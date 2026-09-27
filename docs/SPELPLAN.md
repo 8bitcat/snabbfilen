@@ -23,18 +23,37 @@ när man jobbar. Dagen tar slut — det man inte hann får vänta till i morgon.
 | ⚡ Energi | jobb, gå | sova hemma | somnar på stället → förlorad tid |
 | 💰 Pengar | mat, hyra, kläder | lön | hyresvärden knackar på |
 
-## Platserna (stadskartan)
+## Pixelstaden (navet)
 
-Stadskartan är spelets nav — en gata i sidovy där man klickar/går till en byggnad.
+**Staden är utgångspunkten.** När man kommer ut ur sitt hus står man i Pixelstaden
+och väljer vart man går. Första gången man spelar väljer man var man ska bo.
 
 | Plats | Vad man gör |
 |---|---|
-| 🏠 **Hemma** | Sova (ny dag), äta ur kylskåpet, garderoben (avatar-editorn), möbler |
+| 🏠 **Hemma** | Sova (ny dag), äta ur kylskåpet, garderoben (avatar-editorn) |
+| 🔑 **Bostadsbyrån** | Välja/köpa bostad: Lilla rummet → Lägenheten → Villan (insats + högre hyra, bättre sömn) |
 | 🛒 **Matbutiken** | Köpa mat till kylskåpet — billig mat mättar lite, dyr mättar mycket |
-| ✈️ **Flygplatsen** | JOBB: väskor på rullband med destinationstagg → dra till rätt lucka |
+| ✈️ **Flygplatsen** | JOBB: väskor på rullband med destinationstagg → dra till rätt vagn |
 | 🍊 **Fruktfabriken** | JOBB: packa beställningar — rätt frukt i rätt låda innan bandet går |
-| 👕 **Klädaffären** | JOBB: kunder lämnar plagg → häng/vik till rätt hylla. Och: köpa kläder som låser upp fler val i garderoben |
-| 🏦 **Banken** | (senare) spara, låna, veckohyran dras |
+| 👕 **Klädaffären** | JOBB: plagg till rätt hylla. Och: köpa kläder som låser upp fler val i garderoben |
+
+## Bostäder = progression
+
+| Bostad | Insats | Hyra/vecka | Sömn |
+|---|---|---|---|
+| Lilla rummet | gratis (start) | 350 kr | normal |
+| Lägenheten | 1 500 kr | 600 kr | +10 energi |
+| Villan | 8 000 kr | 1 000 kr | +20 energi |
+
+Rummet ritas efter bostadstyp — större bostad, finare rum. Bostaden ligger i
+spar-JSON:en så att en kompis hus kan ritas upp från ett litet objekt.
+
+## Besöka varandra (multiplayer, M5)
+
+Man ska kunna åka hem till varandra och besöka varandras hus. Motorns
+PeerJS/MQTT-delar (`net.js`/`coop.js` i Pixelverkstan) tas in när grunden står:
+rumskod som i Drömgården/Lantliv, kompisens avatar + bostad ritas från deras
+save-objekt. Därför hålls `{ avatar, home }` serialiserbart från dag ett.
 
 ## Jobben — minispels-kontraktet
 
