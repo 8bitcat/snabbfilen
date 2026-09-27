@@ -48,14 +48,16 @@ och väljer vart man går. Första gången man spelar väljer man var man ska bo
 Rummet ritas efter bostadstyp — större bostad, finare rum. Bostaden ligger i
 spar-JSON:en så att en kompis hus kan ritas upp från ett litet objekt.
 
-## Besöka varandra (KLART 2026-09-27)
+## Öppen värld (KLART 2026-09-27, ersatte rumskoderna samma dag)
 
-👥-knappen i HUD:en: värden bjuder hem med en 4-teckenskod (`js/net/visit.js`,
-PeerJS-moln, värd-auktoritativ stjärna precis som Drömgården/Lantliv, max 6
-gäster). Gästen kliver in i värdens rum — rätt bostadstyp och möbler ritas från
-värdens save — och alla ser varandra gå omkring med namnskyltar. Positioner
-skickas throttlat (90 ms). ÅK HEM-dörren eller 👥 → Åk hem avslutar; resan
-kostar 20 minuter åt varje håll.
+Ingen kod: alla som startar spelet ansluter automatiskt till samma värld
+(`js/net/world.js`). Första spelaren tar det fasta PeerJS-id:t och blir
+världsvärd (nav som vidarebefordrar, max 24 spelare); försvinner värden tar
+nästa klient över automatiskt. Man ser varandra i staden, 👥-listan visar alla
+online och "Åk dit" tar en hem till vem som helst — ägarens bostad + möbler
+ritas från det de publicerat. Emotes (👋❤️😂🎉) när någon är på samma plats.
+`?world=namn` i URL:en ger en egen privat värld (testerna kör så).
+Världen ansluts först efter att avataren valts — inga anonyma spöken.
 
 ## Jobben — minispels-kontraktet
 
