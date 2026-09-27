@@ -77,7 +77,7 @@ function joinAsClient(A) {
 
 // ---------- min publicerade state ----------
 function myState(A) {
-  return { av: { name: A.avatar.name, look: A.avatar.look, color: A.avatar.color }, scene: myScene(A), x: A.scene?.worldX ?? 190, home: A.game.home, furniture: A.game.furniture };
+  return { av: { name: A.avatar.name, look: A.avatar.look, color: A.avatar.color }, scene: myScene(A), x: A.scene?.worldX ?? 190, y: A.scene?.worldY ?? 174, home: A.game.home, furniture: A.game.furniture };
 }
 function myScene(A) {
   if (A.sceneName === 'city') return 'city';
@@ -92,12 +92,14 @@ function cleanP(p, old = {}) {
     if (p.av) out.av = cleanAvatar(p.av);
     if (p.scene !== undefined) out.scene = cleanScene(p.scene);
     if (p.x !== undefined) { out.tx = Math.max(16, Math.min(368, +p.x || 190)); if (out.x === undefined) out.x = out.tx; }
+    if (p.y !== undefined) { out.ty2 = Math.max(30, Math.min(214, +p.y || 174)); if (out.y === undefined) out.y = out.ty2; }
     if (p.home !== undefined) out.home = String(p.home).slice(0, 16);
     if (p.furniture !== undefined) out.furniture = (Array.isArray(p.furniture) ? p.furniture : []).map(String).slice(0, 8);
   }
   out.av = out.av || cleanAvatar({});
   out.scene = out.scene || 'away';
   if (out.x === undefined) { out.x = 190; out.tx = 190; }
+  if (out.y === undefined) { out.y = 174; out.ty2 = 174; }
   return out;
 }
 
@@ -170,20 +172,23 @@ function clientData(A, d, w) {
 export function worldTick(A, myX, dt) {
   if (!W || !W.open) return;
   const now = performance.now();
+  const myY = A.scene?.worldY ?? null;
   const meta = JSON.stringify([A.avatar.look, A.avatar.name, myScene(A), A.game.home, A.game.furniture]);
   const metaChanged = meta !== W.lastMeta;
-  const xChanged = myX !== null && Math.abs(myX - W.lastX) > 0.5;
-  if ((metaChanged || xChanged) && now - W.lastSent > 90) {
+  const posChanged = myX !== null && (Math.abs(myX - W.lastX) > 0.5 || Math.abs((myY ?? 0) - (W.lastY ?? 0)) > 0.5);
+  if ((metaChanged || posChanged) && now - W.lastSent > 90) {
     W.lastSent = now;
-    if (myX !== null) W.lastX = myX;
-    const p = metaChanged ? myState(A) : { x: myX };
+    if (myX !== null) { W.lastX = myX; W.lastY = myY; }
+    const p = metaChanged ? myState(A) : { x: myX, y: myY ?? undefined };
     W.lastMeta = meta;
     if (W.role === 'client' && W.conn?.open) W.conn.send({ t: 'up', p });
     if (W.role === 'host') hostBroadcast({ t: 'up', id: W.myId, p });
   }
   for (const p of W.players.values()) {
-    const d = (p.tx ?? p.x) - p.x, step = 70 * dt;
-    if (Math.abs(d) <= step) p.x = p.tx ?? p.x; else p.x += Math.sign(d) * step;
+    const dx = (p.tx ?? p.x) - p.x, dy = (p.ty2 ?? p.y) - p.y;
+    const dist = Math.hypot(dx, dy), step = 62 * dt;
+    if (dist <= step) { p.x = p.tx ?? p.x; p.y = p.ty2 ?? p.y; }
+    else { p.x += dx / dist * step; p.y += dy / dist * step; }
   }
 }
 
@@ -195,7 +200,7 @@ export function worldFolksHere(A) {
   const out = [];
   for (const [id, p] of W.players) {
     if (p.scene !== here) continue;
-    out.push({ id, av: p.av, x: p.x, walking: Math.abs((p.tx ?? p.x) - p.x) > 1, emote: p.emote && p.emote.until > Date.now() ? p.emote.e : null });
+    out.push({ id, av: p.av, x: p.x, y: p.y, walking: Math.hypot((p.tx ?? p.x) - p.x, (p.ty2 ?? p.y) - p.y) > 1, emote: p.emote && p.emote.until > Date.now() ? p.emote.e : null });
   }
   return out;
 }

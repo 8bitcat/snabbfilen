@@ -18,10 +18,10 @@ export const PHONE_COLORS = ['#e8e8e8', '#222228', '#c9323a', '#3a7bd5'];
 export const BAG_COLORS = ['#2f3440', '#c9323a', '#3a7bd5', '#46a35a', '#e0a02a', '#6b4a33', '#8e5bd1'];
 
 // Alla giltiga värden (även sådana som bara avatarer använder – kunder slumpas aldrig fram dem)
-export const HAIR_STYLES = ['short', 'side', 'long', 'ponytail', 'bun', 'curly', 'afro', 'spiky', 'bald', 'mohawk', 'bob', 'buzz', 'braids', 'pigtails', 'wavy'];
-export const TOP_TYPES = ['tee', 'stripes', 'hoodie', 'jacket', 'sweater', 'shirt'];
+export const HAIR_STYLES = ['short', 'side', 'long', 'ponytail', 'bun', 'curly', 'afro', 'spiky', 'bald', 'mohawk', 'bob', 'buzz', 'braids', 'pigtails', 'wavy', 'mullet', 'curtains', 'space', 'dreads', 'fade'];
+export const TOP_TYPES = ['tee', 'stripes', 'hoodie', 'jacket', 'sweater', 'shirt', 'vest', 'hawaii', 'suit'];
 export const BOTTOM_TYPES = ['jeans', 'pants', 'shorts', 'skirt', 'dress'];
-export const HAT_TYPES = [null, 'cap', 'beanie', 'headband', 'bow', 'crown'];
+export const HAT_TYPES = [null, 'cap', 'beanie', 'headband', 'bow', 'crown', 'bucket', 'tophat'];
 export const GLASSES_TYPES = [false, 'square', 'round', 'sun'];
 export const BEARD_TYPES = [false, 'full', 'mustache', 'stubble', 'goatee'];
 export const BAG_TYPES = [null, 'backpack', 'shoulder'];
@@ -136,7 +136,8 @@ function render(L0, dir, frame) {
   const tw = L.build, lw = K ? 3 : 4;
   const eyeRow = headTop + (K ? 6 : 7);
   const armLen = K ? 5 : 8;
-  const longSleeve = L.top === 'hoodie' || L.top === 'jacket' || L.top === 'sweater';
+  const longSleeve = L.top === 'hoodie' || L.top === 'jacket' || L.top === 'sweater' || L.top === 'suit';
+  const noSleeve = L.top === 'vest';
 
   if (!side) {
     // ---------- ben (fram/bak) ----------
@@ -230,6 +231,25 @@ function render(L0, dir, frame) {
       } else rect(10, ty0, 4, 1, acc.base);
     }
     if (!back && L.top === 'tee' && !L.apron && !K) { rect(13, ty0 + 3, 2, 2, acc.base); put(13, ty0 + 3, acc.hi); }
+    if (L.top === 'vest') { // linne: bara axelband överst, hud på axlarna
+      rect(12 - tw + 1, ty0, tw * 2 - 2, 1, skin.base);
+      put(12 - tw, ty0, skin.lo); put(11 + tw, ty0, skin.lo);
+      put(10, ty0, shirt.base); put(13, ty0, shirt.base);
+      if (!back) rect(11, ty0 + 1, 2, 1, skin.lo);
+    }
+    if (L.top === 'hawaii') { // mönstrad skjorta: prickar i detaljfärgen
+      for (let y = ty0 + 1; y < ty1 - 1; y++) for (let x = 12 - tw + 1; x < 11 + tw; x++) if ((x * 3 + y * 7) % 5 === 0) put(x, y, acc.base);
+      if (!back) { rect(11, ty0, 2, 1, skin.lo); put(11, ty0 + 1, skin.lo); put(12, ty0 + 1, skin.lo); }
+    }
+    if (L.top === 'suit') { // kavaj: vit skjorta, slips i detaljfärgen, slag
+      if (!back) {
+        rect(11, ty0, 2, 2, 0xf4f1ea); put(11, ty0 + 2, 0xf4f1ea); put(12, ty0 + 2, 0xf4f1ea);
+        put(12, ty0 + 1, acc.hi);
+        for (let y = ty0 + 2; y < ty1 - 2; y++) put(12, y, acc.base);
+        put(12, ty1 - 2, acc.lo);
+        put(10, ty0, shirt.hi); put(13, ty0, shirt.hi); put(10, ty0 + 1, shirt.lo); put(13, ty0 + 1, shirt.lo);
+      } else rect(12 - tw + 1, ty0, tw * 2 - 2, 1, shirt.lo);
+    }
     if (L.apron) {
       if (!back) {
         rect(12 - tw + 1, ty0 + 2, tw * 2 - 2, legTop + 3 - (ty0 + 2), 0xf2eee4);
@@ -280,7 +300,7 @@ function render(L0, dir, frame) {
         return;
       }
       const len = sit ? armLen : armLen + swing;
-      const sleeve = longSleeve ? len - 2 : Math.min(3, len - 2);
+      const sleeve = noSleeve ? 0 : longSleeve ? len - 2 : Math.min(3, len - 2);
       for (let j = 0; j < len; j++) {
         const y = torsoTop + 1 + j;
         const isHand = j >= len - 2;
@@ -390,6 +410,22 @@ function render(L0, dir, frame) {
         case 'mohawk': rect(10, h0 - 3, 4, 5, H.base); put(10, h0 - 3, H.hi); put(11, h0 - 2, H.hi); rect(7, h0 + 1, 1, 4, skin.lo); break;
         case 'bob': cap(4); rect(6, h0 + 1, 2, eyeRow + 3 - h0, H.base); rect(16, h0 + 1, 2, eyeRow + 3 - h0, H.lo); rect(8, h0 + 4, 8, 1, H.lo); break;
         case 'buzz': rect(8, h0, 8, 1, H.lo); rect(7, h0 + 1, 10, 2, mix(H.base, skin.base, 0.3)); rect(7, h0 + 3, 1, 2, H.lo); rect(16, h0 + 3, 1, 2, H.lo); break;
+        case 'mullet': cap(3); rect(8, h0 + 3, 3, 1, H.base); rect(7, h0 + 3, 1, 2, H.base); rect(16, h0 + 3, 1, 2, H.lo);
+          rect(5, eyeRow + 1, 2, 6, H.base); rect(17, eyeRow + 1, 2, 6, H.lo); put(5, eyeRow + 1, H.hi); put(18, eyeRow + 6, H.dk); break;
+        case 'curtains': cap(2); rect(7, h0 + 2, 2, 4, H.base); rect(15, h0 + 2, 2, 4, H.lo);
+          rect(8, h0 + 2, 3, 2, H.base); rect(13, h0 + 2, 3, 2, H.lo);
+          put(12, h0, skin.base); put(12, h0 + 1, skin.base); put(11, h0, H.hi); put(13, h0, H.base); break;
+        case 'space': cap(3); rect(8, h0 + 3, 8, 1, H.base); rect(7, h0 + 3, 1, 2, H.base); rect(16, h0 + 3, 1, 2, H.lo);
+          rect(6, h0 - 3, 3, 3, H.base); rect(15, h0 - 3, 3, 3, H.base);
+          put(6, h0 - 3, H.hi); put(8, h0 - 1, H.lo); put(15, h0 - 3, H.hi); put(17, h0 - 1, H.lo); break;
+        case 'dreads': cap(3);
+          for (let y = h0; y < h0 + 3; y++) for (let x = 7; x < 17; x++) if ((x + y) % 2 === 0) put(x, y, H.lo);
+          rect(5, h0 + 2, 2, 8, H.base); rect(17, h0 + 2, 2, 8, H.lo);
+          for (let j = 1; j < 8; j += 2) { put(5, h0 + 2 + j, H.lo); put(18, h0 + 2 + j, H.dk); }
+          put(5, h0 + 2, H.hi); break;
+        case 'fade': rect(9, h0 - 1, 6, 1, H.base); rect(8, h0, 8, 2, H.base); rect(9, h0 - 1, 3, 1, H.hi);
+          rect(8, h0 + 2, 8, 1, mix(H.base, skin.base, 0.25));
+          rect(7, h0 + 2, 1, 3, mix(H.base, skin.base, 0.45)); rect(16, h0 + 2, 1, 3, mix(H.lo, skin.base, 0.45)); break;
         default: cap(3);
       }
     } else {
@@ -397,6 +433,7 @@ function render(L0, dir, frame) {
         case 'bald': rect(7, eyeRow - 1, 10, 2, mix(H.base, skin.base, 0.35)); rect(8, eyeRow + 1, 8, 1, mix(H.lo, skin.lo, 0.4)); put(9, h0 + 1, skin.hi); put(10, h0 + 1, skin.hi); break;
         case 'mohawk': rect(10, h0 - 3, 4, headH - 1, H.base); put(10, h0 - 3, H.hi); break;
         case 'buzz': rect(8, h0, 8, 1, H.lo); rect(7, h0 + 1, 10, headH - 4, mix(H.base, skin.base, 0.3)); break;
+        case 'fade': rect(8, h0, 8, 1, H.base); rect(7, h0 + 1, 10, 2, mix(H.base, skin.base, 0.3)); rect(8, h0 + 3, 8, headH - 6, mix(H.base, skin.base, 0.45)); break;
         case 'afro': for (let y = h0 - 5; y < h0 + 9; y++) { const dy = (y - (h0 + 1)) / 7.5; const hw = Math.round(Math.sqrt(Math.max(0, 1 - dy * dy)) * 8); if (hw) rect(12 - hw, y, hw * 2, 1, H.base); }
           for (let y = h0 - 5; y < h0 + 9; y++) for (let x = 3; x < 21; x++) if (has(x, y) && (x * 7 + y * 3) % 5 === 0) put(x, y, (x + y) % 2 ? H.hi : H.lo);
           break;
@@ -404,8 +441,8 @@ function render(L0, dir, frame) {
           for (let y = h0 - 2; y < h0 + headH - 2; y++) for (let x = 6; x < 18; x++) if (has(x, y) && (x * 3 + y * 5) % 4 === 0) put(x, y, (x + y) % 3 ? H.hi : H.lo);
           break;
         default: {
-          const long = st === 'long' || st === 'bob' || st === 'wavy';
-          const bottom = st === 'long' || st === 'wavy' ? h0 + headH + 3 : st === 'bob' ? eyeRow + 3 : h0 + headH - 3;
+          const long = st === 'long' || st === 'bob' || st === 'wavy' || st === 'mullet' || st === 'dreads';
+          const bottom = st === 'long' || st === 'wavy' || st === 'mullet' || st === 'dreads' ? h0 + headH + 3 : st === 'bob' ? eyeRow + 3 : h0 + headH - 3;
           rect(8, h0 - 1, 8, 1, H.base); rect(7, h0, 10, bottom - h0, H.base);
           if (long) rect(6, h0 + 1, 12, bottom - h0 - 1, H.base);
           rect(9, h0 - 1, 3, 1, H.hi); rect(8, h0, 3, 1, H.hi); put(8, h0 + 1, H.hi);
@@ -421,6 +458,9 @@ function render(L0, dir, frame) {
           if (st === 'ponytail') { rect(11, bottom, 2, K ? 5 : 7, H.base); put(12, bottom + 1, H.lo); rect(11, bottom - 1, 2, 1, 0xc9323a); }
           if (st === 'bun') { rect(10, h0 - 3, 4, 3, H.base); rect(11, h0 - 4, 2, 1, H.base); put(10, h0 - 3, H.hi); }
           if (st === 'spiky') for (let i = 0; i < 4; i++) put(8 + i * 2, h0 - 2, H.base);
+          if (st === 'space') { rect(6, h0 - 3, 3, 3, H.base); rect(15, h0 - 3, 3, 3, H.base); put(6, h0 - 3, H.hi); put(15, h0 - 3, H.hi); }
+          if (st === 'dreads') for (let y = h0 + 1; y < bottom; y++) for (let x = 7; x < 17; x += 2) if ((x + y) % 2 === 0) put(x, y, H.lo);
+          if (st === 'curtains') { put(12, h0 - 1, H.lo); }
         }
       }
     }
@@ -456,6 +496,17 @@ function render(L0, dir, frame) {
       rect(8, cy - 1, 8, 2, capc.base); rect(8, cy - 1, 8, 1, capc.hi); put(15, cy - 1, capc.base); put(15, cy, capc.lo);
       put(8, cy - 2, capc.hi); put(15, cy - 2, capc.base); rect(11, cy - 3, 2, 2, capc.base); put(11, cy - 3, capc.hi);
       if (!back) { put(9, cy, 0x3a8ae0); rect(11, cy, 2, 1, 0xd83a4a); put(14, cy, 0x3a8ae0); }
+    }
+    if (L.hat === 'bucket') { // fiskehatt: kupol + nedvinklat brätte
+      rect(9, h0 - 4, 6, 1, capc.base); rect(8, h0 - 3, 8, 3, capc.base);
+      rect(9, h0 - 4, 3, 1, capc.hi); put(8, h0 - 3, capc.hi); put(15, h0 - 2, capc.lo);
+      rect(6, h0, 12, 1, capc.lo); put(6, h0 + 1, capc.dk); put(17, h0 + 1, capc.dk);
+    }
+    if (L.hat === 'tophat') { // hög hatt med band i detaljfärgen
+      rect(8, h0 - 7, 8, 7, capc.base); rect(8, h0 - 7, 8, 1, capc.hi); put(8, h0 - 6, capc.hi);
+      for (let y = h0 - 6; y < h0 - 1; y++) put(15, y, capc.lo);
+      rect(8, h0 - 1, 8, 1, acc.base);
+      rect(6, h0, 12, 1, capc.dk);
     }
     if (L.phones) {
       const pc = ramp(toInt(L.phoneColor, 0x222228));
@@ -504,7 +555,7 @@ function render(L0, dir, frame) {
         return;
       }
       const len = sit ? armLen - 2 : armLen;
-      const sleeve = longSleeve ? len - 2 : 3;
+      const sleeve = noSleeve ? 0 : longSleeve ? len - 2 : 3;
       for (let j = 0; j < len; j++) {
         const t = (j + 1) / len;
         const x = 11 + Math.round(swing * t * t) + (sit ? Math.round(t * 3) : 0);
@@ -533,6 +584,9 @@ function render(L0, dir, frame) {
     if (L.top === 'hoodie') { rect(8, torsoTop, 3, 3, shirt.lo); put(9, torsoTop, shirt.base); }
     if (L.top === 'jacket') { rect(15, torsoTop, 1, hipTop - torsoTop, acc.base); }
     if (L.top === 'shirt') { rect(13, torsoTop, 3, 1, acc.base); put(15, torsoTop + 1, acc.lo); }
+    if (L.top === 'vest') { rect(9, torsoTop, 7, 1, skin.base); put(15, torsoTop, skin.hi); put(11, torsoTop, shirt.base); put(9, torsoTop, skin.lo); }
+    if (L.top === 'hawaii') { for (let y = torsoTop + 1; y < hipTop; y++) for (let x = 10; x < 15; x++) if ((x * 3 + y * 7) % 5 === 0) put(x, y, acc.base); }
+    if (L.top === 'suit') { rect(13, torsoTop, 3, 2, 0xf4f1ea); put(14, torsoTop + 1, acc.base); put(13, torsoTop, shirt.lo); }
     if (L.apron) { rect(14, torsoTop + 2, 3, legTop + 3 - torsoTop - 2, 0xf2eee4); for (let y = torsoTop + 2; y < legTop + 3; y++) put(14, y, 0xcfc8b8); put(12, torsoTop + 1, 0xf2eee4); put(13, torsoTop + 2, 0xf2eee4); }
     if (L.bag === 'backpack') { rect(10, torsoTop, 1, 5, bagc.dk); }
     if (L.bag === 'shoulder') { for (let i = 0; i < 7; i++) put(10 + (i >> 1), torsoTop + i, bagc.dk); rect(13, hipTop - 3, 4, 4, bagc.base); rect(13, hipTop - 3, 4, 1, bagc.hi); }
@@ -575,6 +629,10 @@ function render(L0, dir, frame) {
       case 'curly': rect(8, h0 - 2, 9, 5, H.base); rect(6, h0, 5, 8, H.base);
         for (let y = h0 - 2; y < h0 + 8; y++) for (let x = 6; x < 18; x++) if (has(x, y) && (x * 3 + y * 5) % 4 === 0 && (y < h0 + 3 || x < 11)) put(x, y, (x + y) % 3 ? H.hi : H.lo);
         break;
+      case 'fade': rect(9, h0, 7, 1, H.base); rect(8, h0 + 1, 8, 1, H.base); rect(8, h0 + 2, 8, 2, mix(H.base, skin.base, 0.3)); rect(8, h0 + 4, 3, 3, mix(H.base, skin.base, 0.45)); break;
+      case 'dreads': { const t3 = (r) => { rect(9, h0 - 1, 7, 1, H.base); rect(8, h0, 9, r, H.base); rect(10, h0 - 1, 3, 1, H.hi); }; t3(3);
+        for (let i = 0; i < 5; i++) { const x = 6 + i * 2; rect(x, h0 + 2, 2, headH - 2 + (i % 3), i % 2 ? H.lo : H.base); }
+        break; }
       default: {
         top(3);
         rect(8, h0 + 3, 3, st === 'long' || st === 'bob' ? 0 : 4, H.base);
@@ -598,6 +656,9 @@ function render(L0, dir, frame) {
           [[5], [4, 5], [3, 4, 5], [3, 4, 5], [3, 4], [3, 4], [4]].forEach((xs, j) => xs.forEach((x) => put(x + 2, h0 + j, j === 6 ? H.lo : H.base)));
           put(8, h0 + 1, 0xc9323a); put(8, h0 + 2, 0xc9323a); put(5, h0 + 3, H.hi);
         }
+        if (st === 'mullet') { rect(6, eyeRow - 1, 3, 2, H.base); rect(6, eyeRow + 1, 2, 6, H.base); put(6, eyeRow + 1, H.lo); put(7, eyeRow + 6, H.lo); }
+        if (st === 'space') { rect(6, h0 - 3, 3, 3, H.base); put(6, h0 - 3, H.hi); rect(13, h0 - 2, 2, 1, H.lo); }
+        if (st === 'curtains') { rect(14, h0 + 2, 3, 2, H.base); put(16, h0 + 3, H.lo); put(13, h0 - 1, H.lo); }
       }
     }
     if (L.hat === 'cap') { rect(9, h0 - 2, 7, 1, capc.base); rect(8, h0 - 1, 9, 3, capc.base); rect(9, h0 - 2, 3, 1, capc.hi); rect(16, h0 + 2, 4, 1, capc.lo); rect(8, h0 + 2, 9, 1, capc.lo); }
@@ -620,6 +681,8 @@ function render(L0, dir, frame) {
       put(9, cy - 2, capc.base); put(15, cy - 2, capc.hi); rect(12, cy - 3, 1, 2, capc.base);
       put(13, cy, 0xd83a4a);
     }
+    if (L.hat === 'bucket') { rect(10, h0 - 4, 5, 1, capc.base); rect(9, h0 - 3, 7, 3, capc.base); rect(10, h0 - 4, 2, 1, capc.hi); rect(7, h0, 11, 1, capc.lo); put(7, h0 + 1, capc.dk); put(17, h0 + 1, capc.dk); }
+    if (L.hat === 'tophat') { rect(9, h0 - 7, 7, 7, capc.base); rect(9, h0 - 7, 7, 1, capc.hi); put(9, h0 - 6, capc.hi); rect(9, h0 - 1, 7, 1, ramp(toInt(L.accent, 0xf4f1ea)).base); rect(7, h0, 11, 1, capc.dk); }
     if (L.phones) { const pc = ramp(toInt(L.phoneColor, 0x222228)); rect(11, h0 - 2, 2, eyeRow - h0, 0x2a2a30); rect(10, eyeRow - 2, 3, 4, pc.base); put(10, eyeRow - 2, pc.hi); }
   }
 

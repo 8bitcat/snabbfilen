@@ -70,6 +70,7 @@ export function makeCity(A) {
 
   return {
     get worldX() { return px; },
+    get worldY() { return FEET; },
     update(dt) {
       t += dt;
       if (target !== null) {

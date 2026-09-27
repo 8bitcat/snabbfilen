@@ -34,6 +34,8 @@ export const payMult = (level) => 1 + 0.15 * (level - 1);
 // ihop till, från kepsen för 90 kr hela vägen upp till kronan.
 export const SORTIMENT = [
   { kind: 'hat', v: 'cap', icon: '🧢', name: 'Keps', price: 90 },
+  { kind: 'top', v: 'vest', icon: '🎽', name: 'Linne', price: 100 },
+  { kind: 'hat', v: 'bucket', icon: '👒', name: 'Fiskehatt', price: 130 },
   { kind: 'bottom', v: 'shorts', icon: '🩳', name: 'Shorts', price: 120 },
   { kind: 'hat', v: 'headband', icon: '🎽', name: 'Hårband', price: 120 },
   { kind: 'glasses', v: 'round', icon: '👓', name: 'Runda glasögon', price: 150 },
@@ -43,6 +45,7 @@ export const SORTIMENT = [
   { kind: 'bottom', v: 'skirt', icon: '👗', name: 'Kjol', price: 200 },
   { kind: 'glasses', v: 'sun', icon: '🕶️', name: 'Solglasögon', price: 220 },
   { kind: 'top', v: 'hoodie', icon: '🧥', name: 'Huvtröja', price: 250 },
+  { kind: 'top', v: 'hawaii', icon: '🌺', name: 'Hawaiiskjorta', price: 280 },
   { kind: 'top', v: 'sweater', icon: '🧶', name: 'Stickad tröja', price: 300 },
   { kind: 'bag', v: 'backpack', icon: '🎒', name: 'Ryggsäck', price: 350 },
   { kind: 'bottom', v: 'dress', icon: '👗', name: 'Klänning', price: 380 },
@@ -50,6 +53,8 @@ export const SORTIMENT = [
   { kind: 'bag', v: 'shoulder', icon: '👜', name: 'Axelväska', price: 420 },
   { kind: 'top', v: 'jacket', icon: '🧥', name: 'Jacka', price: 450 },
   { kind: 'phones', v: true, icon: '🎧', name: 'Hörlurar', price: 500 },
+  { kind: 'top', v: 'suit', icon: '🤵', name: 'Kavaj med slips', price: 1500 },
+  { kind: 'hat', v: 'tophat', icon: '🎩', name: 'Hög hatt', price: 1800 },
   { kind: 'hat', v: 'crown', icon: '👑', name: 'Krona', price: 2500 },
 ];
 export const clothesKey = (kind, v) => `${kind}:${v}`;

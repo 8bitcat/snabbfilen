@@ -225,10 +225,10 @@ const TABS = [
 ];
 
 const LBL = {
-  style: { short: 'Kort', side: 'Sidbena', long: 'Långt', ponytail: 'Häst\u00adsvans', bun: 'Knut', curly: 'Lockigt', afro: 'Afro', spiky: 'Taggigt', bald: 'Flint', mohawk: 'Tuppkam', bob: 'Page', buzz: 'Snaggat', braids: 'Flätor', pigtails: 'Tofsar', wavy: 'Vågigt' },
-  top: { tee: 'T-shirt', stripes: 'Randig', hoodie: 'Huv\u00adtröja', jacket: 'Jacka', sweater: 'Tröja', shirt: 'Skjorta' },
+  style: { short: 'Kort', side: 'Sidbena', long: 'Långt', ponytail: 'Häst\u00adsvans', bun: 'Knut', curly: 'Lockigt', afro: 'Afro', spiky: 'Taggigt', bald: 'Flint', mohawk: 'Tuppkam', bob: 'Page', buzz: 'Snaggat', braids: 'Flätor', pigtails: 'Tofsar', wavy: 'Vågigt', mullet: 'Hockey­frilla', curtains: 'Mitt­bena', space: 'Rymd­knutar', dreads: 'Dreads', fade: 'Fade' },
+  top: { tee: 'T-shirt', stripes: 'Randig', hoodie: 'Huv\u00adtröja', jacket: 'Jacka', sweater: 'Tröja', shirt: 'Skjorta', vest: 'Linne', hawaii: 'Hawaii', suit: 'Kavaj' },
   bottom: { jeans: 'Jeans', pants: 'Byxor', shorts: 'Shorts', skirt: 'Kjol', dress: 'Klän\u00adning' },
-  hat: { null: 'Ingen', cap: 'Keps', beanie: 'Mössa', headband: 'Hårband', bow: 'Rosett', crown: 'Krona' },
+  hat: { null: 'Ingen', cap: 'Keps', beanie: 'Mössa', headband: 'Hårband', bow: 'Rosett', crown: 'Krona', bucket: 'Fiske­hatt', tophat: 'Hög hatt' },
   glasses: { false: 'Inga', square: 'Fyr\u00adkantiga', round: 'Runda', sun: 'Sol\u00adglasögon' },
   beard: { false: 'Inget', full: 'Hel\u00adskägg', mustache: 'Mus\u00adtasch', stubble: 'Stubb', goatee: 'Pip\u00adskägg' },
   blush: { false: 'Utan', true: 'Rosiga' },

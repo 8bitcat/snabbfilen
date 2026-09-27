@@ -46,9 +46,9 @@ const scene = () => page.evaluate(() => window.SF.sceneName);
 ok(await scene() === 'room', 'hamnar i rummet efter bostadsvalet');
 await shot('04-rummet');
 
-// 4. Kylskåpet: ät nudlarna man startar med
-await page.evaluate(() => window.SF.scene.down(236, 150));
-await page.waitForTimeout(900);
+// 4. Kylskåpet: ät nudlarna man startar med (figuren går över isogolvet dit)
+await page.evaluate(() => { const p = window.SF.scene._debug.spot('kylskap'); window.SF.scene.down(p.x, p.y); });
+await page.waitForTimeout(2800);
 ok((await page.locator('.dlg-head h2').textContent())?.includes('Kylskåpet'), 'kylskåpet öppnas');
 await shot('05-kylskap');
 const hungerBefore = await page.evaluate(() => window.SF.game.hunger);
@@ -172,8 +172,8 @@ await page.waitForTimeout(200);
 
 // 12. Garderoben: köpta plagg är öppna, resten har hänglås
 await page.evaluate(() => window.SF.go('room'));
-await page.evaluate(() => window.SF.scene.down(139, 150));
-await page.waitForTimeout(900);
+await page.evaluate(() => { const p = window.SF.scene._debug.spot('garderob'); window.SF.scene.down(p.x, p.y); });
+await page.waitForTimeout(2800);
 await page.click('.av-tab[data-tab="top"]');
 await page.waitForTimeout(300);
 const locks = await page.evaluate(() => ({
@@ -181,7 +181,7 @@ const locks = await page.evaluate(() => ({
   hoodieLocked: !!document.querySelector('.av-panel .av-tile.locked[data-v=\'"hoodie"\']'),
   worn: window.SF.avatar.look.top,
 }));
-const expectLocked = ['sweater', 'shirt', 'jacket'].filter((v) => v !== locks.worn); // det man har på sig visas som valt, inte låst
+const expectLocked = ['sweater', 'shirt', 'jacket', 'vest', 'hawaii', 'suit'].filter((v) => v !== locks.worn); // det man bär visas som valt, inte låst
 ok(!locks.hoodieLocked && expectLocked.every((v) => locks.locked.includes(v)) && locks.locked.length === expectLocked.length,
   `köpta plagg öppna, resten låsta (låsta: ${locks.locked.join(', ')} · på sig: ${locks.worn})`);
 await shot('16-garderob-las');
@@ -297,15 +297,15 @@ for (let i = 0; i < 20 && inRoom !== 1; i++) {
 }
 ok(inRoom === 1, 'värden ser besökaren i sitt rum');
 
-// gästen promenerar genom rummet – syns vandringen hos värden?
-await guest.evaluate(() => window.SF.scene.down(80, 190));
+// gästen promenerar över isogolvet – syns vandringen hos värden?
+await guest.evaluate(() => { const p = window.SF.scene._debug.tile(1, 6); window.SF.scene.down(p.x, p.y); });
 let folk = null;
 for (let i = 0; i < 32; i++) {
   await page.waitForTimeout(250);
   folk = await page.evaluate(() => window.SF.worldFolksHere()[0] || null);
-  if (folk && folk.x > 0 && folk.x < 120) break;
+  if (folk && folk.x > 0 && folk.x < 130) break;
 }
-ok(folk && folk.x < 120, `gästens promenad syns hos värden (x=${Math.round(folk?.x ?? -1)})`);
+ok(folk && folk.x < 130, `gästens promenad syns hos värden (x=${Math.round(folk?.x ?? -1)}, y=${Math.round(folk?.y ?? -1)})`);
 // …och en emote når fram innan den slocknar (2,6 s)
 await guest.evaluate(() => window.SF.sendEmote('❤️'));
 let emote = null;
@@ -317,8 +317,8 @@ ok(emote === '❤️', `emoten syns hos värden (${emote})`);
 await shot('20-vard-med-besok');
 await guest.screenshot({ path: OUT + '21-gast-pa-besok.png' });
 
-// gästen går hem via dörren
-await guest.evaluate(() => window.SF.scene.down(342, 190));
+// gästen går hem via dörröppningen i väggen
+await guest.evaluate(() => { const p = window.SF.scene._debug.spot('dorr'); window.SF.scene.down(p.x, p.y); });
 let back = false;
 for (let i = 0; i < 32 && !back; i++) {
   await guest.waitForTimeout(250);
