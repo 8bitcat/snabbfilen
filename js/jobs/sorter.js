@@ -7,18 +7,20 @@ import { play } from '../core/sound.js';
 
 const BELT_Y = 82;      // sakernas mittpunkt på bandet
 const BINS_Y = 148;     // ovanför = bandet, nedanför = korgarna
+const V = { W: 384, H: 216 }; // ritas i halva upplösningen, skalas 2×
 
 export function makeSorter(A, skin, { onDone }) {
   const stats = { ok: 0, fel: 0, miss: 0 };
   const items = [];
   const pops = makePops();
-  const binW = A.W / skin.bins.length;
+  const binW = V.W / skin.bins.length;
   let t = 0, spawnIn = 1.0, held = null, done = false, doneT = 0, reported = false;
   let hotBin = -1, seq = 0;
 
   const speed = () => 26 + 20 * Math.min(1, t / SHIFT_SECONDS);
 
   return {
+    pxScale: 2,
     _items: items, _stats: stats, // för tools/smoke.mjs
     update(dt) {
       pops.update(dt);
@@ -32,7 +34,7 @@ export function makeSorter(A, skin, { onDone }) {
       spawnIn -= dt;
       if (spawnIn <= 0) {
         spawnIn = 2.3 - 1.1 * Math.min(1, t / SHIFT_SECONDS) + hash(seq, 9) * 0.4;
-        items.push({ cat: (Math.random() * skin.bins.length) | 0, x: A.W + 20, y: BELT_Y, held: false, ...skin.newItem(seq++) });
+        items.push({ cat: (Math.random() * skin.bins.length) | 0, x: V.W + 20, y: BELT_Y, held: false, ...skin.newItem(seq++) });
       }
       for (const it of items) if (!it.held) it.x -= speed() * dt;
       for (let i = items.length - 1; i >= 0; i--) {
@@ -73,13 +75,16 @@ export function makeSorter(A, skin, { onDone }) {
     key(k) { if (k === 'Escape' && !done) abortShift(A); },
 
     draw(ctx) {
-      skin.bg(ctx, A, t);
-      skin.drawBins(ctx, A, binW, hotBin);
+      ctx.save();
+      ctx.setTransform(2, 0, 0, 2, 0, 0);
+      skin.bg(ctx, V, t);
+      skin.drawBins(ctx, V, binW, hotBin);
       for (const it of items) if (!it.held) skin.drawItem(ctx, it);
       if (held) skin.drawItem(ctx, held); // den man håller ritas överst
       pops.draw(ctx);
-      drawShiftHud(ctx, A, { t, dur: SHIFT_SECONDS, ok: stats.ok, fel: stats.fel, title: skin.title });
-      if (done) drawTimeUp(ctx, A);
+      drawShiftHud(ctx, V, { t, dur: SHIFT_SECONDS, ok: stats.ok, fel: stats.fel, title: skin.title });
+      if (done) drawTimeUp(ctx, V);
+      ctx.restore();
     },
   };
 }

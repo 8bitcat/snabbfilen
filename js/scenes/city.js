@@ -49,7 +49,8 @@ export function makeCity(A) {
     look: makeLook(), x: 40 + i * 130 + hash(i, 7) * 60, sp: (14 + hash(i, 3) * 10) * (i % 2 ? 1 : -1), y: FEET - 3 + i * 2,
   }));
 
-  function walkTo(x, cb) { target = Math.max(12, Math.min(A.W - 12, x)); onArrive = cb || null; }
+  const VW = 384, VH = 216; // scenen ritas i halva upplösningen och skalas 2×
+  function walkTo(x, cb) { target = Math.max(12, Math.min(VW - 12, x)); onArrive = cb || null; }
 
   function enter(spot) {
     const hour = g.min / 60;
@@ -69,6 +70,7 @@ export function makeCity(A) {
   }
 
   return {
+    pxScale: 2,
     get worldX() { return px; },
     get worldY() { return FEET; },
     update(dt) {
@@ -84,8 +86,8 @@ export function makeCity(A) {
       }
       for (const f of folk) {
         f.x += f.sp * dt;
-        if (f.x < -20) f.x = A.W + 20;
-        if (f.x > A.W + 20) f.x = -20;
+        if (f.x < -20) f.x = VW + 20;
+        if (f.x > VW + 20) f.x = -20;
       }
     },
 
@@ -96,7 +98,9 @@ export function makeCity(A) {
     },
 
     draw(ctx) {
-      const { W, H } = A;
+      ctx.save();
+      ctx.setTransform(2, 0, 0, 2, 0, 0);
+      const W = VW, H = VH;
       const hour = g.min / 60;
       const night = isNight(hour);
       const [top, bot] = skyAt(hour);
@@ -169,6 +173,7 @@ export function makeCity(A) {
       // natt: lägg en mörk ton över gata + hus (inte himlen)
       if (night) { ctx.fillStyle = 'rgba(10,12,40,0.28)'; ctx.fillRect(0, 60, W, H - 60); }
       else if (rain) { ctx.fillStyle = 'rgba(40,50,80,0.15)'; ctx.fillRect(0, 0, W, H); }
+      ctx.restore();
     },
   };
 }

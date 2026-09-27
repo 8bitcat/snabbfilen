@@ -19,7 +19,7 @@ const cv = $('#scene'), ctx = cv.getContext('2d');
 
 // Appkontexten som alla scener får: tillstånd + navigering.
 const A = {
-  W: 384, H: 216,
+  W: 768, H: 432,
   game: null, avatar: null,
   scene: null, sceneName: '',
   go(name, opts) {
@@ -56,16 +56,18 @@ const ENGINES = { flygplats: 'flygplats', klader: 'klader', frukt: 'frukt' };
 function fit() {
   const w = window.innerWidth, h = window.innerHeight - $('#hud').offsetHeight;
   let s = Math.min(w / A.W, h / A.H);
-  if (s >= 2) s = Math.floor(s);
+  if (s >= 1) s = Math.floor(s * 2) / 2; // halva steg ger jämna pixlar
   cv.style.width = A.W * s + 'px';
   cv.style.height = A.H * s + 'px';
 }
 window.addEventListener('resize', fit);
 
 // ---------- pekare: mus + touch till logiska pixlar ----------
+// Scener med pxScale ritar i halva upplösningen (staden/jobben) – pekaren översätts
 function toLocal(e) {
   const r = cv.getBoundingClientRect();
-  return { x: (e.clientX - r.left) / r.width * A.W, y: (e.clientY - r.top) / r.height * A.H };
+  const k = A.scene?.pxScale || 1;
+  return { x: (e.clientX - r.left) / r.width * A.W / k, y: (e.clientY - r.top) / r.height * A.H / k };
 }
 cv.addEventListener('pointerdown', (e) => { if (modalOpen()) return; cv.setPointerCapture(e.pointerId); const p = toLocal(e); A.scene?.down?.(p.x, p.y); });
 cv.addEventListener('pointermove', (e) => { if (modalOpen()) return; const p = toLocal(e); A.scene?.move?.(p.x, p.y); });

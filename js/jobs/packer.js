@@ -7,6 +7,7 @@ import { play } from '../core/sound.js';
 
 const BELT_Y = 88;
 const BOX = { x: 150, y: 156, w: 84, h: 42 };
+const V = { W: 384, H: 216 }; // ritas i halva upplösningen, skalas 2×
 
 // Frukterna som 8×8-kartor (ritas i skala 2). Bokstav = färg i pal.
 const PAL = { R: '#d9433b', W: '#f2a09a', G: '#2f8f46', Y: '#f0d048', B: '#6a5030', O: '#f08a2a', P: '#9fd356', V: '#8e5bd1' };
@@ -43,6 +44,7 @@ export function makePacker(A, { onDone }) {
   const speed = () => 30 + 16 * Math.min(1, t / SHIFT_SECONDS);
 
   return {
+    pxScale: 2,
     _items: items, _stats: stats, _order: () => order, // för tools/smoke.mjs
     update(dt) {
       pops.update(dt);
@@ -66,7 +68,7 @@ export function makePacker(A, { onDone }) {
         // väg spawnen mot det ordern behöver, annars blir det för glest
         const wanted = order.need.filter((n) => n.got < n.n).map((n) => n.f);
         const f = Math.random() < 0.55 && wanted.length ? wanted[(Math.random() * wanted.length) | 0] : (Math.random() * FRUITS.length) | 0;
-        items.push({ f, x: A.W + 12, y: BELT_Y + (hash(seq, 44) * 8 - 4) });
+        items.push({ f, x: V.W + 12, y: BELT_Y + (hash(seq, 44) * 8 - 4) });
         seq++;
       }
       for (const it of items) it.x -= speed() * dt;
@@ -104,7 +106,9 @@ export function makePacker(A, { onDone }) {
     key(k) { if (k === 'Escape' && !done) abortShift(A); },
 
     draw(ctx) {
-      const { W, H } = A;
+      ctx.save();
+      ctx.setTransform(2, 0, 0, 2, 0, 0);
+      const { W, H } = V;
       // fabrikslokal
       ctx.fillStyle = '#5a6e5c'; ctx.fillRect(0, 0, W, H);
       ctx.fillStyle = '#4c5e4e'; for (let x = 0; x < W; x += 20) ctx.fillRect(x, 0, 2, H);
@@ -149,8 +153,9 @@ export function makePacker(A, { onDone }) {
       for (const fl of flying) drawFruit(ctx, fl.f, fl.x, fl.y);
 
       pops.draw(ctx);
-      drawShiftHud(ctx, A, { t, dur: SHIFT_SECONDS, ok: stats.ok, fel: stats.fel, title: 'FRUKTFABRIKEN' });
-      if (done) drawTimeUp(ctx, A);
+      drawShiftHud(ctx, V, { t, dur: SHIFT_SECONDS, ok: stats.ok, fel: stats.fel, title: 'FRUKTFABRIKEN' });
+      if (done) drawTimeUp(ctx, V);
+      ctx.restore();
     },
   };
 }

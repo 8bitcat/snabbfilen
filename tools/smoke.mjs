@@ -303,9 +303,9 @@ let folk = null;
 for (let i = 0; i < 32; i++) {
   await page.waitForTimeout(250);
   folk = await page.evaluate(() => window.SF.worldFolksHere()[0] || null);
-  if (folk && folk.x > 0 && folk.x < 130) break;
+  if (folk && folk.x > 0 && folk.x < 260) break;
 }
-ok(folk && folk.x < 130, `gästens promenad syns hos värden (x=${Math.round(folk?.x ?? -1)}, y=${Math.round(folk?.y ?? -1)})`);
+ok(folk && folk.x < 260, `gästens promenad syns hos värden (x=${Math.round(folk?.x ?? -1)}, y=${Math.round(folk?.y ?? -1)})`);
 // …och en emote når fram innan den slocknar (2,6 s)
 await guest.evaluate(() => window.SF.sendEmote('❤️'));
 let emote = null;

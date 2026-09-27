@@ -91,8 +91,8 @@ function cleanP(p, old = {}) {
   if (p && typeof p === 'object') {
     if (p.av) out.av = cleanAvatar(p.av);
     if (p.scene !== undefined) out.scene = cleanScene(p.scene);
-    if (p.x !== undefined) { out.tx = Math.max(16, Math.min(368, +p.x || 190)); if (out.x === undefined) out.x = out.tx; }
-    if (p.y !== undefined) { out.ty2 = Math.max(30, Math.min(214, +p.y || 174)); if (out.y === undefined) out.y = out.ty2; }
+    if (p.x !== undefined) { out.tx = Math.max(8, Math.min(760, +p.x || 190)); if (out.x === undefined) out.x = out.tx; }
+    if (p.y !== undefined) { out.ty2 = Math.max(20, Math.min(428, +p.y || 174)); if (out.y === undefined) out.y = out.ty2; }
     if (p.home !== undefined) out.home = String(p.home).slice(0, 16);
     if (p.furniture !== undefined) out.furniture = (Array.isArray(p.furniture) ? p.furniture : []).map(String).slice(0, 8);
   }
