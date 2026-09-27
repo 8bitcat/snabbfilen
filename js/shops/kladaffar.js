@@ -16,13 +16,17 @@ export function openKladaffar(A) {
 
 export function openKladShop(A) {
   const g = A.game;
-  const body = `<p style="font-size:19px;margin-top:0">💰 <b>${fmt(g.money)}</b></p>
+  const rab = g.clothesDiscount();
+  const body = `<p style="font-size:19px;margin-top:0">💰 <b>${fmt(g.money)}</b>
+      ${rab > 0 ? `<br>🏷️ <b class="ok">Personalrabatt ${Math.round(rab * 100)} %</b> – du jobbar ju här!` : ''}</p>
     <div class="plist">${SORTIMENT.map((s, i) => {
       const owned = g.wardrobe.includes(clothesKey(s.kind, s.v));
+      const price = g.clothesPrice(s);
+      const priceHtml = rab > 0 && !owned ? `<s>${fmt(s.price)}</s> <b>${fmt(price)}</b>` : fmt(s.price);
       return `<div class="prow ${owned ? 'here' : ''}">
         <span style="font-size:26px;text-align:center">${s.icon}</span>
-        <span class="nm">${s.name}${owned ? ' <small class="ok">✓ din</small>' : ''}<br><small class="sp">${fmt(s.price)}</small></span>
-        <button class="btn btn-small ${!owned && g.money >= s.price ? 'btn-go' : ''}" data-shop="${i}" ${owned || g.money < s.price ? 'disabled' : ''}>${owned ? 'Har' : 'Köp'}</button>
+        <span class="nm">${s.name}${owned ? ' <small class="ok">✓ din</small>' : ''}<br><small class="sp">${priceHtml}</small></span>
+        <button class="btn btn-small ${!owned && g.money >= price ? 'btn-go' : ''}" data-shop="${i}" ${owned || g.money < price ? 'disabled' : ''}>${owned ? 'Har' : 'Köp'}</button>
       </div>`;
     }).join('')}</div>`;
   const dlg = openModal('🛍️ Klädaffären', body, [{ label: 'Klar', cls: 'btn-go', onClick: closeModal }]);

@@ -21,7 +21,7 @@ python -m http.server 8788
 - **Hyran** dras varje måndag morgon.
 - **Jobben** (minispel, 60 sekunder = 4 timmar): ✈️ Flygplatsen — dra väskan till vagnen med samma tagg · 🍊 Fruktfabriken — klicka frukterna ordersedeln behöver · 👕 Klädaffären — häng plaggen på rätt hylla. Tre pass på samma jobb = befordran och högre lön.
 - **Bostäder:** Lilla rummet → Lägenheten (1 500 kr) → Villan (8 000 kr). Större bostad = bättre sömn. Möbler köps i Möbelhörnan.
-- **Garderoben** hemma öppnar avatarredigeraren — frisyrer, kläder, färger. Finare plagg har 🔒 tills du köpt dem i klädaffären.
+- **Garderoben** hemma öppnar avatarredigeraren — frisyrer, kläder, färger. Bara basplaggen är gratis; 18 plagg och accessoarer (keps → krona) har 🔒 tills du köpt dem i klädaffären. Jobbar du i klädaffären får du personalrabatt (5 % per nivå, max 20 %).
 - **Besök:** 👥-knappen — bjud hem kompisar med en 4-teckenskod eller åk hem till någon. Ni ser varandra gå omkring i rummet.
 - **Målet:** egen villa och 10 000 kr på fickan. 🏆
 

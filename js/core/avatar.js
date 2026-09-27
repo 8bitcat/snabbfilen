@@ -67,10 +67,18 @@ const store = {
   set: (k, v) => { try { localStorage.setItem(k, v); return true; } catch { return false; } },
 };
 
-// Slumpat vuxet utseende i butiksförkläde (utgångsläge innan spelaren klätt ut sig)
+// Slumpat vuxet utseende (utgångsläge innan spelaren klätt ut sig).
+// Nya spelare börjar i det man äger – inget låst plagg på kroppen.
 function defaultLook() {
   const L = makeLook();
   L.kid = false; L.bag = null; L.apron = false;
+  if (AVLOCKS) {
+    if (AVLOCKS('top', L.top)) L.top = 'tee';
+    if (AVLOCKS('bottom', L.bottom)) L.bottom = 'jeans';
+    if (L.hat && AVLOCKS('hat', L.hat)) L.hat = null;
+    if (L.glasses && AVLOCKS('glasses', L.glasses)) L.glasses = false;
+    if (L.phones && AVLOCKS('phones', true)) L.phones = false;
+  }
   return cleanLook(L);
 }
 
@@ -499,7 +507,8 @@ export function openAvatarEditor({ onDone, onCancel, fresh = false } = {}) {
       bottom: Math.random() < 0.12 && bottoms.includes('dress') ? 'dress' : rnd(bottoms.filter((b) => b !== 'dress') || bottoms),
       hat: r < 0.55 || !hats.length ? null : rnd(hats),
       beard: kid || Math.random() > 0.3 ? false : rnd(BEARD_TYPES.filter(Boolean)),
-      bag: null, glasses: unlockedOf('glasses', [L.glasses]).length ? L.glasses : false,
+      bag: null, glasses: !L.glasses || unlockedOf('glasses', [L.glasses]).length ? L.glasses : false,
+      phones: L.phones && !unlockedOf('phones', [true]).length ? false : L.phones,
       build: kid ? 4 : rnd(BUILDS),
     });
     if (L.hat === 'crown' && Math.random() < 0.7) L.cap = '#f0b429';

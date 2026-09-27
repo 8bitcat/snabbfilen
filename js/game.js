@@ -28,20 +28,28 @@ export const JOB_TITLES = ['Nybörjare', 'Van', 'Proffs', 'Mästare', 'Legendar'
 export const levelOf = (shifts) => Math.min(5, 1 + Math.floor(shifts / 3));
 export const payMult = (level) => 1 + 0.15 * (level - 1);
 
-// Klädaffärens sortiment: plagg som låses upp i garderoben när man köpt dem.
-// kind/v matchar look-fälten i people.js. Kronan är stadens dyraste statuspryl.
+// Klädaffärens sortiment: plagg och accessoarer som låses upp i garderoben när
+// man köpt dem. kind/v matchar look-fälten i people.js. Gratis från start är
+// bara basgrejerna (t-shirt, randig tröja, jeans, byxor) – resten jobbar man
+// ihop till, från kepsen för 90 kr hela vägen upp till kronan.
 export const SORTIMENT = [
+  { kind: 'hat', v: 'cap', icon: '🧢', name: 'Keps', price: 90 },
+  { kind: 'bottom', v: 'shorts', icon: '🩳', name: 'Shorts', price: 120 },
+  { kind: 'hat', v: 'headband', icon: '🎽', name: 'Hårband', price: 120 },
+  { kind: 'glasses', v: 'round', icon: '👓', name: 'Runda glasögon', price: 150 },
+  { kind: 'glasses', v: 'square', icon: '👓', name: 'Fyrkantiga glasögon', price: 150 },
+  { kind: 'hat', v: 'beanie', icon: '🧣', name: 'Mössa', price: 150 },
+  { kind: 'hat', v: 'bow', icon: '🎀', name: 'Rosett', price: 180 },
+  { kind: 'bottom', v: 'skirt', icon: '👗', name: 'Kjol', price: 200 },
+  { kind: 'glasses', v: 'sun', icon: '🕶️', name: 'Solglasögon', price: 220 },
   { kind: 'top', v: 'hoodie', icon: '🧥', name: 'Huvtröja', price: 250 },
   { kind: 'top', v: 'sweater', icon: '🧶', name: 'Stickad tröja', price: 300 },
-  { kind: 'top', v: 'shirt', icon: '👔', name: 'Skjorta', price: 400 },
-  { kind: 'top', v: 'jacket', icon: '🧥', name: 'Jacka', price: 450 },
-  { kind: 'bottom', v: 'dress', icon: '👗', name: 'Klänning', price: 380 },
-  { kind: 'hat', v: 'headband', icon: '🎀', name: 'Hårband', price: 120 },
-  { kind: 'hat', v: 'beanie', icon: '🧢', name: 'Mössa', price: 150 },
-  { kind: 'hat', v: 'bow', icon: '🎀', name: 'Rosett', price: 180 },
-  { kind: 'glasses', v: 'sun', icon: '🕶️', name: 'Solglasögon', price: 220 },
   { kind: 'bag', v: 'backpack', icon: '🎒', name: 'Ryggsäck', price: 350 },
+  { kind: 'bottom', v: 'dress', icon: '👗', name: 'Klänning', price: 380 },
+  { kind: 'top', v: 'shirt', icon: '👔', name: 'Skjorta', price: 400 },
   { kind: 'bag', v: 'shoulder', icon: '👜', name: 'Axelväska', price: 420 },
+  { kind: 'top', v: 'jacket', icon: '🧥', name: 'Jacka', price: 450 },
+  { kind: 'phones', v: true, icon: '🎧', name: 'Hörlurar', price: 500 },
   { kind: 'hat', v: 'crown', icon: '👑', name: 'Krona', price: 2500 },
 ];
 export const clothesKey = (kind, v) => `${kind}:${v}`;
@@ -192,14 +200,19 @@ export class Game {
     const s = SORTIMENT.find((s) => s.kind === kind && s.v === v);
     return s && !this.wardrobe.includes(clothesKey(kind, v)) ? s : null;
   }
+  // Jobbar man i klädaffären får man personalrabatt: 5 % per nivå över Nybörjare.
+  // Räknas i hela procent så att 3 × 5 % blir exakt 15 % (flyttal ljuger).
+  clothesDiscount() { return Math.min(20, (levelOf(this.jobs.klader) - 1) * 5) / 100; }
+  clothesPrice(s) { return Math.round(s.price * (1 - this.clothesDiscount())); }
   buyClothes(kind, v) {
     const s = this.clothesLocked(kind, v);
     if (!s) return { ok: false, msg: 'Den har du redan!' };
-    if (this.money < s.price) return { ok: false, msg: 'Du har inte råd!' };
-    this.money -= s.price;
+    const price = this.clothesPrice(s);
+    if (this.money < price) return { ok: false, msg: 'Du har inte råd – dags att jobba ett pass!' };
+    this.money -= price;
     this.wardrobe.push(clothesKey(kind, v));
     this.save();
-    return { ok: true, item: s };
+    return { ok: true, item: s, price };
   }
   buyFurniture(id) {
     const f = FURNITURE.find((f) => f.id === id);

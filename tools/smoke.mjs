@@ -160,7 +160,7 @@ await page.waitForTimeout(200);
 await page.click('.dlg-foot .btn:nth-child(2)'); // 🛍️ Handla kläder
 await page.waitForTimeout(200);
 await shot('15-kladshop');
-await page.click('[data-shop="0"]'); // huvtröjan
+await page.click('.prow:has-text("Huvtröja") [data-shop]');
 await page.waitForTimeout(200);
 const w = await page.evaluate(() => ({ wardrobe: window.SF.game.wardrobe, money: window.SF.game.money }));
 ok(w.wardrobe.includes('top:hoodie'), 'huvtröjan ligger i garderoben');
@@ -185,6 +185,16 @@ ok(!locks.hoodieLocked && expectLocked.every((v) => locks.locked.includes(v)) &&
 await shot('16-garderob-las');
 await page.click('.av-cancel');
 await page.waitForTimeout(200);
+
+// 12b. Personalrabatt: hög nivå på klädaffärsjobbet ger billigare kläder
+const rabatt = await page.evaluate(() => {
+  const g = window.SF.game;
+  g.jobs.klader = 9; g.money = 1000; // Mästare → 15 % rabatt
+  const before = g.money;
+  const r = g.buyClothes('hat', 'beanie');
+  return { price: r.price, delta: before - g.money, disc: g.clothesDiscount() };
+});
+ok(rabatt.disc === 0.15 && rabatt.price === 128 && rabatt.delta === 128, `personalrabatt 15 % på mössan (128 i stället för 150 kr)`);
 
 // 13. Möbelhörnan: köp en soffa till rummet
 await page.evaluate(() => { window.SF.game.money = 5000; window.SF.openHousing(); });
