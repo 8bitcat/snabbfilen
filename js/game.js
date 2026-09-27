@@ -77,6 +77,9 @@ export const KATALOG = [
   { kind: 'spis', icon: '🔥', name: 'Öppen spis', price: 1500, vars: 3 },
 ];
 export const katalogOf = (kind) => KATALOG.find((k) => k.kind === kind);
+// Möbelns egen färg: bara giltig '#rrggbb' (gemener) räknas, annars null = originalfärgen.
+export const cleanHex = (c) => (typeof c === 'string' && /^#[0-9a-f]{6}$/i.test(c) ? c.toLowerCase() : null);
+const withColor = (o, c) => { const h = cleanHex(c); if (h) o.c = h; else delete o.c; return o; };
 // gamla sparfiler köpte möbler per id – mappa till katalog-poster
 const OLD_FURN = { matta: 'matta', lampa: 'lampa', vaxt: 'vaxtS', bokhylla: 'bokhylla', soffa: 'soffa', tv: 'tv', spis: 'spis' };
 
@@ -117,8 +120,8 @@ export class Game {
     this.jobs = { flygplats: 0, frukt: 0, burgare: 0 }; // antal jobbade pass
     this.earned = 0;                      // totalt intjänat
     this.wardrobe = [];                   // upplåsta plagg, "kind:v"
-    this.storage = [];                    // köpta möbler i förrådet, { k, v }
-    this.deco = {};                       // placerade möbler per rum: "hem:sub" -> [{ k, v, x, y, fx? }]
+    this.storage = [];                    // köpta möbler i förrådet, { k, v, c? } (c = egen färg '#rrggbb')
+    this.deco = {};                       // placerade möbler per rum: "hem:sub" -> [{ k, v, c?, x, y, fx? }]
     this.won = false;                     // slutmålet nått
     this.event = null;                    // dagens händelse { id, job? }
     this.best = { flygplats: { ok: 0, pay: 0 }, frukt: { ok: 0, pay: 0 }, burgare: { ok: 0, pay: 0 } }; // rekord
@@ -146,12 +149,12 @@ export class Game {
         for (const k of Object.keys(g.jobs)) g.jobs[k] = Math.max(0, p.jobs?.[k] | 0);
         g.earned = Math.max(0, +p.earned || 0);
         g.wardrobe = (Array.isArray(p.wardrobe) ? p.wardrobe : []).filter((k) => SORTIMENT.some((s) => clothesKey(s.kind, s.v) === k));
-        const cleanItem = (it) => it && katalogOf(it.k) ? { k: it.k, v: Math.max(0, Math.min(katalogOf(it.k).vars - 1, it.v | 0)) } : null;
+        const cleanItem = (it) => it && katalogOf(it.k) ? withColor({ k: it.k, v: Math.max(0, Math.min(katalogOf(it.k).vars - 1, it.v | 0)) }, it.c) : null;
         g.storage = (Array.isArray(p.storage) ? p.storage : []).map(cleanItem).filter(Boolean).slice(0, 60);
         if (p.deco && typeof p.deco === 'object') for (const [key, list] of Object.entries(p.deco)) {
           if (!/^[a-z]+:\d$/.test(key) || !Array.isArray(list)) continue;
           g.deco[key] = list.filter((d) => d && (katalogOf(d.k) || ['sang', 'garderob', 'kylskap', 'vaxt'].includes(d.k)))
-            .map((d) => ({ k: d.k, v: Math.max(0, d.v | 0), x: Math.max(0, Math.min(384, +d.x || 0)), y: Math.max(0, Math.min(216, +d.y || 0)), ...(d.fx ? { fx: 1 } : {}) }))
+            .map((d) => withColor({ k: d.k, v: Math.max(0, d.v | 0), x: Math.max(0, Math.min(384, +d.x || 0)), y: Math.max(0, Math.min(216, +d.y || 0)), ...(d.fx ? { fx: 1 } : {}) }, d.c))
             .slice(0, 40);
         }
         // gamla sparfiler: köpta möbler (id-lista) flyttas till förrådet
@@ -291,14 +294,15 @@ export class Game {
     this.save();
     return { ok: true, item: s, price };
   }
-  // Köp en möbel (variant v) till förrådet – placeras hemma med Möblera-läget.
-  buyFurniture(kind, v = 0) {
+  // Köp en möbel (variant v, egen färg c = '#rrggbb' eller null) till förrådet –
+  // placeras hemma med Möblera-läget.
+  buyFurniture(kind, v = 0, c = null) {
     const f = katalogOf(kind);
     if (!f) return { ok: false, msg: 'Finns inte i katalogen.' };
     if (this.money < f.price) return { ok: false, msg: 'Du har inte råd!' };
     if (this.storage.length >= 40) return { ok: false, msg: 'Förrådet är fullt – möblera hemma först!' };
     this.money -= f.price;
-    this.storage.push({ k: kind, v: Math.max(0, Math.min(f.vars - 1, v | 0)) });
+    this.storage.push(withColor({ k: kind, v: Math.max(0, Math.min(f.vars - 1, v | 0)) }, c));
     this.save();
     return { ok: true, item: f };
   }
@@ -309,14 +313,14 @@ export class Game {
     const it = this.storage[idx];
     if (!it) return false;
     this.storage.splice(idx, 1);
-    (this.deco[this.decoKey(sub)] ||= []).push({ k: it.k, v: it.v, x: Math.round(x), y: Math.round(y) });
+    (this.deco[this.decoKey(sub)] ||= []).push(withColor({ k: it.k, v: it.v, x: Math.round(x), y: Math.round(y) }, it.c));
     this.save();
     return true;
   }
   moveDeco(sub, i, x, y) {
     const d = this.decoRoom(sub)?.[i];
     if (!d) return false;
-    d.x = Math.round(x); d.y = Math.round(y);
+    d.x = Math.round(x); d.y = Math.round(y); // färgen (d.c) följer med
     this.save();
     return true;
   }
@@ -325,7 +329,22 @@ export class Game {
     const d = list?.[i];
     if (!d || d.fx || !katalogOf(d.k)) return false;
     list.splice(i, 1);
-    this.storage.push({ k: d.k, v: d.v });
+    this.storage.push(withColor({ k: d.k, v: d.v }, d.c));
+    this.save();
+    return true;
+  }
+  // Måla om (gratis) – en möbel i förrådet eller en placerad. c = null ger originalfärgen.
+  recolorStorage(idx, c) {
+    const it = this.storage[idx];
+    if (!it) return false;
+    withColor(it, c);
+    this.save();
+    return true;
+  }
+  recolorDeco(sub, i, c) {
+    const d = this.decoRoom(sub)?.[i];
+    if (!d || d.k === 'vaxt') return false;
+    withColor(d, c);
     this.save();
     return true;
   }

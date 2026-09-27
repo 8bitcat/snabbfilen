@@ -1,8 +1,9 @@
 // Hemma – Pixelverkstans butiksstil i spelets gemensamma 384×216-rymd.
 // Bostäderna har flera delrum (dörrar i bakväggen), och allt bohag är
-// "deco"-poster { k, v, x, y } per delrum som ritas från möbelatlasen
-// (köpta EmanuelleDev-sprites). Med Möblera-läget flyttar, placerar och
-// säljer man möbler fritt – och besökare ser din inredning via världen.
+// "deco"-poster { k, v, x, y, c? } per delrum som ritas från möbelatlasen
+// (köpta EmanuelleDev-sprites; c = egen färg, ritas med tintSprite). Med
+// Möblera-läget flyttar, placerar, målar om och säljer man möbler fritt –
+// och besökare ser din inredning (med färgerna) via världen.
 import { drawPerson } from '../core/people.js';
 import { openAvatarEditor, avatarTagColors } from '../core/avatar.js';
 import { Pix, SMALL, ctxText, textW, text, mix, mul, css, hash, bayer } from '../core/floor-pix.js';
@@ -11,6 +12,7 @@ import { foodOf, katalogOf } from '../game.js';
 import { play } from '../core/sound.js';
 import { worldFolksHere, worldMyEmote } from '../net/world.js';
 import { FRAMES } from '../data/frames.js';
+import { tintSprite, spriteBaseColor, isHex } from '../core/recolor.js';
 
 const WALK_SEQ = [1, 3, 2, 3];
 const FW = 384, FH = 216;
@@ -78,6 +80,29 @@ const seedFor = (home, sub) => (SEEDS[`${home}:${sub}`] || []).map((d) => ({ ...
 // hur hög kollisionsrektangeln vid foten är, per möbeltyp
 const SOLID_LOW = new Set(['soffa', 'fatolj', 'stol', 'bordR', 'bordM', 'byra', 'sang']);
 const frameOf = (k, v) => FRAMES[k + (v | 0)] || FRAMES[k + '0'];
+const frameName = (k, v) => (FRAMES[k + (v | 0)] ? k + (v | 0) : k + '0');
+
+// ---------- möbelbilder (atlas, omfärgade eller mattor) ----------
+// Tips till omfärgningen där huvudmaterialet inte är det största: krukväxten
+// ska få ny kruka (inte nya blad), silverspegeln ny ram (inte nytt glas),
+// golvlampan ny skärm (foten blir en mörkare ton av samma färg).
+const TINT_HINT = { vaxtS0: { hue: 24 }, spegel2: { maxL: 0.5 }, lampa0: { minL: 0.8 } };
+export const canRecolor = (k) => k !== 'vaxt'; // monsteran är ritad för hand, inte ur atlasen
+// Möbeln k/v i färgen c (null = original): { img, sx, sy, sw, sh } att rita
+// i heltalsskala, eller null om atlasen inte har laddats än.
+export function furnArt(k, v, c = null) {
+  if (k === 'matta') return { img: rugImg(v, c), sx: 0, sy: 0, sw: RUG.w, sh: RUG.h };
+  const f = frameOf(k, v);
+  if (!f || !ATLAS?.complete) return null;
+  const t = isHex(c) ? tintSprite(ATLAS, f, c, TINT_HINT[frameName(k, v)]) : null;
+  return t ? { img: t, sx: 0, sy: 0, sw: f[2], sh: f[3] } : { img: ATLAS, sx: f[0], sy: f[1], sw: f[2], sh: f[3] };
+}
+// möbelns originalkulör (till "Original"-rutan i färgvalet)
+export function furnBaseColor(k, v) {
+  if (k === 'matta') return (v | 0) === 1 ? '#3f5667' : '#5e1622';
+  const f = frameOf(k, v);
+  return f && ATLAS?.complete ? spriteBaseColor(ATLAS, f, TINT_HINT[frameName(k, v)]) : null;
+}
 
 export function makeRoom(A, { visit = false } = {}) {
   const g = A.game;
@@ -118,7 +143,7 @@ export function makeRoom(A, { visit = false } = {}) {
     props = []; rugs = [];
     decoList().forEach((d, i) => {
       if (decor.carry && decor.carry.src === 'deco' && decor.carry.idx === i) return; // lyftad just nu
-      if (d.k === 'matta') { rugs.push({ d, idx: i, img: rugImg(d.v) }); return; }
+      if (d.k === 'matta') { rugs.push({ d, idx: i, img: rugImg(d.v, d.c) }); return; }
       if (d.k === 'vaxt') { props.push({ ...makePlantProp(d.x + 10, d.y), k: 'vaxt', decoIdx: i, fx: d.fx }); return; }
       const p = spriteProp(d, i, !visit);
       if (p) props.push(p);
@@ -237,22 +262,29 @@ export function makeRoom(A, { visit = false } = {}) {
     box.innerHTML = g.storage.length
       ? g.storage.map((it, i) => {
         const kat = katalogOf(it.k);
-        return `<button class="dp-item" data-st="${i}"><span data-thumb="${it.k}${it.v}"></span>${kat?.name || it.k}</button>`;
+        return `<button class="dp-item" data-st="${i}"><span data-thumb="${i}"></span>${kat?.name || it.k}</button>`;
       }).join('')
-      : '<div class="dp-empty">Tomt – köp möbler hos Bostadsbyrån!</div>';
-    box.querySelectorAll('[data-thumb]').forEach((el) => el.replaceWith(thumbCanvas(el.dataset.thumb)));
+      : '<div class="dp-empty">Tomt – köp möbler i möbelvaruhuset!</div>';
+    box.querySelectorAll('[data-thumb]').forEach((el) => { const it = g.storage[+el.dataset.thumb]; el.replaceWith(thumbCanvas(it.k, it.v, it.c)); });
     box.querySelectorAll('[data-st]').forEach((b) => (b.onclick = () => {
       const it = g.storage[+b.dataset.st];
       if (!it) return;
-      decor.carry = { src: 'storage', idx: +b.dataset.st, k: it.k, v: it.v };
+      decor.carry = { src: 'storage', idx: +b.dataset.st, k: it.k, v: it.v, c: it.c };
       updateSellBtn();
     }));
     updateSellBtn();
   }
   function updateSellBtn() {
+    const c = decor.carry;
+    document.querySelectorAll('#decor-storage [data-st]').forEach((b) => b.classList.toggle('on', c?.src === 'storage' && +b.dataset.st === c.idx));
+    const paintBtn = document.querySelector('#decor-paint');
+    if (paintBtn) {
+      paintBtn.disabled = !c || !canRecolor(c.k);
+      paintBtn.title = c ? (canRecolor(c.k) ? 'Måla om möbeln du håller i – gratis' : 'Den här går inte att måla om') : 'Välj en möbel först';
+      paintBtn.onclick = () => paintCarry();
+    }
     const btn = document.querySelector('#decor-sell');
     if (!btn) return;
-    const c = decor.carry;
     const sellable = c && (c.src === 'storage' || !decoList()[c.idx]?.fx) && katalogOf(c.k);
     btn.disabled = !sellable;
     btn.textContent = sellable ? `Sälj +${Math.round(katalogOf(c.k).price / 2)} kr` : 'Sälj';
@@ -265,6 +297,22 @@ export function makeRoom(A, { visit = false } = {}) {
     };
     const done = document.querySelector('#decor-done');
     if (done) done.onclick = () => toggleDecor(false);
+  }
+  // 🎨 Färg: samma färgval som i varuhuset, för möbeln man håller i – gratis.
+  // (Dialogen laddas vid behov så att room.js och shop-mobler.js inte
+  // importerar varandra.)
+  function paintCarry() {
+    const c = decor.carry;
+    if (!c || !canRecolor(c.k)) return;
+    play('click');
+    import('./shop-mobler.js').then((m) => m.openRecolor(A, { kind: c.k, v: c.v, c: c.c, onPick: (hex) => {
+      const ok = c.src === 'storage' ? g.recolorStorage(c.idx, hex) : g.recolorDeco(sub, c.idx, hex);
+      if (!ok) return;
+      c.c = hex || undefined;
+      play('ok');
+      toast(hex ? '🎨 Nymålad!' : '🎨 Tillbaka i originalfärgen.', 'good');
+      rebuild(); renderStoragePanel();
+    } }));
   }
 
   // ---------- figuren ----------
@@ -311,7 +359,7 @@ export function makeRoom(A, { visit = false } = {}) {
           .find((p) => { const r = p.k === 'matta' ? p.solid : [p.solid[0], p.top, p.solid[2], p.solid[3] + 2]; return x >= r[0] && x <= r[2] && y >= r[1] && y <= r[3]; });
         if (hit) {
           const d = list[hit.decoIdx];
-          decor.carry = { src: 'deco', idx: hit.decoIdx, k: d.k, v: d.v, fx: d.fx };
+          decor.carry = { src: 'deco', idx: hit.decoIdx, k: d.k, v: d.v, c: d.c, fx: d.fx };
           rebuild(); updateSellBtn();
         }
         return;
@@ -353,12 +401,12 @@ export function makeRoom(A, { visit = false } = {}) {
 
       // spöket i möblera-läget
       if (decor.on && decor.carry) {
-        const { k, v } = decor.carry;
+        const { k, v, c } = decor.carry;
         const okHere = canPlace(k, v, decor.mx, decor.my);
         ctx.globalAlpha = 0.7;
-        if (k === 'matta') ctx.drawImage(rugImg(v), decor.mx - RUG.w / 2 | 0, decor.my - RUG.h / 2 | 0);
+        if (k === 'matta') ctx.drawImage(rugImg(v, c), decor.mx - RUG.w / 2 | 0, decor.my - RUG.h / 2 | 0);
         else if (k === 'vaxt') { const p = makePlantProp(decor.mx | 0, decor.my | 0); p.draw(ctx); }
-        else if (ATLAS?.complete) { const f = frameOf(k, v); ctx.drawImage(ATLAS, f[0], f[1], f[2], f[3], decor.mx - f[2] / 2 | 0, decor.my - f[3] | 0, f[2], f[3]); }
+        else { const a = furnArt(k, v, c); if (a) ctx.drawImage(a.img, a.sx, a.sy, a.sw, a.sh, decor.mx - a.sw / 2 | 0, decor.my - a.sh | 0, a.sw, a.sh); }
         ctx.globalAlpha = 1;
         ctx.fillStyle = okHere ? 'rgba(80,220,110,0.8)' : 'rgba(230,60,60,0.8)';
         ctx.fillRect(decor.mx - 6 | 0, decor.my | 0, 12, 2);
@@ -389,7 +437,10 @@ function spriteProp(d, decoIdx, sign) {
       ctx.fillStyle = 'rgba(20,12,28,0.22)';
       ctx.fillRect(x + 1, base - 1, fw - 2, 2);
       ctx.fillRect(x + 3, base + 1, fw - 6, 1);
-      if (ATLAS && ATLAS.complete) ctx.drawImage(ATLAS, fx, fy, fw, fh, x, top, fw, fh);
+      if (ATLAS && ATLAS.complete) {
+        const t = isHex(d.c) ? tintSprite(ATLAS, f, d.c, TINT_HINT[frameName(d.k, d.v)]) : null; // cachad per (ruta, färg)
+        if (t) ctx.drawImage(t, x, top); else ctx.drawImage(ATLAS, fx, fy, fw, fh, x, top, fw, fh);
+      }
       if (label) ctxPlate(ctx, x + fw / 2, top - 9, label);
     },
   };
@@ -400,33 +451,39 @@ function ctxPlate(ctx, cx, y, label) {
   ctx.fillStyle = '#d8b85a'; ctx.fillRect(cx - w / 2 | 0, y, w, 7);
   ctxText(ctx, SMALL, label, (cx - textW(SMALL, label) / 2) | 0, y + 1, '#3a2a10');
 }
-// miniatyr till förrådspanelen (DOM)
-function thumbCanvas(key) {
-  const k = key.replace(/\d+$/, ''), v = +key.slice(k.length) || 0;
-  const c = document.createElement('canvas');
-  c.width = 28; c.height = 28;
-  const x = c.getContext('2d');
+// miniatyr till förrådspanelen (DOM) – i färgen c. Pixelkonst i heltalsskala:
+// små möbler dubbelt så stora, stora i 1:1 (mattan beskärs till ett hörn).
+const THUMB = { w: 52, h: 44 };
+function thumbCanvas(k, v, c) {
+  const cv = document.createElement('canvas');
+  cv.width = THUMB.w; cv.height = THUMB.h;
+  const x = cv.getContext('2d');
   x.imageSmoothingEnabled = false;
   const draw = () => {
-    if (k === 'matta') { x.drawImage(rugImg(v), 0, 0, RUG.w, RUG.h, 0, 6, 28, 16); return; }
-    const f = frameOf(k, v);
-    if (!f) return;
-    const s = Math.min(28 / f[2], 28 / f[3]);
-    x.drawImage(ATLAS, f[0], f[1], f[2], f[3], (28 - f[2] * s) / 2, (28 - f[3] * s) / 2, f[2] * s, f[3] * s);
+    const a = furnArt(k, v, c);
+    if (!a) return;
+    const s = a.sw * 2 <= THUMB.w && a.sh * 2 <= THUMB.h ? 2 : 1;
+    const w = Math.min(a.sw, THUMB.w / s | 0), h = Math.min(a.sh, THUMB.h / s | 0);
+    cv.width = w * s; cv.height = h * s;
+    x.imageSmoothingEnabled = false;
+    x.drawImage(a.img, a.sx, a.sy, w, h, 0, 0, w * s, h * s);
   };
   if (ATLAS.complete) draw(); else ATLAS.addEventListener('load', draw, { once: true });
-  return c;
+  return cv;
 }
 
-// mattor: två varianter, cachade
-const rugCache = {};
-function rugImg(v) {
-  if (rugCache[v]) return rugCache[v];
+// mattor: två mönster (museum/rand), valfri bottenfärg c – cachade
+const rugCache = new Map();
+function rugImg(v, c) {
+  const key = `${v | 0}|${isHex(c) ? c.toLowerCase() : ''}`;
+  if (rugCache.has(key)) return rugCache.get(key);
   const P = new Pix(RUG.w, RUG.h);
-  if (v === 1) paintRug(P, 0, 0, RUG.w, RUG.h, 0x3f5667, 0xd9d2c3, 'stripe');
-  else paintRug(P, 0, 0, RUG.w, RUG.h, 0x5e1622, 0xd8b24a, 'museum');
-  rugCache[v] = P.flush();
-  return rugCache[v];
+  const own = isHex(c) ? parseInt(c.slice(1), 16) : null;
+  if ((v | 0) === 1) paintRug(P, 0, 0, RUG.w, RUG.h, own ?? 0x3f5667, 0xd9d2c3, 'stripe');
+  else paintRug(P, 0, 0, RUG.w, RUG.h, own ?? 0x5e1622, 0xd8b24a, 'museum');
+  if (rugCache.size > 120) rugCache.delete(rugCache.keys().next().value); // egen färg kan ge många
+  rugCache.set(key, P.flush());
+  return rugCache.get(key);
 }
 function paintRug(P, x0, y0, x1, y1, base, trim, kind) {
   for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) {

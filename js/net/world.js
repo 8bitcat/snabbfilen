@@ -98,7 +98,9 @@ function cleanP(p, old = {}) {
       out.deco = {};
       for (const [key, list] of Object.entries(p.deco).slice(0, 12)) {
         if (!/^[a-z]+:\d$/.test(key) || !Array.isArray(list)) continue;
-        out.deco[key] = list.slice(0, 40).map((d) => ({ k: String(d?.k || '').slice(0, 12), v: Math.max(0, d?.v | 0), x: +d?.x || 0, y: +d?.y || 0, ...(d?.fx ? { fx: 1 } : {}) }));
+        // c = möbelns egna färg – bara giltig #rrggbb följer med (besökare ser färgen)
+        out.deco[key] = list.slice(0, 40).map((d) => ({ k: String(d?.k || '').slice(0, 12), v: Math.max(0, d?.v | 0), x: +d?.x || 0, y: +d?.y || 0, ...(d?.fx ? { fx: 1 } : {}),
+          ...(typeof d?.c === 'string' && /^#[0-9a-f]{6}$/i.test(d.c) ? { c: d.c.toLowerCase() } : {}) }));
       }
     }
   }

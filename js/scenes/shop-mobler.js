@@ -1,13 +1,15 @@
 // MÖBLER – varuhuset man går runt i som ett IKEA: alla möbler står utställda
 // på golvet med prislappar. Gå fram till en möbel så öppnas köpdialogen där
-// man väljer färg och köper (hamnar i förrådet, placeras hemma med Möblera).
+// man väljer modell och färg (fritt, med stor förhandsvisning) och köper –
+// möbeln hamnar i förrådet och placeras hemma med Möblera.
 import { Pix, SMALL, BIG, ctxText, textW, text, mix, mul, css, hash, bayer } from '../core/floor-pix.js';
 import { openModal, closeModal, toast } from '../core/ui.js';
 import { KATALOG, katalogOf, fmt } from '../game.js';
 import { play } from '../core/sound.js';
 import { createWalker, selfDrawable, folkDrawables } from './walkable.js';
 import { FRAMES } from '../data/frames.js';
-import { ATLAS } from './room.js';
+import { ATLAS, furnArt, furnBaseColor } from './room.js';
+import { isHex } from '../core/recolor.js';
 
 const FW = 384, FH = 216;
 const WALL_Y = 60;
@@ -76,45 +78,114 @@ export function makeShopMobler(A) {
   };
 }
 
-// köpdialogen med färgval (rutor ritade ur atlasen)
+// ---------- köp-/måladialogen ----------
+// Stor förhandsvisning (heltalsskala på ljus rutig botten) som uppdateras
+// direkt, modellrutor och en rad färgrutor: Original, färdiga kulörer och
+// "Egen färg" (fri färgväljare). Samma dialog används hemma i Möblera-läget
+// för att måla om en möbel – det är gratis.
+export const FURN_COLORS = [
+  ['#d8343c', 'Röd'], ['#ee7d2a', 'Orange'], ['#f2c230', 'Gul'], ['#2f9a4c', 'Grön'], ['#1fb5a8', 'Turkos'],
+  ['#4aa8e8', 'Himmelsblå'], ['#2c5fc0', 'Blå'], ['#7e4bc0', 'Lila'], ['#f07aa8', 'Rosa'], ['#8a5230', 'Brun'],
+  ['#8e8c94', 'Grå'], ['#2b2a33', 'Svart'], ['#f2efe8', 'Vit'],
+];
+const FX_NAMES = { sang: '🛏️ Säng', garderob: '🚪 Garderob', kylskap: '🧊 Kylskåp' }; // funktionsmöbler utanför katalogen
+const colorName = (hex) => FURN_COLORS.find(([h]) => h === hex)?.[1] || `Egen färg ${hex.toUpperCase()}`;
+
 export function openBuy(A, kind) {
+  if (!katalogOf(kind)) return;
+  furnDialog(A, { kind, v: 0, c: null, mode: 'buy' });
+}
+// Måla om en möbel man äger (Möblera-läget). onPick(hex | null) – null = original.
+export function openRecolor(A, { kind, v = 0, c = null, onPick }) {
+  furnDialog(A, { kind, v, c, mode: 'paint', onPick });
+}
+
+function furnDialog(A, o) {
   const g = A.game;
-  const kat = katalogOf(kind);
-  if (!kat) return;
-  let sel = 0;
-  const dlg = openModal(`${kat.icon} ${kat.name}`, `
-    <p style="font-size:19px;margin-top:0">💰 <b>${fmt(g.money)}</b> · Pris: <b>${fmt(kat.price)}</b> · 📦 I förrådet: ${g.storage.filter((s) => s.k === kind).length}</p>
-    ${kat.vars > 1 ? `<p style="font-size:18px;margin:4px 0">Välj färg:</p><div class="av-sws">${Array.from({ length: kat.vars }, (_, i) => `<button class="av-sw fvar ${i === 0 ? 'on' : ''}" data-fvar="${i}" style="--c:#2a2430"><span data-thumb="${i}"></span></button>`).join('')}</div>` : ''}
-    <p style="font-size:17px" class="sp">Möbeln hamnar i förrådet – möblera hemma med 🛋️-knappen.</p>`, [
+  const kind = o.kind, kat = katalogOf(kind), buy = o.mode === 'buy';
+  const title = buy ? `${kat.icon} ${kat.name}` : `🎨 Måla om: ${kat ? `${kat.icon} ${kat.name}` : FX_NAMES[kind] || kind}`;
+  const st = { v: o.v | 0, c: isHex(o.c) ? o.c.toLowerCase() : null };
+  const models = buy && kat.vars > 1 ? Array.from({ length: kat.vars }, (_, i) => i) : []; // hemma byter man färg, inte modell
+  const info = buy
+    ? `💰 <b>${fmt(g.money)}</b> · Pris: <b>${fmt(kat.price)}</b> · 📦 I förrådet: ${g.storage.filter((s) => s.k === kind).length}<br><span class="sp">Möbeln hamnar i förrådet – möblera hemma med 🛋️-knappen. Färgen kan du ändra gratis hemma.</span>`
+    : '<span class="sp">Att måla om hemma är gratis – välj färg och tryck Måla.</span>';
+  const dlg = openModal(title, `
+    <div class="fb">
+      <div class="fb-top${models.length ? '' : ' solo'}">
+        <div class="fb-stage"><canvas class="fb-big"></canvas></div>
+        ${models.length ? `<div class="fb-side"><span class="fb-lbl">Modell</span>
+          <div class="fb-models">${models.map((i) => `<button class="fb-model" data-v="${i}" title="Modell ${i + 1}"><canvas></canvas></button>`).join('')}</div></div>` : ''}
+      </div>
+      <div class="fb-colhead"><span class="fb-lbl">Färg</span><span class="fb-now"><i class="fb-chip"></i><b></b></span></div>
+      <div class="av-sws fb-sws">
+        <button class="av-sw fb-orig" data-col="" title="Original – som den ser ut i butiken"><b>↺</b></button>
+        ${FURN_COLORS.map(([hex, nm]) => `<button class="av-sw" data-col="${hex}" style="--c:${hex}" title="${nm}"></button>`).join('')}
+        <label class="av-sw av-own" title="Egen färg – välj precis vilken du vill"><input type="color" aria-label="Egen färg"><b>+</b></label>
+      </div>
+      <p class="fb-info">${info}</p>
+    </div>`, buy ? [
     { label: 'Stäng', onClick: closeModal },
     { label: `🛒 Köp (${fmt(kat.price)})`, cls: 'btn-go', onClick: () => {
-      const r = g.buyFurniture(kind, sel);
+      const r = g.buyFurniture(kind, st.v, st.c);
       if (!r.ok) { toast(r.msg, 'bad'); play('fel'); return; }
       play('buy');
-      toast(`${kat.icon} ${kat.name} ligger i förrådet!`, 'good');
+      toast(`${kat.icon} ${kat.name}${st.c ? ` (${colorName(st.c)})` : ''} ligger i förrådet!`, 'good');
       closeModal();
     } },
+  ] : [
+    { label: 'Avbryt', onClick: closeModal },
+    { label: '🎨 Måla (gratis)', cls: 'btn-go', onClick: () => { closeModal(); o.onPick?.(st.c); } },
   ]);
-  dlg.querySelectorAll('[data-thumb]').forEach((el) => {
-    const i = +el.dataset.thumb;
-    const c = document.createElement('canvas');
-    c.width = 26; c.height = 26;
-    const x = c.getContext('2d');
+  dlg.classList.add('dlg-furn');
+
+  const big = dlg.querySelector('.fb-big');
+  const tiles = [...dlg.querySelectorAll('.fb-model')];
+  const sws = [...dlg.querySelectorAll('.fb-sws [data-col]')];
+  const own = dlg.querySelector('.av-own'), ownIn = own.querySelector('input');
+  const now = dlg.querySelector('.fb-now');
+
+  // en möbel i heltalsskala s på en canvas (med golvskugga, utom för mattor)
+  const paint = (cv, art, s) => {
+    cv.width = art.sw * s; cv.height = (art.sh + 2) * s;
+    const x = cv.getContext('2d');
     x.imageSmoothingEnabled = false;
-    const draw = () => {
-      if (kind === 'matta') { x.fillStyle = i ? '#3f5667' : '#8a2a32'; x.fillRect(2, 6, 22, 14); x.fillStyle = '#d8b24a'; x.fillRect(4, 8, 18, 1); return; }
-      const f = FRAMES[kind + i] || FRAMES[kind + '0'];
-      const s = Math.min(26 / f[2], 26 / f[3]);
-      x.drawImage(ATLAS, f[0], f[1], f[2], f[3], (26 - f[2] * s) / 2, (26 - f[3] * s) / 2, f[2] * s, f[3] * s);
-    };
-    if (ATLAS.complete) draw(); else ATLAS.addEventListener('load', draw, { once: true });
-    el.replaceWith(c);
-    c.parentElement?.setAttribute('data-i', i);
-  });
-  dlg.querySelectorAll('.fvar').forEach((b) => (b.onclick = () => {
-    sel = +b.dataset.i || +b.getAttribute('data-fvar') || [...dlg.querySelectorAll('.fvar')].indexOf(b);
-    dlg.querySelectorAll('.fvar').forEach((o) => o.classList.toggle('on', o === b));
-  }));
+    if (kind !== 'matta') {
+      x.fillStyle = 'rgba(20,12,28,0.2)';
+      x.fillRect(s, (art.sh - 1) * s, (art.sw - 2) * s, 2 * s);
+      x.fillRect(3 * s, (art.sh + 1) * s, (art.sw - 6) * s, s);
+    }
+    x.drawImage(art.img, art.sx, art.sy, art.sw, art.sh, 0, 0, art.sw * s, art.sh * s);
+  };
+  const intScale = (v, hi) => Math.max(1, Math.min(hi, Math.floor(v)));
+  function render() {
+    const art = furnArt(kind, st.v, st.c);
+    if (art) paint(big, art, intScale(Math.min(236 / art.sw, 170 / (art.sh + 2)), 6));
+    if (tiles.length) {
+      const dims = models.map((i) => furnArt(kind, i, null)).filter(Boolean);
+      const ts = dims.length ? intScale(Math.min(104 / Math.max(...dims.map((a) => a.sw)), 84 / Math.max(...dims.map((a) => a.sh + 2))), 3) : 1;
+      for (const b of tiles) {
+        const i = +b.dataset.v, a = furnArt(kind, i, st.c);
+        if (a) paint(b.querySelector('canvas'), a, ts);
+        b.classList.toggle('on', i === st.v);
+      }
+    }
+    const base = furnBaseColor(kind, st.v) || '#c8c0b0';
+    dlg.querySelector('.fb-orig').style.setProperty('--c', base);
+    for (const b of sws) b.classList.toggle('on', (b.dataset.col || null) === st.c);
+    const isOwn = !!st.c && !FURN_COLORS.some(([h]) => h === st.c);
+    own.classList.toggle('on', isOwn);
+    own.style.setProperty('--c', isOwn ? st.c : '#ffffff');
+    own.querySelector('b').textContent = isOwn ? '' : '+';
+    now.querySelector('.fb-chip').style.setProperty('--c', st.c || base);
+    now.querySelector('b').textContent = st.c ? colorName(st.c) : 'Original';
+  }
+  for (const b of tiles) b.onclick = () => { st.v = +b.dataset.v; play('click'); render(); };
+  for (const b of sws) b.onclick = () => { st.c = b.dataset.col || null; play('click'); render(); };
+  const fromPicker = () => { if (isHex(ownIn.value)) { st.c = ownIn.value.toLowerCase(); render(); } };
+  ownIn.addEventListener('input', fromPicker);
+  ownIn.addEventListener('change', fromPicker);
+  const start = () => { ownIn.value = st.c || furnBaseColor(kind, st.v) || '#d8343c'; render(); };
+  if (ATLAS.complete) start(); else ATLAS.addEventListener('load', start, { once: true });
 }
 
 function paintStore() {
