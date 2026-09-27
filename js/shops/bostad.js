@@ -42,7 +42,7 @@ export function openHousing(A, { firstTime = false, onDone } = {}) {
 // Möbelhörnan: köpta möbler ritas i rummet oavsett bostad (i Villan ingår de flesta).
 export function openFurniture(A) {
   const g = A.game;
-  const body = `<p style="font-size:19px;margin-top:0">💰 <b>${fmt(g.money)}</b> · Möblerna följer med när du flyttar.</p>
+  const body = `<p style="font-size:19px;margin-top:0">💰 <b>${fmt(g.money)}</b> · Möblerna följer med när du flyttar.<br><small class="sp">Möbler av EmanuelleDev ✨</small></p>
     <div class="plist">${FURNITURE.map((f) => {
       const owned = g.furniture.includes(f.id);
       return `<div class="prow ${owned ? 'here' : ''}">

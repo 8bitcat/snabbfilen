@@ -94,7 +94,7 @@ function cleanP(p, old = {}) {
     if (p.x !== undefined) { out.tx = Math.max(8, Math.min(760, +p.x || 190)); if (out.x === undefined) out.x = out.tx; }
     if (p.y !== undefined) { out.ty2 = Math.max(20, Math.min(428, +p.y || 174)); if (out.y === undefined) out.y = out.ty2; }
     if (p.home !== undefined) out.home = String(p.home).slice(0, 16);
-    if (p.furniture !== undefined) out.furniture = (Array.isArray(p.furniture) ? p.furniture : []).map(String).slice(0, 8);
+    if (p.furniture !== undefined) out.furniture = (Array.isArray(p.furniture) ? p.furniture : []).map(String).slice(0, 12);
   }
   out.av = out.av || cleanAvatar({});
   out.scene = out.scene || 'away';

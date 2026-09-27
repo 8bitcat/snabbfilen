@@ -7,7 +7,8 @@ Du har ett rum, en garderob och en plånbok som aldrig räcker. Jobba på staden
 arbetsplatser, köp mat så du orkar, klä dig som du vill och spara till en
 större bostad.
 
-Byggt på 2D-motorn ur Pixelverkstan (procedurell pixelgrafik — inga bildfiler).
+Byggt på 2D-motorn ur Pixelverkstan (procedurell pixelgrafik).
+Möbelsprites: **EmanuelleDev** (emanuelledev.itch.io) — tack! 🙏
 
 ## Spela
 

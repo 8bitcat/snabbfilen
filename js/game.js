@@ -59,12 +59,15 @@ export const SORTIMENT = [
 ];
 export const clothesKey = (kind, v) => `${kind}:${v}`;
 
-// Möbler till hemmet (köps hos Bostadsbyrån). I Villan ingår soffa/växt/TV redan.
+// Möbler till hemmet (köps hos Bostadsbyrån). Villan har det mesta från start.
 export const FURNITURE = [
-  { id: 'matta', icon: '🟥', name: 'Trasmatta', price: 250, desc: 'Mysigare golv direkt.' },
-  { id: 'vaxt', icon: '🪴', name: 'Krukväxt', price: 350, desc: 'Lite liv i hörnet.' },
+  { id: 'matta', icon: '🟥', name: 'Fin matta', price: 250, desc: 'Mysigare golv direkt.' },
+  { id: 'lampa', icon: '💡', name: 'Svamplampan', price: 300, desc: 'Mysbelysning i hörnet.' },
+  { id: 'vaxt', icon: '🪴', name: 'Krukväxt', price: 350, desc: 'Lite liv i rummet.' },
+  { id: 'bokhylla', icon: '📚', name: 'Bokhylla', price: 600, desc: 'Full med spännande böcker.' },
   { id: 'soffa', icon: '🛋️', name: 'Soffa', price: 800, desc: 'För sköna kvällar.' },
-  { id: 'tv', icon: '📺', name: 'TV', price: 1200, desc: 'Kvällsunderhållning.' },
+  { id: 'tv', icon: '📺', name: 'Platt-TV', price: 1200, desc: 'Kvällsunderhållning.' },
+  { id: 'spis', icon: '🔥', name: 'Öppen spis', price: 1500, desc: 'Sprakande brasa – lyxigast i stan.' },
 ];
 
 // Slutmålet: äg Villan med rejält på fickan.
