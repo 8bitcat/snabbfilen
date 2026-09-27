@@ -1,20 +1,51 @@
 // Min avatar: spelarens egen figur (namn + utseende + markörfärg), sparad i localStorage,
 // och redigeraren där man klär ut den. `look` är ett rent JSON-objekt som drawPerson förstår
 // (det skickas över nätet i co-op) – kör alltid främmande data genom cleanAvatar/cleanLook.
+//
+// Redigeraren är byggd för hundratals val: flikar per kategori, rutnät som ritas lat
+// (bara synliga rutor, i omgångar), underrubriker ur registrens `group`. Val som ritas
+// (frisyr, ansikte …) kommer ur registren i js/core/people/*.js, plaggen ur klädkatalogen
+// js/data/wardrobe.js – man ser bara plagg man äger (+ gratis basplagg).
 import {
   makeLook, drawPerson, portrait, FIRST_NAMES,
   SKIN, HAIR, SHIRT, PANTS, SHOES, PHONE_COLORS, BAG_COLORS,
-  HAIR_STYLES, TOP_TYPES, BOTTOM_TYPES, HAT_TYPES, GLASSES_TYPES, BEARD_TYPES, BAG_TYPES, BUILDS,
+  HAIR_STYLES, BUILDS, LOOK_FIELDS, LOOK_COLORS, idOf, valueOf, isValid, entryOf, listOf,
 } from './people.js';
+import { EYE_COLORS, LIP_COLORS, SHADOW_COLORS, MARK_COLORS } from './people/face.js';
+import {
+  SLOTS, SLOT_FIELDS, SLOT_CAN_BE_EMPTY, itemsForSlot, itemById, lookForItem, lookWithoutSlot, wornItem, slotIsEmpty, groupOf,
+} from '../data/wardrobe.js';
 import { openModal, closeModal, toast, esc } from './ui.js';
 
 export const AVATAR_KEY = 'snabbfilen_avatar';
 
-// Klädlås: main.js kopplar in spelets garderob. fn(kind, v) → null (fritt) eller
-// { price } (låst, köps i klädaffären). Låsen gäller bara redigerarens rutor.
-let AVLOCKS = null;
+// ---------- garderoben: vad får spelaren ha på sig? ----------
+// Nytt system: setAvatarWardrobe(() => [ägda katalog-id]) – gratis basplagg ingår alltid.
+// Gammalt system (fortfarande stött): setAvatarLocks((kind, v) => null | { price }) där
+// kind/v är de gamla sortimentsnycklarna ('hat', 'cap'). Nya plagg utan gammal nyckel
+// räknas då som låsta tills main.js kopplats om till setAvatarWardrobe.
+// Inget inkopplat (verktyg/test) ⇒ allt är upplåst.
+let AVLOCKS = null, AVOWNED = null;
 export function setAvatarLocks(fn) { AVLOCKS = fn; }
-const unlockedOf = (key, list) => (AVLOCKS ? list.filter((v) => !AVLOCKS(key, v)) : list);
+export function setAvatarWardrobe(getOwnedIds) { AVOWNED = getOwnedIds; }
+function ownedIds() {
+  try { const v = AVOWNED?.(); return new Set(v instanceof Set ? v : Array.isArray(v) ? v : []); } catch { return new Set(); }
+}
+// Får man ha plagget (katalogpost eller id) på sig i redigeraren?
+export function avatarCanWear(item, owned = null) {
+  const it = typeof item === 'string' ? itemById(item) : item;
+  if (!it) return false;
+  if (it.free) return true;
+  if (AVOWNED) return (owned || ownedIds()).has(it.id);
+  if (AVLOCKS) {
+    if (!it.legacy) return false;
+    const i = it.legacy.indexOf(':'), kind = it.legacy.slice(0, i), raw = it.legacy.slice(i + 1);
+    try { return !AVLOCKS(kind, raw === 'true' ? true : raw); } catch { return false; }
+  }
+  return true;
+}
+const anyLocks = () => !!(AVOWNED || AVLOCKS);
+
 export const NAME_MAX = 12;
 // Markörfärger: namnskylt, muspekare i co-op m.m. – klara färger som syns mot golvet
 export const MARKER_COLORS = ['#ff4d4d', '#ff9f1c', '#ffd23f', '#8ee03c', '#22c7a9', '#3fc4ff', '#4f7dff', '#a66bff', '#ff5dc8', '#f4f1ea'];
@@ -22,30 +53,47 @@ export const MARKER_COLORS = ['#ff4d4d', '#ff9f1c', '#ffd23f', '#8ee03c', '#22c7
 // ---------- rensning / lagring ----------
 const HEX = /^#[0-9a-f]{6}$/i;
 const col = (v, fb) => (typeof v === 'string' && HEX.test(v) ? v.toLowerCase() : fb);
-const oneOf = (v, list, fb) => (list.includes(v) ? v : fb);
 const rnd = (a) => a[Math.floor(Math.random() * a.length)];
+// giltigt registervärde (normaliserat, t.ex. hörlurar 'over' ⇒ true), annars fb
+const reg = (f, v, fb) => (isValid(f, v) ? valueOf(f, idOf(f, v)) : fb);
 
 function cleanName(v) {
   const s = Array.from(String(v ?? '')).filter((ch) => { const c = ch.codePointAt(0); return c >= 32 && c !== 127 && ch !== '<' && ch !== '>'; }).join('').replace(/\s+/g, ' ').trim();
   return Array.from(s).slice(0, NAME_MAX).join('').trim();
 }
 
+// Validerar varje fält mot registren/färgformatet. Okänt ⇒ standard. Resultatet innehåller
+// alltid alla fält (gamla + nya), så redigeraren kan jämföra direkt.
 export function cleanLook(raw) {
   const L = raw && typeof raw === 'object' ? raw : {};
   let style = L.style, hat = L.hat ?? null;
   if (style === 'cap') { style = 'short'; hat = hat || 'cap'; } // gammalt format
   const kid = !!L.kid;
+  const cheeks = reg('cheeks', L.cheeks, L.blush ? 'blush' : 'none');
+  const phones = typeof L.phones === 'string' ? reg('phones', L.phones, false) : !!L.phones;
   return {
-    skin: col(L.skin, '#eabf98'), hair: col(L.hair, '#3b2619'), style: oneOf(style, HAIR_STYLES, 'short'),
-    top: oneOf(L.top, TOP_TYPES, 'tee'), shirt: col(L.shirt, '#3a7bd5'), accent: col(L.accent, '#f4f1ea'),
-    bottom: oneOf(L.bottom, BOTTOM_TYPES, 'jeans'), pants: col(L.pants, '#2d3a5c'), shoes: col(L.shoes, '#1c1c1c'),
-    hat: oneOf(hat, HAT_TYPES, null), cap: col(L.cap, '#c9323a'),
-    glasses: oneOf(L.glasses === true ? 'square' : L.glasses || false, GLASSES_TYPES, false),
-    beard: kid ? false : oneOf(L.beard === true ? 'full' : L.beard || false, BEARD_TYPES, false),
-    phones: !!L.phones, phoneColor: col(L.phoneColor, '#222228'),
-    bag: oneOf(L.bag ?? null, BAG_TYPES, null), bagColor: col(L.bagColor, '#2f3440'),
-    build: kid ? 4 : oneOf(L.build, BUILDS, 5),
-    blush: !!L.blush, apron: !!L.apron, kid,
+    skin: col(L.skin, LOOK_COLORS.skin), hair: col(L.hair, LOOK_COLORS.hair), style: reg('style', style, 'short'),
+    top: reg('top', L.top, 'tee'), shirt: col(L.shirt, LOOK_COLORS.shirt), accent: col(L.accent, LOOK_COLORS.accent),
+    bottom: reg('bottom', L.bottom, 'jeans'), pants: col(L.pants, LOOK_COLORS.pants), shoes: col(L.shoes, LOOK_COLORS.shoes),
+    hat: reg('hat', hat, null), cap: col(L.cap, LOOK_COLORS.cap),
+    glasses: reg('glasses', L.glasses === true ? 'square' : L.glasses || false, false),
+    beard: kid ? false : reg('beard', L.beard === true ? 'full' : L.beard || false, false),
+    phones, phoneColor: col(L.phoneColor, LOOK_COLORS.phoneColor),
+    bag: reg('bag', L.bag ?? null, null), bagColor: col(L.bagColor, LOOK_COLORS.bagColor),
+    build: kid ? 4 : (BUILDS.includes(L.build) ? L.build : 5),
+    blush: cheeks === 'blush', apron: !!L.apron, kid,
+    // hår
+    hairFx: reg('hairFx', L.hairFx, 'none'), hair2: col(L.hair2, null), hairAcc: reg('hairAcc', L.hairAcc, 'none'),
+    // ansikte
+    eyes: reg('eyes', L.eyes, 'normal'), eyeColor: col(L.eyeColor, null), brows: reg('brows', L.brows, 'normal'),
+    nose: reg('nose', L.nose, 'normal'), mouth: reg('mouth', L.mouth, 'normal'), ears: reg('ears', L.ears, 'normal'),
+    cheeks, makeup: reg('makeup', L.makeup, 'none'), lipColor: col(L.lipColor, null), shadowColor: col(L.shadowColor, null),
+    marks: reg('marks', L.marks, 'none'), markColor: col(L.markColor, null),
+    // kläder
+    topPrint: reg('topPrint', L.topPrint, 'none'), print2: col(L.print2, null),
+    bottomPrint: reg('bottomPrint', L.bottomPrint, 'none'), pants2: col(L.pants2, null),
+    shoeType: reg('shoeType', L.shoeType, 'normal'), shoes2: col(L.shoes2, null),
+    neck: reg('neck', L.neck, 'none'), neckColor: col(L.neckColor, null), jewel: reg('jewel', L.jewel, 'none'),
   };
 }
 
@@ -67,19 +115,25 @@ const store = {
   set: (k, v) => { try { localStorage.setItem(k, v); return true; } catch { return false; } },
 };
 
+// Tar av plagg man inte äger (platsen återställs till bas: t-shirt, jeans, ingen hatt …)
+function stripLocked(look) {
+  if (!anyLocks()) return look;
+  const owned = AVOWNED ? ownedIds() : null;
+  let L = look;
+  for (const slot of SLOTS) {
+    if (slotIsEmpty(L, slot)) continue;
+    const it = wornItem(L, slot);
+    if (!it || !avatarCanWear(it, owned)) L = lookWithoutSlot(slot, L);
+  }
+  return cleanLook(L);
+}
+
 // Slumpat vuxet utseende (utgångsläge innan spelaren klätt ut sig).
 // Nya spelare börjar i det man äger – inget låst plagg på kroppen.
 function defaultLook() {
   const L = makeLook();
   L.kid = false; L.bag = null; L.apron = false;
-  if (AVLOCKS) {
-    if (AVLOCKS('top', L.top)) L.top = 'tee';
-    if (AVLOCKS('bottom', L.bottom)) L.bottom = 'jeans';
-    if (L.hat && AVLOCKS('hat', L.hat)) L.hat = null;
-    if (L.glasses && AVLOCKS('glasses', L.glasses)) L.glasses = false;
-    if (L.phones && AVLOCKS('phones', true)) L.phones = false;
-  }
-  return cleanLook(L);
+  return stripLocked(cleanLook(L));
 }
 
 // Senast lästa/sparade avatar. loadAvatar() ger samma look-objekt så länge inget ändrats –
@@ -204,37 +258,53 @@ const CLOTH = uniq([...SHIRT, '#f28bb3', '#9fd356', '#1d1d22']);
 const PAL = {
   skin: uniq([...SKIN, '#ffe3cc', '#3f2618']),
   hair: uniq([...HAIR, '#7b4fb8', '#e0702a']),
-  shirt: CLOTH, accent: CLOTH, cap: CLOTH,
+  hair2: uniq([...HAIR, '#7b4fb8', '#e0702a', '#f28bb3', '#3fc4ff']),
+  shirt: CLOTH, accent: CLOTH, cap: CLOTH, print2: CLOTH, neckColor: CLOTH,
   pants: uniq([...PANTS, '#d9433b', '#3a7bd5', '#8e5bd1', '#b83d7a', '#f0b429', '#e8e3d6']),
+  pants2: CLOTH,
   shoes: uniq([...SHOES, '#46a35a', '#8e5bd1', '#f28bb3']),
+  shoes2: uniq([...SHOES, '#46a35a', '#8e5bd1', '#f28bb3', '#f0b429']),
   bagColor: uniq([...BAG_COLORS, '#2aa39a', '#f28bb3', '#e8e3d6']),
   phoneColor: uniq([...PHONE_COLORS, '#f0b429', '#46a35a', '#f28bb3', '#8e5bd1']),
+  eyeColor: uniq(EYE_COLORS), lipColor: uniq(LIP_COLORS), shadowColor: uniq(SHADOW_COLORS), markColor: uniq(MARK_COLORS),
+};
+// färgfält som får vara tomma (null = motorns standard) – får en "Std"-ruta
+const OPTIONAL = new Set(Object.keys(LOOK_COLORS).filter((k) => LOOK_COLORS[k] === null));
+const COLOR_TITLE = {
+  shirt: 'Färg', accent: 'Detaljfärg', print2: 'Tryckfärg', pants: 'Färg', pants2: 'Mönsterfärg', shoes: 'Färg', shoes2: 'Detaljfärg',
+  cap: 'Färg', bagColor: 'Färg', phoneColor: 'Färg', neckColor: 'Färg', hair: 'Hårfärg', hair2: 'Andra hårfärgen', skin: 'Hud',
+  eyeColor: 'Ögonfärg', lipColor: 'Läppfärg', shadowColor: 'Ögonskugga', markColor: 'Färg på målningen',
 };
 
 const TABS = [
   { id: 'skin', icon: '✋', label: 'Hud', title: 'Hudton' },
-  { id: 'hair', icon: '💇', label: 'Hår', title: 'Hår' },
-  { id: 'face', icon: '👓', label: 'Ansikte', title: 'Ansikte' },
-  { id: 'hat', icon: '🧢', label: 'Huvud', title: 'Huvudbonad' },
-  { id: 'top', icon: '👕', label: 'Tröja', title: 'Tröja' },
-  { id: 'bottom', icon: '👖', label: 'Byxor', title: 'Byxor, kjol & klänning' },
+  { id: 'hair', icon: '💇', label: 'Hår', title: 'Frisyr' },
+  { id: 'hairColor', icon: '🎨', label: 'Hårfärg', title: 'Hårfärg, slingor och toppar' },
+  { id: 'eyes', icon: '👁️', label: 'Ögon', title: 'Ögon och ögonfärg' },
+  { id: 'brows', icon: '🤨', label: 'Bryn', title: 'Ögonbryn' },
+  { id: 'mouth', icon: '👄', label: 'Mun', title: 'Mun och näsa' },
+  { id: 'makeup', icon: '💄', label: 'Smink', title: 'Smink' },
+  { id: 'face', icon: '🙂', label: 'Ansikte', title: 'Kinder, fräknar, ansiktsmålning och öron' },
+  { id: 'beard', icon: '🧔', label: 'Skägg', title: 'Skägg och mustasch' },
+  { id: 'top', icon: '👕', label: 'Överdel', title: 'Tröjor, skjortor och jackor' },
+  { id: 'bottom', icon: '👖', label: 'Underdel', title: 'Byxor, kjolar och klänningar' },
   { id: 'shoes', icon: '👟', label: 'Skor', title: 'Skor' },
-  { id: 'bag', icon: '🎒', label: 'Väska', title: 'Väska' },
-  { id: 'phones', icon: '🎧', label: 'Lurar', title: 'Hörlurar' },
-  { id: 'size', icon: '📏', label: 'Storlek', title: 'Storlek' },
+  { id: 'hat', icon: '🧢', label: 'Huvud', title: 'Huvudbonader, hårspännen och hörlurar' },
+  { id: 'glasses', icon: '👓', label: 'Glasögon', title: 'Glasögon' },
+  { id: 'bag', icon: '🎒', label: 'Väska', title: 'Väskor' },
+  { id: 'neck', icon: '📿', label: 'Hals', title: 'Hals och smycken: halsdukar, slipsar, halsband, örhängen' },
+  { id: 'size', icon: '📏', label: 'Storlek', title: 'Ålder och kroppsbyggnad' },
 ];
+const OLD_TAB = { face: 'face', phones: 'hat' }; // gamla sparade flikar
+// vilka fält varje flik visar (för färgfält som posterna anger i `uses`)
+const TAB_FIELDS = {
+  hair: ['style'], hairColor: ['hairFx'], eyes: ['eyes'], brows: ['brows'], mouth: ['mouth', 'nose'], makeup: ['makeup'],
+  face: ['cheeks', 'marks', 'ears'], beard: ['beard'], top: ['top', 'topPrint'], bottom: ['bottom', 'bottomPrint'],
+  shoes: ['shoeType'], hat: ['hat', 'hairAcc', 'phones'], glasses: ['glasses'], bag: ['bag'], neck: ['neck', 'jewel'],
+};
 
 const LBL = {
-  style: { short: 'Kort', side: 'Sidbena', long: 'Långt', ponytail: 'Häst\u00adsvans', bun: 'Knut', curly: 'Lockigt', afro: 'Afro', spiky: 'Taggigt', bald: 'Flint', mohawk: 'Tuppkam', bob: 'Page', buzz: 'Snaggat', braids: 'Flätor', pigtails: 'Tofsar', wavy: 'Vågigt', mullet: 'Hockey­frilla', curtains: 'Mitt­bena', space: 'Rymd­knutar', dreads: 'Dreads', fade: 'Fade' },
-  top: { tee: 'T-shirt', stripes: 'Randig', hoodie: 'Huv\u00adtröja', jacket: 'Jacka', sweater: 'Tröja', shirt: 'Skjorta', vest: 'Linne', hawaii: 'Hawaii', suit: 'Kavaj' },
-  bottom: { jeans: 'Jeans', pants: 'Byxor', shorts: 'Shorts', skirt: 'Kjol', dress: 'Klän\u00adning' },
-  hat: { null: 'Ingen', cap: 'Keps', beanie: 'Mössa', headband: 'Hårband', bow: 'Rosett', crown: 'Krona', bucket: 'Fiske­hatt', tophat: 'Hög hatt' },
-  glasses: { false: 'Inga', square: 'Fyr\u00adkantiga', round: 'Runda', sun: 'Sol\u00adglasögon' },
-  beard: { false: 'Inget', full: 'Hel\u00adskägg', mustache: 'Mus\u00adtasch', stubble: 'Stubb', goatee: 'Pip\u00adskägg' },
   blush: { false: 'Utan', true: 'Rosiga' },
-  bag: { null: 'Ingen', backpack: 'Rygg\u00adsäck', shoulder: 'Axel\u00adväska' },
-  phones: { false: 'Av', true: 'På' },
-  apron: { false: 'Utan', true: 'För\u00adkläde' },
   kid: { false: 'Vuxen', true: 'Barn' },
   build: { 4: 'Smal', 5: 'Mellan', 6: 'Bred' },
 };
@@ -243,6 +313,7 @@ const LBL = {
 const VIEWS = {
   head: { dir: 'down', crop: (L) => [2, L.kid ? 9 : 1, 20, 20], scale: 3 },
   face: { dir: 'down', crop: (L) => [4, L.kid ? 12 : 4, 15, 15], scale: 4 },
+  neck: { dir: 'down', crop: (L) => [4, L.kid ? 18 : 10, 16, 16], scale: 4 },
   torso: { dir: 'down', crop: (L) => [2, L.kid ? 16 : 12, 20, 20], scale: 3 },
   legs: { dir: 'down', crop: (L) => [2, L.kid ? 21 : 20, 20, 20], scale: 3 },
   side: { dir: 'right', crop: (L) => [2, L.kid ? 16 : 12, 20, 20], scale: 3 },
@@ -257,6 +328,28 @@ function tileCanvas(look, view) {
   const x = c.getContext('2d'); x.imageSmoothingEnabled = false;
   x.drawImage(src, sx, sy, sw, sh, 0, 0, sw * s, sh * s);
   return c;
+}
+
+// Extra stilar för de nya delarna (style.css ägs av andra – håll redigerarens tillägg här)
+function injectStyle() {
+  if (typeof document === 'undefined' || document.getElementById('av-style-v2')) return;
+  const st = document.createElement('style');
+  st.id = 'av-style-v2';
+  st.textContent = `
+.dlg-avatar .av-tabs { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 4px; }
+.dlg-avatar .av-tab { flex-direction: row; justify-content: center; gap: 4px; padding: 3px 4px 2px; font-size: 15px; }
+.dlg-avatar .av-tab i { font-size: 16px; }
+.dlg-avatar .av-sub { font: 16px var(--head); font-weight: 400; text-transform: uppercase; letter-spacing: .8px; color: var(--muted); margin: 4px 0 5px; }
+.dlg-avatar .av-tile i[data-c] { display: block; width: 60px; height: 60px; background: #ece4d5; }
+.dlg-avatar .av-tiles.tall .av-tile i[data-c] { width: 48px; height: 82px; background: none; }
+.dlg-avatar .av-more { font-size: 17px; line-height: 1; color: var(--muted); margin: -2px 0 8px; }
+.dlg-avatar .av-sw.av-std { background: repeating-linear-gradient(45deg, #fff 0 4px, #dcd6cc 4px 8px); font: 14px/30px var(--head); color: var(--ink); text-align: center; }
+@media (max-width: 639px) {
+  .dlg-avatar .av-tabs { grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 3px; }
+  .dlg-avatar .av-tab { font-size: 13px; padding: 1px 2px 0; }
+  .dlg-avatar .av-tab i { font-size: 14px; }
+}`;
+  document.head.appendChild(st);
 }
 
 // Scen: rutigt butiksgolv som rullar när figuren går på stället
@@ -284,13 +377,16 @@ function drawFloor(ctx, camX, camY) {
 }
 
 let lastTab = 'skin';
+const clean = (s) => String(s ?? '').replace(/\u00ad/g, '');
 
 export function openAvatarEditor({ onDone, onCancel, fresh = false } = {}) {
+  injectStyle();
   const saved = fresh ? { name: '', look: defaultLook(), color: rnd(MARKER_COLORS) } : loadAvatar();
   const oldName = fresh ? '' : saved.name;
   const cur = { name: saved.name || (fresh ? '' : rnd(FIRST_NAMES)), look: saved.look, color: saved.color };
   const start = { ...cur };
-  let tab = TABS.some((t) => t.id === lastTab) ? lastTab : 'skin';
+  const want = OLD_TAB[lastTab] || lastTab;
+  let tab = TABS.some((t) => t.id === want) ? want : 'skin';
   let adultBuild = cur.look.kid ? 5 : cur.look.build; // kroppsbyggnaden tillbaka när man byter barn → vuxen
 
   const body = `<div class="av">
@@ -353,7 +449,7 @@ export function openAvatarEditor({ onDone, onCancel, fresh = false } = {}) {
   window.addEventListener('resize', onResize);
 
   const tick = (now) => {
-    if (!cv.isConnected) { window.removeEventListener('resize', onResize); return; } // dialogen stängd
+    if (!cv.isConnected) { window.removeEventListener('resize', onResize); lazy.stop(); return; } // dialogen stängd
     const dt = Math.min(0.1, (now - last) / 1000); last = now;
     let frame = 0;
     const dir = DIRS[dirIdx];
@@ -404,6 +500,36 @@ export function openAvatarEditor({ onDone, onCancel, fresh = false } = {}) {
 
   const updateFace = () => { faceEl.replaceChildren(portrait(cur.look, portraitBg(cur))); };
 
+  // ---------- lat rutritning: bara synliga rutor, några per bildruta ----------
+  const lazy = (() => {
+    let queue = [], pending = [], io = null, raf = 0;
+    const pump = () => {
+      raf = 0;
+      const t0 = performance.now();
+      while (queue.length && performance.now() - t0 < 10) {
+        const el = queue.shift();
+        if (!el.isConnected) continue;
+        const [look, view] = pending[+el.dataset.c] || [];
+        if (look) el.replaceWith(tileCanvas(look, view));
+      }
+      if (queue.length) raf = requestAnimationFrame(pump);
+    };
+    const want = (el) => { if (!queue.includes(el)) queue.push(el); if (!raf) raf = requestAnimationFrame(pump); };
+    return {
+      start(list) {
+        this.stop();
+        pending = list;
+        const els = [...panel.querySelectorAll('i[data-c]')];
+        if (typeof IntersectionObserver === 'undefined') { els.forEach(want); return; }
+        io = new IntersectionObserver((ents) => {
+          for (const en of ents) if (en.isIntersecting) { io.unobserve(en.target); want(en.target); }
+        }, { root: panel, rootMargin: '160px 0px' });
+        els.forEach((el) => io.observe(el));
+      },
+      stop() { io?.disconnect(); io = null; queue = []; if (raf) cancelAnimationFrame(raf); raf = 0; },
+    };
+  })();
+
   // ---------- flikar + val ----------
   const tabsEl = $('.av-tabs');
   tabsEl.onclick = (e) => {
@@ -416,73 +542,154 @@ export function openAvatarEditor({ onDone, onCancel, fresh = false } = {}) {
     const L = cur.look;
     tabsEl.querySelectorAll('[data-tab]').forEach((b) => { const on = b.dataset.tab === tab; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
     const pending = [];
+    const shown = new Set(); // färgfält som redan har rutor i fliken
+    const owned = AVOWNED ? ownedIds() : null;
+
+    // en ruta: look = hur rutan ritas, attrs = data-attribut för klicket
+    const tile = ({ look, view, label, on, attrs, disabled = false, title }) => {
+      const i = pending.push([look, view]) - 1;
+      return `<button class="av-tile ${on ? 'on' : ''}" ${attrs} aria-pressed="${on}" ${disabled ? 'disabled' : ''} title="${esc(clean(title || label))}"><i data-c="${i}"></i>${label ? `<span>${esc(label)}</span>` : ''}</button>`;
+    };
+    const grid = (html, view) => `<div class="av-tiles ${view === VIEWS.full ? 'tall' : ''}">${html}</div>`;
+    // grupperar [{ group, html }] under underrubriker om det finns fler än en grupp
+    const grouped = (items, view) => {
+      const order = [], by = new Map();
+      for (const it of items) { const g = it.group || ''; if (!by.has(g)) { by.set(g, []); order.push(g); } by.get(g).push(it.html); }
+      if (order.length < 2) return grid(items.map((it) => it.html).join(''), view);
+      return order.map((g) => `${g ? `<h5 class="av-sub">${esc(g)}</h5>` : ''}${grid(by.get(g).join(''), view)}`).join('');
+    };
+    // enkla värden (hud, ålder …)
     const tiles = (key, values, view, { labels = LBL[key], disabled = false, patch = null } = {}) =>
-      `<div class="av-tiles ${view === VIEWS.full ? 'tall' : ''}">${values.map((v) => {
-        const look = { ...L, [key]: v, ...(patch ? patch(v) : {}) };
-        const i = pending.push([look, view]) - 1, label = labels ? labels[String(v)] : '';
-        const on = same(L[key], v);
-        const lock = !on && AVLOCKS?.(key, v);
-        const title = lock ? `${(label || String(v)).replace(/\u00ad/g, '')} \u2013 k\u00f6ps i kl\u00e4daff\u00e4ren (${lock.price} kr)` : (label || String(v)).replace(/\u00ad/g, '');
-        return `<button class="av-tile ${on ? 'on' : ''} ${lock ? 'locked' : ''}" data-k="${key}" data-v="${esc(JSON.stringify(v))}" aria-pressed="${on}" ${disabled || lock ? 'disabled' : ''} title="${esc(title)}"><i data-c="${i}"></i>${lock ? '<b class="lk">\ud83d\udd12</b>' : ''}${label ? `<span>${esc(label)}</span>` : ''}</button>`;
-      }).join('')}</div>`;
+      grid(values.map((v) => tile({
+        look: { ...L, [key]: v, ...(patch ? patch(v) : {}) }, view, label: labels ? labels[String(v)] : '', on: same(L[key], v),
+        attrs: `data-k="${key}" data-v="${esc(JSON.stringify(v))}"`, disabled,
+      })).join(''), view);
+    // registerval (frisyr, ögon, skägg …) – alla poster, grupperade
+    const regTiles = (field, view, { disabled = false, patch = null } = {}) => {
+      const F = LOOK_FIELDS[field], curId = idOf(field, L[field]);
+      return grouped(Object.keys(F.reg).map((id) => {
+        const v = valueOf(field, id), e = F.reg[id];
+        return {
+          group: id === 'none' ? '' : e.group,
+          html: tile({ look: { ...L, [field]: v, ...(patch ? patch(v) : {}) }, view, label: e.label, on: curId === id, attrs: `data-k="${field}" data-v="${esc(JSON.stringify(v))}"`, disabled }),
+        };
+      }), view);
+    };
+    // plagg ur katalogen – bara de man äger (+ basplagg, + det man har på sig)
+    const itemTiles = (slot, view, { patch = null } = {}) => {
+      const all = itemsForSlot(slot), worn = wornItem(L, slot), empty = slotIsEmpty(L, slot);
+      const usable = all.filter((it) => avatarCanWear(it, owned));
+      const list = worn && !usable.includes(worn) ? [worn, ...usable] : usable;
+      const out = [];
+      const main = Object.keys(SLOT_FIELDS[slot])[0];
+      if (SLOT_CAN_BE_EMPTY[slot]) out.push({ group: '', html: tile({ look: { ...lookWithoutSlot(slot, L), ...(patch ? patch() : {}) }, view, label: entryOf(main, SLOT_FIELDS[slot][main])?.label || 'Ingen', on: empty, attrs: `data-empty="${slot}"` }) });
+      if (!worn && !empty) out.push({ group: '', html: tile({ look: { ...L, ...(patch ? patch() : {}) }, view, label: 'Nuvarande', on: true, attrs: 'data-keep="1"' }) });
+      for (const it of list) out.push({ group: groupOf(it), html: tile({ look: { ...lookForItem(it, L), ...(patch ? patch() : {}) }, view, label: it.name, on: worn === it, attrs: `data-item="${esc(it.id)}"` }) });
+      const locked = all.filter((it) => !list.includes(it)).length;
+      return grouped(out, view) + (locked ? `<p class="av-more">🔒 ${locked} fler i klädaffären</p>` : '');
+    };
     const swatches = (key, { dim = false, ownOnly = false } = {}) => {
-      const v = L[key], pal = PAL[key], own = !pal.includes(v);
-      return `<div class="av-sws ${dim ? 'dim' : ''}">${(ownOnly ? [] : pal).map((c) => `<button class="av-sw ${c === v ? 'on' : ''}" data-k="${key}" data-v="${esc(JSON.stringify(c))}" style="--c:${c}" aria-label="Färg ${c}" aria-pressed="${c === v}"></button>`).join('')}
-        <label class="av-sw av-own ${own ? 'on' : ''}" style="--c:${own ? v : '#ffffff'}" title="Egen färg"><input type="color" data-own="${key}" value="${v}" aria-label="Egen färg"><b>${own ? '' : '+'}</b></label></div>`;
+      shown.add(key);
+      const v = L[key], pal = PAL[key] || CLOTH, opt = OPTIONAL.has(key), own = v != null && !pal.includes(v);
+      const std = opt ? `<button class="av-sw av-std ${v == null ? 'on' : ''}" data-k="${key}" data-v="null" title="Standard" aria-label="Standardfärg" aria-pressed="${v == null}">Std</button>` : '';
+      return `<div class="av-sws ${dim ? 'dim' : ''}">${std}${(ownOnly ? [] : pal).map((c) => `<button class="av-sw ${c === v ? 'on' : ''}" data-k="${key}" data-v="${esc(JSON.stringify(c))}" style="--c:${c}" aria-label="Färg ${c}" aria-pressed="${c === v}"></button>`).join('')}
+        <label class="av-sw av-own ${own ? 'on' : ''}" style="--c:${own ? v : '#ffffff'}" title="Egen färg"><input type="color" data-own="${key}" value="${v || '#ffffff'}" aria-label="Egen färg"><b>${own ? '' : '+'}</b></label></div>`;
     };
     const sec = (title, inner, hint = '') => `<section class="av-sec"><h4>${esc(title)}</h4>${hint ? `<p class="av-hint">${hint}</p>` : ''}${inner}</section>`;
+    const colorSec = (key, opts = {}, hint = '') => sec(COLOR_TITLE[key] || 'Färg', swatches(key, opts), hint);
+    // färgfält som de valda posterna säger att de använder (uses: ['accent', …])
+    const extraColors = () => {
+      let h = '';
+      for (const f of TAB_FIELDS[tab] || []) for (const k of entryOf(f, f === 'cheeks' ? L.cheeks : L[f])?.uses || []) {
+        if (shown.has(k) || !(k in LOOK_COLORS)) continue;
+        h += colorSec(k);
+      }
+      return h;
+    };
+    const noHead = () => ({ hat: null, phones: false, hairAcc: 'none' });
 
     let html = '';
     switch (tab) {
       case 'skin': html = sec('Hudton', tiles('skin', PAL.skin, VIEWS.head, { labels: null })) + sec('Egen färg', swatches('skin', { ownOnly: true }), 'Grön rymdvarelse? Välj vilken färg du vill.'); break;
-      case 'hair': html = sec('Frisyr', tiles('style', HAIR_STYLES, VIEWS.head, { patch: () => ({ hat: null, phones: false }) }), L.hat || L.phones ? 'Bilderna visas utan huvudbonad och hörlurar.' : '') + sec('Hårfärg', swatches('hair'), 'Gäller även skägg och ögonbryn.'); break;
+      case 'hair':
+        html = sec('Frisyr', regTiles('style', VIEWS.head, { patch: noHead }), L.hat || L.phones || L.hairAcc !== 'none' ? 'Bilderna visas utan huvudbonad, hårspänne och hörlurar.' : '');
+        break;
+      case 'hairColor':
+        html = colorSec('hair', {}, 'Gäller även skägg och ögonbryn.')
+          + sec('Slingor, toppar & tvåfärgat', regTiles('hairFx', VIEWS.head, { patch: noHead }))
+          + colorSec('hair2', { dim: L.hairFx === 'none' }, 'Den andra färgen i slingor, toppar och tvåfärgat hår.');
+        break;
+      case 'eyes': html = sec('Ögon', regTiles('eyes', VIEWS.face, { patch: () => ({ glasses: false }) })) + colorSec('eyeColor', {}, 'Std = mörka ögon.'); break;
+      case 'brows': html = sec('Ögonbryn', regTiles('brows', VIEWS.face, { patch: () => ({ glasses: false }) }), 'Brynen har samma färg som håret.'); break;
+      case 'mouth': html = sec('Mun', regTiles('mouth', VIEWS.face)) + sec('Näsa', regTiles('nose', VIEWS.face)); break;
+      case 'makeup':
+        html = sec('Smink', regTiles('makeup', VIEWS.face, { patch: () => ({ glasses: false }) }))
+          + colorSec('lipColor', { dim: L.makeup === 'none' }) + colorSec('shadowColor', { dim: L.makeup === 'none' });
+        break;
       case 'face':
-        html = sec('Glasögon', tiles('glasses', GLASSES_TYPES, VIEWS.face))
-          + sec('Skägg & mustasch', tiles('beard', BEARD_TYPES, VIEWS.face, { disabled: L.kid }), L.kid ? 'Barn har inget skägg – byt till vuxen under 📏 Storlek.' : '')
-          + sec('Kinder', tiles('blush', [false, true], VIEWS.face));
+        html = sec('Kinder', regTiles('cheeks', VIEWS.face))
+          + sec('Fräknar, märken & ansiktsmålning', regTiles('marks', VIEWS.face)) + colorSec('markColor', { dim: L.marks === 'none' })
+          + sec('Öron', regTiles('ears', VIEWS.head, { patch: noHead }));
         break;
-      case 'hat': html = sec('Huvudbonad', tiles('hat', HAT_TYPES, VIEWS.head)) + sec('Färg', swatches('cap', { dim: !L.hat })); break;
+      case 'beard': html = sec('Skägg & mustasch', regTiles('beard', VIEWS.face, { disabled: L.kid }), L.kid ? 'Barn har inget skägg – byt till vuxen under 📏 Storlek.' : 'Skägget har samma färg som håret.'); break;
       case 'top':
-        html = sec('Modell', tiles('top', TOP_TYPES, VIEWS.torso, { patch: () => ({ apron: false, bag: null }) }), L.apron ? 'Bilderna visas utan förkläde.' : '')
-          + sec('Färg', swatches('shirt'))
-          + sec('Detaljfärg', swatches('accent'), 'Ränder, dragkedja, krage, knappar och tryck.');
+        html = sec('Överdel', itemTiles('top', VIEWS.torso, { patch: () => ({ apron: false, bag: null, neck: 'none' }) }), L.apron ? 'Bilderna visas utan förkläde.' : '')
+          + colorSec('shirt') + colorSec('accent', {}, 'Ränder, dragkedja, krage, knappar och tryck.')
+          + (L.topPrint !== 'none' ? colorSec('print2', {}, 'Mönstrets färg. Std = detaljfärgen.') : '');
         break;
-      case 'bottom':
-        html = sec('Modell', tiles('bottom', BOTTOM_TYPES, VIEWS.legs, { patch: () => ({ apron: false, bag: null }) }), L.apron ? 'Bilderna visas utan förkläde.' : '')
-          + (L.bottom === 'dress' ? sec('Färg', swatches('shirt'), 'Klänningen har samma färg som tröjan.') : sec('Färg', swatches('pants')));
+      case 'bottom': {
+        const cf = entryOf('bottom', L.bottom)?.colorField || 'pants';
+        html = sec('Underdel', itemTiles('bottom', VIEWS.legs, { patch: () => ({ apron: false, bag: null }) }), L.apron ? 'Bilderna visas utan förkläde.' : '')
+          + colorSec(cf, {}, cf === 'shirt' ? 'Samma färg som överdelen.' : '')
+          + (L.bottomPrint !== 'none' ? colorSec('pants2', {}, 'Mönstrets färg. Std = detaljfärgen.') : '');
         break;
-      case 'shoes': html = sec('Skornas färg', swatches('shoes')); break;
-      case 'bag': html = sec('Väska', tiles('bag', BAG_TYPES, VIEWS.side)) + sec('Färg', swatches('bagColor', { dim: !L.bag })); break;
-      case 'phones': html = sec('Hörlurar', tiles('phones', [false, true], VIEWS.head)) + sec('Färg', swatches('phoneColor', { dim: !L.phones })); break;
+      }
+      case 'shoes': html = sec('Skor', itemTiles('shoes', VIEWS.legs)) + colorSec('shoes'); break;
+      case 'hat':
+        html = sec('Huvudbonad', itemTiles('hat', VIEWS.head, { patch: () => ({ phones: false }) })) + colorSec('cap', { dim: !L.hat })
+          + sec('I håret', itemTiles('hairAcc', VIEWS.head, { patch: () => ({ hat: null }) }))
+          + sec('Hörlurar', itemTiles('phones', VIEWS.head)) + colorSec('phoneColor', { dim: !L.phones });
+        break;
+      case 'glasses': html = sec('Glasögon', itemTiles('glasses', VIEWS.face)); break;
+      case 'bag': html = sec('Väska', itemTiles('bag', VIEWS.side)) + colorSec('bagColor', { dim: !L.bag }); break;
+      case 'neck':
+        html = sec('Hals', itemTiles('neck', VIEWS.neck, { patch: () => ({ bag: null }) })) + colorSec('neckColor', { dim: L.neck === 'none' }, 'Std = detaljfärgen.')
+          + sec('Smycken', itemTiles('jewel', VIEWS.head, { patch: () => ({ hat: null, phones: false }) }));
+        break;
       case 'size':
         html = sec('Ålder', tiles('kid', [false, true], VIEWS.full, { patch: (v) => (v ? { beard: false } : { build: adultBuild }) }))
           + sec('Kroppsbyggnad', tiles('build', BUILDS, VIEWS.full, { disabled: L.kid, patch: () => ({ kid: false }) }), L.kid ? 'Barn har alltid samma kroppsbyggnad.' : '');
         break;
     }
+    html += extraColors();
     // behåll fokus + scroll när panelen ritas om
-    const act = document.activeElement, fk = act?.dataset?.k, fv = act?.dataset?.v, top = panel.scrollTop;
+    const act = document.activeElement, fk = act?.dataset?.k || act?.dataset?.item || act?.dataset?.empty, top = panel.scrollTop;
+    const fsel = act?.dataset ? (act.dataset.k ? `[data-k="${act.dataset.k}"][data-v='${act.dataset.v}']` : act.dataset.item ? `[data-item="${act.dataset.item}"]` : act.dataset.empty ? `[data-empty="${act.dataset.empty}"]` : null) : null;
     panel.innerHTML = html;
-    panel.querySelectorAll('[data-c]').forEach((el) => { const [look, view] = pending[+el.dataset.c]; el.replaceWith(tileCanvas(look, view)); });
     panel.scrollTop = top;
-    if (fk && panel.contains(act) === false) {
-      const again = [...panel.querySelectorAll('[data-k]')].find((b) => b.dataset.k === fk && b.dataset.v === fv);
-      again?.focus({ preventScroll: true });
+    lazy.start(pending);
+    if (fk && fsel && panel.contains(act) === false) {
+      try { panel.querySelector(fsel)?.focus({ preventScroll: true }); } catch { /* ogiltig selektor */ }
     }
   };
 
+  // ---------- ändringar ----------
+  const firstUsable = (slot) => itemsForSlot(slot).find((it) => avatarCanWear(it));
+  const setLook = (L, redraw = true) => { cur.look = cleanLook(L); changed(redraw); }; // nytt objekt → spritecachen ritar om
   const set = (k, v, redraw = true) => {
     const L = cur.look, patch = { [k]: v };
     if (k === 'kid') Object.assign(patch, v ? { beard: false } : { build: adultBuild });
-    if (k === 'cap' && !L.hat) patch.hat = 'cap';
-    if (k === 'bagColor' && !L.bag) patch.bag = 'backpack';
-    if (k === 'phoneColor' && !L.phones) patch.phones = true;
-    cur.look = cleanLook({ ...L, ...patch }); // nytt objekt → spritecachen ritar om
-    changed(redraw);
+    // färg på något man inte har på sig: ta på det första plagget man äger
+    const wear = { cap: 'hat', bagColor: 'bag', phoneColor: 'phones', neckColor: 'neck' }[k];
+    if (wear && slotIsEmpty(L, wear)) { const it = firstUsable(wear); if (it) Object.assign(patch, lookForItem(it, {})); }
+    setLook({ ...L, ...patch }, redraw);
   };
   panel.addEventListener('click', (e) => {
-    const b = e.target.closest('button[data-k]');
-    if (!b || b.disabled) return;
-    set(b.dataset.k, JSON.parse(b.dataset.v));
+    const b = e.target.closest('button');
+    if (!b || b.disabled || !panel.contains(b)) return;
+    if (b.dataset.item) { const it = itemById(b.dataset.item); if (it) setLook(lookForItem(it, cur.look)); return; }
+    if (b.dataset.empty) { setLook(lookWithoutSlot(b.dataset.empty, cur.look)); return; }
+    if (b.dataset.k) set(b.dataset.k, JSON.parse(b.dataset.v));
   });
   // egen färg: uppdatera figuren medan man drar, rita om panelen när man släpper
   panel.addEventListener('input', (e) => { const k = e.target.dataset?.own; if (k && HEX.test(e.target.value)) set(k, e.target.value, false); });
@@ -497,23 +704,31 @@ export function openAvatarEditor({ onDone, onCancel, fresh = false } = {}) {
 
   function randomize() {
     const L = makeLook(), kid = cur.look.kid;
-    const r = Math.random();
-    // slumpen får bara välja bland det man äger
-    const tops = unlockedOf('top', TOP_TYPES), bottoms = unlockedOf('bottom', BOTTOM_TYPES);
-    const hats = unlockedOf('hat', HAT_TYPES.filter(Boolean));
-    Object.assign(L, {
-      kid, apron: cur.look.apron,
-      style: rnd(HAIR_STYLES), top: rnd(tops),
-      bottom: Math.random() < 0.12 && bottoms.includes('dress') ? 'dress' : rnd(bottoms.filter((b) => b !== 'dress') || bottoms),
-      hat: r < 0.55 || !hats.length ? null : rnd(hats),
-      beard: kid || Math.random() > 0.3 ? false : rnd(BEARD_TYPES.filter(Boolean)),
-      bag: null, glasses: !L.glasses || unlockedOf('glasses', [L.glasses]).length ? L.glasses : false,
-      phones: L.phones && !unlockedOf('phones', [true]).length ? false : L.phones,
-      build: kid ? 4 : rnd(BUILDS),
-    });
-    if (L.hat === 'crown' && Math.random() < 0.7) L.cap = '#f0b429';
-    cur.look = cleanLook(L);
-    changed();
+    const owned = AVOWNED ? ownedIds() : null;
+    const usable = (slot) => itemsForSlot(slot).filter((it) => avatarCanWear(it, owned));
+    const chance = (p) => Math.random() < p;
+    const other = (field) => rnd(listOf(field).filter((v) => idOf(field, v) !== idOf(field, LOOK_FIELDS[field].def)));
+    let look = { ...L, kid, apron: cur.look.apron, build: kid ? 4 : rnd(BUILDS), style: rnd(HAIR_STYLES) };
+    // plagg: bara sådant man äger
+    const bottoms = usable('bottom'), dress = bottoms.find((it) => it.look.bottom === 'dress'), rest = bottoms.filter((it) => it !== dress);
+    look = lookForItem(rnd(usable('top')), look);
+    look = lookForItem(chance(0.12) && dress ? dress : rnd(rest.length ? rest : bottoms), look);
+    look = lookForItem(rnd(usable('shoes')), look);
+    const hats = usable('hat');
+    look = chance(0.55) || !hats.length ? lookWithoutSlot('hat', look) : lookForItem(rnd(hats), look);
+    look = lookWithoutSlot('bag', look);
+    for (const slot of ['glasses', 'phones']) { const it = wornItem(look, slot); if (it && !avatarCanWear(it, owned)) look = lookWithoutSlot(slot, look); }
+    for (const [slot, p] of [['neck', 0.2], ['jewel', 0.2], ['hairAcc', 0.15]]) { const list = usable(slot); look = chance(p) && list.length ? lookForItem(rnd(list), look) : lookWithoutSlot(slot, look); }
+    // ansikte: oftast standard, ibland något annat
+    for (const [f, p] of [['eyes', 0.4], ['brows', 0.4], ['mouth', 0.4], ['nose', 0.3], ['ears', 0.15], ['makeup', 0.15], ['marks', 0.1], ['hairFx', 0.12]]) {
+      const v = chance(p) ? other(f) : undefined;
+      look[f] = v === undefined ? LOOK_FIELDS[f].def : v;
+    }
+    look.cheeks = L.blush ? 'blush' : 'none';
+    if (look.hairFx !== 'none') look.hair2 = rnd(PAL.hair2);
+    look.beard = kid || Math.random() > 0.3 ? false : rnd(listOf('beard').filter(Boolean));
+    if (look.hat === 'crown' && chance(0.7)) look.cap = '#f0b429';
+    setLook(look);
   }
 
   function save() {

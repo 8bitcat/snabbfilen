@@ -172,20 +172,20 @@ const w = await page.evaluate(() => ({ wardrobe: window.SF.game.wardrobe, money:
 ok(w.wardrobe.includes('top:hoodie'), 'huvtröjan ligger i garderoben');
 ok(w.money === 2000 - 250, `huvtröjan kostade 250 kr (${w.money} kvar)`);
 
-// 8b. Garderoben: köpta plagg öppna, resten låsta
+// 8b. Garderoben: köpta plagg visas, resten döljs bakom "🔒 N fler i klädaffären"
 await page.evaluate(() => window.SF.go('room'));
 await page.evaluate(() => { const p = window.SF.scene._debug.spot('garderob'); window.SF.scene.down(p.x, p.y); });
 await page.waitForTimeout(2800);
 await page.click('.av-tab[data-tab="top"]');
-await page.waitForTimeout(300);
+await page.waitForTimeout(800); // rutorna ritas lat
 const locks = await page.evaluate(() => ({
-  locked: [...document.querySelectorAll('.av-panel .av-tile.locked')].map((b) => JSON.parse(b.dataset.v)),
-  hoodieLocked: !!document.querySelector('.av-panel .av-tile.locked[data-v=\'"hoodie"\']'),
+  items: [...document.querySelectorAll('.av-panel [data-item]')].map((b) => b.dataset.item),
+  more: document.querySelector('.av-panel .av-more')?.textContent || '',
   worn: window.SF.avatar.look.top,
 }));
-const expectLocked = ['sweater', 'shirt', 'jacket', 'vest', 'hawaii', 'suit'].filter((v) => v !== locks.worn);
-ok(!locks.hoodieLocked && expectLocked.every((v) => locks.locked.includes(v)) && locks.locked.length === expectLocked.length,
-  `köpta plagg öppna, resten låsta (på sig: ${locks.worn})`);
+const hidden = ['sweater', 'shirt', 'jacket', 'vest', 'hawaii', 'suit'].filter((v) => v !== locks.worn);
+ok(locks.items.includes('top-hoodie') && hidden.every((v) => !locks.items.includes('top-' + v)) && /🔒\s*\d+ fler/.test(locks.more),
+  `köpta plagg visas, resten dolda (${locks.items.join(', ')} · ${locks.more.trim()})`);
 await shot('16-garderob-las');
 await page.click('.av-cancel');
 await page.waitForTimeout(200);

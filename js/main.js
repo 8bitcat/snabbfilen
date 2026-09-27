@@ -6,6 +6,10 @@ import { Game, SAVE_KEY, WIN_MONEY, JOBS, JOB_TITLES, SORTIMENT, levelOf, fmt, c
 import { makeCity } from './scenes/city.js';
 import { makeRoom } from './scenes/room.js';
 import { makeShopMobler } from './scenes/shop-mobler.js';
+import { makeShopIkea } from './scenes/shop-ikea.js';
+import { makeShopMat } from './scenes/shop-mat.js';
+import { makeShopBostad } from './scenes/shop-bostad.js';
+import { makeShopKafe } from './scenes/shop-kafe.js';
 import { makeShopKlader } from './scenes/shop-klader.js';
 import { makeJobbFlyg } from './jobs/jobb-flyg.js';
 import { makeJobbFrukt } from './jobs/jobb-frukt.js';
@@ -48,7 +52,11 @@ const SCENES = {
   city: (a, o) => makeCity(a, o),
   room: (a, o) => makeRoom(a, o),
   visit: (a) => makeRoom(a, { visit: true }),
-  mobler: (a, o) => makeShopMobler(a, o),
+  mobler: (a, o) => makeShopIkea(a, o),
+  mat: (a, o) => makeShopMat(a, o),
+  bostad: (a, o) => makeShopBostad(a, o),
+  kafe: (a, o) => makeShopKafe(a, o),
+  moblerGammal: (a, o) => makeShopMobler(a, o),
   klader: (a, o) => makeShopKlader(a, o),
   jobbflyg: (a, o) => makeJobbFlyg(a, o),
   jobbfrukt: (a, o) => makeJobbFrukt(a, o),
