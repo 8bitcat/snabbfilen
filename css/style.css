@@ -39,6 +39,10 @@ canvas { image-rendering: pixelated; display: block; }
 .hud-btns { margin-left: auto; display: flex; gap: 6px; }
 .hud-btns .btn { font-size: 15px; padding: 2px 7px; }
 
+/* emote-raden syns när någon annan är på samma plats */
+#emotes { position: fixed; right: 14px; bottom: 14px; display: flex; gap: 6px; z-index: 40; }
+#emotes .btn { font-size: 18px; padding: 4px 8px; }
+
 /* ---------- scenytan ---------- */
 #app { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; }
 #scene { touch-action: none; box-shadow: 0 0 0 3px #000; }

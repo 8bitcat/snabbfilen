@@ -7,7 +7,8 @@ const { chromium } = require('playwright');
 
 const OUT = 'D:/GamesProjects/snabbfilen/tools/out/';
 fs.mkdirSync(OUT, { recursive: true });
-const URL = 'http://localhost:8788/index.html';
+// egen liten testvärld så att testet aldrig möter riktiga spelare
+const URL = 'http://localhost:8788/index.html?world=t' + Date.now().toString(36);
 let fails = 0;
 const ok = (cond, msg) => { console.log((cond ? '  ✓ ' : '  ✗ ') + msg); if (!cond) fails++; };
 
@@ -143,6 +144,7 @@ await page.waitForTimeout(300);
 const morn = await page.evaluate(() => ({ day: window.SF.game.day, min: window.SF.game.min, energy: window.SF.game.energy }));
 ok(morn.day === day1 + 1 && morn.min === 7 * 60, `ny dag efter sömn (dag ${morn.day}, 07:00)`);
 ok(morn.energy > 50, `utvilad på morgonen (energi ${morn.energy})`);
+await page.evaluate(() => { window.SF.game.event = null; }); // slumphändelsen ska inte störa priskontrollerna nedan
 await shot('13-morgon');
 
 // 10. Omladdning: sparfilen håller
@@ -196,6 +198,31 @@ const rabatt = await page.evaluate(() => {
 });
 ok(rabatt.disc === 0.15 && rabatt.price === 128 && rabatt.delta === 128, `personalrabatt 15 % på mössan (128 i stället för 150 kr)`);
 
+// 12c. Dagshändelser: REA sänker priset, extrapass dubblar lönen, rekord sparas
+const ev = await page.evaluate(() => {
+  const g = window.SF.game;
+  const utanRea = g.clothesPrice({ price: 200 });
+  g.event = { id: 'rea' };
+  const medRea = g.clothesPrice({ price: 200 });
+  g.event = { id: 'dubbel', job: 'flygplats' };
+  const before = g.money;
+  const r1 = g.endShift('flygplats', 100, { ok: 5 });
+  const r2 = g.endShift('flygplats', 100, { ok: 3 });
+  g.event = null;
+  return { utanRea, medRea, pay1: r1.finalPay, doubled: r1.doubled, rec1: r1.newRecord, rec2: r2.newRecord, delta: g.money - before, best: g.best.flygplats };
+});
+ok(ev.utanRea === 170 && ev.medRea === 128, `REA: 200 kr-plagg kostar 128 med rea+rabatt (${ev.medRea})`);
+ok(ev.doubled && ev.pay1 === 200 && ev.delta === 400, `extrapass ger dubbel lön (${ev.pay1} kr × 2 pass)`);
+ok(ev.rec1 && !ev.rec2 && ev.best.ok === 5, `rekord sparas rätt (5 rätt, andra passet inget rekord)`);
+
+// 12d. Dagboken 📊: din resa hittills
+await page.click('#hud-diary');
+await page.waitForTimeout(200);
+ok((await page.locator('.dlg-head h2').textContent())?.includes('Din resa'), 'dagboken öppnas');
+await shot('22-dagbok');
+await page.keyboard.press('Escape');
+await page.waitForTimeout(200);
+
 // 13. Möbelhörnan: köp en soffa till rummet
 await page.evaluate(() => { window.SF.game.money = 5000; window.SF.openHousing(); });
 await page.waitForTimeout(200);
@@ -216,19 +243,14 @@ await shot('18-vinst');
 await page.click('.dlg-foot .btn-go');
 await page.waitForTimeout(200);
 
-// 15. Besök: en kompis i en annan webbläsare kommer hem till villan
-console.log('— multiplayer (PeerJS-molnet) —');
-await page.evaluate(() => window.SF.openFriends());
-await page.waitForTimeout(200);
-await page.click('.dlg-foot .btn-go'); // 🏠 Bjud hem kompisar
-let code = null;
-for (let i = 0; i < 50 && !code; i++) {
+// 15. Öppna världen: ingen kod – två spelare hamnar automatiskt i samma värld
+console.log('— öppna världen (PeerJS-molnet) —');
+let hostRole = null;
+for (let i = 0; i < 50 && hostRole !== 'host'; i++) {
   await page.waitForTimeout(200);
-  code = await page.evaluate(() => (window.SF.visitSession()?.open ? window.SF.visitSession().code : null));
+  hostRole = await page.evaluate(() => (window.SF.worldInfo().open ? window.SF.worldInfo().role : null));
 }
-ok(!!code, `värden fick en kod (${code})`);
-await shot('19-bjud-hem');
-await page.keyboard.press('Escape');
+ok(hostRole === 'host', 'första spelaren blev världsvärd automatiskt');
 
 const ctx2 = await browser.newContext({ viewport: { width: 1100, height: 700 } });
 const guest = await ctx2.newPage();
@@ -240,46 +262,77 @@ await guest.evaluate(() => {
   localStorage.setItem('snabbfilen_save1', JSON.stringify({ v: 1, day: 1, min: 600, money: 100, hunger: 80, energy: 80, home: 'rum', fridge: {}, jobs: { flygplats: 0, frukt: 0, klader: 0 }, earned: 0, wardrobe: [], furniture: [], won: false }));
 });
 await guest.reload();
-await guest.waitForTimeout(800);
-if (code) {
-  await guest.evaluate((c) => window.SF.joinVisit(c, { onFail: (m) => (window.__failmsg = m) }), code);
-  let visiting = false;
-  for (let i = 0; i < 60 && !visiting; i++) {
-    await guest.waitForTimeout(250);
-    visiting = await guest.evaluate(() => window.SF.sceneName === 'visit');
-  }
-  const failmsg = await guest.evaluate(() => window.__failmsg || null);
-  ok(visiting, `gästen är på besök i värdens rum${failmsg ? ` (fel: ${failmsg})` : ''}`);
-  ok(await guest.evaluate(() => window.SF.visitSession()?.home) === 'villa', 'gästen ser värdens villa');
-  let hostSees = 0;
-  for (let i = 0; i < 20 && hostSees !== 1; i++) {
-    await page.waitForTimeout(250);
-    hostSees = await page.evaluate(() => window.SF.visitSession()?.folks.size ?? 0);
-  }
-  ok(hostSees === 1, `värden ser 1 besökare`);
-  // gästen promenerar genom rummet – syns hela vandringen hos värden?
-  await guest.evaluate(() => window.SF.scene.down(80, 190));
-  let guestXAtHost = -1;
-  for (let i = 0; i < 32 && !(guestXAtHost > 0 && guestXAtHost < 120); i++) {
-    await page.waitForTimeout(250);
-    guestXAtHost = await page.evaluate(() => [...window.SF.visitSession().folks.values()][0]?.x ?? -1);
-  }
-  ok(guestXAtHost > 0 && guestXAtHost < 120, `gästens promenad syns hos värden (x=${Math.round(guestXAtHost)})`);
-  await shot('20-vard-med-besok');
-  await guest.screenshot({ path: OUT + '21-gast-pa-besok.png' });
-  // gästen åker hem via 👥-knappen, som i spelet
-  await guest.evaluate(() => window.SF.openFriends());
+let guestIn = false;
+for (let i = 0; i < 50 && !guestIn; i++) {
   await guest.waitForTimeout(200);
-  await guest.click('.dlg-foot .btn-red'); // 🚗 Åk hem
-  let left = -1;
-  for (let i = 0; i < 24 && left !== 0; i++) {
-    await page.waitForTimeout(250);
-    left = await page.evaluate(() => window.SF.visitSession()?.folks.size ?? -1);
-  }
-  ok(left === 0, 'värden ser att gästen åkte hem');
-  ok(await guest.evaluate(() => window.SF.sceneName) === 'city', 'gästen är tillbaka i sin egen stad');
-  await ctx2.close();
-} else await ctx2.close();
+  guestIn = await guest.evaluate(() => window.SF.worldInfo().open && window.SF.worldInfo().role === 'client');
+}
+ok(guestIn, 'andra spelaren anslöt automatiskt som klient – ingen kod');
+ok(await page.evaluate(() => window.SF.worldInfo().online) === 2, 'värden räknar 2 online');
+
+// båda går ut i staden och ser varandra
+await page.evaluate(() => window.SF.go('city'));
+await guest.evaluate(() => window.SF.go('city'));
+let seen = 0;
+for (let i = 0; i < 20 && seen !== 1; i++) {
+  await page.waitForTimeout(250);
+  seen = await page.evaluate(() => window.SF.worldFolksHere().length);
+}
+ok(seen === 1, 'spelarna ser varandra på gatan i Pixelstaden');
+await shot('19-stad-tva-spelare');
+
+// gästen åker hem till första spelarens villa via 👥-listan
+const hostId = await guest.evaluate(() => window.SF.playersList()[0]?.id);
+await guest.evaluate((id) => window.SF.visitPlayer(id), hostId);
+await guest.waitForTimeout(400);
+ok(await guest.evaluate(() => window.SF.sceneName) === 'visit', 'gästen är hemma hos den andra');
+ok(await guest.evaluate(() => window.SF.visitTarget?.home) === 'villa', 'gästen ser villan (värdens bostad)');
+
+// värden går hem – nu är båda i samma rum och ser varandra
+await page.evaluate(() => window.SF.go('room'));
+let inRoom = 0;
+for (let i = 0; i < 20 && inRoom !== 1; i++) {
+  await page.waitForTimeout(250);
+  inRoom = await page.evaluate(() => window.SF.worldFolksHere().length);
+}
+ok(inRoom === 1, 'värden ser besökaren i sitt rum');
+
+// gästen promenerar genom rummet – syns vandringen hos värden?
+await guest.evaluate(() => window.SF.scene.down(80, 190));
+let folk = null;
+for (let i = 0; i < 32; i++) {
+  await page.waitForTimeout(250);
+  folk = await page.evaluate(() => window.SF.worldFolksHere()[0] || null);
+  if (folk && folk.x > 0 && folk.x < 120) break;
+}
+ok(folk && folk.x < 120, `gästens promenad syns hos värden (x=${Math.round(folk?.x ?? -1)})`);
+// …och en emote når fram innan den slocknar (2,6 s)
+await guest.evaluate(() => window.SF.sendEmote('❤️'));
+let emote = null;
+for (let i = 0; i < 10 && emote !== '❤️'; i++) {
+  await page.waitForTimeout(150);
+  emote = await page.evaluate(() => window.SF.worldFolksHere()[0]?.emote || null);
+}
+ok(emote === '❤️', `emoten syns hos värden (${emote})`);
+await shot('20-vard-med-besok');
+await guest.screenshot({ path: OUT + '21-gast-pa-besok.png' });
+
+// gästen går hem via dörren
+await guest.evaluate(() => window.SF.scene.down(342, 190));
+let back = false;
+for (let i = 0; i < 32 && !back; i++) {
+  await guest.waitForTimeout(250);
+  back = await guest.evaluate(() => window.SF.sceneName === 'city');
+}
+ok(back, 'gästen gick hem genom dörren och är i sin egen stad');
+let emptyRoom = -1;
+for (let i = 0; i < 20 && emptyRoom !== 0; i++) {
+  await page.waitForTimeout(250);
+  emptyRoom = await page.evaluate(() => window.SF.worldFolksHere().length);
+}
+ok(emptyRoom === 0, 'värdens rum är tomt igen (men båda är kvar i världen)');
+ok(await page.evaluate(() => window.SF.worldInfo().online) === 2, 'fortfarande 2 online i världen');
+await ctx2.close();
 
 console.log(errors.length ? '\nKONSOLFEL:\n' + errors.join('\n') : '\nInga konsolfel.');
 ok(errors.length === 0, 'inga pageerror/console.error');

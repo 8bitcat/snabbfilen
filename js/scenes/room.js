@@ -8,7 +8,7 @@ import { SMALL, ctxText, textW, mix, css, hash } from '../core/floor-pix.js';
 import { openModal, closeModal, toast } from '../core/ui.js';
 import { foodOf } from '../game.js';
 import { play } from '../core/sound.js';
-import { visitTick, visitFolks, visitSession, stopVisit } from '../net/visit.js';
+import { worldFolksHere, worldMyEmote } from '../net/world.js';
 
 const WALK_SEQ = [1, 3, 2, 3];
 const FLOOR_Y = 140, FEET = 192;
@@ -24,13 +24,13 @@ export function makeRoom(A, { visit = false } = {}) {
   const g = A.game;
   let px = visit ? 330 : 190, target = null, onArrive = null, dir = 'down', t = 0;
 
-  const homeId = () => (visit ? visitSession()?.home || 'rum' : g.home);
-  const furn = () => (visit ? visitSession()?.furniture || [] : g.furniture);
+  const homeId = () => (visit ? A.visitTarget?.home || 'rum' : g.home);
+  const furn = () => (visit ? A.visitTarget?.furniture || [] : g.furniture);
   const has = (id) => (STYLES[homeId()] || STYLES.rum)[id] || furn().includes(id);
 
   // klickytorna [x0, x1, etikett, handling] – på besök funkar bara dörren
   const spots = visit
-    ? [{ x0: 322, x1: 362, label: 'ÅK HEM', act: () => { stopVisit(A); play('door'); toast('🚗 Hemma igen.'); A.go('city'); } }]
+    ? [{ x0: 322, x1: 362, label: 'ÅK HEM', act: () => { A.visitTarget = null; g.passTime(20); g.save(); play('door'); toast('🚗 Hemma igen.'); A.go('city'); } }]
     : [
       { x0: 16, x1: 92, label: 'SÄNG', act: () => A.sleepFlow() },
       { x0: 116, x1: 162, label: 'GARDEROB', act: () => { play('click'); openAvatarEditor({ onDone: (av) => { A.avatar = av; toast('👕 Snyggt!', 'good'); } }); } },
@@ -41,6 +41,7 @@ export function makeRoom(A, { visit = false } = {}) {
   function walkTo(x, cb) { target = Math.max(20, Math.min(A.W - 20, x)); onArrive = cb || null; }
 
   return {
+    get worldX() { return px; },
     update(dt) {
       t += dt;
       if (target !== null) {
@@ -49,9 +50,7 @@ export function makeRoom(A, { visit = false } = {}) {
         if (Math.abs(d) <= step) { px = target; target = null; dir = 'down'; const cb = onArrive; onArrive = null; cb?.(); }
         else px += Math.sign(d) * step;
       }
-      visitTick(A, px, dt);
-      // om besöket bryts medan man är där skickas man hem (visit.js visar toast)
-      if (visit && !visitSession()) A.go('city');
+      if (visit && !A.visitTarget) A.go('city');
     },
 
     down(x) {
@@ -137,17 +136,20 @@ export function makeRoom(A, { visit = false } = {}) {
       // etiketter under klickytorna
       for (const s of spots) label(ctx, (s.x0 + s.x1) / 2, 206, s.label);
 
-      // kompisar i rummet (besökare hos värden, alla hos gästen)
-      const folks = visitFolks();
+      // alla som är i samma rum i den öppna världen
+      const folks = worldFolksHere(A);
       for (const f of folks) {
         drawPerson(ctx, f.x, FEET - 2, f.av.look, 'down', f.walking ? WALK_SEQ[Math.floor(t * 8.5) % 4] : (Math.sin(t * 2 + f.x) > 0.9 ? 4 : 0));
         nameTag(ctx, f.x, FEET - 48, f.av);
+        if (f.emote) emoteBubble(ctx, f.x, FEET - 58, f.emote);
       }
 
       // jag själv
       const frame = target !== null ? WALK_SEQ[Math.floor(t * 8.5) % 4] : (Math.sin(t * 2) > 0.9 ? 4 : 0);
       drawPerson(ctx, px, FEET, A.avatar.look, dir, frame);
       if (folks.length) nameTag(ctx, px, FEET - 46, A.avatar);
+      const mine = worldMyEmote();
+      if (mine) emoteBubble(ctx, px, FEET - 56, mine);
 
       if (night) { ctx.fillStyle = 'rgba(10,12,40,0.18)'; ctx.fillRect(0, 0, W, H); }
     },
@@ -165,6 +167,17 @@ function nameTag(ctx, x, y, av) {
   const w = textW(SMALL, av.name || '?') + 6;
   ctx.fillStyle = c.bg; ctx.fillRect(x - w / 2 | 0, y, w, 9);
   ctxText(ctx, SMALL, av.name || '?', (x - w / 2 | 0) + 3, y + 2, c.fg);
+}
+
+// Pratbubbla med en emoji ovanför huvudet
+export function emoteBubble(ctx, x, y, e) {
+  ctx.fillStyle = '#17151a'; ctx.fillRect(x - 9 | 0, y - 15, 18, 16);
+  ctx.fillStyle = '#f4f1ea'; ctx.fillRect(x - 8 | 0, y - 14, 16, 14);
+  ctx.fillStyle = '#f4f1ea'; ctx.fillRect(x - 1 | 0, y, 3, 3); // pilen ner
+  ctx.font = '10px "Segoe UI Emoji", sans-serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(e, x, y - 7);
+  ctx.textAlign = 'start'; ctx.textBaseline = 'alphabetic';
 }
 
 // Kylskåpet: ät något du köpt. Att äta tar en kvart.

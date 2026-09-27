@@ -6,9 +6,11 @@ import { avatarTagColors } from '../core/avatar.js';
 import { SMALL, ctxText, textW, mix, css, hash } from '../core/floor-pix.js';
 import { toast } from '../core/ui.js';
 import { play } from '../core/sound.js';
+import { worldFolksHere, worldMyEmote } from '../net/world.js';
+import { emoteBubble } from './room.js';
 
 const WALK_SEQ = [1, 3, 2, 3];
-const WALK_MIN = 20; // minuter det kostar att gå in någonstans
+const WALK_MIN = 20; // minuter det kostar att gå in någonstans (dubbelt i ösregn)
 
 // x/w = fasad, färgerna är fasta per hus. Ordningen är gatans ordning.
 const SPOTS = [
@@ -55,7 +57,7 @@ export function makeCity(A) {
       toast(`🔒 ${spot.label} har stängt (öppet ${spot.open[0]}–${spot.open[1]}).`, 'bad');
       return;
     }
-    g.passTime(WALK_MIN);
+    g.passTime(g.eventIs('regn') ? WALK_MIN * 2 : WALK_MIN);
     g.save();
     if (g.collapsed) return; // midnatt: main tar hand om det
     play('door');
@@ -67,6 +69,7 @@ export function makeCity(A) {
   }
 
   return {
+    get worldX() { return px; },
     update(dt) {
       t += dt;
       if (target !== null) {
@@ -101,6 +104,7 @@ export function makeCity(A) {
         ctx.fillStyle = css(mix(top, bot, y / GROUND));
         ctx.fillRect(0, y, W, 4);
       }
+      const rain = g.eventIs('regn');
       if (night) {
         ctx.fillStyle = '#e8ecff';
         for (let i = 0; i < 40; i++) {
@@ -109,6 +113,10 @@ export function makeCity(A) {
         }
         ctx.fillStyle = '#f4f1d8'; // månen
         ctx.beginPath(); ctx.fillRect(320, 22, 14, 14); ctx.fillRect(322, 20, 10, 18); ctx.fillRect(318, 24, 18, 10);
+      } else if (rain) {
+        // regnmoln i stället för sol
+        ctx.fillStyle = '#5a6272';
+        for (let i = 0; i < 4; i++) { const cx = 30 + i * 100 + Math.sin(t * 0.4 + i) * 8; ctx.fillRect(cx | 0, 18 + (i % 2) * 8, 46, 12); ctx.fillRect((cx | 0) + 8, 12 + (i % 2) * 8, 28, 10); }
       } else if (hour >= 7 && hour < 19) {
         ctx.fillStyle = '#fff3b8'; // solen
         const sx = 20 + (hour - 7) / 12 * (W - 60);
@@ -132,15 +140,34 @@ export function makeCity(A) {
 
       // folk + spelaren (y-sorterat: folk lite högre upp först)
       for (const f of folk) {
-        if (night) continue; // gatan är tom på natten
+        if (night || rain) continue; // gatan är tom på natten och i ösregnet
         drawPerson(ctx, f.x, f.y, f.look, f.sp < 0 ? 'left' : 'right', WALK_SEQ[Math.floor(t * 7 + f.x) % 4]);
+      }
+      // riktiga spelare i den öppna världen
+      for (const f of worldFolksHere(A)) {
+        drawPerson(ctx, f.x, FEET - 2, f.av.look, 'down', f.walking ? WALK_SEQ[Math.floor(t * 8.5) % 4] : (Math.sin(t * 2 + f.x) > 0.9 ? 4 : 0));
+        drawTag(ctx, f.x, FEET - 48, f.av);
+        if (f.emote) emoteBubble(ctx, f.x, FEET - 58, f.emote);
       }
       const frame = target !== null ? WALK_SEQ[Math.floor(t * 8.5) % 4] : (Math.sin(t * 2) > 0.9 ? 4 : 0);
       drawPerson(ctx, px, FEET, A.avatar.look, dir, frame);
       drawTag(ctx, px, FEET - 46, A.avatar);
+      const mine = worldMyEmote();
+      if (mine) emoteBubble(ctx, px, FEET - 56, mine);
+
+      // regnet faller framför allt
+      if (rain && !night) {
+        ctx.fillStyle = 'rgba(160,190,230,0.55)';
+        for (let i = 0; i < 70; i++) {
+          const rx = (hash(i, 51) * W + t * 40 * (0.7 + hash(i, 52) * 0.6)) % W;
+          const ry = (hash(i, 53) * H + t * (150 + hash(i, 54) * 80)) % H;
+          ctx.fillRect(rx | 0, ry | 0, 1, 5);
+        }
+      }
 
       // natt: lägg en mörk ton över gata + hus (inte himlen)
       if (night) { ctx.fillStyle = 'rgba(10,12,40,0.28)'; ctx.fillRect(0, 60, W, H - 60); }
+      else if (rain) { ctx.fillStyle = 'rgba(40,50,80,0.15)'; ctx.fillRect(0, 0, W, H); }
     },
   };
 }

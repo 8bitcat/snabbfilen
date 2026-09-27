@@ -13,11 +13,14 @@ export function startJobFlow(A, jobId, sceneName) {
   const chk = g.canWork();
   if (!chk.ok) { toast(chk.msg, 'bad'); return; }
   const lvl = levelOf(g.jobs[jobId]);
+  const dubbel = g.eventIs('dubbel') && g.event.job === jobId;
   const rows = [
     `💵 ${job.wage} kr per rätt · −${job.oops} kr per fel${job.bonus ? ` · +${job.bonus} kr per färdig låda` : ''}`,
     `⭐ Din nivå: <b>${JOB_TITLES[lvl - 1]}</b> (lön ×${payMult(lvl).toFixed(2).replace('.', ',')})`,
+    g.best[jobId].ok ? `🏅 Ditt rekord: <b>${g.best[jobId].ok} rätt</b> · bästa lön ${fmt(g.best[jobId].pay)}` : null,
+    dubbel ? `💰 <b class="ok">EXTRAPASS I DAG – DUBBEL LÖN!</b>` : null,
     `⏱️ Ett pass tar 4 timmar.`,
-  ];
+  ].filter(Boolean);
   openModal(`${job.icon} ${job.name}`, `<p style="font-size:21px;margin-top:0"><b>${job.verb}!</b></p>
     <p style="font-size:19px">${rows.join('<br>')}</p>
     ${g.hunger <= 0 ? '<p class="bad" style="font-size:18px">🥴 Du är utsvulten – du jobbar yr och får halv lön!</p>' : ''}
@@ -32,11 +35,11 @@ function finishShift(A, jobId, stats) {
   const lvl = levelOf(A.game.jobs[jobId]);
   const mult = payMult(lvl);
   const base = Math.max(0, stats.ok * job.wage + (stats.boxes || 0) * (job.bonus || 0) - stats.fel * job.oops);
-  const res = A.game.endShift(jobId, base * mult);
+  const res = A.game.endShift(jobId, base * mult, stats);
   play('coin');
   const line = (l, r) => `<div style="display:flex;justify-content:space-between;font-size:20px"><span>${l}</span><b>${r}</b></div>`;
   openModal(`${job.icon} Passet är slut!`, `
-    ${line('✅ Rätt', stats.ok)}
+    ${line('✅ Rätt', stats.ok + (res.newRecord ? ' 🏅 NYTT REKORD!' : ''))}
     ${line('❌ Fel', stats.fel)}
     ${stats.boxes !== undefined ? line('📦 Färdiga lådor', stats.boxes) : ''}
     ${stats.miss ? line('💨 Missade', stats.miss) : ''}
@@ -44,6 +47,7 @@ function finishShift(A, jobId, stats) {
     ${line('Grundlön', fmt(base))}
     ${mult > 1 ? line(`⭐ ${JOB_TITLES[lvl - 1]}-bonus`, '×' + mult.toFixed(2).replace('.', ',')) : ''}
     ${res.starving ? line('🥴 Yr av hunger', 'halv lön!') : ''}
+    ${res.doubled ? line('💰 Extrapass', 'DUBBEL LÖN!') : ''}
     ${line('💰 Lön', fmt(res.finalPay))}`, [
     { label: '💰 Ta lönen', cls: 'btn-go', onClick: () => { closeModal(); A.go('city'); } },
   ], { closable: false });

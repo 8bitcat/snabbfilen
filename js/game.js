@@ -65,6 +65,16 @@ export const FURNITURE = [
 // Slutmålet: äg Villan med rejält på fickan.
 export const WIN_MONEY = 10000;
 
+// Dagshändelser: slumpas fram på morgonen och gäller hela dagen. Hälften av
+// dagarna händer inget alls – då känns händelserna som något speciellt.
+export const EVENTS = [
+  { id: 'rea', icon: '🏷️', text: 'REA i klädaffären – 25 % på allt i dag!' },
+  { id: 'dubbel', icon: '💰', text: 'Extrapass på {job} – dubbel lön i dag!' },
+  { id: 'middag', icon: '🍲', text: 'Grannen bjöd på middag i går kväll – mätt och glad!' },
+  { id: 'tjuga', icon: '💵', text: 'Du hittade 20 kr på trottoaren!' },
+  { id: 'regn', icon: '🌧️', text: 'Ösregn i Pixelstaden – allt tar längre tid ute i dag.' },
+];
+
 // Bostäderna: större bostad = insats + högre hyra men bättre sömn.
 export const HOMES = [
   { id: 'rum', icon: '🛏️', name: 'Lilla rummet', deposit: 0, rent: 350, restBonus: 0, desc: 'En säng, ett kylskåp och en garderob. Men det är ditt.' },
@@ -90,8 +100,12 @@ export class Game {
     this.wardrobe = [];                   // upplåsta plagg, "kind:v"
     this.furniture = [];                  // köpta möbler, id
     this.won = false;                     // slutmålet nått
+    this.event = null;                    // dagens händelse { id, job? }
+    this.best = { flygplats: { ok: 0, pay: 0 }, frukt: { ok: 0, pay: 0 }, klader: { ok: 0, pay: 0 } }; // rekord
     this.collapsed = false;               // somnade utmattad i natt (sätts av passTime)
   }
+
+  eventIs(id) { return this.event?.id === id; }
 
   get dayName() { return DAY_NAMES[(this.day - 1) % 7]; }
   get homeInfo() { return homeOf(this.home); }
@@ -114,6 +128,8 @@ export class Game {
         g.wardrobe = (Array.isArray(p.wardrobe) ? p.wardrobe : []).filter((k) => SORTIMENT.some((s) => clothesKey(s.kind, s.v) === k));
         g.furniture = (Array.isArray(p.furniture) ? p.furniture : []).filter((id) => FURNITURE.some((f) => f.id === id));
         g.won = !!p.won;
+        if (p.event && EVENTS.some((e) => e.id === p.event.id)) g.event = { id: p.event.id, job: JOBS[p.event.job] ? p.event.job : undefined };
+        for (const k of Object.keys(g.best)) g.best[k] = { ok: Math.max(0, p.best?.[k]?.ok | 0), pay: Math.max(0, p.best?.[k]?.pay | 0) };
       }
     } catch { /* trasig – börja om */ }
     return g;
@@ -134,7 +150,8 @@ export class Game {
   }
 
   // Sova till 07:00. quality < 1 = dålig sömn (t.ex. somnade på gatan).
-  // Hungrig sömn ger sämre vila, större bostad ger bonus.
+  // Hungrig sömn ger sämre vila, större bostad ger bonus. Morgonen kan bjuda
+  // på en dagshändelse – hälften av dagarna händer inget alls.
   sleep(quality = 1) {
     this.day += 1;
     this.min = 7 * 60;
@@ -146,8 +163,22 @@ export class Game {
       rent = this.homeInfo.rent;
       this.money -= rent;
     }
+    // dagens händelse
+    this.event = null;
+    let eventText = null;
+    if (Math.random() < 0.5) {
+      const ev = EVENTS[(Math.random() * EVENTS.length) | 0];
+      this.event = { id: ev.id };
+      if (ev.id === 'dubbel') {
+        const jobs = Object.keys(JOBS);
+        this.event.job = jobs[(Math.random() * jobs.length) | 0];
+      }
+      if (ev.id === 'middag') this.hunger = clamp(this.hunger + 35);
+      if (ev.id === 'tjuga') this.money += 20;
+      eventText = `${ev.icon} ${ev.text.replace('{job}', JOBS[this.event.job]?.name || '')}`;
+    }
     this.save();
-    return { rent };
+    return { rent, eventText };
   }
 
   // ---------- mat ----------
@@ -178,20 +209,27 @@ export class Game {
     if (this.min < 8 * 60) return { ok: false, msg: 'Jobbet öppnar 08:00.' };
     return { ok: true };
   }
-  // Ett pass = 4 timmar speltid. Lönen räknas ut av minispelet; yr av hunger = halv lön.
-  endShift(jobId, pay) {
+  // Ett pass = 4 timmar speltid. Lönen räknas ut av minispelet; yr av hunger =
+  // halv lön, extrapass-dagar = dubbel lön. Rekord (flest rätt, bästa lön) sparas.
+  endShift(jobId, pay, stats = {}) {
     const starving = this.hunger <= 0;
-    const finalPay = Math.max(0, Math.round(starving ? pay / 2 : pay));
+    const doubled = this.eventIs('dubbel') && this.event.job === jobId;
+    let finalPay = Math.max(0, Math.round(starving ? pay / 2 : pay));
+    if (doubled) finalPay *= 2;
     const before = levelOf(this.jobs[jobId]);
     this.jobs[jobId] += 1;
     this.money += finalPay;
     this.earned += finalPay;
     this.energy = clamp(this.energy - 35);
     this.passTime(4 * 60);
+    const b = this.best[jobId];
+    const newRecord = (stats.ok || 0) > b.ok;
+    b.ok = Math.max(b.ok, stats.ok || 0);
+    b.pay = Math.max(b.pay, finalPay);
     this.save();
     const after = levelOf(this.jobs[jobId]);
     if (after > before) { play('fanfare'); toast(`⭐ Befordran på ${JOBS[jobId].name}! Du är nu ${JOB_TITLES[after - 1]}.`, 'good'); }
-    return { finalPay, starving, promoted: after > before };
+    return { finalPay, starving, doubled, newRecord, promoted: after > before };
   }
 
   // ---------- kläder & möbler ----------
@@ -202,8 +240,9 @@ export class Game {
   }
   // Jobbar man i klädaffären får man personalrabatt: 5 % per nivå över Nybörjare.
   // Räknas i hela procent så att 3 × 5 % blir exakt 15 % (flyttal ljuger).
+  // Vid REA-dagar dras dessutom 25 % av – rabatterna stackar.
   clothesDiscount() { return Math.min(20, (levelOf(this.jobs.klader) - 1) * 5) / 100; }
-  clothesPrice(s) { return Math.round(s.price * (1 - this.clothesDiscount())); }
+  clothesPrice(s) { return Math.round(s.price * (1 - this.clothesDiscount()) * (this.eventIs('rea') ? 0.75 : 1)); }
   buyClothes(kind, v) {
     const s = this.clothesLocked(kind, v);
     if (!s) return { ok: false, msg: 'Den har du redan!' };

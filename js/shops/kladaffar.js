@@ -18,11 +18,12 @@ export function openKladShop(A) {
   const g = A.game;
   const rab = g.clothesDiscount();
   const body = `<p style="font-size:19px;margin-top:0">💰 <b>${fmt(g.money)}</b>
-      ${rab > 0 ? `<br>🏷️ <b class="ok">Personalrabatt ${Math.round(rab * 100)} %</b> – du jobbar ju här!` : ''}</p>
+      ${g.eventIs('rea') ? `<br>🏷️ <b class="ok">REA I DAG – 25 % PÅ ALLT!</b>` : ''}
+      ${rab > 0 ? `<br>🧑‍💼 <b class="ok">Personalrabatt ${Math.round(rab * 100)} %</b> – du jobbar ju här!` : ''}</p>
     <div class="plist">${SORTIMENT.map((s, i) => {
       const owned = g.wardrobe.includes(clothesKey(s.kind, s.v));
       const price = g.clothesPrice(s);
-      const priceHtml = rab > 0 && !owned ? `<s>${fmt(s.price)}</s> <b>${fmt(price)}</b>` : fmt(s.price);
+      const priceHtml = price !== s.price && !owned ? `<s>${fmt(s.price)}</s> <b>${fmt(price)}</b>` : fmt(s.price);
       return `<div class="prow ${owned ? 'here' : ''}">
         <span style="font-size:26px;text-align:center">${s.icon}</span>
         <span class="nm">${s.name}${owned ? ' <small class="ok">✓ din</small>' : ''}<br><small class="sp">${priceHtml}</small></span>
