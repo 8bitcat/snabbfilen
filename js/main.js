@@ -1,8 +1,8 @@
 // Snabbfilen – bootstrap. En canvas (384×216 logiska pixlar, CSS-skalad),
 // scener för staden/rummet/jobben, DOM-HUD överst och en vanlig rAF-loop.
-import { loadAvatar, openAvatarPicker, avatarPortrait } from './core/avatar.js';
+import { loadAvatar, openAvatarPicker, avatarPortrait, setAvatarLocks } from './core/avatar.js';
 import { openModal, closeModal, toast, modalOpen } from './core/ui.js';
-import { Game, SAVE_KEY, fmt, clock } from './game.js';
+import { Game, SAVE_KEY, WIN_MONEY, fmt, clock } from './game.js';
 import { makeCity } from './scenes/city.js';
 import { makeRoom } from './scenes/room.js';
 import { makeSorter, SORTER_SKINS } from './jobs/sorter.js';
@@ -10,6 +10,9 @@ import { makePacker } from './jobs/packer.js';
 import { startJobFlow } from './jobs/shift.js';
 import { openFoodShop } from './shops/matbutik.js';
 import { openHousing } from './shops/bostad.js';
+import { openKladaffar } from './shops/kladaffar.js';
+import { openFriends, joinVisit, visitSession } from './net/visit.js';
+import { play, unlockAudio, toggleMute, isMuted } from './core/sound.js';
 
 const $ = (s) => document.querySelector(s);
 const cv = $('#scene'), ctx = cv.getContext('2d');
@@ -27,12 +30,17 @@ const A = {
   },
   openFoodShop: () => openFoodShop(A),
   openHousing: (opts) => openHousing(A, opts),
+  openKladaffar: () => openKladaffar(A),
+  openFriends: () => openFriends(A),
+  joinVisit: (code, opts) => joinVisit(A, code, opts), // för tools/smoke.mjs
+  visitSession,
   startJob: (jobId) => startJobFlow(A, jobId, ENGINES[jobId]),
 };
 
 const SCENES = {
   city: (a, o) => makeCity(a, o),
   room: (a, o) => makeRoom(a, o),
+  visit: (a) => makeRoom(a, { visit: true }),
   flygplats: (a, o) => makeSorter(a, SORTER_SKINS.flygplats, o),
   klader: (a, o) => makeSorter(a, SORTER_SKINS.klader, o),
   frukt: (a, o) => makePacker(a, o),
@@ -104,7 +112,9 @@ A.sleepFlow = () => {
     { label: 'Inte än', onClick: closeModal },
     { label: '😴 Sov', cls: 'btn-go', onClick: () => {
       closeModal();
+      play('sleep');
       const { rent } = g.sleep();
+      setTimeout(() => play('morning'), 600);
       toast(`☀️ God morgon! ${g.dayName}, dag ${g.day}.`, 'good');
       if (rent) toast(`💸 Hyra betald: ${fmt(rent)}`, g.money < 0 ? 'bad' : '');
       if (g.money < 0) toast('⚠️ Du är skyldig hyresvärden pengar – jobba ihop dem!', 'bad');
@@ -112,11 +122,33 @@ A.sleepFlow = () => {
   ]);
 };
 
+// Slutmålet: Villan + rejält på fickan → en enda stor gratulation.
+function checkWin() {
+  const g = A.game;
+  if (g.won || g.home !== 'villa' || g.money < WIN_MONEY) return;
+  g.won = true;
+  g.save();
+  play('fanfare');
+  openModal('🏆 Du har lyckats i Pixelstaden!', `<p style="font-size:22px;margin-top:0">Egen villa och <b>${fmt(g.money)}</b> på fickan – från ett litet rum till toppen på ${g.day} dagar!</p>
+    <p style="font-size:19px">💰 Totalt intjänat: <b>${fmt(g.earned)}</b><br>🔨 Jobbade pass: <b>${Object.values(g.jobs).reduce((a, b) => a + b, 0)}</b></p>
+    <p style="font-size:19px">Staden är din – spela vidare, bjud hem kompisarna och visa upp villan! 🎉</p>`,
+    [{ label: '🎉 Tack!', cls: 'btn-go', onClick: closeModal }]);
+}
+
 // ---------- uppstart ----------
 function boot() {
   A.game = Game.load();
   const firstRun = !localStorage.getItem(SAVE_KEY);
   A.avatar = loadAvatar();
+  // garderoben visar 🔒 på plagg som inte är köpta i klädaffären än
+  setAvatarLocks((kind, v) => A.game.clothesLocked(kind, v));
+  // webbläsare släpper ljudet först efter en pekning
+  document.addEventListener('pointerdown', unlockAudio, { capture: true });
+  // HUD-knapparna: kompisar + ljud
+  const mute = $('#hud-mute');
+  mute.textContent = isMuted() ? '🔇' : '🔊';
+  mute.onclick = () => { mute.textContent = toggleMute() ? '🔇' : '🔊'; };
+  $('#hud-friends').onclick = () => A.openFriends();
   fit();
 
   const begin = () => {
@@ -164,6 +196,7 @@ function tick(now) {
   }
   renderHud();
   checkCollapse();
+  if (!modalOpen()) checkWin();
   requestAnimationFrame(tick);
 }
 

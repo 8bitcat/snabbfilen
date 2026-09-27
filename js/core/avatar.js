@@ -9,6 +9,12 @@ import {
 import { openModal, closeModal, toast, esc } from './ui.js';
 
 export const AVATAR_KEY = 'snabbfilen_avatar';
+
+// Klädlås: main.js kopplar in spelets garderob. fn(kind, v) → null (fritt) eller
+// { price } (låst, köps i klädaffären). Låsen gäller bara redigerarens rutor.
+let AVLOCKS = null;
+export function setAvatarLocks(fn) { AVLOCKS = fn; }
+const unlockedOf = (key, list) => (AVLOCKS ? list.filter((v) => !AVLOCKS(key, v)) : list);
 export const NAME_MAX = 12;
 // Markörfärger: namnskylt, muspekare i co-op m.m. – klara färger som syns mot golvet
 export const MARKER_COLORS = ['#ff4d4d', '#ff9f1c', '#ffd23f', '#8ee03c', '#22c7a9', '#3fc4ff', '#4f7dff', '#a66bff', '#ff5dc8', '#f4f1ea'];
@@ -407,7 +413,9 @@ export function openAvatarEditor({ onDone, onCancel, fresh = false } = {}) {
         const look = { ...L, [key]: v, ...(patch ? patch(v) : {}) };
         const i = pending.push([look, view]) - 1, label = labels ? labels[String(v)] : '';
         const on = same(L[key], v);
-        return `<button class="av-tile ${on ? 'on' : ''}" data-k="${key}" data-v="${esc(JSON.stringify(v))}" aria-pressed="${on}" ${disabled ? 'disabled' : ''} title="${esc((label || String(v)).replace(/\u00ad/g, ''))}"><i data-c="${i}"></i>${label ? `<span>${esc(label)}</span>` : ''}</button>`;
+        const lock = !on && AVLOCKS?.(key, v);
+        const title = lock ? `${(label || String(v)).replace(/\u00ad/g, '')} \u2013 k\u00f6ps i kl\u00e4daff\u00e4ren (${lock.price} kr)` : (label || String(v)).replace(/\u00ad/g, '');
+        return `<button class="av-tile ${on ? 'on' : ''} ${lock ? 'locked' : ''}" data-k="${key}" data-v="${esc(JSON.stringify(v))}" aria-pressed="${on}" ${disabled || lock ? 'disabled' : ''} title="${esc(title)}"><i data-c="${i}"></i>${lock ? '<b class="lk">\ud83d\udd12</b>' : ''}${label ? `<span>${esc(label)}</span>` : ''}</button>`;
       }).join('')}</div>`;
     const swatches = (key, { dim = false, ownOnly = false } = {}) => {
       const v = L[key], pal = PAL[key], own = !pal.includes(v);
@@ -482,12 +490,16 @@ export function openAvatarEditor({ onDone, onCancel, fresh = false } = {}) {
   function randomize() {
     const L = makeLook(), kid = cur.look.kid;
     const r = Math.random();
+    // slumpen får bara välja bland det man äger
+    const tops = unlockedOf('top', TOP_TYPES), bottoms = unlockedOf('bottom', BOTTOM_TYPES);
+    const hats = unlockedOf('hat', HAT_TYPES.filter(Boolean));
     Object.assign(L, {
       kid, apron: cur.look.apron,
-      style: rnd(HAIR_STYLES), top: rnd(TOP_TYPES),
-      bottom: Math.random() < 0.12 ? 'dress' : rnd(BOTTOM_TYPES.filter((b) => b !== 'dress')),
-      hat: r < 0.55 ? null : rnd(HAT_TYPES.filter(Boolean)),
+      style: rnd(HAIR_STYLES), top: rnd(tops),
+      bottom: Math.random() < 0.12 && bottoms.includes('dress') ? 'dress' : rnd(bottoms.filter((b) => b !== 'dress') || bottoms),
+      hat: r < 0.55 || !hats.length ? null : rnd(hats),
       beard: kid || Math.random() > 0.3 ? false : rnd(BEARD_TYPES.filter(Boolean)),
+      bag: null, glasses: unlockedOf('glasses', [L.glasses]).length ? L.glasses : false,
       build: kid ? 4 : rnd(BUILDS),
     });
     if (L.hat === 'crown' && Math.random() < 0.7) L.cap = '#f0b429';

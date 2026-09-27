@@ -4,6 +4,7 @@
 import { openModal, closeModal, toast } from '../core/ui.js';
 import { JOBS, JOB_TITLES, levelOf, payMult, fmt } from '../game.js';
 import { SMALL, BIG, ctxText, textW } from '../core/floor-pix.js';
+import { play } from '../core/sound.js';
 
 export const SHIFT_SECONDS = 60;
 
@@ -32,6 +33,7 @@ function finishShift(A, jobId, stats) {
   const mult = payMult(lvl);
   const base = Math.max(0, stats.ok * job.wage + (stats.boxes || 0) * (job.bonus || 0) - stats.fel * job.oops);
   const res = A.game.endShift(jobId, base * mult);
+  play('coin');
   const line = (l, r) => `<div style="display:flex;justify-content:space-between;font-size:20px"><span>${l}</span><b>${r}</b></div>`;
   openModal(`${job.icon} Passet är slut!`, `
     ${line('✅ Rätt', stats.ok)}

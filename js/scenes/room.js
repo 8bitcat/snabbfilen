@@ -1,32 +1,42 @@
-// Hemma. Rummet ritas efter bostadstyp (rum/lägenhet/villa) och har fyra
-// klickytor: sängen (sova), kylskåpet (äta), garderoben (klä om) och dörren (ut).
+// Hemma. Rummet ritas efter bostadstyp (rum/lägenhet/villa) plus köpta möbler,
+// och har fyra klickytor: sängen (sova), kylskåpet (äta), garderoben (klä om)
+// och dörren (ut). Samma scen ritar besök: hos en kompis visas värdens rum och
+// alla figurer som är där (visit.js sköter nätet).
 import { drawPerson } from '../core/people.js';
-import { openAvatarEditor } from '../core/avatar.js';
+import { openAvatarEditor, avatarTagColors } from '../core/avatar.js';
 import { SMALL, ctxText, textW, mix, css, hash } from '../core/floor-pix.js';
 import { openModal, closeModal, toast } from '../core/ui.js';
-import { FOOD, foodOf, fmt } from '../game.js';
+import { foodOf } from '../game.js';
+import { play } from '../core/sound.js';
+import { visitTick, visitFolks, visitSession, stopVisit } from '../net/visit.js';
 
 const WALK_SEQ = [1, 3, 2, 3];
 const FLOOR_Y = 140, FEET = 192;
 
-// Utseendet per bostad: tapet, golv och lite extra möbler.
+// Utseendet per bostad: tapet, golv och vilka möbler som ingår.
 const STYLES = {
-  rum: { wall: 0x8c8270, wall2: 0x7a7160, floor: 0x9a7a50, sofa: false, plant: false, tv: false },
-  lagenhet: { wall: 0x7a94a8, wall2: 0x6a8294, floor: 0xb08a58, sofa: true, plant: true, tv: false },
-  villa: { wall: 0xc0b090, wall2: 0xaa9a7c, floor: 0x8a6a42, sofa: true, plant: true, tv: true },
+  rum: { wall: 0x8c8270, wall2: 0x7a7160, floor: 0x9a7a50, sofa: false, plant: false, tv: false, matta: false },
+  lagenhet: { wall: 0x7a94a8, wall2: 0x6a8294, floor: 0xb08a58, sofa: true, plant: true, tv: false, matta: false },
+  villa: { wall: 0xc0b090, wall2: 0xaa9a7c, floor: 0x8a6a42, sofa: true, plant: true, tv: true, matta: true },
 };
 
-export function makeRoom(A) {
+export function makeRoom(A, { visit = false } = {}) {
   const g = A.game;
-  let px = 190, target = null, onArrive = null, dir = 'down', t = 0;
+  let px = visit ? 330 : 190, target = null, onArrive = null, dir = 'down', t = 0;
 
-  // klickytorna [x0, x1, etikett, handling]
-  const spots = [
-    { x0: 16, x1: 92, label: 'SÄNG', act: () => A.sleepFlow() },
-    { x0: 116, x1: 162, label: 'GARDEROB', act: () => openAvatarEditor({ onDone: (av) => { A.avatar = av; toast('👕 Snyggt!', 'good'); } }) },
-    { x0: 216, x1: 256, label: 'KYLSKÅP', act: () => openFridge(A) },
-    { x0: 322, x1: 362, label: 'UT', act: () => { A.go('city'); } },
-  ];
+  const homeId = () => (visit ? visitSession()?.home || 'rum' : g.home);
+  const furn = () => (visit ? visitSession()?.furniture || [] : g.furniture);
+  const has = (id) => (STYLES[homeId()] || STYLES.rum)[id] || furn().includes(id);
+
+  // klickytorna [x0, x1, etikett, handling] – på besök funkar bara dörren
+  const spots = visit
+    ? [{ x0: 322, x1: 362, label: 'ÅK HEM', act: () => { stopVisit(A); play('door'); toast('🚗 Hemma igen.'); A.go('city'); } }]
+    : [
+      { x0: 16, x1: 92, label: 'SÄNG', act: () => A.sleepFlow() },
+      { x0: 116, x1: 162, label: 'GARDEROB', act: () => { play('click'); openAvatarEditor({ onDone: (av) => { A.avatar = av; toast('👕 Snyggt!', 'good'); } }); } },
+      { x0: 216, x1: 256, label: 'KYLSKÅP', act: () => openFridge(A) },
+      { x0: 322, x1: 362, label: 'UT', act: () => { play('door'); A.go('city'); } },
+    ];
 
   function walkTo(x, cb) { target = Math.max(20, Math.min(A.W - 20, x)); onArrive = cb || null; }
 
@@ -39,6 +49,9 @@ export function makeRoom(A) {
         if (Math.abs(d) <= step) { px = target; target = null; dir = 'down'; const cb = onArrive; onArrive = null; cb?.(); }
         else px += Math.sign(d) * step;
       }
+      visitTick(A, px, dt);
+      // om besöket bryts medan man är där skickas man hem (visit.js visar toast)
+      if (visit && !visitSession()) A.go('city');
     },
 
     down(x) {
@@ -49,7 +62,7 @@ export function makeRoom(A) {
 
     draw(ctx) {
       const { W, H } = A;
-      const st = STYLES[g.home] || STYLES.rum;
+      const st = STYLES[homeId()] || STYLES.rum;
       const hour = g.min / 60, night = hour >= 19.5 || hour < 6.5;
 
       // tapet med rand + golvplankor
@@ -64,9 +77,16 @@ export function makeRoom(A) {
         for (let x = (y / 10 % 2) * 32; x < W; x += 64) ctx.fillRect(x, y, 1, 10);
         ctx.fillRect(0, y, W, 1);
       }
+      // trasmattan
+      if (has('matta')) {
+        ctx.fillStyle = '#b83d3d'; ctx.fillRect(150, 176, 90, 26);
+        ctx.fillStyle = '#d96a5a'; ctx.fillRect(154, 179, 82, 20);
+        ctx.fillStyle = '#b83d3d'; ctx.fillRect(158, 182, 74, 14);
+        ctx.fillStyle = '#e8b230'; ctx.fillRect(150, 176, 90, 1); ctx.fillRect(150, 201, 90, 1);
+      }
 
       // fönster med himlen utanför
-      const wx = 176, ww = g.home === 'villa' ? 56 : 36;
+      const wx = 176, ww = homeId() === 'villa' ? 56 : 36;
       ctx.fillStyle = '#241a12'; ctx.fillRect(wx - 2, 22, ww + 4, 44);
       ctx.fillStyle = night ? '#101838' : hour < 8 || hour > 17 ? '#e8a05a' : '#8ed0ea';
       ctx.fillRect(wx, 24, ww, 40);
@@ -94,22 +114,22 @@ export function makeRoom(A) {
       ctx.fillStyle = '#8a857c'; ctx.fillRect(248, 104, 3, 18); ctx.fillRect(248, 136, 3, 26);
       ctx.fillStyle = css(mix(0xd8d4cc, 0xffffff, 0.4)); ctx.fillRect(218, 98, 3, 84);
 
-      // soffa + växt + TV i finare bostäder
-      if (st.sofa) {
+      // soffa + växt + TV (ingår i finare bostäder eller köps i Möbelhörnan)
+      if (has('soffa')) {
         ctx.fillStyle = '#2c6fb7'; ctx.fillRect(276, 156, 62, 26);
         ctx.fillStyle = css(mix(0x2c6fb7, 0xffffff, 0.2)); ctx.fillRect(276, 150, 62, 10);
         ctx.fillStyle = css(mix(0x2c6fb7, 0x000000, 0.3)); ctx.fillRect(276, 156, 8, 26); ctx.fillRect(330, 156, 8, 26);
       }
-      if (st.plant) {
+      if (has('vaxt')) {
         ctx.fillStyle = '#8e5bd1'; ctx.fillRect(296, 120, 12, 10);
         ctx.fillStyle = '#2f8f46'; ctx.fillRect(298, 104, 3, 16); ctx.fillRect(303, 108, 3, 12); ctx.fillRect(293, 110, 4, 4); ctx.fillRect(306, 102, 4, 5);
       }
-      if (st.tv) {
+      if (has('tv')) {
         ctx.fillStyle = '#17151a'; ctx.fillRect(266, 60, 44, 26);
         ctx.fillStyle = night ? '#3fc4ff' : '#2a3038'; ctx.fillRect(268, 62, 40, 22);
       }
 
-      // dörren ut
+      // dörren
       ctx.fillStyle = '#241a12'; ctx.fillRect(322, 100, 40, 84);
       ctx.fillStyle = '#5a4632'; ctx.fillRect(325, 103, 34, 81);
       ctx.fillStyle = '#e8b230'; ctx.fillRect(352, 140, 4, 4);
@@ -117,9 +137,17 @@ export function makeRoom(A) {
       // etiketter under klickytorna
       for (const s of spots) label(ctx, (s.x0 + s.x1) / 2, 206, s.label);
 
-      // avataren
+      // kompisar i rummet (besökare hos värden, alla hos gästen)
+      const folks = visitFolks();
+      for (const f of folks) {
+        drawPerson(ctx, f.x, FEET - 2, f.av.look, 'down', f.walking ? WALK_SEQ[Math.floor(t * 8.5) % 4] : (Math.sin(t * 2 + f.x) > 0.9 ? 4 : 0));
+        nameTag(ctx, f.x, FEET - 48, f.av);
+      }
+
+      // jag själv
       const frame = target !== null ? WALK_SEQ[Math.floor(t * 8.5) % 4] : (Math.sin(t * 2) > 0.9 ? 4 : 0);
       drawPerson(ctx, px, FEET, A.avatar.look, dir, frame);
+      if (folks.length) nameTag(ctx, px, FEET - 46, A.avatar);
 
       if (night) { ctx.fillStyle = 'rgba(10,12,40,0.18)'; ctx.fillRect(0, 0, W, H); }
     },
@@ -130,6 +158,13 @@ function label(ctx, cx, y, s) {
   const w = textW(SMALL, s) + 6;
   ctx.fillStyle = 'rgba(23,21,26,0.75)'; ctx.fillRect(cx - w / 2 | 0, y, w, 9);
   ctxText(ctx, SMALL, s, (cx - w / 2 | 0) + 3, y + 2, '#f4f1ea');
+}
+
+function nameTag(ctx, x, y, av) {
+  const c = avatarTagColors(av);
+  const w = textW(SMALL, av.name || '?') + 6;
+  ctx.fillStyle = c.bg; ctx.fillRect(x - w / 2 | 0, y, w, 9);
+  ctxText(ctx, SMALL, av.name || '?', (x - w / 2 | 0) + 3, y + 2, c.fg);
 }
 
 // Kylskåpet: ät något du köpt. Att äta tar en kvart.
@@ -147,6 +182,6 @@ function openFridge(A) {
   const dlg = openModal('🧊 Kylskåpet', body, [{ label: 'Stäng', onClick: closeModal }]);
   dlg.querySelectorAll('[data-eat]').forEach((b) => (b.onclick = () => {
     const f = foodOf(b.dataset.eat);
-    if (A.game.eatFromFridge(b.dataset.eat)) { toast(`${f.icon} Mums! +${f.fill} mätthet`, 'good'); openFridge(A); }
+    if (A.game.eatFromFridge(b.dataset.eat)) { play('ok'); toast(`${f.icon} Mums! +${f.fill} mätthet`, 'good'); openFridge(A); }
   }));
 }

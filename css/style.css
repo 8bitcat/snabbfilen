@@ -36,6 +36,8 @@ canvas { image-rendering: pixelated; display: block; }
 .meter .bar i { display: block; height: 100%; background: var(--green2); transition: width .3s; }
 .meter .bar i.mid { background: var(--gold); }
 .meter .bar i.low { background: var(--red2); }
+.hud-btns { margin-left: auto; display: flex; gap: 6px; }
+.hud-btns .btn { font-size: 15px; padding: 2px 7px; }
 
 /* ---------- scenytan ---------- */
 #app { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; }
@@ -132,6 +134,9 @@ canvas { image-rendering: pixelated; display: block; }
 .av-tile.on::after { content: "✓"; position: absolute; top: -7px; right: -7px; width: 20px; height: 20px; font: 16px/18px var(--head); text-align: center;
   background: var(--green2); color: #fff; border: 2px solid var(--ink); }
 .av-tile:disabled { opacity: .4; cursor: not-allowed; }
+.av-tile.locked { opacity: .8; }
+.av-tile.locked canvas { filter: grayscale(1) brightness(.8); }
+.av-tile .lk { position: absolute; top: 2px; right: 2px; font-size: 14px; }
 .av-sws { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 6px; }
 .av-sws.dim { opacity: .55; }
 .av-sw { position: relative; width: 34px; height: 34px; padding: 0; cursor: pointer; background: var(--c); border: 2px solid var(--ink); box-shadow: 2px 2px 0 var(--ink), inset 2px 2px 0 rgba(255,255,255,.35), inset -2px -2px 0 rgba(0,0,0,.18); }

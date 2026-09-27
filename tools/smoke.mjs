@@ -154,6 +154,123 @@ ok(loaded.name === 'Testina', 'avataren överlever omladdning');
 ok(loaded.scene === 'room', 'startar hemma efter omladdning');
 await shot('14-omladdad');
 
+// 11. Klädaffären: handla en huvtröja → låses upp i garderoben
+await page.evaluate(() => { window.SF.game.money = 2000; window.SF.openKladaffar(); });
+await page.waitForTimeout(200);
+await page.click('.dlg-foot .btn:nth-child(2)'); // 🛍️ Handla kläder
+await page.waitForTimeout(200);
+await shot('15-kladshop');
+await page.click('[data-shop="0"]'); // huvtröjan
+await page.waitForTimeout(200);
+const w = await page.evaluate(() => ({ wardrobe: window.SF.game.wardrobe, money: window.SF.game.money }));
+ok(w.wardrobe.includes('top:hoodie'), 'huvtröjan ligger i garderoben');
+ok(w.money === 2000 - 250, `huvtröjan kostade 250 kr (${w.money} kvar)`);
+await page.keyboard.press('Escape');
+await page.waitForTimeout(200);
+
+// 12. Garderoben: köpta plagg är öppna, resten har hänglås
+await page.evaluate(() => window.SF.go('room'));
+await page.evaluate(() => window.SF.scene.down(139, 150));
+await page.waitForTimeout(900);
+await page.click('.av-tab[data-tab="top"]');
+await page.waitForTimeout(300);
+const locks = await page.evaluate(() => ({
+  locked: [...document.querySelectorAll('.av-panel .av-tile.locked')].map((b) => JSON.parse(b.dataset.v)),
+  hoodieLocked: !!document.querySelector('.av-panel .av-tile.locked[data-v=\'"hoodie"\']'),
+  worn: window.SF.avatar.look.top,
+}));
+const expectLocked = ['sweater', 'shirt', 'jacket'].filter((v) => v !== locks.worn); // det man har på sig visas som valt, inte låst
+ok(!locks.hoodieLocked && expectLocked.every((v) => locks.locked.includes(v)) && locks.locked.length === expectLocked.length,
+  `köpta plagg öppna, resten låsta (låsta: ${locks.locked.join(', ')} · på sig: ${locks.worn})`);
+await shot('16-garderob-las');
+await page.click('.av-cancel');
+await page.waitForTimeout(200);
+
+// 13. Möbelhörnan: köp en soffa till rummet
+await page.evaluate(() => { window.SF.game.money = 5000; window.SF.openHousing(); });
+await page.waitForTimeout(200);
+await page.click('.dlg-foot .btn'); // 🛋️ Möbelhörnan
+await page.waitForTimeout(200);
+await page.click('[data-furn="soffa"]');
+await page.waitForTimeout(200);
+ok(await page.evaluate(() => window.SF.game.furniture.includes('soffa')), 'soffan är köpt');
+await page.keyboard.press('Escape');
+await page.waitForTimeout(300);
+await shot('17-rum-med-soffa');
+
+// 14. Slutmålet: Villan + 10 000 kr → gratulationsdialog
+await page.evaluate(() => { window.SF.game.home = 'villa'; window.SF.game.money = 15000; window.SF.game.save(); });
+await page.waitForTimeout(600);
+ok((await page.locator('.dlg-head h2').textContent().catch(() => ''))?.includes('lyckats'), 'vinstdialogen visas');
+await shot('18-vinst');
+await page.click('.dlg-foot .btn-go');
+await page.waitForTimeout(200);
+
+// 15. Besök: en kompis i en annan webbläsare kommer hem till villan
+console.log('— multiplayer (PeerJS-molnet) —');
+await page.evaluate(() => window.SF.openFriends());
+await page.waitForTimeout(200);
+await page.click('.dlg-foot .btn-go'); // 🏠 Bjud hem kompisar
+let code = null;
+for (let i = 0; i < 50 && !code; i++) {
+  await page.waitForTimeout(200);
+  code = await page.evaluate(() => (window.SF.visitSession()?.open ? window.SF.visitSession().code : null));
+}
+ok(!!code, `värden fick en kod (${code})`);
+await shot('19-bjud-hem');
+await page.keyboard.press('Escape');
+
+const ctx2 = await browser.newContext({ viewport: { width: 1100, height: 700 } });
+const guest = await ctx2.newPage();
+guest.on('pageerror', (e) => errors.push('[gäst] ' + e.message));
+guest.on('console', (m) => m.type() === 'error' && errors.push('[gäst] ' + m.text()));
+await guest.goto(URL);
+await guest.evaluate(() => {
+  localStorage.setItem('snabbfilen_avatar', JSON.stringify({ name: 'Kompis', look: { skin: '#eabf98', shirt: '#f28bb3' }, color: '#ff5dc8' }));
+  localStorage.setItem('snabbfilen_save1', JSON.stringify({ v: 1, day: 1, min: 600, money: 100, hunger: 80, energy: 80, home: 'rum', fridge: {}, jobs: { flygplats: 0, frukt: 0, klader: 0 }, earned: 0, wardrobe: [], furniture: [], won: false }));
+});
+await guest.reload();
+await guest.waitForTimeout(800);
+if (code) {
+  await guest.evaluate((c) => window.SF.joinVisit(c, { onFail: (m) => (window.__failmsg = m) }), code);
+  let visiting = false;
+  for (let i = 0; i < 60 && !visiting; i++) {
+    await guest.waitForTimeout(250);
+    visiting = await guest.evaluate(() => window.SF.sceneName === 'visit');
+  }
+  const failmsg = await guest.evaluate(() => window.__failmsg || null);
+  ok(visiting, `gästen är på besök i värdens rum${failmsg ? ` (fel: ${failmsg})` : ''}`);
+  ok(await guest.evaluate(() => window.SF.visitSession()?.home) === 'villa', 'gästen ser värdens villa');
+  let hostSees = 0;
+  for (let i = 0; i < 20 && hostSees !== 1; i++) {
+    await page.waitForTimeout(250);
+    hostSees = await page.evaluate(() => window.SF.visitSession()?.folks.size ?? 0);
+  }
+  ok(hostSees === 1, `värden ser 1 besökare`);
+  // gästen promenerar genom rummet – syns hela vandringen hos värden?
+  await guest.evaluate(() => window.SF.scene.down(80, 190));
+  let guestXAtHost = -1;
+  for (let i = 0; i < 32 && !(guestXAtHost > 0 && guestXAtHost < 120); i++) {
+    await page.waitForTimeout(250);
+    guestXAtHost = await page.evaluate(() => [...window.SF.visitSession().folks.values()][0]?.x ?? -1);
+  }
+  ok(guestXAtHost > 0 && guestXAtHost < 120, `gästens promenad syns hos värden (x=${Math.round(guestXAtHost)})`);
+  await shot('20-vard-med-besok');
+  await guest.screenshot({ path: OUT + '21-gast-pa-besok.png' });
+  // gästen åker hem via 👥-knappen, som i spelet
+  await guest.evaluate(() => window.SF.openFriends());
+  await guest.waitForTimeout(200);
+  await guest.click('.dlg-foot .btn-red'); // 🚗 Åk hem
+  let left = -1;
+  for (let i = 0; i < 24 && left !== 0; i++) {
+    await page.waitForTimeout(250);
+    left = await page.evaluate(() => window.SF.visitSession()?.folks.size ?? -1);
+  }
+  ok(left === 0, 'värden ser att gästen åkte hem');
+  ok(await guest.evaluate(() => window.SF.sceneName) === 'city', 'gästen är tillbaka i sin egen stad');
+  await ctx2.close();
+} else await ctx2.close();
+
 console.log(errors.length ? '\nKONSOLFEL:\n' + errors.join('\n') : '\nInga konsolfel.');
 ok(errors.length === 0, 'inga pageerror/console.error');
 await browser.close();

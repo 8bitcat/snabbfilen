@@ -48,12 +48,14 @@ och väljer vart man går. Första gången man spelar väljer man var man ska bo
 Rummet ritas efter bostadstyp — större bostad, finare rum. Bostaden ligger i
 spar-JSON:en så att en kompis hus kan ritas upp från ett litet objekt.
 
-## Besöka varandra (multiplayer, M5)
+## Besöka varandra (KLART 2026-09-27)
 
-Man ska kunna åka hem till varandra och besöka varandras hus. Motorns
-PeerJS/MQTT-delar (`net.js`/`coop.js` i Pixelverkstan) tas in när grunden står:
-rumskod som i Drömgården/Lantliv, kompisens avatar + bostad ritas från deras
-save-objekt. Därför hålls `{ avatar, home }` serialiserbart från dag ett.
+👥-knappen i HUD:en: värden bjuder hem med en 4-teckenskod (`js/net/visit.js`,
+PeerJS-moln, värd-auktoritativ stjärna precis som Drömgården/Lantliv, max 6
+gäster). Gästen kliver in i värdens rum — rätt bostadstyp och möbler ritas från
+värdens save — och alla ser varandra gå omkring med namnskyltar. Positioner
+skickas throttlat (90 ms). ÅK HEM-dörren eller 👥 → Åk hem avslutar; resan
+kostar 20 minuter åt varje håll.
 
 ## Jobben — minispels-kontraktet
 
@@ -88,8 +90,18 @@ klädkrav).
 
 ## Milstolpar
 
-1. **M1 — Skelett:** stadskarta + rummet + avatar går att klä. Klocka + dag/natt. Sova = ny dag.
-2. **M2 — Ekonomi:** mätthet/energi/pengar, matbutik, kylskåp, hyra.
-3. **M3 — Jobben:** flygplatsen först (enklaste mekaniken), sen fruktfabriken, sen klädaffären.
-4. **M4 — Progression:** befordran, klädupplåsning, möbler, mål ("bli miljonär"?).
-5. **M5 — Polish:** ljud, händelser, ev. co-op via PeerJS (motorn har stödet).
+1. ✅ **M1 — Skelett:** stadskarta + rummet + avatar går att klä. Klocka + dag/natt. Sova = ny dag.
+2. ✅ **M2 — Ekonomi:** mätthet/energi/pengar, matbutik, kylskåp, hyra.
+3. ✅ **M3 — Jobben:** flygplatsen, fruktfabriken, klädaffären. Befordran efter 3 pass.
+4. ✅ **M4 — Progression:** klädaffären säljer plagg som låses upp i garderoben (🔒 i
+   redigeraren tills köpta), Möbelhörnan (matta/växt/soffa/TV), slutmål: Villan +
+   10 000 kr → gratulationsdialog.
+5. ✅ **M5 — Ljud + besök:** WebAudio-synt utan ljudfiler (`core/sound.js`, mute i HUD),
+   besöka varandras hus via rumskod (se ovan).
+
+## Kvar / idéer framåt
+
+- Händelser (grannen knackar på, rea i klädaffären, extrapass med dubbel lön)
+- Fler jobb och nivåer på minispelen; highscore
+- Emotes/chatt under besök · besöka varandras stad, inte bara huset
+- Publicera på 8bitcat.github.io/snabbfilen (kräver kontobyte till 8bitcat)

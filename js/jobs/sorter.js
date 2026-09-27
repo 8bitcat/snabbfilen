@@ -3,6 +3,7 @@
 // inte väskan!) och klädaffärens plagg (rätt plagg på rätt hylla).
 import { SMALL, BIG, ctxText, textW, mix, css, hash } from '../core/floor-pix.js';
 import { SHIFT_SECONDS, drawShiftHud, drawTimeUp, makePops, abortShift } from './shift.js';
+import { play } from '../core/sound.js';
 
 const BELT_Y = 82;      // sakernas mittpunkt på bandet
 const BINS_Y = 148;     // ovanför = bandet, nedanför = korgarna
@@ -38,6 +39,7 @@ export function makeSorter(A, skin, { onDone }) {
         if (items[i].x < -24 && !items[i].held) {
           items.splice(i, 1);
           stats.miss++;
+          play('miss');
           pops.add(20, BELT_Y - 20, 'MISS!', '#d8d2c0');
         }
       }
@@ -63,8 +65,8 @@ export function makeSorter(A, skin, { onDone }) {
       if (y > BINS_Y - 8) {
         const bin = Math.max(0, Math.min(skin.bins.length - 1, (x / binW) | 0));
         items.splice(items.indexOf(held), 1);
-        if (bin === held.cat) { stats.ok++; pops.add(x, BINS_Y - 14, `+${skin.wage}`, '#8ee03c'); }
-        else { stats.fel++; pops.add(x, BINS_Y - 14, 'FEL!', '#ff6a6a'); }
+        if (bin === held.cat) { stats.ok++; play('ok'); pops.add(x, BINS_Y - 14, `+${skin.wage}`, '#8ee03c'); }
+        else { stats.fel++; play('fel'); pops.add(x, BINS_Y - 14, 'FEL!', '#ff6a6a'); }
       } else { held.y = BELT_Y; held.held = false; } // tillbaka på bandet
       held = null; hotBin = -1;
     },

@@ -5,6 +5,7 @@ import { drawPerson, makeLook } from '../core/people.js';
 import { avatarTagColors } from '../core/avatar.js';
 import { SMALL, ctxText, textW, mix, css, hash } from '../core/floor-pix.js';
 import { toast } from '../core/ui.js';
+import { play } from '../core/sound.js';
 
 const WALK_SEQ = [1, 3, 2, 3];
 const WALK_MIN = 20; // minuter det kostar att gå in någonstans
@@ -57,9 +58,11 @@ export function makeCity(A) {
     g.passTime(WALK_MIN);
     g.save();
     if (g.collapsed) return; // midnatt: main tar hand om det
+    play('door');
     if (spot.id === 'hem') A.go('room');
     else if (spot.id === 'bostad') A.openHousing();
     else if (spot.id === 'mat') A.openFoodShop();
+    else if (spot.id === 'klader') A.openKladaffar();
     else A.startJob(spot.id);
   }
 

@@ -1,6 +1,7 @@
 // Speltillståndet för Snabbfilen: klockan, behoven, pengarna, kylskåpet, jobben
 // och bostaden. Ingen rendering här – scenerna läser och kommandona ändrar.
 import { toast } from './core/ui.js';
+import { play } from './core/sound.js';
 
 export const SAVE_KEY = 'snabbfilen_save1';
 export const DAY_NAMES = ['Måndag', 'Tisdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lördag', 'Söndag'];
@@ -27,6 +28,35 @@ export const JOB_TITLES = ['Nybörjare', 'Van', 'Proffs', 'Mästare', 'Legendar'
 export const levelOf = (shifts) => Math.min(5, 1 + Math.floor(shifts / 3));
 export const payMult = (level) => 1 + 0.15 * (level - 1);
 
+// Klädaffärens sortiment: plagg som låses upp i garderoben när man köpt dem.
+// kind/v matchar look-fälten i people.js. Kronan är stadens dyraste statuspryl.
+export const SORTIMENT = [
+  { kind: 'top', v: 'hoodie', icon: '🧥', name: 'Huvtröja', price: 250 },
+  { kind: 'top', v: 'sweater', icon: '🧶', name: 'Stickad tröja', price: 300 },
+  { kind: 'top', v: 'shirt', icon: '👔', name: 'Skjorta', price: 400 },
+  { kind: 'top', v: 'jacket', icon: '🧥', name: 'Jacka', price: 450 },
+  { kind: 'bottom', v: 'dress', icon: '👗', name: 'Klänning', price: 380 },
+  { kind: 'hat', v: 'headband', icon: '🎀', name: 'Hårband', price: 120 },
+  { kind: 'hat', v: 'beanie', icon: '🧢', name: 'Mössa', price: 150 },
+  { kind: 'hat', v: 'bow', icon: '🎀', name: 'Rosett', price: 180 },
+  { kind: 'glasses', v: 'sun', icon: '🕶️', name: 'Solglasögon', price: 220 },
+  { kind: 'bag', v: 'backpack', icon: '🎒', name: 'Ryggsäck', price: 350 },
+  { kind: 'bag', v: 'shoulder', icon: '👜', name: 'Axelväska', price: 420 },
+  { kind: 'hat', v: 'crown', icon: '👑', name: 'Krona', price: 2500 },
+];
+export const clothesKey = (kind, v) => `${kind}:${v}`;
+
+// Möbler till hemmet (köps hos Bostadsbyrån). I Villan ingår soffa/växt/TV redan.
+export const FURNITURE = [
+  { id: 'matta', icon: '🟥', name: 'Trasmatta', price: 250, desc: 'Mysigare golv direkt.' },
+  { id: 'vaxt', icon: '🪴', name: 'Krukväxt', price: 350, desc: 'Lite liv i hörnet.' },
+  { id: 'soffa', icon: '🛋️', name: 'Soffa', price: 800, desc: 'För sköna kvällar.' },
+  { id: 'tv', icon: '📺', name: 'TV', price: 1200, desc: 'Kvällsunderhållning.' },
+];
+
+// Slutmålet: äg Villan med rejält på fickan.
+export const WIN_MONEY = 10000;
+
 // Bostäderna: större bostad = insats + högre hyra men bättre sömn.
 export const HOMES = [
   { id: 'rum', icon: '🛏️', name: 'Lilla rummet', deposit: 0, rent: 350, restBonus: 0, desc: 'En säng, ett kylskåp och en garderob. Men det är ditt.' },
@@ -48,7 +78,10 @@ export class Game {
     this.home = 'rum';
     this.fridge = { nudlar: 1 };          // itemId -> antal
     this.jobs = { flygplats: 0, frukt: 0, klader: 0 }; // antal jobbade pass
-    this.earned = 0;                      // totalt intjänat (för slutmål senare)
+    this.earned = 0;                      // totalt intjänat
+    this.wardrobe = [];                   // upplåsta plagg, "kind:v"
+    this.furniture = [];                  // köpta möbler, id
+    this.won = false;                     // slutmålet nått
     this.collapsed = false;               // somnade utmattad i natt (sätts av passTime)
   }
 
@@ -70,6 +103,9 @@ export class Game {
         g.fridge = {}; for (const [k, v] of Object.entries(p.fridge || {})) if (foodOf(k) && v > 0) g.fridge[k] = Math.min(20, v | 0);
         for (const k of Object.keys(g.jobs)) g.jobs[k] = Math.max(0, p.jobs?.[k] | 0);
         g.earned = Math.max(0, +p.earned || 0);
+        g.wardrobe = (Array.isArray(p.wardrobe) ? p.wardrobe : []).filter((k) => SORTIMENT.some((s) => clothesKey(s.kind, s.v) === k));
+        g.furniture = (Array.isArray(p.furniture) ? p.furniture : []).filter((id) => FURNITURE.some((f) => f.id === id));
+        g.won = !!p.won;
       }
     } catch { /* trasig – börja om */ }
     return g;
@@ -146,8 +182,33 @@ export class Game {
     this.passTime(4 * 60);
     this.save();
     const after = levelOf(this.jobs[jobId]);
-    if (after > before) toast(`⭐ Befordran på ${JOBS[jobId].name}! Du är nu ${JOB_TITLES[after - 1]}.`, 'good');
+    if (after > before) { play('fanfare'); toast(`⭐ Befordran på ${JOBS[jobId].name}! Du är nu ${JOB_TITLES[after - 1]}.`, 'good'); }
     return { finalPay, starving, promoted: after > before };
+  }
+
+  // ---------- kläder & möbler ----------
+  // Låst = finns i sortimentet men är inte köpt. Allt annat är gratis från start.
+  clothesLocked(kind, v) {
+    const s = SORTIMENT.find((s) => s.kind === kind && s.v === v);
+    return s && !this.wardrobe.includes(clothesKey(kind, v)) ? s : null;
+  }
+  buyClothes(kind, v) {
+    const s = this.clothesLocked(kind, v);
+    if (!s) return { ok: false, msg: 'Den har du redan!' };
+    if (this.money < s.price) return { ok: false, msg: 'Du har inte råd!' };
+    this.money -= s.price;
+    this.wardrobe.push(clothesKey(kind, v));
+    this.save();
+    return { ok: true, item: s };
+  }
+  buyFurniture(id) {
+    const f = FURNITURE.find((f) => f.id === id);
+    if (!f || this.furniture.includes(id)) return { ok: false, msg: 'Den har du redan!' };
+    if (this.money < f.price) return { ok: false, msg: 'Du har inte råd!' };
+    this.money -= f.price;
+    this.furniture.push(id);
+    this.save();
+    return { ok: true, item: f };
   }
 
   // ---------- bostad ----------

@@ -3,6 +3,7 @@
 // låda ger bonus och en ny order.
 import { SMALL, BIG, ctxText, textW, mix, css, hash } from '../core/floor-pix.js';
 import { SHIFT_SECONDS, drawShiftHud, drawTimeUp, makePops, abortShift } from './shift.js';
+import { play } from '../core/sound.js';
 
 const BELT_Y = 88;
 const BOX = { x: 150, y: 156, w: 84, h: 42 };
@@ -90,11 +91,13 @@ export function makePacker(A, { onDone }) {
         if (order.need.every((n) => n.got >= n.n)) {
           stats.boxes++;
           boxFlash = 0.8;
+          play('box');
           pops.add(BOX.x + BOX.w / 2, BOX.y - 12, 'LÅDA KLAR! +20', '#ffd23f');
           order = newOrder(seq++);
-        }
+        } else play('ok');
       } else {
         stats.fel++;
+        play('fel');
         pops.add(best.x, best.y - 14, 'FEL!', '#ff6a6a');
       }
     },
