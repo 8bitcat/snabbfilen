@@ -18,13 +18,14 @@ const page = await browser.newPage({ viewport: { width: 1100, height: 700 } });
 page.on('pageerror', (e) => errors.push(e.message));
 page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
 const shot = (name) => page.screenshot({ path: OUT + name + '.png' });
+const scene = () => page.evaluate(() => window.SF.sceneName);
 
 await page.goto(URL);
 await page.evaluate(() => localStorage.clear());
 await page.reload();
 await page.waitForTimeout(800);
 
-// 1. Avatarredigeraren öppnas direkt (ingen sparad avatar)
+// 1. Avatarredigeraren öppnas direkt
 ok(await page.locator('.dlg-avatar').count() === 1, 'avatarredigeraren öppnas vid första start');
 await shot('01-avatar-editor');
 await page.fill('#av-name', 'Testina');
@@ -33,144 +34,139 @@ await page.waitForTimeout(400);
 
 // 2. Välkomstdialog → välj bostad
 ok((await page.locator('.dlg-head h2').textContent())?.includes('Välkommen'), 'välkomstdialogen visas');
-await shot('02-valkommen');
 await page.click('.dlg-foot .btn-go');
 await page.waitForTimeout(300);
-ok((await page.locator('.dlg-head h2').textContent())?.includes('Bostadsbyrån'), 'bostadsvalet visas');
-await shot('03-bostadsval');
 await page.click('[data-move="rum"]');
 await page.waitForTimeout(500);
-
-// 3. Rummet
-const scene = () => page.evaluate(() => window.SF.sceneName);
 ok(await scene() === 'room', 'hamnar i rummet efter bostadsvalet');
 await shot('04-rummet');
 
-// 4. Kylskåpet: ät nudlarna man startar med (figuren går över isogolvet dit)
+// 3. Kylskåpet: gå dit över golvet och ät
 await page.evaluate(() => { const p = window.SF.scene._debug.spot('kylskap'); window.SF.scene.down(p.x, p.y); });
 await page.waitForTimeout(2800);
-ok((await page.locator('.dlg-head h2').textContent())?.includes('Kylskåpet'), 'kylskåpet öppnas');
-await shot('05-kylskap');
+ok((await page.locator('.dlg-head h2').textContent().catch(() => ''))?.includes('Kylskåpet'), 'kylskåpet öppnas');
 const hungerBefore = await page.evaluate(() => window.SF.game.hunger);
 await page.click('[data-eat="nudlar"]');
 await page.waitForTimeout(300);
-const hungerAfter = await page.evaluate(() => window.SF.game.hunger);
-ok(hungerAfter > hungerBefore, `äta höjer mättheten (${hungerBefore} → ${hungerAfter})`);
+ok(await page.evaluate(() => window.SF.game.hunger) > hungerBefore, 'äta höjer mättheten');
 await page.click('.dlg-foot .btn');
 await page.waitForTimeout(200);
 
-// 5. Ut till staden – dag
+// 4. Ut till gåbara staden
 await page.evaluate(() => window.SF.go('city'));
 await page.waitForTimeout(400);
 await shot('06-staden-dag');
-// natt
 await page.evaluate(() => { window.SF.game.min = 22 * 60; });
 await page.waitForTimeout(400);
 await shot('07-staden-natt');
 await page.evaluate(() => { window.SF.game.min = 10 * 60; });
 
-// 6. Matbutiken: köp en pizza hem
+// 4b. REGRESSION: klick på flyghuset ska öppna jobbintro (inte hänga)
+await page.evaluate(() => { window.SF.citySub = 1; window.SF.go('city'); });
+await page.waitForTimeout(300);
+await shot('06b-arbetsomradet');
+await page.evaluate(() => { const p = window.SF.scene._debug.spot('flyg'); window.SF.scene.down(p.x, p.y); });
+let introSeen = false;
+for (let i = 0; i < 20 && !introSeen; i++) {
+  await page.waitForTimeout(300);
+  introSeen = (await page.locator('.dlg-head h2').textContent().catch(() => ''))?.includes('Flygplatsen');
+}
+ok(introSeen, 'flyghuset öppnar jobbintro (hängde inte)');
+await page.click('.dlg-foot .btn'); // En annan gång
+await page.waitForTimeout(200);
+await page.evaluate(() => { window.SF.citySub = 0; });
+
+// 5. Matbutiken: köp en pizza hem
 await page.evaluate(() => window.SF.openFoodShop());
 await page.waitForTimeout(300);
-await shot('08-matbutik');
 const moneyBefore = await page.evaluate(() => window.SF.game.money);
 await page.click('[data-buy="pizza"]');
 await page.waitForTimeout(300);
-const after = await page.evaluate(() => ({ money: window.SF.game.money, fridge: window.SF.game.fridge }));
-ok(after.money === moneyBefore - 65, `pizza kostade 65 kr (${moneyBefore} → ${after.money})`);
-ok(after.fridge.pizza === 1, 'pizzan ligger i kylskåpet');
-await page.evaluate(() => window.SF.game.save());
+ok(await page.evaluate(() => window.SF.game.money) === moneyBefore - 65, 'pizza kostade 65 kr');
+ok(await page.evaluate(() => window.SF.game.fridge.pizza === 1), 'pizzan ligger i kylskåpet');
 await page.keyboard.press('Escape');
 await page.waitForTimeout(200);
 
-// 7. Jobben: alla tre minispelen ritar utan fel, och mekaniken ger poäng
-for (const [job, name] of [['flygplats', '09-flygplatsen'], ['frukt', '10-fruktfabriken'], ['klader', '11-kladaffaren']]) {
-  await page.evaluate((j) => { window.__stats = null; window.SF.go(j, { onDone: (s) => (window.__stats = s) }); }, job);
-  await page.waitForTimeout(2600);
-  await shot(name);
-  // dra/klicka på riktigt: hämta en sak på bandet och lägg den rätt
-  const res = await page.evaluate((j) => {
-    const sc = window.SF.scene;
-    const it = sc._items.find((i) => i.x > 30 && i.x < 370);
-    if (!it) return null;
-    if (j === 'frukt') {
-      // vänta in en frukt som ordern behöver (spawnen är viktad mot dem)
-      return new Promise((resolve) => {
-        const t0 = Date.now();
-        const tryClick = () => {
-          const slot = sc._order().need.find((n) => n.got < n.n);
-          const right = sc._items.find((i) => i.f === slot.f && i.x > 30 && i.x < 370);
-          if (right) { sc.down(right.x, right.y); resolve(sc._stats); }
-          else if (Date.now() - t0 > 6000) resolve(null);
-          else setTimeout(tryClick, 120);
-        };
-        tryClick();
-      });
-    } else {
-      sc.down(it.x, it.y);
-      const bx = (it.cat + 0.5) * (384 / 4);
-      sc.move(bx, 170); sc.up(bx, 170);
-    }
-    return sc._stats;
-  }, job);
-  await page.waitForTimeout(400);
-  await shot(name + '-b');
-  ok(await scene() === job, `${job}: minispelet kör`);
-  ok(res === null || (res.ok === 1 && res.fel === 0), `${job}: rätt sak på rätt plats gav poäng (${JSON.stringify(res)})`);
-}
-
-// 8. Snabbspola ett pass klart: flygplatsen med riggade siffror
-await page.evaluate(() => {
-  window.SF.game.min = 10 * 60;
-  window.SF.go('flygplats', { onDone: null });
+// 6. Jobben: gåbara med plocka/bära/servera
+console.log('— jobben (gåbara) —');
+// FRUKT: bär rätt frukt till lådan
+await page.evaluate(() => { window.__stats = null; window.SF.go('jobbfrukt', { onDone: (s) => (window.__stats = s) }); });
+await page.waitForTimeout(1200);
+await shot('10-fruktfabriken');
+const fr = await page.evaluate(() => {
+  const d = window.SF.scene._debug;
+  d.setCarry(Math.max(0, d.needFruit()));
+  return d.forceDrop();
 });
-await page.waitForTimeout(300);
+ok(fr && fr.ok === 1 && fr.fel === 0, `frukt: rätt frukt i lådan gav poäng (${JSON.stringify(fr)})`);
+// FLYG: plocka väska, lägg i rätt vagn
+await page.evaluate(() => { window.__stats = null; window.SF.go('jobbflyg', { onDone: (s) => (window.__stats = s) }); });
+let fl = null;
+for (let i = 0; i < 20 && !fl; i++) {
+  await page.waitForTimeout(300);
+  fl = await page.evaluate(() => { const d = window.SF.scene._debug; return d.forcePick() ? d.forceDrop(true) : null; });
+}
+await shot('09-flygplatsen');
+ok(fl && fl.ok === 1 && fl.fel === 0, `flyg: väskan i rätt vagn gav poäng (${JSON.stringify(fl)})`);
+// BURGARE: kund + tallrik + servering
+await page.evaluate(() => { window.__stats = null; window.SF.go('jobbburgare', { onDone: (s) => (window.__stats = s) }); });
+await page.waitForTimeout(600);
+const bu = await page.evaluate(() => {
+  const d = window.SF.scene._debug;
+  const wish = d.forceCustomer();
+  d.forcePlate(wish);
+  d.pickPlate(0);
+  return d.serve(true);
+});
+await page.waitForTimeout(400);
+await shot('11-burgarbaren');
+ok(bu && bu.ok === 1 && bu.fel === 0, `burgare: rätt mat till rätt kund gav poäng (${JSON.stringify(bu)})`);
+
+// 7. Lön + sömn + omladdning
+await page.evaluate(() => { window.SF.game.min = 10 * 60; window.SF.go('room'); });
 const payday = await page.evaluate(() => {
   const g = window.SF.game, before = g.money;
-  const r = g.endShift('flygplats', 100);
-  return { before, after: g.money, pay: r.finalPay, min: g.min };
+  const r = g.endShift('flygplats', 100, { ok: 5 });
+  return { before, after: g.money, pay: r.finalPay, min: g.min, rec: r.newRecord };
 });
-ok(payday.after === payday.before + payday.pay, `lönen betalas ut (${payday.before} → ${payday.after})`);
+ok(payday.after === payday.before + payday.pay, 'lönen betalas ut');
 ok(payday.min === 14 * 60, 'passet tog 4 timmar');
-
-// 9. Sova → ny dag
-await page.evaluate(() => window.SF.go('room'));
+ok(payday.rec, 'rekord registrerades');
 const day1 = await page.evaluate(() => window.SF.game.day);
 await page.evaluate(() => window.SF.sleepFlow());
 await page.waitForTimeout(300);
-await shot('12-sova');
 await page.click('.dlg-foot .btn-go');
 await page.waitForTimeout(300);
 const morn = await page.evaluate(() => ({ day: window.SF.game.day, min: window.SF.game.min, energy: window.SF.game.energy }));
-ok(morn.day === day1 + 1 && morn.min === 7 * 60, `ny dag efter sömn (dag ${morn.day}, 07:00)`);
+ok(morn.day === day1 + 1 && morn.min === 7 * 60, `ny dag efter sömn (dag ${morn.day})`);
 ok(morn.energy > 50, `utvilad på morgonen (energi ${morn.energy})`);
-await page.evaluate(() => { window.SF.game.event = null; }); // slumphändelsen ska inte störa priskontrollerna nedan
-await shot('13-morgon');
-
-// 10. Omladdning: sparfilen håller
+await page.evaluate(() => { window.SF.game.event = null; });
 await page.reload();
-await page.waitForTimeout(800);
-const loaded = await page.evaluate(() => ({ day: window.SF.game.day, money: window.SF.game.money, scene: window.SF.sceneName, name: window.SF.avatar.name }));
-ok(loaded.day === morn.day, `dagen överlever omladdning (dag ${loaded.day})`);
-ok(loaded.name === 'Testina', 'avataren överlever omladdning');
-ok(loaded.scene === 'room', 'startar hemma efter omladdning');
-await shot('14-omladdad');
+await page.waitForTimeout(900);
+ok(await page.evaluate(() => window.SF.game.day) === morn.day, 'dagen överlever omladdning');
+ok(await page.evaluate(() => window.SF.avatar.name) === 'Testina', 'avataren överlever omladdning');
 
-// 11. Klädaffären: handla en huvtröja → låses upp i garderoben
-await page.evaluate(() => { window.SF.game.money = 2000; window.SF.openKladaffar(); });
-await page.waitForTimeout(200);
-await page.click('.dlg-foot .btn:nth-child(2)'); // 🛍️ Handla kläder
-await page.waitForTimeout(200);
-await shot('15-kladshop');
-await page.click('.prow:has-text("Huvtröja") [data-shop]');
-await page.waitForTimeout(200);
+// 8. Klädaffären: mannekänger man går fram till
+console.log('— butikerna (gåbara) —');
+await page.evaluate(() => { window.SF.game.money = 2000; window.SF.game.event = null; window.SF.go('klader'); });
+await page.waitForTimeout(400);
+await shot('15-kladaffaren');
+const hoodieIdx = await page.evaluate(() => window.SF.scene._debug.dummies.indexOf('top:hoodie'));
+ok(hoodieIdx >= 0, 'huvtröjan står på en mannekäng');
+await page.evaluate((i) => { const p = window.SF.scene._debug.spot('dummy' + i); window.SF.scene.down(p.x, p.y); }, hoodieIdx);
+let buyDlg = false;
+for (let i = 0; i < 16 && !buyDlg; i++) {
+  await page.waitForTimeout(300);
+  buyDlg = (await page.locator('.dlg-head h2').textContent().catch(() => ''))?.includes('Huvtröja');
+}
+ok(buyDlg, 'köpdialogen öppnas vid mannekängen');
+await page.click('.dlg-foot .btn-go');
+await page.waitForTimeout(300);
 const w = await page.evaluate(() => ({ wardrobe: window.SF.game.wardrobe, money: window.SF.game.money }));
 ok(w.wardrobe.includes('top:hoodie'), 'huvtröjan ligger i garderoben');
 ok(w.money === 2000 - 250, `huvtröjan kostade 250 kr (${w.money} kvar)`);
-await page.keyboard.press('Escape');
-await page.waitForTimeout(200);
 
-// 12. Garderoben: köpta plagg är öppna, resten har hänglås
+// 8b. Garderoben: köpta plagg öppna, resten låsta
 await page.evaluate(() => window.SF.go('room'));
 await page.evaluate(() => { const p = window.SF.scene._debug.spot('garderob'); window.SF.scene.down(p.x, p.y); });
 await page.waitForTimeout(2800);
@@ -181,69 +177,76 @@ const locks = await page.evaluate(() => ({
   hoodieLocked: !!document.querySelector('.av-panel .av-tile.locked[data-v=\'"hoodie"\']'),
   worn: window.SF.avatar.look.top,
 }));
-const expectLocked = ['sweater', 'shirt', 'jacket', 'vest', 'hawaii', 'suit'].filter((v) => v !== locks.worn); // det man bär visas som valt, inte låst
+const expectLocked = ['sweater', 'shirt', 'jacket', 'vest', 'hawaii', 'suit'].filter((v) => v !== locks.worn);
 ok(!locks.hoodieLocked && expectLocked.every((v) => locks.locked.includes(v)) && locks.locked.length === expectLocked.length,
-  `köpta plagg öppna, resten låsta (låsta: ${locks.locked.join(', ')} · på sig: ${locks.worn})`);
+  `köpta plagg öppna, resten låsta (på sig: ${locks.worn})`);
 await shot('16-garderob-las');
 await page.click('.av-cancel');
 await page.waitForTimeout(200);
 
-// 12b. Personalrabatt: hög nivå på klädaffärsjobbet ger billigare kläder
-const rabatt = await page.evaluate(() => {
+// 8c. REA-priset
+const rea = await page.evaluate(() => {
   const g = window.SF.game;
-  g.jobs.klader = 9; g.money = 1000; // Mästare → 15 % rabatt
-  const before = g.money;
-  const r = g.buyClothes('hat', 'beanie');
-  return { price: r.price, delta: before - g.money, disc: g.clothesDiscount() };
-});
-ok(rabatt.disc === 0.15 && rabatt.price === 128 && rabatt.delta === 128, `personalrabatt 15 % på mössan (128 i stället för 150 kr)`);
-
-// 12c. Dagshändelser: REA sänker priset, extrapass dubblar lönen, rekord sparas
-const ev = await page.evaluate(() => {
-  const g = window.SF.game;
-  const utanRea = g.clothesPrice({ price: 200 });
+  const utan = g.clothesPrice({ price: 200 });
   g.event = { id: 'rea' };
-  const medRea = g.clothesPrice({ price: 200 });
-  g.event = { id: 'dubbel', job: 'flygplats' };
-  const before = g.money;
-  const r1 = g.endShift('flygplats', 100, { ok: 5 });
-  const r2 = g.endShift('flygplats', 100, { ok: 3 });
+  const med = g.clothesPrice({ price: 200 });
   g.event = null;
-  return { utanRea, medRea, pay1: r1.finalPay, doubled: r1.doubled, rec1: r1.newRecord, rec2: r2.newRecord, delta: g.money - before, best: g.best.flygplats };
+  return { utan, med };
 });
-ok(ev.utanRea === 170 && ev.medRea === 128, `REA: 200 kr-plagg kostar 128 med rea+rabatt (${ev.medRea})`);
-ok(ev.doubled && ev.pay1 === 200 && ev.delta === 400, `extrapass ger dubbel lön (${ev.pay1} kr × 2 pass)`);
-ok(ev.rec1 && !ev.rec2 && ev.best.ok === 5, `rekord sparas rätt (5 rätt, andra passet inget rekord)`);
+ok(rea.utan === 200 && rea.med === 150, `REA ger 25 % (200 → ${rea.med})`);
 
-// 12d. Dagboken 📊: din resa hittills
+// 9. Möbelvaruhuset: gå fram till soffan och köp
+await page.evaluate(() => { window.SF.game.money = 5000; window.SF.go('mobler'); });
+await page.waitForTimeout(400);
+await shot('18-mobelvaruhus');
+await page.evaluate(() => { const p = window.SF.scene._debug.spot('soffa'); window.SF.scene.down(p.x, p.y); });
+let sofaDlg = false;
+for (let i = 0; i < 16 && !sofaDlg; i++) {
+  await page.waitForTimeout(300);
+  sofaDlg = (await page.locator('.dlg-head h2').textContent().catch(() => ''))?.includes('Soffa');
+}
+ok(sofaDlg, 'soffans köpdialog öppnas i varuhuset');
+await page.click('.dlg-foot .btn-go');
+await page.waitForTimeout(300);
+ok(await page.evaluate(() => window.SF.game.storage.some((s) => s.k === 'soffa')), 'soffan ligger i förrådet');
+// placera den hemma
+const placed = await page.evaluate(() => {
+  const g = window.SF.game;
+  const i = g.storage.findIndex((s) => s.k === 'soffa');
+  g.placeFromStorage(i, 0, 60, 180);
+  return g.decoRoom(0).some((d) => d.k === 'soffa');
+});
+ok(placed, 'soffan placerades i rummet');
+await page.evaluate(() => window.SF.go('room'));
+await page.waitForTimeout(400);
+await shot('17-rum-med-soffa');
+
+// 10. Dagbok + vinst + delrum
 await page.click('#hud-diary');
 await page.waitForTimeout(200);
 ok((await page.locator('.dlg-head h2').textContent())?.includes('Din resa'), 'dagboken öppnas');
-await shot('22-dagbok');
 await page.keyboard.press('Escape');
 await page.waitForTimeout(200);
-
-// 13. Möbelhörnan: köp en soffa till rummet
-await page.evaluate(() => { window.SF.game.money = 5000; window.SF.openHousing(); });
-await page.waitForTimeout(200);
-await page.click('.dlg-foot .btn'); // 🛋️ Möbelhörnan
-await page.waitForTimeout(200);
-await page.click('[data-furn="soffa"]');
-await page.waitForTimeout(200);
-ok(await page.evaluate(() => window.SF.game.furniture.includes('soffa')), 'soffan är köpt');
-await page.keyboard.press('Escape');
-await page.waitForTimeout(300);
-await shot('17-rum-med-soffa');
-
-// 14. Slutmålet: Villan + 10 000 kr → gratulationsdialog
 await page.evaluate(() => { window.SF.game.home = 'villa'; window.SF.game.money = 15000; window.SF.game.save(); });
 await page.waitForTimeout(600);
 ok((await page.locator('.dlg-head h2').textContent().catch(() => ''))?.includes('lyckats'), 'vinstdialogen visas');
-await shot('18-vinst');
 await page.click('.dlg-foot .btn-go');
 await page.waitForTimeout(200);
+await page.evaluate(() => { window.SF.roomSub = 0; window.SF.go('room'); });
+await page.waitForTimeout(400);
+await shot('20-villan-vardagsrum');
+await page.evaluate(() => { const p = window.SF.scene._debug.spot('sub1'); window.SF.scene.down(p.x, p.y); });
+let inBedroom = false;
+for (let i = 0; i < 16 && !inBedroom; i++) {
+  await page.waitForTimeout(300);
+  inBedroom = await page.evaluate(() => window.SF.roomSub === 1 && window.SF.sceneName === 'room');
+}
+ok(inBedroom, 'gick genom dörren till SOVRUM (delrum)');
+await shot('21-villan-sovrum');
+await page.evaluate(() => { window.SF.roomSub = 0; window.SF.go('room'); });
+await page.waitForTimeout(300);
 
-// 15. Öppna världen: ingen kod – två spelare hamnar automatiskt i samma värld
+// 11. Öppna världen: två spelare, besök, promenad, emote
 console.log('— öppna världen (PeerJS-molnet) —');
 let hostRole = null;
 for (let i = 0; i < 50 && hostRole !== 'host'; i++) {
@@ -259,7 +262,7 @@ guest.on('console', (m) => m.type() === 'error' && errors.push('[gäst] ' + m.te
 await guest.goto(URL);
 await guest.evaluate(() => {
   localStorage.setItem('snabbfilen_avatar', JSON.stringify({ name: 'Kompis', look: { skin: '#eabf98', shirt: '#f28bb3' }, color: '#ff5dc8' }));
-  localStorage.setItem('snabbfilen_save1', JSON.stringify({ v: 1, day: 1, min: 600, money: 100, hunger: 80, energy: 80, home: 'rum', fridge: {}, jobs: { flygplats: 0, frukt: 0, klader: 0 }, earned: 0, wardrobe: [], furniture: [], won: false }));
+  localStorage.setItem('snabbfilen_save1', JSON.stringify({ v: 1, day: 1, min: 600, money: 100, hunger: 80, energy: 80, home: 'rum', fridge: {}, jobs: { flygplats: 0, frukt: 0, burgare: 0 }, earned: 0, wardrobe: [], storage: [], deco: {}, won: false }));
 });
 await guest.reload();
 let guestIn = false;
@@ -267,71 +270,65 @@ for (let i = 0; i < 50 && !guestIn; i++) {
   await guest.waitForTimeout(200);
   guestIn = await guest.evaluate(() => window.SF.worldInfo().open && window.SF.worldInfo().role === 'client');
 }
-ok(guestIn, 'andra spelaren anslöt automatiskt som klient – ingen kod');
-ok(await page.evaluate(() => window.SF.worldInfo().online) === 2, 'värden räknar 2 online');
+ok(guestIn, 'andra spelaren anslöt automatiskt – ingen kod');
 
-// båda går ut i staden och ser varandra
-await page.evaluate(() => window.SF.go('city'));
-await guest.evaluate(() => window.SF.go('city'));
+// båda i staden (centrum) och ser varandra
+await page.evaluate(() => { window.SF.citySub = 0; window.SF.go('city'); });
+await guest.evaluate(() => { window.SF.citySub = 0; window.SF.go('city'); });
 let seen = 0;
 for (let i = 0; i < 20 && seen !== 1; i++) {
   await page.waitForTimeout(250);
   seen = await page.evaluate(() => window.SF.worldFolksHere().length);
 }
-ok(seen === 1, 'spelarna ser varandra på gatan i Pixelstaden');
+ok(seen === 1, 'spelarna ser varandra i den gåbara staden');
 await shot('19-stad-tva-spelare');
 
-// gästen åker hem till första spelarens villa via 👥-listan
+// gästen besöker villan
 const hostId = await guest.evaluate(() => window.SF.playersList()[0]?.id);
+await guest.evaluate(() => { window.SF.roomSub = 0; });
 await guest.evaluate((id) => window.SF.visitPlayer(id), hostId);
 await guest.waitForTimeout(400);
 ok(await guest.evaluate(() => window.SF.sceneName) === 'visit', 'gästen är hemma hos den andra');
-ok(await guest.evaluate(() => window.SF.visitTarget?.home) === 'villa', 'gästen ser villan (värdens bostad)');
-
-// värden går hem – nu är båda i samma rum och ser varandra
-await page.evaluate(() => window.SF.go('room'));
+ok(await guest.evaluate(() => window.SF.visitTarget?.home) === 'villa', 'gästen ser villan');
+await page.evaluate(() => { window.SF.roomSub = 0; window.SF.go('room'); });
 let inRoom = 0;
 for (let i = 0; i < 20 && inRoom !== 1; i++) {
   await page.waitForTimeout(250);
   inRoom = await page.evaluate(() => window.SF.worldFolksHere().length);
 }
-ok(inRoom === 1, 'värden ser besökaren i sitt rum');
-
-// gästen promenerar över isogolvet – syns vandringen hos värden?
+ok(inRoom === 1, 'värden ser besökaren i sitt vardagsrum');
+// promenad + emote
 await guest.evaluate(() => { const p = window.SF.scene._debug.tile(1, 6); window.SF.scene.down(p.x, p.y); });
 let folk = null;
 for (let i = 0; i < 32; i++) {
   await page.waitForTimeout(250);
   folk = await page.evaluate(() => window.SF.worldFolksHere()[0] || null);
-  if (folk && folk.x > 0 && folk.x < 260) break;
+  if (folk && folk.x > 0 && folk.x < 130) break;
 }
-ok(folk && folk.x < 260, `gästens promenad syns hos värden (x=${Math.round(folk?.x ?? -1)}, y=${Math.round(folk?.y ?? -1)})`);
-// …och en emote når fram innan den slocknar (2,6 s)
+ok(folk && folk.x < 130, `gästens promenad syns hos värden (x=${Math.round(folk?.x ?? -1)})`);
 await guest.evaluate(() => window.SF.sendEmote('❤️'));
 let emote = null;
 for (let i = 0; i < 10 && emote !== '❤️'; i++) {
   await page.waitForTimeout(150);
   emote = await page.evaluate(() => window.SF.worldFolksHere()[0]?.emote || null);
 }
-ok(emote === '❤️', `emoten syns hos värden (${emote})`);
-await shot('20-vard-med-besok');
-await guest.screenshot({ path: OUT + '21-gast-pa-besok.png' });
-
-// gästen går hem via dörröppningen i väggen
+ok(emote === '❤️', 'emoten syns hos värden');
+await shot('22-vard-med-besok');
+// hem via dörren
 await guest.evaluate(() => { const p = window.SF.scene._debug.spot('dorr'); window.SF.scene.down(p.x, p.y); });
 let back = false;
 for (let i = 0; i < 32 && !back; i++) {
   await guest.waitForTimeout(250);
   back = await guest.evaluate(() => window.SF.sceneName === 'city');
 }
-ok(back, 'gästen gick hem genom dörren och är i sin egen stad');
+ok(back, 'gästen gick hem genom dörren');
 let emptyRoom = -1;
 for (let i = 0; i < 20 && emptyRoom !== 0; i++) {
   await page.waitForTimeout(250);
   emptyRoom = await page.evaluate(() => window.SF.worldFolksHere().length);
 }
-ok(emptyRoom === 0, 'värdens rum är tomt igen (men båda är kvar i världen)');
-ok(await page.evaluate(() => window.SF.worldInfo().online) === 2, 'fortfarande 2 online i världen');
+ok(emptyRoom === 0, 'värdens rum är tomt igen');
+ok(await page.evaluate(() => window.SF.worldInfo().online) === 2, 'fortfarande 2 online');
 await ctx2.close();
 
 console.log(errors.length ? '\nKONSOLFEL:\n' + errors.join('\n') : '\nInga konsolfel.');

@@ -2,15 +2,17 @@
 // scener för staden/rummet/jobben, DOM-HUD överst och en vanlig rAF-loop.
 import { loadAvatar, openAvatarPicker, avatarPortrait, setAvatarLocks } from './core/avatar.js';
 import { openModal, closeModal, toast, modalOpen, esc } from './core/ui.js';
-import { Game, SAVE_KEY, WIN_MONEY, JOBS, JOB_TITLES, SORTIMENT, FURNITURE, levelOf, fmt, clock } from './game.js';
+import { Game, SAVE_KEY, WIN_MONEY, JOBS, JOB_TITLES, SORTIMENT, levelOf, fmt, clock } from './game.js';
 import { makeCity } from './scenes/city.js';
 import { makeRoom } from './scenes/room.js';
-import { makeSorter, SORTER_SKINS } from './jobs/sorter.js';
-import { makePacker } from './jobs/packer.js';
+import { makeShopMobler } from './scenes/shop-mobler.js';
+import { makeShopKlader } from './scenes/shop-klader.js';
+import { makeJobbFlyg } from './jobs/jobb-flyg.js';
+import { makeJobbFrukt } from './jobs/jobb-frukt.js';
+import { makeJobbBurgare } from './jobs/jobb-burgare.js';
 import { startJobFlow } from './jobs/shift.js';
 import { openFoodShop } from './shops/matbutik.js';
 import { openHousing } from './shops/bostad.js';
-import { openKladaffar } from './shops/kladaffar.js';
 import { startWorld, worldTick, worldInfo, playersList, visitPlayer, sendEmote, worldFolksHere } from './net/world.js';
 import { play, unlockAudio, toggleMute, isMuted } from './core/sound.js';
 
@@ -19,7 +21,8 @@ const cv = $('#scene'), ctx = cv.getContext('2d');
 
 // Appkontexten som alla scener får: tillstånd + navigering.
 const A = {
-  W: 768, H: 432,
+  W: 384, H: 216, pxs: 2, // spelets logiska rymd; pxs = device-pixlar per spelpixel (sätts i fit)
+  roomSub: 0,             // vilket delrum i bostaden man är i
   game: null, avatar: null,
   scene: null, sceneName: '',
   go(name, opts) {
@@ -30,7 +33,6 @@ const A = {
   },
   openFoodShop: () => openFoodShop(A),
   openHousing: (opts) => openHousing(A, opts),
-  openKladaffar: () => openKladaffar(A),
   openFriends: () => openWorldDialog(),
   startJob: (jobId) => startJobFlow(A, jobId, ENGINES[jobId]),
   // världen (även för tools/smoke.mjs)
@@ -46,28 +48,33 @@ const SCENES = {
   city: (a, o) => makeCity(a, o),
   room: (a, o) => makeRoom(a, o),
   visit: (a) => makeRoom(a, { visit: true }),
-  flygplats: (a, o) => makeSorter(a, SORTER_SKINS.flygplats, o),
-  klader: (a, o) => makeSorter(a, SORTER_SKINS.klader, o),
-  frukt: (a, o) => makePacker(a, o),
+  mobler: (a, o) => makeShopMobler(a, o),
+  klader: (a, o) => makeShopKlader(a, o),
+  jobbflyg: (a, o) => makeJobbFlyg(a, o),
+  jobbfrukt: (a, o) => makeJobbFrukt(a, o),
+  jobbburgare: (a, o) => makeJobbBurgare(a, o),
 };
-const ENGINES = { flygplats: 'flygplats', klader: 'klader', frukt: 'frukt' };
+const ENGINES = { flygplats: 'jobbflyg', frukt: 'jobbfrukt', burgare: 'jobbburgare' };
 
 // ---------- skala canvasen till fönstret ----------
+// Knivskarpt på alla skärmar: canvasen får exakt ett heltal device-pixlar per
+// spelpixel (384×216-rymden), oavsett fönsterstorlek och Windows-skalning.
 function fit() {
-  const w = window.innerWidth, h = window.innerHeight - $('#hud').offsetHeight;
-  let s = Math.min(w / A.W, h / A.H);
-  if (s >= 1) s = Math.floor(s * 2) / 2; // halva steg ger jämna pixlar
-  cv.style.width = A.W * s + 'px';
-  cv.style.height = A.H * s + 'px';
+  const dpr = window.devicePixelRatio || 1;
+  const w = window.innerWidth, h = window.innerHeight - $('#hud').offsetHeight - 4;
+  const s = Math.max(2, Math.floor(Math.min(w * dpr / A.W, h * dpr / A.H)));
+  A.pxs = s;
+  cv.width = A.W * s;
+  cv.height = A.H * s;
+  cv.style.width = (A.W * s / dpr) + 'px';
+  cv.style.height = (A.H * s / dpr) + 'px';
 }
 window.addEventListener('resize', fit);
 
 // ---------- pekare: mus + touch till logiska pixlar ----------
-// Scener med pxScale ritar i halva upplösningen (staden/jobben) – pekaren översätts
 function toLocal(e) {
   const r = cv.getBoundingClientRect();
-  const k = A.scene?.pxScale || 1;
-  return { x: (e.clientX - r.left) / r.width * A.W / k, y: (e.clientY - r.top) / r.height * A.H / k };
+  return { x: (e.clientX - r.left) / r.width * A.W, y: (e.clientY - r.top) / r.height * A.H };
 }
 cv.addEventListener('pointerdown', (e) => { if (modalOpen()) return; cv.setPointerCapture(e.pointerId); const p = toLocal(e); A.scene?.down?.(p.x, p.y); });
 cv.addEventListener('pointermove', (e) => { if (modalOpen()) return; const p = toLocal(e); A.scene?.move?.(p.x, p.y); });
@@ -84,6 +91,7 @@ function renderHud() {
   const online = worldInfo().online;
   const nearby = worldFolksHere(A).length;
   $('#emotes').classList.toggle('hidden', nearby === 0);
+  $('#decor-btn').classList.toggle('hidden', A.sceneName !== 'room');
   const key = `${g.day}|${Math.floor(g.min)}|${g.money}|${Math.round(g.hunger)}|${Math.round(g.energy)}|${A.avatar?.name}|${online}`;
   if (key === hudKey) return;
   hudKey = key;
@@ -168,7 +176,8 @@ function openDiary() {
   }).join('');
   openModal('📊 Din resa i Pixelstaden', `
     ${line('📅 Dag', `${g.day} (${g.dayName})`)}
-    ${line('🏠 Bostad', `${g.homeInfo.icon} ${g.homeInfo.name}${g.furniture.length ? ` + ${g.furniture.map((id) => FURNITURE.find((f) => f.id === id)?.icon).join('')}` : ''}`)}
+    ${line('🏠 Bostad', `${g.homeInfo.icon} ${g.homeInfo.name}`)}
+    ${line('🛋️ Möbler', `${Object.values(g.deco).flat().filter((d) => !d.fx).length} placerade · ${g.storage.length} i förrådet`)}
     ${line('💰 På fickan', fmt(g.money))}
     ${line('💵 Totalt intjänat', fmt(g.earned))}
     <div style="border-top:3px dashed var(--ink);margin:8px 0"></div>
@@ -207,6 +216,7 @@ function boot() {
   mute.onclick = () => { mute.textContent = toggleMute() ? '🔇' : '🔊'; };
   $('#hud-friends').onclick = () => A.openFriends();
   $('#hud-diary').onclick = () => openDiary();
+  $('#decor-btn').onclick = () => A.scene?.toggleDecor?.();
   document.querySelectorAll('#emotes button').forEach((b) => (b.onclick = () => sendEmote(A, b.dataset.e)));
   fit();
 
@@ -252,6 +262,9 @@ function tick(now) {
   if (A.scene) {
     A.scene.update?.(dt);
     worldTick(A, A.scene.worldX ?? null, dt);
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.fillStyle = '#14121a';
+    ctx.fillRect(0, 0, cv.width, cv.height);
     ctx.imageSmoothingEnabled = false;
     A.scene.draw(ctx);
   }

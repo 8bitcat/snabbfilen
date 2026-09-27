@@ -1,127 +1,147 @@
-// Hemma – i Pixelverkstans butiksstil, ritat i spelets gemensamma 384×216-rymd
-// och uppskalat 2× (pxScale) precis som staden och jobben. Då får golv, väggar,
-// möbler och figuren EXAKT samma pixelkorn i hela spelet. Möblerna är köpta
-// EmanuelleDev-sprites (egen atlas med bara det som används + kredit), golvet
-// och väggarna målas med Pix-pennan, och man går fritt med A* runt möblerna.
-// Bostadsstorleken styrs av en avdelarvägg – Villan har hela lokalen.
+// Hemma – Pixelverkstans butiksstil i spelets gemensamma 384×216-rymd.
+// Bostäderna har flera delrum (dörrar i bakväggen), och allt bohag är
+// "deco"-poster { k, v, x, y } per delrum som ritas från möbelatlasen
+// (köpta EmanuelleDev-sprites). Med Möblera-läget flyttar, placerar och
+// säljer man möbler fritt – och besökare ser din inredning via världen.
 import { drawPerson } from '../core/people.js';
 import { openAvatarEditor, avatarTagColors } from '../core/avatar.js';
 import { Pix, SMALL, ctxText, textW, text, mix, mul, css, hash, bayer } from '../core/floor-pix.js';
 import { openModal, closeModal, toast } from '../core/ui.js';
-import { foodOf } from '../game.js';
+import { foodOf, katalogOf } from '../game.js';
 import { play } from '../core/sound.js';
 import { worldFolksHere, worldMyEmote } from '../net/world.js';
+import { FRAMES } from '../data/frames.js';
 
 const WALK_SEQ = [1, 3, 2, 3];
-const FW = 384, FH = 216;    // rummets logiska rymd (ritas 2× på canvasen)
-const WALL_Y = 86;           // väggens fot – samma som Pixelverkstans butik
+const FW = 384, FH = 216;
+const WALL_Y = 86;
 const DOOR = { x0: 28, x1: 62, cx: 45 };
+const RUG = { w: 90, h: 48 };
 
-// Möbelsprites ur den egna atlasen, ritade 1:1 i 384-rymden.
-const ATLAS = typeof Image !== 'undefined' ? new Image() : null;
+export const ATLAS = typeof Image !== 'undefined' ? new Image() : null;
 if (ATLAS) ATLAS.src = 'assets/interior.png';
-const FRAMES = {
-  sang: [2, 2, 33, 34], garderob: [37, 2, 35, 38], kylskap: [74, 2, 16, 48],
-  soffa: [92, 2, 29, 20], fatolj: [123, 2, 17, 20], tv: [142, 2, 48, 23],
-  bord: [192, 2, 22, 20], bokhylla: [216, 2, 34, 35], spis: [252, 2, 28, 42], lampa: [282, 2, 14, 30],
-};
 
-// Planer per bostad: partition (hur mycket av lokalen man har), tema och möbler.
-// x = vänsterkant, base = fotlinje (y-sortering).
+// Bostädernas delrum: tema + fönster per rum. partition = hur bred lokalen är.
 const PLANS = {
   rum: {
-    partition: 225, wall: 0x8c7a62, wallDk: 0x6a5c48, floorA: 0xcbb894, floorB: 0xb09a74,
-    windows: [[80, 120]],
-    furniture: [
-      { id: 'sang', x: 18, base: 133 },
-      { id: 'garderob', x: 140, base: 96 },
-      { id: 'kylskap', x: 190, base: 94 },
-    ],
-    extra: {
-      soffa: { x: 100, base: 178 }, bord: { x: 162, base: 195 }, vaxt: { x: 213, base: 118 },
-      tv: { x: 78, base: 162 }, matta: [72, 150, 218, 206],
-      bokhylla: { x: 82, base: 97 }, lampa: { x: 208, base: 168 }, spis: { x: 18, base: 168 },
-    },
+    partition: 225,
+    rooms: [{ name: 'RUMMET', wall: 0x8c7a62, wallDk: 0x6a5c48, floorA: 0xcbb894, floorB: 0xb09a74, windows: [[80, 120]] }],
   },
   lagenhet: {
-    partition: 310, wall: 0x6e88a0, wallDk: 0x4e6478, floorA: 0xd9cbaf, floorB: 0xc0ac88,
-    windows: [[80, 120], [134, 174]],
-    furniture: [
-      { id: 'sang', x: 18, base: 133 },
-      { id: 'garderob', x: 196, base: 96 },
-      { id: 'kylskap', x: 252, base: 94 },
-      { id: 'soffa', x: 106, base: 179 },
-      { id: 'bord', x: 150, base: 196 },
-      { id: 'vaxt', x: 294, base: 118 },
+    partition: 310,
+    rooms: [
+      { name: 'VARDAGSRUM', wall: 0x6e88a0, wallDk: 0x4e6478, floorA: 0xd9cbaf, floorB: 0xc0ac88, windows: [[80, 120], [134, 174]] },
+      { name: 'SOVRUM', wall: 0x8a7f9a, wallDk: 0x685e78, floorA: 0xd0c2b0, floorB: 0xb8a892, windows: [[100, 140]] },
     ],
-    extra: {
-      tv: { x: 180, base: 161 }, matta: [88, 154, 262, 208], fatolj: { x: 232, base: 174 },
-      bokhylla: { x: 82, base: 161 }, lampa: { x: 282, base: 166 }, spis: { x: 272, base: 152 },
-    },
   },
   villa: {
-    partition: 0, wall: 0xc4b190, wallDk: 0x9a8a6a, floorA: 0xefe6d2, floorB: 0xd9ccb2,
-    windows: [[80, 120], [134, 172], [307, 347]],
-    furniture: [
-      { id: 'sang', x: 18, base: 133 },
-      { id: 'garderob', x: 230, base: 96 },
-      { id: 'kylskap', x: 278, base: 94 },
-      { id: 'tv', x: 176, base: 151 },
-      { id: 'soffa', x: 112, base: 182 },
-      { id: 'fatolj', x: 160, base: 166 },
-      { id: 'bord', x: 150, base: 200 },
-      { id: 'bokhylla', x: 180, base: 96 },
-      { id: 'spis', x: 344, base: 131 },
-      { id: 'lampa', x: 325, base: 151 },
-      { id: 'vaxt', x: 354, base: 211 },
-      { id: 'vaxt2', x: 68, base: 151 },
-      { id: 'matta', rect: [95, 156, 280, 212] },
+    partition: 0, lyx: true,
+    rooms: [
+      { name: 'VARDAGSRUM', wall: 0xc4b190, wallDk: 0x9a8a6a, floorA: 0xefe6d2, floorB: 0xd9ccb2, windows: [[80, 120], [134, 172], [240, 280]] },
+      { name: 'SOVRUM', wall: 0xb8a0a8, wallDk: 0x907880, floorA: 0xe8ded0, floorB: 0xd2c4b2, windows: [[110, 150], [210, 250]] },
+      { name: 'KÖK', wall: 0xa8b8a0, wallDk: 0x808f78, floorA: 0xe2e6da, floorB: 0xc8cec0, windows: [[110, 150], [230, 270]] },
     ],
-    lyx: true,
   },
 };
-// Köpta möbler dyker upp i mindre bostäder på extraplatserna
-const BUYABLE = ['soffa', 'vaxt', 'tv', 'matta', 'bokhylla', 'lampa', 'spis'];
+
+// Startmöbleringen per bostad och delrum. fx = funktionsmöbel (kan flyttas, inte säljas).
+const SEEDS = {
+  'rum:0': [
+    { k: 'sang', v: 0, x: 18, y: 133, fx: 1 }, { k: 'garderob', v: 0, x: 140, y: 96, fx: 1 },
+    { k: 'kylskap', v: 0, x: 190, y: 94, fx: 1 },
+  ],
+  'lagenhet:0': [
+    { k: 'kylskap', v: 0, x: 214, y: 94, fx: 1 },
+    { k: 'soffa', v: 4, x: 106, y: 179 }, { k: 'bordR', v: 0, x: 150, y: 196 }, { k: 'vaxt', v: 0, x: 270, y: 206 },
+  ],
+  'lagenhet:1': [
+    { k: 'sang', v: 2, x: 40, y: 133, fx: 1 }, { k: 'garderob', v: 0, x: 196, y: 96, fx: 1 },
+    { k: 'byra', v: 1, x: 120, y: 96 },
+  ],
+  'villa:0': [
+    { k: 'soffa', v: 0, x: 112, y: 182 }, { k: 'fatolj', v: 3, x: 164, y: 166 }, { k: 'bordR', v: 0, x: 150, y: 200 },
+    { k: 'tv', v: 0, x: 176, y: 151 }, { k: 'bokhylla', v: 0, x: 180, y: 96 }, { k: 'spis', v: 1, x: 336, y: 131 },
+    { k: 'lampa', v: 0, x: 320, y: 151 }, { k: 'vaxt', v: 0, x: 48, y: 151 }, { k: 'matta', v: 0, x: 100, y: 156 },
+  ],
+  'villa:1': [
+    { k: 'sang', v: 1, x: 40, y: 133, fx: 1 }, { k: 'garderob', v: 0, x: 250, y: 96, fx: 1 },
+    { k: 'byra', v: 3, x: 160, y: 96 }, { k: 'spegel', v: 0, x: 220, y: 94 }, { k: 'matta', v: 1, x: 80, y: 150 },
+  ],
+  'villa:2': [
+    { k: 'kylskap', v: 0, x: 300, y: 94, fx: 1 },
+    { k: 'bordM', v: 0, x: 130, y: 160 }, { k: 'stol', v: 0, x: 110, y: 158 }, { k: 'stol', v: 0, x: 188, y: 158 },
+    { k: 'byra', v: 0, x: 60, y: 96 }, { k: 'vaxtS', v: 0, x: 340, y: 140 },
+  ],
+};
+const seedFor = (home, sub) => (SEEDS[`${home}:${sub}`] || []).map((d) => ({ ...d }));
+
+// hur hög kollisionsrektangeln vid foten är, per möbeltyp
+const SOLID_LOW = new Set(['soffa', 'fatolj', 'stol', 'bordR', 'bordM', 'byra', 'sang']);
+const frameOf = (k, v) => FRAMES[k + (v | 0)] || FRAMES[k + '0'];
 
 export function makeRoom(A, { visit = false } = {}) {
   const g = A.game;
-  const homeId = () => (visit ? A.visitTarget?.home || 'rum' : g.home);
-  const furnOwned = () => (visit ? A.visitTarget?.furniture || [] : g.furniture);
-
-  const plan = PLANS[homeId()] || PLANS.rum;
+  const home = visit ? A.visitTarget?.home || 'rum' : g.home;
+  const plan = PLANS[home] || PLANS.rum;
+  const sub = Math.max(0, Math.min(plan.rooms.length - 1, A.roomSub | 0));
+  A.roomSub = sub;
+  const roomDef = plan.rooms[sub];
   const RIGHT = plan.partition || FW;
-  // möbellistan: planens + köpta extra
-  const items = [...plan.furniture];
-  let rug = plan.furniture.find((f) => f.id === 'matta')?.rect || null;
-  for (const id of BUYABLE) {
-    if (!furnOwned().includes(id)) continue;
-    if (items.some((f) => f.id === id) || (id === 'matta' && rug)) continue;
-    const ex = plan.extra?.[id];
-    if (!ex) continue;
-    if (id === 'matta') rug = plan.extra.matta;
-    else items.push({ id, ...ex });
+  const decoKey = `${home}:${sub}`;
+
+  // deco-listan: min egen (seedas vid behov) eller värdens (read-only)
+  function decoList() {
+    if (visit) return A.visitTarget?.deco?.[decoKey] || seedFor(home, sub);
+    if (!g.deco[decoKey]) { g.deco[decoKey] = seedFor(home, sub); g.save(); }
+    return g.deco[decoKey];
   }
 
-  // ---------- möblerna: sprites ur atlasen + Pix-monsteran ----------
-  const props = [];
-  for (const f of items) {
-    if (f.id === 'matta') continue;
-    const kind = f.id.replace(/\d+$/, '');
-    if (kind === 'vaxt') { const p = makePlantProp(f.x, f.base); props.push({ ...p, id: f.id }); continue; }
-    if (!FRAMES[kind]) continue;
-    props.push(spriteProp(f.id, kind, f.x, f.base, !visit));
-  }
+  // ---------- delrumsdörrar + bakgrund ----------
+  const subDoors = plan.rooms.map((r, i) => i).filter((i) => i !== sub)
+    .map((i, n) => ({ to: i, name: plan.rooms[i].name, x0: RIGHT - 48 - n * 44, x1: RIGHT - 18 - n * 44 }));
+  const bg = buildBg(roomDef, RIGHT, subDoors, sub === 0, !!plan.lyx, visit);
 
-  // hinder (fotrektanglar) för gången
-  const obstacles = props.map((p) => p.solid).filter(Boolean);
+  // ---------- props byggs ur deco (görs om efter varje ändring) ----------
+  let props = [], rugs = [], obstacles = [], hotRects = [], freeGrid;
   const CELL = 4, GW = Math.ceil(FW / CELL), GH = Math.ceil(FH / CELL);
-  const freeGrid = new Uint8Array(GW * GH);
-  for (let gy = 0; gy < GH; gy++) for (let gx = 0; gx < GW; gx++) {
-    const x = gx * CELL + 2, y = gy * CELL + 2;
-    let ok = x > 7 && x < RIGHT - 5 && y > WALL_Y + 4 && y < FH - 4;
-    if (ok) for (const [x0, y0, x1, y1] of obstacles) if (x > x0 - 2 && x < x1 + 2 && y > y0 - 2 && y < y1 + 2) { ok = false; break; }
-    freeGrid[gy * GW + gx] = ok ? 1 : 0;
+
+  const acts = {
+    sang: visit ? null : () => A.sleepFlow(),
+    garderob: visit ? null : () => { play('click'); openAvatarEditor({ onDone: (av) => { A.avatar = av; toast('👕 Snyggt!', 'good'); } }); },
+    kylskap: visit ? null : () => openFridge(A),
+  };
+  const exitAct = visit
+    ? () => { A.visitTarget = null; A.roomSub = 0; g.passTime(20); g.save(); play('door'); toast('🚗 Hemma igen.'); A.go('city'); }
+    : () => { A.roomSub = 0; play('door'); A.go('city'); };
+
+  function rebuild() {
+    props = []; rugs = [];
+    decoList().forEach((d, i) => {
+      if (decor.carry && decor.carry.src === 'deco' && decor.carry.idx === i) return; // lyftad just nu
+      if (d.k === 'matta') { rugs.push({ d, idx: i, img: rugImg(d.v) }); return; }
+      if (d.k === 'vaxt') { props.push({ ...makePlantProp(d.x + 10, d.y), k: 'vaxt', decoIdx: i, fx: d.fx }); return; }
+      const p = spriteProp(d, i, !visit);
+      if (p) props.push(p);
+    });
+    obstacles = props.map((p) => p.solid).filter(Boolean);
+    freeGrid = new Uint8Array(GW * GH);
+    for (let gy = 0; gy < GH; gy++) for (let gx = 0; gx < GW; gx++) {
+      const x = gx * CELL + 2, y = gy * CELL + 2;
+      let ok = x > 7 && x < RIGHT - 5 && y > WALL_Y + 4 && y < FH - 4;
+      if (ok) for (const [x0, y0, x1, y1] of obstacles) if (x > x0 - 2 && x < x1 + 2 && y > y0 - 2 && y < y1 + 2) { ok = false; break; }
+      freeGrid[gy * GW + gx] = ok ? 1 : 0;
+    }
+    hotRects = [];
+    if (sub === 0) hotRects.push({ id: 'dorr', act: exitAct, r: [DOOR.x0, 30, DOOR.x1, WALL_Y + 9], go: [DOOR.cx, WALL_Y + 12] });
+    for (const sd of subDoors) hotRects.push({ id: 'sub' + sd.to, act: () => { A.roomSub = sd.to; play('door'); A.go(A.sceneName); }, r: [sd.x0, 34, sd.x1, WALL_Y + 6], go: [(sd.x0 + sd.x1) / 2, WALL_Y + 12] });
+    for (const p of props) {
+      if (!p.solid) continue;
+      const act = acts[p.k];
+      if (act === undefined || act === null) continue;
+      hotRects.push({ id: p.k, act, r: [p.solid[0], p.top, p.solid[2], p.solid[3] + 2], go: [(p.solid[0] + p.solid[2]) / 2, p.solid[3] + 5] });
+    }
   }
+
   const walkable = (x, y) => !!freeGrid[Math.max(0, Math.min(GH - 1, (y / CELL) | 0)) * GW + Math.max(0, Math.min(GW - 1, (x / CELL) | 0))];
   function nearestFree(x, y) {
     if (walkable(x, y)) return [x, y];
@@ -174,30 +194,90 @@ export function makeRoom(A, { visit = false } = {}) {
     return out;
   }
 
+  // ---------- möblera-läget ----------
+  const decor = { on: false, carry: null, mx: 100, my: 150 };
+  function canPlace(k, v, x, y) {
+    if (k === 'matta') {
+      const x0 = x - RUG.w / 2, y0 = y - RUG.h / 2;
+      return x0 >= 6 && x0 + RUG.w <= RIGHT - 4 && y0 >= WALL_Y + 2 && y0 + RUG.h <= FH - 3;
+    }
+    const f = k === 'vaxt' ? [0, 0, 20, 52] : frameOf(k, v);
+    const w = f[2], left = Math.round(x - w / 2), base = Math.round(y);
+    const solidH = SOLID_LOW.has(k) ? Math.round(f[3] * 0.5) : Math.min(13, Math.round(f[3] * 0.4));
+    if (left < 8 || left + w > RIGHT - 5 || base < WALL_Y + 6 || base > FH - 4) return false;
+    const s = [left - 1, base - solidH, left + w + 1, base + 1];
+    for (const h of hotRects) if (h.id.startsWith('sub') || h.id === 'dorr') {
+      if (s[2] > h.r[0] - 2 && s[0] < h.r[2] + 2 && s[3] > WALL_Y && s[1] < h.r[3] + 6) return false;
+    }
+    for (const o of obstacles) if (s[2] > o[0] && s[0] < o[2] && s[3] > o[1] && s[1] < o[3]) return false;
+    return true;
+  }
+  function commitPlace() {
+    const c = decor.carry;
+    const k = c.k, v = c.v;
+    const pos = k === 'matta'
+      ? { x: Math.round(decor.mx - RUG.w / 2), y: Math.round(decor.my - RUG.h / 2) }
+      : { x: Math.round(decor.mx - (k === 'vaxt' ? 10 : frameOf(k, v)[2] / 2)), y: Math.round(decor.my) };
+    if (c.src === 'storage') g.placeFromStorage(c.idx, sub, pos.x, pos.y);
+    else g.moveDeco(sub, c.idx, pos.x, pos.y);
+    decor.carry = null;
+    rebuild(); renderStoragePanel();
+  }
+  function toggleDecor(force) {
+    if (visit) return;
+    decor.on = force !== undefined ? force : !decor.on;
+    if (!decor.on && decor.carry) { decor.carry = null; rebuild(); } // lyft möbel läggs tillbaka (låg kvar i listan)
+    document.querySelector('#decor-panel')?.classList.toggle('hidden', !decor.on);
+    if (decor.on) { renderStoragePanel(); toast('🛋️ Möblera: klicka på en möbel för att flytta, eller välj ur förrådet.'); }
+    else g.save();
+  }
+  function renderStoragePanel() {
+    const box = document.querySelector('#decor-storage');
+    if (!box) return;
+    box.innerHTML = g.storage.length
+      ? g.storage.map((it, i) => {
+        const kat = katalogOf(it.k);
+        return `<button class="dp-item" data-st="${i}"><span data-thumb="${it.k}${it.v}"></span>${kat?.name || it.k}</button>`;
+      }).join('')
+      : '<div class="dp-empty">Tomt – köp möbler hos Bostadsbyrån!</div>';
+    box.querySelectorAll('[data-thumb]').forEach((el) => el.replaceWith(thumbCanvas(el.dataset.thumb)));
+    box.querySelectorAll('[data-st]').forEach((b) => (b.onclick = () => {
+      const it = g.storage[+b.dataset.st];
+      if (!it) return;
+      decor.carry = { src: 'storage', idx: +b.dataset.st, k: it.k, v: it.v };
+      updateSellBtn();
+    }));
+    updateSellBtn();
+  }
+  function updateSellBtn() {
+    const btn = document.querySelector('#decor-sell');
+    if (!btn) return;
+    const c = decor.carry;
+    const sellable = c && (c.src === 'storage' || !decoList()[c.idx]?.fx) && katalogOf(c.k);
+    btn.disabled = !sellable;
+    btn.textContent = sellable ? `Sälj +${Math.round(katalogOf(c.k).price / 2)} kr` : 'Sälj';
+    btn.onclick = () => {
+      if (!sellable) return;
+      if (c.src === 'storage') g.sellStorage(c.idx); else g.sellDeco(sub, c.idx);
+      play('coin');
+      decor.carry = null;
+      rebuild(); renderStoragePanel();
+    };
+    const done = document.querySelector('#decor-done');
+    if (done) done.onclick = () => toggleDecor(false);
+  }
+
+  // ---------- figuren ----------
+  rebuild();
   let px = visit ? DOOR.cx : Math.min(RIGHT - 40, 100), py = WALL_Y + 34;
   [px, py] = nearestFree(px, py);
   let path = [], onArrive = null, dir = 'down', t = 0;
   function walkTo(x, y, cb) { path = findPath(px, py, x, y); onArrive = cb || null; if (!path.length) { const d = onArrive; onArrive = null; d?.(); } }
 
-  const acts = {
-    dorr: visit
-      ? () => { A.visitTarget = null; g.passTime(20); g.save(); play('door'); toast('🚗 Hemma igen.'); A.go('city'); }
-      : () => { play('door'); A.go('city'); },
-    sang: visit ? null : () => A.sleepFlow(),
-    garderob: visit ? null : () => { play('click'); openAvatarEditor({ onDone: (av) => { A.avatar = av; toast('👕 Snyggt!', 'good'); } }); },
-    kylskap: visit ? null : () => openFridge(A),
-  };
-  const hotRects = [
-    { id: 'dorr', r: [DOOR.x0, 30, DOOR.x1, WALL_Y + 9], go: [DOOR.cx, WALL_Y + 12] },
-    ...props.filter((p) => p.solid && acts[p.id] !== undefined).map((p) => ({ id: p.id, r: [p.solid[0], p.top, p.solid[2], p.solid[3] + 2], go: [(p.solid[0] + p.solid[2]) / 2, p.solid[3] + 5] })),
-  ];
-
-  const bg = buildBg(plan, homeId(), RIGHT, rug, visit);
-
   return {
-    pxScale: 2,
     get worldX() { return px; },
     get worldY() { return py; },
+    toggleDecor,
     _debug: {
       spot: (id) => { const h = hotRects.find((h) => h.id === id); return h ? { x: (h.r[0] + h.r[2]) / 2, y: (h.r[1] + h.r[3]) / 2 } : null; },
       tile: (a, b) => ({ x: Math.min(RIGHT - 20, 30 + a * 40), y: Math.min(FH - 10, WALL_Y + 15 + b * 18) }),
@@ -218,21 +298,40 @@ export function makeRoom(A, { visit = false } = {}) {
       if (visit && !A.visitTarget) A.go('city');
     },
 
+    move(x, y) { decor.mx = x; decor.my = y; },
     down(x, y) {
+      decor.mx = x; decor.my = y;
+      if (decor.on) {
+        if (decor.carry) { if (canPlace(decor.carry.k, decor.carry.v, x, y)) { play('ok'); commitPlace(); } else play('fel'); return; }
+        // plocka upp möbeln under pekaren (främst sorterad först)
+        const list = decoList();
+        const hit = [...props, ...rugs.map((r) => ({ decoIdx: r.idx, k: 'matta', top: r.d.y, solid: [r.d.x, r.d.y, r.d.x + RUG.w, r.d.y + RUG.h] }))]
+          .filter((p) => p.decoIdx !== undefined)
+          .sort((a, b) => (b.solid?.[3] ?? 0) - (a.solid?.[3] ?? 0))
+          .find((p) => { const r = p.k === 'matta' ? p.solid : [p.solid[0], p.top, p.solid[2], p.solid[3] + 2]; return x >= r[0] && x <= r[2] && y >= r[1] && y <= r[3]; });
+        if (hit) {
+          const d = list[hit.decoIdx];
+          decor.carry = { src: 'deco', idx: hit.decoIdx, k: d.k, v: d.v, fx: d.fx };
+          rebuild(); updateSellBtn();
+        }
+        return;
+      }
       for (const h of hotRects) {
         if (x >= h.r[0] && x <= h.r[2] && y >= h.r[1] && y <= h.r[3]) {
-          walkTo(h.go[0], h.go[1], acts[h.id] || undefined);
+          walkTo(h.go[0], h.go[1], h.act || undefined);
           return;
         }
       }
       if (y > WALL_Y && x < RIGHT) walkTo(x, y);
     },
+    key(k) { if (k === 'Escape' && decor.on) toggleDecor(false); },
+    exit() { toggleDecor(false); document.querySelector('#decor-panel')?.classList.add('hidden'); },
 
     draw(ctx) {
-      ctx.save();
-      ctx.setTransform(2, 0, 0, 2, 0, 0);
+      ctx.setTransform(A.pxs, 0, 0, A.pxs, 0, 0);
       const night = isNight(g);
       ctx.drawImage(bg(night), 0, 0);
+      for (const r of rugs) ctx.drawImage(r.img, r.d.x, r.d.y);
 
       const folks = worldFolksHere(A);
       const drawables = props.map((p) => ({ fy: p.sort, draw: () => p.draw(ctx) }));
@@ -250,43 +349,152 @@ export function makeRoom(A, { visit = false } = {}) {
           if (f.emote) emoteBubble(ctx, f.x, f.y - 60, f.emote);
         } });
       }
-      drawables.sort((a, b) => a.fy - b.fy).forEach((d) => d.draw());
+      drawables.sort((a, b) => a.fy - b.fy).forEach((d) => d.draw(ctx));
+
+      // spöket i möblera-läget
+      if (decor.on && decor.carry) {
+        const { k, v } = decor.carry;
+        const okHere = canPlace(k, v, decor.mx, decor.my);
+        ctx.globalAlpha = 0.7;
+        if (k === 'matta') ctx.drawImage(rugImg(v), decor.mx - RUG.w / 2 | 0, decor.my - RUG.h / 2 | 0);
+        else if (k === 'vaxt') { const p = makePlantProp(decor.mx | 0, decor.my | 0); p.draw(ctx); }
+        else if (ATLAS?.complete) { const f = frameOf(k, v); ctx.drawImage(ATLAS, f[0], f[1], f[2], f[3], decor.mx - f[2] / 2 | 0, decor.my - f[3] | 0, f[2], f[3]); }
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = okHere ? 'rgba(80,220,110,0.8)' : 'rgba(230,60,60,0.8)';
+        ctx.fillRect(decor.mx - 6 | 0, decor.my | 0, 12, 2);
+      } else if (decor.on) {
+        ctx.fillStyle = 'rgba(23,21,26,0.7)'; ctx.fillRect(4, 4, 150, 10);
+        ctxText(ctx, SMALL, 'MÖBLERA: KLICKA PÅ EN MÖBEL', 7, 6, '#ffd23f');
+      }
 
       if (night) { ctx.fillStyle = 'rgba(10,12,40,0.22)'; ctx.fillRect(0, 0, FW, FH); }
-      ctx.restore();
     },
   };
 }
 
 const isNight = (g) => { const h = g.min / 60; return h >= 19.5 || h < 6.5; };
 
-// ================= bakgrunden (Pix i 384-rymden, byggs per dag/natt) =================
-function buildBg(plan, homeId, RIGHT, rug, visit) {
+// ---------- sprite-props ----------
+function spriteProp(d, decoIdx, sign) {
+  const f = frameOf(d.k, d.v);
+  if (!f) return null;
+  const [fx, fy, fw, fh] = f;
+  const x = d.x, base = d.y, top = base - fh;
+  const solidH = SOLID_LOW.has(d.k) ? Math.round(fh * 0.5) : Math.min(13, Math.round(fh * 0.4));
+  const label = sign ? { sang: 'SÄNG', garderob: 'GARDEROB', kylskap: 'KYLSKÅP' }[d.k] : null;
+  return {
+    k: d.k, decoIdx, fx: d.fx, sort: base, top,
+    solid: [x - 1, base - solidH, x + fw + 1, base + 1],
+    draw(ctx) {
+      ctx.fillStyle = 'rgba(20,12,28,0.22)';
+      ctx.fillRect(x + 1, base - 1, fw - 2, 2);
+      ctx.fillRect(x + 3, base + 1, fw - 6, 1);
+      if (ATLAS && ATLAS.complete) ctx.drawImage(ATLAS, fx, fy, fw, fh, x, top, fw, fh);
+      if (label) ctxPlate(ctx, x + fw / 2, top - 9, label);
+    },
+  };
+}
+function ctxPlate(ctx, cx, y, label) {
+  const w = textW(SMALL, label) + 6;
+  ctx.fillStyle = '#8a6a2a'; ctx.fillRect(cx - w / 2 - 1 | 0, y - 1, w + 2, 9);
+  ctx.fillStyle = '#d8b85a'; ctx.fillRect(cx - w / 2 | 0, y, w, 7);
+  ctxText(ctx, SMALL, label, (cx - textW(SMALL, label) / 2) | 0, y + 1, '#3a2a10');
+}
+// miniatyr till förrådspanelen (DOM)
+function thumbCanvas(key) {
+  const k = key.replace(/\d+$/, ''), v = +key.slice(k.length) || 0;
+  const c = document.createElement('canvas');
+  c.width = 28; c.height = 28;
+  const x = c.getContext('2d');
+  x.imageSmoothingEnabled = false;
+  const draw = () => {
+    if (k === 'matta') { x.drawImage(rugImg(v), 0, 0, RUG.w, RUG.h, 0, 6, 28, 16); return; }
+    const f = frameOf(k, v);
+    if (!f) return;
+    const s = Math.min(28 / f[2], 28 / f[3]);
+    x.drawImage(ATLAS, f[0], f[1], f[2], f[3], (28 - f[2] * s) / 2, (28 - f[3] * s) / 2, f[2] * s, f[3] * s);
+  };
+  if (ATLAS.complete) draw(); else ATLAS.addEventListener('load', draw, { once: true });
+  return c;
+}
+
+// mattor: två varianter, cachade
+const rugCache = {};
+function rugImg(v) {
+  if (rugCache[v]) return rugCache[v];
+  const P = new Pix(RUG.w, RUG.h);
+  if (v === 1) paintRug(P, 0, 0, RUG.w, RUG.h, 0x3f5667, 0xd9d2c3, 'stripe');
+  else paintRug(P, 0, 0, RUG.w, RUG.h, 0x5e1622, 0xd8b24a, 'museum');
+  rugCache[v] = P.flush();
+  return rugCache[v];
+}
+function paintRug(P, x0, y0, x1, y1, base, trim, kind) {
+  for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) {
+    const bx = Math.min(x - x0, x1 - 1 - x), by = Math.min(y - y0, y1 - 1 - y), b = Math.min(bx, by);
+    let c = mul(base, 0.95 + hash(x, y, 11) * 0.08);
+    if (b === 0) c = mul(base, 0.6);
+    else if (b === 2) c = trim;
+    else if (kind === 'museum' && b > 4) {
+      const u = Math.abs(((x - x0) % 12) - 6) + Math.abs(((y - y0) % 10) - 5);
+      if (u === 4) c = mix(base, trim, 0.45);
+      if (u === 0) c = trim;
+    } else if (kind === 'stripe' && b > 3 && ((y - y0) >> 1) % 3 === 0) c = mix(base, trim, 0.18);
+    if (b === 1 && (x + y) % 2) c = mix(c, 0x000000, 0.2);
+    P.px(x, y, c);
+  }
+}
+
+// Monsteran (Pix)
+function makePlantProp(cx, base) {
+  const P = new Pix(40, 54, cx - 20, base - 52);
+  P.rect(cx - 7, base - 12, 14, 12, 0xe8e4da); P.hl(cx - 8, base - 13, 16, 0xffffff); P.hl(cx - 8, base - 12, 16, 0xcfc8b8);
+  P.vl(cx + 5, base - 11, 11, 0xbdb5a5); P.vl(cx + 6, base - 11, 11, 0xa9a192); P.hl(cx - 6, base - 1, 12, 0x9a9282);
+  P.rect(cx - 6, base - 12, 12, 1, 0x3a2a1c);
+  const leaves = [[-10, -30, 9, 6], [2, -38, 8, 7], [-4, -44, 7, 6], [6, -26, 9, 6], [-12, -20, 8, 5], [8, -16, 7, 5], [-2, -24, 8, 6]];
+  for (const [dx, dy, rx, ry] of leaves) {
+    for (let yy = -ry; yy <= ry; yy++) for (let xx = -rx; xx <= rx; xx++) {
+      const dd = Math.hypot(xx / rx, yy / ry);
+      if (dd >= 1) continue;
+      let c = dd < 0.5 && xx + yy < 0 ? 0x5fbf6e : 0x2f8f46;
+      if (dd > 0.8) c = 0x216b36;
+      if (xx === 0 || (Math.abs(xx - yy) === 0 && dd < 0.7)) c = 0x7fd48a;
+      P.px(cx + dx + xx, base + dy + yy, c);
+    }
+    P.line(cx, base - 12, cx + dx, base + dy + ry, 0x2c6e3a);
+  }
+  P.ell(cx, base + 1, 10, 3, 0x140c1c, 0.3, 3);
+  const img = P.flush();
+  const ox = cx - 20, oy = base - 52;
+  return { img, sort: base, top: oy, solid: [cx - 9, base - 12, cx + 9, base + 1], draw: (ctx) => ctx.drawImage(img, ox, oy) };
+}
+
+// ================= bakgrunden (per delrum + dag/natt) =================
+function buildBg(roomDef, RIGHT, subDoors, hasExit, lyx, visit) {
   const cache = {};
   return (night) => {
     const key = night ? 'n' : 'd';
     if (cache[key]) return cache[key];
     const P = new Pix(FW, FH);
-    const wall = night ? mul(plan.wall, 0.8) : plan.wall;
-    const wallDk = night ? mul(plan.wallDk, 0.8) : plan.wallDk;
+    const wall = night ? mul(roomDef.wall, 0.8) : roomDef.wall;
+    const wallDk = night ? mul(roomDef.wallDk, 0.8) : roomDef.wallDk;
 
-    // ---- golvet: stora plattor med skarv, glans och slumpkorn ----
+    // golvet
     const TW2 = 23, TH2 = 15;
     for (let y = WALL_Y; y < FH; y++) for (let x = 0; x < FW; x++) {
       const tx = (x / TW2) | 0, ty = ((y - WALL_Y) / TH2) | 0;
       const lx = x - tx * TW2, ly = (y - WALL_Y) - ty * TH2;
-      let c = mix(plan.floorA, plan.floorB, ((tx + ty) & 1) ? 0.2 : 0.62);
+      let c = mix(roomDef.floorA, roomDef.floorB, ((tx + ty) & 1) ? 0.2 : 0.62);
       c = mul(c, 0.97 + hash(tx, ty, 1) * 0.05);
       const h = hash(x, y, 2);
       if (h > 0.94) c = mul(c, 0.95); else if (h < 0.02) c = mix(c, 0xffffff, 0.25);
-      if (plan.lyx) { const vein = Math.sin(x * 0.31 + y * 0.55 + Math.sin(x * 0.09) * 4); if (vein > 0.96) c = mix(c, 0xd8b24a, 0.22); }
+      if (lyx) { const vein = Math.sin(x * 0.31 + y * 0.55 + Math.sin(x * 0.09) * 4); if (vein > 0.96) c = mix(c, 0xd8b24a, 0.22); }
       if (lx === 0 || ly === 0) c = mul(c, 0.84);
       else if (lx === 1 || ly === 1) c = mix(c, 0xffffff, 0.2);
       else if (lx + ly > 7 && lx + ly < 9 && ly < 6) c = mix(c, 0xffffff, 0.07);
       P.px(x, y, c);
     }
 
-    // ---- väggen: gradient, paneler och bröstpanel ----
+    // väggen med bröstpanel
     for (let y = 5; y < WALL_Y; y++) for (let x = 4; x < FW - 4; x++) {
       let c = mix(mul(wall, 0.8), wall, Math.min(1, (y - 5) / 20) + (bayer(x, y) - 0.5) * 0.12);
       if (x % 27 === 0) c = mul(c, 0.9); else if (x % 27 === 1) c = mix(c, 0xffffff, 0.05);
@@ -303,26 +511,34 @@ function buildBg(plan, homeId, RIGHT, rug, visit) {
     }
     P.hl(4, 5, FW - 8, mul(wall, 0.6));
     P.hl(4, WALL_Y - 2, FW - 8, mix(wallDk, 0xffffff, 0.25));
-    if (plan.lyx) { P.hl(4, WALL_Y - 20, FW - 8, 0xf0d070); P.hl(4, WALL_Y - 19, FW - 8, 0xc8a24a); }
+    if (lyx) { P.hl(4, WALL_Y - 20, FW - 8, 0xf0d070); P.hl(4, WALL_Y - 19, FW - 8, 0xc8a24a); }
 
-    // ---- dörren ----
-    for (let y = 28; y < WALL_Y; y++) for (let x = DOOR.x0; x < DOOR.x1; x++) {
-      let c = mix(0x5a4632, 0x6a5238, hash(x >> 1, y >> 2, 7) * 0.6 + (bayer(x, y) - 0.5) * 0.1);
-      if ((y - 28) % 22 < 2 || x === DOOR.x0 + 16 || x === DOOR.x0 + 17) c = mul(c, 0.7);
-      P.px(x, y, c);
+    // dörrarna: ut (bara rum 0) + delrumsdörrar
+    const paintDoor = (x0, x1, signText, signCol) => {
+      for (let y = 28; y < WALL_Y; y++) for (let x = x0; x < x1; x++) {
+        let c = mix(0x5a4632, 0x6a5238, hash(x >> 1, y >> 2, 7) * 0.6 + (bayer(x, y) - 0.5) * 0.1);
+        if ((y - 28) % 22 < 2 || x === x0 + ((x1 - x0) >> 1)) c = mul(c, 0.7);
+        P.px(x, y, c);
+      }
+      P.box(x0 - 1, 27, x1 - x0 + 2, WALL_Y - 27, 0x2e2418);
+      P.box(x0, 28, x1 - x0, WALL_Y - 28, 0x8a7050);
+      P.rect(x1 - 6, 54, 2, 4, 0xd8b24a);
+      const tw = textW(SMALL, signText) + 8;
+      const sx = Math.round((x0 + x1) / 2 - tw / 2);
+      P.rect(sx, 20, tw, 9, 0x1d2b1f); P.box(sx, 20, tw, 9, 0x0e1510);
+      text(P, SMALL, signText, sx + 4, 22, signCol);
+    };
+    if (hasExit) {
+      paintDoor(DOOR.x0, DOOR.x1, visit ? 'HEM' : 'UT', 0x6fe08a);
+      for (let y = WALL_Y + 1; y < WALL_Y + 9; y++) for (let x = DOOR.cx - 13; x < DOOR.cx + 13; x++) P.px(x, y, (x + y) % 2 ? 0x4a4038 : 0x3e352e);
+      P.box(DOOR.cx - 13, WALL_Y + 1, 26, 8, 0x2a2018);
     }
-    P.box(DOOR.x0 - 1, 27, DOOR.x1 - DOOR.x0 + 2, WALL_Y - 27, 0x2e2418);
-    P.box(DOOR.x0, 28, DOOR.x1 - DOOR.x0, WALL_Y - 28, 0x8a7050);
-    P.rect(DOOR.x1 - 6, 54, 2, 4, 0xd8b24a); P.px(DOOR.x1 - 6, 55, 0xfbe7a0);
-    P.rect(DOOR.cx - 8, 20, 16, 7, 0x1d2b1f); P.box(DOOR.cx - 8, 20, 16, 7, 0x0e1510);
-    text(P, SMALL, visit ? 'HEM' : 'UT', DOOR.cx - (textW(SMALL, visit ? 'HEM' : 'UT') >> 1), 21, 0x6fe08a);
-    for (let y = WALL_Y + 1; y < WALL_Y + 9; y++) for (let x = DOOR.cx - 13; x < DOOR.cx + 13; x++) P.px(x, y, (x + y) % 2 ? 0x4a4038 : 0x3e352e);
-    P.box(DOOR.cx - 13, WALL_Y + 1, 26, 8, 0x2a2018);
+    for (const sd of subDoors) paintDoor(sd.x0, sd.x1, sd.name, 0xffd23f);
 
-    // ---- fönster med karm, spröjs och ljus ----
+    // fönster
     const sky0 = night ? 0x101838 : 0x8ed0ea, sky1 = night ? 0x1c2140 : 0xbfe6f2;
-    for (const [wx0, wx1] of plan.windows) {
-      if (wx1 > RIGHT - 5) continue;
+    for (const [wx0, wx1] of roomDef.windows) {
+      if (wx1 > RIGHT - 5 || subDoors.some((sd) => wx1 > sd.x0 - 4 && wx0 < sd.x1 + 4)) continue;
       const wy0 = 17, wy1 = 49;
       P.rect(wx0 - 2, wy0 - 2, wx1 - wx0 + 4, wy1 - wy0 + 4, 0xf0ece0);
       P.box(wx0 - 2, wy0 - 2, wx1 - wx0 + 4, wy1 - wy0 + 4, mul(wall, 0.5));
@@ -341,19 +557,7 @@ function buildBg(plan, homeId, RIGHT, rug, visit) {
       }
     }
 
-    // ---- tavlor ----
-    const arts = [[plan.windows.at(-1)[1] + 15, 0x2aa39a], [DOOR.x1 + 8, 0xb83d7a]];
-    for (const [ax, ac] of arts) {
-      if (ax + 17 > RIGHT - 6 || plan.windows.some(([a, b]) => ax + 17 > a - 4 && ax < b + 4)) continue;
-      P.rect(ax, 26, 17, 13, 0x5a4632); P.box(ax, 26, 17, 13, 0x3a2c1e);
-      for (let y = 28, y1 = 37; y < y1; y++) for (let x = ax + 2; x < ax + 15; x++) P.px(x, y, mix(ac, mul(ac, 0.5), (bayer(x, y) - 0.5) * 0.5 + (y - 28) / 9));
-      P.ell(ax + 6, 31, 3, 2, mix(ac, 0xffffff, 0.5), 0.8, 3);
-    }
-
-    // ---- mattan ----
-    if (rug) paintRug(P, rug[0], rug[1], rug[2], rug[3], plan.lyx ? 0x5e1622 : 0x3f5667, plan.lyx ? 0xd8b24a : 0xd9d2c3, plan.lyx ? 'museum' : 'stripe');
-
-    // ---- avdelarväggen + mörkret utanför ----
+    // avdelarvägg + mörker utanför lokalen
     if (RIGHT < FW) {
       for (let y = 5; y < FH; y++) for (let x = RIGHT; x < FW; x++) P.px(x, y, mix(0x17131c, 0x221c28, (bayer(x, y) - 0.5) * 0.4 + 0.5));
       for (let y = 5; y < FH; y++) {
@@ -362,10 +566,10 @@ function buildBg(plan, homeId, RIGHT, rug, visit) {
       }
     }
 
-    // ---- ljuskäglor + AO längs väggen ----
+    // ljuskäglor + AO
     for (let sx = 60; sx < RIGHT - 20; sx += 85) P.ell(sx, WALL_Y + 23, 22, 10, 0xfff3d0, night ? 0.05 : 0.1, 4);
     for (let y = WALL_Y; y < WALL_Y + 4; y++) for (let x = 0; x < RIGHT; x++) {
-      if (x >= DOOR.cx - 13 && x < DOOR.cx + 13) continue;
+      if (hasExit && x >= DOOR.cx - 13 && x < DOOR.cx + 13) continue;
       if (bayer(x, y) < 1 - (y - WALL_Y) / 4) P.px(x, y, 0x1a1426, 0.18);
     }
     P.box(0, 0, FW, FH, 0x0e0d12); P.box(1, 1, FW - 2, FH - 2, 0x1d1a20);
@@ -376,74 +580,6 @@ function buildBg(plan, homeId, RIGHT, rug, visit) {
   };
 }
 
-// mattmålaren – från Pixelverkstans floor-scene
-function paintRug(P, x0, y0, x1, y1, base, trim, kind) {
-  for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) {
-    const bx = Math.min(x - x0, x1 - 1 - x), by = Math.min(y - y0, y1 - 1 - y), b = Math.min(bx, by);
-    let c = mul(base, 0.95 + hash(x, y, 11) * 0.08);
-    if (b === 0) c = mul(base, 0.6);
-    else if (b === 2) c = trim;
-    else if (kind === 'museum' && b > 4) {
-      const u = Math.abs(((x - x0) % 12) - 6) + Math.abs(((y - y0) % 10) - 5);
-      if (u === 4) c = mix(base, trim, 0.45);
-      if (u === 0) c = trim;
-    } else if (kind === 'stripe' && b > 3 && ((y - y0) >> 1) % 3 === 0) c = mix(base, trim, 0.18);
-    if (b === 1 && (x + y) % 2) c = mix(c, 0x000000, 0.2);
-    P.px(x, y, c);
-  }
-}
-
-// ================= möblerna: sprites ur atlasen (1:1 i 384-rymden) =================
-function spriteProp(id, kind, x, base, sign) {
-  const [fx, fy, fw, fh] = FRAMES[kind];
-  const top = base - fh;
-  const solidH = kind === 'bord' || kind === 'soffa' || kind === 'fatolj' ? Math.round(fh * 0.5) : Math.min(13, Math.round(fh * 0.4));
-  const label = { sang: 'SÄNG', garderob: 'GARDEROB', kylskap: 'KYLSKÅP' }[kind];
-  return {
-    id, sort: base, top,
-    solid: [x - 1, base - solidH, x + fw + 1, base + 1],
-    draw(ctx) {
-      ctx.fillStyle = 'rgba(20,12,28,0.22)';
-      ctx.fillRect(x + 1, base - 1, fw - 2, 2);
-      ctx.fillRect(x + 3, base + 1, fw - 6, 1);
-      if (ATLAS && ATLAS.complete) ctx.drawImage(ATLAS, fx, fy, fw, fh, x, top, fw, fh);
-      if (sign && label) ctxPlate(ctx, x + fw / 2, top - 9, label);
-    },
-  };
-}
-// mässingsskylten
-function ctxPlate(ctx, cx, y, label) {
-  const w = textW(SMALL, label) + 6;
-  ctx.fillStyle = '#8a6a2a'; ctx.fillRect(cx - w / 2 - 1 | 0, y - 1, w + 2, 9);
-  ctx.fillStyle = '#d8b85a'; ctx.fillRect(cx - w / 2 | 0, y, w, 7);
-  ctxText(ctx, SMALL, label, (cx - textW(SMALL, label) / 2) | 0, y + 1, '#3a2a10');
-}
-
-// Monsteran från Pixelverkstans floor-props
-function makePlantProp(x, base) {
-  const P = new Pix(40, 54, x - 20, base - 52);
-  const cx = x;
-  P.rect(cx - 7, base - 12, 14, 12, 0xe8e4da); P.hl(cx - 8, base - 13, 16, 0xffffff); P.hl(cx - 8, base - 12, 16, 0xcfc8b8);
-  P.vl(cx + 5, base - 11, 11, 0xbdb5a5); P.vl(cx + 6, base - 11, 11, 0xa9a192); P.hl(cx - 6, base - 1, 12, 0x9a9282);
-  P.rect(cx - 6, base - 12, 12, 1, 0x3a2a1c);
-  const leaves = [[-10, -30, 9, 6], [2, -38, 8, 7], [-4, -44, 7, 6], [6, -26, 9, 6], [-12, -20, 8, 5], [8, -16, 7, 5], [-2, -24, 8, 6]];
-  for (const [dx, dy, rx, ry] of leaves) {
-    for (let yy = -ry; yy <= ry; yy++) for (let xx = -rx; xx <= rx; xx++) {
-      const dd = Math.hypot(xx / rx, yy / ry);
-      if (dd >= 1) continue;
-      let c = dd < 0.5 && xx + yy < 0 ? 0x5fbf6e : 0x2f8f46;
-      if (dd > 0.8) c = 0x216b36;
-      if (xx === 0 || (Math.abs(xx - yy) === 0 && dd < 0.7)) c = 0x7fd48a;
-      P.px(cx + dx + xx, base + dy + yy, c);
-    }
-    P.line(cx, base - 12, cx + dx, base + dy + ry, 0x2c6e3a);
-  }
-  P.ell(cx, base + 1, 10, 3, 0x140c1c, 0.3, 3);
-  const img = P.flush();
-  const ox = x - 20, oy = base - 52;
-  return { img, sort: base, top: oy, solid: [x - 9, base - 12, x + 9, base + 1], draw: (ctx) => ctx.drawImage(img, ox, oy) };
-}
-
 function nameTag(ctx, x, y, av) {
   const c = avatarTagColors(av);
   const w = textW(SMALL, av.name || '?') + 6;
@@ -451,7 +587,6 @@ function nameTag(ctx, x, y, av) {
   ctxText(ctx, SMALL, av.name || '?', (x - w / 2 | 0) + 3, (y | 0) + 2, c.fg);
 }
 
-// Pratbubbla med en emoji (k = skala)
 export function emoteBubble(ctx, x, y, e, k = 1) {
   ctx.fillStyle = '#17151a'; ctx.fillRect(x - 9 * k | 0, y - 15 * k, 18 * k, 16 * k);
   ctx.fillStyle = '#f4f1ea'; ctx.fillRect(x - 8 * k | 0, y - 14 * k, 16 * k, 14 * k);

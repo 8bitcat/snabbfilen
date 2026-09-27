@@ -14,7 +14,7 @@ import { toast } from '../core/ui.js';
 import { cleanAvatar } from '../core/avatar.js';
 import { play } from '../core/sound.js';
 
-const WORLD_VERSION = 'v1';
+const WORLD_VERSION = 'v2';
 // ?world=xyz ger en egen liten värld (används av testerna, funkar för privata också)
 const worldId = () => 'snabbfilen-' + WORLD_VERSION + '-' +
   (new URLSearchParams(location.search).get('world') || 'varlden').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 24);
@@ -77,15 +77,15 @@ function joinAsClient(A) {
 
 // ---------- min publicerade state ----------
 function myState(A) {
-  return { av: { name: A.avatar.name, look: A.avatar.look, color: A.avatar.color }, scene: myScene(A), x: A.scene?.worldX ?? 190, y: A.scene?.worldY ?? 174, home: A.game.home, furniture: A.game.furniture };
+  return { av: { name: A.avatar.name, look: A.avatar.look, color: A.avatar.color }, scene: myScene(A), x: A.scene?.worldX ?? 190, y: A.scene?.worldY ?? 174, home: A.game.home, deco: A.game.deco };
 }
 function myScene(A) {
   if (A.sceneName === 'city') return 'city';
-  if (A.sceneName === 'room') return 'home:' + (W?.myId || 'me');
-  if (A.sceneName === 'visit') return 'home:' + (A.visitTarget?.id || 'me');
+  if (A.sceneName === 'room') return 'home:' + (W?.myId || 'me') + ':' + (A.roomSub | 0);
+  if (A.sceneName === 'visit') return 'home:' + (A.visitTarget?.id || 'me') + ':' + (A.roomSub | 0);
   return 'away';
 }
-const cleanScene = (s) => (s === 'city' || s === 'away' || /^home:[\w-]{1,64}$/.test(String(s)) ? String(s) : 'away');
+const cleanScene = (s) => (s === 'city' || s === 'away' || /^home:[\w-]{1,64}:\d$/.test(String(s)) ? String(s) : 'away');
 function cleanP(p, old = {}) {
   const out = { ...old };
   if (p && typeof p === 'object') {
@@ -94,7 +94,13 @@ function cleanP(p, old = {}) {
     if (p.x !== undefined) { out.tx = Math.max(8, Math.min(760, +p.x || 190)); if (out.x === undefined) out.x = out.tx; }
     if (p.y !== undefined) { out.ty2 = Math.max(20, Math.min(428, +p.y || 174)); if (out.y === undefined) out.y = out.ty2; }
     if (p.home !== undefined) out.home = String(p.home).slice(0, 16);
-    if (p.furniture !== undefined) out.furniture = (Array.isArray(p.furniture) ? p.furniture : []).map(String).slice(0, 12);
+    if (p.deco !== undefined && p.deco && typeof p.deco === 'object') {
+      out.deco = {};
+      for (const [key, list] of Object.entries(p.deco).slice(0, 12)) {
+        if (!/^[a-z]+:\d$/.test(key) || !Array.isArray(list)) continue;
+        out.deco[key] = list.slice(0, 40).map((d) => ({ k: String(d?.k || '').slice(0, 12), v: Math.max(0, d?.v | 0), x: +d?.x || 0, y: +d?.y || 0, ...(d?.fx ? { fx: 1 } : {}) }));
+      }
+    }
   }
   out.av = out.av || cleanAvatar({});
   out.scene = out.scene || 'away';
@@ -173,7 +179,7 @@ export function worldTick(A, myX, dt) {
   if (!W || !W.open) return;
   const now = performance.now();
   const myY = A.scene?.worldY ?? null;
-  const meta = JSON.stringify([A.avatar.look, A.avatar.name, myScene(A), A.game.home, A.game.furniture]);
+  const meta = JSON.stringify([A.avatar.look, A.avatar.name, myScene(A), A.game.home, A.game.deco]);
   const metaChanged = meta !== W.lastMeta;
   const posChanged = myX !== null && (Math.abs(myX - W.lastX) > 0.5 || Math.abs((myY ?? 0) - (W.lastY ?? 0)) > 0.5);
   if ((metaChanged || posChanged) && now - W.lastSent > 90) {
@@ -225,7 +231,7 @@ export function visitPlayer(A, id) {
   A.game.passTime(20); // resan dit
   A.game.save();
   if (A.game.collapsed) return false;
-  A.visitTarget = { id, name: p.av.name, home: p.home || 'rum', furniture: p.furniture || [] };
+  A.visitTarget = { id, name: p.av.name, home: p.home || 'rum', deco: p.deco || {} };
   play('door');
   toast(`🏠 Du är hemma hos ${p.av.name || 'en kompis'}!`, 'good');
   A.go('visit');

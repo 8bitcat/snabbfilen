@@ -1,254 +1,251 @@
-// Pixelstaden – navet. En gata i sidovy med stadens byggnader. Klicka på en
-// byggnad så går avataren dit och kliver in (det kostar en stunds klocktid).
-// Himlen skiftar med klockan och fönstren tänds på kvällen.
+// Pixelstaden – gåbar precis som hemma: fasadrad med dörrar upptill, torg och
+// gata att promenera på, folk som strosar. Två stadsdelar: CENTRUM (hem,
+// bostadsbyrå, mat, kläder, möbler) och ARBETSOMRÅDET (flygplatsen, frukt-
+// fabriken, burgarbaren) – gå ut i kanten för att byta del. Man ser andra
+// spelare som är i samma stadsdel.
 import { drawPerson, makeLook } from '../core/people.js';
-import { avatarTagColors } from '../core/avatar.js';
-import { SMALL, ctxText, textW, mix, css, hash } from '../core/floor-pix.js';
+import { Pix, SMALL, BIG, ctxText, textW, text, mix, mul, css, hash, bayer } from '../core/floor-pix.js';
 import { toast } from '../core/ui.js';
 import { play } from '../core/sound.js';
-import { worldFolksHere, worldMyEmote } from '../net/world.js';
-import { emoteBubble } from './room.js';
+import { createWalker, selfDrawable, folkDrawables, WALK_SEQ } from './walkable.js';
+import { worldFolksHere } from '../net/world.js';
 
-const WALK_SEQ = [1, 3, 2, 3];
-const WALK_MIN = 20; // minuter det kostar att gå in någonstans (dubbelt i ösregn)
+const FW = 384, FH = 216;
+const WALL_Y = 96; // fasadernas fot / trottoarkanten
 
-// x/w = fasad, färgerna är fasta per hus. Ordningen är gatans ordning.
-const SPOTS = [
-  { id: 'hem', label: 'HEM', x: 6, w: 56, c: 0x8a6a4a },
-  { id: 'bostad', label: 'BOSTAD', x: 68, w: 56, c: 0x5a6e8c, open: [8, 18] },
-  { id: 'mat', label: 'MAT', x: 130, w: 60, c: 0x2f8f46, open: [8, 21] },
-  { id: 'flyg', label: 'FLYG', x: 196, w: 62, c: 0x6d7480, open: [8, 20] },
-  { id: 'frukt', label: 'FRUKT', x: 264, w: 58, c: 0xc06a2a, open: [8, 20] },
-  { id: 'klader', label: 'KLÄDER', x: 328, w: 52, c: 0xb83d7a, open: [8, 20] },
+// Stadsdelarnas byggnader: dörr [x0,x1] + tema. act körs efter promenad+dörrtid.
+const DISTRICTS = [
+  {
+    name: 'CENTRUM',
+    buildings: [
+      { id: 'hem', sign: 'HEM', x0: 16, x1: 72, c: 0x8a6a4a, door: [34, 56] },
+      { id: 'bostad', sign: 'BOSTAD', x0: 78, x1: 134, c: 0x5a6e8c, door: [96, 118], open: [8, 18] },
+      { id: 'mat', sign: 'MAT', x0: 140, x1: 200, c: 0x2f8f46, door: [158, 182], open: [8, 21], awning: true },
+      { id: 'klader', sign: 'KLÄDER', x0: 206, x1: 266, c: 0xb83d7a, door: [224, 248], open: [8, 20], display: 'shirt' },
+      { id: 'mobler', sign: 'MÖBLER', x0: 272, x1: 344, c: 0x2c6fb7, door: [294, 322], open: [8, 20], display: 'sofa' },
+    ],
+    exit: { side: 'right', label: 'ARBETSOMRÅDET' },
+  },
+  {
+    name: 'ARBETSOMRÅDET',
+    buildings: [
+      { id: 'flyg', sign: 'FLYGPLATSEN', x0: 14, x1: 118, c: 0x6d7480, door: [50, 82], open: [8, 20], hangar: true },
+      { id: 'frukt', sign: 'FRUKTFABRIKEN', x0: 130, x1: 234, c: 0xc06a2a, door: [166, 198], open: [8, 20], chimney: true },
+      { id: 'burgare', sign: 'BURGARBAREN', x0: 246, x1: 340, c: 0xc9323a, door: [278, 308], open: [8, 22], awning: true, burger: true },
+    ],
+    exit: { side: 'left', label: 'CENTRUM' },
+  },
 ];
-const GROUND = 160, FEET = 174;
-
-// Himlens nyckelfärger över dygnet: [timme, topp, botten]
-const SKY = [
-  [0, 0x0b1026, 0x1c2140], [5, 0x0b1026, 0x1c2140], [7, 0xc7743f, 0xe8b06a],
-  [9, 0x7ec8e8, 0xbfe6f2], [17, 0x7ec8e8, 0xbfe6f2], [20, 0xd06a3a, 0x5a3a6e],
-  [22, 0x0b1026, 0x1c2140], [24, 0x0b1026, 0x1c2140],
-];
-function skyAt(hour) {
-  let i = 1;
-  while (SKY[i][0] < hour) i++;
-  const [h0, t0, b0] = SKY[i - 1], [h1, t1, b1] = SKY[i];
-  const t = (hour - h0) / Math.max(0.01, h1 - h0);
-  return [mix(t0, t1, t), mix(b0, b1, t)];
-}
-const isNight = (hour) => hour >= 19.5 || hour < 6.5;
 
 export function makeCity(A) {
   const g = A.game;
-  // Avataren minns var på gatan den stod
-  if (A.cityX === undefined) A.cityX = SPOTS[0].x + SPOTS[0].w / 2;
-  let px = A.cityX, target = null, onArrive = null, dir = 'down', t = 0;
+  const sub = Math.max(0, Math.min(1, A.citySub | 0));
+  A.citySub = sub;
+  const D = DISTRICTS[sub];
+  const walker = createWalker({ top: WALL_Y + 4, bottom: FH - 6, left: 4, right: FW - 4, spawn: A.cityPos?.[sub] || [sub ? FW - 40 : 100, 140] });
+  walker.speed = 95;
+  let t = 0;
 
-  // Folk på stan: några förbipasserande med slumpade utseenden
+  // strosande stadsbor (bara kosmetik)
   const folk = Array.from({ length: 3 }, (_, i) => ({
-    look: makeLook(), x: 40 + i * 130 + hash(i, 7) * 60, sp: (14 + hash(i, 3) * 10) * (i % 2 ? 1 : -1), y: FEET - 3 + i * 2,
+    look: makeLook(), x: 60 + i * 110 + hash(i, 7) * 40, y: 130 + i * 25,
+    tx: 0, ty: 0, wait: hash(i, 9) * 3,
   }));
+  const bgCache = {};
+  const bg = (night) => {
+    const key = night ? 'n' : 'd';
+    if (!bgCache[key]) bgCache[key] = paintCity(D, night, sub);
+    return bgCache[key];
+  };
 
-  const VW = 384, VH = 216; // scenen ritas i halva upplösningen och skalas 2×
-  function walkTo(x, cb) { target = Math.max(12, Math.min(VW - 12, x)); onArrive = cb || null; }
+  const hotRects = D.buildings.map((b) => ({
+    id: b.id, b,
+    r: [b.door[0], 46, b.door[1], WALL_Y + 8],
+    go: [(b.door[0] + b.door[1]) / 2, WALL_Y + 12],
+  }));
+  const exitRect = D.exit.side === 'right'
+    ? { r: [FW - 14, WALL_Y, FW, FH], go: [FW - 18, 150] }
+    : { r: [0, WALL_Y, 14, FH], go: [18, 150] };
 
-  function enter(spot) {
+  function enter(b) {
     const hour = g.min / 60;
-    if (spot.open && (hour < spot.open[0] || hour >= spot.open[1])) {
-      toast(`🔒 ${spot.label} har stängt (öppet ${spot.open[0]}–${spot.open[1]}).`, 'bad');
+    if (b.open && (hour < b.open[0] || hour >= b.open[1])) {
+      toast(`🔒 ${b.sign} har stängt (öppet ${b.open[0]}–${b.open[1]}).`, 'bad');
       return;
     }
-    g.passTime(g.eventIs('regn') ? WALK_MIN * 2 : WALK_MIN);
+    g.passTime(g.eventIs('regn') ? 40 : 20);
     g.save();
-    if (g.collapsed) return; // midnatt: main tar hand om det
+    if (g.collapsed) return;
     play('door');
-    if (spot.id === 'hem') A.go('room');
-    else if (spot.id === 'bostad') A.openHousing();
-    else if (spot.id === 'mat') A.openFoodShop();
-    else if (spot.id === 'klader') A.openKladaffar();
-    else A.startJob(spot.id);
+    if (b.id === 'hem') { A.roomSub = 0; A.go('room'); }
+    else if (b.id === 'bostad') A.openHousing();
+    else if (b.id === 'mat') A.openFoodShop();
+    else if (b.id === 'klader') A.go('klader');
+    else if (b.id === 'mobler') A.go('mobler');
+    else A.startJob(b.id === 'flyg' ? 'flygplats' : b.id);
   }
 
   return {
-    pxScale: 2,
-    get worldX() { return px; },
-    get worldY() { return FEET; },
+    get worldX() { return walker.px; },
+    get worldY() { return walker.py; },
+    _debug: {
+      spot: (id) => { const h = hotRects.find((h) => h.id === id); return h ? { x: (h.r[0] + h.r[2]) / 2, y: (h.r[1] + h.r[3]) / 2 } : null; },
+      tile: (a, b) => ({ x: 30 + a * 40, y: Math.min(FH - 10, WALL_Y + 15 + b * 14) }),
+    },
+
     update(dt) {
       t += dt;
-      if (target !== null) {
-        const d = target - px, step = 65 * dt;
-        dir = d < 0 ? 'left' : 'right';
-        if (Math.abs(d) <= step) {
-          px = target; target = null; dir = 'down';
-          A.cityX = px;
-          const cb = onArrive; onArrive = null; cb?.();
-        } else px += Math.sign(d) * step;
-      }
-      for (const f of folk) {
-        f.x += f.sp * dt;
-        if (f.x < -20) f.x = VW + 20;
-        if (f.x > VW + 20) f.x = -20;
+      walker.update(dt);
+      A.cityPos = A.cityPos || {};
+      A.cityPos[sub] = [walker.px, walker.py];
+      for (const f of folk) { // strosarna väljer nya mål då och då
+        if (f.wait > 0) { f.wait -= dt; continue; }
+        if (!f.tx) { f.tx = 30 + hash(f.x | 0, t | 0) * (FW - 60); f.ty = WALL_Y + 12 + hash(f.y | 0, t | 0) * 90; }
+        const dx = f.tx - f.x, dy = f.ty - f.y, d = Math.hypot(dx, dy);
+        if (d < 2) { f.tx = 0; f.wait = 1.5 + hash(f.x | 0, 3) * 4; continue; }
+        f.x += dx / d * 26 * dt; f.y += dy / d * 26 * dt;
       }
     },
 
     down(x, y) {
-      const spot = SPOTS.find((s) => x >= s.x && x <= s.x + s.w && y < GROUND + 16);
-      if (spot) walkTo(spot.x + spot.w / 2, () => enter(spot));
-      else walkTo(x);
+      for (const h of hotRects) {
+        if (x >= h.r[0] && x <= h.r[2] && y >= h.r[1] && y <= h.r[3]) {
+          walker.walkTo(h.go[0], h.go[1], () => enter(h.b));
+          return;
+        }
+      }
+      if (x >= exitRect.r[0] && x <= exitRect.r[2] && y >= exitRect.r[1]) {
+        walker.walkTo(exitRect.go[0], exitRect.go[1], () => {
+          A.citySub = sub ? 0 : 1;
+          A.cityPos[A.citySub] = [A.citySub ? 24 : FW - 24, walker.py];
+          A.go('city');
+        });
+        return;
+      }
+      if (y > WALL_Y) walker.walkTo(x, y);
     },
 
     draw(ctx) {
-      ctx.save();
-      ctx.setTransform(2, 0, 0, 2, 0, 0);
-      const W = VW, H = VH;
-      const hour = g.min / 60;
-      const night = isNight(hour);
-      const [top, bot] = skyAt(hour);
-      // himmel i band + stjärnor om natten
-      for (let y = 0; y < GROUND; y += 4) {
-        ctx.fillStyle = css(mix(top, bot, y / GROUND));
-        ctx.fillRect(0, y, W, 4);
-      }
-      const rain = g.eventIs('regn');
-      if (night) {
-        ctx.fillStyle = '#e8ecff';
-        for (let i = 0; i < 40; i++) {
-          const sx = hash(i, 1) * W, sy = hash(i, 2) * 110;
-          if (hash(i, 3) > 0.3 || Math.sin(t * 2 + i) > 0) ctx.fillRect(sx | 0, sy | 0, 1, 1);
-        }
-        ctx.fillStyle = '#f4f1d8'; // månen
-        ctx.beginPath(); ctx.fillRect(320, 22, 14, 14); ctx.fillRect(322, 20, 10, 18); ctx.fillRect(318, 24, 18, 10);
-      } else if (rain) {
-        // regnmoln i stället för sol
-        ctx.fillStyle = '#5a6272';
-        for (let i = 0; i < 4; i++) { const cx = 30 + i * 100 + Math.sin(t * 0.4 + i) * 8; ctx.fillRect(cx | 0, 18 + (i % 2) * 8, 46, 12); ctx.fillRect((cx | 0) + 8, 12 + (i % 2) * 8, 28, 10); }
-      } else if (hour >= 7 && hour < 19) {
-        ctx.fillStyle = '#fff3b8'; // solen
-        const sx = 20 + (hour - 7) / 12 * (W - 60);
-        ctx.fillRect(sx | 0, 18, 14, 14); ctx.fillRect((sx | 0) + 2, 16, 10, 18); ctx.fillRect((sx | 0) - 2, 22, 18, 10);
-      }
-      // bakgrundssiluett av staden
-      ctx.fillStyle = css(mix(bot, 0x1a1a2e, night ? 0.8 : 0.25));
-      for (let i = 0; i < 10; i++) {
-        const bw = 24 + hash(i, 11) * 30, bx = i * 40 - 8, bh = 30 + hash(i, 12) * 45;
-        ctx.fillRect(bx, GROUND - 62 - bh + 62, bw, bh); // står bakom husen
-      }
+      ctx.setTransform(A.pxs, 0, 0, A.pxs, 0, 0);
+      const hour = g.min / 60, night = hour >= 19.5 || hour < 6.5;
+      ctx.drawImage(bg(night), 0, 0);
 
-      for (const s of SPOTS) drawBuilding(ctx, s, g, night, t);
+      const drawables = [];
+      if (!night) for (const f of folk) drawables.push({
+        fy: f.y,
+        draw: () => drawPerson(ctx, f.x, f.y, f.look, f.tx && Math.abs(f.tx - f.x) > Math.abs(f.ty - f.y) ? (f.tx < f.x ? 'left' : 'right') : 'down', f.tx ? WALK_SEQ[Math.floor(t * 7 + f.x) % 4] : 0),
+      });
+      drawables.push(...folkDrawables(A, t));
+      drawables.push(selfDrawable(A, walker, t, { folksHere: worldFolksHere(A).length }));
+      drawables.sort((a, b) => a.fy - b.fy).forEach((d) => d.draw(ctx));
 
-      // trottoar + gata
-      ctx.fillStyle = '#9a9284'; ctx.fillRect(0, GROUND, W, 16);
-      ctx.fillStyle = '#b5ac9c'; ctx.fillRect(0, GROUND, W, 2);
-      ctx.fillStyle = '#7d766a'; for (let x = 0; x < W; x += 24) ctx.fillRect(x, GROUND + 2, 1, 14);
-      ctx.fillStyle = '#3a3a40'; ctx.fillRect(0, GROUND + 16, W, H - GROUND - 16);
-      ctx.fillStyle = '#d8d2c0'; for (let x = 6; x < W; x += 34) ctx.fillRect(x, GROUND + 34, 16, 3);
-
-      // folk + spelaren (y-sorterat: folk lite högre upp först)
-      for (const f of folk) {
-        if (night || rain) continue; // gatan är tom på natten och i ösregnet
-        drawPerson(ctx, f.x, f.y, f.look, f.sp < 0 ? 'left' : 'right', WALK_SEQ[Math.floor(t * 7 + f.x) % 4]);
-      }
-      // riktiga spelare i den öppna världen
-      for (const f of worldFolksHere(A)) {
-        drawPerson(ctx, f.x, FEET - 2, f.av.look, 'down', f.walking ? WALK_SEQ[Math.floor(t * 8.5) % 4] : (Math.sin(t * 2 + f.x) > 0.9 ? 4 : 0));
-        drawTag(ctx, f.x, FEET - 48, f.av);
-        if (f.emote) emoteBubble(ctx, f.x, FEET - 58, f.emote);
-      }
-      const frame = target !== null ? WALK_SEQ[Math.floor(t * 8.5) % 4] : (Math.sin(t * 2) > 0.9 ? 4 : 0);
-      drawPerson(ctx, px, FEET, A.avatar.look, dir, frame);
-      drawTag(ctx, px, FEET - 46, A.avatar);
-      const mine = worldMyEmote();
-      if (mine) emoteBubble(ctx, px, FEET - 56, mine);
-
-      // regnet faller framför allt
-      if (rain && !night) {
-        ctx.fillStyle = 'rgba(160,190,230,0.55)';
-        for (let i = 0; i < 70; i++) {
-          const rx = (hash(i, 51) * W + t * 40 * (0.7 + hash(i, 52) * 0.6)) % W;
-          const ry = (hash(i, 53) * H + t * (150 + hash(i, 54) * 80)) % H;
-          ctx.fillRect(rx | 0, ry | 0, 1, 5);
+      // regnet
+      if (g.eventIs('regn') && !night) {
+        ctx.fillStyle = 'rgba(160,190,230,0.5)';
+        for (let i = 0; i < 60; i++) {
+          const rx = (hash(i, 51) * FW + t * 30) % FW;
+          const ry = (hash(i, 53) * FH + t * (110 + hash(i, 54) * 60)) % FH;
+          ctx.fillRect(rx | 0, ry | 0, 1, 4);
         }
       }
-
-      // natt: lägg en mörk ton över gata + hus (inte himlen)
-      if (night) { ctx.fillStyle = 'rgba(10,12,40,0.28)'; ctx.fillRect(0, 60, W, H - 60); }
-      else if (rain) { ctx.fillStyle = 'rgba(40,50,80,0.15)'; ctx.fillRect(0, 0, W, H); }
-      ctx.restore();
+      if (night) { ctx.fillStyle = 'rgba(10,12,40,0.30)'; ctx.fillRect(0, 0, FW, FH); }
     },
   };
 }
 
-function drawTag(ctx, x, y, av) {
-  const c = avatarTagColors(av);
-  const w = textW(SMALL, av.name) + 6;
-  ctx.fillStyle = c.bg; ctx.fillRect(x - w / 2 | 0, y, w, 9);
-  ctxText(ctx, SMALL, av.name, (x - w / 2 | 0) + 3, y + 2, c.fg);
-}
-
-// En byggnad: fasad, tak, fönster (tända på kvällen), dörr och skylt.
-// Hemma-huset byter utseende efter vilken bostad man har.
-function drawBuilding(ctx, s, g, night, t) {
-  let h = 88, c = s.c;
-  if (s.id === 'hem') h = { rum: 62, lagenhet: 96, villa: 78 }[g.home] || 62;
-  const y0 = GROUND - h, lit = night || (g.min / 60) < 7;
-
-  // fasad + enkel skuggsida
-  ctx.fillStyle = css(c); ctx.fillRect(s.x, y0, s.w, h);
-  ctx.fillStyle = css(mix(c, 0x000000, 0.25)); ctx.fillRect(s.x + s.w - 4, y0, 4, h);
-  ctx.fillStyle = css(mix(c, 0xffffff, 0.18)); ctx.fillRect(s.x, y0, 2, h);
-  // tak
-  if (s.id === 'hem' && g.home !== 'lagenhet') { // sadeltak på hus/villa
-    ctx.fillStyle = '#7d3b30';
-    for (let i = 0; i < 10; i++) ctx.fillRect(s.x - 3 + i, y0 - 10 + i, s.w + 6 - i * 2, 2);
-  } else {
-    ctx.fillStyle = css(mix(c, 0x000000, 0.45)); ctx.fillRect(s.x - 2, y0 - 4, s.w + 4, 5);
+// ---------- stadsbilden (Pix, per stadsdel + dag/natt) ----------
+function paintCity(D, night, sub) {
+  const P = new Pix(FW, FH);
+  const skyTop = night ? 0x0b1026 : 0x7ec8e8, skyBot = night ? 0x1c2140 : 0xbfe6f2;
+  // himmel + bakre siluett
+  for (let y = 0; y < 46; y++) for (let x = 0; x < FW; x++) P.px(x, y, mix(skyTop, skyBot, y / 46 + (bayer(x, y) - 0.5) * 0.06));
+  if (night) for (let i = 0; i < 40; i++) P.px((hash(i, 1) * FW) | 0, (hash(i, 2) * 40) | 0, 0xe8ecff, hash(i, 3) > 0.4 ? 1 : 0.5);
+  else { P.ell(320, 14, 8, 8, 0xfff3b8, 1, 4); P.ell(320, 14, 5, 5, 0xfff9dc, 1, 3); }
+  for (let i = 0; i < 12; i++) {
+    const bw = 20 + hash(i, 11) * 26, bx = i * 34 - 6, bh = 14 + hash(i, 12) * 22;
+    for (let y = 46 - bh; y < 46; y++) for (let x = bx; x < bx + bw; x++) P.px(x, y, night ? 0x141828 : 0x9ab0be);
   }
 
-  // fönster i rutnät
-  const rows = Math.max(1, Math.floor((h - 34) / 22));
-  const cols = Math.max(2, Math.floor(s.w / 20));
-  for (let r = 0; r < rows; r++) for (let k = 0; k < cols; k++) {
-    const wx = s.x + 6 + k * ((s.w - 12) / cols) + 2, wy = y0 + 8 + r * 22;
-    const on = lit && hash(s.x + k, r, 5) > 0.35;
-    ctx.fillStyle = on ? '#ffd97a' : css(mix(c, 0x101828, 0.72));
-    ctx.fillRect(wx | 0, wy, 10, 12);
-    ctx.fillStyle = css(mix(c, 0x000000, 0.4));
-    ctx.fillRect(wx | 0, wy + 5, 10, 1); ctx.fillRect((wx | 0) + 5, wy, 1, 12);
+  // gränderna mellan husen
+  for (let y = 46; y < WALL_Y; y++) for (let x = 0; x < FW; x++) {
+    let c = mix(night ? 0x10121c : 0x3a3f4a, night ? 0x181a26 : 0x2c3038, (y - 46) / 50 + (bayer(x, y) - 0.5) * 0.15);
+    if ((y - 46) % 9 === 0) c = mul(c, 0.85);
+    P.px(x, y, c);
   }
-
-  // dörr + skylt
-  const dx = s.x + s.w / 2 - 7 | 0;
-  ctx.fillStyle = '#241a12'; ctx.fillRect(dx, GROUND - 21, 14, 21);
-  ctx.fillStyle = s.id === 'bostad' ? '#e8b230' : '#5a4632'; ctx.fillRect(dx + 1, GROUND - 20, 12, 20);
-  ctx.fillStyle = '#241a12'; ctx.fillRect(dx + 10, GROUND - 12, 2, 2); // handtag
-  const tw = textW(SMALL, s.label) + 8;
-  const sx = s.x + s.w / 2 - tw / 2 | 0;
-  ctx.fillStyle = '#17151a'; ctx.fillRect(sx, y0 + (s.id === 'hem' && g.home !== 'lagenhet' ? -20 : -14) + 10, tw, 11);
-  ctxText(ctx, SMALL, s.label, sx + 4, y0 + (s.id === 'hem' && g.home !== 'lagenhet' ? -20 : -14) + 13, night ? '#7ee8fa' : '#f4f1ea');
-
-  // små kännetecken per hus
-  if (s.id === 'mat') { // randig markis
-    for (let i = 0; i < s.w - 8; i += 4) {
-      ctx.fillStyle = i % 8 ? '#e8e3d6' : '#c9323a';
-      ctx.fillRect(s.x + 4 + i, GROUND - 26, 4, 4);
+  // fasaderna
+  for (const b of D.buildings) {
+    const c = b.c;
+    for (let y = 8, y1 = WALL_Y; y < y1; y++) for (let x = b.x0; x < b.x1; x++) {
+      let k = mix(c, mul(c, 0.8), (bayer(x, y) - 0.5) * 0.3 + 0.5 + (y - 8) / 240);
+      if (x === b.x0) k = mix(c, 0xffffff, 0.18);
+      if (x === b.x1 - 1) k = mul(c, 0.55);
+      if (b.hangar && (x + y) % 14 === 0) k = mul(k, 0.85); // plåtväggens skarvar
+      P.px(x, y, k);
     }
-  }
-  if (s.id === 'frukt') { // skorsten med rök
-    ctx.fillStyle = '#5a4632'; ctx.fillRect(s.x + s.w - 16, y0 - 14, 8, 14);
-    ctx.fillStyle = 'rgba(220,220,215,0.7)';
-    for (let i = 0; i < 3; i++) {
-      const ph = (t * 8 + i * 9) % 26;
-      ctx.fillRect(s.x + s.w - 14 + Math.sin(t + i) * 2 | 0, y0 - 16 - ph, 3, 3);
+    P.hl(b.x0 - 1, 6, b.x1 - b.x0 + 2, mul(c, 0.5)); P.hl(b.x0 - 1, 7, b.x1 - b.x0 + 2, mix(c, 0xffffff, 0.2));
+    // fönsterrad
+    if (!b.hangar) for (let wx = b.x0 + 6; wx + 12 < b.x1 - 4; wx += 18) {
+      const lit = night && hash(wx, 5) > 0.4;
+      P.rect(wx, 18, 12, 14, lit ? 0xffd97a : night ? 0x18202e : 0x35405c);
+      P.box(wx, 18, 12, 14, mul(c, 0.5));
+      P.vl(wx + 6, 19, 12, mul(c, 0.5)); P.hl(wx + 1, 24, 10, mul(c, 0.5));
+    } else { // hangarens stora port + rand
+      P.rect(b.x0 + 8, 30, b.x1 - b.x0 - 16, 8, 0xd8b24a); for (let x = b.x0 + 8; x < b.x1 - 8; x += 6) P.rect(x, 30, 3, 8, 0x2a2d33);
     }
+    if (b.chimney) { P.rect(b.x1 - 22, 0, 10, 10, 0x5a4632); P.rect(b.x1 - 21, 0, 3, 10, 0x7a5c42); }
+    // skylt
+    const F = textW(BIG, b.sign) + 10 < b.x1 - b.x0 ? BIG : SMALL;
+    const tw = textW(F, b.sign), sx = Math.round((b.x0 + b.x1) / 2 - tw / 2);
+    P.rect(sx - 4, 38, tw + 8, F.h + 4, 0x17151a); P.box(sx - 4, 38, tw + 8, F.h + 4, night ? 0x7ee8fa : 0x000000);
+    text(P, F, b.sign, sx, 40, night ? 0x7ee8fa : 0xf4f1ea);
+    if (b.burger) { P.ell((b.x0 + b.x1) / 2, 34, 5, 3, 0xe8b230, 1, 3); P.hl((b.x0 + b.x1) / 2 - 4, 34, 8, 0xc9323a); }
+    // markis
+    if (b.awning) for (let i = 0; i < b.x1 - b.x0 - 12; i++) {
+      P.px(b.x0 + 6 + i, 52 + (i % 3 === 2 ? 1 : 0), (i >> 2) % 2 ? 0xe8e3d6 : (b.burger ? 0xc9323a : 0x2f8f46));
+      P.px(b.x0 + 6 + i, 53, mul((i >> 2) % 2 ? 0xe8e3d6 : 0xc9323a, 0.7));
+    }
+    // skyltfönster
+    if (b.display) {
+      const dx0 = b.x0 + 8, dx1 = b.door[0] - 4;
+      if (dx1 - dx0 > 16) {
+        P.rect(dx0, 56, dx1 - dx0, 30, night ? 0x223048 : 0xd8ecf4); P.box(dx0, 56, dx1 - dx0, 30, mul(b.c, 0.5));
+        const mx = (dx0 + dx1) >> 1;
+        if (b.display === 'shirt') { P.rect(mx - 5, 64, 10, 9, 0x3fc4ff); P.rect(mx - 8, 64, 3, 4, 0x3fc4ff); P.rect(mx + 5, 64, 3, 4, 0x3fc4ff); }
+        else { P.rect(mx - 8, 68, 16, 6, 0xc9323a); P.rect(mx - 8, 64, 3, 6, 0xc9323a); P.rect(mx + 5, 64, 3, 6, 0xc9323a); }
+      }
+    }
+    // dörren
+    P.rect(b.door[0], 58, b.door[1] - b.door[0], WALL_Y - 58, 0x2e2418);
+    P.rect(b.door[0] + 1, 59, b.door[1] - b.door[0] - 2, WALL_Y - 59, 0x5a4632);
+    P.px(b.door[1] - 4, 76, 0xd8b24a);
+    if (night) P.dith(b.door[0], WALL_Y, b.door[1] - b.door[0], 6, 0xffd97a, 0.5, 0.25);
   }
-  if (s.id === 'flyg') { // liten trafikledartorn-lampa som blinkar
-    ctx.fillStyle = '#4a505a'; ctx.fillRect(s.x + 6, y0 - 16, 10, 16);
-    ctx.fillStyle = Math.sin(t * 4) > 0 ? '#ff5050' : '#601818';
-    ctx.fillRect(s.x + 10, y0 - 20, 3, 3);
+
+  // trottoar + gata/torg
+  for (let y = WALL_Y; y < FH; y++) for (let x = 0; x < FW; x++) {
+    let c;
+    if (y < WALL_Y + 26) { // trottoarplattor
+      c = mix(0x9a9284, 0xb5ac9c, hash((x / 24) | 0, (y / 13) | 0, 6) * 0.5);
+      if (x % 24 === 0 || (y - WALL_Y) % 13 === 0) c = mul(c, 0.8);
+    } else { // gatan/torget
+      c = mix(0x4c4e56, 0x3a3c44, (bayer(x, y) - 0.5) * 0.4 + 0.5 + hash(x, y, 8) * 0.1);
+      if (sub === 0 && ((x + ((y / 6) | 0) * 3) % 48 < 20) && y > WALL_Y + 40 && y < WALL_Y + 70) c = mix(c, 0xd8d2c0, 0.5); // övergångsställe
+    }
+    P.px(x, y, c);
   }
-  if (s.id === 'klader') { // skyltfönster med en tröja
-    ctx.fillStyle = '#f4efe2'; ctx.fillRect(s.x + 8, GROUND - 34, 22, 26);
-    ctx.fillStyle = '#3fc4ff';
-    ctx.fillRect(s.x + 14, GROUND - 27, 10, 10); ctx.fillRect(s.x + 11, GROUND - 27, 3, 5); ctx.fillRect(s.x + 24, GROUND - 27, 3, 5);
+  P.hl(0, WALL_Y + 26, FW, 0x2a2c32);
+  // lyktstolpar + träd (bara dekor – ritas i bg, blockerar inte)
+  for (const lx of sub === 0 ? [110, 250] : [130, 230]) {
+    P.rect(lx, WALL_Y + 30, 2, 26, 0x2a2d33);
+    P.rect(lx - 2, WALL_Y + 28, 6, 4, night ? 0xffd97a : 0x8a8f9a);
+    if (night) P.ell(lx + 1, WALL_Y + 44, 16, 9, 0xffd97a, 0.12, 3);
   }
+  // riktningsskylt mot andra stadsdelen
+  const ex = D.exit.side === 'right' ? FW - 12 : 2;
+  P.rect(ex, WALL_Y + 6, 10, 40, 0x2a2d33);
+  const label = D.exit.label;
+  for (let i = 0; i < label.length && i < 13; i++) text(P, SMALL, label[i], ex + 2, WALL_Y + 8 + i * 6, 0xffd23f);
+
+  P.box(0, 0, FW, FH, 0x0e0d12);
+  return P.flush();
 }

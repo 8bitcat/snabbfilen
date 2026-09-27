@@ -19,23 +19,24 @@ python -m http.server 8788
 
 ## Spelet
 
-- **Klockan går** när du går någonstans, jobbar, äter och sover. Dagen tar slut — hinner du inte hem somnar du på gatan.
-- **Behov:** 🍔 mätthet (köp mat!) och ⚡ energi (sov!). Utsvulten = halv lön. Utmattad = inget jobb.
-- **Hyran** dras varje måndag morgon.
-- **Jobben** (minispel, 60 sekunder = 4 timmar): ✈️ Flygplatsen — dra väskan till vagnen med samma tagg · 🍊 Fruktfabriken — klicka frukterna ordersedeln behöver · 👕 Klädaffären — häng plaggen på rätt hylla. Tre pass på samma jobb = befordran och högre lön.
-- **Bostäder:** Lilla rummet → Lägenheten (1 500 kr) → Villan (8 000 kr). Större bostad = bättre sömn. Möbler köps i Möbelhörnan.
-- **Garderoben** hemma öppnar avatarredigeraren — frisyrer, kläder, färger. Bara basplaggen är gratis; 18 plagg och accessoarer (keps → krona) har 🔒 tills du köpt dem i klädaffären. Jobbar du i klädaffären får du personalrabatt (5 % per nivå, max 20 %).
-- **Öppen värld:** alla som spelar är i samma Pixelstad — ni ser varandra på gatan, och 👥-knappen listar vilka som är online så du kan åka hem till vem som helst. Emote-knappar (👋❤️😂🎉) när någon är nära.
-- **Dagshändelser:** rea i klädaffären, extrapass med dubbel lön, ösregn som gör allt segt…
-- **Målet:** egen villa och 10 000 kr på fickan. 🏆 (📊-knappen visar din resa.)
+Allt är gåbart med din egen figur – klicka där du vill gå. Ingenting ses från sidan.
+
+- **Pixelstaden** i två stadsdelar: *Centrum* (hem, bostadsbyrå, mat, kläder, möbler) och *Arbetsområdet* (flygplats, fruktfabrik, burgarbar). Gå ut i kanten för att byta stadsdel.
+- **Hemma:** bostäderna har flera rum – Lilla rummet, Lägenheten (vardagsrum + sovrum) och Villan (vardagsrum, sovrum, kök) med dörrar mellan rummen. Säng, kylskåp och garderob fungerar.
+- **🛋️ Möblera:** köp möbler i varuhuset, de hamnar i förrådet. Hemma trycker du *Möblera* – plocka ur förrådet, flytta runt, sälj för halva priset. Besökare ser din inredning.
+- **Jobben** (60 sekunder = 4 timmar), med kroppen: ✈️ bär väskorna från bandet till vagnen med rätt bokstav · 🍊 plocka frukten ordersedeln vill ha och bär den till lådan · 🍔 plocka tallriken från disken och servera kunden med samma önskan i pratbubblan. Tre pass = befordran.
+- **Butikerna** går man runt i: möbelvaruhuset visar alla möbler utställda med prislappar (välj färg vid köp), klädaffären har varje plagg på en mannekäng och accessoarerna på hyllan.
+- **Öppen värld:** alla som spelar är i samma Pixelstad, ni ser varandra i staden och kan åka hem till varandra (👥). Emotes när någon är nära.
+- **Dagshändelser, rekord, dagbok 📊** och målet: egen villa + 10 000 kr. 🏆
 
 ## Struktur
 
 - `js/core/` — motorn från Pixelverkstan: `people.js` (pixelfigurer + kläder), `avatar.js` (redigeraren), `floor-pix.js` (pixelritning + fonter), `ui.js` (modal/toast)
 - `js/game.js` — klocka, behov, ekonomi, bostäder, save/load
-- `js/scenes/` — Pixelstaden och rummet
-- `js/jobs/` — arbetspassen: `sorter.js` (flygplats + klädaffär), `packer.js` (fruktfabrik), `shift.js` (löneflödet)
-- `js/shops/` — matbutiken, bostadsbyrån + Möbelhörnan, klädaffärens butik
+- `js/scenes/` — staden, hemmet (delrum + möblering), butikerna och `walkable.js` (gå-motorn alla scener delar)
+- `js/jobs/` — de gåbara jobben (`jobb-flyg.js`, `jobb-frukt.js`, `jobb-burgare.js`) och `shift.js` (löneflödet)
+- `js/shops/` — matbutiken och bostadsbyrån (dialoger)
+- `assets/interior.png` + `js/data/frames.js` — möbelatlasen, byggs av `tools/build-atlas.mjs`
 - `js/net/world.js` — den öppna världen (auto-anslutning, värd-auktoritativ, `?world=` för egen värld)
 - `js/core/sound.js` — ljudeffekter som WebAudio-synt, inga ljudfiler
 - `docs/SPELPLAN.md` — designen och milstolparna

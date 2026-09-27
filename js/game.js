@@ -20,9 +20,9 @@ export const foodOf = (id) => FOOD.find((f) => f.id === id);
 
 // Jobben. wage = kr per rätt, oops = avdrag per fel, bonus = kr per färdig låda (packjobb).
 export const JOBS = {
-  flygplats: { id: 'flygplats', icon: '✈️', name: 'Flygplatsen', verb: 'Sortera bagage', wage: 7, oops: 4 },
-  frukt: { id: 'frukt', icon: '🍊', name: 'Fruktfabriken', verb: 'Packa frukt', wage: 3, oops: 3, bonus: 20 },
-  klader: { id: 'klader', icon: '👕', name: 'Klädaffären', verb: 'Sortera plagg', wage: 8, oops: 4 },
+  flygplats: { id: 'flygplats', icon: '✈️', name: 'Flygplatsen', verb: 'Bär väskorna till rätt vagn', wage: 7, oops: 4 },
+  frukt: { id: 'frukt', icon: '🍊', name: 'Fruktfabriken', verb: 'Plocka frukt från bandet till lådan', wage: 4, oops: 3, bonus: 20 },
+  burgare: { id: 'burgare', icon: '🍔', name: 'Burgarbaren', verb: 'Servera rätt mat till rätt kund', wage: 10, oops: 5 },
 };
 export const JOB_TITLES = ['Nybörjare', 'Van', 'Proffs', 'Mästare', 'Legendar'];
 export const levelOf = (shifts) => Math.min(5, 1 + Math.floor(shifts / 3));
@@ -59,16 +59,26 @@ export const SORTIMENT = [
 ];
 export const clothesKey = (kind, v) => `${kind}:${v}`;
 
-// Möbler till hemmet (köps hos Bostadsbyrån). Villan har det mesta från start.
-export const FURNITURE = [
-  { id: 'matta', icon: '🟥', name: 'Fin matta', price: 250, desc: 'Mysigare golv direkt.' },
-  { id: 'lampa', icon: '💡', name: 'Svamplampan', price: 300, desc: 'Mysbelysning i hörnet.' },
-  { id: 'vaxt', icon: '🪴', name: 'Krukväxt', price: 350, desc: 'Lite liv i rummet.' },
-  { id: 'bokhylla', icon: '📚', name: 'Bokhylla', price: 600, desc: 'Full med spännande böcker.' },
-  { id: 'soffa', icon: '🛋️', name: 'Soffa', price: 800, desc: 'För sköna kvällar.' },
-  { id: 'tv', icon: '📺', name: 'Platt-TV', price: 1200, desc: 'Kvällsunderhållning.' },
-  { id: 'spis', icon: '🔥', name: 'Öppen spis', price: 1500, desc: 'Sprakande brasa – lyxigast i stan.' },
+// Möbelkatalogen (köps i Möbelhörnan, hamnar i förrådet och placeras hemma
+// med Möblera-läget). vars = antal färg-/modellvarianter i spriteatlasen.
+export const KATALOG = [
+  { kind: 'stol', icon: '🪑', name: 'Stol', price: 150, vars: 4 },
+  { kind: 'bordR', icon: '🟤', name: 'Runt bord', price: 250, vars: 4 },
+  { kind: 'matta', icon: '🟥', name: 'Matta', price: 250, vars: 2 },
+  { kind: 'lampa', icon: '💡', name: 'Lampa', price: 300, vars: 2 },
+  { kind: 'spegel', icon: '🪞', name: 'Spegel', price: 350, vars: 3 },
+  { kind: 'vaxtS', icon: '🪴', name: 'Krukväxt', price: 350, vars: 1 },
+  { kind: 'fatolj', icon: '🛋️', name: 'Fåtölj', price: 450, vars: 4 },
+  { kind: 'byra', icon: '🗄️', name: 'Byrå', price: 500, vars: 4 },
+  { kind: 'bokhylla', icon: '📚', name: 'Bokhylla', price: 600, vars: 3 },
+  { kind: 'bordM', icon: '🍽️', name: 'Matbord', price: 600, vars: 4 },
+  { kind: 'soffa', icon: '🛋️', name: 'Soffa', price: 800, vars: 6 },
+  { kind: 'tv', icon: '🖥️', name: 'TV / dator', price: 1200, vars: 2 },
+  { kind: 'spis', icon: '🔥', name: 'Öppen spis', price: 1500, vars: 3 },
 ];
+export const katalogOf = (kind) => KATALOG.find((k) => k.kind === kind);
+// gamla sparfiler köpte möbler per id – mappa till katalog-poster
+const OLD_FURN = { matta: 'matta', lampa: 'lampa', vaxt: 'vaxtS', bokhylla: 'bokhylla', soffa: 'soffa', tv: 'tv', spis: 'spis' };
 
 // Slutmålet: äg Villan med rejält på fickan.
 export const WIN_MONEY = 10000;
@@ -103,13 +113,14 @@ export class Game {
     this.energy = 90;
     this.home = 'rum';
     this.fridge = { nudlar: 1 };          // itemId -> antal
-    this.jobs = { flygplats: 0, frukt: 0, klader: 0 }; // antal jobbade pass
+    this.jobs = { flygplats: 0, frukt: 0, burgare: 0 }; // antal jobbade pass
     this.earned = 0;                      // totalt intjänat
     this.wardrobe = [];                   // upplåsta plagg, "kind:v"
-    this.furniture = [];                  // köpta möbler, id
+    this.storage = [];                    // köpta möbler i förrådet, { k, v }
+    this.deco = {};                       // placerade möbler per rum: "hem:sub" -> [{ k, v, x, y, fx? }]
     this.won = false;                     // slutmålet nått
     this.event = null;                    // dagens händelse { id, job? }
-    this.best = { flygplats: { ok: 0, pay: 0 }, frukt: { ok: 0, pay: 0 }, klader: { ok: 0, pay: 0 } }; // rekord
+    this.best = { flygplats: { ok: 0, pay: 0 }, frukt: { ok: 0, pay: 0 }, burgare: { ok: 0, pay: 0 } }; // rekord
     this.collapsed = false;               // somnade utmattad i natt (sätts av passTime)
   }
 
@@ -134,7 +145,16 @@ export class Game {
         for (const k of Object.keys(g.jobs)) g.jobs[k] = Math.max(0, p.jobs?.[k] | 0);
         g.earned = Math.max(0, +p.earned || 0);
         g.wardrobe = (Array.isArray(p.wardrobe) ? p.wardrobe : []).filter((k) => SORTIMENT.some((s) => clothesKey(s.kind, s.v) === k));
-        g.furniture = (Array.isArray(p.furniture) ? p.furniture : []).filter((id) => FURNITURE.some((f) => f.id === id));
+        const cleanItem = (it) => it && katalogOf(it.k) ? { k: it.k, v: Math.max(0, Math.min(katalogOf(it.k).vars - 1, it.v | 0)) } : null;
+        g.storage = (Array.isArray(p.storage) ? p.storage : []).map(cleanItem).filter(Boolean).slice(0, 60);
+        if (p.deco && typeof p.deco === 'object') for (const [key, list] of Object.entries(p.deco)) {
+          if (!/^[a-z]+:\d$/.test(key) || !Array.isArray(list)) continue;
+          g.deco[key] = list.filter((d) => d && (katalogOf(d.k) || ['sang', 'garderob', 'kylskap', 'vaxt'].includes(d.k)))
+            .map((d) => ({ k: d.k, v: Math.max(0, d.v | 0), x: Math.max(0, Math.min(384, +d.x || 0)), y: Math.max(0, Math.min(216, +d.y || 0)), ...(d.fx ? { fx: 1 } : {}) }))
+            .slice(0, 40);
+        }
+        // gamla sparfiler: köpta möbler (id-lista) flyttas till förrådet
+        if (Array.isArray(p.furniture)) for (const id of p.furniture) if (OLD_FURN[id]) g.storage.push({ k: OLD_FURN[id], v: 0 });
         g.won = !!p.won;
         if (p.event && EVENTS.some((e) => e.id === p.event.id)) g.event = { id: p.event.id, job: JOBS[p.event.job] ? p.event.job : undefined };
         for (const k of Object.keys(g.best)) g.best[k] = { ok: Math.max(0, p.best?.[k]?.ok | 0), pay: Math.max(0, p.best?.[k]?.pay | 0) };
@@ -246,11 +266,8 @@ export class Game {
     const s = SORTIMENT.find((s) => s.kind === kind && s.v === v);
     return s && !this.wardrobe.includes(clothesKey(kind, v)) ? s : null;
   }
-  // Jobbar man i klädaffären får man personalrabatt: 5 % per nivå över Nybörjare.
-  // Räknas i hela procent så att 3 × 5 % blir exakt 15 % (flyttal ljuger).
-  // Vid REA-dagar dras dessutom 25 % av – rabatterna stackar.
-  clothesDiscount() { return Math.min(20, (levelOf(this.jobs.klader) - 1) * 5) / 100; }
-  clothesPrice(s) { return Math.round(s.price * (1 - this.clothesDiscount()) * (this.eventIs('rea') ? 0.75 : 1)); }
+  // REA-dagar ger 25 % rabatt i klädaffären.
+  clothesPrice(s) { return Math.round(s.price * (this.eventIs('rea') ? 0.75 : 1)); }
   buyClothes(kind, v) {
     const s = this.clothesLocked(kind, v);
     if (!s) return { ok: false, msg: 'Den har du redan!' };
@@ -261,14 +278,60 @@ export class Game {
     this.save();
     return { ok: true, item: s, price };
   }
-  buyFurniture(id) {
-    const f = FURNITURE.find((f) => f.id === id);
-    if (!f || this.furniture.includes(id)) return { ok: false, msg: 'Den har du redan!' };
+  // Köp en möbel (variant v) till förrådet – placeras hemma med Möblera-läget.
+  buyFurniture(kind, v = 0) {
+    const f = katalogOf(kind);
+    if (!f) return { ok: false, msg: 'Finns inte i katalogen.' };
     if (this.money < f.price) return { ok: false, msg: 'Du har inte råd!' };
+    if (this.storage.length >= 40) return { ok: false, msg: 'Förrådet är fullt – möblera hemma först!' };
     this.money -= f.price;
-    this.furniture.push(id);
+    this.storage.push({ k: kind, v: Math.max(0, Math.min(f.vars - 1, v | 0)) });
     this.save();
     return { ok: true, item: f };
+  }
+  // ---------- möblering (rummet sköter kollision, det här är bara bokföring) ----------
+  decoKey(sub) { return `${this.home}:${sub | 0}`; }
+  decoRoom(sub) { return this.deco[this.decoKey(sub)] || null; }
+  placeFromStorage(idx, sub, x, y) {
+    const it = this.storage[idx];
+    if (!it) return false;
+    this.storage.splice(idx, 1);
+    (this.deco[this.decoKey(sub)] ||= []).push({ k: it.k, v: it.v, x: Math.round(x), y: Math.round(y) });
+    this.save();
+    return true;
+  }
+  moveDeco(sub, i, x, y) {
+    const d = this.decoRoom(sub)?.[i];
+    if (!d) return false;
+    d.x = Math.round(x); d.y = Math.round(y);
+    this.save();
+    return true;
+  }
+  decoToStorage(sub, i) {
+    const list = this.decoRoom(sub);
+    const d = list?.[i];
+    if (!d || d.fx || !katalogOf(d.k)) return false;
+    list.splice(i, 1);
+    this.storage.push({ k: d.k, v: d.v });
+    this.save();
+    return true;
+  }
+  sellDeco(sub, i) {
+    const list = this.decoRoom(sub);
+    const d = list?.[i];
+    if (!d || d.fx || !katalogOf(d.k)) return false;
+    list.splice(i, 1);
+    this.money += Math.round(katalogOf(d.k).price / 2);
+    this.save();
+    return true;
+  }
+  sellStorage(idx) {
+    const it = this.storage[idx];
+    if (!it) return false;
+    this.storage.splice(idx, 1);
+    this.money += Math.round(katalogOf(it.k).price / 2);
+    this.save();
+    return true;
   }
 
   // ---------- bostad ----------

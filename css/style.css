@@ -43,6 +43,21 @@ canvas { image-rendering: pixelated; display: block; }
 #emotes { position: fixed; right: 14px; bottom: 14px; display: flex; gap: 6px; z-index: 40; }
 #emotes .btn { font-size: 18px; padding: 4px 8px; }
 
+/* möblera hemma: knapp nere till vänster + förrådspanel */
+#decor-btn { position: fixed; left: 14px; bottom: 14px; z-index: 40; }
+#decor-panel { position: fixed; right: 14px; top: 60px; bottom: 60px; width: 168px; z-index: 45;
+  background: var(--paper); border: 3px solid var(--ink); box-shadow: 5px 5px 0 var(--ink);
+  display: flex; flex-direction: column; }
+#decor-panel .dp-head { background: var(--red); color: #fff; font: 19px var(--head); padding: 5px 8px; border-bottom: 3px solid var(--ink); }
+#decor-storage { flex: 1; overflow-y: auto; padding: 6px; display: flex; flex-direction: column; gap: 4px; }
+.dp-item { display: flex; align-items: center; gap: 6px; font: 16px var(--font); background: #fff;
+  border: 2px solid var(--ink); padding: 2px 6px; cursor: pointer; text-align: left; }
+.dp-item:hover { background: #fffbe8; }
+.dp-item canvas { image-rendering: pixelated; }
+.dp-empty { color: var(--muted); font-size: 15px; padding: 6px; }
+#decor-panel .dp-foot { display: flex; gap: 6px; padding: 6px; border-top: 3px solid var(--ink); background: var(--paper2); }
+#decor-panel .dp-foot .btn { flex: 1; }
+
 /* ---------- scenytan ---------- */
 #app { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; }
 #scene { touch-action: none; box-shadow: 0 0 0 3px #000; }
