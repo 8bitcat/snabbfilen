@@ -227,6 +227,10 @@ export function makeJobbBurgare(A, { onDone }) {
       forceCustomer() { const tb = freeTable(); if (!tb) return null; const k = { look: makeLook(), table: tb, x: tb.sx, y: tb.sy, state: 'sit', wish: (Math.random() * 4) | 0, patience: 30, pmax: 30, eat: 0, path: [], dir: 'down', id: seq++ }; customers.push(k); return k.wish; },
       forcePlate(wish) { addPlate(wish ?? (Math.random() * 4) | 0); return plates.length - 1; },
       pickPlate(i = 0) { const p = plates[i]; if (!p) return null; carry = { d: p.d }; plates.splice(i, 1); return carry; },
+      // klick på diskplats i (skärmkoordinater) – för test av byt/ställ ner
+      counterSpot(i = 0) { return { x: SLOTS[i], y: COUNTER.base + 4 }; },
+      plates: () => plates.map((p) => ({ d: p.d, slot: p.slot })),
+      carrying: () => (carry ? carry.d : null),
       serve(right = true) {
         if (!carry) return null;
         const k = customers.find((c) => c.state === 'sit' && (right ? c.wish === carry.d : c.wish !== carry.d)) || customers.find((c) => c.state === 'sit');
@@ -282,16 +286,29 @@ export function makeJobbBurgare(A, { onDone }) {
     },
     down(x, y) {
       if (done) return;
-      // plocka tallrik från disken (tallriken eller dess bubbla)
-      if (!carry && y >= SLOT_TIP - 22 && y < COUNTER.base + 14) {
+      // disken (tallriken eller dess bubbla): plocka upp, byta mot det man bär,
+      // eller ställa ner det man bär på en tom plats
+      if (y >= SLOT_TIP - 22 && y < COUNTER.base + 14) {
         let best = null, bd = 1e9;
         for (const p of plates) { const d = Math.abs(p.x - x); if (d < 14 && d < bd) { best = p; bd = d; } }
         if (best) {
           walker.walkTo(best.x, COUNTER.base + 12, () => {
             const i = plates.indexOf(best);
-            if (i >= 0) { plates.splice(i, 1); carry = { d: best.d }; play('ok'); }
+            if (i < 0) return;
+            if (carry) { plates[i] = { ...best, d: carry.d }; carry = { d: best.d }; play('click'); }
+            else { plates.splice(i, 1); carry = { d: best.d }; play('ok'); }
           });
           return;
+        }
+        if (carry) {
+          const s = SLOTS.findIndex((sx, si) => Math.abs(sx - x) < 14 && !plates.some((p) => p.slot === si));
+          if (s >= 0) {
+            walker.walkTo(SLOTS[s], COUNTER.base + 12, () => {
+              if (!carry || plates.some((p) => p.slot === s)) return;
+              plates.push({ d: carry.d, slot: s, x: SLOTS[s] }); carry = null; play('click');
+            });
+            return;
+          }
         }
       }
       // servera en kund (klick på bubblan, kunden eller bordet)
