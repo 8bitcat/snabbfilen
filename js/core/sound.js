@@ -55,6 +55,9 @@ export function play(name) {
       case 'fanfare': [523, 523, 659, 784].forEach((f, i) => tone(f, i * 0.12, i === 3 ? 0.4 : 0.11)); break;
       case 'knock': tone(140, 0, 0.06, 'square', 0.2); tone(140, 0.12, 0.06, 'square', 0.2); break;
       case 'door': tone(300, 0, 0.08, 'triangle', 0.12, 380); break;
+      case 'honk': tone(392, 0, 0.12, 'square', 0.12); tone(330, 0.15, 0.2, 'square', 0.12); break;
+      case 'slide': tone(620, 0, 0.22, 'triangle', 0.05, 240); break;
+      case 'chirp': tone(2200, 0, 0.05, 'sine', 0.05, 2800); tone(2600, 0.07, 0.05, 'sine', 0.04, 3000); break;
     }
   } catch { /* ljud är aldrig värt en krasch */ }
 }

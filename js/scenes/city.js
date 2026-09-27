@@ -1,251 +1,251 @@
-// Pixelstaden – gåbar precis som hemma: fasadrad med dörrar upptill, torg och
-// gata att promenera på, folk som strosar. Två stadsdelar: CENTRUM (hem,
-// bostadsbyrå, mat, kläder, möbler) och ARBETSOMRÅDET (flygplatsen, frukt-
-// fabriken, burgarbaren) – gå ut i kanten för att byta del. Man ser andra
-// spelare som är i samma stadsdel.
-import { drawPerson, makeLook } from '../core/people.js';
-import { Pix, SMALL, BIG, ctxText, textW, text, mix, mul, css, hash, bayer } from '../core/floor-pix.js';
-import { toast } from '../core/ui.js';
+// Pixelstaden – en stor stad (CITY.W × CITY.H) där kameran följer figuren.
+// Scenen sköter kamera, gång, dörrar, ljussättning och vad som händer när man
+// går in; konsten och livet kommer från modulerna i js/city/ (se map.js för
+// kontraktet). Modulerna laddas var för sig – kraschar en, lever resten.
+import { CITY, BUILDINGS, footprint, doorCenter, artPos, isNightHour } from '../city/map.js';
+import { createWalker, selfDrawable, folkDrawables } from './walkable.js';
+import { openModal, closeModal, toast } from '../core/ui.js';
 import { play } from '../core/sound.js';
-import { createWalker, selfDrawable, folkDrawables, WALK_SEQ } from './walkable.js';
 import { worldFolksHere } from '../net/world.js';
+import { clock } from '../game.js';
 
-const FW = 384, FH = 216;
-const WALL_Y = 96; // fasadernas fot / trottoarkanten
+const MODS = {};
+await Promise.all(['buildings-shops', 'buildings-work', 'ground', 'props', 'traffic', 'life'].map((n) =>
+  import(`../city/${n}.js`).then((m) => { MODS[n] = m; }).catch((e) => console.error(`stadsmodulen ${n} kunde inte laddas:`, e))));
 
-// Stadsdelarnas byggnader: dörr [x0,x1] + tema. act körs efter promenad+dörrtid.
-const DISTRICTS = [
-  {
-    name: 'CENTRUM',
-    buildings: [
-      { id: 'hem', sign: 'HEM', x0: 16, x1: 72, c: 0x8a6a4a, door: [34, 56] },
-      { id: 'bostad', sign: 'BOSTAD', x0: 78, x1: 134, c: 0x5a6e8c, door: [96, 118], open: [8, 18] },
-      { id: 'mat', sign: 'MAT', x0: 140, x1: 200, c: 0x2f8f46, door: [158, 182], open: [8, 21], awning: true },
-      { id: 'klader', sign: 'KLÄDER', x0: 206, x1: 266, c: 0xb83d7a, door: [224, 248], open: [8, 20], display: 'shirt' },
-      { id: 'mobler', sign: 'MÖBLER', x0: 272, x1: 344, c: 0x2c6fb7, door: [294, 322], open: [8, 20], display: 'sofa' },
-    ],
-    exit: { side: 'right', label: 'ARBETSOMRÅDET' },
-  },
-  {
-    name: 'ARBETSOMRÅDET',
-    buildings: [
-      { id: 'flyg', sign: 'FLYGPLATSEN', x0: 14, x1: 118, c: 0x6d7480, door: [50, 82], open: [8, 20], hangar: true },
-      { id: 'frukt', sign: 'FRUKTFABRIKEN', x0: 130, x1: 234, c: 0xc06a2a, door: [166, 198], open: [8, 20], chimney: true },
-      { id: 'burgare', sign: 'BURGARBAREN', x0: 246, x1: 340, c: 0xc9323a, door: [278, 308], open: [8, 22], awning: true, burger: true },
-    ],
-    exit: { side: 'left', label: 'CENTRUM' },
-  },
-];
+const VW = CITY.VIEW_W, VH = CITY.VIEW_H;
+
+// Delad miljö som modulerna läser (muteras varje bildruta av scenen).
+// obstacles = alla hinder för gång (husens fotavtryck + rekvisita + trafikljusstolpar).
+export const env = { t: 0, dt: 0, hour: 12, night: false, dark: 0, rain: false, player: { x: 0, y: 0 }, people: [], obstacles: [], play };
+
+// ---------- simuleringen lever kvar mellan besöken i staden ----------
+let SIM = null;
+function sim() {
+  if (SIM) return SIM;
+  const safe = (name, make, fallback) => { try { return make() || fallback; } catch (e) { console.error(`stadsmodulen ${name} startade inte:`, e); return fallback; } };
+  const none = { items: () => [], obstacles: [], update() {}, glow() {}, positions: () => [], pedGreen: () => true };
+  const props = safe('props', () => MODS.props?.createProps(env), none);
+  const traffic = safe('traffic', () => MODS.traffic?.createTraffic(env), none);
+  env.obstacles = [...BUILDINGS.map(footprint), ...(props.obstacles || []), ...(traffic.obstacles || [])];
+  const life = safe('life', () => MODS.life?.createLife(env, traffic), none);
+  SIM = { props, traffic, life };
+  return SIM;
+}
+
+// ---------- bildcache (mark + hus, per dag/natt) ----------
+const CACHE = {};
+const ART = () => ({ ...(MODS['buildings-shops']?.BUILDING_ART || {}), ...(MODS['buildings-work']?.BUILDING_ART || {}) });
+function groundImg(night) {
+  const k = 'ground:' + night;
+  if (!CACHE[k]) {
+    try { CACHE[k] = MODS.ground.paintGround(night); } catch (e) {
+      console.error('marken kunde inte målas:', e);
+      const c = document.createElement('canvas'); c.width = CITY.W; c.height = CITY.H;
+      const x = c.getContext('2d'); x.fillStyle = '#6a6258'; x.fillRect(0, 0, CITY.W, CITY.H);
+      CACHE[k] = c;
+    }
+  }
+  return CACHE[k];
+}
+function buildingImg(b, night) {
+  const k = 'b:' + b.id + ':' + night;
+  if (!CACHE[k]) {
+    try { CACHE[k] = ART()[b.kind].paint(b, night); } catch (e) {
+      console.error(`huset ${b.id} kunde inte målas:`, e);
+      const c = document.createElement('canvas'); c.width = b.w + 16; c.height = b.h + 20;
+      const x = c.getContext('2d'); x.fillStyle = '#777'; x.fillRect(8, 0, b.w, b.h + 16);
+      CACHE[k] = c;
+    }
+  }
+  return CACHE[k];
+}
+
+// Mörker över dygnet: 0 = dag, ~0.5 = natt, med skymning och gryning.
+function darkness(hour) {
+  if (hour >= 7.5 && hour < 17.5) return 0;
+  if (hour >= 17.5 && hour < 20.5) return (hour - 17.5) / 3 * 0.5;
+  if (hour >= 5.5 && hour < 7.5) return (7.5 - hour) / 2 * 0.5;
+  return 0.5;
+}
+
+// Visa ett fel bara en gång per källa, men låt aldrig en modul stoppa loopen.
+const warned = new Set();
+function guard(name, fn) {
+  try { fn(); } catch (e) { if (!warned.has(name)) { warned.add(name); console.error(`ritfel i ${name}:`, e); } }
+}
 
 export function makeCity(A) {
   const g = A.game;
-  const sub = Math.max(0, Math.min(1, A.citySub | 0));
-  A.citySub = sub;
-  const D = DISTRICTS[sub];
-  const walker = createWalker({ top: WALL_Y + 4, bottom: FH - 6, left: 4, right: FW - 4, spawn: A.cityPos?.[sub] || [sub ? FW - 40 : 100, 140] });
-  walker.speed = 95;
-  let t = 0;
+  const S = sim();
+  const start = A.cityPos || [doorCenter(BUILDINGS[0]).x, doorCenter(BUILDINGS[0]).y];
+  const walker = createWalker({ W: CITY.W, H: CITY.H, left: 4, right: CITY.W - 4, top: CITY.BACK[0], bottom: CITY.H - 4, spawn: start });
+  walker.speed = 110;
+  env.obstacles = [...BUILDINGS.map(footprint), ...(S.props.obstacles || []), ...(S.traffic.obstacles || []), ...(S.life.obstacles || [])];
+  walker.setObstacles(env.obstacles);
+  walker.snapFree();
 
-  // strosande stadsbor (bara kosmetik)
-  const folk = Array.from({ length: 3 }, (_, i) => ({
-    look: makeLook(), x: 60 + i * 110 + hash(i, 7) * 40, y: 130 + i * 25,
-    tx: 0, ty: 0, wait: hash(i, 9) * 3,
-  }));
-  const bgCache = {};
-  const bg = (night) => {
-    const key = night ? 'n' : 'd';
-    if (!bgCache[key]) bgCache[key] = paintCity(D, night, sub);
-    return bgCache[key];
+  const doorOpen = Object.fromEntries(BUILDINGS.map((b) => [b.id, 0]));
+  const doorWasOpen = {};
+  let t = 0, lockedCam = null;
+  const cam = { x: 0, y: 0 };
+  const camTarget = () => lockedCam || {
+    x: Math.max(0, Math.min(CITY.W - VW, walker.px - VW / 2)),
+    y: Math.max(0, Math.min(CITY.H - VH, walker.py - VH * 0.62)),
   };
+  Object.assign(cam, camTarget());
 
-  const hotRects = D.buildings.map((b) => ({
-    id: b.id, b,
-    r: [b.door[0], 46, b.door[1], WALL_Y + 8],
-    go: [(b.door[0] + b.door[1]) / 2, WALL_Y + 12],
-  }));
-  const exitRect = D.exit.side === 'right'
-    ? { r: [FW - 14, WALL_Y, FW, FH], go: [FW - 18, 150] }
-    : { r: [0, WALL_Y, 14, FH], go: [18, 150] };
+  function updateEnv(dt) {
+    env.t += dt; env.dt = dt;
+    env.hour = g.min / 60;
+    env.night = isNightHour(env.hour);
+    env.dark = darkness(env.hour);
+    env.rain = g.eventIs('regn');
+    env.player = { x: walker.px, y: walker.py };
+    const folks = worldFolksHere(A).map((f) => ({ x: f.x, y: f.y }));
+    let npcs = [];
+    try { npcs = S.life.positions?.() || []; } catch { /* modulfel loggas vid ritning */ }
+    env.people = [env.player, ...folks, ...npcs];
+  }
+  updateEnv(0);
 
+  // ---------- gå in ----------
   function enter(b) {
+    if (!b.enter) { toast(`☕ ${b.sign} öppnar snart – håll utkik!`); return; }
     const hour = g.min / 60;
     if (b.open && (hour < b.open[0] || hour >= b.open[1])) {
-      toast(`🔒 ${b.sign} har stängt (öppet ${b.open[0]}–${b.open[1]}).`, 'bad');
+      if (hour < b.open[0]) {
+        openModal(`🔒 ${b.sign}`, `<p style="font-size:20px;margin-top:0">Stängt just nu – öppnar ${clock(b.open[0] * 60)}.</p>`, [
+          { label: 'Gå därifrån', onClick: closeModal },
+          { label: '⏩ Vänta tills det öppnar', cls: 'btn-go', onClick: () => { closeModal(); g.waitUntil(b.open[0] * 60); enter(b); } },
+        ]);
+      } else toast(`🔒 ${b.sign} har stängt för i dag – öppnar ${clock(b.open[0] * 60)} i morgon.`, 'bad');
       return;
     }
-    g.passTime(g.eventIs('regn') ? 40 : 20);
+    g.passTime(g.eventIs('regn') ? 10 : 5);
     g.save();
     if (g.collapsed) return;
     play('door');
-    if (b.id === 'hem') { A.roomSub = 0; A.go('room'); }
-    else if (b.id === 'bostad') A.openHousing();
-    else if (b.id === 'mat') A.openFoodShop();
-    else if (b.id === 'klader') A.go('klader');
-    else if (b.id === 'mobler') A.go('mobler');
-    else A.startJob(b.id === 'flyg' ? 'flygplats' : b.id);
+    const dc = doorCenter(b);
+    A.cityPos = [dc.x, dc.y + 4];
+    if (b.enter === 'hem') { A.roomSub = 0; A.go('room'); }
+    else if (b.enter === 'bostad') A.openHousing();
+    else if (b.enter === 'mat') A.openFoodShop();
+    else if (b.enter === 'klader') A.go('klader');
+    else if (b.enter === 'mobler') A.go('mobler');
+    else A.startJob(b.enter === 'flyg' ? 'flygplats' : b.enter);
+  }
+
+  // ---------- ritning av hela världen (även för panorama) ----------
+  function drawWorld(ctx, cx, cy, vw, vh) {
+    const night = env.night;
+    ctx.drawImage(groundImg(night), cx, cy, vw, vh, cx, cy, vw, vh);
+    guard('ground.groundLive', () => MODS.ground?.groundLive?.(ctx, env, { x: cx, y: cy, w: vw, h: vh }));
+
+    const items = [];
+    const art = ART();
+    for (const b of BUILDINGS) {
+      if (b.x + b.w + 40 < cx || b.x - 40 > cx + vw) continue;
+      items.push({ y: CITY.BASE, draw: () => {
+        const img = buildingImg(b, night), p = artPos(b, img);
+        ctx.drawImage(img, p.x, p.y);
+        guard(`${b.kind}.live`, () => art[b.kind]?.live?.(ctx, b, { t: env.t, night, hour: env.hour, doorOpen: doorOpen[b.id], env }));
+      } });
+    }
+    const add = (name, list) => {
+      let arr = [];
+      guard(name + '.items', () => { arr = list() || []; });
+      for (const it of arr) {
+        if (it.x !== undefined && (it.x < cx - 140 || it.x > cx + vw + 140)) continue;
+        items.push(it);
+      }
+    };
+    add('props', () => S.props.items());
+    add('traffic', () => S.traffic.items());
+    add('life', () => S.life.items());
+    for (const d of folkDrawables(A, t)) items.push({ y: d.fy, draw: () => d.draw(ctx) });
+    const me = selfDrawable(A, walker, t, { folksHere: worldFolksHere(A).length });
+    items.push({ y: me.fy + 0.01, draw: () => me.draw(ctx) });
+    items.sort((a, b) => a.y - b.y);
+    for (const it of items) guard('item', () => it.draw(ctx));
+
+    // ljussättningen: mörker först, sedan allt som lyser
+    if (env.dark > 0) {
+      ctx.fillStyle = `rgba(14,16,44,${env.dark})`;
+      ctx.fillRect(cx, cy, vw, vh);
+      for (const b of BUILDINGS) {
+        if (b.x + b.w + 40 < cx || b.x - 40 > cx + vw) continue;
+        guard(`${b.kind}.glow`, () => { ctx.save(); art[b.kind]?.glow?.(ctx, b, { t: env.t, night, hour: env.hour, doorOpen: doorOpen[b.id], env }); ctx.restore(); });
+      }
+      for (const [name, m] of [['props', S.props], ['traffic', S.traffic], ['life', S.life]]) guard(name + '.glow', () => { ctx.save(); m.glow?.(ctx); ctx.restore(); });
+    }
+    if (env.rain) {
+      ctx.fillStyle = 'rgba(40,50,80,0.14)'; ctx.fillRect(cx, cy, vw, vh);
+      ctx.fillStyle = 'rgba(170,195,235,0.5)';
+      for (let i = 0; i < 90; i++) {
+        const rx = cx + ((i * 97.3 + env.t * 30) % vw);
+        const ry = cy + ((i * 53.7 + env.t * (130 + (i % 7) * 12)) % vh);
+        ctx.fillRect(rx | 0, ry | 0, 1, 4);
+      }
+    }
   }
 
   return {
     get worldX() { return walker.px; },
     get worldY() { return walker.py; },
     _debug: {
-      spot: (id) => { const h = hotRects.find((h) => h.id === id); return h ? { x: (h.r[0] + h.r[2]) / 2, y: (h.r[1] + h.r[3]) / 2 } : null; },
-      tile: (a, b) => ({ x: 30 + a * 40, y: Math.min(FH - 10, WALL_Y + 15 + b * 14) }),
+      spot: (id) => { const b = BUILDINGS.find((x) => x.id === id); if (!b) return null; const dc = doorCenter(b); return { x: dc.x - cam.x, y: CITY.BASE - 12 - cam.y }; },
+      tile: (a, bb) => ({ x: 60 + a * 40 - cam.x, y: CITY.SIDEWALK_N[0] + 8 + bb * 10 - cam.y }),
+      lockCam: (x, y) => { lockedCam = x === null || x === undefined ? null : { x: Math.max(0, Math.min(CITY.W - VW, x)), y: Math.max(0, Math.min(CITY.H - VH, y)) }; if (lockedCam) Object.assign(cam, lockedCam); },
+      teleport: (x, y) => { walker.px = x; walker.py = y; walker.stop(); walker.snapFree(); Object.assign(cam, camTarget()); },
+      panorama: () => {
+        const c = document.createElement('canvas'); c.width = CITY.W; c.height = CITY.H;
+        const x = c.getContext('2d'); x.imageSmoothingEnabled = false;
+        drawWorld(x, 0, 0, CITY.W, CITY.H);
+        return c.toDataURL('image/png');
+      },
+      sim: () => S,
+      cam: () => ({ ...cam }),
     },
 
     update(dt) {
       t += dt;
       walker.update(dt);
-      A.cityPos = A.cityPos || {};
-      A.cityPos[sub] = [walker.px, walker.py];
-      for (const f of folk) { // strosarna väljer nya mål då och då
-        if (f.wait > 0) { f.wait -= dt; continue; }
-        if (!f.tx) { f.tx = 30 + hash(f.x | 0, t | 0) * (FW - 60); f.ty = WALL_Y + 12 + hash(f.y | 0, t | 0) * 90; }
-        const dx = f.tx - f.x, dy = f.ty - f.y, d = Math.hypot(dx, dy);
-        if (d < 2) { f.tx = 0; f.wait = 1.5 + hash(f.x | 0, 3) * 4; continue; }
-        f.x += dx / d * 26 * dt; f.y += dy / d * 26 * dt;
+      A.cityPos = [walker.px, walker.py];
+      updateEnv(dt);
+      for (const [name, m] of [['props', S.props], ['traffic', S.traffic], ['life', S.life]]) guard(name + '.update', () => m.update?.(dt));
+      // dörrarna öppnas när någon är nära
+      for (const b of BUILDINGS) {
+        const dc = doorCenter(b), half = (b.door.x1 - b.door.x0) / 2 + 14;
+        const near = env.people.some((p) => Math.abs(p.x - dc.x) < half && p.y > CITY.BASE - 6 && p.y < CITY.BASE + 30);
+        doorOpen[b.id] += ((near ? 1 : 0) - doorOpen[b.id]) * Math.min(1, dt * (b.door.type === 'slide' ? 5 : 8));
+        if (near && !doorWasOpen[b.id] && b.door.type === 'slide' && Math.abs(walker.px - dc.x) < half + 20) play('slide');
+        doorWasOpen[b.id] = near;
       }
+      // kameran glider efter figuren
+      const tg = camTarget(), k = lockedCam ? 1 : Math.min(1, dt * 6);
+      cam.x += (tg.x - cam.x) * k; cam.y += (tg.y - cam.y) * k;
     },
 
-    down(x, y) {
-      for (const h of hotRects) {
-        if (x >= h.r[0] && x <= h.r[2] && y >= h.r[1] && y <= h.r[3]) {
-          walker.walkTo(h.go[0], h.go[1], () => enter(h.b));
+    down(sx, sy) {
+      const x = sx + cam.x, y = sy + cam.y;
+      // klick på ett hus (fasad eller dörr) → gå till dörren och gå in
+      for (const b of BUILDINGS) {
+        const onFacade = x >= b.x && x < b.x + b.w && y >= CITY.BASE - b.h - 16 && y < CITY.BASE;
+        const onDoorFront = x >= b.door.x0 - 8 && x < b.door.x1 + 8 && y >= CITY.BASE && y < CITY.BASE + 16;
+        if (onFacade || onDoorFront) {
+          const dc = doorCenter(b);
+          walker.walkTo(dc.x, dc.y, () => enter(b));
           return;
         }
       }
-      if (x >= exitRect.r[0] && x <= exitRect.r[2] && y >= exitRect.r[1]) {
-        walker.walkTo(exitRect.go[0], exitRect.go[1], () => {
-          A.citySub = sub ? 0 : 1;
-          A.cityPos[A.citySub] = [A.citySub ? 24 : FW - 24, walker.py];
-          A.go('city');
-        });
-        return;
-      }
-      if (y > WALL_Y) walker.walkTo(x, y);
+      walker.walkTo(x, y);
     },
 
     draw(ctx) {
-      ctx.setTransform(A.pxs, 0, 0, A.pxs, 0, 0);
-      const hour = g.min / 60, night = hour >= 19.5 || hour < 6.5;
-      ctx.drawImage(bg(night), 0, 0);
-
-      const drawables = [];
-      if (!night) for (const f of folk) drawables.push({
-        fy: f.y,
-        draw: () => drawPerson(ctx, f.x, f.y, f.look, f.tx && Math.abs(f.tx - f.x) > Math.abs(f.ty - f.y) ? (f.tx < f.x ? 'left' : 'right') : 'down', f.tx ? WALK_SEQ[Math.floor(t * 7 + f.x) % 4] : 0),
-      });
-      drawables.push(...folkDrawables(A, t));
-      drawables.push(selfDrawable(A, walker, t, { folksHere: worldFolksHere(A).length }));
-      drawables.sort((a, b) => a.fy - b.fy).forEach((d) => d.draw(ctx));
-
-      // regnet
-      if (g.eventIs('regn') && !night) {
-        ctx.fillStyle = 'rgba(160,190,230,0.5)';
-        for (let i = 0; i < 60; i++) {
-          const rx = (hash(i, 51) * FW + t * 30) % FW;
-          const ry = (hash(i, 53) * FH + t * (110 + hash(i, 54) * 60)) % FH;
-          ctx.fillRect(rx | 0, ry | 0, 1, 4);
-        }
-      }
-      if (night) { ctx.fillStyle = 'rgba(10,12,40,0.30)'; ctx.fillRect(0, 0, FW, FH); }
+      const cx = Math.round(cam.x), cy = Math.round(cam.y);
+      ctx.setTransform(A.pxs, 0, 0, A.pxs, -cx * A.pxs, -cy * A.pxs);
+      drawWorld(ctx, cx, cy, VW, VH);
     },
   };
-}
-
-// ---------- stadsbilden (Pix, per stadsdel + dag/natt) ----------
-function paintCity(D, night, sub) {
-  const P = new Pix(FW, FH);
-  const skyTop = night ? 0x0b1026 : 0x7ec8e8, skyBot = night ? 0x1c2140 : 0xbfe6f2;
-  // himmel + bakre siluett
-  for (let y = 0; y < 46; y++) for (let x = 0; x < FW; x++) P.px(x, y, mix(skyTop, skyBot, y / 46 + (bayer(x, y) - 0.5) * 0.06));
-  if (night) for (let i = 0; i < 40; i++) P.px((hash(i, 1) * FW) | 0, (hash(i, 2) * 40) | 0, 0xe8ecff, hash(i, 3) > 0.4 ? 1 : 0.5);
-  else { P.ell(320, 14, 8, 8, 0xfff3b8, 1, 4); P.ell(320, 14, 5, 5, 0xfff9dc, 1, 3); }
-  for (let i = 0; i < 12; i++) {
-    const bw = 20 + hash(i, 11) * 26, bx = i * 34 - 6, bh = 14 + hash(i, 12) * 22;
-    for (let y = 46 - bh; y < 46; y++) for (let x = bx; x < bx + bw; x++) P.px(x, y, night ? 0x141828 : 0x9ab0be);
-  }
-
-  // gränderna mellan husen
-  for (let y = 46; y < WALL_Y; y++) for (let x = 0; x < FW; x++) {
-    let c = mix(night ? 0x10121c : 0x3a3f4a, night ? 0x181a26 : 0x2c3038, (y - 46) / 50 + (bayer(x, y) - 0.5) * 0.15);
-    if ((y - 46) % 9 === 0) c = mul(c, 0.85);
-    P.px(x, y, c);
-  }
-  // fasaderna
-  for (const b of D.buildings) {
-    const c = b.c;
-    for (let y = 8, y1 = WALL_Y; y < y1; y++) for (let x = b.x0; x < b.x1; x++) {
-      let k = mix(c, mul(c, 0.8), (bayer(x, y) - 0.5) * 0.3 + 0.5 + (y - 8) / 240);
-      if (x === b.x0) k = mix(c, 0xffffff, 0.18);
-      if (x === b.x1 - 1) k = mul(c, 0.55);
-      if (b.hangar && (x + y) % 14 === 0) k = mul(k, 0.85); // plåtväggens skarvar
-      P.px(x, y, k);
-    }
-    P.hl(b.x0 - 1, 6, b.x1 - b.x0 + 2, mul(c, 0.5)); P.hl(b.x0 - 1, 7, b.x1 - b.x0 + 2, mix(c, 0xffffff, 0.2));
-    // fönsterrad
-    if (!b.hangar) for (let wx = b.x0 + 6; wx + 12 < b.x1 - 4; wx += 18) {
-      const lit = night && hash(wx, 5) > 0.4;
-      P.rect(wx, 18, 12, 14, lit ? 0xffd97a : night ? 0x18202e : 0x35405c);
-      P.box(wx, 18, 12, 14, mul(c, 0.5));
-      P.vl(wx + 6, 19, 12, mul(c, 0.5)); P.hl(wx + 1, 24, 10, mul(c, 0.5));
-    } else { // hangarens stora port + rand
-      P.rect(b.x0 + 8, 30, b.x1 - b.x0 - 16, 8, 0xd8b24a); for (let x = b.x0 + 8; x < b.x1 - 8; x += 6) P.rect(x, 30, 3, 8, 0x2a2d33);
-    }
-    if (b.chimney) { P.rect(b.x1 - 22, 0, 10, 10, 0x5a4632); P.rect(b.x1 - 21, 0, 3, 10, 0x7a5c42); }
-    // skylt
-    const F = textW(BIG, b.sign) + 10 < b.x1 - b.x0 ? BIG : SMALL;
-    const tw = textW(F, b.sign), sx = Math.round((b.x0 + b.x1) / 2 - tw / 2);
-    P.rect(sx - 4, 38, tw + 8, F.h + 4, 0x17151a); P.box(sx - 4, 38, tw + 8, F.h + 4, night ? 0x7ee8fa : 0x000000);
-    text(P, F, b.sign, sx, 40, night ? 0x7ee8fa : 0xf4f1ea);
-    if (b.burger) { P.ell((b.x0 + b.x1) / 2, 34, 5, 3, 0xe8b230, 1, 3); P.hl((b.x0 + b.x1) / 2 - 4, 34, 8, 0xc9323a); }
-    // markis
-    if (b.awning) for (let i = 0; i < b.x1 - b.x0 - 12; i++) {
-      P.px(b.x0 + 6 + i, 52 + (i % 3 === 2 ? 1 : 0), (i >> 2) % 2 ? 0xe8e3d6 : (b.burger ? 0xc9323a : 0x2f8f46));
-      P.px(b.x0 + 6 + i, 53, mul((i >> 2) % 2 ? 0xe8e3d6 : 0xc9323a, 0.7));
-    }
-    // skyltfönster
-    if (b.display) {
-      const dx0 = b.x0 + 8, dx1 = b.door[0] - 4;
-      if (dx1 - dx0 > 16) {
-        P.rect(dx0, 56, dx1 - dx0, 30, night ? 0x223048 : 0xd8ecf4); P.box(dx0, 56, dx1 - dx0, 30, mul(b.c, 0.5));
-        const mx = (dx0 + dx1) >> 1;
-        if (b.display === 'shirt') { P.rect(mx - 5, 64, 10, 9, 0x3fc4ff); P.rect(mx - 8, 64, 3, 4, 0x3fc4ff); P.rect(mx + 5, 64, 3, 4, 0x3fc4ff); }
-        else { P.rect(mx - 8, 68, 16, 6, 0xc9323a); P.rect(mx - 8, 64, 3, 6, 0xc9323a); P.rect(mx + 5, 64, 3, 6, 0xc9323a); }
-      }
-    }
-    // dörren
-    P.rect(b.door[0], 58, b.door[1] - b.door[0], WALL_Y - 58, 0x2e2418);
-    P.rect(b.door[0] + 1, 59, b.door[1] - b.door[0] - 2, WALL_Y - 59, 0x5a4632);
-    P.px(b.door[1] - 4, 76, 0xd8b24a);
-    if (night) P.dith(b.door[0], WALL_Y, b.door[1] - b.door[0], 6, 0xffd97a, 0.5, 0.25);
-  }
-
-  // trottoar + gata/torg
-  for (let y = WALL_Y; y < FH; y++) for (let x = 0; x < FW; x++) {
-    let c;
-    if (y < WALL_Y + 26) { // trottoarplattor
-      c = mix(0x9a9284, 0xb5ac9c, hash((x / 24) | 0, (y / 13) | 0, 6) * 0.5);
-      if (x % 24 === 0 || (y - WALL_Y) % 13 === 0) c = mul(c, 0.8);
-    } else { // gatan/torget
-      c = mix(0x4c4e56, 0x3a3c44, (bayer(x, y) - 0.5) * 0.4 + 0.5 + hash(x, y, 8) * 0.1);
-      if (sub === 0 && ((x + ((y / 6) | 0) * 3) % 48 < 20) && y > WALL_Y + 40 && y < WALL_Y + 70) c = mix(c, 0xd8d2c0, 0.5); // övergångsställe
-    }
-    P.px(x, y, c);
-  }
-  P.hl(0, WALL_Y + 26, FW, 0x2a2c32);
-  // lyktstolpar + träd (bara dekor – ritas i bg, blockerar inte)
-  for (const lx of sub === 0 ? [110, 250] : [130, 230]) {
-    P.rect(lx, WALL_Y + 30, 2, 26, 0x2a2d33);
-    P.rect(lx - 2, WALL_Y + 28, 6, 4, night ? 0xffd97a : 0x8a8f9a);
-    if (night) P.ell(lx + 1, WALL_Y + 44, 16, 9, 0xffd97a, 0.12, 3);
-  }
-  // riktningsskylt mot andra stadsdelen
-  const ex = D.exit.side === 'right' ? FW - 12 : 2;
-  P.rect(ex, WALL_Y + 6, 10, 40, 0x2a2d33);
-  const label = D.exit.label;
-  for (let i = 0; i < label.length && i < 13; i++) text(P, SMALL, label[i], ex + 2, WALL_Y + 8 + i * 6, 0xffd23f);
-
-  P.box(0, 0, FW, FH, 0x0e0d12);
-  return P.flush();
 }

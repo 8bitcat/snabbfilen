@@ -260,6 +260,7 @@ function tick(now) {
   const dt = Math.min(0.05, (now - last) / 1000);
   last = now;
   if (A.scene) {
+    if (!modalOpen() && !A.sceneName.startsWith('jobb')) A.game.tickReal(dt);
     A.scene.update?.(dt);
     worldTick(A, A.scene.worldX ?? null, dt);
     ctx.setTransform(1, 0, 0, 1, 0, 0);

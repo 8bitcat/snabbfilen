@@ -102,6 +102,7 @@ export const HOMES = [
 export const homeOf = (id) => HOMES.find((h) => h.id === id) || HOMES[0];
 
 const DAY = 24 * 60;
+export const REALTIME_RATE = 2;
 const HUNGER_PER_MIN = 0.05; // 3 mätthet per timme
 
 export class Game {
@@ -131,7 +132,7 @@ export class Game {
 
   // ---------- spara/ladda ----------
   save() {
-    try { localStorage.setItem(SAVE_KEY, JSON.stringify({ v: 1, ...this, })); } catch { /* full/blockerad */ }
+    try { const { _saveIn, collapsed, ...data } = this; localStorage.setItem(SAVE_KEY, JSON.stringify({ v: 1, ...data })); } catch { /* full/blockerad */ }
   }
   static load() {
     const g = new Game();
@@ -233,9 +234,21 @@ export class Game {
   // ---------- jobb ----------
   canWork() {
     if (this.energy < 20) return { ok: false, msg: 'Du är för trött för att jobba – gå hem och sov.' };
-    if (this.min > 19 * 60) return { ok: false, msg: 'För sent att börja ett pass – jobben öppnar 08:00 igen.' };
-    if (this.min < 8 * 60) return { ok: false, msg: 'Jobbet öppnar 08:00.' };
+    if (this.min > 20 * 60) return { ok: false, msg: 'För sent att börja ett pass – jobben öppnar 07:00 igen.' };
+    if (this.min < 7 * 60) return { ok: false, msg: 'Jobbet öppnar 07:00.', waitTo: 7 * 60 };
     return { ok: true };
+  }
+  // Snabbspola fram till en klockslag samma dag (t.ex. när en butik öppnar).
+  waitUntil(targetMin) {
+    if (targetMin > this.min) this.passTime(targetMin - this.min);
+    this.save();
+  }
+  // Klockan går av sig själv medan man är ute och hemma: REALTIME_RATE
+  // spelminuter per verklig sekund (ett helt dygn 07–24 ≈ 8½ minut).
+  tickReal(dt) {
+    this.passTime(dt * REALTIME_RATE);
+    this._saveIn = (this._saveIn ?? 10) - dt;
+    if (this._saveIn <= 0) { this._saveIn = 10; this.save(); }
   }
   // Ett pass = 4 timmar speltid. Lönen räknas ut av minispelet; yr av hunger =
   // halv lön, extrapass-dagar = dubbel lön. Rekord (flest rätt, bästa lön) sparas.

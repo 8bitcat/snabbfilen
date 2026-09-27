@@ -52,6 +52,12 @@ ok(await page.evaluate(() => window.SF.game.hunger) > hungerBefore, 'äta höjer
 await page.click('.dlg-foot .btn');
 await page.waitForTimeout(200);
 
+// 3b. Klockan går av sig själv (2 spelminuter per sekund)
+const m0 = await page.evaluate(() => window.SF.game.min);
+await page.waitForTimeout(1500);
+const m1 = await page.evaluate(() => window.SF.game.min);
+ok(m1 - m0 >= 2 && m1 - m0 < 6, `klockan går av sig själv (+${(m1 - m0).toFixed(1)} min på 1,5 s)`);
+
 // 4. Ut till gåbara staden
 await page.evaluate(() => window.SF.go('city'));
 await page.waitForTimeout(400);
@@ -67,7 +73,7 @@ await page.waitForTimeout(300);
 await shot('06b-arbetsomradet');
 await page.evaluate(() => { const p = window.SF.scene._debug.spot('flyg'); window.SF.scene.down(p.x, p.y); });
 let introSeen = false;
-for (let i = 0; i < 20 && !introSeen; i++) {
+for (let i = 0; i < 80 && !introSeen; i++) { // staden är stor – promenaden tar en stund
   await page.waitForTimeout(300);
   introSeen = (await page.locator('.dlg-head h2').textContent().catch(() => ''))?.includes('Flygplatsen');
 }
@@ -138,7 +144,7 @@ await page.waitForTimeout(300);
 await page.click('.dlg-foot .btn-go');
 await page.waitForTimeout(300);
 const morn = await page.evaluate(() => ({ day: window.SF.game.day, min: window.SF.game.min, energy: window.SF.game.energy }));
-ok(morn.day === day1 + 1 && morn.min === 7 * 60, `ny dag efter sömn (dag ${morn.day})`);
+ok(morn.day === day1 + 1 && morn.min >= 7 * 60 && morn.min < 7 * 60 + 6, `ny dag efter sömn (dag ${morn.day}, ${Math.floor(morn.min / 60)}:${String(Math.floor(morn.min % 60)).padStart(2, '0')})`);
 ok(morn.energy > 50, `utvilad på morgonen (energi ${morn.energy})`);
 await page.evaluate(() => { window.SF.game.event = null; });
 await page.reload();

@@ -91,8 +91,8 @@ function cleanP(p, old = {}) {
   if (p && typeof p === 'object') {
     if (p.av) out.av = cleanAvatar(p.av);
     if (p.scene !== undefined) out.scene = cleanScene(p.scene);
-    if (p.x !== undefined) { out.tx = Math.max(8, Math.min(760, +p.x || 190)); if (out.x === undefined) out.x = out.tx; }
-    if (p.y !== undefined) { out.ty2 = Math.max(20, Math.min(428, +p.y || 174)); if (out.y === undefined) out.y = out.ty2; }
+    if (p.x !== undefined) { out.tx = Math.max(0, Math.min(4000, +p.x || 190)); if (out.x === undefined) out.x = out.tx; }
+    if (p.y !== undefined) { out.ty2 = Math.max(0, Math.min(2000, +p.y || 174)); if (out.y === undefined) out.y = out.ty2; }
     if (p.home !== undefined) out.home = String(p.home).slice(0, 16);
     if (p.deco !== undefined && p.deco && typeof p.deco === 'object') {
       out.deco = {};
@@ -192,7 +192,7 @@ export function worldTick(A, myX, dt) {
   }
   for (const p of W.players.values()) {
     const dx = (p.tx ?? p.x) - p.x, dy = (p.ty2 ?? p.y) - p.y;
-    const dist = Math.hypot(dx, dy), step = 62 * dt;
+    const dist = Math.hypot(dx, dy), step = Math.max(62, dist * 3) * dt;
     if (dist <= step) { p.x = p.tx ?? p.x; p.y = p.ty2 ?? p.y; }
     else { p.x += dx / dist * step; p.y += dy / dist * step; }
   }

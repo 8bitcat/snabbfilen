@@ -10,8 +10,9 @@ import { worldFolksHere, worldMyEmote } from '../net/world.js';
 export const WALK_SEQ = [1, 3, 2, 3];
 const FW = 384, FH = 216;
 
-export function createWalker({ left = 8, right = FW - 8, top = 90, bottom = FH - 4, spawn }) {
-  const CELL = 4, GW = Math.ceil(FW / CELL), GH = Math.ceil(FH / CELL);
+// W/H = världens storlek (standard = en skärm; staden är större och rullar).
+export function createWalker({ W: WW = FW, H: WH = FH, left = 8, right = WW - 8, top = 90, bottom = WH - 4, spawn }) {
+  const CELL = 4, GW = Math.ceil(WW / CELL), GH = Math.ceil(WH / CELL);
   let freeGrid = new Uint8Array(GW * GH);
   let obstacles = [];
   function setObstacles(list) {
@@ -31,7 +32,7 @@ export function createWalker({ left = 8, right = FW - 8, top = 90, bottom = FH -
     for (let r = 1; r < 50; r++) for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
       if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
       const nx = x + dx * CELL, ny = y + dy * CELL;
-      if (nx > 0 && ny > 0 && nx < FW && ny < FH && walkable(nx, ny)) return [nx, ny];
+      if (nx > 0 && ny > 0 && nx < WW && ny < WH && walkable(nx, ny)) return [nx, ny];
     }
     return [x, y];
   }

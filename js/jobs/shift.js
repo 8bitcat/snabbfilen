@@ -11,7 +11,15 @@ export const SHIFT_SECONDS = 60;
 export function startJobFlow(A, jobId, sceneName) {
   const g = A.game, job = JOBS[jobId];
   const chk = g.canWork();
-  if (!chk.ok) { toast(chk.msg, 'bad'); return; }
+  if (!chk.ok) {
+    if (chk.waitTo) {
+      openModal(`${job.icon} ${job.name}`, `<p style="font-size:20px;margin-top:0">${chk.msg}</p>`, [
+        { label: 'Gå därifrån', onClick: closeModal },
+        { label: '⏩ Vänta tills det öppnar', cls: 'btn-go', onClick: () => { closeModal(); g.waitUntil(chk.waitTo); startJobFlow(A, jobId, sceneName); } },
+      ]);
+    } else toast(chk.msg, 'bad');
+    return;
+  }
   const lvl = levelOf(g.jobs[jobId]);
   const dubbel = g.eventIs('dubbel') && g.event.job === jobId;
   const rows = [
