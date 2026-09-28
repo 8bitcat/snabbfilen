@@ -9,6 +9,10 @@ import { play } from '../core/sound.js';
 
 export const SHIFT_SECONDS = 60;
 
+// Jobb där gästerna ger dricks (minispelet räknar stats.dricksKr). Dricksen läggs
+// på lönen efter nivåbonusen – den följer bara med i hunger-halveringen och extrapasset.
+const TIP_JOBS = new Set(['kok']);
+
 // Rakt in i passet (t.ex. via 💼 Jobba ihop-inbjudan): samma öppettids- och
 // ork-kontroller som vanligt, men utan introdialogen – man har redan tackat ja.
 export function startShiftNow(A, jobId, sceneName) {
@@ -37,6 +41,7 @@ export function startJobFlow(A, jobId, sceneName) {
     `⭐ Din nivå: <b>${JOB_TITLES[lvl - 1]}</b> (lön ×${payMult(lvl).toFixed(2).replace('.', ',')})`,
     g.best[jobId].ok ? `🏅 Ditt rekord: <b>${g.best[jobId].ok} rätt</b> · bästa lön ${fmt(g.best[jobId].pay)}` : null,
     dubbel ? `💰 <b class="ok">EXTRAPASS I DAG – DUBBEL LÖN!</b>` : null,
+    TIP_JOBS.has(jobId) ? `🪙 Snabb service ger <b>dricks</b> – den går rakt ner i lönen` : null,
     `⏱️ Ett pass tar 4 timmar.`,
   ].filter(Boolean);
   openModal(`${job.icon} ${job.name}`, `<p style="font-size:21px;margin-top:0"><b>${job.verb}!</b></p>
@@ -79,7 +84,8 @@ function finishShift(A, jobId, stats) {
   const lvl = levelOf(A.game.jobs[jobId]);
   const mult = payMult(lvl);
   const base = Math.max(0, stats.ok * job.wage + (stats.boxes || 0) * (job.bonus || 0) - stats.fel * job.oops);
-  const res = A.game.endShift(jobId, base * mult, stats);
+  const tips = Math.max(0, Math.round(stats.dricksKr || 0));
+  const res = A.game.endShift(jobId, base * mult + tips, stats);
   play('coin');
   const line = (l, r) => `<div style="display:flex;justify-content:space-between;font-size:20px"><span>${l}</span><b>${r}</b></div>`;
   openModal(`${job.icon} Passet är slut!`, `
@@ -91,6 +97,7 @@ function finishShift(A, jobId, stats) {
     ${stats.delat ? line('👥 Jobbat ihop', `${stats.delat} pers – lagets ${stats.lagOk || 0} rätt delas lika`) : ''}
     ${line('Grundlön', fmt(base))}
     ${mult > 1 ? line(`⭐ ${JOB_TITLES[lvl - 1]}-bonus`, '×' + mult.toFixed(2).replace('.', ',')) : ''}
+    ${tips ? line(`🪙 Dricks (${stats.dricks} ggr)`, '+' + fmt(tips)) : ''}
     ${res.starving ? line('🥴 Yr av hunger', 'halv lön!') : ''}
     ${res.doubled ? line('💰 Extrapass', 'DUBBEL LÖN!') : ''}
     ${line('💰 Lön', fmt(res.finalPay))}`, [

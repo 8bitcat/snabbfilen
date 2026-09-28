@@ -10,6 +10,11 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.29.1] – 2026-09-28 – Dricksen blir lön
+- Dricksen i Burgarköket går nu rakt in i lönen: snabb service ger 5 kr, blixtsnabb 10 kr per rätt
+- Köket visar beloppet direkt när gästen ger dricks, och Bella ropar ut det
+- Lönebeskedet har en egen rad för dricksen, och introt berättar att snabbhet lönar sig
+
 ## [0.29.0] – 2026-09-28 – In i Burgarbaren + Burgarköket
 - GÅ IN I BURGARBAREN! Dörren leder nu in i en gåbar 50-talsdiner: schackrutigt golv, röda bås, jukebox, glassdisk och kassörskan Doris. Beställ vid disken, BÄR DIN BRICKA till ett ledigt bord, sätt dig och ät – mättnad och energi fylls bara medan du sitter. Gäster kommer och går, käkar och pratar.
 - NYTT JOBB: BURGARKÖKET. Vid disken kan du ta kökspasset – beställningslappar på skenan, bygg burgarna lager för lager i rätt ordning, vänd biffarna innan de bränns, fritera pommes och ring i klockan. Snabb servering ger dricks-stjärnor!

@@ -555,7 +555,7 @@ function drawGauge(ctx, x, y, tid, tOk, tBrann) {
 }
 
 export function makeJobbKok(A, { onDone } = {}) {
-  const stats = { ok: 0, fel: 0, miss: 0, dricks: 0, brand: 0 };
+  const stats = { ok: 0, fel: 0, miss: 0, dricks: 0, dricksKr: 0, brand: 0 }; // dricksKr läggs på lönen (shift.js)
   const wage = JOBS.kok?.wage ?? 11;   // huvudagenten lägger in JOBS.kok i game.js
   const walker = createWalker({ top: 92, bottom: FH - 5, spawn: [TRAY.x, STAND_Y] });
   walker.setObstacles([
@@ -745,7 +745,12 @@ export function makeJobbKok(A, { onDone } = {}) {
       bricka[s] = null; served++; stats.ok++;
       play('coin');
       pops.add(BRICKA.spots[s], 52, `+${wage} TACK!`, '#8ee03c');
-      if (o.kvar / o.max > 0.6) { stats.dricks++; pops.add(BRICKA.spots[s], 42, 'DRICKS!', '#ffd23f'); bellaSay('SNABBT JOBBAT! GÄSTEN GAV DRICKS! 💰'); }
+      if (o.kvar / o.max > 0.6) { // snabb mat ger dricks – blixtsnabb ger mer; allt går rakt ner i lönen
+        const kr = o.kvar / o.max > 0.85 ? 10 : 5;
+        stats.dricks++; stats.dricksKr += kr;
+        pops.add(BRICKA.spots[s], 42, `+${kr} DRICKS!`, '#ffd23f');
+        bellaSay(kr >= 10 ? 'BLIXTSNABBT! GÄSTEN GAV EN TIA I DRICKS! 💰' : 'SNABBT JOBBAT! GÄSTEN GAV DRICKS! 💰');
+      }
     }
     if (!served && !rest) hint('STÄLL MATEN PÅ BRICKAN FÖRST', BELL.x - 10, 46);
     else if (!served && rest) hint('INGEN HAR BESTÄLLT DET HÄR', BELL.x - 10, 46);

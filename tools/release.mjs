@@ -27,7 +27,7 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const MARK = '<!-- släpp:';
-const COAUTHOR = 'Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>';
+const COAUTHOR = 'Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>';
 
 const argv = process.argv.slice(2);
 const dd = argv.indexOf('--');
