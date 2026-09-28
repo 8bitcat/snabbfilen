@@ -6,6 +6,12 @@ import { drawPerson } from '../core/people.js';
 import { avatarTagColors } from '../core/avatar.js';
 import { SMALL, ctxText, textW } from '../core/floor-pix.js';
 import { worldFolksHere, worldMyEmote, worldMySay } from '../net/world.js';
+import { speak, heardBubble } from '../core/voices.js';
+
+// Ljud när en chattbubbla dyker upp (andra spelares chatt via world.js): anropa varje
+// bildruta bubblan syns – första gången hörs simspråks-babbel, sedan tystnad tills texten
+// byts. voice = avatar/look/namn/'self' (utelämnad = gissning på text + läge).
+export { heardBubble } from '../core/voices.js';
 
 export const WALK_SEQ = [1, 3, 2, 3];
 const FW = 384, FH = 216;
@@ -254,16 +260,30 @@ export function iconBubble(ctx, x, y, drawIcon, hot = false) {
 // Ett pratbubbellager per scen: den senaste repliken visas ovanför en person, ett djur eller
 // den egna figuren (at = {x, y} i världskoordinater, eller en funktion som ger läget varje
 // bildruta). Ritas med scenens kameratransform; view = { x0, x1 } håller bubblan i bild.
+// Repliken hörs också (js/core/voices.js): djuremoji först i texten = djurläte, annars
+// simspråks-babbel. opts (frivillig fjärde parameter till say) = { voice, animal, mood,
+// silent … } – voice = look/avatar/namn/'self' (egna figuren, mjukare), animal = husdjuret
+// eller 'hund'/'katt'/…, silent = ingen röst. Utan opts gissas talaren på texten och rösten
+// hashas på var talaren står, så samma figur låter alltid likadant.
 export function createSpeech() {
-  let cur = null;
+  let cur = null, voiceH = null;
   const now = () => performance.now() / 1000;
+  const hush = () => { try { voiceH?.stop(0.05); } catch { /* ok */ } voiceH = null; };
   return {
-    say(text, at, secs) {
+    say(text, at, secs, opts) {
       const str = String(text || '').trim();
       if (!str || !at) return;
       cur = { text: str, at, until: now() + (secs ?? Math.max(3, Math.min(8, str.length / 12))) };
+      hush();
+      if (opts?.silent) return;
+      try {
+        const pos = typeof at === 'function' ? at() : at;
+        const key = opts?.key ?? (pos ? '@' + Math.round(pos.x / 16) + ',' + Math.round(pos.y / 16) : undefined);
+        heardBubble(str, pos?.x, pos?.y, false); // registrera bubblan – ljudet spelas här nedanför
+        voiceH = speak(str, { ...opts, key });
+      } catch { /* ljudet är aldrig ett krav */ }
     },
-    clear() { cur = null; },
+    clear() { cur = null; hush(); },
     active: () => !!cur && cur.until > now(),
     text: () => (cur && cur.until > now() ? cur.text : null),
     draw(ctx, view) {

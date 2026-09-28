@@ -8,9 +8,13 @@
 // Helansiktsmålningar färgar om huvudets hud med R.pattern(TAG.head, …) – från sidan bara
 // ansiktsdelen (x ≥ 13, framför örat). Bakifrån syns inget av ansiktet.
 import { mix, ramp, TAG } from './util.js';
-import { pix, pal, tint, colorOr, mouthRow, WHITE, SHINE, LASH } from './face-kit.js';
+import { pix as pixAny, pal, tint, colorOr, mouthRow, WHITE, SHINE, LASH } from './face-kit.js';
 
 // ---------- hjälpare ----------
+// Pixelkartor på huden klipps mot huvudets form: en kinddekor som når ut till kanten
+// (t.ex. rad eyeRow+3 där ansiktet smalnar) får inte sticka ut utanför kinden.
+const ON_FACE = new Set([TAG.head, TAG.face, TAG.brow]);
+const pix = (R, x0, y0, rows, P, mode) => pixAny({ put: (x, y, c) => { if (ON_FACE.has(R.tagAt(x, y))) R.put(x, y, c); } }, x0, y0, rows, P, mode);
 // tona bara huden (huvudets pixlar, ev. även ansiktsdetaljer som redan rosiga kinder)
 const tintSkin = (R, x, y, c, t, face = false) => { const g = R.tagAt(x, y); if (g === TAG.head || (face && g === TAG.face)) tint(R, x, y, c, t); };
 const tintSkinRect = (R, x, y, w, h, c, t, face) => { for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) tintSkin(R, x + i, y + j, c, t, face); };
@@ -199,6 +203,28 @@ export const MARKS_NEW = {
     front(R) { const E = R.eyeRow; for (const [x, y] of [[14, -2], [15, -2], [15, -1], [16, -1], [15, 0], [16, 0], [13, 1], [14, 1], [15, 1], [16, 1], [14, 2], [15, 2]]) tintSkin(R, x, E + y, 0x9a2a4a, 0.4, true); },
     side(R) { const E = R.eyeRow; for (const [x, y] of [[13, -2], [14, -2], [12, -1], [13, -1], [13, 0], [12, 1], [13, 1], [14, 1], [13, 2], [14, 2]]) tintSkin(R, x, E + y, 0x9a2a4a, 0.4, true); },
   },
+  // --- rynkor (mörkare hud i veck, tonen under behålls) ---
+  wrinkles: {
+    label: 'Rynkor', group: 'Rynkor',
+    // pannveck, kråkfötter vid ögonvrårna och veck från näsan ner mot mungiporna
+    front(R) {
+      const E = R.eyeRow, c = R.skin.dk;
+      for (let x = 10; x <= 13; x++) tintSkin(R, x, E - 4, c, 0.3);
+      both(R, [[7, E - 1], [8, E + 1]], (x, y) => tintSkin(R, x, y, c, 0.4));
+      both(R, [[10, E + 2], [9, E + 3]], (x, y) => tintSkin(R, x, y, c, 0.45));
+    },
+    side(R) {
+      const E = R.eyeRow, c = R.skin.dk;
+      for (let x = 14; x <= 16; x++) tintSkin(R, x, E - 4, c, 0.3);
+      tintSkin(R, 13, E - 1, c, 0.4); tintSkin(R, 14, E + 1, c, 0.4);
+      tintSkin(R, 15, E + 2, c, 0.45); tintSkin(R, 14, E + 3, c, 0.45);
+    },
+  },
+  laughLines: {
+    label: 'Skrattrynkor', group: 'Rynkor',
+    front(R) { const E = R.eyeRow; both(R, [[10, E + 2], [9, E + 3]], (x, y) => tintSkin(R, x, y, R.skin.dk, 0.45)); },
+    side(R) { const E = R.eyeRow; tintSkin(R, 15, E + 2, R.skin.dk, 0.45); tintSkin(R, 14, E + 3, R.skin.dk, 0.45); },
+  },
   // --- ärr, plåster & skador ---
   scarEye: {
     label: 'Ärr över ögat', group: 'Ärr & plåster',
@@ -261,6 +287,16 @@ export const MARKS_NEW = {
     front(R) { pix(R, 7, R.eyeRow + 1, ['bybb', 'yyyy', 'bybb'], { b: 0x2f6fc0, y: 0xf0c830 }); },
     side(R) { pix(R, 12, R.eyeRow + 1, ['byb', 'yyy', 'byb'], { b: 0x2f6fc0, y: 0xf0c830 }); },
   },
+  finland: {
+    label: 'Finska flaggan', group: 'Ansiktsmålning',
+    front(R) { pix(R, 7, R.eyeRow + 1, ['wbww', 'bbbb', 'wbww'], { b: 0x2a5ab0, w: 0xf4f1ea }); },
+    side(R) { pix(R, 12, R.eyeRow + 1, ['wbw', 'bbb', 'wbw'], { b: 0x2a5ab0, w: 0xf4f1ea }); },
+  },
+  denmark: {
+    label: 'Danska flaggan', group: 'Ansiktsmålning',
+    front(R) { pix(R, 7, R.eyeRow + 1, ['rwrr', 'wwww', 'rwrr'], { r: 0xc8202a, w: 0xf4f1ea }); },
+    side(R) { pix(R, 12, R.eyeRow + 1, ['rwr', 'www', 'rwr'], { r: 0xc8202a, w: 0xf4f1ea }); },
+  },
   supporter: {
     label: 'Supporterränder', group: 'Ansiktsmålning', uses: ['markColor'],
     front(R) { const c = mc(R, 0x2f6fc0); pix(R, 8, R.eyeRow + 1, ['cy', 'cy', 'cy'], { c: c.base, y: 0xf0c830 }, 1); },
@@ -288,6 +324,19 @@ export const MARKS_NEW = {
     front(R) { const c = mc(R, 0x22222a), y = R.eyeRow - 2; R.rect(7, y, 10, 3, c.base); R.rect(7, y, 10, 1, c.hi); R.put(16, y + 1, c.lo); R.put(16, y + 2, c.lo); R.put(11, y + 2, R.skin.lo); R.put(12, y + 2, R.skin.lo); R.draw('eyes'); },
     side(R) { const c = mc(R, 0x22222a), y = R.eyeRow - 2; R.rect(9, y, 8, 3, c.base); R.rect(9, y, 8, 1, c.hi); R.put(8, y + 1, c.lo); R.put(7, y + 2, c.lo); R.draw('eyes'); },
     back(R) { const c = mc(R, 0x22222a), y = R.eyeRow - 2; R.rect(7, y, 10, 2, c.lo); R.put(11, y + 2, c.lo); R.put(12, y + 3, c.lo); },
+    // bandet och knuten ligger utanpå håret (bakifrån och från sidan)
+    afterHair(R) {
+      if (R.front) return;
+      const c = mc(R, 0x22222a), y = R.eyeRow - 2;
+      const over = (x, yy, col) => { const t = R.tagAt(x, yy); if (t === TAG.hair || t === TAG.head) R.put(x, yy, col); };
+      if (R.back) {
+        for (let x = 7; x <= 16; x++) { over(x, y, c.base); over(x, y + 1, c.lo); }
+        R.put(11, y, c.hi); R.put(12, y, c.hi); R.put(11, y + 2, c.lo); R.put(12, y + 2, c.base); R.put(12, y + 3, c.lo); R.put(11, y + 3, c.lo);
+      } else {
+        for (let x = 8; x <= 12; x++) { over(x, y, c.base); over(x, y + 1, c.lo); }
+        R.put(8, y + 1, c.lo); R.put(7, y + 2, c.lo);
+      }
+    },
   },
   butterfly: {
     label: 'Fjäril', group: 'Ansiktsmålning', uses: ['markColor'],
@@ -304,6 +353,24 @@ export const MARKS_NEW = {
     label: 'Katt', group: 'Ansiktsmålning',
     front(R) { const E = R.eyeRow, k = 0x1c1a20; R.put(11, E + 2, 0xe07a8a); R.put(12, E + 2, 0xe07a8a); R.put(11, E + 1, 0x2a2030); R.put(12, E + 1, 0x2a2030); pix(R, 7, E + 1, ['kk.', '...', 'kk.'], { k }, 1); pix(R, 8, E + 2, ['k'], { k }, 1); },
     side(R) { const E = R.eyeRow, k = 0x1c1a20; R.put(17, E + 1, 0x2a2030); R.put(17, E + 2, 0xe07a8a); pix(R, 12, E + 1, ['kk', '..', 'kk'], { k }); },
+  },
+  bindi: {
+    label: 'Bindi', group: 'Ansiktsmålning', uses: ['markColor'],
+    // en prick mitt i pannan mellan brynen (två pixlar – mitten ligger mellan x 11 och 12)
+    front(R) { const c = mc(R, 0xc8202a), y = R.eyeRow - 3; R.put(11, y, c.base); R.put(12, y, c.base); },
+    side(R) { R.put(16, R.eyeRow - 3, mc(R, 0xc8202a).base); },
+  },
+  kissMark: {
+    label: 'Pussmärke', group: 'Ansiktsmålning', uses: ['markColor'],
+    // läppstiftsavtryck på kinden: över- och underläpp med munspringan emellan
+    front(R) { const c = mc(R, 0xe0304a); pix(R, 13, R.eyeRow + 1, ['.cc.', 'cCCc', '.cc.'], { c: c.base, C: c.dk }); },
+    side(R) { const c = mc(R, 0xe0304a); pix(R, 12, R.eyeRow + 1, ['.cc.', 'cCCc', '.cc.'], { c: c.base, C: c.dk }); },
+  },
+  drawnMustache: {
+    label: 'Ritad mustasch', group: 'Ansiktsmålning', uses: ['markColor'],
+    // tuschmustasch med uppsnurrade spetsar (funkar även på barn – till skillnad från riktigt skägg)
+    front(R) { const c = mc(R, 0x1c1a24), y = R.eyeRow + 3; pix(R, 9, y - 1, ['c....c', '.cccc.'], { c: c.base }); },
+    side(R) { const c = mc(R, 0x1c1a24), y = R.eyeRow + 3; pix(R, 14, y - 1, ['c..', '.cc'], { c: c.base }); },
   },
   tiger: {
     label: 'Tiger', group: 'Ansiktsmålning', uses: ['markColor'],
@@ -334,7 +401,7 @@ export const MARKS_NEW = {
       paintFace(R, ramp(0xf6f2ea));
       pix(R, 15, E - 3, ['c', '.', '.', '.', 'c'], { c: c.base });
       pix(R, 14, E + 3, ['r..', '.rr'], { r });
-      pix(R, 17, E + 1, ['Rr', 'rd'], { r, R: 0xff8a80, d: 0xa01820 });
+      pixAny(R, 17, E + 1, ['Rr', 'rd'], { r, R: 0xff8a80, d: 0xa01820 }); // näsan sticker ut – oklippt
     },
   },
   skull: {

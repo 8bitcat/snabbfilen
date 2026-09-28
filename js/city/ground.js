@@ -263,7 +263,7 @@ function asphaltW(x, y, tone = 0, road = true, worn = 0) {
   if (worn <= 0.02) return c;
   c = mix(c, mul(0x5f5e5a, 0.94 + vnoise(x, y, 30, 28) * 0.12), 0.34 * worn);
   const v = vnoise(x, y, 5, 27);
-  if (v > 0.64 && hash(x, y, 29) > 0.52 - worn * 0.22) c = hash(x, y, 30) > 0.45 ? mix(c, 0x8c877c, 0.34 * worn) : mul(c, 1 - 0.22 * worn);
+  if (v > 0.66 && hash(x, y, 29) > 0.6 - worn * 0.2) c = hash(x, y, 30) > 0.55 ? mix(c, 0x827d72, 0.26 * worn) : mul(c, 1 - 0.18 * worn);
   return c;
 }
 // Infartens asfalt: hjulspåren går lodrätt
@@ -316,6 +316,15 @@ function alligator(cx, cy, rx, ry, seed) {
     const v = cellAt(x, y, 4.6, 3.4, seed), e = v.d2 - v.d1;
     if (e < 0.09 && hash(x, y, seed + 1) < 1.25 - t) { shade(x, y, 0.58); if (hash(x, y, seed + 2) > 0.7) blend(x, y + 1, 0xffffff, 0.06); }
     else if (t < 0.7 && hash(v.id, 3, seed) > 0.8) put(x, y, mix(get(x, y), 0x8a857a, 0.12));           // lösa bitar
+  });
+}
+// oregelbunden lagning (en klick ny asfalt med tätad, ojämn kant)
+function blobPatch(cx, cy, rx, ry, tone, seed, ya = 0, yb = H) {
+  ellipse(cx, cy, rx * 1.2, ry * 1.2, (x, y, t) => {
+    if (y < ya || y >= yb) return;
+    const e = t + (vnoise(x, y, 4, seed) - 0.5) * 0.5;
+    if (e > 1) return;
+    put(x, y, e > 0.88 ? (hash(x, y, seed + 1) > 0.3 ? 0x23242a : mul(get(x, y), 0.7)) : asphaltW(x, y, tone, true, 0.2));
   });
 }
 // potthål: trasig kant, grus i botten, belyst bortre innervägg (ljuset från sydväst)
@@ -516,7 +525,7 @@ function paintBack() {
     else if (k < 0.8) { put(x, y, 0x3a6a8a); put(x + 1, y, 0x2a4a6a); }                     // kapsyl/burk
     else put(x, y, 0x2a2622);                                                                // fläck
   }
-  scatter([XS, 10, W, TOP - 2], 150, 741);
+  scatter([XS, 10, W, 13], 40, 741); scatter([XS, TOP - 5, W, TOP - 1], 36, 745); scatter([XS, 13, W, TOP - 5], 24, 746);
   tag(1990, 27, 'BTG', 0xe8443a, 742); tag(2410, 12, 'ZOK', 0x3a9bff, 743);
   paintBoundary();
 }
@@ -782,7 +791,7 @@ function paintAlley(g, top = TOP, base = BASE) {
     put(x0 + 3 + ((hash(x0, 5, 213) * 20) | 0), top + 120, 0x9a6a2a);
   }
   if (worn > 0.5) {
-    scatter([x0 + 1, top + 2, x1 - 1, base - 4], 26, seed + 30);
+    scatter([x0 + 1, top + 2, x0 + 5, base - 4], 7, seed + 30); scatter([x1 - 5, top + 2, x1 - 1, base - 4], 7, seed + 31);
     stain(x0 + (w >> 1), top + 40 + hash(x0, 6, 214) * 60, 5, 3, 0.4, 0x2a2622);             // urin/olja
     if (w >= 20 && hash(x0, 7, 214) > 0.3) tag(x0 + 4, top + 100 + ((hash(x0, 8, 214) * 20) | 0), ['BTG', 'ZOK'][(hash(x0, 9, 214) * 2) | 0], SPRAY[(hash(x0, 10, 214) * SPRAY.length) | 0], seed + 40);
   }
@@ -840,7 +849,7 @@ function paintSideStreet(g) {
     pothole(mid - 12, yA + 76, 5, 2.4, seed + 60); pothole(mid + 9, yA + 112, 4, 2, seed + 61);
     alligator(mid + 6, yA + 20, 10, 7, seed + 62);
     for (let y = yA + 2; y < yB - 2; y++) for (const x of [x0 + 8, x1 - 9]) if (hash(x, y, seed + 63) > 0.8) tuft(x, y, seed + y, hash(x, y, seed + 64) > 0.7);
-    scatter([x0 + 9, yA + 2, x1 - 9, yB - 3], 30, seed + 65);
+    scatter([x0 + 8, yA + 2, x0 + 12, yB - 3], 9, seed + 65); scatter([x1 - 12, yA + 2, x1 - 8, yB - 3], 9, seed + 66);
   }
   gapShadow(g);
 }
@@ -894,6 +903,23 @@ function paintPedestrian(g, top, base, style) {
     }
     put(x, y, c);
   }
+  if (style === 'granit') {
+    // tvärband av mörk granit var 36:e px, en rund mässingsplatta mitt på och ett blanknött stråk
+    for (let y = top + 18; y < base - 8; y += 36) for (let x = x0 + 5; x < x1 - 5; x++) for (let j = 0; j < 3; j++) {
+      let c = granite(x, y + j, j === 0 ? 0x8a857c : j === 1 ? 0x6e6a62 : 0x5e5a54);
+      if ((x - x0) % 8 === 7) c = 0x4a4640;
+      put(x, y + j, c);
+    }
+    const px = mid, py = top + 72;
+    ellipse(px, py, 7, 4.5, (x, y, t) => {
+      let c = t > 0.8 ? 0x5a4a2a : mix(0xc8a050, 0x8a6a30, clamp01((y - py + 3) / 7));
+      if (t < 0.8 && ((x - px) * (x - px) * 0.3 + (y - py) * (y - py) < 3)) c = 0xe8c870;         // stjärnan i mitten
+      if (t < 0.8 && hash(x, y, seed + 20) > 0.85) c = mix(c, 0x3a7a5a, 0.4);                        // ärg
+      put(x, y, c);
+    });
+    for (let y = top + 2; y < base - 4; y++) for (let x = mid - 9; x < mid + 9; x++) if (bayer(x, y) < 0.3 * (1 - Math.abs(x - mid) / 9)) blend(x, y, 0xffffff, 0.08);
+    for (const [lx, ly] of [[x0 + 9, top + 30], [x1 - 17, top + 118]]) lid(lx, ly, 8, 5);
+  }
   // galler i mittrännan och trösklar mot trottoaren/parkgången
   if (style !== 'granit') for (let y = top + 20; y < base - 16; y += 44) grate(mid - 1, y, 3, 6, false, 0.16 + worn * 0.3);
   for (let x = x0; x < x1; x++) { put(x, base - 2, granite(x, base - 2, 0xbdb8ae)); put(x, base - 1, granite(x, base - 1, 0x96918a)); put(x, top, granite(x, top, 0xb2ada3)); }
@@ -909,7 +935,7 @@ function paintPedestrian(g, top, base, style) {
       ellipse(px + pw / 2, py + ph / 2, pw / 2, ph / 2, (x, y, t) => put(x, y, t > 0.86 ? 0x26272c : asphaltW(x, y, -0.1, false, 0.5)));
     }
     for (let i = 0; i < 8; i++) crack(x0 + 6 + hash(i, 1, seed + 14) * (w - 12), top + 6 + hash(i, 2, seed + 14) * (base - top - 14), 10 + hash(i, 3, seed + 14) * 16, seed + 15 + i, { vert: true, x0: x0 + 5, x1: x1 - 5, y0: top + 1, y1: base - 3, weeds: 0.1 });
-    scatter([x0 + 5, top + 2, x1 - 5, base - 4], 34, seed + 16);
+    scatter([x0 + 5, top + 2, x0 + 9, base - 4], 9, seed + 16); scatter([x1 - 9, top + 2, x1 - 5, base - 4], 9, seed + 19);
     tag(x0 + 10, top + 60, 'PXL', 0xe070c0, seed + 17); tag(x0 + 22, top + 110, 'BTG', 0x5ad35a, seed + 18);
   }
   gapShadow(g, top, base);
@@ -975,7 +1001,7 @@ function subWear(ya, yb, seed) {
     crack(x, y, 8 + hash(i, 3, seed) * 16, seed + i, { dx: hash(i, 4, seed) > 0.5 ? 1 : -1, y0: ya, y1: yb, branch: i % 5 === 0, weeds: 0.07 });
   }
   for (let i = 0; i < 16; i++) stain(XS + hash(i, 5, seed) * (W - XS), ya + 3 + hash(i, 6, seed) * (yb - ya - 6), 3 + hash(i, 7, seed) * 4, 1.6, 0.22, 0x3a3026);
-  scatter(r, 170, seed + 1);
+  scatter([XS, ya, W, ya + 4], 34, seed + 1); scatter([XS, yb - 4, W, yb], 34, seed + 8); scatter(r, 22, seed + 9);
   for (let x = XS; x < W; x++) if (hash(x, ya, seed + 2) > 0.94) tuft(x, ya + 1 + ((hash(x, 1, seed + 2) * (yb - ya - 2)) | 0), seed + x, hash(x, 2, seed + 2) > 0.7);
 }
 
@@ -1121,7 +1147,8 @@ function paintRoadX(R) {
   // lagningar: nyare (mörkare) eller äldre (blekare) asfalt med tätade skarvar
   const PATCH = R.dy === 0 ? [...PATCH_N, ...TRENCH_N]
     : [...PATCH_N.map(([px, py, pw, ph, t], i) => [(px + 290 + i * 37) % 1640, py + d, pw, ph, t]), ...TRENCH_N.map(([px, py, pw, ph, t]) => [(px + 400) % 1640, py + d, pw, ph, t])];
-  for (let i = 0; i < 18; i++) PATCH.push([XS + 10 + ((hash(i, 1, sd + 8) * (W - XS - 80)) | 0), A + 5 + ((hash(i, 2, sd + 8) * (B - A - 26)) | 0), 16 + ((hash(i, 3, sd + 8) * 56) | 0), 7 + ((hash(i, 4, sd + 8) * 16) | 0), hash(i, 5, sd + 8) > 0.5 ? -0.15 : 0.1]);
+  for (let i = 0; i < 10; i++) PATCH.push([XS + 10 + ((hash(i, 1, sd + 8) * (W - XS - 80)) | 0), A + 5 + ((hash(i, 2, sd + 8) * (B - A - 26)) | 0), 16 + ((hash(i, 3, sd + 8) * 56) | 0), 7 + ((hash(i, 4, sd + 8) * 16) | 0), hash(i, 5, sd + 8) > 0.5 ? -0.15 : 0.1]);
+  for (let i = 0; i < 12; i++) blobPatch(XS + 20 + hash(i, 1, sd + 9) * (W - XS - 40), A + 10 + hash(i, 2, sd + 9) * (B - A - 22), 8 + hash(i, 3, sd + 9) * 20, 4 + hash(i, 4, sd + 9) * 7, hash(i, 5, sd + 9) > 0.4 ? -0.16 : 0.08, sd + 90 + i, A + 3, B - 4);
   for (const [px, py, pw, ph, tone] of PATCH) {
     for (let y = Math.max(A + 3, py); y < Math.min(B - 4, py + ph); y++) for (let x = px; x < px + pw; x++) {
       const e = x === px || y === py || x === px + pw - 1 || y === py + ph - 1;
@@ -1241,7 +1268,7 @@ function paintRoadX(R) {
     else if (!busZone(x) && !busZone(x + 38)) grate(x + 30, B - 4, 9, 3, true, rust);
   }
   // skräp i förortens rännstenar
-  scatter([XS, A, W, A + 4], 60, sd + 60); scatter([XS, B - 5, W, B - 1], 60, sd + 61);
+  scatter([XS, A, W, A + 4], 44, sd + 60); scatter([XS, B - 5, W, B - 1], 44, sd + 61);
 }
 
 // =====================================================================
@@ -1268,7 +1295,7 @@ function paintInfarten() {
   for (let y = SS1; y < BASE_S; y++) put(I1, y, granite(I1, y, 0xc4bfb5));
   for (let x = I1 + 2; x < IE1; x++) { put(x, SS1, granite(x, SS1, 0xbcb7ad)); }
   for (let i = 0; i < 20; i++) crack(I1 + 3 + hash(i, 1, 962) * 12, SS1 + hash(i, 2, 962) * (BASE_S - SS1), 6 + hash(i, 3, 962) * 10, 963 + i, { vert: true, x0: I1 + 2, x1: IE1, weeds: 0.12 });
-  scatter([I1 + 2, SS1, IE1, BASE_S], 40, 964);
+  scatter([I1 + 2, SS1, IE1, BASE_S], 18, 964);
   // vägbanan
   for (let y = y0; y < y1; y++) for (let x = I0; x < I1; x++) put(x, y, asphaltI(x, y, wornAt(x, y) * 0.5 + 0.2));
   // rännstenar längs trottoarerna (inte där vägen korsar trottoarerna)
@@ -1464,7 +1491,7 @@ function paintPark() {
   paintPlayground(mk);
   paintPads(mk);
   // kanten mellan parkgången och den södra raden (y 490–494): granitkant och en smal rännsten
-  for (let x = 0; x < PX1; x++) {
+  for (let x = 0; x < I0; x++) {
     put(x, BS1, granite(x, BS1, 0xc8c3b9)); put(x, BS1 + 1, granite(x, BS1 + 1, 0x9a958c));
     put(x, BS1 + 2, mul(dirt(x, BS1 + 2), 0.7)); put(x, BS1 + 3, mul(dirt(x, BS1 + 3), 0.6));
   }
@@ -1477,9 +1504,10 @@ function paintDogRun(mk) {
   let x1 = x0; for (let x = x0; x < PX1; x++) if (mk(x, y0 + 5) === 5) x1 = x + 1;
   for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) {
     if (mk(x, y) !== 5) continue;
-    const e = Math.min(x - x0, x1 - 1 - x, y - y0, y1 - 1 - y);
-    const run = e >= 3 && e <= 8 ? 1 - Math.abs(e - 5.5) / 3 : 0;                             // spåret längs staketet
-    const q = fbm(x, y, 12, 160) * 0.8 + run * 0.5 + (hash(x, y, 161) - 0.5) * 0.2;
+    const e = Math.min(x - x0, x1 - 1 - x, y - y0, y1 - 1 - y) + (vnoise(x, y, 9, 163) - 0.5) * 5;
+    const along = vnoise(x * 0.5, y * 0.5, 7, 164);                                           // spåret är tydligt på sina ställen, borta på andra
+    const run = e >= 2 && e <= 10 ? (1 - Math.abs(e - 6) / 4) * (0.3 + along) : 0;             // spåret längs staketet
+    const q = fbm(x, y, 12, 160) * 0.8 + run * 0.55 + (hash(x, y, 161) - 0.5) * 0.2;
     if (q > 0.62) put(x, y, dirt(x, y));
     else if (q > 0.5) put(x, y, mix(get(x, y), 0x8a7a54, 0.5));
   }
@@ -1690,7 +1718,7 @@ function paintSuburbBand() {
   if (LM) {
     for (let y = lamPad[1]; y < lamPad[3]; y++) for (let x = lamPad[0]; x < lamPad[2]; x++) put(x, y, concrete(x, y, 10, 8, 230, 0.9));
     for (let x = lamPad[0]; x < lamPad[2]; x++) shade(x, lamPad[3], 0.8);
-    scatter([lamPad[0], LM.base, lamPad[2], lamPad[3]], 30, 231);
+    scatter([lamPad[0], LM.base, lamPad[2], lamPad[3]], 14, 231);
   }
   // asfaltgångarna (gången från hållplatsen, gångvägen bakom den södra raden, till lamellhusets port)
   for (let y = y0; y < BS1; y++) for (let x = x0; x < x1; x++) {
@@ -1708,9 +1736,9 @@ function paintSuburbBand() {
     put(x, y, e && hash(x, y, 239) > 0.25 ? 0x25262b : asphaltW(x, y, -0.12, false, 0.4));
   }
   pothole(2080, 476, 6, 2.6, 240); pothole(2560, 480, 5, 2.2, 241); pothole(1930, 470, 3.5, 1.8, 242);
-  scatter([x0, BS0, x1, BS1], 120, 243);
+  scatter([x0, BS0, x1, BS0 + 4], 26, 243); scatter([x0, BS1 - 4, x1, BS1], 26, 247);
   // skräp på gräset
-  scatter([x0, y0 + 2, x1, BS0], 220, 244);
+  scatter([x0, y0 + 2, x1, BS0], 70, 244); scatter([x0, y0 + 1, x1, y0 + 6], 30, 248);
   // kanten mot södra raden
   for (let x = XS; x < x1; x++) { put(x, BS1, grime(granite(x, BS1, 0xb8b2a6), x, BS1, 1)); put(x, BS1 + 1, granite(x, BS1 + 1, 0x8a857c)); put(x, BS1 + 2, mul(dirt(x, BS1 + 2), 0.7)); put(x, BS1 + 3, mul(dirt(x, BS1 + 3), 0.6)); }
   // kantstenens skugga mot trottoaren
@@ -1756,7 +1784,7 @@ function paintParking(P, kind) {
   for (let x = x0 + 1; x < x1 - 1; x++) for (const y of [y0 + 1, y1 - 2]) if (hash(x, y, 261) > 0.86) tuft(x, y, 262 + x, hash(x, y, 263) > 0.6);
   // krossat bilfönster: glas som glittrar i en ruta
   for (let k = 0; k < 26; k++) { const x = 1930 + ((hash(k, 1, 264) * 22) | 0), y = y0 + 40 + ((hash(k, 2, 264) * 12) | 0); put(x, y, hash(k, 3, 264) > 0.5 ? 0xdfe8ee : 0xa8c0cc); if (hash(k, 4, 264) > 0.7) put(x + 1, y, 0xffffff); }
-  scatter([x0 + 2, y0 + 2, x1 - 2, y1 - 2], 90, 265);
+  scatter([x0 + 2, y0 + 2, x1 - 2, y0 + 8], 16, 265); scatter([x0 + 2, y1 - 8, x1 - 2, y1 - 2], 16, 266); scatter([x0 + 2, y0 + 2, x1 - 2, y1 - 2], 14, 267);
 }
 // förortens lekplats: nött gräs och jord, sand under gungorna, trasig gummimatta, glas och fimpar
 function paintSubPlay(L) {
@@ -1774,11 +1802,15 @@ function paintSubPlay(L) {
   }
   // sandytor under gungan och rutschkanan (utan kant, gräset växer in)
   for (const [cx, cy, rx, ry] of [[2062, 372, 26, 9], [2136, 368, 16, 7], [2064, 424, 24, 8]]) ellipse(cx, cy, rx, ry, (x, y, t) => {
-    if (t + (vnoise(x, y, 4, 274) - 0.5) * 0.3 > 0.95) return;
-    let c = mix(0xc8b48a, 0xd6c49c, vnoise(x, y, 5, 275));
-    if (hash(x, y, 276) > 0.95) c = 0x9a8a6a; if (vnoise(x, y, 4, 277) > 0.7) c = mix(c, 0x9a8460, 0.4);
+    const e = t + (vnoise(x, y, 4, 274) - 0.5) * 0.36;
+    if (e > 1 || (e > 0.78 && bayer(x, y) < (e - 0.78) / 0.22)) return;                       // prickig kant mot gräset
+    let c = mix(0xb09a74, 0xc2ae86, vnoise(x, y, 5, 275));
+    if (hash(x, y, 276) > 0.94) c = 0x8a7a5e; else if (hash(x, y, 276) < 0.04) c = 0xd4c49c;
+    if (vnoise(x, y, 4, 277) > 0.68) c = mix(c, 0x7a6a4c, 0.4);                                 // blöt, uppgrävd
+    if (hash(x, y, 278) > 0.985) { put(x, y, WEED[1]); return; }
     put(x, y, c);
   });
+  for (const [cx, cy] of [[2056, 374], [2068, 374]]) ellipse(cx, cy, 4, 1.6, (x, y) => put(x, y, mix(get(x, y), 0x5a4a34, 0.5))); // gropar under gungsitsarna
   // trasig gummimatta vid gunghästen (röd/svart, en bit bortriven)
   for (let y = 414; y < 426; y++) for (let x = 2092; x < 2110; x++) {
     if (x > 2104 && y > 420) continue;
@@ -1810,7 +1842,7 @@ function paintPitch(G) {
   // vattensvackor (mörkare), ogräs, skräp
   for (const [cx, cy, rx, ry] of [[mx - 2, my - 12, 12, 3.4], [x0 + 30, y1 - 22, 9, 2.8]]) ellipse(cx, cy, rx, ry, (x, y, t) => blend(x, y, 0x5a4a38, (1 - t) * 0.35));
   for (let i = 0; i < 40; i++) tuft(x0 + 6 + hash(i, 1, 294) * (x1 - x0 - 12), y0 + 6 + hash(i, 2, 294) * (y1 - y0 - 12), 295 + i, hash(i, 3, 294) > 0.7);
-  scatter([x0 + 2, y0 + 2, x1 - 2, y1 - 2], 40, 296);
+  scatter([x0 + 2, y0 + 2, x1 - 2, y1 - 2], 18, 296);
 }
 
 // =====================================================================
@@ -1905,7 +1937,7 @@ function paintRecycling(L) {
     const x = 2292 + ((hash(k, 1, 334) * 40) | 0), y = 552 + ((hash(k, 2, 334) * 30) | 0), g = [0x5a9a5a, 0x8a5a26, 0xcfdde4, 0x3a7a4a][(hash(k, 3, 334) * 4) | 0];
     put(x, y, g); if (hash(k, 4, 334) > 0.75) put(x + 1, y, mix(g, 0xffffff, 0.85));
   }
-  scatter([x0 + 2, y0 + 2, x1 - 2, y1 - 2], 60, 335);
+  scatter([x0 + 2, y0 + 2, x1 - 2, y1 - 2], 34, 335);
   for (let x = x0; x < x1; x++) if (hash(x, y0, 336) > 0.8) tuft(x, y0 + 2, 337 + x, true);
   for (let y = y0; y < y1; y++) for (const x of [x0 + 1, x1 - 2]) if (hash(x, y, 338) > 0.84) tuft(x, y, 339 + y, hash(x, y, 340) > 0.5);
   gapShadow({ x0, x1, row: 's' }, y0, y1);
@@ -1923,7 +1955,7 @@ function paintTrailerLot(L) {
   // eldstad
   ellipse(2700, 588, 5, 2.5, (x, y, t) => put(x, y, t > 0.7 ? mix(0x8a847a, 0x6a665e, hash(x, y, 353)) : mix(0x2a2622, 0x4a443c, hash(x, y, 354))));
   for (let i = 0; i < 30; i++) tuft(x0 + 3 + hash(i, 1, 355) * (x1 - x0 - 6), y0 + 3 + hash(i, 2, 355) * (y1 - y0 - 6), 356 + i, hash(i, 3, 355) > 0.5);
-  scatter([x0 + 2, y0 + 2, x1 - 2, y1 - 2], 30, 357);
+  scatter([x0 + 2, y0 + 2, x1 - 2, y1 - 2], 16, 357);
   gapShadow({ x0, x1, row: 's' }, y0, y1);
 }
 // norra radens tomt i förorten: skrot, jord, oljefläckar, ogräs
@@ -1936,7 +1968,7 @@ function paintJunkLot(g) {
   }
   for (let i = 0; i < 8; i++) stain(x0 + hash(i, 1, 363) * (x1 - x0), y0 + hash(i, 2, 363) * (y1 - y0), 4 + hash(i, 3, 363) * 6, 2 + hash(i, 4, 363) * 3, 0.45);
   for (let i = 0; i < 40; i++) tuft(x0 + 3 + hash(i, 1, 364) * (x1 - x0 - 6), y0 + 3 + hash(i, 2, 364) * (y1 - y0 - 6), 365 + i, hash(i, 3, 364) > 0.5);
-  scatter([x0 + 2, y0 + 2, x1 - 2, y1 - 2], 50, 366);
+  scatter([x0 + 2, y0 + 2, x1 - 2, y1 - 2], 26, 366);
   for (let x = x0; x < x1; x++) { put(x, y1 - 2, grime(granite(x, y1 - 2, 0xaaa59b), x, y1, 1)); put(x, y1 - 1, granite(x, y1 - 1, 0x86817a)); }
   gapShadow(g);
 }
@@ -2095,18 +2127,21 @@ function cloudTex() {
   return (CLOUD = P.flush());
 }
 // Ytslagen för den blöta marken: 1 väg, 2 gång/trottoar/tomt, 3 gräs, 0 vatten/inget
+const PARK_WALKS = [...PARK_LAYOUT.walks, ...PARK_LAYOUT.paths, PARK_LAYOUT.promenade];
+const SUB_HARD = [...LOTS.filter((l) => l.row === 'm' && l.kind !== 'lekplats_x').map((l) => l.rect), ...SUB_LAYOUT.paths];
+const PARKING = lotById('parkering')?.rect || [0, 0, 0, 0];
 function surfaceAt(x, y) {
   if (y >= CN0) return 0;
   if ((y >= R0 && y < R1) || (y >= RS0 && y < RS1) || (x >= I0 && x < I1 && y >= R1 && y < RS0)) return 1;
   if (y < 8) return 0;
   if (y < TOP || (y >= SN0 && y < R0) || (y >= SS0 && y < SS1) || (y >= BASE_S && y < RS0) || y >= RS1) return 2;
   if (y >= PK0 && y < BS0) {
-    if (x < IW0) return PARK_LAYOUT.walks.concat(PARK_LAYOUT.paths, [PARK_LAYOUT.promenade]).some((r) => inR(x, y, r)) ? 2 : 3;
-    if (x < I1 || x < IE1) return 2;
-    return LOTS.some((l) => l.row === 'm' && inR(x, y, l.rect) && l.kind !== 'lekplats_x') || SUB_LAYOUT.paths.some((r) => inR(x, y, r)) ? (inR(x, y, lotById('parkering')?.rect || [0, 0, 0, 0]) ? 1 : 2) : 3;
+    if (x < IW0) return PARK_WALKS.some((r) => inR(x, y, r)) ? 2 : 3;
+    if (x < IE1) return 2;
+    if (inR(x, y, PARKING)) return 1;
+    return SUB_HARD.some((r) => inR(x, y, r)) ? 2 : 3;
   }
-  if (y >= BS0 && y < TOP_S) return 2;
-  // husraderna: gränder och gator (under husen syns inget ändå)
+  // parkgången och husraderna: gränder och gator (under husen syns inget ändå)
   return 2;
 }
 // blöt mark: mörkare, mättad yta + blanka strimmor där himlen speglas (en förmålad bild)
@@ -2114,11 +2149,11 @@ let WET = null;
 function wetTex() {
   if (WET) return WET;
   const P = new Pix(W, H);
-  const rows = new Uint8Array(W);
+  const srow = new Uint8Array(W);
   for (let y = 0; y < H; y++) {
-    for (let x = 0; x < W; x++) rows[x] = surfaceAt(x, y);
+    for (let x = 0; x < W; x++) srow[x] = surfaceAt(x, y);
     for (let x = 0; x < W; x++) {
-      const s = rows[x];
+      const s = srow[x];
       if (!s) continue;
       if (s === 3) { P.px(x, y, 0x0a1420, 0.12); continue; }
       P.px(x, y, 0x0c1422, s === 1 ? 0.22 : 0.15);
@@ -2164,6 +2199,34 @@ function puddleImg(p, night) {
   PUD_IMG.set(k, img);
   return img;
 }
+// kvällsreflexer: de tända fönstren speglar sig som darrande, varma strimmor i den
+// blöta trottoaren nedanför fasaden (en förmålad bild per hus)
+const REFL = new Map();
+function reflectImg(b) {
+  if (REFL.has(b.id)) return REFL.get(b.id);
+  const w = b.w, h = 26, P = new Pix(w, h), seed = b.x + b.base;
+  for (let cx = 6 + ((hash(seed, 1, 990) * 6) | 0); cx < w - 4; cx += 12 + ((hash(cx, 2, seed) * 8) | 0)) {
+    if (cx >= b.door.x0 - b.x - 4 && cx <= b.door.x1 - b.x + 2) continue;
+    const ww = 3 + ((hash(cx, 3, seed) * 4) | 0), warm = hash(cx, 4, seed) > 0.25 ? 0xffd890 : 0xb8d8ff;
+    for (let y = 0; y < h; y++) {
+      if (hash(cx, y >> 1, seed + 5) < 0.28) continue;                                         // strimman bryts av vattnet
+      const wob = Math.round(Math.sin(y * 0.9 + cx) * 1.2), a = 0.5 * (1 - y / h);
+      for (let i = 0; i < ww - (y > h * 0.6 ? 1 : 0); i++) P.px(cx + i + wob, y, warm, a * (i === 0 || i === ww - 1 ? 0.6 : 1));
+    }
+  }
+  // dörren: bredare, ljusare
+  const dx = b.door.x0 - b.x, dw = b.door.x1 - b.door.x0;
+  for (let y = 0; y < h; y++) {
+    if (hash(dx, y >> 1, seed + 6) < 0.2) continue;
+    const wob = Math.round(Math.sin(y * 0.8) * 1.5);
+    for (let i = 2; i < dw - 2; i++) P.px(dx + i + wob, y, 0xffe0a0, 0.55 * (1 - y / h));
+  }
+  const img = P.flush();
+  REFL.set(b.id, img);
+  return img;
+}
+const REFL_HOUSES = [...HOUSES_N, ...HOUSES_S.filter((b) => b.base === BASE_S)];
+
 // ringar (ellipser) för regndroppar i pölar, radie 1–4
 const RING = [null];
 for (let r = 1; r <= 4; r++) {
@@ -2173,7 +2236,12 @@ for (let r = 1; r <= 4; r++) {
 }
 // alla pölar: de fasta + potthålen (som fylls först)
 let ALL_PUDDLES = null;
-const allPuddles = () => ALL_PUDDLES || (ALL_PUDDLES = [...PUDDLES, ...POTHOLES.map((p, k) => ({ x: p.x, y: p.y, rx: p.rx, ry: p.ry, i: 500 + k, hole: true }))]);
+function allPuddles() {
+  if (ALL_PUDDLES) return ALL_PUDDLES;
+  const all = [...PUDDLES, ...POTHOLES.map((p, k) => ({ x: p.x, y: p.y, rx: p.rx, ry: p.ry, i: 500 + k, hole: true }))];
+  if (DAY) ALL_PUDDLES = all;                                                                   // potthålen finns först när marken är målad
+  return all;
+}
 
 // fotspår i snön: varje person lämnar ett avtryck var 5:e px, växelvis vänster/höger fot
 const PRINTS = [], MAXP = 1400;
@@ -2271,6 +2339,16 @@ export function groundLive(ctx, env, view) {
         const r = 1 + Math.floor(f * rmax);
         ctx.fillStyle = `rgba(214,228,246,${(0.6 * (1 - f) * pa).toFixed(3)})`;
         for (const [dx, dy] of RING[Math.min(4, r)]) ctx.fillRect(cx + dx, cy + dy, 1, 1);
+      }
+    }
+    // de tända fönstren speglar sig i den blöta trottoaren när det mörknar
+    const kn = clamp01((env.dark - 0.15) / 0.3) * clamp01((wet - 0.15) / 0.4) * (1 - snow);
+    if (kn > 0.02) {
+      ctx.globalAlpha = kn;
+      for (const b of REFL_HOUSES) {
+        if (b.x + b.w < vx0 || b.x > vx1 || b.base + 30 < vy0 || b.base > vy1) continue;
+        if (b.open && !(env.hour >= b.open[0] && env.hour < b.open[1])) continue;             // stängt och släckt
+        ctx.drawImage(reflectImg(b), b.x, b.base + 3);
       }
     }
     ctx.globalAlpha = 1;

@@ -32,19 +32,26 @@ import { createWalker, selfDrawable, folkDrawables, WALK_SEQ, sayBubble, createS
 const talk = createSpeech(); // repliker och beskrivningar som pratbubblor i scenen
 
 // ================= mått och plats =================
-const VW = 384, W = 600, H = 216;
+// Annonsväggen är ett galleri med en lika stor planch per bostad (62×72 – då ryms insats,
+// hyra och sömn läsbart). Blir väggen bredare än de ursprungliga 202 px (tre bostäder)
+// flyttas hela mäklarhörnan till höger om den lika långt (SH) och kontoret blir bredare –
+// kameran följer figuren längs galleriet.
+const PW = 62, PH = 72, PY = 20, PGAP = 5;       // planscherna
+const NP = Math.max(3, HOMES.length);
+const FEAT_W = Math.max(202, NP * PW + (NP - 1) * PGAP + 8);
+const SH = FEAT_W - 202;                         // så mycket längre galleriet blev
+const VW = 384, W = 600 + SH, H = 216;
 const WALL_Y = 100;                              // golvet börjar här
 const WIN1 = { x: 52, y: 24, w: 80, h: 52 };     // glaset i väntrummets stora fönster
-const WIN2 = { x: 486, y: 24, w: 62, h: 48 };    // fönstret bakom mäklaren
+const WIN2 = { x: 486 + SH, y: 24, w: 62, h: 48 }; // fönstret bakom mäklaren
 const DOOR = { x0: 146, x1: 174, top: 38 };      // glasdörren ut till gatan
 const DOOR_CX = (DOOR.x0 + DOOR.x1) / 2;
-const FEAT = { x0: 184, x1: 386 };               // den mörkblå annonsväggen
-const PW = 62, PH = 72, PY = 20;                 // planscherna
+const FEAT = { x0: 184, x1: 184 + FEAT_W };      // den mörkblå annonsväggen
+const FEAT_CX = (FEAT.x0 + FEAT.x1) >> 1;
 const POSTERS = (() => {
-  const n = Math.max(1, HOMES.length), gap = 5;
-  const pw = Math.min(PW, Math.floor((FEAT.x1 - FEAT.x0 - 8 - gap * (n - 1)) / n));
-  const x0 = FEAT.x0 + Math.floor((FEAT.x1 - FEAT.x0 - (n * pw + (n - 1) * gap)) / 2);
-  return HOMES.map((home, i) => ({ home, x: x0 + i * (pw + gap), y: PY, w: pw, h: PH }));
+  const n = Math.max(1, HOMES.length);
+  const x0 = FEAT.x0 + Math.floor((FEAT.x1 - FEAT.x0 - (n * PW + (n - 1) * PGAP)) / 2);
+  return HOMES.map((home, i) => ({ home, x: x0 + i * (PW + PGAP), y: PY, w: PW, h: PH }));
 })();
 const COFFEE = { x: 8, base: 106 };              // kaffebänken (vänster kant, golvlinje)
 const SOFA = { x: 52, base: 119, w: 78 };        // chesterfieldsoffan under fönstret
@@ -54,30 +61,34 @@ const LAMP = { x: 40, base: 116 };               // golvlampan
 const RACK = { x: 44, base: 160 };               // tidningsstället
 const TICKET = { x: 180, base: 110 };            // nummerlappsautomaten
 const UMBR = { x: 139, base: 105 };              // paraplystället vid dörren
-const BENCH = { x: 285, base: 152, w: 58 };      // gallerisoffan framför planscherna
+const BENCH = { x: FEAT_CX, base: 152, w: 58 };  // gallerisoffan mitt framför planscherna
 const MODEL = { x: 228, base: 196 };             // arkitektmodellen i monter
-const EASEL = { x: 348, base: 192 };             // stafflit med veckans visning
-const DOG = { x: 572, base: 154 };               // mäklarens tax i sin korg
+const EASEL = { x: FEAT.x1 - 38, base: 192 };    // stafflit med veckans visning (galleriets högra ände)
+const DOG = { x: 572 + SH, base: 154 };          // mäklarens tax i sin korg
 const BOXES = { x: 158, base: 204 };             // flyttkartonger (för kunder som ska flytta)
-const PAMPAS = { x: 432, base: 198 };            // golvvas med pampasgräs
+const PAMPAS = { x: 432 + SH, base: 198 };       // golvvas med pampasgräs
 const DOLL = { x: 100, base: 204 };              // dockskåpet i barnhörnan
 const BROCH = { x: 292, base: 206 };             // broschyrstället
-const SIDE = { x: 392, base: 174 };              // sidobord med godisskål och lampa
-const PRINT = { x: 573, base: 138 };             // skrivaren på sideboarden bredvid skrivbordet
-const BIN = { x: 473, base: 140 };               // papperskorgen vid skrivbordet
-const SIGN = { x: 530, base: 208 };              // TILL SALU-skylten med SÅLT!-lapp
-const DESK = { x: 484, base: 142, w: 66 };       // mäklarens skrivbord
+const SIDE = { x: 392 + SH, base: 174 };         // sidobord med godisskål och lampa
+const PRINT = { x: 573 + SH, base: 138 };        // skrivaren på sideboarden bredvid skrivbordet
+const BIN = { x: 473 + SH, base: 140 };          // papperskorgen vid skrivbordet
+const SIGN = { x: 530 + SH, base: 208 };         // TILL SALU-skylten med SÅLT!-lapp
+const DESK = { x: 484 + SH, base: 142, w: 66 };  // mäklarens skrivbord
 const DESK_CX = DESK.x + 33;
 const BOSS = { x: DESK.x + 38, y: 124 };         // mäklaren sitter här (fötterna)
 const GUEST = [DESK.x + 10, DESK.x + 56];        // besöksstolarna (x), ryggen mot oss
 const GUEST_Y = 160;
-const SHELF = { x: 436, base: 104 };             // bokhyllan med pärmar
-const COOLER = { x: 420, base: 106 };            // vattenautomaten
-const FILES = { x: 556, base: 106 };             // arkivskåpen
-const PLANTS = [{ x: 402, base: 108, k: 'fikus' }, { x: 14, base: 212, k: 'monstera' }, { x: 588, base: 214, k: 'monstera2' }];
+const SHELF = { x: 436 + SH, base: 104 };        // bokhyllan med pärmar
+const COOLER = { x: 420 + SH, base: 106 };       // vattenautomaten
+const FILES = { x: 556 + SH, base: 106 };        // arkivskåpen
+// fikusen står vid pilastern i mäklarhörnan; i ett långt galleri får det också två krukor
+// med olivträd mellan planschraderna (bara när väggen har blivit bredare)
+const PLANTS = [{ x: 402 + SH, base: 108, k: 'fikus' }, { x: 14, base: 212, k: 'monstera' }, { x: 588 + SH, base: 214, k: 'monstera2' },
+  ...(SH > 60 ? [{ x: FEAT.x0 + Math.round(FEAT_W * 0.3), base: 212, k: 'monstera' }, { x: FEAT.x0 + Math.round(FEAT_W * 0.72), base: 212, k: 'monstera2' }] : [])];
 const SEATS = [SOFA.x + 22, SOFA.x + 57];        // sittplatser i soffan (x) – kunden har den högra
-const DIPLOMA_X = 436;                           // diplomet (vänsterkant) mellan nummertavlan och fotona
-const PHOTO = { x: 469, y: 18 };                 // inramade foton intill fönstret bakom mäklaren
+const DIPLOMA_X = 436 + SH;                      // diplomet (vänsterkant) mellan nummertavlan och fotona
+const PHOTO = { x: 469 + SH, y: 18 };            // inramade foton intill fönstret bakom mäklaren
+const CEIL = [92, 518 + SH];                     // taklamporna (opalglober)
 // kontaktskuggor på golvet: [x, y, rx, ry] (fotpunkt och storlek)
 const SHADOWS = [
   [SOFA.x + SOFA.w / 2, SOFA.base, SOFA.w / 2 + 3, 4], [TABLE.x, TABLE.base, 24, 4], [CHAIR.x, CHAIR.base, 13, 3.5],
@@ -170,7 +181,7 @@ const FAC = [0xe6c68a, 0xe0a898, 0xb4c6a4, 0xefe9dc, 0xb46a4c, 0xa6bad2, 0xd6b2c
 const AWN = [[0xc9323a, 0xf4f1ea], [0x2a5a48, 0xefe6d2], [0x3a7bd5, 0xf4f1ea], [0xe8b230, 0x6a4424], [0x8e5bd1, 0xf4f1ea], [0x2aa39a, 0xf4f1ea]];
 const SHOPS = ['BAGERI', 'KAFÉ', 'BLOMMOR', 'FRISÖR', 'KIOSK', 'OPTIK', 'PIZZA', 'BÖCKER'];
 const FAR_LANE = 74, NEAR_LANE = 81, PED_Y = 97;
-const LAMPS_OUT = [104, 360, 520];               // lyktstolpar på trottoaren utanför
+const LAMPS_OUT = [104, 360, 520 + SH, ...(SH > 150 ? [520 + (SH >> 1)] : [])]; // lyktstolpar på trottoaren utanför
 
 function cloud(P, cx, cy, s) {
   const parts = [[0, 0, s, s * 0.42], [-s * 0.62, s * 0.14, s * 0.58, s * 0.3], [s * 0.6, s * 0.12, s * 0.62, s * 0.32], [s * 0.12, -s * 0.28, s * 0.5, s * 0.36]];
@@ -255,7 +266,7 @@ function paintOutside(night) {
     if (night && hash(x, y, 91) > 0.993) c = hash(x, y, 92) > 0.5 ? 0xfff6d8 : 0x9ab0e0;
     P.px(x, y, c);
   }
-  if (!night) for (let i = 0; i < 10; i++) cloud(P, 10 + i * 62 + hash(i, 1, 93) * 30, 22 + hash(i, 2, 93) * 12, 6 + hash(i, 3, 93) * 6);
+  if (!night) for (let i = 0; i < Math.ceil(W / 62); i++) cloud(P, 10 + i * 62 + hash(i, 1, 93) * 30, 22 + hash(i, 2, 93) * 12, 6 + hash(i, 3, 93) * 6);
   else { disc(P, 118, 28, 4.5, 4.5, 0xfff4d0); P.px(116, 27, 0xe6dcb8); P.px(119, 29, 0xe6dcb8); P.px(117, 30, 0xe6dcb8); P.ell(118, 28, 12, 12, 0xfff0c0, 0.18, 4); }
   // husen på andra sidan gatan
   let x = -6;
@@ -265,7 +276,7 @@ function paintOutside(night) {
     x += bw;
   }
   // gatuträd och lyktor på bortre trottoaren
-  for (let i = 0; i < 8; i++) { const tx = 22 + i * 78 + Math.floor(hash(i, 5, 95) * 18); if (i % 2) lampPost(P, tx, night); else streetTree(P, tx, night); }
+  for (let i = 0; i < Math.ceil(W / 78); i++) { const tx = 22 + i * 78 + Math.floor(hash(i, 5, 95) * 18); if (i % 2) lampPost(P, tx, night); else streetTree(P, tx, night); }
   // bortre trottoaren, gatan, närmaste trottoaren
   for (let y = 64; y < WALL_Y; y++) for (let x = 0; x < W; x++) {
     let c;
@@ -788,9 +799,9 @@ function paintRoom(night) {
   // ===== väntrummet: väggklocka (visarna ritas levande) =====
   wallClockFace(P, 27, 42);
   // ===== mäklarhörnan: nummertavla, diplom, nyckelskåp =====
-  P.rect(394, 24, 36, 22, 0x2a2430); P.box(393, 23, 38, 24, OUT); P.hl(394, 24, 36, 0x4a4450);
-  text(P, SMALL, 'NUMMER', 394 + Math.floor((36 - textW(SMALL, 'NUMMER')) / 2), 26, 0xf0d048);
-  P.rect(397, 32, 30, 12, 0x120a0a); P.hl(397, 32, 30, 0x2a1818);
+  P.rect(394 + SH, 24, 36, 22, 0x2a2430); P.box(393 + SH, 23, 38, 24, OUT); P.hl(394 + SH, 24, 36, 0x4a4450);
+  text(P, SMALL, 'NUMMER', 394 + SH + Math.floor((36 - textW(SMALL, 'NUMMER')) / 2), 26, 0xf0d048);
+  P.rect(397 + SH, 32, 30, 12, 0x120a0a); P.hl(397 + SH, 32, 30, 0x2a1818);
   // diplom
   const dx = DIPLOMA_X - 440;
   P.darken(442 + dx, 42, 31, 1, 0.7); P.darken(472 + dx, 22, 1, 20, 0.8);
@@ -805,7 +816,7 @@ function paintRoom(night) {
   // inramad karta över Pixelstaden ovanför kaffebaren
   cityMap(P, 5, 9, 29, 20);
   // nyckelskåp: glasdörr, grön filt, krokar med nycklar och färgade brickor
-  const kx = 558, ky = 24, kw = 36, kh = 30;
+  const kx = 558 + SH, ky = 24, kw = 36, kh = 30;
   P.rect(kx, ky, kw, kh, OUT); P.rect(kx + 1, ky + 1, kw - 2, kh - 2, WALNUT[3]); P.hl(kx + 1, ky + 1, kw - 2, WALNUT[4]); P.vl(kx + kw - 2, ky + 2, kh - 3, WALNUT[1]);
   P.rect(kx + 3, ky + 3, kw - 6, kh - 6, 0x1e3a2c);
   for (let j = ky + 3; j < ky + kh - 3; j++) for (let i = kx + 3; i < kx + kw - 3; i++) if (hash(i, j, 72) > 0.85) P.px(i, j, 0x28483a);
@@ -823,7 +834,7 @@ function paintRoom(night) {
   const nl = 'NYCKLAR', nw = textW(SMALL, nl) + 4, nx = kx + Math.floor((kw - nw) / 2);
   P.rect(nx, ky - 8, nw, 7, GOLD); P.box(nx, ky - 8, nw, 7, GOLD_LO); text(P, SMALL, nl, nx + 2, ky - 7, NAVY);
   // ===== taklampor: opalglobar i mässing =====
-  for (const lx of [92, 518]) {
+  for (const lx of CEIL) {
     P.vl(lx, 5, 6, 0x2a2430); P.rect(lx - 1, 10, 3, 2, GOLD); P.px(lx - 1, 10, GOLD_HI);
     disc(P, lx + 0.5, 16, 4.5, 4.5, 0xe8e4dc); disc(P, lx, 15.5, 3.5, 3.5, 0xfdfbf6); P.px(lx - 1, 14, 0xffffff); P.px(lx + 2, 18, 0xd0c8bc);
     P.ell(lx + 0.5, 16, 14, 11, 0xfff4d0, night ? 0.4 : 0.18, 4);
@@ -833,8 +844,8 @@ function paintRoom(night) {
   // mattor: väntrummet (marinblå med guldbård), monterns ovala, mäklarens röda kelim
   rugNavy(P, 30, 108, 112, 56);
   rugOval(P, MODEL.x, MODEL.base - 6, 46, 15);
-  rugKilim(P, 470, 114, 122, 64);
-  rugRunner(P, 190, 116, 192, 13);
+  rugKilim(P, 470 + SH, 114, 122, 64);
+  rugRunner(P, FEAT.x0 + 6, 116, FEAT_W - 10, 13);
   rugKids(P, DOLL.x + 2, DOLL.base - 2, 34, 10);
   // golvgaller i mässing och en tappad broschyr
   P.rect(312, 184, 12, 5, 0x3a2a10); for (let i = 0; i < 12; i += 2) P.vl(312 + i, 184, 5, GOLD); P.hl(312, 184, 12, GOLD_HI); P.hl(312, 188, 12, GOLD_LO); P.darken(312, 189, 12, 1, 0.8);
@@ -855,7 +866,7 @@ function paintRoom(night) {
     sunPatch(P, DOOR.x0 + 2, DOOR.x1 - DOOR.x0 - 4, 30, [(DOOR.x1 - DOOR.x0) / 2 - 2]);
     sunPatch(P, WIN2.x, WIN2.w, 36, [WIN2.w >> 1]);
   } else {
-    for (const [lx, ly, rx] of [[92, 140, 50], [518, 150, 50], [LAMP.x, LAMP.base + 6, 26], [MODEL.x, MODEL.base - 4, 50], [BENCH.x, BENCH.base, 44], [SIDE.x - 5, SIDE.base + 2, 24]]) P.ell(lx, ly, rx, rx * 0.35, 0xffe8b0, 0.22, 4);
+    for (const [lx, ly, rx] of [[CEIL[0], 140, 50], [CEIL[1], 150, 50], [LAMP.x, LAMP.base + 6, 26], [MODEL.x, MODEL.base - 4, 50], [BENCH.x, BENCH.base, 44], [SIDE.x - 5, SIDE.base + 2, 24]]) P.ell(lx, ly, rx, rx * 0.35, 0xffe8b0, 0.22, 4);
   }
   // skugga längs väggen
   for (let i = 0; i < 5; i++) P.darken(0, WALL_Y + i, W, 1, 0.72 + i * 0.055);
@@ -1883,11 +1894,11 @@ const nearImg = (night) => CACHE['near' + night] || (CACHE['near' + night] = pai
 // Kvällen: ett blåviolett dunkel över kontoret, med ljuskäglor runt varje lampa
 // (trappstegat med bayer-dither, ett pixelkorn) och ett varmt sken ovanpå.
 const LIGHTS = () => [
-  [92, 18, 78, 1], [518, 18, 78, 1],                                   // taklamporna
+  [CEIL[0], 18, 78, 1], [CEIL[1], 18, 78, 1],                                 // taklamporna
   [LAMP.x, LAMP.base - 58, 56, 1],                                     // golvlampan
   ...POSTERS.map((p) => [p.x + (p.w >> 1), PY + 8, 46, 0.8]),         // tavelbelysningen
   [DESK.x + 57, DESK.base - 30, 36, 0.9],                              // bankirlampan
-  [412, 38, 16, 0.4], [DOOR_CX, DOOR.top - 10, 14, 0.4],               // nummertavlan, UT-skylten
+  [412 + SH, 38, 16, 0.4], [DOOR_CX, DOOR.top - 10, 14, 0.4],               // nummertavlan, UT-skylten
   [SIDE.x - 5, SIDE.base - 28, 30, 0.8],                               // lampan på sidobordet
 ];
 function nightShade() {
@@ -1964,8 +1975,8 @@ export function makeShopBostad(A) {
 
   // trafiken och folket utanför fönstren
   const R = rng(99);
-  const cars = [0, 1, 2, 3, 4, 5].map((i) => ({ lane: i % 2, x: (i * 131 + R() * 60) % (W + 80) - 40, s: Math.floor(R() * CAR_KINDS.length) }));
-  const peds = [0, 1, 2, 3, 4].map((i) => { const r = rng(300 + i * 17); return { look: { ...makeLook(r), bag: null }, x: r() * W, v: (i % 2 ? 1 : -1) * (12 + r() * 8), ph: Math.floor(r() * 4) }; });
+  const cars = Array.from({ length: 6 + Math.round(SH / 90) * 2 }, (_, i) => i).map((i) => ({ lane: i % 2, x: (i * 131 + R() * 60) % (W + 80) - 40, s: Math.floor(R() * CAR_KINDS.length) }));
+  const peds = Array.from({ length: 5 + Math.round(SH / 110) }, (_, i) => i).map((i) => { const r = rng(300 + i * 17); return { look: { ...makeLook(r), bag: null }, x: r() * W, v: (i % 2 ? 1 : -1) * (12 + r() * 8), ph: Math.floor(r() * 4) }; });
 
   const night = () => isNight(g.min / 60);
   const homeDeposit = () => HOMES.find((x) => x.id === g.home)?.deposit ?? -1;
@@ -2000,7 +2011,7 @@ export function makeShopBostad(A) {
         const nx = nextHome();
         bossSay = { until: t + 5.5, text: nx
           ? `${g.money >= nx.deposit ? `Du har råd med ${nx.name.toLowerCase()} nu – ska vi skriva kontrakt?` : `Spara ${fmt(nx.deposit - g.money)} till, så fixar jag ${nx.name.toLowerCase()} åt dig!`}`
-          : 'Villan är det finaste vi har – och den är din!' };
+          : `${HOMES[HOMES.length - 1].name} är det finaste vi har – och den är din!` };
         openHousing(null);
       } },
     { id: 'soffa', r: [SOFA.x, SOFA.base - 34, SOFA.x + SOFA.w, SOFA.base], go: [SEATS[0], SOFA.base + 5], label: 'SOFFAN', hint: 'KLICKA FÖR ATT SLÅ DIG NER',
@@ -2034,7 +2045,7 @@ export function makeShopBostad(A) {
     { id: 'dockskap', r: [DOLL.x - 24, DOLL.base - 48, DOLL.x + 28, DOLL.base], go: [DOLL.x + 2, DOLL.base + 6], label: 'BARNHÖRNAN', hint: 'DOCKSKÅP MED FYRA RUM',
       act: () => say('🏠 Dockskåpet har sovrum, badrum, kök och vardagsrum – precis som Villan, fast i miniatyr.', 'ok') },
     { id: 'broschyrer', r: [BROCH.x - 17, BROCH.base - 58, BROCH.x + 17, BROCH.base], go: [BROCH.x + 14, BROCH.base + 2], label: 'BROSCHYRER', hint: 'TA EN!',
-      act: () => { const nx = nextHome(); say(nx ? `📄 Du tar en broschyr om ${nx.name}: ${nx.rent} kr i veckan, insats ${nx.deposit} kr. Bilderna är tagna en solig dag.` : '📄 Broschyren om Villan – din egen bostad på glansigt papper!'); } },
+      act: () => { const nx = nextHome(); say(nx ? `📄 Du tar en broschyr om ${nx.name}: ${nx.rent} kr i veckan, insats ${nx.deposit} kr. Bilderna är tagna en solig dag.` : `📄 Broschyren om ${HOMES[HOMES.length - 1].name} – din egen bostad på glansigt papper!`); } },
     { id: 'godis', r: [SIDE.x - 15, SIDE.base - 39, SIDE.x + 15, SIDE.base], go: [SIDE.x, SIDE.base + 8], label: 'GODISSKÅLEN', hint: 'TA EN KARAMELL',
       act: () => say('🍬 Du tar en polkagris ur skålen. Mäklaren låtsas inte se att du tar två.', 'ok') },
     { id: 'skrivare', r: [PRINT.x - 20, PRINT.base - 36, PRINT.x + 20, PRINT.base], go: [PRINT.x - 4, DOG.base + 10], label: 'SKRIVAREN', hint: 'KONTRAKTEN SKRIVS UT HÄR',
@@ -2259,7 +2270,7 @@ function drawClock(ctx, cx, cy, min) {
 function drawServing(ctx, n) {
   // siffrorna på nummertavlan – röda lysdioder
   const s = String(n % 100).padStart(2, '0');
-  const x = 412 - Math.floor(textW(BIG, s) / 2);
+  const x = 412 + SH - Math.floor(textW(BIG, s) / 2);
   ctxText(ctx, BIG, s, x + 1, 35, '#4a0e10');
   ctxText(ctx, BIG, s, x, 34, '#ff4a3a');
 }
@@ -2283,8 +2294,9 @@ function drawPosterLive(ctx, p, g, on, t) {
   row(y + 50, 'INSATS', home.deposit ? `${home.deposit}:-` : 'GRATIS', here ? '#1f2d48' : afford ? '#2f8f46' : '#c9323a');
   row(y + 57, 'HYRA', `${home.rent}:-/V`, '#1f2d48');
   ctxText(ctx, SMALL, 'SÖMN', lx, y + 63, '#8a8478');
-  const stars = 1 + Math.round((home.restBonus || 0) / 10);
-  for (let i = 0; i < 3; i++) star(ctx, rx - 17 + i * 6, y + 63, i < stars ? '#e8b230' : '#d8d0c0');
+  // sömnen i stjärnor 0–4: husvagnen (−10) ingen, rummet 1, lägenheten 2, radhuset/villan 3, takvåningen 4
+  const stars = Math.max(0, Math.min(4, Math.round(((home.restBonus || 0) + 10) / 10)));
+  for (let i = 0; i < 4; i++) star(ctx, rx - 23 + i * 6, y + 63, i < stars ? '#e8b230' : '#d8d0c0');
   // DITT HEM-rosett över bildens nederkant
   if (here) {
     const lbl = 'DITT HEM', bw = textW(SMALL, lbl) + 14, bx = x + Math.floor((w - bw) / 2), by = y + 40;
@@ -2343,9 +2355,20 @@ function drawScreen(ctx, x, y, t) {
 }
 function thumb(ctx, x, y, id) {
   // liten bild av bostaden (9×8)
-  ctx.fillStyle = id === 'lagenhet' ? '#f0a08a' : '#8ec8f0'; ctx.fillRect(x, y, 9, 8);
-  ctx.fillStyle = '#5aa04a'; ctx.fillRect(x, y + 6, 9, 2);
-  if (id === 'lagenhet') {
+  ctx.fillStyle = id === 'lagenhet' ? '#f0a08a' : id === 'takvaning' ? '#2a3468' : '#8ec8f0'; ctx.fillRect(x, y, 9, 8);
+  ctx.fillStyle = id === 'husvagn' || id === 'hoghus' ? '#9a917c' : '#5aa04a'; ctx.fillRect(x, y + 6, 9, 2);
+  if (id === 'husvagn') {
+    ctx.fillStyle = '#f0ece0'; ctx.fillRect(x + 1, y + 3, 6, 3); ctx.fillStyle = '#c9423a'; ctx.fillRect(x + 1, y + 4, 6, 1);
+    ctx.fillStyle = '#3a4a5a'; ctx.fillRect(x + 2, y + 3, 2, 1); ctx.fillStyle = '#18181c'; ctx.fillRect(x + 4, y + 6, 1, 1);
+  } else if (id === 'hoghus') {
+    ctx.fillStyle = '#b4b0a4'; ctx.fillRect(x + 2, y, 5, 7);
+    ctx.fillStyle = '#5a6c7c'; for (let k = 0; k < 3; k++) { ctx.fillRect(x + 3, y + 1 + k * 2, 1, 1); ctx.fillRect(x + 5, y + 1 + k * 2, 1, 1); }
+  } else if (id === 'radhus') {
+    ctx.fillStyle = '#f0d078'; ctx.fillRect(x + 1, y + 3, 7, 3); ctx.fillStyle = '#a04a32'; ctx.fillRect(x, y + 2, 9, 1); ctx.fillRect(x + 1, y + 1, 7, 1);
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(x + 2, y + 4, 1, 1); ctx.fillRect(x + 6, y + 4, 1, 1);
+  } else if (id === 'takvaning') {
+    ctx.fillStyle = '#4a6a9a'; ctx.fillRect(x + 3, y + 1, 3, 7); ctx.fillStyle = '#f8d890'; ctx.fillRect(x + 3, y + 1, 3, 1); ctx.fillStyle = '#d8b45a'; ctx.fillRect(x + 4, y, 1, 1);
+  } else if (id === 'lagenhet') {
     ctx.fillStyle = '#e8dcc8'; ctx.fillRect(x + 2, y + 1, 5, 6);
     ctx.fillStyle = '#3a4a6a'; for (let k = 0; k < 3; k++) { ctx.fillRect(x + 3, y + 2 + k * 2, 1, 1); ctx.fillRect(x + 5, y + 2 + k * 2, 1, 1); }
   } else if (id === 'rum') {

@@ -40,6 +40,12 @@ const DARK_SOLE = 0x2b2622; // grova sulor
 const WOOD = ramp(0xc8955a);   // träskornas sula
 const FUR = ramp(0xe8dfcc);    // pälskant
 const CREAM_SOLE = 0xe9e6dc;   // ljus gummisula (samma som vanliga skor)
+const LEATHER = ramp(0x5a3d2b); // läder (kiltens skärp och sporran)
+const EMBROID = 0xe8dfcc;       // broderi (läderhosen)
+const STOCKING = ramp(0xece8de); // vita strumpor (folkdräkt)
+const LEAF = ramp(0x46a35a);    // blad/skaft i mönster
+const JUTE = ramp(0xcfae78);    // flätad jutesula (espadriller)
+const MOON_SOLE = 0xd9d6cc;     // ljusgrå gummisula (moonboots)
 
 // ---------- hjälpare ----------
 // Rita med en viss etikett: hud och knappar ska inte färgas om av mönster på underdelen.
@@ -75,13 +81,16 @@ function sitShins(R, fn) {
 }
 const lapTop = (R) => R.hipTop + R.bob + R.hipH; // sittande: lårens översta rad (fram/bak)
 // Modell med detaljer per benrad (fx): kopplar in legRow och de sittande smalbenen.
+// Sidovyn får sina detaljer via legRow (motorn anropar den för varje benrad, även sittande),
+// så side() behövs bara för det som ligger utanför benen (linning, fickor …).
 function legs(def) {
-  const f0 = def.front, b0 = def.back;
+  const f0 = def.front, b0 = def.back, s0 = def.side;
   return {
     ...def,
     legRow(R, row) { this.fx(R, row); },
     front(R) { if (R.sit) sitShins(R, (row) => this.fx(R, row)); if (f0) f0.call(this, R); },
     back(R) { if (R.sit) sitShins(R, (row) => this.fx(R, row)); if (b0) b0.call(this, R); },
+    side(R) { if (s0) s0.call(this, R); },
   };
 }
 const kOf = (row) => row.n - 1 - row.j; // rader kvar till fotleden (0 = nedersta)
@@ -311,7 +320,6 @@ export const BOTTOM_REG = {
       R.put(row.left ? row.x + 2 : row.x + 1, row.y, R.pants.hi);
       if (kOf(row) === 0) R.put(row.left ? row.x + 1 : row.x + 2, row.y, R.pants.lo);
     },
-    side(R) { if (R.sit) return; },
   }),
   corduroy: legs({ // manchester: räfflor på längden
     label: 'Manchester\u00adbyxor', group: 'Långbyxor',
@@ -347,6 +355,51 @@ export const BOTTOM_REG = {
       if (row.sit) { const k = kOf(row); if (k <= (R.K ? 0 : 1)) skinRow(R, row); else if (k === 2) paintRow(R, row, cuff); return; }
       if (row.j === b - 1) paintRow(R, row, cuff);
     },
+  }),
+  jodhpurs: legs({ // ridbyxor: vida över låren, tighta under knät, knälapp på insidan
+    label: 'Rid­byxor', group: 'Långbyxor',
+    fx(R, row) {
+      if (row.bare || row.sit) return;
+      const { j } = row, K = R.K, kj = K ? 2 : 4;
+      if (j >= 1 && j <= (K ? 1 : 3)) widen(R, row, !K && j === 2 ? 2 : 1);
+      if (j !== kj && j !== kj + 1) return;
+      const c = mix(legRamp(R, row, R.pants).lo, LEATHER.base, 0.6);
+      withTag(R, TAG.extra, () => {
+        if (row.side) { R.put(row.x + 1, row.y, c); return; }
+        R.put(innerX(row), row.y, c); R.put(row.left ? row.x + row.w - 2 : row.x + 1, row.y, c);
+      });
+    },
+  }),
+  knickers: legs({ // knickers (golfbyxor): pösiga till under knät, mudd och mönstrade knästrumpor
+    label: 'Knickers', group: 'Långbyxor', uses: ['pants2'],
+    fx(R, row) {
+      if (row.bare) return;
+      const p = R.pants, pj = R.K ? 2 : 4, cuff = { hi: p.base, base: p.lo, lo: p.dk, dk: p.dk };
+      const sock = () => withTag(R, TAG.extra, () => {
+        paintRow(R, row, R.pants2);
+        const S = legRamp(R, row, R.pants2), odd = row.y & 1; // sicksack i strumpan
+        R.put(row.side ? row.x + 1 : row.x + 1 + odd, row.y, odd ? S.hi : S.lo);
+      });
+      if (row.sit) { if (row.j === 0) paintRow(R, row, cuff); else sock(); return; }
+      if (row.j === pj) widen(R, row, 1);
+      else if (row.j === pj + 1) paintRow(R, row, cuff);
+      else if (row.j > pj + 1) sock();
+    },
+  }),
+  culottes: legs({ // byxkjol: vida ben som slutar nedanför knät – ser ut som en kjol
+    label: 'Byxkjol', group: 'Långbyxor', bareFrom: (R) => (R.K ? 3 : 5), belt: false, crotch: false, darkSole: true,
+    fx(R, row) {
+      const K = R.K, p = R.pants;
+      if (row.sit) { if (kOf(row) <= (K ? 0 : 1)) skinRow(R, row); else widen(R, row, 1); return; }
+      if (row.bare || row.j < 1) return;
+      const hem = row.j === (K ? 2 : 4), n = row.j >= (K ? 2 : 3) ? 2 : 1;
+      if (hem) paintRow(R, row, { hi: p.base, base: p.lo, lo: p.dk, dk: p.dk });
+      widen(R, row, n, hem ? legRamp(R, row, p).lo : undefined);
+      if (hem && !row.side) R.put(outerX(row), row.y, legRamp(R, row, p).lo);
+    },
+    front(R) { waistband(R); if (R.front) withTag(R, TAG.belt, () => R.put(12, R.hy, GOLD)); },
+    back(R) { waistband(R); },
+    side(R) { waistband(R); },
   }),
 
   // ================= mjukis & träning =================
@@ -410,6 +463,25 @@ export const BOTTOM_REG = {
       if (k === 0) withTag(R, TAG.extra, () => paintRow(R, row, R.pants2));
     },
     front(R) { waistband(R, { c: R.pants.hi }); if (!R.side) withTag(R, TAG.extra, () => { R.put(11, R.hy, R.pants2.base); R.put(12, R.hy, R.pants2.base); R.put(11, R.hy + 1, R.pants2.lo); }); },
+    back(R) { waistband(R, { c: R.pants.hi }); },
+    side(R) { waistband(R, { c: R.pants.hi }); },
+  }),
+  harem: legs({ // haremsbyxor: pösiga, låg gren, tajt mudd vid fotleden
+    label: 'Harems­byxor', group: 'Mjukis & träning', belt: false, crotch: false,
+    fx(R, row) {
+      if (row.bare) return;
+      const k = kOf(row), p = R.pants;
+      if (k === 0) { paintRow(R, row, { hi: p.base, base: p.lo, lo: p.dk, dk: p.dk }); return; }
+      if (row.sit) return;
+      if (row.j >= 1) widen(R, row, k >= 2 && row.j >= (R.K ? 2 : 3) ? 2 : 1);
+      if (!row.side && (k === 2 || k === 4)) R.put(row.left ? row.x + 1 : row.x + 2, row.y, p.lo); // veck
+    },
+    front(R) {
+      waistband(R, { c: R.pants.hi });
+      if (R.sit) return;
+      const y = R.legTop + (R.K ? 2 : 4); // grenen hänger lågt
+      R.put(11, y - 1, R.pants.lo); R.put(12, y - 1, R.pants.lo); R.put(11, y, R.pants.dk); R.put(12, y, R.pants.dk);
+    },
     back(R) { waistband(R, { c: R.pants.hi }); },
     side(R) { waistband(R, { c: R.pants.hi }); },
   }),
@@ -562,6 +634,85 @@ export const BOTTOM_REG = {
     back(R) { this.front(R); },
     side(R) { this.front(R); },
   },
+  kilt: { // kilt: rak, veckad bak, skärp med spänne, fransad kant och sporran framtill
+    label: 'Kilt', group: 'Kjolar', skirt: (R) => (R.K ? 3 : 5), bareFrom: (R) => (R.K ? 2 : 3), crotch: false,
+    front(R) {
+      const p = R.pants, y0 = R.hy, y1 = y0 + R.skirtLen;
+      withTag(R, TAG.belt, () => { R.rect(12 - R.tw, y0, R.tw * 2, 1, LEATHER.dk); if (R.front) R.put(12, y0, SILVER); });
+      if (R.back) { R.pattern(TAG.pants, (x, y, c) => (y > y0 && y < y1 - 1 && (x & 1) && c !== p.lo ? p.lo : null)); return; }
+      const ex = 9 + R.tw; // förklädets kant
+      for (let y = y0 + 1; y < y1; y++) R.put(ex, y, p.lo);
+      withTag(R, TAG.extra, () => {
+        for (let y = y0 + 2; y < y1; y += 2) R.put(ex + 1, y, THREAD); // fransar
+        if (R.sit) return;
+        R.rect(11, y0 + 1, 2, 1, LEATHER.base); R.put(12, y0 + 1, LEATHER.hi); // sporran
+        R.put(11, y0 + 2, FUR.base); R.put(12, y0 + 2, FUR.hi);
+        if (!R.K) { R.put(11, y0 + 3, LEATHER.dk); R.put(12, y0 + 3, LEATHER.dk); } // tofsar
+      });
+    },
+    back(R) { this.front(R); },
+    side(R) {
+      const p = R.pants, y0 = R.hy, n = R.skirtLen;
+      withTag(R, TAG.belt, () => R.rect(9, y0, 7, 1, LEATHER.dk));
+      for (let j = 1; j < n - 1; j++) { const w = Math.min(2, (j + 1) >> 1); for (let x = 9 - w; x < 12; x += 2) R.put(x, y0 + j, p.lo); } // veck bak
+      if (!R.sit) withTag(R, TAG.extra, () => { R.put(16, y0 + 1, LEATHER.base); R.put(16, y0 + 2, FUR.lo); R.put(17, y0 + 2, FUR.base); });
+    },
+  },
+  wrapSkirt: { // omlottkjol: snett omlott framtill och knytband i sidan
+    label: 'Omlott­kjol', group: 'Kjolar', skirt: (R) => (R.K ? 3 : 5), bareFrom: (R) => (R.K ? 2 : 3), crotch: false, uses: ['pants2'],
+    front(R) {
+      const p = R.pants, P = R.pants2, y0 = R.hy, n = R.skirtLen;
+      R.rect(12 - R.tw, y0, R.tw * 2, 1, p.lo);
+      flare(R, n - 1, 1, p.lo);
+      if (R.back) { for (let y = y0 + 2; y < y0 + n - 1; y++) R.put(12, y, p.lo); return; }
+      const x0 = 12 - R.tw + 3;
+      for (let j = 1; j < n; j++) { const x = x0 + j - 1; R.put(x, y0 + j, p.lo); R.put(x + 1, y0 + j, p.hi); } // omlottet
+      withTag(R, TAG.extra, () => { const bx = 12 - R.tw + 1; R.put(bx, y0, P.hi); R.put(bx - 1, y0 + 1, P.base); R.put(bx, y0 + 1, P.lo); if (!R.K) R.put(bx - 1, y0 + 2, P.lo); });
+    },
+    back(R) { this.front(R); },
+    side(R) {
+      const p = R.pants, P = R.pants2, y0 = R.hy, n = R.skirtLen;
+      R.rect(9, y0, 7, 1, p.lo);
+      for (let j = 1; j < n - 1; j++) R.put(13 + Math.min(1, j >> 1), y0 + j, p.lo);
+      flare(R, n - 1, 1, p.lo);
+      withTag(R, TAG.extra, () => { R.put(15, y0, P.hi); R.put(16, y0 + 1, P.base); if (!R.K) R.put(16, y0 + 2, P.lo); });
+    },
+  },
+  tennisSkirt: { // tenniskjol: kort och veckad med rand nertill
+    label: 'Tennis­kjol', group: 'Kjolar', skirt: (R) => (R.K ? 2 : 3), bareFrom: 1, crotch: false, uses: ['pants2'],
+    front(R) {
+      const p = R.pants, P = R.pants2, [y0, y1] = skirtRows(R);
+      R.rect(R.side ? 9 : 12 - R.tw, y0, R.side ? 7 : R.tw * 2, 1, p.lo);
+      flare(R, R.skirtLen - 1, 1);
+      R.pattern(TAG.pants, (x, y, c) => (y >= y1 || y <= y0 ? null : y === y1 - 1 ? ((x & 1) ? P.base : P.hi) : (x & 1) && c !== p.lo ? p.lo : null));
+    },
+    back(R) { this.front(R); },
+    side(R) { this.front(R); },
+  },
+  folkdrakt: { // folkdräktskjol: lång mörk kjol, randigt förkläde framtill och vita strumpor
+    label: 'Folkdräkts­kjol', group: 'Kjolar', skirt: (R) => R.shoeTop - R.hy - (R.K ? 1 : 2), bareFrom: 3, crotch: false, uses: ['pants2'],
+    legRow(R, row) { if (row.bare) withTag(R, TAG.extra, () => paintRow(R, row, STOCKING)); },
+    stripes(R) { const P = R.pants2; return [P.base, 0xf2cf2e, P.lo, 0x46a35a]; },
+    front(R) {
+      const y0 = R.hy, n = R.skirtLen, P = R.pants2, y1 = y0 + n;
+      if (R.sit) sitShins(R, (row) => { if (row.y >= y1) withTag(R, TAG.extra, () => paintRow(R, row, STOCKING)); });
+      withTag(R, TAG.extra, () => {
+        R.rect(12 - R.tw, y0, R.tw * 2, 1, P.dk); // linning
+        if (R.back) { R.put(10, y0, P.hi); R.put(13, y0, P.hi); R.put(11, y0 + 1, P.base); R.put(12, y0 + 1, P.lo); return; } // knuten bak
+        const a = 12 - R.tw + 2, b = 11 + R.tw - 2, S = this.stripes(R);
+        for (let y = y0 + 1; y < y1 - 2; y++) for (let x = a; x <= b; x++) R.put(x, y, x === b ? mix(S[(x - a) & 3], 0x000000, 0.2) : S[(x - a) & 3]);
+        R.rect(a, y1 - 2, b - a + 1, 1, P.dk);
+      });
+    },
+    back(R) { this.front(R); },
+    side(R) {
+      const y0 = R.hy, n = R.skirtLen, P = R.pants2, S = this.stripes(R);
+      withTag(R, TAG.extra, () => {
+        R.rect(9, y0, 7, 1, P.dk);
+        for (let j = 1; j < n - 1; j++) { const x = 16 + Math.min(2, (j + 1) >> 1); R.put(x, y0 + j, j === n - 2 ? P.dk : P.base); R.put(x - 1, y0 + j, S[(j + 1) & 3]); }
+      });
+    },
+  },
 
   // ================= klänningar (tröjans färg) =================
   sundress: { ...DRESS, // sommarklänning: knytband i midjan, spetskant
@@ -709,6 +860,7 @@ export const BOTTOM_REG = {
     afterTorso(R) { bib(R, { pocket: true }); },
     front(R) { const p = R.pants; R.rect(13 - R.tw, R.hy + R.skirtLen - 2, R.tw * 2 - 2, 1, p.hi); },
     back(R) { this.front(R); },
+    side(R) { const p = R.pants; R.rect(10, R.hy + R.skirtLen - 2, 5, 1, p.hi); },
   },
   suspenders: { // hängselbyxor: smala hängslen i kontrastfärg
     label: 'Hängsel\u00adbyxor', group: 'Overaller & hängsel', belt: false, uses: ['pants2'],

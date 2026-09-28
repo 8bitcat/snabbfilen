@@ -377,7 +377,7 @@ function paintVehicle(kind, color, variant, opts = {}) {
     figure(HEAD, x0, hTop, { h: hair, s: skin, t: shirt });
   };
   const seatTop = Math.min(s.belt + 7, winTop);
-  for (const [i, hd] of (s.heads || []).entries()) {
+  for (const [i, hd] of (opts.empty ? [] : s.heads || []).entries()) {   // parkerade fordon står tomma
     if (hd.kind === 'driver') person(hd.x, seatTop, 10 + i * 5);
     else if (rnd(40 + i) < 0.5) person(hd.x, seatTop - 1, 20 + i * 5);
     else figure(REST, hd.x, s.belt + 5, { r: 0x24262e }, 0.25);
@@ -779,7 +779,7 @@ const RIDER_DY = 37;
 const VCACHE = {};
 function vehicleArt(c) {
   const key = c.kind + ':' + c.color + ':' + c.variant + (c.rust ? ':r' : '') + (c.parked ? ':p' : '');
-  return VCACHE[key] || (VCACHE[key] = c.kind === 'moped' ? paintMoped(c.color, c.variant, !c.parked) : paintVehicle(c.kind, c.color, c.variant, { rust: c.rust }));
+  return VCACHE[key] || (VCACHE[key] = c.kind === 'moped' ? paintMoped(c.color, c.variant, !c.parked) : paintVehicle(c.kind, c.color, c.variant, { rust: c.rust, empty: !!c.parked }));
 }
 
 // ======================================================================
@@ -797,7 +797,7 @@ const END = {
 END.taxi = { ...END.sedan, taxi: true };
 const END_L = 30; // så många px längs vägen upptar en bil sedd fram-/bakifrån
 
-function paintEnd(kind, color, variant, rear, rust) {
+function paintEnd(kind, color, variant, rear, rust, empty = false) {
   const e = END[kind], w = e.w, hb = e.hb, tp = e.taper;
   const OX = 3, W = w + 2 * OX, H = hb + e.roof + (e.taxi ? 4 : 0) + 6, gy = H - 3;
   const M = new Uint8Array(W * H);
@@ -890,7 +890,7 @@ function paintEnd(kind, color, variant, rear, rust) {
   const figure = (pat, x0, hTop, pal, tint = 0.3) => pat.forEach((row, j) => { for (let i = 0; i < row.length; i++) { const ch = row[i], x = x0 + i, h = hTop - j; if (ch !== '.' && onGlass(x, h)) put(x, h, mix(pal[ch], cur(x, h), tint)); } });
   const person = (x0, hTop, k, back) => figure(back ? HEAD_BACK : HEAD, x0, hTop, { h: HAIRS[Math.floor(rnd(k + 1) * HAIRS.length)], s: SKINS[Math.floor(rnd(k) * SKINS.length)], t: SHIRTS[Math.floor(rnd(k + 2) * SHIRTS.length)] });
   const gt = Math.min(glassTop, hb - 2);
-  if (!(e.box && rear)) {
+  if (!(e.box && rear) && !empty) {   // parkerade bilar står tomma
     person(rear ? (w >> 1) - 5 : (w >> 1) + 1, gt - 1, 10, rear);
     if (rnd(20) < 0.5) person(rear ? (w >> 1) + 1 : (w >> 1) - 5, gt - 2, 30, rear);
   }
@@ -932,7 +932,7 @@ function paintEnd(kind, color, variant, rear, rust) {
   return { W, H, gy, ox: OX, img: P.flush(), brake: rear ? O.flush() : null, snow: ov.S.flush(), refl: ov.R.flush(), head: [4, w - 4], lampH: 10 };
 }
 const ECACHE = {};
-const endArt = (c, rear) => { const key = c.kind + ':' + c.color + ':' + c.variant + ':' + (rear ? 'b' : 'f') + (c.rust ? 'r' : ''); return ECACHE[key] || (ECACHE[key] = paintEnd(c.kind, c.color, c.variant, rear, c.rust)); };
+const endArt = (c, rear) => { const key = c.kind + ':' + c.color + ':' + c.variant + ':' + (rear ? 'b' : 'f') + (c.rust ? 'r' : '') + (c.parked ? 'p' : ''); return ECACHE[key] || (ECACHE[key] = paintEnd(c.kind, c.color, c.variant, rear, c.rust, !!c.parked)); };
 
 // ---------- hjulen: åtta rotationslägen per fälgtyp ----------
 const NF = 8;
@@ -1596,7 +1596,7 @@ export function createTraffic(env) {
     const st = lineStop(id);
     if (!st) return null;
     const eta = nextBus(st.id);
-    if (eta !== null && eta < 16) return eta;
+    if (eta !== null && eta < 11) return eta;
     const v = env.view || { x: 0, y: 0, w: CITY.VIEW_W || 384, h: CITY.VIEW_H || 216 };
     const cand = lineBuses.filter((c) => !(ride && ride.bus === c) && !seen(c, v) && !(c.dwell > 0 && c.holdUntil > T));
     if (!cand.length) return eta;
@@ -1695,8 +1695,8 @@ export function createTraffic(env) {
       const bp = boardPoint(st);
       const near = (Math.abs(p.x - st.wait.x) < 40 && Math.abs(p.y - st.wait.y) < 16) || (Math.abs(p.x - bp.x) < 44 && Math.abs(p.y - bp.y) < 12);
       waitT[st.id] = near ? (waitT[st.id] || 0) + dt : 0;
-      if (!near) summoned[st.id] = false;
-      else if (waitT[st.id] > 2.5 && !summoned[st.id]) { summoned[st.id] = true; summon(st.id); }
+      if (!near) summoned[st.id] = 0;
+      else if (waitT[st.id] > 1.5 && T >= (summoned[st.id] || 0)) { summoned[st.id] = T + 5; summon(st.id); }   // tittar igen var 5:e sekund
     }
     // när vädret slår om åker mopederna hem (snö, ösregn) och glassbilen in i garaget (vinter) – men bara utanför bild
     const view = env.view, winter = w.season === 'vinter' || w.snow > 0.2 || w.temp < 4;
@@ -1725,8 +1725,8 @@ export function createTraffic(env) {
     const bay = (k) => lot.rect[0] + 12 + k * 26 + 13;
     const yBot = lot.rect[3] - 8;
     // parkeringen: nos in i rutorna på den nedre raden (bakifrån = nosen mot mittgången, framifrån = backad in)
-    const P1 = { kind: 'sedan', color: 0x8a4a3a, variant: 1, rust: true };
-    const P3 = { kind: 'halvkombi', color: 0x9a8a6a, variant: 3, rust: true }, P4 = { kind: 'skapbil', color: 0xa89a6a, variant: 0, rust: true };
+    const P1 = { kind: 'sedan', color: 0x8a4a3a, variant: 1, rust: true, parked: true };
+    const P3 = { kind: 'halvkombi', color: 0x9a8a6a, variant: 3, rust: true, parked: true }, P4 = { kind: 'skapbil', color: 0xa89a6a, variant: 0, rust: true, parked: true };
     for (const [spec, x, y, rear] of [[P1, bay(2), yBot, true], [P3, bay(4), yBot, false], [P4, bay(6), yBot, false]]) {
       const E = endArt(spec, rear);
       parked.push({ x, y, end: E, obstacle: [x - (E.W >> 1) + 2, y - 26, x + (E.W >> 1) - 2, y + 1] });

@@ -78,6 +78,28 @@ export const HAIR_LOCKAR = {
       const m = mask().row(h0 - 3, 10, 15).row(h0 - 2, 9, 16).rect(8, h0 - 1, 9, 3).set(16, h0 + 2).set(17, h0 + 1).set(15, h0 + 2).set(16, h0 + 3);
       paint(R, m, { tex: curls(23, 1.3) }); R.rect(8, h0 + 2, 5, 1, s.a); shavedSideS(R, h0 + 3); col(R, 13, h0 + 2, h0 + 4, s.a); },
   }),
+  curlyBob: hs('Lockig page', 'Lockar', {
+    // hakans längd, volymen längst ner (triangelform), lockar i pannan
+    front(R) { const { h0, eyeRow } = R, { chin } = dims(R);
+      const m = mask().row(h0 - 2, 8, 15).row(h0 - 1, 7, 16).rect(6, h0, 12, 3)
+        .rect(5, h0 + 3, 3, eyeRow - h0 - 3).rect(16, h0 + 3, 3, eyeRow - h0 - 3)
+        .rect(4, eyeRow, 4, chin + 2 - eyeRow).rect(16, eyeRow, 4, chin + 2 - eyeRow)
+        .set(8, h0 + 3).set(10, h0 + 3).set(13, h0 + 3).set(15, h0 + 3);
+      for (const x of [4, 5, 6, 7, 16, 17, 18, 19]) if (nz(x, chin + 1, 14) < 45) m.cut(x, chin + 1);
+      m.cut(4, eyeRow).cut(19, eyeRow);
+      paint(R, m, { tex: curls(15, 1.3) }); },
+    back(R) { const { h0, eyeRow } = R, { chin } = dims(R);
+      const m = mask().row(h0 - 2, 8, 15).row(h0 - 1, 7, 16).rect(6, h0, 12, 3).rect(5, h0 + 3, 14, eyeRow - h0 - 3).rect(4, eyeRow, 16, chin + 2 - eyeRow);
+      for (let x = 4; x <= 19; x++) if (nz(x, chin + 1, 16) < 45) m.cut(x, chin + 1);
+      m.cut(4, eyeRow).cut(19, eyeRow);
+      paint(R, m, { tex: curls(17, 1.3) }); },
+    side(R) { const { h0, eyeRow } = R, { chin } = dims(R);
+      const m = mask().row(h0 - 2, 9, 15).row(h0 - 1, 8, 16).rect(7, h0, 10, 3).rect(6, h0 + 3, 5, eyeRow - h0 - 3).rect(5, eyeRow, 6, chin + 2 - eyeRow)
+        .set(15, h0 + 3).set(16, h0 + 3).set(16, h0 + 4).set(13, h0 + 3);
+      for (let x = 5; x <= 10; x++) if (nz(x, chin + 1, 18) < 45) m.cut(x, chin + 1);
+      m.cut(5, eyeRow);
+      paint(R, m, { tex: curls(19, 1.3) }); },
+  }),
 
   // ================= Afro =================
   twa: hs('Kort afro', 'Afro', {
@@ -138,6 +160,21 @@ export const HAIR_LOCKAR = {
       R.put(8, h0, s.a); R.rect(8, h0 + 1, 8, 1, s.a); R.rect(8, h0 + 2, 5, 1, s.a); shavedSideS(R, h0 + 3);
       const m = mask().row(h0 - 4, 10, 14).row(h0 - 3, 9, 16).rect(8, h0 - 2, 9, 2).row(h0, 9, 16).set(16, h0 + 1); paint(R, m, { tex: curls(83, 1.3) }); },
   }),
+  afroFade: hs('Afro med fade', 'Afro', {
+    // rund kort afro på hjässan, sidorna och nacken tonar ut mot huden
+    front(R) { const { h0 } = R, s = shaved(R);
+      const m = mask().row(h0 - 4, 9, 14).row(h0 - 3, 8, 15).rect(7, h0 - 2, 10, 3).row(h0 + 1, 8, 15).row(h0 + 2, 8, 15);
+      paint(R, m, { tex: curls(85, 1.4) });
+      col(R, 7, h0 + 1, h0 + 2, s.a); col(R, 16, h0 + 1, h0 + 2, s.b); col(R, 7, h0 + 3, h0 + 5, s.f); col(R, 16, h0 + 3, h0 + 5, s.f); },
+    back(R) { const { rect, h0, headH } = R, s = shaved(R);
+      const m = mask().row(h0 - 4, 9, 14).row(h0 - 3, 8, 15).rect(7, h0 - 2, 10, 4);
+      paint(R, m, { tex: curls(86, 1.4) });
+      rect(7, h0 + 2, 10, 2, s.a); col(R, 16, h0 + 2, h0 + 3, s.b); rect(7, h0 + 4, 10, headH - 8, s.f); rect(8, h0 + headH - 4, 8, 1, s.f); },
+    side(R) { const { rect, put, h0 } = R, s = shaved(R);
+      const m = mask().row(h0 - 4, 10, 14).row(h0 - 3, 9, 16).rect(8, h0 - 2, 9, 3).row(h0 + 1, 12, 16).row(h0 + 2, 14, 16);
+      paint(R, m, { tex: curls(87, 1.4) });
+      rect(8, h0 + 1, 4, 1, s.a); rect(8, h0 + 2, 6, 1, s.a); rect(8, h0 + 3, 3, 4, s.f); put(13, h0 + 3, s.f); put(13, h0 + 4, s.f); put(8, h0 + 6, s.b); },
+  }),
 
   // ================= Dreads & twists =================
   dreadsBun: hs('Dreads i knut', 'Dreads & twists', {
@@ -184,5 +221,20 @@ export const HAIR_LOCKAR = {
       for (let x = 5; x <= 18; x++) loc(R, x, h0 + 2, chin + 2 + ((x * 5) % 3), 1, x > 11 || x % 2 === 1, x % 3 === 0); },
     side(R) { const { hair: H, h0 } = R, { chin } = dims(R); sideTop(R); R.put(15, h0 + 3, H.base); R.put(16, h0 + 3, H.lo);
       for (let x = 5; x <= 10; x++) loc(R, x, h0 + 2, chin + 2 + (x % 3), 1, x % 2 === 0, x === 6 || x === 9); },
+  }),
+  dreadHawk: hs('Dreads med rakade sidor', 'Dreads & twists', {
+    // en rand dreads mitt på skallen som hänger ner på ryggen, sidorna rakade
+    front(R) { const { rect, h0 } = R, s = shaved(R);
+      rect(8, h0 - 1, 2, 1, s.a); rect(14, h0 - 1, 2, 1, s.b); rect(7, h0, 3, 3, s.a); rect(14, h0, 3, 3, s.b); col(R, 7, h0 + 3, h0 + 5, s.a); col(R, 16, h0 + 3, h0 + 5, s.b);
+      for (let x = 10; x <= 13; x++) loc(R, x, h0 - 3 + (x === 10 || x === 13 ? 1 : 0), h0 + 1 + (x === 11 ? 1 : 0), 1, x >= 12, false); },
+    back(R) { const { rect, h0, headH } = R, s = shaved(R), { chest } = dims(R);
+      rect(8, h0 - 1, 8, 1, s.a); rect(7, h0, 10, headH - 3, s.a); col(R, 16, h0, h0 + headH - 4, s.b);
+      for (let x = 9; x <= 14; x++) loc(R, x, h0 - 3 + (x === 9 || x === 14 ? 1 : 0), chest - ((x * 5) % 3), 1, x >= 12, x === 10 || x === 13); },
+    side(R) { const { rect, put, hair: H, h0 } = R, s = shaved(R), { chest } = dims(R);
+      rect(8, h0 + 1, 8, 1, s.a); rect(8, h0 + 2, 6, 1, s.a); rect(8, h0 + 3, 3, 4, s.a); put(13, h0 + 3, s.a); put(8, h0 + 6, s.b);
+      const m = mask().row(h0 - 3, 10, 15).row(h0 - 2, 8, 16).rect(7, h0 - 1, 10, 2);
+      paint(R, m, { tex: (x, y, t) => (t === 'base' && (y + (x >> 1)) % 2 ? 'lo' : null) });
+      for (const [x, y0, d] of [[8, h0 + 1, true], [7, h0 + 1, false], [6, h0, true], [5, h0 + 1, false]]) loc(R, x, y0, chest - (x % 3), 1, d, x === 6);
+      put(16, h0 + 1, H.lo); },
   }),
 };

@@ -650,75 +650,8 @@ function paintCafeSet(P, canopy) {
   outline(P, 0x1a1418, 0x1a1418, 0.35);
   groundShadow(P, 3, 0, 16, 4.5, 0.26);
 }
-// ---------- Burgarbarens menyställ (trottoaren öster om dörren, där löpsedeln stod) ----------
-// Samma rätter och priser som jobbet (jobb-burgare.js → burgarMeny()). Laddas tåligt: saknas
-// jobbet ritas bara rätternas namn. Ställets topp slutar under fasadens fönster (≤ 45 px högt).
-let BURGER_MENU = null;
-try { BURGER_MENU = (await import('../jobs/jobb-burgare.js')).burgarMeny?.() || null; } catch (e) { console.error('burgarmenyn kunde inte laddas (menyställ):', e); }
-const DINER = [0x5a0a16, 0x8e1424, 0xc0223a, 0xe44a5c, 0xff8a98];
-const MENU_TOP = -45; // kromlisten överst; huvudet (rött) −44…−37, tavlan −35…−8
-const menuDishes = () => (BURGER_MENU?.dishes || []).filter((d) => d && d.name).slice(0, 4);
-function paintDish(P, d, cx, yBottom) {
-  const w = Math.max(...d.map.map((r) => r.length)), x0 = cx - (w >> 1), y0 = yBottom - d.map.length + 1;
-  d.map.forEach((row, j) => { for (let i = 0; i < row.length; i++) { const c = d.pal[row[i]]; if (c !== undefined) P.px(x0 + i, y0 + j, c); } });
-}
-// prisbricka: gul stjärnbricka med röd text, sitter som en lapp över rätternas hörn
-function priceBadge(P, cx, cy, label) {
-  const tw = textW(SMALL, label), hw = (tw >> 1) + 2;
-  for (let y = cy - 3; y <= cy + 3; y++) for (let x = cx - hw; x <= cx + hw; x++) {
-    const edge = y === cy - 3 || y === cy + 3 || x === cx - hw || x === cx + hw;
-    if (edge && (x === cx - hw || x === cx + hw) && (y === cy - 3 || y === cy + 3)) continue; // rundade hörn
-    P.px(x, y, edge ? 0xb87a10 : y === cy - 2 ? 0xfff08a : y === cy + 2 ? 0xf0b820 : 0xffd23f);
-  }
-  for (const s of [-1, 1]) { P.px(cx + s * (hw + 1), cy, 0xffd23f); P.px(cx + s * (hw + 1), cy - 1, 0xb87a10); P.px(cx + s * (hw + 1), cy + 1, 0xb87a10); }
-  text(P, SMALL, label, cx - (tw >> 1), cy - 2, 0xc8102a);
-}
-// caseOnly = bara det som lyser (huvud + tavla) – nattlagret som ritas ovanpå mörkret
-function paintMenuStand(P, caseOnly = false) {
-  const dishes = menuDishes();
-  if (!caseOnly) {
-    // gummifötter, kromben och tvärslå
-    for (const x of [-13, 11]) { for (let y = -3; y <= -1; y++) { P.px(x, y, STEEL[3]); P.px(x + 1, y, STEEL[1]); } P.hl(x - 1, 0, 4, 0x1a1a1e); P.px(x - 1, 0, 0x3a3a42); }
-    P.hl(-11, -2, 22, STEEL[2]); P.px(-11, -2, STEEL[4]);
-    // kromramen: ljus kant upptill/vänster, mörk nedtill/höger
-    for (let y = MENU_TOP; y <= -4; y++) { P.px(-16, y, y === MENU_TOP ? STEEL[4] : STEEL[3]); P.px(15, y, STEEL[1]); }
-    for (let x = -16; x <= 15; x++) { P.px(x, MENU_TOP, x < 12 ? STEEL[4] : STEEL[3]); P.px(x, -5, STEEL[2]); P.px(x, -4, STEEL[0]); }
-    P.px(-12, MENU_TOP, 0xffffff); P.px(-11, MENU_TOP, 0xffffff);
-    // schackrutor som fasadens band
-    for (let y = -7; y <= -6; y++) for (let x = -15; x <= 14; x++) P.px(x, y, (((x + 16) >> 1) + (y & 1)) & 1 ? 0x141418 : 0xf4f1ea);
-  }
-  // huvudet: rött med ljus överkant och vit pinnrand (texten ritas i egna bilder, se menuHead)
-  for (let x = -15; x <= 14; x++) {
-    P.px(x, -44, DINER[3]);
-    for (let y = -43; y <= -39; y++) P.px(x, y, tone(DINER, 0.52 - ((x + 15) / 30) * 0.12 + (y === -43 ? 0.08 : 0), x, y));
-    P.px(x, -38, 0xf4f1ea); P.px(x, -37, DINER[0]);
-  }
-  P.hl(-15, -36, 30, STEEL[1]);
-  // tavlan: svart glas med ett snett ljusband
-  for (let y = -35; y <= -8; y++) for (let x = -15; x <= 14; x++) {
-    let c = mix(0x121216, 0x1c1c24, bayer(x, y) * 0.8 + (y + 35) / 60);
-    const g = ((x - y) % 29 + 29) % 29;
-    if (g === 0 || g === 1) c = mix(c, 0x9aa6b8, g ? 0.1 : 0.16);
-    P.px(x, y, c);
-  }
-  if (dishes.length && dishes.every((d) => d.map && d.pal)) {
-    const cols = [-8, 7], rows = [-24, -10];
-    dishes.forEach((d, i) => paintDish(P, d, cols[i & 1], rows[i >> 1]));
-    const labels = [...new Set(dishes.map((d) => d.label || `${d.price}:-`))];
-    if (labels.length === 1) priceBadge(P, 0, -22, labels[0]);                         // alla kostar lika: en bricka mitt i
-    else dishes.forEach((d, i) => priceBadge(P, cols[i & 1] + 2, rows[i >> 1] - 1, d.label || `${d.price}:-`));
-  } else {
-    // (jobbet kunde inte laddas) bara namnen
-    (dishes.length ? dishes : [{ name: 'BURGARE' }, { name: 'POMMES' }, { name: 'LÄSK' }, { name: 'GLASS' }]).forEach((d, i) => text(P, SMALL, d.name, -(textW(SMALL, d.name) >> 1), -33 + i * 6, 0xf4f1ea));
-  }
-  if (!caseOnly) groundShadow(P, 3, 1, 17, 2.6, 0.3);
-}
-// huvudets text: MENY och rätternas namn (i tur och ordning, som menylådan på fasaden)
-function paintMenuHead(P, word, lit) {
-  const tw = textW(SMALL, word);
-  text(P, SMALL, word, -(tw >> 1) + 1, -42, lit ? 0xff5a8a : 0x5a0a16);
-  text(P, SMALL, word, -(tw >> 1), -43, lit ? 0xfff0f4 : 0xf4f1ea);
-}
+// (Burgarbarens menyställ ritas numera av fasaden i buildings-work.js – BURGARE_STAND –
+//  så props har ingen egen variant. Kafémenyn nedan är kaféets trottoartavla.)
 function paintMenuBoard(P) {
   const x0 = -10, w = 21, top = -21;
   P.line(x0 + 1, -4, x0 - 1, 0, WOOD[1]); P.line(x0 + w - 2, -4, x0 + w, 0, WOOD[0]);
@@ -1972,20 +1905,6 @@ export function createProps(env) {
   function shelterSeats(bx, by, stop, broken) {
     addSeats('busskur', broken ? [bx - 21] : [bx - 20, bx - 7], by + 6, 'down', by + 10, [bx - 29, by - 16, bx + 5, by + 8], { stop: stop?.id, ...(broken ? { broken: true } : {}) });
   }
-  // Burgarbarens menyställ: rätterna och priserna från jobbet; huvudet visar MENY och rätternas namn i tur och ordning,
-  // på kvällen lyser tavlan och huvudet i rosa neon (ritas i glow ovanpå mörkret)
-  let menuStand = null;
-  function burgerMenu(x, y) {
-    const base = spr(38, 52, 19, 48, (P) => paintMenuStand(P, false));
-    const lit = spr(38, 52, 19, 48, (P) => paintMenuStand(P, true));
-    const words = ['MENY', 'MENY', ...menuDishes().map((d) => d.name)];
-    const heads = words.map((w) => spr(38, 52, 19, 48, (P) => paintMenuHead(P, w, false)));
-    const headsLit = words.map((w) => spr(38, 52, 19, 48, (P) => paintMenuHead(P, w, true)));
-    const halo = spr(80, 70, 40, 56, (P) => { P.ell(0, -40, 22, 8, 0xff4a7a, 0.55, 5); P.ell(0, -22, 18, 16, 0xfff0e0, 0.18, 5); P.ell(0, 3, 20, 4, 0xffd8e0, 0.3, 4); });
-    const headAt = () => Math.floor(env.t / 1.4) % words.length;
-    if (!add('menyställ', x, y, [x - 14, y - 3, x + 15, y + 1], [[x - 15, y - 2, x + 15, y]], (ctx) => { putW(ctx, base, x, y); put(ctx, heads[headAt()], x, y); })) return;
-    menuStand = { x, y, lit, headsLit, halo, headAt };
-  }
   const FRUITSTAND = once('fruit', () => spr(72, 60, 34, 54, paintFruitStand));
   const CARTS = once('carts', () => spr(70, 40, 34, 36, paintCarts));
 
@@ -2009,7 +1928,7 @@ export function createProps(env) {
   pot(566, NW, 'kon'); pot(630, NW, 'kon'); flowerBox(648, NW, 20, ['purple', 'white'], 'svart');
   bench(718, NW + 2); pot(756, NW, 'gras'); pot(840, NW, 'gras'); bikeRack(874, NW + 3);
   cafe(975, NW + 8, [0xb8283a, 0xf4ece0]); cafe(1040, NW + 8, [0x2a6a4a, 0xf4ece0]);
-  flowerBox(1098, NW, 24, ['orange', 'yellow', 'red']); burgerMenu(1182, NW); // (löpsedeln SOL! flyttade till kiosken i parken; ställets östra kant håller sig väster om trafikljuset)
+  flowerBox(1098, NW, 24, ['orange', 'yellow', 'red']); // (Burgarbarens menypelare vid 1182 ritas av fasaden – BURGARE_STAND i buildings-work.js)
   pot(1310, NW, 'pelargon'); pot(1376, NW, 'pelargon'); flowerBox(1404, NW, 24, ['red', 'yellow'], 'zink');
   bench(1480, NW + 2); pot(1522, NW, 'palm'); pot(1614, NW, 'palm'); flowerBox(1650, NW, 24, ['blue', 'white'], 'zink');
 
@@ -2028,8 +1947,8 @@ export function createProps(env) {
   const POSTER = spr(72, 50, 36, 42, paintPoster);
   const POSTER_GLOW = spr(72, 50, 36, 42, (P) => P.ell(19, -18, 16, 20, 0xa8d8ff, 0.5, 5));
   if (add('busskur', SH.x, SH.y, [SH.x - 33, SH.y - 5, SH.x + 34, SH_FRONT + 1], [[SH.x - 32, SH.y - 4, SH.x + 33, SH.y], [SH.x - 27, SH.y + 1, SH.x + 4, SH.y + 5], [SH.x - 33, SH_FRONT - 3, SH.x - 29, SH_FRONT + 1], [SH.x + 30, SH_FRONT - 3, SH.x + 34, SH_FRONT + 1]],
-    (ctx) => put(ctx, SHB, SH.x, SH.y))) {
-    items.push({ x: SH.x, y: SH_FRONT, kind: 'busskur-tak', draw: (ctx) => put(ctx, SHF, SH.x, SH.y) });
+    (ctx) => putW(ctx, SHB, SH.x, SH.y))) {
+    items.push({ x: SH.x, y: SH_FRONT, kind: 'busskur-tak', draw: (ctx) => putW(ctx, SHF, SH.x, SH.y) });
     shelterSeats(SH.x, SH.y, BUS_STOPS[0], false);
     glows.push({ x: SH.x, y: SH.y, s: POSTER_GLOW, a: 0.7 });
     glows.push({ x: SH.x, y: SH.y, s: POSTER, a: 0.6 });
@@ -2359,15 +2278,6 @@ export function createProps(env) {
         if (!vis(l.x, l.y)) continue;
         ctx.globalAlpha = Math.min(1, k * l.a * flick(l.flicker, l.x));
         put(ctx, l.s, l.x, l.y);
-      }
-      // Burgarbarens menyställ: tänd tavla och neonhuvud (vilken rätt huvudet visar följer dagsbilden)
-      const M = menuStand;
-      if (M && vis(M.x, M.y)) {
-        ctx.globalAlpha = Math.min(1, k * 0.92); put(ctx, M.lit, M.x, M.y);
-        ctx.globalAlpha = Math.min(1, k); put(ctx, M.headsLit[M.headAt()], M.x, M.y);
-        ctx.globalCompositeOperation = 'lighter';
-        ctx.globalAlpha = k * (0.85 + 0.15 * Math.sin(env.t * 3.1)); put(ctx, M.halo, M.x, M.y);
-        ctx.globalCompositeOperation = 'source-over';
       }
       ctx.globalAlpha = 1;
     },

@@ -20,7 +20,8 @@ const MODS = {};
 await Promise.all(['buildings-shops', 'buildings-work', 'buildings-south', 'buildings-suburb', 'ground', 'props', 'traffic', 'life', 'weather', 'walk', 'fallback-v2'].map((n) =>
   import(`../city/${n}.js`).then((m) => { MODS[n] = m; }).catch((e) => console.error(`stadsmodulen ${n} kunde inte laddas:`, e))));
 
-const VW = CITY.VIEW_W, VH = CITY.VIEW_H;
+let VW = CITY.VIEW_W, VH = CITY.VIEW_H; // mobilfyllning: vyn följer skärmen, klampad till världen
+const syncView = (A) => { VW = Math.max(CITY.VIEW_W, Math.min(A.W || CITY.VIEW_W, CITY.W)); VH = Math.max(CITY.VIEW_H, Math.min(A.H || CITY.VIEW_H, CITY.H)); };
 export const BUS_FARE = 10, BUS_MINUTES = 15;
 
 // Spelare i staden som inte syns i bild får en pil med namnet i skärmkanten, så att man
@@ -447,6 +448,7 @@ export function makeCity(A) {
     },
 
     draw(ctx) {
+      syncView(A); // skärmen kan ha ändrat storlek – vyn följer med
       const cx = Math.round(cam.x), cy = Math.round(cam.y);
       ctx.setTransform(A.pxs, 0, 0, A.pxs, -cx * A.pxs, -cy * A.pxs);
       drawWorld(ctx, cx, cy, VW, VH);

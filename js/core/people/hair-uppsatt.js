@@ -15,16 +15,20 @@ const hang = (R, x0, y0, y1, w = 2, dark = false, bh = false) => {
     if (ww > 2 && (y - y0) % 4 === 3) P(x0 + off + 1, y, dark ? H.dk : H.lo);
   }
 };
-// bubbelsvans: bubblor (bredd w) med snoddar emellan, rad y0…y1
+// bubbelsvans: runda bubblor (rader 2-4-4-2 px för w = 4) med en snodd emellan, rad y0…y1
+const BUBBLE = [0, 1, 1, 0]; // 0 = smal rad (w-2), 1 = bred rad (w)
 const bubbles = (R, x0, y0, y1, w = 4, bh = false) => {
   const { hair: H } = R, P = bh ? (x, y, c) => behind(R, x, y, c) : R.put;
   let y = y0;
   while (y <= y1) {
-    for (let j = 0; j < 3 && y <= y1; j++, y++) {
-      const ww = j === 1 ? w : w - 2, x = x0 + ((w - ww) >> 1);
-      for (let i = 0; i < ww; i++) P(x + i, y, i === 0 ? (j === 0 ? H.hi : H.base) : i === ww - 1 ? (j === 2 ? H.dk : H.lo) : j === 2 ? H.lo : H.base);
+    for (let j = 0; j < BUBBLE.length && y <= y1; j++, y++) {
+      const ww = BUBBLE[j] ? w : w - 2, x = x0 + ((w - ww) >> 1), last = j === BUBBLE.length - 1 || y === y1;
+      for (let i = 0; i < ww; i++) {
+        const c = i === 0 ? (j === 0 ? H.hi : j === 1 ? H.hi : H.base) : i === ww - 1 ? (last ? H.dk : H.lo) : last ? H.lo : H.base;
+        P(x + i, y, c);
+      }
     }
-    if (y <= y1) { for (let i = 0; i < w - 2; i++) P(x0 + 1 + i, y, TIE); y++; }
+    if (y <= y1 - 2) { for (let i = 0; i < w - 2; i++) P(x0 + 1 + i, y, TIE); y++; } else break;
   }
 };
 // knut (oval) med lindningsspår
@@ -33,6 +37,15 @@ const bun = (R, cx, cy, rx, ry, tex = true) => {
   // nedersta raden mot huvudet blir mörk (skarven syns)
   let yb = -1; for (let y = 0; y < 40; y++) for (let x = 0; x < 24; x++) if (m.on(x, y)) yb = y;
   paint(R, m, { tex: (x, y, t) => (y === yb && R.has(x, y + 1) ? 'lo' : tex && t === 'base' && (x * 2 + y * 3) % 5 === 0 ? 'lo' : null) });
+};
+// palmtofs: kort tofs rakt upp på hjässan som faller ut åt sidorna (x = tofsens vänstra kolumn)
+const palm = (R, x) => {
+  const { put, rect, hair: H, h0 } = R;
+  rect(x, h0 - 2, 2, 1, TIE);
+  put(x, h0 - 3, H.base); put(x + 1, h0 - 3, H.lo);
+  rect(x - 1, h0 - 4, 4, 1, H.base); put(x - 1, h0 - 4, H.hi); put(x + 2, h0 - 4, H.lo);
+  rect(x - 2, h0 - 5, 6, 1, H.base); put(x - 2, h0 - 5, H.hi); put(x, h0 - 5, H.hi); put(x + 3, h0 - 5, H.lo);
+  put(x - 3, h0 - 4, H.base); put(x - 4, h0 - 3, H.lo); put(x + 4, h0 - 4, H.lo); put(x + 5, h0 - 3, H.dk);
 };
 // flätmönster (tvärgående ljusa/mörka band) på en mask
 const braidTex = (vertical) => (x, y) => { const k = vertical ? (y * 2 + (x & 1)) % 4 : (x * 2 + (y & 1)) % 4; return k === 0 ? 'hi' : k === 2 ? 'lo' : k === 3 ? 'dk' : 'base'; };
@@ -70,9 +83,11 @@ export const HAIR_UPPSATT = {
       put(10, eyeRow - 1, TIE); put(10, eyeRow, TIE); hang(R, 9, eyeRow + 1, chest, 3); },
   }),
   bubblePony: hs('Bubbel­svans', 'Hästsvansar', {
-    front(R) { const { eyeRow } = R; sleekF(R); partF(R); bubbles(R, 16, eyeRow - 2, eyeRow + 6, 3, true); },
+    // framifrån syns bara en bubbla som sticker fram bakom nacken/axeln
+    front(R) { const { chin } = dims(R); sleekF(R); partF(R); bubbles(R, 16, chin - 1, chin + 3, 4, true); },
     back(R) { const { rect, h0 } = R, { chest } = dims(R); sleekB(R, true); rect(11, h0 + 1, 2, 1, TIE); bubbles(R, 10, h0 + 2, chest, 4); },
-    side(R) { const { put, h0 } = R, { chest } = dims(R); sleekS(R); put(8, h0 + 1, TIE); put(8, h0 + 2, TIE); bubbles(R, 5, h0 + 2, chest - 1, 4); },
+    side(R) { const { put, rect, hair: H, h0 } = R, { chest } = dims(R); sleekS(R);
+      rect(6, h0 + 1, 2, 1, H.base); put(8, h0 + 1, TIE); put(8, h0 + 2, TIE); bubbles(R, 4, h0 + 2, chest - 1, 4); },
   }),
 
   // ================= Uppsatt =================
@@ -134,6 +149,12 @@ export const HAIR_UPPSATT = {
     back(R) { const { put, hair: H, h0, eyeRow } = R, { chin } = dims(R); sleekB(R, false); col(R, 11, h0 - 1, h0 + R.headH - 5, H.lo);
       put(6, eyeRow + 1, TIE); put(7, eyeRow + 1, TIE); put(16, eyeRow + 1, TIE); put(17, eyeRow + 1, TIE); hang(R, 6, eyeRow + 2, chin + 3, 2); hang(R, 16, eyeRow + 2, chin + 3, 2, true); },
     side(R) { const { put, eyeRow } = R, { chin } = dims(R); sleekS(R); put(9, eyeRow + 1, TIE); put(10, eyeRow + 1, TIE); hang(R, 9, eyeRow + 2, chin + 3, 2, true); },
+  }),
+  palmTuft: hs('Palm­tofs', 'Uppsatt', {
+    // under en täckande hatt klipps tofsen bort (hs)
+    front(R) { sleekF(R); palm(R, 11); },
+    back(R) { sleekB(R, true); palm(R, 11); },
+    side(R) { sleekS(R); palm(R, 11); },
   }),
 
   // ================= Flätor =================

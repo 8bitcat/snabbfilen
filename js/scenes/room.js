@@ -102,9 +102,10 @@ const PLANS = {
 
 // Startmöbleringen per bostad och delrum. fx = startmöbel (kan flyttas, inte säljas).
 const SEEDS = {
-  'husvagn:0': [ // brits, litet kylskåp och klädskåp – kokplattan sitter i väggen under fönstret
+  'husvagn:0': [ // brits, litet kylskåp och klädskåp – kokvrån sitter i väggen under fönstret
     { k: 'enkelsang', v: 2, x: 12, y: 150, fx: 1 }, { k: 'kylskap', v: 0, x: 66, y: 94, fx: 1 },
-    { k: 'kladskap', v: 1, x: 118, y: 94, fx: 1 }, { k: 'pall', v: 0, x: 100, y: 192 }, { k: 'lillmatta', v: 3, x: 56, y: 200 },
+    { k: 'kladskap', v: 1, x: 118, y: 94, fx: 1 }, { k: 'koksbord', v: 0, x: 80, y: 176 }, { k: 'pall', v: 0, x: 108, y: 180 },
+    { k: 'lillmatta', v: 6, x: 38, y: 206 }, { k: 'soptunna', v: 0, x: 130, y: 206 },
   ],
   'rum:0': [
     { k: 'sang', v: 0, x: 14, y: 133, fx: 1 }, { k: 'garderob', v: 0, x: 106, y: 96, fx: 1 },
@@ -112,9 +113,9 @@ const SEEDS = {
   ],
   'hoghus:0': [ // ett rum och kök: pentryt sitter under det högra fönstret, radiatorn under det vänstra
     { k: 'enkelsang', v: 4, x: 14, y: 140, fx: 1 }, { k: 'kylskap', v: 0, x: 122, y: 94, fx: 1 },
-    { k: 'garderob', v: 3, x: 204, y: 96, fx: 1 },
+    { k: 'garderob', v: 10, x: 204, y: 96, fx: 1 },
     { k: 'koksbord', v: 0, x: 150, y: 175 }, { k: 'matstol', v: 0, x: 134, y: 173 }, { k: 'matstol', v: 0, x: 178, y: 173 },
-    { k: 'lillmatta', v: 6, x: 40, y: 200 },
+    { k: 'lillmatta', v: 6, x: 36, y: 206 }, { k: 'retrotv', v: 0, x: 206, y: 202 },
   ],
   'lagenhet:0': [
     { k: 'kylskap', v: 0, x: 214, y: 94, fx: 1 },
@@ -138,33 +139,38 @@ const SEEDS = {
     { k: 'bordM', v: 0, x: 130, y: 160 }, { k: 'matstol', v: 0, x: 114, y: 158 }, { k: 'matstol', v: 0, x: 186, y: 158 },
     { k: 'byra', v: 0, x: 60, y: 96 }, { k: 'vaxtS', v: 0, x: 340, y: 140 },
   ],
-  'radhus:0': [ // vardagsrum med trädgårdsfönster (SOVRUM-dörren börjar vid x=292)
-    { k: 'kylskap', v: 0, x: 250, y: 94, fx: 1 },
-    { k: 'soffa', v: 1, x: 96, y: 180 }, { k: 'soffbord', v: 0, x: 100, y: 202 }, { k: 'fatolj', v: 1, x: 150, y: 185 },
-    { k: 'tv', v: 2, x: 150, y: 150 }, { k: 'bokhylla', v: 1, x: 200, y: 96 }, { k: 'golvlampa', v: 0, x: 66, y: 150 },
-    { k: 'stormatta', v: 1, x: 80, y: 205 }, { k: 'vaxt', v: 0, x: 300, y: 205 },
+  'radhus:0': [ // vardagsrum med kokvrå och trädgårdsfönster (SOVRUM-dörren börjar vid x=292)
+    { k: 'bredhylla', v: 0, x: 82, y: 96 }, { k: 'tv', v: 1, x: 163, y: 96 },
+    { k: 'diskbank', v: 1, x: 206, y: 96 }, { k: 'kylskap', v: 0, x: 258, y: 94, fx: 1 },
+    { k: 'stormatta', v: 3, x: 126, y: 198 }, { k: 'soffa', v: 3, x: 160, y: 176, r: 2 }, { k: 'glasbord', v: 0, x: 159, y: 150 },
+    { k: 'fatolj', v: 3, x: 128, y: 164, r: 1 }, { k: 'golvlampa', v: 0, x: 110, y: 150 },
+    { k: 'koksbord', v: 2, x: 244, y: 176 }, { k: 'matstol', v: 2, x: 228, y: 174 }, { k: 'matstol', v: 2, x: 272, y: 174 },
+    { k: 'vaxt', v: 0, x: 300, y: 206 }, { k: 'fredslilja', v: 0, x: 16, y: 206 },
   ],
-  'radhus:1': [
-    { k: 'sang', v: 5, x: 40, y: 133, fx: 1 }, { k: 'garderob', v: 2, x: 200, y: 96, fx: 1 },
-    { k: 'nattduksbord', v: 1, x: 84, y: 120 }, { k: 'byra', v: 2, x: 120, y: 96 }, { k: 'rundspegel', v: 0, x: 180, y: 44 },
-    { k: 'lillmatta', v: 4, x: 40, y: 200 },
+  'radhus:1': [ // sovrummet åt trädgården
+    { k: 'sang', v: 4, x: 40, y: 133, fx: 1 }, { k: 'nattduksbord', v: 1, x: 76, y: 120 },
+    { k: 'byra', v: 1, x: 111, y: 96 }, { k: 'rundspegel', v: 0, x: 178, y: 44 }, { k: 'garderob', v: 2, x: 200, y: 96, fx: 1 },
+    { k: 'rutmatta', v: 1, x: 56, y: 196 }, { k: 'skrivbord', v: 0, x: 240, y: 160 }, { k: 'kontorsstol', v: 0, x: 250, y: 174 },
+    { k: 'blomkruka', v: 0, x: 300, y: 206 },
   ],
-  'takvaning:0': [ // panoramafönstret upptar bakväggen 70–280; dörrarna till SOVRUM (336) och KÖK (292)
-    { k: 'kuddsoffa', v: 0, x: 110, y: 186 }, { k: 'soffbord', v: 2, x: 114, y: 205 }, { k: 'fatolj', v: 4, x: 150, y: 172 },
-    { k: 'golvlampa', v: 1, x: 176, y: 172 }, { k: 'piano', v: 1, x: 300, y: 150 }, { k: 'hoghylla', v: 1, x: 200, y: 96 },
-    { k: 'tv', v: 2, x: 40, y: 150 }, { k: 'stormatta', v: 2, x: 100, y: 210 }, { k: 'vaxt', v: 0, x: 250, y: 206 },
-    { k: 'fredslilja', v: 0, x: 350, y: 205 },
+  'takvaning:0': [ // panoramafönstret upptar bakväggen 70–280: soffan vänd mot utsikten; dörrarna till KÖK (292) och SOVRUM (336)
+    { k: 'stormatta', v: 3, x: 120, y: 208 }, { k: 'soffa', v: 6, x: 141, y: 186, r: 2 }, { k: 'glasbord', v: 0, x: 140, y: 162 },
+    { k: 'fatolj', v: 5, x: 116, y: 180, r: 1 }, { k: 'fatolj', v: 5, x: 180, y: 180, r: 3 },
+    { k: 'golvlampa', v: 2, x: 202, y: 186 }, { k: 'ljusgrupp', v: 0, x: 100, y: 204 },
+    { k: 'piano', v: 1, x: 300, y: 150 }, { k: 'gummitrad', v: 0, x: 66, y: 104 },
+    { k: 'vaxt', v: 0, x: 250, y: 206 }, { k: 'fredslilja', v: 0, x: 350, y: 206 },
   ],
-  'takvaning:1': [
-    { k: 'sang', v: 9, x: 40, y: 133, fx: 1 }, { k: 'garderob', v: 8, x: 250, y: 96, fx: 1 },
-    { k: 'nattduksbord', v: 3, x: 84, y: 120 }, { k: 'byra', v: 1, x: 160, y: 96 }, { k: 'rundspegel', v: 2, x: 170, y: 44 },
-    { k: 'golvlampa', v: 2, x: 100, y: 150 }, { k: 'lillmatta', v: 8, x: 40, y: 200 },
+  'takvaning:1': [ // sovrummet med stadsutsikt
+    { k: 'nattduksbord', v: 3, x: 22, y: 120 }, { k: 'sang', v: 2, x: 40, y: 133, fx: 1 }, { k: 'nattduksbord', v: 3, x: 76, y: 120 },
+    { k: 'lagbyra', v: 6, x: 112, y: 96 }, { k: 'rundspegel', v: 2, x: 168, y: 44 }, { k: 'garderob', v: 1, x: 254, y: 96, fx: 1 },
+    { k: 'golvlampa', v: 2, x: 96, y: 150 }, { k: 'rundmatta', v: 4, x: 50, y: 188 },
+    { k: 'tv', v: 1, x: 160, y: 204 }, { k: 'klockblomma', v: 0, x: 340, y: 206 },
   ],
-  'takvaning:2': [ // (kylskåpet står till vänster om SOVRUM-dörren, som börjar vid x=292)
-    { k: 'kylskap', v: 0, x: 270, y: 94, fx: 1 },
-    { k: 'kokso', v: 1, x: 110, y: 160 }, { k: 'bordM', v: 2, x: 190, y: 165 }, { k: 'matstol', v: 1, x: 176, y: 163 }, { k: 'matstol', v: 1, x: 244, y: 163 },
-    { k: 'diskbank', v: 0, x: 170, y: 96 }, { k: 'bankskap', v: 3, x: 110, y: 96 }, { k: 'overskap', v: 1, x: 166, y: 44 },
-    { k: 'vaxtS', v: 0, x: 340, y: 140 }, { k: 'soptunna', v: 0, x: 60, y: 200 },
+  'takvaning:2': [ // köket: diskbänk under fönstret, köksö, matbord för sex (kylskåpet mellan spisen och fönstret)
+    { k: 'diskbank', v: 1, x: 100, y: 96 }, { k: 'bankskap', v: 5, x: 150, y: 96 }, { k: 'koksspis', v: 0, x: 200, y: 96 },
+    { k: 'kylskap', v: 0, x: 218, y: 94, fx: 1 }, { k: 'overskap', v: 1, x: 152, y: 60 },
+    { k: 'kokso', v: 1, x: 110, y: 160 }, { k: 'bordM', v: 2, x: 200, y: 182 }, { k: 'matstol', v: 1, x: 186, y: 180 }, { k: 'matstol', v: 1, x: 254, y: 180 },
+    { k: 'vaxtS', v: 0, x: 340, y: 140 }, { k: 'soptunna', v: 0, x: 60, y: 110 }, { k: 'lillblomma', v: 0, x: 30, y: 206 },
   ],
 };
 // Startmöbleringen måste stå rätt från början (annars flyttas den vid första besöket
@@ -1584,14 +1590,16 @@ function drawWindowLife(ctx, view, wins, wy0, wy1, t, night) {
 function caravanFloor(x, y, def) {
   const T = 12, yy = y - WALL_Y;
   const tx = Math.floor(x / T), ty = Math.floor(yy / T), lx = x - tx * T, ly = yy - ty * T;
-  let c = ((tx + ty) & 1) ? def.floorA : def.floorB;
-  c = mul(c, 0.96 + hash(tx, ty, 61) * 0.06);
+  let c = mix(def.floorA, def.floorB, ((tx + ty) & 1) ? 0.25 : 0.7);
+  c = mul(c, 0.97 + hash(tx, ty, 61) * 0.05);
   const wear = Math.max(0, 1 - Math.hypot((x - 70) / 60, (yy - 44) / 34));
-  if (wear > 0 && bayer(x, y) < wear * 0.6) c = mix(c, 0xc8bca0, 0.25);
+  if (wear > 0 && bayer(x, y) < wear * 0.6) c = mix(c, 0xc8bca0, 0.22);
   const h = hash(x, y, 62);
-  if (h > 0.95) c = mul(c, 0.9); else if (h < 0.03) c = mix(c, 0xffffff, 0.15);
-  if (lx === 0 || ly === 0) c = mul(c, 0.82);
-  if (hash(tx, ty, 63) > 0.86 && lx > 3 && lx < 9 && ly > 3 && ly < 9 && hash(x, y, 64) > 0.4) c = mul(c, 0.78);
+  if (h > 0.96) c = mul(c, 0.92); else if (h < 0.025) c = mix(c, 0xffffff, 0.12);
+  // gamla fläckar: mjuka, mörkare blaffor på några rutor
+  if (hash(tx, ty, 63) > 0.91) { const d = Math.hypot(lx - 6, ly - 6) / 4.5 + (hash(x, y, 64) - 0.5) * 0.4; if (d < 1) c = mul(c, d < 0.6 ? 0.84 : 0.9); }
+  if (lx === 0 || ly === 0) c = mul(c, 0.84);
+  else if (lx === 1 || ly === 1) c = mix(c, 0xffffff, 0.06);
   return c;
 }
 // Väggarna: gulnade plastpaneler med nitar under det rundade taket, träimiterad

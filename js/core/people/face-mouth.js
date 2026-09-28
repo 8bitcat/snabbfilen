@@ -8,7 +8,7 @@
 // Näsan: framifrån x 11–13 runt raden eyeRow+2, från sidan sticker den ut vid x 17–18.
 // Öronen: framifrån x 6 och 17 (syns även bakifrån), från sidan x 11–12.
 import { mix, ramp, TAG } from './util.js';
-import { pix, pal, mapEntry, tint, tintRect, mouthRow, WHITE } from './face-kit.js';
+import { pix, pal, mapEntry, tint, tintRect, mouthRow, WHITE, TEAR_HI } from './face-kit.js';
 
 // ---------- munnar ----------
 const Mo = (label, group, spec) => mapEntry(label, group, { base: (R) => R.eyeRow + 3, sbase: mouthRow, ...spec, f: spec.f && [...spec.f, spec.f[3] ?? 0], kf: spec.kf && [...spec.kf, spec.kf[3] ?? 0] });
@@ -33,12 +33,19 @@ export const MOUTHS_NEW = {
   surprised: Mo('Förvånad', 'Öppna', { f: [10, 0, ['.kk.', '.kk.']], s: [16, -1, ['k', 'k']] }),
   shout: Mo('Skriker', 'Öppna', { f: [9, 0, ['MttttM', '.kggk.']], s: [15, -1, ['tt', 'kg']] }),
   tongue: Mo('Räcker ut tungan', 'Öppna', { f: [10, 0, ['MMMM', '.gg.']], s: [16, -1, ['M.', 'gg']] }),
+  // öppen mun med en dregeldroppe som hänger under hakan
+  drool: Mo('Dreglar', 'Öppna', {
+    f: [10, 0, ['MkkM', '...q']], s: [16, -1, ['k', 'q']],
+    after: (R) => R.put(13, R.eyeRow + 5, TEAR_HI), afterS: (R) => R.put(16, mouthRow(R) + 1, TEAR_HI),
+  }),
   // --- tänder ---
   braces: Mo('Tandställning', 'Tänder', { f: [9, 0, ['MtztzM', '.MMMM.']], s: [14, -1, ['Mzt', '..M']] }),
   vampire: Mo('Vampyrtänder', 'Tänder', { f: [10, 0, ['MkkM', 't..t']], s: [16, -1, ['k', 't']] }),
   buck: Mo('Kaninänder', 'Tänder', { f: [10, 0, ['MMMM', '.tt.']], s: [16, -1, ['M', 't']] }),
   gap: Mo('Tandlucka', 'Tänder', { f: [9, 0, ['MtkttM', '.MMMM.']], s: [14, -1, ['Mkt', '..M']] }),
   goldTooth: Mo('Guldtand', 'Tänder', { f: [9, 0, ['MttytM', '.MMMM.']], s: [14, -1, ['Mty', '..M']] }),
+  // sammanbitna tänder (övre raden ljus, nedre skuggad)
+  grimace: Mo('Biter ihop', 'Tänder', { f: [9, 0, ['MttttM', 'MTTTTM']], s: [14, -1, ['Mtt', '.MT']] }),
   // --- läppar ---
   fullLips: Mo('Fylliga läppar', 'Läppar', { p: (R) => ({ n: mix(R.lip, 0xffffff, 0.22) }), f: [10, 0, ['mMMm', '.nn.']], s: [15, -1, ['mm', '.n']] }),
   redLips: Mo('Röda läppar', 'Läppar', { p: lipsC, f: [10, 0, ['cCCc', '.hh.']], s: [15, -1, ['cc', '.h']], uses: ['lipColor'] }),
@@ -69,6 +76,8 @@ export const NOSES_NEW = {
   hooked: No('Örnnäsa', 'Former', { f: [12, 1, ['s', 'S']], s: [17, 0, ['bb', '.b', '.s']] }),
   upturned: No('Uppnäsa', 'Former', { f: [11, 2, ['SS']], s: [17, 1, ['.b', 'S.']] }),
   wide: No('Bred', 'Former', { f: [11, 1, ['.s.', 'S.S']], s: [17, 1, ['b', 's']], afterS: (R) => R.put(16, R.eyeRow + 2, R.skin.dk) }),
+  // knäckt boxarnäsa: näsryggen svänger i sicksack, från sidan en knöl vid roten
+  crooked: No('Sned', 'Former', { f: [11, 0, ['.s', 's.', '.S']], s: [17, 0, ['s', 'b', 's']] }),
   red: {
     label: 'Röd av kyla', group: 'Former',
     front(R) { R.put(12, R.eyeRow + 2, R.skin.lo); tintRect(R, 11, R.eyeRow + 1, 2, 2, 0xe03a3a, 0.4); },
@@ -113,7 +122,8 @@ const Ear = (label, group, spec) => {
 export const EARS_NEW = {
   small: Ear('Små', 'Former', { f: [6, 0, ['b', 's']], s: [11, 0, ['bb', 'sS']] }),
   big: Ear('Stora', 'Former', { f: [5, -2, ['.b', 'bs', 'bS', 'bs', '.b']], s: [10, -2, ['.bb', 'bbs', 'bsS', 'bbs', '.bb']] }),
-  jug: Ear('Utstående', 'Former', { f: [4, -2, ['bb.', 'bsb', '.bs', '..b']], s: [11, -2, ['bb', 'bs', 'bS', 'bb']], tipF: [4, -2, ['bb', 'bs', '.b']] }),
+  // öronen står ut som öppna skålar: breda upptill, smalnar mot örsnibben, fast mot huvudet i varje rad
+  jug: Ear('Utstående', 'Former', { f: [4, -2, ['bbb', 'bsb', '.sb', '..b']], s: [11, -2, ['bb', 'bs', 'bS', 'bb']], tipF: [4, -2, ['bbb', 'bsb', '.sb']] }),
   elf: Ear('Alvöron', 'Sagoväsen', {
     f: [4, -3, ['b..', '.b.', '.bb', '..s', '..b']], s: [9, -3, ['s...', '.s..', '..bb', '..sS', '..bb']],
     tipF: [4, -3, ['b', '.b', '.b']], tipS: [9, -3, ['b.', '.b']],

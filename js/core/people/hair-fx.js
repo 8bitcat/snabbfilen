@@ -33,7 +33,14 @@ export const HAIR_FX = {
   highlights: { label: 'Slingor', group: 'Slingor & toppar',
     ...all((R) => fx(R, (x, y) => ((x + (y >> 3)) % 3 === 0 ? R.hair2 : null))) },
   tips: { label: 'Färgade toppar', group: 'Slingor & toppar',
-    ...all((R) => { const b = bounds(R); fx(R, (x, y) => (b.bot[x] - b.top[x] >= 3 && y >= b.bot[x] - (b.bot[x] - b.top[x] >= 8 ? 2 : 1) ? R.hair2 : null)); }) },
+    // bara ändarna på strängar som är minst halva hårets längd – långt hår får färgade
+    // ändar utan ett band över pannan, kort hår får färgad lugg/nacke
+    ...all((R) => {
+      const b = bounds(R); let span = 0;
+      for (let x = 0; x < 24; x++) if (b.bot[x] - b.top[x] > span) span = b.bot[x] - b.top[x];
+      const thr = Math.max(3, span >> 1);
+      fx(R, (x, y) => (b.bot[x] - b.top[x] >= thr && y >= b.bot[x] - (b.bot[x] - b.top[x] >= 8 ? 2 : 1) ? R.hair2 : null));
+    }) },
   frosted: { label: 'Frostade toppar', group: 'Slingor & toppar',
     ...all((R) => { const b = bounds(R); fx(R, (x, y) => (y <= b.top[x] + (b.top[x] < R.h0 - 1 ? 1 : 0) ? R.hair2 : null)); }) },
   streak: { label: 'Lugg­slinga', group: 'Slingor & toppar', uses: ['hair2'],

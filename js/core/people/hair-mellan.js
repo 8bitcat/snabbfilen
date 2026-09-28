@@ -1,7 +1,9 @@
 // Nya frisyrer: lugg, mellanlångt och långt hår. Samlas i HAIR_REG av hair.js.
 // Varje post byggs med hs(label, grupp, { front, back, side }) – hs klipper frisyren
 // under täckande huvudbonader (se hair-kit.js). Id:n får aldrig byta namn efter släpp.
-import { hs, capF, backStd, backShort, sideTop, sideStd, dims, row, col, mask, paint } from './hair-kit.js';
+import { hs, capF, backStd, backShort, sideTop, sideStd, dims, nz, row, col, mask, paint } from './hair-kit.js';
+// S-våg: utåtförskjutning per rad (0–2 px, en pixel per rad = mjuka diagonaler)
+const WAVE = [0, 1, 2, 2, 1, 0];
 
 // Hår som hänger bakom kroppen: ritas bara där inget annat redan finns (armar, bål och
 // öron ligger framför), så att långt hår syns bakom axlarna i stället för över dem.
@@ -241,5 +243,29 @@ export const HAIR_MELLAN = {
       behindRect(R, 5, h0 + 1, 2, chest - h0, H.base); behindRect(R, 17, h0 + 1, 2, chest - h0, H.lo); put(6, h0 + 1, H.base); put(17, h0 + 1, H.lo); },
     back(R) { const { chest } = dims(R); backTo(R, chest); strands(R, R.h0 + 3, chest - 2, [10, 13]); },
     side(R) { const { rect, hair: H, h0, eyeRow } = R, { chest } = dims(R); longS(R, chest); bangsS(R); rect(12, h0 + 3, 2, eyeRow + 3 - h0 - 2, H.base); row(R, eyeRow + 3, 12, 13, H.lo); col(R, 12, h0 + 3, eyeRow + 2, H.lo); },
+  }),
+  longWaves: hs('Långa vågor', 'Långt hår', {
+    // bröstlångt med sidbena och tydliga S-vågor (bredvid ansiktet vågar bara ytterkanten)
+    front(R) { const { rect, put, hair: H, skin, h0 } = R, { chin, chest } = dims(R); capF(R, 3);
+      put(9, h0, skin.base); put(9, h0 - 1, H.lo); put(10, h0 + 1, H.lo);
+      rect(10, h0 + 3, 6, 1, H.base); rect(13, h0 + 4, 3, 1, H.base); put(12, h0 + 3, H.lo); put(8, h0 + 3, H.base);
+      const m = mask();
+      for (let y = h0 + 1; y <= chest; y++) {
+        const o = WAVE[(y - h0) % 6], a = 6 - o, b = y < chin ? Math.min(a + 2, 7) : a + 2;
+        m.row(y, a, b).row(y, 23 - b, 23 - a);
+      }
+      const e = 6 - WAVE[(chest - h0) % 6]; m.cut(e, chest).cut(23 - e, chest);
+      paint(R, m, { tex: (x, y) => { const o = WAVE[(y - h0) % 6]; return y >= chin && (x === 8 - o || x === 15 + o) ? 'lo' : null; } }); },
+    back(R) { const { h0 } = R, { chest } = dims(R);
+      const m = mask().row(h0 - 1, 8, 15).row(h0, 7, 16);
+      for (let y = h0 + 1; y <= chest; y++) { const o = WAVE[(y - h0) % 6]; m.row(y, 6 - o, 17 + o); }
+      for (let x = 4; x <= 19; x++) if (nz(x, chest, 27) < 40) m.cut(x, chest);
+      paint(R, m, { tex: (x, y) => { const o = WAVE[(y - h0) % 6] - 1; return y > h0 + 2 && y < chest - 1 && (x === 9 + o || x === 14 - o) ? 'lo' : null; } }); },
+    side(R) { const { rect, put, hair: H, h0 } = R, { chest } = dims(R); sideStd(R, false);
+      const m = mask();
+      for (let y = h0 + 1; y <= chest; y++) { const o = WAVE[(y - h0) % 6]; m.row(y, 6 - o, y <= h0 + 2 ? 7 : 10); }
+      m.cut(6 - WAVE[(chest - h0) % 6], chest);
+      paint(R, m, { tex: (x, y) => (y > h0 + 3 && x === 8 - WAVE[(y - h0) % 6] ? 'lo' : null) });
+      rect(13, h0 + 3, 4, 1, H.base); put(16, h0 + 4, H.base); put(15, h0 + 4, H.lo); },
   }),
 };

@@ -19,10 +19,18 @@ import { CHEEKS_NEW, MAKEUP_NEW, MARKS_NEW } from './face-paint.js';
 import { BEARDS_NEW } from './face-beard.js';
 
 // Förslag i redigerarens färgrutor (valfri egen färg går alltid)
-export const EYE_COLORS = ['#2a1d1a', '#5a3a22', '#3f6fb0', '#3f8f5a', '#7a8a96', '#8a6a2a'];
-export const LIP_COLORS = ['#c0304a', '#e0607a', '#a0303a', '#8e2f5e', '#e07a5a', '#6b2a3a'];
-export const SHADOW_COLORS = ['#8e5bd1', '#3a7bd5', '#46a35a', '#d98a3a', '#b83d7a', '#2f3440'];
-export const MARK_COLORS = ['#3a7bd5', '#d9433b', '#46a35a', '#f0b429', '#f4f1ea', '#8e5bd1'];
+// ögon: mörkbruna, bruna, blå, gröna, grå, hasselnöt, isblå, turkos, bärnsten, violett, röd, svart
+export const EYE_COLORS = ['#2a1d1a', '#5a3a22', '#3f6fb0', '#3f8f5a', '#7a8a96', '#8a6a2a',
+  '#9cc8e6', '#2a9a9a', '#c8902a', '#8e5bd1', '#c83a3a', '#121014'];
+// läppar: röd, rosa, mörkröd, plommon, korall, vinröd, nude, cerise, lila, blå, svart
+export const LIP_COLORS = ['#c0304a', '#e0607a', '#a0303a', '#8e2f5e', '#e07a5a', '#6b2a3a',
+  '#c8866e', '#f06aa0', '#8e5bd1', '#3a6ad5', '#2a2030'];
+// ögonskugga: lila, blå, grön, orange, cerise, grafit, rosa, turkos, guld, silver, röd
+export const SHADOW_COLORS = ['#8e5bd1', '#3a7bd5', '#46a35a', '#d98a3a', '#b83d7a', '#2f3440',
+  '#f28bb3', '#2aa39a', '#e8b830', '#c4ccd6', '#d9433b'];
+// ansiktsmålning: blå, röd, grön, gul, vit, lila, svart, rosa, turkos, orange
+export const MARK_COLORS = ['#3a7bd5', '#d9433b', '#46a35a', '#f0b429', '#f4f1ea', '#8e5bd1',
+  '#22202a', '#f28bb3', '#2aa39a', '#f08a24'];
 
 // ---------- ögon (look.eyes, färg look.eyeColor) ----------
 export const EYE_REG = {

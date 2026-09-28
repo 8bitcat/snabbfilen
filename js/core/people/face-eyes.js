@@ -2,7 +2,7 @@
 // Pixelkartorna ritas med pix() ur face-kit.js – se förklaringen där.
 // Ögonen ligger på raderna eyeRow−2 … eyeRow (vänster öga x 7–10, höger speglas),
 // från sidan x 13–16. Ansiktet syns inte bakifrån, så posterna saknar back().
-import { mix, ramp } from './util.js';
+import { mix, ramp, TAG } from './util.js';
 import { pix, pal, mapEntry, tint, irisOf, WHITE, SHINE, LASH } from './face-kit.js';
 
 // ---------- hjälpare ----------
@@ -11,6 +11,8 @@ const normalL = (R) => { const { rect, put, eye, eyeRow: E } = R; if (R.K) { rec
 const normalR = (R) => { const { rect, put, eye, eyeRow: E } = R; if (R.K) { rect(14, E - 1, 2, 2, eye); put(14, E - 1, SHINE); } else rect(14, E - 1, 1, 2, eye); };
 const normalS = (R) => { const { rect, put, eye, eyeRow: E } = R; if (R.K) { rect(14, E - 1, 2, 2, eye); put(15, E - 1, SHINE); } else rect(15, E - 1, 1, 2, eye); };
 const E = (label, group, spec) => mapEntry(label, group, spec);
+// metallplåt + lysdiod för cyborgögat
+const cyborgPal = (R) => { const led = R.eyeC ? R.eyeC.base : 0xff3a30; return { z: 0x8a929e, Z: 0xd4dae2, d: 0x4a505a, r: led, R: mix(led, 0xffffff, 0.6) }; };
 
 // ---------- ögon ----------
 export const EYES_NEW = {
@@ -90,6 +92,19 @@ export const EYES_NEW = {
       for (const [x, y] of [[13, -1], [13, 0], [14, -2], [15, -2], [14, 1], [15, 1], [16, -1], [16, 0]]) tint(R, x, E + y, g, 0.3);
       pix(R, 14, E - 1, ['GG', 'gg'], { G, g }); },
   },
+  cyborg: {
+    label: 'Cyborgöga', group: 'Roliga',
+    // ena ögat är en lysdiod i en metallplåt (ögonfärgen styr diodens färg, annars röd)
+    front(R) {
+      const E = R.eyeRow, P = cyborgPal(R);
+      normalL(R);
+      if (R.K) pix(R, 13, E - 2, ['Zzzz', 'zRrd', 'zrrd', 'zddd'], P); else pix(R, 13, E - 2, ['Zzz', 'zrd', 'zdd'], P);
+    },
+    side(R) {
+      const E = R.eyeRow, P = cyborgPal(R);
+      if (R.K) pix(R, 13, E - 2, ['Zzzz', 'zRrd', 'zrrd', 'zddd'], P); else pix(R, 14, E - 2, ['Zzz', 'zrd', 'zdd'], P);
+    },
+  },
   blank: E('Tomma', 'Roliga', { p: (R) => ({ W: mix(WHITE, R.skin.lo, 0.25) }), f: [8, -1, ['ww', 'WW'], 2], s: [14, -1, ['ww', 'WW']] }),
   patch: {
     label: 'Ögonlapp', group: 'Roliga',
@@ -99,6 +114,14 @@ export const EYES_NEW = {
       pix(R, 9, E - 5, ['p...', '.p..', '..p.', '...p'], P); R.put(16, E - 1, P.p); },
     side(R) { const E = R.eyeRow, P = pal(R, { p: 0x1c1a20, P: 0x3c3844 });
       pix(R, 14, E - 2, ['Ppp', 'ppp', '.p.'], P); pix(R, 8, E - 3, ['pp....', '..ppp.'], P); },
+    // bandet ligger UTANPÅ håret: rita om det där frisyren täcker (bakifrån snett över nacken)
+    afterHair(R) {
+      const E = R.eyeRow, p = 0x1c1a20;
+      const over = (x, y, head) => { const t = R.tagAt(x, y); if (t === TAG.hair || (head && t === TAG.head)) R.put(x, y, p); };
+      if (R.front) for (const [x, dy] of [[12, -2], [11, -3], [10, -4], [9, -5], [8, -6], [7, -7]]) over(x, E + dy);
+      else if (R.side) for (const [x, dy] of [[8, -3], [9, -3], [10, -2], [11, -2], [12, -2], [13, -2]]) over(x, E + dy);
+      else for (let x = 7; x <= 16; x++) over(x, E - 2 - Math.floor((x - 7) / 3), true);
+    },
   },
 };
 
@@ -117,6 +140,8 @@ export const BROWS_NEW = {
   grey: B('Gråa', 'Former', { p: () => ({ t: 0xcfcac2, T: 0x9a948c }), f: [8, -1, ['t..', 'tTT']], s: [14, -1, ['..t', 'TTt']] }),
   unibrow: B('Ihop­växta', 'Former', { f: [8, 0, ['oooo'], 1], s: [14, 0, ['ooo']], after: (R) => { R.put(11, R.eyeRow - 3, R.hair.base); R.put(12, R.eyeRow - 3, R.hair.base); } }),
   arched: B('Bågade', 'Former', { f: [8, 0, ['.oo', 'o..']], s: [14, 0, ['.oo', 'o..']] }),
+  // tunna, högt plockade bågar (spetsen en rad ovanför de vanliga brynen)
+  plucked: B('Plockade', 'Former', { p: (R) => ({ t: mix(R.hair.lo, R.skin.base, 0.2) }), f: [7, -1, ['.tt.', 't..t']], s: [14, -1, ['.tt', 't..']] }),
   angry: B('Arga', 'Humör', { f: [8, 0, ['oo.', '..o']], s: [14, 0, ['oo.', '..o']] }),
   stern: B('Bistra', 'Humör', { f: [7, 0, ['OOO.', '..OO']], s: [13, 0, ['OOO.', '..OO']] }),
   sad: B('Ledsna', 'Humör', { f: [8, -1, ['..o', 'oo.']], s: [14, -1, ['..o', 'oo.']] }),

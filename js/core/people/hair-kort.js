@@ -138,6 +138,26 @@ export const HAIR_KORT = {
       put(14, h0 - 2, H.base); put(15, h0 - 2, H.hi); put(15, h0 - 3, H.base); put(16, h0 - 3, H.hi); put(16, h0 - 4, H.base); put(17, h0 - 4, H.lo); },
   }),
 
+  hardPart: hs('Rakad bena', 'Kort hår', {
+    // kort sidbena med en rakad linje på personens högra sida (framifrån bildens vänstra),
+    // håret svept åt andra hållet, tonade tinningar
+    front(R) { const { rect, put, hair: H, h0 } = R, s = shaved(R);
+      rect(8, h0 - 1, 8, 1, H.base); rect(7, h0, 10, 2, H.base); rect(11, h0 - 2, 4, 1, H.base);
+      rect(11, h0 - 2, 2, 1, H.hi); rect(10, h0 - 1, 3, 1, H.hi); put(8, h0, H.hi); put(14, h0 - 2, H.lo); put(15, h0 - 1, H.lo); col(R, 16, h0, h0 + 1, H.lo);
+      shavedTemples(R, h0 + 2, h0 + 4); put(8, h0 + 2, s.a);
+      rect(10, h0 + 2, 6, 1, H.base); put(12, h0 + 1, H.lo); put(14, h0 + 2, H.lo); put(15, h0 + 2, H.lo); put(16, h0 + 2, H.lo);
+      col(R, 9, h0 - 1, h0 + 1, s.f); },
+    back(R) { const { rect, put, hair: H, h0 } = R, s = shaved(R); topF(R, 2); rect(9, h0 - 2, 4, 1, H.base); put(9, h0 - 2, H.hi); put(12, h0 - 2, H.lo);
+      shavedBack(R, h0 + 2); col(R, 14, h0 - 1, h0 + 1, s.f); },
+    side(R) { const { rect, put, hair: H, h0 } = R, s = shaved(R);
+      rect(9, h0 - 1, 7, 1, H.base); rect(8, h0, 9, 2, H.base); rect(10, h0 - 1, 3, 1, H.hi); put(9, h0, H.hi);
+      if (R.flip) { // vänster sida: det svepta håret, ingen bena
+        rect(10, h0 - 2, 5, 1, H.base); put(10, h0 - 2, H.hi); put(11, h0 - 2, H.hi); put(15, h0 - 1, H.lo);
+        rect(13, h0 + 2, 4, 1, H.base); put(16, h0 + 2, H.lo); put(16, h0 + 3, H.lo); put(12, h0 + 1, H.lo);
+      } else { rect(10, h0, 7, 1, s.f); put(16, h0 + 1, H.lo); put(15, h0 + 2, H.base); put(16, h0 + 2, H.lo); }
+      rect(8, h0 + 2, 5, 1, s.a); shavedSide(R, h0 + 3); put(13, h0 + 3, s.a); put(13, h0 + 4, s.a); },
+  }),
+
   // ================= Rakat & snaggat =================
   undercut: hs('Undercut', 'Rakat', {
     front(R) { const { put, hair: H, h0 } = R, s = shaved(R);

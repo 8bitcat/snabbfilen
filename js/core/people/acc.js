@@ -475,6 +475,90 @@ const shoulderFB = (R) => {
   const bx = back ? 12 - tw - 3 : 11 + tw;
   rect(bx, ty1 - 3, 4, 4, B.base); rect(bx, ty1 - 3, 4, 1, B.hi); put(bx + 3, ty1, B.lo);
 };
+// ---- hjälpare för de nya väskorna ----
+const bagPal = (R, extra) => pal(R.bagC, R.acc, extra);
+// Mall som bara ritar där inget redan finns – för saker BAKOM kroppen. I kroken beforeTorso
+// är ben och höft redan ritade (de ska ligga framför); bål, armar och huvud ritas efteråt.
+const stampBehind = (R, x0, y0, rows, P) => {
+  for (let j = 0; j < rows.length; j++) {
+    const s = rows[j];
+    for (let i = 0; i < s.length; i++) { const c = P[s[i]]; if (c !== undefined && !R.has(x0 + i, y0 + j)) R.put(x0 + i, y0 + j, c); }
+  }
+};
+// Handens nedersta rad och vänstra pixel – samma geometri som motorns armar (people.js).
+// Framifrån/bakifrån: left = armen till vänster i bild (handen är x … x+1). Från sidan:
+// närmaste armen (handen är x … x+2).
+function handAt(R, left) {
+  const { torsoTop: t, tw, armLen, sit, walkA, walkB } = R;
+  if (!R.side) {
+    const len = sit ? armLen : armLen + (left ? 1 : -1) * (walkA ? 1 : walkB ? -1 : 0);
+    return { x: left ? 12 - tw - 2 : 12 + tw, y: t + len };
+  }
+  const swing = walkA ? -3 : walkB ? 3 : 0, len = sit ? armLen - 2 : armLen;
+  return { x: 11 + swing + (sit ? 3 : 0), y: t + len };
+}
+// Väska i handen – bärarens högra hand: vänster i bild framifrån, höger bakifrån, närmaste
+// handen från sidan. Ritas i afterArms så att den hänger framför armen och följer den när
+// man går. t.f = [kolumnen under handens vänstra pixel, rader] framifrån (väskans smala
+// kant), t.s = samma från sidan (hela framsidan). Rad 0 ligger direkt under handen.
+// Sitter man och äter står väskan på golvet; bär man en bricka hänger den på underarmen.
+function held(label, group, t, palette = bagPal, more = {}) {
+  const F = unpack(t.f[1]), M = mirror(F), S = unpack(t.s[1]), fx = t.f[0], sx = t.s[0];
+  for (const m of [F, S]) if (m.some((r) => r.length !== m[0].length)) console.warn(`[acc] ${label}: mallens rader är olika långa`, m);
+  return {
+    label, group, ...more,
+    afterArms(R) {
+      const P = palette(R), floor = R.shoeTop + 1;
+      if (R.side) {
+        if (R.eat) { stamp(R, 4, floor - S.length + 1, S, P); return; }
+        const h = R.carry ? { x: 13, y: R.torsoTop + 5 } : handAt(R, false);
+        stamp(R, h.x - sx, h.y + 1, S, P);
+        return;
+      }
+      const left = !R.back, rows = left ? F : M, w = F[0].length;
+      if (R.eat) { stamp(R, left ? 12 - R.lw - 2 - w : 12 + R.lw + 2, floor - rows.length + 1, rows, P); return; }
+      const h = R.carry ? { x: left ? 12 - R.tw - 2 : 12 + R.tw, y: R.torsoTop + 2 } : handAt(R, left);
+      stamp(R, left ? h.x - fx : h.x + 2 - w + fx, h.y + 1, rows, P);
+    },
+  };
+}
+// Sak på ryggen ur mallar [x0, dy, rader] med rad 0 på bålens översta rad + dy. t.b = bakifrån
+// (ritas ovanpå ryggen), t.s = från sidan (bakom ryggen). Framifrån ritas bakifrån-mallen
+// spegelvänd BAKOM kroppen, så att bara det som sticker ut syns (gitarrhalsen vid axeln,
+// vingspetsarna). Barn: t.bk / t.sk (annars samma mallar). t.overArms: bakifrån ritas saken
+// efter armarna (vingar). t.strapF/strapB/strapS(R) = remmar ovanpå kroppen i respektive vy.
+function onBack(label, group, t, palette = bagPal, more = {}) {
+  const U = (m) => m && [m[0], m[1], unpack(m[2])];
+  const fl = (m) => m && [SW - m[0] - m[2][0].length, m[1], mirror(m[2])];
+  const b = U(t.b), bk = U(t.bk) || b, s = U(t.s), sk = U(t.sk) || s, f = fl(b), fk = fl(bk);
+  for (const m of [b, bk, s, sk]) if (m && m[2].some((r) => r.length !== m[2][0].length)) console.warn(`[acc] ${label}: mallens rader är olika långa`, m[2]);
+  const at = (R, m, behind) => m && (behind ? stampBehind : stamp)(R, m[0], R.ty0 + m[1], m[2], palette(R));
+  const backView = (R) => at(R, R.K ? bk : b, false);
+  return {
+    label, group, ...more,
+    beforeTorso(R) { if (R.side) at(R, R.K ? sk : s, true); else if (R.front) at(R, R.K ? fk : f, true); },
+    front(R) { if (t.strapF) t.strapF(R); },
+    back(R) { if (!t.overArms) backView(R); if (t.strapB) t.strapB(R); },
+    side(R) { if (t.strapS) t.strapS(R); },
+    ...(t.overArms ? { afterArms(R) { if (R.back) backView(R); } } : {}),
+  };
+}
+// Rem snett över kroppen från (xa, ya) till (xb, yb)
+const sash = (R, xa, ya, xb, yb, c) => { const n = Math.max(1, yb - ya); for (let i = 0; i <= n; i++) R.put(xa + Math.round((i * (xb - xa)) / n), ya + i, c); };
+// Axelremmar framifrån (som ryggsäcken), c = färg, dot = ev. reflex på remmarna
+const straps = (R, c, dot) => {
+  const { put, ty0, tw, K } = R;
+  for (let y = ty0; y < ty0 + (K ? 4 : 6); y++) { put(12 - tw + 1, y, c); put(10 + tw, y, c); }
+  if (dot != null) { put(12 - tw + 1, ty0 + 2, dot); put(10 + tw, ty0 + 2, dot); }
+};
+const strapSide = (R, c) => R.rect(10, R.torsoTop, 1, R.K ? 4 : 5, c);
+// Ryggsäck-lik låda bakom ryggen från sidan (x 4–8)
+const sideBox = (R, h, flap) => {
+  const { rect, put, bagC: B, acc: A, torsoTop } = R, y0 = torsoTop + 1;
+  rect(4, y0, 5, h, B.base); rect(4, y0, 5, 1, B.hi); rect(4, y0 + h - 1, 5, 1, B.lo); put(4, y0 + 1, B.lo);
+  if (flap) { rect(4, y0, 5, flap, A.base); rect(4, y0, 5, 1, A.hi); rect(4, y0 + flap - 1, 5, 1, A.lo); }
+};
+
 export const BAG_REG = {
   none: { label: 'Ingen' },
   backpack: {

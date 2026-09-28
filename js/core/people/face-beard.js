@@ -67,6 +67,12 @@ export const BEARDS_NEW = {
     f: ['.a........o.', '.Aa......ao.', '..Aaaaaaao..', '...Aaaaaa...', '...Aaaaao...', '....Aaao....', '.....ao.....'],
     s: ['...a...', '..aaaa.', '.oaaaaa', '.oaaaaa', '..oaaaa', '....oaa', '.....a.'],
   }),
+  // helskägg med grå strån insprängda (grått blandat in i hårfärgen, g)
+  saltPepper: Beard('Gråsprängt skägg', 'Helskägg', {
+    p: (R) => ({ g: R.mix(R.hair.base, 0xd8d4cc, 0.7) }), dy: 1,
+    f: ['.a........o.', '.Ag......ao.', '..AagaagaO..', '...gaaaag...', '....aoga....'],
+    s: ['...a...', '..agaa.', '.aagaga', '.oagaaa', '..oaga.'],
+  }),
   chinCurtain: Beard('Skepparkrans', 'Helskägg', {
     dy: 1,
     f: ['.a........o.', '.Aa......ao.', '..Aa....ao..', '...Aa..ao...', '...Aaaaaa...', '....oaao....'],
@@ -89,6 +95,12 @@ export const BEARDS_NEW = {
     s: ['....o..', '....aaa', '.......', '....aa.', '....ao.', '....o..'],
   }),
   soulPatch: Beard('Hakprick', 'Haka & kinder', { dy: 5, f: ['.....ao.....'], s: ['.....a.'] }),
+  // mustasch och pipskägg som möts i en ring runt munnen
+  circle: Beard('Ringskägg', 'Haka & kinder', {
+    dy: 3,
+    f: ['...Aaaaao...', '...a....o...', '....aaao....'],
+    s: ['....aaa', '....a..', '....ao.'],
+  }),
   sideburns: Beard('Polisonger', 'Haka & kinder', {
     dy: -2,
     f: ['.a........o.', '.a........o.', '.a........o.', '.a........o.', '.o........o.'],
