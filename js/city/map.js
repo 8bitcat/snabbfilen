@@ -179,9 +179,8 @@ const F = (district, id, x, w, base, d, h, door, extra) => ({
 });
 export const FREESTANDING = [
   // parken
-  F('PARKEN', 'kiosk', 392, 40, 452, 24, 34, { x0: 404, x1: 420, type: 'swing' }, { sign: 'KIOSK', icon: '🗞️', open: [7, 22], soon: 'Kiosken säljer bara lotter och kvällstidningar just nu.' }),
+  F('PARKEN', 'kiosk', 392, 40, 452, 24, 34, { x0: 404, x1: 420, type: 'swing' }, { sign: 'GLASS', icon: '🍦', open: [10, 21], enter: 'glass' }), // glasståndet (props.js ritar det öppna ståndet på kioskens plats)
   F('PARKEN', 'toalett', 762, 36, 452, 24, 30, { x0: 772, x1: 786, type: 'swing' }, { sign: 'WC', icon: '🚻', soon: 'Upptaget! Försök igen om en stund.' }),
-  F('PARKEN', 'glasskiosk', 1136, 36, 400, 22, 30, { x0: 1146, x1: 1162, type: 'swing' }, { sign: 'GLASS', icon: '🍦', open: [10, 20], soon: 'Glassen är slut – påfyllning kommer med glassbilen!' }),
   F('PARKEN', 'lekforrad', 1150, 32, 452, 22, 28, { x0: 1158, x1: 1174, type: 'swing' }, { sign: 'LEKFÖRRÅD', icon: '🧸', soon: 'Låst – nyckeln har parkvakten.' }),
   F('PARKEN', 'paviljong', 1296, 88, 444, 36, 44, { x0: 1328, x1: 1352, type: 'open' }, { sign: 'MUSIKPAVILJONGEN', icon: '🎺', soon: 'Ingen konsert just nu – kom tillbaka en annan dag!' }),
   // förorten
@@ -497,7 +496,7 @@ export function validateMap() {
     if (!DISTRICTS.some((d) => d.name === b.district)) out.push(`${b.id}: okänd stadsdel ${b.district}`);
     if (b.row === 's' && (b.top !== CITY.FOOT_TOP_S || b.base > CITY.BASE_S || b.base < CITY.FOOT_TOP_S + 60)) out.push(`${b.id}: fel base/top för södra raden`);
     if (b.row === 'n' && (b.top !== CITY.FOOT_TOP || b.base !== CITY.BASE)) out.push(`${b.id}: fel base/top för norra raden`);
-    if (b.enter && !/^(hem|bostad|mat|klader|mobler|kafe|djur|burgare|frukt|flyg|jobb:[a-z]+|bostad:[a-z]+)$/.test(b.enter)) out.push(`${b.id}: okänd enter ${b.enter}`);
+    if (b.enter && !/^(hem|bostad|mat|klader|mobler|kafe|djur|burgare|frukt|flyg|glass|narbutik|leksaker|jobb:[a-z]+|bostad:[a-z]+)$/.test(b.enter)) out.push(`${b.id}: okänd enter ${b.enter}`);
   }
   for (const l of LOTS) for (const b of ALL_BUILDINGS) if (b.lot !== l.id && hit(l.rect, footprint(b))) out.push(`tomten ${l.id} överlappar ${b.id}`);
   const ids = new Set();

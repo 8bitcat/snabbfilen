@@ -1,7 +1,7 @@
 {
-  "version": "0.33.0",
+  "version": "0.34.0",
   "date": "2026-09-29",
-  "title": "Mobilen: husnamn i staden och kompakt meny",
+  "title": "Vädret rätt och glasståndet i parken",
   "files": [
     "CHANGELOG.md",
     "assets/interior.png",

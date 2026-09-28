@@ -227,6 +227,33 @@ export function makeCity(A) {
   updateEnv(0);
 
   // ---------- gå in ----------
+  // 🍦 Glasståndet i parken (förr kiosken): samma priser som på ståndets meny
+  const GLASS_MENY = [
+    { id: 'kula', icon: '🍨', namn: 'Kulglass, en kula', pris: 12, matt: 4, orka: 2 },
+    { id: 'tva', icon: '🍦', namn: 'Två kulor i våffelstrut', pris: 20, matt: 7, orka: 3 },
+    { id: 'mjuk', icon: '🍦', namn: 'Mjukglass med strössel', pris: 10, matt: 3, orka: 2 },
+  ];
+  function openGlass() {
+    const rows = GLASS_MENY.map((m) => `<div class="prow shoprow">
+        <span style="font-size:28px;text-align:center">${m.icon}</span>
+        <span class="nm">${esc(m.namn)}<br><small class="sp">+${m.matt} mätthet · +${m.orka} ork</small></span>
+        <button class="btn btn-small ${g.money >= m.pris ? 'btn-go' : ''}" data-glass="${m.id}" ${g.money >= m.pris ? '' : 'disabled'}>${m.pris} kr</button>
+      </div>`).join('');
+    const dlg = openModal('🍦 Glasståndet', `<p style="font-size:19px;margin-top:0">Vilken smak? Slå dig sedan ner vid borden och njut!<br>💰 <b>${g.money} kr</b></p><div class="plist">${rows}</div>`,
+      [{ label: 'Inte nu', onClick: closeModal }]);
+    dlg.querySelectorAll('[data-glass]').forEach((btn) => (btn.onclick = () => {
+      const m = GLASS_MENY.find((x) => x.id === btn.dataset.glass);
+      if (!m || g.money < m.pris) { play('fel'); toast('💸 Du har inte råd med den.', 'bad'); return; }
+      g.money -= m.pris;
+      g.hunger = Math.min(100, g.hunger + m.matt);
+      g.energy = Math.min(100, g.energy + m.orka);
+      g.passTime(10);
+      g.save();
+      closeModal();
+      play('coin');
+      toast(`${m.icon} Mums! ${m.namn} – slå dig ner vid borden.`, 'good');
+    }));
+  }
   const homeHere = (b) => (b.homes || []).includes(g.home);
   function enter(b) {
     if (!b.enter) { toast(b.soon ? `${b.icon || '🚪'} ${b.soon}` : `☕ ${b.sign} öppnar snart – håll utkik!`); return; }
@@ -273,6 +300,7 @@ export function makeCity(A) {
       ]);
     } else if (b.enter === 'djur') A.go('djur');
     else if (b.enter === 'burgare') A.go('burgarbar'); // in i dinern – jobba gör man vid disken därinne
+    else if (b.enter === 'glass') openGlass(); // glasståndet i parken
     else if (kind === 'jobb') A.startJob(id);
     else A.startJob(b.enter === 'flyg' ? 'flygplats' : b.enter);
   }

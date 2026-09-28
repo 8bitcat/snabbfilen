@@ -10,6 +10,14 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.34.0] – 2026-09-29 – Vädret rätt och glasståndet i parken
+- Vädret: solen ger vanligt ljus igen – ingen brun eller orange ton över staden på dagen, bara kvällsljus när det börjar mörkna
+- Regn: bilarna skvätter från däcken och plaskar genom pölarna
+- Blåst: träden lutar och vajar med vinden och löven blåser loss
+- Snö: bilarna lämnar hjulspår, och plogbilar röjer alla vägar – även Infarten – och lägger en plogvall mot trottoaren
+- Parkens kiosk är nu ett öppet glasstånd med glassmeny, uteservering och bord man kan sätta sig vid – köp kulglass, två kulor eller mjukglass
+- Den gamla glasskiosken och löpsedlarna "SOL! I HELG" är borttagna
+
 ## [0.33.0] – 2026-09-29 – Mobilen: husnamn i staden och kompakt meny
 - Mobilen: i staden visas husens namn överst när skyltarna hamnar utanför bilden – tryck på namnet så går du dit och in
 - Mobilen: kameran visar mer av husen ovanför figuren, och områdesskylten och vädret ligger inne i bilden

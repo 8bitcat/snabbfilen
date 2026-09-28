@@ -107,8 +107,7 @@ const PLACES = {
   pantbank: { w: 0.4, stay: [8, 20], carry: [] },
   kebab: { w: 1.6, stay: [8, 18], carry: [['burgare', 0.6]] },
   tvatteri: { w: 1, stay: [10, 30], carry: [['tvatt', 0.65]] },
-  kiosk: { w: 1.3, stay: [3, 8], carry: [['tidning', 0.65]] },
-  glasskiosk: { w: 2.2, stay: [3, 8], carry: [['glass', 0.95]], warm: true },
+  kiosk: { w: 2.2, stay: [3, 8], carry: [['glass', 0.9]], warm: true }, // glasståndet (förr kiosken)
   toalett: { w: 0.35, stay: [5, 12], carry: [] },
 };
 // bostadshusen: folk kommer ut ur dem och går hem igen

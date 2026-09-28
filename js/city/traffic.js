@@ -9,9 +9,20 @@
 // tvärtrafiken i T-korsningarna och svänger ut igen i andra änden. Fordon som
 // kör ut ur världen försvinner och nya fyller på från kanten.
 //
-// Vädret (env.weather): torkare och blöta speglingar i regn, snö på taken och
-// långsammare körning när det snöat, halvljus på dagen i dimma och regn, en
-// snöplog per gata på vintern, mopeden stannar hemma i snö och ösregn.
+// Vädret (env.weather): torkare, blöta speglingar och vattenskvätt från däcken på
+// blöt väg (droppar bakom hjulen, en tunn dimslöja efter bakhjulet och ett ordentligt
+// plask med vattenvåg genom pölarna – weather.puddleAt), snö på taken och långsammare
+// körning när det snöat, halvljus på dagen i dimma och regn, mopeden stannar
+// hemma i snö och ösregn. I snö röjer en SNÖPLOG per körfält (varningsljus,
+// plogblad, snösprut): spårlagret env.snowTracks[vägId] = { x0, y0, canvas } (ett per
+// väg) där vanliga bilar mörkar hjulspår där de faktiskt kör (ackumuleras varv för
+// varv), plogen röjer sin halva av vägen ner till våt, saltad asfalt och lägger en
+// plogvall mot trottoarkanten, och nysnön sakta fyller igen. weather.js ritar lagret i
+// stället för den fasta slasken i drawBack (minsta ingreppet: marken rörs inte).
+// Infarten röjs av en egen plog per körfält som svänger in från de östra filerna (sedd
+// framifrån med bladet söderut, bakifrån med saltspridaren norrut – paintPlowEnd). Börjar
+// det snöa mitt i besöket sätts första plogen i varje körfält ut strax utanför bild.
+// I regn kastar bakhjulen också upp en tätare sprutdimma som syns mellan regnstrecken.
 // Förorten: rostiga bilar i trafiken, på parkeringen, på tomten och vid husvagnen,
 // och en parkerad moped utanför garagen.
 //
@@ -40,6 +51,11 @@ import { Pix, mix, mul, hash, bayer, SMALL, BIG, text, textW, ctxText } from '..
 import { CITY, ROADS, CROSSWALKS_ALL, LIGHTS_ALL, LOTS, buildingById } from './map.js';
 
 export const V2 = true;
+
+// ur weather.js hämtas mjukt: pölarna (plask genom en pöl) och den snöiga vägbanans
+// ruta (spårlagrets botten) – trafiken lever även utan dem
+let puddleAt = null, roadSnowTile = null;
+import('./weather.js').then((m) => { puddleAt = m.puddleAt || null; roadSnowTile = m.roadSnow || null; }).catch(() => { /* vädret är valfritt */ });
 
 // ======================================================================
 // Fordonsritningar (sidan)
@@ -931,8 +947,181 @@ function paintEnd(kind, color, variant, rear, rust, empty = false) {
   const ov = overlays(P, gy);
   return { W, H, gy, ox: OX, img: P.flush(), brake: rear ? O.flush() : null, snow: ov.S.flush(), refl: ov.R.flush(), head: [4, w - 4], lampH: 10 };
 }
+// Snöplogen sedd framifrån/bakifrån (Infarten). Samma orange lastbil som från sidan.
+// Framifrån (söderut, mot kameran): brett plogblad i stål med gul/svart slitkant, vinklat så att
+// bildens vänstra ände (plogens högra sida) ligger längre bak, plogmarkörer i ändarna, snö som
+// rullar av bladet åt höger; lyftramen, grill och strålkastare ovanför bladet, stor vindruta med
+// föraren, backspeglar på armar och varningsljusbalken på hyttaket.
+// Bakifrån (norrut): saltspridarens stålbehållare (ribbor, förstärkningsband, V-botten i skugga,
+// stege), spridartallriken under, dubbla bakhjul med stänklappar, bakljus, gul/svart
+// underkörningsskydd och två varningsljus på behållarens hörn.
+// beacons = varningsljusens [dx från mitten, höjd] (blinkar i drawEndCar/glow), lampDx = lyktornas dx.
+function paintPlowEnd(rear) {
+  const w = 28, OX = 6, W = w + 2 * OX, H = 44, gy = H - 3, mid = w >> 1;
+  const P = new Pix(W, H);
+  const put = (x, h, c, a = 1) => P.px(x + OX, gy - h, c, a);
+  const cur = (x, h) => P.get(x + OX, gy - h);
+  const nz = (x, h) => bayer(x + OX, gy - h) - 0.5;
+  const c = 0xe0761e, R = { hi: mix(c, 0xffffff, 0.5), lt: mix(c, 0xffffff, 0.24), c, md: mul(c, 0.84), dk: mul(c, 0.66), dd: mul(c, 0.5) };
+  const body = (x, h, h0, h1, back) => {   // orange plåt: ljusare uppåt, ljus vänsterkant, mörk högerkant
+    const t = Math.max(0, Math.min(1, (h - h0) / Math.max(1, h1 - h0)));
+    let k = back ? mix(R.dd, R.md, t * 0.9 + nz(x, h) * 0.3) : mix(R.md, R.lt, t * 0.9 + nz(x, h) * 0.3);
+    if (x === 0) k = mix(k, 0xffffff, 0.2); else if (x === w - 1) k = mul(k, 0.72);
+    return k;
+  };
+  const beacon = (x0, h0) => {   // varningsljus: svart fot, orange kupa med ljus mitt, blank topp
+    for (let i = 0; i < 3; i++) { put(x0 + i, h0, 0x2a2b31); put(x0 + i, h0 + 1, i === 1 ? 0xffb050 : 0xe07a18); put(x0 + i, h0 + 2, i === 1 ? 0xffd080 : 0xf09030); }
+    put(x0 + 1, h0 + 3, 0xffe0a0);
+  };
+  const O = new Pix(W, H), late = [];   // late: ritas efter konturen (tunna detaljer som annars mörknar)
+  if (!rear) {
+    // --- framifrån ---
+    // framhjulen (syns ovanför bladet vid sidorna) och chassiets skugga bakom ramen
+    for (const x0 of [1, w - 6]) for (let x = x0; x < x0 + 5; x++) for (let h = 4; h <= 13; h++) put(x, h, (x === x0 || x === x0 + 4) ? 0x0e0e12 : h % 2 ? 0x1c1c22 : 0x26262c);
+    for (let x = 6; x < w - 6; x++) for (let h = 6; h <= 12; h++) put(x, h, 0x16171c);
+    // stötfångare
+    for (let x = 5; x < w - 5; x++) { put(x, 11, 0x26272c); put(x, 12, x === 5 || x === w - 6 ? 0x2a2b31 : 0x4a4c54); }
+    // fronten: plåt, skärmar över hjulen, grill, strålkastare, blinkers
+    for (let x = 0; x < w; x++) for (let h = 13; h <= 20; h++) put(x, h, h === 13 && (x < 6 || x >= w - 6) ? R.dd : body(x, h, 13, 20));
+    for (let x = 8; x <= w - 9; x++) for (let h = 14; h <= 19; h++) {
+      const edge = x === 8 || x === w - 9 || h === 19 || h === 14;
+      put(x, h, edge ? mix(0x6a6e76, 0x9a9ea6, nz(x, h) + 0.5) : h % 2 ? 0x1a1b20 : 0x34363c);
+    }
+    put(mid - 1, 17, 0xd8dce4); put(mid, 17, 0xd8dce4); put(mid - 1, 16, 0x9a9ea6); put(mid, 16, 0x9a9ea6);   // märket
+    for (const x0 of [2, w - 6]) for (let x = x0; x < x0 + 4; x++) for (let h = 15; h <= 17; h++) put(x, h, h === 17 ? 0xffffff : x === x0 || x === x0 + 3 ? 0xd8dde6 : 0xfff3c8);
+    put(0, 16, 0xf0a030); put(0, 15, 0xf0a030); put(w - 1, 16, 0xf0a030); put(w - 1, 15, 0xf0a030);
+    // huven sedd uppifrån (två rader) och hyttens front
+    for (let x = 1; x < w - 1; x++) { put(x, 21, mix(c, 0xffffff, 0.3 + nz(x, 21) * 0.1)); put(x, 22, mix(c, 0xffffff, 0.44)); }
+    for (let x = 0; x < w; x++) for (let h = 23; h <= 32; h++) {
+      if (x >= 3 && x <= w - 4 && h >= 24 && h <= 31) {
+        const t = (h - 24) / 7, st = (((x - h) % 13) + 13) % 13;
+        let k = x === 3 || x === w - 4 ? mix(0x18191e, 0x2a2b31, nz(x, h) + 0.5) : mix(0x1c2633, 0x5a7792, t * 0.85 + nz(x, h) * 0.25);
+        if (h === 24 && x > 3 && x < w - 4) k = 0x141a24;                                           // instrumentbrädan
+        else if (x > 3 && x < w - 4) { if (st < 2) k = mix(k, 0xe6f2ff, 0.4); else if (st === 3) k = mix(k, 0xe6f2ff, 0.15); }
+        put(x, h, k);
+      } else put(x, h, body(x, h, 23, 32));
+    }
+    // föraren (till höger sett framifrån) och en solskärm
+    const fig = (pat, x0, hTop, pal) => pat.forEach((row, j) => { for (let i = 0; i < row.length; i++) if (row[i] !== '.') put(x0 + i, hTop - j, mix(pal[row[i]], cur(x0 + i, hTop - j), 0.3)); });
+    fig(HEAD, mid + 3, 30, { h: 0x3b2619, s: 0xe0a97f, t: 0xf07a1e });
+    for (let x = mid + 2; x <= mid + 8; x++) put(x, 31, 0x2a2e36);
+    // taket (tre rader uppifrån) och varningsljusbalken med arbetsljus i mitten
+    for (let x = 1; x < w - 1; x++) for (let h = 33; h <= 35; h++) put(x, h, mix(c, 0xffffff, h === 35 ? 0.48 : 0.32 + 0.05 * (h - 33) + nz(x, h) * 0.1));
+    for (let x = mid - 7; x <= mid + 6; x++) put(x, 36, 0x2a2b31);
+    for (let x = mid - 4; x <= mid + 3; x++) put(x, 37, x === mid - 1 || x === mid ? 0xf2f4f8 : 0x3a3c44);
+    late.push(() => { beacon(mid - 7, 36); beacon(mid + 4, 36); });
+    // backspeglarna på armar
+    for (const [x0, arm] of [[-5, -2], [w + 2, w + 1]]) {
+      for (let x = x0; x < x0 + 3; x++) for (let h = 23; h <= 29; h++) put(x, h, x === x0 + 1 && h > 23 && h < 29 ? mix(0x5a7792, 0xe6f2ff, h === 28 ? 0.5 : 0.15) : 0x1a1b20);
+      for (const h of [24, 28]) { put(arm, h, 0x2a2b31); put(arm + (arm < 0 ? 1 : -1), h, 0x2a2b31); }
+    }
+    // lyftramen: två tryckarmar och cylindern ner mot bladet
+    for (const x0 of [6, w - 8]) for (let h = 9; h <= 13; h++) { put(x0, h, 0x2a2b31); put(x0 + 1, h, h % 2 ? 0x5a5e66 : 0x3a3c44); }
+    for (let h = 10; h <= 13; h++) { put(mid - 1, h, h === 13 ? 0x3a3c44 : 0xb8bcc4); put(mid, h, h === 13 ? 0x2a2b31 : 0x8a8e96); }
+    // plogbladet: vinklat – vänstra änden (längre bak) ritas upp till 2 px högre
+    const b0 = -5, b1 = w + 4;
+    for (let x = b0; x <= b1; x++) {
+      const t = (x - b0) / (b1 - b0), off = Math.round((1 - t) * 2);
+      for (let hh = 0; hh <= 10; hh++) {
+        const h = hh + off;
+        let k;
+        if (hh === 0) k = 0x3a3e46;                                                    // skärstålet
+        else if (hh <= 3) k = ((x + hh) % 6) < 3 ? 0xe8b820 : 0x1e1e22;               // slitkantens varningsränder
+        else if (hh >= 9) k = hh === 10 ? 0xd0d4dc : 0x8a9098;                         // den rullade överkanten
+        else {
+          k = mix(0x5a6068, 0xaab0b8, ((hh - 4) / 4) * 0.8 + nz(x, h) * 0.25 + t * 0.15);  // skålad yta: ljusast upptill
+          if (x % 7 === 3) k = mul(k, 0.84);                                             // ribbor
+          if (hh === 5 && x % 4 === 1) k = 0xc4c8d0;                                     // bultrad
+        }
+        k = mul(k, 0.88 + 0.12 * t);                                                     // vänstra (vända) sidan i skugga
+        if (x === b0 || x === b1) k = mul(k, 0.7);
+        put(x, h, k);
+      }
+      if (off > 0) late.push(() => { for (let h = 0; h < off; h++) put(x, h, 0x0a0c12, 0.35); });   // skuggan under den bakre änden
+    }
+    // plogmarkörerna i bladets ändar (orange/svarta pinnar)
+    late.push(() => { for (const x of [b0, b1]) { const off = x === b0 ? 2 : 0; for (let h = 11 + off; h <= 18 + off; h++) put(x, h, h === 18 + off ? 0xffb050 : ((h - off) >> 1) % 2 ? 0x1e1e22 : 0xf07a1e); } });
+    // snö som trycks framför bladet och rullar av åt vänster (plogens högra sida)
+    late.push(() => { for (let x = b0; x <= b1 - 4; x++) {
+      const t = (x - b0) / (b1 - b0), off = Math.round((1 - t) * 2), hs = hash(x, 5, 4450);
+      if (hs < 0.75 - 0.5 * (1 - t)) continue;
+      put(x, off, hs > 0.85 ? 0xffffff : 0xe6ecf4);
+      if (hs > 0.9 - 0.3 * (1 - t)) put(x, off + 1, 0xf2f6fa);
+    }
+    for (const [x, h, k] of [[-6, 0, 0xe6ecf4], [-6, 1, 0xf2f6fa], [-6, 2, 0xffffff], [-6, 3, 0xdfe6ef], [-5, 3, 0xf2f6fa], [-6, 5, 0xffffff], [-5, 6, 0xeaf0f8]]) put(x, h, k); });
+  } else {
+    // --- bakifrån ---
+    // dubbla bakhjul (däcksidan syns ytterst) med stänklappar framför
+    for (const x0 of [0, w - 6]) for (let x = x0; x < x0 + 6; x++) for (let h = 0; h <= 8; h++) {
+      if (h === 8 && (x === x0 || x === x0 + 5)) continue;
+      put(x, h, x === x0 + 2 || x === x0 + 3 ? 0x0a0a0c : h % 2 ? 0x1c1c22 : 0x2a2a30);
+    }
+    for (const x0 of [1, w - 6]) for (let x = x0; x < x0 + 5; x++) for (let h = 2; h <= 8; h++) {
+      let k = mix(0x1e1f24, 0x2a2b31, nz(x, h) + 0.5);
+      if (h === 4) k = (x & 1) ? 0xd8dce4 : 0xc83a2a;                                  // reflexrand
+      put(x, h, k);
+    }
+    // spridartallriken under behållaren: skiva med skovlar, ränna ner från behållaren, saltkorn
+    for (let x = mid - 4; x <= mid + 3; x++) { put(x, 1, (x & 1) ? 0x5a5e66 : 0x2a2b31); put(x, 2, x === mid - 4 || x === mid + 3 ? 0x5a5e66 : 0x8a8e96); }
+    late.push(() => { for (const [x, h] of [[mid - 6, 0], [mid + 5, 1], [mid - 3, 0], [mid + 2, 0], [mid + 6, 0]]) put(x, h, 0xdfe4ea, 0.85); });
+    // underkörningsskydd med gul/svarta ränder
+    for (let x = 6; x < w - 6; x++) { put(x, 3, 0x2a2b31); for (let h = 4; h <= 6; h++) put(x, h, ((x + h) % 4) < 2 ? 0xe8b820 : 0x1e1e22); }
+    for (let h = 3; h <= 7; h++) { put(mid - 1, h, h === 7 ? 0x9a9ea6 : 0x6a6e76); put(mid, h, h === 7 ? 0x8a8e96 : 0x5a5e66); }
+    // ramen och skärmarna (orange), bakljus och blinkers
+    for (let x = 0; x < w; x++) for (let h = 7; h <= 12; h++) if (!(h === 7 && x >= 6 && x < w - 6)) put(x, h, h === 12 ? R.lt : body(x, h, 7, 12, true));
+    for (const x0 of [1, w - 5]) for (let x = x0; x < x0 + 4; x++) for (let h = 8; h <= 10; h++) put(x, h, h === 10 ? 0xff7766 : h === 8 ? 0x8a1a1a : 0xd42a2a);
+    for (const x0 of [1, w - 3]) { put(x0, 11, 0xf0a030); put(x0 + 1, 11, 0xf0a030); }
+    for (let x = mid - 3; x <= mid + 2; x++) { put(x, 9, 0xeeeef2); put(x, 10, x === mid - 3 || x === mid + 2 ? 0x1a1b20 : 0xdcdee2); }   // registreringsskylten
+    // saltbehållaren: stål med lodräta ribbor, förstärkningsband med nitar, V-botten i skugga
+    for (let x = 0; x < w; x++) for (let h = 13; h <= 35; h++) {
+      let k = mix(0x6a6e76, 0x8e929a, (h - 13) / 22 + nz(x, h) * 0.3);
+      if (x % 5 === 2) k = mix(k, 0xc4c8d0, 0.35); else if (x % 5 === 3) k = mul(k, 0.82);
+      if (h === 24) k = 0x4a4e56; else if (h === 25) k = x % 4 === 1 ? 0xd0d4dc : 0xa0a4ac;
+      if (h === 35) k = 0xb8bcc4; else if (h === 34) k = 0x9a9ea6;
+      const v = Math.max(0, 22 - h) * 0.62;                                             // V-botten: sidorna skuggade nertill
+      if (x < v || x > w - 1 - v) k = mul(k, 0.6);
+      else if (x < v + 1 || x > w - 2 - v) k = mul(k, 0.8);
+      if (x === 0 || x === w - 1) k = mul(k, 0.75);
+      put(x, h, k);
+    }
+    // bakmarkeringen (röd/vita snedränder) längs behållarens nederkant och SALT i schablonskrift
+    for (let x = 1; x < w - 1; x++) for (let h = 13; h <= 15; h++) {
+      const red = (((x - h) % 6) + 6) % 6 < 3;
+      put(x, h, h === 13 ? (red ? 0x8a1a1a : 0xa8aab0) : red ? (h === 15 ? 0xe8463a : 0xd42a2a) : (h === 15 ? 0xffffff : 0xeeeef0));
+    }
+    const sx = OX + ((w - 5 - textW(SMALL, 'SALT')) >> 1);
+    text(P, SMALL, 'SALT', sx + 1, gy - 31, 0xb0b4bc, 0.5);
+    text(P, SMALL, 'SALT', sx, gy - 32, 0x2a2e36);
+    // stegen på högra sidan
+    for (let h = 13; h <= 33; h++) { put(w - 5, h, 0x3a3c44); put(w - 2, h, 0x3a3c44); if (h % 3 === 0) { put(w - 4, h, 0x9a9ea6); put(w - 3, h, 0x8a8e96); } }
+    // varningsljusen på behållarens hörn
+    late.push(() => { beacon(0, 36); beacon(w - 3, 36); });
+    // bromsljusen
+    for (const x0 of [1, w - 5]) for (let x = x0; x < x0 + 4; x++) for (let h = 8; h <= 10; h++) O.px(x + OX, gy - h, h === 10 ? 0xffb0a0 : 0xff3a2a);
+  }
+  // kontur: kanterna mörkas (ovankant mjukare), sedan skuggan på marken
+  const A = P.d, a = (x, h) => { const X = x + OX, Y = gy - h; return X < 0 || Y < 0 || X >= W || Y >= H ? 0 : A[(Y * W + X) * 4 + 3]; };
+  const edge = [];
+  for (let x = -OX; x < w + OX; x++) for (let h = 0; h <= gy; h++) {
+    if (a(x, h) < 255) continue;
+    const u = a(x, h + 1) < 128, dn = a(x, h - 1) < 128 && h > 0, l = a(x - 1, h) < 128, r = a(x + 1, h) < 128;
+    if (u || dn || l || r) edge.push([x, h, u && !dn]);
+  }
+  for (const [x, h, up] of edge) { const k = cur(x, h); put(x, h, up ? mix(mul(k, 0.55), 0x161620, 0.35) : mix(mul(k, 0.42), 0x0a0a10, 0.45)); }
+  for (let x = -3; x < w + 3; x++) { if (!a(x, 0)) put(x, 0, 0x08080e, 0.3); put(x, -1, 0x08080e, x < 0 || x >= w ? 0.12 : 0.26); }
+  for (const f of late) f();
+  const ov = overlays(P, gy);
+  return {
+    W, H, gy, ox: OX, img: P.flush(), brake: rear ? O.flush() : null, snow: ov.S.flush(), refl: ov.R.flush(),
+    head: [3, w - 4], lampH: rear ? 9 : 16, lampDx: [-11, 10],
+    beacons: rear ? [[1 - mid, 37], [w - 2 - mid, 37]] : [[-6, 37], [5, 37]],
+  };
+}
 const ECACHE = {};
-const endArt = (c, rear) => { const key = c.kind + ':' + c.color + ':' + c.variant + ':' + (rear ? 'b' : 'f') + (c.rust ? 'r' : '') + (c.parked ? 'p' : ''); return ECACHE[key] || (ECACHE[key] = paintEnd(c.kind, c.color, c.variant, rear, c.rust, !!c.parked)); };
+const endArt = (c, rear) => {
+  const key = c.kind + ':' + c.color + ':' + c.variant + ':' + (rear ? 'b' : 'f') + (c.rust ? 'r' : '') + (c.parked ? 'p' : '');
+  return ECACHE[key] || (ECACHE[key] = c.kind === 'plog' ? paintPlowEnd(rear) : paintEnd(c.kind, c.color, c.variant, rear, c.rust, !!c.parked));
+};
 
 // ---------- hjulen: åtta rotationslägen per fälgtyp ----------
 const NF = 8;
@@ -1250,7 +1439,7 @@ export function trafficSheet() {
       if (f === 1 && A.door) for (const [d0, d1] of s.doors) { const q0 = s.L - 1 - d1, w2 = d1 - d0 + 1; x.drawImage(A.door[1], 1 + q0, A.gy - s.winTop, w2, s.winTop - A.hb[d0], x0 + q0, y - 1 - s.winTop, w2, s.winTop - A.hb[d0]); }
       if (f === 1) { x.drawImage(A.snow[f], x0 - 1, y - 1 - A.gy); x.drawImage(A.refl[f], x0 - 1, y + 1); }
     }
-    if (END[k]) for (let f = 0; f < 2; f++) { const E = endArt({ kind: k, color: col, variant: v, rust: !!rust }, f === 1); x.drawImage(E.img, 420 + f * 50 - E.ox, y - E.gy); if (f) x.drawImage(E.snow, 420 + f * 50 - E.ox, y - E.gy); }
+    if (END[k] || k === 'plog') for (let f = 0; f < 2; f++) { const E = endArt({ kind: k, color: col, variant: v, rust: !!rust }, f === 1); x.drawImage(E.img, 420 + f * 50 - E.ox, y - E.gy); if (f) x.drawImage(E.snow, 420 + f * 50 - E.ox, y - E.gy); }
   });
   const states = [['r', 'r'], ['ry', 'r'], ['g', 'r'], ['y', 'r'], ['r', 'g'], ['r', 'x'], ['yb', 'o', true], ['o', 'o', true]];
   states.forEach(([cs, ps, br], i) => { const A = poleArt(i ? 's' : 'n', i ? null : 'PARKGATAN', cs, ps, !!br); x.drawImage(A.img, 20 + i * 36 - A.px, cv.height - 6 - A.fy); });
@@ -1260,7 +1449,15 @@ export function trafficSheet() {
 
 export function createTraffic(env) {
   let T = 0, lastHonk = -99, frame = 0;
-  const cars = [], puffs = [], ghosts = [], lineBuses = [];
+  const cars = [], puffs = [], ghosts = [], lineBuses = [], sprays = [];
+  // snöns spårlager (se "spår i snötäcket") – deklareras här eftersom refill() läser plogläget redan vid start.
+  // plowedAt: körfält → när plogen senast körde klart ett varv (0 = vägarna var plogade när vi kom)
+  // (Infartens körfält räknas klara när plogen svänger ut ur den i andra änden)
+  // plowSeen: körfält → senast en plog körde i det; snowStartT: när det senaste snöfallet började
+  // (första plogen i ett snöfall sätts ut strax utanför bild i stället för vid världens kant)
+  let tracks = null, trackFadeT = 0, lastSnowT = -1, snowStartT = -1, wasSnowing = false;
+  const plowedAt = Object.fromEntries(RM.flatMap((m) => m.lanes.map((l) => [m.id + l.i, 0])));
+  const plowSeen = {};
   const rand = Math.random;
   const I = rmById('infarten'), PG = rmById('pixelgatan'), SG = rmById('sodergatan');
   // Resan med bussen (null = spelaren går): { bus, from, to, phase 'ombord'|'åker'|'tonar'|'framme', … }
@@ -1349,26 +1546,72 @@ export function createTraffic(env) {
   }
   // krockar ett fordon med fronten på s (längd L) med någon annan i filen?
   const clash = (rm, li, s, L, self) => cars.some((o) => o !== self && o.road === rm && o.lane === li && o.s - o.L < s + GAP + 4 && o.s > s - L - GAP - 4);
+  // plogen: turn = 'infarten' → den svänger in och röjer Infarten (i st.f. att köra filen ut ur världen)
+  function spawnPlow(rm, li, s, inf) {
+    const c = spawn(rm, li, 'plog', s);
+    c.turn = inf ? 'infarten' : null;
+    return c;
+  }
+  // En plats längs körfältet (s ≤ maxS) där en plog kan sättas ut osynligt: helst 30–230 px före
+  // bildkanten (då kör den in i bild inom några sekunder), annars var som helst utanför bild.
+  function plowStart(rm, li, maxS) {
+    const lane = rm.lanes[li], L = SPECS.plog.L, v = env.view;
+    const seesRoad = !!v && lane.cross > v.y - 12 && lane.cross - 52 < v.y + v.h;
+    const visible = (s) => {
+      if (!seesRoad) return false;
+      const f = rm.a0 + (lane.dir > 0 ? s : rm.len - s), lo0 = f - (lane.dir > 0 ? L : 0);
+      return lo0 + L > v.x - 20 && lo0 < v.x + v.w + 20;
+    };
+    for (let k = 0; k < 16; k++) {
+      let s;
+      if (seesRoad && k < 8) s = sOfFront(rm, lane.dir, (lane.dir > 0 ? v.x - 20 : v.x + v.w + 20) - lane.dir * (30 + rand() * 200));
+      else s = -M + rand() * (Math.min(maxS, rm.len) + M);
+      if (s < -M || s > maxS || visible(s) || clash(rm, li, s, L + 10)) continue;
+      return s;
+    }
+    return null;
+  }
   // fyll på vid världens kant när ett körfält har färre fordon än det ska
   function refill(w, initial) {
+    const snowy = w.snow > 0.25 || w.kind === 'snö';
+    const done = (key) => w.kind !== 'snö' && (plowedAt[key] ?? -1) > lastSnowT;   // sista varvet kört efter snöfallet
     for (const rm of RM) {
       if (rm.axis !== 'x') continue;
       for (const lane of rm.lanes) {
-        const list = inLane(rm, lane.i), want = TARGET[rm.id][lane.i];
-        const snowy = w.snow > 0.25 || w.kind === 'snö';
-        const needPlow = lane.i === 0 && snowy && !list.some((c) => c.kind === 'plog');
-        const total = want + (needPlow ? 1 : 0);
+        const list = inLane(rm, lane.i), want = TARGET[rm.id][lane.i], key = rm.id + lane.i;
+        // en plog per körfält (båda filerna röjs): rundor medan det snöar, sedan ett sista varv
+        const lanePlow = list.some((c) => c.kind === 'plog' && !c.turn);
+        if (lanePlow) plowSeen[key] = T;
+        const needPlow = snowy && !done(key) && !lanePlow;
+        // Infarten: en egen plog svänger in från de östra filerna (Pixelgatan → västra filen söderut,
+        // Södergatan → östra filen norrut) – sedan fortsätter den ut i tvärgatan i andra änden
+        const tn = lane.i === 1 ? TURNS[rm.id] : null, inf = tn ? tn.lane : -1;
+        const needInf = !initial && inf >= 0 && snowy && !done('infarten' + inf)
+          && !cars.some((c) => c.kind === 'plog' && ((c.road === I && c.lane === inf) || (c.road === rm && c.lane === lane.i && c.turn)));
         if (initial) {
-          const loop = rm.len + 2 * M, n = Math.max(1, total - list.length);
+          const total = want + (needPlow ? 1 : 0), loop = rm.len + 2 * M, n = Math.max(1, total - list.length);
           for (let k = 0; k < n; k++) {
             const kind = k === 0 && needPlow ? 'plog' : pickKind(w), s = -M + (k + 0.3 + rand() * 0.4) * (loop / n);
-            if (!clash(rm, lane.i, s, SPECS[kind].L + 10)) spawn(rm, lane.i, kind, s);   // bussarna står redan där
+            if (clash(rm, lane.i, s, SPECS[kind].L + 10)) continue;   // bussarna står redan där
+            if (kind === 'plog') spawnPlow(rm, lane.i, s, false); else spawn(rm, lane.i, kind, s);
           }
           continue;
         }
-        if (list.length >= total) continue;
+        // första plogen i ett snöfall: strax utanför bild (annars dröjer den upp till 100 s från kanten)
+        if (needPlow && (plowSeen[key] ?? -1) < snowStartT) {
+          const s = plowStart(rm, lane.i, rm.len * 0.9);
+          if (s !== null) { spawnPlow(rm, lane.i, s, false); plowSeen[key] = T; continue; }
+        }
+        // Infartens plog: utanför bild någonstans före svängen
+        if (needInf) {
+          const s = plowStart(rm, lane.i, sOfFront(rm, lane.dir, tn.at - lane.dir * 90));
+          if (s !== null) { spawnPlow(rm, lane.i, s, true); continue; }
+        }
+        const normal = list.filter((c) => c.kind !== 'plog').length;
+        if (!needPlow && !needInf && normal >= want) continue;
         if (list.some((c) => c.s - c.L < 30)) continue;   // någon står i infarten till världen
-        spawn(rm, lane.i, needPlow ? 'plog' : pickKind(w), -M - 8);
+        if (needPlow || needInf) spawnPlow(rm, lane.i, -M - 8, !needPlow);
+        else spawn(rm, lane.i, pickKind(w), -M - 8);
       }
     }
   }
@@ -1406,10 +1649,235 @@ export function createTraffic(env) {
       const rear = c.dir > 0 ? lo(c) : hi(c);
       if (snow) puffs.push({ x: frontA(c) + c.dir * 2, y: c.cross - 3 - rand() * 8, vx: c.dir * (14 + rand() * 24), vy: -14 - rand() * 12, life: 0, max: 0.5 + rand() * 0.4, lane: c.cross, snow: true });
       else puffs.push({ x: rear - c.dir * 2, y: c.cross - 3, vx: -c.dir * (6 + rand() * 6), vy: -4 - rand() * 4, life: 0, max: 0.9 + rand() * 0.6, lane: c.cross });
+    } else if (snow) {
+      // Infarten: bladet kastar snön åt plogens högra sida – söderut (framifrån) åt bildens vänster
+      // ur bladets främre ände, norrut (bakifrån) åt höger ur den bortre änden bakom flaket
+      const gy = hi(c), s = -c.dir;
+      puffs.push({ x: c.cross + s * (17 + rand() * 3), y: c.dir > 0 ? gy - 3 - rand() * 7 : lo(c) - 2 - rand() * 6, vx: s * (14 + rand() * 24), vy: -14 - rand() * 12, life: 0, max: 0.5 + rand() * 0.4, lane: c.dir > 0 ? gy + 0.5 : lo(c), snow: true });
     } else {
       const gy = hi(c);
       puffs.push({ x: c.cross - 8 + rand() * 4, y: (c.dir > 0 ? gy - c.L : gy) - 2, vx: -3 + rand() * 6, vy: -4 - rand() * 4, life: 0, max: 0.9 + rand() * 0.6, lane: gy + 0.5 });
     }
+  }
+
+  // ---------- vattenskvätt från däcken (regn, blöt väg, pölar) ----------
+  // Tre sorter, lokala och bara utseende (spellogiken rör dem aldrig):
+  //   0 droppe – kastas bakåt-uppåt bakom hjulet och faller ner på vägen igen (1 px; snabba
+  //              droppar får en svag svans, plaskdroppar är 2 px höga)
+  //   1 slöja  – en tunn dithrad dimtuss bakom stötfångaren som växer och bleknar
+  //   2 våg    – genom en pöl: vattnet trycks upp i en krona fram och bak om däcket
+  // Bakhjulens droppar, slöjan och plasket sorteras strax framför fordonet (den närmsta sidan),
+  // framhjulens strax bakom (inga prickar längs karossen). Mängden följer farten och blötan.
+  const SPRAY_MAX = 420;
+  const MIST = [['.xx.', 'xxxx'], ['.x.x.', 'x.x.x', '.x.x.'], ['x..x...', '..x..x.', '.x...x.']];
+  // i regn: en tätare, större sprutdimma (tvärs bakom hjulet) som syns mellan regnstrecken –
+  // tät kärna nertill som glesnar uppåt och bakåt när den lyfter och sprids
+  const MIST_RAIN = [
+    ['..xx..', '.xxxx.', 'xxxxxx'],
+    ['..x.x...', '.xxx.x..', 'xx.xxx.x', 'xxxxxxx.'],
+    ['..x...x...', '.x..x...x.', 'x.x..x.x..', '.x.x.x..x.', 'x..x..x...'],
+  ];
+  const WAVE = [[[1, -1], [0, -2], [-1, -2]], [[0, -2], [-1, -3], [-2, -3], [-2, -1], [-3, -2]]];
+  const SPR_COL = Array.from({ length: 9 }, (_, i) => `rgba(228,240,255,${(i / 8).toFixed(3)})`);
+  const MIST_COL = Array.from({ length: 9 }, (_, i) => `rgba(220,230,242,${(i / 8).toFixed(3)})`);
+  const sprCol = (tab, a) => tab[Math.max(0, Math.min(8, Math.round(a * 8)))];
+  function drop(x, y, vx, vy, gy, sort, big = false) {
+    sprays.push({ k: 0, x, y, vx, vy, gy, sort, big, life: 0, max: 0.26 + rand() * 0.14 });
+  }
+  // bara fordon nära bilden skvätter (skvätt utanför bild vore bortkastat och tränger ut det som syns)
+  const nearView = (c) => {
+    const v = env.view;
+    if (!v) return true;
+    return c.road.axis === 'x' ? hi(c) > v.x - 60 && lo(c) < v.x + v.w + 60 && c.cross > v.y - 20 && c.cross < v.y + v.h + 60
+      : c.cross > v.x - 40 && c.cross < v.x + v.w + 40 && hi(c) > v.y - 20 && lo(c) < v.y + v.h + 60;
+  };
+  function wheelSpray(c, w, dt) {
+    if (c.kind === 'moped' || sprays.length > SPRAY_MAX || !nearView(c)) return;
+    const wet = w.kind === 'regn' ? Math.max(w.wet, 0.6) : w.wet;
+    if (wet < 0.3 || w.snow > 0.3) { c.pud = null; return; }
+    const sp = Math.min(1.2, c.v / 44), wk = Math.min(1, (wet - 0.25) / 0.55) * sp;
+    if (c.v < 10) return;
+    // i regn drunknar enstaka droppar bland regnstrecken: fler droppar och en tätare sprutdimma
+    const rainy = w.kind === 'regn', more = rainy ? 1.7 : 1;
+    if (c.road.axis === 'x') {
+      const wh = c.spec.wheels || [], gy = c.cross - 1, back = c.cross - 0.25, front = c.cross + 0.5, r = c.spec.r || 5;
+      const rearX = c.dir > 0 ? lo(c) : hi(c);
+      if (!c.pud) c.pud = [];
+      for (let i = 0; i < wh.length; i++) {
+        const rear = i === 0;                                           // hjul 0 sitter närmast bakänden (bilkoordinater)
+        const wxp = lo(c) + (c.dir < 0 ? c.L - 1 - wh[i] : wh[i]);
+        const bx = wxp - c.dir * (r - 1);                                  // däckets bakkant vid marken
+        const pud = puddleAt ? puddleAt(Math.round(wxp), gy) : null;
+        if (pud && c.pud[i] !== pud) {
+          // in i pölen: plask – en krona av droppar åt båda håll och en våg vid däcket
+          c.pud[i] = pud;
+          sprays.push({ k: 2, x: Math.round(wxp), y: gy, gy, sort: front, r, life: 0, max: 0.26 });
+          const n = 6 + Math.round(5 * sp);
+          for (let k = 0; k < n; k++) {
+            const bk = k < n * 0.6;
+            drop(wxp + (bk ? -c.dir : c.dir) * (r - 1), gy - 1,
+              bk ? -c.dir * (8 + rand() * 30) : c.dir * c.v * 0.55 + c.dir * (4 + rand() * 14),
+              -(40 + rand() * 44) * (0.7 + 0.3 * sp), gy, front, rand() < 0.4);
+          }
+        } else if (!pud) c.pud[i] = null;
+        // en solfjäder av droppar bakåt-uppåt ur däckets bakkant (20–70° över vägen, fler ur
+        // bakhjulet, flest medan det går genom en pöl); bilen kör ifrån dem, så de bildar en kort
+        // plym bakom hjulet och stötfångaren. Bakhjulets plym ritas framför karossen (närmsta
+        // sidan), framhjulets bakom den.
+        const want = dt * (pud ? 70 : rear ? 90 : 20) * wk * more, n = Math.floor(want) + (rand() < want % 1 ? 1 : 0);
+        for (let k = 0; k < n; k++) {
+          const a = 0.35 + rand() * 0.85, v0 = (50 + rand() * 32) * (0.6 + 0.4 * sp);
+          drop(bx - c.dir * rand() * 2, gy - 1 - rand() * 2, c.dir * c.v * 0.55 - c.dir * v0 * Math.cos(a), -v0 * Math.sin(a) * 1.25, gy, pud || rear ? front : back, !!pud && rand() < 0.4);
+        }
+      }
+      // tunn slöja som virvlar upp bakom stötfångaren; i regn en tätare sprutdimma bakom bakhjulet också
+      if (rand() < dt * 8 * wk) sprays.push({ k: 1, x: rearX - c.dir * (1 + rand() * 4), y: gy - rand() * 4, vx: c.dir * c.v * (0.2 + rand() * 0.25), vy: -3 - rand() * 5, gy, sort: front, dir: c.dir, life: 0, max: 0.4 + rand() * 0.25 });
+      if (rainy && wh.length && rand() < dt * 11 * wk) {
+        const rx = lo(c) + (c.dir < 0 ? c.L - 1 - wh[0] : wh[0]) - c.dir * (r + 2);
+        sprays.push({ k: 1, rain: true, x: rx - c.dir * rand() * 3, y: gy - rand() * 2, vx: c.dir * c.v * (0.3 + rand() * 0.2), vy: -6 - rand() * 6, gy, sort: front, dir: c.dir, life: 0, max: 0.35 + rand() * 0.2 });
+      }
+    } else if (rand() < dt * 14 * wk) {
+      // Infarten (sedd fram-/bakifrån): droppar som skvätter ut åt sidorna från båda hjulen
+      const gy = Math.round(hi(c)) - 1, side = rand() < 0.5 ? -1 : 1;
+      drop(c.cross + side * 9, gy - 1, side * (8 + rand() * 16), -(12 + rand() * 18) * (0.6 + 0.4 * sp), gy, gy + 0.5);
+    }
+  }
+  function drawSpray(ctx, p) {
+    const t = p.life / p.max, x = Math.round(p.x), y = Math.round(p.y);
+    if (p.k === 0) {
+      const a = 0.95 * (1 - t * t);
+      ctx.fillStyle = sprCol(SPR_COL, a);
+      ctx.fillRect(x, y, 1, p.big ? 2 : 1);
+      // svag svans bakåt längs banan (rörelseoskärpa – dropparna läses som stänk, inte prickar)
+      const sx = Math.abs(p.vx) > 14 ? Math.sign(p.vx) : 0, sy = Math.abs(p.vy) > 20 ? Math.sign(p.vy) : 0;
+      if (sx || sy) { ctx.fillStyle = sprCol(SPR_COL, a * 0.45); ctx.fillRect(x - sx, y - sy, 1, 1); }
+    } else if (p.k === 1) {
+      const fr = (p.rain ? MIST_RAIN : MIST)[Math.min(2, Math.floor(t * 3))], h = fr.length, w = fr[0].length, x0 = x - (w >> 1);
+      ctx.fillStyle = sprCol(p.rain ? SPR_COL : MIST_COL, (p.rain ? 0.55 : 0.38) * (1 - t) * (1 - t * 0.5));
+      for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) if (fr[j][i] === 'x') ctx.fillRect(x0 + (p.dir > 0 ? w - 1 - i : i), y - h + 1 + j, 1, 1);
+    } else {
+      const fr = WAVE[t < 0.45 ? 0 : 1];
+      ctx.fillStyle = sprCol(SPR_COL, 0.9 * (1 - t * 0.5));
+      for (const [dx, dy] of fr) { ctx.fillRect(x - p.r - dx, y + dy, 1, 1); ctx.fillRect(x + p.r + dx, y + dy, 1, 1); }
+    }
+  }
+
+  // ---------- spår i snötäcket ----------
+  // Ett levande spårlager (canvas) per väg, i vägens egna koordinater (x0, y0 = vägens hörn).
+  // Botten är snöig, packad vägbana (weather.roadSnow). Vanliga bilar mörkar två hjulspår
+  // där de faktiskt kör – varje pixel en gång per passage (c.trackA), så spåren blir mörkare
+  // för varje bil: först grått, sedan slask ner mot asfalten. PLOGEN röjer sin halva av vägen
+  // (körfältet ut till trottoarkanten): spåren nollas, kvar blir våt, saltad asfalt med
+  // strimmor av snö efter bladet, och en plogvall läggs längs kanten (högertrafik – plogen
+  // kastar åt höger, mot trottoaren). Nysnö fyller sakta igen både spår och röjda fält; i
+  // plusgrader tunnas täcket ut. weather.js ritar lagret i drawBack via env.snowTracks.
+  // Plogen kör rundor medan det snöar och ett sista varv per körfält när det slutat (plowedAt).
+  const qOf = (w) => Math.max(1, Math.min(10, Math.round(w.snow * 10)));
+  const TTS = 128;
+  const trackCache = {};
+  const tcached = (k, make) => trackCache[k] || (trackCache[k] = make());
+  // hjulspårets ruta: 128 × 2 (vågrät väg) eller 2 × 128 (Infarten), fläckig täthet
+  const rutTex = (ax) => tcached('rut' + ax, () => {
+    const P = ax === 'x' ? new Pix(TTS, 2) : new Pix(2, TTS);
+    for (let a = 0; a < TTS; a++) for (let j = 0; j < 2; j++) {
+      const h = hash(a, j, 4420);
+      if (h < 0.06) continue;
+      const al = 0.2 + 0.16 * hash(a >> 2, j, 4421) + 0.06 * h;
+      if (ax === 'x') P.px(a, j, 0x4a4640, al); else P.px(j, a, 0x4a4640, al);
+    }
+    return P.flush();
+  });
+  // plogat: våt, saltad asfalt (mörkare), saltkorn och grus, tunna snöstrimmor efter bladet
+  const plowedTex = (ax) => tcached('plow' + ax, () => {
+    const P = new Pix(TTS, TTS);
+    for (let v = 0; v < TTS; v++) for (let u = 0; u < TTS; u++) {
+      const x = ax === 'x' ? u : v, y = ax === 'x' ? v : u;   // u = längs vägen, v = tvärs
+      const hs = hash(u, v, 4430);
+      if (hs > 0.982) { P.px(x, y, 0xdfe4ea, 0.6); continue; }                       // salt
+      if (hs < 0.008) { P.px(x, y, 0x8a8074, 0.65); continue; }                      // grus
+      const st = hash(v, 0, 4431) > 0.9 && hash(u >> 4, v, 4432) > 0.55;            // snöstrimma efter bladet
+      if (st && hash(u, v, 4434) > 0.3) { P.px(x, y, hash(u >> 1, v, 4435) > 0.5 ? 0xc3cad4 : 0xd2d8e0, 0.5); continue; }
+      P.px(x, y, 0x141a28, 0.28 + 0.05 * hash(u >> 4, v >> 2, 4433));               // våt asfalt
+    }
+    return P.flush();
+  });
+  // lägger rutan img över rektangeln (x, y, w, h) i lagrets koordinater
+  function tileRect(g, img, x, y, w, h) {
+    const tw = img.width, th = img.height;
+    for (let ty = Math.floor(y / th) * th; ty < y + h; ty += th) for (let tx = Math.floor(x / tw) * tw; tx < x + w; tx += tw) {
+      const x0 = Math.max(tx, x), y0 = Math.max(ty, y), x1 = Math.min(tx + tw, x + w), y1 = Math.min(ty + th, y + h);
+      if (x1 > x0 && y1 > y0) g.drawImage(img, x0 - tx, y0 - ty, x1 - x0, y1 - y0, x0, y0, x1 - x0, y1 - y0);
+    }
+  }
+  // (längs, tvärs) → lagrets rektangel [x, y, w, h]
+  const rectLT = (rm, s, c, ls, lc) => (rm.axis === 'x' ? [s, c, ls, lc] : [c, s, lc, ls]);
+  const alongOf = (TL, rm) => (rm.axis === 'x' ? TL.canvas.width : TL.canvas.height);
+  const acrossOf = (TL, rm) => (rm.axis === 'x' ? TL.canvas.height : TL.canvas.width);
+  // två hjulspår: under de närmsta hjulen (fotlinjen cross − 1 och raden ovanför) och de bortre (7 px upp);
+  // Infartens fordon (fram-/bakifrån) har hjulen på sidorna, ± 9 px
+  function rutSpan(TL, rm, cross, s0, s1) {
+    s0 = Math.max(0, s0); s1 = Math.min(alongOf(TL, rm), s1);
+    if (s1 <= s0) return;
+    const o = cross - (rm.axis === 'x' ? TL.y0 : TL.x0), img = rutTex(rm.axis === 'x' ? 'x' : 'y');
+    for (const r of rm.axis === 'x' ? [o - 2, o - 9] : [o - 10, o + 8]) tileRect(TL.g, img, ...rectLT(rm, s0, r, s1 - s0, 2));
+  }
+  // plogvallens tre rader: idx 0 = krönet (ytterst), 1 = tät snö, 2 = skuggsidan (innerst)
+  const RIDGE_ROW = [[0.45, '#f3f6fa', '#ffffff'], [0.12, '#e6ecf4', '#fafcff'], [0.35, '#cdd6e2', '#cdd6e2']];
+  function plowSpan(TL, rm, cross, s0, s1) {
+    s0 = Math.max(0, s0); s1 = Math.min(alongOf(TL, rm), s1);
+    if (s1 <= s0) return;
+    const g = TL.g, across = acrossOf(TL, rm), off = rm.axis === 'x' ? TL.y0 : TL.x0;
+    const mid = ((rm.c0 + rm.c1) >> 1) - off, near = cross - off >= mid;
+    const c0 = near ? mid : 1, c1 = near ? across - 1 : mid;
+    g.clearRect(...rectLT(rm, s0, c0, s1 - s0, c1 - c0));
+    tileRect(g, plowedTex(rm.axis === 'x' ? 'x' : 'y'), ...rectLT(rm, s0, c0, s1 - s0, c1 - c0));
+    // plogvallen mot trottoarkanten; den bortre vallen (norr/väster om körfältet) kastar en
+    // smal skugga ut över den röjda asfalten – ljuset kommer från nordväst som i snötäcket
+    const e = near ? across - 3 : 0;
+    for (let a = s0; a < s1; a++) {
+      for (let j = 0; j < 3; j++) {
+        const row = RIDGE_ROW[near ? 2 - j : j], h = hash(a, j, 4410);
+        if (h > row[0]) { g.fillStyle = h > 0.8 ? row[2] : row[1]; g.fillRect(...rectLT(rm, a, e + j, 1, 1)); }
+      }
+      if (!near && hash(a, 3, 4411) > 0.25) { g.fillStyle = 'rgba(10,16,30,0.22)'; g.fillRect(...rectLT(rm, a, 3, 1, 1)); }
+    }
+  }
+  function buildTracks(w) {
+    tracks = {};
+    const q = qOf(w), snowing = w.kind === 'snö';
+    for (const rm of RM) {
+      const rect = rm.axis === 'x' ? [rm.a0, rm.c0, rm.a1, rm.c1] : [rm.c0, rm.a0, rm.c1, rm.a1];
+      const cv = document.createElement('canvas');
+      cv.width = Math.max(1, rect[2] - rect[0]); cv.height = Math.max(1, rect[3] - rect[1]);
+      const g = cv.getContext('2d'), TL = { x0: rect[0], y0: rect[1], canvas: cv, g };
+      if (roadSnowTile) {   // botten: packad snö över hela vägbanan
+        g.globalAlpha = Math.min(1, (w.snow - 0.06) / 0.3);
+        tileRect(g, roadSnowTile(q, rm.axis === 'x' ? 'x' : 'y'), 0, 0, cv.width, cv.height);
+        g.globalAlpha = 1;
+      }
+      // trafiken har redan kört en stund: har det slutat snöa är vägen plogad sedan tidigare,
+      // annars ligger några varv hjulspår i snön
+      const len = alongOf(TL, rm);
+      for (const lane of rm.lanes) {
+        if (!snowing) plowSpan(TL, rm, lane.cross, 0, len);
+        for (let k = 0; k < (snowing ? 3 : 1); k++) rutSpan(TL, rm, lane.cross, 0, len);   // ≈ tre bilar i snön
+      }
+      tracks[rm.id] = TL;
+    }
+    env.snowTracks = tracks;
+  }
+  // fronten har flyttat sig: stämpla exakt de pixlar som passerats sedan förra bildrutan
+  function stamp(c) {
+    const a = Math.floor(frontA(c));
+    if (c.trackRoad !== c.road || c.trackA === undefined) { c.trackRoad = c.road; c.trackA = a; return; }
+    if (a === c.trackA) return;
+    const lo0 = Math.min(a, c.trackA), hi0 = Math.max(a, c.trackA);
+    c.trackA = a;
+    const TL = tracks && tracks[c.road.id];
+    if (!TL || hi0 - lo0 > 40) return;                                   // hopp (bussen byter ben) ritar inget
+    const off = c.road.axis === 'x' ? TL.x0 : TL.y0;
+    if (c.kind === 'plog') plowSpan(TL, c.road, c.cross, lo0 - off - 1, hi0 - off + 1);
+    else if (c.kind !== 'moped') rutSpan(TL, c.road, c.cross, lo0 - off, hi0 - off);
   }
 
   // flytta ett fordon in i Infarten (svängen från en vågrät gata) – spöket håller platsen i den gamla filen en stund
@@ -1422,6 +1890,7 @@ export function createTraffic(env) {
   }
   // och ut igen i andra änden
   function transferOut(c, ex) {
+    if (c.kind === 'plog') plowedAt[c.road.id + c.lane] = T;   // plogen har röjt hela Infartens körfält
     const lane = ex.to.lanes[ex.lane];
     c.road = ex.to; c.lane = lane.i; c.dir = lane.dir; c.cross = lane.cross; c.L = c.spec.L; c.s = ex.s;
     c.commit = -1; c.lastCw = -1; c.merged = false; c.blink = 0; c.wait = 0; c.fr = frame;
@@ -1509,7 +1978,9 @@ export function createTraffic(env) {
       if (d < 70) { c.blink = 1; lim(d > 0 ? Math.max(20, vStop(d) + 18) : 20, 'sväng'); }
       if (d <= 0) {
         if (tn.free()) { transferIn(c, tn); return; }
-        c.turn = null; c.blink = 0;   // upptaget – kör rakt fram i stället
+        // upptaget – kör rakt fram i stället; plogen (som ska röja Infarten) väntar in svängen en stund
+        if (c.kind === 'plog' && (c.turnWait = (c.turnWait || 0) + dt) < 9) lim(0, 'sväng');
+        else { c.turn = null; c.blink = 0; }
       }
     }
     // Infartens ändar: väja för tvärgatan, sedan ut i den
@@ -1532,6 +2003,9 @@ export function createTraffic(env) {
     c.s += c.v * dt;
     if (lead && c.s > lead.s - lead.L - 3) { c.s = lead.s - lead.L - 3; c.v = Math.min(c.v, lead.v); }
     c.dist += c.v * dt;
+    // spår i snön (plogen röjer, bilarna mörkar) och vattenskvätt från däcken på blöt väg
+    stamp(c);
+    wheelSpray(c, w, dt);
     // avgaspuffar när fordonet startar från stillastående; plogen sprutar snö
     if (c.kind === 'plog') { if (c.v > 6 && w.snow > 0.15 && rand() < dt * 14 && puffs.length < 60) puff(c, true); }
     else if (was < 10 && vT > was + 4 && rand() < dt * (c.spec.bus ? 10 : 5) && puffs.length < 60) puff(c);
@@ -1671,6 +2145,30 @@ export function createTraffic(env) {
     const w = wx();
     const slow = w.snow > 0.3 ? 0.6 : w.kind === 'regn' ? 0.86 : w.kind === 'dimma' ? 0.72 : 1;
     folk = (env.people || []).filter((p) => p && !(ride && p === env.player));
+    // spårlagret i snön: byggs när täcket lagt sig, släpps när snön smält bort
+    if (!tracks && w.snow >= 0.15 && typeof document !== 'undefined') buildTracks(w);
+    else if (tracks && w.snow < 0.12) { tracks = null; env.snowTracks = null; }
+    if (w.kind === 'snö') { if (!wasSnowing) snowStartT = T; lastSnowT = T; }
+    wasSnowing = w.kind === 'snö';
+    if (tracks && (trackFadeT += dt) >= 1.4) {
+      trackFadeT = 0;
+      for (const id in tracks) {
+        const TL = tracks[id], g = TL.g;
+        if (w.kind === 'snö' && roadSnowTile) {
+          // nysnön fyller sakta igen spår och röjda fält (ett plogat körfält är halvvägs igensnöat
+          // efter ungefär en och en halv minut i tätt snöfall – plogen hinner runt innan dess)
+          g.globalAlpha = 0.004 + 0.01 * w.k;
+          const rm = rmById(id);
+          tileRect(g, roadSnowTile(qOf(w), rm && rm.axis !== 'x' ? 'y' : 'x'), 0, 0, TL.canvas.width, TL.canvas.height);
+          g.globalAlpha = 1;
+        } else if (w.temp > 0) {                         // töväder: vägbanans täcke tunnas ut
+          g.globalCompositeOperation = 'destination-out';
+          g.globalAlpha = 0.04; g.fillStyle = '#000';
+          g.fillRect(0, 0, TL.canvas.width, TL.canvas.height);
+          g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1;
+        }
+      }
+    }
     refill(w, false);
     for (const rm of RM) for (const lane of rm.lanes) {
       const all = [...inLane(rm, lane.i), ...ghosts.filter((g) => g.road === rm && g.lane === lane.i)].sort((a, b) => a.s - b.s);
@@ -1678,13 +2176,18 @@ export function createTraffic(env) {
         const c = all[k];
         if (c.ghost || c.fr === frame) continue;
         c.fr = frame;
-        stepCar(c, all[k + 1] || null, dt, slow, w);
+        // fordonet framför – men inte ett som just svängt ut ur filen i den här bildrutan (dess s gäller
+        // då Infarten: bilen bakom slängdes förr tillbaka till världens kant, "lead.s − L − 3" ≈ −27)
+        let lead = null;
+        for (let j = k + 1; j < all.length && !lead; j++) if (all[j].ghost || (all[j].road === rm && all[j].lane === lane.i)) lead = all[j];
+        stepCar(c, lead, dt, slow, w);
       }
     }
     // ut ur världen → bort (fyller på från kanten); linjebussarna kör runt kvarteret till nästa ben
     for (let i = cars.length - 1; i >= 0; i--) {
       const c = cars[i];
       if (c.s - c.L <= c.road.len + M) continue;
+      if (c.kind === 'plog') plowedAt[c.road.id + c.lane] = T;   // plogen har kört klart ett varv
       if (c.line) place(c, LEGS[(c.leg + 1) % LEGS.length], -M - 4);
       else cars.splice(i, 1);
     }
@@ -1713,6 +2216,15 @@ export function createTraffic(env) {
       p.life += dt; p.x += (p.vx + w.wind * 0.25) * dt; p.y += p.vy * dt; p.vx *= 1 - dt * 1.5;
       if (p.snow) p.vy += 30 * dt;
       if (p.life >= p.max) puffs.splice(i, 1);
+    }
+    // vattenskvätten: dropparna kastas upp och faller ner igen (borta när de når vägen),
+    // slöjan driver efter bilen och bromsas upp, vågen står still där pölen är
+    for (let i = sprays.length - 1; i >= 0; i--) {
+      const p = sprays[i];
+      p.life += dt;
+      if (p.k === 0) { p.x += (p.vx + w.wind * 0.12) * dt; p.y += p.vy * dt; p.vy += 220 * dt; }
+      else if (p.k === 1) { p.x += (p.vx + w.wind * 0.2) * dt; p.y += p.vy * dt; p.vx *= 1 - dt * 2.2; }
+      if (p.life >= p.max || (p.k === 0 && p.vy > 0 && p.y >= p.gy)) sprays.splice(i, 1);
     }
   }
 
@@ -1888,7 +2400,17 @@ export function createTraffic(env) {
     if (w.wet > 0.15) { ctx.globalAlpha = Math.min(1, w.wet) * 0.9; ctx.drawImage(A.refl, x, gy + 1); ctx.globalAlpha = 1; }
     ctx.drawImage(A.img, x, y);
     if (c.brake && A.brake) ctx.drawImage(A.brake, x, y);
-    if (w.snow > 0.35) ctx.drawImage(A.snow, x, y);
+    if (w.snow > 0.35 && c.kind !== 'plog') ctx.drawImage(A.snow, x, y);
+    // plogens varningsljus blinkar växelvis (vänster – paus – höger – paus)
+    if (A.beacons) {
+      const ph = Math.floor(T * 5) % 4;
+      A.beacons.forEach(([dx, h], i) => {
+        if (ph !== i * 2) return;
+        const bx = c.cross + dx, by = gy - h - 1;
+        ctx.fillStyle = '#fff0b0'; ctx.fillRect(bx - 1, by, 3, 2);
+        lighter(ctx, () => { const g = blob('beacon', 0xffa030, 9, 5, 0.6, false); ctx.globalAlpha = 0.9; ctx.drawImage(g.img, bx - g.ox, by - g.oy); });
+      });
+    }
     if (c.blink && Math.floor(T * 3) % 2 === 0) {
       ctx.fillStyle = '#ffb020';
       const bx = c.dir > 0 ? x + A.W - A.ox - 3 : x + A.ox + 1;   // höger blinkers (svängen går åt höger i båda ändar)
@@ -1896,8 +2418,8 @@ export function createTraffic(env) {
     }
     if (dayLights(w)) lighter(ctx, () => {
       ctx.globalAlpha = w.kind === 'dimma' ? 0.7 : 0.45;
-      if (!rear) { const hl = blob('head', 0xfff8e0, 3, 2, 0.95, false); for (const dx of [-8, 8]) ctx.drawImage(hl.img, c.cross + dx - hl.ox, gy - A.lampH - hl.oy); }
-      else { const tg = blob('tail', 0xff2a1a, 4, 2, 0.6, false); ctx.globalAlpha = c.brake ? 0.8 : 0.4; for (const dx of [-9, 9]) ctx.drawImage(tg.img, c.cross + dx - tg.ox, gy - A.lampH - tg.oy); }
+      if (!rear) { const hl = blob('head', 0xfff8e0, 3, 2, 0.95, false); for (const dx of A.lampDx || [-8, 8]) ctx.drawImage(hl.img, c.cross + dx - hl.ox, gy - A.lampH - hl.oy); }
+      else { const tg = blob('tail', 0xff2a1a, 4, 2, 0.6, false); ctx.globalAlpha = c.brake ? 0.8 : 0.4; for (const dx of A.lampDx || [-9, 9]) ctx.drawImage(tg.img, c.cross + dx - tg.ox, gy - A.lampH - tg.oy); }
     });
     if (c.tut > 0) bubble(ctx, c.cross, y - 2);
   }
@@ -1942,7 +2464,7 @@ export function createTraffic(env) {
     carLight, pedLight,
     vehicles: () => cars.map((c) => (c.road.axis === 'x'
       ? { x0: lo(c), x1: hi(c), y: c.cross, dir: c.dir, v: c.v, kind: c.kind, why: c.why, tut: c.tut > 0, road: c.road.id, axis: 'x', door: c.door || 0, dwell: c.dwell || 0, stop: c.stopId, at: c.at || null, line: !!c.line, id: c.id || null, rider: !!(ride && ride.bus === c) }
-      : { x0: c.cross - 13, x1: c.cross + 13, y: hi(c), y0: lo(c), y1: hi(c), dir: c.dir, v: c.v, kind: c.kind, why: c.why, tut: c.tut > 0, road: c.road.id, axis: 'y', door: 0, dwell: 0, stop: null, at: null, line: false, id: null, rider: false })),
+      : { x0: c.cross - (c.kind === 'plog' ? 19 : 13), x1: c.cross + (c.kind === 'plog' ? 19 : 13), y: hi(c), y0: lo(c), y1: hi(c), dir: c.dir, v: c.v, kind: c.kind, why: c.why, tut: c.tut > 0, road: c.road.id, axis: 'y', door: 0, dwell: 0, stop: null, at: null, line: false, id: null, rider: false })),
 
     // ---------- linje 4 (bussen på riktigt) – hur scenen kopplar in det: se filhuvudet ----------
     /** Hållplatserna i körordning. */
@@ -2010,6 +2532,8 @@ export function createTraffic(env) {
           ctx.fillRect(Math.round(p.x), Math.round(p.y), p.snow ? (t < 0.5 ? 2 : 1) : sz, p.snow ? (t < 0.5 ? 2 : 1) : sz);
         } });
       }
+      // vattenskvätt från däcken: små ljusblå droppar som faller tillbaka mot vägen
+      for (const p of sprays) out.push({ x: p.x, y: p.sort, draw: (ctx) => drawSpray(ctx, p) });
       return out;
     },
     glow(ctx) {
@@ -2039,13 +2563,18 @@ export function createTraffic(env) {
           ctx.globalAlpha = k;
           if (c.dir > 0) {
             const hl = blob('head', 0xfff8e0, 3, 2, 0.95, false);
-            for (const dx of [-8, 8]) ctx.drawImage(hl.img, c.cross + dx - hl.ox, gy - A.lampH - hl.oy);
+            for (const dx of A.lampDx || [-8, 8]) ctx.drawImage(hl.img, c.cross + dx - hl.ox, gy - A.lampH - hl.oy);
             const vb = vbeam(); ctx.globalAlpha = k * 0.9 * wetBoost; ctx.drawImage(vb.img, c.cross - vb.ox, gy - 4);
           } else {
             const tg = blob('tail', 0xff2a1a, 5, 3, 0.6, false);
             ctx.globalAlpha = k * (c.brake ? 1 : 0.6);
-            for (const dx of [-9, 9]) ctx.drawImage(tg.img, c.cross + dx - tg.ox, gy - A.lampH - tg.oy);
+            for (const dx of A.lampDx || [-9, 9]) ctx.drawImage(tg.img, c.cross + dx - tg.ox, gy - A.lampH - tg.oy);
             const pool = blob('vpoolr', 0xff5040, 10, 4, 0.2, false); ctx.drawImage(pool.img, c.cross - pool.ox, gy + 3 - pool.oy);
+          }
+          // plogens varningsljus lyser upp snön i mörkret (samma växelblink som i drawEndCar)
+          if (A.beacons) {
+            const ph = Math.floor(T * 5) % 4, g = blob('beacon2', 0xffa030, 16, 8, 0.5, false);
+            A.beacons.forEach(([dx, h], i) => { if (ph === i * 2) { ctx.globalAlpha = k; ctx.drawImage(g.img, c.cross + dx - g.ox, gy - h - 1 - g.oy); } });
           }
           continue;
         }
