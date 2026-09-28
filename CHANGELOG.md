@@ -10,6 +10,14 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.37.0] – 2026-09-29 – Äta på riktigt och Burgarbarens menypelare
+- Äta på riktigt: maten man köper för att äta på plats bär man i handen, sätter sig med och äter bit för bit – mättnad och energi kommer medan man äter
+- Sitter man och äter reser man sig inte förrän det är uppätet, och med maten i handen kommer man inte ut: "DU MÅSTE SÄTTA DIG OCH ÄTA UPP!" – i Stormarknaden, Kaféet, Burgarbaren och Möbeljätten
+- Stormarknaden: korven köps vid grillen och äts vid sittdisken – den hamnar aldrig på kassabandet
+- Betald mat försvinner aldrig: laddas sidan om eller byter man ställe mitt i maten räknas resten in
+- Burgarbaren har olika priser: burgare 25, pommes 15, läsk 12, glass 14 och målet 47 kr
+- Menypelaren utanför Burgarbaren visar alla fyra rätterna och sedan en stor rätt i taget med sitt pris
+
 ## [0.36.0] – 2026-09-29 – Bion, pizzerians uteservering och djuraffären
 - Bion är en riktig biograf: BIO PIXEL med stor ljusskylt där kvällens filmer byts, affischer för actionfilm och romantisk komedi, biljettlucka och popcorn
 - Pizzerian har fått en uteservering på ett trädäck – gäster som äter pizza, snurrar spagetti och skålar, och en servitör som bär ut pizzor

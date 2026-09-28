@@ -17,7 +17,16 @@
 // figuren går dit och sätter sig → äter bit för bit (maten på brickan minskar)
 // → brickan försvinner FÖRST när man ätit upp → mättnad och energi ökar BARA
 // medan man sitter vid bordet (inte i kön, inte stående). Alla platser upptagna
-// = pratbubbla. Reser man sig i förtid följer brickan med i händerna.
+// = pratbubbla.
+// REGELN I ALLA MATSTÄLLEN: sitter man och äter kan man inte gå därifrån förrän
+// det är uppätet – klick någon annanstans → "ÄT UPP FÖRST! 😋" och figuren sitter
+// kvar (att prata med gästerna vid borden går bra). Dörren med brickan i händerna
+// eller mitt i maten → "DU MÅSTE SÄTTA DIG OCH ÄTA UPP!" och man stannar inne
+// (dörren öppnas inte ens för en). Disken, jobbet och menyn väntar också tills
+// brickan är tom. Byts scenen ändå mitt i (somnar vid midnatt, 👥-menyn …) får man
+// det som var kvar i exit() – betald mat går aldrig förlorad, inte heller om sidan
+// laddas om (ny version), stängs eller läggs undan (settleNow). leaveBlock() säger
+// om man får gå just nu (för huvudprogrammets knappar som byter scen).
 // Vid disken kan man också jobba: Servera (A.startJob('burgare')) eller Jobba i
 // köket (A.startJob('kok') – huvudagenten kopplar JOBS.kok och scenen jobbkok).
 //
@@ -39,6 +48,9 @@ import { worldFolksHere } from '../net/world.js';
 import { burgarMeny } from '../jobs/jobb-burgare.js';
 
 const talk = createSpeech(); // repliker och beskrivningar som pratbubblor i scenen
+// regelns två repliker (samma i alla matställen)
+const MSG_ATUPP = 'ÄT UPP FÖRST! 😋';
+const MSG_DORR = 'DU MÅSTE SÄTTA DIG OCH ÄTA UPP!';
 
 // ======================= menyn =======================
 // Samma fyra rätter som menytavlan i serveringsjobbet och på fasaden (10:- styck,
@@ -47,13 +59,13 @@ const talk = createSpeech(); // repliker och beskrivningar som pratbubblor i sce
 const BM = burgarMeny();
 const DISH_IX = Object.fromEntries(BM.dishes.map((d, i) => [d.id, i]));
 export const BURGAR_MENY = [
-  { id: 'burgare', icon: '🍔', name: 'Burgare', price: 10, fill: 24, energy: 6 },
-  { id: 'pommes', icon: '🍟', name: 'Pommes', price: 10, fill: 12, energy: 4 },
-  { id: 'lask', icon: '🥤', name: 'Läsk', price: 10, fill: 4, energy: 10 },
-  { id: 'glass', icon: '🍦', name: 'Glass', price: 10, fill: 8, energy: 8 },
+  { id: 'burgare', icon: '🍔', name: 'Burgare', price: 25, fill: 24, energy: 6 },
+  { id: 'pommes', icon: '🍟', name: 'Pommes', price: 15, fill: 12, energy: 4 },
+  { id: 'lask', icon: '🥤', name: 'Läsk', price: 12, fill: 4, energy: 10 },
+  { id: 'glass', icon: '🍦', name: 'Glass', price: 14, fill: 8, energy: 8 },
   // målet: alla tre klassikerna på en bricka – 5 kr billigare än var för sig
   // läsken först i listan = den står bakom på brickan (spots i trayCanvas)
-  { id: 'mal', icon: '🍔', name: 'Burgarmål (burgare, pommes, läsk)', price: 25, items: ['lask', 'burgare', 'pommes'] },
+  { id: 'mal', icon: '🍔', name: 'Burgarmål (burgare, pommes, läsk)', price: 47, items: ['lask', 'burgare', 'pommes'] },
 ];
 const menyOf = (id) => BURGAR_MENY.find((m) => m.id === id);
 const itemsOf = (m) => (m.items || [m.id]).map((id) => menyOf(id));
@@ -1060,9 +1072,41 @@ export function makeShopBurgarbar(A) {
   for (let k = 0; k < 3; k++) guests.push({ look: lookOf(), seat: null, state: 'away', t: 3 + k * 12 + rng() * 6, w: mkWalker(), items: null, sitT: 0, stay: 0, eatT: 0, eating: 0, biteT: 0, bubble: null, fixed: false, slide: null, ordered: false });
 
   // ---------- figuren (jag) ----------
-  const me = { state: 'free', seat: null, res: null, tray: null, biteT: 0, sitT: 0, eating: 0, slide: null, waitMsgT: -9, doneT: -9, hintGiven: false };
+  // order = rätterna man betalat för (samma objekt som sedan ligger på brickan) tills allt är
+  // uppätet – så länge den finns får man inte gå ut
+  const me = { state: 'free', seat: null, res: null, tray: null, order: null, biteT: 0, sitT: 0, eating: 0, slide: null, waitMsgT: -9, doneT: -9, hintGiven: false };
   const leftovers = []; // brickor som gäster lämnat (smulor) en liten stund
   const meAt = () => ({ x: me.seat ? me.seat.x : walker.px, y: (me.seat ? me.seat.y : walker.py) - 44 });
+  // regelns repliker: samma text som redan syns babblas inte om på nytt
+  function nag(text) {
+    if (talk.text() === text) return;
+    talk.say(text, meAt, 2.8);
+    play('fel');
+  }
+  // Det som ännu inte ätits av den betalda maten räknas in (varje tugga = halva rättens
+  // mättnad/energi). Rätten märks settled så att tuggorna efteråt inte ger något till.
+  function settleOrder() {
+    if (!me.order) return false;
+    for (const it of me.order) {
+      if (it.settled) continue;
+      const left = Math.max(0, 2 - it.stage);
+      g.hunger = c100(g.hunger + it.fill / 2 * left);
+      g.energy = c100(g.energy + it.energy / 2 * left);
+      it.settled = true;
+    }
+    return true;
+  }
+  // Sidan laddas om (ny version), stängs eller läggs undan mitt i maten: resten räknas in och
+  // sparas NU – efter omladdningen står man hemma och brickan här finns inte längre. Brickan
+  // ligger ändå kvar i scenen och regeln gäller om sidan skulle komma tillbaka. Tas bort i exit().
+  function settleNow(e) {
+    if (e?.type === 'visibilitychange' && document.visibilityState !== 'hidden') return;
+    if (!settleOrder()) return;
+    try { g.save(); } catch { /* sparas ändå regelbundet */ }
+  }
+  // capture: körs före menyns speglingslyssnare (menu.js), så att speglingen får med maten
+  const UNLOAD = [[window, 'sf:before-reload'], [window, 'pagehide'], [document, 'visibilitychange']];
+  for (const [el, ev] of UNLOAD) el.addEventListener(ev, settleNow, true);
 
   function release() { if (me.res && me.res.occ === 'me' && me.res !== me.seat) me.res.occ = null; me.res = null; }
   function standUp() {
@@ -1115,6 +1159,7 @@ export function makeShopBurgarbar(A) {
     play('coin');
     // OBS: mättnaden och energin kommer bit för bit NÄR MAN SITTER OCH ÄTER
     const items = itemsOf(m).map((x) => ({ id: x.id, stage: 0, fill: x.fill, energy: x.energy }));
+    me.order = items;
     const order = () => { me.state = 'wait'; jobs.push({ who: 'me', items, x: walker.px }); };
     const atCounter = Math.abs(walker.py - ORDER_Y) < 6 && Math.abs(walker.px - PAY_X) < 30 && !walker.path.length;
     if (atCounter) order();
@@ -1124,6 +1169,7 @@ export function makeShopBurgarbar(A) {
   }
 
   function openMenu() {
+    if (me.order) { nag(MSG_ATUPP); return; }   // brickan först – sedan kan man beställa mer
     const rows = BURGAR_MENY.map((m, i) => {
       const its = itemsOf(m);
       return `<div class="prow" style="grid-template-columns:84px 1fr auto;${m.id === 'mal' ? 'background:#fff8d6' : ''}">
@@ -1150,6 +1196,7 @@ export function makeShopBurgarbar(A) {
 
   // ---------- jobben vid disken ----------
   function openJobs() {
+    if (me.order) { nag(MSG_ATUPP); return; }   // ingen smiter in på ett pass med maten kvar
     const bj = JOBS.burgare, kj = JOBS.kok;
     const body = `<p style="font-size:20px;margin-top:0"><b>Vi behöver folk – välj ditt pass!</b></p>
       <div class="plist">
@@ -1163,6 +1210,7 @@ export function makeShopBurgarbar(A) {
     dlg.querySelectorAll('[data-jobb]').forEach((b) => (b.onclick = () => {
       const id = b.dataset.jobb;
       closeModal();
+      if (me.order) { nag(MSG_ATUPP); return; }
       if (id === 'kok' && !JOBS.kok) { talk.say('👨‍🍳 Köket öppnar för nyanställda alldeles strax – fråga igen snart!', () => ({ x: kass.x, y: KASS_Y - 44 })); play('click'); return; }
       A.startJob(id);
     }));
@@ -1352,14 +1400,17 @@ export function makeShopBurgarbar(A) {
           if (it) {
             it.stage++; me.eating = 0.6; me.biteT = 1.35;
             // HÄR – och bara här – kommer mättnaden och energin: vid bordet, bit för bit
-            g.hunger = c100(g.hunger + it.fill / 2);
-            g.energy = c100(g.energy + it.energy / 2);
+            // (settled = redan inräknad när sidan skulle laddas om/stängas – ge inte två gånger)
+            if (!it.settled) {
+              g.hunger = c100(g.hunger + it.fill / 2);
+              g.energy = c100(g.energy + it.energy / 2);
+            }
             if (me.tray.items.every((i) => i.stage >= 2)) { me.doneT = t; g.save(); play('ok'); }
           } else me.biteT = 1;
         }
         // brickan försvinner FÖRST när allt är uppätet
         if (me.doneT > 0 && t - me.doneT > 1.2 && me.tray.items.every((i) => i.stage >= 2)) {
-          me.tray = null; me.doneT = -9;
+          me.tray = null; me.order = null; me.doneT = -9;
           talk.say('😋 MUMS! Precis vad jag behövde.', meAt);
         }
       } else if (me.sitT > 14) standUp();   // vilar utan mat: res dig efter en stund
@@ -1395,10 +1446,12 @@ export function makeShopBurgarbar(A) {
     cars.sort((a, b) => a.y - b.y);
   }
 
-  let doorOpen = 0, doorWas = false;
+  let doorOpen = 0, doorWas = false, doorForMe = false; // doorForMe: står jag vid dörren och får gå ut?
   function updateDoor(dt) {
     const near = (x, y) => x > DOOR.x0 - 10 && x < DOOR.x1 + 10 && y < WALL_Y + 14;
-    const any = near(walker.px, walker.py) || guests.some((G) => !G.fixed && (G.state === 'enter' || G.state === 'leave') && near(G.w.px, G.w.py));
+    // med maten i händerna öppnas dörren inte för en – den ska ätas här inne
+    doorForMe = near(walker.px, walker.py) && !me.order;
+    const any = doorForMe || guests.some((G) => !G.fixed && (G.state === 'enter' || G.state === 'leave') && near(G.w.px, G.w.py));
     doorOpen += ((any ? 1 : 0) - doorOpen) * Math.min(1, dt * 7);
     if (any && !doorWas) play('chirp');
     doorWas = any;
@@ -1699,6 +1752,7 @@ export function makeShopBurgarbar(A) {
     return {
       me: me.state, seat: me.seat?.id || null,
       tray: me.tray ? me.tray.items.map((i) => i.id + ':' + i.stage) : null,
+      order: !!me.order, say: talk.text(), door: +doorOpen.toFixed(2), doorForMe,
       x: Math.round(walker.px), y: Math.round(walker.py),
       money: g.money, hunger: Math.round(g.hunger), energy: Math.round(g.energy),
       kassor: kass.phase, kok: kitchen.state, queue: queue.length,
@@ -1730,7 +1784,13 @@ export function makeShopBurgarbar(A) {
       },
       state: dbg,
       seats: () => seats.map((s) => ({ id: s.id, x: s.x, y: s.y, occ: s.occ === 'me' ? 'me' : s.occ ? 'npc' : null })),
-      sit: (id) => { const s = seatById(id); if (s && !s.occ) goSit(s); },
+      sit: (id) => {
+        const s = seatById(id);
+        if (!s || s.occ || me.state === 'wait' || me.state === 'toCounter') return;
+        if (me.state === 'sit' && me.tray) { nag(MSG_ATUPP); return; }
+        if (me.state === 'sit') standUp();
+        goSit(s);
+      },
       menu: () => openMenu(),
       jobs: () => openJobs(),
       lockCam: (x) => { lockedCam = x === null || x === undefined ? null : clamp(x, 0, W - VW); cam.x = cams(); },
@@ -1751,25 +1811,34 @@ export function makeShopBurgarbar(A) {
         if (t - me.waitMsgT > 2) { talk.say('🍔 Doris gör i ordning din beställning …', meAt); me.waitMsgT = t; }
         return;
       }
+      // dörrens yta – även golvet precis framför den (där dörren slår upp)
+      const atDoor = (px, py) => px > DOOR.x0 - 10 && px < DOOR.x1 + 10 && py < WALL_Y + 14;
       if (me.state === 'carry') {
         const s = seatAt(x, y);
         if (s && !s.occ) { goSit(s); play('click'); return; }
         if (s && s.occ) { if (t - me.waitMsgT > 2) { talk.say('😕 Där sitter någon redan!', meAt); me.waitMsgT = t; } return; }
         const h = spotAt(x, y);
-        if (h && h.id === 'dorr') { if (t - me.waitMsgT > 2) { talk.say('🍔 Jag äter upp först – brickan stannar här inne!', meAt); me.waitMsgT = t; } return; }
+        // med brickan i händerna kommer man inte ut – och disken, jobbet och menyn får vänta
+        if ((h && h.id === 'dorr') || atDoor(x, y)) { nag(MSG_DORR); return; }
+        if (h && (h.id === 'disk' || h.id === 'glassdisk' || h.id === 'jobb')) { nag(MSG_ATUPP); return; }
         if (y > WALL_Y) { release(); walker.walkTo(x, y); return; }  // golvklick = ångra platsvalet
         if (t - me.waitMsgT > 2.5) { talk.say('🍔 Klicka på ett ledigt bord så sätter jag mig där.', meAt); me.waitMsgT = t; }
         return;
       }
-      if (me.state === 'sit') {
-        standUp();
-        if (me.state === 'carry') {  // maten är inte uppäten: brickan följer med
-          const s = seatAt(x, y);
-          if (s && !s.occ) { goSit(s); play('click'); return; }
-          if (y > WALL_Y) walker.walkTo(x, y);
+      if (me.state === 'sit' && me.tray) {
+        // mitt i maten: man sitter kvar tills det är uppätet (prata med gästerna går bra)
+        const h = spotAt(x, y);
+        if ((h && h.id === 'dorr') || atDoor(x, y)) { nag(MSG_DORR); return; }
+        const s = seatAt(x, y);
+        if (s && s.occ && s.occ !== 'me' && s.occ.state === 'sit') {
+          s.occ.bubble = { text: LINES[Math.floor(Math.random() * LINES.length)], until: t + 4.5 };
+          play('click');
           return;
         }
+        nag(MSG_ATUPP);
+        return;
       }
+      if (me.state === 'sit') standUp();
       release();
       const h = spotAt(x, y);
       if (h) { const [gx, gy] = h.go(x); walker.walkTo(gx, gy, h.act); return; }
@@ -1784,7 +1853,25 @@ export function makeShopBurgarbar(A) {
     },
     move(sx, sy) { hoverId = spotAt(sx + cam.x, sy)?.id || null; hoverT = t; },
     key() {},
-    exit() { talk.clear(); },
+    // Får man lämna dinern just nu? null = ja, annars repliken (som figuren också säger).
+    // För huvudprogrammets knappar som byter scen (👥 Gå dit/Åk hem till, jobbinbjudan …).
+    // { quiet: true } = bara fråga (ingen pratbubbla), t.ex. för omladdningen i version-ui.js.
+    leaveBlock(o) {
+      if (!me.order) return null;
+      if (!o?.quiet) nag(MSG_DORR);
+      return MSG_DORR;
+    },
+    // Scenen byts: blev maten inte uppäten (somnade vid midnatt, 👥-menyn …) får man det som var
+    // kvar ändå – betald mat går aldrig förlorad (varje tugga = halva rättens mättnad/energi).
+    exit() {
+      for (const [el, ev] of UNLOAD) el.removeEventListener(ev, settleNow, true);
+      if (settleOrder()) {
+        for (const it of me.order) it.stage = 2;
+        me.order = null; me.tray = null;
+        g.save();
+      }
+      talk.clear();
+    },
     draw(ctx) {
       syncView(A); // skärmen kan ha ändrat storlek – vyn följer med
       const cx = Math.round(cam.x);
@@ -1795,7 +1882,7 @@ export function makeShopBurgarbar(A) {
       ctx.setTransform(A.pxs, 0, 0, A.pxs, 0, 0);
       const h = hoverId && t - hoverT < 3 ? hoverId : null;
       const label = h === 'disk' ? 'MENYN - KLICKA PÅ DISKEN' : h === 'glassdisk' ? 'GLASSDISKEN - KLICKA FÖR MENYN'
-        : h === 'dorr' ? 'GÅ UT' : h === 'jobb' ? 'JOBBA HÄR - SERVERA ELLER KÖKET'
+        : h === 'dorr' ? (me.order ? 'ÄT UPP MATEN FÖRST - SEN KAN DU GÅ UT' : 'GÅ UT') : h === 'jobb' ? 'JOBBA HÄR - SERVERA ELLER KÖKET'
           : h === 'jukebox' ? 'JUKEBOXEN - SPELA EN LÅT' : h === 'gumball' ? 'TUGGUMMIKULA - 1 KR' : null;
       if (label) {
         const w = textW(SMALL, label) + 10;

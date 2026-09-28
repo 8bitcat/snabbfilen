@@ -382,11 +382,20 @@ onInvite((m) => {
   const namn = esc(String(m.namn || 'En kompis').slice(0, 16));
   play('knock');
   openModal('💼 Jobba ihop?', `<p style="font-size:20px">${namn} jobbar på <b>Burgarbaren</b> och bjuder in dig till passet – häng med och dela disken!</p>`, [
-    { label: '💼 Häng med!', cls: 'btn-go', onClick: () => { closeModal(); startShiftNow(A, 'burgare', 'jobbburgare'); } },
+    { label: '💼 Häng med!', cls: 'btn-go', onClick: () => { if (leaveBlocked()) return; closeModal(); startShiftNow(A, 'burgare', 'jobbburgare'); } },
     { label: 'Inte nu', onClick: closeModal },
   ]);
 });
 
+// ätregeln: mitt i maten (eller med maten i handen) lämnar man inte stället via dialogerna
+function leaveBlocked() {
+  let why = null;
+  try { why = A.scene?.leaveBlock?.() || null; } catch { why = null; }
+  if (!why) return false;
+  closeModal();
+  toast(`😋 ${String(why)}`, 'bad');
+  return true;
+}
 function openWorldDialog() {
   const info = worldInfo();
   const list = playersList();
@@ -413,13 +422,14 @@ function openWorldDialog() {
     const p = list[+el.dataset.face];
     el.replaceWith(avatarPortrait({ name: p.av.name, look: p.av.look, color: p.av.color }, 40));
   });
-  dlg.querySelectorAll('[data-visit]').forEach((b) => (b.onclick = () => { closeModal(); visitPlayer(A, b.dataset.visit); }));
+  dlg.querySelectorAll('[data-visit]').forEach((b) => (b.onclick = () => { if (leaveBlocked()) return; closeModal(); visitPlayer(A, b.dataset.visit); }));
   dlg.querySelectorAll('[data-jobba]').forEach((b) => (b.onclick = () => {
     sendInvite(b.dataset.jobba, 'burgare', A.avatar?.name || '');
     toast('💼 Inbjudan skickad – häng kvar på passet så länge!', 'good');
     closeModal();
   }));
   dlg.querySelectorAll('[data-goto]').forEach((b) => (b.onclick = () => {
+    if (leaveBlocked()) return;
     closeModal();
     A.followPlayer = b.dataset.goto;
     if (A.sceneName !== 'city') { A.visitTarget = null; A.go('city'); }

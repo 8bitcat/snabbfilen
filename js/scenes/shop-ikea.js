@@ -14,6 +14,14 @@
 // köpdialogen öppnas (openBuy i shop-mobler.js). Personal i gula tröjor jobbar
 // och pratar, kunder strosar och provsitter, åker rulltrappa och äter.
 //
+// MATEN (samma regel som i alla matställen): brickan från restaurangen och
+// korven/glassen från kiosken bärs i händerna (bär-bildrutorna) tills man satt
+// sig vid ett ledigt bord – restaurangens bord på plan 2, bistroborden vid
+// kiosken på plan 1. Man äter bit för bit (mättheten och energin kommer med
+// varje tugga), reser sig inte förrän allt är uppätet ("ÄT UPP FÖRST! 😋") och
+// kommer inte ut ur matsalen med maten i händerna ("DU MÅSTE SÄTTA DIG OCH ÄTA
+// UPP!"). När det är uppätet försvinner brickan/tallriken och man kan gå.
+//
 // Hjälpfilerna ligger i js/scenes/ikea/: geo (mått), kat (katalogen), plan
 // (vad som står i vilket rum), layout (planlösningen), furnish (rekvisita,
 // hinder, klick), paint (bakgrunden), folk (människorna), resto (menyn),
@@ -21,7 +29,7 @@
 import { SMALL, ctxText, textW } from '../core/floor-pix.js';
 import { openModal, closeModal, toast } from '../core/ui.js';
 import { play } from '../core/sound.js';
-import { createWalker, WALK_SEQ, emoteBubble } from './walkable.js';
+import { createWalker, WALK_SEQ, emoteBubble, createSpeech } from './walkable.js';
 import { drawPerson } from '../core/people.js';
 import { worldMyEmote } from '../net/world.js';
 import * as ROOM from './room.js';
@@ -34,12 +42,17 @@ import { paintFloorBg } from './ikea/paint.js';
 import { tagImg, outlineImg, boxImg } from './ikea/art.js';
 import { escalatorArt, escPos, pitFrontImg, liftCabImg, liftDoorImg, drawLiftIndicator, LIFT_W, LIFT_H, ESC_PERIOD } from './ikea/art-transit.js';
 import { makeFolk, textBubble, TIPS } from './ikea/folk.js';
-import { openMenu, openKiosk, menuOf } from './ikea/resto.js';
+import { openMenu, openKiosk, menuOf, addBistro, diningZone } from './ikea/resto.js';
 import { trayImg, dishImg, drawMenuStrip, TRAY_W } from './ikea/food.js';
 import { smalandBackImg } from './ikea/art-props.js';
 
 const RIDE_V = 40;          // rulltrappans fart (px/s längs trappan)
 const LIFT_T = { open: 0.5, in: 0.55, close: 0.45, move: 1.5, out: 0.55 };
+// samma två repliker som i Kaféet och Burgarbaren: sitter man och äter reser man
+// sig inte (ÄT UPP FÖRST), mot utgången/rulltrappan/hissen gäller alltid MSG_DORR
+const MSG_ATUPP = 'ÄT UPP FÖRST! 😋';
+const MSG_DORR = 'DU MÅSTE SÄTTA DIG OCH ÄTA UPP!';
+const DAY_MIN = 24 * 60;    // midnatt i spelminuter (som DAY i game.js)
 
 // ================= varuhuset (byggs en gång, cachas tills katalogen ändras) =================
 let STORE = null;
@@ -47,6 +60,7 @@ function buildStore() {
   const floors = buildFloors();
   for (const F of floors) {
     furnish(F);
+    addBistro(F); // bistroborden vid korvkiosken (plan 1) – före gånghindren
     F.walker = createWalker({ W: F.W, H, left: OW + 2, right: F.W - OW - 2, top: A_FLOOR + 3, bottom: H - 5, spawn: F.spawn });
     F.walker.speed = SPEED;
     F.walker.setObstacles(F.obstacles);
@@ -67,9 +81,9 @@ export function makeShopIkea(A, opts = {}) {
   let F = S.floors[0];
   let t = 0, lockedCam = null, hover = null, near = null, fade = 0;
   let ride = null;   // { kind: 'esc'|'lift', … } – medan man åker
-  let meal = null;   // restaurangbesöket
-  let snack = null;  // korv vid ståbordet
-  let myBubble = null;
+  let meal = null;   // maten: restaurangbrickan (plan 2) eller korven/glassen från kiosken (plan 1)
+  let myBubble = null;                 // rulltrappans korta rop
+  const talk = createSpeech();         // mina repliker om maten (ÄT UPP FÖRST! …)
   const cam = { x: 0, y: 0 };
   const W = () => F.W;
   const walker = () => F.walker;
@@ -131,10 +145,7 @@ export function makeShopIkea(A, opts = {}) {
   }
   function clickWorld(x, y) {
     if (ride) { nag(ride.kind === 'lift' ? '🛗 Vänta tills hissen är framme!' : '↕️ Vänta tills du klivit av rulltrappan!'); return; }
-    if (snack) { nag(`${snack.k.icon} Ät upp ${snack.k.id === 'korv' ? 'korven' : 'glassen'} först – det tar bara en stund!`); return; }
-    if (meal && (meal.st === 'sit' || meal.st === 'eat')) { nag('😋 Ät upp först! Du reser dig när tallriken är tom.'); return; }
-    if (meal?.st === 'line') { nag('🧾 Betala i restaurangkassan först!'); return; }
-    if (meal?.st === 'done') standUp();
+    if (meal && mealClick(x, y)) return;
     // personal först (bara om man träffar figuren)
     const s = F.folk.staffAt(x, y);
     if (s) {
@@ -146,12 +157,44 @@ export function makeShopIkea(A, opts = {}) {
     }
     const c = hitAt(x, y);
     if (c?.kind === 'escArr') { arrivalInfo(); return; } // ankomständen – bara en upplysning, ingen promenad
-    if (meal?.st === 'carry' || meal?.st === 'toSeat') {
-      if (c?.kind === 'table') { sitAtTable(c.table); return; }
-      if (c?.kind === 'esc' || c?.kind === 'lift' || c?.kind === 'door' || c?.kind === 'exit') { toast('Ställ tillbaka brickan först – ät upp i lugn och ro!'); return; }
-    }
     if (c) { walker().walkTo(c.go[0], c.go[1], () => act(c)); return; }
     walker().walkTo(x, y);
+  }
+  // Maten styr klicket (true = hanterat): sitter man och äter reser man sig inte,
+  // med maten i händerna kommer man inte ut ur matsalen, uppätet = man får gå.
+  const LEAVE = new Set(['door', 'exit', 'esc', 'lift']);
+  function mealClick(x, y) {
+    const c = hitAt(x, y), leave = !!c && LEAVE.has(c.kind), st = meal.st;
+    if (st === 'sit' || st === 'eat') {
+      sayMe(leave ? MSG_DORR : MSG_ATUPP);
+      return true;
+    }
+    if (st === 'line') { sayMe(leave ? MSG_DORR : 'FÖRST KASSAN, SEN ETT BORD!'); return true; }
+    if (st === 'carry' || st === 'toSeat') {
+      if (c?.kind === 'table') { sitAtTable(c.table); return true; }
+      if (leave || !inDining(x, y)) { sayMe(MSG_DORR); return true; }
+      if (c && (c.kind === 'rest' || c.kind === 'food' || c.kind === 'buy')) { sayMe('JAG ÄTER UPP DET HÄR FÖRST!'); return true; }
+      // en bit bort inne i matsalen – med maten i händerna, reservationen släpps
+      releaseSeat();
+      meal.st = 'carry'; meal.waitSeat = false;
+      walker().walkTo(x, y);
+      return true;
+    }
+    if (st === 'done') standUp(); // uppätet: man reser sig och klicket gäller som vanligt
+    return false;
+  }
+  function inDining(x, y) {
+    const z = diningZone(F);
+    return !!z && x >= z.x0 && x <= z.x1 && y >= z.y0 && y <= z.y1;
+  }
+  // mina repliker om maten, ovanför huvudet (sittande en bit lägre)
+  const meAt = () => { const [x, y] = playerPos(); return { x, y: y - (isSeated() ? 38 : 44) }; };
+  let saidTxt = '', saidAt = -9;
+  function sayMe(msg, secs = 2.6) {
+    if (msg === saidTxt && t - saidAt < 0.9 && talk.active()) return; // dubbelklick = samma bubbla
+    saidTxt = msg; saidAt = t;
+    myBubble = null;
+    talk.say(msg, meAt, secs, { self: true });
   }
   function talkTo(s) {
     walker().dir = walker().px < s.x ? 'right' : 'left';
@@ -175,7 +218,8 @@ export function makeShopIkea(A, opts = {}) {
 
   // ---------- rulltrappan ----------
   function startEsc(e) {
-    if (meal) { toast('Ät upp först!'); return; }
+    if (meal) { sayMe(MSG_DORR); return; }
+    talk.clear();
     if (e.arrive || e.up !== (F.n === 1)) { arrivalInfo(); return; } // ankomständen går inte att åka från
     ride = { kind: 'esc', e, d: -12, v: RIDE_V, leg: 1 };
     walker().stop();
@@ -205,7 +249,8 @@ export function makeShopIkea(A, opts = {}) {
 
   // ---------- hissen ----------
   function startLift() {
-    if (meal) { toast('Ät upp först!'); return; }
+    if (meal) { sayMe(MSG_DORR); return; }
+    talk.clear();
     const L = F.lift;
     ride = { kind: 'lift', st: 'open', t: 0, pos: [L.x + 13, L.fy + 8], inCab: false, to: F.n === 1 ? 2 : 1 };
     walker().stop();
@@ -241,90 +286,182 @@ export function makeShopIkea(A, opts = {}) {
     function next(st) { r.st = st; r.t = 0; }
   }
 
-  // ---------- restaurangen ----------
+  // ---------- maten: restaurangen (plan 2) och korvkiosken (plan 1) ----------
+  // meal = { kind: 'rest'|'kiosk', items: [{ id, fill, energy, stage }], st, seat, … }
+  //   st: line (brickan till kassan) → carry/toSeat (maten i händerna) → sit → eat
+  //   (bit för bit) → done (uppätet, brickan försvinner, man får gå).
+  //   stage per rätt: 0 hel · 1 halväten · 2 uppäten (bilderna: left = 2 − stage).
+  const HOLD = new Set(['line', 'carry', 'toSeat']), SEATED = new Set(['sit', 'eat', 'done']);
+  const isHolding = () => !!meal && HOLD.has(meal.st);
+  const isSeated = () => !!meal?.seat && SEATED.has(meal.st);
+  const leftOf = (it) => 2 - it.stage;
+  const EAT_SECS = { rest: 7, kiosk: 4 }; // så länge ätandet tar (som förut), speltiden nedan
+  const MINUTES = { rest: 15, kiosk: 5 };  // g.passTime när maten är uppäten (som förut)
+  function newMeal(kind, items, sum) {
+    return { kind, sum, day: g.day, st: 'carry', t: 0, seat: null, biteT: 0, eating: 0, got: { fill: 0, energy: 0 },
+      items: items.map((m) => ({ id: m.id, fill: m.fill || 0, energy: m.energy || 0, stage: 0 })) };
+  }
   function openRestMenu() {
     if (meal) return;
     const w = walker();
     w.dir = 'up';
     openMenu(A, {
-      onPay: (items, sum) => {
-        meal = { items, sum, st: 'line', left: 2, t: 0 };
+      onPay: (ids, sum) => {
+        meal = newMeal('rest', ids.map(menuOf).filter(Boolean), sum);
+        meal.st = 'line';
         w.speed = 44;
         w.walkTo(F.restLine.pay[0], F.restLine.pay[1], () => {
           w.speed = SPEED;
           w.dir = 'up';
+          if (!meal) return;
           if (g.money < sum) { toast('Du har inte råd – brickan får stå kvar. Dags att jobba ett pass!', 'bad'); play('fel'); meal = null; return; }
           g.money -= sum; // betala i restaurangkassan
           play('coin');
           g.save?.();
-          F.folk.list.find((a) => a.lines?.includes('SMAKLIG MÅLTID!')) && F.folk.say(F.folk.list.find((a) => a.lines?.includes('SMAKLIG MÅLTID!')), 'SMAKLIG MÅLTID!', 3);
-          toast(`🧾 Betalt ${sum} kr i kassan. Välj ett ledigt bord!`, 'good');
+          const kass = F.folk.list.find((a) => a.lines?.includes('SMAKLIG MÅLTID!'));
+          if (kass) F.folk.say(kass, 'SMAKLIG MÅLTID!', 3);
+          toast(`🧾 Betalt ${sum} kr i kassan. Sätt dig vid ett ledigt bord och ät!`, 'good');
           meal.st = 'carry';
           const s = freeSeatNear(w.px, w.py);
           if (s) goToSeat(s);
+          else { meal.waitSeat = true; sayMe('ALLA BORD ÄR UPPTAGNA – JAG VÄNTAR PÅ ETT LEDIGT!', 3.5); }
         });
       },
     });
   }
+  function buySnack(k) {
+    if (meal) return;
+    g.money -= k.price; // betala i kiosken – mättheten kommer medan man äter
+    g.save?.();
+    play('coin');
+    meal = newMeal('kiosk', [k], k.price);
+    const kiosk = F.folk.list.find((a) => a.lines?.includes('MED SENAP?'));
+    if (kiosk) F.folk.say(kiosk, k.id === 'korv' ? 'VARSÅGOD, EN KORV!' : 'VARSÅGOD!', 3);
+    toast(`${k.icon} ${k.name} – sätt dig vid bistroborden och ät!`, 'good');
+    const w = walker();
+    const s = freeSeatNear(w.px, w.py);
+    if (s) goToSeat(s);
+    else { meal.waitSeat = true; sayMe('ALLA BORD ÄR UPPTAGNA – JAG VÄNTAR PÅ ETT LEDIGT!', 3.5); }
+  }
   const freeSeatNear = (x, y) => F.seats.filter((s) => !s.occ).sort((a, b) => Math.hypot(a.x - x, a.y - y) - Math.hypot(b.x - x, b.y - y))[0] || null;
   function sitAtTable(tb) {
-    if (!meal) { toast('Hämta en bricka med mat vid disken först – menyn hittar du vid brickorna!'); return; }
+    if (!meal) {
+      toast(tb.bistro ? '🌭 Köp en korv eller en glass i kiosken först – sedan sätter du dig här och äter!' : 'Hämta en bricka med mat vid disken först – menyn hittar du vid brickorna!');
+      return;
+    }
     if (meal.st !== 'carry' && meal.st !== 'toSeat') return;
-    const s = F.seats.filter((x) => x.table === tb && !x.occ)[0] || null;
-    if (!s) { toast('Bordet är upptaget – välj ett annat!'); return; }
+    const s = meal.seat?.table === tb ? meal.seat : F.seats.find((x) => x.table === tb && !x.occ) || null;
+    if (!s) { sayMe('DET BORDET ÄR UPPTAGET!'); return; }
     goToSeat(s);
   }
+  // släpp en bordsreservation (bara medan man bär maten – inte när man sitter)
+  function releaseSeat() {
+    if (!meal?.seat || SEATED.has(meal.st)) return;
+    if (meal.seat.occ === 'me') meal.seat.occ = null;
+    meal.seat = null;
+  }
   function goToSeat(s) {
-    if (meal.seat && meal.seat !== s && meal.seat.occ === 'me') meal.seat.occ = null;
+    if (meal.seat !== s) releaseSeat();
     meal.seat = s; s.occ = 'me'; meal.st = 'toSeat';
-    walker().walkTo(s.approach[0], s.approach[1], () => {
-      if (!meal || meal.seat !== s) return;
-      meal.st = 'sit'; meal.t = 0;
-      s.tray = { items: meal.items, left: 2, mine: true };
-      play('click');
-    });
+    walker().walkTo(s.approach[0], s.approach[1], () => { if (meal?.seat === s && meal.st === 'toSeat') sitDown(); });
+  }
+  function sitDown() {
+    const s = meal.seat;
+    meal.st = 'sit'; meal.t = 0;
+    walker().stop();
+    s.tray = { kind: meal.kind, items: meal.items.map((i) => i.id), left: meal.items.map(leftOf), mine: true };
+    play('click');
   }
   function mealStep(dt) {
     meal.t += dt;
-    if (meal.st === 'sit' && meal.t > 0.6) { meal.st = 'eat'; meal.t = 0; myBubble = { msg: 'MUMS!', until: 2 }; }
-    else if (meal.st === 'eat') {
-      const dur = 7;
-      meal.left = meal.t < dur * 0.45 ? 2 : meal.t < dur ? 1 : 0;
-      if (meal.seat.tray) meal.seat.tray.left = meal.left;
-      if (meal.t >= dur) finishMeal();
-    } else if (meal.st === 'done' && meal.t > 2.2) standUp();
+    if (meal.eating > 0) meal.eating -= dt;
+    const w = walker();
+    // säkerhetsnät om gång-callbacken uteblev: sätt dig bara om figuren står vid stolen
+    if (meal.st === 'toSeat' && !w.path.length) {
+      const [ax, ay] = meal.seat.approach;
+      if (Math.hypot(w.px - ax, w.py - ay) < 8) sitDown();
+      else { releaseSeat(); meal.st = 'carry'; }
+    }
+    // alla bord var upptagna: första plats som blir ledig är min
+    if (meal.st === 'carry' && meal.waitSeat && !w.path.length) {
+      const s = freeSeatNear(w.px, w.py);
+      if (s) { meal.waitSeat = false; goToSeat(s); }
+    }
+    if (meal.st === 'sit' && meal.t > 0.6) {
+      meal.st = 'eat'; meal.t = 0; meal.biteT = biteGap() / 2;
+      sayMe(meal.kind === 'kiosk' ? (meal.items[0].id === 'glass' ? 'MUMS! 🍦' : 'MUMS! 🌭') : 'MUMS! 😋', 2);
+    } else if (meal.st === 'eat') {
+      meal.biteT -= dt;
+      if (meal.biteT <= 0) { meal.biteT = biteGap(); bite(); }
+    } else if (meal.st === 'done') {
+      if (meal.seat?.tray && meal.t > 1) meal.seat.tray = null; // uppätet: brickan/tallriken försvinner
+      if (meal.t > 2.4) standUp();
+    }
+  }
+  // tuggorna fördelas jämnt över ätandet: två tuggor per rätt
+  const biteGap = () => EAT_SECS[meal.kind] / (meal.items.length * 2 - 0.5);
+  function bite() {
+    const it = meal.items.find((i) => i.stage < 2);
+    if (!it) { finishMeal(); return; }
+    it.stage++;
+    meal.eating = 0.6;
+    // HÄR – och bara här – kommer mättheten och energin: vid bordet, en tugga i taget
+    // (halva rätten per tugga, heltal som tillsammans blir exakt rättens värde)
+    const half = (v) => (it.stage === 1 ? Math.floor(v / 2) : v - Math.floor(v / 2));
+    const f = half(it.fill), e = half(it.energy);
+    if (f) g.hunger = Math.min(100, Math.round(g.hunger + f));
+    if (e) g.energy = Math.min(100, Math.round(g.energy + e));
+    meal.got.fill += f; meal.got.energy += e;
+    if (meal.seat?.tray) meal.seat.tray.left = meal.items.map(leftOf);
+    if (meal.items.every((i) => i.stage >= 2)) finishMeal();
   }
   function finishMeal() {
-    let fill = 0, energy = 0;
-    for (const id of meal.items) { const m = menuOf(id); fill += m?.fill || 0; energy += m?.energy || 0; }
-    g.hunger = Math.min(100, Math.round(g.hunger + fill));
-    if (energy) g.energy = Math.min(100, Math.round(g.energy + energy));
-    g.passTime?.(15);
+    const { fill, energy } = meal.got;
+    g.passTime?.(MINUTES[meal.kind]);
     g.save?.();
     play('ok');
-    const first = menuOf(meal.items[0]);
-    const what = !first ? 'Maten'
+    const first = meal.kind === 'rest' ? menuOf(meal.items[0].id) : null;
+    const what = meal.kind === 'kiosk' ? (meal.items[0].id === 'glass' ? '🍦 Mjukglassen var god' : '🌭 Korv med bröd – det smakade')
+      : !first ? 'Maten'
       : first.id === 'kottbullar' ? 'Köttbullar med mos och lingonsylt smakar alltid'
       : `${first.name.replace(/\s*\(.*\)/, '')}${meal.items.length > 1 ? ' med mera' : ''} – det smakade`;
     toast(`😋 Mums! ${what}. +${fill} mätthet${energy ? `, +${energy} energi` : ''}`, 'good');
     meal.st = 'done'; meal.t = 0;
-    myBubble = { msg: 'GOTT!', until: 2 };
+    sayMe('GOTT! NU ÄR DET UPPÄTET. 😋', 2.2);
   }
   function standUp() {
-    const s = meal.seat;
+    const s = meal?.seat;
     const w = walker();
-    if (s) { s.occ = null; const tr = s.tray; setTimeout(() => { if (s.tray === tr) s.tray = null; }, 15000); w.px = s.approach[0]; w.py = s.approach[1]; w.snapFree(); }
+    if (s) { if (s.occ === 'me') s.occ = null; s.tray = null; w.px = s.approach[0]; w.py = s.approach[1]; w.snapFree(); }
     meal = null;
   }
-  function buySnack(k) {
-    g.money -= k.price;
-    g.hunger = Math.min(100, Math.round(g.hunger + k.fill));
-    g.passTime?.(5);
+  // Scenen byts mitt i maten (somnade vid midnatt, 👥 Gå dit/Åk hem till, jobbinbjudan …):
+  // betald mat går aldrig förlorad – resten av mättheten/energin räknas in (samma
+  // halv-per-tugga-heltal som bite(), så summan blir exakt rättens värde) och tiden
+  // går som om man ätit klart. En obetald bricka (på väg till kassan) släpps bara.
+  function settleMeal() {
+    if (!meal || meal.st === 'line' || meal.st === 'done') return false;
+    for (const it of meal.items) {
+      const given = (v) => (it.stage >= 2 ? v : it.stage === 1 ? Math.floor(v / 2) : 0);
+      const f = it.fill - given(it.fill), e = it.energy - given(it.energy);
+      if (f) g.hunger = Math.min(100, Math.round(g.hunger + f));
+      if (e) g.energy = Math.min(100, Math.round(g.energy + e));
+      meal.got.fill += f; meal.got.energy += e;
+      it.stage = 2;
+    }
+    // tiden: bara samma dag (har man redan somnat vid midnatt är den förbi) och
+    // aldrig över midnatt mitt i ett scenbyte – då somnar man hellre på vanligt sätt
+    const mins = Math.min(MINUTES[meal.kind], DAY_MIN - 1 - (g.min ?? 0));
+    if (meal.day === g.day && mins > 0) g.passTime?.(mins);
     g.save?.();
-    play('coin');
-    snack = { k, t: 0 };
-    walker().dir = 'down';
-    toast(`${k.icon} ${k.name} – gott! +${k.fill} mätthet`, 'good');
+    return true;
+  }
+  // Får man lämna varuhuset just nu? null = ja, annars repliken (som figuren också säger).
+  // Samma kontrakt som Kaféet och Burgarbaren – för huvudprogrammets knappar som byter scen.
+  function leaveBlock() {
+    if (!meal || meal.st === 'done') return null;
+    sayMe(MSG_DORR);
+    return MSG_DORR;
   }
 
   // ---------- informationen ----------
@@ -370,11 +507,30 @@ export function makeShopIkea(A, opts = {}) {
     if (art) ctx.drawImage(art.img, art.sx, art.sy, art.sw, art.sh, e.x, e.y, art.sw, art.sh);
     else if (e.k === 'matta') { ctx.fillStyle = '#8a2a32'; ctx.fillRect(e.x, e.y, e.w, e.h); }
   }
+  // maten på bordet framför en plats: brickan (restaurangen) eller korven/glassen
+  // på sin servett (bistroborden) – bilden visar hur mycket som är kvar
   function drawTray(ctx, s) {
     const tr = s.tray;
     if (!tr) return;
+    if (tr.kind === 'kiosk') {
+      const d = dishImg(tr.items[0], tr.left[0]);
+      ctx.drawImage(d, Math.round(s.x - d.width / 2), s.table.base - 13 - d.height + 1);
+      return;
+    }
     const img = trayImg(tr.items, tr.left);
     ctx.drawImage(img, Math.round(s.x - TRAY_W / 2), s.table.base - 18 - img.height + 11);
+  }
+  // maten i händerna (bär-bildrutorna): brickan, eller korven/glassen på servetten
+  function drawHeld(ctx, px, py, dir) {
+    const ox = dir === 'left' ? -9 : dir === 'right' ? 9 : 0;
+    if (meal.kind === 'kiosk') {
+      // servetten i händerna framför magen (glassbägaren är högre än korven – lite lägre)
+      const id = meal.items[0].id, d = dishImg(id, 2);
+      ctx.drawImage(d, Math.round(px + ox - d.width / 2), Math.round(py - (id === 'glass' ? 22 : 25)));
+      return;
+    }
+    const img = trayImg(meal.items.map((i) => i.id), 2);
+    ctx.drawImage(img, Math.round(px + ox - img.width / 2), Math.round(py - 7 - img.height));
   }
   function drawRider(ctx, e, d, look, dir) {
     const [x, y] = escPos(e, d);
@@ -473,7 +629,7 @@ export function makeShopIkea(A, opts = {}) {
     // jag
     if (!ride) {
       const [px, py] = playerPos();
-      const sitting = meal && (meal.st === 'sit' || meal.st === 'eat' || meal.st === 'done');
+      const sitting = isSeated();
       items.push({ fy: py + 0.01, draw: () => drawMe(ctx, px, py, sitting) });
     }
     items.sort((a, b) => a.fy - b.fy);
@@ -487,25 +643,19 @@ export function makeShopIkea(A, opts = {}) {
       ctx.fillRect(ax - 4, ay, 9, 1); ctx.fillRect(ax - 3, ay + 1, 7, 1); ctx.fillRect(ax - 2, ay + 2, 5, 1); ctx.fillRect(ax - 1, ay + 3, 3, 1); ctx.fillRect(ax, ay + 4, 1, 1);
     }
     F.folk.bubbles(ctx, inView);
-    if (myBubble && !(ride?.kind === 'esc' && (ride.d > 60 || ride.leg === 2)) && !(ride?.kind === 'lift')) { const [px, py] = playerPos(); const sit = meal && meal.seat && meal.st !== 'carry' && meal.st !== 'toSeat'; textBubble(ctx, px, py - (sit ? 38 : 42), myBubble.msg); }
+    if (myBubble && !(ride?.kind === 'esc' && (ride.d > 60 || ride.leg === 2)) && !(ride?.kind === 'lift')) { const [px, py] = playerPos(); textBubble(ctx, px, py - (isSeated() ? 38 : 42), myBubble.msg); }
+    if (!ride) talk.draw(ctx, { x0: vx, x1: vx + vw });
   }
   function drawMe(ctx, px, py, sitting) {
     const w = walker(), look = A.avatar.look;
     const walking = w.path.length > 0;
     if (sitting) {
-      const f = meal.st === 'eat' ? (Math.floor(meal.t * 1.6) % 3 === 0 ? 5 : 6) : 5;
+      // tuggar: handen till munnen vid varje tugga (och då och då emellan)
+      const f = meal.st === 'eat' && (meal.eating > 0 || Math.floor(meal.t * 1.6) % 3 === 1) ? 6 : 5;
       drawPerson(ctx, px, py, look, 'down', f);
-    } else if (meal && (meal.st === 'line' || meal.st === 'carry' || meal.st === 'toSeat')) {
+    } else if (isHolding()) {
       drawPerson(ctx, px, py, look, w.dir, walking ? [7, 9, 8, 9][Math.floor(t * 8.5) % 4] : 9);
-      if (w.dir !== 'up') {
-        const img = trayImg(meal.items, 2), ox = w.dir === 'left' ? -9 : w.dir === 'right' ? 9 : 0;
-        ctx.drawImage(img, Math.round(px + ox - img.width / 2), Math.round(py - 7 - img.height));
-      }
-    } else if (snack) {
-      drawPerson(ctx, px, py, look, 'down', 9);
-      const d = dishImg('korv', snack.t < 1.5 ? 2 : snack.t < 3 ? 1 : 0);
-      if (snack.k.id === 'korv') ctx.drawImage(d, Math.round(px - 11), Math.round(py - 27));
-      else { ctx.fillStyle = '#e0a860'; ctx.fillRect(px - 1, py - 20, 3, 5); ctx.fillStyle = '#fff4d0'; ctx.fillRect(px - 2, py - 24, 5, 4); }
+      if (w.dir !== 'up') drawHeld(ctx, px, py, w.dir);
     } else {
       const frame = walking ? WALK_SEQ[Math.floor(t * 8.5) % 4] : (Math.sin(t * 2) > 0.9 ? 4 : 0);
       drawPerson(ctx, px, py, look, w.dir, frame);
@@ -540,15 +690,19 @@ export function makeShopIkea(A, opts = {}) {
     if (ride?.kind === 'esc') { msg = `RULLTRAPPA ${ride.e.up ? 'UPP' : 'NER'}`; sub = `TILL PLAN ${ride.leg === 1 ? ride.e.to : F.n}`; }
     else if (ride?.kind === 'lift') { msg = 'HISSEN'; sub = `TILL PLAN ${ride.to}`; }
     else if (meal?.st === 'line') { msg = 'MED BRICKAN'; sub = 'TILL KASSAN...'; }
-    else if (meal?.st === 'carry' || meal?.st === 'toSeat') { msg = 'VÄLJ ETT LEDIGT BORD'; sub = 'KLICKA PÅ ETT BORD'; }
-    else if (meal?.st === 'sit' || meal?.st === 'eat') { msg = 'SMAKLIG MÅLTID!'; sub = 'DU ÄTER...'; }
+    else if (meal?.st === 'carry' || meal?.st === 'toSeat') { msg = 'SÄTT DIG OCH ÄT'; sub = meal.st === 'toSeat' ? 'TILL BORDET...' : 'KLICKA PÅ ETT LEDIGT BORD'; }
+    else if (meal?.st === 'sit' || meal?.st === 'eat') {
+      const n = meal.items.length * 2, done = meal.items.reduce((a, i) => a + i.stage, 0);
+      msg = 'SMAKLIG MÅLTID!'; sub = `DU ÄTER... ${done}/${n}`;
+    }
+    else if (meal?.st === 'done') { msg = 'UPPÄTET!'; sub = 'KLICKA FÖR ATT GÅ VIDARE'; }
     else if (hl?.ex?.buy) { const kat = katOf(hl.ex.k); msg = `${tagName(hl.ex.k)}  ${kat?.price ?? '?'} KR`; sub = hover ? 'KLICKA FÖR ATT KÖPA' : 'KLICKA PÅ MÖBELN FÖR ATT KÖPA'; }
     else if (hl?.ex) { msg = `${(DECOR[hl.ex.k] || '').toUpperCase()} INGÅR I BOSTADEN`; sub = 'SÄLJS INTE HÄR'; }
     else if (hl?.kind === 'esc') { msg = `RULLTRAPPA ${hl.esc.up ? 'UPP' : 'NER'}`; sub = `KLICKA - TILL PLAN ${hl.esc.to}`; }
     else if (hl?.kind === 'escArr') { msg = `RULLTRAPPA FRÅN PLAN ${hl.esc.to}`; sub = F.n === 2 ? 'BARA ANKOMST - ÅK NER EFTER RESTAURANGEN' : 'BARA ANKOMST - ÅK UPP VID ENTRÉN'; }
     else if (hl?.kind === 'lift') { msg = 'HISS'; sub = `KLICKA - TILL PLAN ${F.n === 1 ? 2 : 1}`; }
     else if (hl?.kind === 'rest') { msg = 'RESTAURANGEN'; sub = 'KLICKA - TA EN BRICKA'; }
-    else if (hl?.kind === 'table') { msg = 'BORD FÖR TVÅ'; sub = meal ? 'KLICKA FÖR ATT SÄTTA DIG' : 'HÄMTA MAT FÖRST'; }
+    else if (hl?.kind === 'table') { msg = hl.table?.bistro ? 'BISTROBORD' : 'BORD FÖR TVÅ'; sub = hl.table?.bistro ? 'KÖP EN KORV FÖRST - SEN SÄTTER DU DIG HÄR' : 'HÄMTA MAT FÖRST'; }
     else if (hl?.kind === 'food') { msg = 'KORV 10 KR'; sub = 'KLICKA FÖR ATT KÖPA'; }
     else if (hl?.kind === 'info') { msg = 'INFORMATION'; sub = 'KLICKA FÖR VARUHUSGUIDEN'; }
     else if (hl?.kind === 'kassa') { msg = 'KASSA'; sub = 'ALLT ÄR REDAN BETALT'; }
@@ -572,7 +726,7 @@ export function makeShopIkea(A, opts = {}) {
   // ---------- test-/förhandsvisningskrokar ----------
   function switchTo(n, at) {
     const fl = S.floors[n - 1];
-    ride = null; if (meal) { if (meal.seat?.occ === 'me') meal.seat.occ = null; meal = null; }
+    ride = null; if (meal) { if (meal.seat) { if (meal.seat.occ === 'me') meal.seat.occ = null; meal.seat.tray = null; } meal = null; }
     enterFloor(fl, at || fl.arrive.hiss);
   }
   const routeIdx = (c, fl) => (c.ex ? (fl.n === 2 ? 0 : 1e7) + fl.blocks.indexOf(c.ex.room) * 10000 + (c.ex.rug ? 5000 : 0) + c.ex.x : 2e7);
@@ -618,12 +772,30 @@ export function makeShopIkea(A, opts = {}) {
         switchTo(2);
         const s = F.seats.filter((x) => !x.occ).sort((a, b) => a.x - b.x)[0];
         if (!s) return false;
-        meal = { items, sum: 0, st: 'carry', left: 2, t: 0 };
+        meal = newMeal('rest', items.map(menuOf).filter(Boolean), 0);
         walker().px = s.approach[0]; walker().py = s.approach[1];
         goToSeat(s);
         return true;
       },
-      meal: () => (meal ? { st: meal.st, left: meal.left, seat: meal.seat?.id } : null),
+      // maten just nu: left 2/1/0 för hela måltiden, stages per rätt, got = mätthet/energi hittills
+      meal: () => (meal ? {
+        kind: meal.kind, st: meal.st, seat: meal.seat?.id ?? null, items: meal.items.map((i) => i.id), stages: meal.items.map((i) => i.stage),
+        left: meal.items.every((i) => i.stage >= 2) ? 0 : meal.items.some((i) => i.stage > 0) ? 1 : 2, got: { ...meal.got },
+        held: isHolding(), seated: isSeated(), tray: !!meal.seat?.tray,
+      } : null),
+      speech: () => talk.text(),       // min pratbubbla just nu (eller null)
+      pos: () => { const [x, y] = playerPos(); return { x, y, walking: walker().path.length > 0, cam: { ...cam } }; },
+      // skärmkoordinater för en klickyta på DETTA plan utan att flytta figuren (null = utanför bild)
+      screen: (id, i = 0) => {
+        const cs = F.clicks.filter((c) => c.id === id);
+        const vis = cs.map((c) => { const [x, y] = spotOf(c); return { x: x - cam.x, y: y - cam.y }; }).filter((p) => p.x >= 0 && p.x < VW && p.y >= 0 && p.y < VH);
+        return vis[i] || null;
+      },
+      toScreen: (x, y) => ({ x: x - cam.x, y: y - cam.y }),
+      seats: () => F.seats.map((s) => ({ id: s.id, x: s.x, y: s.y, bistro: !!s.bistro, occ: s.occ === 'me' ? 'me' : s.occ ? 'npc' : null, tray: s.tray ? { kind: s.tray.kind || 'rest', left: s.tray.left } : null })),
+      dining: () => diningZone(F),
+      // testkrok: alla lediga platser på planet upptagna (true) eller lediga igen (false)
+      fullHouse: (on = true) => { let n = 0; for (const s of F.seats) { if (on && !s.occ) { s.occ = { test: true }; n++; } else if (!on && s.occ?.test) { s.occ = null; n++; } } return n; },
       provsitt: () => F.folk.forceSit(walker().px, walker().py),
       lockCam: (x, y) => { lockedCam = x === null || x === undefined ? null : { x: clamp(x, 0, W() - VW), y: clamp(y ?? cam.y, 0, H - VH) }; if (lockedCam) Object.assign(cam, lockedCam); },
       teleport: (x, y) => { const w = walker(); w.px = x; w.py = y; w.stop(); w.snapFree(); Object.assign(cam, camTarget()); },
@@ -681,7 +853,6 @@ export function makeShopIkea(A, opts = {}) {
       else if (ride?.kind === 'lift') liftStep(dt);
       else walker().update(dt);
       if (meal) mealStep(dt);
-      if (snack) { snack.t += dt; if (snack.t > 4) snack = null; }
       const [px, py] = playerPos();
       F.folk.update(dt, t, { px, py });
       // närmaste möbel (när man står vid den)
@@ -704,7 +875,20 @@ export function makeShopIkea(A, opts = {}) {
     },
     down(sx, sy) { clickWorld(sx + cam.x, sy + cam.y); },
     key(k) { if (k === 'Escape' && meal?.st === 'done') standUp(); },
-    exit() { if (meal?.seat?.occ === 'me') { meal.seat.occ = null; meal.seat.tray = null; } },
+    exit() {
+      settleMeal(); // betald mat som inte hann ätas upp räknas in – den går aldrig förlorad
+      // varuhuset (bord och stolar) är cachat mellan besöken – lämna ingen plats upptagen
+      if (meal?.seat) { if (meal.seat.occ === 'me') meal.seat.occ = null; meal.seat.tray = null; }
+      meal = null;
+      for (const fl of S.floors) for (const s of fl.seats) if (s.occ?.test) s.occ = null; // testkrokens platser
+      talk.clear();
+    },
+    // Får man lämna varuhuset just nu? null = ja, annars repliken "DU MÅSTE SÄTTA DIG OCH
+    // ÄTA UPP!" (som figuren också säger). Samma kontrakt som Kaféet och Burgarbaren.
+    leaveBlock,
+    // äldre namn för samma sak (true = man får gå)
+    canLeave() { return leaveBlock() === null; },
+    get eating() { return !!meal && meal.st !== 'done'; },
     // mobilfyllningen: motorn får ge oss en bredare vy, klampad till våningens bredd
     viewMax: { get w() { return W(); }, h: H },
     draw(ctx) {

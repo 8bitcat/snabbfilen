@@ -15,15 +15,34 @@
 // figurens händer och i en panel uppe till vänster). I kassan läggs varorna på
 // rullbandet, kassörskan piper in dem och man betalar allt på en gång
 // (A.game.buyFood per vara → kylskåpet hemma). Räcker inte pengarna får man
-// ett tydligt besked och kan lägga tillbaka saker. Vid sittdisken kan man äta
-// direkt (buyFood(id, { eatNow: true }), 5 kr extra).
+// ett tydligt besked och kan lägga tillbaka saker.
+//
+// MAT SOM ÄTS HÄR (Carls regel för alla matställen, 2026-09-29):
+//   • KORVEN hör till KORV & KAFFE-hörnan. Klick på korven vid grillen → figuren
+//     går dit, korvgubben säger något och pengarna dras direkt (samma pris som
+//     prislappen, FOOD-priset) → KORVEN I HANDEN (pixelkorv med bröd, senap och
+//     servett, bär-bildrutorna). Korven hamnar ALDRIG i korgen eller på bandet.
+//   • Man sätter sig vid sittdisken (ÄT HÄR, pallarna) och äter bit för bit –
+//     mättheten kommer bit för bit när man äter (summan = FOOD.fill, precis som
+//     buyFood(id, { eatNow: true }) ger), och när maten är slut går klockan en
+//     kvart (g.passTime(15), som förut). Tallriken/servetten försvinner då.
+//   • ÄT HÄR-dialogen vid disken (övriga rätter, 5 kr extra som förut) följer
+//     samma regel: rätten ställs framför en och äts sittande.
+//   • Sitter man och äter reser man sig inte förrän det är uppätet ("ÄT UPP
+//     FÖRST!"). Klick på utgången med korven i handen eller mitt i maten → "DU
+//     MÅSTE SÄTTA DIG OCH ÄTA UPP!" direkt (figuren går inte dit och dörrarna
+//     öppnas inte). Med korven i handen kan man inte plocka varor, ta korg eller
+//     gå till kassan – händerna är fulla. Obetalda varor i korgen hanteras som förut.
+//   • leaveBlock() säger samma sak till huvudprogrammets knappar som byter scen.
+//     Byts scenen ändå (exit()) eller laddas sidan om (F5, ny version) räknas det
+//     som var kvar av maten – betald mat går aldrig förlorad.
 //
 // Allt ritas i spelets pixelkorn: förmålade Pix-bilder i skala 1, heltal, med
 // 3–5-toners skuggning, högdagrar, mörka konturer och dithering.
 import { Pix, SMALL, BIG, ctxText, textW, text, eachTextPixel, mix, mul, hash, bayer } from '../core/floor-pix.js';
 import { drawPerson, makeLook } from '../core/people.js';
 import { openModal, closeModal, toast, esc, modalOpen } from '../core/ui.js';
-import { FOOD, foodOf, fmt } from '../game.js';
+import { FOOD, foodOf, fmt, SAVE_KEY } from '../game.js';
 import { play } from '../core/sound.js';
 import { createWalker, selfDrawable, folkDrawables, WALK_SEQ, createSpeech } from './walkable.js';
 import { worldFolksHere } from '../net/world.js';
@@ -86,6 +105,11 @@ const RESTOCK = [490, 161];
 const DROP = { x: 394, base: 346 };             // tomma korgar efter kassan
 const MAX_BASKET = 12;
 const EAT_EXTRA = 5; // game.buyFood tar 5 kr extra för eatNow
+const EAT_BITES = 4; // så många tuggor en portion tar (mättheten delas lika på dem)
+const BITE_EVERY = 1.35, BITE_FIRST = 0.9, BITE_SHOW = 0.6; // sek mellan tuggor, första tuggan, tuggrörelsen
+// samma repliker som Kaféet, Burgarbaren och IKEA
+const MSG_ATUPP = 'ÄT UPP FÖRST! 😋';                 // sitter och äter, klick någon annanstans
+const MSG_DORR = 'DU MÅSTE SÄTTA DIG OCH ÄTA UPP!';   // mot utgången med maten i handen eller mitt i maten
 
 // allt man inte kan gå igenom
 const OBST = [
@@ -539,6 +563,129 @@ function drawIcon(ctx, id, x, y) {
 const SHORT = { nudlar: 'NUDLAR', macka: 'OSTMACKA', korv: 'KORV', pizza: 'PIZZA', lyx: 'LYXLÅDA' };
 const shortName = (f) => SHORT[f.id] || f.name.toUpperCase().replace(/[^A-ZÅÄÖÉ0-9 ]/g, '').slice(0, 10).trim();
 const priceLbl = (n) => `${n}:-`;
+
+// ================= maten man äter på plats (i bitar) =================
+// stage 0 = hel portion … n = uppäten. Varje bild ritas en gång och sparas.
+const DISH_CACHE = new Map();
+// Korv med bröd från grillen, sedd från sidan: brödets bakkant, korven med
+// senapsslinga, brödets framkant och en pappersservett där handen håller.
+// Bettet tas från högra änden med en rundad tandkant där man ser korvens
+// rosa insida och brödets inkråm. 17×10 med kontur.
+const SAUS = [0x5a200e, 0x8a3418, 0xb84a2a, 0xe07a4a, 0xf8b088];
+const BUN = [0x6a3e18, 0xa86a2a, 0xd8963e, 0xf0c070, 0xf8e0a8];
+function korvCanvas(stage, n) {
+  const key = `korv${stage}/${n}`;
+  if (DISH_CACHE.has(key)) return DISH_CACHE.get(key);
+  const P = new Pix(17, 10);
+  const gone = stage >= n;
+  const cut = 15 - Math.round((stage / n) * 13);   // sista kolumnen som är kvar
+  const DEP = [0, 0, 1, 2, 2, 1, 0, 0, 0, 0];        // tandkanten: mitten är djupast bortbiten
+  const keep = (x, y) => !gone && (stage === 0 || x <= cut - DEP[y]);
+  const edge = (x, y) => stage > 0 && x === cut - DEP[y];
+  const food = (x, y, c, inner) => { if (keep(x, y)) P.px(x, y, edge(x, y) ? inner : c); };
+  const CRUMB = 0xfff0c8, MEAT = 0xf0a088;
+  // brödets bakkant sticker upp bakom korven
+  for (let x = 3; x <= 13; x++) food(x, 1, x === 3 || x === 13 ? BUN[2] : BUN[3], CRUMB);
+  // korven: rundade ändar som sticker ut ur brödet
+  for (let x = 1; x <= 15; x++) for (let y = 2; y <= 4; y++) {
+    const end = x === 1 || x === 15;
+    if (end && y !== 3) continue;
+    let c = y === 2 ? SAUS[3] : y === 3 ? SAUS[2] : SAUS[1];
+    if (end) c = SAUS[1];
+    food(x, y, c, MEAT);
+  }
+  food(2, 2, SAUS[3], MEAT); food(3, 2, SAUS[4], MEAT); // glans på korvskinnet
+  // senapsslinga i sicksack ovanpå korven
+  for (let x = 4; x <= 12; x++) {
+    const up = ((x >> 1) & 1) === 1;
+    food(x, up ? 1 : 2, up ? 0xffe860 : 0xf8d020, CRUMB);
+    if (up) food(x, 2, 0xe0b010, MEAT);
+  }
+  // brödets framkant runt korven
+  for (let x = 3; x <= 13; x++) {
+    const end = x === 3 || x === 13;
+    if (end) food(x, 4, BUN[2], CRUMB);
+    food(x, 5, end ? BUN[2] : x === 4 || x === 5 ? BUN[4] : BUN[3], CRUMB);
+    food(x, 6, end ? BUN[1] : BUN[2], CRUMB);
+    if (!end) food(x, 7, BUN[1], CRUMB);
+  }
+  // servetten (ligger kvar när korven är slut – den försvinner med portionen)
+  for (let x = 5; x <= 11; x++) {
+    P.px(x, 7, x === 5 || x === 11 ? 0xe0dcd2 : 0xf4f1ea);
+    P.px(x, 8, x === 5 ? 0xc8c4bc : 0xd8d4ca);
+  }
+  P.px(8, 7, 0xffffff); P.px(7, 8, 0xc8c4bc); // ett veck
+  outline(P, OUT, 0.6);
+  const c = P.flush();
+  DISH_CACHE.set(key, c);
+  return c;
+}
+// Övriga rätter på en tallrik (13×13): ikonen ur ICONS med det uppätna bortplockat –
+// pizzabiten äts från spetsen (kanten blir kvar), lyxlådans fack töms ett i taget,
+// nudelkoppen är öppen med en nudelhög som krymper, mackan bits från högra änden.
+function dishCanvas(id, stage, n) {
+  if (id === 'korv') return korvCanvas(stage, n);
+  const key = `${id}${stage}/${n}`;
+  if (DISH_CACHE.has(key)) return DISH_CACHE.get(key);
+  const c = document.createElement('canvas'); c.width = 13; c.height = 13;
+  const x = c.getContext('2d');
+  // tallriken
+  x.fillStyle = '#17151a'; x.fillRect(0, 9, 13, 4);
+  x.fillStyle = '#f4f1ea'; x.fillRect(1, 9, 11, 3);
+  x.fillStyle = '#ffffff'; x.fillRect(2, 9, 9, 1);
+  x.fillStyle = '#c8c4bc'; x.fillRect(1, 11, 11, 1);
+  const ic = iconFor(id);
+  const pal = { ...ic.pal, c: 0xfff0c8, E: 0x3a3440, n: 0xf8d860, N: 0xd8a030 };
+  const rows = ic.map.map((r) => r.padEnd(9, '.').split(''));
+  const ate = n ? stage / n : 1;
+  if (id === 'pizza') {
+    // från spetsen och uppåt – kanten (två översta raderna) lämnas kvar
+    const keep = 8 - Math.round(ate * 6);
+    for (let y = keep; y < 8; y++) for (let i = 0; i < 9; i++) rows[y][i] = y === keep && rows[y - 1][i] !== '.' ? 'k' : '.';
+  } else if (id === 'lyx') {
+    // facken töms i tur och ordning: laxen, riset, grönsakerna, ägget
+    const FACK = [[1, 5], [1, 1], [4, 1], [4, 5]];
+    const k = Math.min(4, Math.round(ate * 4));
+    for (let f = 0; f < k; f++) { const [y0, x0] = FACK[f]; for (let y = y0; y < y0 + 2; y++) for (let i = x0; i < x0 + 3; i++) rows[y][i] = 'E'; }
+  } else if (id === 'nudlar') {
+    // locket av: nudlar i koppen tills den är tom
+    rows[1] = (stage >= n ? 'kEEEEEEEk' : 'knNnNnNnk').split('');
+  } else {
+    // bett från högra änden med rundad tandkant: i snittet syns lagren (brödets inkråm
+    // som smulor, salladen och osten ljusare). Sista biten före uppätet är en rejäl
+    // ände (minst två kolumner fyllning i mitten) – aldrig bara en ensam kontur.
+    const DEP = [0, 1, 1, 2, 2, 1, 1, 0];
+    const cut = Math.max(4, 7 - Math.round(ate * 4));   // n = 4: 6, 5, 4
+    const CUT_EDGE = { b: 'c', B: 'c', d: 'c', g: 'G', y: 'Y', w: 'c', W: 'c', a: 'c' };
+    if (stage >= n) rows.forEach((r) => r.fill('.'));
+    else if (stage > 0) for (let y = 0; y < 8; y++) {
+      const e = cut - DEP[y];
+      for (let i = 0; i < 9; i++) {
+        if (i <= e) { if (i === e && rows[y][i] !== '.' && rows[y][i] !== 'k') rows[y][i] = CUT_EDGE[rows[y][i]] || rows[y][i]; continue; }
+        rows[y][i] = i === e + 1 && ic.map[y][i] && ic.map[y][i] !== '.' ? 'k' : '.';
+      }
+    }
+  }
+  rows.forEach((r, j) => r.forEach((ch, i) => { if (ch === '.' || !(ch in pal)) return; x.fillStyle = hexs(pal[ch]); x.fillRect(2 + i, 3 + j, 1, 1); }));
+  if (id === 'nudlar' && stage < n) {
+    // nudelhögen över kanten krymper för varje tugga, gaffeln står i
+    const h = Math.max(0, 3 - stage);
+    for (let j = 0; j < h; j++) {
+      const y = 3 - 1 - j, x0 = 4 + j, x1 = 10 - j;
+      for (let i = x0; i <= x1; i++) { x.fillStyle = (i + j) & 1 ? '#f8d860' : '#d8a030'; x.fillRect(i, y, 1, 1); }
+    }
+    x.fillStyle = '#e6ecf0'; x.fillRect(10, 0, 1, 4); x.fillRect(9, 0, 1, 1); x.fillRect(11, 0, 1, 1);
+    x.fillStyle = '#8e98a2'; x.fillRect(10, 3, 1, 1);
+  }
+  DISH_CACHE.set(key, c);
+  return c;
+}
+// en portion som ska ätas: mättheten delad på tuggorna (heltal, summan = fill)
+function newDish(id) {
+  const f = foodOf(id), n = EAT_BITES;
+  const shares = Array.from({ length: n }, (_, k) => Math.round(f.fill * (k + 1) / n) - Math.round(f.fill * k / n));
+  return { id, n, stage: 0, shares, biteT: BITE_FIRST, eating: 0, doneT: -9 };
+}
 
 // ================= var maten står =================
 // Fasta platser för rätterna i FOOD; nya rätter (utan egen plats) får en reservplats.
@@ -1780,24 +1927,30 @@ function paintBar() {
     const kx = lx + lw - 6;
     P.px(kx + 1, fy, STEEL[4]); P.vl(kx, fy + 1, 3, STEEL[4]); P.vl(kx + 1, fy + 1, 3, STEEL[2]);
     P.vl(kx + 1, fy + 4, 3, 0x2a2e36); P.px(kx + 1, fy + 4, STEEL[1]);
-    // saker på disken: servetthållare, salt och peppar, sugerrör, vas, menystativ
-    const napkins = (x) => {
+    // saker på disken: servetthållare, salt och peppar, sugrör, vas, menystativ – alla i
+    // MELLANRUMMEN mellan pallarna, så att maten och ansiktet på den som sitter syns fritt
+    const gap = (i) => Math.round((STOOLS[i] + STOOLS[i + 1]) / 2); // mitt mellan pall i och i+1
+    const napkins = (x) => { // servetthållare, 6 px bred
       P.rect(x, top - 3, 6, 4, STEEL[2]); P.hl(x, top - 3, 6, STEEL[4]); P.vl(x + 5, top - 3, 4, STEEL[0]);
       P.rect(x + 1, top - 6, 4, 3, 0xffffff); P.px(x + 4, top - 5, 0xd8d4cc);
-      P.rect(x + 9, top - 3, 2, 4, 0xffffff); P.px(x + 9, top - 4, STEEL[3]); P.px(x + 10, top - 1, 0xc8c4bc);
-      P.rect(x + 12, top - 3, 2, 4, 0x3a3440); P.px(x + 12, top - 4, STEEL[3]); P.px(x + 12, top - 2, 0x5a5460);
     };
-    napkins(x0 + 36); napkins(x0 + 112);
+    const cruet = (x) => { // salt och peppar, 5 px brett
+      P.rect(x, top - 3, 2, 4, 0xffffff); P.px(x, top - 4, STEEL[3]); P.px(x + 1, top - 1, 0xc8c4bc);
+      P.rect(x + 3, top - 3, 2, 4, 0x3a3440); P.px(x + 3, top - 4, STEEL[3]); P.px(x + 3, top - 2, 0x5a5460);
+    };
+    cruet(gap(0) - 2); napkins(gap(3) - 3); cruet(gap(4) - 2);
     // sugrör i en glasburk
-    P.rect(x0 + 90, top - 4, 4, 5, 0xd8f0f8); P.vl(x0 + 90, top - 4, 5, 0xffffff); P.vl(x0 + 93, top - 4, 5, 0x9ab8c8);
-    for (let k = 0; k < 4; k++) P.vl(x0 + 90 + k, top - 8 + (k & 1), 4, [0xd8323a, 0xf4f1ea, 0x3a7bd5, 0xf0b429][k]);
+    const sx = gap(2) - 2;
+    P.rect(sx, top - 4, 4, 5, 0xd8f0f8); P.vl(sx, top - 4, 5, 0xffffff); P.vl(sx + 3, top - 4, 5, 0x9ab8c8);
+    for (let k = 0; k < 4; k++) P.vl(sx + k, top - 8 + (k & 1), 4, [0xd8323a, 0xf4f1ea, 0x3a7bd5, 0xf0b429][k]);
     // vas med tulpaner
-    P.rect(x0 + 72, top - 5, 3, 6, 0xb8e0f0); P.vl(x0 + 72, top - 5, 6, 0xe8f8ff); P.px(x0 + 74, top - 3, 0x7ab0c8);
-    P.vl(x0 + 73, top - 9, 4, 0x3a8a2a); P.px(x0 + 72, top - 8, 0x5ab83a);
-    P.rect(x0 + 72, top - 12, 3, 3, 0xf05a8a); P.px(x0 + 73, top - 12, 0xff9ac0); P.px(x0 + 71, top - 10, 0xe83a6a);
-    // menystativ
-    P.rect(x0 + 4, top - 8, 8, 9, 0xf4f1ea); P.box(x0 + 4, top - 8, 8, 9, GREEN); P.hl(x0 + 5, top - 7, 6, GREEN_HI);
-    P.hl(x0 + 6, top - 5, 4, 0x3a3e48); P.hl(x0 + 6, top - 3, 3, 0x3a3e48); P.px(x0 + 9, top - 3, 0xd8323a);
+    const vx = gap(1) - 1;
+    P.rect(vx, top - 5, 3, 6, 0xb8e0f0); P.vl(vx, top - 5, 6, 0xe8f8ff); P.px(vx + 2, top - 3, 0x7ab0c8);
+    P.vl(vx + 1, top - 9, 4, 0x3a8a2a); P.px(vx, top - 8, 0x5ab83a);
+    P.rect(vx, top - 12, 3, 3, 0xf05a8a); P.px(vx + 1, top - 12, 0xff9ac0); P.px(vx - 1, top - 10, 0xe83a6a);
+    // menystativ längst till vänster, före första pallen
+    P.rect(x0 + 1, top - 8, 8, 9, 0xf4f1ea); P.box(x0 + 1, top - 8, 8, 9, GREEN); P.hl(x0 + 2, top - 7, 6, GREEN_HI);
+    P.hl(x0 + 3, top - 5, 4, 0x3a3e48); P.hl(x0 + 3, top - 3, 3, 0x3a3e48); P.px(x0 + 6, top - 3, 0xd8323a);
     // pendellampor strax ovanför skivan; sladdarna försvinner uppåt mot det mörka taket
     const LY = base - 48; // skärmens översta rad
     for (const lx of LAMPS) {
@@ -2233,7 +2386,11 @@ export function makeShopMat(A) {
   let bag = false;          // en papperskasse efter betalning
   let belt = null;          // pågående kassaslag: { items: [{ id, x, st, w }], total, next, doneT }
   let receiptOpen = false;
-  let sit = null;           // { i, eat: foodId | null, t }
+  let sit = null;           // { i, t, ate } – pallen man sitter på vid sittdisken
+  // maten man äter HÄR: korven i handen (sit = null) eller portionen vid disken (sit satt).
+  // { id, n, stage, shares, biteT, eating, doneT } – se newDish
+  let dish = null;
+  let refuseT = -9;
   let door = 0, doorWas = false;
   const flies = [], pops = [], bubbles = [];
   let panelHits = [];
@@ -2260,6 +2417,8 @@ export function makeShopMat(A) {
   };
   function removeOne(id) { const i = basket.lastIndexOf(id); if (i >= 0) basket.splice(i, 1); }
   function addToBasket(s) {
+    if (s.d.kind === 'grill') return buyKorv(s); // korven äts här – den hamnar aldrig i korgen
+    if (dish) { handsFull(); return false; }
     if (basket.length >= MAX_BASKET) { play('fel'); toast('🧺 Korgen är full – gå till kassan och betala!', 'bad'); return false; }
     if (belt) cancelScan();
     const first = !hasBasket;
@@ -2274,6 +2433,7 @@ export function makeShopMat(A) {
 
   // ---------- kassan ----------
   function startScan() {
+    if (dish) { handsFull(); return; }
     if (!basket.length) { say('cashier', 'HEJ! TA EN VARA FÖRST'); toast('🧺 Korgen är tom – klicka på en vara med stor gul prislapp.'); return; }
     belt = { items: basket.map((id, i) => ({ id, x: BELT.x0 - i * 11, st: 'belt' })), total: 0, doneT: 0 };
     say('cashier', 'HEJ HEJ!');
@@ -2328,20 +2488,74 @@ export function makeShopMat(A) {
     }));
   }
   function goKassa() {
+    if (dish) { handsFull(); return; }
     sit = null;
     walker.walkTo(K1.x0 + 50, K1.base + 12, () => { walker.dir = 'up'; startScan(); });
   }
 
-  // ---------- ät här ----------
-  function freeStool() {
+  // ---------- mat som äts här: köpet ----------
+  const meAt = () => ({ x: walker.px, y: walker.py - 44 }); // pratbubblan ovanför min figur (även sittande)
+  // Samma summa som game.buyFood räknar fram (FOOD-priset, + ÄT HÄR-tillägget vid disken),
+  // men mättheten ges INTE vid köpet – den kommer tugga för tugga när man sitter och äter.
+  function payHere(f, extra) {
+    const price = f.price + extra;
+    if (g.money < price) return { ok: false, price, msg: 'Du har inte råd!' };
+    g.money -= price;
+    g.save();
+    return { ok: true, price };
+  }
+  // en replik när man inte får göra något (samma replik spammas inte)
+  function refuse(s) {
+    if (talk.text() === s && t - refuseT < 1.2) return;
+    refuseT = t;
+    play('fel');
+    talk.say(s, meAt, 2.8);
+  }
+  const handsFull = () => refuse('🌭 Händerna är fulla! Jag sätter mig vid disken och äter upp korven först.');
+  // KORVEN: betala vid grillen, få den i handen
+  function buyKorv(s) {
+    const f = s.f;
+    if (dish) { refuse(sit ? MSG_ATUPP : '🌭 Jag har redan en korv – nu sätter jag mig och äter!'); return false; }
+    walker.dir = 'up'; // mot korvgubben
+    const r = payHere(f, 0);
+    if (!r.ok) {
+      play('fel');
+      say('vendor', `DET BLIR ${f.price} KR!`);
+      talk.say(`💸 Pengarna räcker inte – korven kostar ${fmt(f.price)}.`, meAt);
+      return false;
+    }
+    play('coin');
+    say('vendor', ['VARSÅGOD! SÄTT DIG VID DISKEN!', 'HÄR HAR DU - SMAKLIG MÅLTID!', 'EN KORV MED BRÖD - VARSÅGOD!'][Math.floor(Math.random() * 3)]);
+    pops.push({ x: s.tag[0], y: s.tag[1] - 2, s: `-${f.price}`, t: 0, c: '#d8323a' });
+    dish = newDish(f.id);
+    walker.dir = 'down'; // vänd dig om med korven i handen
+    return true;
+  }
+  // ÄT HÄR vid disken: betala med tillägget, rätten ställs framför en (man sitter redan)
+  function orderHere(id) {
+    const f = foodOf(id);
+    if (!f) return { ok: false, msg: 'Det finns inte.' };
+    if (dish) return { ok: false, msg: 'Ät upp först!' };
+    const r = payHere(f, EAT_EXTRA);
+    if (!r.ok) return r;
+    play('coin');
+    dish = newDish(f.id);
+    say('vendor', 'VARSÅGOD! SMAKLIG MÅLTID!');
+    return { ok: true, price: r.price, fill: f.fill };
+  }
+
+  // ---------- ät här: pallen, dialogen och tuggorna ----------
+  function freeStool(cx = walker.px) {
     const taken = new Set([REG_I]);
     let best = 0, bd = 1e9;
-    STOOLS.forEach((x, i) => { if (taken.has(i)) return; const d = Math.abs(x - walker.px); if (d < bd) { bd = d; best = i; } });
+    STOOLS.forEach((x, i) => { if (taken.has(i)) return; const d = Math.abs(x - cx); if (d < bd) { bd = d; best = i; } });
     return best;
   }
   function openEat() {
-    const cheapest = Math.min(...FOOD.map((f) => f.price)) + EAT_EXTRA;
-    const rows = FOOD.map((f) => {
+    const menu = FOOD.filter((f) => f.id !== 'korv'); // korven köps vid grillen
+    const korv = foodOf('korv');
+    const cheapest = Math.min(...menu.map((f) => f.price)) + EAT_EXTRA;
+    const rows = menu.map((f) => {
       const price = f.price + EAT_EXTRA, ok = g.money >= price;
       return `<div class="prow shoprow">
         <span style="font-size:28px;text-align:center">${f.icon}</span>
@@ -2349,28 +2563,102 @@ export function makeShopMat(A) {
         <b style="font-size:20px">${fmt(price)}</b>
         <button class="btn btn-small ${ok ? 'btn-go' : ''}" data-eat="${esc(f.id)}" ${ok ? '' : 'disabled'}>😋 Ät</button>
       </div>`;
-    }).join('');
-    const dlg = openModal('😋 Ät här', `<p style="font-size:19px;margin-top:0">Slå dig ner vid disken! Allt kostar ${EAT_EXTRA} kr extra när du äter här, och att äta tar en kvart.<br>💰 <b>${fmt(g.money)}</b> · Mätthet <b>${Math.round(g.hunger)}/100</b></p>
+    }).join('') + (korv ? `<div class="prow shoprow">
+        <span style="font-size:28px;text-align:center">${korv.icon}</span>
+        <span class="nm">${esc(korv.name)}<br><small class="sp">köps vid grillen · +${korv.fill} mätthet</small></span>
+        <b style="font-size:20px">${fmt(korv.price)}</b>
+        <button class="btn btn-small" data-grill="1">🌭 Till grillen</button>
+      </div>` : '');
+    const dlg = openModal('😋 Ät här', `<p style="font-size:19px;margin-top:0">Slå dig ner vid disken! Allt kostar ${EAT_EXTRA} kr extra när du äter här, och att äta tar en kvart. Maten ställs framför dig – du sitter kvar tills den är uppäten.<br>💰 <b>${fmt(g.money)}</b> · Mätthet <b>${Math.round(g.hunger)}/100</b></p>
       ${g.money < cheapest ? '<p class="bad" style="font-size:19px"><b>Du har inte råd med något just nu</b> – jobba ett pass först!</p>' : ''}
       <div class="plist">${rows}</div>`, [{ label: 'Inte nu', onClick: closeModal }]);
     dlg.querySelectorAll('[data-eat]').forEach((b) => (b.onclick = () => {
-      const f = foodOf(b.dataset.eat), r = g.buyFood(f.id, { eatNow: true });
+      const r = orderHere(b.dataset.eat);
       if (!r.ok) { play('fel'); toast(`💸 ${r.msg || 'Du har inte råd!'}`, 'bad'); return; }
-      g.passTime(15); // att äta tar en kvart, som på kaféet och hemma
-      g.save();
       closeModal();
-      play('coin');
-      if (sit) { sit.eat = f.id; sit.t = 0; }
-      toast(`😋 Mums! ${f.icon} ${f.name} – +${f.fill} mätthet.`, 'good');
     }));
+    dlg.querySelector('[data-grill]')?.addEventListener('click', () => {
+      closeModal();
+      const s = spotById('korv');
+      if (s) clickSpot(s, s.go[0]);
+    });
   }
-  function goEat() {
-    const i = freeStool();
-    walker.walkTo(STOOLS[i], STOOL_Y, () => { sit = { i, eat: null, t: 0 }; walker.dir = 'down'; play('click'); openEat(); });
+  function sitDown(i) {
+    sit = { i, t: 0 };
+    walker.dir = 'down';
+    play('click');
+    if (dish) { dish.biteT = BITE_FIRST; talk.say(dish.id === 'korv' ? '🌭 Mums, korv med bröd!' : '😋 Mums!', meAt, 2.2); }
+    else openEat();
   }
+  function goEat(cx) {
+    const i = freeStool(cx);
+    walker.walkTo(STOOLS[i], STOOL_Y, () => sitDown(i));
+  }
+  // en tugga i taget medan man sitter: mättheten kommer HÄR, bit för bit
+  function eatTick(dt) {
+    if (dish.eating > 0) dish.eating -= dt;
+    if (dish.stage < dish.n) {
+      dish.biteT -= dt;
+      if (dish.biteT > 0) return;
+      g.hunger = Math.max(0, Math.min(100, Math.round(g.hunger + dish.shares[dish.stage])));
+      dish.stage++;
+      dish.eating = BITE_SHOW;
+      dish.biteT = BITE_EVERY;
+      if (dish.stage >= dish.n) {
+        dish.doneT = t;
+        g.passTime(15); // att äta tar en kvart, som på kaféet och hemma
+        g.save();
+        play('ok');
+      }
+    } else if (t - dish.doneT > 1.2) {
+      // uppätet: tallriken/servetten försvinner och man kan gå
+      const f = foodOf(dish.id);
+      dish = null;
+      if (sit) sit.ate = f.id;
+      talk.say(`😋 MUMS! ${f.name} – +${f.fill} mätthet.`, meAt, 3);
+    }
+  }
+  // lämnar man scenen på annat sätt (jobbinbjudan, hembesök …) äts resten upp i farten –
+  // pengarna är betalda och mättheten ska inte försvinna
+  function finishNow() {
+    if (!dish) return;
+    const rest = dish.shares.slice(dish.stage).reduce((a, b) => a + b, 0);
+    const done = dish.stage >= dish.n;
+    dish.stage = dish.n;
+    g.hunger = Math.max(0, Math.min(100, Math.round(g.hunger + rest)));
+    if (!done) g.passTime(15);
+    g.save();
+    dish = null;
+  }
+  // Sidan laddas om (F5, ny version, fliken stängs) mitt i maten: räkna in resten och spara,
+  // annars är maten betald och sparad men mättheten borta efter omladdningen.
+  // 'sf:before-reload' skickas av den automatiska uppdateringen precis innan den sparar.
+  // Vid 'pagehide' sparar vi bara om sparningen fortfarande är vår: figurbyte, nytt spel,
+  // omstart och återställning i menyn byter eller tömmer den precis innan omladdningen
+  // (och märker det i sessionStorage) – den får vi aldrig skriva över.
+  function saveIsOurs() {
+    try { if (sessionStorage.getItem('sf_menu_skip') || sessionStorage.getItem('sf_restored')) return false; } catch { /* ingen sessionStorage: kolla sparningen */ }
+    try {
+      const p = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
+      return !!p && p.day === g.day && p.home === g.home && Math.round(+p.money) === Math.round(g.money);
+    } catch { return false; }
+  }
+  function settle(e) {
+    if (!dish) return;
+    if (e?.type === 'pagehide' && !saveIsOurs()) return;
+    finishNow();
+  }
+  window.addEventListener('sf:before-reload', settle);
+  window.addEventListener('pagehide', settle);
 
   // ---------- gå ut ----------
-  function exit() {
+  function goOut() {
+    if (dish) {
+      // hit kommer man inte med maten (klicket på dörren nekas direkt) – men om: vänd och gå in igen
+      refuse(MSG_DORR);
+      walker.walkTo(DOOR_X, FRONT_Y - 24, () => { walker.dir = 'up'; });
+      return;
+    }
     if (basket.length) {
       openModal('🧺 Obetalda varor', `<p style="font-size:20px;margin-top:0">Du har <b>${basket.length}</b> ${basket.length === 1 ? 'vara' : 'varor'} i korgen som inte är betalda (${fmt(total())}).</p>
         <p style="font-size:18px">Gå till kassan och betala – eller ställ tillbaka allt innan du går.</p>`, [
@@ -2390,9 +2678,9 @@ export function makeShopMat(A) {
     ...R.displays.map((s) => ({ id: s.f.id, food: s, r: s.r, go: s.go, act: () => addToBasket(s) })),
     { id: 'kassa', r: [K1.x0, K1.base - 60, K1.x1 + 16, K1.base + 6], go: [K1.x0 + 50, K1.base + 12], act: () => { walker.dir = 'up'; startScan(); } },
     { id: 'kassa2', r: [KASSOR[1].x0, KASSOR[1].base - 60, KASSOR[1].x1 + 16, KASSOR[1].base + 6], go: null, act: () => { hint('🔒 Kassa 2 är stängd – gå till kassa 1!'); goKassa(); } },
-    { id: 'dorr', r: [DOOR.x0 - 6, FRONT_Y - 30, DOOR.x1 + 6, H], go: [DOOR_X, FRONT_Y - 6], act: exit },
-    { id: 'athar', r: [BAR.x0, BAR.base - 40, BAR.x1, BAR.base], go: null, act: goEat },
-    { id: 'korgar', r: [BASKETS.x0 - 2, BASKETS.base - 30, BASKETS.x1 + 8, BASKETS.base], go: [BASKETS.x0 + 10, BASKETS.base - 16], act: () => { if (!hasBasket) { hasBasket = true; play('ok'); toast('🧺 Du tog en korg – klicka på en vara med gul prislapp!', 'good'); } else hint('🧺 Du har redan en korg.'); } },
+    { id: 'dorr', r: [DOOR.x0 - 6, FRONT_Y - 30, DOOR.x1 + 6, H], go: [DOOR_X, FRONT_Y - 6], act: goOut },
+    { id: 'athar', r: [BAR.x0, BAR.base - 40, BAR.x1, BAR.base], go: null, act: (x) => goEat(x) },
+    { id: 'korgar', r: [BASKETS.x0 - 2, BASKETS.base - 30, BASKETS.x1 + 8, BASKETS.base], go: [BASKETS.x0 + 10, BASKETS.base - 16], act: () => { if (dish) handsFull(); else if (!hasBasket) { hasBasket = true; play('ok'); toast('🧺 Du tog en korg – klicka på en vara med gul prislapp!', 'good'); } else hint('🧺 Du har redan en korg.'); } },
     { id: 'vagnar', r: [CARTS.x0, CARTS.base - 34, CARTS.x1, CARTS.base], go: [CARTS.x1 + 6, CARTS.base - 20], act: () => hint('🛒 Kundvagnarna är för storhandlare – korgen räcker gott!') },
     { id: 'pant', r: [PANT.x0, PANT.base - 48, PANT.x1, PANT.base], go: [PANT.x1 + 8, PANT.base - 4], act: () => hint('♻️ Pantmaskinen – du har inga burkar att panta i dag.') },
     { id: 'personal', r: [STAFF.x0, STAFF.top - 10, STAFF.x1, WALL_Y], go: [(STAFF.x0 + STAFF.x1) / 2, WALL_Y + 12], act: () => hint('🚪 PERSONAL – bara för anställda!') },
@@ -2411,14 +2699,16 @@ export function makeShopMat(A) {
   const focusSpot = () => {
     const h = hoverId && t - hoverT < 4 && spotById(hoverId);
     if (h && (h.food || h.id === 'kassa' || h.id === 'athar' || h.id === 'dorr')) return h;
-    if (walker.path.length || sit) return null;
+    if (sit) return null;
+    if (dish) return spotById('athar'); // korven i handen: skylten visar vägen till disken
+    if (walker.path.length) return null;
     return spots.find((s) => s.food && Math.abs(walker.px - s.go[0]) < 8 && Math.abs(walker.py - s.go[1]) < 8) || null;
   };
   function clickSpot(s, x) {
     sit = null;
     if (s.go) walker.walkTo(s.go[0], s.go[1], s.act);
     else if (s.row !== undefined) walker.walkTo(clamp(x, s.r[0] + 4, s.r[2] - 4), s.row + 11, s.act);
-    else s.act();
+    else s.act(x);
   }
 
   // ---------- HUD: korgen (panel uppe till vänster) ----------
@@ -2513,6 +2803,16 @@ export function makeShopMat(A) {
     ctx.fillStyle = '#8a1a22'; for (let k = -6; k < 7; k += 3) ctx.fillRect(x + k, y - 5, 1, 2);
     ctx.fillStyle = '#ff9a90'; ctx.fillRect(x - 7, y - 6, 1, 5);
   }
+  // maten i händerna (bär-bildrutorna håller händerna ihop framför magen): korven i
+  // servetten – eller en tallrik om man skulle resa sig med en (händer inte i spelet)
+  function drawHeld(ctx, fx, fy, dir) {
+    if (!dish) return;
+    const c = dishCanvas(dish.id, dish.stage, dish.n);
+    const korv = dish.id === 'korv';
+    const x = Math.round(fx), y = Math.round(fy);
+    const dx = dir === 'left' ? x - c.width + (korv ? 2 : 1) : dir === 'right' ? x - (korv ? 2 : 1) : x - (c.width >> 1);
+    ctx.drawImage(c, dx, y - (korv ? 24 : 26));
+  }
 
   // ---------- namnskylt för det man står vid / pekar på ----------
   function bigLabel(ctx, s, atTop) {
@@ -2520,10 +2820,14 @@ export function makeShopMat(A) {
     if (s.food) {
       const f = s.food.f;
       icon = f.id; name = shortName(f); price = `${f.price} KR`;
-      hintTxt = basket.length >= MAX_BASKET ? 'KORGEN ÄR FULL' : `+${f.fill} MÄTT - KLICKA SÅ HAMNAR DEN I KORGEN`;
-    } else if (s.id === 'kassa') { name = 'KASSA 1'; price = basket.length ? `${total()} KR` : ''; hintTxt = basket.length ? 'KLICKA SÅ BETALAR DU' : 'PLOCKA VAROR FÖRST'; col = '#6fe08a'; }
-    else if (s.id === 'athar') { name = 'ÄT HÄR'; price = `+${EAT_EXTRA} KR`; hintTxt = 'SÄTT DIG OCH ÄT DIREKT'; col = '#6fe08a'; }
-    else if (s.id === 'dorr') { name = 'UTGÅNG'; price = ''; hintTxt = basket.length ? 'BETALA FÖRST!' : 'TILLBAKA UT PÅ STAN'; col = '#6fe08a'; }
+      if (s.food.d.kind === 'grill') hintTxt = dish ? 'ÄT UPP DIN KORV FÖRST' : `+${f.fill} MÄTT - KÖP OCH ÄT VID DISKEN`;
+      else hintTxt = dish ? 'HÄNDERNA ÄR FULLA - ÄT FÖRST' : basket.length >= MAX_BASKET ? 'KORGEN ÄR FULL' : `+${f.fill} MÄTT - KLICKA SÅ HAMNAR DEN I KORGEN`;
+    } else if (s.id === 'kassa') { name = 'KASSA 1'; price = basket.length ? `${total()} KR` : ''; hintTxt = dish ? 'ÄT UPP KORVEN FÖRST' : basket.length ? 'KLICKA SÅ BETALAR DU' : 'PLOCKA VAROR FÖRST'; col = '#6fe08a'; }
+    else if (s.id === 'athar') {
+      name = 'ÄT HÄR'; col = '#6fe08a';
+      if (dish) { icon = dish.id; price = ''; hintTxt = 'KLICKA - SÄTT DIG OCH ÄT UPP'; }
+      else { price = `+${EAT_EXTRA} KR`; hintTxt = 'SÄTT DIG OCH ÄT DIREKT'; }
+    } else if (s.id === 'dorr') { name = 'UTGÅNG'; price = ''; hintTxt = dish ? 'ÄT UPP FÖRST - SEN KAN DU GÅ UT' : basket.length ? 'BETALA FÖRST!' : 'TILLBAKA UT PÅ STAN'; col = dish ? '#ff7a6a' : '#6fe08a'; }
     else return;
     const nw = textW(BG, name), pw = price ? textW(BG, price) : 0, hw = textW(SM, hintTxt);
     const w = Math.max(nw + pw + (price ? 8 : 0) + (icon ? 14 : 0), hw + (icon ? 14 : 0)) + 12, h = 22;
@@ -2643,18 +2947,20 @@ export function makeShopMat(A) {
     }
     // andra spelare och jag
     for (const d of folkDrawables(A, t)) items.push({ fy: d.fy, draw: () => d.draw(ctx) });
-    const carrying = !sit && (hasBasket || bag);
+    const holding = !sit && !!dish; // maten i händerna går före korgen
+    const carrying = !sit && (hasBasket || bag || holding);
     if (sit) {
       const sx = STOOLS[sit.i];
-      items.push({ fy: STOOL_Y, draw: () => drawPerson(ctx, sx, STOOL_Y, A.avatar.look, 'down', sit.eat && sit.t < 4 ? (Math.floor(sit.t * 2.5) % 2 ? 6 : 5) : 5) });
+      items.push({ fy: STOOL_Y, draw: () => drawPerson(ctx, sx, STOOL_Y, A.avatar.look, 'down', dish && dish.eating > 0 ? 6 : 5) });
     } else {
       const me = selfDrawable(A, walker, t, { carry: carrying, folksHere: worldFolksHere(A).length });
       const dir = walker.dir, ox = dir === 'left' ? -6 : dir === 'right' ? 6 : 0;
       const bx = Math.round(walker.px) + ox, by = Math.round(walker.py) - 12;
       const shown = belt ? [] : basket;
-      if (carrying && dir === 'up') items.push({ fy: walker.py - 0.01, draw: () => drawCarried(ctx, bx, by, shown, bag && !basket.length) });
+      const hands = () => (holding ? drawHeld(ctx, walker.px, walker.py, dir) : drawCarried(ctx, bx, by, shown, bag && !basket.length));
+      if (carrying && dir === 'up') items.push({ fy: walker.py - 0.01, draw: hands });
       items.push({ fy: walker.py, me: true, draw: () => me.draw(ctx) });
-      if (carrying && dir !== 'up') items.push({ fy: walker.py + 0.01, draw: () => drawCarried(ctx, bx, by, shown, bag && !basket.length) });
+      if (carrying && dir !== 'up') items.push({ fy: walker.py + 0.01, draw: hands });
     }
     items.sort((a, b) => a.fy - b.fy);
     for (const it of items) it.draw();
@@ -2674,26 +2980,28 @@ export function makeShopMat(A) {
       const x = f.x0 + (tx - f.x0) * k, y = f.y0 + (ty - f.y0) * k - Math.sin(k * Math.PI) * 18;
       drawIcon(ctx, f.id, Math.round(x) - 4, Math.round(y) - 4);
     }
-    for (const p of pops) ctxText(ctx, BG, p.s, Math.round(p.x) - 5, Math.round(p.y - p.t * 16), p.t < 0.6 || Math.floor(p.t * 10) % 2 ? '#2aba5a' : '#ffffff');
+    for (const p of pops) ctxText(ctx, BG, p.s, Math.round(p.x) - 5, Math.round(p.y - p.t * 16), p.t < 0.6 || Math.floor(p.t * 10) % 2 ? p.c || '#2aba5a' : '#ffffff');
     for (const b of bubbles) {
       const pos = b.who === 'cashier' ? [K1.x0 + 42, K1.base - 66] : [VENDOR_X, GRILL.base - 50];
       speech(ctx, pos[0], pos[1], b.s);
     }
-    if (sit?.eat && sit.t < 4) speech(ctx, STOOLS[sit.i], STOOL_Y - 30, sit.t < 2 ? 'MUMS!' : 'MMM...');
   }
-  // tallrikar och koppar på sittdisken
-  function plate(ctx, x) {
-    ctx.fillStyle = '#17151a'; ctx.fillRect(x - 6, BAR_TOP + 1, 13, 4);
-    ctx.fillStyle = '#f4f1ea'; ctx.fillRect(x - 5, BAR_TOP + 1, 11, 3);
-    ctx.fillStyle = '#ffffff'; ctx.fillRect(x - 4, BAR_TOP + 1, 9, 1);
-    ctx.fillStyle = '#c8c4bc'; ctx.fillRect(x - 5, BAR_TOP + 3, 11, 1);
-  }
+  // maten och koppar på sittdisken
   function barPlates(ctx) {
     if (sit) {
       const x = STOOLS[sit.i];
-      if (sit.eat || sit.ate) plate(ctx, x);
-      if (sit.eat) drawIcon(ctx, sit.eat, x - 4, BAR_TOP - 5 + (sit.t > 2.5 ? 2 : 0));
-      else if (sit.ate) { ctx.fillStyle = '#c8883a'; ctx.fillRect(x - 2, BAR_TOP + 1, 1, 1); ctx.fillRect(x + 2, BAR_TOP + 2, 1, 1); ctx.fillStyle = '#9a9aa0'; ctx.fillRect(x + 3, BAR_TOP, 4, 1); }
+      if (dish) {
+        const c = dishCanvas(dish.id, dish.stage, dish.n);
+        if (dish.id === 'korv') {
+          // korven ligger på sin servett på disken – och lyfts upp till munnen vid varje tugga
+          const bite = dish.eating > 0 && dish.stage < dish.n;
+          ctx.drawImage(c, x - 8, bite ? STOOL_Y - 26 : BAR_TOP - 6);
+        } else ctx.drawImage(c, x - 6, BAR_TOP - 8);
+      } else if (sit.ate) {
+        // uppätet: tallriken är borta, ett par smulor ligger kvar
+        ctx.fillStyle = '#c8883a'; ctx.fillRect(x - 2, BAR_TOP + 1, 1, 1); ctx.fillRect(x + 2, BAR_TOP + 2, 1, 1);
+        ctx.fillStyle = '#e0b060'; ctx.fillRect(x + 4, BAR_TOP + 1, 1, 1);
+      }
     }
     // stamgästens kaffekopp (lyfts när hen dricker)
     const rx = STOOLS[REG_I] + 6, up = Math.sin(t * 0.8) > 0.82;
@@ -2814,6 +3122,29 @@ export function makeShopMat(A) {
     for (let k = 0; k < 4; k++) { const ph = (t * 0.8 + k * 0.25) % 1; ctx.fillRect(Math.round(cx0 + 10 + Math.sin(ph * 7 + k) * 1.5), Math.round(GRILL.base - 30 - ph * 10), 1, 1); }
   }
 
+  function update(dt) {
+    t += dt;
+    // update() svarar true även på steget då figuren kommer fram (och sätter sig) –
+    // bara en pågående promenad reser figuren från pallen
+    if (walker.update(dt) && walker.path.length) sit = null;
+    if (sit) { sit.t += dt; if (dish) eatTick(dt); }
+    else if (dish) dish.eating = 0; // man äter bara sittande
+    // skjutdörrarna öppnas när någon är nära – men inte för mig med maten i handen (jag kommer inte ut)
+    const near = [...(dish ? [] : [{ x: walker.px, y: walker.py }]), ...shoppers.map((s) => ({ x: s.w.px, y: s.w.py }))].some((p) => Math.abs(p.x - DOOR_X) < 30 && p.y > FRONT_Y - 34);
+    door += ((near ? 1 : 0) - door) * Math.min(1, dt * 5);
+    if (near && !doorWas && !dish && Math.abs(walker.px - DOOR_X) < 40 && walker.py > FRONT_Y - 40) play('slide');
+    doorWas = near;
+    updateShoppers(dt);
+    updateBelt(dt);
+    if (receiptOpen && !modalOpen()) cancelScan();
+    if (belt && !belt.done && !walker.path.length && Math.hypot(walker.px - (K1.x0 + 50), walker.py - (K1.base + 12)) > 14) cancelScan();
+    for (let i = flies.length - 1; i >= 0; i--) { flies[i].t += dt; if (flies[i].t > 0.4) flies.splice(i, 1); }
+    for (let i = pops.length - 1; i >= 0; i--) { pops[i].t += dt; if (pops[i].t > 1) pops.splice(i, 1); }
+    for (let i = bubbles.length - 1; i >= 0; i--) { bubbles[i].t += dt; if (bubbles[i].t > 2.4) bubbles.splice(i, 1); }
+    const tg = camTarget(), k = lockedCam ? 1 : Math.min(1, dt * 6);
+    cam.x += (tg.x - cam.x) * k; cam.y += (tg.y - cam.y) * k;
+  }
+
   return {
     get worldX() { return walker.px; },
     get worldY() { return walker.py; },
@@ -2828,9 +3159,23 @@ export function makeShopMat(A) {
       basket: () => groups().map(({ f, n }) => ({ id: f.id, name: f.name, n, price: f.price })),
       basketIds: () => [...basket],
       total: () => total(),
-      pick: (id) => { const s = spots.find((x) => x.id === id && x.food); return s ? addToBasket(s.food) : false; },
+      // lägg en vara i korgen (korven vid grillen går aldrig i korgen – den köps med ett klick på grillen)
+      pick: (id) => { const s = spots.find((x) => x.id === id && x.food && x.food.d.kind !== 'grill'); return s ? addToBasket(s.food) : false; },
       checkout: () => pay(),
-      eat: (id) => { const r = g.buyFood(id, { eatNow: true }); if (r.ok) { g.passTime(15); g.save(); play('coin'); } return r; },
+      // ÄT HÄR-beställning (som knappen i dialogen): betalar och ställer rätten framför en
+      eat: (id) => orderHere(id),
+      // maten man äter här: var den är (i handen/på disken), hur mycket som är uppätet
+      dish: () => (dish ? { id: dish.id, stage: dish.stage, n: dish.n, where: sit ? 'disk' : 'hand', biting: dish.eating > 0, shares: [...dish.shares] } : null),
+      said: () => talk.text(),                                      // min pratbubbla just nu
+      vendorSaid: () => bubbles.filter((b) => b.who === 'vendor').map((b) => b.s),
+      stool: (i) => ({ x: STOOLS[i] - cam.x, y: STOOL_Y - 16 - cam.y }), // skärmläge för en pall (klick)
+      tick: (sec) => { for (let i = 0; i < Math.round(sec * 30); i++) update(1 / 30); },
+      dishImage: (id, stage, n = EAT_BITES, scale = 6) => {          // förhandsbild av en portion
+        const s = dishCanvas(id, stage, n), c = document.createElement('canvas');
+        c.width = s.width * scale; c.height = s.height * scale;
+        const x = c.getContext('2d'); x.imageSmoothingEnabled = false; x.drawImage(s, 0, 0, c.width, c.height);
+        return c.toDataURL('image/png');
+      },
       displays: () => R.displays.map((s) => ({ id: s.f.id, kind: s.d.kind, tag: s.tag, go: s.go })),
       lockCam: (x, y) => { lockedCam = x === null || x === undefined ? null : { x: clamp(x, 0, W - VW), y: clamp(y ?? cam.y, 0, H - VH) }; if (lockedCam) Object.assign(cam, lockedCam); },
       teleport: (x, y) => { sit = null; walker.px = x; walker.py = y; walker.stop(); walker.snapFree(); Object.assign(cam, camTarget()); },
@@ -2839,6 +3184,7 @@ export function makeShopMat(A) {
       pos: () => ({ x: walker.px, y: walker.py, path: walker.path.length }),
       belt: () => (belt ? { total: belt.total, done: !!belt.done, items: belt.items.map((i) => i.st) } : null),
       sit: () => (sit ? { ...sit } : null),
+      door: () => +door.toFixed(2),                                 // skjutdörrarna: 0 stängda … 1 öppna
       shoppers: () => shoppers.map((s) => ({ x: Math.round(s.w.px), y: Math.round(s.w.py), dir: s.w.dir, carry: s.carry, path: s.w.path.length })),
       placeShopper: (i, x, y, wait = 999) => { const s = shoppers[i]; if (!s) return false; s.w.px = x; s.w.py = y; s.w.stop(); s.w.dir = 'up'; s.wait = wait; return true; },
       signHides: (x, y) => !!signHides(x, y),
@@ -2850,39 +3196,38 @@ export function makeShopMat(A) {
       },
     },
 
-    update(dt) {
-      t += dt;
-      // update() svarar true även på steget då figuren kommer fram (och sätter sig) –
-      // bara en pågående promenad reser figuren från pallen
-      if (walker.update(dt) && walker.path.length) sit = null;
-      if (sit) { sit.t += dt; if (sit.eat && sit.t > 4.5) { sit.eat = null; sit.ate = true; } }
-      // skjutdörrarna öppnas när någon är nära
-      const near = [{ x: walker.px, y: walker.py }, ...shoppers.map((s) => ({ x: s.w.px, y: s.w.py }))].some((p) => Math.abs(p.x - DOOR_X) < 30 && p.y > FRONT_Y - 34);
-      door += ((near ? 1 : 0) - door) * Math.min(1, dt * 5);
-      if (near && !doorWas && Math.abs(walker.px - DOOR_X) < 40 && walker.py > FRONT_Y - 40) play('slide');
-      doorWas = near;
-      updateShoppers(dt);
-      updateBelt(dt);
-      if (receiptOpen && !modalOpen()) cancelScan();
-      if (belt && !belt.done && !walker.path.length && Math.hypot(walker.px - (K1.x0 + 50), walker.py - (K1.base + 12)) > 14) cancelScan();
-      for (let i = flies.length - 1; i >= 0; i--) { flies[i].t += dt; if (flies[i].t > 0.4) flies.splice(i, 1); }
-      for (let i = pops.length - 1; i >= 0; i--) { pops[i].t += dt; if (pops[i].t > 1) pops.splice(i, 1); }
-      for (let i = bubbles.length - 1; i >= 0; i--) { bubbles[i].t += dt; if (bubbles[i].t > 2.4) bubbles.splice(i, 1); }
-      const tg = camTarget(), k = lockedCam ? 1 : Math.min(1, dt * 6);
-      cam.x += (tg.x - cam.x) * k; cam.y += (tg.y - cam.y) * k;
-    },
+    update,
 
     down(sx, sy) {
       hoverId = null;
-      for (const h of panelHits) if (sx >= h.r[0] && sx <= h.r[2] && sy >= h.r[1] && sy <= h.r[3]) { h.act(); return; }
       const x = sx + cam.x, y = sy + cam.y;
       const s = spotAt(x, y);
+      // sitter man och äter reser man sig inte förrän det är uppätet – mot utgången gäller MSG_DORR
+      if (sit && dish) { refuse(s?.id === 'dorr' ? MSG_DORR : MSG_ATUPP); return; }
+      for (const h of panelHits) if (sx >= h.r[0] && sx <= h.r[2] && sy >= h.r[1] && sy <= h.r[3]) { h.act(); return; }
+      // korven i handen: utgången nekas direkt vid klicket (man går inte ens dit, dörrarna öppnas inte)
+      if (dish && s?.id === 'dorr') { refuse(MSG_DORR); return; }
       if (belt && !belt.done && s?.id !== 'kassa') cancelScan();
       if (s) { clickSpot(s, x); return; }
       sit = null;
       if (y > WALL_Y) walker.walkTo(x, y);
     },
     move(sx, sy) { hoverId = spotAt(sx + cam.x, sy + cam.y)?.id || null; hoverT = t; },
+    // Får man lämna butiken just nu? null = ja, annars repliken (som figuren också säger).
+    // För huvudprogrammets knappar som byter scen (👥 Gå dit/Åk hem till, jobbinbjudan …) –
+    // samma kontrakt som Kaféet och Burgarbaren. { quiet: true } = bara fråga, säg inget.
+    leaveBlock(o) {
+      if (!dish) return null;
+      if (!o?.quiet) refuse(MSG_DORR);
+      return MSG_DORR;
+    },
+    // lämnar man scenen utan att gå ut genom dörren (jobbinbjudan, hembesök …) äts resten upp
+    exit() {
+      window.removeEventListener('sf:before-reload', settle);
+      window.removeEventListener('pagehide', settle);
+      finishNow();
+      talk.clear();
+    },
 
     draw(ctx) {
       syncView(A); // skärmen kan ha ändrat storlek – vyn följer med

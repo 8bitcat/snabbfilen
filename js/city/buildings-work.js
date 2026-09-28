@@ -200,11 +200,17 @@ function snowEdges(P) {
 // ---------- Burgarbarens meny: rätter och priser från jobbet (laddas tåligt) ----------
 let MENU = null;
 try { MENU = (await import('../jobs/jobb-burgare.js')).burgarMeny?.() || null; } catch (e) { console.error('burgarmenyn kunde inte laddas:', e); }
-// rätten utan kontur (pixelkartan direkt i Pix-pennan), nedre kanten vid y
-function dishPx(P, d, x, yBottom) {
-  const y0 = yBottom - d.map.length;
-  d.map.forEach((row, j) => { for (let i = 0; i < row.length; i++) { const c = d.pal[row[i]]; if (c !== undefined) P.px(x + i, y0 + j, c); } });
-}
+// Menypelaren visar priserna som Doris tar i Burgarbaren (BURGAR_MENY i scenes/shop-burgarbar.js)
+// – ändras de där följer pelaren med. Importen väntas INTE in: scenen laddar fasaderna med
+// await, så en väntande import åt andra hållet kunde låsa sig. Tills den kommit gäller
+// jobbets menypriser; PRICE_V räknas upp så att pelaren målar om sina tavlor.
+let PRICES = null, PRICE_V = 0;
+import('../scenes/shop-burgarbar.js').then((m) => {
+  if (!Array.isArray(m.BURGAR_MENY)) return;
+  PRICES = Object.fromEntries(m.BURGAR_MENY.filter((r) => r.id && r.price > 0).map((r) => [r.id, r.price]));
+  PRICE_V++;
+}).catch((e) => console.error('Burgarbarens priser kunde inte laddas:', e));
+const priceOf = (d) => PRICES?.[d.id] ?? d.price;
 const dishW = (d) => Math.max(...d.map.map((r) => r.length));
 
 // ======================= dörrar =======================
@@ -1463,14 +1469,28 @@ function composeInside(b, st, night, reg) {
 // ---------- menypelaren på trottoaren ----------
 // Står där löpsedeln stod, framför högra fönstret vid Burgarbarens östra hörn (flyttad 5 px
 // västerut så att den går fri från trafikljuset): en ljuslåda med rosa neonrör runt kanten,
-// kromlister, rött emaljhuvud (MENY, som växlar till rätternas namn och då ramar in den rätten)
-// och mörkgrön tavla som på jobbet med samma rätter och priser. Den är 46 px hög – överkanten
+// kromlister, rött emaljhuvud och mörkgrön tavla som på jobbet. Den är 46 px hög – överkanten
 // slutar under fönsterblecket så att gästerna i fönstret syns – och tänds på kvällen.
+// Tavlan växlar varje bildruta (pelaren ritas som y-sorterat föremål, drawStand): ÖVERSIKTEN
+// (MENY och alla fyra rätterna, inga priser) och sedan EN RÄTT I TAGET (rättens namn i huvudet,
+// en stor ritad rätt och priset under). Bytet rullar ner rad för rad över huvud och tavla med
+// en ljus linje i skarven – ingen toning. Stängt står den still på översikten. På kvällen
+// lyser tavlan inifrån (standGlow), men den som står framför pelaren skymmer skenet (occWatch).
 export const BURGARE_STAND = { dx: 101, y: CITY.SIDEWALK_N[0] + 9 };
 const SW = 40, SH = 52, SAX = 20, SAY = 48;
 const SB = { x0: -17, x1: 16, top: -45, head: -44, sep: -38, panel: -37, bot: -1 };
-const SCELL = { w: 15, rowB: [-25, -7], priceY: [-24, -6] };
+// tavlans yta innanför kromen (30 × 36) i pelarens koordinater, och översiktens rutor
+const SCR = { x: SB.x0 + 2, y: SB.panel, w: SB.x1 - SB.x0 - 3, h: SB.bot - SB.panel };
+const SCELL = { w: 15, rowB: [-21, -3] };
+// växlingen: översikten 3 s, varje rätt 2,5 s, bytet rullar ner på 0,4 s
+const STAND_T = { over: 3, dish: 2.5, wipe: 0.4 };
 function standRect(b) { const x = b.x + BURGARE_STAND.dx, y = BURGARE_STAND.y; return [x + SB.x0, y - 3, x + SB.x1 + 1, y + 2]; }
+// tavlans mörkgröna yta (samma brus i pelarbilden och i varje tavelbild, så att bytet inte syns i bakgrunden)
+function boardC(x, y, night) {
+  let c = hash(x, y, 34) > 0.9 ? 0x3a4a40 : jit(0x26342c, x, y, 35, 0.06);
+  if (y === SB.panel) c = mul(c, 0.7);
+  return night ? mix(c, 0x4a6a58, 0.28) : c;
+}
 function paintStand(P, night, snow) {
   const S = (x, y, c, a) => P.px(SAX + x, SAY + y, c, a);
   const { x0, x1, top, bot } = SB;
@@ -1496,29 +1516,247 @@ function paintStand(P, night, snow) {
   }
   // kromlisten mellan huvudet och tavlan
   for (let x = x0 + 2; x <= x1 - 2; x++) S(x, SB.sep, x < x0 + 6 ? 0xf6f8fa : x > x1 - 5 ? 0x9aa0a8 : 0xc8ced4);
-  // tavlan: mörkgrön som på jobbet
-  for (let y = SB.panel; y <= bot - 1; y++) for (let x = x0 + 2; x <= x1 - 2; x++) {
-    let c = hash(x, y, 34) > 0.9 ? 0x3a4a40 : jit(0x26342c, x, y, 35, 0.06);
-    if (y === SB.panel) c = mul(c, 0.7);
-    if (night) c = mix(c, 0x4a6a58, 0.28);
-    S(x, y, c);
-  }
-  // kritprickar mellan raderna, som linjen under MENY på jobbets tavla
-  const midY = SCELL.priceY[0] + 5;
-  for (let x = x0 + 4; x <= x1 - 3; x += 2) S(x, midY, 0x9aa8a0, 0.6);
-  if (MENU) {
-    MENU.dishes.slice(0, 4).forEach((d, i) => {
-      const cx0 = x0 + 2 + (i & 1) * SCELL.w, r = i >> 1;
-      const dw = dishW(d), ox = cx0 + ((SCELL.w - dw) >> 1);
-      dishPx({ px: (x, y, c) => S(x, y, c) }, d, ox, SCELL.rowB[r] + 1);
-      const lw = textW(SMALL, d.label), tx = cx0 + ((SCELL.w - lw) >> 1);
-      text({ px: (x, y, c) => S(x, y, c) }, SMALL, d.label, tx, SCELL.priceY[r], night ? 0xfffaf0 : 0xf4f1ea);
-    });
-  } else text({ px: (x, y, c) => S(x, y, c) }, SMALL, 'SNART', -9, -22, 0xc8c0a8);
+  // tavlan: mörkgrön som på jobbet (innehållet – översikten eller en rätt – ritas i live)
+  for (let y = SB.panel; y <= bot - 1; y++) for (let x = x0 + 2; x <= x1 - 2; x++) S(x, y, boardC(x, y, night));
   if (snow) {
     for (let x = x0; x <= x1; x++) { S(x, top - 1, hash(x, 1, 352) > 0.8 ? 0xdde8f4 : 0xf8fbff); if (x > x0 && x < x1) S(x, top, 0xeaf2fa, 0.85); }
     S(x0 + 3, top - 2, 0xf8fbff); S(x0 + 4, top - 2, 0xf8fbff); S(x1 - 6, top - 2, 0xf0f6fc);
   }
+}
+
+// ---------- tavlans rätter ----------
+// Rätterna målas i ett litet rutnät och får sedan 1 px kontur, tonad efter grannfärgen – samma
+// sel-out som rätterna på jobbets menytavla. Översikten använder jobbets pixelkartor; en rätt
+// i taget visar egna, dubbelt så stora rätter med fler toner och detaljer.
+function dishGrid(w, h) {
+  const g = new Int32Array(w * h).fill(-1);
+  const at = (x, y) => (x >= 0 && y >= 0 && x < w && y < h ? g[y * w + x] : -1);
+  const put = (x, y, c) => { x = Math.floor(x); y = Math.floor(y); if (x >= 0 && y >= 0 && x < w && y < h) g[y * w + x] = c; };
+  return { w, h, g, at, put };
+}
+function blitDish(S, G, x, y) {
+  for (let j = 0; j < G.h; j++) for (let i = 0; i < G.w; i++) {
+    let c = G.g[j * G.w + i];
+    if (c === -1) {
+      for (const [dx, dy] of [[0, 1], [0, -1], [-1, 0], [1, 0]]) {
+        const n = G.at(i + dx, j + dy);
+        if (n !== -1) { c = mix(mul(n, 0.42), 0x1c1418, 0.4); break; }
+      }
+      if (c === -1) continue;
+    }
+    S(x + i, y + j, c);
+  }
+}
+function mapGrid(d) {
+  const G = dishGrid(dishW(d) + 2, d.map.length + 2);
+  d.map.forEach((row, j) => { for (let i = 0; i < row.length; i++) { const c = d.pal[row[i]]; if (c !== undefined) G.put(i + 1, j + 1, c); } });
+  return G;
+}
+// hamburgaren: sesambröd (kupol, blank uppe till vänster), krusig sallad, ost med hörn som
+// hänger ut och droppar ner över köttet, grillat kött med stekskorpa och rostat underbröd
+function bigBurger() {
+  const G = dishGrid(28, 23), P = G.put, cx = 14;
+  const A = 0xffe2aa, B = 0xf2aa4c, C = 0xd4822c, D = 0x9c5622;
+  [6, 9, 10, 11, 12, 12, 12, 11].forEach((hw, j) => {
+    for (let x = -hw; x < hw; x++) {
+      const X = cx + x, Y = 1 + j;
+      let c;
+      if (j === 7) c = x < -hw + 3 ? C : D;
+      else {
+        const d = Math.hypot((x + 4.5) / 12, (j - 0.5) / 6.5) + (bayer(X, Y) - 0.5) * 0.2;
+        c = d < 0.3 ? A : d < 0.8 ? B : d < 1.1 ? C : D;
+        if (x >= hw - 1 || (j >= 5 && x >= hw - 3)) c = D;
+      }
+      P(X, Y, c);
+    }
+  });
+  P(cx - 6, 2, 0xfff4d8); P(cx - 5, 2, 0xfff4d8); P(cx - 7, 3, 0xfff0cc);
+  // sesamfrön: ljusa korn med en skuggpixel, dämpade på skuggsidan
+  for (const [sx, sy, k] of [[-8, 4, 0], [-3, 3, 1], [2, 2, 0], [6, 3, 1], [-10, 6, 0], [-5, 6, 1], [0, 5, 0], [4, 6, 1], [8, 5, 0], [-1, 7, 1]]) {
+    const hi = sx > 3 ? 0xf2d8a8 : 0xfff6dc;
+    P(cx + sx, 1 + sy, hi);
+    if (k) P(cx + sx + 1, sy, hi); else P(cx + sx + 1, 1 + sy, hi);
+    P(cx + sx + (k ? 0 : 1), 2 + sy, sx > 3 ? 0x9c5622 : 0xc07a30);
+  }
+  // salladen: ljusa och mörka blad, flikar som hänger ner och spetsar som sticker ut
+  for (let x = -13; x < 13; x++) {
+    const X = cx + x, w = (x + 13) % 5;
+    P(X, 9, w === 1 || w === 3 ? 0x8edc4c : w === 2 ? 0xb4f070 : 0x5aba3a);
+    P(X, 10, w === 2 ? 0x5aba3a : 0x3f9e34);
+  }
+  // osten (under salladsflikarna) och köttet
+  for (let x = -12; x < 12; x++) { P(cx + x, 11, x < -7 ? 0xffe680 : x > 8 ? 0xf0c030 : 0xffd23f); P(cx + x, 12, x > 8 ? 0xc88414 : 0xe09a1a); }
+  for (let j = 0; j < 5; j++) {
+    const Y = 13 + j, hw = j === 0 || j === 4 ? 11 : 12;
+    for (let x = -hw; x < hw; x++) {
+      const X = cx + x, h = hash(X, Y, 361);
+      let c = j === 0 ? 0x8a4a2c : j === 4 ? 0x4a2414 : 0x6a3622;
+      if (j > 0 && j < 4) { if (h > 0.8) c = 0x8e5436; else if (h < 0.2) c = 0x4e2818; }
+      if (x <= -hw + 1 && j < 4) c = mix(c, 0xc08858, 0.3);
+      if (x >= hw - 2) c = mul(c, 0.72);
+      P(X, Y, c);
+    }
+  }
+  // ostens hörn hänger ut över kanten och den smälta osten droppar ner över köttet
+  P(cx - 13, 12, 0xffd23f); P(cx - 13, 13, 0xe09a1a); P(cx + 12, 12, 0xe09a1a); P(cx + 12, 13, 0xc88414);
+  for (const [dx, len] of [[-8, 2], [-7, 1], [-2, 3], [4, 2], [5, 1], [9, 1]]) for (let k = 0; k < len; k++) P(cx + dx, 13 + k, k === len - 1 ? (dx > 6 ? 0xb07410 : 0xd08c14) : 0xe8a820);
+  for (let x = -13; x < 13; x++) if ((x + 13) % 5 === 0 || x === 12) P(cx + x, 11, 0x2e7a26);
+  // underbrödet: rostad snittyta med smulor, sedan bröd i tre toner och rundad botten
+  [[12, 0], [12, 1], [11, 2], [9, 3]].forEach(([hw, j]) => {
+    for (let x = -hw; x < hw; x++) {
+      const X = cx + x, Y = 18 + j;
+      let c = [0xe8b068, B, C, D][j];
+      if (j === 0) { const h = hash(X, Y, 362); if (h > 0.78) c = 0xf6d098; else if (h < 0.18) c = 0xc88a48; }
+      if (x === -hw && j < 3) c = mix(c, A, 0.4);
+      else if (x >= hw - 2) c = mul(c, 0.8);
+      P(X, Y, c);
+    }
+  });
+  return G;
+}
+// pommesen: vikt röd kartong (ljus, mellan och skuggad sida), gult band och en gul stjärna,
+// en bukett stavar – de bakre i skugga, de främre ljusa med knaprig spets och saltkorn
+function bigPommes() {
+  const G = dishGrid(26, 24), P = G.put, cx = 13;
+  // kartongens baksida – insidan syns mellan stavarna i framkantens svacka
+  for (let x = -11; x < 11; x++) { P(cx + x, 8, x < -7 ? 0xe04a3e : 0xb82622); for (let y = 9; y < 12; y++) P(cx + x, y, y === 9 ? 0x8a1c1a : 0x5a1212); }
+  // [x, topp, lutning, bakre]: de lutande står ut ovanför kanten, aldrig vid kartonghörnen
+  [[-9, 3, 0, 1], [-5, 1, 0, 1], [-1, 0, 0, 1], [3, 2, 0, 1], [7, 1, 1, 1],
+    [-11, 3, -1, 0], [-7, 4, 0, 0], [-3, 2, 0, 0], [1, 4, 0, 0], [5, 3, 0, 0], [9, 5, 0, 0]].forEach(([fx, top, lean, back], k) => {
+    // stavarna slutar vid kanten – längre ner skulle de sticka ut där kartongen smalnar
+    for (let y = top + 1; y <= 10; y++) {
+      const off = lean && y < top + 4 ? lean : 0;
+      for (let i = 0; i < 2; i++) {
+        let c = i === 0 ? 0xffe36a : 0xf5c03a;
+        if (y === top + 1) c = hash(k, 1, 363) > 0.5 ? 0xcf8f1c : 0xe8a830;
+        else if (i === 1 && y > top + 3 && hash(k, y, 364) > 0.7) c = 0xdca028;
+        if (back) c = mix(c, 0x7a3c0c, i === 0 ? 0.28 : 0.46);
+        P(cx + fx + i + off, y, c);
+      }
+    }
+    if (!back && hash(k, 2, 363) > 0.3) P(cx + fx + 1, top + 5, 0xfffbf0);
+  });
+  for (let y = 9; y <= 22; y++) {
+    const hw = Math.round(11 - (y - 9) * 0.34);
+    for (let x = -hw; x < hw; x++) {
+      const u = (x + 0.5) / 11, top = 9 + Math.round(2.4 * (1 - u * u));
+      if (y < top) continue;
+      const X = cx + x, f = (x + 0.5) / hw, band = y === 14 || y === 15;
+      let c = f < -0.4 ? 0xf04a3c : f > 0.45 ? 0xb82622 : 0xe0342c;
+      if (y === 14) c = f < -0.4 ? 0xffe06a : f > 0.45 ? 0xd8a420 : 0xffd23f;
+      else if (y === 15) c = f < -0.4 ? 0xf0b830 : f > 0.45 ? 0xa87a10 : 0xe0a818;
+      if (y === top) c = f > 0.45 ? 0xe05a4a : 0xff8a78;
+      else if (x === -hw) c = band ? 0xfff0a0 : 0xff7060;
+      else if (x === hw - 1) c = band ? 0x8a6010 : 0x8a1c1a;
+      if (y === 22) c = mul(c, 0.72);
+      P(X, y, c);
+    }
+  }
+  // den gula stjärnan på framsidan (spetsen upp, ljus vänsterkant)
+  ['..#..', '#####', '.###.', '.#.#.'].forEach((r, j) => { for (let i = 0; i < 5; i++) if (r[i] === '#') P(cx - 3 + i, 17 + j, j === 0 || i < 2 ? 0xffe680 : i > 2 ? 0xe0a818 : 0xffd23f); });
+  return G;
+}
+// läsken: pappersmugg i blått med vitt band och röd sicksack, plastlock med kupol och kant,
+// randigt sugrör med knyck och några kondensdroppar
+function bigLask() {
+  const G = dishGrid(20, 24), P = G.put, cx = 10;
+  for (let y = 9; y <= 22; y++) {
+    const hw = Math.round(7.4 - (y - 9) * 0.19);
+    for (let x = -hw; x < hw; x++) {
+      const X = cx + x, f = (x + 0.5) / hw;
+      let c = f < -0.78 ? 0x8ec0ff : f < -0.45 ? 0x5a9ae8 : f > 0.55 ? 0x25539e : 0x3a7bd5;
+      if (x === hw - 1) c = 0x1a3c7a;
+      if (y >= 12 && y <= 16) {
+        c = f < -0.72 ? 0xffffff : f > 0.55 ? 0xc8ccd4 : 0xf4f1ea;
+        if (x === hw - 1) c = 0x9aa2ae;
+        const zy = 13 + [0, 1, 2, 2, 1, 0][(x + 30) % 6];
+        if (y === zy) c = f > 0.55 ? 0xb03028 : 0xe8443a;
+        else if (y === 12 || y === 16) c = mul(c, 0.92);
+      }
+      if (y === 9) c = mul(c, 0.7);
+      if (y === 22) c = x === hw - 1 ? 0x10244a : 0x1e3c7a;
+      P(X, y, c);
+    }
+  }
+  // kondensdroppar som rinner (små streck, ojämnt utspridda – två prickar i samma höjd blev ögon)
+  for (const [dx, dy, len] of [[-4, 18, 2], [2, 20, 1], [4, 17, 2]]) for (let k = 0; k < len; k++) P(cx + dx, dy + k, k ? 0x8ec0ff : 0xd8ecff);
+  // locket
+  for (let x = -4; x < 4; x++) P(cx + x, 5, x < -2 ? 0xffffff : x > 1 ? 0xd8dee6 : 0xf2f5f8);
+  for (let x = -6; x < 6; x++) P(cx + x, 6, x < -4 ? 0xffffff : x > 3 ? 0xc8d0da : 0xe4e9ee);
+  for (let x = -8; x < 8; x++) { P(cx + x, 7, x < -5 ? 0xffffff : x > 5 ? 0xc8d0da : 0xf2f5f8); P(cx + x, 8, x > 5 ? 0x8a96a4 : 0xb4bfcc); }
+  // sugröret: två pixlar brett, röd-vita ränder längs röret, knyck åt höger upptill
+  const straw = [[1, 6], [1, 5], [1, 4], [2, 3], [3, 2], [4, 1]];
+  straw.forEach(([sx, sy], k) => {
+    const red = ((k >> 1) & 1) === 0;
+    P(cx + sx, sy, red ? 0xe8443a : 0xfff4ea);
+    P(cx + sx + 1, sy, red ? 0xb03028 : 0xd8cfc4);
+  });
+  return G;
+}
+// glassen: våffelstrut med rutmönster, mintkula med chokladbitar, rosa kula med strössel
+// och ett körsbär med skaft – kulorna rinner en aning över kanten under sig
+function scoop(P, cx, cy, rx, ry, lip, pal, seed) {
+  for (let y = Math.floor(cy - ry); y <= lip + 1; y++) {
+    const v = (y + 0.5 - cy) / ry, w = y + 0.5 < cy ? rx * Math.sqrt(Math.max(0, 1 - v * v)) : rx;
+    const hw = Math.round(w);
+    for (let x = -hw; x < hw; x++) {
+      if (y > lip && !(hash(x, 1, seed) > 0.5 && x > -hw && x < hw - 1)) continue;
+      const X = cx + x;
+      const d = Math.hypot((x + 0.5 + rx * 0.35) / rx, (y + 0.5 - (cy - ry * 0.5)) / ry) + (bayer(X, y) - 0.5) * 0.2;
+      let c = d < 0.35 ? pal[0] : d < 0.95 ? pal[1] : pal[2];
+      if (y >= lip || x >= hw - 1) c = pal[y > lip ? 3 : 2];
+      P(X, y, c);
+    }
+  }
+}
+function bigGlass() {
+  const G = dishGrid(20, 24), P = G.put, cx = 10;
+  for (let x = -8; x < 8; x++) P(cx + x, 15, x < -5 ? 0xf8d496 : x > 4 ? 0xc8883c : 0xf0c07a);
+  for (let y = 16; y <= 22; y++) {
+    const hw = Math.max(1, 7 - (y - 16));
+    for (let x = -hw; x < hw; x++) {
+      const f = (x + 0.5) / hw;
+      let c = ((x + y) & 3) === 0 || ((x - y) & 3) === 0 ? 0xb8742c : 0xecb466;
+      if (f > 0.35) c = mul(c, 0.84); else if (x === -hw) c = 0xf8d496;
+      P(cx + x, y, c);
+    }
+  }
+  scoop(P, cx, 12.5, 8, 3.6, 14, [0xd4fae6, 0x7fdcae, 0x3fae7a, 0x2e8a5e], 365);
+  for (const [dx, dy] of [[-6, 12], [-2, 13], [3, 12], [6, 13], [0, 11], [-4, 10]]) { P(cx + dx, dy, 0x5a3420); if (dx < 2) P(cx + dx - 1, dy, 0x8a5a34); }
+  scoop(P, cx, 8.5, 6, 3.6, 10, [0xffe4f0, 0xff88bb, 0xd9548e, 0xb03a70], 366);
+  for (const [dx, dy, c] of [[-3, 7, 0xffffff], [2, 7, 0xffe060], [-1, 9, 0x6ac0ff], [3, 9, 0x7fdcae], [0, 6, 0xfff4a0], [-4, 9, 0xffe060]]) P(cx + dx, dy, c);
+  // körsbäret med skaft
+  for (const [dx, dy, c] of [[0, 2, 0xff6a6a], [1, 2, 0xc8202c], [-1, 3, 0xc8202c], [0, 3, 0xffd0d0], [1, 3, 0xc8202c], [2, 3, 0x8a1420],
+    [-1, 4, 0xc8202c], [0, 4, 0xc8202c], [1, 4, 0xa81a26], [2, 4, 0x8a1420], [0, 5, 0x8a1420], [1, 5, 0x8a1420], [2, 1, 0x6a8a2a], [3, 1, 0x8aa83a]]) P(cx + dx, dy, c);
+  return G;
+}
+const BIG_DISH = { burgare: bigBurger, pommes: bigPommes, lask: bigLask, glass: bigGlass };
+// tavelbilderna: översikten (i = -1), en rätt i taget (i = 0…) och den tomma tavlan (i = null),
+// för dag och natt. Priset står på raderna PRICE_ROWS i en-rätt-bilderna.
+const PRICE_ROWS = [27, 35];
+function paintScreen(i, night, price) {
+  const P = new Pix(SCR.w, SCR.h), S = (x, y, c, a) => P.px(x - SCR.x, y - SCR.y, c, a);
+  for (let y = SCR.y; y < SCR.y + SCR.h; y++) for (let x = SCR.x; x < SCR.x + SCR.w; x++) S(x, y, boardC(x, y, night));
+  if (i === null) return P.flush();
+  const dishes = MENU ? MENU.dishes.slice(0, 4) : [];
+  const shade = (x, y, w) => P.ell(x - SCR.x, y - SCR.y, w, 1.6, 0x0a120e, 0.5, 3);
+  if (i < 0) {
+    if (!dishes.length) { text({ px: S }, SMALL, 'SNART', -9, -22, 0xc8c0a8); return P.flush(); }
+    // kritprickar mellan raderna, som linjen under MENY på jobbets tavla
+    for (let x = SCR.x + 2; x < SCR.x + SCR.w - 2; x += 2) S(x, -19, night ? 0xb4c8bc : 0x9aa8a0, 0.6);
+    dishes.forEach((d, k) => {
+      const G = mapGrid(d), c0 = SCR.x + (k & 1) * SCELL.w, bot = SCELL.rowB[k >> 1], ox = c0 + ((SCELL.w - G.w + 1) >> 1);
+      shade(ox + G.w / 2, bot + 0.5, G.w / 2);
+      blitDish(S, G, ox, bot - G.h + 1);
+    });
+    return P.flush();
+  }
+  const d = dishes[i], G = (BIG_DISH[d.id] || (() => mapGrid(d)))(), bot = SCR.y + 24, ox = SCR.x + ((SCR.w - G.w + 1) >> 1);
+  shade(ox + G.w / 2, bot + 0.5, G.w / 2 - 1);
+  blitDish(S, G, ox, bot - G.h + 1);
+  const B = bits(BIG, `${price}:-`);
+  sign({ px: S }, B, SCR.x + ((SCR.w - B.w) >> 1), SCR.y + PRICE_ROWS[0], { shadow: 0x0a120e, sa: 0.9, fill: night ? 0xfff0a8 : 0xffe27a, hi: night ? 0xfffbe0 : 0xfff6c8, lo: 0xe8b440 });
+  return P.flush();
 }
 
 function giantBurger(P, cx, by) {
@@ -1778,15 +2016,41 @@ function standImg(night, snow) {
   if (!c) { const P = new Pix(SW, SH); paintStand(P, night, snow); c = P.flush(); STANDS.set(key, c); }
   return c;
 }
-// vilken text huvudet visar just nu: MENY två steg, sedan en rätt i taget
-function headIdx(t, n) {
-  if (n <= 1) return 0;
-  const seq = [0, 0, 1, 2, 3, 4], i = seq[Math.floor(t / 1.6) % seq.length];
-  return i < n ? i : 0;
+// var i varvet pelaren är: cur/prev = -1 (översikten) eller rättens nummer, u = bytets
+// framsteg 0–1 (1 = klart). Varvet: översikt → burgare → pommes → läsk → glass → översikt …
+function standPhase(t, n) {
+  if (n <= 0) return { cur: -1, prev: -1, u: 1 };
+  const total = STAND_T.over + n * STAND_T.dish;
+  let tt = (((t || 0) % total) + total) % total, k = -1;
+  if (tt >= STAND_T.over) { tt -= STAND_T.over; k = Math.min(n - 1, Math.floor(tt / STAND_T.dish)); tt -= k * STAND_T.dish; }
+  return { cur: k, prev: k < 0 ? n - 1 : k - 1, u: Math.min(1, tt / STAND_T.wipe) };
+}
+// raden där bytet rullar just nu (världs-y), eller Infinity när det är klart
+function standSplit(y, ph) { return ph.u >= 1 ? Infinity : y + SB.head + Math.floor(ph.u * (SB.bot - SB.head + 1)); }
+// raderna ovanför skarven ur den nya bilden, resten ur den gamla. Två texter blandas aldrig:
+// band = [a, b, tom] är den gamla bildens textrader, som byts mot den tomma tavlan så fort
+// bytet börjat (huvudet skickar ingen gammal bild alls – dess gamla text släcks direkt)
+function wipeImg(ctx, nw, old, dx, dy, split, band) {
+  const w = nw.width, h = nw.height, s = clamp(split - dy, 0, h);
+  if (s > 0) ctx.drawImage(nw, 0, 0, w, s, dx, dy, w, s);
+  const seg = (img, a, b) => { a = Math.max(a, s); b = Math.min(b, h); if (img && b > a) ctx.drawImage(img, 0, a, w, b - a, dx, dy + a, w, b - a); };
+  if (!band) seg(old, s, h);
+  else { seg(old, s, band[0]); seg(band[2], band[0], band[1]); seg(old, band[1], h); }
+}
+// den ljusa linjen i skarven – bara över tavlans rätter: aldrig över kromlisten, huvudets
+// text eller (när en rätt rullar in) prisraderna, så att den aldrig skär genom halvsynlig text
+function wipeLine(ctx, x, y, split, ph, head, board) {
+  const r = split - y, pr = r - SCR.y;
+  if (r < SB.head || r >= SB.bot || r === SB.sep) return;
+  if (r > SB.head && r < SB.sep) return;
+  if (ph.cur >= 0 && pr >= PRICE_ROWS[0] - 1 && pr <= PRICE_ROWS[1]) return;
+  ctx.fillStyle = r < SB.sep ? head : board;
+  ctx.fillRect(x + SB.x0 + 2, split, SB.x1 - SB.x0 - 3, 1);
 }
 function standKit(K) {
-  if (K.stand) return K.stand;
-  const T = {}, names = ['MENY', ...(MENU ? MENU.dishes.slice(0, 4).map((d) => d.name) : [])];
+  if (K.stand && K.stand.pv === PRICE_V) return K.stand;
+  const dishes = MENU ? MENU.dishes.slice(0, 4) : [];
+  const T = { pv: PRICE_V, n: dishes.length }, names = ['MENY', ...dishes.map((d) => d.name)];
   const hw = SB.x1 - SB.x0 - 3, hh = SB.sep - SB.head;
   T.hw = hw; T.hh = hh;
   T.heads = names.map((s) => {
@@ -1810,10 +2074,12 @@ function standKit(K) {
   const core = new Pix(rw, rh);
   for (let y = 0; y < rh; y++) for (let x = 0; x < rw; x++) if (on[y * rw + x]) core.px(x, y, ((x + y) & 3) === 0 ? 0xffffff : 0xff9ac0);
   T.ring = core.flush();
-  // tavlan tänd: kopia av nattbildens tavla
-  const pw = SB.x1 - SB.x0 - 3, ph = SB.bot - SB.panel, lit = mkCanvas(pw, ph);
-  lit.getContext('2d').drawImage(standImg(true, 0), SAX + SB.x0 + 2, SAY + SB.panel, pw, ph, 0, 0, pw, ph);
-  T.panelLit = lit;
+  // tavelbilderna (översikten + en per rätt) för dagen och för natten – nattbilderna lyser
+  // också inifrån i glow()
+  const modes = [-1, ...dishes.map((d, i) => i)];
+  T.scrD = modes.map((i) => paintScreen(i, false, i < 0 ? 0 : priceOf(dishes[i])));
+  T.scrN = modes.map((i) => paintScreen(i, true, i < 0 ? 0 : priceOf(dishes[i])));
+  T.blankD = paintScreen(null, false); T.blankN = paintScreen(null, true);
   // ljuset som faller på trottoaren framför pelaren
   const sp = new Pix(56, 14);
   sp.ell(28, 5, 26, 6.5, 0xffb8d0, 0.5, 5);
@@ -1821,36 +2087,131 @@ function standKit(K) {
   K.stand = T;
   return T;
 }
-function standCell(i) { return { x: SB.x0 + 2 + (i & 1) * SCELL.w, y: i >> 1 ? SCELL.priceY[0] + 5 : SB.panel, w: SCELL.w, h: 18 }; }
 function drawStand(ctx, b, st, K) {
   const T = standKit(K), x = b.x + BURGARE_STAND.dx, y = BURGARE_STAND.y;
-  const snow = (st.env?.weather?.snowCover || 0) > 0.5 ? 1 : 0, open = isOpen(b, st.hour);
-  // stängt: släckta rör (dagsbilden, som mörkläggs av natten) och huvudet står stilla på MENY
-  ctx.drawImage(standImg(!!st.night && open, snow), x - SAX, y - SAY);
-  const i = open ? headIdx(st.t, T.heads.length) : 0;
-  ctx.drawImage(T.heads[i], x + SB.x0 + 2, y + SB.head);
-  if (i > 0) {
-    // ram runt rätten som huvudet talar om
-    const c = standCell(i - 1);
-    ctx.fillStyle = st.night ? '#ff8ab0' : '#e8b230';
-    ctx.fillRect(x + c.x, y + c.y, c.w, 1); ctx.fillRect(x + c.x, y + c.y + c.h - 1, c.w, 1);
-    ctx.fillRect(x + c.x, y + c.y, 1, c.h); ctx.fillRect(x + c.x + c.w - 1, y + c.y, 1, c.h);
+  const snow = (st.env?.weather?.snowCover || 0) > 0.5 ? 1 : 0, open = isOpen(b, st.hour), lit = !!st.night && open;
+  // stängt: släckta rör (dagsbilden, som mörkläggs av natten) och tavlan står stilla på översikten
+  ctx.drawImage(standImg(lit, snow), x - SAX, y - SAY);
+  const ph = open ? standPhase(st.t, T.n) : { cur: -1, prev: -1, u: 1 }, split = standSplit(y, ph), scr = lit ? T.scrN : T.scrD;
+  wipeImg(ctx, T.heads[ph.cur + 1], null, x + SB.x0 + 2, y + SB.head, split);
+  wipeImg(ctx, scr[ph.cur + 1], scr[ph.prev + 1], x + SCR.x, y + SCR.y, split, priceBand(ph.prev, lit ? T.blankN : T.blankD));
+  wipeLine(ctx, x, y, split, ph, lit ? '#ffb0c0' : '#f48a98', lit ? '#9ad0b4' : '#6a927e');
+  // kväll/natt: det som ritas framför pelaren ska skugga dess sken (se occWatch)
+  const dark = st.env?.dark ?? (st.night ? 0.5 : 0);
+  if (open && dark > 0) occWatch(ctx, glowBox(b), st.t);
+}
+// den gamla bildens prisrader (översikten har inga) – släcks när bytet börjar
+const priceBand = (i, blank) => (i < 0 ? null : [PRICE_ROWS[0], PRICE_ROWS[1], blank]);
+
+// ---------- folk framför pelaren skymmer skenet ----------
+// glow() ritas efter allt annat, så tavlans sken hamnade förr ovanpå den som gick framför
+// pelaren (figuren såg ut att stå bakom glas). Nu lyssnar pelaren, från det att den ritats
+// tills ett osynligt föremål sist i y-ordningen (items) stänger av, på allt som ritas
+// framför den – folk, husdjur, bilar, fåglar – med drawImage och fillRect som når skenets
+// ruta, och ritar samma sak i en mask direkt (samma bild, alfa och färg). Skenet målas
+// sedan i en egen liten duk, masken suddar ut det ('destination-out') och duken läggs på
+// additivt: den som står framför blir en mörk siluett mot den tända tavlan, och skuggan
+// vid fötterna dämpar ljuset på trottoaren. Inget framför → skenet ritas direkt som förut.
+const GLOW_PAD = { l: 26, t: 50, r: 30, b: 10 };
+function glowBox(b) {
+  const x = b.x + BURGARE_STAND.dx, y = BURGARE_STAND.y;
+  return [x - GLOW_PAD.l, y - GLOW_PAD.t, x + GLOW_PAD.r, y + GLOW_PAD.b];
+}
+const OCC = { ctx: null, box: null, m: null, t: null, n: 0, own: null, mask: null, mc: null, glow: null, gc: null };
+function occCanvas(w, h) {
+  const c = mkCanvas(w, h), g = c.getContext('2d');
+  g.imageSmoothingEnabled = false;
+  return [c, g];
+}
+function occWatch(ctx, box, t) {
+  occEnd();
+  if (!ctx || typeof ctx.getTransform !== 'function' || typeof document === 'undefined') return;
+  const m = ctx.getTransform();
+  if (m.b || m.c) return;
+  const w = box[2] - box[0], h = box[3] - box[1];
+  if (!OCC.mask || OCC.mask.width !== w || OCC.mask.height !== h) {
+    [OCC.mask, OCC.mc] = occCanvas(w, h);
+    [OCC.glow, OCC.gc] = occCanvas(w, h);
   }
+  OCC.mc.setTransform(1, 0, 0, 1, 0, 0);
+  OCC.mc.clearRect(0, 0, w, h);
+  OCC.mc.setTransform(1, 0, 0, 1, -box[0], -box[1]);
+  Object.assign(OCC, { ctx, box, m, t, n: 0 });
+  OCC.own = { di: Object.getOwnPropertyDescriptor(ctx, 'drawImage'), fr: Object.getOwnPropertyDescriptor(ctx, 'fillRect') };
+  const di = ctx.drawImage, fr = ctx.fillRect;
+  ctx.drawImage = function (img, a, b2, c, d, e, f, g, hh) {
+    const n = arguments.length;
+    try {
+      if (n >= 9) occNote(this, 0, e, f, g, hh, arguments);
+      else if (n >= 5) occNote(this, 0, a, b2, c, d, arguments);
+      else occNote(this, 0, a, b2, img?.width || 0, img?.height || 0, arguments);
+    } catch (err) { /* avlyssningen får aldrig stoppa ritningen */ }
+    return di.apply(this, arguments);
+  };
+  ctx.fillRect = function (x, y, w2, h2) {
+    try { occNote(this, 1, x, y, w2, h2, arguments); } catch (err) { /* som ovan */ }
+    return fr.apply(this, arguments);
+  };
+}
+function occNote(c, kind, x, y, w, h, args) {
+  if (c !== OCC.ctx) return;
+  if (w < 0) { x += w; w = -w; }
+  if (h < 0) { y += h; h = -h; }
+  const B = OCC.box;
+  if (!(x < B[2] && x + w > B[0] && y < B[3] && y + h > B[1])) return;
+  if (c.globalCompositeOperation !== 'source-over' || !(c.globalAlpha > 0)) return;
+  const m = c.getTransform(), M = OCC.m;
+  if (m.a !== M.a || m.b || m.c || m.d !== M.d || m.e !== M.e || m.f !== M.f) return;
+  const g = OCC.mc;
+  g.globalAlpha = c.globalAlpha;
+  if (kind) { g.fillStyle = c.fillStyle; g.fillRect(x, y, w, h); } else g.drawImage(...args);
+  OCC.n++;
+}
+function occEnd() {
+  const c = OCC.ctx;
+  if (!c) return;
+  OCC.ctx = null;
+  const put = (k, d) => { if (d) Object.defineProperty(c, k, d); else delete c[k]; };
+  put('drawImage', OCC.own.di);
+  put('fillRect', OCC.own.fr);
 }
 function standGlow(ctx, b, st, k, K) {
+  occEnd();
+  const box = glowBox(b), masked = OCC.n > 0 && OCC.t === st.t && OCC.box && OCC.box[0] === box[0] && OCC.box[1] === box[1];
+  if (!masked) { standGlowTo(ctx, b, st, k, K); return; }
+  // skenet i en egen duk, suddat där något står framför, och sedan additivt på staden
+  const g = OCC.gc, w = box[2] - box[0], h = box[3] - box[1];
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1;
+  g.clearRect(0, 0, w, h);
+  g.setTransform(1, 0, 0, 1, -box[0], -box[1]);
+  g.globalCompositeOperation = 'lighter';
+  standGlowTo(g, b, st, k, K);
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  g.globalCompositeOperation = 'destination-out'; g.globalAlpha = 1;
+  g.drawImage(OCC.mask, 0, 0);
+  g.globalCompositeOperation = 'source-over';
+  ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 1;
+  ctx.drawImage(OCC.glow, box[0], box[1]);
+  OCC.n = 0;
+}
+function standGlowTo(ctx, b, st, k, K) {
   const T = standKit(K), x = b.x + BURGARE_STAND.dx, y = BURGARE_STAND.y;
   const tick = Math.floor(st.t * 12), dip = hash(tick, 5, 79) > 0.97 ? 0.35 : 1;
+  const ph = standPhase(st.t, T.n), split = standSplit(y, ph);
   ctx.globalAlpha = k * 0.4;
   ctx.drawImage(T.spill, x - 26, y - 4);
+  // tavlan lyser inifrån: nattbilden av det som visas just nu, med samma rullande byte
   ctx.globalAlpha = k * 0.55;
-  ctx.drawImage(T.panelLit, x + SB.x0 + 2, y + SB.panel);
+  wipeImg(ctx, T.scrN[ph.cur + 1], T.scrN[ph.prev + 1], x + SCR.x, y + SCR.y, split, priceBand(ph.prev, T.blankN));
   ctx.globalAlpha = k * (0.75 + 0.2 * Math.sin(st.t * 8)) * dip;
   ctx.drawImage(T.ringHalo.img, x + SB.x0 - T.ringHalo.pad, y + SB.top - T.ringHalo.pad);
   ctx.globalAlpha = k * 0.9 * dip;
   ctx.drawImage(T.ring, x + SB.x0, y + SB.top);
-  const i = headIdx(st.t, T.headsLit.length);
   ctx.globalAlpha = k * 0.85;
-  ctx.drawImage(T.headsLit[i], x + SB.x0 + 1, y + SB.head - 1);
+  wipeImg(ctx, T.headsLit[ph.cur + 1], null, x + SB.x0 + 1, y + SB.head - 1, split);
+  ctx.globalAlpha = k * 0.5;
+  wipeLine(ctx, x, y, split, ph, '#ff8aa8', '#6ab894');
 }
 const COMP_T = new Map();
 function freshInside(b, st, night, reg) {
@@ -1921,9 +2282,15 @@ const BURGARE = {
     ctx.fillStyle = spin ? '#8a9098' : '#5a5e66';
     ctx.fillRect(ox + fx, fy - 1, 1, 3);
   },
-  // menypelaren står på trottoaren och y-sorteras med folket
+  // menypelaren står på trottoaren och y-sorteras med folket. Det andra föremålet ritar
+  // ingenting: det ligger sist i y-ordningen och stänger av pelarens avlyssning av det som
+  // står framför den (occWatch) innan vädret och mörkret ritas.
   items(b, st, reg, K) {
-    return [{ x: b.x + BURGARE_STAND.dx, y: BURGARE_STAND.y, kind: 'menypelare', draw: (ctx) => drawStand(ctx, b, st, K) }];
+    const x = b.x + BURGARE_STAND.dx;
+    return [
+      { x, y: BURGARE_STAND.y, kind: 'menypelare', draw: (ctx) => drawStand(ctx, b, st, K) },
+      { x, y: 1e9, kind: 'menypelare-slut', draw: () => occEnd() },
+    ];
   },
   obstacles(b) { return [standRect(b)]; },
   glow(ctx, b, st, k, reg, K) {

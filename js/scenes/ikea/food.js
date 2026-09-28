@@ -111,7 +111,28 @@ function paintSaft(P, ox, oy, left) {
   for (let y = oy + lvl; y < oy + 10; y++) P.hl(ox + 9, y, 3, y === oy + lvl ? 0xff8a6a : 0xd8303a);
   P.vl(ox + 11, oy - 2, 5, 0xffffff); P.px(ox + 11, oy - 1, 0xd8231e); P.px(ox + 11, oy + 1, 0xd8231e); P.px(ox + 12, oy - 2, 0xffffff);
 }
-const PAINT = { kottbullar: paintKottbullar, korv: paintKorv, bulle: paintBulle, kaffe: paintKaffe, saft: paintSaft };
+// mjukglass i en blågul pappersbägare med sked, på en servett (kioskens glass)
+function paintGlass(P, ox, oy, left) {
+  P.rect(ox + 4, oy + 9, 13, 2, 0xf4f1ea); P.hl(ox + 4, oy + 10, 13, 0xd8d2c6); P.px(ox + 5, oy + 9, 0xffffff); // servett
+  // bägaren (smalnar av en aning nedåt): vit kant, blå rand, gul linje
+  const ROW = [[7, 7, 'rim'], [7, 7, 'w'], [7, 7, 'b'], [8, 5, 'b'], [8, 5, 'y'], [8, 5, 'w']];
+  const COL = { rim: [0xffffff, 0xe8ecf0, 0xc8ccd2], w: [0xffffff, 0xfaf8f2, 0xd6dce4], b: [0x3f76c8, 0x1d51a0, 0x0c2a5c], y: [0xf6d95a, 0xf2c230, 0xc89a18] };
+  ROW.forEach(([dx, w, k], y) => {
+    for (let x = 0; x < w; x++) P.px(ox + dx + x, oy + 4 + y, COL[k][x === 0 ? 0 : x === w - 1 ? 2 : 1]);
+  });
+  const spoon = (y0) => { P.vl(ox + 12, y0, 3, 0xe8ecf0); P.px(ox + 12, y0, 0xffffff); P.px(ox + 13, y0, 0xd8dce2); };
+  if (left === 0) { spoon(oy + 1); P.px(ox + 9, oy + 4, 0xfff4d0); return; } // tom bägare, skeden står kvar
+  // mjukglassen: en rund snurrad topp (varv med skuggad spiral) – halväten = låg topp med skeden i
+  const rows = left === 2 ? [[6, 9], [7, 7], [8, 5], [9, 3]] : [[6, 9], [7, 7]];
+  rows.forEach(([dx, w], i) => {
+    const yy = oy + 3 - i;
+    for (let x = 0; x < w; x++) P.px(ox + dx + x, yy, x === 0 ? 0xffffff : x === w - 1 ? 0xd8c490 : x === 1 ? 0xfffbe8 : 0xf6ecc8);
+    P.px(ox + dx + ((i * 3 + 2) % w), yy, 0xe0cc98); // spiralens skugglinje
+  });
+  if (left === 2) { P.px(ox + 10, oy - 1, 0xfff4d0); P.px(ox + 11, oy - 2, 0xffffff); } // snurren överst
+  else { P.px(ox + 9, oy + 2, 0xd8c490); spoon(oy); }
+}
+const PAINT = { kottbullar: paintKottbullar, korv: paintKorv, bulle: paintBulle, kaffe: paintKaffe, saft: paintSaft, glass: paintGlass };
 export const DISH_W = 20, DISH_H = 12;
 // en rätt i skala 1 (20×12), med kontur
 export function dishImg(id, left = 2) {
@@ -132,12 +153,16 @@ export function dishBig(id, s = 3) {
 }
 
 // ---------- brickan ----------
-// items: [id, …] (högst 4). left: 2/1/0. Brickan är 36×12, rätterna står på den.
+// items: [id, …] (högst 4). left: 2/1/0 för hela brickan, eller en lista med en
+// siffra per rätt (samma ordning som items) när man äter bit för bit.
+// Brickan är 36×12, rätterna står på den.
 const SLOT_ORDER = ['kottbullar', 'korv', 'bulle', 'kaffe', 'saft'];
 export const TRAY_W = 38, TRAY_H = 22;
 export function trayImg(items, left = 2) {
-  const list = [...items].sort((a, b) => SLOT_ORDER.indexOf(a) - SLOT_ORDER.indexOf(b)).slice(0, 4);
-  return once(`t:${list.join(',')}:${left}`, () => {
+  const pairs = items.map((id, i) => [id, Array.isArray(left) ? left[i] ?? 2 : left])
+    .sort((a, b) => SLOT_ORDER.indexOf(a[0]) - SLOT_ORDER.indexOf(b[0])).slice(0, 4);
+  const list = pairs.map((p) => p[0]), lft = pairs.map((p) => p[1]);
+  return once(`t:${pairs.map((p) => p[0] + p[1]).join(',')}`, () => {
     const c = document.createElement('canvas'); c.width = TRAY_W; c.height = TRAY_H;
     const x = c.getContext('2d');
     const P = new Pix(TRAY_W, TRAY_H);
@@ -150,14 +175,13 @@ export function trayImg(items, left = 2) {
     P.hl(2, 21, TRAY_W - 4, 0x000000, 0.25);
     P.hl(3, 14, 4, 0xc08a5a); // glans
     x.drawImage(P.flush(), 0, 0);
-    // rätterna: stora rätter bak till vänster, småsaker till höger
-    const big = list.filter((i) => i === 'kottbullar' || i === 'korv');
-    const small = list.filter((i) => !big.includes(i));
-    let px = 0;
-    for (const id of big.slice(0, 1)) { x.drawImage(dishImg(id, left), px - 1, 3); px += 17; }
+    // rätterna: stora rätter bak till vänster, småsaker till höger (index i list/lft)
+    const idx = list.map((_, i) => i), isBig = (i) => list[i] === 'kottbullar' || list[i] === 'korv';
+    const big = idx.filter(isBig), small = idx.filter((i) => !isBig(i));
+    for (const i of big.slice(0, 1)) x.drawImage(dishImg(list[i], lft[i]), -1, 3);
     const spots = big.length ? [[16, 4], [23, 6], [9, 7]] : [[0, 4], [9, 5], [18, 4], [24, 6]];
     const rest = [...big.slice(1), ...small];
-    rest.forEach((id, i) => { const s = spots[i] || spots[spots.length - 1]; x.drawImage(dishImg(id, left), s[0] - 4, s[1] - 2); });
+    rest.forEach((i, k) => { const s = spots[k] || spots[spots.length - 1]; x.drawImage(dishImg(list[i], lft[i]), s[0] - 4, s[1] - 2); });
     return c;
   });
 }
