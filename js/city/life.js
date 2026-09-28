@@ -1199,22 +1199,30 @@ export function createLife(env, traffic) {
       tx = g.tx; ty = g.ty; spd = 22;
     }
     const dx = tx - g.x, dy = ty - g.y, d = Math.hypot(dx, dy);
-    g.moving = d > 0.8;
+    // hysteres: börja gå först när målet är en bit bort, sluta först när man är nästan framme
+    if (!g.moving && d > 2.5) g.moving = true;
+    else if (g.moving && d < 0.6) g.moving = false;
     if (g.moving) {
       const s = Math.min(d, spd * dt), nx = g.x + dx / d * s, ny = g.y + dy / d * s;
+      // glid längs hindret i stället för att hoppa: prova hela steget, sedan bara x, sedan bara y
       if (walk(nx, ny) || d < 3) { g.x = nx; g.y = ny; }
-      else { const tr = p.trail, q = tr[Math.max(0, tr.length - 6)]; if (q) { g.x = q.x; g.y = q.y; } }
-      if (Math.abs(dx) > 0.3) g.dir = dx < 0 ? -1 : 1;
+      else if (walk(nx, g.y)) g.x = nx;
+      else if (walk(g.x, ny)) g.y = ny;
       g.anim += dt * Math.max(spd, 20) / 3.2;
     }
-    // kopplet är 18 px långt
+    // kopplet är 18 px långt (mjukt: dras in gradvis i stället för att rycka)
     if (!inside) {
       const lx = g.x - X, ly = g.y - Y, ld = Math.hypot(lx, ly);
-      if (ld > 18) { g.x = X + lx / ld * 18; g.y = Y + ly / ld * 18; }
+      if (ld > 18) { const k = Math.min(1, dt * 8); g.x += (X + lx / ld * 18 - g.x) * k; g.y += (Y + ly / ld * 18 - g.y) * k; }
     }
+    // riktning med tröghet: byt bara om den nya riktningen hållit i sig i 0,3 s
+    let want = g.dir;
+    if (inside && !g.moving) want = doorCenter(p.door.b).x < g.x ? -1 : 1;
+    else if (g.moving) { if (p.moving && Math.abs(p.hx) > 0.2) want = p.hx < 0 ? -1 : 1; else if (Math.abs(dx) > 1.5) want = dx < 0 ? -1 : 1; }
+    else if (g.act !== 'sit' && Math.abs(X - g.x) > 3) want = X < g.x ? -1 : 1;
+    if (want !== g.dir) { g.dirT = (g.dirT || 0) + dt; if (g.dirT >= 0.3) { g.dir = want; g.dirT = 0; } } else g.dirT = 0;
     g.fr = g.moving ? 1 + (Math.floor(g.anim) % 2) : g.act === 'sit' ? 3 : g.act === 'sniff' && Math.sin(env.t * 3 + p.seed) > -0.3 ? 4 : 0;
-    if (!g.moving && g.act !== 'sit' && !inside) g.dir = X < g.x ? -1 : 1;
-    if (inside && !g.moving) { g.fr = 3; g.dir = doorCenter(p.door.b).x < g.x ? -1 : 1; }
+    if (inside && !g.moving) g.fr = 3;
   }
 
   // ---------- befolkningen ----------
@@ -1689,6 +1697,8 @@ export function createLife(env, traffic) {
       updCat(dt);
       updFlies(dt);
     },
+    // hundarna (för tools/dog-test.mjs: inga hopp, inga riktningsbyten varje bildruta)
+    dogs() { return peds.filter((p) => p.dog).map((p) => ({ id: p.seed, x: p.dog.x, y: p.dog.y, dir: p.dog.dir, fr: p.dog.fr, moving: !!p.dog.moving, owner: { x: p.x, y: p.y, moving: !!p.moving } })); },
     positions() {
       const out = [];
       for (const p of peds) if (!p.hidden) out.push({ x: p.x + p.ox, y: p.y + p.oy });
