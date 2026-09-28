@@ -10,6 +10,10 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.23.3] – 2026-09-28 – Repliker som pratbubblor i butikerna
+- Klickar du på taxen eller katten på kaféet, mäklarens tax, kassörskan i klädaffären eller sakerna på bostadsbyrån och i mataffären, visas det som en pratbubbla i scenen – ovanför den som säger något, eller ovanför dig själv – i stället för en ruta högst upp.
+- Pratbubblorna håller sig inom bilden och rymmer längre repliker.
+
 ## [0.23.2] – 2026-09-28 – Möblera med fingret på mobilen
 - Möblera på mobilen: dra möbeln med fingret och släpp, så står den där du släppte. Tidigare satt den kvar i handen och flyttades igen vid nästa tryck.
 

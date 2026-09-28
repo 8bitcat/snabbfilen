@@ -142,7 +142,7 @@ const payday = await page.evaluate(() => {
   return { before, after: g.money, pay: r.finalPay, min: g.min, rec: r.newRecord };
 });
 ok(payday.after === payday.before + payday.pay, 'lönen betalas ut');
-ok(payday.min === 14 * 60, 'passet tog 4 timmar');
+ok(Math.abs(payday.min - 14 * 60) <= 8, `passet tog 4 timmar (klockan ${Math.floor(payday.min / 60)}:${String(payday.min % 60).padStart(2, '0')})`); // realtidsklockan kan hinna ticka några minuter
 ok(payday.rec, 'rekord registrerades');
 const day1 = await page.evaluate(() => window.SF.game.day);
 await page.evaluate(() => window.SF.sleepFlow());

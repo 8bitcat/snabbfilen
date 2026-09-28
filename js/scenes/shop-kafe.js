@@ -27,8 +27,10 @@ import { drawPerson, makeLook } from '../core/people.js';
 import { openModal, closeModal, toast } from '../core/ui.js';
 import { fmt } from '../game.js';
 import { play } from '../core/sound.js';
-import { createWalker, selfDrawable, folkDrawables, WALK_SEQ, nameTag, emoteBubble, iconBubble, sayBubble } from './walkable.js';
+import { createWalker, selfDrawable, folkDrawables, WALK_SEQ, nameTag, emoteBubble, iconBubble, sayBubble, createSpeech } from './walkable.js';
 import { worldFolksHere, worldMyEmote } from '../net/world.js';
+
+const talk = createSpeech(); // repliker och beskrivningar som pratbubblor i scenen
 
 // ======================= menyn =======================
 // fill = mättnad, energy = energi (för första koppen i dag), cake/cup = vad som ritas.
@@ -1625,7 +1627,7 @@ export function makeShopKafe(A) {
     walker.walkTo(s.ax, s.ay, () => {
       if (s.occ && s.occ !== 'me') {
         const alt = pickSeat();
-        if (!alt) { me.state = 'free'; me.item = -1; toast('😕 Alla platser är upptagna – du fikar stående.'); return; }
+        if (!alt) { me.state = 'free'; me.item = -1; talk.say('😕 Alla platser är upptagna – jag fikar stående.', () => ({ x: walker.px, y: walker.py - 44 })); return; }
         goSit(alt, item); return;
       }
       sitDown(s, item);
@@ -1697,20 +1699,20 @@ export function makeShopKafe(A) {
   // påtår ingår när man har köpt något här (en gång per besök)
   let boughtHere = false, patarTaken = false, dogHappy = -9;
   function patar() {
-    if (patarTaken) { toast('☕ Du har redan tagit din påtår.'); play('click'); return; }
-    if (!boughtHere) { toast('☕ Påtår ingår när du har köpt en fika.'); play('click'); return; }
+    if (patarTaken) { talk.say('☕ Jag har redan tagit min påtår.', () => ({ x: walker.px, y: walker.py - 44 })); play('click'); return; }
+    if (!boughtHere) { talk.say('☕ Påtår ingår när man har köpt en fika.', () => ({ x: walker.px, y: walker.py - 44 })); play('click'); return; }
     patarTaken = true;
     g.energy = c100(g.energy + 3);
     g.passTime(5);
     g.save();
     play('ok');
-    toast('☕ Påtår! +3 energi', 'good');
+    talk.say('☕ Påtår! +3 ⚡', () => ({ x: walker.px, y: walker.py - 44 }));
     for (let i = 0; i < 6; i++) puff(STATION.x - 11, STATION.y - 29);
   }
   const hot = [
     { id: 'dorr', r: [DOOR.x0 - 3, DOOR.top - 12, DOOR.x1 + 3, WALL_Y + 10], go: () => DOOR_SPOT, act: () => { play('door'); A.go('city'); } },
-    { id: 'katt', r: [CAT.x - 1, CAT.y - 9, CAT.x + 15, CAT.y + 1], go: () => [CAT.x + 8, BQ.y + 6], act: () => { play('chirp'); catPurr = t + 3; toast('🐈 Kanel spinner nöjt och sträcker på sig.'); } },
-    { id: 'hund', r: [DOG.x - 11, DOG.y - 11, DOG.x + 11, DOG.y + 2], go: () => [DOG.x - 18, DOG.y + 5], act: () => { play('chirp'); dogHappy = t + 4; toast('🐕 Taxen Sixten viftar på svansen. ”Han gillar dig!” säger farmor.'); } },
+    { id: 'katt', r: [CAT.x - 1, CAT.y - 9, CAT.x + 15, CAT.y + 1], go: () => [CAT.x + 8, BQ.y + 6], act: () => { play('chirp'); catPurr = t + 3; talk.say('🐈 Mjau! Kanel spinner nöjt och sträcker på sig.', { x: CAT.x + 7, y: CAT.y - 11 }); } },
+    { id: 'hund', r: [DOG.x - 11, DOG.y - 11, DOG.x + 11, DOG.y + 2], go: () => [DOG.x - 18, DOG.y + 5], act: () => { play('chirp'); dogHappy = t + 4; talk.say('🐕 Vift vift! Han gillar dig, säger farmor.', { x: DOG.x, y: DOG.y - 14 }); } },
     { id: 'patar', r: [STATION.x - 15, STATION.y - 30, STATION.x + 15, STATION.y + 1], go: () => [STATION.x, STATION.y + 7], act: patar },
     { id: 'skylt', r: [EASEL.x - 13, EASEL.y - 31, EASEL.x + 13, EASEL.y + 1], go: () => [EASEL.x + 18, EASEL.y + 3], act: () => { play('click'); openMenu(); } },
     { id: 'tavla', r: [BOARD.x0, BOARD.y0, BOARD.x1, BOARD.y1], go: () => [340, ORDER_Y], act: () => { play('click'); openMenu(); } },
@@ -1806,7 +1808,7 @@ export function makeShopKafe(A) {
       if (k >= 0) {
         trays.splice(k, 1);
         const s = pickSeat();
-        if (!s) { me.state = 'free'; me.item = -1; toast('😕 Alla bord är upptagna – du fikar stående vid disken.'); return; }
+        if (!s) { me.state = 'free'; me.item = -1; talk.say('😕 Alla bord är upptagna – jag fikar stående vid disken.', () => ({ x: walker.px, y: walker.py - 44 })); return; }
         me.state = 'carry';
         goSit(s, me.item);
       }
@@ -2189,7 +2191,7 @@ export function makeShopKafe(A) {
         // med brickan i händerna: klick på ett ledigt bord styr om dit, annars en påminnelse
         const s = seatAt(x, y);
         if (s && !s.occ) { goSit(s, me.item); play('click'); return; }
-        if (t - me.waitMsgT > 2) { toast('☕ Du bär på brickan – klicka på ett ledigt bord så sätter du dig där.'); me.waitMsgT = t; }
+        if (t - me.waitMsgT > 2) { talk.say('☕ Klicka på ett ledigt bord så sätter jag mig där.', () => ({ x: walker.px, y: walker.py - 44 })); me.waitMsgT = t; }
         return;
       }
       if (me.state === 'sit') standUp();
@@ -2210,6 +2212,7 @@ export function makeShopKafe(A) {
       const cx = Math.round(cam.x);
       ctx.setTransform(A.pxs, 0, 0, A.pxs, -cx * A.pxs, 0);
       drawWorld(ctx, cx, VW);
+      talk.draw(ctx, { x0: cx, x1: cx + VW });
       // skylt i nederkanten när man pekar på disken, dörren eller katten
       ctx.setTransform(A.pxs, 0, 0, A.pxs, 0, 0);
       const h = hoverId && t - hoverT < 3 ? hoverId : null;

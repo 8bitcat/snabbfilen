@@ -27,7 +27,9 @@ import { Pix, SMALL, BIG, ctxText, textW, text, eachTextPixel, mix, mul, hash, b
 import { toast } from '../core/ui.js';
 import { HOMES, fmt } from '../game.js';
 import { play } from '../core/sound.js';
-import { createWalker, selfDrawable, folkDrawables, WALK_SEQ, sayBubble } from './walkable.js';
+import { createWalker, selfDrawable, folkDrawables, WALK_SEQ, sayBubble, createSpeech } from './walkable.js';
+
+const talk = createSpeech(); // repliker och beskrivningar som pratbubblor i scenen
 
 // ================= mått och plats =================
 const VW = 384, W = 600, H = 216;
@@ -1979,7 +1981,7 @@ export function makeShopBostad(A) {
     if (row) { row.style.outline = '3px solid #e8b230'; row.style.outlineOffset = '2px'; row.scrollIntoView?.({ block: 'nearest' }); }
   }
   const greet = () => { greetT = t; greeted = true; };
-  const say = (msg, snd = 'click') => { play(snd); toast(msg); };
+  const say = (msg, snd = 'click', at = null) => { play(snd); talk.say(msg, at || (() => ({ x: walker.px, y: walker.py - 44 }))); };
   let bossSay = null; // mäklarens pratbubbla { text, until }
   const HEADLINES = [
     '📰 DRÖMHEM: "Tio sätt att få plats med en soffa i Lilla rummet"',
@@ -2008,7 +2010,7 @@ export function makeShopBostad(A) {
     { id: 'staffli', r: [EASEL.x - 17, EASEL.base - 62, EASEL.x + 18, EASEL.base], go: [EASEL.x, EASEL.base + 8], label: 'VISNING', hint: 'SÖNDAG KLOCKAN 13-15',
       act: () => say('📐 Planritning från visningen: tre rum och kök, balkong i söderläge. Visning söndag kl 13–15 – kaffe bjuder vi på!') },
     { id: 'hund', r: [DOG.x - 17, DOG.base - 18, DOG.x + 17, DOG.base], go: [DOG.x - 22, DOG.base + 10], label: 'KANELBULLE', hint: 'MÄKLARENS TAX',
-      act: () => { wagT = t; say(dogAwake() ? '🐶 Kanelbulle viftar på svansen och nosar på din hand.' : '🐶 Kanelbulle vaknar, gäspar och viftar på svansen.', 'ok'); } },
+      act: () => { wagT = t; say(dogAwake() ? '🐶 Vift vift! Kanelbulle nosar på din hand.' : '🐶 Kanelbulle vaknar, gäspar och viftar på svansen.', 'ok', { x: DOG.x, y: DOG.base - 16 }); } },
     { id: 'kartonger', r: [BOXES.x - 17, BOXES.base - 40, BOXES.x + 17, BOXES.base], go: [BOXES.x + 22, BOXES.base + 2], label: 'FLYTTKARTONGER', hint: 'GRATIS NÄR DU FLYTTAR',
       act: () => say('📦 Flyttkartonger – gratis för alla som skriver kontrakt. Någon har redan packat köket!') },
     { id: 'paraply', r: [UMBR.x - 6, UMBR.base - 30, UMBR.x + 6, UMBR.base], go: [UMBR.x + 6, UMBR.base + 8], label: 'PARAPLYSTÄLLET', hint: 'LÅNA ETT PARAPLY',
@@ -2234,6 +2236,7 @@ export function makeShopBostad(A) {
       const cx = Math.round(cam.x);
       ctx.setTransform(A.pxs, 0, 0, A.pxs, -cx * A.pxs, 0);
       drawWorld(ctx, cx, VW);
+      talk.draw(ctx, { x0: cx, x1: cx + VW });
       // skyltar i skärmkanten och namnskylten för det man står vid/pekar på
       ctx.setTransform(A.pxs, 0, 0, A.pxs, 0, 0);
       if (cx < W - VW - 40 && walker.px < DESK.x - 60) edgeSign(ctx, 'MÄKLAREN', false);

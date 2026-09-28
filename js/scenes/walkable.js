@@ -164,7 +164,7 @@ function emojiImg(g) {
   return c;
 }
 // text → rader av tecken: { g, emoji, w }
-export function sayLines(text) {
+export function sayLines(text, maxW = SAY_W, maxLines = 4) {
   const clean = String(text).replace(/[–—]/g, '-').replace(/…/g, '...').replace(/[“”"«»]/g, '');
   const toks = [];
   for (const g of graphemes(clean)) {
@@ -185,27 +185,29 @@ export function sayLines(text) {
   const wWidth = (w) => w.reduce((a, t) => a + t.w, 0);
   for (let w of words) {
     let ww = wWidth(w);
-    if (line.length && lw + 3 + ww > SAY_W) { lines.push(line); line = []; lw = 0; if (lines.length >= 4) break; }
-    while (ww > SAY_W) { // för långt ord: bryt det
+    if (line.length && lw + 3 + ww > maxW) { lines.push(line); line = []; lw = 0; if (lines.length >= maxLines) break; }
+    while (ww > maxW) { // för långt ord: bryt det
       let k = w.length, acc = ww;
-      while (k > 1 && acc > SAY_W - lw) { k--; acc -= w[k].w; }
+      while (k > 1 && acc > maxW - lw) { k--; acc -= w[k].w; }
       line.push(...w.slice(0, k)); lines.push(line); line = []; lw = 0;
       w = w.slice(k); ww = wWidth(w);
-      if (lines.length >= 4) break;
+      if (lines.length >= maxLines) break;
     }
-    if (lines.length >= 4) break;
+    if (lines.length >= maxLines) break;
     if (line.length) { line.push({ g: ' ', w: 3 }); lw += 3; }
     line.push(...w); lw += ww;
   }
-  if (line.length && lines.length < 4) lines.push(line);
-  return lines.slice(0, 4);
+  if (line.length && lines.length < maxLines) lines.push(line);
+  return lines.slice(0, maxLines);
 }
-export function sayBubble(ctx, x, y, text) {
-  const lines = sayLines(text);
+export function sayBubble(ctx, x, y, text, { w: maxW = SAY_W, lines: maxLines = 4, x0 = null, x1 = null } = {}) {
+  const lines = sayLines(text, maxW, maxLines);
   if (!lines.length) return;
   const lh = lines.map((l) => (l.some((t) => t.emoji) ? 10 : 7));
   const w = Math.max(...lines.map((l) => l.reduce((a, t) => a + t.w, 0))) + 7, h = lh.reduce((a, v) => a + v, 0) + 4;
-  const bx = Math.round(x - w / 2), by = Math.round(y - h - 4);
+  let bx = Math.round(x - w / 2);
+  if (x0 !== null && x1 !== null) bx = Math.max(Math.round(x0) + 2, Math.min(Math.round(x1) - w - 2, bx)); // håll bubblan i bild
+  const by = Math.round(y - h - 4);
   ctx.fillStyle = '#17151a'; ctx.fillRect(bx - 1, by - 1, w + 2, h + 2);
   ctx.fillStyle = '#f4f1ea'; ctx.fillRect(bx, by, w, h);
   const tx = Math.round(x);
@@ -247,4 +249,28 @@ export function iconBubble(ctx, x, y, drawIcon, hot = false) {
   ctx.fillStyle = '#f4f1ea'; ctx.fillRect(x - 7 | 0, y - 15, 18, 16);
   ctx.fillStyle = '#f4f1ea'; ctx.fillRect(x - 1 | 0, y + 1, 3, 3);
   drawIcon(ctx, x + 2, y - 7);
+}
+
+// Ett pratbubbellager per scen: den senaste repliken visas ovanför en person, ett djur eller
+// den egna figuren (at = {x, y} i världskoordinater, eller en funktion som ger läget varje
+// bildruta). Ritas med scenens kameratransform; view = { x0, x1 } håller bubblan i bild.
+export function createSpeech() {
+  let cur = null;
+  const now = () => performance.now() / 1000;
+  return {
+    say(text, at, secs) {
+      const str = String(text || '').trim();
+      if (!str || !at) return;
+      cur = { text: str, at, until: now() + (secs ?? Math.max(3, Math.min(8, str.length / 12))) };
+    },
+    clear() { cur = null; },
+    active: () => !!cur && cur.until > now(),
+    text: () => (cur && cur.until > now() ? cur.text : null),
+    draw(ctx, view) {
+      if (!cur || cur.until <= now()) return;
+      const pos = typeof cur.at === 'function' ? cur.at() : cur.at;
+      if (!pos) return;
+      sayBubble(ctx, pos.x, pos.y, cur.text, { w: 124, lines: 5, x0: view?.x0 ?? null, x1: view?.x1 ?? null });
+    },
+  };
 }

@@ -16,7 +16,9 @@ import { openModal, closeModal, toast, esc } from '../core/ui.js';
 import { SORTIMENT, clothesKey, fmt } from '../game.js';
 import { play } from '../core/sound.js';
 import { saveAvatar } from '../core/avatar.js';
-import { createWalker, selfDrawable, folkDrawables } from './walkable.js';
+import { createWalker, selfDrawable, folkDrawables, createSpeech } from './walkable.js';
+
+const talk = createSpeech(); // repliker och beskrivningar som pratbubblor i scenen
 
 const VW = 384;                        // skärmens bredd i spelpixlar
 const W = 768, H = 216;                // butikens storlek
@@ -154,9 +156,9 @@ export function makeShopKlader(A) {
       // väskorna står på nedre hyllan – ställ dig vid sidan av dem så att de syns
       go: [it.y === GTOP ? it.x : it.x < GOND.x + GOND.w / 2 ? it.x - 22 : it.x + 22, GOND.y + GOND.h + 12],
     })),
-    { id: 'kassa', r: [DESK.x, DESK.y - 30, DESK.x + DESK.w, DESK.y + DESK.h], go: [DESK.x + DESK.w / 2, DESK.y + DESK.h + 10], act: () => { play('click'); toast('💬 Hej! Gå fram till en docka eller en hylla så får du prova plagget på dig.'); } },
-    ...[[8, 84], [W - 84, W - 8]].map(([a, b], i) => ({ id: 'prov' + i, r: [a, 18, b, WALL_Y], go: [(a + b) / 2, WALL_Y + 12], act: () => { play('click'); toast('🪞 Provhytten: klicka på ett plagg – då ser du det på dig själv innan du köper!'); } })),
-    ...RACKS.map(([x0], i) => ({ id: 'stang' + i, r: [x0 - 2, 16, x0 + 72, WALL_Y - 2], go: [x0 + 35, WALL_Y + 12], act: () => { play('click'); toast('👗 Klädstången är bara för att titta. Allt som säljs står på dockorna och hyllorna – klicka på ett plagg så får du prova det!'); } })),
+    { id: 'kassa', r: [DESK.x, DESK.y - 30, DESK.x + DESK.w, DESK.y + DESK.h], go: [DESK.x + DESK.w / 2, DESK.y + DESK.h + 10], act: () => { play('click'); talk.say('Hej! 👋 Gå fram till en docka eller en hylla så får du prova plagget på dig.', { x: DESK.x + DESK.w / 2, y: DESK.y - 30 }); } },
+    ...[[8, 84], [W - 84, W - 8]].map(([a, b], i) => ({ id: 'prov' + i, r: [a, 18, b, WALL_Y], go: [(a + b) / 2, WALL_Y + 12], act: () => { play('click'); talk.say('🪞 Provhytten! Klickar jag på ett plagg ser jag det på mig innan jag köper.', () => ({ x: walker.px, y: walker.py - 44 })); } })),
+    ...RACKS.map(([x0], i) => ({ id: 'stang' + i, r: [x0 - 2, 16, x0 + 72, WALL_Y - 2], go: [x0 + 35, WALL_Y + 12], act: () => { play('click'); talk.say('👗 Stången är bara för att titta – allt som säljs står på dockorna och hyllorna.', () => ({ x: walker.px, y: walker.py - 44 })); } })),
   ];
   for (const s of spots) if (s.item) s.act = () => { hoverId = null; openBuy(A, s.item); };
   const spotAt = (x, y) => spots.find((h) => x >= h.r[0] && x <= h.r[2] && y >= h.r[1] && y <= h.r[3]);
@@ -251,6 +253,7 @@ export function makeShopKlader(A) {
         const d = focus.item;
         dummyTag(ctx, d.x, d.y + 7, d.s, owned(d.s), g, d.dept, true);
       }
+      talk.draw(ctx, { x0: cx, x1: cx + VW });
       // pilar mot avdelningen man inte ser + namnskylten i skärmens nederkant
       ctx.setTransform(A.pxs, 0, 0, A.pxs, 0, 0);
       if (cx > 150) edgeSign(ctx, 'tjej');
