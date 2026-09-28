@@ -38,7 +38,7 @@ const A = {
     A.scene = SCENES[name](A, opts);
     A.scene.enter?.();
   },
-  openFoodShop: () => openFoodShop(A),
+  openFoodShop: () => A.go('mat'), // stormarknaden man går runt i (js/scenes/shop-mat.js)
   openHousing: (opts) => openHousing(A, opts),
   openFriends: () => openWorldDialog(),
   startJob: (jobId) => startJobFlow(A, jobId, ENGINES[jobId]),

@@ -51,6 +51,13 @@ function area(P, x, y, w, h, fn) {
 }
 function rows(P, x, y, w, cs) { cs.forEach((c, i) => { if (c !== null) P.hl(x, y + i, w, c); }); }
 function vcols(P, x, y, h, cs) { cs.forEach((c, i) => { if (c !== null) P.vl(x + i, y, h, c); }); }
+// liten sprite ur teckenrader: tecknet slås upp i pal ('.' = genomskinligt) och
+// får en halvgenomskinlig slagskugga ett snäpp ner till höger
+function stamp(P, x, y, rs, pal, shadow = 0.3) {
+  const on = (i, j) => j >= 0 && j < rs.length && i >= 0 && i < rs[j].length && pal[rs[j][i]] !== undefined;
+  if (shadow) for (let j = 0; j <= rs.length; j++) for (let i = 0; i <= rs[0].length; i++) if (!on(i, j) && on(i - 1, j - 1)) P.px(x + i, y + j, 0x1e1a16, shadow);
+  for (let j = 0; j < rs.length; j++) for (let i = 0; i < rs[j].length; i++) { const c = pal[rs[j][i]]; if (c !== undefined) P.px(x + i, y + j, c); }
+}
 // glasreflex: diagonala strimmor och en ljusare överkant
 function reflect(P, x, y, w, h, str = 1, seed = 0, tint = 0xeef7ff) {
   for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) {
@@ -416,6 +423,111 @@ function paintView(P, mode) {
   for (const cx of [190, 204, 322]) { P.px(cx, 43, 0xf07a1e); P.px(cx, 42, 0xffb070); P.hl(cx - 1, 44, 3, 0xd8601a); }
 }
 
+// ======================= skräpet på golvet =======================
+// Sådant som blir kvar i en bagagehall: avrivna taggar, en arbetshandske, en
+// vält kaffemugg, ett boardingkort, en lös bagagerem, ett avbrutet väskhjul,
+// buntband, plastfilm, mynt – plus sprickor, kantstötta plattor och en lagad
+// platta runt golvbrunnen. Allt ligger platt i golvlagret (inga hinder).
+const SVC = { x: 126, y: 118, w: 16, h: 10 };            // serviceluckan
+const LITTER = {
+  glove: {
+    rows: ['.....xx.....', '.xxxxoOx....', 'xKkkxoOOxxx.', 'xKkkxoOOOOOx', 'xKkkxooddddx', 'xKkkxoOOOOOx', 'xKkkxooddddx', '.xxxxxxxxxx.'],
+    pal: { x: 0x3a2412, o: 0xe8801e, O: 0xffb040, d: 0xa8500e, K: 0x8a8e96, k: 0x4a4e56 },
+  },
+  cup: {
+    rows: ['.xxxxxxxxxx', 'xWWWbBBWWWo', 'xwwwbbbwwwO', 'xssssbbsssO', '.xxxxxxxxxo'],
+    pal: { x: 0x7a7268, W: 0xffffff, w: 0xeae6de, s: 0xbcb6aa, B: 0xb8804a, b: 0x7a4a22, o: 0xd8d2c8, O: 0x2a1a10 },
+  },
+  pass: {
+    rows: ['BBpppppppppq', 'BBpkkpkkkppq', 'BBpppppppppq', 'bBpKpKKpKpKq', 'bbqqqqqqqqqq'],
+    pal: { B: 0x2c6fb7, b: 0x1e4a80, p: 0xf6f4ee, q: 0xd0ccc2, k: 0x9a9ca2, K: 0x1a1a1e },
+  },
+  wheel: {
+    rows: ['.xxx..', 'xrrrxg', 'xrHrxG', 'xrhrx.', '.xxx..'],
+    pal: { x: 0x141418, r: 0x3a3a40, H: 0xd8dce2, h: 0x8a9098, g: 0xaab0b8, G: 0x5a6068 },
+  },
+  tag: {
+    rows: ['..e.......', '.e.e......', 'CCppppppq.', 'CCppkkppq.', '.qqqqqqq..'],
+    pal: { e: 0x2a2c30, p: 0xf6f4ee, q: 0xcac6bc, k: 0x9a9ca2 },
+  },
+  pen: { rows: ['wbbbbbbk', '.BBBBBBx'], pal: { w: 0xe8ecf0, b: 0x3a6ad8, B: 0x2a4aa8, k: 0x1a1a1e, x: 0x3a3a40 } },
+  candy: { rows: ['r.rrr.r', '.rRRRr.', 'r.ddd.r'], pal: { r: 0xe84a8a, R: 0xff9ac0, d: 0xa82a5a } },
+  // koppelsprint (stiftet som låser vagnens dragstång) med ring – tappad vid vagnarna
+  pin: { rows: ['.rr......', 'r..R.....', 'r..LSSSSd', '.rr......'], pal: { r: 0x5a6068, R: 0x9aa0a8, L: 0xd8dce2, S: 0x9aa0a8, d: 0x3a3e46 } },
+  // hörselkåpor som ramppersonalen lagt ifrån sig
+  ears: { rows: ['..bbbbb..', '.b.....b.', 'yy.....yy', 'YY.....YY', 'yy.....yy'], pal: { b: 0x2a2c30, y: 0xd8a018, Y: 0xf0c020 } },
+};
+function paintFloorLitter(P) {
+  // gulsvart tejp runt serviceluckan, nött där folk går
+  const t0x = SVC.x - 4, t0y = SVC.y - 4, tw = SVC.w + 8, th = SVC.h + 8;
+  for (let j = 0; j < th; j++) for (let i = 0; i < tw; i++) {
+    if (!(i < 2 || j < 2 || i >= tw - 2 || j >= th - 2)) continue;
+    const X = t0x + i, Y = t0y + j, worn = hash(X, Y, 20) > 0.9;
+    const c = (((X + Y) >> 1) & 1) ? (j === 0 || i === 0 ? 0xf8d850 : 0xf0c020) : 0x1e1e20;
+    P.px(X, Y, worn ? mix(c, P.get(X, Y), 0.65) : c, 0.9);
+  }
+  // sprickor genom plattorna
+  for (const [sx, sy, n, seed] of [[52, 110, 15, 1], [200, 128, 12, 2], [314, 141, 11, 3], [98, 150, 8, 4]]) {
+    let x = sx, y = sy;
+    for (let s = 0; s < n; s++) {
+      P.px(x, y, mul(P.get(x, y), 0.7)); P.px(x, y + 1, mix(P.get(x, y + 1), WHITE, 0.14));
+      x++; const h = hash(seed, s, 21); y += h > 0.72 ? 1 : h < 0.22 ? -1 : 0;
+    }
+  }
+  // kantstötta plattor där fogarna möts
+  for (const [x, y] of [[95, 105], [207, 121], [319, 137], [271, 121], [63, 137]]) {
+    P.px(x, y, 0x6a665e); P.px(x - 1, y, mul(P.get(x - 1, y), 0.78)); P.px(x, y - 1, mul(P.get(x, y - 1), 0.78));
+    P.px(x + 1, y + 1, mix(P.get(x + 1, y + 1), WHITE, 0.25));
+  }
+  // vält kaffemugg med en pöl kaffe ur öppningen
+  P.ell(170, 131, 6, 1.6, 0x4a2a14, 0.5, 3);
+  P.ell(172, 131, 3, 0.9, 0x2a1a0e, 0.35, 2);
+  for (const [dx, dy] of [[9, 2], [12, 3], [18, 0]]) P.px(166 + dx, 128 + dy, 0x4a2a14, 0.45);
+  stamp(P, 154, 128, LITTER.cup.rows, LITTER.cup.pal);
+  // arbetshandske (varselorange) som ramppersonalen tappat
+  stamp(P, 82, 118, LITTER.glove.rows, LITTER.glove.pal);
+  // boardingkort, penna och godispapper nere vid gallervagnen
+  stamp(P, 206, 114, LITTER.pass.rows, LITTER.pass.pal);
+  stamp(P, 322, 121, LITTER.pen.rows, LITTER.pen.pal, 0.25);
+  stamp(P, 250, 142, LITTER.candy.rows, LITTER.candy.pal, 0.2);
+  // avbrutet väskhjul med fästet kvar
+  stamp(P, 216, 105, LITTER.wheel.rows, LITTER.wheel.pal);
+  // koppelsprinten vid vagn B och hörselkåporna nere vid vagn C
+  stamp(P, 100, 130, LITTER.pin.rows, LITTER.pin.pal, 0.25);
+  stamp(P, 262, 133, LITTER.ears.rows, LITTER.ears.pal);
+  P.hl(263, 138, 3, 0xa87810, 0.6); P.hl(268, 138, 3, 0xa87810, 0.6);
+  // avrivna taggar med gummisnodd
+  for (const [tx, ty, k] of [[178, 134, 1], [258, 108, 3], [44, 124, 0]]) {
+    stamp(P, tx, ty, LITTER.tag.rows, { ...LITTER.tag.pal, C: TAG[k].ci });
+  }
+  // lös bagagerem (vävd, med spänne) som slingrar sig
+  for (let s = 0; s < 24; s++) {
+    const x = 284 + s, y = 125 + Math.round(Math.sin(s * 0.33) * 2);
+    P.px(x + 1, y + 2, 0x1e1a16, 0.25);
+    P.px(x, y, s % 3 === 1 ? 0xf6d8d8 : 0xc83a3a); P.px(x, y + 1, 0x8a1e22);
+  }
+  const bkx = 292, bky = 125 + Math.round(Math.sin(8 * 0.33) * 2) - 1;
+  area(P, bkx, bky, 3, 4, (X, Y, i, j) => (i === 1 && (j === 1 || j === 2) ? null : j === 0 ? 0xf4f6f8 : i === 2 ? 0x6a7078 : 0xb8bec6));
+  // buntband som klippts av vid vagnarna
+  const ZIP = [
+    [[0, 1], [1, 0], [2, 0], [3, 1], [3, 2], [2, 3], [4, 3], [5, 3]],           // ögla med svans
+    [[0, 0], [1, 0], [2, 1], [3, 1], [4, 1], [5, 2], [6, 2]],                   // rakt avklippt
+    [[0, 2], [1, 1], [2, 0], [3, 0], [4, 1], [4, 2], [3, 3]],                   // krokig bit
+  ];
+  for (const [zx, zy, k] of [[98, 141, 0], [192, 131, 1], [284, 144, 2]]) {
+    for (const [dx, dy] of ZIP[k]) P.px(zx + dx, zy + dy, k === 1 ? 0xe8ecf0 : 0x1e1e22);
+    P.px(zx + ZIP[k][1][0], zy + ZIP[k][1][1], k === 1 ? 0xffffff : 0x5a5e66);
+  }
+  // en bit plastfilm från en inplastad väska
+  for (const [dx, dy, a] of [[0, 1, 0.4], [1, 0, 0.5], [2, 0, 0.35], [3, 1, 0.5], [4, 1, 0.3], [1, 2, 0.35], [2, 2, 0.55], [3, 2, 0.3], [5, 2, 0.4], [2, 3, 0.3], [4, 3, 0.35]]) P.px(62 + dx, 119 + dy, 0xf4faff, a);
+  P.px(64, 120, WHITE, 0.85); P.px(66, 121, WHITE, 0.7);
+  // mynt
+  for (const [mx, my, c] of [[150, 106, 0xc88a3a], [276, 147, 0xc8ccd2], [118, 142, 0xd8b048]]) {
+    P.px(mx, my, mix(c, WHITE, 0.5)); P.px(mx + 1, my, c); P.px(mx, my + 1, mul(c, 0.8)); P.px(mx + 1, my + 1, mul(c, 0.62));
+    P.px(mx + 2, my + 1, 0x1e1a16, 0.25);
+  }
+}
+
 function paintHall(mode) {
   const P = new Pix(FW, FH);
   // ---- taket (mest dolt bakom topplisten) ----
@@ -474,6 +586,7 @@ function paintHall(mode) {
     const xx = X + (r & 1) * 16 + 64, c0 = Math.floor(xx / 32), rx = xx - c0 * 32;
     let c = mix(0xbdb9ae, hash(c0, r, 11) > 0.5 ? 0xc6c2b8 : 0xb2aea4, 0.5 + (hash(c0, r, 12) - 0.5) * 0.6);
     c = mix(c, 0x9a968c, clamp((140 - Y) / 50, 0, 1) * 0.35);
+    if (c0 === 8 && r === 3) c = mix(c, 0xa9aeae, 0.5);                 // lagad platta runt brunnen
     if (ry === 15 || rx === 31) c = mul(c, 0.86);
     else if (ry === 0 || rx === 0) c = mix(c, WHITE, 0.1);
     const h = hash(X, Y, 13);
@@ -501,14 +614,80 @@ function paintHall(mode) {
   const st = 'STÅ BAKOM LINJEN', stw = textW(SMALL, st);
   for (const sx of [60, 250]) text(P, SMALL, st, sx, 100, 0xd8b028, 0.85);
   void stw;
+  // en borttappad nalle och avrivna bagagelappar på golvet
+  const TX = 236, TY = 128, fur = 0xa8703a, furD = 0x7a4a22, furL = 0xc89058;
+  P.ell(TX + 4, TY + 7, 9, 2, 0x3a3228, 0.3, 3);
+  for (const [dx, dy, c] of [[0, 1, furD], [0, 0, fur], [8, 0, fur], [8, 1, furD], [-1, 4, fur], [-2, 5, furD], [9, 4, fur], [10, 5, furD], [2, 7, fur], [2, 8, furD], [6, 7, fur], [6, 8, furD]]) P.px(TX + dx, TY + dy, c);
+  area(P, TX + 1, TY + 1, 7, 5, (X, Y, i, j) => ((i === 0 || i === 6) && (j === 0 || j === 4) ? null : j === 0 ? furL : i === 6 || j === 4 ? furD : fur));
+  area(P, TX + 1, TY + 5, 7, 3, (X, Y, i, j) => ((i === 0 || i === 6) && j === 2 ? null : j === 2 ? furD : i < 2 ? furL : fur));
+  P.px(TX + 3, TY + 2, INK); P.px(TX + 5, TY + 2, INK); P.px(TX + 4, TY + 3, 0x3a2418);
+  P.rect(TX + 3, TY + 4, 3, 1, 0xd8303a);
+  P.px(TX + 4, TY + 6, furL);
+  for (const [lx, ly, c] of [[112, 118, 0xd9433b], [288, 138, 0x2c6fb7], [70, 136, 0xe8b230], [170, 112, 0x2f8f46]]) {
+    P.rect(lx, ly, 4, 2, 0xf4f2ea); P.px(lx + 3, ly, c); P.px(lx + 3, ly + 1, c); P.px(lx, ly + 2, 0x6a6860, 0.4);
+  }
+  // pöl vid VÅTT GOLV-skylten
+  for (const [cx, cy, rx, ry] of [[24, 136, 16, 3], [36, 139, 9, 2]]) P.ell(cx, cy, rx, ry, 0xd8e8f4, 0.3, 3);
+  for (let x = 12; x < 44; x += 6) P.px(x, 135 + (x % 3), 0xffffff, 0.6);
   // golvbrunn
   area(P, 186, 142, 13, 6, (X, Y, i, j) => (i === 0 || j === 0 || i === 12 || j === 5 ? 0x6a6860 : i % 2 ? 0x2a2a2e : 0x8a8880));
-  // parkeringsrutor för vagnarna
+  // servicelucka i golvet: stålram, halkskyddsrutor, lyftspår och bultar
+  const { x: HX, y: HY, w: HW, h: HH } = SVC;
+  area(P, HX - 1, HY - 1, HW + 2, HH + 2, (X, Y, i, j) => {
+    const lx = i - 1, ly = j - 1;
+    if (lx < 0 || ly < 0 || lx === HW || ly === HH) return mul(P.get(X, Y), lx < 0 || ly < 0 ? 0.72 : 0.9);  // fogen runt
+    if (ly === 0) return 0xd6d2c8;
+    if (lx === 0) return 0xb4b0a6;
+    if (ly === HH - 1 || lx === HW - 1) return 0x66645c;
+    let c = (lx & 1) === 0 && (ly & 1) === 0 ? 0xaaa69c : 0x8a867e;
+    if (lx + ly < 5) c = mix(c, WHITE, 0.12);
+    if (hash(X, Y, 16) > 0.9) c = mix(c, 0x8a6a4a, 0.3);
+    return c;
+  });
+  for (const bx of [3, HW - 4]) { P.hl(HX + bx - 1, HY + 4, 3, 0x2a2826); P.hl(HX + bx - 1, HY + 5, 3, 0xc8c4ba); }
+  for (const [bx, by] of [[1, 1], [HW - 2, 1], [1, HH - 2], [HW - 2, HH - 2]]) P.px(HX + bx, HY + by, 0x4a4840);
+  // målade pilar mot vagnarna och gummimärken där vagnarna svängt in
+  for (const cart of CARTS) {
+    const ax = cart.x + (cart.w >> 1);
+    for (let y = 138; y <= 147; y++) {
+      const hw = y < 143 ? 1 : 147 - y;
+      for (let x = ax - hw; x <= ax + hw; x++) {
+        const worn = hash(x, y, 18) > 0.86;
+        P.px(x, y, worn ? mix(0xf0cc3a, P.get(x, y), 0.6) : y === 138 || x === ax - hw ? 0xf8d850 : 0xe8c030, 0.9);
+      }
+    }
+    for (let k = 0; k < 2; k++) for (let s = 0; s <= 40; s++) {
+      const u = s / 40, x = Math.round(cart.x - 4 + u * 44 + k * 3), y = Math.round(147 - Math.sin(u * Math.PI) * 5 - k * 3);
+      if (hash(x, y, 19 + k) > 0.3) P.px(x, y, 0x2a2622, 0.2);
+    }
+  }
+  // tuggummi och klackmärken
+  for (let k = 0; k < 10; k++) {
+    const gx = Math.round(40 + hash(k, 0, 17) * 290), gy = Math.round(104 + hash(k, 1, 17) * 44);
+    P.px(gx, gy, 0x6a665e, 0.55); P.px(gx + 1, gy, 0x8a867e, 0.35);
+    const mx = Math.round(30 + hash(k, 2, 17) * 310), my = Math.round(102 + hash(k, 3, 17) * 40);
+    P.hl(mx, my, 2 + (k % 3), 0x1e1c1a, 0.2);
+  }
+  // ett par bortglömda solglasögon
+  const GLX = 300, GLY = 112;
+  P.ell(GLX + 5, GLY + 3, 6, 1.4, 0x3a3228, 0.22, 3);
+  ['.KKK.KKK.', 'KLGKKKLLK', 'KLLK.KLLK', '.KK...KK.'].forEach((r, j) => {
+    for (let i = 0; i < r.length; i++) {
+      const ch = r[i];
+      if (ch !== '.') P.px(GLX + i, GLY + j, ch === 'K' ? 0x1a1a1e : ch === 'G' ? 0xe8f0ff : j === 1 ? 0x3a5a7a : 0x243a52);
+    }
+  });
+  P.line(GLX, GLY + 1, GLX - 3, GLY - 2, 0x2a2a30); P.line(GLX + 8, GLY + 1, GLX + 10, GLY - 2, 0x2a2a30);
+  paintFloorLitter(P);
+  // parkeringsrutor för vagnarna; bokstaven målad mitt under rutan. D:s bokstav
+  // skjuts åt vänster så att den får luft mellan sig och UTGÅNG-knappen.
   for (const cart of CARTS) {
     const x0 = cart.x - 8, x1 = cart.x + cart.w + 7, y0 = 150, y1 = 200;
     for (let x = x0; x <= x1; x++) for (const y of [y0, y1]) if ((x >> 2) % 2 === 0) P.px(x, y, 0xf0cc3a, 0.9);
     for (let y = y0; y <= y1; y++) for (const x of [x0, x1]) if ((y >> 2) % 2 === 0) P.px(x, y, 0xf0cc3a, 0.9);
-    text(P, BIG, cart.ch, cart.x + cart.w + 1, 203, mix(cart.ci, 0xbdb9ae, 0.35), 0.9);
+    const lw = BIG[cart.ch].w, lx = Math.min(cart.x + (cart.w >> 1) - (lw >> 1), EXIT.x0 - lw - 8), lc = mix(cart.ci, 0xbdb9ae, 0.3);
+    text(P, BIG, cart.ch, lx + 1, 204, mul(lc, 0.7), 0.35);
+    text(P, BIG, cart.ch, lx, 203, lc, 0.9);
   }
   P.box(0, 0, FW, FH, 0x0e0d12);
   return P.flush();
@@ -621,7 +800,7 @@ function paintFront() {
     else if (i === 1) c = mix(c, WHITE, 0.2);
     if (j === 16 || j === 17) c = j === 16 ? 0x3a6ab0 : 0x2a4a80;               // blå rand
     if (j > 44) c = mul(c, 0.55);                                                // sockeln
-    if (i > 22 && i < 34 && j > 3 && j < 12 && j % 2 === 0) c = mul(c, 0.6);    // ventilation
+    if (i > 20 && i < 34 && j > 10 && j < 15 && j % 2 === 1) c = mul(c, 0.6);   // ventilation
     return jit(c, X, Y, 48, 0.04);
   });
   text(P, SMALL, 'RÖNTGEN', x0 + 5, top + 5, 0x2a3a5a);
@@ -638,17 +817,42 @@ function paintFront() {
   P.darken(x0 - 3, top + 4, 3, 90 - top - 4, 0.9);
   return P.flush();
 }
-// förgrunden: avspärrningsband nere till vänster och UTGÅNG-skylten
+// förgrunden: säkerhetsbandet (stolpar med utdragbart band) nere till vänster
+// och UTGÅNG-skylten
+const POSTS = [3, 24, 45], POST_Y = 213;   // slutar före A-rutans golvbokstav
+function stanchion(P, x, by) {
+  P.ell(x + 1, by + 1, 6, 1.6, 0x1a1418, 0.45, 3);
+  // foten: rund, blank platta
+  rows(P, x - 1, by - 1, 5, [0xe4e8ec]);
+  area(P, x - 2, by, 7, 1, (X, Y, i) => (i === 0 ? 0xc8ced4 : i === 6 ? 0x5a6068 : 0x9aa0a8));
+  rows(P, x - 1, by + 1, 5, [0x3a3e46]);
+  // stången: krom med ljus kant och mörk skuggsida
+  vcols(P, x, by - 15, 14, [0xf4f6f8, 0xb8bec6, 0x6a7078]);
+  for (let y = by - 14; y < by - 1; y += 5) P.px(x + 1, y, 0xeef2f6);
+  // kassetten med bandet: blank kapsyl, mörk kropp, röd reflex
+  area(P, x - 1, by - 19, 5, 4, (X, Y, i, j) => (j === 0 ? (i === 0 || i === 4 ? 0x9aa0a8 : 0xf4f6f8) : i === 0 ? 0x5a6068 : i === 4 ? 0x16171a : j === 3 ? 0x23262d : 0x3a3e46));
+  P.px(x, by - 18, 0x6a7078); P.px(x + 1, by - 17, 0xd8303a);
+}
 function paintFore() {
   const P = new Pix(FW, FH);
-  for (const sx of [3, 18]) {
-    P.ell(sx + 1, 212, 4, 1.6, 0x1a1418, 0.4, 3);
-    rows(P, sx - 2, 210, 6, [0x9aa0a8, 0x5a6068]);
-    vcols(P, sx, 196, 14, [0xe8ecf0, 0x9aa0a8]);
-    P.rect(sx - 1, 195, 4, 2, 0x5a6068); P.hl(sx - 1, 195, 4, 0xd8dce2);
+  // bandet först (stolparna står framför ändarna)
+  for (let k = 0; k < POSTS.length - 1; k++) {
+    const x0 = POSTS[k] + 3, x1 = POSTS[k + 1] - 1, y = POST_Y - 18;
+    rows(P, x0, y, x1 - x0, [0x5a8af0, 0x2a5ad0, 0x1e3a98]);
+    for (let x = x0 + 2; x < x1 - 1; x += 4) P.px(x, y + 1, 0xdce6ff, 0.55);   // tryck på bandet
+    P.hl(x0, y + 3, x1 - x0, 0x1a1418, 0.3);
   }
-  rows(P, 5, 198, 13, [0x3a6ad8, 0x2a4aa8]);
-  P.hl(5, 198, 13, 0x6a9af0, 0.6);
+  // förbudsskylt som hänger på bandet
+  const sgx = 29, sgy = POST_Y - 14;
+  P.px(sgx + 2, sgy - 1, 0x9aa0a8); P.px(sgx + 8, sgy - 1, 0x9aa0a8);
+  area(P, sgx, sgy, 11, 9, (X, Y, i, j) => (i === 0 || j === 0 ? 0x9aa0a8 : i === 10 || j === 8 ? 0x4a4e56 : 0xf4f6f8));
+  for (let y = -3; y <= 3; y++) for (let x = -3; x <= 3; x++) {
+    const d = Math.hypot(x, y);
+    if (d > 3.3) continue;
+    P.px(sgx + 5 + x, sgy + 4 + y, Math.abs(y) === 0 && Math.abs(x) <= 2 ? WHITE : d > 2.5 ? 0x9a1a1a : 0xd8303a);
+  }
+  P.darken(sgx + 1, sgy + 9, 11, 1, 0.7);
+  for (const sx of POSTS) stanchion(P, sx, POST_Y);
   // UTGÅNG: grön skylt med springande gubbe och pil
   const s = 'UTGÅNG', tw = textW(SMALL, s), w = tw + 20, x = FW - w - 3, y = 200;
   P.rect(x, y, w, 11, 0x0e4a24);
@@ -659,6 +863,101 @@ function paintFore() {
   text(P, SMALL, s, x + 9, y + 3, WHITE);
   for (let j = 0; j < 5; j++) { const hw = 2 - Math.abs(j - 2); P.hl(x + w - 5, y + 3 + j, hw + 1, WHITE); }
   return P.flush();
+}
+
+// ======================= rekvisita på golvet (djupsorteras med figurerna) =======================
+const WET = { x: 8, y: 134 }, CAGE = { x: 342, y: 138 };
+// gul VÅTT GOLV-skylt (A-bock) med halkande gubbe
+let WET_ART = null;
+function wetArt() {
+  if (WET_ART) return WET_ART;
+  const w = 17, h = 21, P = new Pix(w + 4, h + 4, WET.x - 2, WET.y - h - 1);
+  P.ell(WET.x + w / 2, WET.y, w / 2 + 2, 1.8, 0x1a1418, 0.45, 3);
+  area(P, WET.x, WET.y - h, w, h, (X, Y, i, j) => {
+    if (j < 3 && (i < 3 - j || i > w - 4 + j)) return null;
+    if (j === h - 1 && i > 3 && i < w - 4) return null;
+    let c = j === 0 || i === 0 ? 0xffe070 : i === w - 1 || j === h - 1 ? 0xa88010 : 0xf0c020;
+    if (j === 1 && i > 5 && i < w - 6) c = 0x2a2c30;               // handtaget
+    return jit(c, X, Y, 71, 0.05);
+  });
+  text(P, SMALL, 'VÅTT', WET.x + 1, WET.y - h + 5, INK);
+  const man = ['..#..', '.###.', '#.#..', '..##.', '.#..#', '#....'];
+  man.forEach((r, j) => { for (let i = 0; i < 5; i++) if (r[i] === '#') P.px(WET.x + 5 + i, WET.y - h + 11 + j, INK); });
+  P.hl(WET.x + 3, WET.y - h + 17, 11, INK);
+  P.px(WET.x + 13, WET.y - h + 16, 0x3a6ad8); P.px(WET.x + 14, WET.y - h + 15, 0x3a6ad8);
+  WET_ART = { img: P.flush(), x: WET.x - 2, y: WET.y - h - 1 };
+  return WET_ART;
+}
+// gallervagn för skrymmande bagage: skidor, golfbag och barnvagn bakom nätet
+let CAGE_ART = null;
+function cageArt() {
+  if (CAGE_ART) return CAGE_ART;
+  const w = 36, h = 32, ox = CAGE.x - 2, oy = CAGE.y - h - 6, P = new Pix(w + 4, h + 9, ox, oy), x0 = CAGE.x, y1 = CAGE.y - 4;
+  P.ell(x0 + w / 2, CAGE.y, w / 2 + 3, 2.4, 0x1a1418, 0.45, 4);
+  // bakre nätet
+  area(P, x0 + 1, y1 - h + 1, w - 2, h - 2, (X, Y, i, j) => (i % 5 === 0 || j % 5 === 0 ? 0x5a6068 : null));
+  // skidor (två par) lutade mot bakväggen
+  for (const [sx, c] of [[x0 + 4, 0xd8303a], [x0 + 7, 0x2c6fb7]]) {
+    P.line(sx, y1 - 2, sx + 5, y1 - h - 4, c); P.line(sx + 1, y1 - 2, sx + 6, y1 - h - 4, mul(c, 0.7));
+    P.px(sx + 5, y1 - h - 5, 0xf4f4f4); P.px(sx + 6, y1 - h - 5, 0xf4f4f4);
+  }
+  // golfbagen med klubbhuvuden
+  area(P, x0 + 15, y1 - 24, 8, 23, (X, Y, i, j) => (i === 0 ? 0x3a4a6a : i === 7 ? 0x141a2a : j === 4 || j === 16 ? 0xe8ecf0 : jit(0x1e2a44, X, Y, 72, 0.08)));
+  for (const [dx, c] of [[1, 0xc8ced4], [3, 0x9aa0a8], [5, 0xd8b048], [6, 0xc8ced4]]) { P.vl(x0 + 15 + dx, y1 - 29, 5, 0x8a9098); P.rect(x0 + 15 + dx - 1, y1 - 30, 2, 2, c); }
+  P.rect(x0 + 16, y1 - 12, 6, 3, 0xd8303a); P.hl(x0 + 16, y1 - 12, 6, 0xff6a5a);
+  // barnvagnen (hopfälld)
+  area(P, x0 + 25, y1 - 15, 9, 9, (X, Y, i, j) => ((i + j < 3) ? null : j === 0 || i === 0 ? 0x4a4a52 : jit(0x2a2a30, X, Y, 73, 0.08)));
+  P.hl(x0 + 26, y1 - 11, 7, 0xd8303a);
+  P.line(x0 + 25, y1 - 15, x0 + 31, y1 - 24, 0x9aa0a8); P.rect(x0 + 30, y1 - 25, 3, 1, 0x2a2a30);
+  for (const wx of [x0 + 26, x0 + 32]) { P.rect(wx - 1, y1 - 5, 3, 3, 0x141418); P.px(wx, y1 - 4, 0x8a9098); }
+  // främre nätet, ramen och bottenplattan
+  area(P, x0, y1 - h, w, h, (X, Y, i, j) => {
+    if (i === 0 || i === w - 1 || j === 0) return j === 0 ? 0xe0e4ea : i === 0 ? 0xc8ced4 : 0x6a7078;
+    if ((i + 2) % 5 === 0 || (j + 2) % 5 === 0) return (i + j) % 2 ? 0xaab0b8 : 0x8a9098;
+    return null;
+  });
+  rows(P, x0 - 1, y1, w + 2, [0xd8303a, 0x9a2020, 0x3a3e46]);
+  for (const wx of [x0 + 2, x0 + w - 6]) area(P, wx, y1 + 3, 4, 3, (X, Y, i, j) => (j === 0 ? 0x5a6068 : (i === 0 || i === 3) && j === 2 ? null : 0x141418));
+  CAGE_ART = { img: P.flush(), x: ox, y: oy };
+  return CAGE_ART;
+}
+
+// infoskärm på fot vid vänsterkanten: avgångarna för de fyra vagnarna
+const KIOSK = { x: 3, y: 181 };
+let KIOSK_ART = null;
+function kioskArt() {
+  if (KIOSK_ART) return KIOSK_ART;
+  const x0 = KIOSK.x, by = KIOSK.y, ox = x0 - 3, oy = by - 39, P = new Pix(20, 43, ox, oy);
+  P.ell(x0 + 6.5, by, 9, 1.8, 0x1a1418, 0.45, 3);
+  // foten
+  area(P, x0, by - 3, 13, 3, (X, Y, i, j) => ((i === 0 || i === 12) && j === 0 ? null : j === 0 ? 0xe4e8ec : j === 1 ? (i === 0 ? 0xc8ced4 : i === 12 ? 0x5a6068 : 0x9aa0a8) : 0x3a3e46));
+  // pelaren (borstat stål) med info-märke
+  area(P, x0 + 4, by - 18, 5, 15, (X, Y, i) => jit([0xf4f6f8, 0xc8ced4, 0xaab0b8, 0x8a9098, 0x5a6068][i], X, Y, 81, 0.03));
+  area(P, x0 + 4, by - 16, 5, 6, (X, Y, i, j) => (j === 0 ? 0x5a8af0 : j === 5 || i === 4 ? 0x1e3a98 : 0x2a5ad0));
+  P.px(x0 + 6, by - 15, WHITE); P.vl(x0 + 6, by - 13, 3, WHITE);
+  // skärmhuset: ljus kapsyl, mörk ram med fasad kant
+  area(P, x0, by - 37, 13, 19, (X, Y, i, j) => {
+    if (j === 0) return i === 0 || i === 12 ? 0x9aa0a8 : 0xe4e8ec;
+    if (i === 0 || j === 1) return 0x5a5e66;
+    if (i === 12 || j === 18) return 0x121316;
+    if (i === 1 || j === 2) return 0x3a3e46;
+    return 0x23262d;
+  });
+  for (let i = 0; i < 4; i++) P.px(x0 + 3 + i * 2, by - 21, 0x5a5e66);   // högtalargaller
+  // skärmen: en rad per destination med taggens färg och status
+  const sx = x0 + 2, sy = by - 34;
+  area(P, sx, sy, 9, 13, (X, Y, i, j) => (j < 2 ? (j === 0 ? 0x2a4a8a : 0x1e3a6a) : 0x0e1a2e));
+  P.hl(sx + 1, sy, 3, 0xffd23a); P.hl(sx + 5, sy, 3, 0xd8e0f0);
+  for (let k = 0; k < 4; k++) {
+    const ry = sy + 3 + k * 3;
+    P.rect(sx + 1, ry, 2, 2, TAG[k].ci); P.px(sx + 1, ry, mix(TAG[k].ci, WHITE, 0.4));
+    P.hl(sx + 4, ry, 3 + (k & 1), 0xd8e0f0);
+    P.hl(sx + 4, ry + 1, 2, 0x5a6a8a);
+    P.px(sx + 8, ry, 0x5ad06a);
+  }
+  reflect(P, sx, sy, 9, 13, 0.7, 5);
+  KIOSK_ART = { img: P.flush(), x: ox, y: oy, blink: [sx + 8, sy + 3 + 2 * 3] };
+  return KIOSK_ART;
 }
 
 // personalen: ramparbetare i varselkläder och en säkerhetsvakt vid röntgen
@@ -698,6 +997,7 @@ function xraySprite(body) {
 export function makeJobbFlyg(A, { onDone }) {
   const stats = { ok: 0, fel: 0, miss: 0 };
   const walker = createWalker({ top: BELT_Y + 16, bottom: FH - 26, spawn: [190, 130] });
+  walker.setObstacles([[WET.x, WET.y - 6, WET.x + 17, WET.y], [CAGE.x, CAGE.y - 8, CAGE.x + 36, CAGE.y], [KIOSK.x, KIOSK.y - 6, KIOSK.x + 13, KIOSK.y]]);
   const pops = makePops();
   let items = [], t = 0, seq = 0, spawnIn = 1.0, carry = null, done = false, doneT = 0, reported = false;
   const speed = () => 20 + 14 * Math.min(1, t / SHIFT_SECONDS);
@@ -844,7 +1144,7 @@ export function makeJobbFlyg(A, { onDone }) {
 
   function drawBelt(ctx) {
     const off = Math.floor(beltOff) % SURF_PERIOD;
-    ctx.drawImage(G.surf, off, 0, FW, SURF_H, 0, SURF_Y, FW, SURF_H);
+    ctx.drawImage(G.surf, SURF_PERIOD - 1 - off, 0, FW, SURF_H, 0, SURF_Y, FW, SURF_H);
     ctx.drawImage(G.belt, 0, 0);
     // rullarna under bandet snurrar
     const ph = Math.floor(beltOff / 2) % 4;
@@ -871,6 +1171,16 @@ export function makeJobbFlyg(A, { onDone }) {
       },
     };
   }
+  const propDrawable = (fy, get) => ({ fy, draw(ctx) { const S = get(); ctx.drawImage(S.img, S.x, S.y); } });
+  // infoskärmen: statuslampan för PARIS blinkar (boarding)
+  const kioskDrawable = () => ({
+    fy: KIOSK.y,
+    draw(ctx) {
+      const S = kioskArt();
+      ctx.drawImage(S.img, S.x, S.y);
+      ctx.fillStyle = Math.floor(t * 2.5) % 2 ? '#ffb020' : '#3a2a10'; ctx.fillRect(S.blink[0], S.blink[1], 1, 1);
+    },
+  });
   const crewDrawable = () => ({
     draw(ctx) {
       const f = crew.walking ? WALK_SEQ[Math.floor(t * 8.5) % 4] : crew.lift > 0 ? [7, 8, 9, 8][Math.floor(t * 6) % 4] : (Math.sin(t * 1.7) > 0.93 ? 4 : 0);
@@ -950,7 +1260,7 @@ export function makeJobbFlyg(A, { onDone }) {
       ctx.drawImage(G.front, 0, 0);
       drawCurtains(ctx);
       drawGadgets(ctx);
-      const drawables = [...folkDrawables(A, t), selfDrawable(A, walker, t, { carry: !!carry }), ...CARTS.map((_, i) => cartDrawable(i))];
+      const drawables = [...folkDrawables(A, t), selfDrawable(A, walker, t, { carry: !!carry }), ...CARTS.map((_, i) => cartDrawable(i)), propDrawable(WET.y, wetArt), propDrawable(CAGE.y, cageArt), kioskDrawable()];
       drawables.sort((a, b) => a.fy - b.fy).forEach((d) => d.draw(ctx));
       ctx.drawImage(G.fore, 0, 0);
       if (carry) drawCase(ctx, carry, walker.px, walker.py - 46);

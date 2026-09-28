@@ -84,16 +84,20 @@ await page.click('.dlg-foot .btn'); // En annan gång
 await page.waitForTimeout(200);
 await page.evaluate(() => { window.SF.citySub = 0; });
 
-// 5. Matbutiken: köp en pizza hem
-await page.evaluate(() => window.SF.openFoodShop());
-await page.waitForTimeout(300);
+// 5. Stormarknaden (gåbar): plocka en pizza i korgen och betala i kassan
+await page.evaluate(() => window.SF.go('mat'));
+await page.waitForTimeout(700);
 const moneyBefore = await page.evaluate(() => window.SF.game.money);
-await page.click('[data-buy="pizza"]');
+ok(await page.evaluate(() => !!window.SF.scene._debug.spot('pizza')), 'pizzan står på en hylla med prislapp');
+ok(await page.evaluate(() => window.SF.scene._debug.pick('pizza')), 'pizzan lades i korgen');
+ok(await page.evaluate(() => window.SF.scene._debug.basket().some((b) => b.id === 'pizza')), 'korgen innehåller pizzan');
+await shot('07-stormarknad');
+await page.evaluate(() => window.SF.scene._debug.checkout());
+let paid = false;
+for (let i = 0; i < 60 && !paid; i++) { await page.waitForTimeout(250); paid = await page.evaluate(() => window.SF.game.fridge.pizza === 1); }
+ok(paid && (await page.evaluate(() => window.SF.game.money)) === moneyBefore - 65, 'betalade 65 kr i kassan – pizzan ligger i kylskåpet');
+await page.evaluate(() => window.SF.go('city'));
 await page.waitForTimeout(300);
-ok(await page.evaluate(() => window.SF.game.money) === moneyBefore - 65, 'pizza kostade 65 kr');
-ok(await page.evaluate(() => window.SF.game.fridge.pizza === 1), 'pizzan ligger i kylskåpet');
-await page.keyboard.press('Escape');
-await page.waitForTimeout(200);
 
 // 6. Jobben: gåbara med plocka/bära/servera
 console.log('— jobben (gåbara) —');

@@ -41,7 +41,7 @@ export const BUILDINGS = [
   B('mat', 312, 196, 104, { x0: 388, x1: 432, type: 'slide' }, { sign: 'STORMARKNAD', enter: 'mat', open: [7, 23] }),
   B('klader', 536, 124, 112, { x0: 586, x1: 610, type: 'swing' }, { sign: 'KLÄDER', enter: 'klader', open: [7, 21] }),
   B('mobler', 688, 220, 116, { x0: 776, x1: 820, type: 'slide' }, { sign: 'MÖBELJÄTTEN', enter: 'mobler', open: [7, 21] }),
-  B('kafe', 960, 92, 92, { x0: 994, x1: 1018, type: 'swing' }, { sign: 'KAFÉ', enter: null }),
+  B('kafe', 960, 92, 92, { x0: 994, x1: 1018, type: 'swing' }, { sign: 'KAFÉ', enter: 'kafe', open: [7, 21] }),
   B('burgare', 1080, 132, 100, { x0: 1134, x1: 1158, type: 'swing' }, { sign: 'BURGARBAREN', enter: 'burgare', open: [7, 23] }),
   B('frukt', 1264, 160, 118, { x0: 1330, x1: 1356, type: 'swing' }, { sign: 'FRUKTFABRIKEN', enter: 'frukt', open: [7, 21] }),
   B('flyg', 1452, 228, 124, { x0: 1544, x1: 1592, type: 'slide' }, { sign: 'FLYGPLATSEN', enter: 'flyg', open: [7, 21] }),

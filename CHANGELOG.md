@@ -10,6 +10,12 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.18.0] – 2026-09-28 – Stormarknaden, kaféet och bostadsbyrån
+- Stormarknaden går man nu runt i: frukt och grönt, bröd, mejerikyl, frysar, hyllor med prislappar och kampanjer. Plocka varor i korgen och betala i kassan – maten hamnar i kylskåpet hemma. Vid disken kan du äta på plats.
+- Kaféet är öppet: glasmonter med bakverk, espressomaskin, griffeltavla med meny. Köp en fika, sätt dig vid ett bord och ät – mättnad och energi går upp.
+- Bostadsbyrån är ett riktigt mäklarkontor med annonsplanscher för alla bostäder, mäklare, väntrum och en sovande tax. Klicka på en annons för att flytta.
+- Flygplatsens bagagehall och fruktfabrikens hall har fått samma detaljnivå som staden: fönster ut mot plattan, röntgen, tegelväggar, rör, pallar, truck och maskiner.
+
 ## [0.17.0] – 2026-09-28 – Huvudmeny, pixelmätare och musik
 - Huvudmeny när spelet startar, med Pixelstaden levande i bakgrunden: Nytt spel, Fortsätt och Inställningar.
 - Alla skapade figurer visas med porträtt och en sammanfattning (pengar, bostad, dag, antal pass). Välj vem som ska spela – varje figur har sitt eget spel.
