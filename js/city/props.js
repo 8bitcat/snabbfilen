@@ -407,15 +407,16 @@ function makeStreetSign(name, dir) {
     P.hl(-1, 0, 4, STEEL[0]); P.hl(-1, -1, 4, STEEL[2]);
     P.px(0, -47, STEEL[4]); P.px(1, -47, STEEL[2]);
     const px0 = dir > 0 ? 2 : -pw;
-    for (let y = -49; y <= -41; y++) for (let x = px0; x < px0 + pw; x++) {
+    // plåten: blå rad både över och under texten, så att den vita ramen aldrig nuddar bokstäverna
+    for (let y = -49; y <= -39; y++) for (let x = px0; x < px0 + pw; x++) {
       let c = mix(0x1a4a9a, 0x2a62b8, (bayer(x, y) - 0.5) * 0.3 + 0.5);
-      if (y === -49) c = 0x4a82d8; if (y === -41) c = 0x0e2a5e;
+      if (y === -49) c = 0x4a82d8; if (y === -39) c = 0x0e2a5e;
       if (x === px0) c = mix(c, 0xffffff, 0.2); if (x === px0 + pw - 1) c = mul(c, 0.7);
       P.px(x, y, c);
     }
-    P.box(px0 + 1, -48, pw - 2, 7, 0xe8eef6);
+    P.box(px0 + 1, -48, pw - 2, 9, 0xe8eef6);
     text(P, SMALL, name, px0 + 3, -46, 0xffffff);
-    P.px(dir > 0 ? 1 : 0, -47, STEEL[2]); P.px(dir > 0 ? 1 : 0, -43, STEEL[2]);
+    P.px(dir > 0 ? 1 : 0, -47, STEEL[2]); P.px(dir > 0 ? 1 : 0, -41, STEEL[2]);
     groundShadow(P, 2, 1, 4, 1.6);
   });
 }

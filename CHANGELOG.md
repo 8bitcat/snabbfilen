@@ -10,6 +10,11 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.23.4] – 2026-09-28 – Flera figurer får heta samma
+- Varje figur har nu ett eget id, så flera kan heta samma sak. **Nytt spel** skapar alltid en ny person med ett eget liv, och rutan **Börja om?** kommer inte längre upp.
+- Gamla figurer behåller sina sparningar: de får namnet som id.
+- Gatuskyltarna är en pixel högre, så att bokstäverna inte längre går ihop med den vita ramen.
+
 ## [0.23.3] – 2026-09-28 – Repliker som pratbubblor i butikerna
 - Klickar du på taxen eller katten på kaféet, mäklarens tax, kassörskan i klädaffären eller sakerna på bostadsbyrån och i mataffären, visas det som en pratbubbla i scenen – ovanför den som säger något, eller ovanför dig själv – i stället för en ruta högst upp.
 - Pratbubblorna håller sig inom bilden och rymmer längre repliker.
