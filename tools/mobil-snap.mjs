@@ -97,7 +97,21 @@ console.log('— fyllning på riktiga enheter —');
 await fillCase('iphone13mini-liggande', 812, 375, 3);
 await fillCase('iphone13mini-staende', 375, 812, 3);
 await fillCase('pixel5', 851, 393, 2.75);
+await fillCase('ipad-liggande', 1180, 820, 2);
 await fillCase('dator', 1366, 768, 1);
+
+console.log('— standardzoom per enhet (utan sparat val) —');
+async function defaultZoom(name, w, h, dpr, expectNara) {
+  const { c, p } = await boot(w, h, dpr);
+  await p.evaluate(() => SF.go('city'));
+  await p.waitForTimeout(600);
+  const g = await geo(p);
+  ok(expectNara ? g.W === 384 : g.W > 384, `${name}: standard = ${expectNara ? 'NÄRA (klassiska vyn)' : 'VID (ser mer värld)'} (A.W ${g.W})`);
+  await c.close();
+}
+await defaultZoom('mobil', 812, 375, 3, true);
+await defaultZoom('padda', 1180, 820, 2, false);
+await defaultZoom('dator', 1366, 768, 1, false);
 
 console.log('— testrobotarnas gamla läge (utan ?mobfill) —');
 {

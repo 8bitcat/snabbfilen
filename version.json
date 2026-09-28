@@ -1,7 +1,7 @@
 {
-  "version": "0.25.4",
+  "version": "0.25.5",
   "date": "2026-09-28",
-  "title": "Möbeljätten bred",
+  "title": "Paddorna får rätt zoom",
   "files": [
     "CHANGELOG.md",
     "assets/interior.png",

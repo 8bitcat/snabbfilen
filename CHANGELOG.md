@@ -10,6 +10,10 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.25.5] – 2026-09-28 – Paddorna får rätt zoom
+- Paddor (iPad m.fl.) får nu VID-läget som standard i stället för NÄRA: stora skärmar ser mer värld i rätt pixelstorlek, inte jättepixlar. Mobiler behåller NÄRA. 🔍 växlar som vanligt.
+- Knip-zoom på själva sidan (iOS) blockeras inne i spelet så spelytan inte hamnar snett – i dialoger och menyer går det fortfarande att zooma.
+
 ## [0.25.4] – 2026-09-28 – Möbeljätten bred
 - Möbeljätten är nu bred som staden och mataffären: du ser mer av varuhuset på hela skärmen – entréhallen med rulltrapporna, Småland och kassabandet samtidigt.
 - På höga skärmar syns båda våningsbanden på en gång, i stället för ett i taget.

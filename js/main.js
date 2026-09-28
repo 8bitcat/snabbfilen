@@ -97,7 +97,9 @@ const zoomMode = () => {
   if (z === 'ram' || z === 'vid' || z === 'nara') return z;
   // Standard: mobilen NÄRA (samma bild som på datorn – stora pixlar – och fyller
   // skärmen), datorn VID (ser mer värld). 🔍-knappen växlar nära → vid → ram.
-  return matchMedia('(pointer: coarse)').matches ? 'nara' : 'vid';
+  // NÄRA bara på små pekskärmar (mobiler) – paddor och datorer får VID (ser mer värld)
+  const liten = Math.min(window.screen.width, window.screen.height) < 700;
+  return matchMedia('(pointer: coarse)').matches && liten ? 'nara' : 'vid';
 };
 A.view = { w: DESIGN_W, h: DESIGN_H, boxX: 0, boxY: 0, boxed: false };
 function applySceneView() {
@@ -207,6 +209,11 @@ zoomBtn.addEventListener('click', () => {
   zoomLabel(); fit();
 });
 document.querySelector('#hud .hud-btns')?.insertBefore(zoomBtn, document.getElementById('hud-mute'));
+
+// iOS: knip-zoom på själva sidan förstör spelytan – blockera i spelet, tillåt i dialoger
+for (const ev of ['gesturestart', 'gesturechange', 'gestureend']) {
+  document.addEventListener(ev, (e) => { if (!modalOpen()) e.preventDefault(); }, { passive: false });
+}
 
 // Fasta scener ritas i sin centrerade ruta: alla scener börjar med
 // ctx.setTransform(A.pxs, 0, 0, A.pxs, ...), så rutans förskjutning läggs in i
