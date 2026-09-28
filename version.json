@@ -1,7 +1,7 @@
 {
-  "version": "0.25.6",
+  "version": "0.26.0",
   "date": "2026-09-28",
-  "title": "Disken i Burgarbaren lagad",
+  "title": "Jobba tillsammans i Burgarbaren",
   "files": [
     "CHANGELOG.md",
     "assets/interior.png",
@@ -45,6 +45,7 @@
     "js/jobs/jobb-frukt.js",
     "js/jobs/shift.js",
     "js/main.js",
+    "js/net/coop.js",
     "js/net/world.js",
     "js/scenes/city.js",
     "js/scenes/ikea/art-market.js",

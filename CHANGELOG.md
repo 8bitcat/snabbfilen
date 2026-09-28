@@ -10,6 +10,12 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.26.0] – 2026-09-28 – Jobba tillsammans i Burgarbaren
+- NYTT: JOBBA TILLSAMMANS! Gå till Burgarbaren samtidigt som en kompis – ni ser varandra i dinern, delar på samma kunder och samma disk, och den som serverar får poängen och lönen. En langar tallrikar, en springer till borden!
+- Den som var först på passet är skiftledare och håller i kön och köket – kompisar kan hoppa in och av mitt i skiftet utan att något går sönder.
+- Kollegor syns nu även i butikerna och på de andra jobben – vinka med emotes!
+- Grunden är byggd så att fler ställen kan bli samarbetsjobb framöver, köket i nya Burgarbaren står på tur.
+
 ## [0.25.6] – 2026-09-28 – Disken i Burgarbaren lagad
 - Disken i Burgarbaren är lagad: tallrikar hamnar ALDRIG mer på varandra eller på någon annans plats.
 - Köket fyller nu alla sex platserna (förr stannade det vid fem) och väntar snällt när disken är full.
