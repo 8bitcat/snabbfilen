@@ -372,3 +372,8 @@ body.menu-boot #app { overflow: hidden; }
 body.hud-pix #app { flex-direction: column; gap: 0; }
 #hudpix { display: block; image-rendering: pixelated; box-shadow: 0 0 0 3px #000; }
 body.menu-boot #hudpix { display: none; }
+
+/* Bostadsbyråns annonsdialog: planschbilder i pixelskala */
+.prow.homerow { grid-template-columns: auto 1fr auto; }
+canvas.homepic { width: 128px; height: auto; image-rendering: pixelated; border: 2px solid var(--ink); display: block; }
+@media (max-width: 639px) { canvas.homepic { width: 64px; } }

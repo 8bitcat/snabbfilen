@@ -686,6 +686,15 @@ function paintDoor(P, night) {
   text(P, SMALL, 'UT', sx + 3, top - 12, 0xe8ffe8);
   P.px(sx + sw - 5, top - 11, 0xe8ffe8); P.px(sx + sw - 4, top - 10, 0xe8ffe8); P.px(sx + sw - 5, top - 9, 0xe8ffe8); P.hl(sx + sw - 7, top - 10, 3, 0xe8ffe8);
 }
+// Planschen som egen bild (annonsdialogen visar samma målning som hänger på väggen)
+export function posterImage(homeId) {
+  const i = HOMES.findIndex((h) => h.id === homeId);
+  if (i < 0) return null;
+  const P = new Pix(PW + 2, PH + 2);
+  paintPosterStatic(P, { home: HOMES[i], x: 0, y: 0, w: PW, h: PH }, i);
+  return P.flush();
+}
+
 function paintPosterStatic(P, p, idx) {
   const { x, y, w, h, home } = p;
   P.darken(x + 2, y + h, w, 2, 0.55); P.darken(x + w, y + 2, 2, h - 2, 0.55);

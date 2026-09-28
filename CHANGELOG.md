@@ -10,6 +10,9 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.19.0] – 2026-09-28 – Annonser med bilder på bostadsbyrån
+- Bostadsbyråns annonser har bilder: samma planscher som hänger på mäklarkontorets vägg visas i annonsdialogen, i pixelskala, för varje bostad.
+
 ## [0.18.4] – 2026-09-28 – Hundarna slutar blinka och gå åt två håll
 - Hundarna i staden hoppar inte längre fram och tillbaka: när vägen är blockerad glider hunden längs hindret i stället för att teleporteras bakåt, den växlar inte mellan gå och stå varje bildruta, och den byter riktning först när den nya riktningen hållit i sig en stund.
 

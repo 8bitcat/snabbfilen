@@ -3,6 +3,7 @@
 import { openModal, closeModal, toast } from '../core/ui.js';
 import { HOMES, fmt } from '../game.js';
 import { play } from '../core/sound.js';
+import { posterImage } from '../scenes/shop-bostad.js';
 
 export function openHousing(A, { firstTime = false, onDone } = {}) {
   const g = A.game;
@@ -11,8 +12,8 @@ export function openHousing(A, { firstTime = false, onDone } = {}) {
     : `💰 <b>${fmt(g.money)}</b> · Hyran dras varje måndag morgon.`}</p>
     <div class="plist">${HOMES.map((h) => {
       const here = g.home === h.id, afford = g.money >= h.deposit;
-      return `<div class="prow shoprow ${here ? 'here' : ''}">
-        <span style="font-size:28px;text-align:center">${h.icon}</span>
+      return `<div class="prow shoprow homerow ${here ? 'here' : ''}">
+        <span data-pic="${h.id}" style="font-size:28px;text-align:center">${h.icon}</span>
         <span class="nm">${h.name}${here ? ' <small class="ok">← du bor här</small>' : ''}<br>
           <small class="sp">${h.desc}</small><br>
           <small class="sp">Insats <b>${h.deposit ? fmt(h.deposit) : 'gratis'}</b> · hyra ${fmt(h.rent)}/vecka${h.restBonus ? ` · 😴 +${h.restBonus} energi` : ''}</small></span>
@@ -22,6 +23,16 @@ export function openHousing(A, { firstTime = false, onDone } = {}) {
   const dlg = openModal('🔑 Bostadsbyrån', body,
     firstTime ? [] : [{ label: 'Stäng', onClick: closeModal }],
     { closable: !firstTime });
+  // annonsbilderna: samma planscher som hänger på mäklarkontorets vägg, i pixelskala
+  dlg.querySelectorAll('[data-pic]').forEach((el) => {
+    try {
+      const c = posterImage(el.dataset.pic);
+      if (!c) return;
+      c.className = 'homepic';
+      c.title = HOMES.find((h) => h.id === el.dataset.pic)?.name || '';
+      el.replaceWith(c);
+    } catch { /* bilden är bara pynt */ }
+  });
   dlg.querySelectorAll('[data-move]').forEach((b) => (b.onclick = () => {
     const r = g.moveTo(b.dataset.move);
     if (!r.ok) { toast(r.msg, 'bad'); return; }

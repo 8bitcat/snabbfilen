@@ -1,7 +1,7 @@
 {
-  "version": "0.18.4",
+  "version": "0.19.0",
   "date": "2026-09-28",
-  "title": "Hundarna slutar blinka och gå åt två håll",
+  "title": "Annonser med bilder på bostadsbyrån",
   "files": [
     "CHANGELOG.md",
     "assets/interior.png",
