@@ -37,6 +37,7 @@ const A = {
   scene: null, sceneName: '',
   go(name, opts) {
     A.scene?.exit?.();
+    A.scene = null; // gamla scenens viewMax får inte läcka in i nästa scens bygge
     A.sceneName = name;
     applySceneView(); // scenens vy (bred eller 384×216) innan den byggs
     A.scene = SCENES[name](A, opts);
@@ -100,7 +101,7 @@ const zoomMode = () => {
 };
 A.view = { w: DESIGN_W, h: DESIGN_H, boxX: 0, boxY: 0, boxed: false };
 function applySceneView() {
-  const v = A.view, cap = fillMode() && zoomMode() !== 'nara' ? WIDE[A.sceneName] : null; // NÄRA = klassiska vyn överallt
+  const v = A.view, cap = fillMode() && zoomMode() !== 'nara' ? (WIDE[A.sceneName] || (A.scene && A.scene.viewMax) || null) : null; // NÄRA = klassiska vyn överallt; scenen kan ange viewMax
   A.W = Math.max(DESIGN_W, Math.min(v.w, cap ? cap.w : DESIGN_W));
   A.H = Math.max(DESIGN_H, Math.min(v.h, cap ? cap.h : DESIGN_H));
   v.boxX = Math.max(0, (v.w - A.W) >> 1);

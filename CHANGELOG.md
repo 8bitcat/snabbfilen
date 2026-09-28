@@ -10,6 +10,11 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.25.4] – 2026-09-28 – Möbeljätten bred
+- Möbeljätten är nu bred som staden och mataffären: du ser mer av varuhuset på hela skärmen – entréhallen med rulltrapporna, Småland och kassabandet samtidigt.
+- På höga skärmar syns båda våningsbanden på en gång, i stället för ett i taget.
+- Gäller VID-zoomläget (🔍) – NÄRA på mobilen visar som förut datorns klassiska bild.
+
 ## [0.25.3] – 2026-09-28 – Närmare på mobilen
 - Mobilen kommer NÄRMARE: samma bild som på datorn – stora, tydliga pixlar – och den fyller hela skärmen. Det är nu standard på mobil och platta.
 - 🔍-knappen växlar mellan tre zoomlägen: NÄRA (som datorn, fyller skärmen), VID (ser mer av staden och butikerna på en gång) och RAM (hela bilden med pixelram). Valet sparas.

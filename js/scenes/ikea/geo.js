@@ -2,7 +2,11 @@
 // Varje plan är en egen gåbar yta W × H med två "band": rad A överst (rum +
 // gång 1) och rad B under (rum + gång 2). Kameran följer figuren: i raderna
 // visas ett band i taget, i de öppna hallarna glider den mjukt mellan dem.
-export const VW = 384, VH = 216;
+export let VW = 384, VH = 216; // mobilfyllning: vyn följer skärmen (levande exportbindningar)
+export const syncView = (A, maxW) => {
+  VW = Math.max(384, Math.min(A.W || 384, maxW || 384));
+  VH = Math.max(216, Math.min(A.H || 216, H));
+};
 export const TOP = 12;                       // takkanten ovanför bakväggarna (rad A)
 export const WH = 58;                        // väggarnas höjd i bild
 export const FD = 92;                        // rummens djup (golvet)

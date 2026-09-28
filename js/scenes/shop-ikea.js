@@ -26,7 +26,7 @@ import { drawPerson } from '../core/people.js';
 import { worldMyEmote } from '../net/world.js';
 import * as ROOM from './room.js';
 import * as MOB from './shop-mobler.js';
-import { VW, VH, H, OW, A_FLOOR, B_WALL, B_FLOOR, AISLE1, AISLE2, SPEED, clamp, camYFor } from './ikea/geo.js';
+import { VW, VH, H, OW, A_FLOOR, B_WALL, B_FLOOR, AISLE1, AISLE2, SPEED, clamp, camYFor, syncView } from './ikea/geo.js';
 import { KAT, katOf, frameOf, tagName, katSig } from './ikea/kat.js';
 import { buildFloors, DECOR } from './ikea/layout.js';
 import { furnish } from './ikea/furnish.js';
@@ -705,7 +705,10 @@ export function makeShopIkea(A, opts = {}) {
     down(sx, sy) { clickWorld(sx + cam.x, sy + cam.y); },
     key(k) { if (k === 'Escape' && meal?.st === 'done') standUp(); },
     exit() { if (meal?.seat?.occ === 'me') { meal.seat.occ = null; meal.seat.tray = null; } },
+    // mobilfyllningen: motorn får ge oss en bredare vy, klampad till våningens bredd
+    viewMax: { get w() { return W(); }, h: H },
     draw(ctx) {
+      syncView(A, W()); // skärmen kan ha ändrat storlek – vyn följer med
       const cx = Math.round(cam.x), cy = Math.round(cam.y);
       ctx.setTransform(A.pxs, 0, 0, A.pxs, -cx * A.pxs, -cy * A.pxs);
       drawWorld(ctx, cx, cy, VW, VH);

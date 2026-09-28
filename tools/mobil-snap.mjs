@@ -79,6 +79,11 @@ async function fillCase(name, w, h, dpr) {
   await p.waitForTimeout(500);
   const k2 = await geo(p);
   ok(k2.W === Math.min(k2.view.w, 640) && k2.W > 384 && k2.H === 216, `${name}: VID – kaféet ser mer lokal (A.W ${k2.W})`);
+  await p.evaluate(() => SF.go('mobler'));
+  await p.waitForTimeout(700);
+  const i2 = await geo(p);
+  ok(i2.W > 384 && i2.H === Math.min(i2.view.h, 388), `${name}: VID – Möbeljätten ser mer varuhus (A.W ${i2.W}, A.H ${i2.H})`);
+  await p.screenshot({ path: `tools/out/mobil-${name}-ikea.png` });
   // RAM: hela bilden med pixelram
   await p.evaluate(() => SF.go('room'));
   await p.waitForTimeout(400);
