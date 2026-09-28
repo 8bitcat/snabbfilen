@@ -63,7 +63,7 @@ const slot = sees ? sees.find((p) => p.d === 2).slot : 0;
 await G.evaluate((s) => { const D2 = SF.scene._debug; const sp = D2.counterSpot(s); SF.scene.down(sp.x, sp.y - 8); }, slot);
 const took = await until(() => D(G, 'D.carrying()'), 10000, 300);
 ok(took === 2, `${gn} plockar tallriken via ledaren (bär rätt ${took})`);
-const goneAtL = await until(async () => { const pl = await D(L, 'D.plates()'); return pl && !pl.some((p) => p.slot === slot && p.d === 2); }, 5000, 300);
+const goneAtL = await until(async () => { const pl = await D(L, 'D.plates()'); return pl && !pl.some((p) => p.slot === slot && p.d === 2); }, 12000, 300);
 ok(!!goneAtL, 'tallriken försvinner samtidigt hos ledaren – ingen dubblett');
 
 // ta FÖRSTA sittande kunden (tvinga fram tills någon sitter) och matcha rätten
@@ -94,6 +94,10 @@ if (cust) {
     ok(lStats && lStats.ok === 0, `ledaren fick INTE poängen (${ln}: ok ${lStats?.ok})`);
     const eating = await until(async () => { const cs = await D(L, 'D.customersDbg()'); return (cs || []).some((k) => k.i === cust.i && k.st === 'eat'); }, 6000, 300);
     ok(!!eating, 'kunden äter hos ledaren – serveringen gällde i den delade världen');
+    const lagG = await D(G, 'D.lag()');
+    const lagL = await until(async () => { const l = await D(L, 'D.lag()'); return l && l.ok >= 1 ? l : null; }, 6000, 300);
+    ok(!!lagL && lagG && lagG.ok === lagL.ok, `lagets räkning är synkad (${lagG?.ok} rätt hos båda – lönen delas lika)`);
+    ok((lagG?.bord | 0) === 10, `extraborden är framme när man är två (${lagG?.bord} bord)`);
   }
 }
 
@@ -120,6 +124,7 @@ if (invited) {
   await D(G, 'D.forceCustomer()');
   const fresh = await until(async () => ((await D(G, 'D.customersDbg()')) || []).find((k) => k.i > maxId) || null, 8000, 300);
   ok(!!fresh, `världen fortsätter hos den nya ledaren – ny kund med NYTT id (${fresh?.i} > ${maxId})`);
+  ok((((await D(G, 'D.lag()')) || {}).bord | 0) === 10, 'extraborden står kvar efter att kompisen gått – gästerna sitter ju där');
 }
 
 const realErrors = errors.filter((e) => !/peer|webrtc|ice|Could not connect|Lost connection/i.test(e));

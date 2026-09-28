@@ -184,9 +184,14 @@ function bubbleFood(ctx, d, ix, iy, iw, ih) {
 // fyra bord (spelets runda bord) med en stol bakom – kunden sitter på stolen,
 // vänd mot oss, och får maten på bordet framför sig. Nedre bordet står
 // förskjutet så att ingen pratbubbla hamnar över ett annat bord.
+// Borden: de FYRA första är grunddinern (solo). Jobbar man IHOP rullas
+// extraborden fram – tio platser och högre tempo (används bara i coop-läget).
 const TABLES = [
   { x: 48, y: 146 }, { x: 158, y: 146 }, { x: 268, y: 146 }, { x: 213, y: 200 },
+  { x: 103, y: 146 }, { x: 213, y: 146 }, { x: 323, y: 146 },
+  { x: 48, y: 200 }, { x: 103, y: 200 }, { x: 268, y: 200 },
 ].map((tb) => ({ ...tb, sx: tb.x + 11, sy: tb.y - 8 }));
+const BAS_BORD = 4;
 const TABLE_F = 'bordR2', CHAIR_F = 'stol2', CHAIR_LIFT = 7;
 // stolsspriten (13×21): armstöden är kolumn 0–2 och 10–12 på rad 9–16
 function drawChair(ctx, tb, armsOnly) {
@@ -202,7 +207,7 @@ export function makeJobbBurgare(A, { onDone }) {
   const stats = { ok: 0, fel: 0, miss: 0 };
   const walker = createWalker({ top: COUNTER.base + 6, bottom: FH - 6, spawn: [240, 110] });
   walker.setObstacles([
-    ...TABLES.map((tb) => [tb.x - 4, tb.y - 16, tb.x + 26, tb.y + 2]),
+    ...TABLES.slice(0, BAS_BORD).map((tb) => [tb.x - 4, tb.y - 16, tb.x + 26, tb.y + 2]),
     [PLANT.x - 2, PLANT.y - 8, PLANT.x + 24, PLANT.y + 1],
   ]);
   const pops = makePops();
@@ -216,13 +221,20 @@ export function makeJobbBurgare(A, { onDone }) {
   // läget ~3 ggr/s; medarbetare ser samma diner och skickar sina handlingar som
   // önskemål. Lön och statistik räknas per person (den som serverar får betalt).
   const coop = makeShiftCoop(A, 'away:jobbburgare');
-  let snapIn = 0, wasLead = true;
+  let snapIn = 0, wasLead = true, wasCoop = false, maxN = 1;
+  const team = { ok: 0, fel: 0, miss: 0 }; // LAGETS räkning – delas lika vid passets slut
+  const bordAktiva = () => (coop.active || maxN > 1 ? TABLES : TABLES.slice(0, BAS_BORD));
+  const setObs = () => walker.setObstacles([
+    ...bordAktiva().map((tb) => [tb.x - 4, tb.y - 16, tb.x + 26, tb.y + 2]),
+    [PLANT.x - 2, PLANT.y - 8, PLANT.x + 24, PLANT.y + 1],
+  ]);
   const snapAsap = () => { snapIn = 0; };
   const sendSnap = () => coop.send({
     t: 'snap',
     pl: plates.map((p) => ({ d: p.d, s: p.slot })),
     cu: customers.map((k) => ({ i: k.id, ti: TABLES.indexOf(k.table), st: k.state, w: k.wish,
       x: Math.round(k.x), y: Math.round(k.y), pa: Math.round(k.patience * 10) / 10, pm: k.pmax, lo: k.look })),
+    tm: [team.ok, team.fel, team.miss],
   });
   const applySnap = (m) => {
     plates = (m.pl || []).slice(0, SLOTS.length).map((p) => ({ d: p.d | 0, slot: p.s | 0, x: SLOTS[p.s | 0] ?? SLOTS[0] }));
@@ -236,6 +248,7 @@ export function makeJobbBurgare(A, { onDone }) {
       k.gx = +c.x || 0; k.gy = +c.y || 0; if (c.lo) k.look = c.lo;
     }
     customers = customers.filter((k) => seen.has(k.id));
+    if (m.tm) { team.ok = m.tm[0] | 0; team.fel = m.tm[1] | 0; team.miss = m.tm[2] | 0; }
   };
   const tweenGuests = (dt) => { // medarbetarnas vy: kunderna glider mot ledarens lägen
     for (const k of customers) {
@@ -253,6 +266,7 @@ export function makeJobbBurgare(A, { onDone }) {
     if (right) { k.state = 'eat'; k.eat = 4; }
     coop.send({ t: 'res', a: 'serve', by: byId, cust: custId, right });
     if (k) pops.add(k.x, k.y - 62, right ? '+10 TACK!' : 'FEL RÄTT!', right ? '#8ee03c' : '#ff6a6a');
+    if (right) team.ok++; else team.fel++;
     if (byId === coop.myId) { if (right) { stats.ok++; play('coin'); } else { stats.fel++; play('fel'); } carry = null; }
     snapAsap();
   };
@@ -303,7 +317,7 @@ export function makeJobbBurgare(A, { onDone }) {
   });
   coop.on('serve', (m, from) => { if (coop.leader) leaderServe(m.cust | 0, m.d | 0, from); });
 
-  function freeTable() { return TABLES.find((tb) => !customers.some((k) => k.table === tb)); }
+  function freeTable() { return bordAktiva().find((tb) => !customers.some((k) => k.table === tb)); }
   // ledig plats på disken – ALDRIG någon annans: är det fullt får rätten vänta i köket.
   // reservedSlot = platsen spelaren är på väg till med sin tallrik (köket rör den inte).
   let reservedSlot = -1;
@@ -335,6 +349,7 @@ export function makeJobbBurgare(A, { onDone }) {
       },
       stats,
       coop: () => ({ leader: coop.leader, active: coop.active, mates: coop.peers().length, settled: coop.settled, myId: coop.myId }),
+      lag: () => ({ ...team, maxN, bord: bordAktiva().length }),
       customersDbg: () => customers.map((k) => ({ i: k.id, st: k.state, w: k.wish, x: Math.round(k.x), y: Math.round(k.y), ty: k.table.y })),
     },
     get worldX() { return walker.px; },
@@ -343,12 +358,26 @@ export function makeJobbBurgare(A, { onDone }) {
       pops.update(dt);
       if (done) {
         coop.tick(); coop.resign(); // MITT pass är slut – lämna över ledningen direkt (även på lönebeskedet)
-        doneT += dt; if (doneT > 1.2 && !reported) { reported = true; onDone(stats); } return;
+        doneT += dt;
+        if (doneT > 1.2 && !reported) {
+          reported = true;
+          if (maxN > 1) { // jobbat ihop: laget delar lika på alltihop
+            const sh = (v) => Math.round(v / maxN);
+            onDone({ ok: sh(team.ok), fel: sh(team.fel), miss: sh(team.miss), delat: maxN, lagOk: team.ok, lagFel: team.fel });
+          } else onDone(stats);
+        }
+        return;
       }
       t += dt;
       if (t >= SHIFT_SECONDS) { done = true; return; }
       walker.update(dt);
       coop.tick();
+      if (coop.active) maxN = Math.max(maxN, coop.peers().length + 1);
+      if (coop.active !== wasCoop) { // kompis in/ut: extraborden fram eller undan
+        wasCoop = coop.active;
+        setObs();
+        if (wasCoop) { play('knock'); pops.add(192, 128, 'EXTRABORDEN FRAM!', '#8ee03c'); }
+      }
       // Skiftledaren (eller solo) kör simuleringen; medarbetare följer ledarens läge
       const iLead = !coop.active || (coop.leader && coop.settled);
       if (iLead && !wasLead) {
@@ -364,7 +393,7 @@ export function makeJobbBurgare(A, { onDone }) {
       // nya kunder
       custIn -= dt;
       if (custIn <= 0) {
-        custIn = 6 - 2.5 * Math.min(1, t / SHIFT_SECONDS) + hash(seq, 3) * 2;
+        custIn = (6 - 2.5 * Math.min(1, t / SHIFT_SECONDS) + hash(seq, 3) * 2) * (coop.active ? 0.45 : 1); // fullt ös när man är fler
         const tb = freeTable();
         // in från vänster framför borden, upp på bordets vänstra sida och in på stolen
         if (tb) customers.push({ look: makeLook(), table: tb, x: -12, y: ENTRY_Y, state: 'walk', wish: (Math.random() * 4) | 0, patience: 26, pmax: 26, eat: 0, id: seq++, dir: 'right', path: [[tb.x - 12, ENTRY_Y], [tb.x - 8, tb.sy], [tb.sx, tb.sy]] });
@@ -381,7 +410,7 @@ export function makeJobbBurgare(A, { onDone }) {
           else k.state = 'sit';
         } else if (k.state === 'sit') {
           k.patience -= dt;
-          if (k.patience <= 0) { leave(k); stats.miss++; play('miss'); pops.add(k.x, k.y - 62, 'GICK HEM…', '#d8d2c0'); }
+          if (k.patience <= 0) { leave(k); stats.miss++; team.miss++; play('miss'); pops.add(k.x, k.y - 62, 'GICK HEM…', '#d8d2c0'); }
         } else if (k.state === 'eat') {
           k.eat -= dt;
           if (k.eat <= 0) leave(k);
@@ -391,7 +420,7 @@ export function makeJobbBurgare(A, { onDone }) {
       // nya tallrikar på disken (bara rätter som någon väntar på + lite slump)
       plateIn -= dt;
       if (plateIn <= 0 && plates.length < SLOTS.length) {
-        plateIn = 3.4 - 1.2 * Math.min(1, t / SHIFT_SECONDS);
+        plateIn = (3.4 - 1.2 * Math.min(1, t / SHIFT_SECONDS)) * (coop.active ? 0.75 : 1);
         const waiting = customers.filter((k) => k.state === 'sit').map((k) => k.wish);
         const d = waiting.length && Math.random() < 0.75 ? waiting[(Math.random() * waiting.length) | 0] : (Math.random() * 4) | 0;
         addPlate(d);
@@ -474,7 +503,7 @@ export function makeJobbBurgare(A, { onDone }) {
         const x = Math.round(walker.px) + ox - (PW >> 1), y = Math.round(walker.py) - 12 - (s.height - 1);
         drawables.push({ fy: walker.py + (dir === 'up' ? -0.01 : 0.01), draw: () => ctx.drawImage(s, 0, 0, s.width, s.height - 1, x, y, s.width, s.height - 1) });
       }
-      for (const tb of TABLES) {
+      for (const tb of bordAktiva()) {
         const k = customers.find((c) => c.table === tb);
         // stolen: ryggen bakom kunden, armstöden framför (så att stolen syns runt hen)
         if (atlasOk) {
@@ -525,7 +554,7 @@ export function makeJobbBurgare(A, { onDone }) {
         }
       }
       pops.draw(ctx);
-      drawShiftHud(ctx, { W: FW }, { t, dur: SHIFT_SECONDS, ok: stats.ok, fel: stats.fel, title: 'BURGARBAREN' });
+      drawShiftHud(ctx, { W: FW }, { t, dur: SHIFT_SECONDS, ok: maxN > 1 ? team.ok : stats.ok, fel: maxN > 1 ? team.fel : stats.fel, title: maxN > 1 ? 'BURGARBAREN IHOP' : 'BURGARBAREN' });
       if (done) drawTimeUp(ctx, { W: FW, H: FH });
     },
   };

@@ -10,6 +10,12 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.27.0] – 2026-09-28 – Jobba ihop: delad lön och fulla bord
+- JOBBA IHOP på riktigt: när du börjar ett pass på Burgarbaren finns knappen "💼 Jobba ihop" – välj vem i Pixelstaden du vill jobba med, så får hen inbjudan medan du kliver rakt in på passet.
+- NI DELAR PÅ LÖNEN: lagets alla serveringar räknas ihop och delas lika när passet är slut – att jobba med kompisar lönar sig.
+- EXTRABORDEN RULLAS FRAM: dubbelt så många bord och stolar när ni är fler, och kunderna strömmar in i högre tempo – full rusch!
+- Mätaren på passet visar LAGETS rätt och fel när ni är fler, och lönebeskedet visar hur lagets resultat delades.
+
 ## [0.26.2] – 2026-09-28 – Osynken vid spel ihop lagad
 - Osynk-buggen vid spel ihop är lagad: när skiftledarens pass tar slut lämnas ledningen över DIREKT till kompisen – världen fryser aldrig på lönebeskedet.
 - Somnar ledarens mobil eller tappas nätet tar kompisen över inom några sekunder, och en väckt gammal ledare lägger sig automatiskt – aldrig två som kör var sin värld.

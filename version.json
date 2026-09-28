@@ -1,7 +1,7 @@
 {
-  "version": "0.26.2",
+  "version": "0.27.0",
   "date": "2026-09-28",
-  "title": "Osynken vid spel ihop lagad",
+  "title": "Jobba ihop: delad lön och fulla bord",
   "files": [
     "CHANGELOG.md",
     "assets/interior.png",
