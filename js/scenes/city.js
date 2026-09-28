@@ -301,6 +301,7 @@ export function makeCity(A) {
     } else if (b.enter === 'djur') A.go('djur');
     else if (b.enter === 'burgare') A.go('burgarbar'); // in i dinern – jobba gör man vid disken därinne
     else if (b.enter === 'glass') openGlass(); // glasståndet i parken
+    else if (b.enter === 'narbutik') A.go('narbutik'); // förortens närbutik 24/7 (js/scenes/shop-narbutik.js)
     else if (kind === 'jobb') A.startJob(id);
     else A.startJob(b.enter === 'flyg' ? 'flygplats' : b.enter);
   }

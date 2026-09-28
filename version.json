@@ -1,7 +1,7 @@
 {
-  "version": "0.34.0",
+  "version": "0.35.0",
   "date": "2026-09-29",
-  "title": "Vädret rätt och glasståndet i parken",
+  "title": "Närbutiken öppnar",
   "files": [
     "CHANGELOG.md",
     "assets/interior.png",
@@ -96,6 +96,7 @@
     "js/scenes/shop-klader.js",
     "js/scenes/shop-mat.js",
     "js/scenes/shop-mobler.js",
+    "js/scenes/shop-narbutik.js",
     "js/scenes/shop-terminal.js",
     "js/scenes/walkable.js",
     "js/shops/bostad.js",

@@ -10,6 +10,12 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.35.0] – 2026-09-29 – Närbutiken öppnar
+- Närbutiken i förorten har öppnat – en egen trång och sunkig butik med utomlandskänsla, öppen dygnet runt
+- Smala gångar, överfulla hyllor, kartongstaplar, en kylvägg med exotiska drycker, ett lysrör som blinkar och katten Sultan som flyttar runt
+- Allt kostar 20 % mer än på Stormarknaden – men den har alltid öppet
+- Ny skylt utanför: en sliten ljuslåda med NÄRBUTIK 24/7 där ett lysrör håller på att dö
+
 ## [0.34.0] – 2026-09-29 – Vädret rätt och glasståndet i parken
 - Vädret: solen ger vanligt ljus igen – ingen brun eller orange ton över staden på dagen, bara kvällsljus när det börjar mörkna
 - Regn: bilarna skvätter från däcken och plaskar genom pölarna

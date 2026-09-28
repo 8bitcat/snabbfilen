@@ -51,7 +51,7 @@ export const homeBuildingId = (homeId) => HOME_BUILDING[homeId] || 'hem';
 
 // Butiker utan egen scen ännu: vart dörren leder i dag och ett förslag.
 export const SHOPS_EXTRA = [
-  { id: 'narbutik', building: 'narbutik', enter: 'mat', idea: 'Egen scen: trång butik med galler, dyrare än Stormarknad men öppen sent; allt kostar +20 %.' },
+  { id: 'narbutik', building: 'narbutik', enter: 'narbutik', idea: 'Egen scen: trång butik med galler, dyrare än Stormarknad men öppen sent; allt kostar +20 %.' },
   { id: 'pantbank', building: 'pantbank', enter: null, idea: 'Sälj möbler ur förrådet för halva priset, låna pengar mot pant.' },
   { id: 'kebab', building: 'kebab', enter: null, idea: 'Ät direkt (som kaféet): kebabrulle 45 kr, mättar 55.' },
   { id: 'kiosk', building: 'kiosk', enter: 'glass', idea: 'Glasståndet: kulglass, två kulor eller mjukglass – sätt dig vid borden. (Lotter och kvällstidningar kan få ett eget ställe.)' },

@@ -159,7 +159,7 @@ const XN = (id, x, w, h, door, extra) => mk('n', 'FÖRORTEN', id, x, w, h, door,
 const XS = (id, x, w, h, door, extra) => mk('s', 'FÖRORTEN', id, x, w, h, door, extra);
 export const BUILDINGS_X = [
   XN('hoghus', 1768, 168, 168, { x0: 1840, x1: 1864, type: 'swing' }, { sign: 'BETONGVÄGEN 1', icon: '🏢', enter: 'bostad:hoghus', homes: ['rum', 'hoghus'] }), // Lilla rummet (startbostaden) ligger i förorten
-  XN('narbutik', 1964, 108, 104, { x0: 2004, x1: 2028, type: 'swing' }, { sign: 'NÄRBUTIK 24/7', icon: '🏪', enter: 'mat' }),
+  XN('narbutik', 1964, 108, 104, { x0: 2004, x1: 2028, type: 'swing' }, { sign: 'NÄRBUTIK 24/7', icon: '🏪', enter: 'narbutik' }),
   XN('pantbank', 2072, 76, 104, { x0: 2098, x1: 2122, type: 'swing' }, { sign: 'PANTBANKEN', icon: '💍', open: [10, 18], soon: 'Pantbanken: "Vi köper ditt guld!" – kom tillbaka när du har något att pantsätta.' }),
   XN('kebab', 2148, 88, 104, { x0: 2180, x1: 2204, type: 'swing' }, { sign: 'KEBAB GRILL', icon: '🥙', open: [11, 24], soon: 'Grillen är trasig. "ÖPPNAR SNART" står det på en lapp från i fjol.' }),
   XN('overgivet', 2288, 104, 96, { x0: 2328, x1: 2352, type: 'boarded' }, { sign: '', icon: '🏚️', soon: 'Igenspikat. Det luktar fukt och någon har sprejat ett hjärta på dörren.' }),

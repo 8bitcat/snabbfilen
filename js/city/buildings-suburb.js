@@ -1,5 +1,5 @@
 // FÖRORTEN: fasadkonst för förortens hus – höghusen på Betongvägen (1, 5 och
-// lamellen 7), närbutiken med galler och handskrivna lappar, pantbanken med de
+// lamellen 7), närbutiken med en sliten ljuslåda som flimrar, galler och handskrivna lappar, pantbanken med de
 // tre guldkulorna, kebaben med neon där en bokstav är släckt, det igenspikade
 // huset, bilverkstan med oljefläckar och däckstaplar, tvätteriet, garagelängan,
 // lagerhallen och husvagnen. Allt är slitet men detaljrikt: betongelement,
@@ -665,7 +665,7 @@ const DOOR_ART = {
   hoghus: { h: 30, interior: (I, w, h) => { interiorBase(I, w, h, { wall0: 0xd8d4c8, wall1: 0xa8a49a, floor: 0x8a8a84 }); for (let r = 0; r < 3; r++) for (let c = 0; c < 3; c++) { I.rect(2 + c * 4, 6 + r * 4, 3, 3, 0x9a9ea8); I.hl(2 + c * 4, 6 + r * 4, 3, 0xc8ccd4); } I.rect(w - 8, 8, 6, 12, 0x3a5a3a); I.hl(w - 8, 8, 6, 0x5a7a5a); }, leaf: (S, w, h, n) => glassLeaf(S, w, h, { night: n, label: 'PORT 1', stickers: 3, crackGlass: true }), edge: 0x8a929c, hinge: 'l' },
   hoghus2: { h: 30, interior: (I, w, h) => { interiorBase(I, w, h, { wall0: 0xc8c4b8, wall1: 0x8a8678, floor: 0x7a7a74, lampCol: 0xd8e0ff }); for (let r = 0; r < 3; r++) for (let c = 0; c < 4; c++) { I.rect(2 + c * 4, 5 + r * 4, 3, 3, 0x8a8e98); I.hl(2 + c * 4, 5 + r * 4, 3, 0xb8bcc4); } I.rect(w - 6, 10, 3, 4, 0xd8303a); }, leaf: (S, w, h, n) => glassLeaf(S, w, h, { night: n, label: 'PORT 5', stickers: 5 }), edge: 0x8a929c, hinge: 'r' },
   lamell: { h: 30, interior: (I, w, h) => { interiorBase(I, w, h, { wall0: 0xe8e0c8, wall1: 0xb8b09a, floor: 0x9a8a6a }); for (let s = 0; s < 5; s++) { I.rect(w - 4 - s * 3, h - 10 - s * 3, 8, 3, 0xb8a888); I.hl(w - 4 - s * 3, h - 10 - s * 3, 8, 0xd8c8a8); } I.rect(2, 8, 6, 8, 0x8a9aa8); I.px(4, 10, 0xf0f0f0); }, leaf: (S, w, h, n) => glassLeaf(S, w, h, { night: n, label: 'PORT B', stickers: 2 }), edge: 0x8a929c, hinge: 'l' },
-  narbutik: { h: 30, interior: (I, w, h) => { interiorBase(I, w, h, { wall0: 0xf0ece0, wall1: 0xc8c4b8, floor: 0xb8b0a0, lampCol: 0xe8f0ff }); for (let r = 0; r < 3; r++) { I.hl(1, 7 + r * 5, w - 2, 0x8a8a90); for (let x = 2; x < w - 2; x += 2) I.rect(x, 4 + r * 5, 1, 3, pick(SPRAY, x, r, 1)); } I.rect(w - 6, 12, 5, 10, 0x2a3a5a); I.rect(w - 5, 13, 3, 8, 0x6ab0f0); }, leaf: (S, w, h, n) => glassLeaf(S, w, h, { night: n, label: 'DRAG', stickers: 7, frame: 0x5a5a60 }), edge: 0x6a6a70, hinge: 'l' },
+  narbutik: { h: 30, interior: (I, w, h) => { interiorBase(I, w, h, { wall0: 0xf0ece0, wall1: 0xc8c4b8, floor: 0xb8b0a0, lampCol: 0xe8f0ff }); for (let r = 0; r < 3; r++) { I.hl(1, 7 + r * 5, w - 2, 0x8a8a90); for (let x = 2; x < w - 2; x += 2) I.rect(x, 4 + r * 5, 1, 3, pick(SPRAY, x, r, 1)); } I.rect(w - 6, 12, 5, 10, 0x2a3a5a); I.rect(w - 5, 13, 3, 8, 0x6ab0f0); }, leaf: (S, w, h, n) => { glassLeaf(S, w, h, { night: n, label: 'DRAG', frame: 0x5a5a60 }); stickers(S, 3, 11, w - 12, h - 23, 7, w * 7); }, edge: 0x6a6a70, hinge: 'l' }, // klistermärkena under DRAG, till vänster om handtaget
   pantbank: { h: 30, interior: (I, w, h) => { interiorBase(I, w, h, { wall0: 0x6a5a48, wall1: 0x3a3028, floor: 0x5a4a3a, lampCol: 0xffe8b0 }); I.rect(2, 14, w - 4, 4, 0x8a6a40); I.hl(2, 14, w - 4, 0xc8a870); I.rect(3, 6, w - 6, 8, 0x9ab0c0, 0.5); I.px(w >> 1, 10, 0xffd23f); }, leaf: (S, w, h, n) => solidLeaf(S, w, h, 0x2a2a30, { night: n, window: [3, 4, w - 6, 9], grille: true, handle: 0xd8c060, mailslot: true, stickers: 1 }), edge: 0x4a4a50, hinge: 'r' },
   kebab: { h: 30, interior: (I, w, h) => { interiorBase(I, w, h, { wall0: 0xf0d8b0, wall1: 0xc8a878, floor: 0xa89070, lampCol: 0xffe0a0 }); I.rect(2, 12, w - 4, 6, 0xd8303a); I.hl(2, 12, w - 4, 0xf05a5a); I.rect(w - 7, 3, 5, 9, 0x3a2a1a); I.rect(w - 6, 4, 3, 7, 0x9a5a34); I.px(w - 5, 6, 0xc8804a); }, leaf: (S, w, h, n) => glassLeaf(S, w, h, { night: n, note: ['ÖPPNAR', 'SNART!'], noteY: 4, notePaper: 0xf8f0c0, frame: 0x5a3a2a, stickers: 2 }), edge: 0x6a4a3a, hinge: 'l' },
   overgivet: { h: 30, interior: (I, w, h) => { I.rect(0, 0, w, h, 0x0a0a0e); }, leaf: (S, w, h) => { boards(S, 0, 0, w, h, 77); S.hl(0, 0, w, 0x3a2a18); stencil(S, (w >> 1) - 3, 10, 'hjarta', 0xff5dc8, 0.95); S.px((w >> 1) - 1, 16, 0xff5dc8, 0.7); S.px((w >> 1) - 1, 17, 0xff5dc8, 0.5); tag(S, 2, 22, 'NEJ', 0xf4f1ea, 9); }, boarded: true },
@@ -987,7 +987,7 @@ function turbineFrames() { // ventilationsturbin (snurrande kula med lameller)
 // ======================= gemensam live/glow för förortens hus =======================
 const META = {};
 export const _META = META; // för felsökning i förhandsvisningen
-export const _DBG = { sprite: (...a) => sprite(...a), lifeDraw: (...a) => lifeDraw(...a) };
+export const _DBG = { sprite: (...a) => sprite(...a), lifeDraw: (...a) => lifeDraw(...a), nbTube: (t) => nbTube(t, seedOf('narbutik')) };
 const metaOf = (b, night) => META[b.id + ':' + !!night] || META[b.id + ':' + !night];
 function liveX(ctx, b, st) {
   const spec = DOOR_ART[b.kind];
@@ -1458,11 +1458,394 @@ function grille(P, x, y, w, h, o = {}) {
   if (o.box !== false) { P.rect(x - 1, y - 4, w + 2, 4, 0x6a6e78); P.hl(x - 1, y - 4, w + 2, 0xa8acb4); P.hl(x - 1, y - 1, w + 2, 0x3a3e46); }
   P.hl(x, y + h, w, 0x3a3e46); P.px(x + (w >> 1), y + h + 1, 0x2a2e36);
 }
+// ======================= NÄRBUTIKENS LJUSLÅDA =======================
+// En lång, sliten ljuslåda i förortsstil: vit plastfront med röda NÄRBUTIK (spelets BIG i
+// fetstil), röd 24/7-panel, ett avslaget hörn där det nakna lysröret syns, sprickor,
+// silvertejp, döda flugor och en vattenfläck i botten, rostig underkarm, vinkeljärn,
+// en duva på lådans tak och en lös kabel som dinglar under. Dagtid är lådan släckt.
+// Kvällstid tänder glow() plastens och bokstävernas EGNA pixlar (ljuset sitter bakom
+// texten – ingen ljusruta läggs över bokstäverna) och ett dithrat sken på väggen.
+// Lysröret bakom U och T håller på att dö: det slocknar ibland ett ögonblick, blinkar två
+// gånger eller försöker tända om (nbTube) – oregelbundet, aldrig stroboskop.
+
+// fetstil utan att prickarna flyter ihop: Ä/Ö får två tydliga prickar (##..##)
+function boldDots(B, word) {
+  [...word.toUpperCase()].forEach((ch, k) => {
+    const G = BIG[ch];
+    if (!G || !G.up.length) return;
+    const dots = [...G.up[0]].map((c, i) => (c === '#' ? i : -1)).filter((i) => i >= 0);
+    if (dots.length !== 2) return;
+    const [c0, c1] = B.cols[k], y = B.up - G.up.length;
+    for (let i = c0; i < c1; i++) B.on[y * B.w + i] = 0;
+    for (const i of [dots[0] - 1, dots[0], dots[1] + 1, dots[1] + 2]) if (i >= 0 && c0 + i < c1) B.on[y * B.w + c0 + i] = 1;
+  });
+  return B;
+}
+// lådans mått (husbildens koordinater) – samma för alla lägen
+function nbGeo(C, gTop) {
+  const { L, R } = C, x0 = L + 1, x1 = R - 2, fx0 = x0 + 1, fx1 = x1 - 1, fy0 = gTop + 1, fy1 = gTop + 12;
+  const pv = fx1 - 28, dv = pv - 2;                                   // 24/7-panelen (pv..fx1), mittprofilen (dv, dv+1)
+  const B = boldDots(bits(BIG, 'NÄRBUTIK', { bold: true }), 'NÄRBUTIK');
+  const tx = fx0 + ((dv - fx0 - B.w) >> 1) + 1, ty = fy0 + 3;       // versalhöjdens överkant
+  const N = bits(BIG, '24/7'), nx = pv + ((fx1 + 1 - pv - N.w) >> 1);
+  const HW = [11, 9, 8, 6, 5, 3, 3, 1];                              // det avslagna hörnet, rad för rad
+  const hit = (M, bx) => (x, y) => { const i = x - bx, j = y - (ty - M.up); return i >= 0 && j >= 0 && i < M.w && j < M.h && M.on[j * M.w + i] === 1; };
+  return {
+    x0, x1, fx0, fx1, fy0, fy1, pv, dv, B, tx, ty, N, nx,
+    seg: [tx + B.cols[4][0] - 1, tx + B.cols[5][1]],                  // det döende röret: U, T och glipan runt dem
+    tubes: [fy0 + 3.5, fy0 + 7.5],                                     // lysrörens mittlinjer bakom plasten
+    letter: hit(B, tx),
+    hole: (x, y) => y >= fy0 && y - fy0 < HW.length && x >= fx0 && x < fx0 + HW[y - fy0],
+    cable: C.dx1 + 2,                                                   // där den lösa kabeln hänger ut (mellan dörren och högra fönstret)
+  };
+}
+// Målar lådan. mode: 'day' (släckt i dagsljus), 'lit' (tänd), 'dead' (släckt i mörkret).
+// Allt som ser likadant ut tänt och släckt (karm, tejp, flugor, sockel) räknas inte som ljus.
+function nbSign(Q, G, C, mode) {
+  const s = C.s, lit = mode === 'lit', dead = mode === 'dead';
+  const { x0, x1, fx0, fx1, fy0, fy1, pv, dv, B, tx, ty, N, nx, tubes, hole, letter } = G;
+  const tubeD = (y) => Math.min(Math.abs(y - tubes[0]), Math.abs(y - tubes[1]));
+  const FH = fy1 - fy0 + 1;
+  // --- lådans tak (ses snett uppifrån): damm, löv, fågelskit ---
+  for (let x = x0; x <= x1; x++) {
+    let a = jit(0x868a92, x, fy0 - 3, s + 60, 0.08), b = jit(0xb4b8c0, x, fy0 - 2, s + 61, 0.06);
+    const n = hash(x, 3, s + 62);
+    if (n > 0.84) a = hash(x, 4, s + 62) > 0.5 ? 0x5e5c54 : 0x6a6458; else if (n < 0.05) b = 0x8a8a82;
+    if (x === x0 || x === x1) { a = mul(a, 0.8); b = mul(b, 0.84); }
+    Q.px(x, fy0 - 3, a); Q.px(x, fy0 - 2, b);
+  }
+  Q.px(x0 + 38, fy0 - 3, 0xb8782a); Q.px(x0 + 39, fy0 - 3, 0x8a5a24); Q.px(x0 + 39, fy0 - 2, 0xc88a3a); // löv
+  Q.px(x0 + 71, fy0 - 3, 0x9a6a2a); Q.px(x0 + 72, fy0 - 2, 0x7a4e20);
+  for (const dx of [48, 51, 55, 58]) Q.px(x0 + dx, fy0 - 2 - (dx & 1), 0xf0eee6);                     // fågelskit där duvan sitter
+  // --- karmen: aluminiumprofil, rostig underkarm, skruvar ---
+  for (let x = x0; x <= x1; x++) {
+    Q.px(x, fy0 - 1, x === x0 ? 0x9aa0a8 : x === x1 ? 0x3e424a : jit(hash(x, 5, s + 63) > 0.88 ? 0x8a8e96 : 0x5e626a, x, fy0 - 1, s + 64, 0.06));
+    let c = jit(0x44484f, x, fy1 + 1, s + 65, 0.06);
+    const r = hash(x >> 1, 7, s + 66);
+    if (r > 0.7) c = r > 0.87 ? 0xa45a2a : 0x7a4222;
+    Q.px(x, fy1 + 1, c);
+  }
+  for (let y = fy0; y <= fy1; y++) {
+    Q.px(x0, y, y === fy0 ? 0x5a5e66 : 0x7c8088); Q.px(x1, y, 0x3a3e46);
+    Q.px(dv, y, 0x8a8e96); Q.px(dv + 1, y, 0x4a4e56);
+  }
+  for (const [x, y] of [[x0, fy0 - 1], [x1, fy0 - 1], [x0, fy1 + 1], [x1, fy1 + 1], [dv, fy0 - 1], [dv + 1, fy1 + 1]]) Q.px(x, y, 0xc8ccd4);
+  Q.px(G.cable, fy1 + 1, 0x16161a); Q.px(G.cable + 1, fy1 + 1, 0x2e2e34);                               // kabelgenomföringen
+  // vinkeljärnen som håller lådan (mellan fönstren ovanför)
+  for (const bx of [x0 + 24, x1 - 25]) { Q.vl(bx, fy0 - 5, 2, 0x3a3e46); Q.vl(bx + 1, fy0 - 5, 2, 0x6a6e76); Q.px(bx + 1, fy0 - 5, 0xa8acb4); Q.px(bx + 2, fy0 - 4, 0x7a4222, 0.7); }
+  // --- vita fronten ---
+  const face = (x, y) => {
+    const j = y - fy0;
+    let c;
+    if (lit) {
+      const d = tubeD(y);
+      c = d < 1 ? 0xfffef8 : d < 2 ? 0xfdf6e8 : d < 3 ? 0xf2e8d4 : 0xe4d8c0;
+      if (x < G.seg[0]) c = mix(c, 0xffd8a0, 0.2);                   // vänstra röret är gammalt och gulare
+      if (j === 0) c = mul(c, 0.84);
+      return jit(c, x, y, s + 67, 0.025);
+    }
+    if (dead) return jit(j === 0 ? 0x7a766e : j >= FH - 2 ? 0x86827a : 0x949088, x, y, s + 67, 0.03);
+    c = j === 0 ? 0xcbc7bd : j >= FH - 2 ? 0xd4d0c6 : 0xe8e5dc;
+    if (x < fx0 + 24) c = qmix(c, mix(c, 0xe0cc94, 0.42), 1 - (x - fx0) / 24, x, y, 3); // solgulnad vid det trasiga hörnet
+    return jit(c, x, y, s + 67, 0.03);
+  };
+  area(Q, fx0, fy0, dv - fx0, FH, (X, Y) => {
+    if (hole(X, Y)) return null;
+    let c = face(X, Y);
+    if (hole(X - 1, Y)) c = lit ? 0xffffff : dead ? 0xa8a49c : 0xfcfbf6;                          // plastens brottkant
+    else if (hole(X, Y - 1)) c = mul(c, 0.9);                                                      // skugga under brottet
+    const st = hash(X, 9, s + 68);                                   // smutsränder från karmen
+    if (st > 0.87 && Y - fy0 <= 1 + Math.floor(hash(X, 10, s + 68) * 3) && !letter(X, Y)) c = mul(c, 0.94);
+    return c;
+  });
+  // --- hålet: lådans insida (smutsvit plåt i skugga), det nakna röret med sockel och svärtad ända, kabel, spindelväv ---
+  for (let y = fy0; y < fy0 + 8; y++) for (let x = fx0; x < fx0 + 11; x++) {
+    if (!hole(x, y)) continue;
+    const j = y - fy0, tr = j === 3 || j === 4, top = j === 3;
+    let c;
+    if (tr && x === fx0) c = lit ? (top ? 0xd8d4c8 : 0x8a867c) : (top ? 0xa8a498 : 0x6a665e); // sockeln (i skugga på dagen)
+    else if (tr && x === fx0 + 1) c = top ? 0x5a5a56 : 0x3a3a38;                     // den svärtade rörändan
+    else if (tr) c = lit ? (top ? 0xffffff : 0xeef4f8) : dead ? (top ? 0x9aa0a2 : 0x6e7478) : (top ? 0xb4b8b8 : 0x7e8488);
+    else if (x === fx0 && j < 3) c = lit ? 0x3a3a3e : 0x1e1e22;                     // matarkabeln upp till sockeln
+    else {
+      const k = j === 0 ? 0 : j === 1 ? 1 : j === 2 || j === 5 ? 3 : 2;               // 0 = skugga under karmen … 3 = intill röret
+      c = lit ? [0x9aa2a8, 0xbcc4c8, 0xd0d8dc, 0xe4ecf0][k] : dead ? 0x222228 : [0x18181e, 0x24242a, 0x2e2e34, 0x3e3e44][k]; // natt: kallt, bländande naket ljus
+    }
+    Q.px(x, y, c);
+  }
+  for (const [x, y] of [[fx0 + 2, fy0], [fx0 + 3, fy0 + 1], [fx0 + 4, fy0 + 1], [fx0 + 2, fy0 + 2]]) Q.px(x, y, lit ? 0xe8e6dc : dead ? 0x55555a : 0xb0b0b4, 0.75); // spindelväv
+  // --- sprickor ut från hålet ---
+  const cr = (pts) => pts.forEach(([x, y]) => {
+    Q.px(x, y, lit ? 0xffffff : dead ? 0x66625a : 0x8a867c);
+    if (!letter(x, y + 1) && !hole(x, y + 1)) Q.px(x, y + 1, lit ? 0xd8ccb4 : dead ? 0x8a867e : 0xf4f2ea);
+  });
+  cr([[fx0 + 11, fy0], [fx0 + 12, fy0 + 1], [fx0 + 13, fy0 + 1], [fx0 + 14, fy0 + 1], [fx0 + 15, fy0 + 2]]);
+  cr([[fx0 + 1, fy0 + 8], [fx0 + 2, fy0 + 9], [fx0 + 3, fy0 + 10], [fx0 + 4, fy0 + 11]]);
+  cr([[fx0 + 7, fy0 + 4], [fx0 + 8, fy0 + 5], [fx0 + 8, fy0 + 6]]);
+  // --- vattenfläck i botten till höger (regn har kommit in): oregelbunden fläck med mörkare rand ---
+  const wcx = dv - 5.5, wcy = fy1 + 0.5;
+  const wet = (x, y) => { const d = Math.hypot((x - wcx) / 5.5, (y - wcy) / 2.6); return x < dv && y <= fy1 && d < 1 + (hash(x, y, s + 77) - 0.5) * 0.35; };
+  for (let y = fy1 - 3; y <= fy1; y++) for (let x = dv - 12; x < dv; x++) {
+    if (!wet(x, y) || letter(x, y)) continue;
+    const edge = !wet(x, y - 1) || !wet(x - 1, y);
+    Q.px(x, y, edge ? (lit ? 0xd4ac6a : dead ? 0x6a5a40 : 0xb49a66) : mix(face(x, y), lit ? 0xf0c880 : dead ? 0x8a7a5a : 0xd8c490, 0.28));
+  }
+  // --- bokstäverna (vinyl på plasten, lite solblekta) ---
+  if (!lit && !dead) sign(Q, B, tx, ty, { fill: null, shadow: 0x8a867c, sx: 1, sy: 1, sa: 0.45 });
+  sign(Q, B, tx, ty, lit
+    ? { fill: (i, j, X, Y) => jit(0xe02a22, X, Y, s + 69, 0.03), hi: 0xff6a54, lo: 0xb41818 }
+    : dead ? { fill: 0x6a1e1e, hi: 0x7c2c2a, lo: 0x4c1414 }
+      : { fill: (i, j, X, Y) => jit(i > B.cols[6][0] ? 0xca3a34 : 0xc2302c, X, Y, s + 69, 0.05), hi: 0xd85a4c, lo: 0x8c1c1c });
+  // --- 24/7-panelen: röd plast, vita siffror, ett klistermärke ---
+  area(Q, pv, fy0, fx1 - pv + 1, FH, (X, Y, i, j) => {
+    const base = lit ? 0xea3c2e : dead ? 0x5a1c1a : 0xb02a26;
+    let c = j === 0 ? mul(base, 0.78) : j === 1 ? mix(base, WHITE, lit ? 0.18 : 0.1) : j >= FH - 2 ? mul(base, 0.8) : base;
+    if (lit && tubeD(Y) < 1) c = mix(c, 0xffa080, 0.22);
+    if (i === 0) c = mul(c, 0.86);
+    return jit(c, X, Y, s + 70, 0.04);
+  });
+  sign(Q, N, nx, ty, lit ? { fill: 0xffffff, lo: 0xffe2d8 } : dead ? { fill: 0x8a7470, lo: 0x6a5652 } : { fill: 0xf2eee6, lo: 0xcac0b6, shadow: 0x6a1412, sx: 1, sy: 1, sa: 0.6 });
+  Q.rect(pv + 1, fy1 - 1, 3, 2, 0x2a5aa8); Q.hl(pv + 1, fy1 - 1, 3, 0x3a7bd5); Q.px(pv + 2, fy1 - 1, 0xf0f0f0);   // klistermärke
+  // --- silvertejp över den nedre sprickan ---
+  for (let j = 0; j < 3; j++) for (let i = 0; i < 7; i++) {
+    if ((i === 0 || i === 6) && hash(i, j, s + 71) > 0.55) continue;                           // fransiga ändar
+    let c = j === 0 ? 0xb4b8bc : j === 2 ? 0x7c8086 : 0x9a9ea4;
+    if (hash(i, j, s + 72) > 0.78) c = mix(c, WHITE, 0.22);                                      // veck
+    Q.px(fx0 + 1 + i, fy0 + 8 + j, c);
+  }
+  Q.px(fx0 + 7, fy0 + 7, 0xc8ccd0);                                                               // en hörna som släppt
+  // --- döda flugor i botten av lådan (syns som prickar genom plasten) ---
+  for (let k = 0; k < 9; k++) {
+    const x = fx0 + 10 + Math.floor(hash(k, s, 73) * (dv - fx0 - 24)), y = fy1 - (hash(k, s, 74) > 0.7 ? 1 : 0);
+    if (letter(x, y)) continue;
+    Q.px(x, y, 0x2e2a26);
+    if (hash(k, s, 75) > 0.6 && !letter(x + 1, y)) Q.px(x + 1, y, 0x5a5650);
+  }
+  for (const dx of [9, 17, 22]) Q.px(pv + dx, fy1, 0x3a1614);
+}
+// Tända/släckta bilder för glow() och live(): resten av lådan, det döende röret tänt/släckt
+// och skenet på väggen. Bara pixlar som skiljer tänt från släckt lyser. När röret är släckt
+// lyser grannrören ändå in en bit i lådan: biten mörknar mot mitten i fyra steg (nbDim).
+const nbDim = (dc) => (dc <= 0 ? 0.72 : dc <= 2 ? 0.5 : dc <= 4 ? 0.32 : 0.18);
+function nbLights(C, G) {
+  const { L, R } = C, { x0, x1, fy0, fy1, seg, dv } = G;
+  const X0 = L, Y0 = fy0 - 8, W = R - L, H = fy1 - fy0 + 16;
+  const mk = () => new Pix(W, H, X0, Y0);
+  const lit = mk(), dead = mk();
+  nbSign(lit, G, C, 'lit'); nbSign(dead, G, C, 'dead');
+  const em = [];                                                       // ljuskällorna: [i, j, iSeg, dim]
+  const rest = mk(), segOn = mk(), segOff = mk(), segDim = mk();
+  for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) {
+    const x = X0 + i, y = Y0 + j;
+    if (y < fy0 || y > fy1 || x <= x0 || x >= x1) continue;
+    const a = lit.get(x, y), b = dead.get(x, y);
+    if (a === b) continue;
+    const inSeg = x >= seg[0] && x <= seg[1], f = inSeg ? nbDim(Math.min(x - seg[0], seg[1] - x)) : 1;
+    em.push([i, j, inSeg, f]);
+    if (inSeg) { segOn.px(x, y, a); segOff.px(x, y, b); segDim.px(x, y, a, f); } else rest.px(x, y, a);
+  }
+  // skenet på väggen: dithrat och kvantiserat; på karmen en jämn kant, aldrig inne på fronten
+  const halo = (segOn) => {
+    const P = mk(), r = 6, best = new Float32Array(W * H);
+    for (const [ei, ej, inSeg, f] of em) {
+      const w = inSeg && !segOn ? f * 0.8 : 1;
+      for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
+        const i = ei + dx, j = ej + dy;
+        if (i < 0 || j < 0 || i >= W || j >= H) continue;
+        const v = w * (1 - Math.hypot(dx, dy) / (r + 0.6));
+        if (v > best[j * W + i]) best[j * W + i] = v;
+      }
+    }
+    for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) {
+      const x = X0 + i, y = Y0 + j, v = best[j * W + i];
+      if (v <= 0) continue;
+      const inBox = x >= x0 && x <= x1 && y >= fy0 - 3 && y <= fy1 + 1;
+      const rim = inBox && (y === fy0 - 1 || y === fy1 + 1 || x === x0 || x === x1 || x === dv || x === dv + 1);
+      if (inBox && !rim) continue;
+      if (rim) { P.px(x, y, 0xfff0d8, v > 0.7 ? 0.3 : v > 0.4 ? 0.2 : 0.1); continue; }
+      const q = Math.floor(v * 4 + bayer(x, y)) / 4;
+      if (q > 0) P.px(x, y, 0xfff0d8, q * 0.42);
+    }
+    return P.flush();
+  };
+  const img = { rest: rest.flush(), on: segOn.flush(), off: segOff.flush(), dim: segDim.flush(), haloOn: halo(true), haloOff: halo(false) };
+  C.reg.glowFx.push((ctx, t, st, k) => {
+    const on = nbTube(t, C.s) === 1;
+    ctx.globalAlpha = Math.min(1, 0.55 * k);
+    ctx.drawImage(img.rest, X0, Y0);
+    ctx.drawImage(on ? img.on : img.dim, X0, Y0);
+    ctx.globalAlpha = k;
+    ctx.drawImage(on ? img.haloOn : img.haloOff, X0, Y0);
+    ctx.globalAlpha = 1;
+  });
+  // på natten är husbilden tänd – när röret slocknar läggs den släckta biten över
+  if (C.night) C.reg.extra.push((ctx, t) => { if (nbTube(t, C.s) === 0) ctx.drawImage(img.off, X0, Y0); });
+}
+// Det döende röret: tänt för det mesta; ibland (oregelbundet) ett av mönstren nedan.
+// Varje bit är minst 0,09 s – det hackar, men blixtrar aldrig som ett stroboskop.
+// Tiden delas i fack à 2,2 s; högst ett avbrott per fack och det ligger helt inne i facket
+// med minst 0,3 s tänt före och efter. Allt avgörs vid fackets START (även de lugna
+// stunderna), så ett påbörjat avbrott körs alltid klart – inga avklippta blixtar.
+// I snitt ca 6 avbrott i minuten, med lugna stunder på 13 s emellanåt.
+const NB_EPIS = [
+  [0.3, [[0.13, 0]]],                                                  // slocknar ett ögonblick
+  [0.36, [[0.2, 0], [0.1, 1], [0.12, 0], [0.1, 1], [0.24, 0]]],        // slocknar, blinkar två gånger, lyser igen
+  [0.14, [[0.5, 0], [0.09, 1], [0.42, 0], [0.12, 1], [0.18, 0]]],      // glimtändaren försöker tända om
+  [0.2, [[0.16, 0], [0.12, 1], [0.1, 0]]],                             // hackar till
+];
+function nbTube(t, seed) {
+  const SLOT = 2.2, n = Math.floor(t / SLOT);
+  if (hash(Math.floor((n * SLOT) / 13), seed, 81) < 0.35) return 1;  // lugna stunder (avgörs vid fackets start)
+  if (hash(n, seed, 82) > 0.36) return 1;                             // de flesta fack: inget händer
+  let p = hash(n, seed, 83), ep = NB_EPIS[0][1];
+  for (const [w, e] of NB_EPIS) { ep = e; if ((p -= w) < 0) break; }
+  const dur = ep.reduce((a, e) => a + e[0], 0);
+  let v = t - n * SLOT - 0.3 - hash(n, seed, 84) * (SLOT - dur - 0.6); // 0,3 s marginal i båda ändar av facket
+  if (v < 0 || v >= dur) return 1;
+  for (const [d, on] of ep) { if (v < d) return on; v -= d; }
+  return 1;
+}
+// den lösa (vita) elkabeln under lådan: dinglar sakta (mer i blåst), avklippt med kopparn ute
+function nbCable(C, G) {
+  const x = G.cable, y = G.fy1 + 2, len = 9;
+  C.reg.extra.push((ctx, t, st) => {
+    const wind = st.env?.weather?.wind || 0;
+    const e = clamp(Math.round(Math.sin(t * 1.1 + 0.7) * 0.7 + Math.sin(t * 0.43) * 0.5 + wind * 0.05), -1, 1);
+    let cx = x;
+    for (let r = 0; r < len; r++) {
+      if (r === 5 || r === 7) cx = x + (r === 5 ? (e > 0 ? 1 : e < 0 ? -1 : 0) : e);
+      ctx.fillStyle = r % 3 === 2 ? '#9c9a92' : '#d6d4cc'; ctx.fillRect(cx, y + r, 1, 1);       // vit elkabel (vriden)
+    }
+    ctx.fillStyle = '#c0702e'; ctx.fillRect(cx - 1, y + len, 1, 1);
+    ctx.fillStyle = '#e8a650'; ctx.fillRect(cx + 1, y + len, 1, 1); ctx.fillRect(cx, y + len + 1, 1, 1);
+  });
+}
+// Skyltfönstrets kvällsljus UTAN att lägga ljus över text: glasrutan (och dess kant) minus
+// lappar/skyltar som har text. Samma fyllning som reg.glows, men bitvis.
+function rectMinus(r, holes) {
+  let parts = [r];
+  for (const [hx, hy, hw, hh] of holes) {
+    const next = [];
+    for (const [x, y, w, h] of parts) {
+      const ix0 = Math.max(x, hx), iy0 = Math.max(y, hy), ix1 = Math.min(x + w, hx + hw), iy1 = Math.min(y + h, hy + hh);
+      if (ix0 >= ix1 || iy0 >= iy1) { next.push([x, y, w, h]); continue; }
+      if (iy0 > y) next.push([x, y, w, iy0 - y]);
+      if (iy1 < y + h) next.push([x, iy1, w, y + h - iy1]);
+      if (ix0 > x) next.push([x, iy0, ix0 - x, iy1 - iy0]);
+      if (ix1 < x + w) next.push([ix1, iy0, x + w - ix1, iy1 - iy0]);
+    }
+    parts = next;
+  }
+  return parts;
+}
+function glassGlow(C, x, y, w, h, c, a, holes) {
+  const inner = rectMinus([x, y, w, h], holes);
+  const ring = [[x - 1, y - 1, w + 2, 1], [x - 1, y + h, w + 2, 1], [x - 1, y, 1, h], [x + w, y, 1, h]].flatMap((r) => rectMinus(r, holes));
+  C.reg.glowFx.push((ctx, t, st, k) => {
+    ctx.fillStyle = rgba(c, a * k * 0.4); for (const [rx, ry, rw, rh] of ring) ctx.fillRect(rx, ry, rw, rh);
+    ctx.fillStyle = rgba(c, a * k); for (const [rx, ry, rw, rh] of inner) ctx.fillRect(rx, ry, rw, rh);
+  });
+}
+// Butikens egen löpsedel (världskoordinater): en gatupratare i järn framför högra fönstret, fötterna
+// en pixel ut på trottoaren. Tavlan är 30×15: två rader SMALL med luft runtom (KATTEN / HITTAD!).
+function nbBoardGeo(b) {
+  const W = 30, H = 15, X0 = b.door.x1 + 3, fy = baseOf(b) + 1;
+  return { X0, W, H, fy, top: fy - 2 - H };
+}
+function nbBoardImg(G, snow, s) {
+  const { X0, W, H, fy, top } = G, X1 = X0 + W - 1, B = top + H - 1;
+  const P = new Pix(W + 4, H + 7, X0 - 2, top - 3);
+  // skuggan på trottoaren under tavlan
+  for (let x = X0 + 1; x < X1; x++) { P.px(x, fy - 1, 0x1a1422, 0.3); P.px(x, fy, 0x1a1422, 0.22); if (x > X0 + 2 && x < X1 - 2) P.px(x, fy + 1, 0x1a1422, 0.1); }
+  // benen: det främre paret utåtställt, det bakre anas innanför
+  for (const [x, c] of [[X0 + 4, 0x16181c], [X1 - 4, 0x16181c]]) { P.px(x, fy - 2, c); P.px(x, fy - 1, mix(c, 0x30363e, 0.4)); }
+  P.px(X0 + 1, fy - 2, 0x4a525c); P.px(X0 + 2, fy - 2, 0x1e2228); P.px(X0, fy - 1, 0x30363e); P.px(X0 + 1, fy - 1, 0x1e2228);
+  P.px(X1 - 2, fy - 2, 0x30363e); P.px(X1 - 1, fy - 2, 0x1e2228); P.px(X1 - 1, fy - 1, 0x30363e); P.px(X1, fy - 1, 0x1e2228);
+  for (const x of [X0, X0 + 1, X1 - 1, X1]) P.px(x, fy, 0x0e0e12);                        // gummifötter
+  P.px(X0 + 1, fy - 1, 0x7a4222); P.px(X1 - 1, fy, 0x5a3018);                              // rost på benen
+  // järnramen: ljus överkant, mörk underkant med rost, slitna fläckar
+  for (let i = 0; i < W; i++) {
+    let t = hash(i, 1, s + 95) > 0.84 ? 0x6e7884 : 0x4a525c, u = 0x1e2228;
+    const r = hash(i >> 1, 2, s + 96);
+    if (r > 0.72) u = r > 0.9 ? 0xa45a2a : 0x7a4222;
+    P.px(X0 + i, top, t); P.px(X0 + i, B, u);
+  }
+  for (let j = 1; j < H - 1; j++) { P.px(X0, top + j, j === 1 ? 0x4a525c : 0x30363e); P.px(X1, top + j, 0x1e2228); }
+  P.px(X0, top, 0x6e7884); P.px(X1, B, 0x101216); P.px(X0, B, 0x7a4222);
+  // papperet: tidningsvitt, gulnat och fuktigt nertill, skuggat under ramens läpp
+  area(P, X0 + 1, top + 1, W - 2, H - 2, (X, Y, i, j) => {
+    let c = qmix(0xf6f4ec, 0xe4dac0, (j - 8) / 4, X, Y, 3);
+    if (j === 0) c = mul(c, 0.9); else if (i === 0) c = mul(c, 0.94);
+    if (j === H - 3 && hash(X, Y, s + 97) > 0.78) c = 0xbcb2a0;                             // stänk från trottoaren
+    return jit(c, X, Y, s + 98, 0.03);
+  });
+  // rubrikerna: svart och röd, röd med mörkare nederkant
+  text(P, SMALL, 'KATTEN', X0 + 3, top + 2, 0x16161c);
+  eachTextPixel(SMALL, 'HITTAD!', X0 + 2, top + 8, 1, (x, y) => P.px(x, y, y === top + 12 ? 0xa81414 : 0xd01c1c));
+  // plastfickans blänk (i marginalen), klämmorna i överkant och ett hundöra nere till höger
+  P.px(X0 + 1, top + 1, 0xffffff); P.px(X0 + 2, top + 1, 0xfcfcf8);
+  P.px(X1 - 1, top + 3, 0xffffff, 0.7); P.px(X1 - 1, top + 4, 0xffffff, 0.45);
+  for (const cx of [X0 + 6, X1 - 7]) { P.px(cx, top, 0xbcc4cc); P.px(cx + 1, top, 0x8e98a2); P.px(cx, top + 1, 0x8e98a2); P.px(cx + 1, top + 1, 0x646c76); }
+  P.px(X1 - 1, B - 1, 0x8a867c); P.px(X1 - 2, B - 1, 0xd8d2c0); P.px(X1 - 1, B - 2, 0xd8d2c0);
+  if (snow) snowCap(P, X0, top, W, s);
+  return P.flush();
+}
+// y-sorterat föremål: tavlan ritas över husets sockel, och folk på trottoaren hamnar rätt framför den
+const NB_ITEMS = {};
+function nbItems(b, st) {
+  const snow = (st?.env?.weather?.snowCover || 0) > 0.5 ? 1 : 0, key = b.id + ':' + snow;
+  let L = NB_ITEMS[key];
+  if (!L) {
+    const G = nbBoardGeo(b), img = nbBoardImg(G, snow, seedOf(b.id));
+    L = NB_ITEMS[key] = [{ x: G.X0 + (G.W >> 1), y: G.fy, draw: (ctx) => ctx.drawImage(img, G.X0 - 2, G.top - 3) }];
+  }
+  return L;
+}
+// Kartongskylt som hänger i rullgallret på två ståltrådar: KAFFE med svart tusch, avriven
+// överkant där wellpappens räfflor syns, kaffestänk och en fuktfläck (inget av det rör texten).
+// Bokstäverna darrar bara nedåt (in i marginalen), aldrig upp i rivkanten. Returnerar rutan
+// (med trådarna och skuggan) för hålet i kvällsljuset.
+function kaffeSign(Q, x, y, s) {
+  const w = 22, h = 8;
+  area(Q, x, y, w, h, (X, Y, i, j) => {
+    if (i === w - 1 && j === h - 1) return null;                                            // avrivet hörn
+    let c = jit(0xc49a64, X, Y, s + 93, 0.07);
+    if (j === 0) c = (i & 1) ? 0xd6b27a : 0x9a7040;                                          // räfflorna i rivkanten
+    else if (j === h - 1 || (i === w - 2 && j === h - 2)) c = mul(c, 0.76);
+    else if (i === w - 1) c = mul(c, 0.84);
+    else if (i === 0) c = mix(c, WHITE, 0.1);
+    return c;
+  });
+  for (const hx of [x + 3, x + w - 4]) { Q.px(hx, y - 1, 0x9aa0a8); Q.px(hx, y, 0x2a2a30); }   // trådarna upp till kåpan
+  for (const [i, j, a] of [[20, 1, 0.5], [20, 2, 0.35], [19, 6, 0.4], [18, 6, 0.25]]) Q.px(x + i, y + j, 0x7a4a22, a); // kaffestänk
+  Q.px(x + 1, y + 6, mul(0xc49a64, 0.86)); Q.px(x + 2, y + 6, mul(0xc49a64, 0.9));           // fuktfläck
+  let cx = x + 1;
+  for (const ch of 'KAFFE') { text(Q, SMALL, ch, cx, y + 1 + (hash(cx, s, 94) > 0.66 ? 1 : 0), 0x1a1612); cx += textW(SMALL, ch) + 1; }
+  Q.hl(x + 1, y + h, w - 1, 0x000000, 0.3); Q.vl(x + w, y + 1, h - 1, 0x000000, 0.22);        // skuggan
+  return [x, y - 1, w + 1, h + 2];
+}
+// prislapp i självlysande gult med röd siffra, tejpad på glaset (tejpen bara i övre hörnen)
+function prisLapp(Q, x, y, str) {
+  const w = textW(SMALL, str) + 3, h = 7;
+  area(Q, x, y, w, h, (X, Y, i, j) => (j === h - 1 ? 0xd8b830 : i === w - 1 ? 0xe8c83a : jit(0xfbe24a, X, Y, 99, 0.04)));
+  Q.px(x, y, 0xfff4a0); Q.px(x + w - 1, y, 0xfff4a0, 0.9);                                  // tejpen
+  text(Q, SMALL, str, x + 1, y + 1, 0xc81818);
+  Q.hl(x + 1, y + h, w, 0x000000, 0.28); Q.vl(x + w, y + 1, h, 0x000000, 0.2);
+  return [x, y, w + 1, h + 1];
+}
+// två trisslotter tejpade på glaset (utan text): gul och blå med silvrigt skrapfält
+function trisslotter(Q, x, y) {
+  for (const [tx, ty, c, lo] of [[x, y, 0xf0b429, 0xb88210], [x + 2, y + 1, 0x3a7bd5, 0x24509a]]) {
+    Q.rect(tx, ty, 3, 5, c); Q.hl(tx, ty, 3, mix(c, WHITE, 0.35)); Q.hl(tx, ty + 4, 3, lo);
+    Q.px(tx + 1, ty + 2, 0xc8ccd4); Q.px(tx + 1, ty + 3, 0x8a9098);
+    Q.px(tx + 1, ty - 1, 0xe8e0b8, 0.85);                                                    // tejpen
+  }
+}
 function paintNarbutik(b, night, opts) {
   const C = begin(b, night, opts);
   return shopRow(C, {
     trim: 0xc8b8a0, frame: 0xe8e4dc, cols: [C.L + 8, C.L + 30, C.L + 64, C.L + 86], firewalls: [1],
-    special: { '3,0': { foil: true, curtain: null, blind: null }, '1,1': { ac: true } },
+    special: { '3,0': { foil: true, curtain: null, blind: null }, '1,1': { lit: false, blind: null } }, // 1,1: fönster-AC (upper)
     wall: (P, x, y, w, h) => { bricks(P, x, y, w, h, 0x7a4a34, C.s, { bw: 6, bh: 3 }); for (let i = 0; i < w; i++) for (let j = 0; j < 6; j++) if (hash(i, j, 3) < (6 - j) * 0.08) P.px(x + i, y + 5 + j, 0x1a1410, 0.25); },
     roof(C) {
       const { P, L } = C;
@@ -1473,43 +1856,58 @@ function paintNarbutik(b, night, opts) {
       dish(P, L + 96, 60, { rust: true, r: 3 });
       birdsOn(C, L + 4, L + 50, C.FT - 1, 2);
     },
-    upper(C) { // folie i ett fönster (någon sover på dagen)
+    upper(C) { // folie i ett fönster (någon sover på dagen) och en fönster-AC som droppar ner på ljuslådan
       const { P, L, FT } = C, x = L + 86 + 1, y = FT + 8 + 1;
       area(P, x, y, 12, 14, (X, Y) => { const n = hash(X, Y, 61); return n > 0.7 ? 0xf0f4f8 : n < 0.25 ? 0x8a9098 : 0xc0c6ce; });
+      const ax = L + 30, ay = FT + 8 + 26 + 7;                              // nedre rutan i fönster 1,1
+      P.hl(ax, ay, 14, 0xf2f0e8); P.px(ax, ay, 0xc8c6be); P.px(ax + 13, ay, 0xb0aea6);  // ovansidan
+      area(P, ax, ay + 1, 14, 7, (X, Y, i, j) => {
+        if (i === 0) return 0xe4e2da; if (i === 13) return 0x8e8c84;
+        if (j === 6) return hash(X, Y, 62) > 0.6 ? 0x8a5a2a : 0x8e8c84;      // rostig underkant
+        if (i >= 5 && i <= 11 && j >= 1 && j <= 5) return j % 2 ? 0x6e6c66 : 0xb8b6ae; // bakre gallret (lameller)
+        return jit(j === 0 ? 0xe4e2da : 0xcecbc2, X, Y, 63, 0.05);
+      });
+      P.rect(ax + 1, ay + 2, 3, 2, 0x5a5e66); P.px(ax + 2, ay + 2, 0x8a9098);   // typskylten
+      P.hl(ax, ay + 8, 14, 0x000000, 0.28);                                     // skugga på ramen
+      streak(P, ax + 11, ay + 12, 3, 0x3a4a2a, 0.6, 5);                         // alger där kondensvattnet rinner
+      C.reg.drips.push({ x: ax + 11, y: ay + 12, len: 3, ph: 0.3 });              // droppar ner på lådans tak
     },
     shop(C, gTop) {
-      const { P, L, R, BY, dx0, dx1, s } = C, night = C.night;
-      // ljuslådan: NÄRBUTIK + 24/7 (ett lysrör i vänstra delen har gått sönder)
-      const sy = gTop + 2, sw = R - L - 4;
-      area(P, L + 2, sy, sw, 12, (X, Y, i, j) => jit(j === 0 ? 0xffffff : j === 11 ? 0xb8b8b8 : night ? (i < sw * 0.3 ? 0xa8a8a0 : 0xfffcf0) : 0xf4f2ea, X, Y, 71, 0.03));
-      P.box(L + 1, sy - 1, sw + 2, 14, 0x3a3a44); P.hl(L + 2, sy + 12, sw, 0x000000, 0.3);
-      const B = bits(BIG, 'NÄRBUTIK', { bold: true });
-      sign(P, B, L + 6, sy + 3, { fill: 0xd8202a, hi: 0xf05050, lo: 0x9a1018, shadow: 0x8a8a8a, sx: 1, sy: 1, sa: 0.4 });
-      P.ell(R - 14, sy + 6, 7, 5.5, 0xd8202a, 1, 1); text(P, SMALL, '24/7', R - 21, sy + 4, 0xffffff);
-      if (night) { C.reg.glows.push([L + 2 + Math.round(sw * 0.3), sy, Math.round(sw * 0.7), 12, 0xfff8e0, 0.4]); C.reg.flick.push({ x: L + 2, y: sy, w: Math.round(sw * 0.3), h: 12, c: 0xfff8e0, a: 0.35, mode: 'flick' }); }
-      if (C.snow) snowCap(P, L + 1, sy - 1, sw + 2, s);
-      cctv(C, R - 7, sy + 14, true);
-      // vänstra fönstret: kassan med kassörskan, hyllor, lottreklam; halvt nerdraget galler
+      const { P, L, R, dx0, dx1, s } = C, night = C.night;
+      // Lapparna med text sitter där ingenting står framför dem: i vänstra fönstret till vänster
+      // om lyktstolpen (props.js lamp(1990, …), stolpen på x ≈ 1992), i högra ovanför butikens
+      // löpsedel KATTEN HITTAD! (nbItems, ett y-sorterat föremål) – ingen text skymmer någon annan.
       const wy = 158, wh = 22;
-      shopWin(C, L + 3, wy, dx0 - L - 7, wh, { lit: night, litCol: 0xf4f8ff, act: 'cashier', cx: 2, per: 8,
+      const BG = nbBoardGeo(b), board = [BG.X0 - C.box.x, BG.top - C.box.y, BG.W, BG.H];
+      let kaffe = null, pris = null, glass = null;
+      // vänstra fönstret: halvt nerdraget rullgaller med kartongskylten KAFFE på ståltråd, prislappen
+      // 10:- under den, kassörskan bakom disken till höger och trisslotter/klistermärken bortom stolpen
+      shopWin(C, L + 3, wy, dx0 - L - 7, wh, { lit: false, act: 'cashier', cx: 15, per: 8,   // kassörskans ansikte x 1985–1989
         back: (Q, gx, gy, gw, gh) => {
           area(Q, gx, gy, gw, gh, (X, Y, i, j) => jit(night ? qmix(0xf8f8f0, 0xd8dcd8, j / gh, X, Y, 3) : qmix(0x8a8c88, 0x5a5c5a, j / gh, X, Y, 3), X, Y, 72, 0.04));
           const dim = night ? 1 : 0.62;
-          for (let r = 0; r < 3; r++) goodsRow(Q, gx + 12, gy + 5 + r * 5, gw - 12, s + r, dim);
-          Q.rect(gx + 1, gy + 2, 9, 6, mul(0xffd23f, dim)); text(Q, SMALL, 'LOT', gx + 2, gy + 3, mul(0xd8202a, dim)); // lottreklam
+          for (let r = 0; r < 3; r++) goodsRow(Q, gx + 1, gy + 5 + r * 5, gw - 2, s + r, dim);
           Q.hl(gx + (gw >> 1), gy, 6, mul(0xf0f4ff, dim));
         },
         front: (Q, gx, gy, gw, gh) => {
-          Q.rect(gx, gy + gh - 5, 14, 5, 0x8a6a4a); Q.hl(gx, gy + gh - 5, 14, 0xb89a6a); Q.rect(gx + 8, gy + gh - 8, 5, 3, 0x2a2a34); Q.px(gx + 9, gy + gh - 7, 0x6fdc4c); // disken med kassaapparat
-          for (let i = 14; i < gw; i += 4) Q.rect(gx + i, gy + gh - 3, 3, 3, pick(PACKS, i, 3, 5)); // godis vid kassan
+          // disken framför kassörskan (med kortterminalen), godisstället längst till vänster
+          const kx = gx + 12, ky = gy + gh - 3;                                               // diskens ovansida
+          Q.rect(kx, ky, 13, 3, 0x8a6a4a); Q.hl(kx, ky, 13, 0xb89a6a); Q.hl(kx, ky + 2, 13, 0x5a4432);
+          Q.rect(kx + 1, ky - 2, 3, 2, 0x2a2a34); Q.hl(kx + 1, ky - 2, 3, 0x4a4a56); Q.px(kx + 2, ky - 1, 0x6fdc4c); // kortterminalen
+          for (let i = 0; i < 11; i += 4) { const c = pick(PACKS, i, 3, 5); Q.rect(gx + i, gy + gh - 4, 3, 4, c); Q.hl(gx + i, gy + gh - 4, 3, mix(c, WHITE, 0.3)); } // godis
+          Q.hl(gx, gy + gh - 5, 11, 0x6a6e78);                                                // godisställets hylla
           grille(Q, gx, gy, gw, 7, { box: false });
-          note(Q, gx + gw - 18, gy + 9, ['KAFFE', '10:-'], { seed: 11, paper: 0xfff8d0, ink: 0x2a2a6a });
-          stickers(Q, gx + 1, gy + 9, 8, 6, 3, 5);
+          kaffe = kaffeSign(Q, gx, gy - 1, s);                                                // hänger i gallret, x 1968–1989
+          pris = prisLapp(Q, gx + 1, gy + 8, '10:-');                                         // under skylten, x 1969–1984
+          trisslotter(Q, gx + 26, gy + 8);                                                    // till höger om lyktstolpen
+          stickers(Q, gx + 26, gy + 14, 5, 5, 2, 5);
         },
       });
       grille(P, L + 3, wy, dx0 - L - 7, 0, {}); // gallrets kåpa
-      // högra fönstret: hyllor och läskkylen, fasta galler, lappar
-      shopWin(C, dx1 + 4, wy, R - dx1 - 7, wh, { lit: night, litCol: 0xf4f8ff,
+      // kvällsljuset i glaset läggs inte över kartongskylten eller prislappen
+      if (night) glassGlow(C, L + 4, wy + 1, dx0 - L - 9, wh - 2, 0xf4f8ff, 0.3, [kaffe, pris]);
+      // högra fönstret: hyllor och läskkylen, fasta galler, GLASS-lappen ovanför löpsedeln, kortmärken
+      shopWin(C, dx1 + 4, wy, R - dx1 - 7, wh, { lit: false,
         back: (Q, gx, gy, gw, gh) => {
           area(Q, gx, gy, gw, gh, (X, Y, i, j) => jit(night ? qmix(0xf8f8f0, 0xd8dcd8, j / gh, X, Y, 3) : qmix(0x8a8c88, 0x5a5c5a, j / gh, X, Y, 3), X, Y, 73, 0.04));
           const dim = night ? 1 : 0.62;
@@ -1521,18 +1919,33 @@ function paintNarbutik(b, night, opts) {
         },
         front: (Q, gx, gy, gw, gh) => {
           for (let i = gx + 2; i < gx + gw; i += 4) Q.vl(i, gy, gh, 0x2a2a30); Q.hl(gx, gy + 7, gw, 0x2a2a30); Q.hl(gx, gy + 15, gw, 0x2a2a30);
-          note(Q, gx + 2, gy + 1, ['GLASS'], { seed: 12, paper: 0xd8f0ff, ink: 0xd8202a });
-          note(Q, gx + 14, gy + 9, ['SWISH', 'OK'], { seed: 13, paper: 0xfff0f8, ink: 0x6a2a8a });
+          // GLASS-lappen högst upp (y 159–166), helt ovanför löpsedeln som börjar på y 170; tejpbitarna
+          // sitter bara i hörnen utanför textens kolumner (en nål mitt över blev en accent: GLÁSS)
+          const gn = note(Q, gx + 2, gy, ['GLASS'], { seed: 12, paper: 0xd8f0ff, ink: 0xd8202a, pad: 1, tape: false });
+          for (const tx of [gn[0] - 1, gn[0] + gn[2] - 1]) Q.rect(tx, gn[1] - 1, 2, 2, 0xe8e0b8, 0.85);
+          glass = [gn[0] - 1, gn[1] - 1, gn[2] + 2, gn[3] + 2];                              // + tejpen och skuggan
+          // kortmärkena på glaset (utan text) – till höger om löpsedeln
+          const kx = gx + gw - 6, ky = gy + gh - 10;
+          Q.rect(kx - 1, ky - 1, 7, 5, 0xf4f4ee); Q.hl(kx - 1, ky + 3, 7, 0xc8c8c0);
+          Q.px(kx + 1, ky, 0xd8202a); Q.px(kx + 2, ky, 0xf07a1a); Q.px(kx + 3, ky, 0xf0b429);
+          Q.hl(kx, ky + 1, 2, 0xd8202a); Q.px(kx + 2, ky + 1, 0xf07a1a); Q.hl(kx + 3, ky + 1, 2, 0xf0b429);
+          Q.px(kx + 1, ky + 2, 0xb81a22); Q.px(kx + 2, ky + 2, 0xd86a18); Q.px(kx + 3, ky + 2, 0xd89a20);
+          Q.rect(kx, ky + 5, 6, 3, 0x2a4ab8); Q.hl(kx, ky + 5, 6, 0x4a6ad8); Q.hl(kx + 1, ky + 6, 3, 0xe8ecf4); Q.px(kx + 5, ky + 7, 0xf0b429);
         },
       });
-      // löpsedeln på trottoaren och glassflaggan
-      const lx = dx1 + 3, ly = BY - 21;
-      P.line(lx + 1, BY - 1, lx + 4, ly, 0x5a5a60); P.line(lx + 25, BY - 1, lx + 22, ly, 0x5a5a60);
-      area(P, lx + 3, ly, 21, 19, (X, Y, i, j) => (i === 0 || j === 0 || i === 20 || j === 18 ? 0x2a2a34 : jit(0xfafaf4, X, Y, 74, 0.03)));
-      text(P, SMALL, 'KATTEN', lx + 5, ly + 2, 0x1a1a22); text(P, SMALL, 'HITTAD', lx + 5, ly + 8, 0xd8202a); text(P, SMALL, 'I HISS', lx + 5, ly + 13, 0x1a1a22, 0.8);
-      const px = L + 1; P.vl(px, gTop + 4, BY - gTop - 4, 0x8a8a90); P.vl(px + 1, gTop + 4, BY - gTop - 4, 0x5a5a60);
-      area(P, px + 2, gTop + 5, 10, 8, (X, Y, i, j) => (j < 3 ? 0x2a5ac8 : j < 5 ? 0xf4f4f4 : 0xd8202a));
-      P.rect(px + 5, gTop + 6, 3, 2, 0xf0d8a0); P.px(px + 6, gTop + 8, 0xc89a50); P.px(px + 6, gTop + 9, 0xc89a50); P.px(px + 5, gTop + 5, 0xff9ac8); // glasstrut på flaggan
+      if (night) glassGlow(C, dx1 + 5, wy + 1, R - dx1 - 9, wh - 2, 0xf4f8ff, 0.3, [glass, board]); // GLASS-lappen och löpsedeln likaså
+      // ljuslådan NÄRBUTIK 24/7 (nbSign) – efter fönstren, så att underkarmen ligger framför gallerkåpan
+      const G = nbGeo(C, gTop);
+      nbSign(P, G, C, night ? 'lit' : 'day');
+      P.darken(G.x0, G.fy1 + 2, G.x1 - G.x0 + 1, 1, 0.72);                                        // lådans skugga på väggen
+      for (let k = 0; k < 4; k++) { const rx = G.cable + 6 + Math.floor(hash(k, s, 76) * (G.x1 - G.cable - 10)); streak(P, rx, G.fy1 + 2, 2, 0x7a4222, 0.6, rx); } // rostrinningar
+      if (C.snow) snowCap(P, G.x0, G.fy0 - 2, G.x1 - G.x0 + 1, s);
+      nbLights(C, G);
+      nbCable(C, G);
+      birdsOn(C, L + 46, L + 62, G.fy0 - 2, 1);
+      cctv(C, R - 7, gTop + 16, true);
+      // (löpsedeln KATTEN HITTAD! är ett eget y-sorterat föremål – nbItems – så att sockeln
+      //  inte målas över dess nederkant och folk som går förbi hamnar rätt framför/bakom den)
     },
   });
 }
@@ -2215,7 +2628,7 @@ function paintHusvagn(b, night, opts) {
 const art = (paint) => ({ paint, live: liveX, glow: glowX });
 export const BUILDING_ART = {
   hoghus: art(paintHoghus), hoghus2: art(paintHoghus2),
-  narbutik: art(paintNarbutik), pantbank: art(paintPantbank), kebab: art(paintKebab),
+  narbutik: { ...art(paintNarbutik), items: nbItems }, pantbank: art(paintPantbank), kebab: art(paintKebab),
   overgivet: art(paintOvergivet), bilverkstad: art(paintBilverkstad), tvatteri: art(paintTvatteri),
   garage: art(paintGarage), lagerhall: art(paintLagerhall),
   lamell: art(paintLamell), husvagn: art(paintHusvagn),

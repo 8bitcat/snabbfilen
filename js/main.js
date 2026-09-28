@@ -26,6 +26,7 @@ import { makeJobbKok } from './jobs/jobb-kok.js';
 import { makeShopTerminal } from './scenes/shop-terminal.js';
 import { makeJobbIncheck } from './jobs/jobb-incheck.js';
 import { makeShopDjur } from './scenes/shop-djur.js';
+import { makeShopNarbutik } from './scenes/shop-narbutik.js';
 import { startJobFlow, startShiftNow } from './jobs/shift.js';
 import { openFoodShop } from './shops/matbutik.js';
 import { openHousing } from './shops/bostad.js';
@@ -95,6 +96,7 @@ const SCENES = {
   terminal: (a, o) => makeShopTerminal(a, o),
   jobbincheck: (a, o) => makeJobbIncheck(a, o),
   djur: (a, o) => makeShopDjur(a, o),
+  narbutik: (a, o) => makeShopNarbutik(a, o), // förortens närbutik 24/7
 };
 const ENGINES = { flygplats: 'jobbflyg', frukt: 'jobbfrukt', burgare: 'jobbburgare', pizzeria: 'jobbpizzeria', posten: 'jobbposten', bensinmack: 'jobbbensin', bilverkstad: 'jobbverkstad', tvatteri: 'jobbtvatt', kafe: 'jobbkafe', kok: 'jobbkok' };
 
@@ -360,7 +362,7 @@ const PLACE_AWAY = {
   jobbpizzeria: '🍕 jobbar på pizzerian', jobbposten: '📦 jobbar på Posten', jobbbensin: '⛽ jobbar på macken',
   jobbverkstad: '🔧 jobbar på bilverkstaden', jobbtvatt: '🧺 jobbar på tvätteriet', jobbkafe: '☕ jobbar på kaféet',
   mat: '🛒 i mataffären', klader: '👕 i klädaffären', mobler: '🛋️ på MÖBELJÄTTEN', moblergammal: '🛋️ på MÖBELJÄTTEN',
-  bostad: '🔑 på bostadsbyrån', kafe: '☕ på kaféet', djur: '🐾 i djuraffären',
+  bostad: '🔑 på bostadsbyrån', kafe: '☕ på kaféet', djur: '🐾 i djuraffären', narbutik: '🏪 i närbutiken',
 };
 function placeOf(p, info) {
   const s = String(p.scene || 'away');
