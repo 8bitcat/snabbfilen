@@ -10,6 +10,12 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.24.0] – 2026-09-28 – Veckan först med sju fönster mot staden
+- **Veckan möter dig först** när du kommer in i spelet (och som förut varje morgon när du vaknar, och med 📅).
+- Dagarna är nu **sju fönster ut mot Pixelstaden**, med en egen utsikt för varje dag: hyreshuset på måndagen, bussen, parkträdet, flygplanet, fredagsljusen, pariserhjulet och kyrktornet. Molnen, bussen och planet rör sig, och regnar det i dag så regnar det i fönstret.
+- Avklarade dagar är gråa och i skymning. Dagens fönster lyser, och söndagen påminner om hyran i morgon.
+- Större rutor och större text. Sparmålsrutan är borttagen och ersatt av **Veckans läge**: pengar, bostad, hyra, nästa hyra, mat i kylen, energi och mättnad.
+
 ## [0.23.4] – 2026-09-28 – Flera figurer får heta samma
 - Varje figur har nu ett eget id, så flera kan heta samma sak. **Nytt spel** skapar alltid en ny person med ett eget liv, och rutan **Börja om?** kommer inte längre upp.
 - Gamla figurer behåller sina sparningar: de får namnet som id.

@@ -277,11 +277,19 @@ function boot() {
       openModal('🌆 Välkommen till Pixelstaden!', `<div class="who">${''}<div>
         <p style="font-size:20px;margin-top:0">Här börjar ditt nya liv, <b>${A.avatar.name}</b>! Du har <b>${fmt(A.game.money)}</b> på fickan.</p>
         <p style="font-size:19px">Tjäna pengar på stadens jobb, köp mat så du orkar, klä dig snyggt – och spara till en större bostad. Först: var vill du bo?</p></div></div>`,
-        [{ label: '🔑 Välj bostad', cls: 'btn-go', onClick: () => { closeModal(); A.openHousing({ firstTime: true, onDone: () => A.go('room') }); } }],
+        [{ label: '🔑 Välj bostad', cls: 'btn-go', onClick: () => { closeModal(); A.openHousing({ firstTime: true, onDone: () => { A.go('room'); weekFirst(); } }); } }],
         { closable: false });
     } else {
       A.go('room');
+      weekFirst();
     }
+  };
+  // veckan är det första man möts av när man kommer in (men inte efter en uppdatering mitt i spelet)
+  const weekFirst = () => {
+    let quiet = false;
+    try { quiet = !!sessionStorage.getItem('sf_quiet_start'); sessionStorage.removeItem('sf_quiet_start'); } catch { /* ok */ }
+    if (quiet || (navigator.webdriver && !new URLSearchParams(location.search).has('week'))) return;
+    openWeek(A);
   };
 
   const start = () => {

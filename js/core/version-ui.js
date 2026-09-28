@@ -220,6 +220,7 @@ async function reloadNow() {
   reloading = true;
   ss.set('sf_upd_tries_' + v, String(tries + 1));
   ss.set('sf_upd_target', v);
+  ss.set('sf_quiet_start', '1'); // efter omladdningen: rakt tillbaka in, ingen veckoruta
   window.dispatchEvent(new Event('sf:before-reload')); // andra moduler (t.ex. djuren) sparar sig
   try { window.SF?.game?.save(); } catch { /* spelet sparar ändå regelbundet */ }
   if (banner) banner.querySelector('.txt').innerHTML = `⬇️ Hämtar v${esc(v)} …`;
