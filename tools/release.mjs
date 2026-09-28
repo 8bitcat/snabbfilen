@@ -37,7 +37,7 @@ const val = (n) => { const i = opts.indexOf('--' + n); return i >= 0 ? opts[i + 
 const bump = opts[0];
 
 const die = (msg) => { console.error('✗ ' + msg); process.exit(1); };
-const git = (args, o = {}) => execFileSync('git', args, { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], ...o }).trim();
+const git = (args, o = {}) => (execFileSync('git', args, { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], ...o }) ?? '').trim();
 const gitOk = (args) => { try { git(args); return true; } catch { return false; } };
 
 if (!['major', 'minor', 'patch'].includes(bump)) die('första argumentet ska vara major, minor eller patch');
