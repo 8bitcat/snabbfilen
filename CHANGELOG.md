@@ -10,6 +10,10 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.18.2] – 2026-09-28 – Mätarna skymde ordersedeln på jobbet
+- Pixelmätarna ritas inte under arbetspass – de skymde ordersedeln på fruktfabriken. Jobben har sin egen rad överst.
+- Etiketterna MAT och SÖMN krockade med porträttramen; mätarna har fått lite mer luft.
+
 ## [0.18.1] – 2026-09-28 – Dialoger ovanpå menyn och namnruta vid Spara
 - Dialoger som öppnas från menyn (redigeraren, bekräftelser, nyheterna) ligger nu ovanpå menyn, inte bakom den.
 - Trycker du Spara i redigeraren utan att ha skrivit ett namn kommer en ruta upp och frågar efter namnet.

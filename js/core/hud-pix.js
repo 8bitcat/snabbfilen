@@ -69,8 +69,10 @@ function coin(ctx, x, y) {
 
 export function drawPixHud(ctx, A) {
   const g = A.game; if (!g) return;
+  // under ett arbetspass har jobbet sin egen rad överst och ordersedlar i hörnet – mätarna skulle skymma dem
+  if (String(A.sceneName || '').startsWith('jobb')) return;
   ctx.setTransform(A.pxs, 0, 0, A.pxs, 0, 0);
-  const X = 3, Y = 3, W = 126, H = 45;
+  const X = 3, Y = 3, W = 126, H = 48;
   // panel med skugga
   ctx.fillStyle = 'rgba(0,0,0,.45)'; ctx.fillRect(X + 2, Y + 2, W, H);
   ctx.fillStyle = INK; ctx.fillRect(X, Y, W, H);
@@ -92,11 +94,11 @@ export function drawPixHud(ctx, A) {
   const day = `${String(g.dayName || '').toUpperCase().slice(0, 3)} ${g.day}  ${clock(g.min)}`;
   ctxText(ctx, SMALL, day, tx, Y + 18, PAPER2);
   // mätare: mätthet + sömn
-  bar(ctx, X + 4, Y + 33, 44, g.hunger, burger);
-  bar(ctx, X + 66, Y + 33, 44, g.energy, zz);
-  // små etiketter ovanför mätarna
-  ctxText(ctx, SMALL, 'MAT', X + 12, Y + 27, PAPER2);
-  ctxText(ctx, SMALL, 'SÖMN', X + 74, Y + 27, PAPER2);
+  bar(ctx, X + 4, Y + 37, 44, g.hunger, burger);
+  bar(ctx, X + 66, Y + 37, 44, g.energy, zz);
+  // små etiketter ovanför mätarna (under porträttramen, som slutar vid Y+28)
+  ctxText(ctx, SMALL, 'MAT', X + 12, Y + 30, PAPER2);
+  ctxText(ctx, SMALL, 'SÖMN', X + 74, Y + 30, PAPER2);
   // liten rubrik uppe till höger i panelen om man är skyldig pengar
   if (money < 0) ctxText(ctx, SMALL, 'SKULD!', X + W - textW(SMALL, 'SKULD!') - 3, Y + 4, RED);
 }

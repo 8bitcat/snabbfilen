@@ -1,7 +1,7 @@
 {
-  "version": "0.18.1",
+  "version": "0.18.2",
   "date": "2026-09-28",
-  "title": "Dialoger ovanpå menyn och namnruta vid Spara",
+  "title": "Mätarna skymde ordersedeln på jobbet",
   "files": [
     "CHANGELOG.md",
     "assets/interior.png",
