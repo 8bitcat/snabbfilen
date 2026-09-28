@@ -18,7 +18,7 @@ const argv = process.argv.slice(2);
 const note = argv.filter((a) => !a.startsWith('--')).join(' ') || 'kontrollpunkt';
 const index = path.join(os.tmpdir(), `snabbfilen-wip-index-${process.pid}`);
 const env = { ...process.env, GIT_INDEX_FILE: index };
-const git = (args, o = {}) => execFileSync('git', args, { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], ...o }).trim();
+const git = (args, o = {}) => (execFileSync('git', args, { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], ...o }) ?? '').trim();
 const gitOk = (args) => { try { git(args); return true; } catch { return false; } };
 
 try {
