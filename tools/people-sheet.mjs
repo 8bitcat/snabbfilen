@@ -136,7 +136,23 @@ const res = await page.evaluate(async (o) => {
   const counts = {};
   for (const f of Object.keys(P.LOOK_FIELDS)) counts[f] = Object.keys(P.LOOK_FIELDS[f].reg).length;
   for (const s of W.SLOTS) counts['katalog:' + s] = W.itemsForSlot(s).length;
-  return { pages, counts, problems: W.checkWardrobe(), msPerSprite: nDraw ? ms / nDraw : 0 };
+  // registerkontroll: poster utan etikett/ritning, okänt utsnitt, front utan side (info åt granskarna –
+  // en post kan medvetet sakna en vy, t.ex. ansiktsdetaljer bakifrån)
+  const HOOKS = ['prep', 'afterLegs', 'afterHips', 'beforeTorso', 'afterTorso', 'beforeArms', 'afterArms', 'afterHead', 'afterFace', 'afterHair', 'last', 'legRow', 'sleeveAt', 'skirt', 'bareFrom'];
+  const regNotes = [];
+  for (const [f, F] of Object.entries(P.LOOK_FIELDS)) {
+    if (o.cats && !o.cats.includes(f)) continue;
+    const bad = { 'ritar inget': [], 'saknar label': [], 'okänd tile': [], 'front men ingen side': [] };
+    for (const [id, e] of Object.entries(F.reg)) {
+      if (id === 'none' || id === P.idOf(f, F.def)) continue;
+      if (!e.label) bad['saknar label'].push(id);
+      if (e.tile != null && !W.TILE_VIEWS.includes(e.tile)) bad['okänd tile'].push(id);
+      if (!(e.front || e.back || e.side || HOOKS.some((h) => e[h] != null))) bad['ritar inget'].push(id);
+      else if (e.front && !e.side) bad['front men ingen side'].push(id);
+    }
+    for (const [k, ids] of Object.entries(bad)) if (ids.length) regNotes.push(`${f}: ${k}: ${ids.join(', ')}`);
+  }
+  return { pages, counts, problems: W.checkWardrobe(), regNotes, msPerSprite: nDraw ? ms / nDraw : 0 };
 }, opts);
 
 for (const p of res.pages) {
@@ -147,5 +163,6 @@ for (const p of res.pages) {
 console.log('Antal val per register:', Object.entries(res.counts).map(([k, v]) => `${k} ${v}`).join(', '));
 console.log(`Ritning: ${res.msPerSprite.toFixed(3)} ms/sprite (inkl. cachemiss)`);
 console.log(res.problems.length ? 'KATALOGPROBLEM:\n  ' + res.problems.join('\n  ') : 'Katalogen: inga problem.');
+if (res.regNotes.length) console.log('Registerkontroll (info – kolla att det är avsiktligt):\n  ' + res.regNotes.join('\n  '));
 console.log(errs.length ? 'KONSOLFEL:\n' + errs.join('\n') : 'Inga konsolfel.');
 await browser.close();

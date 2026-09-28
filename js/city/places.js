@@ -44,7 +44,7 @@ export const NEW_HOMES = [
 
 // Vilket hus varje bostad ligger i (v1-bostäderna ligger alla på Pixelgatan 1).
 export const HOME_BUILDING = {
-  rum: 'hem', lagenhet: 'hem', villa: 'hem',
+  rum: 'hoghus', lagenhet: 'hem', villa: 'hem', // Lilla rummet ligger i förortens höghus (Carl 2026-09-28)
   ...Object.fromEntries(NEW_HOMES.map((h) => [h.id, h.building])),
 };
 export const homeBuildingId = (homeId) => HOME_BUILDING[homeId] || 'hem';

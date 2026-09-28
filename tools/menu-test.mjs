@@ -30,7 +30,28 @@ ok(await p.evaluate(() => document.querySelector('[data-continue]')?.disabled ==
 ok(await p.evaluate(() => window.SF.sceneName === 'city' && window.SF.attract === true), 'staden lever i bakgrunden (bakgrundsläge)');
 ok(await p.evaluate(() => document.querySelector('#hud-face')?.offsetParent === null), 'HUD-raden är dold i startmenyn');
 
-// 2. två figurer med egna sparningar
+// 1b. Nytt spel → Avbryt och ✕ → tillbaka i menyn, fortfarande utan figur
+await p.click('[data-new]'); await p.waitForTimeout(400);
+ok(await p.evaluate(() => !!document.querySelector('.dlg-avatar')), 'Nytt spel öppnar redigeraren');
+await p.click('.dlg-avatar .dlg-foot .av-cancel'); await p.waitForTimeout(300);
+ok(await menuOpen(p) && await p.evaluate(() => document.querySelector('[data-continue]')?.disabled === true && window.SF.attract === true), 'Avbryt → tillbaka i menyn, Fortsätt fortfarande nedtonad');
+await p.click('[data-new]'); await p.waitForTimeout(400);
+await p.evaluate(() => document.querySelector('#modal [data-close]')?.click()); await p.waitForTimeout(300);
+ok(await menuOpen(p) && await p.evaluate(() => !window.SF.game.won && window.SF.sceneName === 'city' && window.SF.attract === true), '✕ → tillbaka i menyn');
+await p.click('[data-new]'); await p.waitForTimeout(400);
+await p.click('.dlg-avatar .dlg-foot .av-save'); await p.waitForTimeout(300);
+ok(await p.evaluate(() => !!document.querySelector('.av-nameask')), 'Spara utan namn i Nytt spel → namnrutan');
+await p.keyboard.press('Escape'); await p.waitForTimeout(150);
+await p.click('.dlg-avatar .dlg-foot .av-cancel'); await p.waitForTimeout(300);
+ok(await menuOpen(p) && await p.evaluate(() => !JSON.parse(localStorage.getItem('snabbfilen_avatar') || '{}').name), 'ingen figur utan namn skapades');
+// startflödet utan meny (sessionens hoppa-över-flagga, som efter en omladdning): figurväljaren → Avbryt → menyn, inte spelet
+await p.evaluate(() => { sessionStorage.setItem('sf_menu_skip', '1'); });
+await p.reload(); await p.waitForFunction(() => !!window.SF?.game, null, { timeout: 20000 }); await p.waitForTimeout(800);
+ok(await p.evaluate(() => !!document.querySelector('.dlg-avatar') || !!document.querySelector('.av-pick')), 'utan meny och utan figur öppnas figurskaparen');
+await p.evaluate(() => (document.querySelector('.dlg-avatar .av-cancel') || document.querySelector('#modal [data-close]'))?.click()); await p.waitForTimeout(500);
+ok(await menuOpen(p) && await p.evaluate(() => window.SF.sceneName === 'city' && window.SF.attract === true && !window.SF.avatar.name), 'Avbryt i figurskaparen vid start → huvudmenyn, inte spelet utan namn');
+
+// 2. två figurer med egna sparningar (sparade före id:na: de får namnets slug som id)
 await p.evaluate(() => {
   localStorage.setItem('snabbfilen_avatars', JSON.stringify([{ name: 'Kalle', look: { skin: '#eabf98', shirt: '#3a78d8' }, color: '#3a78d8' }, { name: 'Julia', look: { skin: '#f0cfb0', shirt: '#e04888', hair: '#c04020' }, color: '#ff5dc8' }]));
   localStorage.setItem('snabbfilen_avatar', JSON.stringify({ name: 'Kalle', look: { skin: '#eabf98', shirt: '#3a78d8' }, color: '#3a78d8' }));
@@ -41,13 +62,15 @@ await p.reload();
 await p.waitForFunction(() => !!window.SF?.game, null, { timeout: 20000 });
 await p.waitForTimeout(1200);
 ok(await p.evaluate(() => document.querySelectorAll('.menu-card').length) === 2, 'båda figurerna visas med kort');
-const cardText = (await p.evaluate(() => document.querySelector('.menu-card[data-pick="Julia"]')?.innerText || '')).replace(/ /g, ' ');
+const ids = await p.evaluate(() => JSON.parse(localStorage.getItem('snabbfilen_avatars') || '[]').map((a) => a.id).join(','));
+ok(ids === 'kalle,julia', `gamla figurer får id efter namnet, så sparningarna hittas (${ids})`);
+const cardText = (await p.evaluate(() => document.querySelector('.menu-card[data-pick="julia"]')?.innerText || '')).replace(/ /g, ' ');
 ok(/11 200 kr/.test(cardText) && /Villan/.test(cardText) && /dag 12/.test(cardText), `sammanfattning på kortet (${cardText.replace(/\s+/g, ' ').slice(0, 60)})`);
 ok(/Fortsätt som Kalle/.test(await p.evaluate(() => document.querySelector('[data-continue]').textContent)), 'Fortsätt-knappen visar vald figur');
 await p.screenshot({ path: 'tools/out/menu-test-1.png' });
 
 // 2b. dialoger från menyn ligger ovanpå menyn (✏️ Ändra → redigeraren)
-await p.click('[data-edit="Kalle"]'); await p.waitForTimeout(500);
+await p.click('[data-edit="kalle"]'); await p.waitForTimeout(500);
 const layered = await p.evaluate(() => {
   const dlg = document.querySelector('.dlg-avatar'); if (!dlg) return { dlg: false };
   const r = dlg.getBoundingClientRect(); const top = document.elementFromPoint(r.left + r.width / 2, r.top + 20);
@@ -93,7 +116,7 @@ ok(!(await menuOpen(p)), 'Esc stänger pausmenyn');
 
 // 6. byt figur → egen sparning, den förra parkeras
 await p.click('#hud-menu'); await p.waitForTimeout(300);
-await p.click('.menu-card[data-pick="Julia"]'); await p.waitForTimeout(150);
+await p.click('.menu-card[data-pick="julia"]'); await p.waitForTimeout(150);
 await p.click('[data-continue]');
 await p.waitForFunction(() => window.SF?.avatar?.name === 'Julia', null, { timeout: 20000 });
 await p.waitForTimeout(800);
@@ -102,6 +125,30 @@ ok(j.money === 11200 && j.home === 'villa', `Julia spelar med sin egen sparning 
 ok(j.kalle === 2450, 'Kalles sparning parkerades orörd');
 ok(!j.menu, 'ingen meny efter figurbytet – rakt in i spelet');
 
+// 6b. Nytt spel med ett namn som redan finns → en ny person med eget id, ingen "Börja om?"-ruta
+await p.click('#hud-menu'); await p.waitForTimeout(300);
+await p.click('[data-new]'); await p.waitForTimeout(400);
+await p.fill('#av-name', 'Julia');
+await p.click('.dlg-avatar .dlg-foot .av-save'); await p.waitForTimeout(400);
+ok(await p.evaluate(() => !/Börja om/.test(document.querySelector('#modal:not(.hidden) h2, #modal:not(.hidden) .dlg-title')?.textContent || '')), 'ingen "Börja om?"-ruta för ett namn som redan finns');
+await p.waitForFunction(() => window.SF?.avatar?.name === 'Julia' && window.SF.avatar.id !== 'julia', null, { timeout: 20000 });
+await p.waitForTimeout(800);
+const j2 = await p.evaluate(() => ({ id: window.SF.avatar.id, day: window.SF.game.day, money: window.SF.game.money, won: window.SF.game.won,
+  julias: JSON.parse(localStorage.getItem('snabbfilen_avatars') || '[]').filter((a) => a.name === 'Julia').map((a) => a.id),
+  old: JSON.parse(localStorage.getItem('snabbfilen_save:julia') || '{}').money }));
+ok(j2.julias.length === 2 && new Set(j2.julias).size === 2, `två figurer heter Julia med var sitt id (${j2.julias.join(', ')})`);
+ok(j2.day === 1 && !j2.won && j2.money !== 11200, `nya Julia börjar ett eget liv (dag ${j2.day}, ${j2.money} kr)`);
+ok(j2.old === 11200, 'gamla Julias sparning ligger kvar orörd');
+ok(await p.evaluate(() => /Välkommen/.test(document.querySelector('#modal')?.innerText || '')), 'nya Julia välkomnas till ett nytt liv');
+await p.evaluate(() => { const m = document.querySelector('#modal'); m.classList.add('hidden'); m.innerHTML = ''; }); // hoppa över bostadsvalet
+await p.click('#hud-menu'); await p.waitForTimeout(300);
+ok(await p.evaluate(() => document.querySelectorAll('.menu-card').length) === 3, 'menyn visar tre figurer');
+await p.click('.menu-card[data-pick="julia"]'); await p.waitForTimeout(150);
+await p.click('[data-continue]');
+await p.waitForFunction(() => window.SF?.avatar?.id === 'julia', null, { timeout: 20000 });
+await p.waitForTimeout(800);
+ok(await p.evaluate(() => window.SF.game.money === 11200 && window.SF.game.home === 'villa'), 'tillbaka till gamla Julia – hennes spel är kvar');
+
 // 7. mobil
 const m = await mk(420, 860);
 const dump = await p.evaluate(() => Object.fromEntries(Object.keys(localStorage).filter((k) => k.startsWith('snabbfilen')).map((k) => [k, localStorage.getItem(k)])));
@@ -109,7 +156,7 @@ await m.goto(U); await m.evaluate((s) => { for (const [k, v] of Object.entries(s
 await m.reload();
 await m.waitForFunction(() => !!window.SF?.game, null, { timeout: 20000 });
 await m.waitForTimeout(1200);
-ok(await menuOpen(m) && (await m.evaluate(() => document.querySelectorAll('.menu-card').length)) === 2, 'menyn fungerar på mobilbredd');
+ok(await menuOpen(m) && (await m.evaluate(() => document.querySelectorAll('.menu-card').length)) === 3, 'menyn fungerar på mobilbredd');
 await m.screenshot({ path: 'tools/out/menu-test-3-mobil.png' });
 
 console.log(errors.length ? '\nKONSOLFEL:\n' + errors.join('\n') : '\nInga konsolfel.');

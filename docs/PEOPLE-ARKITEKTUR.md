@@ -21,6 +21,12 @@ js/core/avatar.js          avatarredigeraren (flikar, lat rutritning, cleanLook)
 
 Registerfilerna importerar **bara** från `util.js` (aldrig från `people.js` – cirkelberoende).
 
+**Hjälpfiler.** Blir en registerfil stor delas innehållet upp i hjälpfiler med samma prefix,
+som registerfilen importerar och slår ihop (t.ex. `hair-kort.js`, `hair-lockar.js`,
+`hair-kit.js` med delade ritfunktioner; `face-eyes.js`, `face-paint.js`, `face-kit.js`). Varje
+specialist äger sina prefix: `hair*`, `face*`, `tops*`, `bottoms*`, `acc*`. Motorn importerar
+fortfarande bara de fem registerfilerna ovan.
+
 ---
 
 ## 1. Look-objektet
@@ -75,6 +81,8 @@ export const HAIR_REG = {
     side(R) { … },             // profil åt höger ('right'; 'left' speglas automatiskt)
     prep(R) { … },             // valfri: körs innan NÅGOT ritas – ändra färger/mått i R
     uses: ['accent'],          // valfri: färgfält redigeraren ska visa för posten
+    tile: 'torso',             // valfri: utsnitt i redigerarens ruta – head face neck torso legs side full
+                               //   (t.ex. handskar/klockor under Smycken, som annars visas som huvud)
     // valfria krokar (se lagerordningen): afterLegs afterHips beforeTorso afterTorso
     //   beforeArms afterArms afterHead afterFace afterHair last
   },
@@ -127,6 +135,7 @@ etikett – tonen (hi/base/lo/dk) följer med automatiskt, så skuggning och bor
 | grupp | fält |
 |---|---|
 | **rita** | `put(x, y, färg)`, `rect(x, y, w, h, färg)` – heltal, logiska koordinater (speglas i vänstervy) |
+| **sudda** | `erase(x, y)`, `eraseRect(x, y, w, h)` – gör pixlar genomskinliga igen (t.ex. hår som en hjälm döljer); konturen läggs efteråt |
 | **läsa** | `has(x, y)`, `get(x, y)` → färg eller −1, `topAt(x, fb)`, `tagAt(x, y)` |
 | **mönster** | `each(tag, (x, y, färg) => …)`, `pattern(tag, (x, y, färg) => ramp \| färg \| null, källramp?)` |
 | **övrigt** | `draw(fält)` ritar fältets aktuella post i vyn, `E` (poster per fält), `id` (id per fält), `L` (normaliserat look), `tag` (etiketten nya pixlar får) |
@@ -221,7 +230,8 @@ Ett plagg kan kombinera flera registerval (t.ex. huvtröja + kamouflagetryck).
 { id: 'top-hoodie-camo', slot: 'top', look: { top: 'hoodie', topPrint: 'camo' },
   name: 'Kamouflagehuvtröja', price: 450, dept: 'unisex', icon: '🧥',
   colors: { shirt: '#6b7a4a', print2: '#3f4a2c' },   // förslag: mannekäng + när man köper
-  group: 'Tröjor' },                                  // valfri underrubrik
+  group: 'Tröjor',                                    // valfri underrubrik
+  tile: 'torso' },                                    // valfritt utsnitt i redigeraren (TILE_VIEWS)
 ```
 * `slot`: `top bottom shoes hat glasses bag neck jewel hairAcc phones`. `look` får bara innehålla
   platsens modellfält (`SLOT_FIELDS`): top → `top, topPrint`; bottom → `bottom, bottomPrint`;
@@ -272,4 +282,7 @@ node tools/people-sheet.mjs --cat katalog:top            # katalogens överdelar
 node tools/people-sheet.mjs --cat eyes --frames 0,1,5 --dirs down,right,up,left --scale 4
 node tools/avatar-snap.mjs                    # redigeraren i riktiga spelet: flikar, klick, konsolfel
 ```
-`people-sheet` skriver också antal val per register, ms/sprite, katalogproblem och konsolfel.
+`people-sheet` skriver också antal val per register, ms/sprite, katalogproblem, en registerkontroll
+(poster utan etikett/ritning, okänd `tile`, front utan side – info, kan vara avsiktligt) och konsolfel.
+Kontaktarken hamnar i `tools/out/sheets/` (ändra med `--out`, t.ex. en egen mapp per specialist så att
+parallella körningar inte skriver över varandra).

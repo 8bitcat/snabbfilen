@@ -5,7 +5,7 @@
 import { drawPerson } from '../core/people.js';
 import { avatarTagColors } from '../core/avatar.js';
 import { SMALL, ctxText, textW } from '../core/floor-pix.js';
-import { worldFolksHere, worldMyEmote } from '../net/world.js';
+import { worldFolksHere, worldMyEmote, worldMySay } from '../net/world.js';
 
 export const WALK_SEQ = [1, 3, 2, 3];
 const FW = 384, FH = 216;
@@ -119,6 +119,8 @@ export function selfDrawable(A, walker, t, { carry = false, folksHere = 0 } = {}
       if (folksHere) nameTag(ctx, walker.px, walker.py - 50, A.avatar);
       const mine = worldMyEmote();
       if (mine) emoteBubble(ctx, walker.px, walker.py - 60, mine);
+      const said = worldMySay();
+      if (said) sayBubble(ctx, walker.px, walker.py - (mine ? 78 : 62), said);
     },
   };
 }
@@ -130,8 +132,98 @@ export function folkDrawables(A, t) {
       drawPerson(ctx, f.x, f.y, f.av.look, 'down', f.walking ? WALK_SEQ[Math.floor(t * 8.5) % 4] : (Math.sin(t * 2 + f.x) > 0.9 ? 4 : 0));
       nameTag(ctx, f.x, f.y - 50, f.av);
       if (f.emote) emoteBubble(ctx, f.x, f.y - 58, f.emote);
+      if (f.say) sayBubble(ctx, f.x, f.y - (f.emote ? 76 : 60), f.say);
     },
   }));
+}
+
+// Pratbubbla med text (chatten och NPC-repliker): radbruten pixeltext, högst fyra rader,
+// svans nedåt. Fonten har versaler A–Ö, siffror och lite skiljetecken; emoji ritas som små
+// 9×9-pixelbilder (systemets emoji nedskalad med hårda kanter, samma pixelkorn som spelet).
+const SAY_W = 76, SAY_OK = /[A-ZÅÄÖÉ0-9 \-+!.:,?/%'=]/;
+const EMO = new Map();
+const isEmoji = (g) => /\p{Extended_Pictographic}|\p{Regional_Indicator}/u.test(g);
+const graphemes = (str) => (typeof Intl !== 'undefined' && Intl.Segmenter
+  ? [...new Intl.Segmenter('sv', { granularity: 'grapheme' }).segment(str)].map((x) => x.segment) : Array.from(str));
+function emojiImg(g) {
+  let c = EMO.get(g);
+  if (c) return c;
+  const big = document.createElement('canvas'); big.width = big.height = 36;
+  const bx = big.getContext('2d');
+  bx.textAlign = 'center'; bx.textBaseline = 'middle';
+  bx.font = '30px "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif';
+  bx.fillText(g, 18, 20);
+  c = document.createElement('canvas'); c.width = c.height = 9;
+  const x = c.getContext('2d');
+  x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high';
+  x.drawImage(big, 0, 0, 36, 36, 0, 0, 9, 9);
+  const d = x.getImageData(0, 0, 9, 9);
+  for (let i = 3; i < d.data.length; i += 4) d.data[i] = d.data[i] > 96 ? 255 : 0;
+  x.putImageData(d, 0, 0);
+  EMO.set(g, c);
+  return c;
+}
+// text → rader av tecken: { g, emoji, w }
+export function sayLines(text, maxW = SAY_W, maxLines = 4) {
+  const clean = String(text).replace(/[–—]/g, '-').replace(/…/g, '...').replace(/[“”"«»]/g, '');
+  const toks = [];
+  for (const g of graphemes(clean)) {
+    if (isEmoji(g)) toks.push({ g, emoji: true, w: 10 });
+    else {
+      const u = g.toUpperCase();
+      if (u === ' ' || /\s/.test(u)) toks.push({ g: ' ', w: 3 });
+      else if (SAY_OK.test(u)) toks.push({ g: u, w: textW(SMALL, u) + 1 });
+    }
+  }
+  // ord = följd av icke-mellanslag
+  const words = [];
+  let cur = [];
+  for (const t of toks) { if (t.g === ' ') { if (cur.length) words.push(cur); cur = []; } else cur.push(t); }
+  if (cur.length) words.push(cur);
+  const lines = [];
+  let line = [], lw = 0;
+  const wWidth = (w) => w.reduce((a, t) => a + t.w, 0);
+  for (let w of words) {
+    let ww = wWidth(w);
+    if (line.length && lw + 3 + ww > maxW) { lines.push(line); line = []; lw = 0; if (lines.length >= maxLines) break; }
+    while (ww > maxW) { // för långt ord: bryt det
+      let k = w.length, acc = ww;
+      while (k > 1 && acc > maxW - lw) { k--; acc -= w[k].w; }
+      line.push(...w.slice(0, k)); lines.push(line); line = []; lw = 0;
+      w = w.slice(k); ww = wWidth(w);
+      if (lines.length >= maxLines) break;
+    }
+    if (lines.length >= maxLines) break;
+    if (line.length) { line.push({ g: ' ', w: 3 }); lw += 3; }
+    line.push(...w); lw += ww;
+  }
+  if (line.length && lines.length < maxLines) lines.push(line);
+  return lines.slice(0, maxLines);
+}
+export function sayBubble(ctx, x, y, text, { w: maxW = SAY_W, lines: maxLines = 4, x0 = null, x1 = null } = {}) {
+  const lines = sayLines(text, maxW, maxLines);
+  if (!lines.length) return;
+  const lh = lines.map((l) => (l.some((t) => t.emoji) ? 10 : 7));
+  const w = Math.max(...lines.map((l) => l.reduce((a, t) => a + t.w, 0))) + 7, h = lh.reduce((a, v) => a + v, 0) + 4;
+  let bx = Math.round(x - w / 2);
+  if (x0 !== null && x1 !== null) bx = Math.max(Math.round(x0) + 2, Math.min(Math.round(x1) - w - 2, bx)); // håll bubblan i bild
+  const by = Math.round(y - h - 4);
+  ctx.fillStyle = '#17151a'; ctx.fillRect(bx - 1, by - 1, w + 2, h + 2);
+  ctx.fillStyle = '#f4f1ea'; ctx.fillRect(bx, by, w, h);
+  const tx = Math.round(x);
+  ctx.fillStyle = '#17151a'; ctx.fillRect(tx - 2, by + h, 5, 1); ctx.fillRect(tx - 1, by + h + 1, 3, 1); ctx.fillRect(tx, by + h + 2, 1, 1);
+  ctx.fillStyle = '#f4f1ea'; ctx.fillRect(tx - 1, by + h, 3, 1);
+  let yy = by + 3;
+  lines.forEach((l, i) => {
+    let xx = bx + 4;
+    const emo = lh[i] === 10;
+    for (const t of l) {
+      if (t.emoji) ctx.drawImage(emojiImg(t.g), xx, yy - 1);
+      else if (t.g !== ' ') ctxText(ctx, SMALL, t.g, xx, yy + (emo ? 2 : 0), '#17151a');
+      xx += t.w;
+    }
+    yy += lh[i];
+  });
 }
 
 export function nameTag(ctx, x, y, av) {
@@ -157,4 +249,28 @@ export function iconBubble(ctx, x, y, drawIcon, hot = false) {
   ctx.fillStyle = '#f4f1ea'; ctx.fillRect(x - 7 | 0, y - 15, 18, 16);
   ctx.fillStyle = '#f4f1ea'; ctx.fillRect(x - 1 | 0, y + 1, 3, 3);
   drawIcon(ctx, x + 2, y - 7);
+}
+
+// Ett pratbubbellager per scen: den senaste repliken visas ovanför en person, ett djur eller
+// den egna figuren (at = {x, y} i världskoordinater, eller en funktion som ger läget varje
+// bildruta). Ritas med scenens kameratransform; view = { x0, x1 } håller bubblan i bild.
+export function createSpeech() {
+  let cur = null;
+  const now = () => performance.now() / 1000;
+  return {
+    say(text, at, secs) {
+      const str = String(text || '').trim();
+      if (!str || !at) return;
+      cur = { text: str, at, until: now() + (secs ?? Math.max(3, Math.min(8, str.length / 12))) };
+    },
+    clear() { cur = null; },
+    active: () => !!cur && cur.until > now(),
+    text: () => (cur && cur.until > now() ? cur.text : null),
+    draw(ctx, view) {
+      if (!cur || cur.until <= now()) return;
+      const pos = typeof cur.at === 'function' ? cur.at() : cur.at;
+      if (!pos) return;
+      sayBubble(ctx, pos.x, pos.y, cur.text, { w: 124, lines: 5, x0: view?.x0 ?? null, x1: view?.x1 ?? null });
+    },
+  };
 }

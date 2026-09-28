@@ -5,6 +5,10 @@
 // (tools/people-baseline.json, som skrivs i Node).
 //   node tools/avatar-snap.mjs                 (servern: python -m http.server 8788)
 //   node tools/avatar-snap.mjs --tabs hair,top --port 8788 --mobile
+//   node tools/avatar-snap.mjs --tabs neck,hat --owned all --out tools/out/acc
+//       --owned all | id1,id2   flikarna visas med setAvatarWardrobe (alla / vissa katalogplagg ägda),
+//                               så att nya plagg syns i klädflikarna (annars bara gamla sortimentet)
+//       --out <mapp>            var skärmdumparna hamnar (standard tools/out)
 import { createRequire } from 'module';
 import fs from 'fs';
 const require = createRequire('D:/Qisy/QISYFrontend/QISYFrontend-1/package.json');
@@ -14,7 +18,8 @@ const arg = (k, d) => { const i = process.argv.indexOf('--' + k); return i < 0 ?
 const port = arg('port', '8788');
 const mobile = !!arg('mobile', false);
 const onlyTabs = arg('tabs', null);
-const outDir = 'tools/out';
+const owned = arg('owned', null);
+const outDir = String(arg('out', 'tools/out'));
 fs.mkdirSync(outDir, { recursive: true });
 
 const browser = await chromium.launch();
@@ -56,7 +61,18 @@ const bad = Object.entries(hashes).filter(([k, h]) => base.sprites[k] !== h).map
 log(`Webbläsaren mot baslinjen: ${Object.keys(hashes).length} sprites, ${bad.length} skillnader${bad.length ? ': ' + bad.slice(0, 10).join(', ') : ' ✓'}`);
 
 // ---------- 2. redigeraren med det gamla låssystemet (main.js: setAvatarLocks) ----------
-await page.evaluate(async () => { const A = await import('/js/core/avatar.js'); window.__av = A; A.openAvatarEditor({}); });
+const ownedIds = await page.evaluate(async (ow) => {
+  const A = await import('/js/core/avatar.js'); window.__av = A;
+  let ids = null;
+  if (ow) {
+    const W = await import('/js/data/wardrobe.js');
+    ids = ow === true || ow === 'all' ? W.WARDROBE.map((it) => it.id) : String(ow).split(',');
+    A.setAvatarWardrobe(() => ids);
+  }
+  A.openAvatarEditor({});
+  return ids;
+}, owned);
+if (ownedIds) log(`--owned: ${ownedIds.length} plagg ägda (setAvatarWardrobe) – låskontrollerna nedan gäller då inte`);
 await settle();
 const tabIds = await page.$$eval('.av-tab', (bs) => bs.map((b) => b.dataset.tab));
 log('Flikar:', tabIds.join(', '));

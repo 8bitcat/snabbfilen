@@ -2,7 +2,8 @@
 // NYTT SPEL, FORTSÄTT, alla skapade figurer med porträtt och sammanfattning (pengar,
 // bostad, dag), samt inställningar (ljud, musik, mätare). Varje figur har sin egen
 // sparning: den aktiva ligger som vanligt i 'snabbfilen_save1', de andra parkeras under
-// 'snabbfilen_save:<namn>'. Byte av figur = parkera nuvarande, hämta den andra, ladda om.
+// 'snabbfilen_save:<figurens id>'. Byte av figur = parkera nuvarande, hämta den andra, ladda om.
+// Figurerna skiljs åt på id, inte namn – flera kan heta samma sak.
 import { listAvatars, loadAvatar, saveAvatar, deleteAvatar, avatarPortrait, avatarColor, openAvatarEditor } from './avatar.js';
 import { isMuted, toggleMute, play } from './sound.js';
 import { isMusicOn, setMusic, musicTick } from './music.js';
@@ -13,8 +14,7 @@ import { VERSION } from '../version.js';
 import { openNews, makeBackup } from './version-ui.js';
 
 const SKIP = 'sf_menu_skip';
-const slug = (name) => String(name || '').toLowerCase().replace(/[^a-z0-9åäö]/g, '').slice(0, 24);
-const saveKeyOf = (name) => 'snabbfilen_save:' + slug(name);
+const saveKeyOf = (id) => 'snabbfilen_save:' + id;
 const ls = {
   get(k) { try { return localStorage.getItem(k); } catch { return null; } },
   set(k, v) { try { localStorage.setItem(k, v); } catch { /* ok */ } },
@@ -26,11 +26,11 @@ const ls = {
 export function parkCurrentSave() {
   const av = loadAvatar();
   const raw = ls.get(SAVE_KEY);
-  if (av.name && raw) ls.set(saveKeyOf(av.name), raw);
+  if (av.name && av.id && raw) ls.set(saveKeyOf(av.id), raw);
 }
-function summaryOf(name, isCurrent) {
-  let raw = isCurrent ? ls.get(SAVE_KEY) : ls.get(saveKeyOf(name));
-  if (!raw && isCurrent) raw = ls.get(saveKeyOf(name));
+function summaryOf(id, isCurrent) {
+  let raw = isCurrent ? ls.get(SAVE_KEY) : ls.get(saveKeyOf(id));
+  if (!raw && isCurrent) raw = ls.get(saveKeyOf(id));
   if (!raw) return null;
   try {
     const p = JSON.parse(raw);
@@ -59,32 +59,24 @@ function reloadInto() {
 // ---------- byten ----------
 function switchTo(av) {
   parkCurrentSave();
-  const raw = ls.get(saveKeyOf(av.name));
+  const raw = ls.get(saveKeyOf(av.id));
   if (raw) ls.set(SAVE_KEY, raw); else ls.del(SAVE_KEY);
   saveAvatar(av);
   reloadInto();
 }
+// Nytt spel = alltid en ny person med eget id och eget liv, även om namnet redan finns.
 function newGame() {
+  parkCurrentSave(); // innan redigeraren sparar den nya figuren som den aktiva
   openAvatarEditor({
     fresh: true,
-    onDone: (av) => {
-      parkCurrentSave();
-      const existing = ls.get(saveKeyOf(av.name));
-      const go = () => { ls.del(SAVE_KEY); ls.del(saveKeyOf(av.name)); saveAvatar(av); reloadInto(); };
-      if (existing) {
-        openModal('Börja om?', `<p>Det finns redan en figur som heter <b>${esc(av.name)}</b> med ett påbörjat spel. Vill du börja om från början med den?</p><p>Det gamla spelet läggs bland säkerhetskopiorna (versionsknappen) om du ångrar dig.</p>`, [
-          { label: 'Avbryt', onClick: () => { closeModal(); render(); } },
-          { label: 'Börja om', cls: 'btn-red', onClick: () => { makeBackup(`före omstart av ${av.name}`); closeModal(); go(); } },
-        ]);
-      } else go();
-    },
+    onDone: (av) => { ls.del(SAVE_KEY); ls.del(saveKeyOf(av.id)); reloadInto(); },
     onCancel: () => render(),
   });
 }
 function restartCurrent(av) {
   openModal('🔄 Börja om från början?', `<p><b>${esc(av.name)}</b> börjar om i Lilla rummet med startpengarna. Pengar, kläder, möbler och allt annat försvinner.</p><p>En säkerhetskopia läggs under versionsknappen om du ångrar dig.</p>`, [
     { label: 'Avbryt', onClick: () => closeModal() },
-    { label: '🔄 Börja om', cls: 'btn-red', onClick: () => { makeBackup(`före omstart av ${av.name}`); ls.del(SAVE_KEY); ls.del(saveKeyOf(av.name)); closeModal(); reloadInto(); } },
+    { label: '🔄 Börja om', cls: 'btn-red', onClick: () => { makeBackup(`före omstart av ${av.name}`); ls.del(SAVE_KEY); ls.del(saveKeyOf(av.id)); closeModal(); reloadInto(); } },
   ]);
 }
 function removeAvatar(av, isCurrent) {
@@ -92,9 +84,9 @@ function removeAvatar(av, isCurrent) {
     { label: 'Avbryt', onClick: () => closeModal() },
     { label: 'Ta bort', cls: 'btn-red', onClick: () => {
       makeBackup(`före borttagning av ${av.name}`);
-      ls.del(saveKeyOf(av.name));
+      ls.del(saveKeyOf(av.id));
       if (isCurrent) ls.del(SAVE_KEY);
-      deleteAvatar(av.name);
+      deleteAvatar(av.id);
       closeModal();
       if (isCurrent) reloadInto(); else render();
     } },
@@ -107,23 +99,23 @@ function render() {
   if (!root) return;
   const list = listAvatars();
   const cur = loadAvatar();
-  const curName = cur.name || '';
-  if (!selected || !list.some((a) => a.name === selected)) selected = curName || list[0]?.name || null;
-  const sel = list.find((a) => a.name === selected) || null;
+  const curId = cur.name ? cur.id || '' : '';
+  if (!selected || !list.some((a) => a.id === selected)) selected = curId || list[0]?.id || null;
+  const sel = list.find((a) => a.id === selected) || null;
   const paused = !!opts.pause;
   const canContinue = !!sel;
-  const contLabel = !sel ? '▶ Fortsätt' : paused && sel.name === curName ? '▶ Fortsätt spela' : `▶ Fortsätt som ${esc(sel.name)}`;
+  const contLabel = !sel ? '▶ Fortsätt' : paused && sel.id === curId ? '▶ Fortsätt spela' : `▶ Fortsätt som ${esc(sel.name)}`;
   const cards = list.map((a) => {
-    const isCur = a.name === curName;
-    const s = summaryOf(a.name, isCur);
+    const isCur = a.id === curId;
+    const s = summaryOf(a.id, isCur);
     const sum = s ? `${fmt(s.money)} · ${s.home} · dag ${s.day}${s.shifts ? ` · ${s.shifts} pass` : ''}${s.won ? ' · 🏆' : ''}` : 'Nytt liv – inte börjat än';
-    return `<div class="menu-card ${a.name === selected ? 'on' : ''}" data-pick="${esc(a.name)}" style="--pc:${esc(avatarColor(a))}">
-      <span class="menu-face" data-face="${esc(a.name)}"></span>
+    return `<div class="menu-card ${a.id === selected ? 'on' : ''}" data-pick="${esc(a.id)}" style="--pc:${esc(avatarColor(a))}">
+      <span class="menu-face" data-face="${esc(a.id)}"></span>
       <span class="menu-card-txt"><b>${esc(a.name)}${isCur ? ' <i class="nu">spelar nu</i>' : ''}</b><small>${sum}</small></span>
       <span class="menu-card-tools">
-        <button class="btn btn-small" data-edit="${esc(a.name)}" title="Ändra utseende">✏️</button>
-        ${isCur ? `<button class="btn btn-small" data-restart="${esc(a.name)}" title="Börja om från början">🔄</button>` : ''}
-        <button class="btn btn-small" data-del="${esc(a.name)}" title="Ta bort">🗑</button>
+        <button class="btn btn-small" data-edit="${esc(a.id)}" title="Ändra utseende">✏️</button>
+        ${isCur ? `<button class="btn btn-small" data-restart="${esc(a.id)}" title="Börja om från början">🔄</button>` : ''}
+        <button class="btn btn-small" data-del="${esc(a.id)}" title="Ta bort">🗑</button>
       </span>
     </div>`;
   }).join('');
@@ -143,8 +135,8 @@ function render() {
     <div class="menu-cards">${cards}</div>
     <div class="menu-foot"><button class="btn btn-small" data-news>v${esc(VERSION)} · Nyheter</button>${paused ? '<span class="menu-hint">Esc stänger</span>' : ''}</div>
   </div>`;
-  root.querySelectorAll('[data-face]').forEach((el) => { const a = list.find((x) => x.name === el.dataset.face); if (a) el.replaceWith(avatarPortrait(a, 56)); });
-  root.querySelectorAll('.menu-card').forEach((c) => (c.onclick = (e) => { if (e.target.closest('button')) return; play('click'); if (selected === c.dataset.pick) startWith(list.find((a) => a.name === selected)); else { selected = c.dataset.pick; render(); } }));
+  root.querySelectorAll('[data-face]').forEach((el) => { const a = list.find((x) => x.id === el.dataset.face); if (a) el.replaceWith(avatarPortrait(a, 56)); });
+  root.querySelectorAll('.menu-card').forEach((c) => (c.onclick = (e) => { if (e.target.closest('button')) return; play('click'); if (selected === c.dataset.pick) startWith(list.find((a) => a.id === selected)); else { selected = c.dataset.pick; render(); } }));
   root.querySelector('[data-new]').onclick = () => { play('click'); newGame(); };
   root.querySelector('[data-continue]').onclick = () => { if (sel) { play('click'); startWith(sel); } };
   root.querySelector('[data-settings]').onclick = () => { play('click'); showSettings = !showSettings; render(); };
@@ -153,17 +145,17 @@ function render() {
   root.querySelector('[data-music]')?.addEventListener('click', () => { setMusic(!isMusicOn()); play('click'); render(); });
   root.querySelector('[data-hud]')?.addEventListener('click', () => { setHudMode(hudMode() === 'pix' ? 'rad' : 'pix'); play('click'); render(); });
   root.querySelectorAll('[data-edit]').forEach((b) => (b.onclick = () => {
-    const a = list.find((x) => x.name === b.dataset.edit);
-    if (a.name !== curName) { switchTo(a); return; } // bytet laddar om; redigera hemma i garderoben
+    const a = list.find((x) => x.id === b.dataset.edit);
+    if (a.id !== curId) { switchTo(a); return; } // bytet laddar om; redigera hemma i garderoben
     openAvatarEditor({ onDone: (av) => { A.avatar = av; render(); }, onCancel: () => render() });
   }));
-  root.querySelectorAll('[data-restart]').forEach((b) => (b.onclick = () => restartCurrent(list.find((x) => x.name === b.dataset.restart))));
-  root.querySelectorAll('[data-del]').forEach((b) => (b.onclick = () => removeAvatar(list.find((x) => x.name === b.dataset.del), b.dataset.del === curName)));
+  root.querySelectorAll('[data-restart]').forEach((b) => (b.onclick = () => restartCurrent(list.find((x) => x.id === b.dataset.restart))));
+  root.querySelectorAll('[data-del]').forEach((b) => (b.onclick = () => removeAvatar(list.find((x) => x.id === b.dataset.del), b.dataset.del === curId)));
 }
 function startWith(av) {
   if (!av) return;
   const cur = loadAvatar();
-  if (av.name !== cur.name) { switchTo(av); return; }
+  if (av.id !== cur.id || !cur.name) { switchTo(av); return; }
   close();
   opts.onStart?.();
 }
@@ -179,7 +171,7 @@ export function openMenu(app, o = {}) {
   }
   open = true;
   showSettings = false;
-  selected = loadAvatar().name || null;
+  selected = loadAvatar().id || null;
   document.body.classList.add('menu-open');
   document.body.classList.toggle('menu-boot', !o.pause);
   root.classList.remove('hidden');

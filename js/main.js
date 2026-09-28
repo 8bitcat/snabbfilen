@@ -20,14 +20,20 @@ import { makeJobbBensin } from './jobs/jobb-bensin.js';
 import { makeJobbVerkstad } from './jobs/jobb-verkstad.js';
 import { makeJobbTvatt } from './jobs/jobb-tvatt.js';
 import { makeJobbKafe } from './jobs/jobb-kafe.js';
+import { makeShopBurgarbar } from './scenes/shop-burgarbar.js';
+import { makeJobbKok } from './jobs/jobb-kok.js';
+import { makeShopTerminal } from './scenes/shop-terminal.js';
+import { makeJobbIncheck } from './jobs/jobb-incheck.js';
 import { makeShopDjur } from './scenes/shop-djur.js';
 import { startJobFlow } from './jobs/shift.js';
 import { openFoodShop } from './shops/matbutik.js';
 import { openHousing } from './shops/bostad.js';
-import { startWorld, worldTick, worldInfo, playersList, visitPlayer, sendEmote, worldFolksHere, playerName } from './net/world.js';
+import { startWorld, worldTick, worldInfo, playersList, visitPlayer, sendEmote, sendSay, worldFolksHere, playerName } from './net/world.js';
 import { openMenu, mountMenuButton, isMenuOpen, shouldShowMenuAtBoot } from './core/menu.js';
 import { drawPixHud, isPixHud, apply as applyHud, stripHeight, layoutStrip } from './core/hud-pix.js';
 import { musicTick } from './core/music.js';
+import { openWeek } from './core/week.js';
+import { mountChat, isChatOpen } from './core/chat.js';
 import { play, unlockAudio, toggleMute, isMuted } from './core/sound.js';
 
 const $ = (s) => document.querySelector(s);
@@ -55,6 +61,7 @@ const A = {
   playersList,
   visitPlayer: (id) => visitPlayer(A, id),
   sendEmote: (e) => sendEmote(A, e),
+  sendSay: (text) => sendSay(A, text),
   worldFolksHere: () => worldFolksHere(A),
 };
 
@@ -77,6 +84,10 @@ const SCENES = {
   jobbverkstad: (a, o) => makeJobbVerkstad(a, o),
   jobbtvatt: (a, o) => makeJobbTvatt(a, o),
   jobbkafe: (a, o) => makeJobbKafe(a, o),
+  burgarbar: (a, o) => makeShopBurgarbar(a, o),
+  jobbkok: (a, o) => makeJobbKok(a, o),
+  terminal: (a, o) => makeShopTerminal(a, o),
+  jobbincheck: (a, o) => makeJobbIncheck(a, o),
   djur: (a, o) => makeShopDjur(a, o),
 };
 const ENGINES = { flygplats: 'jobbflyg', frukt: 'jobbfrukt', burgare: 'jobbburgare', pizzeria: 'jobbpizzeria', posten: 'jobbposten', bensinmack: 'jobbbensin', bilverkstad: 'jobbverkstad', tvatteri: 'jobbtvatt', kafe: 'jobbkafe' };
@@ -108,7 +119,8 @@ cv.addEventListener('pointerdown', (e) => { if (modalOpen()) return; cv.setPoint
 cv.addEventListener('pointermove', (e) => { if (modalOpen()) return; const p = toLocal(e); A.scene?.move?.(p.x, p.y); });
 cv.addEventListener('pointerup', (e) => { if (modalOpen()) return; const p = toLocal(e); A.scene?.up?.(p.x, p.y); });
 window.addEventListener('keydown', (e) => {
-  if (modalOpen() || isMenuOpen() || e.ctrlKey || e.altKey || e.metaKey) return;
+  if (modalOpen() || isMenuOpen() || isChatOpen() || e.ctrlKey || e.altKey || e.metaKey) return;
+  if (/INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName || '')) return; // man skriver i ett fält
   A.scene?.key?.(e.key);
 });
 
@@ -146,7 +158,7 @@ function checkCollapse() {
   g.collapsed = false;
   A.go('room');
   openModal('😵 Utmattad!', `<p style="font-size:20px">Du somnade där du stod och vaknar hemma – stel, hungrig och inte alls utvilad. Gå och lägg dig i tid nästa gång!</p>`,
-    [{ label: 'Aj då', cls: 'btn-go', onClick: closeModal }]);
+    [{ label: 'Aj då', cls: 'btn-go', onClick: () => { closeModal(); openWeek(A, { morning: true }); } }]);
 }
 
 // ---------- sova / äta / hyra (öppnas från rummet) ----------
@@ -162,10 +174,8 @@ A.sleepFlow = () => {
       play('sleep');
       const { rent, eventText } = g.sleep();
       setTimeout(() => play('morning'), 600);
-      toast(`☀️ God morgon! ${g.dayName}, dag ${g.day}.`, 'good');
-      if (rent) toast(`💸 Hyra betald: ${fmt(rent)}`, g.money < 0 ? 'bad' : '');
-      if (g.money < 0) toast('⚠️ Du är skyldig hyresvärden pengar – jobba ihop dem!', 'bad');
-      if (eventText) setTimeout(() => toast(eventText, 'good'), 900);
+      // veckosammanfattningen är alltid det första man ser när man vaknat
+      openWeek(A, { morning: true, rentPaid: rent, eventText });
     } },
   ]);
 };
@@ -272,6 +282,13 @@ function boot() {
   mute.onclick = () => { mute.textContent = toggleMute() ? '🔇' : '🔊'; musicTick(); };
   $('#hud-friends').onclick = () => A.openFriends();
   $('#hud-diary').onclick = () => openDiary();
+  // 📅 veckan: samma sammanfattning som vid uppvaknandet
+  if (!document.getElementById('hud-week')) {
+    const wb = document.createElement('button');
+    wb.id = 'hud-week'; wb.className = 'btn btn-small'; wb.title = 'Veckan: hyra, checklista och sparmål'; wb.textContent = '📅';
+    wb.onclick = () => openWeek(A);
+    $('#hud-diary').before(wb);
+  }
   $('#decor-btn').onclick = () => A.scene?.toggleDecor?.();
   document.querySelectorAll('#emotes button').forEach((b) => (b.onclick = () => sendEmote(A, b.dataset.e)));
   fit();
@@ -282,11 +299,19 @@ function boot() {
       openModal('🌆 Välkommen till Pixelstaden!', `<div class="who">${''}<div>
         <p style="font-size:20px;margin-top:0">Här börjar ditt nya liv, <b>${A.avatar.name}</b>! Du har <b>${fmt(A.game.money)}</b> på fickan.</p>
         <p style="font-size:19px">Tjäna pengar på stadens jobb, köp mat så du orkar, klä dig snyggt – och spara till en större bostad. Först: var vill du bo?</p></div></div>`,
-        [{ label: '🔑 Välj bostad', cls: 'btn-go', onClick: () => { closeModal(); A.openHousing({ firstTime: true, onDone: () => A.go('room') }); } }],
+        [{ label: '🔑 Välj bostad', cls: 'btn-go', onClick: () => { closeModal(); A.openHousing({ firstTime: true, onDone: () => { A.go('room'); weekFirst(); } }); } }],
         { closable: false });
     } else {
       A.go('room');
+      weekFirst();
     }
+  };
+  // veckan är det första man möts av när man kommer in (men inte efter en uppdatering mitt i spelet)
+  const weekFirst = () => {
+    let quiet = false;
+    try { quiet = !!sessionStorage.getItem('sf_quiet_start'); sessionStorage.removeItem('sf_quiet_start'); } catch { /* ok */ }
+    if (quiet || (navigator.webdriver && !new URLSearchParams(location.search).has('week'))) return;
+    openWeek(A);
   };
 
   const start = () => {
@@ -296,11 +321,14 @@ function boot() {
       openAvatarPicker({
         title: '🧑 Vem är du?', text: 'Skapa din figur – du kan byta kläder hemma i garderoben när du vill.',
         onPick: (av) => { A.avatar = av; begin(); },
-        onCancel: () => { A.avatar = loadAvatar(); begin(); },
+        // utan namn kommer man aldrig in i spelet: Avbryt leder tillbaka till huvudmenyn
+        onCancel: () => { A.avatar = loadAvatar(); if (A.avatar.name) begin(); else backToMenu(); },
       });
     } else begin();
   };
+  const backToMenu = () => { A.attract = true; fit(); A.go('city'); openMenu(A, { onStart: start }); };
   mountMenuButton(A);
+  mountChat(A);
   applyHud();
   // huvudmenyn: staden lever bakom panelen tills man väljer figur och trycker Fortsätt
   if (shouldShowMenuAtBoot()) { A.attract = true; fit(); A.go('city'); openMenu(A, { onStart: start }); }

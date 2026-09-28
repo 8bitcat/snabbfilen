@@ -115,7 +115,7 @@ const mk = (row, district, id, x, w, h, door, extra) => ({
 const B = (id, x, w, h, door, extra) => mk('n', 'CENTRUM', id, x, w, h, door, extra);
 // Den norra raden i centrum (v1 – samma koordinater, samma enter).
 export const BUILDINGS = [
-  B('hem', 16, 120, 132, { x0: 64, x1: 88, type: 'swing' }, { sign: 'PIXELGATAN 1', icon: '🏠', enter: 'hem', homes: ['rum', 'lagenhet', 'villa'] }),
+  B('hem', 16, 120, 132, { x0: 64, x1: 88, type: 'swing' }, { sign: 'PIXELGATAN 1', icon: '🏠', enter: 'hem', homes: ['lagenhet', 'villa'] }),
   B('bostad', 164, 96, 100, { x0: 200, x1: 224, type: 'swing' }, { sign: 'BOSTADSBYRÅN', icon: '🔑', enter: 'bostad', open: [7, 20] }),
   B('mat', 312, 196, 104, { x0: 388, x1: 432, type: 'slide' }, { sign: 'STORMARKNAD', icon: '🛒', enter: 'mat', open: [7, 23] }),
   B('klader', 536, 124, 112, { x0: 586, x1: 610, type: 'swing' }, { sign: 'KLÄDER', icon: '👕', enter: 'klader', open: [7, 21] }),
@@ -123,7 +123,7 @@ export const BUILDINGS = [
   B('kafe', 960, 92, 92, { x0: 994, x1: 1018, type: 'swing' }, { sign: 'KAFÉ', icon: '☕', enter: 'kafe', open: [7, 21] }),
   B('burgare', 1080, 132, 100, { x0: 1134, x1: 1158, type: 'swing' }, { sign: 'BURGARBAREN', icon: '🍔', enter: 'burgare', open: [7, 23] }),
   B('frukt', 1264, 160, 118, { x0: 1330, x1: 1356, type: 'swing' }, { sign: 'FRUKTFABRIKEN', icon: '🍎', enter: 'frukt', open: [7, 21] }),
-  B('flyg', 1452, 228, 124, { x0: 1544, x1: 1592, type: 'slide' }, { sign: 'FLYGPLATSEN', icon: '✈️', enter: 'flyg', open: [7, 21] }),
+  B('flyg', 1452, 228, 124, { x0: 1544, x1: 1592, type: 'slide' }, { sign: 'FLYGPLATSEN', icon: '✈️', enter: 'flyg' }),
 ];
 
 // Den södra raden (SÖDER): fasaderna med dörrarna vetter mot Södergatan,
@@ -158,8 +158,8 @@ export const BUILDINGS_S = [
 const XN = (id, x, w, h, door, extra) => mk('n', 'FÖRORTEN', id, x, w, h, door, extra);
 const XS = (id, x, w, h, door, extra) => mk('s', 'FÖRORTEN', id, x, w, h, door, extra);
 export const BUILDINGS_X = [
-  XN('hoghus', 1768, 168, 168, { x0: 1840, x1: 1864, type: 'swing' }, { sign: 'BETONGVÄGEN 1', icon: '🏢', enter: 'bostad:hoghus', homes: ['hoghus'] }),
-  XN('narbutik', 1964, 108, 104, { x0: 2004, x1: 2028, type: 'swing' }, { sign: 'NÄRBUTIKEN', icon: '🏪', enter: 'mat', open: [8, 23] }),
+  XN('hoghus', 1768, 168, 168, { x0: 1840, x1: 1864, type: 'swing' }, { sign: 'BETONGVÄGEN 1', icon: '🏢', enter: 'bostad:hoghus', homes: ['rum', 'hoghus'] }), // Lilla rummet (startbostaden) ligger i förorten
+  XN('narbutik', 1964, 108, 104, { x0: 2004, x1: 2028, type: 'swing' }, { sign: 'NÄRBUTIK 24/7', icon: '🏪', enter: 'mat' }),
   XN('pantbank', 2072, 76, 104, { x0: 2098, x1: 2122, type: 'swing' }, { sign: 'PANTBANKEN', icon: '💍', open: [10, 18], soon: 'Pantbanken: "Vi köper ditt guld!" – kom tillbaka när du har något att pantsätta.' }),
   XN('kebab', 2148, 88, 104, { x0: 2180, x1: 2204, type: 'swing' }, { sign: 'KEBAB GRILL', icon: '🥙', open: [11, 24], soon: 'Grillen är trasig. "ÖPPNAR SNART" står det på en lapp från i fjol.' }),
   XN('overgivet', 2288, 104, 96, { x0: 2328, x1: 2352, type: 'boarded' }, { sign: '', icon: '🏚️', soon: 'Igenspikat. Det luktar fukt och någon har sprejat ett hjärta på dörren.' }),

@@ -1,22 +1,53 @@
-// Pixelstadens mark – bakgatan, gränderna, tvärgatorna, trottoarerna, bilvägen
-// och parken, målat pixel för pixel i samma korn som figurerna (1 enhet = 1 px).
-//   paintGround(night) → canvas CITY.W × CITY.H. Målas EN gång per dag/natt
-//                        och cachas av scenen (allt tungt sker här).
-//   groundLive(ctx, env, view) → det lilla som rör sig på marken varje bildruta:
-//                        drivande molnskuggor på dagen och regnringar i pölarna.
+// Pixelstadens mark (v2) – hela världen 2720 × 820, målad pixel för pixel i samma
+// korn som figurerna (1 enhet = 1 px):
+//   bakgatan, gränderna, tvärgatorna och gågatorna i båda husraderna, trottoarerna,
+//   Pixelgatan, Södergatan och Infarten (asfalt, zebror, stopplinjer, busszoner),
+//   parken (gräs, grusgångar, torget, dammen, hundrastgården, lekplatsens sand, ängen),
+//   kyrkogården, macken, kajen och kanalen – och förorten, där allt är slitet:
+//   spruckna och saknade plattor, potthål, lappad asfalt, fimpar, glasskärvor,
+//   ogräs i sprickorna, bleka övergångsställen, klotter, parkeringen med linjer,
+//   den slitna lekplatsen, grusplanen, återvinningen och vagnsplatsen.
+//
+// Kontrakt (docs/STADEN.md):
+//   paintGround(night) → canvas CITY.W × CITY.H. Målas EN gång per dag/natt och cachas
+//                        av scenen (natten = dagens bild tonad, så bara ett tungt pass).
+//   groundLive(ctx, env, view) → det som rör sig på marken varje bildruta: blöt asfalt
+//                        med himmelsreflexer och pölar efter env.weather.wet, regnringar,
+//                        krusningar på kanalen, (molnskuggor bara utan weather.js).
+//   groundOver(ctx, env, view) → fotspår i snön där folk går. Ska ritas EFTER
+//                        weather.drawBack (snötäcket) – annars ritar groundLive dem själv.
+//   V2 = true           → scenen hoppar över platshållarmarken i fallback-v2.js.
 // Ljuset kommer snett från sydväst: fasaderna mot trottoaren är solbelysta och
 // husen kastar skugga snett bakåt (norrut/österut) – in i gränderna och över
-// bakgatan. Det är det som ger djup mellan husen.
-import { Pix, mix, mul, hash, bayer, BIG, eachTextPixel } from '../core/floor-pix.js';
-import { CITY, BUILDINGS, STREETS, CROSSWALKS, PARK_LAYOUT, PATH_RECTS, BUS_STOP } from './map.js';
+// bakgatan/parkgången. Det är det som ger djup mellan husen.
+import { Pix, mix, mul, hash, bayer, BIG, SMALL, eachTextPixel } from '../core/floor-pix.js';
+import { CITY, BUILDINGS, BUILDINGS_S, BUILDINGS_X, FREESTANDING, STREETS_ALL, CROSSWALKS, CROSSWALKS_S, CROSSWALKS_I,
+  BUS_STOPS, PARK_LAYOUT, SUB_LAYOUT, LOTS, footprint } from './map.js';
+
+export const V2 = true;
 
 const W = CITY.W, H = CITY.H;
-const BASE = CITY.BASE, TOP = CITY.FOOT_TOP;
-const [R0, R1] = CITY.ROAD;          // 218–276
-const [SN0] = CITY.SIDEWALK_N;       // 186
-const [SS0, SS1] = CITY.SIDEWALK_S;  // 276–306
-const PK0 = CITY.PARK[0];            // 306
-const SUN_DX = 0.2;                  // skuggan förskjuts så här mycket österut per pixel norrut
+const W1 = 1700;                                   // v1-stadens bredd (de gamla slumpslingorna behåller sitt utseende)
+const BASE = CITY.BASE, TOP = CITY.FOOT_TOP;       // 186 / 40
+const BASE_S = CITY.BASE_S, TOP_S = CITY.FOOT_TOP_S; // 640 / 494
+const DY = CITY.DY_S;                              // 454
+const [R0, R1] = CITY.ROAD;                        // 218–276
+const [RS0, RS1] = CITY.ROAD_S;                    // 672–730
+const [SN0] = CITY.SIDEWALK_N;                     // 186
+const [SS0, SS1] = CITY.SIDEWALK_S;                // 276–306
+const [SX0] = CITY.SIDEWALK_SS;                    // 730
+const PK0 = CITY.PARK[0];                          // 306
+const [BS0, BS1] = CITY.BACK_S;                    // 462–490
+const [I0, I1] = CITY.INFARTEN;                    // 1700–1752
+const XS = CITY.X_SUB;                             // 1752
+const [Q0, Q1] = CITY.QUAY;                        // 760–776
+const CN0 = CITY.CANAL[0];                         // 776
+const SUN_DX = 0.2;                                // skuggan förskjuts så här mycket österut per pixel norrut
+const IW0 = 1686, IE1 = 1766;                      // Infartens trottoarer: väster 1686–1700, öster 1752–1766
+const ROW_N = STREETS_ALL.filter((s) => s.row === 'n'), ROW_S = STREETS_ALL.filter((s) => s.row === 's');
+const HOUSES_N = [...BUILDINGS, ...BUILDINGS_X.filter((b) => b.row === 'n')];
+const HOUSES_S = [...BUILDINGS_S, ...BUILDINGS_X.filter((b) => b.row === 's')];
+const lotById = (id) => LOTS.find((l) => l.id === id);
 
 // ---------- pixelbuffert (skrivs direkt i ImageData under målningen) ----------
 let D = null, SH = null;
@@ -56,6 +87,11 @@ function ellipse(cx, cy, rx, ry, fn) {
     if (t < 1) fn(x, y, t);
   }
 }
+const fillR = (r, fn) => { for (let y = r[1]; y < r[3]; y++) for (let x = r[0]; x < r[2]; x++) put(x, y, fn(x, y)); };
+const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
+const smooth = (a, b, v) => { const t = clamp01((v - a) / (b - a)); return t * t * (3 - 2 * t); };
+const mod = (a, n) => ((a % n) + n) % n;
+const inR = (x, y, r) => x >= r[0] && x < r[2] && y >= r[1] && y < r[3];
 
 // ---------- brus ----------
 function vnoise(x, y, s, seed) {
@@ -67,6 +103,15 @@ function vnoise(x, y, s, seed) {
 }
 const fbm = (x, y, s, seed) => vnoise(x, y, s, seed) * 0.58 + vnoise(x, y, s / 2.3, seed + 1) * 0.28 + vnoise(x, y, s / 5.1, seed + 2) * 0.14;
 
+// Slitaget 0–1 per plats: centrum/parken 0, söder 0.15, förorten 1 – med en prickig,
+// ojämn övergång i höjd med Infarten (vägarna blir sämre ju längre österut man går).
+function wornAt(x, y) {
+  const base = y >= BS1 && y < Q1 ? 0.15 : 0;
+  if (x < I1 - 36) return base;
+  if (x >= XS + 64) return 1;
+  return base + (1 - base) * smooth(I1 - 30, XS + 60, x + (vnoise(x, y, 17, 7) - 0.5) * 44);
+}
+
 // granit: fläckig med mörka korn och glittrande kvarts
 function granite(x, y, c) {
   const h = hash(x, y, 5);
@@ -75,6 +120,8 @@ function granite(x, y, c) {
   return mul(c, 0.94 + hash(x, y, 6) * 0.1);
 }
 const grainy = (c, x, y, amt) => mul(c, 1 - amt + hash(x, y, 3) * amt * 2);
+// smutsa ner en färg efter slitaget (grått, brunt damm)
+const grime = (c, x, y, worn, seed = 40) => (worn > 0 ? mix(c, mul(0x8a8274, 0.9 + vnoise(x, y, 9, seed) * 0.2), worn * (0.18 + vnoise(x, y, 23, seed + 1) * 0.2)) : c);
 
 // ---------- stenrader ----------
 // Rader med (ev. varierande) höjd, stenar med varierande bredd. bond = halvstensförband.
@@ -102,12 +149,14 @@ function rows(x0, x1, y0, y1, o) {
   };
 }
 // Målar stenarna med fog nere/höger, högdager uppe/vänster och skugga nere/höger.
+// col får returnera -1 = "sten saknas" (målas då av o.hole).
 function stones(at, x0, x1, y0, y1, col, o = {}) {
   const hi = o.hi ?? 0.16, lo = o.lo ?? 0.82, jc = o.joint || (() => 0x4a443c), gr = o.grain ?? 0.06;
   for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) {
     const s = at(x, y);
     if (s.lx === s.w - 1 || s.ly === s.h - 1) { put(x, y, jc(x, y)); continue; }
     let c = col(s, x, y);
+    if (c < 0) { put(x, y, o.hole ? o.hole(x, y, s) : dirt(x, y)); continue; }
     const L = s.lx, T = s.ly, Rr = s.w - 2, B = s.h - 2;
     if (o.round && (L === 0 || L === Rr) && (T === 0 || T === B)) c = mix(c, jc(x, y), 0.6);
     else if (T === 0) c = mix(c, 0xffffff, hi);
@@ -118,11 +167,83 @@ function stones(at, x0, x1, y0, y1, col, o = {}) {
   }
 }
 
+// ---------- jord, grus, betong, ogräs, skräp ----------
+// jord med småsten (saknade plattor, tomter, trampade ytor)
+function dirt(x, y) {
+  let c = grainy(mix(0x7a6a54, 0x927e62, vnoise(x, y, 6, 610)), x, y, 0.08);
+  const h = hash(x, y, 611);
+  if (h > 0.94) c = mix(0xb0a48e, 0x9a9488, hash(x, y, 612));
+  else if (hash(x, y - 1, 611) > 0.94) c = mul(c, 0.78);
+  else if (h < 0.05) c = mul(c, 0.78);
+  return c;
+}
+// grus: krattat, ljust (kyrkogården, macken) eller rödaktigt (grusplanen)
+function gravel(x, y, base, seed = 620) {
+  let c = mul(mix(base, mul(base, 1.1), vnoise(x, y, 7, seed)), 0.94 + hash(x, y, seed + 1) * 0.1);
+  const h = hash(x, y, seed + 2);
+  if (h > 0.93) c = [0xe8dcc0, 0xd4c4a4, 0xa89478, 0x9a948a][(hash(x, y, seed + 3) * 4) | 0];
+  else if (hash(x, y - 1, seed + 2) > 0.93) c = mul(c, 0.8);
+  else if (h < 0.05) c = mul(c, 0.82);
+  return c;
+}
+// betongplattor (ruta cw × ch) med fogar, ballast och slitage
+function concrete(x, y, cw, ch, seed, worn = 0) {
+  const lx = mod(x, cw), ly = mod(y, ch), id = hash(Math.floor(x / cw), Math.floor(y / ch), seed);
+  if (lx === cw - 1 || ly === ch - 1) return worn > 0.5 && hash(x, y, seed + 1) > 0.7 ? mix(0x4a5a30, 0x5e7a3a, hash(x, y, seed + 2)) : mul(0x6e6a62, 0.9 + hash(x, y, seed + 3) * 0.16);
+  let c = mix(0xb0aca2, 0xa2a096, id);
+  if (id > 0.9) c = mul(c, 0.88);
+  if (ly === 0) c = mix(c, 0xffffff, 0.12); else if (ly === ch - 2) c = mul(c, 0.9);
+  if (lx === 0) c = mix(c, 0xffffff, 0.05); else if (lx === cw - 2) c = mul(c, 0.94);
+  c = grainy(c, x, y, 0.06);
+  if (hash(x, y, seed + 4) > 0.96) c = mul(c, 0.84);
+  return grime(c, x, y, worn, seed + 5);
+}
+// ogrästuva i en spricka/fog (ritas uppåt från fotpunkten)
+const WEED = [0x2a4f22, 0x3a6c2c, 0x528a38, 0x72aa48];
+function tuft(x, y, s, big = false) {
+  put(x, y, WEED[0]); put(x, y - 1, WEED[1]);
+  if (hash(x, y, s) > 0.4) put(x - 1, y - 1, WEED[2]);
+  if (hash(x, y, s + 1) > 0.5) put(x + 1, y - 2, WEED[2]);
+  if (big) { put(x - 1, y - 2, WEED[1]); put(x, y - 3, WEED[3]); put(x + 1, y - 1, WEED[2]); put(x + 2, y - 2, WEED[1]); put(x - 2, y - 1, WEED[2]); }
+  if (hash(x, y, s + 2) > 0.86) put(x, y - (big ? 4 : 2), 0xf2d23a);                     // maskros
+}
+// skräp: fimpar, glasskärvor, kapsyler, papper, tuggummi, burkar, påsar, löv
+function litter(x, y, k, s) {
+  x = Math.floor(x); y = Math.floor(y);
+  if (k < 0.3) { put(x, y, 0xefeadf); put(x + 1, y, 0xe4ded2); put(x + 2, y, 0xd08a3c); shade(x, y + 1, 0.85); }   // fimp
+  else if (k < 0.48) {                                                                                               // glasskärvor
+    const g = [0x5a9a5a, 0x8a5a26, 0xcfdde4][(hash(x, y, s) * 3) | 0];
+    for (let j = 0; j < 4; j++) { const dx = ((hash(j, s, 1) - 0.5) * 6) | 0, dy = ((hash(j, s, 2) - 0.5) * 3) | 0; put(x + dx, y + dy, g); if (j === 0) put(x + dx + 1, y + dy, mix(g, 0xffffff, 0.8)); }
+  } else if (k < 0.56) { put(x, y, hash(x, y, s) > 0.5 ? 0xc8a030 : 0xb03a2a); put(x + 1, y, 0x6a5a3a); }           // kapsyl
+  else if (k < 0.66) { put(x, y, 0xe8e2d4); put(x + 1, y, 0xd8d2c4); put(x, y + 1, 0xc4beb0); shade(x + 1, y + 1, 0.8); } // papperslapp
+  else if (k < 0.74) { put(x, y, 0x6e6a64); if (hash(x, y, s) > 0.5) put(x + 1, y, 0x7c7872); }                       // tuggummi
+  else if (k < 0.82) { const c = hash(x, y, s) > 0.5 ? 0xc83a32 : 0x9aa4ae; put(x, y, c); put(x + 1, y, mix(c, 0xffffff, 0.4)); put(x + 2, y, mul(c, 0.7)); shade(x, y + 1, 0.8); shade(x + 1, y + 1, 0.8); } // burk
+  else if (k < 0.88) { put(x, y, 0xe6e8ea); put(x + 1, y, 0xd2d6da); put(x - 1, y + 1, 0xc8ccd0); put(x, y + 1, 0xf0f2f4); put(x + 1, y + 1, 0xb8bcc2); } // plastpåse
+  else { const lc = [0xc88a2a, 0x9a5a22, 0xd8b040][(hash(x, y, s) * 3) | 0]; put(x, y, lc); put(x + 1, y, mul(lc, 0.75)); } // löv
+}
+function scatter(r, n, seed, kinds = [0, 1]) {
+  for (let i = 0; i < n; i++) {
+    const x = r[0] + hash(i, 1, seed) * (r[2] - r[0] - 3), y = r[1] + 1 + hash(i, 2, seed) * (r[3] - r[1] - 3);
+    litter(x, y, kinds[0] + hash(i, 3, seed) * (kinds[1] - kinds[0]), seed + i);
+  }
+}
+// sprejad tagg på marken/muren: SMALL-text med dimmig kant
+function tag(x0, y0, s, col, seed) {
+  eachTextPixel(SMALL, s, x0, y0, 1, (px, py) => {
+    put(px, py, mul(col, 0.9 + hash(px, py, seed) * 0.2));
+    if (hash(px, py, seed + 1) > 0.7) blend(px + (hash(px, py, seed + 2) > 0.5 ? 1 : -1), py + (hash(px, py, seed + 3) > 0.5 ? 1 : 0), col, 0.35);
+  });
+}
+
 // ---------- asfalt ----------
 const ASPH = 0x46484f;
-// hjulspåren i körfälten (y-band där däcken nöter asfalten blank)
-const TRACKS = [[233, 236], [240, 244], [259, 262], [266, 270]];
+// hjulspåren i körfälten (y-band där däcken nöter asfalten blank) – Pixelgatan och Södergatan
+const TRACKS_N = [[233, 236], [240, 244], [259, 262], [266, 270]];
+const TRACKS = [...TRACKS_N, ...TRACKS_N.map(([a, b]) => [a + DY, b + DY])];
 const trackAt = (y) => { for (const t of TRACKS) if (y >= t[0] && y < t[1]) return 1; return 0; };
+// Infartens hjulspår (lodräta band kring körfälten x 1713 och 1739)
+const TRACKS_I = [[1706, 1709], [1716, 1720], [1732, 1735], [1742, 1746]];
+const trackAtX = (x) => { for (const t of TRACKS_I) if (x >= t[0] && x < t[1]) return 1; return 0; };
 function asphalt(x, y, tone = 0, road = true) {
   // grundton i tre skalor: stora fläckar, mellanstora och klumpig ballast (inte salt-och-peppar)
   const f = vnoise(x, y, 2.4, 26);
@@ -133,6 +254,22 @@ function asphalt(x, y, tone = 0, road = true) {
   else if (h > 0.992) c = mix(c, 0xaaa49a, 0.6 * (1 - tr * 0.5));                      // kvartskorn
   else if (h > 0.968) c = mix(c, 0x8e8a84, 0.36 * (1 - tr * 0.5));                     // ljust grus
   else if (h > 0.93 && f > 0.45) c = mix(c, 0x6e7078, 0.3);                            // gråblå sten
+  if (tr) c = mul(c, 1 - 0.07 * tr);
+  return c;
+}
+// gammal asfalt: oxiderad (gråare, ljusare), stensläpp i fläckar där ballasten lossnat
+function asphaltW(x, y, tone = 0, road = true, worn = 0) {
+  let c = asphalt(x, y, tone, road);
+  if (worn <= 0.02) return c;
+  c = mix(c, mul(0x5f5e5a, 0.94 + vnoise(x, y, 30, 28) * 0.12), 0.34 * worn);
+  const v = vnoise(x, y, 5, 27);
+  if (v > 0.64 && hash(x, y, 29) > 0.52 - worn * 0.22) c = hash(x, y, 30) > 0.45 ? mix(c, 0x8c877c, 0.34 * worn) : mul(c, 1 - 0.22 * worn);
+  return c;
+}
+// Infartens asfalt: hjulspåren går lodrätt
+function asphaltI(x, y, worn) {
+  let c = asphaltW(x, y, 0, false, worn);
+  const tr = trackAtX(x) * (0.6 + vnoise(x, y, 18, 25) * 0.4);
   if (tr) c = mul(c, 1 - 0.07 * tr);
   return c;
 }
@@ -157,6 +294,7 @@ function crack(x, y, len, seed, o = {}) {
     } else {
       shade(px, py, 0.55);
       if (hash(i, seed, 3) > 0.6) blend(px, py + 1, 0xffffff, 0.08);
+      if (o.weeds && hash(i, seed, 7) > 1 - o.weeds) tuft(px, py, seed + i, hash(i, seed, 8) > 0.7);
     }
     if (o.vert) { py += 1; if (hash(i, seed, 4) < 0.4) px += hash(i, seed, 5) < 0.5 ? -1 : 1; }
     else { px += o.dx || 1; if (hash(i, seed, 4) < 0.38) py += hash(i, seed, 5) < 0.5 ? -1 : 1; }
@@ -172,19 +310,49 @@ function stain(cx, cy, rx, ry, a, col = 0x1c1e24) {
     if (q > 0.2) blend(x, y, col, Math.min(1, q) * a);
   });
 }
+// krackelering (krokodilsprickor): ett nät av sprickor inom en ellips
+function alligator(cx, cy, rx, ry, seed) {
+  ellipse(cx, cy, rx, ry, (x, y, t) => {
+    const v = cellAt(x, y, 4.6, 3.4, seed), e = v.d2 - v.d1;
+    if (e < 0.09 && hash(x, y, seed + 1) < 1.25 - t) { shade(x, y, 0.58); if (hash(x, y, seed + 2) > 0.7) blend(x, y + 1, 0xffffff, 0.06); }
+    else if (t < 0.7 && hash(v.id, 3, seed) > 0.8) put(x, y, mix(get(x, y), 0x8a857a, 0.12));           // lösa bitar
+  });
+}
+// potthål: trasig kant, grus i botten, belyst bortre innervägg (ljuset från sydväst)
+const POTHOLES = [];
+function pothole(cx, cy, rx, ry, seed) {
+  const x0 = Math.floor(cx - rx * 1.5), x1 = Math.ceil(cx + rx * 1.5), y0 = Math.floor(cy - ry * 1.6), y1 = Math.ceil(cy + ry * 1.6);
+  for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+    const t = Math.hypot((x + 0.5 - cx) / rx, (y + 0.5 - cy) / ry) + (vnoise(x, y, 2.2, seed) - 0.5) * 0.45;
+    if (t < 1) {
+      const dy = (y + 0.5 - cy) / ry;
+      let c = mix(0x3a3834, 0x2a2926, clamp01(dy * 0.5 + 0.5));
+      if (dy < -0.45 && t > 0.62) c = mix(0x6e6a62, 0x585650, hash(x, y, seed + 1));                // bortre väggen i ljuset
+      else if (dy > 0.3 && t > 0.7) c = 0x1e1d1c;                                                    // närmaste väggen i skugga
+      const h = hash(x, y, seed + 2);
+      if (h > 0.8) c = mix(0x8a857a, 0x6a665e, hash(x, y, seed + 3));                                  // grus och asfaltbitar i botten
+      else if (h < 0.08) c = 0x181716;
+      put(x, y, c);
+    } else if (t < 1.35) {
+      const q = (1.35 - t) / 0.35;
+      if (hash(x, y, seed + 4) < q * 0.8) put(x, y, hash(x, y, seed + 5) > 0.5 ? mix(get(x, y), 0x7c786e, 0.4) : mul(get(x, y), 0.72)); // söndersmulad kant
+    }
+  }
+  POTHOLES.push({ x: cx, y: cy, rx: rx * 0.85, ry: ry * 0.8 });
+}
 // dagvattengaller: järnram och spalter, lite rost
-function grate(x0, y0, w, h, vertical = true) {
+function grate(x0, y0, w, h, vertical = true, rust = 0.16) {
   for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) {
     const lx = x - x0, ly = y - y0, edge = lx === 0 || ly === 0 || lx === w - 1 || ly === h - 1;
     let c;
     if (edge) c = ly === 0 ? 0x8a8984 : lx === 0 ? 0x6e6d68 : 0x3a3935;
     else c = (vertical ? lx % 2 === 0 : ly % 2 === 0) ? 0x121316 : (ly === 1 || lx === 1 ? 0x6e6d6a : 0x55544f);
-    if (hash(x, y, 77) > 0.84) c = mix(c, 0x8a5230, 0.4);
+    if (hash(x, y, 77) > 1 - rust) c = mix(c, 0x8a5230, 0.4 + rust);
     put(x, y, c);
   }
 }
 // brunnslock (runt, sett snett ovanifrån = ellips)
-function manhole(cx, cy, rx, ry) {
+function manhole(cx, cy, rx, ry, rust = 0) {
   for (let y = Math.floor(cy - ry - 1); y <= cy + ry + 1; y++) for (let x = Math.floor(cx - rx - 1); x <= cx + rx + 1; x++) {
     const dx = (x + 0.5 - cx) / rx, dy = (y + 0.5 - cy) / ry, t = Math.hypot(dx, dy);
     if (t > 1.2) continue;
@@ -195,12 +363,11 @@ function manhole(cx, cy, rx, ry) {
     else {
       c = (x & 1) === 0 && (y & 1) === 0 ? 0x8c887f : 0x66625b;                            // halkskydd
       if (dx + dy < -0.5) c = mix(c, 0xffffff, 0.14);
-      if (vnoise(x, y, 3, 88) > 0.66) c = mix(c, 0x8a5a36, 0.4);                           // rost
+      if (vnoise(x, y, 3, 88) > 0.66 - rust * 0.3) c = mix(c, 0x8a5a36, 0.4 + rust * 0.2); // rost
     }
     put(x, y, c);
   }
 }
-
 // fyrkantigt gjutjärnslock i trottoaren (ljus ram, rutmönster, skugga nere/höger)
 function lid(x0, y0, w, h) {
   for (let y = y0 - 1; y <= y0 + h; y++) for (let x = x0 - 1; x <= x0 + w; x++) {
@@ -222,8 +389,23 @@ function valve(cx, cy) {
   put(cx - 1, cy, 0x7a766e); put(cx, cy, 0x4a5a78); put(cx + 1, cy, 0x3e4c66); put(cx + 2, cy, 0x6a665e);
   put(cx, cy + 1, 0x55524c); put(cx + 1, cy + 1, 0x55524c);
 }
+// voronoiceller på ett skakat rutnät (kullersten, krackelering)
+const CB = { d1: 0, d2: 0, id: 0, px: 0, py: 0 };
+function cellAt(x, y, sx, sy, seed) {
+  const gx = Math.floor(x / sx), gy = Math.floor(y / sy);
+  CB.d1 = CB.d2 = 1e9;
+  for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) {
+    const cx = gx + i, cy = gy + j;
+    const fx = (cx + 0.18 + hash(cx, cy, seed) * 0.64) * sx, fy = (cy + 0.18 + hash(cx, cy, seed + 1) * 0.64) * sy;
+    const d = Math.hypot((x + 0.5 - fx) / sx, (y + 0.5 - fy) / sy);
+    if (d < CB.d1) { CB.d2 = CB.d1; CB.d1 = d; CB.id = cx * 7919 + cy; CB.px = fx; CB.py = fy; } else if (d < CB.d2) CB.d2 = d;
+  }
+  return CB;
+}
 
-// ---------- pölar (delas med groundLive för regnringarna) ----------
+// ---------- pölar ----------
+// Varje pöl målas torr i marken (en mörk, siltig fläck där vattnet brukar stå) och
+// fylls av groundLive när det är blött (env.weather.wet). Delas med regnringarna.
 const PUDDLES = [
   // bakgatan
   [95, 30, 7, 2.2], [455, 15, 9, 2.4], [838, 31, 6, 2], [1190, 17, 8, 2.4], [1586, 29, 10, 2.6],
@@ -235,25 +417,25 @@ const PUDDLES = [
   [382, 273, 12, 1.8], [1046, 273, 10, 1.8], [822, 219, 9, 1.6], [1392, 219, 11, 1.6],
   // trottoaren och promenaden
   [1592, 292, 6, 2], [470, 340, 8, 2.4], [1386, 341, 6, 2], [1640, 339, 5, 2],
+  // v2 – parkgången, gränderna i söder, Södergatans rännstenar, bortre trottoaren
+  [390, 476, 8, 2.2], [1120, 482, 7, 2], [1520, 474, 9, 2.4], [160, 604, 5, 2], [1588, 580, 5, 2], [1434, 560, 5, 1.8],
+  [520, 727, 12, 1.8], [1180, 673, 10, 1.6], [960, 727, 9, 1.6], [300, 746, 6, 2], [1380, 748, 7, 2],
+  // förorten
+  [1860, 28, 11, 2.6], [2140, 17, 8, 2.4], [2470, 30, 12, 2.8], [2640, 20, 7, 2.2], [1950, 150, 5, 2], [2410, 120, 6, 2],
+  [2262, 110, 8, 2.4], [2130, 273, 13, 1.8], [2520, 219, 12, 1.6], [2330, 727, 14, 1.8], [2600, 673, 11, 1.6],
+  [1860, 390, 14, 3], [1950, 430, 9, 2.4], [1800, 346, 8, 2], [2080, 476, 10, 2.4], [2560, 480, 8, 2.2],
+  [2566, 392, 12, 3.2], [2460, 430, 9, 2.6], [2090, 418, 6, 2], [2670, 540, 10, 2.6], [2650, 600, 8, 2.2],
+  [2330, 612, 9, 2.4], [2262, 560, 6, 2], [1942, 590, 5, 2], [2070, 540, 5, 1.8], [1760, 420, 4, 1.8],
+  [1900, 292, 7, 2], [2240, 746, 9, 2.2], [2620, 750, 8, 2],
 ].map(([x, y, rx, ry], i) => ({ x, y, rx, ry, i }));
 
-function paintPuddles(night) {
-  for (const p of PUDDLES) {
-    const x0 = Math.floor(p.x - p.rx * 1.4), x1 = Math.ceil(p.x + p.rx * 1.4);
-    const y0 = Math.floor(p.y - p.ry * 1.4), y1 = Math.ceil(p.y + p.ry * 1.4);
-    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
-      const t = Math.hypot((x + 0.5 - p.x) / p.rx, (y + 0.5 - p.y) / p.ry) + (vnoise(x, y, 3, 700 + p.i) - 0.5) * 0.4;
-      if (t < 1) {
-        // spegling: himmel överst, mörkare nedåt, lite av botten syns igenom
-        const f = (y + 0.5 - (p.y - p.ry)) / (p.ry * 2);
-        const sky = night ? mix(0x2c3654, 0x161c30, f) : mix(0xb4c8da, 0x5c6c80, f);
-        let c = mix(get(x, y), sky, 0.72);
-        if (t > 0.78) c = mul(c, 0.86);
-        if (!night && y < p.y && hash(x, y, 701) > 0.82) c = mix(c, 0xeef4fa, 0.5);
-        put(x, y, c);
-      } else if (t < 1.4 && bayer(x, y) < (1.4 - t) / 0.4) shade(x, y, 0.8);    // våt kant
-    }
-  }
+// torr pöl: silt och damm i en svacka (ljus kant där smutsvattnet torkat in)
+function paintDryPuddles() {
+  for (const p of PUDDLES) ellipse(p.x, p.y, p.rx * 1.15, p.ry * 1.2, (x, y, t) => {
+    const n = t + (vnoise(x, y, 3, 700 + p.i) - 0.5) * 0.4;
+    if (n < 0.8) blend(x, y, 0x2c2a26, 0.14);
+    else if (n < 1) blend(x, y, 0xb8ac94, 0.16 * (hash(x, y, 702) > 0.35 ? 1 : 0));
+  });
 }
 
 // =====================================================================
@@ -261,20 +443,9 @@ function paintPuddles(night) {
 // =====================================================================
 const COB = [0xa0988a, 0x938d84, 0xa99e8c, 0x978e8f, 0xafa696, 0x8c867c, 0xa39988, 0x9e9480, 0xa8948a];
 // kullersten: oregelbundna, rundade stenar (voronoiceller på ett skakat rutnät)
-const CBX = 6.2, CBY = 4.4, CB = { d1: 0, d2: 0, id: 0, px: 0, py: 0 };
-function cobbleAt(x, y) {
-  const gx = Math.floor(x / CBX), gy = Math.floor(y / CBY);
-  CB.d1 = CB.d2 = 1e9;
-  for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) {
-    const cx = gx + i, cy = gy + j;
-    const fx = (cx + 0.18 + hash(cx, cy, 720) * 0.64) * CBX, fy = (cy + 0.18 + hash(cx, cy, 721) * 0.64) * CBY;
-    const d = Math.hypot((x + 0.5 - fx) / CBX, (y + 0.5 - fy) / CBY);
-    if (d < CB.d1) { CB.d2 = CB.d1; CB.d1 = d; CB.id = cx * 7919 + cy; CB.px = fx; CB.py = fy; } else if (d < CB.d2) CB.d2 = d;
-  }
-  return CB;
-}
+const CBX = 6.2, CBY = 4.4;
 function cobble(x, y) {
-  const v = cobbleAt(x, y), edge = v.d2 - v.d1;
+  const v = cellAt(x, y, CBX, CBY, 720), edge = v.d2 - v.d1;
   if (edge < 0.1) {                                                                            // fog: sand, jord och mossa
     if (fbm(x, y, 16, 14) > 0.6 && hash(x, y, 15) > 0.3) return hash(x, y, 16) > 0.5 ? 0x6a7a42 : 0x56663a;
     return mul(0x5e574d, 0.9 + hash(x, y, 17) * 0.2);
@@ -287,9 +458,9 @@ function cobble(x, y) {
   return grainy(c, x, y, 0.05);
 }
 function paintBack() {
-  for (let y = 8; y < TOP; y++) for (let x = 0; x < W; x++) put(x, y, cobble(x, y));
-  // mittränna av släta hällar
-  for (let x = 0; x < W; x++) {
+  // centrum: kullersten med en mittränna av släta hällar
+  for (let y = 8; y < TOP; y++) for (let x = 0; x < XS; x++) put(x, y, cobble(x, y));
+  for (let x = 0; x < XS; x++) {
     shade(x, 21, 0.78);
     for (let y = 22; y < 25; y++) {
       const j = (x + 3) % 11 === 0;
@@ -297,9 +468,36 @@ function paintBack() {
     }
     if (vnoise(x, 0, 30, 18) > 0.55) blend(x, 23, 0x4a5664, 0.45);                   // vattenstrimma
   }
-  for (let x = 128; x < W; x += 262) grate(x, 22, 7, 3);
+  for (let x = 128; x < XS - 10; x += 262) grate(x, 22, 7, 3);
+  // förorten: sprucken, lappad asfalt med en betongränna, kullerstenen tar slut i en ojämn skarv
+  for (let y = 8; y < TOP; y++) for (let x = XS - 30; x < W; x++) {
+    const edge = x - XS + (vnoise(x, y, 5, 730) - 0.5) * 22;
+    if (edge < 0) continue;
+    let c = asphaltW(x, y, 0.02, false, 1);
+    if (y < 11 || y >= TOP - 3) c = mul(c, 0.9);                                              // smuts längs kanterna
+    put(x, y, c);
+  }
+  for (let x = XS; x < W; x++) for (let y = 22; y < 25; y++) {
+    let c = concrete(x, y, 13, 40, 731, 1);
+    if (y === 22) c = mix(c, 0xffffff, 0.08); else if (y === 24) c = mul(c, 0.82);
+    if (y === 23 && vnoise(x, 0, 20, 732) > 0.5) c = mix(c, 0x3a4450, 0.4);                    // unket vatten i rännan
+    put(x, y, c);
+  }
+  for (let i = 0; i < 26; i++) crack(XS + hash(i, 1, 733) * (W - XS), 10 + hash(i, 2, 733) * 26, 8 + hash(i, 3, 733) * 22, 734 + i, { sealed: i % 3 === 0, branch: i % 4 === 0, dx: hash(i, 4, 733) > 0.5 ? 1 : -1, y0: 9, y1: TOP - 1, weeds: 0.08 });
+  for (const [px, pw, tone] of [[1800, 40, -0.12], [2010, 26, 0.08], [2190, 58, -0.14], [2350, 30, -0.1], [2560, 46, 0.07], [2690, 24, -0.12]]) {
+    for (let y = 11; y < 34; y++) for (let x = px; x < px + pw; x++) {
+      if (y >= 22 && y < 25) continue;
+      const e = x === px || x === px + pw - 1 || y === 11 || y === 33;
+      put(x, y, e && hash(x, y, 735) > 0.25 ? 0x25262b : asphaltW(x, y, tone, false, 0.6));
+    }
+  }
+  for (const [cx, cy, rx, ry] of [[1880, 30, 5, 2.2], [2120, 14, 4, 1.8], [2300, 31, 6, 2.4], [2500, 15, 4, 1.8], [2630, 30, 5, 2]]) pothole(cx, cy, rx, ry, 736 + cx);
+  for (let x = XS + 70; x < W - 10; x += 230) grate(x, 22, 7, 3, true, 0.45);
+  for (let i = 0; i < 20; i++) stain(XS + hash(i, 1, 737) * (W - XS), 12 + hash(i, 2, 737) * 22, 3 + hash(i, 3, 737) * 6, 1.4 + hash(i, 4, 737) * 1.6, 0.3);
+  // ogräs längs muren och husens bakväggar
+  for (let x = XS; x < W; x++) { if (hash(x, 9, 738) > 0.9) tuft(x, 10, 738 + x, hash(x, 9, 739) > 0.6); if (hash(x, 38, 738) > 0.93) tuft(x, TOP - 1, 740 + x); }
   // bakgårdarna bakom husen: packad jord och grus med tuvor, i husens skugga
-  for (const b of BUILDINGS) for (let y = TOP; y < BASE; y++) for (let x = b.x; x < b.x + b.w; x++) {
+  for (const b of HOUSES_N) for (let y = TOP; y < BASE; y++) for (let x = b.x; x < b.x + b.w; x++) {
     let c = grainy(mix(0x7c705f, 0x8e826c, vnoise(x, y, 7, 30)), x, y, 0.08);
     const h = hash(x, y, 31);
     if (h > 0.93) c = mix(0xb0a48e, 0x9a9488, hash(x, y, 32));
@@ -310,36 +508,43 @@ function paintBack() {
     put(x, y, mul(c, y === TOP + 1 ? 0.6 : 0.72));
     SH[y * W + x] = 1;
   }
-  // skräp och löv mellan stenarna
+  // skräp och löv mellan stenarna (centrum) – mycket mer i förorten
   for (let i = 0; i < 90; i++) {
-    const x = (hash(i, 1, 19) * W) | 0, y = 10 + ((hash(i, 2, 19) * 28) | 0), k = hash(i, 3, 19);
+    const x = (hash(i, 1, 19) * W1) | 0, y = 10 + ((hash(i, 2, 19) * 28) | 0), k = hash(i, 3, 19);
     if (k < 0.5) { put(x, y, 0x9a6a2a); put(x + 1, y, 0x7a5220); }                        // brunt löv
     else if (k < 0.7) put(x, y, 0xd8d2c4);                                                  // papperslapp
     else if (k < 0.8) { put(x, y, 0x3a6a8a); put(x + 1, y, 0x2a4a6a); }                     // kapsyl/burk
     else put(x, y, 0x2a2622);                                                                // fläck
   }
+  scatter([XS, 10, W, TOP - 2], 150, 741);
+  tag(1990, 27, 'BTG', 0xe8443a, 742); tag(2410, 12, 'ZOK', 0x3a9bff, 743);
   paintBoundary();
 }
 
-// y 0–8: häck, plank, mur och staket mot kvarteret bakom
+// y 0–8: häck, plank, mur och staket mot kvarteret bakom – i förorten betongmur,
+// trasigt nätstängsel, grått klotterplank och vildvuxet sly
 function paintBoundary() {
-  const KINDS = ['hack', 'plank', 'mur', 'staket'];
-  const PAINT = { hack: hedge, plank, mur: brickWall, staket: railing };
+  const KINDS = ['hack', 'plank', 'mur', 'staket'], KX = ['betong', 'nat', 'plank2', 'sly'];
+  const PAINT = { hack: hedge, plank, mur: brickWall, staket: railing, betong: concreteWall, nat: chainLink, plank2: greyPlank, sly: scrub };
   let x = 0, i = 0, prev = '';
   while (x < W) {
-    const len = 110 + ((hash(i, 1, 51) * 150) | 0);
-    let kind = KINDS[(hash(i, 2, 51) * KINDS.length) | 0];
-    if (kind === prev) kind = KINDS[(KINDS.indexOf(kind) + 1) % KINDS.length];
-    const x1 = Math.min(W, x + len);
+    const sub = x >= XS - 20;
+    const len = (sub ? 90 : 110) + ((hash(i, 1, 51) * (sub ? 120 : 150)) | 0);
+    const K = sub ? KX : KINDS;
+    let kind = K[(hash(i, 2, 51) * K.length) | 0];
+    if (kind === prev) kind = K[(K.indexOf(kind) + 1) % K.length];
+    let x1 = Math.min(W, x + len);
+    if (!sub && x1 > XS - 20) x1 = XS - 20;
     PAINT[kind](x, x1, i);
-    if (x > 0) post(x - 1);
+    if (x > 0) post(x - 1, sub);
     prev = kind; x = x1; i++;
   }
 }
-function post(x0) {
+function post(x0, sub) {
   for (let y = 0; y < 9; y++) for (let x = x0; x < x0 + 3; x++) {
     let c = y === 0 ? 0xd0cbc0 : y === 1 ? 0xb8b2a6 : x === x0 ? 0xaaa498 : x === x0 + 2 ? 0x77726a : 0x958f85;
     if (y === 8) c = 0x5a554e;
+    if (sub) c = grime(c, x, y, 1, 52);
     put(x, y, granite(x, y, c));
   }
   for (let x = x0 - 1; x < x0 + 5; x++) shade(x, 9, 0.75);
@@ -429,15 +634,86 @@ function railing(x0, x1, s) {
     shade(x, 8, 0.72); if (bayer(x, 9) < 0.5) shade(x, 9, 0.85);
   }
 }
+// förortens gränser
+const SPRAY = [0xe8443a, 0x3a9bff, 0xf4d23c, 0x5ad35a, 0xe070c0, 0xf4f1ea, 0xff8a2a];
+function concreteWall(x0, x1, s) {
+  for (let x = x0; x < x1; x++) {
+    const px = (x - x0) % 30;
+    for (let y = 0; y < 8; y++) {
+      let c = y === 0 ? 0xb4b0a6 : y === 7 ? 0x6e6a62 : mix(0x9a968c, 0x8a867e, vnoise(x, y, 6, 110 + s));
+      if (px === 29) c = 0x55524c;                                                          // skarv mellan elementen
+      else if (px === 0) c = mix(c, 0xffffff, 0.1);
+      if (y > 3 && vnoise(x, y, 4, 111) > 0.62) c = mix(c, 0x5a4a34, 0.3);                  // rostränder från armeringen
+      if (y >= 5 && hash(x, y, 112) > 0.6 && vnoise(x, 0, 7, 113) > 0.5) c = mix(c, 0x4a5a34, 0.4); // mossa nertill
+      put(x, y, grainy(c, x, y, 0.06));
+    }
+    shade(x, 8, 0.72); if (bayer(x, 9) < 0.5) shade(x, 9, 0.85);
+  }
+  // taggar på muren
+  for (let k = 0; k < (x1 - x0) / 34; k++) {
+    const tx = x0 + 4 + ((hash(k, 1, 114 + s) * (x1 - x0 - 20)) | 0), col = SPRAY[(hash(k, 2, 114 + s) * SPRAY.length) | 0];
+    tag(tx, 1 + ((hash(k, 3, 114 + s) * 2) | 0), ['BTG', 'ZOK', 'NEJ', 'KAOS', 'PXL', 'YO', 'ACAB'.slice(0, 3), 'LOL'][(hash(k, 4, 114 + s) * 8) | 0], col, 115 + k);
+  }
+}
+function chainLink(x0, x1, s) {
+  for (let x = x0; x < x1; x++) {
+    for (let y = 0; y < 8; y++) {
+      // torrt gräs och sly bakom
+      const n = fbm(x, y, 5, 120 + s) + (hash(x, y, 121) - 0.5) * 0.3;
+      let c = n > 0.6 ? 0x8a8a4a : n > 0.44 ? 0x6a7038 : 0x4a5430;
+      // nätet: diagonala trådar
+      const hole = vnoise(x, y, 5, 122 + s) > 0.74;
+      if (!hole && ((x + y) % 4 === 0 || (x - y + 64) % 4 === 0)) c = hash(x, y, 123) > 0.8 ? 0x8a5a36 : 0x9a9c9e;
+      if (y === 0) c = 0x6a6c70;
+      put(x, y, c);
+    }
+    if ((x - x0) % 24 === 0) for (let y = 0; y < 8; y++) put(x, y, y === 0 ? 0x9a9ca0 : 0x5a5c60);
+    if (hash(x, 7, 124) > 0.8) tuft(x, 8, 125 + x, hash(x, 7, 126) > 0.6);
+    shade(x, 8, 0.8);
+  }
+}
+function greyPlank(x0, x1, s) {
+  for (let x = x0; x < x1; x++) {
+    const bx = (x - x0) % 5, board = ((x - x0) / 5) | 0, f = hash(board, s, 130);
+    const gone = f > 0.9;                                                                   // bräda saknas
+    for (let y = 0; y < 8; y++) {
+      let c;
+      if (gone) c = y < 6 ? mix(0x3a4a2a, 0x2a3420, hash(x, y, 131)) : 0x2a2a24;
+      else if (bx === 4) c = 0x2a2620;
+      else {
+        c = mix(0x8a847a, 0x6e6a62, f);
+        if (bx === 0) c = mix(c, 0xffffff, 0.1); if (bx === 3) c = mul(c, 0.84);
+        c = mul(c, 0.9 + hash(x, y >> 1, 132) * 0.16);
+        if (y === 7) c = mul(c, 0.7);
+      }
+      put(x, y, c);
+    }
+    shade(x, 8, 0.72); if (bayer(x, 9) < 0.5) shade(x, 9, 0.85);
+  }
+  for (let k = 0; k < (x1 - x0) / 40; k++) tag(x0 + 3 + ((hash(k, 1, 133 + s) * (x1 - x0 - 16)) | 0), 1, ['BTG', 'ZOK', 'PXL', 'KAOS'][(hash(k, 2, 133 + s) * 4) | 0], SPRAY[(hash(k, 3, 133 + s) * SPRAY.length) | 0], 134 + k);
+}
+function scrub(x0, x1, s) {
+  for (let x = x0; x < x1; x++) {
+    const bot = 6 + Math.round(vnoise(x, 0, 4, 140 + s) * 4);
+    for (let y = 0; y < bot; y++) {
+      const n = fbm(x, y, 5, 141 + s) * 0.7 + (hash(x, y, 142) - 0.5) * 0.4 - y * 0.02;
+      let c = n > 0.6 ? 0x7a8a42 : n > 0.46 ? 0x5a6a32 : n > 0.34 ? 0x4a5428 : 0x6a5a3a;   // grönt, torrt och brunt sly
+      if (hash(x, y, 143) > 0.97) c = 0x2a1c14;                                             // kvistar
+      put(x, y, c);
+    }
+    if (hash(x, 2, 144) > 0.985) { put(x, 3, 0xe8e4dc); put(x + 1, 3, 0xd0ccc4); }           // påse som fastnat
+    for (let y = bot; y < bot + 2; y++) if (bayer(x, y) < 0.5) shade(x, y, 0.78);
+  }
+}
 
-// husens skuggor snett bakåt över bakgatan
-function backShadows() {
-  for (const b of BUILDINGS) {
+// husens skuggor snett bakåt över bakgatan (norra raden) och parkgången (södra raden)
+function backShadows(houses, top, row) {
+  for (const b of houses) {
     const L = 9 + ((b.h * 0.05) | 0);
-    const gap = STREETS.find((s) => s.x0 === b.x + b.w);
+    const gap = (row === 'n' ? ROW_N : ROW_S).find((s) => s.x0 === b.x + b.w);
     const cap = gap ? Math.min((gap.x1 - gap.x0) * 0.7, 31) : 12;
-    for (let y = Math.max(8, TOP - L - 2); y < TOP; y++) {
-      const up = TOP - y, xs = b.x + up * SUN_DX, xe = b.x + b.w + cap;
+    for (let y = Math.max(8, top - L - 2); y < top; y++) {
+      const up = top - y, xs = b.x + up * SUN_DX, xe = b.x + b.w + cap;
       for (let x = Math.floor(xs) - 2; x < xe + 2; x++) {
         let q = Math.min(x + 0.5 - xs, xe - x - 0.5) / 2.5 + 0.5;
         q = Math.min(q, (L - up) / 3 + 0.5);
@@ -447,11 +723,12 @@ function backShadows() {
   }
 }
 // skuggan från huset till vänster ner i en gränd/tvärgata (snett avskuren mot trottoaren)
-function gapShadow(g) {
+function gapShadow(g, top = TOP, base = BASE) {
   const w = g.x1 - g.x0;
-  if (g.x0 === 0) return;                                                                    // inget hus till vänster
-  for (let y = TOP; y < BASE; y++) {
-    const dmax = Math.min(w * 0.7, 2 + (BASE - y) * SUN_DX);
+  const houses = g.row === 's' ? HOUSES_S : HOUSES_N;
+  if (!houses.some((b) => b.x + b.w === g.x0)) return;                                     // inget hus till vänster
+  for (let y = top; y < base; y++) {
+    const dmax = Math.min(w * 0.7, 2 + (base - y) * SUN_DX);
     for (let x = g.x0; x < g.x1; x++) {
       const q = (dmax - (x - g.x0 + 0.5)) / 2.5 + 0.5;
       if (q >= 1 || (q > 0 && bayer(x, y) < q)) shadow(x, y);
@@ -460,47 +737,56 @@ function gapShadow(g) {
 }
 
 // =====================================================================
-// GRÄNDERNA (28 bred) – sliten stenläggning, brunn, pölar, mossa
+// GRÄNDERNA – sliten stenläggning, brunn, pölar, mossa (förorten: trasig och skräpig)
 // =====================================================================
 const FLAG = [0x877f73, 0x7b756c, 0x90887a, 0x746f68, 0x8a7f72, 0x80796e];
-function paintAlley(g) {
-  const { x0, x1 } = g, w = x1 - x0, seed = 200 + x0, edge = g.kind === 'edge';
-  const at = rows(x0, x1, TOP, BASE - 2, { h: [5, 7], w: [6, 11], seed });
-  stones(at, x0, x1, TOP, BASE - 2, (s, x, y) => {
+function paintAlley(g, top = TOP, base = BASE) {
+  const { x0, x1 } = g, w = x1 - x0, seed = 200 + x0 + (g.row === 's' ? 5000 : 0), edge = g.kind === 'edge';
+  const worn = wornAt(x0 + (w >> 1), base - 10);
+  const at = rows(x0, x1, top, base - 2, { h: [5, 7], w: [6, 11], seed });
+  stones(at, x0, x1, top, base - 2, (s, x, y) => {
     const h = hash(s.r, s.k, seed + 1);
-    if (h > 0.94) return mix(0x5a5046, 0x6e6252, hash(x, y, 9));                             // sten saknas – jord och grus
-    return mul(FLAG[(hash(s.k, s.r, seed + 2) * FLAG.length) | 0], 0.86 + hash(s.r, s.k, seed + 3) * 0.2);
+    if (h > 0.94 - worn * 0.2) return -1;                                                    // sten saknas – jord och grus
+    let c = mul(FLAG[(hash(s.k, s.r, seed + 2) * FLAG.length) | 0], 0.86 + hash(s.r, s.k, seed + 3) * 0.2);
+    if (worn > 0.5 && hash(s.k, s.r, seed + 7) > 0.7) c = mul(c, 0.84);                      // sjunkna, fuktiga hällar
+    return grime(c, x, y, worn * 0.8, seed);
   }, {
     hi: 0.12, lo: 0.84, grain: 0.07,
+    hole: (x, y) => (worn > 0.5 && vnoise(x, y, 6, seed + 8) > 0.62 ? asphaltW(x, y, -0.08, false, 0.5) : dirt(x, y)), // lagat med asfalt
     joint: (x, y) => {
       const e = Math.min(x - x0, x1 - 1 - x);
-      if (e < 5 && hash(x, y, seed + 4) > 0.5) return hash(x, y, seed + 5) > 0.5 ? 0x527c36 : 0x3e6a2c; // ogräs i fogarna
+      if ((e < 5 || worn > 0.5) && hash(x, y, seed + 4) > 0.5 - worn * 0.2) return hash(x, y, seed + 5) > 0.5 ? 0x527c36 : 0x3e6a2c; // ogräs i fogarna
       return mul(0x4e4840, 0.9 + hash(x, y, 8) * 0.2);
     },
   });
   // fuktig, mossig kant längs husväggarna
-  for (let y = TOP; y < BASE - 2; y++) for (const x of [x0, x1 - 1]) {
+  for (let y = top; y < base - 2; y++) for (const x of [x0, x1 - 1]) {
     const m = vnoise(x, y, 6, seed + 6);
     put(x, y, m > 0.55 ? mix(0x3c4a2c, 0x5a6c3c, hash(x, y, 1)) : mul(0x4a443c, 0.85 + hash(x, y, 2) * 0.2));
     const xi = x === x0 ? x + 1 : x - 1;
     if (m > 0.6) blend(xi, y, 0x4a6034, 0.6); else shade(xi, y, 0.86);
   }
   // tröskel mot trottoaren
-  for (let x = x0; x < x1; x++) { put(x, BASE - 2, granite(x, BASE - 2, 0xaaa59b)); put(x, BASE - 1, granite(x, BASE - 1, 0x86817a)); }
+  for (let x = x0; x < x1; x++) { put(x, base - 2, granite(x, base - 2, 0xaaa59b)); put(x, base - 1, granite(x, base - 1, 0x86817a)); }
   // sprickor i hällarna
-  for (let i = 0; i < 4; i++) crack(x0 + 3 + hash(i, 1, seed) * (w - 6), TOP + 8 + hash(i, 2, seed) * 120, 5 + hash(i, 3, seed) * 8, seed + i, { vert: true, x0: x0 + 1, x1: x1 - 1, y0: TOP, y1: BASE - 3 });
-  if (!edge) {
+  for (let i = 0; i < 4 + worn * 6; i++) crack(x0 + 3 + hash(i, 1, seed) * (w - 6), top + 8 + hash(i, 2, seed) * (base - top - 20), 5 + hash(i, 3, seed) * 8, seed + i, { vert: true, x0: x0 + 1, x1: x1 - 1, y0: top, y1: base - 3, weeds: worn * 0.1 });
+  if (!edge && w >= 20) {
     // dagvattenbrunn mitt i gränden, fuktig ring och rostrand
-    const cx = x0 + (w >> 1), dy = TOP + 64 + ((hash(x0, 1, 210) * 44) | 0);
+    const cx = x0 + (w >> 1), dy = top + 64 + ((hash(x0, 1, 210) * 44) | 0);
     ellipse(cx, dy + 2.5, 9, 5, (x, y, t) => { if (bayer(x, y) < (1 - t) * 1.3) shade(x, y, 0.84); });
-    grate(cx - 4, dy, 8, 5);
+    grate(cx - 4, dy, 8, 5, true, 0.16 + worn * 0.3);
     for (let x = cx - 3; x < cx + 3; x++) for (let y = dy + 5; y < dy + 8; y++) if (hash(x, y, 211) > 0.45) blend(x, y, 0x7a4a2a, 0.3 - (y - dy - 5) * 0.08);
-    stain(x0 + 7 + hash(x0, 2, 212) * 12, TOP + 30 + hash(x0, 3, 212) * 40, 4, 2, 0.35);
+    stain(x0 + 7 + hash(x0, 2, 212) * 12, top + 30 + hash(x0, 3, 212) * 40, 4, 2, 0.35);
     // lite skräp
-    put(x0 + 4 + ((hash(x0, 4, 213) * 18) | 0), TOP + 90, 0xd8d2c4);
-    put(x0 + 3 + ((hash(x0, 5, 213) * 20) | 0), TOP + 120, 0x9a6a2a);
+    put(x0 + 4 + ((hash(x0, 4, 213) * 18) | 0), top + 90, 0xd8d2c4);
+    put(x0 + 3 + ((hash(x0, 5, 213) * 20) | 0), top + 120, 0x9a6a2a);
   }
-  gapShadow(g);
+  if (worn > 0.5) {
+    scatter([x0 + 1, top + 2, x1 - 1, base - 4], 26, seed + 30);
+    stain(x0 + (w >> 1), top + 40 + hash(x0, 6, 214) * 60, 5, 3, 0.4, 0x2a2622);             // urin/olja
+    if (w >= 20 && hash(x0, 7, 214) > 0.3) tag(x0 + 4, top + 100 + ((hash(x0, 8, 214) * 20) | 0), ['BTG', 'ZOK'][(hash(x0, 9, 214) * 2) | 0], SPRAY[(hash(x0, 10, 214) * SPRAY.length) | 0], seed + 40);
+  }
+  gapShadow(g, top, base);
 }
 
 // =====================================================================
@@ -509,25 +795,26 @@ function paintAlley(g) {
 const SLAB = [0xb4ac9e, 0xaca598, 0xbab3a6, 0xa9a59d, 0xb8ae9e, 0xb0a99b];
 function paintSideStreet(g) {
   const { x0, x1 } = g, w = x1 - x0, seed = 500 + x0, mid = x0 + (w >> 1);
-  const yA = TOP, yB = BASE - 2;
+  const yA = TOP, yB = BASE - 2, worn = wornAt(mid, yB);
   for (let y = yA; y < yB; y++) for (let x = x0; x < x1; x++) {
     const lx = x - x0, rx = x1 - 1 - x;
     let c;
     if (lx <= 5 || rx <= 5) {                                                                // smal trottoar längs husen
       const s = lx <= 5 ? lx : rx, row = ((y - yA) / 8) | 0, ly = (y - yA) % 8;
-      if (s === 5 || ly === 7) c = mul(0x857d71, 0.92 + hash(x, y, 4) * 0.12);
+      if (s === 5 || ly === 7) c = worn > 0.5 && hash(x, y, seed + 11) > 0.6 ? WEED[1] : mul(0x857d71, 0.92 + hash(x, y, 4) * 0.12);
+      else if (worn > 0.5 && hash(row, lx <= 5 ? 1 : 2, seed + 12) > 0.85) c = dirt(x, y);     // platta saknas
       else {
         c = SLAB[(hash(row, lx <= 5 ? 1 : 2, seed) * SLAB.length) | 0];
         if (ly === 0) c = mix(c, 0xffffff, 0.1);
         if (ly === 6) c = mul(c, 0.9);
-        c = grainy(c, x, y, 0.05);
+        c = grainy(grime(c, x, y, worn), x, y, 0.05);
         if (hash(x, y, seed + 9) > 0.93) c = mul(c, 0.86);
         if (s === 0) c = mul(c, 0.74); else if (s === 1) c = mul(c, 0.9);                      // mot husväggen
       }
     } else if (lx === 6 || rx === 6) c = granite(x, y, 0xd0cbc1);                              // kantstenens överkant
     else if (lx === 7 || rx === 7) c = granite(x, y, 0xa6a197);
-    else if (lx === 8 || rx === 8) c = mul(asphalt(x, y, -0.05, false), 0.72);                 // ränna vid kantstenen
-    else c = asphalt(x, y, 0, false);
+    else if (lx === 8 || rx === 8) c = mul(asphaltW(x, y, -0.05, false, worn), 0.72);          // ränna vid kantstenen
+    else c = asphaltW(x, y, 0, false, worn);
     if ((lx === 6 || lx === 7 || rx === 6 || rx === 7) && (y - yA) % 16 === 15) c = 0x5c5750;   // fogar i kantstenen
     put(x, y, c);
   }
@@ -536,242 +823,262 @@ function paintSideStreet(g) {
   for (let x = x0; x < x1; x++) { put(x, yB, granite(x, yB, 0xbdb8ae)); put(x, yB + 1, granite(x, yB + 1, 0x96918a)); }
   // lagning och sprickor
   const py = yA + 20 + ((hash(seed, 1, 1) * 60) | 0);
-  for (let y = py; y < py + 12; y++) for (let x = x0 + 9; x < mid - 1; x++) put(x, y, (y === py || y === py + 11 || x === x0 + 9 || x === mid - 2) ? 0x26272c : asphalt(x, y, -0.12, false));
-  for (let i = 0; i < 3; i++) crack(x0 + 12 + hash(i, 1, seed) * 28, yA + 6 + hash(i, 2, seed) * 110, 18 + hash(i, 3, seed) * 20, seed + i * 7, { vert: true, sealed: i < 2, x0: x0 + 9, x1: x1 - 9, y0: yA + 2, y1: yB - 1 });
+  for (let y = py; y < py + 12; y++) for (let x = x0 + 9; x < mid - 1; x++) put(x, y, (y === py || y === py + 11 || x === x0 + 9 || x === mid - 2) ? 0x26272c : asphaltW(x, y, -0.12, false, worn * 0.5));
+  for (let i = 0; i < 3 + worn * 7; i++) crack(x0 + 12 + hash(i, 1, seed) * 28, yA + 6 + hash(i, 2, seed) * 110, 18 + hash(i, 3, seed) * 20, seed + i * 7, { vert: true, sealed: i < 2, x0: x0 + 9, x1: x1 - 9, y0: yA + 2, y1: yB - 1, weeds: worn * 0.06 });
   // mittlinje
-  for (let y = yA + 4; y < yB - 14; y++) if ((y - yA) % 18 < 9) for (const x of [mid - 1, mid]) mark(x, y, 0xe8e2cc, 0.08 + vnoise(x, y, 6, seed) * 0.2);
+  for (let y = yA + 4; y < yB - 14; y++) if ((y - yA) % 18 < 9) for (const x of [mid - 1, mid]) mark(x, y, 0xe8e2cc, 0.08 + vnoise(x, y, 6, seed) * 0.2 + worn * 0.4);
   // hajtänder: väjningsplikt mot den genomgående gångbanan (södergående körfältet)
   for (let tx = x0 + 11; tx + 5 <= mid - 2; tx += 7) {
-    for (let r = 0; r < 3; r++) for (let i = 2 - r; i <= 2 + r; i++) mark(tx + i, yB - 9 + r, 0xece6d2, 0.08);
+    for (let r = 0; r < 3; r++) for (let i = 2 - r; i <= 2 + r; i++) mark(tx + i, yB - 9 + r, 0xece6d2, 0.08 + worn * 0.4);
   }
   // brunnslock, galler och oljefläckar
-  manhole(mid + 8, yA + 58 + ((hash(seed, 2, 2) * 30) | 0), 5, 2.6);
-  grate(x0 + 9, yA + 96, 3, 8, false);
-  grate(x1 - 12, yA + 40, 3, 8, false);
+  manhole(mid + 8, yA + 58 + ((hash(seed, 2, 2) * 30) | 0), 5, 2.6, worn);
+  grate(x0 + 9, yA + 96, 3, 8, false, 0.16 + worn * 0.3);
+  grate(x1 - 12, yA + 40, 3, 8, false, 0.16 + worn * 0.3);
   stain(mid - 9, yA + 130, 4, 2, 0.4); stain(mid + 10, yA + 30, 3, 1.6, 0.3);
+  if (worn > 0.5) {
+    pothole(mid - 12, yA + 76, 5, 2.4, seed + 60); pothole(mid + 9, yA + 112, 4, 2, seed + 61);
+    alligator(mid + 6, yA + 20, 10, 7, seed + 62);
+    for (let y = yA + 2; y < yB - 2; y++) for (const x of [x0 + 8, x1 - 9]) if (hash(x, y, seed + 63) > 0.8) tuft(x, y, seed + y, hash(x, y, seed + 64) > 0.7);
+    scatter([x0 + 9, yA + 2, x1 - 9, yB - 3], 30, seed + 65);
+  }
   gapShadow(g);
 }
 
 // =====================================================================
-// NORRA TROTTOAREN (186–218)
+// GÅGATORNA – korgflätat tegel, granitband och en mittränna (södra raden, Infarten)
+// =====================================================================
+const BRICK = [0x9a5a44, 0xa8644a, 0x8e5240, 0xb06e52, 0x94604e, 0x7e4a3c];
+const CBRICK = [0xa8a49a, 0x9a968c, 0xb2aea4, 0x8e8a82, 0xa09a8e];                          // betongsten (förorten)
+function paintPedestrian(g, top, base, style) {
+  const { x0, x1 } = g, w = x1 - x0, mid = x0 + (w >> 1), seed = 800 + x0 + (g.row === 's' ? 7000 : 0);
+  const worn = wornAt(mid, base - 10), pal = style === 'betong' ? CBRICK : BRICK;
+  const SETT = [0xc4beb2, 0xb8b2a6, 0xcdc7bb, 0xb0aa9e];
+  for (let y = top; y < base - 2; y++) for (let x = x0; x < x1; x++) {
+    const lx = x - x0, rx = x1 - 1 - x;
+    let c;
+    if (lx < 5 || rx < 5) {                                                                  // granitband längs husen (smågatsten 4×4)
+      const s = lx < 5 ? lx : rx, gx = Math.floor((s + 4) / 4), gy = Math.floor((y - top) / 4), lxx = (s + 4) % 4, ly = (y - top) % 4;
+      if (lxx === 3 || ly === 3) c = worn > 0.5 && hash(x, y, seed + 1) > 0.5 ? WEED[1] : 0x6c665d;
+      else {
+        c = mul(SETT[(hash(gx + (lx < 5 ? 0 : 9), gy, seed + 2) * SETT.length) | 0], 0.92 + hash(gx, gy, seed + 3) * 0.14);
+        if (ly === 0) c = mix(c, 0xffffff, 0.14); else if (ly === 2) c = mul(c, 0.88);
+        c = grime(c, x, y, worn);
+      }
+      if (s === 0) c = mul(c, 0.78);
+    } else if (Math.abs(x + 0.5 - (mid + 0.5)) <= 1.5 && style !== 'granit') {                // mittränna av mörk granit
+      c = x === mid ? granite(x, y, 0x5a5650) : granite(x, y, 0x7e7a72);
+      if (x === mid && vnoise(x, y, 14, seed + 4) > 0.55) c = mix(c, 0x3a4450, 0.4);
+    } else if (style === 'granit') {                                                         // stora granithällar i halvförband
+      const row = Math.floor((y - top) / 10), off = (row & 1) * 8, cx = Math.floor((x - x0 - 5 + off) / 16), lxx = mod(x - x0 - 5 + off, 16), ly = (y - top) % 10;
+      if (lxx === 15 || ly === 9) c = 0x6a655d;
+      else {
+        const id = hash(cx, row, seed + 5);
+        c = mul(id > 0.5 ? 0xbab4a8 : 0xa8a296, 0.94 + hash(cx, row, seed + 6) * 0.1);
+        if (ly === 0) c = mix(c, 0xffffff, 0.12); else if (ly === 8) c = mul(c, 0.88);
+        c = granite(x, y, c);
+      }
+    } else {                                                                                 // korgflätat tegel (8×4-stenar parvis)
+      const bx = x - x0 - 5, by = y - top, cx = Math.floor(bx / 8), cy = Math.floor(by / 8), lxx = mod(bx, 8), ly = mod(by, 8);
+      const horiz = ((cx + cy) & 1) === 0;
+      let joint, topE, botE, id;
+      if (horiz) { joint = lxx === 7 || ly === 3 || ly === 7; topE = ly === 0 || ly === 4; botE = ly === 2 || ly === 6; id = hash(cx * 2 + (ly >= 4 ? 1 : 0), cy, seed + 7); }
+      else { joint = ly === 7 || lxx === 3 || lxx === 7; topE = ly === 0; botE = ly === 6; id = hash(cx, cy * 2 + (lxx >= 4 ? 1 : 0), seed + 8); }
+      if (joint) c = worn > 0.4 && hash(x, y, seed + 9) > 0.55 ? (hash(x, y, seed + 10) > 0.5 ? WEED[1] : WEED[0]) : mul(0x4e4840, 0.9 + hash(x, y, 8) * 0.2);
+      else if (id > 1 - worn * 0.12) c = dirt(x, y);                                          // sten saknas
+      else {
+        c = mul(pal[(id * pal.length) | 0], 0.9 + hash(x, y, seed + 11) * 0.1);
+        if (topE) c = mix(c, 0xffffff, 0.14); else if (botE) c = mul(c, 0.84);
+        c = grime(c, x, y, worn, seed);
+      }
+    }
+    put(x, y, c);
+  }
+  // galler i mittrännan och trösklar mot trottoaren/parkgången
+  if (style !== 'granit') for (let y = top + 20; y < base - 16; y += 44) grate(mid - 1, y, 3, 6, false, 0.16 + worn * 0.3);
+  for (let x = x0; x < x1; x++) { put(x, base - 2, granite(x, base - 2, 0xbdb8ae)); put(x, base - 1, granite(x, base - 1, 0x96918a)); put(x, top, granite(x, top, 0xb2ada3)); }
+  // nötta stråk mitt i gatan, tuggummi
+  for (let y = top + 2; y < base - 4; y++) for (let x = x0 + 6; x < x1 - 6; x++) {
+    if (Math.abs(x - mid - 6 * Math.sin(y * 0.03)) < 7 && bayer(x, y) < 0.25) blend(x, y, 0xffffff, 0.05);
+    if (hash(x, y, seed + 12) > 0.998) put(x, y, 0x6e6a64);
+  }
+  if (worn > 0.5) {
+    // lagat med asfalt, sprickor, skräp och en tagg
+    for (let k = 0; k < 3; k++) {
+      const px = x0 + 8 + ((hash(k, 1, seed + 13) * (w - 30)) | 0), py = top + 10 + ((hash(k, 2, seed + 13) * (base - top - 40)) | 0), pw = 10 + ((hash(k, 3, seed + 13) * 12) | 0), ph = 6 + ((hash(k, 4, seed + 13) * 10) | 0);
+      ellipse(px + pw / 2, py + ph / 2, pw / 2, ph / 2, (x, y, t) => put(x, y, t > 0.86 ? 0x26272c : asphaltW(x, y, -0.1, false, 0.5)));
+    }
+    for (let i = 0; i < 8; i++) crack(x0 + 6 + hash(i, 1, seed + 14) * (w - 12), top + 6 + hash(i, 2, seed + 14) * (base - top - 14), 10 + hash(i, 3, seed + 14) * 16, seed + 15 + i, { vert: true, x0: x0 + 5, x1: x1 - 5, y0: top + 1, y1: base - 3, weeds: 0.1 });
+    scatter([x0 + 5, top + 2, x1 - 5, base - 4], 34, seed + 16);
+    tag(x0 + 10, top + 60, 'PXL', 0xe070c0, seed + 17); tag(x0 + 22, top + 110, 'BTG', 0x5ad35a, seed + 18);
+  }
+  gapShadow(g, top, base);
+}
+
+// =====================================================================
+// TROTTOARERNA – plattor, smågatsten, kantsten (norra typen: kantstenens framsida syns)
 // =====================================================================
 const SETT = [0x9e9890, 0xa9a298, 0x958f87, 0xaea496, 0x9a948d];
 const slabCol = (seed) => (s, x, y) => {
-  const h = hash(s.r, s.k, seed);
+  const h = hash(s.r, s.k, seed), worn = wornAt(x, y);
+  if (worn > 0.3 && h > 1 - 0.07 * worn) return -1;                                         // platta saknas
   let c = SLAB[(hash(s.k, s.r, seed + 1) * SLAB.length) | 0];
   if (h > 0.93) c = 0xc4c2ba;                                                                 // utbytt, nyare platta
-  else if (h < 0.05) c = mul(c, 0.86);                                                         // fläckig
+  else if (h < 0.05 + 0.1 * worn) c = mul(c, 0.86);                                           // fläckig/sjunken
   c = mul(c, 0.95 + hash(s.r, s.k, seed + 2) * 0.08);
   const gg = hash(x, y, seed + 3);
   if (gg > 0.93) c = mul(c, 0.86); else if (gg < 0.04) c = mix(c, 0xffffff, 0.25);           // ballast i betongen
-  return mul(c, 0.96 + vnoise(x, y, 5, seed + 4) * 0.08);
+  return grime(mul(c, 0.96 + vnoise(x, y, 5, seed + 4) * 0.08), x, y, worn, seed + 5);
 };
-const settCol = (seed) => (s) => mul(SETT[(hash(s.r, s.k, seed) * SETT.length) | 0], 0.9 + hash(s.k, s.r, seed + 1) * 0.16);
+const settCol = (seed) => (s, x, y) => {
+  const worn = wornAt(x, y);
+  if (worn > 0.3 && hash(s.r, s.k, seed + 2) > 1 - 0.08 * worn) return -1;
+  return grime(mul(SETT[(hash(s.r, s.k, seed) * SETT.length) | 0], 0.9 + hash(s.k, s.r, seed + 1) * 0.16), x, y, worn, seed + 3);
+};
+const slabJoint = (x, y) => {
+  const worn = wornAt(x, y);
+  if (worn > 0.3 && hash(x, y, 950) > 1 - 0.45 * worn) return hash(x, y, 951) > 0.5 ? WEED[1] : WEED[2];
+  return mul(0x877f73, 0.92 + hash(x, y, 4) * 0.12);
+};
 
-// kännbar varningsyta (kupolplattor) vid övergångsställena
-function tactile(xa, xb, ya, yb) {
+// kännbar varningsyta (kupolplattor) vid övergångsställena (trasig i förorten)
+function tactile(xa, xb, ya, yb, broken = false) {
   for (let y = ya; y < yb; y++) for (let x = xa; x < xb; x++) {
     const lx = (x - xa) % 7, ly = y - ya;
-    let c = granite(x, y, 0xd8d4ca);
+    if (broken && hash(Math.floor((x - xa) / 7), 1, xa) > 0.6) continue;                     // plattor saknas
+    let c = granite(x, y, broken ? 0xc4bfb2 : 0xd8d4ca);
     if (lx === 6) c = 0x9a958b;
     else if ((lx === 1 || lx === 4) && (ly % 3 === 1)) c = 0xf4f0e8;                         // kupol
     else if ((lx === 1 || lx === 4) && (ly % 3 === 2)) c = 0xa9a59b;                         // kupolens skugga
     put(x, y, c);
   }
 }
-
-function paintSidewalkN() {
-  const y0 = SN0;
-  const at = rows(0, W, y0, y0 + 18, { h: [9, 9], w: [18, 18], seed: 300, bond: true });
-  stones(at, 0, W, y0, y0 + 18, slabCol(301), { hi: 0.1, lo: 0.9, grain: 0.04, joint: (x, y) => mul(0x877f73, 0.92 + hash(x, y, 4) * 0.12) });
-  const at2 = rows(0, W, y0 + 18, y0 + 25, { h: [3, 4], w: [3, 5], seed: 302 });
-  stones(at2, 0, W, y0 + 18, y0 + 25, settCol(303), { round: true, hi: 0.2, lo: 0.8, grain: 0.06, joint: () => 0x6c665d });
-  // kantsten mot vägen (framsidan syns – den vetter mot kameran)
-  for (let x = 0; x < W; x++) {
-    const cw = CROSSWALKS.some((c) => x >= c.x0 && x < c.x1);
-    put(x, 211, 0x5b564f);
-    if (cw) {                                                                                  // nedsänkt vid övergångsstället
-      put(x, 212, granite(x, 212, 0xc6c1b7)); put(x, 213, granite(x, 213, 0xb3aea4)); put(x, 214, granite(x, 214, 0xaea99f));
-      put(x, 215, granite(x, 215, 0xa9a49a)); put(x, 216, granite(x, 216, 0xa29d94)); put(x, 217, 0x77736c);
-    } else {
-      put(x, 212, granite(x, 212, 0xd8d3c9)); put(x, 213, granite(x, 213, 0xb6b1a7)); put(x, 214, granite(x, 214, 0xafaaa0));
-      put(x, 215, granite(x, 215, 0xc6c1b7)); put(x, 216, granite(x, 216, 0x9a958c)); put(x, 217, granite(x, 217, 0x76716a));
-    }
-    if (x % 24 === 0) for (let y = 213; y < 218; y++) put(x, y, 0x5c5750);
-  }
-  for (const c of CROSSWALKS) tactile(c.x0 + 3, c.x1 - 3, 204, 211);
-  paintSidewalkWear(y0 + 2, y0 + 17, 310);
-  for (const mx of [118, 470, 1116, 1400, 1622]) lid(mx - 4, 197, 8, 5);
-  for (const vx of [232, 640, 1040, 1508]) valve(vx, 208);
-  // blankslitet framför dörrarna
-  for (const b of BUILDINGS) ellipse((b.door.x0 + b.door.x1) / 2, 196, (b.door.x1 - b.door.x0) / 2 + 8, 7, (x, y, t) => { if (bayer(x, y) < (1 - t) * 0.9) blend(x, y, 0xffffff, 0.07); });
-  // husens fot: mörk kontaktskugga precis under fasaden
-  for (const b of BUILDINGS) for (let x = b.x; x < b.x + b.w; x++) { shade(x, BASE + 4, 0.78); if (bayer(x, BASE + 5) < 0.5) shade(x, BASE + 5, 0.9); }
-}
-// sprickor, tuggummi och fläckar på plattor
-function paintSidewalkWear(ya, yb, seed) {
-  for (let y = ya; y < yb; y++) for (let x = 0; x < W; x++) {
+// sprickor, tuggummi, fläckar, fimpar och ogräs på plattor
+function paintSidewalkWear(ya, yb, seed, x0 = 0, x1 = W1) {
+  for (let y = ya; y < yb; y++) for (let x = x0; x < x1; x++) {
     const h = hash(x, y, seed);
     if (h > 0.9975) { put(x, y, 0x6e6a64); if (hash(x, y, seed + 1) > 0.5) put(x + 1, y, 0x7c7872); }   // tuggummi
     else if (h < 0.0012) blend(x, y, 0x4a3a2a, 0.3);
   }
-  for (let i = 0; i < 26; i++) {
-    const x = hash(i, 1, seed + 2) * W, y = ya + 2 + hash(i, 2, seed + 2) * (yb - ya - 4);
+  const n = Math.round(26 * (x1 - x0) / W1);
+  for (let i = 0; i < n; i++) {
+    const x = x0 + hash(i, 1, seed + 2) * (x1 - x0), y = ya + 2 + hash(i, 2, seed + 2) * (yb - ya - 4);
     crack(x, y, 4 + hash(i, 3, seed + 2) * 7, seed + i, { dx: hash(i, 4, seed) > 0.5 ? 1 : -1, y0: ya, y1: yb });
   }
-  for (let i = 0; i < 8; i++) stain(hash(i, 5, seed) * W, ya + 3 + hash(i, 6, seed) * (yb - ya - 6), 2 + hash(i, 7, seed) * 3, 1.3, 0.12, 0x3a3026);
+  for (let i = 0; i < 8 * (x1 - x0) / W1; i++) stain(x0 + hash(i, 5, seed) * (x1 - x0), ya + 3 + hash(i, 6, seed) * (yb - ya - 6), 2 + hash(i, 7, seed) * 3, 1.3, 0.12, 0x3a3026);
+}
+// förortens slitage ovanpå plattorna
+function subWear(ya, yb, seed) {
+  const r = [XS, ya, W, yb];
+  for (let i = 0; i < 70; i++) {
+    const x = XS + hash(i, 1, seed) * (W - XS), y = ya + 2 + hash(i, 2, seed) * (yb - ya - 4);
+    crack(x, y, 8 + hash(i, 3, seed) * 16, seed + i, { dx: hash(i, 4, seed) > 0.5 ? 1 : -1, y0: ya, y1: yb, branch: i % 5 === 0, weeds: 0.07 });
+  }
+  for (let i = 0; i < 16; i++) stain(XS + hash(i, 5, seed) * (W - XS), ya + 3 + hash(i, 6, seed) * (yb - ya - 6), 3 + hash(i, 7, seed) * 4, 1.6, 0.22, 0x3a3026);
+  scatter(r, 170, seed + 1);
+  for (let x = XS; x < W; x++) if (hash(x, ya, seed + 2) > 0.94) tuft(x, ya + 1 + ((hash(x, 1, seed + 2) * (yb - ya - 2)) | 0), seed + x, hash(x, 2, seed + 2) > 0.7);
 }
 
-// =====================================================================
-// BILVÄGEN (218–276) – högupplöst asfalt med allt som hör till
-// =====================================================================
-function paintRoad() {
-  // rännstenar av gatsten
-  const gN = rows(0, W, R0, R0 + 3, { h: [3, 3], w: [4, 6], seed: 401 });
-  stones(gN, 0, W, R0, R0 + 3, (s) => mul(0x6f6b65, 0.86 + hash(s.r, s.k, 402) * 0.26), { hi: 0.14, lo: 0.8, joint: (x, y) => mul(0x3a3733, 0.9 + hash(x, y, 1) * 0.2) });
-  const gS = rows(0, W, R1 - 4, R1 - 1, { h: [3, 3], w: [4, 6], seed: 403 });
-  stones(gS, 0, W, R1 - 4, R1 - 1, (s) => mul(0x6f6b65, 0.86 + hash(s.r, s.k, 404) * 0.26), { hi: 0.14, lo: 0.8, joint: (x, y) => mul(0x3a3733, 0.9 + hash(x, y, 1) * 0.2) });
-  for (let x = 0; x < W; x++) { put(x, R1 - 1, 0x2a2b30); put(x, R0 + 2, mul(get(x, R0 + 2), 0.8)); }
-  // asfalt
-  for (let y = R0 + 3; y < R1 - 4; y++) for (let x = 0; x < W; x++) put(x, y, asphalt(x, y));
-  // lagningar: nyare (mörkare) eller äldre (blekare) asfalt med tätade skarvar
-  const PATCH = [[118, 224, 46, 14, -0.13], [522, 250, 30, 18, 0.07], [758, 228, 62, 12, -0.1], [1012, 256, 40, 12, 0.06], [1330, 222, 26, 22, -0.14], [1560, 252, 52, 15, -0.08], [40, 250, 22, 10, 0.08], [1452, 226, 34, 11, 0.07]];
-  const TRENCH = [[436, R0 + 3, 6, 26, -0.15], [1118, 247, 6, 24, -0.15], [1622, R0 + 3, 7, 50, -0.12]];
-  for (const [px, py, pw, ph, tone] of [...PATCH, ...TRENCH]) {
-    for (let y = py; y < py + ph; y++) for (let x = px; x < px + pw; x++) {
-      const e = x === px || y === py || x === px + pw - 1 || y === py + ph - 1;
-      const c = asphalt(x, y, tone);
-      put(x, y, e && hash(x, y, 405) > 0.3 ? mul(c, 0.72) : c);                                // tätad skarv, lite ojämn
-      if (e && hash(x, y, 406) > 0.85) blend(x + (x === px ? -1 : x === px + pw - 1 ? 1 : 0), y + (y === py ? -1 : y === py + ph - 1 ? 1 : 0), 0x202126, 0.5);
-    }
-  }
-  // spöklinjer: gammal, bortfräst mittlinje som fortfarande anas
-  for (let x = 0; x < W; x++) if ((x + 20) % 40 < 18 && vnoise(x, 5, 60, 407) > 0.42) for (const y of [251, 252]) if (hash(x, y, 408) > 0.35) put(x, y, mix(get(x, y), 0x6a6c72, 0.35));
-  // sand och grus (vintersand) som samlats längs kantstenen, löv i rännstenen
+// Norra typen: plattor närmast fasaderna, smågatsten, kantsten vars framsida syns (mot vägen).
+// S = { y0, cws, houses, drives, lids, valves, seed }
+function paintSidewalkTop(S) {
+  const y0 = S.y0, sd = S.seed;
+  const at = rows(0, W, y0, y0 + 18, { h: [9, 9], w: [18, 18], seed: sd, bond: true });
+  stones(at, 0, W, y0, y0 + 18, slabCol(sd + 1), { hi: 0.1, lo: 0.9, grain: 0.04, joint: slabJoint });
+  const at2 = rows(0, W, y0 + 18, y0 + 25, { h: [3, 4], w: [3, 5], seed: sd + 2 });
+  stones(at2, 0, W, y0 + 18, y0 + 25, settCol(sd + 3), { round: true, hi: 0.2, lo: 0.8, grain: 0.06, joint: () => 0x6c665d });
+  // kantsten mot vägen (framsidan syns – den vetter mot kameran)
+  const k = y0 + 25;                                                                          // 211 / 665
+  const low = (x) => S.cws.some((c) => x >= c.x0 && x < c.x1) || S.drives.some(([a, b]) => x >= a && x < b);
   for (let x = 0; x < W; x++) {
-    for (let d = 0; d < 5; d++) for (const y of [R0 + 3 + d, R1 - 5 - d]) {
-      if (hash(x, y, 409) < (0.24 - d * 0.05) * (0.4 + vnoise(x, y, 20, 411))) put(x, y, mix(mix(0xa09682, 0x7e766a, hash(x, y, 412)), get(x, y), 0.3));
+    const worn = wornAt(x, k);
+    put(x, k, 0x5b564f);
+    if (low(x)) {                                                                              // nedsänkt vid övergångsställen och utfarter
+      put(x, k + 1, granite(x, k + 1, 0xc6c1b7)); put(x, k + 2, granite(x, k + 2, 0xb3aea4)); put(x, k + 3, granite(x, k + 3, 0xaea99f));
+      put(x, k + 4, granite(x, k + 4, 0xa9a49a)); put(x, k + 5, granite(x, k + 5, 0xa29d94)); put(x, k + 6, 0x77736c);
+    } else {
+      put(x, k + 1, granite(x, k + 1, 0xd8d3c9)); put(x, k + 2, granite(x, k + 2, 0xb6b1a7)); put(x, k + 3, granite(x, k + 3, 0xafaaa0));
+      put(x, k + 4, granite(x, k + 4, 0xc6c1b7)); put(x, k + 5, granite(x, k + 5, 0x9a958c)); put(x, k + 6, granite(x, k + 6, 0x76716a));
     }
-    if (hash(x, 0, 413) > 0.965) {
-      const y = hash(x, 1, 413) > 0.5 ? R0 + 1 : R1 - 3, k = hash(x, 2, 413);
-      const lc = k < 0.4 ? 0xc88a2a : k < 0.7 ? 0x9a5a22 : 0xd8b040;
-      put(x, y, lc); if (k > 0.3) put(x + 1, y, mul(lc, 0.75));
-    }
-  }
-  // sprickor: tätade (blanka svarta) och öppna hårfina
-  for (let i = 0; i < 16; i++) crack(hash(i, 1, 410) * W, R0 + 6 + hash(i, 2, 410) * (R1 - R0 - 14), 8 + hash(i, 3, 410) * 22, 410 + i * 3, { sealed: i < 9, branch: i < 5, dx: hash(i, 4, 410) > 0.5 ? 1 : -1, y0: R0 + 3, y1: R1 - 4 });
-  crack(330, 249, 70, 430, { sealed: true, y0: 248, y1: 251 });                            // längsspricka vid mitten
-  crack(1320, 249, 54, 431, { sealed: true, y0: 248, y1: 251 });
-  // krackelering nära södra kanten
-  for (let i = 0; i < 12; i++) crack(1396 + hash(i, 1, 432) * 44, 262 + hash(i, 2, 432) * 8, 4 + hash(i, 3, 432) * 6, 433 + i, { dx: hash(i, 4, 432) > 0.5 ? 1 : -1, y0: 260, y1: 271 });
-  // oljedropp mitt i körfälten – tätare där bilarna står och väntar vid rött
-  for (let i = 0; i < 60; i++) stain(hash(i, 1, 440) * W, (i & 1 ? 263.5 : 237.5) + (hash(i, 2, 440) - 0.5) * 3, 2 + hash(i, 3, 440) * 3, 1 + hash(i, 4, 440), 0.22);
-  for (const c of CROSSWALKS) for (let i = 0; i < 6; i++) {
-    stain(c.x1 + 12 + hash(i, 5, c.x0) * 50, 237.5 + (hash(i, 6, c.x0) - 0.5) * 3, 2 + hash(i, 7, c.x0) * 4, 1.2 + hash(i, 8, c.x0), 0.35);
-    stain(c.x0 - 12 - hash(i, 9, c.x0) * 50, 263.5 + (hash(i, 10, c.x0) - 0.5) * 3, 2 + hash(i, 11, c.x0) * 4, 1.2 + hash(i, 12, c.x0), 0.35);
-  }
-  // bromsspår före Torggatan
-  const tc = CROSSWALKS[1] || CROSSWALKS[0];
-  if (tc) for (let x = tc.x0 - 44; x < tc.x0 - 8; x++) for (const y of [261, 268]) { const f = (x - (tc.x0 - 44)) / 36; if (hash(x, y, 450) < 0.35 + f * 0.6) blend(x, y, 0x17181c, 0.55); }
-  // mittlinje (slitna streck) och streckade kantlinjer – uppehåll vid övergångsställena
-  const nearCW = (x, pad) => CROSSWALKS.some((c) => x >= c.x0 - pad && x < c.x1 + pad);
-  const busX0 = BUS_STOP.x - 60, busX1 = BUS_STOP.x + 60;
-  for (let x = 0; x < W; x++) {
-    if (!nearCW(x, 14) && (x + 6) % 34 < 16) {
-      mark(x, 246, 0xefe9d4, wearAt(x, 246, 0.03));
-      mark(x, 247, 0xd6d0bc, wearAt(x, 247, 0.03));
-      if (hash(x, 248, 36) > 0.4) shade(x, 248, 0.88);                                    // färgens kant
-    }
-    if (!nearCW(x, 8)) {
-      mark(x, R0 + 4, 0xcfc9b6, 0.12 + vnoise(x, 0, 9, 37) * 0.3);                        // tunna, slitna kantlinjer
-      if (x < busX0 || x >= busX1) mark(x, R1 - 6, 0xcfc9b6, 0.12 + vnoise(x, 1, 9, 37) * 0.3);
+    if (x % 24 === 0) for (let y = k + 2; y < k + 7; y++) put(x, y, 0x5c5750);
+    if (worn > 0.3) {                                                                          // kantstenen i förorten: kantstött och smutsig
+      if (hash(x >> 2, k, sd + 4) > 1 - 0.18 * worn) for (let y = k + 1; y < k + 4; y++) put(x, y, mix(get(x, y), 0x5e5a52, 0.6));
+      for (let y = k + 1; y < k + 7; y++) put(x, y, grime(get(x, y), x, y, worn, sd + 5));
     }
   }
-  // övergångsställen: sju breda zebraränder, smutsiga och nötta i hjulspåren, + stopplinjer
-  for (const c of CROSSWALKS) {
-    for (let k = 0; k < 7; k++) {
-      const by = 223 + k * 7;
-      for (let y = by; y < by + 4; y++) for (let x = c.x0 + 3; x < c.x1 - 3; x++) {
-        const tr = trackAt(y), n = vnoise(x, y, 5, 34 + c.x0);
-        if (hash(x, y, 35) < tr * 0.22 + (n > 0.78 ? 0.35 : 0.01)) continue;                // bortnött – asfalten syns
-        let col = y === by ? 0xfaf7ee : y === by + 3 ? 0xd4cebe : 0xefebde;
-        col = mix(col, 0x8e8c86, tr * 0.28 + n * 0.1);                                        // däckgrå smuts
-        if (x === c.x0 + 3 || x === c.x1 - 4) col = mix(col, get(x, y), 0.35);
-        put(x, y, mul(col, 0.95 + hash(x, y, 36) * 0.06));
-      }
-      for (let x = c.x0 + 3; x < c.x1 - 3; x++) if (hash(x, by + 4, 37) > 0.15) shade(x, by + 4, 0.84); // färgens tjocklek
-    }
-    // övre körfältet kör västerut: stopplinje öster om övergångsstället
-    for (let y = R0 + 4; y < 246; y++) for (let x = c.x1 + 4; x < c.x1 + 7; x++) mark(x, y, 0xf0ecde, wearAt(x, y, 0.05));
-    // undre körfältet kör österut: stopplinje väster om övergångsstället
-    for (let y = 248; y < R1 - 5; y++) for (let x = c.x0 - 6; x < c.x0 - 3; x++) mark(x, y, 0xf0ecde, wearAt(x, y, 0.05));
-  }
-  // busshållplats: gul sicksack längs kanten och BUSS i körfältet
-  for (let x = busX0; x < busX1; x++) {
-    const ph = (x - busX0) % 8, yy = R1 - 8 + Math.round((ph < 4 ? ph : 8 - ph) * 0.75);
-    mark(x, yy, 0xe8c040, 0.1);
-  }
-  eachTextPixel(BIG, 'BUSS', BUS_STOP.x - 11, 254, 1, (px, py) => mark(px, py, 0xe8e0c8, wearAt(px, py, 0.08)));
-  // brunnslock med lagad asfaltruta runt
-  for (const [mx, my] of [[180, 233], [705, 259], [1125, 234], [1480, 260]]) {
-    for (let y = my - 5; y < my + 5; y++) for (let x = mx - 9; x < mx + 9; x++) {
-      const e = x === mx - 9 || y === my - 5 || x === mx + 8 || y === my + 4;
-      put(x, y, e ? 0x25262b : asphalt(x, y, -0.12));
-    }
-    manhole(mx, my, 6, 3.2);
-  }
-  // dagvattengaller i rännstenarna
-  for (let i = 0, x = 52; x < W - 10; i++, x += 118) {
-    if (nearCW(x, 12) || nearCW(x + 8, 12)) continue;
-    if (i & 1) { grate(x, R0, 9, 3); ellipse(x + 4.5, R0 + 4, 7, 2, (px, py, t) => { if (bayer(px, py) < (1 - t)) shade(px, py, 0.85); }); }
-    else if (x < busX0 - 10 || x > busX1) grate(x + 30, R1 - 4, 9, 3);
-  }
-}
-
-// =====================================================================
-// SÖDRA TROTTOAREN (276–306)
-// =====================================================================
-function paintSidewalkS() {
-  const busX0 = BUS_STOP.x - 44, busX1 = BUS_STOP.x + 44;
-  // kantsten (bara ovansidan syns härifrån)
-  for (let x = 0; x < W; x++) {
-    const cw = CROSSWALKS.some((c) => x >= c.x0 && x < c.x1), bus = x >= busX0 && x < busX1;
-    put(x, SS0, granite(x, SS0, cw ? 0xc8c3b9 : bus ? 0xe2ddd3 : 0xdad5cb));
-    put(x, SS0 + 1, granite(x, SS0 + 1, cw ? 0xaca79d : bus ? 0xc6c1b7 : 0xb6b1a7));
-    put(x, SS0 + 2, granite(x, SS0 + 2, cw ? 0xa6a197 : 0xa9a49a));
-    put(x, SS0 + 3, 0x5c5750);
-    if (x % 24 === 12) for (let y = SS0; y < SS0 + 3; y++) put(x, y, 0x5c5750);
-  }
-  const at = rows(0, W, SS0 + 4, SS0 + 10, { h: [3, 3], w: [3, 5], seed: 320 });
-  stones(at, 0, W, SS0 + 4, SS0 + 10, settCol(321), { round: true, hi: 0.2, lo: 0.8, grain: 0.06, joint: () => 0x6c665d });
-  const at2 = rows(0, W, SS0 + 10, SS0 + 28, { h: [9, 9], w: [18, 18], seed: 322, bond: true, shift: 5 });
-  stones(at2, 0, W, SS0 + 10, SS0 + 28, slabCol(323), { hi: 0.1, lo: 0.9, grain: 0.04, joint: (x, y) => mul(0x877f73, 0.92 + hash(x, y, 4) * 0.12) });
-  // låg kantsten mot parken
-  const onPath = (x) => PARK_LAYOUT.paths.some((p) => x >= p[0] && x < p[2]);
-  for (let x = 0; x < W; x++) {
-    const p = onPath(x);
-    put(x, SS1 - 2, granite(x, SS1 - 2, p ? 0xbcb7ad : 0xcfcac0));
-    put(x, SS1 - 1, granite(x, SS1 - 1, p ? 0xb2ada3 : 0x928d85));
-  }
-  for (const c of CROSSWALKS) tactile(c.x0 + 3, c.x1 - 3, SS0 + 4, SS0 + 10);
-  // hållplatsytan: ljusa plattor och vit ledlinje
-  for (let y = SS0 + 4; y < SS0 + 10; y++) for (let x = busX0; x < busX1; x++) {
-    let c = granite(x, y, 0xc6c0b4);
-    if ((x - busX0) % 12 === 11 || y === SS0 + 9) c = 0x8e887e;
-    if (y === SS0 + 5 || y === SS0 + 6) c = (x % 3 === 2) ? 0xb4b0a6 : 0xf0ece4;
+  for (const c of S.cws) tactile(c.x0 + 3, c.x1 - 3, y0 + 18, y0 + 25, !!c.broken);
+  // utfarter: grova betongplattor tvärs över trottoaren, däckspår
+  for (const [a, b] of S.drives) for (let y = y0 + 2; y < k; y++) for (let x = a; x < b; x++) {
+    let c = concrete(x, y, 12, 12, sd + 6, wornAt(x, y));
+    if (Math.abs(x - a - 8) < 3 || Math.abs(b - 8 - x) < 3) c = mul(c, 0.84);
     put(x, y, c);
   }
-  paintSidewalkWear(SS0 + 11, SS0 + 27, 330);
-  for (const mx of [206, 842, 1330, 1566]) lid(mx - 4, SS0 + 17, 8, 5);
-  for (const vx of [118, 1000, 1470]) valve(vx, SS0 + 7);
-  paintHopscotch(1122, SS0 + 12);
+  paintSidewalkWear(y0 + 2, y0 + 17, sd + 10);
+  subWear(y0 + 1, y0 + 25, sd + 20);
+  for (const mx of S.lids) lid(mx - 4, y0 + 11, 8, 5);
+  for (const vx of S.valves) valve(vx, y0 + 22);
+  // blankslitet framför dörrarna
+  for (const b of S.houses) ellipse((b.door.x0 + b.door.x1) / 2, b.base + 10, (b.door.x1 - b.door.x0) / 2 + 8, 7, (x, y, t) => { if (bayer(x, y) < (1 - t) * 0.9) blend(x, y, 0xffffff, 0.07); });
+  // husens fot: mörk kontaktskugga precis under fasaden
+  for (const b of S.houses) for (let x = b.x; x < b.x + b.w; x++) { shade(x, b.base + 4, 0.78); if (bayer(x, b.base + 5) < 0.5) shade(x, b.base + 5, 0.9); }
+}
+
+// Södra typen: kantstenens ovansida, smågatsten, plattor, låg kant mot parken/kajen.
+// S = { y0, cws, stops, drives, lowAt(x), lids, valves, seed, hop }
+function paintSidewalkBottom(S) {
+  const y0 = S.y0, y1 = y0 + 30, sd = S.seed;
+  const zone = (x) => S.stops.find((s) => x >= s.x - 44 && x < s.x + 44);
+  for (let x = 0; x < W; x++) {
+    const cw = S.cws.some((c) => x >= c.x0 && x < c.x1) || S.drives.some(([a, b]) => x >= a && x < b), bus = zone(x);
+    put(x, y0, granite(x, y0, cw ? 0xc8c3b9 : bus ? 0xe2ddd3 : 0xdad5cb));
+    put(x, y0 + 1, granite(x, y0 + 1, cw ? 0xaca79d : bus ? 0xc6c1b7 : 0xb6b1a7));
+    put(x, y0 + 2, granite(x, y0 + 2, cw ? 0xa6a197 : 0xa9a49a));
+    put(x, y0 + 3, 0x5c5750);
+    if (x % 24 === 12) for (let y = y0; y < y0 + 3; y++) put(x, y, 0x5c5750);
+    const worn = wornAt(x, y0);
+    if (worn > 0.3) for (let y = y0; y < y0 + 3; y++) put(x, y, grime(get(x, y), x, y, worn, sd));
+  }
+  const at = rows(0, W, y0 + 4, y0 + 10, { h: [3, 3], w: [3, 5], seed: sd + 1 });
+  stones(at, 0, W, y0 + 4, y0 + 10, settCol(sd + 2), { round: true, hi: 0.2, lo: 0.8, grain: 0.06, joint: () => 0x6c665d });
+  const at2 = rows(0, W, y0 + 10, y0 + 28, { h: [9, 9], w: [18, 18], seed: sd + 3, bond: true, shift: 5 });
+  stones(at2, 0, W, y0 + 10, y0 + 28, slabCol(sd + 4), { hi: 0.1, lo: 0.9, grain: 0.04, joint: slabJoint });
+  // låg kant mot parken/kajen (lägre där gångarna börjar)
+  for (let x = 0; x < W; x++) {
+    const p = S.lowAt(x);
+    put(x, y1 - 2, granite(x, y1 - 2, p ? 0xbcb7ad : 0xcfcac0));
+    put(x, y1 - 1, granite(x, y1 - 1, p ? 0xb2ada3 : 0x928d85));
+  }
+  for (const c of S.cws) tactile(c.x0 + 3, c.x1 - 3, y0 + 4, y0 + 10, !!c.broken);
+  // hållplatsytorna: ljusa plattor och vit ledlinje (den trasiga: spruckna, bortnötta)
+  for (const s of S.stops) {
+    const bx0 = s.x - 44, bx1 = s.x + 44, br = !!s.broken;
+    for (let y = y0 + 4; y < y0 + 10; y++) for (let x = bx0; x < bx1; x++) {
+      if (br && vnoise(x, y, 5, sd + 5) > 0.66) continue;
+      let c = granite(x, y, br ? 0xb4aea2 : 0xc6c0b4);
+      if ((x - bx0) % 12 === 11 || y === y0 + 9) c = 0x8e887e;
+      if ((y === y0 + 5 || y === y0 + 6) && !(br && hash(x >> 2, y, sd + 6) > 0.45)) c = (x % 3 === 2) ? 0xb4b0a6 : 0xf0ece4;
+      put(x, y, br ? grime(c, x, y, 1, sd + 7) : c);
+    }
+    if (br) {
+      for (let i = 0; i < 10; i++) crack(bx0 + hash(i, 1, sd + 8) * 88, y0 + 5 + hash(i, 2, sd + 8) * 20, 10 + hash(i, 3, sd + 8) * 16, sd + 9 + i, { dx: 1, y0: y0 + 4, y1: y1 - 2, branch: true, weeds: 0.1 });
+      for (let k = 0; k < 6; k++) litter(s.x - 30 + hash(k, 1, sd + 10) * 60, y0 + 14 + hash(k, 2, sd + 10) * 10, 0.3 + hash(k, 3, sd + 10) * 0.18, sd + 11 + k); // krossat glas från kuren
+      tag(s.x - 36, y0 + 16, 'BTG', 0xe8443a, sd + 12);
+    }
+  }
+  // utfarter: nedsänkt kantsten och asfalt tvärs över trottoaren
+  for (const [a, b] of S.drives) for (let y = y0 + 4; y < y1 - 2; y++) for (let x = a; x < b; x++) put(x, y, asphaltW(x, y, 0.03, false, wornAt(x, y) * 0.8));
+  paintSidewalkWear(y0 + 11, y0 + 27, sd + 20);
+  subWear(y0 + 4, y1 - 2, sd + 30);
+  for (const mx of S.lids) lid(mx - 4, y0 + 17, 8, 5);
+  for (const vx of S.valves) valve(vx, y0 + 7);
+  if (S.hop) paintHopscotch(S.hop[0], y0 + 12, S.hop[1]);
 }
 // kritritad hage på trottoaren
 const DIGITS = { 1: ['.#', '##', '.#', '.#', '.#'], 2: ['##', '.#', '##', '#.', '##'], 3: ['##', '.#', '##', '.#', '##'], 4: ['#.', '#.', '##', '.#', '.#'], 5: ['##', '#.', '##', '.#', '##'], 6: ['#.', '#.', '##', '##', '##'], 7: ['##', '.#', '.#', '.#', '.#'], 8: ['##', '##', '..', '##', '##'] };
-function paintHopscotch(x0, y0) {
+function paintHopscotch(x0, y0, faded = 0) {
   const CH = [0xf4eaf0, 0xf0c8d8, 0xc8e0f4];
   const cells = [[0, 0, 9, 14, 1], [9, 0, 9, 14, 2], [18, 0, 9, 7, 3], [18, 7, 9, 7, 4], [27, 0, 9, 14, 5], [36, 0, 9, 7, 6], [36, 7, 9, 7, 7], [45, 0, 10, 14, 8]];
-  const chalk = (x, y, c) => { if (hash(x, y, 461) > 0.18) blend(x, y, c, 0.55 + hash(x, y, 462) * 0.3); };
+  const chalk = (x, y, c) => { if (hash(x, y, 461) > 0.18 + faded) blend(x, y, c, (0.55 + hash(x, y, 462) * 0.3) * (1 - faded * 0.6)); };
   cells.forEach(([cx, cy, cw, chh, n], i) => {
     const c = CH[i % 3];
     for (let x = x0 + cx; x <= x0 + cx + cw; x++) { chalk(x, y0 + cy, c); chalk(x, y0 + cy + chh, c); }
@@ -786,54 +1093,309 @@ function paintHopscotch(x0, y0) {
 }
 
 // =====================================================================
-// PARKEN (306–420) – gräs, grusgångar, stenlagt runt torg
+// VÄGARNA (Pixelgatan, Södergatan) – högupplöst asfalt med allt som hör till
+// =====================================================================
+const PATCH_N = [[118, 224, 46, 14, -0.13], [522, 250, 30, 18, 0.07], [758, 228, 62, 12, -0.1], [1012, 256, 40, 12, 0.06], [1330, 222, 26, 22, -0.14], [1560, 252, 52, 15, -0.08], [40, 250, 22, 10, 0.08], [1452, 226, 34, 11, 0.07]];
+const TRENCH_N = [[436, R0 + 3, 6, 26, -0.15], [1118, 247, 6, 24, -0.15], [1622, R0 + 3, 7, 50, -0.12]];
+function paintRoadX(R) {
+  const A = R.y0, B = R.y1, d = A - R0, sd = R.seed;
+  const open = (list, x) => list.some(([a, b]) => x >= a && x < b);
+  // rännstenar av gatsten (öppna där Infarten mynnar)
+  const gN = rows(0, W, A, A + 3, { h: [3, 3], w: [4, 6], seed: sd + 1 });
+  stones(gN, 0, W, A, A + 3, (s) => mul(0x6f6b65, 0.86 + hash(s.r, s.k, sd + 2) * 0.26), { hi: 0.14, lo: 0.8, joint: (x, y) => mul(0x3a3733, 0.9 + hash(x, y, 1) * 0.2) });
+  const gS = rows(0, W, B - 4, B - 1, { h: [3, 3], w: [4, 6], seed: sd + 3 });
+  stones(gS, 0, W, B - 4, B - 1, (s) => mul(0x6f6b65, 0.86 + hash(s.r, s.k, sd + 4) * 0.26), { hi: 0.14, lo: 0.8, joint: (x, y) => mul(0x3a3733, 0.9 + hash(x, y, 1) * 0.2) });
+  for (let x = 0; x < W; x++) { put(x, B - 1, 0x2a2b30); put(x, A + 2, mul(get(x, A + 2), 0.8)); }
+  // asfalt
+  for (let y = A + 3; y < B - 4; y++) for (let x = 0; x < W; x++) put(x, y, asphaltW(x, y, 0, true, wornAt(x, y)));
+  for (let x = 0; x < W; x++) {
+    if (open(R.openN, x)) for (let y = A; y < A + 3; y++) put(x, y, asphaltW(x, y, 0, false, wornAt(x, y)));
+    if (open(R.openS, x)) for (let y = B - 4; y < B; y++) put(x, y, asphaltW(x, y, 0, false, wornAt(x, y)));
+  }
+  // grus och ogräs i förortens rännstenar
+  for (let x = XS; x < W; x++) for (const y of [A, A + 1, B - 4, B - 3]) {
+    if (open(R.openN, x) || open(R.openS, x)) continue;
+    if (hash(x, y, sd + 5) > 0.93) put(x, y, dirt(x, y));
+    if (hash(x, y, sd + 6) > 0.985) tuft(x, y === A || y === A + 1 ? A + 2 : B - 2, sd + x, hash(x, y, sd + 7) > 0.6);
+  }
+  // lagningar: nyare (mörkare) eller äldre (blekare) asfalt med tätade skarvar
+  const PATCH = R.dy === 0 ? [...PATCH_N, ...TRENCH_N]
+    : [...PATCH_N.map(([px, py, pw, ph, t], i) => [(px + 290 + i * 37) % 1640, py + d, pw, ph, t]), ...TRENCH_N.map(([px, py, pw, ph, t]) => [(px + 400) % 1640, py + d, pw, ph, t])];
+  for (let i = 0; i < 18; i++) PATCH.push([XS + 10 + ((hash(i, 1, sd + 8) * (W - XS - 80)) | 0), A + 5 + ((hash(i, 2, sd + 8) * (B - A - 26)) | 0), 16 + ((hash(i, 3, sd + 8) * 56) | 0), 7 + ((hash(i, 4, sd + 8) * 16) | 0), hash(i, 5, sd + 8) > 0.5 ? -0.15 : 0.1]);
+  for (const [px, py, pw, ph, tone] of PATCH) {
+    for (let y = Math.max(A + 3, py); y < Math.min(B - 4, py + ph); y++) for (let x = px; x < px + pw; x++) {
+      const e = x === px || y === py || x === px + pw - 1 || y === py + ph - 1;
+      const c = asphaltW(x, y, tone, true, wornAt(x, y) * 0.4);
+      put(x, y, e && hash(x, y, 405) > 0.3 ? mul(c, 0.72) : c);                                // tätad skarv, lite ojämn
+      if (e && hash(x, y, 406) > 0.85) blend(x + (x === px ? -1 : x === px + pw - 1 ? 1 : 0), y + (y === py ? -1 : y === py + ph - 1 ? 1 : 0), 0x202126, 0.5);
+    }
+  }
+  // spöklinjer: gammal, bortfräst mittlinje som fortfarande anas
+  for (let x = 0; x < W; x++) if ((x + 20) % 40 < 18 && vnoise(x, 5 + d, 60, 407) > 0.42) for (const y of [A + 33, A + 34]) if (hash(x, y, 408) > 0.35) put(x, y, mix(get(x, y), 0x6a6c72, 0.35));
+  // sand och grus (vintersand) som samlats längs kantstenen, löv i rännstenen
+  for (let x = 0; x < W; x++) {
+    for (let dd = 0; dd < 5; dd++) for (const y of [A + 3 + dd, B - 5 - dd]) {
+      if (hash(x, y, 409) < (0.24 - dd * 0.05) * (0.4 + vnoise(x, y, 20, 411)) * (1 + wornAt(x, y) * 0.8)) put(x, y, mix(mix(0xa09682, 0x7e766a, hash(x, y, 412)), get(x, y), 0.3));
+    }
+    if (hash(x, d, 413) > 0.965) {
+      const y = hash(x, 1 + d, 413) > 0.5 ? A + 1 : B - 3, k = hash(x, 2 + d, 413);
+      const lc = k < 0.4 ? 0xc88a2a : k < 0.7 ? 0x9a5a22 : 0xd8b040;
+      put(x, y, lc); if (k > 0.3) put(x + 1, y, mul(lc, 0.75));
+    }
+  }
+  // sprickor: tätade (blanka svarta) och öppna hårfina
+  for (let i = 0; i < 16; i++) crack(hash(i, 1, sd + 10) * W1, A + 6 + hash(i, 2, sd + 10) * (B - A - 14), 8 + hash(i, 3, sd + 10) * 22, sd + 10 + i * 3, { sealed: i < 9, branch: i < 5, dx: hash(i, 4, sd + 10) > 0.5 ? 1 : -1, y0: A + 3, y1: B - 4 });
+  for (let i = 0; i < 46; i++) crack(XS + hash(i, 1, sd + 11) * (W - XS), A + 6 + hash(i, 2, sd + 11) * (B - A - 14), 10 + hash(i, 3, sd + 11) * 30, sd + 11 + i * 3, { sealed: i % 3 !== 0, branch: i % 3 === 0, dx: hash(i, 4, sd + 11) > 0.5 ? 1 : -1, y0: A + 3, y1: B - 4 });
+  crack(R.dy ? 610 : 330, A + 31, 70, sd + 30, { sealed: true, y0: A + 30, y1: A + 33 });           // längsspricka vid mitten
+  crack(R.dy ? 1480 : 1320, A + 31, 54, sd + 31, { sealed: true, y0: A + 30, y1: A + 33 });
+  crack(2000, A + 31, 120, sd + 32, { sealed: true, y0: A + 30, y1: A + 33 }); crack(2400, A + 31, 150, sd + 33, { sealed: false, y0: A + 30, y1: A + 33 });
+  // krackelering nära södra kanten
+  const kx = R.dy ? 700 : 1396;
+  for (let i = 0; i < 12; i++) crack(kx + hash(i, 1, 432) * 44, A + 44 + hash(i, 2, 432) * 8, 4 + hash(i, 3, 432) * 6, 433 + i + d, { dx: hash(i, 4, 432) > 0.5 ? 1 : -1, y0: A + 42, y1: A + 53 });
+  // förorten: krokodilsprickor och potthål i hjulspåren
+  for (let i = 0; i < 9; i++) alligator(XS + 30 + hash(i, 1, sd + 40) * (W - XS - 60), A + 12 + hash(i, 2, sd + 40) * (B - A - 26), 12 + hash(i, 3, sd + 40) * 18, 4 + hash(i, 4, sd + 40) * 4, sd + 41 + i);
+  const cwNear = (x, pad) => R.cws.some((c) => x >= c.x0 - pad && x < c.x1 + pad);
+  for (let i = 0; i < 12; i++) {
+    const x = XS + 40 + hash(i, 1, sd + 50) * (W - XS - 80), band = TRACKS_N[(hash(i, 2, sd + 50) * 4) | 0];
+    if (cwNear(x, 14)) continue;
+    pothole(x, band[0] + d + 1.5 + (hash(i, 3, sd + 50) - 0.5) * 3, 3 + hash(i, 4, sd + 50) * 5, 1.6 + hash(i, 5, sd + 50) * 1.4, sd + 51 + i);
+  }
+  // oljedropp mitt i körfälten – tätare där bilarna står och väntar vid rött
+  for (let i = 0; i < 60; i++) stain(hash(i, 1, 440 + d) * W1, (i & 1 ? A + 45.5 : A + 19.5) + (hash(i, 2, 440) - 0.5) * 3, 2 + hash(i, 3, 440) * 3, 1 + hash(i, 4, 440), 0.22);
+  for (let i = 0; i < 44; i++) stain(XS + hash(i, 1, 441 + d) * (W - XS), (i & 1 ? A + 45.5 : A + 19.5) + (hash(i, 2, 441) - 0.5) * 4, 2 + hash(i, 3, 441) * 4, 1 + hash(i, 4, 441) * 1.4, 0.3);
+  for (const c of R.cws) for (let i = 0; i < 6; i++) {
+    stain(c.x1 + 12 + hash(i, 5, c.x0) * 50, A + 19.5 + (hash(i, 6, c.x0) - 0.5) * 3, 2 + hash(i, 7, c.x0) * 4, 1.2 + hash(i, 8, c.x0), 0.35);
+    stain(c.x0 - 12 - hash(i, 9, c.x0) * 50, A + 45.5 + (hash(i, 10, c.x0) - 0.5) * 3, 2 + hash(i, 11, c.x0) * 4, 1.2 + hash(i, 12, c.x0), 0.35);
+  }
+  // bromsspår före det andra övergångsstället (och ett par sladdar i förorten)
+  const tc = R.cws[1] || R.cws[0];
+  if (tc) for (let x = tc.x0 - 44; x < tc.x0 - 8; x++) for (const y of [A + 43, A + 50]) { const f = (x - (tc.x0 - 44)) / 36; if (hash(x, y, 450) < 0.35 + f * 0.6) blend(x, y, 0x17181c, 0.55); }
+  for (const [sx, sy] of [[1900 + d, A + 44], [2480 - d, A + 18]]) for (let k = 0; k < 40; k++) { const x = sx + k, y = sy + Math.round(Math.sin(k * 0.12) * 3); for (const o of [0, 7]) if (hash(x, y + o, 451) < 0.7) blend(x, y + o, 0x17181c, 0.45); }
+  // mittlinje (slitna streck) och streckade kantlinjer – uppehåll vid övergångsställena och Infarten
+  const nearCW = (x, pad) => R.cws.some((c) => x >= c.x0 - pad && x < c.x1 + pad);
+  const busZone = (x) => R.stops.some((s) => x >= s.x - 60 && x < s.x + 60);
+  for (let x = 0; x < W; x++) {
+    const wx = wornAt(x, A + 28) * 0.42;
+    if (!nearCW(x, 14) && (x + 6) % 34 < 16) {
+      mark(x, A + 28, 0xefe9d4, wearAt(x, A + 28, 0.03) + wx);
+      mark(x, A + 29, 0xd6d0bc, wearAt(x, A + 29, 0.03) + wx);
+      if (hash(x, A + 30, 36) > 0.4) shade(x, A + 30, 0.88);                                    // färgens kant
+    }
+    if (!nearCW(x, 8)) {
+      if (!open(R.openN, x)) mark(x, A + 4, 0xcfc9b6, 0.12 + vnoise(x, d, 9, 37) * 0.3 + wx);     // tunna, slitna kantlinjer
+      if (!busZone(x) && !open(R.openS, x)) mark(x, B - 6, 0xcfc9b6, 0.12 + vnoise(x, 1 + d, 9, 37) * 0.3 + wx);
+    }
+  }
+  // övergångsställen: sju breda zebraränder, smutsiga och nötta i hjulspåren, + stopplinjer
+  for (const c of R.cws) {
+    const br = c.broken ? 0.45 : 0;
+    for (let k = 0; k < 7; k++) {
+      const by = A + 5 + k * 7;
+      for (let y = by; y < by + 4; y++) for (let x = c.x0 + 3; x < c.x1 - 3; x++) {
+        const tr = trackAt(y), n = vnoise(x, y, 5, 34 + c.x0);
+        if (hash(x, y, 35) < tr * 0.22 + (n > 0.78 - br * 0.5 ? 0.35 + br : 0.01) + br * 0.3) continue; // bortnött – asfalten syns
+        let col = y === by ? 0xfaf7ee : y === by + 3 ? 0xd4cebe : 0xefebde;
+        col = mix(col, 0x8e8c86, tr * 0.28 + n * 0.1 + br * 0.4);                                // däckgrå smuts
+        if (x === c.x0 + 3 || x === c.x1 - 4) col = mix(col, get(x, y), 0.35);
+        put(x, y, mul(col, 0.95 + hash(x, y, 36) * 0.06));
+      }
+      for (let x = c.x0 + 3; x < c.x1 - 3; x++) if (hash(x, by + 4, 37) > 0.15 + br) shade(x, by + 4, 0.84); // färgens tjocklek
+    }
+    // övre körfältet kör västerut: stopplinje öster om övergångsstället
+    for (let y = A + 4; y < A + 28; y++) for (let x = c.x1 + 4; x < c.x1 + 7; x++) mark(x, y, 0xf0ecde, wearAt(x, y, 0.05) + br);
+    // undre körfältet kör österut: stopplinje väster om övergångsstället
+    for (let y = A + 30; y < B - 5; y++) for (let x = c.x0 - 6; x < c.x0 - 3; x++) mark(x, y, 0xf0ecde, wearAt(x, y, 0.05) + br);
+    if (c.broken) {                                                                            // en lagning rakt över zebran
+      for (let y = A + 12; y < A + 30; y++) for (let x = c.x0 + 14; x < c.x0 + 34; x++) {
+        const e = x === c.x0 + 14 || y === A + 12 || x === c.x0 + 33 || y === A + 29;
+        put(x, y, e && hash(x, y, 452) > 0.3 ? 0x25262b : asphaltW(x, y, -0.14, true, 0.3));
+      }
+    }
+  }
+  // busshållplatser: gul sicksack längs kanten och BUSS i körfältet
+  for (const s of R.stops) {
+    const bx0 = s.x - 60, bx1 = s.x + 60, br = s.broken ? 0.45 : 0;
+    for (let x = bx0; x < bx1; x++) {
+      const ph = (x - bx0) % 8, yy = B - 8 + Math.round((ph < 4 ? ph : 8 - ph) * 0.75);
+      mark(x, yy, 0xe8c040, 0.1 + br);
+    }
+    eachTextPixel(BIG, 'BUSS', s.x - 11, A + 36, 1, (px, py) => mark(px, py, 0xe8e0c8, wearAt(px, py, 0.08) + br));
+  }
+  // brunnslock med lagad asfaltruta runt
+  const MH = R.dy === 0 ? [[180, 233], [705, 259], [1125, 234], [1480, 260], [1900, 234], [2350, 260], [2620, 233]]
+    : [[330, A + 41], [880, A + 15], [1380, A + 41], [1640, A + 16], [2010, A + 41], [2470, A + 15]];
+  for (const [mx, my] of MH) {
+    const worn = wornAt(mx, my);
+    for (let y = my - 5; y < my + 5; y++) for (let x = mx - 9; x < mx + 9; x++) {
+      const e = x === mx - 9 || y === my - 5 || x === mx + 8 || y === my + 4;
+      put(x, y, e ? 0x25262b : asphaltW(x, y, -0.12, true, worn * 0.5));
+    }
+    manhole(mx, my, 6, 3.2, worn);
+    if (worn > 0.5) for (let x = mx - 8; x < mx + 8; x++) if (hash(x, my, 453) > 0.6) shade(x, my + 5, 0.7);   // locket har sjunkit
+  }
+  // dagvattengaller i rännstenarna
+  for (let i = 0, x = 52 + (R.dy ? 30 : 0); x < W - 10; i++, x += 118) {
+    if (nearCW(x, 12) || nearCW(x + 8, 12) || open(R.openS, x) || open(R.openS, x + 38) || open(R.openN, x)) continue;
+    const rust = 0.16 + wornAt(x, A) * 0.34;
+    if (i & 1) { grate(x, A, 9, 3, true, rust); ellipse(x + 4.5, A + 4, 7, 2, (px, py, t) => { if (bayer(px, py) < (1 - t)) shade(px, py, 0.85); }); }
+    else if (!busZone(x) && !busZone(x + 38)) grate(x + 30, B - 4, 9, 3, true, rust);
+  }
+  // skräp i förortens rännstenar
+  scatter([XS, A, W, A + 4], 60, sd + 60); scatter([XS, B - 5, W, B - 1], 60, sd + 61);
+}
+
+// =====================================================================
+// INFARTEN – lodrät väg mellan Pixelgatan och Södergatan, trottoarer på båda sidor
+// =====================================================================
+function paintInfarten() {
+  const y0 = R1, y1 = RS0, worn = 0.55;
+  // trottoarerna längs vägen (väster: parken → parkgången, öster: parkeringen → Södergatan)
+  const walk = (xa, xb, ya, yb, curbX, seed) => {
+    for (let y = ya; y < yb; y++) for (let x = xa; x < xb; x++) {
+      const w = wornAt(x, y);
+      let c = concrete(x - xa, y, 7, 12, seed, w * 0.9);
+      if (w > 0.4 && hash(Math.floor((x - xa) / 7), Math.floor(y / 12), seed + 1) > 0.93) c = dirt(x, y);
+      put(x, y, c);
+    }
+    for (let y = ya; y < yb; y++) {
+      put(curbX, y, granite(curbX, y, 0xd0cbc1)); put(curbX + (curbX < I0 ? 1 : -1), y, granite(curbX, y, 0xa6a197));
+      if (y % 16 === 15) put(curbX, y, 0x5c5750);
+    }
+  };
+  walk(IW0, I0 - 2, SS1, BS1, I0 - 2, 960);
+  for (let y = SS1; y < BS1; y++) put(I0 - 1, y, granite(I0 - 1, y, 0x9a958b));
+  walk(I1 + 2, IE1, SS1, BASE_S, I1 + 1, 961);
+  for (let y = SS1; y < BASE_S; y++) put(I1, y, granite(I1, y, 0xc4bfb5));
+  for (let x = I1 + 2; x < IE1; x++) { put(x, SS1, granite(x, SS1, 0xbcb7ad)); }
+  for (let i = 0; i < 20; i++) crack(I1 + 3 + hash(i, 1, 962) * 12, SS1 + hash(i, 2, 962) * (BASE_S - SS1), 6 + hash(i, 3, 962) * 10, 963 + i, { vert: true, x0: I1 + 2, x1: IE1, weeds: 0.12 });
+  scatter([I1 + 2, SS1, IE1, BASE_S], 40, 964);
+  // vägbanan
+  for (let y = y0; y < y1; y++) for (let x = I0; x < I1; x++) put(x, y, asphaltI(x, y, wornAt(x, y) * 0.5 + 0.2));
+  // rännstenar längs trottoarerna (inte där vägen korsar trottoarerna)
+  const gutter = (x, y, s) => (y % 4 === 3 ? 0x3a3733 : mul(0x6f6b65, 0.86 + hash(x >> 1, y >> 2, s) * 0.26));
+  for (let y = SS1; y < BASE_S; y++) {
+    if (y < BS1) for (const x of [I0, I0 + 1]) put(x, y, gutter(x, y, 965));
+    for (const x of [I1 - 2, I1 - 1]) put(x, y, gutter(x, y, 967));
+  }
+  for (let y = SS1; y < BASE_S; y++) put(I1 - 1, y, mul(get(I1 - 1, y), 0.8));
+  // lagningar, sprickor, oljefläckar, potthål
+  for (const [px, py, pw, ph, tone] of [[1704, 360, 18, 30, -0.13], [1728, 520, 20, 40, 0.07], [1703, 590, 14, 18, -0.1]]) {
+    for (let y = py; y < py + ph; y++) for (let x = px; x < px + pw; x++) {
+      const e = x === px || y === py || x === px + pw - 1 || y === py + ph - 1;
+      put(x, y, e && hash(x, y, 968) > 0.3 ? 0x25262b : asphaltI(x, y, 0.3 + tone));
+    }
+  }
+  for (let i = 0; i < 16; i++) crack(I0 + 4 + hash(i, 1, 969) * 44, y0 + 30 + hash(i, 2, 969) * (y1 - y0 - 60), 12 + hash(i, 3, 969) * 30, 970 + i, { vert: true, sealed: i % 2 === 0, x0: I0 + 2, x1: I1 - 2 });
+  for (let i = 0; i < 26; i++) stain((i & 1 ? 1739 : 1713) + (hash(i, 1, 971) - 0.5) * 4, y0 + 30 + hash(i, 2, 971) * (y1 - y0 - 60), 1.2 + hash(i, 3, 971), 2 + hash(i, 4, 971) * 3, 0.25);
+  pothole(1744, 430, 3.5, 2, 972); pothole(1708, 560, 4, 2.2, 973);
+  // mittlinje och kantlinjer (lodräta), uppehåll vid zebrorna
+  const nearZ = (y, pad) => CROSSWALKS_I.some((c) => y >= c.y0 - pad && y < c.y1 + pad);
+  for (let y = y0; y < y1; y++) {
+    if (!nearZ(y, 6) && (y + 4) % 26 < 12) { mark(1725, y, 0xefe9d4, wearAt(1725, 0, 0.05) + 0.2); mark(1726, y, 0xd6d0bc, wearAt(1726, 0, 0.05) + 0.2); if (hash(1727, y, 36) > 0.4) shade(1727, y, 0.88); }
+    if (!nearZ(y, 4) && y > SS1 && y < BASE_S) { mark(I0 + 3, y, 0xcfc9b6, 0.25 + vnoise(0, y, 9, 37) * 0.3); if (y < BS1 || true) mark(I1 - 4, y, 0xcfc9b6, 0.25 + vnoise(1, y, 9, 37) * 0.3); }
+  }
+  // zebror tvärs över Infarten (ränderna går längs vägen) och stopplinjer
+  for (const c of CROSSWALKS_I) {
+    for (let k = 0; k < 7; k++) {
+      const bx = I0 + 4 + k * 7;
+      for (let x = bx; x < bx + 4; x++) for (let y = c.y0; y < c.y1; y++) {
+        const tr = trackAtX(x), n = vnoise(x, y, 5, 34 + c.y0);
+        if (hash(x, y, 35) < tr * 0.25 + (n > 0.74 ? 0.4 : 0.04)) continue;
+        let col = x === bx ? 0xfaf7ee : x === bx + 3 ? 0xd4cebe : 0xefebde;
+        col = mix(col, 0x8e8c86, tr * 0.3 + n * 0.12);
+        if (y === c.y0 || y === c.y1 - 1) col = mix(col, get(x, y), 0.35);
+        put(x, y, mul(col, 0.95 + hash(x, y, 36) * 0.06));
+      }
+      for (let y = c.y0; y < c.y1; y++) if (hash(bx + 4, y, 37) > 0.15) shade(bx + 4, y, 0.84);
+    }
+    for (let y = c.stop[1] - 2; y <= c.stop[1]; y++) for (let x = I0 + 3; x < 1724; x++) mark(x, y, 0xf0ecde, wearAt(x, 0, 0.08));   // söderut
+    for (let y = c.stop[-1]; y <= c.stop[-1] + 2; y++) for (let x = 1728; x < I1 - 3; x++) mark(x, y, 0xf0ecde, wearAt(x, 0, 0.08)); // norrut
+  }
+  // hajtänder där Infarten mynnar i Pixelgatan (norrut) och Södergatan (söderut)
+  for (let tx = 1729; tx + 5 <= I1 - 2; tx += 7) for (let r = 0; r < 3; r++) for (let i = 2 - r; i <= 2 + r; i++) mark(tx + i, y0 + 2 - r, 0xece6d2, 0.12);
+  for (let tx = I0 + 3; tx + 5 <= 1724; tx += 7) for (let r = 0; r < 3; r++) for (let i = 2 - r; i <= 2 + r; i++) mark(tx + i, y1 - 5 + r, 0xece6d2, 0.12);
+  // pilar: söderut delar sig vänster/höger mot Södergatan, norrut rakt fram
+  const arrow = (cx, cy, dir, split) => {
+    for (let j = 0; j < 14; j++) for (const dx of [0, 1]) mark(cx + dx, cy + j * dir, 0xeee8d4, 0.15);
+    if (split) { for (let j = 0; j < 6; j++) { mark(cx - j - 1, cy + (13 - j) * dir, 0xeee8d4, 0.15); mark(cx + j + 2, cy + (13 - j) * dir, 0xeee8d4, 0.15); } }
+    else for (let r = 0; r < 4; r++) for (let i = -r; i <= r + 1; i++) mark(cx + i, cy + (14 + 3 - r) * dir, 0xeee8d4, 0.15);
+  };
+  arrow(1712, 600, 1, true); arrow(1738, 350, -1, false);
+  manhole(1739, 470, 5, 2.6, 0.5); grate(I0, 400, 3, 8, false, 0.4); grate(I1 - 3, 560, 3, 8, false, 0.5);
+  scatter([I0, y0 + 30, I0 + 4, y1 - 30], 20, 974); scatter([I1 - 5, y0 + 30, I1, y1 - 30], 26, 975);
+}
+
+// =====================================================================
+// PARKEN (306–490) – gräs, grusgångar, torget, dammen, hundrastgården, lekplatsen, ängen
 // =====================================================================
 const GR = [0x2d5a28, 0x3a7131, 0x49863a, 0x5a9a42, 0x6daf4b, 0x88c458];
 const PRX = PARK_LAYOUT.plaza.r * 1.2, PRY = PARK_LAYOUT.plaza.r * 0.96;
+const PX1 = IW0, PY1 = TOP_S;                                                      // parkens ruta: x 0–1686, y 306–494
+// mask: 0 gräs, 1 grus, 2 torget, 3 dammen, 4 sand, 5 hundrastgården, 6 platta, 8 ängen
 function parkMask() {
-  const M = new Uint8Array(W * (H - PK0));
+  const M = new Uint8Array(PX1 * (PY1 - PK0));
   const { cx, cy } = PARK_LAYOUT.plaza, [px0, py0, px1, py1] = PARK_LAYOUT.promenade;
-  for (let y = PK0; y < H; y++) for (let x = 0; x < W; x++) {
+  const paths = [...PARK_LAYOUT.paths, ...PARK_LAYOUT.walks, PARK_LAYOUT.promenade, PARK_LAYOUT.back];
+  const pond = PARK_LAYOUT.pond, pg = PARK_LAYOUT.playground, dog = PARK_LAYOUT.dogPark, mw = PARK_LAYOUT.meadow;
+  const dogX1 = Math.min(dog[2], ...PARK_LAYOUT.walks.filter((w) => w[0] < dog[2] && w[2] > dog[0]).map((w) => w[0]));
+  const pads = FREESTANDING.filter((b) => b.district === 'PARKEN').map((b) => [b.x - 2, b.top - 2, b.x + b.w + 2, b.base + 3]);
+  for (let y = PK0; y < PY1; y++) for (let x = 0; x < PX1; x++) {
     let m = 0;
-    for (const r of PATH_RECTS) if (x >= r[0] && x < r[2] && y >= r[1] && y < r[3]) { m = 1; break; }
-    // rundade ändar på promenaden
-    if (m && y >= py0 && y < py1 && (x < px0 + 2 || x >= px1 - 2)) {
-      const ex = x < px0 + 2 ? x - px0 : px1 - 1 - x, ey = Math.min(y - py0, py1 - 1 - y);
-      if (ex + ey < 2) m = 0;
+    if (y >= BS1) m = 9;                                                                      // kanten mot södra raden
+    else {
+      for (const r of paths) if (x >= r[0] && x < r[2] && y >= r[1] && y < r[3]) { m = 1; break; }
+      if (m && y >= py0 && y < py1 && (x < px0 + 2 || x >= px1 - 2)) {                           // rundade ändar på promenaden
+        const ex = x < px0 + 2 ? x - px0 : px1 - 1 - x, ey = Math.min(y - py0, py1 - 1 - y);
+        if (ex + ey < 2) m = 0;
+      }
+      if (Math.hypot((x + 0.5 - cx) / PRX, (y + 0.5 - cy) / PRY) < 1) m = 2;
+      if (!m) {
+        if (Math.hypot((x + 0.5 - pond.cx) / pond.rx, (y + 0.5 - pond.cy) / pond.ry) < 1) m = 3;
+        else if (inR(x, y, pg)) m = 4;
+        else if (x >= dog[0] && x < dogX1 && y >= dog[1] && y < dog[3]) m = 5;
+        else if (pads.some((r) => inR(x, y, r))) m = 6;
+        else if (inR(x, y, mw) && fbm(x, y, 16, 150) + Math.min(x - mw[0], mw[2] - x, y - mw[1], mw[3] - y) / 60 > 0.62) m = 8;
+      }
     }
-    if (Math.hypot((x + 0.5 - cx) / PRX, (y + 0.5 - cy) / PRY) < 1) m = 2;
-    M[(y - PK0) * W + x] = m;
+    M[(y - PK0) * PX1 + x] = m;
   }
   return M;
 }
 function paintPark() {
   const M = parkMask();
-  const mk = (x, y) => (x < 0 || x >= W || y < PK0 || y >= H ? 0 : M[(y - PK0) * W + x]);
-  // gräs: fläckigt i flera skalor, små tuvor med ljus ovansida
-  for (let y = PK0; y < H; y++) for (let x = 0; x < W; x++) {
-    if (mk(x, y)) continue;
+  const mk = (x, y) => (x < 0 || x >= PX1 || y < PK0 || y >= PY1 ? 1 : M[(y - PK0) * PX1 + x]);
+  const grassy = (m) => m === 0 || m === 8 || m === 5;
+  // gräs: fläckigt i flera skalor, små tuvor med ljus ovansida (ängen: ljusare, gulare, högre)
+  for (let y = PK0; y < BS0; y++) for (let x = 0; x < PX1; x++) {
+    const m = mk(x, y);
+    if (!grassy(m)) continue;
     const emb = vnoise(x, y, 3.4, 105) - vnoise(x + 0.7, y + 1.6, 3.4, 105);                   // tuvor, ljusa ovanpå
     const n = fbm(x, y, 30, 101) * 0.6 + vnoise(x, y, 9, 102) * 0.24 + emb * 0.85 + (hash(x, y, 103) - 0.5) * 0.12 + 0.08;
     const i = n < 0.3 ? 0 : n < 0.41 ? 1 : n < 0.53 ? 2 : n < 0.65 ? 3 : n < 0.77 ? 4 : 5;
-    put(x, y, mul(GR[i], 0.97 + hash(x, y, 104) * 0.05));
+    let c = mul(GR[i], 0.97 + hash(x, y, 104) * 0.05);
+    if (m === 8) c = mix(c, 0x9aa850, 0.22 + vnoise(x, y, 11, 151) * 0.2);
+    put(x, y, c);
   }
-  // grässtrån (lodräta små streck med ljus topp)
-  for (let y = PK0 + 3; y < H; y++) for (let x = 1; x < W - 1; x++) {
-    if (mk(x, y) || mk(x, y - 1) || mk(x, y - 2) || hash(x, y, 110) < 0.9) continue;
+  // grässtrån (lodräta små streck med ljus topp) – högre på ängen
+  for (let y = PK0 + 3; y < BS0; y++) for (let x = 1; x < PX1 - 1; x++) {
+    const m = mk(x, y);
+    if (!grassy(m) || !grassy(mk(x, y - 1)) || !grassy(mk(x, y - 2)) || hash(x, y, 110) < (m === 8 ? 0.8 : 0.9)) continue;
     const lean = hash(x, y, 111) < 0.3 ? -1 : hash(x, y, 111) > 0.7 ? 1 : 0;
     put(x, y, GR[1]); put(x, y - 1, GR[3]);
-    if (hash(x, y, 112) > 0.4 && !mk(x + lean, y - 2)) put(x + lean, y - 2, GR[hash(x, y, 113) > 0.6 ? 5 : 4]);
+    if (hash(x, y, 112) > 0.4 && grassy(mk(x + lean, y - 2))) put(x + lean, y - 2, GR[hash(x, y, 113) > 0.6 ? 5 : 4]);
+    if (m === 8 && hash(x, y, 114) > 0.5 && grassy(mk(x + lean, y - 3))) put(x + lean, y - 3, hash(x, y, 115) > 0.7 ? 0xd8d890 : 0xa8b860); // vippor
   }
   // klöver i fläckar
-  for (let y = PK0 + 2; y < H - 2; y++) for (let x = 1; x < W - 2; x++) {
-    if (mk(x, y) || mk(x + 1, y) || mk(x, y + 1) || vnoise(x, y, 14, 120) < 0.68 || hash(x, y, 121) < 0.93) continue;
+  for (let y = PK0 + 2; y < BS0 - 2; y++) for (let x = 1; x < PX1 - 2; x++) {
+    if (mk(x, y) !== 0 || mk(x + 1, y) !== 0 || mk(x, y + 1) !== 0 || vnoise(x, y, 14, 120) < 0.68 || hash(x, y, 121) < 0.93) continue;
     put(x, y, 0x5aa662); put(x + 1, y, 0x4c9658); put(x, y + 1, 0x3e8048); put(x + 1, y + 1, 0x2e6a3a);
     if (hash(x, y, 122) > 0.9) put(x, y - 1, 0xecdcec);                                       // klöverblomma
   }
-  // blommor: ängsfläckar med prästkragar, maskrosor, violer, rödklöver, smörblommor
-  for (let y = PK0 + 3; y < H - 1; y++) for (let x = 1; x < W - 3; x++) {
-    if (mk(x, y) || mk(x + 2, y) || mk(x, y + 1)) continue;
-    const mv = vnoise(x, y, 34, 130), h = hash(x, y, 131);
+  // blommor: ängsfläckar med prästkragar, maskrosor, violer, rödklöver, smörblommor (tätt på ängen)
+  for (let y = PK0 + 3; y < BS0 - 1; y++) for (let x = 1; x < PX1 - 3; x++) {
+    const m = mk(x, y);
+    if ((m !== 0 && m !== 8) || mk(x + 2, y) !== m || mk(x, y + 1) !== m) continue;
+    const mv = vnoise(x, y, 34, 130) + (m === 8 ? 0.3 : 0), h = hash(x, y, 131);
     if (!(mv > 0.6 ? h > 0.99 - (mv - 0.6) * 0.04 : h > 0.9993)) continue;
     const k = hash(x, y, 132);
     if (k < 0.42) {                                                                           // prästkrage
@@ -846,28 +1408,30 @@ function paintPark() {
     else put(x, y, 0xfbe45a);                                                                 // smörblomma
   }
   // trampstigar där folk genar över gräset
-  for (const [ax, ay, bx, by, wd] of [[598, PK0, 640, 334, 5], [1224, 318, 1196, 334, 4], [300, 318, 326, 334, 3.5]]) {
+  for (const [ax, ay, bx, by, wd] of [[598, PK0, 640, 334, 5], [1224, 318, 1196, 334, 4], [300, 318, 326, 334, 3.5], [412, 346, 412, 426, 3], [780, 346, 779, 428, 3], [1166, 346, 1154, 378, 3], [1340, 346, 1340, 406, 3.5]]) {
     const L = Math.hypot(bx - ax, by - ay);
     for (let y = Math.min(ay, by) - 6; y < Math.max(ay, by) + 6; y++) for (let x = Math.min(ax, bx) - 8; x < Math.max(ax, bx) + 8; x++) {
-      if (mk(x, y) || y < PK0) continue;
+      if (mk(x, y) !== 0 || y < PK0) continue;
       const t = Math.max(0, Math.min(1, ((x - ax) * (bx - ax) + (y - ay) * (by - ay)) / (L * L)));
-      const d = Math.hypot(x - (ax + (bx - ax) * t), y - (ay + (by - ay) * t)) + (vnoise(x, y, 4, 140) - 0.5) * 2;
-      const q = 1 - d / wd;
+      const dd = Math.hypot(x - (ax + (bx - ax) * t), y - (ay + (by - ay) * t)) + (vnoise(x, y, 4, 140) - 0.5) * 2;
+      const q = 1 - dd / wd;
       if (q <= 0) continue;
       if (bayer(x, y) < q * 1.4) put(x, y, mix(0x9a8458, 0x7e6a44, hash(x, y, 141)));
       else put(x, y, mix(get(x, y), 0xa8a860, 0.35));
     }
   }
   // mullvadshögar
-  for (const [mx, my] of [[152, 396], [712, 404], [1566, 402], [1106, 388]]) {
+  for (const [mx, my] of [[152, 396], [712, 404], [1566, 402], [1106, 388], [520, 440], [1450, 430]]) {
+    if (mk(mx, my) !== 0 && mk(mx, my) !== 8) continue;
     ellipse(mx, my, 3.5, 2, (x, y, t) => put(x, y, y < my - 0.5 ? (t < 0.5 ? 0x8a6c4c : 0x72563a) : 0x5a4230));
     for (let x = mx - 4; x < mx + 4; x++) shade(x, my + 2, 0.8);
   }
+  paintDogRun(mk);
   // grus
   const [, py0, , py1] = PARK_LAYOUT.promenade;
-  for (let y = PK0; y < H; y++) for (let x = 0; x < W; x++) {
+  for (let y = PK0; y < BS1; y++) for (let x = 0; x < PX1; x++) {
     if (mk(x, y) !== 1) continue;
-    const edge = !mk(x - 1, y) || !mk(x + 1, y) || !mk(x, y - 1) || !mk(x, y + 1) || !mk(x - 2, y) || !mk(x + 2, y);
+    const edge = mk(x - 1, y) !== 1 || mk(x + 1, y) !== 1 || mk(x, y - 1) !== 1 || mk(x, y + 1) !== 1 || mk(x - 2, y) !== 1 || mk(x + 2, y) !== 1;
     const center = y >= py0 + 4 && y < py1 - 4;
     let c = mix(0xc6b28c, 0xd6c6a2, vnoise(x, y, 9, 401) * (center ? 1.2 : 0.8));
     c = mul(c, 0.94 + hash(x, y, 402) * 0.1);
@@ -876,27 +1440,139 @@ function paintPark() {
     else if (hash(x, y - 1, 403) > thr) c = mul(c, 0.78);                                       // stenens skugga
     else if (h < 0.05) c = mul(c, 0.82);
     if (edge) c = mul(c, 0.9);
+    if (y >= BS0 && y < BS1 && Math.abs(y - (BS0 + 12 + Math.sin(x * 0.02) * 3)) < 4 && bayer(x, y) < 0.2) c = mul(c, 0.93); // nött mitt i parkgången
     put(x, y, c);
   }
-  // cykelspår i promenaden
-  for (let x = 60; x < W - 60; x++) {
+  // cykelspår i promenaden och parkgången
+  for (let x = 60; x < PX1 - 60; x++) {
     if (x > 860 && x < 1010) continue;
     const y = Math.round(339.5 + Math.sin(x * 0.045) * 1.4 + Math.sin(x * 0.013) * 1.1);
     if (mk(x, y) === 1 && hash(x, 0, 406) > 0.15) put(x, y, mul(get(x, y), 0.86));
+    const y2 = Math.round(BS0 + 14 + Math.sin(x * 0.037) * 2.4 + Math.sin(x * 0.011) * 1.6);
+    if (mk(x, y2) === 1 && hash(x, 1, 406) > 0.2) put(x, y2, mul(get(x, y2), 0.87));
   }
   // kantsten mellan gräs och grus
-  for (let y = PK0; y < H; y++) for (let x = 0; x < W; x++) {
-    if (mk(x, y)) continue;
+  for (let y = PK0; y < BS1; y++) for (let x = 0; x < PX1; x++) {
+    if (!grassy(mk(x, y))) continue;
     const dn = mk(x, y + 1) === 1, up = mk(x, y - 1) === 1, lr = mk(x - 1, y) === 1 || mk(x + 1, y) === 1;
     if (dn) put(x, y, granite(x, y, 0xd6d1c7));
-    else if (up) { put(x, y, granite(x, y, 0xa29d94)); if (y + 1 < H && !mk(x, y + 1)) shade(x, y + 1, 0.82); }
+    else if (up) { put(x, y, granite(x, y, 0xa29d94)); if (grassy(mk(x, y + 1))) shade(x, y + 1, 0.82); }
     else if (lr) put(x, y, granite(x, y, 0xbab5ab));
   }
   paintPlaza(mk);
+  paintPond(mk);
+  paintPlayground(mk);
+  paintPads(mk);
+  // kanten mellan parkgången och den södra raden (y 490–494): granitkant och en smal rännsten
+  for (let x = 0; x < PX1; x++) {
+    put(x, BS1, granite(x, BS1, 0xc8c3b9)); put(x, BS1 + 1, granite(x, BS1 + 1, 0x9a958c));
+    put(x, BS1 + 2, mul(dirt(x, BS1 + 2), 0.7)); put(x, BS1 + 3, mul(dirt(x, BS1 + 3), 0.6));
+  }
   // kantstenens skugga där parken möter trottoaren
-  for (let x = 0; x < W; x++) { if (!mk(x, PK0)) shade(x, PK0, 0.74); if (!mk(x, PK0 + 1) && bayer(x, PK0 + 1) < 0.5) shade(x, PK0 + 1, 0.88); }
+  for (let x = 0; x < PX1; x++) { if (grassy(mk(x, PK0))) shade(x, PK0, 0.74); if (grassy(mk(x, PK0 + 1)) && bayer(x, PK0 + 1) < 0.5) shade(x, PK0 + 1, 0.88); }
 }
-
+// hundrastgården: nött gräs, jordfläckar, ett upptrampat spår innanför staketet och tassavtryck
+function paintDogRun(mk) {
+  const [x0, y0, , y1] = PARK_LAYOUT.dogPark;
+  let x1 = x0; for (let x = x0; x < PX1; x++) if (mk(x, y0 + 5) === 5) x1 = x + 1;
+  for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) {
+    if (mk(x, y) !== 5) continue;
+    const e = Math.min(x - x0, x1 - 1 - x, y - y0, y1 - 1 - y);
+    const run = e >= 3 && e <= 8 ? 1 - Math.abs(e - 5.5) / 3 : 0;                             // spåret längs staketet
+    const q = fbm(x, y, 12, 160) * 0.8 + run * 0.5 + (hash(x, y, 161) - 0.5) * 0.2;
+    if (q > 0.62) put(x, y, dirt(x, y));
+    else if (q > 0.5) put(x, y, mix(get(x, y), 0x8a7a54, 0.5));
+  }
+  // vägen från grinden
+  const [g0, g1] = PARK_LAYOUT.dogGate;
+  for (let y = PARK_LAYOUT.promenade[3]; y < y0 + 16; y++) for (let x = g0 + 2; x < g1 - 2; x++) if (bayer(x, y) < 0.7 - (y - y0) / 30) put(x, y, dirt(x, y));
+  // tassavtryck och ett grävt hål
+  for (let i = 0; i < 40; i++) {
+    const x = x0 + 6 + ((hash(i, 1, 162) * (x1 - x0 - 12)) | 0), y = y0 + 6 + ((hash(i, 2, 162) * (y1 - y0 - 12)) | 0);
+    if (mk(x, y) !== 5) continue;
+    blend(x, y, 0x4a3a28, 0.5); blend(x + 2, y + 1, 0x4a3a28, 0.5);
+  }
+  ellipse(x0 + 30, y1 - 22, 3, 1.6, (x, y) => put(x, y, 0x3a2c1e)); ellipse(x0 + 30, y1 - 20, 5, 1.4, (x, y, t) => { if (t > 0.5) put(x, y, 0x8a6c4c); });
+  put(x0 + 60, y0 + 40, 0xd8e040); put(x0 + 61, y0 + 40, 0xb8c030); put(x0 + 60, y0 + 41, 0x9aa028);   // en tennisboll
+}
+// dammen: stenkant, grund strand, djupt i mitten, näckrosor och himlens spegling
+function paintPond(mk) {
+  const { cx, cy, rx, ry } = PARK_LAYOUT.pond;
+  for (let y = Math.floor(cy - ry * 1.3); y <= cy + ry * 1.3; y++) for (let x = Math.floor(cx - rx * 1.3); x <= cx + rx * 1.3; x++) {
+    const t = Math.hypot((x + 0.5 - cx) / rx, (y + 0.5 - cy) / ry) + (vnoise(x, y, 3, 170) - 0.5) * 0.05;
+    const m = mk(x, y);
+    if (t < 0.93) {
+      const dy = (y + 0.5 - cy) / ry;
+      let c = mix(0x5a8a8e, 0x1e4a5e, clamp01(1.1 - t * 1.1));                              // grunt vid kanten, djupt i mitten
+      c = mix(c, 0x9ac4d8, clamp01(-dy * 0.5) * 0.35);                                      // himlen speglas i bortre halvan
+      if (t > 0.8) c = mix(c, 0x6a7a4a, 0.35);                                               // botten syns i strandkanten
+      const r = vnoise(x * 0.35, y * 2, 3, 171);
+      if (r > 0.72) c = mix(c, 0xd0e4ee, 0.35); else if (r < 0.22) c = mul(c, 0.88);         // krusningar
+      put(x, y, c);
+      continue;
+    }
+    if (t < 1.18 && (m === 3 || m === 0 || m === 8)) {
+      // strandstenar: runda, mossiga
+      const v = cellAt(x, y, 4, 3, 172), e = v.d2 - v.d1;
+      let c = e < 0.12 ? 0x3e4a2e : mul(mix(0x9a948a, 0x7e7a70, hash(v.id, 1, 173)), 0.9 + hash(v.id, 2, 173) * 0.2);
+      const ly = (y + 0.5 - v.py) / 3;
+      if (e >= 0.12 && ly < -0.2) c = mix(c, 0xffffff, 0.2); else if (e >= 0.12 && ly > 0.3) c = mul(c, 0.78);
+      if (vnoise(x, y, 4, 174) > 0.6 && e >= 0.12) c = mix(c, 0x5a7a3a, 0.4);                  // mossa
+      if (t < 0.99) c = mul(c, 0.8);                                                           // våt nertill
+      put(x, y, c);
+    }
+  }
+  // skugga från strandkanten på vattnet (bortre kanten)
+  ellipse(cx, cy, rx * 0.93, ry * 0.93, (x, y, t) => { if (t > 0.84 && y < cy && bayer(x, y) < 0.6) shade(x, y, 0.82); });
+  // näckrosor
+  for (let k = 0; k < 8; k++) {
+    const lx = Math.round(cx + (hash(k, 1, 175) - 0.5) * rx * 1.4), ly = Math.round(cy + (hash(k, 2, 175) - 0.5) * ry * 1.2);
+    if (Math.hypot((lx - cx) / rx, (ly - cy) / ry) > 0.8) continue;
+    for (let i = -2; i <= 2; i++) put(lx + i, ly, i === 0 ? 0x3a7a3a : 0x4a8a3a); put(lx - 1, ly - 1, 0x5a9a4a); put(lx + 1, ly - 1, 0x5a9a4a); put(lx, ly - 1, 0x2e5e2e);
+    for (let i = -2; i <= 2; i++) shade(lx + i, ly + 1, 0.8);
+    if (k % 3 === 0) { put(lx, ly - 1, 0xf4c4d8); put(lx + 1, ly - 2, 0xfae4ec); }            // blomma
+  }
+}
+// lekplatsen i parken: sand i en träram, krattspår, fotspår och lite leksaker
+function paintPlayground(mk) {
+  const [x0, y0, x1, y1] = PARK_LAYOUT.playground;
+  for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) {
+    const e = Math.min(x - x0, x1 - 1 - x, y - y0, y1 - 1 - y);
+    let c;
+    if (e < 2) {                                                                              // träramen (sliper)
+      c = e === 0 ? 0x5a3e24 : 0x8a6238;
+      if ((y === y0 || y === y1 - 1) ? (x - x0) % 20 === 19 : (y - y0) % 20 === 19) c = 0x3a2616;
+      c = grainy(c, x, y, 0.1);
+    } else {
+      c = mix(0xd8c49a, 0xe6d6ae, vnoise(x, y, 6, 180));
+      if (Math.sin((x + y * 0.3) * 0.9) > 0.85) c = mul(c, 0.94);                               // krattspår
+      if (vnoise(x, y, 5, 181) > 0.7) c = mix(c, 0xb8a078, 0.4);                                 // fuktig, uppgrävd sand
+      const h = hash(x, y, 182);
+      if (h > 0.97) c = 0xf4ead0; else if (h < 0.03) c = 0xa8946e;
+    }
+    put(x, y, c);
+  }
+  // nött under gungorna och vid rutschkanans slut, fotspår
+  ellipse(1056, 438, 12, 4, (x, y, t) => { if (bayer(x, y) < (1 - t)) put(x, y, mix(get(x, y), 0x9a8460, 0.5)); });
+  ellipse(1094, 437, 6, 3, (x, y, t) => { if (bayer(x, y) < (1 - t)) put(x, y, mix(get(x, y), 0x9a8460, 0.45)); });
+  for (let i = 0; i < 30; i++) { const x = x0 + 4 + ((hash(i, 1, 183) * (x1 - x0 - 8)) | 0), y = y0 + 4 + ((hash(i, 2, 183) * (y1 - y0 - 8)) | 0); blend(x, y, 0x8a7450, 0.4); blend(x + 1, y, 0x8a7450, 0.3); }
+  put(1076, 420, 0xd83a2a); put(1077, 420, 0xb02a1e); put(1076, 421, 0x8a2016); put(1078, 419, 0x3a6ad0);  // en röd hink och en blå spade
+  for (let x = x0; x < x1; x++) shade(x, y1, 0.8);
+}
+// plattor under och framför parkens småhus (kiosken, toaletten, glasskiosken, förrådet, paviljongen)
+function paintPads(mk) {
+  for (const b of FREESTANDING.filter((f) => f.district === 'PARKEN')) {
+    const r = [b.x - 2, b.top - 2, b.x + b.w + 2, b.base + 3];
+    for (let y = r[1]; y < r[3]; y++) for (let x = r[0]; x < r[2]; x++) put(x, y, concrete(x, y, 8, 8, 190 + b.x, 0));
+    // en plattgång från dörren ner till närmaste grusgång
+    let y = b.base + 3;
+    while (y < BS1 && mk((b.door.x0 + b.door.x1) >> 1, y) !== 1 && y < b.base + 40) {
+      for (let x = b.door.x0; x < b.door.x1; x++) put(x, y, concrete(x, y, 8, 6, 191 + b.x, 0));
+      y++;
+    }
+    for (let x = r[0]; x < r[2]; x++) shade(x, r[3], 0.82);
+  }
+}
 // torget: ringar av smågatsten i solfjäder, åttauddig stjärna i rödgranit, mörk kant
 function paintPlaza(mk) {
   const { cx, cy } = PARK_LAYOUT.plaza, NR = 14, TAU = Math.PI * 2;
@@ -943,33 +1619,453 @@ function paintPlaza(mk) {
     put(x, y, grainy(c, x, y, 0.05));
   }
   // lätt skugga på gräset söder om torgets kantsten
-  ellipse(cx, cy, PRX + 1.5, PRY + 1.5, (x, y) => { if (!mk(x, y) && y > cy) shade(x, y, 0.84); });
+  ellipse(cx, cy, PRX + 1.5, PRY + 1.5, (x, y) => { if ((mk(x, y) === 0 || mk(x, y) === 8) && y > cy) shade(x, y, 0.84); });
 }
 
 // =====================================================================
-function nightTint() {
-  for (let i = 0; i < D.length; i += 4) { D[i] *= 0.86; D[i + 1] *= 0.9; D[i + 2] = Math.min(255, D[i + 2] * 0.97 + 8); }
+// FÖRORTENS MELLANBAND (x 1752–2720, y 306–494) – sliten gräsmatta, parkeringen,
+// lekplatsen, grusplanen, lamellhusets platta, asfaltgångarna
+// =====================================================================
+const GRX = [0x3e4e26, 0x4c5e2c, 0x5c6e34, 0x6c7c3c, 0x808c48, 0x94985a];
+function paintSuburbBand() {
+  const x0 = IE1, x1 = W, y0 = SS1, y1 = TOP_S;
+  const P = lotById('parkering'), LK = lotById('lekplats_x'), GP = lotById('grusplan'), LM = FREESTANDING.find((b) => b.id === 'lamell');
+  const paths = [...SUB_LAYOUT.paths, SUB_LAYOUT.back];
+  const lamPad = LM ? [LM.x - 3, LM.top - 2, LM.x + LM.w + 3, LM.base + 4] : [0, 0, 0, 0];
+  const lamWalk = LM ? [LM.door.x0 - 2, LM.base, LM.door.x1 + 2, BS0] : [0, 0, 0, 0];
+  const drive = P?.drive ? [P.drive[0], y0, P.drive[1], P.rect[1]] : [0, 0, 0, 0];
+  const kind = (x, y) => {
+    if (y >= BS1) return 9;
+    if (paths.some((r) => inR(x, y, r)) || inR(x, y, lamWalk)) return 1;
+    if (P && inR(x, y, P.rect)) return 2;
+    if (inR(x, y, drive)) return 7;
+    if (LK && inR(x, y, LK.rect)) return 3;
+    if (GP && inR(x, y, GP.rect)) return 4;
+    if (inR(x, y, lamPad)) return 5;
+    return 0;
+  };
+  // 1. sliten gräsmatta: gulnade fläckar, bar jord, vildvuxna tuvor
+  for (let y = y0; y < BS0; y++) for (let x = x0; x < x1; x++) {
+    if (kind(x, y) !== 0) continue;
+    const emb = vnoise(x, y, 3.4, 205) - vnoise(x + 0.7, y + 1.6, 3.4, 205);
+    const n = fbm(x, y, 26, 201) * 0.6 + vnoise(x, y, 8, 202) * 0.24 + emb * 0.85 + (hash(x, y, 203) - 0.5) * 0.14 + 0.06;
+    const i = n < 0.3 ? 0 : n < 0.41 ? 1 : n < 0.53 ? 2 : n < 0.65 ? 3 : n < 0.77 ? 4 : 5;
+    let c = mul(GRX[i], 0.96 + hash(x, y, 204) * 0.06);
+    const bare = fbm(x, y, 20, 206);
+    if (bare > 0.64) c = dirt(x, y);                                                           // bar jord
+    else if (bare > 0.58) c = mix(c, 0x8a7a54, 0.5);
+    else if (vnoise(x, y, 30, 207) > 0.66) c = mix(c, 0xb0a860, 0.35);                          // gulnat, torrt gräs
+    put(x, y, c);
+  }
+  // grässtrån, vildvuxna tuvor, maskrosor och nässlor
+  for (let y = y0 + 3; y < BS0; y++) for (let x = x0 + 1; x < x1 - 1; x++) {
+    if (kind(x, y) !== 0 || kind(x, y - 2) !== 0) continue;
+    const h = hash(x, y, 210);
+    if (h > 0.93) { put(x, y, GRX[1]); put(x, y - 1, GRX[3]); if (hash(x, y, 211) > 0.5) put(x + (hash(x, y, 212) > 0.5 ? 1 : -1), y - 2, GRX[4]); }
+    else if (h < 0.004) tuft(x, y, 213 + x, true);
+    else if (h < 0.006) { put(x, y, 0x3e6a2c); put(x, y - 1, 0xf6d23a); }
+  }
+  // trampstigar: hållplatsen → lamellhuset, gången → lekplatsens grind, lamellhuset → grusplanen (hålet i stängslet)
+  const trails = [[2016, SS1, 2294, 452, 4], [2026, 400, 2098, 336, 3], [2400, 430, 2432, 388, 3], [2312, 452, 2458, 452, 3.5], [1766, 460, 1820, 452, 3], [2566, SS1, 2568, 318, 4], [2172, 452, 2200, 440, 2.5]];
+  for (const [ax, ay, bx, by, wd] of trails) {
+    const L = Math.max(1, Math.hypot(bx - ax, by - ay));
+    for (let y = Math.min(ay, by) - 6; y < Math.max(ay, by) + 6; y++) for (let x = Math.min(ax, bx) - 8; x < Math.max(ax, bx) + 8; x++) {
+      if (kind(x, y) !== 0 || y < y0) continue;
+      const t = Math.max(0, Math.min(1, ((x - ax) * (bx - ax) + (y - ay) * (by - ay)) / (L * L)));
+      const dd = Math.hypot(x - (ax + (bx - ax) * t), y - (ay + (by - ay) * t)) + (vnoise(x, y, 4, 214) - 0.5) * 2;
+      const q = 1 - dd / wd;
+      if (q <= 0) continue;
+      if (bayer(x, y) < q * 1.5) put(x, y, dirt(x, y)); else put(x, y, mix(get(x, y), 0x9a8a60, 0.4));
+    }
+  }
+  // däckspår över gräset (någon har kört upp på gräsmattan) och en bränd fläck
+  for (let x = 2180; x < 2250; x++) for (const o of [0, 9]) { const y = Math.round(318 + (x - 2180) * 0.9 + o); if (kind(x, y) === 0 && hash(x, y, 215) < 0.8) { put(x, y, mix(dirt(x, y), 0x3a3024, 0.4)); put(x + 1, y, dirt(x + 1, y)); } }
+  ellipse(2395, 346, 8, 4, (x, y, t) => { if (kind(x, y) !== 0) return; put(x, y, t < 0.5 ? mix(0x2a2622, 0x4a443c, hash(x, y, 216)) : mix(get(x, y), 0x2a2622, (1 - t) * 1.2)); });
+  for (let k = 0; k < 6; k++) put(2390 + ((hash(k, 1, 217) * 10) | 0), 344 + ((hash(k, 2, 217) * 4) | 0), 0xd8d4cc);    // aska
+  // 2. parkeringen
+  if (P) paintParking(P, kind);
+  // 3. lekplatsen, 4. grusplanen, 5. lamellhusets platta
+  if (LK) paintSubPlay(LK);
+  if (GP) paintPitch(GP);
+  if (LM) {
+    for (let y = lamPad[1]; y < lamPad[3]; y++) for (let x = lamPad[0]; x < lamPad[2]; x++) put(x, y, concrete(x, y, 10, 8, 230, 0.9));
+    for (let x = lamPad[0]; x < lamPad[2]; x++) shade(x, lamPad[3], 0.8);
+    scatter([lamPad[0], LM.base, lamPad[2], lamPad[3]], 30, 231);
+  }
+  // asfaltgångarna (gången från hållplatsen, gångvägen bakom den södra raden, till lamellhusets port)
+  for (let y = y0; y < BS1; y++) for (let x = x0; x < x1; x++) {
+    if (kind(x, y) !== 1) continue;
+    let c = asphaltW(x, y, 0.06, false, 0.85);
+    const e = kind(x - 1, y) !== 1 || kind(x + 1, y) !== 1 || kind(x, y - 1) !== 1 || kind(x, y + 1) !== 1;
+    if (e) c = mul(c, 0.86);
+    put(x, y, c);
+  }
+  for (let i = 0; i < 44; i++) crack(x0 + hash(i, 1, 232) * (x1 - x0), BS0 + 2 + hash(i, 2, 232) * 24, 8 + hash(i, 3, 232) * 20, 233 + i, { dx: hash(i, 4, 232) > 0.5 ? 1 : -1, y0: BS0, y1: BS1, weeds: 0.1, sealed: i % 4 === 0 });
+  for (let i = 0; i < 8; i++) crack(2006 + hash(i, 1, 234) * 18, y0 + 10 + hash(i, 2, 234) * 140, 8 + hash(i, 3, 234) * 14, 235 + i, { vert: true, x0: 2004, x1: 2026, weeds: 0.12 });
+  for (let x = x0; x < x1; x++) { if (hash(x, BS0, 236) > 0.86) tuft(x, BS0 + 1, 237 + x, hash(x, 1, 236) > 0.6); if (hash(x, BS1, 236) > 0.88) tuft(x, BS1 - 1, 238 + x); }
+  for (const [px, pw] of [[1880, 40], [2140, 26], [2420, 50], [2610, 30]]) for (let y = BS0 + 3; y < BS1 - 3; y++) for (let x = px; x < px + pw; x++) {
+    const e = x === px || x === px + pw - 1 || y === BS0 + 3 || y === BS1 - 4;
+    put(x, y, e && hash(x, y, 239) > 0.25 ? 0x25262b : asphaltW(x, y, -0.12, false, 0.4));
+  }
+  pothole(2080, 476, 6, 2.6, 240); pothole(2560, 480, 5, 2.2, 241); pothole(1930, 470, 3.5, 1.8, 242);
+  scatter([x0, BS0, x1, BS1], 120, 243);
+  // skräp på gräset
+  scatter([x0, y0 + 2, x1, BS0], 220, 244);
+  // kanten mot södra raden
+  for (let x = XS; x < x1; x++) { put(x, BS1, grime(granite(x, BS1, 0xb8b2a6), x, BS1, 1)); put(x, BS1 + 1, granite(x, BS1 + 1, 0x8a857c)); put(x, BS1 + 2, mul(dirt(x, BS1 + 2), 0.7)); put(x, BS1 + 3, mul(dirt(x, BS1 + 3), 0.6)); }
+  // kantstenens skugga mot trottoaren
+  for (let x = x0; x < x1; x++) if (kind(x, y0) === 0) { shade(x, y0, 0.74); if (bayer(x, y0 + 1) < 0.5) shade(x, y0 + 1, 0.88); }
+}
+// parkeringen: sliten asfalt, bleka rutor, hjulstopp, oljefläckar, potthål, ett krossat bilfönster
+function paintParking(P, kind) {
+  const [x0, y0, x1, y1] = P.rect;
+  for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) put(x, y, asphaltW(x, y, 0.02, false, 0.9));
+  if (P.drive) for (let y = SS1; y < y0; y++) for (let x = P.drive[0]; x < P.drive[1]; x++) put(x, y, asphaltW(x, y, 0.02, false, 0.8));
+  // betongkant runt om (öppen vid infarten)
+  for (let x = x0; x < x1; x++) for (const y of [y0, y1 - 1]) if (!(y === y0 && P.drive && x >= P.drive[0] && x < P.drive[1])) put(x, y, grime(granite(x, y, y === y0 ? 0xc0bbb0 : 0x9a958c), x, y, 1));
+  for (let y = y0; y < y1; y++) for (const x of [x0, x1 - 1]) put(x, y, grime(granite(x, y, 0xb4afa4), x, y, 1));
+  // rutor: övre raden x 1826–1976 (bilarna står med fronten mot muren), undre raden 1776–1976
+  const lineV = (x, ya, yb) => { for (let y = ya; y < yb; y++) for (const dx of [0, 1]) mark(x + dx, y, 0xe8e4d4, 0.3 + vnoise(x, y, 6, 250) * 0.4); };
+  const lineH = (xa, xb, y) => { for (let x = xa; x < xb; x++) mark(x, y, 0xe8e4d4, 0.3 + vnoise(x, y, 6, 251) * 0.4); };
+  for (let x = 1826; x <= 1976; x += 50) lineV(x, y0 + 8, y0 + 52);
+  lineH(1826, 1978, y0 + 52);
+  for (let x = 1776; x <= 1976; x += 50) lineV(x, y1 - 44, y1 - 4);
+  lineH(1776, 1978, y1 - 44);
+  // handikapprutan (blek blå) och P i gången
+  for (let y = y1 - 30; y < y1 - 14; y++) for (let x = 1792; x < 1810; x++) if (hash(x, y, 252) > 0.45) blend(x, y, 0x3a6ab0, 0.35);
+  eachTextPixel(BIG, 'P', 1990 - 10, y0 + 66, 1, (px, py) => mark(px, py, 0xe8e4d4, 0.4));
+  // pilar i gången
+  for (const [ax, dir] of [[1860, 1], [1940, -1]]) {
+    const ay = y0 + 70;
+    for (let i = 0; i < 18; i++) for (const dy of [0, 1]) mark(ax + i * dir, ay + dy, 0xe8e4d4, 0.4);
+    for (let r = 0; r < 4; r++) for (let j = -r; j <= r + 1; j++) mark(ax + (18 + 3 - r) * dir, ay + j, 0xe8e4d4, 0.4);
+  }
+  // hjulstopp av betong i överkant av varje ruta
+  for (let x = 1831; x < 1976; x += 50) for (let i = 0; i < 40; i++) { if (i > 4 && i < 36 && (i < 12 || i > 28)) { put(x + i, y0 + 11, 0xc4bfb4); put(x + i, y0 + 12, 0x8a857c); shade(x + i, y0 + 13, 0.7); } }
+  // oljefläckar under bilarna, lagningar, sprickor, potthål, ogräs
+  for (let x = 1851; x < 1976; x += 50) { stain(x, y0 + 38, 10, 5, 0.45); stain(x - 4, y0 + 34, 4, 2, 0.4); }
+  for (let x = 1801; x < 1976; x += 50) stain(x, y1 - 20, 9, 4, 0.4);
+  for (const [px, py, pw, ph] of [[1900, y0 + 60, 44, 14], [1780, y0 + 20, 30, 20]]) for (let y = py; y < py + ph; y++) for (let x = px; x < px + pw; x++) {
+    const e = x === px || y === py || x === px + pw - 1 || y === py + ph - 1;
+    put(x, y, e && hash(x, y, 253) > 0.25 ? 0x25262b : asphaltW(x, y, -0.13, false, 0.4));
+  }
+  for (let i = 0; i < 40; i++) crack(x0 + 4 + hash(i, 1, 254) * (x1 - x0 - 8), y0 + 4 + hash(i, 2, 254) * (y1 - y0 - 8), 10 + hash(i, 3, 254) * 26, 255 + i, { dx: hash(i, 4, 254) > 0.5 ? 1 : -1, x0: x0 + 1, x1: x1 - 1, y0: y0 + 1, y1: y1 - 1, sealed: i % 3 === 0, branch: i % 4 === 0, weeds: 0.08 });
+  alligator(1880, y0 + 78, 22, 8, 256); alligator(1990, y1 - 30, 10, 12, 257);
+  pothole(1862, y0 + 72, 7, 3, 258); pothole(1952, y0 + 112, 5, 2.4, 259); pothole(1800, y0 + 50, 4, 2, 260);
+  grate(1884, y0 + 90, 8, 5, true, 0.5);
+  for (let x = x0 + 1; x < x1 - 1; x++) for (const y of [y0 + 1, y1 - 2]) if (hash(x, y, 261) > 0.86) tuft(x, y, 262 + x, hash(x, y, 263) > 0.6);
+  // krossat bilfönster: glas som glittrar i en ruta
+  for (let k = 0; k < 26; k++) { const x = 1930 + ((hash(k, 1, 264) * 22) | 0), y = y0 + 40 + ((hash(k, 2, 264) * 12) | 0); put(x, y, hash(k, 3, 264) > 0.5 ? 0xdfe8ee : 0xa8c0cc); if (hash(k, 4, 264) > 0.7) put(x + 1, y, 0xffffff); }
+  scatter([x0 + 2, y0 + 2, x1 - 2, y1 - 2], 90, 265);
+}
+// förortens lekplats: nött gräs och jord, sand under gungorna, trasig gummimatta, glas och fimpar
+function paintSubPlay(L) {
+  const [x0, y0, x1, y1] = L.rect;
+  for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) {
+    const q = fbm(x, y, 14, 270);
+    let c;
+    if (q > 0.55) c = dirt(x, y);
+    else {
+      const n = fbm(x, y, 20, 271) + (hash(x, y, 272) - 0.5) * 0.2;
+      c = mul(GRX[n < 0.35 ? 1 : n < 0.5 ? 2 : n < 0.62 ? 3 : 4], 0.96 + hash(x, y, 273) * 0.06);
+      if (q > 0.48) c = mix(c, 0x8a7a54, 0.5);
+    }
+    put(x, y, c);
+  }
+  // sandytor under gungan och rutschkanan (utan kant, gräset växer in)
+  for (const [cx, cy, rx, ry] of [[2062, 372, 26, 9], [2136, 368, 16, 7], [2064, 424, 24, 8]]) ellipse(cx, cy, rx, ry, (x, y, t) => {
+    if (t + (vnoise(x, y, 4, 274) - 0.5) * 0.3 > 0.95) return;
+    let c = mix(0xc8b48a, 0xd6c49c, vnoise(x, y, 5, 275));
+    if (hash(x, y, 276) > 0.95) c = 0x9a8a6a; if (vnoise(x, y, 4, 277) > 0.7) c = mix(c, 0x9a8460, 0.4);
+    put(x, y, c);
+  });
+  // trasig gummimatta vid gunghästen (röd/svart, en bit bortriven)
+  for (let y = 414; y < 426; y++) for (let x = 2092; x < 2110; x++) {
+    if (x > 2104 && y > 420) continue;
+    const g = ((x - 2092) >> 2) + ((y - 414) >> 2);
+    put(x, y, (x - 2092) % 4 === 3 || (y - 414) % 4 === 3 ? 0x2a2222 : g & 1 ? 0x8a2a24 : 0x6a2420);
+  }
+  for (let i = 0; i < 26; i++) { const x = x0 + 4 + hash(i, 1, 278) * (x1 - x0 - 8), y = y0 + 4 + hash(i, 2, 278) * (y1 - y0 - 8); litter(x, y, hash(i, 3, 278) * 0.66, 279 + i); }
+  for (let x = x0; x < x1; x++) { if (hash(x, y0, 280) > 0.7) tuft(x, y0 + 2, 281 + x, true); if (hash(x, y1, 280) > 0.75) tuft(x, y1 - 1, 282 + x, true); }
+  for (let y = y0; y < y1; y++) { if (hash(x0, y, 283) > 0.75) tuft(x0 + 1, y, 284 + y, true); if (hash(x1, y, 283) > 0.75) tuft(x1 - 2, y, 285 + y, true); }
+  paintHopscotch(2092, 438, 0.5);
+}
+// grusplanen: rödaktigt grus, bleka kritlinjer, nötta målområden, vattensvackor, ogräs i kanterna
+function paintPitch(G) {
+  const [x0, y0, x1, y1] = G.rect, mx = (x0 + x1) >> 1, my = (y0 + y1) >> 1;
+  for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) {
+    let c = gravel(x, y, 0xa88a68, 290);
+    const e = Math.min(x - x0, x1 - 1 - x, y - y0, y1 - 1 - y);
+    if (e < 6 && vnoise(x, y, 5, 291) > 0.5 - (6 - e) * 0.05) c = mix(c, GRX[2], 0.6);          // gräs som tar över i kanterna
+    put(x, y, c);
+  }
+  // nötta ytor framför målen och i mittcirkeln (ljusare, hårt packat)
+  for (const [cx, cy, rx, ry] of [[x0 + 22, my, 20, 16], [x1 - 22, my, 20, 16], [mx, my, 22, 12]]) ellipse(cx, cy, rx, ry, (x, y, t) => { if (bayer(x, y) < (1 - t) * 1.2) put(x, y, mix(get(x, y), 0xc4a480, 0.5)); });
+  // kritlinjerna (bleka, delvis borta)
+  const L = (x, y) => { if (vnoise(x, y, 8, 292) > 0.3) blend(x, y, 0xf0ece0, 0.55 + hash(x, y, 293) * 0.2); };
+  for (let x = x0 + 5; x < x1 - 5; x++) { L(x, y0 + 5); L(x, y1 - 6); }
+  for (let y = y0 + 5; y < y1 - 5; y++) { L(x0 + 5, y); L(x1 - 6, y); L(mx, y); }
+  ellipse(mx, my, 20, 13, (x, y, t) => { if (t > 0.88) L(x, y); });
+  for (const [bx0, bx1] of [[x0 + 5, x0 + 40], [x1 - 41, x1 - 6]]) { for (let y = my - 30; y <= my + 30; y++) L(bx0 === x0 + 5 ? bx1 : bx0, y); for (let x = bx0; x <= bx1; x++) { L(x, my - 30); L(x, my + 30); } }
+  // vattensvackor (mörkare), ogräs, skräp
+  for (const [cx, cy, rx, ry] of [[mx - 2, my - 12, 12, 3.4], [x0 + 30, y1 - 22, 9, 2.8]]) ellipse(cx, cy, rx, ry, (x, y, t) => blend(x, y, 0x5a4a38, (1 - t) * 0.35));
+  for (let i = 0; i < 40; i++) tuft(x0 + 6 + hash(i, 1, 294) * (x1 - x0 - 12), y0 + 6 + hash(i, 2, 294) * (y1 - y0 - 12), 295 + i, hash(i, 3, 294) > 0.7);
+  scatter([x0 + 2, y0 + 2, x1 - 2, y1 - 2], 40, 296);
 }
 
+// =====================================================================
+// SÖDRA RADEN (y 494–640) – gränder, gågator, kyrkogården, gårdarna, förortens tomter
+// =====================================================================
+function paintSouthRow() {
+  // under husen (syns knappt – taken täcker): packad jord
+  for (const b of HOUSES_S) { const fp = footprint(b); for (let y = fp[1]; y <= fp[3]; y++) for (let x = fp[0]; x < fp[2]; x++) put(x, y, mul(dirt(x, y), 0.7)); }
+  for (const g of ROW_S) {
+    if (g.road) continue;                                                                    // Infarten målas för sig
+    if (g.x0 === I1) continue;                                                               // Infartens östra trottoar
+    if (g.kind === 'lot') { if (g.lot === 'kyrkogard') paintChurchyard(lotById(g.lot)); else if (g.lot === 'atervinning') paintRecycling(lotById(g.lot)); else if (g.lot === 'vagnsplatsen') paintTrailerLot(lotById(g.lot)); continue; }
+    if (g.kind === 'street') { paintPedestrian(g, BS1, BASE_S, g.x0 >= XS ? 'betong' : 'tegel'); continue; }
+    paintAlley(g, BS1, BASE_S);
+  }
+  // radhusens trädgårdar (husspecialisten ritar gräsmattan ovanpå som föremål – det här är grunden)
+  for (const b of HOUSES_S) {
+    if (!b.yard) continue;
+    if (b.yard.kind === 'garden') {
+      const [x0, y0, x1, y1] = b.yard.rect;
+      for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) {
+        const n = fbm(x, y, 12, 300) + (hash(x, y, 301) - 0.5) * 0.2;
+        put(x, y, mul(GR[n < 0.35 ? 2 : n < 0.5 ? 3 : n < 0.64 ? 4 : 5], 0.97 + hash(x, y, 302) * 0.05));
+      }
+      for (let y = y0; y < y1; y++) for (let x = b.door.x0 + 2; x < b.door.x1 - 2; x++) put(x, y, concrete(x, y, 6, 6, 303, 0));
+    } else if (b.yard.kind === 'forecourt') paintForecourt(b);
+  }
+  // Infartens östra trottoar i förortens södra rad fortsätter (målas av paintInfarten); den smala remsan intill
+  for (let y = BS1; y < BASE_S; y++) for (let x = IE1; x < IE1 + 2; x++) put(x, y, mul(dirt(x, y), 0.75));
+  backShadows(HOUSES_S, TOP_S, 's');
+}
+// kyrkogården: välklippt gräs med klippränder, krattade grusgångar mellan grindarna
+function paintChurchyard(L) {
+  const [x0, y0, x1, y1] = L.rect, gy = (y0 + y1) >> 1;
+  const gN = (L.gates || []).find((g) => g.side === 'n'), gS = (L.gates || []).find((g) => g.side === 's');
+  const onPath = (x, y) => (gN && x >= gN.x0 && x < gN.x1 && y < gy + 7) || (y >= gy - 7 && y < gy + 7 && x >= x0 + 6 && x < x1 - 6) || (gS && x >= gS.x0 && x < gS.x1 && y >= gy - 7);
+  for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) {
+    if (onPath(x, y)) {
+      const e = !onPath(x - 1, y) || !onPath(x + 1, y) || !onPath(x, y - 1) || !onPath(x, y + 1);
+      let c = gravel(x, y, 0xcfc2a4, 310);
+      if (e) c = granite(x, y, 0xa29d94);
+      put(x, y, c);
+      continue;
+    }
+    const n = fbm(x, y, 26, 311) * 0.5 + vnoise(x, y, 7, 312) * 0.3 + (hash(x, y, 313) - 0.5) * 0.12;
+    let c = mul(GR[n < 0.35 ? 1 : n < 0.5 ? 2 : n < 0.63 ? 3 : 4], 0.95 + hash(x, y, 314) * 0.06);
+    if (Math.floor((x - x0) / 10) & 1) c = mix(c, 0xffffff, 0.05); else c = mul(c, 0.97);   // klippränder
+    if (hash(x, y, 315) > 0.93) { put(x, y, GR[1]); put(x, y - 1, GR[3]); continue; }
+    put(x, y, c);
+  }
+  // små planteringar (mörk jord med blommor) längs mittgången
+  for (let x = x0 + 14; x < x1 - 14; x += 34) {
+    if ((gN && x + 10 > gN.x0 && x < gN.x1) || (gS && x + 10 > gS.x0 && x < gS.x1)) continue;
+    for (const yy of [gy - 11, gy + 8]) for (let y = yy; y < yy + 3; y++) for (let xx = x; xx < x + 10; xx++) {
+      let c = mix(0x4a3a2a, 0x3a2c20, hash(xx, y, 316));
+      if (hash(xx, y, 317) > 0.72) c = [0xe85a6a, 0xf4f0f4, 0xf4d23c, 0xb07ad8][(hash(xx, y, 318) * 4) | 0];
+      put(xx, y, c);
+    }
+  }
+  // skuggan från kyrkan (västerut) ner över gräset
+  gapShadow({ x0, x1, row: 's' }, y0, y1);
+}
+// macken: betongplattor, pumpöar med gul kant, pilar, en ränna och oljefläckar
+function paintForecourt(b) {
+  const [x0, y0, x1, y1] = b.yard.rect;
+  for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) put(x, y, concrete(x, y, 16, 11, 320, 0.1));
+  for (const [bx0, by0, bx1, by1] of b.blocks || []) {
+    for (let y = by0 - 3; y < by1 + 3; y++) for (let x = bx0 - 3; x < bx1 + 3; x++) {
+      const e = x < bx0 - 1 || x >= bx1 + 1 || y < by0 - 1 || y >= by1 + 1;
+      let c = e ? ((x + y) % 6 < 3 ? 0xe8c040 : 0x2a2a2a) : granite(x, y, 0xc8c4ba);           // gul-svart kant
+      if (y === by0 - 3) c = mix(c, 0xffffff, 0.2);
+      put(x, y, c);
+    }
+    for (let x = bx0 - 3; x < bx1 + 3; x++) shade(x, by1 + 3, 0.7);
+    stain((bx0 + bx1) / 2, by1 + 7, 7, 3, 0.4); stain(bx0 - 6, by1 + 4, 3, 1.6, 0.35);
+  }
+  // pilar och körfält mellan pumparna
+  for (let y = y0 + 4; y < y1 - 4; y++) for (const x of [1648, 1649]) if ((y - y0) % 10 < 5) mark(x, y, 0xf4f0e4, 0.1);
+  for (let r = 0; r < 4; r++) for (let i = -r; i <= r + 1; i++) mark(1648 + i, y1 - 6 + r, 0xf4f0e4, 0.1);
+  // ränna tvärs över framkanten
+  for (let x = x0; x < x1; x++) { put(x, y1 - 3, (x & 1) ? 0x2a2a2c : 0x6a6a6a); put(x, y1 - 2, 0x4a4a4c); }
+  for (let i = 0; i < 10; i++) stain(x0 + 8 + hash(i, 1, 321) * (x1 - x0 - 16), y0 + 6 + hash(i, 2, 321) * (y1 - y0 - 12), 2 + hash(i, 3, 321) * 4, 1.2 + hash(i, 4, 321), 0.3);
+  for (let x = x0; x < x1; x++) { shade(x, b.base + 4, 0.78); if (bayer(x, b.base + 5) < 0.5) shade(x, b.base + 5, 0.9); }
+}
+// återvinningen: sprucken betong, rost- och oljefläckar, mängder av glasskärvor vid glasigloon
+function paintRecycling(L) {
+  const [x0, y0, x1, y1] = L.rect;
+  for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) put(x, y, concrete(x, y, 23, 15, 330, 1));
+  for (let i = 0; i < 26; i++) crack(x0 + hash(i, 1, 331) * (x1 - x0), y0 + hash(i, 2, 331) * (y1 - y0), 8 + hash(i, 3, 331) * 20, 332 + i, { dx: hash(i, 4, 331) > 0.5 ? 1 : -1, x0, x1, y0, y1, weeds: 0.1, branch: i % 3 === 0 });
+  for (let i = 0; i < 10; i++) stain(x0 + hash(i, 1, 333) * (x1 - x0), y0 + hash(i, 2, 333) * (y1 - y0), 3 + hash(i, 3, 333) * 6, 2 + hash(i, 4, 333) * 3, 0.3, i & 1 ? 0x5a3a22 : 0x1c1e24);
+  for (let k = 0; k < 90; k++) {                                                              // glas framför GLAS-igloon
+    const x = 2292 + ((hash(k, 1, 334) * 40) | 0), y = 552 + ((hash(k, 2, 334) * 30) | 0), g = [0x5a9a5a, 0x8a5a26, 0xcfdde4, 0x3a7a4a][(hash(k, 3, 334) * 4) | 0];
+    put(x, y, g); if (hash(k, 4, 334) > 0.75) put(x + 1, y, mix(g, 0xffffff, 0.85));
+  }
+  scatter([x0 + 2, y0 + 2, x1 - 2, y1 - 2], 60, 335);
+  for (let x = x0; x < x1; x++) if (hash(x, y0, 336) > 0.8) tuft(x, y0 + 2, 337 + x, true);
+  for (let y = y0; y < y1; y++) for (const x of [x0 + 1, x1 - 2]) if (hash(x, y, 338) > 0.84) tuft(x, y, 339 + y, hash(x, y, 340) > 0.5);
+  gapShadow({ x0, x1, row: 's' }, y0, y1);
+}
+// vagnsplatsen: grus och jord med hjulspår, ogräs och en eldstad av stenar
+function paintTrailerLot(L) {
+  const [x0, y0, x1, y1] = L.rect;
+  for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) {
+    let c = fbm(x, y, 12, 350) > 0.55 ? dirt(x, y) : gravel(x, y, 0xa49a88, 351);
+    if (vnoise(x, y, 9, 352) > 0.64) c = mix(c, GRX[3], 0.6);
+    put(x, y, c);
+  }
+  // hjulspår där husvagnen drogs in
+  for (let y = y0 + 20; y < y1; y++) for (const cx of [2652, 2688]) { const x = Math.round(cx + Math.sin(y * 0.05) * 2); for (let k = -1; k <= 1; k++) put(x + k, y, mix(get(x + k, y), 0x4a3c2c, k === 0 ? 0.5 : 0.25)); }
+  // eldstad
+  ellipse(2700, 588, 5, 2.5, (x, y, t) => put(x, y, t > 0.7 ? mix(0x8a847a, 0x6a665e, hash(x, y, 353)) : mix(0x2a2622, 0x4a443c, hash(x, y, 354))));
+  for (let i = 0; i < 30; i++) tuft(x0 + 3 + hash(i, 1, 355) * (x1 - x0 - 6), y0 + 3 + hash(i, 2, 355) * (y1 - y0 - 6), 356 + i, hash(i, 3, 355) > 0.5);
+  scatter([x0 + 2, y0 + 2, x1 - 2, y1 - 2], 30, 357);
+  gapShadow({ x0, x1, row: 's' }, y0, y1);
+}
+// norra radens tomt i förorten: skrot, jord, oljefläckar, ogräs
+function paintJunkLot(g) {
+  const L = lotById(g.lot), [x0, y0, x1, y1] = L ? L.rect : [g.x0, TOP, g.x1, BASE];
+  for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) {
+    let c = fbm(x, y, 10, 360) > 0.5 ? dirt(x, y) : gravel(x, y, 0x9a9282, 361);
+    if (vnoise(x, y, 8, 362) > 0.62) c = mix(c, GRX[2], 0.6);
+    put(x, y, c);
+  }
+  for (let i = 0; i < 8; i++) stain(x0 + hash(i, 1, 363) * (x1 - x0), y0 + hash(i, 2, 363) * (y1 - y0), 4 + hash(i, 3, 363) * 6, 2 + hash(i, 4, 363) * 3, 0.45);
+  for (let i = 0; i < 40; i++) tuft(x0 + 3 + hash(i, 1, 364) * (x1 - x0 - 6), y0 + 3 + hash(i, 2, 364) * (y1 - y0 - 6), 365 + i, hash(i, 3, 364) > 0.5);
+  scatter([x0 + 2, y0 + 2, x1 - 2, y1 - 2], 50, 366);
+  for (let x = x0; x < x1; x++) { put(x, y1 - 2, grime(granite(x, y1 - 2, 0xaaa59b), x, y1, 1)); put(x, y1 - 1, granite(x, y1 - 1, 0x86817a)); }
+  gapShadow(g);
+}
+
+// =====================================================================
+// KAJEN (760–776) och KANALEN (776–820)
+// =====================================================================
+function paintQuay() {
+  // gångytan: stora granithällar i halvförband
+  const at = rows(0, W, Q0, Q0 + 10, { h: [10, 10], w: [22, 30], seed: 370 });
+  stones(at, 0, W, Q0, Q0 + 10, (s, x, y) => grime(mul(mix(0xb4aea2, 0xa6a094, hash(s.k, s.r, 371)), 0.94 + hash(s.r, s.k, 372) * 0.1), x, y, wornAt(x, y) * 0.8), { hi: 0.12, lo: 0.86, grain: 0.05, joint: (x, y) => (wornAt(x, y) > 0.5 && hash(x, y, 373) > 0.6 ? WEED[1] : 0x6a655d) });
+  // kajkanten: överkant (ljus), framsida (solbelyst, sydväst) och en mörk droppkant
+  for (let x = 0; x < W; x++) {
+    const worn = wornAt(x, Q1);
+    put(x, Q0 + 10, granite(x, Q0 + 10, 0xd4cfc4)); put(x, Q0 + 11, granite(x, Q0 + 11, 0xc6c1b6));
+    for (let y = Q0 + 12; y < Q1; y++) put(x, y, grime(granite(x, y, y === Q1 - 1 ? 0x8a857c : 0xb2ada2), x, y, worn * 0.8));
+    if (x % 26 === 25) for (let y = Q0 + 10; y < Q1; y++) put(x, y, 0x6a655d);
+  }
+  // förtöjningsringar i kajkanten
+  for (let x = 70; x < W; x += 180) { put(x, Q1 - 3, 0x2a2a2c); put(x + 1, Q1 - 4, 0x3a3a3e); put(x + 2, Q1 - 3, 0x2a2a2c); put(x + 1, Q1 - 2, 0x1a1a1c); put(x + 1, Q1 - 3, 0x8a5a36); }
+  // räcket: stolpar och två ledstänger (rostigt och bucklat i förorten, en bit saknas)
+  const gone = (x) => x > 2230 && x < 2262;
+  for (let x = 0; x < W; x++) {
+    if (gone(x)) continue;
+    const worn = wornAt(x, Q1), sag = worn > 0.5 ? Math.round(Math.sin(x * 0.07) * vnoise(x, 0, 30, 374) * 1.4) : 0;
+    const iron = worn > 0.5 && hash(x, 0, 375) > 0.6 ? 0x6a4a32 : 0x2a2c32, hi = worn > 0.5 ? 0x8a6a4a : 0x5a5e68;
+    if (x % 12 === 0) { for (let y = Q0 + 4; y < Q0 + 12; y++) put(x, y, y === Q0 + 4 ? hi : iron); put(x + 1, Q0 + 5, mul(iron, 0.7)); shade(x + 1, Q0 + 3, 0.8); }
+    put(x, Q0 + 4 + sag, hi); put(x, Q0 + 5 + sag, iron);                                     // överliggaren
+    put(x, Q0 + 8, iron);                                                                     // mittstången
+    shade(x + 1, Q0 + 2 + sag, 0.86);                                                         // skuggan faller norrut
+  }
+}
+function paintCanal() {
+  const y0 = CN0, wl = CN0 + 7;                                                               // kajmurens framsida, vattenlinjen
+  // kajmuren: granitblock som blir mörka och våta nertill, alger vid vattenlinjen
+  const at = rows(0, W, y0, wl, { h: [3, 4], w: [10, 18], seed: 380, bond: true });
+  stones(at, 0, W, y0, wl, (s, x, y) => mul(mix(0x7e7a72, 0x6a665e, hash(s.k, s.r, 381)), 1 - (y - y0) * 0.06), { hi: 0.1, lo: 0.8, grain: 0.06, joint: () => 0x3a3834 });
+  for (let x = 0; x < W; x++) {
+    put(x, wl - 1, mix(get(x, wl - 1), 0x3e5a3a, 0.7)); if (hash(x, 0, 382) > 0.5) put(x, wl - 2, mix(get(x, wl - 2), 0x4a6a3a, 0.5));
+    if (hash(x, 1, 383) > 0.97) for (let y = y0 + 1; y < wl - 1; y++) put(x, y, mix(get(x, y), 0x5a4a34, 0.3)); // rostränder från ringarna
+  }
+  // vattnet: djupare nedåt, murens spegling överst, avlånga krusningar
+  for (let y = wl; y < H; y++) for (let x = 0; x < W; x++) {
+    const f = (y - wl) / (H - wl), worn = wornAt(x, 790);
+    let c = mix(0x3e7088, 0x1c3c54, f);
+    if (worn > 0.3) c = mix(c, 0x3a5a4a, worn * 0.35);                                         // grumligare i förorten
+    if (y < wl + 4) c = mix(c, 0x2a3a40, (wl + 4 - y) * 0.16 + (vnoise(x, y, 4, 384) - 0.5) * 0.2); // murens spegling
+    const r = vnoise(x * 0.3, y * 1.6, 3, 385) * 0.7 + vnoise(x * 0.1, y, 6, 386) * 0.3;
+    if (r > 0.7) c = mix(c, 0x9ac4dc, 0.3 + (r - 0.7) * 0.9);
+    else if (r < 0.28) c = mul(c, 0.86);
+    put(x, y, c);
+  }
+  // förorten: skräp i vattnet – en kundvagn som sticker upp, ett däck, en flaska, en påse
+  const cart = [2130, 806];
+  for (let x = cart[0]; x < cart[0] + 12; x++) { put(x, cart[1], 0x9aa0a6); if (x % 3 === 0) for (let y = cart[1]; y < cart[1] + 5; y++) put(x, y, mix(get(x, y), 0x8a9096, 0.6)); }
+  for (let y = cart[1]; y < cart[1] + 5; y++) put(cart[0] + 11, y, mix(get(cart[0] + 11, y), 0x9aa0a6, 0.7));
+  ellipse(2460, 798, 5, 2, (x, y, t) => { if (t > 0.45) put(x, y, t > 0.8 ? 0x1a1a1c : 0x2e2e30); });
+  put(2580, 790, 0x5a9a5a); put(2581, 790, 0x6aaa6a); put(2582, 790, 0xdfe8ee);
+  for (const [px, py] of [[1980, 812], [2640, 802]]) { put(px, py, 0xe6e8ea); put(px + 1, py, 0xd2d6da); put(px, py + 1, 0xc8ccd0); put(px + 1, py + 1, 0xb8bcc2); }
+  for (let x = 0; x < W; x++) if (hash(x, 2, 387) > 0.994) { put(x, wl + 2, 0xd8a040); }        // löv som flyter
+}
+
+// =====================================================================
+// Marken för hela världen
+// =====================================================================
+const CWS_N = CROSSWALKS, CWS_S = CROSSWALKS_S;
+const SLOW = new Set();
+function step(name, fn) {
+  try { fn(); } catch (e) { if (!SLOW.has(name)) { SLOW.add(name); console.error(`marken: ${name} kunde inte målas:`, e); } }
+}
+function paintDay() {
+  POTHOLES.length = 0;
+  step('bakgatan', paintBack);
+  step('norra raden', () => {
+    for (const g of ROW_N) {
+      if (g.kind === 'lot') paintJunkLot(g);
+      else if (g.kind === 'street' && g.road === 'infarten') paintPedestrian(g, TOP, BASE, 'granit');
+      else if (g.kind === 'street') paintSideStreet(g);
+      else paintAlley(g);
+    }
+    backShadows(HOUSES_N, TOP, 'n');
+  });
+  step('norra trottoaren', () => paintSidewalkTop({
+    y0: SN0, cws: CWS_N, houses: HOUSES_N, drives: [], seed: 300,
+    lids: [118, 470, 1116, 1400, 1622, 1880, 2130, 2380, 2560], valves: [232, 640, 1040, 1508, 1990, 2440],
+  }));
+  step('Pixelgatan', () => paintRoadX({ y0: R0, y1: R1, dy: 0, seed: 400, cws: CWS_N, stops: BUS_STOPS.filter((s) => s.road === 'pixelgatan'), openN: [], openS: [[I0, I1]] }));
+  const parkLow = (x) => PARK_LAYOUT.paths.some((p) => x >= p[0] && x < p[2]) || (x >= 2004 && x < 2026);
+  step('södra trottoaren', () => paintSidewalkBottom({
+    y0: SS0, cws: CWS_N, stops: BUS_STOPS.filter((s) => s.road === 'pixelgatan'), drives: lotById('parkering')?.drive ? [lotById('parkering').drive] : [],
+    lowAt: parkLow, seed: 320, lids: [206, 842, 1330, 1566, 1850, 2200, 2480], valves: [118, 1000, 1470, 2120, 2600], hop: [1122, 0],
+  }));
+  step('parken', paintPark);
+  step('förortens mellanband', paintSuburbBand);
+  step('södra raden', paintSouthRow);
+  const doorDrive = [...HOUSES_S.filter((b) => b.door.type === 'roll').map((b) => [b.door.x0 - 2, b.door.x1 + 2]), [1604, 1642], [1662, 1698]];
+  step('trottoaren framför södra raden', () => paintSidewalkTop({
+    y0: BASE_S, cws: CWS_S, houses: HOUSES_S.filter((b) => b.base === BASE_S), drives: doorDrive, seed: 1300,
+    lids: [96, 540, 980, 1180, 1540, 1880, 2300, 2640], valves: [300, 760, 1300, 2060, 2520],
+  }));
+  step('Södergatan', () => paintRoadX({ y0: RS0, y1: RS1, dy: DY, seed: 1400, cws: CWS_S, stops: BUS_STOPS.filter((s) => s.road === 'sodergatan'), openN: [[I0, I1]], openS: [] }));
+  step('bortre trottoaren', () => paintSidewalkBottom({
+    y0: SX0, cws: CWS_S, stops: BUS_STOPS.filter((s) => s.road === 'sodergatan'), drives: [], lowAt: () => false, seed: 1320,
+    lids: [150, 690, 1250, 1620, 2050, 2500], valves: [420, 900, 1460, 2280], hop: [1840, 0.55],
+  }));
+  step('kajen', paintQuay);
+  step('kanalen', paintCanal);
+  step('Infarten', paintInfarten);
+  step('pölarna', paintDryPuddles);
+}
+function nightTint(d) {
+  for (let i = 0; i < d.length; i += 4) { d[i] *= 0.86; d[i + 1] *= 0.9; d[i + 2] = Math.min(255, d[i + 2] * 0.97 + 8); }
+}
+// Dagens bild målas en gång; natten är samma bild tonad (sparar ett helt tungt pass).
+let DAY = null;
 export function paintGround(night) {
   const P = new Pix(W, H);
-  D = P.d; SH = new Uint8Array(W * H);
-  try {
-    paintBack();
-    for (const g of STREETS) (g.kind === 'street' ? paintSideStreet : paintAlley)(g);
-    backShadows();
-    paintSidewalkN();
-    paintRoad();
-    paintSidewalkS();
-    paintPark();
-    paintPuddles(night);
-    if (night) nightTint();
-  } finally { D = null; SH = null; }
+  if (!DAY) {
+    D = P.d; SH = new Uint8Array(W * H);
+    try { paintDay(); } finally { D = null; SH = null; }
+    DAY = new Uint8ClampedArray(P.d);
+  } else P.d.set(DAY);
+  if (night) nightTint(P.d);
   return P.flush();
 }
 
 // =====================================================================
-// LEVANDE MARK – molnskuggor och regnringar (billigt: en förmålad bild + få pixlar)
+// LEVANDE MARK – blöt asfalt, pölar, regnringar, krusningar, fotspår i snön
+// (billigt: förmålade bilder + några hundra pixlar per bildruta, bara i bild)
 // =====================================================================
 const CW = 720, CHh = 420;
 let CLOUD = null;
@@ -998,28 +2094,75 @@ function cloudTex() {
   }
   return (CLOUD = P.flush());
 }
-// våt mark i regn: mörkare, mättad yta + blanka strimmor där himlen speglas (en förmålad bild)
+// Ytslagen för den blöta marken: 1 väg, 2 gång/trottoar/tomt, 3 gräs, 0 vatten/inget
+function surfaceAt(x, y) {
+  if (y >= CN0) return 0;
+  if ((y >= R0 && y < R1) || (y >= RS0 && y < RS1) || (x >= I0 && x < I1 && y >= R1 && y < RS0)) return 1;
+  if (y < 8) return 0;
+  if (y < TOP || (y >= SN0 && y < R0) || (y >= SS0 && y < SS1) || (y >= BASE_S && y < RS0) || y >= RS1) return 2;
+  if (y >= PK0 && y < BS0) {
+    if (x < IW0) return PARK_LAYOUT.walks.concat(PARK_LAYOUT.paths, [PARK_LAYOUT.promenade]).some((r) => inR(x, y, r)) ? 2 : 3;
+    if (x < I1 || x < IE1) return 2;
+    return LOTS.some((l) => l.row === 'm' && inR(x, y, l.rect) && l.kind !== 'lekplats_x') || SUB_LAYOUT.paths.some((r) => inR(x, y, r)) ? (inR(x, y, lotById('parkering')?.rect || [0, 0, 0, 0]) ? 1 : 2) : 3;
+  }
+  if (y >= BS0 && y < TOP_S) return 2;
+  // husraderna: gränder och gator (under husen syns inget ändå)
+  return 2;
+}
+// blöt mark: mörkare, mättad yta + blanka strimmor där himlen speglas (en förmålad bild)
 let WET = null;
 function wetTex() {
   if (WET) return WET;
   const P = new Pix(W, H);
-  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-    if (y >= PK0) { P.px(x, y, 0x0a1420, 0.12); continue; }                                    // parken: lite mörkare
-    P.px(x, y, 0x0c1422, y >= R0 + 3 && y < R1 - 4 ? 0.22 : 0.15);
-    if (hash(x, y, 971) > 0.992) P.px(x, y, 0xc8d8ea, 0.35);                                  // glimtar i vattenfilmen
+  const rows = new Uint8Array(W);
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) rows[x] = surfaceAt(x, y);
+    for (let x = 0; x < W; x++) {
+      const s = rows[x];
+      if (!s) continue;
+      if (s === 3) { P.px(x, y, 0x0a1420, 0.12); continue; }
+      P.px(x, y, 0x0c1422, s === 1 ? 0.22 : 0.15);
+      if (hash(x, y, 971) > 0.992) P.px(x, y, 0xc8d8ea, 0.35);                                  // glimtar i vattenfilmen
+    }
   }
-  // himlen speglas i de blanka hjulspåren
-  for (let i = 0; i < 1100; i++) {
+  // himlen speglas i de blanka hjulspåren (båda vägarna och Infarten)
+  for (let i = 0; i < 2200; i++) {
     const band = TRACKS[i % TRACKS.length], x = (hash(i, 1, 970) * W) | 0;
     const y = band[0] + ((hash(i, 2, 970) * (band[1] - band[0])) | 0), len = 3 + ((hash(i, 3, 970) * 10) | 0);
     for (let k = 0; k < len; k++) P.px(x + k, y, 0xa8bcd4, 0.3 * (1 - Math.abs(k - len / 2) / len));
   }
+  for (let i = 0; i < 160; i++) {
+    const band = TRACKS_I[i % 4], x = band[0] + ((hash(i, 4, 970) * (band[1] - band[0])) | 0), y = R1 + ((hash(i, 5, 970) * (RS0 - R1)) | 0), len = 3 + ((hash(i, 6, 970) * 9) | 0);
+    for (let k = 0; k < len; k++) P.px(x, y + k, 0xa8bcd4, 0.3 * (1 - Math.abs(k - len / 2) / len));
+  }
   // vattenfilm längs rännstenarna
-  for (let x = 0; x < W; x++) for (const y of [R0 + 1, R1 - 3]) {
+  for (let x = 0; x < W; x++) for (const y of [R0 + 1, R1 - 3, RS0 + 1, RS1 - 3]) {
     const v = vnoise(x, y, 14, 972);
     if (v > 0.45) P.px(x, y, 0xb4c6dc, (v - 0.45) * 0.7);
   }
   return (WET = P.flush());
+}
+// pölarna som små förmålade bilder (dag/natt): himlens spegling, ljus överkant, våt kant
+const PUD_IMG = new Map();
+function puddleImg(p, night) {
+  const k = p.i + (night ? 'n' : 'd');
+  if (PUD_IMG.has(k)) return PUD_IMG.get(k);
+  const w = Math.ceil(p.rx * 2.8) + 2, h = Math.ceil(p.ry * 2.8) + 2, ox = Math.floor(p.x - p.rx * 1.4), oy = Math.floor(p.y - p.ry * 1.4);
+  const P = new Pix(w, h);
+  for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) {
+    const x = ox + i, y = oy + j;
+    const t = Math.hypot((x + 0.5 - p.x) / p.rx, (y + 0.5 - p.y) / p.ry) + (vnoise(x, y, 3, 700 + p.i) - 0.5) * 0.4;
+    if (t < 1) {
+      const f = (y + 0.5 - (p.y - p.ry)) / (p.ry * 2);
+      let c = night ? mix(0x2c3654, 0x161c30, f) : mix(0xb4c8da, 0x5c6c80, f);
+      if (t > 0.78) c = mul(c, 0.86);
+      if (!night && y < p.y && hash(x, y, 701) > 0.82) c = mix(c, 0xeef4fa, 0.5);
+      P.px(i, j, c, 0.74);
+    } else if (t < 1.4 && bayer(x, y) < (1.4 - t) / 0.4) P.px(i, j, 0x0a1420, 0.22);         // våt kant
+  }
+  const img = { cv: P.flush(), x: ox, y: oy };
+  PUD_IMG.set(k, img);
+  return img;
 }
 // ringar (ellipser) för regndroppar i pölar, radie 1–4
 const RING = [null];
@@ -1028,12 +2171,53 @@ for (let r = 1; r <= 4; r++) {
   for (let i = 0; i < 48; i++) { const a = (i / 48) * Math.PI * 2; pts.add(Math.round(Math.cos(a) * r) + ',' + Math.round(Math.sin(a) * ry)); }
   RING.push([...pts].map((s) => s.split(',').map(Number)));
 }
-const mod = (a, n) => ((a % n) + n) % n;
+// alla pölar: de fasta + potthålen (som fylls först)
+let ALL_PUDDLES = null;
+const allPuddles = () => ALL_PUDDLES || (ALL_PUDDLES = [...PUDDLES, ...POTHOLES.map((p, k) => ({ x: p.x, y: p.y, rx: p.rx, ry: p.ry, i: 500 + k, hole: true }))]);
+
+// fotspår i snön: varje person lämnar ett avtryck var 5:e px, växelvis vänster/höger fot
+const PRINTS = [], MAXP = 1400;
+let lastPos = [], printSide = [], printN = 0, overT = -1;
+function trackPrints(env) {
+  const w = env.weather, snow = w ? w.snowCover || 0 : 0;
+  const ppl = env.people || [];
+  if (snow < 0.15) { lastPos = ppl.map((p) => ({ x: p.x, y: p.y })); return; }
+  for (let i = 0; i < ppl.length; i++) {
+    const p = ppl[i], L = lastPos[i];
+    if (!L) { lastPos[i] = { x: p.x, y: p.y }; continue; }
+    const dx = p.x - L.x, dy = p.y - L.y, d = Math.hypot(dx, dy);
+    if (d > 40) { lastPos[i] = { x: p.x, y: p.y }; continue; }                                // teleport/buss – inga spår
+    if (d < 5) continue;
+    printSide[i] = -(printSide[i] || 1);
+    const nx = -dy / d, ny = dx / d;                                                          // åt sidan om gångriktningen
+    const pr = { x: Math.round(p.x + nx * 1.6 * printSide[i]), y: Math.round(p.y + ny * 1.2 * printSide[i]), t: env.t, h: Math.abs(dx) >= Math.abs(dy) };
+    if (PRINTS.length < MAXP) PRINTS.push(pr); else PRINTS[printN++ % MAXP] = pr;
+    lastPos[i] = { x: p.x, y: p.y };
+  }
+  lastPos.length = ppl.length;
+}
+function drawPrints(ctx, env, view) {
+  const w = env.weather, snow = w ? w.snowCover || 0 : 0;
+  if (snow < 0.15 || !PRINTS.length) return;
+  const vx0 = view.x - 2, vy0 = view.y - 2, vx1 = view.x + view.w + 2, vy1 = view.y + view.h + 2;
+  const fill = w.kind === 'snö' ? 0.02 + 0.03 * (w.intensity || 0) : 0.006;                  // nysnö fyller igen spåren
+  const k = clamp01((snow - 0.15) / 0.3);
+  for (const p of PRINTS) {
+    if (p.x < vx0 || p.x > vx1 || p.y < vy0 || p.y > vy1 || p.y > CITY.WALK_BOTTOM + 1) continue;
+    const a = k * 0.55 * (1 - (env.t - p.t) * fill);
+    if (a <= 0.03) continue;
+    ctx.fillStyle = `rgba(92,104,128,${a.toFixed(3)})`;
+    if (p.h) ctx.fillRect(p.x - 1, p.y, 3, 1); else ctx.fillRect(p.x, p.y - 1, 2, 2);
+    ctx.fillStyle = `rgba(250,252,255,${(a * 0.7).toFixed(3)})`;
+    ctx.fillRect(p.x - (p.h ? 1 : 0), p.y - (p.h ? 1 : 2), p.h ? 3 : 2, 1);                   // uppkastad snö vid kanten
+  }
+}
 
 export function groundLive(ctx, env, view) {
   const vx0 = Math.floor(view.x), vy0 = Math.floor(view.y), vx1 = vx0 + Math.ceil(view.w), vy1 = vy0 + Math.ceil(view.h);
-  // molnskuggor som driver förbi på dagen
-  if (!env.rain && env.dark < 0.4) {
+  const w = env.weather;
+  // molnskuggor som driver förbi på dagen (bara utan väder-modulen – weather.js ritar egna)
+  if (!w && !env.rain && env.dark < 0.4) {
     const tex = cloudTex();
     const ox = Math.floor(mod(env.t * 5, CW)), oy = Math.floor(mod(env.t * 1.2, CHh));
     ctx.save();
@@ -1045,30 +2229,72 @@ export function groundLive(ctx, env, view) {
       }
     ctx.restore();
   }
-  if (!env.rain) return;
+  const snow = w ? w.snowCover || 0 : 0;
+  const wet = w ? w.wet || 0 : env.rain ? 0.8 : 0;
+  const raining = w ? w.kind === 'regn' : !!env.rain;
+  const frozen = w && ((w.season === 'vinter' && w.temp <= 0) || snow > 0.25);
   ctx.save();
-  // blöt mark
-  const wx0 = Math.max(0, vx0), wy0 = Math.max(0, vy0), wx1 = Math.min(W, vx1), wy1 = Math.min(H, vy1);
-  if (wx1 > wx0 && wy1 > wy0) ctx.drawImage(wetTex(), wx0, wy0, wx1 - wx0, wy1 - wy0, wx0, wy0, wx1 - wx0, wy1 - wy0);
-  // regnringar i pölarna
-  for (const p of PUDDLES) {
-    if (p.x + p.rx < vx0 || p.x - p.rx > vx1 || p.y + p.ry < vy0 || p.y - p.ry > vy1) continue;
-    const n = p.rx > 7 ? 3 : 2, rmax = Math.max(1, Math.min(4, Math.floor(p.rx * 0.5)));
-    for (let k = 0; k < n; k++) {
-      const ph = env.t * 1.3 + hash(p.i, k, 950) * 3, cyc = Math.floor(ph), f = ph - cyc;
-      const cx = Math.round(p.x + (hash(p.i, k * 31 + cyc, 951) - 0.5) * (p.rx - rmax)), cy = Math.round(p.y + (hash(p.i, k * 31 + cyc, 952) - 0.5) * p.ry * 0.5);
-      const r = 1 + Math.floor(f * rmax);
-      ctx.fillStyle = `rgba(214,228,246,${(0.6 * (1 - f)).toFixed(3)})`;
-      for (const [dx, dy] of RING[Math.min(4, r)]) ctx.fillRect(cx + dx, cy + dy, 1, 1);
+  // krusningar som driver på kanalen (inte när den är frusen)
+  if (!frozen && vy1 > CN0 + 7) {
+    const t = env.t, drift = (w?.windNow ?? w?.wind ?? 6) * 0.25 + 3;
+    ctx.fillStyle = env.night ? 'rgba(120,150,190,0.22)' : 'rgba(210,232,246,0.34)';
+    const n = Math.round(26 * view.w / 384);
+    for (let i = 0; i < n; i++) {
+      const y = CN0 + 9 + ((hash(i, 1, 980) * (H - CN0 - 11)) | 0);
+      if (y < vy0 || y >= vy1) continue;
+      const x = vx0 + mod(hash(i, 2, 980) * view.w + t * drift * (0.6 + hash(i, 3, 980)), view.w + 20) - 10;
+      const len = 3 + ((hash(i, 4, 980) * 6) | 0), ph = Math.sin(t * 1.6 + i);
+      ctx.fillRect(Math.round(x), y, Math.max(1, Math.round(len * (0.6 + 0.4 * ph))), 1);
     }
   }
-  // stänk där dropparna slår i marken
-  ctx.fillStyle = 'rgba(206,222,244,0.5)';
-  const cnt = Math.min(260, Math.round(60 * (view.w * view.h) / (384 * 216))), s = Math.floor(env.t * 9);
-  for (let j = 0; j < cnt; j++) {
-    const x = vx0 + Math.floor(hash(j, s, 960) * (vx1 - vx0)), y = vy0 + Math.floor(hash(j, s, 961) * (vy1 - vy0));
-    ctx.fillRect(x, y, 1, 1);
-    if (hash(j, s, 962) > 0.6) { ctx.fillRect(x - 1, y - 1, 1, 1); ctx.fillRect(x + 1, y - 1, 1, 1); }
+  // blöt mark, pölar och regnringar
+  if (wet > 0.05 && snow < 0.6) {
+    const a = clamp01(wet * 1.25) * (1 - snow);
+    const wx0 = Math.max(0, vx0), wy0 = Math.max(0, vy0), wx1 = Math.min(W, vx1), wy1 = Math.min(H, vy1);
+    ctx.globalAlpha = a;
+    if (wx1 > wx0 && wy1 > wy0) ctx.drawImage(wetTex(), wx0, wy0, wx1 - wx0, wy1 - wy0, wx0, wy0, wx1 - wx0, wy1 - wy0);
+    const night = !!env.night;
+    for (const p of allPuddles()) {
+      if (p.x + p.rx * 1.4 < vx0 || p.x - p.rx * 1.4 > vx1 || p.y + p.ry * 1.4 < vy0 || p.y - p.ry * 1.4 > vy1) continue;
+      const size = p.rx * p.ry;                                                               // små pölar torkar först
+      const pa = p.hole ? clamp01((wet - 0.08) / 0.25) : clamp01((wet - (size > 14 ? 0.12 : 0.28)) / 0.3);
+      if (pa <= 0.02) continue;
+      const img = puddleImg(p, night);
+      ctx.globalAlpha = pa * (1 - snow);
+      ctx.drawImage(img.cv, img.x, img.y);
+      if (!raining) continue;
+      const n = p.rx > 7 ? 3 : 2, rmax = Math.max(1, Math.min(4, Math.floor(p.rx * 0.5)));
+      ctx.globalAlpha = 1;
+      for (let k = 0; k < n; k++) {
+        const ph = env.t * 1.3 + hash(p.i, k, 950) * 3, cyc = Math.floor(ph), f = ph - cyc;
+        const cx = Math.round(p.x + (hash(p.i, k * 31 + cyc, 951) - 0.5) * (p.rx - rmax)), cy = Math.round(p.y + (hash(p.i, k * 31 + cyc, 952) - 0.5) * p.ry * 0.5);
+        const r = 1 + Math.floor(f * rmax);
+        ctx.fillStyle = `rgba(214,228,246,${(0.6 * (1 - f) * pa).toFixed(3)})`;
+        for (const [dx, dy] of RING[Math.min(4, r)]) ctx.fillRect(cx + dx, cy + dy, 1, 1);
+      }
+    }
+    ctx.globalAlpha = 1;
+    // stänk där dropparna slår i marken (bara utan weather.js – den ritar egna stänk)
+    if (raining && !w) {
+      ctx.fillStyle = 'rgba(206,222,244,0.5)';
+      const cnt = Math.min(260, Math.round(60 * (view.w * view.h) / (384 * 216))), s = Math.floor(env.t * 9);
+      for (let j = 0; j < cnt; j++) {
+        const x = vx0 + Math.floor(hash(j, s, 960) * (vx1 - vx0)), y = vy0 + Math.floor(hash(j, s, 961) * (vy1 - vy0));
+        ctx.fillRect(x, y, 1, 1);
+        if (hash(j, s, 962) > 0.6) { ctx.fillRect(x - 1, y - 1, 1, 1); ctx.fillRect(x + 1, y - 1, 1, 1); }
+      }
+    }
   }
+  // fotspår i snön
+  trackPrints(env);
+  if (env.t - overT > 0.5) drawPrints(ctx, env, view);                                        // groundOver är inte inkopplat – rita här
+  ctx.restore();
+}
+
+// Efter weather.drawBack (ovanpå snötäcket): fotspåren där folk har gått.
+export function groundOver(ctx, env, view) {
+  overT = env.t;
+  ctx.save();
+  drawPrints(ctx, env, view);
   ctx.restore();
 }

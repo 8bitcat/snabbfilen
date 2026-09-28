@@ -103,11 +103,19 @@ function colorFromName(name) {
   return MARKER_COLORS[h % MARKER_COLORS.length];
 }
 
-// Rensar ett avatarobjekt (t.ex. från nätet): { name, look, color } med giltiga värden
+// Varje figur har ett eget id, så att flera kan heta samma sak. Figurer från tiden före
+// id:na får namnets slug – samma nyckel som deras parkerade sparning redan ligger under.
+const ID_RE = /^[a-z0-9åäö-]{1,32}$/;
+export const legacyId = (name) => String(name || '').toLowerCase().replace(/[^a-z0-9åäö]/g, '').slice(0, 24) || 'figur';
+export const newAvatarId = () => 'id-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+
+// Rensar ett avatarobjekt (t.ex. från nätet): { id, name, look, color } med giltiga värden
 export function cleanAvatar(raw) {
   const a = raw && typeof raw === 'object' ? raw : {};
   const name = cleanName(a.name);
-  return { name, look: cleanLook(a.look), color: col(a.color, null) || colorFromName(name) };
+  const out = { name, look: cleanLook(a.look), color: col(a.color, null) || colorFromName(name) };
+  if (typeof a.id === 'string' && ID_RE.test(a.id)) out.id = a.id;
+  return out;
 }
 
 const store = {
@@ -146,7 +154,11 @@ export function loadAvatar() {
   if (raw) {
     try {
       const p = JSON.parse(raw);
-      if (p && typeof p === 'object' && p.look && typeof p.look === 'object') { const av = cleanAvatar(p); memo = { raw, av }; return { ...av }; }
+      if (p && typeof p === 'object' && p.look && typeof p.look === 'object') {
+        const av = cleanAvatar(p);
+        if (av.name && !av.id) return { ...saveAvatar({ ...av, id: legacyId(av.name) }) }; // figur från före id:na
+        memo = { raw, av }; return { ...av };
+      }
     } catch { /* trasig – skapa ny */ }
   }
   if (!raw && memo) { store.set(AVATAR_KEY, memo.raw); return { ...memo.av }; } // lagringen tömd/blockerad: behåll avataren
@@ -154,39 +166,52 @@ export function loadAvatar() {
 }
 
 export function saveAvatar(av) {
-  const c = cleanAvatar(av), raw = JSON.stringify(c);
+  const c = cleanAvatar(av);
+  if (c.name && !c.id) c.id = newAvatarId(); // ny figur (eller namngiven för första gången)
+  const raw = JSON.stringify(c);
   store.set(AVATAR_KEY, raw);
   memo = { raw, av: c };
-  if (c.name) upsertProfile(c, av.oldName);
+  if (c.name) upsertProfile(c);
   return { ...c };
 }
 
 // ---------- Sparade avatarer (flera personer kan dela en dator) ----------
 export const PROFILES_KEY = 'snabbfilen_avatars';
-const PROFILE_MAX = 12;
+const PROFILE_MAX = 24;
 export function listAvatars() {
   let list = [];
   try { list = JSON.parse(store.get(PROFILES_KEY) || '[]'); } catch { list = []; }
   list = (Array.isArray(list) ? list : []).map(cleanAvatar).filter((a) => a.name);
+  let dirty = false;
+  const seen = new Set();
+  list = list.filter((a) => {
+    if (!a.id) { a.id = legacyId(a.name); dirty = true; } // profil från före id:na
+    if (seen.has(a.id)) { dirty = true; return false; }
+    seen.add(a.id);
+    return true;
+  });
   // den nuvarande avataren (från tiden före listan) följer med
   try {
     const cur = JSON.parse(store.get(AVATAR_KEY) || 'null');
-    if (cur?.name && cur.look && !list.some((a) => a.name.toLowerCase() === String(cur.name).toLowerCase())) { list.unshift(cleanAvatar(cur)); store.set(PROFILES_KEY, JSON.stringify(list)); }
+    if (cur?.name && cur.look) {
+      const c = cleanAvatar(cur);
+      if (!c.id) c.id = legacyId(c.name);
+      if (!seen.has(c.id)) { list.unshift(c); dirty = true; }
+    }
   } catch { /* ingen */ }
+  if (dirty) store.set(PROFILES_KEY, JSON.stringify(list));
   return list;
 }
-function upsertProfile(av, oldName) {
-  const list = listAvatars().filter((a) => a.name.toLowerCase() !== String(oldName || '').toLowerCase() || !oldName);
-  const i = list.findIndex((a) => a.name.toLowerCase() === av.name.toLowerCase());
-  if (i >= 0) list.splice(i, 1);
-  list.unshift({ name: av.name, look: av.look, color: av.color });
+function upsertProfile(av) {
+  const list = listAvatars().filter((a) => a.id !== av.id);
+  list.unshift({ id: av.id, name: av.name, look: av.look, color: av.color });
   store.set(PROFILES_KEY, JSON.stringify(list.slice(0, PROFILE_MAX)));
 }
-export function deleteAvatar(name) {
-  const list = listAvatars().filter((a) => a.name.toLowerCase() !== String(name).toLowerCase());
+export function deleteAvatar(id) {
+  const list = listAvatars().filter((a) => a.id !== id);
   store.set(PROFILES_KEY, JSON.stringify(list));
   const cur = loadAvatar();
-  if (cur.name && cur.name.toLowerCase() === String(name).toLowerCase()) saveAvatar(list[0] || { name: '', look: defaultLook(), color: rnd(MARKER_COLORS) });
+  if (cur.id === id) saveAvatar(list[0] || { name: '', look: defaultLook(), color: rnd(MARKER_COLORS) });
 }
 
 // Välj vem du är: sparade avatarer + skapa ny. onPick(av) när man valt.
@@ -195,7 +220,7 @@ export function openAvatarPicker({ title = '🧑 Vem spelar?', text = 'Välj din
   if (!list.length) return openAvatarEditor({ fresh: true, onDone: onPick, onCancel });
   const cur = loadAvatar();
   const body = `<p style="font-size:19px;margin-top:0">${esc(text)}</p>
-    <div class="av-pick">${list.map((a, i) => `<div class="av-card ${cur.name === a.name ? 'on' : ''}" style="--pc:${esc(avatarColor(a))}">
+    <div class="av-pick">${list.map((a, i) => `<div class="av-card ${cur.id === a.id ? 'on' : ''}" style="--pc:${esc(avatarColor(a))}">
         <button class="av-card-main" data-pick="${i}"><span data-face="${i}"></span><b>${esc(a.name)}</b></button>
         <div class="av-card-tools"><button class="btn btn-small" data-edit="${i}" title="Ändra ${esc(a.name)}">✏️</button><button class="btn btn-small" data-del="${i}" title="Ta bort ${esc(a.name)}">🗑</button></div>
       </div>`).join('')}
@@ -214,7 +239,7 @@ export function openAvatarPicker({ title = '🧑 Vem spelar?', text = 'Välj din
   dlg.querySelectorAll('[data-del]').forEach((b) => (b.onclick = () => {
     const a = list[+b.dataset.del];
     if (!confirm(`Ta bort avataren ${a.name}?`)) return;
-    deleteAvatar(a.name);
+    deleteAvatar(a.id);
     openAvatarPicker({ title, text, onPick, onCancel });
   }));
   dlg.querySelector('[data-new]').onclick = () => openAvatarEditor({ fresh: true, onDone: (av) => onPick?.(av), onCancel: () => openAvatarPicker({ title, text, onPick, onCancel }) });
@@ -319,6 +344,9 @@ const VIEWS = {
   side: { dir: 'right', crop: (L) => [2, L.kid ? 16 : 12, 20, 20], scale: 3 },
   full: { dir: 'down', crop: () => [0, 0, 24, 41], scale: 2 },
 };
+// En registerpost eller ett katalogplagg kan välja eget utsnitt med `tile: 'torso'` o.s.v.
+// (t.ex. handskar och klockor under Smycken, som annars visas som huvud).
+const viewFor = (fallback, ...hints) => { for (const h of hints) if (h && Object.hasOwn(VIEWS, h)) return VIEWS[h]; return fallback; };
 
 function tileCanvas(look, view) {
   const src = document.createElement('canvas'); src.width = 24; src.height = 41;
@@ -382,7 +410,7 @@ const clean = (s) => String(s ?? '').replace(/\u00ad/g, '');
 export function openAvatarEditor({ onDone, onCancel, fresh = false } = {}) {
   injectStyle();
   const saved = fresh ? { name: '', look: defaultLook(), color: rnd(MARKER_COLORS) } : loadAvatar();
-  const oldName = fresh ? '' : saved.name;
+  const avId = fresh ? '' : saved.id; // en ny figur får ett eget id, även om namnet redan finns
   const cur = { name: saved.name || (fresh ? '' : rnd(FIRST_NAMES)), look: saved.look, color: saved.color };
   const start = { ...cur };
   const want = OLD_TAB[lastTab] || lastTab;
@@ -571,7 +599,7 @@ export function openAvatarEditor({ onDone, onCancel, fresh = false } = {}) {
         const v = valueOf(field, id), e = F.reg[id];
         return {
           group: id === 'none' ? '' : e.group,
-          html: tile({ look: { ...L, [field]: v, ...(patch ? patch(v) : {}) }, view, label: e.label, on: curId === id, attrs: `data-k="${field}" data-v="${esc(JSON.stringify(v))}"`, disabled }),
+          html: tile({ look: { ...L, [field]: v, ...(patch ? patch(v) : {}) }, view: viewFor(view, e.tile), label: e.label, on: curId === id, attrs: `data-k="${field}" data-v="${esc(JSON.stringify(v))}"`, disabled }),
         };
       }), view);
     };
@@ -584,7 +612,7 @@ export function openAvatarEditor({ onDone, onCancel, fresh = false } = {}) {
       const main = Object.keys(SLOT_FIELDS[slot])[0];
       if (SLOT_CAN_BE_EMPTY[slot]) out.push({ group: '', html: tile({ look: { ...lookWithoutSlot(slot, L), ...(patch ? patch() : {}) }, view, label: entryOf(main, SLOT_FIELDS[slot][main])?.label || 'Ingen', on: empty, attrs: `data-empty="${slot}"` }) });
       if (!worn && !empty) out.push({ group: '', html: tile({ look: { ...L, ...(patch ? patch() : {}) }, view, label: 'Nuvarande', on: true, attrs: 'data-keep="1"' }) });
-      for (const it of list) out.push({ group: groupOf(it), html: tile({ look: { ...lookForItem(it, L), ...(patch ? patch() : {}) }, view, label: it.name, on: worn === it, attrs: `data-item="${esc(it.id)}"` }) });
+      for (const it of list) out.push({ group: groupOf(it), html: tile({ look: { ...lookForItem(it, L), ...(patch ? patch() : {}) }, view: viewFor(view, it.tile, entryOf(main, it.look[main])?.tile), label: it.name, on: worn === it, attrs: `data-item="${esc(it.id)}"` }) });
       const locked = all.filter((it) => !list.includes(it)).length;
       return grouped(out, view) + (locked ? `<p class="av-more">🔒 ${locked} fler i klädaffären</p>` : '');
     };
@@ -765,7 +793,7 @@ export function openAvatarEditor({ onDone, onCancel, fresh = false } = {}) {
   function save() {
     const name = cleanName(input.value);
     if (!name) { askName(); return; }
-    const av = saveAvatar({ name, look: cur.look, color: cur.color, oldName });
+    const av = saveAvatar({ id: avId, name, look: cur.look, color: cur.color });
     closeModal();
     try { toast(`Sparat! Hej ${av.name} 👋`, 'good'); } catch { /* ingen toast-yta */ }
     onDone?.(av);

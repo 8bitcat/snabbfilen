@@ -1,16 +1,34 @@
-// Bilverkstaden – laga bilarna på lyftarna! Bilar kör in från sidorna upp på
-// fyra lyftar, ägaren kliver ur och väntar vid bakänden, lyften går upp och en
-// pratbubbla visar felet: punktering (däck), oljebyte (oljedunk), trasig lampa
-// (glödlampa), rostigt avgasrör (avgasrör) eller tomt batteri (batteri).
-// Hämta rätt reservdel ur hyllorna vid bakväggen, gå till bilens front och
-// HÅLL INNE (musknapp/finger) för att laga – eller tryck mellanslag: ett tryck
-// räcker för en hel lagning så länge man står kvar. En framstegsstapel fylls
-// medan gnistor, luft och olja sprutar. Den lagade bilen sänks och backar ut.
-// Fel del gör ägaren sur, och väntar hen för länge kör hen därifrån.
+// Bilverkstaden – byt däck och laga bilarna på lyftarna! Bilar kör in genom
+// rullportarna i sidoväggarna upp på fyra lyftar, ägaren kliver ur och väntar
+// vid bakänden, och en pratbubbla visar felet.
+//
+// DÄCKBYTET är det vanligaste jobbet och görs steg för steg, allt synligt:
+//   1. HISSA – gå till lyftens manöverpanel och klicka: lyften höjer bilen.
+//      Bubblan visar det platta däcket, vilket hjul (minibilen uppifrån:
+//      vänster/höger, fram/bak) och vilken sorts nytt däck bilen ska ha.
+//   2. SKRUVDRAGARE – hämta den på en av verktygsvagnarna.
+//   3. SKRUVAR – gå till det punkterade hjulet och klicka på skruvarna (i
+//      navbubblan eller på hjulet) – en i taget, var och en snurrar ut med en
+//      liten mätare. Klickar man medan den snurrar slirar dragaren (fel), och
+//      skruvar man på fel hjul blir det fel.
+//   4. DÄCK AV – lyft av hjulet (skruvdragaren läggs på golvet) och lägg det
+//      i en av staplarna för gamla hjul.
+//   5. NYTT DÄCK – hämta rätt sort i däckstället: SOMMAR, VINTER, STORT
+//      (pickuper) eller LITET (halvkombi). Fel sort ger fel.
+//   6. SKRUVA FAST – ta skruvdragaren igen och skruva i skruvarna. Tar man
+//      dem i kryssmönster (varannan) blir det bonus.
+//   7. LUFT – hämta luftslangen vid kompressorn och håll inne vid hjulet tills
+//      mätaren står på grönt. För mycket smäller det (PANG), för lite är fel.
+//   8. SÄNK – sänk lyften vid panelen: bilen backar ut och kunden betalar.
+// Omväxling: oljebyte, trasig lampa, rostigt avgasrör eller tomt batteri –
+// hämta delen i hyllan och HÅLL INNE vid bilens front (eller mellanslag).
+// Stegraden överst visar vad som är nästa steg för bilen man jobbar med, och
+// de första gångerna pekar en hjälptext ut vart man ska gå. Väntar kunden för
+// länge kör hen därifrån – utom när hjulet sitter löst, då blir hen bara arg.
 //
 // Allt är handritade pixlar i skala 1: verkstaden målas EN gång (Pix), bilarna
 // målas per modell/färg/förare och cachas åt båda hållen, hjulen har åtta
-// rotationslägen och reservdelarna är små pixelkartor med mörk kontur.
+// rotationslägen per däcksort och reservdelarna är små pixelkartor med kontur.
 import { drawPerson, makeLook } from '../core/people.js';
 import { Pix, SMALL, BIG, ctxText, textW, text, mix, mul, css, hash, bayer } from '../core/floor-pix.js';
 import { createWalker, selfDrawable, folkDrawables, WALK_SEQ } from '../scenes/walkable.js';
@@ -207,7 +225,7 @@ const SPECS = {
     antenna: 20, fuel: { x: 5, h: 12 }, extraTop: 3,
   },
   halvkombi: {
-    L: 50, D: 3, r: 5, wheels: [10, 39], rim: 'alloy',
+    L: 50, D: 3, r: 4, wheels: [10, 39], rim: 'alloy',
     top: [[0, 8], [1, 16], [2, 19], [4, 21], [25, 21], [28, 20], [34, 14], [45, 12], [48, 10], [49, 7]],
     bot: [[0, 5], [2, 3], [47, 3], [49, 5]],
     cab: [1, 34], belt: 13, roof: [4, 27], ws: [28, 34], rw: [0, 3],

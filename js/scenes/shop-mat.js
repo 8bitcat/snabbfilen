@@ -25,8 +25,10 @@ import { drawPerson, makeLook } from '../core/people.js';
 import { openModal, closeModal, toast, esc, modalOpen } from '../core/ui.js';
 import { FOOD, foodOf, fmt } from '../game.js';
 import { play } from '../core/sound.js';
-import { createWalker, selfDrawable, folkDrawables, WALK_SEQ } from './walkable.js';
+import { createWalker, selfDrawable, folkDrawables, WALK_SEQ, createSpeech } from './walkable.js';
 import { worldFolksHere } from '../net/world.js';
+
+const talk = createSpeech(); // repliker och beskrivningar som pratbubblor i scenen
 
 // ================= geometri (spelpixlar, världskoordinater) =================
 const VW = 384, VH = 216;
@@ -2381,7 +2383,7 @@ export function makeShopMat(A) {
   function leave() { play('door'); A.go('city'); }
 
   // ---------- klickbara platser ----------
-  const hint = (s) => { if (t - lastHint < 2.5) return; lastHint = t; play('click'); toast(s); };
+  const hint = (s) => { if (t - lastHint < 2.5) return; lastHint = t; play('click'); talk.say(s, () => ({ x: walker.px, y: walker.py - 44 })); };
   const LOOK = '👀 Det här är bara att titta på – varorna med stor gul prislapp kan du köpa!';
   const spots = [
     ...R.displays.map((s) => ({ id: s.f.id, food: s, r: s.r, go: s.go, act: () => addToBasket(s) })),
@@ -2885,6 +2887,7 @@ export function makeShopMat(A) {
       const cx = Math.round(cam.x), cy = Math.round(cam.y);
       ctx.setTransform(A.pxs, 0, 0, A.pxs, -cx * A.pxs, -cy * A.pxs);
       drawWorld(ctx, cx, cy, VW, VH);
+      talk.draw(ctx, { x0: cx, x1: cx + VW });
       ctx.setTransform(A.pxs, 0, 0, A.pxs, 0, 0);
       drawPanel(ctx);
       const focus = focusSpot();

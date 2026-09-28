@@ -38,6 +38,11 @@
 //   L.autoPlace()         – ställer ut köpta prylar som saknas i hemmet (görs automatiskt när lagret
 //                           skapas om hemmet har djur; opts.autoPlace = false stänger av)
 //   L.exit()              – när scenen lämnas (släpper live-läget, lyssnaren och A.carrying)
+//   L.invalidate()        – scenens gångbarhet (isFree) har ändrats, t.ex. en möbel flyttades:
+//                           djurens vägnät byggs om, och ett djur som nu står i en möbel
+//                           kliver ut till närmaste lediga plats
+//   L.placing             – true medan en pryl hålls i handen (spöket; nästa klick ställer den)
+//   L.itemAt(wx, wy)      – { id, k } för prylen under pekaren (även med ett djur i den) | null
 //   L.version             – räknas upp när prylarnas hinder ändras
 //   L._debug              – { actors, spot(petId|itemId|k|'bajs') → {x,y} (logiska px), pets(), items(),
 //                             meters() (skyltarnas lägen), think(id), goTo(id, x, y, run),
@@ -794,6 +799,8 @@ export function createPetLayer(A, opts = {}) {
     }) || null;
   }
   function messAt(x, y) { return messes().find((m) => Math.abs(m.x - x) <= 6 && y >= m.y - 8 && y <= m.y + 3) || null; }
+  // pekar man mitt på högen/pölen går den före djuret (hunden står ofta kvar ovanpå den)
+  function messAtTight(x, y) { return messes().find((m) => Math.abs(m.x - x) <= 4 && y >= m.y - 5 && y <= m.y + 2) || null; }
 
   // Spelaren går fram (om det går) och gör sedan handlingen
   function walkThen(x, y, cb) {
@@ -1118,6 +1125,26 @@ export function createPetLayer(A, opts = {}) {
     }
     return done;
   }
+  // Efter en flytt (sim._migrate) har prylar och olyckor rum = null och koordinater från
+  // den gamla bostaden: de hör hemma i det första rum lagret visar. Står en pryl då i en
+  // möbel, i väggen eller utanför det här (kanske mindre) rummet flyttas den till en
+  // ledig plats (annars ligger den kvar – den går att flytta via Djurprylar).
+  function adoptLoose() {
+    let n = 0;
+    for (const it of store.items) {
+      if (it.home !== home || it.room != null) continue;
+      it.room = room; n++;
+      if (!canPlace(it.k, it.x, it.y, it.id)) { const sp = findSpot(it.k); if (sp) { it.x = sp[0]; it.y = sp[1]; } }
+    }
+    for (const m of store.messes) {
+      if (m.home !== home || m.room != null) continue;
+      m.room = room; n++;
+      if (!petFree(m.x, m.y, null)) [m.x, m.y] = nearestFreePt(clamp(m.x, B.left + 6, B.right - 6), clamp(m.y, B.top + 6, B.bottom - 3)).map(Math.round);
+    }
+    if (n) { version++; opts.onObstacles?.(obstacles()); store.save(); }
+    return n;
+  }
+  adoptLoose();
   if (opts.autoPlace !== false && store.pets.some((p) => p.home === home)) autoPlace();
 
   syncActors();
@@ -1168,6 +1195,7 @@ export function createPetLayer(A, opts = {}) {
       if (lastSync > 0.5) {
         lastSync = 0;
         for (const a of actors.values()) if (!a.pet.out) { a.pet.x = Math.round(a.x); a.pet.y = Math.round(a.y); a.pet.room = room; }
+        adoptLoose();
       }
       if (carrying() && !store.itemById(A.carrying.itemId)) setCarry(null);
     },
@@ -1213,9 +1241,10 @@ export function createPetLayer(A, opts = {}) {
     down(wx, wy) {
       mouse = { x: wx, y: wy };
       if (placing) { placing.x = wx; placing.y = wy; commitPlace(); return true; }
-      const a = actorAt(wx, wy);
+      const tight = messAtTight(wx, wy);
+      const a = tight ? null : actorAt(wx, wy);
       if (a) { clickPet(a); return true; }
-      const m = messAt(wx, wy);
+      const m = tight || messAt(wx, wy);
       if (m) {
         walkThen(m.x, m.y + 5, () => { if (store.cleanMess(m.id)) { play('coin'); spark(m.x, m.y, 'clean'); toast(m.kind === 'kiss' ? '🧽 Torkat upp!' : '🧻 Städat bort!', 'good'); version++; } });
         return true;
@@ -1227,9 +1256,10 @@ export function createPetLayer(A, opts = {}) {
     hover(wx, wy) {
       mouse = { x: wx, y: wy };
       if (placing) { placing.x = wx; placing.y = wy; }
-      const a = actorAt(wx, wy);
+      const tight = messAtTight(wx, wy);
+      const a = tight ? null : actorAt(wx, wy);
       if (a) { hover = { kind: 'pet', id: a.id, label: `${a.pet.name} (${speciesWord(a.pet).toLowerCase()})` }; return hover; }
-      const m = messAt(wx, wy);
+      const m = tight || messAt(wx, wy);
       if (m) { hover = { kind: 'mess', id: m.id, label: m.kind === 'kiss' ? 'Kisspöl – torka upp' : 'Bajs – städa bort' }; return hover; }
       const it = itemAt(wx, wy);
       if (it) { hover = { kind: 'item', id: it.id, label: `${PET_ITEMS[it.k].namn} – ${itemStatus(it)}` }; return hover; }
@@ -1246,6 +1276,18 @@ export function createPetLayer(A, opts = {}) {
     },
     obstacles,
     openInventory, startPlacing, startMoving, autoPlace,
+    get placing() { return !!placing; },
+    // prylen under pekaren (även om ett djur ligger i den) – { id, k } | null (Möblera-läget)
+    itemAt(wx, wy) { const it = itemAt(wx, wy); return it ? { id: it.id, k: it.k } : null; },
+    invalidate() {
+      gridV = -1; // findPath bygger om nätet vid nästa sökning
+      for (const a of actors.values()) {
+        if (a.elev || a.mode === 'jump' || a.pet.out || petFree(a.x, a.y, a.allow)) continue;
+        // en möbel ställdes där djuret stod: kliv ut till närmaste lediga plats
+        [a.x, a.y] = nearestFreePt(a.x, a.y);
+        a.vx = 0; a.vy = 0; a.path = []; a.then = null; a.mode = 'idle'; a.modeT = 0.3;
+      }
+    },
     cancel() { placing = null; setCarry(null); },
     exit() {
       unsub();

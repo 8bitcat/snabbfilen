@@ -206,6 +206,14 @@ function render(L0, dir, frame) {
     tags[p] = R.tag;
   };
   const rect = (x, y, w, h, c) => { for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) put(x + i, y + j, c); };
+  // sudda (genomskinligt igen) – t.ex. hår som en hjälm ska dölja. Konturen läggs efteråt, så kanten blir rätt.
+  const erase = (x, y) => {
+    if (flip) x = SW - 1 - x;
+    if (x < 0 || y < 0 || x >= SW || y >= SH) return;
+    const p = y * SW + x;
+    d[p * 4 + 3] = 0; tags[p] = TAG.none;
+  };
+  const eraseRect = (x, y, w, h) => { for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) erase(x + i, y + j); };
   const has = (x, y) => { if (flip) x = SW - 1 - x; return x >= 0 && y >= 0 && x < SW && y < SH && d[(y * SW + x) * 4 + 3] > 0; };
   const topAt = (x, fb) => { for (let y = 0; y < SH; y++) if (has(x, y)) return y; return fb; }; // översta ritade pixeln i kolumnen
   const get = (x, y) => { if (flip) x = SW - 1 - x; if (x < 0 || y < 0 || x >= SW || y >= SH) return -1; const i = (y * SW + x) * 4; return d[i + 3] ? (d[i] << 16) | (d[i + 1] << 8) | d[i + 2] : -1; };
@@ -270,7 +278,7 @@ function render(L0, dir, frame) {
 
   Object.assign(R, {
     L, dir, frame, view, side, back, front: view === 'front', flip, K, adult: !K, SW, SH, TAG,
-    put, rect, has, topAt, get, tagAt, each, pattern, draw, E, id,
+    put, rect, erase, eraseRect, has, topAt, get, tagAt, each, pattern, draw, E, id,
     mix, mul, ramp, far, toneOf, toInt,
     // färger (ramper { hi, base, lo, dk } om inget annat sägs)
     skin: skinR, hair: hairR, shirt: shirtR, acc: accR,

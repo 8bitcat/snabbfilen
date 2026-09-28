@@ -22,7 +22,20 @@
 // bildruta ritas bara färdiga bilder på heltalskoordinater i skala 1.
 //
 // Kontrakt (docs/STADEN.md): createTraffic(env) →
-//   { items(), obstacles, update(dt), glow(ctx), pedGreen(i), positions(), vehicles(), carLight(i), pedLight(i) }
+//   { items(), obstacles, update(dt), glow(ctx), pedGreen(i), positions(), vehicles(), carLight(i), pedLight(i),
+//     line(), busAt(id), busDoorHit(x, y), hold(id, s), release(id), destinations(id), board(från, till, opts),
+//     ride(), alight(force), skipRide(), nextBus(id), summon(id) }
+//
+// BUSSEN PÅ RIKTIGT (linje 4): tre bussar kör slingan Pixelgatan → runt kvarteret → Södergatan →
+// runt igen och stannar vid alla BUS_STOPS med framdörren vid stop.x + 40. LED-skylten rullar
+// nästa hållplats. Står spelaren vid en hållplats kallas en buss fram. Scenen (city.js) kopplar in:
+//   klick:   const b = traffic.busDoorHit(x, y) → traffic.hold(b.stop.id); gå till b.board →
+//            fråga "Vill du åka till …?" (traffic.destinations(b.stop.id)) → betala →
+//            traffic.board(b.stop.id, tillId, { draw: (ctx, x, fotY, dir) => drawPerson(…) }); avbryt → release
+//   varje bildruta: const r = traffic.ride(); om r: figuren ritas inte (den sitter i bussen), walker
+//            följer r.pos (kameran följer bussen), svart ton = r.fade (hoppet sker när r.fade === 1);
+//            r.phase === 'framme' → const p = traffic.alight(); ställ figuren på p.
+//   klick under resan → traffic.skipRide() (tona direkt till målet).
 import { Pix, mix, mul, hash, bayer, SMALL, BIG, text, textW, ctxText } from '../core/floor-pix.js';
 import { CITY, ROADS, CROSSWALKS_ALL, LIGHTS_ALL, LOTS, buildingById } from './map.js';
 
@@ -123,6 +136,10 @@ const SPECS = {
   moped: { L: 28, D: 0, r: 4, wheels: [5, 22], rim: 'moped', moped: true, head: { x: 24, h0: 12, h1: 13 }, tail: { w: 2, h0: 9, h1: 10 } },
 };
 SPECS.taxi = { ...SPECS.sedan, taxi: true, extraTop: 8 };
+// Bussen: framdörrens mitt räknat från bakänden, och rutan där spelaren sitter när hen åker med
+// (fönstret framför mittdörren – full glashöjd, ingen skylt i vägen).
+const DOOR_Q = (SPECS.buss.doors[1][0] + SPECS.buss.doors[1][1]) >> 1;
+const SEAT = [32, 43];
 
 const PAINT = [0xc23a32, 0x2f6db5, 0xc3c8d0, 0xe9e9eb, 0x2b2e36, 0x3f8a55, 0xd99a2b, 0x2a9d9a, 0x7a2e3e, 0x5e7b99, 0xe57a2e, 0x6b4f8f];
 const RUST_PAINT = [0x7a6f5e, 0x8a4a3a, 0x5e6a5e, 0x9a8a6a, 0x6a5a7a, 0x4a5a6a, 0xa89a6a, 0x6e5a4a];
@@ -452,6 +469,9 @@ function paintVehicle(kind, color, variant, opts = {}) {
 
   // ---------- typernas särdrag ----------
   const box = (x0, h0, w, hh, fill) => { for (let j = 0; j < hh; j++) for (let i = 0; i < w; i++) put(x0 + i, h0 + j, fill(i, j)); };
+  // bussen: den tomma fönsterplatsen (SG) och dess glasrader
+  const SG = s.bus ? new Pix(W, H) : null;
+  let seatH0 = 999, seatH1 = -1;
   if (s.taxi) {
     // rutig list och takskylt
     for (let x = 14; x <= 44; x++) for (const h of [7, 8]) if (get(x, h) === BODY) put(x, h, (x + h) & 1 ? 0x1a1a1e : 0xf4f4f0);
@@ -545,9 +565,15 @@ function paintVehicle(kind, color, variant, opts = {}) {
         else if (h === 19 || h === 20) put(x, h, 0x3a3c44);
       }
     }
-    // skyltar i rutorna
-    box(65, 29, 26, 7, (i, j) => (i === 0 || i === 25 || j === 0 || j === 6 ? 0x2a2a2e : 0x0c0c0e));
+    // skyltar i rutorna: LED-skylten (släckta lysdioder i rutnät – texten rullar fram i drawCar) och linjenumret
+    box(65, 29, 26, 7, (i, j) => (i === 0 || i === 25 || j === 0 || j === 6 ? 0x2a2a2e : (i + j) % 2 ? 0x0c0c0e : 0x1c140c));
     box(93, 29, 7, 7, (i, j) => (i === 0 || i === 6 || j === 0 || j === 6 ? 0x2a2a2e : 0x0c0c0e));
+    // spelarens fönsterplats: den tomma rutan sparas innan passagerarna målas (ritas över dem när man åker med)
+    for (let x = SEAT[0]; x <= SEAT[1]; x++) for (let h = s.belt + 1; h <= winTop; h++) {
+      if (get(x, h) !== GLASS) continue;
+      SG.px(x + 1, gy - h, cur(x, h));
+      seatH0 = Math.min(seatH0, h); seatH1 = Math.max(seatH1, h);
+    }
     // reklamskylt för Burgarbaren mellan mittdörren och framhjulet
     box(66, 8, 17, 10, (i, j) => (i === 0 || i === 16 || j === 0 || j === 9 ? 0x3a1a14 : i === 1 || i === 15 || j === 1 || j === 8 ? 0xf4f0e6 : mix(0xf6c83a, 0xe8a820, j / 9)));
     const BURGER = ['..#####..', '.#######.', '#########', 'ggggggggg', 'rrrrrrrrr', 'mmmmmmmmm', '.#######.'];
@@ -602,7 +628,18 @@ function paintVehicle(kind, color, variant, opts = {}) {
   const N = s.bus ? new Pix(W, H) : null;
   if (N) for (let x = 0; x < L; x++) for (let h = 0; h <= gy; h++) {
     if (!onGlass(x, h)) continue;
-    N.px(x + 1, gy - h, 0xffe2a0, occ[(gy - h) * W + x + 1] ? 0.12 : 0.5);
+    const seat = x >= SEAT[0] && x <= SEAT[1];   // spelarens plats lyses svagare så att figuren syns i kvällsljuset
+    N.px(x + 1, gy - h, 0xffe2a0, occ[(gy - h) * W + x + 1] ? 0.12 : seat ? 0.2 : 0.5);
+  }
+  // glaset framför spelarens plats: svag blåton, en diagonal glansrand och mörkare överkant
+  const SH = s.bus ? new Pix(W, H) : null;
+  if (SH) for (let x = SEAT[0]; x <= SEAT[1]; x++) for (let h = seatH0; h <= seatH1; h++) {
+    if (get(x, h) !== GLASS) continue;
+    const t = (h - seatH0) / Math.max(1, seatH1 - seatH0), st = (((x - h) % 23) + 23) % 23;
+    SH.px(x + 1, gy - h, mix(0x5a7792, 0x1c2633, t), 0.2 + t * 0.12);
+    if (st < 2) SH.px(x + 1, gy - h, 0xe6f2ff, 0.34); else if (st === 2 || st === 5) SH.px(x + 1, gy - h, 0xe6f2ff, 0.12);
+    if (h === seatH1) SH.px(x + 1, gy - h, 0x0a0c12, 0.45);
+    if (x === SEAT[0] || x === SEAT[1]) SH.px(x + 1, gy - h, 0x0a0c12, 0.25);
   }
   // ---------- bromsljusen (läggs över när bilen bromsar) ----------
   const O = new Pix(W, H);
@@ -629,7 +666,7 @@ function paintVehicle(kind, color, variant, opts = {}) {
     if (s.taxi) T(SMALL, 'TAXI', 19, 29, 0x2a2014);
     if (s.brand === 'pixelbud') { T(BIG, 'PIXELBUD', 3, 29, 0x1f4fa8, 0xb8c8e4); T(SMALL, 'LEVERANS', 9, 17, 0xffffff, 0xa85210); }
     if (s.brand === 'glass') T(BIG, 'GLASS', 13, 42, 0xd83a80);
-    if (s.bus) { T(SMALL, 'PIXELTRAFIK', 36, 42, 0xa8261e, 0xd0d0c8); T(SMALL, 'TORGET', 67, 34, 0xffb22a); T(SMALL, '4', 95, 34, 0xffb22a); }
+    if (s.bus) { T(SMALL, 'PIXELTRAFIK', 36, 42, 0xa8261e, 0xd0d0c8); T(SMALL, '4', 95, 34, 0xffb22a); }
     if (s.blade) { T(SMALL, 'PIXELPLOG', 6, 27, 0xffffff, 0x2a2e36); T(SMALL, 'SALT', 26, 21, 0xe8e0c8); }
   };
   decal(P, false); decal(Q, true);
@@ -643,16 +680,20 @@ function paintVehicle(kind, color, variant, opts = {}) {
     ws = { x0: s.ws[0], x1: s.ws[1], h0: s.belt + 1, h1: top };
   }
   const topH = Math.max(...ht) + D;
+  const SGQ = SG && mirrored(SG), SHQ = SH && mirrored(SH);
   return {
     W, H, gy, hb, topH, ws,
     img: [P.flush(), Q.flush()], brake: [O.flush(), OQ.flush()],
     night: N ? [N.flush(), NQ.flush()] : null, door: DP ? [DP.flush(), DQ.flush()] : null,
     snow: [ov.S.flush(), ovS.flush()], refl: [ov.R.flush(), ovR.flush()],
+    // bussen: spelarens fönsterplats (tom ruta + glaset framför) i bilkoordinater
+    seat: SG && seatH1 >= 0 ? { q0: SEAT[0], q1: SEAT[1], h0: seatH0, h1: seatH1 } : null,
+    seatGlass: SG ? [SG.flush(), SGQ.flush()] : null, sheen: SH ? [SH.flush(), SHQ.flush()] : null,
   };
 }
 
-// ---------- mopeden (sidan): liten skoter med förare i hjälm ----------
-function paintMoped(color, variant) {
+// ---------- mopeden (sidan): liten skoter med förare i hjälm (rider = false: parkerad, tom) ----------
+function paintMoped(color, variant, rider = true) {
   const L = 28, gy = 27, W = L + 2, H = gy + 3;
   const P = new Pix(W, H);
   const put = (x, h, c, a = 1) => P.px(x + 1, gy - h, c, a);
@@ -674,31 +715,71 @@ function paintMoped(color, variant) {
   put(21, 13, 0xfff3c8); put(22, 13, 0xffffff); put(21, 12, 0xd8dce4); put(22, 12, 0xfff3c8); put(23, 12, 0xf0a030);
   put(1, 9, 0xd42a2a); put(1, 10, 0xff7766); put(2, 7, 0xeeeef2); put(3, 7, 0xeeeef2);
   for (let x = 2; x <= 9; x++) put(x, 4, x < 4 ? 0x4a4c54 : 0x8a8e96);
-  // föraren
-  const skin = SKINS[Math.floor(rnd(1) * SKINS.length)], jacket = SHIRTS[Math.floor(rnd(2) * SHIRTS.length)];
-  const helmet = [0xe8e4dc, 0x2b2e36, 0xd9433b, 0x3a7bd5, 0xf2c230][variant % 5];
-  for (let h = 7; h <= 13; h++) { put(12, h, 0x2c3040); put(13, h, 0x2c3040); }
-  put(12, 6, 0x1a1a1e); put(13, 6, 0x1a1a1e); put(14, 6, 0x1a1a1e);
-  for (let x = 11; x <= 15; x++) for (let h = 14; h <= 20; h++) put(x, h, x === 15 ? mul(jacket, 0.7) : x === 11 ? mix(jacket, 0xffffff, 0.2) : jacket);
-  for (let x = 15; x <= 20; x++) put(x, 18 - Math.round((x - 15) * 0.4), jacket);
-  put(20, 16, skin); put(21, 16, skin); put(13, 21, skin); put(14, 21, skin);
-  for (let x = 10; x <= 16; x++) for (let h = 21; h <= 27; h++) {
-    const d = Math.hypot(x - 13, h - 24.3);
-    if (d > 3.4) continue;
-    put(x, h, d > 2.7 ? mul(helmet, 0.7) : x + h < 35 ? mix(helmet, 0xffffff, 0.25) : helmet);
+  if (rider) {
+    // föraren
+    const skin = SKINS[Math.floor(rnd(1) * SKINS.length)], jacket = SHIRTS[Math.floor(rnd(2) * SHIRTS.length)];
+    const helmet = [0xe8e4dc, 0x2b2e36, 0xd9433b, 0x3a7bd5, 0xf2c230][variant % 5];
+    for (let h = 7; h <= 13; h++) { put(12, h, 0x2c3040); put(13, h, 0x2c3040); }
+    put(12, 6, 0x1a1a1e); put(13, 6, 0x1a1a1e); put(14, 6, 0x1a1a1e);
+    for (let x = 11; x <= 15; x++) for (let h = 14; h <= 20; h++) put(x, h, x === 15 ? mul(jacket, 0.7) : x === 11 ? mix(jacket, 0xffffff, 0.2) : jacket);
+    for (let x = 15; x <= 20; x++) put(x, 18 - Math.round((x - 15) * 0.4), jacket);
+    put(20, 16, skin); put(21, 16, skin); put(13, 21, skin); put(14, 21, skin);
+    for (let x = 10; x <= 16; x++) for (let h = 21; h <= 27; h++) {
+      const d = Math.hypot(x - 13, h - 24.3);
+      if (d > 3.4) continue;
+      put(x, h, d > 2.7 ? mul(helmet, 0.7) : x + h < 35 ? mix(helmet, 0xffffff, 0.25) : helmet);
+    }
+    for (let x = 14; x <= 16; x++) put(x, 24, 0x1a1c22);
+    put(15, 23, 0x1a1c22); put(16, 23, 0x2a3040); put(16, 24, 0x3a4a60);
+  } else {
+    // parkerad: sadeln syns hel, en hjälm hänger på styret och stödet står nere
+    for (let x = 8; x <= 17; x++) put(x, 13, 0x2a2a32);
+    for (let x = 9; x <= 16; x++) put(x, 14, 0x3a3a44);
+    for (let x = 22; x <= 25; x++) for (let h = 15; h <= 19; h++) { const d = Math.hypot(x - 23.5, h - 17); if (d < 2.3) put(x, h, d > 1.5 ? 0x8a2a28 : 0xd9433b); }
+    put(23, 20, 0x1a1c22);
+    put(10, 4, 0x3a3c44); put(10, 3, 0x3a3c44); put(9, 2, 0x3a3c44); put(9, 1, 0x2a2c32); put(10, 1, 0x2a2c32);
   }
-  for (let x = 14; x <= 16; x++) put(x, 24, 0x1a1c22);
-  put(15, 23, 0x1a1c22); put(16, 23, 0x2a3040); put(16, 24, 0x3a4a60);
   const Q = mirrored(P), O = new Pix(W, H);
   O.px(2, gy - 9, 0xff3a2a); O.px(2, gy - 10, 0xffb0a0);
   const OQ = mirrored(O), ov = overlays(P, gy), ovS = mirrored(ov.S), ovR = mirrored(ov.R);
   return { W, H, gy, hb: new Array(L).fill(3), topH: 28, ws: null, img: [P.flush(), Q.flush()], brake: [O.flush(), OQ.flush()], night: null, door: null, snow: [ov.S.flush(), ovS.flush()], refl: [ov.R.flush(), ovR.flush()] };
 }
 
+// ---------- bussens LED-skylt: "4 NÄSTA FLYGPLATSEN" som rullar fram ----------
+// Remsan innehåller texten tre gånger efter varandra så att ett 24 px brett fönster
+// alltid kan klippas ut ur den (sx = rullningen modulo en period). Rad 0–1 = prickarna över Å/Ä/Ö.
+const LCACHE = {};
+function ledStrip(str) {
+  if (LCACHE[str]) return LCACHE[str];
+  const gap = 14, per = textW(SMALL, str) + gap, W = per * 2 + 26, H = 7;
+  const P = new Pix(W, H);
+  for (const ox of [0, per, per * 2]) {
+    text(P, SMALL, str, ox + 1, 3, 0x6a3a08);        // glöd runt de tända dioderna
+    text(P, SMALL, str, ox, 2, 0xffb22a);
+  }
+  return (LCACHE[str] = { img: P.flush(), per });
+}
+// Pilen över framdörren när bussen står inne och spelaren är nära ("kliv på här").
+const ARROW = ['kkkkkkkkk', 'kyyyyyyyk', 'kywwwwwyk', '.kyyyyyk.', '..kyyyk..', '...kyk...', '....k....'];
+const ARROWC = { k: 0x1c1a22, y: 0xffd23f, w: 0xfff3b0 };
+let ARROW_IMG = null;
+function arrowImg() {
+  if (ARROW_IMG) return ARROW_IMG;
+  const P = new Pix(ARROW[0].length, ARROW.length);
+  ARROW.forEach((row, j) => { for (let i = 0; i < row.length; i++) if (row[i] !== '.') P.px(i, j, ARROWC[row[i]]); });
+  return (ARROW_IMG = P.flush());
+}
+// Passageraren: scenen skickar helst en egen ritfunktion (board(…, { draw })); annars laddas
+// figurritaren först när den behövs (board(…, { look })) så att trafiken aldrig beror på den.
+let PEOPLE = null;
+function loadPeople() { if (!PEOPLE) PEOPLE = import('../core/people.js').then((m) => { PEOPLE = m; }).catch(() => { PEOPLE = {}; }); }
+// figurens fotpunkt under fönstrets överkant (figuren är 40 hög; huvud och axlar syns i rutan)
+const RIDER_DY = 37;
+
 const VCACHE = {};
 function vehicleArt(c) {
-  const key = c.kind + ':' + c.color + ':' + c.variant + (c.rust ? ':r' : '');
-  return VCACHE[key] || (VCACHE[key] = c.kind === 'moped' ? paintMoped(c.color, c.variant) : paintVehicle(c.kind, c.color, c.variant, { rust: c.rust }));
+  const key = c.kind + ':' + c.color + ':' + c.variant + (c.rust ? ':r' : '') + (c.parked ? ':p' : '');
+  return VCACHE[key] || (VCACHE[key] = c.kind === 'moped' ? paintMoped(c.color, c.variant, !c.parked) : paintVehicle(c.kind, c.color, c.variant, { rust: c.rust }));
 }
 
 // ======================================================================
@@ -1101,8 +1182,54 @@ const RM = ROADS.map((r) => {
   };
 });
 const rmById = (id) => RM.find((m) => m.id === id) || null;
-// hur många fordon per körfält (bussen och plogen kommer utöver)
-const TARGET = { pixelgatan: [4, 4], sodergatan: [3, 3], infarten: [0, 0] };
+// hur många fordon per körfält (bussarna på linje 4 räknas in, plogen kommer utöver)
+const TARGET = { pixelgatan: [8, 8], sodergatan: [6, 6], infarten: [0, 0] };
+
+// ---------- busslinje 4 ----------
+// Linjen kör österut längs Pixelgatan (PIXELTORGET → FLYGPLATSEN → BETONGTORGET), runt
+// kvarteret utanför bild, österut längs Södergatan (SÖDERKYRKAN) och sedan runt igen. Ett
+// "ben" = en väg + körfältet där hållplatserna ligger, med hållplatserna i körordning. Bussen
+// stannar med framdörren vid stop.x + 40 (mellan kuren och hållplatsskylten); där, på
+// trottoarkanten, kliver spelaren på och av. Tre bussar går runt; står spelaren och väntar
+// kallas den närmaste osynliga bussen fram (summon) så att man aldrig väntar länge.
+const LEGS = RM.filter((m) => m.axis === 'x' && m.stops.length).map((m) => {
+  const lane = m.stops[0].lane, dir = m.lanes[lane].dir;
+  return { rm: m, lane, dir, stops: m.stops.filter((s) => s.lane === lane).sort((a, b) => (a.x - b.x) * dir) };
+});
+const LINE = LEGS.flatMap((l) => l.stops);
+const BUS_L = SPECS.buss.L;
+const LEG_LEN = LEGS.map((l) => l.rm.len + 2 * M + BUS_L + 8);          // s-sträckan innan bussen byter ben
+const LEG_OFF = LEG_LEN.map((_, k) => LEG_LEN.slice(0, k).reduce((a, b) => a + b, 0));
+const LOOP = LEG_LEN.reduce((a, b) => a + b, 0) || 1;
+const lineStop = (id) => (id && typeof id === 'object' ? LINE.find((s) => s === id || s.id === id.id) : LINE.find((s) => s.id === id || s.name === id)) || null;
+const legOfStop = (st) => LEGS.find((l) => l.stops.includes(st)) || null;
+// Framdörren hamnar strax efter hållplatsskylten (kuren står på stop.x ± 33, skylten på stop.x + 46)
+// så att dörren syns – men aldrig så att fronten står över stopplinjen vid ett övergångsställe.
+const FRONT_OFF = (dir) => (dir > 0 ? BUS_L - DOOR_Q : -(BUS_L - 1 - DOOR_Q));
+const STOP_DOOR = new Map();
+for (const leg of LEGS) for (const st of leg.stops) {
+  let door = st.x + 64 * leg.dir;
+  for (const cw of leg.rm.crosswalks) {
+    const line = cw.stop?.[leg.dir];
+    if (line === undefined || (line - st.x) * leg.dir <= 0) continue;
+    if ((door + FRONT_OFF(leg.dir) - line) * leg.dir > -2) door = line - 2 * leg.dir - FRONT_OFF(leg.dir);
+  }
+  STOP_DOOR.set(st.id, door);
+}
+const doorXOf = (st, dir) => STOP_DOOR.get(st.id) ?? st.x + 64 * dir;
+const stopFront = (st, dir) => doorXOf(st, dir) + FRONT_OFF(dir);
+const sOfFront = (rm, dir, front) => (dir > 0 ? front - rm.a0 : rm.a0 + rm.len - front);
+// trottoarkanten mitt för framdörren (där spelaren står när hen kliver på/av)
+function boardPoint(st) {
+  const leg = legOfStop(st), r = leg.rm, near = r.lanes[leg.lane].cross > (r.c0 + r.c1) / 2;
+  return { x: doorXOf(st, leg.dir), y: near ? r.c1 + 6 : r.c0 - 6 };
+}
+/** Linje 4:s hållplatser i körordning (id, name, district, broken …). */
+export const BUS_LINE = LINE;
+const RIDE_SHOW = 4.2;       // så länge man ser bussen köra iväg innan skärmen tonar (långa resor)
+const JUMP_MIN = 640;        // kortare resor än så åker man hela vägen i bild
+const APPROACH = 176;        // efter toningen: så långt före hållplatsen bussen dyker upp
+const FADE_OUT = 0.6, FADE_HOLD = 0.3, FADE_IN = 0.7;
 const KINDS = [['sedan', 30], ['halvkombi', 24], ['taxi', 10], ['skapbil', 10], ['pickup', 9], ['glassbil', 6], ['moped', 7]];
 
 // Förhandsvisning (verktyg): alla fordonstyper åt båda hållen, fram-/bakifrån, rost, plog, moped och stolparnas lägen på ett ark.
@@ -1133,9 +1260,14 @@ export function trafficSheet() {
 
 export function createTraffic(env) {
   let T = 0, lastHonk = -99, frame = 0;
-  const cars = [], puffs = [], ghosts = [];
+  const cars = [], puffs = [], ghosts = [], lineBuses = [];
   const rand = Math.random;
   const I = rmById('infarten'), PG = rmById('pixelgatan'), SG = rmById('sodergatan');
+  // Resan med bussen (null = spelaren går): { bus, from, to, phase 'ombord'|'åker'|'tonar'|'framme', … }
+  let ride = null, riderWarned = false;
+  // Folket som trafiken tar hänsyn till – spelaren räknas inte medan hen sitter i bussen.
+  let folk = [];
+  const waitT = {}, summoned = {};
 
   // vädret just nu (tåligt: fungerar även utan weather.js – då bara env.rain)
   const wx = () => {
@@ -1167,7 +1299,7 @@ export function createTraffic(env) {
   const hi = (c) => lo(c) + c.L;
   const inLane = (rm, li) => cars.filter((c) => c.road === rm && c.lane === li);
   const laneBusy = (rm, li, a0, a1) => inLane(rm, li).some((c) => lo(c) < a1 && hi(c) > a0);
-  const peopleIn = (x0, y0, x1, y1) => (env.people || []).some((p) => p && p.x >= x0 && p.x < x1 && p.y >= y0 && p.y < y1);
+  const peopleIn = (x0, y0, x1, y1) => folk.some((p) => p.x >= x0 && p.x < x1 && p.y >= y0 && p.y < y1);
   const zebraBusy = (cw, pad = 10) => !!cw && peopleIn(cw.x0 - pad, cw.y0 - pad, cw.x1 + pad, cw.y1 + pad);
 
   // Svängarna i T-korsningarna. Högertrafik: från Pixelgatans östra fil (1) svänger man höger
@@ -1215,27 +1347,57 @@ export function createTraffic(env) {
     cars.push(c);
     return c;
   }
+  // krockar ett fordon med fronten på s (längd L) med någon annan i filen?
+  const clash = (rm, li, s, L, self) => cars.some((o) => o !== self && o.road === rm && o.lane === li && o.s - o.L < s + GAP + 4 && o.s > s - L - GAP - 4);
   // fyll på vid världens kant när ett körfält har färre fordon än det ska
   function refill(w, initial) {
     for (const rm of RM) {
       if (rm.axis !== 'x') continue;
       for (const lane of rm.lanes) {
         const list = inLane(rm, lane.i), want = TARGET[rm.id][lane.i];
-        const needBus = lane.i === 1 && !list.some((c) => c.spec.bus);
         const snowy = w.snow > 0.25 || w.kind === 'snö';
         const needPlow = lane.i === 0 && snowy && !list.some((c) => c.kind === 'plog');
-        const total = want + (needBus ? 1 : 0) + (needPlow ? 1 : 0);
+        const total = want + (needPlow ? 1 : 0);
         if (initial) {
-          const loop = rm.len + 2 * M, n = total;
-          for (let k = 0; k < n; k++) spawn(rm, lane.i, k === 0 && needBus ? 'buss' : k === 1 && needPlow ? 'plog' : pickKind(w), -M + (k + 0.3 + rand() * 0.4) * (loop / n));
+          const loop = rm.len + 2 * M, n = Math.max(1, total - list.length);
+          for (let k = 0; k < n; k++) {
+            const kind = k === 0 && needPlow ? 'plog' : pickKind(w), s = -M + (k + 0.3 + rand() * 0.4) * (loop / n);
+            if (!clash(rm, lane.i, s, SPECS[kind].L + 10)) spawn(rm, lane.i, kind, s);   // bussarna står redan där
+          }
           continue;
         }
         if (list.length >= total) continue;
         if (list.some((c) => c.s - c.L < 30)) continue;   // någon står i infarten till världen
-        spawn(rm, lane.i, needBus ? 'buss' : needPlow ? 'plog' : pickKind(w), -M - 8);
+        spawn(rm, lane.i, needPlow ? 'plog' : pickKind(w), -M - 8);
       }
     }
   }
+
+  // ---------- linje 4: bussarna går runt och byter ben utanför bild ----------
+  // Flytta bussen c till benet leg med fronten på s. Står någon i vägen backar bussen bakom
+  // (clear = true: vanliga bilar som står i vägen försvinner i stället – används bakom toningen).
+  function place(c, leg, s, clear = false) {
+    const lane = leg.rm.lanes[leg.lane];
+    for (let k = 0; k < 16; k++) {
+      const hit = cars.find((o) => o !== c && o.road === leg.rm && o.lane === leg.lane && o.s - o.L < s + GAP + 6 && o.s > s - c.spec.L - GAP - 6);
+      if (!hit) break;
+      if (clear && !hit.line && !(ride && ride.bus === hit)) { cars.splice(cars.indexOf(hit), 1); continue; }
+      s = hit.s - hit.L - GAP - 8;
+    }
+    c.road = leg.rm; c.lane = leg.lane; c.dir = lane.dir; c.cross = lane.cross; c.L = c.spec.L; c.s = s;
+    c.leg = LEGS.indexOf(leg); c.done = new Set(); c.dwell = 0; c.door = 0; c.at = null; c.leave = 0; c.holdUntil = 0;
+    c.commit = -1; c.lastCw = -1; c.blink = 0; c.merged = false; c.wait = 0; c.fr = frame; c.brake = false;
+  }
+  function makeLineBus(u) {
+    let k = 0;
+    while (k < LEGS.length - 1 && u >= LEG_OFF[k] + LEG_LEN[k]) k++;
+    const leg = LEGS[k], c = makeCar(leg.rm, leg.lane, 'buss', u - LEG_OFF[k] - M, false);
+    Object.assign(c, { line: true, id: 'buss' + (lineBuses.length + 1), leg: k, at: null, holdUntil: 0, dwellT: 0 });
+    cars.push(c); lineBuses.push(c);
+    return c;
+  }
+  // tre bussar jämnt fördelade över slingan; den första närmar sig Pixeltorget
+  if (LEGS.length) for (let k = 0; k < 3; k++) makeLineBus((stopFront(LINE[0], LEGS[0].dir) - 200 + M + (k * LOOP) / 3) % LOOP);
   refill(wx(), true);
 
   function puff(c, snow) {
@@ -1296,35 +1458,46 @@ export function createTraffic(env) {
     // folk på vägen framför
     if (rm.axis === 'x') {
       const band = c.lane === 0 ? [rm.c0 + 1, rm.c0 + 33] : [rm.c0 + 31, rm.c1 + 1];
-      for (const p of env.people || []) {
-        if (!p || p.y < band[0] || p.y > band[1]) continue;
+      for (const p of folk) {
+        if (p.y < band[0] || p.y > band[1]) continue;
         const a = (p.x - front) * c.dir;
         if (a < -6 || a > 110) continue;
         lim(vStop(a - 16), p === env.player ? 'spelare' : 'folk');
       }
     } else {
-      for (const p of env.people || []) {
-        if (!p || Math.abs(p.x - c.cross) > 13) continue;
+      for (const p of folk) {
+        if (Math.abs(p.x - c.cross) > 13) continue;
         const a = (p.y - front) * c.dir;
         if (a < -6 || a > 90) continue;
         lim(vStop(a - 14), p === env.player ? 'spelare' : 'folk');
       }
     }
-    // bussen stannar vid hållplatserna i sin fil (även den trasiga)
+    // bussen stannar vid hållplatserna i sin fil (även den trasiga) med framdörren mitt för påstigningen
     if (c.spec.bus) {
+      const riding = !!ride && ride.bus === c;
       let next = null;
       for (const st of rm.stops) {
         if (st.lane !== c.lane || c.done.has(st.id)) continue;
-        const d = ahead(st.x + 10 * c.dir);
+        const d = ahead(stopFront(st, c.dir));
         if (d > -4 && (!next || d < next.d)) next = { st, d };
       }
       if (c.dwell > 0) {
         lim(0, 'hållplats');
+        c.dwellT = (c.dwellT || 0) + dt;
+        // dörrarna står kvar öppna: någon har bett bussen vänta (hold), spelaren ska kliva av,
+        // eller spelaren står vid dörren (föraren väntar en stund på den som springer till)
+        const held = (c.holdUntil || 0) > T || (riding && ride.phase === 'framme') || (!ride && c.dwellT < 16 && playerAtDoor(c));
+        if (held) c.dwell = Math.max(c.dwell, 1.6);
         c.dwell -= dt;
-        if (c.dwell <= 0) { c.done.add(c.stopId); c.dwell = 0; c.leave = 1.4; }
+        if (c.dwell <= 0) { c.done.add(c.at || c.stopId); c.dwell = 0; c.leave = 1.4; c.at = null; c.noWait = false; }
       } else if (next) {
         lim(vStop(next.d), 'hållplats');
-        if (Math.abs(next.d) < 2 && c.v < 3) { c.dwell = next.st.broken ? 3.5 : 5.5; c.stopId = next.st.id; }
+        if (Math.abs(next.d) < 2 && c.v < 3) {
+          const dest = riding && ride.to === next.st;
+          c.dwell = next.st.broken ? 4.5 : riding && !dest ? 3.4 : 6;
+          c.stopId = c.at = next.st.id; c.dwellT = 0;
+          if (dest) ride.arrived = true;
+        }
       }
       c.leave = Math.max(0, (c.leave || 0) - dt);
       const want = c.dwell > 0.9 && c.dwell < 5.0 ? 1 : 0;
@@ -1377,11 +1550,127 @@ export function createTraffic(env) {
     }
   }
 
+  // står spelaren på trottoarkanten vid bussens framdörr?
+  function playerAtDoor(c) {
+    const p = env.player, st = c.line && c.at && !c.noWait ? lineStop(c.at) : null;
+    if (!p || !st) return false;
+    const bp = boardPoint(st);
+    return Math.abs(p.x - bp.x) < 70 && Math.abs(p.y - bp.y) < 30;
+  }
+
+  // ---------- linje 4: tidtabell, framkallning och resan ----------
+  // hur långt (längs slingan) bussen har kvar till hållplatsens stopplinje
+  const loopU = (k, s) => LEG_OFF[k] + s + M;
+  function routeDist(c, st) {
+    const leg = legOfStop(st), k = LEGS.indexOf(leg);
+    const u1 = loopU(k, sOfFront(leg.rm, leg.dir, stopFront(st, leg.dir))), u0 = loopU(c.leg, c.s);
+    return (((u1 - u0) % LOOP) + LOOP) % LOOP;
+  }
+  // ungefär hur många sekunder tills bussen c står vid hållplatsen st
+  function etaOf(c, st) {
+    if (c.at === st.id && c.dwell > 0) return 0;
+    const d = routeDist(c, st);
+    let n = 0;
+    for (const s2 of LINE) if (s2 !== st && routeDist(c, s2) < d) n++;
+    return d / (c.cruise * 0.95) + n * 6 + (c.dwell || 0);
+  }
+  function nextBus(id) {
+    const st = lineStop(id);
+    if (!st || !lineBuses.length) return null;
+    return Math.min(...lineBuses.map((c) => etaOf(c, st)));
+  }
+  // bussen som står inne vid hållplatsen (eller precis har börjat rulla därifrån)
+  function standing(st) {
+    if (!st) return null;
+    for (const c of lineBuses) if (c.at === st.id && c.dwell > 0) return c;
+    for (const c of lineBuses) {
+      if (c.stopId !== st.id || !(c.leave > 0) || c.road !== LEGS[c.leg]?.rm) continue;
+      if (Math.abs(frontA(c) - stopFront(st, c.dir)) < 8) return c;
+    }
+    return null;
+  }
+  const seen = (c, v) => hi(c) > v.x - 8 && lo(c) < v.x + v.w + 8 && c.cross + 6 > v.y && c.cross - 52 < v.y + v.h;
+  // Kalla fram en buss: den som annars skulle komma sist och inte syns flyttas (utanför bild)
+  // strax före hållplatsen. Svarar med ungefär hur många sekunder det dröjer.
+  function summon(id) {
+    const st = lineStop(id);
+    if (!st) return null;
+    const eta = nextBus(st.id);
+    if (eta !== null && eta < 16) return eta;
+    const v = env.view || { x: 0, y: 0, w: CITY.VIEW_W || 384, h: CITY.VIEW_H || 216 };
+    const cand = lineBuses.filter((c) => !(ride && ride.bus === c) && !seen(c, v) && !(c.dwell > 0 && c.holdUntil > T));
+    if (!cand.length) return eta;
+    cand.sort((a, b) => etaOf(b, st) - etaOf(a, st));
+    const c = cand[0], leg = legOfStop(st), sf = stopFront(st, leg.dir);
+    let front = leg.dir > 0 ? Math.min(sf - 220, v.x - 24) : Math.max(sf + 220, v.x + v.w + 24);
+    front = leg.dir > 0 ? Math.max(front, leg.rm.a0 - M) : Math.min(front, leg.rm.a1 + M);
+    place(c, leg, sOfFront(leg.rm, leg.dir, front), false);
+    c.v = c.cruise;
+    return etaOf(c, st);
+  }
+  // Resan: 'ombord' (dörrarna stängs) → 'åker' (skärmen följer bussen) → ev. 'tonar' (långa
+  // resor: svart, bussen flyttas till strax före målet, tillbaka) → 'åker' → 'framme' (dörrarna
+  // öppna vid målet – scenen hämtar spelaren med alight()).
+  function jumpTo(c, st) {
+    const leg = legOfStop(st), front = stopFront(st, leg.dir) - leg.dir * APPROACH;
+    place(c, leg, sOfFront(leg.rm, leg.dir, front), true);
+    c.v = c.cruise * 0.85;
+  }
+  function stepRide(dt) {
+    const r = ride, c = r.bus;
+    r.elapsed += dt;
+    if (!cars.includes(c)) { ride = null; return; }
+    if (r.phase === 'ombord') {
+      if (c.dwell <= 0 && c.v > 1) { r.phase = 'åker'; r.t = 0; r.far = r.skip || routeDist(c, r.to) > JUMP_MIN; }
+    } else if (r.phase === 'åker') {
+      r.t += dt;
+      if (r.arrived && c.door > 0.85) { r.phase = 'framme'; r.t = 0; r.exit = boardPoint(r.to); }
+      else if (r.far && !r.arrived && (r.t > RIDE_SHOW || r.skip)) { r.phase = 'tonar'; r.ft = 0; }
+    } else if (r.phase === 'tonar') {
+      r.ft += dt;
+      if (!r.jumped && r.ft >= FADE_OUT) { jumpTo(c, r.to); r.jumped = true; r.jumps++; }
+      r.fade = r.ft < FADE_OUT ? r.ft / FADE_OUT : r.ft < FADE_OUT + FADE_HOLD ? 1 : Math.max(0, 1 - (r.ft - FADE_OUT - FADE_HOLD) / FADE_IN);
+      if (r.ft >= FADE_OUT + FADE_HOLD + FADE_IN) { r.phase = 'åker'; r.fade = 0; r.far = false; r.jumped = false; r.skip = false; r.t = 0; }
+    } else if (r.phase === 'framme') {
+      r.t += dt;
+      if (r.t > 8) alight();   // ingen hämtade spelaren – släpp ändå så att bussen kan gå
+    }
+  }
+  function board(fromId, toId, opts = {}) {
+    if (ride) return false;
+    const from = lineStop(fromId), to = lineStop(toId), c = standing(from);
+    if (!from || !to || from === to || !c) return false;
+    if (c.dwell <= 0) { c.at = c.stopId = from.id; c.done.delete(from.id); c.leave = 0; }
+    c.holdUntil = 0;
+    c.dwell = Math.min(Math.max(c.dwell, 1.5), 2.2);   // dörrarna stängs strax, sedan går bussen
+    ride = {
+      bus: c, from, to, phase: 'ombord', t: 0, ft: 0, fade: 0, elapsed: 0, jumps: 0, far: false, jumped: false, arrived: false, skip: false, exit: null,
+      draw: typeof opts.draw === 'function' ? opts.draw : null, look: opts.look || null, dir: opts.dir || null,
+    };
+    if (!ride.draw && ride.look) loadPeople();
+    return true;
+  }
+  function alight(force = false) {
+    if (!ride) return null;
+    const r = ride, c = r.bus;
+    if (r.phase !== 'framme' && !force) return null;
+    let p = r.exit;
+    if (!p) { // avbruten resa: närmaste trottoarkant vid framdörren
+      const rm = c.road, near = c.cross > (rm.c0 + rm.c1) / 2;
+      p = rm.axis === 'x' ? { x: Math.round(c.dir > 0 ? hi(c) - (BUS_L - DOOR_Q) : lo(c) + (BUS_L - 1 - DOOR_Q)), y: near ? rm.c1 + 6 : rm.c0 - 6 } : { x: rm.c1 + 6, y: Math.round(hi(c)) };
+    }
+    if (c.dwell > 0) c.dwell = Math.min(Math.max(c.dwell, 2.2), 2.8);   // dörrarna står kvar en stund medan man kliver ut
+    c.noWait = true;                                      // … men föraren väntar inte på den som just klev av
+    ride = null;
+    return { x: p.x, y: p.y, stop: r.to };
+  }
+
   function update(dt) {
     dt = Math.min(0.1, Math.max(0, dt || 0));
     T += dt; frame++;
     const w = wx();
     const slow = w.snow > 0.3 ? 0.6 : w.kind === 'regn' ? 0.86 : w.kind === 'dimma' ? 0.72 : 1;
+    folk = (env.people || []).filter((p) => p && !(ride && p === env.player));
     refill(w, false);
     for (const rm of RM) for (const lane of rm.lanes) {
       const all = [...inLane(rm, lane.i), ...ghosts.filter((g) => g.road === rm && g.lane === lane.i)].sort((a, b) => a.s - b.s);
@@ -1392,8 +1681,32 @@ export function createTraffic(env) {
         stepCar(c, all[k + 1] || null, dt, slow, w);
       }
     }
-    // ut ur världen → bort (fyller på från kanten)
-    for (let i = cars.length - 1; i >= 0; i--) { const c = cars[i]; if (c.s - c.L > c.road.len + M) cars.splice(i, 1); }
+    // ut ur världen → bort (fyller på från kanten); linjebussarna kör runt kvarteret till nästa ben
+    for (let i = cars.length - 1; i >= 0; i--) {
+      const c = cars[i];
+      if (c.s - c.L <= c.road.len + M) continue;
+      if (c.line) place(c, LEGS[(c.leg + 1) % LEGS.length], -M - 4);
+      else cars.splice(i, 1);
+    }
+    if (ride) stepRide(dt);
+    // spelaren som står och väntar vid en hållplats får en buss inom några sekunder
+    const p = env.player;
+    if (p && !ride) for (const st of LINE) {
+      const bp = boardPoint(st);
+      const near = (Math.abs(p.x - st.wait.x) < 40 && Math.abs(p.y - st.wait.y) < 16) || (Math.abs(p.x - bp.x) < 44 && Math.abs(p.y - bp.y) < 12);
+      waitT[st.id] = near ? (waitT[st.id] || 0) + dt : 0;
+      if (!near) summoned[st.id] = false;
+      else if (waitT[st.id] > 2.5 && !summoned[st.id]) { summoned[st.id] = true; summon(st.id); }
+    }
+    // när vädret slår om åker mopederna hem (snö, ösregn) och glassbilen in i garaget (vinter) – men bara utanför bild
+    const view = env.view, winter = w.season === 'vinter' || w.snow > 0.2 || w.temp < 4;
+    const noMoped = w.snow > 0.3 || (w.kind === 'regn' && w.k > 0.6);
+    if (view && (noMoped || winter)) for (let i = cars.length - 1; i >= 0; i--) {
+      const c = cars[i];
+      if (!((c.kind === 'moped' && noMoped) || (c.kind === 'glassbil' && winter))) continue;
+      const seen = c.road.axis === 'x' ? hi(c) > view.x - 80 && lo(c) < view.x + view.w + 80 : c.cross > view.x - 80 && c.cross < view.x + view.w + 80 && hi(c) > view.y - 80 && lo(c) < view.y + view.h + 80;
+      if (!seen) cars.splice(i, 1);
+    }
     for (let i = ghosts.length - 1; i >= 0; i--) if (ghosts[i].until < T) ghosts.splice(i, 1);
     for (let i = puffs.length - 1; i >= 0; i--) {
       const p = puffs[i];
@@ -1404,35 +1717,31 @@ export function createTraffic(env) {
   }
 
   // ---------- parkerade fordon i förorten ----------
+  // (samordnat med props.js: rekvisitan har den övre raden på parkeringen, vraket på tomten,
+  //  tvättlinan på vagnsplatsen och oljefaten vid garagen – trafikens bilar står där det är fritt)
   const parked = [], obstacles = LIGHTS_ALL.map((l) => [l.x - 3, l.y - 2, l.x + 4, l.y + 1]);
   {
     const lot = LOTS.find((l) => l.id === 'parkering');
     const bay = (k) => lot.rect[0] + 12 + k * 26 + 13;
-    const yTop = lot.rect[1] + 42, yBot = lot.rect[3] - 8;
-    // parkeringen: nos in i rutorna – översta raden ses bakifrån, nedersta framifrån
-    const P1 = { kind: 'sedan', color: 0x8a4a3a, variant: 1, rust: true }, P2 = { kind: 'pickup', color: 0x5e6a5e, variant: 2, rust: true };
+    const yBot = lot.rect[3] - 8;
+    // parkeringen: nos in i rutorna på den nedre raden (bakifrån = nosen mot mittgången, framifrån = backad in)
+    const P1 = { kind: 'sedan', color: 0x8a4a3a, variant: 1, rust: true };
     const P3 = { kind: 'halvkombi', color: 0x9a8a6a, variant: 3, rust: true }, P4 = { kind: 'skapbil', color: 0xa89a6a, variant: 0, rust: true };
-    for (const [spec, x, y, rear] of [[P1, bay(2), yTop, true], [P2, bay(5), yTop, true], [P3, bay(1), yBot, false], [P4, bay(6), yBot, false]]) {
+    for (const [spec, x, y, rear] of [[P1, bay(2), yBot, true], [P3, bay(4), yBot, false], [P4, bay(6), yBot, false]]) {
       const E = endArt(spec, rear);
       parked.push({ x, y, end: E, obstacle: [x - (E.W >> 1) + 2, y - 26, x + (E.W >> 1) - 2, y + 1] });
     }
-    // tomten: ett vrak på pallar utan framhjul, ogräs runt om
-    const tomt = LOTS.find((l) => l.id === 'tomten');
-    if (tomt) {
-      const x0 = tomt.rect[0] + 14, y = tomt.rect[1] + 112;
-      parked.push({ x: x0 + 29, y, side: { kind: 'sedan', color: 0x5e6a5e, variant: 2, rust: true }, x0, wreck: true, obstacle: [x0, y - 12, x0 + 58, y + 1] });
-    }
-    // vagnsplatsen: rostig pickup bredvid husvagnen
+    // vagnsplatsen: rostig pickup bakom husvagnen (ovanför tvättlinan)
     const vp = LOTS.find((l) => l.id === 'vagnsplatsen');
     if (vp) {
-      const x0 = vp.rect[0] + 10, y = vp.rect[1] + 66;
+      const x0 = vp.rect[0] + 10, y = vp.rect[1] + 32;
       parked.push({ x: x0 + 31, y, side: { kind: 'pickup', color: 0x8a4a3a, variant: 0, rust: true }, x0, flip: 1, obstacle: [x0, y - 12, x0 + 62, y + 1] });
     }
-    // mopeden utanför garagen (någon skruvar på en till där inne)
+    // mopeden vid kantstenen utanför garagen, tom och på stödet (någon skruvar på en till där inne)
     const gar = buildingById('garage');
     if (gar) {
-      const x0 = gar.x + gar.w - 26, y = gar.base + 14;
-      parked.push({ x: x0 + 14, y, side: { kind: 'moped', color: 0xf2c230, variant: 2 }, x0, obstacle: [x0 + 2, y - 6, x0 + 26, y + 1] });
+      const x0 = gar.x + gar.w - 36, y = CITY.SIDEWALK_SN[1] - 4;
+      parked.push({ x: x0 + 14, y, side: { kind: 'moped', color: 0xf2c230, variant: 2, parked: true }, x0, obstacle: [x0 + 2, y - 6, x0 + 26, y + 1] });
     }
     for (const p of parked) obstacles.push(p.obstacle);
   }
@@ -1453,19 +1762,21 @@ export function createTraffic(env) {
     fn();
     ctx.globalCompositeOperation = op; ctx.globalAlpha = ga;
   }
-  // torkaren: en liten pinne som pendlar över vindrutan (två lägen)
+  // torkaren: en liten pinne som pendlar över vindrutan (två lägen). Bladet är ljust så det
+  // syns mot det mörka glaset, och en ljus rand av rentorkat glas följer efter det.
   function wiper(ctx, A, f, x0, laneY) {
     const ws = A.ws;
     if (!ws) return;
     const up = Math.floor(T * 3) % 2 === 0;
     const len = Math.min(7, ws.h1 - ws.h0 + 1);
     const px = ws.x1 - 2, ph = ws.h0;
-    ctx.fillStyle = 'rgba(20,22,30,0.85)';
     for (let k = 0; k < len; k++) {
       const cx = up ? px - Math.round(k * 0.35) : px - Math.round(k * 0.9), ch = up ? ph + k : ph + Math.round(k * 0.45);
       if (ch > ws.h1) break;
       const sx = f ? x0 + A.W - 3 - cx : x0 + cx;
+      ctx.fillStyle = k === 0 ? '#2a2c34' : '#c8d2dc';
       ctx.fillRect(sx, laneY - 1 - ch, 1, 1);
+      if (k > 0 && k < len - 1) { ctx.fillStyle = 'rgba(220,236,255,0.35)'; ctx.fillRect(sx + (f ? 1 : -1) * (up ? 1 : 0), laneY - 1 - ch - (up ? 0 : 1), 1, 1); }
     }
   }
   function drawCar(ctx, c, w) {
@@ -1485,6 +1796,10 @@ export function createTraffic(env) {
         const y0 = A.gy - s.winTop, hh = s.winTop - A.hb[d0];
         ctx.drawImage(A.door[f], sx, y0, open, hh, x0 - 1 + sx, top + y0, open, hh);
       }
+    }
+    if (c.line) {
+      if (ride && ride.bus === c) drawRider(ctx, c, A, f, x0, top);
+      drawLed(ctx, c, A, f, x0, top, 1);
     }
     // hjulen
     const rim = c.rust ? 'rust' : s.rim, n = RIMN[rim], per = (Math.PI * 2) / n, rot = (c.dist / s.r) * c.dir;
@@ -1521,6 +1836,51 @@ export function createTraffic(env) {
       ctx.drawImage(tg.img, tx - tg.ox, ty - tg.oy);
     });
     if (c.tut > 0) bubble(ctx, x0 + (L >> 1), c.cross - 1 - A.topH - 2);
+    // pilen över framdörren: bussen står inne och spelaren är nära – klicka för att kliva på
+    if (c.line && !ride && !c.noWait && c.at && c.dwell > 0 && c.door > 0.6) {
+      const p = env.player, bp = boardPoint(lineStop(c.at));
+      if (p && Math.abs(p.x - bp.x) < 150 && Math.abs(p.y - bp.y) < 70) {
+        const img = arrowImg(), dx = f ? x0 + L - 1 - DOOR_Q : x0 + DOOR_Q;
+        ctx.drawImage(img, dx - (img.width >> 1), top + (A.gy - A.topH) - img.height - 3 + (Math.floor(T * 2.6) % 2));
+      }
+    }
+  }
+  // Spelaren i sin fönsterplats: den tomma rutan läggs över de målade passagerarna, figuren ritas
+  // klippt till glaset (scenens egen figur, ride.draw) och glaset med glansen läggs ovanpå.
+  function drawRider(ctx, c, A, f, x0, top) {
+    const st = A.seat;
+    if (!st || !A.seatGlass) return;
+    const L = c.spec.L;
+    const xa = f ? x0 + L - 1 - st.q1 : x0 + st.q0, xb = f ? x0 + L - 1 - st.q0 : x0 + st.q1;
+    const ya = top + (A.gy - st.h1), yb = top + (A.gy - st.h0);
+    ctx.drawImage(A.seatGlass[f], x0 - 1, top);
+    const look = ride.look, dp = PEOPLE && PEOPLE.drawPerson;
+    const fn = ride.draw || (look && dp ? (cx, x, y, d) => dp(cx, x, y, look, d, 0) : null);
+    if (fn) {
+      ctx.save();
+      ctx.beginPath(); ctx.rect(xa, ya, xb - xa + 1, yb - ya + 1); ctx.clip();
+      try { fn(ctx, (xa + xb + 1) >> 1, ya + RIDER_DY, ride.dir || 'down'); } catch (e) {
+        if (!riderWarned) { riderWarned = true; console.error('passageraren i bussen kunde inte ritas:', e); }
+      }
+      ctx.restore();
+    }
+    ctx.drawImage(A.sheen[f], x0 - 1, top);
+  }
+  // LED-skylten: nästa hållplats rullar förbi (a = styrka; glow ritar den igen med 'lighter')
+  function drawLed(ctx, c, A, f, x0, top, a) {
+    const nx = nextStopOf(c), strip = ledStrip(nx ? nx.name : 'EJ I TRAFIK');
+    const sx = Math.floor(T * 13) % strip.per, dx = f ? x0 + c.spec.L - 1 - 89 : x0 + 66;
+    if (a !== 1) ctx.globalAlpha = a;
+    ctx.drawImage(strip.img, sx, 1, 24, 6, dx, top + (A.gy - 35), 24, 6);
+    if (a !== 1) ctx.globalAlpha = 1;
+  }
+  // nästa hållplats för en linjebuss (står den inne: hållplatsen efter)
+  function nextStopOf(c) {
+    const leg = LEGS[c.leg];
+    if (!leg || c.road !== leg.rm) return null;
+    const front = frontA(c);
+    for (const st of leg.stops) if (st.id !== c.at && !c.done.has(st.id) && (stopFront(st, c.dir) - front) * c.dir > -4) return st;
+    return LEGS[(c.leg + 1) % LEGS.length].stops[0];
   }
   function drawEndCar(ctx, c, w) {
     const rear = c.dir < 0, A = endArt(c, rear);
@@ -1554,26 +1914,24 @@ export function createTraffic(env) {
       return;
     }
     const A = vehicleArt(p.side), s = SPECS[p.side.kind], f = p.flip || 0, x0 = p.x0, top = p.y - 1 - A.gy;
-    if (w.wet > 0.15 && !p.wreck) { ctx.globalAlpha = w.wet * 0.5; ctx.drawImage(A.refl[f], x0 - 1, p.y + 1); ctx.globalAlpha = 1; }
+    if (w.wet > 0.15) { ctx.globalAlpha = w.wet * 0.5; ctx.drawImage(A.refl[f], x0 - 1, p.y + 1); ctx.globalAlpha = 1; }
     ctx.drawImage(A.img[f], x0 - 1, top);
     if (w.snow > 0.25) ctx.drawImage(A.snow[f], x0 - 1, top);
     const wimg = wheelArt(s.r, p.side.rust ? 'rust' : s.rim, 2);
-    s.wheels.forEach((wxp, i) => {
-      const q = f ? s.L - 1 - wxp : wxp, wx0 = x0 + q - s.r, wy = p.y - 1 - 2 * s.r;
-      if (p.wreck && i === 1) { // pallar i stället för framhjul
-        ctx.fillStyle = '#6a4a2a'; ctx.fillRect(wx0 + 1, wy + s.r + 2, 2 * s.r - 1, 3);
-        ctx.fillStyle = '#9a7a4a'; ctx.fillRect(wx0 + 2, wy + s.r + 2, 2 * s.r - 3, 1);
-        ctx.fillStyle = '#4a3418'; ctx.fillRect(wx0 + 2, wy + s.r + 5, 2, 4); ctx.fillRect(wx0 + 2 * s.r - 4, wy + s.r + 5, 2, 4);
-        return;
-      }
-      ctx.drawImage(wimg, wx0, wy);
-    });
-    if (p.wreck) { // ogräs och glassplitter
-      ctx.fillStyle = '#5a8a3a';
-      for (const [dx, dy] of [[-4, 0], [8, -1], [30, 0], [52, -1], [62, 0], [20, -2]]) { ctx.fillRect(x0 + dx, p.y - 3 + dy, 1, 3); ctx.fillRect(x0 + dx + 1, p.y - 2 + dy, 1, 2); }
-      ctx.fillStyle = '#b8d0e0'; ctx.fillRect(x0 + 44, p.y - 1, 2, 1); ctx.fillRect(x0 + 48, p.y, 1, 1);
+    for (const wxp of s.wheels) {
+      const q = f ? s.L - 1 - wxp : wxp;
+      ctx.drawImage(wimg, x0 + q - s.r, p.y - 1 - 2 * s.r);
     }
     if (p.side.kind === 'moped') { ctx.fillStyle = '#3a3c44'; ctx.fillRect(x0 + 9, p.y - 3, 1, 3); ctx.fillRect(x0 + 8, p.y - 1, 3, 1); }   // stödet
+  }
+
+  // bussen som den scenen får se: var den står, var man kliver på och om dörrarna är öppna
+  function busInfo(c, st) {
+    const bp = boardPoint(st);
+    return {
+      id: c.id, stop: st, doorX: bp.x, board: bp, x0: Math.round(lo(c)), x1: Math.round(hi(c)), y: c.cross,
+      open: c.door || 0, leaving: !(c.dwell > 0), held: (c.holdUntil || 0) > T, next: nextStopOf(c),
+    };
   }
 
   return {
@@ -1583,8 +1941,56 @@ export function createTraffic(env) {
     // extra för andra moduler: lägen och fordonens positioner
     carLight, pedLight,
     vehicles: () => cars.map((c) => (c.road.axis === 'x'
-      ? { x0: lo(c), x1: hi(c), y: c.cross, dir: c.dir, v: c.v, kind: c.kind, why: c.why, tut: c.tut > 0, road: c.road.id, axis: 'x' }
-      : { x0: c.cross - 13, x1: c.cross + 13, y: hi(c), y0: lo(c), y1: hi(c), dir: c.dir, v: c.v, kind: c.kind, why: c.why, tut: c.tut > 0, road: c.road.id, axis: 'y' })),
+      ? { x0: lo(c), x1: hi(c), y: c.cross, dir: c.dir, v: c.v, kind: c.kind, why: c.why, tut: c.tut > 0, road: c.road.id, axis: 'x', door: c.door || 0, dwell: c.dwell || 0, stop: c.stopId, at: c.at || null, line: !!c.line, id: c.id || null, rider: !!(ride && ride.bus === c) }
+      : { x0: c.cross - 13, x1: c.cross + 13, y: hi(c), y0: lo(c), y1: hi(c), dir: c.dir, v: c.v, kind: c.kind, why: c.why, tut: c.tut > 0, road: c.road.id, axis: 'y', door: 0, dwell: 0, stop: null, at: null, line: false, id: null, rider: false })),
+
+    // ---------- linje 4 (bussen på riktigt) – hur scenen kopplar in det: se filhuvudet ----------
+    /** Hållplatserna i körordning. */
+    line: () => LINE,
+    /** Bussen som står inne vid hållplatsen (eller precis rullar därifrån), annars null. */
+    busAt: (id) => { const st = lineStop(id), c = standing(st); return c ? busInfo(c, st) : null; },
+    /** Träffar klicket (världskoordinater) en buss som står vid en hållplats? → samma som busAt. */
+    busDoorHit(x, y) {
+      if (ride) return null;
+      for (const c of lineBuses) {
+        const st = lineStop(c.at || c.stopId), s2 = st && standing(st);
+        if (s2 !== c) continue;
+        if (x >= lo(c) - 3 && x < hi(c) + 3 && y >= c.cross - 50 && y < c.cross + 6) return busInfo(c, st);
+      }
+      return null;
+    },
+    /** Be bussen vid hållplatsen vänta (dörrarna öppna) i högst sec sekunder – t.ex. medan dialogen är öppen. */
+    hold(id, sec = 25) {
+      const st = lineStop(id), c = standing(st);
+      if (!c) return false;
+      if (!(c.dwell > 0)) { c.dwell = 2.6; c.at = c.stopId = st.id; c.leave = 0; c.done.delete(st.id); c.dwellT = 0; }
+      c.holdUntil = T + sec;
+      return true;
+    },
+    /** Släpp bussen (utan id: alla). */
+    release(id) { for (const c of lineBuses) if (!id || c.at === id || c.stopId === id || c.at === lineStop(id)?.id) c.holdUntil = 0; },
+    /** Resmålen från en hållplats i körordning: [{ id, name, district, broken, stops }]. */
+    destinations(id) {
+      const st = lineStop(id), k = LINE.indexOf(st);
+      if (k < 0) return LINE.map((s, i) => ({ id: s.id, name: s.name, district: s.district, broken: !!s.broken, stops: i + 1 }));
+      return [...LINE.slice(k + 1), ...LINE.slice(0, k)].map((s, i) => ({ id: s.id, name: s.name, district: s.district, broken: !!s.broken, stops: i + 1 }));
+    },
+    /** Kliv på bussen som står vid fromId och åk till toId. opts.draw(ctx, x, fotY, riktning) ritar
+     *  spelarens figur (klipps till fönstret) – eller opts.look (figurens utseende). → true/false */
+    board,
+    /** Resan just nu, eller null: { phase, from, to, pos {x,y} (följ med kameran), fade 0–1, elapsed, jumps, exit } */
+    ride: () => (ride ? {
+      phase: ride.phase, from: ride.from, to: ride.to, fade: ride.fade, elapsed: ride.elapsed, jumps: ride.jumps, exit: ride.exit, busId: ride.bus.id,
+      pos: { x: Math.round(lo(ride.bus) + ride.bus.L / 2), y: ride.bus.cross + 4 },
+    } : null),
+    /** Kliv av (när phase === 'framme'; force = avbryt resan var som helst) → { x, y, stop } där figuren ska stå. */
+    alight,
+    /** Hoppa fram till målet (toningen) – t.ex. när spelaren klickar under resan. */
+    skipRide() { if (!ride || ride.arrived || ride.phase === 'tonar' || ride.phase === 'framme') return false; ride.far = true; ride.skip = true; return true; },
+    /** Ungefär hur många sekunder tills nästa buss står vid hållplatsen. */
+    nextBus,
+    /** Kalla fram en buss till hållplatsen (dyker upp utanför bild) → sekunder tills den är där. */
+    summon,
     positions: () => cars.map((c) => (c.road.axis === 'x' ? { x: lo(c) + c.L / 2, y: c.cross } : { x: c.cross, y: hi(c) })),
     items() {
       const out = [], w = wx();
@@ -1666,6 +2072,11 @@ export function createTraffic(env) {
         ctx.drawImage(tg.img, tx - tg.ox, ty - tg.oy);
         if (w.wet > 0.2) { ctx.globalAlpha = k * w.wet * 0.35 * (c.brake ? 1.5 : 1); const rp = blob('rpool', 0xff3020, 6, 3, 0.4, false); ctx.drawImage(rp.img, tx - rp.ox, c.cross + 2 - rp.oy); }
         if (A.night) { ctx.globalAlpha = k * 0.8; ctx.drawImage(A.night[f], x0 - 1, top); }
+        if (c.line) {
+          drawLed(ctx, c, A, f, x0, top, k * 0.9);
+          const lg = blob('led', 0xffa020, 16, 5, 0.22, false), cxl = f ? x0 + c.L - 1 - 78 : x0 + 78;
+          ctx.globalAlpha = k; ctx.drawImage(lg.img, cxl - lg.ox, top + (A.gy - 32) - lg.oy);
+        }
         if (s.taxi) {
           const sg = blob('taxi', 0xfff0b0, 12, 5, 0.35, false);
           ctx.globalAlpha = k;

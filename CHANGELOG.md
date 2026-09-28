@@ -10,6 +10,42 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.24.0] – 2026-09-28 – Veckan först med sju fönster mot staden
+- **Veckan möter dig först** när du kommer in i spelet (och som förut varje morgon när du vaknar, och med 📅).
+- Dagarna är nu **sju fönster ut mot Pixelstaden**, med en egen utsikt för varje dag: hyreshuset på måndagen, bussen, parkträdet, flygplanet, fredagsljusen, pariserhjulet och kyrktornet. Molnen, bussen och planet rör sig, och regnar det i dag så regnar det i fönstret.
+- Avklarade dagar är gråa och i skymning. Dagens fönster lyser, och söndagen påminner om hyran i morgon.
+- Större rutor och större text. Sparmålsrutan är borttagen och ersatt av **Veckans läge**: pengar, bostad, hyra, nästa hyra, mat i kylen, energi och mättnad.
+
+## [0.23.4] – 2026-09-28 – Flera figurer får heta samma
+- Varje figur har nu ett eget id, så flera kan heta samma sak. **Nytt spel** skapar alltid en ny person med ett eget liv, och rutan **Börja om?** kommer inte längre upp.
+- Gamla figurer behåller sina sparningar: de får namnet som id.
+- Gatuskyltarna är en pixel högre, så att bokstäverna inte längre går ihop med den vita ramen.
+
+## [0.23.3] – 2026-09-28 – Repliker som pratbubblor i butikerna
+- Klickar du på taxen eller katten på kaféet, mäklarens tax, kassörskan i klädaffären eller sakerna på bostadsbyrån och i mataffären, visas det som en pratbubbla i scenen – ovanför den som säger något, eller ovanför dig själv – i stället för en ruta högst upp.
+- Pratbubblorna håller sig inom bilden och rymmer längre repliker.
+
+## [0.23.2] – 2026-09-28 – Möblera med fingret på mobilen
+- Möblera på mobilen: dra möbeln med fingret och släpp, så står den där du släppte. Tidigare satt den kvar i handen och flyttades igen vid nästa tryck.
+
+## [0.23.1] – 2026-09-28 – Aldrig in i spelet utan namn
+- Man kan inte längre komma in i spelet utan namn: trycker man Avbryt eller ✕ när man skapar sin figur hamnar man i huvudmenyn igen.
+
+## [0.23.0] – 2026-09-28 – Veckosammanfattning med hyresdag, checklista och sparmål
+- Veckosammanfattning varje morgon: när du vaknar ser du veckan måndag–söndag. Avklarade dagar är grå, dagens dag är gul, och måndagen visar hyran – så du ser exakt när pengarna dras.
+- En prognos säger om pengarna räcker till hyran, annars hur mycket du behöver tjäna och ungefär hur många pass det är.
+- En checklista för dagen (hyran, mat, kylskåpet, sömn) och ett sparmål mot nästa bostad med en mätare.
+- 📅-knappen uppe till höger öppnar veckan när du vill.
+
+## [0.22.0] – 2026-09-28 – Pratbubblor, emoji i chatten och menytavla vid Burgarbaren
+- Klickar du på en kafégäst eller mäklaren säger de sin replik i en pratbubbla ovanför sig, inte i en ruta högst upp.
+- Emoji i chatten: skriv in vilka emoji du vill (eller välj i 😀-väljaren i chattraden) – de ritas som små pixelbilder i pratbubblan. Bubblorna rymmer nu fyra rader.
+- Menytavla vid Burgarbarens entré med samma rätter och priser som på jobbet, upplyst på kvällen.
+- Burgarbarens nederdel är nu blank röd emalj med vit rand – de räfflade stålpanelerna såg ut som nerdragna jalusier fast restaurangen var öppen.
+
+## [0.21.0] – 2026-09-28 – Chatt med pratbubblor
+- Chatta med de andra: tryck Enter (eller 💬 uppe till höger), skriv och skicka. Det du säger visas som en pratbubbla ovanför din figur i några sekunder, och alla som är på samma plats ser den.
+
 ## [0.20.0] – 2026-09-28 – 147 nya möbler, rotation, slitna Lilla rummet och MÖBELJÄTTEN i två våningar
 - 147 nya möbler i katalogen (160 totalt): kök, badrum, barnrum, kontor, hall, dekor, växter, lampor, tavlor, gardiner, jul – och sängar och garderober i många färger. Allt ur de köpta EmanuelleDev-arken, färgbart som förut.
 - Väggsaker hängs på väggen och står inte i vägen. Allt går att flytta, även säng, garderob, kylskåp och toalett – funktionen följer med möbeln, också till ett annat rum via förrådet.

@@ -14,6 +14,7 @@
 //   icon?:  emoji i listor, colors?: föreslagna färger { shirt, accent, print2, pants, … },
 //   legacy?: gamla sparfilers nyckel 'kind:v' (bara det första sortimentet)
 //   group?: underrubrik i redigeraren (annars registerpostens group)
+//   tile?:  utsnitt i redigerarens ruta (TILE_VIEWS; annars registerpostens tile, annars flikens)
 // }
 import { WARDROBE_TOPS } from './wardrobe-tops.js';
 import { WARDROBE_BOTTOMS, WARDROBE_SHOES } from './wardrobe-bottoms.js';
@@ -39,6 +40,8 @@ export const SLOT_LABELS = {
   top: 'Överdel', bottom: 'Underdel', shoes: 'Skor', hat: 'Huvudbonad', glasses: 'Glasögon', bag: 'Väska',
   neck: 'Hals', jewel: 'Smycken', hairAcc: 'I håret', phones: 'Hörlurar',
 };
+// Utsnitten redigerarens rutor kan visa (`tile` på ett plagg eller en registerpost)
+export const TILE_VIEWS = ['head', 'face', 'neck', 'torso', 'legs', 'side', 'full'];
 // Platser som kan vara tomma ("Ingen"). Överdel, underdel och skor har man alltid.
 export const SLOT_CAN_BE_EMPTY = { hat: true, glasses: true, bag: true, neck: true, jewel: true, hairAcc: true, phones: true };
 
@@ -115,6 +118,7 @@ export function checkWardrobe() {
       else out.push(`${where}: look.${f} är inget modellfält (färger hör hemma i colors)`);
       if (SLOT_FIELDS[it.slot] && !(f in SLOT_FIELDS[it.slot])) out.push(`${where}: look.${f} hör inte till platsen ${it.slot}`);
     }
+    if (it.tile != null && !TILE_VIEWS.includes(it.tile)) out.push(`${where}: tile '${it.tile}' finns inte (${TILE_VIEWS.join('/')})`);
     for (const [f, v] of Object.entries(it.colors || {})) {
       if (!(f in LOOK_COLORS)) out.push(`${where}: colors.${f} är inget färgfält`);
       else if (!/^#[0-9a-f]{6}$/i.test(v)) out.push(`${where}: colors.${f} = ${v} är ingen #rrggbb`);

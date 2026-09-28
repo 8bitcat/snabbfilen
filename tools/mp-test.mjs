@@ -55,6 +55,11 @@ for (const p of [A, B, C]) await toCity(p, 300);
 ok(await until(async () => (await A.page.evaluate(() => window.SF.worldFolksHere().length)) === 2), 'Anna ser båda i staden');
 ok((await names(C)) === 'Anna,Bosse', `Cilla ser Anna och Bosse (${await names(C)})`);
 
+// 1b. chatten: det Anna säger syns som bubbla hos Bosse
+await A.page.evaluate(() => window.SF.sendSay('Hej Bosse, kom hit!'));
+ok(await until(async () => (await B.page.evaluate(() => (window.SF.worldFolksHere().find((f) => f.av.name === 'Anna') || {}).say)) === 'Hej Bosse, kom hit!'), 'chatten når fram som pratbubbla');
+await A.page.screenshot({ path: 'tools/out/mp-chat.png' });
+
 // 2. platsen syns i listan
 await B.page.evaluate(() => window.SF.go('mat'));
 ok(await until(async () => (await A.page.evaluate(() => window.SF.playersList().find((p) => p.av.name === 'Bosse')?.scene)) === 'away:mat'), 'listan vet att Bosse är i mataffären');

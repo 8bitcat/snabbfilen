@@ -172,9 +172,11 @@ function snowCap(P, x, y, w, h = 2) {
     P.px(X, Y, j === 0 ? (hash(X, Y, 501) > 0.85 ? 0xdde8f4 : 0xf8fbff) : 0xeaf2fa);
   }
 }
-// snö på en större yta (tak): täcker nästan allt, lämnar lite av underlaget vid kanterna
-function snowArea(P, x, y, w, h, seed = 502, cover = 0.92) {
+// snö på en större yta (tak): täcker nästan allt, lämnar lite av underlaget vid kanterna.
+// keep(X, Y) → true lämnar pixeln orörd (skorstenar, kupor, aggregat som står på taket).
+function snowArea(P, x, y, w, h, seed = 502, cover = 0.92, keep = null) {
   area(P, x, y, w, h, (X, Y, i, j) => {
+    if (keep && keep(X, Y)) return null;
     const edge = Math.min(i, w - 1 - i, j, h - 1 - j);
     const k = edge < 2 ? 0.6 : 1;
     if (hash(X, Y, seed) > cover * k) return null;
@@ -452,7 +454,7 @@ function kafeWin(P, x, y, w, h, night, reg, side) {
   reg.halo.push([x + w / 2, BASE + 7, w * 0.6 + 5, 8, 0xffb060, 0.22]);
 }
 
-function paintKafe(P, b, night, reg) {
+function paintKafe(P, b, night, reg, opts = {}) {
   const L = ART_OVER, W = b.w, R = L + W, T = BASE - b.h, cx = L + (W >> 1);
   const d0 = b.door.x0 - b.x + L, d1 = b.door.x1 - b.x + L;
   const EAVE = T - 2, RIDGE = TOP + 12;
@@ -612,6 +614,22 @@ function paintKafe(P, b, night, reg) {
   P.rect(L, BASE, W, 1, 0x1a1418, 0.35);
   P.rect(L, BASE + 1, W, 1, 0x1a1418, 0.15);
   rows(P, d0 - 2, BASE, d1 - d0 + 4, [0xd8d0c0, 0x9a9282]);
+  // ---- snö: båda takfallen (skorsten och kupa lämnas), nocken, rännan, lister, blomlådor ----
+  if (opts.snow) {
+    const keep = (X, Y) => (X >= chx - 1 && X < chx + 10 && Y >= chTop - 6 && Y < chBot)
+      || (Y >= dTop - 11 && Y < dTop && Math.abs(X - cx) <= 1 + Math.round((Y - (dTop - 11)) * 1.3))
+      || (Y >= dTop && Y < dBot && Math.abs(X - cx) <= 10);
+    snowArea(P, L - 2, TOP + 1, W + 4, RIDGE - TOP - 2, 506, 0.85, keep);
+    snowArea(P, L - 3, RIDGE + 3, W + 6, EAVE - RIDGE - 4, 507, 0.9, keep);
+    snowCap(P, L - 4, RIDGE - 2, W + 8, 2);
+    snowCap(P, L - 5, EAVE - 1, W + 10, 1);
+    // kupans vindskivor får en vit kant
+    for (let j = 1; j < 11; j++) { const half = 1 + Math.round(j * 1.3), y = dTop - 11 + j; P.px(cx - half, y, 0xf8fbff); P.px(cx + half, y, 0xf8fbff); }
+    for (const wx of [L + 3, R - 17]) snowCap(P, wx - 2, T + 22, 18, 2);
+    snowCap(P, L - 1, U1 - 1, W + 2, 1);
+    snowCap(P, L - 1, A0, W + 2, 1);
+    snowCap(P, d0 - 2, DT - 9, d1 - d0 + 4, 1);
+  }
 }
 DOOR_ART.kafe = {
   hinge: 'r', light: 0xffc27a, edge: 0x1c3a2c,
@@ -678,16 +696,6 @@ const KAFE = {
 };
 
 // ======================= BURGARBAREN =======================
-function seatBack(P, x, y, w, h) {
-  for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) {
-    if (j === 0 && (i === 0 || i === w - 1)) continue;
-    let c = [0xe8505a, 0xc42a38, 0x9a1e2c, 0xc42a38, 0x8a1a26][Math.min(4, i)];
-    if (j === 0) c = 0xd8dde2;
-    else if (j === 1) c = mix(c, WHITE, 0.25);
-    else if (i === 2 && j % 3 === 0) c = 0x6a1420;
-    P.px(x + i, y + j, c);
-  }
-}
 function chromeFrame(P, x, y, w, h, body) {
   P.box(x - 2, y - 2, w + 4, h + 4, 0x7a8088);
   P.box(x - 1, y - 1, w + 2, h + 2, 0xe8ecf0);
@@ -810,14 +818,15 @@ function giantBurger(P, cx, by) {
   P.hl(cx + 8, yd - 6, 5, 0xffffff);
 }
 // Menylådans geometri: hänger från neonbandets underkant ner till huven över dörren,
-// mellan de två fönstrens kromramar (1 px luft åt varje håll). Två kolumner om 14 px:
-// rätten (12 px hög, utan kontur) över priset. Samma rätter och priser som på jobbet.
+// lika bred som huven och med 1 px luft till fönstrens kromramar. Två kolumner om
+// 16 px: rätten (12 px hög, utan kontur) över priset ('10:-' är 13 px, så det blir
+// 3 px luft mellan priserna). Samma rätter och priser som på jobbet.
 function menuGeom(d0, d1, S1) {
-  const x = d0 - 3, w = d1 - d0 + 6, y = S1, h = DT - 7 - y;
+  const x = d0 - 5, w = d1 - d0 + 10, y = S1, h = DT - 7 - y;
   const head = { x: x + 1, y: y + 1, w: w - 2, h: 7 };
-  const py = y + 9, ph = h - 10;
-  const cells = [[x + 1, py], [x + 15, py], [x + 1, py + 19], [x + 15, py + 19]]; // 14 × 18 var
-  return { x, y, w, h, head, panel: { x: x + 1, y: py, w: w - 2, h: ph }, cells, cw: 14 };
+  const py = y + 9, ph = h - 10, cw = 16;
+  const cells = [[x + 1, py], [x + 1 + cw, py], [x + 1, py + 19], [x + 1 + cw, py + 19]]; // 16 × 18 var
+  return { x, y, w, h, head, panel: { x: x + 1, y: py, w: w - 2, h: ph }, cells, cw };
 }
 // den lilla dinerklockan ovanför högra fönstret: kromring, vit tavla, fyra timmarkeringar
 function clockFace(P, cx, cy, night) {
@@ -891,7 +900,8 @@ function paintBurgare(P, b, night, reg, opts = {}) {
   P.hl(L, Z0 + 9, W, 0xd02a3e); P.hl(L, Z0 + 10, W, 0x7e1624, 0.5);
   for (let x = L + 4; x < R - 4; x += 12) { P.px(x, Z0 + 6, 0x8a9098); P.px(x, Z0 + 7, 0xffffff, 0.7); }
   const wy = Z0 + 15, wh = DT - wy - 5;
-  const wins = [[L + 6, d0 - 6 - (L + 6)], [d1 + 6, R - 6 - (d1 + 6)]];
+  // fönstren slutar 8 px från dörren så att menylådan (huvens bredd) får 1 px luft till kromramarna
+  const wins = [[L + 6, d0 - 8 - (L + 6)], [d1 + 8, R - 6 - (d1 + 8)]];
   for (const [wx, ww] of wins) {
     diner(P, wx, wy, ww, wh, night, reg);
     P.vl(wx + (ww >> 1) - 1, wy, wh, 0xe8ecf0);
@@ -926,11 +936,15 @@ function paintBurgare(P, b, night, reg, opts = {}) {
     return c;
   });
   if (MENU) {
+    // kritstreck som delar tavlan i fyra rutor (varannan pixel, som dragna för hand)
+    const dvx = M.panel.x + M.cw, dvy = M.cells[2][1] - 1;
+    for (let y = M.panel.y + 1; y < M.panel.y + M.panel.h - 1; y++) if ((y + dvx) & 1) P.px(dvx, y, 0xb8c4bc, 0.55);
+    for (let x = M.panel.x + 1; x < M.panel.x + M.panel.w - 1; x++) if ((x + dvy) & 1) P.px(x, dvy, 0xb8c4bc, 0.55);
     MENU.dishes.forEach((d, i) => {
       if (i >= M.cells.length) return;
-      const [cx0, cy0] = M.cells[i], k = i & 1; // högra kolumnen knuffas 1 px så priserna inte flyter ihop
-      dishPx(P, d, cx0 + k + ((M.cw - dishW(d)) >> 1), cy0 + 12);
-      text(P, SMALL, d.label, cx0 + k + ((M.cw - 1 - textW(SMALL, d.label)) >> 1), cy0 + 13, night ? 0xfff8e8 : 0xf4f1ea);
+      const [cx0, cy0] = M.cells[i];
+      dishPx(P, d, cx0 + ((M.cw - dishW(d)) >> 1), cy0 + 12);
+      text(P, SMALL, d.label, cx0 + ((M.cw - textW(SMALL, d.label)) >> 1), cy0 + 13, night ? 0xfff8e8 : 0xf4f1ea);
     });
   } else {
     text(P, SMALL, 'SNART', M.panel.x + ((M.panel.w - textW(SMALL, 'SNART')) >> 1), M.panel.y + 16, 0xc8c0a8);
@@ -946,14 +960,19 @@ function paintBurgare(P, b, night, reg, opts = {}) {
   area(P, d0 - 5, hy, d1 - d0 + 10, 3, (X, Y, i, j) => [0xf6f8fa, 0xc2c8d0, 0x9aa0a8][j]);
   area(P, d0 - 4, hy + 3, d1 - d0 + 8, 3, (X, Y, i, j) => (j === 1 ? 0xffffff : 0xd8303a));
   P.darken(d0 - 3, hy + 6, d1 - d0 + 6, 1, 0.6);
-  // röd rand, räfflat rostfritt och schackrutig sockel
+  // röd rand, blank röd emalj med vit pinnrand (INTE räfflat stål – det såg ut som nerdragna
+  // jalusier) och schackrutig sockel
   area(P, L, DT, W, 4, (X, Y, i, j) => [0xf07080, 0xd02a3e, 0xc2263a, 0x7e1624][j]);
   P.hl(L, DT + 4, W, 0xffffff);
-  area(P, L, DT + 5, W, BASE - 6 - DT - 5, (X, Y, i, j) => {
-    const band = 0.5 + 0.5 * Math.sin(i * 0.19 + 1.3) * Math.sin(i * 0.07);
-    const base = mix(0x8a929c, 0xd4dae2, band);
-    return [mix(base, WHITE, 0.45), base, mul(base, 0.72)][j % 3];
+  const EH = BASE - 6 - DT - 5;
+  area(P, L, DT + 5, W, EH, (X, Y, i, j) => {
+    const glans = j < 2 ? 0.25 : j > EH - 3 ? -0.3 : 0;
+    const base = mix(0xb8203a, 0xe0485a, 0.35 + 0.25 * Math.sin(i * 0.05));
+    return glans > 0 ? mix(base, WHITE, glans) : glans < 0 ? mul(base, 1 + glans) : jit(base, X, Y, 61, 0.03);
   });
+  const pin = DT + 5 + Math.floor(EH / 2);
+  P.hl(L, pin, W, 0xffffff); P.hl(L, pin + 1, W, 0xf4c4c8);
+  for (let x = L + 3; x < R - 2; x += 12) { P.px(x, DT + 7, 0xf0d0d4); P.px(x, BASE - 9, 0xf0d0d4); } // nitar
   P.hl(L, BASE - 7, W, 0x2a2c30);
   for (let y = BASE - 6; y < BASE; y++) for (let x = L; x < R; x++) {
     const on = ((Math.floor((x - L) / 3) + Math.floor((y - BASE + 6) / 3)) & 1) === 0;
@@ -1222,7 +1241,7 @@ function crate(P, x, y, fruit) {
   P.rect(x + 5, y + 3, 3, 2, 0xf2e6c2);
   P.px(x + 6, y + 3, fruit);
 }
-function paintFrukt(P, b, night, reg) {
+function paintFrukt(P, b, night, reg, opts = {}) {
   const L = ART_OVER, W = b.w, R = L + W, T = BASE - b.h;
   const d0 = b.door.x0 - b.x + L, d1 = b.door.x1 - b.x + L;
   const TW = 32, GL = 8, RISE = 13, D = T - TOP - 2;
@@ -1394,6 +1413,27 @@ function paintFrukt(P, b, night, reg) {
   for (let y = T + 8; y < BASE; y += 20) P.hl(L, y, 4, 0x3a4044);
   P.rect(L, BASE, W, 1, 0x1a1418, 0.35);
   P.rect(L, BASE + 1, W, 1, 0x1a1418, 0.15);
+  // ---- snö: plåtfallen på sågtandstaket (glaset skottar sig självt), parapeten, bleck, kajen ----
+  if (opts.snow) {
+    for (let x = L; x < R; x++) {
+      const p = prof(x), v = (x - L) % TW, y1 = T - p - 2, y0 = y1 - D;
+      if (v < TW - GL) { for (let y = y0; y < y1; y++) if (hash(x, y, 508) < 0.93) P.px(x, y, y === y0 ? 0xf8fbff : qmix(0xf2f6fc, 0xd4e0ee, (y - y0) / D, x, y, 3)); }
+      else P.px(x, y1 - 1, 0xeaf2fa, 0.8);
+      P.px(x, y1, 0xf8fbff);
+    }
+    for (const wx of [L + 6, L + 32, R - 58, R - 28]) snowCap(P, wx - 2, T + 55, 26, 2);
+    snowCap(P, L, py - 1, d0 - 8 - L, 1);
+    snowCap(P, ex, ey - 1, 14, 1);
+    snowCap(P, pbx - 3, pby - 3, pb.w + 6, 1);
+    const lcx0 = (d0 + d1) >> 1;
+    snowCap(P, d0 - 5, DT - 7, lcx0 - 2 - (d0 - 5), 1); snowCap(P, lcx0 + 3, DT - 7, d1 + 5 - (lcx0 + 3), 1);
+    const scx = rx0 + (rw >> 1);
+    snowCap(P, rx0 - 3, RT - 6, scx - 3 - (rx0 - 3), 1); snowCap(P, scx + 3, RT - 6, rx1 + 3 - (scx + 3), 1);
+    const bol = [rx0 + 4, rx1 - 8];
+    snowArea(P, rx0 - 6, DKY + 1, R - (rx0 - 6), BASE - DKY - 2, 509, 0.75, (X, Y) => bol.some((bx) => X >= bx && X < bx + 4 && Y < DKY + 8));
+    snowCap(P, L + 2, BASE - 19, 13, 1);
+    snowCap(P, L + 16, BASE - 9, 13, 1);
+  }
 }
 DOOR_ART.frukt = {
   hinge: 'l', light: 0xe8f4ff, edge: 0x1e3a2c,
@@ -1590,7 +1630,7 @@ function walkers() {
   return WALKERS;
 }
 const PLANE = ['.....#.....', '....###....', '....###....', '...#####...', '.#########.', '###########', '....###....', '....###....', '...#####...', '..##...##..'];
-function paintFlyg(P, b, night, reg) {
+function paintFlyg(P, b, night, reg, opts = {}) {
   const L = ART_OVER, W = b.w, R = L + W, T = BASE - b.h, cx = L + (W >> 1);
   const d0 = b.door.x0 - b.x + L, d1 = b.door.x1 - b.x + L, dcx = (d0 + d1) >> 1;
   // ---- taket: ljus takduk, lanternin, aggregat ----
@@ -1779,6 +1819,21 @@ function paintFlyg(P, b, night, reg) {
   P.rect(L, BASE, W, 1, 0x1a1418, 0.35);
   P.rect(L, BASE + 1, W, 1, 0x1a1418, 0.15);
   rows(P, d0 - 3, BASE, d1 - d0 + 6, [0xc8ccd2, 0x8a9098]);
+  // ---- snö: takduken (lanternin, aggregat, torn och stång lämnas), entréns glastak, skylt, lådan ----
+  if (opts.snow) {
+    const AGG = [[L + 30, 22], [L + 58, 16]], hy = T - 16;
+    const keep = (X, Y) => (X >= lx0 - 1 && X < lx0 + lw + 1 && Y >= ly0 && Y < ly0 + 12)
+      || AGG.some(([hx, hw]) => X >= hx && X < hx + hw && Y >= hy && Y < hy + 11)
+      || (X >= tx - 6 && X < tx + 6 && Y >= sTop && Y < sBot) || (X >= tx - 4 && X < tx + 14 && Y >= sBot - 1 && Y < sBot + 2)
+      || (X >= sx - 2 && X <= sx + 2 && Y >= 20);
+    snowArea(P, L + 1, TOP + 3, W - 2, T - TOP - 3, 510, 0.88, keep);
+    snowCap(P, L, TOP, W, 2);
+    snowCap(P, lx0 - 1, ly0 - 1, lw + 2, 2);
+    for (const [hx, hw] of AGG) snowCap(P, hx, hy - 1, hw, 2);
+    snowCap(P, d0 - 12, DT - 15, d1 - d0 + 24, 1);
+    snowCap(P, abx, aby - 1, abw, 1);
+    snowCap(P, px0, BASE - 10, pw, 1);
+  }
 }
 DOOR_ART.flyg = {
   light: 0xe8f2ff,
