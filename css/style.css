@@ -389,3 +389,40 @@ canvas.homepic { width: 128px; height: auto; image-rendering: pixelated; border:
 #chat .chat-cat div { display: flex; flex-wrap: wrap; gap: 2px; }
 #chat .chat-cat button { font-size: 20px; line-height: 1; padding: 2px; background: none; border: 0; cursor: pointer; border-radius: 3px; }
 #chat .chat-cat button:hover { background: #fff4c7; }
+
+/* Veckosammanfattningen (js/core/week.js) */
+.wk-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 5px; margin-bottom: 10px; }
+.wk-day { background: #fff; border: 3px solid var(--ink); box-shadow: 2px 2px 0 var(--ink); padding: 4px 3px 5px; text-align: center; min-height: 86px; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.wk-day b { font: 20px var(--head); letter-spacing: .5px; }
+.wk-day .wk-n { font-size: 14px; color: var(--muted); }
+.wk-day.past { background: #cfcac2; color: #6d6660; box-shadow: none; }
+.wk-day.past b { color: #6d6660; }
+.wk-day.today { background: #fff4c7; outline: 3px solid var(--gold); outline-offset: -1px; }
+.wk-day.rentday { border-color: var(--red2); }
+.wk-day i { font: 13px var(--font); font-style: normal; padding: 0 4px; }
+.wk-now { background: var(--gold); color: var(--ink); }
+.wk-done { color: var(--green); font-size: 18px !important; }
+.wk-rent { background: var(--red2); color: #fff; font-size: 13px; line-height: 1.05; padding: 1px 3px; margin-top: auto; }
+.wk-paid { background: #6d6660; color: #fff; font-size: 13px; line-height: 1.05; padding: 1px 3px; margin-top: auto; }
+.wk-ok { font-size: 19px; margin: 6px 0; color: var(--green); }
+.wk-bad { font-size: 19px; margin: 6px 0; color: var(--red2); }
+.wk-ok b, .wk-bad b { color: var(--ink); }
+.wk-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: start; }
+.wk-todo { list-style: none; margin: 0; padding: 0; font-size: 18px; }
+.wk-todo li { display: flex; gap: 6px; padding: 2px 0; }
+.wk-todo li span { width: 18px; flex: none; }
+.wk-todo li.ok { color: var(--muted); }
+.wk-todo li.ok span { color: var(--green); }
+.wk-goal { background: #fff; border: 2px solid var(--ink); padding: 6px 8px; font-size: 17px; }
+.wk-goal b { display: block; font: 19px var(--head); }
+.wk-goal span, .wk-goal small { display: block; color: var(--muted); font-size: 15px; }
+.wk-bar { height: 12px; background: #34303a; border: 2px solid var(--ink); margin: 5px 0 3px; }
+.wk-bar i { display: block; height: 100%; background: var(--green2); }
+.wk-tip { font-size: 15px; color: var(--muted); margin: 10px 0 0; }
+@media (max-width: 639px) {
+  .wk-grid { gap: 3px; }
+  .wk-day { min-height: 72px; padding: 3px 1px; }
+  .wk-day b { font-size: 16px; }
+  .wk-rent, .wk-paid { font-size: 11px; }
+  .wk-cols { grid-template-columns: 1fr; }
+}

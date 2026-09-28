@@ -10,6 +10,12 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.23.0] – 2026-09-28 – Veckosammanfattning med hyresdag, checklista och sparmål
+- Veckosammanfattning varje morgon: när du vaknar ser du veckan måndag–söndag. Avklarade dagar är grå, dagens dag är gul, och måndagen visar hyran – så du ser exakt när pengarna dras.
+- En prognos säger om pengarna räcker till hyran, annars hur mycket du behöver tjäna och ungefär hur många pass det är.
+- En checklista för dagen (hyran, mat, kylskåpet, sömn) och ett sparmål mot nästa bostad med en mätare.
+- 📅-knappen uppe till höger öppnar veckan när du vill.
+
 ## [0.22.0] – 2026-09-28 – Pratbubblor, emoji i chatten och menytavla vid Burgarbaren
 - Klickar du på en kafégäst eller mäklaren säger de sin replik i en pratbubbla ovanför sig, inte i en ruta högst upp.
 - Emoji i chatten: skriv in vilka emoji du vill (eller välj i 😀-väljaren i chattraden) – de ritas som små pixelbilder i pratbubblan. Bubblorna rymmer nu fyra rader.

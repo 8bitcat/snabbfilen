@@ -1,7 +1,7 @@
 {
-  "version": "0.22.0",
+  "version": "0.23.0",
   "date": "2026-09-28",
-  "title": "Pratbubblor, emoji i chatten och menytavla vid Burgarbaren",
+  "title": "Veckosammanfattning med hyresdag, checklista och sparmål",
   "files": [
     "CHANGELOG.md",
     "assets/interior.png",
@@ -33,6 +33,7 @@
     "js/core/sound.js",
     "js/core/ui.js",
     "js/core/version-ui.js",
+    "js/core/week.js",
     "js/data/frames.js",
     "js/data/wardrobe-acc.js",
     "js/data/wardrobe-bottoms.js",

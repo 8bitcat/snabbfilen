@@ -21,6 +21,7 @@ import { startWorld, worldTick, worldInfo, playersList, visitPlayer, sendEmote, 
 import { openMenu, mountMenuButton, isMenuOpen, shouldShowMenuAtBoot } from './core/menu.js';
 import { drawPixHud, isPixHud, apply as applyHud, stripHeight, layoutStrip } from './core/hud-pix.js';
 import { musicTick } from './core/music.js';
+import { openWeek } from './core/week.js';
 import { mountChat, isChatOpen } from './core/chat.js';
 import { play, unlockAudio, toggleMute, isMuted } from './core/sound.js';
 
@@ -135,7 +136,7 @@ function checkCollapse() {
   g.collapsed = false;
   A.go('room');
   openModal('😵 Utmattad!', `<p style="font-size:20px">Du somnade där du stod och vaknar hemma – stel, hungrig och inte alls utvilad. Gå och lägg dig i tid nästa gång!</p>`,
-    [{ label: 'Aj då', cls: 'btn-go', onClick: closeModal }]);
+    [{ label: 'Aj då', cls: 'btn-go', onClick: () => { closeModal(); openWeek(A, { morning: true }); } }]);
 }
 
 // ---------- sova / äta / hyra (öppnas från rummet) ----------
@@ -151,10 +152,8 @@ A.sleepFlow = () => {
       play('sleep');
       const { rent, eventText } = g.sleep();
       setTimeout(() => play('morning'), 600);
-      toast(`☀️ God morgon! ${g.dayName}, dag ${g.day}.`, 'good');
-      if (rent) toast(`💸 Hyra betald: ${fmt(rent)}`, g.money < 0 ? 'bad' : '');
-      if (g.money < 0) toast('⚠️ Du är skyldig hyresvärden pengar – jobba ihop dem!', 'bad');
-      if (eventText) setTimeout(() => toast(eventText, 'good'), 900);
+      // veckosammanfattningen är alltid det första man ser när man vaknat
+      openWeek(A, { morning: true, rentPaid: rent, eventText });
     } },
   ]);
 };
@@ -261,6 +260,13 @@ function boot() {
   mute.onclick = () => { mute.textContent = toggleMute() ? '🔇' : '🔊'; musicTick(); };
   $('#hud-friends').onclick = () => A.openFriends();
   $('#hud-diary').onclick = () => openDiary();
+  // 📅 veckan: samma sammanfattning som vid uppvaknandet
+  if (!document.getElementById('hud-week')) {
+    const wb = document.createElement('button');
+    wb.id = 'hud-week'; wb.className = 'btn btn-small'; wb.title = 'Veckan: hyra, checklista och sparmål'; wb.textContent = '📅';
+    wb.onclick = () => openWeek(A);
+    $('#hud-diary').before(wb);
+  }
   $('#decor-btn').onclick = () => A.scene?.toggleDecor?.();
   document.querySelectorAll('#emotes button').forEach((b) => (b.onclick = () => sendEmote(A, b.dataset.e)));
   fit();
