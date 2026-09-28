@@ -303,13 +303,21 @@ export const EVENTS = [
   { id: 'regn', icon: '🌧️', text: 'Ösregn i Pixelstaden – allt tar längre tid ute i dag.' },
 ];
 
-// Bostäderna: större bostad = insats + högre hyra men bättre sömn.
+// Bostäderna: större bostad = insats + högre hyra men bättre sömn (restBonus kan vara
+// negativ – husvagnen är kall och Förortsettan högljudd). Ordningen billigast → dyrast
+// är den som bostadsbyrån och planschväggen visar. Planlösningarna ligger i
+// js/scenes/room.js (PLANS/SEEDS), husen i staden i js/city/places.js.
 export const HOMES = [
+  { id: 'husvagn', icon: '🚐', name: 'Husvagnen', deposit: 0, rent: 150, restBonus: -10, desc: 'En rostig husvagn på tomten i förorten. Billigast i stan – om du tål kylan.' },
   { id: 'rum', icon: '🛏️', name: 'Lilla rummet', deposit: 0, rent: 350, restBonus: 0, desc: 'En säng, ett kylskåp och en garderob. Men det är ditt.' },
+  { id: 'hoghus', icon: '🏢', name: 'Förortsettan', deposit: 500, rent: 250, restBonus: -5, desc: 'Ett rum och kök på sjunde våningen i Betongvägen 1. Hissen går ibland.' },
   { id: 'lagenhet', icon: '🏢', name: 'Lägenheten', deposit: 1500, rent: 600, restBonus: 10, desc: 'Riktigt kök, soffa och utsikt över Pixelstaden.' },
+  { id: 'radhus', icon: '🏡', name: 'Radhuset', deposit: 4000, rent: 800, restBonus: 15, desc: 'Eget radhus på Söder med en liten trädgård. Grannarna grillar på lördagar.' },
   { id: 'villa', icon: '🏡', name: 'Villan', deposit: 8000, rent: 1000, restBonus: 20, desc: 'Eget hus med trädgård. Hit kan kompisarna komma.' },
+  { id: 'takvaning', icon: '🏙️', name: 'Takvåningen', deposit: 20000, rent: 2000, restBonus: 25, desc: 'Högst upp i Tornhuset – terrass med utsikt över hela Pixelstaden.' },
 ];
-export const homeOf = (id) => HOMES.find((h) => h.id === id) || HOMES.find((h) => h.id === 'rum') || HOMES[0]; // okänd bostad → Lilla rummet
+// Okänd bostad (t.ex. i en sparfil från en annan version) → Lilla rummet, aldrig husvagnen.
+export const homeOf = (id) => HOMES.find((h) => h.id === id) || HOMES.find((h) => h.id === 'rum') || HOMES[0];
 
 const DAY = 24 * 60;
 export const REALTIME_RATE = 2;

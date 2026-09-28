@@ -1,7 +1,7 @@
 {
-  "version": "0.29.1",
+  "version": "0.30.0",
   "date": "2026-09-28",
-  "title": "Dricksen blir lön",
+  "title": "Fyra nya bostäder och husdjuren hemma",
   "files": [
     "CHANGELOG.md",
     "assets/interior.png",
@@ -64,6 +64,7 @@
     "js/net/world.js",
     "js/pets/items.js",
     "js/pets/layer.js",
+    "js/pets/outdoors.js",
     "js/pets/pet-art.js",
     "js/pets/pet-canvas.js",
     "js/pets/sim.js",

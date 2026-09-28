@@ -204,7 +204,7 @@ export function createPetStore({ storage = null, rng = Math.random, key = PETS_S
         bornDay: day, home: home ?? null, room: opts.room ?? null,
         x: isNum(opts.x) ? opts.x : null, y: isNum(opts.y) ? opts.y : null,
       });
-      p.stage = stageOf(Math.max(S.day, day) - p.bornDay);
+      p.stage = stageOf(Math.max(S.day, S.nowDay(), day) - p.bornDay); // S.day kan ligga efter (nyss nollställd butik) – spelklockan vet bäst
       S.pets.push(p);
       if (!S.gifts.skal) { S.gifts.skal = true; S.inventory.matskal = (S.inventory.matskal | 0) + 1; }
       if (species === 'hund' && !S.gifts.koppel) { S.gifts.koppel = true; S.inventory.koppel = (S.inventory.koppel | 0) + 1; }
@@ -499,7 +499,7 @@ export function createPetStore({ storage = null, rng = Math.random, key = PETS_S
       // spelklockan går aldrig bakåt – gör den det har spelaren börjat om (eller lagt tillbaka
       // en äldre spelsparfil): förra spelets djur ska inte dyka upp i den nya bostaden
       if (S.clockAbs != null && abs < S.clockAbs - RESTART_BACK_MIN) S._restart('nytt spel (klockan gick tillbaka)');
-      if (S.clockAbs == null || abs < S.clockAbs - 1) { S.clockAbs = abs; S.day = Math.max(1, day | 0); S._clampBorn(S.day); S._migrate(ctx.home); return 0; }
+      if (S.clockAbs == null || abs < S.clockAbs - 1) { S.clockAbs = abs; S.day = Math.max(1, day | 0); S._clampBorn(S.day); S._restage(S.day); S._migrate(ctx.home); return 0; }
       const d = abs - S.clockAbs;
       if (d <= 0) { S._migrate(ctx.home); return 0; }
       S._advance(S.clockAbs, abs, ctx);
@@ -517,6 +517,18 @@ export function createPetStore({ storage = null, rng = Math.random, key = PETS_S
     // dag), annars fastnar djuret som unge i veckor
     _clampBorn(day) {
       for (const p of S.pets) if (!isNum(p.bornDay) || p.bornDay > day) p.bornDay = day;
+    },
+    // Klockan sattes direkt (ny butik, liten bakåthoppning) utan dagsskifte: djur som hunnit
+    // bli äldre (t.ex. adopterade med en födelsedag bakåt i tiden) får rätt livsskede direkt
+    // i stället för nästa morgon. Bara framåt – ett djur blir aldrig yngre.
+    _restage(day) {
+      const RANK = { unge: 0, ung: 1, vuxen: 2 };
+      for (const p of S.pets) {
+        const st = stageOf(day - (isNum(p.bornDay) ? p.bornDay : day));
+        if ((RANK[st] ?? 0) <= (RANK[p.stage] ?? 0)) continue;
+        p.stage = st;
+        S._emit('vaxte', st === 'vuxen' ? `${p.name} är vuxen nu!` : `${p.name} har vuxit – inte en liten unge längre.`, { petId: p.id, home: p.home });
+      }
     },
     _advance(from, to, ctx) {
       S._migrate(ctx.home);

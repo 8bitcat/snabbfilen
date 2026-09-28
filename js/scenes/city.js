@@ -13,6 +13,7 @@ import { SMALL, BIG, ctxText, textW } from '../core/floor-pix.js';
 import { worldFolksHere } from '../net/world.js';
 import { clock, JOBS, HOMES } from '../game.js';
 import { WORKPLACES, NEW_HOMES } from '../city/places.js';
+import { createPetWalk } from '../pets/outdoors.js'; // husdjuren på promenad (hunden i koppel)
 
 // Stadsmodulerna. buildings-* ger BUILDING_ART, ground/props/traffic/life livet,
 // weather vädret, walk gångmotorn och fallback-v2 platshållare för allt som
@@ -163,6 +164,9 @@ export function makeCity(A) {
   env.obstacles = [...MAP_OBSTACLES, ...artObstacles(), ...(S.props.obstacles || []), ...(S.traffic.obstacles || []), ...(S.fallback.obstacles || []), ...(S.life.obstacles || [])];
   walker.setObstacles(env.obstacles);
   walker.snapFree();
+  // husdjuren som är ute (js/pets/outdoors.js): följer figuren, promenaden räknas med spelklockan
+  let pets = null;
+  try { pets = createPetWalk(A); } catch (e) { console.error('husdjuren i staden startade inte:', e); }
 
   const doorOpen = Object.fromEntries(ALL_BUILDINGS.map((b) => [b.id, 0]));
   const doorWasOpen = {};
@@ -386,6 +390,7 @@ export function makeCity(A) {
         const me = selfDrawable(A, walker, t, { folksHere: worldFolksHere(A).length });
         items.push({ y: me.fy + 0.01, draw: () => me.draw(ctx) });
       }
+      if (pets && !riding) guard('husdjuren', () => { for (const d of pets.drawables()) items.push({ y: d.fy, draw: () => d.draw(ctx) }); });
     }
     items.sort((a, b) => a.y - b.y);
     for (const it of items) guard('item', () => it.draw(ctx));
@@ -466,6 +471,7 @@ export function makeCity(A) {
       standUp,
       cam: () => ({ ...cam }),
       markers: () => markers.map((m) => ({ ...m })),
+      pets: () => (pets ? pets._debug.followers() : []), // husdjuren på promenad (tools/pets-walk-test.mjs)
     },
 
     update(dt) {
@@ -488,6 +494,7 @@ export function makeCity(A) {
         if (r.phase === 'framme') finishRide();
       } else if (riding) { riding = false; walker.snapFree(); } // bussen försvann – stå kvar där man är
       A.cityPos = [walker.px, walker.py];
+      if (pets) guard('husdjuren.update', () => pets.update(dt, walker.px, walker.py, (x, y) => walker.walkable(x, y), { hidden: riding }));
       updateEnv(dt);
       if (banner) banner.t += dt;
       if (fade.phase === 0) checkDistrict(false);

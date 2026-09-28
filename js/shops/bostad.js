@@ -16,7 +16,7 @@ export function openHousing(A, { firstTime = false, onDone } = {}) {
         <span data-pic="${h.id}" style="font-size:28px;text-align:center">${h.icon}</span>
         <span class="nm">${h.name}${here ? ' <small class="ok">← du bor här</small>' : ''}<br>
           <small class="sp">${h.desc}</small><br>
-          <small class="sp">Insats <b>${h.deposit ? fmt(h.deposit) : 'gratis'}</b> · hyra ${fmt(h.rent)}/vecka${h.restBonus ? ` · 😴 +${h.restBonus} energi` : ''}</small></span>
+          <small class="sp">Insats <b>${h.deposit ? fmt(h.deposit) : 'gratis'}</b> · hyra ${fmt(h.rent)}/vecka${h.restBonus > 0 ? ` · 😴 +${h.restBonus} energi` : ''}${h.restBonus < 0 ? ` · <span class="bad">🥶 −${Math.abs(h.restBonus)} energi</span>` : ''}</small></span>
         <button class="btn btn-small ${afford && !here ? 'btn-go' : ''}" data-move="${h.id}" ${here || !afford ? 'disabled' : ''}>${here ? 'Hemma' : 'Flytta hit'}</button>
       </div>`;
     }).join('')}</div>`;

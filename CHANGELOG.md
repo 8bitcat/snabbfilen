@@ -10,6 +10,14 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.30.0] – 2026-09-28 – Fyra nya bostäder och husdjuren hemma
+- Fyra nya bostäder hos bostadsbyrån: Husvagnen med egen gårdsplätt, Förortsettan på sjunde våningen med trapphus och trasig hiss, Radhuset på Söder och Takvåningen högst upp i Tornhuset
+- Planschväggen visar alla sju bostäder med egna bilder, och man kan flytta in i husvagnen direkt
+- Husdjuren bor hemma: skål, säck, kattlåda, korg och bur som går att ställa ut, fylla, tömma och städa
+- Hunden följer med ut i koppel – promenaden räknas och hunden gör sina behov ute i stället för hemma
+- Husvagnen och Förortsettan ger sämre sömn, och bostadsbyrån visar det i rött
+- På mobilen fyller Lilla rummet och Lägenheten skärmen utan tom yta runt rummet
+
 ## [0.29.1] – 2026-09-28 – Dricksen blir lön
 - Dricksen i Burgarköket går nu rakt in i lönen: snabb service ger 5 kr, blixtsnabb 10 kr per rätt
 - Köket visar beloppet direkt när gästen ger dricks, och Bella ropar ut det
