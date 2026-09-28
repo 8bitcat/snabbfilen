@@ -161,7 +161,7 @@ export function makeCity(A) {
     const dc = doorCenter(b);
     A.cityPos = [dc.x, dc.y + 4];
     if (b.enter === 'hem') { A.roomSub = 0; A.go('room'); }
-    else if (b.enter === 'bostad') A.openHousing();
+    else if (b.enter === 'bostad') A.go('bostad'); // mäklarkontoret man går runt i (js/scenes/shop-bostad.js)
     else if (b.enter === 'mat') A.openFoodShop();
     else if (b.enter === 'klader') A.go('klader');
     else if (b.enter === 'mobler') A.go('mobler');

@@ -367,3 +367,8 @@ body.menu-boot #app { overflow: hidden; }
 .av-nameask-box input { width: 100%; font: 26px var(--font); padding: 5px 10px; border: 3px solid var(--ink); background: #fff; box-shadow: inset 2px 2px 0 #e3dac9; }
 .av-nameask-err { min-height: 22px; color: var(--red2); font-size: 17px; margin: 4px 0 6px; }
 .av-nameask-btns { display: flex; gap: 8px; justify-content: flex-end; }
+
+/* Pixelmätarnas remsa ovanför spelbilden (js/core/hud-pix.js) */
+body.hud-pix #app { flex-direction: column; gap: 0; }
+#hudpix { display: block; image-rendering: pixelated; box-shadow: 0 0 0 3px #000; }
+body.menu-boot #hudpix { display: none; }

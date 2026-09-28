@@ -10,6 +10,10 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.18.3] – 2026-09-28 – Mätarremsa ovanför bilden, gå in på bostadsbyrån
+- Pixelmätarna sitter nu som en egen remsa direkt ovanför spelbilden, i samma pixelstil, och täcker aldrig något i spelet – med porträtt, pengar, dag och klocka, mat, sömn och antal online.
+- Bostadsbyrån går att gå in i: klicka på dörren i staden så kommer du in på mäklarkontoret med annonsplanscher, mäklare och väntrum.
+
 ## [0.18.2] – 2026-09-28 – Mätarna skymde ordersedeln på jobbet
 - Pixelmätarna ritas inte under arbetspass – de skymde ordersedeln på fruktfabriken. Jobben har sin egen rad överst.
 - Etiketterna MAT och SÖMN krockade med porträttramen; mätarna har fått lite mer luft.

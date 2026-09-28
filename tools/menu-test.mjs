@@ -79,6 +79,8 @@ await p.click('[data-continue]'); await p.waitForTimeout(1500);
 const st = await p.evaluate(() => ({ menu: !!document.querySelector('#menu:not(.hidden)'), scene: window.SF.sceneName, attract: window.SF.attract, pix: document.body.classList.contains('hud-pix'), hudH: document.querySelector('#hud').offsetHeight }));
 ok(!st.menu && st.scene === 'room' && st.attract === false, 'Fortsätt startar spelet hemma');
 ok(st.pix === (before.includes('RAD')) , `mätarvalet slår igenom (pixel: ${st.pix}, HUD-höjd ${st.hudH})`);
+const strip = await p.evaluate(() => { const c = document.querySelector('#hudpix'); const sc = document.querySelector('#scene'); if (!c) return null; const a = c.getBoundingClientRect(), b = sc.getBoundingClientRect(); return { shown: !c.classList.contains('hidden') && a.height > 0, above: Math.abs(a.bottom - b.top) < 8 && Math.abs(a.width - b.width) < 2, h: Math.round(a.height) }; });
+ok(!!strip && strip.shown === st.pix && (!st.pix || strip.above), `pixelremsan ligger ovanför spelbilden, utanför scenen (${JSON.stringify(strip)})`);
 await p.evaluate(() => window.SF.go('city')); await p.waitForTimeout(1200);
 await p.screenshot({ path: 'tools/out/menu-test-2.png' });
 

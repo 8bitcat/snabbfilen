@@ -19,7 +19,7 @@ import { openFoodShop } from './shops/matbutik.js';
 import { openHousing } from './shops/bostad.js';
 import { startWorld, worldTick, worldInfo, playersList, visitPlayer, sendEmote, worldFolksHere, playerName } from './net/world.js';
 import { openMenu, mountMenuButton, isMenuOpen, shouldShowMenuAtBoot } from './core/menu.js';
-import { drawPixHud, isPixHud, apply as applyHud } from './core/hud-pix.js';
+import { drawPixHud, isPixHud, apply as applyHud, stripHeight, layoutStrip } from './core/hud-pix.js';
 import { musicTick } from './core/music.js';
 import { play, unlockAudio, toggleMute, isMuted } from './core/sound.js';
 
@@ -74,12 +74,14 @@ function fit() {
   const dpr = window.devicePixelRatio || 1;
   const w = window.innerWidth, h = window.innerHeight - $('#hud').offsetHeight - 4;
   // bakom huvudmenyn täcker hela staden fönstret (kanterna klipps), annars får hela spelbilden plats
-  const s = Math.max(2, A.attract ? Math.ceil(Math.max(w * dpr / A.W, h * dpr / A.H)) : Math.floor(Math.min(w * dpr / A.W, h * dpr / A.H)));
+  // pixelmätarnas remsa ligger ovanför spelbilden och tar sin höjd av samma yta
+  const s = Math.max(2, A.attract ? Math.ceil(Math.max(w * dpr / A.W, h * dpr / A.H)) : Math.floor(Math.min(w * dpr / A.W, h * dpr / (A.H + stripHeight(A)))));
   A.pxs = s;
   cv.width = A.W * s;
   cv.height = A.H * s;
   cv.style.width = (A.W * s / dpr) + 'px';
   cv.style.height = (A.H * s / dpr) + 'px';
+  layoutStrip(A, dpr);
 }
 window.addEventListener('resize', fit);
 
