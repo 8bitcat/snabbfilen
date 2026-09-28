@@ -382,3 +382,10 @@ canvas.homepic { width: 128px; height: auto; image-rendering: pixelated; border:
 #chat { position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 45; display: flex; gap: 6px; align-items: center;
   width: min(92vw, 520px); background: var(--paper); border: 3px solid var(--ink); box-shadow: 4px 4px 0 var(--ink); padding: 6px; }
 #chat input { flex: 1; min-width: 0; font: 22px var(--font); padding: 4px 8px; border: 2px solid var(--ink); background: #fff; }
+/* chattens emojiväljare */
+#chat { flex-wrap: wrap; }
+#chat .chat-emojis { flex-basis: 100%; order: -1; max-height: 190px; overflow: auto; background: #fff; border: 2px solid var(--ink); padding: 4px 6px; }
+#chat .chat-cat b { display: block; font: 15px var(--font); color: var(--muted); margin: 2px 0; }
+#chat .chat-cat div { display: flex; flex-wrap: wrap; gap: 2px; }
+#chat .chat-cat button { font-size: 20px; line-height: 1; padding: 2px; background: none; border: 0; cursor: pointer; border-radius: 3px; }
+#chat .chat-cat button:hover { background: #fff4c7; }

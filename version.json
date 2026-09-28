@@ -1,7 +1,7 @@
 {
-  "version": "0.21.0",
+  "version": "0.22.0",
   "date": "2026-09-28",
-  "title": "Chatt med pratbubblor",
+  "title": "Pratbubblor, emoji i chatten och menytavla vid Burgarbaren",
   "files": [
     "CHANGELOG.md",
     "assets/interior.png",

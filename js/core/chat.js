@@ -6,15 +6,36 @@ import { isMenuOpen } from './menu.js';
 
 const MAX = 80;
 let A = null, bar = null, input = null;
+// Emojiväljaren (alla emoji går också att skriva in direkt, t.ex. Win + . eller mobilens tangentbord)
+const EMOJIS = [
+  ['Glad', '😀 😃 😄 😁 😆 😅 😂 🤣 😊 😇 🙂 😉 😍 🥰 😘 😋 😛 😜 🤪 😎 🤩 🥳 😏 🤗 🤭 🫡 🤔 🤫'],
+  ['Känslor', '😐 😑 😶 🙄 😬 😴 🤤 😪 😮 😲 😳 🥺 😢 😭 😤 😠 😡 🤯 😱 😨 😰 🤢 🤮 🤧 🥶 🥵 😵 💀 👻 🤖 👽 💩'],
+  ['Hjärtan', '❤️ 🧡 💛 💚 💙 💜 🖤 🤍 🤎 💖 💗 💓 💞 💕 💘 💝 💔 ❣️ 💯 ✨ ⭐ 🌟 💫 🔥 💥 🎉 🎊'],
+  ['Händer', '👋 🤚 ✋ 👌 🤌 ✌️ 🤞 🤟 🤘 🤙 👈 👉 👆 👇 👍 👎 ✊ 👊 👏 🙌 🫶 👐 🤝 🙏 💪'],
+  ['Djur', '🐶 🐱 🐭 🐹 🐰 🦊 🐻 🐼 🐨 🐯 🦁 🐮 🐷 🐸 🐵 🐔 🐧 🐦 🦆 🦉 🐴 🦄 🐝 🦋 🐢 🐍 🐙 🐬 🐳 🐟'],
+  ['Mat', '🍎 🍊 🍋 🍌 🍉 🍇 🍓 🍒 🥝 🍍 🥕 🌽 🍞 🧀 🍔 🍟 🍕 🌭 🥪 🌮 🍝 🍣 🍩 🍪 🎂 🍰 🧁 🍫 🍭 🍦 ☕ 🧃 🥤'],
+  ['Saker', '⚽ 🏀 🏈 🎾 🏐 🎮 🕹️ 🎲 🎨 🎵 🎶 🎸 🎤 🎧 📱 💻 🖥️ 💡 🎁 🎈 🏆 🥇 👑 💎 💰 🔑 🏠 🚗 🚌 ✈️ 🚀 🌈 ☀️ 🌙 ⛄ 🌧️'],
+];
 
 function mount() {
   if (bar) return;
   bar = document.createElement('div');
   bar.id = 'chat';
   bar.className = 'hidden';
-  bar.innerHTML = `<input type="text" maxlength="${MAX}" placeholder="Skriv något till de andra …" autocomplete="off" spellcheck="false"><button class="btn btn-small btn-go" data-send>Skicka</button><button class="btn btn-small" data-close title="Stäng (Esc)">✕</button>`;
+  bar.innerHTML = `<div class="chat-emojis hidden">${EMOJIS.map(([cat, list]) => `<div class="chat-cat"><b>${cat}</b><div>${[...list].filter((c) => c.trim()).map((e) => `<button type="button" data-emo="${e}">${e}</button>`).join('')}</div></div>`).join('')}</div>
+    <button class="btn btn-small" data-emopick title="Emoji">😀</button><input type="text" maxlength="${MAX}" placeholder="Skriv något till de andra …" autocomplete="off" spellcheck="false"><button class="btn btn-small btn-go" data-send>Skicka</button><button class="btn btn-small" data-close title="Stäng (Esc)">✕</button>`;
   document.body.append(bar);
   input = bar.querySelector('input');
+  const pick = bar.querySelector('.chat-emojis');
+  bar.querySelector('[data-emopick]').onclick = () => { pick.classList.toggle('hidden'); input.focus(); };
+  pick.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-emo]');
+    if (!b) return;
+    const at = input.selectionStart ?? input.value.length, end = input.selectionEnd ?? at;
+    input.value = (input.value.slice(0, at) + b.dataset.emo + input.value.slice(end)).slice(0, MAX);
+    const pos = Math.min(MAX, at + b.dataset.emo.length);
+    input.focus(); input.setSelectionRange(pos, pos);
+  });
   bar.querySelector('[data-send]').onclick = () => send();
   bar.querySelector('[data-close]').onclick = () => close();
   input.addEventListener('keydown', (e) => {

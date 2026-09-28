@@ -137,32 +137,91 @@ export function folkDrawables(A, t) {
   }));
 }
 
-// Pratbubbla med text (chatten): radbruten pixeltext, högst tre rader, svans nedåt.
-// Fonten har bara versaler A–Ö, siffror och lite skiljetecken – resten blir mellanslag.
-const SAY_W = 72, SAY_OK = /[A-ZÅÄÖ0-9 \-+!.:,?/%'=]/;
+// Pratbubbla med text (chatten och NPC-repliker): radbruten pixeltext, högst fyra rader,
+// svans nedåt. Fonten har versaler A–Ö, siffror och lite skiljetecken; emoji ritas som små
+// 9×9-pixelbilder (systemets emoji nedskalad med hårda kanter, samma pixelkorn som spelet).
+const SAY_W = 76, SAY_OK = /[A-ZÅÄÖÉ0-9 \-+!.:,?/%'=]/;
+const EMO = new Map();
+const isEmoji = (g) => /\p{Extended_Pictographic}|\p{Regional_Indicator}/u.test(g);
+const graphemes = (str) => (typeof Intl !== 'undefined' && Intl.Segmenter
+  ? [...new Intl.Segmenter('sv', { granularity: 'grapheme' }).segment(str)].map((x) => x.segment) : Array.from(str));
+function emojiImg(g) {
+  let c = EMO.get(g);
+  if (c) return c;
+  const big = document.createElement('canvas'); big.width = big.height = 36;
+  const bx = big.getContext('2d');
+  bx.textAlign = 'center'; bx.textBaseline = 'middle';
+  bx.font = '30px "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif';
+  bx.fillText(g, 18, 20);
+  c = document.createElement('canvas'); c.width = c.height = 9;
+  const x = c.getContext('2d');
+  x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high';
+  x.drawImage(big, 0, 0, 36, 36, 0, 0, 9, 9);
+  const d = x.getImageData(0, 0, 9, 9);
+  for (let i = 3; i < d.data.length; i += 4) d.data[i] = d.data[i] > 96 ? 255 : 0;
+  x.putImageData(d, 0, 0);
+  EMO.set(g, c);
+  return c;
+}
+// text → rader av tecken: { g, emoji, w }
 export function sayLines(text) {
-  const words = String(text).toUpperCase().split('').map((c) => (SAY_OK.test(c) ? c : ' ')).join('').replace(/\s+/g, ' ').trim().split(' ');
-  const lines = [];
-  let cur = '';
-  for (const w of words) {
-    const t = cur ? cur + ' ' + w : w;
-    if (textW(SMALL, t) <= SAY_W) cur = t;
-    else { if (cur) lines.push(cur); cur = w; while (textW(SMALL, cur) > SAY_W) { let k = cur.length; while (k > 1 && textW(SMALL, cur.slice(0, k)) > SAY_W) k--; lines.push(cur.slice(0, k)); cur = cur.slice(k); } }
-    if (lines.length >= 3) break;
+  const clean = String(text).replace(/[–—]/g, '-').replace(/…/g, '...').replace(/[“”"«»]/g, '');
+  const toks = [];
+  for (const g of graphemes(clean)) {
+    if (isEmoji(g)) toks.push({ g, emoji: true, w: 10 });
+    else {
+      const u = g.toUpperCase();
+      if (u === ' ' || /\s/.test(u)) toks.push({ g: ' ', w: 3 });
+      else if (SAY_OK.test(u)) toks.push({ g: u, w: textW(SMALL, u) + 1 });
+    }
   }
-  if (cur && lines.length < 3) lines.push(cur);
-  return lines.slice(0, 3);
+  // ord = följd av icke-mellanslag
+  const words = [];
+  let cur = [];
+  for (const t of toks) { if (t.g === ' ') { if (cur.length) words.push(cur); cur = []; } else cur.push(t); }
+  if (cur.length) words.push(cur);
+  const lines = [];
+  let line = [], lw = 0;
+  const wWidth = (w) => w.reduce((a, t) => a + t.w, 0);
+  for (let w of words) {
+    let ww = wWidth(w);
+    if (line.length && lw + 3 + ww > SAY_W) { lines.push(line); line = []; lw = 0; if (lines.length >= 4) break; }
+    while (ww > SAY_W) { // för långt ord: bryt det
+      let k = w.length, acc = ww;
+      while (k > 1 && acc > SAY_W - lw) { k--; acc -= w[k].w; }
+      line.push(...w.slice(0, k)); lines.push(line); line = []; lw = 0;
+      w = w.slice(k); ww = wWidth(w);
+      if (lines.length >= 4) break;
+    }
+    if (lines.length >= 4) break;
+    if (line.length) { line.push({ g: ' ', w: 3 }); lw += 3; }
+    line.push(...w); lw += ww;
+  }
+  if (line.length && lines.length < 4) lines.push(line);
+  return lines.slice(0, 4);
 }
 export function sayBubble(ctx, x, y, text) {
   const lines = sayLines(text);
   if (!lines.length) return;
-  const w = Math.max(...lines.map((l) => textW(SMALL, l))) + 8, h = lines.length * 7 + 5;
+  const lh = lines.map((l) => (l.some((t) => t.emoji) ? 10 : 7));
+  const w = Math.max(...lines.map((l) => l.reduce((a, t) => a + t.w, 0))) + 7, h = lh.reduce((a, v) => a + v, 0) + 4;
   const bx = Math.round(x - w / 2), by = Math.round(y - h - 4);
   ctx.fillStyle = '#17151a'; ctx.fillRect(bx - 1, by - 1, w + 2, h + 2);
   ctx.fillStyle = '#f4f1ea'; ctx.fillRect(bx, by, w, h);
-  ctx.fillStyle = '#17151a'; ctx.fillRect(Math.round(x) - 2, by + h, 5, 1); ctx.fillRect(Math.round(x) - 1, by + h + 1, 3, 1); ctx.fillRect(Math.round(x), by + h + 2, 1, 1);
-  ctx.fillStyle = '#f4f1ea'; ctx.fillRect(Math.round(x) - 1, by + h, 3, 1);
-  lines.forEach((l, i) => ctxText(ctx, SMALL, l, bx + 4, by + 3 + i * 7, '#17151a'));
+  const tx = Math.round(x);
+  ctx.fillStyle = '#17151a'; ctx.fillRect(tx - 2, by + h, 5, 1); ctx.fillRect(tx - 1, by + h + 1, 3, 1); ctx.fillRect(tx, by + h + 2, 1, 1);
+  ctx.fillStyle = '#f4f1ea'; ctx.fillRect(tx - 1, by + h, 3, 1);
+  let yy = by + 3;
+  lines.forEach((l, i) => {
+    let xx = bx + 4;
+    const emo = lh[i] === 10;
+    for (const t of l) {
+      if (t.emoji) ctx.drawImage(emojiImg(t.g), xx, yy - 1);
+      else if (t.g !== ' ') ctxText(ctx, SMALL, t.g, xx, yy + (emo ? 2 : 0), '#17151a');
+      xx += t.w;
+    }
+    yy += lh[i];
+  });
 }
 
 export function nameTag(ctx, x, y, av) {

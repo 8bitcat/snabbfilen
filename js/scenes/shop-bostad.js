@@ -27,7 +27,7 @@ import { Pix, SMALL, BIG, ctxText, textW, text, eachTextPixel, mix, mul, hash, b
 import { toast } from '../core/ui.js';
 import { HOMES, fmt } from '../game.js';
 import { play } from '../core/sound.js';
-import { createWalker, selfDrawable, folkDrawables, WALK_SEQ } from './walkable.js';
+import { createWalker, selfDrawable, folkDrawables, WALK_SEQ, sayBubble } from './walkable.js';
 
 // ================= mått och plats =================
 const VW = 384, W = 600, H = 216;
@@ -1980,6 +1980,7 @@ export function makeShopBostad(A) {
   }
   const greet = () => { greetT = t; greeted = true; };
   const say = (msg, snd = 'click') => { play(snd); toast(msg); };
+  let bossSay = null; // mäklarens pratbubbla { text, until }
   const HEADLINES = [
     '📰 DRÖMHEM: "Tio sätt att få plats med en soffa i Lilla rummet"',
     '📰 PIXELPOSTEN: "Större bostad – bättre sömn, säger forskarna"',
@@ -1995,9 +1996,9 @@ export function makeShopBostad(A) {
       act: () => {
         greet();
         const nx = nextHome();
-        toast(nx
-          ? `💬 Mäklaren: "${g.money >= nx.deposit ? `Du har råd med ${nx.name.toLowerCase()} nu – ska vi skriva kontrakt?` : `Spara ${fmt(nx.deposit - g.money)} till, så fixar jag ${nx.name.toLowerCase()} åt dig!`}"`
-          : '💬 Mäklaren: "Villan är det finaste vi har – och den är din!"');
+        bossSay = { until: t + 5.5, text: nx
+          ? `${g.money >= nx.deposit ? `Du har råd med ${nx.name.toLowerCase()} nu – ska vi skriva kontrakt?` : `Spara ${fmt(nx.deposit - g.money)} till, så fixar jag ${nx.name.toLowerCase()} åt dig!`}`
+          : 'Villan är det finaste vi har – och den är din!' };
         openHousing(null);
       } },
     { id: 'soffa', r: [SOFA.x, SOFA.base - 34, SOFA.x + SOFA.w, SOFA.base], go: [SEATS[0], SOFA.base + 5], label: 'SOFFAN', hint: 'KLICKA FÖR ATT SLÅ DIG NER',
@@ -2153,7 +2154,8 @@ export function makeShopBostad(A) {
     }
 
     // mäklarens hälsning
-    if (t - greetT < 3) speech(ctx, BOSS.x, BOSS.y - 46, 'HEJ! VÄLKOMMEN!');
+    if (bossSay && bossSay.until > t) sayBubble(ctx, BOSS.x, BOSS.y - 44, bossSay.text);
+    else if (t - greetT < 3) speech(ctx, BOSS.x, BOSS.y - 46, 'HEJ! VÄLKOMMEN!');
   }
 
   return {

@@ -27,7 +27,7 @@ import { drawPerson, makeLook } from '../core/people.js';
 import { openModal, closeModal, toast } from '../core/ui.js';
 import { fmt } from '../game.js';
 import { play } from '../core/sound.js';
-import { createWalker, selfDrawable, folkDrawables, WALK_SEQ, nameTag, emoteBubble, iconBubble } from './walkable.js';
+import { createWalker, selfDrawable, folkDrawables, WALK_SEQ, nameTag, emoteBubble, iconBubble, sayBubble } from './walkable.js';
 import { worldFolksHere, worldMyEmote } from '../net/world.js';
 
 // ======================= menyn =======================
@@ -2131,7 +2131,8 @@ export function makeShopKafe(A) {
     // pratbubblor (ovanpå ljuset så att de syns även i kväll)
     for (const G of guests) if (G.bubble && G.bubble.until > t && G.seat && G.state === 'sit') {
       const [x, y] = seatPos(G.seat);
-      iconBubble(ctx, Math.round(x) - 2, Math.round(y) - (G.seat.front ? 38 : 42), G.bubble.icon);
+      if (G.bubble.text) sayBubble(ctx, Math.round(x), Math.round(y) - (G.seat.front ? 38 : 42), G.bubble.text);
+      else iconBubble(ctx, Math.round(x) - 2, Math.round(y) - (G.seat.front ? 38 : 42), G.bubble.icon);
     }
     if (bar.bubble && bar.bubble.until > t) iconBubble(ctx, Math.round(bar.x) - 2, BARI_Y - 42, bar.bubble.icon);
   }
@@ -2198,8 +2199,7 @@ export function makeShopKafe(A) {
       const s = seatAt(x, y);
       if (s && !s.occ) { goSit(s); return; }
       if (s && s.occ && s.occ !== 'me' && s.occ.state === 'sit') {
-        s.occ.bubble = { icon: ICONS[Math.floor(Math.random() * ICONS.length)], until: t + 2.5 };
-        toast(`💬 ”${LINES[Math.floor(Math.random() * LINES.length)]}”`);
+        s.occ.bubble = { text: LINES[Math.floor(Math.random() * LINES.length)], until: t + 4.5 }; // repliken i en pratbubbla ovanför gästen
         play('click');
         return;
       }

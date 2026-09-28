@@ -10,6 +10,12 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.22.0] – 2026-09-28 – Pratbubblor, emoji i chatten och menytavla vid Burgarbaren
+- Klickar du på en kafégäst eller mäklaren säger de sin replik i en pratbubbla ovanför sig, inte i en ruta högst upp.
+- Emoji i chatten: skriv in vilka emoji du vill (eller välj i 😀-väljaren i chattraden) – de ritas som små pixelbilder i pratbubblan. Bubblorna rymmer nu fyra rader.
+- Menytavla vid Burgarbarens entré med samma rätter och priser som på jobbet, upplyst på kvällen.
+- Burgarbarens nederdel är nu blank röd emalj med vit rand – de räfflade stålpanelerna såg ut som nerdragna jalusier fast restaurangen var öppen.
+
 ## [0.21.0] – 2026-09-28 – Chatt med pratbubblor
 - Chatta med de andra: tryck Enter (eller 💬 uppe till höger), skriv och skicka. Det du säger visas som en pratbubbla ovanför din figur i några sekunder, och alla som är på samma plats ser den.
 
