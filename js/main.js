@@ -93,12 +93,14 @@ const fillMode = () => !A.attract && (!navigator.webdriver || new URLSearchParam
 const zoomMode = () => {
   let z = null;
   try { z = localStorage.getItem('snabbfilen_zoom'); } catch { /* ok */ }
-  if (z === 'ram' || z === 'fyll') return z;
-  return 'fyll'; // Carl: inne i rum och butiker ska hela skärmen ALLTID fyllas – 🔍 växlar
+  if (z === 'ram' || z === 'vid' || z === 'nara') return z;
+  // Standard: mobilen NÄRA (samma bild som på datorn – stora pixlar – och fyller
+  // skärmen), datorn VID (ser mer värld). 🔍-knappen växlar nära → vid → ram.
+  return matchMedia('(pointer: coarse)').matches ? 'nara' : 'vid';
 };
 A.view = { w: DESIGN_W, h: DESIGN_H, boxX: 0, boxY: 0, boxed: false };
 function applySceneView() {
-  const v = A.view, cap = fillMode() ? WIDE[A.sceneName] : null;
+  const v = A.view, cap = fillMode() && zoomMode() !== 'nara' ? WIDE[A.sceneName] : null; // NÄRA = klassiska vyn överallt
   A.W = Math.max(DESIGN_W, Math.min(v.w, cap ? cap.w : DESIGN_W));
   A.H = Math.max(DESIGN_H, Math.min(v.h, cap ? cap.h : DESIGN_H));
   v.boxX = Math.max(0, (v.w - A.W) >> 1);
@@ -131,7 +133,7 @@ function fit() {
   applySceneView();
   const stripCss = strip ? strip * s / dpr : 0;
   const sEl = document.getElementById('hudpix');
-  if (v.boxed && zoomMode() === 'fyll') {
+  if (v.boxed && zoomMode() !== 'ram') {
     // FYLL SKÄRMEN: canvasen är bara spelbilden (384×216 i heltalsskala) och
     // förstoras sedan jämnt tills ytan är täckt. Blir beskärningen orimlig
     // (stående läge) fylls bara bredden. Mätarremsan ligger kvar överst.
@@ -191,14 +193,16 @@ rotateHint();
 // 🔍-knappen i HUD-raden: växla zoom för rum/butiker/jobb (staden fyller alltid)
 const zoomBtn = document.createElement('button');
 zoomBtn.id = 'hud-zoom'; zoomBtn.className = 'btn btn-small';
-const zoomLabel = () => {
-  const fyll = zoomMode() === 'fyll';
-  zoomBtn.textContent = fyll ? '⛶' : '🔍';
-  zoomBtn.title = fyll ? 'Zoom: fyller skärmen – tryck för hela bilden med ram' : 'Zoom: hela bilden med ram – tryck för att fylla skärmen';
+const ZOOMS = {
+  nara: { ikon: '🔍', txt: 'Zoom: NÄRA – samma bild som på datorn, fyller skärmen. Tryck för VID (se mer värld).' },
+  vid: { ikon: '⛶', txt: 'Zoom: VID – ser mer av staden och butikerna. Tryck för RAM (hela bilden).' },
+  ram: { ikon: '▣', txt: 'Zoom: RAM – hela bilden med pixelram. Tryck för NÄRA (fyller skärmen).' },
 };
+const zoomLabel = () => { const z = ZOOMS[zoomMode()]; zoomBtn.textContent = z.ikon; zoomBtn.title = z.txt; };
 zoomLabel();
 zoomBtn.addEventListener('click', () => {
-  try { localStorage.setItem('snabbfilen_zoom', zoomMode() === 'fyll' ? 'ram' : 'fyll'); } catch { /* ok */ }
+  const next = { nara: 'vid', vid: 'ram', ram: 'nara' }[zoomMode()];
+  try { localStorage.setItem('snabbfilen_zoom', next); } catch { /* ok */ }
   zoomLabel(); fit();
 });
 document.querySelector('#hud .hud-btns')?.insertBefore(zoomBtn, document.getElementById('hud-mute'));

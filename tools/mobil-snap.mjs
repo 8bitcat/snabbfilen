@@ -48,45 +48,43 @@ const geo = (p) => p.evaluate(() => {
 
 async function fillCase(name, w, h, dpr) {
   const { c, p } = await boot(w, h, dpr);
-  const fyll = true; // Carl: FYLL är standard ÖVERALLT – rum och butiker täcker alltid skärmen (🔍 växlar till RAM)
-  const r = await geo(p); // startscenen: rummet (fast 384×216-scen)
-  if (fyll) {
-    // smala lokaler (contentBox, t.ex. Lilla rummet) fyller höjden; annars fylls bredden
-    const stripH = r.strip ? r.strip.h : 0;
-    ok(r.cv.w >= r.app.w - 2 || r.cv.h >= r.app.h - stripH - 3, `${name}: FYLL – spelbilden täcker skärmen (canvas ${r.cv.w | 0}×${r.cv.h | 0}, app ${r.app.w | 0}×${r.app.h | 0})`);
-    ok(r.W === 384 && r.H === 216 && !r.view.boxed, `${name}: FYLL – rummet i jämn förstoring utan ram`);
-  } else {
-    const gap = Math.abs(r.app.w - r.cv.w) <= 2 && Math.abs((r.cv.y + r.cv.h) - (r.app.y + r.app.h)) <= 2;
-    ok(gap, `${name}: spelbilden fyller ytans bredd och botten (app ${r.app.w | 0}×${r.app.h | 0}, canvas ${r.cv.w | 0}×${r.cv.h | 0})`);
-    ok(r.W === 384 && r.H === 216 && r.view.boxed === (r.view.w > 384 || r.view.h > 216), `${name}: rummet ritas i sin 384×216-ruta (vy ${r.view.w}×${r.view.h})`);
-  }
+  const setZoom = async (z) => { await p.evaluate((zz) => { localStorage.setItem('snabbfilen_zoom', zz); window.dispatchEvent(new Event('resize')); }, z); await p.waitForTimeout(200); };
+  // NÄRA (mobilens standard): klassiska 384-bilden – samma som på datorn – förstorad tills skärmen täcks
+  await setZoom('nara');
+  const r = await geo(p);
+  const stripH = r.strip ? r.strip.h : 0;
+  ok(r.cv.w >= r.app.w - 2 || r.cv.h >= r.app.h - stripH - 3, `${name}: NÄRA – rummet täcker skärmen (canvas ${r.cv.w | 0}×${r.cv.h | 0}, app ${r.app.w | 0}×${r.app.h | 0})`);
+  ok(r.W === 384 && r.H === 216 && !r.view.boxed, `${name}: NÄRA – klassiska vyn utan ram`);
   ok(r.scrollX <= 0 && r.scrollY <= 0, `${name}: ingen skroll (${r.scrollX}, ${r.scrollY})`);
   ok(r.strip && Math.abs(r.strip.w - r.app.w) <= 2 && r.strip.y <= r.app.y + 2, `${name}: mätarremsan spänner över hela bredden`);
   ok(await p.evaluate(() => !!document.getElementById('hud-zoom')), `${name}: 🔍-knappen finns i HUD-raden`);
   await p.screenshot({ path: `tools/out/mobil-${name}-rum.png` });
-  if (fyll) { // 🔍 växlar till RAM (hela bilden) och tillbaka
-    await p.evaluate(() => { localStorage.setItem('snabbfilen_zoom', 'ram'); window.dispatchEvent(new Event('resize')); });
-    await p.waitForTimeout(200);
-    const r2 = await geo(p);
-    ok(r2.view.boxed && Math.abs(r2.app.w - r2.cv.w) <= 2, `${name}: 🔍 → RAM visar hela bilden med pixelram`);
-    await p.evaluate(() => { localStorage.setItem('snabbfilen_zoom', 'fyll'); window.dispatchEvent(new Event('resize')); });
-    await p.waitForTimeout(150);
-  }
   await p.evaluate(() => SF.go('city'));
   await p.waitForTimeout(800);
+  const n = await geo(p);
+  ok(n.W === 384 && (n.cv.w >= n.app.w - 2 || n.cv.h >= n.app.h - stripH - 3), `${name}: NÄRA – staden i klassiska vyn, fyller skärmen`);
+  await p.screenshot({ path: `tools/out/mobil-${name}-stad-nara.png` });
+  // VID: ser mer värld
+  await setZoom('vid');
   const s = await geo(p);
-  ok(s.W === s.view.w && s.W > 384, `${name}: staden ser MER värld på bredden (A.W ${s.W} av vyn ${s.view.w})`);
-  ok(s.H >= 216 && s.H >= Math.min(s.view.h, 400), `${name}: staden använder höjden (A.H ${s.H}, vy ${s.view.h})`);
+  ok(s.W === s.view.w && s.W > 384, `${name}: VID – staden ser MER värld på bredden (A.W ${s.W} av vyn ${s.view.w})`);
+  ok(s.H >= 216 && s.H >= Math.min(s.view.h, 400), `${name}: VID – staden använder höjden (A.H ${s.H}, vy ${s.view.h})`);
   await p.screenshot({ path: `tools/out/mobil-${name}-stad.png` });
   await p.evaluate(() => SF.go('mat'));
   await p.waitForTimeout(500);
   const m2 = await geo(p);
-  ok(m2.W === Math.min(m2.view.w, 768) && m2.W > 384, `${name}: mataffären ser mer butik (A.W ${m2.W})`);
+  ok(m2.W === Math.min(m2.view.w, 768) && m2.W > 384, `${name}: VID – mataffären ser mer butik (A.W ${m2.W})`);
   await p.screenshot({ path: `tools/out/mobil-${name}-mat.png` });
   await p.evaluate(() => SF.go('kafe'));
   await p.waitForTimeout(500);
   const k2 = await geo(p);
-  ok(k2.W === Math.min(k2.view.w, 640) && k2.W > 384 && k2.H === 216, `${name}: kaféet ser mer lokal (A.W ${k2.W})`);
+  ok(k2.W === Math.min(k2.view.w, 640) && k2.W > 384 && k2.H === 216, `${name}: VID – kaféet ser mer lokal (A.W ${k2.W})`);
+  // RAM: hela bilden med pixelram
+  await p.evaluate(() => SF.go('room'));
+  await p.waitForTimeout(400);
+  await setZoom('ram');
+  const r2 = await geo(p);
+  ok(r2.view.boxed && Math.abs(r2.app.w - r2.cv.w) <= 2, `${name}: RAM – hela bilden med pixelram`);
   await c.close();
 }
 

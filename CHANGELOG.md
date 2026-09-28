@@ -10,6 +10,11 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.25.3] – 2026-09-28 – Närmare på mobilen
+- Mobilen kommer NÄRMARE: samma bild som på datorn – stora, tydliga pixlar – och den fyller hela skärmen. Det är nu standard på mobil och platta.
+- 🔍-knappen växlar mellan tre zoomlägen: NÄRA (som datorn, fyller skärmen), VID (ser mer av staden och butikerna på en gång) och RAM (hela bilden med pixelram). Valet sparas.
+- Datorn har VID som standard precis som innan.
+
 ## [0.25.2] – 2026-09-28 – Mataffären och kaféet breda
 - Mataffären och kaféet är nu breda som staden: du ser MER av butiken på hela skärmen – hyllrader, båda kassorna och pantmaskinen samtidigt – i stället för en förstorad och beskuren bild.
 - Skärpan är exakt densamma: fler knivskarpa pixlar i bild, ingen skalning.
