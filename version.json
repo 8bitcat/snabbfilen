@@ -1,7 +1,7 @@
 {
-  "version": "0.20.0",
+  "version": "0.21.0",
   "date": "2026-09-28",
-  "title": "147 nya möbler, rotation, slitna Lilla rummet och MÖBELJÄTTEN i två våningar",
+  "title": "Chatt med pratbubblor",
   "files": [
     "CHANGELOG.md",
     "assets/interior.png",
@@ -15,6 +15,7 @@
     "js/city/props.js",
     "js/city/traffic.js",
     "js/core/avatar.js",
+    "js/core/chat.js",
     "js/core/floor-pix.js",
     "js/core/fx.js",
     "js/core/hud-pix.js",

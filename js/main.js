@@ -17,10 +17,11 @@ import { makeJobbBurgare } from './jobs/jobb-burgare.js';
 import { startJobFlow } from './jobs/shift.js';
 import { openFoodShop } from './shops/matbutik.js';
 import { openHousing } from './shops/bostad.js';
-import { startWorld, worldTick, worldInfo, playersList, visitPlayer, sendEmote, worldFolksHere, playerName } from './net/world.js';
+import { startWorld, worldTick, worldInfo, playersList, visitPlayer, sendEmote, sendSay, worldFolksHere, playerName } from './net/world.js';
 import { openMenu, mountMenuButton, isMenuOpen, shouldShowMenuAtBoot } from './core/menu.js';
 import { drawPixHud, isPixHud, apply as applyHud, stripHeight, layoutStrip } from './core/hud-pix.js';
 import { musicTick } from './core/music.js';
+import { mountChat, isChatOpen } from './core/chat.js';
 import { play, unlockAudio, toggleMute, isMuted } from './core/sound.js';
 
 const $ = (s) => document.querySelector(s);
@@ -48,6 +49,7 @@ const A = {
   playersList,
   visitPlayer: (id) => visitPlayer(A, id),
   sendEmote: (e) => sendEmote(A, e),
+  sendSay: (text) => sendSay(A, text),
   worldFolksHere: () => worldFolksHere(A),
 };
 
@@ -94,7 +96,8 @@ cv.addEventListener('pointerdown', (e) => { if (modalOpen()) return; cv.setPoint
 cv.addEventListener('pointermove', (e) => { if (modalOpen()) return; const p = toLocal(e); A.scene?.move?.(p.x, p.y); });
 cv.addEventListener('pointerup', (e) => { if (modalOpen()) return; const p = toLocal(e); A.scene?.up?.(p.x, p.y); });
 window.addEventListener('keydown', (e) => {
-  if (modalOpen() || isMenuOpen() || e.ctrlKey || e.altKey || e.metaKey) return;
+  if (modalOpen() || isMenuOpen() || isChatOpen() || e.ctrlKey || e.altKey || e.metaKey) return;
+  if (/INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName || '')) return; // man skriver i ett fält
   A.scene?.key?.(e.key);
 });
 
@@ -287,6 +290,7 @@ function boot() {
     } else begin();
   };
   mountMenuButton(A);
+  mountChat(A);
   applyHud();
   // huvudmenyn: staden lever bakom panelen tills man väljer figur och trycker Fortsätt
   if (shouldShowMenuAtBoot()) { A.attract = true; fit(); A.go('city'); openMenu(A, { onStart: start }); }

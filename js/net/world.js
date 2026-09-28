@@ -7,9 +7,9 @@
 // 'city' (gatan), 'home:<id>' (hemma hos den spelaren – ägare och gäster får
 // samma nyckel och ser därmed varandra) eller 'away' (jobb m.m., osynlig).
 //
-//   klient→värd  {t:'hi', p}  {t:'up', p}  {t:'emote', e}  {t:'ping'}
+//   klient→värd  {t:'hi', p}  {t:'up', p}  {t:'emote', e}  {t:'say', text}  {t:'ping'}
 //   värd→klient  {t:'world', you, players:[[id,p]]}  {t:'join', id, p}
-//                {t:'up', id, p}  {t:'emote', id, e}  {t:'leave', id}  {t:'pong'}
+//                {t:'up', id, p}  {t:'emote', id, e}  {t:'say', id, text}  {t:'leave', id}  {t:'pong'}
 //
 // Protokollet ändras bara bakåtkompatibelt (nya fält/meddelanden ignoreras av äldre
 // versioner) – byt aldrig WORLD_VERSION, då hamnar gamla flikar i en annan värld.
@@ -30,6 +30,9 @@ const worldName = () => new URLSearchParams(location.search).get('world') || (LO
 const worldId = () => 'snabbfilen-' + WORLD_VERSION + '-' + worldName().toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 24);
 
 const EMOTE_MS = 2600;
+const SAY_MS = 7000;
+const SAY_MAX = 80;
+const cleanSay = (t) => String(t ?? '').replace(/[\u0000-\u001f]/g, '').trim().slice(0, SAY_MAX);
 const MAX_PLAYERS = 24;
 // ?nettest=1 kortar alla tider så att testerna hinner se spöken städas och värdbyten
 const FAST = typeof location !== 'undefined' && /[?&]nettest=1/.test(location.search);
@@ -252,7 +255,7 @@ function hostData(A, conn, d) {
     try { conn.send({ t: 'pong' }); } catch { /* stängd */ }
     return;
   }
-  if (known && (d.t === 'up' || d.t === 'emote')) known.active = Date.now();
+  if (known && (d.t === 'up' || d.t === 'emote' || d.t === 'say')) known.active = Date.now();
   if (d.t === 'hi') {
     const p = cleanP(d.p);
     // samma spelare igen (ny flik/omladdning/tappad uppkoppling) → ta bort den gamla
@@ -275,6 +278,11 @@ function hostData(A, conn, d) {
     if (!p) return;
     p.emote = { e: String(d.e).slice(0, 4), until: Date.now() + EMOTE_MS };
     hostBroadcast({ t: 'emote', id, e: p.emote.e }, id);
+  } else if (d.t === 'say') {
+    const p = W.players.get(id), text = cleanSay(d.text);
+    if (!p || !text) return;
+    p.say = { text, until: Date.now() + SAY_MS };
+    hostBroadcast({ t: 'say', id, text }, id);
   }
 }
 function hostDrop(A, conn) {
@@ -323,6 +331,9 @@ function clientData(A, d, w) {
   } else if (d.t === 'emote') {
     const p = w.players.get(d.id);
     if (p) p.emote = { e: String(d.e).slice(0, 4), until: Date.now() + EMOTE_MS };
+  } else if (d.t === 'say') {
+    const p = w.players.get(d.id), text = cleanSay(d.text);
+    if (p && text) p.say = { text, until: Date.now() + SAY_MS };
   } else if (d.t === 'leave') {
     const p = w.players.get(d.id);
     w.players.delete(d.id);
@@ -364,11 +375,23 @@ export function worldFolksHere(A) {
   const out = [];
   for (const [id, p] of W.players) {
     if (p.scene !== here) continue;
-    out.push({ id, av: p.av, x: p.x, y: p.y, walking: Math.hypot((p.tx ?? p.x) - p.x, (p.ty2 ?? p.y) - p.y) > 1, emote: p.emote && p.emote.until > Date.now() ? p.emote.e : null });
+    out.push({ id, av: p.av, x: p.x, y: p.y, walking: Math.hypot((p.tx ?? p.x) - p.x, (p.ty2 ?? p.y) - p.y) > 1, emote: p.emote && p.emote.until > Date.now() ? p.emote.e : null, say: p.say && p.say.until > Date.now() ? p.say.text : null });
   }
   return out;
 }
 export const worldMyEmote = () => (W?.myEmote && W.myEmote.until > Date.now() ? W.myEmote.e : null);
+let mySay = null;
+export const worldMySay = () => (mySay && mySay.until > Date.now() ? mySay.text : null);
+// Säg något: bubblan visas alltid ovanför en själv, och skickas till alla i världen
+export function sendSay(A, text) {
+  const t = cleanSay(text);
+  if (!t) return;
+  mySay = { text: t, until: Date.now() + SAY_MS };
+  markActive();
+  if (!W || !W.open) return;
+  if (W.role === 'client' && W.conn?.open) W.conn.send({ t: 'say', text: t });
+  if (W.role === 'host') hostBroadcast({ t: 'say', id: W.myId, text: t });
+}
 
 export function sendEmote(A, e) {
   if (!W || !W.open) return;

@@ -5,7 +5,7 @@
 import { drawPerson } from '../core/people.js';
 import { avatarTagColors } from '../core/avatar.js';
 import { SMALL, ctxText, textW } from '../core/floor-pix.js';
-import { worldFolksHere, worldMyEmote } from '../net/world.js';
+import { worldFolksHere, worldMyEmote, worldMySay } from '../net/world.js';
 
 export const WALK_SEQ = [1, 3, 2, 3];
 const FW = 384, FH = 216;
@@ -119,6 +119,8 @@ export function selfDrawable(A, walker, t, { carry = false, folksHere = 0 } = {}
       if (folksHere) nameTag(ctx, walker.px, walker.py - 50, A.avatar);
       const mine = worldMyEmote();
       if (mine) emoteBubble(ctx, walker.px, walker.py - 60, mine);
+      const said = worldMySay();
+      if (said) sayBubble(ctx, walker.px, walker.py - (mine ? 78 : 62), said);
     },
   };
 }
@@ -130,8 +132,37 @@ export function folkDrawables(A, t) {
       drawPerson(ctx, f.x, f.y, f.av.look, 'down', f.walking ? WALK_SEQ[Math.floor(t * 8.5) % 4] : (Math.sin(t * 2 + f.x) > 0.9 ? 4 : 0));
       nameTag(ctx, f.x, f.y - 50, f.av);
       if (f.emote) emoteBubble(ctx, f.x, f.y - 58, f.emote);
+      if (f.say) sayBubble(ctx, f.x, f.y - (f.emote ? 76 : 60), f.say);
     },
   }));
+}
+
+// Pratbubbla med text (chatten): radbruten pixeltext, högst tre rader, svans nedåt.
+// Fonten har bara versaler A–Ö, siffror och lite skiljetecken – resten blir mellanslag.
+const SAY_W = 72, SAY_OK = /[A-ZÅÄÖ0-9 \-+!.:,?/%'=]/;
+export function sayLines(text) {
+  const words = String(text).toUpperCase().split('').map((c) => (SAY_OK.test(c) ? c : ' ')).join('').replace(/\s+/g, ' ').trim().split(' ');
+  const lines = [];
+  let cur = '';
+  for (const w of words) {
+    const t = cur ? cur + ' ' + w : w;
+    if (textW(SMALL, t) <= SAY_W) cur = t;
+    else { if (cur) lines.push(cur); cur = w; while (textW(SMALL, cur) > SAY_W) { let k = cur.length; while (k > 1 && textW(SMALL, cur.slice(0, k)) > SAY_W) k--; lines.push(cur.slice(0, k)); cur = cur.slice(k); } }
+    if (lines.length >= 3) break;
+  }
+  if (cur && lines.length < 3) lines.push(cur);
+  return lines.slice(0, 3);
+}
+export function sayBubble(ctx, x, y, text) {
+  const lines = sayLines(text);
+  if (!lines.length) return;
+  const w = Math.max(...lines.map((l) => textW(SMALL, l))) + 8, h = lines.length * 7 + 5;
+  const bx = Math.round(x - w / 2), by = Math.round(y - h - 4);
+  ctx.fillStyle = '#17151a'; ctx.fillRect(bx - 1, by - 1, w + 2, h + 2);
+  ctx.fillStyle = '#f4f1ea'; ctx.fillRect(bx, by, w, h);
+  ctx.fillStyle = '#17151a'; ctx.fillRect(Math.round(x) - 2, by + h, 5, 1); ctx.fillRect(Math.round(x) - 1, by + h + 1, 3, 1); ctx.fillRect(Math.round(x), by + h + 2, 1, 1);
+  ctx.fillStyle = '#f4f1ea'; ctx.fillRect(Math.round(x) - 1, by + h, 3, 1);
+  lines.forEach((l, i) => ctxText(ctx, SMALL, l, bx + 4, by + 3 + i * 7, '#17151a'));
 }
 
 export function nameTag(ctx, x, y, av) {

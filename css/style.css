@@ -377,3 +377,8 @@ body.menu-boot #hudpix { display: none; }
 .prow.homerow { grid-template-columns: auto 1fr auto; }
 canvas.homepic { width: 128px; height: auto; image-rendering: pixelated; border: 2px solid var(--ink); display: block; }
 @media (max-width: 639px) { canvas.homepic { width: 64px; } }
+
+/* Chatten (js/core/chat.js): inmatningsraden längst ner */
+#chat { position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 45; display: flex; gap: 6px; align-items: center;
+  width: min(92vw, 520px); background: var(--paper); border: 3px solid var(--ink); box-shadow: 4px 4px 0 var(--ink); padding: 6px; }
+#chat input { flex: 1; min-width: 0; font: 22px var(--font); padding: 4px 8px; border: 2px solid var(--ink); background: #fff; }
