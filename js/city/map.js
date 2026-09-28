@@ -395,7 +395,7 @@ const XM = (CITY.INFARTEN[0] + CITY.INFARTEN[1]) / 2; // gränsen går mitt i In
 export const DISTRICTS = [
   { id: 'centrum', name: 'CENTRUM', tag: 'BUTIKER OCH JOBB PÅ PIXELGATAN', rects: [[0, 0, XM, CITY.PARK[0]]], worn: 0, spawn: { x: 640, y: 296 } },
   { id: 'parken', name: 'PARKEN', tag: 'FONTÄNEN, DAMMEN OCH LEKPLATSEN', rects: [[0, CITY.PARK[0], XM, CITY.BACK_S[1]]], worn: 0, spawn: { x: 934, y: 420 } },
-  { id: 'soder', name: 'SÖDER', tag: 'KYRKAN, BION OCH BIBLIOTEKET', rects: [[0, CITY.BACK_S[1], XM, CITY.H]], worn: 0.15, spawn: { x: 934, y: 660 } },
+  { id: 'soder', name: 'SÖDER', tag: 'KYRKAN, BION OCH BIBLIOTEKET', rects: [[0, CITY.BACK_S[1], XM, CITY.H]], worn: 0, spawn: { x: 934, y: 660 } },
   { id: 'fororten', name: 'FÖRORTEN', tag: 'BETONG, GRAFFITI OCH BILLIGA HYROR', rects: [[XM, 0, CITY.W, CITY.H]], worn: 1, spawn: { x: 2040, y: 296 } },
 ];
 export const districtAt = (x, y) => DISTRICTS.find((d) => d.rects.some((r) => x >= r[0] && x < r[2] && y >= r[1] && y < r[3])) || DISTRICTS[0];

@@ -10,6 +10,12 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.29.0] – 2026-09-28 – In i Burgarbaren + Burgarköket
+- GÅ IN I BURGARBAREN! Dörren leder nu in i en gåbar 50-talsdiner: schackrutigt golv, röda bås, jukebox, glassdisk och kassörskan Doris. Beställ vid disken, BÄR DIN BRICKA till ett ledigt bord, sätt dig och ät – mättnad och energi fylls bara medan du sitter. Gäster kommer och går, käkar och pratar.
+- NYTT JOBB: BURGARKÖKET. Vid disken kan du ta kökspasset – beställningslappar på skenan, bygg burgarna lager för lager i rätt ordning, vänd biffarna innan de bränns, fritera pommes och ring i klockan. Snabb servering ger dricks-stjärnor!
+- Burgarbarens fasad är färdig: menystället står på trottoaren (och går inte längre att gå igenom), dinerfönstren är fulla av liv – och efter stängning är det faktiskt SLÄCKT och mörkt.
+- Husen på Söder är hela igen (slitaget hörde till förorten), och garagelängans tak har fått ventilation i stället för klotter.
+
 ## [0.28.2] – 2026-09-28 – Klotter bara på väggar
 - Klottret har flyttat dit det hör hemma: taggarna är borta från gräsmattor, gågator, lekplatsens gungor, rutschkanan och sandlådan, bänkarna, elskåpen, biljettautomaten, containrarna, återvinningsigloon, bilvraket och ljussignalerna.
 - Kvar är klottret där det ska vara: på husväggarna i förorten, muren och klotterplanket.

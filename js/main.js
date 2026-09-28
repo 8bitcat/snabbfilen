@@ -21,6 +21,10 @@ import { makeJobbBensin } from './jobs/jobb-bensin.js';
 import { makeJobbVerkstad } from './jobs/jobb-verkstad.js';
 import { makeJobbTvatt } from './jobs/jobb-tvatt.js';
 import { makeJobbKafe } from './jobs/jobb-kafe.js';
+import { makeShopBurgarbar } from './scenes/shop-burgarbar.js';
+import { makeJobbKok } from './jobs/jobb-kok.js';
+import { makeShopTerminal } from './scenes/shop-terminal.js';
+import { makeJobbIncheck } from './jobs/jobb-incheck.js';
 import { makeShopDjur } from './scenes/shop-djur.js';
 import { startJobFlow, startShiftNow } from './jobs/shift.js';
 import { openFoodShop } from './shops/matbutik.js';
@@ -85,9 +89,13 @@ const SCENES = {
   jobbverkstad: (a, o) => makeJobbVerkstad(a, o),
   jobbtvatt: (a, o) => makeJobbTvatt(a, o),
   jobbkafe: (a, o) => makeJobbKafe(a, o),
+  burgarbar: (a, o) => makeShopBurgarbar(a, o),
+  jobbkok: (a, o) => makeJobbKok(a, o),
+  terminal: (a, o) => makeShopTerminal(a, o),
+  jobbincheck: (a, o) => makeJobbIncheck(a, o),
   djur: (a, o) => makeShopDjur(a, o),
 };
-const ENGINES = { flygplats: 'jobbflyg', frukt: 'jobbfrukt', burgare: 'jobbburgare', pizzeria: 'jobbpizzeria', posten: 'jobbposten', bensinmack: 'jobbbensin', bilverkstad: 'jobbverkstad', tvatteri: 'jobbtvatt', kafe: 'jobbkafe' };
+const ENGINES = { flygplats: 'jobbflyg', frukt: 'jobbfrukt', burgare: 'jobbburgare', pizzeria: 'jobbpizzeria', posten: 'jobbposten', bensinmack: 'jobbbensin', bilverkstad: 'jobbverkstad', tvatteri: 'jobbtvatt', kafe: 'jobbkafe', kok: 'jobbkok' };
 
 // ---------- skala canvasen till fönstret ----------
 // MOBILFYLLNING: spelet fyller HELA ytan under HUD-raden på alla enheter, med
@@ -102,6 +110,7 @@ const WIDE = {
   city: { get w() { return CITY.W; }, get h() { return CITY.H; } },
   mat: { w: 768, h: 400 }, // stormarknadens värld
   kafe: { w: 640, h: 216 }, // kaféets värld (fast höjd – resten fylls av zoomen)
+  burgarbar: { w: 640, h: 216 }, // dinern man går in i
 };
 const fillMode = () => !A.attract && (!navigator.webdriver || new URLSearchParams(location.search).has('mobfill'));
 // Zoomvalet för fasta scener: 'fyll' täcker skärmen (jämn förstoring, pixelated),
