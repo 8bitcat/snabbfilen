@@ -286,3 +286,19 @@ kbd {
   color: var(--ink); background: #fff; border: 2px solid var(--ink); border-bottom-width: 3px; border-radius: 4px; vertical-align: 2px; text-shadow: none; opacity: .9;
 }
 @media (hover: none) { kbd { display: none; } }
+
+/* Versionsnumret i HUD:en och nyhetsrutan (js/core/version-ui.js) */
+.hud-btns .hud-version { font: 15px var(--font); letter-spacing: 0; padding: 2px 6px; background: #2b2733; color: #cfc7ba; border-color: #cfc7ba; box-shadow: 2px 2px 0 #000; }
+.toast.wrap { white-space: normal; max-width: min(92vw, 560px); text-align: center; line-height: 1.05; }
+.hud-btns .hud-version.ny { background: var(--gold); color: var(--ink); border-color: var(--ink); animation: ver-ny 1.2s steps(2) 6; }
+@keyframes ver-ny { 50% { background: #fff4c7; } }
+.nyheter section { border-bottom: 2px dashed #cbbfa8; padding: 6px 0 8px; }
+.nyheter section:last-child { border-bottom: 0; }
+.nyheter section.nu { background: #fff4c7; margin: 0 -8px; padding: 6px 8px 8px; }
+.nyheter h3 { margin: 0; font: 22px var(--head); letter-spacing: .3px; }
+.nyheter .ver { display: inline-block; background: var(--ink); color: var(--gold); font: 17px var(--font); padding: 0 6px; margin-right: 4px; vertical-align: 2px; }
+.nyheter .du { font: 16px var(--font); color: var(--green); }
+.nyheter .datum { font-size: 15px; color: var(--muted); margin: 1px 0 2px; }
+.nyheter ul { margin: 2px 0 0; padding-left: 20px; font-size: 19px; line-height: 1.15; }
+.nyheter li { margin: 2px 0; }
+.nyheter code { font: inherit; background: #e3dac9; padding: 0 3px; }

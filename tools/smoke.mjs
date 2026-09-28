@@ -1,5 +1,5 @@
 // Röktest: klickar igenom hela grundflödet och tar skärmdumpar till tools/out/.
-// Kör: node tools/smoke.mjs   (servern på http://localhost:8788)
+// Kör: node tools/smoke.mjs   (servern på http://localhost:8788; annan port: SMOKE_PORT=8791)
 import { createRequire } from 'module';
 import fs from 'fs';
 const require = createRequire('D:/Qisy/QISYFrontend/QISYFrontend-1/package.json');
@@ -8,7 +8,8 @@ const { chromium } = require('playwright');
 const OUT = 'D:/GamesProjects/snabbfilen/tools/out/';
 fs.mkdirSync(OUT, { recursive: true });
 // egen liten testvärld så att testet aldrig möter riktiga spelare
-const URL = 'http://localhost:8788/index.html?world=t' + Date.now().toString(36);
+const PORT = process.env.SMOKE_PORT || '8788';
+const URL = `http://localhost:${PORT}/index.html?world=t` + Date.now().toString(36);
 let fails = 0;
 const ok = (cond, msg) => { console.log((cond ? '  ✓ ' : '  ✗ ') + msg); if (!cond) fails++; };
 

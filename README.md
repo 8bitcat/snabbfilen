@@ -29,6 +29,25 @@ Allt är gåbart med din egen figur – klicka där du vill gå. Ingenting ses f
 - **Öppen värld:** alla som spelar är i samma Pixelstad, ni ser varandra i staden och kan åka hem till varandra (👥). Emotes när någon är nära.
 - **Dagshändelser, rekord, dagbok 📊** och målet: egen villa + 10 000 kr. 🏆
 
+## Versioner och släpp
+
+Spelet har ett versionsnummer som syns uppe till höger (tryck på det för nyheterna).
+Alla versioner står i [CHANGELOG.md](CHANGELOG.md) och har en git-tagg (`git tag`), så
+man kan alltid gå tillbaka: `git checkout v0.13.0`.
+
+- **Ny funktion** höjer mittensiffran (0.14.0 → 0.15.0), **buggfix** sista siffran (0.15.0 → 0.15.1).
+- **Varje sak släpps för sig** så fort den är klar och provkörd – inte i stora klumpar:
+  ```bash
+  node tools/release.mjs minor --title "Mataffären med korg och kassa" --scope mat --notes nyheter.md -- js/scenes/shop-mat.js
+  node tools/verify.mjs                     # hela röktestet på exakt den committen, i en egen kopia
+  git push origin main --follow-tags        # publicera (GitHub Pages)
+  ```
+  Släppskriptet tar bara med de filer man anger och stoppar om någon av dem importerar en fil
+  som inte följer med.
+- **Kontrollpunkter** av pågående arbete: `node tools/checkpoint.mjs "vad som pågår" --push`
+  sparar allt i arbetskatalogen på grenen `wip` utan att röra `main` eller det publicerade spelet.
+- Spelet säger själv till när en ny version har publicerats medan man spelar.
+
 ## Struktur
 
 - `js/core/` — motorn från Pixelverkstan: `people.js` (pixelfigurer + kläder), `avatar.js` (redigeraren), `floor-pix.js` (pixelritning + fonter), `ui.js` (modal/toast)
