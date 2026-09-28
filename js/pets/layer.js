@@ -7,7 +7,7 @@
 // någon teleport. Kontroll: tools/pets-room-snap.mjs --js "PV.audit(90)".
 //
 // ============================== API ==============================
-// import { createPetLayer, createPetFollower } from './pets/layer.js';
+// import { createPetLayer, createPetFollower } from '../pets/layer.js';
 //
 // const L = createPetLayer(A, { home, room, bounds:{left,right,top,bottom}, isFree(x,y), walker,
 //                               onObstacles?(list), toasts = true, sync = true, store? });

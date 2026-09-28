@@ -3,7 +3,7 @@
 // Körs lika bra i node (tools/pets-sim-test.mjs) som i webbläsaren.
 //
 // ============================== API ==============================
-// import { petStore, createPetStore, seededRng, PET_RULES, MAX_PETS } from './pets/sim.js';
+// import { petStore, createPetStore, seededRng, PET_RULES, MAX_PETS } from '../pets/sim.js';
 //
 // petStore() → singleton (laddas ur localStorage första gången).
 // createPetStore({ storage, rng, key }) → ny, fristående butik (tester).
