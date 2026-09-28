@@ -216,7 +216,7 @@ export function makeJobbBurgare(A, { onDone }) {
   // läget ~3 ggr/s; medarbetare ser samma diner och skickar sina handlingar som
   // önskemål. Lön och statistik räknas per person (den som serverar får betalt).
   const coop = makeShiftCoop(A, 'away:jobbburgare');
-  let snapIn = 0;
+  let snapIn = 0, wasLead = true;
   const snapAsap = () => { snapIn = 0; };
   const sendSnap = () => coop.send({
     t: 'snap',
@@ -341,13 +341,26 @@ export function makeJobbBurgare(A, { onDone }) {
     get worldY() { return walker.py; },
     update(dt) {
       pops.update(dt);
-      if (done) { doneT += dt; if (doneT > 1.2 && !reported) { reported = true; onDone(stats); } return; }
+      if (done) {
+        coop.tick(); coop.resign(); // MITT pass är slut – lämna över ledningen direkt (även på lönebeskedet)
+        doneT += dt; if (doneT > 1.2 && !reported) { reported = true; onDone(stats); } return;
+      }
       t += dt;
       if (t >= SHIFT_SECONDS) { done = true; return; }
       walker.update(dt);
       coop.tick();
       // Skiftledaren (eller solo) kör simuleringen; medarbetare följer ledarens läge
-      if (!coop.active || (coop.leader && coop.settled)) {
+      const iLead = !coop.active || (coop.leader && coop.settled);
+      if (iLead && !wasLead) {
+        // JAG tar över passet: hoppa över gamla kund-id:n (inga krockar/teleporter)
+        // och dra igång kön och köket snabbt så världen aldrig står still
+        seq = Math.max(seq, 1 + customers.reduce((mx, k) => Math.max(mx, k.id | 0), -1));
+        custIn = Math.min(custIn, 2); plateIn = Math.min(plateIn, 1);
+        for (const k of customers) { k.gx = undefined; k.gy = undefined; k.moving = false; }
+        snapAsap();
+      }
+      wasLead = iLead;
+      if (iLead) {
       // nya kunder
       custIn -= dt;
       if (custIn <= 0) {
@@ -385,7 +398,7 @@ export function makeJobbBurgare(A, { onDone }) {
       } else if (plateIn <= 0) {
         plateIn = 0.8; // fullt på disken – köket tittar igen strax
       }
-      if (coop.active) { snapIn -= dt; if (snapIn <= 0) { snapIn = 0.35; sendSnap(); } }
+      if (coop.active) { snapIn -= dt; if (snapIn <= 0) { snapIn = 0.35; sendSnap(); coop.sentSnap(); } }
       } else {
         tweenGuests(dt);
       }

@@ -110,6 +110,18 @@ if (invited) {
   ok(!!joined, `"Häng med!" tar ${gn} rakt in på passet`);
 }
 
+// LEDARBYTE (osynk-fixen): ledaren lämnar – medarbetaren tar över inom sekunder,
+// världen fortsätter och nya kunder krockar inte med gamla id:n
+{
+  const maxId = Math.max(-1, ...((await D(G, 'D.customersDbg()')) || []).map((k) => k.i));
+  await L.evaluate(() => SF.go('city'));
+  const promoted = await until(async () => { const c = await D(G, 'D.coop()'); return c && c.leader ? c : null; }, 12000, 400);
+  ok(!!promoted, `${gn} tar över som skiftledare när ${ln} går (inom sekunder)`);
+  await D(G, 'D.forceCustomer()');
+  const fresh = await until(async () => ((await D(G, 'D.customersDbg()')) || []).find((k) => k.i > maxId) || null, 8000, 300);
+  ok(!!fresh, `världen fortsätter hos den nya ledaren – ny kund med NYTT id (${fresh?.i} > ${maxId})`);
+}
+
 const realErrors = errors.filter((e) => !/peer|webrtc|ice|Could not connect|Lost connection/i.test(e));
 console.log(realErrors.length ? '\nKONSOLFEL:\n' + realErrors.join('\n') : '\nInga konsolfel.');
 ok(realErrors.length === 0, 'inga pageerror');

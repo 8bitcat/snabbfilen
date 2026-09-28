@@ -10,6 +10,11 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.26.2] – 2026-09-28 – Osynken vid spel ihop lagad
+- Osynk-buggen vid spel ihop är lagad: när skiftledarens pass tar slut lämnas ledningen över DIREKT till kompisen – världen fryser aldrig på lönebeskedet.
+- Somnar ledarens mobil eller tappas nätet tar kompisen över inom några sekunder, och en väckt gammal ledare lägger sig automatiskt – aldrig två som kör var sin värld.
+- Vid ledarbyte fortsätter samma kunder sitta kvar, och nya kunder krockar aldrig med de gamla.
+
 ## [0.26.1] – 2026-09-28 – Bjud in att jobba ihop
 - NYTT: BJUD IN en kompis att jobba ihop! Stå på passet i Burgarbaren, öppna 👥-knappen och tryck "💼 Jobba ihop" vid kompisens namn.
 - Kompisen får en inbjudan var hen än är i staden – ett tryck på "Häng med!" och hen står i dinern bredvid dig, redo att dela disken.

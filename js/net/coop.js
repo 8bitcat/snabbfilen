@@ -25,25 +25,41 @@ export const sendInvite = (toId, job, namn) => sendJob({ k: 'invite', to: String
 
 export function makeShiftCoop(A, key) {
   const started = Date.now();
-  const mates = new Map(); // id → { start } (bara de som hälsat räknas i ledarvalet)
+  const mates = new Map(); // id → { start, slut, seen } (bara de som hälsat räknas i ledarvalet)
   const handlers = {};
   let helloAt = 0;
+  let resigned = false; // mitt pass är slut – jag leder aldrig mer i detta skift
+  const lastSnap = { id: null, t: 0 }; // vem som senast KÖRDE världen (aktiv ledare har företräde)
   const c = {
     key,
     get myId() { return worldMyId(); },
     // kollegorna: alla på samma ställe enligt världen (syns även som figurer i scenen)
     peers() { return worldFolksHere(A); },
     get active() { return !!this.myId && this.peers().length > 0; },
-    // stabilt ledarval: äldst i scenen leder; nykomlingar tar ALDRIG över ett pågående skift
+    // Ledarval i tre steg: (1) en AKTIV ledare (färsk snap) har alltid företräde –
+    // en väckt gammal ledare lägger sig direkt; (2) den vars pass är slut (resign)
+    // leder aldrig mer; (3) annars senioritet – äldst i scenen, som tystnat < 6 s.
     get leader() {
       if (!this.active) return true;
+      if (resigned) return false;
+      const now = Date.now();
+      if (lastSnap.id && lastSnap.id !== this.myId && now - lastSnap.t < 4000) return false;
       for (const f of this.peers()) {
         const m = mates.get(f.id);
-        if (!m) continue; // har inte hälsat än – räknas inte förrän vi vet starttiden
+        if (!m || m.slut) continue; // ohälsad eller färdigjobbad räknas inte
+        if (now - m.seen > 6000) continue; // tystnad (somnad mobil?) räknas inte
         if (m.start < started || (m.start === started && f.id < this.myId)) return false;
       }
       return true;
     },
+    // passet är slut för mig: lämna över ledningen omedelbart och berätta det
+    resign() {
+      if (resigned) return;
+      resigned = true;
+      this.send({ t: 'hej', start: started, slut: 1 });
+    },
+    // scenen märker varje snap jag skickar, så företrädet blir mitt
+    sentSnap() { lastSnap.id = this.myId; lastSnap.t = Date.now(); },
     // nykomling: vänta in första hälsningen (max 2,5 s) innan egen simulering startas,
     // så att två inte kör var sin värld under anslutningsögonblicket
     get settled() { return mates.size > 0 || Date.now() - started > 2500; },
@@ -51,7 +67,7 @@ export function makeShiftCoop(A, key) {
     send(m) { return sendJob({ k: key, ...m }); },
     tick() {
       const now = Date.now();
-      if (now - helloAt > 2000) { helloAt = now; this.send({ t: 'hej', start: started }); }
+      if (now - helloAt > 2000) { helloAt = now; this.send({ t: 'hej', start: started, slut: resigned ? 1 : 0 }); }
       const here = new Set(this.peers().map((f) => f.id));
       for (const id of [...mates.keys()]) if (!here.has(id)) mates.delete(id);
     },
@@ -59,10 +75,11 @@ export function makeShiftCoop(A, key) {
       if (!m || m.k !== key || !from) return;
       if (m.t === 'hej') {
         const old = mates.get(from);
-        mates.set(from, { start: Math.min(+m.start || Date.now(), old ? old.start : Infinity) });
-        if (!old) this.send({ t: 'hej', start: started }); // svara direkt så nya genast ser vem som leder
+        mates.set(from, { start: Math.min(+m.start || Date.now(), old ? old.start : Infinity), slut: m.slut ? 1 : old?.slut || 0, seen: Date.now() });
+        if (!old) this.send({ t: 'hej', start: started, slut: resigned ? 1 : 0 }); // svara direkt så nya ser vem som leder
         return;
       }
+      if (m.t === 'snap') { lastSnap.id = from; lastSnap.t = Date.now(); } // aktiv ledare noteras
       handlers[m.t]?.(m, from);
     },
     dispose() { if (CUR === c) CUR = null; },
