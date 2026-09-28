@@ -10,6 +10,11 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.36.0] – 2026-09-29 – Bion, pizzerians uteservering och djuraffären
+- Bion är en riktig biograf: BIO PIXEL med stor ljusskylt där kvällens filmer byts, affischer för actionfilm och romantisk komedi, biljettlucka och popcorn
+- Pizzerian har fått en uteservering på ett trädäck – gäster som äter pizza, snurrar spagetti och skålar, och en servitör som bär ut pizzor
+- Djuraffären ser ut som en välskött butik med stor skylt, valpar och kattungar som leker i skyltfönstret och ett akvarium
+
 ## [0.35.0] – 2026-09-29 – Närbutiken öppnar
 - Närbutiken i förorten har öppnat – en egen trång och sunkig butik med utomlandskänsla, öppen dygnet runt
 - Smala gångar, överfulla hyllor, kartongstaplar, en kylvägg med exotiska drycker, ett lysrör som blinkar och katten Sultan som flyttar runt

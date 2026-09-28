@@ -2919,7 +2919,7 @@ export function createProps(env) {
   sign(CROSSWALKS_S[0].name, CROSSWALKS_S[0].x1 + 8, CS - 2, -1);
   sign(CROSSWALKS_S[1].name, CROSSWALKS_S[1].x1 + 8, CS - 2, -1);
   sign('VÅRDGATAN', 1212, CS - 2, -1); // vid gågatans västra hörn – plåten fri från lindens krona
-  menu(158, FS); cafe(182, FS + 6, [0xc82a2a, 0xf4ece0]); pot(246, FS, 'klot'); // pizzerians uteservering väster om dörren
+  menu(158, FS); pot(246, FS, 'klot'); // (pizzerians gamla uteservering här är borttagen – den nya står på trädäcket längs gaveln, buildings-south.js)
   mailbox(330, FS); bikeRack(418, FS + 3); // brevlådan öster om skyltstolpen så stolpen inte spetsar den
   // djuraffären: en LÅG blomlåda i stället för klotkrukan vid 490 – krukan skymde klösträdet och kattungarna i skyltfönstret (granskningsfynd)
   bench(460, FS + 2); flowerBox(486, FS, 20, ['yellow', 'white'], 'svart'); pot(556, FS, 'klot'); bench(580, FS + 2); bin(606, FS);
