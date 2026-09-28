@@ -56,7 +56,9 @@ const priceOf = (g, i) => KAFE_MENY[i].price - (i === dagensOf(g) ? 5 : 0);
 const HOT = { kaffe: 1, latte: 1, capp: 1, choklad: 1, te: 1, espresso: 1 };
 
 // ======================= mått (världskoordinater) =======================
-const VW = 384, W = 640, H = 216;
+let VW = 384; // mobilfyllning: vyn följer skärmen, klampad till kaféet
+const W = 640, H = 216;
+const syncView = (A) => { VW = Math.max(384, Math.min(A.W || 384, W)); };
 const WALL_Y = 82;                              // där golvet möter bakväggen
 const CEIL = 7;                                 // taklistens underkant
 const WAIN = 50;                                // bröstpanelens överkant
@@ -2209,6 +2211,7 @@ export function makeShopKafe(A) {
     },
     move(sx, sy) { hoverId = spotAt(sx + cam.x, sy)?.id || null; hoverT = t; },
     draw(ctx) {
+      syncView(A); // skärmen kan ha ändrat storlek – vyn följer med
       const cx = Math.round(cam.x);
       ctx.setTransform(A.pxs, 0, 0, A.pxs, -cx * A.pxs, 0);
       drawWorld(ctx, cx, VW);

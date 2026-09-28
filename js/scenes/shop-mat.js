@@ -31,8 +31,9 @@ import { worldFolksHere } from '../net/world.js';
 const talk = createSpeech(); // repliker och beskrivningar som pratbubblor i scenen
 
 // ================= geometri (spelpixlar, världskoordinater) =================
-const VW = 384, VH = 216;
+let VW = 384, VH = 216; // mobilfyllning: vyn följer skärmen, klampad till butiken
 const W = 768, H = 400;
+const syncView = (A) => { VW = Math.max(384, Math.min(A.W || 384, W)); VH = Math.max(216, Math.min(A.H || 216, H)); };
 const WALL_Y = 72;                    // bakväggens fot = golvets början
 const FRONT_Y = 388;                  // glasfasadens överkant (nederst)
 const SIDE = 6;                       // sidoväggarnas tjocklek
@@ -2884,6 +2885,7 @@ export function makeShopMat(A) {
     move(sx, sy) { hoverId = spotAt(sx + cam.x, sy + cam.y)?.id || null; hoverT = t; },
 
     draw(ctx) {
+      syncView(A); // skärmen kan ha ändrat storlek – vyn följer med
       const cx = Math.round(cam.x), cy = Math.round(cam.y);
       ctx.setTransform(A.pxs, 0, 0, A.pxs, -cx * A.pxs, -cy * A.pxs);
       drawWorld(ctx, cx, cy, VW, VH);

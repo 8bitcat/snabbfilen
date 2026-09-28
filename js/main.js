@@ -82,7 +82,11 @@ const ENGINES = { flygplats: 'jobbflyg', frukt: 'jobbfrukt', burgare: 'jobbburga
 // runt om – allt målas på canvasen, inga döda ytor. Testrobotar får exakt
 // gamla 384×216-beteendet med marginaler, om de inte skickar ?mobfill=1.
 const DESIGN_W = 384, DESIGN_H = 216;
-const WIDE = { city: { get w() { return CITY.W; }, get h() { return CITY.H; } } };
+const WIDE = {
+  city: { get w() { return CITY.W; }, get h() { return CITY.H; } },
+  mat: { w: 768, h: 400 }, // stormarknadens värld
+  kafe: { w: 640, h: 216 }, // kaféets värld (fast höjd – resten fylls av zoomen)
+};
 const fillMode = () => !A.attract && (!navigator.webdriver || new URLSearchParams(location.search).has('mobfill'));
 // Zoomvalet för fasta scener: 'fyll' täcker skärmen (jämn förstoring, pixelated),
 // 'ram' visar hela bilden i heltalsskala med pixelram. Pekskärm får fyll som standard.

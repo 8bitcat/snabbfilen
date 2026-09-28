@@ -10,6 +10,11 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.25.2] – 2026-09-28 – Mataffären och kaféet breda
+- Mataffären och kaféet är nu breda som staden: du ser MER av butiken på hela skärmen – hyllrader, båda kassorna och pantmaskinen samtidigt – i stället för en förstorad och beskuren bild.
+- Skärpan är exakt densamma: fler knivskarpa pixlar i bild, ingen skalning.
+- Fler ställen blir breda i takt med att de byggs om – närmast bostäderna och klädaffären.
+
 ## [0.25.1] – 2026-09-28 – Zoomval: inne fylls hela skärmen
 - Inne i rum, butiker och på jobben fylls nu HELA skärmen: bilden förstoras jämnt tills ytan är täckt, med liten beskärning som tas mest upptill så golv, diskar och dörrar syns.
 - Ny 🔍-knapp i HUD-raden: växla mellan "fyll skärmen" och "hela bilden med ram" – valet sparas per webbläsare.

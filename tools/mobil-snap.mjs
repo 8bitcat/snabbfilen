@@ -78,6 +78,15 @@ async function fillCase(name, w, h, dpr) {
   ok(s.W === s.view.w && s.W > 384, `${name}: staden ser MER värld på bredden (A.W ${s.W} av vyn ${s.view.w})`);
   ok(s.H >= 216 && s.H >= Math.min(s.view.h, 400), `${name}: staden använder höjden (A.H ${s.H}, vy ${s.view.h})`);
   await p.screenshot({ path: `tools/out/mobil-${name}-stad.png` });
+  await p.evaluate(() => SF.go('mat'));
+  await p.waitForTimeout(500);
+  const m2 = await geo(p);
+  ok(m2.W === Math.min(m2.view.w, 768) && m2.W > 384, `${name}: mataffären ser mer butik (A.W ${m2.W})`);
+  await p.screenshot({ path: `tools/out/mobil-${name}-mat.png` });
+  await p.evaluate(() => SF.go('kafe'));
+  await p.waitForTimeout(500);
+  const k2 = await geo(p);
+  ok(k2.W === Math.min(k2.view.w, 640) && k2.W > 384 && k2.H === 216, `${name}: kaféet ser mer lokal (A.W ${k2.W})`);
   await c.close();
 }
 
