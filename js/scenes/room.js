@@ -648,6 +648,9 @@ export function makeRoom(A, { visit = false } = {}) {
       if (document.body.classList.contains('decor-on')) { document.body.classList.remove('decor-on'); window.dispatchEvent(new Event('resize')); }
     },
 
+    // Mobilfyllningen: lokalens verkliga bredd (partition) – motorn beskär och
+    // fyller skärmen med den i stället för att visa den mörka ytan bortom väggen.
+    contentBox: plan.partition ? { x: 0, y: 0, w: Math.min(FW, plan.partition + 6), h: FH } : null,
     draw(ctx) {
       ctx.setTransform(A.pxs, 0, 0, A.pxs, 0, 0);
       const night = isNight(g);

@@ -38,8 +38,9 @@ const A = {
   go(name, opts) {
     A.scene?.exit?.();
     A.sceneName = name;
-    applySceneView(); // scenens vy (bred eller 384×216-ruta) innan den byggs
+    applySceneView(); // scenens vy (bred eller 384×216) innan den byggs
     A.scene = SCENES[name](A, opts);
+    fit(); // canvasgeometrin kan bero på scenens contentBox (fyll/ram/bred)
     A.scene.enter?.();
   },
   openFoodShop: () => A.go('mat'), // stormarknaden man går runt i (js/scenes/shop-mat.js)
@@ -83,6 +84,14 @@ const ENGINES = { flygplats: 'jobbflyg', frukt: 'jobbfrukt', burgare: 'jobbburga
 const DESIGN_W = 384, DESIGN_H = 216;
 const WIDE = { city: { get w() { return CITY.W; }, get h() { return CITY.H; } } };
 const fillMode = () => !A.attract && (!navigator.webdriver || new URLSearchParams(location.search).has('mobfill'));
+// Zoomvalet för fasta scener: 'fyll' täcker skärmen (jämn förstoring, pixelated),
+// 'ram' visar hela bilden i heltalsskala med pixelram. Pekskärm får fyll som standard.
+const zoomMode = () => {
+  let z = null;
+  try { z = localStorage.getItem('snabbfilen_zoom'); } catch { /* ok */ }
+  if (z === 'ram' || z === 'fyll') return z;
+  return 'fyll'; // Carl: inne i rum och butiker ska hela skärmen ALLTID fyllas – 🔍 växlar
+};
 A.view = { w: DESIGN_W, h: DESIGN_H, boxX: 0, boxY: 0, boxed: false };
 function applySceneView() {
   const v = A.view, cap = fillMode() ? WIDE[A.sceneName] : null;
@@ -116,10 +125,39 @@ function fit() {
   v.w = Math.max(DESIGN_W, Math.floor(w * dpr / s));
   v.h = Math.max(DESIGN_H, Math.floor(h * dpr / s) - strip);
   applySceneView();
-  cv.width = v.w * s;
-  cv.height = v.h * s;
-  // de sista device-pixlarna (mindre än en spelpixel) fylls med en omärkbar sträckning
   const stripCss = strip ? strip * s / dpr : 0;
+  const sEl = document.getElementById('hudpix');
+  if (v.boxed && zoomMode() === 'fyll') {
+    // FYLL SKÄRMEN: canvasen är bara spelbilden (384×216 i heltalsskala) och
+    // förstoras sedan jämnt tills ytan är täckt. Blir beskärningen orimlig
+    // (stående läge) fylls bara bredden. Mätarremsan ligger kvar överst.
+    // Scenen kan ange sin verkliga innehållsruta (t.ex. lokalens bredd i rummet):
+    // då beskärs canvasen till den och DEN fyller skärmen – ingen död yta i bild.
+    const cb = (A.scene && A.scene.contentBox) || null;
+    const cbx = cb ? cb.x | 0 : 0, cby = cb ? cb.y | 0 : 0;
+    const cbw = cb ? Math.max(64, Math.min(A.W, cb.w | 0)) : A.W;
+    const cbh = cb ? Math.max(64, Math.min(A.H, cb.h | 0)) : A.H;
+    v.boxX = -cbx; v.boxY = -cby; v.boxed = false; // vyn (v.w/v.h) lämnas orörd
+    if (cv.width !== cbw * s) cv.width = cbw * s;
+    if (cv.height !== cbh * s) cv.height = cbh * s;
+    const bw = cbw * s / dpr, bh = cbh * s / dpr, ah = Math.max(1, h - stripCss);
+    const kC = Math.min(w / bw, ah / bh), kV = Math.max(w / bw, ah / bh);
+    const k = kV <= kC * 1.6 ? kV : kC; // täck ytan; bara vid orimlig beskärning (stående) fylls ena leden
+    const cw = bw * k, ch = bh * k;
+    cv.style.width = cw + 'px'; cv.style.height = ch + 'px';
+    cv.style.position = 'absolute';
+    cv.style.left = ((w - cw) / 2) + 'px';
+    // beskärningen tas mest upptill (väggkonst) – golvet, disken och dörren nertill behålls
+    cv.style.top = (stripCss + Math.min(0, ah - ch) * 0.7 + Math.max(0, ah - ch) / 2) + 'px';
+    if (sEl) { sEl.style.position = 'absolute'; sEl.style.left = '0'; sEl.style.top = '0'; }
+    layoutStrip(A, dpr, Math.max(DESIGN_W, Math.ceil(w * dpr / s)), w);
+    return;
+  }
+  cv.style.position = ''; cv.style.left = ''; cv.style.top = '';
+  if (sEl) { sEl.style.position = ''; sEl.style.left = ''; sEl.style.top = ''; }
+  if (cv.width !== v.w * s) cv.width = v.w * s;
+  if (cv.height !== v.h * s) cv.height = v.h * s;
+  // de sista device-pixlarna (mindre än en spelpixel) fylls med en omärkbar sträckning
   cv.style.width = w + 'px';
   cv.style.height = Math.max(1, h - stripCss) + 'px';
   layoutStrip(A, dpr, v.w, w);
@@ -145,6 +183,21 @@ window.addEventListener('resize', rotateHint);
 window.addEventListener('orientationchange', rotateHint);
 $('#rotate-anyway')?.addEventListener('click', () => { try { sessionStorage.setItem('sf_rot_ok', '1'); } catch { /* ok */ } rotateHint(); });
 rotateHint();
+
+// 🔍-knappen i HUD-raden: växla zoom för rum/butiker/jobb (staden fyller alltid)
+const zoomBtn = document.createElement('button');
+zoomBtn.id = 'hud-zoom'; zoomBtn.className = 'btn btn-small';
+const zoomLabel = () => {
+  const fyll = zoomMode() === 'fyll';
+  zoomBtn.textContent = fyll ? '⛶' : '🔍';
+  zoomBtn.title = fyll ? 'Zoom: fyller skärmen – tryck för hela bilden med ram' : 'Zoom: hela bilden med ram – tryck för att fylla skärmen';
+};
+zoomLabel();
+zoomBtn.addEventListener('click', () => {
+  try { localStorage.setItem('snabbfilen_zoom', zoomMode() === 'fyll' ? 'ram' : 'fyll'); } catch { /* ok */ }
+  zoomLabel(); fit();
+});
+document.querySelector('#hud .hud-btns')?.insertBefore(zoomBtn, document.getElementById('hud-mute'));
 
 // Fasta scener ritas i sin centrerade ruta: alla scener börjar med
 // ctx.setTransform(A.pxs, 0, 0, A.pxs, ...), så rutans förskjutning läggs in i
@@ -183,7 +236,8 @@ function drawSurround() {
 function toLocal(e) {
   const r = cv.getBoundingClientRect();
   const v = A.view;
-  return { x: (e.clientX - r.left) / r.width * v.w - v.boxX, y: (e.clientY - r.top) / r.height * v.h - v.boxY };
+  const lw = cv.width / A.pxs, lh = cv.height / A.pxs; // canvasens logiska mått, oavsett zoomläge
+  return { x: (e.clientX - r.left) / r.width * lw - v.boxX, y: (e.clientY - r.top) / r.height * lh - v.boxY };
 }
 const inView = (p) => !A.view.boxed || (p.x >= 0 && p.y >= 0 && p.x <= A.W && p.y <= A.H);
 cv.addEventListener('pointerdown', (e) => { if (modalOpen()) return; cv.setPointerCapture(e.pointerId); const p = toLocal(e); if (!inView(p)) return; A.scene?.down?.(p.x, p.y); });

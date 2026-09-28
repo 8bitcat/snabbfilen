@@ -48,13 +48,30 @@ const geo = (p) => p.evaluate(() => {
 
 async function fillCase(name, w, h, dpr) {
   const { c, p } = await boot(w, h, dpr);
+  const fyll = true; // Carl: FYLL är standard ÖVERALLT – rum och butiker täcker alltid skärmen (🔍 växlar till RAM)
   const r = await geo(p); // startscenen: rummet (fast 384×216-scen)
-  const gap = Math.abs(r.app.w - r.cv.w) <= 2 && Math.abs((r.cv.y + r.cv.h) - (r.app.y + r.app.h)) <= 2;
-  ok(gap, `${name}: spelbilden fyller ytans bredd och botten (app ${r.app.w | 0}×${r.app.h | 0}, canvas ${r.cv.w | 0}×${r.cv.h | 0})`);
+  if (fyll) {
+    // smala lokaler (contentBox, t.ex. Lilla rummet) fyller höjden; annars fylls bredden
+    const stripH = r.strip ? r.strip.h : 0;
+    ok(r.cv.w >= r.app.w - 2 || r.cv.h >= r.app.h - stripH - 3, `${name}: FYLL – spelbilden täcker skärmen (canvas ${r.cv.w | 0}×${r.cv.h | 0}, app ${r.app.w | 0}×${r.app.h | 0})`);
+    ok(r.W === 384 && r.H === 216 && !r.view.boxed, `${name}: FYLL – rummet i jämn förstoring utan ram`);
+  } else {
+    const gap = Math.abs(r.app.w - r.cv.w) <= 2 && Math.abs((r.cv.y + r.cv.h) - (r.app.y + r.app.h)) <= 2;
+    ok(gap, `${name}: spelbilden fyller ytans bredd och botten (app ${r.app.w | 0}×${r.app.h | 0}, canvas ${r.cv.w | 0}×${r.cv.h | 0})`);
+    ok(r.W === 384 && r.H === 216 && r.view.boxed === (r.view.w > 384 || r.view.h > 216), `${name}: rummet ritas i sin 384×216-ruta (vy ${r.view.w}×${r.view.h})`);
+  }
   ok(r.scrollX <= 0 && r.scrollY <= 0, `${name}: ingen skroll (${r.scrollX}, ${r.scrollY})`);
-  ok(r.strip && Math.abs(r.strip.w - r.cv.w) <= 2 && r.strip.y <= r.app.y + 2, `${name}: mätarremsan spänner över hela bredden`);
-  ok(r.W === 384 && r.H === 216 && r.view.boxed === (r.view.w > 384 || r.view.h > 216), `${name}: rummet ritas i sin 384×216-ruta (vy ${r.view.w}×${r.view.h})`);
+  ok(r.strip && Math.abs(r.strip.w - r.app.w) <= 2 && r.strip.y <= r.app.y + 2, `${name}: mätarremsan spänner över hela bredden`);
+  ok(await p.evaluate(() => !!document.getElementById('hud-zoom')), `${name}: 🔍-knappen finns i HUD-raden`);
   await p.screenshot({ path: `tools/out/mobil-${name}-rum.png` });
+  if (fyll) { // 🔍 växlar till RAM (hela bilden) och tillbaka
+    await p.evaluate(() => { localStorage.setItem('snabbfilen_zoom', 'ram'); window.dispatchEvent(new Event('resize')); });
+    await p.waitForTimeout(200);
+    const r2 = await geo(p);
+    ok(r2.view.boxed && Math.abs(r2.app.w - r2.cv.w) <= 2, `${name}: 🔍 → RAM visar hela bilden med pixelram`);
+    await p.evaluate(() => { localStorage.setItem('snabbfilen_zoom', 'fyll'); window.dispatchEvent(new Event('resize')); });
+    await p.waitForTimeout(150);
+  }
   await p.evaluate(() => SF.go('city'));
   await p.waitForTimeout(800);
   const s = await geo(p);
