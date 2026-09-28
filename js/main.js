@@ -2,6 +2,7 @@
 // scener för staden/rummet/jobben, DOM-HUD överst och en vanlig rAF-loop.
 import { loadAvatar, openAvatarPicker, avatarPortrait, setAvatarLocks } from './core/avatar.js';
 import { openModal, closeModal, toast, modalOpen, esc } from './core/ui.js';
+import { onInvite, sendInvite } from './net/coop.js';
 import { Game, SAVE_KEY, WIN_MONEY, JOBS, JOB_TITLES, SORTIMENT, levelOf, fmt, clock } from './game.js';
 import { makeCity } from './scenes/city.js';
 import { makeRoom } from './scenes/room.js';
@@ -14,7 +15,7 @@ import { makeShopKlader } from './scenes/shop-klader.js';
 import { makeJobbFlyg } from './jobs/jobb-flyg.js';
 import { makeJobbFrukt } from './jobs/jobb-frukt.js';
 import { makeJobbBurgare } from './jobs/jobb-burgare.js';
-import { startJobFlow } from './jobs/shift.js';
+import { startJobFlow, startShiftNow } from './jobs/shift.js';
 import { openFoodShop } from './shops/matbutik.js';
 import { openHousing } from './shops/bostad.js';
 import { startWorld, worldTick, worldInfo, playersList, visitPlayer, sendEmote, sendSay, worldFolksHere, playerName } from './net/world.js';
@@ -341,16 +342,30 @@ function placeOf(p, info) {
   }
   return PLACE_AWAY[s.slice(5)] || '💼 upptagen';
 }
+// 💼 Jobbinbjudan: en kompis vill jobba ihop – fråga snällt och häng med
+onInvite((m) => {
+  if (!m || m.to !== worldInfo().myId || String(m.job) !== 'burgare') return;
+  if (modalOpen()) return; // stör inte mitt i en dialog – kompisen kan bjuda igen
+  const namn = esc(String(m.namn || 'En kompis').slice(0, 16));
+  play('knock');
+  openModal('💼 Jobba ihop?', `<p style="font-size:20px">${namn} jobbar på <b>Burgarbaren</b> och bjuder in dig till passet – häng med och dela disken!</p>`, [
+    { label: '💼 Häng med!', cls: 'btn-go', onClick: () => { closeModal(); startShiftNow(A, 'burgare', 'jobbburgare'); } },
+    { label: 'Inte nu', onClick: closeModal },
+  ]);
+});
+
 function openWorldDialog() {
   const info = worldInfo();
   const list = playersList();
   const inJob = A.sceneName.startsWith('jobb');
+  const coopJob = A.sceneName === 'jobbburgare' ? 'burgare' : null; // jobb man kan bjuda in till (fler kommer)
   const verTag = (v) => (v === info.version ? '' : ` <span class="old">${v ? 'v' + esc(v) : 'gammal version'}</span>`);
   const rows = list.map((p, i) => `<div class="prow">
       <span data-face="${i}"></span>
       <span class="nm">${esc(p.av.name || '?')}${verTag(p.ver)}<br><small class="sp">${placeOf(p, info)}</small></span>
+      ${coopJob ? `<button class="btn btn-small btn-gold" data-jobba="${esc(p.id)}">💼 Jobba ihop</button>` : ''}
       ${p.scene === 'city' && !inJob ? `<button class="btn btn-small" data-goto="${esc(p.id)}">🚶 Gå dit</button>` : ''}
-      <button class="btn btn-small btn-go" data-visit="${esc(p.id)}">🚗 Åk hem till</button>
+      ${coopJob ? '' : `<button class="btn btn-small btn-go" data-visit="${esc(p.id)}">🚗 Åk hem till</button>`}
     </div>`).join('');
   const role = info.role === 'host' ? 'du håller i världen' : info.role === 'client' ? 'ansluten' : 'kopplar upp';
   const dlg = openModal('👥 Pixelstaden online', `
@@ -366,6 +381,11 @@ function openWorldDialog() {
     el.replaceWith(avatarPortrait({ name: p.av.name, look: p.av.look, color: p.av.color }, 40));
   });
   dlg.querySelectorAll('[data-visit]').forEach((b) => (b.onclick = () => { closeModal(); visitPlayer(A, b.dataset.visit); }));
+  dlg.querySelectorAll('[data-jobba]').forEach((b) => (b.onclick = () => {
+    sendInvite(b.dataset.jobba, 'burgare', A.avatar?.name || '');
+    toast('💼 Inbjudan skickad – häng kvar på passet så länge!', 'good');
+    closeModal();
+  }));
   dlg.querySelectorAll('[data-goto]').forEach((b) => (b.onclick = () => {
     closeModal();
     A.followPlayer = b.dataset.goto;

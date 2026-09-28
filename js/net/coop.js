@@ -13,7 +13,15 @@
 import { sendJob, onJob, worldFolksHere, worldMyId } from './world.js';
 
 let CUR = null;
-onJob((ev) => { CUR?._recv(ev); });
+let inviteCb = null;
+onJob((ev) => {
+  if (ev?.m?.k === 'invite') { inviteCb?.(ev.m, ev.from); return; }
+  CUR?._recv(ev);
+});
+
+// 💼 Jobbinbjudningar: skickas till EN spelare (to), oavsett var hen är i staden
+export const onInvite = (cb) => { inviteCb = cb; };
+export const sendInvite = (toId, job, namn) => sendJob({ k: 'invite', to: String(toId), job: String(job), namn: String(namn || '').slice(0, 16) });
 
 export function makeShiftCoop(A, key) {
   const started = Date.now();

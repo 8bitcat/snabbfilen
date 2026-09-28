@@ -10,6 +10,11 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.26.1] – 2026-09-28 – Bjud in att jobba ihop
+- NYTT: BJUD IN en kompis att jobba ihop! Stå på passet i Burgarbaren, öppna 👥-knappen och tryck "💼 Jobba ihop" vid kompisens namn.
+- Kompisen får en inbjudan var hen än är i staden – ett tryck på "Häng med!" och hen står i dinern bredvid dig, redo att dela disken.
+- Öppettider och ork gäller som vanligt, men introdialogen hoppas över – ni har ju redan bestämt er.
+
 ## [0.26.0] – 2026-09-28 – Jobba tillsammans i Burgarbaren
 - NYTT: JOBBA TILLSAMMANS! Gå till Burgarbaren samtidigt som en kompis – ni ser varandra i dinern, delar på samma kunder och samma disk, och den som serverar får poängen och lönen. En langar tallrikar, en springer till borden!
 - Den som var först på passet är skiftledare och håller i kön och köket – kompisar kan hoppa in och av mitt i skiftet utan att något går sönder.

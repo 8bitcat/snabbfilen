@@ -1,7 +1,7 @@
 {
-  "version": "0.26.0",
+  "version": "0.26.1",
   "date": "2026-09-28",
-  "title": "Jobba tillsammans i Burgarbaren",
+  "title": "Bjud in att jobba ihop",
   "files": [
     "CHANGELOG.md",
     "assets/interior.png",

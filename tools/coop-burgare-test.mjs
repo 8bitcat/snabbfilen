@@ -66,22 +66,49 @@ ok(took === 2, `${gn} plockar tallriken via ledaren (bär rätt ${took})`);
 const goneAtL = await until(async () => { const pl = await D(L, 'D.plates()'); return pl && !pl.some((p) => p.slot === slot && p.d === 2); }, 5000, 300);
 ok(!!goneAtL, 'tallriken försvinner samtidigt hos ledaren – ingen dubblett');
 
-let cust = null;
-for (let i = 0; i < 10 && !cust; i++) {
+// ta FÖRSTA sittande kunden (tvinga fram tills någon sitter) och matcha rätten
+const cust = await until(async () => {
   await D(L, 'D.forceCustomer()');
   const cs = await D(L, 'D.customersDbg()');
-  cust = (cs || []).find((k) => k.w === 2 && k.st === 'sit') || null;
+  return (cs || []).find((k) => k.st === 'sit') || null;
+}, 20000, 500);
+ok(!!cust, `en kund sitter hos ledaren (id ${cust?.i}, vill ha rätt ${cust?.w})`);
+if (cust && cust.w !== took) { // byt min tallrik mot rätten kunden vill ha (swap via ledaren)
+  await D(L, `D.forcePlate(${cust.w})`);
+  const pl2 = await until(async () => { const pl = await D(G, 'D.plates()'); return (pl || []).find((p) => p.d === cust.w) || null; }, 8000, 300);
+  ok(!!pl2, `${gn} ser rätten kunden vill ha på disken`);
+  if (pl2) {
+    await G.evaluate((s) => { const sp = SF.scene._debug.counterSpot(s); SF.scene.down(sp.x, sp.y - 8); }, pl2.slot);
+    const sw = await until(async () => (await D(G, 'D.carrying()')) === cust.w, 12000, 300);
+    ok(!!sw, `${gn} byter till rätt ${cust.w} via ledaren (byteslogiken i delat läge)`);
+  }
 }
-ok(!!cust, `en kund som vill ha rätt 2 sitter hos ledaren (id ${cust?.i})`);
-const custAtG = await until(async () => { const cs = await D(G, 'D.customersDbg()'); return (cs || []).find((k) => k.i === cust.i && k.st === 'sit') || null; }, 6000, 300);
-ok(!!custAtG, `${gn} ser samma kund vid samma bord`);
-await G.evaluate((k) => { SF.scene.down(k.x, k.ty); }, custAtG);
-const servedStats = await until(async () => { const s = await D(G, 'D.stats'); return s && s.ok >= 1 ? s : null; }, 12000, 400);
-ok(!!servedStats, `${gn} serverar och FÅR POÄNGEN (ok: ${servedStats?.ok})`);
-const lStats = await D(L, 'D.stats');
-ok(lStats && lStats.ok === 0, `ledaren fick INTE poängen (${ln}: ok ${lStats?.ok})`);
-const eating = await until(async () => { const cs = await D(L, 'D.customersDbg()'); return (cs || []).some((k) => k.i === cust.i && k.st === 'eat'); }, 5000, 300);
-ok(!!eating, 'kunden äter hos ledaren – serveringen gällde i den delade världen');
+if (cust) {
+  const custAtG = await until(async () => { const cs = await D(G, 'D.customersDbg()'); return (cs || []).find((k) => k.i === cust.i && k.st === 'sit') || null; }, 8000, 300);
+  ok(!!custAtG, `${gn} ser samma kund vid samma bord`);
+  if (custAtG) {
+    await G.evaluate((k) => { SF.scene.down(k.x, k.ty); }, custAtG);
+    const servedStats = await until(async () => { const s = await D(G, 'D.stats'); return s && s.ok >= 1 ? s : null; }, 15000, 400);
+    ok(!!servedStats, `${gn} serverar och FÅR POÄNGEN (ok: ${servedStats?.ok})`);
+    const lStats = await D(L, 'D.stats');
+    ok(lStats && lStats.ok === 0, `ledaren fick INTE poängen (${ln}: ok ${lStats?.ok})`);
+    const eating = await until(async () => { const cs = await D(L, 'D.customersDbg()'); return (cs || []).some((k) => k.i === cust.i && k.st === 'eat'); }, 6000, 300);
+    ok(!!eating, 'kunden äter hos ledaren – serveringen gällde i den delade världen');
+  }
+}
+
+// 💼 inbjudan: medarbetaren går hem till stan, ledaren bjuder in – dialog + Häng med!
+await G.evaluate(() => SF.go('city'));
+await new Promise((r) => setTimeout(r, 700));
+const gId = await G.evaluate(() => SF.worldInfo().myId);
+await L.evaluate(async (to) => { const m = await import('/js/net/coop.js'); m.sendInvite(to, 'burgare', SF.game ? (JSON.parse(localStorage.getItem('snabbfilen_avatar')) || {}).name : ''); }, gId);
+const invited = await until(() => G.evaluate(() => { const el = document.getElementById('modal'); return el && !el.classList.contains('hidden') && /Jobba ihop/.test(el.textContent) ? 1 : 0; }), 8000, 300);
+ok(!!invited, `${gn} får inbjudan i en dialog ("Jobba ihop?")`);
+if (invited) {
+  await G.evaluate(() => { for (const b of document.querySelectorAll('#modal button')) if (/Häng med/.test(b.textContent)) { b.click(); break; } });
+  const joined = await until(() => G.evaluate(() => (SF.sceneName === 'jobbburgare' ? 1 : 0)), 8000, 300);
+  ok(!!joined, `"Häng med!" tar ${gn} rakt in på passet`);
+}
 
 const realErrors = errors.filter((e) => !/peer|webrtc|ice|Could not connect|Lost connection/i.test(e));
 console.log(realErrors.length ? '\nKONSOLFEL:\n' + realErrors.join('\n') : '\nInga konsolfel.');

@@ -8,6 +8,15 @@ import { play } from '../core/sound.js';
 
 export const SHIFT_SECONDS = 60;
 
+// Rakt in i passet (t.ex. via 💼 Jobba ihop-inbjudan): samma öppettids- och
+// ork-kontroller som vanligt, men utan introdialogen – man har redan tackat ja.
+export function startShiftNow(A, jobId, sceneName) {
+  const chk = A.game.canWork();
+  if (!chk.ok) { toast(chk.msg, 'bad'); return false; }
+  A.go(sceneName, { onDone: (stats) => finishShift(A, jobId, stats) });
+  return true;
+}
+
 export function startJobFlow(A, jobId, sceneName) {
   const g = A.game, job = JOBS[jobId];
   const chk = g.canWork();
