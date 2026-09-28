@@ -541,3 +541,15 @@ export function drawTables(ctx) {
     ctx.drawImage(ATLAS, f[0], f[1], f[2], f[3], tb.x, tb.y - f[3], f[2], f[3]);
   }
 }
+
+// Menyn utåt: Burgarbarens fasad i staden (js/city/buildings-work.js) visar samma
+// rätter och priser som menytavlan här inne. sprite = rätten med kontur (samma
+// canvas som på tavlan och i pratbubblorna), map/pal = pixelkartan för egna
+// varianter. Priset är det som paintDiner skriver på tavlan ('10:-') – ändras
+// det där ska det ändras här också.
+export function burgarMeny() {
+  return {
+    title: 'MENY',
+    dishes: DISHES.map((d, i) => ({ id: d.id, name: d.name, price: 10, label: '10:-', sprite: foodSprite(i), map: d.map, pal: d.pal })),
+  };
+}

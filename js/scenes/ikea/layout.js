@@ -20,8 +20,8 @@ import { katOf, dims, tagDims, isFlat } from './kat.js';
 import { escOff } from './art-transit.js';
 
 export const SPECIAL = {
-  core1: { name: 'ENTRÉ', wall: 0x1d51a0, trim: 0x0c2a5c, paper: 'butik', wains: 0, floor: 'entre' },
-  core2: { name: 'PLAN 2', wall: 0xe9e5dc, trim: 0x1f58a8, paper: 'butik', wains: 0, floor: 'sten2' },
+  core1: { name: 'ENTRÉHALLEN', wall: 0x1d51a0, trim: 0x0c2a5c, paper: 'butik', wains: 0, floor: 'entre' },
+  core2: { name: 'RULLTRAPPSHALLEN', wall: 0xe9e5dc, trim: 0x1f58a8, paper: 'butik', wains: 0, floor: 'sten2' },
   rest: { name: 'RESTAURANG', wall: 0x9a6a46, trim: 0x5e3c26, paper: 'trapanel', wains: 18, floor: 'parkett' },
   kassa: { name: 'KASSOR', wall: 0xe4e2dc, trim: 0x1f58a8, paper: 'butik', wains: 0, floor: 'butik' },
   exit: { name: 'UTGÅNG', wall: 0xe4e2dc, trim: 0x1f58a8, paper: 'butik', wains: 0, floor: 'butik' },
@@ -94,7 +94,7 @@ function exhibitsOf(F) {
         solid: hang ? null : [x - 1, base - solidH, x + d.w + 1, base + 1],
         hot: [x0, top - 2, x1, tag ? tag.y + tag.h : base + 3],
         go: [Math.round(x + d.w / 2), hang ? r.fy + 10 : base + 7],
-        seat: /soffa|fatolj|stol|pall|bank|kudde/.test(it.k) && !hang ? [Math.round(x + d.w / 2), base - 3] : null,
+        seat: /soffa|fatolj|stol|pall|bank|kudde/.test(it.k) && !hang && !/^bak|^sido/.test(it.k) ? [Math.round(x + d.w / 2), base - 5] : null,
       });
     }
     for (const rg of r.rugs) {
@@ -130,7 +130,7 @@ function floor1(plan) {
   const core = block('core1', CORE1_W);
   const exit = block('exit', EXIT_W);
   const kassa = block('kassa', KASSA_W);
-  const bays = Math.max(8, Math.min(24, plan.lager.length));
+  const bays = Math.max(8, Math.min(16, plan.lager.length));
   const lager = block('lager', Math.max(LAGER_MIN, bays * 40 + 40), { stretch: true, cartons: plan.lager.slice(0, bays) });
   const depts = plan.depts.map((d) => Object.assign(d, { kind: 'dept', stretch: true }));
   const s = split([core], [exit, kassa, lager], depts, null, depts.length);

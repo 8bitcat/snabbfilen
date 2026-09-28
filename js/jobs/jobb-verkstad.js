@@ -3,10 +3,10 @@
 // pratbubbla visar felet: punktering (däck), oljebyte (oljedunk), trasig lampa
 // (glödlampa), rostigt avgasrör (avgasrör) eller tomt batteri (batteri).
 // Hämta rätt reservdel ur hyllorna vid bakväggen, gå till bilens front och
-// HÅLL INNE (musknapp/finger, eller mellanslag) för att laga – en
-// framstegsstapel fylls medan gnistor, luft och olja sprutar. Den lagade bilen
-// sänks och backar ut. Fel del gör ägaren sur, och väntar hen för länge kör
-// hen därifrån.
+// HÅLL INNE (musknapp/finger) för att laga – eller tryck mellanslag: ett tryck
+// räcker för en hel lagning så länge man står kvar. En framstegsstapel fylls
+// medan gnistor, luft och olja sprutar. Den lagade bilen sänks och backar ut.
+// Fel del gör ägaren sur, och väntar hen för länge kör hen därifrån.
 //
 // Allt är handritade pixlar i skala 1: verkstaden målas EN gång (Pix), bilarna
 // målas per modell/färg/förare och cachas åt båda hållen, hjulen har åtta
@@ -14,7 +14,7 @@
 import { drawPerson, makeLook } from '../core/people.js';
 import { Pix, SMALL, BIG, ctxText, textW, text, mix, mul, css, hash, bayer } from '../core/floor-pix.js';
 import { createWalker, selfDrawable, folkDrawables, WALK_SEQ } from '../scenes/walkable.js';
-import { SHIFT_SECONDS, drawShiftHud, drawTimeUp, makePops, abortShift } from './shift.js';
+import { SHIFT_SECONDS, drawShiftHud, drawTimeUp, abortShift } from './shift.js';
 import { play } from '../core/sound.js';
 
 const FW = 384, FH = 216;
@@ -26,6 +26,37 @@ const RAMP = 4;                // hur högt bilen står på banan (nedsänkt)
 const REPAIR_T = 1.6;          // sekunder man håller inne för att laga
 const PATIENCE = 32;           // kundens tålamod (s) när bilen står uppe
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+// Poängpuffar med samma utseende som makePops i shift.js (mörk ruta, liten
+// text, stiger 14 px/s i 0,9 s) plus två saker verkstaden behöver: en puff kan
+// ha en tagg – en ny puff med samma tagg ersätter den gamla, så att 'SUR!' och
+// 'TRÖTTNADE!' aldrig ligger på varandra – och ett golv (minY) som puffen inte
+// stiger förbi, så att bakre radens puffar stannar vid väggens fot i stället
+// för att glida upp på klockan och radion. Puffarna hålls dessutom inom bild i
+// sidled, eftersom ägarna väntar ända ute vid kanterna.
+function makeShopPops() {
+  const list = [];
+  return {
+    drop(tag) { for (let i = list.length - 1; i >= 0; i--) if (list[i].tag === tag) list.splice(i, 1); },
+    add(x, y, txt, col, { tag = null, minY = 0 } = {}) {
+      if (tag) this.drop(tag);
+      const h = ((textW(SMALL, txt) + 4) >> 1) + 1;
+      list.push({ x: clamp(Math.round(x), h, FW - h), y, txt, col, tag, minY, age: 0 });
+    },
+    update(dt) {
+      for (const p of list) { p.age += dt; p.y = Math.max(p.minY, p.y - 14 * dt); }
+      for (let i = list.length - 1; i >= 0; i--) if (list[i].age > 0.9) list.splice(i, 1);
+    },
+    draw(ctx) {
+      for (const p of list) {
+        const w = textW(SMALL, p.txt) + 4, x = (p.x - w / 2) | 0, y = p.y | 0;
+        ctx.fillStyle = 'rgba(23,21,26,0.7)'; ctx.fillRect(x, y, w, 9);
+        ctxText(ctx, SMALL, p.txt, x + 2, y + 2, p.col);
+      }
+    },
+    list: () => list.map((p) => ({ x: p.x, y: Math.round(p.y), txt: p.txt, tag: p.tag })),
+  };
+}
 
 // ---------- reservdelarna ----------
 const PART_NAMES = ['DÄCK', 'OLJA', 'LAMPOR', 'AVGAS', 'BATTERI'];
@@ -585,8 +616,11 @@ const BAYS = [
 const STATIONS = [132, 162, 192, 222, 252];
 const PICK_Y = 102;
 const CARTS = [{ x: 150, y: 170, kind: 0 }, { x: 236, y: 193, kind: 1 }];
-const JACK = { x: 22, y: 153 };       // rullbar garagedomkraft (vänster mitt)
-const STACK = { x: 360, y: 152 };     // däckstapel (höger mitt)
+// domkraften och däckstapeln står i mittpartierna, med foten på PROP_FOOT så
+// att främre radens ägarpuffar får plats nedanför dem
+const PROP_FOOT = 148;
+const JACK = { x: 22, y: PROP_FOOT };     // rullbar garagedomkraft (vänster mitt)
+const STACK = { x: 360, y: PROP_FOOT };   // däckstapel (höger mitt)
 const LAMP = { x: 196, y: 148 };
 const TUBES = [48, 120, 264, 336];    // lysrören (det sista flimrar)
 const CLOCK = { x: 318, y: 39 };
@@ -603,10 +637,7 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
     [STACK.x - 13, STACK.y - 5, STACK.x + 13, STACK.y + 1],
   ]);
   for (const b of BAYS) { b.lift = 0; b.moving = 0; }
-  const pops = makePops();
-  // poängpuffarna hålls inom bild (ägarna väntar ända ute vid kanterna)
-  const rawPop = pops.add;
-  pops.add = (x, y, txt, col) => { const h = ((textW(SMALL, txt) + 4) >> 1) + 1; rawPop(clamp(x, h, FW - h), y, txt, col); };
+  const pops = makeShopPops();
   let cars = [], fx = [], notes = [], t = 0, seq = 0, carIn = 0.8, carry = null;
   let done = false, doneT = 0, reported = false;
   const hold = { on: false, bay: -1 };
@@ -644,20 +675,51 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
   const faceCar = (b, x) => (x < b.lx + RUN / 2 ? 'right' : 'left');
   function freeBays() { return BAYS.filter((b) => !carOf(b)); }
 
+  // Puffarnas platser. Främre raden: bilens ord ovanför bilen och ägarens ord
+  // ovanför ägaren, som i Burgarbaren (ägarpuffen hålls i bandet mellan
+  // domkraften/däckstapeln och ägarens arg-/hjärtikon). Bakre raden står så
+  // nära bakväggen att allt som stiger ovanför bilen eller ägaren hamnar på
+  // klockan, radion, brandsläckaren eller i ägarens ansikte – där läggs de
+  // två orden i stället sida vid sida på golvet nedanför lyften och stiger
+  // upp mot bilen. En ny händelse för samma bil ersätter de gamla puffarna.
+  const backRow = (y) => y < 160;
+  const POP_GAP = 3;
+  // bakre radens puffar skjuts 5 px in mot mitten så de går fria från
+  // domkraften och däckstapeln som står i kanterna nedanför lyftarna
+  const backPopX = (b) => b.lx + RUN / 2 + (b.face ? -5 : 5);
+  function eventPops(c, car, owner) {         // car/owner = [text, färg] eller null
+    const tb = 'bil' + c.id, ta = 'agare' + c.id;
+    pops.drop(tb); pops.drop(ta);
+    if (backRow(c.bay.base)) {
+      const cx = backPopX(c.bay), y = c.bay.base + 8;
+      if (car && owner) {
+        const wc = textW(SMALL, car[0]) + 4, wo = textW(SMALL, owner[0]) + 4, tot = wc + POP_GAP + wo;
+        pops.add(cx - tot / 2 + wc / 2, y, car[0], car[1], { tag: tb });
+        pops.add(cx + tot / 2 - wo / 2, y, owner[0], owner[1], { tag: ta });
+      } else if (car) pops.add(cx, y, car[0], car[1], { tag: tb });
+      else pops.add(cx, y, owner[0], owner[1], { tag: ta });
+    } else {
+      if (car) pops.add(Math.round(c.x + c.L / 2), carGY(c) - carArt(c).topH - 30, car[0], car[1], { tag: tb });
+      if (owner) pops.add(c.owner.x, c.owner.y - 56, owner[0], owner[1], { tag: ta, minY: PROP_FOOT + 1 });
+    }
+  }
+  function spotPop(b, s, txt, col) {           // vid mekanikerns arbetsplats på lyft b
+    if (backRow(s.y)) pops.add(backPopX(b), b.base + 8, txt, col, { tag: 'tips' });
+    else pops.add(s.x, s.y - 58, txt, col, { tag: 'tips' });
+  }
+
   function giveUp(c) {
     stats.miss++;
     play('miss');
     c.gaveUp = true; c.state = 'lower'; c.bay.moving = 1;
     c.owner.angry = 1.6;
-    pops.add(c.owner.x, c.owner.y - 58, 'TRÖTTNADE!', '#d8d2c0');
+    eventPops(c, null, ['TRÖTTNADE!', '#d8d2c0']);
     if (hold.bay === c.bay.i) hold.on = false;
   }
   function wrongPart(c) {
     stats.fel++;
     play('fel');
-    const cx = Math.round(c.x + c.L / 2);
-    pops.add(cx, carGY(c) - carArt(c).topH - 30, 'FEL DEL!', '#ff6a6a');
-    pops.add(c.owner.x, c.owner.y - 52, 'SUR!', '#ff9a6a');
+    eventPops(c, ['FEL DEL!', '#ff6a6a'], ['SUR!', '#ff9a6a']);
     c.owner.angry = 2.2;
     c.patience = Math.max(3, c.patience - 6);
     hold.on = false; keyHold = 0;
@@ -667,8 +729,7 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
     fixedCount++;
     play('coin');
     const cx = Math.round(c.x + c.L / 2), top = carGY(c) - carArt(c).topH;
-    pops.add(cx, top - 30, 'KLART!', '#8ee03c');
-    pops.add(c.owner.x, c.owner.y - 52, 'TACK!', '#ffd23f');
+    eventPops(c, ['KLART!', '#8ee03c'], ['TACK!', '#ffd23f']);
     c.fixed = true; c.state = 'fixed'; c.wait = 0.8; c.prog = 1; c.flash = 1; c.puddle = 0; c.drip = null;
     c.owner.happy = 1.4; c.owner.angry = 0;
     carry = null; hold.on = false; keyHold = 0;
@@ -854,6 +915,8 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
       pickPart(p = 0) { carry = { p: clamp(p | 0, 0, 4) }; return carry.p; },
       carrying: () => (carry ? carry.p : null),
       cars: () => cars.map((c) => ({ bay: c.bay.i, fault: c.fault, state: c.state, prog: c.prog, patience: c.patience })),
+      // de puffar som syns just nu: [{x, y, txt, tag}] (y är rutans överkant)
+      pops: () => pops.list(),
       // laga direkt: right=true → en väntande bil vars fel matchar delen man bär
       // blir klar (ok+1); right=false → delen sätts i en bil med ett annat fel
       // (fel+1). Finns ingen passande bil byts delen i händerna så att utfallet
@@ -917,7 +980,7 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
         if (near && c && c.state === 'wait') {
           walker.dir = faceCar(b, s.x);
           if (!carry) {
-            if (!hintCool) { hintCool = 1.5; pops.add(s.x, s.y - 58, 'HÄMTA RÄTT DEL!', '#ffd23f'); play('miss'); }
+            if (!hintCool) { hintCool = 1.5; spotPop(b, s, 'HÄMTA RÄTT DEL!', '#ffd23f'); play('miss'); }
             hold.on = false; keyHold = 0;
           } else if (carry.p !== c.fault) wrongPart(c);
           else {
@@ -937,7 +1000,8 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
         const i = STATIONS.findIndex((s) => Math.abs(s - x) <= 14);
         if (i >= 0) {
           walker.walkTo(STATIONS[i], PICK_Y, () => {
-            if (carry && carry.p === i) { carry = null; play('click'); pops.add(STATIONS[i], PICK_Y - 60, 'TILLBAKA', '#d8d2c0'); }
+            // puffen läggs nedanför mig (ovanför står hyllan och skylten)
+            if (carry && carry.p === i) { carry = null; play('click'); pops.add(STATIONS[i], PICK_Y + 12, 'TILLBAKA', '#d8d2c0', { tag: 'tips', minY: PICK_Y + 4 }); }
             else { carry = { p: i }; play('ok'); }
           });
           return;
@@ -957,8 +1021,10 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
     key(k) {
       if (k === 'Escape' && !done) { abortShift(A); return; }
       if ((k === ' ' || k === 'Enter') && !done) {
+        // ett tryck räcker för en hel lagning (REPAIR_T) så länge man står
+        // kvar; nedhållen tangent förlänger via webbläsarens auto-repeat
         const i = nearestBay();
-        if (i >= 0) { keyHold = 0.6; hold.bay = i; }
+        if (i >= 0) { keyHold = REPAIR_T + 0.15; hold.bay = i; }
       }
     },
     draw(ctx) {
@@ -1018,13 +1084,15 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
         // framstegsstapeln över mekanikerns arbetsplats (håller sig inom bild)
         if (c.prog > 0) { const s = spotOf(c.bay); progressBar(ctx, clamp(s.x, 18, FW - 18), s.y - 47, c.prog, working === c, t); }
       }
-      // hjälptext: stå vid fronten med rätt del men håll inte inne
+      // hjälptext: stå vid fronten med rätt del men håll inte inne (två rader,
+      // så att även tangentbordsvägen nämns)
       if (!working && fixedCount < 3 && carry && !walker.path.length) {
         const i = nearestBay(), c = i >= 0 ? carOf(BAYS[i]) : null;
         if (c && c.state === 'wait' && c.fault === carry.p && (t * 3 | 0) % 2 === 0) {
-          const s = 'HÅLL INNE!', w = textW(SMALL, s) + 6, x = Math.round(walker.px - w / 2), y = Math.round(walker.py) - (c.prog > 0 ? 60 : 52);
-          ctx.fillStyle = '#17151a'; ctx.fillRect(x, y, w, 9);
-          ctxText(ctx, SMALL, s, x + 3, y + 2, '#ffd23f');
+          const rows = ['HÅLL INNE!', 'ELLER MELLANSLAG'], iw = Math.max(...rows.map((s) => textW(SMALL, s))), w = iw + 6;
+          const x = clamp(Math.round(walker.px - w / 2), 1, FW - w - 1), y = Math.round(walker.py) - (c.prog > 0 ? 66 : 58);
+          ctx.fillStyle = '#17151a'; ctx.fillRect(x, y, w, 15);
+          rows.forEach((s, j) => ctxText(ctx, SMALL, s, x + 3 + ((iw - textW(SMALL, s)) >> 1), y + 2 + j * 6, j ? '#d8d2c0' : '#ffd23f'));
         }
       }
       pops.draw(ctx);

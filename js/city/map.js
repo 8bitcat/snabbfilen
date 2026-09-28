@@ -120,7 +120,7 @@ export const BUILDINGS = [
   B('mat', 312, 196, 104, { x0: 388, x1: 432, type: 'slide' }, { sign: 'STORMARKNAD', icon: '🛒', enter: 'mat', open: [7, 23] }),
   B('klader', 536, 124, 112, { x0: 586, x1: 610, type: 'swing' }, { sign: 'KLÄDER', icon: '👕', enter: 'klader', open: [7, 21] }),
   B('mobler', 688, 220, 116, { x0: 776, x1: 820, type: 'slide' }, { sign: 'MÖBELJÄTTEN', icon: '🛋️', enter: 'mobler', open: [7, 21] }),
-  B('kafe', 960, 92, 92, { x0: 994, x1: 1018, type: 'swing' }, { sign: 'KAFÉ', icon: '☕', enter: null }),
+  B('kafe', 960, 92, 92, { x0: 994, x1: 1018, type: 'swing' }, { sign: 'KAFÉ', icon: '☕', enter: 'kafe', open: [7, 21] }),
   B('burgare', 1080, 132, 100, { x0: 1134, x1: 1158, type: 'swing' }, { sign: 'BURGARBAREN', icon: '🍔', enter: 'burgare', open: [7, 23] }),
   B('frukt', 1264, 160, 118, { x0: 1330, x1: 1356, type: 'swing' }, { sign: 'FRUKTFABRIKEN', icon: '🍎', enter: 'frukt', open: [7, 21] }),
   B('flyg', 1452, 228, 124, { x0: 1544, x1: 1592, type: 'slide' }, { sign: 'FLYGPLATSEN', icon: '✈️', enter: 'flyg', open: [7, 21] }),
@@ -138,7 +138,7 @@ export const BUILDINGS_S = [
   }),
   S('pizzeria', 172, 88, 100, { x0: 204, x1: 228, type: 'swing' }, { sign: 'PIZZERIA NAPOLI', icon: '🍕', enter: 'jobb:pizzeria', open: [11, 23] }),
   S('posten', 312, 92, 96, { x0: 346, x1: 370, type: 'swing' }, { sign: 'POSTEN', icon: '📮', enter: 'jobb:posten', open: [8, 18] }),
-  S('bibliotek', 432, 180, 116, { x0: 508, x1: 536, type: 'swing' }, { sign: 'BIBLIOTEKET', icon: '📚', enter: 'jobb:bibliotek', open: [9, 20] }),
+  S('djuraffar', 432, 180, 116, { x0: 508, x1: 536, type: 'swing' }, { sign: 'DJURAFFÄREN', icon: '🐾', enter: 'djur', open: [9, 19] }),
   S('bio', 640, 176, 120, { x0: 710, x1: 746, type: 'slide' }, { sign: 'BIO PIXEL', icon: '🎬', open: [12, 24], soon: 'Kvällens film börjar 19:00 – biljettluckan öppnar snart!' }),
   S('kyrka', 868, 132, 104, { x0: 922, x1: 946, type: 'swing' }, {
     sign: 'SÖDERKYRKAN', icon: '⛪', tower: { x0: 914, x1: 954, h: 212 },
@@ -181,9 +181,9 @@ export const FREESTANDING = [
   // parken
   F('PARKEN', 'kiosk', 392, 40, 452, 24, 34, { x0: 404, x1: 420, type: 'swing' }, { sign: 'KIOSK', icon: '🗞️', open: [7, 22], soon: 'Kiosken säljer bara lotter och kvällstidningar just nu.' }),
   F('PARKEN', 'toalett', 762, 36, 452, 24, 30, { x0: 772, x1: 786, type: 'swing' }, { sign: 'WC', icon: '🚻', soon: 'Upptaget! Försök igen om en stund.' }),
-  F('PARKEN', 'glasskiosk', 998, 36, 394, 22, 30, { x0: 1008, x1: 1024, type: 'swing' }, { sign: 'GLASS', icon: '🍦', open: [10, 20], soon: 'Glassen är slut – påfyllning kommer med glassbilen!' }),
+  F('PARKEN', 'glasskiosk', 1136, 36, 400, 22, 30, { x0: 1146, x1: 1162, type: 'swing' }, { sign: 'GLASS', icon: '🍦', open: [10, 20], soon: 'Glassen är slut – påfyllning kommer med glassbilen!' }),
   F('PARKEN', 'lekforrad', 1150, 32, 452, 22, 28, { x0: 1158, x1: 1174, type: 'swing' }, { sign: 'LEKFÖRRÅD', icon: '🧸', soon: 'Låst – nyckeln har parkvakten.' }),
-  F('PARKEN', 'paviljong', 1300, 88, 444, 36, 44, { x0: 1332, x1: 1356, type: 'open' }, { sign: 'MUSIKPAVILJONGEN', icon: '🎺', soon: 'Ingen konsert just nu – kom tillbaka en annan dag!' }),
+  F('PARKEN', 'paviljong', 1296, 88, 444, 36, 44, { x0: 1328, x1: 1352, type: 'open' }, { sign: 'MUSIKPAVILJONGEN', icon: '🎺', soon: 'Ingen konsert just nu – kom tillbaka en annan dag!' }),
   // förorten
   F('FÖRORTEN', 'lamell', 2200, 200, 452, 40, 84, { x0: 2288, x1: 2312, type: 'swing' }, { sign: 'BETONGVÄGEN 7', icon: '🏢', soon: 'Porten är låst och kodlåset är sönderslaget. Du bor inte här.' }),
   F('FÖRORTEN', 'husvagn', 2646, 48, 628, 22, 28, { x0: 2656, x1: 2668, type: 'swing' }, { sign: 'HUSVAGNEN', icon: '🚐', enter: 'bostad:husvagn', homes: ['husvagn'], lot: 'vagnsplatsen' }),
@@ -306,7 +306,7 @@ export const LIGHTS_ALL = [...LIGHTS, ...LIGHTS_S];
 const stop = (id, name, district, x, y, road, lane, extra) => ({ id, name, district, x, y, road, lane, wait: { x: x + 30, y: y - 3 }, ...extra });
 export const BUS_STOPS = [
   stop('pixeltorget', 'PIXELTORGET', 'CENTRUM', 610, CITY.SIDEWALK_S[1] - 3, 'pixelgatan', 1),
-  stop('flygplatsen', 'FLYGPLATSEN', 'CENTRUM', 1560, CITY.SIDEWALK_S[1] - 3, 'pixelgatan', 1),
+  stop('flygplatsen', 'FLYGPLATSEN', 'CENTRUM', 1626, CITY.SIDEWALK_S[1] - 3, 'pixelgatan', 1),
   stop('soderkyrkan', 'SÖDERKYRKAN', 'SÖDER', 1106, CITY.SIDEWALK_SS[1] - 3, 'sodergatan', 1),
   stop('betongtorget', 'BETONGTORGET', 'FÖRORTEN', 2010, CITY.SIDEWALK_S[1] - 3, 'pixelgatan', 1, { broken: true }),
 ];
@@ -341,16 +341,17 @@ export const PARK_LAYOUT = {
   plaza: { cx: 934, cy: 366, r: 42 },
   promenade: [20, 334, CITY.X_CITY - 20, 346],
   paths: CROSSWALKS.filter((c) => c.i < 3).map((c) => [c.x0 + 12, CITY.SIDEWALK_S[1], c.x1 - 12, 334]),
+  // (lagda mellan v1-rekvisitans träd, bänkar och rabatter – flytta inte utan att köra röktestet)
   walks: [
-    [150, 346, 170, 462],    // → gränden radhusen/pizzerian
-    [272, 346, 300, 462],    // Parkgatans axel → Postgatan
+    [134, 346, 150, 462],    // → gränden radhusen/pizzerian
+    [300, 346, 320, 462],    // Parkgatans axel → Postgatan
     [920, 408, 948, 462],    // torget → kyrkans baksida (kyrkaxeln: Torggatan – fontänen – tornet)
-    [1224, 346, 1252, 462],  // Fabriksgatans axel → Vårdgatan
-    [1424, 346, 1444, 462],  // → gränden vårdcentralen/tornhuset
+    [1206, 346, 1226, 462],  // Fabriksgatans axel → Vårdgatan
+    [1398, 346, 1412, 462],  // → gränden vårdcentralen/tornhuset
   ],
   back: [0, CITY.BACK_S[0], CITY.X_CITY, CITY.BACK_S[1]],   // parkgången
-  pond: { cx: 604, cy: 398, rx: 60, ry: 22 },               // dammen (änder, näckrosor, is på vintern)
-  playground: [1030, 410, 1140, 458],                       // lekplatsen (sand, gungor, rutschkana)
+  pond: { cx: 262, cy: 400, rx: 36, ry: 18 },               // dammen (änder, näckrosor, is på vintern)
+  playground: [1030, 410, 1130, 458],                       // lekplatsen (sand, gungor, rutschkana)
   dogPark: [20, 358, 140, 452], dogGate: [74, 90],          // hundrastgården (staket, grind i norr)
   meadow: [1470, 356, 1680, 458],                           // ängen (vildblommor, buskar, fåglar)
 };
@@ -443,7 +444,7 @@ export const RESERVED = [
   ...LIGHTS_S.map((l) => [l.x - 6, l.y - 8, l.x + 6, l.y + 3]),
   ...LOTS.flatMap((l) => (l.gates || []).map((g) => gateRect(l, g))),
   ...LOTS.filter((l) => l.drive).map((l) => [l.drive[0], CITY.SIDEWALK_S[0], l.drive[1], l.rect[1]]),
-  ...BUS_STOPS.slice(1).map((s) => [s.x - 26, s.y - 18, s.x + 26, s.y + 3]),  // skjulen (v1-skjulet sköter rekvisitan själv)
+  ...BUS_STOPS.slice(1).map((s) => [s.x - 24, s.y - 18, s.x + 24, s.y + 3]),  // skjulen (v1-skjulet sköter rekvisitan själv)
   [PARK_LAYOUT.pond.cx - PARK_LAYOUT.pond.rx - 2, PARK_LAYOUT.pond.cy - PARK_LAYOUT.pond.ry - 2,
     PARK_LAYOUT.pond.cx + PARK_LAYOUT.pond.rx + 2, PARK_LAYOUT.pond.cy + PARK_LAYOUT.pond.ry + 2],
   [PARK_LAYOUT.dogGate[0], PARK_LAYOUT.dogPark[1] - 6, PARK_LAYOUT.dogGate[1], PARK_LAYOUT.dogPark[1] + 6],

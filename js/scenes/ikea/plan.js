@@ -32,15 +32,15 @@ export const SHOW_ORDER = ['vardagsrum', 'kok', 'kontor', 'sovrum', 'barnrum', '
 // Marknadshallens avdelningar (plan 1)
 export const DEPTS = {
   textil: { name: 'TEXTILIER', fixW: 150, wall: 0xe6dfe8, trim: 0x1f58a8, paper: 'butik', wains: 0, floor: 'vinyl',
-    props: [['bin', 'kuddar', '49:-', 8, 'mid'], ['bin', 'hajar', '149:-', 52, 'front'], ['table', 'textil', '99:-', 96, 'mid']] },
+    props: [['bin', 'kuddar', '49:-', 8, 'mid'], ['bin', 'hajar', '149:-', 52, 'front'], ['table', 'textil', '99:-', 96, 'mid'], ['bin', 'handdukar', '39:-', 104, 'front']] },
   kok: { name: 'MATLAGNING', fixW: 168, wall: 0xe8eee8, trim: 0x1f58a8, paper: 'butik', wains: 0, floor: 'vinyl',
-    props: [['table', 'kok', '29:-', 10, 'mid'], ['bin', 'ovrigt', '19:-', 66, 'front'], ['table', 'kok', '9:90', 112, 'mid']] },
+    props: [['table', 'kok', '29:-', 10, 'mid'], ['bin', 'ovrigt', '19:-', 66, 'front'], ['table', 'kok', '9:90', 112, 'mid'], ['bin', 'ljus', '9:90', 118, 'front']] },
   ljus: { name: 'BELYSNING', fixW: 140, wall: 0xdcdcd4, trim: 0x1f58a8, paper: 'butik', wains: 0, floor: 'vinyl',
-    props: [['table', 'ljus', '79:-', 8, 'mid'], ['bin', 'ljus', '5:-', 62, 'front'], ['table', 'ljus', '149:-', 96, 'front']] },
+    props: [['table', 'ljus', '79:-', 8, 'mid'], ['bin', 'ljus', '5:-', 62, 'front'], ['table', 'ljus', '149:-', 96, 'front'], ['bin', 'ljus', '19:-', 10, 'front']] },
   vaxt: { name: 'KRUKOR OCH VÄXTER', fixW: 164, wall: 0xe2ecdc, trim: 0x2c7a3c, paper: 'butik', wains: 0, floor: 'vinyl',
-    props: [['stand', 0, '', 6, 'mid'], ['bin', 'blommor', '29:-', 58, 'front'], ['stand', 1, '', 104, 'mid']] },
+    props: [['stand', 0, '', 6, 'mid'], ['bin', 'blommor', '29:-', 58, 'front'], ['stand', 1, '', 104, 'mid'], ['bin', 'blommor', '19:-', 112, 'front']] },
   dekor: { name: 'DEKORATION', fixW: 178, wall: 0xece4d8, trim: 0x1f58a8, paper: 'butik', wains: 0, floor: 'vinyl',
-    props: [['bin', 'ljus', '9:-', 8, 'front'], ['table', 'dekor', '39:-', 52, 'mid'], ['bin', 'kuddar', '49:-', 110, 'front']] },
+    props: [['bin', 'ljus', '9:-', 8, 'front'], ['table', 'dekor', '39:-', 52, 'mid'], ['bin', 'kuddar', '49:-', 110, 'front'], ['table', 'dekor', '59:-', 122, 'mid']] },
 };
 export const DEPT_ORDER = ['textil', 'kok', 'ljus', 'vaxt', 'dekor'];
 // vilken avdelning en sort hör till i marknadshallen
@@ -77,6 +77,8 @@ export const DECOR = { sang: 'Sängen', garderob: 'Garderoben', kylskap: 'Kylsk�
 
 // ---------- recepten: handplacerade rum ----------
 // it: [sort, variant, x, rad | fotlinje, { c: egen färg }]  (x från rummets innerkant)
+//     sort kan vara en lista av alternativ – den första som finns i katalogen används
+//     (barnrummets säng: enkelsängen om den finns, annars dubbelsängen)
 // rugs: { v, x, y (överkant), tag: [mitt-x, y], c }   fix: [namn, x, bredd]
 // deco: [sort, x, y, b, h, extra] – på väggen (y negativt = uppåt från golvkanten)
 export const RECIPES = {
@@ -110,7 +112,7 @@ export const RECIPES = {
   barnrum: {
     IW: 196,
     fix: [['leksaker', 12, 40]],
-    items: [['sang', 4, 8, 32], ['bokhylla', 2, 56, 'wall'], ['lampa', 1, 100, 'wall'],
+    items: [[['enkelsang', 'sang'], 4, 8, 32], ['bokhylla', 2, 56, 'wall'], ['lampa', 1, 100, 'wall'],
       ['stol', 1, 92, 'mid'], ['bordR', 1, 120, 'mid'], ['fatolj', 2, 160, 'mid']],
     rugs: [{ v: 0, x: 88, y: 34, tag: [133, 68], c: '#e58fb6' }],
     deco: [['affisch', 12, -46, 24, 20], ['fonster', 132, -42, 42, 21]],
@@ -138,9 +140,10 @@ const COLOR_WALL = [['lampa', 0], ['lampa', 1], ['spegel', 0, 'wall'], ['spegel'
 function newRoom(type, rc, st) {
   st = st || TYPES[type];
   const keep = (k) => !!katOf(k) || !!DECOR[k];
+  const pick = (k) => (Array.isArray(k) ? k.find(keep) || null : keep(k) ? k : null);
   return {
     type, st, name: st.name, IW: rc?.IW || 0,
-    items: (rc?.items || []).filter(([k]) => keep(k)).map(([k, v, x, row, o]) => ({ k, v: varOf(k, v), x, row, c: o?.c || null })),
+    items: (rc?.items || []).map(([k, v, x, row, o]) => [pick(k), v, x, row, o]).filter(([k]) => k).map(([k, v, x, row, o]) => ({ k, v: varOf(k, v), x, row, c: o?.c || null })),
     rugs: katOf('matta') ? (rc?.rugs || []).map((r) => ({ k: 'matta', w: 90, h: 48, ...r, v: varOf('matta', r.v) })) : [],
     fix: (rc?.fix || []).slice(), deco: (rc?.deco || []).slice(),
   };
@@ -168,10 +171,13 @@ function packOne(room, e) {
   cursors(room);
   const d = dims(e.k, e.v), sw = slotW(e.k, e.v), z = zoneOf(e);
   if (z === 'rug') {
-    const x = room._mx + 3, rw = d.w, rh = Math.min(d.h, 48);
-    const y = Math.max(20, 58 - rh); // mattan ligger mitt på golvet, lappen strax nedanför
-    room.rugs.push({ k: e.k, v: e.v, x, y, w: rw, h: rh, tag: [x + (rw >> 1), y + rh - 12], c: e.c || null });
-    room._mx += Math.max(sw, rw + 6);
+    // mattan tar plats i både mitt- och främre raden så att ingen småmöbel hamnar på den eller dess lapp
+    const rw = d.w, rh = Math.min(d.h, 48), slot = Math.max(sw, rw + 6), x0 = Math.max(room._mx, room._fx), x = Math.round(x0 + (slot - rw) / 2);
+    const y = Math.max(20, 58 - rh); // mattan ligger mitt på golvet
+    // lappen: på stora mattor nere i kanten, på små (dörrmattor …) strax nedanför så mattan syns
+    const ty = rh >= 30 ? y + rh - 12 : y + rh + 2;
+    room.rugs.push({ k: e.k, v: e.v, x, y, w: rw, h: rh, tag: [x + (rw >> 1), ty], c: e.c || null });
+    room._mx = room._fx = x0 + slot;
   } else if (z === 'hang') {
     room.items.push({ k: e.k, v: e.v, x: Math.round(room._wx + (sw - d.w) / 2), row: 'hang', c: e.c || null });
     room._wx += sw;
@@ -187,10 +193,13 @@ function packOne(room, e) {
   }
   room.IW = Math.max(room.IW, room._wx + 4, room._mx + 4, room._fx + 4, MIN_IW);
 }
-function wouldFit(room, e, max = MAX_IW) {
+// var nästa möbel i raden hamnar (mattor: efter både mitt- och främre raden)
+function cursorOf(room, z) {
   cursors(room);
-  const z = zoneOf(e), cur = z === 'hang' || z === 'wall' ? room._wx : z === 'front' ? room._fx : room._mx;
-  return cur + slotW(e.k, e.v) + 4 <= max;
+  return z === 'hang' || z === 'wall' ? room._wx : z === 'front' ? room._fx : z === 'rug' ? Math.max(room._mx, room._fx) : room._mx;
+}
+function wouldFit(room, e, max = MAX_IW) {
+  return cursorOf(room, zoneOf(e)) + slotW(e.k, e.v) + 4 <= max;
 }
 // fotlinjen (från golvkanten) för en rad; väggsaker hänger på väggen
 export const rowY = (row, h = 16) => (row === 'hang' ? -Math.max(6, Math.min(14, 44 - h)) : typeof row === 'number' ? row : ROWY[row]);
@@ -216,68 +225,75 @@ function autoDeco(room) {
 }
 
 // ================= planen =================
+// Packa en grupps möbler: först i första rummet (receptet), sedan i nya rum
+// ("KÖK 2" …) när det blir för trångt.
+function packGroup(makeFirst, makeExtra, list, max) {
+  const arr = [makeFirst()];
+  for (const e of list) {
+    let room = arr[arr.length - 1];
+    if (!wouldFit(room, e, max) && (room.items.length || room.rugs.length)) { room = makeExtra(arr.length + 1); arr.push(room); }
+    packOne(room, e);
+  }
+  return arr;
+}
+// …och jämna ut: möblerna delas ut över så få rum som möjligt så att varje rum
+// och varje rad (vägg, mitt, fram) blir ungefär lika full – inga halvtomma rum.
+function dealInto(makeFirst, makeExtra, list, max, m, grow) {
+  const arr = [makeFirst()];
+  while (arr.length < m) arr.push(makeExtra(arr.length + 1));
+  for (const e of list) {
+    const z = zoneOf(e);
+    let best = null;
+    for (const room of arr) if (wouldFit(room, e, max) && (!best || cursorOf(room, z) < cursorOf(best, z))) best = room;
+    if (!best) { if (!grow) return null; best = makeExtra(arr.length + 1); arr.push(best); }
+    packOne(best, e);
+  }
+  return arr;
+}
+function packBalanced(makeFirst, makeExtra, list, max) {
+  if (!list.length) return [makeFirst()];
+  const nMax = packGroup(makeFirst, makeExtra, list, max).length;
+  for (let m = 1; m <= nMax; m++) { const arr = dealInto(makeFirst, makeExtra, list, max, m, false); if (arr) return arr; }
+  return dealInto(makeFirst, makeExtra, list, max, nMax, true);
+}
+
 // → { rooms (plan 2, i gångordning), depts (plan 1), lager: [sort …] }
 export function buildPlan() {
-  const rooms = [];
-  const byType = {};
+  const order = SHOW_ORDER.slice();
   let custom = 0;
-  for (const type of SHOW_ORDER) {
-    const r = newRoom(type, RECIPES[type]);
-    rooms.push(r); byType[type] = [r];
-  }
   // varje möbelsort till sitt rum (k.room → tabellen → marknadshallen)
-  const extras = new Map(); // rumstyp → [{k, v}]
+  const extras = new Map(order.map((t) => [t, []])); // rumstyp → [{k, v}]
   const market = []; // {k, v, zone}
+  const inRecipe = (type, k) => (RECIPES[type]?.items || []).some((it) => (Array.isArray(it[0]) ? it[0].includes(k) : it[0] === k)) || (k === 'matta' && (RECIPES[type]?.rugs || []).length > 0);
   for (const kat of KAT()) {
     const raw = Array.isArray(kat.room) ? kat.room[0] : kat.room;
-    let type = roomTypeOf(raw, KIND_ROOM[kat.kind] || 'ovrigt');
+    const type = roomTypeOf(raw, KIND_ROOM[kat.kind] || 'ovrigt');
     if (type === 'ovrigt') { market.push({ k: kat.kind, v: 0 }); continue; }
     if (!TYPES[type]) { // ett helt nytt rum, t.ex. "Trädgård"
       TYPES[type] = { ...EXTRA_STYLES[custom++ % EXTRA_STYLES.length], name: String(raw).toUpperCase().slice(0, 16) };
     }
-    if (!byType[type]) { const r = newRoom(type, null); rooms.push(r); byType[type] = [r]; }
-    if (byType[type].some((r) => shows(r, kat.kind))) continue;
-    if (!extras.has(type)) extras.set(type, []);
+    if (!extras.has(type)) { extras.set(type, []); order.push(type); }
+    if (inRecipe(type, kat.kind)) continue;
     extras.get(type).push({ k: kat.kind, v: 0 });
   }
-  // rummen: packas in, flyttar till "NAMN 2" när det blir för trångt
-  for (const [type, list] of extras) {
-    for (const e of list) {
-      const arr = byType[type];
-      let room = arr[arr.length - 1];
-      if (!wouldFit(room, e) && (room.items.length || room.rugs.length)) {
-        const extra = newRoom(type, null);
-        extra.name = `${TYPES[type].name} ${arr.length + 1}`;
-        rooms.splice(rooms.indexOf(room) + 1, 0, extra);
-        arr.push(extra);
-        room = extra;
-      }
-      packOne(room, e);
-    }
+  const rooms = [];
+  for (const type of order) {
+    const name = TYPES[type].name;
+    rooms.push(...packBalanced(() => newRoom(type, RECIPES[type] || null), (i) => Object.assign(newRoom(type, null), { name: `${name} ${i}` }), extras.get(type), MAX_IW));
   }
   for (const r of rooms) { r.IW = Math.max(r.IW, MIN_IW); if (!r.deco.length) r.deco = autoDeco(r); }
   rooms.forEach((r, i) => { r.num = i + 1; });
 
   // marknadshallen: avdelningar med egna hyllor + katalogens småsaker + fler färger
   for (const [k, v, zone] of COLOR_WALL) if (katOf(k)) market.push({ k, v: varOf(k, v), zone, extra: true });
+  const byDept = Object.fromEntries(DEPT_ORDER.map((id) => [id, []]));
+  for (const e of market) byDept[deptOf(e.k)].push(e);
   const deptRooms = [];
-  const byDept = {};
   for (const id of DEPT_ORDER) {
     const D = DEPTS[id];
-    const r = newRoom('m_' + id, null, D);
-    r.dept = id; r.IW = D.fixW; r.props = D.props;
-    deptRooms.push(r); byDept[id] = [r];
-  }
-  for (const e of market) {
-    const id = deptOf(e.k), arr = byDept[id];
-    let room = arr[arr.length - 1];
-    if (!wouldFit(room, e, MAX_IW + 60)) {
-      const extra = newRoom('m_' + id, null, DEPTS[id]);
-      extra.dept = id; extra.IW = 0; extra.props = []; extra.name = `${DEPTS[id].name} ${arr.length + 1}`;
-      deptRooms.splice(deptRooms.indexOf(room) + 1, 0, extra);
-      arr.push(extra); room = extra;
-    }
-    packOne(room, e);
+    const first = () => Object.assign(newRoom('m_' + id, null, D), { dept: id, IW: D.fixW, props: D.props });
+    const extra = (i) => Object.assign(newRoom('m_' + id, null, D), { dept: id, IW: 0, props: [], name: `${D.name} ${i}` });
+    deptRooms.push(...packBalanced(first, extra, byDept[id], MAX_IW + 60));
   }
   for (const r of deptRooms) r.IW = Math.max(r.IW, MIN_IW);
 

@@ -17,6 +17,8 @@ function ac() {
 }
 // Webbläsare kräver en användargest innan ljud får låta – anropas på första pekningen.
 export function unlockAudio() { try { ac(); } catch { /* inget ljudstöd */ } }
+// Ljudkontexten för musiken (js/core/music.js) – null om ljud saknas.
+export function audioContext() { try { return ac(); } catch { return null; } }
 
 export const isMuted = () => muted;
 export function toggleMute() {

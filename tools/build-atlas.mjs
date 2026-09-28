@@ -27,8 +27,9 @@ const PICKS = [
   ['fatolj0', S, 296, 107, 17, 20], ['fatolj1', S, 136, 107, 17, 20], ['fatolj2', S, 200, 107, 17, 20], ['fatolj3', S, 264, 107, 17, 20],
   // garderober (4 – bruna raden)
   ['garderob0', C, 69, 296, 35, 38], ['garderob1', C, 181, 296, 35, 38], ['garderob2', C, 293, 296, 35, 38], ['garderob3', C, 405, 296, 35, 38],
-  // kylskåp (2)
-  ['kylskap0', P9, 160, 0, 16, 48], ['kylskap1', P9, 320, 0, 16, 48],
+  // kylskåpet (startmöbeln) – samma kylskåp som kyl2, rätt beskuret 16×28 (rutan hade
+  // förut 20 tomma rader överst; fotlinjen är densamma så sparfiler påverkas inte)
+  ['kylskap0', P9, 160, 20, 16, 28],
   // TV (2: platt + retro)
   ['tv0', P2, 136, 72, 48, 23], ['tv1', P2, 4, 10, 24, 20],
   // runda bord (4) + matbord (4)
@@ -48,8 +49,22 @@ const PICKS = [
 ];
 
 // ---------- nya möbler (katalogiserade i tools/furniture/*.json, dubbletter rensade) ----------
-// TV / dator: gamingdatorn (KATALOG:s tv0) i tre färger till → tv2..tv4
-const EXTRA = [['tv2', P2, 136, 6, 48, 25], ['tv3', P2, 136, 38, 48, 25], ['tv4', P2, 136, 103, 48, 25]];
+// Fler färger till sorter som redan finns (samma modell, samma storlek – nya nycklar
+// läggs efter de gamla så att gamla sparfiler pekar rätt):
+//   tv2..tv4      gamingdatorn (tv0) i tre färger till
+//   soffa6..9     soffan i de fyra färger som saknades (vit, blå, lila, laxrosa)
+//   fatolj4..5    fåtöljen i rosa och vit
+//   sang6..13     dubbelsängen i åtta färger till (blå, rosa, rutig, turkos, orange, svart, ljusrosa, lila)
+//   garderob4..11 den stora garderoben i åtta färger till
+const EXTRA = [
+  ['tv2', P2, 136, 6, 48, 25], ['tv3', P2, 136, 38, 48, 25], ['tv4', P2, 136, 103, 48, 25],
+  ['soffa6', S, 66, 11, 29, 20], ['soffa7', S, 98, 11, 29, 20], ['soffa8', S, 194, 11, 29, 20], ['soffa9', S, 258, 11, 29, 20],
+  ['fatolj4', S, 168, 107, 17, 20], ['fatolj5', S, 232, 107, 17, 20],
+  ['sang6', B, 7, 317, 33, 34], ['sang7', B, 103, 317, 33, 34], ['sang8', B, 199, 317, 33, 34], ['sang9', B, 295, 317, 33, 34],
+  ['sang10', B, 7, 365, 33, 34], ['sang11', B, 103, 365, 33, 34], ['sang12', B, 199, 365, 33, 34], ['sang13', B, 295, 365, 33, 34],
+  ['garderob4', C, 517, 296, 35, 38], ['garderob5', C, 629, 296, 35, 38], ['garderob6', C, 517, 8, 35, 38], ['garderob7', C, 629, 8, 35, 38],
+  ['garderob8', C, 293, 8, 35, 38], ['garderob9', C, 181, 8, 35, 38], ['garderob10', C, 69, 8, 35, 38], ['garderob11', C, 405, 8, 35, 38],
+];
 // [sort, bredd, höjd, [[fil, sx, sy], …]] → sort0, sort1 … (alla varianter av en sort är lika stora)
 const KINDS = [
   // VARDAGSRUM
@@ -57,6 +72,7 @@ const KINDS = [
   ['tvbank', 27, 14, [[D, 2, 130], [D, 34, 130], [D, 66, 130], [D, 98, 130], [D, 130, 130], [D, 162, 130], [D, 194, 130]]],
   ['soffbord', 30, 12, [[T, 193, 242], [T, 193, 274], [T, 193, 306], [T, 193, 338]]],
   ['glasbord', 30, 9, [[T, 192, 229]]],
+  // soffan/fåtöljen bakifrån och från sidan – vyerna som soffa/fatolj roterar till (KATALOG.views)
   ['baksoffa', 29, 18, [[S, 2, 45], [S, 34, 45], [S, 66, 45], [S, 98, 45], [S, 130, 45], [S, 162, 45], [S, 194, 45], [S, 226, 45], [S, 258, 45], [S, 290, 45]]],
   ['sidosoffa', 13, 29, [[S, 1, 66], [S, 33, 66], [S, 65, 66], [S, 97, 66], [S, 129, 66], [S, 161, 66], [S, 193, 66], [S, 225, 66], [S, 257, 66], [S, 289, 66]]],
   ['kuddsoffa', 29, 22, [[S, 2, 105], [S, 34, 105], [S, 66, 105]]],
@@ -82,14 +98,15 @@ const KINDS = [
   ['stormatta', 70, 40, [[P11, 4, 117], [P11, 84, 117], [P11, 4, 165], [P11, 84, 165]]],
   ['skivor', 14, 15, [[P1, 0, 176], [P1, 32, 177]]],
   // SOVRUM
+  // sängarna: enkelsäng framifrån ↔ tvarsang (samma säng från sidan, samma färgordning),
+  // sang0..13 (dubbelsängen) ↔ tvardubbel (från sidan: röd, laxrosa, grönblommig, ljusrosa
+  // och sedan de åtta färgerna i sang6..13 – KATALOG:s views-karta pekar rätt)
   ['enkelsang', 18, 34, [[B, 7, 2], [B, 71, 2], [B, 135, 2], [B, 263, 2], [B, 7, 50], [B, 71, 50], [B, 135, 50], [B, 327, 50], [B, 71, 98], [B, 135, 98]]],
-  ['dubbelsang', 33, 34, [[B, 7, 317], [B, 103, 317], [B, 199, 317], [B, 295, 317], [B, 7, 365], [B, 103, 365], [B, 199, 365], [B, 295, 365]]],
   ['tvarsang', 32, 24, [[B, 0, 152], [B, 48, 152], [B, 96, 152], [B, 192, 152], [B, 0, 184], [B, 48, 184], [B, 96, 184], [B, 240, 184], [B, 48, 216], [B, 96, 216]]],
-  ['tvardubbel', 32, 38, [[B, 192, 426], [B, 240, 426], [B, 288, 426], [B, 336, 426], [B, 0, 474], [B, 48, 474], [B, 96, 474], [B, 144, 474]]],
+  ['tvardubbel', 32, 38, [[B, 0, 426], [B, 48, 426], [B, 96, 426], [B, 144, 426], [B, 192, 426], [B, 240, 426], [B, 288, 426], [B, 336, 426], [B, 0, 474], [B, 48, 474], [B, 96, 474], [B, 144, 474]]],
   ['nattduksbord', 16, 16, [[D, 0, 8], [D, 64, 8], [D, 128, 9], [D, 192, 9]]],
   ['kladskap', 23, 33, [[C, 5, 301], [C, 117, 301], [C, 229, 301], [C, 341, 301], [C, 453, 301], [C, 565, 301], [C, 453, 13], [C, 565, 13], [C, 229, 13], [C, 5, 13]]],
   ['linneskap', 25, 36, [[C, 35, 298], [C, 147, 298], [C, 259, 298], [C, 371, 298], [C, 483, 298], [C, 595, 298], [C, 483, 10], [C, 595, 10], [C, 259, 10], [C, 35, 10]]],
-  ['storgarderob', 35, 38, [[C, 517, 296], [C, 629, 296], [C, 517, 8], [C, 629, 8], [C, 293, 8], [C, 181, 8], [C, 69, 8], [C, 405, 8]]],
   ['lagbyra', 27, 12, [[D, 2, 98], [D, 34, 98], [D, 66, 98], [D, 98, 98], [D, 130, 98], [D, 162, 98], [D, 194, 98]]],
   ['kista', 16, 15, [[BS, 208, 17]]],
   ['ramtavla', 12, 15, [[P1, 18, 17], [P1, 50, 17]]],
@@ -108,7 +125,7 @@ const KINDS = [
   ['kryddhylla', 48, 15, [[P9, 0, 0], [P9, 192, 0], [P9, 352, 0], [P9, 544, 0]]],
   ['mikro', 14, 11, [[P1, 225, 53]]],
   ['brodrost', 10, 11, [[P1, 243, 53]]],
-  ['kaffekokare', 11, 15, [[P1, 211, 49]]],
+  ['kaffebryggare', 11, 15, [[P1, 211, 49]]],
   ['soptunna', 9, 12, [[P1, 211, 164], [P1, 211, 180]]],
   ['koksbord', 24, 23, [[T, 4, 292], [T, 36, 292], [T, 68, 292], [T, 100, 292], [T, 131, 292], [T, 164, 292]]],
   ['dryckeskyl', 26, 41, [[HW, 195, 38]]],

@@ -171,7 +171,7 @@ export const trayStackImg = () => once('tstack', () => {
   P.hl(3, 3, 18, 0xa87048);
   // bestickkoppar
   for (const [x, c] of [[4, 0xc8ccd2], [10, 0xe8ecf0], [16, 0xc8ccd2]]) { P.rect(x, 18, 5, 6, 0x3a3e46); P.vl(x + 1, 15, 3, c); P.vl(x + 3, 14, 4, c); }
-  text(P, SMALL, 'BRICKOR', 0, 26, 0xffffff);
+  text(P, SMALL, 'BRICKA', 1, 26, 0xffffff);
   return P.flush();
 });
 // varma disken med matbrickor bakom glas (w bred)
@@ -289,12 +289,26 @@ export function paintMenuBoard(P, x, y, w, h) {
   for (let xx = x + 6; xx < x + w - 6; xx += 2) P.px(xx, y + 12, 0x5a6a60);
 }
 // menyraderna på tavlan (efter att bakgrunden är klar – rätterna är canvasar)
-export function drawMenuRows(ctx, x, y, w, ctxText) {
+// menyn som en rad: rätt, namn och pris i varsin kolumn (tavlan är w bred)
+const LABEL = { kottbullar: 'KÖTTBULLAR', korv: 'KORV', bulle: 'BULLE', kaffe: 'KAFFE', saft: 'SAFT' };
+export function drawMenuStrip(ctx, x, y, w, ctxText) {
+  const ws = MENU.map((m) => Math.max(24, textW(SMALL, LABEL[m.id] || m.short)) + 6);
+  const gap = (w - 4 - ws.reduce((a, b) => a + b, 0)) / Math.max(1, MENU.length - 1);
+  let cx = x + 2;
   MENU.forEach((m, i) => {
-    const ry = y + 16 + i * 11;
-    ctx.drawImage(dishImg(m.id, 2), x + 2, ry - 5);
-    ctxText(ctx, SMALL, m.short, x + 25, ry + 1, '#f4f1ea');
-    const p = `${m.price}:-`;
-    ctxText(ctx, SMALL, p, x + w - 4 - textW(SMALL, p), ry + 1, '#f6cf2a');
+    const mid = Math.round(cx + ws[i] / 2), lbl = LABEL[m.id] || m.short, p = `${m.price}:-`;
+    ctx.drawImage(dishImg(m.id, 2), mid - 11, y + 12);
+    ctxText(ctx, SMALL, lbl, mid - (textW(SMALL, lbl) >> 1), y + 29, '#f4f1ea');
+    ctxText(ctx, SMALL, p, mid - (textW(SMALL, p) >> 1), y + 35, '#f6cf2a');
+    cx += ws[i] + gap;
+  });
+}
+// idx = vilka rätter (index i MENU) som står i den här kolumnen
+export function drawMenuRows(ctx, x, y, w, ctxText, idx = MENU.map((_, i) => i)) {
+  idx.forEach((mi, i) => {
+    const m = MENU[mi], ry = y + 14 + i * 12;
+    ctx.drawImage(dishImg(m.id, 2), x + 1, ry - 2);
+    ctxText(ctx, SMALL, m.short, x + 24, ry + 1, '#f4f1ea');
+    ctxText(ctx, SMALL, `${m.price}:-`, x + 24, ry + 7, '#f6cf2a');
   });
 }

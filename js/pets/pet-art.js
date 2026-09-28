@@ -4,8 +4,15 @@
 // målas sedan som 2D-former i pixelduken (pet-canvas.js) med handplacerade ögon,
 // nosar, öron och mönster per vy (fram = 'down', bak = 'up', sida = 'right',
 // 'left' speglas). Allt i heltalspixlar, en pixelkornighet, ingen skalning.
+// Bakvyn ('up') fuskar medvetet: huvudet sitter ovanför bogen (inte nersänkt), hängöron sticker ut
+// 1 px utanför skallen med kontur, och svansen läggs om i bildplanet (backTail): hund hänger ner
+// under rumpan (upp när den är glad), katt upp och krokig som ett frågetecken – annars blir en svans
+// som pekar mot kameran bara en prick. Framvyn: bakbenen står 1 px bredare så tassarna syns bakom
+// frambenen; 'eat' framifrån visar hjässan (öron upptill, blundande ögon lågt, nos i nederkant).
+// Felsökning: globalThis.PET_DEBUG_GROUPS = true färgar varje del efter grupp (se tools/pets-sprite-preview.html?dbg=1).
+// Förhandsvisning: node tools/pets-sprite-snap.mjs "mode=grid&species=hund&anim=idle" tools/out/x.png (fler lägen i preview-filen).
 import { SPECIES } from './sprite-data.js';
-import { BW, BH, AX, GY, SP, CP, G, projector, rampOf, newBuf, put, get, grpAt, ell, thick, poly, inkEdge, outline, toCanvas, lum } from './pet-canvas.js';
+import { BW, BH, AX, GY, SP, CP, G, projector, rampOf, newBuf, put, get, grpAt, ell, thick, poly, inkEdge, outline, toCanvas, lum, dropShadow } from './pet-canvas.js';
 import { mix, mul, hash } from '../core/floor-pix.js';
 
 const AGE = { unge: 0, ung: 1, vuxen: 2 };
@@ -18,49 +25,49 @@ const breedIn = (sp, id) => { const S = SPECIES[sp] || SPECIES.katt; return S.br
 // ======================================================================
 //  Mått (pixlar). a = 0 unge, 1 ung, 2 vuxen
 // ======================================================================
-const DOG_SIZE = { xs: 0.62, s: 0.78, m: 0.9, l: 1, xl: 1.07 };
+const DOG_SIZE = { xs: 0.62, s: 0.78, m: 0.9, l: 0.97, xl: 1.0 };
 function dogRig(B, a) {
   const S = DOG_SIZE[B.size] ?? 0.9, HS = S ** 0.62;
-  const kb = [0.56, 0.8, 1][a], kl = [0.6, 0.82, 1][a], kh = [0.8, 0.9, 1][a];
+  const kb = [0.56, 0.8, 1][a], kl = [0.8, 0.88, 1][a], kh = [0.8, 0.9, 1][a];
   const legs = B.legs ?? 1, len = B.len ?? 1, bulk = B.bulk ?? 1;
   return {
     S, legH: 4.0 * S * kl * legs + (a === 0 ? 0.6 : 0),
-    tR: 2.5 * S * kb * bulk, tW: 2.7 * S * kb * bulk,
+    tR: 2.5 * S * kb * bulk, tW: 2.7 * S * [0.7, 0.86, 1][a] * bulk,
     bodyL: 6.6 * S * kb * len,
     hRx: 3.35 * HS * kh, hRy: 3.2 * HS * kh, hW: 3.7 * HS * kh * (B.head ?? 1),
     snL: ({ long: 2.3, mid: 1.7, short: 1.0, flat: 0.3 })[B.snout || 'mid'] * HS * [0.5, 0.78, 1][a],
     snH: 1.45 * HS * kh * (B.snout === 'flat' ? 1.1 : 1),
-    legW: S * [0.8, 0.92, 1][a] >= 0.7 ? 2 : 1,
+    legW: S * [0.8, 0.92, 1][a] >= 0.6 ? 2 : 1, // 2 px ben för alla vuxna (även chihuahua); 1 px bara för de minsta ungarna
     ears: B.ears || 'flop', earL: 2.2 * HS * kh * (B.ears === 'bat' ? 1.3 : 1),
     tail: B.tail || 'whip', tailL: 4.4 * S * [0.5, 0.78, 1][a] * (B.tailK ?? 1),
     eyeBig: a === 0,
   };
 }
 function catRig(B, a) {
-  const S = B.big ? 1.1 : B.slim ? 0.97 : 1, HS = S ** 0.62;
-  const kb = [0.56, 0.8, 1][a], kl = [0.55, 0.8, 1][a], kh = [0.8, 0.9, 1][a];
+  const S = (B.big ? 1.1 : B.slim ? 0.97 : 1) * 0.88, HS = (S / 0.88) ** 0.62 * 0.95;
+  const kb = [0.56, 0.8, 1][a], kl = [0.72, 0.86, 1][a], kh = [0.84, 0.92, 1][a];
   return {
-    S, legH: 2.9 * S * kl * (B.slim ? 1.12 : 1) + (a === 0 ? 0.3 : 0),
-    tR: 2.0 * S * kb * (B.round ? 1.12 : 1), tW: 2.2 * S * kb * (B.round ? 1.15 : 1),
-    bodyL: 4.6 * S * kb * (B.slim ? 1.08 : 1),
-    hRx: 2.25 * HS * kh, hRy: 2.05 * HS * kh, hW: 2.45 * HS * kh * (B.round ? 1.08 : B.slim ? 0.94 : 1),
+    S, legH: 3.5 * S * kl * (B.slim ? 1.1 : 1) + (a === 0 ? 0.4 : 0),
+    tR: 1.9 * S * kb * (B.round ? 1.12 : 1), tW: 2.1 * S * [0.7, 0.86, 1][a] * (B.round ? 1.15 : 1),
+    bodyL: 5.4 * S * kb * (B.slim ? 1.08 : 1),
+    hRx: 2.45 * HS * kh, hRy: 2.25 * HS * kh, hW: 2.75 * HS * kh * (B.round ? 1.08 : B.slim ? 0.94 : 1),
     snL: 0.5 * HS * kh, snH: 1.0 * HS * kh,
     legW: a === 0 ? 1 : 2,
-    ears: 'cat', earL: 1.75 * HS * kh * (B.slim ? 1.15 : B.round ? 0.85 : 1),
-    tail: B.fluff ? 'bushy' : 'cat', tailL: 5.0 * S * [0.5, 0.78, 1][a],
+    ears: 'cat', earL: 1.95 * HS * kh * (B.slim ? 1.15 : B.round ? 0.85 : 1),
+    tail: B.fluff ? 'bushy' : 'cat', tailL: 5.2 * S * [0.5, 0.78, 1][a],
     eyeBig: a === 0,
   };
 }
 function rabbitRig(B, a) {
-  const S = B.round ? 1.05 : 1;
-  const kb = [0.6, 0.82, 1][a], kh = [0.82, 0.92, 1][a];
+  const S = (B.round ? 1.05 : 1) * 0.9;
+  const kb = [0.6, 0.82, 1][a], kh = [0.78, 0.87, 0.95][a];
   return {
     S, legH: 0,
     tR: 2.25 * S * kb, tW: 2.45 * S * kb, bodyL: 2.1 * S * kb,
-    hRx: 1.85 * kh, hRy: 1.7 * kh, hW: 1.95 * kh * (B.round ? 1.08 : 1),
+    hRx: 1.95 * kh, hRy: 1.85 * kh, hW: 2.3 * kh * (B.round ? 1.08 : 1),
     snL: 0.4 * kh, snH: 0.9 * kh,
     legW: 1,
-    ears: B.ears || 'up', earL: (B.ears === 'short' ? 1.7 : B.ears === 'lop' ? 2.6 : 3.0) * kh * [0.78, 0.9, 1][a],
+    ears: B.ears || 'up', earL: (B.ears === 'short' ? 1.6 : B.ears === 'lop' ? 2.5 : 2.7) * kh * [0.9, 0.95, 1][a],
     tail: 'puff', tailL: 1,
     eyeBig: a === 0,
   };
@@ -115,7 +122,7 @@ function quadPose(R, anim, f) {
       const up = s === 1 ? [0, L, L, 0] : s === 3 ? [L, 0, 0, L] : [0, 0, 0, 0];
       stand([A * ph, -A * ph, -A * ph, A * ph], up);
       P.lift = s === 1 || s === 3 ? 1 : 0;
-      P.tail = { up: cat ? 42 : 30, wag: cat ? wagA * 0.35 : wagA * 0.6 };
+      P.tail = { up: cat ? 30 : 30, wag: cat ? wagA * 0.35 : wagA * 0.6 };
       break;
     }
     case 'run': {
@@ -135,18 +142,20 @@ function quadPose(R, anim, f) {
     }
     case 'sit': case 'love': case 'beg': {
       const beg = anim === 'beg' && !cat;
-      P.hip = [-bodyL * 0.22, tR * 0.95];
-      P.sh = beg ? [P.hip[0] + tR * 0.25, P.hip[1] + bodyL * 0.72 + tR * 0.5] : [bodyL * (cat ? 0.12 : 0.18), legH + tR * (cat ? 1.25 : 1.1)];
-      const fu = P.sh[0] + (cat ? 0.35 : 0.45);
+      P.sit = true;
+      P.hip = [-bodyL * 0.24, tR * 1.0];
+      P.sh = beg ? [P.hip[0] + tR * 0.2, P.hip[1] + bodyL * 0.62 + tR * 0.6] : [bodyL * (cat ? 0.0 : 0.04), legH + tR * (cat ? 1.25 : 1.12)];
+      const fu = P.sh[0] + tR * (cat ? 0.55 : 0.7);
+      const topF = [P.sh[0] + tR * (cat ? 0.35 : 0.45), P.sh[1] - tR * 0.25];
       P.legs = [
-        beg ? { front: true, v: sp * 0.9, kind: 'up', alt: f.alt } : { front: true, v: sp * (cat ? 0.7 : 0.85), paw: [fu, 0], kind: 'stand' },
-        beg ? { front: true, v: -sp * 0.9, kind: 'up', alt: 1 - f.alt } : { front: true, v: -sp * (cat ? 0.7 : 0.85), paw: [fu, 0], kind: 'stand' },
-        { front: false, v: sp * 1.2, kind: 'sit', paw: [P.hip[0] + tR * 1.05, 0] },
-        { front: false, v: -sp * 1.2, kind: 'sit', paw: [P.hip[0] + tR * 1.05, 0] },
+        beg ? { front: true, v: sp * 0.9, kind: 'up', alt: f.alt } : { front: true, v: sp * (cat ? 0.7 : 0.85), paw: [fu, 0], top: topF, kind: 'stand' },
+        beg ? { front: true, v: -sp * 0.9, kind: 'up', alt: 1 - f.alt } : { front: true, v: -sp * (cat ? 0.7 : 0.85), paw: [fu, 0], top: topF, kind: 'stand' },
+        { front: false, v: sp * 1.2, kind: 'sit', paw: [P.hip[0] + tR * 1.25, 0] },
+        { front: false, v: -sp * 1.2, kind: 'sit', paw: [P.hip[0] + tR * 1.25, 0] },
       ];
-      P.head = beg ? [P.sh[0] + hRx * 0.35, P.sh[1] + tR * 0.35 + hRy * 0.85]
-        : cat ? [P.sh[0] + tR * 0.3 + hRx * 0.2, P.sh[1] + tR * 0.35 + hRy * 0.72] : [P.sh[0] + tR * 0.45 + hRx * 0.3, P.sh[1] + tR * 0.45 + hRy * 0.78];
-      P.tail = cat ? { lie: true, wrap: 1, wag: wagA * 0.2 } : { lie: true, wag: wagA * 0.8 };
+      P.head = beg ? [P.sh[0] + tR * 0.25 + hRx * 0.3, P.sh[1] + tR * 0.4 + hRy * 0.72]
+        : cat ? [P.sh[0] + tR * 0.5 + hRx * 0.3, P.sh[1] + tR * 0.4 + hRy * 0.62] : [P.sh[0] + tR * 0.6 + hRx * 0.42, P.sh[1] + tR * 0.45 + hRy * 0.62];
+      P.tail = cat ? { lie: true, wrap: 1, wag: wagA * 0.2 } : { lie: true, wrap: 0.6, wag: wagA * 0.8 };
       P.breath = f.breath ? 1 : 0;
       if (anim === 'love') { P.eyes = 'happy'; P.blush = true; P.tilt = 1; }
       if (anim === 'beg') { P.hp = 16; P.mouth = cat ? (f.alt ? 'meow' : 'closed') : 'tongue'; P.eyes = f.blink ? 'closed' : 'big'; if (cat) P.legs[0] = { front: true, v: sp * 0.7, kind: 'up', alt: f.alt }; }
@@ -202,6 +211,7 @@ function quadPose(R, anim, f) {
     case 'poop': case 'pee': {
       const lift = anim === 'pee' && !cat && R.sex === 'hane';
       stand();
+      if (anim === 'pee') P.stream = { lift, alt: f.alt };
       if (lift) {
         P.legs[3] = { front: false, v: -sp, kind: 'lift' }; // närmaste bakbenet lyfts (sidovy: mot kameran)
         P.tail = { up: 40, wag: 0 };
@@ -240,7 +250,7 @@ function quadPose(R, anim, f) {
     default: { // idle
       stand();
       P.breath = f.breath ? 1 : 0;
-      P.tail = { up: cat ? 55 : 26, wag: cat ? wagA * 0.3 : wagA * 0.45 };
+      P.tail = { up: cat ? 22 : 26, wag: cat ? wagA * 0.3 : wagA * 0.45 };
       P.look = f.look || 0;
     }
   }
@@ -511,7 +521,7 @@ const EYE_DK = 0x18121a, GLINT = 0xfcfaff;
 function eyeAt(B, x, y, R, st, iris, fur, mirror) {
   // x = ögats vänstra kolumn, y = översta raden. mirror: glansen på andra sidan
   const lid = mix(rampOf(fur)[3], EYE_DK, 0.45);
-  const big = R.eyeBig || st === 'big';
+  const big = R.eyeBig;
   if (st === 'closed' || st === 'squint') {
     const w = big ? 2 : 1;
     const yy = y + (big ? 1 : 1);
@@ -521,25 +531,25 @@ function eyeAt(B, x, y, R, st, iris, fur, mirror) {
   }
   if (st === 'happy') {
     // ^ – en liten båge
-    if (big) { put(B, x, y + 1, lid, G.face); put(B, x + 1, y, lid, G.face); put(B, x + 2, y + 1, lid, G.face); }
-    else { put(B, x, y, lid, G.face); put(B, x - 1, y + 1, lid, G.face); put(B, x + 1, y + 1, lid, G.face); }
+    const soft = mix(lid, fur, 0.45);
+    if (big) { put(B, x, y + 1, lid, G.face); put(B, x + 1, y, lid, G.face); put(B, x + 2, y + 1, soft, G.face); }
+    else { put(B, x, y, lid, G.face); put(B, x - 1, y + 1, soft, G.face); put(B, x + 1, y + 1, soft, G.face); }
     return;
   }
   const down = st === 'down';
   if (big) {
-    // 2×2: glans uppe mot ljuset, iris nere
-    const gx = mirror ? x + 1 : x;
-    put(B, x, y, EYE_DK, G.face); put(B, x + 1, y, EYE_DK, G.face);
-    put(B, x, y + 1, iris != null ? mix(iris, EYE_DK, 0.35) : EYE_DK, G.face); put(B, x + 1, y + 1, iris != null ? mix(iris, EYE_DK, 0.35) : EYE_DK, G.face);
-    if (!down) put(B, gx, y, GLINT, G.face);
+    // ungar: 2×2 blanka svarta ögon med glans uppe till vänster
+    put(B, x, y, down ? EYE_DK : GLINT, G.face); put(B, x + 1, y, EYE_DK, G.face);
+    put(B, x, y + 1, EYE_DK, G.face); put(B, x + 1, y + 1, iris != null ? mix(iris, EYE_DK, 0.55) : EYE_DK, G.face);
     return;
   }
-  // 1×2
+  // 1×2 (st 'big' = glittrande)
+  const sparkle = st === 'big';
   if (iris != null) {
-    put(B, x, y, down ? mix(iris, EYE_DK, 0.5) : mix(iris, GLINT, 0.18), G.face);
+    put(B, x, y, down ? mix(iris, EYE_DK, 0.5) : sparkle ? mix(iris, GLINT, 0.55) : mix(iris, GLINT, 0.15), G.face);
     put(B, x, y + 1, EYE_DK, G.face);
   } else {
-    put(B, x, y, down ? EYE_DK : mix(EYE_DK, GLINT, 0.28), G.face);
+    put(B, x, y, down ? EYE_DK : mix(EYE_DK, GLINT, sparkle ? 0.75 : 0.28), G.face);
     put(B, x, y + 1, EYE_DK, G.face);
   }
 }
@@ -554,9 +564,10 @@ export function paintPet(pet, anim, dir, f) {
     // fram/bak: kortare kropp (annars blir djuren höga pinnar), bredare kropp och större huvud
     const rab = R.sp === 'kanin';
     R.bodyL *= rab ? 0.85 : view === 'front' ? 0.7 : 0.5;
-    R.tW *= rab ? 1.08 : 1.18; R.hW *= rab ? 1.05 : 1.1;
+    R.tW *= rab ? 1.22 : view === 'front' ? 1.24 : 1.18; R.hW *= rab ? 1.12 : 1.08;
+    if (rab) { R.tW = Math.max(R.tW, 1.7); R.hW = Math.max(R.hW, 2.1); } // kaninungar: minst 3–4 px breda så öron och kropp läses
     R.sp2 = R.tW * 0.52;
-    R.tailL *= 0.85;
+    if (view === 'front') R.tailL *= 0.85; // bakifrån syns svansen i hela sin längd
   }
   const B = newBuf();
   const coat = coatOf(R, view);
@@ -564,6 +575,7 @@ export function paintPet(pet, anim, dir, f) {
   if (R.sp === 'kanin') { P = rabbitPose(R, anim, f); info = drawRabbit(B, R, P, view, coat); }
   else { P = quadPose(R, anim, f); info = drawQuad(B, R, P, view, coat); }
   if (R.fluff || R.curly) fringe(B, R);
+  if (globalThis.PET_DEBUG_GROUPS) { const pal = [0, 0xff0000, 0x00ff00, 0x0000ff, 0xffff00, 0xff00ff, 0x00ffff, 0xff8800, 0x8800ff, 0x008888, 0x888800, 0x880088, 0x448844, 0x444488, 0x884444]; for (let k = 0; k < B.col.length; k++) if (B.col[k] >= 0) B.col[k] = pal[B.grp[k]] ?? 0xffffff; }
   outline(B);
   const spr = toCanvas(B, dir === 'left');
   const flipX = (x) => (dir === 'left' ? -x : x);
@@ -632,7 +644,7 @@ function drawQuad(B, R, P, view, coat) {
     });
   } else {
     const fb = !side;
-    add(zOf(hip3), () => ell(B, H2[0], H2[1], fb ? tW * 0.98 : tR * 1.0, fb ? tR * 0.9 : tR * (1.0 + breath * 0.1), 0, M('rump'), { g: G.body, ink: back ? false : undefined }));
+    add(zOf(hip3), () => ell(B, H2[0], H2[1], fb ? tW * (back ? 1.08 : 0.98) : tR * 1.0, fb ? tR * (back ? 1.0 : 0.9) : tR * (1.0 + breath * 0.1), 0, M('rump'), { g: G.body }));
     const mid3 = [(hip3[0] + sh3[0]) / 2, 0, (hip3[2] + sh3[2]) / 2 + (P.arch || 0)];
     const Mid = Pt(...mid3);
     add(zOf(mid3), () => {
@@ -641,12 +653,16 @@ function drawQuad(B, R, P, view, coat) {
     });
     add(zOf(sh3) - (front ? 0.01 : 0), () => {
       const S = Pt(sh3[0] + 0.15, 0, sh3[2]);
-      ell(B, S[0], S[1] + (fb ? 0 : tR * 0.12), fb ? tW * 1.0 : tR * 1.08, fb ? tR * 0.95 : tR * (1.14 + breath * 0.1), 0, M('chest'), { g: G.body });
+      if (front) ell(B, S[0], S[1] + tR * 0.3, tW * 1.02, tR * (P.sit ? 1.3 : 1.2), 0, M('chest'), { g: G.body });
+      else ell(B, S[0], S[1] + (fb ? 0 : tR * 0.12), fb ? tW * 1.0 : tR * 1.08, fb ? tR * 0.95 : tR * (1.14 + breath * 0.1), 0, M('chest'), { g: G.body, ink: back ? 'up' : false });
     });
   }
 
   // ---------- huvud ----------
-  const hc3 = [P.head[0], 0, P.head[1] - (back && !P.sleep ? R.hRy * 0.45 : 0)];
+  // bakifrån: huvudet sitter ovanför bogen (inte nersänkt i kroppen) så att nacke och öron syns;
+  // äter det, tittar det ner framför kroppen och bara hjässan + öronen sticker upp över ryggen
+  const hc3 = [P.head[0] - (back && !P.sleep ? R.hRx * (P.eat ? -0.3 : 0.3) : 0), 0, P.head[1] - (back && !P.sleep ? R.hRy * (P.eat ? -0.35 : 0.42) : 0)];
+  if (front && !P.sleep && !P.eat) { hc3[0] = sh3[0] + (hc3[0] - sh3[0]) * 0.5; hc3[2] += tR * 0.4; }
   const HC = Pt(...hc3);
   // hals (sidovy och bakifrån)
   const neck3 = [(sh3[0] + hc3[0]) / 2 + tR * 0.1, 0, (sh3[2] + hc3[2]) / 2 + (P.sleep ? 0 : tR * 0.1)];
@@ -654,7 +670,7 @@ function drawQuad(B, R, P, view, coat) {
   if (!P.sleep && (side || back)) {
     add(side ? -0.05 : zOf(neck3), () => {
       const dx = HC[0] - S2[0], dy = HC[1] - S2[1];
-      ell(B, NK[0], NK[1], Math.max(tR * 0.75, Math.hypot(dx, dy) * 0.45), tR * (cat ? 0.68 : 0.72), side ? Math.atan2(dy, dx) : Math.PI / 2, M('neck'), { g: G.body });
+      ell(B, NK[0], NK[1], Math.max(tR * 0.75, Math.hypot(dx, dy) * 0.45), tR * (cat ? 0.68 : 0.72), side ? Math.atan2(dy, dx) : Math.PI / 2, M('neck'), { g: G.body, ink: back ? 'up' : false });
     });
   }
   add(side ? -0.2 : zOf(hc3) - (back ? 0 : 0.5), () => drawHead(B, R, P, view, HC, coat));
@@ -662,7 +678,8 @@ function drawQuad(B, R, P, view, coat) {
   // ---------- ben ----------
   P.legs.forEach((lg) => {
     const base = lg.front ? sh3 : hip3;
-    const v = lg.v;
+    // fram/bak: bakbenen står lite bredare så att tassarna sticker ut 1 px bredvid frambenen
+    const v = !side && !lg.front && lg.kind === 'stand' ? lg.v + Math.sign(lg.v) * 0.95 : lg.v;
     const far = side && v > 0;
     const shade = far ? 1 : 0;
     const z = pr(base[0], v, 0)[2] + (side ? 0 : 1.2) + (lg.front ? 0 : 0.01);
@@ -687,19 +704,20 @@ function drawQuad(B, R, P, view, coat) {
     if (lg.kind === 'up') {
       // framtass i luften (tigga / slå)
       add(z - (side ? 0 : 1.5), () => {
-        const top = Pt(sh3[0] + 0.2, v, sh3[2] - tR * 0.2);
-        const lift = lg.alt ? 0.8 : 0;
-        const elbow = Pt(sh3[0] + tR * 0.6 + (lg.swipe ? 0.8 : 0), v, sh3[2] - tR * 0.45 + lift);
-        const paw = Pt(sh3[0] + tR * 0.9 + (lg.swipe ? 1.4 : 0.2), v, sh3[2] - tR * 0.2 + lift + (lg.swipe ? 1.2 : 0));
+        const top = Pt(sh3[0] + tR * 0.3, v, sh3[2] - tR * 0.1);
+        const lift = lg.alt ? 0.9 : 0;
+        const elbow = Pt(sh3[0] + tR * 1.0 + (lg.swipe ? 0.8 : 0), v, sh3[2] - tR * 0.55 + lift);
+        const paw = Pt(sh3[0] + tR * 1.3 + (lg.swipe ? 1.4 : 0), v, sh3[2] - tR * 0.05 + lift + (lg.swipe ? 1.2 : 0));
         thick(B, [top, elbow, paw], r, legMat('leg'), { g: G.leg, far: shade, leg: true });
         ell(B, paw[0], paw[1], 0.75, 0.65, 0, (i, j) => coat('paw', { t: 1 }, i, j), { g: G.paw, far: shade });
       });
       return;
     }
+    const fo = side && far ? (lg.front ? -0.9 : 0.9) : 0; // bortre benen lite förskjutna så att alla fyra syns
     if (lg.front) {
       add(z, () => {
-        const top = Pt(sh3[0] + 0.15, v, sh3[2] - tR * 0.35);
-        const paw = Pt(lg.paw[0], v, lg.paw[1], false);
+        const top = lg.top ? Pt(lg.top[0] + fo * 0.5, v, lg.top[1]) : Pt(sh3[0] + 0.15 + fo * 0.5, v, sh3[2] - tR * 0.35);
+        const paw = Pt(lg.paw[0] + fo, v, lg.paw[1], false);
         const mid = [(top[0] + paw[0]) / 2 + (side ? 0.15 : 0), (top[1] + paw[1]) / 2];
         thick(B, [top, mid, [paw[0], paw[1] - 0.5]], r, legMat('leg'), { g: G.leg, far: shade, leg: true });
         pawAt(B, paw, W, side, far, coat, lg.paw[1] > 0.3);
@@ -716,7 +734,7 @@ function drawQuad(B, R, P, view, coat) {
         if (side) thick(B, [hock, [paw[0] - 0.5, paw[1] - 0.5]], r, legMat('leg', 0.5), { g: G.leg, far: shade, leg: true });
         else thick(B, [[T[0], T[1] + tR * 0.3], [paw[0], paw[1] - 0.5]], r, legMat('leg', 0.3), { g: G.leg, far: 0, leg: true });
         pawAt(B, paw, W, side, far, coat, false, lg.kind === 'sit' ? 1.3 : 1);
-        if (side) ell(B, T[0], T[1], tR * (lg.kind === 'sit' ? 1.0 : 0.85), tR * (lg.kind === 'sit' ? 0.9 : 0.95), 0, M('thigh'), { g: G.thigh, far: shade });
+        if (side) ell(B, T[0], T[1], tR * (lg.kind === 'sit' ? 1.05 : 0.85), tR * (lg.kind === 'sit' ? 0.95 : 0.95), 0, M('thigh'), { g: G.thigh, far: shade, ink: far ? false : 'side' });
         else ell(B, T[0], T[1], tR * 0.6, tR * 0.85, 0, M('thigh'), { g: G.thigh });
       });
       return;
@@ -724,24 +742,24 @@ function drawQuad(B, R, P, view, coat) {
     if (lg.kind === 'lift') {
       add(z, () => {
         const T = Pt(hip3[0] + 0.1, v * 1.1, hip3[2] - tR * 0.25);
-        const knee = Pt(hip3[0] - tR * 0.1, v * 2.2, legH * 0.85 + 0.6);
-        const paw = Pt(hip3[0] - tR * 0.7, v * 2.6, legH * 0.9 + 0.9);
+        const knee = Pt(hip3[0] + 0.3, v * 1.7, legH * 0.9 + 0.5);
+        const paw = Pt(hip3[0] - tR * 0.9, v * 2.0, legH * 1.05 + 0.7);
         thick(B, [T, knee, paw], r, legMat('leg'), { g: G.leg, far: shade, leg: true });
         ell(B, T[0], T[1], tR * 0.7, tR * 0.85, 0, M('thigh'), { g: G.thigh, far: shade });
       });
       return;
     }
     add(z, () => {
-      const T = Pt(hip3[0] + 0.15, v * 1.02, hip3[2] - tR * 0.28);
-      const paw = Pt(lg.paw[0], v, lg.paw[1], false);
+      const T = Pt(hip3[0] + 0.15 + fo * 0.5, v * 1.02, hip3[2] - tR * 0.28);
+      const paw = Pt(lg.paw[0] + fo, v, lg.paw[1], false);
       const hockW = Math.max(lg.paw[1] + legH * 0.36, legH * 0.36);
-      const hock = Pt(lg.paw[0] - (cat ? 0.55 : 0.45) - (side ? 0.1 : 0), v, hockW, false);
+      const hock = Pt(lg.paw[0] + fo - (cat ? 0.55 : 0.45) - (side ? 0.1 : 0), v, hockW, false);
       hock[1] -= Math.min(L, 1);
-      const knee = Pt(hip3[0] + 0.2, v, hip3[2] - tR * 0.75);
+      const knee = Pt(hip3[0] + 0.2 + fo * 0.5, v, hip3[2] - tR * 0.75);
       if (side) thick(B, [knee, hock, [paw[0], paw[1] - 0.5]], r, legMat('leg', 0.3), { g: G.leg, far: shade, leg: true });
       else thick(B, [[T[0], T[1]], [paw[0], paw[1] - 0.5]], r, legMat('leg', 0.3), { g: G.leg, far: 0, leg: true });
       pawAt(B, paw, W, side, far, coat, lg.paw[1] > 0.3);
-      if (side) ell(B, T[0], T[1] + 0.2, tR * 0.72, tR * 0.92, 0, M('thigh'), { g: G.thigh, far: shade });
+      if (side) ell(B, T[0], T[1] + 0.2, tR * 0.72, tR * 0.92, 0, M('thigh'), { g: G.thigh, far: shade, ink: far ? false : 'side' });
       else ell(B, T[0], T[1], tR * 0.55, tR * 0.8, 0, M('thigh'), { g: G.thigh });
     });
   });
@@ -750,26 +768,73 @@ function drawQuad(B, R, P, view, coat) {
   const tp = tailPts(R, P, hip3);
   if (front && !P.tail.lie) {
     // framifrån syns svansen bara när den viftar ut åt sidan bakom kroppen
-    const b = tp.base, bias = (P.tail.wag || 0) >= 0 ? 1 : -1;
-    tp.pts = tp.pts.map((p, k) => { const t = k / (tp.pts.length - 1); return [b[0] + (p[0] - b[0]) * 0.8, p[1] + bias * t * R.tailL * 0.35 - (P.tail.wag || 0) * t * R.tailL * 0.3, b[2] + (p[2] - b[2]) * 0.55]; });
+    const b = tp.base, wg = P.tail.wag || 0;
+    tp.pts = tp.pts.map((p, k) => { const t = k / (tp.pts.length - 1); return [b[0] + (p[0] - b[0]) * 0.8, -wg * t * R.tailL * 0.9, b[2] + (p[2] - b[2]) * 0.5]; });
   }
+  if (back && !P.tail.lie) backTail(R, P, tp, cat, tR);
   const TP = tp.pts.map((p) => Pt(...p));
   const tailZ = side ? (P.tail.lie ? -0.02 : (R.tail === 'curl' ? -0.01 : 0.6)) : zOf(tp.pts[Math.min(2, tp.pts.length - 1)]) + (front ? 0.5 : -0.5);
-  add(tailZ, () => drawTail(B, R, P, view, TP, coat));
+  const hideTail = front && !P.tail.lie && R.tail !== 'curl' && ((P.tail.up ?? 30) < 45 || Math.abs(P.tail.wag || 0) < 0.3);
+  if (!hideTail) add(tailZ, () => drawTail(B, R, P, view, TP, coat));
 
   parts.sort((a, b) => b.z - a.z);
   for (const p of parts) p.fn();
+  if (P.stream) {
+    // en liten gul stråle ner mot golvet
+    const st = P.stream;
+    const a = Pt(hip3[0] + (st.lift ? -0.2 : tR * 0.35), st.lift ? -R.sp2 * 0.6 : 0, st.lift ? legH * 0.55 : Math.max(0.8, hip3[2] - tR * 0.9), false);
+    const b = Pt(hip3[0] + (st.lift ? -0.6 : tR * 0.3), st.lift ? -R.sp2 * 1.3 : 0, 0, false);
+    const n = Math.max(1, Math.round(Math.abs(b[1] - a[1])));
+    for (let k = 0; k <= n; k++) {
+      const x = Math.floor(a[0] + (b[0] - a[0]) * k / n), y = Math.floor(a[1] + (b[1] - a[1]) * k / n);
+      if ((k + st.alt) % 3 === 2) continue;
+      put(B, x, y, k % 2 ? 0xf0d050 : 0xfff0a0, G.fx);
+    }
+  }
   return { neck: side ? Pt(sh3[0] + tR * 0.5, 0, sh3[2] + tR * 0.55) : front ? [HC[0], HC[1] + R.hRy * 0.8] : Pt(neck3[0], 0, neck3[2]) };
 }
 
+// Svansen sedd bakifrån: en svans som pekar mot kameran blir bara en prick, så här läggs den
+// om i bildplanet – hund: hänger ner under rumpan (eller upp när den är glad), katt: upp och
+// böjd åt sidan som ett frågetecken. Viftningen (wag) svänger spetsen i sidled.
+function backTail(R, P, tp, cat, tR) {
+  const kind = R.tail;
+  const wg = P.tail.wag || 0, up = P.tail.up ?? 30, n = tp.pts.length, Lt = R.tailL * (cat && R.age === 0 ? 1.3 : 1); // kattungar: annars försvinner den korta svansen i kroppen
+  const b = tp.base, root = [b[0] + tR * 0.15, 0, b[2] + tR * 0.3]; // roten högt på rumpan, lite inåt
+  if (kind === 'bob') { tp.pts = [root, [root[0] - 0.4, wg * 0.6, root[2] + 0.9]]; tp.base = root; return; }
+  if (kind === 'curl') return; // ringlar sig över ryggen – syns redan
+  const pts = [];
+  if (cat) {
+    // nästan rakt upp från roten, kroken åt sidan först mot spetsen (frågetecken)
+    const tilt0 = (5 + clamp01((60 - up) / 60) * 14) * (wg < -0.05 ? -1 : 1), bend = P.tail.quiver ? 6 : 52;
+    let u = root[0], v = 0, w = root[2]; const step = Lt / (n - 1);
+    pts.push([u, v, w]);
+    for (let i = 1; i < n; i++) {
+      const t = i / (n - 1), a = (tilt0 + Math.sign(tilt0) * bend * t * t) * D2R;
+      v += Math.sin(a) * step; w += Math.cos(a) * step; u -= step * 0.1;
+      pts.push([u, v + wg * t * Lt * 0.3, w]);
+    }
+  } else {
+    const upDir = up >= 45;
+    // hängande: spetsen ska nå minst ~1 px under rumpans nederkant (korta ben: tax/corgi), men aldrig under golvet
+    const hang = Math.max(Lt * 0.95, root[2] - (P.hip[1] - tR) + 1.0);
+    for (let i = 0; i < n; i++) {
+      const t = i / (n - 1);
+      if (upDir) pts.push([root[0] + t * 0.2, wg * t * t * Lt * 0.75, root[2] + t * Lt * 0.9]);
+      else pts.push([root[0] - t * Lt * 0.18, wg * t * t * Lt * 0.7 + t * t * Lt * 0.22, Math.max(0.45, root[2] - t * hang)]);
+    }
+  }
+  tp.pts = pts; tp.base = root;
+}
+
 function pawAt(B, P2, W, side, far, coat, lifted, len = 1) {
-  const x = Math.floor(P2[0] - W / 2 + 0.5 + (side ? 0 : 0)), y = Math.floor(P2[1] - 0.5 + 0.5);
+  const x = Math.floor(P2[0] - W / 2 + 0.5), y = Math.floor(P2[1]);
   const c = coat('paw', { t: 1 }, x, y);
   const R = rampOf(c);
   const col = far ? R[2] : R[1];
-  const w = side ? W + (lifted ? 0 : Math.round(len)) : W;
-  for (let q = 0; q < w; q++) put(B, x + q, y, q === 0 && !far ? R[1] : col, G.paw);
-  if (!far && side && !lifted) put(B, x + w - 1, y, R[far ? 2 : 1], G.paw);
+  // sidovy: närmre tassar får en tå framåt (sitt: längre), bortre bara benets bredd
+  const w = side && !far && !lifted ? W + Math.max(1, Math.round(len)) - (W > 1 ? 1 : 0) : W;
+  for (let q = 0; q < w; q++) put(B, x + q, y, col, G.paw);
 }
 
 // svansen som en kedja punkter från roten (modellkoordinater)
@@ -782,7 +847,7 @@ function tailPts(R, P, hip) {
   if (T.lie) {
     for (let i = 0; i < n; i++) {
       const t = i / (n - 1);
-      const a = (T.wrap ? 160 : 55) * D2R * t;
+      const a = (T.wrap ? 100 + 60 * T.wrap : 55) * D2R * t;
       const r = Lt * (T.wrap ? 0.55 : 0.8);
       pts.push([base[0] - Math.sin(a) * r * 0.9 * (T.wrap ? 1 : 1.2) + (T.wrap ? t * t * tR * 0.9 : 0), -(1 - Math.cos(a)) * r * 0.9 - wag * t * 1.2, Math.max(0.45, base[2] * (1 - t * 2.4))]);
     }
@@ -798,17 +863,22 @@ function tailPts(R, P, hip) {
     return { pts, base };
   }
   if (kind === 'bob') { pts.push(base, [base[0] - 0.9, wag * 0.5, base[2] + 0.7]); return { pts, base }; }
-  const upA = (T.up ?? 30) * D2R;
-  for (let i = 0; i < n; i++) {
+  // "sköldpaddsgång": startriktning a0 (grader över vågrätt bakåt) och total böjning längs svansen
+  const up = T.up ?? 30;
+  let a0 = up, turn = 0;
+  if (kind === 'cat' || kind === 'bushy') { if (T.quiver) { a0 = up; turn = 0; } else if (up >= 80) { a0 = 78; turn = 55; } else { a0 = Math.max(0, up - 18); turn = 62; } }
+  else if (kind === 'brush' || kind === 'plume') { a0 = up > 45 ? up * 0.8 : up * 0.45; turn = up > 45 ? 10 : -48; }
+  else if (kind === 'otter') { a0 = up * 0.6; turn = -18; }
+  else if (kind === 'whip' || kind === 'pom') { a0 = up; turn = 24; }
+  const step = Lt / (n - 1);
+  let x = base[0], z = base[2], s = 0;
+  pts.push([x, 0, z]);
+  for (let i = 1; i < n; i++) {
     const t = i / (n - 1);
-    let a = upA;
-    if (kind === 'brush' || kind === 'plume') a = upA * 0.45 - 40 * D2R * t + (T.up > 45 ? 40 * D2R * t : 0);
-    if (kind === 'otter') a = upA * 0.6 - 18 * D2R * t;
-    if (kind === 'cat' || kind === 'bushy') a = upA + (T.quiver ? 0 : 38 * D2R * t * t);
-    if (kind === 'whip' || kind === 'pom') a = upA + 20 * D2R * t;
-    const r = Lt * t;
-    const bk = Math.cos(a) * r, rise = Math.sin(a) * r;
-    pts.push([base[0] - bk, -wag * r * 0.75, base[2] + rise]);
+    const a = (a0 + turn * (t - 0.5 / (n - 1))) * D2R;
+    x -= Math.cos(a) * step; z += Math.sin(a) * step; s += step;
+    const bend = (kind === 'cat' || kind === 'bushy') ? t * t * Lt * 0.28 : 0; // katter håller svansen lite åt sidan
+    pts.push([x, -wag * s * 0.75 - bend, Math.max(0.4, z)]);
   }
   if (T.quiver) { const l = pts[n - 1]; pts[n - 1] = [l[0] - 0.7, l[1], l[2] - 0.2]; }
   return { pts, base };
@@ -819,15 +889,17 @@ function drawTail(B, R, P, view, TP, coat) {
   const g = view === 'back' ? G.tailNear : G.tail;
   const sc = [0.7, 0.86, 1][R.age] * Math.sqrt(R.S || 1);
   const mat = (i, j, t) => coat('tail', { t }, i, j);
-  const ink = view === 'back' ? true : false;
-  if (kind === 'bob') { ell(B, TP[1][0], TP[1][1], 0.9 * sc + 0.3, 0.8 * sc + 0.3, 0, (i, j) => coat('tail', { t: 0.5 }, i, j), { g, ink }); return; }
+  const ink = view === 'back' ? (P.tail.lie ? true : 'right') : false; // bakifrån: belyst vänsterkant, mörk högerkant
+  if (kind === 'bob') { ell(B, TP[1][0], TP[1][1], 0.9 * sc + 0.3, 0.8 * sc + 0.3, 0, (i, j) => coat('tail', { t: 0.5 }, i, j), { g, ink: view === 'back' ? 'down' : false, bright: view === 'back' ? 0.25 : 0 }); return; }
   const prof = {
     plume: (t) => (1.15 - t * 0.35) * sc, brush: (t) => (1.1 - t * 0.2) * sc, bushy: (t) => (1.05 + t * 0.1) * sc,
     curl: (t) => (1.0 - t * 0.2) * sc, otter: (t) => (1.05 - t * 0.6) * sc,
-    cat: (t) => (R.age === 0 ? 0.5 : 0.95 - t * 0.35), whip: (t) => (R.S >= 0.85 && R.age > 0 ? 0.95 - t * 0.45 : 0.5), pom: () => 0.5,
+    cat: (t) => (R.age === 0 ? 0.5 : R.age === 1 ? 0.55 : 0.78 - t * 0.25),
+    whip: (t) => Math.max(0.5, (R.age > 0 ? 0.55 + 0.42 * R.S : 0.5) - t * 0.45), // 2 px vid roten även för små hundar → ingen 1-px-trappa
+    pom: () => 0.5,
   }[kind] || (() => 0.6);
-  thick(B, TP, prof, mat, { g, ink });
-  if (kind === 'pom') { const e = TP[TP.length - 1]; ell(B, e[0], e[1], 1.3, 1.2, 0, (i, j) => coat('tail', { t: 1 }, i, j), { g, ink: true }); }
+  thick(B, TP, prof, mat, { g, ink, bright: view === 'back' && !P.tail.lie ? 0.2 : 0 });
+  if (kind === 'pom') { const e = TP[TP.length - 1]; ell(B, e[0], e[1], 1.3, 1.2, 0, (i, j) => coat('tail', { t: 1 }, i, j), { g, ink: view === 'back' ? 'right' : true }); }
 }
 
 // ---------- huvudet (alla vyer) ----------
@@ -847,13 +919,14 @@ function drawHead(B, R, P, view, HC, coat) {
   const E = R.earL * (P.ears === 'back' ? 0.75 : 1);
   if (!rab) {
     if (side) earSide(B, R, P, cx, cy, rx, ry, E, coat, true);
-    else if (front && (R.ears === 'cat' || R.ears === 'up' || R.ears === 'bat')) earsUpFB(B, R, P, cx, cy, rx, ry, E, coat, true);
+    else if (front && (R.ears === 'cat' || R.ears === 'up' || R.ears === 'bat')) earsUpFB(B, R, P, cx, cy, rx, ry, E, coat, true, !eatDown); // ner i skålen: öronens baksida syns, inget rosa
   } else {
     rabbitEars(B, R, P, view, cx, cy, rx, ry, coat, true);
   }
 
   // --- skalle ---
-  ell(B, cx, cy, rx, ry, 0, hq('head'), { g: G.head, ink: front ? 'down' : false });
+  const headMask = ell(B, cx, cy, rx, ry, 0, hq('head'), { g: G.head, ink: back ? false : front && !rab ? true : 'down' });
+  if (!back) dropShadow(B, headMask, G.head, 1, 0.82);
   if (cat && !side && R.age > 0) ell(B, cx, cy + ry * 0.32, rx * 1.1, ry * 0.62, 0, hq('head'), { g: G.head, clip: (i, j) => j + 0.5 > cy });
   if (cat && R.fluff >= 2 && !back) ell(B, cx - (side ? rx * 0.35 : 0), cy + ry * 0.62, side ? rx * 0.75 : rx * 0.95, ry * 0.5, 0, hq('ruff'), { g: G.head });
   if (rab && R.fluff >= 2) {
@@ -889,7 +962,7 @@ function drawHead(B, R, P, view, HC, coat) {
     }
     // öga
     const ex = Math.floor(cx + rx * (dog ? 0.3 : 0.36) - (R.eyeBig ? 0.5 : 0)), ey = Math.floor(cy - ry * (dog ? 0.28 : 0.22) - (R.eyeBig ? 0.5 : 0) + (P.eat ? 0.5 : 0));
-    eyeAt(B, ex, ey, R, P.eyes === 'big' ? 'open' : P.eyes, cat || rab || C.eye != null ? iris : null, fur, false);
+    eyeAt(B, ex, ey, R, P.eyes, cat || rab || C.eye != null ? iris : null, fur, false);
     if (P.blush) put(B, ex, ey + 2 + (R.eyeBig ? 1 : 0), mix(rampOf(fur)[1], 0xf06080, 0.5), G.face);
     if (cat && R.age > 0 && !P.eat) { const wy = Math.floor(cy + ry * 0.3); put(B, Math.floor(cx + rx + 0.4), wy + 1, 0xe8e4dc, G.face); }
     // öra framför
@@ -897,12 +970,23 @@ function drawHead(B, R, P, view, HC, coat) {
   } else if (front) {
     const c = Math.floor(cx); // mittkolumnen
     if (eatDown) {
-      // tittar ner i skålen: ser pannan, nosen skymd
-      const ey = Math.floor(cy + ry * 0.2);
-      const k = Math.max(1, Math.round(rx * 0.45));
-      eyeAt(B, c - k - (R.eyeBig ? 1 : 0), ey, R, 'closed', iris, fur, false);
-      eyeAt(B, c + k, ey, R, 'closed', iris, fur, true);
-      if (dog) ell(B, cx, cy + ry * 0.85, R.snH * 0.9 + 0.3, R.snH * 0.5, 0, hq('snout'), { g: G.snout, ink: 'down' });
+      // tittar ner i skålen: hjässan mot kameran – öronen högst upp, blundande ögon långt ner,
+      // nosen/nosparti i nederkanten (skålen ritas av lagret framför)
+      const ey = Math.floor(cy + ry * 0.3);
+      const k = Math.max(1, Math.round(rx * 0.48));
+      const lid = mix(rampOf(fur)[3], EYE_DK, 0.5);
+      put(B, c - k - 1, ey, lid, G.face); put(B, c - k, ey, lid, G.face);
+      put(B, c + k, ey, lid, G.face); put(B, c + k + 1, ey, lid, G.face);
+      const ny = Math.floor(cy + ry * 0.92);
+      if (dog) {
+        ell(B, cx, cy + ry * 0.78, Math.max(1.2, R.hW * 0.42), R.snH * 0.45 + 0.2, 0, (i, j, lu, lv) => coat('snout', { lu, lv, sv: lv }, i, j), { g: G.snout, ink: 'down' });
+        const noseC = C.nose ?? 0x1e181c;
+        put(B, c, ny, noseC, G.face);
+        if (R.hW >= 2.6) { put(B, c - 1, ny, noseC, G.face); put(B, c + 1, ny, noseC, G.face); }
+      } else {
+        ell(B, cx, cy + ry * 0.8, Math.max(1.0, rx * 0.4), 0.7, 0, hq('snout'), { g: G.snout });
+        put(B, c, ny, C.nose ?? (lum(fur) < 0.3 ? 0x40303a : 0xe07a8c), G.face);
+      }
     } else {
       // nosparti
       const tilt = P.tilt ? 1 : 0;
@@ -930,17 +1014,16 @@ function drawHead(B, R, P, view, HC, coat) {
         if (rab && P.nose) put(B, c, ny + 1, 0xd06a7c, G.face);
         if (P.mouth === 'meow') { put(B, c, ny + 1, 0x3a1a22, G.face); put(B, c, ny + 2, 0xe86a7c, G.face); }
         // morrhår (vuxna katter)
-        if (cat && R.age > 0) { const wy = ny + 1; put(B, c - Math.ceil(rx) - 1, wy, 0xe8e4dc, G.face); put(B, c + Math.ceil(rx) + 1, wy, 0xe8e4dc, G.face); }
+        if (cat && R.age > 0) { const wy = ny + 1, wx = Math.floor(rx * 1.05); const wc = mix(rampOf(fur)[1], 0xf4f0ea, 0.6); put(B, c - wx, wy, wc, G.face); put(B, c + wx, wy, wc, G.face); }
       }
       // ögon
-      const big = R.eyeBig || P.eyes === 'big';
-      const k = Math.max(1, Math.round(rx * (big ? 0.42 : 0.5)));
-      const ey = Math.floor(cy - ry * (dog ? 0.25 : 0.18) - (big ? 0.5 : 0)) + (P.look === 2 ? 1 : 0);
-      const lookX = P.look === 1 ? -1 : P.look === 3 ? 1 : 0;
-      const st = P.eyes === 'big' ? 'open' : P.eyes;
+      const big = R.eyeBig;
+      const k = Math.max(1, Math.round(rx * (big ? 0.42 : rab ? 0.56 : 0.5)));
+      const ey = Math.floor(cy - ry * (dog ? 0.25 : rab ? 0.3 : 0.18) - (big ? 0.5 : 0));
+      const st = P.eyes;
       const ir = cat || rab || C.eye != null ? iris : null;
-      if (big) { eyeAt(B, c - k - 1 + lookX * 0, ey, R, st, ir, fur, false); eyeAt(B, c + k, ey, R, st, ir, fur, true); }
-      else { eyeAt(B, c - k, ey + tilt * 0, R, st, ir, fur, false); eyeAt(B, c + k, ey, R, st, ir, fur, true); }
+      if (big) { eyeAt(B, c - k - 1, ey, R, st, ir, fur, false); eyeAt(B, c + k, ey, R, st, ir, fur, true); }
+      else { eyeAt(B, c - k, ey, R, st, ir, fur, false); eyeAt(B, c + k, ey, R, st, ir, fur, true); }
       if (P.blush) { const bc = mix(rampOf(fur)[1], 0xf06080, 0.5); put(B, c - k - 1, ey + 2 + (big ? 1 : 0), bc, G.face); put(B, c + k + 1, ey + 2 + (big ? 1 : 0), bc, G.face); }
     }
     if (!rab) earsFB(B, R, P, cx, cy, rx, ry, E, coat, 'front');
@@ -952,7 +1035,7 @@ function drawHead(B, R, P, view, HC, coat) {
 }
 
 // spetsiga öron fram/bak (katt, schäfer, husky, corgi, chihuahua)
-function earsUpFB(B, R, P, cx, cy, rx, ry, E, coat, frontView) {
+function earsUpFB(B, R, P, cx, cy, rx, ry, E, coat, frontView, inner = true) {
   const bat = R.ears === 'bat', dog = R.sp === 'hund';
   const backA = P.ears === 'back' ? 1 : P.ears === 'rest' ? 0.5 : 0;
   for (const s of [-1, 1]) {
@@ -961,7 +1044,7 @@ function earsUpFB(B, R, P, cx, cy, rx, ry, E, coat, frontView) {
     const tx = cx + s * (rx * (bat ? 1.25 : dog ? 0.78 : 0.7) + backA * 1.2 + (bat ? E * 0.45 : 0)), ty = cy - ry - E * (1 - backA * 0.45) + (bat ? E * 0.25 : 0);
     const tri = [[x0, y0], [x1, y1], [tx, ty]];
     poly(B, tri, (i, j) => coat('ear', { lu: s }, i, j), { g: G.ear, tone: frontView ? 1 : 2, ink: !frontView });
-    if (frontView) {
+    if (frontView && inner) {
       // insidan: mindre triangel närmare mitten, rosa
       const k = bat ? 0.5 : 0.52;
       const m = [(x0 + x1 + tx) / 3, (y0 + y1 + ty) / 3];
@@ -974,24 +1057,25 @@ function earsUpFB(B, R, P, cx, cy, rx, ry, E, coat, frontView) {
 // hängande/vikta öron fram/bak
 function earsFB(B, R, P, cx, cy, rx, ry, E, coat, view) {
   const back = P.ears === 'back' ? 1 : 0, perk = P.ears === 'perk' ? 1 : 0;
+  const bk = view === 'back'; // bakifrån: öronen sticker ut ~1 px utanför huvudet och får kontur, annars försvinner de i skallen
   for (const s of [-1, 1]) {
     const mat = (i, j) => coat('ear', { lu: s }, i, j);
     switch (R.ears) {
       case 'flop': {
-        const ex = cx + s * (rx * 0.9 + 0.1), ey = cy + ry * 0.12 - perk * 0.6 - back * 0.3;
-        ell(B, ex, ey, Math.max(0.95, E * 0.42), E * 0.95, s * 0.18, mat, { g: G.ear });
+        const ex = cx + s * (rx * 0.9 + 0.1 + (bk ? 0.7 : 0)), ey = cy + ry * (bk ? 0.02 : 0.12) - perk * 0.6 - back * 0.3;
+        ell(B, ex, ey, Math.max(bk ? 1.05 : 0.95, E * 0.42), E * 0.95, s * 0.18, mat, { g: G.ear, ink: bk, far: bk ? 1 : 0 });
         break;
       }
       case 'pom': {
-        const ex = cx + s * (rx * 0.95 + 0.3), ey = cy + ry * 0.35;
-        ell(B, ex, ey, E * 0.6, E * 0.85, 0, mat, { g: G.ear });
+        const ex = cx + s * (rx * 0.95 + 0.3 + (bk ? 0.5 : 0)), ey = cy + ry * (bk ? 0.2 : 0.35);
+        ell(B, ex, ey, E * 0.6, E * 0.85, 0, mat, { g: G.ear, ink: bk, far: bk ? 1 : 0 });
         break;
       }
       case 'fold': {
         const x0 = cx + s * rx * 0.25, y0 = cy - ry * 0.98;
         const x1 = cx + s * rx * 0.95, y1 = cy - ry * 0.5 - perk * 0.4;
-        const tx = cx + s * (rx * 1.05 + 0.3 - back * 0.2), ty = cy - ry * 0.05 + (view === 'back' ? -0.6 : 0) - perk * 0.8;
-        poly(B, [[x0, y0], [x1 + s * 0.4, y1 - 0.6], [tx, ty], [x0 + s * 0.8, y0 + 1.2]], mat, { g: G.ear, tone: view === 'back' ? 2 : 1, ink: true });
+        const tx = cx + s * (rx * 1.05 + 0.3 - back * 0.2 + (bk ? 0.8 : 0)), ty = cy - ry * 0.05 + (bk ? -0.4 : 0) - perk * 0.8;
+        poly(B, [[x0, y0], [x1 + s * 0.4, y1 - 0.6], [tx, ty], [x0 + s * 0.8, y0 + 1.2]], mat, { g: G.ear, tone: bk ? 2 : 1, ink: true });
         break;
       }
       default: break;
@@ -1103,12 +1187,14 @@ function drawRabbit(B, R, P, view, coat) {
     // bomullssvans
     const T3 = [hip3[0] - tR * 0.95, 0, hip3[2] + tR * (P.tailUp ? 0.6 : 0.2)];
     const T = Pt(...T3);
-    add(side ? 0.5 : zOf(T3), () => ell(B, T[0] + (side ? -0.1 : 0), T[1], 0.95 + (R.age ? 0.1 : 0), 0.9, 0, (i, j, lu, lv) => coat('puff', { lu, lv }, i, j), { g: back ? G.tailNear : G.tail, bright: 0.2, ink: back }));
+    // bakifrån: ljusare tofs, lite större, med en mörk kant upptill (vecket mot rumpan) så att den syns även på vita kaniner
+    add(side ? 0.5 : zOf(T3), () => ell(B, T[0] + (side ? -0.1 : 0), T[1] + (back ? 0.3 : 0), 0.95 + (R.age ? 0.1 : 0) + (back ? 0.2 : 0), 0.9 + (back ? 0.15 : 0), 0, (i, j, lu, lv) => coat('puff', { lu, lv }, i, j), { g: back ? G.tailNear : G.tail, bright: back ? 0.45 : 0.2, ink: back ? 'up' : false, maxTone: back ? 1 : undefined }));
     hc3 = P.eat ? [sh3[0] + tR * 0.7 + hRx * 0.45, 0, hRy * 0.85 + (P.chew ? 0.3 : 0)]
       : P.sleep ? [sh3[0] + tR * 0.6 + hRx * 0.3, 0, hRy * 0.95]
         : [sh3[0] + tR * 0.5 + hRx * 0.25 + st * 0.3, 0, sh3[2] + tR * 0.45 + hRy * 0.58];
     neck = Pt(sh3[0] + tR * 0.5, 0, sh3[2] + tR * 0.4);
   }
+  if (front && !P.eat && !P.sleep) { hc3[0] -= (P.stretch || 0) * 0.3; hc3[2] += tR * 0.25; }
   const HC = Pt(...hc3);
   add(side ? -0.3 : zOf(hc3) - (back ? 0 : 0.5), () => drawHead(B, R, P, view, HC, coat));
   parts.sort((a, b) => b.z - a.z);
@@ -1119,18 +1205,18 @@ function drawRabbit(B, R, P, view, coat) {
 function rabbitEars(B, R, P, view, cx, cy, rx, ry, coat, behind) {
   const side = view === 'side', front = view === 'front';
   const E = R.earL;
-  const flat = P.ears === 'flat' ? 1 : P.ears === 'back' ? 0.5 : 0;
+  // 'back' (hoppets luftruta) lägger öronen bakåt bara i sidovyn – fram/bak behåller de sin plats,
+  // annars byter siluetten form varje hopp (T-form) och det ser ut att pulsera
+  const flat = P.ears === 'flat' ? 1 : P.ears === 'back' ? (side ? 0.5 : 0) : 0;
   const mat = (i, j) => coat('ear', {}, i, j);
   const inMat = (i, j) => coat('earIn', {}, i, j);
   const w = R.age === 0 ? 0.8 : 0.95;
   if (R.ears === 'lop') {
-    if (side) {
-      if (behind) return;
-      ell(B, cx - rx * 0.15, cy + ry * 0.35, w + 0.15, E * 0.58, 0.18, mat, { g: G.ear, ink: true });
-    } else {
-      if (behind) return;
-      for (const s of [-1, 1]) ell(B, cx + s * (rx * 0.92 + 0.2), cy + ry * 0.35, w + 0.1, E * 0.56, s * 0.12, mat, { g: G.ear, ink: true });
-    }
+    // vädur: långa hängande öron, lite mörkare än huvudet
+    const lm = (i, j) => mul(coat('ear', {}, i, j), 0.86);
+    if (behind) return;
+    if (side) ell(B, cx - rx * 0.2, cy + ry * 0.25, w + 0.3, E * 0.72, 0.2, lm, { g: G.ear, ink: true });
+    else for (const s of [-1, 1]) ell(B, cx + s * (rx * 0.9 + 0.1), cy + ry * 0.2, w + 0.2, E * 0.72, s * 0.15, lm, { g: G.ear, ink: true });
     return;
   }
   if (side) {
@@ -1143,15 +1229,15 @@ function rabbitEars(B, R, P, view, cx, cy, rx, ry, coat, behind) {
     if (!behind && !flat) ell(B, ex + 0.35, ey + 0.3, 0.45, L2 * 0.72, -tilt, inMat, { g: G.ear, clip: (i, j) => m.has(j * BW + i) });
     return;
   }
-  if (behind && front) return;
-  if (!behind && !front) { /* bakifrån ritas öronen efter huvudet */ }
-  if (behind && !front) return;
+  // framifrån: bakåtlagda öron ritas bakom huvudet (annars täcker de ansiktet); bakifrån alltid efter huvudet
+  if (front ? behind !== (flat > 0) : behind) return;
   for (const s of [-1, 1]) {
     const wig = P.earWiggle && s > 0 ? 1 : 0;
     const spread = (7 + wig * 12 + flat * 55) * D2R * s;
     const L2 = E * 0.55;
-    const ex = cx + s * rx * 0.42 + Math.sin(spread) * L2, ey = cy - ry * 0.72 - Math.cos(spread) * L2 * (1 - flat * 0.5) + flat * 1.2;
-    const m = ell(B, ex, ey, w, L2 + 0.2, spread, mat, { g: G.ear, ink: true, far: front ? 0 : 0 });
+    // minst 1 px mellan öronen (små huvuden): två separata pinnar, inte en klump
+    const ex = cx + s * Math.max(rx * 0.42, 1.0) + Math.sin(spread) * L2, ey = cy - ry * 0.72 - Math.cos(spread) * L2 * (1 - flat * 0.5) + flat * 1.2;
+    const m = ell(B, ex, ey, w, L2 + 0.2, spread, mat, { g: G.ear, ink: true, far: front ? 0 : 1 });
     if (front && !flat) ell(B, ex, ey + 0.4, 0.45, L2 * 0.7, spread, inMat, { g: G.ear, clip: (i, j) => m.has(j * BW + i) });
   }
 }

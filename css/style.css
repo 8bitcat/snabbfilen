@@ -57,8 +57,9 @@ canvas { image-rendering: pixelated; display: block; }
 .dp-item canvas { image-rendering: pixelated; justify-self: center; }
 .dp-empty { color: var(--muted); font-size: 15px; padding: 6px; }
 #decor-panel .dp-foot { display: flex; flex-wrap: wrap; gap: 6px; padding: 6px; border-top: 3px solid var(--ink); background: var(--paper2); }
-#decor-panel .dp-foot .btn { flex: 1; }
-#decor-panel #decor-paint { flex-basis: 100%; }
+#decor-panel .dp-foot .btn { flex: 1 1 40%; }
+#decor-panel #decor-done { flex-basis: 100%; }
+.dp-item small { display: block; color: var(--muted); font-size: 13px; margin-top: 2px; }
 
 /* ---------- köp-/måladialogen för möbler ---------- */
 .dlg.dlg-furn { width: min(700px, 100%); }
@@ -97,6 +98,9 @@ canvas { image-rendering: pixelated; display: block; }
 
 /* ---------- scenytan ---------- */
 #app { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; }
+/* Möblera-läget: förrådspanelen (168 px + 14 px kant + skugga) ligger fixed till höger –
+   #app lämnar plats så att canvasen (fit() i main.js) aldrig hamnar under den */
+@media (min-width: 700px) { body.decor-on #app { padding-right: 192px; } }
 #scene { touch-action: none; box-shadow: 0 0 0 3px #000; }
 
 /* ---------- Knappar ---------- */
@@ -302,3 +306,74 @@ kbd {
 .nyheter ul { margin: 2px 0 0; padding-left: 20px; font-size: 19px; line-height: 1.15; }
 .nyheter li { margin: 2px 0; }
 .nyheter code { font: inherit; background: #e3dac9; padding: 0 3px; }
+
+/* Ny version: banderoll längst ner (js/core/version-ui.js) */
+#sf-update { position: fixed; left: 50%; bottom: 12px; transform: translateX(-50%); z-index: 95; display: flex; align-items: center; gap: 10px;
+  max-width: min(94vw, 720px); background: var(--ink); color: #fff; border: 3px solid var(--gold); box-shadow: 4px 4px 0 #000; padding: 6px 10px; font-size: 19px; line-height: 1.1; }
+#sf-update .sub { color: #cfc7ba; font-size: 17px; }
+#sf-update .btn { flex: none; }
+.nyheter section.backup ul { list-style: none; padding-left: 0; }
+.nyheter section.backup li { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 17px; }
+
+/* 👥-listan: version och var man är */
+.prow .old { font: 14px var(--font); color: #fff; background: var(--red2); padding: 0 4px; vertical-align: 2px; }
+.world-diag { font-size: 15px; color: var(--muted); margin: 8px 0 0; }
+.plist .prow { grid-template-columns: 44px 1fr auto auto; }
+
+/* ---------- Huvudmenyn / pausmenyn (js/core/menu.js) ---------- */
+#menu { position: fixed; inset: 0; z-index: 45; /* under #modal (50): dialoger från menyn (redigeraren, bekräftelser, nyheter) ligger alltid överst */ display: flex; align-items: center; justify-content: center; padding: 12px; background: rgba(10, 8, 14, .28); overflow: auto; }
+.menu-panel { width: min(560px, 100%); max-height: 100%; overflow: auto; background: var(--paper); border: 4px solid var(--ink); box-shadow: 8px 8px 0 var(--ink); padding: 14px 16px 12px; }
+.menu-title { text-align: center; font: 56px var(--head); letter-spacing: 2px; color: var(--red2); text-shadow: 3px 3px 0 var(--ink); line-height: .9; }
+.menu-title small { display: block; font: 20px var(--font); color: var(--muted); letter-spacing: 1px; text-shadow: none; margin-top: 4px; }
+.menu-btns { display: flex; flex-direction: column; gap: 8px; margin: 14px auto 0; width: min(330px, 100%); }
+.menu-main { font-size: 24px; padding: 8px 12px; }
+.menu-settings { margin: 12px auto 0; width: min(330px, 100%); background: #fff; border: 2px solid var(--ink); padding: 6px 10px; }
+.menu-row { display: flex; justify-content: space-between; align-items: center; font-size: 20px; padding: 3px 0; gap: 10px; }
+.menu-sub { font: 22px var(--head); margin: 14px 0 6px; letter-spacing: .5px; }
+.menu-cards { display: flex; flex-direction: column; gap: 7px; }
+.menu-card { display: grid; grid-template-columns: 60px 1fr auto; gap: 10px; align-items: center; background: #fff; border: 3px solid var(--ink); padding: 4px 8px 4px 4px; cursor: pointer; box-shadow: 3px 3px 0 var(--ink); }
+.menu-card:hover { background: #fffbef; }
+.menu-card.on { background: #fff4c7; outline: 3px solid var(--gold); outline-offset: -1px; }
+.menu-card canvas { border: 2px solid var(--pc, var(--ink)); display: block; }
+.menu-card-txt { min-width: 0; }
+.menu-card-txt b { font: 22px var(--head); display: block; letter-spacing: .3px; }
+.menu-card-txt small { font-size: 16px; color: var(--muted); display: block; line-height: 1.05; }
+.menu-card .nu { font: 14px var(--font); color: #fff; background: var(--green); padding: 0 5px; vertical-align: 3px; font-style: normal; margin-left: 4px; }
+.menu-card-tools { display: flex; gap: 4px; }
+.menu-foot { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; font-size: 15px; color: var(--muted); }
+body.menu-open #emotes, body.menu-open #decor-btn { display: none !important; }
+@media (max-width: 639px) {
+  .menu-panel { padding: 10px; }
+  .menu-title { font-size: 40px; }
+  .menu-card { grid-template-columns: 48px 1fr auto; gap: 6px; }
+  .menu-card-tools .btn { padding: 2px 5px; font-size: 14px; }
+  .menu-card-txt b { font-size: 19px; }
+}
+
+/* Pixelmätarna (js/core/hud-pix.js): HUD-raden krymper till bara knapparna */
+body.hud-pix #hud > :not(.hud-btns) { display: none; }
+body.hud-pix #hud { padding: 3px 8px; }
+/* startmenyn: bara knapparna i HUD-raden, staden fyller hela bakgrunden */
+body.menu-boot #hud > :not(.hud-btns) { display: none; }
+body.menu-boot #app { overflow: hidden; }
+@media (max-width: 639px) { .menu-card canvas { width: 44px; height: 53px; } .menu-card { grid-template-columns: 46px 1fr auto; } }
+
+/* Namnrutan ovanpå avatarredigeraren (Spara utan namn) */
+.dlg-avatar { position: relative; }
+.av-nameask { position: absolute; inset: 0; background: rgba(15, 12, 20, .55); display: flex; align-items: center; justify-content: center; z-index: 5; padding: 12px; }
+.av-nameask-box { background: var(--paper); border: 4px solid var(--ink); box-shadow: 6px 6px 0 var(--ink); padding: 14px 16px; width: min(380px, 100%); }
+.av-nameask-box h3 { margin: 0 0 4px; font: 28px var(--head); letter-spacing: .5px; }
+.av-nameask-box p { margin: 0 0 10px; font-size: 18px; color: var(--muted); line-height: 1.1; }
+.av-nameask-box input { width: 100%; font: 26px var(--font); padding: 5px 10px; border: 3px solid var(--ink); background: #fff; box-shadow: inset 2px 2px 0 #e3dac9; }
+.av-nameask-err { min-height: 22px; color: var(--red2); font-size: 17px; margin: 4px 0 6px; }
+.av-nameask-btns { display: flex; gap: 8px; justify-content: flex-end; }
+
+/* Pixelmätarnas remsa ovanför spelbilden (js/core/hud-pix.js) */
+body.hud-pix #app { flex-direction: column; gap: 0; }
+#hudpix { display: block; image-rendering: pixelated; box-shadow: 0 0 0 3px #000; }
+body.menu-boot #hudpix { display: none; }
+
+/* Bostadsbyråns annonsdialog: planschbilder i pixelskala */
+.prow.homerow { grid-template-columns: auto 1fr auto; }
+canvas.homepic { width: 128px; height: auto; image-rendering: pixelated; border: 2px solid var(--ink); display: block; }
+@media (max-width: 639px) { canvas.homepic { width: 64px; } }

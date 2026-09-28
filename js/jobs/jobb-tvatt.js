@@ -13,6 +13,12 @@
 // med tvättkorgar under, strykbräda där en kollega stryker (ånga), klädhängare
 // med kemtvätt i plast och en väntbänk. Allt statiskt målas en gång och cachas;
 // bara det som rör sig ritas varje bildruta. Ett pixelkorn: heltal, skala 1.
+//
+// Figuren ställer sig alltid snett vid sidan om det hen jobbar med (springan
+// till höger om tvättmaskinen, springan mellan tumlarkolumnerna, bredvid kunden
+// på bänken) så att luckor, displayer, nummerlappar och kunder syns. Maskinernas
+// puffar dyker upp under maskinen vid golvet, inte över skyltarna. Klick under
+// vikningen köas och utförs när påsen är knuten.
 import { drawPerson, makeLook } from '../core/people.js';
 import { Pix, SMALL, BIG, ctxText, textW, text, mix, mul, css, hash, bayer } from '../core/floor-pix.js';
 import { createWalker, selfDrawable, folkDrawables, WALK_SEQ } from '../scenes/walkable.js';
@@ -48,6 +54,15 @@ const COUNTER = { x0: 20, x1: 92, top: 67, surf: 72, base: 97 };
 const CSLOTS = [33, 55, 77];                       // tre platser på inlämningsdisken
 const WASHERS = [0, 1, 2, 3, 4, 5].map((i) => ({ x: 96 + i * 34, y: 57, w: 32, h: 41, cls: i >> 1 }));
 const DRYERS = [{ x: 302, y: 40 }, { x: 342, y: 40 }, { x: 302, y: 69 }, { x: 342, y: 69 }].map((d) => ({ ...d, w: 36, h: 29 }));
+// Var man står vid maskinerna: snett vid sidan om luckan, så att trumma, display
+// och nummerlapp syns medan man jobbar. Vid tvättmaskinen i springan till höger
+// (vid handtaget, vänd åt vänster), vid torktumlarna i springan mellan kolumnerna.
+const STAND_Y = FLOOR_Y + 8;
+const washerStandX = (w) => w.x + w.w + 1;
+const DRYER_STAND_X = DRYERS[0].x + DRYERS[0].w + 2;
+// Maskinernas puffar ("VITT!", "TORKAR!", …) dyker upp under maskinen vid golvlisten
+// och stiger över sockeln – aldrig över skyltarna eller displayerna.
+const POP_Y = FLOOR_Y + 2;
 const SIGNS = [0, 1, 2].map((c) => ({ c, x: 96 + c * 68 + 33 - 25, y: 41, w: 50, h: 13 }));
 const TABLE = { x0: 136, x1: 232, top: 142, fy: 168 };
 const TSLOTS = [158, 184, 210];                    // vikbordets tre platser
@@ -955,6 +970,7 @@ export function makeJobbTvatt(A, { onDone }) {
   const tslots = TSLOTS.map((x) => ({ x, item: null }));
   const seats = SEATS.map((x) => ({ x, k: null }));
   let customers = [], t = 0, seq = 0, custIn = 0.6, carry = null, folding = null;
+  let queued = null;                  // klick som kom medan man vek – utförs när vikningen är klar
   let nextNum = 10 + ((Math.random() * 70) | 0), shownNum = nextNum - 1, ticketT = 0;
   let done = false, doneT = 0, reported = false;
   const cache = {};
@@ -1005,7 +1021,7 @@ export function makeJobbTvatt(A, { onDone }) {
     for (const s of cslots) { if (s.item?.o === o) s.item = null; if (s.res === o.cust) s.res = null; }
     for (const s of tslots) if (s.item?.o === o) s.item = null;
     for (const m of [...washers, ...dryers]) if (m.o === o) { m.o = null; m.state = 'idle'; m.tt = 0; }
-    if (carry?.o === o) { carry = null; pops.add(walker.px, walker.py - 50, 'KUNDEN GICK', '#d8d2c0'); }
+    if (carry?.o === o) { carry = null; pops.add(walker.px, walker.py + 3, 'KUNDEN GICK', '#d8d2c0'); }
     if (folding?.o === o) folding = null;
   }
 
@@ -1014,10 +1030,12 @@ export function makeJobbTvatt(A, { onDone }) {
     if (s.item) {
       if (!carry) { carry = s.item; s.item = null; play('ok'); }
       else if (carry.kind === 'bag') { const tmp = s.item; s.item = carry; carry = tmp; play('click'); }
-      else pops.add(s.x, COUNTER.top - 22, 'HÄNDERNA FULLA', '#d8d2c0');
+      else pops.add(s.x, POP_Y, 'HÄNDERNA FULLA', '#d8d2c0');
     } else if (carry?.kind === 'bag' && !s.res) { s.item = carry; carry = null; play('click'); }
   }
   function useWasher(w) {
+    // puffen lite till vänster om mitten, så den inte hamnar på figuren som står i springan till höger
+    const pop = (txt, col) => pops.add(w.x + 12, POP_Y, txt, col);
     if (w.state === 'idle') {
       if (carry?.kind === 'bag') {
         const o = carry.o; carry = null;
@@ -1025,24 +1043,56 @@ export function makeJobbTvatt(A, { onDone }) {
         if (w.cls !== o.cls) {
           o.stained = true; o.dyed = w.cls; o.dye = 0;
           stats.fel++; play('fel');
-          pops.add(w.x + 16, w.y - 8, 'FEL MASKIN!', '#ff6a6a');
-        } else { play('door'); pops.add(w.x + 16, w.y - 8, CLS[w.cls].name + '!', '#8ee03c'); }
-      } else if (carry) pops.add(w.x + 16, w.y - 8, 'INTE HÄR', '#d8d2c0');
-    } else if (w.state === 'run') pops.add(w.x + 16, w.y - 8, 'TVÄTTAR...', '#9ad0f4');
+          pop('FEL MASKIN!', '#ff6a6a');
+        } else { play('door'); pop(CLS[w.cls].name + '!', '#8ee03c'); }
+      } else if (carry) pop('INTE HÄR', '#d8d2c0');
+    } else if (w.state === 'run') pop('TVÄTTAR...', '#9ad0f4');
     else if (w.state === 'done') {
       if (!carry) { carry = { kind: 'wet', o: w.o }; w.o = null; w.state = 'idle'; play('ok'); }
-      else pops.add(w.x + 16, w.y - 8, 'HÄNDERNA FULLA', '#d8d2c0');
+      else pop('HÄNDERNA FULLA', '#d8d2c0');
     }
   }
   function useDryer(d) {
+    // puffen under tumlarkolumnen, en bit från springan där figuren står
+    const pop = (txt, col) => pops.add(d.x + 14, POP_Y, txt, col);
     if (d.state === 'idle') {
-      if (carry?.kind === 'wet') { d.o = carry.o; carry = null; d.state = 'run'; d.tt = 0; play('door'); pops.add(d.x + 18, d.y - 4, 'TORKAR!', '#ffb070'); }
-      else if (carry) pops.add(d.x + 18, d.y - 4, carry.kind === 'bag' ? 'TVÄTTA FÖRST' : 'INTE HÄR', '#d8d2c0');
-    } else if (d.state === 'run') pops.add(d.x + 18, d.y - 4, 'TORKAR...', '#ffb070');
+      if (carry?.kind === 'wet') { d.o = carry.o; carry = null; d.state = 'run'; d.tt = 0; play('door'); pop('TORKAR!', '#ffb070'); }
+      else if (carry) pop(carry.kind === 'bag' ? 'TVÄTTA FÖRST' : 'INTE HÄR', '#d8d2c0');
+    } else if (d.state === 'run') pop('TORKAR...', '#ffb070');
     else if (d.state === 'done') {
       if (!carry) { carry = { kind: 'dry', o: d.o }; d.o = null; d.state = 'idle'; play('ok'); }
-      else pops.add(d.x + 18, d.y - 4, 'HÄNDERNA FULLA', '#d8d2c0');
+      else pop('HÄNDERNA FULLA', '#d8d2c0');
     }
+  }
+  // ett klick i lokalen: gå dit och gör det som finns där. Under vikningen
+  // köas klicket (som i kaféet) och utförs så fort påsen är knuten.
+  function handleDown(x, y) {
+    if (done) return;
+    if (folding) { queued = [x, y]; return; }
+    // disken (påsen eller dess bubbla)
+    if (x >= COUNTER.x0 && x < COUNTER.x1 && y >= 32 && y < FLOOR_Y + 4) {
+      const s = cslots.reduce((b, c) => (Math.abs(c.x - x) < Math.abs(b.x - x) ? c : b));
+      if (Math.abs(s.x - x) < 12) { walker.walkTo(s.x, STAND_Y, () => pickCounter(s)); return; }
+    }
+    const w = hitMachine(washers, x, y, 6);
+    if (w) { walker.walkTo(washerStandX(w), STAND_Y, () => { walker.dir = 'left'; useWasher(w); }); return; }
+    const d = hitMachine(dryers, x, y, 2);
+    if (d) { walker.walkTo(DRYER_STAND_X, STAND_Y, () => { walker.dir = d.x < DRYER_STAND_X ? 'left' : 'right'; useDryer(d); }); return; }
+    // vikbordet
+    if (x >= TABLE.x0 - 4 && x < TABLE.x1 + 4 && y >= TABLE.top - 26 && y < TABLE.fy) {
+      const s = tslots.reduce((b, c) => (Math.abs(c.x - x) < Math.abs(b.x - x) ? c : b));
+      walker.walkTo(s.x, WORK_Y, () => useTable(s));
+      return;
+    }
+    // en väntande kund (bubblan eller figuren): ställ dig snett vid sidan om hen,
+    // på den sida du kommer från, så att kunden syns när påsen lämnas
+    const k = customers.find((c) => c.state === 'sit' && Math.abs(c.x - x) < 12 && y > c.y - 62 && y < c.y + 4);
+    if (k) {
+      const side = walker.px < k.x ? -12 : 12;
+      walker.walkTo(k.x + side, k.y + 14, () => { walker.dir = side < 0 ? 'right' : 'left'; deliver(k); });
+      return;
+    }
+    walker.walkTo(x, y);
   }
   function useTable(s) {
     if (folding) return;
@@ -1097,7 +1147,7 @@ export function makeJobbTvatt(A, { onDone }) {
       // släpps (bara i testläget).
       pickBag(which) {
         if (folding) folding = null;
-        carry = null;
+        queued = null; carry = null;
         let s = which >= 10 ? cslots.find((c) => c.item?.o.num === which) : cslots[which ?? -1];
         if (!s?.item) s = cslots.find((c) => c.item?.kind === 'bag');
         if (!s) return null;
@@ -1135,6 +1185,11 @@ export function makeJobbTvatt(A, { onDone }) {
       carrying: () => (carry ? { kind: carry.kind, num: carry.o.num, cls: carry.o.cls, stained: carry.o.stained } : null),
       machines: () => ({ washers: washers.map((w) => ({ cls: w.cls, state: w.state, num: w.o?.num ?? null })), dryers: dryers.map((d) => ({ state: d.state, num: d.o?.num ?? null })) }),
       customers: () => customers.filter((k) => k.state === 'sit').map((k) => ({ num: k.o.num, cls: k.o.cls, patience: +k.patience.toFixed(1) })),
+      // sant när figuren står still och varken viker eller har ett köat klick (för klicktester)
+      idle: () => !folding && !queued && walker.path.length === 0,
+      folding: () => (folding ? { num: folding.o.num, tt: +folding.tt.toFixed(2) } : null),
+      queued: () => (queued ? [...queued] : null),
+      where: () => ({ x: Math.round(walker.px), y: Math.round(walker.py), dir: walker.dir }),
       // för förhandsbilder: ställ upp lägen direkt
       stage(fn) { return fn({ washers, dryers, cslots, tslots, customers, spawnCustomer, newOrder, walker, setCarry: (c) => { carry = c; }, setFolding: (f) => { folding = f; } }); },
     },
@@ -1144,7 +1199,7 @@ export function makeJobbTvatt(A, { onDone }) {
       pops.update(dt);
       if (done) { doneT += dt; if (doneT > 1.2 && !reported) { reported = true; onDone(stats); } return; }
       t += dt;
-      if (t >= SHIFT_SECONDS) { done = true; return; }
+      if (t >= SHIFT_SECONDS) { done = true; queued = null; walker.stop(); return; }
       if (!folding) walker.update(dt);
       ticketT = Math.max(0, ticketT - dt);
       // nya kunder
@@ -1170,6 +1225,8 @@ export function makeJobbTvatt(A, { onDone }) {
         folding.tt += dt;
         if (folding.tt >= FOLD_T) { carry = { kind: 'folded', o: folding.o }; folding = null; play('box'); }
       }
+      // det köade klicket (även om vikningen avbröts för att kunden gick)
+      if (!folding && queued) { const q = queued; queued = null; handleDown(q[0], q[1]); }
       // kunderna
       for (const k of customers) {
         k.shake = Math.max(0, k.shake - dt);
@@ -1196,28 +1253,7 @@ export function makeJobbTvatt(A, { onDone }) {
       }
       customers = customers.filter((k) => !(k.state === 'leave' && !k.plan.length));
     },
-    down(x, y) {
-      if (done || folding) return;
-      // disken (påsen eller dess bubbla)
-      if (x >= COUNTER.x0 && x < COUNTER.x1 && y >= 32 && y < FLOOR_Y + 4) {
-        const s = cslots.reduce((b, c) => (Math.abs(c.x - x) < Math.abs(b.x - x) ? c : b));
-        if (Math.abs(s.x - x) < 12) { walker.walkTo(s.x, FLOOR_Y + 8, () => pickCounter(s)); return; }
-      }
-      const w = hitMachine(washers, x, y, 6);
-      if (w) { walker.walkTo(w.x + 16, FLOOR_Y + 8, () => useWasher(w)); return; }
-      const d = hitMachine(dryers, x, y, 2);
-      if (d) { walker.walkTo(d.x + 18, FLOOR_Y + 8, () => useDryer(d)); return; }
-      // vikbordet
-      if (x >= TABLE.x0 - 4 && x < TABLE.x1 + 4 && y >= TABLE.top - 26 && y < TABLE.fy) {
-        const s = tslots.reduce((b, c) => (Math.abs(c.x - x) < Math.abs(b.x - x) ? c : b));
-        walker.walkTo(s.x, WORK_Y, () => useTable(s));
-        return;
-      }
-      // en väntande kund (bubblan eller figuren)
-      const k = customers.find((c) => c.state === 'sit' && Math.abs(c.x - x) < 12 && y > c.y - 62 && y < c.y + 4);
-      if (k) { walker.walkTo(k.x, k.y + 14, () => deliver(k)); return; }
-      walker.walkTo(x, y);
-    },
+    down(x, y) { handleDown(x, y); },
     key(kk) { if (kk === 'Escape' && !done) abortShift(A); },
     draw(ctx) {
       ctx.setTransform(A.pxs, 0, 0, A.pxs, 0, 0);
@@ -1341,7 +1377,8 @@ export function makeJobbTvatt(A, { onDone }) {
       ctx.fillRect(w.x + jx + 29, w.y + jy + 11, 1, 1);
       if (w.state === 'done' && blink) ctx.drawImage(washerRing(0xffd23f), w.x + 4, w.y + 14);
       else if (w.state === 'idle' && carry?.kind === 'bag' && carry.o.cls === w.cls && blink) ctx.drawImage(washerRing(0x8ee03c), w.x + 4, w.y + 14);
-      if (w.o) drawTag(ctx, w.x + jx + 21, w.y + jy + 31, w.o.num);
+      // nummerlappen nere till vänster på luckan (figuren står till höger)
+      if (w.o) drawTag(ctx, w.x + jx + 2, w.y + jy + 31, w.o.num);
     }
     // torktumlarna
     for (const d of dryers) {
@@ -1357,7 +1394,8 @@ export function makeJobbTvatt(A, { onDone }) {
       }
       if (d.state === 'done' && blink) ctx.drawImage(dryerRing(0xffd23f), d.x + 6, d.y + 7);
       else if (d.state === 'idle' && carry?.kind === 'wet' && blink) ctx.drawImage(dryerRing(0x8ee03c), d.x + 6, d.y + 7);
-      if (d.o) drawTag(ctx, d.x + 23, d.y + 19, d.o.num);
+      // nummerlappen på den sida av luckan som vetter bort från springan där figuren står
+      if (d.o) drawTag(ctx, d.x + (d.x < DRYER_STAND_X ? 2 : 23), d.y + 19, d.o.num);
     }
   }
   function timeStr(sec) {

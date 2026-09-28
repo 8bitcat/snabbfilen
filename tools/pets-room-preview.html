@@ -17,7 +17,7 @@
 <div id="toasts"></div>
 <script type="module">
 // Attrapprum för husdjurslagret (js/pets/layer.js) + prylarna (items.js) + följaren.
-//   tools/pets-room-preview.html?k=4&hour=12&speed=0&scene=hem|prylar|ute|natt[&manual=1]
+//   tools/pets-room-preview.html?k=4&hour=12&speed=0&scene=hem|natt|ny|kluster|prylar|poser|ute[&manual=1]
 // window.PV: setup(scene, opts), advance(sec, dt), render(), click(x, y), hover(x, y), store, layer
 import { createPetStore, seededRng } from '../js/pets/sim.js';
 import { createPetLayer, createPetFollower } from '../js/pets/layer.js';
@@ -149,6 +149,15 @@ function setup(name = 'hem', o = {}) {
     mess(S, 'kiss', 'hund', 296, 196);
     if (name === 'natt') A.game.min = 23 * 60;
   }
+  if (name === 'kluster') { // fyra djur tätt ihop: mätarna får inte staplas i ett torn
+    const ad = (sp, br, sex, nm, x, y, age = 10, more = {}) => Object.assign(S.adopt(sp, br, sex, nm, HOME, { day: A.game.day - age, room: ROOM, x, y }), more);
+    ad('hund', 'golden', 'hane', 'Bamse', 180, 160, 10, { toilet: 85, hunger: 60 });
+    ad('katt', 'tigrerad', 'hona', 'Misse', 196, 158, 10, { hunger: 22 });
+    ad('kanin', 'vadur', 'hona', 'Mimmi', 188, 170, 10, { hunger: 50 });
+    ad('hund', 'tax', 'hona', 'Tassa', 168, 172, 10, { happy: 12 });
+    ad('katt', 'svart', 'hane', 'Sotis', 300, 150, 10);
+    place(S, 'matskal', 150, 128, { food: 0.7, foodKind: 'katt' });
+  }
   if (name === 'ny') { // ny djurägare: allt ligger i förrådet, lagret ställer fram det
     S.adopt('katt', 'rodkatt', 'hane', 'Findus', HOME, { day: A.game.day });
     S.adopt('hund', 'corgi', 'hona', 'Tindra', HOME, { day: A.game.day - 4 });
@@ -157,6 +166,7 @@ function setup(name = 'hem', o = {}) {
   if (name !== 'prylar' && name !== 'ute' && name !== 'poser') {
     L = createPetLayer(A, { store: S, home: HOME, room: ROOM, bounds: BOUNDS, isFree: sceneFree, walker, onObstacles: (list) => walker.setObstacles([...FURN.map((f) => f.r), ...list]) });
     walker.setObstacles([...FURN.map((f) => f.r), ...L.obstacles()]);
+    if (name === 'kluster') hold(); // sitt still så att bilden blir jämförbar
   }
   if (name === 'ute') {
     const dog = S.adopt('hund', o.breed || 'schafer', 'hane', 'Rex', HOME, { day: A.game.day - 10 });
@@ -168,6 +178,11 @@ function setup(name = 'hem', o = {}) {
   }
   render();
   return true;
+}
+
+// Alla djur i rummet sätter sig och stannar där de är (för mätarbilder)
+function hold(sec = 999) {
+  for (const a of L._debug.actors.values()) { a.path = []; a.then = null; a.onEnd = null; a.mode = 'pose'; a.pose = 'sit'; a.modeT = sec; a.face = 'down'; }
 }
 
 // Ute: ägaren går fram och tillbaka med stopp (för att se att följarna inte flimrar)
@@ -351,7 +366,7 @@ function audit(sec = 30, dt = 1 / 60) {
   return [...rec.entries()].map(([id, r]) => `${id.padEnd(7)} dirbyten ${r.dirs} (för täta ${r.dirFast}) · stå/gå ${r.anims} (för täta ${r.animFast}) · hopp ${r.jumps} (max ${r.maxJump}px) · darr ${r.jitter} · pingpong ${r.pingpong || 0}${r.ex.length ? '\n     ' + r.ex.join('\n     ') : ''}`).join('\n');
 }
 
-window.PV = { setup, advance, render, click, audit, hover: (x, y) => L?.hover(x, y), get store() { return S; }, get layer() { return L; }, get walker() { return walker; }, get followers() { return followers; }, A, ready: true };
+window.PV = { setup, advance, render, click, audit, hold, hover: (x, y) => L?.hover(x, y), get store() { return S; }, get layer() { return L; }, get walker() { return walker; }, get followers() { return followers; }, A, ready: true };
 </script>
 </body>
 </html>

@@ -43,6 +43,10 @@ const SHELF = { x0: 250, x1: 288, top: 22, row0: 33, rowH: 13, rows: 4, cols: 3 
 const COUNTER = { x0: 289, top: 73, front: 78, bot: 95 };
 const CUST_Y = 86;                                     // kundernas fötter (bakom disken)
 const SLOTS = [314, 354];
+// puffar vid disken stiger ca 13 px på 0,9 s – de får inte nå UTLÄMNING-skylten (rad 18–27):
+// POP_FREE (på väggen mellan NR och NU) när kundens bubbla är borta och puffen är smal ('TACK!'),
+// POP_BUBBLE (över kundens huvud) när bubblan (rad 28–51), nummerlappsautomaten och kö-skärmen ska förbli läsbara
+const POP_FREE = 44, POP_BUBBLE = 60;
 const CAGE = { w: 46, d: 6, base: 206, top: 170 };
 const CAGES = REG.map((r, i) => { const x0 = 12 + i * 70; return { reg: i, x0, x1: x0 + CAGE.w, cx: x0 + (CAGE.w >> 1) }; });
 // lastens platser i buren: fyra lager à fem, nedersta på däcket, varannan rad förskjuten
@@ -662,9 +666,9 @@ function paintShop(P) {
     if (j >= 45) c = qmix(0xc8b890, 0xb0a078, (j - 45) / 8, X, Y, 2);
     return jit(c, X, Y, 73, 0.03);
   });
-  // UTLÄMNING: hängande blå skylt
-  const s = 'UTLÄMNING', tw = textW(SMALL, s), w = tw + 10, x = 336 - (w >> 1), y = 20;
-  for (const hx of [x + 4, x + w - 5]) P.vl(hx, 17, 3, 0x3a3e46);
+  // UTLÄMNING: blå skylt monterad i taket, tätt under HUD:en (rad 0–17) så att
+  // kundernas pratbubblor (topp y 28) och puffarna går fria under den
+  const s = 'UTLÄMNING', tw = textW(SMALL, s), w = tw + 10, x = 336 - (w >> 1), y = 18;
   area(P, x, y, w, 9, (X, Y, i, j) => (i === 0 || j === 0 || i === w - 1 || j === 8 ? 0x0e2a5e : j === 1 ? 0x4a7ad8 : 0x2a5cb4));
   text(P, SMALL, s, x + 5, y + 2, PY);
   P.darken(x + 1, y + 9, w, 1, 0.85);
@@ -984,7 +988,7 @@ export function makeJobbPosten(A, { onDone }) {
   }
   function custLeave(k, happy) {
     k.state = 'leave'; k.dir = 'right';
-    if (!happy) { stats.miss++; play('miss'); pops.add(k.x, 30, 'GICK HEM…', '#d8d2c0'); }
+    if (!happy) { stats.miss++; play('miss'); pops.add(k.x, POP_BUBBLE, 'GICK HEM...', '#d8d2c0'); }   // '…' finns inte i typsnittet
   }
   function pickFromBelt(it) {
     const i = items.indexOf(it);
@@ -1030,7 +1034,7 @@ export function makeJobbPosten(A, { onDone }) {
     if (!forceWrong && carry.num === k.num) {
       stats.ok++; stats.kunder++;
       play('coin');
-      pops.add(k.x, 30, 'TACK!', '#8ee03c');
+      pops.add(k.x, POP_FREE, 'TACK!', '#8ee03c');
       k.state = 'take'; k.take = 0.9; k.parcel = { num: carry.num, col: carry.col, kg: carry.kg };
       counterShow = { kg: carry.kg, t: 1.6 };
       usedNums.delete(carry.num);
@@ -1038,7 +1042,7 @@ export function makeJobbPosten(A, { onDone }) {
     } else {
       stats.fel++;
       play('fel');
-      pops.add(k.x, 30, 'FEL PAKET!', '#ff6a6a');
+      pops.add(k.x, POP_BUBBLE, 'FEL PAKET!', '#ff6a6a');
       k.patience = Math.max(2, k.patience - 5);
     }
   }
@@ -1084,6 +1088,13 @@ export function makeJobbPosten(A, { onDone }) {
         return stats;
       },
       crash() { if (!carry || carry.src !== 'belt') return null; crash(); return stats; },
+      // en väntande kund tröttnar och går hem (utan num: första väntande): stats.miss +1
+      giveUp(num) {
+        const k = customers.find((c) => c.state === 'wait' && (num === undefined || c.num === num));
+        if (!k) return null;
+        custLeave(k, false);
+        return stats;
+      },
       setRun,
       carrying: () => (carry ? (carry.src === 'belt' ? { src: 'belt', reg: carry.item.reg, kind: carry.item.kind, fragile: carry.item.fragile } : { src: 'shelf', num: carry.num }) : null),
       teleport(x, y) { walker.px = x; walker.py = y; walker.stop(); },
@@ -1212,7 +1223,7 @@ export function makeJobbPosten(A, { onDone }) {
         if (k) {
           const kk = k;
           walker.walkTo(kk.x, WALK_TOP + 1, () => {
-            if (!carry) pops.add(kk.x, 30, 'NR ' + kk.num + ' TACK!', '#f4f1ea');
+            if (!carry) pops.add(kk.x, POP_BUBBLE, 'NR ' + kk.num + ' TACK!', '#f4f1ea');
             else if (carry.src === 'belt') pops.add(walker.px, walker.py - 58, 'SKA SORTERAS!', '#d8d2c0');
             else serveTo(kk);
           });
@@ -1519,10 +1530,14 @@ export function makeJobbPosten(A, { onDone }) {
       ctx.fillRect(ix + 2, iy + 16, Math.max(1, Math.round((iw - 4) * (1 - shake))), 2);
     }
   }
+  // hjälpraden de första sekunderna: direkt under HUD:en (som pizzerian), centrerad över
+  // sorteringshallen så att varken HÄMTAS-hyllan eller burarna skyms; tonar bort sista sekunden
   function drawHint(ctx) {
     const s = 'DUBBELKLICKA = SPRING  -  ÖMTÅLIGT: GÅ LUGNT!';
-    const w = textW(SMALL, s) + 8, x = (FW - w) >> 1, y = FH - 13;
+    const w = textW(SMALL, s) + 8, x = (SHELF.x0 - w) >> 1, y = 18;
+    ctx.globalAlpha = t > 6 ? Math.max(0, 7 - t) : 1;
     ctx.fillStyle = 'rgba(23,21,26,0.85)'; ctx.fillRect(x, y, w, 10);
-    ctxText(ctx, SMALL, s, x + 4, y + 3, t > 6 && Math.floor(clk * 6) % 2 ? '#8a8478' : '#ffd23f');
+    ctxText(ctx, SMALL, s, x + 4, y + 3, '#ffd23f');
+    ctx.globalAlpha = 1;
   }
 }

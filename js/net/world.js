@@ -7,85 +7,207 @@
 // 'city' (gatan), 'home:<id>' (hemma hos den spelaren – ägare och gäster får
 // samma nyckel och ser därmed varandra) eller 'away' (jobb m.m., osynlig).
 //
-//   klient→värd  {t:'hi', p}  {t:'up', p}  {t:'emote', e}
+//   klient→värd  {t:'hi', p}  {t:'up', p}  {t:'emote', e}  {t:'ping'}
 //   värd→klient  {t:'world', you, players:[[id,p]]}  {t:'join', id, p}
-//                {t:'up', id, p}  {t:'emote', id, e}  {t:'leave', id}
+//                {t:'up', id, p}  {t:'emote', id, e}  {t:'leave', id}  {t:'pong'}
+//
+// Protokollet ändras bara bakåtkompatibelt (nya fält/meddelanden ignoreras av äldre
+// versioner) – byt aldrig WORLD_VERSION, då hamnar gamla flikar i en annan värld.
+// Hjärtslag: klienten pingar var 5:e s och värden svarar direkt (händelsestyrt, så det
+// fungerar även när värdens flik ligger i bakgrunden). Tystnad → spöket städas bort.
 import { toast } from '../core/ui.js';
 import { cleanAvatar } from '../core/avatar.js';
 import { play } from '../core/sound.js';
+import { VERSION } from '../version.js';
 
 const WORLD_VERSION = 'v2';
-// ?world=xyz ger en egen liten värld (används av testerna, funkar för privata också)
-const worldId = () => 'snabbfilen-' + WORLD_VERSION + '-' +
-  (new URLSearchParams(location.search).get('world') || 'varlden').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 24);
+// ?world=xyz ger en egen liten värld (används av testerna, funkar för privata också).
+// Körs spelet lokalt (utvecklingsserver, testrobotar) hamnar man ALDRIG i den riktiga
+// världen utan att be om det med ?world=varlden – annars kan en testrobot bli värd för
+// de riktiga spelarna och sedan försvinna.
+const LOCAL = /^(localhost|127\.|\[?::1\]?$|10\.|192\.168\.|0\.0\.0\.0)/.test(location.hostname) || location.protocol === 'file:';
+const worldName = () => new URLSearchParams(location.search).get('world') || (LOCAL ? 'lokal' : 'varlden');
+const worldId = () => 'snabbfilen-' + WORLD_VERSION + '-' + worldName().toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 24);
 
 const EMOTE_MS = 2600;
 const MAX_PLAYERS = 24;
+// ?nettest=1 kortar alla tider så att testerna hinner se spöken städas och värdbyten
+const FAST = typeof location !== 'undefined' && /[?&]nettest=1/.test(location.search);
+const PING_MS = FAST ? 700 : 5000;             // klienten pingar värden
+const HOST_SILENT_MS = FAST ? 3500 : 20000;    // klienten: inget från värden så länge → anslut om
+const CLIENT_SILENT_MS = FAST ? 5000 : 90000;  // värden: tyst klient (som kan pinga) → spöke, ta bort
+const SWEEP_MS = FAST ? 1000 : 10000;
+const RESIGN_MS = FAST ? 2500 : 20000;         // dold värd med spelare lämnar över
+// Inaktiv (ingen mus/tangent/touch) i 5 minuter → ut ur världen tills man rör sig igen.
+// Värden rensar dessutom bort den som inte gjort något på 6 minuter (även äldre versioner).
+const IDLE_MS = FAST ? 6000 : 5 * 60 * 1000;
+const HOST_IDLE_MS = FAST ? 9000 : 6 * 60 * 1000;
+
+// En fast nyckel per webbläsare: kommer samma spelare in igen (ny flik, omladdning,
+// tappad uppkoppling) ersätter den nya anslutningen den gamla i stället för att bli två.
+const NET_KEY = (() => {
+  try {
+    let k = localStorage.getItem('snabbfilen_netkey');
+    if (!k) { k = Math.random().toString(36).slice(2, 12) + Date.now().toString(36); localStorage.setItem('snabbfilen_netkey', k); }
+    return k;
+  } catch { return Math.random().toString(36).slice(2, 12); }
+})();
 let W = null;
 let retryTimer = null;
+let idle = false;            // utloggad för att man varit inaktiv
+let lastActive = Date.now();
 
-export const worldInfo = () => ({ role: W?.role || 'off', myId: W?.myId || null, online: W ? W.players.size + 1 : 1, open: !!W?.open });
+export const worldInfo = () => ({ idle, dbg: FAST && W ? { hb: !!W.hb, heard: Date.now() - (W.lastHeard || 0), connOpen: !!W.conn?.open, timers: W.timers?.length, dead: !!W.dead, peerOpen: !!W.peer?.open, peerDestroyed: !!W.peer?.destroyed, players: [...W.players.keys()].map((k) => k.slice(0, 6)) } : undefined, role: W?.role || 'off', myId: W?.myId || null, online: W ? W.players.size + 1 : 1, open: !!W?.open, world: worldName(), local: LOCAL, version: VERSION });
 
 // ---------- start & värdbyte ----------
 export function startWorld(A) {
+  if (idle) return;
   if (!window.Peer) { scheduleRetry(A, 8000); return; }
-  tryHost(A);
+  // en dold flik ska inte bli värd om någon annan kan: försök först som klient
+  if (typeof document !== 'undefined' && document.hidden) joinAsClient(A, { hostIfEmpty: true });
+  else tryHost(A);
 }
 function scheduleRetry(A, ms) {
   clearTimeout(retryTimer);
   retryTimer = setTimeout(() => { if (!W) startWorld(A); }, ms + Math.random() * 2000);
 }
 function baseState(A) {
-  return { role: null, peer: null, myId: null, conns: new Map(), conn: null, players: new Map(), open: false, myEmote: null, lastSent: 0, lastX: -1, lastMeta: '' };
+  return { role: null, peer: null, myId: null, conns: new Map(), conn: null, players: new Map(), open: false, myEmote: null, lastSent: 0, lastX: -1, lastMeta: '', timers: [] };
 }
+function stopTimers(w) { for (const t of w?.timers || []) clearInterval(t); if (w) w.timers = []; }
+function killPeer(w) { w.dead = true; stopTimers(w); try { w.peer?.destroy(); } catch { /* ok */ } }
 function tryHost(A) {
   let peer;
   try { peer = new window.Peer(worldId(), { debug: 0 }); } catch { scheduleRetry(A, 8000); return; }
   const w = baseState(A);
   w.role = 'host'; w.peer = peer; w.myId = worldId();
-  peer.on('open', () => { W = w; W.open = true; });
+  peer.on('open', () => {
+    W = w; W.open = true;
+    w.timers.push(setInterval(() => hostSweep(A, w), SWEEP_MS));
+  });
   peer.on('error', (e) => {
-    if (e.type === 'unavailable-id') { try { peer.destroy(); } catch { /* ok */ } joinAsClient(A); } // någon är redan värd
-    else if (!W || W.peer === peer) { W = null; scheduleRetry(A, 6000); }
+    if (e.type === 'unavailable-id') { killPeer(w); if (W === w) W = null; joinAsClient(A); } // någon är redan värd
+    else if (!W || W.peer === peer) { stopTimers(w); W = null; scheduleRetry(A, 6000); }
   });
   peer.on('connection', (conn) => {
     conn.on('data', (d) => hostData(A, conn, d));
     conn.on('close', () => hostDrop(A, conn));
   });
-  peer.on('disconnected', () => { try { peer.reconnect(); } catch { /* ok */ } });
+  // tappad kontakt med signalservern → återanslut, men ALDRIG om vi själva stänger värden:
+  // destroy() skickar 'disconnected' först, och en reconnect då registrerar om värd-id:t
+  // på en död anslutning så att ingen annan kan bli värd.
+  peer.on('disconnected', () => { if (w.dead) return; try { peer.reconnect(); } catch { /* ok */ } });
 }
-function joinAsClient(A) {
+function joinAsClient(A, { hostIfEmpty = false } = {}) {
   let peer;
   try { peer = new window.Peer(undefined, { debug: 0 }); } catch { scheduleRetry(A, 8000); return; }
   const w = baseState(A);
   w.role = 'client'; w.peer = peer;
-  peer.on('error', (e) => { if (e.type === 'peer-unavailable') { teardown(); scheduleRetry(A, 500); } });
+  peer.on('error', (e) => {
+    if (e.type !== 'peer-unavailable') return;
+    teardown();
+    if (hostIfEmpty && !idle) tryHost(A); // ingen värd finns – då får den dolda fliken ta det
+    else scheduleRetry(A, 500);
+  });
   peer.on('open', (id) => {
     w.myId = id;
     const conn = peer.connect(worldId(), { reliable: true });
     w.conn = conn;
-    conn.on('open', () => conn.send({ t: 'hi', p: myState(A) }));
-    conn.on('data', (d) => clientData(A, d, w));
+    conn.on('open', () => {
+      conn.send({ t: 'hi', p: myState(A) });
+      w.lastHeard = Date.now();
+      w.timers.push(setInterval(() => clientPulse(A, w), PING_MS));
+    });
+    conn.on('data', (d) => { w.lastHeard = Date.now(); clientData(A, d, w); });
     conn.on('close', () => { const wasOpen = W?.open; teardown(); if (wasOpen) scheduleRetry(A, 300); }); // värden försvann: kanske min tur
   });
   const bootTimer = setTimeout(() => { if (!w.open) { teardown(); scheduleRetry(A, 6000); } }, 10000);
   const oldOpen = () => clearTimeout(bootTimer);
   w._welcomed = oldOpen;
   W = w;
-  function teardown() { try { peer.destroy(); } catch { /* ok */ } if (W === w) W = null; }
+  function teardown() { killPeer(w); if (W === w) W = null; }
+  w.teardown = teardown;
 }
+
+const rtcDead = (conn) => { const st = conn?.peerConnection?.connectionState; return st === 'failed' || st === 'disconnected' || st === 'closed'; };
+// Klientens puls: pinga värden, och har en värd som kan svara (pong) varit tyst för
+// länge är anslutningen död fast ingen 'close' kom (mobil som somnat, bytt nät …).
+function clientPulse(A, w) {
+  if (W !== w) return;
+  const dead = () => { w.teardown?.(); scheduleRetry(A, 300); };
+  // kanalen stängd utan att 'close' kom (händer när fliken på andra sidan bara försvinner),
+  // eller WebRTC-förbindelsen själv rapporterar att motparten är borta (oavsett version)
+  if (w.open && (!w.conn?.open || w.peer?.destroyed || w.peer?.disconnected || rtcDead(w.conn))) { dead(); return; }
+  if (!w.conn?.open) return;
+  // a = spelaren har rört mus/tangent sedan förra pingen (står man still i en meny räknas det ändå)
+  try { w.conn.send({ t: 'ping', a: lastActive > (w.lastPing || 0) ? 1 : 0 }); } catch { dead(); return; }
+  w.lastPing = Date.now();
+  if (w.hb && Date.now() - (w.lastHeard || 0) > HOST_SILENT_MS) dead();
+}
+// Flikbyten:
+// - klient som blir synlig igen: kolla värden direkt i stället för att vänta på nästa puls.
+// - värd vars flik göms (mobilen i fickan fryser sidan): lämna över efter en stund så att
+//   de andra inte tappar varandra. En synlig klient tar värdskapet, den dolda fliken
+//   kommer tillbaka som vanlig klient.
+let resignTimer = null;
+if (typeof document !== 'undefined') document.addEventListener('visibilitychange', () => {
+  clearTimeout(resignTimer);
+  if (!W) return;
+  if (!document.hidden && W.role === 'client') {
+    if (W.hb && Date.now() - (W.lastHeard || 0) > HOST_SILENT_MS) { W.teardown?.(); scheduleRetry(window.SF, 300); }
+    return;
+  }
+  if (document.hidden && W.role === 'host' && W.players.size) {
+    const w = W;
+    resignTimer = setTimeout(() => {
+      if (W !== w || !document.hidden || !w.players.size) return;
+      killPeer(w);
+      W = null;
+      clearTimeout(retryTimer);
+      retryTimer = setTimeout(() => { if (!W) joinAsClient(window.SF); }, 4000);
+    }, RESIGN_MS);
+  }
+});
+
+// ---------- inaktivitet ----------
+// Rör man inte mus, tangentbord eller skärm på IDLE_MS lämnar man världen (värden lämnar
+// över till någon annan). Första rörelsen efteråt tar en tillbaka.
+function markActive() {
+  lastActive = Date.now();
+  if (!idle) return;
+  idle = false;
+  toast('🌆 Tillbaka i Pixelstaden!', 'good');
+  if (window.SF && !W) startWorld(window.SF);
+}
+function goIdle() {
+  if (idle || !W) return;
+  idle = true;
+  clearTimeout(retryTimer);
+  const w = W;
+  W = null;
+  killPeer(w);
+  toast('💤 Du har varit borta en stund – utloggad ur världen. Rör dig så är du tillbaka!', 'wrap');
+}
+if (typeof window !== 'undefined') {
+  for (const ev of ['pointerdown', 'keydown', 'touchstart', 'wheel']) window.addEventListener(ev, markActive, { capture: true, passive: true });
+  setInterval(() => { if (!idle && W && Date.now() - lastActive > IDLE_MS) goIdle(); }, FAST ? 1000 : 5000);
+}
+export const worldMarkActive = markActive;
 
 // ---------- min publicerade state ----------
 function myState(A) {
-  return { av: { name: A.avatar.name, look: A.avatar.look, color: A.avatar.color }, scene: myScene(A), x: A.scene?.worldX ?? 190, y: A.scene?.worldY ?? 174, home: A.game.home, deco: A.game.deco };
+  return { av: { name: A.avatar.name, look: A.avatar.look, color: A.avatar.color }, scene: myScene(A), x: A.scene?.worldX ?? 190, y: A.scene?.worldY ?? 174, home: A.game.home, deco: A.game.deco, key: NET_KEY, ver: VERSION };
 }
 function myScene(A) {
   if (A.sceneName === 'city') return 'city';
   if (A.sceneName === 'room') return 'home:' + (W?.myId || 'me') + ':' + (A.roomSub | 0);
   if (A.sceneName === 'visit') return 'home:' + (A.visitTarget?.id || 'me') + ':' + (A.roomSub | 0);
-  return 'away';
+  // butiker och jobb: osynlig för andra, men de ser VAR man är (äldre versioner läser det som 'away')
+  const where = String(A.sceneName || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 24);
+  return where ? 'away:' + where : 'away';
 }
-const cleanScene = (s) => (s === 'city' || s === 'away' || /^home:[\w-]{1,64}:\d$/.test(String(s)) ? String(s) : 'away');
+const isAway = (s) => String(s).startsWith('away');
+const cleanScene = (s) => (s === 'city' || /^away(:[a-z0-9]{1,24})?$/.test(String(s)) || /^home:[\w-]{1,64}:\d$/.test(String(s)) ? String(s) : 'away');
 function cleanP(p, old = {}) {
   const out = { ...old };
   if (p && typeof p === 'object') {
@@ -94,12 +216,17 @@ function cleanP(p, old = {}) {
     if (p.x !== undefined) { out.tx = Math.max(0, Math.min(4000, +p.x || 190)); if (out.x === undefined) out.x = out.tx; }
     if (p.y !== undefined) { out.ty2 = Math.max(0, Math.min(2000, +p.y || 174)); if (out.y === undefined) out.y = out.ty2; }
     if (p.home !== undefined) out.home = String(p.home).slice(0, 16);
+    if (typeof p.key === 'string') out.key = p.key.slice(0, 40);
+    if (typeof p.ver === 'string') out.ver = p.ver.slice(0, 16);
     if (p.deco !== undefined && p.deco && typeof p.deco === 'object') {
       out.deco = {};
-      for (const [key, list] of Object.entries(p.deco).slice(0, 12)) {
-        if (!/^[a-z]+:\d$/.test(key) || !Array.isArray(list)) continue;
-        // c = möbelns egna färg – bara giltig #rrggbb följer med (besökare ser färgen)
-        out.deco[key] = list.slice(0, 40).map((d) => ({ k: String(d?.k || '').slice(0, 12), v: Math.max(0, d?.v | 0), x: +d?.x || 0, y: +d?.y || 0, ...(d?.fx ? { fx: 1 } : {}),
+      // upp till 24 delrum med 80 möbler var (de nya bostäderna har fler rum och mer bohag)
+      for (const [key, list] of Object.entries(p.deco).slice(0, 24)) {
+        if (!/^[a-z][a-z0-9]*:\d{1,2}$/.test(key) || !Array.isArray(list)) continue;
+        // c = möbelns egna färg – bara giltig #rrggbb följer med (besökare ser färgen),
+        // r = rotationen (0–3, 0 skickas inte), sortnamn upp till 24 tecken
+        out.deco[key] = list.slice(0, 80).map((d) => ({ k: String(d?.k || '').slice(0, 24), v: Math.max(0, d?.v | 0), x: +d?.x || 0, y: +d?.y || 0, ...(d?.fx ? { fx: 1 } : {}),
+          ...((d?.r | 0) & 3 ? { r: (d.r | 0) & 3 } : {}),
           ...(typeof d?.c === 'string' && /^#[0-9a-f]{6}$/i.test(d.c) ? { c: d.c.toLowerCase() } : {}) }));
       }
     }
@@ -118,9 +245,20 @@ function hostBroadcast(msg, except = null) {
 function hostData(A, conn, d) {
   if (!W || W.role !== 'host' || !d || typeof d !== 'object') return;
   const id = conn.peer;
+  const known = W.players.get(id);
+  if (known) known.seen = Date.now();
+  if (d.t === 'ping') {
+    if (known) { known.hb = true; if (d.a) known.active = Date.now(); }
+    try { conn.send({ t: 'pong' }); } catch { /* stängd */ }
+    return;
+  }
+  if (known && (d.t === 'up' || d.t === 'emote')) known.active = Date.now();
   if (d.t === 'hi') {
-    if (W.players.size >= MAX_PLAYERS) { conn.close(); return; }
     const p = cleanP(d.p);
+    // samma spelare igen (ny flik/omladdning/tappad uppkoppling) → ta bort den gamla
+    if (p.key) for (const [oid, op] of [...W.players]) if (oid !== id && op.key === p.key) dropPlayer(oid, true);
+    if (W.players.size >= MAX_PLAYERS) { conn.close(); return; }
+    p.seen = p.active = Date.now();
     W.conns.set(id, conn);
     W.players.set(id, p);
     conn.send({ t: 'world', you: id, players: [[W.myId, myState(A)], ...[...W.players].filter(([pid]) => pid !== id)] });
@@ -141,17 +279,35 @@ function hostData(A, conn, d) {
 }
 function hostDrop(A, conn) {
   if (!W || W.role !== 'host') return;
-  const id = conn.peer, p = W.players.get(id);
-  if (!p) return;
+  if (W.conns.get(conn.peer) !== conn) return; // redan ersatt av en nyare anslutning
+  const p = W.players.get(conn.peer);
+  if (p && dropPlayer(conn.peer, false)) toast(`👋 ${p.av.name || 'Någon'} loggade ut.`);
+}
+function dropPlayer(id, quiet) {
+  const p = W.players.get(id), conn = W.conns.get(id);
+  if (!p) return false;
   W.conns.delete(id);
   W.players.delete(id);
-  hostBroadcast({ t: 'leave', id });
-  toast(`👋 ${p.av.name || 'Någon'} loggade ut.`);
+  try { conn?.close(); } catch { /* ok */ }
+  hostBroadcast({ t: 'leave', id, ...(quiet ? { quiet: 1 } : {}) });
+  return true;
+}
+// Klienter som kan pinga men tystnat är spöken (mobilen somnade, nätet bröts utan 'close').
+function hostSweep(A, w) {
+  if (W !== w || W.role !== 'host') return;
+  const now = Date.now();
+  for (const [id, p] of [...W.players]) {
+    if (rtcDead(W.conns.get(id))) dropPlayer(id, true);
+    else if (p.hb && now - (p.seen || 0) > CLIENT_SILENT_MS) dropPlayer(id, true);
+    else if (now - (p.active || p.seen || 0) > HOST_IDLE_MS) { if (dropPlayer(id, false)) toast(`💤 ${p.av.name || 'Någon'} var borta en stund och loggades ut.`); }
+    else if (!W.conns.get(id)?.open && now - (p.seen || 0) > 15000) dropPlayer(id, true);
+  }
 }
 
 // ---------- klientsidan ----------
 function clientData(A, d, w) {
   if (W !== w || !d || typeof d !== 'object') return;
+  if (d.t === 'pong') { w.hb = true; return; }
   if (d.t === 'world') {
     w.open = true;
     w._welcomed?.();
@@ -170,7 +326,7 @@ function clientData(A, d, w) {
   } else if (d.t === 'leave') {
     const p = w.players.get(d.id);
     w.players.delete(d.id);
-    if (p) toast(`👋 ${p.av.name || 'Någon'} loggade ut.`);
+    if (p && !d.quiet) toast(`👋 ${p.av.name || 'Någon'} loggade ut.`);
   }
 }
 
@@ -204,7 +360,7 @@ export function worldTick(A, myX, dt) {
 export function worldFolksHere(A) {
   if (!W || !W.open) return [];
   const here = myScene(A);
-  if (here === 'away') return [];
+  if (isAway(here)) return [];
   const out = [];
   for (const [id, p] of W.players) {
     if (p.scene !== here) continue;
@@ -225,7 +381,13 @@ export function sendEmote(A, e) {
 // ---------- besök ----------
 export function playersList() {
   if (!W || !W.open) return [];
-  return [...W.players].map(([id, p]) => ({ id, av: p.av, scene: p.scene, home: p.home }));
+  return [...W.players].map(([id, p]) => ({ id, av: p.av, scene: p.scene, home: p.home, x: p.x, y: p.y, ver: p.ver || null }));
+}
+// Namnet på den som har ett visst spelar-id (för "hemma hos …")
+export function playerName(id) {
+  if (!W) return null;
+  if (id === W.myId) return null;
+  return W.players.get(id)?.av?.name || null;
 }
 export function visitPlayer(A, id) {
   const p = W?.players.get(id);

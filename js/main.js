@@ -24,7 +24,10 @@ import { makeShopDjur } from './scenes/shop-djur.js';
 import { startJobFlow } from './jobs/shift.js';
 import { openFoodShop } from './shops/matbutik.js';
 import { openHousing } from './shops/bostad.js';
-import { startWorld, worldTick, worldInfo, playersList, visitPlayer, sendEmote, worldFolksHere } from './net/world.js';
+import { startWorld, worldTick, worldInfo, playersList, visitPlayer, sendEmote, worldFolksHere, playerName } from './net/world.js';
+import { openMenu, mountMenuButton, isMenuOpen, shouldShowMenuAtBoot } from './core/menu.js';
+import { drawPixHud, isPixHud, apply as applyHud, stripHeight, layoutStrip } from './core/hud-pix.js';
+import { musicTick } from './core/music.js';
 import { play, unlockAudio, toggleMute, isMuted } from './core/sound.js';
 
 const $ = (s) => document.querySelector(s);
@@ -42,7 +45,7 @@ const A = {
     A.scene = SCENES[name](A, opts);
     A.scene.enter?.();
   },
-  openFoodShop: () => openFoodShop(A),
+  openFoodShop: () => A.go('mat'), // stormarknaden man går runt i (js/scenes/shop-mat.js)
   openHousing: (opts) => openHousing(A, opts),
   openFriends: () => openWorldDialog(),
   startJob: (jobId) => startJobFlow(A, jobId, ENGINES[jobId]),
@@ -76,7 +79,7 @@ const SCENES = {
   jobbkafe: (a, o) => makeJobbKafe(a, o),
   djur: (a, o) => makeShopDjur(a, o),
 };
-const ENGINES = { flygplats: 'jobbflyg', frukt: 'jobbfrukt', burgare: 'jobbburgare' };
+const ENGINES = { flygplats: 'jobbflyg', frukt: 'jobbfrukt', burgare: 'jobbburgare', pizzeria: 'jobbpizzeria', posten: 'jobbposten', bensinmack: 'jobbbensin', bilverkstad: 'jobbverkstad', tvatteri: 'jobbtvatt', kafe: 'jobbkafe' };
 
 // ---------- skala canvasen till fönstret ----------
 // Knivskarpt på alla skärmar: canvasen får exakt ett heltal device-pixlar per
@@ -84,12 +87,15 @@ const ENGINES = { flygplats: 'jobbflyg', frukt: 'jobbfrukt', burgare: 'jobbburga
 function fit() {
   const dpr = window.devicePixelRatio || 1;
   const w = window.innerWidth, h = window.innerHeight - $('#hud').offsetHeight - 4;
-  const s = Math.max(2, Math.floor(Math.min(w * dpr / A.W, h * dpr / A.H)));
+  // bakom huvudmenyn täcker hela staden fönstret (kanterna klipps), annars får hela spelbilden plats
+  // pixelmätarnas remsa ligger ovanför spelbilden och tar sin höjd av samma yta
+  const s = Math.max(2, A.attract ? Math.ceil(Math.max(w * dpr / A.W, h * dpr / A.H)) : Math.floor(Math.min(w * dpr / A.W, h * dpr / (A.H + stripHeight(A)))));
   A.pxs = s;
   cv.width = A.W * s;
   cv.height = A.H * s;
   cv.style.width = (A.W * s / dpr) + 'px';
   cv.style.height = (A.H * s / dpr) + 'px';
+  layoutStrip(A, dpr);
 }
 window.addEventListener('resize', fit);
 
@@ -102,7 +108,7 @@ cv.addEventListener('pointerdown', (e) => { if (modalOpen()) return; cv.setPoint
 cv.addEventListener('pointermove', (e) => { if (modalOpen()) return; const p = toLocal(e); A.scene?.move?.(p.x, p.y); });
 cv.addEventListener('pointerup', (e) => { if (modalOpen()) return; const p = toLocal(e); A.scene?.up?.(p.x, p.y); });
 window.addEventListener('keydown', (e) => {
-  if (modalOpen() || e.ctrlKey || e.altKey || e.metaKey) return;
+  if (modalOpen() || isMenuOpen() || e.ctrlKey || e.altKey || e.metaKey) return;
   A.scene?.key?.(e.key);
 });
 
@@ -164,19 +170,42 @@ A.sleepFlow = () => {
   ]);
 };
 
-// 👥 Onlinelistan: alla i världen, med "Åk dit"-knapp. Ingen kod – öppen värld.
+// 👥 Onlinelistan: alla i världen, var de är just nu, "Gå dit" (i staden) och "Åk dit"
+// (hem till dem). Ingen kod – öppen värld.
+const PLACE_AWAY = {
+  jobbflyg: '✈️ jobbar på flygplatsen', jobbfrukt: '🍊 jobbar på fruktfabriken', jobbburgare: '🍔 jobbar på Burgarbaren',
+  jobbpizzeria: '🍕 jobbar på pizzerian', jobbposten: '📦 jobbar på Posten', jobbbensin: '⛽ jobbar på macken',
+  jobbverkstad: '🔧 jobbar på bilverkstaden', jobbtvatt: '🧺 jobbar på tvätteriet', jobbkafe: '☕ jobbar på kaféet',
+  mat: '🛒 i mataffären', klader: '👕 i klädaffären', mobler: '🛋️ på MÖBELJÄTTEN', moblergammal: '🛋️ på MÖBELJÄTTEN',
+  bostad: '🔑 på bostadsbyrån', kafe: '☕ på kaféet', djur: '🐾 i djuraffären',
+};
+function placeOf(p, info) {
+  const s = String(p.scene || 'away');
+  if (s === 'city') return '🏙️ i staden';
+  if (s.startsWith('home:')) {
+    const owner = s.split(':')[1];
+    if (owner === p.id) return '🏠 hemma';
+    if (owner === info.myId) return '🏠 hemma hos dig!';
+    return `🏠 hos ${playerName(owner) || 'en kompis'}`;
+  }
+  return PLACE_AWAY[s.slice(5)] || '💼 upptagen';
+}
 function openWorldDialog() {
   const info = worldInfo();
   const list = playersList();
-  const place = (s) => (s === 'city' ? '🏙️ i staden' : String(s).startsWith('home:') ? '🏠 hemma' : '💼 upptagen');
+  const inJob = A.sceneName.startsWith('jobb');
+  const verTag = (v) => (v === info.version ? '' : ` <span class="old">${v ? 'v' + esc(v) : 'gammal version'}</span>`);
   const rows = list.map((p, i) => `<div class="prow">
       <span data-face="${i}"></span>
-      <span class="nm">${esc(p.av.name || '?')}<br><small class="sp">${place(p.scene)}</small></span>
-      <button class="btn btn-small btn-go" data-visit="${esc(p.id)}">🚗 Åk dit</button>
+      <span class="nm">${esc(p.av.name || '?')}${verTag(p.ver)}<br><small class="sp">${placeOf(p, info)}</small></span>
+      ${p.scene === 'city' && !inJob ? `<button class="btn btn-small" data-goto="${esc(p.id)}">🚶 Gå dit</button>` : ''}
+      <button class="btn btn-small btn-go" data-visit="${esc(p.id)}">🚗 Åk hem till</button>
     </div>`).join('');
+  const role = info.role === 'host' ? 'du håller i världen' : info.role === 'client' ? 'ansluten' : 'kopplar upp';
   const dlg = openModal('👥 Pixelstaden online', `
     <p style="font-size:19px;margin-top:0">${info.open ? `<b>${info.online}</b> ${info.online === 1 ? 'spelare (bara du) i världen just nu.' : 'spelare i världen just nu.'}` : '📡 Kopplar upp mot världen…'}</p>
-    ${list.length ? `<div class="plist">${rows}</div>` : info.open ? '<p style="font-size:18px">Du är ensam i stan – tipsa någon om länken så ses ni här!</p>' : ''}`,
+    ${list.length ? `<div class="plist">${rows}</div>` : info.open ? '<p style="font-size:18px">Du är ensam i stan – tipsa någon om länken så ses ni här!</p>' : ''}
+    <p class="world-diag">Du ser bara dem som är på samma ställe som du. v${esc(info.version)} · ${role}${info.world !== 'varlden' ? ` · värld: ${esc(info.world)}` : ''}</p>`,
   [
     ...(A.sceneName === 'visit' ? [{ label: '🚗 Åk hem', cls: 'btn-red', onClick: () => { closeModal(); A.visitTarget = null; A.game.passTime(20); A.game.save(); A.go('city'); } }] : []),
     { label: 'Stäng', cls: 'btn-go', onClick: closeModal },
@@ -186,6 +215,11 @@ function openWorldDialog() {
     el.replaceWith(avatarPortrait({ name: p.av.name, look: p.av.look, color: p.av.color }, 40));
   });
   dlg.querySelectorAll('[data-visit]').forEach((b) => (b.onclick = () => { closeModal(); visitPlayer(A, b.dataset.visit); }));
+  dlg.querySelectorAll('[data-goto]').forEach((b) => (b.onclick = () => {
+    closeModal();
+    A.followPlayer = b.dataset.goto;
+    if (A.sceneName !== 'city') { A.visitTarget = null; A.go('city'); }
+  }));
 }
 
 // 📊 Dagboken: vad man har gjort i Pixelstaden hittills.
@@ -235,7 +269,7 @@ function boot() {
   // HUD-knapparna: kompisar + ljud
   const mute = $('#hud-mute');
   mute.textContent = isMuted() ? '🔇' : '🔊';
-  mute.onclick = () => { mute.textContent = toggleMute() ? '🔇' : '🔊'; };
+  mute.onclick = () => { mute.textContent = toggleMute() ? '🔇' : '🔊'; musicTick(); };
   $('#hud-friends').onclick = () => A.openFriends();
   $('#hud-diary').onclick = () => openDiary();
   $('#decor-btn').onclick = () => A.scene?.toggleDecor?.();
@@ -255,13 +289,22 @@ function boot() {
     }
   };
 
-  if (!A.avatar.name) {
-    openAvatarPicker({
-      title: '🧑 Vem är du?', text: 'Skapa din figur – du kan byta kläder hemma i garderoben när du vill.',
-      onPick: (av) => { A.avatar = av; begin(); },
-      onCancel: () => { A.avatar = loadAvatar(); begin(); },
-    });
-  } else begin();
+  const start = () => {
+    A.attract = false;
+    fit();
+    if (!A.avatar.name) {
+      openAvatarPicker({
+        title: '🧑 Vem är du?', text: 'Skapa din figur – du kan byta kläder hemma i garderoben när du vill.',
+        onPick: (av) => { A.avatar = av; begin(); },
+        onCancel: () => { A.avatar = loadAvatar(); begin(); },
+      });
+    } else begin();
+  };
+  mountMenuButton(A);
+  applyHud();
+  // huvudmenyn: staden lever bakom panelen tills man väljer figur och trycker Fortsätt
+  if (shouldShowMenuAtBoot()) { A.attract = true; fit(); A.go('city'); openMenu(A, { onStart: start }); }
+  else start();
 
   // porträttet i HUD:en
   const face = $('#hud-face');
@@ -282,7 +325,7 @@ function tick(now) {
   const dt = Math.min(0.05, (now - last) / 1000);
   last = now;
   if (A.scene) {
-    if (!modalOpen() && !A.sceneName.startsWith('jobb')) A.game.tickReal(dt);
+    if (!modalOpen() && !isMenuOpen() && !A.sceneName.startsWith('jobb')) A.game.tickReal(dt);
     A.scene.update?.(dt);
     worldTick(A, A.scene.worldX ?? null, dt);
     ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -290,6 +333,7 @@ function tick(now) {
     ctx.fillRect(0, 0, cv.width, cv.height);
     ctx.imageSmoothingEnabled = false;
     A.scene.draw(ctx);
+    if (isPixHud() && !A.attract) drawPixHud(ctx, A);
   }
   renderHud();
   checkCollapse();

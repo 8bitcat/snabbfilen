@@ -13,10 +13,11 @@
 //     kakelugn, påtår-bordet, tidningar på pelaren, golvlampa, en persisk matta,
 //     kafékatten Kanel på soffan och farmors tax Sixten på mattan.
 //
-// Mekanik: klick på disken → menyn (6 fikor) → köp: pengarna dras, mättnad och
+// Mekanik: klick på disken → menyn (7 fikor, bl.a. latten för 35 kr som skylten ute lovar) → köp: pengarna dras, mättnad och
 // energi höjs (koffeinet biter sämre för varje kopp samma dag), klockan går en
 // kvart och spelet sparas. Baristan gör i ordning fikat, figuren bär brickan
-// till ett ledigt bord, sätter sig och äter en stund. Gäster kommer och går.
+// till ett ledigt bord (klick på ett annat bord under tiden styr om dit), sätter
+// sig och äter en stund. Gäster kommer och går.
 // Påtår (+3 energi) ingår en gång per besök när man har köpt något.
 //
 // Allt statiskt målas pixel för pixel med Pix-pennan EN gång (per dag/natt) –
@@ -38,6 +39,8 @@ export const KAFE_MENY = [
   { id: 'semla', icon: '🍥', name: 'Semla & varm choklad', board: 'SEMLA', price: 50, fill: 30, energy: 8, cake: 'semla', cup: 'choklad' },
   { id: 'prinsess', icon: '🎂', name: 'Prinsesstårta & te', board: 'PRINSESSTÅRTA', price: 60, fill: 34, energy: 10, cake: 'prinsess', cup: 'te' },
   { id: 'espresso', icon: '☕', name: 'Dubbel espresso', board: 'ESPRESSO', price: 25, fill: 2, energy: 24, cake: null, cup: 'espresso' },
+  // samma latte som trottoarprataren ute på gatan lovar (LATTE 35:-)
+  { id: 'latte', icon: '🥛', name: 'Caffè latte & pepparkaka', board: 'LATTE', price: 35, fill: 6, energy: 18, cake: null, cup: 'latte' },
 ];
 const KICK = [1, 0.75, 0.5, 0.3, 0.15];           // koffeinets verkan: kopp 1, 2, 3 … samma dag
 const CAF_KEY = 'snabbfilen_kafe';
@@ -59,7 +62,7 @@ const DOOR = { x0: 96, x1: 124, top: 26 };      // glasdörren ut
 const WINS = [{ x0: 16, x1: 88 }, { x0: 132, x1: 204 }];
 const WIN_T = 18, WIN_B = 62;                   // fönsterglasets över-/underkant
 const LEDGE = 62;                               // bardisken under fönstren
-const BOARD = { x0: 226, x1: 299, y0: 8, y1: 63 };
+const BOARD = { x0: 226, x1: 299, y0: 8, y1: 64 };   // sju rader: griffeln går ner bakom brödkorgen
 const BACK = { x0: 226, x1: 432, top: 66, y: 86 };   // bakdisken mot väggen
 const CNT = { x0: 222, x1: 434, top: 97, face: 104, y: 118 }; // disken (golvkant y)
 const CASE = { x0: 232, x1: 316 };              // glasmontern på disken
@@ -265,7 +268,15 @@ function paintSet(P, x, y, m, stage = 0) {
     if (stage >= 1) for (const [dx, dy] of [[5, 6], [7, 6], [2, 6], [6, 5]]) if (stage === 2 || dx > 4) P.px(x + dx, y + dy, stage === 2 ? 0xb88450 : 0xd09a5a);
     if (stage === 2) { P.hl(x + 1, y + 5, 5, 0xc8ccd2); P.px(x + 1, y + 4, 0xa8b0b8); } // gaffeln
   }
-  if (!m.cake) {
+  if (!m.cake && m.cup === 'latte') {
+    // lattet i högt glas på ett avlångt fat, med en glasyrad pepparkaka och en långsked
+    spr(P, x + 1, y + 7, ['.pppppppppppp.', '..qqqqqqqqqq..'], { p: 0xfaf8f4, q: 0xcfc8bc });
+    P.px(x + 3, y + 7, 0xffffff);
+    const heart = ['kk.kk', 'kKkKk', 'kkWkk', '.kKk.', '..k..'];
+    if (stage < 2) spr(P, x + 2, y + 2, stage === 1 ? heart.map((r) => r.slice(0, 2) + '...') : heart, { k: 0xa8581e, K: 0xd88a4a, W: 0xfaf4ea });
+    if (stage >= 1) for (const [dx, dy] of [[5, 6], [3, 6], [7, 6]]) if (stage === 2 || dx > 4) P.px(x + dx, y + dy, 0xa8581e);
+    P.vl(x + 12, y + 1, 3, 0xc8ccd2); P.px(x + 12, y + 1, 0xeef0f4);        // långskeden sticker upp ur glaset
+  } else if (!m.cake) {
     // espresson serveras med ett glas vatten och en chokladbit på ett litet fat
     spr(P, x + 1, y + 1, ['g..g', 'gwwg', 'gWwg', 'gwwg', 'gwwg', 'gwwg', 'gwwg', '.gg.'], { g: 0xb8d0dc, w: 0xe0eef4, W: 0xffffff });
     if (stage < 2) P.hl(x + 2, y + 2, 2, 0xc8e0ea);
@@ -274,9 +285,12 @@ function paintSet(P, x, y, m, stage = 0) {
   }
   if (cup) {
     const cw = cup.m[0].length, ch = cup.m.length;
-    const ux = m.cake ? x + 11 : x + 7, uy = y + 9 - ch;
+    const ux = m.cake ? x + 11 : m.cup === 'latte' ? x + 10 : x + 7, uy = y + 9 - ch;
     spr(P, ux, uy, cup.m, cup.p);
     if (stage === 2 && cup.p.k) P.hl(ux + 1, uy + 1, Math.max(1, cw - 3), 0xd8cfc0); // urdrucken
+    if (stage === 2 && m.cup === 'latte') {                                         // tomt glas, skumrand kvar
+      for (let j = 1; j < ch - 1; j++) for (let i = 1; i < cw - 1; i++) P.px(ux + i, uy + j, j === 1 ? 0xf4ecdc : 0xe6eef2);
+    }
   }
 }
 
@@ -448,13 +462,13 @@ function paintBoard(P, dag) {
   // rubrik med en liten kaffekopp och hjärta
   const title = textMask(BIG, 'MENY');
   const tx = x0 + ((w - title.w) >> 1);
-  drawText(P, title, tx, y0 + 4, { fill: 0xfaf6e8, rough: true });
-  spr(P, tx - 10, y0 + 5, ['.w.w..', '......', 'wwwww.', 'w...ww', 'w...w.', '.www..'], { w: 0xf2d890 });
-  spr(P, tx + title.w + 4, y0 + 6, ['p.p', 'ppp', '.p.'], { p: 0xf08aa8 });
-  for (let x = x0 + 6; x < x1 - 6; x += 2) P.px(x, y0 + 12 + ((x >> 1) & 1), 0xe07aa0, 0.8);
+  drawText(P, title, tx, y0 + 3, { fill: 0xfaf6e8, rough: true });
+  spr(P, tx - 10, y0 + 4, ['.w.w..', '......', 'wwwww.', 'w...ww', 'w...w.', '.www..'], { w: 0xf2d890 });
+  spr(P, tx + title.w + 4, y0 + 5, ['p.p', 'ppp', '.p.'], { p: 0xf08aa8 });
+  for (let x = x0 + 6; x < x1 - 6; x += 2) P.px(x, y0 + 10, (x >> 1) & 1 ? 0xe07aa0 : 0xf0a8c0, 0.8);
   // raderna: namn till vänster, pris till höger (dagens fika med gul krita och en pil)
   KAFE_MENY.forEach((m, i) => {
-    const y = y0 + 16 + i * 6, isD = i === dag;
+    const y = y0 + 12 + i * 6, isD = i === dag;
     if (isD) for (let j = -1; j < 6; j++) for (let x = x0 + 3; x < x1 - 3; x++) if (bayer(x, y + j) < 0.35) P.px(x, y + j, 0xd8e0d8, 0.1);
     const name = textMask(SMALL, m.board);
     drawText(P, name, x0 + 5, y, { fill: isD ? 0xffe070 : 0xf4f0e2, rough: true });
@@ -949,7 +963,6 @@ function paintNightLight() {
   P.ell(FLAMP.x, FLAMP.y - 42, 8, 4, 0xffe8b0, 0.55, 3);
   P.ell(FLAMP.x - 12, FLAMP.y, 48, 12, AMB, 0.2, 4);
   P.ell(362, 18, 48, 15, 0xff6a3a, 0.2, 4);                                    // neonskylten
-  for (const T of TABLES) if (!T.bench) P.ell(T.x + (T.long ? 21 : 7), T.y - 15, 20, 13, AMB, 0.22, 4);
   for (const w of WINS) P.ell((w.x0 + w.x1) / 2, WIN_T + 4, (w.x1 - w.x0) / 2 + 6, 10, 0xffd890, 0.2, 3);
   return P.flush();
 }
@@ -1552,8 +1565,9 @@ export function makeShopKafe(A) {
   const glows = {
     lamp: glowImg(22, 16, 0xffc070, 0.28), sconce: glowImg(18, 14, 0xffc070, 0.26), candle: glowImg(8, 6, 0xffb050, 0.35),
     neon: glowImg(34, 10, 0xff8a3a, 0.2), fairy: glowImg(4, 4, 0xffd890, 0.4),
-    pool: glowImg(26, 8, 0xffc070, 0.24),
+    pool: glowImg(26, 8, 0xffc070, 0.24), table: glowImg(20, 13, 0xff9c48, 0.22),
   };
+  const lightLayer = () => (cache.lightLayer ||= (() => { const c = mkCanvas(W, H), x = c.getContext('2d'); x.imageSmoothingEnabled = false; return { c, x }; })());
 
   // ---------- baristan ----------
   const BARISTA = { skin: '#c68a5c', hair: '#1d1714', style: 'bun', top: 'tee', shirt: '#2f3440', accent: '#c9a44a', bottom: 'pants', pants: '#2b2b30', shoes: '#1c1c1c', glasses: false, beard: false, phones: false, bag: null, hat: 'beanie', cap: '#8e2a30', apron: true, build: 5, blush: true, kid: false };
@@ -1976,6 +1990,13 @@ export function makeShopKafe(A) {
 
   function drawWorld(ctx, cx, vw) {
     const hour = g.min / 60, night = isNight(hour), dark = darkness(hour);
+    // I kväll byggs bordsljusens sken i ett eget lager i djupordning: ett bord lägger till
+    // sitt sken, och allt som ritas framför det (folk, stolsryggar) suddar ut det igen.
+    // Då hamnar pölen på bordsskivan och på den som sitter vänd mot ljuset – inte på
+    // nacken hos den som sitter med ryggen åt oss.
+    const lit = night || dark > 0.2;
+    const LL = lit ? lightLayer() : null;
+    if (LL) { LL.x.globalCompositeOperation = 'source-over'; LL.x.globalAlpha = 1; LL.x.clearRect(0, 0, W, H); }
     ctx.drawImage(bg(), 0, 0);
     // ---- utanför: bilar och folk som går förbi (klippt till glaset) ----
     ctx.save();
@@ -2012,7 +2033,8 @@ export function makeShopKafe(A) {
 
     // ---- allt på golvet i djupordning ----
     const items = [];
-    const add = (fy, draw) => items.push({ fy, draw });
+    // fig = står framför ljuset och skymmer det, light = lägger till sken i ljuslagret
+    const add = (fy, draw, o = {}) => items.push({ fy, draw, fig: !!o.fig, light: o.light || null });
     add(CNT.y, () => {
       const bf = bar.walking ? WALK_SEQ[Math.floor(t * 8.5) % 4] : (Math.sin(t * 1.7) > 0.93 ? 4 : 0);
       drawPerson(ctx, Math.round(bar.x), BARI_Y, BARISTA, bar.dir, bf);
@@ -2030,12 +2052,17 @@ export function makeShopKafe(A) {
         else ctx.drawImage(tableImg, T.x - 14, T.y - 17);
         for (const s of ts) drawPlate(ctx, s);
         if ((night || dark > 0.15) && !T.bench) drawCandle(ctx, T.x + (T.long ? 21 : 7), T.y - 14);
-      });
-      for (const s of ts) if (s.front) add(s.y, () => {
-        ctx.drawImage(chairUp.img, s.x - 8, s.y - 25);
-        drawSeated(ctx, s);
-        ctx.drawImage(chairUp.front, s.x - 8, s.y - 25);
-      });
+      }, T.bench ? {} : { light: (x) => {
+        const lx = T.x + (T.long ? 21 : 7);
+        x.globalAlpha = 1; x.drawImage(glows.table, lx - 21, T.y - 29);                  // pölen på bordsskivan
+        x.globalAlpha = 0.75 + 0.25 * Math.sin(t * 9 + T.x);                             // levande ljuslåga
+        x.drawImage(glows.candle, lx - 9, T.y - 25);
+      } });
+      for (const s of ts) if (s.front) add(s.y, (c) => {
+        c.drawImage(chairUp.img, s.x - 8, s.y - 25);
+        drawSeated(c, s);
+        c.drawImage(chairUp.front, s.x - 8, s.y - 25);
+      }, { fig: true });
     }
     for (const s of seats) if (s.kind === 'pall') add(s.y, () => { drawPlate(ctx, s); ctx.drawImage(stoolImg, s.x - 6, s.y - 12); drawSeated(ctx, s); });
     for (const p of PLANTS) { const im = plantImg[p.kind]; add(p.y, () => ctx.drawImage(im.img, p.x - im.ox, p.y - im.oy)); }
@@ -2048,27 +2075,32 @@ export function makeShopKafe(A) {
     add(PRAM.y, () => ctx.drawImage(pramImg.img, PRAM.x - pramImg.ox, PRAM.y - pramImg.oy));
     add(BQ.y - 0.5, () => drawCat(ctx));
     for (const G of guests) if (!G.fixed && (G.state === 'enter' || G.state === 'order' || G.state === 'carry' || G.state === 'leave')) {
-      add(G.w.py, () => {
+      add(G.w.py, (c) => {
         const carry = G.state === 'carry', walking = G.w.path.length > 0;
         const fr = carry ? (walking ? [7, 9, 8, 9][Math.floor(t * 7) % 4] : 9) : walking ? WALK_SEQ[Math.floor(t * 7) % 4] : 0;
         const dir = G.state === 'order' ? 'up' : G.w.dir;
-        if (carry && dir === 'up') drawTrayHeld(ctx, G.w.px, G.w.py, dir, G.item);
-        drawPerson(ctx, G.w.px, G.w.py, G.look, dir, fr);
-        if (carry && dir !== 'up') drawTrayHeld(ctx, G.w.px, G.w.py, dir, G.item);
-      });
+        if (carry && dir === 'up') drawTrayHeld(c, G.w.px, G.w.py, dir, G.item);
+        drawPerson(c, G.w.px, G.w.py, G.look, dir, fr);
+        if (carry && dir !== 'up') drawTrayHeld(c, G.w.px, G.w.py, dir, G.item);
+      }, { fig: true });
     }
-    for (const d of folkDrawables(A, t)) add(d.fy, () => d.draw(ctx));
+    for (const d of folkDrawables(A, t)) add(d.fy, (c) => d.draw(c), { fig: true });
     if (me.state !== 'sit') {
       const carry = me.state === 'carry';
       const sd = selfDrawable(A, walker, t, { carry, folksHere: worldFolksHere(A).length });
-      add(walker.py + 0.01, () => {
-        if (carry && walker.dir === 'up') drawTrayHeld(ctx, walker.px, walker.py, walker.dir, me.item);
-        sd.draw(ctx);
-        if (carry && walker.dir !== 'up') drawTrayHeld(ctx, walker.px, walker.py, walker.dir, me.item);
-      });
+      add(walker.py + 0.01, (c) => {
+        if (carry && walker.dir === 'up') drawTrayHeld(c, walker.px, walker.py, walker.dir, me.item);
+        sd.draw(c);
+        if (carry && walker.dir !== 'up') drawTrayHeld(c, walker.px, walker.py, walker.dir, me.item);
+      }, { fig: true });
     }
     items.sort((a, b) => a.fy - b.fy);
-    for (const it of items) it.draw();
+    for (const it of items) {
+      it.draw(ctx);
+      if (!LL) continue;
+      if (it.fig) { LL.x.globalCompositeOperation = 'destination-out'; LL.x.globalAlpha = 0.9; it.draw(LL.x); }
+      if (it.light) { LL.x.globalCompositeOperation = 'lighter'; it.light(LL.x); }
+    }
 
     // ---- ånga och noter ----
     for (const p of parts) {
@@ -2089,10 +2121,7 @@ export function makeShopKafe(A) {
       ctx.globalCompositeOperation = 'lighter';
       ctx.globalAlpha = k;
       ctx.drawImage(nightLight(), 0, 0);
-      for (const T of TABLES) if (!T.bench) {
-        ctx.globalAlpha = k * (0.75 + 0.25 * Math.sin(t * 9 + T.x));             // levande ljuslågor
-        ctx.drawImage(glows.candle, T.x + (T.long ? 12 : -2), T.y - 25);
-      }
+      ctx.drawImage(LL.c, 0, 0);                                                 // bordsljusen (skymda av folk framför)
       for (const w of WINS) for (let x = w.x0 + 2, n = 0; x < w.x1 - 1; x += 5, n++) {
         ctx.globalAlpha = k * (0.55 + 0.45 * Math.sin(t * 2 + n * 1.7));
         ctx.drawImage(glows.fairy, x - 4, WIN_T + 2 + Math.round(Math.sin((x - w.x0) / (w.x1 - w.x0) * Math.PI) * 2) - 4);
@@ -2155,7 +2184,13 @@ export function makeShopKafe(A) {
         if (t - me.waitMsgT > 2) { toast('☕ Baristan gör i ordning din beställning …'); me.waitMsgT = t; }
         return;
       }
-      if (me.state === 'carry') return;
+      if (me.state === 'carry') {
+        // med brickan i händerna: klick på ett ledigt bord styr om dit, annars en påminnelse
+        const s = seatAt(x, y);
+        if (s && !s.occ) { goSit(s, me.item); play('click'); return; }
+        if (t - me.waitMsgT > 2) { toast('☕ Du bär på brickan – klicka på ett ledigt bord så sätter du dig där.'); me.waitMsgT = t; }
+        return;
+      }
       if (me.state === 'sit') standUp();
       release();
       const h = spotAt(x, y);

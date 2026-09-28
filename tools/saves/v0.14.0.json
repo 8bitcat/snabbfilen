@@ -1,0 +1,10 @@
+{
+  "version": "0.14.0",
+  "made": "2026-09-28T05:43:18.288Z",
+  "source": "https://8bitcat.github.io/snabbfilen/",
+  "localStorage": {
+    "snabbfilen_avatar": "{\"name\":\"Fixtur\",\"look\":{\"skin\":\"#eabf98\",\"shirt\":\"#f28bb3\",\"hair\":\"#5a3825\"},\"color\":\"#ff5dc8\"}",
+    "snabbfilen_seen_version": "0.14.0",
+    "snabbfilen_save1": "{\"v\":1,\"day\":3,\"min\":640.011799999988,\"money\":26033,\"hunger\":65.9994100000006,\"energy\":71,\"home\":\"villa\",\"fridge\":{\"pizza\":1,\"lyx\":1,\"macka\":1},\"jobs\":{\"flygplats\":2,\"frukt\":0,\"burgare\":5},\"earned\":4321,\"wardrobe\":[\"hat:cap\",\"top:vest\",\"bottom:shorts\"],\"storage\":[{\"k\":\"spis\",\"v\":0},{\"k\":\"matta\",\"v\":0,\"c\":\"#22aa66\"}],\"deco\":{\"villa:0\":[{\"k\":\"soffa\",\"v\":0,\"x\":112,\"y\":182},{\"k\":\"fatolj\",\"v\":3,\"x\":164,\"y\":166},{\"k\":\"bordR\",\"v\":0,\"x\":150,\"y\":200},{\"k\":\"tv\",\"v\":0,\"x\":176,\"y\":151},{\"k\":\"bokhylla\",\"v\":0,\"x\":180,\"y\":96},{\"k\":\"spis\",\"v\":1,\"x\":336,\"y\":131},{\"k\":\"lampa\",\"v\":0,\"x\":320,\"y\":151},{\"k\":\"vaxt\",\"v\":0,\"x\":48,\"y\":151},{\"k\":\"matta\",\"v\":0,\"x\":100,\"y\":156},{\"k\":\"soffa\",\"v\":0,\"x\":140,\"y\":150,\"c\":\"#3366ff\"}],\"villa:1\":[{\"k\":\"lampa\",\"v\":0,\"x\":90,\"y\":140}],\"villa:2\":[{\"k\":\"bokhylla\",\"v\":0,\"x\":200,\"y\":160,\"c\":\"#aa5533\"}]},\"won\":true,\"event\":null,\"best\":{\"flygplats\":{\"ok\":0,\"pay\":0},\"frukt\":{\"ok\":0,\"pay\":0},\"burgare\":{\"ok\":14,\"pay\":310}}}"
+  }
+}

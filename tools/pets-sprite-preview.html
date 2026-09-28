@@ -15,6 +15,7 @@ import * as SP from '../js/pets/sprites.js';
 import { drawPerson, makeLook } from '../js/core/people.js';
 import { ctxText, SMALL } from '../js/core/floor-pix.js';
 const Q = new URLSearchParams(location.search);
+if (Q.get('dbg')) globalThis.PET_DEBUG_GROUPS = true;
 const mode = Q.get('mode') || 'grid';
 const scale = +(Q.get('scale') || 3);
 const out = document.getElementById('out');
@@ -110,8 +111,50 @@ if (mode === 'grid') {
   for (const sp of ['hund', 'katt', 'kanin']) for (const b of SP.SPECIES[sp].breeds) {
     rows.push(sp + ' ' + b.id.padEnd(11) + STAGES.map((st) => { const s = SP.petSize(pet(sp, b.id, st)); const bd = SP.petBox(pet(sp, b.id, st), 'idle', 'down'); return `${st}:${s.w}x${s.h} fram:${bd.x1 - bd.x0}x${bd.y1 - bd.y0}`; }).join('  '));
   }
+  const t1 = performance.now(); let n = 0;
+  for (const a of SP.ANIMS) for (const d of ['down', 'up', 'right']) for (const st of STAGES) { SP.drawPet(ctx, 2, 2, pet('hund', 'schafer', st, 'hane', 'perf'), a, 0.37, d); n++; }
+  rows.push(`${n} nya bildrutor: ${((performance.now() - t1) / n).toFixed(2)} ms/st`);
   window.__info = rows.join('\n');
   lc.width = 4; lc.height = 4; finish(lc);
+} else if (mode === 'neck') {
+  // halsbandspunkten (petNeck) som röd pixel + fötterna som blå, alla riktningar
+  const list = [['hund', 'labrador', 'vuxen'], ['hund', 'tax', 'vuxen'], ['hund', 'chihuahua', 'unge'], ['katt', 'tigrerad', 'vuxen'], ['kanin', 'brun', 'vuxen']];
+  const anims = (Q.get('anims') || 'walk,idle,sit').split(',');
+  const CW2 = 26, RH2 = 24;
+  lc.width = 8 + DIRS.length * anims.length * CW2; lc.height = 4 + list.length * RH2; floor(ctx, lc.width, lc.height);
+  list.forEach(([sp, br, st], r) => anims.forEach((a, ai) => DIRS.forEach((d, di) => {
+    const x = 4 + (ai * DIRS.length + di) * CW2 + 13, y = 4 + r * RH2 + 19;
+    const p = pet(sp, br, st, 'hane', 'n');
+    SP.drawPet(ctx, x, y, p, a, 0.2, d);
+    const n = SP.petNeck(p, a, 0.2, d);
+    ctx.fillStyle = '#ff0000'; ctx.fillRect(x + n.x, y + n.y, 1, 1);
+    ctx.fillStyle = '#0040ff'; ctx.fillRect(x, y, 1, 1);
+  })));
+  finish(lc);
+} else if (mode === 'room') {
+  // attrapprum i spelets upplösning: ett gäng djur i olika lägen (skala 4–5 ≈ i spelet)
+  const t = t0;
+  lc.width = 200; lc.height = 110; floor(ctx, 200, 110);
+  ctx.fillStyle = '#e8dcc0'; ctx.fillRect(0, 0, 200, 22); ctx.fillStyle = '#b89a70'; ctx.fillRect(0, 22, 200, 2);
+  let rng = 3; const r = () => (rng = (rng * 16807) % 2147483647) / 2147483647;
+  const L = makeLook(r);
+  const items = [
+    [30, 60, null, 'person', 'down'],
+    [58, 58, { species: 'hund', breed: 'golden', stage: 'vuxen', sex: 'hona', id: 'a' }, 'sit', 'down'],
+    [90, 50, { species: 'katt', breed: 'rodkatt', stage: 'vuxen', sex: 'hane', id: 'b' }, 'walk', 'right'],
+    [120, 46, { species: 'katt', breed: 'tigrerad', stage: 'unge', sex: 'hona', id: 'c' }, 'play', 'left'],
+    [150, 52, { species: 'hund', breed: 'tax', stage: 'vuxen', sex: 'hane', id: 'd' }, 'idle', 'right'],
+    [175, 45, { species: 'kanin', breed: 'vadur', stage: 'vuxen', sex: 'hona', id: 'e' }, 'eat', 'left'],
+    [40, 90, { species: 'hund', breed: 'labrador', stage: 'unge', sex: 'hane', id: 'f' }, 'happy', 'down'],
+    [70, 96, { species: 'katt', breed: 'svart', stage: 'vuxen', sex: 'hona', id: 'g' }, 'sleep', 'right'],
+    [100, 92, { species: 'hund', breed: 'husky', stage: 'vuxen', sex: 'hane', id: 'h' }, 'walk', 'down'],
+    [125, 98, { species: 'kanin', breed: 'vit', stage: 'unge', sex: 'hane', id: 'i' }, 'idle', 'down'],
+    [150, 90, { species: 'hund', breed: 'corgi', stage: 'vuxen', sex: 'hona', id: 'j' }, 'walk', 'up'],
+    [178, 96, { species: 'katt', breed: 'siames', stage: 'ung', sex: 'hona', id: 'k' }, 'sit', 'down'],
+  ].sort((a, b) => a[1] - b[1]);
+  for (const [x, y, p, a, d] of items) { if (!p) drawPerson(ctx, x, y, L, d, 0); else SP.drawPet(ctx, x, y, p, a, t, d); }
+  SP.drawPoop(ctx, 190, 70, t); SP.drawPuddle(ctx, 12, 100);
+  finish(lc);
 } else if (mode === 'scale') {
   lc.width = 384; lc.height = 110; floor(ctx, 384, 110);
   let rng = 7; const r = () => (rng = (rng * 16807) % 2147483647) / 2147483647;

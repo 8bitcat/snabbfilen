@@ -10,6 +10,63 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.20.0] – 2026-09-28 – 147 nya möbler, rotation, slitna Lilla rummet och MÖBELJÄTTEN i två våningar
+- 147 nya möbler i katalogen (160 totalt): kök, badrum, barnrum, kontor, hall, dekor, växter, lampor, tavlor, gardiner, jul – och sängar och garderober i många färger. Allt ur de köpta EmanuelleDev-arken, färgbart som förut.
+- Väggsaker hängs på väggen och står inte i vägen. Allt går att flytta, även säng, garderob, kylskåp och toalett – funktionen följer med möbeln, också till ett annat rum via förrådet.
+- 🔄 Rotera i Möblera-läget (och tangenten R): soffor, fåtöljer och sängar vänds framåt, åt sidan och bakåt; övriga möbler speglas. Besökare ser rotationen.
+- Lilla rummet är mindre och sjabbigt: sprickor, fuktfläckar, flagnande tapet, spindelväv med en spindel, sprucken ruta, en mus, naken glödlampa – och ett gulnat dass med snett lock. De finare bostäderna är som förut.
+- MÖBELJÄTTEN i två våningar: entréplan med marknadshall, självbetjäningslager med pallställ och truck, kassor och korvkiosk; utställningsplan med små inredda rum för vardagsrum, kök, kontor, sovrum, barnrum, badrum och hall längs den gula slingan.
+- Åk rulltrappa (animerade steg) eller hiss mellan våningarna. Personal i gula kläder fyller på, kör vagnar, sitter i kassorna och hjälper till med tips när du klickar på dem; andra kunder provsitter soffor.
+- Restaurangen: ta en bricka, välj köttbullar med mos och lingonsylt, korv, kanelbulle, kaffe eller saft, betala i kassan och sätt dig och ät – mättnaden går upp.
+- Skyltar överallt: avdelningar, våningar, vägvisare och prislappar på allt som är till salu.
+
+## [0.19.0] – 2026-09-28 – Annonser med bilder på bostadsbyrån
+- Bostadsbyråns annonser har bilder: samma planscher som hänger på mäklarkontorets vägg visas i annonsdialogen, i pixelskala, för varje bostad.
+
+## [0.18.4] – 2026-09-28 – Hundarna slutar blinka och gå åt två håll
+- Hundarna i staden hoppar inte längre fram och tillbaka: när vägen är blockerad glider hunden längs hindret i stället för att teleporteras bakåt, den växlar inte mellan gå och stå varje bildruta, och den byter riktning först när den nya riktningen hållit i sig en stund.
+
+## [0.18.3] – 2026-09-28 – Mätarremsa ovanför bilden, gå in på bostadsbyrån
+- Pixelmätarna sitter nu som en egen remsa direkt ovanför spelbilden, i samma pixelstil, och täcker aldrig något i spelet – med porträtt, pengar, dag och klocka, mat, sömn och antal online.
+- Bostadsbyrån går att gå in i: klicka på dörren i staden så kommer du in på mäklarkontoret med annonsplanscher, mäklare och väntrum.
+
+## [0.18.2] – 2026-09-28 – Mätarna skymde ordersedeln på jobbet
+- Pixelmätarna ritas inte under arbetspass – de skymde ordersedeln på fruktfabriken. Jobben har sin egen rad överst.
+- Etiketterna MAT och SÖMN krockade med porträttramen; mätarna har fått lite mer luft.
+
+## [0.18.1] – 2026-09-28 – Dialoger ovanpå menyn och namnruta vid Spara
+- Dialoger som öppnas från menyn (redigeraren, bekräftelser, nyheterna) ligger nu ovanpå menyn, inte bakom den.
+- Trycker du Spara i redigeraren utan att ha skrivit ett namn kommer en ruta upp och frågar efter namnet.
+
+## [0.18.0] – 2026-09-28 – Stormarknaden, kaféet och bostadsbyrån
+- Stormarknaden går man nu runt i: frukt och grönt, bröd, mejerikyl, frysar, hyllor med prislappar och kampanjer. Plocka varor i korgen och betala i kassan – maten hamnar i kylskåpet hemma. Vid disken kan du äta på plats.
+- Kaféet är öppet: glasmonter med bakverk, espressomaskin, griffeltavla med meny. Köp en fika, sätt dig vid ett bord och ät – mättnad och energi går upp.
+- Bostadsbyrån är ett riktigt mäklarkontor med annonsplanscher för alla bostäder, mäklare, väntrum och en sovande tax. Klicka på en annons för att flytta.
+- Flygplatsens bagagehall och fruktfabrikens hall har fått samma detaljnivå som staden: fönster ut mot plattan, röntgen, tegelväggar, rör, pallar, truck och maskiner.
+
+## [0.17.0] – 2026-09-28 – Huvudmeny, pixelmätare och musik
+- Huvudmeny när spelet startar, med Pixelstaden levande i bakgrunden: Nytt spel, Fortsätt och Inställningar.
+- Alla skapade figurer visas med porträtt och en sammanfattning (pengar, bostad, dag, antal pass). Välj vem som ska spela – varje figur har sitt eget spel.
+- Fortsätt är nedtonad tills det finns en figur. Från menyn kan du också börja om från början eller ta bort en figur.
+- ☰-knappen öppnar samma meny mitt i spelet (Esc stänger).
+- Inställningar: ljud på/av, musik på/av och val av mätare.
+- Pixelmätare uppe till vänster i spelbilden: porträtt, pengar, dag och klocka, mat och sömn – i samma pixelstil som staden. Växla mot den gamla raden överst i inställningarna.
+- Bakgrundsmusik: en liten chiptune-slinga (kan stängas av).
+
+## [0.16.0] – 2026-09-28 – Automatisk uppdatering och säkerhetskopior
+- Spelet uppdaterar sig självt: när en ny version kommer ut sparas allt och sidan laddas om när det passar – aldrig mitt i ett arbetspass eller en dialog. Allt du har är kvar.
+- Innan omladdningen hämtas hela nya versionen, så gamla och nya filer blandas aldrig.
+- En säkerhetskopia av din sparning tas vid varje versionsbyte (de tre senaste sparas). Du hittar dem under versionsknappen och kan återställa om något blivit fel.
+- Sparningen tappar aldrig något som en nyare version lagt till, även om du råkar spela en äldre flik.
+- Spelet fungerar även utan nät när du väl har laddat det en gång.
+
+## [0.15.0] – 2026-09-28 – Ni ser varandra i staden
+- Ni ser varandra igen: den som tappar nätet, somnar i fickan eller stänger fliken städas bort ur världen inom en minut, och samma spelare i två flikar blir inte två figurer.
+- 👥-listan visar var alla är just nu (i staden, i mataffären, på jobbet, hemma hos någon) och har en "Gå dit"-knapp som tar dig fram till kompisen i staden.
+- Är en kompis i staden men utanför bild visas en pil med namnet i skärmkanten – klicka på den så går du dit.
+- Den som håller i världen och lägger mobilen i fickan lämnar över till någon som är aktiv, så de andra tappar inte varandra.
+- Har du inte rört spelet på fem minuter loggas du ut ur världen; första klicket tar dig tillbaka.
+
 ## [0.14.0] – 2026-09-28 – Versionsnummer i spelet
 - Versionsnumret syns uppe till höger – tryck på det för att läsa nyheterna.
 - Spelet säger till när en ny version har kommit ut medan du spelar, och visar vad som är nytt första gången du startar en ny version.

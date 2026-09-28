@@ -33,6 +33,8 @@ const BENCH = { top: 182, face: 198 };  // bakbänken längst fram
 const BENCH_Y = 194;             // där baristan står vid bakbänken
 const SPOTS = [122, 160, 198];   // gästernas platser vid disken
 const LAMPS = [103, 141, 179];   // pendellampor mellan bubblorna
+const TALK_X0 = 89, TALK_X1 = 212; // fönsterremsan mellan griffeltavlorna (dit beställningsropen kläms)
+const STN_Y = 60;                // puffarna vid disken/maskinen: under tavlorna (de stiger ~13 px)
 // glasmontern och dess tre fack (ett per bakverk)
 const MON = { x0: 6, x1: 86, top: 52 };
 const MON_COLS = [21, 46, 70];
@@ -344,7 +346,7 @@ function checkMark(ctx, x, y) {
 export function makeJobbKafe(A, { onDone } = {}) {
   const stats = { ok: 0, fel: 0, miss: 0, drycker: 0, bakverk: 0, gaster: 0 };
   const walker = createWalker({ top: 116, bottom: 197, left: 8, right: 376, spawn: [200, 152] });
-  walker.speed = 80;   // baristan är snabb i benen
+  walker.speed = 92;   // baristan är snabb i benen – stationerna ligger spridda över hela lokalen
   walker.setObstacles([
     [CRATES.x - 2, CRATES.y - 12, CRATES.x + 24, CRATES.y + 1],
     [BUCKET.x - 2, BUCKET.y - 10, BUCKET.x + 24, BUCKET.y + 1],
@@ -372,7 +374,9 @@ export function makeJobbKafe(A, { onDone } = {}) {
   }
   function pickDrink() { const r = Math.random(); return r < 0.24 ? 0 : r < 0.5 ? 1 : r < 0.8 ? 2 : 3; }
   function newCustomer(s, prog, standing = false) {
-    const pmax = 38 - 10 * prog;
+    // en dryck tar 6–11 s med gång, och tre gäster kan stå i kö – tålamodet
+    // räcker till att vänta på två före sig även i slutet av passet
+    const pmax = 40 - 8 * prog;
     return {
       id: seq++, look: makeLook(), spot: s, x: standing ? SPOTS[s] : -14, y: standing ? CUST_Y : CUST_Y - 2,
       state: standing ? 'wait' : 'walk', dir: standing ? 'down' : 'right',
@@ -380,7 +384,11 @@ export function makeJobbKafe(A, { onDone } = {}) {
       gotDrink: false, gotPastry: false, patience: pmax, pmax, t: 0,
     };
   }
-  const say = (x, y, s, c = '#d8d2c0') => pops.add(x, y, s, c);
+  // poängpuff/kommentar; hålls inom skärmen så att den inte klipps vid kanten
+  const say = (x, y, s, c = '#d8d2c0') => { const hw = (textW(SMALL, s) + 4) >> 1; pops.add(clamp(Math.round(x), hw + 2, FW - hw - 2), y, s, c); };
+  // puff vid en gäst: kläms in i fönsterremsan (som ropen) så att den inte
+  // stiger upp över griffeltavlorna
+  function sayK(k, y, s, c) { const hw = (textW(SMALL, s) + 4) >> 1; say(clamp(Math.round(k.x), TALK_X0 + hw, TALK_X1 - hw), y, s, c); }
   // gästen säger sin beställning högt; repliker köar så att de aldrig krockar
   function sayOrder(k) {
     const wait = talk.reduce((m, s) => Math.max(m, 2.1 - s.age), 0);
@@ -391,19 +399,19 @@ export function makeJobbKafe(A, { onDone } = {}) {
 
   // ---------- stationerna ----------
   function actMala() {
-    if (dose) { say(GRIND.x, 40, 'REDAN MALET'); play('click'); return; }
+    if (dose) { say(GRIND.x, STN_Y, 'REDAN MALET'); play('click'); return; }
     play('slide');
     startBusy('mala', 0.8, () => { dose = true; play('ok'); });
   }
   function actBrygg(g) {
-    if (!dose) { say(GROUPS[g].x, 40, 'MALA FÖRST!', '#ffd23f'); play('miss'); return; }
-    if (cup) { say(GROUPS[g].x, 40, 'KOPPEN ÄR FULL'); play('miss'); return; }
+    if (!dose) { say(GROUPS[g].x, STN_Y, 'MALA FÖRST!', '#ffd23f'); play('miss'); return; }
+    if (cup) { say(GROUPS[g].x, STN_Y, 'KOPPEN ÄR FULL'); play('miss'); return; }
     play('knock');
     startBusy('brygg', 1.2, () => { cup = { mug: false, kaffe: true }; dose = false; play('ok'); }, { g });
   }
   function actAnga() {
-    if (!cup) { say(WAND.x, 40, 'INGEN KOPP'); play('miss'); return; }
-    if (cup.skum) { say(WAND.x, 40, 'REDAN SKUMMAD'); play('miss'); return; }
+    if (!cup) { say(WAND.x, STN_Y, 'INGEN KOPP'); play('miss'); return; }
+    if (cup.skum) { say(WAND.x, STN_Y, 'REDAN SKUMMAD'); play('miss'); return; }
     play('slide');
     startBusy('anga', 1.0, () => { cup.skum = true; play('ok'); });
   }
@@ -425,7 +433,7 @@ export function makeJobbKafe(A, { onDone } = {}) {
   }
   function actMonter(k) {
     if (pastry === k) { pastry = null; stock[k] = Math.min(4, stock[k] + 1); play('click'); return; }
-    if (stock[k] <= 0) { say(MON_COLS[k], 40, 'SLUT – VÄNTA'); play('miss'); return; }
+    if (stock[k] <= 0) { say(MON_COLS[k], STN_Y, 'SLUT - VÄNTA'); play('miss'); return; }
     startBusy('monter', 0.3, () => {
       if (pastry !== null) stock[pastry] = Math.min(4, stock[pastry] + 1);
       pastry = k; stock[k]--; play('click');
@@ -438,23 +446,23 @@ export function makeJobbKafe(A, { onDone } = {}) {
     const py = 36;
     if (cup && !k.gotDrink) {
       const d = drinkOf(cup);
-      if (d < 0) { say(k.x, py, 'INTE KLAR!', '#ffd23f'); play('miss'); }   // koppen stannar i handen
+      if (d < 0) { sayK(k, py, 'INTE KLAR!', '#ffd23f'); play('miss'); }   // koppen stannar i handen
       else {
-        if (d === k.drink) { k.gotDrink = true; stats.ok++; stats.drycker++; gave = true; say(k.x, py, 'MUMS!', '#8ee03c'); }
-        else { stats.fel++; say(k.x, py, 'FEL DRYCK!', '#ff6a6a'); play('fel'); }
+        if (d === k.drink) { k.gotDrink = true; stats.ok++; stats.drycker++; gave = true; sayK(k, py, 'MUMS!', '#8ee03c'); }
+        else { stats.fel++; sayK(k, py, 'FEL DRYCK!', '#ff6a6a'); play('fel'); }
         cup = null;
       }
     }
     if (pastry !== null && k.pastry >= 0 && !k.gotPastry) {
-      if (pastry === k.pastry) { k.gotPastry = true; stats.ok++; stats.bakverk++; gave = true; say(k.x, py - 9, 'GOTT!', '#8ee03c'); }
-      else { stats.fel++; say(k.x, py - 9, 'FEL BAKVERK!', '#ff6a6a'); play('fel'); }
+      if (pastry === k.pastry) { k.gotPastry = true; stats.ok++; stats.bakverk++; gave = true; sayK(k, py - 9, 'GOTT!', '#8ee03c'); }
+      else { stats.fel++; sayK(k, py - 9, 'FEL BAKVERK!', '#ff6a6a'); play('fel'); }
       pastry = null;
     }
     if (gave) {
       k.patience = Math.min(k.pmax, k.patience + 5);
       if (k.gotDrink && (k.pastry < 0 || k.gotPastry)) {
         k.state = 'happy'; k.t = 1.1; stats.gaster++;
-        say(k.x, py + 9, 'TACK!', '#8ee03c');
+        sayK(k, py + 9, 'TACK!', '#8ee03c');
         play(k.pastry >= 0 ? 'box' : 'coin');
       } else play('coin');
     }
@@ -511,7 +519,8 @@ export function makeJobbKafe(A, { onDone } = {}) {
   // namnlappen över huvudet: vad koppen i handen är just nu
   function drawCupTag(ctx) {
     if (!cup || busy) return;
-    const d = drinkOf(cup), s = d >= 0 ? DRINKS[d].name : cup.mug ? 'KAKAO…' : '…';
+    // (pixelfonten har inga '…' – tre punkter i stället)
+    const d = drinkOf(cup), s = d >= 0 ? DRINKS[d].name : cup.mug ? 'KAKAO...' : '...';
     // vid disken hamnar lappen under fötterna, så att den inte skymmer gästerna
     const w = textW(SMALL, s) + 6, x = Math.round(walker.px - w / 2);
     const y = walker.py < 140 ? Math.round(walker.py) + 3 : Math.round(walker.py) - 50;
@@ -548,12 +557,15 @@ export function makeJobbKafe(A, { onDone } = {}) {
       if (k.gotPastry) drawAt(ctx, platedPastry(k.pastry), k.x + 8, 90);
     }
   }
-  // gästen säger sin beställning högt när hen kommer fram till disken
+  // gästen säger sin beställning högt när hen kommer fram till disken.
+  // Ropet ligger ovanför bubblorna, i remsan med fönstren (x 89–212) mellan
+  // griffeltavlorna, så att det aldrig täcker menyn eller FIKA-listan.
   function drawTalk(ctx) {
     for (const s of talk) {
       if (s.age < 0) continue;
       const a = s.age < 1.6 ? 1 : Math.max(0, 1 - (s.age - 1.6) / 0.5);
-      const w = textW(SMALL, s.txt) + 6, x = clamp(Math.round(s.x - w / 2), 2, FW - w - 2), y = Math.round(s.y);
+      const w = textW(SMALL, s.txt) + 6, y = Math.round(s.y);
+      const x = w >= TALK_X1 - TALK_X0 ? ((TALK_X0 + TALK_X1 - w) >> 1) : clamp(Math.round(s.x - w / 2), TALK_X0, TALK_X1 - w);
       ctx.globalAlpha = a;
       ctx.fillStyle = '#17151a'; ctx.fillRect(x + 1, y, w - 2, 9); ctx.fillRect(x, y + 1, w, 7);
       ctx.fillStyle = '#fff6e0'; ctx.fillRect(x + 1, y + 1, w - 2, 7);
@@ -743,6 +755,9 @@ export function makeJobbKafe(A, { onDone } = {}) {
         return drinkOf(cup);
       },
       pickPastry(k = 0) { pastry = k; return pastry; },
+      // montern: läs av eller sätt antalet kvar av en sort (0 = slut)
+      stock: () => stock.slice(),
+      setStock(k, n) { stock[k] = clamp(n | 0, 0, 4); return stock[k]; },
       // servera direkt: right = till en gäst som vill ha det jag bär, annars till en som inte vill det
       serve(right = true) {
         if (!cup && pastry === null) return null;
@@ -814,7 +829,7 @@ export function makeJobbKafe(A, { onDone } = {}) {
       if (custIn <= 0) {
         const prog = Math.min(1, t / SHIFT_SECONDS);
         const s = freeSpot();
-        if (s >= 0) { customers.push(newCustomer(s, prog)); custIn = 5.4 - 2 * prog + hash(seq, 7) * 2.2; }
+        if (s >= 0) { customers.push(newCustomer(s, prog)); custIn = 6 - 2 * prog + hash(seq, 7) * 2.2; }
         else custIn = 1;
       }
       for (const k of customers) {
@@ -827,7 +842,7 @@ export function makeJobbKafe(A, { onDone } = {}) {
           else { k.x += Math.sign(tx - k.x) * sp; k.dir = tx < k.x ? 'left' : 'right'; }
         } else if (k.state === 'wait') {
           k.patience -= dt;
-          if (k.patience <= 0) { k.state = 'leave'; k.dir = 'left'; k.y = CUST_Y - 3; stats.miss++; play('miss'); say(k.x, 36, 'GICK…'); }
+          if (k.patience <= 0) { k.state = 'leave'; k.dir = 'left'; k.y = CUST_Y - 3; stats.miss++; play('miss'); sayK(k, 36, 'GICK...'); }
         } else if (k.state === 'happy') {
           k.t -= dt;
           if (k.t <= 0) { k.state = 'exit'; k.dir = 'right'; k.y = CUST_Y - 3; }

@@ -24,6 +24,16 @@
 // Metoder:
 //   adopt(species, breed, sex, name, home, { day, room, x, y }?) → pet | null (fullt: lastError)
 //       Djuret börjar som unge. Första djuret ger en gratis matskål, första hunden ett koppel.
+//       bornDay = opts.day, annars spelklockan (setClock), annars senast tickade dag.
+//   setClock(() => ({ day, min })) – koppla spelklockan (lagret gör det själv; huvudsessionen kan
+//       göra det en gång vid start: petStore().setClock(() => ({ day: A.game.day, min: A.game.min }))).
+//       nowDay() → dagen enligt klockan.
+//   reset() → tömmer allt (djur, prylar, förråd, olyckor) och sparar – anropa vid NYTT SPEL.
+//       Butiken upptäcker också nytt spel själv: spelsparfilen (snabbfilen_save1) saknas när
+//       petStore() skapas, eller spelklockan går tillbaka mer än två timmar (syncTo). Då läggs
+//       det gamla undan under snabbfilen_pets1_undanlagd_<tid> och butiken börjar om
+//       (store.restarted = skälet). opts.day i adopt() får därför gärna ligga bakåt i tiden
+//       ("född för tio dagar sedan") – det tolkas aldrig som ett nytt spel.
 //   buyItem(k, n = 1)                    → true (lägger i inventory; pengar sköter anroparen)
 //   placeItem(k, home, room, x, y)       → item | null (tar ur inventory)
 //   moveItem(id, x, y) · pickItem(id)    → true/false (pickItem: tillbaka till inventory)
@@ -33,11 +43,14 @@
 //       false → skälet i store.lastError (svensk text) och store.lastReason
 //       ('ingen-sack' | 'tom-sack' | 'full' | 'ingen-skal' | 'inte-skal').
 //   cleanLitter(itemId) (kattlåda/kaninbur) · cleanMess(messId) → true/false
-//   walkStart(petId) → { ok:true, msg } | false (lastError: 'Du behöver ett koppel …')
+//   walkStart(petId) → { ok:true, msg } | false (lastError: 'Du behöver ett koppel …', 'för liten':
+//       katt-/kaninungar får inte följa med ut; lastReason 'inget-koppel' | 'for-liten')
 //       Hund kräver koppel (första hunden får ett gratis). Djuret får out = true: hemma följer
 //       det spelaren (hund i koppel), i staden visar scenen det med createPetFollower.
 //   walkEnd(petId?) → [djur som kom hem]  – anropa när spelaren kommer hem (eller tar av
-//       kopplet). Har hunden varit ute ≥ 4 min utan att göra sitt räknas det som gjort.
+//       kopplet), gärna även vid jobbstart och läggdags. Har hunden varit ute ≥ 4 min utan att
+//       göra sitt räknas det som gjort. Ett djur som varit ute mer än 6 speltimmar går hem
+//       självt (händelse 'hem').
 //   outdoorBusiness(petId) → true om hunden fick göra sitt ute (anropas av följaren)
 //   pet(petId) · play(petId) → nytt glädjevärde (klappa/leka)
 //   rename(petId, namn) · setFollowing(petId, bool) · feedDirect(petId, bowlId) (lagret: djuret äter)
@@ -51,16 +64,20 @@
 //   petsIn(home, room) · itemsIn(home, room) · messesIn(home, room) · petById(id) · itemById(id)
 //   hasLeash() · sacksFor(species) · needs(pet) → { hungry, sad, toilet, critical }
 //   listen(fn) → avprenumerera;  händelser { type, text, petId?, home? } (typ: 'kar', 'ungar',
-//       'vaxte', 'bajs', 'kiss', 'lada', 'hungrig', 'ute')
+//       'vaxte', 'bajs', 'kiss', 'lada', 'hungrig', 'ute', 'hem')
 //   save() · load() · summary() → { count, lines[], hungry[], needWalk[], messes, dirtyLitter }
 // ==================================================================
 import { PET_ITEMS } from './items.js';
 
 export const PETS_SAVE_KEY = 'snabbfilen_pets1';
+const GAME_SAVE_KEY = 'snabbfilen_save1';   // spelets egen sparnyckel (js/game.js SAVE_KEY) – saknas den är spelet nytt
 export const MAX_PETS = 12;
 export const ARTER = ['katt', 'hund', 'kanin'];
 export const STAGE_DAYS = { ung: 3, vuxen: 7 };
 const DAYMIN = 24 * 60;
+const OUT_MAX_MIN = 6 * 60;      // så länge ett djur orkar vara ute innan det går hem självt
+const URGE_GRACE_MIN = 90;       // speldminuter lagret får på sig att leda djuret till lådan
+const RESTART_BACK_MIN = 120;    // klockan mer än så här bakåt = nytt spel
 
 // Per art: hunger/timme, hur många mättnadspoäng en full skål ger, toalett/timme,
 // ensamhet (glädjeförlust/timme utan sällskap), glädje/timme på promenad.
@@ -109,11 +126,37 @@ export function createPetStore({ storage = null, rng = Math.random, key = PETS_S
     nextId: 1,
     clockAbs: null,          // senast tickade speltid (minuter sedan dag 1 00:00)
     day: 1,
+    clock: null,             // () => ({ day, min }) – spelklockan, om någon kopplat den (setClock)
+    restarted: null,         // skälet om butiken började om (nytt spel upptäckt)
     live: null,              // { home, room, abs } – rummet som lagret styr just nu
     lastError: '', lastReason: '',
     rng, storage, key,
     _listeners: new Set(),
     _sinceSave: 0,
+
+    // ------------------------------------------------------------------
+    //  Klockan och nytt spel
+    // ------------------------------------------------------------------
+    setClock(fn) { S.clock = typeof fn === 'function' ? fn : null; return S; },
+    nowDay() {
+      if (S.clock) { try { const c = S.clock(); if (c && isNum(+c.day)) return Math.max(1, +c.day | 0); } catch { /* klockan får inte fälla butiken */ } }
+      return S.day;
+    },
+    // Nytt spel: allt bort (sparas tomt). Förra spelets djur ska inte följa med in i nya bostaden.
+    reset() {
+      S.pets = []; S.items = []; S.inventory = {}; S.messes = []; S.opened = {}; S.gifts = {}; S.log = [];
+      S.nextId = 1; S.clockAbs = null; S.day = 1; S.live = null; S.lastError = ''; S.lastReason = '';
+      S.save();
+      return S;
+    },
+    // Som reset(), men det gamla läggs undan (snabbfilen_pets1_undanlagd_<tid>) om det fanns något.
+    _restart(why = 'nytt spel') {
+      const had = S.pets.length > 0 || S.items.length > 0 || Object.keys(S.inventory).length > 0 || S.messes.length > 0;
+      if (had && S.storage) { try { S.storage.setItem(`${S.key}_undanlagd_${Date.now()}`, JSON.stringify(S.toJSON())); } catch { /* full */ } }
+      S.reset();
+      if (had) S.restarted = why;
+      return had;
+    },
 
     // ------------------------------------------------------------------
     //  Uppslag
@@ -155,13 +198,13 @@ export function createPetStore({ storage = null, rng = Math.random, key = PETS_S
       if (!ARTER.includes(species)) { S.lastError = 'Okänd djurart.'; return null; }
       if (S.pets.length >= MAX_PETS) { S.lastError = `Du kan ha högst ${MAX_PETS} djur.`; return null; }
       sex = sex === 'hona' ? 'hona' : 'hane';
-      const day = isNum(opts.day) ? opts.day : S.day;
+      const day = isNum(opts.day) ? opts.day : S.nowDay();
       const p = S._newPet({
         species, breed: String(breed || ''), sex, name: cleanName(name) || S._freeName(species, sex),
         bornDay: day, home: home ?? null, room: opts.room ?? null,
         x: isNum(opts.x) ? opts.x : null, y: isNum(opts.y) ? opts.y : null,
       });
-      p.stage = stageOf(S.day - p.bornDay);
+      p.stage = stageOf(Math.max(S.day, day) - p.bornDay);
       S.pets.push(p);
       if (!S.gifts.skal) { S.gifts.skal = true; S.inventory.matskal = (S.inventory.matskal | 0) + 1; }
       if (species === 'hund' && !S.gifts.koppel) { S.gifts.koppel = true; S.inventory.koppel = (S.inventory.koppel | 0) + 1; }
@@ -306,7 +349,7 @@ export function createPetStore({ storage = null, rng = Math.random, key = PETS_S
       if (!p) return fail('inget-djur', 'Djuret finns inte.');
       if (p.species === 'hund' && !S.hasLeash()) return fail('inget-koppel', 'Du behöver ett koppel – köp ett i djuraffären.');
       if (p.stage === 'unge' && p.species !== 'hund') return fail('for-liten', `${p.name} är för liten för att gå ut än.`);
-      p.out = true; p.outMin = 0; p.didBusiness = false; p.following = false;
+      p.out = true; p.outMin = 0; p.outTot = 0; p.didBusiness = false; p.following = false;
       S.save();
       return { ok: true, msg: p.species === 'hund' ? `Koppel på! ${p.name} viftar på svansen.` : `${p.name} följer med ut.` };
     },
@@ -314,13 +357,23 @@ export function createPetStore({ storage = null, rng = Math.random, key = PETS_S
       const back = [];
       for (const p of S.pets) {
         if (!p.out || (petId && p.id !== petId)) continue;
-        if (p.species === 'hund' && (p.outMin || 0) >= 4 && p.toilet > 5) S._business(p);
-        p.out = false; p.outMin = 0; p.didBusiness = false;
-        p.room = null; p.x = null; p.y = null; // nästa lager i hemmet ställer djuret vid spelaren
+        S._endWalk(p);
         back.push(p);
       }
       if (back.length) S.save();
       return back;
+    },
+    _endWalk(p) {
+      if (p.species === 'hund' && (p.outMin || 0) >= 4 && p.toilet > 5) S._business(p);
+      p.out = false; p.outMin = 0; p.outTot = 0; p.didBusiness = false;
+      p.room = null; p.x = null; p.y = null; // nästa lager i hemmet ställer djuret vid spelaren
+    },
+    // Ute för länge (jobbpass, sömn, glömt koppel): djuret går hem självt.
+    _comeHome(p, atHome = false) {
+      S._endWalk(p);
+      const text = atHome ? `${p.name} tröttnade på att vänta och gick och la sig.`
+        : p.species === 'hund' ? `${p.name} tröttnade på att vänta och gick hem själv.` : `${p.name} smet hem på egen hand.`;
+      S._emit('hem', text, { petId: p.id, home: p.home });
     },
     outdoorBusiness(petId) {
       const p = S.petById(petId);
@@ -406,7 +459,7 @@ export function createPetStore({ storage = null, rng = Math.random, key = PETS_S
       const box = where.itemId ? S.itemById(where.itemId) : null;
       if (box && 'dirt' in box && box.dirt < 1) {
         box.dirt = clamp(box.dirt + (box.k === 'kaninbur' ? 0.1 : 0.15), 0, 1);
-        p.toilet = 0; p.urge = false;
+        p.toilet = 0; p.urge = false; p.urgeMin = 0;
         S.save();
         return { inBox: true };
       }
@@ -422,7 +475,7 @@ export function createPetStore({ storage = null, rng = Math.random, key = PETS_S
       };
       S.messes.push(m);
       if (S.messes.length > 40) S.messes.shift();
-      p.toilet = 0; p.urge = false;
+      p.toilet = 0; p.urge = false; p.urgeMin = 0;
       p.happy = clamp(p.happy - 4);
       const what = kind === 'kiss' ? 'kissat' : 'bajsat';
       S._emit(kind, p.species === 'hund' ? `${p.name} har ${what} inne! Gå ut med hunden oftare.`
@@ -443,7 +496,10 @@ export function createPetStore({ storage = null, rng = Math.random, key = PETS_S
     },
     syncTo(day, minOfDay, ctx = {}) {
       const abs = (Math.max(1, day | 0) - 1) * DAYMIN + (+minOfDay || 0);
-      if (S.clockAbs == null || abs < S.clockAbs - 1) { S.clockAbs = abs; S.day = day | 0; S._migrate(ctx.home); return 0; }
+      // spelklockan går aldrig bakåt – gör den det har spelaren börjat om (eller lagt tillbaka
+      // en äldre spelsparfil): förra spelets djur ska inte dyka upp i den nya bostaden
+      if (S.clockAbs != null && abs < S.clockAbs - RESTART_BACK_MIN) S._restart('nytt spel (klockan gick tillbaka)');
+      if (S.clockAbs == null || abs < S.clockAbs - 1) { S.clockAbs = abs; S.day = Math.max(1, day | 0); S._clampBorn(S.day); S._migrate(ctx.home); return 0; }
       const d = abs - S.clockAbs;
       if (d <= 0) { S._migrate(ctx.home); return 0; }
       S._advance(S.clockAbs, abs, ctx);
@@ -457,8 +513,14 @@ export function createPetStore({ storage = null, rng = Math.random, key = PETS_S
       const from = to - min;
       S._advance(from, to, ctx);
     },
+    // född "i framtiden" (fel klocka när djuret köptes) → räknas från i dag (spelets riktiga
+    // dag), annars fastnar djuret som unge i veckor
+    _clampBorn(day) {
+      for (const p of S.pets) if (!isNum(p.bornDay) || p.bornDay > day) p.bornDay = day;
+    },
     _advance(from, to, ctx) {
       S._migrate(ctx.home);
+      S._clampBorn(dayOf(to));
       if (to - from > 3 * DAYMIN) from = to - 3 * DAYMIN;
       let t = from;
       while (t < to - 1e-9) {
@@ -496,13 +558,15 @@ export function createPetStore({ storage = null, rng = Math.random, key = PETS_S
         const slow = night && !p.out ? 0.5 : 1;
         // ---- behov
         p.hunger = clamp(p.hunger - R.hungerH * h * young * slow);
-        p.toilet = clamp(p.toilet + R.toiletH * h * slow * (p.stage === 'unge' ? 1.15 : 1), 0, 120);
+        p.toilet = clamp(p.toilet + R.toiletH * h * slow * (p.stage === 'unge' ? 1.15 : 1));
         // ---- promenad
         if (p.out) {
+          p.outTot = (p.outTot || 0) + m;
           if (ctx.outdoors) p.outMin = (p.outMin || 0) + m;
           if (p.species === 'hund' && ctx.outdoors && !p.didBusiness && p.outMin >= 6 && p.toilet >= 5 && !ctx.followerHandlesBusiness) {
             S._business(p); p.didBusiness = true;
           }
+          if (p.outTot >= OUT_MAX_MIN) S._comeHome(p, ctx.playerHome != null && ctx.playerHome === p.home); // glömd (jobb, sömn) → går hem/lägger sig självt
         }
         // ---- äta ur skål (lagret sköter djuren i rummet det visar)
         if (!p.out && p.hunger < R.eatBelow && (!live || p.hunger < 8)) {
@@ -523,7 +587,7 @@ export function createPetStore({ storage = null, rng = Math.random, key = PETS_S
           if (w) w.water = Math.max(0, w.water - 0.03 * h * (p.species === 'hund' ? 1.4 : 1));
         }
         // ---- toalett
-        if (!p.out) S._toiletStep(p, live, H);
+        if (!p.out) S._toiletStep(p, live, H, m);
         // ---- glädje
         let dh = -1.5;
         if (p.hunger < 30) dh -= 4; else if (p.hunger > 70) dh += 0.5;
@@ -569,20 +633,22 @@ export function createPetStore({ storage = null, rng = Math.random, key = PETS_S
       const pick = (list) => list.sort((a, b) => (sameRoom(b.room, p.room) - sameRoom(a.room, p.room)) || b.food - a.food)[0] || null;
       return pick(own) || (desperate ? pick(bowls) : null);
     },
-    _toiletStep(p, live, H) {
-      if (p.toilet < 100) return;
-      if (live && p.toilet < 115) { p.urge = true; return; } // lagret låter djuret gå till lådan/sätta sig
+    _toiletStep(p, live, H, m = 0) {
+      if (p.toilet < 100) { if (p.urgeMin) p.urgeMin = 0; return; }
+      // i rummet som visas leder lagret djuret till lådan (urge) – hinner det inte på
+      // URGE_GRACE_MIN speldminuter tar simuleringen över
+      if (live) { p.urge = true; p.urgeMin = (p.urgeMin || 0) + m; if (p.urgeMin < URGE_GRACE_MIN) return; }
       if (p.species === 'katt') {
         const box = H.litter.filter((b) => b.dirt < 1).sort((a, b) => (sameRoom(b.room, p.room) - sameRoom(a.room, p.room)) || a.dirt - b.dirt)[0];
         if (box) {
           box.dirt = clamp(box.dirt + 0.15, 0, 1);
-          p.toilet = 0; p.urge = false;
+          p.toilet = 0; p.urge = false; p.urgeMin = 0;
           if (box.dirt >= 0.99) S._emit('lada', `Kattlådan är full – ${p.name} vill ha den tömd!`, { petId: p.id, home: p.home, itemId: box.id });
           return;
         }
       } else if (p.species === 'kanin') {
         const cage = H.bur.find((b) => b.dirt < 1);
-        if (cage) { cage.dirt = clamp(cage.dirt + 0.1, 0, 1); p.toilet = 0; p.urge = false; return; }
+        if (cage) { cage.dirt = clamp(cage.dirt + 0.1, 0, 1); p.toilet = 0; p.urge = false; p.urgeMin = 0; return; }
       }
       // på golvet – nära där djuret är (eller på en slumpad plats om det inte syns)
       const x = isNum(p.x) ? p.x + (S.rng() - 0.5) * 6 : null, y = isNum(p.y) ? p.y + 1 : null;
@@ -591,7 +657,7 @@ export function createPetStore({ storage = null, rng = Math.random, key = PETS_S
     _newDay(day) {
       S.day = day;
       for (const p of S.pets) {
-        const st = stageOf(day - (p.bornDay ?? day));
+        const st = stageOf(day - (isNum(p.bornDay) ? p.bornDay : day));
         if (st !== p.stage) {
           p.stage = st;
           S._emit('vaxte', st === 'vuxen' ? `${p.name} är vuxen nu!` : `${p.name} har vuxit – inte en liten unge längre.`, { petId: p.id, home: p.home });
@@ -653,7 +719,7 @@ export function createPetStore({ storage = null, rng = Math.random, key = PETS_S
     //  Spara / ladda / sammanfatta
     // ------------------------------------------------------------------
     toJSON() {
-      const clean = (p) => { const { _hungryWarned, urge, ...rest } = p; return rest; };
+      const clean = (p) => { const { _hungryWarned, urge, urgeMin, ...rest } = p; return rest; };
       return { v: 1, pets: S.pets.map(clean), items: S.items, inventory: S.inventory, messes: S.messes, opened: S.opened,
         gifts: S.gifts, log: S.log.slice(0, 20), nextId: S.nextId, clockAbs: S.clockAbs, day: S.day };
     },
@@ -668,11 +734,12 @@ export function createPetStore({ storage = null, rng = Math.random, key = PETS_S
       S.pets = []; S.items = []; S.inventory = {}; S.messes = []; S.opened = {}; S.gifts = {}; S.log = []; S.nextId = 1; S.clockAbs = null; S.day = 1;
       if (!p || p.v !== 1) return S;
       const num = (v, d = 0) => (isNum(+v) && v !== null && v !== '' ? +v : d);
+      const savedDay = Math.max(1, num(p.day, 1) | 0);
       S.pets = (Array.isArray(p.pets) ? p.pets : []).filter((q) => q && ARTER.includes(q.species)).slice(0, MAX_PETS).map((q) => ({
         ...q,
         id: String(q.id), name: cleanName(q.name) || 'Tuss', breed: String(q.breed || ''), sex: q.sex === 'hona' ? 'hona' : 'hane',
-        bornDay: num(q.bornDay, 1), stage: ['unge', 'ung', 'vuxen'].includes(q.stage) ? q.stage : 'unge',
-        hunger: clamp(num(q.hunger, 70)), happy: clamp(num(q.happy, 70)), toilet: clamp(num(q.toilet, 0), 0, 120),
+        bornDay: Math.min(savedDay, num(q.bornDay, 1)), stage: ['unge', 'ung', 'vuxen'].includes(q.stage) ? q.stage : 'unge',
+        hunger: clamp(num(q.hunger, 70)), happy: clamp(num(q.happy, 70)), toilet: clamp(num(q.toilet, 0)),
         x: isNum(q.x) ? q.x : null, y: isNum(q.y) ? q.y : null, following: !!q.following, out: !!q.out,
         lover: q.lover ? String(q.lover) : null, pregnantUntil: isNum(q.pregnantUntil) ? q.pregnantUntil : null,
       }));
@@ -692,7 +759,7 @@ export function createPetStore({ storage = null, rng = Math.random, key = PETS_S
       S.log = Array.isArray(p.log) ? p.log.slice(0, 20) : [];
       S.nextId = Math.max(1, num(p.nextId, 1) | 0);
       S.clockAbs = isNum(p.clockAbs) ? p.clockAbs : null;
-      S.day = Math.max(1, num(p.day, 1) | 0);
+      S.day = savedDay;
       // säkerställ att nextId aldrig krockar
       const maxId = Math.max(0, ...[...S.pets, ...S.items, ...S.messes].map((o) => parseInt(String(o.id).slice(1), 10) || 0));
       if (S.nextId <= maxId) S.nextId = maxId + 1;
@@ -748,6 +815,11 @@ export function petStore() {
     try { storage = typeof localStorage !== 'undefined' ? localStorage : null; } catch { storage = null; }
     _store = createPetStore({ storage });
     _store.load();
+    // Nytt spel? Spelet räknar sig som nytt när dess sparfil saknas (main.js: firstRun) – då
+    // ska inte förra spelets djur och prylar följa med in i den nya bostaden.
+    let gameSave = null;
+    try { gameSave = storage ? storage.getItem(GAME_SAVE_KEY) : null; } catch { gameSave = null; }
+    if (storage && !gameSave && _store._restart('nytt spel (ingen spelsparfil)')) console.info('Husdjuren från förra spelet lades undan.');
   }
   return _store;
 }

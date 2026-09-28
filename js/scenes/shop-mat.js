@@ -80,6 +80,7 @@ const PLANT = { x: 744, base: 300 };            // stor krukväxt vid kaffemaski
 const SCALE = { x: 229, base: 190 };            // fruktvågen med påsrulle
 const CAGE = { x0: 502, x1: 524, base: 160 };
 const RESTOCK = [490, 161];
+const DROP = { x: 394, base: 346 };             // tomma korgar efter kassan
 const MAX_BASKET = 12;
 const EAT_EXTRA = 5; // game.buyFood tar 5 kr extra för eatNow
 
@@ -108,6 +109,7 @@ const OBST = [
   [PLANT.x - 9, PLANT.base - 6, PLANT.x + 9, PLANT.base],
   [SCALE.x - 6, SCALE.base - 5, SCALE.x + 6, SCALE.base],
   [CAGE.x0, CAGE.base - 8, CAGE.x1, CAGE.base],
+  [DROP.x - 1, DROP.base - 6, DROP.x + 15, DROP.base],
 ];
 
 // kunderna tittar på hyllorna härifrån
@@ -603,6 +605,7 @@ function art() {
     freezers: FREEZERS.map((F, i) => paintFreezer(F, i, displays)),
     kassor: KASSOR.map((K) => paintKassa(K)),
     candy: KASSOR.map((K, i) => paintCandyRack(K.x1 + 2, K.base, i)),
+    drop: paintBasketDrop(),
     grill: paintGrill(displays),
     bar: paintBar(),
     stool: paintStool(),
@@ -632,35 +635,151 @@ function paintGlowSprite(rx, ry, c) {
 }
 
 // ---------- golvet ----------
+// värdebrus (mjukt) – samma recept som stadens mark
+function vnoise(x, y, s, seed) {
+  const fx = x / s, fy = y / s, ix = Math.floor(fx), iy = Math.floor(fy);
+  let tx = fx - ix, ty = fy - iy;
+  tx = tx * tx * (3 - 2 * tx); ty = ty * ty * (3 - 2 * ty);
+  const a = hash(ix, iy, seed), b = hash(ix + 1, iy, seed), c = hash(ix, iy + 1, seed), d = hash(ix + 1, iy + 1, seed);
+  return a + (b - a) * tx + (c - a) * ty + (a - b - c + d) * tx * ty;
+}
+// glidande ton ur en palett (golven får brus i stället för rutig dithering)
+function ramp(pal, v) {
+  const f = clamp(v, 0, 0.999) * (pal.length - 1), i = Math.floor(f);
+  return mix(pal[i], pal[Math.min(pal.length - 1, i + 1)], f - i);
+}
+// gångstråken där folk (och kundvagnar) nött golvet: [x0, y0, x1, y1, halva bredden]
+const WEAR = [
+  // frukt och grönt
+  [14, 97, 236, 97, 7], [120, 100, 120, 246, 9], [14, 158, 238, 158, 8], [14, 230, 240, 230, 9], [230, 100, 230, 246, 7],
+  // vinylen: in från dörren, tvärgången, kassorna, gångarna mellan hyllorna
+  [DOOR_X, FRONT_Y, DOOR_X, 262, 15], [14, 296, 556, 296, 11], [150, 360, 430, 360, 10], [DOOR_X, 372, 330, 362, 9],
+  [396, 96, 396, 300, 9], [557, 96, 557, 240, 10], [246, 96, 246, 300, 6], [250, 94, 540, 94, 7],
+  [252, 162, 540, 162, 7], [252, 226, 540, 226, 7], [574, 164, 756, 164, 7], [574, 228, 756, 228, 6],
+  // bageriet och kaféet
+  [552, 100, 756, 100, 8], [548, 318, 756, 314, 11], [590, 358, 756, 358, 7],
+];
+function wearAt(x, y) {
+  let w = 0;
+  for (const [ax, ay, bx, by, r] of WEAR) {
+    const dx = bx - ax, dy = by - ay, L = dx * dx + dy * dy;
+    const t = L ? clamp(((x - ax) * dx + (y - ay) * dy) / L, 0, 1) : 0;
+    const d = Math.hypot(x - ax - dx * t, y - ay - dy * t) / r;
+    if (d < 1) w = Math.max(w, 1 - d * d);
+  }
+  return w * (0.45 + vnoise(x, y, 9, 61) * 0.55); // fläckigt, inte en jämn matta
+}
+// butiksvinyl: plattor med egen ton, inbakade flingor, smuts i fogarna och gångslitage
 function vinyl(x, y) {
   const yy = y - WALL_Y, tx = x >> 4, ty = yy >> 4, lx = x & 15, ly = yy & 15;
   let c = (tx + ty) & 1 ? 0xe8e5dc : 0xdedacf;
   if ((ty % 6 === 5) && (tx % 2 === 0)) c = 0xc8d8cc; // en grön accentplatta ibland
+  c = mul(c, 0.975 + hash(tx, ty, 8) * 0.05);                    // varje platta har sin egen ton
+  c = mul(c, 1 + (vnoise(x, y, 22, 64) - 0.5) * 0.06 + (vnoise(x, y, 5, 67) - 0.5) * 0.03); // molnigt
   const n = hash(x, y, 7);
-  if (n > 0.965) c = mul(c, 0.9); else if (n < 0.025) c = mix(c, 0xffffff, 0.45);
-  if (hash(x >> 1, y >> 1, 9) > 0.93) c = mix(c, 0xb0aa9c, 0.3);
-  if (lx === 0 || ly === 0) c = mix(c, 0x9e988c, 0.5);
-  else if (lx === 1 || ly === 1) c = mix(c, 0xffffff, 0.3);
-  return c;
+  if (n > 0.972) c = mix(c, 0x8e887c, 0.42);                     // mörka flingor
+  else if (n > 0.95) c = mix(c, 0xb8b0a0, 0.4);
+  else if (n > 0.935) c = mix(c, 0x9ab0a0, 0.25);                // gröngrå
+  else if (n < 0.022) c = mix(c, 0xffffff, 0.55);                // vita
+  if (lx === 0 || ly === 0) {                                    // fogen – smutsigare här och där
+    c = mix(c, 0x9e988c, 0.5);
+    if (vnoise(x, y, 7, 65) > 0.58) c = mix(c, 0x6e685e, 0.35);
+  } else if (lx === 1 || ly === 1) c = mix(c, 0xffffff, 0.28);
+  else if (lx === 15 || ly === 15) c = mul(c, 0.975);
+  else if (lx === 2 && ly === 2) c = mix(c, 0xffffff, 0.35);     // glans i plattans hörn
+  const w = wearAt(x, y);
+  if (w > 0) c = mix(c, (tx + ty) & 1 ? 0xc4beb2 : 0xbcb6aa, w * 0.3);
+  return mul(c, 0.985 + hash(x, y, 66) * 0.03);
 }
+// trägolv: långa plankor i förband, ådring längs plankan, kvistar, mjuka fogar och slitage
 function plank(x, y, pal, seed) {
-  const yy = y - WALL_Y, row = Math.floor(yy / 6), ly = yy % 6;
-  const off = (hash(row, 3, seed) * 40) | 0, len = 26 + ((hash(row, 4, seed) * 22) | 0);
-  const seg = Math.floor((x + off) / len), lx = (x + off) % len;
-  let v = 0.56 + (hash(seg, row, seed + 2) - 0.5) * 0.26 + Math.sin((x + seg * 17) * 0.33 + row * 1.7) * 0.05 + (hash(x, y, seed) - 0.5) * 0.08;
-  if (ly === 0) v -= 0.34; else if (ly === 1) v += 0.14;
-  if (lx === 0) v -= 0.28; else if (lx === 1) v += 0.08;
-  if (hash(seg, row, seed + 5) > 0.86 && Math.abs(lx - len / 2) < 2 && ly === 3) v -= 0.3; // kvist
-  return tone(pal, v, x, y);
+  const PH = 7, yy = y - WALL_Y, row = Math.floor(yy / PH), ly = yy - row * PH;
+  const off = (hash(row, 3, seed) * 97) | 0, len = 58 + ((hash(row, 4, seed) * 52) | 0);
+  const seg = Math.floor((x + off) / len), lx = x + off - seg * len;
+  const ps = hash(seg, row, seed + 2); // plankans eget virke
+  let v = 0.5 + (ps - 0.5) * 0.3;
+  // ådringen: tunna stråk längs plankan som böljar lite, plus långsträckt brus
+  const gy = ly + Math.sin((lx + ps * 40) * 0.085) * 1.3;
+  let grain = Math.sin(gy * 2.2 + ps * 9) * 0.06 + (vnoise(x * 0.14 + seg * 31, y * 1.1, 1, seed + 3) - 0.5) * 0.16;
+  // kvistar med årsringar runt
+  if (ps > 0.58) {
+    const kx = 10 + ((hash(seg, row, seed + 6) * (len - 20)) | 0), ky = 2 + ((hash(seg, row, seed + 7) * 3) | 0);
+    const d = Math.hypot((lx - kx) / 2.1, ly - ky);
+    if (d < 1) grain -= 0.3 - d * 0.1;
+    else if (d < 3.2) grain += Math.cos(d * 3.4) * 0.07 - 0.03;
+  }
+  const w = wearAt(x, y);
+  v += grain * (1 - w * 0.55) + (hash(x, y, seed) - 0.5) * 0.05;
+  v += w * 0.08;                                  // lacken nött – ljusare och mattare
+  // fogarna: mörk springa nedtill och i plankändarna, ljus fas upptill
+  if (ly === PH - 1) v = v * 0.55 - 0.04;
+  else if (ly === 0) v += 0.07;
+  if (lx === len - 1) v = v * 0.55 - 0.03;
+  else if (lx === 0) v += 0.05;
+  let c = ramp(pal, v);
+  if (w > 0) c = mix(c, 0xb8ac98, w * 0.16);
+  return mul(c, 0.97 + hash(x, y, seed + 9) * 0.06);
 }
 function terracotta(x, y) {
   const lx = x % 10, ly = (y - WALL_Y) % 10, tx = Math.floor(x / 10), ty = Math.floor((y - WALL_Y) / 10);
-  if (lx === 0 || ly === 0) return 0x9a7a62;
+  if (lx === 0 || ly === 0) return mul(0x9a7a62, 0.92 + hash(x, y, 23) * 0.12 - (vnoise(x, y, 6, 24) > 0.62 ? 0.12 : 0));
   let c = mix(0xc0684a, 0xa85236, hash(tx, ty, 21) * 0.7);
+  c = mul(c, 1 + (vnoise(x, y, 4, 25) - 0.5) * 0.1);
   if (lx === 1 || ly === 1) c = mix(c, 0xffd0b0, 0.2);
   if (lx === 9 || ly === 9) c = mul(c, 0.86);
-  if (hash(x, y, 22) > 0.9) c = mul(c, 0.92);
-  return c;
+  // kantstötta hörn på en del plattor
+  if (hash(tx, ty, 26) > 0.7 && ((lx === 1 && ly <= 2) || (ly === 1 && lx <= 2))) c = 0x9a7a62;
+  const n = hash(x, y, 22);
+  if (n > 0.93) c = mul(c, 0.88); else if (n < 0.03) c = mix(c, 0xffd8c0, 0.35);
+  const w = wearAt(x, y);
+  if (w > 0) c = mix(c, 0xc89a80, w * 0.22);
+  return mul(c, 0.975 + hash(x, y, 27) * 0.05);
+}
+// skosulornas svarta streck och kundvagnshjulens spår på vinylen (tätast i gångstråken)
+function paintScuffs(P) {
+  for (let i = 0; i < 520; i++) {
+    const x = SIDE + 2 + ((hash(i, 1, 81) * (W - SIDE * 2 - 4)) | 0), y = WALL_Y + 20 + ((hash(i, 2, 81) * (FRONT_Y - WALL_Y - 26)) | 0);
+    if (zoneAt(x, y) !== 'vinyl') continue;
+    if (hash(i, 3, 81) > 0.12 + wearAt(x, y) * 0.9) continue;
+    const len = 3 + ((hash(i, 4, 81) * 6) | 0), a0 = hash(i, 5, 81) * Math.PI, bend = (hash(i, 6, 81) - 0.5) * 0.45;
+    const a = 0.16 + hash(i, 7, 81) * 0.24;
+    for (let k = 0; k < len; k++) {
+      const ang = a0 + bend * k, px = Math.round(x + Math.cos(ang) * k), py = Math.round(y + Math.sin(ang) * k * 0.55);
+      P.px(px, py, 0x2e2a2a, a * (k === 0 || k === len - 1 ? 0.55 : 1));
+    }
+  }
+  // hjulspår från vagnparken in i butiken: två svaga parallella streck som svänger
+  for (let k = 0; k < 150; k++) {
+    const t = k / 150, x = CARTS.x1 + 8 + t * 150, y = CARTS.base - 26 - Math.sin(t * Math.PI) * 40;
+    if (hash(k, 1, 83) < 0.3) continue;
+    P.px(Math.round(x), Math.round(y), 0x3a3636, 0.12); P.px(Math.round(x), Math.round(y) + 7, 0x3a3636, 0.12);
+  }
+}
+// småskräp och fläckar som gör golvet levande
+function paintDebris(P) {
+  const leaf = (x, y, c, flip) => { P.px(x, y, c); P.px(x + (flip ? -1 : 1), y, mix(c, 0xffffff, 0.25)); P.px(x + (flip ? -1 : 1) * 2, y - 1, c); P.px(x, y + 1, mul(c, 0.6), 0.5); };
+  const stain = (cx, cy, rx, ry, c, a, seed) => {
+    for (let y = Math.floor(cy - ry); y <= cy + ry; y++) for (let x = Math.floor(cx - rx); x <= cx + rx; x++) {
+      const t = Math.hypot((x + 0.5 - cx) / rx, (y + 0.5 - cy) / ry) + (hash(x, y, seed) - 0.5) * 0.35;
+      if (t < 1) P.px(x, y, c, a * (t > 0.75 ? 1.3 : 0.8));
+    }
+  };
+  // frukt och grönt: tappade blad, en druva, en mosad tomat och en prislapp
+  leaf(116, 152, 0x4a9a3a); leaf(72, 236, 0x5ab83a, true); leaf(226, 104, 0x3a8a2a); leaf(160, 164, 0x6aa83a);
+  P.rect(228, 178, 2, 2, 0x6a2a6a); P.px(228, 178, 0xb87ab8); P.px(229, 180, 0x2a1030, 0.4);   // druva
+  stain(142, 233, 3, 1.4, 0x8a1a10, 0.45, 91); P.px(141, 233, 0xd8403a); P.px(143, 232, 0x5a8a2a); // mosad tomat
+  P.hl(64, 160, 3, 0xf8f4ea); P.px(66, 161, 0xc8c0b0); P.px(65, 160, 0xd83a2a);                   // prislapp
+  // vinylen: kvitto vid kassan, en kapsyl, tuggummin och en blöt fläck från moppen
+  P.rect(404, 366, 6, 3, 0xf8f6f0); P.hl(405, 367, 4, 0xb8b4ac); P.px(409, 368, 0xd8d4cc); P.hl(404, 369, 6, 0x4a4640, 0.2);
+  P.rect(322, 252, 2, 2, 0xd8323a); P.px(322, 252, 0xff8a80); P.px(324, 253, 0x3a1010, 0.3);
+  for (const [gx, gy] of [[188, 280], [470, 300], [264, 318], [520, 186], [150, 372], [440, 236]]) { P.hl(gx, gy, 2, 0x4a4648, 0.8); P.px(gx, gy + 1, 0x2a2628, 0.35); }
+  stain(WET.x + 4, WET.base - 8, 14, 4, 0x8ab0c8, 0.2, 93); P.px(WET.x - 2, WET.base - 10, 0xffffff, 0.8); P.px(WET.x + 8, WET.base - 7, 0xffffff, 0.7);
+  // kaféet: kaffestänk, smulor under pallarna och ett sockerpaket
+  stain(646, 308, 2.5, 1.2, 0x2a1408, 0.45, 95); stain(652, 310, 1.2, 0.8, 0x2a1408, 0.4, 96);
+  for (let i = 0; i < 26; i++) { const x = 604 + ((hash(i, 1, 97) * 144) | 0), y = 380 + ((hash(i, 2, 97) * 6) | 0); P.px(x, y, hash(i, 3, 97) > 0.5 ? 0xe0b070 : 0xc8904a); }
+  P.rect(700, 344, 3, 2, 0xf4f1ea); P.px(702, 345, 0x3a7bd5);
+  // bageriet: mjöldamm
+  for (let i = 0; i < 60; i++) { const x = 560 + ((hash(i, 1, 99) * 130) | 0), y = 88 + ((hash(i, 2, 99) * 24) | 0); P.px(x, y, 0xfff6ea, 0.25 + hash(i, 3, 99) * 0.3); }
 }
 const zoneAt = (x, y) => (x < 240 && y < 246 ? 'frukt' : x >= 560 && y >= 240 ? 'kafe' : x >= 546 && y < 118 ? 'bageri' : 'vinyl');
 function paintFloor(P) {
@@ -676,8 +795,19 @@ function paintFloor(P) {
   strip(240, WALL_Y, 240, 246); strip(0, 246, 241, 246);
   strip(560, 240, 560, FRONT_Y); strip(560, 240, W, 240);
   strip(546, WALL_Y, 546, 118); strip(546, 118, W, 118);
+  paintScuffs(P);
+  paintDebris(P);
   // kassaköns gröna golvlinje och "VÄNTA HÄR"-streck
   for (const K of KASSOR) {
+    // ståmatta i gummi där kunden står och betalar
+    const m0 = K.x0 + 20, m1 = K.x0 + 80, my0 = K.base + 3, my1 = K.base + 19;
+    for (let y = my0; y < my1; y++) for (let x = m0; x < m1; x++) {
+      let c = ((x + y) & 1) ? 0x3a3e46 : 0x30343c;
+      if ((x - m0) % 3 === 1 && (y - my0) % 3 === 1) c = 0x4a4e58; // noppor
+      if (x === m0 || y === my0) c = 0x5a5e68; else if (x === m1 - 1 || y === my1 - 1) c = 0x1e2026;
+      P.px(x, y, c);
+    }
+    P.hl(m0 + 1, my0, m1 - m0 - 2, 0x6a7078);
     for (let x = K.x0 - 4; x < K.x1 + 18; x++) { P.px(x, K.base + 22, GREEN); P.px(x, K.base + 23, GREEN_DK, 0.6); }
     for (let x = K.x0 + 8; x < K.x0 + 40; x += 4) { P.hl(x, K.base + 34, 2, 0xf0c020); }
   }
@@ -1282,6 +1412,14 @@ const CATS = {
   godis: { sign: 'GODIS & CHIPS', col: 0xc84a8a, shelves: [['candy', 'choc'], ['candy'], ['bag'], ['tp', 'deterg']] },
 };
 const LIPS = [35, 25, 15, 5]; // hyllplanens höjd över golvet (varorna står på dem)
+// avdelningsskyltarna på gondolerna – kunderna ska inte ställa sig med huvudet bakom dem
+const SIGN_Y = (base) => base - 59; // skyltens översta rad (den står på hyllans ovansida, base-48)
+const SIGNS = GONDOLAS.map((G) => {
+  const w = textW(SM, CATS[G.cat].sign) + 10, x = G.x0 + 6, y = SIGN_Y(G.base);
+  return { x0: x - 1, x1: x + w + 1, y0: y - 1, y1: y + 11, base: G.base };
+});
+// figuren är 27 px hög: huvudet på en figur med fötterna i (x, y) ligger i [x±6, y-27 … y-17]
+const signHides = (x, y) => SIGNS.find((s) => y < s.base && x + 6 > s.x0 && x - 6 < s.x1 && y - 27 < s.y1 && y - 19 > s.y0);
 function paintGondola(G, gi, displays) {
   const { x0, x1, base, cat } = G, w = x1 - x0, C = CATS[cat];
   const mine = displays.filter((s) => s.d.kind === 'gondola' && s.d.g === gi);
@@ -1337,9 +1475,10 @@ function paintGondola(G, gi, displays) {
       text(P, SM, s, wx + 2, wy + 2, fgc);
     }
     outline(P, OUT, 0.5);
-    // avdelningsskylt på stolpar ovanpå hyllan (vänster ände)
-    const sgw = textW(SM, C.sign) + 10, sgx = x0 + 6, sgy = base - 68;
-    for (const px of [sgx + 3, sgx + sgw - 4]) { P.vl(px, sgy + 10, base - 48 - sgy - 10, 0x5a5e68); }
+    // avdelningsskylt som står direkt på hyllans ovansida (vänster ände) – ingen glipa under,
+    // så att en kund bakom hyllan aldrig ser ut som en huvudlös kropp mellan skylt och hylla
+    const sgw = textW(SM, C.sign) + 10, sgx = x0 + 6, sgy = SIGN_Y(base);
+    for (const px of [sgx + 3, sgx + sgw - 4]) { P.rect(px - 1, sgy + 10, 3, base - 48 - sgy - 10, 0x5a5e68); P.px(px - 1, sgy + 10, 0x8a909a); }
     P.rect(sgx, sgy, sgw, 10, 0xf8f8f4); P.box(sgx, sgy, sgw, 10, OUT); P.hl(sgx + 1, sgy + 1, sgw - 2, 0xffffff);
     P.rect(sgx + 1, sgy + 7, sgw - 2, 2, C.col); P.rect(sgx + 2, sgy + 2, 3, 3, C.col);
     text(P, SM, C.sign, sgx + 7, sgy + 2, 0x2a2e36);
@@ -1478,7 +1617,7 @@ function paintKassa(K) {
     for (let x = BELT.x0 - K1.x0 + x0; x < BELT.x1 - K1.x0 + x0; x++) { P.px(x, top + 2, 0x4a4a52); P.px(x, face - 3, 0x18181c); }
     for (let x = x0 + 1; x < x0 + 49; x++) { P.px(x, top + 1, STEEL[4]); P.px(x, face - 2, STEEL[2]); }
     // varuavskiljare på bandet
-    P.rect(x0 + 6, top + 4, 12, 2, 0x5a6270); P.hl(x0 + 6, top + 4, 12, STEEL[3]); text(P, SM, 'NÄSTA', x0 + 20, top + 4, 0x6a7280, 0.0);
+    P.rect(x0 + 6, top + 4, 12, 2, 0x5a6270); P.hl(x0 + 6, top + 4, 12, STEEL[3]); P.px(x0 + 6, top + 5, STEEL[4]); P.px(x0 + 17, top + 5, 0x3a4250);
     // skannerglas
     P.rect(x0 + 50, top + 2, 8, face - top - 4, 0x1a1e24); P.rect(x0 + 51, top + 3, 6, face - top - 6, 0x3a4652);
     P.hl(x0 + 51, top + 3, 6, 0x8ab0c8); P.px(x0 + 54, top + 6, 0xff3a3a);
@@ -1506,7 +1645,10 @@ function paintKassa(K) {
     P.rect(x0 - 2, base - 60, 11, 10, 0x1a1e24); P.rect(x0 - 1, base - 59, 9, 8, open ? 0x2aba5a : 0x6a1a1a);
     text(P, SM, String(n), x0 + 2, base - 58, open ? 0xffffff : 0xb86a6a);
     if (!open) { // stängd: skylt på bandet och kedja
-      P.rect(x0 + 18, top - 8, 24, 9, 0xd8323a); P.box(x0 + 18, top - 8, 24, 9, 0x6a0a10); text(P, SM, 'STÄNGD', x0 + 19, top - 6, 0xffffff);
+      const sw = textW(SM, 'STÄNGD') + 6, sx = x0 + 30 - (sw >> 1);
+      P.rect(sx, top - 9, sw, 10, 0xd8323a); P.hl(sx + 1, top - 8, sw - 2, 0xf06a6a); P.hl(sx + 1, top - 1, sw - 2, 0xa81a22);
+      P.box(sx, top - 9, sw, 10, 0x6a0a10);
+      text(P, SM, 'STÄNGD', sx + 3, top - 6, 0xffffff);
       P.vl(x0 + 30, top + 1, 2, 0x5a5e68);
     }
     outline(P, OUT, 0.5);
@@ -1514,7 +1656,7 @@ function paintKassa(K) {
   });
 }
 function paintCandyRack(x0, base, i) {
-  return sprite(x0 - 2, base - 38, 18, 42, (P) => {
+  return sprite(x0 - 6, base - 39, 26, 43, (P) => {
     P.rect(x0, base - 34, 14, 34, 0x3a3e48); P.vl(x0, base - 34, 34, 0x6a7280); P.vl(x0 + 13, base - 34, 34, 0x1a1e24);
     for (let k = 0; k < 4; k++) {
       const b = base - 26 + k * 7;
@@ -1524,9 +1666,11 @@ function paintCandyRack(x0, base, i) {
       }
       P.hl(x0 + 1, b, 12, STEEL[3]);
     }
-    P.rect(x0 - 1, base - 38, 16, 5, RED); P.hl(x0 - 1, base - 38, 16, 0xff7a70);
-    text(P, SM, 'GODIS', x0, base - 37, 0xffffff, 0.0);
-    P.px(x0 + 3, base - 36, 0xffffff); P.px(x0 + 7, base - 36, 0xffffff); P.px(x0 + 11, base - 36, 0xffffff);
+    // skylten ovanpå stället, bredare än själva stället så att ordet får plats
+    const gw = textW(SM, 'GODIS') + 4, gx = x0 + 7 - (gw >> 1);
+    P.rect(gx, base - 39, gw, 7, RED); P.hl(gx, base - 39, gw, 0xff7a70); P.hl(gx, base - 33, gw, RED_DK);
+    P.px(gx, base - 39, 0xffb0a8); P.vl(gx + gw - 1, base - 38, 5, RED_DK);
+    text(P, SM, 'GODIS', gx + 2, base - 38, 0xffffff);
     outline(P, OUT, 0.5);
     groundShadow(P, x0 + 7, base + 1, 9, 2, 0.3);
   });
@@ -1579,8 +1723,7 @@ function paintGrill(displays) {
     P.rect(cx0 + 8, top - 6, 5, 5, 0xf4f1ea); P.hl(cx0 + 8, top - 6, 5, 0x5a3a1a); // mugg under pipen
     P.rect(cx0 + 4, top - 2, 14, 2, STEEL[1]);
     // menytavla som hänger i kedjor från taket, ovanför korvgubben
-    const mx = x0 + 38, my = base - 84, mw = 54, mh = 22;
-    for (const px of [mx + 5, mx + mw - 6]) for (let y = base - 92; y < my; y++) P.px(px, y, (y & 1) ? STEEL[1] : STEEL[3]);
+    const mx = x0 + 38, my = base - 80, mw = 54, mh = 22;
     P.rect(mx - 1, my - 1, mw + 2, mh + 2, 0x8a5a2a); P.hl(mx - 1, my - 1, mw + 2, 0xc08a50); P.hl(mx - 1, my + mh, mw + 2, 0x5a3a1a);
     P.rect(mx, my, mw, mh, 0x1e2622);
     P.rect(mx, my, mw, 7, GREEN); P.hl(mx, my, mw, GREEN_HI);
@@ -1589,6 +1732,11 @@ function paintGrill(displays) {
     text(P, SM, 'KAFFE', mx + 2, my + 15, 0xf4f1ea); text(P, SM, 'GRATIS', mx + mw - 2 - textW(SM, 'GRATIS'), my + 15, 0x6fe08a);
     P.px(mx + 1, my + mh - 2, 0xf4f1ea, 0.35); P.px(mx + mw - 3, my + 8, 0xf4f1ea, 0.3); // kritdamm
     outline(P, OUT, 0.5);
+    // kedjorna upp mot taket – tonar bort så att tavlan inte ser ut att hänga i frysen
+    for (const px of [mx + 5, mx + mw - 6]) {
+      for (let y = my - 9; y < my - 1; y++) { const k = (y - (my - 9)) / 8; if (k > 0.5 || bayer(px, y) < k * 1.8) P.px(px, y, (y & 1) ? STEEL[1] : STEEL[3], 0.35 + k * 0.65); }
+      P.px(px, my - 1, STEEL[4]);
+    }
     groundShadow(P, x0 + w / 2, base + 1, w / 2 + 4, 3, 0.3);
   });
 }
@@ -1617,12 +1765,18 @@ function paintBar() {
     P.rect(x0, base - 2, w, 2, 0x1a1008);
     P.vl(x0, top, base - top, mix(WALNUT[3], 0xffffff, 0.2)); P.vl(x1 - 1, top, base - top, WALNUT[0]);
     // ÄT HÄR-skylt på fronten
-    const lbl = 'ÄT HÄR', lw = textW(SM, lbl) + 18, lx = Math.round(x0 + w / 2 - lw / 2);
-    P.rect(lx, face + 4, lw, 9, GREEN); P.hl(lx, face + 4, lw, GREEN_HI); P.hl(lx, face + 12, lw, GREEN_DK);
-    P.vl(lx, face + 4, 9, GREEN_HI); P.vl(lx + lw - 1, face + 4, 9, GREEN_DK);
-    text(P, SM, lbl, lx + 9, face + 6, 0xffffff);
-    P.vl(lx + 4, face + 6, 5, 0xffffff); P.px(lx + 3, face + 6, 0xffffff); P.px(lx + 5, face + 6, 0xffffff); // gaffel
-    P.vl(lx + lw - 5, face + 6, 5, 0xffffff); P.px(lx + lw - 4, face + 6, 0xffffff); P.px(lx + lw - 4, face + 7, 0xffffff); // kniv
+    const lbl = 'ÄT HÄR', tw = textW(SM, lbl), lw = tw + 21, lx = Math.round(x0 + w / 2 - lw / 2), sy = face + 4;
+    P.rect(lx, sy, lw, 9, GREEN); P.hl(lx, sy, lw, GREEN_HI); P.hl(lx, sy + 8, lw, GREEN_DK);
+    P.vl(lx, sy, 9, GREEN_HI); P.vl(lx + lw - 1, sy, 9, GREEN_DK);
+    text(P, SM, lbl, lx + 12, sy + 2, 0xffffff);
+    // gaffel med tre pinnar (5 px bred) och kniv med 2 px brett blad – i stål, inte vitt som texten
+    const fx = lx + 4, fy = sy + 1;
+    for (const dx of [0, 2, 4]) P.vl(fx + dx, fy, 2, STEEL[4]);
+    P.hl(fx, fy + 2, 5, STEEL[3]); P.hl(fx + 1, fy + 3, 3, STEEL[3]); P.px(fx + 3, fy + 3, STEEL[2]);
+    P.vl(fx + 2, fy + 4, 3, STEEL[4]); P.px(fx + 2, fy + 6, STEEL[2]);
+    const kx = lx + lw - 6;
+    P.px(kx + 1, fy, STEEL[4]); P.vl(kx, fy + 1, 3, STEEL[4]); P.vl(kx + 1, fy + 1, 3, STEEL[2]);
+    P.vl(kx + 1, fy + 4, 3, 0x2a2e36); P.px(kx + 1, fy + 4, STEEL[1]);
     // saker på disken: servetthållare, salt och peppar, sugerrör, vas, menystativ
     const napkins = (x) => {
       P.rect(x, top - 3, 6, 4, STEEL[2]); P.hl(x, top - 3, 6, STEEL[4]); P.vl(x + 5, top - 3, 4, STEEL[0]);
@@ -1641,16 +1795,27 @@ function paintBar() {
     // menystativ
     P.rect(x0 + 4, top - 8, 8, 9, 0xf4f1ea); P.box(x0 + 4, top - 8, 8, 9, GREEN); P.hl(x0 + 5, top - 7, 6, GREEN_HI);
     P.hl(x0 + 6, top - 5, 4, 0x3a3e48); P.hl(x0 + 6, top - 3, 3, 0x3a3e48); P.px(x0 + 9, top - 3, 0xd8323a);
-    // pendellampor i sladdar från taket
+    // pendellampor strax ovanför skivan; sladdarna försvinner uppåt mot det mörka taket
+    const LY = base - 48; // skärmens översta rad
     for (const lx of LAMPS) {
-      for (let y = base - 72; y < base - 58; y++) P.px(lx, y, 0x2a2e36);
-      const ly = base - 58;
-      for (let j = 0; j < 5; j++) { const hw = 2 + j; P.hl(lx - hw, ly + j, hw * 2 + 1, j === 0 ? 0x4a8a5a : j === 4 ? GREEN_DK : GREEN); P.px(lx - hw, ly + j, GREEN_HI); }
-      P.hl(lx - 5, ly + 5, 11, 0xfff0c0); P.hl(lx - 3, ly + 6, 7, 0xffffff); P.px(lx - 4, ly + 5, 0xffffff);
+      for (let j = 0; j < 5; j++) {
+        const hw = 2 + j;
+        for (let x = lx - hw; x <= lx + hw; x++) {
+          const u = (x - lx + hw) / (hw * 2); // 0 vänster … 1 höger
+          P.px(x, LY + j, j === 4 ? GREEN_DK : u < 0.2 ? GREEN_HI : u > 0.75 ? mul(GREEN, 0.72) : GREEN);
+        }
+      }
+      P.px(lx - 1, LY + 1, 0xc8f0d0); // emaljglans
+      P.hl(lx - 5, LY + 5, 11, 0xfff0c0); P.hl(lx - 2, LY + 6, 5, 0xffffff); P.px(lx - 4, LY + 5, 0xffffff);
     }
     outline(P, OUT, 0.5);
-    // lampornas ljuskägla (efter konturen så att den inte får kant)
-    for (const lx of LAMPS) for (let j = 0; j < 12; j++) { const hw = 5 + Math.round(j * 0.9); for (let x = lx - hw; x <= lx + hw; x++) if (bayer(x, j) < 0.35 - j * 0.02) P.px(x, base - 51 + j, 0xfff4d0, 0.25); }
+    // sladdarna (efter konturen – en tunn linje som tonar bort uppåt)
+    for (const lx of LAMPS) {
+      for (let y = LY - 14; y < LY - 1; y++) { const k = (y - (LY - 14)) / 13; if (k > 0.5 || bayer(lx, y) < k * 1.8) P.px(lx, y, 0x2a2e36, 0.3 + k * 0.7); }
+      P.hl(lx - 1, LY - 1, 3, 0x4a4e58); P.px(lx, LY - 1, 0x2a2e36); // fästet på skärmen
+    }
+    // lampornas ljuskägla ner mot skivan (efter konturen så att den inte får kant)
+    for (const lx of LAMPS) for (let j = 0; j < top - (LY + 7); j++) { const hw = 5 + Math.round(j * 0.9); for (let x = lx - hw; x <= lx + hw; x++) if (bayer(x, j) < 0.34 - j * 0.018) P.px(x, LY + 7 + j, 0xfff4d0, 0.22); }
     groundShadow(P, x0 + w / 2, base + 1, w / 2 + 4, 3, 0.3);
   });
 }
@@ -1722,10 +1887,20 @@ function paintBasketStack() {
     P.rect(x0 + 1, base - 6, 20, 6, STEEL[2]); P.hl(x0 + 1, base - 6, 20, STEEL[4]); P.hl(x0 + 1, base - 1, 20, STEEL[0]);
     for (let k = 0; k < 5; k++) basketSprite(P, x0 + 4, base - 15 - k * 3);
     P.vl(x0 + 22, base - 26, 22, STEEL[2]); P.rect(x0 + 16, base - 29, 14, 7, GREEN); P.hl(x0 + 16, base - 29, 14, GREEN_HI);
-    text(P, SM, 'KORG', x0 + 16, base - 28, 0xffffff, 0.0);
     P.rect(x0 + 17, base - 28, 12, 5, GREEN); basketMini(P, x0 + 19, base - 28);
     outline(P, OUT, 0.5);
     groundShadow(P, x0 + 12, base + 1, 13, 3, 0.3);
+  });
+}
+// en hög tomma korgar på golvet efter kassan, med en liten skylt
+function paintBasketDrop() {
+  const { x, base } = DROP;
+  return sprite(x - 4, base - 20, 24, 24, (P) => {
+    for (let k = 0; k < 4; k++) basketSprite(P, x, base - 10 - k * 2);
+    P.vl(x + 17, base - 17, 17, STEEL[2]); P.vl(x + 18, base - 17, 17, STEEL[0]);
+    P.rect(x + 13, base - 20, 9, 6, GREEN); P.hl(x + 13, base - 20, 9, GREEN_HI); basketMini(P, x + 14, base - 19);
+    outline(P, OUT, 0.5);
+    groundShadow(P, x + 7, base + 1, 9, 2, 0.3);
   });
 }
 function basketMini(P, x, y) { P.hl(x + 2, y, 4, 0xffffff); P.hl(x, y + 1, 8, 0xffffff); P.hl(x + 1, y + 2, 6, 0xffffff); P.px(x + 2, y + 3, 0xffffff); P.px(x + 5, y + 3, 0xffffff); }
@@ -2059,13 +2234,15 @@ export function makeShopMat(A) {
   let door = 0, doorWas = false;
   const flies = [], pops = [], bubbles = [];
   let panelHits = [];
+  let panelSide = 'left';   // korgpanelens hörn (byter sida när figuren går in under den)
   const cam = { x: 0, y: 0 };
   const camTarget = () => lockedCam || { x: clamp(walker.px - VW / 2, 0, W - VW), y: clamp(walker.py - VH * 0.62, 0, H - VH) };
   Object.assign(cam, camTarget());
 
   // kunderna i butiken
   const shoppers = L.shoppers.map((look, i) => {
-    const w = createWalker({ W, H, left: SIDE + 4, right: W - SIDE - 4, top: WALL_Y + 6, bottom: FRONT_Y - 3, spawn: BROWSE[(i * 7 + 3) % BROWSE.length] });
+    const sp = BROWSE[(i * 7 + 3) % BROWSE.length], sg = signHides(sp[0], sp[1]);
+    const w = createWalker({ W, H, left: SIDE + 4, right: W - SIDE - 4, top: WALL_Y + 6, bottom: FRONT_Y - 3, spawn: sg ? [sg.x1 + 8, sp[1]] : sp });
     w.speed = 34 + i * 5;
     w.setObstacles(OBST); w.snapFree();
     return { w, look, carry: i % 2 === 0, wait: 1 + i * 1.3, dir: 'up' };
@@ -2170,12 +2347,14 @@ export function makeShopMat(A) {
         <button class="btn btn-small ${ok ? 'btn-go' : ''}" data-eat="${esc(f.id)}" ${ok ? '' : 'disabled'}>😋 Ät</button>
       </div>`;
     }).join('');
-    const dlg = openModal('😋 Ät här', `<p style="font-size:19px;margin-top:0">Slå dig ner vid disken! Allt kostar ${EAT_EXTRA} kr extra när du äter här.<br>💰 <b>${fmt(g.money)}</b> · Mätthet <b>${Math.round(g.hunger)}/100</b></p>
+    const dlg = openModal('😋 Ät här', `<p style="font-size:19px;margin-top:0">Slå dig ner vid disken! Allt kostar ${EAT_EXTRA} kr extra när du äter här, och att äta tar en kvart.<br>💰 <b>${fmt(g.money)}</b> · Mätthet <b>${Math.round(g.hunger)}/100</b></p>
       ${g.money < cheapest ? '<p class="bad" style="font-size:19px"><b>Du har inte råd med något just nu</b> – jobba ett pass först!</p>' : ''}
       <div class="plist">${rows}</div>`, [{ label: 'Inte nu', onClick: closeModal }]);
     dlg.querySelectorAll('[data-eat]').forEach((b) => (b.onclick = () => {
       const f = foodOf(b.dataset.eat), r = g.buyFood(f.id, { eatNow: true });
       if (!r.ok) { play('fel'); toast(`💸 ${r.msg || 'Du har inte råd!'}`, 'bad'); return; }
+      g.passTime(15); // att äta tar en kvart, som på kaféet och hemma
+      g.save();
       closeModal();
       play('coin');
       if (sit) { sit.eat = f.id; sit.t = 0; }
@@ -2244,9 +2423,15 @@ export function makeShopMat(A) {
     panelHits = [];
     const gs = groups();
     if (!gs.length && !belt) return;
-    const x0 = 4, y0 = 4, w = 116;
+    const w = 116, y0 = 4;
     const rowsH = gs.length * 11;
     const h = 16 + rowsH + 34;
+    // panelen flyttar till andra hörnet när figuren går in under den (med lite marginal åt båda hållen)
+    const fx = walker.px - cam.x, fy = walker.py - cam.y;
+    const under = (px0) => fx > px0 - 10 && fx < px0 + w + 10 && fy - 40 < y0 + h + 4;
+    if (panelSide === 'left' && under(4)) panelSide = 'right';
+    else if (panelSide === 'right' && under(VW - 4 - w) && !under(4)) panelSide = 'left';
+    const x0 = panelSide === 'left' ? 4 : VW - 4 - w;
     ctx.fillStyle = '#0e0d12'; ctx.fillRect(x0 - 2, y0 - 2, w + 4, h + 4);
     ctx.fillStyle = '#2a8a4a'; ctx.fillRect(x0 - 1, y0 - 1, w + 2, h + 2);
     ctx.fillStyle = '#fbf8ee'; ctx.fillRect(x0, y0, w, h);
@@ -2292,7 +2477,7 @@ export function makeShopMat(A) {
     y += 13;
     const mt = `DU HAR ${Math.round(g.money)} KR`;
     ctxText(ctx, SM, mt, x0 + 4, y, afford ? '#6a6070' : '#c9323a');
-    panelHits.push({ r: [x0 - 2, y0 - 2, x0 + w + 2, y0 + h + 2], act: () => {} });
+    // bara knapparna fångar klick – resten av panelen släpper igenom klicket till butiken
   }
   function drawMiniBasket(ctx, x, y) {
     ctx.fillStyle = '#e6ecf0'; ctx.fillRect(x + 4, y, 6, 1); ctx.fillRect(x + 3, y + 1, 1, 2); ctx.fillRect(x + 10, y + 1, 1, 2);
@@ -2382,7 +2567,10 @@ export function makeShopMat(A) {
         s.wait -= dt;
         if (s.wait <= 0) {
           const p = BROWSE[Math.floor(Math.random() * BROWSE.length)];
-          s.w.walkTo(p[0] + (Math.random() * 16 - 8), p[1], () => { s.wait = 2 + Math.random() * 4; s.w.dir = 'up'; });
+          let tx = p[0] + (Math.random() * 16 - 8);
+          const sg = signHides(tx, p[1]);
+          if (sg) tx = sg.x1 + 8; // ställ dig bredvid skylten, inte bakom den
+          s.w.walkTo(tx, p[1], () => { s.wait = 2 + Math.random() * 4; s.w.dir = 'up'; });
           if (!s.w.path.length) s.wait = 1;
         }
       }
@@ -2412,7 +2600,8 @@ export function makeShopMat(A) {
     KASSOR.forEach((K, i) => {
       if (K.open) add(K.base - 24, K.x0 + 30, K.base - 70, K.x0 + 60, K.base - 20, () => drawPerson(ctx, K.x0 + 42, K.base - 25, L.cashier, 'down', belt && !belt.done ? 9 : Math.sin(t * 1.6) > 0.94 ? 4 : 0));
       add(K.base, K.x0 - 4, K.base - 60, K.x1 + 4, K.base + 8, () => { put(ctx, R.kassor[i]); if (K.open) liveKassa(ctx, K); });
-      add(K.base, K.x1, K.base - 38, K.x1 + 18, K.base + 4, () => put(ctx, R.candy[i]));
+      add(K.base, K.x1 - 6, K.base - 40, K.x1 + 22, K.base + 4, () => put(ctx, R.candy[i]));
+      if (i === 0) add(DROP.base, DROP.x - 4, DROP.base - 20, DROP.x + 20, DROP.base + 4, () => put(ctx, R.drop));
     });
     add(GRILL.base - 16, GRILL.x0 + 38, GRILL.base - 60, GRILL.x0 + 66, GRILL.base, () => drawPerson(ctx, VENDOR_X, GRILL.base - 17, L.vendor, Math.sin(t * 0.4) > 0.75 ? 'left' : 'down', Math.sin(t * 1.3 + 1) > 0.94 ? 4 : 0));
     add(GRILL.base, GRILL.x0 - 4, GRILL.base - 92, GRILL.x1 + 4, GRILL.base + 8, () => {
@@ -2638,7 +2827,7 @@ export function makeShopMat(A) {
       total: () => total(),
       pick: (id) => { const s = spots.find((x) => x.id === id && x.food); return s ? addToBasket(s.food) : false; },
       checkout: () => pay(),
-      eat: (id) => { const r = g.buyFood(id, { eatNow: true }); if (r.ok) play('coin'); return r; },
+      eat: (id) => { const r = g.buyFood(id, { eatNow: true }); if (r.ok) { g.passTime(15); g.save(); play('coin'); } return r; },
       displays: () => R.displays.map((s) => ({ id: s.f.id, kind: s.d.kind, tag: s.tag, go: s.go })),
       lockCam: (x, y) => { lockedCam = x === null || x === undefined ? null : { x: clamp(x, 0, W - VW), y: clamp(y ?? cam.y, 0, H - VH) }; if (lockedCam) Object.assign(cam, lockedCam); },
       teleport: (x, y) => { sit = null; walker.px = x; walker.py = y; walker.stop(); walker.snapFree(); Object.assign(cam, camTarget()); },
@@ -2648,6 +2837,8 @@ export function makeShopMat(A) {
       belt: () => (belt ? { total: belt.total, done: !!belt.done, items: belt.items.map((i) => i.st) } : null),
       sit: () => (sit ? { ...sit } : null),
       shoppers: () => shoppers.map((s) => ({ x: Math.round(s.w.px), y: Math.round(s.w.py), dir: s.w.dir, carry: s.carry, path: s.w.path.length })),
+      placeShopper: (i, x, y, wait = 999) => { const s = shoppers[i]; if (!s) return false; s.w.px = x; s.w.py = y; s.w.stop(); s.w.dir = 'up'; s.wait = wait; return true; },
+      signHides: (x, y) => !!signHides(x, y),
       panorama: (scale = 1) => {
         const c = document.createElement('canvas'); c.width = W * scale; c.height = H * scale;
         const x = c.getContext('2d'); x.imageSmoothingEnabled = false; x.setTransform(scale, 0, 0, scale, 0, 0);

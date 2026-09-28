@@ -27,7 +27,7 @@ export function escalatorArt(e) {
   const xs = [e.lx - e.sx * 18, e.lx + e.sx * (e.run + 2)];
   const x0 = Math.min(...xs) - 2, x1 = Math.max(...xs) + 2;
   const far = escPos(e, e.run);
-  const yTop = Math.min(e.ly, far[1]) - 24, yBot = Math.max(e.ly, far[1]) + (e.sy < 0 ? 16 : 16);
+  const yTop = Math.floor(Math.min(e.ly, far[1]) - 24), yBot = Math.ceil(Math.max(e.ly, far[1]) + 16);
   const W = x1 - x0, Hh = yBot - yTop;
   const mk = () => new Pix(W, Hh, x0, yTop);
   const back = mk(), front = mk();

@@ -63,7 +63,7 @@ function drawFlip(ctx, img, x, y, flip) {
 export function makeFolk(F, rng) {
   const list = [];
   let seq = 0;
-  const A = (o) => { const a = { id: seq++, x: 0, y: 0, dir: 'down', path: [], speed: 30, walking: false, frame: 0, bubble: null, t: 0, wait: 0, ...o }; list.push(a); return a; };
+  const A = (o) => { const a = { id: seq++, x: 0, y: 0, dir: 'down', path: [], speed: 30, walking: false, frame: 0, bubble: null, t: 0, wait: 0, ...o }; if (a.pts && o.x === undefined) { a.x = a.pts[0][0]; a.y = a.pts[0][1] + 2; } list.push(a); return a; };
   const say = (a, msg, s = 3) => { a.bubble = { msg, until: s }; };
   const nav = (a, x, y) => { a.path = F.walker.findPath(a.x, a.y, x, y).map((p) => [p[0], p[1]]); if (!a.path.length) a.path = [[x, y]]; };
   const routes = F.paths.map(densify);
@@ -75,36 +75,38 @@ export function makeFolk(F, rng) {
   if (F.n === 1) {
     A({ role: 'staff', mode: 'still', look: staffLook(rng, { style: 'bun' }), x: an.info[0], y: an.info[1], lines: ['VÄLKOMMEN!', 'KAN JAG HJÄLPA TILL?', 'SOFFOR FINNS PÅ PLAN 2!', 'KARTAN FINNS HÄR!'], tip: 1 });
     an.kassor.forEach((k, i) => A({ role: 'staff', mode: 'still', look: staffLook(rng), x: k.cashier[0], y: k.cashier[1], frame: 5, lines: ['HEJ HEJ!', 'VILL DU HA EN KASSE?', 'NÄSTA, TACK!', 'KVITTOT?'], tip: 4 + i }));
-    A({ role: 'staff', mode: 'still', look: staffLook(rng, { hat: 'cap', cap: '#f4f1ea' }), x: an.korv[0], y: an.korv[1] - 6, lines: ['KORV, 10 KRONOR!', 'MED SENAP?', 'GLASS, 5 KRONOR!'], tip: 5 });
+    A({ role: 'staff', mode: 'still', look: staffLook(rng, { hat: 'cap', cap: '#f4f1ea' }), x: an.korv[0], y: an.korv[1], dir: 'left', lines: ['KORV, 10 KRONOR!', 'MED SENAP?', 'GLASS, 5 KRONOR!'], tip: 5 });
     // truckföraren i lagret
     const lg = an.lager;
     A({ role: 'staff', mode: 'truck', look: staffLook(rng, { hat: 'cap', cap: '#f2c230', top: 'hiVis', shirt: '#f2c230' }), x: lg.x0 + 40, y: lg.y, x0: lg.x0 + 10, x1: lg.x1 - 40, speed: 32, dirX: 1, lines: ['SE UPP, TRUCK!', 'PIP PIP!'], tip: 7 });
     // påfyllare i lagret och i marknadshallen, vagnkörare
-    const shelves = F.bays.slice(0, 6).map((bx) => [bx + 20, F.lager.fy + 28, 'fyll']);
+    const shelves = F.bays.slice(1, 7).map((bx) => [bx + 40, F.lager.fy + 50, 'fyll']);
     if (shelves.length) A({ role: 'staff', mode: 'patrol', look: staffLook(rng), pts: shelves, carry: 'carton', speed: 28, lines: ['FYLLER PÅ!', 'NYA KARTONGER!'], tip: 7 });
-    const deptPts = F.depts.slice(0, 6).map((r) => [r.x0 + 40, r.fy + 26, 'fyll']);
+    // påfyllaren står på golvet framför vägghyllan (inte inne i den)
+    const deptPts = F.depts.slice(0, 6).map((r) => [...F.walker.nearestFree(r.x0 + 40, r.fy + 40), 'fyll']);
     if (deptPts.length) A({ role: 'staff', mode: 'patrol', look: staffLook(rng, { style: 'ponytail' }), pts: deptPts, carry: 'carton', speed: 30, lines: ['FYLLER PÅ!', 'KAN JAG HJÄLPA TILL?'], tip: 0 });
     const cageLane = [[F.depts[0]?.x0 ?? 700, AISLE1 + 2, 'stå'], [F.turnCx - 20, AISLE1 + 2, 'stå'], [F.turnCx - 20, AISLE2 - 2, 'stå'], [F.kassa.x1 + 20, AISLE2 - 2, 'stå']];
     A({ role: 'staff', mode: 'patrol', look: staffLook(rng, { style: 'buzz' }), pts: cageLane, push: 'cage', speed: 26, lines: ['SE UPP BAKOM!', 'HEJ!'], tip: 8 });
-    A({ role: 'staff', mode: 'patrol', look: staffLook(rng), pts: [[lg.x0 + 60, lg.y + 16, 'stå'], [lg.x1 - 60, lg.y + 16, 'stå']], push: 'flat', speed: 24, lines: ['PLATTA PAKET!', 'TUNGT!'], tip: 7 });
+    A({ role: 'staff', mode: 'patrol', look: staffLook(rng), pts: [[lg.x0 + 60, lg.cart, 'stå'], [lg.x1 - 110, lg.cart, 'stå']], push: 'flat', speed: 24, lines: ['PLATTA PAKET!', 'TUNGT!'], tip: 7 });
     // barnen i Småland
     const sm = an.smaland;
     for (let i = 0; i < 3; i++) A({ role: 'barn', mode: 'kid', look: kidLook(rng), x: sm.x0 + 8 + i * 22, y: sm.y, hx: sm.x0 + 8 + i * 22, ph: rng() * 6 });
     // kunder vid kassorna
     an.kassor.forEach((k, i) => { if (i !== 1) A({ role: 'kund', mode: 'still', look: kundLook(rng), x: k.queue[0], y: k.queue[1], dir: 'left', push: 'cart', load: 1 + (i & 1) }); });
     // korvätare vid ståborden
-    for (const [hx, hy] of an.hightables) A({ role: 'kund', mode: 'still', look: kundLook(rng), x: hx, y: hy, dir: hx > an.korv[0] + 160 ? 'left' : 'right', frame: 9, holding: 'korv' });
+    for (const [hx, hy] of an.hightables) A({ role: 'kund', mode: 'still', look: kundLook(rng), x: hx, y: hy, dir: hx > an.korv[0] + 130 ? 'left' : 'right', frame: 9, holding: 'korv' });
   } else {
     // restaurangen: kocken, kassörskan
     A({ role: 'staff', mode: 'still', look: staffLook(rng, { hat: 'cap', cap: '#f4f1ea', top: 'chef', shirt: '#f4f1ea', accent: '#f2c230' }), x: an.cook[0], y: an.cook[1], lines: ['KÖTTBULLAR, VARSÅGOD!', 'LINGON?', 'MOS ELLER POTATIS?'], tip: 2 });
     A({ role: 'staff', mode: 'still', look: staffLook(rng, { style: 'bob' }), x: an.cashierR[0], y: an.cashierR[1], lines: ['NÄSTA, TACK!', 'PÅTÅR INGÅR!', 'SMAKLIG MÅLTID!'], tip: 8 });
     // hjälpsamma säljare i utställningen
     const rooms = F.rooms;
-    const stops = (a, b) => rooms.slice(a, b).map((r) => [Math.round(r.x0 + r.IW / 2), r.fy + FD - 4, 'hjälp']);
+    const stops = (a, b) => rooms.slice(a, b).map((r) => [r.x1 - 14, r.fy + FD - 6, 'hjälp']);
     const nA = F.rowA.length - 1;
     A({ role: 'staff', mode: 'patrol', look: staffLook(rng, { style: 'long' }), pts: stops(0, Math.min(nA, 5)), speed: 26, lines: HELP_LINES, tip: 1 });
     if (rooms.length > nA) A({ role: 'staff', mode: 'patrol', look: staffLook(rng, { style: 'short', glasses: 'square' }), pts: stops(nA, Math.min(rooms.length, nA + 5)), speed: 26, lines: HELP_LINES, tip: 6 });
-    if (rooms.length > 2) A({ role: 'staff', mode: 'patrol', look: staffLook(rng, { style: 'curly' }), pts: rooms.slice(1, 5).map((r) => [r.x0 + 24, r.fy + 20, 'fyll']), carry: 'carton', speed: 28, lines: ['FYLLER PÅ!', 'NYA PRISLAPPAR!'], tip: 0 });
+    // påfyllaren står mellan väggraden och mittraden, vänd mot väggen
+    if (rooms.length > 2) A({ role: 'staff', mode: 'patrol', look: staffLook(rng, { style: 'curly' }), pts: rooms.slice(1, 5).map((r) => [...F.walker.nearestFree(r.x0 + 24, r.fy + 36), 'fyll']), carry: 'carton', speed: 28, lines: ['FYLLER PÅ!', 'NYA PRISLAPPAR!'], tip: 0 });
     // gäster som redan sitter och äter
     const free = F.seats.slice();
     for (let i = 0; i < 7 && free.length; i++) {
@@ -135,8 +137,10 @@ export function makeFolk(F, rng) {
   }
   // en rulltrappsåkare som blir kund när hen kliver av (plan 2 upp, plan 1 ner)
   function spawnRider() {
+    if (kunder() >= cap) return;
+    if (F.n === 1 && rng() < 0.5) { newKund(0, 0, null); return; } // in genom glasdörrarna
     const e = F.esc.find((x) => (F.n === 2 ? x.id === 'upp' : x.id === 'ner'));
-    if (!e || kunder() >= cap) return;
+    if (!e) return;
     e.riders.push({ look: kundLook(rng), d: e.run, v: -38, onDone: (r) => { const a = newKund(F.n === 1 ? 1 : 0, 0); a.look = r.look; a.x = e.board[0]; a.y = e.board[1]; } });
   }
   function toRider(a, e) { // kunden kliver på rulltrappan och försvinner från planet
@@ -193,7 +197,7 @@ export function makeFolk(F, rng) {
     if (a.state === 'look' || a.state === 'sit') {
       a.wait -= dt;
       if (a.wait <= 0) {
-        if (a.state === 'sit') { a.x = a.ex.go[0]; a.y = a.ex.go[1]; a.frame = 0; }
+        if (a.state === 'sit') { a.x = a.ex.go[0]; a.y = a.ex.go[1]; a.frame = 0; a.sortY = null; }
         a.state = 'back'; nav(a, R[a.k][0], R[a.k][1]);
       }
       return;
@@ -202,7 +206,7 @@ export function makeFolk(F, rng) {
       if (!move(a, dt)) {
         if (a.state === 'detour') {
           a.dir = 'up'; a.state = 'look'; a.wait = 2 + rng() * 3;
-          if (a.ex.seat && rng() < 0.65) { a.state = 'sit'; a.x = a.ex.seat[0]; a.y = a.ex.seat[1]; a.dir = 'down'; a.frame = 5; a.wait = 3 + rng() * 4; if (rng() < 0.5) say(a, ['SKÖN!', 'MJUK!', 'DEN HÄR!', 'HMM...'][(rng() * 4) | 0], 2.5); }
+          if (a.ex.seat && rng() < 0.65) { a.state = 'sit'; a.x = a.ex.seat[0]; a.y = a.ex.seat[1]; a.sortY = a.ex.base + 0.5; a.dir = 'down'; a.frame = 5; a.wait = 3 + rng() * 4; if (rng() < 0.5) say(a, ['SKÖN!', 'MJUK!', 'DEN HÄR!', 'HMM...'][(rng() * 4) | 0], 2.5); }
         } else a.state = null;
       }
       return;
@@ -274,7 +278,7 @@ export function makeFolk(F, rng) {
     const out = [];
     for (const a of list) {
       if (!inView(a.x - 30, a.y - 44, a.x + 30, a.y + 4)) continue;
-      out.push({ fy: a.y, draw: () => drawAgent(ctx, a, t) });
+      out.push({ fy: a.sortY ?? a.y, draw: () => drawAgent(ctx, a, t) });
     }
     return out;
   }
@@ -291,8 +295,8 @@ export function makeFolk(F, rng) {
     if (push) drawPush(ctx, a, t, false);
     if (carrying) {
       const img = a.hands === 'tray' ? trayImg(a.tray?.items || ['kottbullar'], a.tray?.left ?? 2) : cartonImg();
-      const ox = a.dir === 'left' ? -6 : a.dir === 'right' ? 6 : 0;
-      if (a.dir !== 'up') ctx.drawImage(img, Math.round(a.x + ox - img.width / 2), Math.round(y - 12 - img.height + (a.hands === 'tray' ? 1 : 0)));
+      const tray = a.hands === 'tray', ox = a.dir === 'left' ? (tray ? -9 : -6) : a.dir === 'right' ? (tray ? 9 : 6) : 0;
+      if (a.dir !== 'up') ctx.drawImage(img, Math.round(a.x + ox - img.width / 2), Math.round(y - (tray ? 7 : 12) - img.height));
     }
     if (a.holding === 'bag' && !carrying) ctx.drawImage(bagImg(), Math.round(a.x + (a.dir === 'left' ? -9 : 4)), Math.round(y - 17));
     if (a.holding === 'korv') { const d = dishImg('korv', Math.sin(t * 0.3 + a.id) > 0 ? 2 : 1); ctx.drawImage(d, Math.round(a.x + (a.dir === 'left' ? -14 : -6)), Math.round(y - 26)); }
@@ -340,7 +344,16 @@ export function makeFolk(F, rng) {
     }
     return best;
   }
-  return { list, update, drawables, bubbles, staffAt, say, riders: () => F.esc.flatMap((e) => e.riders) };
+  // för förhandsvisningar: en kund provsitter närmaste soffa/fåtölj
+  function forceSit(px, py) {
+    const ex = F.ex.filter((e) => e.seat).sort((p, q) => Math.hypot(p.x - px, p.base - py) - Math.hypot(q.x - px, q.base - py))[0];
+    const a = list.find((x) => x.mode === 'route' && !x.push);
+    if (!ex || !a) return false;
+    a.ex = ex; a.state = 'sit'; a.x = ex.seat[0]; a.y = ex.seat[1]; a.sortY = ex.base + 0.5; a.dir = 'down'; a.frame = 5; a.wait = 8; a.path = [];
+    say(a, 'SKÖN!', 4);
+    return true;
+  }
+  return { list, update, drawables, bubbles, staffAt, say, forceSit, riders: () => F.esc.flatMap((e) => e.riders) };
 }
 
 // gula gångens hörnpunkter → täta punkter var 40:e px (kundernas väg)

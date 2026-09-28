@@ -9,7 +9,7 @@
 // pallar med lådor, en parkerad truck och en kollega bakom bandet. Allt statiskt
 // målas EN gång (cachas per ljusläge) – bara det som rör sig ritas varje bildruta.
 // Ett pixelkorn: heltal, skala 1.
-import { Pix, SMALL, ctxText, textW, text, mix, mul, css, hash, bayer } from '../core/floor-pix.js';
+import { Pix, SMALL, BIG, ctxText, textW, text, eachTextPixel, mix, mul, css, hash, bayer } from '../core/floor-pix.js';
 import { createWalker, selfDrawable, folkDrawables, WALK_SEQ } from '../scenes/walkable.js';
 import { SHIFT_SECONDS, drawShiftHud, drawTimeUp, makePops, abortShift } from './shift.js';
 import { drawPerson } from '../core/people.js';
@@ -28,13 +28,17 @@ const WASH = { x0: 3, x1: 30, top: 57 };          // fruktvaskarens utlopp (vän
 const SORT = { x0: 344, tx0: 350, top: 57 };      // sorteringsmaskinen (höger)
 const BOARD = { x: 38, y: 26, w: 150, h: 33 };    // anslagstavlan
 const WINS = [206, 282], WIN_Y = 27, WIN_W = 34, WIN_H = 20;
-const CLOCK = { x: 260, y: 35 };
-const LAMPS = [116, 260];
+// klockan och högra lampan sitter var för sig mellan fönstren (lampan hänger
+// inte längre rakt ovanför klockan)
+const CLOCK = { x: 268, y: 35 };
+const LAMPS = [116, 250];
 const LEGS = [60, 124, 188, 252, 304];
 const TRUCK = { x: 12, y: 193 };                  // truckens vänstra kant + markplan
 const STACK = { x: 353, y: 204 };                 // pallen med tomma lådor
 const EXIT = { x1: 58, y0: 200, wx: 26, wy: 206 }; // UTGÅNG nere till vänster
 const BIN = { x: 356, y: 134 }, MOP = { x: 60, y: 124 }, JACK = { x: 150, y: 207 };
+const CRATES = { x: 240, y: 198 };                // tomma plastbackar i en stapel
+const PSPOT = { x: 150, y: 114, w: 44, h: 28 };   // tejpad pallplats P3 mitt på golvet
 const CREW_STOPS = [218, 234, 284, 298, 312];     // kollegans stopp bakom bandet (fria från klockan)
 const SURF_PERIOD = 48;
 
@@ -72,6 +76,13 @@ function area(P, x, y, w, h, fn) {
 }
 function rows(P, x, y, w, cs) { cs.forEach((c, i) => { if (c !== null) P.hl(x, y + i, w, c); }); }
 function vcols(P, x, y, h, cs) { cs.forEach((c, i) => { if (c !== null) P.vl(x + i, y, h, c); }); }
+// liten sprite ur teckenrader: tecknet slås upp i pal ('.' = genomskinligt) och
+// får en halvgenomskinlig slagskugga ett snäpp ner till höger
+function stamp(P, x, y, rs, pal, shadow = 0.3) {
+  const on = (i, j) => j >= 0 && j < rs.length && i >= 0 && i < rs[j].length && pal[rs[j][i]] !== undefined;
+  if (shadow) for (let j = 0; j <= rs.length; j++) for (let i = 0; i <= rs[0].length; i++) if (!on(i, j) && on(i - 1, j - 1)) P.px(x + i, y + j, 0x1e1a16, shadow);
+  for (let j = 0; j < rs.length; j++) for (let i = 0; i < rs[j].length; i++) { const c = pal[rs[j][i]]; if (c !== undefined) P.px(x + i, y + j, c); }
+}
 // glasreflex: diagonala strimmor och en ljusare överkant
 function reflect(P, x, y, w, h, str = 1, seed = 0, tint = 0xeef7ff) {
   for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) {
@@ -511,6 +522,28 @@ function jackArt(mode) {
   return (JACK_ART[mode] = { img: P.flush(), x: ox, y: oy });
 }
 
+// tomma plastbackar staplade på golvet (den översta på sniskan, med ett löv i)
+const CRATE_ART = {};
+function cratesArt(mode) {
+  if (CRATE_ART[mode]) return CRATE_ART[mode];
+  const w = 18, ox = CRATES.x - 3, oy = CRATES.y - 26, P = new Pix(w + 8, 30, ox, oy), x0 = CRATES.x, y0 = CRATES.y, g = 0x2e8a4a;
+  P.ell(x0 + w / 2 + 1, y0, w / 2 + 3, 2, 0x1a1418, 0.5, 4);
+  // undre backen: insidan syns inte (den övre står i den)
+  plasticCrate(P, x0, y0 - 9, w, 9, null, 551);
+  // övre backen, förskjuten: mörk insida och bakkant ovanför framsidan
+  const ux = x0 + 2, uy = y0 - 18;
+  area(P, ux, uy - 3, w, 3, (X, Y, i, j) => (j === 0 ? mix(g, WHITE, 0.25) : i === 0 || i === w - 1 ? mul(g, 0.7) : jit(mul(g, j === 1 ? 0.42 : 0.55), X, Y, 552, 0.06)));
+  plasticCrate(P, ux, uy, w, 9, null, 553);
+  P.hl(ux, uy + 9, w, mul(g, 0.35));
+  // ett löv som blivit kvar i backen
+  P.px(ux + 5, uy - 2, 0x8ac86a); P.px(ux + 6, uy - 2, 0x5aa03e); P.px(ux + 7, uy - 1, 0x3a7a2e);
+  // en etikett på undre backen
+  P.rect(x0 + 12, y0 - 6, 4, 3, 0xf2ecdc); P.hl(x0 + 12, y0 - 6, 4, WHITE); P.px(x0 + 13, y0 - 5, 0x9a968c); P.px(x0 + 14, y0 - 5, 0x9a968c);
+  outline(P, 0x10201a, 0.85);
+  nightShade(P, mode);
+  return (CRATE_ART[mode] = { img: P.flush(), x: ox, y: oy });
+}
+
 // ======================= LÅDAN (packplatsen) =======================
 // Bakre delen (insidan) och främre delen målas var för sig så att frukterna
 // man lägger i hamnar emellan. Står på en pall med en pappersetikett.
@@ -637,6 +670,106 @@ function paintWindow(P, x0, mode) {
   P.darken(x0 - 1, y0 + WIN_H + 3, WIN_W + 2, 1, 0.7);
 }
 
+// ======================= skräpet på golvet =======================
+// Mittgolvet mellan trucken, pallyftaren och lådan: en tejpad pallplats, spillda
+// druvor, löv som fallit av frukten, en golvskrapa, en avbruten pallbräda,
+// plastfilm, en arbetshandske, en följesedel, ett mosat apelsinskal och
+// oljedropp efter trucken. Allt ligger platt i golvlagret (inga hinder).
+const LITTER = {
+  leaf: { rows: ['.lL.', 'dmmL', '.dd.'], pal: { L: 0x8ac86a, l: 0x5aa03e, m: 0x3a7a2e, d: 0x245a22 } },
+  leaf2: { rows: ['Ll..', 'mmLb', '.dd.'], pal: { L: 0xa8c84a, l: 0x7aa03a, m: 0x5a8a2a, d: 0x3a5a1e, b: 0x6a4a2a } },
+  glove: {
+    rows: ['....xx......', 'xxxxyYx.....', 'xgggxyYYxxx.', 'xgGgxyYYYYYx', 'xgggxyyddddx', 'xgGgxyYYYYYx', 'xgggxyyddddx', '.xxxxxxxxxx.'],
+    pal: { x: 0x3a2a12, y: 0xe8c030, Y: 0xfae070, d: 0xa88010, g: 0x4a5a4a, G: 0x6a7a6a },
+  },
+  slip: {
+    rows: ['pppppppppq', 'pRRRkkkpnq', 'ppppppppnq', 'pkkkkkpppq', 'pkkkppkkpq', 'qqqqqqqqqq'],
+    pal: { p: 0xf6f2e6, q: 0xcfc8b6, k: 0x9a968c, R: 0xc83a3a, n: 0xe0dac8 },
+  },
+  // skrynklig papperspåse (fruktpåse) som blåst in under bandet
+  bag: { rows: ['..ppP..', '.pPPPp.', 'pPPppPp', 'ppdppdp', '.ppppp.'], pal: { p: 0xc8a878, P: 0xe0c898, d: 0x8a6a48 } },
+  // hörselkåpor som kollegan lagt ifrån sig
+  ears: { rows: ['..bbbbb..', '.b.....b.', 'gg.....gg', 'GG.....GG', 'gg.....gg'], pal: { b: 0x2a2c30, g: 0x2a6a3e, G: 0x3a8a52 } },
+};
+function paintFloorLitter(P) {
+  // ---- pallplats P3: gula tejphörn, smutskant runt pallens fotavtryck, stencil ----
+  const { x: sx0, y: sy0, w: sw, h: sh } = PSPOT;
+  area(P, sx0, sy0, sw, sh, (X, Y, i, j) => {
+    const e = Math.min(i, j, sw - 1 - i, sh - 1 - j), c = P.get(X, Y);
+    if (e === 3) return mul(c, 0.88);                 // smuts längs pallkanten
+    if (e === 4) return mul(c, 0.94);
+    if (e > 4) return mix(c, WHITE, 0.04);            // skyddat under pallen
+    return null;
+  });
+  const taped = new Set();
+  for (const [cx, cy, dx, dy] of [[sx0, sy0, 1, 1], [sx0 + sw - 1, sy0, -1, 1], [sx0, sy0 + sh - 1, 1, -1], [sx0 + sw - 1, sy0 + sh - 1, -1, -1]]) {
+    for (let k = 0; k < 8; k++) for (let w = 0; w < 2; w++) { taped.add((cx + k * dx) + ',' + (cy + w * dy)); taped.add((cx + w * dx) + ',' + (cy + k * dy)); }
+  }
+  for (const key of taped) {
+    const [X, Y] = key.split(',').map(Number), worn = hash(X, Y, 441) > 0.86;
+    P.px(X, Y, worn ? mix(0xe8c030, P.get(X, Y), 0.6) : 0xe8c030, 0.92);
+  }
+  // tejpen har släppt i ett hörn och krullat sig
+  P.px(sx0 + sw - 9, sy0 + sh - 2, 0xfae070); P.px(sx0 + sw - 9, sy0 + sh - 3, 0xc89a18); P.px(sx0 + sw - 10, sy0 + sh - 3, 0x1e1a16, 0.3);
+  const lw = textW(BIG, 'P3'), lx = sx0 + ((sw - lw) >> 1), ly = sy0 + ((sh - 7) >> 1);
+  eachTextPixel(BIG, 'P3', lx, ly, 1, (x, y) => { if (hash(x, y, 442) > 0.16) P.px(x, y, 0xe8c030, hash(x, y, 443) > 0.5 ? 0.55 : 0.4); });
+  // flisor från pallarna
+  for (const [fx, fy, len] of [[156, 139, 3], [186, 118, 2], [199, 131, 3], [145, 126, 2]]) { P.hl(fx, fy, len, 0xd8b478); P.px(fx + len, fy + 1, 0x1e1a16, 0.25); P.hl(fx, fy + 1, len, 0x8a6a3a, 0.5); }
+  // ---- spillda druvor vid saftfläcken + en mosad ----
+  P.ell(237, 117, 3, 1.2, 0x4a1a5a, 0.55, 2);
+  P.px(236, 117, 0x8a52c6); P.px(238, 116, 0x6a3a9a);
+  for (const [gx, gy] of [[226, 109], [231, 112], [243, 112], [222, 114]]) { ball(P, gx, gy, 0x8a52c6); P.px(gx + 1, gy + 3, 0x3a3432, 0.45); P.px(gx + 2, gy + 3, 0x3a3432, 0.25); }
+  P.px(229, 108, 0x6a4a2a); P.px(230, 109, 0x6a4a2a); P.px(231, 109, 0x3a8a2a);
+  // ---- löv som fallit av ----
+  for (const [lx2, ly2, k] of [[100, 112, 0], [178, 106, 1], [262, 121, 0], [207, 160, 1], [127, 170, 0], [276, 106, 1]]) stamp(P, lx2, ly2, (k ? LITTER.leaf2 : LITTER.leaf).rows, (k ? LITTER.leaf2 : LITTER.leaf).pal, 0.25);
+  // ---- golvskrapan som någon lagt ifrån sig ----
+  P.line(247, 142, 265, 133, 0x1e1a16, 0.28);
+  P.line(246, 140, 264, 131, 0xc8ced2); P.line(246, 141, 264, 132, 0x6a7276);
+  P.rect(244, 140, 3, 2, 0x1e1e22); P.px(244, 140, 0x4a4a52);
+  P.line(263, 127, 268, 137, 0x1e1a16, 0.28);
+  P.line(262, 126, 267, 136, 0xd8342c); P.line(263, 126, 268, 136, 0x16161a);
+  P.px(262, 126, 0xff7a6a); P.px(265, 131, 0x8a1a14);
+  // ---- avbruten pallbräda med spikar ----
+  area(P, 214, 186, 17, 3, (X, Y, i, j) => {
+    if (i === 0 && j !== 1) return null;                   // flisig ände
+    if (i === 16 && j === 2) return null;
+    return jit(j === 0 ? 0xe0b478 : j === 1 ? 0xc8964e : 0x8a6a32, X, Y, 444, 0.06);
+  });
+  P.hl(215, 189, 16, 0x1e1a16, 0.3); P.px(231, 188, 0x1e1a16, 0.3);
+  for (const nx of [218, 227]) { P.px(nx, 187, 0x5a5a60); P.px(nx, 186, 0xaab0b8); }
+  P.px(213, 187, 0xd8b478); P.px(212, 188, 0xc8964e);
+  // ---- plastfilm från en inplastad pall ----
+  for (const [ox, oy] of [[118, 160], [266, 168]]) {
+    for (const [dx, dy, a] of [[0, 1, 0.4], [1, 0, 0.5], [2, 0, 0.35], [3, 1, 0.5], [4, 1, 0.3], [1, 2, 0.35], [2, 2, 0.55], [3, 2, 0.3], [5, 2, 0.4], [2, 3, 0.3], [4, 3, 0.35], [6, 3, 0.25]]) P.px(ox + dx, oy + dy, 0xf4faff, a);
+    P.px(ox + 2, oy + 1, WHITE, 0.85); P.px(ox + 4, oy + 2, WHITE, 0.7);
+  }
+  // ---- arbetshandske och en följesedel ----
+  stamp(P, 176, 150, LITTER.glove.rows, LITTER.glove.pal);
+  stamp(P, 102, 121, LITTER.slip.rows, LITTER.slip.pal);
+  // ---- mosat apelsinskal med saft ----
+  P.ell(224, 152, 4, 1.3, 0xc85a1a, 0.3, 3);
+  for (const [dx, dy, c] of [[0, 0, 0xf08c1c], [1, 0, 0xffb048], [2, 1, 0xf08c1c], [-2, 1, 0xc8600e], [-1, 1, 0xf6e6c0], [3, -1, 0xc8600e], [0, 2, 0xf6e6c0]]) P.px(224 + dx, 151 + dy, c);
+  // ---- oljedropp efter trucken och en äldre, utsmetad fläck ----
+  for (const [ox, oy, r] of [[116, 150, 2.2], [128, 155, 1.6], [141, 159, 2], [153, 163, 1.4], [165, 166, 1.8]]) P.ell(ox, oy, r, r * 0.45, 0x1a1a18, 0.22, 2);
+  P.ell(206, 140, 10, 2.4, 0x2a2a26, 0.1, 3);
+  for (let x = 200; x < 214; x++) if (hash(x, 1, 445) > 0.6) P.px(x, 140 + (x & 1), 0x8a7aa8, 0.12);   // regnbågsskimmer
+  // ---- avklippt spännband (blått PET-band) i en lös ögla + papperspåse + hörselkåpor ----
+  // öglan ligger på högkant framtill så bandets bredd syns som en mörkare kant under
+  for (let a = 0; a < 44; a++) {
+    const t2 = (a / 44) * Math.PI * 2, sn = Math.sin(t2), x = Math.round(314 + Math.cos(t2) * 7), y = Math.round(129 + sn * 2.6);
+    if (sn > 0.2) { P.px(x, y + 1, 0x1e3a98); P.px(x + 1, y + 2, 0x1e1a16, 0.25); }
+    else P.px(x + 1, y + 1, 0x1e1a16, 0.2);
+    P.px(x, y, sn < -0.3 ? 0x5a8af0 : 0x2a5ad0);
+  }
+  P.line(321, 128, 331, 133, 0x2a5ad0); P.line(321, 129, 331, 134, 0x1e3a98); P.px(331, 135, 0x1e1a16, 0.25);
+  stamp(P, 328, 142, LITTER.bag.rows, LITTER.bag.pal);
+  stamp(P, 296, 147, LITTER.ears.rows, LITTER.ears.pal);
+  P.hl(297, 152, 3, 0x1e4a2e, 0.6); P.hl(302, 152, 3, 0x1e4a2e, 0.6);
+  // ---- fruktklistermärken och en kapsyl ----
+  for (const [kx, ky, c] of [[138, 132, 0x2f8f46], [214, 170, 0x2c6fb7], [258, 150, 0xd8342c]]) { P.px(kx, ky, c); P.px(kx + 1, ky, mix(c, WHITE, 0.4)); P.px(kx + 1, ky + 1, 0x1e1a16, 0.2); }
+  P.px(196, 110, 0xc8ced4); P.px(197, 110, 0x8a9096); P.px(196, 111, 0x6a7076); P.px(197, 111, 0xd8303a);
+}
+
 // ======================= bakgrunden: hallen =======================
 function paintHall(mode) {
   const P = new Pix(FW, FH), night = mode === 'natt';
@@ -715,6 +848,7 @@ function paintHall(mode) {
   for (const [cx, cy, rx, ry] of [[22, 102, 20, 4], [40, 106, 12, 3], [12, 107, 8, 2]]) P.ell(cx, cy, rx, ry, 0x9ab8c8, 0.3, 3);
   for (let x = 8; x < 50; x += 7) P.px(x, 102 + (x % 3), 0xe8f4ff, 0.5);
   area(P, 46, 108, 13, 6, (X, Y, i, j) => (i === 0 || j === 0 ? 0x5a5850 : i === 12 || j === 5 ? 0x9a968c : i % 2 ? 0x1e1e20 : 0x7a786e));
+  paintFloorLitter(P);
   // bandets skugga
   [0.45, 0.55, 0.64, 0.72, 0.8, 0.86, 0.9, 0.94, 0.97].forEach((f, i) => P.darken(0, FLOOR_Y + i, FW, 1, f));
   // gulsvart varningsrand framför bandet
@@ -743,9 +877,9 @@ function paintHall(mode) {
   for (let x = 64; x < SORT.x0; x += 64) { vcols(P, x, 20, 5, [0xe8ecee, 0x8a9296, 0x4a5256]); }
   for (let x = 48; x < SORT.x0; x += 32) { P.vl(x, 18, 3, 0x3a3e44); P.hl(x - 1, 20, 3, 0x2a2e34); }
   P.darken(34, 24, SORT.x0 - 34, 1, 0.75);
-  // sprinklerröret (rött) med munstycken
+  // sprinklerröret (rött) med munstycken (inga munstycken framför fönsterglaset)
   rows(P, 36, 26, SORT.x0 - 36, [0xe05a48, 0xa8281c]);
-  for (let x = 70; x < SORT.x0; x += 48) { P.px(x, 28, 0xd8b048); P.px(x - 1, 29, 0xa88830); P.px(x + 1, 29, 0xa88830); }
+  for (let x = 70; x < SORT.x0; x += 48) { if (inWin(x, WIN_Y)) continue; P.px(x, 28, 0xd8b048); P.px(x - 1, 29, 0xa88830); P.px(x + 1, 29, 0xa88830); }
   P.darken(36, 28, SORT.x0 - 36, 1, 0.8);
   // stigarröret ner bakom bandet med ratt och manometer
   const px0 = 192;
@@ -1092,6 +1226,7 @@ export function makeJobbFrukt(A, { onDone }) {
     [BIN.x - 1, BIN.y - 8, BIN.x + 21, BIN.y],
     [MOP.x - 1, MOP.y - 8, MOP.x + 16, MOP.y],
     [JACK.x - 7, JACK.y - 8, JACK.x + 46, JACK.y],
+    [CRATES.x, CRATES.y - 6, CRATES.x + 20, CRATES.y],
   ]);
   const pops = makePops();
   let items = [], t = 0, seq = 0, spawnIn = 0.8, carry = null, done = false, doneT = 0, reported = false;
@@ -1304,7 +1439,7 @@ export function makeJobbFrukt(A, { onDone }) {
     },
   });
   const sprDrawable = (fy, get) => ({ fy, draw(ctx) { const S = get(mode); ctx.drawImage(S.img, S.x, S.y); } });
-  const props = () => [sprDrawable(STACK.y, stackArt), sprDrawable(BIN.y, binArt), sprDrawable(MOP.y, mopArt), sprDrawable(JACK.y, jackArt)];
+  const props = () => [sprDrawable(STACK.y, stackArt), sprDrawable(BIN.y, binArt), sprDrawable(MOP.y, mopArt), sprDrawable(JACK.y, jackArt), sprDrawable(CRATES.y, cratesArt)];
 
   return {
     _debug: {

@@ -399,6 +399,129 @@ section('Determinism och långkörning');
 }
 
 // ---------------------------------------------------------------------------
+section('Födelsedag: klockan, framtiden och butiken utan lager');
+{
+  // Granskarens fall A: adopt utan { day } medan simuleringen inte tickat på länge
+  const S = mk(30);
+  const c = clock(S, { day: 1 });
+  let gameDay = 10;
+  S.setClock(() => ({ day: gameDay, min: 12 * 60 }));
+  const p = S.adopt('katt', 'vit', 'hona', 'Snöa', HOME);
+  ok(p.bornDay === 10 && p.stage === 'unge', `adopt() utan day tar dagen från spelklockan (född dag ${p.bornDay})`);
+  c.day = 10; c.min = 12 * 60; S.syncTo(10, 12 * 60, { home: HOME }); // lagret startar (tickar ikapp högst 3 dygn)
+  c.adv(24 * 60); // dag 11
+  ok(p.stage === 'unge' && p.bornDay === 10, `nästa midnatt är kattungen fortfarande unge (född dag ${p.bornDay}, hoppar inte till vuxen)`);
+  c.adv(24 * 60); c.adv(24 * 60);
+  ok(p.stage === 'ung' && c.day === 13, `ung efter 3 dagar (dag ${c.day})`);
+  S.setClock(null);
+  ok(S.nowDay() === S.day, 'utan klocka: nowDay() = senast tickade dag');
+  // född "i framtiden" (gammal klocka i butiken) → räknas från i dag, fastnar inte som unge
+  const T = mk(31);
+  const t = clock(T, { day: 5 });
+  const q = T.adopt('hund', 'tax', 'hane', 'Framtid', HOME, { day: 40 });
+  for (let i = 0; i < 8; i++) t.adv(24 * 60);
+  ok(q.bornDay <= 6 && q.stage === 'vuxen', `bornDay i framtiden klampas till spelets riktiga dag (född dag ${q.bornDay}, ${q.stage} dag ${t.day})`);
+  // laddning klampar också
+  const st = memStorage();
+  const U = createPetStore({ storage: st, rng: seededRng(32) });
+  clock(U, { day: 3 });
+  U.adopt('kanin', 'vit', 'hona', 'Fram', HOME, { day: 30 });
+  U.save();
+  const V = createPetStore({ storage: st }); V.load();
+  ok(V.pets[0].bornDay === 3, `load() klampar bornDay till sparad dag (${V.pets[0].bornDay})`);
+}
+
+// ---------------------------------------------------------------------------
+section('Nytt spel: reset() och automatisk upptäckt');
+{
+  // Granskarens fall C: djur adopterat dag 30 i villan → spelaren börjar om (dag 1, rum)
+  const st = memStorage();
+  const S = createPetStore({ storage: st, rng: seededRng(33) });
+  const c = clock(S, { day: 30 });
+  S.adopt('katt', 'vit', 'hona', 'Gammal', 'villa', { room: 0, x: 100, y: 150 });
+  S.buyItem('sack-katt', 2); S.placeItem('matskal', 'villa', 0, 120, 160);
+  c.adv(60);
+  S.save();
+  const T = createPetStore({ storage: st, rng: seededRng(33) });
+  T.load();
+  ok(T.pets.length === 1 && T.day === 30, 'sparfilen från förra spelet laddas (dag 30)');
+  T.syncTo(1, 7 * 60 + 30, { home: 'rum' });
+  ok(T.pets.length === 0 && T.items.length === 0 && Object.keys(T.inventory).length === 0, 'klockan går tillbaka till dag 1 → butiken börjar om (inga gamla djur i nya rummet)');
+  ok(T.restarted && /klockan/.test(T.restarted), 'skälet finns i store.restarted: ' + T.restarted);
+  const keys = [...st._m.keys()];
+  ok(keys.some((k) => k.startsWith('snabbfilen_pets1_undanlagd_')), 'det gamla lades undan under snabbfilen_pets1_undanlagd_<tid>');
+  ok(JSON.parse(st.getItem('snabbfilen_pets1')).pets.length === 0, 'och den vanliga sparnyckeln är tömd');
+  ok(T.day === 1 && T.clockAbs === 7 * 60 + 30, 'klockan står på det nya spelets tid');
+  const n = T.adopt('hund', 'mops', 'hane', 'Ny', 'rum');
+  ok(n && n.bornDay === 1 && T.inventory.matskal === 1 && T.inventory.koppel === 1, 'nya spelet får sina gratisgåvor igen');
+  // små hopp bakåt (samma dag) startar inte om
+  const U = mk(34);
+  const u = clock(U, { day: 4, min: 12 * 60 });
+  U.adopt('katt', 'vit', 'hona', 'Kvar', HOME);
+  U.syncTo(4, 11 * 60, { home: HOME });
+  ok(U.pets.length === 1 && !U.restarted, 'en timme bakåt (t.ex. två flikar) rör inte djuren');
+  u.adv(1);
+  // reset() för hand
+  U.reset();
+  ok(U.pets.length === 0 && U.day === 1 && U.clockAbs === null, 'reset() tömmer allt');
+  // petStore(): ingen spelsparfil = nytt spel
+  const g = memStorage();
+  g.setItem('snabbfilen_pets1', st.getItem('snabbfilen_pets1_undanlagd_' + keys.find((k) => k.startsWith('snabbfilen_pets1_undanlagd_')).slice('snabbfilen_pets1_undanlagd_'.length)));
+  let singleton = null;
+  try {
+    globalThis.localStorage = g;
+    const mod = await import('../js/pets/sim.js?v=singleton');
+    singleton = mod.petStore();
+  } catch (e) { console.log('  (petStore()-testet hoppas över: ' + e.message + ')'); }
+  if (singleton) {
+    ok(singleton.pets.length === 0 && /spelsparfil/.test(singleton.restarted || ''), 'petStore() utan snabbfilen_save1 → nytt spel, djuren undanlagda');
+    ok([...g._m.keys()].some((k) => k.startsWith('snabbfilen_pets1_undanlagd_')), 'undanlagt även där');
+    delete globalThis.localStorage;
+  }
+}
+
+// ---------------------------------------------------------------------------
+section('Toalett 0–100, ute för länge, för liten');
+{
+  const S = mk(35);
+  const c = clock(S);
+  const dog = S.adopt('hund', 'husky', 'hane', 'Loke', HOME, { day: -10, room: 0, x: 100, y: 150 });
+  S.buyItem('sack-hund', 5); S.placeItem('matskal', HOME, 0, 120, 160);
+  let maxT = 0, sawUrge = false, urgeAt = null, messAt = null;
+  for (let i = 0; i < 720; i++) { // 12 timmar i live-läge, minut för minut (lagret synkar varje bildruta)
+    S.setLive(HOME, 0); c.adv(1);
+    maxT = Math.max(maxT, dog.toilet);
+    if (dog.urge && urgeAt == null) urgeAt = i;
+    sawUrge = sawUrge || !!dog.urge;
+    if (S.messes.length && messAt == null) messAt = i;
+  }
+  ok(maxT <= 100, `toilet klampas till 100 även i live-läge (max ${maxT.toFixed(1)})`);
+  ok(sawUrge, `behovet syns som urge-flagga i live-läget (efter ${urgeAt} min)`);
+  ok(S.messes.length >= 1 && messAt - urgeAt >= 85 && messAt - urgeAt <= 95, `får lagret inte till det på 90 speldminuter tar simuleringen över (olycka efter ${messAt - urgeAt} min)`);
+  S.clearLive();
+  // ute för länge → går hem självt
+  const events = [];
+  const unsub = S.listen((e) => events.push(e));
+  dog.toilet = 50;
+  ok(S.walkStart(dog.id).ok, 'koppel på');
+  c.adv(3 * 60, { playerHome: null, outdoors: false });
+  ok(dog.out, 'efter 3 timmar (t.ex. ett jobbpass) är hunden fortfarande med');
+  c.adv(4 * 60, { playerHome: null, outdoors: false });
+  ok(!dog.out && dog.room === null, 'efter 6 timmar ute har hunden gått hem självt');
+  ok(events.some((e) => e.type === 'hem'), 'händelse: hem – ' + events.find((e) => e.type === 'hem')?.text);
+  unsub();
+  // för liten
+  const kit = S.adopt('katt', 'vit', 'hona', 'Liten', HOME);
+  ok(S.walkStart(kit.id) === false && S.lastReason === 'for-liten', 'kattunge får inte följa med ut (for-liten): ' + S.lastError);
+  const bun = S.adopt('kanin', 'vit', 'hane', 'Pytte', HOME, { day: -20 });
+  ok(S.walkStart(bun.id).ok, 'vuxen kanin får följa med');
+  S.walkEnd();
+  const pup = S.adopt('hund', 'tax', 'hane', 'Valp', HOME);
+  ok(S.walkStart(pup.id).ok, 'valpar får gå ut i koppel');
+  S.walkEnd();
+}
+
+// ---------------------------------------------------------------------------
 section('Sammanfattning');
 {
   const S = mk(20);

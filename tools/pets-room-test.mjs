@@ -115,10 +115,22 @@ await page.fill('#pet-namn', 'Kalle Anka');
 await ev(() => [...document.querySelectorAll('#modal .dlg-foot .btn')].find((b) => b.textContent.includes('Spara')).click());
 ok((await ev((id) => PV.store.petById(id).name, bamse)) === 'Kalle Anka', 'Byt namn');
 
+// kattungen: "Ta med ut" är gråad (walkStart skulle neka med 'for-liten')
+const nala = await ev(() => PV.store.pets.find((p) => p.name === 'Nala').id);
+await ev(() => { if (!document.getElementById('modal').classList.contains('hidden')) document.querySelector('#modal [data-close]')?.click(); });
+await clickAt((await spot(nala)).x, (await spot(nala)).y);
+await run(3);
+const small = await ev(() => { const b = [...document.querySelectorAll('#modal .dlg-foot .btn')].find((b) => /liten/i.test(b.textContent)); return b ? { disabled: b.disabled, txt: b.textContent.trim() } : null; });
+ok(small && small.disabled, `kattungens meny: knappen "${small?.txt}" är gråad`);
+await page.screenshot({ path: 'tools/out/pets-test-meny-unge.png' });
+await ev(() => document.querySelector('#modal [data-close]')?.click());
+
 // ---- 5. Förrådet: ställ ut en kattlåda
 console.log('\n# Förrådet');
-await ev(() => { PV.store.buyItem('kattlada'); PV.layer.openInventory(); });
+await ev(() => { PV.store.buyItem('kattlada'); PV.store.buyItem('sack-kanin'); PV.layer.openInventory(); });
 await page.screenshot({ path: 'tools/out/pets-test-forrad.png' });
+const fit = await ev(() => { const d = document.querySelector('#modal .dlg'); const r = d.getBoundingClientRect(); const foot = d.querySelector('.dlg-foot').getBoundingClientRect(); return { h: Math.round(r.height), win: window.innerHeight, footIn: foot.bottom <= window.innerHeight + 1, rows: d.querySelectorAll('.prow').length, scrolls: d.scrollHeight > d.clientHeight + 1 }; });
+ok(fit.footIn && !fit.scrolls, `Djurprylar-dialogen ryms på skärmen (${fit.h}/${fit.win} px, ${fit.rows} rader, Klar-knappen synlig)`);
 await ev(() => document.querySelector('#modal [data-place="kattlada"]').click());
 const n0 = await ev(() => PV.store.items.filter((i) => i.k === 'kattlada').length);
 await ev(() => { PV.hover(300, 205); PV.render(); });
@@ -134,6 +146,31 @@ const accident = await ev(() => PV.store.messes.filter((m) => m.by === 'hund').l
 ok(accident >= 1, `hunden gjorde på golvet när ingen gick ut (${accident} st)`);
 const pose = await ev(() => PV.layer._debug.pets().find((p) => p.name === 'Bamse'));
 ok(pose && pose.x > 0, 'hunden står kvar i rummet');
+
+// ---- 7. Mätarna: fyra djur tätt ihop → inga torn, inga överlapp, alla nära sitt djur
+console.log('\n# Mätarna i ett kluster');
+await ev(() => PV.setup('kluster', { hour: 12 }));
+await run(3);
+const meters = await ev(() => PV.layer._debug.meters());
+const overlap = (a, b) => a.x0 < b.x0 + b.w && a.x0 + a.w > b.x0 && a.y0 < b.y0 + b.h && a.y0 + a.h > b.y0;
+let overlaps = 0;
+for (let i = 0; i < meters.length; i++) for (let j = i + 1; j < meters.length; j++) if (!meters[i].dim && !meters[j].dim && overlap(meters[i], meters[j])) overlaps++;
+ok(overlaps === 0, `inga två tydliga skyltar överlappar (${meters.length} djur)`);
+const lift = meters.map((m) => m.baseY0 - m.y0);
+ok(Math.max(...lift) <= 10, `ingen skylt lyfts mer än en skylthöjd (max ${Math.max(...lift)} px)`);
+const side = meters.map((m) => Math.abs(m.x0 - m.baseX0));
+ok(Math.max(...side) <= 14, `sidoförskjutning högst 14 px (max ${Math.max(...side)} px)`);
+const near = meters.every((m) => m.petY - (m.y0 + m.h) <= 30);
+ok(near, 'varje skylt sitter inom 30 px ovanför sitt djur');
+console.log('   ' + meters.map((m) => `${m.name}: dx ${m.x0 - m.baseX0} dy ${m.y0 - m.baseY0}${m.dim ? ' (nedtonad)' : ''}`).join(' · '));
+// hovra en av dem → dess skylt får förtur och full styrka
+const bamse2 = await ev(() => PV.store.pets.find((p) => p.name === 'Bamse').id);
+const sb = await spot(bamse2);
+await ev(({ x, y }) => { PV.hover(x, y); }, sb);
+await run(1.5);
+const mB = await ev((id) => PV.layer._debug.meters().find((m) => m.id === id), bamse2);
+ok(mB && !mB.dim && Math.abs(mB.x0 - mB.baseX0) <= 2 && mB.y0 === mB.baseY0, 'hovrad hund: skylten står på sin hemplats och är tydlig');
+await page.screenshot({ path: 'tools/out/pets-test-kluster.png', clip: { x: 0, y: 0, width: 384 * K, height: 216 * K } });
 
 console.log(`\n${passes} ok, ${fails} fel`);
 console.log(errs.length ? 'KONSOLFEL:\n' + errs.join('\n') : 'Inga konsolfel.');

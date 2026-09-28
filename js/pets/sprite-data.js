@@ -1,5 +1,5 @@
 // Arter och raser för husdjuren (data). Importeras via sprites.js (SPECIES).
-// Färger som heltal 0xRRGGBB. Mönster (pat): se sprite-render.js (coatColor).
+// Färger som heltal 0xRRGGBB. Mönster (pat): se pet-art.js (coatOf).
 export const SPECIES = {
   katt: {
     id: 'katt', namn: 'Katt', plural: 'Katter', unge: 'Kattunge', ung: 'Ung katt', vuxen: 'Katt', ljud: 'Mjau!',

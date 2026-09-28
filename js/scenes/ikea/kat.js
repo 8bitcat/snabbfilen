@@ -23,7 +23,17 @@ export const varOf = (k, v) => {
 export const isWallKind = (k) => !!katOf(k)?.wall;
 // typsnittet saknar en del tecken – byt ut dem mot något läsbart
 const clean = (s) => String(s).toUpperCase().replace(/&/g, 'OCH').replace(/[–—]/g, '-').replace(/[^A-ZÅÄÖÉ0-9 .,:!?'/%+=-]/g, '');
-export const tagName = (k) => clean(katOf(k)?.name || k).slice(0, 18);
+// långa namn kortas vid ett ordmellanrum (inte mitt i ett ord); en avhuggen
+// bisats ("… MED TVÅ", "… OCH") tas bort helt ("BOKHYLLA MED TVÅ HYLLOR" → "BOKHYLLA")
+const TAG_MAX = 20;
+function shorten(s) {
+  if (s.length <= TAG_MAX) return s;
+  const head = s.slice(0, TAG_MAX + 1), sp = head.lastIndexOf(' ');
+  const cut = sp >= 6 ? head.slice(0, sp) : s.slice(0, TAG_MAX);
+  const trimmed = cut.replace(/\s+(MED|OCH|I|FÖR|PÅ|AV|TILL|UTAN)(\s.*)?$/, '');
+  return trimmed.length >= 4 ? trimmed : cut;
+}
+export const tagName = (k) => shorten(clean(katOf(k)?.name || k));
 export const tagPrice = (k) => `${katOf(k)?.price ?? '?'}:-`;
 export const tagDims = (k) => ({ w: Math.max(textW(SMALL, tagName(k)), textW(SMALL, tagPrice(k))) + 6, h: 15 });
 export const signText = clean;

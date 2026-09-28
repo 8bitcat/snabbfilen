@@ -55,9 +55,9 @@ function paintCore1(P, F) {
   planBadge(P, bx + 70, 36, 1, 'ENTRÉPLAN');
   paintMap(P, bx + 140, 34, 54, 32, F);
   paintLiftFrame(P, F.lift.x, A_FLOOR, 1);
-  // över rulltrapporna: skylt och takbjälke mot plan 2
+  // över rulltrapporna: takbjälke mot plan 2 och en hängande skylt (nedanför
+  // takbandet 0–12, där spelets planvisare ligger)
   const [eu, en] = F.esc;
-  roomSign(P, Math.round((eu.lx + en.lx) / 2), 3, 0, 'RULLTRAPPOR TILL PLAN 2', { wire: 0, bg: YEL, fg: NAVY });
   for (const [e, lbl] of [[eu, 'UPP'], [en, 'NER']]) {
     // golvmarkering vid påstigningen
     const [px] = e.board;
@@ -68,8 +68,7 @@ function paintCore1(P, F) {
     arrowGlyph(P, tx + tw - 5, e.ly + 14, e.up ? 'U' : 'D', YEL);
   }
   paintSlab(P, F.slab.x0, F.slab.x1, F.slab.y, 'PLAN 2');
-  // "VÄLKOMMEN" på golvet framför dörrarna
-  text(P, SMALL, 'VÄLKOMMEN IN!', bx + 90, A_FLOOR + 6, 0xffffff, 0.8);
+  roomSign(P, Math.round((eu.lx + en.lx) / 2), A_WALL, 0, 'RULLTRAPPOR TILL PLAN 2', { wire: 4, bg: YEL, fg: NAVY });
 }
 
 // ---------- ankomsthallen (plan 2) ----------
@@ -83,15 +82,17 @@ function paintCore2(P, F) {
   for (const e of F.esc) paintPit(P, e.pit[0], e.pit[1], e.pit[2], e.pit[3]);
   // skyltar vid öppningarna
   const [eu, en] = F.esc;
-  const lab = (e, lbl, up) => {
-    const tw = textW(SMALL, lbl) + 12, tx = Math.round(e.board[0] - tw / 2 + 2);
-    P.rect(tx, e.ly + 12, tw, 9, up ? 0x169a4a : BLUE); P.box(tx, e.ly + 12, tw, 9, NAVY);
-    text(P, SMALL, lbl, tx + 3, e.ly + 14, 0xffffff);
-    arrowGlyph(P, tx + tw - 5, e.ly + 16, up ? 'U' : 'D', YEL);
+  const lab = (e, lbl, up) => { // skylt på golvet bakom öppningen
+    const tw = textW(SMALL, lbl) + 12, tx = Math.round((e.pit[0] + e.pit[1]) / 2 - tw / 2), ty = e.pit[2] - 28;
+    P.rect(tx + 1, ty + 1, tw, 9, 0x000000, 0.2);
+    P.rect(tx, ty, tw, 9, up ? 0x169a4a : BLUE); P.box(tx, ty, tw, 9, NAVY);
+    text(P, SMALL, lbl, tx + 3, ty + 2, 0xffffff);
+    arrowGlyph(P, tx + tw - 5, ty + 4, up ? 'U' : 'D', YEL);
   };
-  lab(en, 'NER PLAN 1', false);
-  // golvtext
-  text(P, SMALL, 'VÄLKOMMEN UPP!', eu.board[0] - 22, eu.ly - 26, BLUE, 0.7);
+  lab(en, 'RULLTRAPPA NER TILL PLAN 1', false);
+  lab(eu, 'FRÅN PLAN 1', true);
+  roomSign(P, bx + 116, r.wy + 1, 0, 'VÄLKOMMEN UPP!', { wire: 0, bg: YEL, fg: NAVY });
+  void eu;
 }
 
 // ---------- restaurangen ----------
@@ -99,7 +100,7 @@ function paintRest(P, F) {
   const r = F.rest, bx = r.x0, fy = r.fy;
   paintWall(P, r.wl, r.wr, r.wy, r.fy, r.st);
   // menytavlan över serveringen
-  const M = F.menuBoard = { x: bx + 44, y: r.wy + 4, w: 176, h: 50 };
+  const M = F.menuBoard = { x: bx + 52, y: r.wy + 4, w: 186, h: 42 };
   paintMenuBoard(P, M.x, M.y, M.w, M.h);
   // fönster med utsikt i östra delen + lampor över borden
   for (const wx of [bx + 262, bx + 346]) paintWindow(P, wx, fy - 44, 60, 22, 0xe8d8b0);
@@ -143,10 +144,12 @@ function paintLager(P, F) {
   paintWall(P, r.wl, r.wr, r.wy, r.fy, r.st);
   const rx0 = bx + 8, bw = 40;
   const n = Math.floor((r.IW - 16) / bw);
-  paintRacks(P, rx0, rx0 + n * bw, fy, r.wy, 11, bw);
+  const scx = bx + r.IW / 2, sw = textW(SMALL, 'SJÄLVBETJÄNINGSLAGER') + 10; // lagrets skylt – inga gångskyltar under den
+  paintRacks(P, rx0, rx0 + n * bw, fy, r.wy, 11, bw, [scx - sw / 2 - 3, scx + sw / 2 + 3]);
   // gul/svart kant framför pallställen + körfält för truckarna
-  hazard(P, rx0, fy + 30, n * bw, 2);
-  for (let x = bx + 6; x < r.x1 - 10; x += 16) P.rect(x, fy + 62, 8, 2, 0xf2c230, 0.85);
+  hazard(P, rx0, fy + 45, n * bw, 2);
+  for (let x = bx + 6; x < r.x1 - 10; x += 16) P.rect(x, fy + 88, 8, 2, 0xf2c230, 0.85);
+  text(P, SMALL, 'TRUCK', bx + 40, fy + 58, 0xf2c230, 0.7);
   roomSign(P, bx + r.IW / 2, r.wy - 2, 0, 'SJÄLVBETJÄNINGSLAGER', { wire: 0, bg: YEL, fg: NAVY });
   // lampor i taket (lysrör)
   for (let x = bx + 30; x < r.x1 - 20; x += 80) { P.rect(x, r.wy - 1, 24, 2, 0xf4f8ff); P.ell(x + 12, fy + 40, 34, 16, 0xf4f8ff, 0.08, 4); }
@@ -156,6 +159,19 @@ function paintLager(P, F) {
 function paintRoom(P, r) {
   const bx = r.x0 + r.ox;
   paintWall(P, r.wl, r.wr, r.wy, r.fy, r.st);
+  if (r.kind === 'room' && !r.rugs.length && r.IW > 160) { // de extra rummen får en vävd matta under mittraden
+    const x0 = r.x0 + 14, x1 = r.x1 - 14, y0 = r.fy + 28, y1 = r.fy + 60;
+    const base = mix(r.st.trim || 0x8a6a4a, 0xf4f1ea, 0.35), stripe = mix(r.st.wall, 0xffffff, 0.2);
+    for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) {
+      const b = Math.min(x - x0, x1 - 1 - x, y - y0, y1 - 1 - y);
+      let c = b < 2 ? mul(base, 0.72) : ((y - y0) % 6 < 2 ? stripe : base);
+      if (b >= 2 && ((x + y) & 3) === 0) c = mul(c, 0.94);
+      if (b === 3) c = mix(c, 0xffffff, 0.25);
+      P.px(x, y, c);
+    }
+    for (let x = x0; x < x1; x += 2) { P.px(x, y0 - 1, mul(base, 0.8)); P.px(x, y1, mul(base, 0.8)); }
+    P.hl(x0 + 1, y1 + 1, x1 - x0 - 2, 0x000000, 0.12);
+  }
   for (const d of r.deco) if (d[0] === 'fonster') paintWindow(P, bx + d[1], r.fy + d[2], d[3], d[4], r.st.curtain);
   for (const d of r.deco) paintDeco(P, d, bx, r.fy);
   for (const f of r.fix) paintFix(P, f, bx, r.fy);

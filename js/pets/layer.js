@@ -40,7 +40,14 @@
 //   L.exit()              – när scenen lämnas (släpper live-läget, lyssnaren och A.carrying)
 //   L.version             – räknas upp när prylarnas hinder ändras
 //   L._debug              – { actors, spot(petId|itemId|k|'bajs') → {x,y} (logiska px), pets(), items(),
-//                             think(id), goTo(id, x, y, run), setMode(id, 'sleep'|'eat'|'toilet'|…) }
+//                             meters() (skyltarnas lägen), think(id), goTo(id, x, y, run),
+//                             setMode(id, 'sleep'|'eat'|'toilet'|…) }
+//   Lagret kopplar också spelklockan till butiken (store.setClock) så att djuraffärens adopt()
+//   alltid får rätt födelsedag, och visar butikens händelser som toasts ('kar', 'ungar', 'vaxte',
+//   'bajs', 'kiss', 'lada', 'hungrig', 'ute', 'hem' = djuret gick hem självt efter 6 h ute).
+//   Mätaren: hjärta (glad), skål (mätt) och för hund bajs (kissnödig) ovanför varje djur –
+//   nedtonad på avstånd, tydlig nära/hover, blinkar röd ram vid kris. Skyltar som krockar
+//   glider isär i sidled, högst en skylthöjd upp, annars under fötterna – aldrig i torn.
 //
 // const F = createPetFollower(A, pet);   // pet = ett djur ur petStore().walking()
 //   F.update(dt, ownerX, ownerY, isFree?) · F.drawable() → { x, y, fy, draw(ctx) } · F.x · F.y
@@ -57,7 +64,11 @@
 //      lägg L.obstacles() till rummets hinder; varje bildruta L.update(dt);
 //      rita [...scenens, ...L.drawables()] sorterat på fy; pekare: if (L.down(x, y)) return;
 //      mus: L.hover(x, y); tangent: if (L.key(e.key)) return; när scenen lämnas: L.exit().
-//      Kommer man hem från staden: petStore().walkEnd() (tar av kopplet, räknar promenaden).
+//      Kommer man hem från staden: petStore().walkEnd() (tar av kopplet, räknar promenaden) –
+//      gärna också vid jobbstart och läggdags (annars går djuret hem självt efter 6 speltimmar).
+//  Nytt spel: petStore().reset() när spelaren börjar om. (Butiken upptäcker det också själv:
+//      spelsparfilen saknas, eller spelklockan går tillbaka mer än två timmar → det gamla läggs
+//      undan under snabbfilen_pets1_undanlagd_<tid>.)
 //  Staden: för varje p i petStore().walking(): F = createPetFollower(A, p); varje bildruta
 //      F.update(dt, walker.px, walker.py, (x, y) => walker.walkable(x, y)); rita F.drawable().
 //  Klockan: petStore().syncTo(A.game.day, A.game.min, { home: A.game.home, playerHome: <hemma ? hem : null>,
@@ -97,7 +108,7 @@ const MOVE_ON = 2, MOVE_OFF = 0.5;
 const DIR_HOLD = 0.3;
 const STATE_HOLD = 0.25;
 const SPD = { katt: [15, 42], hund: [19, 50], kanin: [12, 30] };
-const EMO = { kar: '❤️', ungar: '🍼', vaxte: '🌱', bajs: '💩', kiss: '💦', lada: '🧻', hungrig: '🍽️', ute: '🌳' };
+const EMO = { kar: '❤️', ungar: '🍼', vaxte: '🌱', bajs: '💩', kiss: '💦', lada: '🧻', hungrig: '🍽️', ute: '🌳', hem: '🏠' };
 const GOOD = new Set(['kar', 'ungar', 'vaxte', 'ute']);
 const rnd = Math.random;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -157,6 +168,9 @@ function stepMotion(a, dt, dvx, dvy, free, acc = ACC) {
 // ======================================================================
 export function createPetLayer(A, opts = {}) {
   const store = opts.store || petStore();
+  // spelklockan kopplas till butiken så att adopt() (butiken) alltid vet vilken dag det är,
+  // även när lagret inte är igång
+  if (opts.sync !== false && A.game && store.setClock) store.setClock(() => ({ day: A.game.day, min: A.game.min }));
   const home = opts.home ?? A.game?.home ?? null;
   const room = opts.room ?? null;
   const B = { left: 8, right: 376, top: 92, bottom: 212, ...(opts.bounds || {}) };
@@ -648,46 +662,78 @@ export function createPetLayer(A, opts = {}) {
   }
   // Mätaren: liten mörk skylt med hjärta (glädje), skål (mättnad) och – bara hund – bajs
   // (toalettbehov), var och en med en 5 px stapel. Nedtonad på avstånd, tydlig nära/hover,
-  // blinkar rött vid kris. Skyltar som skulle krocka glider isär (mjukt, inga hopp).
-  const MH = 9;
+  // blinkar rött vid kris. Skyltar som skulle krocka glider isär (mjukt, inga hopp): först i
+  // sidled (högst 18 px), sedan högst EN skylthöjd uppåt – aldrig ett torn – och i en tät
+  // klunga hellre under djurets fötter (spetsen pekar då uppåt). Får en skylt ändå ingen ren
+  // plats ritas den svagare (den hovrade/närmaste vinner).
+  const MH = 9, METER_UP = MH + 1, METER_SIDE = 18;
+  const METER_CANDS = (() => {
+    const c = [[0, 0]];
+    for (let d = 2; d <= METER_SIDE; d += 2) c.push([d, 0], [-d, 0]);
+    c.push([0, -METER_UP]);
+    for (let d = 2; d <= METER_SIDE; d += 2) c.push([d, -METER_UP], [-d, -METER_UP]);
+    return c;
+  })();
   function meterBase(a) {
     const p = a.pet, n = p.species === 'hund' ? 3 : 2, w = n * 6 + 1;
     if (a.hTop == null || a.hTopStage !== p.stage) { a.hTop = Math.abs(petBox(p, 'idle', 'down').y0 || 10); a.hTopStage = p.stage; }
     return { w, x0: Math.round(a.x) - (w >> 1), y0: Math.round(a.y - a.z) - a.hTop - MH - 3 };
   }
   function layoutMeters(dt) {
-    const list = [...actors.values()].map((a) => ({ a, ...meterBase(a) })).sort((m1, m2) => m2.y0 - m1.y0);
+    const list = [...actors.values()].map((a) => ({ a, ...meterBase(a) }));
+    // den hovrade/öppnade först, sedan den som står närmast betraktaren – de får bästa platsen
+    const prio = (m) => ((hover?.kind === 'pet' && hover.id === m.a.id) || menuFor === m.a.id ? 1e6 : 0) + m.a.y;
+    list.sort((m1, m2) => prio(m2) - prio(m1));
     // andra djurs kroppar räknas också som hinder – en skylt ska inte täcka grannen
     const bodies = [...actors.values()].map((a) => {
       const b = petBox(a.pet, animOf(a), a.dir), X = Math.round(a.x), Y = Math.round(a.y - a.z);
       return { id: a.id, x0: X + b.x0, x1: X + b.x1, y0: Y + b.y0, y1: Y + b.y1 };
     });
     const placed = [];
+    const k = Math.min(1, dt * 7);
     for (const m of list) {
-      let off = 0;
-      for (let k = 0; k < 5; k++) {
-        const y = m.y0 + off;
-        const hitQ = (q) => q.id !== m.a.id && m.x0 < q.x1 + 1 && m.x0 + m.w > q.x0 - 1 && y < q.y1 + 1 && y + MH > q.y0 - 1;
-        const hit = placed.find(hitQ) || bodies.find(hitQ);
-        if (!hit) break;
-        off = Math.min(off, hit.y0 - 1 - MH - m.y0);
-      }
-      placed.push({ id: 'm' + m.a.id, x0: m.x0, x1: m.x0 + m.w, y0: m.y0 + off, y1: m.y0 + off + MH });
-      m.a.mOff = (m.a.mOff ?? off) + (off - (m.a.mOff ?? off)) * Math.min(1, dt * 7);
+      const a = m.a, ox = a.mOffX || 0, oy = a.mOffY || 0;
+      const downDy = a.hTop + MH + 5; // skylten strax under fötterna
+      let best = null, bestCost = Infinity;
+      const tryCand = (dx, dy, base) => {
+        const x0 = m.x0 + dx, y0 = m.y0 + dy;
+        if (x0 < B.left - 2 || x0 + m.w > B.right + 2 || y0 + MH > B.bottom + 4) return;
+        const hitQ = (q) => q.id !== a.id && x0 < q.x1 + 1 && x0 + m.w > q.x0 - 1 && y0 < q.y1 + 1 && y0 + MH > q.y0 - 1;
+        if (placed.some(hitQ)) return;
+        // billigast nära hemplatsen – och nära där skylten redan är (ingen växling hit och dit);
+        // att skymma en granne kostar mycket men går före att inte få plats alls
+        const cost = base + 0.5 * (Math.abs(dx - ox) + Math.abs(dy - oy)) + (bodies.some(hitQ) ? 60 : 0);
+        if (cost < bestCost) { bestCost = cost; best = [dx, dy]; }
+      };
+      for (const [dx, dy] of METER_CANDS) tryCand(dx, dy, Math.abs(dx) + 1.3 * Math.abs(dy));
+      tryCand(0, downDy, 16);
+      for (let d = 2; d <= METER_SIDE; d += 2) { tryCand(d, downDy, 16 + d * 0.5); tryCand(-d, downDy, 16 + d * 0.5); }
+      a.mDim = !best || bestCost >= 60; // ingen ren plats: svagare, så grannen syns igenom
+      const [dx, dy] = best || [0, 0];
+      placed.push({ id: 'm' + a.id, x0: m.x0 + dx, x1: m.x0 + dx + m.w, y0: m.y0 + dy, y1: m.y0 + dy + MH });
+      a.mOffX = ox + (dx - ox) * k; a.mOffY = oy + (dy - oy) * k;
     }
+  }
+  function meterRect(a) {
+    const b = meterBase(a);
+    return { x0: b.x0 + Math.round(a.mOffX || 0), y0: b.y0 + Math.round(a.mOffY || 0), w: b.w, h: MH, baseX0: b.x0, baseY0: b.y0 };
   }
   function drawMeter(ctx, a) {
     const p = a.pet, dog = p.species === 'hund';
     const stats = [['glad', p.happy / 100, false], ['mat', p.hunger / 100, false]];
     if (dog) stats.push(['bajs', p.toilet / 100, true]);
-    const { w: W, x0, y0: by } = meterBase(a);
-    const y0 = by + Math.round(a.mOff || 0), H = MH;
+    const { x0, y0, w: W, h: H } = meterRect(a);
     const blink = Math.floor(t * 3) % 2 === 0;
-    if (a.alpha < 0.03) return;
-    ctx.globalAlpha = a.alpha;
+    const hov = (hover?.kind === 'pet' && hover.id === a.id) || menuFor === a.id;
+    const alpha = a.alpha * (a.mDim && !hov ? 0.55 : 1);
+    if (alpha < 0.03) return;
+    ctx.globalAlpha = alpha;
     ctx.fillStyle = 'rgba(23,21,26,0.82)';
     ctx.fillRect(x0 + 1, y0, W - 2, H); ctx.fillRect(x0, y0 + 1, W, H - 2);
-    ctx.fillRect((x0 + (W >> 1)), y0 + H, 1, 1);                 // liten spets ned mot djuret
+    // liten spets mot djuret: nedåt (två pixlar när skylten lyfts), uppåt när skylten står under fötterna
+    const sx = clamp(Math.round(a.x), x0 + 1, x0 + W - 2);
+    if ((a.mOffY || 0) > 3) ctx.fillRect(sx, y0 - 1, 1, 1);
+    else ctx.fillRect(sx, y0 + H, 1, (a.mOffY || 0) < -3 ? 2 : 1);
     ctx.fillStyle = 'rgba(255,255,255,0.10)'; ctx.fillRect(x0 + 1, y0, W - 2, 1); // glans i överkanten
     stats.forEach(([key, v, inv], i) => {
       const cx = x0 + 1 + i * 6;
@@ -701,7 +747,7 @@ export function createPetLayer(A, opts = {}) {
       if (fill) ctx.fillRect(cx, y0 + 6, fill, 1);
     });
     if (stats.some(([, v, inv]) => (inv ? v >= 0.92 : v < 0.15)) && blink) { // röd blinkram vid kris
-      ctx.globalAlpha = Math.max(a.alpha, 0.85);
+      ctx.globalAlpha = Math.max(alpha, a.mDim && !hov ? 0.5 : 0.85);
       ctx.fillStyle = '#e04848';
       ctx.fillRect(x0 + 1, y0 - 1, W - 2, 1); ctx.fillRect(x0 + 1, y0 + H, W - 2, 1);
       ctx.fillRect(x0 - 1, y0 + 1, 1, H - 2); ctx.fillRect(x0 + W, y0 + 1, 1, H - 2);
@@ -863,15 +909,17 @@ export function createPetLayer(A, opts = {}) {
           ${status.length ? `<p style="font-size:17px;margin:8px 0 0">${status.join('<br>')}</p>` : ''}
         </div></div>`;
     const done = (fn) => () => { closeModal(); menuFor = null; if (a) { a.mode = 'idle'; a.modeT = 0.2; } fn?.(); };
+    const tooSmall = !p.out && p.stage === 'unge' && p.species !== 'hund'; // walkStart nekar ('for-liten')
     const outBtn = p.species === 'hund'
       ? { label: p.out ? '🦮 Ta av kopplet' : '🦮 Koppel på', onClick: done(() => {
         if (p.out) { store.walkEnd(p.id); p.room = room; p.x = a?.x ?? p.x; p.y = a?.y ?? p.y; toast(`${p.name} är fri igen.`); }
         else { const r = store.walkStart(p.id); toast(r ? '🦮 ' + r.msg : store.lastError, r ? 'good' : 'bad'); play(r ? 'ok' : 'fel'); }
       }) }
-      : { label: p.out ? '🏠 Stanna hemma' : '🚶 Ta med ut', onClick: done(() => {
-        if (p.out) { store.walkEnd(p.id); p.room = room; p.x = a?.x ?? p.x; p.y = a?.y ?? p.y; }
-        else { const r = store.walkStart(p.id); toast(r ? r.msg : store.lastError, r ? 'good' : 'bad'); }
-      }) };
+      : tooSmall ? { label: '🚼 För liten att gå ut', disabled: true, onClick: () => {} }
+        : { label: p.out ? '🏠 Stanna hemma' : '🚶 Ta med ut', onClick: done(() => {
+          if (p.out) { store.walkEnd(p.id); p.room = room; p.x = a?.x ?? p.x; p.y = a?.y ?? p.y; }
+          else { const r = store.walkStart(p.id); toast(r ? r.msg : store.lastError, r ? 'good' : 'bad'); }
+        }) };
     const dlg = openModal(`🐾 ${esc(p.name)}`, body, [
       { label: '🤚 Klappa', cls: 'btn-go', onClick: done(() => doPat(p.id)) },
       { label: '🎾 Leka', onClick: done(() => doPlay(p.id)) },
@@ -939,15 +987,17 @@ export function createPetLayer(A, opts = {}) {
     const inv = Object.entries(store.inventory).filter(([k, n]) => n > 0 && PET_ITEMS[k]);
     const opened = Object.entries(store.opened).filter(([k, n]) => n > 0 && PET_ITEMS[k] && !(store.inventory[k] > 0));
     const placed = items();
+    // förrådet: namn + beskrivning; rummet: kompakta rader (namn – status) i en lista som
+    // rullar själv, så dialogen ryms på skärmen även med tolv prylar framme
     const rowInv = ([k, n]) => `<div class="prow"><span data-ic="${k}"></span><span class="nm">${esc(PET_ITEMS[k].namn)} ×${n}<br><small class="sp">${esc(PET_ITEMS[k].desc || '')}</small></span>
       <button class="btn btn-small btn-go" data-place="${k}">Ställ ut</button></div>`;
-    const rowPlaced = (it) => `<div class="prow"><span data-ic="${it.k}"></span><span class="nm">${esc(PET_ITEMS[it.k].namn)}<br><small class="sp">${esc(itemStatus(it))}</small></span>
+    const rowPlaced = (it) => `<div class="prow" style="padding:2px 6px 2px 3px;gap:6px"><span data-ic="${it.k}"></span><span class="nm" style="font-size:18px">${esc(PET_ITEMS[it.k].namn)} <small class="sp">– ${esc(itemStatus(it))}</small></span>
       <span style="display:flex;gap:4px"><button class="btn btn-small" data-move="${it.id}">Flytta</button><button class="btn btn-small" data-pick="${it.id}">Plocka upp</button></span></div>`;
     const dlg = openModal('🐾 Djurprylar', `
-      ${inv.length || opened.length ? `<p style="font-size:18px;margin:0 0 6px"><b>I förrådet</b></p><div class="plist">${[...inv, ...opened.map(([k, n]) => [k, `påbörjad (${n} kvar)`])].map(rowInv).join('')}</div>` : '<p style="font-size:18px;margin-top:0">Förrådet är tomt – köp prylar i djuraffären.</p>'}
-      ${placed.length ? `<p style="font-size:18px;margin:12px 0 6px"><b>Här i rummet</b></p><div class="plist">${placed.map(rowPlaced).join('')}</div>` : ''}`,
+      ${inv.length || opened.length ? `<p style="font-size:18px;margin:0 0 6px"><b>I förrådet</b></p><div class="plist" style="max-height:32vh;overflow:auto;padding:2px">${[...inv, ...opened.map(([k, n]) => [k, `påbörjad (${n} kvar)`])].map(rowInv).join('')}</div>` : '<p style="font-size:18px;margin-top:0">Förrådet är tomt – köp prylar i djuraffären.</p>'}
+      ${placed.length ? `<p style="font-size:18px;margin:10px 0 6px"><b>Här i rummet</b> <small class="sp">(${placed.length})</small></p><div class="plist" style="max-height:40vh;overflow:auto;padding:2px;gap:4px">${placed.map(rowPlaced).join('')}</div>` : ''}`,
     [{ label: 'Klar', cls: 'btn-go', onClick: closeModal }]);
-    dlg.querySelectorAll('[data-ic]').forEach((el) => el.replaceWith(itemCanvas(el.dataset.ic, 2)));
+    dlg.querySelectorAll('[data-ic]').forEach((el) => el.replaceWith(itemCanvas(el.dataset.ic, fitScale(el.dataset.ic))));
     dlg.querySelectorAll('[data-place]').forEach((b) => (b.onclick = () => { closeModal(); startPlacing(b.dataset.place); }));
     dlg.querySelectorAll('[data-move]').forEach((b) => (b.onclick = () => { closeModal(); startMoving(b.dataset.move); }));
     dlg.querySelectorAll('[data-pick]').forEach((b) => (b.onclick = () => {
@@ -962,7 +1012,16 @@ export function createPetLayer(A, opts = {}) {
     if (def.typ === 'lada') return it.dirt > 0.6 ? 'behöver tömmas!' : it.dirt > 0.2 ? 'lite använd' : 'ren';
     if (def.typ === 'bur') return it.dirt > 0.6 ? 'byt halm!' : 'fräsch halm';
     if (def.typ === 'sack') return `${it.left} portioner kvar`;
-    return def.desc || '';
+    // korg/klösträd: vem som ligger där just nu; leksaker och koppel: kort och gott
+    const who = [...actors.values()].filter((a) => a.inItem === it.id || a.elev === it.id).map((a) => a.pet.name);
+    if (def.typ === 'sang' || def.typ === 'klos') return who.length ? `${who.join(' och ')} ${def.typ === 'klos' ? 'är där uppe' : 'ligger här'}` : 'ledig';
+    if (def.typ === 'leksak') return 'på golvet';
+    return 'på plats';
+  }
+  // ikonskala som ryms i dialogradens 44 px-kolumn (breda/höga saker ritas i skala 1)
+  function fitScale(k, max = 2) {
+    const d = PET_ITEMS[k];
+    return Math.max(1, Math.min(max, Math.floor(40 / (Math.max(d.w, 11) + 4)), Math.floor(40 / (d.h + 4))));
   }
 
   // ---------- utplacering ----------
@@ -1199,6 +1258,8 @@ export function createPetLayer(A, opts = {}) {
       actors,
       pets: () => [...actors.values()].map((a) => ({ id: a.id, name: a.pet.name, x: a.x, y: a.y, mode: a.mode, pose: a.pose, anim: animOf(a), dir: a.dir })),
       items: () => items(),
+      // mätarnas skyltar (logiska px): var de ritas, var hemplatsen är, och om de tonats ned
+      meters: () => [...actors.values()].map((a) => ({ id: a.id, name: a.pet.name, ...meterRect(a), dim: !!a.mDim, petX: Math.round(a.x), petY: Math.round(a.y - a.z) })),
       // SKÄRMkoordinater (logiska) för klicktester: djur-id, pryl-id, prylnyckel (k) eller 'bajs'
       spot(id) {
         const a = actors.get(id);

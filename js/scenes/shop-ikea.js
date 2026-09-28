@@ -35,7 +35,7 @@ import { tagImg, outlineImg, boxImg } from './ikea/art.js';
 import { escalatorArt, escPos, pitFrontImg, liftCabImg, liftDoorImg, drawLiftIndicator, LIFT_W, LIFT_H, ESC_PERIOD } from './ikea/art-transit.js';
 import { makeFolk, textBubble, TIPS } from './ikea/folk.js';
 import { openMenu, openKiosk, menuOf } from './ikea/resto.js';
-import { trayImg, dishImg, drawMenuRows, TRAY_W } from './ikea/food.js';
+import { trayImg, dishImg, drawMenuStrip, TRAY_W } from './ikea/food.js';
 import { smalandBackImg } from './ikea/art-props.js';
 
 const RIDE_V = 40;          // rulltrappans fart (px/s längs trappan)
@@ -102,7 +102,15 @@ export function makeShopIkea(A, opts = {}) {
 
   // ---------- klick ----------
   const hitAt = (x, y) => F.clicks.find((c) => x >= c.hot[0] && x <= c.hot[2] && y >= c.hot[1] && y <= c.hot[3]) || null;
-  const busy = () => !!ride || (meal && meal.st !== 'carry' && meal.st !== 'toSeat') || !!snack;
+  // ett vänligt "vänta lite" när klick inte går att göra något med (högst ett per sekund)
+  let nagAt = -9;
+  const nag = (msg) => { if (t - nagAt > 1.2) { nagAt = t; toast(msg); } };
+  const arrivalInfo = () => {
+    play('chirp');
+    toast(F.n === 2
+      ? '↗️ Den här rulltrappan kommer bara UPP hit från plan 1. Rulltrappan NER står längre fram i hallen – efter restaurangen.'
+      : '↘️ Den här rulltrappan kommer bara NER hit från plan 2. Rulltrappan UPP står vid entrén, bredvid hissen.');
+  };
   function act(c) {
     if (c.kind === 'buy') {
       play('click');
@@ -112,6 +120,7 @@ export function makeShopIkea(A, opts = {}) {
     else if (c.kind === 'door') { play('door'); A.go('city'); }
     else if (c.kind === 'exit') { play('door'); toast('🛍️ Tack för besöket på MÖBELJÄTTEN – välkommen åter!', 'good'); A.go('city'); }
     else if (c.kind === 'esc') startEsc(c.esc);
+    else if (c.kind === 'escArr') arrivalInfo();
     else if (c.kind === 'lift') startLift();
     else if (c.kind === 'rest') openRestMenu();
     else if (c.kind === 'table') sitAtTable(c.table);
@@ -121,17 +130,22 @@ export function makeShopIkea(A, opts = {}) {
     else if (c.kind === 'play') { play('chirp'); toast('🎈 Småland är för barn upp till 1,20 m – du får titta på bollhavet!'); }
   }
   function clickWorld(x, y) {
-    if (ride || snack) return;
-    if (meal && (meal.st === 'sit' || meal.st === 'eat' || meal.st === 'pay' || meal.st === 'line')) return;
+    if (ride) { nag(ride.kind === 'lift' ? '🛗 Vänta tills hissen är framme!' : '↕️ Vänta tills du klivit av rulltrappan!'); return; }
+    if (snack) { nag(`${snack.k.icon} Ät upp ${snack.k.id === 'korv' ? 'korven' : 'glassen'} först – det tar bara en stund!`); return; }
+    if (meal && (meal.st === 'sit' || meal.st === 'eat')) { nag('😋 Ät upp först! Du reser dig när tallriken är tom.'); return; }
+    if (meal?.st === 'line') { nag('🧾 Betala i restaurangkassan först!'); return; }
     if (meal?.st === 'done') standUp();
     // personal först (bara om man träffar figuren)
     const s = F.folk.staffAt(x, y);
     if (s) {
-      const side = s.mode === 'truck' ? [s.x + 23, s.y + 18] : [s.x + (walker().px < s.x ? -14 : 14), s.y + 6];
-      walker().walkTo(side[0], side[1], () => talkTo(s));
+      const w = walker(), sx = walker().px < s.x ? -14 : 14;
+      const cand = s.mode === 'truck' ? [[s.x + 23, s.y + 18]] : [[s.x + sx, s.y + 6], [s.x - sx, s.y + 6], [s.x, s.y + 24], [s.x, s.y + 34], [s.x, s.y + 46]];
+      const side = cand.find(([cx, cy]) => w.walkable(cx, cy)) || cand[0];
+      w.walkTo(side[0], side[1], () => talkTo(s));
       return;
     }
     const c = hitAt(x, y);
+    if (c?.kind === 'escArr') { arrivalInfo(); return; } // ankomständen – bara en upplysning, ingen promenad
     if (meal?.st === 'carry' || meal?.st === 'toSeat') {
       if (c?.kind === 'table') { sitAtTable(c.table); return; }
       if (c?.kind === 'esc' || c?.kind === 'lift' || c?.kind === 'door' || c?.kind === 'exit') { toast('Ställ tillbaka brickan först – ät upp i lugn och ro!'); return; }
@@ -156,12 +170,13 @@ export function makeShopIkea(A, opts = {}) {
     if (c.ex && !c.ex.rug) cand.push([c.ex.x + c.ex.w / 2, c.ex.top + c.ex.h / 2]);
     cand.push([(c.hot[0] + c.hot[2]) / 2, (c.hot[1] + c.hot[3]) / 2]);
     for (let yy = c.hot[1] + 1; yy < c.hot[3]; yy += 3) for (let xx = c.hot[0] + 1; xx < c.hot[2]; xx += 3) cand.push([xx, yy]);
-    return cand.find(([x, y]) => hitAt(x, y) === c && !F.folk.staffAt(x, y)) || cand[0];
+    return cand.find(([x, y]) => hitAt(x, y) === c && !F.folk?.staffAt(x, y)) || cand[0];
   }
 
   // ---------- rulltrappan ----------
   function startEsc(e) {
     if (meal) { toast('Ät upp först!'); return; }
+    if (e.arrive || e.up !== (F.n === 1)) { arrivalInfo(); return; } // ankomständen går inte att åka från
     ride = { kind: 'esc', e, d: -12, v: RIDE_V, leg: 1 };
     walker().stop();
     play('slide');
@@ -233,13 +248,16 @@ export function makeShopIkea(A, opts = {}) {
     w.dir = 'up';
     openMenu(A, {
       onPay: (items, sum) => {
-        g.money -= sum;
         meal = { items, sum, st: 'line', left: 2, t: 0 };
         w.speed = 44;
         w.walkTo(F.restLine.pay[0], F.restLine.pay[1], () => {
           w.speed = SPEED;
+          w.dir = 'up';
+          if (g.money < sum) { toast('Du har inte råd – brickan får stå kvar. Dags att jobba ett pass!', 'bad'); play('fel'); meal = null; return; }
+          g.money -= sum; // betala i restaurangkassan
           play('coin');
           g.save?.();
+          F.folk.list.find((a) => a.lines?.includes('SMAKLIG MÅLTID!')) && F.folk.say(F.folk.list.find((a) => a.lines?.includes('SMAKLIG MÅLTID!')), 'SMAKLIG MÅLTID!', 3);
           toast(`🧾 Betalt ${sum} kr i kassan. Välj ett ledigt bord!`, 'good');
           meal.st = 'carry';
           const s = freeSeatNear(w.px, w.py);
@@ -284,7 +302,11 @@ export function makeShopIkea(A, opts = {}) {
     g.passTime?.(15);
     g.save?.();
     play('ok');
-    toast(`😋 Mums! Köttbullar med mos och lingonsylt smakar alltid. +${fill} mätthet${energy ? `, +${energy} energi` : ''}`, 'good');
+    const first = menuOf(meal.items[0]);
+    const what = !first ? 'Maten'
+      : first.id === 'kottbullar' ? 'Köttbullar med mos och lingonsylt smakar alltid'
+      : `${first.name.replace(/\s*\(.*\)/, '')}${meal.items.length > 1 ? ' med mera' : ''} – det smakade`;
+    toast(`😋 Mums! ${what}. +${fill} mätthet${energy ? `, +${energy} energi` : ''}`, 'good');
     meal.st = 'done'; meal.t = 0;
     myBubble = { msg: 'GOTT!', until: 2 };
   }
@@ -399,6 +421,12 @@ export function makeShopIkea(A, opts = {}) {
       ctx.drawImage(L.door, x, y);
       ctx.save(); ctx.translate(x + LIFT_W, y); ctx.scale(-1, 1); ctx.drawImage(L.door, 0, 0); ctx.restore();
     }
+    // knappen lyser medan hissen är beställd
+    if (ride?.kind === 'lift' && ['open', 'in', 'close', 'move'].includes(ride.st)) {
+      const px = x + LIFT_W + 6, up = ride.to > F.n;
+      ctx.fillStyle = Math.floor(t * 4) % 2 ? '#ffd23f' : '#ffb000';
+      ctx.fillRect(px + 2, L.fy - (up ? 23 : 18), 3, 3);
+    }
     const lit = !!L.arrow || (ride?.kind === 'lift');
     drawLiftIndicator(ctx, x, L.fy, ride?.kind === 'lift' && ride.st === 'move' && ride.t > LIFT_T.move / 2 ? ride.to : F.n, L.arrow, lit);
   }
@@ -435,6 +463,7 @@ export function makeShopIkea(A, opts = {}) {
       if (p.id === 'lekland') { const bk = smalandBackImg(); items.push({ fy: p.y + 38.5, draw: () => ctx.drawImage(bk, 3, 29, 70, 12, p.x + 3, p.y + 29, 70, 12) }); }
     }
     for (const w of F.walls) if (inView(w.x, w.y, w.x + w.img.width, w.fy)) items.push({ fy: w.fy, draw: () => ctx.drawImage(w.img, w.x, w.y) });
+    for (const d of F.furn) if (inView(d.x, d.base - d.h, d.x + d.w, d.base)) items.push({ fy: d.base, draw: () => { const a = ROOM.furnArt?.(d.k, d.v); if (a) { ctx.fillStyle = 'rgba(20,12,28,0.2)'; ctx.fillRect(d.x + 1, d.base - 1, d.w - 2, 2); ctx.drawImage(a.img, a.sx, a.sy, a.sw, a.sh, d.x, d.base - d.h, a.sw, a.sh); } } });
     for (const e of F.esc) {
       const art = artOf(e);
       if (!inView(art.x, art.y, art.x + art.w, art.y + art.h)) continue;
@@ -458,7 +487,7 @@ export function makeShopIkea(A, opts = {}) {
       ctx.fillRect(ax - 4, ay, 9, 1); ctx.fillRect(ax - 3, ay + 1, 7, 1); ctx.fillRect(ax - 2, ay + 2, 5, 1); ctx.fillRect(ax - 1, ay + 3, 3, 1); ctx.fillRect(ax, ay + 4, 1, 1);
     }
     F.folk.bubbles(ctx, inView);
-    if (myBubble) { const [px, py] = playerPos(); const sit = meal && meal.seat && meal.st !== 'carry' && meal.st !== 'toSeat'; textBubble(ctx, px, py - (sit ? 38 : 42), myBubble.msg); }
+    if (myBubble && !(ride?.kind === 'esc' && (ride.d > 60 || ride.leg === 2)) && !(ride?.kind === 'lift')) { const [px, py] = playerPos(); const sit = meal && meal.seat && meal.st !== 'carry' && meal.st !== 'toSeat'; textBubble(ctx, px, py - (sit ? 38 : 42), myBubble.msg); }
   }
   function drawMe(ctx, px, py, sitting) {
     const w = walker(), look = A.avatar.look;
@@ -469,8 +498,8 @@ export function makeShopIkea(A, opts = {}) {
     } else if (meal && (meal.st === 'line' || meal.st === 'carry' || meal.st === 'toSeat')) {
       drawPerson(ctx, px, py, look, w.dir, walking ? [7, 9, 8, 9][Math.floor(t * 8.5) % 4] : 9);
       if (w.dir !== 'up') {
-        const img = trayImg(meal.items, 2), ox = w.dir === 'left' ? -6 : w.dir === 'right' ? 6 : 0;
-        ctx.drawImage(img, Math.round(px + ox - img.width / 2), Math.round(py - 12 - img.height + 1));
+        const img = trayImg(meal.items, 2), ox = w.dir === 'left' ? -9 : w.dir === 'right' ? 9 : 0;
+        ctx.drawImage(img, Math.round(px + ox - img.width / 2), Math.round(py - 7 - img.height));
       }
     } else if (snack) {
       drawPerson(ctx, px, py, look, 'down', 9);
@@ -487,36 +516,24 @@ export function makeShopIkea(A, opts = {}) {
   function drawMenuBoard(ctx) {
     const M = F.menuBoard;
     if (!(M.x + M.w >= cam.x && M.x <= cam.x + VW)) return;
-    // två kolumner: rätterna till vänster, dryck/fika till höger
-    const colW = (M.w >> 1) - 2;
     ctx.save(); ctx.beginPath(); ctx.rect(M.x, M.y, M.w, M.h); ctx.clip();
-    drawMenuRows(ctx, M.x, M.y - 3, colW, ctxText, [0, 1, 2]);
-    drawMenuRows(ctx, M.x + colW + 4, M.y - 3, colW, ctxText, [3, 4]);
+    drawMenuStrip(ctx, M.x, M.y, M.w, ctxText);
     ctx.restore();
   }
   function zoneAt(x, y) { return F.zones.find((z) => x >= z.x0 && x < z.x1 && y >= z.y0 && y < z.y1)?.r || null; }
   function drawHud(ctx) {
     ctx.setTransform(A.pxs, 0, 0, A.pxs, 0, 0);
-    // planet (uppe till höger)
+    // planet och rummet man står i: en rad i takbandet uppe till höger, så att
+    // varuhusets egna takskyltar (från y 13) inte skyms
     {
-      const lbl = `${F.name}`, w = textW(SMALL, lbl) + 36, x = VW - w - 4, y = 4;
-      ctx.fillStyle = 'rgba(12,30,70,0.88)'; ctx.fillRect(x, y, w, 15);
-      ctx.fillStyle = '#f6cf2a'; ctx.fillRect(x, y, 22, 15);
-      ctx.fillStyle = '#0c2a5c'; ctx.fillRect(x + 22, y, 1, 15);
-      ctxText(ctx, SMALL, 'PLAN', x + 3, y + 2, '#0c2a5c');
-      ctxText(ctx, SMALL, String(F.n), x + 9, y + 8, '#0c2a5c');
-      ctx.fillStyle = '#0c2a5c'; ctx.fillRect(x + 8, y + 14, 5, 1);
-      ctxText(ctx, SMALL, lbl, x + 28, y + 5, '#f6d02f');
-    }
-    // rummet man står i
-    const [px, py] = playerPos();
-    const r = zoneAt(px, py);
-    if (r) {
-      const label = r.num ? `${r.num} ${r.name}` : r.name;
-      const lw = textW(SMALL, label) + 8;
-      ctx.fillStyle = 'rgba(12,30,70,0.82)'; ctx.fillRect(4, 4, lw, 11);
-      ctx.fillStyle = '#f6cf2a'; ctx.fillRect(4, 14, lw, 1);
-      ctxText(ctx, SMALL, label, 8, 7, '#f6d02f');
+      const [px, py] = playerPos();
+      const r = zoneAt(px, py);
+      const pl = `PLAN ${F.n}`, lbl = r ? (r.num ? `${r.num} ${r.name}` : r.name) : F.name;
+      const pw = textW(SMALL, pl) + 7, w = pw + textW(SMALL, lbl) + 9, x = VW - w - 3, y = 1;
+      ctx.fillStyle = 'rgba(12,30,70,0.9)'; ctx.fillRect(x, y, w, 11);
+      ctx.fillStyle = '#f6cf2a'; ctx.fillRect(x, y, pw, 11); ctx.fillRect(x + pw, y + 10, w - pw, 1);
+      ctxText(ctx, SMALL, pl, x + 3, y + 3, '#0c2a5c');
+      ctxText(ctx, SMALL, lbl, x + pw + 4, y + 3, '#f6d02f');
     }
     const hl = hover || near;
     let msg = null, sub = null;
@@ -528,6 +545,7 @@ export function makeShopIkea(A, opts = {}) {
     else if (hl?.ex?.buy) { const kat = katOf(hl.ex.k); msg = `${tagName(hl.ex.k)}  ${kat?.price ?? '?'} KR`; sub = hover ? 'KLICKA FÖR ATT KÖPA' : 'KLICKA PÅ MÖBELN FÖR ATT KÖPA'; }
     else if (hl?.ex) { msg = `${(DECOR[hl.ex.k] || '').toUpperCase()} INGÅR I BOSTADEN`; sub = 'SÄLJS INTE HÄR'; }
     else if (hl?.kind === 'esc') { msg = `RULLTRAPPA ${hl.esc.up ? 'UPP' : 'NER'}`; sub = `KLICKA - TILL PLAN ${hl.esc.to}`; }
+    else if (hl?.kind === 'escArr') { msg = `RULLTRAPPA FRÅN PLAN ${hl.esc.to}`; sub = F.n === 2 ? 'BARA ANKOMST - ÅK NER EFTER RESTAURANGEN' : 'BARA ANKOMST - ÅK UPP VID ENTRÉN'; }
     else if (hl?.kind === 'lift') { msg = 'HISS'; sub = `KLICKA - TILL PLAN ${F.n === 1 ? 2 : 1}`; }
     else if (hl?.kind === 'rest') { msg = 'RESTAURANGEN'; sub = 'KLICKA - TA EN BRICKA'; }
     else if (hl?.kind === 'table') { msg = 'BORD FÖR TVÅ'; sub = meal ? 'KLICKA FÖR ATT SÄTTA DIG' : 'HÄMTA MAT FÖRST'; }
@@ -570,24 +588,28 @@ export function makeShopIkea(A, opts = {}) {
     get worldY() { return playerPos()[1]; },
     get floor() { return F.n; },
     _debug: {
-      // skärmkoordinater till den första utställda möbeln av sorten (byter plan vid behov)
+      // skärmkoordinater till den första utställda möbeln av sorten – byter plan
+      // vid behov, och ställer figuren i gången framför möbeln om den ligger utanför bild
       spot: (id) => {
         const hit = findClick(id);
         if (!hit) return null;
         const { c, fl } = hit;
-        if (fl !== F) {
-          const w = fl.walker;
-          const at = w.nearestFree(c.go[0], c.ex ? Math.min(c.go[1] + 30, c.ex.room.band === 'A' ? AISLE1 : AISLE2) : c.go[1]);
-          switchTo(fl.n, at);
+        const at = fl.walker.nearestFree(c.go[0], c.ex ? Math.min(c.go[1] + 30, c.ex.room.band === 'A' ? AISLE1 : AISLE2) : c.go[1]);
+        if (fl !== F) switchTo(fl.n, at);
+        else {
+          Object.assign(cam, camTarget());
+          const [x, y] = spotOf(c);
+          const sx = x - cam.x, sy = y - cam.y;
+          if (sx < 0 || sx >= VW || sy < 0 || sy >= VH) switchTo(F.n, at);
         }
         Object.assign(cam, camTarget());
         const [x, y] = spotOf(c);
         return { x: x - cam.x, y: y - cam.y };
       },
       floor: (n) => { switchTo(n); return F.n; },
-      ride: (id = 'upp') => { // åk rulltrappan (upp/ner) eller hissen härifrån
+      ride: (id = 'upp') => { // åk rulltrappan (upp från plan 1 / ner från plan 2) eller hissen härifrån
         if (id === 'hiss') { const L = F.lift; walker().px = L.x + 13; walker().py = L.fy + 8; startLift(); return true; }
-        const e = F.esc.find((x) => x.id === id);
+        const e = F.esc.find((x) => x.id === id && !x.arrive);
         if (!e) return false;
         walker().px = e.board[0]; walker().py = e.board[1]; startEsc(e); return true;
       },
@@ -602,11 +624,13 @@ export function makeShopIkea(A, opts = {}) {
         return true;
       },
       meal: () => (meal ? { st: meal.st, left: meal.left, seat: meal.seat?.id } : null),
+      provsitt: () => F.folk.forceSit(walker().px, walker().py),
       lockCam: (x, y) => { lockedCam = x === null || x === undefined ? null : { x: clamp(x, 0, W() - VW), y: clamp(y ?? cam.y, 0, H - VH) }; if (lockedCam) Object.assign(cam, lockedCam); },
       teleport: (x, y) => { const w = walker(); w.px = x; w.py = y; w.stop(); w.snapFree(); Object.assign(cam, camTarget()); },
       cam: () => ({ ...cam }),
       size: () => ({ W: W(), H, floors: S.floors.map((f) => f.W) }),
       hover: (id) => { hover = id ? F.clicks.find((c) => c.id === id) || null : null; },
+      clicks: () => F.clicks.filter((c) => !c.ex).map((c) => ({ id: c.id, kind: c.kind, hot: c.hot, go: c.go })),
       folk: () => F.folk.list.map((a) => ({ role: a.role, mode: a.mode, x: Math.round(a.x), y: Math.round(a.y), state: a.state || null })),
       rooms: () => S.floors.flatMap((fl) => fl.blocks.map((r) => ({ floor: fl.n, name: r.num ? `${r.num} ${r.name}` : r.name, kind: r.kind, x0: r.x0, x1: r.x1, band: r.band, items: [...fl.ex, ...(fl.cartons || [])].filter((e) => e.room === r).map((e) => `${e.k}${e.v}`) }))),
       exhibits: () => S.floors.flatMap((fl) => fl.ex.map((e) => ({ floor: fl.n, k: e.k, v: e.v, buy: e.buy, room: e.room.name, x: e.x, base: e.base }))),
@@ -620,6 +644,11 @@ export function makeShopIkea(A, opts = {}) {
             if (e === tg.e || e.rug || e.hang || e.base <= tg.e.base) continue;
             if (ov(tg.r, [e.x, e.top, e.x + e.w, e.base])) out.push(`P${fl.n}: lapp ${tg.e.k} skyms av ${e.k} (${e.room.name})`);
           }
+          // en matta som döljs av sin egen lapp (mindre än 16 px av mattan kvar att se)
+          for (const e of fl.ex) if (e.rug && e.tag) {
+            const covered = Math.max(0, Math.min(e.y + e.h, e.tag.y + e.tag.h) - Math.max(e.y, e.tag.y));
+            if (covered > 0 && e.h - covered < 16) out.push(`P${fl.n}: lappen täcker mattan ${e.k} (${e.room.name})`);
+          }
           const w = fl.walker, sp = fl.spawn;
           for (const c of fl.clicks) {
             const p = w.findPath(sp[0], sp[1], c.go[0], c.go[1]); const last = p[p.length - 1];
@@ -629,7 +658,7 @@ export function makeShopIkea(A, opts = {}) {
         const kinds = new Set(S.floors.flatMap((fl) => fl.ex.filter((e) => e.buy).map((e) => e.k)));
         for (const k of KAT()) if (!kinds.has(k.kind)) out.push(`${k.kind} saknas i utställningen`);
         const cur = F;
-        for (const fl of S.floors) { F = fl; for (const c of fl.clicks) if (c.ex) { const [x, y] = spotOf(c); if (hitAt(x, y) !== c) out.push(`P${fl.n}: ${c.id} i ${c.ex.room.name} går inte att klicka på`); } }
+        for (const fl of S.floors) { F = fl; folkOf(F); for (const c of fl.clicks) if (c.ex) { const [x, y] = spotOf(c); if (hitAt(x, y) !== c) out.push(`P${fl.n}: ${c.id} i ${c.ex.room.name} går inte att klicka på`); } }
         F = cur;
         return out;
       },
@@ -660,7 +689,7 @@ export function makeShopIkea(A, opts = {}) {
       if (!ride && !meal) {
         let bestD = 20;
         for (const c of F.clicks) {
-          if (c.kind === 'door' || c.kind === 'exit' || c.kind === 'table') continue;
+          if (c.kind === 'door' || c.kind === 'exit' || c.kind === 'table' || c.kind === 'escArr') continue;
           const d = Math.hypot(c.go[0] - px, c.go[1] - py);
           if (d < bestD) { bestD = d; near = c; }
         }

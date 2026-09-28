@@ -8,13 +8,14 @@ import { mix, mul } from '../core/floor-pix.js';
 
 export const BW = 64, BH = 60, AX = 32, GY = 49;
 export const SP = 0.52, CP = 0.86; // djup → skärm-y, höjd → skärm-y (snett ovanifrån)
-export const G = { none: 0, tail: 1, far: 2, body: 3, thigh: 4, leg: 5, neck: 6, head: 7, ear: 8, snout: 9, face: 10, earFar: 11, paw: 12, mane: 13, tailNear: 14 };
+const SPL = 0.42;                     // i sidovy: bortre sidan lite högre upp (mindre än SP, annars svävar bortre benen)
+export const G = { none: 0, tail: 1, far: 2, body: 3, thigh: 4, leg: 5, neck: 6, head: 7, ear: 8, snout: 9, face: 10, earFar: 11, paw: 12, mane: 13, tailNear: 14, fx: 15 };
 
 // modell (u framåt, v djurets vänster, w upp) → [bx, by, djup] för en vy
 export function projector(view) {
   if (view === 'front') return (u, v, w) => [AX + 0.5 + v, GY + 0.5 + u * SP - w * CP, -u];
   if (view === 'back') return (u, v, w) => [AX + 0.5 - v, GY + 0.5 - u * SP - w * CP, u];
-  return (u, v, w) => [AX + 0.5 + u, GY + 0.5 - v * SP - w * CP, v]; // sidan (höger); vänster speglas
+  return (u, v, w) => [AX + 0.5 + u, GY + 0.5 - v * SPL - w * CP, v]; // sidan (höger); vänster speglas
 }
 
 // ---------------------------------------------------------------- färger
@@ -35,7 +36,7 @@ export function rampOf(c) {
   RAMPS.set(c, r);
   return r;
 }
-export const inkOf = (c) => mix(mul(c, 0.7), 0x2a1f3a, 0.2);
+export const inkOf = (c) => mix(mul(c, 0.76), 0x2a1f3a, 0.16);
 
 // ---------------------------------------------------------------- bufferten
 export function newBuf() {
@@ -172,12 +173,13 @@ export function poly(B, P, mat, o = {}) {
 }
 
 // Mörk innerkant där delen (mask) gränsar mot en annan, tidigare ritad grupp.
-// mode: true = alla sidor, 'down' = bara nedåt/sidorna (inte uppåt), 'up' = bara uppåt
+// mode: true = alla sidor, 'down' = bara nedåt/sidorna (inte uppåt), 'up' = bara uppåt,
+// 'side' = vänster/höger, 'right' = bara höger/nedåt (smala delar som svansar: belyst vänsterkolumn, mörk höger)
 export function inkEdge(B, mask, g, mode = true) {
   const hit = [];
   for (const k of mask) {
     const i = k % BW, j = (k - i) / BW;
-    const N = mode === 'down' ? [[1, 0], [-1, 0], [0, 1]] : mode === 'up' ? [[0, -1]] : mode === 'side' ? [[1, 0], [-1, 0]] : [[1, 0], [-1, 0], [0, 1], [0, -1]];
+    const N = mode === 'down' ? [[1, 0], [-1, 0], [0, 1]] : mode === 'up' ? [[0, -1]] : mode === 'side' ? [[1, 0], [-1, 0]] : mode === 'right' ? [[1, 0], [0, 1]] : [[1, 0], [-1, 0], [0, 1], [0, -1]];
     for (const [dx, dy] of N) {
       const x = i + dx, y = j + dy;
       if (!inb(x, y)) continue;
@@ -200,7 +202,7 @@ export function outline(B) {
       const x = i + dx, y = j + dy;
       if (!inb(x, y)) continue;
       const q = y * BW + x;
-      if (src[q] >= 0 && B.grp[q] !== G.none) { best = src[q]; break; }
+      if (src[q] >= 0 && B.grp[q] !== G.none && B.grp[q] !== G.fx) { best = src[q]; break; }
     }
     if (best < 0) continue;
     const r = (best >> 16) & 255, gg = (best >> 8) & 255, b = best & 255;
@@ -230,4 +232,18 @@ export function toCanvas(B, flip) {
   // fötterna: kolumnen AX (mitten) och raden GY
   const ox = flip ? AX - x1 : x0 - AX;
   return { cv, ox, oy: y0 - GY, w, h };
+}
+
+// Slagskugga: pixlarna precis under en del (mask) som tillhör andra grupper blir en ton mörkare
+// (huvudet skuggar bröstet, örat skuggar kinden …). rows = hur många rader ner.
+export function dropShadow(B, mask, g, rows = 1, k = 0.8) {
+  const lowest = new Map();
+  for (const q of mask) { const i = q % BW, j = (q - i) / BW; if (!lowest.has(i) || lowest.get(i) < j) lowest.set(i, j); }
+  for (const [i, j] of lowest) for (let r = 1; r <= rows; r++) {
+    const y = j + r;
+    if (!inb(i, y)) break;
+    const q = y * BW + i;
+    if (B.col[q] < 0 || B.grp[q] === g || mask.has(q)) break;
+    B.col[q] = mix(mul(B.col[q], k), 0x2a1f3a, 0.08);
+  }
 }

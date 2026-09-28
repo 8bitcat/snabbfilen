@@ -167,8 +167,9 @@ export function paintDeptWall(P, kind, x, w, fy, wy, seed = 0) {
       for (let i = 0; i < cw; i += 14) {
         const c = PALS.textil[(i / 14 + seed) % PALS.textil.length];
         for (let yy = fy - 43; yy < fy - 6; yy++) for (let xx = cx + i; xx < cx + i + 12; xx++) P.px(xx, yy, mul(c, (xx - cx - i) % 3 === 0 ? 0.82 : (xx - cx - i) % 3 === 1 ? 1.05 : 0.95));
-        miniTag(P, cx + i, fy - 5, '99:-');
       }
+      const lbl = 'GARDIN 99:-', lw = textW(SMALL, lbl) + 4; // en lapp för hela stången
+      miniTag(P, cx + Math.round((cw - lw) / 2), fy - 5, lbl);
     }
   } else if (kind === 'kok') {
     paintWallShelf(P, x, fy, Math.min(w, 110), 44, 3, GOODS.kok, seed);
@@ -217,8 +218,10 @@ export function paintLampCeiling(P, x0, x1, yTop, seed = 0) {
 // ---------- lagret ----------
 // Pallställ längs bakväggen: bays (fack) om bw px, tre bärbalksnivåer.
 // Nedersta nivån lämnas tom (där står de klickbara kartongerna).
-export function paintRacks(P, x0, x1, fy, wy, aisleStart, bw = 40) {
+// avoid: [x0, x1] där ingen gångskylt får hamna (lagrets egen skylt hänger där)
+export function paintRacks(P, x0, x1, fy, wy, aisleStart, bw = 40, avoid = null) {
   const base = fy + 10, levels = [base - 20, base - 38, base - 56];
+  const signs = []; // gångskyltarna målas sist, så att stolparna inte täcker dem
   let bay = 0;
   for (let bx = x0; bx + bw <= x1; bx += bw, bay++) {
     const aisle = aisleStart + Math.floor(bay / 2);
@@ -236,10 +239,10 @@ export function paintRacks(P, x0, x1, fy, wy, aisleStart, bw = 40) {
         cx += cw + 1;
       }
     });
-    // bärbalkar (orange) med platsetiketter
+    // bärbalkar (orange) med platsetiketter (ovanför nedersta balken, fria från kartongerna)
     levels.forEach((ly, li) => {
       P.rect(bx, ly, bw, 3, 0xe87a1a); P.hl(bx, ly, bw, 0xffa050); P.hl(bx, ly + 2, bw, 0xa84a0a);
-      if (li === 0) { const lbl = String((bay % 2) * 10 + 1 + (bay >> 1) % 9).padStart(2, '0'); P.rect(bx + bw / 2 - 5, ly, 11, 3, 0xf4f1ea); text(P, SMALL, lbl, bx + bw / 2 - 3, ly - 1, 0x141414, 0.9); }
+      if (li === 0) { const lbl = String((bay % 2) * 10 + 1 + (bay >> 1) % 9).padStart(2, '0'); P.rect(bx + bw / 2 - 6, ly - 8, 12, 8, 0xf4f1ea); P.box(bx + bw / 2 - 6, ly - 8, 12, 8, 0x8a8478); text(P, SMALL, lbl, bx + bw / 2 - 4, ly - 7, 0x141414); }
     });
     // stolpar (blå med hål)
     for (const ux of [bx, bx + bw - 3]) {
@@ -247,12 +250,14 @@ export function paintRacks(P, x0, x1, fy, wy, aisleStart, bw = 40) {
       for (let y = wy + 6; y < base; y += 4) P.px(ux + 1, y, 0x0c2a5c);
       P.rect(ux - 1, base - 1, 5, 2, 0x3a3e46);
     }
-    // gångskylt högst upp (varannan)
-    if (bay % 2 === 0) {
-      const t = `GÅNG ${aisle}`, tw = textW(SMALL, t) + 8, sx = bx + bw - tw / 2;
-      P.rect(sx, wy + 2, tw, 9, 0xf6cf2a); P.box(sx, wy + 2, tw, 9, 0x141414);
-      text(P, SMALL, t, sx + 4, wy + 4, 0x141414);
-    }
+    // gångskylt högst upp, mitt över de två facken i gången
+    if (bay % 2 === 0) signs.push([bx + bw, aisle]);
+  }
+  for (const [cx, aisle] of signs) {
+    const t = `GÅNG ${aisle}`, tw = textW(SMALL, t) + 8, sx = Math.round(cx - tw / 2);
+    if (avoid && sx + tw > avoid[0] && sx < avoid[1]) continue;
+    P.rect(sx, wy + 2, tw, 9, 0xf6cf2a); P.box(sx, wy + 2, tw, 9, 0x141414);
+    text(P, SMALL, t, sx + 4, wy + 4, 0x141414);
   }
   P.hl(x0, base + 1, x1 - x0, 0x000000, 0.25);
 }

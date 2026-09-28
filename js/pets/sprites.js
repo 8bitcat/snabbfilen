@@ -139,14 +139,13 @@ export function drawPetIcon(ctx, x, y, pet, scale = 1) {
   const s = spriteOf({ ...pet, id: pet?.id ?? 'ikon' }, anim, 0.5, 'down');
   const smooth = ctx.imageSmoothingEnabled;
   ctx.imageSmoothingEnabled = false;
-  const fx = Math.round(ICON_W / 2), fy = ICON_H - 2;
+  // centrera djuret i rutan (fötterna så lågt som möjligt men hela djuret synligt)
+  const fx = Math.round(ICON_W / 2) - Math.round((s.ox + s.ox + s.w) / 2);
+  const fy = Math.min(ICON_H - 2, Math.round((ICON_H - s.h) / 2) - s.oy + 1);
   ctx.fillStyle = 'rgba(20,12,30,.22)';
   const rx = s.shadow.rx + 1;
-  ctx.fillRect(x + (fx - rx) * sc, y + (fy) * sc, (rx * 2 + 1) * sc, 1 * sc);
-  // passa in i rutan (stora hundar kan vara högre än rutan): lyft uppåt vid behov
-  const top = fy + s.oy;
-  const dy = top < 0 ? -top : 0;
-  ctx.drawImage(s.cv, x + (fx + s.ox) * sc, y + (fy + s.oy + dy) * sc, s.w * sc, s.h * sc);
+  ctx.fillRect(x + (fx - rx) * sc, y + fy * sc, (rx * 2 + 1) * sc, 1 * sc);
+  ctx.drawImage(s.cv, x + (fx + s.ox) * sc, y + (fy + s.oy) * sc, s.w * sc, s.h * sc);
   ctx.imageSmoothingEnabled = smooth;
 }
 

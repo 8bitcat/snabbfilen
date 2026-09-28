@@ -24,7 +24,8 @@ const scene = () => page.evaluate(() => window.SF.sceneName);
 await page.goto(URL);
 await page.evaluate(() => localStorage.clear());
 await page.reload();
-await page.waitForTimeout(800);
+await page.waitForFunction(() => !!window.SF?.worldInfo, null, { timeout: 20000 });
+await page.waitForTimeout(400);
 
 // 1. Avatarredigeraren öppnas direkt
 ok(await page.locator('.dlg-avatar').count() === 1, 'avatarredigeraren öppnas vid första start');
@@ -83,6 +84,36 @@ await page.click('.dlg-foot .btn'); // En annan gång
 await page.waitForTimeout(200);
 await page.evaluate(() => { window.SF.citySub = 0; });
 
+// 4c. Staden v2: kartkontraktet stämmer, man kan gå runt ett södervänt hus till dörren, bussen går till förorten
+const mapProblems = await page.evaluate(() => import('../js/city/map.js').then((m) => m.validateMap()));
+ok(mapProblems.length === 0, `kartkontraktet v2 stämmer${mapProblems.length ? ': ' + mapProblems.slice(0, 3).join('; ') : ''}`);
+await page.evaluate(() => { const d = window.SF.scene._debug; d.teleport(216, 476); d.enter('pizzeria'); }); // från parkgången bakom pizzerian
+let around = false;
+for (let i = 0; i < 60 && !around; i++) {
+  await page.waitForTimeout(250);
+  around = await page.evaluate(() => window.SF.scene._debug.arrived());
+}
+const atDoor = await page.evaluate(() => window.SF.scene._debug.pos());
+ok(around && Math.abs(atDoor.x - 216) < 6 && atDoor.y > 640 && atDoor.y < 664, `gick runt pizzerian till dörren på söderfasaden (${Math.round(atDoor.x)},${Math.round(atDoor.y)})`);
+await shot('06c-soder');
+const busBefore = await page.evaluate(() => ({ min: window.SF.game.min, money: window.SF.game.money }));
+await page.evaluate(() => { const d = window.SF.scene._debug; const p = d.busStop('SÖDERKYRKAN'); window.SF.scene.down(p.x, p.y); });
+let busDlg = false;
+for (let i = 0; i < 40 && !busDlg; i++) {
+  await page.waitForTimeout(250);
+  busDlg = (await page.locator('.dlg-head h2').textContent().catch(() => ''))?.includes('SÖDERKYRKAN');
+}
+ok(busDlg, 'busshållplatsen öppnar resmålsdialogen');
+await page.click('[data-bus="betongtorget"]');
+let inSuburb = false;
+for (let i = 0; i < 20 && !inSuburb; i++) {
+  await page.waitForTimeout(250);
+  inSuburb = await page.evaluate(() => window.SF.scene._debug.arrived() && window.SF.scene._debug.districtNow() === 'FÖRORTEN');
+}
+const busAfter = await page.evaluate(() => ({ min: window.SF.game.min, money: window.SF.game.money }));
+ok(inSuburb && busAfter.money === busBefore.money - 10 && busAfter.min >= busBefore.min + 15, `bussen tog en till förorten (10 kr, +${Math.round(busAfter.min - busBefore.min)} min)`);
+await shot('06d-fororten');
+
 // 5. Matbutiken: köp en pizza hem
 await page.evaluate(() => window.SF.openFoodShop());
 await page.waitForTimeout(300);
@@ -137,7 +168,7 @@ const payday = await page.evaluate(() => {
   return { before, after: g.money, pay: r.finalPay, min: g.min, rec: r.newRecord };
 });
 ok(payday.after === payday.before + payday.pay, 'lönen betalas ut');
-ok(payday.min === 14 * 60, 'passet tog 4 timmar');
+ok(Math.abs(payday.min - 14 * 60) <= 8, `passet tog 4 timmar (klockan ${Math.floor(payday.min / 60)}:${String(payday.min % 60).padStart(2, '0')})`); // realtidsklockan kan hinna ticka några minuter
 ok(payday.rec, 'rekord registrerades');
 const day1 = await page.evaluate(() => window.SF.game.day);
 await page.evaluate(() => window.SF.sleepFlow());
@@ -272,6 +303,7 @@ await guest.evaluate(() => {
   localStorage.setItem('snabbfilen_save1', JSON.stringify({ v: 1, day: 1, min: 600, money: 100, hunger: 80, energy: 80, home: 'rum', fridge: {}, jobs: { flygplats: 0, frukt: 0, burgare: 0 }, earned: 0, wardrobe: [], storage: [], deco: {}, won: false }));
 });
 await guest.reload();
+await guest.waitForFunction(() => !!window.SF?.worldInfo, null, { timeout: 20000 });
 let guestIn = false;
 for (let i = 0; i < 50 && !guestIn; i++) {
   await guest.waitForTimeout(200);
