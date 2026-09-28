@@ -10,6 +10,13 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.25.6] – 2026-09-28 – Disken i Burgarbaren lagad
+- Disken i Burgarbaren är lagad: tallrikar hamnar ALDRIG mer på varandra eller på någon annans plats.
+- Köket fyller nu alla sex platserna (förr stannade det vid fem) och väntar snällt när disken är full.
+- Ställa ner är enklare: klicka var som helst på disken så väljs närmaste lediga plats, och platsen hålls åt dig medan du går fram – köket kan inte längre ta den.
+- Är hela disken full sägs det tydligt: "FULLT PÅ DISKEN!" och du behåller rätten i händerna.
+- Klick på en upptagen plats byter rätt som förut.
+
 ## [0.25.5] – 2026-09-28 – Paddorna får rätt zoom
 - Paddor (iPad m.fl.) får nu VID-läget som standard i stället för NÄRA: stora skärmar ser mer värld i rätt pixelstorlek, inte jättepixlar. Mobiler behåller NÄRA. 🔍 växlar som vanligt.
 - Knip-zoom på själva sidan (iOS) blockeras inne i spelet så spelytan inte hamnar snett – i dialoger och menyer går det fortfarande att zooma.

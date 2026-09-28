@@ -211,12 +211,14 @@ export function makeJobbBurgare(A, { onDone }) {
   const bg = () => (bgCache.x ||= paintDiner());
 
   function freeTable() { return TABLES.find((tb) => !customers.some((k) => k.table === tb)); }
-  // ledig plats på disken (faller tillbaka på en plats i tur och ordning om alla är tagna)
+  // ledig plats på disken – ALDRIG någon annans: är det fullt får rätten vänta i köket.
+  // reservedSlot = platsen spelaren är på väg till med sin tallrik (köket rör den inte).
+  let reservedSlot = -1;
   function freeSlot() {
-    const i = SLOTS.findIndex((_, s) => !plates.some((p) => p.slot === s));
-    return i >= 0 ? i : plates.length % SLOTS.length;
+    const i = SLOTS.findIndex((_, s) => s !== reservedSlot && !plates.some((p) => p.slot === s));
+    return i >= 0 ? i : -1;
   }
-  function addPlate(d) { const slot = freeSlot(); plates.push({ d, slot, x: SLOTS[slot] }); }
+  function addPlate(d) { const slot = freeSlot(); if (slot < 0) return false; plates.push({ d, slot, x: SLOTS[slot] }); return true; }
   function leave(k) {
     k.state = 'leave';
     k.path = [[k.table.x - 8, k.table.sy], [k.table.x - 12, k.table.y + 8]];
@@ -277,15 +279,18 @@ export function makeJobbBurgare(A, { onDone }) {
       customers = customers.filter((k) => k.x > -16);
       // nya tallrikar på disken (bara rätter som någon väntar på + lite slump)
       plateIn -= dt;
-      if (plateIn <= 0 && plates.length < 5) {
+      if (plateIn <= 0 && plates.length < SLOTS.length) {
         plateIn = 3.4 - 1.2 * Math.min(1, t / SHIFT_SECONDS);
         const waiting = customers.filter((k) => k.state === 'sit').map((k) => k.wish);
         const d = waiting.length && Math.random() < 0.75 ? waiting[(Math.random() * waiting.length) | 0] : (Math.random() * 4) | 0;
         addPlate(d);
+      } else if (plateIn <= 0) {
+        plateIn = 0.8; // fullt på disken – köket tittar igen strax
       }
     },
     down(x, y) {
       if (done) return;
+      reservedSlot = -1; // en ny order avbryter en pågående nedställningsreservation
       // disken (tallriken eller dess bubbla): plocka upp, byta mot det man bär,
       // eller ställa ner det man bär på en tom plats
       if (y >= SLOT_TIP - 22 && y < COUNTER.base + 14) {
@@ -301,14 +306,25 @@ export function makeJobbBurgare(A, { onDone }) {
           return;
         }
         if (carry) {
-          const s = SLOTS.findIndex((sx, si) => Math.abs(sx - x) < 14 && !plates.some((p) => p.slot === si));
+          // närmaste LEDIGA plats, oavsett var på disken man klickar – aldrig någon annans
+          let s = -1, sd = 1e9;
+          SLOTS.forEach((sx, si) => { const dd = Math.abs(sx - x); if (dd < sd && !plates.some((p) => p.slot === si)) { s = si; sd = dd; } });
           if (s >= 0) {
+            reservedSlot = s; // håll platsen åt spelaren tills hen är framme
             walker.walkTo(SLOTS[s], COUNTER.base + 12, () => {
-              if (!carry || plates.some((p) => p.slot === s)) return;
-              plates.push({ d: carry.d, slot: s, x: SLOTS[s] }); carry = null; play('click');
+              reservedSlot = -1;
+              if (!carry) return;
+              // hann platsen tas under gången? ta närmaste andra lediga i stället
+              let s2 = plates.some((p) => p.slot === s) ? -1 : s;
+              if (s2 < 0) { let bd = 1e9; SLOTS.forEach((sx2, si) => { const dd2 = Math.abs(sx2 - SLOTS[s]); if (dd2 < bd && !plates.some((p) => p.slot === si)) { s2 = si; bd = dd2; } }); }
+              if (s2 < 0) { play('miss'); pops.add(SLOTS[s], SLOT_TIP + 10, 'FULLT PÅ DISKEN!', '#ff6a6a'); return; }
+              plates.push({ d: carry.d, slot: s2, x: SLOTS[s2] }); carry = null; play('click');
             });
-            return;
+          } else {
+            play('miss');
+            pops.add(x, SLOT_TIP + 10, 'FULLT PÅ DISKEN!', '#ff6a6a');
           }
+          return;
         }
       }
       // servera en kund (klick på bubblan, kunden eller bordet)
