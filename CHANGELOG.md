@@ -10,6 +10,12 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.25.1] – 2026-09-28 – Zoomval: inne fylls hela skärmen
+- Inne i rum, butiker och på jobben fylls nu HELA skärmen: bilden förstoras jämnt tills ytan är täckt, med liten beskärning som tas mest upptill så golv, diskar och dörrar syns.
+- Ny 🔍-knapp i HUD-raden: växla mellan "fyll skärmen" och "hela bilden med ram" – valet sparas per webbläsare.
+- Lilla rummet visar inte längre den mörka ytan bortom väggen: lokalens riktiga bredd är det som fyller skärmen.
+- I stående läge fylls bredden i stället för att bilden beskärs sönder – och vändskylten tipsar om liggande läge.
+
 ## [0.25.0] – 2026-09-28 – Hela skärmen fylls på alla enheter
 - Spelet fyller nu HELA skärmen på varje enhet – mobil, platta och dator, stående som liggande. Inga svarta kanter.
 - Staden visar mer värld åt alla håll: bredare gata, fler hus och mer liv på samma gång.

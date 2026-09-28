@@ -1,7 +1,7 @@
 {
-  "version": "0.25.0",
+  "version": "0.25.1",
   "date": "2026-09-28",
-  "title": "Hela skärmen fylls på alla enheter",
+  "title": "Zoomval: inne fylls hela skärmen",
   "files": [
     "CHANGELOG.md",
     "assets/interior.png",

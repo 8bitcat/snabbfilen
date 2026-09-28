@@ -459,3 +459,10 @@ body { padding-bottom: env(safe-area-inset-bottom); }
 #decor-btn { left: max(14px, env(safe-area-inset-left)); bottom: max(14px, env(safe-area-inset-bottom)); }
 #emotes { right: max(14px, env(safe-area-inset-right)); bottom: max(14px, env(safe-area-inset-bottom)); }
 #chat { bottom: max(14px, env(safe-area-inset-bottom)); max-width: min(560px, calc(100vw - 20px)); }
+
+/* ---------- zoomval (fyll skärmen inne i rum/butiker) ---------- */
+#app { position: relative; }
+#hudpix { z-index: 2; }
+
+/* ---------- innehallsruta: pixelmönster bakom spelbilden (band ser avsiktliga ut) ---------- */
+#app { background: repeating-conic-gradient(#100e15 0% 25%, #151221 0% 50%) 0 0 / 16px 16px; }
