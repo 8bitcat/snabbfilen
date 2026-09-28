@@ -601,6 +601,16 @@ export function makeRoom(A, { visit = false } = {}) {
     },
 
     move(x, y) { decor.mx = x; decor.my = y; },
+    // mobilen: dra möbeln med fingret och släpp – då ställs den där man släppte
+    // (tryck för att plocka upp + tryck för att ställa ner fungerar som förut)
+    up(x, y) {
+      const p = decor.press;
+      decor.press = null;
+      if (!decor.on || !decor.carry || !p) return;
+      if (Math.hypot(x - p.x, y - p.y) < 6) return; // ett tryck utan att dra: behåll möbeln i handen
+      decor.mx = x; decor.my = y;
+      if (canPlaceCarry(x, y)) { play('ok'); commitPlace(); } else play('fel');
+    },
     down(x, y) {
       decor.mx = x; decor.my = y;
       if (decor.on) {
@@ -615,6 +625,7 @@ export function makeRoom(A, { visit = false } = {}) {
         if (hit) {
           const d = list[hit.decoIdx];
           decor.carry = { src: 'deco', idx: hit.decoIdx, k: d.k, v: d.v, c: d.c, fx: d.fx, r: d.r | 0, r0: d.r | 0 };
+          decor.press = { x, y }; // släpps den efter att ha dragits ställs den ner där (se up)
           rebuild(); updateSellBtn();
         }
         return;

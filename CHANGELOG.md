@@ -10,6 +10,9 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.23.2] – 2026-09-28 – Möblera med fingret på mobilen
+- Möblera på mobilen: dra möbeln med fingret och släpp, så står den där du släppte. Tidigare satt den kvar i handen och flyttades igen vid nästa tryck.
+
 ## [0.23.1] – 2026-09-28 – Aldrig in i spelet utan namn
 - Man kan inte längre komma in i spelet utan namn: trycker man Avbryt eller ✕ när man skapar sin figur hamnar man i huvudmenyn igen.
 
