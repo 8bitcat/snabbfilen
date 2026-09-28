@@ -283,6 +283,10 @@ function hostData(A, conn, d) {
     if (!p || !text) return;
     p.say = { text, until: Date.now() + SAY_MS };
     hostBroadcast({ t: 'say', id, text }, id);
+  } else if (d.t === 'job') {
+    if (!known || !d.m || typeof d.m !== 'object') return;
+    hostBroadcast({ t: 'job', id, m: d.m }, id);
+    jobIn({ from: id, m: d.m });
   }
 }
 function hostDrop(A, conn) {
@@ -338,6 +342,8 @@ function clientData(A, d, w) {
     const p = w.players.get(d.id);
     w.players.delete(d.id);
     if (p && !d.quiet) toast(`👋 ${p.av.name || 'Någon'} loggade ut.`);
+  } else if (d.t === 'job') {
+    if (d.m && typeof d.m === 'object') jobIn({ from: d.id, m: d.m });
   }
 }
 
@@ -371,7 +377,8 @@ export function worldTick(A, myX, dt) {
 export function worldFolksHere(A) {
   if (!W || !W.open) return [];
   const here = myScene(A);
-  if (isAway(here)) return [];
+  // kollegor på samma jobb/i samma butik ser numera varandra (exakt samma away-nyckel
+  // krävs) – grunden för att jobba tillsammans; olika ställen ser fortfarande inget
   const out = [];
   for (const [id, p] of W.players) {
     if (p.scene !== here) continue;
@@ -399,6 +406,21 @@ export function sendEmote(A, e) {
   if (W.role === 'client' && W.conn?.open) W.conn.send({ t: 'emote', e });
   if (W.role === 'host') hostBroadcast({ t: 'emote', id: W.myId, e });
   play('click');
+}
+
+// ---------- jobbkanalen: delade arbetspass (jobba tillsammans) ----------
+// Små spelmeddelanden mellan spelare på SAMMA ställe: värden reläar rakt av till
+// alla andra, och js/net/coop.js filtrerar på plats-nyckeln. Datakanalen är
+// reliable, så ordningen är garanterad.
+let jobCb = null;
+export const onJob = (cb) => { jobCb = cb; };
+const jobIn = (ev) => { try { jobCb?.(ev); } catch (e) { console.error('jobbkanalen:', e); } };
+export const worldMyId = () => (W?.open ? W.myId : null);
+export function sendJob(m) {
+  if (!W || !W.open || !m || typeof m !== 'object') return false;
+  if (W.role === 'host') { hostBroadcast({ t: 'job', id: W.myId, m }); return true; }
+  if (W.conn?.open) { try { W.conn.send({ t: 'job', m }); return true; } catch { return false; } }
+  return false;
 }
 
 // ---------- besök ----------

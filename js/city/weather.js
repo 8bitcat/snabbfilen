@@ -1025,8 +1025,13 @@ export function createWeather(env) {
       const warm = w.season === 'vinter' ? [255, 244, 224, 0.03] : [255, 214, 140, 0.045 + 0.035 * k * (1 - w.cloud)];
       ctx.fillStyle = rgba(warm[0], warm[1], warm[2], warm[3] * day); ctx.fillRect(vx, vy, vw, vh);
       if (w.golden > 0) {
-        ctx.fillStyle = rgba(255, 160, 70, 0.09 * w.golden * day); ctx.fillRect(vx, vy, vw, vh);
-        ctx.globalAlpha = 0.1 * w.golden * day * (1 - w.cloud);
+        // gyllene timmen: varm färgsättning (soft-light håller kvar kontrasten),
+        // en tydlig varm slöja och solstrålar som sakta vandrar
+        ctx.globalCompositeOperation = 'soft-light';
+        ctx.globalAlpha = 0.5 * w.golden * day; ctx.fillStyle = '#e8843c'; ctx.fillRect(vx, vy, vw, vh);
+        ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+        ctx.fillStyle = rgba(255, 160, 70, 0.15 * w.golden * day); ctx.fillRect(vx, vy, vw, vh);
+        ctx.globalAlpha = 0.16 * w.golden * day * (1 - w.cloud);
         blit(ctx, sunbeamTex(), rectOf(view), Math.floor(mod(env.t * 2.5, SB_W)));
         ctx.globalAlpha = 1;
       }

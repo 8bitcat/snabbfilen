@@ -2,6 +2,7 @@
 // scener för staden/rummet/jobben, DOM-HUD överst och en vanlig rAF-loop.
 import { loadAvatar, openAvatarPicker, avatarPortrait, setAvatarLocks } from './core/avatar.js';
 import { openModal, closeModal, toast, modalOpen, esc } from './core/ui.js';
+import { onInvite, sendInvite } from './net/coop.js';
 import { Game, SAVE_KEY, WIN_MONEY, JOBS, JOB_TITLES, SORTIMENT, levelOf, fmt, clock } from './game.js';
 import { makeCity } from './scenes/city.js';
 import { makeRoom } from './scenes/room.js';
@@ -26,7 +27,7 @@ import { makeShopTerminal } from './scenes/shop-terminal.js';
 import { makeJobbIncheck } from './jobs/jobb-incheck.js';
 import { makeShopLeksaker } from './scenes/shop-leksaker.js';
 import { makeShopDjur } from './scenes/shop-djur.js';
-import { startJobFlow } from './jobs/shift.js';
+import { startJobFlow, startShiftNow } from './jobs/shift.js';
 import { openFoodShop } from './shops/matbutik.js';
 import { openHousing } from './shops/bostad.js';
 import { startWorld, worldTick, worldInfo, playersList, visitPlayer, sendEmote, sendSay, worldFolksHere, playerName } from './net/world.js';
@@ -49,6 +50,7 @@ const A = {
   scene: null, sceneName: '',
   go(name, opts) {
     A.scene?.exit?.();
+    A.scene = null; // gamla scenens viewMax får inte läcka in i nästa scens bygge
     A.sceneName = name;
     applySceneView(); // scenens vy (bred eller 384×216) innan den byggs
     A.scene = SCENES[name](A, opts);
@@ -106,19 +108,27 @@ const ENGINES = { flygplats: 'jobbflyg', frukt: 'jobbfrukt', burgare: 'jobbburga
 // runt om – allt målas på canvasen, inga döda ytor. Testrobotar får exakt
 // gamla 384×216-beteendet med marginaler, om de inte skickar ?mobfill=1.
 const DESIGN_W = 384, DESIGN_H = 216;
-const WIDE = { city: { get w() { return CITY.W; }, get h() { return CITY.H; } } };
+const WIDE = {
+  city: { get w() { return CITY.W; }, get h() { return CITY.H; } },
+  mat: { w: 768, h: 400 }, // stormarknadens värld
+  kafe: { w: 640, h: 216 }, // kaféets värld (fast höjd – resten fylls av zoomen)
+};
 const fillMode = () => !A.attract && (!navigator.webdriver || new URLSearchParams(location.search).has('mobfill'));
 // Zoomvalet för fasta scener: 'fyll' täcker skärmen (jämn förstoring, pixelated),
 // 'ram' visar hela bilden i heltalsskala med pixelram. Pekskärm får fyll som standard.
 const zoomMode = () => {
   let z = null;
   try { z = localStorage.getItem('snabbfilen_zoom'); } catch { /* ok */ }
-  if (z === 'ram' || z === 'fyll') return z;
-  return 'fyll'; // Carl: inne i rum och butiker ska hela skärmen ALLTID fyllas – 🔍 växlar
+  if (z === 'ram' || z === 'vid' || z === 'nara') return z;
+  // Standard: mobilen NÄRA (samma bild som på datorn – stora pixlar – och fyller
+  // skärmen), datorn VID (ser mer värld). 🔍-knappen växlar nära → vid → ram.
+  // NÄRA bara på små pekskärmar (mobiler) – paddor och datorer får VID (ser mer värld)
+  const liten = Math.min(window.screen.width, window.screen.height) < 700;
+  return matchMedia('(pointer: coarse)').matches && liten ? 'nara' : 'vid';
 };
 A.view = { w: DESIGN_W, h: DESIGN_H, boxX: 0, boxY: 0, boxed: false };
 function applySceneView() {
-  const v = A.view, cap = fillMode() ? WIDE[A.sceneName] : null;
+  const v = A.view, cap = fillMode() && zoomMode() !== 'nara' ? (WIDE[A.sceneName] || (A.scene && A.scene.viewMax) || null) : null; // NÄRA = klassiska vyn överallt; scenen kan ange viewMax
   A.W = Math.max(DESIGN_W, Math.min(v.w, cap ? cap.w : DESIGN_W));
   A.H = Math.max(DESIGN_H, Math.min(v.h, cap ? cap.h : DESIGN_H));
   v.boxX = Math.max(0, (v.w - A.W) >> 1);
@@ -151,7 +161,7 @@ function fit() {
   applySceneView();
   const stripCss = strip ? strip * s / dpr : 0;
   const sEl = document.getElementById('hudpix');
-  if (v.boxed && zoomMode() === 'fyll') {
+  if (v.boxed && zoomMode() !== 'ram') {
     // FYLL SKÄRMEN: canvasen är bara spelbilden (384×216 i heltalsskala) och
     // förstoras sedan jämnt tills ytan är täckt. Blir beskärningen orimlig
     // (stående läge) fylls bara bredden. Mätarremsan ligger kvar överst.
@@ -211,17 +221,24 @@ rotateHint();
 // 🔍-knappen i HUD-raden: växla zoom för rum/butiker/jobb (staden fyller alltid)
 const zoomBtn = document.createElement('button');
 zoomBtn.id = 'hud-zoom'; zoomBtn.className = 'btn btn-small';
-const zoomLabel = () => {
-  const fyll = zoomMode() === 'fyll';
-  zoomBtn.textContent = fyll ? '⛶' : '🔍';
-  zoomBtn.title = fyll ? 'Zoom: fyller skärmen – tryck för hela bilden med ram' : 'Zoom: hela bilden med ram – tryck för att fylla skärmen';
+const ZOOMS = {
+  nara: { ikon: '🔍', txt: 'Zoom: NÄRA – samma bild som på datorn, fyller skärmen. Tryck för VID (se mer värld).' },
+  vid: { ikon: '⛶', txt: 'Zoom: VID – ser mer av staden och butikerna. Tryck för RAM (hela bilden).' },
+  ram: { ikon: '▣', txt: 'Zoom: RAM – hela bilden med pixelram. Tryck för NÄRA (fyller skärmen).' },
 };
+const zoomLabel = () => { const z = ZOOMS[zoomMode()]; zoomBtn.textContent = z.ikon; zoomBtn.title = z.txt; };
 zoomLabel();
 zoomBtn.addEventListener('click', () => {
-  try { localStorage.setItem('snabbfilen_zoom', zoomMode() === 'fyll' ? 'ram' : 'fyll'); } catch { /* ok */ }
+  const next = { nara: 'vid', vid: 'ram', ram: 'nara' }[zoomMode()];
+  try { localStorage.setItem('snabbfilen_zoom', next); } catch { /* ok */ }
   zoomLabel(); fit();
 });
 document.querySelector('#hud .hud-btns')?.insertBefore(zoomBtn, document.getElementById('hud-mute'));
+
+// iOS: knip-zoom på själva sidan förstör spelytan – blockera i spelet, tillåt i dialoger
+for (const ev of ['gesturestart', 'gesturechange', 'gestureend']) {
+  document.addEventListener(ev, (e) => { if (!modalOpen()) e.preventDefault(); }, { passive: false });
+}
 
 // Fasta scener ritas i sin centrerade ruta: alla scener börjar med
 // ctx.setTransform(A.pxs, 0, 0, A.pxs, ...), så rutans förskjutning läggs in i
@@ -349,16 +366,30 @@ function placeOf(p, info) {
   }
   return PLACE_AWAY[s.slice(5)] || '💼 upptagen';
 }
+// 💼 Jobbinbjudan: en kompis vill jobba ihop – fråga snällt och häng med
+onInvite((m) => {
+  if (!m || m.to !== worldInfo().myId || String(m.job) !== 'burgare') return;
+  if (modalOpen()) return; // stör inte mitt i en dialog – kompisen kan bjuda igen
+  const namn = esc(String(m.namn || 'En kompis').slice(0, 16));
+  play('knock');
+  openModal('💼 Jobba ihop?', `<p style="font-size:20px">${namn} jobbar på <b>Burgarbaren</b> och bjuder in dig till passet – häng med och dela disken!</p>`, [
+    { label: '💼 Häng med!', cls: 'btn-go', onClick: () => { closeModal(); startShiftNow(A, 'burgare', 'jobbburgare'); } },
+    { label: 'Inte nu', onClick: closeModal },
+  ]);
+});
+
 function openWorldDialog() {
   const info = worldInfo();
   const list = playersList();
   const inJob = A.sceneName.startsWith('jobb');
+  const coopJob = A.sceneName === 'jobbburgare' ? 'burgare' : null; // jobb man kan bjuda in till (fler kommer)
   const verTag = (v) => (v === info.version ? '' : ` <span class="old">${v ? 'v' + esc(v) : 'gammal version'}</span>`);
   const rows = list.map((p, i) => `<div class="prow">
       <span data-face="${i}"></span>
       <span class="nm">${esc(p.av.name || '?')}${verTag(p.ver)}<br><small class="sp">${placeOf(p, info)}</small></span>
+      ${coopJob ? `<button class="btn btn-small btn-gold" data-jobba="${esc(p.id)}">💼 Jobba ihop</button>` : ''}
       ${p.scene === 'city' && !inJob ? `<button class="btn btn-small" data-goto="${esc(p.id)}">🚶 Gå dit</button>` : ''}
-      <button class="btn btn-small btn-go" data-visit="${esc(p.id)}">🚗 Åk hem till</button>
+      ${coopJob ? '' : `<button class="btn btn-small btn-go" data-visit="${esc(p.id)}">🚗 Åk hem till</button>`}
     </div>`).join('');
   const role = info.role === 'host' ? 'du håller i världen' : info.role === 'client' ? 'ansluten' : 'kopplar upp';
   const dlg = openModal('👥 Pixelstaden online', `
@@ -374,6 +405,11 @@ function openWorldDialog() {
     el.replaceWith(avatarPortrait({ name: p.av.name, look: p.av.look, color: p.av.color }, 40));
   });
   dlg.querySelectorAll('[data-visit]').forEach((b) => (b.onclick = () => { closeModal(); visitPlayer(A, b.dataset.visit); }));
+  dlg.querySelectorAll('[data-jobba]').forEach((b) => (b.onclick = () => {
+    sendInvite(b.dataset.jobba, 'burgare', A.avatar?.name || '');
+    toast('💼 Inbjudan skickad – häng kvar på passet så länge!', 'good');
+    closeModal();
+  }));
   dlg.querySelectorAll('[data-goto]').forEach((b) => (b.onclick = () => {
     closeModal();
     A.followPlayer = b.dataset.goto;

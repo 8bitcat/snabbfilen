@@ -10,6 +10,54 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.27.0] – 2026-09-28 – Jobba ihop: delad lön och fulla bord
+- JOBBA IHOP på riktigt: när du börjar ett pass på Burgarbaren finns knappen "💼 Jobba ihop" – välj vem i Pixelstaden du vill jobba med, så får hen inbjudan medan du kliver rakt in på passet.
+- NI DELAR PÅ LÖNEN: lagets alla serveringar räknas ihop och delas lika när passet är slut – att jobba med kompisar lönar sig.
+- EXTRABORDEN RULLAS FRAM: dubbelt så många bord och stolar när ni är fler, och kunderna strömmar in i högre tempo – full rusch!
+- Mätaren på passet visar LAGETS rätt och fel när ni är fler, och lönebeskedet visar hur lagets resultat delades.
+
+## [0.26.2] – 2026-09-28 – Osynken vid spel ihop lagad
+- Osynk-buggen vid spel ihop är lagad: när skiftledarens pass tar slut lämnas ledningen över DIREKT till kompisen – världen fryser aldrig på lönebeskedet.
+- Somnar ledarens mobil eller tappas nätet tar kompisen över inom några sekunder, och en väckt gammal ledare lägger sig automatiskt – aldrig två som kör var sin värld.
+- Vid ledarbyte fortsätter samma kunder sitta kvar, och nya kunder krockar aldrig med de gamla.
+
+## [0.26.1] – 2026-09-28 – Bjud in att jobba ihop
+- NYTT: BJUD IN en kompis att jobba ihop! Stå på passet i Burgarbaren, öppna 👥-knappen och tryck "💼 Jobba ihop" vid kompisens namn.
+- Kompisen får en inbjudan var hen än är i staden – ett tryck på "Häng med!" och hen står i dinern bredvid dig, redo att dela disken.
+- Öppettider och ork gäller som vanligt, men introdialogen hoppas över – ni har ju redan bestämt er.
+
+## [0.26.0] – 2026-09-28 – Jobba tillsammans i Burgarbaren
+- NYTT: JOBBA TILLSAMMANS! Gå till Burgarbaren samtidigt som en kompis – ni ser varandra i dinern, delar på samma kunder och samma disk, och den som serverar får poängen och lönen. En langar tallrikar, en springer till borden!
+- Den som var först på passet är skiftledare och håller i kön och köket – kompisar kan hoppa in och av mitt i skiftet utan att något går sönder.
+- Kollegor syns nu även i butikerna och på de andra jobben – vinka med emotes!
+- Grunden är byggd så att fler ställen kan bli samarbetsjobb framöver, köket i nya Burgarbaren står på tur.
+
+## [0.25.6] – 2026-09-28 – Disken i Burgarbaren lagad
+- Disken i Burgarbaren är lagad: tallrikar hamnar ALDRIG mer på varandra eller på någon annans plats.
+- Köket fyller nu alla sex platserna (förr stannade det vid fem) och väntar snällt när disken är full.
+- Ställa ner är enklare: klicka var som helst på disken så väljs närmaste lediga plats, och platsen hålls åt dig medan du går fram – köket kan inte längre ta den.
+- Är hela disken full sägs det tydligt: "FULLT PÅ DISKEN!" och du behåller rätten i händerna.
+- Klick på en upptagen plats byter rätt som förut.
+
+## [0.25.5] – 2026-09-28 – Paddorna får rätt zoom
+- Paddor (iPad m.fl.) får nu VID-läget som standard i stället för NÄRA: stora skärmar ser mer värld i rätt pixelstorlek, inte jättepixlar. Mobiler behåller NÄRA. 🔍 växlar som vanligt.
+- Knip-zoom på själva sidan (iOS) blockeras inne i spelet så spelytan inte hamnar snett – i dialoger och menyer går det fortfarande att zooma.
+
+## [0.25.4] – 2026-09-28 – Möbeljätten bred
+- Möbeljätten är nu bred som staden och mataffären: du ser mer av varuhuset på hela skärmen – entréhallen med rulltrapporna, Småland och kassabandet samtidigt.
+- På höga skärmar syns båda våningsbanden på en gång, i stället för ett i taget.
+- Gäller VID-zoomläget (🔍) – NÄRA på mobilen visar som förut datorns klassiska bild.
+
+## [0.25.3] – 2026-09-28 – Närmare på mobilen
+- Mobilen kommer NÄRMARE: samma bild som på datorn – stora, tydliga pixlar – och den fyller hela skärmen. Det är nu standard på mobil och platta.
+- 🔍-knappen växlar mellan tre zoomlägen: NÄRA (som datorn, fyller skärmen), VID (ser mer av staden och butikerna på en gång) och RAM (hela bilden med pixelram). Valet sparas.
+- Datorn har VID som standard precis som innan.
+
+## [0.25.2] – 2026-09-28 – Mataffären och kaféet breda
+- Mataffären och kaféet är nu breda som staden: du ser MER av butiken på hela skärmen – hyllrader, båda kassorna och pantmaskinen samtidigt – i stället för en förstorad och beskuren bild.
+- Skärpan är exakt densamma: fler knivskarpa pixlar i bild, ingen skalning.
+- Fler ställen blir breda i takt med att de byggs om – närmast bostäderna och klädaffären.
+
 ## [0.25.1] – 2026-09-28 – Zoomval: inne fylls hela skärmen
 - Inne i rum, butiker och på jobben fylls nu HELA skärmen: bilden förstoras jämnt tills ytan är täckt, med liten beskärning som tas mest upptill så golv, diskar och dörrar syns.
 - Ny 🔍-knapp i HUD-raden: växla mellan "fyll skärmen" och "hela bilden med ram" – valet sparas per webbläsare.

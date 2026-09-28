@@ -2130,19 +2130,25 @@ export function createProps(env) {
 
   // =================== Söder: trottoaren framför husen, gränderna, kajen ===================
   const FS = CITY.SIDEWALK_SN[0] + 6, CS = CITY.SIDEWALK_SN[1] - 5; // 646 mot fasaderna, 667 kantstenen
-  for (const [k, x] of [['lind', 50], ['korsbar', 170], ['bjork', 400], ['lind', 560], ['korsbar', 700], ['lind', 900], ['bjork', 1030], ['korsbar', 1150], ['lind', 1250], ['bjork', 1380], ['korsbar', 1490], ['lind', 1610]]) tree(k, x, CS);
+  // (björken som stod vid 1380 skymde vårdcentralens ambulansintag – nu vid kyrkogårdsstaketet 1108)
+  for (const [k, x] of [['lind', 50], ['korsbar', 170], ['bjork', 400], ['lind', 560], ['korsbar', 700], ['lind', 900], ['bjork', 1030], ['bjork', 1108], ['korsbar', 1150], ['lind', 1250], ['korsbar', 1490], ['lind', 1610]]) tree(k, x, CS);
   for (const x of [110, 330, 470, 640, 770, 960, 1090, 1200, 1300, 1440, 1560, 1660]) lamp(x, CS + 1);
   hydrant(240, CS); bin(600, CS); hydrant(1010, CS); bin(1330, CS);
-  // gatuskyltarna står öster om övergångsställena – trafikljusstolpen (LIGHTS_S) tar den västra sidan
-  for (const c of CROSSWALKS_S.slice(0, 2)) sign(c.name, c.x1 + 12, CS - 2, 1);
-  sign('VÅRDGATAN', 1276, CS - 2, 1);
+  // gatuskyltarna står öster om övergångsställena (trafikljusstolpen tar den västra sidan) men
+  // plåten pekar VÄSTERUT över gatmynningen – åt öster täckte den postens brevlåda/dörr,
+  // kyrkporten och vårdcentralens skyltfönster (granskningsfynd)
+  sign(CROSSWALKS_S[0].name, CROSSWALKS_S[0].x1 + 8, CS - 2, -1);
+  sign(CROSSWALKS_S[1].name, CROSSWALKS_S[1].x1 + 8, CS - 2, -1);
+  sign('VÅRDGATAN', 1212, CS - 2, -1); // vid gågatans västra hörn – plåten fri från lindens krona
   menu(158, FS); cafe(182, FS + 6, [0xc82a2a, 0xf4ece0]); pot(246, FS, 'klot'); // pizzerians uteservering väster om dörren
-  mailbox(324, FS); bikeRack(418, FS + 3);
+  mailbox(330, FS); bikeRack(418, FS + 3); // brevlådan öster om skyltstolpen så stolpen inte spetsar den
   bench(460, FS + 2); pot(490, FS, 'klot'); pot(556, FS, 'klot'); bench(580, FS + 2); bin(606, FS);
   news(660, FS + 1); pot(690, FS, 'kon'); pot(766, FS, 'kon'); bench(790, FS + 2);
   hedge(890, FS, 30); hedge(978, FS, 30);
   bench(1100, FS + 4); bikeRack(1160, FS + 3);
-  bench(1290, FS + 2); bin(1310, FS); pot(1380, FS, 'pelargon'); bench(1404, FS + 2);
+  // krukan och östra bänken stod framför ambulansintaget – krukan till kyrkogårdsstaketet,
+  // bänken till kantstenen (helt under fasadlinjen, vetter mot gatan)
+  bench(1290, FS + 2); bin(1310, FS); pot(1195, FS, 'pelargon'); bench(1400, CS - 2);
   flowerBox(1470, FS, 24, ['red', 'white']); pot(1546, FS, 'palm');
   for (const [x, y, a, b] of [[156, 560, 'gron', 'brun'], [412, 530, 'gra', 'gron'], [620, 540, 'bla', 'gra'], [1428, 520, 'gron', 'gra'], [1582, 560, 'gra', 'gron']]) { wheelieBin(x, y, a); wheelieBin(x + 11, y, b); }
   // bortre trottoaren mot kanalen: bänkar med ryggen mot gatan (framifrån sedda – den som sitter tittar ut
@@ -2203,7 +2209,9 @@ export function createProps(env) {
   lamp(1790, CS + 1, 1, 2); deadTree(1870, CS); lamp(1950, CS + 1, 1, 1); elskap(2010, CS - 1); lamp(2070, CS + 1, 1, 3); lamp(2150, CS + 1, 1, 1);
   lamp(2320, CS + 1, 1, 2); deadTree(2400, CS); lamp(2470, CS + 1, 1, 1); lamp(2560, CS + 1, 1, 3); lamp(2650, CS + 1, 1, 1);
   barrels(1868, FS + 1); tires(1900, FS); wheelieBin(1936, 560, 'gra'); wheelieBin(1947, 560, 'gron');
-  trashBags(1966, FS + 1); bench(2042, FS + 2); tippedCart(2100, FS); barrels(2210, FS + 1); pallets(2262, 600);
+  // oljefaten stod framför garageport 3 och skymde glipan med kattögonen – nu vid kantstenen
+  // (väster om trafikens parkerade moped), helt under fasadlinjen
+  trashBags(1966, FS + 1); bench(2042, FS + 2); tippedCart(2100, FS); barrels(2182, CS); pallets(2262, 600);
   pallets(2430, FS + 1); overfull(2580, FS + 4);
   scrub(1940, FS + 2); scrub(2070, FS + 2); wornHedge(2462, FS + 1, 24); scrub(2620, FS + 2);
   for (const [x, y] of [[1800, 650], [1990, 668], [2120, 652], [2300, 660], [2400, 650], [2520, 668], [2620, 652], [2700, 660]]) weeds(x, y);

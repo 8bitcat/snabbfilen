@@ -1571,7 +1571,7 @@ export function createLife(env, traffic, props) {
       if (shops.length) opts.push(['shop', (m.wet ? 5 : 3) * (p.dog ? 0.45 : 1)]);
       if (!dark && nav.windows.length) opts.push(['window', 1.4]);
       if (!m.wet && h >= 6.5 && h < 22 && nav.parkNodes.length) opts.push(['park', (p.dog ? 4 : 2) * m.nice]);
-      if (h >= 6 && h < 23.5 && nav.stops.length) opts.push(['bus', m.wet ? 1.4 : 0.8]);
+      if (h >= 6 && h < 23.5 && nav.stops.length) opts.push(['bus', m.wet ? 2.4 : 1.3]);
       if (!m.wet && h >= 7 && h < 22.5) opts.push(['seat', (m.cold ? 0.5 : 1.6) * m.nice * (p.comp ? 1.3 : 1)]);
       if (!m.wet && h >= 7 && h < 22 && nav.lines.Q.length) opts.push(['quay', 0.7 * m.nice]);
       if (p.dog && nav.special.dogIn >= 0 && !m.wet && h >= 6 && h < 22) opts.push(['dogpark', 2.2]);
@@ -1697,10 +1697,12 @@ export function createLife(env, traffic, props) {
         if (!B || p.node !== B.node) return;
         p.stop = B;
         // sitt i kuren om det finns en ledig plats, annars stå och vänta
+        // (bänkens nod kan vara en annan än hållplatsens – gå dit först; i regn tar man helst taket)
         const inShelter = seats().filter((q) => q.stop === B.s.id && seatFree(q));
-        if (inShelter.length && rnd() < 0.7) {
+        if (inShelter.length && rnd() < (mood().wet ? 0.95 : 0.7)) {
           const q = pick(inShelter), info = seatInfo(q);
-          if (info && info.node === B.node) { p.plan.unshift({ k: 'seat', seat: q, t: s.t + rr(20, 50), bus: B }, { k: 'unbus' }); return; }
+          // reservera platsen direkt så att inte två väljer samma bänkplats i samma stund
+          if (info) { claimSeat(q, p); p.wantSeat = q; p.plan.unshift({ k: 'go', n: info.node }, { k: 'seat', seat: q, t: s.t + rr(20, 50), bus: B }, { k: 'unbus' }); return; }
         }
         const free = B.spots.filter((b) => !b.busy);
         if (!free.length) { p.stop = null; return; }
@@ -1714,6 +1716,7 @@ export function createLife(env, traffic, props) {
       case 'unbus': {
         const spot = p.spot;
         if (spot) { spot.busy = null; p.spot = null; }
+        if (p.wantSeat) { freeSeat(p.wantSeat, p); p.wantSeat = null; }
         p.look4bus = false; p.stop = null;
         // "bussen kom" – är man utom synhåll kliver man bara på
         if (!visible(p.x, p.y, 40) && rnd() < 0.6) { p.gone = true; return; }
@@ -1754,8 +1757,10 @@ export function createLife(env, traffic, props) {
         return;
       case 'play': {
         // barnen springer runt på lekplatsen, stannar, hoppar och springer vidare
+        // (aldrig i skymningsbandet bakom gungställningen/rutschkanan – där ser
+        // barnet ut att stå ovanpå överliggaren)
         if (env.t > s.until) return;
-        const r = s.rect, q = nav.nearest(Math.round(rr(r[0], r[2])), Math.round(rr(r[1], r[3])), walk, 6);
+        const q = lekPunkt(s.rect);
         if (q) p.path = nav.pathTo(p.x, p.y, q[0], q[1], 20) || [];
         p.speed = rr(34, 46);
         p.plan.unshift({ k: 'wait', t: rr(0.4, 2.2), face: pick(['down', 'left', 'right', 'up', 'down']), jump: rnd() < 0.45 }, { ...s });
@@ -2289,6 +2294,39 @@ export function createLife(env, traffic, props) {
     if (lx && nav.special.lekX >= 0) PLAYS.push({ id: 'förorten', rect: [lx.rect[0] + 8, lx.rect[1] + 10, lx.rect[2] - 8, lx.rect[3] - 8], node: nav.special.lekX, kids: [] });
   }
   const inHours = (h, [a, b]) => (b > 24 ? h >= a || h < b - 24 : h >= a && h < b);
+  // De höga lekredskapen (gungställningen, rutschkanan) ritas 30–40 pixlar över sin
+  // basrad. Ett barn som stannar i bandet strax bakom (norr om) dem skyms av konsten
+  // och ser ut att stå ovanpå överliggaren – så i det bandet stannar ingen.
+  let lekBand = null;
+  function lekSkymd(x, y) {
+    if (!lekBand) {
+      lekBand = [];
+      const P = PR();
+      const its = P && typeof P.items === 'function' ? safe(() => P.items(), []) : [];
+      for (const it of its || []) {
+        if (!it || !Number.isFinite(it.x) || !Number.isFinite(it.y)) continue;
+        if (it.kind === 'gunga' || it.kind === 'rutschkana') lekBand.push([it.x - 24, it.y - 40, it.x + 24, it.y - 2]);
+        else if (it.kind === 'gunghäst' || it.kind === 'gungbräda') lekBand.push([it.x - 20, it.y - 12, it.x + 20, it.y - 2]);
+      }
+      // utan rekvisitans lista: smala, grunda hinder i lekytorna behandlas som redskap
+      if (!lekBand.length) {
+        for (const Pl of PLAYS) for (const o of env.obstacles || []) {
+          if (!o || o[2] - o[0] > 60 || o[3] - o[1] > 6) continue;
+          if (o[0] >= Pl.rect[0] - 30 && o[2] <= Pl.rect[2] + 30 && o[1] >= Pl.rect[1] - 10 && o[3] <= Pl.rect[3] + 10) lekBand.push([o[0] - 2, o[1] - 30, o[2] + 2, o[1] - 2]);
+        }
+      }
+    }
+    for (const b of lekBand) if (x >= b[0] && x <= b[2] && y >= b[1] && y <= b[3]) return true;
+    return false;
+  }
+  // en slumpad, gångbar punkt i lekytan där barnet syns helt (inte skymd bakom ett redskap)
+  function lekPunkt(r) {
+    for (let k = 0; k < 8; k++) {
+      const c = nav.nearest(Math.round(rr(r[0], r[2])), Math.round(rr(r[1], r[3])), walk, 6);
+      if (c && !lekSkymd(c[0], c[1])) return c;
+    }
+    return null;
+  }
   function spawnFor(nodeId, o, initial, placeAt) {
     // kom gående från en nod utom synhåll i närheten – eller stå redan på plats vid start
     let p;
@@ -2328,10 +2366,12 @@ export function createLife(env, traffic, props) {
       if (Pl.kids.length >= want || (!initial && rnd() > dt * 0.6)) continue;
       // ett barn (ibland två) och en förälder som sätter sig på en bänk nära lekplatsen eller står vid kanten
       const n = Math.min(want - Pl.kids.length, rnd() < 0.4 ? 2 : 1);
-      const at = initial ? nav.nearest(Math.round(rr(x0, x1)), Math.round(rr(y0, y1)), walk, 6) : null;
+      const at = initial ? lekPunkt(Pl.rect) : null;
       for (let i = 0; i < n; i++) {
         const plan = [{ k: 'go', n: Pl.node }, { k: 'play', rect: Pl.rect, until: env.t + rr(50, 150) }, { k: 'leave' }];
-        const kid = spawnFor(Pl.node, { special: 'play', kid: true, plan: initial ? [{ k: 'play', rect: Pl.rect, until: env.t + rr(30, 150) }, { k: 'leave' }] : plan }, initial, at && [at[0] + i * 7, at[1]]);
+        // barn två ställs en bit åt sidan – men inte in i skymningsbandet
+        const off = at && (i === 0 || !lekSkymd(at[0] + i * 7, at[1])) ? i * 7 : 0;
+        const kid = spawnFor(Pl.node, { special: 'play', kid: true, plan: initial ? [{ k: 'play', rect: Pl.rect, until: env.t + rr(30, 150) }, { k: 'leave' }] : plan }, initial, at && [at[0] + off, at[1]]);
         kid.play = Pl; kid.umb = null; if (initial) kid.node = Pl.node;
         Pl.kids.push(kid);
       }

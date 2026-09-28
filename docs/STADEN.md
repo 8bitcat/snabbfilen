@@ -92,8 +92,8 @@ frontY          (valfritt) y för husets främre lager (BUILDING_ART[kind].front
 door            { x0, x1, type: 'swing'|'slide'|'open'|'roll'|'boarded' }
 row             'n' | 's' | 'f'      face: 'south' (alla)      district: 'CENTRUM' | 'PARKEN' | 'SÖDER' | 'FÖRORTEN'
 sign, icon      skylt och ikon i meddelanden
-enter           'hem' | 'bostad' | 'mat' | 'klader' | 'mobler' | 'kafe' | 'burgare' | 'frukt' | 'flyg'
-                | 'jobb:<id>' | 'bostad:<homeId>' | null
+enter           'hem' | 'bostad' | 'mat' | 'klader' | 'mobler' | 'kafe' | 'djur' | 'burgare' | 'frukt' | 'flyg'
+                | 'jobb:<id>' | 'bostad:<homeId>' | null      (validateMap känner exakt den listan)
 homes           (valfritt) vilka bostäder (HOMES-id) som ligger i huset
 open            [från, till] i timmar          soon: egen text när man inte kan gå in
 tower           (kyrkan) { x0, x1, h }
@@ -140,7 +140,8 @@ Pixelgatans norra rad – behåll `id`/`kind`, `door` och `artBox`. Förortens h
 
 ```
 paintGround(night) → canvas CITY.W × CITY.H     målas en gång per dag/natt, cachas av scenen
-groundLive(ctx, env, view)                       molnskuggor, regnringar … varje bildruta
+groundLive(ctx, env, view)                       molnskuggor, regnringar … varje bildruta (före vädrets snötäcke)
+groundOver(ctx, env, view)                       fotspår/trampade stigar – scenen ritar den EFTER weather.drawBack
 export const V2 = true                           när marken målar hela v2-världen
 ```
 
@@ -180,8 +181,12 @@ Trafikljus med `broken` blinkar gult. Platshållaren ritar stillastående stolpa
 ### Livet – `life.js`
 
 ```
-createLife(env, traffic) → { items(), obstacles?, update(dt), glow(ctx), positions() }
+createLife(env, traffic, props) → { items(), obstacles?, update(dt), glow(ctx), positions(),
+                                    busySeats() → Set, seatBusy(id) }
 ```
+
+`props` (skickas av scenen) ger de riktiga sittplatserna via `props.seats()` –
+utan den faller livet tillbaka på att gissa bänkar ur hindren.
 
 Fotgängare, hundar, fåglar, katter … i hela världen: använd `STREETS_ALL`,
 `CROSSWALKS_ALL` (fråga `traffic.pedGreen(i)`), `PATHS`, `BUS_STOPS`, `ALL_BUILDINGS`
@@ -216,7 +221,7 @@ löv i blåsten, solstrålar, åska.
 Ritordning per bildruta:
 
 1. `groundImg(night)` (ground.paintGround + ev. fallback) → `ground.groundLive`
-2. `weather.drawBack` (snötäcke, våt glans)
+2. `weather.drawBack` (snötäcke, våt glans) → `ground.groundOver` (fotspår skarpt ovanpå snön)
 3. **y-sorterade föremål**: alla hus (`y = base`, + `items`/`front`), fallback, props, traffic, life, andra spelare, jag
 4. `weather.drawFront` (regn, snöfall, dimma, blåst, molnljus)
 5. mörker (`env.dark`) → `glow` för hus, fallback, props, traffic, life, weather
@@ -228,12 +233,23 @@ forceWeather, player {x,y}, people [{x,y}], obstacles, district, view {x,y,w,h},
 Gång: `env.obstacles = MAP_OBSTACLES + props + traffic + fallback + life`. Cell 4 px.
 Dörrar öppnas när någon står framför (`base−6 < y < base+30`). Klick på fasad/dörr →
 gå till `doorCenter(b)` och `enter`. Klick på en hållplats → gå till `wait` och öppna
-bussdialogen. Bussen: 10 kr, 15 spelminuter, skärmen tonar, figuren står vid målets `wait`.
+bussdialogen (skyltresan: 10 kr, 15 spelminuter, skärmen tonar, figuren står vid målets `wait`).
 Områdesskylten visas när man kommer in i ett nytt område (`DISTRICTS[].name/tag`).
+
+**Bussen på riktigt** (receptet i traffic.js filhuvud är inkopplat): klick på en buss som
+står vid en hållplats → `busDoorHit` → `hold` → gå till framdörren → dialog med
+`destinations` → betala 10 kr + 15 min → `board(från, till, { look })`. Under resan ritas
+figuren i bussfönstret av trafiken, kameran följer `ride().pos`, toningen `ride().fade`
+delar skärmrutan med skyltresans, och vid `phase 'framme'` hämtas figuren med `alight()`.
+Klick under resan → `skipRide()`. **Bänkarna**: klick på en ledig plats
+(`props.seatAt`, ledig = `!life.seatBusy(id)`) → gå till `seat.walk` och sätt dig
+(frame 5 på `seat.x/y`); nästa klick reser figuren och fortsätter som vanligt.
+Spelarens fotpunkt på sitsen håller platsen (livets `seatFree` viker för spelare).
 
 `_debug`: `spot(id)`, `tile(a,b)`, `lockCam(x,y)`, `teleport(x,y)`, `panorama()`,
 `busTo(namn)`, `busStop(namn)`, `district(namn)`, `districtNow()`, `weather(force)`,
-`walkTo(x,y)`, `arrived()`, `pos()`, `enter(id)`, `buildings`, `env`, `sim()`, `cam()`, `markers()`.
+`walkTo(x,y)`, `arrived()`, `pos()`, `enter(id)`, `buildings`, `env`, `sim()`, `cam()`, `markers()`,
+`ride()` (resan just nu), `sitting()` (bänkplatsens id), `standUp()`.
 
 ## 6. Verktyg
 
@@ -250,7 +266,7 @@ Områdesskylten visas när man kommer in i ett nytt område (`DISTRICTS[].name/t
 |---|---|---|
 | `map.js`, `city.js`, `walk.js`, `places.js`, `fallback-v2.js`, `docs/STADEN.md` | arkitekten | kontraktet, scenen, platshållarna |
 | `buildings-shops.js`, `buildings-work.js` | (klara, v1) | norra raden |
-| `buildings-south.js` | söder-specialisten | radhus, pizzeria, posten, bibliotek, bio, kyrka, vårdcentral, Tornhuset, macken + parkens småhus |
+| `buildings-south.js` | söder-specialisten | radhus, pizzeria, posten, djuraffär, bio, kyrka, vårdcentral, Tornhuset, macken + parkens småhus |
 | `buildings-suburb.js` | förorts-specialisten | höghusen, närbutik, pantbank, kebab, övergivet hus, bilverkstad, tvätteri, garage, lagerhall, lamellhus, husvagn |
 | `facade-kit.js` | delad startpunkt | får ändras av husspecialisterna (samordna) |
 | `ground.js` | mark-specialisten | hela världens mark → `export const V2 = true` |
@@ -260,5 +276,7 @@ Områdesskylten visas när man kommer in i ett nytt område (`DISTRICTS[].name/t
 | `weather.js` | väder-specialisten | rikare väder, årstider |
 | `game.js`, `main.js` | huvudagenten | JOBS/HOMES/ENGINES från places.js |
 
-Nya jobb som staden pekar på (`places.js`): pizzeria, posten, bibliotek, vard, bensinmack,
+Nya jobb som staden pekar på (`places.js`): pizzeria, posten, vard, bensinmack,
 bilverkstad, tvatteri. Nya bostäder: husvagn, hoghus, radhus, takvaning.
+Vårdcentralen (`vard`) är den enda som ännu saknar jobbscen i main.js – dörren visar
+"anställer snart" tills huvudagenten kopplar in den i `JOBS` + `ENGINES`.

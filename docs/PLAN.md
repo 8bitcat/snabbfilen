@@ -32,7 +32,23 @@ pausmenyn ☰, pixelmätarna ovanför spelbilden · bostadsbyrån man går runt 
 pratbubblor i butikerna · 0.23.4 flera figurer får heta samma (unika id), högre gatuskyltar ·
 0.24.0 veckan först med sju fönster mot staden · **0.25.0 hela skärmen fylls på varje
 enhet** (samma pixelkorn – vyn växer: staden ser mer värld, fasta scener får pixelram,
-mätarremsan över hela bredden, vänd-på-mobilen-skylt, säkra kanter runt notchen).
+mätarremsan över hela bredden, vänd-på-mobilen-skylt, säkra kanter runt notchen) ·
+**0.25.1 zoomvalet** (inne i rum/butiker/jobb fylls hela skärmen som standard – jämn
+förstoring med beskärning mest upptill; 🔍-knappen växlar till hela bilden med ram;
+scener kan ange contentBox så t.ex. Lilla rummets mörka yta bortom väggen aldrig visas) ·
+**0.25.2 mataffären och kaféet breda** (ser MER butik på hela skärmen, som staden) ·
+**0.25.3 närmare på mobilen** (tre zoomlägen via 🔍: NÄRA = datorns bild med stora
+pixlar, standard på mobil · VID = ser mer värld, standard på dator · RAM = pixelram) ·
+**0.25.4 Möbeljätten bred** (entréhallen, Småland och kassorna på samma skärm; nya
+mekanismen viewMax gör att en scen kan bli bred med enbart sin egen fil) ·
+0.25.5 paddorna får VID-läget + knip-zoom-skydd · 0.25.6 disken i Burgarbaren lagad
+(ingen stapling, köket fyller alla sex, reserverad plats, FULLT-besked) ·
+**0.26.0 JOBBA TILLSAMMANS i Burgarbaren** (delat skift: kollegan syns, samma kunder
+och disk, servitören får poängen; jobbkanal i world.js + js/net/coop.js) ·
+**0.26.1 bjud in att jobba ihop** (💼-knapp i 👥-dialogen, inbjudan når kompisen var
+hen än är, "Häng med!" går rakt in på passet). STORSTADSKÖRNINGEN ÄR KLAR (alla 16
+agenter gröna) – integreras och släpps i bitar härnäst; Burgarbaren-inne-körningen
+(restaurangen + kökjobbet) kör nu.
 
 ## Pågår nu (agenterna kör)
 

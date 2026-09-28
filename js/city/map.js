@@ -497,7 +497,7 @@ export function validateMap() {
     if (!DISTRICTS.some((d) => d.name === b.district)) out.push(`${b.id}: okänd stadsdel ${b.district}`);
     if (b.row === 's' && (b.top !== CITY.FOOT_TOP_S || b.base > CITY.BASE_S || b.base < CITY.FOOT_TOP_S + 60)) out.push(`${b.id}: fel base/top för södra raden`);
     if (b.row === 'n' && (b.top !== CITY.FOOT_TOP || b.base !== CITY.BASE)) out.push(`${b.id}: fel base/top för norra raden`);
-    if (b.enter && !/^(hem|bostad|mat|klader|mobler|burgare|frukt|flyg|jobb:[a-z]+|bostad:[a-z]+)$/.test(b.enter)) out.push(`${b.id}: okänd enter ${b.enter}`);
+    if (b.enter && !/^(hem|bostad|mat|klader|mobler|kafe|djur|burgare|frukt|flyg|jobb:[a-z]+|bostad:[a-z]+)$/.test(b.enter)) out.push(`${b.id}: okänd enter ${b.enter}`);
   }
   for (const l of LOTS) for (const b of ALL_BUILDINGS) if (b.lot !== l.id && hit(l.rect, footprint(b))) out.push(`tomten ${l.id} överlappar ${b.id}`);
   const ids = new Set();

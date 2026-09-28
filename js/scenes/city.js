@@ -6,6 +6,7 @@
 import { CITY, BUILDINGS, ALL_BUILDINGS, doorCenter, artPos, artBox, baseOf, isNightHour, BUS_STOPS, busStopById,
   DISTRICTS, districtAt, districtByName, MAP_OBSTACLES } from '../city/map.js';
 import { createWalker, selfDrawable, folkDrawables, nameTag } from './walkable.js';
+import { drawPerson } from '../core/people.js';
 import { openModal, closeModal, toast, esc } from '../core/ui.js';
 import { play } from '../core/sound.js';
 import { SMALL, BIG, ctxText, textW } from '../core/floor-pix.js';
@@ -76,7 +77,7 @@ function sim() {
     ground: !MODS.ground?.V2, props: !MODS.props?.V2, traffic: !MODS.traffic?.V2,
   }), NONE);
   env.obstacles = [...MAP_OBSTACLES, ...(props.obstacles || []), ...(traffic.obstacles || []), ...(fallback.obstacles || [])];
-  const life = safe('life', () => MODS.life?.createLife(env, traffic), NONE);
+  const life = safe('life', () => MODS.life?.createLife(env, traffic, props), NONE); // props ger livet riktiga sittplatser (props.seats())
   const weather = safe('weather', () => MODS.weather?.createWeather(env), NO_WEATHER);
   SIM = { props, traffic, life, fallback, weather };
   return SIM;
@@ -280,6 +281,53 @@ export function makeCity(A) {
     dlg.querySelectorAll('[data-bus]').forEach((el) => { el.onclick = () => { closeModal(); rideBus(busStopById(el.dataset.bus)); }; });
   }
 
+  // ---------- bussen på riktigt (receptet i traffic.js filhuvud) ----------
+  // Klick på en buss som står vid en hållplats → håll den, gå till framdörren och välj resmål.
+  // Under resan sitter figuren i bussfönstret (trafiken ritar den), kameran följer bussen
+  // och vid målet kliver man av med alight(). Klick under resan hoppar fram (skipRide).
+  let riding = false;   // spelaren sitter i bussen (traffic.ride() ≠ null)
+  let sitting = null;   // spelaren sitter på en bänk: { seat } från props.seats()
+  function boardNow(from, toId) {
+    if (g.money < BUS_FARE) { toast(`🚌 Bussen kostar ${BUS_FARE} kr – du har inte råd.`, 'bad'); S.traffic.release?.(from.id); return; }
+    const ok = S.traffic.board?.(from.id, toId, { look: A.avatar.look, dir: 'down' });
+    if (!ok) { rideBus(busStopById(toId)); return; } // bussen hann gå – skyltdialogens resa tar en dit (den betalar själv)
+    g.money -= BUS_FARE;
+    g.passTime(BUS_MINUTES);
+    g.save();
+    walker.stop();
+    play('door');
+  }
+  function openBoardDialog(from) {
+    const bi = S.traffic.busAt?.(from.id);
+    if (!bi) { openBusDialog(from); return; } // bussen hann gå medan man gick fram – vanliga dialogen
+    S.traffic.hold?.(from.id);
+    const dests = (S.traffic.destinations?.(from.id) || []).filter((s) => s.id !== from.id);
+    const body = `<p style="font-size:19px;margin-top:0">Dörrarna står öppna${from.broken ? ' – kuren är sönder men bussen går' : ''}. Resan kostar <b>${BUS_FARE} kr</b>.</p><div class="plist">${dests.map((s) => `
+      <div class="prow shoprow"><span style="font-size:28px;text-align:center">${s.broken ? '🚏' : '🚌'}</span>
+        <span class="nm">${esc(s.name)}<br><small class="sp">${esc(s.district)} · ${s.stops} hållplats${s.stops === 1 ? '' : 'er'} bort</small></span>
+        <button class="btn btn-small ${g.money >= BUS_FARE ? 'btn-go' : ''}" data-bus="${s.id}" ${g.money >= BUS_FARE ? '' : 'disabled'}>Kliv på</button></div>`).join('')}</div>`;
+    const dlg = openModal(`🚌 Linje 4 vid ${esc(from.name)}`, body, [{ label: 'Kliv inte på', onClick: () => { S.traffic.release?.(from.id); closeModal(); } }]);
+    dlg.querySelectorAll('[data-bus]').forEach((el) => { el.onclick = () => { closeModal(); boardNow(from, el.dataset.bus); }; });
+  }
+  // Kliv av bussen: ställ figuren vid dörren och väck kameran/området.
+  function finishRide() {
+    const p = S.traffic.alight?.();
+    riding = false;
+    if (!p) { walker.snapFree(); return; }
+    walker.px = p.x; walker.py = p.y; walker.dir = 'down'; walker.stop(); walker.snapFree();
+    A.cityPos = [walker.px, walker.py];
+    Object.assign(cam, camTarget());
+    checkDistrict(true);
+    toast(p.stop?.broken ? `🚌 ${p.stop.name}: hållplatsen är sönder, men du kom fram.` : `🚌 Framme vid ${p.stop?.name || 'hållplatsen'}.`);
+  }
+  // Res dig från bänken (tillbaka till gångpunkten framför/bakom sitsen).
+  function standUp() {
+    if (!sitting) return;
+    const s = sitting.seat;
+    sitting = null;
+    walker.px = s.walk.x; walker.py = s.walk.y; walker.stop(); walker.snapFree();
+  }
+
   // ---------- ritning av hela världen (även för panorama) ----------
   function drawWorld(ctx, cx, cy, vw, vh) {
     const night = env.night, snow = (env.weather?.snowCover || 0) > 0.5 ? 1 : 0;
@@ -287,6 +335,7 @@ export function makeCity(A) {
     ctx.drawImage(groundImg(night), cx, cy, vw, vh, cx, cy, vw, vh);
     guard('ground.groundLive', () => MODS.ground?.groundLive?.(ctx, env, view));
     guard('weather.drawBack', () => S.weather.drawBack?.(ctx, view));
+    guard('ground.groundOver', () => MODS.ground?.groundOver?.(ctx, env, view)); // fotspår m.m. skarpt OVANPÅ snötäcket
 
     const items = [];
     const art = ART();
@@ -319,8 +368,17 @@ export function makeCity(A) {
     add('life', () => S.life.items());
     for (const d of folkDrawables(A, t)) items.push({ y: d.fy, draw: () => d.draw(ctx) });
     if (!A.attract) {
-      const me = selfDrawable(A, walker, t, { folksHere: worldFolksHere(A).length });
-      items.push({ y: me.fy + 0.01, draw: () => me.draw(ctx) });
+      if (riding) { /* figuren sitter i bussfönstret – trafiken ritar den (ride.look) */ }
+      else if (sitting) {
+        const s = sitting.seat;
+        items.push({ y: s.y + 0.01, draw: () => {
+          drawPerson(ctx, s.x, s.y, A.avatar.look, s.dir || 'down', 5);
+          if (worldFolksHere(A).length) nameTag(ctx, s.x, s.y - 46, A.avatar);
+        } });
+      } else {
+        const me = selfDrawable(A, walker, t, { folksHere: worldFolksHere(A).length });
+        items.push({ y: me.fy + 0.01, draw: () => me.draw(ctx) });
+      }
     }
     items.sort((a, b) => a.y - b.y);
     for (const it of items) guard('item', () => it.draw(ctx));
@@ -363,7 +421,8 @@ export function makeCity(A) {
   function drawOverlay(ctx) {
     drawBanner(ctx);
     if (!A.attract) guard('weather.badge', () => MODS.weather?.drawWeatherBadge?.(ctx, VW - 3, 3, env.weather));
-    if (fade.a > 0) { ctx.fillStyle = `rgba(4,4,10,${fade.a.toFixed(3)})`; ctx.fillRect(0, 0, VW, VH); }
+    const a = Math.max(fade.a, riding ? S.traffic.ride?.()?.fade || 0 : 0); // busstoningen (långa resor) delar rutan med skyltresans toning
+    if (a > 0) { ctx.fillStyle = `rgba(4,4,10,${a.toFixed(3)})`; ctx.fillRect(0, 0, VW, VH); }
   }
 
   const spotOf = (b) => { const dc = doorCenter(b); return { x: dc.x - cam.x, y: baseOf(b) + 12 - cam.y }; };
@@ -394,6 +453,10 @@ export function makeCity(A) {
       buildings: ALL_BUILDINGS,
       env,
       sim: () => S,
+      // bussen på riktigt + bänkarna (för röktestet)
+      ride: () => (S.traffic.ride?.() || null),
+      sitting: () => (sitting ? sitting.seat.id : null),
+      standUp,
       cam: () => ({ ...cam }),
       markers: () => markers.map((m) => ({ ...m })),
     },
@@ -409,6 +472,14 @@ export function makeCity(A) {
       if (fade.phase === 1) { fade.a = Math.min(1, fade.a + dt * 2.6); if (fade.a >= 1) { fade.phase = 2; const cb = fade.cb; fade.cb = null; cb?.(); } }
       else if (fade.phase === 2) { fade.a = Math.max(0, fade.a - dt * 1.8); if (fade.a <= 0) fade.phase = 0; }
       else walker.update(dt);
+      // bussresan på riktigt: figuren sitter i bussen, kameran (walker-punkten) följer den
+      const r = S.traffic.ride?.();
+      if (r) {
+        riding = true;
+        walker.stop();
+        walker.px = r.pos.x; walker.py = r.pos.y;
+        if (r.phase === 'framme') finishRide();
+      } else if (riding) { riding = false; walker.snapFree(); } // bussen försvann – stå kvar där man är
       A.cityPos = [walker.px, walker.py];
       updateEnv(dt);
       if (banner) banner.t += dt;
@@ -429,13 +500,30 @@ export function makeCity(A) {
 
     down(sx, sy) {
       if (A.attract || fade.phase) return;
+      // klick under bussresan → hoppa fram till målet (toningen)
+      if (riding) { S.traffic.skipRide?.(); return; }
       // klick på en kompis-pil i kanten → gå mot den spelaren
       const m = markers.find((mk) => sx >= mk.x && sx < mk.x + mk.w && sy >= mk.y && sy < mk.y + mk.h);
-      if (m) { walker.walkTo(m.fx, m.fy + 4); return; }
+      if (m) { standUp(); walker.walkTo(m.fx, m.fy + 4); return; }
       const x = sx + cam.x, y = sy + cam.y;
+      if (sitting) standUp(); // res dig först – klicket fortsätter som vanligt
+      // klick på en buss som står vid en hållplats → håll den, gå till framdörren och kliv på
+      const bi = S.traffic.busDoorHit?.(x, y);
+      if (bi) { S.traffic.hold?.(bi.stop.id); walker.walkTo(bi.board.x, bi.board.y, () => openBoardDialog(bi.stop)); return; }
       // klick på en busshållplats → gå dit och välj resmål
       const stop = busStopHit(x, y);
       if (stop) { walker.walkTo(stop.wait.x, stop.wait.y, () => openBusDialog(stop)); return; }
+      // klick på en ledig bänkplats → gå dit och sätt dig
+      const seat = S.props.seatAt?.(x, y, (s) => !S.life.seatBusy?.(s.id));
+      if (seat) {
+        walker.walkTo(seat.walk.x, seat.walk.y, () => {
+          if (S.life.seatBusy?.(seat.id)) { toast('🪑 Upptaget – någon hann före.'); return; }
+          sitting = { seat };
+          walker.stop();
+          walker.px = seat.x; walker.py = seat.y; walker.dir = seat.dir || 'down'; // fotpunkten på sitsen (env.player håller platsen åt en)
+        });
+        return;
+      }
       // klick på ett hus (fasad eller dörr) → gå till dörren och gå in
       for (const b of ALL_BUILDINGS) {
         if (facadeHit(b, x, y)) {

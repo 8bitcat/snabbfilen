@@ -1,7 +1,7 @@
 {
-  "version": "0.25.1",
+  "version": "0.27.0",
   "date": "2026-09-28",
-  "title": "Zoomval: inne fylls hela skärmen",
+  "title": "Jobba ihop: delad lön och fulla bord",
   "files": [
     "CHANGELOG.md",
     "assets/interior.png",
@@ -45,6 +45,7 @@
     "js/jobs/jobb-frukt.js",
     "js/jobs/shift.js",
     "js/main.js",
+    "js/net/coop.js",
     "js/net/world.js",
     "js/scenes/city.js",
     "js/scenes/ikea/art-market.js",

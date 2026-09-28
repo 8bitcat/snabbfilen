@@ -1,12 +1,22 @@
 // Arbetspasset: samma flöde för alla jobb. Intro-dialog → minispel (60 s verklig
 // tid = 4 h speltid) → lönebesked. Lön = rätt × styckpris − fel × avdrag, gånger
 // nivåbonusen. Är man utsvulten halveras lönen (yr i huvudet).
-import { openModal, closeModal, toast } from '../core/ui.js';
+import { openModal, closeModal, toast, esc } from '../core/ui.js';
+import { sendInvite } from '../net/coop.js';
 import { JOBS, JOB_TITLES, levelOf, payMult, fmt } from '../game.js';
 import { SMALL, BIG, ctxText, textW } from '../core/floor-pix.js';
 import { play } from '../core/sound.js';
 
 export const SHIFT_SECONDS = 60;
+
+// Rakt in i passet (t.ex. via 💼 Jobba ihop-inbjudan): samma öppettids- och
+// ork-kontroller som vanligt, men utan introdialogen – man har redan tackat ja.
+export function startShiftNow(A, jobId, sceneName) {
+  const chk = A.game.canWork();
+  if (!chk.ok) { toast(chk.msg, 'bad'); return false; }
+  A.go(sceneName, { onDone: (stats) => finishShift(A, jobId, stats) });
+  return true;
+}
 
 export function startJobFlow(A, jobId, sceneName) {
   const g = A.game, job = JOBS[jobId];
@@ -34,8 +44,34 @@ export function startJobFlow(A, jobId, sceneName) {
     ${g.hunger <= 0 ? '<p class="bad" style="font-size:18px">🥴 Du är utsvulten – du jobbar yr och får halv lön!</p>' : ''}
     ${g.energy < 40 ? '<p style="font-size:18px">😪 Du är ganska trött – sista passet för i dag?</p>' : ''}`, [
     { label: 'En annan gång', onClick: closeModal },
+    ...(jobId === 'burgare' ? [{ label: '💼 Jobba ihop', onClick: () => coopPicker(A, jobId, sceneName) }] : []),
     { label: '🔨 Jobba ett pass', cls: 'btn-go', onClick: () => { closeModal(); A.go(sceneName, { onDone: (stats) => finishShift(A, jobId, stats) }); } },
   ]);
+}
+
+// 💼 Välj vem du vill jobba ihop med INNAN passet: inbjudan skickas och du går
+// direkt in – kompisen hoppar in bredvid dig. Ni delar lönen, borden dubbleras
+// och kunderna strömmar in. (Carls design: väljaren hör hemma i startdialogen.)
+function coopPicker(A, jobId, sceneName) {
+  const list = A.playersList?.() || [];
+  if (!list.length) {
+    toast('Ingen annan är i Pixelstaden just nu – börja passet, så kan kompisar hoppa in via 👥!', 'bad');
+    return;
+  }
+  const rows = list.map((p) => `<div class="prow"><span class="nm">${esc(p.av?.name || '?')}</span>
+    <button class="btn btn-small btn-go" data-bjud="${esc(p.id)}">💼 Bjud & börja</button></div>`).join('');
+  const dlg = openModal('💼 Jobba ihop – med vem?', `
+    <p style="font-size:19px;margin-top:0">Kompisen får en inbjudan och hoppar rakt in på ditt pass.
+    Ni <b>delar på lönen</b>, extraborden rullas fram och kunderna strömmar in!</p>
+    <div class="plist">${rows}</div>`, [
+    { label: 'Tillbaka', onClick: () => { closeModal(); startJobFlow(A, jobId, sceneName); } },
+  ]);
+  dlg.querySelectorAll('[data-bjud]').forEach((b) => (b.onclick = () => {
+    closeModal();
+    sendInvite(b.dataset.bjud, jobId, A.avatar?.name || '');
+    toast('💼 Inbjudan skickad – in på passet med dig!', 'good');
+    startShiftNow(A, jobId, sceneName);
+  }));
 }
 
 function finishShift(A, jobId, stats) {
@@ -52,6 +88,7 @@ function finishShift(A, jobId, stats) {
     ${stats.boxes !== undefined ? line('📦 Färdiga lådor', stats.boxes) : ''}
     ${stats.miss ? line('💨 Missade', stats.miss) : ''}
     <div style="border-top:3px dashed var(--ink);margin:8px 0"></div>
+    ${stats.delat ? line('👥 Jobbat ihop', `${stats.delat} pers – lagets ${stats.lagOk || 0} rätt delas lika`) : ''}
     ${line('Grundlön', fmt(base))}
     ${mult > 1 ? line(`⭐ ${JOB_TITLES[lvl - 1]}-bonus`, '×' + mult.toFixed(2).replace('.', ',')) : ''}
     ${res.starving ? line('🥴 Yr av hunger', 'halv lön!') : ''}
