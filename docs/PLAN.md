@@ -34,7 +34,13 @@ grenen `wip`.
 | **0.32** | **Djuren ute i staden** i koppel (hunden bajsar ute, toalettmätaren nollas) | 0.24 |
 | **0.33** | **Downtown** med kontor, **universitetet** (utbildning), **datorbutiken** (bygga datorer som jobb, Pixelverkstans motor) och **finansjobb** (räkna) – jobben kräver utbildning | 0.23, 0.27 |
 | **0.34** | Stadens småställen: bio (film på kvällen), kebab, kiosk med lotter, pantbank (sälj möbler), vårdcentralen som jobb | 0.23 |
+| **0.35** | **Staden på längden**: förorten flyttas 3–5 skärmbredder bort, dit man går över en **stor bro** och förbi bilverkstaden (stökigare och skitigare på vägen). Bussen tar en direkt. Bortom förorten: **landet** med gårdar och bondgårdar att bo på | 0.23 |
+| **0.36** | **Ljud och musik**: egen musik per stadsdel (fri musik med rätt licens i stället för plinkplonket), regn och snö som låter, vindpustar, stadens ambiens (trafiken, parken, folkmyllret) | 0.23 |
 | **1.0** | **Buggjakt och finputs** i alla scener (flimmer, z-ordning, överlapp, detaljnivå) | allt ovan |
+
+Följer med storstaden (0.23-etappen): **bussen på riktigt** (gå in när den stannar, betala, "vill du åka till …?") och **sitta på bänkar och i busskurer**. Alla NPC-repliker som fortfarande visas i rutor överst görs om till pratbubblor ovanför personen/djuret.
+
+Redan släppt i dag utanför planen: 0.21 chatt, 0.22 pratbubblor och emoji, menytavla vid Burgarbaren, 0.23 veckosammanfattningen, 0.23.1 inget spel utan namn, 0.23.2 möblera med fingret.
 
 ## Vad jag behöver från Carl
 - Originalbilderna till fotbollsbutiken i `docs/ref/fotboll/` (lagfotot och matchstället), och den tjugonde spelaren om listan var avkapad.
