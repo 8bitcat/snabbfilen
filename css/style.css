@@ -466,3 +466,10 @@ body { padding-bottom: env(safe-area-inset-bottom); }
 
 /* ---------- innehallsruta: pixelmönster bakom spelbilden (band ser avsiktliga ut) ---------- */
 #app { background: repeating-conic-gradient(#100e15 0% 25%, #151221 0% 50%) 0 0 / 16px 16px; }
+
+/* 👁 Titta in (bostadsbyrån): knappen under planschen och förhandsbilden inifrån */
+.homepic-wrap { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.homelook { font-size: 15px; padding: 2px 6px; }
+.look-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.homelook-pic { background: #17151a; border: 3px solid #17151a; line-height: 0; }
+.homelook-canvas { width: 100%; height: auto; image-rendering: pixelated; image-rendering: crisp-edges; display: block; }

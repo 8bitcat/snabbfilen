@@ -156,6 +156,12 @@ let lastDistrictId = null; // områdesskylten visas bara när man kommer till et
 export function makeCity(A) {
   const g = A.game;
   const S = sim();
+  // Ut genom den egna ytterdörren: man kliver alltid ut ur sitt eget hus (husvagnen,
+  // höghuset …) – även första gången och efter en omladdning, då ingen stadsposition finns
+  // sparad (förr hamnade man då vid första huset i centrum). Menyns bakgrundsstad rörs inte.
+  const homeB = !A.attract && ALL_BUILDINGS.find((b) => (b.homes || []).includes(g.home));
+  if (homeB && (A.leftHome || !A.cityPos)) { const dc = doorCenter(homeB); A.cityPos = [dc.x, dc.y + 4]; }
+  A.leftHome = false;
   const start = A.cityPos || [doorCenter(BUILDINGS[0]).x, doorCenter(BUILDINGS[0]).y];
   const bounds = { W: CITY.W, H: CITY.H, left: 4, right: CITY.W - 4, top: CITY.BACK[0], bottom: CITY.WALK_BOTTOM ?? CITY.H - 4, spawn: start };
   let walker;

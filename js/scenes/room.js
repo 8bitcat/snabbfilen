@@ -438,7 +438,7 @@ export function makeRoom(A, { visit = false } = {}) {
   }
   const exitAct = visit
     ? () => { A.visitTarget = null; A.roomSub = 0; g.passTime(20); g.save(); play('door'); toast('🚗 Hemma igen.'); A.go('city'); }
-    : () => { A.roomSub = 0; play('door'); A.go('city'); };
+    : () => { A.roomSub = 0; A.leftHome = true; play('door'); A.go('city'); }; // staden ställer en vid det egna husets dörr
 
   // ---------- props byggs ur deco (görs om efter varje ändring) ----------
   // freeGrid = gångbart för spelaren (möbler + husdjurens korgar/lådor), furnGrid = djurens
@@ -923,6 +923,35 @@ export function makeRoom(A, { visit = false } = {}) {
 }
 
 const isNight = (g) => { const h = g.min / 60; return h >= 19.5 || h < 6.5; };
+
+// 👁 Förhandsbilder till bostadsbyrån: ett delrum ritat precis som när man flyttar in
+// (startmöbleringen, ens egen figur vid dörren), i en egen canvas. Går samma väg som ett
+// besök – då sparas inget, inga husdjur skapas och inga möbler flyttas.
+// → { canvas, rooms: [delrummens namn] } eller null för en okänd bostad.
+export function renderHomePreview(A, homeId, sub = 0, { night = false } = {}) {
+  const plan = PLANS[homeId];
+  if (!plan) return null;
+  const hop = hopping;
+  const fakeG = { min: night ? 21 * 60 : 12 * 60, day: 1, deco: {}, storage: [], home: homeId, money: 0, passTime() {}, save() {} };
+  const fake = { pxs: 1, W: FW, H: FH, game: fakeG, avatar: A.avatar, visitTarget: { id: '__visning', name: '', home: homeId, deco: {} },
+    roomSub: sub, sceneName: '__visning', view: A.view, go() {} };
+  let scene;
+  try { scene = makeRoom(fake, { visit: true }); } finally { hopping = hop; }
+  const RIGHT = plan.partition || FW;
+  const w = RIGHT < FW && !plan.outside ? RIGHT : FW; // smala lokaler: bara rummet, inte den mörka ytan bortom
+  const full = document.createElement('canvas');
+  full.width = FW; full.height = FH;
+  const fctx = full.getContext('2d');
+  fctx.imageSmoothingEnabled = false;
+  scene.update(0);
+  scene.draw(fctx);
+  const canvas = document.createElement('canvas');
+  canvas.width = w; canvas.height = FH;
+  const ctx = canvas.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(full, 0, 0);
+  return { canvas, rooms: plan.rooms.map((r) => r.name) };
+}
 
 // ---------- sprite-props ----------
 // En golvmöbel ur atlasen i sin rotationsvy: x = vänsterkant, y = fotlinje.

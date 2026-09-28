@@ -489,8 +489,8 @@ function boot() {
     if (firstRun) {
       openModal('🌆 Välkommen till Pixelstaden!', `<div class="who">${''}<div>
         <p style="font-size:20px;margin-top:0">Här börjar ditt nya liv, <b>${A.avatar.name}</b>! Du har <b>${fmt(A.game.money)}</b> på fickan.</p>
-        <p style="font-size:19px">Tjäna pengar på stadens jobb, köp mat så du orkar, klä dig snyggt – och spara till en större bostad. Först: var vill du bo?</p></div></div>`,
-        [{ label: '🔑 Välj bostad', cls: 'btn-go', onClick: () => { closeModal(); A.openHousing({ firstTime: true, onDone: () => { A.go('room'); weekFirst(); } }); } }],
+        <p style="font-size:19px">Alla börjar i en rostig husvagn ute i förorten. Tjäna pengar på stadens jobb, köp mat så du orkar, klä dig snyggt – och spara ihop till en bättre bostad hos bostadsbyrån!</p></div></div>`,
+        [{ label: '🚐 Till husvagnen', cls: 'btn-go', onClick: () => { closeModal(); A.game.home = 'husvagn'; A.game.save(); A.go('room'); weekFirst(); } }],
         { closable: false });
     } else {
       A.go('room');

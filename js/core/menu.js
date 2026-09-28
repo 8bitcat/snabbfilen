@@ -74,7 +74,7 @@ function newGame() {
   });
 }
 function restartCurrent(av) {
-  openModal('🔄 Börja om från början?', `<p><b>${esc(av.name)}</b> börjar om i Lilla rummet med startpengarna. Pengar, kläder, möbler och allt annat försvinner.</p><p>En säkerhetskopia läggs under versionsknappen om du ångrar dig.</p>`, [
+  openModal('🔄 Börja om från början?', `<p><b>${esc(av.name)}</b> börjar om i husvagnen med startpengarna. Pengar, kläder, möbler och allt annat försvinner.</p><p>En säkerhetskopia läggs under versionsknappen om du ångrar dig.</p>`, [
     { label: 'Avbryt', onClick: () => closeModal() },
     { label: '🔄 Börja om', cls: 'btn-red', onClick: () => { makeBackup(`före omstart av ${av.name}`); ls.del(SAVE_KEY); ls.del(saveKeyOf(av.id)); closeModal(); reloadInto(); } },
   ]);

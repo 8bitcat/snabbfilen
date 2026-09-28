@@ -34,13 +34,16 @@ await page.fill('#av-name', 'Testina');
 await page.click('.av-save');
 await page.waitForTimeout(400);
 
-// 2. Välkomstdialog → välj bostad
+// 2. Välkomstdialog → alla börjar i husvagnen (Carl 2026-09-28)
 ok((await page.locator('.dlg-head h2').textContent())?.includes('Välkommen'), 'välkomstdialogen visas');
 await page.click('.dlg-foot .btn-go');
-await page.waitForTimeout(300);
-await page.click('[data-move="rum"]');
 await page.waitForTimeout(500);
-ok(await scene() === 'room', 'hamnar i rummet efter bostadsvalet');
+ok(await scene() === 'room', 'hamnar hemma efter välkomsten');
+ok(await page.evaluate(() => window.SF.game.home) === 'husvagn', 'nya spelare börjar i husvagnen');
+// resten av röktestet är byggt kring Lilla rummets planlösning (husvagnen testas i
+// tools/homes-test.mjs och tools/bostad-titta-test.mjs) – flytta testfiguren dit
+await page.evaluate(() => { window.SF.game.home = 'rum'; window.SF.game.save(); window.SF.roomSub = 0; window.SF.go('room'); });
+await page.waitForTimeout(400);
 await shot('04-rummet');
 
 // 3. Kylskåpet: gå dit över golvet och ät

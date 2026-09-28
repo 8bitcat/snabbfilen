@@ -10,6 +10,12 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.31.0] – 2026-09-28 – Alla börjar i husvagnen, titta in i bostäderna
+- Alla nya spelare börjar i husvagnen ute i förorten – spara ihop till något bättre hos bostadsbyrån
+- 👁 Titta in: tryck på en bostad hos bostadsbyrån och se hur det ser ut inne när man flyttar in – varje rum, dag och kväll
+- Förortsettan och Lilla rummet har bytt plats i listan, så hyran stiger uppåt
+- Går man ut ur husvagnen, eller något annat hem, kommer man ut vid sitt eget hus – inte vid första huset i centrum
+
 ## [0.30.1] – 2026-09-28 – Ljudlabbet
 - Ljudlabbet: en egen sida där man kan lyssna på spelets ljud innan de kopplas in – snabbfilen/ljud.html
 - Där finns effektljuden, simspråket med nio olika röster och egna repliker, och alla djurläten
