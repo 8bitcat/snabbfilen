@@ -1,0 +1,250 @@
+[
+  {"kind": "enkelsang", "name": "Enkelsäng", "icon": "🛏️", "price": 900, "room": "SOVRUM", "function": "sova", "variants": [
+    {"file": "Beds.png", "sx": 7, "sy": 2, "sw": 18, "sh": 34},
+    {"file": "Beds.png", "sx": 71, "sy": 2, "sw": 18, "sh": 34},
+    {"file": "Beds.png", "sx": 135, "sy": 2, "sw": 18, "sh": 34},
+    {"file": "Beds.png", "sx": 263, "sy": 2, "sw": 18, "sh": 34},
+    {"file": "Beds.png", "sx": 7, "sy": 50, "sw": 18, "sh": 34},
+    {"file": "Beds.png", "sx": 71, "sy": 50, "sw": 18, "sh": 34},
+    {"file": "Beds.png", "sx": 135, "sy": 50, "sw": 18, "sh": 34},
+    {"file": "Beds.png", "sx": 327, "sy": 50, "sw": 18, "sh": 34},
+    {"file": "Beds.png", "sx": 71, "sy": 98, "sw": 18, "sh": 34},
+    {"file": "Beds.png", "sx": 135, "sy": 98, "sw": 18, "sh": 34}
+  ]},
+  {"kind": "dubbelsang", "name": "Dubbelsäng", "icon": "🛏️", "price": 1800, "room": "SOVRUM", "function": "sova", "variants": [
+    {"file": "Beds.png", "sx": 7, "sy": 317, "sw": 33, "sh": 34},
+    {"file": "Beds.png", "sx": 103, "sy": 317, "sw": 33, "sh": 34},
+    {"file": "Beds.png", "sx": 199, "sy": 317, "sw": 33, "sh": 34},
+    {"file": "Beds.png", "sx": 295, "sy": 317, "sw": 33, "sh": 34},
+    {"file": "Beds.png", "sx": 7, "sy": 365, "sw": 33, "sh": 34},
+    {"file": "Beds.png", "sx": 103, "sy": 365, "sw": 33, "sh": 34},
+    {"file": "Beds.png", "sx": 199, "sy": 365, "sw": 33, "sh": 34},
+    {"file": "Beds.png", "sx": 295, "sy": 365, "sw": 33, "sh": 34}
+  ]},
+  {"kind": "tvarsang", "name": "Säng på tvären", "icon": "🛏️", "price": 950, "room": "SOVRUM", "function": "sova", "variants": [
+    {"file": "Beds.png", "sx": 0, "sy": 152, "sw": 32, "sh": 24},
+    {"file": "Beds.png", "sx": 48, "sy": 152, "sw": 32, "sh": 24},
+    {"file": "Beds.png", "sx": 96, "sy": 152, "sw": 32, "sh": 24},
+    {"file": "Beds.png", "sx": 192, "sy": 152, "sw": 32, "sh": 24},
+    {"file": "Beds.png", "sx": 0, "sy": 184, "sw": 32, "sh": 24},
+    {"file": "Beds.png", "sx": 48, "sy": 184, "sw": 32, "sh": 24},
+    {"file": "Beds.png", "sx": 96, "sy": 184, "sw": 32, "sh": 24},
+    {"file": "Beds.png", "sx": 240, "sy": 184, "sw": 32, "sh": 24},
+    {"file": "Beds.png", "sx": 48, "sy": 216, "sw": 32, "sh": 24},
+    {"file": "Beds.png", "sx": 96, "sy": 216, "sw": 32, "sh": 24}
+  ]},
+  {"kind": "tvardubbel", "name": "Dubbelsäng på tvären", "icon": "🛏️", "price": 1900, "room": "SOVRUM", "function": "sova", "variants": [
+    {"file": "Beds.png", "sx": 192, "sy": 426, "sw": 32, "sh": 38},
+    {"file": "Beds.png", "sx": 240, "sy": 426, "sw": 32, "sh": 38},
+    {"file": "Beds.png", "sx": 288, "sy": 426, "sw": 32, "sh": 38},
+    {"file": "Beds.png", "sx": 336, "sy": 426, "sw": 32, "sh": 38},
+    {"file": "Beds.png", "sx": 0, "sy": 474, "sw": 32, "sh": 38},
+    {"file": "Beds.png", "sx": 48, "sy": 474, "sw": 32, "sh": 38},
+    {"file": "Beds.png", "sx": 96, "sy": 474, "sw": 32, "sh": 38},
+    {"file": "Beds.png", "sx": 144, "sy": 474, "sw": 32, "sh": 38}
+  ]},
+  {"kind": "nattduksbord", "name": "Nattduksbord", "icon": "🗄️", "price": 250, "room": "SOVRUM", "variants": [
+    {"file": "Dressers.png", "sx": 0, "sy": 8, "sw": 16, "sh": 16},
+    {"file": "Dressers.png", "sx": 64, "sy": 8, "sw": 16, "sh": 16},
+    {"file": "Dressers.png", "sx": 128, "sy": 9, "sw": 16, "sh": 16},
+    {"file": "Dressers.png", "sx": 192, "sy": 9, "sw": 16, "sh": 16}
+  ]},
+  {"kind": "kladskap", "name": "Klädskåp", "icon": "🚪", "price": 700, "room": "SOVRUM", "function": "garderob", "variants": [
+    {"file": "Closet.png", "sx": 5, "sy": 301, "sw": 23, "sh": 33},
+    {"file": "Closet.png", "sx": 117, "sy": 301, "sw": 23, "sh": 33},
+    {"file": "Closet.png", "sx": 229, "sy": 301, "sw": 23, "sh": 33},
+    {"file": "Closet.png", "sx": 341, "sy": 301, "sw": 23, "sh": 33},
+    {"file": "Closet.png", "sx": 453, "sy": 301, "sw": 23, "sh": 33},
+    {"file": "Closet.png", "sx": 565, "sy": 301, "sw": 23, "sh": 33},
+    {"file": "Closet.png", "sx": 453, "sy": 13, "sw": 23, "sh": 33},
+    {"file": "Closet.png", "sx": 565, "sy": 13, "sw": 23, "sh": 33},
+    {"file": "Closet.png", "sx": 229, "sy": 13, "sw": 23, "sh": 33},
+    {"file": "Closet.png", "sx": 5, "sy": 13, "sw": 23, "sh": 33}
+  ]},
+  {"kind": "linneskap", "name": "Linneskåp med hyllor", "icon": "🧺", "price": 850, "room": "SOVRUM", "function": "garderob", "variants": [
+    {"file": "Closet.png", "sx": 35, "sy": 298, "sw": 25, "sh": 36},
+    {"file": "Closet.png", "sx": 147, "sy": 298, "sw": 25, "sh": 36},
+    {"file": "Closet.png", "sx": 259, "sy": 298, "sw": 25, "sh": 36},
+    {"file": "Closet.png", "sx": 371, "sy": 298, "sw": 25, "sh": 36},
+    {"file": "Closet.png", "sx": 483, "sy": 298, "sw": 25, "sh": 36},
+    {"file": "Closet.png", "sx": 595, "sy": 298, "sw": 25, "sh": 36},
+    {"file": "Closet.png", "sx": 483, "sy": 10, "sw": 25, "sh": 36},
+    {"file": "Closet.png", "sx": 595, "sy": 10, "sw": 25, "sh": 36},
+    {"file": "Closet.png", "sx": 259, "sy": 10, "sw": 25, "sh": 36},
+    {"file": "Closet.png", "sx": 35, "sy": 10, "sw": 25, "sh": 36}
+  ]},
+  {"kind": "storgarderob", "name": "Stor garderob", "icon": "👔", "price": 1300, "room": "SOVRUM", "function": "garderob", "variants": [
+    {"file": "Closet.png", "sx": 517, "sy": 296, "sw": 35, "sh": 38},
+    {"file": "Closet.png", "sx": 629, "sy": 296, "sw": 35, "sh": 38},
+    {"file": "Closet.png", "sx": 517, "sy": 8, "sw": 35, "sh": 38},
+    {"file": "Closet.png", "sx": 629, "sy": 8, "sw": 35, "sh": 38},
+    {"file": "Closet.png", "sx": 293, "sy": 8, "sw": 35, "sh": 38},
+    {"file": "Closet.png", "sx": 181, "sy": 8, "sw": 35, "sh": 38},
+    {"file": "Closet.png", "sx": 69, "sy": 8, "sw": 35, "sh": 38},
+    {"file": "Closet.png", "sx": 405, "sy": 8, "sw": 35, "sh": 38}
+  ]},
+  {"kind": "lagbyra", "name": "Låg byrå", "icon": "🗃️", "price": 450, "room": "SOVRUM", "variants": [
+    {"file": "Dressers.png", "sx": 2, "sy": 98, "sw": 27, "sh": 12},
+    {"file": "Dressers.png", "sx": 34, "sy": 98, "sw": 27, "sh": 12},
+    {"file": "Dressers.png", "sx": 66, "sy": 98, "sw": 27, "sh": 12},
+    {"file": "Dressers.png", "sx": 98, "sy": 98, "sw": 27, "sh": 12},
+    {"file": "Dressers.png", "sx": 130, "sy": 98, "sw": 27, "sh": 12},
+    {"file": "Dressers.png", "sx": 162, "sy": 98, "sw": 27, "sh": 12},
+    {"file": "Dressers.png", "sx": 194, "sy": 98, "sw": 27, "sh": 12}
+  ]},
+  {"kind": "kista", "name": "Förvaringskista", "icon": "🧰", "price": 400, "room": "SOVRUM", "variants": [
+    {"file": "Blacksmith.png", "sx": 208, "sy": 17, "sw": 16, "sh": 15}
+  ]},
+  {"kind": "piano", "name": "Piano", "icon": "🎹", "price": 3500, "room": "VARDAGSRUM", "variants": [
+    {"file": "Others.png", "sx": 2, "sy": 91, "sw": 29, "sh": 20},
+    {"file": "Others.png", "sx": 34, "sy": 91, "sw": 29, "sh": 20},
+    {"file": "Others.png", "sx": 66, "sy": 91, "sw": 29, "sh": 20}
+  ]},
+  {"kind": "tvbank", "name": "TV-bänk", "icon": "📺", "price": 600, "room": "VARDAGSRUM", "variants": [
+    {"file": "Dressers.png", "sx": 2, "sy": 130, "sw": 27, "sh": 14},
+    {"file": "Dressers.png", "sx": 34, "sy": 130, "sw": 27, "sh": 14},
+    {"file": "Dressers.png", "sx": 66, "sy": 130, "sw": 27, "sh": 14},
+    {"file": "Dressers.png", "sx": 98, "sy": 130, "sw": 27, "sh": 14},
+    {"file": "Dressers.png", "sx": 130, "sy": 130, "sw": 27, "sh": 14},
+    {"file": "Dressers.png", "sx": 162, "sy": 130, "sw": 27, "sh": 14},
+    {"file": "Dressers.png", "sx": 194, "sy": 130, "sw": 27, "sh": 14}
+  ]},
+  {"kind": "soffbord", "name": "Soffbord", "icon": "☕", "price": 400, "room": "VARDAGSRUM", "variants": [
+    {"file": "Tables and desks.png", "sx": 193, "sy": 242, "sw": 30, "sh": 12},
+    {"file": "Tables and desks.png", "sx": 193, "sy": 274, "sw": 30, "sh": 12},
+    {"file": "Tables and desks.png", "sx": 193, "sy": 306, "sw": 30, "sh": 12},
+    {"file": "Tables and desks.png", "sx": 193, "sy": 338, "sw": 30, "sh": 12}
+  ]},
+  {"kind": "glasbord", "name": "Glasbord", "icon": "🥂", "price": 550, "room": "VARDAGSRUM", "variants": [
+    {"file": "Tables and desks.png", "sx": 192, "sy": 229, "sw": 30, "sh": 9}
+  ]},
+  {"kind": "baksoffa", "name": "Soffa bakifrån", "icon": "🛋️", "price": 800, "room": "VARDAGSRUM", "variants": [
+    {"file": "Sofa and armchair.png", "sx": 2, "sy": 45, "sw": 29, "sh": 18},
+    {"file": "Sofa and armchair.png", "sx": 34, "sy": 45, "sw": 29, "sh": 18},
+    {"file": "Sofa and armchair.png", "sx": 66, "sy": 45, "sw": 29, "sh": 18},
+    {"file": "Sofa and armchair.png", "sx": 98, "sy": 45, "sw": 29, "sh": 18},
+    {"file": "Sofa and armchair.png", "sx": 130, "sy": 45, "sw": 29, "sh": 18},
+    {"file": "Sofa and armchair.png", "sx": 162, "sy": 45, "sw": 29, "sh": 18},
+    {"file": "Sofa and armchair.png", "sx": 194, "sy": 45, "sw": 29, "sh": 18},
+    {"file": "Sofa and armchair.png", "sx": 226, "sy": 45, "sw": 29, "sh": 18},
+    {"file": "Sofa and armchair.png", "sx": 258, "sy": 45, "sw": 29, "sh": 18},
+    {"file": "Sofa and armchair.png", "sx": 290, "sy": 45, "sw": 29, "sh": 18}
+  ]},
+  {"kind": "sidosoffa", "name": "Soffa från sidan", "icon": "🛋️", "price": 800, "room": "VARDAGSRUM", "variants": [
+    {"file": "Sofa and armchair.png", "sx": 1, "sy": 66, "sw": 13, "sh": 29},
+    {"file": "Sofa and armchair.png", "sx": 33, "sy": 66, "sw": 13, "sh": 29},
+    {"file": "Sofa and armchair.png", "sx": 65, "sy": 66, "sw": 13, "sh": 29},
+    {"file": "Sofa and armchair.png", "sx": 97, "sy": 66, "sw": 13, "sh": 29},
+    {"file": "Sofa and armchair.png", "sx": 129, "sy": 66, "sw": 13, "sh": 29},
+    {"file": "Sofa and armchair.png", "sx": 161, "sy": 66, "sw": 13, "sh": 29},
+    {"file": "Sofa and armchair.png", "sx": 193, "sy": 66, "sw": 13, "sh": 29},
+    {"file": "Sofa and armchair.png", "sx": 225, "sy": 66, "sw": 13, "sh": 29},
+    {"file": "Sofa and armchair.png", "sx": 257, "sy": 66, "sw": 13, "sh": 29},
+    {"file": "Sofa and armchair.png", "sx": 289, "sy": 66, "sw": 13, "sh": 29}
+  ]},
+  {"kind": "kuddsoffa", "name": "Soffa med kuddar", "icon": "🛋️", "price": 950, "room": "VARDAGSRUM", "variants": [
+    {"file": "Sofa and armchair.png", "sx": 2, "sy": 105, "sw": 29, "sh": 22},
+    {"file": "Sofa and armchair.png", "sx": 34, "sy": 105, "sw": 29, "sh": 22},
+    {"file": "Sofa and armchair.png", "sx": 66, "sy": 105, "sw": 29, "sh": 22}
+  ]},
+  {"kind": "bakfatolj", "name": "Fåtölj bakifrån", "icon": "💺", "price": 450, "room": "VARDAGSRUM", "variants": [
+    {"file": "Sofa and armchair.png", "sx": 136, "sy": 141, "sw": 17, "sh": 18},
+    {"file": "Sofa and armchair.png", "sx": 168, "sy": 141, "sw": 17, "sh": 18},
+    {"file": "Sofa and armchair.png", "sx": 200, "sy": 141, "sw": 17, "sh": 18},
+    {"file": "Sofa and armchair.png", "sx": 232, "sy": 141, "sw": 17, "sh": 18},
+    {"file": "Sofa and armchair.png", "sx": 264, "sy": 141, "sw": 17, "sh": 18},
+    {"file": "Sofa and armchair.png", "sx": 296, "sy": 141, "sw": 17, "sh": 18}
+  ]},
+  {"kind": "sidofatolj", "name": "Fåtölj från sidan", "icon": "💺", "price": 450, "room": "VARDAGSRUM", "variants": [
+    {"file": "Sofa and armchair.png", "sx": 130, "sy": 171, "sw": 13, "sh": 20},
+    {"file": "Sofa and armchair.png", "sx": 162, "sy": 171, "sw": 13, "sh": 20},
+    {"file": "Sofa and armchair.png", "sx": 194, "sy": 171, "sw": 13, "sh": 20},
+    {"file": "Sofa and armchair.png", "sx": 226, "sy": 171, "sw": 13, "sh": 20},
+    {"file": "Sofa and armchair.png", "sx": 258, "sy": 171, "sw": 13, "sh": 20},
+    {"file": "Sofa and armchair.png", "sx": 290, "sy": 171, "sw": 13, "sh": 20}
+  ]},
+  {"kind": "matstol", "name": "Matstol med dyna", "icon": "🪑", "price": 180, "room": "VARDAGSRUM", "variants": [
+    {"file": "Chairs.png", "sx": 130, "sy": 13, "sw": 11, "sh": 18},
+    {"file": "Chairs.png", "sx": 194, "sy": 13, "sw": 11, "sh": 18},
+    {"file": "Chairs.png", "sx": 194, "sy": 45, "sw": 11, "sh": 18},
+    {"file": "Chairs.png", "sx": 194, "sy": 77, "sw": 11, "sh": 18},
+    {"file": "Chairs.png", "sx": 194, "sy": 109, "sw": 11, "sh": 18},
+    {"file": "Chairs.png", "sx": 194, "sy": 141, "sw": 11, "sh": 18}
+  ]},
+  {"kind": "pelarbord", "name": "Runt pelarbord", "icon": "🍵", "price": 300, "room": "VARDAGSRUM", "variants": [
+    {"file": "Tables and desks.png", "sx": 5, "sy": 261, "sw": 22, "sh": 22},
+    {"file": "Tables and desks.png", "sx": 37, "sy": 261, "sw": 22, "sh": 22},
+    {"file": "Tables and desks.png", "sx": 69, "sy": 261, "sw": 22, "sh": 22},
+    {"file": "Tables and desks.png", "sx": 101, "sy": 261, "sw": 22, "sh": 22},
+    {"file": "Tables and desks.png", "sx": 133, "sy": 261, "sw": 22, "sh": 22},
+    {"file": "Tables and desks.png", "sx": 165, "sy": 261, "sw": 22, "sh": 22}
+  ]},
+  {"kind": "sidobord", "name": "Sidobord med duk", "icon": "🟫", "price": 280, "room": "VARDAGSRUM", "variants": [
+    {"file": "Tables and desks.png", "sx": 5, "sy": 325, "sw": 22, "sh": 22},
+    {"file": "Tables and desks.png", "sx": 37, "sy": 325, "sw": 22, "sh": 22},
+    {"file": "Tables and desks.png", "sx": 69, "sy": 325, "sw": 22, "sh": 22},
+    {"file": "Tables and desks.png", "sx": 101, "sy": 325, "sw": 22, "sh": 22},
+    {"file": "Tables and desks.png", "sx": 133, "sy": 325, "sw": 22, "sh": 22},
+    {"file": "Tables and desks.png", "sx": 165, "sy": 325, "sw": 22, "sh": 22}
+  ]},
+  {"kind": "eldstad", "name": "Eldstad med sims", "icon": "🔥", "price": 1400, "room": "VARDAGSRUM", "variants": [
+    {"file": "Fireplace.png", "sx": 131, "sy": 84, "sw": 26, "sh": 28},
+    {"file": "Fireplace.png", "sx": 163, "sy": 84, "sw": 26, "sh": 28},
+    {"file": "Fireplace.png", "sx": 195, "sy": 84, "sw": 26, "sh": 28},
+    {"file": "Fireplace.png", "sx": 227, "sy": 84, "sw": 26, "sh": 28}
+  ]},
+  {"kind": "tegelspis", "name": "Tegelspis", "icon": "🧱", "price": 1600, "room": "VARDAGSRUM", "variants": [
+    {"file": "Fireplace.png", "sx": 2, "sy": 18, "sw": 28, "sh": 30},
+    {"file": "Fireplace.png", "sx": 162, "sy": 18, "sw": 28, "sh": 30},
+    {"file": "Fireplace.png", "sx": 194, "sy": 18, "sw": 28, "sh": 30},
+    {"file": "Fireplace.png", "sx": 226, "sy": 18, "sw": 28, "sh": 30}
+  ]},
+  {"kind": "murspis", "name": "Murad spis med skorsten", "icon": "🔥", "price": 2200, "room": "VARDAGSRUM", "variants": [
+    {"file": "Fireplace.png", "sx": 0, "sy": 65, "sw": 32, "sh": 47},
+    {"file": "Fireplace.png", "sx": 32, "sy": 65, "sw": 32, "sh": 47}
+  ]},
+  {"kind": "laghylla", "name": "Låg bokhylla", "icon": "📚", "price": 350, "room": "VARDAGSRUM", "variants": [
+    {"file": "School.png", "sx": 210, "sy": 9, "sw": 28, "sh": 20},
+    {"file": "School.png", "sx": 242, "sy": 9, "sw": 28, "sh": 20}
+  ]},
+  {"kind": "mellanhylla", "name": "Bokhylla med två hyllplan", "icon": "📚", "price": 450, "room": "VARDAGSRUM", "variants": [
+    {"file": "School.png", "sx": 210, "sy": 43, "sw": 28, "sh": 26},
+    {"file": "School.png", "sx": 242, "sy": 43, "sw": 28, "sh": 26}
+  ]},
+  {"kind": "hoghylla", "name": "Hög bokhylla", "icon": "📚", "price": 650, "room": "VARDAGSRUM", "variants": [
+    {"file": "School.png", "sx": 210, "sy": 137, "sw": 28, "sh": 33},
+    {"file": "School.png", "sx": 242, "sy": 137, "sw": 28, "sh": 33}
+  ]},
+  {"kind": "smalhylla", "name": "Smal bokhylla", "icon": "📚", "price": 400, "room": "VARDAGSRUM", "variants": [
+    {"file": "School.png", "sx": 212, "sy": 91, "sw": 24, "sh": 26},
+    {"file": "School.png", "sx": 244, "sy": 91, "sw": 24, "sh": 26}
+  ]},
+  {"kind": "bredhylla", "name": "Bred bokhylla", "icon": "📚", "price": 1100, "room": "VARDAGSRUM", "variants": [
+    {"file": "School.png", "sx": 305, "sy": 9, "sw": 47, "sh": 33},
+    {"file": "School.png", "sx": 353, "sy": 9, "sw": 47, "sh": 33},
+    {"file": "School.png", "sx": 353, "sy": 57, "sw": 47, "sh": 33}
+  ]},
+  {"kind": "hallbank", "name": "Hallbänk med ryggstöd", "icon": "🪵", "price": 550, "room": "HALL", "variants": [
+    {"file": "hospital wing.png", "sx": 145, "sy": 8, "sw": 31, "sh": 18},
+    {"file": "hospital wing.png", "sx": 193, "sy": 8, "sw": 31, "sh": 18}
+  ]},
+  {"kind": "sittbank", "name": "Sittbänk", "icon": "🪵", "price": 350, "room": "HALL", "variants": [
+    {"file": "Temple.png", "sx": 64, "sy": 18, "sw": 32, "sh": 12}
+  ]},
+  {"kind": "skobank", "name": "Skobänk", "icon": "👟", "price": 400, "room": "HALL", "variants": [
+    {"file": "Dressers.png", "sx": 2, "sy": 114, "sw": 27, "sh": 12},
+    {"file": "Dressers.png", "sx": 34, "sy": 114, "sw": 27, "sh": 12},
+    {"file": "Dressers.png", "sx": 66, "sy": 114, "sw": 27, "sh": 12},
+    {"file": "Dressers.png", "sx": 98, "sy": 114, "sw": 27, "sh": 12},
+    {"file": "Dressers.png", "sx": 130, "sy": 114, "sw": 27, "sh": 12},
+    {"file": "Dressers.png", "sx": 162, "sy": 114, "sw": 27, "sh": 12},
+    {"file": "Dressers.png", "sx": 194, "sy": 114, "sw": 27, "sh": 12}
+  ]},
+  {"kind": "pall", "name": "Pall", "icon": "🪑", "price": 90, "room": "HALL", "variants": [
+    {"file": "Tables and desks.png", "sx": 195, "sy": 369, "sw": 9, "sh": 10}
+  ]},
+  {"kind": "rustning", "name": "Riddarrustning", "icon": "🛡️", "price": 3000, "room": "HALL", "variants": [
+    {"file": "Blacksmith.png", "sx": 49, "sy": 68, "sw": 15, "sh": 28},
+    {"file": "Blacksmith.png", "sx": 65, "sy": 68, "sw": 15, "sh": 28}
+  ]}
+]

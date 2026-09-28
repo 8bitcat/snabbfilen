@@ -88,7 +88,7 @@ export const FURN_COLORS = [
   ['#4aa8e8', 'Himmelsblå'], ['#2c5fc0', 'Blå'], ['#7e4bc0', 'Lila'], ['#f07aa8', 'Rosa'], ['#8a5230', 'Brun'],
   ['#8e8c94', 'Grå'], ['#2b2a33', 'Svart'], ['#f2efe8', 'Vit'],
 ];
-const FX_NAMES = { sang: '🛏️ Säng', garderob: '🚪 Garderob', kylskap: '🧊 Kylskåp' }; // funktionsmöbler utanför katalogen
+const FX_NAMES = { sang: '🛏️ Säng', garderob: '🚪 Garderob', kylskap: '🧊 Kylskåp', dass: '🚽 Dasset' }; // startmöbler utanför katalogen
 const colorName = (hex) => FURN_COLORS.find(([h]) => h === hex)?.[1] || `Egen färg ${hex.toUpperCase()}`;
 
 export function openBuy(A, kind) {

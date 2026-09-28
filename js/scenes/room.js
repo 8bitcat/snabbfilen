@@ -1,14 +1,24 @@
 // Hemma – Pixelverkstans butiksstil i spelets gemensamma 384×216-rymd.
 // Bostäderna har flera delrum (dörrar i bakväggen), och allt bohag är
-// "deco"-poster { k, v, x, y, c? } per delrum som ritas från möbelatlasen
-// (köpta EmanuelleDev-sprites; c = egen färg, ritas med tintSprite). Med
-// Möblera-läget flyttar, placerar, målar om och säljer man möbler fritt –
-// och besökare ser din inredning (med färgerna) via världen.
+// "deco"-poster { k, v, x, y, c?, r?, fx? } per delrum som ritas från möbelatlasen
+// (köpta EmanuelleDev-sprites; c = egen färg, ritas med tintSprite; r = rotation
+// 0–3, se viewOf i game.js; fx = startmöbel som inte kan säljas). Med
+// Möblera-läget flyttar, roterar, placerar, målar om och säljer man möbler
+// fritt – även startmöblerna, också via förrådet till ett annat delrum – och
+// besökare ser din inredning (med färger och rotation) via världen.
+//
+// Funktionerna (sova, garderob, äta, toalett, tvätta, tv) sitter på möbelsorten
+// och följer med möbeln vart den än står. Står ingen säng ute alls (alla ligger
+// i förrådet) rullas en madrass ut på golvet så att man ändå kan sova.
+//
+// Väggsaker (KATALOG.wall) hänger på bakväggen: de fästs i väggens höjdled,
+// är inga hinder för gången och ritas bakom allt som står på golvet. De får inte
+// hänga över dörrar, varandra eller fönstren (utom gardiner: KATALOG.overWindow).
 import { drawPerson } from '../core/people.js';
 import { openAvatarEditor, avatarTagColors } from '../core/avatar.js';
 import { Pix, SMALL, ctxText, textW, text, mix, mul, css, hash, bayer } from '../core/floor-pix.js';
 import { openModal, closeModal, toast } from '../core/ui.js';
-import { foodOf, katalogOf } from '../game.js';
+import { foodOf, katalogOf, functionOf, viewOf, rotStates, knownKind, fmt, MAX_STORAGE, MAX_PER_ROOM } from '../game.js';
 import { play } from '../core/sound.js';
 import { worldFolksHere, worldMyEmote } from '../net/world.js';
 import { FRAMES } from '../data/frames.js';
@@ -17,6 +27,7 @@ import { tintSprite, spriteBaseColor, isHex } from '../core/recolor.js';
 const WALK_SEQ = [1, 3, 2, 3];
 const FW = 384, FH = 216;
 const WALL_Y = 86;
+const WALL_TOP = 8;                 // väggsaker får inte hänga högre än så (ovanför är taklisten)
 const DOOR = { x0: 28, x1: 62, cx: 45 };
 const RUG = { w: 90, h: 48 };
 
@@ -24,9 +35,11 @@ export const ATLAS = typeof Image !== 'undefined' ? new Image() : null;
 if (ATLAS) ATLAS.src = 'assets/interior.png';
 
 // Bostädernas delrum: tema + fönster per rum. partition = hur bred lokalen är.
+// shabby = Lilla rummet: sprickor, fuktfläckar, flagnande tapet, spindelväv, naken
+// glödlampa och slitet golv (de finare bostäderna slipper).
 const PLANS = {
   rum: {
-    partition: 225,
+    partition: 176, shabby: true,
     rooms: [{ name: 'RUMMET', wall: 0x8c7a62, wallDk: 0x6a5c48, floorA: 0xcbb894, floorB: 0xb09a74, windows: [[80, 120]] }],
   },
   lagenhet: {
@@ -46,11 +59,11 @@ const PLANS = {
   },
 };
 
-// Startmöbleringen per bostad och delrum. fx = funktionsmöbel (kan flyttas, inte säljas).
+// Startmöbleringen per bostad och delrum. fx = startmöbel (kan flyttas, inte säljas).
 const SEEDS = {
   'rum:0': [
-    { k: 'sang', v: 0, x: 18, y: 133, fx: 1 }, { k: 'garderob', v: 0, x: 140, y: 96, fx: 1 },
-    { k: 'kylskap', v: 0, x: 190, y: 94, fx: 1 },
+    { k: 'sang', v: 0, x: 14, y: 133, fx: 1 }, { k: 'garderob', v: 0, x: 106, y: 96, fx: 1 },
+    { k: 'kylskap', v: 0, x: 150, y: 94, fx: 1 }, { k: 'dass', v: 0, x: 138, y: 174, fx: 1 },
   ],
   'lagenhet:0': [
     { k: 'kylskap', v: 0, x: 214, y: 94, fx: 1 },
@@ -69,24 +82,42 @@ const SEEDS = {
     { k: 'sang', v: 1, x: 40, y: 133, fx: 1 }, { k: 'garderob', v: 0, x: 250, y: 96, fx: 1 },
     { k: 'byra', v: 3, x: 160, y: 96 }, { k: 'spegel', v: 0, x: 220, y: 94 }, { k: 'matta', v: 1, x: 80, y: 150 },
   ],
-  'villa:2': [
-    { k: 'kylskap', v: 0, x: 300, y: 94, fx: 1 },
-    { k: 'bordM', v: 0, x: 130, y: 160 }, { k: 'stol', v: 0, x: 110, y: 158 }, { k: 'stol', v: 0, x: 188, y: 158 },
+  'villa:2': [ // (kylskåpet står till vänster om SOVRUM-dörren, som börjar vid x=290)
+    { k: 'kylskap', v: 0, x: 270, y: 94, fx: 1 },
+    { k: 'bordM', v: 0, x: 130, y: 160 }, { k: 'matstol', v: 0, x: 114, y: 158 }, { k: 'matstol', v: 0, x: 186, y: 158 },
     { k: 'byra', v: 0, x: 60, y: 96 }, { k: 'vaxtS', v: 0, x: 340, y: 140 },
   ],
 };
+// Startmöbleringen måste stå rätt från början (annars flyttas den vid första besöket
+// med en toast) – tools/room-check.mjs kontrollerar varje delrum mot fits().
 const seedFor = (home, sub) => (SEEDS[`${home}:${sub}`] || []).map((d) => ({ ...d }));
 
-// hur hög kollisionsrektangeln vid foten är, per möbeltyp
-const SOLID_LOW = new Set(['soffa', 'fatolj', 'stol', 'bordR', 'bordM', 'byra', 'sang']);
+// Möbler som är "djupa" (sängar, soffor, bord): hindret är halva höjden. Övriga
+// (skåp, hyllor, lampor) står upp – bara foten är hinder.
+const SOLID_LOW = new Set(['soffa', 'fatolj', 'stol', 'bordR', 'bordM', 'byra', 'sang', 'enkelsang', 'kuddsoffa', 'matstol', 'pelarbord',
+  'sidobord', 'koksbord', 'soffbord', 'glasbord', 'skrivbord', 'arbetsbank', 'barnbord', 'skolbank', 'hallbank', 'sittbank', 'skobank',
+  'kokso', 'diskbank', 'bankskap', 'badkar', 'dusch', 'djurbadd', 'golvkudde', 'molnkudde', 'stjarnkudde', 'badbank', 'strykbrada',
+  'lagbyra', 'tvbank', 'nattduksbord', 'kista', 'leksakslada', 'backar', 'kontorsstol', 'skolstol', 'barnstol', 'pall', 'dass']);
+const solidH = (k, fh) => (SOLID_LOW.has(k) ? Math.round(fh * 0.5) : Math.min(13, Math.round(fh * 0.4)));
 const frameOf = (k, v) => FRAMES[k + (v | 0)] || FRAMES[k + '0'];
 const frameName = (k, v) => (FRAMES[k + (v | 0)] ? k + (v | 0) : k + '0');
+const isWall = (k) => !!katalogOf(k)?.wall;
+// mattor ur arken: ligger platt på golvet, går att gå på, ritas under allt
+const isFlat = (k) => k !== 'matta' && /matta$/.test(k);
+// vad skylten över en funktionsmöbel säger
+const FN_LABEL = { sova: 'SÄNG', garderob: 'GARDEROB', ata: 'KYLSKÅP', toalett: 'TOALETT', tvatta: 'TVÄTTA', tv: 'TV' };
+const KIND_LABEL = { koksspis: 'SPIS', mikro: 'MIKRO', dusch: 'DUSCH', badkar: 'BADKAR', tvattmaskin: 'TVÄTT', tvattpelare: 'TVÄTT',
+  handfat: 'HANDFAT', tvattstall: 'HANDFAT', dator: 'DATOR', laptop: 'DATOR', spelkonsol: 'KONSOL', dass: 'DASSET', kladskap: 'KLÄDSKÅP', linneskap: 'LINNESKÅP' };
+const labelOf = (k) => { const fn = functionOf(k); return fn ? KIND_LABEL[k] || FN_LABEL[fn] : null; };
+// namn på startmöbler som inte finns i katalogen (till förrådspanelen)
+const FX_NAMES = { kylskap: 'Kylskåp', dass: 'Dasset', vaxt: 'Monstera' };
+export const nameOf = (k) => katalogOf(k)?.name || FX_NAMES[k] || k;
 
 // ---------- möbelbilder (atlas, omfärgade eller mattor) ----------
 // Tips till omfärgningen där huvudmaterialet inte är det största: krukväxten
 // ska få ny kruka (inte nya blad), silverspegeln ny ram (inte nytt glas),
 // golvlampan ny skärm (foten blir en mörkare ton av samma färg).
-const TINT_HINT = { vaxtS0: { hue: 24 }, spegel2: { maxL: 0.5 }, lampa0: { minL: 0.8 } };
+const TINT_HINT = { vaxtS0: { hue: 24 }, spegel2: { maxL: 0.5 }, lampa0: { minL: 0.8 }, dass0: { minL: 0.6 } };
 export const canRecolor = (k) => k !== 'vaxt'; // monsteran är ritad för hand, inte ur atlasen
 // Möbeln k/v i färgen c (null = original): { img, sx, sy, sw, sh } att rita
 // i heltalsskala, eller null om atlasen inte har laddats än.
@@ -97,12 +128,48 @@ export function furnArt(k, v, c = null) {
   const t = isHex(c) ? tintSprite(ATLAS, f, c, TINT_HINT[frameName(k, v)]) : null;
   return t ? { img: t, sx: 0, sy: 0, sw: f[2], sh: f[3] } : { img: ATLAS, sx: f[0], sy: f[1], sw: f[2], sh: f[3] };
 }
+// Samma sak i rotationsläge r: rätt vy ur atlasen (soffan från sidan …) och om
+// den ska speglas – rita med drawArt.
+export function furnView(k, v, c = null, r = 0) {
+  const vw = viewOf(k, v, r);
+  const a = furnArt(vw.k, vw.v, c);
+  return a ? { ...a, flip: vw.flip } : null;
+}
+// Ritar en möbelbild med övre vänstra hörnet i (x, y), speglad pixelexakt om
+// flip (heltalskoordinater + scale(-1,1) = samma pixelkorn, ingen kantutjämning).
+export function drawArt(ctx, a, x, y) {
+  if (!a.flip) { ctx.drawImage(a.img, a.sx, a.sy, a.sw, a.sh, x, y, a.sw, a.sh); return; }
+  ctx.save();
+  ctx.translate(x + a.sw, y);
+  ctx.scale(-1, 1);
+  ctx.drawImage(a.img, a.sx, a.sy, a.sw, a.sh, 0, 0, a.sw, a.sh);
+  ctx.restore();
+}
 // möbelns originalkulör (till "Original"-rutan i färgvalet)
 export function furnBaseColor(k, v) {
   if (k === 'matta') return (v | 0) === 1 ? '#3f5667' : '#5e1622';
   const f = frameOf(k, v);
   return f && ATLAS?.complete ? spriteBaseColor(ATLAS, f, TINT_HINT[frameName(k, v)]) : null;
 }
+// möbelns mått i rotationsläge r
+function dimsOf(k, v, r) {
+  if (k === 'matta') return { w: RUG.w, h: RUG.h };
+  if (k === 'vaxt') return { w: 20, h: 52 };
+  const vw = viewOf(k, v, r);
+  const f = frameOf(vw.k, vw.v);
+  return f ? { w: f[2], h: f[3] } : { w: 16, h: 16 };
+}
+// Fotavtrycket för en möbel med vänsterkant x och fotlinje y (mattan: överkant y):
+// { t: 'wall' | 'flat' | 'solid', r: [x0, y0, x1, y1], w, h }
+function footOf(k, v, r, x, y) {
+  const { w, h } = dimsOf(k, v, r);
+  if (isWall(k)) return { t: 'wall', r: [x, y - h, x + w, y], w, h };
+  if (k === 'matta') return { t: 'flat', r: [x, y, x + w, y + h], w, h };
+  if (isFlat(k)) return { t: 'flat', r: [x, y - h, x + w, y], w, h };
+  const sh = k === 'vaxt' ? 12 : solidH(k, h);
+  return { t: 'solid', r: [x - 1, y - sh, x + w + 1, y + 1], w, h };
+}
+const overlaps = (a, b) => a[2] > b[0] && a[0] < b[2] && a[3] > b[1] && a[1] < b[3];
 
 export function makeRoom(A, { visit = false } = {}) {
   const g = A.game;
@@ -124,30 +191,155 @@ export function makeRoom(A, { visit = false } = {}) {
   // ---------- delrumsdörrar + bakgrund ----------
   const subDoors = plan.rooms.map((r, i) => i).filter((i) => i !== sub)
     .map((i, n) => ({ to: i, name: plan.rooms[i].name, x0: RIGHT - 48 - n * 44, x1: RIGHT - 18 - n * 44 }));
-  const bg = buildBg(roomDef, RIGHT, subDoors, sub === 0, !!plan.lyx, visit);
+  const doorRects = [...(sub === 0 ? [[DOOR.x0 - 2, 26, DOOR.x1 + 2, WALL_Y]] : []), ...subDoors.map((sd) => [sd.x0 - 2, 26, sd.x1 + 2, WALL_Y])];
+  // fönstren som faktiskt ritas (samma urval som i buildBg), med karm: väggsaker får inte hänga där
+  const windowRects = roomDef.windows
+    .filter(([wx0, wx1]) => !(wx1 > RIGHT - 5 || subDoors.some((sd) => wx1 > sd.x0 - 4 && wx0 < sd.x1 + 4)))
+    .map(([wx0, wx1]) => [wx0 - 2, 15, wx1 + 2, 51]);
+  const bg = buildBg(roomDef, RIGHT, subDoors, sub === 0, !!plan.lyx, visit, !!plan.shabby);
 
-  // ---------- props byggs ur deco (görs om efter varje ändring) ----------
-  let props = [], rugs = [], obstacles = [], hotRects = [], freeGrid;
-  const CELL = 4, GW = Math.ceil(FW / CELL), GH = Math.ceil(FH / CELL);
+  // ---------- var får möbler stå? ----------
+  // De andra möblernas fotavtryck (räknas en gång per sökning – fitRoom prövar tusentals lägen)
+  const feetOf = (list, skip) => list.map((o, i) => (i === skip ? null : { wall: isWall(o.k), flat: o.k === 'matta' || isFlat(o.k), r: footOf(o.k, o.v, o.r, o.x, o.y).r }));
+  // x/y som i deco-posten (vänsterkant + fotlinje; mattan överkant). skip = index i listan att bortse från.
+  function fits(k, v, r, x, y, list, skip = -1, feet = feetOf(list, skip)) {
+    const ft = footOf(k, v, r, x, y);
+    const [x0, y0, x1, y1] = ft.r;
+    if (ft.t === 'wall') {
+      if (x0 < 5 || x1 > RIGHT - 5 || y0 < WALL_TOP || y1 > WALL_Y - 3) return false;
+      for (const dr of doorRects) if (overlaps(ft.r, dr)) return false;
+      if (!katalogOf(k)?.overWindow) for (const wr of windowRects) if (overlaps(ft.r, wr)) return false;
+      return !feet.some((o) => o && o.wall && overlaps(ft.r, o.r));
+    }
+    if (ft.t === 'flat') return x0 >= 6 && x1 <= RIGHT - 4 && y0 >= WALL_Y + 2 && y1 <= FH - 3;
+    if (x < 8 || x + ft.w > RIGHT - 5 || y < WALL_Y + 6 || y > FH - 4) return false;
+    for (const dr of doorRects) if (x1 > dr[0] && x0 < dr[2] && y1 > WALL_Y && y0 < WALL_Y + 15) return false; // fritt framför dörrarna
+    return !feet.some((o) => o && !o.wall && !o.flat && overlaps(ft.r, o.r));
+  }
+  // Närmaste lediga plats för möbeln d: ett rutnät om 4 px förankrat där den står (plus
+  // kanterna), sorterat på avståndet – lodrätt räknas tredubbelt så att den helst stannar
+  // på sin rad (höga skåp vid bakväggen blir kvar vid väggen, en väggsak som hänger 1 px
+  // för lågt knuffas bara upp). Väggsaker undviker lägen bakom höga golvmöbler.
+  function nearestSpot(d, list, skip) {
+    const { w, h } = dimsOf(d.k, d.v, d.r);
+    const wall = isWall(d.k);
+    const axis = (from, lo, hi, step) => {
+      const s = new Set([lo, hi]);
+      for (let v = from; v >= lo; v -= step) if (v <= hi) s.add(v);
+      for (let v = from + step; v <= hi; v += step) if (v >= lo) s.add(v);
+      return [...s].filter((v) => v >= lo && v <= hi);
+    };
+    const xs = axis(d.x, wall ? 5 : 8, RIGHT - 5 - w, 4);
+    const ys = wall ? axis(d.y, WALL_TOP + h, WALL_Y - 3, 4)
+      : d.k === 'matta' ? axis(d.y, WALL_Y + 2, FH - 3 - h, 4)
+        : isFlat(d.k) ? axis(d.y, WALL_Y + 2 + h, FH - 3, 4) : axis(d.y, WALL_Y + 6, FH - 4, 4);
+    const feet = feetOf(list, skip);
+    // de ritade rektanglarna för golvmöblerna: en väggsak ska helst inte hamna bakom dem,
+    // och en golvmöbel ska helst inte skymma (eller skymmas av) en annan
+    const drawn = list.filter((o, j) => j !== skip && !isWall(o.k) && o.k !== 'matta' && !isFlat(o.k))
+      .map((o) => { const dm = dimsOf(o.k, o.v, o.r); return [o.x, o.y - dm.h, o.x + dm.w, o.y]; });
+    const flat = d.k === 'matta' || isFlat(d.k);
+    const cands = [];
+    for (const y of ys) for (const x of xs) {
+      let cost = Math.abs(x - d.x) + Math.abs(y - d.y) * 3;
+      if (!flat && drawn.some((r) => overlaps([x, y - h, x + w, y], r))) cost += wall ? 300 : 150;
+      cands.push({ x, y, cost });
+    }
+    cands.sort((a, b) => a.cost - b.cost);
+    for (const c of cands) if (fits(d.k, d.v, d.r, c.x, c.y, list, skip, feet)) return c;
+    return null;
+  }
+  // deco-position ur pekarläget (mitten under pekaren; väggsaker fästs i väggens höjdled)
+  function posFor(k, v, r, mx, my) {
+    const { w, h } = dimsOf(k, v, r);
+    const x = Math.round(mx - w / 2);
+    if (isWall(k)) return { x, y: Math.max(WALL_TOP + h, Math.min(WALL_Y - 3, Math.round(my))) };
+    if (k === 'matta') return { x, y: Math.round(my - h / 2) };
+    return { x, y: Math.round(my) };
+  }
 
-  const acts = {
-    sang: visit ? null : () => A.sleepFlow(),
-    garderob: visit ? null : () => { play('click'); openAvatarEditor({ onDone: (av) => { A.avatar = av; toast('👕 Snyggt!', 'good'); } }); },
-    kylskap: visit ? null : () => openFridge(A),
-  };
+  // finns en möbel med funktionen fn utställd i något av bostadens delrum? (delrum man
+  // inte varit i än räknas med sin startmöblering)
+  const homeHasFunction = (fn) => plan.rooms.some((r, i) => (g.deco[`${home}:${i}`] || seedFor(home, i)).some((d) => functionOf(d.k) === fn));
+
+  // ---------- äldre sparfiler: se till att allt får plats i (den mindre) lokalen ----------
+  // Lilla rummet krympte och fick ett dass, och väggsaker får inte längre hänga över
+  // fönstren: det som står fel knuffas till närmaste lediga plats, annars till förrådet.
+  // Är förrådet fullt får möbeln stå kvar (inne i lokalen, så att den går att plocka
+  // upp) – inget försvinner någonsin, spelaren flyttar den själv med Möblera.
+  function fitRoom() {
+    if (visit) return;
+    const list = decoList();
+    let changed = false, nudged = 0, stored = 0;
+    const stuck = [];
+    if (home === 'rum' && sub === 0 && list.length < MAX_PER_ROOM && !list.some((d) => functionOf(d.k) === 'toalett') && !g.storage.some((it) => it.k === 'dass')) {
+      list.push({ k: 'dass', v: 0, x: 138, y: 174, fx: 1 });
+      changed = true;
+    }
+    for (let i = list.length - 1; i >= 0; i--) {
+      const d = list[i];
+      if (!knownKind(d.k) || fits(d.k, d.v, d.r, d.x, d.y, list, i)) continue;
+      changed = true;
+      const spot = nearestSpot(d, list, i);
+      if (spot) { d.x = spot.x; d.y = spot.y; if (!d.fx) nudged++; continue; } // startmöbler knuffas tyst
+      if (g.storage.length < MAX_STORAGE) {
+        list.splice(i, 1);
+        g.storage.push({ k: d.k, v: d.v, ...(d.c ? { c: d.c } : {}), ...(d.fx ? { fx: 1 } : {}), ...(d.r ? { r: d.r } : {}) });
+        stored++;
+      } else {
+        const { w, h } = dimsOf(d.k, d.v, d.r);
+        d.x = Math.max(isWall(d.k) ? 5 : 8, Math.min(RIGHT - 5 - w, d.x));
+        d.y = isWall(d.k) ? Math.max(WALL_TOP + h, Math.min(WALL_Y - 3, d.y))
+          : d.k === 'matta' ? Math.max(WALL_Y + 2, Math.min(FH - 3 - h, d.y))
+            : isFlat(d.k) ? Math.max(WALL_Y + 2 + h, Math.min(FH - 3, d.y)) : Math.max(WALL_Y + 6, Math.min(FH - 4, d.y));
+        stuck.push(nameOf(d.k));
+      }
+    }
+    if (changed) g.save();
+    if (stored) toast(`📦 ${home === 'rum' ? 'Rummet är mindre nu – ' : ''}${stored === 1 ? 'en möbel fick' : `${stored} möbler fick`} inte plats och ligger i förrådet.`);
+    else if (nudged) toast(`🛋️ ${nudged === 1 ? 'En möbel knuffades' : `${nudged} möbler knuffades`} till en ledig plats.`);
+    if (stuck.length) toast(`⚠️ Förrådet är fullt – ${stuck.slice(0, 2).join(', ')}${stuck.length > 2 ? ' m.fl.' : ''} står i vägen. Flytta med 🛋️ Möblera!`, 'bad');
+  }
+  fitRoom();
+
+  // ---------- vad man gör vid funktionsmöblerna ----------
+  function actFor(fn, kind) {
+    if (visit || !fn) return null;
+    switch (fn) {
+      case 'sova': return () => A.sleepFlow();
+      case 'garderob': return () => { play('click'); openAvatarEditor({ onDone: (av) => { A.avatar = av; toast('👕 Snyggt!', 'good'); } }); };
+      case 'ata': return () => openFridge(A);
+      case 'toalett': return () => useToilet(A, kind);
+      case 'tvatta': return () => wash(A, kind);
+      case 'tv': return () => watchTv(A, kind);
+    }
+    return null;
+  }
   const exitAct = visit
     ? () => { A.visitTarget = null; A.roomSub = 0; g.passTime(20); g.save(); play('door'); toast('🚗 Hemma igen.'); A.go('city'); }
     : () => { A.roomSub = 0; play('door'); A.go('city'); };
 
+  // ---------- props byggs ur deco (görs om efter varje ändring) ----------
+  let props = [], rugs = [], wallItems = [], obstacles = [], hotRects = [], freeGrid;
+  const CELL = 4, GW = Math.ceil(FW / CELL), GH = Math.ceil(FH / CELL);
+
   function rebuild() {
-    props = []; rugs = [];
-    decoList().forEach((d, i) => {
+    props = []; rugs = []; wallItems = [];
+    const list = decoList();
+    list.forEach((d, i) => {
       if (decor.carry && decor.carry.src === 'deco' && decor.carry.idx === i) return; // lyftad just nu
-      if (d.k === 'matta') { rugs.push({ d, idx: i, img: rugImg(d.v, d.c) }); return; }
+      if (d.k === 'matta') { rugs.push({ decoIdx: i, x: d.x, y: d.y, w: RUG.w, h: RUG.h, img: rugImg(d.v, d.c), draw: (ctx) => ctx.drawImage(rugImg(d.v, d.c), d.x, d.y) }); return; }
       if (d.k === 'vaxt') { props.push({ ...makePlantProp(d.x + 10, d.y), k: 'vaxt', decoIdx: i, fx: d.fx }); return; }
+      if (isWall(d.k)) { const w = wallProp(d, i); if (w) wallItems.push(w); return; }
+      if (isFlat(d.k)) { const f = flatProp(d, i); if (f) rugs.push(f); return; }
       const p = spriteProp(d, i, !visit);
       if (p) props.push(p);
     });
+    // ingen säng utställd någonstans hemma? då får madrassen på golvet duga
+    if (!visit && !homeHasFunction('sova') && !(decor.carry && functionOf(decor.carry.k) === 'sova')) {
+      const m = makeMattressProp(list, RIGHT);
+      if (m) { m.act = () => floorSleep(A); props.push(m); }
+    }
     obstacles = props.map((p) => p.solid).filter(Boolean);
     freeGrid = new Uint8Array(GW * GH);
     for (let gy = 0; gy < GH; gy++) for (let gx = 0; gx < GW; gx++) {
@@ -161,9 +353,14 @@ export function makeRoom(A, { visit = false } = {}) {
     for (const sd of subDoors) hotRects.push({ id: 'sub' + sd.to, act: () => { A.roomSub = sd.to; play('door'); A.go(A.sceneName); }, r: [sd.x0, 34, sd.x1, WALL_Y + 6], go: [(sd.x0 + sd.x1) / 2, WALL_Y + 12] });
     for (const p of props) {
       if (!p.solid) continue;
-      const act = acts[p.k];
-      if (act === undefined || act === null) continue;
+      const act = p.act || actFor(p.fn, p.k);
+      if (!act) continue;
       hotRects.push({ id: p.k, act, r: [p.solid[0], p.top, p.solid[2], p.solid[3] + 2], go: [(p.solid[0] + p.solid[2]) / 2, p.solid[3] + 5] });
+    }
+    for (const w of wallItems) { // t.ex. tvättstället: gå fram till väggen under det
+      const act = actFor(w.fn, w.k);
+      if (!act) continue;
+      hotRects.push({ id: w.k, act, r: [w.x, w.top, w.x + w.w, w.top + w.h], go: [w.x + w.w / 2, WALL_Y + 12] });
     }
   }
 
@@ -220,40 +417,68 @@ export function makeRoom(A, { visit = false } = {}) {
   }
 
   // ---------- möblera-läget ----------
+  // carry = möbeln man håller i: { src: 'deco'|'storage', idx, k, v, c, r, r0 (rotationen den hade), fx }
   const decor = { on: false, carry: null, mx: 100, my: 150 };
-  function canPlace(k, v, x, y) {
-    if (k === 'matta') {
-      const x0 = x - RUG.w / 2, y0 = y - RUG.h / 2;
-      return x0 >= 6 && x0 + RUG.w <= RIGHT - 4 && y0 >= WALL_Y + 2 && y0 + RUG.h <= FH - 3;
-    }
-    const f = k === 'vaxt' ? [0, 0, 20, 52] : frameOf(k, v);
-    const w = f[2], left = Math.round(x - w / 2), base = Math.round(y);
-    const solidH = SOLID_LOW.has(k) ? Math.round(f[3] * 0.5) : Math.min(13, Math.round(f[3] * 0.4));
-    if (left < 8 || left + w > RIGHT - 5 || base < WALL_Y + 6 || base > FH - 4) return false;
-    const s = [left - 1, base - solidH, left + w + 1, base + 1];
-    for (const h of hotRects) if (h.id.startsWith('sub') || h.id === 'dorr') {
-      if (s[2] > h.r[0] - 2 && s[0] < h.r[2] + 2 && s[3] > WALL_Y && s[1] < h.r[3] + 6) return false;
-    }
-    for (const o of obstacles) if (s[2] > o[0] && s[0] < o[2] && s[3] > o[1] && s[1] < o[3]) return false;
-    return true;
+  const carrySkip = () => (decor.carry?.src === 'deco' ? decor.carry.idx : -1);
+  function canPlaceCarry(mx, my) {
+    const c = decor.carry;
+    const { x, y } = posFor(c.k, c.v, c.r, mx, my);
+    return fits(c.k, c.v, c.r, x, y, decoList(), carrySkip());
   }
   function commitPlace() {
     const c = decor.carry;
-    const k = c.k, v = c.v;
-    const pos = k === 'matta'
-      ? { x: Math.round(decor.mx - RUG.w / 2), y: Math.round(decor.my - RUG.h / 2) }
-      : { x: Math.round(decor.mx - (k === 'vaxt' ? 10 : frameOf(k, v)[2] / 2)), y: Math.round(decor.my) };
-    if (c.src === 'storage') g.placeFromStorage(c.idx, sub, pos.x, pos.y);
-    else g.moveDeco(sub, c.idx, pos.x, pos.y);
+    const pos = posFor(c.k, c.v, c.r, decor.mx, decor.my);
+    if (c.src === 'storage') {
+      if (!g.placeFromStorage(c.idx, sub, pos.x, pos.y)) { play('fel'); toast('Rummet är fullt!', 'bad'); return; }
+      const list = decoList();
+      if (c.r) g.rotateDeco(sub, list.length - 1, c.r);
+    } else {
+      g.moveDeco(sub, c.idx, pos.x, pos.y);
+      g.rotateDeco(sub, c.idx, c.r);
+    }
     decor.carry = null;
     rebuild(); renderStoragePanel();
   }
+  // 🔄 rotera möbeln man håller i (även tangenten R)
+  function rotateCarry() {
+    const c = decor.carry;
+    if (!c || c.k === 'vaxt') return; // monsteran är ritad för hand och har bara en vy (knappen är också avstängd)
+    c.r = (c.r + 1) % rotStates(c.k);
+    if (c.src === 'storage') g.rotateStorage(c.idx, c.r);
+    play('click');
+    updateSellBtn();
+  }
+  // 📦 lägg möbeln man håller i i förrådet (så kan den ställas ut i ett annat delrum)
+  function storeCarry() {
+    const c = decor.carry;
+    if (!c) return;
+    if (c.src === 'deco') {
+      if (!g.decoToStorage(sub, c.idx)) { play('fel'); toast('Förrådet är fullt!', 'bad'); return; }
+      toast(`📦 ${nameOf(c.k)} ligger i förrådet.`);
+    }
+    play('ok');
+    decor.carry = null;
+    rebuild(); renderStoragePanel();
+  }
+  // lägg ner det man håller i utan att flytta det (rotationen återställs)
+  function dropCarry() {
+    const c = decor.carry;
+    if (!c) return;
+    if (c.src === 'deco' && c.r !== c.r0) g.rotateDeco(sub, c.idx, c.r0);
+    if (c.src === 'storage' && c.r !== c.r0) g.rotateStorage(c.idx, c.r0);
+    decor.carry = null;
+    rebuild();
+  }
   function toggleDecor(force) {
     if (visit) return;
-    decor.on = force !== undefined ? force : !decor.on;
-    if (!decor.on && decor.carry) { decor.carry = null; rebuild(); } // lyft möbel läggs tillbaka (låg kvar i listan)
+    const was = decor.on;
+    decor.on = force !== undefined ? !!force : !decor.on;
+    if (!decor.on && decor.carry) dropCarry(); // lyft möbel läggs tillbaka (låg kvar i listan)
     document.querySelector('#decor-panel')?.classList.toggle('hidden', !decor.on);
-    if (decor.on) { renderStoragePanel(); toast('🛋️ Möblera: klicka på en möbel för att flytta, eller välj ur förrådet.'); }
+    // förrådspanelen tar plats till höger: body.decor-on ger #app en marginal och canvasen
+    // räknas om (fit i main.js) så att panelen aldrig döljer rummets högerkant
+    if (decor.on !== was) { document.body.classList.toggle('decor-on', decor.on); window.dispatchEvent(new Event('resize')); }
+    if (decor.on) { renderStoragePanel(); toast('🛋️ Möblera: klicka på en möbel för att flytta, R eller 🔄 vrider den, eller välj ur förrådet.'); }
     else g.save();
   }
   function renderStoragePanel() {
@@ -262,14 +487,16 @@ export function makeRoom(A, { visit = false } = {}) {
     box.innerHTML = g.storage.length
       ? g.storage.map((it, i) => {
         const kat = katalogOf(it.k);
-        return `<button class="dp-item" data-st="${i}"><span data-thumb="${i}"></span>${kat?.name || it.k}</button>`;
+        const hint = kat?.wall ? 'väggsak' : it.fx ? 'startmöbel' : functionOf(it.k) ? FN_LABEL[functionOf(it.k)].toLowerCase() : '';
+        return `<button class="dp-item" data-st="${i}"><span data-thumb="${i}"></span><span>${nameOf(it.k)}${hint ? `<small>${hint}</small>` : ''}</span></button>`;
       }).join('')
-      : '<div class="dp-empty">Tomt – köp möbler i möbelvaruhuset!</div>';
+      : '<div class="dp-empty">Tomt – köp möbler på MÖBELJÄTTEN, eller lägg något här med 📦.</div>';
     box.querySelectorAll('[data-thumb]').forEach((el) => { const it = g.storage[+el.dataset.thumb]; el.replaceWith(thumbCanvas(it.k, it.v, it.c)); });
     box.querySelectorAll('[data-st]').forEach((b) => (b.onclick = () => {
       const it = g.storage[+b.dataset.st];
       if (!it) return;
-      decor.carry = { src: 'storage', idx: +b.dataset.st, k: it.k, v: it.v, c: it.c };
+      if (decor.carry) dropCarry();
+      decor.carry = { src: 'storage', idx: +b.dataset.st, k: it.k, v: it.v, c: it.c, fx: it.fx, r: it.r | 0, r0: it.r | 0 };
       updateSellBtn();
     }));
     updateSellBtn();
@@ -283,11 +510,24 @@ export function makeRoom(A, { visit = false } = {}) {
       paintBtn.title = c ? (canRecolor(c.k) ? 'Måla om möbeln du håller i – gratis' : 'Den här går inte att måla om') : 'Välj en möbel först';
       paintBtn.onclick = () => paintCarry();
     }
+    const rotBtn = document.querySelector('#decor-rotate');
+    if (rotBtn) {
+      rotBtn.disabled = !c || c.k === 'vaxt';
+      rotBtn.textContent = c && rotStates(c.k) === 4 ? `🔄 Rotera (${['fram', 'höger', 'bak', 'vänster'][c.r]})` : '🔄 Rotera';
+      rotBtn.onclick = () => rotateCarry();
+    }
+    const storeBtn = document.querySelector('#decor-store');
+    if (storeBtn) {
+      storeBtn.disabled = !c || c.src !== 'deco';
+      storeBtn.onclick = () => storeCarry();
+    }
     const btn = document.querySelector('#decor-sell');
     if (!btn) return;
-    const sellable = c && (c.src === 'storage' || !decoList()[c.idx]?.fx) && katalogOf(c.k);
+    const item = c ? (c.src === 'storage' ? g.storage[c.idx] : decoList()[c.idx]) : null;
+    const sellable = !!c && g.sellable(item);
     btn.disabled = !sellable;
-    btn.textContent = sellable ? `Sälj +${Math.round(katalogOf(c.k).price / 2)} kr` : 'Sälj';
+    btn.textContent = sellable ? `Sälj +${Math.round(katalogOf(c.k).price / 2)} kr` : c?.fx ? 'Sälj (startmöbel)' : 'Sälj';
+    btn.title = c?.fx ? 'Startmöblerna går att flytta men inte sälja' : '';
     btn.onclick = () => {
       if (!sellable) return;
       if (c.src === 'storage') g.sellStorage(c.idx); else g.sellDeco(sub, c.idx);
@@ -329,6 +569,20 @@ export function makeRoom(A, { visit = false } = {}) {
     _debug: {
       spot: (id) => { const h = hotRects.find((h) => h.id === id); return h ? { x: (h.r[0] + h.r[2]) / 2, y: (h.r[1] + h.r[3]) / 2 } : null; },
       tile: (a, b) => ({ x: Math.min(RIGHT - 20, 30 + a * 40), y: Math.min(FH - 10, WALL_Y + 15 + b * 18) }),
+      // för testerna: lyft möbel i (i deco-listan) / förrådspost, rotera, släpp vid (x, y)
+      pick: (idx) => { const d = decoList()[idx]; if (!d) return false; decor.carry = { src: 'deco', idx, k: d.k, v: d.v, c: d.c, fx: d.fx, r: d.r | 0, r0: d.r | 0 }; rebuild(); return true; },
+      pickStorage: (idx) => { const it = g.storage[idx]; if (!it) return false; decor.carry = { src: 'storage', idx, k: it.k, v: it.v, c: it.c, fx: it.fx, r: it.r | 0, r0: it.r | 0 }; return true; },
+      rotate: () => rotateCarry(),
+      store: () => storeCarry(),
+      drop: (x, y) => { decor.mx = x; decor.my = y; if (!decor.carry || !canPlaceCarry(x, y)) return false; commitPlace(); return true; },
+      canPlace: (x, y) => !!decor.carry && canPlaceCarry(x, y),
+      props: () => props.map((p) => ({ k: p.k, fn: p.fn, solid: p.solid })),
+      walls: () => wallItems.map((w) => ({ k: w.k, x: w.x, top: w.top })),
+      // står varje post i listan rätt (som fitRoom ser det)? – för startmöbleringstestet
+      allFit: () => { const list = decoList(); return list.every((d, i) => !knownKind(d.k) || fits(d.k, d.v, d.r, d.x, d.y, list, i)); },
+      seeds: () => seedFor(home, sub),
+      windows: windowRects, doors: doorRects,
+      partition: RIGHT,
     },
 
     update(dt) {
@@ -350,16 +604,17 @@ export function makeRoom(A, { visit = false } = {}) {
     down(x, y) {
       decor.mx = x; decor.my = y;
       if (decor.on) {
-        if (decor.carry) { if (canPlace(decor.carry.k, decor.carry.v, x, y)) { play('ok'); commitPlace(); } else play('fel'); return; }
-        // plocka upp möbeln under pekaren (främst sorterad först)
+        if (decor.carry) { if (canPlaceCarry(x, y)) { play('ok'); commitPlace(); } else play('fel'); return; }
+        // plocka upp möbeln under pekaren (främst sorterad först; väggsaker och mattor sist)
         const list = decoList();
-        const hit = [...props, ...rugs.map((r) => ({ decoIdx: r.idx, k: 'matta', top: r.d.y, solid: [r.d.x, r.d.y, r.d.x + RUG.w, r.d.y + RUG.h] }))]
-          .filter((p) => p.decoIdx !== undefined)
-          .sort((a, b) => (b.solid?.[3] ?? 0) - (a.solid?.[3] ?? 0))
-          .find((p) => { const r = p.k === 'matta' ? p.solid : [p.solid[0], p.top, p.solid[2], p.solid[3] + 2]; return x >= r[0] && x <= r[2] && y >= r[1] && y <= r[3]; });
+        const hit = [
+          ...props.filter((p) => p.decoIdx !== undefined).sort((a, b) => b.solid[3] - a.solid[3]).map((p) => ({ decoIdx: p.decoIdx, r: [p.solid[0], p.top, p.solid[2], p.solid[3] + 2] })),
+          ...wallItems.map((w) => ({ decoIdx: w.decoIdx, r: [w.x, w.top, w.x + w.w, w.top + w.h] })),
+          ...rugs.map((r) => ({ decoIdx: r.decoIdx, r: [r.x, r.y, r.x + r.w, r.y + r.h] })),
+        ].find((p) => x >= p.r[0] && x <= p.r[2] && y >= p.r[1] && y <= p.r[3]);
         if (hit) {
           const d = list[hit.decoIdx];
-          decor.carry = { src: 'deco', idx: hit.decoIdx, k: d.k, v: d.v, c: d.c, fx: d.fx };
+          decor.carry = { src: 'deco', idx: hit.decoIdx, k: d.k, v: d.v, c: d.c, fx: d.fx, r: d.r | 0, r0: d.r | 0 };
           rebuild(); updateSellBtn();
         }
         return;
@@ -372,14 +627,23 @@ export function makeRoom(A, { visit = false } = {}) {
       }
       if (y > WALL_Y && x < RIGHT) walkTo(x, y);
     },
-    key(k) { if (k === 'Escape' && decor.on) toggleDecor(false); },
-    exit() { toggleDecor(false); document.querySelector('#decor-panel')?.classList.add('hidden'); },
+    key(k) {
+      if (k === 'Escape' && decor.on) toggleDecor(false);
+      if ((k === 'r' || k === 'R') && decor.on && decor.carry) rotateCarry();
+    },
+    exit() {
+      toggleDecor(false);
+      document.querySelector('#decor-panel')?.classList.add('hidden');
+      if (document.body.classList.contains('decor-on')) { document.body.classList.remove('decor-on'); window.dispatchEvent(new Event('resize')); }
+    },
 
     draw(ctx) {
       ctx.setTransform(A.pxs, 0, 0, A.pxs, 0, 0);
       const night = isNight(g);
       ctx.drawImage(bg(night), 0, 0);
-      for (const r of rugs) ctx.drawImage(r.img, r.d.x, r.d.y);
+      for (const w of wallItems) w.draw(ctx);
+      if (plan.shabby) drawSpider(ctx, RIGHT, t);
+      for (const r of rugs) r.draw(ctx);
 
       const folks = worldFolksHere(A);
       const drawables = props.map((p) => ({ fy: p.sort, draw: () => p.draw(ctx) }));
@@ -401,15 +665,17 @@ export function makeRoom(A, { visit = false } = {}) {
 
       // spöket i möblera-läget
       if (decor.on && decor.carry) {
-        const { k, v, c } = decor.carry;
-        const okHere = canPlace(k, v, decor.mx, decor.my);
+        const { k, v, c, r } = decor.carry;
+        const okHere = canPlaceCarry(decor.mx, decor.my);
+        const pos = posFor(k, v, r, decor.mx, decor.my);
         ctx.globalAlpha = 0.7;
-        if (k === 'matta') ctx.drawImage(rugImg(v, c), decor.mx - RUG.w / 2 | 0, decor.my - RUG.h / 2 | 0);
-        else if (k === 'vaxt') { const p = makePlantProp(decor.mx | 0, decor.my | 0); p.draw(ctx); }
-        else { const a = furnArt(k, v, c); if (a) ctx.drawImage(a.img, a.sx, a.sy, a.sw, a.sh, decor.mx - a.sw / 2 | 0, decor.my - a.sh | 0, a.sw, a.sh); }
+        if (k === 'matta') ctx.drawImage(rugImg(v, c), pos.x, pos.y);
+        else if (k === 'vaxt') { const p = makePlantProp(pos.x + 10, pos.y); p.draw(ctx); }
+        else { const a = furnView(k, v, c, r); if (a) drawArt(ctx, a, pos.x, pos.y - a.sh); }
         ctx.globalAlpha = 1;
         ctx.fillStyle = okHere ? 'rgba(80,220,110,0.8)' : 'rgba(230,60,60,0.8)';
-        ctx.fillRect(decor.mx - 6 | 0, decor.my | 0, 12, 2);
+        if (isWall(k)) ctx.fillRect(pos.x, pos.y + 1, dimsOf(k, v, r).w, 2);
+        else ctx.fillRect(decor.mx - 6 | 0, decor.my | 0, 12, 2);
       } else if (decor.on) {
         ctx.fillStyle = 'rgba(23,21,26,0.7)'; ctx.fillRect(4, 4, 150, 10);
         ctxText(ctx, SMALL, 'MÖBLERA: KLICKA PÅ EN MÖBEL', 7, 6, '#ffd23f');
@@ -423,27 +689,52 @@ export function makeRoom(A, { visit = false } = {}) {
 const isNight = (g) => { const h = g.min / 60; return h >= 19.5 || h < 6.5; };
 
 // ---------- sprite-props ----------
+// En golvmöbel ur atlasen i sin rotationsvy: x = vänsterkant, y = fotlinje.
 function spriteProp(d, decoIdx, sign) {
-  const f = frameOf(d.k, d.v);
+  const vw = viewOf(d.k, d.v, d.r);
+  const f = frameOf(vw.k, vw.v);
   if (!f) return null;
-  const [fx, fy, fw, fh] = f;
+  const [, , fw, fh] = f;
   const x = d.x, base = d.y, top = base - fh;
-  const solidH = SOLID_LOW.has(d.k) ? Math.round(fh * 0.5) : Math.min(13, Math.round(fh * 0.4));
-  const label = sign ? { sang: 'SÄNG', garderob: 'GARDEROB', kylskap: 'KYLSKÅP' }[d.k] : null;
+  const fn = functionOf(d.k);
+  const label = sign ? labelOf(d.k) : null;
   return {
-    k: d.k, decoIdx, fx: d.fx, sort: base, top,
-    solid: [x - 1, base - solidH, x + fw + 1, base + 1],
+    k: d.k, fn, decoIdx, fx: d.fx, sort: base, top,
+    solid: [x - 1, base - solidH(d.k, fh), x + fw + 1, base + 1],
     draw(ctx) {
       ctx.fillStyle = 'rgba(20,12,28,0.22)';
       ctx.fillRect(x + 1, base - 1, fw - 2, 2);
       ctx.fillRect(x + 3, base + 1, fw - 6, 1);
-      if (ATLAS && ATLAS.complete) {
-        const t = isHex(d.c) ? tintSprite(ATLAS, f, d.c, TINT_HINT[frameName(d.k, d.v)]) : null; // cachad per (ruta, färg)
-        if (t) ctx.drawImage(t, x, top); else ctx.drawImage(ATLAS, fx, fy, fw, fh, x, top, fw, fh);
-      }
+      const a = furnView(d.k, d.v, d.c, d.r); // cachad per (ruta, färg)
+      if (a) drawArt(ctx, a, x, top);
       if (label) ctxPlate(ctx, x + fw / 2, top - 9, label);
     },
   };
+}
+// väggsak: hänger på bakväggen med underkant y, inget hinder
+function wallProp(d, decoIdx) {
+  const vw = viewOf(d.k, d.v, d.r);
+  const f = frameOf(vw.k, vw.v);
+  if (!f) return null;
+  const [, , fw, fh] = f;
+  const top = d.y - fh;
+  return {
+    k: d.k, fn: functionOf(d.k), decoIdx, fx: d.fx, x: d.x, top, w: fw, h: fh,
+    draw(ctx) {
+      ctx.fillStyle = 'rgba(20,12,28,0.18)';
+      ctx.fillRect(d.x + 1, d.y, fw - 1, 1); ctx.fillRect(d.x + fw, top + 1, 1, fh - 1);
+      const a = furnView(d.k, d.v, d.c, d.r);
+      if (a) drawArt(ctx, a, d.x, top);
+    },
+  };
+}
+// matta ur arken: platt, gåbar, ritas under allt
+function flatProp(d, decoIdx) {
+  const vw = viewOf(d.k, d.v, d.r);
+  const f = frameOf(vw.k, vw.v);
+  if (!f) return null;
+  const [, , fw, fh] = f;
+  return { k: d.k, decoIdx, x: d.x, y: d.y - fh, w: fw, h: fh, draw(ctx) { const a = furnView(d.k, d.v, d.c, d.r); if (a) drawArt(ctx, a, d.x, d.y - fh); } };
 }
 function ctxPlate(ctx, cx, y, label) {
   const w = textW(SMALL, label) + 6;
@@ -460,6 +751,7 @@ function thumbCanvas(k, v, c) {
   const x = cv.getContext('2d');
   x.imageSmoothingEnabled = false;
   const draw = () => {
+    if (k === 'vaxt') { const p = makePlantProp(20, 52); cv.width = 40; cv.height = 44; x.imageSmoothingEnabled = false; x.drawImage(p.img, 0, -10); return; }
     const a = furnArt(k, v, c);
     if (!a) return;
     const s = a.sw * 2 <= THUMB.w && a.sh * 2 <= THUMB.h ? 2 : 1;
@@ -470,6 +762,105 @@ function thumbCanvas(k, v, c) {
   };
   if (ATLAS.complete) draw(); else ATLAS.addEventListener('load', draw, { once: true });
   return cv;
+}
+
+// ---------- madrassen på golvet (när ingen säng står ute) ----------
+let mattressImg = null;
+function mattressArt() {
+  if (mattressImg) return mattressImg;
+  const P = new Pix(34, 16);
+  // madrass med kudde: blågrå, randig, lite tillplattad
+  P.rect(1, 4, 32, 11, 0x2a2430);
+  P.rect(2, 5, 30, 9, 0x6f7f9a); P.rect(2, 5, 30, 1, 0x93a3bc); P.rect(2, 13, 30, 1, 0x4c5a72);
+  for (let x = 4; x < 30; x += 4) P.rect(x, 7, 1, 6, 0x5d6d88);
+  P.rect(3, 6, 8, 6, 0xf0ece0); P.rect(3, 6, 8, 1, 0xffffff); P.rect(3, 11, 8, 1, 0xc8c4b4); P.box(3, 6, 8, 6, 0x9a9686);
+  for (let x = 2; x < 32; x++) P.px(x, 14, 0x000000, (x & 1) ? 0.25 : 0.1);
+  mattressImg = P.flush();
+  return mattressImg;
+}
+function makeMattressProp(list, RIGHT) {
+  const w = 34, h = 16;
+  let x = -1, y = -1;
+  // en ledig fläck: helst nere till vänster
+  const free = (tx, ty) => {
+    if (tx < 8 || tx + w > RIGHT - 5 || ty < WALL_Y + 16 || ty > FH - 4) return false;
+    const me = [tx - 1, ty - 8, tx + w + 1, ty + 1];
+    if (me[2] > DOOR.x0 - 2 && me[0] < DOOR.x1 + 2 && me[1] < WALL_Y + 15) return false;
+    for (const o of list) { if (isWall(o.k) || o.k === 'matta' || isFlat(o.k)) continue; if (overlaps(me, footOf(o.k, o.v, o.r, o.x, o.y).r)) return false; }
+    return true;
+  };
+  for (let ty = FH - 8; y < 0 && ty > WALL_Y + 16; ty -= 6) for (let tx = 10; x < 0 && tx + w < RIGHT - 5; tx += 6) if (free(tx, ty)) { x = tx; y = ty; }
+  if (x < 0) return null;
+  const img = mattressArt();
+  return {
+    k: 'madrass', fn: 'sova', sort: y, top: y - h,
+    solid: [x - 1, y - 8, x + w + 1, y + 1],
+    act: null, // sätts av rummet: floorSleep (golvet ger sämre sömn)
+    draw(ctx) { ctx.drawImage(img, x, y - h); ctxPlate(ctx, x + w / 2, y - h - 9, 'GOLVET'); },
+  };
+}
+// Sova på golvet: som sängen, fast sämre (kvalitet 0,75) – och en påminnelse om förrådet.
+function floorSleep(A) {
+  const g = A.game;
+  openModal('😴 Sova på golvet', `<p style="font-size:20px">Ingen säng är utställd – den ligger i förrådet. Golvet är hårt, kallt och lite dammigt, men du somnar.</p>
+    <p style="font-size:18px" class="bad">Sämre sömn än i en säng. Ställ ut sängen med 🛋️ Möblera!</p>`, [
+    { label: 'Inte än', onClick: closeModal },
+    { label: '😴 Sov ändå', cls: 'btn-go', onClick: () => {
+      closeModal();
+      play('sleep');
+      const { rent, eventText } = g.sleep(0.75);
+      setTimeout(() => play('morning'), 600);
+      toast(`☀️ God morgon! ${g.dayName}, dag ${g.day}. Aj, ryggen …`, 'good');
+      if (rent) toast(`💸 Hyra betald: ${fmt(rent)}`, g.money < 0 ? 'bad' : '');
+      if (g.money < 0) toast('⚠️ Du är skyldig hyresvärden pengar – jobba ihop dem!', 'bad');
+      if (eventText) setTimeout(() => toast(eventText, 'good'), 900);
+    } },
+  ]);
+}
+
+// ---------- funktionerna man gör vid möblerna ----------
+const DASS_LINES = [
+  '🚽 *KLONK* … *gurgel* … Det spolade. Typ.',
+  '🚽 Locket ramlade av igen. Du satte dit det. Det ramlade av.',
+  '🚽 Grannen bankar i väggen: "SLUTA SPOLA!"',
+  '🚽 Vattnet snurrade åt fel håll, sedan åt rätt håll, sedan stannade det.',
+  '🚽 Pumpen fick jobba. Du också.',
+  '🚽 Något bubblade till nere i röret. Du väljer att inte tänka på det.',
+];
+const WC_LINES = ['🚽 Skönt. Livet går vidare.', '🚽 *spol* Fräscht och fint.', '🚽 Toapapper: check. Handtvätt: check.', '🚽 Lugnt och stilla. Bästa stunden på dagen.'];
+const pick = (arr) => arr[(Math.random() * arr.length) | 0];
+// spolningen: sus → nedåtsvep → gurgel (dasset klonkar dessutom)
+function flushSound(bad) {
+  play('slide');
+  setTimeout(() => play('sleep'), 120);
+  setTimeout(() => play('chirp'), 650);
+  if (bad) { setTimeout(() => play('knock'), 900); setTimeout(() => play('miss'), 1250); }
+}
+function useToilet(A, kind) {
+  const g = A.game;
+  const bad = kind === 'dass';
+  flushSound(bad);
+  toast(pick(bad ? DASS_LINES : WC_LINES), bad ? 'wrap' : 'good');
+  g.passTime(5);
+  g.save();
+}
+function wash(A, kind) {
+  const g = A.game;
+  play('slide');
+  const long = kind === 'dusch' || kind === 'badkar';
+  const msg = { dusch: '🚿 Fräsch och ren!', badkar: '🛁 Ett långt varmt bad. Ahh.', tvattmaskin: '🫧 Tvätten snurrar. Rena kläder i morgon!', tvattpelare: '🧺 Tvätt och tork i ett – lyx!' }[kind] || '🧼 Rena händer!';
+  g.energy = Math.min(100, g.energy + (long ? 5 : 2));
+  g.passTime(long ? 20 : 5);
+  g.save();
+  toast(msg, 'good');
+}
+function watchTv(A, kind) {
+  const g = A.game;
+  play('click');
+  const msg = { dator: '💻 Du surfar en stund. Var tog timmen vägen?', laptop: '💻 Lite skärmtid i soffan.', spelkonsol: '🎮 En runda till … bara en till.' }[kind] || '📺 Du zappar en stund. Inget bra på, som vanligt.';
+  g.passTime(30);
+  g.save();
+  toast(msg);
 }
 
 // mattor: två mönster (museum/rand), valfri bottenfärg c – cachade
@@ -526,7 +917,7 @@ function makePlantProp(cx, base) {
 }
 
 // ================= bakgrunden (per delrum + dag/natt) =================
-function buildBg(roomDef, RIGHT, subDoors, hasExit, lyx, visit) {
+function buildBg(roomDef, RIGHT, subDoors, hasExit, lyx, visit, shabby) {
   const cache = {};
   return (night) => {
     const key = night ? 'n' : 'd';
@@ -545,6 +936,10 @@ function buildBg(roomDef, RIGHT, subDoors, hasExit, lyx, visit) {
       const h = hash(x, y, 2);
       if (h > 0.94) c = mul(c, 0.95); else if (h < 0.02) c = mix(c, 0xffffff, 0.25);
       if (lyx) { const vein = Math.sin(x * 0.31 + y * 0.55 + Math.sin(x * 0.09) * 4); if (vein > 0.96) c = mix(c, 0xd8b24a, 0.22); }
+      if (shabby) { // slitet: blekta och smutsiga brädor, gamla fläckar
+        if (hash(tx, ty, 21) > 0.7) c = mix(c, 0x8a7a5c, 0.22);
+        if (hash(x >> 1, y >> 1, 22) > 0.965) c = mul(c, 0.8);
+      }
       if (lx === 0 || ly === 0) c = mul(c, 0.84);
       else if (lx === 1 || ly === 1) c = mix(c, 0xffffff, 0.2);
       else if (lx + ly > 7 && lx + ly < 9 && ly < 6) c = mix(c, 0xffffff, 0.07);
@@ -597,17 +992,19 @@ function buildBg(roomDef, RIGHT, subDoors, hasExit, lyx, visit) {
     for (const [wx0, wx1] of roomDef.windows) {
       if (wx1 > RIGHT - 5 || subDoors.some((sd) => wx1 > sd.x0 - 4 && wx0 < sd.x1 + 4)) continue;
       const wy0 = 17, wy1 = 49;
-      P.rect(wx0 - 2, wy0 - 2, wx1 - wx0 + 4, wy1 - wy0 + 4, 0xf0ece0);
+      P.rect(wx0 - 2, wy0 - 2, wx1 - wx0 + 4, wy1 - wy0 + 4, shabby ? 0xd8d0bc : 0xf0ece0);
       P.box(wx0 - 2, wy0 - 2, wx1 - wx0 + 4, wy1 - wy0 + 4, mul(wall, 0.5));
       for (let y = wy0; y < wy1; y++) for (let x = wx0; x < wx1; x++) {
         let c = mix(sky0, sky1, (y - wy0) / (wy1 - wy0) + (bayer(x, y) - 0.5) * 0.08);
         if (!night && hash(x >> 2, y >> 1, 9) > 0.93) c = mix(c, 0xffffff, 0.5);
         if (night && hash(x, y, 10) > 0.985) c = 0xe8ecff;
+        if (shabby && hash(x >> 1, y >> 1, 23) > 0.9) c = mix(c, 0x9a9070, 0.35); // smutsig ruta
         P.px(x, y, c);
       }
       P.rect(wx0, (wy0 + wy1 >> 1), wx1 - wx0, 1, 0xf0ece0);
       P.rect((wx0 + wx1 >> 1), wy0, 1, wy1 - wy0, 0xf0ece0);
       P.hl(wx0 - 2, wy1 + 2, wx1 - wx0 + 4, 0xd8d2c2);
+      if (shabby) { P.line(wx0 + 4, wy0 + 2, wx0 + 11, wy0 + 12, 0xe8f0f8); P.line(wx0 + 11, wy0 + 12, wx0 + 9, wy0 + 19, 0xe8f0f8); } // spricka i rutan
       if (!night) for (let y = WALL_Y; y < WALL_Y + 30; y++) {
         const s = (y - WALL_Y) * 0.5, fade = 1 - (y - WALL_Y) / 30;
         for (let x = Math.round(wx0 + s); x < wx1 + s; x++) if (bayer(x, y) < fade * 0.85) P.px(x, y, 0xfff6dc, 0.1);
@@ -623,8 +1020,10 @@ function buildBg(roomDef, RIGHT, subDoors, hasExit, lyx, visit) {
       }
     }
 
+    if (shabby) paintShabby(P, RIGHT, wall, wallDk, night, hasExit, roomDef);
+
     // ljuskäglor + AO
-    for (let sx = 60; sx < RIGHT - 20; sx += 85) P.ell(sx, WALL_Y + 23, 22, 10, 0xfff3d0, night ? 0.05 : 0.1, 4);
+    if (!shabby) for (let sx = 60; sx < RIGHT - 20; sx += 85) P.ell(sx, WALL_Y + 23, 22, 10, 0xfff3d0, night ? 0.05 : 0.1, 4);
     for (let y = WALL_Y; y < WALL_Y + 4; y++) for (let x = 0; x < RIGHT; x++) {
       if (hasExit && x >= DOOR.cx - 13 && x < DOOR.cx + 13) continue;
       if (bayer(x, y) < 1 - (y - WALL_Y) / 4) P.px(x, y, 0x1a1426, 0.18);
@@ -635,6 +1034,112 @@ function buildBg(roomDef, RIGHT, subDoors, hasExit, lyx, visit) {
     cache[key] = P.flush();
     return cache[key];
   };
+}
+
+// ---------- Lilla rummets förfall ----------
+// Sprickor, fuktfläckar, flagnande tapet, spindelväv i hörnen, en naken glödlampa
+// (lyser på natten) och slitet golv. Allt deterministiskt ur hash().
+function paintShabby(P, RIGHT, wall, wallDk, night, hasExit, roomDef) {
+  const crackDk = mul(wall, 0.42), crackLt = mix(wall, 0xffffff, 0.18);
+  // sprickor: taggiga linjer nedåt från taklisten och ut från fönstret
+  const crack = (x, y, len, seed, drift = 0) => {
+    for (let i = 0; i < len; i++) {
+      const h = hash(i, seed, 31);
+      x += h < 0.3 ? -1 : h > 0.72 ? 1 : 0;
+      x += drift && i % 3 === 0 ? drift : 0;
+      y += hash(i, seed, 32) > 0.25 ? 1 : 0;
+      if (y >= WALL_Y - 3 || x < 5 || x > RIGHT - 5) break;
+      P.px(x, y, crackDk); P.px(x + 1, y, crackLt, 0.7);
+      if (h > 0.9 && i > 3) { P.px(x - 1, y + 1, crackDk); P.px(x - 2, y + 2, crackDk, 0.7); } // förgrening
+    }
+  };
+  crack(RIGHT - 60, 6, 34, 1); crack(RIGHT - 58, 20, 10, 5, 1);
+  crack(12, 6, 26, 2, -0);
+  crack(122, 30, 22, 3, 1);
+  if (hasExit) crack(DOOR.x1 + 6, 6, 18, 4);
+  // fuktfläckar: gulbruna, ditherade blaffor
+  const stain = (cx, cy, rx, ry, seed) => {
+    for (let y = cy - ry; y <= cy + ry; y++) for (let x = cx - rx; x <= cx + rx; x++) {
+      const d = Math.hypot((x - cx) / rx, (y - cy) / ry) + (hash(x, y, seed) - 0.5) * 0.35;
+      if (d >= 1 || y < 6 || y >= WALL_Y - 3 || x < 5 || x >= RIGHT - 4) continue;
+      const a = d > 0.75 ? (bayer(x, y) < 1 - (d - 0.75) * 4 ? 0.35 : 0) : 0.35 + (1 - d) * 0.25;
+      if (a) P.px(x, y, 0x5a4a28, a);
+      if (d > 0.85 && d < 0.98 && bayer(x, y) > 0.5) P.px(x, y, 0x3e3220, 0.4); // mörk kant
+    }
+  };
+  stain(RIGHT - 30, 14, 14, 8, 41); stain(RIGHT - 24, 40, 9, 12, 42); stain(70, 62, 8, 5, 43);
+  // flagnande tapet: en flik i övre högra hörnet som hänger ner (baksidan gulvit, väggen bakom mörk)
+  const fx0 = RIGHT - 22, fy0 = 6;
+  for (let i = 0; i < 12; i++) {
+    for (let x = fx0 + i; x < RIGHT - 5; x++) { const y = fy0 + i; if (y < WALL_Y - 3) P.px(x, y, mul(wallDk, 0.55)); } // bar vägg
+  }
+  for (let i = 0; i < 11; i++) { // fliken
+    const y = fy0 + 12 + i, x0 = fx0 + i, x1 = fx0 + 12 + Math.max(0, 6 - i);
+    for (let x = x0; x <= x1 && x < RIGHT - 5; x++) if (y < WALL_Y - 3) P.px(x, y, x === x0 || x === x1 || i === 10 ? 0x8a7a58 : 0xe6dcc0);
+  }
+  // spindelväv i övre hörnen: strålar + bågar
+  const web = (cx, cy, dirX, r) => {
+    const col = mix(wall, 0xffffff, 0.55);
+    for (const a of [0, 0.3, 0.62, 0.95, 1.27, 1.57]) {
+      for (let d = 2; d < r; d++) {
+        const x = Math.round(cx + Math.cos(a) * d * dirX), y = Math.round(cy + Math.sin(a) * d);
+        if (y >= 6 && x > 4 && x < RIGHT - 4 && (d + (a * 7 | 0)) % 2 === 0) P.px(x, y, col, 0.75);
+      }
+    }
+    for (const rr of [5, 9, 13, 17]) {
+      if (rr >= r) break;
+      for (let a = 0; a <= 1.57; a += 0.08) {
+        const sag = Math.sin(a * 2) * 1.5;
+        const x = Math.round(cx + Math.cos(a) * rr * dirX), y = Math.round(cy + Math.sin(a) * rr + sag);
+        if (y >= 6 && x > 4 && x < RIGHT - 4) P.px(x, y, col, 0.6);
+      }
+    }
+  };
+  web(5, 5, 1, 20); web(RIGHT - 5, 5, -1, 16);
+  // naken glödlampa på sladd från taket – bredvid fönstret och dörren, inte framför dem
+  const clear = (x) => x > 12 && x < RIGHT - 12 && !roomDef.windows.some(([a, b]) => x + 5 > a - 4 && x - 5 < b + 4) && !(hasExit && x + 5 > DOOR.x0 - 3 && x - 5 < DOOR.x1 + 3);
+  const bx = [Math.round(RIGHT * 0.5) + 8, 70, RIGHT - 40, 20].find(clear) ?? Math.round(RIGHT * 0.5), by = 24;
+  for (let y = 5; y < by - 4; y++) P.px(bx, y, 0x2a2420);
+  P.rect(bx - 1, by - 5, 3, 3, 0x3a3530); P.px(bx - 1, by - 5, 0x5a5550);
+  const glass = night ? 0xfff0a8 : 0xe4dfc8, glassDk = night ? 0xe6c860 : 0xb8b09a;
+  P.rect(bx - 2, by - 2, 5, 5, glass); P.px(bx - 2, by - 2, glassDk); P.px(bx + 2, by - 2, glassDk); P.px(bx - 2, by + 2, glassDk); P.px(bx + 2, by + 2, glassDk);
+  P.px(bx + 1, by + 1, glassDk); P.px(bx - 1, by - 1, 0xffffff);
+  P.rect(bx - 1, by + 3, 3, 1, glassDk);
+  if (night) { P.ell(bx, by + 2, 28, 16, 0xffe9a0, 0.16, 3); P.ell(bx, by, 9, 7, 0xfff6c8, 0.35, 2); P.ell(bx, WALL_Y + 14, 34, 9, 0xfff3d0, 0.1, 4); }
+  else P.ell(bx, WALL_Y + 20, 26, 9, 0xfff3d0, 0.06, 4);
+  // golvet: repor och en gammal fläck vid dörren
+  const scratch = 0x6a5a40;
+  for (let i = 0; i < 9; i++) {
+    const sx = 14 + ((hash(i, 3, 51) * (RIGHT - 40)) | 0), sy = WALL_Y + 12 + ((hash(i, 7, 52) * (FH - WALL_Y - 24)) | 0);
+    const len = 4 + ((hash(i, 9, 53) * 8) | 0), dx = hash(i, 11, 54) > 0.5 ? 1 : -1;
+    for (let j = 0; j < len; j++) P.px(sx + j * dx, sy + (j >> 1), scratch, 0.5);
+  }
+  for (let y = FH - 30; y < FH - 12; y++) for (let x = RIGHT - 46; x < RIGHT - 18; x++) {
+    const d = Math.hypot((x - (RIGHT - 32)) / 14, (y - (FH - 21)) / 9) + (hash(x, y, 55) - 0.5) * 0.3;
+    if (d < 1 && bayer(x, y) < 1.1 - d) P.px(x, y, 0x4a3a24, 0.28);
+  }
+  // musfläck vid golvlisten
+  for (let x = 8; x < 20; x++) P.px(x, WALL_Y, 0x2a2018, 0.5);
+  P.rect(9, WALL_Y - 5, 5, 5, 0x1a1418); P.px(11, WALL_Y - 6, 0x1a1418); P.px(10, WALL_Y - 6, 0x1a1418);
+}
+// Spindeln: sitter i väven uppe till höger och firar sig ibland ner på en tråd,
+// hänger och gungar lite och klättrar upp igen. Ritas varje bildruta (period 19 s).
+function drawSpider(ctx, RIGHT, t) {
+  const cx = RIGHT - 14, y0 = 12;
+  const ph = t % 19;
+  let dy = 0;
+  if (ph < 1.6) dy = (ph / 1.6) * 16;
+  else if (ph < 4.2) dy = 16 + Math.sin((ph - 1.6) * 3) * 1.2;
+  else if (ph < 6) dy = 16 * (1 - (ph - 4.2) / 1.8);
+  const sy = Math.round(y0 + dy), sx = cx + (ph > 1.6 && ph < 4.2 ? Math.round(Math.sin((ph - 1.6) * 3) * 1.5) : 0);
+  if (dy > 0.5) { ctx.fillStyle = 'rgba(235,235,225,0.55)'; ctx.fillRect(sx, y0 - 4, 1, sy - y0 + 4); }
+  ctx.fillStyle = '#1a1418';
+  ctx.fillRect(sx - 1, sy, 3, 2); ctx.fillRect(sx, sy - 1, 1, 1);
+  // ben
+  const leg = dy > 0.5 && ((t * 6) | 0) % 2 ? 1 : 0;
+  ctx.fillRect(sx - 3, sy + leg, 2, 1); ctx.fillRect(sx + 2, sy + leg, 2, 1);
+  ctx.fillRect(sx - 3, sy + 2 - leg, 1, 1); ctx.fillRect(sx + 3, sy + 2 - leg, 1, 1);
+  ctx.fillRect(sx - 2, sy - 1, 1, 1); ctx.fillRect(sx + 2, sy - 1, 1, 1);
 }
 
 function nameTag(ctx, x, y, av) {

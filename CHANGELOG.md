@@ -10,6 +10,16 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.20.0] – 2026-09-28 – 147 nya möbler, rotation, slitna Lilla rummet och MÖBELJÄTTEN i två våningar
+- 147 nya möbler i katalogen (160 totalt): kök, badrum, barnrum, kontor, hall, dekor, växter, lampor, tavlor, gardiner, jul – och sängar och garderober i många färger. Allt ur de köpta EmanuelleDev-arken, färgbart som förut.
+- Väggsaker hängs på väggen och står inte i vägen. Allt går att flytta, även säng, garderob, kylskåp och toalett – funktionen följer med möbeln, också till ett annat rum via förrådet.
+- 🔄 Rotera i Möblera-läget (och tangenten R): soffor, fåtöljer och sängar vänds framåt, åt sidan och bakåt; övriga möbler speglas. Besökare ser rotationen.
+- Lilla rummet är mindre och sjabbigt: sprickor, fuktfläckar, flagnande tapet, spindelväv med en spindel, sprucken ruta, en mus, naken glödlampa – och ett gulnat dass med snett lock. De finare bostäderna är som förut.
+- MÖBELJÄTTEN i två våningar: entréplan med marknadshall, självbetjäningslager med pallställ och truck, kassor och korvkiosk; utställningsplan med små inredda rum för vardagsrum, kök, kontor, sovrum, barnrum, badrum och hall längs den gula slingan.
+- Åk rulltrappa (animerade steg) eller hiss mellan våningarna. Personal i gula kläder fyller på, kör vagnar, sitter i kassorna och hjälper till med tips när du klickar på dem; andra kunder provsitter soffor.
+- Restaurangen: ta en bricka, välj köttbullar med mos och lingonsylt, korv, kanelbulle, kaffe eller saft, betala i kassan och sätt dig och ät – mättnaden går upp.
+- Skyltar överallt: avdelningar, våningar, vägvisare och prislappar på allt som är till salu.
+
 ## [0.19.0] – 2026-09-28 – Annonser med bilder på bostadsbyrån
 - Bostadsbyråns annonser har bilder: samma planscher som hänger på mäklarkontorets vägg visas i annonsdialogen, i pixelskala, för varje bostad.
 

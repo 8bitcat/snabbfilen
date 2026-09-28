@@ -95,6 +95,30 @@ const aside = await broken.page.evaluate(() => Object.keys(localStorage).filter(
 ok(aside.some((v) => v.includes('nytt format')), 'sparfil i okänt format lades undan orörd');
 await broken.ctx.close();
 
+// 4. Fullt förråd + möbler som inte får plats i (det mindre) Lilla rummet: varken fitRoom
+//    (hemma) eller load() får tappa något – summan är densamma efter två omladdningar,
+//    färgerna följer med och förrådet växer inte förbi taket.
+{
+  console.log('\nfullt förråd + möbler utanför lokalen:');
+  const fx = JSON.parse(fs.readFileSync(path.join(ROOT, 'tools/saves', fixtures[0]), 'utf8'));
+  const old = JSON.parse(fx.localStorage.snabbfilen_save1);
+  const shelves = Array.from({ length: 40 }, (_, i) => ({ k: 'bredhylla', v: i % 3, x: 200 + (i % 4) * 30, y: 100 + ((i / 4) | 0) * 12, c: '#aa00' + String(i).padStart(2, '0') }));
+  const full = { ...old, home: 'rum', storage: Array.from({ length: 80 }, (_, i) => ({ k: 'stol', v: i % 4 })), deco: { 'rum:0': [{ k: 'sang', v: 0, x: 14, y: 133, fx: 1 }, ...shelves] } };
+  const total = (s) => (s.storage || []).length + Object.values(s.deco || {}).flat().filter((d) => d.k !== 'dass').length;
+  const enterRoom = async (page) => { await page.evaluate(() => { window.SF.roomSub = 0; window.SF.go('room'); }); await page.waitForTimeout(400); };
+  const { ctx, page } = await boot({ ...fx.localStorage, snabbfilen_save1: JSON.stringify(full) });
+  await enterRoom(page);
+  const s1 = await stored(page);
+  ok(total(s1) === 121 && s1.storage.length === 80, `hemma: ${total(s1)} möbler kvar av 121, förrådet ${s1.storage.length} (taket är 80)`);
+  for (let i = 0; i < 2; i++) { await page.reload(); await page.waitForFunction(() => !!window.SF?.game, null, { timeout: 20000 }); await enterRoom(page); }
+  const s2 = await stored(page);
+  ok(total(s2) === 121 && s2.storage.length === 80, `efter två omladdningar: ${total(s2)} möbler, förrådet ${s2.storage.length}`);
+  const all = [...s2.storage, ...Object.values(s2.deco).flat()];
+  ok(shelves.every((sh) => all.some((d) => d.k === 'bredhylla' && d.c === sh.c)), 'alla 40 färgade hyllor kvar med sin färg');
+  ok(all.filter((d) => d.k === 'stol').length === 80 && all.some((d) => d.k === 'sang' && d.fx), '80 stolar och sängen kvar');
+  await ctx.close();
+}
+
 console.log(errors.length ? '\nKONSOLFEL:\n' + errors.join('\n') : '\nInga konsolfel.');
 ok(errors.filter((e) => !/Sparfilen kunde inte läsas/.test(e)).length === 0, 'inga pageerror/console.error');
 await browser.close();

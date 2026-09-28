@@ -8,7 +8,11 @@ arbetsplatser, köp mat så du orkar, klä dig som du vill och spara till en
 större bostad.
 
 Byggt på 2D-motorn ur Pixelverkstan (procedurell pixelgrafik).
-Möbelsprites: **EmanuelleDev** (emanuelledev.itch.io) — tack! 🙏
+Möbelsprites: **EmanuelleDev** (emanuelledev.itch.io) — tack! 🙏 Bara de rutor
+spelet använder är inbäddade (`assets/interior.png`, byggd av `tools/build-atlas.mjs`
+ur de köpta arken: möbler, kök, badrum, skola, jul, kattmöbler, ljus m.m.); arken
+själva ligger inte i projektet. Lilla rummets dass, lamporna och monsteran är ritade
+för hand i samma stil.
 
 ## Spela
 
@@ -22,8 +26,8 @@ python -m http.server 8788
 Allt är gåbart med din egen figur – klicka där du vill gå. Ingenting ses från sidan.
 
 - **Pixelstaden** i två stadsdelar: *Centrum* (hem, bostadsbyrå, mat, kläder, möbler) och *Arbetsområdet* (flygplats, fruktfabrik, burgarbar). Gå ut i kanten för att byta stadsdel.
-- **Hemma:** bostäderna har flera rum – Lilla rummet, Lägenheten (vardagsrum + sovrum) och Villan (vardagsrum, sovrum, kök) med dörrar mellan rummen. Säng, kylskåp och garderob fungerar.
-- **🛋️ Möblera:** köp möbler i varuhuset, de hamnar i förrådet. Hemma trycker du *Möblera* – plocka ur förrådet, flytta runt, sälj för halva priset. Besökare ser din inredning.
+- **Hemma:** bostäderna har flera rum – Lilla rummet (litet, sjabbigt: sprickor, spindelväv, naken glödlampa och ett uselt dass), Lägenheten (vardagsrum + sovrum) och Villan (vardagsrum, sovrum, kök) med dörrar mellan rummen. Säng, garderob, kylskåp, toalett, dusch/badkar och TV/dator fungerar – och funktionen följer möbeln vart den än står.
+- **🛋️ Möblera:** köp möbler på MÖBELJÄTTEN (160 sorter i åtta avdelningar), de hamnar i förrådet. Hemma trycker du *Möblera* – plocka ur förrådet, flytta runt (allt, även startmöblerna), vrid med 🔄/R (soffor, fåtöljer och sängar har riktiga sido- och bakvyer, resten speglas), häng tavlor på väggen (bara gardiner får hänga över fönstren), måla om gratis, lägg i förrådet för att flytta till ett annat rum, sälj för halva priset. Ligger sängen i förrådet sover man på en madrass på golvet. Besökare ser din inredning.
 - **Jobben** (60 sekunder = 4 timmar), med kroppen: ✈️ bär väskorna från bandet till vagnen med rätt bokstav · 🍊 plocka frukten ordersedeln vill ha och bär den till lådan · 🍔 plocka tallriken från disken och servera kunden med samma önskan i pratbubblan. Tre pass = befordran.
 - **Butikerna** går man runt i: möbelvaruhuset visar alla möbler utställda med prislappar (välj färg vid köp), klädaffären har varje plagg på en mannekäng och accessoarerna på hyllan.
 - **Öppen värld:** alla som spelar är i samma Pixelstad, ni ser varandra i staden och kan åka hem till varandra (👥). Emotes när någon är nära.
