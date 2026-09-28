@@ -10,6 +10,10 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.28.2] – 2026-09-28 – Klotter bara på väggar
+- Klottret har flyttat dit det hör hemma: taggarna är borta från gräsmattor, gågator, lekplatsens gungor, rutschkanan och sandlådan, bänkarna, elskåpen, biljettautomaten, containrarna, återvinningsigloon, bilvraket och ljussignalerna.
+- Kvar är klottret där det ska vara: på husväggarna i förorten, muren och klotterplanket.
+
 ## [0.28.1] – 2026-09-28 – Verkstan lagad och skyltar på skärmen
 - Bilverkstan är lagad: jobbet kunde hänga sig direkt (flera delar av verkstan hade aldrig ritats färdigt). Nu finns kompressorn, skruvdragaren som läggs på golvet, navet med skruvarna i bubblan, luftmunstycket och dagsljuset genom porten – och däckstället har fått riktiga hyllskenor så inga däck svävar i luften.
 - Skyltarna håller sig på skärmen i mobilens NÄRA-läge: köpskylten i djuraffären, kaféets skylt, mataffärens hörnpanel och arbetspassens tidsrad kläms nu in i den synliga bilden i stället för att beskäras.
