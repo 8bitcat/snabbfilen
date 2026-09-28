@@ -18,6 +18,9 @@ import { startJobFlow } from './jobs/shift.js';
 import { openFoodShop } from './shops/matbutik.js';
 import { openHousing } from './shops/bostad.js';
 import { startWorld, worldTick, worldInfo, playersList, visitPlayer, sendEmote, worldFolksHere, playerName } from './net/world.js';
+import { openMenu, mountMenuButton, isMenuOpen, shouldShowMenuAtBoot } from './core/menu.js';
+import { drawPixHud, isPixHud, apply as applyHud } from './core/hud-pix.js';
+import { musicTick } from './core/music.js';
 import { play, unlockAudio, toggleMute, isMuted } from './core/sound.js';
 
 const $ = (s) => document.querySelector(s);
@@ -70,7 +73,8 @@ const ENGINES = { flygplats: 'jobbflyg', frukt: 'jobbfrukt', burgare: 'jobbburga
 function fit() {
   const dpr = window.devicePixelRatio || 1;
   const w = window.innerWidth, h = window.innerHeight - $('#hud').offsetHeight - 4;
-  const s = Math.max(2, Math.floor(Math.min(w * dpr / A.W, h * dpr / A.H)));
+  // bakom huvudmenyn täcker hela staden fönstret (kanterna klipps), annars får hela spelbilden plats
+  const s = Math.max(2, A.attract ? Math.ceil(Math.max(w * dpr / A.W, h * dpr / A.H)) : Math.floor(Math.min(w * dpr / A.W, h * dpr / A.H)));
   A.pxs = s;
   cv.width = A.W * s;
   cv.height = A.H * s;
@@ -88,7 +92,7 @@ cv.addEventListener('pointerdown', (e) => { if (modalOpen()) return; cv.setPoint
 cv.addEventListener('pointermove', (e) => { if (modalOpen()) return; const p = toLocal(e); A.scene?.move?.(p.x, p.y); });
 cv.addEventListener('pointerup', (e) => { if (modalOpen()) return; const p = toLocal(e); A.scene?.up?.(p.x, p.y); });
 window.addEventListener('keydown', (e) => {
-  if (modalOpen() || e.ctrlKey || e.altKey || e.metaKey) return;
+  if (modalOpen() || isMenuOpen() || e.ctrlKey || e.altKey || e.metaKey) return;
   A.scene?.key?.(e.key);
 });
 
@@ -249,7 +253,7 @@ function boot() {
   // HUD-knapparna: kompisar + ljud
   const mute = $('#hud-mute');
   mute.textContent = isMuted() ? '🔇' : '🔊';
-  mute.onclick = () => { mute.textContent = toggleMute() ? '🔇' : '🔊'; };
+  mute.onclick = () => { mute.textContent = toggleMute() ? '🔇' : '🔊'; musicTick(); };
   $('#hud-friends').onclick = () => A.openFriends();
   $('#hud-diary').onclick = () => openDiary();
   $('#decor-btn').onclick = () => A.scene?.toggleDecor?.();
@@ -269,13 +273,22 @@ function boot() {
     }
   };
 
-  if (!A.avatar.name) {
-    openAvatarPicker({
-      title: '🧑 Vem är du?', text: 'Skapa din figur – du kan byta kläder hemma i garderoben när du vill.',
-      onPick: (av) => { A.avatar = av; begin(); },
-      onCancel: () => { A.avatar = loadAvatar(); begin(); },
-    });
-  } else begin();
+  const start = () => {
+    A.attract = false;
+    fit();
+    if (!A.avatar.name) {
+      openAvatarPicker({
+        title: '🧑 Vem är du?', text: 'Skapa din figur – du kan byta kläder hemma i garderoben när du vill.',
+        onPick: (av) => { A.avatar = av; begin(); },
+        onCancel: () => { A.avatar = loadAvatar(); begin(); },
+      });
+    } else begin();
+  };
+  mountMenuButton(A);
+  applyHud();
+  // huvudmenyn: staden lever bakom panelen tills man väljer figur och trycker Fortsätt
+  if (shouldShowMenuAtBoot()) { A.attract = true; fit(); A.go('city'); openMenu(A, { onStart: start }); }
+  else start();
 
   // porträttet i HUD:en
   const face = $('#hud-face');
@@ -296,7 +309,7 @@ function tick(now) {
   const dt = Math.min(0.05, (now - last) / 1000);
   last = now;
   if (A.scene) {
-    if (!modalOpen() && !A.sceneName.startsWith('jobb')) A.game.tickReal(dt);
+    if (!modalOpen() && !isMenuOpen() && !A.sceneName.startsWith('jobb')) A.game.tickReal(dt);
     A.scene.update?.(dt);
     worldTick(A, A.scene.worldX ?? null, dt);
     ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -304,6 +317,7 @@ function tick(now) {
     ctx.fillRect(0, 0, cv.width, cv.height);
     ctx.imageSmoothingEnabled = false;
     A.scene.draw(ctx);
+    if (isPixHud() && !A.attract) drawPixHud(ctx, A);
   }
   renderHud();
   checkCollapse();

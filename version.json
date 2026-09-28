@@ -1,7 +1,7 @@
 {
-  "version": "0.16.0",
+  "version": "0.17.0",
   "date": "2026-09-28",
-  "title": "Automatisk uppdatering och säkerhetskopior",
+  "title": "Huvudmeny, pixelmätare och musik",
   "files": [
     "CHANGELOG.md",
     "assets/interior.png",
@@ -17,6 +17,9 @@
     "js/core/avatar.js",
     "js/core/floor-pix.js",
     "js/core/fx.js",
+    "js/core/hud-pix.js",
+    "js/core/menu.js",
+    "js/core/music.js",
     "js/core/people.js",
     "js/core/people/acc.js",
     "js/core/people/bottoms.js",

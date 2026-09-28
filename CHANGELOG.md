@@ -10,6 +10,15 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.17.0] – 2026-09-28 – Huvudmeny, pixelmätare och musik
+- Huvudmeny när spelet startar, med Pixelstaden levande i bakgrunden: Nytt spel, Fortsätt och Inställningar.
+- Alla skapade figurer visas med porträtt och en sammanfattning (pengar, bostad, dag, antal pass). Välj vem som ska spela – varje figur har sitt eget spel.
+- Fortsätt är nedtonad tills det finns en figur. Från menyn kan du också börja om från början eller ta bort en figur.
+- ☰-knappen öppnar samma meny mitt i spelet (Esc stänger).
+- Inställningar: ljud på/av, musik på/av och val av mätare.
+- Pixelmätare uppe till vänster i spelbilden: porträtt, pengar, dag och klocka, mat och sömn – i samma pixelstil som staden. Växla mot den gamla raden överst i inställningarna.
+- Bakgrundsmusik: en liten chiptune-slinga (kan stängas av).
+
 ## [0.16.0] – 2026-09-28 – Automatisk uppdatering och säkerhetskopior
 - Spelet uppdaterar sig självt: när en ny version kommer ut sparas allt och sidan laddas om när det passar – aldrig mitt i ett arbetspass eller en dialog. Allt du har är kvar.
 - Innan omladdningen hämtas hela nya versionen, så gamla och nya filer blandas aldrig.
