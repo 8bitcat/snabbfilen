@@ -473,3 +473,15 @@ body { padding-bottom: env(safe-area-inset-bottom); }
 .look-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
 .homelook-pic { background: #17151a; border: 3px solid #17151a; line-height: 0; }
 .homelook-canvas { width: 100%; height: auto; image-rendering: pixelated; image-rendering: crisp-edges; display: block; }
+
+/* 🎙️ Röstchatten (js/net/voice-ui.js): knappen i verktygsraden och panelen */
+#hud-voice.voice-off { opacity: 0.6; }
+#hud-voice.voice-on { background: #2f7d45; color: #fff; }
+#hud-voice.voice-muted { background: #7d2f2f; color: #fff; }
+#hud-voice.voice-talk { box-shadow: 0 0 0 2px var(--gold), 2px 2px 0 var(--ink); }
+.vbox { background: #fff; border: 2px solid var(--ink); padding: 6px 8px; margin: 8px 0; }
+.vhead { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 19px; margin-bottom: 2px; }
+.vbox .sp { color: var(--muted); font-size: 16px; line-height: 1.1; }
+.vlist { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
+.vrow { display: flex; justify-content: space-between; align-items: center; gap: 8px; border-top: 1px dashed #cfc7ba; padding-top: 4px; }
+.vrow .nm { font-size: 18px; line-height: 1.05; }

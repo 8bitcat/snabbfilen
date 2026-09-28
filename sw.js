@@ -11,7 +11,7 @@
 //   self.addEventListener('install', () => self.skipWaiting());
 //   self.addEventListener('activate', (e) => e.waitUntil(self.registration.unregister()));
 // och publicera – alla spelare blir av med den vid nästa besök.
-const VERSION = '0.31.0'; // skrivs av tools/release.mjs
+const VERSION = '0.32.0'; // skrivs av tools/release.mjs
 const CACHE = 'snabbfilen-' + VERSION;
 const abs = (p) => new URL(p, self.location.href).href;
 

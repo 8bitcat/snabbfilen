@@ -35,6 +35,7 @@ import { drawPixHud, isPixHud, apply as applyHud, stripHeight, layoutStrip } fro
 import { musicTick } from './core/music.js';
 import { openWeek } from './core/week.js';
 import { mountChat, isChatOpen } from './core/chat.js';
+import { initVoiceUI } from './net/voice-ui.js';
 import { play, unlockAudio, toggleMute, isMuted } from './core/sound.js';
 import { CITY } from './city/map.js';
 
@@ -472,6 +473,7 @@ function boot() {
   mute.textContent = isMuted() ? '🔇' : '🔊';
   mute.onclick = () => { mute.textContent = toggleMute() ? '🔇' : '🔊'; musicTick(); };
   $('#hud-friends').onclick = () => A.openFriends();
+  initVoiceUI(A); // 🎙️ röstchatten: röst i närheten + röstgrupper (js/net/voice.js)
   $('#hud-diary').onclick = () => openDiary();
   // 📅 veckan: samma sammanfattning som vid uppvaknandet
   if (!document.getElementById('hud-week')) {

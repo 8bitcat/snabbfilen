@@ -92,6 +92,7 @@ function tryHost(A) {
     if (e.type === 'unavailable-id') { killPeer(w); if (W === w) W = null; joinAsClient(A); } // någon är redan värd
     else if (!W || W.peer === peer) { stopTimers(w); W = null; scheduleRetry(A, 6000); }
   });
+  peer.on('call', callIn); // röstchatten (js/net/voice.js)
   peer.on('connection', (conn) => {
     conn.on('data', (d) => hostData(A, conn, d));
     conn.on('close', () => hostDrop(A, conn));
@@ -106,6 +107,7 @@ function joinAsClient(A, { hostIfEmpty = false } = {}) {
   try { peer = new window.Peer(undefined, { debug: 0 }); } catch { scheduleRetry(A, 8000); return; }
   const w = baseState(A);
   w.role = 'client'; w.peer = peer;
+  peer.on('call', callIn); // röstchatten (js/net/voice.js)
   peer.on('error', (e) => {
     if (e.type !== 'peer-unavailable') return;
     teardown();
@@ -199,7 +201,7 @@ export const worldMarkActive = markActive;
 
 // ---------- min publicerade state ----------
 function myState(A) {
-  return { av: { name: A.avatar.name, look: A.avatar.look, color: A.avatar.color }, scene: myScene(A), x: A.scene?.worldX ?? 190, y: A.scene?.worldY ?? 174, home: A.game.home, deco: A.game.deco, key: NET_KEY, ver: VERSION };
+  return { av: { name: A.avatar.name, look: A.avatar.look, color: A.avatar.color }, scene: myScene(A), x: A.scene?.worldX ?? 190, y: A.scene?.worldY ?? 174, home: A.game.home, deco: A.game.deco, key: NET_KEY, ver: VERSION, vo: voiceFlag() ? 1 : 0 };
 }
 function myScene(A) {
   if (A.sceneName === 'city') return 'city';
@@ -221,6 +223,7 @@ function cleanP(p, old = {}) {
     if (p.home !== undefined) out.home = String(p.home).slice(0, 16);
     if (typeof p.key === 'string') out.key = p.key.slice(0, 40);
     if (typeof p.ver === 'string') out.ver = p.ver.slice(0, 16);
+    if (p.vo !== undefined) out.vo = p.vo ? 1 : 0;
     if (p.deco !== undefined && p.deco && typeof p.deco === 'object') {
       out.deco = {};
       // upp till 24 delrum med 80 möbler var (de nya bostäderna har fler rum och mer bohag)
@@ -354,7 +357,7 @@ export function worldTick(A, myX, dt) {
   if (!W || !W.open) return;
   const now = performance.now();
   const myY = A.scene?.worldY ?? null;
-  const meta = JSON.stringify([A.avatar.look, A.avatar.name, myScene(A), A.game.home, A.game.deco]);
+  const meta = JSON.stringify([A.avatar.look, A.avatar.name, myScene(A), A.game.home, A.game.deco, voiceFlag() ? 1 : 0]);
   const metaChanged = meta !== W.lastMeta;
   const posChanged = myX !== null && (Math.abs(myX - W.lastX) > 0.5 || Math.abs((myY ?? 0) - (W.lastY ?? 0)) > 0.5);
   if ((metaChanged || posChanged) && now - W.lastSent > 90) {
@@ -382,11 +385,11 @@ export function worldFolksHere(A) {
   const out = [];
   for (const [id, p] of W.players) {
     if (p.scene !== here) continue;
-    out.push({ id, av: p.av, x: p.x, y: p.y, walking: Math.hypot((p.tx ?? p.x) - p.x, (p.ty2 ?? p.y) - p.y) > 1, emote: p.emote && p.emote.until > Date.now() ? p.emote.e : null, say: p.say && p.say.until > Date.now() ? p.say.text : null });
+    out.push({ id, av: p.av, x: p.x, y: p.y, vo: p.vo | 0, walking: Math.hypot((p.tx ?? p.x) - p.x, (p.ty2 ?? p.y) - p.y) > 1, emote: (p.emote && p.emote.until > Date.now() ? p.emote.e : null) || (talkSrc(id) ? TALK_EMOTE : null), say: p.say && p.say.until > Date.now() ? p.say.text : null });
   }
   return out;
 }
-export const worldMyEmote = () => (W?.myEmote && W.myEmote.until > Date.now() ? W.myEmote.e : null);
+export const worldMyEmote = () => (W?.myEmote && W.myEmote.until > Date.now() ? W.myEmote.e : null) || (talkSrc('self') ? TALK_EMOTE : null);
 let mySay = null;
 export const worldMySay = () => (mySay && mySay.until > Date.now() ? mySay.text : null);
 // Säg något: bubblan visas alltid ovanför en själv, och skickas till alla i världen
@@ -412,9 +415,9 @@ export function sendEmote(A, e) {
 // Små spelmeddelanden mellan spelare på SAMMA ställe: värden reläar rakt av till
 // alla andra, och js/net/coop.js filtrerar på plats-nyckeln. Datakanalen är
 // reliable, så ordningen är garanterad.
-let jobCb = null;
-export const onJob = (cb) => { jobCb = cb; };
-const jobIn = (ev) => { try { jobCb?.(ev); } catch (e) { console.error('jobbkanalen:', e); } };
+const jobCbs = new Set(); // coop.js (jobba ihop) och voice.js (röstchatten)
+export const onJob = (cb) => { jobCbs.add(cb); };
+const jobIn = (ev) => { for (const cb of jobCbs) { try { cb(ev); } catch (e) { console.error('jobbkanalen:', e); } } };
 export const worldMyId = () => (W?.open ? W.myId : null);
 export function sendJob(m) {
   if (!W || !W.open || !m || typeof m !== 'object') return false;
@@ -422,6 +425,23 @@ export function sendJob(m) {
   if (W.conn?.open) { try { W.conn.send({ t: 'job', m }); return true; } catch { return false; } }
   return false;
 }
+
+// ---------- röstchatten (krokar – själva ljudet ligger i js/net/voice.js) ----------
+// Inkommande mediasamtal går till voice.js, som bara svarar på samtal man själv sagt ja
+// till (närhet med röst PÅ, eller en grupp man gått med i) – allt annat stängs direkt.
+let callCb = null;
+export const onCall = (cb) => { callCb = cb; };
+function callIn(mc) {
+  if (!callCb) { try { mc.close(); } catch { /* ok */ } return; }
+  try { callCb(mc); } catch (e) { console.error('röstchatten:', e); try { mc.close(); } catch { /* ok */ } }
+}
+export const worldPeer = () => (W?.open && W.peer && !W.peer.destroyed ? W.peer : null);
+let voiceFlag = () => false;   // har jag rösten på? (publiceras som vo)
+let talkSrc = () => false;     // pratar id (eller 'self') just nu? → 🗣️ över figuren
+const TALK_EMOTE = '🗣️';
+export const setVoiceHooks = ({ on, talking } = {}) => { if (on) voiceFlag = on; if (talking) talkSrc = talking; };
+export const worldPlayer = (id) => (W?.players.get(id) || null);
+export const worldMyKey = () => NET_KEY; // fast per webbläsare – röstgrupperna följer nyckeln, inte spelar-id:t
 
 // ---------- besök ----------
 export function playersList() {

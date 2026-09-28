@@ -10,6 +10,13 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.32.0] – 2026-09-29 – Röstchatt
+- 🎙️ Röstchatt: prata med varandra i Pixelstaden – knappen 🎙️ i verktygsraden
+- Röst i närheten: den som har rösten på hör – och hörs av – andra med rösten på som står nära, och ljudet tonar bort när man går ifrån varandra
+- Röstgrupper: skapa en grupp och bjud in kompisar, så hörs ni överallt i stan – den som bjuds måste tacka ja
+- 🗣️ syns över den som pratar, och man kan tysta sin mikrofon eller en enskild person
+- Mikrofonen är alltid avstängd tills man själv slår på den
+
 ## [0.31.0] – 2026-09-28 – Alla börjar i husvagnen, titta in i bostäderna
 - Alla nya spelare börjar i husvagnen ute i förorten – spara ihop till något bättre hos bostadsbyrån
 - 👁 Titta in: tryck på en bostad hos bostadsbyrån och se hur det ser ut inne när man flyttar in – varje rum, dag och kväll
