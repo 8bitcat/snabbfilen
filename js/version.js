@@ -1,4 +1,4 @@
 // Skrivs av tools/release.mjs vid varje släpp – ändra inte för hand.
-export const VERSION = '0.14.0';
+export const VERSION = '0.15.0';
 export const DATE = '2026-09-28';
-export const TITLE = 'Versionsnummer i spelet';
+export const TITLE = 'Ni ser varandra i staden';

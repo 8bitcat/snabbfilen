@@ -59,7 +59,7 @@ window.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') el = m.querySelector('[data-close]');
   else if (typingNow()) return;
   else if (e.key === 'Enter') { const go = [...m.querySelectorAll('.dlg-foot .btn-go:not(:disabled)')]; if (go.length === 1) el = go[0]; }
-  else if (e.key.length === 1) {
+  else if (typeof e.key === 'string' && e.key.length === 1) {
     const k = e.key.toUpperCase();
     el = [...m.querySelectorAll('[data-key]')].find((b) => b.dataset.key === k && !b.disabled) || null;
   }

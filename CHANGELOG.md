@@ -10,6 +10,13 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.15.0] – 2026-09-28 – Ni ser varandra i staden
+- Ni ser varandra igen: den som tappar nätet, somnar i fickan eller stänger fliken städas bort ur världen inom en minut, och samma spelare i två flikar blir inte två figurer.
+- 👥-listan visar var alla är just nu (i staden, i mataffären, på jobbet, hemma hos någon) och har en "Gå dit"-knapp som tar dig fram till kompisen i staden.
+- Är en kompis i staden men utanför bild visas en pil med namnet i skärmkanten – klicka på den så går du dit.
+- Den som håller i världen och lägger mobilen i fickan lämnar över till någon som är aktiv, så de andra tappar inte varandra.
+- Har du inte rört spelet på fem minuter loggas du ut ur världen; första klicket tar dig tillbaka.
+
 ## [0.14.0] – 2026-09-28 – Versionsnummer i spelet
 - Versionsnumret syns uppe till höger – tryck på det för att läsa nyheterna.
 - Spelet säger till när en ny version har kommit ut medan du spelar, och visar vad som är nytt första gången du startar en ny version.

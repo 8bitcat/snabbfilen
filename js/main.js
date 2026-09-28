@@ -17,7 +17,7 @@ import { makeJobbBurgare } from './jobs/jobb-burgare.js';
 import { startJobFlow } from './jobs/shift.js';
 import { openFoodShop } from './shops/matbutik.js';
 import { openHousing } from './shops/bostad.js';
-import { startWorld, worldTick, worldInfo, playersList, visitPlayer, sendEmote, worldFolksHere } from './net/world.js';
+import { startWorld, worldTick, worldInfo, playersList, visitPlayer, sendEmote, worldFolksHere, playerName } from './net/world.js';
 import { play, unlockAudio, toggleMute, isMuted } from './core/sound.js';
 
 const $ = (s) => document.querySelector(s);
@@ -150,19 +150,42 @@ A.sleepFlow = () => {
   ]);
 };
 
-// 👥 Onlinelistan: alla i världen, med "Åk dit"-knapp. Ingen kod – öppen värld.
+// 👥 Onlinelistan: alla i världen, var de är just nu, "Gå dit" (i staden) och "Åk dit"
+// (hem till dem). Ingen kod – öppen värld.
+const PLACE_AWAY = {
+  jobbflyg: '✈️ jobbar på flygplatsen', jobbfrukt: '🍊 jobbar på fruktfabriken', jobbburgare: '🍔 jobbar på Burgarbaren',
+  jobbpizzeria: '🍕 jobbar på pizzerian', jobbposten: '📦 jobbar på Posten', jobbbensin: '⛽ jobbar på macken',
+  jobbverkstad: '🔧 jobbar på bilverkstaden', jobbtvatt: '🧺 jobbar på tvätteriet', jobbkafe: '☕ jobbar på kaféet',
+  mat: '🛒 i mataffären', klader: '👕 i klädaffären', mobler: '🛋️ på MÖBELJÄTTEN', moblergammal: '🛋️ på MÖBELJÄTTEN',
+  bostad: '🔑 på bostadsbyrån', kafe: '☕ på kaféet', djur: '🐾 i djuraffären',
+};
+function placeOf(p, info) {
+  const s = String(p.scene || 'away');
+  if (s === 'city') return '🏙️ i staden';
+  if (s.startsWith('home:')) {
+    const owner = s.split(':')[1];
+    if (owner === p.id) return '🏠 hemma';
+    if (owner === info.myId) return '🏠 hemma hos dig!';
+    return `🏠 hos ${playerName(owner) || 'en kompis'}`;
+  }
+  return PLACE_AWAY[s.slice(5)] || '💼 upptagen';
+}
 function openWorldDialog() {
   const info = worldInfo();
   const list = playersList();
-  const place = (s) => (s === 'city' ? '🏙️ i staden' : String(s).startsWith('home:') ? '🏠 hemma' : '💼 upptagen');
+  const inJob = A.sceneName.startsWith('jobb');
+  const verTag = (v) => (v === info.version ? '' : ` <span class="old">${v ? 'v' + esc(v) : 'gammal version'}</span>`);
   const rows = list.map((p, i) => `<div class="prow">
       <span data-face="${i}"></span>
-      <span class="nm">${esc(p.av.name || '?')}<br><small class="sp">${place(p.scene)}</small></span>
-      <button class="btn btn-small btn-go" data-visit="${esc(p.id)}">🚗 Åk dit</button>
+      <span class="nm">${esc(p.av.name || '?')}${verTag(p.ver)}<br><small class="sp">${placeOf(p, info)}</small></span>
+      ${p.scene === 'city' && !inJob ? `<button class="btn btn-small" data-goto="${esc(p.id)}">🚶 Gå dit</button>` : ''}
+      <button class="btn btn-small btn-go" data-visit="${esc(p.id)}">🚗 Åk hem till</button>
     </div>`).join('');
+  const role = info.role === 'host' ? 'du håller i världen' : info.role === 'client' ? 'ansluten' : 'kopplar upp';
   const dlg = openModal('👥 Pixelstaden online', `
     <p style="font-size:19px;margin-top:0">${info.open ? `<b>${info.online}</b> ${info.online === 1 ? 'spelare (bara du) i världen just nu.' : 'spelare i världen just nu.'}` : '📡 Kopplar upp mot världen…'}</p>
-    ${list.length ? `<div class="plist">${rows}</div>` : info.open ? '<p style="font-size:18px">Du är ensam i stan – tipsa någon om länken så ses ni här!</p>' : ''}`,
+    ${list.length ? `<div class="plist">${rows}</div>` : info.open ? '<p style="font-size:18px">Du är ensam i stan – tipsa någon om länken så ses ni här!</p>' : ''}
+    <p class="world-diag">Du ser bara dem som är på samma ställe som du. v${esc(info.version)} · ${role}${info.world !== 'varlden' ? ` · värld: ${esc(info.world)}` : ''}</p>`,
   [
     ...(A.sceneName === 'visit' ? [{ label: '🚗 Åk hem', cls: 'btn-red', onClick: () => { closeModal(); A.visitTarget = null; A.game.passTime(20); A.game.save(); A.go('city'); } }] : []),
     { label: 'Stäng', cls: 'btn-go', onClick: closeModal },
@@ -172,6 +195,11 @@ function openWorldDialog() {
     el.replaceWith(avatarPortrait({ name: p.av.name, look: p.av.look, color: p.av.color }, 40));
   });
   dlg.querySelectorAll('[data-visit]').forEach((b) => (b.onclick = () => { closeModal(); visitPlayer(A, b.dataset.visit); }));
+  dlg.querySelectorAll('[data-goto]').forEach((b) => (b.onclick = () => {
+    closeModal();
+    A.followPlayer = b.dataset.goto;
+    if (A.sceneName !== 'city') { A.visitTarget = null; A.go('city'); }
+  }));
 }
 
 // 📊 Dagboken: vad man har gjort i Pixelstaden hittills.

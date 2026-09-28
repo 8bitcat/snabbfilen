@@ -3,7 +3,7 @@
 // går in; konsten och livet kommer från modulerna i js/city/ (se map.js för
 // kontraktet). Modulerna laddas var för sig – kraschar en, lever resten.
 import { CITY, BUILDINGS, footprint, doorCenter, artPos, isNightHour } from '../city/map.js';
-import { createWalker, selfDrawable, folkDrawables } from './walkable.js';
+import { createWalker, selfDrawable, folkDrawables, nameTag } from './walkable.js';
 import { openModal, closeModal, toast } from '../core/ui.js';
 import { play } from '../core/sound.js';
 import { worldFolksHere } from '../net/world.js';
@@ -17,6 +17,34 @@ const VW = CITY.VIEW_W, VH = CITY.VIEW_H;
 
 // Delad miljö som modulerna läser (muteras varje bildruta av scenen).
 // obstacles = alla hinder för gång (husens fotavtryck + rekvisita + trafikljusstolpar).
+// Spelare i staden som inte syns i bild får en pil med namnet i skärmkanten, så att man
+// alltid vet att de är här och åt vilket håll. Klick på pilen = gå dit.
+let markers = [];
+const MARK_INK = '#17151a';
+function drawFolkMarkers(ctx, cx, cy) {
+  markers = [];
+  for (const f of worldFolksHere(window.SF)) {
+    const sx = Math.round(f.x - cx), sy = Math.round(f.y - 14 - cy);
+    if (sx >= -4 && sx < VW + 4 && sy >= -30 && sy < VH + 10) continue; // syns redan
+    const mx = Math.max(30, Math.min(VW - 30, sx)), my = Math.max(24, Math.min(VH - 14, sy));
+    const dx = sx < 0 ? -1 : sx >= VW ? 1 : 0, dy = sy < 0 ? -1 : sy >= VH ? 1 : 0;
+    // pilen: en liten triangel i spelarens färg som pekar mot dem
+    const ax = dx < 0 ? 4 : dx > 0 ? VW - 5 : mx, ay = dy < 0 ? 14 : dy > 0 ? VH - 5 : my;
+    for (let i = 0; i < 5; i++) {
+      const len = 9 - i * 2;
+      ctx.fillStyle = MARK_INK;
+      if (dx) ctx.fillRect(ax - dx * i - (dx < 0 ? 0 : 1), ay - (len >> 1) - 1, 1, len + 2);
+      else ctx.fillRect(ax - (len >> 1) - 1, ay - dy * i - (dy < 0 ? 0 : 1), len + 2, 1);
+      ctx.fillStyle = f.av.color || '#f4c542';
+      if (dx) ctx.fillRect(ax - dx * i - (dx < 0 ? 0 : 1), ay - (len >> 1), 1, len);
+      else ctx.fillRect(ax - (len >> 1), ay - dy * i - (dy < 0 ? 0 : 1), len, 1);
+    }
+    const tx = dx < 0 ? 34 : dx > 0 ? VW - 34 : mx, ty = dy < 0 ? 20 : dy > 0 ? VH - 22 : my - 5;
+    nameTag(ctx, tx, ty, f.av);
+    markers.push({ x: Math.min(ax, tx) - 30, y: Math.min(ay, ty) - 6, w: Math.abs(tx - ax) + 60, h: Math.abs(ty - ay) + 20, fx: f.x, fy: f.y });
+  }
+}
+
 export const env = { t: 0, dt: 0, hour: 12, night: false, dark: 0, rain: false, player: { x: 0, y: 0 }, people: [], obstacles: [], play };
 
 // ---------- simuleringen lever kvar mellan besöken i staden ----------
@@ -89,10 +117,14 @@ export function makeCity(A) {
   const doorWasOpen = {};
   let t = 0, lockedCam = null;
   const cam = { x: 0, y: 0 };
-  const camTarget = () => lockedCam || {
+  const attractCam = () => {
+    const span = Math.max(1, CITY.W - VW), u = (t * 9) % (2 * span);
+    return { x: Math.round(u < span ? u : 2 * span - u), y: Math.max(0, Math.min(CITY.H - VH, CITY.BASE - VH * 0.55)) };
+  };
+  const camTarget = () => lockedCam || (A.attract ? attractCam() : {
     x: Math.max(0, Math.min(CITY.W - VW, walker.px - VW / 2)),
     y: Math.max(0, Math.min(CITY.H - VH, walker.py - VH * 0.62)),
-  };
+  });
   Object.assign(cam, camTarget());
 
   function updateEnv(dt) {
@@ -105,7 +137,7 @@ export function makeCity(A) {
     const folks = worldFolksHere(A).map((f) => ({ x: f.x, y: f.y }));
     let npcs = [];
     try { npcs = S.life.positions?.() || []; } catch { /* modulfel loggas vid ritning */ }
-    env.people = [env.player, ...folks, ...npcs];
+    env.people = [...(A.attract ? [] : [env.player]), ...folks, ...npcs];
   }
   updateEnv(0);
 
@@ -133,6 +165,7 @@ export function makeCity(A) {
     else if (b.enter === 'mat') A.openFoodShop();
     else if (b.enter === 'klader') A.go('klader');
     else if (b.enter === 'mobler') A.go('mobler');
+    else if (b.enter === 'kafe') A.go('kafe');
     else A.startJob(b.enter === 'flyg' ? 'flygplats' : b.enter);
   }
 
@@ -164,8 +197,10 @@ export function makeCity(A) {
     add('traffic', () => S.traffic.items());
     add('life', () => S.life.items());
     for (const d of folkDrawables(A, t)) items.push({ y: d.fy, draw: () => d.draw(ctx) });
-    const me = selfDrawable(A, walker, t, { folksHere: worldFolksHere(A).length });
-    items.push({ y: me.fy + 0.01, draw: () => me.draw(ctx) });
+    if (!A.attract) {
+      const me = selfDrawable(A, walker, t, { folksHere: worldFolksHere(A).length });
+      items.push({ y: me.fy + 0.01, draw: () => me.draw(ctx) });
+    }
     items.sort((a, b) => a.y - b.y);
     for (const it of items) guard('item', () => it.draw(ctx));
 
@@ -206,10 +241,17 @@ export function makeCity(A) {
       },
       sim: () => S,
       cam: () => ({ ...cam }),
+      markers: () => markers.map((m) => ({ ...m })),
     },
 
     update(dt) {
       t += dt;
+      if (A.followPlayer) {
+        const f = worldFolksHere(A).find((p) => p.id === A.followPlayer);
+        A.followPlayer = null;
+        if (f) walker.walkTo(f.x, f.y + 4);
+        else toast('Hen är inte i staden längre.', 'bad');
+      }
       walker.update(dt);
       A.cityPos = [walker.px, walker.py];
       updateEnv(dt);
@@ -223,11 +265,15 @@ export function makeCity(A) {
         doorWasOpen[b.id] = near;
       }
       // kameran glider efter figuren
-      const tg = camTarget(), k = lockedCam ? 1 : Math.min(1, dt * 6);
+      const tg = camTarget(), k = lockedCam ? 1 : Math.min(1, dt * (A.attract ? 1.5 : 6));
       cam.x += (tg.x - cam.x) * k; cam.y += (tg.y - cam.y) * k;
     },
 
     down(sx, sy) {
+      if (A.attract) return;
+      // klick på en kompis-pil i kanten → gå mot den spelaren
+      const m = markers.find((mk) => sx >= mk.x && sx < mk.x + mk.w && sy >= mk.y && sy < mk.y + mk.h);
+      if (m) { walker.walkTo(m.fx, m.fy + 4); return; }
       const x = sx + cam.x, y = sy + cam.y;
       // klick på ett hus (fasad eller dörr) → gå till dörren och gå in
       for (const b of BUILDINGS) {
@@ -246,6 +292,8 @@ export function makeCity(A) {
       const cx = Math.round(cam.x), cy = Math.round(cam.y);
       ctx.setTransform(A.pxs, 0, 0, A.pxs, -cx * A.pxs, -cy * A.pxs);
       drawWorld(ctx, cx, cy, VW, VH);
+      ctx.setTransform(A.pxs, 0, 0, A.pxs, 0, 0);
+      drawFolkMarkers(ctx, cx, cy);
     },
   };
 }

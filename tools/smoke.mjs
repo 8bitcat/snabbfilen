@@ -24,7 +24,8 @@ const scene = () => page.evaluate(() => window.SF.sceneName);
 await page.goto(URL);
 await page.evaluate(() => localStorage.clear());
 await page.reload();
-await page.waitForTimeout(800);
+await page.waitForFunction(() => !!window.SF?.worldInfo, null, { timeout: 20000 });
+await page.waitForTimeout(400);
 
 // 1. Avatarredigeraren öppnas direkt
 ok(await page.locator('.dlg-avatar').count() === 1, 'avatarredigeraren öppnas vid första start');
@@ -272,6 +273,7 @@ await guest.evaluate(() => {
   localStorage.setItem('snabbfilen_save1', JSON.stringify({ v: 1, day: 1, min: 600, money: 100, hunger: 80, energy: 80, home: 'rum', fridge: {}, jobs: { flygplats: 0, frukt: 0, burgare: 0 }, earned: 0, wardrobe: [], storage: [], deco: {}, won: false }));
 });
 await guest.reload();
+await guest.waitForFunction(() => !!window.SF?.worldInfo, null, { timeout: 20000 });
 let guestIn = false;
 for (let i = 0; i < 50 && !guestIn; i++) {
   await guest.waitForTimeout(200);

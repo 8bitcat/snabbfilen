@@ -4,6 +4,7 @@
 //
 //   node tools/verify.mjs                (HEAD, port 8791)
 //   node tools/verify.mjs v0.14.0 --port 8792
+//   node tools/verify.mjs --extra tools/mp-test.mjs      (kör även fler testskript i kopian)
 //
 // Loggen hamnar i tools/out/verify-<ref>.log. Slutkod 0 = allt grönt.
 import { execFileSync, spawn } from 'node:child_process';
@@ -13,8 +14,9 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const argv = process.argv.slice(2);
-const ref = argv.find((a, i) => !a.startsWith('--') && argv[i - 1] !== '--port') || 'HEAD';
+const ref = argv.find((a, i) => !a.startsWith('--') && argv[i - 1] !== '--port' && argv[i - 1] !== '--extra') || 'HEAD';
 const port = argv.includes('--port') ? argv[argv.indexOf('--port') + 1] : '8791';
+const extras = argv.flatMap((a, i) => (a === '--extra' ? [argv[i + 1]] : [])).filter(Boolean);
 const dir = path.resolve(ROOT, '..', `snabbfilen-verify-${port}`);
 const git = (args) => execFileSync('git', args, { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -40,12 +42,17 @@ try {
   if (!up) throw new Error('servern startade inte');
 
   const out = [];
-  code = await new Promise((resolve) => {
-    const p = spawn('node', ['tools/smoke.mjs'], { cwd: dir, env: { ...process.env, SMOKE_PORT: port }, stdio: ['ignore', 'pipe', 'pipe'] });
+  const runScript = (script) => new Promise((resolve) => {
+    out.push(`
+=== ${script} ===
+`);
+    const p = spawn('node', [script], { cwd: dir, env: { ...process.env, SMOKE_PORT: port }, stdio: ['ignore', 'pipe', 'pipe'] });
     p.stdout.on('data', (b) => out.push(b.toString()));
     p.stderr.on('data', (b) => out.push(b.toString()));
     p.on('close', (c) => resolve(c ?? 1));
   });
+  code = await runScript('tools/smoke.mjs');
+  for (const x of extras) { const c = await runScript(x); if (c !== 0) code = code || c; }
   const log = out.join('');
   const logFile = path.join(ROOT, 'tools/out', `verify-${ref.replace(/[^\w.-]/g, '_')}.log`);
   fs.mkdirSync(path.dirname(logFile), { recursive: true });
