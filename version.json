@@ -1,7 +1,7 @@
 {
-  "version": "0.23.0",
+  "version": "0.23.1",
   "date": "2026-09-28",
-  "title": "Veckosammanfattning med hyresdag, checklista och sparmål",
+  "title": "Aldrig in i spelet utan namn",
   "files": [
     "CHANGELOG.md",
     "assets/interior.png",

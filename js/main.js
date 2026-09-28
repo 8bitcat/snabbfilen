@@ -291,10 +291,12 @@ function boot() {
       openAvatarPicker({
         title: '🧑 Vem är du?', text: 'Skapa din figur – du kan byta kläder hemma i garderoben när du vill.',
         onPick: (av) => { A.avatar = av; begin(); },
-        onCancel: () => { A.avatar = loadAvatar(); begin(); },
+        // utan namn kommer man aldrig in i spelet: Avbryt leder tillbaka till huvudmenyn
+        onCancel: () => { A.avatar = loadAvatar(); if (A.avatar.name) begin(); else backToMenu(); },
       });
     } else begin();
   };
+  const backToMenu = () => { A.attract = true; fit(); A.go('city'); openMenu(A, { onStart: start }); };
   mountMenuButton(A);
   mountChat(A);
   applyHud();
