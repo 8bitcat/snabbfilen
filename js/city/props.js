@@ -1299,8 +1299,7 @@ function paintBrokenShelterBack(P) {
   for (let y = -33; y <= -3; y++) for (let x = 10; x <= 28; x++) if (y < -18 + Math.round(Math.sin(x * 0.8) * 3) && hash(x, y, 506) > 0.05) P.px(x, y, mix(0x2a70d8, 0x9ad8fa, (y + 33) / 15));
   text(P, SMALL, 'FLY', 12, -30, 0xffffff);
   P.line(11, -12, 27, -5, 0x2a2a30); P.line(12, -5, 26, -13, 0x2a2a30);
-  tag(P, 12, -16, 'ZOK', 0xff2e6a); tag(P, -26, -31, 'BTG', 0x36d6ff);
-  throwUp(P, -6, -7, 14, 0xffe030, 7);
+  // klotter borttaget (Carl: bara på byggnader, muren och planket)
   // "UR FUNKTION"-lapp tejpad på mittstolpen, hänger snett
   for (let y = -32; y <= -18; y++) for (let x = -10; x <= 28; x++) { const dy = x > 8 ? 1 : 0; P.px(x, y + dy, (y === -32 || y === -18 || x === -10 || x === 28) ? 0x8a8060 : 0xf6f0d8); }
   text(P, SMALL, 'UR', -7, -30, 0x1a1a1e); text(P, SMALL, 'FUNKTION', -7, -23, 0xd02020);
@@ -1383,7 +1382,7 @@ function paintSwing(P, worn) {
   for (let x = -16; x <= 16; x++) { P.px(x, -30, M[3]); P.px(x, -29, M[2]); P.px(x, -28, M[1]); if (worn && hash(x, 1, 531) > 0.75) P.px(x, -29, RUST[2]); }
   const chain = (x, len) => { for (let y = -27; y < -27 + len; y++) P.px(x, y, (y & 1) ? CHAIN[3] : CHAIN[1]); };
   chain(-8, 20); chain(-3, 20); P.rect(-9, -8, 7, 2, 0x1a1a1e); P.hl(-9, -8, 7, 0x3a3a44);
-  if (worn) { chain(4, 9); P.px(4, -18, CHAIN[2]); chain(9, 22); P.px(9, -5, 0x1a1a1e); tag(P, -14, -27, 'ZOK', 0x36d6ff, 0x101014, false); }
+  if (worn) { chain(4, 9); P.px(4, -18, CHAIN[2]); chain(9, 22); P.px(9, -5, 0x1a1a1e); }
   else { chain(4, 20); chain(9, 20); P.rect(3, -8, 7, 2, 0x1a1a1e); P.hl(3, -8, 7, 0x3a3a44); }
   for (const x of [-18, -6, 6, 18]) P.hl(x - 1, 0, 3, M[0]);
   groundShadow(P, 3, 0, 20, 2.6, 0.26);
@@ -1404,7 +1403,7 @@ function paintSlide(P, worn) {
     P.px(x, yt - 1, R[0]); P.px(x, yt + 6, R[0]);
   }
   P.vl(16, -6, 6, STEEL[2]); P.vl(9, -14, 14, STEEL[1]);
-  if (worn) { tag(P, 0, -18, 'OJ', 0xffe030, 0x101014, false); P.px(3, -22, RUST[3]); P.px(4, -22, RUST[3]); }
+  if (worn) { P.px(3, -22, RUST[3]); P.px(4, -22, RUST[3]); }
   groundShadow(P, 3, 0, 18, 2.6, 0.26);
 }
 function paintSandbox(P, w, worn, seed) {
@@ -1418,8 +1417,7 @@ function paintSandbox(P, w, worn, seed) {
   if (worn) {
     for (let i = 0; i < 6; i++) { const x = x0 + 3 + Math.floor(hash(i, seed, 3) * (w - 6)), y = -3 - Math.floor(hash(i, seed, 4) * 8); P.vl(x, y - 3, 4, GRASS[1]); P.px(x + 1, y - 2, GRASS[3]); }
     P.rect(x0 + 5, -6, 2, 5, 0x3a8a3a); P.px(x0 + 5, -7, 0x2a6a2a); P.px(x1 - 6, -4, 0xd02020); P.px(x1 - 5, -4, 0xd02020);
-    tag(P, x0 + 2, 1, 'PIX', 0x7cff3a, 0x101014, false);
-  } else {
+    } else {
     P.rect(x0 + 5, -8, 4, 4, 0x2a6ad8); P.hl(x0 + 5, -8, 4, 0x6aa0ff); P.px(x0 + 6, -9, 0x2a6ad8); P.px(x0 + 7, -9, 0x2a6ad8);
     P.vl(x1 - 7, -9, 4, 0xe0c030); P.rect(x1 - 8, -6, 3, 2, 0xd02020);
     disc(P, x0 + (w >> 1), -5, 3.5, 2, 0xf0ece0); P.px(x0 + (w >> 1) - 1, -6, 0xffffff);
@@ -1456,8 +1454,7 @@ function paintElskap(P, seed) {
   P.rect(-6, -19, 12, 2, G[0]); for (let x = -5; x <= 4; x += 2) P.px(x, -18, G[3]);
   P.rect(3, -11, 2, 3, 0x1a1a1e); P.px(3, -11, G[4]);
   P.rect(-5, -8, 4, 4, 0xf0c020); P.px(-4, -7, 0x1a1a1e); P.px(-3, -6, 0x1a1a1e); P.px(-4, -5, 0x1a1a1e);
-  tag(P, -6, -16, ['PIX', 'ZOK', 'NEJ', 'OJ'][Math.floor(hash(seed, 1, 2) * 4)], TAGS[Math.floor(hash(seed, 2, 2) * TAGS.length)]);
-  throwUp(P, -3, -3, 8, TAGS[Math.floor(hash(seed, 3, 2) * TAGS.length)], seed);
+  // klotter borttaget (Carl: inte på elskåpen)
   P.rect(1, -14, 4, 3, 0xffffff, 0.9); P.px(2, -13, 0xd02020);
   groundShadow(P, 2, 1, 8, 2, 0.28);
 }
@@ -1489,7 +1486,7 @@ function paintOverfullContainer(P) {
   }
   P.rect(-4, -19, 7, 4, 0xa8845a); P.hl(-4, -19, 7, 0xc8a878); P.vl(-1, -18, 3, 0x6a5030);
   P.rect(6, -18, 5, 3, 0xe8e0c8); P.px(7, -17, 0xd02020); P.px(-11, -18, 0x3a8a3a); P.px(-12, -17, 0x3a8a3a);
-  tag(P, -12, -9, 'KRAM', 0xff2e6a, 0x101014, false); P.px(9, -12, RUST[3]); P.px(10, -13, RUST[2]); P.px(-14, -4, RUST[2]);
+  P.px(9, -12, RUST[3]); P.px(10, -13, RUST[2]); P.px(-14, -4, RUST[2]);
   P.rect(17, -3, 6, 3, 0xe8e0c8); P.px(18, -4, 0xd02020); P.px(-19, -2, 0x1a1a1e); P.hl(-20, -1, 3, 0x26262e);
 }
 function paintTippedCart(P) {
@@ -1530,7 +1527,7 @@ function paintCar(P, col, wreck, seed) {
   if (wreck) {
     for (const x of [-12, 11]) { P.rect(x - 3, -3, 7, 3, CONC_BLOCK[1]); P.hl(x - 3, -3, 7, CONC_BLOCK[2]); P.hl(x - 3, 0, 7, CONC_BLOCK[0]); }
     P.rect(-8, yb - 7, 6, 6, 0x1a1410); P.line(0, yb - 15, 6, yb - 19, B[2]); P.line(1, yb - 15, 7, yb - 19, B[0]);
-    tag(P, -16, yb - 6, 'ZOK', 0x36d6ff, 0x101014, false); P.px(5, yb - 10, 0xffffff, 0.5); P.line(3, yb - 12, 8, yb - 9, 0xe8f4ff, 0.6);
+    P.px(5, yb - 10, 0xffffff, 0.5); P.line(3, yb - 12, 8, yb - 9, 0xe8f4ff, 0.6);
     for (let i = 0; i < 6; i++) P.px(-20 + Math.round(hash(i, seed, 8) * 40), 1, hash(i, seed, 9) > 0.5 ? 0xe8f4ff : 0x9ac8e0);
   } else {
     for (const x of [-11, 11]) { for (let y = -5; y <= 0; y++) for (let xx = -3; xx <= 3; xx++) { const d = Math.hypot(xx, (y + 2.5) * 1.1); if (d < 3.4) P.px(x + xx, y, d < 1.6 ? 0x8a8e96 : d < 2.6 ? 0x2a2a30 : 0x121216); } }
@@ -1666,7 +1663,6 @@ function paintIgloo(P, col, name, seed) {
   }
   P.rect(-9, -10, 4, 4, 0x0a0a0c); P.hl(-9, -10, 4, C[0]);
   P.rect(-2, -3, 6, 3, 0x1a1a1e); P.rect(-8, -9, 17, 6, 0xf4f1ea); text(P, SMALL, name, -8 + Math.floor((17 - textW(SMALL, name)) / 2), -8, C[0]);
-  tag(P, 2, -15, 'OJ', TAGS[Math.floor(hash(seed, 1, 9) * TAGS.length)], 0x101014, false);
   // påsar och flaskor runtom
   P.px(-14, -1, 0x3a8a3a); P.px(-14, -2, 0x3a8a3a); P.px(-13, 0, 0x2a6a2a); P.hl(12, 0, 3, 0xe8e0c8); P.px(13, -1, 0xd02020);
   outline(P, 0x121216, 0x121216, 0.45);
@@ -1677,14 +1673,14 @@ function paintBrokenBench(P) {
   slat(P, -13, -19, 26, 0.05); P.line(-13, -16, 4, -12, WOOD[1]); P.line(-13, -15, 4, -11, WOOD[0]);
   slat(P, -14, -10, 28, 0.12); P.hl(-14, -6, 28, WOOD[0]);
   for (const s of [0, 1]) { const x = s ? 12 : -13, i = s ? -1 : 1; P.vl(x, -11, 5, IRON[1]); P.vl(x, -5, 5, IRON[2]); P.vl(x + i, -5, 5, IRON[1]); P.hl(Math.min(x, x + i) - 1, 0, 4, IRON[0]); }
-  tag(P, -10, -19, 'BTG', 0xff2e6a, 0x101014, false); P.px(3, -10, RUST[3]); P.px(-6, -9, 0x1a1a1e);
+  P.px(3, -10, RUST[3]); P.px(-6, -9, 0x1a1a1e);
   groundShadow(P, 2, 0, 16, 3, 0.3);
 }
 function paintTicketMachine(P) {
   for (let y = -24; y <= 0; y++) for (let x = -5; x <= 4; x++) P.px(x, y, tone(IRON, 0.8 - ((x + 5) / 9) * 0.5 + (y === -24 ? 0.15 : 0) - (y === 0 ? 0.3 : 0), x, y));
   P.rect(-3, -21, 6, 5, 0x1a3a2a); P.hl(-2, -20, 4, 0x3aff8a, 0.8); P.hl(-2, -18, 3, 0x3aff8a, 0.5);
   P.rect(-3, -13, 6, 2, 0x2a2a30); P.px(-3, -13, 0x6a6e76); P.rect(0, -10, 3, 3, 0xf0c020); P.rect(-3, -6, 4, 2, 0x0a0a0c);
-  text(P, SMALL, 'P', -1, -4, 0x2a6ad8); tag(P, -6, -16, 'NEJ', 0xffe030, 0x101014, false);
+  text(P, SMALL, 'P', -1, -4, 0x2a6ad8);
   groundShadow(P, 1, 1, 6, 1.6, 0.26);
 }
 function paintReeds(P, seed, dry = false) {

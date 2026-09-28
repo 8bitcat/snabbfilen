@@ -46,9 +46,16 @@ mekanismen viewMax gör att en scen kan bli bred med enbart sin egen fil) ·
 **0.26.0 JOBBA TILLSAMMANS i Burgarbaren** (delat skift: kollegan syns, samma kunder
 och disk, servitören får poängen; jobbkanal i world.js + js/net/coop.js) ·
 **0.26.1 bjud in att jobba ihop** (💼-knapp i 👥-dialogen, inbjudan når kompisen var
-hen än är, "Häng med!" går rakt in på passet). STORSTADSKÖRNINGEN ÄR KLAR (alla 16
-agenter gröna) – integreras och släpps i bitar härnäst; Burgarbaren-inne-körningen
-(restaurangen + kökjobbet) kör nu.
+hen än är, "Häng med!" går rakt in på passet) · 0.26.2 osynk-fixen (aktiv ledare har
+företräde, pass-slut lämnar över direkt, tysta ledare avsätts) · **0.27.0 jobba ihop
+på riktigt** (välj kompis i startdialogen, DELAD LÖN, extraborden 4→10, kundrusch) ·
+**0.28.0 DEN STORA STADEN** (hela v2-världen: Söder med Södergatan och kanalen,
+Förorten med graffiti och trasiga hållplatsen, riktig buss, väder och årstider,
+A*-gång, sex nya jobb – pizzerian, posten, macken, bilverkstan, tvätteriet,
+baristan – djuraffären ÖPPNAD, Burgarbarens nya fasad; 33 filer, 125 kontroller).
+Burgarbaren-inne-körningen (restaurangen + kökjobbet) kör nu; därefter släpps resten
+av köerna i tur och ordning: bostäderna+husdjuren hemma, garderoben, däckbytet,
+flygterminalen, ljudet, leksaksaffären.
 
 ## Pågår nu (agenterna kör)
 

@@ -1335,7 +1335,12 @@ export function makeShopBurgarbar(A) {
         if (!me.hintGiven) { me.hintGiven = true; talk.say('🍔 Klicka på ett ledigt bord eller bås så sätter jag mig där!', meAt); }
       }
     }
-    if (me.state === 'carry' && !walker.path.length && !me.seat && me.res && me.res.occ === 'me') sitDown(me.res);
+    // säkerhetsnät om gång-callbacken uteblev: sätt dig BARA om figuren faktiskt
+    // står vid platsens angöringspunkt – annars släpps reservationen (t.ex. ångrad gång)
+    if (me.state === 'carry' && !walker.path.length && !me.seat && me.res && me.res.occ === 'me') {
+      if (Math.hypot(walker.px - me.res.ax, walker.py - me.res.ay) < 8) sitDown(me.res);
+      else release();
+    }
     if (me.state === 'sit') {
       me.sitT += dt;
       if (me.slide) { me.slide.k += dt * 4; if (me.slide.k >= 1) me.slide = null; }
@@ -1659,13 +1664,16 @@ export function makeShopBurgarbar(A) {
       ctx.restore();
     }
     // ---- pratbubblor (ovanpå ljuset så att de syns även i kväll) ----
+    const iView = (x) => x > cx - 10 && x < cx + vw + 10; // talaren måste synas (nästan) i bild
     for (const G of guests) {
       if (!G.bubble || G.bubble.until <= t) continue;
       if (G.state === 'queue' && G.bubble.icon) {
+        if (!iView(G.w.px)) continue; // utanför kamerakanten: ingen bubbla utan avsändare
         const sprI = BM.dishes[DISH_IX[G.bubble.icon]].sprite;
         iconBubble(ctx, Math.round(G.w.px), Math.round(G.w.py) - 44, (c, ix, iy) => c.drawImage(sprI, ix - 8, iy - 7));
       } else if (G.seat && G.state === 'sit' && G.bubble.text) {
         const [x, y] = seatPos(G.seat);
+        if (!iView(x)) continue; // stolen utanför bild: hoppa över i stället för att klämma in bubblan
         sayBubble(ctx, Math.round(x), Math.round(y) - (G.seat.front ? 36 : 42), G.bubble.text, { x0: cx, x1: cx + vw });
       }
     }
@@ -1749,7 +1757,7 @@ export function makeShopBurgarbar(A) {
         if (s && s.occ) { if (t - me.waitMsgT > 2) { talk.say('😕 Där sitter någon redan!', meAt); me.waitMsgT = t; } return; }
         const h = spotAt(x, y);
         if (h && h.id === 'dorr') { if (t - me.waitMsgT > 2) { talk.say('🍔 Jag äter upp först – brickan stannar här inne!', meAt); me.waitMsgT = t; } return; }
-        if (y > WALL_Y) { walker.walkTo(x, y); return; }
+        if (y > WALL_Y) { release(); walker.walkTo(x, y); return; }  // golvklick = ångra platsvalet
         if (t - me.waitMsgT > 2.5) { talk.say('🍔 Klicka på ett ledigt bord så sätter jag mig där.', meAt); me.waitMsgT = t; }
         return;
       }

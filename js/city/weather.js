@@ -16,8 +16,9 @@
 //                 sprickor) och dammen, pölar som krusas i regnet, solglitter på vatten/pölar/snö och
 //                 på våt asfalt när solen kommer efter regnet
 //     drawFront – efter allt y-sorterat, före mörkret: molnskuggor i två lager som driver med vinden
-//                 över allt (mark, hus, folk), årstidens färgton (soft-light) + dygnets ljus
-//                 (gryning/skymning), väderljus, solstrålar i gyllene timmen, regnbåge efter regn,
+//                 över allt (mark, hus, folk), dygnets ljus (gryning/skymning – ingen årstidston:
+//                 sol/moln på dagen är stadens vanliga look), dämpat väderljus bara vid nederbörd/vind,
+//                 solstrålar i gyllene timmen, regnbåge efter regn,
 //                 regn i tre styrkor (dugg med slöja/regn/ösregn – snett i blåst, byiga regnsjok, stänk
 //                 som slår upp från marken, blixtar med ljungeld), snöfall (flingor i fyra djup som
 //                 virvlar, yrsnö i blåst), dimma (tre dithrade dimbankar som driver i olika takt, tätare
@@ -569,6 +570,11 @@ function zones() {
   Z = { walk, road, water, puddles };
   return Z;
 }
+// Finns en pöl (sz ≥ 1) inom r px från punkten? Trafiken frågar för däckens vattenskvätt.
+export function puddleNear(x, y, r = 6) {
+  for (const p of zones().puddles) if (p.sz >= 1 && Math.abs(p.x - x) <= r && Math.abs(p.y - y) <= r) return true;
+  return false;
+}
 const overlap = (a, b) => a[0] < b[2] && a[2] > b[0] && a[1] < b[3] && a[3] > b[1];
 const isect = (a, b) => [Math.max(a[0], b[0]), Math.max(a[1], b[1]), Math.min(a[2], b[2]), Math.min(a[3], b[3])];
 // tar bort h ur varje rektangel i listan (delar i upp till fyra bitar)
@@ -882,7 +888,14 @@ export function createWeather(env) {
     const ts = slush(q);
     for (const { r, c } of roads) {
       blit(ctx, ts, c);
-      if (q >= 3) {
+      // hjulspåren: trafikens levande spårlager om det finns (bilarna mörkar spår där de
+      // faktiskt kör, plogen röjer och lägger vall) – annars de fasta linjerna som förr
+      const TL = env.snowTracks?.[r.id];
+      if (TL && TL.canvas) {
+        ctx.globalAlpha = 1;
+        ctx.drawImage(TL.canvas, c[0] - TL.x0, c[1] - TL.y0, c[2] - c[0], c[3] - c[1], c[0], c[1], c[2] - c[0], c[3] - c[1]);
+        ctx.globalAlpha = 0.96;
+      } else if (q >= 3) {
         ctx.fillStyle = rgba(50, 52, 58, 0.55 + q * 0.03);
         for (const l of r.lanes) for (const off of [-5, 4]) {
           if (r.axis === 'x') { const y = l.y + off; if (y >= c[1] && y < c[3]) ctx.fillRect(c[0], y, c[2] - c[0], 2); }
@@ -995,35 +1008,24 @@ export function createWeather(env) {
   }
 
   // ---------- ljuset över hela bilden ----------
-  // årstidens färgton: en färgsättning (soft-light – kontrasten blir kvar, bara tonen skiftar)
-  // plus en svag slöja. Vår = friskt grön, sommar = varmt gul, höst = rostig, vinter = blåkall.
-  const SEASON_TINT = { vår: [176, 232, 196, 0.03], sommar: [255, 228, 150, 0.035], höst: [236, 164, 84, 0.05], vinter: [168, 190, 236, 0.06] };
-  const SEASON_GRADE = { vår: ['#86ba7c', 0.3], sommar: ['#c89a5c', 0.3], höst: ['#cc7a3c', 0.36], vinter: ['#5a7ec6', 0.4] };
+  // Sol och moln på dagen = stadens vanliga ljusa look, HELT utan färgton (beslut: årstiden
+  // ska inte täcka staden – bara nederbörd/vind/dimma får färga bilden, och då dämpat).
+  // Dygnsljuset (gryning/skymning/gyllene timmen) ligger kvar som förr.
   function drawLight(ctx, view, w) {
     const vx = view.x, vy = view.y, vw = view.w, vh = view.h, k = w.intensity, h = env.hour ?? 12;
     const day = clamp01(1 - env.dark * 2);
     if (day > 0) {
-      // årstidens ton
-      const g = SEASON_GRADE[w.season] || SEASON_GRADE.sommar;
-      ctx.globalCompositeOperation = 'soft-light';
-      ctx.globalAlpha = g[1] * day; ctx.fillStyle = g[0]; ctx.fillRect(vx, vy, vw, vh);
-      ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
-      const s = SEASON_TINT[w.season] || SEASON_TINT.sommar;
-      ctx.fillStyle = rgba(s[0], s[1], s[2], s[3] * day); ctx.fillRect(vx, vy, vw, vh);
       // dygnets ljus: gryningen är blåkall, kvällen rödvarm (svagare under moln)
       const dawn = Math.max(0, 1 - Math.abs(h - 6.3) / 1.5), dusk = Math.max(0, 1 - Math.abs(h - 19.2) / 1.6), clear = 1 - 0.7 * w.cloud;
       if (dawn > 0) { ctx.fillStyle = rgba(150, 172, 232, 0.07 * dawn * day); ctx.fillRect(vx, vy, vw, vh); }
       if (dusk > 0) { ctx.fillStyle = rgba(255, 140, 80, 0.09 * dusk * day * clear); ctx.fillRect(vx, vy, vw, vh); }
     }
-    // himlens ljus per väder
-    if (w.kind === 'moln') { ctx.fillStyle = rgba(40, 48, 70, 0.07 + 0.11 * k); ctx.fillRect(vx, vy, vw, vh); }
-    if (w.kind === 'regn') { ctx.fillStyle = rgba(36, 46, 72, 0.08 + 0.16 * k); ctx.fillRect(vx, vy, vw, vh); }
-    if (w.kind === 'snö') { ctx.fillStyle = rgba(222, 230, 246, 0.05 + 0.08 * k); ctx.fillRect(vx, vy, vw, vh); }
-    if (w.kind === 'blåst') { ctx.fillStyle = rgba(230, 226, 214, 0.03 + 0.03 * k); ctx.fillRect(vx, vy, vw, vh); }
+    // vädrets eget ljus – BARA vid nederbörd och vind, aldrig en hinna i sol/moln:
+    // lätt gråton i regn, kall ton i snöfall, blek dammton i hård blåst
+    if (w.kind === 'regn') { ctx.fillStyle = rgba(36, 46, 72, 0.05 + 0.1 * k); ctx.fillRect(vx, vy, vw, vh); }
+    if (w.kind === 'snö') { ctx.fillStyle = rgba(222, 230, 246, 0.04 + 0.07 * k); ctx.fillRect(vx, vy, vw, vh); }
+    if (w.kind === 'blåst') { ctx.fillStyle = rgba(230, 226, 214, 0.02 + 0.03 * k); ctx.fillRect(vx, vy, vw, vh); }
     if (w.kind === 'sol' && day > 0) {
-      // varmt ljus, kallare på vintern, och den gyllene timmen morgon/kväll med solstrålar
-      const warm = w.season === 'vinter' ? [255, 244, 224, 0.03] : [255, 214, 140, 0.045 + 0.035 * k * (1 - w.cloud)];
-      ctx.fillStyle = rgba(warm[0], warm[1], warm[2], warm[3] * day); ctx.fillRect(vx, vy, vw, vh);
       if (w.golden > 0) {
         // gyllene timmen: varm färgsättning (soft-light håller kvar kontrasten),
         // en tydlig varm slöja och solstrålar som sakta vandrar
@@ -1042,8 +1044,6 @@ export function createWeather(env) {
         ctx.globalAlpha = 1;
       }
     }
-    // blöt mark ger en svag kall ton även när det slutat regna
-    if (w.wet > 0.2 && w.kind !== 'regn') { ctx.fillStyle = rgba(30, 44, 70, 0.05 * w.wet); ctx.fillRect(vx, vy, vw, vh); }
   }
   // blixten: hela bilden vitnar, mest upptill
   function drawFlash(ctx, view, w, a) {

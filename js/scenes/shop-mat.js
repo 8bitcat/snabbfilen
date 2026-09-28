@@ -2426,7 +2426,7 @@ export function makeShopMat(A) {
     panelHits = [];
     const gs = groups();
     if (!gs.length && !belt) return;
-    const w = 116, y0 = 4;
+    const w = 116, y0 = 4 + (globalThis.SF?.view?.safe?.y0 | 0); // under fyll-lägets beskärning
     const rowsH = gs.length * 11;
     const h = 16 + rowsH + 34;
     // panelen flyttar till andra hörnet när figuren går in under den (med lite marginal åt båda hållen)

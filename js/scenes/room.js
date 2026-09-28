@@ -55,9 +55,12 @@ if (ATLAS) ATLAS.src = 'assets/interior.png';
 // egen sjabbighet (rost och nitar / sliten tapet och radiator). view = vad man ser
 // genom fönstren: 'sky' (standard), 'tomt', 'betong', 'tradgard', 'stad'. winY = glasets
 // över-/underkant (takvåningen har högre fönster). Ordningen är billigast → dyrast.
+// outside = vad som ritas UTANFÖR en smal lokal så att hela 384×216 används (Carls
+// mobilfyllningsregel): 'gard' = husvagnens gårdsplätt, 'trapphus' = Förortsettans
+// trapphus. Lokaler utan outside och partition < 384 beskärs i stället med contentBox.
 const PLANS = {
   husvagn: {
-    partition: 148, worn: 'husvagn',
+    partition: 148, worn: 'husvagn', outside: 'gard',
     rooms: [{ name: 'HUSVAGNEN', wall: 0xd8ccb0, wallDk: 0x8c7c62, floorA: 0x9c8c70, floorB: 0x80705a, windows: [[84, 118]], view: 'tomt' }],
   },
   rum: {
@@ -65,7 +68,7 @@ const PLANS = {
     rooms: [{ name: 'RUMMET', wall: 0x8c7a62, wallDk: 0x6a5c48, floorA: 0xcbb894, floorB: 0xb09a74, windows: [[80, 120]] }],
   },
   hoghus: {
-    partition: 244, worn: 'hoghus',
+    partition: 244, worn: 'hoghus', outside: 'trapphus',
     rooms: [{ name: 'ETTAN', wall: 0xb4ac9c, wallDk: 0x787064, floorA: 0xb8a88a, floorB: 0x9e8e72, windows: [[72, 116], [150, 198]], view: 'betong' }],
   },
   lagenhet: {
@@ -75,11 +78,11 @@ const PLANS = {
       { name: 'SOVRUM', wall: 0x8a7f9a, wallDk: 0x685e78, floorA: 0xd0c2b0, floorB: 0xb8a892, windows: [[100, 140]] },
     ],
   },
-  radhus: {
-    partition: 340,
+  radhus: { // hela bredden (mobilfyllningen) – tre trädgårdsfönster i rad i vardagsrummet
+    partition: 0,
     rooms: [
-      { name: 'VARDAGSRUM', wall: 0xd8c8a4, wallDk: 0xa08c68, floorA: 0xdcc8a4, floorB: 0xc2ac86, windows: [[80, 130], [150, 200]], view: 'tradgard' },
-      { name: 'SOVRUM', wall: 0xa4b6c6, wallDk: 0x788a9a, floorA: 0xd6c8b2, floorB: 0xbeb096, windows: [[110, 160]], view: 'tradgard' },
+      { name: 'VARDAGSRUM', wall: 0xd8c8a4, wallDk: 0xa08c68, floorA: 0xdcc8a4, floorB: 0xc2ac86, windows: [[80, 130], [150, 200], [284, 326]], view: 'tradgard' },
+      { name: 'SOVRUM', wall: 0xa4b6c6, wallDk: 0x788a9a, floorA: 0xd6c8b2, floorB: 0xbeb096, windows: [[110, 160], [250, 300]], view: 'tradgard' },
     ],
   },
   villa: {
@@ -139,7 +142,7 @@ const SEEDS = {
     { k: 'bordM', v: 0, x: 130, y: 160 }, { k: 'matstol', v: 0, x: 114, y: 158 }, { k: 'matstol', v: 0, x: 186, y: 158 },
     { k: 'byra', v: 0, x: 60, y: 96 }, { k: 'vaxtS', v: 0, x: 340, y: 140 },
   ],
-  'radhus:0': [ // vardagsrum med kokvrå och trädgårdsfönster (SOVRUM-dörren börjar vid x=292)
+  'radhus:0': [ // vardagsrum med kokvrå och trädgårdsfönster (SOVRUM-dörren börjar vid x=336)
     { k: 'bredhylla', v: 0, x: 82, y: 96 }, { k: 'tv', v: 1, x: 163, y: 96 },
     { k: 'diskbank', v: 1, x: 206, y: 96 }, { k: 'kylskap', v: 0, x: 258, y: 94, fx: 1 },
     { k: 'stormatta', v: 3, x: 126, y: 198 }, { k: 'soffa', v: 3, x: 160, y: 176, r: 2 }, { k: 'glasbord', v: 0, x: 159, y: 150 },
@@ -719,6 +722,10 @@ export function makeRoom(A, { visit = false } = {}) {
   return {
     get worldX() { return px; },
     get worldY() { return py; },
+    // Mobilfyllningen (fit i main.js): smala lokaler utan egen utsida (Lilla rummet,
+    // Lägenheten) beskärs till lokalens verkliga bredd så att ingen död yta fyller
+    // skärmen. Husvagnen och Förortsettan ritar i stället gården/trapphuset – full vy.
+    contentBox: RIGHT < FW && !plan.outside ? { x: 0, y: 0, w: RIGHT, h: FH } : undefined,
     toggleDecor,
     _debug: {
       spot: (id) => { const h = hotRects.find((h) => h.id === id); return h ? { x: (h.r[0] + h.r[2]) / 2, y: (h.r[1] + h.r[3]) / 2 } : null; },
@@ -1244,9 +1251,13 @@ function buildBg(roomDef, RIGHT, subDoors, hasExit, plan, visit) {
     if (worn === 'husvagn') caravanFixtures(P, RIGHT, wins, wy0, wy1, night, hasExit, wall, wallDk);
     if (worn === 'hoghus') ettaFixtures(P, RIGHT, wins, wy0, wy1, night, hasExit, wall, wallDk);
 
-    // avdelarvägg + mörker utanför lokalen
+    // avdelarvägg + världen utanför lokalen: husvagnen har sin gårdsplätt och
+    // Förortsettan trapphuset (Carls mobilfyllningsregel: ingen död yta i bild) –
+    // övriga smala lokaler blir mörka och beskärs i fyll-läget av contentBox
     if (RIGHT < FW) {
-      for (let y = 5; y < FH; y++) for (let x = RIGHT; x < FW; x++) P.px(x, y, mix(0x17131c, 0x221c28, (bayer(x, y) - 0.5) * 0.4 + 0.5));
+      if (plan.outside === 'gard') paintGard(P, RIGHT, night);
+      else if (plan.outside === 'trapphus') paintTrapphus(P, RIGHT, night);
+      else for (let y = 5; y < FH; y++) for (let x = RIGHT; x < FW; x++) P.px(x, y, mix(0x17131c, 0x221c28, (bayer(x, y) - 0.5) * 0.4 + 0.5));
       for (let y = 5; y < FH; y++) {
         P.px(RIGHT - 3, y, mul(wallDk, 0.5)); P.px(RIGHT - 2, y, mix(wallDk, 0xffffff, 0.15));
         P.px(RIGHT - 1, y, wallDk);
@@ -1810,6 +1821,210 @@ function ettaFixtures(P, RIGHT, wins, wy0, wy1, night, hasExit, wall, wallDk) {
   const ox = a ? a[1] + 1 : 110;
   P.rect(ox, WALL_Y - 13, 5, 5, 0xe8e2cc); P.box(ox, WALL_Y - 13, 5, 5, 0xa8a088); P.px(ox + 1, WALL_Y - 11, 0x3a3228); P.px(ox + 3, WALL_Y - 11, 0x3a3228);
 }
+// ---------- husvagnens gårdsplätt ----------
+// Utanför gaveln (Carls mobilfyllningsregel: hela 384×216 används): himlen och
+// förortens skivhus bortom nätstängslet, grusplätten med tvättlina, klotgrill,
+// campingstol, gasoltub, stödben vid vagnen, trampstenar och ett gammalt däck
+// med blommor i. På kvällen lyser natriumlyktan vid stängslet orange.
+function paintGard(P, x0, night) {
+  const hz = 98;
+  const sh = (c) => (night ? mul(c, 0.62) : c);
+  // himlen och marken
+  for (let y = 5; y < FH; y++) for (let x = x0; x < FW; x++) {
+    if (y < hz) { P.px(x, y, skyPx(x, y, (y - 5) / (hz - 5), night, 91)); continue; }
+    let c = mix(night ? 0x33312e : 0x9a917c, night ? 0x282624 : 0x847a66, hash(x >> 1, y, 92));
+    if (hash(x, y >> 1, 93) > 0.88) c = night ? 0x203024 : [0x5a8a3a, 0x6a9a44, 0x4a7a32][(x + y) % 3]; // ogräs
+    if (hash(x >> 2, y >> 2, 94) > 0.94) c = mul(c, 0.86); // gamla oljefläckar
+    P.px(x, y, c);
+  }
+  if (!night) cloudsIn(P, x0 + 2, FW - 4, 10, hz - 26, 95);
+  // förortens skivhus bortom stängslet
+  for (let bx = x0 - 10; bx < FW; bx += 44) {
+    const w = 26 + Math.round(hash(bx, 1, 96) * 12), h = 14 + Math.round(hash(bx, 2, 96) * 12), l = bx + Math.round(hash(bx, 3, 96) * 8);
+    for (let y = hz - h; y < hz; y++) for (let x = Math.max(x0, l); x < Math.min(FW, l + w); x++) {
+      let c = night ? 0x262a36 : mix(0xa4a8ac, 0xb8bcc0, hash(x >> 2, y, 97) * 0.5);
+      if (x === l + w - 1) c = mul(c, 0.85);
+      if (y === hz - h) c = night ? mul(c, 0.8) : mix(c, 0xffffff, 0.25);
+      if ((x - l) % 4 === 1 && (y - (hz - h)) % 4 === 1 && y < hz - 1) c = night ? (hash(x, y, 98) > 0.55 ? 0xf0c878 : 0x1a1c26) : 0x7a8c9c;
+      P.px(x, y, c);
+    }
+  }
+  // nätstängslet på stolpar
+  const ft = hz - 13, fb = hz + 2;
+  for (let y = ft; y <= fb; y++) for (let x = x0; x < FW; x++) if (((x + y) & 3) === 0 || ((x - y) & 3) === 0) P.px(x, y, night ? 0x4a4e56 : 0x767a80, 0.7);
+  P.hl(x0, ft, FW - x0, night ? 0x3a3e46 : 0x5a5e64);
+  for (let x = x0 + 8; x < FW; x += 26) { P.vl(x, ft - 2, fb - ft + 5, night ? 0x3a3e46 : 0x55595e); P.px(x, ft - 3, night ? 0x2e3238 : 0x45494e); }
+  // natriumlyktan vid stängslet
+  const lx = FW - 30;
+  P.vl(lx, hz - 34, 36, night ? 0x2a2c30 : 0x5a5e62); P.hl(lx - 6, hz - 34, 7, night ? 0x2a2c30 : 0x5a5e62);
+  P.rect(lx - 8, hz - 33, 4, 3, night ? 0xffc060 : 0x8a8e92);
+  if (night) { P.ell(lx - 6, hz - 27, 20, 14, 0xff9a40, 0.3, 4); P.ell(lx - 6, hz + 8, 30, 10, 0xff9a40, 0.12, 4); }
+  // vagnens stödben och rostrand nere vid gaveln
+  for (const [sx, sy] of [[x0 + 4, FH - 34], [x0 + 4, FH - 8]]) {
+    P.line(x0, sy - 6, sx + 6, sy + 4, sh(0x8a8e94)); P.rect(sx + 5, sy + 4, 4, 2, sh(0x5a5e64)); P.rect(sx + 4, sy + 6, 6, 1, sh(0x3a3e44));
+  }
+  caravanRust(P, x0 + 1, 108, 16, 9);
+  // gasoltuben vid vagnen
+  const gx = x0 + 14, gy = 156;
+  P.rect(gx, gy - 12, 9, 12, sh(0x2f6fae)); P.vl(gx + 1, gy - 11, 10, sh(0x5a9ade)); P.vl(gx + 7, gy - 11, 10, sh(0x1e4a78));
+  P.hl(gx + 1, gy - 13, 7, sh(0x2f6fae)); P.rect(gx + 3, gy - 16, 3, 3, sh(0x8a8e94)); P.px(gx + 2, gy - 15, sh(0xb8bcc2));
+  P.ell(gx + 4, gy + 1, 6, 2, 0x140c1c, 0.3, 3);
+  // trampstenar från gaveln ut till grillen
+  for (const [px, py] of [[x0 + 22, 190], [x0 + 36, 181], [x0 + 50, 190], [x0 + 43, 202]]) {
+    P.ell(px, py, 6, 3, sh(0xa8a296), 1, 2); P.ell(px - 1, py - 1, 4, 2, sh(0xbcb6aa), 1, 2);
+  }
+  // tvättlinan: två stolpar, en handduk och strumpor på tork
+  const p1 = x0 + 66, p2 = x0 + 124, py = 148;
+  P.vl(p1, py - 34, 34, sh(0x6a4a2c)); P.vl(p1 + 1, py - 34, 34, sh(0x8a5e38)); P.hl(p1 - 3, py - 34, 7, sh(0x6a4a2c));
+  P.vl(p2, py - 30, 30, sh(0x6a4a2c)); P.vl(p2 + 1, py - 30, 30, sh(0x8a5e38)); P.hl(p2 - 3, py - 30, 7, sh(0x6a4a2c));
+  for (let x = p1 + 2; x < p2; x++) { const t = (x - p1) / (p2 - p1); P.px(x, Math.round(py - 33 + Math.sin(t * Math.PI) * 3 + t * 3), sh(0xd8d4c8), 0.9); }
+  for (let i = 0; i < 12; i++) for (let j = 0; j < 14; j++) { // handduken
+    const x = p1 + 12 + i, y = Math.round(py - 32 + Math.sin(((x - p1) / (p2 - p1)) * Math.PI) * 3 + (x - p1) / (p2 - p1) * 3) + 1 + j;
+    P.px(x, y, sh(((j >> 2) & 1) ? 0xd9433b : 0xf0e8d8));
+  }
+  for (const sx of [p1 + 34, p1 + 42]) for (let j = 0; j < 6; j++) { // strumporna
+    const y0 = Math.round(py - 32 + Math.sin(((sx - p1) / (p2 - p1)) * Math.PI) * 3 + (sx - p1) / (p2 - p1) * 3) + 1;
+    P.px(sx, y0 + j, sh(j > 3 ? 0xd9433b : 0xf0c020)); P.px(sx + 1, y0 + j, sh(j > 3 ? 0xa82a24 : 0xc89a10), j > 1 ? 1 : 0);
+  }
+  // klotgrillen på tre ben
+  const bx = x0 + 58, by = 184;
+  P.ell(bx, by + 1, 9, 2.5, 0x140c1c, 0.35, 3);
+  for (const [dx, dy] of [[-6, 0], [6, 0], [0, 1]]) P.line(bx + dx * 0.4, by - 7, bx + dx, by + dy, sh(0x3a3a40));
+  for (let y = -14; y <= -6; y++) for (let x = -8; x <= 8; x++) {
+    const e = (x / 8.5) ** 2 + ((y + 10) / 4.5) ** 2;
+    if (e > 1) continue;
+    let c = e > 0.75 ? 0x1e1e24 : 0x2e2e36;
+    if (x + y < -16) c = 0x4a4a54;
+    P.px(bx + x, by + y, sh(c));
+  }
+  P.hl(bx - 8, by - 10, 17, sh(0x16161a));
+  P.rect(bx - 1, by - 17, 3, 2, sh(0x4a4a54)); P.px(bx, by - 18, sh(0x6a6a74)); // locket och knoppen
+  P.rect(bx + 9, by - 12, 3, 1, sh(0x8a6a3a)); // sidohandtaget
+  if (night) P.ell(bx, by - 8, 5, 2, 0xff6a2a, 0.4, 3);
+  // campingstolen (randig duk, sedd snett framifrån)
+  const cx = x0 + 94, cy = 188;
+  P.ell(cx + 1, cy + 1, 8, 2.5, 0x140c1c, 0.3, 3);
+  P.line(cx - 6, cy, cx - 2, cy - 10, sh(0x8a8e94)); P.line(cx + 6, cy, cx + 2, cy - 10, sh(0x8a8e94));
+  P.line(cx - 5, cy, cx + 3, cy - 9, sh(0x6a6e74)); P.line(cx + 5, cy, cx - 3, cy - 9, sh(0x6a6e74));
+  for (let j = 0; j < 5; j++) P.hl(cx - 5, cy - 10 - j, 10, sh((j & 1) ? 0xf0e8d8 : 0x3a7bd5)); // sitsen
+  for (let j = 0; j < 9; j++) P.hl(cx - 4, cy - 24 + j, 9, sh(((j >> 1) & 1) ? 0xf0e8d8 : 0x3a7bd5)); // ryggen
+  P.vl(cx - 5, cy - 24, 10, sh(0x8a8e94)); P.vl(cx + 5, cy - 24, 10, sh(0x8a8e94));
+  // däcket med blommor i
+  const tx = FW - 26, ty = FH - 12;
+  for (let y = ty - 4; y <= ty + 3; y++) for (let x = tx - 8; x <= tx + 8; x++) {
+    const e = ((x - tx) / 8) ** 2 + ((y - ty) / 4) ** 2;
+    if (e <= 1 && e > 0.32) P.px(x, y, sh(e > 0.72 ? 0x16161a : 0x2a2a30));
+  }
+  for (const [dx, c] of [[-3, 0xd9433b], [0, 0xf0c020], [3, 0xf28bb3]]) {
+    P.px(tx + dx, ty - 2, sh(c)); P.px(tx + dx, ty - 1, sh(0x2e6a2e));
+  }
+  if (night) { P.rect(x0, 5, FW - x0, FH - 5, 0x0a0f2a, 0.12); }
+}
+
+// ---------- Förortsettans trapphus ----------
+// Utanför lägenhetsväggen: trapphuset på våning 7 – grönmålad bröstning, terrazzo,
+// hissen med TRASIG-lapp (hissen går ibland!), anslagstavlan, trappautomaten som
+// lyser på kvällen, pizzakartonger vid dörren och trappan ner mot våning 6.
+function paintTrapphus(P, x0, night) {
+  const sh = (c) => (night ? mul(c, 0.7) : c);
+  const GRN = WALL_Y - 30;
+  // väggen: ljus puts upptill, sliten grönmålad bröstning nertill
+  for (let y = 5; y < WALL_Y; y++) for (let x = x0; x < FW; x++) {
+    let c;
+    if (y < GRN) {
+      c = mix(0xd6d0be, 0xc8c2b0, hash(x >> 1, y >> 1, 101) * 0.6);
+      if (hash(x >> 2, y >> 2, 102) > 0.96) c = mul(c, 0.9);
+    } else if (y === GRN) c = 0x4a5a4e;
+    else {
+      c = mix(0x6f8f7a, 0x5f7f6a, hash(x >> 1, y, 103) * 0.7);
+      if (y === GRN + 1) c = mix(c, 0xffffff, 0.15);
+      if (hash(x, y, 104) > 0.965) c = mul(c, 0.85); // avskavd färg
+      if (y >= WALL_Y - 3) c = mul(c, 0.6);
+    }
+    P.px(x, y, sh(c));
+  }
+  P.hl(x0, 5, FW - x0, sh(0xa8a292)); P.hl(x0, 6, FW - x0, sh(0xbcb6a4));
+  // terrazzogolvet med stänk
+  for (let y = WALL_Y; y < FH; y++) for (let x = x0; x < FW; x++) {
+    let c = mix(0xb0aca0, 0xa39f92, hash(x, y, 105) * 0.5);
+    const h = hash(x * 3 + 1, y * 7 + 2, 106);
+    if (h > 0.9) c = 0x6a675e; else if (h < 0.04) c = 0xd8d4c8; else if (h > 0.885 && h <= 0.9) c = 0x8a5a4a;
+    if ((x - x0) % 48 === 0 || (y - WALL_Y) % 32 === 0) c = mul(c, 0.88); // plattskarvar
+    P.px(x, y, sh(c));
+  }
+  for (let i = 0; i < 4; i++) P.darken(x0, WALL_Y + i, FW - x0, 1, 0.78 + i * 0.05);
+  // hissen: ståldörr med rombfönster, HISS-skylt och en tejpad TRASIG-lapp
+  const hx = x0 + 12, hw = 34, ht = 24;
+  P.rect(hx - 2, ht - 2, hw + 4, WALL_Y - ht + 2, sh(0x5a5e64)); P.hl(hx - 2, ht - 2, hw + 4, sh(0x7a7e84));
+  for (let y = ht; y < WALL_Y; y++) for (let x = hx; x < hx + hw; x++) {
+    let c = mix(0x9aa0a8, 0x8a9098, hash(x >> 2, y >> 2, 107) * 0.7);
+    if (x === hx + (hw >> 1) - 1) c = 0x5a5e64; if (x === hx + (hw >> 1)) c = 0xb8bcc2;
+    if (y === ht) c = 0xc8ccd2; if (y === WALL_Y - 1) c = 0x4a4e54;
+    P.px(x, y, sh(c));
+  }
+  for (const [dx, dy] of [[0, -4], [1, -3], [2, -2], [1, -1], [0, 0], [-1, -1], [-2, -2], [-1, -3]]) // rombfönstret (vänster dörrblad)
+    P.px(hx + 9 + dx, ht + 12 + dy, sh(night ? 0x1a1c22 : 0x2a3038));
+  P.px(hx + 9, ht + 10, sh(0x4a5a6a));
+  const hs = 'HISS', hsw = textW(SMALL, hs) + 6, hsx = hx + ((hw - hsw) >> 1);
+  P.rect(hsx, ht - 11, hsw, 9, sh(0x1d2b1f)); P.box(hsx, ht - 11, hsw, 9, sh(0x0e1510));
+  text(P, SMALL, hs, hsx + 3, ht - 9, night ? 0x9aba7a : 0xffd23f);
+  // lappen: snett tejpad, rödpennat TRASIG
+  const nx = hx + 6, ny = ht + 22;
+  for (let j = 0; j < 11; j++) P.hl(nx + (j > 5 ? 1 : 0), ny + j, 26, sh(0xf4efe0));
+  P.hl(nx + 1, ny - 1, 8, sh(0xd8d4c8), 0.8); // tejpbiten
+  text(P, SMALL, 'TRASIG', nx + 2, ny + 3, 0xc9323a);
+  P.hl(nx + 2, ny + 9, 22, sh(0x8a8478), 0.6);
+  // 7 TR målat på putsen + anslagstavlan med lappar
+  text(P, SMALL, '7 TR', x0 + 58, 16, sh(0x6a675e));
+  const ax = x0 + 56, ay = 28;
+  P.rect(ax, ay, 34, 24, sh(0x5a4632)); P.rect(ax + 2, ay + 2, 30, 20, sh(0x9a7a4e));
+  for (let j = 0; j < 20; j++) for (let i = 0; i < 30; i++) if (hash(i, j, 108) > 0.88) P.px(ax + 2 + i, ay + 2 + j, sh(0x8a6a40));
+  for (const [dx, dy, w, h, c] of [[4, 4, 9, 11, 0xf4efe0], [16, 5, 10, 8, 0xf0e0a0], [7, 13, 12, 7, 0xf4efe0]]) {
+    P.rect(ax + dx, ay + dy, w, h, sh(c));
+    for (let l = 2; l < h - 1; l += 2) P.hl(ax + dx + 1, ay + dy + l, w - 3, sh(0xa8a292));
+    P.px(ax + dx + (w >> 1), ay + dy, sh(0xc9323a));
+  }
+  // trappautomaten (lyser varmt på kvällen)
+  const tx = x0 + 100, ty = 56;
+  P.rect(tx, ty, 6, 8, sh(0xe8e2cc)); P.box(tx, ty, 6, 8, sh(0xa8a088));
+  P.rect(tx + 2, ty + 3, 2, 2, night ? 0xffa040 : 0xc08030);
+  if (night) P.ell(tx + 3, ty + 4, 7, 6, 0xffa040, 0.3, 3);
+  // plafonden i taket
+  const px = x0 + 66;
+  P.rect(px - 6, 5, 12, 2, sh(0xd8d4c8)); P.rect(px - 5, 7, 10, 2, night ? 0xfff6d8 : sh(0xf0ece0)); P.hl(px - 4, 9, 8, night ? 0xf0e0b0 : sh(0xd8d2c4));
+  if (night) { P.ell(px, 12, 30, 12, 0xfff0c0, 0.22, 4); P.ell(px, WALL_Y + 14, 34, 9, 0xfff3d0, 0.08, 4); }
+  // pizzakartonger utanför grannens dörr
+  const kx = x0 + 6, ky = 104;
+  for (let i = 0; i < 3; i++) {
+    const yy = ky - i * 5, xx = kx + (i & 1);
+    P.rect(xx, yy - 4, 18, 5, sh(0xc8a878)); P.hl(xx, yy - 4, 18, sh(0xe0c294)); P.hl(xx, yy, 18, sh(0x8a6a40));
+    P.px(xx + 4, yy - 2, sh(0xc9323a)); P.px(xx + 8, yy - 2, sh(0x46a35a)); P.hl(xx + 11, yy - 2, 4, sh(0x8a6a40));
+  }
+  P.ell(kx + 9, ky + 2, 10, 2.5, 0x140c1c, 0.3, 3);
+  // trappan ner mot våning 6: öppning i golvet med räcke och nedåtgående steg
+  const sx0 = FW - 78, sy0 = 132, sw = 64;
+  P.hl(sx0 - 2, sy0 - 1, sw + 4, sh(0xd8d4c8)); // kantlisten
+  for (let s = 0; s < 7; s++) {
+    const yy = sy0 + s * 11, xx = sx0 + s * 3, w = sw - s * 3;
+    if (yy >= FH) break;
+    for (let j = 0; j < 11 && yy + j < FH; j++) for (let i = 0; i < w; i++) {
+      let c = j < 3 ? mix(0xa8a496, 0x9a968a, hash(xx + i, yy, 109) * 0.5) : mix(0x6a675e, 0x54524a, j / 11);
+      c = mul(c, 1 - s * 0.09);
+      P.px(xx + i, yy + j, sh(c));
+    }
+    P.hl(xx, yy, w, sh(mul(0xd8d4c8, 1 - s * 0.08)));
+  }
+  // räcket längs öppningen: stolpar och en ledstång i trä som följer trappan ner
+  for (let s = 0; s < 5; s++) {
+    const bx = sx0 - 3 + s * 6, by = sy0 - 2 + s * 11;
+    if (by > FH - 6) break;
+    P.vl(bx, by - 16, 17, sh(0x4a4e56)); P.px(bx, by - 16, sh(0x6a6e76));
+  }
+  P.line(sx0 - 3, sy0 - 18, sx0 + 24, sy0 + 30, sh(0x8a5a30));
+  P.line(sx0 - 2, sy0 - 18, sx0 + 25, sy0 + 30, sh(0xa87038));
+  if (night) P.rect(x0, 5, FW - x0, FH - 5, 0x0a0f2a, 0.1);
+}
+
 // takvåningens infällda spotlights i taket
 function ceilingSpots(P, RIGHT, night) {
   for (let x = 40; x < RIGHT - 20; x += 64) {

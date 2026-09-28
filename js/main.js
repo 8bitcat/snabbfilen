@@ -26,6 +26,7 @@ import { makeJobbKok } from './jobs/jobb-kok.js';
 import { makeShopTerminal } from './scenes/shop-terminal.js';
 import { makeJobbIncheck } from './jobs/jobb-incheck.js';
 import { makeShopLeksaker } from './scenes/shop-leksaker.js';
+import { makeShopNarbutik } from './scenes/shop-narbutik.js';
 import { makeShopDjur } from './scenes/shop-djur.js';
 import { startJobFlow, startShiftNow } from './jobs/shift.js';
 import { openFoodShop } from './shops/matbutik.js';
@@ -95,9 +96,10 @@ const SCENES = {
   terminal: (a, o) => makeShopTerminal(a, o),
   jobbincheck: (a, o) => makeJobbIncheck(a, o),
   leksaker: (a, o) => makeShopLeksaker(a, o),
+  narbutik: (a, o) => makeShopNarbutik(a, o),
   djur: (a, o) => makeShopDjur(a, o),
 };
-const ENGINES = { flygplats: 'jobbflyg', frukt: 'jobbfrukt', burgare: 'jobbburgare', pizzeria: 'jobbpizzeria', posten: 'jobbposten', bensinmack: 'jobbbensin', bilverkstad: 'jobbverkstad', tvatteri: 'jobbtvatt', kafe: 'jobbkafe' };
+const ENGINES = { flygplats: 'jobbflyg', frukt: 'jobbfrukt', burgare: 'jobbburgare', pizzeria: 'jobbpizzeria', posten: 'jobbposten', bensinmack: 'jobbbensin', bilverkstad: 'jobbverkstad', tvatteri: 'jobbtvatt', kafe: 'jobbkafe', kok: 'jobbkok' };
 
 // ---------- skala canvasen till fönstret ----------
 // MOBILFYLLNING: spelet fyller HELA ytan under HUD-raden på alla enheter, med
@@ -112,6 +114,7 @@ const WIDE = {
   city: { get w() { return CITY.W; }, get h() { return CITY.H; } },
   mat: { w: 768, h: 400 }, // stormarknadens värld
   kafe: { w: 640, h: 216 }, // kaféets värld (fast höjd – resten fylls av zoomen)
+  burgarbar: { w: 640, h: 216 }, // dinern man går in i
 };
 const fillMode = () => !A.attract && (!navigator.webdriver || new URLSearchParams(location.search).has('mobfill'));
 // Zoomvalet för fasta scener: 'fyll' täcker skärmen (jämn förstoring, pixelated),
@@ -126,7 +129,7 @@ const zoomMode = () => {
   const liten = Math.min(window.screen.width, window.screen.height) < 700;
   return matchMedia('(pointer: coarse)').matches && liten ? 'nara' : 'vid';
 };
-A.view = { w: DESIGN_W, h: DESIGN_H, boxX: 0, boxY: 0, boxed: false };
+A.view = { w: DESIGN_W, h: DESIGN_H, boxX: 0, boxY: 0, boxed: false, safe: { x0: 0, y0: 0, x1: DESIGN_W, y1: DESIGN_H } };
 function applySceneView() {
   const v = A.view, cap = fillMode() && zoomMode() !== 'nara' ? (WIDE[A.sceneName] || (A.scene && A.scene.viewMax) || null) : null; // NÄRA = klassiska vyn överallt; scenen kan ange viewMax
   A.W = Math.max(DESIGN_W, Math.min(v.w, cap ? cap.w : DESIGN_W));
@@ -183,12 +186,19 @@ function fit() {
     cv.style.left = ((w - cw) / 2) + 'px';
     // beskärningen tas mest upptill (väggkonst) – golvet, disken och dörren nertill behålls
     cv.style.top = (stripCss + Math.min(0, ah - ch) * 0.7 + Math.max(0, ah - ch) / 2) + 'px';
+    // den SYNLIGA rutan i spelpixlar – skyltar och HUD i scenerna klämmer sig innanför
+    const cropT = Math.max(0, (ch - ah) * 0.7), cropB = Math.max(0, (ch - ah) * 0.3), cropL = Math.max(0, (cw - w) / 2);
+    v.safe = {
+      x0: Math.ceil(cropL / cw * A.W), x1: A.W - Math.ceil(cropL / cw * A.W),
+      y0: Math.ceil(cropT / ch * A.H), y1: A.H - Math.ceil(cropB / ch * A.H),
+    };
     if (sEl) { sEl.style.position = 'absolute'; sEl.style.left = '0'; sEl.style.top = '0'; }
     layoutStrip(A, dpr, Math.max(DESIGN_W, Math.ceil(w * dpr / s)), w);
     return;
   }
   cv.style.position = ''; cv.style.left = ''; cv.style.top = '';
   if (sEl) { sEl.style.position = ''; sEl.style.left = ''; sEl.style.top = ''; }
+  v.safe = { x0: 0, y0: 0, x1: A.W, y1: A.H }; // hela rutan syns i ram/vid-lägena
   if (cv.width !== v.w * s) cv.width = v.w * s;
   if (cv.height !== v.h * s) cv.height = v.h * s;
   // de sista device-pixlarna (mindre än en spelpixel) fylls med en omärkbar sträckning

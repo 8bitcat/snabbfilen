@@ -76,7 +76,7 @@ function sim() {
   const fallback = safe('fallback-v2', () => MODS['fallback-v2']?.createFallback(env, {
     ground: !MODS.ground?.V2, props: !MODS.props?.V2, traffic: !MODS.traffic?.V2,
   }), NONE);
-  env.obstacles = [...MAP_OBSTACLES, ...(props.obstacles || []), ...(traffic.obstacles || []), ...(fallback.obstacles || [])];
+  env.obstacles = [...MAP_OBSTACLES, ...artObstacles(), ...(props.obstacles || []), ...(traffic.obstacles || []), ...(fallback.obstacles || [])];
   const life = safe('life', () => MODS.life?.createLife(env, traffic, props), NONE); // props ger livet riktiga sittplatser (props.seats())
   const weather = safe('weather', () => MODS.weather?.createWeather(env), NO_WEATHER);
   SIM = { props, traffic, life, fallback, weather };
@@ -85,6 +85,12 @@ function sim() {
 
 // ---------- bildcache (mark + hus, per dag/natt/snö) ----------
 const CACHE = {};
+// husens egna hinder (t.ex. Burgarbarens menypelare på trottoaren)
+function artObstacles() {
+  const art = ART(), out = [];
+  for (const b of ALL_BUILDINGS) { const o = art[b.kind]?.obstacles?.(b); if (o) out.push(...o); }
+  return out;
+}
 const ART = () => ({
   ...(MODS['buildings-shops']?.BUILDING_ART || {}), ...(MODS['buildings-work']?.BUILDING_ART || {}),
   ...(MODS['buildings-south']?.BUILDING_ART || {}), ...(MODS['buildings-suburb']?.BUILDING_ART || {}),
@@ -154,7 +160,7 @@ export function makeCity(A) {
   let walker;
   try { walker = MODS.walk.createCityWalker(bounds); } catch (e) { console.error('gångmotorn walk.js startade inte – använder den enkla:', e); walker = createWalker(bounds); }
   walker.speed = 110;
-  env.obstacles = [...MAP_OBSTACLES, ...(S.props.obstacles || []), ...(S.traffic.obstacles || []), ...(S.fallback.obstacles || []), ...(S.life.obstacles || [])];
+  env.obstacles = [...MAP_OBSTACLES, ...artObstacles(), ...(S.props.obstacles || []), ...(S.traffic.obstacles || []), ...(S.fallback.obstacles || []), ...(S.life.obstacles || [])];
   walker.setObstacles(env.obstacles);
   walker.snapFree();
 
@@ -246,6 +252,7 @@ export function makeCity(A) {
         { label: '💼 Jobba ett pass', onClick: () => { closeModal(); A.startJob('kafe'); } },
       ]);
     } else if (b.enter === 'djur') A.go('djur');
+    else if (b.enter === 'burgare') A.go('burgarbar'); // in i dinern – jobba gör man vid disken därinne
     else if (kind === 'jobb') A.startJob(id);
     else A.startJob(b.enter === 'flyg' ? 'flygplats' : b.enter);
   }

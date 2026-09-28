@@ -108,15 +108,16 @@ export function abortShift(A) {
 
 // Gemensam topplist i minispelen: tidsstapel + räkneverk.
 export function drawShiftHud(ctx, A, { t, dur, ok, fel, title }) {
-  ctx.fillStyle = 'rgba(23,21,26,0.85)'; ctx.fillRect(0, 0, A.W, 18);
-  ctxText(ctx, BIG, title, 4, 5, '#f4f1ea');
+  const sy = (globalThis.SF?.view?.safe?.y0 | 0); // fyll-lägets beskärning: remsan nedanför kanten
+  ctx.fillStyle = 'rgba(23,21,26,0.85)'; ctx.fillRect(0, sy, A.W, 18);
+  ctxText(ctx, BIG, title, 4, sy + 5, '#f4f1ea');
   const bw = 110, bx = A.W - bw - 4;
-  ctx.fillStyle = '#17151a'; ctx.fillRect(bx - 2, 4, bw + 4, 10);
+  ctx.fillStyle = '#17151a'; ctx.fillRect(bx - 2, sy + 4, bw + 4, 10);
   const left = Math.max(0, 1 - t / dur);
   ctx.fillStyle = left < 0.2 ? '#d9433b' : '#45b964';
-  ctx.fillRect(bx, 6, bw * left | 0, 6);
+  ctx.fillRect(bx, sy + 6, bw * left | 0, 6);
   const s = `+${ok}  -${fel}`;
-  ctxText(ctx, SMALL, s, bx - textW(SMALL, s) - 8, 6, '#f4f1ea');
+  ctxText(ctx, SMALL, s, bx - textW(SMALL, s) - 8, sy + 6, '#f4f1ea');
 }
 
 // Små sifferpuffar ("+7", "FEL") som stiger och tonar bort.

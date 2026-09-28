@@ -526,7 +526,7 @@ function paintBack() {
     else put(x, y, 0x2a2622);                                                                // fläck
   }
   scatter([XS, 10, W, 13], 40, 741); scatter([XS, TOP - 5, W, TOP - 1], 36, 745); scatter([XS, 13, W, TOP - 5], 24, 746);
-  tag(1990, 27, 'BTG', 0xe8443a, 742); tag(2410, 12, 'ZOK', 0x3a9bff, 743);
+  // marktaggar borttagna (Carl: klotter bara på byggnader och väggar)
   paintBoundary();
 }
 
@@ -699,7 +699,6 @@ function greyPlank(x0, x1, s) {
     }
     shade(x, 8, 0.72); if (bayer(x, 9) < 0.5) shade(x, 9, 0.85);
   }
-  for (let k = 0; k < (x1 - x0) / 40; k++) tag(x0 + 3 + ((hash(k, 1, 133 + s) * (x1 - x0 - 16)) | 0), 1, ['BTG', 'ZOK', 'PXL', 'KAOS'][(hash(k, 2, 133 + s) * 4) | 0], SPRAY[(hash(k, 3, 133 + s) * SPRAY.length) | 0], 134 + k);
 }
 function scrub(x0, x1, s) {
   for (let x = x0; x < x1; x++) {
@@ -793,7 +792,6 @@ function paintAlley(g, top = TOP, base = BASE) {
   if (worn > 0.5) {
     scatter([x0 + 1, top + 2, x0 + 5, base - 4], 7, seed + 30); scatter([x1 - 5, top + 2, x1 - 1, base - 4], 7, seed + 31);
     stain(x0 + (w >> 1), top + 40 + hash(x0, 6, 214) * 60, 5, 3, 0.4, 0x2a2622);             // urin/olja
-    if (w >= 20 && hash(x0, 7, 214) > 0.3) tag(x0 + 4, top + 100 + ((hash(x0, 8, 214) * 20) | 0), ['BTG', 'ZOK'][(hash(x0, 9, 214) * 2) | 0], SPRAY[(hash(x0, 10, 214) * SPRAY.length) | 0], seed + 40);
   }
   gapShadow(g, top, base);
 }
@@ -936,7 +934,6 @@ function paintPedestrian(g, top, base, style) {
     }
     for (let i = 0; i < 8; i++) crack(x0 + 6 + hash(i, 1, seed + 14) * (w - 12), top + 6 + hash(i, 2, seed + 14) * (base - top - 14), 10 + hash(i, 3, seed + 14) * 16, seed + 15 + i, { vert: true, x0: x0 + 5, x1: x1 - 5, y0: top + 1, y1: base - 3, weeds: 0.1 });
     scatter([x0 + 5, top + 2, x0 + 9, base - 4], 9, seed + 16); scatter([x1 - 9, top + 2, x1 - 5, base - 4], 9, seed + 19);
-    tag(x0 + 10, top + 60, 'PXL', 0xe070c0, seed + 17); tag(x0 + 22, top + 110, 'BTG', 0x5ad35a, seed + 18);
   }
   gapShadow(g, top, base);
 }
@@ -1088,7 +1085,6 @@ function paintSidewalkBottom(S) {
     if (br) {
       for (let i = 0; i < 10; i++) crack(bx0 + hash(i, 1, sd + 8) * 88, y0 + 5 + hash(i, 2, sd + 8) * 20, 10 + hash(i, 3, sd + 8) * 16, sd + 9 + i, { dx: 1, y0: y0 + 4, y1: y1 - 2, branch: true, weeds: 0.1 });
       for (let k = 0; k < 6; k++) litter(s.x - 30 + hash(k, 1, sd + 10) * 60, y0 + 14 + hash(k, 2, sd + 10) * 10, 0.3 + hash(k, 3, sd + 10) * 0.18, sd + 11 + k); // krossat glas från kuren
-      tag(s.x - 36, y0 + 16, 'BTG', 0xe8443a, sd + 12);
     }
   }
   // utfarter: nedsänkt kantsten och asfalt tvärs över trottoaren

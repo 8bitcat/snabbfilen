@@ -9,9 +9,13 @@
 // tvärtrafiken i T-korsningarna och svänger ut igen i andra änden. Fordon som
 // kör ut ur världen försvinner och nya fyller på från kanten.
 //
-// Vädret (env.weather): torkare och blöta speglingar i regn, snö på taken och
-// långsammare körning när det snöat, halvljus på dagen i dimma och regn, en
-// snöplog per gata på vintern, mopeden stannar hemma i snö och ösregn.
+// Vädret (env.weather): torkare, blöta speglingar och vattenskvätt från däcken i
+// regn (mer genom pölarna – weather.puddleNear), snö på taken och långsammare
+// körning när det snöat, halvljus på dagen i dimma och regn, mopeden stannar
+// hemma i snö och ösregn. I snö röjer en SNÖPLOG per körfält (varningsljus,
+// plogblad, snösprut): spårlagret env.snowTracks[vägId] (canvas per väg) där
+// vanliga bilar mörkar hjulspår och plogen nollar + lägger plogvall längs kanten –
+// weather.js ritar lagret ovanpå slasken i drawBack.
 // Förorten: rostiga bilar i trafiken, på parkeringen, på tomten och vid husvagnen,
 // och en parkerad moped utanför garagen.
 //
@@ -40,6 +44,10 @@ import { Pix, mix, mul, hash, bayer, SMALL, BIG, text, textW, ctxText } from '..
 import { CITY, ROADS, CROSSWALKS_ALL, LIGHTS_ALL, LOTS, buildingById } from './map.js';
 
 export const V2 = true;
+
+// pölarna frågas mjukt ur weather.js (större skvätt genom en pöl) – trafiken lever utan dem
+let puddleNear = null;
+import('./weather.js').then((m) => { puddleNear = m.puddleNear || null; }).catch(() => { /* utan pölar skvätter det ändå */ });
 
 // ======================================================================
 // Fordonsritningar (sidan)
@@ -1260,7 +1268,7 @@ export function trafficSheet() {
 
 export function createTraffic(env) {
   let T = 0, lastHonk = -99, frame = 0;
-  const cars = [], puffs = [], ghosts = [], lineBuses = [];
+  const cars = [], puffs = [], ghosts = [], lineBuses = [], sprays = [];
   const rand = Math.random;
   const I = rmById('infarten'), PG = rmById('pixelgatan'), SG = rmById('sodergatan');
   // Resan med bussen (null = spelaren går): { bus, from, to, phase 'ombord'|'åker'|'tonar'|'framme', … }
@@ -1356,7 +1364,7 @@ export function createTraffic(env) {
       for (const lane of rm.lanes) {
         const list = inLane(rm, lane.i), want = TARGET[rm.id][lane.i];
         const snowy = w.snow > 0.25 || w.kind === 'snö';
-        const needPlow = lane.i === 0 && snowy && !list.some((c) => c.kind === 'plog');
+        const needPlow = snowy && !list.some((c) => c.kind === 'plog');   // en plog per körfält – båda filerna röjs
         const total = want + (needPlow ? 1 : 0);
         if (initial) {
           const loop = rm.len + 2 * M, n = Math.max(1, total - list.length);
@@ -1409,6 +1417,86 @@ export function createTraffic(env) {
     } else {
       const gy = hi(c);
       puffs.push({ x: c.cross - 8 + rand() * 4, y: (c.dir > 0 ? gy - c.L : gy) - 2, vx: -3 + rand() * 6, vy: -4 - rand() * 4, life: 0, max: 0.9 + rand() * 0.6, lane: gy + 0.5 });
+    }
+  }
+
+  // ---------- vattenskvätt från däcken (regn, blöt väg, pölar) ----------
+  // Små korta droppar som kastas bakåt-uppåt bakom hjulet och faller ner igen.
+  // big > 1 = genom en pöl: fler och högre. side = Infartens fordon (skvätt åt sidorna).
+  function spray(x, y, dir, big = 1, side = false) {
+    sprays.push({
+      x: x - dir * 2, y: y - 1, lane: y + 0.5,
+      vx: side ? dir * (6 + rand() * 10) : -dir * (12 + rand() * 22) * big,
+      vy: -(16 + rand() * 24) * big,
+      life: 0, max: 0.26 + rand() * 0.2, big: big > 1 && rand() < 0.6,
+    });
+  }
+  function wheelSpray(c, w, dt) {
+    if (c.v < 16 || c.kind === 'moped' || sprays.length > 110) return;
+    if (!(w.kind === 'regn' || w.wet > 0.35)) return;
+    const wk = Math.min(1, (w.wet || 0) + (w.kind === 'regn' ? 0.35 : 0)) * Math.min(1, c.v / 46);
+    if (c.road.axis === 'x') {
+      for (const wq of c.spec.wheels || []) {
+        const wxp = Math.round(lo(c) + (c.dir < 0 ? c.L - 1 - wq : wq));
+        if (puddleNear && puddleNear(wxp, c.cross - 1, 7)) { if (rand() < dt * 26) for (let k = 0; k < 4; k++) spray(wxp, c.cross - 1, c.dir, 1.6); }
+        else if (rand() < dt * 4.2 * wk) spray(wxp, c.cross - 1, c.dir, 1);
+      }
+    } else if (rand() < dt * 3 * wk) {
+      spray(c.cross + (rand() < 0.5 ? -9 : 9), Math.round(hi(c)) - 1, rand() < 0.5 ? -1 : 1, 1, true);
+    }
+  }
+
+  // ---------- spår i snötäcket ----------
+  // Ett levande spårlager (canvas) per väg: vanliga bilar mörkar hjulspår där de faktiskt
+  // kör (ackumuleras för varje passage), PLOGEN röjer sitt körfält – spårlagret nollas,
+  // asfalten skymtar och en plogvall läggs längs vägkanten (högertrafik: plogen kastar åt
+  // höger, mot trottoaren). Nysnö fyller sakta igen alltihop. weather.js ritar lagren
+  // ovanpå slasken i drawBack via env.snowTracks[vägens id].
+  let tracks = null, trackFadeT = 0;
+  function buildTracks() {
+    tracks = {};
+    for (const rm of RM) {
+      const rect = rm.axis === 'x' ? [rm.a0, rm.c0, rm.a1, rm.c1] : [rm.c0, rm.a0, rm.c1, rm.a1];
+      const cv = document.createElement('canvas');
+      cv.width = Math.max(1, rect[2] - rect[0]); cv.height = Math.max(1, rect[3] - rect[1]);
+      tracks[rm.id] = { x0: rect[0], y0: rect[1], canvas: cv, g: cv.getContext('2d') };
+    }
+    env.snowTracks = tracks;
+  }
+  // plogvallens tre rader: idx 0 = krönet (ytterst), 1 = tät snö, 2 = skuggsidan (innerst)
+  const RIDGE_ROW = [[0.45, '#f3f6fa', '#ffffff'], [0.12, '#e6ecf4', '#fafcff'], [0.35, '#cdd6e2', '#cdd6e2']];
+  function stamp(c, a0, a1) {
+    const TL = tracks && tracks[c.road.id];
+    if (!TL || Math.abs(a1 - a0) < 0.05) return;
+    const g = TL.g, rm = c.road;
+    let s0 = Math.floor(Math.min(a0, a1)) - 2, s1 = Math.ceil(Math.max(a0, a1)) + 2;
+    if (rm.axis === 'x') {
+      s0 -= TL.x0; s1 -= TL.x0;
+      if (s1 <= 0 || s0 >= TL.canvas.width) return;
+      if (c.kind === 'plog') {
+        const mid = ((rm.c0 + rm.c1) >> 1) - TL.y0, top = c.cross - TL.y0 < mid;
+        const y0 = top ? 1 : mid, y1 = top ? mid : TL.canvas.height - 1;
+        g.clearRect(s0, y0, s1 - s0, y1 - y0);
+        g.fillStyle = 'rgba(56,58,64,0.5)';                    // röjt: asfalten skymtar
+        g.fillRect(s0, y0, s1 - s0, y1 - y0);
+        const ry = top ? 0 : TL.canvas.height - 3;             // vallen vid kanten
+        for (let x = Math.max(0, s0); x < Math.min(TL.canvas.width, s1); x++) for (let j = 0; j < 3; j++) {
+          const row = RIDGE_ROW[top ? j : 2 - j], h = hash(x, j, 4410);
+          if (h > row[0]) { g.fillStyle = h > 0.8 ? row[2] : row[1]; g.fillRect(x, ry + j, 1, 1); }
+        }
+      } else {
+        g.fillStyle = 'rgba(44,46,52,0.18)';                   // två hjulspår, mörkare för varje varv
+        const cy = c.cross - TL.y0;
+        g.fillRect(s0, cy - 5, s1 - s0, 2);
+        g.fillRect(s0, cy + 4, s1 - s0, 2);
+      }
+    } else {
+      s0 -= TL.y0; s1 -= TL.y0;
+      if (s1 <= 0 || s0 >= TL.canvas.height) return;
+      g.fillStyle = 'rgba(44,46,52,0.18)';
+      const cx = c.cross - TL.x0;
+      g.fillRect(cx - 9, s0, 2, s1 - s0);
+      g.fillRect(cx + 8, s0, 2, s1 - s0);
     }
   }
 
@@ -1529,9 +1617,13 @@ export function createTraffic(env) {
     else c.v = Math.max(vT, c.v - 230 * dt);
     c.brake = !!why && (vT < was - 0.5 || c.v < 1);
     c.why = why;
+    const aPrev = frontA(c);
     c.s += c.v * dt;
     if (lead && c.s > lead.s - lead.L - 3) { c.s = lead.s - lead.L - 3; c.v = Math.min(c.v, lead.v); }
     c.dist += c.v * dt;
+    // spår i snön (plogen röjer, bilarna mörkar) och vattenskvätt från däcken i regn
+    if (tracks && (c.kind === 'plog' ? c.v > 1 : w.snow >= 0.2 && c.v > 4 && c.kind !== 'moped')) stamp(c, aPrev, frontA(c));
+    wheelSpray(c, w, dt);
     // avgaspuffar när fordonet startar från stillastående; plogen sprutar snö
     if (c.kind === 'plog') { if (c.v > 6 && w.snow > 0.15 && rand() < dt * 14 && puffs.length < 60) puff(c, true); }
     else if (was < 10 && vT > was + 4 && rand() < dt * (c.spec.bus ? 10 : 5) && puffs.length < 60) puff(c);
@@ -1671,6 +1763,19 @@ export function createTraffic(env) {
     const w = wx();
     const slow = w.snow > 0.3 ? 0.6 : w.kind === 'regn' ? 0.86 : w.kind === 'dimma' ? 0.72 : 1;
     folk = (env.people || []).filter((p) => p && !(ride && p === env.player));
+    // spårlagret i snön: byggs när täcket lagt sig, släpps när snön smält bort
+    if (!tracks && w.snow >= 0.2 && typeof document !== 'undefined') buildTracks();
+    else if (tracks && w.snow < 0.12) { tracks = null; env.snowTracks = null; }
+    if (tracks && w.kind === 'snö' && (trackFadeT += dt) >= 1.2) {
+      trackFadeT = 0;   // nysnön fyller sakta igen spåren och täcker plogens röjda asfalt
+      for (const id in tracks) {
+        const t2 = tracks[id].g;
+        t2.globalCompositeOperation = 'destination-out';
+        t2.globalAlpha = 0.05 + 0.1 * w.k; t2.fillStyle = '#000';
+        t2.fillRect(0, 0, tracks[id].canvas.width, tracks[id].canvas.height);
+        t2.globalCompositeOperation = 'source-over'; t2.globalAlpha = 1;
+      }
+    }
     refill(w, false);
     for (const rm of RM) for (const lane of rm.lanes) {
       const all = [...inLane(rm, lane.i), ...ghosts.filter((g) => g.road === rm && g.lane === lane.i)].sort((a, b) => a.s - b.s);
@@ -1713,6 +1818,12 @@ export function createTraffic(env) {
       p.life += dt; p.x += (p.vx + w.wind * 0.25) * dt; p.y += p.vy * dt; p.vx *= 1 - dt * 1.5;
       if (p.snow) p.vy += 30 * dt;
       if (p.life >= p.max) puffs.splice(i, 1);
+    }
+    // vattenskvätten: kastas upp, faller ner igen (borta när de når marken)
+    for (let i = sprays.length - 1; i >= 0; i--) {
+      const p = sprays[i];
+      p.life += dt; p.x += (p.vx + w.wind * 0.12) * dt; p.y += p.vy * dt; p.vy += 190 * dt;
+      if (p.life >= p.max || p.y > p.lane + 1) sprays.splice(i, 1);
     }
   }
 
@@ -2008,6 +2119,15 @@ export function createTraffic(env) {
           const t = p.life / p.max, a = (1 - t) * (p.snow ? 0.85 : 0.45), sz = t < 0.35 ? 2 : 3;
           ctx.fillStyle = p.snow ? `rgba(244,248,255,${a.toFixed(3)})` : `rgba(206,206,212,${a.toFixed(3)})`;
           ctx.fillRect(Math.round(p.x), Math.round(p.y), p.snow ? (t < 0.5 ? 2 : 1) : sz, p.snow ? (t < 0.5 ? 2 : 1) : sz);
+        } });
+      }
+      // vattenskvätt från däcken: små ljusblå droppar som faller tillbaka mot vägen
+      for (const p of sprays) {
+        out.push({ x: p.x, y: p.lane, draw: (ctx) => {
+          const a = (1 - p.life / p.max) * 0.55;
+          ctx.fillStyle = `rgba(196,216,240,${a.toFixed(3)})`;
+          ctx.fillRect(Math.round(p.x), Math.round(p.y), 1, 1);
+          if (p.big && p.life < p.max * 0.5) ctx.fillRect(Math.round(p.x) + 1, Math.round(p.y) - 1, 1, 1);
         } });
       }
       return out;

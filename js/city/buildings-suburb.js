@@ -1949,8 +1949,8 @@ function paintTvatteri(b, night, opts) {
 
 // ======================= GARAGELÄNGAN =======================
 // Fyra portar under ett jättelikt sprucket tak: spelarens port, två grannportar
-// (en på glänt med ögon i springan), ett förråd med hänglås – och en hel
-// klotterpjäs uppe på taket som bara syns från parken.
+// (en på glänt med ögon i springan), ett förråd med hänglås – och ventilations-
+// aggregat uppe på taket (Carl: inget klotter på taken – klotter hör till väggar).
 function paintGarage(b, night, opts) {
   const C = begin(b, night, opts), { P, L, R, BY, FT, s } = C, W = b.w, N = C.night;
   const { dx0, dx1 } = C, dT = BY - DOOR_ART[b.kind].h; // portarna är 34 höga
@@ -1958,7 +1958,10 @@ function paintGarage(b, night, opts) {
   gravelRoof(P, L, 40, W, FT - 40, s, { night: N, puddles: 3, moss: 0.08, col: 0x625e56 });
   P.hl(L, 40, W, 0x827e76); P.hl(L, 41, W, 0x4a463e);
   for (let k = 0; k < 8; k++) crack(P, L + 8 + Math.floor(hash(k, s, 1) * (W - 16)), 46 + Math.floor(hash(k, s, 2) * (FT - 60)), 8 + Math.floor(hash(k, s, 3) * 14), s + k, 0x000000, 0.35);
-  piece(P, L + 40, 76, 'BETONG', { x2: false, c1: 0xffd23f, c2: 0xff8a2a, cloud: 0x3a2a5a, drips: 3, sign: 'ZOK' });
+  // ventilation i centrum-stil i stället för takklotter (Carls regel)
+  hvac(P, L + 38, 66, 22, 8, 7, { fan: true, rust: 2 });
+  ventPipe(P, L + 68, 70, 9);
+  ventPipe(P, L + 30, 88, 7, 0x8a9088);
   football(P, L + 100, 98);
   wireCart(P, R - 42, 70);
   antenna(P, L + 16, 44, 10);

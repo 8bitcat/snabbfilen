@@ -540,6 +540,182 @@ function picRum(P, x, y, w, h) {
   P.vl(x + 24, y, 5, 0x3a3440); P.rect(x + 23, y + 5, 3, 3, 0xfff4c0); P.px(x + 24, y + 5, 0xffffff); P.ell(x + 24.5, y + 7, 5, 4, 0xfff4c0, 0.4, 3);
   P.rect(x + 44, y + 3, 6, 8, 0x3a7bd5); P.box(x + 44, y + 3, 6, 8, 0xf6f2ea); P.px(x + 46, y + 5, 0xf0c020); P.rect(x + 45, y + 8, 4, 2, 0x46a35a);
 }
+function picHusvagn(P, x, y, w, h) {
+  // himmel med sol och moln över förortstomten
+  vgrad(P, x, y, w, 15, 0x5aa8ea, 0xc8e8f6, 4);
+  disc(P, x + 6, y + 5, 3, 3, 0xfff6c0); P.ell(x + 6, y + 5, 7, 6, 0xfff8d0, 0.3, 3);
+  cloud(P, x + 31, y + 4, 3); cloud(P, x + 45, y + 7, 2);
+  // skivhusen vid horisonten
+  for (const [l, bw, bh] of [[0, 10, 6], [13, 9, 8], [41, 10, 7]]) {
+    for (let j = 0; j < bh; j++) for (let i = 0; i < bw; i++) {
+      let c = 0xa8acb2;
+      if (j === 0) c = 0xc0c4c8;
+      if (i % 3 === 1 && j % 2 === 1 && j > 0) c = 0x7a8c9c;
+      P.px(x + l + i, y + 15 - bh + j, c);
+    }
+  }
+  // nätstängslet och grusplätten
+  for (let j = 15; j < 20; j++) for (let i = 0; i < w; i++) if (((i + j) & 3) === 0 || ((i - j) & 3) === 0) P.px(x + i, y + j, 0x8a8e94, 0.6);
+  P.hl(x, y + 15, w, 0x6a6e74);
+  for (let i = 2; i < w; i += 12) P.vl(x + i, y + 14, 6, 0x55595e);
+  for (let j = 20; j < h; j++) for (let i = 0; i < w; i++) {
+    let c = mix(0x9a917c, 0x847a66, hash(x + i, y + j, 151));
+    if (hash(x + i, (y + j) >> 1, 152) > 0.88) c = [0x5a8a3a, 0x6a9a44][(i + j) % 2];
+    P.px(x + i, y + j, c);
+  }
+  // husvagnen: rundad kräm med teal-rand, skjutfönster, dörr, hjul och dragstång
+  const cx = x + 10, cy = y + 9, cw = 30, ch = 14;
+  for (let j = 0; j < ch; j++) for (let i = 0; i < cw; i++) {
+    if ((j === 0 || j === ch - 1) && (i === 0 || i === cw - 1)) continue; // rundade hörn
+    let c = j === 0 ? 0xffffff : j < 3 ? 0xf4efe0 : j < 8 ? 0xe8e2d0 : 0xdcd4be;
+    if (j === 6 || j === 7) c = 0x2aa39a;
+    if (j === ch - 1) c = 0x9a9284;
+    if (i === cw - 1) c = mul(c, 0.85);
+    P.px(cx + i, cy + j, c);
+  }
+  P.hl(cx + 1, cy - 1, cw - 2, 0x8a8e94);
+  P.rect(cx + 8, cy - 3, 4, 2, 0x8a8e94); P.hl(cx + 8, cy - 3, 4, 0xb8bcc2); // takluckan
+  P.rect(cx + 4, cy + 2, 9, 4, 0x3a4a5a); P.hl(cx + 4, cy + 2, 9, 0x6a8aa8); P.vl(cx + 8, cy + 2, 4, 0x2e3038);
+  P.box(cx + 3, cy + 1, 11, 6, 0x8a8e94);
+  P.rect(cx + 21, cy + 2, 6, 11, 0xc9423a); P.hl(cx + 21, cy + 2, 6, 0xe06a5a); P.vl(cx + 26, cy + 3, 10, 0x8a2a24);
+  P.rect(cx + 22, cy + 3, 4, 3, 0x3a4a5a); P.px(cx + 22, cy + 3, 0x6a8aa8);
+  P.px(cx + 25, cy + 8, 0xf0c020); // handtaget
+  // rost vid skarven, hjulet och dragstången
+  P.px(cx + 2, cy + 9, 0x9a5226); P.px(cx + 2, cy + 10, 0x7a3a18); P.px(cx + 17, cy + 12, 0x9a5226);
+  disc(P, cx + 9, cy + ch + 1, 3.2, 3.2, 0x1e1e24); disc(P, cx + 9, cy + ch + 1, 1.2, 1.2, 0x8a8e94);
+  P.line(cx - 1, cy + ch - 3, x + 3, cy + ch + 3, 0x6a6e74); P.px(x + 3, cy + ch + 4, 0x3a3e44);
+  P.rect(cx + cw - 3, cy + ch, 2, 3, 0x8a8e94); // stödbenet bak
+  // gasoltuben vid dörren och det gamla däcket
+  P.rect(cx + 28, cy + 9, 3, 5, 0x2f6fae); P.px(cx + 28, cy + 9, 0x5a9ade); P.px(cx + 29, cy + 8, 0x8a8e94);
+  for (let j = -2; j <= 2; j++) for (let i = -4; i <= 4; i++) {
+    const e = (i / 4) ** 2 + (j / 2) ** 2;
+    if (e <= 1 && e > 0.3) P.px(x + 45 + i, y + h - 4 + j, e > 0.72 ? 0x16161a : 0x2a2a30);
+  }
+  P.px(x + 45, y + h - 5, 0xf0c020); // en blomma i däcket
+}
+function picHoghus(P, x, y, w, h) {
+  // gråblek himmel och en fågel
+  vgrad(P, x, y, w, 9, 0x9ab8d0, 0xd8e4ec, 3);
+  P.px(x + 6, y + 3, 0x3a4048); P.px(x + 7, y + 2, 0x3a4048); P.px(x + 8, y + 3, 0x3a4048);
+  // marken: asfalt med en rabatt
+  for (let j = 26; j < h; j++) for (let i = 0; i < w; i++) P.px(x + i, y + j, mix(0x8a8a8e, 0x77777c, hash(x + i, y + j, 164)));
+  // skivhuset i betongelement med regnränder
+  const bx = x + 10, bw = 32, by = y + 2, bh = 26;
+  for (let j = 0; j < bh; j++) for (let i = 0; i < bw; i++) {
+    let c = mix(0xa8a498, 0xb4b0a4, hash(i >> 2, j >> 2, 161));
+    if (i % 8 === 0 || j % 4 === 0) c = mul(c, 0.85);
+    if (hash(bx + i, 0, 162) > 0.85 && hash(i, j >> 2, 163) > 0.35) c = mix(c, 0x8a8272, 0.3);
+    if (i === bw - 1) c = mul(c, 0.8);
+    P.px(bx + i, by + j, c);
+  }
+  P.hl(bx, by, bw, 0x7a766c); P.hl(bx, by + 1, bw, 0xc8c4b8);
+  for (const ax of [bx + 7, bx + 23]) { P.vl(ax, by - 4, 4, 0x5a5e64); P.hl(ax - 1, by - 3, 3, 0x5a5e64); }
+  // fönster våning för våning – sjuan (näst överst) lyser varmt och pekas ut
+  for (let f = 0; f < 5; f++) for (let c2 = 0; c2 < 4; c2++) {
+    const wx = bx + 3 + c2 * 8, wy = by + 3 + f * 4;
+    const mine = f === 1 && c2 === 1;
+    P.rect(wx, wy, 4, 2, mine ? 0xffe0a0 : hash(f, c2, 165) > 0.6 ? 0x8a9aa8 : 0x4a5a6a);
+    if (mine) P.px(wx, wy, 0xfff4c8);
+    if (c2 % 2 === 0 && f > 0) { P.hl(wx - 1, wy + 2, 6, 0x8e8a80); if (hash(f, c2, 166) > 0.55) P.px(wx + 3, wy + 1, [0xd9433b, 0x3a7bd5, 0xf0c020][f % 3]); }
+  }
+  // pilen som pekar ut din etta
+  const ay = by + 7;
+  P.hl(x + 3, ay + 1, 5, 0xe8b230); P.px(x + 8, ay, 0xe8b230); P.px(x + 8, ay + 2, 0xe8b230); P.px(x + 9, ay + 1, 0xfff0b0);
+  // entrén med skärmtak och nummer 1
+  P.rect(bx + 13, by + bh - 6, 6, 6, 0x2a2a34); P.rect(bx + 14, by + bh - 5, 4, 5, 0x3a4a5a); P.px(bx + 17, by + bh - 3, 0xf0c020);
+  P.hl(bx + 12, by + bh - 7, 8, 0x1f2d48); P.hl(bx + 12, by + bh - 8, 8, 0x34496e);
+  P.px(bx + 10, by + bh - 5, 0xf6f2ea); // husnumret
+  // buskarna vid entrén
+  for (const sx of [bx - 3, bx + 21]) { disc(P, sx + 1, by + bh - 1, 2.5, 2, 0x2e6a2e); P.px(sx, by + bh - 3, 0x4a8a3a); }
+}
+function picRadhus(P, x, y, w, h) {
+  // himmel, sol och moln
+  vgrad(P, x, y, w, 12, 0x5aa8ea, 0xd4eefa, 4);
+  disc(P, x + w - 8, y + 4, 3, 3, 0xfff6c0); P.ell(x + w - 8, y + 4, 7, 6, 0xfff8d0, 0.3, 3);
+  cloud(P, x + 12, y + 4, 3);
+  // fyra sammanbyggda radhus med tegeltak och skorstenar
+  const by = y + 8, fh2 = 13, U = 13;
+  for (let j = 0; j < 6; j++) for (let i = 2 + (5 - j); i < w - 2 - (5 - j); i++) {
+    let c = (j + (i >> 2)) & 1 ? 0xa04a32 : 0x8a3a28;
+    if (j === 0) c = 0x6a2a1c;
+    P.px(x + i, by - 6 + j, c);
+  }
+  for (const sx of [x + 12, x + 38]) { P.rect(sx, by - 9, 3, 4, 0x8a3a28); P.hl(sx - 1, by - 9, 5, 0x4a2a24); }
+  for (let j = 0; j < fh2; j++) for (let i = 2; i < w - 2; i++) {
+    const u = Math.floor((i - 2) / U);
+    let c = [0xf0e4d0, 0xe6d8be, 0xf0e0c8, 0xe8dcc4][u & 3];
+    c = mul(c, 0.96 + hash(x + i, y + j, 171) * 0.08);
+    if ((i - 2) % U === 0 && i > 2) c = mul(c, 0.7); // skarven mellan husen
+    if (j === fh2 - 1) c = mul(c, 0.85);
+    P.px(x + i, by + j, c);
+  }
+  // varje hus: fönster + dörr; ditt hus (nummer två) har röd dörr och lampa
+  for (let u = 0; u < 4; u++) {
+    const ux = x + 2 + u * U, mine = u === 1;
+    P.rect(ux + 2, by + 3, 4, 4, 0x8ec4e8); P.box(ux + 1, by + 2, 6, 6, 0xf6f2ea); P.px(ux + 2, by + 3, 0xffffff);
+    P.rect(ux + 8, by + 5, 4, 8, mine ? 0xc9323a : [0x2a5a48, 0x2a5a48, 0x3a5a80, 0x6a4424][u]);
+    P.hl(ux + 8, by + 5, 4, mine ? 0xe06a5a : 0x4a7a68); P.px(ux + 10, by + 9, 0xf0c020);
+    if (mine) { P.px(ux + 7, by + 4, 0xf0c020); P.px(ux + 7, by + 3, 0x3a3a40); }
+  }
+  // trädgårdarna: gräs, vitt spjälstaket, blomrabatt och gången till din dörr
+  for (let j = by + fh2; j < y + h; j++) for (let i = 0; i < w; i++)
+    P.px(x + i, j, mix((i >> 2) & 1 ? 0x66ac52 : 0x5aa04a, 0x2e6a2a, (j - by - fh2) / 12));
+  for (let i = 0; i < w; i++) {
+    if (i % 2 === 0) { P.vl(x + i, y + h - 5, 4, 0xf6f2ea); P.px(x + i, y + h - 6, 0xffffff); } else P.px(x + i, y + h - 4, 0xe0d8cc);
+  }
+  for (let j = by + fh2; j < y + h; j++) { const sp = Math.floor((j - by - fh2) * 0.4); for (let i = -1 - sp; i <= 1 + sp; i++) P.px(x + 25 + i, j, hash(i, j, 172) > 0.5 ? 0xe0d0a8 : 0xd0bc90); }
+  for (let i = 3; i < w - 3; i += 2) if (hash(i, 1, 173) > 0.45) P.px(x + i, by + fh2 + 1, [0xd9433b, 0xf28bb3, 0xf0c020, 0xffffff][i % 4]);
+  // äppelträdet i hörnet
+  P.rect(x + w - 7, by + fh2 - 2, 2, 6, 0x6a4424);
+  for (let yy = -5; yy <= 2; yy++) for (let xx = -5; xx <= 5; xx++) {
+    const e = (xx / 5.5) ** 2 + ((yy + 1.5) / 4.5) ** 2;
+    if (e > 1) continue;
+    let c = e < 0.4 ? 0x5a9e46 : e < 0.75 ? 0x3a7e38 : 0x28602c;
+    if (hash(xx, yy, 174) > 0.92) c = 0xe0302a;
+    P.px(x + w - 6 + xx, by + fh2 - 4 + yy, c);
+  }
+}
+function picTakvaning(P, x, y, w, h) {
+  // kvällshimmel med stjärnor och måne
+  for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) {
+    let c = mix(0x141a3a, 0x4a3560, q(j / (h - 1), x + i, y + j, 4));
+    if (j < h * 0.7 && hash(x + i, y + j, 181) > 0.975) c = 0xe8ecff;
+    P.px(x + i, y + j, c);
+  }
+  disc(P, x + 44, y + 5, 3, 3, 0xfff6d8); disc(P, x + 42.6, y + 4.4, 2.6, 2.6, mix(0x141a3a, 0x4a3560, 0.2));
+  // skylinen i två lager med tända fönster
+  const sky1 = y + 18, sky2 = y + 23;
+  for (let i = 0; i < w; i++) {
+    const t1 = 4 + Math.floor(hash(Math.floor(i / 6), 1, 182) * 8);
+    for (let j = 0; j < t1; j++) {
+      const yy = sky1 - j + 4;
+      P.px(x + i, yy, 0x262c48);
+      if (i % 3 === 1 && j % 3 === 1 && hash(i, j, 183) > 0.5) P.px(x + i, yy, 0xd8b45a);
+    }
+  }
+  for (let j = sky2 - y; j < h; j++) for (let i = 0; i < w; i++) {
+    let c = 0x171c34;
+    if (i % 5 === 2 && j % 4 === 2 && hash(i, j, 184) > 0.4) c = 0xf0c878;
+    if (j === sky2 - y) c = 0x2e3452;
+    P.px(x + i, y + j, c);
+  }
+  // TV-tornet med blinklampa
+  P.vl(x + 8, y + 8, 12, 0x3a4260); P.rect(x + 7, y + 12, 3, 2, 0x4a5270); P.px(x + 8, y + 7, 0xff3a2a);
+  // Tornhuset: högst i stan, takvåningen lyser och terrassen har ljusslinga
+  const tx = x + 20, tw = 13;
+  for (let j = 6; j < h; j++) for (let i = 0; i < tw; i++) {
+    let c = i === 0 ? 0x3e4a6a : i === tw - 1 ? 0x1c2238 : 0x2a3448;
+    if (j > 10 && i > 1 && i < tw - 2 && (i % 3 === 0) && (j % 4 === 2) && hash(i, j, 185) > 0.55) c = 0xffe0a0;
+    P.px(tx + i, y + j, c);
+  }
+  // takvåningens fönsterband + terrassräcket med ljusslinga och parasoll
+  P.rect(tx + 1, y + 7, tw - 2, 3, 0xffe0a0); P.hl(tx + 1, y + 7, tw - 2, 0xfff4c8);
+  for (let i = 2; i < tw - 2; i += 3) P.vl(tx + i, y + 7, 3, 0x2a3448);
+  P.hl(tx, y + 6, tw, 0x4e5a7a);
+  for (let i = 0; i < tw; i += 2) { P.px(tx + i, y + 4, 0x8a94b4); P.px(tx + i + 1, y + 5, i % 4 ? 0xfff0b0 : 0xffc870); }
+  P.px(tx + 2, y + 3, 0xd9433b); P.hl(tx + 1, y + 4, 3, 0xd9433b); P.px(tx + 2, y + 5, 0x8a8478); // parasollet
+  P.px(tx + (tw >> 1), y + 2, 0xff3a2a); // varningsljuset på taket
+}
 function picGeneric(P, x, y, w, h, seed) {
   vgrad(P, x, y, w, 20, 0x6ab0ea, 0xd0ecfa, 4);
   for (let j = 20; j < h; j++) for (let i = 0; i < w; i++) P.px(x + i, y + j, mix(0x5aa04a, 0x2e6a2a, (j - 20) / 14));
@@ -548,7 +724,7 @@ function picGeneric(P, x, y, w, h, seed) {
   P.rect(hx + 10, hy + 5, 4, 8, 0x5a3a24);
   for (const wx of [hx + 3, hx + 17]) { P.rect(wx, hy + 3, 4, 4, 0x8ec4e8); P.box(wx - 1, hy + 2, 6, 6, 0xf6f2ea); }
 }
-const PICS = { rum: picRum, lagenhet: picLagenhet, villa: picVilla };
+const PICS = { rum: picRum, lagenhet: picLagenhet, villa: picVilla, husvagn: picHusvagn, hoghus: picHoghus, radhus: picRadhus, takvaning: picTakvaning };
 
 // ================= rummet (väggar, golv, allt på väggen) =================
 function parquet(x, y) {
@@ -2286,13 +2462,16 @@ function drawPosterLive(ctx, p, g, on, t) {
     ctx.fillRect(x - 1, y - 1, w + 2, 1); ctx.fillRect(x - 1, y + h, w + 2, 1); ctx.fillRect(x - 1, y, 1, h); ctx.fillRect(x + w, y, 1, h);
   }
   const lx = x + 5, rx = x + w - 5;
-  const row = (ly, label, val, col) => {
+  // svenska prislappar: 1500:- och 600:-/V (vecka). Med sju bostäder finns även
+  // femsiffriga insatser (20000) – blir raden trång tappar värdet sitt :-/-suffix
+  // i stället för att krocka med rubriken (minst 6 px luft emellan).
+  const row = (ly, label, val, col, alt) => {
+    if (alt && textW(SMALL, label) + textW(SMALL, val) > w - 16) val = alt;
     ctxText(ctx, SMALL, label, lx, ly, '#8a8478');
     ctxText(ctx, SMALL, val, rx - textW(SMALL, val), ly, col);
   };
-  // svenska prislappar: 1500:- och 600:-/V (vecka) – får plats med luft emellan
-  row(y + 50, 'INSATS', home.deposit ? `${home.deposit}:-` : 'GRATIS', here ? '#1f2d48' : afford ? '#2f8f46' : '#c9323a');
-  row(y + 57, 'HYRA', `${home.rent}:-/V`, '#1f2d48');
+  row(y + 50, 'INSATS', home.deposit ? `${home.deposit}:-` : 'GRATIS', here ? '#1f2d48' : afford ? '#2f8f46' : '#c9323a', home.deposit ? String(home.deposit) : null);
+  row(y + 57, 'HYRA', `${home.rent}:-/V`, '#1f2d48', `${home.rent}/V`);
   ctxText(ctx, SMALL, 'SÖMN', lx, y + 63, '#8a8478');
   // sömnen i stjärnor 0–4: husvagnen (−10) ingen, rummet 1, lägenheten 2, radhuset/villan 3, takvåningen 4
   const stars = Math.max(0, Math.min(4, Math.round(((home.restBonus || 0) + 10) / 10)));

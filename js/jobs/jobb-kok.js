@@ -206,8 +206,10 @@ function drawTicket(ctx, o, x, blink) {
   const mk = rec.id === 'shake' ? SMAKER[o.smak][0] + rec.mark : rec.mark;
   ctxText(ctx, SMALL, mk, x + ((TICKET_W - textW(SMALL, mk)) >> 1), y + TICKET_H - 6, '#b8281e');
   if (o.kvar < 8 && blink) {
-    ctx.fillStyle = '#17151a'; ctx.fillRect(x + TICKET_W - 2, y - 3, 5, 10);
-    ctx.fillStyle = '#d9433b'; ctx.fillRect(x + TICKET_W - 1, y - 2, 3, 5); ctx.fillRect(x + TICKET_W - 1, y + 4, 3, 2);
+    // varningslampan ritas INNANFÖR lappen – skenan är tät (lapp 16 px, delning 17)
+    // så en platta utanför högerkanten skulle skymma nästa lapps tålamodsrand
+    ctx.fillStyle = '#17151a'; ctx.fillRect(x + TICKET_W - 6, y - 3, 5, 10);
+    ctx.fillStyle = '#d9433b'; ctx.fillRect(x + TICKET_W - 5, y - 2, 3, 5); ctx.fillRect(x + TICKET_W - 5, y + 4, 3, 2);
   }
 }
 
@@ -386,7 +388,97 @@ function paintKok() {
   P.rect(TRASH.x - 10, TRASH.y - 24, 20, 3, 0x6a747e); P.hl(TRASH.x - 10, TRASH.y - 24, 20, 0xa8b2bc);
   P.rect(TRASH.x - 2, TRASH.y - 26, 4, 2, 0x4a545e);
   P.darken(TRASH.x - 8, TRASH.y, 17, 1, 0.7);
+  // ---------- golvdekaler: fläckar, spill och spår (platta – kocken går över dem) ----------
+  P.ell(44, 149, 7, 3, 0x241c12, 0.2);                       // fettfläckar nedanför grillen
+  P.ell(56, 153, 4, 2, 0x241c12, 0.15);
+  P.ell(118, 148, 5, 2, 0x241c12, 0.13);                     // ...och vid fritösen
+  for (const [fx, fy] of [[115, 145], [121, 149], [126, 144]]) { P.px(fx, fy, 0xf0b83a); P.px(fx + 1, fy, 0xd89a28); }   // tappade pommes
+  P.px(206, 148, 0x6a9a2c); P.px(207, 148, 0x9ac84a);        // en picklesskiva som trillat
+  for (const [sx, sy, sw] of [[70, 159, 9], [180, 158, 8], [206, 166, 7], [252, 151, 10], [296, 161, 6]]) P.darken(sx, sy, sw, 1, 0.88);   // hjulspår efter vagnen
+  P.ell(150, 182, 14, 5, 0xaec6ba, 0.1);                     // nyskurat och vått kring brunnen
+  P.ell(129, 171, 9, 4, 0xaec6ba, 0.08);
+  // moppen ligger på golvet bredvid hinken
+  P.line(306, 187, 284, 196, 0x9a6a3a); P.line(306, 188, 284, 197, 0x6a4424);
+  P.px(303, 187, 0xc08a54);
+  P.rect(281, 193, 4, 4, 0x6a747e); P.hl(281, 193, 4, 0xa8b2bc);   // kragen som håller garnet
+  for (let i = 0; i < 7; i++) { const gx = 269 + i * 2, gy = 194 + (i % 3), gh = 4 + (i % 2); P.vl(gx, gy, gh, i & 1 ? 0xd8d2c0 : 0xb0aa9c); P.px(gx, gy + gh, 0x8a8478); }
+  P.ell(276, 200, 9, 2, 0xaec6ba, 0.12);
   P.box(0, 0, FW, FH, 0x0e0d12);
+  return P.flush();
+}
+
+// ---------- golvrekvisitan: lastpall, läskbackar, halt-skylt och hink ----------
+// Målas separat och ritas med djupsortering (fy = basen) så att kocken kan
+// stå BAKOM rekvisitan utan att hamna framför den i bilden.
+const PROPS_Z = [
+  { x: 6, y: 162, w: 52, h: 42, fy: 203 },    // lastpallen med brödlådorna
+  { x: 84, y: 173, w: 33, h: 29, fy: 202 },   // läskbackarna
+  { x: 152, y: 169, w: 29, h: 23, fy: 191 },  // halt-skylten vid brunnen
+  { x: 305, y: 182, w: 23, h: 19, fy: 200 },  // hinken
+];
+function paintProps() {
+  const P = new Pix(FW, FH);
+  // -- lastpallen i vänstra hörnet: träpall med brödlådor från grossisten --
+  P.rect(8, 195, 48, 3, 0x9a6a3a); P.hl(8, 195, 48, 0xc08a54);
+  for (const gx of [18, 30, 42]) P.vl(gx, 195, 3, 0x4a2e16);        // springorna
+  P.hl(8, 198, 48, 0x3a2412);
+  P.rect(8, 199, 48, 3, 0x6a4424);
+  for (const fx of [8, 28, 49]) P.rect(fx, 199, 7, 3, 0x50321a);    // klossarna
+  P.darken(7, 202, 50, 1, 0.7);
+  const lada = (x, y, w, h) => {                                    // en kartong
+    for (let yy = y; yy < y + h; yy++) for (let xx = x; xx < x + w; xx++)
+      P.px(xx, yy, mix(0xbe9152, 0xa87c42, (yy - y) / h + (bayer(xx, yy) - 0.5) * 0.2));
+    P.hl(x, y, w, 0xe0b478); P.vl(x, y + 1, h - 1, 0xd0a468);
+    P.vl(x + w - 1, y + 1, h - 1, 0x8a6034); P.hl(x + 1, y + h - 1, w - 1, 0x74522a);
+    P.hl(x + 1, y + 3, w - 2, 0x8a6034);                            // lockets skarv
+  };
+  lada(10, 179, 22, 16); lada(32, 179, 21, 16); lada(19, 165, 24, 14);
+  P.rect(20, 187, 2, 6, 0xd8c9a4); P.px(20, 187, 0xece0c0);         // tejp på vänstra lådan
+  P.rect(41, 186, 5, 2, 0x8a6034); P.rect(41, 189, 8, 1, 0x8a6034); // fraktstämpel på högra
+  text(P, SMALL, 'BRÖD', 23, 170, 0x6a4a24);
+  // -- läskbackarna: två staplade, samma röda som läskautomaten, flaskhalsar uppstickande --
+  const back = (x, y, spjalor) => {
+    for (let yy = y; yy < y + 11; yy++) for (let xx = x; xx < x + 28; xx++)
+      P.px(xx, yy, mix(0xbe2530, 0x9c1c26, (yy - y) / 11 + (bayer(xx, yy) - 0.5) * 0.2));
+    P.hl(x, y, 28, 0xe86050); P.vl(x, y + 1, 10, 0xd8453a);
+    P.vl(x + 27, y + 1, 10, 0x8e1a22); P.hl(x, y + 10, 28, 0x6e1218);
+    if (spjalor) for (let i = 1; i < 7; i++) P.vl(x + i * 4, y + 2, 7, 0x7e161e);
+  };
+  back(86, 190, false); back(86, 179, true);
+  text(P, SMALL, 'LÄSK', 92, 193, 0xffd0c8);
+  for (let i = 0; i < 6; i++) {                                     // kapsyler + halsar
+    const bx = 89 + i * 4;
+    P.px(bx, 175, i === 2 ? 0xd9433b : 0xf0c02a);
+    P.vl(bx, 176, 3, 0x4a2c1a); P.px(bx, 177, 0x8a5a3a);
+  }
+  P.darken(85, 201, 30, 1, 0.72);
+  // -- varningsskylten vid golvbrunnen (nyskurat = HALT) --
+  for (let y = 173; y <= 189; y++) {
+    const hw = 3 + Math.round(((y - 173) * 9) / 16);
+    for (let x = 166 - hw; x <= 166 + hw; x++) {
+      let c = mix(0xffd23f, 0xd9a41e, (y - 173) / 16 + (bayer(x, y) - 0.5) * 0.18);
+      if (x === 166 - hw || x === 166 + hw) c = 0x8a6a10;
+      if (y === 189) c = 0x6e5208;
+      P.px(x, y, c);
+    }
+  }
+  P.rect(164, 171, 5, 2, 0x8a6a10); P.px(165, 171, 0xffe27a);       // toppöglan
+  P.rect(165, 174, 2, 4, 0x3a2c08); P.rect(165, 179, 2, 2, 0x3a2c08); // utropstecknet
+  text(P, SMALL, 'HALT', 159, 183, 0x3a2c08);
+  P.darken(157, 190, 19, 1, 0.78);
+  // -- hinken (moppen ligger bredvid, målad i golvet) --
+  for (let y = 184; y <= 198; y++) {
+    const hw = 8 - Math.round(((y - 184) * 2) / 14);
+    for (let x = 316 - hw; x <= 316 + hw; x++) {
+      let c = mix(0xb4bec8, 0x6e7882, (x - (316 - hw)) / (hw * 2) + (bayer(x, y) - 0.5) * 0.14);
+      if (y === 184) c = 0xd8e0e6;
+      if (x === 316 - hw || x === 316 + hw) c = 0x49525c;
+      P.px(x, y, c);
+    }
+  }
+  P.hl(310, 185, 13, 0x3e6272); P.px(313, 185, 0x9ed0e0); P.px(318, 185, 0x86b8c8);   // skurvattnet
+  P.px(308, 186, 0x2e3840); P.px(324, 186, 0x2e3840);               // grepens fästen
+  P.darken(309, 199, 15, 1, 0.72);
   return P.flush();
 }
 
@@ -469,6 +561,10 @@ export function makeJobbKok(A, { onDone } = {}) {
   walker.setObstacles([
     [ISL.x0, ISL.front + 1, ISL.x1, ISL.base],               // bänkön (kocken står bakom, som i pizzerian)
     [TRASH.x - 11, TRASH.y - 26, TRASH.x + 11, TRASH.y + 1], // soptunnan
+    [6, 178, 57, 203],                                       // lastpallen med brödlådorna
+    [84, 176, 115, 201],                                     // läskbackarna
+    [153, 175, 179, 191],                                    // halt-skylten vid brunnen
+    [305, 181, 327, 199],                                    // hinken (moppen är platt och gåbar)
   ]);
   const pops = makePops();
   const talk = createSpeech();
@@ -496,6 +592,7 @@ export function makeJobbKok(A, { onDone } = {}) {
   const cache = {};
   const bg = () => (cache.bg ||= paintKok());
   const island = () => (cache.isl ||= paintIsland());
+  const props = () => (cache.props ||= paintProps());
 
   // ---------- hjälpare ----------
   function hint(txt, x, y) { pops.add(x, y, txt, '#ffd23f'); play('click'); }
@@ -718,6 +815,8 @@ export function makeJobbKok(A, { onDone } = {}) {
     orders: () => orders.map((o) => ({ recept: RECEPT[o.recept].id, namn: RECEPT[o.recept].namn, smak: o.smak !== undefined ? SMAKER[o.smak] : undefined, kvar: +o.kvar.toFixed(1) })),
     // forceOrder('burgare' | 'gron' | 'stora' | 'pommes' | 'lask' | 'shake' | 'glass', smak 0-2)
     forceOrder: (recept, smak) => { const o = spawnOrder(REC_IX[recept] ?? 0, smak); return o ? dbg.orders()[orders.length - 1] : null; },
+    // testhjälp: sänker alla lappars tålamod (varningslampan tänds under 8 s kvar)
+    rush: (s = 6) => { for (const o of orders) o.kvar = Math.min(o.kvar, s); return dbg.orders(); },
     // Ett stationssteg direkt, utan gång. Ingredienser: 'underbrod' 'ost' 'sallad' 'tomat'
     // 'lok' 'pickles' 'dressing' 'overbrod'. Grillen: 'grill' (rå biff på), 'vand', 'stek'
     // (allt blir klart), 'brann' (allt bränns), 'tabiff' (ta klar biff), 'biff' (genväg:
@@ -997,6 +1096,7 @@ export function makeJobbKok(A, { onDone } = {}) {
           }
         },
       });
+      for (const pr of PROPS_Z) drawables.push({ fy: pr.fy, draw: () => ctx.drawImage(props(), pr.x, pr.y, pr.w, pr.h, pr.x, pr.y, pr.w, pr.h) });
       drawables.sort((a, b) => a.fy - b.fy).forEach((d) => d.draw(ctx));
       drawParts(ctx);
       pops.draw(ctx);

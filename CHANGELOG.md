@@ -10,6 +10,20 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.29.0] – 2026-09-28 – In i Burgarbaren + Burgarköket
+- GÅ IN I BURGARBAREN! Dörren leder nu in i en gåbar 50-talsdiner: schackrutigt golv, röda bås, jukebox, glassdisk och kassörskan Doris. Beställ vid disken, BÄR DIN BRICKA till ett ledigt bord, sätt dig och ät – mättnad och energi fylls bara medan du sitter. Gäster kommer och går, käkar och pratar.
+- NYTT JOBB: BURGARKÖKET. Vid disken kan du ta kökspasset – beställningslappar på skenan, bygg burgarna lager för lager i rätt ordning, vänd biffarna innan de bränns, fritera pommes och ring i klockan. Snabb servering ger dricks-stjärnor!
+- Burgarbarens fasad är färdig: menystället står på trottoaren (och går inte längre att gå igenom), dinerfönstren är fulla av liv – och efter stängning är det faktiskt SLÄCKT och mörkt.
+- Husen på Söder är hela igen (slitaget hörde till förorten), och garagelängans tak har fått ventilation i stället för klotter.
+
+## [0.28.2] – 2026-09-28 – Klotter bara på väggar
+- Klottret har flyttat dit det hör hemma: taggarna är borta från gräsmattor, gågator, lekplatsens gungor, rutschkanan och sandlådan, bänkarna, elskåpen, biljettautomaten, containrarna, återvinningsigloon, bilvraket och ljussignalerna.
+- Kvar är klottret där det ska vara: på husväggarna i förorten, muren och klotterplanket.
+
+## [0.28.1] – 2026-09-28 – Verkstan lagad och skyltar på skärmen
+- Bilverkstan är lagad: jobbet kunde hänga sig direkt (flera delar av verkstan hade aldrig ritats färdigt). Nu finns kompressorn, skruvdragaren som läggs på golvet, navet med skruvarna i bubblan, luftmunstycket och dagsljuset genom porten – och däckstället har fått riktiga hyllskenor så inga däck svävar i luften.
+- Skyltarna håller sig på skärmen i mobilens NÄRA-läge: köpskylten i djuraffären, kaféets skylt, mataffärens hörnpanel och arbetspassens tidsrad kläms nu in i den synliga bilden i stället för att beskäras.
+
 ## [0.28.0] – 2026-09-28 – Den stora staden
 - STADEN ÄR STOR NU! Pixelstaden har växt till en hel värld: nya SÖDER under parken med Södergatan, pizzerian, posten, biblioteket, bion, kyrkan med klocktornet, vårdcentralen och bensinmacken – och kajen vid kanalen längst i söder.
 - FÖRORTEN bortom infarten: höghus i betong, närbutik med galler, pantbank, kebab, klotter överallt och en busshållplats som sett bättre dagar.
