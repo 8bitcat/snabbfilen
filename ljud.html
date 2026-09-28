@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="sv">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ljudlabbet – Snabbfilen</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Jersey+10&family=VT323&display=swap" rel="stylesheet">
+  <style>
+    /* Ljudlabbet: lyssna på spelets alla ljud innan de kopplas in i spelet.
+       Samma färger som spelets HUD (mörk bläck, krämvit text, guldkant). */
+    :root { --ink: #17151a; --panel: #23202a; --card: #2d2935; --line: #4a4456; --text: #f4f1ea; --dim: #b9b2a6; --gold: #e8b230; --go: #45b964; --bad: #d9433b; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--ink); color: var(--text); font-family: 'VT323', monospace; font-size: 21px; line-height: 1.25; }
+    main { max-width: 980px; margin: 0 auto; padding: 16px 16px 60px; }
+    h1 { font-family: 'Jersey 10', 'VT323', monospace; font-weight: 400; font-size: 46px; margin: 6px 0 2px; color: var(--gold); letter-spacing: 1px; }
+    h2 { font-family: 'Jersey 10', 'VT323', monospace; font-weight: 400; font-size: 32px; margin: 0 0 4px; }
+    h3 { font-size: 22px; margin: 14px 0 6px; color: var(--gold); font-weight: 400; }
+    p { margin: 4px 0 10px; color: var(--dim); }
+    a { color: var(--gold); }
+    section { background: var(--panel); border: 3px solid var(--line); padding: 12px 14px 14px; margin: 16px 0; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+    button { font: inherit; font-size: 20px; color: var(--text); background: var(--card); border: 3px solid var(--line); padding: 8px 10px; cursor: pointer; text-align: left; min-height: 48px; }
+    button:hover { border-color: var(--gold); }
+    button:active { transform: translateY(1px); }
+    button.playing { border-color: var(--go); background: #24382b; }
+    button small { display: block; color: var(--dim); font-size: 16px; }
+    .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 8px; }
+    .chip { font-size: 18px; min-height: 40px; padding: 5px 9px; }
+    .chip.on { border-color: var(--gold); background: #3a3120; }
+    input[type=text] { font: inherit; font-size: 20px; flex: 1 1 260px; min-width: 0; background: var(--ink); color: var(--text); border: 3px solid var(--line); padding: 8px 10px; }
+    .banner { background: #3a1f1d; border: 3px solid var(--bad); padding: 10px 12px; margin: 12px 0; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .banner.hidden, .hidden { display: none; }
+    .note { font-size: 17px; color: var(--dim); }
+    .off { opacity: 0.55; }
+    audio { width: 100%; margin-top: 6px; }
+    .track { background: var(--card); border: 3px solid var(--line); padding: 8px 10px; }
+    .track b { font-weight: 400; color: var(--text); }
+    .top { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px; }
+  </style>
+</head>
+<body>
+<main>
+  <div class="top">
+    <h1>🔊 Ljudlabbet</h1>
+    <a href="./">← Tillbaka till Snabbfilen</a>
+  </div>
+  <p>Här kan du lyssna på spelets ljud innan de kopplas in i spelet. Tryck på en knapp så spelas ljudet. Nya ljud dyker upp här så fort de är byggda.</p>
+
+  <div id="muted" class="banner hidden">
+    <span>🔇 Spelets ljud är avstängt i den här webbläsaren.</span>
+    <button id="unmute" class="chip">🔊 Slå på ljudet</button>
+  </div>
+
+  <section id="sec-effekter">
+    <h2>🎮 Spelets effektljud</h2>
+    <p>De korta ljuden i spelet: pengar, rätt och fel, dörrar och tutor.</p>
+    <div class="grid" id="effekter"></div>
+  </section>
+
+  <section id="sec-roster">
+    <h2>🗣️ Simspråket</h2>
+    <p>Alla i Pixelstaden pratar babbel – man hör att de pratar, men inte vilket språk. Varje person har en egen röst som alltid låter likadant.</p>
+    <h3>1. Välj en replik eller skriv en egen</h3>
+    <div class="row" id="repliker"></div>
+    <div class="row"><input type="text" id="text" value="Hej! Vill du ha en kaffe?" maxlength="80" aria-label="Egen replik"></div>
+    <h3>2. Välj vem som säger den</h3>
+    <div class="grid" id="personer"></div>
+    <div class="row" style="margin-top:10px"><button id="alla" class="chip">▶ Fem personer säger samma sak</button></div>
+    <p class="note" id="roster-status"></p>
+  </section>
+
+  <section id="sec-djur">
+    <h2>🐾 Djuren</h2>
+    <p>Husdjuren och djuren i staden och i djuraffären.</p>
+    <div id="djur"></div>
+    <p class="note" id="djur-status"></p>
+  </section>
+
+  <section id="sec-musik">
+    <h2>🎵 Musiken</h2>
+    <p>Bakgrundsmusiken ska vara härlig och motiverande men aldrig ta över. Varje stadsdel och några ställen inne får sin egen.</p>
+    <div class="grid" id="musik" style="grid-template-columns:repeat(auto-fill,minmax(260px,1fr))"></div>
+    <p class="note" id="musik-status">Letar efter musiken…</p>
+  </section>
+
+  <section id="sec-ambiens">
+    <h2>🌆 Stadens och ställenas ljud</h2>
+    <p>Bilarna, parken, vattnet vid kanalen, regn och blåst, dinern, caféet och butikerna.</p>
+    <div class="grid" id="ambiens"></div>
+    <p class="note" id="ambiens-status">Letar efter ljudbäddarna…</p>
+  </section>
+</main>
+
+<script type="module">
+// Varje ljuddel laddas för sig: är en modul halvfärdig slutar bara den delen att fungera.
+const $ = (s) => document.querySelector(s);
+// (samma modulinstanser som spelet – rösterna och sidan delar ljud av/på i js/core/sound.js)
+const load = async (path) => { try { return await import(path); } catch (e) { console.warn('kunde inte ladda', path, e); return null; } };
+const el = (tag, props = {}, kids = []) => { const n = Object.assign(document.createElement(tag), props); for (const k of [].concat(kids)) n.append(k); return n; };
+
+const sound = await load('./js/core/sound.js');
+const unlock = () => { try { sound?.unlockAudio(); } catch { /* ok */ } };
+window.addEventListener('pointerdown', unlock, { capture: true });
+
+// ---- ljud av i spelet? då hörs inget här heller (samma inställning) ----
+function checkMuted() { $('#muted').classList.toggle('hidden', !sound?.isMuted?.()); }
+$('#unmute').onclick = () => { unlock(); if (sound?.isMuted?.()) sound.toggleMute(); checkMuted(); };
+checkMuted();
+
+// En knapp som lyser grönt en stund när den spelar
+function btn(label, sub, fn, secs = 1) {
+  const b = el('button', {}, [label, ...(sub ? [el('small', { textContent: sub })] : [])]);
+  b.onclick = () => {
+    unlock();
+    if (sound?.isMuted?.()) { checkMuted(); $('#muted').scrollIntoView({ behavior: 'smooth' }); return; }
+    try { fn(); } catch (e) { console.error(e); }
+    b.classList.add('playing');
+    clearTimeout(b._t); b._t = setTimeout(() => b.classList.remove('playing'), secs * 1000);
+  };
+  return b;
+}
+
+// ---- effektljuden (js/core/sound.js) ----
+const EFFEKTER = [
+  ['click', 'Klick', 'knappar och menyer'], ['ok', 'Rätt!', 'rätt i ett jobb'], ['fel', 'Fel', 'fel i ett jobb'],
+  ['miss', 'Miss', 'en kund gick'], ['coin', 'Pengar', 'lön och betalning'], ['box', 'Klart!', 'en låda eller order klar'],
+  ['buy', 'Köp', 'i butikerna'], ['sleep', 'Somna', 'lägga sig'], ['morning', 'God morgon', 'vakna'],
+  ['fanfare', 'Befordran', 'ny nivå på jobbet'], ['knock', 'Knack knack', 'någon kommer'], ['door', 'Dörren', 'in och ut'],
+  ['honk', 'Tuta', 'bilar i staden'], ['slide', 'Glid', 'dra och släppa'], ['chirp', 'Kvitter', 'fåglar'],
+];
+if (sound?.play) for (const [k, l, s] of EFFEKTER) $('#effekter').append(btn(l, s, () => sound.play(k), 0.6));
+else $('#effekter').append(el('p', { textContent: 'Effektljuden gick inte att ladda.' }));
+
+// ---- rösterna (js/core/voices.js) ----
+const voices = await load('./js/core/voices.js');
+const REPLIKER = [
+  ['Hej! Vill du ha en kaffe?', 'vanlig'], ['Vad kostar den här?', 'fråga'], ['Tack så jättemycket! 😀', 'glad'],
+  ['Oj! Vad billigt!', 'ivrig'], ['Nej, nu blir jag sur 😡', 'arg'], ['En hamburgare och en milkshake, tack. Med extra ost om det går.', 'lång'],
+];
+for (const [t, k] of REPLIKER) {
+  const c = el('button', { className: 'chip', textContent: k });
+  c.onclick = () => { $('#text').value = t; for (const x of document.querySelectorAll('#repliker .chip')) x.classList.toggle('on', x === c); };
+  $('#repliker').append(c);
+}
+const PERSONER = [
+  ['Doris', 'i kassan på Burgarbaren', 'Doris'], ['Bella', 'i köksluckan', 'Bella'], ['Sven', 'en farbror på gatan', 'Sven'],
+  ['Maja', 'en tjej i parken', 'Maja'], ['Olle', 'en kille på bussen', 'Olle'], ['Ett barn', 'på lekplatsen', 'barn'],
+  ['Farmor', 'på caféet', 'farmor'], ['Farfar', 'på bänken', 'farfar'], ['Du själv', 'din egen figur', 'self'],
+];
+const say = (v) => {
+  const text = $('#text').value.trim() || 'Hej!';
+  if (voices.speak) return voices.speak(text, v === 'self' ? { self: true } : { voice: v });
+  return voices.babble(text, voices.voiceFor(v));
+};
+if (voices?.speak || voices?.babble) {
+  for (const [namn, sub, v] of PERSONER) $('#personer').append(btn(namn, sub, () => say(v), 2.2));
+  $('#alla').onclick = () => {
+    unlock();
+    ['Sven', 'Maja', 'barn', 'farmor', 'Olle'].forEach((v, i) => setTimeout(() => say(v), i * 2300));
+  };
+} else {
+  $('#personer').append(el('p', { textContent: 'Rösterna håller på att byggas – kom tillbaka om en stund.' }));
+  $('#alla').classList.add('hidden');
+}
+
+// ---- djuren ----
+const DJUR = [
+  ['🐶 Hundar', [
+    ['Valp', 'pip-skall', 'hund', '', { sort: 'valp' }], ['Tax', 'gläfs', 'hund', '', { sort: 'tax' }],
+    ['Mellanhund', 'voff', 'hund', '', { sort: 'mellan' }], ['Stor hund', 'djupt VOFF', 'hund', '', { sort: 'stor' }],
+    ['Glad hund', 'viftar på svansen', 'hund', 'glad', {}], ['Arg hund', 'morrar och skäller', 'hund', 'arg', {}],
+    ['Ledsen hund', 'gnäller', 'hund', 'ledsen', {}], ['Trött hund', 'gäspar', 'hund', 'trött', {}],
+  ]],
+  ['🐱 Katter', [
+    ['Katt', 'mjau', 'katt', '', {}], ['Kattunge', 'litet mjau', 'katt', '', { sort: 'unge' }],
+    ['Hungrig katt', 'mjauar efter mat', 'katt', 'hungrig', {}], ['Katten spinner', 'kurrar i 3 s', 'katt', 'spinn', { secs: 3 }],
+    ['Mjau + spinn', 'nöjd katt', 'katt', 'mjauspinn', {}], ['Arg katt', 'fräser', 'katt', 'arg', {}],
+  ]],
+  ['🐰 Fler djur', [
+    ['Kanin', 'nosar', 'kanin', '', {}], ['Arg kanin', 'stampar', 'kanin', 'arg', {}], ['Fågel', 'kvitter', 'fagel', '', {}],
+    ['Duva', 'kuttrar', 'duva', '', {}], ['Fisk', 'blubb', 'fisk', '', {}], ['Mus', 'piper', 'mus', '', {}], ['Orm', 'väser', 'orm', '', {}],
+  ]],
+];
+if (voices?.animalSound) {
+  let n = 0;
+  for (const [rubrik, lista] of DJUR) {
+    const g = el('div', { className: 'grid' });
+    for (const [l, s, kind, mood, opts] of lista) g.append(btn(l, s, () => voices.animalSound(kind, mood, { ...opts, vary: ++n }), 1.4));
+    $('#djur').append(el('h3', { textContent: rubrik }), g);
+  }
+} else $('#djur').append(el('p', { textContent: 'Djurlätena håller på att byggas – kom tillbaka om en stund.' }));
+
+// ---- musiken: spåren som faktiskt finns (och har en källa i CREDITS.md) ----
+const SPAR = [
+  ['centrum', 'Centrum'], ['parken', 'Parken'], ['soder', 'Söder'], ['fororten', 'Förorten'], ['natt', 'Natten'],
+  ['hemma', 'Hemma'], ['kafe', 'Caféet'], ['butik', 'Butikerna'], ['klader', 'Klädaffären'], ['diner', 'Dinern'], ['jukebox', 'Jukeboxen'],
+];
+(async () => {
+  let credits = '';
+  try { const r = await fetch('./assets/audio/CREDITS.md', { cache: 'no-store' }); if (r.ok) credits = await r.text(); } catch { /* ok */ }
+  let shown = 0;
+  for (const [k, namn] of SPAR) {
+    const src = `./assets/audio/music/${k}.mp3`;
+    let ok = false;
+    try { ok = (await fetch(src, { method: 'HEAD', cache: 'no-store' })).ok; } catch { /* ok */ }
+    if (!ok) continue;
+    const kalla = credits.split(/\r?\n/).find((l) => l.toLowerCase().includes(k + '.mp3'));
+    const a = el('audio', { controls: true, preload: 'none', loop: true, src });
+    a.volume = 0.6;
+    $('#musik').append(el('div', { className: 'track' }, [el('b', { textContent: '🎵 ' + namn }), ...(kalla ? [el('div', { className: 'note', textContent: kalla.replace(/[#*|`]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 140) })] : []), a]));
+    shown++;
+  }
+  $('#musik-status').textContent = shown
+    ? (credits ? 'Källa och licens för varje låt står i assets/audio/CREDITS.md.' : 'Källan för låtarna kontrolleras just nu.')
+    : 'Musiken håller på att tas fram – kom tillbaka om en stund.';
+})();
+
+// ---- ambiensen (js/core/ambience.js) – visas när ljudkörningen är klar ----
+const amb = await load('./js/core/ambience.js');
+const beds = amb?.PREVIEW_BEDS || amb?.BEDS || null;
+if (amb && typeof amb.previewBed === 'function' && beds) {
+  let cur = null;
+  const list = Array.isArray(beds) ? beds : Object.entries(beds).map(([id, v]) => ({ id, ...(typeof v === 'object' ? v : { name: String(v) }) }));
+  for (const b of list) {
+    const knapp = btn(b.name || b.id, b.desc || 'tryck igen för att stoppa', () => {
+      if (cur === b.id) { amb.stopPreview?.(); cur = null; return; }
+      cur = b.id; amb.previewBed(b.id);
+    }, 8);
+    $('#ambiens').append(knapp);
+  }
+  $('#ambiens-status').textContent = 'Varje ljudbädd spelar tills du trycker igen eller väljer en annan.';
+} else {
+  $('#ambiens-status').textContent = 'Ljudbäddarna byggs just nu – de dyker upp här så fort de är klara.';
+}
+window.__ljudlabb = { sound: !!sound, voices: !!voices, ambience: !!amb };
+</script>
+</body>
+</html>

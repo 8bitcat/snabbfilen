@@ -10,6 +10,11 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.30.1] – 2026-09-28 – Ljudlabbet
+- Ljudlabbet: en egen sida där man kan lyssna på spelets ljud innan de kopplas in – snabbfilen/ljud.html
+- Där finns effektljuden, simspråket med nio olika röster och egna repliker, och alla djurläten
+- Musiken och stadens ljud dyker upp på sidan så fort de är klara
+
 ## [0.30.0] – 2026-09-28 – Fyra nya bostäder och husdjuren hemma
 - Fyra nya bostäder hos bostadsbyrån: Husvagnen med egen gårdsplätt, Förortsettan på sjunde våningen med trapphus och trasig hiss, Radhuset på Söder och Takvåningen högst upp i Tornhuset
 - Planschväggen visar alla sju bostäder med egna bilder, och man kan flytta in i husvagnen direkt

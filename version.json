@@ -1,7 +1,7 @@
 {
-  "version": "0.30.0",
+  "version": "0.30.1",
   "date": "2026-09-28",
-  "title": "Fyra nya bostäder och husdjuren hemma",
+  "title": "Ljudlabbet",
   "files": [
     "CHANGELOG.md",
     "assets/interior.png",
@@ -40,6 +40,7 @@
     "js/core/sound.js",
     "js/core/ui.js",
     "js/core/version-ui.js",
+    "js/core/voices.js",
     "js/core/week.js",
     "js/data/frames.js",
     "js/data/wardrobe-acc.js",
