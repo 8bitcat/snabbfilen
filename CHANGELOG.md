@@ -10,6 +10,15 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.25.0] – 2026-09-28 – Hela skärmen fylls på alla enheter
+- Spelet fyller nu HELA skärmen på varje enhet – mobil, platta och dator, stående som liggande. Inga svarta kanter.
+- Staden visar mer värld åt alla håll: bredare gata, fler hus och mer liv på samma gång.
+- Mätarremsan spänner över hela skärmens bredd, med mätarna i mitten.
+- Rum, butiker och jobb ritas centrerade med en mörk pixelram runt om – allt syns på en skärm.
+- Ny skylt på mobilen: håller du den stående föreslår spelet att du vänder den – Snabbfilen spelas liggande.
+- Chatten och hörnknapparna håller sig undan mobilens notch och hemindikator.
+- Ingenting är uppskalat eller suddigt: exakt samma knivskarpa pixelkorn som förut – bilden växer i stället.
+
 ## [0.24.0] – 2026-09-28 – Veckan först med sju fönster mot staden
 - **Veckan möter dig först** när du kommer in i spelet (och som förut varje morgon när du vaknar, och med 📅).
 - Dagarna är nu **sju fönster ut mot Pixelstaden**, med en egen utsikt för varje dag: hyreshuset på måndagen, bussen, parkträdet, flygplanet, fredagsljusen, pariserhjulet och kyrktornet. Molnen, bussen och planet rör sig, och regnar det i dag så regnar det i fönstret.

@@ -45,13 +45,13 @@ function ensureStrip() {
   return strip;
 }
 // Anropas från fit(): ger remsan samma skala som spelbilden (heltal device-pixlar per spelpixel)
-export function layoutStrip(A, dpr) {
+export function layoutStrip(A, dpr, wLogical = W, cssW = 0) {
   const c = ensureStrip(); if (!c) return;
   const h = stripHeight(A);
   c.classList.toggle('hidden', h === 0);
   if (!h) return;
-  c.width = W * A.pxs; c.height = h * A.pxs;
-  c.style.width = (W * A.pxs / dpr) + 'px';
+  c.width = wLogical * A.pxs; c.height = h * A.pxs;
+  c.style.width = (cssW || (wLogical * A.pxs / dpr)) + 'px';
   c.style.height = (h * A.pxs / dpr) + 'px';
 }
 
@@ -106,10 +106,10 @@ export function drawPixHud(_ctx, A) {
   const ctx = c.getContext('2d');
   ctx.setTransform(A.pxs, 0, 0, A.pxs, 0, 0);
   ctx.imageSmoothingEnabled = false;
-  const H = STRIP_H;
-  ctx.fillStyle = INK; ctx.fillRect(0, 0, W, H);
-  ctx.fillStyle = '#2b2733'; ctx.fillRect(0, 0, W, 1);
-  ctx.fillStyle = PAPER2; ctx.fillRect(0, H - 1, W, 1);
+  const H = STRIP_H, Wv = Math.max(W, Math.round(c.width / A.pxs)); // remsan kan vara bredare än 384 (mobilfyllning)
+  ctx.fillStyle = INK; ctx.fillRect(0, 0, Wv, H);
+  ctx.fillStyle = '#2b2733'; ctx.fillRect(0, 0, Wv, 1);
+  ctx.fillStyle = PAPER2; ctx.fillRect(0, H - 1, Wv, 1);
   // porträtt 20×24 i ram
   const px = 3, py = 2;
   ctx.fillStyle = PAPER2; ctx.fillRect(px - 1, py - 1, 22, 26);
@@ -126,15 +126,16 @@ export function drawPixHud(_ctx, A) {
   const day = `${String(g.dayName || '').toUpperCase()} DAG ${g.day}  ${clock(g.min)}`;
   ctxText(ctx, SMALL, day, tx, 17, PAPER2);
   // mätare: mat + sömn
-  ctxText(ctx, SMALL, 'MAT', 136, 3, PAPER2);
-  bar(ctx, 136, 12, 64, g.hunger, burger);
-  ctxText(ctx, SMALL, 'SÖMN', 224, 3, PAPER2);
-  bar(ctx, 224, 12, 64, g.energy, zz);
+  const mx = Math.max(136, ((Wv / 2) | 0) - 76); // mätarna i mitten när remsan är bred
+  ctxText(ctx, SMALL, 'MAT', mx, 3, PAPER2);
+  bar(ctx, mx, 12, 64, g.hunger, burger);
+  ctxText(ctx, SMALL, 'SÖMN', mx + 88, 3, PAPER2);
+  bar(ctx, mx + 88, 12, 64, g.energy, zz);
   // höger: online + skuld / dagens händelse
   const online = A.worldInfo?.().online || 1;
   const onTxt = online > 1 ? `${online} ONLINE` : 'ENSAM I STAN';
-  folkIcon(ctx, W - 4 - textW(SMALL, onTxt) - 10, 3);
-  ctxText(ctx, SMALL, onTxt, W - 4 - textW(SMALL, onTxt), 3, PAPER2);
-  if (money < 0) ctxText(ctx, SMALL, 'SKULD!', W - 4 - textW(SMALL, 'SKULD!'), 17, RED);
-  else if (g.event?.id) { const t = String(g.event.id).toUpperCase(); ctxText(ctx, SMALL, t, W - 4 - textW(SMALL, t), 17, GOLD); }
+  folkIcon(ctx, Wv - 4 - textW(SMALL, onTxt) - 10, 3);
+  ctxText(ctx, SMALL, onTxt, Wv - 4 - textW(SMALL, onTxt), 3, PAPER2);
+  if (money < 0) ctxText(ctx, SMALL, 'SKULD!', Wv - 4 - textW(SMALL, 'SKULD!'), 17, RED);
+  else if (g.event?.id) { const t = String(g.event.id).toUpperCase(); ctxText(ctx, SMALL, t, Wv - 4 - textW(SMALL, t), 17, GOLD); }
 }

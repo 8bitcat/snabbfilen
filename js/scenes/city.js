@@ -13,7 +13,8 @@ const MODS = {};
 await Promise.all(['buildings-shops', 'buildings-work', 'ground', 'props', 'traffic', 'life'].map((n) =>
   import(`../city/${n}.js`).then((m) => { MODS[n] = m; }).catch((e) => console.error(`stadsmodulen ${n} kunde inte laddas:`, e))));
 
-const VW = CITY.VIEW_W, VH = CITY.VIEW_H;
+let VW = CITY.VIEW_W, VH = CITY.VIEW_H; // mobilfyllning: vyn följer skärmen, klampad till världen
+const syncView = (A) => { VW = Math.max(CITY.VIEW_W, Math.min(A.W || CITY.VIEW_W, CITY.W)); VH = Math.max(CITY.VIEW_H, Math.min(A.H || CITY.VIEW_H, CITY.H)); };
 
 // Delad miljö som modulerna läser (muteras varje bildruta av scenen).
 // obstacles = alla hinder för gång (husens fotavtryck + rekvisita + trafikljusstolpar).
@@ -289,6 +290,7 @@ export function makeCity(A) {
     },
 
     draw(ctx) {
+      syncView(A); // skärmen kan ha ändrat storlek – vyn följer med
       const cx = Math.round(cam.x), cy = Math.round(cam.y);
       ctx.setTransform(A.pxs, 0, 0, A.pxs, -cx * A.pxs, -cy * A.pxs);
       drawWorld(ctx, cx, cy, VW, VH);

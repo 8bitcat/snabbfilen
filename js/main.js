@@ -24,6 +24,7 @@ import { musicTick } from './core/music.js';
 import { openWeek } from './core/week.js';
 import { mountChat, isChatOpen } from './core/chat.js';
 import { play, unlockAudio, toggleMute, isMuted } from './core/sound.js';
+import { CITY } from './city/map.js';
 
 const $ = (s) => document.querySelector(s);
 const cv = $('#scene'), ctx = cv.getContext('2d');
@@ -37,6 +38,7 @@ const A = {
   go(name, opts) {
     A.scene?.exit?.();
     A.sceneName = name;
+    applySceneView(); // scenens vy (bred eller 384×216-ruta) innan den byggs
     A.scene = SCENES[name](A, opts);
     A.scene.enter?.();
   },
@@ -71,31 +73,122 @@ const SCENES = {
 const ENGINES = { flygplats: 'jobbflyg', frukt: 'jobbfrukt', burgare: 'jobbburgare' };
 
 // ---------- skala canvasen till fönstret ----------
-// Knivskarpt på alla skärmar: canvasen får exakt ett heltal device-pixlar per
-// spelpixel (384×216-rymden), oavsett fönsterstorlek och Windows-skalning.
+// MOBILFYLLNING: spelet fyller HELA ytan under HUD-raden på alla enheter, med
+// exakt samma pixelkorn som förut (heltal device-pixlar per spelpixel). I
+// stället för svarta kanter växer den logiska vyn (A.W×A.H) med skärmen:
+// breda scener (staden) visar mer värld åt alla håll, fasta scener (rum,
+// butiker, jobb) ritas centrerade i sin 384×216-ruta med en mörk pixelram
+// runt om – allt målas på canvasen, inga döda ytor. Testrobotar får exakt
+// gamla 384×216-beteendet med marginaler, om de inte skickar ?mobfill=1.
+const DESIGN_W = 384, DESIGN_H = 216;
+const WIDE = { city: { get w() { return CITY.W; }, get h() { return CITY.H; } } };
+const fillMode = () => !A.attract && (!navigator.webdriver || new URLSearchParams(location.search).has('mobfill'));
+A.view = { w: DESIGN_W, h: DESIGN_H, boxX: 0, boxY: 0, boxed: false };
+function applySceneView() {
+  const v = A.view, cap = fillMode() ? WIDE[A.sceneName] : null;
+  A.W = Math.max(DESIGN_W, Math.min(v.w, cap ? cap.w : DESIGN_W));
+  A.H = Math.max(DESIGN_H, Math.min(v.h, cap ? cap.h : DESIGN_H));
+  v.boxX = Math.max(0, (v.w - A.W) >> 1);
+  v.boxY = Math.max(0, (v.h - A.H) >> 1);
+  v.boxed = v.boxX > 0 || v.boxY > 0;
+}
 function fit() {
   const dpr = window.devicePixelRatio || 1;
-  const w = window.innerWidth, h = window.innerHeight - $('#hud').offsetHeight - 4;
-  // bakom huvudmenyn täcker hela staden fönstret (kanterna klipps), annars får hela spelbilden plats
-  // pixelmätarnas remsa ligger ovanför spelbilden och tar sin höjd av samma yta
-  const s = Math.max(2, A.attract ? Math.ceil(Math.max(w * dpr / A.W, h * dpr / A.H)) : Math.floor(Math.min(w * dpr / A.W, h * dpr / (A.H + stripHeight(A)))));
+  const box = $('#app').getBoundingClientRect();
+  const w = Math.max(64, box.width), h = Math.max(64, box.height);
+  const v = A.view;
+  if (A.attract || !fillMode()) {
+    // huvudmenyn: staden täcker fönstret (kanterna klipps) · testrobotar: gamla läget
+    A.W = DESIGN_W; A.H = DESIGN_H;
+    v.w = DESIGN_W; v.h = DESIGN_H; v.boxX = 0; v.boxY = 0; v.boxed = false;
+    const s = Math.max(2, A.attract ? Math.ceil(Math.max(w * dpr / A.W, h * dpr / A.H)) : Math.floor(Math.min(w * dpr / A.W, h * dpr / (A.H + stripHeight(A)))));
+    A.pxs = s;
+    cv.width = A.W * s;
+    cv.height = A.H * s;
+    cv.style.width = (A.W * s / dpr) + 'px';
+    cv.style.height = (A.H * s / dpr) + 'px';
+    layoutStrip(A, dpr);
+    return;
+  }
+  const strip = stripHeight(A);
+  const s = Math.max(2, Math.floor(Math.min(w * dpr / DESIGN_W, h * dpr / (DESIGN_H + strip))));
   A.pxs = s;
-  cv.width = A.W * s;
-  cv.height = A.H * s;
-  cv.style.width = (A.W * s / dpr) + 'px';
-  cv.style.height = (A.H * s / dpr) + 'px';
-  layoutStrip(A, dpr);
+  v.w = Math.max(DESIGN_W, Math.floor(w * dpr / s));
+  v.h = Math.max(DESIGN_H, Math.floor(h * dpr / s) - strip);
+  applySceneView();
+  cv.width = v.w * s;
+  cv.height = v.h * s;
+  // de sista device-pixlarna (mindre än en spelpixel) fylls med en omärkbar sträckning
+  const stripCss = strip ? strip * s / dpr : 0;
+  cv.style.width = w + 'px';
+  cv.style.height = Math.max(1, h - stripCss) + 'px';
+  layoutStrip(A, dpr, v.w, w);
 }
 window.addEventListener('resize', fit);
+window.visualViewport?.addEventListener('resize', fit);
+window.addEventListener('orientationchange', fit);
+if (window.ResizeObserver) new ResizeObserver(() => fit()).observe($('#app'));
+
+// Vänd på mobilen: i stående läge på en liten pekskärm visas en vänlig skylt.
+// Testrobotar ser den bara med ?rothint=1. "Spela stående ändå" gäller sessionen.
+const rotEl = $('#rotate');
+function rotateHint() {
+  if (!rotEl) return;
+  let off = false;
+  try { off = !!sessionStorage.getItem('sf_rot_ok'); } catch { /* ok */ }
+  const allowed = !navigator.webdriver || new URLSearchParams(location.search).has('rothint');
+  const phone = matchMedia('(pointer: coarse)').matches && Math.min(window.innerWidth, window.innerHeight) < 560;
+  const portrait = window.innerHeight > window.innerWidth * 1.2;
+  rotEl.classList.toggle('hidden', off || !allowed || !phone || !portrait);
+}
+window.addEventListener('resize', rotateHint);
+window.addEventListener('orientationchange', rotateHint);
+$('#rotate-anyway')?.addEventListener('click', () => { try { sessionStorage.setItem('sf_rot_ok', '1'); } catch { /* ok */ } rotateHint(); });
+rotateHint();
+
+// Fasta scener ritas i sin centrerade ruta: alla scener börjar med
+// ctx.setTransform(A.pxs, 0, 0, A.pxs, ...), så rutans förskjutning läggs in i
+// själva setTransform – scenernas egen kod behöver inte ändras.
+const rawSetTransform = ctx.setTransform.bind(ctx);
+ctx.setTransform = (a, b, c, d, e, f) => {
+  if (typeof a === 'object') { rawSetTransform(a); return; }
+  const v = A.view;
+  rawSetTransform(a, b, c, d, (e || 0) + v.boxX * A.pxs, (f || 0) + v.boxY * A.pxs);
+};
+// pixelramen runt fasta scener: mörkt schackmönster + svart kant
+let surPat = null, surKey = '';
+function drawSurround() {
+  const v = A.view, s = A.pxs;
+  if (!surPat || surKey !== 'k' + s) {
+    surKey = 'k' + s;
+    const t = document.createElement('canvas');
+    t.width = t.height = 8 * s;
+    const g = t.getContext('2d');
+    g.fillStyle = '#100e15'; g.fillRect(0, 0, t.width, t.height);
+    g.fillStyle = '#151221'; g.fillRect(0, 0, 4 * s, 4 * s); g.fillRect(4 * s, 4 * s, 4 * s, 4 * s);
+    surPat = ctx.createPattern(t, 'repeat');
+  }
+  rawSetTransform(1, 0, 0, 1, 0, 0);
+  ctx.fillStyle = surPat;
+  ctx.fillRect(0, 0, cv.width, cv.height);
+  const bx = v.boxX * s, by = v.boxY * s, bw = A.W * s, bh = A.H * s, f = Math.max(2, s >> 1);
+  ctx.fillStyle = '#000';
+  ctx.fillRect(bx - f, by - f, bw + 2 * f, f);
+  ctx.fillRect(bx - f, by + bh, bw + 2 * f, f);
+  ctx.fillRect(bx - f, by, f, bh);
+  ctx.fillRect(bx + bw, by, f, bh);
+}
 
 // ---------- pekare: mus + touch till logiska pixlar ----------
 function toLocal(e) {
   const r = cv.getBoundingClientRect();
-  return { x: (e.clientX - r.left) / r.width * A.W, y: (e.clientY - r.top) / r.height * A.H };
+  const v = A.view;
+  return { x: (e.clientX - r.left) / r.width * v.w - v.boxX, y: (e.clientY - r.top) / r.height * v.h - v.boxY };
 }
-cv.addEventListener('pointerdown', (e) => { if (modalOpen()) return; cv.setPointerCapture(e.pointerId); const p = toLocal(e); A.scene?.down?.(p.x, p.y); });
-cv.addEventListener('pointermove', (e) => { if (modalOpen()) return; const p = toLocal(e); A.scene?.move?.(p.x, p.y); });
-cv.addEventListener('pointerup', (e) => { if (modalOpen()) return; const p = toLocal(e); A.scene?.up?.(p.x, p.y); });
+const inView = (p) => !A.view.boxed || (p.x >= 0 && p.y >= 0 && p.x <= A.W && p.y <= A.H);
+cv.addEventListener('pointerdown', (e) => { if (modalOpen()) return; cv.setPointerCapture(e.pointerId); const p = toLocal(e); if (!inView(p)) return; A.scene?.down?.(p.x, p.y); });
+cv.addEventListener('pointermove', (e) => { if (modalOpen()) return; const p = toLocal(e); if (!inView(p)) return; A.scene?.move?.(p.x, p.y); });
+cv.addEventListener('pointerup', (e) => { if (modalOpen()) return; const p = toLocal(e); if (!inView(p)) return; A.scene?.up?.(p.x, p.y); });
 window.addEventListener('keydown', (e) => {
   if (modalOpen() || isMenuOpen() || isChatOpen() || e.ctrlKey || e.altKey || e.metaKey) return;
   if (/INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName || '')) return; // man skriver i ett fält
@@ -334,11 +427,21 @@ function tick(now) {
     if (!modalOpen() && !isMenuOpen() && !A.sceneName.startsWith('jobb')) A.game.tickReal(dt);
     A.scene.update?.(dt);
     worldTick(A, A.scene.worldX ?? null, dt);
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    rawSetTransform(1, 0, 0, 1, 0, 0);
     ctx.fillStyle = '#14121a';
     ctx.fillRect(0, 0, cv.width, cv.height);
     ctx.imageSmoothingEnabled = false;
-    A.scene.draw(ctx);
+    if (A.view.boxed) {
+      drawSurround();
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(A.view.boxX * A.pxs, A.view.boxY * A.pxs, A.W * A.pxs, A.H * A.pxs);
+      ctx.clip();
+      A.scene.draw(ctx);
+      ctx.restore();
+    } else {
+      A.scene.draw(ctx);
+    }
     if (isPixHud() && !A.attract) drawPixHud(ctx, A);
   }
   renderHud();
