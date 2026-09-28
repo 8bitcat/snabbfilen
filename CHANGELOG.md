@@ -10,6 +10,13 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.16.0] – 2026-09-28 – Automatisk uppdatering och säkerhetskopior
+- Spelet uppdaterar sig självt: när en ny version kommer ut sparas allt och sidan laddas om när det passar – aldrig mitt i ett arbetspass eller en dialog. Allt du har är kvar.
+- Innan omladdningen hämtas hela nya versionen, så gamla och nya filer blandas aldrig.
+- En säkerhetskopia av din sparning tas vid varje versionsbyte (de tre senaste sparas). Du hittar dem under versionsknappen och kan återställa om något blivit fel.
+- Sparningen tappar aldrig något som en nyare version lagt till, även om du råkar spela en äldre flik.
+- Spelet fungerar även utan nät när du väl har laddat det en gång.
+
 ## [0.15.0] – 2026-09-28 – Ni ser varandra i staden
 - Ni ser varandra igen: den som tappar nätet, somnar i fickan eller stänger fliken städas bort ur världen inom en minut, och samma spelare i två flikar blir inte två figurer.
 - 👥-listan visar var alla är just nu (i staden, i mataffären, på jobbet, hemma hos någon) och har en "Gå dit"-knapp som tar dig fram till kompisen i staden.

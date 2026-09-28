@@ -14,6 +14,7 @@
 //   --dry         visa vad som skulle hända, ändra ingenting
 //   --push        git push origin main + taggen direkt (gör det först efter tools/verify.mjs)
 //   --no-claude   utan Co-Authored-By-raden
+//   --use S=F     köa filen F som sökvägen S (släpp bara en del av en fil som andra också ändrar i)
 //
 // Stoppar om något annat redan ligger köat i git, om en angiven fil saknas, eller om en
 // köad JS-fil importerar en fil som inte kommer med i committen (då skulle den publicerade
@@ -67,10 +68,19 @@ const d = new Date();
 const DATE = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
 // --- köa filerna och kontrollera importerna ---
-git(['add', '-A', '--', ...paths]);
+// --use sökväg=fil köar innehållet i "fil" som "sökväg" (när arbetskatalogens fil också har
+// andras halvfärdiga ändringar och bara en del ska släppas). Kan anges flera gånger.
+const uses = opts.flatMap((o, i) => (o === '--use' ? [opts[i + 1]] : [])).filter(Boolean).map((u) => { const at = u.indexOf('='); return at > 0 ? [u.slice(0, at), u.slice(at + 1)] : die(`--use ska vara sökväg=fil: ${u}`); });
+const plain = paths.filter((p) => !uses.some(([u]) => u === p.replace(/\\/g, '/')));
+if (plain.length) git(['add', '-A', '--', ...plain]);
+for (const [dest, src] of uses) {
+  if (!fs.existsSync(src)) { git(['reset', '-q']); die(`--use: filen finns inte: ${src}`); }
+  const sha = git(['hash-object', '-w', '--path=' + dest, src]);
+  git(['update-index', '--add', '--cacheinfo', `100644,${sha},${dest}`]);
+}
 const staged = git(['diff', '--cached', '--name-only', '--diff-filter=ACMR']).split('\n').filter(Boolean);
 if (!staged.length) { die('inga ändringar i de angivna filerna'); }
-const WRITTEN_HERE = new Set(['js/version.js', 'version.json', 'CHANGELOG.md']);
+const WRITTEN_HERE = new Set(['js/version.js', 'version.json', 'CHANGELOG.md', 'sw.js']);
 const inIndex = (p) => WRITTEN_HERE.has(p) || gitOk(['cat-file', '-e', ':' + p]);
 const missing = [];
 for (const f of staged) {
@@ -101,7 +111,11 @@ const lineEnd = cl.indexOf('\n', at) + 1;
 const newCl = cl.slice(0, lineEnd) + '\n' + section + cl.slice(lineEnd).replace(/^\n*/, '\n');
 const esc = (s) => s.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 const verJs = `// Skrivs av tools/release.mjs vid varje släpp – ändra inte för hand.\nexport const VERSION = '${V}';\nexport const DATE = '${DATE}';\nexport const TITLE = '${esc(title)}';\n`;
-const verJson = JSON.stringify({ version: V, date: DATE, title }, null, 2) + '\n';
+// alla filer som ingår i sidan (för service workerns förladdning och uppdateringens hämtning)
+const shipped = git(['ls-files', '--cached']).split('\n').filter((f) => /^(index\.html|sw\.js|version\.json|CHANGELOG\.md|js\/.*\.js|css\/.*\.css|assets\/.*)$/.test(f)).sort();
+const verJson = JSON.stringify({ version: V, date: DATE, title, files: shipped }, null, 2) + '\n';
+const swPath = path.join(ROOT, 'sw.js');
+const swSrc = fs.readFileSync(swPath, 'utf8').replace(/const VERSION = '[^']*';/, `const VERSION = '${V}';`);
 const subject = `${type}${scope ? `(${scope})` : ''}: ${title}`;
 const body = `${subject}\n\n${notes.join('\n')}\n\nVersion ${V}.${flag('no-claude') ? '' : `\n\n${COAUTHOR}`}\n`;
 
@@ -112,7 +126,8 @@ if (dry) { git(['reset', '-q']); console.log('\n' + section); process.exit(0); }
 fs.writeFileSync(verFile, verJs);
 fs.writeFileSync(path.join(ROOT, 'version.json'), verJson);
 fs.writeFileSync(clPath, newCl);
-git(['add', '--', 'js/version.js', 'version.json', 'CHANGELOG.md']);
+fs.writeFileSync(swPath, swSrc);
+git(['add', '--', 'js/version.js', 'version.json', 'CHANGELOG.md', 'sw.js']);
 
 const tmp = path.join(os.tmpdir(), `snabbfilen-release-${process.pid}.txt`);
 fs.writeFileSync(tmp, body);

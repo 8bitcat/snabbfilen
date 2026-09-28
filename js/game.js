@@ -4,6 +4,9 @@ import { toast } from './core/ui.js';
 import { play } from './core/sound.js';
 
 export const SAVE_KEY = 'snabbfilen_save1';
+// Fält som gamla versioner sparade men som load() redan har flyttat in på nytt ställe
+// (furniture → förrådet) – de ska inte följa med tillbaka som okänd data.
+const LEGACY_FIELDS = ['furniture'];
 export const DAY_NAMES = ['Måndag', 'Tisdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lördag', 'Söndag'];
 export const fmt = (n) => Math.round(n).toLocaleString('sv-SE') + ' kr';
 export const clock = (min) => `${String(Math.floor(min / 60) % 24).padStart(2, '0')}:${String(Math.floor(min % 60)).padStart(2, '0')}`;
@@ -134,27 +137,60 @@ export class Game {
   get homeInfo() { return homeOf(this.home); }
 
   // ---------- spara/ladda ----------
+  // Sparfilen får aldrig tappa data mellan versioner: det som den här versionen inte
+  // förstår (fält, plagg, möbler, jobb, mat från en nyare version) ligger kvar i _keep
+  // och skrivs tillbaka orört, så att en äldre flik aldrig raderar något nyare.
   save() {
-    try { const { _saveIn, collapsed, ...data } = this; localStorage.setItem(SAVE_KEY, JSON.stringify({ v: 1, ...data })); } catch { /* full/blockerad */ }
+    try {
+      const { _saveIn, collapsed, ...data } = this;
+      const k = this._keep;
+      const out = { ...(k?.top || {}), v: 1, ...data };
+      if (k) {
+        out.jobs = { ...k.jobs, ...data.jobs };
+        out.best = { ...k.best, ...data.best };
+        out.fridge = { ...k.fridge, ...data.fridge };
+        out.wardrobe = [...data.wardrobe, ...k.wardrobe.filter((w) => !data.wardrobe.includes(w))];
+        out.storage = [...data.storage, ...k.storage];
+        out.deco = { ...data.deco };
+        for (const [key, list] of Object.entries(k.deco)) out.deco[key] = [...(data.deco[key] || []), ...list];
+      }
+      localStorage.setItem(SAVE_KEY, JSON.stringify(out));
+    } catch { /* full/blockerad */ }
   }
   static load() {
     const g = new Game();
+    let rawText = null;
     try {
-      const p = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
+      rawText = localStorage.getItem(SAVE_KEY);
+      const p = JSON.parse(rawText || 'null');
+      if (p && p.v !== 1) throw new Error('okänd sparversion ' + p.v);
       if (p && p.v === 1) {
+        const keep = { top: {}, jobs: {}, best: {}, fridge: {}, wardrobe: [], storage: [], deco: {} };
+        Object.defineProperty(g, '_keep', { value: keep, writable: true, enumerable: false });
+        for (const [key, val] of Object.entries(p)) if (!(key in g) && !LEGACY_FIELDS.includes(key)) keep.top[key] = val;
         g.day = Math.max(1, p.day | 0); g.min = Math.min(DAY - 1, Math.max(0, +p.min || 0));
         g.money = Math.round(+p.money || 0); g.hunger = clamp(p.hunger); g.energy = clamp(p.energy);
         g.home = homeOf(p.home).id;
-        g.fridge = {}; for (const [k, v] of Object.entries(p.fridge || {})) if (foodOf(k) && v > 0) g.fridge[k] = Math.min(20, v | 0);
+        g.fridge = {}; for (const [k, v] of Object.entries(p.fridge || {})) { if (!foodOf(k)) keep.fridge[k] = v; else if (v > 0) g.fridge[k] = Math.min(20, v | 0); }
         for (const k of Object.keys(g.jobs)) g.jobs[k] = Math.max(0, p.jobs?.[k] | 0);
+        for (const [k, v] of Object.entries(p.jobs || {})) if (!(k in g.jobs)) keep.jobs[k] = v;
+        for (const [k, v] of Object.entries(p.best || {})) if (!(k in g.best)) keep.best[k] = v;
         g.earned = Math.max(0, +p.earned || 0);
-        g.wardrobe = (Array.isArray(p.wardrobe) ? p.wardrobe : []).filter((k) => SORTIMENT.some((s) => clothesKey(s.kind, s.v) === k));
-        const cleanItem = (it) => it && katalogOf(it.k) ? withColor({ k: it.k, v: Math.max(0, Math.min(katalogOf(it.k).vars - 1, it.v | 0)) }, it.c) : null;
+        const knownClothes = (k) => SORTIMENT.some((s) => clothesKey(s.kind, s.v) === k);
+        g.wardrobe = (Array.isArray(p.wardrobe) ? p.wardrobe : []).filter(knownClothes);
+        keep.wardrobe = (Array.isArray(p.wardrobe) ? p.wardrobe : []).filter((k) => typeof k === 'string' && !knownClothes(k));
+        // fält som en nyare version lagt på en möbel (t.ex. rotation) följer med orörda
+        const extra = (it) => { const { k, v, x, y, fx, c, ...rest } = it; return rest; };
+        const cleanItem = (it) => it && katalogOf(it.k) ? withColor({ ...extra(it), k: it.k, v: Math.max(0, Math.min(katalogOf(it.k).vars - 1, it.v | 0)) }, it.c) : null;
         g.storage = (Array.isArray(p.storage) ? p.storage : []).map(cleanItem).filter(Boolean).slice(0, 60);
+        keep.storage = (Array.isArray(p.storage) ? p.storage : []).filter((it) => it && typeof it === 'object' && !katalogOf(it.k));
+        const knownFurn = (d) => d && (katalogOf(d.k) || ['sang', 'garderob', 'kylskap', 'vaxt'].includes(d.k));
         if (p.deco && typeof p.deco === 'object') for (const [key, list] of Object.entries(p.deco)) {
-          if (!/^[a-z]+:\d$/.test(key) || !Array.isArray(list)) continue;
-          g.deco[key] = list.filter((d) => d && (katalogOf(d.k) || ['sang', 'garderob', 'kylskap', 'vaxt'].includes(d.k)))
-            .map((d) => withColor({ k: d.k, v: Math.max(0, d.v | 0), x: Math.max(0, Math.min(384, +d.x || 0)), y: Math.max(0, Math.min(216, +d.y || 0)), ...(d.fx ? { fx: 1 } : {}) }, d.c))
+          if (!/^[a-z]+:\d$/.test(key) || !Array.isArray(list)) { keep.deco[key] = list; continue; }
+          const unknown = list.filter((d) => d && typeof d === 'object' && !knownFurn(d));
+          if (unknown.length) keep.deco[key] = unknown;
+          g.deco[key] = list.filter(knownFurn)
+            .map((d) => withColor({ ...extra(d), k: d.k, v: Math.max(0, d.v | 0), x: Math.max(0, Math.min(384, +d.x || 0)), y: Math.max(0, Math.min(216, +d.y || 0)), ...(d.fx ? { fx: 1 } : {}) }, d.c))
             .slice(0, 40);
         }
         // gamla sparfiler: köpta möbler (id-lista) flyttas till förrådet
@@ -163,7 +199,12 @@ export class Game {
         if (p.event && EVENTS.some((e) => e.id === p.event.id)) g.event = { id: p.event.id, job: JOBS[p.event.job] ? p.event.job : undefined };
         for (const k of Object.keys(g.best)) g.best[k] = { ok: Math.max(0, p.best?.[k]?.ok | 0), pay: Math.max(0, p.best?.[k]?.pay | 0) };
       }
-    } catch { /* trasig – börja om */ }
+    } catch (err) {
+      // Trasig eller för ny sparfil: lägg undan den orörd innan spelet börjar om, så att
+      // nästa save() aldrig skriver över det enda exemplaret.
+      try { if (rawText) localStorage.setItem(`${SAVE_KEY}_undanlagd_${Date.now()}`, rawText); } catch { /* full */ }
+      console.warn('Sparfilen kunde inte läsas och lades undan:', err?.message);
+    }
     return g;
   }
 

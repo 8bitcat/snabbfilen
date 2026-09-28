@@ -1,7 +1,7 @@
 {
-  "version": "0.15.0",
+  "version": "0.16.0",
   "date": "2026-09-28",
-  "title": "Ni ser varandra i staden",
+  "title": "Automatisk uppdatering och säkerhetskopior",
   "files": [
     "CHANGELOG.md",
     "assets/interior.png",
@@ -53,6 +53,7 @@
     "js/shops/bostad.js",
     "js/shops/matbutik.js",
     "js/version.js",
+    "sw.js",
     "version.json"
   ]
 }
