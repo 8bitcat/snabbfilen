@@ -1,0 +1,142 @@
+[
+  {"kind": "kyl", "name": "Kylskåp", "icon": "🧊", "price": 1800, "room": "KÖK", "function": "ata", "variants": [
+    {"file": "Part 9 copiar.png", "sx": 128, "sy": 20, "sw": 16, "sh": 28},
+    {"file": "Part 9 copiar.png", "sx": 144, "sy": 20, "sw": 16, "sh": 28},
+    {"file": "Part 9 copiar.png", "sx": 160, "sy": 20, "sw": 16, "sh": 28},
+    {"file": "Part 9 copiar.png", "sx": 480, "sy": 52, "sw": 16, "sh": 28},
+    {"file": "Part 9 copiar.png", "sx": 496, "sy": 52, "sw": 16, "sh": 28},
+    {"file": "Part 9 copiar.png", "sx": 512, "sy": 52, "sw": 16, "sh": 28}
+  ]},
+  {"kind": "koksspis", "name": "Köksspis", "icon": "🍳", "price": 1600, "room": "KÖK", "function": "ata", "variants": [
+    {"file": "Part 9 copiar.png", "sx": 128, "sy": 93, "sw": 16, "sh": 19},
+    {"file": "Part 9 copiar.png", "sx": 480, "sy": 29, "sw": 16, "sh": 19}
+  ]},
+  {"kind": "flakt", "name": "Köksfläkt", "icon": "💨", "price": 600, "room": "KÖK", "wall": true, "variants": [
+    {"file": "Part 9 copiar.png", "sx": 128, "sy": 80, "sw": 16, "sh": 12},
+    {"file": "Part 9 copiar.png", "sx": 480, "sy": 16, "sw": 16, "sh": 12}
+  ]},
+  {"kind": "kokso", "name": "Köksö med ugn", "icon": "🥘", "price": 2400, "room": "KÖK", "variants": [
+    {"file": "Part 9 copiar.png", "sx": 0, "sy": 72, "sw": 48, "sh": 24},
+    {"file": "Part 9 copiar.png", "sx": 192, "sy": 72, "sw": 48, "sh": 24},
+    {"file": "Part 9 copiar.png", "sx": 352, "sy": 72, "sw": 48, "sh": 24},
+    {"file": "Part 9 copiar.png", "sx": 544, "sy": 72, "sw": 48, "sh": 24}
+  ]},
+  {"kind": "diskbank", "name": "Diskbänk", "icon": "🚰", "price": 1400, "room": "KÖK", "variants": [
+    {"file": "Part 9 copiar.png", "sx": 48, "sy": 77, "sw": 48, "sh": 19},
+    {"file": "Part 9 copiar.png", "sx": 240, "sy": 77, "sw": 48, "sh": 19},
+    {"file": "Part 9 copiar.png", "sx": 400, "sy": 77, "sw": 48, "sh": 19},
+    {"file": "Part 9 copiar.png", "sx": 592, "sy": 77, "sw": 48, "sh": 19}
+  ]},
+  {"kind": "bankskap", "name": "Köksbänk", "icon": "🗄️", "price": 700, "room": "KÖK", "variants": [
+    {"file": "Part 9 copiar.png", "sx": 16, "sy": 32, "sw": 48, "sh": 16},
+    {"file": "Part 9 copiar.png", "sx": 208, "sy": 32, "sw": 48, "sh": 16},
+    {"file": "Part 9 copiar.png", "sx": 368, "sy": 32, "sw": 48, "sh": 16},
+    {"file": "Part 9 copiar.png", "sx": 560, "sy": 32, "sw": 48, "sh": 16},
+    {"file": "Part 9 copiar.png", "sx": 16, "sy": 16, "sw": 48, "sh": 16},
+    {"file": "Part 9 copiar.png", "sx": 208, "sy": 16, "sw": 48, "sh": 16},
+    {"file": "Part 9 copiar.png", "sx": 368, "sy": 16, "sw": 48, "sh": 16},
+    {"file": "Part 9 copiar.png", "sx": 560, "sy": 16, "sw": 48, "sh": 16}
+  ]},
+  {"kind": "overskap", "name": "Överskåp", "icon": "🚪", "price": 450, "room": "KÖK", "wall": true, "variants": [
+    {"file": "Part 9 copiar.png", "sx": 96, "sy": 0, "sw": 48, "sh": 15},
+    {"file": "Part 9 copiar.png", "sx": 288, "sy": 0, "sw": 48, "sh": 15},
+    {"file": "Part 9 copiar.png", "sx": 448, "sy": 0, "sw": 48, "sh": 15},
+    {"file": "Part 9 copiar.png", "sx": 640, "sy": 0, "sw": 48, "sh": 15}
+  ]},
+  {"kind": "porslinsskap", "name": "Porslinsskåp", "icon": "🍽️", "price": 500, "room": "KÖK", "wall": true, "variants": [
+    {"file": "Part 9 copiar.png", "sx": 48, "sy": 0, "sw": 48, "sh": 15},
+    {"file": "Part 9 copiar.png", "sx": 240, "sy": 0, "sw": 48, "sh": 15},
+    {"file": "Part 9 copiar.png", "sx": 400, "sy": 0, "sw": 48, "sh": 15},
+    {"file": "Part 9 copiar.png", "sx": 592, "sy": 0, "sw": 48, "sh": 15}
+  ]},
+  {"kind": "kryddhylla", "name": "Kryddhylla", "icon": "🧂", "price": 250, "room": "KÖK", "wall": true, "variants": [
+    {"file": "Part 9 copiar.png", "sx": 0, "sy": 0, "sw": 48, "sh": 15},
+    {"file": "Part 9 copiar.png", "sx": 192, "sy": 0, "sw": 48, "sh": 15},
+    {"file": "Part 9 copiar.png", "sx": 352, "sy": 0, "sw": 48, "sh": 15},
+    {"file": "Part 9 copiar.png", "sx": 544, "sy": 0, "sw": 48, "sh": 15}
+  ]},
+  {"kind": "mikro", "name": "Mikrovågsugn", "icon": "♨️", "price": 400, "room": "KÖK", "function": "ata", "variants": [
+    {"file": "Part 1 copiar.png", "sx": 225, "sy": 53, "sw": 14, "sh": 11}
+  ]},
+  {"kind": "brodrost", "name": "Brödrost", "icon": "🍞", "price": 150, "room": "KÖK", "variants": [
+    {"file": "Part 1 copiar.png", "sx": 243, "sy": 53, "sw": 10, "sh": 11}
+  ]},
+  {"kind": "kaffebryggare", "name": "Kaffebryggare", "icon": "☕", "price": 250, "room": "KÖK", "variants": [
+    {"file": "Part 1 copiar.png", "sx": 211, "sy": 49, "sw": 11, "sh": 15}
+  ]},
+  {"kind": "soptunna", "name": "Soptunna", "icon": "🗑️", "price": 80, "room": "KÖK", "variants": [
+    {"file": "Part 1 copiar.png", "sx": 211, "sy": 164, "sw": 9, "sh": 12},
+    {"file": "Part 1 copiar.png", "sx": 211, "sy": 180, "sw": 9, "sh": 12}
+  ]},
+  {"kind": "koksbord", "name": "Köksbord", "icon": "🪑", "price": 450, "room": "KÖK", "variants": [
+    {"file": "Tables and desks.png", "sx": 4, "sy": 292, "sw": 24, "sh": 23},
+    {"file": "Tables and desks.png", "sx": 36, "sy": 292, "sw": 24, "sh": 23},
+    {"file": "Tables and desks.png", "sx": 68, "sy": 292, "sw": 24, "sh": 23},
+    {"file": "Tables and desks.png", "sx": 100, "sy": 292, "sw": 24, "sh": 23},
+    {"file": "Tables and desks.png", "sx": 131, "sy": 292, "sw": 24, "sh": 23},
+    {"file": "Tables and desks.png", "sx": 164, "sy": 292, "sw": 24, "sh": 23}
+  ]},
+  {"kind": "dryckeskyl", "name": "Dryckeskyl", "icon": "🥤", "price": 2200, "room": "KÖK", "variants": [
+    {"file": "hospital wing.png", "sx": 195, "sy": 38, "sw": 26, "sh": 41}
+  ]},
+  {"kind": "rullbord", "name": "Rullbord", "icon": "🛒", "price": 300, "room": "KÖK", "variants": [
+    {"file": "hospital wing.png", "sx": 292, "sy": 66, "sw": 23, "sh": 27}
+  ]},
+  {"kind": "toalett", "name": "Toalett", "icon": "🚽", "price": 900, "room": "BADRUM", "function": "toalett", "variants": [
+    {"file": "Part 10 copiar.png", "sx": 66, "sy": 10, "sw": 10, "sh": 22},
+    {"file": "Part 10 copiar.png", "sx": 131, "sy": 10, "sw": 10, "sh": 22},
+    {"file": "Part 10 copiar.png", "sx": 195, "sy": 10, "sw": 10, "sh": 22},
+    {"file": "Part 10 copiar.png", "sx": 67, "sy": 42, "sw": 10, "sh": 22},
+    {"file": "Part 10 copiar.png", "sx": 130, "sy": 42, "sw": 10, "sh": 22},
+    {"file": "Part 10 copiar.png", "sx": 163, "sy": 74, "sw": 10, "sh": 22}
+  ]},
+  {"kind": "handfat", "name": "Handfat", "icon": "🪥", "price": 500, "room": "BADRUM", "function": "tvatta", "variants": [
+    {"file": "Part 10 copiar.png", "sx": 66, "sy": 78, "sw": 13, "sh": 18},
+    {"file": "Part 10 copiar.png", "sx": 114, "sy": 78, "sw": 13, "sh": 18}
+  ]},
+  {"kind": "tvattstall", "name": "Tvättställ", "icon": "🧼", "price": 400, "room": "BADRUM", "wall": true, "function": "tvatta", "variants": [
+    {"file": "Part 10 copiar.png", "sx": 66, "sy": 98, "sw": 13, "sh": 14},
+    {"file": "Part 10 copiar.png", "sx": 114, "sy": 98, "sw": 13, "sh": 14}
+  ]},
+  {"kind": "badkar", "name": "Badkar", "icon": "🛁", "price": 2800, "room": "BADRUM", "function": "tvatta", "variants": [
+    {"file": "Part 10 copiar.png", "sx": 5, "sy": 39, "sw": 26, "sh": 25},
+    {"file": "Part 10 copiar.png", "sx": 37, "sy": 39, "sw": 26, "sh": 25}
+  ]},
+  {"kind": "dusch", "name": "Dusch", "icon": "🚿", "price": 2200, "room": "BADRUM", "function": "tvatta", "variants": [
+    {"file": "Part 10 copiar.png", "sx": 0, "sy": 96, "sw": 32, "sh": 32},
+    {"file": "Part 10 copiar.png", "sx": 32, "sy": 96, "sw": 32, "sh": 32},
+    {"file": "Part 10 copiar.png", "sx": 64, "sy": 160, "sw": 32, "sh": 32},
+    {"file": "Part 10 copiar.png", "sx": 96, "sy": 160, "sw": 32, "sh": 32},
+    {"file": "Part 10 copiar.png", "sx": 0, "sy": 128, "sw": 32, "sh": 32},
+    {"file": "Part 10 copiar.png", "sx": 32, "sy": 128, "sw": 32, "sh": 32},
+    {"file": "Part 10 copiar.png", "sx": 0, "sy": 160, "sw": 32, "sh": 32},
+    {"file": "Part 10 copiar.png", "sx": 32, "sy": 160, "sw": 32, "sh": 32}
+  ]},
+  {"kind": "badhylla", "name": "Badrumshylla", "icon": "🧴", "price": 350, "room": "BADRUM", "variants": [
+    {"file": "Part 10 copiar.png", "sx": 80, "sy": 118, "sw": 16, "sh": 26},
+    {"file": "Part 10 copiar.png", "sx": 96, "sy": 118, "sw": 16, "sh": 26},
+    {"file": "Part 10 copiar.png", "sx": 112, "sy": 118, "sw": 16, "sh": 26},
+    {"file": "Part 10 copiar.png", "sx": 64, "sy": 118, "sw": 16, "sh": 26}
+  ]},
+  {"kind": "badbank", "name": "Badrumsbänk", "icon": "🧽", "price": 600, "room": "BADRUM", "variants": [
+    {"file": "Part 10 copiar.png", "sx": 64, "sy": 144, "sw": 48, "sh": 15},
+    {"file": "Part 10 copiar.png", "sx": 112, "sy": 144, "sw": 48, "sh": 15}
+  ]},
+  {"kind": "tvattmaskin", "name": "Tvättmaskin", "icon": "🫧", "price": 2000, "room": "BADRUM", "function": "tvatta", "variants": [
+    {"file": "Part 10 copiar.png", "sx": 240, "sy": 110, "sw": 16, "sh": 18}
+  ]},
+  {"kind": "torktumlare", "name": "Torktumlare", "icon": "🌀", "price": 1600, "room": "BADRUM", "variants": [
+    {"file": "Part 10 copiar.png", "sx": 224, "sy": 110, "sw": 16, "sh": 18}
+  ]},
+  {"kind": "tvattpelare", "name": "Tvättpelare", "icon": "🧺", "price": 3500, "room": "BADRUM", "function": "tvatta", "variants": [
+    {"file": "Part 10 copiar.png", "sx": 208, "sy": 100, "sw": 16, "sh": 28}
+  ]},
+  {"kind": "strykbrada", "name": "Strykbräda", "icon": "👔", "price": 200, "room": "BADRUM", "variants": [
+    {"file": "Part 10 copiar.png", "sx": 133, "sy": 172, "sw": 22, "sh": 19},
+    {"file": "Part 10 copiar.png", "sx": 165, "sy": 172, "sw": 22, "sh": 19},
+    {"file": "Part 10 copiar.png", "sx": 197, "sy": 172, "sw": 22, "sh": 19}
+  ]},
+  {"kind": "medicinskap", "name": "Medicinskåp", "icon": "💊", "price": 300, "room": "BADRUM", "wall": true, "variants": [
+    {"file": "hospital wing.png", "sx": 2, "sy": 2, "sw": 29, "sh": 23}
+  ]}
+]

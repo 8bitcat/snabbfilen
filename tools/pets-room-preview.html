@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<title>Husdjur – attrapprum</title>
+<link rel="stylesheet" href="../css/style.css">
+<style>
+  html, body { margin: 0; background: #1a1620; overflow: auto; }
+  #c { image-rendering: pixelated; display: block; cursor: pointer; }
+  #info { color: #e8e2d6; font: 14px/1.3 monospace; padding: 4px 8px; white-space: pre; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="info"></div>
+<div id="modal" class="hidden"></div>
+<div id="toasts"></div>
+<script type="module">
+// Attrapprum för husdjurslagret (js/pets/layer.js) + prylarna (items.js) + följaren.
+//   tools/pets-room-preview.html?k=4&hour=12&speed=0&scene=hem|prylar|ute|natt[&manual=1]
+// window.PV: setup(scene, opts), advance(sec, dt), render(), click(x, y), hover(x, y), store, layer
+import { createPetStore, seededRng } from '../js/pets/sim.js';
+import { createPetLayer, createPetFollower } from '../js/pets/layer.js';
+import { PET_ITEMS, drawPetItem } from '../js/pets/items.js';
+import { drawPet } from '../js/pets/sprites.js';
+import { createWalker, WALK_SEQ } from '../js/scenes/walkable.js';
+import { drawPerson, makeLook } from '../js/core/people.js';
+import { SMALL, ctxText, hash } from '../js/core/floor-pix.js';
+
+const Q = new URLSearchParams(location.search);
+const K = +(Q.get('k') || 4);
+const W = 384, H = 216;
+const cv = document.getElementById('c');
+cv.width = W * K; cv.height = H * K;
+const ctx = cv.getContext('2d');
+ctx.imageSmoothingEnabled = false;
+const info = document.getElementById('info');
+
+const HOME = 'lagenhet', ROOM = 'vardagsrum';
+let look = makeLook(seededRng(5));
+look = { ...look, skin: '#e0a97f', hair: '#3b2619', shirt: '#3a7bd5', pants: '#2d3a5c' };
+const A = { game: { day: 5, min: 12 * 60, home: HOME, money: 5000, save() {} }, avatar: { name: 'Test', look }, carrying: null };
+
+// ---------- attrapprummets möbler (scenens hinder) ----------
+const FURN = [
+  { kind: 'soffa', r: [148, 80, 236, 100] },
+  { kind: 'bord', r: [272, 142, 308, 156] },
+  { kind: 'hylla', r: [16, 78, 50, 94] },
+];
+const sceneFree = (x, y) => !FURN.some((f) => x >= f.r[0] && x < f.r[2] && y >= f.r[1] && y < f.r[3]);
+const BOUNDS = { left: 8, right: 376, top: 94, bottom: 210 };
+
+let S, L, walker, scene = 'hem', t = 0, followers = [], owner = null;
+
+function bg(ctx, night) {
+  // vägg
+  for (let y = 0; y < 92; y++) for (let x = 0; x < W; x += 1) {
+    const stripe = (x % 12) < 6;
+    ctx.fillStyle = y > 84 ? '#6e4e3a' : stripe ? '#d9c7a4' : '#cfbb96';
+    if (y === 84) ctx.fillStyle = '#f0e2c4';
+    ctx.fillRect(x, y, 1, 1);
+  }
+  ctx.fillStyle = '#4a3226'; ctx.fillRect(0, 90, W, 2);
+  // fönster
+  ctx.fillStyle = '#5a3e2c'; ctx.fillRect(282, 14, 58, 46);
+  ctx.fillStyle = night ? '#1c2448' : '#9fd0f0'; ctx.fillRect(286, 18, 50, 38);
+  if (!night) { ctx.fillStyle = '#c8e6fa'; ctx.fillRect(288, 20, 20, 3); ctx.fillStyle = '#e8f4fc'; ctx.fillRect(290, 21, 8, 1); }
+  else { ctx.fillStyle = '#f0e8b0'; ctx.fillRect(320, 24, 3, 3); ctx.fillStyle = '#fff'; ctx.fillRect(296, 30, 1, 1); ctx.fillRect(310, 22, 1, 1); }
+  ctx.fillStyle = '#5a3e2c'; ctx.fillRect(310, 18, 2, 38); ctx.fillRect(286, 36, 50, 2);
+  ctx.fillStyle = '#7a563e'; ctx.fillRect(280, 58, 62, 4);
+  // tavla
+  ctx.fillStyle = '#3a2a20'; ctx.fillRect(70, 24, 34, 24); ctx.fillStyle = '#e8d8a8'; ctx.fillRect(72, 26, 30, 20);
+  ctx.fillStyle = '#6aa05a'; ctx.fillRect(72, 38, 30, 8); ctx.fillStyle = '#e8b040'; ctx.fillRect(90, 29, 5, 5);
+  // golv: plankor
+  for (let y = 92; y < H; y++) for (let x = 0; x < W; x++) {
+    const row = Math.floor((y - 92) / 7), off = (row * 37) % 60;
+    const seam = (y - 92) % 7 === 0 || ((x + off) % 60 === 0);
+    const n = hash(Math.floor((x + off) / 60), row, 3);
+    let c = n > 0.66 ? '#b98a5c' : n > 0.33 ? '#b08256' : '#a87a50';
+    if (seam) c = '#7e5836';
+    else if (hash(x, y, 9) > 0.93) c = '#c4966a';
+    ctx.fillStyle = c; ctx.fillRect(x, y, 1, 1);
+  }
+  // matta
+  ctx.fillStyle = '#7a3a4a'; ctx.fillRect(120, 150, 110, 40);
+  ctx.fillStyle = '#9a4a5a'; ctx.fillRect(123, 153, 104, 34);
+  ctx.fillStyle = '#e8c878';
+  for (let x = 126; x < 226; x += 6) { ctx.fillRect(x, 156, 3, 1); ctx.fillRect(x + 2, 183, 3, 1); }
+  // möbler (enkla men tydliga)
+  const sofa = FURN[0].r;
+  ctx.fillStyle = '#2a4a6a'; ctx.fillRect(sofa[0], 62, sofa[2] - sofa[0], 22);
+  ctx.fillStyle = '#3a6a94'; ctx.fillRect(sofa[0] + 2, 64, sofa[2] - sofa[0] - 4, 16);
+  ctx.fillStyle = '#4a7ea8'; ctx.fillRect(sofa[0] + 4, 82, sofa[2] - sofa[0] - 8, 12);
+  ctx.fillStyle = '#2a4a6a'; ctx.fillRect(sofa[0], 80, 8, 20); ctx.fillRect(sofa[2] - 8, 80, 8, 20);
+  ctx.fillStyle = '#1e3650'; ctx.fillRect(sofa[0] + 8, 94, sofa[2] - sofa[0] - 16, 6);
+  const bord = FURN[1].r;
+  ctx.fillStyle = '#6a4a30'; ctx.fillRect(bord[0], bord[1] - 8, bord[2] - bord[0], 8);
+  ctx.fillStyle = '#8a6444'; ctx.fillRect(bord[0] + 1, bord[1] - 7, bord[2] - bord[0] - 2, 5);
+  ctx.fillStyle = '#4a3220'; ctx.fillRect(bord[0] + 2, bord[1], 2, 14); ctx.fillRect(bord[2] - 4, bord[1], 2, 14);
+  const hy = FURN[2].r;
+  ctx.fillStyle = '#5a4030'; ctx.fillRect(hy[0], 40, hy[2] - hy[0], 54);
+  ctx.fillStyle = '#7a5a40'; for (let y = 44; y < 92; y += 12) ctx.fillRect(hy[0] + 2, y, hy[2] - hy[0] - 4, 9);
+  ctx.fillStyle = '#c84a3a'; ctx.fillRect(hy[0] + 4, 46, 4, 7); ctx.fillStyle = '#3a7ac8'; ctx.fillRect(hy[0] + 9, 47, 3, 6);
+  ctx.fillStyle = '#e8c040'; ctx.fillRect(hy[0] + 14, 45, 4, 8);
+}
+
+function playerDrawable() {
+  const carry = !!A.carrying;
+  const walking = walker.path.length > 0;
+  const frame = carry ? (walking ? [7, 9, 8, 9][Math.floor(t * 8.5) % 4] : 9) : walking ? WALK_SEQ[Math.floor(t * 8.5) % 4] : 0;
+  return { fy: walker.py, y: walker.py, draw: (c) => drawPerson(c, Math.round(walker.px), Math.round(walker.py), look, walker.dir, frame) };
+}
+
+function mkStore(seed = 11) {
+  const st = createPetStore({ storage: null, rng: seededRng(seed) });
+  st.syncTo(A.game.day, A.game.min, { home: HOME });
+  return st;
+}
+function place(st, k, x, y, extra = {}) { st.buyItem(k); const it = st.placeItem(k, HOME, ROOM, x, y); Object.assign(it, extra); return it; }
+function mess(st, kind, by, x, y) { st.messes.push({ id: 'm' + st.nextId++, home: HOME, room: ROOM, x, y, kind, by }); }
+
+function setup(name = 'hem', o = {}) {
+  scene = name; t = 0; followers = []; owner = null;
+  if (L) { try { L.exit(); } catch {} L = null; }
+  A.game.min = (o.hour ?? 12) * 60; A.game.day = 5; A.carrying = null;
+  S = mkStore(o.seed ?? 11);
+  walker = createWalker({ left: BOUNDS.left, right: BOUNDS.right, top: BOUNDS.top, bottom: BOUNDS.bottom, spawn: o.spawn || [196, 132] });
+  if (name === 'hem' || name === 'natt') {
+    const ad = (sp, br, sex, nm, x, y, age = 10, more = {}) => Object.assign(S.adopt(sp, br, sex, nm, HOME, { day: A.game.day - age, room: ROOM, x, y }), more);
+    ad('katt', 'tigrerad', 'hona', 'Misse', 150, 170, 10, { hunger: 40, happy: 75 });
+    ad('katt', 'svart', 'hane', 'Sotis', 250, 120, 10, { hunger: 80 });
+    ad('katt', 'siames', 'hona', 'Nala', 180, 186, 1, { hunger: 70 });
+    ad('hund', 'golden', 'hane', 'Bamse', 90, 150, 10, { toilet: 74, hunger: 60 });
+    ad('hund', 'tax', 'hona', 'Tassa', 320, 180, 1, { toilet: 30, happy: 22 });
+    ad('kanin', 'vadur', 'hona', 'Mimmi', 70, 196, 10, { hunger: 12 });
+    place(S, 'matskal', 150, 128, { food: 0.7, foodKind: 'katt' });
+    place(S, 'matskal', 110, 128, { food: 0, foodKind: null });
+    place(S, 'vattenskal', 132, 130, { water: 0.8 });
+    place(S, 'kattlada', 344, 118, { dirt: 0.55 });
+    place(S, 'hundkorg', 58, 116);
+    place(S, 'kattkorg', 252, 110);
+    place(S, 'kaninbur', 40, 200, { dirt: 0.3 });
+    place(S, 'kattklostrad', 360, 160);
+    place(S, 'leksak-boll', 212, 172);
+    place(S, 'leksak-ben', 96, 178);
+    place(S, 'sack-katt', 20, 138);
+    place(S, 'sack-hund', 34, 140, { left: 4 });
+    mess(S, 'bajs', 'hund', 232, 140);
+    mess(S, 'kiss', 'hund', 296, 196);
+    if (name === 'natt') A.game.min = 23 * 60;
+  }
+  if (name === 'ny') { // ny djurägare: allt ligger i förrådet, lagret ställer fram det
+    S.adopt('katt', 'rodkatt', 'hane', 'Findus', HOME, { day: A.game.day });
+    S.adopt('hund', 'corgi', 'hona', 'Tindra', HOME, { day: A.game.day - 4 });
+    S.buyItem('sack-katt'); S.buyItem('sack-hund'); S.buyItem('kattlada'); S.buyItem('hundkorg'); S.buyItem('matskal'); S.buyItem('vattenskal');
+  }
+  if (name !== 'prylar' && name !== 'ute' && name !== 'poser') {
+    L = createPetLayer(A, { store: S, home: HOME, room: ROOM, bounds: BOUNDS, isFree: sceneFree, walker, onObstacles: (list) => walker.setObstacles([...FURN.map((f) => f.r), ...list]) });
+    walker.setObstacles([...FURN.map((f) => f.r), ...L.obstacles()]);
+  }
+  if (name === 'ute') {
+    const dog = S.adopt('hund', o.breed || 'schafer', 'hane', 'Rex', HOME, { day: A.game.day - 10 });
+    const cat = S.adopt('katt', 'rodkatt', 'hane', 'Findus', HOME, { day: A.game.day - 10 });
+    dog.toilet = o.toilet ?? 10;
+    S.walkStart(dog.id); S.walkStart(cat.id);
+    followers = [createPetFollower(A, dog, { store: S }), createPetFollower(A, cat, { store: S })];
+    owner = { x: 60, y: 150, vx: 0, path: o.path || 'pendel', t: 0 };
+  }
+  render();
+  return true;
+}
+
+// Ute: ägaren går fram och tillbaka med stopp (för att se att följarna inte flimrar)
+function ownerStep(dt) {
+  owner.t += dt;
+  const T = owner.t % 16;
+  let tx;
+  if (owner.path === 'pendel') tx = T < 6 ? 60 + T * 45 : T < 8 ? 330 : T < 14 ? 330 - (T - 8) * 45 : 60;
+  else tx = 190 + Math.sin(owner.t * 0.8) * 120;
+  const ty = 150 + (owner.path === 'pendel' ? (T > 6 && T < 8 ? 0 : 0) : Math.sin(owner.t * 1.3) * 20);
+  owner.dir = tx > owner.x + 0.1 ? 'right' : tx < owner.x - 0.1 ? 'left' : owner.dir || 'down';
+  owner.moving = Math.abs(tx - owner.x) > 0.05 || Math.abs(ty - owner.y) > 0.05;
+  owner.x = tx; owner.y = ty;
+}
+
+function advance(sec, dt = 1 / 60) {
+  const n = Math.max(1, Math.round(sec / dt));
+  const speed = +(Q.get('speed') || 0);
+  for (let i = 0; i < n; i++) {
+    t += dt;
+    if (speed) A.game.min += speed * dt;
+    while (A.game.min >= 24 * 60) { A.game.min -= 24 * 60; A.game.day++; }
+    if (walker) walker.update(dt);
+    if (L) L.update(dt);
+    if (owner) {
+      ownerStep(dt);
+      S.syncTo(A.game.day, A.game.min, { home: HOME, playerHome: null, outdoors: true });
+      for (const f of followers) f.update(dt, owner.x, owner.y, (x, y) => y > 128 && y < 204 && x > 4 && x < 380);
+    }
+  }
+}
+
+function drawStreet(ctx) {
+  ctx.fillStyle = '#7aa0c8'; ctx.fillRect(0, 0, W, 60);
+  ctx.fillStyle = '#b8a890'; ctx.fillRect(0, 60, W, 66);
+  for (let x = 0; x < W; x += 48) { ctx.fillStyle = '#8a5a44'; ctx.fillRect(x + 4, 66, 40, 58); ctx.fillStyle = '#e8d0a0'; ctx.fillRect(x + 12, 76, 10, 12); ctx.fillRect(x + 26, 76, 10, 12); }
+  for (let y = 126; y < 206; y++) for (let x = 0; x < W; x++) {
+    const seam = (y - 126) % 10 === 0 || (x + ((y - 126) / 10 | 0) * 5) % 20 === 0;
+    ctx.fillStyle = seam ? '#8c8a86' : hash(x >> 2, y >> 2, 4) > 0.5 ? '#b4b2ac' : '#aeaca6';
+    ctx.fillRect(x, y, 1, 1);
+  }
+  ctx.fillStyle = '#6a6862'; ctx.fillRect(0, 204, W, 2);
+  ctx.fillStyle = '#3a3a40'; ctx.fillRect(0, 206, W, 10);
+}
+
+function render() {
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.fillStyle = '#1a1620'; ctx.fillRect(0, 0, cv.width, cv.height);
+  ctx.setTransform(K, 0, 0, K, 0, 0);
+  ctx.imageSmoothingEnabled = false;
+  if (scene === 'prylar') { drawItemSheet(ctx); return; }
+  if (scene === 'poser') { drawPoseSheet(ctx); return; }
+  if (scene === 'ute') {
+    drawStreet(ctx);
+    const ds = followers.map((f) => f.drawable());
+    ds.push({ fy: owner.y, draw: (c) => drawPerson(c, Math.round(owner.x), Math.round(owner.y), look, owner.dir || 'down', owner.moving ? WALK_SEQ[Math.floor(t * 8.5) % 4] : 0) });
+    ds.sort((a, b) => a.fy - b.fy).forEach((d) => d.draw(ctx));
+    return;
+  }
+  const night = A.game.min / 60 % 24 >= 22 || A.game.min / 60 % 24 < 7;
+  bg(ctx, night);
+  const ds = [...L.drawables(), playerDrawable()];
+  ds.sort((a, b) => (a.fy ?? a.y) - (b.fy ?? b.y)).forEach((d) => d.draw(ctx));
+  if (night) { ctx.fillStyle = 'rgba(20,24,70,0.35)'; ctx.fillRect(0, 0, W, H); }
+  info.textContent = `${scene} dag ${A.game.day} ${String(Math.floor(A.game.min / 60 % 24)).padStart(2, '0')}:${String(Math.floor(A.game.min % 60)).padStart(2, '0')}\n` +
+    L._debug.pets().map((p) => `${p.name.padEnd(7)} ${p.mode.padEnd(6)} ${String(p.pose).padEnd(6)} ${p.anim.padEnd(6)} ${p.dir.padEnd(5)} ${p.x.toFixed(1)},${p.y.toFixed(1)}`).join('\n') +
+    '\n' + S.summary().lines.join(' | ');
+}
+
+// Djuren i sina prylar: sova i korg (4 riktningar), äta vid skål, sitta, tigga
+function drawPoseSheet(ctx) {
+  ctx.fillStyle = '#b08256'; ctx.fillRect(0, 0, W, H);
+  for (let y = 0; y < H; y += 7) { ctx.fillStyle = '#9a7048'; ctx.fillRect(0, y, W, 1); }
+  const pets = [
+    { species: 'katt', breed: 'tigrerad', sex: 'hona', stage: 'vuxen' },
+    { species: 'katt', breed: 'skogkatt', sex: 'hane', stage: 'unge' },
+    { species: 'hund', breed: 'golden', sex: 'hane', stage: 'vuxen' },
+    { species: 'hund', breed: 'schafer', sex: 'hane', stage: 'vuxen' },
+    { species: 'hund', breed: 'chihuahua', sex: 'hona', stage: 'vuxen' },
+    { species: 'kanin', breed: 'brun', sex: 'hona', stage: 'vuxen' },
+  ];
+  const dirs = ['down', 'up', 'left', 'right'];
+  pets.forEach((p, r) => {
+    const y = 26 + r * 34;
+    const bed = p.species === 'hund' ? 'hundkorg' : p.species === 'katt' ? 'kattkorg' : null;
+    dirs.forEach((d, c) => {
+      const x = 20 + c * 30;
+      if (bed) { drawPetItem(ctx, bed, x, y, { layer: 'back' }); drawPet(ctx, x, y - 3, p, 'sleep', t, d); drawPetItem(ctx, bed, x, y, { layer: 'front' }); }
+      else { drawPet(ctx, x, y - 2, p, 'sleep', t, d); }
+    });
+    ['up', 'left', 'right'].forEach((d, c) => {
+      const x = 150 + c * 28;
+      drawPetItem(ctx, 'matskal', x, y - 6, { food: 0.7, foodKind: p.species });
+      const off = { up: [0, 5], left: [8, 1], right: [-8, 1] }[d];
+      drawPet(ctx, x + off[0], y - 6 + off[1], p, 'eat', t, d);
+    });
+    ['sit', 'beg', 'happy', 'poop'].forEach((an, c) => drawPet(ctx, 250 + c * 32, y, p, an, t, 'down'));
+  });
+}
+
+// Alla prylar i alla lägen (för att granska ritningen)
+function drawItemSheet(ctx) {
+  ctx.fillStyle = '#c8a878'; ctx.fillRect(0, 0, W, H);
+  for (let y = 0; y < H; y += 8) { ctx.fillStyle = '#b89868'; ctx.fillRect(0, y, W, 1); }
+  const lab = (s, x, y) => ctxText(ctx, SMALL, s, x, y, '#2a1a10');
+  let x = 14;
+  [0, 0.2, 0.5, 0.8, 1].forEach((f, i) => drawPetItem(ctx, 'matskal', 14 + i * 16, 24, { food: f, foodKind: ['katt', 'hund', 'kanin', 'katt', 'hund'][i] }));
+  lab('MATSKAL', 6, 30);
+  [0, 0.4, 1].forEach((f, i) => drawPetItem(ctx, 'vattenskal', 100 + i * 16, 24, { water: f, t }));
+  lab('VATTEN', 94, 30);
+  [0, 0.3, 0.6, 1].forEach((f, i) => drawPetItem(ctx, 'kattlada', 170 + i * 24, 26, { dirt: f, t }));
+  lab('KATTLADA', 162, 30);
+  drawPetItem(ctx, 'hundkorg', 30, 74, {}); drawPetItem(ctx, 'kattkorg', 66, 74, {});
+  lab('KORGAR', 14, 80);
+  drawPetItem(ctx, 'kaninbur', 110, 78, { dirt: 0 }); drawPetItem(ctx, 'kaninbur', 150, 78, { dirt: 0.9 });
+  lab('KANINBUR', 100, 82);
+  drawPetItem(ctx, 'kattklostrad', 190, 80, { t });
+  drawPetItem(ctx, 'leksak-boll', 216, 74, { rot: 0 }); drawPetItem(ctx, 'leksak-ben', 232, 74, {}); drawPetItem(ctx, 'koppel', 252, 74, {});
+  lab('LEKSAKER', 208, 80);
+  ['sack-katt', 'sack-hund', 'sack-kanin'].forEach((k, i) => [1, 0.5, 0.2].forEach((f, j) => drawPetItem(ctx, k, 280 + j * 16, 30 + i * 22, { frac: f })));
+  lab('SACKAR', 290, 96);
+  // kanin i buren + katt i korgen
+  drawPetItem(ctx, 'kaninbur', 50, 150, { dirt: 0.2, layer: 'back' });
+  drawPet(ctx, 50, 145, { species: 'kanin', breed: 'prickig', sex: 'hona', stage: 'vuxen' }, 'idle', t, 'down');
+  drawPetItem(ctx, 'kaninbur', 50, 150, { dirt: 0.2, layer: 'front' });
+  drawPetItem(ctx, 'kattkorg', 100, 150, {});
+  drawPet(ctx, 100, 148, { species: 'katt', breed: 'rodkatt', sex: 'hane', stage: 'vuxen' }, 'sleep', t, 'down');
+  drawPetItem(ctx, 'kattkorg', 100, 150, { layer: 'front' });
+  drawPetItem(ctx, 'hundkorg', 150, 150, {});
+  drawPet(ctx, 150, 148, { species: 'hund', breed: 'collie', sex: 'hona', stage: 'vuxen' }, 'sleep', t, 'down');
+  drawPetItem(ctx, 'hundkorg', 150, 150, { layer: 'front' });
+  drawPetItem(ctx, 'matskal', 200, 150, { food: 0.8, foodKind: 'hund' });
+  drawPet(ctx, 200, 156, { species: 'hund', breed: 'labrador', sex: 'hane', stage: 'vuxen' }, 'eat', t, 'up');
+  drawPetItem(ctx, 'kattlada', 250, 150, { dirt: 0.2 });
+  drawPet(ctx, 250, 147, { species: 'katt', breed: 'svart', sex: 'hona', stage: 'vuxen' }, 'poop', t, 'down');
+  lab('ANVANDNING', 20, 170);
+}
+
+cv.addEventListener('mousemove', (e) => { const r = cv.getBoundingClientRect(); L?.hover((e.clientX - r.left) / K, (e.clientY - r.top) / K); });
+cv.addEventListener('click', (e) => { const r = cv.getBoundingClientRect(); click((e.clientX - r.left) / K, (e.clientY - r.top) / K); });
+window.addEventListener('keydown', (e) => L?.key(e.key));
+function click(x, y) {
+  if (L && L.down(x, y)) return 'lager';
+  walker.walkTo(x, y);
+  return 'golv';
+}
+
+setup(Q.get('scene') || 'hem', { hour: Q.get('hour') != null ? +Q.get('hour') : 12 });
+if (!Q.get('manual')) {
+  let last = performance.now();
+  const loop = (now) => { const dt = Math.min(0.1, (now - last) / 1000); last = now; advance(dt, dt); render(); requestAnimationFrame(loop); };
+  requestAnimationFrame(loop);
+}
+// Flimmerrevision: kör sec sekunder i 60 fps och leta efter riktningsbyten tätare än 0,3 s,
+// stå/gå-växlingar tätare än 0,25 s, hopp > 2 px per bildruta och fram-och-tillbaka-darr.
+function audit(sec = 30, dt = 1 / 60) {
+  const rec = new Map();
+  const n = Math.round(sec / dt);
+  const snap = () => {
+    if (L) return L._debug.pets().map((p) => ({ id: p.name, x: Math.round(p.x), y: Math.round(p.y - (L._debug.actors.get(L._debug.pets().find((q) => q.name === p.name)?.id)?.z || 0)), dir: p.dir, anim: p.anim }));
+    return followers.map((f) => ({ id: f.pet.name, x: Math.round(f.x), y: Math.round(f.y), dir: f.dir, anim: f.anim }));
+  };
+  for (let i = 0; i < n; i++) {
+    advance(dt, dt);
+    const tt = i * dt;
+    for (const s of snap()) {
+      let r = rec.get(s.id);
+      if (!r) { r = { last: s, dirT: -9, animT: -9, dirFast: 0, animFast: 0, jumps: 0, jitter: 0, dirs: 0, anims: 0, dx: [], maxJump: 0, ex: [] }; rec.set(s.id, r); continue; }
+      const L0 = r.last;
+      if (s.dir !== L0.dir) { if (r.prevDir === s.dir && tt - r.dirT < 0.8 && (s.anim === 'walk' || s.anim === 'run')) { r.pingpong = (r.pingpong || 0) + 1; if (r.ex.length < 10) r.ex.push(`pingpong ${L0.dir}→${s.dir} @${tt.toFixed(2)} (${(tt - r.dirT).toFixed(2)}s) ${s.anim}`); } r.prevDir = L0.dir; if (tt - r.dirT < 0.299) { r.dirFast++; if (r.ex.length < 4) r.ex.push(`dir ${L0.dir}→${s.dir} @${tt.toFixed(2)} (${(tt - r.dirT).toFixed(2)}s) ${s.anim}`); } r.dirT = tt; r.dirs++; }
+      const mv = (a) => a === 'walk' || a === 'run';
+      if (mv(s.anim) !== mv(L0.anim)) { if (tt - r.animT < 0.25) { r.animFast++; if (r.ex.length < 8) r.ex.push(`anim ${L0.anim}→${s.anim} @${tt.toFixed(2)} (${(tt - r.animT).toFixed(2)}s)`); } r.animT = tt; r.anims++; }
+      const j = Math.max(Math.abs(s.x - L0.x), Math.abs(s.y - L0.y));
+      r.maxJump = Math.max(r.maxJump, j);
+      if (j > 2) { r.jumps++; if (r.ex.length < 10) r.ex.push(`hopp ${j}px @${tt.toFixed(2)} ${L0.x},${L0.y}→${s.x},${s.y} ${s.anim}`); }
+      const d = Math.sign(s.x - L0.x);
+      if (d) { r.dx.push([tt, d]); while (r.dx.length && tt - r.dx[0][0] > 0.2) r.dx.shift(); const flips = r.dx.reduce((k, v, i2, arr) => k + (i2 && v[1] !== arr[i2 - 1][1] ? 1 : 0), 0); if (flips >= 2) { r.jitter++; r.dx = []; } }
+      r.last = s;
+    }
+  }
+  return [...rec.entries()].map(([id, r]) => `${id.padEnd(7)} dirbyten ${r.dirs} (för täta ${r.dirFast}) · stå/gå ${r.anims} (för täta ${r.animFast}) · hopp ${r.jumps} (max ${r.maxJump}px) · darr ${r.jitter} · pingpong ${r.pingpong || 0}${r.ex.length ? '\n     ' + r.ex.join('\n     ') : ''}`).join('\n');
+}
+
+window.PV = { setup, advance, render, click, audit, hover: (x, y) => L?.hover(x, y), get store() { return S; }, get layer() { return L; }, get walker() { return walker; }, get followers() { return followers; }, A, ready: true };
+</script>
+</body>
+</html>

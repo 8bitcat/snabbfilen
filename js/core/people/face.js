@@ -13,6 +13,10 @@
 // Ändra inte posterna 'normal'/'none'/'blush'/gamla skägg – de är pixellåsta av
 // tools/people-regress.mjs.
 import { mix } from './util.js';
+import { EYES_NEW, BROWS_NEW } from './face-eyes.js';
+import { MOUTHS_NEW, NOSES_NEW, EARS_NEW } from './face-mouth.js';
+import { CHEEKS_NEW, MAKEUP_NEW, MARKS_NEW } from './face-paint.js';
+import { BEARDS_NEW } from './face-beard.js';
 
 // Förslag i redigerarens färgrutor (valfri egen färg går alltid)
 export const EYE_COLORS = ['#2a1d1a', '#5a3a22', '#3f6fb0', '#3f8f5a', '#7a8a96', '#8a6a2a'];
@@ -30,6 +34,7 @@ export const EYE_REG = {
     side(R) { const { rect, put, eye, eyeRow, K } = R;
       if (K) { rect(14, eyeRow - 1, 2, 2, eye); put(15, eyeRow - 1, 0xffffff); } else rect(15, eyeRow - 1, 1, 2, eye); },
   },
+  ...EYES_NEW, // nya ögon: face-eyes.js
 };
 
 // ---------- ögonbryn (look.brows) – färgen följer håret ----------
@@ -39,6 +44,7 @@ export const BROW_REG = {
     front(R) { const { rect, hair, eyeRow, K } = R; if (!K) { rect(8, eyeRow - 3, 3, 1, hair.lo); rect(13, eyeRow - 3, 3, 1, hair.lo); } },
     side(R) { const { rect, hair, eyeRow, K } = R; if (!K) rect(14, eyeRow - 3, 3, 1, hair.lo); },
   },
+  ...BROWS_NEW, // nya bryn: face-eyes.js
 };
 
 // ---------- näsa (look.nose) ----------
@@ -48,6 +54,7 @@ export const NOSE_REG = {
     front(R) { R.put(12, R.eyeRow + 2, R.skin.lo); },
     side(R) { const { put, skin, eyeRow } = R; put(17, eyeRow + 1, skin.base); put(17, eyeRow + 2, skin.lo); },
   },
+  ...NOSES_NEW, // nya näsor: face-mouth.js
 };
 
 // ---------- mun (look.mouth) – färg R.lip ----------
@@ -57,6 +64,7 @@ export const MOUTH_REG = {
     front(R) { R.rect(11, R.eyeRow + (R.K ? 3 : 4), 2, 1, R.lip); },
     side(R) { R.put(16, R.eyeRow + (R.K ? 3 : 4), R.lip); },
   },
+  ...MOUTHS_NEW, // nya munnar: face-mouth.js
 };
 
 // ---------- öron (look.ears) – syns även bakifrån ----------
@@ -67,6 +75,7 @@ export const EAR_REG = {
     front: earsFB, back: earsFB,
     side(R) { const { rect, put, skin, eyeRow } = R; rect(11, eyeRow - 1, 2, 3, skin.base); put(11, eyeRow, skin.lo); put(12, eyeRow, skin.dk); },
   },
+  ...EARS_NEW, // nya öron: face-mouth.js
 };
 
 // ---------- kinder (look.cheeks; gamla look.blush=true ⇒ 'blush') ----------
@@ -80,6 +89,7 @@ export const CHEEK_REG = {
     side(R) { if (R.K) blushS(R); },
   },
   blush: { label: 'Rosiga', front: blushF, side: blushS },
+  ...CHEEKS_NEW, // nya kinder: face-paint.js
 };
 
 // ---------- smink (look.makeup; färger look.lipColor → R.lipC, look.shadowColor → R.shadowC) ----------
@@ -88,11 +98,13 @@ export const CHEEK_REG = {
 // (före ögonen) så att ögonen hamnar ovanpå.
 export const MAKEUP_REG = {
   none: { label: 'Inget' },
+  ...MAKEUP_NEW, // nytt smink: face-paint.js
 };
 
 // ---------- märken: fräknar, födelsemärken, ansiktsmålning (look.marks, färg look.markColor → R.markC) ----------
 export const MARK_REG = {
   none: { label: 'Inga' },
+  ...MARKS_NEW, // nya märken och ansiktsmålningar: face-paint.js
 };
 
 // ---------- skägg (look.beard; false = inget, gamla true ⇒ 'full') – färgen följer håret ----------
@@ -128,4 +140,5 @@ export const BEARD_REG = {
     side(R) { const { rect, put, hair, eyeRow, h0, headH } = R;
       rect(15, eyeRow + 3, 3, 1, hair.base); put(15, eyeRow + 4, hair.lo); rect(14, h0 + headH, 2, 1, hair.base); },
   },
+  ...BEARDS_NEW, // nya skägg och mustascher: face-beard.js
 };

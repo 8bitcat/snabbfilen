@@ -1,0 +1,174 @@
+[
+  {"kind": "skrivbord", "name": "Skrivbord", "icon": "📝", "price": 700, "room": "KONTOR", "variants": [
+    {"file": "Tables and desks.png", "sx": 0, "sy": 8, "sw": 32, "sh": 19},
+    {"file": "Tables and desks.png", "sx": 0, "sy": 40, "sw": 32, "sh": 19},
+    {"file": "Tables and desks.png", "sx": 0, "sy": 72, "sw": 32, "sh": 19},
+    {"file": "Tables and desks.png", "sx": 0, "sy": 104, "sw": 32, "sh": 19},
+    {"file": "Tables and desks.png", "sx": 0, "sy": 136, "sw": 32, "sh": 19},
+    {"file": "Tables and desks.png", "sx": 0, "sy": 168, "sw": 32, "sh": 19},
+    {"file": "Tables and desks.png", "sx": 0, "sy": 200, "sw": 32, "sh": 19}
+  ]},
+  {"kind": "arbetsbank", "name": "Arbetsbänk med lådor", "icon": "🗃️", "price": 900, "room": "KONTOR", "variants": [
+    {"file": "School.png", "sx": 160, "sy": 121, "sw": 48, "sh": 23}
+  ]},
+  {"kind": "kontorsstol", "name": "Kontorsstol", "icon": "💺", "price": 450, "room": "KONTOR", "variants": [
+    {"file": "Chairs.png", "sx": 66, "sy": 75, "sw": 11, "sh": 20},
+    {"file": "Chairs.png", "sx": 2, "sy": 107, "sw": 11, "sh": 20},
+    {"file": "Chairs.png", "sx": 66, "sy": 107, "sw": 11, "sh": 20}
+  ]},
+  {"kind": "dator", "name": "Dator", "icon": "🖥️", "price": 1400, "room": "KONTOR", "function": "tv", "variants": [
+    {"file": "Part 2 copiar.png", "sx": 69, "sy": 8, "sw": 22, "sh": 23},
+    {"file": "Part 2 copiar.png", "sx": 70, "sy": 40, "sw": 22, "sh": 23},
+    {"file": "Part 2 copiar.png", "sx": 69, "sy": 72, "sw": 22, "sh": 23},
+    {"file": "Part 2 copiar.png", "sx": 69, "sy": 104, "sw": 22, "sh": 23}
+  ]},
+  {"kind": "gamingdator", "name": "Gamingdator", "icon": "🖱️", "price": 3500, "room": "KONTOR", "function": "tv", "variants": [
+    {"file": "Part 2 copiar.png", "sx": 136, "sy": 6, "sw": 48, "sh": 25},
+    {"file": "Part 2 copiar.png", "sx": 136, "sy": 38, "sw": 48, "sh": 25},
+    {"file": "Part 2 copiar.png", "sx": 136, "sy": 103, "sw": 48, "sh": 25}
+  ]},
+  {"kind": "datortorn", "name": "Datortorn", "icon": "💾", "price": 1000, "room": "KONTOR", "variants": [
+    {"file": "Part 2 copiar.png", "sx": 4, "sy": 96, "sw": 7, "sh": 16},
+    {"file": "Part 2 copiar.png", "sx": 36, "sy": 96, "sw": 7, "sh": 16},
+    {"file": "Part 2 copiar.png", "sx": 4, "sy": 112, "sw": 7, "sh": 16},
+    {"file": "Part 2 copiar.png", "sx": 36, "sy": 112, "sw": 7, "sh": 16}
+  ]},
+  {"kind": "laptop", "name": "Bärbar dator", "icon": "💻", "price": 1800, "room": "KONTOR", "function": "tv", "variants": [
+    {"file": "Part 2 copiar.png", "sx": 2, "sy": 66, "sw": 12, "sh": 14},
+    {"file": "Part 2 copiar.png", "sx": 18, "sy": 66, "sw": 12, "sh": 14}
+  ]},
+  {"kind": "telefon", "name": "Telefon", "icon": "☎️", "price": 350, "room": "KONTOR", "variants": [
+    {"file": "Part 1 copiar.png", "sx": 179, "sy": 53, "sw": 12, "sh": 11},
+    {"file": "Part 1 copiar.png", "sx": 179, "sy": 69, "sw": 12, "sh": 11},
+    {"file": "Part 1 copiar.png", "sx": 179, "sy": 85, "sw": 12, "sh": 11}
+  ]},
+  {"kind": "parmar", "name": "Pärmar", "icon": "📂", "price": 120, "room": "KONTOR", "variants": [
+    {"file": "Part 1 copiar.png", "sx": 195, "sy": 36, "sw": 11, "sh": 12}
+  ]},
+  {"kind": "bokstapel", "name": "Bokstapel", "icon": "📚", "price": 150, "room": "KONTOR", "variants": [
+    {"file": "Part 1 copiar.png", "sx": 180, "sy": 11, "sw": 9, "sh": 21},
+    {"file": "Part 1 copiar.png", "sx": 196, "sy": 11, "sw": 9, "sh": 21}
+  ]},
+  {"kind": "laspulpet", "name": "Läspulpet", "icon": "📖", "price": 750, "room": "KONTOR", "variants": [
+    {"file": "Temple.png", "sx": 64, "sy": 47, "sw": 16, "sh": 26},
+    {"file": "Temple.png", "sx": 80, "sy": 47, "sw": 16, "sh": 26}
+  ]},
+  {"kind": "papperskorg", "name": "Papperskorg", "icon": "🗑️", "price": 80, "room": "KONTOR", "variants": [
+    {"file": "School.png", "sx": 327, "sy": 213, "sw": 18, "sh": 21}
+  ]},
+  {"kind": "anslagstavla", "name": "Anslagstavla", "icon": "📌", "price": 300, "room": "KONTOR", "wall": true, "variants": [
+    {"file": "hospital wing.png", "sx": 289, "sy": 6, "sw": 30, "sh": 20},
+    {"file": "hospital wing.png", "sx": 289, "sy": 37, "sw": 30, "sh": 20}
+  ]},
+  {"kind": "skolplansch", "name": "Kroppsplansch", "icon": "🫀", "price": 220, "room": "KONTOR", "wall": true, "variants": [
+    {"file": "hospital wing.png", "sx": 263, "sy": 5, "sw": 17, "sh": 21}
+  ]},
+  {"kind": "skoltavla", "name": "Skoltavla", "icon": "🟩", "price": 900, "room": "KONTOR", "wall": true, "variants": [
+    {"file": "School.png", "sx": 144, "sy": 160, "sw": 64, "sh": 24},
+    {"file": "School.png", "sx": 144, "sy": 192, "sw": 64, "sh": 24}
+  ]},
+  {"kind": "spelkonsol", "name": "Spelkonsol", "icon": "🎮", "price": 1600, "room": "BARNRUM", "function": "tv", "variants": [
+    {"file": "Part 2 copiar.png", "sx": 0, "sy": 128, "sw": 16, "sh": 16},
+    {"file": "Part 2 copiar.png", "sx": 16, "sy": 127, "sw": 16, "sh": 16},
+    {"file": "Part 2 copiar.png", "sx": 48, "sy": 128, "sw": 16, "sh": 16}
+  ]},
+  {"kind": "retrotv", "name": "Gammal TV", "icon": "📺", "price": 900, "room": "BARNRUM", "function": "tv", "variants": [
+    {"file": "Part 2 copiar.png", "sx": 40, "sy": 75, "sw": 16, "sh": 20}
+  ]},
+  {"kind": "skolbank", "name": "Skolbänk", "icon": "✏️", "price": 500, "room": "BARNRUM", "variants": [
+    {"file": "School.png", "sx": 131, "sy": 42, "sw": 27, "sh": 29}
+  ]},
+  {"kind": "skolstol", "name": "Skolstol", "icon": "🪑", "price": 200, "room": "BARNRUM", "variants": [
+    {"file": "School.png", "sx": 66, "sy": 45, "sw": 11, "sh": 18}
+  ]},
+  {"kind": "barnbord", "name": "Barnbord", "icon": "🟫", "price": 350, "room": "BARNRUM", "variants": [
+    {"file": "School.png", "sx": 130, "sy": 10, "sw": 28, "sh": 22}
+  ]},
+  {"kind": "barnstol", "name": "Stjärnstol", "icon": "⭐", "price": 300, "room": "BARNRUM", "variants": [
+    {"file": "Chairs.png", "sx": 258, "sy": 13, "sw": 11, "sh": 18},
+    {"file": "Chairs.png", "sx": 258, "sy": 45, "sw": 11, "sh": 18},
+    {"file": "Chairs.png", "sx": 258, "sy": 77, "sw": 11, "sh": 18},
+    {"file": "Chairs.png", "sx": 258, "sy": 109, "sw": 11, "sh": 18},
+    {"file": "Chairs.png", "sx": 258, "sy": 141, "sw": 11, "sh": 18}
+  ]},
+  {"kind": "platskap", "name": "Plåtskåp", "icon": "🔒", "price": 650, "room": "BARNRUM", "variants": [
+    {"file": "School.png", "sx": 128, "sy": 80, "sw": 16, "sh": 32}
+  ]},
+  {"kind": "backar", "name": "Förvaringsbackar", "icon": "🧺", "price": 350, "room": "BARNRUM", "variants": [
+    {"file": "School.png", "sx": 160, "sy": 65, "sw": 16, "sh": 15},
+    {"file": "School.png", "sx": 176, "sy": 65, "sw": 16, "sh": 15},
+    {"file": "School.png", "sx": 192, "sy": 65, "sw": 16, "sh": 15}
+  ]},
+  {"kind": "leksakslada", "name": "Leksakskista", "icon": "📦", "price": 450, "room": "BARNRUM", "variants": [
+    {"file": "Part 1 copiar.png", "sx": 144, "sy": 113, "sw": 16, "sh": 15},
+    {"file": "Part 1 copiar.png", "sx": 160, "sy": 113, "sw": 16, "sh": 15},
+    {"file": "Part 1 copiar.png", "sx": 144, "sy": 129, "sw": 16, "sh": 15},
+    {"file": "Part 1 copiar.png", "sx": 160, "sy": 129, "sw": 16, "sh": 15}
+  ]},
+  {"kind": "ryggsack", "name": "Ryggsäck", "icon": "🎒", "price": 250, "room": "BARNRUM", "variants": [
+    {"file": "Part 1 copiar.png", "sx": 50, "sy": 113, "sw": 11, "sh": 14},
+    {"file": "Part 1 copiar.png", "sx": 66, "sy": 113, "sw": 11, "sh": 14},
+    {"file": "Part 1 copiar.png", "sx": 82, "sy": 113, "sw": 11, "sh": 14},
+    {"file": "Part 1 copiar.png", "sx": 98, "sy": 113, "sw": 11, "sh": 14}
+  ]},
+  {"kind": "gosedjur", "name": "Gosedjur", "icon": "🧸", "price": 200, "room": "BARNRUM", "variants": [
+    {"file": "Part 1 copiar.png", "sx": 130, "sy": 97, "sw": 13, "sh": 15},
+    {"file": "Part 1 copiar.png", "sx": 145, "sy": 97, "sw": 13, "sh": 15},
+    {"file": "Part 1 copiar.png", "sx": 161, "sy": 97, "sw": 13, "sh": 15}
+  ]},
+  {"kind": "jattenalle", "name": "Jättenalle", "icon": "🐻", "price": 600, "room": "BARNRUM", "variants": [
+    {"file": "Part 1 copiar.png", "sx": 152, "sy": 74, "sw": 17, "sh": 22}
+  ]},
+  {"kind": "gosegroda", "name": "Gosegroda", "icon": "🐸", "price": 220, "room": "BARNRUM", "variants": [
+    {"file": "Part 11 copiar.png", "sx": 120, "sy": 11, "sw": 18, "sh": 19}
+  ]},
+  {"kind": "byggklossar", "name": "Byggklossar", "icon": "🧱", "price": 120, "room": "BARNRUM", "variants": [
+    {"file": "Part 1 copiar.png", "sx": 2, "sy": 5, "sw": 11, "sh": 10},
+    {"file": "Part 1 copiar.png", "sx": 18, "sy": 6, "sw": 11, "sh": 10}
+  ]},
+  {"kind": "nattlampa", "name": "Nattlampa", "icon": "🍄", "price": 250, "room": "BARNRUM", "variants": [
+    {"file": "Part 1 copiar.png", "sx": 66, "sy": 2, "sw": 11, "sh": 13},
+    {"file": "Part 1 copiar.png", "sx": 113, "sy": 3, "sw": 11, "sh": 13}
+  ]},
+  {"kind": "golvkudde", "name": "Golvkudde", "icon": "🟪", "price": 180, "room": "BARNRUM", "variants": [
+    {"file": "Part 11 copiar.png", "sx": 150, "sy": 0, "sw": 18, "sh": 14},
+    {"file": "Part 11 copiar.png", "sx": 150, "sy": 16, "sw": 18, "sh": 14},
+    {"file": "Part 11 copiar.png", "sx": 182, "sy": 0, "sw": 18, "sh": 14},
+    {"file": "Part 11 copiar.png", "sx": 182, "sy": 16, "sw": 18, "sh": 14},
+    {"file": "Part 11 copiar.png", "sx": 214, "sy": 0, "sw": 18, "sh": 14},
+    {"file": "Part 11 copiar.png", "sx": 214, "sy": 16, "sw": 18, "sh": 14}
+  ]},
+  {"kind": "molnkudde", "name": "Molnkudde", "icon": "☁️", "price": 250, "room": "BARNRUM", "variants": [
+    {"file": "Part 11 copiar.png", "sx": 245, "sy": 12, "sw": 24, "sh": 18}
+  ]},
+  {"kind": "stjarnkudde", "name": "Stjärnkudde", "icon": "🌟", "price": 250, "room": "BARNRUM", "variants": [
+    {"file": "Part 11 copiar.png", "sx": 256, "sy": 65, "sw": 16, "sh": 14}
+  ]},
+  {"kind": "palett", "name": "Målarpalett", "icon": "🎨", "price": 150, "room": "BARNRUM", "variants": [
+    {"file": "Part 1 copiar.png", "sx": 162, "sy": 18, "sw": 11, "sh": 13}
+  ]},
+  {"kind": "fiol", "name": "Fiol", "icon": "🎻", "price": 1200, "room": "BARNRUM", "variants": [
+    {"file": "Part 1 copiar.png", "sx": 115, "sy": 123, "sw": 9, "sh": 21}
+  ]},
+  {"kind": "basketboll", "name": "Basketboll", "icon": "🏀", "price": 150, "room": "BARNRUM", "variants": [
+    {"file": "basketball.png", "sx": 181, "sy": 39, "sw": 8, "sh": 8}
+  ]},
+  {"kind": "basketkorg", "name": "Basketkorg", "icon": "🥅", "price": 800, "room": "BARNRUM", "wall": true, "variants": [
+    {"file": "basketball.png", "sx": 165, "sy": 7, "sw": 40, "sh": 22}
+  ]},
+  {"kind": "abcplansch", "name": "ABC-plansch", "icon": "🔤", "price": 180, "room": "BARNRUM", "wall": true, "variants": [
+    {"file": "School.png", "sx": 39, "sy": 6, "sw": 18, "sh": 22}
+  ]},
+  {"kind": "barntavla", "name": "Barntavla", "icon": "🖼️", "price": 160, "room": "BARNRUM", "wall": true, "variants": [
+    {"file": "School.png", "sx": 6, "sy": 7, "sw": 18, "sh": 18},
+    {"file": "School.png", "sx": 6, "sy": 39, "sw": 18, "sh": 18},
+    {"file": "School.png", "sx": 39, "sy": 39, "sw": 18, "sh": 18}
+  ]},
+  {"kind": "vaggmane", "name": "Vägg-måne", "icon": "🌙", "price": 280, "room": "BARNRUM", "wall": true, "variants": [
+    {"file": "Part 11 copiar.png", "sx": 82, "sy": 5, "sw": 25, "sh": 25}
+  ]},
+  {"kind": "skivor", "name": "Skivsamling", "icon": "💿", "price": 400, "room": "VARDAGSRUM", "variants": [
+    {"file": "Part 1 copiar.png", "sx": 0, "sy": 176, "sw": 14, "sh": 15},
+    {"file": "Part 1 copiar.png", "sx": 32, "sy": 177, "sw": 14, "sh": 15}
+  ]}
+]

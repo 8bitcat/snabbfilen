@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="sv"><head><meta charset="utf-8"><title>Husdjurssprites</title>
+<style>html,body{margin:0;background:#2a2433;color:#eee;font:12px monospace}canvas{image-rendering:pixelated;display:block}</style>
+</head><body>
+<canvas id="out"></canvas>
+<script type="module">
+// Förhandsvisning av js/pets/sprites.js. Parametrar:
+//   ?mode=grid&species=hund&anim=idle&t=0&scale=3      rader = raser, kolumner = stadier × riktningar
+//   ?mode=anims&species=katt&breed=tigrerad&stage=vuxen   rader = animationer, kolumner = riktningar × tider
+//   ?mode=seq&species=hund&breed=tax&anim=walk&dir=right&n=10&dt=0.08   bildsekvens (alla stadier)
+//   ?mode=icons   porträtt för alla raser
+//   ?mode=fx      hjärtan, zzz, bajs, pöl (sekvens)
+//   ?mode=scale   jämförelse mot folket (drawPerson)
+import * as SP from '../js/pets/sprites.js';
+import { drawPerson, makeLook } from '../js/core/people.js';
+import { ctxText, SMALL } from '../js/core/floor-pix.js';
+const Q = new URLSearchParams(location.search);
+const mode = Q.get('mode') || 'grid';
+const scale = +(Q.get('scale') || 3);
+const out = document.getElementById('out');
+const DIRS = ['down', 'right', 'up', 'left'];
+const STAGES = ['unge', 'ung', 'vuxen'];
+function floor(ctx, W, H) {
+  // trägolv som i lägenheten
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x += 1) {}
+  ctx.fillStyle = '#c9a57a'; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = '#bb976c'; for (let y = 0; y < H; y += 6) ctx.fillRect(0, y, W, 1);
+  ctx.fillStyle = '#d4b28a'; for (let y = 3; y < H; y += 12) for (let x = (y * 7) % 23; x < W; x += 23) ctx.fillRect(x, y, 1, 5);
+}
+function label(ctx, s, x, y, c = '#2a1a10') { try { ctxText(ctx, SMALL, s, x, y, c); } catch { ctx.fillStyle = c; ctx.font = '5px monospace'; ctx.fillText(s, x, y + 5); } }
+function finish(lc) {
+  out.width = lc.width * scale; out.height = lc.height * scale;
+  const o = out.getContext('2d'); o.imageSmoothingEnabled = false;
+  o.drawImage(lc, 0, 0, out.width, out.height);
+  window.__done = true;
+}
+const lc = document.createElement('canvas');
+const ctx = lc.getContext('2d');
+const t0 = +(Q.get('t') || 0);
+const pet = (species, breed, stage, sex = 'hane', id = 'p') => ({ species, breed, stage, sex, id });
+
+if (mode === 'grid') {
+  const sp = Q.get('species') || 'hund', anim = Q.get('anim') || 'idle';
+  const DIRS = Q.get('dirs') ? Q.get('dirs').split(',') : ['down', 'right', 'up', 'left'];
+  const stages = Q.get('stage') ? [Q.get('stage')] : STAGES;
+  const only = Q.get('breeds') ? Q.get('breeds').split(',') : null;
+  const breeds = SP.SPECIES[sp].breeds.filter((b) => !only || only.includes(b.id));
+  const CWD = +(Q.get('cw') || 30), RH = +(Q.get('rh') || 26), LW = 44;
+  const W = LW + stages.length * DIRS.length * CWD + 4, H = breeds.length * RH + 12;
+  const ND = DIRS.length;
+  lc.width = W; lc.height = H; floor(ctx, W, H);
+  stages.forEach((st, si) => DIRS.forEach((d, di) => label(ctx, st.slice(0, 3) + ' ' + d[0], LW + (si * ND + di) * CWD + 2, 2)));
+  breeds.forEach((b, bi) => {
+    const y = 12 + bi * RH + RH - 5;
+    label(ctx, b.id.slice(0, 10), 1, y - 8);
+    stages.forEach((st, si) => DIRS.forEach((d, di) => {
+      const x = LW + (si * ND + di) * CWD + (CWD >> 1);
+      SP.drawPet(ctx, x, y, pet(sp, b.id, st, bi % 2 ? 'hona' : 'hane', b.id + st), anim, t0, d);
+    }));
+  });
+  finish(lc);
+} else if (mode === 'anims') {
+  const sp = Q.get('species') || 'katt', breed = Q.get('breed') || SP.SPECIES[sp].breeds[0].id, stage = Q.get('stage') || 'vuxen';
+  const sex = Q.get('sex') || 'hane';
+  const times = (Q.get('times') || '0,0.3').split(',').map(Number);
+  const CWD = +(Q.get('cw') || 30), RH = +(Q.get('rh') || 28), LW = 30;
+  const W = LW + DIRS.length * times.length * CWD + 4, H = SP.ANIMS.length * RH + 12;
+  lc.width = W; lc.height = H; floor(ctx, W, H);
+  SP.ANIMS.forEach((a, ai) => {
+    const y = 12 + ai * RH + RH - 6;
+    label(ctx, a, 1, y - 8);
+    DIRS.forEach((d, di) => times.forEach((t, ti) => {
+      const x = LW + (di * times.length + ti) * CWD + (CWD >> 1);
+      SP.drawPet(ctx, x, y, pet(sp, breed, stage, sex, 'x'), a, t, d);
+    }));
+  });
+  finish(lc);
+} else if (mode === 'seq') {
+  const sp = Q.get('species') || 'hund', breed = Q.get('breed') || SP.SPECIES[sp].breeds[0].id;
+  const anim = Q.get('anim') || 'walk', dir = Q.get('dir') || 'right';
+  const n = +(Q.get('n') || 10), dt = +(Q.get('dt') || 0.08);
+  const stages = Q.get('stage') ? [Q.get('stage')] : STAGES;
+  const CWD = +(Q.get('cw') || 26), RH = +(Q.get('rh') || 26);
+  const W = n * CWD + 4, H = stages.length * RH + 4;
+  lc.width = W; lc.height = H; floor(ctx, W, H);
+  stages.forEach((st, si) => { for (let k = 0; k < n; k++) SP.drawPet(ctx, 2 + k * CWD + (CWD >> 1), 2 + si * RH + RH - 5, pet(sp, breed, st, 'hane', 'seq'), anim, t0 + k * dt, dir); });
+  finish(lc);
+} else if (mode === 'icons') {
+  const sc = +(Q.get('isc') || 2);
+  const all = [];
+  for (const sp of ['katt', 'hund', 'kanin']) for (const b of SP.SPECIES[sp].breeds) all.push([sp, b]);
+  const cols = 8, w = SP.ICON_W * sc + 4, h = SP.ICON_H * sc + 10;
+  lc.width = cols * w + 4; lc.height = Math.ceil(all.length / cols) * h + 4; floor(ctx, lc.width, lc.height);
+  all.forEach(([sp, b], i) => {
+    const x = 2 + (i % cols) * w, y = 2 + Math.floor(i / cols) * h;
+    ctx.fillStyle = '#e8dcc4'; ctx.fillRect(x, y, SP.ICON_W * sc, SP.ICON_H * sc);
+    SP.drawPetIcon(ctx, x, y, pet(sp, b.id, i % 3 === 0 ? 'unge' : 'vuxen'), sc);
+    label(ctx, b.id.slice(0, 9), x, y + SP.ICON_H * sc + 2);
+  });
+  finish(lc);
+} else if (mode === 'fx') {
+  const n = 10; lc.width = n * 26 + 4; lc.height = 4 * 26; floor(ctx, lc.width, lc.height);
+  for (let k = 0; k < n; k++) {
+    const t = k * 0.1, x = 15 + k * 26;
+    SP.drawHearts(ctx, x, 22, t); SP.drawZzz(ctx, x - 3, 44, t); SP.drawPoop(ctx, x, 72, t); SP.drawPuddle(ctx, x, 96);
+  }
+  finish(lc);
+} else if (mode === 'sizes') {
+  const rows = [];
+  for (const sp of ['hund', 'katt', 'kanin']) for (const b of SP.SPECIES[sp].breeds) {
+    rows.push(sp + ' ' + b.id.padEnd(11) + STAGES.map((st) => { const s = SP.petSize(pet(sp, b.id, st)); const bd = SP.petBox(pet(sp, b.id, st), 'idle', 'down'); return `${st}:${s.w}x${s.h} fram:${bd.x1 - bd.x0}x${bd.y1 - bd.y0}`; }).join('  '));
+  }
+  window.__info = rows.join('\n');
+  lc.width = 4; lc.height = 4; finish(lc);
+} else if (mode === 'scale') {
+  lc.width = 384; lc.height = 110; floor(ctx, 384, 110);
+  let rng = 7; const r = () => (rng = (rng * 16807) % 2147483647) / 2147483647;
+  const L = makeLook(r);
+  drawPerson(ctx, 14, 40, L, 'down', 0);
+  drawPerson(ctx, 14, 90, L, 'right', 0);
+  let x = 32;
+  for (const sp of ['hund', 'katt', 'kanin']) for (const b of SP.SPECIES[sp].breeds) {
+    SP.drawPet(ctx, x, 40, pet(sp, b.id, 'vuxen'), 'idle', 0, 'down');
+    SP.drawPet(ctx, x, 90, pet(sp, b.id, 'vuxen'), 'idle', 0, 'right');
+    SP.drawPet(ctx, x, 62, pet(sp, b.id, 'unge'), 'idle', 0, 'right');
+    x += sp === 'hund' ? 16 : 12;
+  }
+  finish(lc);
+}
+</script>
+</body></html>
