@@ -10,6 +10,12 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.33.0] – 2026-09-29 – Mobilen: husnamn i staden och kompakt meny
+- Mobilen: i staden visas husens namn överst när skyltarna hamnar utanför bilden – tryck på namnet så går du dit och in
+- Mobilen: kameran visar mer av husen ovanför figuren, och områdesskylten och vädret ligger inne i bilden
+- Mobilen: huvudmenyn i två spalter på liggande telefon, så att "Vem spelar?" syns direkt, och tätare dialogrutor
+- Första gången i staden får man ett tips om hur man går in i husen
+
 ## [0.32.0] – 2026-09-29 – Röstchatt
 - 🎙️ Röstchatt: prata med varandra i Pixelstaden – knappen 🎙️ i verktygsraden
 - Röst i närheten: den som har rösten på hör – och hörs av – andra med rösten på som står nära, och ljudet tonar bort när man går ifrån varandra

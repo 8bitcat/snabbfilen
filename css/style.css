@@ -485,3 +485,32 @@ body { padding-bottom: env(safe-area-inset-bottom); }
 .vlist { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
 .vrow { display: flex; justify-content: space-between; align-items: center; gap: 8px; border-top: 1px dashed #cfc7ba; padding-top: 4px; }
 .vrow .nm { font-size: 18px; line-height: 1.05; }
+
+/* 📱 Korta liggande skärmar (mobilen): huvudmenyn i två spalter så att "Vem spelar?" syns
+   direkt, och tätare dialogrutor (Carl: menyerna var för stora för mobilen) */
+@media (max-height: 540px) and (min-width: 560px) {
+  #menu { padding: 6px; align-items: stretch; }
+  .menu-panel { width: min(900px, 100%); display: grid; grid-template-columns: minmax(0, 300px) minmax(0, 1fr); grid-template-areas: "title sub" "btns cards" "set cards" "foot cards"; grid-template-rows: auto auto auto 1fr; column-gap: 18px; align-content: start; padding: 10px 12px; box-shadow: 5px 5px 0 var(--ink); }
+  .menu-title { grid-area: title; font-size: 38px; text-align: left; }
+  .menu-title small { font-size: 16px; margin-top: 2px; }
+  .menu-btns { grid-area: btns; margin: 8px 0 0; width: 100%; gap: 6px; }
+  .menu-main { font-size: 19px; padding: 5px 10px; }
+  .menu-settings { grid-area: set; margin: 8px 0 0; width: 100%; }
+  .menu-row { font-size: 17px; }
+  .menu-sub { grid-area: sub; margin: 0 0 4px; align-self: end; font-size: 20px; }
+  .menu-cards { grid-area: cards; overflow: auto; max-height: calc(100dvh - 76px); align-self: start; padding: 0 4px 4px 0; }
+  .menu-foot { grid-area: foot; margin-top: 8px; align-self: end; }
+  .menu-card { grid-template-columns: 42px 1fr auto; gap: 6px; box-shadow: 2px 2px 0 var(--ink); }
+  .menu-card .menu-face, .menu-card canvas { width: 38px !important; height: 46px !important; }
+  .menu-card .menu-face { display: block; overflow: hidden; }
+  .menu-card-txt b { font-size: 18px; }
+  .menu-card-txt small { font-size: 14px; }
+  .menu-card-tools .btn { padding: 1px 5px; font-size: 13px; }
+  #modal { padding: 6px; }
+  .dlg { box-shadow: 5px 5px 0 var(--ink); border-width: 3px; }
+  .dlg-head { padding: 4px 10px; border-bottom-width: 3px; }
+  .dlg-head h2 { font-size: 20px; }
+  .dlg-body { padding: 8px 10px; }
+  .dlg-foot { padding: 0 10px 8px; gap: 6px; }
+  .dlg-foot .btn { font-size: 17px; padding: 4px 10px; }
+}

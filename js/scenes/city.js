@@ -170,6 +170,12 @@ export function makeCity(A) {
   env.obstacles = [...MAP_OBSTACLES, ...artObstacles(), ...(S.props.obstacles || []), ...(S.traffic.obstacles || []), ...(S.fallback.obstacles || []), ...(S.life.obstacles || [])];
   walker.setObstacles(env.obstacles);
   walker.snapFree();
+  // första gången i staden: hur man tar sig in någonstans (Carl: "man förstår inte vad man ska göra")
+  if (!A.attract) {
+    let seen = false;
+    try { seen = localStorage.getItem('snabbfilen_tips_hus') === '1'; localStorage.setItem('snabbfilen_tips_hus', '1'); } catch { /* ok */ }
+    if (!seen) setTimeout(() => toast('👆 Tryck på ett hus – eller på husnamnet överst – så går du dit och in.', 'good'), 1200);
+  }
   // husdjuren som är ute (js/pets/outdoors.js): följer figuren, promenaden räknas med spelklockan
   let pets = null;
   try { pets = createPetWalk(A); } catch (e) { console.error('husdjuren i staden startade inte:', e); }
@@ -182,9 +188,13 @@ export function makeCity(A) {
     const span = Math.max(1, CITY.W - VW), u = (t * 9) % (2 * span);
     return { x: Math.round(u < span ? u : 2 * span - u), y: Math.max(0, Math.min(CITY.H - VH, CITY.BASE - VH * 0.55)) };
   };
+  // var figuren står i höjdled: 62 % ner i bilden – men när NÄRA-läget beskär överkanten
+  // (mobilen) räknas det i den SYNLIGA rutan och längre ner (74 %), så att mer av husfasaderna
+  // med skyltarna syns ovanför figuren
+  const camAnchorY = () => { const s = globalThis.SF?.view?.safe; if (!s || !(s.y0 > 0)) return VH * 0.62; const y1 = Math.min(VH, s.y1 || VH); return s.y0 + (y1 - s.y0) * 0.74; };
   const camTarget = () => lockedCam || (A.attract ? attractCam() : {
     x: Math.max(0, Math.min(CITY.W - VW, walker.px - VW / 2)),
-    y: Math.max(0, Math.min(CITY.H - VH, walker.py - VH * 0.62)),
+    y: Math.max(0, Math.min(CITY.H - VH, walker.py - camAnchorY())),
   });
   Object.assign(cam, camTarget());
 
@@ -418,15 +428,61 @@ export function makeCity(A) {
     }
   }
 
-  // ---------- skärmlagret: områdesskylt, väder, busstoning ----------
+  // ---------- skärmlagret: husnamn, områdesskylt, väder, busstoning ----------
+  // den SYNLIGA rutan i vyns spelpixlar (fyll/NÄRA-läget beskär kanterna – main.js v.safe)
+  const safeBox = () => { const s = globalThis.SF?.view?.safe; return s ? { x0: s.x0 | 0, y0: s.y0 | 0, x1: Math.min(VW, s.x1 | 0 || VW), y1: Math.min(VH, s.y1 | 0 || VH) } : { x0: 0, y0: 0, x1: VW, y1: VH }; };
+  // HUSNAMN: hus vars övre fasad (där skylten sitter) ligger ovanför den synliga rutan får sitt
+  // namn i överkanten, rakt ovanför dörren, med en liten pil ner. Klickbara (se down).
+  let signChips = [];
+  function drawSignChips(ctx, cx, cy) {
+    signChips = [];
+    if (A.attract || riding) return;
+    const sb = safeBox(), visTop = cy + sb.y0, visBot = cy + sb.y1;
+    const rows = [[], []];
+    const cand = [];
+    for (const b of ALL_BUILDINGS) {
+      const label = String(b.sign || '').trim();
+      if (!label || !(b.enter || b.soon)) continue;
+      const dc = doorCenter(b), sx = Math.round(dc.x - cx);
+      if (sx < sb.x0 + 4 || sx > sb.x1 - 4) continue;
+      const top = b.row === 'f' ? b.base - (b.d || 0) - b.h : b.base - b.h;
+      if (top > visBot) continue;                        // hela huset ligger nedanför bilden
+      if (top + 14 >= visTop) continue;                  // fasaden (och skylten) syns redan
+      cand.push({ b, label: label.toUpperCase(), sx, near: Math.abs(dc.x - walker.px) });
+    }
+    cand.sort((p, q) => p.near - q.near);                // närmast figuren först – de får plats först
+    for (const c of cand) {
+      const w = textW(SMALL, c.label) + 8, h = 11;
+      let x = Math.round(c.sx - w / 2);
+      x = Math.max(sb.x0 + 2, Math.min(x, sb.x1 - w - 2));
+      for (let r = 0; r < 2; r++) {
+        const y = sb.y0 + 3 + r * 14;
+        if (r === 0 && x + w > sb.x1 - 46) continue;    // väderbrickan i högra hörnet
+        if (rows[r].some((o) => x < o.x + o.w + 3 && x + w + 3 > o.x)) continue;
+        rows[r].push({ x, w });
+        signChips.push({ b: c.b, x, y, w, h, sx: c.sx, label: c.label });
+        break;
+      }
+    }
+    for (const c of signChips) {
+      ctx.fillStyle = 'rgba(16,18,30,0.86)'; ctx.fillRect(c.x, c.y, c.w, c.h);
+      ctx.fillStyle = '#e8b230'; ctx.fillRect(c.x, c.y, c.w, 1);
+      ctx.fillStyle = '#000000'; ctx.fillRect(c.x, c.y + c.h, c.w, 1);
+      ctxText(ctx, SMALL, c.label, c.x + 4, c.y + 3, '#f4f1ea');
+      // pilen ner mot huset
+      const px = Math.max(c.x + 2, Math.min(c.sx, c.x + c.w - 3));
+      ctx.fillStyle = 'rgba(16,18,30,0.86)'; ctx.fillRect(px - 2, c.y + c.h, 5, 1); ctx.fillRect(px - 1, c.y + c.h + 1, 3, 1); ctx.fillRect(px, c.y + c.h + 2, 1, 1);
+    }
+  }
   function drawBanner(ctx) {
     if (!banner) return;
     const { d, t: bt } = banner, dur = 3.4;
     if (bt > dur) { banner = null; return; }
     const k = bt < 0.35 ? bt / 0.35 : bt > dur - 0.6 ? (dur - bt) / 0.6 : 1;
     const name = d.name, tag = d.tag || '';
+    const sb = safeBox();
     const w = Math.max(textW(BIG, name, 2), textW(SMALL, tag)) + 24, h = tag ? 44 : 30;
-    const x = Math.round((VW - w) / 2), y = Math.round(26 - (1 - k) * 12);
+    const x = Math.round((sb.x0 + sb.x1 - w) / 2), y = Math.round(sb.y0 + 22 - (1 - k) * 12);
     ctx.save();
     ctx.globalAlpha = Math.max(0, Math.min(1, k));
     ctx.fillStyle = 'rgba(16,18,30,0.82)'; ctx.fillRect(x, y, w, h);
@@ -438,7 +494,7 @@ export function makeCity(A) {
   }
   function drawOverlay(ctx) {
     drawBanner(ctx);
-    if (!A.attract) guard('weather.badge', () => MODS.weather?.drawWeatherBadge?.(ctx, VW - 3, 3, env.weather));
+    if (!A.attract) { const sb = safeBox(); guard('weather.badge', () => MODS.weather?.drawWeatherBadge?.(ctx, sb.x1 - 3, sb.y0 + 3, env.weather)); }
     const a = Math.max(fade.a, riding ? S.traffic.ride?.()?.fade || 0 : 0); // busstoningen (långa resor) delar rutan med skyltresans toning
     if (a > 0) { ctx.fillStyle = `rgba(4,4,10,${a.toFixed(3)})`; ctx.fillRect(0, 0, VW, VH); }
   }
@@ -477,6 +533,7 @@ export function makeCity(A) {
       standUp,
       cam: () => ({ ...cam }),
       markers: () => markers.map((m) => ({ ...m })),
+      chips: () => signChips.map((c) => ({ label: c.label, x: c.x, y: c.y, w: c.w, h: c.h, id: c.b.id })), // husnamnen i överkanten (tools/mobil-stad-test.mjs)
       pets: () => (pets ? pets._debug.followers() : []), // husdjuren på promenad (tools/pets-walk-test.mjs)
     },
 
@@ -525,6 +582,9 @@ export function makeCity(A) {
       // klick på en kompis-pil i kanten → gå mot den spelaren
       const m = markers.find((mk) => sx >= mk.x && sx < mk.x + mk.w && sy >= mk.y && sy < mk.y + mk.h);
       if (m) { standUp(); walker.walkTo(m.fx, m.fy + 4); return; }
+      // klick på ett husnamn i överkanten → gå till dörren och gå in
+      const chip = signChips.find((c) => sx >= c.x - 2 && sx < c.x + c.w + 2 && sy >= c.y - 2 && sy < c.y + c.h + 4);
+      if (chip) { if (sitting) standUp(); const dc = doorCenter(chip.b); walker.walkTo(dc.x, dc.y, () => enter(chip.b)); return; }
       const x = sx + cam.x, y = sy + cam.y;
       if (sitting) standUp(); // res dig först – klicket fortsätter som vanligt
       // klick på en buss som står vid en hållplats → håll den, gå till framdörren och kliv på
@@ -562,6 +622,7 @@ export function makeCity(A) {
       drawWorld(ctx, cx, cy, VW, VH);
       ctx.setTransform(A.pxs, 0, 0, A.pxs, 0, 0);
       drawFolkMarkers(ctx, cx, cy);
+      guard('husnamnen', () => drawSignChips(ctx, cx, cy));
       drawOverlay(ctx);
     },
   };
