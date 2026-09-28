@@ -1,7 +1,7 @@
 {
-  "version": "0.18.0",
+  "version": "0.18.1",
   "date": "2026-09-28",
-  "title": "Stormarknaden, kaféet och bostadsbyrån",
+  "title": "Dialoger ovanpå menyn och namnruta vid Spara",
   "files": [
     "CHANGELOG.md",
     "assets/interior.png",

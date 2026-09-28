@@ -731,13 +731,40 @@ export function openAvatarEditor({ onDone, onCancel, fresh = false } = {}) {
     setLook(look);
   }
 
+  // Inget namn när man trycker Spara → en ruta ovanpå redigeraren frågar efter det
+  // (i stället för ett litet rött meddelande som är lätt att missa).
+  function askName() {
+    if (dlg.querySelector('.av-nameask')) return;
+    setErr('');
+    const box = document.createElement('div');
+    box.className = 'av-nameask';
+    box.innerHTML = `<div class="av-nameask-box">
+      <h3>Vad heter du?</h3>
+      <p>Namnet står på din namnskylt när andra ser dig i Pixelstaden.</p>
+      <input type="text" maxlength="14" placeholder="Ditt namn" autocomplete="off" spellcheck="false">
+      <div class="av-nameask-err"></div>
+      <div class="av-nameask-btns"><button class="btn" data-esc>Avbryt</button><button class="btn btn-go" data-ok>💾 Spara</button></div>
+    </div>`;
+    dlg.append(box);
+    const inp = box.querySelector('input'), err = box.querySelector('.av-nameask-err');
+    inp.value = input.value;
+    setTimeout(() => inp.focus(), 30);
+    const done = () => {
+      const n = cleanName(inp.value);
+      if (!n) { err.textContent = 'Skriv ett namn först!'; inp.focus(); return; }
+      input.value = n;
+      box.remove();
+      changed();
+      save();
+    };
+    box.querySelector('[data-ok]').onclick = done;
+    box.querySelector('[data-esc]').onclick = () => { box.remove(); input.focus(); };
+    inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); done(); } });
+  }
+
   function save() {
     const name = cleanName(input.value);
-    if (!name) {
-      setErr('Skriv ett namn först!');
-      input.focus();
-      return;
-    }
+    if (!name) { askName(); return; }
     const av = saveAvatar({ name, look: cur.look, color: cur.color, oldName });
     closeModal();
     try { toast(`Sparat! Hej ${av.name} 👋`, 'good'); } catch { /* ingen toast-yta */ }

@@ -56,7 +56,8 @@ window.addEventListener('keydown', (e) => {
   if (!modalOpen() || e.ctrlKey || e.altKey || e.metaKey || e.repeat) return;
   const m = $('#modal');
   let el = null;
-  if (e.key === 'Escape') el = m.querySelector('[data-close]');
+  // ett inre lager i dialogen (t.ex. namnrutan i redigeraren) kan fånga Escape med data-esc
+  if (e.key === 'Escape') el = m.querySelector('[data-esc]') || m.querySelector('[data-close]');
   else if (typingNow()) return;
   else if (e.key === 'Enter') { const go = [...m.querySelectorAll('.dlg-foot .btn-go:not(:disabled)')]; if (go.length === 1) el = go[0]; }
   else if (typeof e.key === 'string' && e.key.length === 1) {

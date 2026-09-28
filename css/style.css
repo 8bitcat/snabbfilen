@@ -321,7 +321,7 @@ kbd {
 .plist .prow { grid-template-columns: 44px 1fr auto auto; }
 
 /* ---------- Huvudmenyn / pausmenyn (js/core/menu.js) ---------- */
-#menu { position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; padding: 12px; background: rgba(10, 8, 14, .28); overflow: auto; }
+#menu { position: fixed; inset: 0; z-index: 45; /* under #modal (50): dialoger från menyn (redigeraren, bekräftelser, nyheter) ligger alltid överst */ display: flex; align-items: center; justify-content: center; padding: 12px; background: rgba(10, 8, 14, .28); overflow: auto; }
 .menu-panel { width: min(560px, 100%); max-height: 100%; overflow: auto; background: var(--paper); border: 4px solid var(--ink); box-shadow: 8px 8px 0 var(--ink); padding: 14px 16px 12px; }
 .menu-title { text-align: center; font: 56px var(--head); letter-spacing: 2px; color: var(--red2); text-shadow: 3px 3px 0 var(--ink); line-height: .9; }
 .menu-title small { display: block; font: 20px var(--font); color: var(--muted); letter-spacing: 1px; text-shadow: none; margin-top: 4px; }
@@ -357,3 +357,13 @@ body.hud-pix #hud { padding: 3px 8px; }
 body.menu-boot #hud > :not(.hud-btns) { display: none; }
 body.menu-boot #app { overflow: hidden; }
 @media (max-width: 639px) { .menu-card canvas { width: 44px; height: 53px; } .menu-card { grid-template-columns: 46px 1fr auto; } }
+
+/* Namnrutan ovanpå avatarredigeraren (Spara utan namn) */
+.dlg-avatar { position: relative; }
+.av-nameask { position: absolute; inset: 0; background: rgba(15, 12, 20, .55); display: flex; align-items: center; justify-content: center; z-index: 5; padding: 12px; }
+.av-nameask-box { background: var(--paper); border: 4px solid var(--ink); box-shadow: 6px 6px 0 var(--ink); padding: 14px 16px; width: min(380px, 100%); }
+.av-nameask-box h3 { margin: 0 0 4px; font: 28px var(--head); letter-spacing: .5px; }
+.av-nameask-box p { margin: 0 0 10px; font-size: 18px; color: var(--muted); line-height: 1.1; }
+.av-nameask-box input { width: 100%; font: 26px var(--font); padding: 5px 10px; border: 3px solid var(--ink); background: #fff; box-shadow: inset 2px 2px 0 #e3dac9; }
+.av-nameask-err { min-height: 22px; color: var(--red2); font-size: 17px; margin: 4px 0 6px; }
+.av-nameask-btns { display: flex; gap: 8px; justify-content: flex-end; }

@@ -46,6 +46,25 @@ ok(/11 200 kr/.test(cardText) && /Villan/.test(cardText) && /dag 12/.test(cardTe
 ok(/Fortsätt som Kalle/.test(await p.evaluate(() => document.querySelector('[data-continue]').textContent)), 'Fortsätt-knappen visar vald figur');
 await p.screenshot({ path: 'tools/out/menu-test-1.png' });
 
+// 2b. dialoger från menyn ligger ovanpå menyn (✏️ Ändra → redigeraren)
+await p.click('[data-edit="Kalle"]'); await p.waitForTimeout(500);
+const layered = await p.evaluate(() => {
+  const dlg = document.querySelector('.dlg-avatar'); if (!dlg) return { dlg: false };
+  const r = dlg.getBoundingClientRect(); const top = document.elementFromPoint(r.left + r.width / 2, r.top + 20);
+  return { dlg: true, onTop: !!top?.closest('#modal'), menuZ: +getComputedStyle(document.querySelector('#menu')).zIndex, modalZ: +getComputedStyle(document.querySelector('#modal')).zIndex };
+});
+ok(layered.dlg && layered.onTop && layered.modalZ > layered.menuZ, `redigeraren ligger ovanpå menyn (meny ${layered.menuZ} < dialog ${layered.modalZ})`);
+// Spara utan namn → namnrutan ovanpå redigeraren; Escape stänger bara rutan
+await p.fill('#av-name', '');
+await p.click('.dlg-avatar .dlg-foot .av-save'); await p.waitForTimeout(300);
+ok(await p.evaluate(() => !!document.querySelector('.av-nameask') && !!document.activeElement?.closest?.('.av-nameask')), 'Spara utan namn öppnar namnrutan med fokus i fältet');
+await p.keyboard.press('Escape'); await p.waitForTimeout(200);
+ok(await p.evaluate(() => !document.querySelector('.av-nameask') && !!document.querySelector('.dlg-avatar')), 'Escape stänger bara namnrutan, redigeraren är kvar');
+await p.click('.dlg-avatar .dlg-foot .av-save'); await p.waitForTimeout(200);
+await p.keyboard.type('Kalle'); await p.keyboard.press('Enter'); await p.waitForTimeout(500);
+ok(await p.evaluate(() => !document.querySelector('.dlg-avatar') && window.SF.avatar.name === 'Kalle'), 'namnet ur rutan sparas och redigeraren stängs');
+ok(await menuOpen(p), 'menyn är kvar efter redigeringen');
+
 // 3. inställningar
 await p.click('[data-settings]'); await p.waitForTimeout(200);
 ok(await p.evaluate(() => !!document.querySelector('.menu-settings:not(.hidden)')), 'inställningarna fälls ut');
