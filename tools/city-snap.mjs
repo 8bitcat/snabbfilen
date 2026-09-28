@@ -2,6 +2,9 @@
 //   node tools/city-snap.mjs --pano --hour 12 --out tools/out/pano.png
 //   node tools/city-snap.mjs --cam 300,120 --hour 21 --wait 3000 --out tools/out/x.png
 //   node tools/city-snap.mjs --cam 300,120 --teleport 410,200 --out …   (figuren vid en plats)
+//   --district SÖDER|FÖRORTEN|PARKEN|CENTRUM   (figuren och kameran till områdets startpunkt)
+//   --weather sol|moln|regn|snö|dimma|blåst  --snow 0..1  --season vår|sommar|höst|vinter  --temp N
+//   --rain      (dagshändelsen 'regn' – samma som --weather regn)
 //   --scale 3   förstora bilden (default 2 för --cam, 1 för --pano)
 //   --scene jobbburgare   (annan scen än staden; --cam/--teleport gäller bara staden)
 //   --port 8788 (servern: python -m http.server 8788 i spelmappen)
@@ -19,8 +22,10 @@ const wait = +arg('wait', 1500);
 const pano = !!arg('pano', false);
 const cam = arg('cam', null);
 const tele = arg('teleport', null);
+const district = arg('district', null);
 const scale = +arg('scale', pano ? 1 : 2);
 const rain = !!arg('rain', false);
+const weather = arg('weather', null), snow = arg('snow', null), season = arg('season', null), temp = arg('temp', null);
 const sceneName = arg('scene', 'city'); // t.ex. jobbburgare, jobbfrukt, klader, mobler
 
 const browser = await chromium.launch();
@@ -41,6 +46,16 @@ await page.evaluate(({ hour, rain, sceneName }) => {
   if (rain) S.game.event = { id: 'regn' };
   S.go(sceneName, sceneName.startsWith('jobb') ? { onDone: () => {} } : undefined);
 }, { hour, rain, sceneName });
+// vädret tvingas via scenens _debug.weather (env.forceWeather) – bara i staden
+if (sceneName === 'city' && (weather || snow !== null || season || temp !== null)) {
+  const f = {};
+  if (weather) f.kind = weather;
+  if (snow !== null) f.snow = +snow;
+  if (season) f.season = season;
+  if (temp !== null) f.temp = +temp;
+  await page.evaluate((f) => window.SF.scene._debug.weather?.(f), f);
+}
+if (district && sceneName === 'city') await page.evaluate((d) => window.SF.scene._debug.district?.(d), String(district));
 if (tele) { const [x, y] = String(tele).split(',').map(Number); await page.evaluate(([x, y]) => window.SF.scene._debug.teleport(x, y), [x, y]); }
 if (cam) { const [x, y] = String(cam).split(',').map(Number); await page.evaluate(([x, y]) => window.SF.scene._debug.lockCam(x, y), [x, y]); }
 // håll klockan still medan simuleringen får gå
@@ -69,5 +84,6 @@ if (scale !== 1 && pano) {
 fs.mkdirSync(out.replace(/[\\/][^\\/]*$/, '') || '.', { recursive: true });
 fs.writeFileSync(out, png);
 console.log('skrev', out);
+if (sceneName === 'city') console.log('väder:', await page.evaluate(() => JSON.stringify(window.SF.scene._debug.env?.weather || null)));
 console.log(errs.length ? 'KONSOLFEL:\n' + errs.join('\n') : 'Inga konsolfel.');
 await browser.close();

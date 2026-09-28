@@ -26,6 +26,12 @@ export const JOBS = {
   flygplats: { id: 'flygplats', icon: '✈️', name: 'Flygplatsen', verb: 'Bär väskorna till rätt vagn', wage: 7, oops: 4 },
   frukt: { id: 'frukt', icon: '🍊', name: 'Fruktfabriken', verb: 'Plocka frukt från bandet till lådan', wage: 4, oops: 3, bonus: 20 },
   burgare: { id: 'burgare', icon: '🍔', name: 'Burgarbaren', verb: 'Servera rätt mat till rätt kund', wage: 10, oops: 5 },
+  pizzeria: { id: 'pizzeria', icon: '🍕', name: 'Pizzerian', verb: 'Baka rätt pizza och servera rätt kund', wage: 20, oops: 8 },
+  posten: { id: 'posten', icon: '📮', name: 'Posten', verb: 'Sortera paketen till rätt rullbur', wage: 10, oops: 5 },
+  bensinmack: { id: 'bensinmack', icon: '⛽', name: 'Pixelmacken', verb: 'Tanka bilarna och sälj korv i kiosken', wage: 10, oops: 5 },
+  bilverkstad: { id: 'bilverkstad', icon: '🔧', name: 'Bilverkstan', verb: 'Hämta rätt del och laga bilarna', wage: 12, oops: 5 },
+  tvatteri: { id: 'tvatteri', icon: '🧺', name: 'Tvätteriet', verb: 'Tvätta, torka, vik och lämna rätt påse', wage: 16, oops: 6 },
+  kafe: { id: 'kafe', icon: '☕', name: 'Kaféet', verb: 'Gör rätt dryck och servera rätt gäst', wage: 14, oops: 6 },
 };
 export const JOB_TITLES = ['Nybörjare', 'Van', 'Proffs', 'Mästare', 'Legendar'];
 export const levelOf = (shifts) => Math.min(5, 1 + Math.floor(shifts / 3));
@@ -302,7 +308,7 @@ export const HOMES = [
   { id: 'lagenhet', icon: '🏢', name: 'Lägenheten', deposit: 1500, rent: 600, restBonus: 10, desc: 'Riktigt kök, soffa och utsikt över Pixelstaden.' },
   { id: 'villa', icon: '🏡', name: 'Villan', deposit: 8000, rent: 1000, restBonus: 20, desc: 'Eget hus med trädgård. Hit kan kompisarna komma.' },
 ];
-export const homeOf = (id) => HOMES.find((h) => h.id === id) || HOMES[0];
+export const homeOf = (id) => HOMES.find((h) => h.id === id) || HOMES.find((h) => h.id === 'rum') || HOMES[0]; // okänd bostad → Lilla rummet
 
 const DAY = 24 * 60;
 export const REALTIME_RATE = 2;
@@ -317,14 +323,14 @@ export class Game {
     this.energy = 90;
     this.home = 'rum';
     this.fridge = { nudlar: 1 };          // itemId -> antal
-    this.jobs = { flygplats: 0, frukt: 0, burgare: 0 }; // antal jobbade pass
+    this.jobs = Object.fromEntries(Object.keys(JOBS).map((k) => [k, 0])); // antal jobbade pass per jobb
     this.earned = 0;                      // totalt intjänat
     this.wardrobe = [];                   // upplåsta plagg, "kind:v"
     this.storage = [];                    // möbler i förrådet, { k, v, c?, r?, fx? } (c = egen färg '#rrggbb', r = rotation 0–3)
     this.deco = {};                       // placerade möbler per rum: "hem:sub" -> [{ k, v, c?, x, y, r?, fx? }]
     this.won = false;                     // slutmålet nått
     this.event = null;                    // dagens händelse { id, job? }
-    this.best = { flygplats: { ok: 0, pay: 0 }, frukt: { ok: 0, pay: 0 }, burgare: { ok: 0, pay: 0 } }; // rekord
+    this.best = Object.fromEntries(Object.keys(JOBS).map((k) => [k, { ok: 0, pay: 0 }])); // rekord per jobb
     this.collapsed = false;               // somnade utmattad i natt (sätts av passTime)
   }
 

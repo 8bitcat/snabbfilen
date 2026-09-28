@@ -1,29 +1,72 @@
-// Stadslivet i Pixelstaden – fotgängare (med hundar, kassar, paraplyer,
-// sällskap och joggare), duvor, förbiflygande fåglar, fjärilar, eldflugor
-// och en katt på en trappa. Allt i samma pixelkorn som resten av staden
-// (1 enhet = 1 spelpixel). Alla småfigurer målas EN gång till cachade
+// Stadslivet i Pixelstaden (v2 – hela världen): fotgängare med hundar, kassar,
+// paraplyer, sällskap och joggare, folk som sitter på bänkarna och väntar på
+// bussen i kurerna, barn på lekplatserna, ungdomar som hänger vid kiosken i
+// förorten, hundar som nosar, skäller och viftar på svansen (och springer lösa
+// i hundrastgården), duvor, måsar, kråkor, småfåglar i buskarna, fågelflockar,
+// ekorrar i träden, änder i dammen, svanar i kanalen, katter, fjärilar,
+// eldflugor och snögubbar på vintern. Allt i samma pixelkorn som resten av
+// staden (1 enhet = 1 spelpixel). Alla småfigurer målas EN gång till cachade
 // canvasar – per bildruta blir det bara drawImage/fillRect.
 //
-// Fotgängarna går på ett eget gångnät: noder på trottoarerna, i gränderna,
-// på bakgatan, vid övergångsställena och i parken. Kanterna mellan noderna
-// räknas ut EN gång mot hindren (husens fotavtryck + rekvisita + stolpar)
-// på ett 2-px-rutnät, så per figur blir det bara en liten Dijkstra över
-// ~80 noder när den väljer ett nytt mål. Vägen korsas bara vid
-// övergångsställena och bara när traffic.pedGreen(i) är sann.
+// Fotgängarna går på ett eget gångnät över hela världen (2720 × 820): gånglinjer
+// på bakgatan, trottoarerna, promenaden, parkgången, kajen, noder i alla gränder,
+// vid alla dörrar (även de fristående husens), övergångsställena (även Infartens
+// och Södergatans), lekplatserna, hundrastgården, parkeringen och grusplanen.
+// Kanterna mellan noderna räknas ut EN gång mot hindren på ett 2-px-rutnät; per
+// figur blir det en liten Dijkstra (binär hög) över nätet när den väljer ett
+// nytt mål. Vägen korsas bara vid övergångsställena och bara när
+// traffic.pedGreen(i) är sann.
 //
-// Kontrakt (se map.js / scenes/city.js):
-//   createLife(env, traffic) → { items(), update(dt), positions(), glow(ctx), obstacles }
-import { CITY, BUILDINGS, STREETS, CROSSWALKS, PARK_LAYOUT, PATH_RECTS, BUS_STOP, doorCenter, inRect } from './map.js';
+// Vädret (env.weather): paraplyer och regnställ i regn, vinterkläder, mössor och
+// halsdukar när det är kallt, shorts och solglasögon när det är varmt, snögubbar
+// när snön ligger, färre människor ute i ösregn, snöstorm och dimma.
+//
+// Kontrakt (se docs/STADEN.md):
+//   createLife(env, traffic, props?) → { items(), update(dt), positions(), glow(ctx), obstacles }
+//   props (valfritt, annars env.props): props.seats() ger bänkarnas och kurernas platser
+//   { id, x, y, dir, walk: {x, y}, stop?, broken?, bench } – saknas den räknar livet ut
+//   platserna själv ur hindren. Extra: busySeats() → Set med upptagna plats-id,
+//   seatBusy(id), dogs() (för tools/dog-test.mjs), _debug.
+import * as MAP from './map.js';
 import { drawPerson, makeLook } from '../core/people.js';
 import { Pix, mix, mul, hash } from '../core/floor-pix.js';
+
+// ---------- kartan (tåligt: allt som saknas får ett v1-värde) ----------
+const CITY = MAP.CITY;
+const inRect = MAP.inRect || ((x, y, r) => x >= r[0] && x < r[2] && y >= r[1] && y < r[3]);
+const baseOf = MAP.baseOf || ((b) => b.base ?? CITY.BASE);
+const doorCenter = MAP.doorCenter || ((b) => ({ x: (b.door.x0 + b.door.x1) / 2, y: baseOf(b) + 12 }));
+const BUILDINGS = MAP.BUILDINGS || [];
+const ALL_B = MAP.ALL_BUILDINGS || BUILDINGS;
+const STREETS_ALL = MAP.STREETS_ALL || MAP.STREETS || [];
+const CROSS_ALL = MAP.CROSSWALKS_ALL || MAP.CROSSWALKS || [];
+const PARK = MAP.PARK_LAYOUT || { plaza: { cx: 934, cy: 366, r: 42 }, promenade: [20, 334, 1680, 346], paths: [] };
+const SUB = MAP.SUB_LAYOUT || { paths: [] };
+const PATHS = MAP.PATHS || (MAP.PATH_RECTS || []).map((rect) => ({ rect, kind: 'grus' }));
+const LOTS = MAP.LOTS || [];
+const BUS_STOPS = MAP.BUS_STOPS && MAP.BUS_STOPS.length ? MAP.BUS_STOPS
+  : [{ id: 'pixeltorget', name: 'PIXELTORGET', x: MAP.BUS_STOP.x, y: MAP.BUS_STOP.y, road: 'pixelgatan', lane: 1 }];
+const districtAt = MAP.districtAt || (() => null);
+const byId = (id) => ALL_B.find((b) => b.id === id) || null;
 
 const WALK_SEQ = [1, 3, 2, 3];
 const CW = CITY.W, CH = CITY.H, BASE = CITY.BASE;
 const VW = CITY.VIEW_W, VH = CITY.VIEW_H;
-// gånglinjerna (fotpunkternas y) på trottoarer, bakgata och promenad
-const Y_N = 203, Y_S = 291, Y_BACK = 22, Y_PROM = 340;
-const CURB_N = CITY.ROAD[0] - 4, CURB_S = CITY.ROAD[1] + 5;
-const DOOR_H = 34; // dörröppningens höjd i husmodulerna – figurerna klipps mot den när de går in/ut
+const midOf = (a, d) => (a ? Math.round((a[0] + a[1]) / 2) : d);
+const ROAD_N = CITY.ROAD, ROAD_S = CITY.ROAD_S || [CITY.ROAD[0] + 454, CITY.ROAD[1] + 454];
+const XI = CITY.INFARTEN || [1700, 1752];
+const X_SUB = CITY.X_SUB || XI[1];
+// gånglinjerna (fotpunkternas y)
+const Y_BACK = 22, Y_N = 203, Y_S = 291, Y_PROM = 340;
+const Y_BKS = midOf(CITY.BACK_S, 476);                 // parkgången bakom den södra raden
+const Y_SN = midOf(CITY.SIDEWALK_SN, 656);             // trottoaren framför de södra husen
+const Y_SS = (CITY.SIDEWALK_SS ? CITY.SIDEWALK_SS[0] : 730) + 7;   // bortre trottoaren (nära kanten – bänkarna står mot kanalen)
+const Y_Q = (CITY.QUAY ? CITY.QUAY[0] : 760) + 7;      // kajen
+const WALK_BOTTOM = CITY.WALK_BOTTOM ?? CH - 4;
+const CURB_N = ROAD_N[0] - 4, CURB_S = ROAD_N[1] + 5;
+const CURB_SN = ROAD_S[0] - 4, CURB_SS = ROAD_S[1] + 5;
+const DOOR_H = 34; // dörröppningens höjd i v1-husen – figurerna klipps mot den när de går in/ut
+const doorH = (b) => (BUILDINGS.includes(b) ? DOOR_H : b.row === 'f' ? Math.max(18, Math.min(26, (b.h || 30) - 4)) : 30);
 
 // ---------- små hjälpare ----------
 const rnd = Math.random;
@@ -40,9 +83,11 @@ function wpick(list) {
 }
 const headingDir = (hx, hy) => (Math.abs(hx) > Math.abs(hy) * 0.8 ? (hx < 0 ? 'left' : 'right') : hy < 0 ? 'up' : 'down');
 const faceTo = (dx, dy) => headingDir(dx, dy);
+const safe = (fn, fb) => { try { return fn(); } catch { return fb; } };
 
-// ---------- butikerna: hur ofta man går dit, hur länge man stannar, vad man bär ut ----------
-const SHOPS = {
+// ---------- ställena: hur ofta man går dit, hur länge man stannar, vad man bär ut ----------
+// eve = mest på kvällen, warm = bara när det är varmt, dog = hundägare går gärna dit
+const PLACES = {
   mat: { w: 5, stay: [8, 20], carry: [['kasse', 0.75]] },
   klader: { w: 2.2, stay: [8, 18], carry: [['pase', 0.65]] },
   mobler: { w: 2.2, stay: [14, 30], carry: [['kartong', 0.35], ['frakt', 0.5]] },
@@ -50,10 +95,28 @@ const SHOPS = {
   bostad: { w: 0.6, stay: [6, 14], carry: [] },
   frukt: { w: 0.8, stay: [6, 16], carry: [['frukt', 0.45]] },
   flyg: { w: 1.2, stay: [6, 14], carry: [['resvaska', 0.6]] },
+  kafe: { w: 1.8, stay: [10, 26], carry: [['kaffe', 0.55]] },
+  pizzeria: { w: 2, stay: [8, 20], carry: [['pizza', 0.6]] },
+  posten: { w: 1.6, stay: [8, 20], carry: [['paket', 0.6]] },
+  djuraffar: { w: 1.3, stay: [8, 20], carry: [['pase', 0.5]], dog: 3 },
+  bio: { w: 1.2, stay: [30, 80], carry: [], eve: true },
+  kyrka: { w: 0.4, stay: [20, 60], carry: [] },
+  vardcentral: { w: 0.7, stay: [20, 50], carry: [] },
+  bensinmack: { w: 1, stay: [6, 14], carry: [['kaffe', 0.35], ['kasse', 0.25]] },
+  narbutik: { w: 3, stay: [5, 12], carry: [['kasse', 0.7]] },
+  pantbank: { w: 0.4, stay: [8, 20], carry: [] },
+  kebab: { w: 1.6, stay: [8, 18], carry: [['burgare', 0.6]] },
+  tvatteri: { w: 1, stay: [10, 30], carry: [['tvatt', 0.65]] },
+  kiosk: { w: 1.3, stay: [3, 8], carry: [['tidning', 0.65]] },
+  glasskiosk: { w: 2.2, stay: [3, 8], carry: [['glass', 0.95]], warm: true },
+  toalett: { w: 0.35, stay: [5, 12], carry: [] },
 };
-const isOpen = (b, h) => !b.open || (h >= b.open[0] && h < b.open[1]);
-// butiker man kan fönstershoppa vid
-const WINDOW_SHOPS = ['bostad', 'mat', 'klader', 'mobler', 'kafe', 'burgare', 'frukt'];
+// bostadshusen: folk kommer ut ur dem och går hem igen
+const HOMES = ['hem', 'radhus', 'tornhuset', 'hoghus', 'hoghus2', 'lamell', 'husvagn'];
+const isOpen = (b, h) => !b.open || (h >= b.open[0] && h < b.open[1]) || (b.open[1] > 24 && h < b.open[1] - 24);
+// butiker man kan fönstershoppa vid (norra och södra raden)
+const WINDOW_SHOPS = ['bostad', 'mat', 'klader', 'mobler', 'kafe', 'burgare', 'frukt', 'pizzeria', 'posten', 'djuraffar', 'bio', 'narbutik', 'pantbank'];
+const enterable = (b) => b && b.door && b.door.type !== 'boarded' && b.door.type !== 'roll';
 
 // =====================================================================
 //  Sprites – pixelkartor och små målare, cachade canvasar
@@ -107,9 +170,20 @@ function flipX(c) {
   x.putImageData(img, 0, 0);
   return n;
 }
+function flipY(c) {
+  const w = c.width, h = c.height, s = c.getContext('2d').getImageData(0, 0, w, h).data;
+  const n = mkCanvas(w, h), x = n.getContext('2d'), img = x.createImageData(w, h), d = img.data;
+  for (let y = 0; y < h; y++) for (let i = 0; i < w; i++) {
+    const a = (y * w + i) * 4, b = ((h - 1 - y) * w + i) * 4;
+    d[b] = s[a]; d[b + 1] = s[a + 1]; d[b + 2] = s[a + 2]; d[b + 3] = s[a + 3];
+  }
+  x.putImageData(img, 0, 0);
+  return n;
+}
 const pairOf = (c) => ({ r: c, l: flipX(c), w: c.width, h: c.height });
 
-// ---------- duvor (vända åt höger; vänster speglas) ----------
+// ---------- markfåglar (vända åt höger; vänster speglas) ----------
+// Duvor och kråkor delar kroppsform, måsarna och småfåglarna har egna.
 const PIG_VARIANTS = [
   { H: 0x8e97ab, h: 0xb6bece, B: 0x8a93a6, L: 0xaab3c4, D: 0x68708a, W: 0xa0a8ba, w: 0x7c8498, x: 0x2e3244, T: 0x5d6578, t: 0x2b2f3e, g: 0x5aae8a, p: 0xa06cb8 },
   { H: 0x5e6474, h: 0x7c8494, B: 0x5a6070, L: 0x767d8e, D: 0x454a58, W: 0x6c7282, w: 0x4a5060, x: 0x202230, T: 0x3c404c, t: 0x1e2028, g: 0x4e9a7a, p: 0x8a5aa0 },
@@ -117,6 +191,9 @@ const PIG_VARIANTS = [
   { H: 0x9a8474, h: 0xbca696, B: 0x9a8676, L: 0xb8a494, D: 0x786456, W: 0xaa9686, w: 0x846e5e, x: 0x3a2e28, T: 0x6a5648, t: 0x352a24, g: 0x6aa888, p: 0x9a6a9a },
 ];
 const PIG_COMMON = { e: 0xf08a2a, c: 0xefe9dc, b: 0x4a4448, f: 0xd9667a };
+// kråkan: svart med blåvioletta skimmer i nacken, mörk näbb och mörka fötter
+const CROW_PAL = { H: 0x2a2a34, h: 0x46465a, B: 0x24242e, L: 0x30303c, D: 0x18181f, W: 0x34343f, w: 0x26262f, x: 0x121216, T: 0x1e1e26, t: 0x101014,
+  g: 0x3a4c72, p: 0x4c3c70, e: 0x8a8a70, c: 0x3a3a44, b: 0x26262c, f: 0x1e1e24 };
 const PIG_MAPS = {
   stand: [
     '......hH...',
@@ -179,9 +256,202 @@ const PIG_MAPS = {
     '...Ww......',
   ],
 };
+// fiskmåsen: vitt huvud, grå mantel, svarta vingspetsar med vita prickar, gul näbb med röd fläck
+const GULL_PAL = { h: 0xffffff, H: 0xebebe5, B: 0xcfd0cc, W: 0xf6f6f2, G: 0xa9b3c1, g: 0x87929f, x: 0x24242c, s: 0xf2f2ec, e: 0x2a2226, y: 0xecc23a, r: 0xd84a3a, f: 0xe2a676 };
+const GULL_MAPS = {
+  stand: [
+    '........hH...',
+    '.......hHeHyy',
+    '.......HHHHr.',
+    '.....GGGHHH..',
+    '..GGGgGGWHHB.',
+    'xsGGgGgGWHHB.',
+    'xxxGGGGGWBBB.',
+    '....BBBBBBB..',
+    '......f..f...',
+    '......f..f...',
+  ],
+  walk: [
+    '.........hH..',
+    '........hHeHy',
+    '........HHHHy',
+    '.....GGGHHHr.',
+    '..GGGgGGWHHB.',
+    'xsGGgGgGWHHB.',
+    'xxxGGGGGWBBB.',
+    '....BBBBBBB..',
+    '.....f....f..',
+    '....f......f.',
+  ],
+  peck: [
+    '.............',
+    '.............',
+    '.............',
+    '.....GGG.....',
+    '..GGGgGGWHH..',
+    'xsGGgGgGWHHH.',
+    'xxxGGGGGWBHHh',
+    '....BBBBBBHeH',
+    '......f..f.yy',
+    '......f..f..r',
+  ],
+  up: [
+    '....GG.........',
+    '....GGG........',
+    '.....GgG.......',
+    '......GGW..hH..',
+    'xx..GGGWWHHeHyy',
+    '.xxGGgWHHHHH...',
+    '.....BBBBB.....',
+  ],
+  mid: [
+    '...............',
+    '..........hH...',
+    'xxsGGGGGGWHeHyy',
+    '.xxGgGgGWHHHH..',
+    '....BBBBBBB....',
+    '...............',
+    '...............',
+  ],
+  down: [
+    '...............',
+    '...........hH..',
+    'x...GGGWWHHeHyy',
+    '.x.GGgWHHHHH...',
+    '...GgGBBBBB....',
+    '..GGG..........',
+    '.GG............',
+  ],
+};
+// småfåglar (gråsparv, talgoxe, bofink): hoppar och pickar, flyger in i buskarna
+const SPARROW_PALS = [
+  { c: 0x7a4a2a, H: 0x9a9488, e: 0x121212, k: 0x3a3430, T: 0x5a3c26, B: 0x8e5e36, d: 0x4e3420, w: 0xe0d8c8, y: 0xc8b89c, f: 0xa88a6a },
+  { c: 0x16161c, H: 0x1c1c24, e: 0x0a0a0a, k: 0x2a2a2e, T: 0x4a6078, B: 0x7a9a3c, d: 0x4a6a8a, w: 0xf4f4f0, y: 0xf0d040, f: 0x6a7a8a },
+  { c: 0x5a7a9a, H: 0x6a8aa8, e: 0x121212, k: 0x8a8a90, T: 0x4a3a2e, B: 0x8a5a3a, d: 0x3a2a22, w: 0xe8e0d8, y: 0xd8987e, f: 0xa88a7a },
+];
+const SPARROW_MAPS = {
+  stand: ['.....cc.', '....cHek', '..TBBHww', '.TBdByyw', '...Byy..', '....f.f.'],
+  peck: ['........', '........', '..TBBc..', '.TBdBHc.', '...ByHek', '....f.f.'],
+  hop: ['.....cc.', '....cHek', '..TBBHww', '.TBdByyw', '...Byy..', '.....f..'],
+  up: ['..B.....', '..BB..c.', '...BBHek', '.TBdyy..', '........'],
+  mid: ['......c.', '.BBBBHek', 'TBdByy..', '........', '........'],
+  down: ['......c.', '..TBBHek', '.BBdyy..', '.B......', '........'],
+};
 
-// ---------- katten (rödrandig, vänd åt höger) ----------
-const CAT_PAL = { O: 0xdc8a3c, o: 0xf4b468, r: 0xa65a22, s: 0x8a4418, w: 0xf6eee0, W: 0xd6ccbc, k: 0x3a2418, g: 0x9ad65a, n: 0xe48a8e, E: 0xe8a0a0 };
+// ---------- ekorren (vänd åt höger) ----------
+const SQ_PAL = { R: 0xb8522a, r: 0xda773c, o: 0x8a3a1c, T: 0xa84820, t: 0xd4783a, w: 0xf2e6d2, k: 0x120c0a, n: 0x3a2016, e: 0x7a3014 };
+const SQ_MAPS = {
+  // sitter upp med svansen som ett S bakom sig
+  sit: [
+    '.tTt........',
+    'tTTTT...e.e.',
+    'TTttT...RRR.',
+    'TT..T..RRkRn',
+    '.T..T..rRRR.',
+    '....TT.RRw..',
+    '....TRRRRw..',
+    '...TTRrRRw..',
+    '....TRRRRwR.',
+    '....TRRRRR..',
+    '.....oo.oo..',
+  ],
+  // sitter och gnager på en kotte (tassarna uppe vid munnen)
+  gnaw: [
+    '.tTt........',
+    'tTTTT...e.e.',
+    'TTttT...RRR.',
+    'TT..T..RRkRn',
+    '.T..T..rRRRo',
+    '....TT.RRwoo',
+    '....TRRRRw..',
+    '...TTRrRRw..',
+    '....TRRRRw..',
+    '....TRRRRR..',
+    '.....oo.oo..',
+  ],
+  run1: [
+    '..tTt........',
+    '.tTTTTt...e.e',
+    'tTT..TtT.RRRR',
+    'TT....TRRRRkRn',
+    '......RRrRRRR.',
+    '.....oRRRwwR..',
+    '....o.....o...',
+  ],
+  run2: [
+    '.............',
+    '..tTTt....e.e',
+    '.tTTTTTt.RRRR',
+    'tTT...TRRRRkRn',
+    'T.....RRrRRR..',
+    '.......RwwRo..',
+    '.......oo.....',
+  ],
+  // klättrar uppför stammen (huvudet upp)
+  climb: [
+    '.e.e..',
+    '.RRR..',
+    'RRkRo.',
+    '.RRR..',
+    '.rRRo.',
+    '.RRR..',
+    '.RRRo.',
+    '.TT...',
+    'TTt...',
+    'TtT...',
+    '.TT...',
+    '..t...',
+  ],
+};
+
+// ---------- änder och svanar ----------
+const DUCK_PALS = [
+  // gräsand hane: grönt huvud, vit halsring, brunt bröst
+  { G: 0x2a7a4a, h: 0x4aa870, g: 0x1e5a38, e: 0x0a0a0a, y: 0xe8c43a, w: 0xf4f4ee, C: 0x8a4a2a, c: 0x6a3620, B: 0xbcbcb6, b: 0x96968f, K: 0x26262c, W: 0x3a5ac0 },
+  // hona: brunspräcklig
+  { G: 0x8a6a44, h: 0xa88a5e, g: 0x6a4e30, e: 0x1a1410, y: 0xd8883a, w: 0x8a6a44, C: 0x9a7a54, c: 0x7a5a3a, B: 0xaa8c62, b: 0x7a5e3e, K: 0x6a5034, W: 0x3a5ac0 },
+];
+const DUCK_MAPS = {
+  swim: [
+    '.......GG...',
+    '......GhGeyy',
+    '.......GG...',
+    '.......ww...',
+    '.KbBBBBCC...',
+    'KKbBWWBBCc..',
+    '..bbbbbbbc..',
+  ],
+  // grundsim: huvudet under vattnet, stjärten upp
+  dab: [
+    '............',
+    '............',
+    '.K..........',
+    '.KK.........',
+    '..KbBBB.....',
+    '..bBWWBBC...',
+    '...bbbbbbCc.',
+  ],
+};
+const SWAN_PAL = { h: 0xffffff, W: 0xf2f2ee, w: 0xd6dae0, d: 0xb2b8c2, o: 0xe8742a, k: 0x1a1a1e };
+const SWAN_MAP = [
+  '..........hW..',
+  '.........hWWk.',
+  '..........WWoo',
+  '..........wW..',
+  '..........wW..',
+  '.........wW...',
+  '....hWWWWWW...',
+  '..hWWWwwwWWW..',
+  '.WWwwwwwwwWWd.',
+  '..dddddddddd..',
+];
+
+// ---------- katter (liggande, vakna, sittande) ----------
+const CAT_PALS = [
+  { O: 0xdc8a3c, o: 0xf4b468, r: 0xa65a22, s: 0x8a4418, w: 0xf6eee0, W: 0xd6ccbc, k: 0x3a2418, g: 0x9ad65a, n: 0xe48a8e, E: 0xe8a0a0 },  // rödrandig
+  { O: 0x8a8a90, o: 0xb0b0b6, r: 0x5a5a62, s: 0x4a4a52, w: 0xeeeeea, W: 0xcacac4, k: 0x2a2a30, g: 0xe8d040, n: 0xd88a8e, E: 0xd8a0a4 },  // grå tigrerad
+  { O: 0x26242c, o: 0x3a3842, r: 0x18161c, s: 0x121016, w: 0x3a3842, W: 0x2c2a32, k: 0x0e0c10, g: 0xd8e040, n: 0x6a4a50, E: 0x5a4048 },  // svart
+];
 const CAT_MAPS = {
   // ligger och sover: ögonen stängda, svansen runt tassarna
   sleep: [
@@ -254,6 +524,14 @@ const BIRD = {
     ['k.........k', '.kK.....Kk.', '...kkkkk...', '.....k.....'],
     ['...........', 'kkKKkkkKKkk', '....kkk....', '.....k.....'],
     ['...........', '...kkkkk...', '.kK..k..Kk.', 'k.........k'],
+  ] },
+  // stare i flock: små prickar
+  star: { pal: { k: 0x1c1a22 }, fr: [['k.k', '.k.'], ['kkk', '...'], ['.k.', 'k.k']] },
+  // grågäss i plogformation (vår och höst)
+  goose: { pal: { k: 0x1e1c20, G: 0x6e665a, g: 0x8e8578, W: 0xe8e4dc }, fr: [
+    ['G...........G', '.GG.......GG.', '...ggWkWgg...', '.....WkW.....', '......k......'],
+    ['.............', 'GGGgggWkWgggG', '.....WkW.....', '......k......', '.............'],
+    ['.............', '...ggWkWgg...', '.GG..WkW..GG.', 'G.....k.....G', '.............'],
   ] },
 };
 
@@ -332,34 +610,65 @@ const CARRY_MAPS = {
     'Cddddd',
     '.w..w.',
   ], pal: { C: 0x2a8a8a, h: 0x4ab0b0, d: 0x1c5e5e, k: 0x1c4848, w: 0x1a1a1e }, ax: 3, ay: 7 },
+  // kaffe att ta med: pappmugg med lock och hylsa
+  kaffe: { rows: ['wwww', 'WccW', 'WssW', 'WssW', '.WW.'], pal: { w: 0xf4f1ea, W: 0xd8d2c4, c: 0x2a2226, s: 0xb07a44 }, ax: 1, ay: 2 },
+  // pizzakartong (platt, med tryck) i handen
+  pizza: { rows: ['KKKKKKKKKK', 'kkkRRRRkkd', 'kkRrRRrRkd', 'dddddddddd'], pal: { K: 0xf0e8d8, k: 0xd8ccb4, d: 0xa8987c, R: 0xc8322a, r: 0x2a8a3a }, ax: 2, ay: 0 },
+  // postpaket med tejp och adresslapp
+  paket: { rows: ['PPPtPPP', 'pPPtPPd', 'pwwtPPd', 'pPPtPPd', 'ddddddd'], pal: { P: 0xc8964e, p: 0xdcae6a, d: 0x9a6e36, t: 0xe8d8a8, w: 0xf6f2e8 }, ax: 3, ay: 0 },
+  // kvällstidning från kiosken
+  tidning: { rows: ['WWWWW', 'WRRRW', 'WkkkW', 'WkWkW', 'wwwww'], pal: { W: 0xf4f1ea, w: 0xc8c4bc, R: 0xe0302a, k: 0x3a3a40 }, ax: 2, ay: 1 },
+  // glasstrut med två kulor
+  glass: { rows: ['.pw.', 'pppw', 'cccc', '.cc.', '.c..'], pal: { p: 0xf4a8c0, w: 0xf8f0d8, c: 0xd89a4a }, ax: 1, ay: 3 },
+  // tvättpåse från tvätteriet
+  tvatt: { rows: ['..kk...', '.BBBB..', 'BbwBBBd', 'BwwbBBd', 'BBBBBBd', '.ddddd.'], pal: { k: 0x2a2630, B: 0x3a6ab0, b: 0x5a8ad0, w: 0xf4f4f0, d: 0x284a80 }, ax: 3, ay: 0 },
 };
 const PASE_COLORS = [0xd24a8a, 0x2a2a30, 0xe8c13a, 0x3a8ad0, 0xf4f1ea, 0x46a35a];
 const CASE_COLORS = [0x2a8a8a, 0xc9323a, 0x2a2a30, 0xb8bcc4, 0x3a5fb0, 0xe0a02a];
 const UMB_COLORS = [0xc9323a, 0x2a2e48, 0x1e1e24, 0xe8c13a, 0x2f8f6f, 0x3a7bd5, 0x8e5bd1, 0xe07a2e];
 
-// ---------- hundar: en liten målare per ras ----------
+// ---------- hundar: en liten målare med raser ----------
+// size: m mellan · s liten · t tax · c corgi. ears: flop hängöron · up ståöron · big stora ståöron
 const DOGS = [
-  { base: 0xa8683a, hi: 0xcc8e56, lo: 0x7a4624, ear: 0x5a3018, size: 'm', ears: 'flop' },                      // brun blandras
-  { base: 0x2e2c34, hi: 0x4e4c58, lo: 0x1c1b20, ear: 0x19181c, size: 'm', ears: 'flop' },                      // svart labrador
-  { base: 0xdcaa56, hi: 0xf0c880, lo: 0xa87a34, ear: 0xb88438, size: 'm', ears: 'flop' },                      // golden
-  { base: 0xeceae4, hi: 0xffffff, lo: 0xbcb8ae, ear: 0x6a4428, size: 's', ears: 'up', spots: 0x7a4a2a },       // jackrussell
-  { base: 0x7a4a26, hi: 0x9c6a3c, lo: 0x55321a, ear: 0x3e2412, size: 't', ears: 'flop' },                      // tax
-  { base: 0x8a8e96, hi: 0xb0b4bc, lo: 0x5e626a, ear: 0x3a3c44, size: 's', ears: 'up', belly: 0xd8dade },        // schnauzer
+  { n: 'blandras', base: 0xa8683a, hi: 0xcc8e56, lo: 0x7a4624, ear: 0x5a3018, size: 'm', ears: 'flop' },
+  { n: 'labrador', base: 0x2e2c34, hi: 0x4e4c58, lo: 0x1c1b20, ear: 0x19181c, size: 'm', ears: 'flop', collar: 0xe0b020 },
+  { n: 'golden', base: 0xdcaa56, hi: 0xf0c880, lo: 0xa87a34, ear: 0xb88438, size: 'm', ears: 'flop', collar: 0x3a6ad0 },
+  { n: 'jackrussell', base: 0xeceae4, hi: 0xffffff, lo: 0xbcb8ae, ear: 0x6a4428, size: 's', ears: 'up', spots: 0x7a4a2a },
+  { n: 'tax', base: 0x7a4a26, hi: 0x9c6a3c, lo: 0x55321a, ear: 0x3e2412, size: 't', ears: 'flop' },
+  { n: 'schnauzer', base: 0x8a8e96, hi: 0xb0b4bc, lo: 0x5e626a, ear: 0x3a3c44, size: 's', ears: 'up', belly: 0xd8dade },
+  { n: 'dalmatiner', base: 0xf2f0ea, hi: 0xffffff, lo: 0xc8c4bc, ear: 0x26262a, size: 'm', ears: 'flop', spots: 0x1e1e24, dense: true, collar: 0x2a8a4a },
+  { n: 'corgi', base: 0xd8883a, hi: 0xf0a858, lo: 0xa8602a, ear: 0xb8682a, size: 'c', ears: 'big', belly: 0xf6eee0, mask: 0xf6eee0, tail: 'stub', collar: 0x3a6ad0 },
+  { n: 'pudel', base: 0xeee4d2, hi: 0xffffff, lo: 0xc8baa4, ear: 0xd8ccb6, size: 's', ears: 'flop', curls: true, collar: 0xe04a8a },
+  { n: 'husky', base: 0x7a7e88, hi: 0x9ea2ac, lo: 0x565a64, ear: 0x464a54, size: 'm', ears: 'up', belly: 0xf0f0ee, mask: 0xf0f0ee, tail: 'curl', eye: 0x5aa8e8, collar: 0xd83a3a },
+  { n: 'mops', base: 0xd8bc8a, hi: 0xecd4a6, lo: 0xae9262, ear: 0x2a2420, size: 's', ears: 'flop', snout: 'short', muzzle: 0x2a2420, tail: 'curl', collar: 0x2a8a8a },
+  { n: 'schäfer', base: 0xb8783a, hi: 0xd89858, lo: 0x8a5424, ear: 0x2a1e16, size: 'm', ears: 'up', saddle: 0x2a2220, muzzle: 0x2a2220, collar: 0xe0b020 },
 ];
-// fr: 0 stå · 1/2 gå · 3 sitt · 4 nosa
+// fr: 0 stå · 1/2 gå · 3 sitt · 4 nosa · 5 skäll (huvudet upp, munnen öppen) · 6 stå och vifta (svansen upp)
 function paintDog(br, fr) {
   const P = new Pix(22, 16);
-  const small = br.size === 's', tax = br.size === 't';
-  const bodyL = small ? 8 : tax ? 12 : 11, bodyH = small ? 4 : tax ? 4 : 5, legH = small ? 2 : tax ? 1 : 3;
+  const sz = br.size, small = sz === 's', tax = sz === 't', corgi = sz === 'c';
+  const bodyL = small ? 8 : tax ? 12 : corgi ? 11 : 11, bodyH = small ? 4 : tax ? 4 : 5, legH = small ? 2 : tax || corgi ? 1 : 3;
   const gy = 14, by1 = gy - legH, by0 = by1 - bodyH + 1;
   const bx0 = 4, bx1 = bx0 + bodyL - 1;
   const C = br, far = mix(C.lo, 0x1a1420, 0.3), nose = 0x16141a;
-  const sit = fr === 3, sniff = fr === 4;
+  const sit = fr === 3, sniff = fr === 4, bark = fr === 5;
+  const wagS = fr === 2 ? 1 : fr === 6 ? -1 : 0;
+  // pudelns lockar: ljusa och mörka prickar i pälsen
+  const fur = (x, y, c) => (C.curls ? (hash(x, y, 9) < 0.28 ? C.hi : hash(x, y, 11) < 0.18 ? mix(c, C.lo, 0.6) : c) : c);
   const put = (x, y, c) => P.px(x, y, c);
   // svans
   if (sit) { put(bx0 - 1, gy, C.lo); put(bx0 - 2, gy - 1, C.lo); }
-  else {
-    const wag = fr === 2 ? 1 : 0;
+  else if (C.tail === 'curl') {
+    // husky och mops: svansen i en ring upp över ryggen (viftar i sidled)
+    const o = wagS > 0 ? 1 : 0;
+    put(bx0 - 1, by0 + 1, C.base); put(bx0 - 1, by0, C.hi); put(bx0, by0 - 1, C.hi); put(bx0 + 1 + o, by0 - 2, C.hi);
+    put(bx0 + 1, by0 - 1, C.belly || C.base); if (wagS < 0) put(bx0 - 1, by0 - 1, C.hi);
+  } else if (C.tail === 'stub') {
+    put(bx0 - 1, by0 + (wagS < 0 ? 0 : 1), C.base);
+  } else if (wagS < 0) {
+    put(bx0 - 1, by0 + 1, C.base); put(bx0 - 2, by0, C.base); put(bx0 - 1, by0 - 1, C.hi); if (!small) put(bx0 - 1, by0 - 2, C.hi);
+  } else {
+    const wag = wagS > 0 ? 1 : 0;
     put(bx0 - 1, by0 + 1, C.base);
     put(bx0 - 2, by0, C.base);
     put(bx0 - 2 - wag, by0 - 1, C.hi);
@@ -371,7 +680,7 @@ function paintDog(br, fr) {
     const legs = [[bx0 + 2, sw, true], [bx1 - 1, -sw, true], [bx0 + 1, -sw, false], [bx1 - 2, sw, false]];
     for (const [lx, o, isFar] of legs) {
       for (let j = 1; j < legH; j++) put(lx + (j === legH - 1 && legH > 2 ? o : 0), by1 + j, isFar ? far : C.base);
-      put(lx + o, gy, isFar ? mix(far, 0x000000, 0.2) : C.lo);
+      put(lx + o, gy, isFar ? mix(far, 0x000000, 0.2) : (C.belly && corgi ? C.belly : C.lo));
     }
   } else {
     // sittande: bakbenet vikt under kroppen, frambenen raka
@@ -387,34 +696,44 @@ function paintDog(br, fr) {
     for (let y = top; y <= bot; y++) {
       if (y === top && (x === bx0 || x === bx1)) continue;
       let c = y === top ? C.hi : y === bot ? C.lo : C.base;
-      if (C.spots && y > top && y < bot && hash(x, y, 3) < 0.3) c = C.spots;
+      if (C.saddle && y <= top + 1 && x > bx0 && x < bx1 - 1) c = y === top ? mix(C.saddle, C.hi, 0.25) : C.saddle;
+      if (C.spots && y > top && y < bot + (C.dense ? 1 : 0) && hash(x, y, 3) < (C.dense ? 0.34 : 0.3)) c = C.spots;
       if (C.belly && y === bot && x > bx0 + 1 && x < bx1) c = C.belly;
-      put(x, y, c);
+      put(x, y, fur(x, y, c));
     }
   }
   // huvud
   const hs = small ? 4 : 5;
   const hx0 = bx1 - (small ? 1 : 2) + (sniff ? 2 : 0);
-  const hy0 = sniff ? by1 - 2 : by0 - hs + 2 - (sit ? 2 : 0);
-  if (!sniff) for (let y = hy0 + hs - 1; y <= by0 + 1; y++) for (let x = hx0; x < hx0 + 3; x++) put(x, y, C.base); // hals
+  const hy0 = (sniff ? by1 - 2 : by0 - hs + 2 - (sit ? 2 : 0)) - (bark ? 1 : 0);
+  if (!sniff) for (let y = hy0 + hs - 1; y <= by0 + 1; y++) for (let x = hx0; x < hx0 + 3; x++) put(x, y, fur(x, y, C.saddle && x === hx0 ? C.saddle : C.base)); // hals
   for (let j = 0; j < hs; j++) for (let i = 0; i < hs; i++) {
     if ((j === 0 || j === hs - 1) && (i === 0 || i === hs - 1)) continue;
-    put(hx0 + i, hy0 + j, j === 0 ? C.hi : i === hs - 1 && j > 1 ? C.lo : C.base);
+    let c = j === 0 ? C.hi : i === hs - 1 && j > 1 ? C.lo : C.base;
+    if (C.mask && j >= 2 && i >= 2) c = C.mask;
+    if (C.dense && hash(i, j, 21) < 0.2) c = C.spots;
+    put(hx0 + i, hy0 + j, fur(hx0 + i, hy0 + j, c));
   }
-  // nos
-  const sy = hy0 + hs - 3, sn = small ? 2 : 3;
-  for (let i = 0; i < sn; i++) { put(hx0 + hs - 1 + i, sy + 1, C.base); put(hx0 + hs - 1 + i, sy + 2, C.lo); }
+  // nos (mopsen har en kort, svart nos; schäfern en mörk)
+  const sy = hy0 + hs - 3, sn = C.snout === 'short' ? 1 : small ? 2 : 3;
+  const snC = C.muzzle || C.base, snL = C.muzzle ? mul(C.muzzle, 0.8) : C.lo;
+  for (let i = 0; i < sn; i++) {
+    put(hx0 + hs - 1 + i, sy + 1, i === 0 && !C.muzzle ? C.base : snC);
+    if (bark && i > 0) { put(hx0 + hs - 1 + i, sy + 2, i === 1 ? 0xc84a5a : 0x3a1a22); put(hx0 + hs - 2 + i, sy + 3, snL); }
+    else put(hx0 + hs - 1 + i, sy + 2, C.mask && i < sn ? C.mask : snL);
+  }
   put(hx0 + hs - 2 + sn, sy + 1, nose);
-  put(hx0 + hs - 2, hy0 + 1, nose); // öga
+  put(hx0 + hs - 2, hy0 + 1, C.eye || nose); // öga
   // öron
   if (br.ears === 'up') { put(hx0, hy0 - 1, C.ear); put(hx0 + 1, hy0 - 1, C.ear); put(hx0 + 1, hy0 - 2, C.ear); }
+  else if (br.ears === 'big') { put(hx0, hy0 - 1, C.ear); put(hx0 + 1, hy0 - 1, C.ear); put(hx0 + 1, hy0 - 2, C.ear); put(hx0, hy0 - 2, C.hi); put(hx0 + 1, hy0 - 3, C.ear); put(hx0 + 2, hy0 - 1, C.ear); }
   else { for (let j = 1; j <= 3; j++) put(hx0, hy0 + j, C.ear); put(hx0 + 1, hy0 + 1, C.ear); put(hx0 + 1, hy0 + 2, C.ear); }
   // halsband
-  if (!sniff) { put(hx0 + 1, hy0 + hs, 0xc8323a); put(hx0 + 2, hy0 + hs, 0xd84a4a); }
+  if (!sniff) { const col = C.collar || 0xc8323a; put(hx0 + 1, hy0 + hs, col); put(hx0 + 2, hy0 + hs, mix(col, 0xffffff, 0.2)); }
   // tunga när den går
   if (fr === 1 || fr === 2) put(hx0 + hs, sy + 3, 0xe06a7a);
   const neck = sniff ? [hx0 + 1, hy0 + 1] : [hx0 + 2, hy0 + hs];
-  return { c: fromPix(P), neck };
+  return { c: fromPix(P), neck, mouth: [hx0 + hs - 1 + sn, sy + 2] };
 }
 
 // ---------- paraply (fyra dukpaneler, spröt och uddar), ett per färg ----------
@@ -439,22 +758,70 @@ function paintUmbrella(c) {
   return fromPix(P);
 }
 
+// ---------- snögubbar: tre klot med skuggning, kol, morot, pinnarmar och hatt/mössa/hink ----------
+const SNOW4 = [0x9aacc4, 0xc6d4e6, 0xe6eef8, 0xffffff];
+function paintSnowman(v) {
+  const P = new Pix(22, 32, -11, -30);
+  // mjuk skugga och snövall vid foten
+  P.ell(2, 0, 9, 2.4, 0x6a80a0, 0.45, 4);
+  const ball = (cx, cy, rx, ry) => {
+    for (let y = Math.floor(cy - ry); y <= Math.ceil(cy + ry); y++) for (let x = Math.floor(cx - rx); x <= Math.ceil(cx + rx); x++) {
+      const u = (x + 0.5 - cx) / rx, w = (y + 0.5 - cy) / ry;
+      if (u * u + w * w > 1) continue;
+      // ljuset från sydväst: vänster/nedre kant ljusast, höger/övre mörkare
+      const l = 0.62 - u * 0.42 + w * 0.12 + (hash(x, y, 71) - 0.5) * 0.14;
+      P.px(x, y, SNOW4[clamp(Math.round(l * 3.4), 0, 3)]);
+    }
+  };
+  ball(0, -5, 7, 5.4); ball(0, -14.5, 5.2, 4.4); ball(0, -22, 4, 3.8);
+  // snöklumpar och fotspår runt foten
+  for (const [x, y] of [[-8, -1], [7, -1], [-6, 0], [5, 0], [9, 0]]) P.px(x, y, SNOW4[2]);
+  // knappar av kol
+  P.px(0, -16, 0x1a1a1e); P.px(0, -13, 0x1a1a1e); P.px(0, -7, 0x26262a);
+  // ansiktet: ögon och en morot som pekar åt höger
+  P.px(-2, -23, 0x16161a); P.px(1, -23, 0x16161a); P.px(-1, -20, 0x2a2a30); P.px(0, -20, 0x2a2a30); P.px(1, -20, 0x2a2a30);
+  P.hl(1, -22, 3, 0xe8782a); P.px(4, -22, 0xc05818); P.px(2, -21, 0xc05818);
+  // pinnarmar med kvistar
+  P.line(-5, -15, -10, -19, 0x5a3a22); P.px(-9, -20, 0x5a3a22); P.px(-11, -19, 0x7a5232);
+  P.line(5, -15, 10, -18, 0x5a3a22); P.px(9, -19, 0x5a3a22); P.px(11, -17, 0x7a5232);
+  if (v === 0) { // hög hatt
+    P.hl(-5, -26, 11, 0x1e1e24); P.rect(-3, -31, 7, 5, 0x26262c); P.hl(-3, -27, 7, 0xc8323a); P.vl(-3, -31, 5, 0x3a3a44);
+  } else if (v === 1) { // röd toppluva med tofs och randig halsduk
+    P.rect(-4, -27, 9, 2, 0xf4f1ea); P.rect(-3, -30, 7, 3, 0xd23a3a); P.px(-2, -30, 0xe86060); P.rect(-1, -32, 3, 2, 0xf4f1ea);
+    for (let x = -4; x <= 4; x++) P.px(x, -18, x % 2 ? 0x3a6ad0 : 0xf4f1ea);
+    P.vl(3, -17, 4, 0x3a6ad0); P.px(3, -14, 0xf4f1ea);
+  } else if (v === 2) { // hink på huvudet
+    P.rect(-4, -29, 9, 4, 0x3a8ad0); P.hl(-4, -29, 9, 0x6aaae8); P.hl(-4, -26, 9, 0x2a6aa8); P.px(-5, -26, 0x2a6aa8); P.px(5, -26, 0x2a6aa8);
+  } else { // bara halsduk (röd) som fladdrar
+    P.hl(-4, -18, 9, 0xc8323a); P.hl(-3, -17, 7, 0xa02a2a); P.line(3, -17, 6, -13, 0xc8323a); P.px(6, -12, 0xa02a2a);
+  }
+  return fromPix(P);
+}
+
 let SPR = null;
 function buildSprites() {
   if (SPR) return SPR;
-  const S = { pig: [], cat: {}, bf: [], bird: {}, carry: {}, pase: {}, case: {}, umb: {}, dog: [] };
-  for (const v of PIG_VARIANTS) {
-    const pal = { ...v, ...PIG_COMMON }, set = {};
-    for (const k in PIG_MAPS) set[k] = pairOf(fromMap(PIG_MAPS[k], pal));
-    S.pig.push(set);
+  const S = { pig: [], crow: null, gull: null, sparrow: [], sq: {}, duck: [], swan: null, cat: [], bf: [], bird: {}, carry: {}, pase: {}, case: {}, umb: {}, dog: [], snowman: [] };
+  const setOf = (maps, pal) => { const set = {}; for (const k in maps) set[k] = pairOf(fromMap(maps[k], pal)); return set; };
+  for (const v of PIG_VARIANTS) S.pig.push(setOf(PIG_MAPS, { ...v, ...PIG_COMMON }));
+  S.crow = setOf(PIG_MAPS, CROW_PAL);
+  S.gull = setOf(GULL_MAPS, GULL_PAL);
+  for (const pal of SPARROW_PALS) S.sparrow.push(setOf(SPARROW_MAPS, pal));
+  S.sq = setOf(SQ_MAPS, SQ_PAL);
+  S.sq.down = { r: flipY(S.sq.climb.r), l: flipY(S.sq.climb.l), w: S.sq.climb.w, h: S.sq.climb.h };
+  for (const pal of DUCK_PALS) S.duck.push(setOf(DUCK_MAPS, pal));
+  S.swan = pairOf(fromMap(SWAN_MAP, SWAN_PAL));
+  for (const pal of CAT_PALS) {
+    const set = {};
+    for (const k in CAT_MAPS) set[k] = pairOf(fromMap(CAT_MAPS[k], pal));
+    set.tails = CAT_TAILS.map((extra) => {
+      const rows = CAT_MAPS.awake.map((r) => r.split(''));
+      for (const [x, y] of extra) rows[y][x] = 'r';
+      if (extra.length) { rows[6][0] = 'O'; rows[5][0] = 'r'; }
+      return pairOf(fromMap(rows.map((r) => r.join('')), pal));
+    });
+    S.cat.push(set);
   }
-  for (const k in CAT_MAPS) S.cat[k] = pairOf(fromMap(CAT_MAPS[k], CAT_PAL));
-  S.catTail = CAT_TAILS.map((extra) => {
-    const rows = CAT_MAPS.awake.map((r) => r.split(''));
-    for (const [x, y] of extra) rows[y][x] = 'r';
-    if (extra.length) { rows[6][0] = 'O'; rows[5][0] = 'r'; }
-    return pairOf(fromMap(rows.map((r) => r.join('')), CAT_PAL));
-  });
   for (const col of BF_COLORS) { const set = {}; for (const k in BF_MAPS) set[k] = fromMap(BF_MAPS[k], col, true); S.bf.push(set); }
   for (const k in BIRD) S.bird[k] = BIRD[k].fr.map((rows) => fromMap(rows, BIRD[k].pal, false));
   for (const k in CARRY_MAPS) { const m = CARRY_MAPS[k]; S.carry[k] = { ...pairOf(fromMap(m.rows, m.pal)), ax: m.ax + 1, ay: m.ay + 1 }; }
@@ -469,9 +836,10 @@ function buildSprites() {
   for (const c of UMB_COLORS) S.umb[c] = paintUmbrella(c);
   for (const br of DOGS) {
     const frames = [];
-    for (let f = 0; f < 5; f++) { const d = paintDog(br, f); frames.push({ r: d.c, l: flipX(d.c), neck: d.neck }); }
+    for (let f = 0; f < 7; f++) { const d = paintDog(br, f); frames.push({ r: d.c, l: flipX(d.c), neck: d.neck, mouth: d.mouth }); }
     S.dog.push(frames);
   }
+  for (let v = 0; v < 4; v++) S.snowman.push(pairOf(paintSnowman(v)));
   SPR = S;
   return S;
 }
@@ -479,23 +847,78 @@ function buildSprites() {
 // Förhandsvisning av alla småfigurer (för utveckling): ark i skala 1.
 export function _sheet() {
   const S = buildSprites();
-  const c = mkCanvas(320, 150), x = c.getContext('2d');
-  x.fillStyle = '#8a8478'; x.fillRect(0, 0, 320, 150);
+  const c = mkCanvas(420, 300), x = c.getContext('2d');
+  x.fillStyle = '#8a8478'; x.fillRect(0, 0, 420, 300);
   let px = 2;
-  for (const set of S.pig) { let py = 2; for (const k in set) { x.drawImage(set[k].r, px, py); py += 12; } px += 15; }
+  for (const set of [...S.pig, S.crow]) { let py = 2; for (const k in set) { x.drawImage(set[k].r, px, py); py += 12; } px += 15; }
+  { let py = 2; for (const k in S.gull) { x.drawImage(S.gull[k].r, px, py); py += 13; } px += 18; }
+  for (const set of S.sparrow) { let py = 2; for (const k in set) { x.drawImage(set[k].r, px, py); py += 9; } px += 11; }
   let cx = px + 2;
-  for (const k in S.cat) { x.drawImage(S.cat[k].r, cx, 2); cx += S.cat[k].w + 3; }
-  S.catTail.forEach((t, i) => x.drawImage(t.r, px + 2 + i * 22, 20));
-  S.dog.forEach((frames, i) => frames.forEach((f, j) => x.drawImage(f.r, px + 2 + j * 23, 34 + i * 17)));
+  for (const set of S.cat) { let cy = 2; for (const k of ['sleep', 'awake', 'sit']) { x.drawImage(set[k].r, cx, cy); cy += 15; } cx += 22; }
+  S.dog.forEach((frames, i) => frames.forEach((f, j) => x.drawImage(f.r, 2 + j * 23 + (i >= 6 ? 170 : 0), 80 + (i % 6) * 17)));
+  let sx = 2;
+  for (const k of ['sit', 'gnaw', 'run1', 'run2', 'climb', 'down']) { x.drawImage(S.sq[k].r, sx, 186); sx += S.sq[k].w + 3; }
+  for (const set of S.duck) for (const k in set) { x.drawImage(set[k].r, sx, 188); sx += 16; }
+  x.drawImage(S.swan.r, sx, 184); sx += 18;
+  for (const s of S.snowman) { x.drawImage(s.r, sx, 176); sx += 23; }
   let bx = 2;
-  for (const set of S.bf) { let by = 80; for (const k in set) { x.drawImage(set[k], bx, by); by += 5; } bx += 8; }
-  let gx = 2;
-  for (const k in S.bird) { S.bird[k].forEach((f, i) => x.drawImage(f, gx + i * 13, 100)); gx += 42; }
+  for (const set of S.bf) { let by = 206; for (const k in set) { x.drawImage(set[k], bx, by); by += 5; } bx += 8; }
+  let gx = 40;
+  for (const k in S.bird) { S.bird[k].forEach((f, i) => x.drawImage(f, gx + i * 15, 210)); gx += 48; }
   let kx = 2;
-  for (const k in S.carry) { x.drawImage(S.carry[k].r, kx, 110); kx += S.carry[k].w + 2; }
+  for (const k in S.carry) { x.drawImage(S.carry[k].r, kx, 232); kx += S.carry[k].w + 2; }
   let ux = 2;
-  for (const k in S.umb) { x.drawImage(S.umb[k], ux, 130); ux += 21; }
+  for (const k in S.umb) { x.drawImage(S.umb[k], ux, 260); ux += 21; }
   return c.toDataURL('image/png');
+}
+
+// =====================================================================
+//  Utseenden: årstid, väder, stadsdel
+// =====================================================================
+function dress(L0, o) {
+  const L = { ...L0 };
+  const w = o.w || {}, t = w.temp ?? 15, season = w.season || 'sommar', kind = w.kind || (o.rain ? 'regn' : 'sol');
+  const winter = season === 'vinter' || t < 3, cool = !winter && t < 11, warm = t >= 19 && (kind === 'sol' || kind === 'moln');
+  const noShorts = () => { if (['shorts', 'skirt', 'bermuda', 'cargoShorts', 'denimShorts', 'miniSkirt'].includes(L.bottom)) L.bottom = pick(['jeans', 'pants', 'chinos', 'jeans']); };
+  if (o.jog) {
+    L.bag = null; L.shoeType = 'sneakers'; L.shoes = pick(['#f2f2f2', '#3a6bc2', '#c23b3b', '#1c1c1c']); L.phones = rnd() < 0.5;
+    if (winter) { L.top = pick(['fleece', 'windbreaker', 'track']); L.bottom = pick(['leggings', 'trackPants']); L.hat = pick(['beanie', 'headband', 'beanie']); }
+    else if (cool) { L.top = pick(['track', 'windbreaker', 'tee']); L.bottom = pick(['leggings', 'trackPants', 'sportShorts']); L.hat = pick([null, 'headband', 'cap']); }
+    else { L.top = pick(['tee', 'tank', 'tee', 'track']); L.bottom = pick(['sportShorts', 'bikeShorts', 'shorts', 'leggings']); L.hat = pick([null, 'cap', 'sweatband', 'headband']); }
+    return L;
+  }
+  if (o.youth || (o.sub && !L.kid && rnd() < 0.5)) {
+    L.top = winter ? pick(['puffer', 'bomber', 'zipHoodie', 'puffer']) : pick(['zipHoodie', 'hoodie', 'track', 'bomber', 'zipHoodie', 'tee']);
+    L.bottom = pick(['trackPants', 'joggers', 'jeansBaggy', 'jeans', 'sweatpants', 'jeansRipped']);
+    L.shoeType = pick(['sneakers', 'highTops', 'sneakers']);
+    if (rnd() < 0.55) L.hat = pick(['capBack', 'cap', 'beanie', 'capBack', 'bucket']);
+    if (rnd() < 0.2) L.neck = 'chain';
+    L.phones = rnd() < 0.3;
+  }
+  if (L.kid && winter) { L.top = 'puffer'; L.bottom = 'snowsuit'; L.hat = pick(['pompom', 'beanie', 'pompom', 'ushanka']); L.shoeType = 'winterBoots'; L.neck = rnd() < 0.5 ? pick(['scarf', 'scarfStripe']) : L.neck; }
+  else if (L.kid && kind === 'regn') { L.top = 'raincoat'; L.bottom = 'rainPants'; L.shoeType = 'rubberBoots'; L.shirt = pick(['#f0b429', '#d9433b', '#3a7bd5', '#46a35a']); }
+  else if (winter) {
+    if (!o.youth && rnd() < 0.85) L.top = pick(['puffer', 'parka', 'coat', 'puffer', 'coat', 'downVest', 'fleece', 'parka']);
+    if (rnd() < 0.72) L.hat = pick(['beanie', 'pompom', 'beanie', 'ushanka', 'earmuffs', 'beanie', 'flatCap']);
+    if (rnd() < 0.62) L.neck = pick(['scarf', 'scarfStripe', 'scarfLong', 'scarf']);
+    L.shoeType = pick(['winterBoots', 'boots', 'winterBoots', 'ankleBoots']);
+    noShorts();
+    L.glasses = L.glasses === 'sun' ? false : L.glasses;
+  } else if (cool) {
+    if (!o.youth && rnd() < 0.7) L.top = pick(['jacket', 'windbreaker', 'trench', 'bomber', 'denim', 'zipHoodie', 'fleece', 'coat', 'hoodie', 'sweater', 'cardigan', 'leather']);
+    if (rnd() < 0.2) L.neck = pick(['scarf', 'scarfStripe']);
+    if (rnd() < 0.2) L.shoeType = pick(['boots', 'ankleBoots']);
+    noShorts();
+  } else if (warm) {
+    if (!o.youth && rnd() < 0.7) L.top = pick(['tee', 'tank', 'hawaii', 'polo', 'tee', 'blouse', 'vneck', 'tee']);
+    if (!L.kid && rnd() < 0.45) L.bottom = pick(['shorts', 'denimShorts', 'skirt', 'sundress', 'bermuda', 'cargoShorts', 'shorts']);
+    else if (L.kid && rnd() < 0.5) L.bottom = pick(['shorts', 'sundress', 'dungareeShorts']);
+    if (rnd() < 0.25) L.shoeType = pick(['sandals', 'flipflops', 'sandals']);
+    if (rnd() < 0.22) L.hat = pick(['cap', 'straw', 'bucket', 'visor']);
+    if (rnd() < 0.3) L.glasses = 'sun';
+  }
+  if (kind === 'regn' && !L.kid && rnd() < 0.3) { L.top = 'raincoat'; if (rnd() < 0.6) L.shoeType = 'rubberBoots'; }
+  return L;
 }
 
 // =====================================================================
@@ -503,35 +926,68 @@ export function _sheet() {
 // =====================================================================
 const CELL = 2, GW = Math.ceil(CW / CELL), GH = Math.ceil(CH / CELL);
 const DIRS8 = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]];
-// 0 = spärrat, 1 = gräs (går att gå på), 2 = belagt (trottoar, gränd, gång, övergångsställe)
-function zoneAt(x, y) {
-  if (x < 4 || x > CW - 4 || y < CITY.BACK[0] + 2 || y > CH - 4) return 0;
-  if (y < CITY.FOOT_TOP) return 2;                                            // bakgatan
-  if (y < BASE) return BUILDINGS.some((b) => x >= b.x && x < b.x + b.w) ? 0 : 2; // gränder/tvärgator
-  if (y < CITY.ROAD[0]) return 2;                                             // norra trottoaren
-  if (y < CITY.ROAD[1]) return CROSSWALKS.some((c) => x >= c.x0 + 6 && x < c.x1 - 6) ? 2 : 0; // bara övergångsställena
-  if (y < CITY.PARK[0]) return 2;                                             // södra trottoaren
-  if (PATH_RECTS.some((r) => inRect(x, y, r))) return 2;
-  const P = PARK_LAYOUT.plaza;
-  if (Math.hypot(x - P.cx, y - P.cy) < P.r - 2) return 2;
-  return 1;
-}
+const cwMid = (c) => Math.round((c.x0 + c.x1) / 2);
 
-function buildNav(obstacles) {
+// Rutnätet ritas med rektanglar: 0 = spärrat, 1 = gräs/grus (går att gå på), 2 = belagt
+// (trottoar, gränd, gång, övergångsställe, parkering). Hindren (hus, rekvisita, stolpar) spärras sist.
+function rasterNav(obstacles) {
   const G = new Uint8Array(GW * GH);
-  for (let gy = 0; gy < GH; gy++) for (let gx = 0; gx < GW; gx++) G[gy * GW + gx] = zoneAt(gx * CELL + 1, gy * CELL + 1);
+  const fill = (r, v) => {
+    if (!r) return;
+    const gx0 = Math.max(0, Math.ceil((r[0] - 1) / CELL)), gx1 = Math.min(GW - 1, Math.ceil((r[2] - 1) / CELL) - 1);
+    const gy0 = Math.max(0, Math.ceil((r[1] - 1) / CELL)), gy1 = Math.min(GH - 1, Math.ceil((r[3] - 1) / CELL) - 1);
+    for (let gy = gy0; gy <= gy1; gy++) G.fill(v, gy * GW + gx0, gy * GW + gx1 + 1);
+  };
+  const disc = (cx, cy, r, v) => {
+    for (let gy = Math.floor((cy - r) / CELL); gy <= Math.ceil((cy + r) / CELL); gy++) for (let gx = Math.floor((cx - r) / CELL); gx <= Math.ceil((cx + r) / CELL); gx++) {
+      if (gx < 0 || gy < 0 || gx >= GW || gy >= GH) continue;
+      if (Math.hypot(gx * CELL + 1 - cx, gy * CELL + 1 - cy) < r) G[gy * GW + gx] = v;
+    }
+  };
+  // mellanbandet (parken, förortens gräsytor) går att gå på
+  fill([0, CITY.PARK[0], CW, (CITY.BACK_S || [462])[0]], 1);
+  // bakgata, gränder och tvärgator i båda raderna
+  fill([4, CITY.BACK[0] + 2, CW - 4, CITY.FOOT_TOP], 2);
+  for (const s of STREETS_ALL) if (s.kind !== 'lot' && s.kind !== 'road') fill([Math.max(4, s.x0), s.y0 ?? CITY.BACK[1], Math.min(CW - 4, s.x1), s.y1 ?? BASE], 2);
+  // trottoarerna och kajen
+  fill([4, CITY.SIDEWALK_N[0], CW - 4, CITY.SIDEWALK_N[1]], 2);
+  fill([4, CITY.SIDEWALK_S[0], CW - 4, CITY.SIDEWALK_S[1]], 2);
+  if (CITY.SIDEWALK_SN) fill([4, CITY.SIDEWALK_SN[0], CW - 4, CITY.SIDEWALK_SN[1]], 2);
+  if (CITY.SIDEWALK_SS) fill([4, CITY.SIDEWALK_SS[0], CW - 4, CITY.SIDEWALK_SS[1]], 2);
+  if (CITY.QUAY) fill([4, CITY.QUAY[0], CW - 4, WALK_BOTTOM], 2);
+  for (const p of PATHS) fill(p.rect, 2);
+  if (PARK.plaza) disc(PARK.plaza.cx, PARK.plaza.cy, PARK.plaza.r - 2, 2);
+  // övergångsställena över de vågräta gatorna
+  for (const c of CROSS_ALL) if (c.road !== 'infarten') fill([c.x0 + 6, c.y0 ?? ROAD_N[0], c.x1 - 6, c.y1 ?? ROAD_N[1]], 2);
+  // tomterna: kyrkogården och lekplatsen är gräs/sand, parkeringen och återvinningen asfalt, skrottomten stängd
+  for (const l of LOTS) fill(l.rect, l.kind === 'tomten' ? 0 : l.kind === 'parkering' || l.kind === 'atervinning' || l.kind === 'vagnsplatsen' ? 2 : 1);
+  for (const b of ALL_B) if (b.yard) fill(b.yard.rect, 2);
+  // Infarten: bilväg söder om Pixelgatan – bara zebrorna går att gå på
+  if (CITY.INFARTEN) {
+    fill([XI[0], ROAD_N[1], XI[1], ROAD_S[0]], 0);
+    for (const c of CROSS_ALL) if (c.road === 'infarten') fill([c.x0, c.y0, c.x1, c.y1], 2);
+  }
+  // hindren
   for (const o of obstacles) {
     if (!o || o.length < 4) continue;
     const x0 = Math.max(0, Math.floor((o[0] - 4) / CELL)), x1 = Math.min(GW - 1, Math.floor((o[2] + 3) / CELL));
     const y0 = Math.max(0, Math.floor((o[1] - 2) / CELL)), y1 = Math.min(GH - 1, Math.floor((o[3] + 1) / CELL));
-    for (let gy = y0; gy <= y1; gy++) for (let gx = x0; gx <= x1; gx++) G[gy * GW + gx] = 0;
+    for (let gy = y0; gy <= y1; gy++) G.fill(0, gy * GW + x0, gy * GW + x1 + 1);
   }
+  // världens kanter
+  for (let gy = 0; gy < GH; gy++) { const y = gy * CELL + 1; if (y < CITY.BACK[0] + 2 || y > WALK_BOTTOM) G.fill(0, gy * GW, gy * GW + GW); }
+  return G;
+}
+
+function buildNav(obstacles) {
+  const G = rasterNav(obstacles);
   const cell = (x, y) => {
     const gx = Math.floor(x / CELL), gy = Math.floor(y / CELL);
     return gx < 0 || gy < 0 || gx >= GW || gy >= GH ? 0 : G[gy * GW + gx];
   };
   const walk = (x, y) => cell(x, y) > 0;
   const paved = (x, y) => cell(x, y) === 2;
+  const grass = (x, y) => cell(x, y) === 1;
   const los = (ax, ay, bx, by, test) => {
     const n = Math.ceil(Math.hypot(bx - ax, by - ay));
     for (let i = 1; i < n; i++) if (!test(ax + (bx - ax) * i / n, ay + (by - ay) * i / n)) return false;
@@ -551,13 +1007,13 @@ function buildNav(obstacles) {
     return null;
   }
   // bredden-först i en ruta runt sträckan, sedan åtstramad med siktlinjer
-  function gridPath(ax, ay, bx, by, test) {
-    const pad = 36;
+  function gridPath(ax, ay, bx, by, test, pad = 36) {
     const gx0 = Math.max(0, Math.floor((Math.min(ax, bx) - pad) / CELL)), gx1 = Math.min(GW - 1, Math.floor((Math.max(ax, bx) + pad) / CELL));
     const gy0 = Math.max(0, Math.floor((Math.min(ay, by) - pad) / CELL)), gy1 = Math.min(GH - 1, Math.floor((Math.max(ay, by) + pad) / CELL));
     const w = gx1 - gx0 + 1, h = gy1 - gy0 + 1;
     const okc = (i, j) => test((gx0 + i) * CELL + 1, (gy0 + j) * CELL + 1);
     const si = Math.floor(ax / CELL) - gx0, sj = Math.floor(ay / CELL) - gy0, ti = Math.floor(bx / CELL) - gx0, tj = Math.floor(by / CELL) - gy0;
+    if (si < 0 || sj < 0 || ti < 0 || tj < 0 || si >= w || ti >= w || sj >= h || tj >= h) return null;
     const start = sj * w + si, goal = tj * w + ti;
     const prev = new Int32Array(w * h).fill(-1), q = new Int32Array(w * h);
     let qh = 0, qt = 0;
@@ -596,23 +1052,30 @@ function buildNav(obstacles) {
   const node = (x, y, tag) => {
     const p = nearest(Math.round(x), Math.round(y), paved, 12) || nearest(Math.round(x), Math.round(y), walk, 12);
     if (!p) return -1;
-    nodes.push({ x: p[0], y: p[1], tag, adj: [] });
+    // samma plats två gånger blir en nod
+    for (let i = nodes.length - 1; i >= 0 && i > nodes.length - 400; i--) if (nodes[i].x === p[0] && nodes[i].y === p[1]) return i;
+    nodes.push({ x: p[0], y: p[1], tag, adj: [], i: nodes.length });
     return nodes.length - 1;
   };
   function link(a, b, opt = {}) {
-    if (a < 0 || b < 0 || a === b) return;
+    if (a < 0 || b < 0 || a === b) return false;
     const A = nodes[a], B = nodes[b];
+    if (A.adj.some((e) => e.a === b || e.b === b)) return true;
     let pts = los(A.x, A.y, B.x, B.y, paved) ? [[A.x, A.y], [B.x, B.y]] : null;
     if (!pts) pts = gridPath(A.x, A.y, B.x, B.y, paved) || gridPath(A.x, A.y, B.x, B.y, walk);
-    if (!pts) return;
+    if (!pts) return false;
     let len = 0;
     for (let k = 1; k < pts.length; k++) len += Math.hypot(pts[k][0] - pts[k - 1][0], pts[k][1] - pts[k - 1][1]);
-    const e = { a, b, pts, len, cross: opt.cross ?? -1, cost: len + (opt.extra || 0) };
+    // gräs kostar lite extra – man går hellre på gångarna
+    let soft = 0;
+    for (let k = 1; k < pts.length; k++) { const mx = (pts[k][0] + pts[k - 1][0]) / 2, my = (pts[k][1] + pts[k - 1][1]) / 2; if (grass(mx, my)) soft += Math.hypot(pts[k][0] - pts[k - 1][0], pts[k][1] - pts[k - 1][1]) * 0.5; }
+    const e = { a, b, pts, len, cross: opt.cross ?? -1, cost: len + soft + (opt.extra || 0) };
     edges.push(e); A.adj.push(e); B.adj.push(e);
+    return true;
   }
   // en rak gånglinje med noder vid alla x (sammanslagna inom 6 px, utfyllda var 110:e px)
-  function line(y, xs, tag) {
-    const sorted = [...xs].map(Math.round).sort((a, b) => a - b), out = [];
+  function line(y, xs, tag, xa = 6, xb = CW - 6) {
+    const sorted = [...xs].map(Math.round).filter((x) => x >= xa && x <= xb).sort((a, b) => a - b), out = [];
     for (const x of sorted) {
       if (out.length && x - out[out.length - 1] < 6) continue;
       if (out.length) {
@@ -621,65 +1084,195 @@ function buildNav(obstacles) {
       }
       out.push(x);
     }
-    const ids = out.map((x) => node(x, y, tag)).filter((i) => i >= 0);
+    const ids = [];
+    for (const x of out) { const i = node(x, y, tag); if (i >= 0 && !ids.includes(i)) ids.push(i); }
     for (let k = 1; k < ids.length; k++) link(ids[k - 1], ids[k]);
     return ids;
   }
-  const at = (ids, x) => ids.reduce((best, i) => (Math.abs(nodes[i].x - x) < Math.abs(nodes[best].x - x) ? i : best), ids[0]);
+  const at = (ids, x, y) => ids.reduce((best, i) => (Math.abs(nodes[i].x - x) + (y === undefined ? 0 : Math.abs(nodes[i].y - y) * 2) < Math.abs(nodes[best].x - x) + (y === undefined ? 0 : Math.abs(nodes[best].y - y) * 2) ? i : best), ids[0]);
+  const nearNode = (x, y, ids = null, maxD = 160) => {
+    let best = -1, bd = maxD;
+    for (const n of ids ? ids.map((i) => nodes[i]) : nodes) { const d = Math.hypot(n.x - x, n.y - y); if (d < bd) { bd = d; best = n.i; } }
+    return best;
+  };
 
-  const gaps = STREETS
+  const gapsOf = (row) => STREETS_ALL.filter((s) => s.row === row && (s.kind === 'alley' || s.kind === 'street' || s.kind === 'edge'))
     .map((s) => ({ s, x0: Math.max(s.x0, 5), x1: Math.min(s.x1, CW - 5) }))
     .filter((g) => g.x1 - g.x0 >= 10)
     .map((g) => ({ ...g, cx: Math.round((g.x0 + g.x1) / 2) }));
-  const cwX = CROSSWALKS.map((c) => Math.round((c.x0 + c.x1) / 2));
-  const doorX = {};
-  for (const b of BUILDINGS) doorX[b.id] = Math.round(doorCenter(b).x);
-  const pl = PARK_LAYOUT.plaza, prom = PARK_LAYOUT.promenade;
+  const gN = gapsOf('n'), gS = gapsOf('s');
+  const cwP = CROSS_ALL.filter((c) => (c.road || 'pixelgatan') === 'pixelgatan');
+  const cwS = CROSS_ALL.filter((c) => c.road === 'sodergatan');
+  const dX = (b) => Math.round(doorCenter(b).x);
+  const rowN = ALL_B.filter((b) => b.row === 'n' || !b.row), rowS = ALL_B.filter((b) => b.row === 's'), rowF = ALL_B.filter((b) => b.row === 'f');
+  const stopsP = BUS_STOPS.filter((s) => (s.road || 'pixelgatan') === 'pixelgatan'), stopsS = BUS_STOPS.filter((s) => s.road === 'sodergatan');
+  const pl = PARK.plaza, prom = PARK.promenade;
+  const walks = (PARK.walks || []).map((r) => Math.round((r[0] + r[2]) / 2));
+  const lot = (id) => LOTS.find((l) => l.id === id) || null;
+  const kyrk = lot('kyrkogard'), lekX = lot('lekplats_x'), grus = lot('grusplan'), park = lot('parkering'), aterv = lot('atervinning'), vagn = lot('vagnsplatsen');
+  const gate = (l, side) => (l?.gates || []).find((g) => g.side === side) || null;
+  const gmid = (g) => Math.round((g.x0 + g.x1) / 2);
+  const infW = XI[0] - 7, infE = XI[1] + 7;
+  const subPaths = (SUB.paths || []).map((r) => Math.round((r[0] + r[2]) / 2));
 
-  const N = line(Y_N, [6, CW - 6, ...gaps.map((g) => g.cx), ...Object.values(doorX), ...cwX], 'n');
-  const S = line(Y_S, [6, CW - 6, ...cwX, BUS_STOP.x], 's');
-  const Bk = line(Y_BACK, [6, CW - 6, ...gaps.map((g) => g.cx)], 'b');
-  const Pm = line(Y_PROM, [prom[0] + 4, prom[2] - 4, ...cwX, pl.cx - 40, pl.cx + 40], 'p');
-  // gränder och tvärgator: bakgatan ↔ norra trottoaren
-  for (const g of gaps) link(at(Bk, g.cx), at(N, g.cx));
-  // övergångsställena (med trafikljus) och parkgångarna
+  // ---- gånglinjerna ----
+  const Bk = line(Y_BACK, [6, CW - 6, ...gN.map((g) => g.cx)], 'b');
+  const N = line(Y_N, [6, CW - 6, ...gN.map((g) => g.cx), ...rowN.map(dX), ...cwP.map(cwMid)], 'n');
+  const S = line(Y_S, [6, CW - 6, ...cwP.map(cwMid), ...stopsP.flatMap((s) => [s.x - 42, s.x + 30, s.x + 44]), infW, infE, ...subPaths,
+    ...(lekX && gate(lekX, 'n') ? [gmid(gate(lekX, 'n'))] : []), ...(grus && gate(grus, 'n') ? [gmid(gate(grus, 'n'))] : []), ...(park?.drive ? [Math.round((park.drive[0] + park.drive[1]) / 2)] : [])], 's');
+  const Pm = prom ? line(Y_PROM, [prom[0] + 4, prom[2] - 4, ...cwP.filter((c) => c.x1 <= prom[2]).map(cwMid), pl.cx - 40, pl.cx + 40, ...walks, ...(PARK.dogGate ? [Math.round((PARK.dogGate[0] + PARK.dogGate[1]) / 2)] : [])], 'p', prom[0], prom[2]) : [];
+  const BkS = CITY.BACK_S ? line(Y_BKS, [6, CW - 6, ...walks, ...gS.map((g) => g.cx), ...rowF.filter((b) => Math.abs(baseOf(b) + 9 - Y_BKS) < 26).map(dX), infW, infE, ...subPaths,
+    ...(kyrk && gate(kyrk, 'n') ? [gmid(gate(kyrk, 'n'))] : []), ...(lekX && gate(lekX, 's') ? [gmid(gate(lekX, 's'))] : []), ...(grus && gate(grus, 's') ? [gmid(gate(grus, 's'))] : []),
+    ...(aterv ? [Math.round((aterv.rect[0] + aterv.rect[2]) / 2)] : []), ...(vagn ? [Math.round((vagn.rect[0] + vagn.rect[2]) / 2)] : [])], 'k') : [];
+  const SN = CITY.SIDEWALK_SN ? line(Y_SN, [6, CW - 6, ...gS.map((g) => g.cx), ...rowS.map(dX), ...cwS.map(cwMid), infW, infE, ...(kyrk && gate(kyrk, 's') ? [gmid(gate(kyrk, 's'))] : []),
+    ...rowF.filter((b) => Math.abs(baseOf(b) + 9 - Y_SN) < 30).map(dX), ...(aterv ? [Math.round((aterv.rect[0] + aterv.rect[2]) / 2)] : []), ...(vagn ? [Math.round((vagn.rect[0] + vagn.rect[2]) / 2)] : [])], 'sn') : [];
+  const SS = CITY.SIDEWALK_SS ? line(Y_SS, [6, CW - 6, ...cwS.map(cwMid), ...stopsS.flatMap((s) => [s.x - 42, s.x + 30, s.x + 44])], 'ss') : [];
+  const Q = CITY.QUAY ? line(Y_Q, [6, CW - 6], 'q') : [];
+
+  // ---- tvärförbindelser ----
+  // gränder och tvärgator i norra raden: bakgatan ↔ trottoaren
+  for (const g of gN) link(at(Bk, g.cx), at(N, g.cx));
+  // övergångsställena (Pixelgatan med trafikljus; Betonggatans är trasigt – där väjer bilarna)
   const curbs = [];
-  CROSSWALKS.forEach((c, k) => {
-    const cx = cwX[k];
-    const kN = node(cx, CURB_N, 'kant'), kS = node(cx, CURB_S, 'kant');
-    link(at(N, cx), kN);
+  for (const c of cwP) {
+    const x = cwMid(c);
+    const kN = node(x, CURB_N, 'kant'), kS = node(x, CURB_S, 'kant');
+    link(at(N, x), kN);
     link(kN, kS, { cross: c.i, extra: 50 });
-    link(kS, at(S, cx));
-    link(at(S, cx), at(Pm, cx));
+    link(kS, at(S, x));
     curbs.push(kN, kS);
-  });
+  }
+  for (const c of cwS) {
+    if (!SN.length || !SS.length) break;
+    const x = cwMid(c);
+    const kN = node(x, CURB_SN, 'kant'), kS = node(x, CURB_SS, 'kant');
+    link(at(SN, x), kN);
+    link(kN, kS, { cross: c.i, extra: 50 });
+    link(kS, at(SS, x));
+    curbs.push(kN, kS);
+  }
+  // parkgångarna: trottoaren ↔ promenaden (v1) och promenaden ↔ parkgången (v2)
+  for (const r of PARK.paths || []) { const x = Math.round((r[0] + r[2]) / 2); if (Pm.length) link(at(S, x), at(Pm, x)); }
   // torget: en ring runt fontänen
   const ring = [];
-  for (let k = 0; k < 8; k++) {
-    const a = k * Math.PI / 4;
-    const i = node(pl.cx + Math.cos(a) * (pl.r - 8), pl.cy + Math.sin(a) * (pl.r - 8), 'torg');
-    if (i >= 0) ring.push(i);
+  if (pl) {
+    for (let k = 0; k < 8; k++) {
+      const a = k * Math.PI / 4;
+      const i = node(pl.cx + Math.cos(a) * (pl.r - 8), pl.cy + Math.sin(a) * (pl.r - 8), 'torg');
+      if (i >= 0 && !ring.includes(i)) ring.push(i);
+    }
+    for (let k = 0; k < ring.length; k++) link(ring[k], ring[(k + 1) % ring.length]);
   }
-  for (let k = 0; k < ring.length; k++) link(ring[k], ring[(k + 1) % ring.length]);
   const ringNear = (x, y) => ring.reduce((b, i) => (Math.hypot(nodes[i].x - x, nodes[i].y - y) < Math.hypot(nodes[b].x - x, nodes[b].y - y) ? i : b), ring[0]);
-  if (ring.length) {
+  if (ring.length && Pm.length) {
     link(ringNear(pl.cx, pl.cy - pl.r), at(Pm, pl.cx));
     link(ringNear(pl.cx - pl.r, pl.cy - pl.r * 0.7), at(Pm, pl.cx - 40));
     link(ringNear(pl.cx + pl.r, pl.cy - pl.r * 0.7), at(Pm, pl.cx + 40));
   }
+  for (const r of PARK.walks || []) {
+    const x = Math.round((r[0] + r[2]) / 2);
+    if (!BkS.length) break;
+    if (ring.length && r[1] > Y_PROM + 30) link(ringNear(x, r[1]), at(BkS, x));
+    else if (Pm.length) link(at(Pm, x), at(BkS, x));
+  }
+  // Infartens trottoarer genom mellanbandet
+  if (BkS.length) { link(at(S, infW), at(BkS, infW, Y_BKS)); link(at(S, infE), at(BkS, infE, Y_BKS)); }
+  if (BkS.length && SN.length) link(at(BkS, infE), at(SN, infE));
+  // förortens stig från hållplatsen till gångvägen
+  for (const x of subPaths) if (BkS.length) link(at(S, x), at(BkS, x));
+  // gränderna i södra raden: parkgången ↔ trottoaren
+  for (const g of gS) if (BkS.length && SN.length) link(at(BkS, g.cx), at(SN, g.cx));
+  // kajen: några trappor ner från bortre trottoaren
+  if (Q.length && SS.length) for (let x = 120; x < CW - 60; x += 240) link(at(SS, x), at(Q, x));
+
+  // ---- tomterna ----
+  const special = {};
+  const gateNode = (l, side, dy) => { const g = gate(l, side); if (!g) return -1; return side === 'w' ? node(l.rect[0] + (dy || 0), Math.round((g.y0 + g.y1) / 2), 'grind') : node(gmid(g), (side === 'n' ? l.rect[1] : l.rect[3]) + (dy || 0), 'grind'); };
+  if (kyrk && BkS.length && SN.length) {
+    const gn = gateNode(kyrk, 'n', 6), gs = gateNode(kyrk, 's', -6), mid = node((kyrk.rect[0] + kyrk.rect[2]) / 2, (kyrk.rect[1] + kyrk.rect[3]) / 2, 'kyrk');
+    if (gn >= 0) { link(at(BkS, nodes[gn].x), gn); link(gn, mid); }
+    if (gs >= 0) { link(at(SN, nodes[gs].x), gs); link(gs, mid); }
+    special.kyrk = mid;
+  }
+  if (lekX) {
+    const gn = gateNode(lekX, 'n', 6), gs = gateNode(lekX, 's', -6), mid = node((lekX.rect[0] + lekX.rect[2]) / 2, (lekX.rect[1] + lekX.rect[3]) / 2 + 6, 'lek');
+    if (gn >= 0) { link(at(S, nodes[gn].x), gn); link(gn, mid); }
+    if (gs >= 0 && BkS.length) { link(at(BkS, nodes[gs].x), gs); link(gs, mid); }
+    special.lekX = mid;
+  }
+  if (grus) {
+    const gn = gateNode(grus, 'n', 6), gs = gateNode(grus, 's', -6), gw = gateNode(grus, 'w', 6), mid = node((grus.rect[0] + grus.rect[2]) / 2, (grus.rect[1] + grus.rect[3]) / 2, 'grus');
+    if (gn >= 0) { link(at(S, nodes[gn].x), gn); link(gn, mid); }
+    if (gs >= 0 && BkS.length) { link(at(BkS, nodes[gs].x), gs); link(gs, mid); }
+    if (gw >= 0) link(gw, mid);
+    special.grus = mid;
+  }
+  if (park) {
+    const x = park.drive ? Math.round((park.drive[0] + park.drive[1]) / 2) : park.rect[0] + 30;
+    const a = node(x, park.rect[1] + 12, 'p-lot'), b = node((park.rect[0] + park.rect[2]) / 2, park.rect[3] - 10, 'p-lot');
+    link(at(S, x), a); link(a, b); if (BkS.length) link(b, at(BkS, nodes[b]?.x ?? x));
+    special.parkering = b;
+  }
+  if (aterv && BkS.length && SN.length) link(at(BkS, (aterv.rect[0] + aterv.rect[2]) / 2), at(SN, (aterv.rect[0] + aterv.rect[2]) / 2));
+  if (vagn && BkS.length && SN.length) link(at(BkS, (vagn.rect[0] + vagn.rect[2]) / 2), at(SN, (vagn.rect[0] + vagn.rect[2]) / 2));
+  // parkens lekplats och hundrastgården
+  if (PARK.playground && BkS.length) {
+    const r = PARK.playground, mid = node((r[0] + r[2]) / 2, (r[1] + r[3]) / 2, 'lek');
+    link(mid, at(BkS, nodes[mid]?.x ?? r[0]));
+    if (Pm.length) link(mid, nearNode(nodes[mid].x, nodes[mid].y - 60, Pm, 140));
+    special.lekP = mid;
+  }
+  if (PARK.dogPark && PARK.dogGate && Pm.length) {
+    const r = PARK.dogPark, gx = Math.round((PARK.dogGate[0] + PARK.dogGate[1]) / 2);
+    const out = node(gx, r[1] - 8, 'hund'), inn = node(gx, r[1] + 14, 'hund');
+    link(at(Pm, gx), out); link(out, inn);
+    special.dogIn = inn;
+  }
+
+  // ---- dörrarna ----
+  const doorNode = {};
+  for (const b of rowN) if (N.length) doorNode[b.id] = at(N, dX(b));
+  for (const b of rowS) if (SN.length) doorNode[b.id] = at(SN, dX(b));
+  for (const b of rowF) {
+    const i = node(dX(b), baseOf(b) + 9, 'dörr');
+    if (i < 0) continue;
+    // de två närmaste noderna på gånglinjerna (gräs går bra – man kliver av gången fram till kiosken)
+    const cand = nodes.filter((n) => n.i !== i && n.tag !== 'kant' && n.tag !== 'dörr').map((n) => [n.i, Math.hypot(n.x - nodes[i].x, (n.y - nodes[i].y) * 1.2)]).sort((a, b) => a[1] - b[1]);
+    let k = 0;
+    for (const [j, d] of cand) { if (d > 150 || k >= 2) break; if (link(i, j)) k++; }
+    doorNode[b.id] = i;
+  }
+  const lineOf = (b) => (b.row === 's' ? SN : b.row === 'f' ? null : N);
 
   function route(from, to) {
     if (from === to) return [];
     const n = nodes.length, dist = new Float64Array(n).fill(Infinity), via = new Array(n).fill(null), done = new Uint8Array(n);
-    dist[from] = 0;
-    for (;;) {
-      let u = -1, best = Infinity;
-      for (let i = 0; i < n; i++) if (!done[i] && dist[i] < best) { best = dist[i]; u = i; }
-      if (u < 0 || u === to) break;
+    // binär hög av [avstånd, nod]
+    const H = [];
+    const push = (d, i) => { H.push([d, i]); let k = H.length - 1; while (k > 0) { const p = (k - 1) >> 1; if (H[p][0] <= H[k][0]) break; const t = H[p]; H[p] = H[k]; H[k] = t; k = p; } };
+    const pop = () => {
+      const top = H[0], last = H.pop();
+      if (H.length) {
+        H[0] = last;
+        for (let k = 0; ;) {
+          const l = 2 * k + 1, r = l + 1; let m = k;
+          if (l < H.length && H[l][0] < H[m][0]) m = l;
+          if (r < H.length && H[r][0] < H[m][0]) m = r;
+          if (m === k) break;
+          const t = H[m]; H[m] = H[k]; H[k] = t; k = m;
+        }
+      }
+      return top;
+    };
+    dist[from] = 0; push(0, from);
+    while (H.length) {
+      const [d, u] = pop();
+      if (done[u]) continue;
       done[u] = 1;
+      if (u === to) break;
       for (const e of nodes[u].adj) {
-        const v = e.a === u ? e.b : e.a, d = best + e.cost;
-        if (d < dist[v]) { dist[v] = d; via[v] = e; }
+        const v = e.a === u ? e.b : e.a, nd = d + e.cost;
+        if (nd < dist[v]) { dist[v] = nd; via[v] = e; push(nd, v); }
       }
     }
     if (!via[to]) return null;
@@ -693,81 +1286,193 @@ function buildNav(obstacles) {
     }
     return pts;
   }
+  // gångväg mellan två godtyckliga punkter (rak om det går, annars runt hindren)
+  function pathTo(ax, ay, bx, by, pad = 36) {
+    if (los(ax, ay, bx, by, walk)) return [{ x: bx, y: by, gate: -1, noOff: true }];
+    const P = gridPath(ax, ay, bx, by, paved, pad) || gridPath(ax, ay, bx, by, walk, pad);
+    return P ? P.slice(1).map(([x, y]) => ({ x, y, gate: -1, noOff: true })) : null;
+  }
 
-  // dörrnoder, fönsterplatser, busshållplatsens väntplatser, utgångar
-  const doorNode = {};
-  for (const b of BUILDINGS) doorNode[b.id] = at(N, doorX[b.id]);
+  // ---- fönstren man kan stanna vid ----
   const windows = [];
-  for (const b of BUILDINGS) {
-    if (!WINDOW_SHOPS.includes(b.id)) continue;
-    const half = (b.door.x1 - b.door.x0) / 2 + 12, dc = doorX[b.id];
+  for (const b of [...rowN, ...rowS]) {
+    if (!WINDOW_SHOPS.includes(b.id) || !doorNode[b.id] && doorNode[b.id] !== 0) continue;
+    const L = lineOf(b);
+    if (!L || !L.length) continue;
+    const base = baseOf(b), half = (b.door.x1 - b.door.x0) / 2 + 12, dc = dX(b);
     for (let x = b.x + 12; x < b.x + b.w - 12; x += 9) {
       if (Math.abs(x - dc) < half) continue;
-      const nn = at(N, x), ny = nodes[nn].y, wy = BASE + 7;
+      const nn = at(L, x), ny = nodes[nn].y, wy = base + 7;
       if (paved(x, wy) && paved(x, ny) && los(nodes[nn].x, ny, x, ny, paved) && los(x, ny, x, wy, paved)) windows.push({ b, x, y: wy, node: nn, ny });
     }
   }
-  // gångväg mellan två godtyckliga punkter (rak om det går, annars runt hindren)
-  function pathTo(ax, ay, bx, by) {
-    if (los(ax, ay, bx, by, walk)) return [{ x: bx, y: by, gate: -1, noOff: true }];
-    const P = gridPath(ax, ay, bx, by, paved) || gridPath(ax, ay, bx, by, walk);
-    return P ? P.slice(1).map(([x, y]) => ({ x, y, gate: -1, noOff: true })) : null;
-  }
-  // busshållplatsen: väntplatser runt skjulet (nära kanten och hållplatsen först)
-  const busNode = at(S, BUS_STOP.x), bus = [];
-  {
-    const B0 = nodes[busNode], cand = [];
-    for (let x = BUS_STOP.x - 48; x <= BUS_STOP.x + 48; x += 6) {
-      for (const y of [286, 290, 295, 298]) if (paved(x, y)) cand.push({ x, y, s: Math.abs(x - BUS_STOP.x) * 0.6 + (y - 284) * 1.2 });
+
+  // ---- busshållplatserna: väntplatser runt kuren, närmast kanten och skylten först ----
+  const stops = [];
+  for (const s of BUS_STOPS) {
+    const L = s.road === 'sodergatan' ? SS : S;
+    if (!L.length) continue;
+    const w = s.wait || { x: s.x + 30, y: s.y - 3 };
+    const nd = at(L, w.x);
+    const B0 = nodes[nd], curb = s.road === 'sodergatan' ? CURB_SS : CURB_S;
+    const cand = [];
+    for (let x = s.x - 50; x <= s.x + 56; x += 6) for (let y = curb + 3; y <= s.y + 1; y += 4) {
+      if (!paved(x, y)) continue;
+      cand.push({ x, y, s: Math.abs(x - (s.x + 12)) * 0.5 + Math.abs(y - (curb + 8)) * 0.9 });
     }
     cand.sort((a, b) => a.s - b.s);
+    const spots = [];
     for (const c of cand) {
-      if (bus.length >= 8) break;
-      if (bus.some((b) => Math.abs(b.x - c.x) < 8 && Math.abs(b.y - c.y) < 6)) continue;
+      if (spots.length >= 8) break;
+      if (spots.some((b) => Math.abs(b.x - c.x) < 8 && Math.abs(b.y - c.y) < 6)) continue;
       const there = pathTo(B0.x, B0.y, c.x, c.y);
       if (!there || there.length > 6) continue;
       const back = pathTo(c.x, c.y, B0.x, B0.y);
       if (!back) continue;
-      bus.push({ x: c.x, y: c.y, busy: null, there, back });
+      // under kurens tak (då behövs inget paraply)
+      const roof = Math.abs(c.x - s.x) < 32 && c.y < s.y + 1 && c.y > s.y - 18;
+      spots.push({ x: c.x, y: c.y, busy: null, there, back, roof });
     }
+    stops.push({ s, node: nd, spots, curb, road: s.road || 'pixelgatan', served: false });
   }
-  const ends = (ids) => (ids.length ? [{ n: ids[0], dir: -1 }, { n: ids[ids.length - 1], dir: 1 }] : []);
-  const exits = [...ends(N), ...ends(S), ...ends(Pm), ...ends(Bk).map((e) => ({ ...e, back: true }))];
-  const curbSet = new Set(curbs);
-  const spawnNodes = [...N, ...S, ...Pm].filter((i) => !curbSet.has(i));
 
-  return { G, walk, paved, los, nearest, pathTo, nodes, edges, route, N, S, Bk, Pm, ring, doorNode, windows, busNode, bus, exits, spawnNodes };
+  const endsOf = (ids) => (ids.length ? [ids[0], ids[ids.length - 1]].filter((i) => nodes[i].x < 16 || nodes[i].x > CW - 16).map((i) => ({ n: i, dir: nodes[i].x < CW / 2 ? -1 : 1 })) : []);
+  const exits = [...endsOf(N), ...endsOf(S), ...endsOf(SN), ...endsOf(SS), ...endsOf(Q), ...endsOf(BkS), ...endsOf(Bk).map((e) => ({ ...e, back: true }))];
+  const curbSet = new Set(curbs);
+  const spawnNodes = [...N, ...S, ...Pm, ...BkS, ...SN, ...SS, ...Q].filter((i) => !curbSet.has(i));
+  const parkNodes = [...Pm, ...ring, ...BkS.filter((i) => nodes[i].x < XI[0]), ...['lekP', 'kyrk', 'lekX', 'grus', 'parkering'].map((k) => special[k]).filter((i) => i >= 0)];
+  const lines = { Bk, N, S, Pm, BkS, SN, SS, Q };
+
+  return { G, walk, paved, grass, los, nearest, pathTo, gridPath, nodes, edges, route, lines, ring, doorNode, windows, stops, exits, spawnNodes, parkNodes, special, nearNode, at };
 }
 
 // =====================================================================
 //  createLife
 // =====================================================================
-export function createLife(env, traffic) {
+export function createLife(env, traffic, props) {
   const T = traffic || {};
+  const PR = () => props || env.props || null;
   const green = (i) => { try { return typeof T.pedGreen === 'function' ? !!T.pedGreen(i) : true; } catch { return true; } };
   const S = buildSprites();
   const nav = buildNav(env.obstacles || []);
   const { nodes, walk, paved } = nav;
-  const parkNodes = [...nav.Pm, ...nav.ring];
+  const W = () => env.weather || { kind: env.rain ? 'regn' : 'sol', intensity: 0.6, snowCover: 0, season: 'sommar', temp: 15, wind: 0 };
 
+  // ---------- kameran ----------
   let cam = { x: 0, y: 0 };
   const updCam = () => {
+    const v = env.view;
+    if (v && v.w) { cam = { x: v.x, y: v.y }; return; }
     const px = env.player?.x ?? CW / 2, py = env.player?.y ?? 200;
     cam = { x: clamp(px - VW / 2, 0, CW - VW), y: clamp(py - VH * 0.62, 0, CH - VH) };
   };
   const visible = (x, y, m = 16) => x > cam.x - m && x < cam.x + VW + m && y > cam.y - m && y < cam.y + VH + 44;
-  const camCX = () => cam.x + VW / 2;
+  const camCX = () => cam.x + VW / 2, camCY = () => cam.y + VH / 2;
+  const camD = (x, y) => Math.hypot(x - camCX(), (y - camCY()) * 1.25);
+
+  // ---------- sittplatserna (bänkar och kurer) ----------
+  // Rekvisitan (props.seats()) äger platserna. Saknas den räknas de ut ur hindren:
+  // en bänk är ett 27×4-hinder, kurerna står vid hållplatserna.
+  let seatSrc = null, seatList = [];
+  const seatUse = new Map();         // plats-id → fotgängare
+  const seatMeta = new Map();        // plats-id → { node, there, back } (lat)
+  function fallbackSeats() {
+    const out = [];
+    const add = (kind, xs, y, dir, walkY, extra = {}) => { const bench = `${kind}@${xs[0]},${y}`; xs.forEach((sx, i) => out.push({ id: `${bench}:${i}`, kind, x: sx, y, dir, walk: { x: sx, y: walkY }, bench, ...extra })); };
+    for (const o of env.obstacles || []) {
+      if (!o || o[2] - o[0] !== 27 || o[3] - o[1] !== 4) continue;
+      const x = o[0] + 13, y = o[3];
+      // bakifrån sedda bänkar: parkens nedre del, kyrkogården och kajen
+      const back = x < XI[0] && ((y > 348 && y < 452) || (y > 494 && y < 640 && x > 1000 && x < 1212) || y > 740);
+      if (back) add('bank', [x - 7, x + 6], y - 6, 'up', y - 9); else add('bank', [x - 7, x + 6], y + 1, 'down', y + 5);
+    }
+    BUS_STOPS.forEach((s, k) => {
+      const by = k === 0 ? CITY.SIDEWALK_S[0] + 10 : s.y - 13;
+      add('busskur', s.broken ? [s.x - 21] : [s.x - 20, s.x - 7], by + 6, 'down', by + 10, { stop: s.id, ...(s.broken ? { broken: true } : {}) });
+    });
+    return out;
+  }
+  function seats() {
+    const P = PR();
+    let raw = null;
+    if (P && typeof P.seats === 'function') raw = safe(() => P.seats(), null);
+    else if (Array.isArray(env.seats)) raw = env.seats;
+    if (raw && raw.length) {
+      if (raw !== seatSrc || raw.length !== seatList.length) {
+        seatSrc = raw;
+        seatList = raw.filter((s) => s && Number.isFinite(s.x) && Number.isFinite(s.y)).map((s) => ({
+          id: s.id ?? `${s.x},${s.y}`, kind: s.kind || 'bank', x: s.x, y: s.y, dir: s.dir || s.face || (s.back ? 'up' : 'down'),
+          walk: s.walk || { x: s.x, y: s.y + ((s.dir || s.face) === 'up' ? -3 : 4) }, stop: s.stop ?? null, broken: !!s.broken, bench: s.bench ?? s.id,
+        }));
+      }
+    } else if (!seatSrc) { seatSrc = 'egna'; seatList = fallbackSeats(); }
+    return seatList;
+  }
+  const npcAt = (x, y, r) => { for (const q of env.people || []) if (Math.abs(q.x - x) < r && Math.abs(q.y - y) < r) return true; return false; };
+  // en plats är ledig om ingen fotgängare har tagit den och ingen spelare sitter där
+  const seatFree = (s, me = null) => { const u = seatUse.get(s.id); if (u && u !== me && !u.gone) return false; return !playerAt(s.x, s.y, 3); };
+  function playerAt(x, y, r) {
+    const ppl = env.people || [], n = ppl.length - peds.filter((p) => !p.hidden).length;
+    for (let i = 0; i < Math.max(0, n); i++) { const q = ppl[i]; if (q && Math.abs(q.x - x) < r && Math.abs(q.y - y) < r) return true; }
+    return false;
+  }
+  function seatInfo(s) {
+    let m = seatMeta.get(s.id);
+    if (m !== undefined) return m;
+    m = null;
+    const w = s.walk;
+    const cand = nodes.filter((n) => n.tag !== 'kant' && Math.abs(n.x - w.x) < 130 && Math.abs(n.y - w.y) < 90)
+      .map((n) => [n, Math.hypot(n.x - w.x, (n.y - w.y) * 1.2)]).sort((a, b) => a[1] - b[1]).slice(0, 5);
+    for (const [n] of cand) {
+      const there = nav.pathTo(n.x, n.y, w.x, w.y);
+      if (!there || there.length > 8) continue;
+      const back = nav.pathTo(w.x, w.y, n.x, n.y);
+      if (!back) continue;
+      m = { node: n.i, there, back };
+      break;
+    }
+    seatMeta.set(s.id, m);
+    return m;
+  }
+  const claimSeat = (s, p) => { seatUse.set(s.id, p); };
+  const freeSeat = (s, p) => { if (s && seatUse.get(s.id) === p) seatUse.delete(s.id); };
+
+  // ---------- träd och buskar (för ekorrar och småfåglar) ----------
+  const TREE_KINDS = { lind: 30, bjork: 28, korsbar: 26, ek: 40, lonn: 34, gran: 8, 'dött träd': 26 };
+  let trees = [], bushes = [];
+  function findFlora() {
+    const P = PR();
+    const items = P && typeof P.items === 'function' ? safe(() => P.items(), []) : [];
+    for (const it of items || []) {
+      if (!it || !Number.isFinite(it.x)) continue;
+      if (TREE_KINDS[it.kind] !== undefined) trees.push({ x: Math.round(it.x), y: Math.round(it.y), h: TREE_KINDS[it.kind], kind: it.kind });
+      else if (it.kind === 'buske' || it.kind === 'häck') bushes.push([Math.round(it.x), Math.round(it.y)]);
+    }
+    // utan rekvisitans lista: ett träd är ett 5×3-hinder (stammen), en buske 12×3, en häck 5 hög
+    const needT = !trees.length, needB = !bushes.length;
+    if (needT || needB) {
+      for (const o of env.obstacles || []) {
+        if (!o) continue;
+        const w = o[2] - o[0], h = o[3] - o[1];
+        if (needT && w === 5 && h === 3) trees.push({ x: o[0] + 2, y: o[3] - 1, h: 28, kind: '?' });
+        if (!needB) continue;
+        if (w === 12 && h === 3) bushes.push([o[0] + 6, o[3]]);
+        else if (h === 5 && w >= 24 && w <= 60) bushes.push([Math.round((o[0] + o[2]) / 2), o[3]]);
+      }
+    }
+    // bara träd som står på gräs eller trottoar (inte inne i ett hus eller staket)
+    trees = trees.filter((t) => t.y > 30);
+  }
 
   // ------------------------------------------------------------------
   //  Fotgängare
   // ------------------------------------------------------------------
   let peds = [];
   let nextId = 1;
-  function lookFor(kid, jogger) {
+  function lookFor(o = {}) {
     let L = makeLook();
-    for (let i = 0; i < 40 && !!L.kid !== !!kid; i++) L = makeLook();
-    if (jogger) L = { ...L, top: 'tee', bottom: 'shorts', bag: null, hat: rnd() < 0.4 ? 'cap' : null, phones: rnd() < 0.5, shoes: pick(['#f2f2f2', '#3a6bc2', '#c23b3b']) };
-    return L;
+    for (let i = 0; i < 40 && !!L.kid !== !!o.kid; i++) L = makeLook();
+    return dress(L, { ...o, w: env.weather, rain: env.rain });
   }
   function mkPed(look) {
     return {
@@ -775,28 +1480,37 @@ export function createLife(env, traffic) {
       anim: rnd() * 4, face: 'down', path: [], plan: [], hold: 0, node: -1, moving: false, hidden: false, door: null,
       carry: null, carryCol: pick(PASE_COLORS), caseCol: pick(CASE_COLORS), umb: rnd() < 0.8 ? pick(UMB_COLORS) : null,
       dog: null, comp: null, leader: null, jogger: false, trail: [], trailT: 0, seed: rnd() * 100, gone: false, leaving: false,
-      onCross: -1, look4bus: false, spot: null, wj: [rr(-1, 1), rr(0, 1)],
+      onCross: -1, look4bus: false, spot: null, wj: [rr(-1, 1), rr(0, 1)], kind: 'folk',
+      sit: null, seatT: null, wantSeat: null, stop: null, hang: null, play: null, jump: false, gest: 0, gestT: rr(1, 4),
+      showMove: false, stillT: 1, showDir: 'down', dirT: 0, leaves: 0,
     };
+  }
+  const subAt = (x) => x >= X_SUB - 10;
+  function addDog(p, late) {
+    const br = ri(0, DOGS.length - 1);
+    p.dog = { br, x: p.x - 8, y: p.y, dir: 1, fr: 0, anim: 0, act: 'walk', t: 0, tx: p.x, ty: p.y, tie: null, moving: false, dirT: 0, bark: 0, wag: 0, cool: rr(2, 6), free: null };
+    p.speed = Math.min(p.speed, 28);
+    return late;
   }
   function addExtras(p) {
     const h = env.hour, late = h < 6 || h >= 21;
-    if (p.look.kid) return;
-    if (rnd() < (late ? 0.4 : 0.18)) {
-      const br = ri(0, DOGS.length - 1);
-      p.dog = { br, x: p.x - 8, y: p.y, dir: 1, fr: 0, anim: 0, act: 'walk', t: 0, tx: p.x, ty: p.y, tie: null };
-      p.speed = Math.min(p.speed, 28);
-    } else if (!late && rnd() < 0.2 && peds.length < targetCount(h)) {
-      const c = mkPed(lookFor(rnd() < 0.5, false));
+    if (p.look.kid || p.kind !== 'folk') return;
+    if (rnd() < (late ? 0.4 : 0.22)) addDog(p, late);
+    else if (!late && rnd() < 0.2 && ordinary() < targetCount(h)) {
+      const c = mkPed(lookFor({ kid: rnd() < 0.5, sub: subAt(p.x) }));
       c.leader = p; c.x = p.x - 6; c.y = p.y; c.node = p.node; c.umb = rnd() < 0.5 ? c.umb : null;
       p.comp = c; p.speed = Math.min(p.speed, 30);
       peds.push(c);
     }
-    if (!p.dog && rnd() < 0.12) p.carry = pick(['kasse', 'pase', 'kasse', 'frakt']);
+    if (!p.dog && rnd() < 0.12) p.carry = pick(['kasse', 'pase', 'kasse', 'frakt', 'kaffe', 'tidning']);
   }
-  function spawn(kind, arg) {
-    const h = env.hour, late = h < 6 || h >= 21.5;
-    const jog = kind !== 'door' && ((h >= 6 && h < 10) || (h >= 17 && h < 21)) && rnd() < 0.1;
-    const p = mkPed(lookFor(!late && !jog && rnd() < 0.12, jog));
+  function spawn(kind, arg, o = {}) {
+    const h = env.hour, late = h < 6 || h >= 21.5, w = W();
+    const jogOk = kind !== 'door' && !o.special && ((h >= 6 && h < 10) || (h >= 16.5 && h < 21)) && !(w.kind === 'regn' && (w.intensity ?? 0.6) > 0.7);
+    const jog = jogOk && rnd() < 0.11;
+    const at = kind === 'node' ? nodes[arg] : kind === 'edge' ? nodes[arg.n] : kind === 'door' ? doorCenter(arg) : { x: camCX(), y: camCY() };
+    const p = mkPed(lookFor({ kid: o.kid ?? (!late && !jog && rnd() < 0.1), jog, youth: o.youth, sub: subAt(at.x) }));
+    if (o.special) p.kind = o.special;
     if (jog) { p.jogger = true; p.speed = rr(58, 70); p.umb = null; }
     if (kind === 'node') {
       const n = nodes[arg];
@@ -806,70 +1520,107 @@ export function createLife(env, traffic) {
       p.node = arg.n; p.x = arg.dir < 0 ? -12 : CW + 12; p.y = n.y;
       p.plan.push({ k: 'to', x: n.x, y: n.y });
     } else if (kind === 'door') {
-      const b = arg, dc = doorCenter(b);
-      p.node = nav.doorNode[b.id]; p.x = dc.x; p.y = BASE - 3;
-      p.door = { b, ph: 'inside', t: rr(0.3, 3), stay: 0, spawned: true };
+      const b = arg, dc = doorCenter(b), base = baseOf(b);
+      p.node = nav.doorNode[b.id]; p.x = dc.x; p.y = base - 3;
+      p.door = { b, base, ph: 'inside', t: rr(0.3, 3), stay: 0, spawned: true };
       p.hidden = true;
       if (b.id === 'flyg' && rnd() < 0.7) p.carry = 'resvaska';
     }
     peds.push(p);
-    if (!p.jogger) addExtras(p);
+    if (!p.jogger && !o.special) addExtras(p);
     if (p.comp) { p.comp.x = p.x; p.comp.y = p.y; p.comp.hidden = p.hidden; }
     if (p.dog) { p.dog.x = p.x - 8; p.dog.y = p.y; }
     if (p.door && p.dog) p.dog.tie = tieSpot(p.door.b);
-    p.plan.push(...planFor(p));
+    p.plan.push(...(o.plan || planFor(p)));
     return p;
   }
 
   // ---------- planerna ----------
   // mål nära kameran är mycket vanligare än mål långt bort
-  const nearW = (x, spread = 190) => Math.exp(-Math.max(0, Math.abs(x - camCX()) - 150) / spread);
+  const nearW = (x, y, spread = 190) => Math.exp(-Math.max(0, camD(x, y ?? camCY()) - 160) / spread);
   function nearNodes(ids, spread = 190) {
-    return wpick(ids.map((i) => [i, nearW(nodes[i].x, spread) + 0.01]));
+    return wpick(ids.map((i) => [i, nearW(nodes[i].x, nodes[i].y, spread) + 0.005]));
+  }
+  // vädret styr lusten: sol → parken och bänkarna, regn → butiker och bussen
+  function mood() {
+    const w = W(), k = w.kind, I = w.intensity ?? 0.6, t = w.temp ?? 15;
+    const wet = k === 'regn' ? 0.25 + (1 - I) * 0.3 : k === 'snö' ? 0.55 : k === 'dimma' ? 0.7 : 1;
+    const nice = (k === 'sol' ? 1.35 : k === 'moln' ? 1 : wet) * (t < -5 ? 0.6 : t < 3 ? 0.8 : t > 18 ? 1.15 : 1);
+    return { nice, wet: k === 'regn', cold: t < 3, warm: t >= 16 };
+  }
+  function placeList(h) {
+    const out = [];
+    const m = mood();
+    for (const b of ALL_B) {
+      const P = PLACES[b.id];
+      if (!P || !enterable(b) || nav.doorNode[b.id] === undefined || !isOpen(b, h + 0.3)) continue;
+      if (P.warm && !m.warm) continue;
+      let w = P.w;
+      if (P.eve) w *= h >= 17 ? 2.2 : 0.4;
+      out.push([b, w]);
+    }
+    return out;
   }
   function planFor(p) {
-    const st = [], h = env.hour, dark = env.dark > 0.3, rain = env.rain;
-    if (p.jogger) {
-      const a = nav.Pm[0], b = nav.Pm[nav.Pm.length - 1];
-      const first = Math.abs(nodes[a].x - p.x) > Math.abs(nodes[b].x - p.x) ? a : b;
-      if (nav.ring.length && rnd() < 0.7) st.push({ k: 'go', n: pick(nav.ring) }, { k: 'go', n: pick(nav.ring) });
-      st.push({ k: 'go', n: first }, { k: 'leave' });
-      return st;
-    }
+    const st = [], h = env.hour, dark = env.dark > 0.3, m = mood();
+    if (p.jogger) return jogPlan(p);
     const n = ri(1, 3);
     for (let i = 0; i < n; i++) {
-      const shops = BUILDINGS.filter((b) => SHOPS[b.id] && isOpen(b, h + 0.3));
+      const shops = placeList(h);
       const opts = [];
-      if (shops.length) opts.push(['shop', (rain ? 5 : 3) * (p.dog ? 0.4 : 1)]);
+      if (shops.length) opts.push(['shop', (m.wet ? 5 : 3) * (p.dog ? 0.45 : 1)]);
       if (!dark && nav.windows.length) opts.push(['window', 1.4]);
-      if (!rain && h >= 6.5 && h < 22 && parkNodes.length) opts.push(['park', p.dog ? 5 : 2]);
-      if (h >= 6 && h < 23.5 && nav.bus.length) opts.push(['bus', 0.8]);
+      if (!m.wet && h >= 6.5 && h < 22 && nav.parkNodes.length) opts.push(['park', (p.dog ? 4 : 2) * m.nice]);
+      if (h >= 6 && h < 23.5 && nav.stops.length) opts.push(['bus', m.wet ? 2.4 : 1.3]);
+      if (!m.wet && h >= 7 && h < 22.5) opts.push(['seat', (m.cold ? 0.5 : 1.6) * m.nice * (p.comp ? 1.3 : 1)]);
+      if (!m.wet && h >= 7 && h < 22 && nav.lines.Q.length) opts.push(['quay', 0.7 * m.nice]);
+      if (p.dog && nav.special.dogIn >= 0 && !m.wet && h >= 6 && h < 22) opts.push(['dogpark', 2.2]);
       opts.push(['wander', 1.6]);
-      if (!dark && nav.Bk.length) opts.push(['alley', 0.45]);
+      if (!dark && nav.lines.Bk.length) opts.push(['alley', 0.4]);
+      if (i === n - 1) opts.push(['home', 0.9]);
       const a = wpick(opts);
       if (a === 'shop') {
-        const near = shops.map((b) => [b, SHOPS[b.id].w * (nearW(doorCenter(b).x, 260) + 0.02)]);
+        const near = shops.map(([b, w]) => [b, w * (PLACES[b.id].dog && p.dog ? PLACES[b.id].dog : 1) * (nearW(doorCenter(b).x, baseOf(b), 260) + 0.01)]);
         const b = wpick(near);
         if (b.id === 'flyg' && rnd() < 0.5 && !p.carry) p.carry = 'resvaska';
-        st.push({ k: 'go', n: nav.doorNode[b.id] }, { k: 'door', b, t: rr(...SHOPS[b.id].stay) });
+        st.push({ k: 'go', n: nav.doorNode[b.id] }, { k: 'door', b, t: rr(...PLACES[b.id].stay) });
+      } else if (a === 'home') {
+        const homes = HOMES.map(byId).filter((b) => enterable(b) && nav.doorNode[b.id] !== undefined);
+        if (!homes.length) continue;
+        const b = wpick(homes.map((b) => [b, nearW(doorCenter(b).x, baseOf(b), 240) + 0.01]));
+        st.push({ k: 'go', n: nav.doorNode[b.id] }, { k: 'door', b, t: 0, home: true });
+        return st; // hemma – planen tar slut här
       } else if (a === 'window') {
-        const w = wpick(nav.windows.map((w) => [w, nearW(w.x) + 0.01]));
+        const w = wpick(nav.windows.map((w) => [w, nearW(w.x, w.y) + 0.01]));
         st.push({ k: 'go', n: w.node }, { k: 'to', x: w.x, y: w.ny, at: w.node }, { k: 'to', x: w.x, y: w.y, noOff: true, at: w.node },
           { k: 'wait', t: rr(2.5, 7), face: 'up' }, { k: 'to', x: w.x, y: w.ny, at: w.node });
       } else if (a === 'park') {
         const k = ri(2, 4);
         for (let j = 0; j < k; j++) {
-          const nn = nearNodes(parkNodes, 260);
+          const nn = nearNodes(nav.parkNodes, 260);
           st.push({ k: 'go', n: nn });
           if (nav.ring.includes(nn) && rnd() < 0.5) {
-            const pl = PARK_LAYOUT.plaza;
+            const pl = PARK.plaza;
             st.push({ k: 'wait', t: rr(3, 9), face: faceTo(pl.cx - nodes[nn].x, pl.cy - nodes[nn].y) });
           }
         }
+      } else if (a === 'seat') {
+        const list = seats().filter((s) => !s.stop && seatFree(s));
+        if (!list.length) continue;
+        const s = wpick(list.map((s) => [s, nearW(s.x, s.y, 200) + 0.003]));
+        const info = seatInfo(s);
+        if (!info) continue;
+        st.push({ k: 'go', n: info.node }, { k: 'seat', seat: s, t: rr(12, 45) * (m.cold ? 0.5 : 1) });
+      } else if (a === 'quay') {
+        const nn = nearNodes(nav.lines.Q, 220);
+        st.push({ k: 'go', n: nn }, { k: 'to', x: nodes[nn].x + rr(-6, 6), y: Math.min(WALK_BOTTOM - 1, nodes[nn].y + 3), noOff: true, at: nn }, { k: 'wait', t: rr(4, 12), face: 'down' });
+      } else if (a === 'dogpark') {
+        st.push({ k: 'go', n: nav.special.dogIn }, { k: 'dogpark', t: rr(20, 50) });
       } else if (a === 'bus') {
-        st.push({ k: 'go', n: nav.busNode }, { k: 'bus', t: rr(8, 26) });
+        const s = wpick(nav.stops.map((s) => [s, nearW(s.s.x, s.s.y, 220) + 0.005]));
+        st.push({ k: 'go', n: s.node }, { k: 'bus', stop: s, t: rr(10, 30) });
       } else if (a === 'alley') {
-        st.push({ k: 'go', n: pick(nav.Bk) }, { k: 'go', n: pick(nav.Bk) });
+        st.push({ k: 'go', n: nearNodes(nav.lines.Bk, 200) }, { k: 'go', n: nearNodes(nav.lines.Bk, 200) });
       } else {
         st.push({ k: 'go', n: nearNodes(nav.spawnNodes) });
         if (rnd() < 0.3) st.push({ k: 'wait', t: rr(1, 4), face: pick(['down', 'left', 'right']) });
@@ -878,30 +1629,84 @@ export function createLife(env, traffic) {
     st.push({ k: 'leave' });
     return st;
   }
+  // joggarna springer längs de långa raka gångarna: promenaden, parkgången, kajen, bakgatan
+  function jogPlan(p) {
+    const L = nav.lines;
+    const routes = [L.Pm, L.Q, L.BkS.filter((i) => nodes[i].x < XI[0]), L.BkS.filter((i) => nodes[i].x > XI[1]), L.SS].filter((r) => r.length > 3);
+    if (!routes.length) return [{ k: 'leave' }];
+    const r = wpick(routes.map((r) => [r, nearW(nodes[r[r.length >> 1]].x, nodes[r[0]].y, 300) + 0.01]));
+    const a = r[0], b = r[r.length - 1];
+    const first = Math.abs(nodes[a].x - p.x) < Math.abs(nodes[b].x - p.x) ? a : b, last = first === a ? b : a;
+    const st = [{ k: 'go', n: nav.nearNode(p.x, p.y, r, 400) >= 0 ? nav.nearNode(p.x, p.y, r, 400) : first }];
+    if (r === L.Pm && nav.ring.length && rnd() < 0.5) st.push({ k: 'go', n: pick(nav.ring) }, { k: 'go', n: pick(nav.ring) });
+    st.push({ k: 'go', n: last }, { k: 'leave' });
+    return st;
+  }
 
   function nextStep(p) {
     const s = p.plan.shift();
     if (!s) { p.plan = planFor(p); return; }
     switch (s.k) {
       case 'go': {
-        if (p.node === s.n) return;
+        if (p.node === s.n || s.n === undefined || s.n < 0) return;
         const r = p.node >= 0 ? nav.route(p.node, s.n) : null;
         if (!r) return; // går inte att nå – hoppa över steget
         const N0 = nodes[p.node];
-        if (Math.hypot(N0.x - p.x, N0.y - p.y) > 2) r.unshift({ x: N0.x, y: N0.y, gate: -1 });
+        if (Math.hypot(N0.x - p.x, N0.y - p.y) > 2) {
+          const back = nav.pathTo(p.x, p.y, N0.x, N0.y, 24);
+          if (back) r.unshift(...back.map((q) => ({ ...q, noOff: false })));
+          else r.unshift({ x: N0.x, y: N0.y, gate: -1 });
+        }
         p.path = r; p.node = s.n;
         return;
       }
       case 'to':
-        // en avstickare från en nod (fönster) – bara om man faktiskt kom fram till noden
+        // en avstickare från en nod (fönster, kajkanten) – bara om man faktiskt kom fram till noden
         if (s.at !== undefined && p.node !== s.at) return;
         p.path = [{ x: s.x, y: s.y, gate: -1, noOff: !!s.noOff }];
         return;
-      case 'wait': p.hold = s.t; p.face = s.face || p.face; return;
+      case 'wait': p.hold = s.t; p.face = s.face || p.face; p.jump = !!s.jump; return;
+      case 'seat': {
+        const seat = s.seat, info = seatInfo(seat);
+        if (!info || p.node !== info.node || !seatFree(seat, p)) return;
+        claimSeat(seat, p);
+        p.wantSeat = seat;
+        p.path = [...info.there.map((q) => ({ ...q })), { x: seat.x, y: seat.y, gate: -1, noOff: true }];
+        // sällskapet sätter sig bredvid om det finns plats på samma bänk
+        if (p.comp) {
+          const two = seats().find((q) => q !== seat && q.bench === seat.bench && seatFree(q));
+          if (two) { claimSeat(two, p.comp); p.comp.seatWant = two; }
+        }
+        p.plan.unshift({ k: 'sitdown', seat, t: s.t, bus: s.bus || null }, { k: 'standup', seat });
+        return;
+      }
+      case 'sitdown':
+        if (Math.hypot(p.x - s.seat.x, p.y - s.seat.y) > 2) { freeSeat(s.seat, p); p.wantSeat = null; return; }
+        p.sit = s.seat; p.wantSeat = null; p.hold = s.t; p.face = s.seat.dir; p.ox = p.oy = 0;
+        if (s.bus) { p.stop = s.bus; p.look4bus = true; }
+        return;
+      case 'standup': {
+        const seat = s.seat, info = seatInfo(seat);
+        p.sit = null; freeSeat(seat, p); p.look4bus = false;
+        if (p.comp && p.comp.seatWant) { freeSeat(p.comp.seatWant, p.comp); p.comp.seatWant = null; p.comp.sit = null; }
+        p.path = [{ x: seat.walk.x, y: seat.walk.y, gate: -1, noOff: true }, ...(info ? info.back.map((q) => ({ ...q })) : [])];
+        return;
+      }
       case 'bus': {
-        const free = nav.bus.filter((b) => !b.busy);
-        if (!free.length || p.node !== nav.busNode) { if (p.plan[0]?.bus) p.plan.shift(); return; }
-        const spot = pick(free), N0 = nodes[p.node];
+        const B = s.stop;
+        if (!B || p.node !== B.node) return;
+        p.stop = B;
+        // sitt i kuren om det finns en ledig plats, annars stå och vänta
+        // (bänkens nod kan vara en annan än hållplatsens – gå dit först; i regn tar man helst taket)
+        const inShelter = seats().filter((q) => q.stop === B.s.id && seatFree(q));
+        if (inShelter.length && rnd() < (mood().wet ? 0.95 : 0.7)) {
+          const q = pick(inShelter), info = seatInfo(q);
+          // reservera platsen direkt så att inte två väljer samma bänkplats i samma stund
+          if (info) { claimSeat(q, p); p.wantSeat = q; p.plan.unshift({ k: 'go', n: info.node }, { k: 'seat', seat: q, t: s.t + rr(20, 50), bus: B }, { k: 'unbus' }); return; }
+        }
+        const free = B.spots.filter((b) => !b.busy);
+        if (!free.length) { p.stop = null; return; }
+        const spot = pick(free.slice(0, 5)), N0 = nodes[p.node];
         spot.busy = p.id; p.spot = spot;
         p.path = spot.there.map((q) => ({ ...q }));
         if (Math.hypot(N0.x - p.x, N0.y - p.y) > 2) p.path.unshift({ x: N0.x, y: N0.y, gate: -1 });
@@ -911,90 +1716,146 @@ export function createLife(env, traffic) {
       case 'unbus': {
         const spot = p.spot;
         if (spot) { spot.busy = null; p.spot = null; }
-        p.look4bus = false;
+        if (p.wantSeat) { freeSeat(p.wantSeat, p); p.wantSeat = null; }
+        p.look4bus = false; p.stop = null;
         // "bussen kom" – är man utom synhåll kliver man bara på
         if (!visible(p.x, p.y, 40) && rnd() < 0.6) { p.gone = true; return; }
         const N0 = nodes[p.node];
-        p.path = spot ? spot.back.map((q) => ({ ...q })) : [{ x: N0.x, y: N0.y, gate: -1 }];
+        if (spot) p.path = spot.back.map((q) => ({ ...q }));
+        else if (Math.hypot(N0.x - p.x, N0.y - p.y) > 2) p.path = nav.pathTo(p.x, p.y, N0.x, N0.y) || [{ x: N0.x, y: N0.y, gate: -1 }];
         return;
       }
       case 'pts': p.path = s.pts.map((q) => ({ ...q })); return;
       case 'door': {
-        const b = s.b, dc = doorCenter(b);
+        const b = s.b, dc = doorCenter(b), base = baseOf(b);
         if (p.node !== nav.doorNode[b.id]) return; // kom aldrig fram till dörren
-        p.door = { b, ph: 'app', t: 0, stay: s.t };
-        p.path = [{ x: dc.x + rr(-2, 2), y: BASE + 9, gate: -1, noOff: true }];
-        if (p.dog) p.dog.tie = tieSpot(b);
+        p.door = { b, base, ph: 'app', t: 0, stay: s.t, home: !!s.home };
+        const tx = dc.x + rr(-2, 2), ty = base + 9;
+        p.path = nav.pathTo(p.x, p.y, tx, ty) || [{ x: tx, y: ty, gate: -1, noOff: true }];
+        if (p.dog && !s.home) p.dog.tie = tieSpot(b);
         return;
       }
+      case 'dogpark': {
+        const r = PARK.dogPark;
+        if (!r || !p.dog || p.node !== nav.special.dogIn) return;
+        const q = nav.nearest(Math.round(rr(r[0] + 16, r[2] - 16)), Math.round(rr(r[1] + 14, r[1] + 34)), walk, 8);
+        if (q) p.path = nav.pathTo(p.x, p.y, q[0], q[1]) || [];
+        p.plan.unshift({ k: 'unleash', t: s.t }, { k: 'calldog' });
+        return;
+      }
+      case 'unleash':
+        if (p.dog) { const r = PARK.dogPark; p.dog.free = [r[0] + 6, r[1] + 8, Math.min(r[2], 132) - 6, r[3] - 6]; p.dog.t = 0; }
+        p.hold = s.t; p.face = 'down';
+        return;
+      case 'calldog':
+        // vänta tills hunden har kommit tillbaka och fått kopplet på
+        if (p.dog && p.dog.free) {
+          p.dog.free = null; p.dog.call = true;
+        }
+        if (p.dog && Math.hypot(p.dog.x - p.x, p.dog.y - p.y) > 14) { p.hold = 0.4; p.plan.unshift({ k: 'calldog' }); return; }
+        if (p.dog) p.dog.call = false;
+        return;
+      case 'play': {
+        // barnen springer runt på lekplatsen, stannar, hoppar och springer vidare
+        // (aldrig i skymningsbandet bakom gungställningen/rutschkanan – där ser
+        // barnet ut att stå ovanpå överliggaren)
+        if (env.t > s.until) return;
+        const q = lekPunkt(s.rect);
+        if (q) p.path = nav.pathTo(p.x, p.y, q[0], q[1], 20) || [];
+        p.speed = rr(34, 46);
+        p.plan.unshift({ k: 'wait', t: rr(0.4, 2.2), face: pick(['down', 'left', 'right', 'up', 'down']), jump: rnd() < 0.45 }, { ...s });
+        return;
+      }
+      case 'hang': {
+        // ungdomarna: stå i en klunga, vänd mot varandra, skratta, titta i mobilen
+        p.hang = s.spot; p.hold = s.t; p.face = faceTo(s.spot.cx - p.x, (s.spot.cy - p.y) * 0.6);
+        return;
+      }
+      case 'unhang':
+        if (p.hang) { const i = p.hang.used.indexOf(p); if (i >= 0) p.hang.used[i] = null; p.hang = null; }
+        return;
       case 'leave': {
-        if (!visible(p.x, p.y, 60)) { p.gone = true; return; }
-        const ex = wpick(nav.exits.map((e) => [e, (e.back ? 0.15 : 1) / (1 + Math.abs(nodes[e.n].x - p.x) / 250)]));
-        p.plan.unshift({ k: 'go', n: ex.n }, { k: 'out', dir: ex.dir });
+        if (!visible(p.x, p.y, 60) || ++p.leaves > 6) { p.gone = true; return; }
+        // ut ur världen vid kanten, eller till en plats utom synhåll där man försvinner
+        const ex = nav.exits.filter((e) => !e.back && Math.abs(nodes[e.n].x - p.x) < 260);
+        if (ex.length && rnd() < 0.6) { const e = pick(ex); p.plan.unshift({ k: 'go', n: e.n }, { k: 'out', dir: e.dir }); return; }
+        const far = nav.spawnNodes.filter((i) => { const n = nodes[i], d = Math.hypot(n.x - p.x, n.y - p.y); return d > 170 && d < 520 && !visible(n.x, n.y, 30); });
+        if (far.length) { p.plan.unshift({ k: 'go', n: wpick(far.map((i) => [i, 1 / (1 + Math.hypot(nodes[i].x - p.x, nodes[i].y - p.y) / 200)])) }, { k: 'vanish' }); return; }
+        p.gone = true;
         return;
       }
+      case 'vanish': if (!visible(p.x, p.y, 40)) p.gone = true; else p.plan.unshift({ k: 'leave' }); return;
       case 'out': p.leaving = true; p.path = [{ x: s.dir < 0 ? -14 : CW + 14, y: p.y, gate: -1, noOff: true }]; return;
       case 'board': {
         // klev på bussen – men hann den gå får man vänta på nästa
-        if (busAtStop() || !visible(p.x, p.y, 30)) { p.gone = true; return; }
-        const B0 = nodes[nav.busNode];
+        const B = s.stop;
+        if (!B || busAt(B) || !visible(p.x, p.y, 30)) { p.gone = true; return; }
+        const B0 = nodes[B.node];
         p.face = 'right';
-        p.plan.unshift({ k: 'wait', t: rr(0.6, 1.4), face: 'right' }, { k: 'pts', pts: nav.pathTo(p.x, p.y, B0.x, B0.y) || [{ x: B0.x, y: B0.y, gate: -1 }] }, { k: 'bus', t: rr(15, 40) });
+        p.plan.unshift({ k: 'wait', t: rr(0.6, 1.4), face: 'right' }, { k: 'pts', pts: nav.pathTo(p.x, p.y, B0.x, B0.y) || [{ x: B0.x, y: B0.y, gate: -1 }] }, { k: 'bus', stop: B, t: rr(15, 40) });
         return;
       }
     }
   }
 
-  // ---------- bussen: de som väntar kliver på, några kliver av ----------
-  // traffic.vehicles() är ett frivilligt tillägg i trafikmodulen – finns det inte väntar man bara.
-  let busServed = false;
-  function busAtStop() {
+  // ---------- bussarna: de som väntar kliver på, några kliver av ----------
+  // traffic.vehicles() ger bussarna med stop (hållplatsens id) och dwell när de står still vid en hållplats.
+  function busAt(B) {
     if (typeof T.vehicles !== 'function') return null;
     let vs = null;
     try { vs = T.vehicles(); } catch { return null; }
     for (const v of vs || []) {
-      if (v.kind !== 'buss' || v.v > 1.5) continue;
+      if (v.kind !== 'buss' || Math.abs(v.v) > 1.5) continue;
+      if (v.stop !== undefined && v.stop !== null) { if (v.stop === B.s.id && (v.dwell || 0) > 0) return v; continue; }
+      if ((v.road || 'pixelgatan') !== B.road) continue;
       const front = v.dir > 0 ? v.x1 : v.x0;
-      if (Math.abs(front - (BUS_STOP.x + 10 * v.dir)) < 16) return v;
+      if (Math.abs(front - (B.s.x + 10 * v.dir)) < 16) return v;
     }
     return null;
   }
   function updBus() {
-    const bus = busAtStop();
-    if (!bus) { busServed = false; return; }
-    const bx = Math.round((bus.x0 + bus.x1) / 2) + 4, by = CURB_S;
-    // alla som står och väntar (även de som hinner fram medan bussen står still) kliver på
-    for (const p of peds) {
-      if (p.leader || !p.spot || p.door) continue;
-      p.spot.busy = null; p.spot = null; p.look4bus = false;
-      p.hold = rr(0, 0.5); p.path = [];
-      const tx = bx + rr(-3, 3), pts = nav.pathTo(p.x, p.y, tx, by) || [{ x: tx, y: by, gate: -1, noOff: true }];
-      p.plan = [{ k: 'pts', pts }, { k: 'board' }];
-    }
-    if (busServed) return;
-    busServed = true;
-    // någon kliver av (en gång per stopp)
-    if (peds.length < targetCount(env.hour)) {
-      for (let i = Math.min(ri(0, 2), targetCount(env.hour) - peds.length); i > 0; i--) {
-        const p = spawn('node', nav.busNode);
-        p.x = bx + rr(-3, 3); p.y = by; p.hidden = true; p.hold = 0.8 + i * rr(0.5, 1); p.fromBus = true;
-        if (p.comp) { p.comp.x = p.x; p.comp.y = p.y; }
-        if (p.dog) { p.dog.x = p.x; p.dog.y = p.y + 2; }
-        const B0 = nodes[nav.busNode];
-        p.plan.unshift({ k: 'pts', pts: nav.pathTo(p.x, p.y, B0.x, B0.y) || [{ x: B0.x, y: B0.y, gate: -1 }] });
+    for (const B of nav.stops) {
+      if (Math.abs(B.s.x - camCX()) > 700) { B.served = false; continue; }
+      const bus = busAt(B);
+      if (!bus) { B.served = false; continue; }
+      const bx = Math.round((bus.x0 + bus.x1) / 2) + 4, by = B.curb;
+      // alla som väntar här (även de som hinner fram medan bussen står still) kliver på
+      for (const p of peds) {
+        if (p.leader || p.door || p.stop !== B) continue;
+        if (p.spot) { p.spot.busy = null; p.spot = null; }
+        if (p.sit) { freeSeat(p.sit, p); p.sit = null; }
+        if (p.wantSeat) { freeSeat(p.wantSeat, p); p.wantSeat = null; }
+        p.look4bus = false; p.stop = null;
+        p.hold = rr(0, 0.5); p.path = [];
+        const tx = bx + rr(-3, 3), pts = nav.pathTo(p.x, p.y, tx, by) || [{ x: tx, y: by, gate: -1, noOff: true }];
+        p.plan = [{ k: 'pts', pts }, { k: 'board', stop: B }];
+      }
+      if (B.served) continue;
+      B.served = true;
+      // någon kliver av (en gång per stopp)
+      const want = targetCount(env.hour);
+      if (ordinary() < want) {
+        for (let i = Math.min(ri(0, 2), want - ordinary()); i > 0; i--) {
+          const p = spawn('node', B.node);
+          p.x = bx + rr(-3, 3); p.y = by; p.hidden = true; p.hold = 0.8 + i * rr(0.5, 1); p.fromBus = true;
+          if (p.comp) { p.comp.x = p.x; p.comp.y = p.y; }
+          if (p.dog) { p.dog.x = p.x; p.dog.y = p.y + 2; }
+          const B0 = nodes[B.node];
+          p.plan.unshift({ k: 'pts', pts: nav.pathTo(p.x, p.y, B0.x, B0.y) || [{ x: B0.x, y: B0.y, gate: -1 }] });
+        }
       }
     }
   }
   function tieSpot(b) {
-    const dc = doorCenter(b), half = (b.door.x1 - b.door.x0) / 2 + 12;
+    const dc = doorCenter(b), half = (b.door.x1 - b.door.x0) / 2 + 12, base = baseOf(b);
     for (const side of [1, -1]) {
-      const q = nav.nearest(Math.round(dc.x + side * half), BASE + 7, paved, 6);
+      const q = nav.nearest(Math.round(dc.x + side * half), base + 7, paved, 6) || nav.nearest(Math.round(dc.x + side * half), base + 7, walk, 6);
       if (q) return { x: q[0], y: q[1] };
     }
     return null;
   }
   function gotItem(p, b) {
-    const shop = SHOPS[b.id];
+    const shop = PLACES[b.id];
     if (!shop || p.look.kid || p.jogger) return;
     if (b.id === 'flyg' && p.carry === 'resvaska') { p.carry = null; if (rnd() < 0.8) p.flew = true; return; }
     for (const [kind, prob] of shop.carry) if (rnd() < prob) { p.carry = kind; break; }
@@ -1002,7 +1863,7 @@ export function createLife(env, traffic) {
 
   // ---------- dörrarna: gå in, var borta en stund, kom ut igen ----------
   function updDoor(p, dt) {
-    const D = p.door, dc = doorCenter(D.b);
+    const D = p.door, dc = doorCenter(D.b), base = D.base;
     if (D.ph === 'app') {
       if (p.path.length) return false;
       D.ph = 'pause'; D.t = 0.35; p.face = 'up';
@@ -1011,9 +1872,9 @@ export function createLife(env, traffic) {
     if (D.ph === 'in') {
       p.y -= 17 * dt; p.x += (dc.x - p.x) * Math.min(1, dt * 5);
       p.moving = true; p.hx = 0; p.hy = -1; p.anim += dt * 17 / 5;
-      if (p.y <= BASE - 3) {
-        p.y = BASE - 3; p.hidden = true; D.ph = 'inside'; D.t = D.stay;
-        if (p.flew) p.gone = true;
+      if (p.y <= base - 3) {
+        p.y = base - 3; p.hidden = true; D.ph = 'inside'; D.t = D.stay;
+        if (p.flew || D.home) p.gone = true;
       }
       return true;
     }
@@ -1031,11 +1892,11 @@ export function createLife(env, traffic) {
     if (D.ph === 'out0') { D.t -= dt; p.moving = false; p.face = 'down'; if (D.t <= 0) D.ph = 'out'; return true; }
     if (D.ph === 'out') {
       p.y += 17 * dt; p.moving = true; p.hx = 0; p.hy = 1; p.anim += dt * 17 / 5;
-      if (p.y >= BASE + 9) {
+      if (p.y >= base + 9) {
         p.door = null;
         if (p.dog) p.dog.tie = null;
         const N0 = nodes[p.node];
-        p.path = [{ x: N0.x, y: N0.y, gate: -1 }];
+        p.path = N0 ? (nav.pathTo(p.x, p.y, N0.x, N0.y) || [{ x: N0.x, y: N0.y, gate: -1 }]) : [];
       }
       return true;
     }
@@ -1045,7 +1906,7 @@ export function createLife(env, traffic) {
     const D = p.door;
     if (!D) return 1;
     if (D.ph === 'out0') return clamp(0.35 * (1 - D.t / 0.55), 0.05, 0.35);
-    return clamp(0.35 + (y - (BASE - 3)) / 7 * 0.65, 0.35, 1);
+    return clamp(0.35 + (y - (D.base - 3)) / 7 * 0.65, 0.35, 1);
   };
 
   // ---------- gång ----------
@@ -1054,18 +1915,20 @@ export function createLife(env, traffic) {
     if (p.door && updDoor(p, dt)) { p.ox *= 0.8; p.oy *= 0.8; return; }
     if (p.hold > 0) {
       p.hold -= dt; p.moving = false;
-      // står man på en utvald plats (fönster, hållplats) glider sidoförskjutningen bort
-      if (p.stillSpot || !walk(p.x + p.ox, p.y + p.oy)) { const k = 1 - Math.min(1, dt * 5); p.ox *= k; p.oy *= k; }
-      if (p.hold <= 0) { p.look4bus = false; if (p.fromBus) { p.fromBus = false; p.hidden = false; p.face = 'down'; } }
+      // står man på en utvald plats (fönster, hållplats, bänk) glider sidoförskjutningen bort
+      if (p.stillSpot || p.sit || !walk(p.x + p.ox, p.y + p.oy)) { const k = 1 - Math.min(1, dt * 5); p.ox *= k; p.oy *= k; }
+      if (p.hang) idleHang(p, dt);
+      if (p.hold <= 0) { p.look4bus = false; p.jump = false; if (p.fromBus) { p.fromBus = false; p.hidden = false; p.face = 'down'; } }
       return;
     }
-    const wp = p.path[0];
+    let wp = p.path[0];
     if (!wp) {
-      p.moving = false;
       if (p.leaving) { p.gone = true; return; }
       nextStep(p);
       if (p.plan[0]?.bus) p.look4bus = true;
-      return;
+      wp = p.path[0];
+      // ingen ny väg (vänta, sitta, dörr …): stå still – annars fortsätt gå samma bildruta (inget blink)
+      if (!wp || p.hold > 0) { p.moving = false; return; }
     }
     let dx = wp.x - p.x, dy = wp.y - p.y, d = Math.hypot(dx, dy);
     if (d > 0.01) { p.hx = dx / d; p.hy = dy / d; }
@@ -1084,7 +1947,7 @@ export function createLife(env, traffic) {
     const X = p.x + p.ox, Y = p.y + p.oy;
     let block = 0;
     for (const q of others) {
-      if (q === p || q.hidden) continue;
+      if (q === p || q.hidden || q.sit) continue;
       const qx = q.x + (q.ox || 0), qy = q.y + (q.oy || 0);
       const rx = qx - X, ry = qy - Y, ahead = rx * p.hx + ry * p.hy;
       if (ahead <= 0 || ahead > 12) continue;
@@ -1095,7 +1958,7 @@ export function createLife(env, traffic) {
     const step = sp * dt;
     if (d <= step) {
       p.x = wp.x; p.y = wp.y; p.path.shift(); p.stillSpot = !!wp.noOff;
-      if (p.onCross >= 0 && (!p.path.length || p.y >= CURB_S - 1 || p.y <= CURB_N + 1)) p.onCross = -1;
+      if (p.onCross >= 0 && (!p.path.length || p.y >= CURB_S - 1 && p.y <= CURB_S + 3 || p.y <= CURB_N + 1 && p.y >= CURB_N - 3 || p.y >= CURB_SS - 1 && p.y < CURB_SS + 3 || p.y <= CURB_SN + 1 && p.y > CURB_SN - 3)) p.onCross = -1;
     } else { p.x += dx / d * step; p.y += dy / d * step; }
     p.moving = true;
     p.anim += dt * sp / (p.jogger ? 4.5 : 5);
@@ -1105,7 +1968,7 @@ export function createLife(env, traffic) {
   const okOff = (p, tx, ty) => paved(p.x + tx, p.y + ty) && paved(p.x + p.hx * 5 + tx, p.y + p.hy * 5 + ty) && paved(p.x + p.hx * 10 + tx, p.y + p.hy * 10 + ty);
   // högertrafik på trottoaren: varje figur håller sig en bit till höger om mittlinjen
   function laneOffset(p, dt, wp) {
-    let lane = wp && wp.noOff ? 0 : p.lane;
+    const lane = wp && wp.noOff ? 0 : p.lane;
     let tx = -p.hy * lane, ty = p.hx * lane;
     if (lane) {
       if (!okOff(p, tx, ty)) { tx *= 0.5; ty *= 0.5; if (!okOff(p, tx, ty)) { tx = 0; ty = 0; } }
@@ -1129,9 +1992,9 @@ export function createLife(env, traffic) {
       const wx = tx - p.hy * a - p.hx * bk, wy = ty + p.hx * a - p.hy * bk;
       if (paved(p.x + wx, p.y + wy)) { tx = wx; ty = wy; }
     }
-    const k = Math.min(1, dt * 4);
+    // mjukt mot målet; står förskjutningen i ett hinder glider den snabbare hem (inget ryck)
+    const k = Math.min(1, dt * (walk(p.x + p.ox, p.y + p.oy) ? 4 : 12));
     p.ox += (tx - p.ox) * k; p.oy += (ty - p.oy) * k;
-    if (!walk(p.x + p.ox, p.y + p.oy)) { p.ox *= 0.3; p.oy *= 0.3; }
   }
   function sampleTrail(p, dt) {
     p.trailT += dt;
@@ -1140,6 +2003,19 @@ export function createLife(env, traffic) {
     p.trail.push({ x: p.x + p.ox, y: p.y + p.oy });
     if (p.trail.length > 14) p.trail.shift();
   }
+  // Det man SER: gå/stå och riktning med lite tröghet, så att en figur aldrig
+  // blinkar mellan stå- och gåbild eller vänder sig fram och tillbaka mellan två bildrutor.
+  function updShow(p, dt) {
+    if (p.moving) { p.showMove = true; p.stillT = 0; } else { p.stillT += dt; if (p.stillT > 0.14) p.showMove = false; }
+    let want;
+    if (p.sit) want = p.sit.dir;
+    else if (p.showMove) want = headingDir(p.hx, p.hy);
+    else want = p.look4bus && Math.sin(env.t * 0.8 + p.seed) > 0.75 ? 'left' : p.face;
+    if (want === p.showDir) { p.dirT = 0; return; }
+    p.dirT += dt;
+    // stilla figurer vänder sig direkt när de vill; gående först när riktningen hållit i sig en stund
+    if (!p.showMove || p.dirT > 0.12 || p.sit) { p.showDir = want; p.dirT = 0; }
+  }
 
   // ---------- sällskap: går bredvid ledaren (följer dess spår) ----------
   function updComp(c, dt) {
@@ -1147,24 +2023,61 @@ export function createLife(env, traffic) {
     c.hidden = L.hidden;
     c.door = L.door;
     if (c.hidden) { c.x = L.x; c.y = L.y; c.ox = c.oy = 0; c.moving = false; return; }
+    // ledaren sitter: sätt dig på platsen bredvid (via bänkens gångpunkt)
+    if (L.sit && c.seatWant) {
+      const s = c.seatWant, onSeat = Math.hypot(c.x - s.x, c.y - s.y) < 0.8;
+      if (onSeat) { c.sit = s; c.moving = false; c.face = s.dir; return; }
+      const nearWalk = Math.hypot(c.x - s.walk.x, c.y - s.walk.y) < 1.5 || c.goSeat;
+      const tx = nearWalk ? s.x : s.walk.x, ty = nearWalk ? s.y : s.walk.y;
+      if (nearWalk) c.goSeat = true;
+      const dx = tx - c.x, dy = ty - c.y, d = Math.hypot(dx, dy), st = Math.min(d, 30 * dt);
+      if (d > 0.01) { c.x += dx / d * st; c.y += dy / d * st; c.hx = dx / d; c.hy = dy / d; }
+      c.moving = d > 0.3; if (c.moving) c.anim += dt * 6;
+      return;
+    }
+    c.goSeat = false;
+    if (c.sit) { c.sit = null; c.x = c.sitFrom?.x ?? c.x; }
     const tr = L.trail, lag = Math.min(tr.length - 1, 5);
     const src = lag >= 0 ? tr[tr.length - 1 - lag] : { x: L.x, y: L.y };
     let tx = src.x + L.hy * 8, ty = src.y - L.hx * 8;
-    if (L.door || !paved(tx, ty) || L.waitGate) {
+    if (L.door || !paved(tx, ty) || L.waitGate || L.sit) {
       tx = src.x; ty = src.y;
       if (L.waitGate) { tx = L.x + L.ox - L.hy * -9; ty = L.y + L.oy + L.hx * -9; if (!paved(tx, ty)) { tx = src.x; ty = src.y; } }
+      if (L.sit) { tx = L.sit.walk.x + 9; ty = L.sit.walk.y; }
     }
     const dx = tx - c.x, dy = ty - c.y, d = Math.hypot(dx, dy);
     const sp = Math.max(L.speed * 1.5, 34) * dt;
-    if (d > 0.5) {
+    // hysteres: börja gå vid > 1,5 px, stanna först när man är nästan framme
+    if (!c.moving && d > 1.5) c.moving = true;
+    else if (c.moving && d < 0.4 && !L.moving) c.moving = false;
+    if (d > 0.3) {
       const s = Math.min(d, sp), nx = c.x + dx / d * s, ny = c.y + dy / d * s;
-      if (walk(nx, ny) || L.door) { c.x = nx; c.y = ny; } else { c.x = src.x; c.y = src.y; }
-      c.hx = dx / d; c.hy = dy / d;
-    }
-    c.moving = d > 1.5 || (L.moving && d > 0.5);
+      // glid längs hindret i stället för att hoppa tillbaka i ledarens spår
+      if (walk(nx, ny) || L.door) { c.x = nx; c.y = ny; }
+      else if (walk(nx, c.y)) c.x = nx;
+      else if (walk(c.x, ny)) c.y = ny;
+      else { c.stuck = (c.stuck || 0) + dt; if (c.stuck > 0.5) { c.x = nx; c.y = ny; } }
+      if (d > 1) { c.hx = dx / d; c.hy = dy / d; }
+    } else c.stuck = 0;
     if (c.moving) c.anim += dt * L.speed / 5;
     c.face = L.moving ? headingDir(c.hx, c.hy) : L.face;
     c.speed = L.speed;
+  }
+
+  // ---------- ungdomarna i klungan ----------
+  function idleHang(p, dt) {
+    p.gestT -= dt;
+    if (p.gest > 0) p.gest -= dt;
+    if (p.gestT > 0) return;
+    p.gestT = rr(1.2, 4.5);
+    const H = p.hang, r = rnd();
+    if (r < 0.35) {
+      // vänd dig mot någon annan i klungan
+      const o = H.used.filter((q) => q && q !== p);
+      if (o.length) { const q = pick(o); p.face = faceTo(q.x - p.x, (q.y - p.y) * 0.6); }
+    } else if (r < 0.6) p.gest = rr(0.3, 0.8);            // skrattar/gestikulerar
+    else if (r < 0.75) { p.face = 'down'; p.phoneT = rr(2, 5); } // tittar i mobilen
+    else p.face = faceTo(H.cx - p.x, (H.cy - p.y) * 0.6);
   }
 
   // ---------- hundar ----------
@@ -1172,10 +2085,23 @@ export function createLife(env, traffic) {
     const g = p.dog, X = p.x + p.ox, Y = p.y + p.oy;
     const inside = p.door && p.door.ph !== 'app' && p.door.ph !== 'out';
     let tx, ty, spd = Math.max(p.speed * 1.5, 40);
+    g.cool -= dt; if (g.bark > 0) g.bark -= dt; if (g.wag > 0) g.wag -= dt;
     if (inside && g.tie) { tx = g.tie.x; ty = g.tie.y; g.act = 'sit'; }
-    else if (p.moving || p.waitGate) {
-      // hunden drar lite före, på vänstra sidan
+    else if (g.free) {
+      // lös i hundrastgården: spring runt, nosa, sitt en stund, spring igen
+      g.t -= dt;
+      if (g.t <= 0 || (!g.moving && g.act === 'run')) {
+        const r = g.free, a = rnd();
+        g.act = a < 0.45 ? 'run' : a < 0.8 ? 'sniff' : 'sit';
+        g.t = g.act === 'run' ? rr(1, 2.6) : rr(1.2, 3.5);
+        if (g.act === 'run') { const q = nav.nearest(Math.round(rr(r[0], r[2])), Math.round(rr(r[1], r[3])), walk, 6); if (q) { g.tx = q[0]; g.ty = q[1]; } }
+        else { g.tx = g.x; g.ty = g.y; if (rnd() < 0.5) g.wag = rr(0.8, 2); }
+      }
+      tx = g.tx; ty = g.ty; spd = g.act === 'run' ? 52 : 24;
+    } else if (g.call || p.moving || p.waitGate) {
+      // hunden drar lite före, på vänstra sidan (på väg tillbaka från rastgården: rakt till matte/husse)
       tx = X + p.hx * 9 + p.hy * 4; ty = Y + p.hy * 9 - p.hx * 4;
+      if (g.call) { tx = X + 6; ty = Y + 2; spd = 50; }
       if (p.waitGate) {
         // vid rödljuset: sitt kvar bredvid, inte ute i gatan
         tx = X + p.hy * 7; ty = Y - p.hx * 7;
@@ -1186,6 +2112,9 @@ export function createLife(env, traffic) {
         if (s) { tx = s.x; ty = s.y; } else { tx = X - p.hx * 8; ty = Y - p.hy * 8; }
       }
       if (!p.waitGate) g.act = 'walk';
+    } else if (p.sit) {
+      // matte/husse sitter på bänken: lägg dig vid fötterna
+      tx = p.sit.walk.x + (p.sit.dir === 'up' ? 6 : 8); ty = p.sit.walk.y + (p.sit.dir === 'up' ? -1 : 1); g.act = 'sit'; spd = 22;
     } else {
       // matte/husse står still: nosa runt, ibland sitta
       g.t -= dt;
@@ -1195,168 +2124,374 @@ export function createLife(env, traffic) {
         const a = rnd() * Math.PI * 2, r = rr(5, 11);
         g.tx = X + Math.cos(a) * r; g.ty = Y + Math.sin(a) * r * 0.5;
         if (!walk(g.tx, g.ty)) { g.tx = X + 6; g.ty = Y + 1; }
+        if (rnd() < 0.35) g.wag = rr(0.8, 2.2);
       }
       tx = g.tx; ty = g.ty; spd = 22;
     }
     const dx = tx - g.x, dy = ty - g.y, d = Math.hypot(dx, dy);
-    // hysteres: börja gå först när målet är en bit bort, sluta först när man är nästan framme
-    if (!g.moving && d > 2.5) g.moving = true;
-    else if (g.moving && d < 0.6) g.moving = false;
-    if (g.moving) {
+    // hysteres: börja gå först när målet är en bit bort, sluta först när man är nästan
+    // framme. Följer hunden sin GÅENDE ägare stannar den inte alls – målpunkten flyttar
+    // sig ju en halv pixel i taget och gå/stå skulle annars blinka i ägarens takt.
+    const follow = p.moving && !g.free && !p.waitGate && !inside;
+    if (!g.moving && d > (follow ? 1.2 : 2.5)) g.moving = true;
+    else if (g.moving && d < 0.6 && !follow) g.moving = false;
+    if (g.moving && d > 0.01) {
       const s = Math.min(d, spd * dt), nx = g.x + dx / d * s, ny = g.y + dy / d * s;
       // glid längs hindret i stället för att hoppa: prova hela steget, sedan bara x, sedan bara y
-      if (walk(nx, ny) || d < 3) { g.x = nx; g.y = ny; }
+      if (walk(nx, ny) || d < 3 || g.call) { g.x = nx; g.y = ny; }
       else if (walk(nx, g.y)) g.x = nx;
       else if (walk(g.x, ny)) g.y = ny;
-      g.anim += dt * Math.max(spd, 20) / 3.2;
+      // bentakt efter den faktiska farten (tätt bakom ägaren travar hunden i hens takt)
+      const asp = dt > 0 ? Math.min(spd, s / dt) : spd;
+      g.anim += dt * Math.max(asp, 16) / 3.2;
     }
-    // kopplet är 18 px långt (mjukt: dras in gradvis i stället för att rycka)
-    if (!inside) {
+    // kopplet är 18 px långt (mjukt: dras in gradvis, högst lite snabbare än hunden själv går)
+    if (!inside && !g.free) {
       const lx = g.x - X, ly = g.y - Y, ld = Math.hypot(lx, ly);
-      if (ld > 18) { const k = Math.min(1, dt * 8); g.x += (X + lx / ld * 18 - g.x) * k; g.y += (Y + ly / ld * 18 - g.y) * k; }
+      if (ld > 18) {
+        const k = Math.min(1, dt * 8), mx = (X + lx / ld * 18 - g.x) * k, my = (Y + ly / ld * 18 - g.y) * k, mm = Math.hypot(mx, my), cap = Math.max(spd, 60) * dt * 1.2;
+        const f = mm > cap ? cap / mm : 1;
+        g.x += mx * f; g.y += my * f;
+      }
     }
     // riktning med tröghet: byt bara om den nya riktningen hållit i sig i 0,3 s
     let want = g.dir;
     if (inside && !g.moving) want = doorCenter(p.door.b).x < g.x ? -1 : 1;
-    else if (g.moving) { if (p.moving && Math.abs(p.hx) > 0.2) want = p.hx < 0 ? -1 : 1; else if (Math.abs(dx) > 1.5) want = dx < 0 ? -1 : 1; }
-    else if (g.act !== 'sit' && Math.abs(X - g.x) > 3) want = X < g.x ? -1 : 1;
+    else if (g.moving) { if (!g.free && p.moving && Math.abs(p.hx) > 0.2) want = p.hx < 0 ? -1 : 1; else if (Math.abs(dx) > 1.5) want = dx < 0 ? -1 : 1; }
+    else if (g.look) want = g.look;
+    else if (!g.free && g.act !== 'sit' && Math.abs(X - g.x) > 3) want = X < g.x ? -1 : 1;
     if (want !== g.dir) { g.dirT = (g.dirT || 0) + dt; if (g.dirT >= 0.3) { g.dir = want; g.dirT = 0; } } else g.dirT = 0;
-    g.fr = g.moving ? 1 + (Math.floor(g.anim) % 2) : g.act === 'sit' ? 3 : g.act === 'sniff' && Math.sin(env.t * 3 + p.seed) > -0.3 ? 4 : 0;
-    if (inside && !g.moving) g.fr = 3;
+    // bildrutan: gå · skälla · sitta · nosa · vifta · stå
+    if (g.moving) g.fr = 1 + (Math.floor(g.anim) % 2);
+    else if (g.bark > 0) g.fr = Math.floor(env.t * 7 + p.seed) % 2 ? 5 : 0;
+    else if (g.act === 'sit' || (inside && !g.moving)) g.fr = 3;
+    else if (g.act === 'sniff' && Math.sin(env.t * 3 + p.seed) > -0.3) g.fr = 4;
+    else if (g.wag > 0) g.fr = Math.floor(env.t * 9 + p.seed) % 2 ? 6 : 0;
+    else g.fr = 0;
+    if (g.bark <= 0) g.look = 0;
+  }
+  // hundar som möts skäller och viftar; katter och ekorrar får en skäll
+  function dogSocial() {
+    const dogs = [];
+    for (const p of peds) if (p.dog && !p.hidden && !(p.door && p.door.ph === 'inside' && !p.dog.tie)) dogs.push(p.dog);
+    for (let i = 0; i < dogs.length; i++) {
+      const a = dogs[i];
+      if (a.cool > 0) continue;
+      for (let j = 0; j < dogs.length; j++) {
+        if (i === j) continue;
+        const b = dogs[j];
+        if (Math.abs(a.x - b.x) > 34 || Math.abs(a.y - b.y) > 16) continue;
+        a.cool = rr(4, 9); b.cool = Math.max(b.cool, rr(3, 6));
+        if (rnd() < 0.55) { a.bark = rr(0.6, 1.3); a.look = b.x < a.x ? -1 : 1; } else a.wag = rr(1.2, 2.4);
+        b.wag = Math.max(b.wag, rr(1, 2));
+        if (a.bark > 0) env.play?.('bark');
+        break;
+      }
+      if (a.cool > 0) continue;
+      for (const c of cats) if (visibleCat(c) && Math.abs(a.x - c.x) < 30 && Math.abs(a.y - c.y) < 14) { a.bark = rr(0.8, 1.6); a.look = c.x < a.x ? -1 : 1; a.cool = rr(5, 10); c.st = 'sit'; c.t = rr(2, 4); break; }
+      if (a.cool > 0) continue;
+      for (const q of squirrels) if (q.st === 'g' && Math.abs(a.x - q.x) < 40 && Math.abs(a.y - q.y) < 18) { a.bark = rr(0.8, 1.4); a.look = q.x < a.x ? -1 : 1; a.cool = rr(4, 9); break; }
+    }
   }
 
   // ---------- befolkningen ----------
-  function targetCount(h) {
-    const n = h < 5 ? 3 : h < 6.5 ? 4 : h < 8 ? 9 : h < 16 ? 13 : h < 19 ? 14 : h < 21 ? 9 : h < 23 ? 6 : 4;
-    return Math.round(n * (env.rain ? 0.75 : 1));
+  function weatherFactor() {
+    const w = W(), I = w.intensity ?? 0.6, k = w.kind;
+    let f = 1;
+    if (k === 'regn') f = I > 0.75 ? 0.45 : 0.72;
+    else if (k === 'snö') f = I > 0.75 ? 0.55 : 0.85;
+    else if (k === 'dimma') f = 0.62;
+    else if (k === 'blåst') f = 0.85;
+    else if (k === 'sol' && (w.temp ?? 15) > 16) f = 1.12;
+    if ((w.temp ?? 15) < -8) f *= 0.8;
+    return f;
   }
-  // Nya figurer dyker upp strax utanför bild (eller kommer ut ur en butik), så
-  // att det alltid är liv där spelaren är – staden är 4–5 skärmar bred.
+  function targetCount(h) {
+    const n = h < 5 ? 3 : h < 6.5 ? 4 : h < 8 ? 10 : h < 16 ? 15 : h < 19 ? 16 : h < 21 ? 10 : h < 23 ? 7 : 4;
+    return Math.max(2, Math.round(n * weatherFactor()));
+  }
+  const ordinary = () => { let n = 0; for (const p of peds) if (p.kind === 'folk') n++; return n; };
+  // Nya figurer dyker upp strax utanför bild (eller kommer ut ur en butik/ett hus),
+  // så att det alltid är liv där spelaren är – världen är sju skärmar bred och fyra hög.
   function spawnSomewhere(initial) {
-    const h = env.hour, open = BUILDINGS.filter((b) => SHOPS[b.id] && isOpen(b, h));
-    const c = camCX();
-    if (rnd() < (initial ? 0.2 : 0.3) && open.length) {
-      const near = open.filter((b) => Math.abs(doorCenter(b).x - c) < 330);
-      if (near.length) return spawn('door', pick(near));
-    }
+    const h = env.hour;
+    const doors = ALL_B.filter((b) => enterable(b) && nav.doorNode[b.id] !== undefined && ((PLACES[b.id] && isOpen(b, h)) || HOMES.includes(b.id)) && camD(doorCenter(b).x, baseOf(b)) < 330);
+    if (rnd() < (initial ? 0.2 : 0.3) && doors.length) return spawn('door', pick(doors));
     const cands = nav.spawnNodes.filter((i) => {
       const n = nodes[i];
-      return Math.abs(n.x - c) < (initial ? 300 : 340) && (initial || !visible(n.x, n.y, 26));
+      return Math.abs(n.x - camCX()) < (initial ? 300 : 340) && Math.abs(n.y - camCY()) < 230 && (initial || !visible(n.x, n.y, 26));
     });
-    const edges = nav.exits.filter((e) => !e.back && Math.abs(nodes[e.n].x - c) < 340);
+    const edges = nav.exits.filter((e) => !e.back && camD(nodes[e.n].x, nodes[e.n].y) < 340);
     if (edges.length && (!cands.length || rnd() < 0.3)) return spawn('edge', pick(edges));
     if (cands.length) return spawn('node', pick(cands));
-    return spawn('edge', pick(nav.exits));
+    return nav.exits.length ? spawn('edge', pick(nav.exits)) : spawn('node', pick(nav.spawnNodes));
   }
   let spawnT = 0;
   function manage(dt) {
-    // alla figurer räknas (även sällskap), målet är 8–14 på dagen och färre på natten
+    // alla vanliga figurer räknas (även sällskap), målet är 10–16 på dagen och färre på natten och i ösregn
     const want = targetCount(env.hour);
-    const leaders = peds.length;
+    const have = ordinary();
     spawnT -= dt;
-    if (leaders < want && spawnT <= 0) { spawnSomewhere(false); spawnT = want - leaders > 4 ? rr(0.1, 0.3) : rr(0.4, 1.6); }
+    if (have < want && spawnT <= 0) { spawnSomewhere(false); spawnT = want - have > 4 ? rr(0.1, 0.3) : rr(0.4, 1.6); }
     // de som vandrat långt från kameran byts ut mot nya i närheten
-    const c = camCX();
     for (const p of peds) {
       if (p.leader || p.gone) continue;
-      if (Math.abs(p.x - c) > 420 && !visible(p.x, p.y, 40) && rnd() < dt * 0.5) p.gone = true;
-      if (leaders > want + 1 && !visible(p.x, p.y, 40) && rnd() < dt * 0.05) p.gone = true;
+      if (camD(p.x, p.y) > 460 && !visible(p.x, p.y, 40) && rnd() < dt * 0.5) p.gone = true;
+      if (p.kind === 'folk' && have > want + 1 && !visible(p.x, p.y, 40) && rnd() < dt * 0.05) p.gone = true;
     }
+    manageSpots(dt, false);
     cleanup();
+  }
+  function release(p) {
+    if (p.spot) { p.spot.busy = null; p.spot = null; }
+    if (p.sit) freeSeat(p.sit, p);
+    if (p.wantSeat) freeSeat(p.wantSeat, p);
+    if (p.seatWant) freeSeat(p.seatWant, p);
+    if (p.hang) { const i = p.hang.used.indexOf(p); if (i >= 0) p.hang.used[i] = null; }
+    if (p.play) p.play.kids = p.play.kids.filter((q) => q !== p);
   }
   function cleanup() {
     if (!peds.some((p) => p.gone || (p.leader && p.leader.gone))) return;
-    for (const p of peds) if ((p.gone || (p.leader && p.leader.gone)) && p.spot) { p.spot.busy = null; p.spot = null; }
+    for (const p of peds) if (p.gone || (p.leader && p.leader.gone)) release(p);
     peds = peds.filter((p) => !p.gone && !(p.leader && p.leader.gone));
   }
-  // Kameran hoppade (ut ur en butik långt bort, teleport): byt ut de som blev
+  // Kameran hoppade (ut ur en butik långt bort, buss, teleport): byt ut de som blev
   // kvar långt borta och fyll på runt den nya platsen direkt.
   let lastCam = null;
   function repopulate() {
-    const c = camCX();
-    for (const p of peds) if (!p.leader && Math.abs(p.x - c) > 380) p.gone = true;
+    for (const p of peds) if (!p.leader && camD(p.x, p.y) > 380) p.gone = true;
     cleanup();
-    for (let i = 0; i < 40 && peds.length < targetCount(env.hour); i++) preRun(spawnSomewhere(true), rr(0, 16));
+    for (let i = 0; i < 40 && ordinary() < targetCount(env.hour); i++) preRun(spawnSomewhere(true), rr(0, 16));
+    manageSpots(0, true);
+  }
+
+  // ---------- platser med eget folk: ungdomar vid kiosken, barn på lekplatserna ----------
+  const HANGS = [];
+  {
+    const add = (id, cx, cy, hours, want, nodeId) => {
+      const c = nav.nearest(Math.round(cx), Math.round(cy), walk, 10);
+      if (!c || nodeId === undefined || nodeId < 0) return;
+      // 4–5 platser i en ring runt mitten (på gångbar mark)
+      const pos = [];
+      for (let k = 0; k < 7 && pos.length < 5; k++) {
+        const a = k * 2.4 + 0.3, q = nav.nearest(Math.round(c[0] + Math.cos(a) * 8), Math.round(c[1] + Math.sin(a) * 4), walk, 4);
+        if (q && !pos.some((o) => Math.hypot(o[0] - q[0], o[1] - q[1]) < 6) && nav.pathTo(nodes[nodeId].x, nodes[nodeId].y, q[0], q[1])) pos.push(q);
+      }
+      if (pos.length >= 3) HANGS.push({ id, cx: c[0], cy: c[1], pos, used: pos.map(() => null), hours, want, node: nodeId });
+    };
+    const nb = byId('narbutik'), L = nav.lines;
+    // "kiosken" i förorten är närbutiken som har öppet dygnet runt
+    if (nb && L.N.length) add('kiosken', nb.door.x1 + 18, baseOf(nb) + 17, [14, 25], [3, 5], nav.at(L.N, nb.door.x1 + 18));
+    const bt = BUS_STOPS.find((s) => s.broken);
+    if (bt && L.S.length) add('betongtorget', bt.x + 58, bt.y - 12, [15, 23.5], [2, 4], nav.at(L.S, bt.x + 44));
+    const lx = LOTS.find((l) => l.id === 'lekplats_x');
+    if (lx && nav.special.lekX >= 0) add('lekplatsen', (lx.rect[0] + lx.rect[2]) / 2 + 20, lx.rect[1] + 50, [19, 23], [2, 4], nav.special.lekX);
+  }
+  const PLAYS = [];
+  if (PARK.playground && nav.special.lekP >= 0) PLAYS.push({ id: 'parken', rect: [PARK.playground[0] + 6, PARK.playground[1] + 6, PARK.playground[2] - 6, PARK.playground[3] - 4], node: nav.special.lekP, kids: [] });
+  {
+    const lx = LOTS.find((l) => l.id === 'lekplats_x');
+    if (lx && nav.special.lekX >= 0) PLAYS.push({ id: 'förorten', rect: [lx.rect[0] + 8, lx.rect[1] + 10, lx.rect[2] - 8, lx.rect[3] - 8], node: nav.special.lekX, kids: [] });
+  }
+  const inHours = (h, [a, b]) => (b > 24 ? h >= a || h < b - 24 : h >= a && h < b);
+  // De höga lekredskapen (gungställningen, rutschkanan) ritas 30–40 pixlar över sin
+  // basrad. Ett barn som stannar i bandet strax bakom (norr om) dem skyms av konsten
+  // och ser ut att stå ovanpå överliggaren – så i det bandet stannar ingen.
+  let lekBand = null;
+  function lekSkymd(x, y) {
+    if (!lekBand) {
+      lekBand = [];
+      const P = PR();
+      const its = P && typeof P.items === 'function' ? safe(() => P.items(), []) : [];
+      for (const it of its || []) {
+        if (!it || !Number.isFinite(it.x) || !Number.isFinite(it.y)) continue;
+        if (it.kind === 'gunga' || it.kind === 'rutschkana') lekBand.push([it.x - 24, it.y - 40, it.x + 24, it.y - 2]);
+        else if (it.kind === 'gunghäst' || it.kind === 'gungbräda') lekBand.push([it.x - 20, it.y - 12, it.x + 20, it.y - 2]);
+      }
+      // utan rekvisitans lista: smala, grunda hinder i lekytorna behandlas som redskap
+      if (!lekBand.length) {
+        for (const Pl of PLAYS) for (const o of env.obstacles || []) {
+          if (!o || o[2] - o[0] > 60 || o[3] - o[1] > 6) continue;
+          if (o[0] >= Pl.rect[0] - 30 && o[2] <= Pl.rect[2] + 30 && o[1] >= Pl.rect[1] - 10 && o[3] <= Pl.rect[3] + 10) lekBand.push([o[0] - 2, o[1] - 30, o[2] + 2, o[1] - 2]);
+        }
+      }
+    }
+    for (const b of lekBand) if (x >= b[0] && x <= b[2] && y >= b[1] && y <= b[3]) return true;
+    return false;
+  }
+  // en slumpad, gångbar punkt i lekytan där barnet syns helt (inte skymd bakom ett redskap)
+  function lekPunkt(r) {
+    for (let k = 0; k < 8; k++) {
+      const c = nav.nearest(Math.round(rr(r[0], r[2])), Math.round(rr(r[1], r[3])), walk, 6);
+      if (c && !lekSkymd(c[0], c[1])) return c;
+    }
+    return null;
+  }
+  function spawnFor(nodeId, o, initial, placeAt) {
+    // kom gående från en nod utom synhåll i närheten – eller stå redan på plats vid start
+    let p;
+    if (initial && placeAt) {
+      p = spawn('node', nodeId, o);
+      p.x = placeAt[0]; p.y = placeAt[1];
+    } else {
+      const N0 = nodes[nodeId];
+      const cands = nav.spawnNodes.filter((i) => { const n = nodes[i]; const d = Math.hypot(n.x - N0.x, n.y - N0.y); return d < 300 && d > 60 && !visible(n.x, n.y, 26); });
+      p = spawn('node', cands.length ? pick(cands) : nodeId, o);
+    }
+    return p;
+  }
+  function manageSpots(dt, initial) {
+    const h = env.hour, w = W(), wet = w.kind === 'regn' && (w.intensity ?? 0.6) > 0.5, f = weatherFactor();
+    for (const H of HANGS) {
+      const near = camD(H.cx, H.cy) < 420 && inHours(h, H.hours);
+      if (!near) continue;
+      const want = Math.round((H.want[0] + (hash(env.day | 0, H.cx, 5) * (H.want[1] - H.want[0] + 0.99))) * (wet ? 0.5 : f > 1 ? 1 : f));
+      const have = H.used.filter((q) => q && !q.gone).length + peds.filter((q) => q.goHang === H).length;
+      if (have >= want || (!initial && rnd() > dt * 0.8)) continue;
+      const k = H.used.findIndex((q) => !q || q.gone);
+      if (k < 0) continue;
+      const pos = H.pos[k];
+      const plan = [{ k: 'go', n: H.node }, { k: 'to', x: pos[0], y: pos[1], noOff: true, at: H.node }, { k: 'hang', spot: H, t: rr(60, 220) }, { k: 'unhang' }, { k: 'to', x: nodes[H.node].x, y: nodes[H.node].y }, { k: 'leave' }];
+      const p = spawnFor(H.node, { special: 'youth', youth: true, kid: false, plan: initial ? [{ k: 'hang', spot: H, t: rr(40, 220) }, { k: 'unhang' }, { k: 'to', x: nodes[H.node].x, y: nodes[H.node].y }, { k: 'leave' }] : plan }, initial, pos);
+      p.umb = rnd() < 0.3 ? p.umb : null; p.speed = rr(22, 28);
+      H.used[k] = p; p.goHang = initial ? null : H;
+      if (initial) { p.node = H.node; }
+    }
+    for (const Pl of PLAYS) {
+      const [x0, y0, x1, y1] = Pl.rect, cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+      Pl.kids = Pl.kids.filter((q) => !q.gone);
+      const day = h >= 8.5 && h < 19.5 && !(w.kind === 'regn' && (w.intensity ?? 0.6) > 0.45) && w.kind !== 'dimma';
+      if (!day || camD(cx, cy) > 430) continue;
+      const want = Math.max(0, Math.round((2 + hash(env.day | 0, Math.round(cx), 9) * 2.99) * (w.kind === 'regn' ? 0.4 : f > 1 ? 1.2 : f)));
+      if (Pl.kids.length >= want || (!initial && rnd() > dt * 0.6)) continue;
+      // ett barn (ibland två) och en förälder som sätter sig på en bänk nära lekplatsen eller står vid kanten
+      const n = Math.min(want - Pl.kids.length, rnd() < 0.4 ? 2 : 1);
+      const at = initial ? lekPunkt(Pl.rect) : null;
+      for (let i = 0; i < n; i++) {
+        const plan = [{ k: 'go', n: Pl.node }, { k: 'play', rect: Pl.rect, until: env.t + rr(50, 150) }, { k: 'leave' }];
+        // barn två ställs en bit åt sidan – men inte in i skymningsbandet
+        const off = at && (i === 0 || !lekSkymd(at[0] + i * 7, at[1])) ? i * 7 : 0;
+        const kid = spawnFor(Pl.node, { special: 'play', kid: true, plan: initial ? [{ k: 'play', rect: Pl.rect, until: env.t + rr(30, 150) }, { k: 'leave' }] : plan }, initial, at && [at[0] + off, at[1]]);
+        kid.play = Pl; kid.umb = null; if (initial) kid.node = Pl.node;
+        Pl.kids.push(kid);
+      }
+      const seat = seats().filter((s) => !s.stop && seatFree(s) && Math.hypot(s.x - cx, s.y - cy) < 90).sort((a, b) => Math.hypot(a.x - cx, a.y - cy) - Math.hypot(b.x - cx, b.y - cy))[0];
+      const info = seat && seatInfo(seat);
+      const edge = nav.nearest(Math.round(x1 + 8), Math.round(cy), walk, 10) || nav.nearest(Math.round(x0 - 8), Math.round(cy), walk, 10);
+      const pplan = info ? [{ k: 'go', n: info.node }, { k: 'seat', seat, t: rr(60, 160) }, { k: 'leave' }]
+        : edge ? [{ k: 'go', n: Pl.node }, { k: 'pts', pts: nav.pathTo(nodes[Pl.node].x, nodes[Pl.node].y, edge[0], edge[1]) || [] }, { k: 'wait', t: rr(50, 140), face: faceTo(cx - edge[0], 0) }, { k: 'leave' }] : null;
+      if (pplan && rnd() < 0.85) {
+        const par = spawnFor(info ? info.node : Pl.node, { special: 'parent', kid: false, plan: pplan }, initial, null);
+        if (initial && info) { par.node = info.node; par.x = nodes[info.node].x; par.y = nodes[info.node].y; }
+      }
+    }
   }
 
   // ------------------------------------------------------------------
-  //  Duvor
+  //  Markfåglar: duvor, måsar, kråkor och småfåglar
   // ------------------------------------------------------------------
-  const FLOCK = [[1040, 207], [470, 209], [1395, 206], [720, 293], [1110, 294], [170, 293], [905, 386], [962, 352],
-    [620, 352], [1470, 358], [150, 356], [560, 24], [1300, 24], [800, 210], [1560, 294]]
-    .map(([x, y]) => nav.nearest(x, y, walk, 10)).filter(Boolean);
-  const pigeons = [];
+  const spotsOf = (list) => list.map(([x, y]) => nav.nearest(Math.round(x), Math.round(y), walk, 10)).filter(Boolean);
+  const FLOCK = spotsOf([[1040, 207], [470, 209], [1395, 206], [720, 293], [1110, 294], [170, 293], [905, 386], [962, 352],
+    [620, 352], [1470, 358], [150, 356], [560, 24], [1300, 24], [800, 210], [1560, 294],
+    [230, 652], [700, 655], [1010, 660], [1500, 652], [400, 742], [900, 741], [1300, 738], [2060, 296], [1880, 205], [2230, 300], [1900, 430], [2110, 472]]);
+  const GULL_SPOTS = spotsOf([[150, 766], [480, 764], [820, 768], [1180, 766], [1520, 764], [1900, 766], [2280, 768], [2600, 765], [2196, 205], [1150, 207], [640, 740], [2420, 742]]);
+  const CROW_SPOTS = spotsOf([[1060, 560], [1150, 610], [1110, 520], [2520, 360], [2640, 420], [2060, 360], [2320, 610], [1790, 420], [2560, 28], [2350, 476], [1850, 470]]);
+  const birdsG = [];
+  const SPEC = {
+    duva: { sets: () => S.pig, flee: 20, spd: 9, spots: FLOCK, day: true },
+    mas: { sets: () => [S.gull], flee: 26, spd: 11, spots: GULL_SPOTS, day: false },
+    kraka: { sets: () => [S.crow], flee: 34, spd: 8, spots: CROW_SPOTS, day: true },
+    sparv: { sets: () => S.sparrow, flee: 22, spd: 0, spots: [], hide: true },
+  };
   const threatsNear = (x, y, r) => {
     for (const q of env.people || []) if (Math.abs(q.x - x) < r && Math.abs(q.y - y) < r * 0.7) return q;
     for (const p of peds) if (p.dog && Math.abs(p.dog.x - x) < r + 4 && Math.abs(p.dog.y - y) < (r + 4) * 0.7) return p.dog;
     return null;
   };
-  function landSpot(s) {
+  function landSpot(s, r = 14) {
     for (let i = 0; i < 6; i++) {
-      const x = s[0] + rr(-14, 14), y = s[1] + rr(-6, 6);
+      const x = s[0] + rr(-r, r), y = s[1] + rr(-r * 0.43, r * 0.43);
       if (walk(x, y)) return [x, y];
     }
     return [s[0], s[1]];
   }
-  function mkPigeon(spot, x, y) {
-    return { x, y, v: pick([0, 0, 0, 0, 1, 1, 2, 3]), dir: pick([-1, 1]), st: 'g', act: 'stand', t: rr(0.2, 2), alt: 0, spot, tx: x, ty: y, fl: null, panic: 0, anim: rnd() * 10, from: null };
+  function mkBird(sp, spot, x, y, v) {
+    return { sp, x, y, v, dir: pick([-1, 1]), st: 'g', act: 'stand', t: rr(0.2, 2), alt: 0, spot, tx: x, ty: y, fl: null, panic: 0, anim: rnd() * 10, from: null, hop: 0 };
   }
-  {
-    const used = [...FLOCK].sort(() => rnd() - 0.5).slice(0, 7);
-    for (const s of used) {
-      const n = ri(2, 5);
-      for (let i = 0; i < n; i++) {
-        const [x, y] = landSpot(s), pg = mkPigeon(s, x, y);
-        if (env.dark > 0.3) { pg.st = 'a'; pg.t = rr(5, 40); } // på natten sover duvorna på taken
-        pigeons.push(pg);
+  function seedBirds() {
+    const place = (sp, spots, nFlocks, per, variants) => {
+      for (const s of [...spots].sort(() => rnd() - 0.5).slice(0, nFlocks)) {
+        const n = ri(per[0], per[1]);
+        for (let i = 0; i < n; i++) { const [x, y] = landSpot(s, sp === 'sparv' ? 10 : 14); birdsG.push(mkBird(sp, s, x, y, pick(variants))); }
       }
-    }
+    };
+    place('duva', FLOCK, 11, [2, 5], [0, 0, 0, 0, 1, 1, 2, 3]);
+    place('mas', GULL_SPOTS, 7, [1, 3], [0]);
+    place('kraka', CROW_SPOTS, 6, [1, 3], [0]);
+    // småfåglarna bor i buskarna och häckarna: gråsparvar oftast, en och annan talgoxe och bofink
+    const homes = bushes.length ? bushes : [];
+    SPEC.sparv.spots = homes.map(([x, y]) => [x, y + 3]);
+    place('sparv', SPEC.sparv.spots, Math.min(14, homes.length), [1, 3], [0, 0, 0, 1, 2]);
   }
   function flight(pg, tx, ty, a1) {
-    const dist = Math.hypot(tx - pg.x, ty - pg.y);
-    pg.fl = { x0: pg.x, y0: pg.y, a0: pg.alt, x1: tx, y1: ty, a1, T: Math.max(0.9, dist / rr(70, 92)), u: 0, h: 12 + dist * 0.08, away: a1 > 0 };
+    const dist = Math.hypot(tx - pg.x, ty - pg.y), sp = pg.sp === 'sparv' ? rr(60, 80) : pg.sp === 'mas' ? rr(55, 75) : rr(70, 92);
+    pg.fl = { x0: pg.x, y0: pg.y, a0: pg.alt, x1: tx, y1: ty, a1, T: Math.max(pg.sp === 'sparv' ? 0.35 : 0.9, dist / sp), u: 0, h: (pg.sp === 'sparv' ? 5 : 12) + dist * 0.08, away: a1 > 0 };
     pg.st = 'f';
     if (Math.abs(tx - pg.x) > 2) pg.dir = tx < pg.x ? -1 : 1;
   }
   function takeOff(pg, from) {
+    const SP = SPEC[pg.sp];
+    if (SP.hide && pg.spot) { flight(pg, pg.spot[0] + rr(-3, 3), pg.spot[1] - 3, 0); pg.hideAfter = true; return; }
     const away = Math.sign(pg.x - (from ? from.x : pg.x - 1)) || pick([-1, 1]);
-    const cands = FLOCK.filter((s) => Math.sign(s[0] - pg.x) === away && Math.abs(s[0] - pg.x) > 60 && Math.abs(s[0] - pg.x) < 460 && !threatsNear(s[0], s[1], 36));
+    const cands = SP.spots.filter((s) => Math.sign(s[0] - pg.x) === away && Math.abs(s[0] - pg.x) > 60 && Math.abs(s[0] - pg.x) < 460 && Math.abs(s[1] - pg.y) < 260 && !threatsNear(s[0], s[1], 36));
     if (cands.length && rnd() < 0.75 && env.dark < 0.3) {
       const s = pick(cands), [x, y] = landSpot(s);
       pg.spot = s; flight(pg, x, y, 0);
     } else flight(pg, pg.x + away * rr(180, 300), pg.y - rr(30, 80), rr(70, 100));
   }
-  function updPigeons(dt) {
-    const dark = env.dark > 0.3;
-    for (const pg of pigeons) {
+  function updBirdsG(dt) {
+    const dark = env.dark > 0.3, cx = camCX(), cy = camCY();
+    for (const pg of birdsG) {
       pg.anim += dt;
+      const SP = SPEC[pg.sp];
+      // långt från kameran står fåglarna bara still (ingen syns, inget kostar)
+      if (pg.st === 'g' && (Math.abs(pg.x - cx) > 520 || Math.abs(pg.y - cy) > 360)) continue;
       if (pg.st === 'g') {
         if (pg.panic > 0) { pg.panic -= dt; if (pg.panic <= 0) takeOff(pg, pg.from); continue; }
-        const th = threatsNear(pg.x, pg.y, 20);
+        const th = threatsNear(pg.x, pg.y, SP.flee);
         if (th) {
           takeOff(pg, th);
           // hela flocken flaxar iväg, en efter en
-          for (const o of pigeons) if (o !== pg && o.st === 'g' && o.panic <= 0 && Math.hypot(o.x - pg.x, o.y - pg.y) < 34) { o.panic = rr(0.05, 0.35); o.from = th; }
+          for (const o of birdsG) if (o !== pg && o.sp === pg.sp && o.st === 'g' && o.panic <= 0 && Math.hypot(o.x - pg.x, o.y - pg.y) < 34) { o.panic = rr(0.05, 0.35); o.from = th; }
           continue;
         }
-        if (dark && rnd() < dt * 0.6) { takeOff(pg, null); continue; }
+        if (dark && pg.sp !== 'mas' && rnd() < dt * 0.6) { takeOff(pg, null); continue; }
         pg.t -= dt;
         if (pg.act === 'walk') {
           const dx = pg.tx - pg.x, dy = pg.ty - pg.y, d = Math.hypot(dx, dy);
           if (d < 0.5) { pg.act = 'stand'; pg.t = rr(0.3, 1.2); }
           else {
-            const s = Math.min(d, 9 * dt), nx = pg.x + dx / d * s, ny = pg.y + dy / d * s;
+            const s = Math.min(d, SP.spd * dt), nx = pg.x + dx / d * s, ny = pg.y + dy / d * s;
             if (walk(nx, ny)) { pg.x = nx; pg.y = ny; } else { pg.act = 'stand'; }
-            if (Math.abs(dx) > 0.2) pg.dir = dx < 0 ? -1 : 1;
+            if (Math.abs(dx) > 1) pg.dir = dx < 0 ? -1 : 1;
           }
+        } else if (pg.act === 'hop') {
+          // småfåglarna hoppar: små skutt med fötterna ihop
+          pg.hop += dt * 5;
+          const u = Math.min(1, pg.hop), nx = pg.hx0 + (pg.tx - pg.hx0) * u, ny = pg.hy0 + (pg.ty - pg.hy0) * u;
+          if (walk(nx, ny)) { pg.x = nx; pg.y = ny; }
+          if (u >= 1) { pg.act = rnd() < 0.5 ? 'hop' : 'stand'; pg.t = rr(0.2, 0.9); if (pg.act === 'hop') startHop(pg); }
         }
-        if (pg.t <= 0) {
+        if (pg.t <= 0 && pg.act !== 'hop') {
           const r = rnd();
           if (r < 0.45) { pg.act = 'peck'; pg.t = rr(0.8, 2.2); }
           else if (r < 0.8) {
-            pg.act = 'walk'; pg.t = 3;
-            const s = pg.spot || [pg.x, pg.y];
-            pg.tx = clamp(pg.x + rr(-12, 12), s[0] - 18, s[0] + 18); pg.ty = clamp(pg.y + rr(-4, 4), s[1] - 7, s[1] + 7);
+            if (pg.sp === 'sparv') { pg.act = 'hop'; startHop(pg); }
+            else {
+              pg.act = 'walk'; pg.t = 3;
+              const s = pg.spot || [pg.x, pg.y];
+              pg.tx = clamp(pg.x + rr(-12, 12), s[0] - 18, s[0] + 18); pg.ty = clamp(pg.y + rr(-4, 4), s[1] - 7, s[1] + 7);
+            }
           } else { pg.act = 'stand'; pg.t = rr(0.4, 1.6); if (rnd() < 0.5) pg.dir = -pg.dir; }
         }
       } else if (pg.st === 'f') {
@@ -1366,60 +2501,85 @@ export function createLife(env, traffic) {
         pg.x = f.x0 + (f.x1 - f.x0) * u; pg.y = f.y0 + (f.y1 - f.y0) * u;
         pg.alt = Math.max(0, f.a0 + (f.a1 - f.a0) * u + f.h * Math.sin(Math.PI * u));
         if (u >= 1) {
-          if (f.away) { pg.st = 'a'; pg.t = rr(8, 40); }
+          if (pg.hideAfter) { pg.hideAfter = false; pg.st = 'h'; pg.alt = 0; pg.t = rr(3, 10); }
+          else if (f.away) { pg.st = 'a'; pg.t = rr(8, 40); }
           else { pg.st = 'g'; pg.alt = 0; pg.act = 'stand'; pg.t = rr(0.4, 1.2); }
+        }
+      } else if (pg.st === 'h') {
+        // gömd i busken: kika ut igen när ingen är nära (och det är ljust)
+        pg.t -= dt;
+        if (pg.t <= 0) {
+          if (dark || threatsNear(pg.x, pg.y, SP.flee + 6)) { pg.t = rr(2, 6); continue; }
+          const [x, y] = landSpot(pg.spot, 10);
+          pg.st = 'g'; pg.act = 'hop'; pg.hx0 = pg.x; pg.hy0 = pg.y; pg.tx = x; pg.ty = y; pg.hop = 0; pg.t = 0.5;
         }
       } else {
         // borta (på taken): kom tillbaka efter en stund om det är ljust
         pg.t -= dt;
         if (pg.t <= 0) {
-          if (env.dark > 0.2) { pg.t = rr(10, 30); continue; }
-          const s = pick(FLOCK), [x, y] = landSpot(s), side = pick([-1, 1]);
+          if (env.dark > 0.2 && pg.sp !== 'mas') { pg.t = rr(10, 30); continue; }
+          const near = SP.spots.filter((s) => Math.abs(s[0] - cx) < 700);
+          const s = pick(near.length ? near : SP.spots);
+          if (!s) { pg.t = rr(10, 30); continue; }
+          const [x, y] = landSpot(s), side = pick([-1, 1]);
           pg.spot = s; pg.x = x + side * rr(160, 240); pg.y = y - rr(20, 60); pg.alt = rr(60, 90);
           flight(pg, x, y, 0);
         }
       }
     }
   }
-  function pigeonItem(pg) {
-    const set = S.pig[pg.v];
+  function startHop(pg) {
+    const s = pg.spot || [pg.x, pg.y];
+    pg.hx0 = pg.x; pg.hy0 = pg.y; pg.hop = 0;
+    pg.tx = clamp(pg.x + rr(-6, 6), s[0] - 14, s[0] + 14); pg.ty = clamp(pg.y + rr(-2, 2), s[1] - 5, s[1] + 5);
+    if (Math.abs(pg.tx - pg.x) > 1) pg.dir = pg.tx < pg.x ? -1 : 1;
+  }
+  function birdGItem(pg) {
+    const SP = SPEC[pg.sp], set = SP.sets()[pg.v] || SP.sets()[0];
     if (pg.st === 'g') {
-      let fr = 'stand';
-      if (pg.act === 'peck') fr = Math.sin(pg.anim * 9) > 0.1 ? 'peck' : 'stand';
+      let fr = 'stand', lift = 0;
+      if (pg.act === 'peck') fr = Math.sin(pg.anim * (pg.sp === 'sparv' ? 14 : 9)) > 0.1 ? 'peck' : 'stand';
       else if (pg.act === 'walk') fr = Math.floor(pg.anim * 7) % 2 ? 'walk' : 'stand';
-      const sp = set[fr], img = pg.dir < 0 ? sp.l : sp.r;
+      else if (pg.act === 'hop') { fr = 'hop'; lift = Math.round(Math.sin(Math.min(1, pg.hop) * Math.PI) * 2); }
+      const sp = set[fr] || set.stand, img = pg.dir < 0 ? sp.l : sp.r;
       const x = Math.round(pg.x), y = Math.round(pg.y);
-      return { x, y: pg.y, draw: (ctx) => ctx.drawImage(img, x - 6, y - 10) };
+      return { x, y: pg.y, draw: (ctx) => ctx.drawImage(img, x - (img.width >> 1), y - img.height + 1 - lift) };
     }
     const f = pg.fl, u = f ? f.u : 0;
     let fr;
     if (f && !f.away && u > 0.82) fr = 'up';
-    else fr = ['up', 'mid', 'down', 'mid'][Math.floor(pg.anim * (u < 0.2 ? 18 : 12)) % 4];
+    else fr = ['up', 'mid', 'down', 'mid'][Math.floor(pg.anim * (pg.sp === 'sparv' ? 22 : pg.sp === 'mas' ? 8 : u < 0.2 ? 18 : 12)) % 4];
     const sp = set[fr], img = pg.dir < 0 ? sp.l : sp.r;
     const x = Math.round(pg.x), y = Math.round(pg.y), a = Math.round(pg.alt);
     return { x, y: a > 10 ? 1e5 + pg.y : pg.y, draw: (ctx) => {
       if (a < 40) { ctx.fillStyle = 'rgba(20,12,30,.18)'; ctx.fillRect(x - 2, y - 1, 5, 1); }
-      ctx.drawImage(img, x - 6, y - a - 6);
+      ctx.drawImage(img, x - (img.width >> 1), y - a - (img.height >> 1));
     } };
   }
 
   // ------------------------------------------------------------------
-  //  Förbiflygande fåglar
+  //  Förbiflygande fåglar och flockar
   // ------------------------------------------------------------------
   let birds = [], birdT = rr(2, 6);
   function updBirds(dt) {
     birdT -= dt;
+    const w = W();
     if (birdT <= 0) {
-      birdT = rr(7, 18);
-      if (env.dark < 0.4) {
+      birdT = rr(6, 16);
+      if (env.dark < 0.4 && w.kind !== 'dimma') {
         const dir = pick([-1, 1]), x = dir > 0 ? cam.x - 16 : cam.x + VW + 16, y = cam.y + rr(12, 96);
-        const kind = wpick([['sw', env.dark > 0.1 ? 3 : 2], ['gull', env.rain ? 0.4 : 1.2], ['crow', 1]]);
-        const n = kind === 'sw' ? ri(2, 4) : 1;
+        const migr = (w.season === 'vår' || w.season === 'höst');
+        const kind = wpick([['sw', w.season === 'sommar' ? 3 : 0.6], ['gull', env.rain ? 0.4 : 1.2], ['crow', 1], ['star', w.season === 'vinter' ? 0.4 : 1.4], ['goose', migr ? 1 : 0.05]]);
+        const n = kind === 'sw' ? ri(2, 4) : kind === 'star' ? ri(9, 16) : kind === 'goose' ? ri(5, 9) : 1;
         for (let i = 0; i < n; i++) {
+          let ox = -dir * i * rr(10, 18), oy = rr(-8, 8);
+          if (kind === 'star') { ox = -dir * rr(0, 40); oy = rr(-12, 12); }
+          // plogen: två skänklar bakåt från den första gåsen
+          if (kind === 'goose') { const k = (i + 1) >> 1, side = i % 2 ? 1 : -1; ox = -dir * k * 13; oy = side * k * 6; }
           birds.push({
-            k: kind, x: x - dir * i * rr(10, 18), y: y + rr(-8, 8), y0: 0, dir,
-            vx: dir * (kind === 'sw' ? rr(105, 140) : kind === 'gull' ? rr(38, 50) : rr(52, 66)),
-            ph: rnd() * 10, t: 0,
+            k: kind, x: x + ox, y: y + oy, y0: 0, dir,
+            vx: dir * (kind === 'sw' ? rr(105, 140) : kind === 'gull' ? rr(38, 50) : kind === 'star' ? rr(66, 74) : kind === 'goose' ? 44 : rr(52, 66)),
+            ph: rnd() * 10, t: 0, wob: rr(0.6, 1.4),
           });
         }
       }
@@ -1427,17 +2587,145 @@ export function createLife(env, traffic) {
     for (const b of birds) {
       b.t += dt;
       b.x += b.vx * dt;
-      b.y0 = b.k === 'sw' ? Math.sin(b.t * 2.6 + b.ph) * 5 : Math.sin(b.t * 0.9 + b.ph) * 2;
+      if (b.k === 'star') { b.x += Math.sin(b.t * 2.3 * b.wob + b.ph) * dt * 18; b.y0 = Math.sin(b.t * 1.7 + b.ph) * 7; }
+      else b.y0 = b.k === 'sw' ? Math.sin(b.t * 2.6 + b.ph) * 5 : b.k === 'goose' ? Math.sin(b.t * 0.7) * 1.5 : Math.sin(b.t * 0.9 + b.ph) * 2;
     }
-    birds = birds.filter((b) => (b.dir > 0 ? b.x < cam.x + VW + 40 : b.x > cam.x - 40) && Math.abs(b.x - camCX()) < 700);
+    birds = birds.filter((b) => (b.dir > 0 ? b.x < cam.x + VW + 60 : b.x > cam.x - 60) && Math.abs(b.x - camCX()) < 700);
   }
   function birdItem(b) {
     const fr = S.bird[b.k];
     let i;
     if (b.k === 'gull') i = Math.sin(b.t * 1.2 + b.ph) > 0.2 ? 1 : [0, 1, 2, 1][Math.floor(b.t * 5) % 4];
-    else i = [0, 1, 2, 1][Math.floor(b.t * (b.k === 'sw' ? 14 : 7) + b.ph) % 4];
+    else i = [0, 1, 2, 1][Math.floor(b.t * (b.k === 'sw' ? 14 : b.k === 'star' ? 16 : b.k === 'goose' ? 4 : 7) + b.ph) % 4];
     const img = fr[i], x = Math.round(b.x), y = Math.round(b.y + b.y0);
     return { x, y: 2e5 + y, draw: (ctx) => ctx.drawImage(img, x - (img.width >> 1), y - (img.height >> 1)) };
+  }
+
+  // ------------------------------------------------------------------
+  //  Ekorrar i träden
+  // ------------------------------------------------------------------
+  const squirrels = [];
+  function seedSquirrels() {
+    const park = trees.filter((t) => t.y > CITY.PARK[0] && t.y < (CITY.FOOT_TOP_S || 494) + 150 && t.kind !== 'gran');
+    const pool = park.length >= 3 ? park : trees;
+    for (let i = 0; i < Math.min(5, pool.length); i++) {
+      const t = pool[Math.floor((i + 0.5) * pool.length / Math.min(5, pool.length))];
+      squirrels.push({ tree: t, x: t.x + 1, y: t.y + 1, alt: t.h, st: 'u', t: rr(1, 12), dir: 1, anim: 0, tx: 0, ty: 0, next: null, act: 'sit' });
+    }
+  }
+  const treeNear = (x, y, r, not) => trees.filter((t) => t !== not && Math.abs(t.x - x) < r && Math.abs(t.y - y) < r * 0.6);
+  function updSquirrels(dt) {
+    const w = W();
+    for (const q of squirrels) {
+      if (Math.abs(q.x - camCX()) > 560) continue;
+      q.anim += dt; q.t -= dt;
+      const th = q.st === 'g' ? threatsNear(q.x, q.y, 30) : null;
+      if (q.st === 'u') {
+        // uppe i kronan (syns inte): kom ner när det är lugnt, ljust och inte ösregnar
+        if (q.t <= 0) {
+          if (env.dark > 0.3 || (w.kind === 'regn' && (w.intensity ?? 0.6) > 0.6) || threatsNear(q.tree.x, q.tree.y, 34)) { q.t = rr(4, 12); continue; }
+          q.st = 'down'; q.alt = q.tree.h; q.x = q.tree.x + 1; q.y = q.tree.y + 1;
+        }
+      } else if (q.st === 'down' || q.st === 'up') {
+        const sp = q.st === 'up' ? (q.flee ? 55 : 30) : 22;
+        q.alt += (q.st === 'up' ? sp : -sp) * dt;
+        if (q.st === 'down' && q.alt <= 0) { q.alt = 0; q.st = 'g'; q.act = 'sit'; q.t = rr(1.5, 4); q.dir = pick([-1, 1]); }
+        if (q.st === 'up' && q.alt >= q.tree.h) { q.st = 'u'; q.flee = false; q.t = rr(4, 16); }
+      } else if (q.st === 'g') {
+        if (th) { // någon kommer: spring till närmaste träd och upp
+          q.flee = true;
+          const t = [q.tree, ...treeNear(q.x, q.y, 60)].sort((a, b) => Math.hypot(a.x - q.x, a.y - q.y) - Math.hypot(b.x - q.x, b.y - q.y))[0];
+          q.next = t; q.act = 'run'; q.tx = t.x + 1; q.ty = t.y + 1;
+        }
+        if (q.act === 'run') {
+          const dx = q.tx - q.x, dy = q.ty - q.y, d = Math.hypot(dx, dy), s = Math.min(d, (q.flee ? 62 : 44) * dt);
+          if (d > 0.5) { q.x += dx / d * s; q.y += dy / d * s; if (Math.abs(dx) > 1) q.dir = dx < 0 ? -1 : 1; }
+          else if (q.next) { q.tree = q.next; q.next = null; q.st = 'up'; q.alt = 0; }
+          else { q.act = 'sit'; q.t = rr(1, 3); }
+        } else if (q.t <= 0) {
+          const r = rnd();
+          if (r < 0.3) { q.act = 'gnaw'; q.t = rr(2, 5); }
+          else if (r < 0.55) { q.act = 'run'; q.next = null; const a = rnd() * 6.28; q.tx = q.tree.x + Math.cos(a) * rr(8, 22); q.ty = q.tree.y + Math.sin(a) * rr(3, 9); if (!walk(q.tx, q.ty)) { q.tx = q.tree.x + 6; q.ty = q.tree.y + 3; } }
+          else if (r < 0.8) { const o = treeNear(q.x, q.y, 110, q.tree); if (o.length) { q.next = pick(o); q.act = 'run'; q.tx = q.next.x + 1; q.ty = q.next.y + 1; } else { q.act = 'sit'; q.t = rr(1, 3); } }
+          else { q.act = 'run'; q.next = q.tree; q.tx = q.tree.x + 1; q.ty = q.tree.y + 1; }
+          if (q.act === 'sit' || q.act === 'gnaw') q.dir = rnd() < 0.3 ? -q.dir : q.dir;
+        }
+      }
+    }
+  }
+  function squirrelItem(q) {
+    if (q.st === 'u') return null;
+    const x = Math.round(q.x), y = Math.round(q.y);
+    if (q.st === 'up' || q.st === 'down') {
+      const spr = q.st === 'up' ? S.sq.climb : S.sq.down, img = spr.r, a = Math.round(q.alt);
+      // på stammen: ritas precis framför trädet
+      return { x, y: q.tree.y + 0.4, draw: (ctx) => ctx.drawImage(img, x - 3, y - a - img.height + 2) };
+    }
+    const run = q.act === 'run', k = run ? (Math.floor(q.anim * 12) % 2 ? 'run1' : 'run2') : q.act === 'gnaw' ? 'gnaw' : 'sit';
+    const spr = S.sq[k], img = q.dir < 0 ? spr.l : spr.r;
+    return { x, y: q.y, draw: (ctx) => {
+      ctx.fillStyle = 'rgba(20,12,30,.2)'; ctx.fillRect(x - 3, y - 1, 7, 1);
+      ctx.drawImage(img, x - (img.width >> 1), y - img.height + 1 - (run && Math.floor(q.anim * 12) % 2 ? 1 : 0));
+    } };
+  }
+
+  // ------------------------------------------------------------------
+  //  Änder i dammen och svanar i kanalen
+  // ------------------------------------------------------------------
+  const pond = PARK.pond;
+  const ducks = [];
+  if (pond) for (let i = 0; i < 4; i++) ducks.push({ v: i === 1 || i === 3 ? 1 : 0, x: pond.cx + rr(-pond.rx * 0.5, pond.rx * 0.5), y: pond.cy + rr(-pond.ry * 0.4, pond.ry * 0.4), tx: pond.cx, ty: pond.cy, dir: pick([-1, 1]), t: rr(1, 5), dab: 0, ph: rnd() * 6 });
+  const swans = [];
+  if (CITY.CANAL) for (let i = 0; i < 2; i++) swans.push({ x: rr(200, CW - 200), y: CITY.CANAL[0] + 12 + i * 3, dir: pick([-1, 1]), v: rr(4, 7), ph: rnd() * 6 });
+  const frozen = () => { const w = W(); return (w.snowCover || 0) > 0.45 || (w.season === 'vinter' && (w.temp ?? 0) < -1); };
+  function updWater(dt) {
+    if (frozen()) return;
+    for (const d of ducks) {
+      d.t -= dt;
+      if (d.dab > 0) { d.dab -= dt; continue; }
+      const dx = d.tx - d.x, dy = d.ty - d.y, dd = Math.hypot(dx, dy);
+      if (dd > 0.4) { d.x += dx / dd * Math.min(dd, 5 * dt); d.y += dy / dd * Math.min(dd, 5 * dt); if (Math.abs(dx) > 1.5) d.dir = dx < 0 ? -1 : 1; }
+      if (d.t <= 0) {
+        d.t = rr(2, 7);
+        if (rnd() < 0.3) d.dab = rr(1, 2.4);
+        else {
+          const a = rnd() * 6.28, r = Math.sqrt(rnd()) * 0.62;
+          d.tx = pond.cx + Math.cos(a) * pond.rx * r; d.ty = pond.cy + Math.sin(a) * pond.ry * r * 0.8;
+          // änderna följer gärna efter varandra
+          if (rnd() < 0.3) { const o = pick(ducks); if (o !== d) { d.tx = o.x - o.dir * 9; d.ty = o.y + 1; } }
+        }
+      }
+    }
+    for (const s of swans) {
+      s.x += s.dir * s.v * dt;
+      if (s.x < 20 || s.x > CW - 20) s.dir = -s.dir;
+      if (rnd() < dt * 0.02) s.dir = -s.dir;
+    }
+  }
+  function waterItems(out) {
+    if (frozen()) return;
+    const t = env.t;
+    for (const d of ducks) {
+      if (!visible(d.x, d.y, 20)) continue;
+      const set = S.duck[d.v], spr = d.dab > 0 ? set.dab : set.swim, img = d.dir < 0 ? spr.l : spr.r;
+      const x = Math.round(d.x), y = Math.round(d.y), bob = Math.sin(t * 2.2 + d.ph) > 0.6 ? 1 : 0;
+      out.push({ x, y: d.y, draw: (ctx) => {
+        ctx.drawImage(img, x - (img.width >> 1), y - img.height + 2 + bob);
+        // vattenlinjen och ett litet kölvatten
+        ctx.fillStyle = 'rgba(210,236,250,.55)'; ctx.fillRect(x - 5, y + 1, 10, 1);
+        const moving = Math.hypot(d.tx - d.x, d.ty - d.y) > 0.5 && d.dab <= 0;
+        if (moving) { ctx.fillStyle = 'rgba(230,246,255,.4)'; ctx.fillRect(x - d.dir * 8, y, 2, 1); ctx.fillRect(x - d.dir * 11, y - 1, 2, 1); ctx.fillRect(x - d.dir * 11, y + 1, 2, 1); }
+      } });
+    }
+    for (const s of swans) {
+      if (!visible(s.x, s.y, 20)) continue;
+      const img = s.dir < 0 ? S.swan.l : S.swan.r, x = Math.round(s.x), y = Math.round(s.y), bob = Math.sin(t * 1.4 + s.ph) > 0.7 ? 1 : 0;
+      out.push({ x, y: s.y, draw: (ctx) => {
+        ctx.drawImage(img, x - (img.width >> 1), y - img.height + 3 + bob);
+        ctx.fillStyle = 'rgba(210,236,250,.5)'; ctx.fillRect(x - 6, y + 2, 12, 1);
+        ctx.fillStyle = 'rgba(230,246,255,.35)'; ctx.fillRect(x - s.dir * 10, y + 1, 3, 1); ctx.fillRect(x - s.dir * 14, y, 3, 1); ctx.fillRect(x - s.dir * 14, y + 3, 3, 1);
+      } });
+    }
   }
 
   // ------------------------------------------------------------------
@@ -1446,29 +2734,31 @@ export function createLife(env, traffic) {
   // Rabatterna hittas bland rekvisitans hinder i parken (låga, breda rutor);
   // saknas de flyger fjärilarna vid kanterna av gångarna i stället.
   let BF_HOMES = (env.obstacles || [])
-    .filter((o) => o && o[1] > CITY.PARK[0] && o[2] - o[0] >= 28 && o[3] - o[1] >= 7 && o[3] - o[1] <= 14)
+    .filter((o) => o && o[1] > CITY.PARK[0] && o[3] < (CITY.BACK_S || [462])[0] && o[0] < XI[0] && o[2] - o[0] >= 28 && o[3] - o[1] >= 7 && o[3] - o[1] <= 14)
     .map((o) => [(o[0] + o[2]) / 2, o[3] - 1, (o[2] - o[0]) / 2]);
   if (BF_HOMES.length < 3) {
     BF_HOMES = [];
-    for (const r of PARK_LAYOUT.paths) BF_HOMES.push([r[0] - 9, 318, 10], [r[2] + 9, 324, 10]);
-    for (let x = 90; x < CW - 60; x += 130) BF_HOMES.push([x, (x / 130) % 2 < 1 ? 328 : 354, 12]);
+    for (const r of PARK.paths || []) BF_HOMES.push([r[0] - 9, 318, 10], [r[2] + 9, 324, 10]);
+    for (let x = 90; x < XI[0] - 60; x += 130) BF_HOMES.push([x, (x / 130) % 2 < 1 ? 328 : 354, 12]);
   }
+  if (PARK.meadow) { const m = PARK.meadow; for (let i = 0; i < 4; i++) BF_HOMES.push([m[0] + 20 + i * (m[2] - m[0] - 40) / 3, m[1] + 20 + (i % 2) * 40, 16]); }
   const butterflies = [];
-  for (let i = 0; i < 18; i++) {
+  for (let i = 0; i < 20; i++) {
     const h = BF_HOMES[i % BF_HOMES.length];
     butterflies.push({ hx: h[0], hy: h[1], hw: h[2], x: h[0], y: h[1], alt: rr(4, 12), tx: h[0], ty: h[1], ta: 8, c: ri(0, BF_COLORS.length - 1), ph: rnd() * 10, t: 0 });
   }
-  const bfActive = () => env.dark === 0 && !env.rain && env.hour >= 8 && env.hour < 19.5;
+  const bfActive = () => { const w = W(); return env.dark === 0 && !env.rain && env.hour >= 8 && env.hour < 19.5 && (w.season === 'vår' || w.season === 'sommar' || (w.temp ?? 15) >= 14) && w.kind !== 'snö' && (w.temp ?? 15) >= 10; };
   function updButterflies(dt) {
     if (!bfActive()) return;
     for (const f of butterflies) {
+      if (Math.abs(f.x - camCX()) > 500) continue;
       f.t += dt;
       const dx = f.tx - f.x, dy = f.ty - f.y, d = Math.hypot(dx, dy);
       let sp = 14;
       const th = threatsNear(f.x, f.y, 14);
       if (th) { sp = 30; f.tx = f.x + Math.sign(f.x - th.x || 1) * 20; f.ty = f.y + rr(-6, 6); f.ta = rr(12, 20); }
       if (d < 1.5) {
-        if (rnd() < 0.05) { const h = pick(BF_HOMES.filter((q) => Math.abs(q[0] - f.hx) < 220)); if (h) { f.hx = h[0]; f.hy = h[1]; f.hw = h[2]; } }
+        if (rnd() < 0.05) { const h = pick(BF_HOMES.filter((q) => Math.abs(q[0] - f.hx) < 220 && Math.abs(q[1] - f.hy) < 120)); if (h) { f.hx = h[0]; f.hy = h[1]; f.hw = h[2]; } }
         f.tx = f.hx + rr(-f.hw, f.hw); f.ty = f.hy + rr(-3, 3); f.ta = rr(4, 14);
       } else {
         const s = Math.min(d, sp * dt);
@@ -1485,34 +2775,46 @@ export function createLife(env, traffic) {
   }
 
   // ------------------------------------------------------------------
-  //  Katten på trappan vid Pixelgatan 1
+  //  Katterna: på trappan vid Pixelgatan 1, i radhusträdgården och vid det övergivna huset
   // ------------------------------------------------------------------
-  const home = BUILDINGS.find((b) => b.id === 'hem') || BUILDINGS[0];
-  // trappstenen vid porten går ~5 px utanför dörren – katten ligger på dess högra ände
-  const cat = { x: home.door.x1 + 3, y: BASE + 3, st: 'sleep', t: rr(4, 10), tail: 0, tailT: 0, dir: -1 };
-  function updCat(dt) {
-    cat.t -= dt; cat.tailT -= dt;
-    const near = (env.people || []).some((q) => Math.abs(q.x - cat.x) < 18 && Math.abs(q.y - cat.y) < 12)
-      || peds.some((p) => p.dog && Math.abs(p.dog.x - cat.x) < 26 && Math.abs(p.dog.y - cat.y) < 16);
-    if (near) { cat.st = 'sit'; cat.t = rr(2, 4); }
-    else if (cat.t <= 0) {
-      if (cat.st === 'sit') cat.st = 'awake';
-      else cat.st = cat.st === 'sleep' ? 'awake' : (env.dark > 0.3 ? 'awake' : 'sleep');
-      cat.t = cat.st === 'sleep' ? rr(8, 20) : rr(4, 10);
-    }
-    if (cat.tailT <= 0) { cat.tail = cat.st === 'sleep' ? 0 : ri(0, 2); cat.tailT = rr(0.3, 1.4); }
+  const cats = [];
+  {
+    const home = byId('hem') || BUILDINGS[0];
+    // trappstenen vid porten går ~5 px utanför dörren – katten ligger på dess högra ände
+    if (home) cats.push({ x: home.door.x1 + 3, y: baseOf(home) + 3, pal: 0, st: 'sleep', t: rr(4, 10), tail: 0, tailT: 0, dir: -1 });
+    const rh = byId('radhus');
+    if (rh) { const q = nav.nearest(Math.round(rh.door.x1 + 12), baseOf(rh) + 6, walk, 6); if (q) cats.push({ x: q[0], y: q[1], pal: 1, st: 'awake', t: rr(4, 10), tail: 0, tailT: 0, dir: 1 }); }
+    const ov = byId('overgivet');
+    if (ov) { const q = nav.nearest(Math.round(ov.door.x0 - 10), baseOf(ov) + 4, walk, 6); if (q) cats.push({ x: q[0], y: q[1], pal: 2, st: 'sleep', t: rr(4, 10), tail: 0, tailT: 0, dir: 1, night: true }); }
   }
-  function catItem() {
-    const spr = cat.st === 'sit' ? S.cat.sit : cat.st === 'sleep' ? S.cat.sleep : S.catTail[cat.tail];
+  const visibleCat = (c) => !(c.pal === 1 && env.rain); // grå katten går in när det regnar
+  function updCat(dt) {
+    for (const cat of cats) {
+      if (Math.abs(cat.x - camCX()) > 500) continue;
+      cat.t -= dt; cat.tailT -= dt;
+      const near = (env.people || []).some((q) => Math.abs(q.x - cat.x) < 18 && Math.abs(q.y - cat.y) < 12)
+        || peds.some((p) => p.dog && Math.abs(p.dog.x - cat.x) < 26 && Math.abs(p.dog.y - cat.y) < 16);
+      if (near) { cat.st = 'sit'; cat.t = rr(2, 4); }
+      else if (cat.t <= 0) {
+        if (cat.st === 'sit') cat.st = 'awake';
+        else cat.st = cat.st === 'sleep' ? 'awake' : (env.dark > 0.3 && !cat.night ? 'awake' : 'sleep');
+        cat.t = cat.st === 'sleep' ? rr(8, 20) : rr(4, 10);
+      }
+      if (cat.tailT <= 0) { cat.tail = cat.st === 'sleep' ? 0 : ri(0, 2); cat.tailT = rr(0.3, 1.4); }
+    }
+  }
+  function catItem(cat) {
+    const set = S.cat[cat.pal];
+    const spr = cat.st === 'sit' ? set.sit : cat.st === 'sleep' ? set.sleep : set.tails[cat.tail];
     const img = cat.dir < 0 ? spr.l : spr.r, x = Math.round(cat.x), y = Math.round(cat.y);
     return { x, y: cat.y, draw: (ctx) => {
       ctx.fillStyle = 'rgba(20,12,30,.22)'; ctx.fillRect(x - (img.width >> 1) + 2, y - 1, img.width - 4, 2);
       ctx.drawImage(img, x - (img.width >> 1), y - img.height + 1);
     } };
   }
-  const catEyes = () => {
+  const catEyes = (cat) => {
     if (cat.st === 'sleep') return [];
-    const spr = cat.st === 'sit' ? S.cat.sit : S.catTail[0], x0 = Math.round(cat.x) - (spr.w >> 1), y0 = Math.round(cat.y) - spr.h + 1;
+    const set = S.cat[cat.pal], spr = cat.st === 'sit' ? set.sit : set.tails[0], x0 = Math.round(cat.x) - (spr.w >> 1), y0 = Math.round(cat.y) - spr.h + 1;
     // ögonen ('g') i kartan + 1 px kontur
     const rows = cat.st === 'sit' ? CAT_MAPS.sit : CAT_MAPS.awake, out = [];
     rows.forEach((r, j) => { for (let i = 0; i < r.length; i++) if (r[i] === 'g') out.push([cat.dir < 0 ? x0 + spr.w - 2 - i : x0 + 1 + i, y0 + 1 + j]); });
@@ -1520,12 +2822,41 @@ export function createLife(env, traffic) {
   };
 
   // ------------------------------------------------------------------
-  //  Eldflugor över gräset en mörk kväll (ritas i glow)
+  //  Snögubbar på gräset när snön ligger
+  // ------------------------------------------------------------------
+  const snowmen = [];
+  {
+    const areas = [[560, 372, 880, 452], [1236, 360, 1460, 452], [1480, 372, 1668, 452], [150, 424, 380, 456], [20, 620, 146, 638], [2040, 350, 2160, 440], [2450, 334, 2690, 444], [2200, 316, 2400, 404]];
+    const clear = (x, y) => { for (let dy = -6; dy <= 1; dy += 2) for (let dx = -8; dx <= 8; dx += 2) if (!walk(x + dx, y + dy)) return false; return !paved(x, y) || y > 600; };
+    areas.forEach((r, i) => {
+      for (let k = 0; k < 24; k++) {
+        const x = Math.round(r[0] + hash(i, k, 301) * (r[2] - r[0])), y = Math.round(r[1] + hash(i, k, 302) * (r[3] - r[1]));
+        if (!clear(x, y) || snowmen.some((s) => Math.hypot(s.x - x, s.y - y) < 40)) continue;
+        snowmen.push({ x, y, v: (i + k) % 4, dir: hash(i, k, 303) < 0.5 ? 1 : -1, day: i });
+        break;
+      }
+    });
+  }
+  function snowmanItems(out) {
+    const w = W();
+    if ((w.snowCover || 0) < 0.35) return;
+    for (const s of snowmen) {
+      if (!visible(s.x, s.y, 30)) continue;
+      // inte alla varje dag: vilka som byggts beror på dagen
+      if (hash(env.day | 0, s.day, 17) < 0.3) continue;
+      const img = s.dir < 0 ? S.snowman[s.v].l : S.snowman[s.v].r, x = Math.round(s.x), y = Math.round(s.y);
+      out.push({ x, y: s.y, draw: (ctx) => ctx.drawImage(img, x - 12, y - 30) });
+    }
+  }
+
+  // ------------------------------------------------------------------
+  //  Eldflugor över gräset en mörk sommarkväll (ritas i glow)
   // ------------------------------------------------------------------
   const flies = [];
   function updFlies(dt) {
-    const on = env.dark > 0.3 && !env.rain;
-    const top = Math.max(CITY.PARK[0] + 4, cam.y), bot = Math.min(CH - 6, cam.y + VH);
+    const w = W();
+    const on = env.dark > 0.3 && !env.rain && (w.season === 'sommar' || (w.temp ?? 15) >= 14) && w.kind !== 'snö';
+    const top = Math.max(CITY.PARK[0] + 4, cam.y), bot = Math.min((CITY.BACK_S || [CH])[0] - 2, cam.y + VH);
     if (!on || bot - top < 8) { flies.length = 0; return; }
     while (flies.length < 16) flies.push({ x: cam.x + rr(0, VW), y: rr(top, bot), vx: rr(-4, 4), vy: rr(-2, 2), ph: rnd() * 10 });
     for (const f of flies) {
@@ -1562,52 +2893,67 @@ export function createLife(env, traffic) {
       ctx.fillRect(x, y, 1, 1); lx = x; ly = y;
     }
   }
+  function underRoof(p) { return !!(p.sit && p.sit.kind === 'busskur') || !!(p.spot && p.spot.roof); }
   function drawPed(ctx, p) {
-    const X = Math.round(p.x + p.ox), Y = Math.round(p.y + p.oy);
-    const dir = p.moving ? headingDir(p.hx, p.hy) : (p.look4bus && Math.sin(env.t * 0.8 + p.seed) > 0.75 ? 'left' : p.face);
+    const X = Math.round(p.x + p.ox);
+    let Y = Math.round(p.y + p.oy);
+    const dir = p.showDir || 'down';
     const box = p.carry === 'kartong';
     let frame;
-    if (p.moving) frame = box ? [7, 9, 8, 9][Math.floor(p.anim) % 4] : WALK_SEQ[Math.floor(p.anim) % 4];
+    if (p.sit) frame = p.carry === 'glass' || p.carry === 'burgare' || (p.carry === 'kaffe' && Math.sin(env.t * 0.9 + p.seed) > 0.4) ? 6 : 5;
+    else if (p.showMove) frame = box ? [7, 9, 8, 9][Math.floor(p.anim) % 4] : WALK_SEQ[Math.floor(p.anim) % 4];
+    else if (p.jump) { const ph = (env.t * 3.2 + p.seed) % 1; frame = ph < 0.45 ? 3 : 0; if (ph < 0.45) Y -= 2; }
+    else if (p.hang && p.gest > 0) frame = Math.floor(env.t * 6 + p.seed) % 2 ? 3 : 4;
     else frame = box ? 9 : Math.sin(env.t * 1.3 + p.seed) > 0.93 ? 4 : 0;
     const door = p.door || (p.leader && p.leader.door);
     // klipp bara den som faktiskt står i dörröppningen (inte sällskapet bredvid)
-    const clip = door && Y < BASE + 5 && X > door.b.door.x0 - 8 && X < door.b.door.x1 + 8;
+    const dbase = door ? door.base : BASE;
+    const clip = door && Y < dbase + 5 && X > door.b.door.x0 - 8 && X < door.b.door.x1 + 8;
     const alpha = door ? doorAlpha(p.leader || p, Y) : 1;
     if (clip) {
-      const b = door.b;
+      const b = door.b, dh = doorH(b);
       ctx.save();
       ctx.beginPath();
-      ctx.rect(b.door.x0, BASE - DOOR_H, b.door.x1 - b.door.x0, DOOR_H); // dörröppningen (husens DOOR_H)
-      ctx.rect(X - 20, BASE, 40, 60);
+      ctx.rect(b.door.x0, dbase - dh, b.door.x1 - b.door.x0, dh); // dörröppningen
+      ctx.rect(X - 20, dbase, 40, 60);
       ctx.clip();
     }
     if (alpha < 1) ctx.globalAlpha = alpha;
-    const rain = env.rain && p.umb;
+    const rain = env.rain && p.umb && !underRoof(p);
     const kidH = p.look.kid ? 8 : 0;
     const h = handPos(p, X, Y, dir, frame);
     const side = dir === 'left' || dir === 'right';
-    // bakom kroppen: paraplyets skaft, släpande resväska, kartong bakifrån
-    if (rain) { ctx.fillStyle = '#2a2630'; ctx.fillRect(X + (side ? (dir === 'right' ? 2 : -2) : 1), Y - 35 + kidH, 1, 16); }
-    if (p.carry === 'resvaska' && side) drawCase(ctx, p, X, Y, dir, h);
-    if (box && dir === 'up') drawCarry(ctx, 'kartong', X - 7, Y - 27, 'r');
+    // bakom kroppen: paraplyets skaft, släpande resväska, kartong bakifrån, kassen på marken bredvid den som sitter
+    if (rain) { ctx.fillStyle = '#2a2630'; ctx.fillRect(X + (side ? (dir === 'right' ? 2 : -2) : 1), Y - 35 + kidH + (p.sit ? 1 : 0), 1, 16); }
+    if (p.sit && p.carry && p.carry !== 'glass' && p.carry !== 'burgare' && p.carry !== 'kaffe') {
+      const spr = p.carry === 'pase' ? S.pase[p.carryCol] : p.carry === 'resvaska' ? S.case[p.caseCol] : S.carry[p.carry];
+      if (spr) ctx.drawImage(spr.r, X + 7, Y - spr.h + 2);
+    }
+    if (!p.sit && p.carry === 'resvaska' && side) drawCase(ctx, p, X, Y, dir, h);
+    if (!p.sit && box && dir === 'up') drawCarry(ctx, 'kartong', X - 7, Y - 27, 'r');
     drawPerson(ctx, X, Y, p.look, dir, frame);
-    // framför: kasse i handen, kartong, resväska bredvid, paraplyets duk
-    if (p.carry && !box && p.carry !== 'resvaska') {
+    // framför: kasse i handen, kartong, resväska bredvid, paraplyets duk, mobilen
+    if (!p.sit && p.carry && !box && p.carry !== 'resvaska') {
       const spr = p.carry === 'pase' ? S.pase[p.carryCol] : S.carry[p.carry];
       if (spr) {
         const img = h.side < 0 ? spr.l : spr.r, ax = h.side < 0 ? spr.w - 1 - spr.ax : spr.ax;
         ctx.drawImage(img, h.x - ax, h.y - spr.ay);
       }
     }
-    if (box && dir !== 'up') {
+    if (!p.sit && box && dir !== 'up') {
       const bx = dir === 'right' ? X + 1 : dir === 'left' ? X - 16 : X - 8;
       drawCarry(ctx, 'kartong', bx, Y - 26, 'r');
     }
-    if (p.carry === 'resvaska' && !side) drawCase(ctx, p, X, Y, dir, h);
+    if (!p.sit && p.carry === 'resvaska' && !side) drawCase(ctx, p, X, Y, dir, h);
+    if (p.hang && p.phoneT > 0 && dir === 'down' && !p.showMove) {
+      // mobilen lyser i handen
+      ctx.fillStyle = '#1a1a20'; ctx.fillRect(X - 1, Y - 18, 3, 4);
+      ctx.fillStyle = env.dark > 0.2 ? '#bfe4ff' : '#6a8ab0'; ctx.fillRect(X, Y - 17, 1, 2);
+    }
     if (rain) {
       const u = S.umb[p.umb];
       const ux = X + (side ? (dir === 'right' ? 2 : -2) : 1) - 9;
-      ctx.drawImage(u, ux, Y - 42 + kidH);
+      ctx.drawImage(u, ux, Y - 42 + kidH + (p.sit ? 2 : 0));
     }
     if (alpha < 1) ctx.globalAlpha = 1;
     if (clip) ctx.restore();
@@ -1636,13 +2982,21 @@ export function createLife(env, traffic) {
     const x0 = x - 11, y0 = y - 15;
     ctx.fillStyle = 'rgba(20,12,30,.22)'; ctx.fillRect(x - 6, y - 1, 12, 2);
     ctx.drawImage(img, x0, y0);
+    // skallet: små streck framför munnen
+    if (g.fr === 5) {
+      const mx = g.dir < 0 ? x0 + 21 - fr.mouth[0] : x0 + fr.mouth[0], my = y0 + fr.mouth[1], s = g.dir < 0 ? -1 : 1;
+      ctx.fillStyle = '#f4f1ea';
+      ctx.fillRect(mx + s * 2, my - 3, 1, 1); ctx.fillRect(mx + s * 3, my - 4, 1, 1);
+      ctx.fillRect(mx + s * 3, my - 1, 2 * s > 0 ? 2 : 1, 1); if (s < 0) ctx.fillRect(mx - 4, my - 1, 1, 1);
+      ctx.fillRect(mx + s * 2, my + 1, 1, 1); ctx.fillRect(mx + s * 3, my + 2, 1, 1);
+    }
     const inside = p.door && p.door.ph !== 'app' && p.door.ph !== 'out';
-    if (!inside && !p.hidden) {
+    if (!inside && !p.hidden && !g.free) {
       const nx = g.dir < 0 ? x0 + 21 - fr.neck[0] : x0 + fr.neck[0], ny = y0 + fr.neck[1];
       const X = Math.round(p.x + p.ox), Y = Math.round(p.y + p.oy);
-      const dir = p.moving ? headingDir(p.hx, p.hy) : p.face;
+      const dir = p.showDir || 'down';
       const hx = dir === 'down' || dir === 'up' ? X - (p.look.build || 5) - 1 : dir === 'right' ? X + 1 : X - 2;
-      drawLeash(ctx, hx, Y - 14, nx, ny);
+      drawLeash(ctx, hx, Y - (p.sit ? 10 : 14), nx, ny);
     }
   }
 
@@ -1661,6 +3015,7 @@ export function createLife(env, traffic) {
       p.dog.x = walk(dx, dy) ? dx : X; p.dog.y = walk(dx, dy) ? dy : Y;
       if (p.door && p.dog.tie) { p.dog.x = p.dog.tie.x; p.dog.y = p.dog.tie.y; }
     }
+    p.showMove = p.moving; p.showDir = p.sit ? p.sit.dir : p.moving ? headingDir(p.hx, p.hy) : p.face;
   }
   // Scenen skapar modulerna innan den fyllt i env (klockan, spelarens plats),
   // så startbefolkningen sätts ut vid första update() i stället.
@@ -1668,9 +3023,13 @@ export function createLife(env, traffic) {
   function start() {
     started = true;
     updCam();
-    lastCam = camCX();
-    if (env.dark > 0.3) for (const pg of pigeons) { pg.st = 'a'; pg.t = rr(5, 40); } // på natten sover duvorna på taken
-    for (let i = 0, n = targetCount(env.hour); i < 40 && peds.length < n; i++) preRun(spawnSomewhere(true), rr(0, 16));
+    lastCam = [camCX(), camCY()];
+    findFlora();
+    seedBirds();
+    seedSquirrels();
+    if (env.dark > 0.3) for (const pg of birdsG) { if (pg.sp === 'sparv') { pg.st = 'h'; pg.t = rr(5, 40); } else if (pg.sp !== 'mas') { pg.st = 'a'; pg.t = rr(5, 40); } } // på natten sover fåglarna
+    for (let i = 0, n = targetCount(env.hour); i < 40 && ordinary() < n; i++) preRun(spawnSomewhere(true), rr(0, 16));
+    manageSpots(0, true);
     cleanup();
   }
 
@@ -1682,41 +3041,51 @@ export function createLife(env, traffic) {
       if (!started) start();
       updCam();
       const nNpc = peds.filter((p) => !p.hidden).length;
-      if (lastCam !== null && Math.abs(camCX() - lastCam) > 260) repopulate();
-      lastCam = camCX();
+      if (lastCam && Math.hypot(camCX() - lastCam[0], camCY() - lastCam[1]) > 260) repopulate();
+      lastCam = [camCX(), camCY()];
       const ppl = env.people || [];
       others = [...peds, ...ppl.slice(0, Math.max(1, ppl.length - nNpc))];
       manage(dt);
       updBus();
       for (const p of peds) if (!p.leader) { movePed(p, dt); sampleTrail(p, dt); }
       for (const p of peds) if (p.leader) updComp(p, dt);
+      for (const p of peds) { updShow(p, dt); if (p.phoneT > 0) p.phoneT -= dt; }
       for (const p of peds) if (p.dog) updDog(p, dt);
-      updPigeons(dt);
+      dogSocial();
+      updBirdsG(dt);
       updBirds(dt);
+      updSquirrels(dt);
+      updWater(dt);
       updButterflies(dt);
       updCat(dt);
       updFlies(dt);
     },
     // hundarna (för tools/dog-test.mjs: inga hopp, inga riktningsbyten varje bildruta)
-    dogs() { return peds.filter((p) => p.dog).map((p) => ({ id: p.seed, x: p.dog.x, y: p.dog.y, dir: p.dog.dir, fr: p.dog.fr, moving: !!p.dog.moving, owner: { x: p.x, y: p.y, moving: !!p.moving } })); },
+    dogs() { return peds.filter((p) => p.dog).map((p) => ({ id: p.seed, x: p.dog.x, y: p.dog.y, dir: p.dog.dir, fr: p.dog.fr, moving: !!p.dog.moving, free: !!p.dog.free, owner: { x: p.x, y: p.y, moving: !!p.moving } })); },
     positions() {
       const out = [];
       for (const p of peds) if (!p.hidden) out.push({ x: p.x + p.ox, y: p.y + p.oy });
       return out;
     },
+    // sittplatser som fotgängarna har tagit (så att spelaren inte sätter sig i knät på någon)
+    busySeats() { const s = new Set(); for (const [id, p] of seatUse) if (p && !p.gone) s.add(id); return s; },
+    seatBusy(id) { const p = seatUse.get(id); return !!(p && !p.gone); },
     items() {
       const out = [];
       for (const p of peds) {
-        if (!p.hidden) {
+        if (!p.hidden && visible(p.x, p.y, 60)) {
           const Y = p.y + p.oy, door = p.door || (p.leader && p.leader.door);
-          out.push({ x: p.x + p.ox, y: door ? Math.max(Y, BASE + 0.5) : Y, draw: (ctx) => drawPed(ctx, p) });
+          out.push({ x: p.x + p.ox, y: p.sit ? p.sit.y : door ? Math.max(Y, door.base + 0.5) : Y, draw: (ctx) => drawPed(ctx, p) });
         }
-        if (p.dog) out.push({ x: p.dog.x, y: p.dog.y, draw: (ctx) => drawDog(ctx, p) });
+        if (p.dog && visible(p.dog.x, p.dog.y, 40) && !(p.hidden && p.door && p.door.home)) out.push({ x: p.dog.x, y: p.dog.y, draw: (ctx) => drawDog(ctx, p) });
       }
-      for (const pg of pigeons) if (pg.st !== 'a') out.push(pigeonItem(pg));
+      for (const pg of birdsG) if ((pg.st === 'g' || pg.st === 'f') && visible(pg.x, pg.y - pg.alt, 30)) out.push(birdGItem(pg));
       for (const b of birds) out.push(birdItem(b));
-      if (bfActive()) for (const f of butterflies) out.push(bfItem(f));
-      out.push(catItem());
+      for (const q of squirrels) if (visible(q.x, q.y, 30)) { const it = squirrelItem(q); if (it) out.push(it); }
+      waterItems(out);
+      snowmanItems(out);
+      if (bfActive()) for (const f of butterflies) if (visible(f.x, f.y, 20)) out.push(bfItem(f));
+      for (const c of cats) if (visibleCat(c) && visible(c.x, c.y, 20)) out.push(catItem(c));
       return out;
     },
     glow(ctx) {
@@ -1730,11 +3099,21 @@ export function createLife(env, traffic) {
         ctx.fillStyle = `rgba(150,230,60,${(a * 0.5).toFixed(3)})`; ctx.fillRect(x - 1, y, 3, 1); ctx.fillRect(x, y - 1, 1, 3);
         ctx.fillStyle = `rgba(245,255,170,${a.toFixed(3)})`; ctx.fillRect(x, y, 1, 1);
       }
+      ctx.globalCompositeOperation = 'source-over';
       if (env.dark > 0.2) {
-        ctx.fillStyle = 'rgba(170,255,110,0.85)';
-        for (const [x, y] of catEyes()) ctx.fillRect(x, y, 1, 1);
+        for (const c of cats) {
+          if (!visibleCat(c) || !visible(c.x, c.y, 10)) continue;
+          ctx.fillStyle = c.pal === 2 ? 'rgba(230,240,90,0.9)' : 'rgba(170,255,110,0.85)';
+          for (const [x, y] of catEyes(c)) ctx.fillRect(x, y, 1, 1);
+        }
+        // mobilskärmarna lyser i mörkret
+        for (const p of peds) if (p.hang && p.phoneT > 0 && p.showDir === 'down' && !p.showMove && visible(p.x, p.y, 10)) {
+          const X = Math.round(p.x + p.ox), Y = Math.round(p.y + p.oy);
+          ctx.fillStyle = 'rgba(170,215,255,0.35)'; ctx.fillRect(X - 2, Y - 19, 5, 6);
+          ctx.fillStyle = 'rgba(210,235,255,0.9)'; ctx.fillRect(X, Y - 17, 1, 2);
+        }
       }
     },
-    _debug: { nav, peds: () => peds, pigeons, cat, spawn, planFor, buildings: BUILDINGS, butterflies, bfHomes: () => BF_HOMES },
+    _debug: { nav, peds: () => peds, birds: birdsG, squirrels, ducks, swans, cats, snowmen, seats, seatUse, hangs: HANGS, plays: PLAYS, spawn, planFor, buildings: ALL_B, butterflies, bfHomes: () => BF_HOMES, trees: () => trees, bushes: () => bushes },
   };
 }

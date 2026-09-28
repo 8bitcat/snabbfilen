@@ -696,72 +696,831 @@ const KAFE = {
 };
 
 // ======================= BURGARBAREN =======================
-function seatBack(P, x, y, w, h) {
-  for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) {
-    if (j === 0 && (i === 0 || i === w - 1)) continue;
-    let c = [0xe8505a, 0xc42a38, 0x9a1e2c, 0xc42a38, 0x8a1a26][Math.min(4, i)];
-    if (j === 0) c = 0xd8dde2;
-    else if (j === 1) c = mix(c, WHITE, 0.25);
-    else if (i === 2 && j % 3 === 0) c = 0x6a1420;
-    P.px(x + i, y + j, c);
-  }
-}
 function chromeFrame(P, x, y, w, h, body) {
   P.box(x - 2, y - 2, w + 4, h + 4, 0x7a8088);
   P.box(x - 1, y - 1, w + 2, h + 2, 0xe8ecf0);
   P.hl(x - 1, y + h, w + 2, 0xa8aeb6);
   for (const [cx, cy] of [[x - 2, y - 2], [x + w + 1, y - 2], [x - 2, y + h + 1], [x + w + 1, y + h + 1]]) P.px(cx, cy, body);
 }
-function diner(P, x, y, w, h, night, reg) {
+// ---------- interiören: bakvägg, bås, bord och glas i lager ----------
+// Fönstren målas i lager som cachas (insideLayers): bakväggen (bg), båsen (mid), borden och
+// grillen (fg) och glaset med spröjs (glass). live() sätter varje bildruta ihop dem i en liten
+// duk med folket emellan – servitrisen på rullskridskor i gången, gästerna som äter, doppar
+// pommes, dricker och pratar i båsen, barn med glasstrut och dinglande ben, personal som
+// torkar lediga bord och kocken som vänder burgare i köksfönstret över dörren – och glow()
+// lägger samma duk additivt på kvällen, så att folket syns i egna färger i de tända fönstren.
+// Stängt (utanför b.open, dvs. efter 23 och före 7): folket är borta, lokalen mörkläggs,
+// neonen, glödlamporna, fönstergloriorna och menypelaren släcks – bara takstrålkastarna på
+// jätteburgaren, klockan och värmelampornas standby-glöd lyser.
+// Sidofönstrens rader räknas nedifrån: golvet h−2…h−1, sitsen h−9, bordsskivan h−11 och
+// båsens överkant h−21. Köksfönstret: fläktkåpan överst, grillgallret h−8, passet h−4…h−1.
+const VINYL = [0x5a1018, 0x8a1a26, 0xb8243a, 0xd83a4e, 0xf07080];
+function vinylDisc(P, cx, cy) {
+  for (let y = -2; y <= 2; y++) for (let x = -2; x <= 2; x++) {
+    if (Math.abs(x) === 2 && Math.abs(y) === 2) continue;
+    const r2 = x * x + y * y;
+    let c = r2 === 0 ? 0x1a1a22 : r2 <= 1 ? (x + y < 0 ? 0xe8505a : 0xc02a3a) : 0x16161c;
+    if (r2 > 1 && (x + y === -2 || x + y === -3)) c = 0x4a4a58; // blänk uppe till vänster
+    else if (r2 > 1 && x + y >= 3) c = 0x0c0c10;
+    P.px(cx + x, cy + y, c);
+  }
+}
+// inramad bild: röd femtiotalsbil med fenor under blå himmel
+function carPicture(P, x, y, night) {
+  P.box(x, y, 9, 6, 0xc2c8d0);
+  P.hl(x, y, 9, 0xf6f8fa); P.hl(x, y + 5, 9, 0x7a808a); P.vl(x + 8, y + 1, 4, 0x9aa0a8);
+  area(P, x + 1, y + 1, 7, 4, (X, Y, i, j) => (j < 2 ? (night ? 0x9ad0f8 : 0x78aed0) : j === 2 ? 0xf6e0a8 : 0xe0c088));
+  P.hl(x + 3, y + 2, 3, 0xd02a3e); P.px(x + 4, y + 2, 0xbfe8ff); P.px(x + 6, y + 2, 0xf04a5a);
+  P.hl(x + 1, y + 3, 7, 0xe8404a); P.px(x + 1, y + 3, 0xffd23f); P.px(x + 7, y + 3, 0xff6a6a);
+  P.px(x + 2, y + 4, 0x1a1a1e); P.px(x + 6, y + 4, 0x1a1a1e);
+}
+function dinerWall(P, x, y, w, h, night, side) {
   area(P, x, y, w, h, (X, Y, i, j) => {
+    if (j >= h - 2) { // schackrutigt golv
+      const on = ((i >> 1) + j) & 1;
+      return night ? (on ? 0xf4efe6 : 0x2a2630) : (on ? 0xb4ccc4 : 0x3a4a48);
+    }
     let c = night ? qmix(0xfff4e0, 0xf2d4b4, j / h, X, Y, 3) : qmix(0xc2e4d6, 0x80ac9e, j / h, X, Y, 3);
-    if (j === 5 || j === 6) c = night ? 0xff9ab0 : 0xd86a80;
-    else if (j > 6 && (i % 4 === 0 || j % 4 === 0)) c = mul(c, 0.93);
+    if (j === 0) return mul(c, 0.72);                                  // taklisten
+    if (j === 5) return night ? 0xffa8bc : 0xe0788c;                   // rosa rand
+    if (j === 6) return night ? 0xf0869e : 0xc45a70;
+    if (j === 7) return night ? 0xe8e0d6 : 0x9ab8b0;                   // kromlist under randen
+    if (j > 7 && (i % 4 === 0 || (j - 8) % 4 === 0)) c = mul(c, 0.93); // kakel
     return c;
   });
-  const bw = Math.floor(w / 2);
-  for (let k = 0; k < 2; k++) {
-    const bx = x + k * bw, mid = bx + (bw >> 1);
-    P.vl(mid, y, 3, 0x2a2a30);
-    P.rect(mid - 1, y + 3, 3, 2, 0xfff8e8);
-    P.hl(mid - 1, y + 5, 3, 0xd8c8a8);
-    P.ell(mid + 0.5, y + 6, 6, 4, 0xfff4d0, night ? 0.5 : 0.25);
-    // gäster
-    if (hash(bx, y, 201) > 0.3) {
-      const sc = [0x3a7bd5, 0xf0c040, 0x7ac070, 0xe07a30][Math.floor(hash(bx, y, 202) * 4)];
-      const skin = [0xe0a97f, 0xa86a44, 0xf0c8a0][Math.floor(hash(bx, y, 203) * 3)];
-      P.rect(bx + 7, y + 16, 4, 7, sc);
-      P.vl(bx + 7, y + 16, 7, mix(sc, WHITE, 0.3));
-      P.rect(bx + 7, y + 12, 3, 4, skin);
-      P.hl(bx + 7, y + 11, 3, [0x3b2619, 0xe8c070, 0x1a1a1a][Math.floor(hash(bx, y, 204) * 3)]);
-    }
-    if (hash(bx, y, 205) > 0.55) {
-      const sc = [0xd83a5a, 0x5a4ac0, 0x40a0a0][Math.floor(hash(bx, y, 206) * 3)];
-      P.rect(bx + bw - 11, y + 16, 4, 7, sc);
-      P.rect(bx + bw - 10, y + 12, 3, 4, 0xe0a97f);
-      P.hl(bx + bw - 10, y + 11, 3, 0x6a3a1a);
-    }
-    seatBack(P, bx + 1, y + 13, 5, h - 13);
-    seatBack(P, bx + bw - 6, y + 13, 5, h - 13);
-    const tx = bx + 6, tw = bw - 12, ty = y + 22;
-    P.hl(tx, ty, tw, 0xf8f8f6);
-    P.hl(tx, ty + 1, tw, 0xb8bec6);
-    P.vl(tx + (tw >> 1), ty + 2, h - 24, 0x8a9098);
-    P.rect(tx + 1, ty - 4, 1, 4, 0xd8303a); P.px(tx + 1, ty - 5, 0xffffff);
-    P.rect(tx + 2, ty - 3, 1, 3, 0xf0c020);
-    // milkshake med sugrör och körsbär
-    const mx = tx + tw - 4;
-    P.rect(mx, ty - 5, 3, 5, 0xf6a8c0);
-    P.hl(mx, ty - 5, 3, 0xffffff);
-    P.px(mx + 1, ty - 6, 0xd8303a);
-    P.vl(mx + 2, ty - 9, 3, 0xe84a5a);
-    P.vl(mx, ty - 4, 4, 0xffe0ec);
+  // pendellampor med röda emaljskärmar och ljuskägla
+  for (const lx of [x + 9, x + w - 10]) {
+    P.vl(lx, y, 3, 0x2a2a30);
+    P.hl(lx - 1, y + 3, 3, 0xd83a4e); P.px(lx - 1, y + 3, 0xff8a94);
+    P.hl(lx - 2, y + 4, 5, 0xb8203a); P.px(lx - 2, y + 4, 0xe8505a); P.px(lx + 2, y + 4, 0x7e1624);
+    P.px(lx, y + 5, 0xfff6c8); P.px(lx - 1, y + 5, 0xffe8a0, 0.6); P.px(lx + 1, y + 5, 0xffe8a0, 0.6);
+    P.ell(lx + 0.5, y + 9, 7, 5, 0xfff4d0, night ? 0.4 : 0.2);
   }
-  reflect(P, x, y, w, h, night, 0.9, x + 7);
-  reg.win.push([x, y, w, h]);
-  reg.halo.push([x + w / 2, y + h / 2, w * 0.6 + 4, h * 0.6 + 3, 0xffe0c0, 0.28]);
-  reg.halo.push([x + w / 2, BASE + 7, w * 0.55 + 4, 8, 0xffc8a0, 0.2]);
+  if (side === 'l') for (const rx of [x + 15, x + 24]) vinylDisc(P, rx, y + 11);
+  else { carPicture(P, x + 11, y + 8, night); vinylDisc(P, x + 25, y + 11); }
 }
+// båset i profil: rygg (5 px) med kanalstoppning och kromlist, sits (5 px) med rundad framkant
+function booth(P, x0, y, h, dir) {
+  const top = y + h - 21, seat = y + h - 9, floor = y + h - 2, X = (i) => x0 + dir * i;
+  for (let yy = top; yy < floor; yy++) for (let i = 0; i < 5; i++) {
+    if (yy === top && (i === 0 || i === 4)) continue; // rundad topp
+    let c;
+    if (yy === top) c = 0xf6f8fa;
+    else if (yy === top + 1) c = i === 0 || i === 4 ? 0xaab0b8 : VINYL[4];
+    else {
+      c = [VINYL[1], VINYL[3], VINYL[2], VINYL[3], VINYL[0]][i];
+      if ((yy - top) % 4 === 1 && i > 0 && i < 4) c = mul(c, 0.78); // sömmarna
+      if ((yy - top) % 4 === 3 && i === 2) c = 0x4a0c14;             // knappar
+      if (yy >= seat + 3) c = mul(c, 0.7);                           // under sitsen
+    }
+    P.px(X(i), yy, c);
+  }
+  for (let i = 5; i < 10; i++) {
+    const edge = i === 9;
+    P.px(X(i), seat, edge ? VINYL[3] : VINYL[4]);
+    P.px(X(i), seat + 1, edge ? VINYL[2] : VINYL[3]);
+    P.px(X(i), seat + 2, edge ? VINYL[1] : VINYL[2]);
+    P.px(X(i), seat + 3, edge ? 0x9aa0a8 : 0xd8dde2); // kromlist
+    for (let yy = seat + 4; yy < floor; yy++) P.px(X(i), yy, edge ? 0x3a0810 : jit(VINYL[0], X(i), yy, 232, 0.08));
+  }
+  for (let i = 0; i < 10; i++) P.px(X(i), floor, i % 3 === 0 ? 0x9aa0a8 : 0xd8dde2); // sparkplåten
+}
+// bordet mellan båsen: laminat med röd kant, kromfot (på var sin sida om spröjsen) och kryddor
+function dinerTable(P, x, y, w, h) {
+  const tt = y + h - 11, x0 = x + 11, x1 = x + w - 11, mid = x + (w >> 1);
+  for (let xx = x0; xx < x1; xx++) {
+    P.px(xx, tt, hash(xx, tt, 231) > 0.8 ? 0xf0c4cc : 0xfbfaf6);
+    P.px(xx, tt + 1, 0xd02a3e);
+    P.px(xx, tt + 2, 0x6a7078, 0.8);
+  }
+  P.px(x0, tt, 0xe8ecf0); P.px(x1 - 1, tt, 0xd8dde2);
+  P.px(x0, tt + 1, 0x9a1e2c); P.px(x1 - 1, tt + 1, 0x7e1624);
+  for (let yy = tt + 3; yy < y + h - 2; yy++) { P.px(mid - 2, yy, 0xe8ecf0); P.px(mid - 3, yy, 0x9aa0a8); P.px(mid + 1, yy, 0xc2c8d0); P.px(mid + 2, yy, 0x6a7078); }
+  P.hl(mid - 5, y + h - 2, 10, 0xb8bec6); P.hl(mid - 4, y + h - 2, 3, 0xf6f8fa);
+  // ketchup och senap vid spröjsen, servettställ i krom
+  P.vl(mid - 3, tt - 4, 4, 0xd8303a); P.px(mid - 3, tt - 5, 0xffffff); P.px(mid - 3, tt - 3, 0xff7a84);
+  P.vl(mid - 4, tt - 3, 3, 0xf0c020); P.px(mid - 4, tt - 4, 0xd8303a); P.px(mid - 4, tt - 2, 0xc89010);
+  P.rect(mid + 2, tt - 3, 3, 3, 0xc8ced4); P.hl(mid + 2, tt - 4, 3, 0xffffff); P.vl(mid + 4, tt - 3, 3, 0x8a9098); P.px(mid + 2, tt - 3, 0xf6f8fa);
+}
+// glaset: grönaktig ton på dagen, reflexstrimmor och (i sidofönstren) en kromspröjs
+function glassOver(P, x, y, w, h, night, mullion) {
+  if (!night) for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) P.px(x + i, y + j, 0xd6f2e8, 0.14);
+  reflect(P, x, y, w, h, night, 0.85, x + 7);
+  if (mullion) { P.vl(x + (w >> 1) - 1, y, h, 0xe8ecf0); P.vl(x + (w >> 1), y, h, 0x8a9098); }
+}
+// köket: vita kakel, fläktkåpa i rostfritt, två värmelampor, bongskena med beställningslappar
+function kitchenWall(P, x, y, w, h, night) {
+  area(P, x, y, w, h, (X, Y, i, j) => {
+    if (j < 3) return [0x6a7078, 0xd8dde2, 0xaab0b8][j];
+    if (j === 3) return 0x4a4e56;
+    const r = (j - 4) >> 1, rx = (i + (r & 1 ? 2 : 0)) % 4;
+    let c = night ? qmix(0xfffaf2, 0xf0e2cc, j / h, X, Y, 3) : qmix(0xd4ece4, 0x9cc0b4, j / h, X, Y, 3);
+    if ((j - 4) % 2 === 1 || rx === 3) c = mul(c, 0.86);
+    else if (rx === 0 && (j - 4) % 2 === 0) c = mix(c, WHITE, 0.25);
+    return c;
+  });
+  for (let i = 2; i < w - 2; i += 5) P.px(x + i, y + 1, 0x9aa0a8); // nitar i kåpan
+  for (const lx of [x + 6, x + w - 7]) {
+    P.hl(lx - 1, y + 3, 3, 0x2a2c32);
+    P.px(lx - 1, y + 4, 0xc84a2a); P.px(lx, y + 4, night ? 0xffc860 : 0xf09040); P.px(lx + 1, y + 4, 0xa83a20);
+  }
+  P.hl(x + 1, y + 6, w - 2, 0xe8ecf0); P.hl(x + 1, y + 7, w - 2, 0x7a808a);
+  for (const [sx, n] of [[x + 3, 0], [x + 9, 1], [x + w - 8, 2]]) {
+    area(P, sx, y + 8, 4, 5 - (n & 1), (X, Y, i, j) => (j === 0 ? 0xc8c0b0 : 0xfaf6ea));
+    P.hl(sx + 1, y + 10, 2, 0x8a8a90); P.px(sx + 1, y + 11, n === 1 ? 0xd02a3e : 0x8a8a90);
+  }
+}
+function kitchenFront(P, x, y, w, h, night) {
+  const g = y + h - 8;
+  // grillgallret med glöd mellan stängerna
+  for (let i = 1; i < w - 1; i++) P.px(x + i, g, i % 2 ? 0x2a2c32 : night ? 0xc84a2a : 0x8a3a24);
+  area(P, x, g + 1, w, 3, (X, Y, i, j) => (i === 0 || i === w - 1 ? 0x6a7078 : [0xe8ecf0, 0xb8c0c8, 0x8a9098][j]));
+  for (const kx of [x + 3, x + 7, x + 11]) { P.px(kx, g + 2, 0x1a1a1e); P.px(kx, g + 1, 0xd02a3e); }
+  // passet: blank hylla i rostfritt
+  area(P, x, y + h - 4, w, 4, (X, Y, i, j) => jit([0xf6f8fa, 0xd8dde2, 0xaab0b8, 0x6a7078][j], X, Y, 233, j ? 0.04 : 0));
+  for (let i = 2; i < w; i += 7) P.px(x + i, y + h - 3, 0xf6f8fa, 0.7);
+}
+
+// ---------- folket: små sprites som målas en gång (sparas per utseende och pose) ----------
+const SKINS = [[0xf2cca6, 0xd8a47c], [0xe0a97f, 0xc08462], [0xb87850, 0x925a3a], [0x7a4a2e, 0x5a341e]];
+const HAIRS = [0x2a1a12, 0x6a3a1a, 0xe8c070, 0xb8502a, 0x141418, 0xd8d4cc, 0x8a5a2a];
+const STYLES = ['kort', 'lang', 'tofs', 'keps', 'knut', 'kort', 'lang'];
+const SHIRTS = [0x3a7bd5, 0xf0c040, 0x5aae5a, 0xe07a30, 0xd83a5a, 0x7a5ac8, 0x40a8a8, 0xf4f1ea, 0x2a2a34];
+const PANTS = [0x2d3a5c, 0x3a3a44, 0x5a4a3a, 0x3a5a8a, 0x1e1e24];
+const ACTS = ['burgare', 'pommes', 'shake', 'prat', 'glass', 'burgare', 'dipp'];
+function flipped(c) {
+  const d = mkCanvas(c.width, c.height), x = d.getContext('2d');
+  x.translate(c.width, 0); x.scale(-1, 1); x.drawImage(c, 0, 0);
+  return d;
+}
+function lookOf(id) {
+  const h = (k) => hash(id, k, 311), pick = (a, k) => a[Math.floor(h(k) * a.length) % a.length];
+  return { id, skin: pick(SKINS, 1), hair: pick(HAIRS, 2), style: pick(STYLES, 3), shirt: pick(SHIRTS, 4), pants: pick(PANTS, 5), cap: pick([0xd02a3e, 0x3a7bd5, 0x2a2a34, 0xf0c040], 6) };
+}
+// maten i handen / på bordet (små kartor, rader uppifrån)
+const MINI = {
+  burgare: { rows: ['.aba.', 'aaaaa', 'gmmmg', '.ccc.'], pal: { a: 0xf0aa4c, b: 0xffd488, g: 0x5aa83a, m: 0x6a3a24, c: 0xd08a3a } },
+  pommes: { rows: ['y.Y', 'YyY', 'RRr', 'RWr', '.R.'], pal: { y: 0xf5c03a, Y: 0xffe36a, R: 0xe0342c, r: 0xa82320, W: 0xffd23f } },
+  shake: { rows: ['..s', '.s.', 'ww.', 'pp.', 'pP.', 'pP.', 'gg.'], pal: { s: 0xe84a5a, w: 0xffffff, p: 0xf6a8c0, P: 0xe0849e, g: 0xd8dde2 } },
+  prat: { rows: ['.~.', 'wwc', 'wwc', 'ss.'], pal: { '~': 0xe8e8ec, w: 0xffffff, c: 0xd8d8e0, s: 0xc8ced4 } },
+  glass: { rows: ['.r.', 'qPp', 'PPp', 'Gg.', '.k.'], pal: { r: 0xd8303a, q: 0xffd0e4, P: 0xff88bb, p: 0xd9548e, G: 0x7fdcae, g: 0x3fae7a, k: 0xecb466 } },
+  // dippkoppen (vit kopp med röd sås) och glasstruten i barnets hand
+  dipp: { rows: ['rRr', 'www'], pal: { r: 0xf05a4a, R: 0xc82a20, w: 0xf6f8fa } },
+  strut: { rows: ['.q.', 'qPp', 'PPp', 'kK.', '.k.'], pal: { q: 0xffd0e4, P: 0xff88bb, p: 0xd9548e, K: 0xecb466, k: 0xb8742c } },
+};
+function mini(P, name, x, yBottom) {
+  const m = MINI[name];
+  m.rows.forEach((row, j) => { for (let i = 0; i < row.length; i++) { const c = m.pal[row[i]]; if (c !== undefined) P.px(x + i, yBottom - m.rows.length + 1 + j, c); } });
+}
+// en sittande gäst i profil (vänd åt höger). Origo = ryggens kolumn, sitsens överkant.
+// pose: rest (handen vid tallriken), chew, lift, mouth (maten vid munnen), talk (gestikulerar),
+// drink (lutar sig fram mot sugröret)
+const G_AX = 3, G_AY = 14, G_W = 17, G_H = 24;
+function paintGuest(P, look, pose, food) {
+  const s = (x, y, c) => P.px(G_AX + x, G_AY + y, c);
+  const [sk, sk2] = look.skin, hr = look.hair, hrH = mix(hr, WHITE, 0.28), hr2 = mul(hr, 0.72);
+  const sh = look.shirt, sh2 = mul(sh, 0.7), sh3 = mix(sh, WHITE, 0.32), pt = look.pants, pt2 = mul(pt, 0.72);
+  const lean = pose === 'drink' ? 1 : 0, bob = pose === 'talk' ? -1 : 0;
+  // underkroppen: låren framåt mot bordet, benen ner mot golvet, skor
+  for (let x = 1; x <= 7; x++) { s(x, -1, pt); s(x, 0, pt2); }
+  for (let y = 1; y <= 6; y++) { s(6, y, pt); s(7, y, pt2); }
+  s(6, 7, 0x2a2a30); s(7, 7, 0x1a1a1e); s(8, 7, 0x2a2a30); s(8, 6, 0x3a3a40);
+  // överkroppen (lätt framåtlutad när hen dricker)
+  for (let y = -7; y <= -2; y++) for (let x = 0; x <= 4; x++) {
+    if (y === -7 && (x === 0 || x === 4)) continue;
+    const xx = x + (lean && y < -4 ? 1 : 0);
+    s(xx, y + bob * (y < -4 ? 1 : 0), x === 0 ? sh2 : x === 4 ? sh3 : y === -7 ? sh3 : sh);
+  }
+  if (sh === 0xf4f1ea) for (let y = -6; y <= -2; y += 2) s(1, y, 0xd8d0c0); // randig vit tröja
+  // hals, huvud i profil: öra, öga, näsa, mun
+  const hx = lean, hy = lean + bob;
+  s(2 + hx, -8 + hy, sk2); s(3 + hx, -8 + hy, sk2);
+  for (let y = -12; y <= -9; y++) for (let x = 1; x <= 4; x++) s(x + hx, y + hy, x === 1 ? sk2 : sk);
+  s(5 + hx, -10 + hy, sk);
+  s(4 + hx, -11 + hy, 0x2a1a14);
+  s(2 + hx, -10 + hy, mul(sk2, 0.92));
+  s(4 + hx, -9 + hy, pose === 'talk' || pose === 'chew' ? 0x7a2a28 : mix(sk2, 0xb85a4a, 0.5));
+  s(5 + hx, -11 + hy, mix(sk, WHITE, 0.2));
+  // håret
+  const H = (x, y, c = hr) => s(x + hx, y + hy, c);
+  if (look.style === 'keps') {
+    for (let x = 1; x <= 4; x++) H(x, -13, look.cap);
+    H(2, -13, mix(look.cap, WHITE, 0.3)); H(5, -12, look.cap); H(6, -12, mul(look.cap, 0.7));
+    for (let x = 1; x <= 3; x++) H(x, -12, mul(look.cap, 0.8));
+    H(1, -11, hr); H(1, -10, hr2);
+  } else {
+    for (let x = 1; x <= 4; x++) H(x, -13, x === 2 || x === 3 ? hrH : hr);
+    H(1, -12, hr); H(2, -12, hr); H(3, -12, hr2); H(1, -11, hr2);
+    if (look.style === 'lang') { for (let y = -12; y <= -7; y++) H(0, y, y > -9 ? hr2 : hr); H(1, -10, hr); H(1, -9, hr2); }
+    if (look.style === 'tofs') { H(0, -12, hr); H(-1, -11, hr); H(-1, -10, hr2); H(0, -11, 0xd02a3e); }
+    if (look.style === 'knut') { H(1, -14, hr); H(2, -14, hrH); H(0, -13, hr2); }
+  }
+  // armen (skjortärm överst, sedan hud) och maten i handen
+  const arm = (pts) => pts.forEach(([x, y], i) => s(x, y, i < 2 ? (i ? sh : sh3) : sk));
+  if (pose === 'lift') {
+    arm([[4, -6], [4, -5], [5, -4], [6, -5], [6, -6]]);
+    if (food) mini(P, food, G_AX + 5, G_AY - 6);
+  } else if (pose === 'mouth') {
+    arm([[4, -6], [4, -5], [5, -5], [5, -6], [5, -7]]);
+    if (food) mini(P, food, G_AX + 4, G_AY - 8);
+  } else if (pose === 'talk') {
+    arm([[4, -6], [4, -5], [5, -4], [6, -5], [7, -6]]);
+    s(7, -7, sk); s(8, -6, sk2);
+  } else if (pose === 'dip') {
+    // armen sträcks fram mot dippkoppen på bordet, pommesen pekar ner i såsen
+    arm([[4, -6], [5, -5], [6, -4], [7, -4], [8, -3], [9, -3]]);
+    if (food) mini(P, food, G_AX + 10, G_AY - 3);
+  } else if (pose === 'drink') {
+    arm([[5, -6], [5, -5], [5, -4], [6, -3], [7, -3]]);
+  } else {
+    arm([[4, -6], [4, -5], [4, -4], [5, -3], [6, -3], [7, -3], [8, -3]]);
+    s(4, -3, sk2);
+  }
+}
+const GUESTS = new Map();
+function guestSprite(look, pose, food, dir) {
+  const key = `${look.id}|${pose}|${food || ''}|${dir}`;
+  let c = GUESTS.get(key);
+  if (!c) {
+    if (GUESTS.size > 480) GUESTS.clear();
+    const P = new Pix(G_W, G_H);
+    paintGuest(P, look, pose, food);
+    c = P.flush();
+    if (dir < 0) c = flipped(c);
+    GUESTS.set(key, c);
+  }
+  return c;
+}
+// vad gästen gör just nu: pose + om maten är i handen
+function guestPose(act, t) {
+  if (act === 'burgare' || act === 'pommes') {
+    const u = t % (act === 'burgare' ? 5.4 : 4.2);
+    if (u < 2.3) return { pose: Math.floor(u * 3) % 2 && u > 0.6 ? 'chew' : 'rest', hand: false };
+    if (u < 2.6) return { pose: 'lift', hand: true };
+    if (u < 3.5) return { pose: 'mouth', hand: true };
+    if (u < 3.8) return { pose: 'lift', hand: true };
+    return { pose: 'rest', hand: false };
+  }
+  if (act === 'shake') {
+    const u = t % 6.4;
+    if (u < 2.6) return { pose: u > 1 && u < 1.8 ? 'talk' : 'rest', hand: false };
+    if (u < 4.4) return { pose: 'drink', hand: false };
+    return { pose: 'rest', hand: false };
+  }
+  if (act === 'glass') {
+    const u = t % 2.6;
+    return u < 1.2 ? { pose: 'rest', hand: false } : u < 1.5 ? { pose: 'lift', hand: true } : u < 2.2 ? { pose: 'mouth', hand: true } : { pose: 'lift', hand: true };
+  }
+  if (act === 'dipp') {
+    // tar en pommes, doppar den i såsen på bordet och stoppar den i munnen
+    const u = t % 5.2;
+    if (u < 1.6) return { pose: u > 0.8 ? 'chew' : 'rest', hand: false };
+    if (u < 2.0) return { pose: 'lift', hand: true };
+    if (u < 2.8) return { pose: 'dip', hand: true };
+    if (u < 3.2) return { pose: 'lift', hand: true };
+    if (u < 4.0) return { pose: 'mouth', hand: true };
+    return { pose: 'rest', hand: false };
+  }
+  const u = t % 3.2; // prat: gestikulerar och pratar, dricker kaffe ibland
+  return { pose: u < 0.7 || (u > 1.4 && u < 1.9) ? 'talk' : 'rest', hand: false };
+}
+
+// ---------- barnet med glasstrut: stort huvud, dinglande ben som sparkar ----------
+// Origo som gästen: ryggens kolumn, sitsens överkant. Benen når inte golvet utan
+// dinglar framför sitsen (två bildrutor), struten hålls högt eller vid munnen.
+const C2_AX = 3, C2_AY = 14, C2_W = 16, C2_H = 22;
+function paintChild(P, look, pose, legs) {
+  const s = (x, y, c) => P.px(C2_AX + x, C2_AY + y, c);
+  const [sk, sk2] = look.skin, hr = look.hair, hrH = mix(hr, WHITE, 0.28), hr2 = mul(hr, 0.72);
+  const sh = look.shirt, sh2 = mul(sh, 0.7), sh3 = mix(sh, WHITE, 0.32), pt = look.pants, pt2 = mul(pt, 0.72);
+  // låren fram över sitsen
+  for (let x = 1; x <= 4; x++) { s(x, -1, pt); s(x, 0, pt2); }
+  // benen dinglar och sparkar växelvis, röda små gympaskor
+  const leg = (x, len) => { for (let y = 1; y <= len; y++) s(x, y, y === len ? 0xd02a3e : pt); s(x + 1, len, 0xb01c30); };
+  if (legs === 0) { leg(2, 3); leg(4, 4); } else { leg(2, 4); leg(4, 3); }
+  // kort överkropp
+  for (let y = -6; y <= -2; y++) for (let x = 0; x <= 3; x++) {
+    if (y === -6 && x === 0) continue;
+    s(x, y, x === 0 ? sh2 : x === 3 ? sh3 : sh);
+  }
+  if (sh === 0xf4f1ea) for (let y = -5; y <= -2; y += 2) s(1, y, 0xd8d0c0);
+  // stort huvud i profil (munnen sänks när hen slickar)
+  const hy = pose === 'mouth' ? 1 : 0;
+  s(2, -7 + hy, sk2);
+  for (let y = -12; y <= -8; y++) for (let x = 0; x <= 4; x++) s(x, y + hy, x === 0 ? sk2 : sk);
+  s(5, -10 + hy, sk);                                     // näsan
+  s(4, -11 + hy, 0x2a1a14);                               // ögat
+  s(4, -9 + hy, pose === 'mouth' ? 0x7a2a28 : 0xc8705a);  // munnen (öppen mot glassen)
+  s(2, -9 + hy, 0xf0a8a0);                                // kinden
+  // håret: lugg + liten tofs eller keps
+  if (look.style === 'keps') {
+    for (let x = 0; x <= 4; x++) s(x, -13 + hy, look.cap);
+    s(5, -12 + hy, look.cap); s(6, -12 + hy, mul(look.cap, 0.7)); s(1, -13 + hy, mix(look.cap, WHITE, 0.3));
+    s(0, -12 + hy, mul(look.cap, 0.8));
+  } else {
+    for (let x = 0; x <= 4; x++) s(x, -13 + hy, x === 1 || x === 2 ? hrH : hr);
+    s(0, -12 + hy, hr); s(1, -12 + hy, hr2); s(4, -12 + hy, hr2);
+    if (look.style === 'tofs' || look.style === 'knut') { s(1, -14 + hy, hr); s(2, -14 + hy, hrH); s(0, -14 + hy, 0xd02a3e); }
+    if (look.style === 'lang') { for (let y = -12; y <= -8; y++) s(-1, y + hy, y > -10 ? hr2 : hr); }
+  }
+  // armen håller struten – högt (hold) eller vid munnen (mouth)
+  if (pose === 'mouth') {
+    s(3, -6, sh3); s(4, -6, sk); s(5, -7, sk);
+    mini(P, 'strut', C2_AX + 5, C2_AY - 8 + hy);
+  } else {
+    s(3, -6, sh3); s(4, -5, sk); s(5, -6, sk);
+    mini(P, 'strut', C2_AX + 5, C2_AY - 7);
+  }
+}
+const CHILDREN = new Map();
+function childSprite(look, pose, legs, dir) {
+  const key = `${look.id}|${pose}|${legs}|${dir}`;
+  let c = CHILDREN.get(key);
+  if (!c) {
+    if (CHILDREN.size > 240) CHILDREN.clear();
+    const P = new Pix(C2_W, C2_H);
+    paintChild(P, look, pose, legs);
+    c = P.flush();
+    if (dir < 0) c = flipped(c);
+    CHILDREN.set(key, c);
+  }
+  return c;
+}
+function childPose(t) {
+  const u = t % 4.2;
+  return u < 1.8 ? 'hold' : u < 2.7 ? 'mouth' : u < 3.1 ? 'hold' : u < 3.5 ? 'mouth' : 'hold';
+}
+
+// ---------- personalen som torkar ett ledigt bord: trasan går i cirklar ----------
+// Origo = fötterna på golvet. Står vid den tomma sitsen, lutar sig över bordet;
+// bakre handen håller en grå balja, främre handen för den vita trasan (3 lägen).
+const T2_AX = 4, T2_AY = 22, T2_W = 15, T2_H = 24;
+function paintWiper(P, fr) {
+  const s = (x, y, c) => P.px(T2_AX + x, T2_AY + y, c);
+  const sk = 0xe0a97f, sk2 = 0xc08462, W1 = 0xffffff, W2 = 0xe8ecf0, W3 = 0xc2c8d0;
+  const sh = 0x5a9ec8, sh2 = 0x3a7aa0;
+  // skor och byxor
+  s(0, -1, 0x2a2a30); s(1, -1, 0x1a1a1e); s(2, -1, 0x2a2a30);
+  for (let y = -7; y <= -2; y++) { s(0, y, 0x3a3a44); s(1, y, 0x2c2c34); }
+  // förklädet (hänger fram mot bordet) och tröjan, lätt framåtlutad
+  for (let y = -12; y <= -8; y++) for (let x = -1; x <= 3; x++) {
+    if (y === -12 && x === -1) continue;
+    s(x, y, x === -1 ? W3 : x === 3 ? W2 : W1);
+  }
+  for (let y = -15; y <= -13; y++) for (let x = -1; x <= 2; x++) s(x + 1, y, x === -1 ? sh2 : x === 2 ? mix(sh, WHITE, 0.3) : sh);
+  s(1, -12, sh2); // bältet skymtar
+  // bakre armen med baljan
+  s(-1, -12, sh2); s(-2, -11, sk2);
+  s(-3, -10, 0x8a9098); s(-2, -10, 0xaab0b8); s(-3, -9, 0x6a7078); s(-2, -9, 0x8a9098);
+  // huvudet i profil mot bordet + pappersmössa
+  s(2, -16, sk2);
+  for (let y = -20; y <= -17; y++) for (let x = 1; x <= 4; x++) s(x, y, x === 1 ? sk2 : sk);
+  s(5, -18, sk); s(4, -19, 0x2a1a14); s(4, -17, 0xb87a5a);
+  s(1, -19, mul(sk2, 0.92));
+  for (let x = 1; x <= 4; x++) s(x, -21, x === 4 ? W3 : W1);
+  s(2, -22, W1); s(3, -22, W2); s(1, -21, 0xd02a3e);
+  // främre armen: axel → trasan på bordsskivan i tre lägen
+  const hands = [[6, -10], [8, -11], [7, -9]][fr];
+  s(3, -14, mix(sh, WHITE, 0.3)); s(4, -13, sh);
+  s(5, -12, sk); s(Math.min(hands[0] - 1, 6), hands[1] - 1, sk);
+  // trasan (vit med skugga) vid handen
+  s(hands[0], hands[1], 0xf6f8fa); s(hands[0] + 1, hands[1], 0xd8dde2); s(hands[0], hands[1] + 1, 0xb8c0c8);
+}
+const WIPERS = new Map();
+function wiperSprite(fr, dir) {
+  const key = fr + '|' + dir;
+  let c = WIPERS.get(key);
+  if (!c) {
+    const P = new Pix(T2_W, T2_H);
+    paintWiper(P, fr);
+    c = P.flush();
+    if (dir < 0) c = flipped(c);
+    WIPERS.set(key, c);
+  }
+  return c;
+}
+// torkas det just nu vid (wi, si)? – en kort städrunda ungefär var 51:e sekund per plats,
+// förskjuten så att två torkare aldrig syns samtidigt
+function wipePhase(wi, si, t) {
+  const u = (t + (wi * 2 + si) * 17) % 51;
+  return u < 5.2 ? u : -1;
+}
+function drawWiper(x2, g, st) {
+  const t = st.t, oy = g.y;
+  g.sides.forEach((s, wi) => {
+    for (let si = 0; si < 2; si++) {
+      if (seatGuest(wi, si, st.hour ?? 12)) continue;     // torkar bara lediga platser
+      const u = wipePhase(wi, si, t);
+      if (u < 0) continue;
+      const dir = si === 0 ? 1 : -1;
+      const X = (L, iw) => (dir > 0 ? s.x + L : s.x + s.w - L - iw) - g.x;
+      const fr = [0, 1, 2, 1][Math.floor(u * 3.2) % 4];
+      x2.drawImage(wiperSprite(fr, dir), X(1, T2_W), s.y + s.h - 2 - T2_AY - oy);
+    }
+  });
+}
+
+// servitrisen på rullskridskor i profil (vänd åt höger). Origo = fötterna, mitt under henne.
+const W_AX = 5, W_AY = 26, W_W = 16, W_H = 28;
+function paintWaitress(P, stride, tray) {
+  const s = (x, y, c) => P.px(W_AX + x, W_AY + y, c);
+  const sk = 0xf0c8a0, sk2 = 0xd4a07a, hr = 0xb8502a, hrH = 0xe07a44, hr2 = 0x7e3218;
+  const dr = 0xf07aa8, dr2 = 0xc04a7a, drH = 0xffa8c8, ap = 0xfffaf4, ap2 = 0xe0d8d0;
+  const bob = stride === 1 ? -1 : 0, S = (x, y, c) => s(x, y + bob, c);
+  // rullskridskorna: vita kängor, röda hjul
+  const skate = (x, far) => {
+    s(x, -1, far ? 0xd8dde2 : 0xffffff); s(x + 1, -1, far ? 0xd8dde2 : 0xffffff); s(x + 2, -1, far ? 0xc8ced4 : 0xf0f0f0);
+    s(x, -2, far ? 0xd8dde2 : 0xffffff); s(x + 1, -2, 0xe8e8ec);
+    s(x, 0, 0xd8303a); s(x + 2, 0, 0xd8303a); s(x + 1, 0, 0x3a3a40);
+  };
+  // benen: isär när hon skjuter ifrån (0), ihop och en pixel högre i glidet (1)
+  if (stride === 0) {
+    for (const [x, y] of [[-1, -7], [-1, -6], [-2, -5], [-2, -4], [-2, -3]]) s(x, y, sk2);
+    for (const [x, y] of [[1, -7], [1, -6], [2, -5], [2, -4], [2, -3]]) s(x, y, sk);
+    skate(-3, true); skate(1, false);
+  } else {
+    for (let y = -8; y <= -4; y++) { s(-1, y, sk2); s(0, y, sk); }
+    s(-1, -3, 0xf0f0f0); s(0, -3, 0xffffff);
+    skate(-2, true); skate(-1, false);
+  }
+  // kjolen med vit fåll, förklädet, bältet
+  for (let y = -10; y <= -8; y++) for (let x = -3; x <= 3; x++) {
+    if (y === -10 && (x === -3 || x === 3)) continue;
+    let c = x <= -2 ? dr2 : x >= 2 ? drH : dr;
+    if (y === -8) c = x === -3 ? 0xe8e0e0 : 0xffffff;
+    S(x, y, c);
+  }
+  for (let y = -13; y <= -11; y++) for (let x = -2; x <= 2; x++) S(x, y, x === -2 ? dr2 : x === 2 ? drH : dr);
+  for (let y = -12; y <= -8; y++) { S(1, y, ap); S(2, y, y === -8 ? ap2 : ap); }
+  S(-2, -12, 0x7e1624); for (let x = -1; x <= 2; x++) S(x, -12, x > 0 ? 0xffffff : 0xd02a3e);
+  // överkroppen och den vita kragen
+  for (let y = -16; y <= -14; y++) for (let x = -2; x <= 1; x++) S(x, y, x === -2 ? dr2 : x === 1 ? drH : dr);
+  S(-1, -16, 0xffffff); S(0, -16, 0xffffff); S(1, -16, 0xf0f0f0);
+  // bakre armen svänger
+  S(-3, -15, dr2); S(-3, -14, sk2); S(-3 + (stride ? 0 : -1), -13, sk2);
+  // huvudet: hals, ansikte åt höger, öga, näsa, röda läppar
+  S(0, -17, sk2);
+  for (let y = -21; y <= -18; y++) for (let x = -1; x <= 2; x++) S(x, y, x === -1 ? sk2 : sk);
+  S(3, -19, sk); S(2, -20, 0x2a1a14); S(2, -18, 0xd8303a); S(0, -19, sk2);
+  // håret med hästsvans som gungar, pappersmössan
+  for (let x = -2; x <= 1; x++) S(x, -22, x === 0 ? hrH : hr);
+  S(-2, -21, hr); S(-2, -20, hr2); S(-1, -21, hr); S(-2, -19, hr2); S(2, -22, hr2);
+  const pony = stride === 1 ? 0 : 1;
+  S(-3, -21, hr); S(-4, -20 + pony, hr); S(-4, -19 + pony, hr2); S(-5, -18 + pony, hr2); S(-3, -20, 0xffffff);
+  for (let x = -1; x <= 2; x++) S(x, -23, x === 2 ? 0xd8dde2 : 0xffffff);
+  S(0, -24, 0xffffff); S(1, -24, 0xf0f0f0); S(-1, -23, 0xd02a3e);
+  // främre armen håller brickan högt, med burgare och milkshake
+  S(1, -15, drH); S(2, -15, dr); S(3, -16, sk); S(4, -17, sk); S(4, -18, sk2);
+  for (let x = 1; x <= 8; x++) { S(x, -19, x === 1 ? 0xf6f8fa : 0xd8dde2); if (x > 4) S(x, -18, 0x7a808a); }
+  if (tray) {
+    // burgaren
+    S(2, -22, 0xf0aa4c); S(3, -22, 0xffd488); S(4, -22, 0xf0aa4c);
+    S(2, -21, 0x5aa83a); S(3, -21, 0x6a3a24); S(4, -21, 0x5aa83a); S(2, -20, 0xd08a3a); S(3, -20, 0xd08a3a); S(4, -20, 0xd08a3a);
+    // milkshaken med sugrör
+    for (let y = -23; y <= -20; y++) { S(6, y, y === -23 ? 0xffffff : 0xf6a8c0); S(7, y, y === -23 ? 0xf0f0f0 : 0xe0849e); }
+    S(7, -24, 0xe84a5a); S(8, -25, 0xe84a5a); S(6, -24, 0xd8303a);
+  }
+}
+const WAITRESS = new Map();
+function waitressSprite(stride, tray, dir) {
+  const key = `${stride}|${tray ? 1 : 0}|${dir}`;
+  let c = WAITRESS.get(key);
+  if (!c) {
+    const P = new Pix(W_W, W_H);
+    paintWaitress(P, stride, tray);
+    c = P.flush();
+    if (dir < 0) c = flipped(c);
+    WAITRESS.set(key, c);
+  }
+  return c;
+}
+// servitrisens runda (22 s): in från vänster med full bricka, serverar vid vänstra bordet,
+// åker förbi dörren bort till köket, kommer tillbaka med nästa beställning till högra bordet
+// och åker ut åt vänster. [tid, från x, till x, riktning, full bricka] i konstkoordinater.
+const WAIT_PATH = [[2.6, -8, 33, 1, 1], [1.6, 33, 33, 1, 1], [5.2, 33, 150, 1, 0], [2.8, 150, 150, -1, 0],
+  [2, 150, 116, -1, 1], [1.5, 116, 116, -1, 1], [4.4, 116, -8, -1, 0], [1.9, -8, -8, 1, 1]];
+const WAIT_T = WAIT_PATH.reduce((a, p) => a + p[0], 0);
+function waitressAt(t) {
+  let u = t % WAIT_T;
+  for (const [d, x0, x1, dir, tray] of WAIT_PATH) {
+    if (u < d) {
+      const k = u / d, e = x0 === x1 ? 0 : k < 0.15 ? (k / 0.15) ** 2 * 0.075 : k > 0.85 ? 1 - ((1 - k) / 0.15) ** 2 * 0.075 : 0.075 + (k - 0.15) / 0.7 * 0.85;
+      return { x: Math.round(x0 + (x1 - x0) * e), dir, tray: !!tray, moving: x0 !== x1 };
+    }
+    u -= d;
+  }
+  return { x: -20, dir: 1, tray: false, moving: false };
+}
+
+// kocken i köksfönstret, framifrån: kockmössa, mustasch, vit dubbelknäppt rock, röd halsduk.
+// pose: press (stekspaden mot grillen), flip (spaden uppe), reach (lägger tallriken på passet)
+const C_W = 18, C_H = 16, C_CX = 7;
+function paintCook(P, pose) {
+  const s = (x, y, c) => P.px(C_CX + x, y, c);
+  const sk = 0xe8b890, sk2 = 0xc8906a, W1 = 0xffffff, W2 = 0xe8ecf0, W3 = 0xc2c8d0;
+  // mössan: puffig topp med veck, band
+  for (let x = -2; x <= 2; x++) s(x, 0, x === -1 ? W1 : x === 2 ? W3 : W2);
+  for (let y = 1; y <= 2; y++) for (let x = -3; x <= 3; x++) s(x, y, x === -3 ? W2 : x === 3 ? W3 : (x === -1 || x === 1) && y === 2 ? W3 : W1);
+  for (let x = -2; x <= 2; x++) s(x, 3, x === 2 ? W3 : 0xdfe3e8);
+  // ansiktet
+  for (let y = 4; y <= 8; y++) for (let x = -2; x <= 2; x++) { if (y === 8 && Math.abs(x) === 2) continue; s(x, y, x === 2 ? sk2 : sk); }
+  s(-2, 4, 0x5a3a24); s(2, 4, 0x5a3a24);
+  s(-1, 5, 0x2a1a14); s(1, 5, 0x2a1a14);
+  s(0, 6, sk2);
+  s(-1, 7, 0x5a3a24); s(0, 7, 0x6a4a30); s(1, 7, 0x5a3a24);
+  s(0, 8, 0xc8704a);
+  // halsduken och rocken med två knapprader
+  s(-1, 9, 0xd02a3e); s(0, 9, 0xe84a5a); s(1, 9, 0xd02a3e); s(0, 10, 0xb8203a);
+  for (let y = 9; y < C_H; y++) for (let x = -4; x <= 4; x++) {
+    if (y === 9 && Math.abs(x) <= 1) continue;
+    if (y === 10 && x === 0) continue;
+    if (y === 9 && Math.abs(x) === 4) continue;
+    s(x, y, x <= -3 ? W1 : x >= 3 ? W3 : W2);
+  }
+  for (const y of [11, 13]) { s(-1, y, 0x8a9098); s(1, y, 0x8a9098); }
+  // vänstra armen vilar, högra håller stekspaden
+  for (let y = 10; y <= 13; y++) s(-5, y, y === 13 ? sk : W2);
+  if (pose === 'flip') {
+    s(5, 10, W2); s(5, 9, W2); s(6, 8, sk); s(6, 7, sk); s(7, 6, 0x3a3a40); s(8, 5, 0x3a3a40);
+    s(8, 4, 0xc8ced4); s(9, 4, 0xe8ecf0); s(10, 4, 0xaab0b8);
+  } else if (pose === 'reach') {
+    s(5, 10, W2); s(6, 10, W2); s(7, 11, W2); s(8, 11, sk); s(9, 11, sk);
+  } else {
+    s(5, 10, W2); s(5, 11, W2); s(6, 12, sk); s(6, 13, 0x3a3a40); s(7, 14, 0x3a3a40);
+    s(7, 15, 0xc8ced4); s(8, 15, 0xe8ecf0); s(9, 15, 0xaab0b8);
+  }
+}
+const COOKS = {};
+function cookSprite(pose) {
+  if (!COOKS[pose]) { const P = new Pix(C_W, C_H); paintCook(P, pose); COOKS[pose] = P.flush(); }
+  return COOKS[pose];
+}
+// kockens runda (8 s): steker, vänder burgaren, lägger upp på passet och plingar i klockan
+function cookAt(t) {
+  const u = t % 8;
+  if (u < 2) return { pose: 'press', dx: 0, flip: -1, plate: false, bell: false };
+  if (u < 2.6) return { pose: 'flip', dx: 0, flip: (u - 2) / 0.6, plate: false, bell: false };
+  if (u < 4.3) return { pose: u > 3.4 && u < 3.9 ? 'flip' : 'press', dx: 0, flip: -1, plate: false, bell: false };
+  if (u < 4.8) return { pose: 'press', dx: Math.round((u - 4.3) / 0.5 * 4), flip: -1, plate: false, bell: false };
+  if (u < 5.6) return { pose: 'reach', dx: 4, flip: -1, plate: u > 5.1, bell: false };
+  if (u < 6.2) return { pose: 'reach', dx: 4, flip: -1, plate: true, bell: true };
+  if (u < 6.7) return { pose: 'press', dx: 4 - Math.round((u - 6.2) / 0.5 * 4), flip: -1, plate: true, bell: false };
+  return { pose: 'press', dx: 0, flip: -1, plate: u < 7.6, bell: false };
+}
+// ---------- sammansättningen: lager + folk i en liten duk per bildruta ----------
+const INSIDE = new Map(), COMP = new Map(), MINIS = new Map();
+function insideLayers(b, night) {
+  const key = b.id + (night ? ':n' : ':d');
+  let Ly = INSIDE.get(key);
+  if (Ly) return Ly;
+  const g = regOf(b).inside;
+  const mk = (fn) => { const P = new Pix(g.w, g.h, g.x, g.y); fn(P); return P.flush(); };
+  Ly = {
+    bg: mk((P) => { for (const s of g.sides) dinerWall(P, s.x, s.y, s.w, s.h, night, s.side); kitchenWall(P, g.k.x, g.k.y, g.k.w, g.k.h, night); }),
+    mid: mk((P) => { for (const s of g.sides) { booth(P, s.x, s.y, s.h, 1); booth(P, s.x + s.w - 1, s.y, s.h, -1); } }),
+    fg: mk((P) => { for (const s of g.sides) dinerTable(P, s.x, s.y, s.w, s.h); kitchenFront(P, g.k.x, g.k.y, g.k.w, g.k.h, night); }),
+    glass: mk((P) => { for (const s of g.sides) glassOver(P, s.x, s.y, s.w, s.h, night, true); glassOver(P, g.k.x, g.k.y, g.k.w, g.k.h, night, false); }),
+    mask: mk((P) => { for (const r of [...g.sides, g.k]) P.rect(r.x, r.y, r.w, r.h, 0xffffff); }),
+  };
+  INSIDE.set(key, Ly);
+  return Ly;
+}
+// hela fönstret (utan folk) direkt i fasadbilden – samma lager, så att bilden är rätt även utan live()
+function paintInside(P, g, night) {
+  for (const s of g.sides) {
+    dinerWall(P, s.x, s.y, s.w, s.h, night, s.side);
+    booth(P, s.x, s.y, s.h, 1); booth(P, s.x + s.w - 1, s.y, s.h, -1);
+    dinerTable(P, s.x, s.y, s.w, s.h);
+    glassOver(P, s.x, s.y, s.w, s.h, night, true);
+  }
+  kitchenWall(P, g.k.x, g.k.y, g.k.w, g.k.h, night);
+  kitchenFront(P, g.k.x, g.k.y, g.k.w, g.k.h, night);
+  glassOver(P, g.k.x, g.k.y, g.k.w, g.k.h, night, false);
+}
+function miniImg(name, dir) {
+  const key = name + dir;
+  let c = MINIS.get(key);
+  if (!c) {
+    const m = MINI[name], P = new Pix(m.rows[0].length, m.rows.length);
+    mini(P, name, 0, m.rows.length - 1);
+    c = P.flush();
+    if (dir < 0) c = flipped(c);
+    MINIS.set(key, c);
+  }
+  return c;
+}
+// vem sitter var: gästerna byts ungefär var 37:e spelminut, fler vid lunch och middag
+function seatGuest(wi, si, hour) {
+  const seed = wi * 2 + si, min = hour * 60;
+  const slot = Math.floor(min / 37 + hash(seed, 1, 321) * 3);
+  const busy = 0.3 + 0.6 * Math.max(Math.exp(-(((hour - 12.2) / 1.5) ** 2)), Math.exp(-(((hour - 18.4) / 1.7) ** 2)));
+  if (seed !== 0 && seed !== 3 && hash(seed, slot, 322) > busy) return null;
+  const id = Math.floor(hash(seed, slot, 323) * 997);
+  // ibland är gästen ett barn med glasstrut (inte längst till höger – trafikljuset skymmer)
+  const child = seed !== 3 && hash(id, 12, 326) > 0.7;
+  return { look: lookOf(id), act: child ? 'strut' : ACTS[Math.floor(hash(id, 9, 324) * ACTS.length) % ACTS.length], phase: hash(id, 10, 325) * 7, child };
+}
+const HAND = { burgare: 'burgare', pommes: 'fry', glass: 'sked', dipp: 'fry' };
+MINI.fry = { rows: ['Y', 'y', 'y'], pal: { Y: 0xffe36a, y: 0xf5c03a } };
+MINI.sked = { rows: ['P', 'c', 'c'], pal: { P: 0xff88bb, c: 0xd8dde2 } };
+MINI.plate = { rows: ['wwwww', '.ggg.'], pal: { w: 0xffffff, g: 0xaab0b8 } };
+function drawGuests(x2, g, st) {
+  const t = st.t, ox = g.x, oy = g.y;
+  g.sides.forEach((s, wi) => {
+    const tt = s.y + s.h - 11;
+    for (let si = 0; si < 2; si++) {
+      const q = seatGuest(wi, si, st.hour ?? 12);
+      if (!q) continue;
+      const dir = si === 0 ? 1 : -1;
+      // spegla en vänsterplacering (L = avstånd från fönstrets vänsterkant) för högra platsen
+      const X = (L, iw) => (dir > 0 ? s.x + L : s.x + s.w - L - iw) - ox;
+      // det som står på bordet framför gästen
+      const onTable = (name, L) => { const m = miniImg(name, name === 'shake' ? -dir : dir); x2.drawImage(m, X(L, m.width), tt - m.height - oy); };
+      if (q.child) {
+        // barnet: dinglande ben som sparkar, glasstruten högt eller vid munnen
+        const u = t + q.phase, legs = Math.floor(u * 2) % 2;
+        x2.drawImage(childSprite(q.look, childPose(u), legs, dir), X(2, C2_W), s.y + s.h - 9 - C2_AY - oy);
+        onTable('prat', 12);
+        continue;
+      }
+      const p = guestPose(q.act, t + q.phase);
+      const img = guestSprite(q.look, p.pose, p.hand ? HAND[q.act] : null, dir);
+      x2.drawImage(img, X(5 - G_AX, G_W), s.y + s.h - 9 - G_AY - oy);
+      if (q.act === 'burgare') { onTable('plate', 10); if (!p.hand) x2.drawImage(miniImg('burgare', dir), X(10, 5), tt - 6 - oy); }
+      else if (q.act === 'pommes') { onTable('plate', 10); x2.drawImage(miniImg('pommes', dir), X(11, 3), tt - 7 - oy); }
+      else if (q.act === 'dipp') { x2.drawImage(miniImg('pommes', dir), X(9, 3), tt - 5 - oy); onTable('dipp', 14); }
+      else if (q.act === 'shake') onTable('shake', 9);
+      else if (q.act === 'glass') onTable('glass', 11);
+      else onTable('prat', 11);
+    }
+  });
+}
+function drawWaitress(x2, g, st) {
+  const w = waitressAt(st.t), s0 = g.sides[0];
+  const stride = w.moving ? Math.floor(st.t * 4.5) % 2 : 1;
+  const img = waitressSprite(stride, w.tray, w.dir), ax = w.dir > 0 ? W_AX : W_W - 1 - W_AX;
+  x2.save();
+  x2.beginPath();
+  for (const s of g.sides) x2.rect(s.x - g.x, s.y - g.y, s.w, s.h);
+  x2.clip();
+  x2.drawImage(img, w.x - ax - g.x, s0.y + s0.h - 1 - W_AY - g.y);
+  x2.restore();
+}
+// grill-lågorna: fasta tungplatser vars höjd stegar 1→2→3→2 i otakt med grannen –
+// fyra cachade bilder per bredd, så varje bildruta bara är en drawImage
+const FLAME_IMGS = new Map();
+function flameImg(w, f) {
+  const key = w + ':' + f;
+  let c = FLAME_IMGS.get(key);
+  if (!c) {
+    const P = new Pix(w - 4, 3);
+    for (let i = 0; i < w - 4; i++) {
+      const seed = hash(i, 0, 341);
+      if (seed > 0.42) continue;
+      const hh = 1 + Math.max(0, Math.min(2, Math.floor(1.1 + Math.sin(i * 1.9 + seed * 9 + f * (Math.PI / 2)) * 1.2)));
+      for (let j = 0; j < hh; j++) P.px(i, 2 - j, j === 0 ? 0xff8a2a : j === 1 ? 0xffc23a : 0xfff0a0);
+    }
+    c = P.flush();
+    FLAME_IMGS.set(key, c);
+  }
+  return c;
+}
+// köket: kocken, burgarna på grillen (en vänds), lågor, os, tallriken och klockan på passet
+function drawKitchen(x2, g, st, stage) {
+  const k = g.k, ox = g.x, oy = g.y, gy = k.y + k.h - 8, c = cookAt(st.t);
+  if (stage === 'back') {
+    x2.drawImage(cookSprite(c.pose), k.x + 3 + c.dx - ox, k.y + 4 - oy);
+    return;
+  }
+  if (stage === 'grill') {
+    // lugna lågor: fyra förberäknade lågbilder som växlar långsamt – tungorna står på
+    // fasta platser och andas upp och ner i pixelsteg (inget pixelbrus)
+    x2.drawImage(flameImg(k.w, Math.floor(st.t * 3) % 4), k.x + 2 - ox, gy - 3 - oy);
+    // burgare A steker hela tiden, burgare B vänds (bågen följer spaden) och får ost efter andra vändningen
+    const patty = (px, py, raw, cheese) => {
+      x2.fillStyle = raw ? '#b8604e' : '#7a4228'; x2.fillRect(px - ox, py - oy, 4, 1);
+      x2.fillStyle = raw ? '#8a4032' : '#4a2618'; x2.fillRect(px - ox, py + 1 - oy, 4, 1);
+      x2.fillStyle = raw ? '#e08a7a' : '#9a5a38'; x2.fillRect(px + 1 - ox, py - oy, 1, 1);
+      if (cheese) { x2.fillStyle = '#ffd23f'; x2.fillRect(px - ox, py - 1 - oy, 4, 1); x2.fillRect(px + 3 - ox, py - oy, 1, 1); }
+    };
+    patty(k.x + 5, gy - 2, false, false);
+    const u = st.t % 8, flipB = c.flip >= 0 ? c.flip : -1;
+    const lift = flipB >= 0 ? Math.round(Math.sin(Math.PI * flipB) * 8) : 0;
+    if (flipB >= 0 && flipB > 0.35 && flipB < 0.65) { x2.fillStyle = '#6a3a24'; x2.fillRect(k.x + 17 - ox, gy - 2 - lift - oy, 4, 1); }
+    else patty(k.x + 16 + (lift ? 1 : 0), gy - 2 - lift, u < 2, u > 3.8 && u < 4.8);
+    // os som stiger mot kåpan
+    for (let n = 0; n < 6; n++) {
+      const life = (st.t * 0.45 + n / 6) % 1, sx = (n & 1 ? k.x + 18 : k.x + 7) + Math.round(Math.sin(st.t * 1.3 + n * 2) * 1.5 * life);
+      const sy = gy - 3 - Math.round(life * (k.h - 12));
+      x2.globalAlpha = (1 - life) * 0.55;
+      x2.fillStyle = '#f4f2f0';
+      x2.fillRect(sx - ox, sy - oy, life > 0.4 ? 2 : 1, 1);
+    }
+    x2.globalAlpha = 1;
+    return;
+  }
+  // stage 'pass': tallriken med burgare + pommes och klockan som plingar
+  const py = k.y + k.h - 5;
+  x2.fillStyle = '#c8a040'; x2.fillRect(k.x + 17 - ox, py - oy, 3, 1); x2.fillStyle = '#ffd23f'; x2.fillRect(k.x + 18 - ox, py - 1 - oy, 1, 1);
+  x2.fillStyle = '#8a6a24'; x2.fillRect(k.x + 17 - ox, py + 1 - oy, 3, 1);
+  if (c.bell && Math.floor(st.t * 8) % 2 === 0) { x2.fillStyle = '#fff6c0'; x2.fillRect(k.x + 16 - ox, py - 3 - oy, 1, 1); x2.fillRect(k.x + 20 - ox, py - 3 - oy, 1, 1); x2.fillRect(k.x + 18 - ox, py - 4 - oy, 1, 1); }
+  if (c.plate) {
+    x2.drawImage(miniImg('plate', 1), k.x + 21 - ox, py - oy);
+    x2.drawImage(miniImg('burgare', 1), k.x + 21 - ox, py - 4 - oy);
+    x2.drawImage(miniImg('pommes', 1), k.x + 25 - ox, py - 4 - oy);
+  }
+}
+function composeInside(b, st, night, reg) {
+  const g = reg.inside, open = isOpen(b, st.hour);
+  // stängt (efter 23 och före 7): dagslagren utan folk, mörklagda till en släckt lokal
+  const Ly = insideLayers(b, open ? night : false), key = b.id + (night ? ':n' : ':d');
+  let c = COMP.get(key);
+  if (!c) { c = mkCanvas(g.w, g.h); COMP.set(key, c); }
+  const x2 = c.getContext('2d');
+  x2.clearRect(0, 0, g.w, g.h);
+  x2.drawImage(Ly.bg, 0, 0);
+  if (open) { drawWaitress(x2, g, st); drawKitchen(x2, g, st, 'back'); }
+  x2.drawImage(Ly.mid, 0, 0);
+  if (open) { drawGuests(x2, g, st); drawWiper(x2, g, st); drawKitchen(x2, g, st, 'grill'); }
+  x2.drawImage(Ly.fg, 0, 0);
+  if (open) drawKitchen(x2, g, st, 'pass');
+  if (!open) {
+    // släckt: kall natt över hela lokalen, värmelampornas standby-glöd och nattens reflexer
+    x2.fillStyle = night ? 'rgba(10,14,26,0.82)' : 'rgba(14,18,32,0.6)';
+    x2.fillRect(0, 0, g.w, g.h);
+    for (const lx of [g.k.x + 6, g.k.x + g.k.w - 7]) {
+      x2.fillStyle = 'rgba(200,74,42,0.55)';
+      x2.fillRect(lx - g.x, g.k.y + 4 - g.y, 1, 1);
+    }
+    x2.drawImage(insideLayers(b, true).glass, 0, 0);
+  } else x2.drawImage(Ly.glass, 0, 0);
+  x2.globalCompositeOperation = 'destination-in';
+  x2.drawImage(Ly.mask, 0, 0);
+  x2.globalCompositeOperation = 'source-over';
+  return c;
+}
+
+// ---------- menypelaren på trottoaren ----------
+// Står där löpsedeln stod, framför högra fönstret vid Burgarbarens östra hörn (flyttad 5 px
+// västerut så att den går fri från trafikljuset): en ljuslåda med rosa neonrör runt kanten,
+// kromlister, rött emaljhuvud (MENY, som växlar till rätternas namn och då ramar in den rätten)
+// och mörkgrön tavla som på jobbet med samma rätter och priser. Den är 46 px hög – överkanten
+// slutar under fönsterblecket så att gästerna i fönstret syns – och tänds på kvällen.
+export const BURGARE_STAND = { dx: 101, y: CITY.SIDEWALK_N[0] + 9 };
+const SW = 40, SH = 52, SAX = 20, SAY = 48;
+const SB = { x0: -17, x1: 16, top: -45, head: -44, sep: -38, panel: -37, bot: -1 };
+const SCELL = { w: 15, rowB: [-25, -7], priceY: [-24, -6] };
+function standRect(b) { const x = b.x + BURGARE_STAND.dx, y = BURGARE_STAND.y; return [x + SB.x0, y - 3, x + SB.x1 + 1, y + 2]; }
+function paintStand(P, night, snow) {
+  const S = (x, y, c, a) => P.px(SAX + x, SAY + y, c, a);
+  const { x0, x1, top, bot } = SB;
+  P.ell(SAX + 2.5, SAY + 0.5, 17, 2.6, 0x1a1418, 0.34);
+  // gummifötterna
+  for (const fx of [x0 + 2, x1 - 4]) { S(fx, 0, 0x3a3a40); S(fx + 1, 0, 0x2a2a30); S(fx + 2, 0, 0x16161a); }
+  // neonröret runt kanten (släckt på dagen: blekrosa glas med blänk) och kromlister innanför
+  for (let y = top; y <= bot; y++) for (let x = x0; x <= x1; x++) {
+    const ex = x === x0 || x === x1, ey = y === top || y === bot;
+    if (ex && ey) continue;
+    if (ex || ey) {
+      let c = night ? 0xffc8da : 0xeea8bc;
+      if (((x + y) & 3) === 0) c = night ? 0xfff0f6 : 0xfad8e2;
+      if (y === bot || x === x1) c = mul(c, 0.86);
+      S(x, y, c);
+    } else if (x === x0 + 1 || x === x1 - 1) S(x, y, x === x0 + 1 ? (y < top + 3 ? 0xf6f8fa : 0xdfe3e8) : (y > bot - 3 ? 0x5a6068 : 0x8a9098));
+  }
+  // huvudet i röd emalj (texten ritas i live och växlar)
+  for (let y = SB.head; y < SB.sep; y++) for (let x = x0 + 2; x <= x1 - 2; x++) {
+    const j = y - SB.head;
+    let c = j === 0 ? 0xf07080 : j === SB.sep - SB.head - 1 ? 0x9a1e2c : x < x0 + 4 ? 0xe04a5a : x > x1 - 4 ? 0xb01c30 : 0xd02a3e;
+    S(x, y, jit(c, x, y, 351, 0.04));
+  }
+  // kromlisten mellan huvudet och tavlan
+  for (let x = x0 + 2; x <= x1 - 2; x++) S(x, SB.sep, x < x0 + 6 ? 0xf6f8fa : x > x1 - 5 ? 0x9aa0a8 : 0xc8ced4);
+  // tavlan: mörkgrön som på jobbet
+  for (let y = SB.panel; y <= bot - 1; y++) for (let x = x0 + 2; x <= x1 - 2; x++) {
+    let c = hash(x, y, 34) > 0.9 ? 0x3a4a40 : jit(0x26342c, x, y, 35, 0.06);
+    if (y === SB.panel) c = mul(c, 0.7);
+    if (night) c = mix(c, 0x4a6a58, 0.28);
+    S(x, y, c);
+  }
+  // kritprickar mellan raderna, som linjen under MENY på jobbets tavla
+  const midY = SCELL.priceY[0] + 5;
+  for (let x = x0 + 4; x <= x1 - 3; x += 2) S(x, midY, 0x9aa8a0, 0.6);
+  if (MENU) {
+    MENU.dishes.slice(0, 4).forEach((d, i) => {
+      const cx0 = x0 + 2 + (i & 1) * SCELL.w, r = i >> 1;
+      const dw = dishW(d), ox = cx0 + ((SCELL.w - dw) >> 1);
+      dishPx({ px: (x, y, c) => S(x, y, c) }, d, ox, SCELL.rowB[r] + 1);
+      const lw = textW(SMALL, d.label), tx = cx0 + ((SCELL.w - lw) >> 1);
+      text({ px: (x, y, c) => S(x, y, c) }, SMALL, d.label, tx, SCELL.priceY[r], night ? 0xfffaf0 : 0xf4f1ea);
+    });
+  } else text({ px: (x, y, c) => S(x, y, c) }, SMALL, 'SNART', -9, -22, 0xc8c0a8);
+  if (snow) {
+    for (let x = x0; x <= x1; x++) { S(x, top - 1, hash(x, 1, 352) > 0.8 ? 0xdde8f4 : 0xf8fbff); if (x > x0 && x < x1) S(x, top, 0xeaf2fa, 0.85); }
+    S(x0 + 3, top - 2, 0xf8fbff); S(x0 + 4, top - 2, 0xf8fbff); S(x1 - 6, top - 2, 0xf0f6fc);
+  }
+}
+
 function giantBurger(P, cx, by) {
   const hw = 30;
   // ställning
@@ -827,17 +1586,6 @@ function giantBurger(P, cx, by) {
   P.rect(cx + 8, yd - 7, 5, 3, 0xd8303a);
   P.hl(cx + 8, yd - 6, 5, 0xffffff);
 }
-// Menylådans geometri: hänger från neonbandets underkant ner till huven över dörren,
-// lika bred som huven och med 1 px luft till fönstrens kromramar. Två kolumner om
-// 16 px: rätten (12 px hög, utan kontur) över priset ('10:-' är 13 px, så det blir
-// 3 px luft mellan priserna). Samma rätter och priser som på jobbet.
-function menuGeom(d0, d1, S1) {
-  const x = d0 - 5, w = d1 - d0 + 10, y = S1, h = DT - 7 - y;
-  const head = { x: x + 1, y: y + 1, w: w - 2, h: 7 };
-  const py = y + 9, ph = h - 10, cw = 16;
-  const cells = [[x + 1, py], [x + 1 + cw, py], [x + 1, py + 19], [x + 1 + cw, py + 19]]; // 16 × 18 var
-  return { x, y, w, h, head, panel: { x: x + 1, y: py, w: w - 2, h: ph }, cells, cw };
-}
 // den lilla dinerklockan ovanför högra fönstret: kromring, vit tavla, fyra timmarkeringar
 function clockFace(P, cx, cy, night) {
   for (let y = -5; y <= 5; y++) for (let x = -5; x <= 5; x++) {
@@ -854,7 +1602,7 @@ function clockFace(P, cx, cy, night) {
 function paintBurgare(P, b, night, reg, opts = {}) {
   const L = ART_OVER, W = b.w, R = L + W, T = BASE - b.h, cx = L + (W >> 1);
   const d0 = b.door.x0 - b.x + L, d1 = b.door.x1 - b.x + L;
-  // krönet reser sig 12 px över fotavtryckets topp så att menylådan får plats över dörren
+  // krönet reser sig 12 px över fotavtryckets topp så att köksfönstret får plats över dörren
   const PT = T - 12;
   // ---- platt tak med grus, aggregat och jätteburgaren ----
   area(P, L, TOP, W, PT - TOP, (X, Y, i, j) => {
@@ -909,16 +1657,26 @@ function paintBurgare(P, b, night, reg, opts = {}) {
   P.hl(L, Z0 + 3, W, 0xd02a3e); P.hl(L, Z0 + 4, W, 0xf07080, 0.5);
   P.hl(L, Z0 + 9, W, 0xd02a3e); P.hl(L, Z0 + 10, W, 0x7e1624, 0.5);
   for (let x = L + 4; x < R - 4; x += 12) { P.px(x, Z0 + 6, 0x8a9098); P.px(x, Z0 + 7, 0xffffff, 0.7); }
-  const wy = Z0 + 15, wh = DT - wy - 5;
-  // fönstren slutar 8 px från dörren så att menylådan (huvens bredd) får 1 px luft till kromramarna
+  const wy = Z0 + 15, wh = DT - wy - 5, hy = DT - 7;
+  // Tre fönster in i dinern: två med bås (sidorna) och köksfönstret över dörren, lika brett
+  // som huven. Sidofönstren slutar 8 px från dörren så att det blir 2 px vit emalj mellan
+  // kromramarna. Allt innanför glaset målas i lager (se insideLayers) – folket ritas i live().
   const wins = [[L + 6, d0 - 8 - (L + 6)], [d1 + 8, R - 6 - (d1 + 8)]];
-  for (const [wx, ww] of wins) {
-    diner(P, wx, wy, ww, wh, night, reg);
-    P.vl(wx + (ww >> 1) - 1, wy, wh, 0xe8ecf0);
-    P.vl(wx + (ww >> 1), wy, wh, 0x8a9098);
-    chromeFrame(P, wx, wy, ww, wh, 0xf0eee8);
-    P.darken(wx - 2, wy + wh + 2, ww + 4, 1, 0.85);
+  const sides = wins.map(([wx, ww], i) => ({ x: wx, y: wy, w: ww, h: wh, side: i ? 'r' : 'l' }));
+  const kw = { x: d0 - 2, y: wy, w: d1 - d0 + 4, h: hy - 3 - wy };
+  reg.inside = { x: sides[0].x, y: wy, w: sides[1].x + sides[1].w - sides[0].x, h: wh, sides, k: kw };
+  paintInside(P, reg.inside, night);
+  // fönstrens ljusglorior hålls ur den generella halon (som lyser hela natten) och ritas i
+  // glow() bara när det är öppet – efter 23 ska lokalen vara släckt och se stängd ut
+  reg.winHalo = [];
+  for (const s of [...sides, kw]) {
+    chromeFrame(P, s.x, s.y, s.w, s.h, 0xf0eee8);
+    P.darken(s.x - 2, s.y + s.h + 2, s.w + 4, 1, 0.85);
+    reg.winHalo.push([s.x + s.w / 2, s.y + s.h / 2, s.w * 0.6 + 4, s.h * 0.6 + 3, 0xffe0c0, 0.26]);
   }
+  for (const s of sides) reg.winHalo.push([s.x + s.w / 2, BASE + 7, s.w * 0.55 + 4, 8, 0xffc8a0, 0.2]);
+  // köksfönstrets bleck: en smal kromhylla som vilar på huven
+  P.hl(kw.x - 1, kw.y + kw.h + 2, kw.w + 2, 0xc2c8d0);
   // ÖPPET-skylten hänger i listen över vänstra fönstret …
   const ob = bits(SMALL, 'ÖPPET'), ox0 = wins[0][0] + (wins[0][1] >> 1) - (ob.w >> 1), oy0 = Z0 + 5;
   P.rect(ox0 - 2, oy0 - 3, ob.w + 4, 9, 0x14161c);
@@ -932,41 +1690,7 @@ function paintBurgare(P, b, night, reg, opts = {}) {
   reg.clock = [ccx, ccy];
   if (night) { reg.win.push([ccx - 4, ccy - 4, 9, 9]); reg.halo.push([ccx + 0.5, ccy + 0.5, 8, 7, 0xfff0c0, 0.25]); }
 
-  // ---- menylådan ovanför dörren ----
-  const M = menuGeom(d0, d1, S1);
-  // kromram med fasad kant, rött huvud (texten ritas i live: MENY och rätternas namn i tur och ordning)
-  P.rect(M.x, M.y, M.w, M.h, 0x9aa0a8);
-  P.bevel(M.x, M.y, M.w, M.h, 0xf6f8fa, 0x5a6068);
-  area(P, M.head.x, M.head.y, M.head.w, M.head.h, (X, Y, i, j) => jit(j === 0 ? 0xf07080 : j === M.head.h - 1 ? 0x7e1624 : 0xd02a3e, X, Y, 46, 0.05));
-  P.hl(M.head.x, M.head.y + M.head.h, M.head.w, 0xe8ecf0);
-  // mörk tavla som på jobbet, med tunn kritkant
-  area(P, M.panel.x, M.panel.y, M.panel.w, M.panel.h, (X, Y) => {
-    let c = hash(X, Y, 34) > 0.9 ? 0x3a4a40 : jit(0x26342c, X, Y, 35, 0.06);
-    if (night) c = mix(c, 0x5a7a68, 0.35);
-    return c;
-  });
-  if (MENU) {
-    // kritstreck som delar tavlan i fyra rutor (varannan pixel, som dragna för hand)
-    const dvx = M.panel.x + M.cw, dvy = M.cells[2][1] - 1;
-    for (let y = M.panel.y + 1; y < M.panel.y + M.panel.h - 1; y++) if ((y + dvx) & 1) P.px(dvx, y, 0xb8c4bc, 0.55);
-    for (let x = M.panel.x + 1; x < M.panel.x + M.panel.w - 1; x++) if ((x + dvy) & 1) P.px(x, dvy, 0xb8c4bc, 0.55);
-    MENU.dishes.forEach((d, i) => {
-      if (i >= M.cells.length) return;
-      const [cx0, cy0] = M.cells[i];
-      dishPx(P, d, cx0 + ((M.cw - dishW(d)) >> 1), cy0 + 12);
-      text(P, SMALL, d.label, cx0 + ((M.cw - textW(SMALL, d.label)) >> 1), cy0 + 13, night ? 0xfff8e8 : 0xf4f1ea);
-    });
-  } else {
-    text(P, SMALL, 'SNART', M.panel.x + ((M.panel.w - textW(SMALL, 'SNART')) >> 1), M.panel.y + 16, 0xc8c0a8);
-  }
-  if (night) {
-    reg.win.push([M.panel.x, M.panel.y, M.panel.w, M.panel.h], [M.head.x, M.head.y, M.head.w, M.head.h]);
-    reg.halo.push([M.x + M.w / 2, M.y + M.h / 2, M.w * 0.85, M.h * 0.65, 0xffd0a0, 0.28]);
-    reg.halo.push([M.x + M.w / 2, M.y + M.h + 6, M.w * 0.7, 8, 0xffc8a0, 0.18]);
-  }
-  reg.menu = M;
   // huven över dörren
-  const hy = DT - 7;
   area(P, d0 - 5, hy, d1 - d0 + 10, 3, (X, Y, i, j) => [0xf6f8fa, 0xc2c8d0, 0x9aa0a8][j]);
   area(P, d0 - 4, hy + 3, d1 - d0 + 8, 3, (X, Y, i, j) => (j === 1 ? 0xffffff : 0xd8303a));
   P.darken(d0 - 3, hy + 6, d1 - d0 + 6, 1, 0.6);
@@ -1011,7 +1735,7 @@ function paintBurgare(P, b, night, reg, opts = {}) {
     snowCap(P, L - 1, PT - 1, W + 2, 2);
     snowCap(P, d0 - 6, hy - 1, d1 - d0 + 12, 2);
     for (const [wx, ww] of wins) snowCap(P, wx - 2, wy + wh + 1, ww + 4, 1);
-    snowCap(P, M.x - 1, M.y - 1, M.w + 2, 1);
+    snowCap(P, kw.x - 2, kw.y + kw.h + 1, kw.w + 4, 1);
     snowCap(P, L, Z0 + 2, W, 1);
     snowCap(P, L, DT - 1, W, 1);
   }
@@ -1046,6 +1770,95 @@ DOOR_ART.burgare = {
   },
 };
 function isOpen(b, hour) { return !b.open || (hour >= b.open[0] && hour < b.open[1]); }
+// menypelaren: bilder (dag/natt × snö), huvudets texter, neonrörets sken och ljuset på marken
+const STANDS = new Map();
+function standImg(night, snow) {
+  const key = (night ? 'n' : 'd') + (snow ? 's' : '');
+  let c = STANDS.get(key);
+  if (!c) { const P = new Pix(SW, SH); paintStand(P, night, snow); c = P.flush(); STANDS.set(key, c); }
+  return c;
+}
+// vilken text huvudet visar just nu: MENY två steg, sedan en rätt i taget
+function headIdx(t, n) {
+  if (n <= 1) return 0;
+  const seq = [0, 0, 1, 2, 3, 4], i = seq[Math.floor(t / 1.6) % seq.length];
+  return i < n ? i : 0;
+}
+function standKit(K) {
+  if (K.stand) return K.stand;
+  const T = {}, names = ['MENY', ...(MENU ? MENU.dishes.slice(0, 4).map((d) => d.name) : [])];
+  const hw = SB.x1 - SB.x0 - 3, hh = SB.sep - SB.head;
+  T.hw = hw; T.hh = hh;
+  T.heads = names.map((s) => {
+    const tb = bits(SMALL, s), H = new Pix(hw, hh);
+    sign(H, tb, (hw - tb.w) >> 1, 1, { fill: 0xfff4ea, shadow: 0x6a1020, sa: 0.85 });
+    return H.flush();
+  });
+  T.headsLit = names.map((s) => {
+    const tb = bits(SMALL, s), H = new Pix(hw + 2, hh + 2);
+    sign(H, tb, 1 + ((hw - tb.w) >> 1), 2, { outline: 0xff6a90, oa: 0.5, fill: 0xfffaf4 });
+    return H.flush();
+  });
+  // neonröret: ramen innanför kromen som en bitmapp → kärna + gloria
+  const rw = SB.x1 - SB.x0 + 1, rh = SB.bot - SB.top + 1, on = new Uint8Array(rw * rh);
+  for (let y = 0; y < rh; y++) for (let x = 0; x < rw; x++) {
+    const ex = x === 0 || x === rw - 1, ey = y === 0 || y === rh - 1;
+    if ((ex || ey) && !(ex && ey)) on[y * rw + x] = 1;
+  }
+  const RB = { w: rw, h: rh, on };
+  T.ringHalo = haloOf(RB, 0xff3a78, 4, 0.42);
+  const core = new Pix(rw, rh);
+  for (let y = 0; y < rh; y++) for (let x = 0; x < rw; x++) if (on[y * rw + x]) core.px(x, y, ((x + y) & 3) === 0 ? 0xffffff : 0xff9ac0);
+  T.ring = core.flush();
+  // tavlan tänd: kopia av nattbildens tavla
+  const pw = SB.x1 - SB.x0 - 3, ph = SB.bot - SB.panel, lit = mkCanvas(pw, ph);
+  lit.getContext('2d').drawImage(standImg(true, 0), SAX + SB.x0 + 2, SAY + SB.panel, pw, ph, 0, 0, pw, ph);
+  T.panelLit = lit;
+  // ljuset som faller på trottoaren framför pelaren
+  const sp = new Pix(56, 14);
+  sp.ell(28, 5, 26, 6.5, 0xffb8d0, 0.5, 5);
+  T.spill = sp.flush();
+  K.stand = T;
+  return T;
+}
+function standCell(i) { return { x: SB.x0 + 2 + (i & 1) * SCELL.w, y: i >> 1 ? SCELL.priceY[0] + 5 : SB.panel, w: SCELL.w, h: 18 }; }
+function drawStand(ctx, b, st, K) {
+  const T = standKit(K), x = b.x + BURGARE_STAND.dx, y = BURGARE_STAND.y;
+  const snow = (st.env?.weather?.snowCover || 0) > 0.5 ? 1 : 0, open = isOpen(b, st.hour);
+  // stängt: släckta rör (dagsbilden, som mörkläggs av natten) och huvudet står stilla på MENY
+  ctx.drawImage(standImg(!!st.night && open, snow), x - SAX, y - SAY);
+  const i = open ? headIdx(st.t, T.heads.length) : 0;
+  ctx.drawImage(T.heads[i], x + SB.x0 + 2, y + SB.head);
+  if (i > 0) {
+    // ram runt rätten som huvudet talar om
+    const c = standCell(i - 1);
+    ctx.fillStyle = st.night ? '#ff8ab0' : '#e8b230';
+    ctx.fillRect(x + c.x, y + c.y, c.w, 1); ctx.fillRect(x + c.x, y + c.y + c.h - 1, c.w, 1);
+    ctx.fillRect(x + c.x, y + c.y, 1, c.h); ctx.fillRect(x + c.x + c.w - 1, y + c.y, 1, c.h);
+  }
+}
+function standGlow(ctx, b, st, k, K) {
+  const T = standKit(K), x = b.x + BURGARE_STAND.dx, y = BURGARE_STAND.y;
+  const tick = Math.floor(st.t * 12), dip = hash(tick, 5, 79) > 0.97 ? 0.35 : 1;
+  ctx.globalAlpha = k * 0.4;
+  ctx.drawImage(T.spill, x - 26, y - 4);
+  ctx.globalAlpha = k * 0.55;
+  ctx.drawImage(T.panelLit, x + SB.x0 + 2, y + SB.panel);
+  ctx.globalAlpha = k * (0.75 + 0.2 * Math.sin(st.t * 8)) * dip;
+  ctx.drawImage(T.ringHalo.img, x + SB.x0 - T.ringHalo.pad, y + SB.top - T.ringHalo.pad);
+  ctx.globalAlpha = k * 0.9 * dip;
+  ctx.drawImage(T.ring, x + SB.x0, y + SB.top);
+  const i = headIdx(st.t, T.headsLit.length);
+  ctx.globalAlpha = k * 0.85;
+  ctx.drawImage(T.headsLit[i], x + SB.x0 + 1, y + SB.head - 1);
+}
+const COMP_T = new Map();
+function freshInside(b, st, night, reg) {
+  const key = b.id + (night ? ':n' : ':d');
+  if (COMP_T.get(key) === st.t && COMP.has(key)) return COMP.get(key);
+  COMP_T.set(key, st.t);
+  return composeInside(b, st, night, reg);
+}
 const BURGARE = {
   paint: paintBurgare,
   kit(b, reg) {
@@ -1059,41 +1872,11 @@ const BURGARE = {
     sign(Q, ob, 1, 1 + ob.up, { outline: 0x3ad0ff, oa: 0.4, fill: 0xe8fbff });
     K.oppet = Q.flush();
     K.oppetHalo = haloOf(ob, 0x3ad0ff, 3, 0.5);
-    // menylådans huvud: MENY och rätternas namn i tur och ordning (vanlig + tänd variant)
-    const M = reg.menu, names = ['MENY', ...(MENU ? MENU.dishes.map((d) => d.name) : [])];
-    K.heads = names.map((s) => {
-      const tb = bits(SMALL, s), H = new Pix(M.head.w, M.head.h);
-      sign(H, tb, (M.head.w - tb.w) >> 1, 1, { fill: 0xfff4ea, shadow: 0x7e1624, sa: 0.7 });
-      return H.flush();
-    });
-    K.headsLit = names.map((s) => {
-      const tb = bits(SMALL, s), H = new Pix(M.head.w + 2, M.head.h + 2);
-      sign(H, tb, 1 + ((M.head.w - tb.w) >> 1), 2, { outline: 0xff6a80, oa: 0.5, fill: 0xfffaf4 });
-      return H.flush();
-    });
-    const HL = new Pix(M.w + 12, M.head.h + 12);
-    HL.ell(M.w / 2 + 6, M.head.h / 2 + 6, M.w / 2 + 4, M.head.h / 2 + 5, 0xff5a78, 0.45);
-    K.headHalo = HL.flush();
+    // fönstrens ljusglorior i en egen bild, så att de kan släckas när det är stängt
+    const hp = new Pix(b.w + ART_OVER * 2, HGT + 30);
+    for (const [hx, hy, rx, ry, c, a] of reg.winHalo || []) hp.ell(hx, hy, rx, ry, c, a);
+    K.winGlow = hp.flush();
     return K;
-  },
-  // vilken text huvudet visar just nu: MENY två steg, sedan en rätt i taget
-  headIdx(st, K) {
-    const n = K.heads.length;
-    if (n <= 1) return 0;
-    const seq = [0, 0, 1, 2, 3, 4], i = seq[Math.floor(st.t / 1.6) % seq.length];
-    return i < n ? i : 0;
-  },
-  menu(ctx, b, st, K, reg, lit) {
-    const M = reg.menu, ox = b.x - ART_OVER, i = BURGARE.headIdx(st, K);
-    if (lit) ctx.drawImage(K.headsLit[i], ox + M.head.x - 1, M.head.y - 1);
-    else ctx.drawImage(K.heads[i], ox + M.head.x, M.head.y);
-    if (i > 0 && M.cells[i - 1]) {
-      // ram runt rätten som huvudet talar om
-      const [cx0, cy0] = M.cells[i - 1], w = M.cw, h = 18;
-      ctx.fillStyle = lit ? '#ff8aa0' : '#e8b230';
-      ctx.fillRect(ox + cx0, cy0, w, 1); ctx.fillRect(ox + cx0, cy0 + h - 1, w, 1);
-      ctx.fillRect(ox + cx0, cy0, 1, h); ctx.fillRect(ox + cx0 + w - 1, cy0, 1, h);
-    }
   },
   clock(ctx, b, st, reg) {
     const [cx, cy] = reg.clock, ox = b.x - ART_OVER, h = st.hour ?? 12;
@@ -1115,13 +1898,21 @@ const BURGARE = {
     if (rest > 0) ctx.drawImage(K.neon, c1 + 1, 0, rest, H, dx + c1 + 1, dy, rest, H);
   },
   live(ctx, b, st, reg, K) {
-    const ox = b.x - ART_OVER;
-    BURGARE.neon(ctx, b, st, K, reg);
-    const ph = Math.floor(st.t * 7);
-    ctx.fillStyle = '#fff2a8';
-    reg.bulbs.forEach(([x, y], i) => { if ((i + ph) % 3 === 0) ctx.fillRect(ox + x, y, 1, 1); });
-    if (isOpen(b, st.hour)) ctx.drawImage(K.oppet, ox + reg.oppet.x - 1, reg.oppet.y - reg.oppet.B.up - 1);
-    BURGARE.menu(ctx, b, st, K, reg, false);
+    const ox = b.x - ART_OVER, open = isOpen(b, st.hour);
+    // folket i fönstren (servitrisen, gästerna, kocken) – lagren och sprites är förmålade;
+    // stängt: samma duk visar den släckta lokalen i stället
+    if (reg.inside) ctx.drawImage(freshInside(b, st, !!st.night, reg), ox + reg.inside.x, reg.inside.y);
+    if (open) {
+      BURGARE.neon(ctx, b, st, K, reg);
+      const ph = Math.floor(st.t * 7);
+      ctx.fillStyle = '#fff2a8';
+      reg.bulbs.forEach(([x, y], i) => { if ((i + ph) % 3 === 0) ctx.fillRect(ox + x, y, 1, 1); });
+      ctx.drawImage(K.oppet, ox + reg.oppet.x - 1, reg.oppet.y - reg.oppet.B.up - 1);
+    } else {
+      // stängt: släck även hallen bakom dörrglaset, i samma mörker som fönstren
+      ctx.fillStyle = st.night ? 'rgba(10,14,26,0.72)' : 'rgba(14,18,32,0.5)';
+      ctx.fillRect(b.door.x0 + 2, DT + 2, b.door.x1 - b.door.x0 - 4, 22);
+    }
     BURGARE.clock(ctx, b, st, reg);
     // fläkten i kylaggregatet snurrar
     const [fx, fy] = reg.fan, spin = Math.floor(st.t * 9) % 2;
@@ -1130,39 +1921,47 @@ const BURGARE = {
     ctx.fillStyle = spin ? '#8a9098' : '#5a5e66';
     ctx.fillRect(ox + fx, fy - 1, 1, 3);
   },
+  // menypelaren står på trottoaren och y-sorteras med folket
+  items(b, st, reg, K) {
+    return [{ x: b.x + BURGARE_STAND.dx, y: BURGARE_STAND.y, kind: 'menypelare', draw: (ctx) => drawStand(ctx, b, st, K) }];
+  },
+  obstacles(b) { return [standRect(b)]; },
   glow(ctx, b, st, k, reg, K) {
-    const ox = b.x - ART_OVER, { B, x, y } = reg.neon;
+    const ox = b.x - ART_OVER, { B, x, y } = reg.neon, open = isOpen(b, st.hour);
     ctx.globalCompositeOperation = 'lighter';
-    ctx.globalAlpha = k * 0.85;
-    BURGARE.neon(ctx, b, st, K, reg);
-    ctx.globalAlpha = k * (0.8 + 0.2 * Math.sin(st.t * 9));
-    ctx.drawImage(K.neonHalo.img, ox + x - K.neonHalo.pad, y - B.up - K.neonHalo.pad);
-    const ph = Math.floor(st.t * 7);
-    ctx.fillStyle = '#ffd860';
-    reg.bulbs.forEach(([bx, by], i) => {
-      if ((i + ph) % 3 !== 0) return;
-      ctx.globalAlpha = k * 0.35; ctx.fillRect(ox + bx - 1, by - 1, 3, 3);
-      ctx.globalAlpha = k; ctx.fillRect(ox + bx, by, 1, 1);
-    });
-    if (isOpen(b, st.hour)) {
+    if (open) {
+      // de tända fönstren med folket i egna färger + gloriorna runt rutorna
+      if (reg.inside) {
+        ctx.globalAlpha = k * 0.45;
+        ctx.drawImage(freshInside(b, st, true, reg), ox + reg.inside.x, reg.inside.y);
+      }
+      ctx.globalAlpha = k * 0.6;
+      ctx.drawImage(K.winGlow, ox, 0);
+      ctx.globalAlpha = k * 0.85;
+      BURGARE.neon(ctx, b, st, K, reg);
+      ctx.globalAlpha = k * (0.8 + 0.2 * Math.sin(st.t * 9));
+      ctx.drawImage(K.neonHalo.img, ox + x - K.neonHalo.pad, y - B.up - K.neonHalo.pad);
+      const ph = Math.floor(st.t * 7);
+      ctx.fillStyle = '#ffd860';
+      reg.bulbs.forEach(([bx, by], i) => {
+        if ((i + ph) % 3 !== 0) return;
+        ctx.globalAlpha = k * 0.35; ctx.fillRect(ox + bx - 1, by - 1, 3, 3);
+        ctx.globalAlpha = k; ctx.fillRect(ox + bx, by, 1, 1);
+      });
       const o = reg.oppet;
       ctx.globalAlpha = k * 0.8;
       ctx.drawImage(K.oppetHalo.img, ox + o.x - K.oppetHalo.pad, o.y - o.B.up - K.oppetHalo.pad);
       ctx.globalAlpha = k * 0.85;
       ctx.drawImage(K.oppet, ox + o.x - 1, o.y - o.B.up - 1);
     }
-    // menylådan: huvudet i rosa neon med gloria, tavlan får sitt sken via reg.win/halo
-    const M = reg.menu;
-    ctx.globalAlpha = k * 0.55;
-    ctx.drawImage(K.headHalo, ox + M.x - 6, M.head.y - 6);
-    ctx.globalAlpha = k * 0.8;
-    BURGARE.menu(ctx, b, st, K, reg, true);
-    // takstrålkastarna mot jätteburgaren
+    // takstrålkastarna mot jätteburgaren lyser hela natten – landmärket ska synas
     ctx.fillStyle = '#ffe8a0';
     for (const [sx, sy] of reg.spots) {
       ctx.globalAlpha = k * 0.45; ctx.fillRect(ox + sx - 1, sy - 1, 4, 3);
       ctx.globalAlpha = k; ctx.fillRect(ox + sx, sy, 2, 1);
     }
+    // menypelaren: tavlan, neonröret och ljuset på trottoaren – släckt när det är stängt
+    if (open) standGlow(ctx, b, st, k, K);
     ctx.globalCompositeOperation = 'source-over';
     ctx.globalAlpha = 1;
   },
@@ -2037,6 +2836,9 @@ function makeArt(kind) {
       drawDoorAt(ctx, doorKit(b), b.door.x0, DT, st.doorOpen);
       spec.live?.(ctx, b, st, regOf(b), kitOf(b));
     },
+    // egna y-sorterade föremål framför huset (Burgarbarens menypelare) och deras hinder
+    items(b, st) { return spec.items ? spec.items(b, st, regOf(b), kitOf(b)) || [] : []; },
+    obstacles(b) { return spec.obstacles ? spec.obstacles(b) : []; },
     glow(ctx, b, st) {
       const dark = st.env?.dark ?? (st.night ? 0.5 : 0);
       const k = clamp(dark / 0.5, 0, 1);

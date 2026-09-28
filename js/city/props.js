@@ -9,9 +9,15 @@
 // kronorna vajar genom att tre band förskjuts en pixel, fontänen bläddrar
 // mellan förmålade vattenrutor och kvällsljuset läggs i glow().
 //
-// Kontrakt: createProps(env) → { items(), obstacles, update(dt), glow(ctx) }
-import { Pix, mix, mul, hash, bayer, SMALL, BIG, text, textW } from '../core/floor-pix.js';
-import { CITY, BUILDINGS, CROSSWALKS, PARK_LAYOUT, BUS_STOP, RESERVED, footprint } from './map.js';
+// Kontrakt: createProps(env) → { items(), obstacles, update(dt), glow(ctx, view),
+//   seats(), seatAt(x, y, isFree?), seatNear(x, y, r?, isFree?) }  – alla bänkar och busskurernas
+//   bänkar går att sitta på (se "sittplatser" i createProps). export const V2 = true.
+import { Pix, mix, mul, hash, bayer, SMALL, BIG, text, textW, eachTextPixel } from '../core/floor-pix.js';
+import { CITY, BUILDINGS, ALL_BUILDINGS, CROSSWALKS, CROSSWALKS_S, PARK_LAYOUT, BUS_STOP, BUS_STOPS, LOTS, RESERVED, footprint, gateRect } from './map.js';
+
+// Rekvisitan täcker hela v2-världen (Söder, parken, Infarten, förorten) – scenen
+// kopplar bort platshållaren i fallback-v2.js när V2 är satt.
+export const V2 = true;
 
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 
@@ -256,31 +262,38 @@ function drawCrown(ctx, s, x, y, sway) {
 }
 
 // ---------- lyktor ----------
-function paintStreetLamp(P, m) {
+// worn: lutande, rostig stolpe med klistermärken (förorten); lean = px åt sidan i toppen
+function paintStreetLamp(P, m, worn = 0, lean = 0) {
+  const lx = (y) => (lean ? Math.round(((-8 - y) / 52) * lean) : 0);
   // sockel med serviceslucka
   for (let y = -7; y <= 0; y++) for (let x = -2; x <= 3; x++) {
     let v = 0.8 - ((x + 2) / 5) * 0.6 + (y === -7 ? 0.18 : 0) - (y === 0 ? 0.3 : 0);
-    P.px(x, y, tone(POLE, v, x, y));
+    P.px(x, y, worn && hash(x, y, 7) > 0.8 ? RUST[2] : tone(POLE, v, x, y));
   }
-  P.rect(-1, -5, 3, 3, POLE[1]); P.hl(-1, -5, 3, POLE[0]); P.px(1, -4, POLE[3]);
+  if (worn) { P.rect(-1, -5, 3, 3, 0x0a0a0c); P.px(0, -4, POLE[0]); } // luckan borta
+  else { P.rect(-1, -5, 3, 3, POLE[1]); P.hl(-1, -5, 3, POLE[0]); P.px(1, -4, POLE[3]); }
   // stolpen
   for (let y = -60; y <= -8; y++) {
-    P.px(0, y, hash(0, y, 3) > 0.92 ? POLE[4] : POLE[3]);
-    P.px(1, y, POLE[1]);
+    const dx = lx(y);
+    P.px(dx, y, worn && hash(0, y, 8) > 0.86 ? RUST[1 + (y & 1)] : hash(0, y, 3) > 0.92 ? POLE[4] : POLE[3]);
+    P.px(dx + 1, y, POLE[1]);
   }
-  P.hl(-1, -34, 4, POLE[2]); P.px(-1, -34, POLE[4]); P.px(2, -34, POLE[0]);
+  P.hl(-1 + lx(-34), -34, 4, POLE[2]); P.px(-1 + lx(-34), -34, POLE[4]); P.px(2 + lx(-34), -34, POLE[0]);
+  if (worn) { P.rect(-1 + lx(-40), -42, 4, 4, 0xf4f1ea, 0.9); P.px(lx(-40), -41, 0xd02020); P.rect(-1 + lx(-24), -26, 4, 3, 0x36d6ff, 0.9); P.rect(lx(-18), -19, 3, 3, 0xffe030, 0.9); }
   // böjd arm och lykthuvud
-  const ax = (i) => (m > 0 ? 1 + i : -i);
-  P.px(0, -61, POLE[3]); P.px(1, -61, POLE[2]);
+  const ox = lx(-61);
+  const ax = (i) => ox + (m > 0 ? 1 + i : -i);
+  P.px(ox, -61, POLE[3]); P.px(ox + 1, -61, POLE[2]);
   P.px(ax(1), -62, POLE[3]); P.px(ax(1), -61, POLE[1]);
   for (let i = 2; i <= 8; i++) { P.px(ax(i), -63, POLE[4]); P.px(ax(i), -62, POLE[2]); }
-  const hx0 = m > 0 ? 6 : -12;
+  const hx0 = ox + (m > 0 ? 6 : -12);
   for (let x = hx0; x < hx0 + 8; x++) {
     P.px(x, -62, x === hx0 || x === hx0 + 7 ? POLE[2] : POLE[3]);
     P.px(x, -61, POLE[2]); P.px(x, -60, POLE[1]);
   }
   P.hl(hx0 + 1, -63, 6, POLE[4]);
-  P.hl(hx0 + 1, -59, 6, 0xcfd6cc); P.px(hx0 + 1, -59, 0xa8b0a6); P.px(hx0 + 6, -59, 0x9aa298);
+  if (worn === 2) { P.hl(hx0 + 1, -59, 6, 0x6a706c); P.px(hx0 + 3, -59, 0x2a2e2c); P.px(hx0 + 4, -58, 0xcfd6cc); } // krossat glas
+  else { P.hl(hx0 + 1, -59, 6, 0xcfd6cc); P.px(hx0 + 1, -59, 0xa8b0a6); P.px(hx0 + 6, -59, 0x9aa298); }
   groundShadow(P, 2, 1, 6, 2, 0.3);
 }
 function paintParkLamp(P) {
@@ -422,17 +435,29 @@ function makeStreetSign(name, dir) {
 }
 
 // ---------- blommor och växter ----------
-function paintFlowerBox(P, w, seed, cols, style) {
+// torra kvistar (vinterns rabatter och blomlådor): korta bruna stjälkar med en knopp här och var
+function dryTwigs(P, x0, x1, y, seed, step = 2) {
+  for (let x = x0; x <= x1; x += step) {
+    if (hash(x, seed, 21) < 0.4) continue;
+    const h = 2 + Math.floor(hash(x, seed, 22) * 5), c = hash(x, seed, 23) > 0.5 ? 0x5a4630 : 0x7a6244;
+    P.vl(x, y - h + 1, h, c);
+    if (hash(x, seed, 24) > 0.6) P.px(x + (hash(x, seed, 25) > 0.5 ? 1 : -1), y - h, 0x4a3a28);
+  }
+}
+function paintFlowerBox(P, w, seed, cols, style, bare = false) {
   const x0 = -(w >> 1), x1 = x0 + w - 1;
   const pal = style === 'zink' ? STEEL : style === 'svart' ? IRON : WOOD;
-  for (let i = 0; i < Math.ceil(w / 5); i++) {
-    const cx = x0 + 2 + i * 5 + Math.round(hash(i, seed, 1) * 2);
-    paintCrown(P, cx, -10, 3.4, 3 + hash(i, seed, 2) * 1.6, LEAVES, seed + i * 13, { clumps: 3, inner: 1, lift: 0.05 });
-  }
-  for (let i = 0; i < w - 1; i += 2) {
-    if (hash(i, seed, 5) < 0.3) continue;
-    const x = x0 + 1 + i, y = -11 - Math.round(hash(i, seed, 6) * 4);
-    bloom(P, x, y, FL[cols[Math.floor(hash(i, seed, 7) * cols.length)]], hash(i, seed, 8) > 0.6 ? 1 : 0);
+  if (bare) dryTwigs(P, x0 + 1, x1 - 1, -8, seed);
+  else {
+    for (let i = 0; i < Math.ceil(w / 5); i++) {
+      const cx = x0 + 2 + i * 5 + Math.round(hash(i, seed, 1) * 2);
+      paintCrown(P, cx, -10, 3.4, 3 + hash(i, seed, 2) * 1.6, LEAVES, seed + i * 13, { clumps: 3, inner: 1, lift: 0.05 });
+    }
+    for (let i = 0; i < w - 1; i += 2) {
+      if (hash(i, seed, 5) < 0.3) continue;
+      const x = x0 + 1 + i, y = -11 - Math.round(hash(i, seed, 6) * 4);
+      bloom(P, x, y, FL[cols[Math.floor(hash(i, seed, 7) * cols.length)]], hash(i, seed, 8) > 0.6 ? 1 : 0);
+    }
   }
   for (let y = -7; y <= 0; y++) for (let x = x0; x <= x1; x++) {
     let v = 0.64 - ((x - x0) / w) * 0.3 + (y === -7 ? 0.28 : 0) - (y === 0 ? 0.3 : 0);
@@ -442,14 +467,14 @@ function paintFlowerBox(P, w, seed, cols, style) {
     P.px(x, y, tone(pal, v, x, y));
   }
   P.hl(x0 + 1, -8, w - 2, SOIL[2]);
-  for (let i = 1; i < w - 1; i++) if (hash(i, seed, 9) > 0.8) {
+  if (!bare) for (let i = 1; i < w - 1; i++) if (hash(i, seed, 9) > 0.8) {
     const x = x0 + i, len = 1 + Math.floor(hash(i, seed, 10) * 3);
     for (let k = 0; k < len; k++) P.px(x, -6 + k, k === len - 1 && hash(i, seed, 11) > 0.5 ? FL[cols[0]][1] : LEAVES[4 - (k & 1)]);
   }
   outline(P, 0x141018, 0x141018, 0.45);
   groundShadow(P, 2, 0, w / 2 + 2, 2.5);
 }
-function paintPot(P, plant, seed) {
+function paintPot(P, plant, seed, bare = false) {
   if (plant === 'klot') {
     paintCrown(P, 0, -17, 6.5, 6.5, BOX, seed, { clumps: 7, inner: 2 });
   } else if (plant === 'kon') {
@@ -469,7 +494,7 @@ function paintPot(P, plant, seed) {
     }
   } else if (plant === 'pelargon') {
     paintCrown(P, 0, -14, 7, 5, LEAVES, seed, { clumps: 6, inner: 2, lift: 0.05 });
-    for (let i = 0; i < 7; i++) bloom(P, -5 + Math.round(hash(i, seed, 3) * 10), -19 + Math.round(hash(i, seed, 4) * 6), FL[i % 3 ? 'red' : 'pink'], 1);
+    if (!bare) for (let i = 0; i < 7; i++) bloom(P, -5 + Math.round(hash(i, seed, 3) * 10), -19 + Math.round(hash(i, seed, 4) * 6), FL[i % 3 ? 'red' : 'pink'], 1);
   } else if (plant === 'palm') {
     for (let y = -24; y <= -10; y++) { P.px(0, y, (y & 1) ? 0x7a5a3a : 0x5a3e26); P.px(1, y, 0x3e2a1a); }
     const F = [0x1e5a24, 0x2e7a30, 0x4a9a3e, 0x74b852];
@@ -496,11 +521,12 @@ function paintPot(P, plant, seed) {
   P.hl(-5, -10, 10, SOIL[1]); P.px(-6, -10, GRANITE[4]);
   groundShadow(P, 3, 0, 9, 2.4);
 }
-function paintBed(P, w, seed, rows) {
+function paintBed(P, w, seed, rows, bare = false) {
   const x0 = -(w >> 1), x1 = x0 + w - 1, D = 9;
   for (let y = -D; y <= -2; y++) for (let x = x0 + 1; x < x1; x++) P.px(x, y, tone(SOIL, 0.45 + (hash(x, y, seed) - 0.5) * 0.6, x, y));
   for (let x = x0; x <= x1; x++) P.px(x, -D - 1, tone(GRANITE, 0.75 - ((x - x0) % 5 === 0 ? 0.3 : 0) + (hash(x, 2, seed) - 0.5) * 0.1, x, -D - 1));
   for (let y = -D; y <= 0; y++) { P.px(x0, y, GRANITE[3]); P.px(x1, y, GRANITE[1]); }
+  if (bare) { dryTwigs(P, x0 + 2, x1 - 2, -D + 3, seed, 3); dryTwigs(P, x0 + 3, x1 - 2, -3, seed + 1, 3); }
   rows.forEach((col, r) => {
     const yb = -D + 2 + r * 2, kind = col === 'white' ? 1 : col === 'blue' ? 0 : 2;
     for (let x = x0 + 2 + (r & 1); x < x1 - 1; x += 2) {
@@ -517,21 +543,61 @@ function paintBed(P, w, seed, rows) {
   }
   groundShadow(P, 2, 1, w / 2 + 1, 2);
 }
-function paintHedge(P, w, h, seed) {
-  const x0 = -(w >> 1), x1 = x0 + w - 1, top = -h - 4;
-  for (let y = top; y <= -1; y++) for (let x = x0; x <= x1; x++) {
-    if (y === top && (x === x0 || x === x1)) continue;
-    if (y === top + 1 && (x === x0 || x === x1) && hash(x, y, seed) > 0.5) continue;
-    const onTop = y < -h;
-    let v = onTop ? 0.86 - (y - top) * 0.06 : 0.6 - ((y + h) / h) * 0.4;
-    v += (hash(x >> 1, y >> 1, seed) - 0.5) * 0.3 + (hash(x, y, seed + 1) - 0.5) * 0.12;
-    if (x === x0) v += 0.1; if (x >= x1 - 1) v -= 0.2;
-    P.px(x, y, tone(BOX, v, x, y));
+// worn (förorten): oklippt och ojämn topp, bruna döda fläckar, ett genomtrampat hål och skräp vid foten
+const DEAD = [0x2a1e10, 0x4a3818, 0x6a5426, 0x8a7036, 0xa88a48];
+function paintHedge(P, w, h, seed, worn = false) {
+  const x0 = -(w >> 1), x1 = x0 + w - 1;
+  const hole = worn ? x0 + 6 + Math.floor(hash(seed, 1, 81) * Math.max(1, w - 16)) : -999; // genomtrampat hål (4 px brett)
+  for (let x = x0; x <= x1; x++) {
+    const tp = worn ? -h - 4 + Math.round((hash(x >> 2, 0, seed + 82) - 0.35) * 4) + (hash(x, 1, seed + 83) > 0.8 ? -2 : 0) : -h - 4;
+    for (let y = tp; y <= -1; y++) {
+      if (!worn && y === tp && (x === x0 || x === x1)) continue;
+      if (y === tp + 1 && (x === x0 || x === x1) && hash(x, y, seed) > 0.5) continue;
+      if (worn && x >= hole && x < hole + 4 && y > -h + 1) continue;
+      const onTop = y < tp + 4;
+      let v = onTop ? 0.86 - (y - tp) * 0.06 : 0.6 - ((y + h) / h) * 0.4;
+      v += (hash(x >> 1, y >> 1, seed) - 0.5) * 0.3 + (hash(x, y, seed + 1) - 0.5) * 0.12;
+      if (x === x0) v += 0.1; if (x >= x1 - 1) v -= 0.2;
+      const dead = worn && hash(x >> 2, y >> 2, seed + 84) > 0.72;
+      P.px(x, y, tone(dead ? DEAD : BOX, v, x, y));
+    }
   }
-  for (let x = x0 + 1; x < x1; x++) if (hash(x, 0, seed + 3) > 0.62) P.px(x, top - 1, BOX[4]);
-  for (let x = x0 + 2; x < x1 - 1; x += 3) if (hash(x, 1, seed + 4) > 0.7) P.px(x, top + 4 + Math.floor(hash(x, 2, seed) * (h - 2)), BOX[5]);
+  const top = -h - 4;
+  if (!worn) for (let x = x0 + 1; x < x1; x++) if (hash(x, 0, seed + 3) > 0.62) P.px(x, top - 1, BOX[4]);
+  for (let x = x0 + 2; x < x1 - 1; x += 3) if (hash(x, 1, seed + 4) > 0.7) P.px(x, top + 4 + Math.floor(hash(x, 2, seed) * (h - 2)), worn ? DEAD[4] : BOX[5]);
+  if (worn) {
+    // spretiga skott som ingen klippt, kvistar genom hålet
+    for (let x = x0 + 2; x < x1 - 1; x += 5) if (hash(x, 3, seed + 85) > 0.45) P.line(x, top + 1, x + Math.round((hash(x, 4, seed) - 0.5) * 4), top - 3 - Math.floor(hash(x, 5, seed) * 3), BOX[3]);
+    P.line(hole, -3, hole + 3, -6, DEAD[1]); P.px(hole + 1, -2, DEAD[2]);
+  }
   outline(P, BOX[0], BOX[1], 0.7);
+  if (worn) {
+    P.rect(hole + 5, -3, 3, 3, 0xe8e0c8); P.px(hole + 6, -2, 0xd02020);                  // mjölkpaket
+    P.px(x1 - 5, -1, 0x3a8a3a); P.px(x1 - 4, 0, 0x3a8a3a); P.px(x0 + 4, 0, 0xc8c0a8);   // flaska, papper
+    P.rect(x0 + 8, -h - 1, 3, 2, 0xf4f4f8, 0.85); P.px(x0 + 9, -h + 1, 0xd8d8e0);         // plastpåse i häcken
+  }
   groundShadow(P, 3, 0, w / 2 + 3, 2.6, 0.32);
+}
+// snår (förorten): ovårdad buske med döda grenar, en fastblåst påse – kala kvistar på vintern
+const SCRUB = { grön: [0x16200e, 0x243214, 0x36481c, 0x4e6226, 0x6a7c34, 0x8c9a48], höst: [0x2e200a, 0x4e3812, 0x72541a, 0x967424, 0xb89434, 0xd2b04a] };
+function paintScrub(P, seed, season) {
+  if (season === 'vinter') {
+    paintBare(P, { top: -9, ry: 17, bark: [0x241a12, 0x42342a, 0x625444, 0x827462] }, seed);
+    for (let x = -5; x <= 5; x += 2) if (hash(x, seed, 86) > 0.5) P.px(x, 0, 0x5a4a38);
+  } else {
+    paintCrown(P, 0, -8, 11, 8, season === 'höst' ? SCRUB.höst : SCRUB.grön, seed, { clumps: 8, inner: 3, holes: 0.06, rough: 1.8 });
+    // döda grenar som sticker ut och bruna fläckar
+    for (let i = 0; i < 4; i++) {
+      const a = -Math.PI * (0.15 + hash(i, seed, 87) * 0.7), r0 = 5, r1 = 12 + hash(i, seed, 88) * 4;
+      P.line(Math.round(Math.cos(a) * r0), Math.round(-8 + Math.sin(a) * r0 * 0.7), Math.round(Math.cos(a) * r1), Math.round(-8 + Math.sin(a) * r1 * 0.75), DEAD[1 + (i & 1)]);
+    }
+    for (let i = 0; i < 6; i++) { const x = -8 + Math.floor(hash(i, seed, 89) * 16), y = -13 + Math.floor(hash(i, seed, 90) * 10); P.px(x, y, DEAD[3]); P.px(x + 1, y, DEAD[2]); }
+    outline(P, 0x10160a, 0x1a2410, 0.7);
+  }
+  // fastblåst plastpåse och en burk vid roten
+  if (hash(seed, 2, 91) > 0.35) { P.rect(3, -12, 4, 3, 0xf0f0f4, 0.9); P.px(4, -9, 0xd0d0d8); P.px(7, -13, 0xffffff); P.px(5, -11, 0x3a7bd5); }
+  P.rect(-7, -2, 3, 2, 0xc02828); P.px(-7, -2, 0xe8e8e8);
+  groundShadow(P, 4, 1, 12, 3, 0.28);
 }
 function paintBush(P, seed, flowers) {
   paintCrown(P, 0, -7, 9, 7, LEAVES, seed, { clumps: 7, inner: 3 });
@@ -584,6 +650,8 @@ function paintCafeSet(P, canopy) {
   outline(P, 0x1a1418, 0x1a1418, 0.35);
   groundShadow(P, 3, 0, 16, 4.5, 0.26);
 }
+// (Burgarbarens menyställ ritas numera av fasaden i buildings-work.js – BURGARE_STAND –
+//  så props har ingen egen variant. Kafémenyn nedan är kaféets trottoartavla.)
 function paintMenuBoard(P) {
   const x0 = -10, w = 21, top = -21;
   P.line(x0 + 1, -4, x0 - 1, 0, WOOD[1]); P.line(x0 + w - 2, -4, x0 + w, 0, WOOD[0]);
@@ -813,7 +881,7 @@ function paintPoster(P) {
   text(P, SMALL, '990:-', 11, -7, 0xfff080);
   P.box(x0 - 1, y0 - 1, 21, y1 - y0 + 3, 0x9aa2aa);
 }
-function paintShelterBack(P) {
+function paintShelterBack(P, poster = paintPoster) {
   // bakvägg: aluminiumram, glas med prickband, reklamlåda till höger
   for (let y = -35; y <= 0; y++) for (let x = -29; x <= 6; x++) {
     const s = x + Math.round(y * 0.7) + 60;
@@ -825,7 +893,7 @@ function paintShelterBack(P) {
   for (const x of [-31, 7, 30]) for (let y = -36; y <= 0; y++) { P.px(x, y, STEEL[3]); P.px(x + 1, y, STEEL[1]); }
   P.hl(-31, -36, 63, STEEL[4]); P.hl(-31, 0, 63, STEEL[1]); P.hl(-29, -1, 36, STEEL[0], 0.6);
   P.rect(9, -35, 21, 35, 0x1e2228); P.hl(9, -35, 21, 0x4a525c);
-  paintPoster(P);
+  poster(P);
   // bänken längs väggen
   slat(P, -27, -3, 30, 0.1); slat(P, -27, -1, 30, 0);
   P.hl(-27, 1, 30, WOOD[0]);
@@ -967,6 +1035,697 @@ function paintFountainGlow(P) {
   P.ell(0, -4, 30, 8, 0x5ac0ff, 0.18, 4);
 }
 
+// =====================================================================
+// v2: årstider, snö, slitage och rekvisita för Söder, parken, Infarten och förorten
+// =====================================================================
+let ENV = null;                                                   // env från createProps (väder, tid)
+const seasonNow = () => ENV?.weather?.season || 'sommar';
+const snowNow = () => (ENV?.weather?.snowCover || 0) > 0.5;
+const RUST = [0x2e140a, 0x5a2810, 0x8a4418, 0xb86a2a, 0xd89050];
+const CHAIN = [0x24282c, 0x3e444a, 0x5e666e, 0x848c94, 0xaab2ba];
+const BAG = [0x0a0a0e, 0x16161c, 0x26262e, 0x3a3a44, 0x54545e];
+const TAGS = [0xff2e6a, 0x36d6ff, 0xffe030, 0x7cff3a, 0xff7a1e, 0xc860ff, 0xffffff];
+const GRASS = [0x2e5a22, 0x3e7a2c, 0x56983a, 0x78b44e, 0xa0cc6a];
+
+// Snö på allt som har en ovansida: en kopia av spriten där varje pixel med
+// tom pixel ovanför får 1–3 px vitt. Görs lat och cachas på spriten (s.snow).
+function snowify(s) {
+  const w = s.w, h = s.h + 3, c = document.createElement('canvas'); c.width = w; c.height = h;
+  const g = c.getContext('2d'); g.drawImage(s.img, 0, 3);
+  const im = g.getImageData(0, 0, w, h), d = im.data;
+  const A = (x, y) => x >= 0 && y >= 0 && x < w && y < h && d[(y * w + x) * 4 + 3] > 200;
+  const set = (x, y, col) => { const i = (y * w + x) * 4; d[i] = (col >> 16) & 255; d[i + 1] = (col >> 8) & 255; d[i + 2] = col & 255; d[i + 3] = 255; };
+  const caps = [];
+  for (let y = 1; y < h; y++) for (let x = 0; x < w; x++) if (A(x, y) && !A(x, y - 1)) caps.push(x, y);
+  for (let i = 0; i < caps.length; i += 2) {
+    const x = caps[i], y = caps[i + 1], hs = hash(x, y, 909);
+    if (hs < 0.1) continue;
+    set(x, y, hs > 0.72 ? 0xffffff : 0xe4ecf8);
+    if (hs > 0.3 && !A(x, y - 1)) set(x, y - 1, hs > 0.82 ? 0xffffff : 0xd8e2f0);
+    if (hs > 0.88 && y >= 2 && !A(x, y - 2)) set(x, y - 2, 0xf4f8ff);
+  }
+  g.putImageData(im, 0, 0);
+  return { img: c, ax: s.ax, ay: s.ay + 3, w, h };
+}
+const snowOf = (s) => s.snow || (s.snow = snowify(s));
+function putW(ctx, s, x, y) { put(ctx, snowNow() ? snowOf(s) : s, x, y); }
+// fylld ellips (pixelrund)
+function disc(P, cx, cy, rx, ry, c, a = 1) {
+  for (let y = Math.floor(cy - ry); y <= cy + ry; y++) for (let x = Math.floor(cx - rx); x <= cx + rx; x++) {
+    if (((x + 0.5 - cx) / rx) ** 2 + ((y + 0.5 - cy) / ry) ** 2 < 1) P.px(x, y, c, a);
+  }
+}
+// klotter: tag med kontur och rinningar, och "throw-up" (bubbliga klumpar)
+function tag(P, x, y, s, col, out = 0x101014, drip = true) {
+  for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1]]) text(P, SMALL, s, x + dx, y + dy, out);
+  text(P, SMALL, s, x, y, col);
+  if (drip) for (let i = 0; i < textW(SMALL, s); i += 5) if (hash(i, x, y) > 0.5) P.vl(x + i + 1, y + 5, 1 + Math.floor(hash(i, y, x) * 3), col, 0.8);
+}
+function throwUp(P, x, y, w, col, seed) {
+  for (let pass = 0; pass < 2; pass++) for (let i = 0; i < w; i += 5) {
+    const r = 2 + hash(i, seed, 1) * 1.5, cy = y + (hash(i, seed, 2) - 0.5) * 2;
+    if (pass === 0) disc(P, x + i, cy, r + 1.2, r * 0.9 + 1.1, 0x101014);
+    else { disc(P, x + i, cy, r, r * 0.9, col); P.px(x + i - 1, Math.round(cy) - 1, mix(col, 0xffffff, 0.5)); }
+  }
+}
+
+// ---------- årstidens träd ----------
+const AUTUMN = {
+  lind: [0x4a3a08, 0x7a5c10, 0xa88418, 0xd0a828, 0xe8c840, 0xf8e070],
+  bjork: [0x4e3c0a, 0x806410, 0xb08c18, 0xd8b028, 0xf0cc48, 0xfce890],
+  ek: [0x3a1e0a, 0x60300e, 0x8a4a18, 0xb06a24, 0xcc8c36, 0xe0ac58],
+  lonn: [0x4a1008, 0x7c1c0c, 0xb03a14, 0xd8601c, 0xf08c2c, 0xf8b850],
+  korsbar: [0x4a1a08, 0x7c2e0c, 0xb0501a, 0xd87828, 0xf0a040, 0xf8c870],
+};
+const SPRING = {
+  lind: [0x1c3a1a, 0x2e5c22, 0x48802e, 0x68a43c, 0x90c454, 0xbce07c],
+  bjork: [0x2a4a1a, 0x447024, 0x649830, 0x8cbc44, 0xb4d860, 0xdcf090],
+  ek: [0x1a3216, 0x2c5020, 0x44702c, 0x62923a, 0x86b052, 0xb0cc74],
+  lonn: [0x22401a, 0x386022, 0x54842e, 0x76a63e, 0x9cc456, 0xc4dc7c],
+};
+const SUMMER_CHERRY = [0x14301a, 0x22481e, 0x346a28, 0x4a8a34, 0x6aa848, 0x94c866];
+function seasonTree(kind, season) {
+  const T = { ...TREE[kind] };
+  if (T.spruce) return T;
+  if (season === 'höst') { T.pal = AUTUMN[kind]; T.bloom = 0; }
+  else if (season === 'vår') { if (kind !== 'korsbar') T.pal = SPRING[kind]; }
+  else if (season === 'sommar' && kind === 'korsbar') { T.pal = SUMMER_CHERRY; T.bloom = 0.035; T.bloomCol = [0xc01828, 0xe83040, 0x8a0c1a]; }
+  else if (season === 'vinter') T.bare = true;
+  return T;
+}
+// kal krona: grenverk som förgrenar sig uppåt ur stammen
+function paintBare(P, T, seed, bark = T.bark) {
+  const branch = (x, y, ang, len, d, s) => {
+    const x1 = x + Math.cos(ang) * len, y1 = y + Math.sin(ang) * len;
+    P.line(x, y, x1, y1, d >= 3 ? bark[1] : bark[0]);
+    if (d >= 3) P.line(x - 1, y, x1 - 1, y1, bark[2]);
+    if (d >= 4) P.line(x + 1, y, x1 + 1, y1, bark[0]);
+    if (d <= 0 || len < 2.5) { if (hash(s, 1, seed) > 0.4) P.px(Math.round(x1), Math.round(y1) - 1, bark[1]); return; }
+    const n = 2 + (hash(s, d, seed) > 0.55 ? 1 : 0);
+    for (let i = 0; i < n; i++) {
+      const a = ang + (hash(s, i, seed + d) - 0.5) * 1.6 + (i - (n - 1) / 2) * 0.35;
+      branch(x1, y1, Math.max(-Math.PI + 0.3, Math.min(-0.3, a)), len * (0.58 + hash(s, i, seed + 9) * 0.22), d - 1, s * 3 + i + 1);
+    }
+  };
+  branch(0, T.top + 5, -Math.PI / 2 + (hash(seed, 2, 3) - 0.5) * 0.3, T.ry * 0.62, 4, 1);
+  branch(0, T.top + 9, -Math.PI / 2 - 0.9, T.ry * 0.4, 2, 7);
+  branch(1, T.top + 8, -Math.PI / 2 + 0.85, T.ry * 0.42, 2, 11);
+}
+function makeSeasonTree(kind, seed, grate, season) {
+  const T = seasonTree(kind, season);
+  const bw = 2 * (T.rx + 10), bah = -T.top + 12;
+  const base = spr(bw, bah + 8, T.rx + 10, bah, (P) => {
+    if (grate) paintGrate(P);
+    paintTrunk(P, T.top, T.w, T.bark, T.birch, seed);
+    if (!T.spruce && !T.bare) {
+      const b = T.bark;
+      P.line(0, T.top + 8, -Math.round(T.rx * 0.45), T.top - 3, b[1]);
+      P.line(1, T.top + 6, Math.round(T.rx * 0.5), T.top - 5, b[1]);
+      P.line(0, T.top + 3, -2, T.top - 9, b[2]);
+    }
+    if (!grate) {
+      P.px(-3, 0, T.bark[1]); P.px(3, 0, T.bark[0]);
+      if (season !== 'vinter') for (let x = -6; x <= 6; x++) if (hash(x, 0, seed) > 0.55) P.px(x, 1, hash(x, 1, seed) > 0.5 ? 0x4a8a34 : 0x2e6a26);
+    }
+    if (T.petals && season === 'vår') for (let i = 0; i < 22; i++) {
+      const a = hash(i, seed, 41) * Math.PI * 2, r = 0.35 + hash(i, seed, 42) * 0.65;
+      P.px(Math.round(Math.cos(a) * T.rx * 0.9 * r) + 3, Math.round(Math.sin(a) * 5 * r) + 1, hash(i, seed, 43) > 0.5 ? 0xffd4e2 : 0xf09ab8);
+    }
+    if (season === 'höst' && !T.spruce) for (let i = 0; i < 30; i++) { // nedfallna löv
+      const a = hash(i, seed, 51) * Math.PI * 2, r = 0.3 + hash(i, seed, 52) * 0.7;
+      P.px(Math.round(Math.cos(a) * T.rx * 1.1 * r) + 2, Math.round(Math.sin(a) * 6 * r) + 1, T.pal[2 + Math.floor(hash(i, seed, 53) * 3)]);
+    }
+    groundShadow(P, 5, 1, T.rx * 0.9, 3.8, season === 'vinter' ? 0.16 : 0.32);
+  });
+  const cw = 2 * T.rx + 9, ch = 2 * T.ry + 9;
+  const crown = spr(cw, ch, T.rx + 4, T.ry + 4 - T.cy, (P) => {
+    if (T.bare) { paintBare(P, T, seed); return; }
+    if (T.spruce) paintSpruce(P, T, seed);
+    else paintCrown(P, 0, T.cy, T.rx, T.ry, T.pal, seed, T);
+    if (T.birch) {
+      for (let x = -T.rx + 1; x < T.rx; x++) {
+        if (hash(x, seed, 31) < 0.45) continue;
+        let yl = null;
+        for (let yy = P.h - 1; yy >= 0; yy--) if (P.d[(yy * P.w + x - P.ox) * 4 + 3] > 200) { yl = yy + P.oy; break; }
+        if (yl === null) continue;
+        const len = Math.min(2 + Math.floor(hash(x, seed, 32) * 5), P.oy + P.h - 3 - yl);
+        for (let k = 1; k <= len; k++) if (hash(x, k, seed + 33) > 0.2) P.px(x, yl + k, T.pal[(k & 1) ? 3 : 2]);
+      }
+    }
+    outline(P, T.pal[0], mix(T.pal[0], T.pal[1], 0.5), 0.8);
+  });
+  return { base, crown, T };
+}
+// dött träd (förorten): kalt året runt, grå bark, en plastpåse fast i en gren
+function paintDeadTree(P, seed) {
+  const T = { top: -30, ry: 18, rx: 16, bark: [0x2a2622, 0x4a443c, 0x6a625a, 0x8a827a] };
+  paintTrunk(P, T.top, 3, T.bark, false, seed);
+  paintBare(P, T, seed, T.bark);
+  P.rect(-9, -44, 4, 3, 0xe8e8f0, 0.9); P.px(-8, -41, 0xc8c8d0); P.px(-6, -45, 0xffffff);
+  groundShadow(P, 3, 1, 8, 2.6, 0.2);
+}
+
+// ---------- staket, murar och plank ----------
+const FENCE_H = { mur: 10, tra: 12, chain: 18 };
+// vågrät sträcka: x 0..w, fotlinje y = 0. isOpen(x) = grindöppning
+function paintFenceRun(P, w, style, seed, isOpen, worn = 0) {
+  const H = FENCE_H[style];
+  for (let x = 0; x < w; x++) {
+    if (isOpen(x)) continue;
+    const opened = (x > 0 && isOpen(x - 1)) || (x < w - 1 && isOpen(x + 1));
+    if (style === 'mur') {
+      for (let y = -H; y <= 0; y++) {
+        let v = y === -H ? 0.95 : y === -H + 1 ? 0.78 : y === 0 ? 0.28 : 0.62 - ((y + H) / H) * 0.15;
+        const row = Math.floor((y + H) / 3), joint = ((x + row * 4) % 8) === 0 || (y + H) % 3 === 2;
+        if (joint && y > -H + 1 && y < 0) v -= 0.3;
+        v += (hash(x, y, seed) - 0.5) * 0.12; if (hash(x, y, seed + 1) > 0.94) v -= 0.2;
+        P.px(x, y, tone(STONE, v, x, y));
+      }
+      if (hash(x, 0, seed + 2) > 0.85) P.px(x, -H + 2 + Math.floor(hash(x, 1, seed) * 6), 0x5a7a34);
+      if (opened) { for (let y = -H - 4; y <= 0; y++) for (let i = 0; i < 3; i++) P.px(x + (isOpen(x + 1) ? -i : i), y, tone(GRANITE, 0.85 - i * 0.28, x + i, y)); }
+    } else if (style === 'tra') {
+      if (x % 3 === 0) { for (let y = -H; y <= 0; y++) P.px(x, y, tone(WOOD, 0.72 - ((y + H) / H) * 0.2 + (hash(x, y >> 1, seed) - 0.5) * 0.2, x, y)); P.px(x, -H, WOOD[4]); }
+      else { P.px(x, -H + 3, WOOD[x % 3 === 1 ? 1 : 2]); P.px(x, -4, WOOD[x % 3 === 1 ? 1 : 2]); }
+      if (x % 24 === 0 || opened) for (let y = -H - 2; y <= 0; y++) { P.px(x, y, WOOD[3]); P.px(x + 1, y, WOOD[1]); }
+    } else {
+      const sag = worn ? Math.round(Math.sin(((x % 48) / 48) * Math.PI) * 2 * (hash(x >> 5, 0, seed) > 0.5 ? 1 : 0)) : 0;
+      const top = -H + sag, hole = worn && hash(x >> 3, 0, seed + 3) > 0.9;
+      P.px(x, top, CHAIN[4]); P.px(x, top + 1, CHAIN[2]);
+      for (let y = top + 2; y <= 0; y++) {
+        if (hole && y < -4 && y > top + 4) continue;
+        const d1 = ((x + y) % 4 + 4) % 4 === 0, d2 = ((x - y) % 4 + 4) % 4 === 0;
+        if (d1 || d2) P.px(x, y, d1 ? CHAIN[3] : CHAIN[2], 0.72);
+      }
+      P.px(x, 0, CHAIN[1], 0.8);
+      if (x % 24 === 0 || opened) {
+        for (let y = -H - 2; y <= 0; y++) { P.px(x, y, worn && hash(x, y, seed + 4) > 0.75 ? RUST[2] : CHAIN[3]); P.px(x + 1, y, worn && hash(x, y, seed + 5) > 0.8 ? RUST[1] : CHAIN[1]); }
+        P.hl(x - 1, -H - 3, 4, CHAIN[4]);
+      }
+    }
+  }
+}
+// lodrät sträcka sedd på kant: x = 0, y 0..h
+function paintFenceSide(P, h, style, seed, isOpen, worn = 0) {
+  const H = FENCE_H[style];
+  const post = (y, a, b) => { for (let k = 0; k <= H + 2; k++) { P.px(0, y - k, a); P.px(1, y - k, b); } P.hl(-1, y - H - 3, 4, a); };
+  for (let y = 0; y < h; y++) {
+    if (isOpen(y)) continue;
+    if (style === 'mur') { for (let i = 0; i < 4; i++) P.px(i, y, tone(STONE, 0.88 - i * 0.22 + (hash(i, y, seed) - 0.5) * 0.15, i, y)); if (y === 0) for (let k = 1; k <= H; k++) for (let i = 0; i < 4; i++) P.px(i, -k, tone(STONE, 0.8 - i * 0.2, i, -k)); }
+    else if (style === 'tra') { P.px(0, y, WOOD[3]); P.px(1, y, WOOD[1]); if (y % 24 === 0) post(y, WOOD[3], WOOD[1]); }
+    else { P.px(0, y, CHAIN[3], (y % 2) ? 0.55 : 0.9); P.px(1, y, CHAIN[1], 0.5); if (y % 24 === 0) post(y, worn && hash(0, y, seed) > 0.6 ? RUST[2] : CHAIN[3], CHAIN[1]); }
+  }
+}
+// klotterplank: plank med stolpar, fullt med tags
+function paintGraffitiWall(P, w, seed) {
+  const H = 22, x0 = -(w >> 1);
+  for (let x = x0; x < x0 + w; x++) for (let y = -H; y <= 0; y++) {
+    let v = 0.62 - ((y + H) / H) * 0.12 + (hash(x >> 2, y, seed) - 0.5) * 0.16;
+    if ((x - x0) % 6 === 5) v -= 0.3; if (y === -H) v += 0.25; if (y === 0) v -= 0.3;
+    if (hash(x, y, seed + 1) > 0.96) v -= 0.25;
+    P.px(x, y, tone([0x2a2420, 0x4a3e34, 0x6a5a4a, 0x8a7a66, 0xa89a84], v, x, y));
+  }
+  for (let x = x0; x < x0 + w; x += 36) { for (let y = -H - 3; y <= 0; y++) { P.px(x, y, 0x5a5048); P.px(x + 1, y, 0x2e2822); } }
+  const words = ['ZOK', 'BTG', 'PIX', 'KRAM', '4EVER', 'VILD', 'OJ', 'BLING', 'SNABB', 'NEJ'];
+  let x = x0 + 4, k = 0;
+  while (x < x0 + w - 16) {
+    const wd = words[Math.floor(hash(k, seed, 7) * words.length)], col = TAGS[Math.floor(hash(k, seed, 8) * TAGS.length)];
+    if (hash(k, seed, 9) > 0.4) tag(P, x, -H + 5 + Math.floor(hash(k, seed, 10) * 8), wd, col);
+    else throwUp(P, x + 3, -H + 8 + Math.floor(hash(k, seed, 10) * 6), 12 + Math.floor(hash(k, seed, 11) * 12), col, seed + k);
+    x += textW(SMALL, wd) + 8 + Math.floor(hash(k, seed, 12) * 10); k++;
+  }
+  // krona, hjärta, pil
+  const hx = x0 + w - 14; P.px(hx, -8, 0xff2e6a); P.px(hx + 2, -8, 0xff2e6a); P.hl(hx - 1, -7, 5, 0xff2e6a); P.hl(hx, -6, 3, 0xff2e6a); P.px(hx + 1, -5, 0xff2e6a);
+  P.hl(x0 + 6, -4, 10, 0xffe030); P.px(x0 + 16, -5, 0xffe030); P.px(x0 + 16, -3, 0xffe030);
+  groundShadow(P, 2, 0, w / 2, 2.4, 0.22);
+}
+
+// ---------- busskurer (Flygplatsen, Söderkyrkan) och den trasiga (Betongtorget) ----------
+function paintPosterBio(P) {
+  const x0 = 10, x1 = 28, y0 = -33, y1 = -3;
+  for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) P.px(x, y, mix(0x1a0a2e, 0x4a1a6e, (y - y0) / 30 + (bayer(x, y) - 0.5) * 0.15));
+  for (let i = 0; i < 14; i++) P.px(x0 + Math.floor(hash(i, 1, 61) * 19), y0 + Math.floor(hash(i, 2, 61) * 12), 0xfff0a0);
+  disc(P, 19, -21, 5, 5, 0xf8e070); disc(P, 19, -21, 3, 3, 0x1a0a2e); P.px(17, -23, 0xffffff);
+  text(P, SMALL, 'BIO', 14, -16, 0xff5ab0); text(P, SMALL, 'PIXEL', 10, -10, 0xffffff);
+  P.rect(x0, -7, 19, 5, 0xd02030); P.hl(x0, -7, 19, 0xe84a50); text(P, SMALL, 'NU!', 15, -7, 0xfff080);
+  P.box(x0 - 1, y0 - 1, 21, y1 - y0 + 3, 0x9aa2aa);
+}
+function paintPosterGlass(P) {
+  const x0 = 10, x1 = 28, y0 = -33, y1 = -3;
+  for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) P.px(x, y, mix(0xffd6e8, 0xffa0c8, (y - y0) / 30 + (bayer(x, y) - 0.5) * 0.15));
+  // strut med tre kulor
+  P.line(15, -8, 19, -19, 0xc88a3a); P.line(23, -8, 19, -19, 0xa86a2a); for (let y = -18; y <= -9; y++) P.hl(19 - Math.round((y + 8) * 0.36), y, 1 + Math.round((y + 8) * 0.72), 0xe8b060);
+  disc(P, 19, -22, 4, 3.5, 0xf6f0d8); disc(P, 16, -26, 3.5, 3.2, 0xf4b0c0); disc(P, 22, -27, 3.5, 3.2, 0x7a4a2a); P.px(21, -29, 0xa87a5a); P.px(15, -28, 0xffffff);
+  text(P, SMALL, 'GLASS', 10, -14 + 8, 0x8a2050);
+  P.rect(x0, -7, 19, 5, 0x1e7a3a); text(P, SMALL, '25:-', 13, -7, 0xffffff);
+  P.box(x0 - 1, y0 - 1, 21, y1 - y0 + 3, 0x9aa2aa);
+}
+function paintBrokenShelterBack(P) {
+  const post = (x, bend) => { for (let y = -36; y <= 0; y++) { const dx = bend ? Math.round(((-y) / 36) * bend) : 0; P.px(x + dx, y, hash(x, y, 501) > 0.8 ? RUST[2] : STEEL[2]); P.px(x + dx + 1, y, hash(x, y, 502) > 0.85 ? RUST[1] : STEEL[0]); } };
+  // vänster ruta: bara delar kvar, resten krossat
+  for (let y = -35; y <= 0; y++) for (let x = -29; x <= 6; x++) {
+    const gone = (y > -18 && hash(x >> 1, y >> 1, 503) < 0.55) || (x > -8 && y > -30 && hash(x >> 2, y >> 2, 504) < 0.35);
+    if (gone) continue;
+    const s = x + Math.round(y * 0.7) + 60, hi = s === 44 || s === 45;
+    P.px(x, y, hi ? 0xf0faff : 0xbfe2f2, hi ? 0.4 : 0.22);
+  }
+  for (let k = 0; k < 7; k++) { const a = k * 0.9 + 0.3; P.line(-12, -14, -12 + Math.cos(a) * 16, -14 + Math.sin(a) * 14, 0xe8f4ff, 0.75); }
+  for (let r = 4; r <= 12; r += 4) for (let a = 0; a < 6.28; a += 0.45) P.px(-12 + Math.cos(a) * r, -14 + Math.sin(a) * r * 0.9, 0xe8f4ff, 0.5);
+  post(-31, 0); post(7, 2); post(30, 0);
+  P.hl(-31, -36, 63, STEEL[4]); P.hl(-31, -35, 63, STEEL[2]);
+  for (let x = -31; x < 32; x += 2) if (hash(x, 1, 505) > 0.6) P.px(x, -36, RUST[2]);
+  P.hl(-31, 0, 63, STEEL[1]);
+  // reklamlådan: sönderslagen lucka, halva affischen borta, papp bakom
+  P.rect(9, -35, 21, 35, 0x1e2228); P.hl(9, -35, 21, 0x4a525c); P.rect(10, -33, 19, 31, 0x8a8478);
+  for (let y = -33; y <= -3; y++) for (let x = 10; x <= 28; x++) if (y < -18 + Math.round(Math.sin(x * 0.8) * 3) && hash(x, y, 506) > 0.05) P.px(x, y, mix(0x2a70d8, 0x9ad8fa, (y + 33) / 15));
+  text(P, SMALL, 'FLY', 12, -30, 0xffffff);
+  P.line(11, -12, 27, -5, 0x2a2a30); P.line(12, -5, 26, -13, 0x2a2a30);
+  tag(P, 12, -16, 'ZOK', 0xff2e6a); tag(P, -26, -31, 'BTG', 0x36d6ff);
+  throwUp(P, -6, -7, 14, 0xffe030, 7);
+  // "UR FUNKTION"-lapp tejpad på mittstolpen, hänger snett
+  for (let y = -32; y <= -18; y++) for (let x = -10; x <= 28; x++) { const dy = x > 8 ? 1 : 0; P.px(x, y + dy, (y === -32 || y === -18 || x === -10 || x === 28) ? 0x8a8060 : 0xf6f0d8); }
+  text(P, SMALL, 'UR', -7, -30, 0x1a1a1e); text(P, SMALL, 'FUNKTION', -7, -23, 0xd02020);
+  P.rect(-11, -33, 5, 3, 0xd8d8c0, 0.85); P.rect(24, -32, 5, 3, 0xd8d8c0, 0.85);
+  // bänken: en planka kvar, en hänger ned
+  slat(P, -27, -3, 14, 0.1); P.hl(-27, 1, 14, WOOD[0]);
+  P.line(-12, -3, -2, 2, WOOD[1]); P.line(-12, -2, -2, 3, WOOD[0]);
+  for (const x of [-25, -14]) { P.vl(x, 2, 4, IRON[2]); P.vl(x + 1, 2, 4, IRON[1]); }
+  P.vl(0, 2, 4, IRON[1]);
+  // krossat glas och skräp på marken, vält papperskorg
+  for (let i = 0; i < 44; i++) { const x = -30 + Math.round(hash(i, 1, 507) * 40), y = 1 + Math.round(hash(i, 2, 507) * 5); P.px(x, y, hash(i, 3, 507) > 0.5 ? 0xe8f4ff : 0x9ac8e0, 0.9); }
+  P.rect(16, 2, 5, 3, 0xd8c8a0); P.px(17, 1, 0xa89870); P.px(23, 3, 0x3a8a3a); P.px(24, 4, 0x3a8a3a); P.px(25, 5, 0x2a6a2a);
+  P.rect(20, -2, 8, 5, 0x3a4048); P.hl(20, -2, 8, 0x6a727c); P.rect(28, -1, 2, 3, 0x0a0a0c); P.px(30, 2, 0xe8e0c0); P.px(31, 3, 0xc8c0a0); P.px(29, 4, 0xd02020);
+  groundShadow(P, 2, 3, 34, 4, 0.22);
+}
+function paintBrokenShelterFront(P) {
+  const d = 13;
+  for (let y = -35; y <= -23; y++) for (let x = -33; x <= 33; x++) {
+    const sag = x > 0 ? Math.round((x / 33) * 2) : 0, yy = y + sag, rib = x === -33 || x === 33 || x === -11 || x === 11;
+    if (rib) { P.px(x, yy, hash(x, y, 511) > 0.7 ? RUST[2] : x > 0 ? STEEL[1] : STEEL[3]); continue; }
+    if (x > 11 && hash(x >> 2, y >> 2, 512) < 0.7) continue;
+    if (x > -11 && x < 11 && hash(x, y, 513) < 0.08) continue;
+    P.px(x, yy, y === -24 ? 0xe0f4ff : 0x9acce0, y === -24 ? 0.45 : 0.26);
+  }
+  P.hl(-33, -36, 34, STEEL[4]); P.line(0, -36, 33, -34, STEEL[3]);
+  for (let x = -34; x <= 34; x++) { const sag = x > 0 ? Math.round((x / 34) * 2) : 0; for (let y = -22; y <= -20; y++) P.px(x, y + sag, y === -22 ? (hash(x, 1, 514) > 0.75 ? RUST[3] : STEEL[4]) : y === -21 ? 0x2a3038 : 0x1a1e24); }
+  P.rect(-9, -23, 19, 7, 0x2a5a30); P.box(-9, -23, 19, 7, 0x9aa89a); text(P, SMALL, 'BUSS', -7, -22, 0xb8c8b8);
+  P.line(-8, -22, 8, -18, 0xff2e6a); P.line(-8, -21, 8, -17, 0xff2e6a, 0.6);
+  P.line(14, -19, 16, -8, 0x1a1a1e); P.px(16, -7, 0x1a1a1e); P.px(16, -6, 0xd02020);
+  for (let y = -19; y <= d; y++) { P.px(-32, y, hash(0, y, 515) > 0.8 ? RUST[2] : STEEL[3]); P.px(-31, y, STEEL[1]); }
+  P.hl(-33, d, 4, STEEL[0]);
+  for (let y = -17; y <= d; y++) { const dx = y < -8 ? 3 : 0; P.px(31 + dx, y, hash(1, y, 516) > 0.7 ? RUST[3] : STEEL[3]); P.px(32 + dx, y, STEEL[1]); }
+  P.px(32, -8, STEEL[2]); P.px(33, -9, STEEL[2]); P.hl(30, d, 4, STEEL[0]);
+  for (let y = -19; y <= d - 1; y++) if (hash(2, y, 517) > 0.4) P.px(-30, y, 0xbfe2f2, 0.18);
+}
+function paintBusSignBroken(P) {
+  for (let y = -30; y <= 0; y++) { P.px(0, y, hash(0, y, 521) > 0.8 ? RUST[2] : STEEL[3]); P.px(1, y, STEEL[1]); }
+  P.line(0, -30, 6, -44, STEEL[3]); P.line(1, -30, 7, -44, STEEL[1]); P.hl(-1, 0, 4, STEEL[0]);
+  const dy = (x) => Math.round((x + 6) / 9);
+  for (let y = -58; y <= -46; y++) for (let x = -6; x <= 20; x++) { const c = (y === -58 || y === -46 || x === -6 || x === 20) ? 0x1a1a1e : hash(x, y, 522) > 0.9 ? 0xc0a020 : 0xe0c020; P.px(x, y + dy(x), mul(c, 0.92)); }
+  eachTextPixel(BIG, 'BUSS', -4, -55, 1, (px, py) => P.px(px, py + dy(px), 0x1a1a1e));
+  P.line(-4, -53, 19, -47, 0xff2e6a); P.line(-3, -53, 20, -47, 0xff2e6a, 0.6);
+  P.rect(-4, -40, 9, 11, 0xd8d8d0); P.box(-4, -40, 9, 11, 0x5a626c); for (let y = -38; y <= -32; y += 2) P.hl(-2, y, 5, 0x8a929a);
+  P.line(-3, -39, 4, -31, 0x2a2a30); P.line(-3, -33, 3, -39, 0x2a2a30); P.rect(-2, -35, 4, 3, 0x36d6ff, 0.9);
+  P.px(-6, -20, 0xffe030); P.px(-5, -21, 0xffe030); P.hl(-6, -19, 3, 0xffe030);
+  groundShadow(P, 2, 1, 5, 1.8);
+}
+
+// ---------- kyrkogården ----------
+function paintGravestone(P, kind, seed) {
+  const G = [0x4a4a46, 0x6c6c66, 0x8e8e86, 0xb0b0a6, 0xcccdc4];
+  const stone = (x, y, v) => P.px(x, y, tone(G, v + (hash(x, y, seed) - 0.5) * 0.12 - (hash(x >> 1, y >> 1, seed + 1) > 0.9 ? 0.25 : 0), x, y));
+  if (kind === 0) { // rundad sten
+    for (let y = -12; y <= 0; y++) { const hw = y < -9 ? 3 - (-9 - y) : 4; for (let x = -hw; x <= hw; x++) stone(x, y, 0.75 - ((x + hw) / (2 * hw)) * 0.4 + (y === -12 ? 0.15 : 0)); }
+    P.hl(-3, -7, 3, G[0], 0.6); P.hl(-2, -5, 5, G[0], 0.6); P.hl(-3, -3, 4, G[0], 0.5);
+  } else if (kind === 1) { // kors
+    for (let y = -16; y <= -1; y++) for (let x = -1; x <= 1; x++) stone(x, y, 0.85 - (x + 1) * 0.28);
+    for (let y = -13; y <= -11; y++) for (let x = -5; x <= 5; x++) stone(x, y, 0.85 - (y + 13) * 0.2);
+    for (let y = -2; y <= 0; y++) for (let x = -4; x <= 4; x++) stone(x, y, 0.6 - ((x + 4) / 8) * 0.35);
+  } else if (kind === 2) { // obelisk
+    for (let y = -20; y <= -4; y++) { const hw = 1 + Math.round((y + 20) / 8); for (let x = -hw; x <= hw; x++) stone(x, y, 0.88 - ((x + hw) / (2 * hw + 1)) * 0.5); }
+    for (let y = -3; y <= 0; y++) for (let x = -4; x <= 4; x++) stone(x, y, 0.62 - ((x + 4) / 8) * 0.4 + (y === -3 ? 0.2 : 0));
+    P.px(0, -21, G[4]);
+  } else { // bred sten med två namn
+    for (let y = -9; y <= 0; y++) for (let x = -7; x <= 7; x++) stone(x, y, 0.78 - ((x + 7) / 14) * 0.4 + (y === -9 ? 0.15 : 0) - (y === 0 ? 0.25 : 0));
+    P.hl(-5, -6, 4, G[0], 0.6); P.hl(1, -6, 5, G[0], 0.6); P.hl(-5, -4, 5, G[0], 0.5); P.hl(1, -4, 4, G[0], 0.5);
+  }
+  outline(P, 0x2a2a28, 0x3a3a38, 0.6);
+  if (hash(3, seed, 5) > 0.45) { for (let i = 0; i < 3; i++) P.px(-3 + i * 2 + (kind === 2 ? 5 : 0), 1, i === 1 ? 0xf0c020 : 0xe04060); P.px(-2 + (kind === 2 ? 5 : 0), 2, 0x4a8a34); }
+  if (hash(4, seed, 5) > 0.7) { P.rect(4, -3, 2, 3, 0xd02020); P.px(4, -4, 0xffe080); }
+  for (let i = 0; i < 4; i++) P.px(-5 + Math.round(hash(i, seed, 9) * 10), 1, GRASS[2 + (i & 1)]);
+  groundShadow(P, 2, 1, 6, 1.8, 0.28);
+}
+
+// ---------- lekplatser ----------
+function paintSwing(P, worn) {
+  const M = worn ? [0x3a2e22, 0x5a4a34, 0x7a6848, 0x9a8a62] : [0x6a1a10, 0xb03020, 0xe05030, 0xf88060];
+  const leg = (x0, x1) => { P.line(x0, 0, x1, -28, M[1]); P.line(x0 + 1, 0, x1 + 1, -28, M[2]); P.line(x0 - 1, 0, x1 - 1, -28, M[0]); };
+  leg(-18, -12); leg(-6, -12); leg(18, 12); leg(6, 12);
+  for (let x = -16; x <= 16; x++) { P.px(x, -30, M[3]); P.px(x, -29, M[2]); P.px(x, -28, M[1]); if (worn && hash(x, 1, 531) > 0.75) P.px(x, -29, RUST[2]); }
+  const chain = (x, len) => { for (let y = -27; y < -27 + len; y++) P.px(x, y, (y & 1) ? CHAIN[3] : CHAIN[1]); };
+  chain(-8, 20); chain(-3, 20); P.rect(-9, -8, 7, 2, 0x1a1a1e); P.hl(-9, -8, 7, 0x3a3a44);
+  if (worn) { chain(4, 9); P.px(4, -18, CHAIN[2]); chain(9, 22); P.px(9, -5, 0x1a1a1e); tag(P, -14, -27, 'ZOK', 0x36d6ff, 0x101014, false); }
+  else { chain(4, 20); chain(9, 20); P.rect(3, -8, 7, 2, 0x1a1a1e); P.hl(3, -8, 7, 0x3a3a44); }
+  for (const x of [-18, -6, 6, 18]) P.hl(x - 1, 0, 3, M[0]);
+  groundShadow(P, 3, 0, 20, 2.6, 0.26);
+}
+function paintSlide(P, worn) {
+  const R = worn ? [0x5a2a1a, 0x8a4028, 0xb05a34, 0xc87a50] : [0x8a2010, 0xc83a20, 0xf05a30, 0xff8a60];
+  // stege till vänster, plattform, rutschbana ner åt höger
+  for (let y = -26; y <= 0; y++) { P.px(-12, y, STEEL[3]); P.px(-11, y, STEEL[1]); P.px(-6, y, STEEL[3]); P.px(-5, y, STEEL[1]); }
+  for (let y = -24; y <= -2; y += 4) P.hl(-11, y, 6, STEEL[2]);
+  P.rect(-13, -30, 12, 4, R[2]); P.hl(-13, -30, 12, R[3]); P.hl(-13, -27, 12, R[0]);
+  for (let y = -34; y <= -30; y++) { P.px(-13, y, R[1]); P.px(-2, y, R[1]); } P.hl(-13, -34, 12, R[3]);
+  for (let x = -1; x <= 16; x++) {
+    const yt = Math.round(-30 + ((x + 1) / 17) * 30 - Math.sin(((x + 1) / 17) * Math.PI) * 4);
+    for (let y = yt; y <= yt + 5; y++) {
+      const c = y === yt ? STEEL[4] : y === yt + 1 ? STEEL[3] : y > yt + 3 ? R[1] : R[2];
+      P.px(x, y, worn && hash(x, y, 532) > 0.82 ? RUST[2] : c);
+    }
+    P.px(x, yt - 1, R[0]); P.px(x, yt + 6, R[0]);
+  }
+  P.vl(16, -6, 6, STEEL[2]); P.vl(9, -14, 14, STEEL[1]);
+  if (worn) { tag(P, 0, -18, 'OJ', 0xffe030, 0x101014, false); P.px(3, -22, RUST[3]); P.px(4, -22, RUST[3]); }
+  groundShadow(P, 3, 0, 18, 2.6, 0.26);
+}
+function paintSandbox(P, w, worn, seed) {
+  const x0 = -(w >> 1), x1 = x0 + w - 1, D = 12;
+  for (let y = -D; y <= -1; y++) for (let x = x0 + 1; x < x1; x++) {
+    let c = mix(0xd8c898, 0xecdcae, hash(x, y, seed)); if (worn && hash(x >> 1, y >> 1, seed + 1) > 0.8) c = mix(c, 0x8a7a5a, 0.5);
+    P.px(x, y, c);
+  }
+  for (let x = x0; x <= x1; x++) { slat(P, x, -D - 2, 1, 0.1); slat(P, x, 0, 1, worn ? -0.2 : 0.05); }
+  for (let y = -D - 1; y <= 0; y++) { P.px(x0, y, WOOD[3]); P.px(x0 + 1, y, WOOD[2]); P.px(x1 - 1, y, WOOD[1]); P.px(x1, y, WOOD[0]); }
+  if (worn) {
+    for (let i = 0; i < 6; i++) { const x = x0 + 3 + Math.floor(hash(i, seed, 3) * (w - 6)), y = -3 - Math.floor(hash(i, seed, 4) * 8); P.vl(x, y - 3, 4, GRASS[1]); P.px(x + 1, y - 2, GRASS[3]); }
+    P.rect(x0 + 5, -6, 2, 5, 0x3a8a3a); P.px(x0 + 5, -7, 0x2a6a2a); P.px(x1 - 6, -4, 0xd02020); P.px(x1 - 5, -4, 0xd02020);
+    tag(P, x0 + 2, 1, 'PIX', 0x7cff3a, 0x101014, false);
+  } else {
+    P.rect(x0 + 5, -8, 4, 4, 0x2a6ad8); P.hl(x0 + 5, -8, 4, 0x6aa0ff); P.px(x0 + 6, -9, 0x2a6ad8); P.px(x0 + 7, -9, 0x2a6ad8);
+    P.vl(x1 - 7, -9, 4, 0xe0c030); P.rect(x1 - 8, -6, 3, 2, 0xd02020);
+    disc(P, x0 + (w >> 1), -5, 3.5, 2, 0xf0ece0); P.px(x0 + (w >> 1) - 1, -6, 0xffffff);
+  }
+  groundShadow(P, 2, 1, w / 2 + 1, 2, 0.24);
+}
+function paintSpringRider(P, worn) {
+  for (let y = -8; y <= -1; y++) { P.px(-1, y, (y & 1) ? CHAIN[3] : CHAIN[1]); P.px(0, y, (y & 1) ? CHAIN[2] : CHAIN[0]); P.px(1, y, (y & 1) ? CHAIN[3] : CHAIN[1]); }
+  P.hl(-3, 0, 7, IRON[1]); P.hl(-2, -1, 5, IRON[3]);
+  if (worn) { P.hl(-2, -9, 5, IRON[2]); P.px(0, -10, RUST[3]); P.px(-3, 1, RUST[2]); groundShadow(P, 1, 1, 4, 1.4, 0.24); return; }
+  const H = [0x8a4a10, 0xd88a28, 0xf8b850, 0xffe090];
+  P.rect(-8, -14, 14, 5, H[1]); P.hl(-8, -14, 14, H[2]); P.hl(-8, -10, 14, H[0]);
+  P.rect(5, -20, 5, 7, H[1]); P.hl(5, -20, 5, H[2]); P.px(9, -19, 0x1a1a1e); P.px(10, -18, H[0]); P.px(4, -21, H[0]); P.px(6, -21, H[0]);
+  P.line(-8, -14, -11, -18, H[0]); P.px(-10, -19, H[2]);
+  P.hl(-3, -16, 3, IRON[3]); P.px(-3, -17, IRON[4]); P.px(-1, -17, IRON[4]);
+  groundShadow(P, 2, 1, 8, 1.8, 0.24);
+}
+function paintSeesaw(P) {
+  P.rect(-2, -6, 5, 6, IRON[2]); P.hl(-2, -6, 5, IRON[4]); P.vl(2, -5, 5, IRON[0]);
+  for (let x = -16; x <= 16; x++) { const y = -8 - Math.round(x * 0.22); P.px(x, y, 0x3a8ad8); P.px(x, y + 1, 0x2a5aa8); P.px(x, y - 1, 0x6ab0ff); }
+  P.rect(-17, -13, 4, 2, 0xf0c020); P.rect(13, -6, 4, 2, 0xf0c020); P.vl(-15, -16, 3, IRON[3]); P.vl(15, -9, 3, IRON[3]);
+  groundShadow(P, 2, 1, 16, 2, 0.24);
+}
+
+// ---------- förortens skräp ----------
+function paintElskap(P, seed) {
+  const G = [0x3e4640, 0x5a645c, 0x788278, 0x98a298, 0xb4bcb4];
+  for (let y = -20; y <= 0; y++) for (let x = -7; x <= 6; x++) {
+    let v = 0.8 - ((x + 7) / 13) * 0.55 + (y === -20 ? 0.15 : 0) - (y === 0 ? 0.35 : 0);
+    if (y > -18 && y < -2 && x === 0) v -= 0.2; if (y === -16 || y === -14) v -= 0.1;
+    if (hash(x, y, seed) > 0.93) v -= 0.25;
+    P.px(x, y, tone(G, v, x, y));
+  }
+  P.rect(-6, -19, 12, 2, G[0]); for (let x = -5; x <= 4; x += 2) P.px(x, -18, G[3]);
+  P.rect(3, -11, 2, 3, 0x1a1a1e); P.px(3, -11, G[4]);
+  P.rect(-5, -8, 4, 4, 0xf0c020); P.px(-4, -7, 0x1a1a1e); P.px(-3, -6, 0x1a1a1e); P.px(-4, -5, 0x1a1a1e);
+  tag(P, -6, -16, ['PIX', 'ZOK', 'NEJ', 'OJ'][Math.floor(hash(seed, 1, 2) * 4)], TAGS[Math.floor(hash(seed, 2, 2) * TAGS.length)]);
+  throwUp(P, -3, -3, 8, TAGS[Math.floor(hash(seed, 3, 2) * TAGS.length)], seed);
+  P.rect(1, -14, 4, 3, 0xffffff, 0.9); P.px(2, -13, 0xd02020);
+  groundShadow(P, 2, 1, 8, 2, 0.28);
+}
+function paintTrashBags(P, seed, n = 3) {
+  for (let i = 0; i < n; i++) {
+    const cx = -8 + i * 8 + Math.round(hash(i, seed, 1) * 3), rx = 5 + hash(i, seed, 2) * 2, ry = 4 + hash(i, seed, 3) * 2;
+    for (let y = Math.floor(-2 * ry); y <= 0; y++) for (let x = Math.floor(cx - rx); x <= cx + rx; x++) {
+      const nx = (x + 0.5 - cx) / rx, ny = (y + 0.5 + ry) / ry;
+      if (nx * nx + ny * ny >= 1) continue;
+      const nz = Math.sqrt(Math.max(0, 1 - nx * nx - ny * ny));
+      P.px(x, y, tone(BAG, 0.35 + 0.45 * (-0.5 * nx - 0.6 * ny + 0.5 * nz) + (hash(x, y, seed + i) - 0.5) * 0.25, x, y));
+    }
+    P.px(cx + Math.round(rx * 0.3), Math.round(-2 * ry) + 1, 0xe8e0c8); P.px(cx + Math.round(rx * 0.3) + 1, Math.round(-2 * ry), 0xc8c0a8);
+  }
+  P.px(-14, 0, 0xd02020); P.px(-13, -1, 0xd02020); P.hl(9, 0, 3, 0xe8e0c8); P.px(13, -1, 0x3a8a3a); P.px(13, 0, 0x2a6a2a);
+  outline(P, 0x08080a, 0x08080a, 0.4);
+  groundShadow(P, 2, 1, 14, 2.2, 0.26);
+}
+function paintOverfullContainer(P) {
+  paintContainer(P);
+  P.erase(-10, -14, 22, 6);
+  const C = [0x0e2a3a, 0x163e54, 0x22586e, 0x327488, 0x5a9aac];
+  for (let y = -14; y <= -9; y++) for (let x = -10; x < 12; x++) P.px(x, y, tone(C, 0.55 - ((x + 10) / 22) * 0.3, x, y));
+  // lock på glänt, påsar och kartonger som väller över
+  P.line(-16, -20, -2, -27, C[3]); P.line(-16, -19, -2, -26, C[1]);
+  for (const [cx, cy, rx, ry, s] of [[-8, -22, 5, 3.5, 1], [2, -24, 6, 4, 2], [10, -21, 5, 3, 3]]) for (let y = Math.floor(cy - ry); y <= cy + ry; y++) for (let x = Math.floor(cx - rx); x <= cx + rx; x++) {
+    const nx = (x + 0.5 - cx) / rx, ny = (y + 0.5 - cy) / ry; if (nx * nx + ny * ny >= 1) continue;
+    P.px(x, y, tone(BAG, 0.4 + 0.4 * (-0.5 * nx - 0.6 * ny) + (hash(x, y, s) - 0.5) * 0.3, x, y));
+  }
+  P.rect(-4, -19, 7, 4, 0xa8845a); P.hl(-4, -19, 7, 0xc8a878); P.vl(-1, -18, 3, 0x6a5030);
+  P.rect(6, -18, 5, 3, 0xe8e0c8); P.px(7, -17, 0xd02020); P.px(-11, -18, 0x3a8a3a); P.px(-12, -17, 0x3a8a3a);
+  tag(P, -12, -9, 'KRAM', 0xff2e6a, 0x101014, false); P.px(9, -12, RUST[3]); P.px(10, -13, RUST[2]); P.px(-14, -4, RUST[2]);
+  P.rect(17, -3, 6, 3, 0xe8e0c8); P.px(18, -4, 0xd02020); P.px(-19, -2, 0x1a1a1e); P.hl(-20, -1, 3, 0x26262e);
+}
+function paintTippedCart(P) {
+  const hi = STEEL[4], mid = STEEL[2], lo = STEEL[1];
+  // korgen ligger på sidan: trådgaller som en liggande trapets, hjulen uppåt
+  for (let y = -9; y <= -1; y++) for (let x = -9; x <= 9; x++) {
+    if (y === -9 || y === -1 || x === -9 || x === 9) P.px(x, y, y === -9 ? hi : lo);
+    else if ((x - y) % 3 === 0 || (x + y) % 3 === 0) P.px(x, y, (y & 1) ? mid : STEEL[3], 0.7);
+  }
+  P.rect(-8, -8, 3, 4, 0xc82a2a); P.px(-8, -8, 0xff7060);
+  P.line(9, -6, 14, -6, mid); P.line(14, -6, 15, -3, lo);
+  for (const [wx, wy] of [[-6, -13], [4, -13]]) { P.rect(wx, wy, 3, 2, 0x1a1a1e); P.px(wx + 1, wy - 1, 0x6a6e76); P.vl(wx + 1, wy + 2, 4, lo); }
+  P.hl(-5, -14, 12, lo); P.px(-11, -3, 0x1a1a1e); P.px(-10, -2, 0xe8e0c8);
+  groundShadow(P, 2, 0, 12, 2, 0.26);
+}
+function paintTires(P, seed) {
+  const T = [0x0e0e10, 0x1e1e22, 0x30323a, 0x4a4c54];
+  const tire = (cx, cy, side) => {
+    if (side) { for (let y = -5; y <= 5; y++) for (let x = -5; x <= 5; x++) { const d = Math.hypot(x, y); if (d > 5.2 || d < 2) continue; P.px(cx + x, cy + y, tone(T, 0.55 - y * 0.06 - x * 0.03 + (d > 4.3 ? -0.15 : 0) + (hash(x, y, seed) - 0.5) * 0.14, cx + x, cy + y)); } P.px(cx - 2, cy - 3, T[3]); }
+    else { for (let y = -3; y <= 0; y++) for (let x = -6; x <= 5; x++) { const e = Math.abs(x + 0.5) > 5 ? -0.2 : 0; P.px(cx + x, cy + y, tone(T, 0.62 - (y + 3) * 0.14 + e + (hash(x, y, seed + cy) - 0.5) * 0.12, cx + x, cy + y)); } P.hl(cx - 3, cy - 3, 6, T[3]); P.hl(cx - 2, cy - 2, 4, T[0]); }
+  };
+  tire(-6, 0); tire(-6, -4); tire(-6, -8); tire(6, -5, true);
+  P.px(-6, -12, RUST[3]); P.px(-5, -12, RUST[2]);
+  groundShadow(P, 2, 1, 12, 2, 0.28);
+}
+// bil (parkerad eller vrak), sedd från sidan: fronten åt höger
+function paintCar(P, col, wreck, seed) {
+  const B = wreck ? [0x2a1a10, 0x4a2c18, 0x6e4426, 0x8a5c38, 0xa87a50] : [mul(col, 0.35), mul(col, 0.6), col, mix(col, 0xffffff, 0.3), mix(col, 0xffffff, 0.6)];
+  const yb = wreck ? -3 : -4;
+  for (let y = yb - 8; y <= yb; y++) for (let x = -19; x <= 19; x++) {
+    let v = 0.72 - ((y - (yb - 8)) / 8) * 0.35; if (x === -19 || x === 19) v -= 0.2; if (y === yb - 8) v += 0.2; if (y === yb) v -= 0.3;
+    if (wreck && hash(x >> 1, y >> 1, seed) > 0.72) v += (hash(x, y, seed + 1) - 0.5) * 0.6;
+    P.px(x, y, tone(B, v, x, y));
+  }
+  for (let y = yb - 15; y < yb - 8; y++) { const l = -12 + (yb - 8 - y), r = 12 - (yb - 8 - y) * 1.2; for (let x = Math.round(l); x <= r; x++) { const win = y > yb - 14 && x > l + 2 && x < r - 2 && x !== 0 && x !== 1; P.px(x, y, win ? (wreck ? (hash(x, y, seed + 2) > 0.5 ? 0x0a0a0c : 0x2a3a44) : mix(0x2a4a6a, 0x9ad0f0, (x - l) / (r - l) * 0.5 + (y - (yb - 14)) / 6 * 0.4)) : tone(B, y === yb - 15 ? 0.95 : 0.7, x, y)); } }
+  P.hl(-18, yb - 4, 37, B[0], 0.5);
+  P.rect(16, yb - 5, 3, 2, wreck ? 0x4a4a48 : 0xfff0a0); P.rect(-19, yb - 5, 2, 2, wreck ? 0x4a2a2a : 0xd02020);
+  if (wreck) {
+    for (const x of [-12, 11]) { P.rect(x - 3, -3, 7, 3, CONC_BLOCK[1]); P.hl(x - 3, -3, 7, CONC_BLOCK[2]); P.hl(x - 3, 0, 7, CONC_BLOCK[0]); }
+    P.rect(-8, yb - 7, 6, 6, 0x1a1410); P.line(0, yb - 15, 6, yb - 19, B[2]); P.line(1, yb - 15, 7, yb - 19, B[0]);
+    tag(P, -16, yb - 6, 'ZOK', 0x36d6ff, 0x101014, false); P.px(5, yb - 10, 0xffffff, 0.5); P.line(3, yb - 12, 8, yb - 9, 0xe8f4ff, 0.6);
+    for (let i = 0; i < 6; i++) P.px(-20 + Math.round(hash(i, seed, 8) * 40), 1, hash(i, seed, 9) > 0.5 ? 0xe8f4ff : 0x9ac8e0);
+  } else {
+    for (const x of [-11, 11]) { for (let y = -5; y <= 0; y++) for (let xx = -3; xx <= 3; xx++) { const d = Math.hypot(xx, (y + 2.5) * 1.1); if (d < 3.4) P.px(x + xx, y, d < 1.6 ? 0x8a8e96 : d < 2.6 ? 0x2a2a30 : 0x121216); } }
+    P.px(-16, yb - 2, B[4]); P.hl(-2, yb - 3, 4, B[0]); P.px(12, yb - 11, 0xe8f4ff, 0.7);
+  }
+  outline(P, 0x121216, 0x121216, 0.55);
+  groundShadow(P, 3, 0, 21, 3, 0.3);
+}
+const CONC_BLOCK = [0x5a5852, 0x8a8880, 0xb0aea6];
+function paintWeeds(P, seed, n = 6) {
+  for (let i = 0; i < n; i++) {
+    const bx = -8 + Math.round(hash(i, seed, 1) * 16), h = 3 + Math.floor(hash(i, seed, 2) * 5), lean = hash(i, seed, 3) > 0.5 ? 1 : -1;
+    for (let k = 0; k < h; k++) P.px(bx + (k > h / 2 ? lean : 0), -k, GRASS[1 + (k & 1)]);
+    if (hash(i, seed, 4) > 0.65) { P.px(bx + lean, -h, 0xffe030); P.px(bx + lean + 1, -h - 1, 0xfff080); }
+    else if (hash(i, seed, 5) > 0.8) P.px(bx + lean, -h, 0xf0f0f0);
+  }
+}
+function paintSofa(P) {
+  const S = [0x2e2a34, 0x4a4452, 0x6a6474, 0x8a8494, 0xa8a2b2];
+  for (let y = -10; y <= 0; y++) for (let x = -15; x <= 15; x++) P.px(x, y, tone(S, 0.62 - ((x + 15) / 30) * 0.3 - (y > -4 ? 0.15 : 0) + (hash(x, y, 541) - 0.5) * 0.1, x, y));
+  for (let y = -17; y <= -10; y++) for (let x = -14; x <= 14; x++) P.px(x, y, tone(S, 0.72 - ((x + 14) / 28) * 0.3 + (y === -17 ? 0.15 : 0) + (hash(x, y, 542) - 0.5) * 0.1, x, y));
+  P.vl(0, -16, 6, S[0]); P.vl(-1, -9, 5, S[0]); P.vl(1, -9, 5, S[0]);
+  for (const x of [-16, 15]) for (let y = -14; y <= 0; y++) { P.px(x, y, S[x < 0 ? 3 : 1]); }
+  P.rect(-9, -8, 5, 3, 0xc8a878); P.px(-8, -7, 0x8a6a48); P.px(-7, -7, 0x8a6a48);
+  P.px(6, -7, CHAIN[3]); P.px(7, -8, CHAIN[4]); P.px(6, -9, CHAIN[3]);
+  P.rect(8, -14, 4, 2, 0xd02020, 0.6); P.px(-12, -4, 0x1a1a1e); P.px(-11, -4, 0x1a1a1e);
+  for (const x of [-13, 12]) { P.vl(x, 1, 2, 0x1a1410); }
+  outline(P, 0x141018, 0x141018, 0.5);
+  groundShadow(P, 3, 1, 17, 2.4, 0.3);
+}
+function paintBarrels(P) {
+  const b = (x, C, dent) => {
+    for (let y = -14; y <= 0; y++) for (let xx = -5; xx <= 4; xx++) {
+      let v = 0.8 - ((xx + 5) / 9) * 0.6; if (y === -14) v += 0.15; if (y === 0) v -= 0.3; if (y === -10 || y === -5) v -= 0.18;
+      if (dent && hash(xx, y, 551) > 0.8) v -= 0.3; if (hash(xx, y, 552) > 0.9) v = -1;
+      P.px(x + xx, y, v < 0 ? RUST[1 + Math.floor(hash(xx, y, 553) * 3)] : tone(C, v, x + xx, y));
+    }
+    P.hl(x - 4, -15, 8, C[4]); P.px(x - 1, -15, C[2]); P.px(x + 1, -14, 0x1a1a1e);
+  };
+  b(-7, [0x102848, 0x1a4078, 0x2a5aa8, 0x4a80d0, 0x7aa8f0], false); b(5, [0x4a1010, 0x7a1a1a, 0xb02828, 0xd85040, 0xf08070], true);
+  P.rect(-9, -8, 3, 3, 0xf0c020); P.px(-8, -7, 0x1a1a1e);
+  P.ell(9, 1, 5, 1.5, 0x1a1410, 0.6, 3);
+  groundShadow(P, 2, 1, 12, 2, 0.28);
+}
+function paintPallets(P) {
+  for (let k = 0; k < 3; k++) {
+    const y0 = -k * 5, dx = (k & 1) ? 1 : 0;
+    for (let x = -12 + dx; x <= 12 + dx; x++) { P.px(x, y0 - 4, tone(WOOD, 0.8 + (hash(x, k, 561) - 0.5) * 0.15, x, y0)); P.px(x, y0 - 3, WOOD[2]); if ((x - dx + 12) % 8 === 0) { P.vl(x, y0 - 2, 2, WOOD[1]); P.vl(x + 1, y0 - 2, 2, WOOD[0]); } }
+    P.hl(-12 + dx, y0 - 0, 25, WOOD[0]);
+  }
+  P.rect(-8, -22, 9, 7, 0xa8845a); P.hl(-8, -22, 9, 0xc8a878); P.vl(0, -21, 6, 0x6a5030); P.px(-6, -19, 0x3a2a1a); P.px(-4, -19, 0x3a2a1a);
+  groundShadow(P, 2, 1, 14, 2, 0.28);
+}
+function paintPiskstallning(P) {
+  for (const x of [-14, 13]) for (let y = -26; y <= 0; y++) { P.px(x, y, STEEL[3]); P.px(x + 1, y, STEEL[1]); }
+  P.hl(-13, -26, 26, STEEL[4]); P.hl(-13, -25, 26, STEEL[2]); P.hl(-13, -16, 26, STEEL[3]); P.hl(-13, -15, 26, STEEL[1]);
+  // en matta hänger över den övre stången
+  for (let y = -25; y <= -8; y++) for (let x = -9; x <= 3; x++) {
+    const p = ((x + 9) % 4 < 2) !== ((y + 25) % 4 < 2);
+    P.px(x, y, mix(p ? 0x8a2a3a : 0xd8a040, 0x000000, y === -8 ? 0.4 : (x === 3 ? 0.3 : 0)));
+  }
+  P.hl(-9, -25, 13, 0xf0d090); P.vl(-9, -24, 17, 0xb04050);
+  for (const x of [-15, 12]) P.hl(x, 0, 4, STEEL[0]);
+  groundShadow(P, 2, 1, 16, 2, 0.26);
+}
+function paintGoal(P, dir) {
+  const X = (x) => dir * x;
+  for (let y = -22; y <= 0; y++) { P.px(X(0), y, 0xf4f4f0); P.px(X(0) - dir, y, 0xb8b8b4); }
+  for (let y = -22; y <= -4; y++) { P.px(X(-8), y, 0xe0e0dc); }
+  P.line(X(0), -22, X(-8), -22, 0xf4f4f0); P.line(X(-8), -4, X(-14), 0, 0xe0e0dc);
+  for (let y = -21; y <= -1; y++) for (let x = -13; x < 0; x++) { const yy = y + Math.max(0, -(x + 8)) * 0.5; if (x < -8 && y < -4 - (-(x + 8)) * 0.5) continue; if ((x + y) % 3 === 0 || (x - y) % 3 === 0) P.px(X(x), Math.round(yy), 0xe8e8e0, 0.45); }
+  P.hl(X(-1), 0, 3, 0x8a8a86);
+  groundShadow(P, 1, 1, 8, 2, 0.22);
+}
+function paintFloodlight(P, broken) {
+  for (let y = -70; y <= 0; y++) { P.px(0, y, hash(0, y, 571) > 0.85 ? RUST[2] : STEEL[3]); P.px(1, y, STEEL[1]); P.px(-1, y, y % 9 === 0 ? STEEL[4] : STEEL[2], 0.6); }
+  P.rect(-3, -3, 7, 3, STEEL[1]); P.hl(-3, -3, 7, STEEL[3]);
+  P.hl(-7, -70, 16, STEEL[2]); P.hl(-7, -71, 16, STEEL[4]);
+  for (const x of [-6, 0, 6]) { P.rect(x - 2, -76, 5, 5, IRON[1]); P.hl(x - 2, -76, 5, IRON[3]); P.rect(x - 1, -74, 3, 2, broken && x === 6 ? 0x2a2a30 : 0xe8f0f8); }
+  if (broken) { P.line(6, -70, 9, -64, 0x1a1a1e); P.px(9, -63, 0x1a1a1e); }
+  groundShadow(P, 2, 1, 5, 1.6, 0.26);
+}
+function paintClothesline(P) {
+  for (const x of [-22, 22]) { for (let y = -24; y <= 0; y++) { P.px(x, y, STEEL[3]); P.px(x + 1, y, STEEL[1]); } P.hl(x - 3, -24, 8, STEEL[2]); }
+  for (let x = -21; x <= 21; x++) { P.px(x, -23 + Math.round(Math.sin(((x + 21) / 42) * Math.PI) * 1.5), 0xe8e8e0, 0.9); P.px(x, -19 + Math.round(Math.sin(((x + 21) / 42) * Math.PI) * 1.5), 0xd8d8d0, 0.8); }
+  const G = [[-17, 0x3a7bd5, 8, 10], [-6, 0xf4f1ea, 6, 8], [3, 0xd02040, 7, 9], [13, 0x2a2a30, 6, 11]];
+  for (const [x, c, w, h] of G) { const yt = -22 + Math.round(Math.sin(((x + 21) / 42) * Math.PI) * 1.5); for (let y = yt; y < yt + h; y++) for (let xx = x; xx < x + w; xx++) P.px(xx, y, mix(c, 0x000000, (xx - x) / w * 0.3 + (hash(xx, y, 581) - 0.5) * 0.1)); P.px(x, yt, 0xf0c020); P.px(x + w - 1, yt, 0xf0c020); }
+  groundShadow(P, 2, 1, 24, 1.8, 0.2);
+}
+function paintPlasticChair(P, col) {
+  const C = [mul(col, 0.5), mul(col, 0.75), col, mix(col, 0xffffff, 0.4)];
+  P.rect(-4, -14, 8, 6, C[2]); P.hl(-4, -14, 8, C[3]); P.vl(3, -13, 5, C[1]); P.hl(-3, -12, 5, C[1], 0.5);
+  P.rect(-5, -8, 10, 2, C[2]); P.hl(-5, -8, 10, C[3]); P.hl(-5, -7, 10, C[0]);
+  for (const x of [-5, 4]) { P.vl(x, -6, 6, C[1]); P.vl(x + (x < 0 ? 1 : -1), -6, 6, C[0], 0.6); }
+  P.px(-6, -13, C[1]); P.vl(-6, -12, 5, C[1]);
+  groundShadow(P, 2, 1, 6, 1.6, 0.24);
+}
+function paintGrill(P) {
+  for (const [x, y] of [[-5, 0], [5, 0], [0, 2]]) P.vl(x, -10, 10 - y, IRON[2]);
+  disc(P, 0, -12, 8, 4, IRON[2]); disc(P, 0, -13, 8, 3, IRON[3]); P.hl(-7, -14, 15, IRON[4]);
+  for (let x = -6; x <= 6; x += 2) P.px(x, -14, 0x8a8e96);
+  P.rect(-4, -17, 3, 4, 0x2a2a30); P.px(-3, -18, 0xf08020); P.px(-2, -19, 0xffd040, 0.8); P.px(-1, -21, 0x8a8a8a, 0.4);
+  P.px(9, -12, IRON[3]); P.px(10, -12, IRON[1]);
+  groundShadow(P, 2, 1, 9, 2, 0.26);
+}
+function paintGasBottle(P) {
+  const B = [0x0c1e4a, 0x18347a, 0x2850aa, 0x4a78d0, 0x7aa0e8];
+  for (let y = -12; y <= 0; y++) for (let x = -3; x <= 3; x++) P.px(x, y, tone(B, 0.8 - ((x + 3) / 6) * 0.6 + (y === 0 ? -0.3 : 0), x, y));
+  P.hl(-2, -13, 5, B[3]); P.rect(-1, -15, 3, 2, IRON[2]); P.px(0, -16, IRON[3]); P.rect(-2, -8, 4, 3, 0xf0f0e8, 0.7);
+  groundShadow(P, 1, 1, 4, 1.4, 0.24);
+}
+function paintBollard(P, worn) {
+  for (let y = -11; y <= 0; y++) for (let x = -2; x <= 1; x++) P.px(x, y, tone(IRON, 0.8 - ((x + 2) / 3) * 0.5 + (y === 0 ? -0.3 : 0), x, y));
+  P.hl(-2, -12, 4, IRON[4]); P.hl(-2, -7, 4, worn ? 0xb8b0a0 : 0xf4f1ea); P.px(1, -7, 0xa8a49a);
+  if (worn) { P.px(-1, -3, RUST[2]); P.px(0, -9, RUST[3]); P.px(-1, -10, 0x36d6ff); P.px(0, -10, 0x36d6ff); }
+  groundShadow(P, 1, 1, 3, 1.2, 0.26);
+}
+function paintLifebuoy(P) {
+  for (let y = -26; y <= 0; y++) { P.px(0, y, tone(WOOD, 0.75, 0, y)); P.px(1, y, WOOD[1]); }
+  P.hl(-1, -27, 4, WOOD[4]);
+  for (let y = -6; y <= 6; y++) for (let x = -6; x <= 6; x++) { const d = Math.hypot(x, y); if (d > 6.2 || d < 2.8) continue; const q = Math.abs(x) > Math.abs(y) ? (x > 0 ? 1 : 3) : (y > 0 ? 2 : 0); P.px(x + 1, y - 18, mix((q & 1) ? 0xf4f1ea : 0xf05020, 0x000000, (x + y) / 24 + 0.2)); }
+  P.rect(-4, -12, 10, 6, 0xf4f1ea); P.box(-4, -12, 10, 6, 0xd02020); P.hl(-2, -10, 6, 0xd02020); P.hl(-2, -8, 4, 0xd02020);
+  groundShadow(P, 1, 1, 4, 1.4, 0.26);
+}
+function paintIgloo(P, col, name, seed) {
+  const C = [mul(col, 0.4), mul(col, 0.65), col, mix(col, 0xffffff, 0.25), mix(col, 0xffffff, 0.55)];
+  for (let y = -18; y <= 0; y++) for (let x = -11; x <= 11; x++) {
+    const nx = x / 11.5, ny = (y + 4) / 15; if (nx * nx + ny * ny >= 1 && y < -4) continue;
+    if (y > -4 && Math.abs(x) > 10) continue;
+    const nz = Math.sqrt(Math.max(0, 1 - nx * nx - ny * ny));
+    let v = 0.4 + 0.5 * (-0.55 * nx - 0.5 * ny + 0.5 * nz); if (y === 0) v -= 0.3; if (hash(x, y, seed) > 0.94) v -= 0.25;
+    P.px(x, y, tone(C, v, x, y));
+  }
+  P.rect(-9, -10, 4, 4, 0x0a0a0c); P.hl(-9, -10, 4, C[0]);
+  P.rect(-2, -3, 6, 3, 0x1a1a1e); P.rect(-8, -9, 17, 6, 0xf4f1ea); text(P, SMALL, name, -8 + Math.floor((17 - textW(SMALL, name)) / 2), -8, C[0]);
+  tag(P, 2, -15, 'OJ', TAGS[Math.floor(hash(seed, 1, 9) * TAGS.length)], 0x101014, false);
+  // påsar och flaskor runtom
+  P.px(-14, -1, 0x3a8a3a); P.px(-14, -2, 0x3a8a3a); P.px(-13, 0, 0x2a6a2a); P.hl(12, 0, 3, 0xe8e0c8); P.px(13, -1, 0xd02020);
+  outline(P, 0x121216, 0x121216, 0.45);
+  groundShadow(P, 2, 1, 12, 2.4, 0.28);
+}
+function paintBrokenBench(P) {
+  for (const x of [-12, 11]) { P.vl(x, -20, 11, hash(x, 1, 591) > 0.5 ? RUST[2] : IRON[2]); P.px(x, -20, IRON[4]); }
+  slat(P, -13, -19, 26, 0.05); P.line(-13, -16, 4, -12, WOOD[1]); P.line(-13, -15, 4, -11, WOOD[0]);
+  slat(P, -14, -10, 28, 0.12); P.hl(-14, -6, 28, WOOD[0]);
+  for (const s of [0, 1]) { const x = s ? 12 : -13, i = s ? -1 : 1; P.vl(x, -11, 5, IRON[1]); P.vl(x, -5, 5, IRON[2]); P.vl(x + i, -5, 5, IRON[1]); P.hl(Math.min(x, x + i) - 1, 0, 4, IRON[0]); }
+  tag(P, -10, -19, 'BTG', 0xff2e6a, 0x101014, false); P.px(3, -10, RUST[3]); P.px(-6, -9, 0x1a1a1e);
+  groundShadow(P, 2, 0, 16, 3, 0.3);
+}
+function paintTicketMachine(P) {
+  for (let y = -24; y <= 0; y++) for (let x = -5; x <= 4; x++) P.px(x, y, tone(IRON, 0.8 - ((x + 5) / 9) * 0.5 + (y === -24 ? 0.15 : 0) - (y === 0 ? 0.3 : 0), x, y));
+  P.rect(-3, -21, 6, 5, 0x1a3a2a); P.hl(-2, -20, 4, 0x3aff8a, 0.8); P.hl(-2, -18, 3, 0x3aff8a, 0.5);
+  P.rect(-3, -13, 6, 2, 0x2a2a30); P.px(-3, -13, 0x6a6e76); P.rect(0, -10, 3, 3, 0xf0c020); P.rect(-3, -6, 4, 2, 0x0a0a0c);
+  text(P, SMALL, 'P', -1, -4, 0x2a6ad8); tag(P, -6, -16, 'NEJ', 0xffe030, 0x101014, false);
+  groundShadow(P, 1, 1, 6, 1.6, 0.26);
+}
+function paintReeds(P, seed, dry = false) {
+  const R = dry ? [0x5a4a24, 0x7a6834, 0x9a8a4c, 0xbcaa6a] : [0x4a6a24, 0x6a8a34, 0x8aa848, 0xb0c060];
+  for (let i = 0; i < 9; i++) {
+    const bx = -6 + Math.round(i * 1.5), lean = (hash(i, seed, 1) - 0.5) * 3, h = 12 + hash(i, seed, 2) * 12;
+    P.line(bx, 0, Math.round(bx + lean), Math.round(-h), R[i % 3]);
+    if (hash(i, seed, 3) > 0.45) { P.vl(Math.round(bx + lean), Math.round(-h) - 4, 4, 0x5a3a1e); P.px(Math.round(bx + lean), Math.round(-h) - 5, 0x8a6a3a); }
+    else P.px(Math.round(bx + lean), Math.round(-h) - 1, R[3]);
+  }
+  groundShadow(P, 2, 1, 7, 1.4, 0.2);
+}
+// dry = hösten: gult, torrt gräs med fröställningar i stället för blommor
+function paintWildflowers(P, seed, w = 30, dry = false) {
+  const x0 = -(w >> 1), G = dry ? [0x6a6a2a, 0x8a883a, 0xa8a050, 0xc4b868, 0xdcd090] : GRASS;
+  for (let i = 0; i < w / 2; i++) {
+    const x = x0 + Math.round(hash(i, seed, 1) * w), y = -Math.round(hash(i, seed, 2) * 6), h = 2 + Math.floor(hash(i, seed, 3) * 4);
+    P.vl(x, y - h, h, G[1 + (i & 1)]);
+    const cols = ['white', 'yellow', 'purple', 'blue', 'pink', 'red'];
+    if (hash(i, seed, 4) > 0.3) {
+      if (dry) { P.px(x, y - h - 1, 0x8a7a3a); if (hash(i, seed, 6) > 0.5) P.px(x + 1, y - h - 1, 0xb4a060); }
+      else bloom(P, x, y - h - 1, FL[cols[Math.floor(hash(i, seed, 5) * cols.length)]], hash(i, seed, 6) > 0.5 ? 1 : 0);
+    }
+  }
+  for (let i = 0; i < w / 3; i++) { const x = x0 + Math.round(hash(i, seed, 7) * w), y = -Math.round(hash(i, seed, 8) * 6); P.px(x, y, G[3]); P.px(x, y - 1, G[4]); }
+}
+function paintDogHurdle(P) {
+  for (const x of [-10, 9]) { P.vl(x, -12, 13, WOOD[2]); P.vl(x + 1, -12, 13, WOOD[0]); P.px(x, -13, WOOD[4]); }
+  P.hl(-9, -9, 18, 0xe0c030); P.hl(-9, -8, 18, 0xa88420); P.hl(-9, -4, 18, 0x2a6ad8); P.hl(-9, -3, 18, 0x1a4098);
+  groundShadow(P, 2, 1, 12, 1.6, 0.24);
+}
+function paintInfoBoard(P, title) {
+  for (const x of [-12, 10]) for (let y = -30; y <= 0; y++) { P.px(x, y, WOOD[3]); P.px(x + 1, y, WOOD[1]); }
+  P.rect(-14, -34, 28, 3, WOOD[2]); P.hl(-14, -34, 28, WOOD[4]); P.hl(-14, -32, 28, WOOD[0]);
+  P.rect(-13, -31, 26, 16, 0x2a5a30); P.box(-13, -31, 26, 16, WOOD[1]);
+  text(P, SMALL, title, -12 + Math.floor((24 - textW(SMALL, title)) / 2), -29, 0xf4f1ea);
+  P.rect(-11, -22, 22, 5, 0xe8e4d0); for (let y = -21; y <= -18; y += 2) P.hl(-10, y, 12 + (y & 2), 0x8a8478);
+  P.rect(3, -22, 7, 5, 0x3a8ad8); P.px(4, -21, 0x5a9a3a); P.px(5, -20, 0x5a9a3a); P.px(6, -20, 0x5a9a3a);
+  groundShadow(P, 2, 1, 13, 1.8, 0.26);
+}
+
 // ---------- placeringen ----------
 const NW = CITY.SIDEWALK_N[0] + 7;   // 193: mot fasaderna
 const NC = CITY.SIDEWALK_N[1] - 5;   // 213: kantstenen (träd, lyktor)
@@ -976,12 +1735,14 @@ const PU = PARK_LAYOUT.promenade[1]; // 334: promenaden
 const PD = PARK_LAYOUT.promenade[3]; // 346
 
 export function createProps(env) {
+  ENV = env;
   const items = [], obstacles = [], bases = [], glows = [], lits = [], skipped = [];
-  const BLOCK = [...RESERVED, ...BUILDINGS.map(footprint)];
+  const BLOCK = [...RESERVED, ...ALL_BUILDINGS.map(footprint)];
   const hit = (a, b) => a[0] < b[2] && a[2] > b[0] && a[1] < b[3] && a[3] > b[1];
-  // lägg till ett föremål om dess markyta är ledig (aldrig i RESERVED, gångar eller husen)
-  function add(kind, x, y, base, obs, draw) {
-    if (BLOCK.some((b) => hit(base, b)) || bases.some((b) => hit(base, b))) { skipped.push(`${kind}@${x},${y}`); return false; }
+  // lägg till ett föremål om dess markyta är ledig (aldrig i RESERVED, gångar eller husen);
+  // force = kartan har själv reserverat platsen åt föremålet (busskurerna)
+  function add(kind, x, y, base, obs, draw, force = false) {
+    if ((!force && BLOCK.some((b) => hit(base, b))) || bases.some((b) => hit(base, b))) { skipped.push(`${kind}@${x},${y}`); return false; }
     bases.push(base);
     for (const o of obs) obstacles.push(o);
     items.push({ x, y, draw, kind });
@@ -989,38 +1750,62 @@ export function createProps(env) {
   }
   const cache = {};
   const once = (k, make) => cache[k] || (cache[k] = make());
-  const sprItem = (kind, s, x, y, base, obs) => add(kind, x, y, base, obs, (ctx) => put(ctx, s, x, y));
+  const sprItem = (kind, s, x, y, base, obs, force) => add(kind, x, y, base, obs, (ctx) => putW(ctx, s, x, y), force);
+  // föremål som inte tar plats i marken (ogräs, blomster, glassplitter) – ingen bas, inga hinder
+  const loose = (kind, s, x, y) => { items.push({ x, y, kind, draw: (ctx) => putW(ctx, s, x, y) }); };
+  // blomster och gräs som följer årstiden: en sprite per nyckel (lat, cachas per föremål).
+  // Standardnyckeln skiljer bara vintern (kala kvistar) från resten; make(nyckel) → sprite eller null
+  const winterKey = (s) => (s === 'vinter' ? 'vinter' : 'blom');
+  function seasonal(kind, x, y, base, obs, make, keyOf = winterKey) {
+    const byS = {};
+    const get = () => { const k = keyOf(seasonNow()); return k in byS ? byS[k] : (byS[k] = make(k)); };
+    return add(kind, x, y, base, obs, (ctx) => { const s = get(); if (s) putW(ctx, s, x, y); });
+  }
 
-  // --- vind: mjuka byar som får kronorna att vaja ---
+  // --- vind: mjuka byar som får kronorna att vaja (vädrets vind lägger på) ---
   let gust = 0, gustT = 0, gustTo = 0;
   const sway = (ph, big) => (0.9 + gust) * Math.sin(env.t * (big ? 1.1 : 1.45) + ph) * (big ? 1.1 : 1);
 
+  // träd: kronan och foten byggs per årstid (lat, cachas per träd) – vår/sommar/höst-färger, kalt på vintern,
+  // körsbärsblom om våren, fallande löv om hösten, snö på grenarna när det ligger snö
   function tree(kind, x, y, grate = true) {
-    const seed = (x * 7 + y * 13) | 0, t = makeTree(kind, seed, grate), T = t.T, ph = hash(x, y, 5) * 6.28;
+    const seed = (x * 7 + y * 13) | 0, ph = hash(x, y, 5) * 6.28, T0 = TREE[kind];
+    const byS = {};
+    const get = () => { const k = seasonNow(); return byS[k] || (byS[k] = makeSeasonTree(kind, seed, grate, k)); };
     const base = grate ? [x - 10, y - 4, x + 11, y + 5] : [x - 4, y - 3, x + 5, y + 2];
-    const petals = T.petals ? Array.from({ length: 4 }, (_, i) => ({ o: hash(i, seed, 1), dx: (hash(i, seed, 2) - 0.5) * T.rx * 1.4 })) : null;
+    const drops = Array.from({ length: 4 }, (_, i) => ({ o: hash(i, seed, 1), dx: (hash(i, seed, 2) - 0.5) * T0.rx * 1.4 }));
     return add(kind, x, y, base, [[x - 2, y - 2, x + 3, y + 1]], (ctx) => {
-      put(ctx, t.base, x, y);
-      drawCrown(ctx, t.crown, x, y, sway(ph, !grate));
-      if (petals) {
-        const fall = -(T.cy + T.ry * 0.4);
-        for (const p of petals) {
-          const s = (env.t * 0.13 + p.o) % 1;
+      const t = get(), T = t.T, season = seasonNow(), snow = snowNow();
+      putW(ctx, t.base, x, y);
+      drawCrown(ctx, snow ? snowOf(t.crown) : t.crown, x, y, T.bare ? sway(ph, !grate) * 0.3 : sway(ph, !grate));
+      const petal = T.petals && season === 'vår', leaf = season === 'höst' && !T.spruce;
+      if (petal || leaf) {
+        const fall = -(T.cy + T.ry * 0.4), pal = leaf ? T.pal : null;
+        for (const p of drops) {
+          const s = (env.t * (leaf ? 0.1 : 0.13) + p.o) % 1;
           if (s > 0.94) continue;
-          ctx.fillStyle = s * 7 % 2 < 1 ? '#ffd4e2' : '#f2a2bf';
+          ctx.fillStyle = leaf ? '#' + pal[3 + (s * 7 % 2 < 1 ? 0 : 1)].toString(16).padStart(6, '0') : (s * 7 % 2 < 1 ? '#ffd4e2' : '#f2a2bf');
           ctx.fillRect(Math.round(x + p.dx + s * 12 + Math.sin(env.t * 2.1 + p.o * 9) * 3), Math.round(y + T.cy + T.ry * 0.4 + s * fall), 1, 1);
         }
       }
     });
   }
+  function deadTree(x, y) {
+    const s = spr(44, 60, 22, 56, (P) => paintDeadTree(P, (x * 3 + y) | 0));
+    sprItem('dött träd', s, x, y, [x - 4, y - 3, x + 5, y + 2], [[x - 2, y - 2, x + 3, y + 1]]);
+  }
   const LAMP_S = [once('lampR', () => spr(30, 72, 13, 68, (P) => paintStreetLamp(P, 1))), once('lampL', () => spr(30, 72, 16, 68, (P) => paintStreetLamp(P, -1)))];
   const LAMP_GLOW = once('lampGlow', () => spr(64, 84, 32, 74, (P) => paintLampGlow(P, -59, 19, 22, 8)));
   const LAMP_LIT = [1, -1].map((m) => spr(12, 6, 6, 3, (P) => { P.hl(-3, 0, 6, 0xfff6d8); P.hl(-2, 0, 4, 0xffffff); P.hl(-4, 1, 8, 0xffe8b0, 0.5); P.hl(-3, -1, 6, 0xffe0a0, 0.35); }));
-  function lamp(x, y, m = 1) {
-    const hx = x + (m > 0 ? 10 : -8);
-    if (!sprItem('lykta', LAMP_S[m > 0 ? 0 : 1], x, y, [x - 2, y - 3, x + 4, y + 1], [[x - 2, y - 3, x + 4, y + 1]])) return;
-    glows.push({ x: hx, y, s: LAMP_GLOW, a: 0.95, flicker: hash(x, y, 3) > 0.93 });
-    lits.push({ x: hx, y: y - 59, s: LAMP_LIT[0], a: 1 });
+  // mode: 0 = hel, 1 = sliten (lutar, rost, klistermärken), 2 = trasig: flimrar, 3 = död (mörk, krossat glas)
+  function lamp(x, y, m = 1, mode = 0) {
+    const lean = mode ? [0, 2, -3, 3][mode] * (hash(x, y, 4) > 0.5 ? 1 : -1) : 0;
+    const s = mode ? spr(36, 72, 18, 68, (P) => paintStreetLamp(P, m, mode === 3 ? 2 : 1, lean)) : LAMP_S[m > 0 ? 0 : 1];
+    const hx = x + lean + (m > 0 ? 10 : -8);
+    if (!sprItem('lykta', s, x, y, [x - 2, y - 3, x + 4, y + 1], [[x - 2, y - 3, x + 4, y + 1]])) return;
+    if (mode === 3) return;
+    glows.push({ x: hx, y, s: LAMP_GLOW, a: mode === 1 ? 0.8 : 0.95, flicker: mode === 2 ? 2 : hash(x, y, 3) > 0.93 ? 1 : 0 });
+    lits.push({ x: hx, y: y - 59, s: LAMP_LIT[0], a: 1, flicker: mode === 2 ? 2 : 0 });
   }
   const PARK_LAMP = once('parkLamp', () => spr(14, 52, 6, 50, paintParkLamp));
   const PARK_GLOW = once('parkGlow', () => spr(48, 56, 24, 48, (P) => paintLampGlow(P, -37, 13, 17, 9)));
@@ -1033,8 +1818,27 @@ export function createProps(env) {
     glows.push({ x: x + 1, y, s: PARK_GLOW, a: 0.9 });
     lits.push({ x, y: y - 33, s: PARK_LIT, a: 1 });
   }
+  // --- sittplatser: alla bänkar och busskurernas bänkar går att sitta på ---
+  // En plats = { id, kind: 'bank'|'busskur', x, y, dir, walk: {x, y}, hit: [x0, y0, x1, y1], bench, broken?, stop? }
+  //   x, y  fotpunkten där figuren ritas sittande (drawPerson(ctx, x, y, look, dir, 5)) – y är också sorteringslinjen:
+  //         framifrån sedd bänk: 1 px framför bänkens fotlinje (figuren ritas över sitsen),
+  //         bakifrån sedd bänk: 6 px bakom (bänkens rygg ritas över figurens nederdel), busskur: mellan bakvägg och tak
+  //   walk  fri punkt utanför bänkens hinder att gå till innan man sätter sig (och ställa sig på när man reser sig)
+  //   hit   klickytan i världen (bänken + lite runtom); bench = bänkens id (platserna på samma bänk delar det)
+  const seats = [];
+  function addSeats(kind, xs, y, dir, walkY, hit, extra = {}) {
+    const benchId = `${kind}@${Math.round(hit[0])},${Math.round(y)}`;
+    xs.forEach((sx, i) => seats.push({ id: `${benchId}:${i}`, kind, x: sx, y, dir, walk: { x: sx, y: walkY }, hit, bench: benchId, ...extra }));
+  }
+  // bänk framifrån: sitsen ligger 7–10 px över fotlinjen, figurens knä hamnar på den när fötterna står på y + 1
+  const frontSeats = (x, y, extra) => addSeats('bank', [x - 7, x + 6], y + 1, 'down', y + 5, [x - 15, y - 22, x + 16, y + 3], extra);
   const BENCH = [once('bench', () => spr(36, 26, 17, 22, (P) => paintBench(P, false))), once('benchB', () => spr(36, 24, 17, 20, (P) => paintBench(P, true)))];
-  const bench = (x, y, back = false) => sprItem('bänk', BENCH[back ? 1 : 0], x, y, [x - 14, y - 5, x + 15, y + 1], [[x - 13, y - 4, x + 14, y]]);
+  const bench = (x, y, back = false) => {
+    if (!sprItem('bänk', BENCH[back ? 1 : 0], x, y, [x - 14, y - 5, x + 15, y + 1], [[x - 13, y - 4, x + 14, y]])) return false;
+    if (back) addSeats('bank', [x - 7, x + 6], y - 6, 'up', y - 9, [x - 15, y - 21, x + 16, y + 2]); // bakifrån: man sitter med ryggen mot oss
+    else frontSeats(x, y);
+    return true;
+  };
   const BIN = once('bin', () => spr(16, 20, 7, 17, paintBin));
   const bin = (x, y) => sprItem('papperskorg', BIN, x, y, [x - 4, y - 3, x + 4, y + 1], [[x - 4, y - 3, x + 4, y + 1]]);
   const HYD = once('hyd', () => spr(18, 20, 9, 16, paintHydrant));
@@ -1048,24 +1852,26 @@ export function createProps(env) {
     sprItem('gatuskylt', makeStreetSign(name, dir), x, y, [x - 1, y - 2, x + 3, y + 1], [[x - 1, y - 2, x + 3, y + 1]]);
   }
   function flowerBox(x, y, w, cols, style = 'tra') {
-    const s = spr(w + 10, 26, (w >> 1) + 4, 20, (P) => paintFlowerBox(P, w, (x * 3 + y) | 0, cols, style));
-    sprItem('blomlåda', s, x, y, [x - (w >> 1), y - 5, x + (w >> 1), y + 1], [[x - (w >> 1), y - 4, x + (w >> 1), y]]);
+    seasonal('blomlåda', x, y, [x - (w >> 1), y - 5, x + (w >> 1), y + 1], [[x - (w >> 1), y - 4, x + (w >> 1), y]],
+      (k) => spr(w + 10, 26, (w >> 1) + 4, 20, (P) => paintFlowerBox(P, w, (x * 3 + y) | 0, cols, style, k === 'vinter')));
   }
   function pot(x, y, plant) {
-    const s = spr(30, 44, 15, 38, (P) => paintPot(P, plant, (x * 5 + y) | 0));
-    sprItem('kruka', s, x, y, [x - 7, y - 4, x + 7, y + 1], [[x - 6, y - 4, x + 6, y]]);
+    const make = (k) => spr(30, 44, 15, 38, (P) => paintPot(P, plant, (x * 5 + y) | 0, k === 'vinter'));
+    if (plant === 'pelargon') seasonal('kruka', x, y, [x - 7, y - 4, x + 7, y + 1], [[x - 6, y - 4, x + 6, y]], make);
+    else sprItem('kruka', make('blom'), x, y, [x - 7, y - 4, x + 7, y + 1], [[x - 6, y - 4, x + 6, y]]);
   }
   function bed(x, y, w, rows) {
-    const s = spr(w + 8, 22, (w >> 1) + 3, 18, (P) => paintBed(P, w, (x + y * 3) | 0, rows));
-    sprItem('rabatt', s, x, y, [x - (w >> 1), y - 10, x + (w >> 1), y + 1], [[x - (w >> 1), y - 8, x + (w >> 1), y]]);
+    seasonal('rabatt', x, y, [x - (w >> 1), y - 10, x + (w >> 1), y + 1], [[x - (w >> 1), y - 8, x + (w >> 1), y]],
+      (k) => spr(w + 8, 22, (w >> 1) + 3, 18, (P) => paintBed(P, w, (x + y * 3) | 0, k === 'vinter' ? [] : rows, k === 'vinter')));
   }
   function hedge(x, y, w, h = 8) {
     const s = spr(w + 10, h + 12, (w >> 1) + 3, h + 7, (P) => paintHedge(P, w, h, (x * 11 + y) | 0));
     sprItem('häck', s, x, y, [x - (w >> 1), y - 6, x + (w >> 1), y + 1], [[x - (w >> 1), y - 5, x + (w >> 1), y]]);
   }
   function bush(x, y, flowers) {
-    const s = spr(30, 24, 13, 19, (P) => paintBush(P, (x * 13 + y) | 0, flowers));
-    sprItem('buske', s, x, y, [x - 8, y - 4, x + 8, y + 1], [[x - 6, y - 3, x + 6, y]]);
+    const make = (k) => spr(30, 24, 13, 19, (P) => paintBush(P, (x * 13 + y) | 0, k === 'vinter' ? null : flowers));
+    if (flowers) seasonal('buske', x, y, [x - 8, y - 4, x + 8, y + 1], [[x - 6, y - 3, x + 6, y]], make);
+    else sprItem('buske', make('blom'), x, y, [x - 8, y - 4, x + 8, y + 1], [[x - 6, y - 3, x + 6, y]]);
   }
   function wheelieBin(x, y, kind) {
     sprItem('sopkärl', once('wb' + kind, () => spr(18, 22, 8, 18, (P) => paintWheelieBin(P, kind))), x, y, [x - 5, y - 4, x + 5, y + 1], [[x - 5, y - 4, x + 5, y]]);
@@ -1093,6 +1899,12 @@ export function createProps(env) {
     });
     if (ok) { glows.push({ x, y: y - 36, s: BULB_GLOW, a: 0.8 }); lits.push({ x, y: y - 36, s: BULBS, a: 1 }); }
   }
+  // busskurens bänk längs bakväggen (sitsen på bakväggens fotlinje −3…0, benen ner till +5):
+  // figuren sitter 6 px framför väggen – bakväggen ritas bakom, taket och de främre stolparna framför.
+  // Den trasiga kuren har bara en planka kvar – en plats, broken.
+  function shelterSeats(bx, by, stop, broken) {
+    addSeats('busskur', broken ? [bx - 21] : [bx - 20, bx - 7], by + 6, 'down', by + 10, [bx - 29, by - 16, bx + 5, by + 8], { stop: stop?.id, ...(broken ? { broken: true } : {}) });
+  }
   const FRUITSTAND = once('fruit', () => spr(72, 60, 34, 54, paintFruitStand));
   const CARTS = once('carts', () => spr(70, 40, 34, 36, paintCarts));
 
@@ -1116,7 +1928,7 @@ export function createProps(env) {
   pot(566, NW, 'kon'); pot(630, NW, 'kon'); flowerBox(648, NW, 20, ['purple', 'white'], 'svart');
   bench(718, NW + 2); pot(756, NW, 'gras'); pot(840, NW, 'gras'); bikeRack(874, NW + 3);
   cafe(975, NW + 8, [0xb8283a, 0xf4ece0]); cafe(1040, NW + 8, [0x2a6a4a, 0xf4ece0]);
-  flowerBox(1098, NW, 24, ['orange', 'yellow', 'red']); news(1186, NW + 1);
+  flowerBox(1098, NW, 24, ['orange', 'yellow', 'red']); // (Burgarbarens menypelare vid 1182 ritas av fasaden – BURGARE_STAND i buildings-work.js)
   pot(1310, NW, 'pelargon'); pot(1376, NW, 'pelargon'); flowerBox(1404, NW, 24, ['red', 'yellow'], 'zink');
   bench(1480, NW + 2); pot(1522, NW, 'palm'); pot(1614, NW, 'palm'); flowerBox(1650, NW, 24, ['blue', 'white'], 'zink');
 
@@ -1135,8 +1947,9 @@ export function createProps(env) {
   const POSTER = spr(72, 50, 36, 42, paintPoster);
   const POSTER_GLOW = spr(72, 50, 36, 42, (P) => P.ell(19, -18, 16, 20, 0xa8d8ff, 0.5, 5));
   if (add('busskur', SH.x, SH.y, [SH.x - 33, SH.y - 5, SH.x + 34, SH_FRONT + 1], [[SH.x - 32, SH.y - 4, SH.x + 33, SH.y], [SH.x - 27, SH.y + 1, SH.x + 4, SH.y + 5], [SH.x - 33, SH_FRONT - 3, SH.x - 29, SH_FRONT + 1], [SH.x + 30, SH_FRONT - 3, SH.x + 34, SH_FRONT + 1]],
-    (ctx) => put(ctx, SHB, SH.x, SH.y))) {
-    items.push({ x: SH.x, y: SH_FRONT, kind: 'busskur-tak', draw: (ctx) => put(ctx, SHF, SH.x, SH.y) });
+    (ctx) => putW(ctx, SHB, SH.x, SH.y))) {
+    items.push({ x: SH.x, y: SH_FRONT, kind: 'busskur-tak', draw: (ctx) => putW(ctx, SHF, SH.x, SH.y) });
+    shelterSeats(SH.x, SH.y, BUS_STOPS[0], false);
     glows.push({ x: SH.x, y: SH.y, s: POSTER_GLOW, a: 0.7 });
     glows.push({ x: SH.x, y: SH.y, s: POSTER, a: 0.6 });
     glows.push({ x: SH.x, y: SH.y - 14, s: once('shelterLight', () => spr(50, 40, 25, 26, (P) => { P.ell(0, 12, 24, 7, 0xffe4b0, 0.35, 4); P.ell(-13, -5, 5, 2.5, 0xfff4d8, 0.9, 3); P.ell(14, -5, 5, 2.5, 0xfff4d8, 0.9, 3); })), a: 0.8 });
@@ -1146,7 +1959,7 @@ export function createProps(env) {
   sign(cw[1].name, cw[1].x0 - 10, SB, 1);
   lamp(1010, SC, -1); tree('bjork', 1050, SB); lamp(1130, SC, -1); hydrant(1160, SC + 1); tree('korsbar', 1178, SB);
   sign(cw[2].name, cw[2].x0 - 10, SB, 1);
-  tree('lind', 1316, SB); lamp(1370, SC, -1); tree('bjork', 1430, SB); bin(1486, SB); tree('korsbar', 1540, SB); lamp(1600, SC, -1); tree('lind', 1660, SB);
+  tree('lind', 1316, SB); lamp(1370, SC, -1); tree('bjork', 1430, SB); bin(1486, SB); tree('korsbar', 1540, SB); lamp(1600, SC, -1); bin(1690, SB); // (linden vid 1660 fick ge plats åt kuren och skylten vid Flygplatsen)
 
   // =================== parken ===================
   // övre remsan: häckar med bänkar framför, rabatter och parklyktor
@@ -1178,34 +1991,291 @@ export function createProps(env) {
   for (let f = 0; f < FOUNT.frames; f++) FR.push(spr(70, 72, 35, 64, (P) => paintFountain(P, f, FOUNT.frames)));
   const FGLOW = spr(70, 72, 35, 64, paintFountainGlow);
   const fframe = () => FR[Math.floor(env.t * 12) % FOUNT.frames];
-  add('fontän', FOUNT.x, FOUNT.y, [FOUNT.x - 27, FOUNT.y - 25, FOUNT.x + 28, FOUNT.y + 1], [[FOUNT.x - 26, FOUNT.y - 24, FOUNT.x + 27, FOUNT.y]], (ctx) => put(ctx, fframe(), FOUNT.x, FOUNT.y));
+  // (fryser till is under snötäcket: stilla bild med snö på kanterna)
+  add('fontän', FOUNT.x, FOUNT.y, [FOUNT.x - 27, FOUNT.y - 25, FOUNT.x + 28, FOUNT.y + 1], [[FOUNT.x - 26, FOUNT.y - 24, FOUNT.x + 27, FOUNT.y]], (ctx) => (snowNow() ? put(ctx, snowOf(FR[0]), FOUNT.x, FOUNT.y) : put(ctx, fframe(), FOUNT.x, FOUNT.y)));
+
+  // =====================================================================
+  // v2 – Söder, parkens nya delar, Infarten och förorten
+  // =====================================================================
+  const seedAt = (x, y) => (x * 7 + y * 13) | 0;
+  const item2 = (kind, x, y, base, obs, w, h, ax, ay, paint, force) => sprItem(kind, spr(w, h, ax, ay, paint), x, y, base, obs, force);
+
+  // --- busskurer för hållplatserna 1–3 (kartan har reserverat platsen: force) ---
+  function shelter(s, poster) {
+    const bx = s.x, by = s.y - 13, fy = s.y, br = !!s.broken;
+    const back = spr(72, 50, 36, 42, br ? paintBrokenShelterBack : (P) => paintShelterBack(P, poster));
+    const front = spr(78, 56, 39, 42, br ? paintBrokenShelterFront : paintShelterFront);
+    const obs = [[bx - 32, by - 4, bx + 33, by], br ? [bx - 27, by + 1, bx - 12, by + 5] : [bx - 27, by + 1, bx + 4, by + 5], [bx - 33, fy - 3, bx - 29, fy + 1], [bx + 30, fy - 3, bx + 34, fy + 1]];
+    if (!add('busskur', bx, by, [bx - 33, by - 5, bx + 34, fy + 1], obs, (ctx) => putW(ctx, back, bx, by), true)) return;
+    items.push({ x: bx, y: fy, kind: 'busskur-tak', draw: (ctx) => putW(ctx, front, bx, by) });
+    shelterSeats(bx, by, s, br);
+    if (br) {
+      glows.push({ x: bx, y: by - 14, s: once('brokenLight', () => spr(50, 40, 25, 26, (P) => { P.ell(0, 12, 22, 6, 0xb8d8ff, 0.3, 4); P.ell(-13, -5, 5, 2.5, 0xe0f0ff, 0.9, 3); })), a: 0.8, flicker: 2 });
+    } else {
+      glows.push({ x: bx, y: by, s: once('posterGlow', () => spr(72, 50, 36, 42, (P) => P.ell(19, -18, 16, 20, 0xa8d8ff, 0.5, 5))), a: 0.7 });
+      glows.push({ x: bx, y: by, s: spr(72, 50, 36, 42, poster), a: 0.6 });
+      glows.push({ x: bx, y: by - 14, s: once('shelterLight', () => spr(50, 40, 25, 26, (P) => { P.ell(0, 12, 24, 7, 0xffe4b0, 0.35, 4); P.ell(-13, -5, 5, 2.5, 0xfff4d8, 0.9, 3); P.ell(14, -5, 5, 2.5, 0xfff4d8, 0.9, 3); })), a: 0.8 });
+    }
+    const sign = br ? spr(36, 64, 15, 60, paintBusSignBroken) : once('bussign', () => spr(32, 64, 15, 60, paintBusSign));
+    sprItem('hållplatsskylt', sign, bx + 46, fy - 2, [bx + 44, fy - 4, bx + 49, fy - 1], [[bx + 45, fy - 4, bx + 48, fy - 1]], true);
+  }
+  shelter(BUS_STOPS[1], paintPosterBio);
+  shelter(BUS_STOPS[2], paintPosterGlass);
+  shelter(BUS_STOPS[3]);
+
+  // --- staket runt tomter och hundrastgården: fyra sidor som y-sorterade bitar, hinder utom i grindarna ---
+  function lotFence(rect, gates, style, worn, kind = 'staket') {
+    const [x0, y0, x1, y1] = rect, seed = seedAt(x0, y0), H = FENCE_H[style], w = x1 - x0;
+    const openH = (side, x) => gates.some((g) => g.side === side && x >= g.x0 && x < g.x1);
+    const openV = (side, y) => gates.some((g) => g.side === side && y >= g.y0 && y < g.y1);
+    const front = spr(w + 2, H + 6, 0, H + 4, (P) => paintFenceRun(P, w, style, seed, (x) => openH('s', x0 + x), worn));
+    items.push({ x: (x0 + x1) / 2, y: y1, kind, draw: (ctx) => putW(ctx, front, x0, y1 - 1) });
+    const back = spr(w + 2, H + 6, 0, H + 4, (P) => paintFenceRun(P, w, style, seed + 1, (x) => openH('n', x0 + x), worn));
+    items.push({ x: (x0 + x1) / 2, y: y0, kind, draw: (ctx) => putW(ctx, back, x0, y0) });
+    for (const [xx, side] of [[x0, 'w'], [x1 - 1, 'e']]) for (let ys = y0; ys < y1; ys += 16) {
+      const hh = Math.min(16, y1 - ys), sg = spr(6, hh + H + 4, 1, H + 3, (P) => paintFenceSide(P, hh, style, seed + ys, (y) => openV(side, ys + y), worn));
+      items.push({ x: xx, y: ys + hh, kind, draw: (ctx) => putW(ctx, sg, xx, ys) });
+    }
+    const segs = [];
+    const run = (a, b, vertical, fixed, sideId) => {
+      let s = a;
+      const holes = gates.filter((g) => g.side === sideId).map((g) => (vertical ? [g.y0, g.y1] : [g.x0, g.x1])).sort((p, q) => p[0] - q[0]);
+      for (const [h0, h1] of holes) { if (h0 > s) segs.push(vertical ? [fixed, s, fixed + 1, h0] : [s, fixed, h0, fixed + 1]); s = Math.max(s, h1); }
+      if (b > s) segs.push(vertical ? [fixed, s, fixed + 1, b] : [s, fixed, b, fixed + 1]);
+    };
+    run(x0, x1, false, y0, 'n'); run(x0, x1, false, y1 - 1, 's'); run(y0, y1, true, x0, 'w'); run(y0, y1, true, x1 - 1, 'e');
+    for (const s of segs) { obstacles.push(s); bases.push(s); }
+  }
+  for (const l of LOTS) if (l.fence) lotFence(l.rect, l.gates || [], l.kind === 'kyrkogard' ? 'mur' : 'chain', l.district === 'FÖRORTEN' ? 1 : 0, l.kind === 'kyrkogard' ? 'mur' : 'stängsel');
+  // hundrastgården: parkgången [134–150] går längs östra kanten – staketet slutar där gången börjar
+  const DOG = [...PARK_LAYOUT.dogPark];
+  for (const w of PARK_LAYOUT.walks) if (w[0] < DOG[2] && w[2] > DOG[0] && w[1] < DOG[3] && w[3] > DOG[1]) DOG[2] = Math.min(DOG[2], w[0]);
+  lotFence(DOG, [{ side: 'n', x0: PARK_LAYOUT.dogGate[0], x1: PARK_LAYOUT.dogGate[1] }], 'tra', 0, 'hundstaket');
+
+  // --- små fabriker för v2-rekvisitan ---
+  const grave = (kind, x, y) => item2('gravsten', x, y, [x - 6, y - 3, x + 8, y + 1], [[x - 5, y - 2, x + 7, y]], 22, 28, 11, 24, (P) => paintGravestone(P, kind, seedAt(x, y)));
+  const swing = (x, y, worn) => item2('gunga', x, y, [x - 19, y - 4, x + 20, y + 1], [[x - 19, y - 3, x + 20, y]], 44, 36, 22, 32, (P) => paintSwing(P, worn));
+  const slide = (x, y, worn) => item2('rutschkana', x, y, [x - 14, y - 3, x + 18, y + 1], [[x - 13, y - 2, x + 17, y]], 36, 40, 16, 36, (P) => paintSlide(P, worn));
+  const sandbox = (x, y, w, worn) => item2('sandlåda', x, y, [x - (w >> 1), y - 14, x + (w >> 1) + 1, y + 1], [[x - (w >> 1), y - 13, x + (w >> 1), y]], w + 4, 20, (w >> 1) + 2, 16, (P) => paintSandbox(P, w, worn, seedAt(x, y)));
+  const springRider = (x, y, worn) => item2('gunghäst', x, y, [x - 9, y - 3, x + 9, y + 1], [[x - 8, y - 2, x + 8, y]], 26, 26, 13, 23, (P) => paintSpringRider(P, worn));
+  const seesaw = (x, y) => item2('gungbräda', x, y, [x - 17, y - 4, x + 17, y + 1], [[x - 16, y - 3, x + 16, y]], 40, 22, 20, 18, paintSeesaw);
+  const elskap = (x, y) => item2('elskåp', x, y, [x - 7, y - 3, x + 7, y + 1], [[x - 7, y - 3, x + 7, y]], 18, 26, 9, 22, (P) => paintElskap(P, seedAt(x, y)));
+  const trashBags = (x, y) => item2('sopsäckar', x, y, [x - 16, y - 3, x + 16, y + 1], [[x - 13, y - 2, x + 13, y]], 34, 18, 17, 14, (P) => paintTrashBags(P, seedAt(x, y)));
+  const overfull = (x, y) => sprItem('container', once('contFull', () => spr(48, 36, 23, 31, paintOverfullContainer)), x, y, [x - 16, y - 8, x + 16, y + 1], [[x - 15, y - 7, x + 15, y]]);
+  const tippedCart = (x, y) => sprItem('kundvagn', once('tipped', () => spr(30, 20, 13, 16, paintTippedCart)), x, y, [x - 10, y - 3, x + 12, y + 1], [[x - 9, y - 2, x + 11, y]]);
+  const tires = (x, y) => item2('däck', x, y, [x - 12, y - 3, x + 12, y + 1], [[x - 11, y - 2, x + 11, y]], 28, 20, 14, 16, (P) => paintTires(P, seedAt(x, y)));
+  const car = (x, y, col) => item2('bil', x, y, [x - 21, y - 6, x + 21, y + 1], [[x - 20, y - 5, x + 20, y]], 46, 28, 23, 24, (P) => paintCar(P, col, false, seedAt(x, y)));
+  const wreck = (x, y) => item2('bilvrak', x, y, [x - 21, y - 6, x + 21, y + 1], [[x - 20, y - 5, x + 20, y]], 46, 28, 23, 24, (P) => paintCar(P, 0, true, seedAt(x, y)));
+  const weeds = (x, y) => loose('ogräs', spr(22, 12, 11, 10, (P) => paintWeeds(P, seedAt(x, y))), x, y);
+  const sofa = (x, y) => sprItem('soffa', once('sofa', () => spr(38, 24, 19, 20, paintSofa)), x, y, [x - 17, y - 4, x + 18, y + 1], [[x - 16, y - 3, x + 17, y]]);
+  const barrels = (x, y) => sprItem('oljefat', once('barrels', () => spr(30, 22, 15, 18, paintBarrels)), x, y, [x - 12, y - 4, x + 12, y + 1], [[x - 11, y - 3, x + 11, y]]);
+  const pallets = (x, y) => sprItem('pallar', once('pallets', () => spr(32, 28, 16, 24, paintPallets)), x, y, [x - 13, y - 4, x + 13, y + 1], [[x - 12, y - 3, x + 12, y]]);
+  const piskstallning = (x, y) => sprItem('piskställning', once('pisk', () => spr(36, 32, 18, 28, paintPiskstallning)), x, y, [x - 16, y - 3, x + 16, y + 1], [[x - 15, y - 2, x + 15, y]]);
+  const goal = (x, y, dir) => item2('fotbollsmål', x, y, dir > 0 ? [x - 14, y - 3, x + 2, y + 1] : [x - 2, y - 3, x + 14, y + 1], [dir > 0 ? [x - 13, y - 2, x + 1, y] : [x - 1, y - 2, x + 13, y]], 34, 28, 17, 24, (P) => paintGoal(P, dir));
+  const floodlight = (x, y, broken) => { if (item2('strålkastare', x, y, [x - 4, y - 2, x + 5, y + 1], [[x - 3, y - 2, x + 4, y]], 24, 82, 12, 78, (P) => paintFloodlight(P, broken))) { glows.push({ x: x - 3, y: y + 4, s: once('floodGlow', () => spr(90, 100, 45, 90, (P) => paintLampGlow(P, -74, 30, 34, 10))), a: 0.7, flicker: broken ? 1 : 0 }); } };
+  const clothesline = (x, y) => sprItem('tvättlina', once('cloth', () => spr(52, 30, 26, 26, paintClothesline)), x, y, [x - 24, y - 3, x + 24, y + 1], [[x - 23, y - 2, x - 21, y], [x + 21, y - 2, x + 23, y]]);
+  const chair = (x, y, col = 0xf4f1ea) => sprItem('plaststol', once('chair' + col, () => spr(16, 18, 8, 16, (P) => paintPlasticChair(P, col))), x, y, [x - 5, y - 3, x + 5, y + 1], [[x - 5, y - 2, x + 5, y]]);
+  const grill = (x, y) => sprItem('grill', once('grill', () => spr(24, 26, 12, 22, paintGrill)), x, y, [x - 7, y - 3, x + 7, y + 1], [[x - 6, y - 2, x + 6, y]]);
+  const gasBottle = (x, y) => sprItem('gasol', once('gas', () => spr(12, 20, 6, 17, paintGasBottle)), x, y, [x - 4, y - 3, x + 4, y + 1], [[x - 3, y - 2, x + 3, y]]);
+  const bollard = (x, y, worn) => sprItem('pollare', once('bollard' + (worn ? 1 : 0), () => spr(8, 16, 4, 14, (P) => paintBollard(P, worn))), x, y, [x - 2, y - 2, x + 2, y + 1], [[x - 2, y - 2, x + 2, y]]);
+  const lifebuoy = (x, y) => sprItem('livboj', once('buoy', () => spr(18, 32, 8, 29, paintLifebuoy)), x, y, [x - 2, y - 2, x + 3, y + 1], [[x - 1, y - 2, x + 2, y]]);
+  const igloo = (x, y, col, name) => item2('återvinning', x, y, [x - 12, y - 4, x + 12, y + 1], [[x - 11, y - 3, x + 11, y]], 32, 24, 16, 20, (P) => paintIgloo(P, col, name, seedAt(x, y)));
+  // den trasiga bänken: sitsen är hel (ryggen har en lös planka) – går att sitta på, broken
+  const brokenBench = (x, y) => { if (sprItem('trasig bänk', once('bbench', () => spr(36, 26, 17, 22, paintBrokenBench)), x, y, [x - 14, y - 5, x + 15, y + 1], [[x - 13, y - 4, x + 14, y]])) frontSeats(x, y, { broken: true }); };
+  // förortens ovårdade häckar och snår (snåren följer årstiden: grönt, brunt om hösten, kala kvistar på vintern)
+  function wornHedge(x, y, w, h = 8) {
+    const s = spr(w + 10, h + 16, (w >> 1) + 3, h + 11, (P) => paintHedge(P, w, h, (x * 11 + y) | 0, true));
+    sprItem('häck', s, x, y, [x - (w >> 1), y - 6, x + (w >> 1), y + 1], [[x - (w >> 1), y - 5, x + (w >> 1), y]]);
+  }
+  const scrubKey = (s) => (s === 'vår' ? 'sommar' : s);
+  const scrub = (x, y) => seasonal('snår', x, y, [x - 9, y - 4, x + 9, y + 1], [[x - 7, y - 3, x + 7, y]],
+    (k) => spr(40, 36, 20, 31, (P) => paintScrub(P, seedAt(x, y), k)), scrubKey);
+  const ticketMachine = (x, y) => sprItem('biljettautomat', once('ticket', () => spr(14, 28, 7, 25, paintTicketMachine)), x, y, [x - 6, y - 3, x + 5, y + 1], [[x - 5, y - 2, x + 4, y]]);
+  // vassen är grön vår/sommar, gulbrun höst/vinter; vildblommorna blommar vår/sommar, är torrt gräs om hösten och borta under snön
+  const dryKey = (s) => (s === 'höst' || s === 'vinter' ? 'torr' : 'grön');
+  const reeds = (x, y) => seasonal('vass', x, y, [x - 4, y - 2, x + 5, y + 1], [[x - 3, y - 1, x + 4, y]], (k) => spr(20, 34, 10, 31, (P) => paintReeds(P, seedAt(x, y), k === 'torr')), dryKey);
+  const wildflowers = (x, y, w = 30) => {
+    const byS = {};
+    items.push({ x, y, kind: 'vildblommor', draw: (ctx) => {
+      const k = seasonNow();
+      if (k === 'vinter') return;
+      const s = byS[k] || (byS[k] = spr(w + 6, 14, (w >> 1) + 3, 12, (P) => paintWildflowers(P, seedAt(x, y), w, k === 'höst')));
+      putW(ctx, s, x, y);
+    } });
+  };
+  const hurdle = (x, y) => sprItem('hundhinder', once('hurdle', () => spr(26, 18, 13, 15, paintDogHurdle)), x, y, [x - 11, y - 3, x + 11, y + 1], [[x - 10, y - 2, x + 10, y]]);
+  const infoBoard = (x, y, title) => item2('anslagstavla', x, y, [x - 13, y - 3, x + 14, y + 1], [[x - 12, y - 2, x + 13, y]], 34, 40, 17, 36, (P) => paintInfoBoard(P, title));
+  const graffitiWall = (x, y, w) => item2('klotterplank', x, y, [x - (w >> 1), y - 6, x + (w >> 1), y + 1], [[x - (w >> 1), y - 5, x + (w >> 1), y]], w + 8, 32, (w >> 1) + 4, 28, (P) => paintGraffitiWall(P, w, seedAt(x, y)));
+
+  // =================== parken: dammen, hundrastgården, lekplatsen, ängen, parkgången ===================
+  for (const [x, y] of [[216, 396], [228, 424], [250, 424], [290, 378], [232, 378]]) reeds(x, y); // (öster om dammen går parkgången – vassen står på västra stranden)
+  bench(262, 438, true);
+  hurdle(110, 432); bin(126, 446); infoBoard(112, 354, 'HUNDAR');
+  news(378, 456); // löpsedeln SOL! I HELG står vid kiosken (som säljer kvällstidningarna)
+  swing(1056, 436, false); slide(1104, 434, false); sandbox(1058, 456, 30, false); springRider(1094, 455, false); seesaw(1124, 447);
+  for (const [x, y] of [[1500, 420], [1545, 382], [1590, 442], [1632, 402], [1662, 440], [1482, 452], [1610, 372], [1530, 450]]) wildflowers(x, y);
+  for (const x of [200, 480, 700, 1000, 1260, 1600]) parkLamp(x, 460);
+  bench(560, 460); bench(1290, 460);
+  for (const [x, f] of [[90, 'white'], [460, null], [700, 'pink'], [960, null], [1250, 'purple'], [1450, null]]) bush(x, 456, f);
+  bed(560, 452, 40, ['red', 'yellow']); bed(1000, 452, 40, ['blue', 'white']);
+
+  // =================== kyrkogården ===================
+  const KG = LOTS.find((l) => l.id === 'kyrkogard');
+  if (KG) {
+    const rows = [[520, [1016, 1040, 1064, 1088, 1130, 1154, 1200]], [548, [1020, 1046, 1070, 1136, 1160, 1184]], [600, [1016, 1078, 1132, 1156, 1180, 1200]], [628, [1022, 1084, 1140, 1164, 1188]]]; // (granen står där 1178 låg)
+    rows.forEach(([y, xs], r) => xs.forEach((x, k) => grave((r + k) % 4, x + Math.round(hash(r, k, 61) * 4), y + Math.round(hash(r, k, 62) * 4))));
+    tree('gran', 1180, 524, false); tree('bjork', 1024, 612, false);
+    bench(1150, 590, true); parkLamp(1126, 592); hedge(1060, 506, 40);
+  }
+
+  // =================== Söder: trottoaren framför husen, gränderna, kajen ===================
+  const FS = CITY.SIDEWALK_SN[0] + 6, CS = CITY.SIDEWALK_SN[1] - 5; // 646 mot fasaderna, 667 kantstenen
+  // (björken som stod vid 1380 skymde vårdcentralens ambulansintag – nu vid kyrkogårdsstaketet 1108)
+  for (const [k, x] of [['lind', 50], ['korsbar', 170], ['bjork', 400], ['lind', 560], ['korsbar', 700], ['lind', 900], ['bjork', 1030], ['bjork', 1108], ['korsbar', 1150], ['lind', 1250], ['korsbar', 1490], ['lind', 1610]]) tree(k, x, CS);
+  for (const x of [110, 330, 470, 640, 770, 960, 1090, 1200, 1300, 1440, 1560, 1660]) lamp(x, CS + 1);
+  hydrant(240, CS); bin(600, CS); hydrant(1010, CS); bin(1330, CS);
+  // gatuskyltarna står öster om övergångsställena (trafikljusstolpen tar den västra sidan) men
+  // plåten pekar VÄSTERUT över gatmynningen – åt öster täckte den postens brevlåda/dörr,
+  // kyrkporten och vårdcentralens skyltfönster (granskningsfynd)
+  sign(CROSSWALKS_S[0].name, CROSSWALKS_S[0].x1 + 8, CS - 2, -1);
+  sign(CROSSWALKS_S[1].name, CROSSWALKS_S[1].x1 + 8, CS - 2, -1);
+  sign('VÅRDGATAN', 1212, CS - 2, -1); // vid gågatans västra hörn – plåten fri från lindens krona
+  menu(158, FS); cafe(182, FS + 6, [0xc82a2a, 0xf4ece0]); pot(246, FS, 'klot'); // pizzerians uteservering väster om dörren
+  mailbox(330, FS); bikeRack(418, FS + 3); // brevlådan öster om skyltstolpen så stolpen inte spetsar den
+  bench(460, FS + 2); pot(490, FS, 'klot'); pot(556, FS, 'klot'); bench(580, FS + 2); bin(606, FS);
+  news(660, FS + 1); pot(690, FS, 'kon'); pot(766, FS, 'kon'); bench(790, FS + 2);
+  hedge(890, FS, 30); hedge(978, FS, 30);
+  bench(1100, FS + 4); bikeRack(1160, FS + 3);
+  // krukan och östra bänken stod framför ambulansintaget – krukan till kyrkogårdsstaketet,
+  // bänken till kantstenen (helt under fasadlinjen, vetter mot gatan)
+  bench(1290, FS + 2); bin(1310, FS); pot(1195, FS, 'pelargon'); bench(1400, CS - 2);
+  flowerBox(1470, FS, 24, ['red', 'white']); pot(1546, FS, 'palm');
+  for (const [x, y, a, b] of [[156, 560, 'gron', 'brun'], [412, 530, 'gra', 'gron'], [620, 540, 'bla', 'gra'], [1428, 520, 'gron', 'gra'], [1582, 560, 'gra', 'gron']]) { wheelieBin(x, y, a); wheelieBin(x + 11, y, b); }
+  // bortre trottoaren mot kanalen: bänkar med ryggen mot gatan (framifrån sedda – den som sitter tittar ut
+  // över kanalen, mot oss), lyktor, pollare och livbojar på kajen
+  const QS = CITY.SIDEWALK_SS[1] - 8, QL = CITY.SIDEWALK_SS[1] - 12, QB = CITY.QUAY[0] + 6; // 752, 748, 766
+  for (const x of [90, 210, 420, 560, 700, 950, 1180, 1300, 1460, 1600]) bench(x, QS);
+  for (const x of [150, 360, 480, 640, 780, 900, 1240, 1400, 1540, 1660]) lamp(x, QL, -1);
+  for (const x of [250, 590, 1030, 1350]) bin(x, QS);
+  bikeRack(745, QS); bikeRack(515, QS);
+  for (let x = 40; x < CITY.X_CITY - 10; x += 96) bollard(x, QB, false);
+  for (const x of [180, 560, 940, 1320]) lifebuoy(x, QB);
+
+  // =================== Infarten ===================
+  lamp(1682, 380); lamp(1682, 456); lamp(1769, 380); lamp(1769, 450, 1, 1);
+  for (const x of [1706, 1718, 1730, 1742]) bollard(x, 184, false);
+  bench(1726, 100); bikeRack(1726, 150); wheelieBin(1712, 60, 'gra'); wheelieBin(1723, 60, 'gron');
+
+  // =================== förorten: norra raden (Pixelgatans norra trottoar) ===================
+  const FN = NW, CN = NC; // 193 / 213
+  lamp(1790, CN + 1, 1, 2); deadTree(1860, CN); elskap(1920, CN - 1); lamp(1990, CN + 1, 1, 1); lamp(2100, CN + 1, 1, 3); tippedCart(2170, CN - 1);
+  lamp(2210, CN + 1, 1, 1); lamp(2330, CN + 1, 1, 2); deadTree(2400, CN); lamp(2480, CN + 1, 1, 1); elskap(2560, CN - 1); lamp(2640, CN + 1, 1, 3); lamp(2700, CN + 1, 1, 1);
+  wheelieBin(1790, FN + 1, 'gra'); wheelieBin(1801, FN + 1, 'gron'); trashBags(1890, FN + 2); brokenBench(1922, FN + 3);
+  news(1975, FN + 1); trashBags(2058, FN + 2); bollard(2078, FN - 1, true); bollard(2142, FN - 1, true);
+  chair(2156, FN + 1); chair(2224, FN + 1, 0xd8d0c0); tires(2306, FN + 1); trashBags(2378, FN + 2);
+  wheelieBin(2432, FN + 1, 'gron'); wheelieBin(2443, FN + 1, 'gra'); wheelieBin(2454, FN + 1, 'brun'); trashBags(2560, FN + 2); brokenBench(2590, FN + 3);
+  for (const [x, y] of [[1850, 200], [1940, 210], [2050, 198], [2120, 214], [2260, 200], [2360, 212], [2470, 214], [2620, 200], [2690, 212]]) weeds(x, y);
+  // tomten: skrot bakom stängslet
+  wreck(2672, 130); tires(2648, 165); sofa(2690, 172); tippedCart(2650, 96); trashBags(2690, 70);
+  for (const [x, y] of [[2645, 110], [2700, 110], [2660, 150], [2690, 185], [2640, 60], [2705, 150]]) weeds(x, y);
+  // bakgatan
+  overfull(1950, 32); wheelieBin(2410, 30, 'gra'); wheelieBin(2421, 30, 'bla'); overfull(2300, 32); trashBags(2500, 33);
+
+  // =================== förorten: södra trottoaren, Betongtorget (den trasiga hållplatsen) ===================
+  const CX = SC, SX = SB; // 282 / 301
+  lamp(1770, CX, -1, 1); lamp(1860, CX, -1, 2); lamp(1930, CX, -1, 1); lamp(2100, CX, -1, 3); elskap(2150, CX - 1); lamp(2200, CX, -1, 1);
+  lamp(2330, CX, -1, 2); deadTree(2400, CX); lamp(2470, CX, -1, 1); lamp(2560, CX, -1, 3); lamp(2640, CX, -1, 1);
+  trashBags(1960, SX - 1); brokenBench(1900, SX + 1); tippedCart(2080, SX - 1); wheelieBin(2120, SX - 1, 'gra'); bin(2312, SX); brokenBench(2420, SX + 1); trashBags(2600, SX - 1);
+  for (const [x, y] of [[1830, 300], [1900, 290], [2060, 296], [2180, 302], [2250, 292], [2380, 300], [2520, 296], [2690, 302]]) weeds(x, y);
+
+  // =================== förorten: parkeringen, lekplatsen, lamellhuset, grusplanen ===================
+  graffitiWall(1912, 324, 160);
+  car(1850, 366, 0x3a6ad0); car(1900, 366, 0xd8d0c0); car(1955, 366, 0x8a2a2a);
+  wreck(1800, 446); tippedCart(1930, 440); tires(1870, 445); ticketMachine(1985, 336); lamp(1992, 440, -1, 2);
+  for (const [x, y] of [[1780, 330], [1975, 400], [1840, 420], [1990, 450]]) weeds(x, y);
+  swing(2062, 378, true); slide(2136, 372, true); sandbox(2064, 428, 34, true); springRider(2100, 420, true); brokenBench(2150, 440); trashBags(2050, 448);
+  for (const [x, y] of [[2040, 350], [2150, 340], [2110, 400], [2160, 420], [2080, 450]]) weeds(x, y);
+  piskstallning(2188, 400); bikeRack(2350, 458); wheelieBin(2408, 440, 'gra'); wheelieBin(2419, 440, 'gron'); trashBags(2250, 458);
+  // gräsremsan bakom lamellhuset: björkar (höghusgårdens träd), oklippt häck och snår
+  tree('bjork', 2180, 334, false); tree('bjork', 2418, 338, false);
+  wornHedge(2236, 318, 48); scrub(2290, 320); wornHedge(2350, 318, 56); scrub(2404, 312);
+  scrub(2186, 452); scrub(2420, 456);
+  // parkeringens kanter och hållplatsstigen
+  scrub(1778, 336); scrub(2040, 322); scrub(2040, 460);
+  goal(2448, 404, 1); goal(2688, 404, -1); floodlight(2438, 330, false); floodlight(2696, 330, true); brokenBench(2600, 440);
+  for (const [x, y] of [[2500, 330], [2650, 340], [2460, 440], [2690, 448]]) weeds(x, y);
+
+  // =================== förorten: södra raden (Södergatan), återvinningen, vagnsplatsen ===================
+  lamp(1790, CS + 1, 1, 2); deadTree(1870, CS); lamp(1950, CS + 1, 1, 1); elskap(2010, CS - 1); lamp(2070, CS + 1, 1, 3); lamp(2150, CS + 1, 1, 1);
+  lamp(2320, CS + 1, 1, 2); deadTree(2400, CS); lamp(2470, CS + 1, 1, 1); lamp(2560, CS + 1, 1, 3); lamp(2650, CS + 1, 1, 1);
+  barrels(1868, FS + 1); tires(1900, FS); wheelieBin(1936, 560, 'gra'); wheelieBin(1947, 560, 'gron');
+  // oljefaten stod framför garageport 3 och skymde glipan med kattögonen – nu vid kantstenen
+  // (väster om trafikens parkerade moped), helt under fasadlinjen
+  trashBags(1966, FS + 1); bench(2042, FS + 2); tippedCart(2100, FS); barrels(2182, CS); pallets(2262, 600);
+  pallets(2430, FS + 1); overfull(2580, FS + 4);
+  scrub(1940, FS + 2); scrub(2070, FS + 2); wornHedge(2462, FS + 1, 24); scrub(2620, FS + 2);
+  for (const [x, y] of [[1800, 650], [1990, 668], [2120, 652], [2300, 660], [2400, 650], [2520, 668], [2620, 652], [2700, 660]]) weeds(x, y);
+  igloo(2306, 560, 0x2a8a3a, 'GLAS'); igloo(2334, 556, 0xe8e4d8, 'PAPP'); igloo(2362, 560, 0x2a5aa8, 'PLÅT');
+  trashBags(2320, 590); overfull(2340, 625); graffitiWall(2334, 500, 80);
+  for (const [x, y] of [[2296, 530], [2370, 600], [2300, 632]]) weeds(x, y);
+  clothesline(2660, 560); chair(2700, 620); grill(2702, 605); gasBottle(2638, 620); tires(2640, 596); trashBags(2700, 640);
+  for (const [x, y] of [[2636, 540], [2705, 580], [2650, 636]]) weeds(x, y);
+  // bortre trottoaren i förorten
+  brokenBench(1800, QS); lamp(1860, QL, -1, 2); bin(1900, QS); lifebuoy(2000, QB); brokenBench(2200, QS); lamp(2300, QL, -1, 1); trashBags(2400, QS);
+  lamp(2500, QL, -1, 3); brokenBench(2600, QS); lamp(2680, QL, -1, 1);
+  for (let x = 1800; x < CITY.W - 10; x += 96) bollard(x, QB, true);
+  for (const [x, y] of [[1950, 750], [2150, 745], [2350, 752], [2550, 746], [2650, 754]]) weeds(x, y);
 
   if (skipped.length) console.warn('rekvisita som inte fick plats (RESERVED/hus/annan rekvisita):', skipped.join(', '));
+
+  // sittplatsen för ett klick i världen: den närmaste platsen på bänken man klickade på.
+  // isFree(seat) låter scenen hoppa över upptagna platser (andra spelare, fotgängare).
+  function seatAt(x, y, isFree = () => true) {
+    let best = null, bd = Infinity;
+    for (const s of seats) {
+      const h = s.hit;
+      if (x < h[0] || x >= h[2] || y < h[1] || y >= h[3] || !isFree(s)) continue;
+      const d = Math.abs(s.x - x) + Math.abs(s.y - y) * 0.25;
+      if (d < bd) { bd = d; best = s; }
+    }
+    return best;
+  }
+  // närmaste lediga plats inom r px från (x, y) – för fotgängare som vill vila (life.js)
+  function seatNear(x, y, r = 60, isFree = () => true) {
+    let best = null, bd = r;
+    for (const s of seats) { const d = Math.hypot(s.x - x, s.y - y); if (d < bd && isFree(s)) { bd = d; best = s; } }
+    return best;
+  }
 
   return {
     items: () => items,
     obstacles,
     _skipped: skipped,
+    seats: () => seats,
+    seatAt,
+    seatNear,
     update(dt) {
       gustT -= dt;
-      if (gustT <= 0) { gustT = 2 + Math.random() * 4; gustTo = Math.random() * (env.rain ? 1.8 : 0.9); }
+      const wind = Math.abs(env.weather?.wind || 0) / 60;
+      if (gustT <= 0) { gustT = 2 + Math.random() * 4; gustTo = Math.random() * (env.rain ? 1.8 : 0.9) + wind; }
       gust += (gustTo - gust) * Math.min(1, dt * 0.8);
     },
-    glow(ctx) {
+    glow(ctx, view) {
       const k = clamp((env.dark - 0.1) / 0.28, 0, 1);
       if (k <= 0) return;
-      const m = ctx.getTransform ? ctx.getTransform() : null;
-      const sc = m && m.a ? m.a : 1, vx = m ? -m.e / sc : 0, vw = ctx.canvas.width / sc;
-      const vis = (x) => x > vx - 90 && x < vx + vw + 90;
+      let vx, vw, vy = -1e9, vh = 2e9;
+      if (view) { vx = view.x; vw = view.w; vy = view.y; vh = view.h; }
+      else { const m = ctx.getTransform ? ctx.getTransform() : null, sc = m && m.a ? m.a : 1; vx = m ? -m.e / sc : 0; vw = ctx.canvas.width / sc; }
+      const vis = (x, y) => x > vx - 90 && x < vx + vw + 90 && y > vy - 90 && y < vy + vh + 90;
+      // flimmer: 1 = enstaka blink, 2 = trasigt lysrör som sprakar
+      const flick = (f, seed) => (f === 2 ? (hash(Math.floor(env.t * 13), 2, seed) > 0.42 ? (hash(Math.floor(env.t * 31), 3, seed) > 0.2 ? 1 : 0.6) : 0.08) : f === 1 ? (hash(Math.floor(env.t * 9), 1, seed) > 0.25 ? 1 : 0.25) : 1);
       ctx.globalCompositeOperation = 'lighter';
       for (const g of glows) {
-        if (!vis(g.x)) continue;
-        let a = g.a;
-        if (g.flicker) a *= hash(Math.floor(env.t * 9), 1, g.x) > 0.25 ? 1 : 0.25;
-        ctx.globalAlpha = k * a;
+        if (!vis(g.x, g.y)) continue;
+        ctx.globalAlpha = k * g.a * flick(g.flicker, g.x);
         put(ctx, g.s, g.x, g.y);
       }
-      if (vis(FOUNT.x)) {
+      if (vis(FOUNT.x, FOUNT.y) && !snowNow()) {
         ctx.globalAlpha = k * (0.85 + 0.15 * Math.sin(env.t * 2));
         put(ctx, FGLOW, FOUNT.x, FOUNT.y);
         ctx.globalAlpha = k * 0.3;
@@ -1213,8 +2283,8 @@ export function createProps(env) {
       }
       ctx.globalCompositeOperation = 'source-over';
       for (const l of lits) {
-        if (!vis(l.x)) continue;
-        ctx.globalAlpha = Math.min(1, k * l.a);
+        if (!vis(l.x, l.y)) continue;
+        ctx.globalAlpha = Math.min(1, k * l.a * flick(l.flicker, l.x));
         put(ctx, l.s, l.x, l.y);
       }
       ctx.globalAlpha = 1;

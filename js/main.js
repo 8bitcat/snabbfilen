@@ -15,6 +15,13 @@ import { makeShopKlader } from './scenes/shop-klader.js';
 import { makeJobbFlyg } from './jobs/jobb-flyg.js';
 import { makeJobbFrukt } from './jobs/jobb-frukt.js';
 import { makeJobbBurgare } from './jobs/jobb-burgare.js';
+import { makeJobbPizzeria } from './jobs/jobb-pizzeria.js';
+import { makeJobbPosten } from './jobs/jobb-posten.js';
+import { makeJobbBensin } from './jobs/jobb-bensin.js';
+import { makeJobbVerkstad } from './jobs/jobb-verkstad.js';
+import { makeJobbTvatt } from './jobs/jobb-tvatt.js';
+import { makeJobbKafe } from './jobs/jobb-kafe.js';
+import { makeShopDjur } from './scenes/shop-djur.js';
 import { startJobFlow, startShiftNow } from './jobs/shift.js';
 import { openFoodShop } from './shops/matbutik.js';
 import { openHousing } from './shops/bostad.js';
@@ -72,8 +79,15 @@ const SCENES = {
   jobbflyg: (a, o) => makeJobbFlyg(a, o),
   jobbfrukt: (a, o) => makeJobbFrukt(a, o),
   jobbburgare: (a, o) => makeJobbBurgare(a, o),
+  jobbpizzeria: (a, o) => makeJobbPizzeria(a, o),
+  jobbposten: (a, o) => makeJobbPosten(a, o),
+  jobbbensin: (a, o) => makeJobbBensin(a, o),
+  jobbverkstad: (a, o) => makeJobbVerkstad(a, o),
+  jobbtvatt: (a, o) => makeJobbTvatt(a, o),
+  jobbkafe: (a, o) => makeJobbKafe(a, o),
+  djur: (a, o) => makeShopDjur(a, o),
 };
-const ENGINES = { flygplats: 'jobbflyg', frukt: 'jobbfrukt', burgare: 'jobbburgare' };
+const ENGINES = { flygplats: 'jobbflyg', frukt: 'jobbfrukt', burgare: 'jobbburgare', pizzeria: 'jobbpizzeria', posten: 'jobbposten', bensinmack: 'jobbbensin', bilverkstad: 'jobbverkstad', tvatteri: 'jobbtvatt', kafe: 'jobbkafe' };
 
 // ---------- skala canvasen till fönstret ----------
 // MOBILFYLLNING: spelet fyller HELA ytan under HUD-raden på alla enheter, med

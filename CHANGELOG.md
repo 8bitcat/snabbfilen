@@ -10,6 +10,16 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.28.0] – 2026-09-28 – Den stora staden
+- STADEN ÄR STOR NU! Pixelstaden har växt till en hel värld: nya SÖDER under parken med Södergatan, pizzerian, posten, biblioteket, bion, kyrkan med klocktornet, vårdcentralen och bensinmacken – och kajen vid kanalen längst i söder.
+- FÖRORTEN bortom infarten: höghus i betong, närbutik med galler, pantbank, kebab, klotter överallt och en busshållplats som sett bättre dagar.
+- ÅK BUSS på riktigt: gå till en hållplats, kliv på för 10 kr och åk genom hela staden.
+- VÄDER OCH ÅRSTIDER: sol, drivande moln, regn med åska, snö som lägger sig, dimma och blåst – och hela staden skiftar med årstiderna.
+- SEX NYA JOBB att gå till: Pizzerian, Posten, Pixelmacken, Bilverkstan, Tvätteriet och baristapasset på Kaféet.
+- DJURAFFÄREN HAR ÖPPNAT: hälsa på hundarna, katterna och kaninerna och köp prylar – husdjuren flyttar in hemma hos dig i nästa uppdatering!
+- Burgarbaren har fått sin nya fasad: menyställ på trottoaren och stora dinerfönster med gäster, kockar och en servitris på rullskridskor.
+- Sitt på bänkar och i busskurer, hundar som slutat flimra, och tusen nya detaljer.
+
 ## [0.27.0] – 2026-09-28 – Jobba ihop: delad lön och fulla bord
 - JOBBA IHOP på riktigt: när du börjar ett pass på Burgarbaren finns knappen "💼 Jobba ihop" – välj vem i Pixelstaden du vill jobba med, så får hen inbjudan medan du kliver rakt in på passet.
 - NI DELAR PÅ LÖNEN: lagets alla serveringar räknas ihop och delas lika när passet är slut – att jobba med kompisar lönar sig.

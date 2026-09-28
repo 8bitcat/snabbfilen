@@ -84,6 +84,89 @@ await page.click('.dlg-foot .btn'); // En annan gång
 await page.waitForTimeout(200);
 await page.evaluate(() => { window.SF.citySub = 0; });
 
+// 4c. Staden v2: kartkontraktet stämmer, man kan gå runt ett södervänt hus till dörren, bussen går till förorten
+const mapProblems = await page.evaluate(() => import('../js/city/map.js').then((m) => m.validateMap()));
+ok(mapProblems.length === 0, `kartkontraktet v2 stämmer${mapProblems.length ? ': ' + mapProblems.slice(0, 3).join('; ') : ''}`);
+await page.evaluate(() => { const d = window.SF.scene._debug; d.teleport(216, 476); d.enter('pizzeria'); }); // från parkgången bakom pizzerian
+let around = false;
+for (let i = 0; i < 60 && !around; i++) {
+  await page.waitForTimeout(250);
+  around = await page.evaluate(() => window.SF.scene._debug.arrived());
+}
+const atDoor = await page.evaluate(() => window.SF.scene._debug.pos());
+ok(around && Math.abs(atDoor.x - 216) < 6 && atDoor.y > 640 && atDoor.y < 664, `gick runt pizzerian till dörren på söderfasaden (${Math.round(atDoor.x)},${Math.round(atDoor.y)})`);
+await shot('06c-soder');
+const busBefore = await page.evaluate(() => ({ min: window.SF.game.min, money: window.SF.game.money }));
+await page.evaluate(() => { const d = window.SF.scene._debug; const p = d.busStop('SÖDERKYRKAN'); window.SF.scene.down(p.x, p.y); });
+let busDlg = false;
+for (let i = 0; i < 40 && !busDlg; i++) {
+  await page.waitForTimeout(250);
+  busDlg = (await page.locator('.dlg-head h2').textContent().catch(() => ''))?.includes('SÖDERKYRKAN');
+}
+ok(busDlg, 'busshållplatsen öppnar resmålsdialogen');
+await page.click('[data-bus="betongtorget"]');
+let inSuburb = false;
+for (let i = 0; i < 20 && !inSuburb; i++) {
+  await page.waitForTimeout(250);
+  inSuburb = await page.evaluate(() => window.SF.scene._debug.arrived() && window.SF.scene._debug.districtNow() === 'FÖRORTEN');
+}
+const busAfter = await page.evaluate(() => ({ min: window.SF.game.min, money: window.SF.game.money }));
+ok(inSuburb && busAfter.money === busBefore.money - 10 && busAfter.min >= busBefore.min + 15, `bussen tog en till förorten (10 kr, +${Math.round(busAfter.min - busBefore.min)} min)`);
+await shot('06d-fororten');
+
+// 4d. Bussen på riktigt: väntande spelare kallar fram en buss → klick på dörren → dialog → ombord → framme
+let busSeen = false;
+for (let i = 0; i < 80 && !busSeen; i++) { // spelaren står vid hållplatsen – trafiken summonar en buss
+  await page.waitForTimeout(250);
+  busSeen = await page.evaluate(() => !!window.SF.scene._debug.sim().traffic.busAt?.('betongtorget'));
+}
+ok(busSeen, 'en buss kom fram när man väntade vid hållplatsen');
+const doorClicked = await page.evaluate(() => {
+  const d = window.SF.scene._debug, tr = d.sim().traffic;
+  const bi = tr.busAt?.('betongtorget');
+  if (!bi) return false;
+  tr.hold('betongtorget', 30); // ge promenaden till dörren gott om tid
+  const c = d.cam();
+  window.SF.scene.down((bi.x0 + bi.x1) / 2 - c.x, bi.y - 20 - c.y);
+  return true;
+});
+let lineDlg = false;
+for (let i = 0; i < 40 && !lineDlg; i++) {
+  await page.waitForTimeout(250);
+  lineDlg = (await page.locator('.dlg-head h2').textContent().catch(() => ''))?.includes('Linje 4');
+}
+ok(doorClicked && lineDlg, 'klick på bussdörren öppnar Linje 4-dialogen');
+const rideBefore = await page.evaluate(() => window.SF.game.money);
+await page.click('[data-bus="pixeltorget"]');
+let riding = false;
+for (let i = 0; i < 20 && !riding; i++) { await page.waitForTimeout(250); riding = await page.evaluate(() => !!window.SF.scene._debug.ride()); }
+ok(riding && (await page.evaluate(() => window.SF.game.money)) === rideBefore - 10, 'ombord på bussen (10 kr) – resan är igång');
+await shot('06e-ombord');
+await page.evaluate(() => window.SF.scene.down(10, 10)); // klick under resan = hoppa fram
+let offBus = false;
+for (let i = 0; i < 80 && !offBus; i++) { await page.waitForTimeout(250); offBus = await page.evaluate(() => !window.SF.scene._debug.ride()); }
+const offPos = await page.evaluate(() => window.SF.scene._debug.pos());
+ok(offBus && Math.abs(offPos.x - 610) < 220, `klev av bussen vid Pixeltorget (${Math.round(offPos.x)},${Math.round(offPos.y)})`);
+
+// 4e. Bänkarna: klick på en ledig parkbänk → figuren går dit och sätter sig; nästa klick reser den
+const seatId = await page.evaluate(() => {
+  const d = window.SF.scene._debug, S = d.sim();
+  const p = d.pos();
+  const s = S.props.seatNear?.(p.x, p.y, 900, (q) => q.kind === 'bank' && !S.life.seatBusy?.(q.id));
+  if (!s) return null;
+  d.teleport(s.walk.x, s.walk.y + (s.dir === 'up' ? -24 : 24));
+  const c = d.cam();
+  window.SF.scene.down(s.x - c.x, s.y - 4 - c.y);
+  return s.id;
+});
+let sat = false;
+for (let i = 0; i < 30 && !sat; i++) { await page.waitForTimeout(250); sat = await page.evaluate(() => !!window.SF.scene._debug.sitting()); }
+ok(!!seatId && sat, `satte sig på en bänk (${seatId})`);
+await shot('06f-bank');
+await page.evaluate(() => { const d = window.SF.scene._debug, c = d.cam(), p = d.pos(); window.SF.scene.down(p.x - c.x, p.y + 40 - c.y); });
+await page.waitForTimeout(600);
+ok(await page.evaluate(() => !window.SF.scene._debug.sitting()), 'reste sig vid nästa klick');
+
 // 5. Stormarknaden (gåbar): plocka en pizza i korgen och betala i kassan
 await page.evaluate(() => window.SF.go('mat'));
 await page.waitForTimeout(700);
@@ -91,7 +174,7 @@ const moneyBefore = await page.evaluate(() => window.SF.game.money);
 ok(await page.evaluate(() => !!window.SF.scene._debug.spot('pizza')), 'pizzan står på en hylla med prislapp');
 ok(await page.evaluate(() => window.SF.scene._debug.pick('pizza')), 'pizzan lades i korgen');
 ok(await page.evaluate(() => window.SF.scene._debug.basket().some((b) => b.id === 'pizza')), 'korgen innehåller pizzan');
-await shot('07-stormarknad');
+await shot('08-stormarknad');
 await page.evaluate(() => window.SF.scene._debug.checkout());
 let paid = false;
 for (let i = 0; i < 60 && !paid; i++) { await page.waitForTimeout(250); paid = await page.evaluate(() => window.SF.game.fridge.pizza === 1); }
