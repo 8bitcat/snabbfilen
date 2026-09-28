@@ -2222,10 +2222,12 @@ export function makeShopKafe(A) {
       const label = h === 'disk' || h === 'tavla' ? 'MENYN - KLICKA PÅ DISKEN' : h === 'skylt' ? 'DAGENS FIKA - 5 KR BILLIGARE' : h === 'dorr' ? 'GÅ UT' : h === 'katt' ? 'KAFÉKATTEN KANEL'
         : h === 'hund' ? 'TAXEN SIXTEN' : h === 'patar' ? 'PÅTÅR - INGÅR NÄR DU FIKAT' : null;
       if (label) {
+        const safe = globalThis.SF?.view?.safe || { y1: H }; // fyll-läget kan beskära nederkanten
+        const by = Math.min(H, safe.y1) - 14;
         const w = textW(SMALL, label) + 10;
-        ctx.fillStyle = '#17151a'; ctx.fillRect((VW - w) >> 1, H - 14, w, 11);
-        ctx.fillStyle = '#e8b230'; ctx.fillRect(((VW - w) >> 1) + 1, H - 13, w - 2, 1);
-        ctxText(ctx, SMALL, label, ((VW - w) >> 1) + 5, H - 10, '#f4f1ea');
+        ctx.fillStyle = '#17151a'; ctx.fillRect((VW - w) >> 1, by, w, 11);
+        ctx.fillStyle = '#e8b230'; ctx.fillRect(((VW - w) >> 1) + 1, by + 1, w - 2, 1);
+        ctxText(ctx, SMALL, label, ((VW - w) >> 1) + 5, by + 4, '#f4f1ea');
       }
     },
   };

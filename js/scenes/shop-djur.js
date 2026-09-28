@@ -872,7 +872,10 @@ function bigLabel(ctx, spot, t, atTop) {
   }
   const nw = textW(BIG, name), pw = textW(BIG, price), hw = textW(SMALL, hint) + (sub ? textW(SMALL, sub) + 8 : 0);
   const w = Math.max(nw + pw + 26, hw + 26), h = 24;
-  const x0 = Math.round((VW - w) / 2), y0 = atTop ? 3 : H - h - 3;
+  const safe = globalThis.SF?.view?.safe || { x0: 0, y0: 0, x1: VW, y1: H }; // synliga rutan (fyll-läget beskär)
+  let x0 = Math.round((VW - w) / 2);
+  x0 = Math.max(safe.x0 + 2, Math.min(x0, safe.x1 - w - 2));
+  const y0 = atTop ? safe.y0 + 3 : Math.min(H, safe.y1) - h - 3;
   ctx.fillStyle = '#0e0d12'; ctx.fillRect(x0 - 2, y0 - 2, w + 4, h + 4);
   ctx.fillStyle = col; ctx.fillRect(x0 - 1, y0 - 1, w + 2, h + 2);
   ctx.fillStyle = '#17151a'; ctx.fillRect(x0, y0, w, h);

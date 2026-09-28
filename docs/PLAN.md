@@ -5,8 +5,13 @@ Varje del blir ett eget släpp så fort den är klar och provkörd (`tools/relea
 först. Två agenter får aldrig skriva i samma fil samtidigt, så vissa delar väntar på att
 en fil blir ledig.
 
-**Live nu: v0.24.0.** Allt som är byggt men inte släppt ligger i arbetskopian och säkras på
+**Live nu: v0.25.0.** Allt som är byggt men inte släppt ligger i arbetskopian och säkras på
 grenen `wip`.
+
+**Arbetsordning (Carl 2026-09-28 em):** huvudsessionen bygger som standard; agentkörningar
+startas EN i taget (inte parallellt) när kontogränsen tillåter, och pixelgrafiken körs
+alltid på huvudmodellen – kvaliteten får aldrig sjunka. Alla åtta körningarna stoppades
+av kontogränsen i dag; de återupptas en och en efter återställningen (18:00/20:40).
 
 ## Vem gör vad
 
@@ -25,7 +30,32 @@ pausmenyn ☰, pixelmätarna ovanför spelbilden · bostadsbyrån man går runt 
 0.21 chatt · 0.22 pratbubblor och emoji, menytavla vid Burgarbaren · 0.23 veckosammanfattningen
 · 0.23.1 aldrig in i spelet utan namn · 0.23.2 möblera med fingret · 0.23.3 repliker som
 pratbubblor i butikerna · 0.23.4 flera figurer får heta samma (unika id), högre gatuskyltar ·
-**0.24.0 veckan först med sju fönster mot staden**.
+0.24.0 veckan först med sju fönster mot staden · **0.25.0 hela skärmen fylls på varje
+enhet** (samma pixelkorn – vyn växer: staden ser mer värld, fasta scener får pixelram,
+mätarremsan över hela bredden, vänd-på-mobilen-skylt, säkra kanter runt notchen) ·
+**0.25.1 zoomvalet** (inne i rum/butiker/jobb fylls hela skärmen som standard – jämn
+förstoring med beskärning mest upptill; 🔍-knappen växlar till hela bilden med ram;
+scener kan ange contentBox så t.ex. Lilla rummets mörka yta bortom väggen aldrig visas) ·
+**0.25.2 mataffären och kaféet breda** (ser MER butik på hela skärmen, som staden) ·
+**0.25.3 närmare på mobilen** (tre zoomlägen via 🔍: NÄRA = datorns bild med stora
+pixlar, standard på mobil · VID = ser mer värld, standard på dator · RAM = pixelram) ·
+**0.25.4 Möbeljätten bred** (entréhallen, Småland och kassorna på samma skärm; nya
+mekanismen viewMax gör att en scen kan bli bred med enbart sin egen fil) ·
+0.25.5 paddorna får VID-läget + knip-zoom-skydd · 0.25.6 disken i Burgarbaren lagad
+(ingen stapling, köket fyller alla sex, reserverad plats, FULLT-besked) ·
+**0.26.0 JOBBA TILLSAMMANS i Burgarbaren** (delat skift: kollegan syns, samma kunder
+och disk, servitören får poängen; jobbkanal i world.js + js/net/coop.js) ·
+**0.26.1 bjud in att jobba ihop** (💼-knapp i 👥-dialogen, inbjudan når kompisen var
+hen än är, "Häng med!" går rakt in på passet) · 0.26.2 osynk-fixen (aktiv ledare har
+företräde, pass-slut lämnar över direkt, tysta ledare avsätts) · **0.27.0 jobba ihop
+på riktigt** (välj kompis i startdialogen, DELAD LÖN, extraborden 4→10, kundrusch) ·
+**0.28.0 DEN STORA STADEN** (hela v2-världen: Söder med Södergatan och kanalen,
+Förorten med graffiti och trasiga hållplatsen, riktig buss, väder och årstider,
+A*-gång, sex nya jobb – pizzerian, posten, macken, bilverkstan, tvätteriet,
+baristan – djuraffären ÖPPNAD, Burgarbarens nya fasad; 33 filer, 125 kontroller).
+Burgarbaren-inne-körningen (restaurangen + kökjobbet) kör nu; därefter släpps resten
+av köerna i tur och ordning: bostäderna+husdjuren hemma, garderoben, däckbytet,
+flygterminalen, ljudet, leksaksaffären.
 
 ## Pågår nu (agenterna kör)
 
@@ -50,6 +80,8 @@ pratbubblor i butikerna · 0.23.4 flera figurer får heta samma (unika id), hög
 | 0.36 | **Downtown** med kontor, **universitetet** (utbildning), **datorbutiken** (bygga datorer som jobb) och **finansjobb** (räkna) – jobben kräver utbildning | storstaden + banken |
 | 0.37 | Stadens småställen: bio, kebab, kiosk med lotter, pantbank, vårdcentralen som jobb | storstaden |
 | 0.38 | **Staden på längden**: förorten 3–5 skärmbredder bort över en **stor bro**, förbi bilverkstaden (stökigare och skitigare), bussen tar en direkt. Bortom förorten: **landet** med gårdar och bondgårdar att bo på | storstaden |
+| – | **Leksaksaffären**: gåbar butik med squishy-dumplings i bambukorgar (pastell, glitter, jul), squishy-mat (ost, smör, jordgubbe, iskuber, kattass), klämbordet (håll = ihoptryckt, släpp = fjädrar, pip och glitter), EGNA kawaii-figurer (inga Sanrio – spelet är publikt), plysch och andra leksaker, köpflöde, fasad med modelltåg | körning skriven (leksaksaffaren), återupptas efter gränsen |
+| – | **Mobilen steg 2**: fasta scener (rummet, butikerna, jobben) görs "breda" så de själva fyller hela vyn i stället för pixelramen – scen för scen via WIDE-tabellen i main.js | huvudsessionen, när respektive scenfil är ledig |
 | 1.0 | **Buggjakt och finputs** i alla scener (flimmer, z-ordning, överlapp, detaljnivå) | allt ovan |
 
 ## Vad jag behöver från Carl

@@ -625,6 +625,8 @@ const TIRE_KINDS = ['sommar', 'vinter', 'stort', 'litet'];
 const TIRE_TXT = { sommar: 'SOMMAR', vinter: 'VINTER', stort: 'STORT', litet: 'LITET' };
 const TIRE_COL = { sommar: '#d8641a', vinter: '#2f6db5', stort: '#8a3a2a', litet: '#2e8a48' };
 const TIRE_R = { sommar: 5, vinter: 5, stort: 6, litet: 4 };
+// minibilen uppifrån i däcksbubblan (fronten uppåt)
+const MINI = ['..bbbbb..', '.bByBBBb.', 'WbBBBBBbW', 'WbgggggbW', 'WbBBBBBbW', '.bBBBBBb.', '.bBBBBBb.', '.bBBBBBb.', '.bBBBBBb.', '.bBBBBBb.', 'WbgggggbW', 'WbBBBBBbW', 'WbBBBBBbW', '.bBrBrBb.', '..bbbbb..'];
 const TIRE_RIM = { sommar: 'alloy', vinter: 'steel', stort: 'steel', litet: 'steel' };
 const tireKindFor = (kind) => (kind === 'pickup' ? 'stort' : kind === 'halvkombi' ? 'litet' : Math.random() < 0.5 ? 'sommar' : 'vinter');
 const kindWheel = (kind, f = 0) => wheelArt(TIRE_R[kind], TIRE_RIM[kind], f, kind);
@@ -2378,7 +2380,7 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
     patienceBar(ctx, c, ix + 2, iy + 23, IW - 4);
   }
   // bilen uppifrån (fronten uppåt): vänster på bilen är vänster i bilden
-  const MINI = ['..bbbbb..', '.bByBBBb.', 'WbBBBBBbW', 'WbgggggbW', 'WbBBBBBbW', '.bBBBBBb.', '.bBBBBBb.', '.bBBBBBb.', '.bBBBBBb.', '.bBBBBBb.', 'WbgggggbW', 'WbBBBBBbW', 'WbBBBBBbW', '.bBrBrBb.', '..bbbbb..'];
+  // (minibilens pixelkarta ligger på modulnivå vid TIRE_R – anropsordningen krävde det)
   function drawMiniCar(ctx, c, x0, y0) {
     const j = c.tj, col = c.color, flatCol = (t * 4 | 0) % 2 ? '#ff3a2a' : '#8a1a14';
     const flatX = c.face ? 0 : 8, flatRows = j.wheel ? [2, 3, 4] : [10, 11, 12];
@@ -2687,6 +2689,145 @@ function jackImg() {
   return (IMG.jack = P.flush());
 }
 // tre liggande däck på varandra
+// en arbetshög med n däck (högarna man hämtar däck från vid bytet); n=0 = kritmarkerad tom plats
+function pileImg(n) {
+  const key = 'pile' + n;
+  if (IMG[key]) return IMG[key];
+  const W = 22, H = 8 + Math.max(1, n) * 5 + 4, P = new Pix(W, H), cx = 11;
+  P.hl(2, H - 1, 19, 0x140c1e, 0.3);
+  if (n <= 0) { // tomt: kritring på golvet där högen ska stå
+    for (let x = 3; x <= 18; x++) { P.px(x, H - 2, 0x6a6674); P.px(x, H - 7, 0x6a6674); }
+    for (let y = H - 7; y <= H - 2; y++) { P.px(3, y, 0x6a6674); P.px(18, y, 0x6a6674); }
+  } else {
+    for (let k = 0; k < n; k++) tireSide(P, cx, H - 2 - k * 5, 18);
+    tireTop(P, cx, H - 2 - (n - 1) * 5 - 4, 18);
+  }
+  return (IMG[key] = P.flush());
+}
+
+// skruvdragaren: gul pistolmodell med hylsa, grepp och batteri. mir=1 = nosen åt vänster.
+function wrenchImg(mir) {
+  const key = 'wrench' + mir;
+  if (IMG[key]) return IMG[key];
+  const W = 13, H = 11, P = new Pix(W, H);
+  const X = (x) => (mir ? W - 1 - x : x);
+  // hylsan (nosen)
+  P.px(X(11), 3, 0x8a8e96); P.px(X(12), 3, 0x5a5e66); P.px(X(11), 4, 0xc8ccd4); P.px(X(12), 4, 0x8a8e96); P.px(X(11), 5, 0x5a5e66); P.px(X(12), 5, 0x3a3e46);
+  // kroppen
+  for (let x = 3; x <= 10; x++) { P.px(X(x), 2, 0xffd23f); P.px(X(x), 3, 0xf2c230); P.px(X(x), 4, 0xd89a1a); P.px(X(x), 5, 0xb07a12); }
+  P.px(X(3), 3, 0x17151a); P.px(X(10), 2, 0xfff2a0);
+  P.hl(mir ? W - 11 : 3, 1, 8, 0x17151a); P.hl(mir ? W - 11 : 3, 6, 8, 0x17151a);
+  // luftintag/motorlinjer
+  P.px(X(5), 3, 0x8a6a10); P.px(X(7), 3, 0x8a6a10);
+  // greppet nedåt med avtryckare och batteri
+  P.px(X(5), 6, 0x2a2b31); P.px(X(6), 6, 0x2a2b31);
+  for (let y = 6; y <= 8; y++) { P.px(X(5), y, 0x3a3e46); P.px(X(6), y, 0x22242a); }
+  P.px(X(7), 6, 0xc8342a); // avtryckaren
+  P.px(X(4), 9, 0x17151a); P.px(X(5), 9, 0x2f5fa8); P.px(X(6), 9, 0x244a86); P.px(X(7), 9, 0x17151a);
+  P.hl(mir ? W - 8 : 4, 10, 4, 0x140c1e, 0.35);
+  return (IMG[key] = P.flush());
+}
+
+// luftmunstycket man bär och håller mot ventilen
+function nozzleImg() {
+  if (IMG.nozzle) return IMG.nozzle;
+  const W = 7, H = 10, P = new Pix(W, H);
+  P.px(3, 0, 0xc8ccd4); P.px(3, 1, 0x8a8e96); P.px(2, 1, 0x5a5e66); P.px(4, 1, 0x5a5e66); // pipen
+  P.hl(2, 2, 3, 0x8a8e96);
+  for (let y = 3; y <= 7; y++) { P.px(2, y, 0xd84a38); P.px(3, y, 0xc8342a); P.px(4, y, 0x8a2018); } // greppet
+  P.px(1, 4, 0xffd23f); P.px(1, 5, 0xd89a1a); // avtryckaren
+  P.hl(2, 8, 3, 0x7a1e16); P.px(3, 9, 0x17151a); // slanganslutningen
+  return (IMG.nozzle = P.flush());
+}
+
+// dagsljuset som faller in genom rullporten (spegelvänds för högra porten)
+function spillImg(L) {
+  const key = 'spill' + (L ? 1 : 0);
+  if (IMG[key]) return IMG[key];
+  const W = 46, H = 26, P = new Pix(W, H);
+  for (let y = 0; y < H; y++) {
+    const len = Math.round(W * (0.55 + 0.45 * (y / H))); // bredare nertill (ljuskägla)
+    for (let x = 0; x < len; x++) {
+      const k = x / len;
+      const a = (1 - k) * (1 - k) * 0.30 + 0.02;
+      if (((x + y * 3) % 5) === 0 && k > 0.5) continue; // dithrad ytterkant
+      P.px(L ? x : W - 1 - x, y, 0xfff2c8, a);
+    }
+  }
+  return (IMG[key] = P.flush());
+}
+
+// navet i navbubblan (31×31, centrum 15,15): skruvarna ritas ovanpå av bubblan.
+// state: 'flat' = punkterat hjul · true = nytt hjul monterat · false = naken trumma
+function hubFaceImg(state) {
+  const key = 'hub' + state;
+  if (IMG[key]) return IMG[key];
+  const W = 31, H = 31, P = new Pix(W, H), cx = 15, cy = 15;
+  const ring = (r0, r1, c, a = 1) => {
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const d = Math.hypot(x - cx, y - cy);
+      if (d >= r0 && d < r1) P.px(x, y, c, a);
+    }
+  };
+  if (state === 'flat' || state === true) {
+    // däcket framifrån
+    ring(10.5, 15.2, 0x1b1b20);
+    ring(13.6, 15.2, 0x26262e);
+    ring(10.5, 11.6, 0x101014);
+    if (state === 'flat') { // platt: buken hänger nertill + lite ur form
+      for (let x = cx - 11; x <= cx + 11; x++) { P.px(x, 28, 0x1b1b20); P.px(x, 29, 0x101014); }
+      for (let x = cx - 8; x <= cx + 8; x++) P.px(x, 30, 0x0c0c10, 0.8);
+      P.hl(cx - 12, 27, 4, 0x26262e); P.hl(cx + 9, 27, 4, 0x26262e);
+    } else { // nytt: mönsterknastrar och en glansbåge
+      for (let a = 0; a < 24; a++) { const an = a / 24 * Math.PI * 2; P.px(cx + Math.round(Math.cos(an) * 13), cy + Math.round(Math.sin(an) * 13), a % 2 ? 0x30303a : 0x16161b); }
+      P.px(cx - 8, cy - 11, 0x3c3c46); P.px(cx - 10, cy - 8, 0x3c3c46);
+    }
+    // fälgen
+    ring(4.5, 10.5, state === 'flat' ? 0x9aa0aa : 0xc8ccd4);
+    ring(9.2, 10.5, 0x6a6e78);
+    for (let a = 0; a < 5; a++) { const an = -Math.PI / 2 + a / 5 * Math.PI * 2; // ekrar
+      for (let r = 5; r <= 9; r++) P.px(cx + Math.round(Math.cos(an) * r), cy + Math.round(Math.sin(an) * r), 0x8a8e98); }
+    P.px(cx - 3, cy - 6, 0xffffff, 0.7); P.px(cx - 5, cy - 4, 0xffffff, 0.5); // glans
+  } else {
+    // naken bromstrumma
+    ring(2.5, 12.2, 0x3a3c44);
+    ring(10.6, 12.2, 0x2a2b31);
+    ring(2.5, 4.2, 0x1a1a20);
+    ring(6.5, 7.4, 0x4a4c56, 0.8); // svarvspår
+    P.px(cx - 4, cy - 6, 0x6a6e78); P.px(cx - 6, cy - 3, 0x5a5e68); // slitglans
+    P.px(cx, cy, 0x0c0c10);
+  }
+  return (IMG[key] = P.flush());
+}
+
+// kompressorn (ritas i drawComp som skakar den och lägger svänghjul/visare/slang live):
+// liggande tank på hjul, manometer, motor med remskydd i spalter, handtag för slangen
+function compImg() {
+  if (IMG.comp) return IMG.comp;
+  const W = 40, H = 24, P = new Pix(W, H);
+  P.hl(4, H - 1, 33, 0x140c1e, 0.3);
+  // handtaget upp till höger (slangen rullas på det, ritas live)
+  P.vl(31, 2, 9, 0x8a8e96); P.vl(32, 2, 9, 0x5a5e66); P.hl(28, 2, 5, 0x8a8e96); P.px(27, 3, 0x5a5e66);
+  // motorn med remskydd: ram + spalter – svänghjulet skymtar i spalterna (live)
+  P.rect(25, 5, 13, 13, 0x22242a);
+  P.hl(25, 5, 13, 0x5a5e68); P.vl(25, 6, 11, 0x3a3e46); P.vl(37, 6, 11, 0x3a3e46); P.hl(25, 17, 13, 0x17151a);
+  for (const sx of [27, 30, 33, 36]) P.vl(sx, 7, 9, 0x14161c);
+  // liggande trycktank
+  P.rect(4, 10, 22, 9, 0xc8342a);
+  P.hl(5, 10, 20, 0xe8705c); P.hl(5, 11, 20, 0xd84a38); P.hl(5, 18, 20, 0x7a1e16);
+  P.px(4, 10, 0x8a2018); P.px(25, 10, 0x8a2018); P.px(4, 18, 0x5a140e); P.px(25, 18, 0x5a140e);
+  P.vl(3, 12, 5, 0x8a2018); P.vl(26, 12, 5, 0x8a2018);
+  // manometern (visaren ritas live i drawComp)
+  P.rect(8, 13, 5, 5, 0xf4f1ea); P.hl(8, 12, 5, 0x8a8e96); P.hl(9, 13, 3, 0xffffff); P.px(12, 17, 0xd9d0bc);
+  // rör från tanken till motorn
+  P.hl(24, 8, 4, 0x8a8e96); P.px(24, 9, 0x5a5e66);
+  // hjul och stödfot
+  P.rect(6, 19, 4, 4, 0x17151a); P.px(7, 20, 0x3a3a42);
+  P.rect(20, 19, 4, 4, 0x17151a); P.px(21, 20, 0x3a3a42);
+  P.vl(35, 18, 4, 0x3a3e46); P.hl(34, 22, 4, 0x17151a);
+  return (IMG.comp = P.flush());
+}
+
 function stackImg() {
   if (IMG.stack) return IMG.stack;
   const W = 26, H = 24, P = new Pix(W, H), cx = 13;
@@ -2928,6 +3069,20 @@ function paintShop() {
   STATIONS.forEach((cx) => plaque(cx));
   // DÄCK: fyra liggande däck
   { const cx = STATIONS[0]; for (let k = 0; k < 4; k++) tireSide(P, cx, 95 - k * 5, 22); tireTop(P, cx, 74, 22); P.hl(cx - 10, 96, 21, 0x140c1e, 0.35); }
+  // DÄCKSTÄLLET: stativ i två plan som väggdäcken står på (hjulen ritas live ovanpå)
+  {
+    const rx0 = RACK.x0 - 7, rx1 = RACK.x1 + 7, top = RACK.y0 - 3;
+    for (const sy of [RACK.mid, RACK.y1 - 1]) { // hyllskenor: ljus ovansida, mörk kant
+      P.hl(rx0, sy, rx1 - rx0 + 1, 0x9aa0aa); P.hl(rx0, sy + 1, rx1 - rx0 + 1, 0x2a2b31);
+    }
+    for (const sx of [rx0, rx1 - 1]) { // stolpar med fötter och väggfäste
+      P.vl(sx, top, RACK.y1 + 1 - top, 0x5a5e68); P.vl(sx + 1, top, RACK.y1 + 1 - top, 0x3a3e46);
+      P.hl(sx - 1, RACK.y1 + 1, 4, 0x17151a);
+      P.px(sx, top - 1, 0x2a2b31); P.px(sx + 1, top - 1, 0x2a2b31);
+    }
+    P.hl(rx0, top, rx1 - rx0 + 1, 0x4a4e58); // topplisten
+    P.hl(rx0 + 2, RACK.y1 + 2, rx1 - rx0 - 3, 0x140c1e, 0.3); // skuggan under stället
+  }
   // OLJA: blått fat med handpump + två dunkar
   {
     const cx = STATIONS[1];

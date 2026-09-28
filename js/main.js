@@ -116,7 +116,7 @@ const zoomMode = () => {
   const liten = Math.min(window.screen.width, window.screen.height) < 700;
   return matchMedia('(pointer: coarse)').matches && liten ? 'nara' : 'vid';
 };
-A.view = { w: DESIGN_W, h: DESIGN_H, boxX: 0, boxY: 0, boxed: false };
+A.view = { w: DESIGN_W, h: DESIGN_H, boxX: 0, boxY: 0, boxed: false, safe: { x0: 0, y0: 0, x1: DESIGN_W, y1: DESIGN_H } };
 function applySceneView() {
   const v = A.view, cap = fillMode() && zoomMode() !== 'nara' ? (WIDE[A.sceneName] || (A.scene && A.scene.viewMax) || null) : null; // NÄRA = klassiska vyn överallt; scenen kan ange viewMax
   A.W = Math.max(DESIGN_W, Math.min(v.w, cap ? cap.w : DESIGN_W));
@@ -173,12 +173,19 @@ function fit() {
     cv.style.left = ((w - cw) / 2) + 'px';
     // beskärningen tas mest upptill (väggkonst) – golvet, disken och dörren nertill behålls
     cv.style.top = (stripCss + Math.min(0, ah - ch) * 0.7 + Math.max(0, ah - ch) / 2) + 'px';
+    // den SYNLIGA rutan i spelpixlar – skyltar och HUD i scenerna klämmer sig innanför
+    const cropT = Math.max(0, (ch - ah) * 0.7), cropB = Math.max(0, (ch - ah) * 0.3), cropL = Math.max(0, (cw - w) / 2);
+    v.safe = {
+      x0: Math.ceil(cropL / cw * A.W), x1: A.W - Math.ceil(cropL / cw * A.W),
+      y0: Math.ceil(cropT / ch * A.H), y1: A.H - Math.ceil(cropB / ch * A.H),
+    };
     if (sEl) { sEl.style.position = 'absolute'; sEl.style.left = '0'; sEl.style.top = '0'; }
     layoutStrip(A, dpr, Math.max(DESIGN_W, Math.ceil(w * dpr / s)), w);
     return;
   }
   cv.style.position = ''; cv.style.left = ''; cv.style.top = '';
   if (sEl) { sEl.style.position = ''; sEl.style.left = ''; sEl.style.top = ''; }
+  v.safe = { x0: 0, y0: 0, x1: A.W, y1: A.H }; // hela rutan syns i ram/vid-lägena
   if (cv.width !== v.w * s) cv.width = v.w * s;
   if (cv.height !== v.h * s) cv.height = v.h * s;
   // de sista device-pixlarna (mindre än en spelpixel) fylls med en omärkbar sträckning
