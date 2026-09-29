@@ -112,7 +112,7 @@ const newCl = cl.slice(0, lineEnd) + '\n' + section + cl.slice(lineEnd).replace(
 const esc = (s) => s.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 const verJs = `// Skrivs av tools/release.mjs vid varje släpp – ändra inte för hand.\nexport const VERSION = '${V}';\nexport const DATE = '${DATE}';\nexport const TITLE = '${esc(title)}';\n`;
 // alla filer som ingår i sidan (för service workerns förladdning och uppdateringens hämtning)
-const shipped = git(['ls-files', '--cached']).split('\n').filter((f) => /^(index\.html|sw\.js|version\.json|CHANGELOG\.md|js\/.*\.js|css\/.*\.css|assets\/.*)$/.test(f)).sort();
+const shipped = git(['ls-files', '--cached']).split('\n').filter((f) => /^(index\.html|sw\.js|version\.json|CHANGELOG\.md|js\/.*\.js|css\/.*\.css|assets\/.*)$/.test(f) && !/^assets\/audio\//.test(f)).sort(); // (ljudet hämtas lat, inte vid varje släpp)
 const verJson = JSON.stringify({ version: V, date: DATE, title, files: shipped }, null, 2) + '\n';
 const swPath = path.join(ROOT, 'sw.js');
 const swSrc = fs.readFileSync(swPath, 'utf8').replace(/const VERSION = '[^']*';/, `const VERSION = '${V}';`);

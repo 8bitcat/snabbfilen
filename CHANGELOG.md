@@ -10,6 +10,14 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.46.0] – 2026-09-29 – Riktiga ljud överallt
+- RIKTIGA LJUD: allt som låter i spelet är nu inspelningar (fria CC0-ljud) i stället för pip och syntar
+- Bakgrundsljud som skiftar där du går: trafiken på gatorna, fåglar och duvor i parken, vågor, måsar och båtmotorer vid kanalen, blåsten som tar i vid vattnet, regnet (dämpat när du är inne), snön, natten med syrsor
+- Varje ställe har sitt eget ljud: sorlet och espressomaskinen på caféet, fritösen och grillen i Burgarbaren, stormarknaden, butikerna, hemma, flygterminalen och verkstäderna
+- Bakgrundsmusik som inte tar över – egna låtar för stadsdelarna, parken, caféet, hemma och natten (musiken går att stänga av i menyn)
+- Folk pratar simspråk med riktiga röster (man, kvinna, barn, äldre – glada, sura, frågande), och hundar, katter, kaniner och fåglar låter som riktiga djur
+- I röstchatten viker bakgrundsljudet och musiken undan när någon pratar
+
 ## [0.45.0] – 2026-09-29 – Fasadrunda: macken, Söder och parken
 - PIXELMACKEN är en riktig bensinmack: tak över två pumpöar, bilar som svänger in, tankar (kronorna rullar på displayen) och kör vidare, och en stor prisskylt med BENSIN 95 och DIESEL som ändras under dagen – plus butik med KAFFE, biltvätt, luft/vatten och dammsugare
 - Radhusen: inga mörka streck tvärs över fasaden, mittenhuset har sin egen färg och inga halva fönster sticker fram bakom dörrarna

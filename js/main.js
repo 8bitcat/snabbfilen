@@ -35,6 +35,7 @@ import { startWorld, worldTick, worldInfo, playersList, visitPlayer, sendEmote, 
 import { openMenu, mountMenuButton, isMenuOpen, shouldShowMenuAtBoot } from './core/menu.js';
 import { drawPixHud, isPixHud, apply as applyHud, stripHeight, layoutStrip } from './core/hud-pix.js';
 import { musicTick } from './core/music.js';
+import { recTick } from './core/rec.js';
 import { openWeek } from './core/week.js';
 import { mountChat, isChatOpen } from './core/chat.js';
 import { initVoiceUI } from './net/voice-ui.js';
@@ -565,6 +566,7 @@ function tick(now) {
     if (!modalOpen() && !isMenuOpen() && !A.sceneName.startsWith('jobb')) A.game.tickReal(dt);
     A.scene.update?.(dt);
     worldTick(A, A.scene.worldX ?? null, dt);
+    recTick(A, dt); // bakgrundsljudet där man är + musiken (tyst före första klicket, vid mute och i dold flik)
     rawSetTransform(1, 0, 0, 1, 0, 0);
     ctx.fillStyle = '#14121a';
     ctx.fillRect(0, 0, cv.width, cv.height);

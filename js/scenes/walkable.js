@@ -6,9 +6,17 @@ import { drawPerson } from '../core/people.js';
 import { avatarTagColors } from '../core/avatar.js';
 import { SMALL, ctxText, textW } from '../core/floor-pix.js';
 import { worldFolksHere, worldMyEmote, worldMySay } from '../net/world.js';
+import { speak, heardBubble, guessAnimal, selfTalkMode } from '../core/voices.js';
+
+// Ljud när en pratbubbla dyker upp: heardBubble(text, x, y, voice, { pan, gain }) anropas
+// varje bildruta bubblan syns – första gången hörs simspråks-babbel, sedan tystnad tills
+// texten byts. voice = avatar/look/namn/'self' (utelämnad = gissning på text + läge).
+// sayBubble gör det själv (se nedan), så det behövs bara för bubblor som ritas på annat sätt.
+export { heardBubble } from '../core/voices.js';
 
 export const WALK_SEQ = [1, 3, 2, 3];
 const FW = 384, FH = 216;
+let selfAt = null; // var den egna figuren stod senast (selfDrawable) – för rösten i createSpeech
 
 // W/H = världens storlek (standard = en skärm; staden är större och rullar).
 export function createWalker({ W: WW = FW, H: WH = FH, left = 8, right = WW - 8, top = 90, bottom = WH - 4, spawn }) {
@@ -108,6 +116,7 @@ export function createWalker({ W: WW = FW, H: WH = FH, left = 8, right = WW - 8,
 
 // Min figur som drawable (med namnskylt när andra är här, bär-frames vid carry)
 export function selfDrawable(A, walker, t, { carry = false, folksHere = 0 } = {}) {
+  selfAt = { x: walker.px, y: walker.py, scene: A?.sceneName ?? null }; // repliker ovanför mig = min röst
   return {
     fy: walker.py,
     draw(ctx) {
@@ -120,7 +129,7 @@ export function selfDrawable(A, walker, t, { carry = false, folksHere = 0 } = {}
       const mine = worldMyEmote();
       if (mine) emoteBubble(ctx, walker.px, walker.py - 60, mine);
       const said = worldMySay();
-      if (said) sayBubble(ctx, walker.px, walker.py - (mine ? 78 : 62), said);
+      if (said) sayBubble(ctx, walker.px, walker.py - (mine ? 78 : 62), said, { voice: 'self' });
     },
   };
 }
@@ -135,7 +144,7 @@ export function folkDrawables(A, t) {
       drawPerson(ctx, f.x, f.y, f.av.look, seated ? f.sit : 'down', frame);
       nameTag(ctx, f.x, f.y - 50, f.av);
       if (f.emote) emoteBubble(ctx, f.x, f.y - 58, f.emote);
-      if (f.say) sayBubble(ctx, f.x, f.y - (f.emote ? 76 : 60), f.say);
+      if (f.say) sayBubble(ctx, f.x, f.y - (f.emote ? 76 : 60), f.say, { voice: f.av || f.id });
     },
   }));
 }
@@ -203,9 +212,24 @@ export function sayLines(text, maxW = SAY_W, maxLines = 4) {
   if (line.length && lines.length < maxLines) lines.push(line);
   return lines.slice(0, maxLines);
 }
-export function sayBubble(ctx, x, y, text, { w: maxW = SAY_W, lines: maxLines = 4, x0 = null, x1 = null } = {}) {
+// Bubblan hörs också (heardBubble): första bildrutan en ny text syns babblar talaren, en gång.
+// voice = avatar/look/namn/'self' (utelämnad = gissning på texten + var bubblan står, så en
+// gäst på samma plats låter likadant), voice: false = tyst (ljudet sköts någon annanstans).
+// Bubblor utanför bild hörs inte; i bild panoreras rösten lite åt det håll talaren står.
+function bubbleHeard(ctx, x, y, text, voice) {
+  if (voice === false) return;
+  try {
+    const m = ctx.getTransform(), cw = ctx.canvas?.width || 0, ch = ctx.canvas?.height || 0;
+    const sx = m.a * x + m.c * y + m.e, sy = m.b * x + m.d * y + m.f;
+    if (cw && (sx < -8 || sx > cw + 8 || sy < -20 || sy > ch + 80)) return; // utanför bild
+    const pan = cw ? Math.max(-1, Math.min(1, sx / cw * 2 - 1)) * 0.45 : 0;
+    heardBubble(text, x, y, voice, { pan });
+  } catch { /* ljudet är aldrig ett krav */ }
+}
+export function sayBubble(ctx, x, y, text, { w: maxW = SAY_W, lines: maxLines = 4, x0 = null, x1 = null, voice } = {}) {
   const lines = sayLines(text, maxW, maxLines);
   if (!lines.length) return;
+  bubbleHeard(ctx, x, y, text, voice);
   const lh = lines.map((l) => (l.some((t) => t.emoji) ? 10 : 7));
   const w = Math.max(...lines.map((l) => l.reduce((a, t) => a + t.w, 0))) + 7, h = lh.reduce((a, v) => a + v, 0) + 4;
   let bx = Math.round(x - w / 2);
@@ -257,23 +281,72 @@ export function iconBubble(ctx, x, y, drawIcon, hot = false) {
 // Ett pratbubbellager per scen: den senaste repliken visas ovanför en person, ett djur eller
 // den egna figuren (at = {x, y} i världskoordinater, eller en funktion som ger läget varje
 // bildruta). Ritas med scenens kameratransform; view = { x0, x1 } håller bubblan i bild.
-export function createSpeech() {
-  let cur = null;
+// Repliken hörs också (js/core/voices.js): djuremoji först i texten = djurläte (🐶 skäll,
+// 🐱 jam, "spinner" = spinn, 🐰 nos …), annars simspråks-babbel. Står bubblan ovanför den
+// egna figuren (som selfDrawable ritade senast) är det min egen, mjukare röst. opts (frivillig
+// fjärde parameter till say) = { voice, animal, mood, self, silent, key, max } – voice = look/avatar/
+// namn/'self', animal = husdjuret eller 'hund'/'katt'/…, silent = ingen röst. Utan opts gissas
+// talaren på texten och rösten hashas på var talaren står, så samma figur låter likadant.
+// Egna figurens repliker är oftast tankar och tips ("Stången är bara för att titta …"), så de
+// blir bara ett kort, mjukt mummel (högst SELF_MAX s), och samma tanke igen inom SELF_REPEAT s är
+// tyst. createSpeech({ selfVoice }) ändrar det för en scen: 'kort' (standard, se setSelfTalk i
+// voices.js), 'full' = hela babblet, 'av' eller false = den egna figuren är tyst i scenen.
+const SELF_MAX = 1.1, SELF_GAIN = 0.8, SELF_REPEAT = 20;
+const selfSaid = new Map(); // tankens text → när den hördes senast (delas av alla scener)
+export function createSpeech(cfg = {}) {
+  let cur = null, voiceH = null;
   const now = () => performance.now() / 1000;
+  const hush = () => { try { voiceH?.stop(0.05); } catch { /* ok */ } voiceH = null; };
+  // bubblan ovanför huvudet på den egna figuren: scenerna lägger den 44 px över fötterna
+  // (walker.py - 44). Snävt fönster – kassörskan bakom disken står rakt ovanför en när man
+  // beställer (ca 65 px upp) och ska inte låta som en själv. Sitter man (ingen selfDrawable)
+  // gäller senaste läget i samma scen, nära stolen.
+  const overMe = (pos) => {
+    if (!pos || !selfAt) return false;
+    const sc = globalThis.SF?.sceneName ?? null;
+    if (selfAt.scene && sc && selfAt.scene !== sc) return false;
+    const dy = pos.y - selfAt.y;
+    return Math.abs(pos.x - selfAt.x) <= 12 && dy >= -58 && dy <= -32;
+  };
   return {
-    say(text, at, secs) {
+    say(text, at, secs, opts) {
       const str = String(text || '').trim();
       if (!str || !at) return;
       cur = { text: str, at, until: now() + (secs ?? Math.max(3, Math.min(8, str.length / 12))) };
+      hush();
+      if (opts?.silent) return;
+      try {
+        const pos = typeof at === 'function' ? at() : at;
+        const key = opts?.key ?? (pos ? '@' + Math.round(pos.x / 16) + ',' + Math.round(pos.y / 16) : undefined);
+        const self = opts?.self ?? (opts?.voice === undefined && !opts?.animal && overMe(pos));
+        heardBubble(str, pos?.x, pos?.y, false); // registrera bubblan – ljudet spelas här nedanför
+        let extra = null, mine = false;
+        // min egen röst (inte ett djurläte med djuremoji): kort mummel, samma tanke hörs inte om och om igen
+        const animalish = opts?.animal ? true : opts?.animal !== false && !opts?.voice && !!guessAnimal(str);
+        if ((self || opts?.voice === 'self') && !animalish) {
+          const c = cfg?.selfVoice, mode = c === false ? 'av' : c === true ? 'full' : (c || selfTalkMode());
+          if (mode === 'av') return;
+          const last = selfSaid.get(str);
+          if (last != null && now() - last < SELF_REPEAT) return;
+          if (mode !== 'full') extra = { max: opts?.max ?? SELF_MAX, gain: (opts?.gain ?? 1) * SELF_GAIN };
+          mine = true;
+        }
+        voiceH = speak(str, { ...opts, key, self, ...extra });
+        if (mine && voiceH) { // bara det som faktiskt hördes räknas (ljud av = inget minne)
+          const t = now();
+          selfSaid.set(str, t);
+          if (selfSaid.size > 40) for (const [k, v] of selfSaid) if (t - v > SELF_REPEAT) selfSaid.delete(k);
+        }
+      } catch { /* ljudet är aldrig ett krav */ }
     },
-    clear() { cur = null; },
+    clear() { cur = null; hush(); },
     active: () => !!cur && cur.until > now(),
     text: () => (cur && cur.until > now() ? cur.text : null),
     draw(ctx, view) {
       if (!cur || cur.until <= now()) return;
       const pos = typeof cur.at === 'function' ? cur.at() : cur.at;
       if (!pos) return;
-      sayBubble(ctx, pos.x, pos.y, cur.text, { w: 124, lines: 5, x0: view?.x0 ?? null, x1: view?.x1 ?? null });
+      sayBubble(ctx, pos.x, pos.y, cur.text, { w: 124, lines: 5, x0: view?.x0 ?? null, x1: view?.x1 ?? null, voice: false });
     },
   };
 }

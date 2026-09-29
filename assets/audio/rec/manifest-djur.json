@@ -1,0 +1,625 @@
+[
+  {
+    "id": "hund-valp",
+    "fil": "assets/audio/rec/djur/hund-valp.mp3",
+    "kategori": "djur",
+    "namn": "Valp skäller",
+    "beskrivning": "Valp som gläfser ljust två gånger – valparna i djuraffären och den egna valpen hemma.",
+    "loop": false,
+    "sek": 0.81,
+    "källa": "https://freesound.org/people/Mewsel/sounds/208030/",
+    "upphovsperson": "Mewsel",
+    "licens": "CC0",
+    "originaltitel": "Chihuahua Barks",
+    "klipp": [
+      {
+        "källa": "https://freesound.org/people/Mewsel/sounds/208030/",
+        "start": 0.22,
+        "slut": 1.2
+      }
+    ]
+  },
+  {
+    "id": "hund-liten",
+    "fil": "assets/audio/rec/djur/hund-liten.mp3",
+    "kategori": "djur",
+    "namn": "Liten hund gläfser",
+    "beskrivning": "Liten hund (tax/terrier-storlek) som gläfser tre gånger – små hundar i djuraffären, hemma och på gatan.",
+    "loop": false,
+    "sek": 2.18,
+    "källa": "https://freesound.org/people/michorvath/sounds/270586/",
+    "upphovsperson": "michorvath",
+    "licens": "CC0",
+    "originaltitel": "Small Dog Barking",
+    "klipp": [
+      {
+        "källa": "https://freesound.org/people/michorvath/sounds/270586/",
+        "start": 0.2,
+        "slut": 2.4
+      }
+    ]
+  },
+  {
+    "id": "hund-liten-2",
+    "fil": "assets/audio/rec/djur/hund-liten-2.mp3",
+    "kategori": "djur",
+    "namn": "Liten hund gläfser 2",
+    "beskrivning": "Variant: liten hund, tre korta gläfs – slumpas omväxlande med hund-liten.",
+    "loop": false,
+    "sek": 1.93,
+    "källa": "https://freesound.org/people/ScouseMouseJB/sounds/351876/",
+    "upphovsperson": "ScouseMouseJB",
+    "licens": "CC0",
+    "originaltitel": "Small dog.wav",
+    "klipp": [
+      {
+        "källa": "https://freesound.org/people/ScouseMouseJB/sounds/351876/",
+        "start": 1.55,
+        "slut": 3.5
+      }
+    ]
+  },
+  {
+    "id": "hund-mellan",
+    "fil": "assets/audio/rec/djur/hund-mellan.mp3",
+    "kategori": "djur",
+    "namn": "Hund skäller",
+    "beskrivning": "Mellanstor hund, voff-voff – hundar i djuraffären, hemma och i parken.",
+    "loop": false,
+    "sek": 1.01,
+    "källa": "https://freesound.org/people/ken788/sounds/386766/",
+    "upphovsperson": "ken788",
+    "licens": "CC0",
+    "originaltitel": "Dog_Barking.wav",
+    "klipp": [
+      {
+        "källa": "https://freesound.org/people/ken788/sounds/386766/",
+        "start": 0.55,
+        "slut": 1.62
+      }
+    ]
+  },
+  {
+    "id": "hund-mellan-2",
+    "fil": "assets/audio/rec/djur/hund-mellan-2.mp3",
+    "kategori": "djur",
+    "namn": "Hund skäller 2",
+    "beskrivning": "Variant: ett kraftigt voff (labrador) – slumpas omväxlande med hund-mellan.",
+    "loop": false,
+    "sek": 0.65,
+    "källa": "https://freesound.org/people/iccleste/sounds/260773/",
+    "upphovsperson": "iccleste",
+    "licens": "CC0",
+    "originaltitel": "Throaty dog bark.wav",
+    "klipp": [
+      {
+        "källa": "https://freesound.org/people/iccleste/sounds/260773/",
+        "start": 0.9,
+        "slut": 1.58
+      }
+    ]
+  },
+  {
+    "id": "hund-mellan-3",
+    "fil": "assets/audio/rec/djur/hund-mellan-3.mp3",
+    "kategori": "djur",
+    "namn": "Hund skäller 3",
+    "beskrivning": "Variant: två voff från blandrashund – slumpas omväxlande med hund-mellan.",
+    "loop": false,
+    "sek": 1.14,
+    "källa": "https://freesound.org/people/nsstudios/sounds/343074/",
+    "upphovsperson": "nsstudios",
+    "licens": "CC0",
+    "originaltitel": "mixed-breed dog (Mia)",
+    "klipp": [
+      {
+        "källa": "https://freesound.org/people/nsstudios/sounds/343074/",
+        "start": 11.7,
+        "slut": 12.95
+      }
+    ]
+  },
+  {
+    "id": "hund-stor",
+    "fil": "assets/audio/rec/djur/hund-stor.mp3",
+    "kategori": "djur",
+    "namn": "Stor hund skäller",
+    "beskrivning": "Stor hund med djupt skall, två voff – stora hundar i djuraffären, hemma och på gården.",
+    "loop": false,
+    "sek": 0.69,
+    "källa": "https://freesound.org/people/nick121087/sounds/274471/",
+    "upphovsperson": "nick121087",
+    "licens": "CC0",
+    "originaltitel": "Dog Barking ",
+    "klipp": [
+      {
+        "källa": "https://freesound.org/people/nick121087/sounds/274471/",
+        "start": 16.85,
+        "slut": 17.65
+      }
+    ]
+  },
+  {
+    "id": "hund-stor-2",
+    "fil": "assets/audio/rec/djur/hund-stor-2.mp3",
+    "kategori": "djur",
+    "namn": "Stor hund skäller 2",
+    "beskrivning": "Variant: ett djupt skall från stor hund – slumpas omväxlande med hund-stor.",
+    "loop": false,
+    "sek": 0.6,
+    "källa": "https://freesound.org/people/nick121087/sounds/274471/",
+    "upphovsperson": "nick121087",
+    "licens": "CC0",
+    "originaltitel": "Dog Barking ",
+    "klipp": [
+      {
+        "källa": "https://freesound.org/people/nick121087/sounds/274471/",
+        "start": 5.0,
+        "slut": 5.6
+      }
+    ]
+  },
+  {
+    "id": "hund-glad",
+    "fil": "assets/audio/rec/djur/hund-glad.mp3",
+    "kategori": "djur",
+    "namn": "Glad hund",
+    "beskrivning": "Glad hund: fyra glada skall följt av flåsande – när man klappar/leker med hunden eller kommer hem.",
+    "loop": false,
+    "sek": 3.09,
+    "källa": "https://freesound.org/people/MisterTood/sounds/9031/ + https://freesound.org/people/AGFX/sounds/221496/",
+    "upphovsperson": "MisterTood + AGFX",
+    "licens": "CC0",
+    "originaltitel": "Dog Bark1.wav + Dog Retreiver fast panting play grunt 15.wav",
+    "klipp": [
+      {
+        "källa": "https://freesound.org/people/MisterTood/sounds/9031/",
+        "start": 1.85,
+        "slut": 3.25
+      },
+      {
+        "källa": "https://freesound.org/people/AGFX/sounds/221496/",
+        "start": 12.72,
+        "slut": 14.7
+      }
+    ]
+  },
+  {
+    "id": "hund-morr",
+    "fil": "assets/audio/rec/djur/hund-morr.mp3",
+    "kategori": "djur",
+    "namn": "Hund morrar",
+    "beskrivning": "Lågt, hotfullt morrande – hund som vaktar maten eller inte vill bli störd.",
+    "loop": false,
+    "sek": 2.3,
+    "källa": "https://freesound.org/people/coldvet/sounds/404920/",
+    "upphovsperson": "coldvet",
+    "licens": "CC0",
+    "originaltitel": "Dog Growl - Beast / Creature",
+    "klipp": [
+      {
+        "källa": "https://freesound.org/people/coldvet/sounds/404920/",
+        "start": 10.0,
+        "slut": 12.3
+      }
+    ]
+  },
+  {
+    "id": "hund-gnall",
+    "fil": "assets/audio/rec/djur/hund-gnall.mp3",
+    "kategori": "djur",
+    "namn": "Hund gnäller",
+    "beskrivning": "Hund (tax) som gnäller/piper två gånger – hungrig, ensam eller vill ut på promenad.",
+    "loop": false,
+    "sek": 2.61,
+    "källa": "https://freesound.org/people/5deMayo/sounds/169142/",
+    "upphovsperson": "5deMayo",
+    "licens": "CC0",
+    "originaltitel": "Dachshund Whines.mp3",
+    "klipp": [
+      {
+        "källa": "https://freesound.org/people/5deMayo/sounds/169142/",
+        "start": 2.58,
+        "slut": 3.9
+      },
+      {
+        "källa": "https://freesound.org/people/5deMayo/sounds/169142/",
+        "start": 5.62,
+        "slut": 7.03
+      }
+    ]
+  },
+  {
+    "id": "hund-gasp",
+    "fil": "assets/audio/rec/djur/hund-gasp.mp3",
+    "kategori": "djur",
+    "namn": "Hund gäspar",
+    "beskrivning": "Hund som gäspar med ett litet pip – trött hund, kväll/morgon hemma.",
+    "loop": false,
+    "sek": 0.75,
+    "källa": "https://freesound.org/people/qubodup/sounds/827319/",
+    "upphovsperson": "qubodup",
+    "licens": "CC0",
+    "originaltitel": "Malinois Good Morning Yawn Yelp",
+    "klipp": [
+      {
+        "källa": "https://freesound.org/people/qubodup/sounds/827319/",
+        "start": 0.5,
+        "slut": 1.25
+      }
+    ]
+  },
+  {
+    "id": "katt-jam",
+    "fil": "assets/audio/rec/djur/katt-jam.mp3",
+    "kategori": "djur",
+    "namn": "Katt jamar",
+    "beskrivning": "Vuxen katt, ett mjau – katter i djuraffären, hemma och på gatan.",
+    "loop": false,
+    "sek": 0.87,
+    "källa": "https://freesound.org/people/skymary/sounds/412017/",
+    "upphovsperson": "skymary",
+    "licens": "CC0",
+    "originaltitel": "cat meow short",
+    "klipp": [
+      {
+        "källa": "https://freesound.org/people/skymary/sounds/412017/",
+        "start": 0.25,
+        "slut": 1.12
+      }
+    ]
+  },
+  {
+    "id": "katt-jam-2",
+    "fil": "assets/audio/rec/djur/katt-jam-2.mp3",
+    "kategori": "djur",
+    "namn": "Katt jamar 2",
+    "beskrivning": "Variant: kort, lite gnälligt mjau – slumpas omväxlande med katt-jam.",
+    "loop": false,
+    "sek": 0.83,
+    "källa": "https://freesound.org/people/steprock/sounds/845517/",
+    "upphovsperson": "steprock",
+    "licens": "CC0",
+    "originaltitel": "cat-meow-annoyed",
+    "klipp": [
+      {
+        "källa": "https://freesound.org/people/steprock/sounds/845517/",
+        "start": 1.12,
+        "slut": 1.95
+      }
+    ]
+  },
+  {
+    "id": "katt-jam-3",
+    "fil": "assets/audio/rec/djur/katt-jam-3.mp3",
+    "kategori": "djur",
+    "namn": "Katt jamar 3",
+    "beskrivning": "Variant: långt, tydligt mjau (miiaau) från vuxen katt – slumpas omväxlande med katt-jam.",
+    "loop": false,
+    "sek": 1.25,
+    "källa": "https://freesound.org/people/lextrack/sounds/333916/",
+    "upphovsperson": "lextrack",
+    "licens": "CC0",
+    "originaltitel": "Cat Meowing",
+    "klipp": [
+      {
+        "källa": "https://freesound.org/people/lextrack/sounds/333916/",
+        "start": 0.1,
+        "slut": 1.35
+      }
+    ]
+  },
+  {
+    "id": "katt-unge",
+    "fil": "assets/audio/rec/djur/katt-unge.mp3",
+    "kategori": "djur",
+    "namn": "Kattunge jamar",
+    "beskrivning": "Kattunge (6–7 veckor) med ljust, pipigt mjau – kattungar i djuraffären och hemma.",
+    "loop": false,
+    "sek": 0.8,
+    "källa": "https://freesound.org/people/lolamadeus/sounds/196251/",
+    "upphovsperson": "lolamadeus",
+    "licens": "CC0",
+    "originaltitel": "Kitten Meowing.wav",
+    "klipp": [
+      {
+        "källa": "https://freesound.org/people/lolamadeus/sounds/196251/",
+        "start": 4.72,
+        "slut": 5.52
+      }
+    ]
+  },
+  {
+    "id": "katt-unge-2",
+    "fil": "assets/audio/rec/djur/katt-unge-2.mp3",
+    "kategori": "djur",
+    "namn": "Kattunge jamar 2",
+    "beskrivning": "Variant: kattunge, kort pipigt mjau – slumpas omväxlande med katt-unge.",
+    "loop": false,
+    "sek": 0.68,
+    "källa": "https://freesound.org/people/lolamadeus/sounds/196251/",
+    "upphovsperson": "lolamadeus",
+    "licens": "CC0",
+    "originaltitel": "Kitten Meowing.wav",
+    "klipp": [
+      {
+        "källa": "https://freesound.org/people/lolamadeus/sounds/196251/",
+        "start": 0.42,
+        "slut": 1.1
+      }
+    ]
+  },
+  {
+    "id": "katt-hungrig",
+    "fil": "assets/audio/rec/djur/katt-hungrig.mp3",
+    "kategori": "djur",
+    "namn": "Hungrig katt",
+    "beskrivning": "Krävande katt, två envisa mjau – katten vill ha mat (tom matskål).",
+    "loop": false,
+    "sek": 2.36,
+    "källa": "https://freesound.org/people/Oneirophile/sounds/120160/",
+    "upphovsperson": "Oneirophile",
+    "licens": "CC0",
+    "originaltitel": "Cat Wants Food",
+    "klipp": [
+      {
+        "källa": "https://freesound.org/people/Oneirophile/sounds/120160/",
+        "start": 1.4,
+        "slut": 3.85
+      }
+    ]
+  },
+  {
+    "id": "katt-glad",
+    "fil": "assets/audio/rec/djur/katt-glad.mp3",
+    "kategori": "djur",
+    "namn": "Nöjd katt (trill)",
+    "beskrivning": "Kort nöjt trill/kurr – när man klappar katten eller ger den mat.",
+    "loop": false,
+    "sek": 0.89,
+    "källa": "https://freesound.org/people/jsbarrett/sounds/200336/",
+    "upphovsperson": "jsbarrett",
+    "licens": "CC0",
+    "originaltitel": "Cat trilling",
+    "klipp": [
+      {
+        "källa": "https://freesound.org/people/jsbarrett/sounds/200336/",
+        "start": 3.36,
+        "slut": 4.25
+      }
+    ]
+  },
+  {
+    "id": "katt-spinn",
+    "fil": "assets/audio/rec/djur/katt-spinn.mp3",
+    "kategori": "djur",
+    "namn": "Katt spinner",
+    "beskrivning": "Spinnande katt, sömlös loop (loopStart/loopEnd, se loopinfo) – katten i knät/soffan, loopas så länge man klappar.",
+    "loop": true,
+    "sek": 8.466621,
+    "källa": "https://freesound.org/people/Trautwein/sounds/260881/",
+    "upphovsperson": "Trautwein",
+    "licens": "CC0",
+    "originaltitel": "Cat purr.wav",
+    "pad": 0.5,
+    "loopStart": 0.5,
+    "loopEnd": 8.966621,
+    "loopSampel": 373378,
+    "filSek": 9.466621,
+    "loopinfo": "Filen = [sista 0,5 s av loopen][loopen][första 0,5 s]. Spela med AudioBufferSourceNode: loop=true, loopStart=0.5, loopEnd=0.5+sek (som musiken i js/core/music.js och bäddarna i manifest-baddar.json).",
+    "klipp": [
+      {
+        "källa": "https://freesound.org/people/Trautwein/sounds/260881/",
+        "start": 33.0,
+        "slut": 46.0
+      }
+    ]
+  },
+  {
+    "id": "katt-fras",
+    "fil": "assets/audio/rec/djur/katt-fras.mp3",
+    "kategori": "djur",
+    "namn": "Katt fräser",
+    "beskrivning": "Arg katt som fräser – katten blir skrämd eller retad, möter en hund.",
+    "loop": false,
+    "sek": 1.08,
+    "källa": "https://freesound.org/people/Zabuhailo/sounds/146963/",
+    "upphovsperson": "Zabuhailo",
+    "licens": "CC0",
+    "originaltitel": "catHisses1.wav",
+    "klipp": [
+      {
+        "källa": "https://freesound.org/people/Zabuhailo/sounds/146963/",
+        "start": 0.22,
+        "slut": 1.3
+      }
+    ]
+  },
+  {
+    "id": "kanin-nos",
+    "fil": "assets/audio/rec/djur/kanin-nos.mp3",
+    "kategori": "djur",
+    "namn": "Kanin tuggar",
+    "beskrivning": "Kanin som mumsar/tuggar grönsaker – kaninen äter, i djuraffären och hemma.",
+    "loop": false,
+    "sek": 3.27,
+    "källa": "https://freesound.org/people/BeeProductive/sounds/380890/",
+    "upphovsperson": "BeeProductive",
+    "licens": "CC0",
+    "originaltitel": "rabbit eating.wav",
+    "klipp": [
+      {
+        "källa": "https://freesound.org/people/BeeProductive/sounds/380890/",
+        "start": 63.5,
+        "slut": 66.8
+      }
+    ]
+  },
+  {
+    "id": "kanin-stamp",
+    "fil": "assets/audio/rec/djur/kanin-stamp.mp3",
+    "kategori": "djur",
+    "namn": "Kanin stampar",
+    "beskrivning": "Kanin som stampar med bakbenen två gånger (varning/irritation) – kaninburen.",
+    "loop": false,
+    "sek": 0.85,
+    "källa": "https://freesound.org/people/kessir/sounds/386007/",
+    "upphovsperson": "kessir",
+    "licens": "CC0",
+    "originaltitel": "Rabbit Thump on Soil",
+    "klipp": [
+      {
+        "källa": "https://freesound.org/people/kessir/sounds/386007/",
+        "start": 0.58,
+        "slut": 1.02
+      },
+      {
+        "källa": "https://freesound.org/people/kessir/sounds/386007/",
+        "start": 3.78,
+        "slut": 4.25
+      }
+    ]
+  },
+  {
+    "id": "fagel",
+    "fil": "assets/audio/rec/djur/fagel.mp3",
+    "kategori": "djur",
+    "namn": "Småfåglar kvittrar",
+    "beskrivning": "Sparvar som kvittrar – fågelburen i djuraffären, parker och träd i stan.",
+    "loop": false,
+    "sek": 3.2,
+    "källa": "https://freesound.org/people/Kimskell/sounds/628951/",
+    "upphovsperson": "Kimskell",
+    "licens": "CC0",
+    "originaltitel": "Sparrows02.wav",
+    "klipp": [
+      {
+        "källa": "https://freesound.org/people/Kimskell/sounds/628951/",
+        "start": 0.95,
+        "slut": 4.15
+      }
+    ]
+  },
+  {
+    "id": "fagel-2",
+    "fil": "assets/audio/rec/djur/fagel-2.mp3",
+    "kategori": "djur",
+    "namn": "Småfåglar kvittrar 2",
+    "beskrivning": "Variant: sparvar på nära håll, glesare kvitter – slumpas omväxlande med fagel.",
+    "loop": false,
+    "sek": 3.2,
+    "källa": "https://freesound.org/people/Profispiesser/sounds/543827/",
+    "upphovsperson": "Profispiesser",
+    "licens": "CC0",
+    "originaltitel": "FXSaSc Sparrows Close Chirp Exterior Birds.wav",
+    "klipp": [
+      {
+        "källa": "https://freesound.org/people/Profispiesser/sounds/543827/",
+        "start": 9.4,
+        "slut": 12.6
+      }
+    ]
+  },
+  {
+    "id": "duva",
+    "fil": "assets/audio/rec/djur/duva.mp3",
+    "kategori": "djur",
+    "namn": "Duva kuttrar",
+    "beskrivning": "Duva som kuttrar (kort + långt kutter) – duvor på torget, gatan och i parken.",
+    "loop": false,
+    "sek": 2.0,
+    "källa": "https://freesound.org/people/haulaway/sounds/735366/",
+    "upphovsperson": "haulaway",
+    "licens": "CC0",
+    "originaltitel": "Domestic Dove Coo",
+    "klipp": [
+      {
+        "källa": "https://freesound.org/people/haulaway/sounds/735366/",
+        "start": 3.95,
+        "slut": 5.95
+      }
+    ]
+  },
+  {
+    "id": "duva-2",
+    "fil": "assets/audio/rec/djur/duva-2.mp3",
+    "kategori": "djur",
+    "namn": "Ringduva hoar",
+    "beskrivning": "Variant: ringduvans hoande – parker och trädgårdar i stan.",
+    "loop": false,
+    "sek": 2.31,
+    "källa": "https://freesound.org/people/squashy555/sounds/319512/",
+    "upphovsperson": "squashy555",
+    "licens": "CC0",
+    "originaltitel": "pigeon.wav",
+    "klipp": [
+      {
+        "källa": "https://freesound.org/people/squashy555/sounds/319512/",
+        "start": 0.55,
+        "slut": 3.05
+      }
+    ]
+  },
+  {
+    "id": "fisk",
+    "fil": "assets/audio/rec/djur/fisk.mp3",
+    "kategori": "djur",
+    "namn": "Akvariebubbel",
+    "beskrivning": "Bubblor som porlar i vatten – akvariet i djuraffären och hemma, när man matar fisken.",
+    "loop": false,
+    "sek": 2.37,
+    "källa": "https://freesound.org/people/ristooooo1/sounds/539823/",
+    "upphovsperson": "ristooooo1",
+    "licens": "CC0",
+    "originaltitel": "Bubbles 001.wav",
+    "klipp": [
+      {
+        "källa": "https://freesound.org/people/ristooooo1/sounds/539823/",
+        "start": 0.55,
+        "slut": 2.98
+      }
+    ]
+  },
+  {
+    "id": "hamster",
+    "fil": "assets/audio/rec/djur/hamster.mp3",
+    "kategori": "djur",
+    "namn": "Marsvin piper",
+    "beskrivning": "Marsvin som piper ivrigt (används för smådjuren hamster/marsvin) – smådjursburen i djuraffären och hemma.",
+    "loop": false,
+    "sek": 2.63,
+    "källa": "https://freesound.org/people/Breviceps/sounds/583078/",
+    "upphovsperson": "Breviceps",
+    "licens": "CC0",
+    "originaltitel": "Squeaking Guinea Pigs",
+    "not": "Marsvin, inte hamster: det finns ingen ren CC0-inspelning av en hamster som piper. Idt behålls för spelets skull.",
+    "klipp": [
+      {
+        "källa": "https://freesound.org/people/Breviceps/sounds/583078/",
+        "start": 0.32,
+        "slut": 2.95
+      }
+    ]
+  },
+  {
+    "id": "hamster-2",
+    "fil": "assets/audio/rec/djur/hamster-2.mp3",
+    "kategori": "djur",
+    "namn": "Marsvin tigger mat",
+    "beskrivning": "Variant: marsvin som piper rytmiskt och tjuter högt (tigger mat) – slumpas omväxlande med hamster, t.ex. när man matar.",
+    "loop": false,
+    "sek": 3.89,
+    "källa": "https://freesound.org/people/Hatayde/sounds/580283/",
+    "upphovsperson": "Hatayde",
+    "licens": "CC0",
+    "originaltitel": "guinea_pig.wav",
+    "not": "Marsvin, inte hamster: det finns ingen ren CC0-inspelning av en hamster som piper. Idt behålls för spelets skull.",
+    "klipp": [
+      {
+        "källa": "https://freesound.org/people/Hatayde/sounds/580283/",
+        "start": 1.39,
+        "slut": 5.28
+      }
+    ]
+  }
+]

@@ -18,7 +18,10 @@
 //
 // speak(text, opts) gissar vem som pratar (🐶 🐱 🐰 … i början = djur, annars en person) och
 // används av pratbubblorna (createSpeech/sayBubble i js/scenes/walkable.js); heardBubble gör
-// samma sak för bubblor som ritas varje bildruta (spelarchatten, gästernas repliker).
+// samma sak för bubblor som ritas varje bildruta (spelarchatten, gästernas repliker) och känner
+// igen bubblan på talare + text. chatter(röst) = sims-snack utan text (klick på en fotgängare).
+// setSelfTalk('kort'|'full'|'av') styr den egna figurens tankar/tips i scenerna (standard: kort
+// mjukt mummel, samma tanke hörs inte om och om igen).
 //
 // Regler: tyst när ljudet är avstängt (isMuted – kollas vid start och medan något låter), inget
 // ljud före första pekningen/tangenten, högst MAX_VOICES samtidiga röster (den äldsta tonas
@@ -399,7 +402,8 @@ function setQ(E, fs, f0, wide = 1) {
 function setF(E, vals, t, tau, fs) { for (let i = 0; i < 3; i++) E.F[i].setTargetAtTime(vals[i] * fs, t, tau); }
 
 // ---------------------------------------------------------------- babbel
-function babbleAt(c, dest, t0, text, voice, moodIn) {
+// maxT = längsta babbel i sekunder (högst MAX_TAL; kortare för den egna figurens mummel).
+function babbleAt(c, dest, t0, text, voice, moodIn, maxT = MAX_TAL) {
   const v = voiceFor(voice);
   const V = voiceParams(v);
   const T = textInfo(text);
@@ -408,6 +412,7 @@ function babbleAt(c, dest, t0, text, voice, moodIn) {
   const endKind = T.question ? 'rise' : M.end;
   const r = rng((hashStr(String(text)) ^ v.seed) >>> 0);
   const rate = V.rate * M.rate;
+  const lim = clamp(+maxT || MAX_TAL, 0.45, MAX_TAL);
   // 1) stavelserna i tid (sekunder från start)
   const plan = [];
   let t = 0.015;
@@ -415,7 +420,7 @@ function babbleAt(c, dest, t0, text, voice, moodIn) {
     for (let i = 0; i < w.syl; i++) {
       const stress = i === 0 && (w.syl > 1 || r() < 0.55);
       const d = (stress ? 1.22 : 0.84) * (0.86 + 0.28 * r()) / rate;
-      if (plan.length && t + d > MAX_TAL - 0.14) break outer;
+      if (plan.length && t + d > lim - 0.14) break outer;
       plan.push({ t, d, stress, on: wpick(r, V.cons), v: wpick(r, V.vow), coda: r() < 0.2 ? wpick(r, CODA_W) : '', gap: 0 });
       t += d;
     }
@@ -828,7 +833,18 @@ const ALIAS = {
   fisk: 'fisk', fish: 'fisk', orm: 'orm', snake: 'orm', hamster: 'mus', marsvin: 'mus', mus: 'mus', rat: 'mus', råtta: 'mus',
 };
 // animalSound som en plan: { tag, fn(c, dest, t0) → handle }
-function routeAnimal(kind, mood = '', opts = {}) {
+function routeAnimal(kind, mood, opts = {}) {
+  const R = routeAnimalSynth(kind, mood, opts);
+  if (!R) return R;
+  const pet = kind && typeof kind === 'object' ? kind : null;
+  let sort = opts.sort || '';
+  if (R.tag === 'hund') { try { sort = dogSort(pet ? { ...pet, sort: opts.sort || pet.sort } : opts.sort || ''); } catch { /* mellan */ } }
+  if (R.tag === 'katt' && !sort && (pet?.stage === 'unge' || String(kind).toLowerCase() === 'kattunge')) sort = 'unge';
+  const seed = (opts.seed ?? hashStr(R.tag + '|' + (pet ? (pet.id ?? pet.name ?? pet.breed ?? '') : sort) + '|' + (opts.key ?? ''))) >>> 0;
+  R.sample = { type: 'animal', kind: R.tag, mood: String(mood || '').toLowerCase(), sort, seed, vary: opts.vary | 0, secs: opts.secs };
+  return R;
+}
+function routeAnimalSynth(kind, mood = '', opts = {}) {
   let sort = opts.sort || '', pet = null;
   if (kind && typeof kind === 'object') { pet = kind; kind = pet.species || pet.kind; mood = mood || pet.mood || ''; sort = sort || pet; }
   const k = ALIAS[String(kind || '').toLowerCase()] || String(kind || '').toLowerCase();
@@ -893,7 +909,11 @@ function routeSpeak(text, opts = {}) {
     if (R) return R;
   }
   const voice = opts.self || opts.voice === 'self' ? selfVoice() : opts.voice ? voiceFor(opts.voice) : voiceFor('~' + (opts.key ?? str));
-  return { tag: 'babbel', info: { kind: voice.kind, pitch: voice.pitch, self: !!voice.soft }, fn: (c, d, t) => babbleAt(c, d, t, str, voice, opts.mood) };
+  const max = opts.max ? clamp(+opts.max, 0.45, MAX_TAL) : MAX_TAL;
+  const ti = textInfo(str);
+  return { tag: 'babbel', info: { kind: voice.kind, pitch: voice.pitch, self: !!voice.soft, max },
+    sample: { type: 'person', kind: voice.kind, mood: opts.mood || ti.mood, question: ti.question, seed: voice.seed, self: !!voice.soft, max: opts.max ? max : voice.soft ? 1.1 : undefined, vary: opts.vary | 0 },
+    fn: (c, d, t) => babbleAt(c, d, t, str, voice, opts.mood, max) };
 }
 
 // ---------------------------------------------------------------- spela (live)
@@ -914,6 +934,11 @@ function ensureWatch() {
   }, 120);
 }
 let calls = 0; // räknare → djurens vary (nytt skall varje gång, samma röst)
+// Inspelningarna (js/core/rec.js) tar över när de finns: sampler.ready(plan.sample) → true när ett
+// inspelat klipp är laddat, sampler.play(sample, c, dest, t0) ger { srcs, outs, nodes, end } som
+// syntarna – max-röster, scenbyte, mute och stopp sköts här som förut. Annars låter syntversionen.
+let SAMPLER = null;
+export function setVoiceSampler(sm) { SAMPLER = sm && typeof sm.ready === 'function' && typeof sm.play === 'function' ? sm : null; }
 // mix = { pan: -1..1 (vänster–höger), gain: 0..1 (svagare, t.ex. långt bort) }
 function run(plan, mix = {}) {
   if (!plan) return null;
@@ -927,7 +952,9 @@ function run(plan, mix = {}) {
     const pan = clamp(+mix.pan || 0, -1, 1), gain = mix.gain == null ? 1 : clamp(+mix.gain || 0, 0, 1.5);
     if (pan && typeof c.createStereoPanner === 'function') { const p = c.createStereoPanner(); p.pan.value = pan; p.connect(dest); dest = p; extra.push(p); }
     if (gain !== 1) { const g = c.createGain(); g.gain.value = gain; g.connect(dest); dest = g; extra.push(g); }
-    const h = plan.fn(c, dest, c.currentTime + 0.015);
+    let rec = false;
+    try { rec = !!(SAMPLER && plan.sample && SAMPLER.ready(plan.sample)); } catch { rec = false; }
+    const h = rec ? SAMPLER.play(plan.sample, c, dest, c.currentTime + 0.015) : plan.fn(c, dest, c.currentTime + 0.015);
     h.nodes.push(...extra);
     let left = h.srcs.length, done = false;
     const V = {
@@ -962,7 +989,7 @@ function run(plan, mix = {}) {
 // Alla returnerar ett handtag { stop(), playing() } eller null (tyst: ljud av, inget klick än,
 // ingen WebAudio).
 // Alla tar också mix = { pan, gain } sist (pan −1..1, gain 0..1).
-export const babble = (text, voice, mood, mix) => run({ tag: 'babbel', fn: (c, d, t) => babbleAt(c, d, t, text, voice, mood) }, mix);
+export const babble = (text, voice, mood, mix) => { const v = voiceFor(voice), ti = textInfo(text); return run({ tag: 'babbel', sample: { type: 'person', kind: v.kind, mood: mood || ti.mood, question: ti.question, seed: v.seed, self: !!v.soft, vary: ++calls }, fn: (c, d, t) => babbleAt(c, d, t, text, voice, mood) }, mix); };
 export const bark = (sort = 'mellan', mood = '', mix) => run(routeAnimal('hund', mood, { sort, vary: ++calls }), mix);
 export const meow = (sort = '', mood = '', mix) => run(routeAnimal('katt', mood, { sort, vary: ++calls }), mix);
 export const purr = (secs = 3, mix) => run(routeAnimal('katt', 'spinn', { secs, vary: ++calls }), mix);
@@ -991,21 +1018,75 @@ export function speak(text, opts = {}) {
   return run(routeSpeak(text, o.vary == null ? { ...o, vary: ++calls } : o), o);
 }
 
+// Sims-snack utan text: en kort babbelreplik med personens röst – för klick på folk som inte har
+// någon replik (fotgängarna i staden, gäster). Samma person låter alltid likadant men säger något
+// nytt varje gång. voice = look/avatar/namn; opts = { mood, question, words (1–8), pan, gain }.
+function chatterPlan(voice, o, seed) {
+  const v = voiceFor(voice || '~okänd');
+  const r = rng(seed >>> 0);
+  const n = clamp((o.words | 0) || 2 + Math.floor(r() * 4), 1, 8);
+  const words = [];
+  for (let i = 0; i < n; i++) words.push('ba'.repeat(1 + Math.floor(r() * 3)) + (i < n - 1 && r() < 0.2 ? ',' : ''));
+  const end = o.question ? '?' : o.mood === 'glad' || o.mood === 'ivrig' ? '!' : ['.', '!', '?', '.', '.'][Math.floor(r() * 5)];
+  const text = words.join(' ') + end;
+  const mood = MOODS[o.mood] ? o.mood : (end === '!' ? 'glad' : undefined);
+  return { tag: 'babbel', info: { kind: v.kind, pitch: v.pitch, self: !!v.soft, chatter: true },
+    sample: { type: 'person', kind: v.kind, mood: mood || 'neutral', question: end === '?', seed: v.seed, self: !!v.soft, vary: seed >>> 0 },
+    fn: (c, d, t) => babbleAt(c, d, t, text, v, mood) };
+}
+export function chatter(voice, opts = {}) {
+  const o = opts || {};
+  return run(chatterPlan(voice, o, hashStr('prat|' + (++calls)) ^ ((Math.random() * 4294967296) >>> 0)), o);
+}
+
+// Den egna figurens repliker i scenerna (tankar och tips via createSpeech i walkable.js):
+// 'kort' = ett kort, mjukt mummel (standard), 'full' = hela babblet, 'av' = tyst. Spelarchatten
+// (sayBubble med voice 'self') påverkas inte.
+let selfTalk = 'kort';
+export function setSelfTalk(mode) { selfTalk = mode === 'full' || mode === true ? 'full' : mode === 'av' || mode === false ? 'av' : 'kort'; }
+export const selfTalkMode = () => selfTalk;
+
 // Pratbubblor som ritas varje bildruta (sayBubble: andra spelares chatt, gästernas repliker):
 // första gången en text syns (eller efter minst 0,7 s utan den) hörs den – sedan tyst tills
 // texten byts. voice = avatar/look/namn/'self' (utelämnad = gissning på texten + läget x, y),
 // voice === false = bubblan har redan fått sitt ljud (createSpeech) – bara registrera.
 // mix = { pan, gain }.
-const HEARD = new Map();
+// Bubblan känns igen på talare + text: samma röst (voice) eller – utan röst – en bubbla med samma
+// text nära där den syntes förra gången (den kan glida med en gående figur). Två talare som
+// säger samma sak hörs alltså båda.
+const HEARD = new Map(); // text → [{ id, x, y, t }]
+const NEAR = 40;         // px mellan två bildrutor för att räknas som samma bubbla
+const VOICE_ID = new WeakMap();
+let heardSweep = 0;
+function speakerId(voice) {
+  if (voice == null || voice === false || voice === '') return null;
+  if (voice === 'self') return 'self';
+  if (typeof voice === 'string') return 's:' + voice.toLowerCase();
+  if (typeof voice === 'number') return '#' + voice;
+  if (typeof voice === 'object') {
+    let id = VOICE_ID.get(voice);
+    if (!id) { id = 'v:' + voiceFor(voice).seed; VOICE_ID.set(voice, id); }
+    return id;
+  }
+  return null;
+}
 export function heardBubble(text, x, y, voice, mix = {}) {
-  const key = String(text || '');
-  if (!key) return null;
-  const now = nowS(), e = HEARD.get(key);
-  if (e && now - e.t < 0.7) { e.t = now; return null; }
-  HEARD.set(key, { t: now });
-  if (HEARD.size > 64) for (const [k, v] of HEARD) if (now - v.t > 5) HEARD.delete(k);
-  if (voice === false) return null;
-  return speak(key, { voice: voice || undefined, key: '@' + Math.round((+x || 0) / 16) + ',' + Math.round((+y || 0) / 16), pan: mix.pan, gain: mix.gain });
+  const str = String(text || '');
+  if (!str) return null;
+  const X = +x || 0, Y = +y || 0, now = nowS();
+  let id = null;
+  try { id = speakerId(voice); } catch { id = null; }
+  let list = HEARD.get(str);
+  if (!list) { list = []; HEARD.set(str, list); }
+  const e = list.find((h) => (id && h.id === id) || (!(id && h.id) && Math.abs(h.x - X) <= NEAR && Math.abs(h.y - Y) <= NEAR));
+  const fresh = !e || now - e.t >= 0.7;
+  if (e) { e.t = now; e.x = X; e.y = Y; if (id) e.id = id; } else list.push({ id, x: X, y: Y, t: now });
+  if (now - heardSweep > 2) { // glöm bubblor som inte syns längre
+    heardSweep = now;
+    for (const [k, l] of HEARD) { const keep = l.filter((h) => now - h.t < 5); if (keep.length) HEARD.set(k, keep); else HEARD.delete(k); }
+  }
+  if (!fresh || voice === false) return null;
+  return speak(str, { voice: voice || undefined, key: '@' + Math.round(X / 16) + ',' + Math.round(Y / 16), pan: mix?.pan, gain: mix?.gain });
 }
 
 export function stopVoices(fade = 0.04) { for (const v of active.slice()) v.stop(fade); }
@@ -1019,6 +1100,7 @@ export const _render = {
   chirp: chirpAt, coo: cooAt, blubb: blubbAt, squeak: squeakAt, snuff: snuffAt, thump: thumpAt,
   speak(c, dest, t0, text, opts) { const p = routeSpeak(text, opts || {}); return p ? p.fn(c, dest, t0) : null; },
   animal(c, dest, t0, kind, mood, opts) { const p = routeAnimal(kind, mood, opts || {}); return p ? p.fn(c, dest, t0) : null; },
+  chatter(c, dest, t0, voice, opts = {}) { return chatterPlan(voice, opts || {}, opts?.seed ?? 1).fn(c, dest, t0); },
   plan: (text, opts) => routeSpeak(text, opts || {})?.tag ?? null,
   chain: (c, target, level) => makeChain(c, target || c.destination, level).input, // spelets buss
   voiceParams, MAX_VOICES, OUT_LEVEL, LIM,

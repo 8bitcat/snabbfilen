@@ -19,6 +19,7 @@
 //   {k:'voice', t:'lamna', gid}           jag lämnar gruppen
 import { onJob, sendJob, onCall, worldPeer, worldMyId, worldFolksHere, worldPlayer, worldMyKey, playersList, setVoiceHooks, worldMarkActive, playerName } from './world.js';
 import { toast } from '../core/ui.js';
+import { setDuck } from '../core/rec.js';
 
 const NEAR_IN = 140, NEAR_OUT = 190, FULL = 40; // spelpixlar: kopplas in / ut, full volym inom
 const TICK_MS = 150;         // nivåerna (vem pratar) – länkarna ses över varannan gång
@@ -208,6 +209,8 @@ function levels(now) {
     if (L.meter && L.target > 0.05 && level(L.meter) > TALK_RMS) L.talkUntil = now + TALK_HOLD;
   }
   if (S.selfMeter && !S.micMuted && level(S.selfMeter) > TALK_RMS) S.talkSelfUntil = now + TALK_HOLD;
+  // pratar någon i röstchatten? – bakgrundsljudet och musiken viker undan
+  try { setDuck([...S.links.values()].some((L) => L.talkUntil > now && !isHushed(L.id)) ? 1 : 0); } catch { /* ok */ }
 }
 
 // ---------- grupperna ----------
