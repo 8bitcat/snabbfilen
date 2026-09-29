@@ -22,8 +22,11 @@ export const FOOD = [
 export const foodOf = (id) => FOOD.find((f) => f.id === id);
 
 // Jobben. wage = kr per rätt, oops = avdrag per fel, bonus = kr per färdig låda (packjobb).
+// nattoppet = passen går även efter 20 (flygplatsen stänger aldrig), back = scenen man
+// står kvar i efter passet (annars staden).
 export const JOBS = {
-  flygplats: { id: 'flygplats', icon: '✈️', name: 'Flygplatsen', verb: 'Bär väskorna till rätt vagn', wage: 7, oops: 4 },
+  flygplats: { id: 'flygplats', icon: '✈️', name: 'Flygplatsen', verb: 'Bär väskorna till rätt vagn', wage: 7, oops: 4, nattoppet: true, back: 'terminal' },
+  incheckning: { id: 'incheckning', icon: '🛄', name: 'Incheckningen', verb: 'Checka in resenärerna vid disk 3', wage: 18, oops: 5, nattoppet: true, back: 'terminal' },
   frukt: { id: 'frukt', icon: '🍊', name: 'Fruktfabriken', verb: 'Plocka frukt från bandet till lådan', wage: 4, oops: 3, bonus: 20 },
   burgare: { id: 'burgare', icon: '🍔', name: 'Burgarbaren', verb: 'Servera rätt mat till rätt kund', wage: 10, oops: 5 },
   pizzeria: { id: 'pizzeria', icon: '🍕', name: 'Pizzerian', verb: 'Baka rätt pizza och servera rätt kund', wage: 20, oops: 8 },
@@ -492,8 +495,10 @@ export class Game {
   }
 
   // ---------- jobb ----------
-  canWork() {
+  canWork(jobId) {
     if (this.energy < 20) return { ok: false, msg: 'Du är för trött för att jobba – gå hem och sov.' };
+    // flygplatsen går dygnet runt – men sista nattpasset börjar 23:00
+    if (JOBS[jobId]?.nattoppet) return this.min > 23 * 60 ? { ok: false, msg: 'Sista nattpasset har redan gått – nästa pass börjar 07:00.' } : { ok: true };
     if (this.min > 20 * 60) return { ok: false, msg: 'För sent att börja ett pass – jobben öppnar 07:00 igen.' };
     if (this.min < 7 * 60) return { ok: false, msg: 'Jobbet öppnar 07:00.', waitTo: 7 * 60 };
     return { ok: true };
@@ -522,7 +527,11 @@ export class Game {
     this.money += finalPay;
     this.earned += finalPay;
     this.energy = clamp(this.energy - 35);
-    this.passTime(4 * 60);
+    // ett nattpass slutar vid midnatt (nightEnd): man tar nattbussen hem och sover i stället
+    // för att somna där man står
+    const left = DAY - 1 - this.min;
+    const nightEnd = !!JOBS[jobId]?.nattoppet && left < 4 * 60;
+    this.passTime(nightEnd ? Math.max(0, left) : 4 * 60);
     const b = this.best[jobId];
     const newRecord = (stats.ok || 0) > b.ok;
     b.ok = Math.max(b.ok, stats.ok || 0);
@@ -530,7 +539,7 @@ export class Game {
     this.save();
     const after = levelOf(this.jobs[jobId]);
     if (after > before) { play('fanfare'); toast(`⭐ Befordran på ${JOBS[jobId].name}! Du är nu ${JOB_TITLES[after - 1]}.`, 'good'); }
-    return { finalPay, starving, doubled, newRecord, promoted: after > before };
+    return { finalPay, starving, doubled, newRecord, promoted: after > before, nightEnd };
   }
 
   // ---------- kläder & möbler ----------

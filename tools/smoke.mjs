@@ -72,7 +72,7 @@ await page.waitForTimeout(400);
 await shot('07-staden-natt');
 await page.evaluate(() => { window.SF.game.min = 10 * 60; });
 
-// 4b. REGRESSION: klick på flyghuset ska öppna jobbintro (inte hänga)
+// 4b. REGRESSION: klick på flyghuset ska leda in i terminalen (inte hänga)
 await page.evaluate(() => { window.SF.citySub = 1; window.SF.go('city'); });
 await page.waitForTimeout(300);
 await shot('06b-arbetsomradet');
@@ -80,10 +80,10 @@ await page.evaluate(() => { const p = window.SF.scene._debug.spot('flyg'); windo
 let introSeen = false;
 for (let i = 0; i < 80 && !introSeen; i++) { // staden är stor – promenaden tar en stund
   await page.waitForTimeout(300);
-  introSeen = (await page.locator('.dlg-head h2').textContent().catch(() => ''))?.includes('Flygplatsen');
+  introSeen = await page.evaluate(() => window.SF.sceneName === 'terminal');
 }
-ok(introSeen, 'flyghuset öppnar jobbintro (hängde inte)');
-await page.click('.dlg-foot .btn'); // En annan gång
+ok(introSeen, 'flyghuset leder in i terminalen (hängde inte)');
+await page.evaluate(() => window.SF.go('city'));
 await page.waitForTimeout(200);
 await page.evaluate(() => { window.SF.citySub = 0; });
 

@@ -1,4 +1,4 @@
 // Skrivs av tools/release.mjs vid varje släpp – ändra inte för hand.
-export const VERSION = '0.42.0';
+export const VERSION = '0.43.0';
 export const DATE = '2026-09-29';
-export const TITLE = 'Vi sitter tillsammans';
+export const TITLE = 'Flygterminalen och incheckningen';

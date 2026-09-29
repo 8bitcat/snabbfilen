@@ -304,7 +304,8 @@ export function makeCity(A) {
     else if (b.enter === 'leksaker') A.go('leksaker'); // Leksakslådan (js/scenes/shop-leksaker.js)
     else if (b.enter === 'narbutik') A.go('narbutik'); // förortens närbutik 24/7 (js/scenes/shop-narbutik.js)
     else if (kind === 'jobb') A.startJob(id);
-    else A.startJob(b.enter === 'flyg' ? 'flygplats' : b.enter);
+    else if (b.enter === 'flyg') A.go('terminal'); // flygterminalen: bagagechefen och incheckningen erbjuder passen
+    else A.startJob(b.enter);
   }
 
   // ---------- bussen ----------

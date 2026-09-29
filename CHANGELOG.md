@@ -10,6 +10,13 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.43.0] – 2026-09-29 – Flygterminalen och incheckningen
+- FLYGTERMINALEN: flygplatsens dörr leder nu in i en stor gåbar avgångshall med glasväggar – plan som landar och lyfter, tankbilen under vingen, signalgubben och trappbilen, bagagebandet, avgångstavlan som bläddrar, säkerhetskontrollen med bågen som piper, gaterna och PIXEL KAFFE
+- Nytt jobb: INCHECKNINGEN – kolla passen (falska finns!), väg väskorna, välj plats, skriv rätt bagagelapp och skicka iväg surfbrädor och hundburar till specialbagaget; 18 kr per resenär
+- Bagagechefen vid bandet erbjuder det gamla bagagepasset, stationschefen och diskarna incheckningen
+- Flygplatsen stänger aldrig: flygjobben går att ta på kvällen fram till 23:00, och ett nattpass som når midnatt slutar med nattbussen hem till sängen i stället för att man somnar där man står
+- Efter passet står man kvar i terminalen
+
 ## [0.42.0] – 2026-09-29 – Vi sitter tillsammans
 - Andra spelare syns SITTANDE: sätter sig någon vid ett bord på caféet, i Burgarbaren, i Möbeljättens restaurang eller på en parkbänk ser alla andra figuren sitta där – och tugga när maten står framme
 - Platsen där en annan spelare sitter är upptagen: varken du eller stadens folk sätter sig i knät på dem, och den blir ledig igen när de reser sig
