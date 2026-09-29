@@ -144,6 +144,7 @@ export const BUILDINGS_S = [
     sign: 'SÖDERKYRKAN', icon: '⛪', tower: { x0: 914, x1: 954, h: 212 },
     soon: 'Kyrkan är tyst och sval. Gudstjänst på söndag klockan 11.',
   }),
+  S('leksaker', 1100, 112, 116, { x0: 1180, x1: 1204, type: 'swing' }, { sign: 'LEKSAKSLÅDAN', icon: '🧸', enter: 'leksaker', open: [9, 19] }), // leksaksaffären (js/city/buildings-leksaker.js + js/scenes/shop-leksaker.js)
   S('vardcentral', 1264, 156, 124, { x0: 1326, x1: 1358, type: 'slide' }, { sign: 'VÅRDCENTRALEN', icon: '🏥', enter: 'jobb:vard', open: [8, 17] }),
   S('tornhuset', 1448, 128, 172, { x0: 1500, x1: 1524, type: 'swing' }, { sign: 'TORNHUSET', icon: '🏙️', enter: 'bostad:takvaning', homes: ['takvaning'] }),
   S('bensinmack', 1600, 100, 64, { x0: 1636, x1: 1660, type: 'slide' }, {
@@ -196,8 +197,8 @@ export const buildingById = (id) => ALL_BUILDINGS.find((b) => b.id === id) || nu
 // (med hinder och grindar där gates anger) av props.js. row 'm' = mellanbandet.
 // ---------------------------------------------------------------------
 export const LOTS = [
-  { id: 'kyrkogard', kind: 'kyrkogard', name: 'KYRKOGÅRDEN', district: 'SÖDER', row: 's', rect: [1000, CITY.FOOT_TOP_S, 1212, CITY.BASE_S], fence: true,
-    gates: [{ side: 'n', x0: 1096, x1: 1116 }, { side: 's', x0: 1040, x1: 1060 }] },
+  { id: 'kyrkogard', kind: 'kyrkogard', name: 'KYRKOGÅRDEN', district: 'SÖDER', row: 's', rect: [1000, CITY.FOOT_TOP_S, 1100, CITY.BASE_S], fence: true, // (krympt: Leksakslådan står på östra delen)
+    gates: [{ side: 'n', x0: 1060, x1: 1080 }, { side: 's', x0: 1040, x1: 1060 }] },
   { id: 'parkering', kind: 'parkering', name: 'PARKERINGEN', district: 'FÖRORTEN', row: 'm', rect: [1768, 318, 2000, 452], fence: false,
     drive: [1790, 1822] }, // infarten från Pixelgatan (bilar korsar trottoaren här)
   { id: 'lekplats_x', kind: 'lekplats_x', name: 'LEKPLATSEN', district: 'FÖRORTEN', row: 'm', rect: [2030, 334, 2170, 452], fence: true,
@@ -437,6 +438,7 @@ export const RESERVED = [
   ...PATH_RECTS,
   // --- v2 ---
   [0, CITY.ROAD_S[0], CITY.W, CITY.ROAD_S[1]],                               // Södergatan
+  [1100, CITY.SIDEWALK_SN[0], 1212, CITY.SIDEWALK_SN[0] + 24],                // Leksakslådans skyltfönster och dörr
   [CITY.INFARTEN[0], CITY.ROAD[0], CITY.INFARTEN[1], CITY.ROAD_S[1]],        // Infarten
   ...[...BUILDINGS_S, ...BUILDINGS_X, ...FREESTANDING].flatMap((b) => [footprint(b), doorFront(b), ...(b.blocks || []), ...(b.yard ? [b.yard.rect] : [])]),
   ...CROSSWALKS_S.flatMap((c) => sidewalkEnds(c, CITY.SIDEWALK_SN, CITY.SIDEWALK_SS)),

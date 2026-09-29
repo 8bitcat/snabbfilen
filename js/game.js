@@ -332,6 +332,7 @@ export class Game {
     this.energy = 90;
     this.home = 'husvagn';                // alla börjar i husvagnen (Carl 2026-09-28)
     this.fridge = { nudlar: 1 };          // itemId -> antal
+    this.toys = {};                       // köpta leksaker (Leksakslådan): id -> antal
     this.jobs = Object.fromEntries(Object.keys(JOBS).map((k) => [k, 0])); // antal jobbade pass per jobb
     this.earned = 0;                      // totalt intjänat
     this.wardrobe = [];                   // upplåsta plagg, "kind:v"
@@ -383,6 +384,7 @@ export class Game {
         g.day = Math.max(1, p.day | 0); g.min = Math.min(DAY - 1, Math.max(0, +p.min || 0));
         g.money = Math.round(+p.money || 0); g.hunger = clamp(p.hunger); g.energy = clamp(p.energy);
         g.home = homeOf(p.home).id;
+        g.toys = {}; for (const [k, v] of Object.entries(p.toys && typeof p.toys === 'object' ? p.toys : {})) if ((v | 0) > 0) g.toys[k] = Math.min(999, v | 0);
         g.fridge = {}; for (const [k, v] of Object.entries(p.fridge || {})) { if (!foodOf(k)) keep.fridge[k] = v; else if (v > 0) g.fridge[k] = Math.min(20, v | 0); }
         for (const k of Object.keys(g.jobs)) g.jobs[k] = Math.max(0, p.jobs?.[k] | 0);
         for (const [k, v] of Object.entries(p.jobs || {})) if (!(k in g.jobs)) keep.jobs[k] = v;

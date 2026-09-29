@@ -10,6 +10,12 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.39.0] – 2026-09-29 – Leksakslådan öppnar
+- Leksakslådan har öppnat på Söder, bredvid kyrkogården – en rosa leksaksaffär med modelltåg och nalle i skyltfönstret
+- Squishy-dumplings i bambukorgar (pastell, glitter och jul), squishy-mat som ostkub, smörpaket, jordgubbslåda och kattass
+- Klämbordet: håll inne så trycks leksaken ihop, släpp så fjädrar den tillbaka med pip och glitter
+- Egna klämkompisar i plysch och plast, nallar, bilar, tåg, bollar, spel och dockor – köpta leksaker sparas
+
 ## [0.38.0] – 2026-09-29 – Garderoben: nya frisyrer och ansikten
 - Garderoben: en ny figurmotor med lager – 89 frisyrer, 16 hårfärgseffekter och över 180 nya ansiktsval (ögon, bryn, näsa, mun, öron, kinder, smink, fräknar och märken, skägg)
 - Över 350 nya plagg är ritade: tröjor, jackor, byxor, kjolar, skor, hattar, glasögon, halsband och smycken – de börjar säljas i klädaffären och stans nya butiker i nästa släpp

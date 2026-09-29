@@ -19,7 +19,7 @@ import { createPetWalk } from '../pets/outdoors.js'; // husdjuren på promenad (
 // weather vädret, walk gångmotorn och fallback-v2 platshållare för allt som
 // modulerna inte täcker ännu (marken/skjulen/staketen i v2-områdena).
 const MODS = {};
-await Promise.all(['buildings-shops', 'buildings-work', 'buildings-south', 'buildings-suburb', 'ground', 'props', 'traffic', 'life', 'weather', 'walk', 'fallback-v2'].map((n) =>
+await Promise.all(['buildings-shops', 'buildings-work', 'buildings-south', 'buildings-suburb', 'buildings-leksaker', 'ground', 'props', 'traffic', 'life', 'weather', 'walk', 'fallback-v2'].map((n) =>
   import(`../city/${n}.js`).then((m) => { MODS[n] = m; }).catch((e) => console.error(`stadsmodulen ${n} kunde inte laddas:`, e))));
 
 let VW = CITY.VIEW_W, VH = CITY.VIEW_H; // mobilfyllning: vyn följer skärmen, klampad till världen
@@ -94,7 +94,7 @@ function artObstacles() {
 }
 const ART = () => ({
   ...(MODS['buildings-shops']?.BUILDING_ART || {}), ...(MODS['buildings-work']?.BUILDING_ART || {}),
-  ...(MODS['buildings-south']?.BUILDING_ART || {}), ...(MODS['buildings-suburb']?.BUILDING_ART || {}),
+  ...(MODS['buildings-south']?.BUILDING_ART || {}), ...(MODS['buildings-suburb']?.BUILDING_ART || {}), ...(MODS['buildings-leksaker']?.BUILDING_ART || {}),
 });
 function groundImg(night) {
   const k = 'ground:' + night;
@@ -301,6 +301,7 @@ export function makeCity(A) {
     } else if (b.enter === 'djur') A.go('djur');
     else if (b.enter === 'burgare') A.go('burgarbar'); // in i dinern – jobba gör man vid disken därinne
     else if (b.enter === 'glass') openGlass(); // glasståndet i parken
+    else if (b.enter === 'leksaker') A.go('leksaker'); // Leksakslådan (js/scenes/shop-leksaker.js)
     else if (b.enter === 'narbutik') A.go('narbutik'); // förortens närbutik 24/7 (js/scenes/shop-narbutik.js)
     else if (kind === 'jobb') A.startJob(id);
     else A.startJob(b.enter === 'flyg' ? 'flygplats' : b.enter);

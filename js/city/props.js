@@ -2918,7 +2918,7 @@ export function createProps(env) {
   // kyrkporten och vårdcentralens skyltfönster (granskningsfynd)
   sign(CROSSWALKS_S[0].name, CROSSWALKS_S[0].x1 + 8, CS - 2, -1);
   sign(CROSSWALKS_S[1].name, CROSSWALKS_S[1].x1 + 8, CS - 2, -1);
-  sign('VÅRDGATAN', 1212, CS - 2, -1); // vid gågatans västra hörn – plåten fri från lindens krona
+  sign('VÅRDGATAN', 1218, CS - 2, -1); // vid gågatans västra hörn – plåten fri från lindens krona
   menu(158, FS); pot(246, FS, 'klot'); // (pizzerians gamla uteservering här är borttagen – den nya står på trädäcket längs gaveln, buildings-south.js)
   mailbox(330, FS); bikeRack(418, FS + 3); // brevlådan öster om skyltstolpen så stolpen inte spetsar den
   // djuraffären: en LÅG blomlåda i stället för klotkrukan vid 490 – krukan skymde klösträdet och kattungarna i skyltfönstret (granskningsfynd)
@@ -2926,10 +2926,10 @@ export function createProps(env) {
   pot(690, FS, 'kon'); // (löpsedeln SOL! I HELG stod här – borttagen, Carl 2026-09-29)
   pot(766, FS, 'kon'); bench(790, FS + 2);
   hedge(890, FS, 30); hedge(978, FS, 30);
-  bench(1100, FS + 4); bikeRack(1160, FS + 3);
+  // (Leksakslådan står här) – bänken och cykelstället flyttade ur skyltfönstret
   // krukan och östra bänken stod framför ambulansintaget – krukan till kyrkogårdsstaketet,
   // bänken till kantstenen (helt under fasadlinjen, vetter mot gatan)
-  bench(1290, FS + 2); bin(1310, FS); pot(1195, FS, 'pelargon'); bench(1400, CS - 2);
+  bench(1290, FS + 2); bin(1310, FS); bench(1400, CS - 2);
   flowerBox(1470, FS, 24, ['red', 'white']); pot(1546, FS, 'palm');
   for (const [x, y, a, b] of [[156, 560, 'gron', 'brun'], [412, 530, 'gra', 'gron'], [620, 540, 'bla', 'gra'], [1428, 520, 'gron', 'gra'], [1582, 560, 'gra', 'gron']]) { wheelieBin(x, y, a); wheelieBin(x + 11, y, b); }
   // bortre trottoaren mot kanalen: bänkar med ryggen mot gatan (framifrån sedda – den som sitter tittar ut
