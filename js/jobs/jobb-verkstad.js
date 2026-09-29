@@ -3,39 +3,63 @@
 // vid bakänden, och en pratbubbla visar felet.
 //
 // DÄCKBYTET är det vanligaste jobbet och görs steg för steg, allt synligt:
+//   0. Bilen kör in genom porten och stannar på lyften – den lutar mot det
+//      platta hjulet (fälgen står nästan på banan) och det pyser ur däcket.
 //   1. HISSA – gå till lyftens manöverpanel och klicka: lyften höjer bilen.
-//      Bubblan visar det platta däcket, vilket hjul (minibilen uppifrån:
-//      vänster/höger, fram/bak) och vilken sorts nytt däck bilen ska ha.
+//      Bubblan visar det platta däcket, vilket hjul (minibilen uppifrån med
+//      V/H bredvid, fram/bak) och vilken sorts nytt däck bilen ska ha.
 //   2. SKRUVDRAGARE – hämta den på en av verktygsvagnarna.
 //   3. SKRUVAR – gå till det punkterade hjulet och klicka på skruvarna (i
 //      navbubblan eller på hjulet) – en i taget, var och en snurrar ut med en
-//      liten mätare. Klickar man medan den snurrar slirar dragaren (fel), och
-//      skruvar man på fel hjul blir det fel.
-//   4. DÄCK AV – lyft av hjulet (skruvdragaren läggs på golvet) och lägg det
-//      i en av staplarna för gamla hjul.
+//      liten mätare och hoppar ner i skruvskålen på golvet. Klickar man medan
+//      den snurrar slirar dragaren (fel) – mot slutet köas nästa skruv i stället
+//      (den blinkar) – och skruvar man på fel hjul blir det fel.
+//   4. DÄCK AV – lyft av hjulet (skruvdragaren läggs på golvet, navet med
+//      bromsskivan syns) och bär det gamla däcket till en stapel för gamla hjul.
+//      Klickar man på den tomma vagnen hämtar mekanikern dragaren på golvet.
 //   5. NYTT DÄCK – hämta rätt sort i däckstället: SOMMAR, VINTER, STORT
-//      (pickuper) eller LITET (halvkombi). Fel sort ger fel.
-//   6. SKRUVA FAST – ta skruvdragaren igen och skruva i skruvarna. Tar man
-//      dem i kryssmönster (varannan) blir det bonus.
+//      (pickuper) eller LITET (halvkombi) – varje fack har sin skylt. Fel sort ger fel.
+//   6. SKRUVA FAST – ta skruvdragaren igen och skruva i skruvarna (de plockas
+//      ur skålen). Tar man dem i kryssmönster (varannan) blir det bonus.
 //   7. LUFT – hämta luftslangen vid kompressorn och håll inne vid hjulet tills
 //      mätaren står på grönt. För mycket smäller det (PANG), för lite är fel.
 //   8. SÄNK – sänk lyften vid panelen: bilen backar ut och kunden betalar.
 // Omväxling: oljebyte, trasig lampa, rostigt avgasrör eller tomt batteri –
 // hämta delen i hyllan och HÅLL INNE vid bilens front (eller mellanslag).
-// Stegraden överst visar vad som är nästa steg för bilen man jobbar med, och
+// Jobbkortet i topplisten visar bilen (minibilen), hjulet och däcksorten;
+// stegraden under visar vad som är nästa steg för bilen man jobbar med, och
 // de första gångerna pekar en hjälptext ut vart man ska gå. Väntar kunden för
-// länge kör hen därifrån – utom när hjulet sitter löst, då blir hen bara arg.
+// länge kör hen därifrån (på sitt platta däck) – utom när hjulet är av, löst
+// eller ännu tomt: då blir hen bara arg, väntar kvar och säger ÄNTLIGEN! (+1).
+// Passet är 90 s (4 h på klockan) – ett däckbyte tar sin tid.
+// FYLL-LÄGET (riktiga spelare, dator och mobil) beskär bilden: då följer en
+// lodrät kamera mekanikern (hela pixlar), bubblor som hamnar ovanför det
+// synliga hänger under lyften, och däckstället väljer bara när alla fyra
+// skyltarna syns (annars går man fram och väljer där). Hjälptexter och puffar
+// letar upp en ledig plats – de täcker aldrig bubblor, skyltar eller figurer.
 //
 // Allt är handritade pixlar i skala 1: verkstaden målas EN gång (Pix), bilarna
 // målas per modell/färg/förare och cachas åt båda hållen, hjulen har åtta
 // rotationslägen per däcksort och reservdelarna är små pixelkartor med kontur.
+// Hjulet man bär ritas i figurernas skala (bilarna är mindre än folket).
+//
+// _debug (för tester): forceCar(bil|fel, {bay, wheel, tire, raised, drive}),
+// step(namn, opts) för varje steg utan gång ('hissa', 'skruvdragare', 'skruv',
+// 'skruvar', 'däck av', 'stapel', 'nytt däck', 'sätt på', 'skruva fast',
+// 'luft', 'sänk'), stats, spot(id) = klickpunkter i canvasens koordinater
+// ('panel:2', 'hjul:3:fram', 'bult:3:0', 'skruvdragare', 'kompressor', 'stapel',
+// 'dack:vinter' …), tire(bay), hud(), hint(), autoCars(av/på), time(s), idle(),
+// me(), cam() (kameran i fyll-läget), occupied() (rutorna som inte får täckas) m.fl.
 import { drawPerson, makeLook } from '../core/people.js';
-import { Pix, SMALL, BIG, ctxText, textW, text, mix, mul, css, hash, bayer } from '../core/floor-pix.js';
+import { Pix, SMALL, BIG, ctxText, textW, text, mix, mul, css, hex, hash, bayer } from '../core/floor-pix.js';
 import { createWalker, selfDrawable, folkDrawables, WALK_SEQ } from '../scenes/walkable.js';
-import { SHIFT_SECONDS, drawShiftHud, drawTimeUp, abortShift } from './shift.js';
-import { play } from '../core/sound.js';
+import { drawShiftHud, drawTimeUp, abortShift } from './shift.js';
+import { play, audioContext, isMuted } from '../core/sound.js';
 
 const FW = 384, FH = 216;
+// Verkstadens pass är längre än de andra jobbens 60 s (ett däckbyte tar en
+// halv minut även när allt går rätt) – men är fortfarande 4 timmar på klockan.
+const SHIFT_T = 90;
 const FLOOR_Y = 92;            // golvet börjar (bakväggens fot)
 const RUN = 70;                // lyftbanans längd
 const LIFT_H = 12;             // hur högt lyften går
@@ -65,19 +89,22 @@ function makeShopPops() {
       for (const p of list) { p.age += dt; p.y = Math.max(p.minY, p.y - 14 * dt); }
       for (let i = list.length - 1; i >= 0; i--) if (list[i].age > 0.9) list.splice(i, 1);
     },
-    draw(ctx) {
+    // fit(p, x, y, w) → [x, y]: scenen flyttar puffen till en ledig plats (inget överlapp)
+    draw(ctx, fit = null) {
       for (const p of list) {
-        const w = textW(SMALL, p.txt) + 4, x = (p.x - w / 2) | 0, y = p.y | 0;
+        const w = textW(SMALL, p.txt) + 4;
+        const [x, y] = fit ? fit(p, (p.x - w / 2) | 0, p.y | 0, w) : [(p.x - w / 2) | 0, p.y | 0];
         ctx.fillStyle = 'rgba(23,21,26,0.7)'; ctx.fillRect(x, y, w, 9);
         ctxText(ctx, SMALL, p.txt, x + 2, y + 2, p.col);
       }
     },
-    list: () => list.map((p) => ({ x: p.x, y: Math.round(p.y), txt: p.txt, tag: p.tag })),
+    list: () => list.map((p) => ({ x: p.x + (p.dx || 0), y: Math.round(p.y + (p.dy || 0)), txt: p.txt, tag: p.tag })),
   };
 }
 
 // ---------- reservdelarna ----------
 const PART_NAMES = ['DÄCK', 'OLJA', 'LAMPOR', 'AVGAS', 'BATTERI'];
+const JOB_TXT = ['DÄCKBYTE', 'OLJEBYTE', 'TRASIG LAMPA', 'ROSTIGT AVGASRÖR', 'TOMT BATTERI'];
 const PART_IDS = ['dack', 'olja', 'lampa', 'avgas', 'batteri'];
 const PARTS = [
   { // däck (sidovy, fälg och nav)
@@ -158,6 +185,38 @@ const PARTS = [
     ] },
 ];
 
+// Verkstadens egna ljud (spelets ljudmodul har inget för tryckluft eller en
+// hydraulpump): brus genom ett högpassfilter som pyser, och ett lågt surrande
+// sågtandsbrum för pumpen. Samma avstängningsknapp som allt annat.
+let NOISE = null;
+function sfx(name) {
+  if (isMuted()) return;
+  const ac = audioContext();
+  if (!ac) return;
+  try {
+    if (!NOISE) {
+      NOISE = ac.createBuffer(1, (ac.sampleRate * 0.4) | 0, ac.sampleRate);
+      const d = NOISE.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    }
+    const t0 = ac.currentTime, g = ac.createGain(), f = ac.createBiquadFilter();
+    g.connect(ac.destination); f.connect(g);
+    g.gain.setValueAtTime(0.0001, t0);
+    if (name === 'luft') {
+      const s = ac.createBufferSource();
+      s.buffer = NOISE; f.type = 'highpass'; f.frequency.value = 2600;
+      g.gain.linearRampToValueAtTime(0.04, t0 + 0.03); g.gain.linearRampToValueAtTime(0.0001, t0 + 0.34);
+      s.connect(f); s.start(t0); s.stop(t0 + 0.36);
+    } else {
+      const o = ac.createOscillator();
+      o.type = 'sawtooth'; o.frequency.setValueAtTime(64, t0); o.frequency.linearRampToValueAtTime(name === 'sank' ? 56 : 78, t0 + 0.3);
+      f.type = 'lowpass'; f.frequency.value = 420;
+      g.gain.linearRampToValueAtTime(0.07, t0 + 0.04); g.gain.linearRampToValueAtTime(0.0001, t0 + 0.32);
+      o.connect(f); o.start(t0); o.stop(t0 + 0.34);
+    }
+  } catch { /* inget ljudstöd */ }
+}
+
 const newCanvas = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; };
 function pixelsToCanvas(grid, w, h) {
   const c = newCanvas(w, h), x2 = c.getContext('2d');
@@ -189,16 +248,19 @@ function mapSprite(map, pal) {
 const PSPR = [];
 const partSprite = (p) => (PSPR[p] ||= mapSprite(PARTS[p].map, PARTS[p].pal));
 
-// Pratbubbla med rundade hörn och spets nedåt i (cx, tip). Innerytan är iw×ih;
-// returnerar innerytans övre vänstra hörn.
-function bubble(ctx, cx, tip, iw, ih, hot = false) {
-  const w = iw + 2, h = ih + 2, x0 = cx - (w >> 1), y0 = tip - 2 - h;
+// Pratbubbla med rundade hörn och spets nedåt i (cx, tip) – eller uppåt (up),
+// då hänger bubblan under spetsen. Innerytan är iw×ih; returnerar innerytans
+// övre vänstra hörn.
+// sx: spetsens x om den inte sitter mitt under/över bubblan.
+function bubble(ctx, cx, tip, iw, ih, hot = false, up = false, sx = cx) {
+  const w = iw + 2, h = ih + 2, x0 = cx - (w >> 1), y0 = up ? tip + 3 : tip - 2 - h;
   ctx.fillStyle = hot ? '#e8b230' : '#17151a';
   ctx.fillRect(x0 + 1, y0, w - 2, h); ctx.fillRect(x0, y0 + 1, w, h - 2);
-  ctx.fillRect(cx - 1, tip - 2, 3, 2); ctx.fillRect(cx, tip, 1, 1);
+  if (up) { ctx.fillRect(sx - 1, tip + 1, 3, 2); ctx.fillRect(sx, tip, 1, 1); }
+  else { ctx.fillRect(sx - 1, tip - 2, 3, 2); ctx.fillRect(sx, tip, 1, 1); }
   ctx.fillStyle = '#f4f1ea';
   ctx.fillRect(x0 + 1, y0 + 1, w - 2, h - 2);
-  ctx.fillRect(cx, tip - 2, 1, 2);
+  ctx.fillRect(sx, up ? tip + 1 : tip - 2, 1, 2);
   ctx.fillStyle = '#ffffff'; ctx.fillRect(x0 + 2, y0 + 1, w - 5, 1);
   ctx.fillStyle = '#d9d0bc'; ctx.fillRect(x0 + 1, y0 + h - 2, w - 2, 1);
   if (hot) { ctx.fillStyle = '#ffe07a'; ctx.fillRect(x0 + 1, y0 + 1, 1, h - 3); }
@@ -210,6 +272,9 @@ function bubble(ctx, cx, tip, iw, ih, hot = false) {
 // kaross, skuggning i 3–4 toner, rutor med reflexer, mörk kontur och små
 // detaljer. x från bakänden (0) till fronten (L-1) för en bil vänd åt höger,
 // h = höjd över marken (0 = hjulens nedersta rad).
+// sag: där bilen delas när den lutar mot ett platt däck (första kolumnen i
+// den främre delen) – en dörrskarv/B-stolpe, så att pixelsteget hamnar i en
+// linje som redan finns i karossen i stället för mitt i en ruta.
 // ======================================================================
 const SPECS = {
   sedan: {
@@ -222,7 +287,7 @@ const SPECS = {
     head: { x: 55, h0: 9, h1: 10 }, tail: { w: 2, h0: 9, h1: 11 },
     seams: [17, 29, 43], handles: [[20, 11], [32, 11]], mirror: { x: 40, h: 15 },
     crease: 9, heads: [{ x: 33, kind: 'driver' }, { x: 21, kind: 'back' }],
-    antenna: 20, fuel: { x: 5, h: 12 }, extraTop: 3,
+    antenna: 20, fuel: { x: 5, h: 12 }, extraTop: 3, sag: 30,
   },
   halvkombi: {
     L: 50, D: 3, r: 4, wheels: [10, 39], rim: 'alloy',
@@ -234,7 +299,7 @@ const SPECS = {
     head: { x: 47, h0: 9, h1: 10 }, tail: { w: 2, h0: 9, h1: 14 },
     seams: [21, 34], handles: [[23, 10]], mirror: { x: 31, h: 14 },
     crease: 9, heads: [{ x: 25, kind: 'driver' }, { x: 12, kind: 'back' }],
-    rails: true, fuel: { x: 4, h: 11 }, extraTop: 2,
+    rails: true, fuel: { x: 4, h: 11 }, extraTop: 2, sag: 21,
   },
   kombi: {
     L: 58, D: 3, r: 5, wheels: [12, 46], rim: 'steel',
@@ -246,7 +311,7 @@ const SPECS = {
     head: { x: 55, h0: 9, h1: 10 }, tail: { w: 2, h0: 9, h1: 15 },
     seams: [17, 29, 43], handles: [[20, 11], [32, 11]], mirror: { x: 40, h: 15 },
     crease: 9, heads: [{ x: 33, kind: 'driver' }, { x: 21, kind: 'back' }],
-    rails: true, fuel: { x: 7, h: 12 }, extraTop: 2,
+    rails: true, fuel: { x: 7, h: 12 }, extraTop: 2, sag: 30,
   },
   pickup: {
     L: 62, D: 3, r: 6, wheels: [13, 49], rim: 'steel',
@@ -257,7 +322,7 @@ const SPECS = {
     bump: { h0: 4, h1: 8, rear: 2, front: 3, chrome: true },
     head: { x: 59, h0: 11, h1: 13 }, tail: { w: 2, h0: 10, h1: 14 },
     seams: [24, 44], handles: [[29, 14]], mirror: { x: 41, h: 17 },
-    crease: 11, heads: [{ x: 34, kind: 'driver' }], cargo: true, extraTop: 4,
+    crease: 11, heads: [{ x: 34, kind: 'driver' }], cargo: true, extraTop: 4, sag: 25,
   },
 };
 SPECS.taxi = { ...SPECS.sedan, taxi: true, extraTop: 8 };
@@ -537,11 +602,13 @@ function paintCar(kind, color, variant, driver) {
     const w = textW(SMALL, 'TAXI'), x = flip ? W - 20 - w : 20, y = gy - 29;
     text(T0, SMALL, 'TAXI', x, y, 0x2a2014);
   }
-  // översta färgade raden (för pratbubblans plats)
+  // översta färgade raden (för pratbubblans plats), och per kolumn (höjd över hjulens rad)
   let topRow = 0;
   outer: for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (P.d[(y * W + x) * 4 + 3] > 0) { topRow = y; break outer; }
+  const colTop = [];
+  for (let x = 0; x < W; x++) { let y = 0; while (y < H && P.d[(y * W + x) * 4 + 3] === 0) y++; colTop.push(y < H ? gy - y : 0); }
   return {
-    W, H, gy, ht, hb, topH: gy - topRow, headPx, eh,
+    W, H, gy, ht, hb, topH: gy - topRow, colTop, headPx, eh,
     img: [P.flush(), Q.flush()], brake: [O.flush(), OQ.flush()],
   };
 }
@@ -589,24 +656,28 @@ function paintWheel(r, style, f, kind = 'sommar') {
   }
   return P.flush();
 }
-// punkterat däck: fälgen har sjunkit, gummit buktar ut mot golvet
-// (bilden är 4 px bredare än ett helt hjul: ritas 2 px till vänster om hjulets ruta)
+// Punkterat däck: fälgen har sjunkit två pixlar och står nästan på banan,
+// gummit är tryckt till en bred, platt kaka som buktar ut åt sidorna och pressas
+// ner över banans kant. Bilden är 4 px bredare och 1 px högre än ett helt hjul:
+// den ritas med samma överkant, 2 px till vänster om hjulets ruta.
 function paintFlat(r, style) {
-  const n = RIMN[style], S = 2 * r + 1, W = S + 4, P = new Pix(W, S), rimR = r - 2;
-  const cx = r + 2, cy = r + 1;
-  for (let j = 0; j < S; j++) for (let i = 0; i < W; i++) {
+  const n = RIMN[style], S = 2 * r + 1, W = S + 4, H = S + 1, P = new Pix(W, H), rimR = r - 2;
+  const cx = r + 2, cy = r + 2;
+  for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) {
     const dx = i - cx, dy = j - cy;
-    // övre halvan: nästan rund men en pixel lägre; nedre: bred, platt bula
-    const rx = dy > 0 ? r + 2.2 : r + 0.4, ry = dy > 0 ? r - 0.6 : r + 0.4;
+    // övre halvan: rund men två pixlar lägre; nedre: bred, platt kaka
+    const rx = dy > 0 ? r + 2.3 : r + 0.4, ry = dy > 0 ? r - 0.6 : r + 0.4;
     const e = Math.hypot(dx / rx, dy / ry);
-    const flatRow = j === S - 1 && Math.abs(dx) <= r + 1;
+    const flatRow = j === H - 1 && Math.abs(dx) <= r + 1;
     if (e > 1.02 && !flatRow) continue;
     const d = Math.hypot(dx, dy);
     let k = wheelPixel(style, n, 0.3, r, rimR, dx, dy, -(dx + dy) / (2 * r));
     if (d > rimR + 0.45) {
-      k = e > 0.84 || flatRow ? 0x121215 : dy > 0 && Math.abs(dx) > 2 ? 0x2b2b31 : 0x1c1c21;
-      if (dy > 0 && Math.abs(dx) > r - 1 && e < 0.93) k = 0x50505a;                 // bukten glänser
-      if (dy === 0 && Math.abs(dx) > r - 1 && e < 0.93) k = 0x34343c;
+      k = e > 0.86 || flatRow ? 0x0c0c10 : dy > 0 && Math.abs(dx) > 2 ? 0x34343c : 0x1c1c21;
+      if (dy > 0 && Math.abs(dx) > r - 1 && e < 0.93) k = 0x6a6a74;                 // bukten glänser
+      if (dy === 0 && Math.abs(dx) > r - 1 && e < 0.93) k = 0x46464f;
+      if (dy < 0 && d > r - 0.6) k = 0x121215;
+      if (flatRow && Math.abs(dx) > r - 2) k = 0x2a2a32;                            // gummit trycks ut mot banan
     }
     P.px(i, j, k);
   }
@@ -623,14 +694,50 @@ const flatArt = (r, style) => { const k = 'F' + r + style; return WCACHE[k] || (
 // på halvkombin – samma storlek som hjulen på bilen (radie 5, 6 och 4).
 const TIRE_KINDS = ['sommar', 'vinter', 'stort', 'litet'];
 const TIRE_TXT = { sommar: 'SOMMAR', vinter: 'VINTER', stort: 'STORT', litet: 'LITET' };
+const TIRE_GET = { sommar: 'ETT SOMMARDÄCK', vinter: 'ETT VINTERDÄCK', stort: 'ETT STORT DÄCK', litet: 'ETT LITET DÄCK' };
 const TIRE_COL = { sommar: '#d8641a', vinter: '#2f6db5', stort: '#8a3a2a', litet: '#2e8a48' };
 const TIRE_R = { sommar: 5, vinter: 5, stort: 6, litet: 4 };
+const TB_W = 39;          // däckbubblans innerbredd: däcket, V, minibilen, H
 // minibilen uppifrån i däcksbubblan (fronten uppåt)
 const MINI = ['..bbbbb..', '.bByBBBb.', 'WbBBBBBbW', 'WbgggggbW', 'WbBBBBBbW', '.bBBBBBb.', '.bBBBBBb.', '.bBBBBBb.', '.bBBBBBb.', '.bBBBBBb.', 'WbgggggbW', 'WbBBBBBbW', 'WbBBBBBbW', '.bBrBrBb.', '..bbbbb..'];
 const TIRE_RIM = { sommar: 'alloy', vinter: 'steel', stort: 'steel', litet: 'steel' };
 const tireKindFor = (kind) => (kind === 'pickup' ? 'stort' : kind === 'halvkombi' ? 'litet' : Math.random() < 0.5 ? 'sommar' : 'vinter');
 const kindWheel = (kind, f = 0) => wheelArt(TIRE_R[kind], TIRE_RIM[kind], f, kind);
 const kindFlat = (kind) => flatArt(TIRE_R[kind], TIRE_RIM[kind]);
+// Hjulet i händerna ritas i figurernas skala (bilarna är mindre än folket), så
+// att det syns att man bär ett stort, tungt hjul: sidovägg med glansbåge,
+// slitbana med mönster efter sorten, fälgen och – på ett nytt – den färgade
+// lappen från däckstället. Det gamla är platt, dammigt och har spiken kvar.
+const BIG_R = { sommar: 7, vinter: 7, stort: 8, litet: 6 };
+function paintBigTire(kind, old) {
+  const r = BIG_R[kind], style = TIRE_RIM[kind], n = RIMN[style], rimR = r - 3;
+  const S = 2 * r + 1, W = S + (old ? 4 : 0), P = new Pix(W, S);
+  const cx = r + (old ? 2 : 0), cy = r + (old ? 1 : 0);
+  for (let j = 0; j < S; j++) for (let i = 0; i < W; i++) {
+    const dx = i - cx, dy = j - cy, d = Math.hypot(dx, dy), a = Math.atan2(dy, dx), lit = -(dx + dy) / (2 * r);
+    let e = d / (r + 0.4);
+    if (old) e = Math.hypot(dx / (dy > 0 ? r + 2.2 : r + 0.4), dy / (dy > 0 ? r - 0.6 : r + 0.4));
+    if (e > 1.02 && !(old && j === S - 1 && Math.abs(dx) <= r + 1)) continue;
+    if (kind === 'stort' && !old && d > r - 0.7 && Math.cos(12 * a) < -0.3) continue;            // grova klackar
+    let k;
+    if (d <= rimR + 0.45) k = wheelPixel(style, n, 0.25, r, rimR, dx, dy, lit);
+    else {
+      const edge = e > 0.86 || (old && j === S - 1);
+      k = edge ? 0x121215 : d < rimR + 1.3 ? 0x0e0e12 : mix(0x1c1c22, 0x383842, clamp(lit * 1.5 + 0.3, 0, 1));
+      if (!edge && d > rimR + 1.3 && lit > 0.3 && Math.abs(d - (rimR + r) / 2) < 0.6) k = 0x55555f;   // glansbågen
+      if (edge && !old && Math.cos(a * (kind === 'vinter' ? 9 : 14)) > 0.7) k = kind === 'vinter' ? 0xc8ccd4 : 0x2e2e36;  // mönster/dubbar
+      if (old && !edge) k = mix(k, 0x6a5e4a, 0.18);                                                 // dammigt
+    }
+    P.px(i, j, k);
+  }
+  if (old) { P.px(cx + r, cy - 2, 0xdce0e8); P.px(cx + r - 1, cy - 2, 0x8a8e96); }                 // spiken
+  else {
+    const col = hex(TIRE_COL[kind]);
+    P.rect(cx + r - 4, cy - r + 1, 3, 2, col); P.px(cx + r - 4, cy - r + 1, mix(col, 0xffffff, 0.4)); // lappen
+  }
+  return P.flush();
+}
+const bigTire = (kind, old) => { const k = 'B' + kind + (old ? 1 : 0); return WCACHE[k] || (WCACHE[k] = paintBigTire(kind, old)); };
 // skruvarnas radie på navet (i spelpixlar) för en hjulradie
 const boltR = (r) => (r <= 4 ? 1.7 : r === 5 ? 2.2 : 2.7);
 const boltPos = (r, n, k) => { const a = -Math.PI / 2 + k * Math.PI * 2 / n, br = boltR(r); return [Math.round(Math.cos(a) * br), Math.round(Math.sin(a) * br)]; };
@@ -678,9 +785,24 @@ const BAYS = [
 // bakväggen: däckstället (2×2 fack) och fyra reservdelshyllor (olja, lampor, avgas, batteri)
 const RACK = { x0: 104, x1: 160, y0: 46, mid: 70, y1: 96 };
 const SLOTS = [
-  { kind: 'sommar', x: 118, row: 0 }, { kind: 'vinter', x: 146, row: 0 },
-  { kind: 'stort', x: 118, row: 1 }, { kind: 'litet', x: 146, row: 1 },
+  { kind: 'sommar', x: 116, row: 0 }, { kind: 'vinter', x: 148, row: 0 },
+  { kind: 'stort', x: 116, row: 1 }, { kind: 'litet', x: 148, row: 1 },
 ];
+// skylten ovanför varje fack (färgad efter däcksorten)
+const slotSignY = (sl) => (sl.row ? RACK.mid + 3 : RACK.y0 + 3);
+// skyltarna på bakväggen som hjälptexter och puffar inte får täcka
+let SIGNS = null;
+function signRects() {
+  if (SIGNS) return SIGNS;
+  const r = [], sign = (x, y, w, h) => r.push({ x, y, w, h, k: 'sign' });
+  const sw = textW(BIG, 'BILSERVICE') + 10;
+  sign(192 - (sw >> 1), 27, sw, 11);
+  const hw = textW(SMALL, 'DÄCK') + 8;
+  sign(STATIONS[0] - (hw >> 1), RACK.y0 - 12, hw, 10);
+  for (const sl of SLOTS) { const w = textW(SMALL, TIRE_TXT[sl.kind]) + 4; sign(sl.x - (w >> 1), slotSignY(sl), w, 8); }
+  for (let i = 1; i < STATIONS.length; i++) sign(STATIONS[i] - 11, 40, 22, 24);   // skylten + namnet under
+  return (SIGNS = r);
+}
 const PART_X = [0, 184, 212, 240, 266];
 // var stationerna målas på bakväggen: [0] är däckställets mitt, resten = PART_X
 const STATIONS = [132, ...PART_X.slice(1)];
@@ -725,7 +847,7 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
   for (const b of BAYS) Object.assign(b, { lift: 0, moving: 0, port: 0, hum: 0, press: 0 });
   const pops = makeShopPops();
   let cars = [], fx = [], notes = [], t = 0, seq = 0, carIn = 0.8, carry = null;
-  let done = false, doneT = 0, reported = false;
+  let done = false, doneT = 0, reported = false, autoCars = true;
   const hold = { on: false, bay: -1, wheel: -1 };
   let keyHold = 0, working = null, workTick = 0, noteIn = 1.2, hintCool = 0, lastTip = '';
   let focus = -1, pulse = 0, pulseCar = null, airing = null, spinTick = 0, hissTick = 0;
@@ -737,6 +859,107 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
   const startMin = Number.isFinite(A.game?.min) ? A.game.min : 8 * 60;
   let bgc = null;
   const bg = () => (bgc ||= paintShop());
+
+  // ---------- kameran (fyll-läget) ----------
+  // Fyll-läget beskär bilden upptill och nertill (en laptop ser ~175 av 216
+  // rader, mobilen i NÄRA ~140) och topplisten + stegraden tar 28 rader till.
+  // Då följer en lodrät kamera mekanikern – hela spelpixlar, ingen skalning –
+  // så att det man jobbar med alltid syns: hela bakväggen (däckställets
+  // skyltar) vid hyllorna, bilens bubbla vid lyften och skruvskålen,
+  // skruvdragaren på golvet och fötterna vid främre raden. Får allt plats
+  // (vanliga läget, testrobotarna) står kameran still på 0.
+  const TOP_Y = 32;                                       // det översta som måste synas (DÄCK-skylten)
+  let cam = 0, camR = 0, camInit = false;
+  const safeView = () => globalThis.SF?.view?.safe || { x0: 0, y0: 0, x1: FW, y1: FH };
+  const winTop = () => (safeView().y0 | 0) + 28;         // canvasrad under topplisten och stegraden
+  const winBot = () => Math.min(FH, (safeView().y1 | 0) || FH);
+  const viewTop = () => winTop() + camR;                  // översta synliga scenraden under listen
+  const viewBot = () => winBot() + camR;                  // nedersta synliga scenraden
+  // bubblans överkant (ungefär) för en bil som står uppe på lyften
+  const bubbleTopOf = (c) => c.bay.base - 1 - RAMP - LIFT_H - carArt(c).topH - 36;
+  // lyften vars arbetsplatser (hjulen, panelen, fronten) ligger vid (x, y)
+  const bayAt = (x, y) => BAYS.find((b) => Math.abs(y - (b.base + 5)) <= 12 && x >= b.lx - 34 && x <= b.lx + RUN + 34) || null;
+  // kameran som visar det viktiga när mekanikern står i (px, py): hen själv, hela
+  // bakväggen vid hyllorna, bilens bubbla vid en lyft – flyttad så lite som möjligt
+  function camFor(px, py) {
+    const v0 = winTop(), v1 = winBot(), hw = v1 - v0;
+    let fa = py - 44, fb = py + 5;
+    if (py < 112) fa = Math.min(fa, TOP_Y);
+    const b = bayAt(px, py), c = b && carOf(b);
+    if (c && c.state !== 'leave') fa = Math.min(fa, bubbleTopOf(c));
+    if (fb - fa > hw) { fa = py - 44; fb = py + 5; }    // får inte plats: bara mekanikern
+    return fb - fa > hw ? (fa + fb) / 2 - (v0 + v1) / 2 : clamp(cam, fb - v1, fa - v0);
+  }
+  function camTarget() {
+    const v0 = winTop(), v1 = winBot();
+    const lo = TOP_Y - v0, hi = FH - v1;                  // lo: toppen syns · hi: botten syns
+    if (hi <= lo) return clamp(0, hi, lo);                // allt får plats
+    const dest = walker.path.length ? walker.path[walker.path.length - 1] : null;
+    // på väg: sikta på vyn vid målet redan nu, men mekanikern får aldrig glida ur bild
+    const tg = dest ? clamp(camFor(dest[0], dest[1]), walker.py + 6 - v1, walker.py - 46 - v0) : camFor(walker.px, walker.py);
+    return clamp(tg, lo, hi);
+  }
+  function stepCam(dt) {
+    const tg = camTarget();
+    if (!camInit) { cam = tg; camInit = true; }
+    else {
+      const step = clamp((tg - cam) * Math.min(1, dt * 6), -130 * dt, 130 * dt);   // mjukt, högst 130 px/s
+      cam = Math.abs(tg - cam) < 0.3 ? tg : cam + step;
+    }
+    camR = Math.round(cam);
+  }
+
+  // ---------- inget får ligga på varandra ----------
+  // Varje bildruta samlas rutorna som syns: bubblorna, mekanikern, ägarna och
+  // skyltarna på väggen. Hjälpskylten väljer en ledig plats och puffarna flyttas
+  // uppåt (eller nedåt) tills de inte täcker något – eller varandra.
+  let occ = [], drawing = false;
+  let lastHint = null;                                    // hjälpskyltens förra plats (den hoppar inte i onödan)
+  const hitR = (a, b) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+  const occupy = (x, y, w, h, k = 'b') => { occ.push({ x, y, w, h, k }); };
+  function freeAt(r, pad, kinds) {
+    const q = { x: r.x - pad, y: r.y - pad, w: r.w + 2 * pad, h: r.h + 2 * pad };
+    return !occ.some((o) => kinds.includes(o.k) && hitR(q, o));
+  }
+  // hur mycket (i pixlar) en ruta täcker av det upptagna
+  function overlapArea(r, kinds, pad = 0) {
+    let a = 0;
+    for (const o of occ) {
+      if (!kinds.includes(o.k)) continue;
+      const w = Math.min(r.x + r.w + pad, o.x + o.w) - Math.max(r.x - pad, o.x), h = Math.min(r.y + r.h + pad, o.y + o.h) - Math.max(r.y - pad, o.y);
+      if (w > 0 && h > 0) a += w * h;
+    }
+    return a;
+  }
+  const HINT_AVOID = ['b', 'me', 'own', 'sign'];
+  const POP_AVOID = ['b', 'me', 'hint', 'pop', 'sign'];
+  // en puff flyttas (så lite som möjligt, helst uppåt) tills den ligger fritt
+  // (först rakt upp/ner, sedan också åt sidan; x flyttas via p.dx)
+  function fitPop(p, x, y, w) {
+    const top = viewTop() + 1, bot = viewBot() - 10;
+    const X = (dx) => clamp(x + dx, 1, FW - w - 1);
+    const ok = (dx, dy) => { const yy = y + dy; return yy >= top && yy <= bot && freeAt({ x: X(dx), y: yy, w, h: 9 }, 1, POP_AVOID); };
+    let dx = p.dx || 0, dy = p.dy || 0;
+    if (!ok(dx, dy)) {
+      let f = null;
+      for (let d = 0; d <= 50 && !f; d++) { if (ok(0, -d)) f = [0, -d]; else if (d <= 34 && ok(0, d)) f = [0, d]; }
+      for (const sx of [16, -16, 32, -32, 48, -48, 64, -64, 88, -88]) {
+        if (f) break;
+        for (let d = 0; d <= 36 && !f; d += 3) { if (ok(sx, -d)) f = [sx, -d]; else if (ok(sx, d)) f = [sx, d]; }
+      }
+      [dx, dy] = f || [0, clamp(y, top, bot) - y];
+      p.dx = dx; p.dy = dy;
+    }
+    const xx = X(dx), yy = y + dy;
+    occ.push({ x: xx, y: yy, w, h: 9, k: 'pop', txt: p.txt });
+    return [xx, yy];
+  }
+  // bubbla + registrering av dess ruta (spetsen inräknad)
+  function bub(ctx, cx, tip, iw, ih, hot = false, up = false, sx = cx) {
+    const w = iw + 2, h = ih + 2, x0 = cx - (w >> 1), y0 = up ? tip + 3 : tip - 2 - h;
+    occupy(x0, Math.min(y0, tip), w, h + 3);
+    return bubble(ctx, cx, tip, iw, ih, hot, up, sx);
+  }
 
   const carOf = (b) => cars.find((c) => c.bay === b) || null;
   const carGY = (c) => c.bay.base - 1 - c.rise - Math.round(c.bay.lift);   // raden där hjulen möter banan
@@ -759,7 +982,7 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
   function tireJob(c) {
     const n = c.kind === 'halvkombi' ? 4 : 5;
     return { wheel: Math.random() < 0.55 ? 1 : 0, want: c.tk, n, bolts: new Array(n).fill(true), tire: 'flat', mounted: null,
-      air: 0, aired: false, spin: null, queued: null, last: -1, order: [], slip: false, lowFel: false, wrongT: -9, late: false, bang: 0 };
+      air: 0, aired: false, spin: null, queued: null, last: -1, order: [], slip: false, lowFel: false, wrongT: -9, late: false, bang: 0, flying: -9 };
   }
   function makeCar(b, fault, kindWish) {
     const kind = kindWish && SPECS[kindWish] ? kindWish : pickKind(), s = SPECS[kind], pal = COLORS[kind];
@@ -786,7 +1009,7 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
   // så att hjulet syns bredvid figuren; vid panelen lite utanför fronten.
   function wheelSpot(c, i) {
     const out = (i === 1 ? 1 : -1) * (c.face ? -1 : 1);
-    return { x: Math.round(wheelX(c, i) + out * 10), y: Math.min(c.bay.base + 6, FH - 6), dir: out > 0 ? 'left' : 'right' };
+    return { x: Math.round(wheelX(c, i) + out * 13), y: Math.min(c.bay.base + 6, FH - 6), dir: out > 0 ? 'left' : 'right' };
   }
   const panelSpot = (b) => ({ x: b.face ? b.spotX - 3 : b.spotX + 3, y: b.spotY + 2, dir: b.face ? 'right' : 'left' });
   const slotSpot = (sl) => ({ x: sl.x, y: PICK_Y, dir: 'up' });
@@ -809,6 +1032,13 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
     return best;
   }
   const nearestPile = () => piles.reduce((a, p) => (Math.abs(p.x - walker.px) < Math.abs(a.x - walker.px) ? p : a));
+  // Skruvskålen: en magnetskål på golvet mellan hjulet och mekanikern där de
+  // urskruvade skruvarna landar – de syns där tills de skruvas i igen.
+  function bowlPos(c) {
+    const out = (c.tj.wheel === 1 ? 1 : -1) * (c.face ? -1 : 1);
+    return { x: wheelX(c, c.tj.wheel) + out * 2 - 4, y: c.bay.base + 2 };
+  }
+  const bowlShown = (c) => !!c.tj && (c.state === 'wait' || c.state === 'ready') && (c.tj.tire !== 'flat' || c.tj.bolts.some((b) => !b) || !!c.tj.spin);
 
   // Puffarnas platser. Främre raden: bilens ord ovanför bilen och ägarens ord
   // ovanför ägaren, som i Burgarbaren (ägarpuffen hålls i bandet mellan
@@ -832,7 +1062,8 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
       } else if (car) pops.add(cx, y, car[0], car[1], { tag: tb });
       else pops.add(cx, y, owner[0], owner[1], { tag: ta });
     } else {
-      if (car) pops.add(Math.round(c.x + c.L / 2), carGY(c) - carArt(c).topH - 30, car[0], car[1], { tag: tb });
+      // ovanför bilens bubbla (inte i den) – fitPop lyfter den förbi en högre navbubbla
+      if (car) pops.add(Math.round(c.x + c.L / 2), carGY(c) - carArt(c).topH - 44, car[0], car[1], { tag: tb });
       if (owner) pops.add(c.owner.x, c.owner.y - 56, owner[0], owner[1], { tag: ta, minY: PROP_FOOT + 1 });
     }
   }
@@ -854,8 +1085,10 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
   // ---------- händelser ----------
   function giveUp(c) {
     const j = c.tj;
-    // med ett löst eller avtaget hjul kan kunden inte köra – hen blir bara argare
-    if (j && (j.tire === 'off' || j.bolts.some((b) => !b) || j.spin)) {
+    // Med ett löst, avtaget eller ännu tomt nytt hjul kan kunden inte köra – hen
+    // blir bara argare. En kund som redan blivit sen väntar kvar ända tills
+    // lyften sänks (och säger ÄNTLIGEN!) i stället för att köra iväg mitt i.
+    if (j && (j.late || j.tire === 'off' || j.bolts.some((b) => !b) || j.spin || (j.tire === 'new' && !j.aired))) {
       if (!j.late) { j.late = true; c.nag = t; c.owner.angry = 2; eventPops(c, null, ['SKYNDA PÅ!', '#ff9a6a']); play('miss'); }
       else if (t - c.nag > 5) { c.nag = t; c.owner.angry = 1.6; eventPops(c, null, ['SKYNDA PÅ!', '#ff9a6a']); }
       c.patience = 0;
@@ -863,19 +1096,22 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
     }
     stats.miss++;
     play('miss');
-    c.gaveUp = true; c.state = 'lower'; c.bay.moving = c.bay.lift > 0 ? 1 : 0;
+    c.gaveUp = true; c.state = 'lower'; c.bay.moving = c.bay.lift > 0 ? 1 : 0; c.bay.pressUp = false;
     c.owner.angry = 1.6;
     eventPops(c, null, ['TRÖTTNADE!', '#d8d2c0']);
     if (hold.bay === c.bay.i) hold.on = false;
     if (airing === c) airing = null;
     if (pulseCar === c) { pulseCar = null; pulse = 0; }
   }
+  // ett fel kostar tålamod (men lämnar alltid några sekunder kvar) – och ger
+  // aldrig tillbaka tålamod till en kund som redan väntat ut sig
+  const annoy = (c, s) => { c.patience = Math.min(c.patience, Math.max(3, c.patience - s)); };
   function wrongPart(c) {
     stats.fel++;
     play('fel');
     eventPops(c, ['FEL DEL!', '#ff6a6a'], ['SUR!', '#ff9a6a']);
     c.owner.angry = 2.2;
-    c.patience = Math.max(3, c.patience - 6);
+    annoy(c, 6);
     hold.on = false; keyHold = 0;
   }
   function wrongWheel(c) {
@@ -883,12 +1119,12 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
     if (t - j.wrongT < 1.5) return;
     j.wrongT = t;
     stats.fel++; play('fel');
-    c.owner.angry = 1.8; c.patience = Math.max(3, c.patience - 4);
+    c.owner.angry = 1.8; annoy(c, 4);
     eventPops(c, ['FEL HJUL!', '#ff6a6a'], [posTxt(c) + '!', '#ff9a6a']);
   }
   function wrongTire(c) {
     stats.fel++; play('fel');
-    c.owner.angry = 2; c.patience = Math.max(3, c.patience - 5);
+    c.owner.angry = 2; annoy(c, 5);
     eventPops(c, ['FEL DÄCK!', '#ff6a6a'], [TIRE_TXT[c.tj.want] + '!', '#ff9a6a']);
   }
   // lagningen är klar – bilen väntar på att lyften sänks
@@ -1079,7 +1315,7 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
   }
   // i vilken ordning kryssmönstret går om man börjar på skruv s0 (för hjälpsiffrorna)
   function starOrder(n, s0 = 0) { return n === 4 ? [s0, s0 + 2, s0 + 1, s0 + 3].map((k) => k % 4) : [0, 1, 2, 3, 4].map((m) => (s0 + 2 * m) % 5); }
-  function startBolt(c, bi) {
+  function startBolt(c, bi, fromQ = false) {
     const j = c.tj, out = j.tire === 'flat';
     const cand = (k) => j.bolts[k] === out;       // ut: skruvar som sitter i · in: tomma hål
     if (bi >= 0 && !cand(bi)) { tipAt(out ? 'DEN ÄR REDAN UTE' : 'DEN SITTER REDAN', '#d8d2c0', false); play('click'); return; }
@@ -1087,17 +1323,33 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
       for (let s = 1; s <= j.n; s++) { const k = (j.last + s + j.n) % j.n; if (cand(k)) { bi = k; break; } }
       if (bi < 0) return;
     }
-    j.spin = { i: bi, t: 0, out }; j.slip = false;
+    j.spin = { i: bi, t: 0, out, q: fromQ }; j.slip = false;
     c.lastWork = t;
+    if (!out) {    // skruven plockas upp ur skålen och sätts i navet
+      const bp = bowlPos(c), wx = wheelX(c, j.wheel), wy = wheelCY(c), T = 0.2;
+      addFx(bp.x + 4, bp.y + 1, (wx - bp.x - 4) / T, (wy - bp.y - 1) / T, 0, T, '#eef2f6', 1, false);
+    }
     play('click');
   }
+  // nästa skruv i tur (för kön): den man klickade på, annars nästa efter den som snurrar
+  function nextBolt(j, bi) {
+    const out = j.tire === 'flat', cur = j.spin ? j.spin.i : -1;
+    if (bi >= 0 && bi !== cur) return bi;
+    const from = cur >= 0 ? cur : j.last;
+    for (let s = 1; s <= j.n; s++) { const k = (from + s + j.n) % j.n; if (k !== cur && j.bolts[k] === out) return k; }
+    return null;
+  }
+  // Klick medan en skruv snurrar: i början = för snabbt (fel), mot slutet köas
+  // nästa skruv (den blinkar i navbubblan). Ett klick alldeles efter att en köad
+  // skruv börjat snurra räknas inte som för snabbt – det var nog kön man inte såg.
   function boltClick(c, bi, how) {
     const j = c.tj;
     if (j.spin) {
       const p = j.spin.t / SPIN_T;
-      if (how === 'key') { if (p >= 0.55) j.queued = bi; return; }   // nedhållen tangent: nästa skruv när den här är klar
+      if (j.spin.q && j.spin.t < 0.3) return;
+      if (how === 'key') { if (p >= 0.55) j.queued = nextBolt(j, bi); return; }   // nedhållen tangent: nästa skruv när den här är klar
       if (p < 0.6) { slip(c); return; }
-      j.queued = bi;
+      j.queued = nextBolt(j, bi);
       return;
     }
     startBolt(c, bi);
@@ -1116,7 +1368,11 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
     const j = c.tj, k = j.spin.i, out = j.spin.out;
     j.bolts[k] = !out; j.last = k; j.spin = null;
     const wx = wheelX(c, j.wheel), wy = wheelCY(c), side = (j.wheel === 1) !== !!c.face ? 1 : -1;
-    if (out) addFx(wx, wy, side * (14 + Math.random() * 10), -34 - Math.random() * 10, 230, 0.55, '#e8ecf2', 1, false);   // skruven hoppar ur
+    if (out) {   // skruven hoppar ur i en båge ner i skruvskålen på golvet
+      const bp = bowlPos(c), T = 0.42, g = 230;
+      addFx(wx, wy, (bp.x + 3 - wx) / T, (bp.y + 1 - wy) / T - g * T / 2, g, T, '#e8ecf2', 1, false);
+      j.flying = t + T;
+    }
     else j.order.push(k);
     play('click');
     const inN = j.bolts.filter(Boolean).length;
@@ -1132,7 +1388,7 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
     }
     const q = j.queued;
     j.queued = null;
-    if (q !== null && j.bolts.some((b) => b === out)) startBolt(c, q);
+    if (q !== null && j.bolts.some((b) => b === out)) startBolt(c, q, true);
   }
   function pang(c) {
     const j = c.tj;
@@ -1153,7 +1409,7 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
     if (j.air >= GREEN_LO && j.air <= GREEN_HI) {
       j.aired = true; learn('LUFT');
       finish(c);
-      eventPops(c, ['LAGOM!', '#8ee03c'], ['SÄNK LYFTEN!', '#ffd23f']);
+      eventPops(c, ['LAGOM!', '#8ee03c'], ['PERFEKT!', '#ffd23f']);
       stowIn = 0.7;                                       // slangen rullas in av sig själv
     } else if (j.air > GREEN_HI) {
       stats.fel++; play('fel');
@@ -1180,9 +1436,10 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
     return { x: Math.round(walker.px) + ox, y: Math.round(walker.py) - 14 };
   }
   function dropWrench() {
+    // läggs ner bakom fötterna (bort från hjulet och skruvskålen)
     const w = wrenches[carry.wrench], dir = walker.dir;
-    const ox = dir === 'left' ? -8 : dir === 'right' ? 8 : 7;
-    Object.assign(w, { at: 'floor', x: clamp(Math.round(walker.px + ox), 8, FW - 8), y: Math.round(walker.py) + 2 });
+    const ox = dir === 'left' ? 8 : dir === 'right' ? -8 : 7;
+    Object.assign(w, { at: 'floor', x: clamp(Math.round(walker.px + ox), 8, FW - 8), y: Math.min(FH - 4, Math.round(walker.py) + 2) });
     carry = null;
     play('click');
   }
@@ -1220,14 +1477,14 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
     if (c.state === 'park') {
       c.state = 'raise'; b.moving = 1; b.press = 0.35; b.pressUp = true; b.hum = 0;
       learn('HISSA');
-      play('slide');
+      play('click');
       return;
     }
     if (c.state === 'ready') {
       c.state = 'lower'; b.moving = 1; b.press = 0.35; b.pressUp = false; b.hum = 0;
       learn('SÄNK');
       payOut(c);
-      play('slide');
+      play('click');
       return;
     }
     if (c.state === 'wait') {
@@ -1285,7 +1542,7 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
       eventPops(c, ['AV!', '#8ee03c'], null);
       return;
     }
-    if (j.tire === 'off') { tipAt(right ? 'HÄMTA ' + TIRE_TXT[j.want] + 'DÄCK' : 'FEL HJUL - ' + posTxt(c)); return; }
+    if (j.tire === 'off') { tipAt(right ? 'HÄMTA ' + TIRE_GET[j.want] : 'FEL HJUL - ' + posTxt(c)); return; }
     if (j.bolts.some((k) => !k)) {
       if (!wrench) { tipAt('TA SKRUVDRAGAREN'); return; }
       if (!right) { wrongWheel(c); return; }
@@ -1340,7 +1597,16 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
       tipAt('DU HAR REDAN EN', '#d8d2c0');
       return;
     }
-    if (!w) { tipAt('SKRUVDRAGAREN ÄR BORTA', '#d8d2c0'); return; }
+    if (!w) {
+      // vagnens egen dragare ligger någon annanstans (på golvet vid ett hjul, som
+      // man kanske inte ser i fyll-läget) – gå och hämta den närmaste
+      const o = nearestWrench();
+      if (!o) { tipAt('SKRUVDRAGAREN ÄR BORTA', '#d8d2c0'); return; }
+      tipAt(o.at === 'floor' ? 'DEN LIGGER VID HJULET' : 'DEN ANDRA VAGNEN', '#d8d2c0', false);
+      if (o.at === 'cart') go(cartSpot(o.cart), () => actCart(o.cart));
+      else go({ x: o.x, y: o.y }, () => takeWrench(o));
+      return;
+    }
     takeWrench(w);
   }
   function actComp() {
@@ -1402,13 +1668,39 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
     return hasWrench() && ((j.tire === 'flat' && j.bolts.some(Boolean)) || (j.tire === 'new' && j.bolts.some((k) => !k)));
   }
   const gaugeVisible = (c) => { const j = c && c.tj; return !!j && c.state === 'wait' && hasHose() && j.tire === 'new' && !j.aired && j.bolts.every(Boolean) && atWheel(c, j.wheel); };
-  // en bubbla ovanför hjulet: [spetsens x, spetsens y, innerytans x, y]
+  // bilens högsta punkt (skärm-y) över skärmkolumnerna x0…x1
+  function carTopOver(c, x0, x1) {
+    const art = carArt(c), X = Math.round(c.x) - 1;
+    let top = 0;
+    for (let ix = Math.max(0, x0 - X); ix <= Math.min(art.W - 1, x1 - X); ix++) top = Math.max(top, art.colTop[c.face ? art.W - 1 - ix : ix]);
+    return carGY(c) - top;
+  }
+  // En bubbla som hamnar ovanför det synliga (under topplisten och stegraden,
+  // när kameran i fyll-läget tittar på främre raden) hänger i stället under
+  // lyften med spetsen uppåt – förskjuten in mot hallens mitt, så att den inte
+  // krockar med främre radens bubblor. Returnerar bubblans mitt (cx), spetsens x
+  // (sx), spetsen och riktningen.
+  // (Under ritningen letar den upp en plats som ingen annan bubbla har – de
+  // hängande bubblorna ritas sist – och kommer ihåg den för klicken.)
+  function bubbleSpot(c, cx, tipAbove, iw, ih) {
+    if (tipAbove - 4 - ih >= viewTop()) return { cx, sx: cx, tip: tipAbove, up: false };
+    const inward = c.bay.lx < FW / 2 ? 1 : -1, w = iw + 2, h = ih + 2, tip = c.bay.base + 2;
+    const at = (k) => clamp(Math.round(c.bay.lx + RUN / 2 + inward * k), (w >> 1) + 1, FW - (w >> 1) - 1);
+    let bx = at(44);
+    if (drawing) {
+      for (const k of [44, 56, 68, 80, 92, 104]) { const x = at(k); if (freeAt({ x: x - (w >> 1), y: tip, w, h: h + 3 }, 1, ['b'])) { bx = x; break; } }
+      c.flipX = bx;
+    } else if (c.flipX) bx = c.flipX;
+    return { cx: bx, sx: bx - inward * ((w >> 1) - 4), tip, up: true };
+  }
+  // en bubbla ovanför hjulet – spetsen strax över taket/huven där bubblan är, så
+  // att bilen syns hel under den: [spetsens x, spetsens y, innerytans x, y]
   function wheelBubbleAt(c, iw, ih) {
-    const j = c.tj, art = carArt(c), q = c.spec.wheels[j.wheel];
+    const j = c.tj;
     const cx = clamp(wheelX(c, j.wheel), (iw >> 1) + 3, FW - (iw >> 1) - 3);
-    const tip = carGY(c) - art.ht[q] - c.spec.D - 2;
+    const s = bubbleSpot(c, cx, carTopOver(c, cx - (iw >> 1) - 1, cx + (iw >> 1) + 1) - 3, iw, ih);
     const w = iw + 2, h = ih + 2;
-    return { cx, tip, ix: cx - (w >> 1) + 1, iy: tip - 2 - h + 1 };
+    return { ...s, ix: s.cx - (w >> 1) + 1, iy: s.up ? s.tip + 4 : s.tip - 2 - h + 1 };
   }
   function hubGeom(c) {
     const g = wheelBubbleAt(c, 31, 31), j = c.tj, hx = g.ix + 15, hy = g.iy + 15;
@@ -1480,11 +1772,11 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
   function hintFor(c) {
     if (!c) return null;
     const st = stageOf(c), j = c.tj, b = c.bay;
-    const wheelT = () => ({ x: wheelX(c, j.wheel), y: wheelCY(c) - c.spec.r - 2 });
+    const wheelT = () => ({ x: wheelX(c, j.wheel), y: wheelCY(c) - c.spec.r - 2, al: wheelX(c, j.wheel) < c.x + c.L / 2 ? 'l' : 'r' });
     const wrenchT = () => { const w = nearestWrench(); if (!w) return null; return w.at === 'cart' ? { x: CARTS[w.cart].x - 6, y: CARTS[w.cart].y - 33 } : { x: w.x, y: w.y - 8 }; };
     const pileT = () => { const p = nearestPile(); return { x: p.x, y: p.y - 10 - p.n * 5 }; };
-    const slotT = (kind) => { const sl = SLOTS.find((s) => s.kind === kind); return { x: sl.x, y: sl.row ? RACK.mid + 2 : RACK.y0 + 1 }; };
-    const panelT = () => ({ x: b.panelX + 2, y: b.panelY - 4 });
+    const slotT = (kind) => { const sl = SLOTS.find((s) => s.kind === kind); return { x: sl.x, y: slotSignY(sl) - 1 }; };
+    const panelT = () => ({ x: b.panelX + 2, y: b.panelY - 4, al: b.face ? 'l' : 'r' });
     const at = (k, p, txt) => (p ? { key: k, ...p, txt } : null);
     switch (st) {
       case 'HISSA': return c.state === 'park' ? at('HISSA', panelT(), 'HISSA UPP BILEN') : null;
@@ -1496,7 +1788,7 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
       case 'DÄCK AV': return carry && carry.old ? at('STAPEL', pileT(), 'LÄGG DET I STAPELN') : at('DÄCK AV', wheelT(), 'TA AV HJULET');
       case 'NYTT DÄCK':
         if (carry && carry.wheel && !carry.old) return carry.wheel === j.want ? at('NYTT DÄCK', wheelT(), 'SÄTT PÅ HJULET') : at('NYTT DÄCK', slotT(carry.wheel), 'FEL SORT - LÄMNA TILLBAKA');
-        return at('NYTT DÄCK', slotT(j.want), 'HÄMTA ' + TIRE_TXT[j.want] + 'DÄCK');
+        return at('NYTT DÄCK', slotT(j.want), 'HÄMTA ' + TIRE_GET[j.want]);
       case 'SKRUVA FAST': return hasWrench() ? (hubVisible(c) ? null : at('SKRUVA FAST', wheelT(), 'SKRUVA FAST HJULET')) : at('SKRUVA FAST', wrenchT(), 'TA SKRUVDRAGAREN');
       case 'LUFT': return hasHose() ? (gaugeVisible(c) ? null : at('LUFT', wheelT(), 'FYLL LUFT HÄR')) : at('LUFT', { x: COMP.x + 10, y: COMP.y - 27 }, 'HÄMTA LUFTSLANGEN');
     }
@@ -1524,7 +1816,7 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
     const j = c.tj;
     return { bay: c.bay.i, car: c.kind, state: c.state, stage: stageOf(c), wheel: j.wheel ? 'fram' : 'bak', side: sideTxt(c).toLowerCase(), pos: posTxt(c),
       want: j.want, n: j.n, bolts: j.bolts.slice(), tire: j.tire, mounted: j.mounted, air: +j.air.toFixed(3), aired: j.aired,
-      spin: j.spin ? { i: j.spin.i, t: +j.spin.t.toFixed(2), out: j.spin.out } : null, order: j.order.slice(), late: j.late, patience: +c.patience.toFixed(2) };
+      spin: j.spin ? { i: j.spin.i, t: +j.spin.t.toFixed(2), out: j.spin.out, q: !!j.spin.q } : null, queued: j.queued ?? null, order: j.order.slice(), late: j.late, patience: +c.patience.toFixed(2) };
   }
   function debugStep(name, opts = {}) {
     const n = foldName(name);
@@ -1541,6 +1833,14 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
         return res(true);
       case 'skruvdragare': return res(grabWrench());
       case 'skruv': case 'skruvar': {
+        // en skruv (ut ur det punkterade hjulet, eller i det nya) eller alla ut
+        if (n === 'skruv' && c.state === 'wait' && j.tire === 'new' && j.bolts.some((k) => !k)) {
+          if (!grabWrench()) return res(false, 'ingen skruvdragare');
+          place(wheelSpot(c, j.wheel));
+          startBolt(c, Number.isInteger(opts.i) ? opts.i : -1);
+          if (j.spin && !opts.anim) { j.spin.t = SPIN_T; boltDone(c); }
+          return res(true);
+        }
         if (c.state !== 'wait' || j.tire !== 'flat') return res(false, 'inget punkterat hjul att skruva ur');
         if (!grabWrench()) return res(false, 'ingen skruvdragare');
         place(wheelSpot(c, j.wheel));
@@ -1566,12 +1866,14 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
       case 'nyttdack': case 'sattpa': {
         if (c.state !== 'wait' || j.tire !== 'off') return res(false, 'hjulet är inte av');
         if (carry && carry.old) { const p = nearestPile(); place(pileSpot(p)); actPile(p); }
+        const kind = TIRE_KINDS.includes(opts.kind) ? opts.kind : j.want;
         if (n === 'nyttdack' || !carry || !carry.wheel) {
-          const sl = SLOTS.find((s) => s.kind === (TIRE_KINDS.includes(opts.kind) ? opts.kind : j.want));
+          const sl = SLOTS.find((s) => s.kind === kind);
           place(slotSpot(sl)); actRack(sl);
         }
-        if (!opts.keep) { place(wheelSpot(c, j.wheel)); actWheel(c, j.wheel, 'key'); }
-        return res(j.tire === 'new');
+        if (opts.keep) return res(!!carry && carry.wheel === kind && !carry.old, kind === j.want ? '' : 'fel sort (bilen vill ha ' + j.want + ')');
+        place(wheelSpot(c, j.wheel)); actWheel(c, j.wheel, 'key');
+        return res(j.tire === 'new', j.tire === 'new' ? '' : 'fel sort (bilen vill ha ' + j.want + ')');
       }
       case 'skruvafast': {
         if (c.state !== 'wait' || j.tire !== 'new') return res(false, 'inget nytt hjul på plats');
@@ -1599,8 +1901,14 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
     }
     return res(false, 'okänt steg: ' + name);
   }
-  // klickpunkter i spelkoordinater (för scene.down(x, y) i tester)
+  // Klickpunkter för scene.down(x, y) i tester: canvasens spelkoordinater, dvs.
+  // med kameran inräknad (i det vanliga läget samma som scenens koordinater).
+  // sy = punkten i scenens egna koordinater.
   function debugSpot(id) {
+    const p = sceneSpot(id);
+    return p ? { x: p.x, y: p.y - camR, sy: p.y } : null;
+  }
+  function sceneSpot(id) {
     const [k0, a, b2] = String(id || '').split(':'), k = foldName(k0);
     const bay = BAYS[clamp(+a || 0, 0, 3)];
     switch (k) {
@@ -1666,7 +1974,7 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
         if (right) {
           const c = ws[0];
           if (c.tj) Object.assign(c.tj, { tire: 'new', mounted: c.tj.want, spin: null, air: (GREEN_LO + GREEN_HI) / 2, aired: true }), c.tj.bolts.fill(true);
-          finish(c); c.state = 'lower'; c.bay.moving = c.bay.lift > 0 ? 1 : 0; payOut(c);
+          finish(c); c.state = 'lower'; c.bay.moving = c.bay.lift > 0 ? 1 : 0; c.bay.pressUp = false; payOut(c);
           return stats;
         }
         const c = ws.find((k) => !k.tj) || ws[0];
@@ -1687,13 +1995,27 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
       // låt kunden vid lyft `bay` tröttna nästan direkt (test av sur kund som kör iväg)
       expire(bay = 0) { const c = carOf(BAYS[bay]); if (!c || (c.state !== 'wait' && c.state !== 'park')) return false; c.patience = 0.05; c.lastWork = -9; return true; },
       teleport(x, y) { walker.stop(); walker.px = x; walker.py = y; },
-      // klickpunkter (spelkoordinater) för reservdelshyllorna (1–4; 0 = däckstället) och bilar
-      stationSpot: (i = 1) => (i <= 0 ? { x: SLOTS[0].x, y: 62 } : { x: PART_X[clamp(i, 1, 4)], y: 80 }),
-      carSpot: (bay = 0) => { const b = BAYS[bay] || BAYS[0]; return { x: b.lx + RUN / 2, y: b.base - 16 }; },
+      // står figuren still (framme vid målet)?
+      idle: () => !walker.path.length,
+      me: () => ({ x: Math.round(walker.px), y: Math.round(walker.py), dir: walker.dir }),
+      // av/på för bilar som kommer av sig själva (tester vill ha lugn och ro)
+      autoCars(on = true) { autoCars = !!on; if (on) carIn = Math.min(carIn, 1); return autoCars; },
+      // passets klocka i sekunder (läs, eller sätt för att spola)
+      time(s) { if (Number.isFinite(s)) t = clamp(s, 0, SHIFT_T); return t; },
+      shiftSeconds: SHIFT_T,
+      // klickpunkter (canvasens spelkoordinater, kameran inräknad) för
+      // reservdelshyllorna (1–4; 0 = däckstället) och bilar
+      stationSpot: (i = 1) => (i <= 0 ? { x: SLOTS[0].x, y: 62 - camR } : { x: PART_X[clamp(i, 1, 4)], y: 80 - camR }),
+      carSpot: (bay = 0) => { const b = BAYS[bay] || BAYS[0]; return { x: b.lx + RUN / 2, y: b.base - 16 - camR }; },
+      // kameran i fyll-läget: y = förskjutningen (scenrad = canvasrad + y), top/bot = synliga scenrader under listen
+      cam: () => ({ y: camR, top: viewTop(), bot: viewBot(), target: Math.round(camTarget()) }),
+      // rutorna som var upptagna förra bildrutan (bubblor, mekanikern, skyltar, hjälpskylt, puffar)
+      occupied: () => occ.map((o) => ({ ...o })),
     },
     get worldX() { return walker.px; },
     get worldY() { return walker.py; },
     update(dt) {
+      stepCam(dt);
       pops.update(dt);
       for (const p of fx) { p.life -= dt; p.vy += p.g * dt; p.x += p.vx * dt; p.y += p.vy * dt; }
       fx = fx.filter((p) => p.life > 0);
@@ -1712,7 +2034,7 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
         }
         b.port = clamp(b.port + clamp(want - b.port, -dt * 1.6, dt * 1.6), 0, 1);
         b.press = Math.max(0, b.press - dt);
-        if (b.moving && (b.hum -= dt) <= 0) { b.hum = 0.3; play('slide'); }   // hydrauliken pumpar
+        if (b.moving && (b.hum -= dt) <= 0) { b.hum = 0.3; sfx(b.pressUp ? 'hissa' : 'sank'); }   // hydraulpumpen surrar
       }
       // kompressorn: startar av sig själv ibland och går när man fyller luft
       compRun = Math.max(0, compRun - dt);
@@ -1720,15 +2042,15 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
       if (compRun > 0) compPh += dt * 14;
       if (done) { doneT += dt; if (doneT > 1.2 && !reported) { reported = true; onDone?.(stats); } return; }
       t += dt;
-      if (t >= SHIFT_SECONDS) { done = true; working = null; return; }
+      if (t >= SHIFT_T) { done = true; working = null; return; }
       walker.update(dt);
       keyHold = Math.max(0, keyHold - dt);
       hintCool = Math.max(0, hintCool - dt);
       if (stowIn > 0 && (stowIn -= dt) <= 0) stowHose();
       // nya bilar – punkteringar är vanligast
-      carIn -= dt;
+      if (autoCars) carIn -= dt;
       if (carIn <= 0) {
-        carIn = 8.5 - 2.5 * Math.min(1, t / SHIFT_SECONDS) + Math.random() * 3;
+        carIn = 8.5 - 2.5 * Math.min(1, t / SHIFT_T) + Math.random() * 3;
         const free = freeBays();
         if (free.length) {
           const b = free[(Math.random() * free.length) | 0];
@@ -1761,7 +2083,7 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
           airing = c; hoseCar = c;
           j.air = Math.min(1.02, j.air + AIR_RATE * dt); c.lastWork = t;
           compRun = Math.max(compRun, 0.6);
-          if ((hissTick -= dt) <= 0) { hissTick = 0.32; play('slide'); }
+          if ((hissTick -= dt) <= 0) { hissTick = 0.32; sfx('luft'); }   // tryckluften pyser
           const vx = wheelX(c, j.wheel), vy = wheelCY(c) - c.spec.r + 2;
           if (Math.random() < 0.5) addFx(vx + (Math.random() - 0.5) * 2, vy, (Math.random() - 0.5) * 14, -8 - Math.random() * 8, -4, 0.35, 'rgba(255,255,255,0.75)');
           if (j.air >= 1) pang(c);
@@ -1796,6 +2118,9 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
     },
     down(x, y) {
       if (done) return;
+      // klick på topplisten/stegraden når inte scenen (i fyll-läget ligger dolda saker under den)
+      if (y < winTop() - 1) return;
+      y += camR;                                          // canvasrad → scenrad
       hold.on = false; hold.bay = -1; hold.wheel = -1;
       // 1) navbubblan: klicka på en skruv (eller var som helst i den = nästa skruv)
       const hb = hubHit(x, y);
@@ -1808,7 +2133,14 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
       if (pb) { focus = pb.i; go(panelSpot(pb), () => actPanel(pb)); return; }
       // 4) bakväggen: däckstället och reservdelshyllorna
       if (y >= 34 && y < PICK_Y + 8) {
-        if (x >= RACK.x0 - 2 && x <= RACK.x1 + 2) {
+        if (x >= RACK.x0 - 7 && x <= RACK.x1 + 7) {
+          // Alla fyra skyltarna måste synas för att man ska kunna välja rätt – i
+          // fyll-läget kan övre raden ligga dold under listen: då går man bara
+          // fram till stället (kameran visar det) och väljer där.
+          if (slotSignY(SLOTS[0]) < viewTop()) {
+            go({ x: STATIONS[0], y: PICK_Y, dir: 'up' }, () => tipAt('VÄLJ DÄCK', '#d8d2c0', false));
+            return;
+          }
           const col = x < (RACK.x0 + RACK.x1) / 2 ? 0 : 1, row = y < RACK.mid ? 0 : 1;
           const sl = SLOTS[row * 2 + col];
           go(slotSpot(sl), () => actRack(sl));
@@ -1836,7 +2168,8 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
     },
     key(k) {
       if (k === 'Escape' && !done) { abortShift(A); return; }
-      if ((k === ' ' || k === 'Enter') && !done) {
+      // bara mellanslag – Enter öppnar chatten (som då tar tangenterna)
+      if (k === ' ' && !done) {
         // närmaste arbetsplats: ett hjul, en panel eller fronten
         const w = nearestWork();
         if (!w) return;
@@ -1847,10 +2180,15 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
     },
     draw(ctx) {
       const sh = shake > 0 ? ((t * 40) | 0) % 2 * 2 - 1 : 0;       // PANG: bilden skakar en pixel
-      ctx.setTransform(A.pxs, 0, 0, A.pxs, sh * A.pxs, 0);
+      ctx.setTransform(A.pxs, 0, 0, A.pxs, sh * A.pxs, -camR * A.pxs);   // kameran (0 när allt syns)
+      // det som syns och inte får täckas: skyltarna, mekanikern (med det hen bär) och ägarna
+      occ = signRects().slice();
+      // (mekanikern som går undviks inte – då skulle texterna hoppa undan i varje steg)
+      occ.push({ x: Math.round(walker.px) - (carry ? 9 : 6), y: Math.round(walker.py) - 44, w: carry ? 18 : 12, h: 46, k: walker.path.length ? 'gar' : 'me' });
+      for (const c of cars) if (c.owner.show) occupy(Math.round(c.owner.x) - 6, Math.round(c.owner.y) - 43, 12, 44, 'own');
       ctx.drawImage(bg(), 0, 0);
       drawLights(ctx, t);
-      drawClock(ctx, startMin + (t / SHIFT_SECONDS) * 240);
+      drawClock(ctx, startMin + (t / SHIFT_T) * 240);
       drawRackTires(ctx);
       for (const b of BAYS) drawPort(ctx, b);
       drawHoseFloor(ctx);
@@ -1866,6 +2204,7 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
       drawables.push({ fy: JACK.y, draw: () => { const im = jackImg(); ctx.drawImage(im, JACK.x - 14, JACK.y - im.height + 1); } });
       for (const p of piles) drawables.push({ fy: p.y, draw: () => drawPile(ctx, p) });
       drawables.push({ fy: COMP.y, draw: () => drawComp(ctx) });
+      for (const c of cars) if (bowlShown(c)) drawables.push({ fy: c.bay.base + 5, draw: () => drawBowl(ctx, c) });
       for (const w of wrenches) if (w.at === 'floor') drawables.push({ fy: w.y, draw: () => { const im = wrenchImg(0); ctx.fillStyle = 'rgba(16,12,20,0.25)'; ctx.fillRect(w.x - 5, w.y, 10, 1); ctx.drawImage(im, w.x - (im.width >> 1), w.y - im.height + 1); } });
       drawables.sort((a, b) => a.fy - b.fy).forEach((d) => d.draw(ctx));
       // gnistor, rök och ånga
@@ -1876,25 +2215,14 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
       }
       ctx.globalAlpha = 1;
       drawNotes(ctx);
-      // pratbubblor, navbubblor, luftmätare, framsteg och tut
-      for (const c of cars) {
-        const art = carArt(c), cx = Math.round(c.x + c.L / 2), topY = carGY(c) - art.topH;
-        if (c.honk > 0) honkBubble(ctx, cx, topY - 2);
-        if (c.tj && c.tj.bang > 0) bangStar(ctx, wheelX(c, c.tj.wheel), wheelCY(c), c.tj.bang);
-        if (c.state === 'ready') { readyBubble(ctx, cx, topY - 2 - ((t * 3 | 0) % 2)); continue; }
-        if (!['park', 'raise', 'wait'].includes(c.state)) continue;
-        if (hubVisible(c)) { drawHubBubble(ctx, c); continue; }
-        if (gaugeVisible(c)) { drawGaugeBubble(ctx, c); continue; }
-        if (c.tj) { drawTireBubble(ctx, c, cx, topY - 2); continue; }
-        const hot = !!carry && carry.p === c.fault;
-        const tip = topY - 2 - (hot && (t * 4 | 0) % 2 ? 1 : 0);
-        const [ix, iy] = bubble(ctx, cx, tip, 18, 19, hot);
-        const s = partSprite(c.fault);
-        ctx.drawImage(s, ix + ((18 - s.width) >> 1), iy + ((16 - s.height) >> 1));
-        patienceBar(ctx, c, ix + 2, iy + 16, 14);
-        // framstegsstapeln över mekanikerns arbetsplats (håller sig inom bild)
-        if (c.prog > 0) { const s2 = spotOf(c.bay); progressBar(ctx, clamp(s2.x, 18, FW - 18), s2.y - 47, c.prog, working === c, t); }
-      }
+      // pratbubblor, navbubblor, luftmätare, framsteg och tut – bubblor som kanske
+      // måste hänga under lyften (dolda upptill i fyll-läget) ritas sist, så att
+      // de kan välja en plats som ingen annan bubbla redan har
+      drawing = true;
+      const later = [];
+      for (const c of cars) { if (carGY(c) - carArt(c).topH - 41 < viewTop()) later.push(c); else drawCarBubbles(ctx, c); }
+      for (const c of later) drawCarBubbles(ctx, c);
+      drawing = false;
       // hjälptext: stå vid fronten med rätt del men håll inte inne (två rader,
       // så att även tangentbordsvägen nämns)
       if (!working && carry && carry.p !== undefined && !walker.path.length && needTip('LAGA')) {
@@ -1903,21 +2231,45 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
           const rows = ['HÅLL INNE!', 'ELLER MELLANSLAG'], iw = Math.max(...rows.map((s) => textW(SMALL, s))), w = iw + 6;
           const x = clamp(Math.round(walker.px - w / 2), 1, FW - w - 1), y = Math.round(walker.py) - (c.prog > 0 ? 66 : 58);
           ctx.fillStyle = '#17151a'; ctx.fillRect(x, y, w, 15);
+          occupy(x, y, w, 15);
           rows.forEach((s, j) => ctxText(ctx, SMALL, s, x + 3 + ((iw - textW(SMALL, s)) >> 1), y + 2 + j * 6, j ? '#d8d2c0' : '#ffd23f'));
         }
       }
       // de första gångerna: en pil som visar vart nästa steg är
       const fc = focusCar(), h = hintFor(fc);
-      if (h && needTip(h.key)) hintArrow(ctx, h.x, h.y, h.txt, t);
-      pops.draw(ctx);
+      if (h && needTip(h.key)) hintArrow(ctx, h.x, h.y, h.txt, t, h.al);
+      pops.draw(ctx, fitPop);
       ctx.setTransform(A.pxs, 0, 0, A.pxs, 0, 0);
-      drawShiftHud(ctx, { W: FW }, { t, dur: SHIFT_SECONDS, ok: stats.ok, fel: stats.fel, title: 'BILVERKSTADEN' });
+      drawShiftHud(ctx, { W: FW }, { t, dur: SHIFT_T, ok: stats.ok, fel: stats.fel, title: 'BILVERKSTADEN' });
       drawStepRow(ctx, fc);
       if (done) drawTimeUp(ctx, { W: FW, H: FH });
     },
   };
 
   // ---------- ritning per bildruta ----------
+  // en bils bubbla (fel, däck, nav, luftmätare eller SÄNK), tut och framsteg
+  function drawCarBubbles(ctx, c) {
+    const art = carArt(c), cx = Math.round(c.x + c.L / 2), topY = carGY(c) - art.topH;
+    if (c.honk > 0) { const r = honkBubble(ctx, cx, topY - 2); occupy(r.x, r.y, r.w, r.h); }
+    if (c.tj && c.tj.bang > 0) bangStar(ctx, wheelX(c, c.tj.wheel), wheelCY(c), c.tj.bang);
+    if (c.state === 'ready') { const s = bubbleSpot(c, cx, topY - 2, 29, 9); readyBubble(ctx, s.cx, s.tip - ((t * 3 | 0) % 2), s.up, s.sx); return; }
+    if (!['park', 'raise', 'wait'].includes(c.state)) return;
+    if (hubVisible(c)) { drawHubBubble(ctx, c); return; }
+    if (gaugeVisible(c)) { drawGaugeBubble(ctx, c); return; }
+    if (c.tj) { const s = bubbleSpot(c, cx, topY - 2, TB_W, 26); drawTireBubble(ctx, c, s.cx, s.tip, s.up, s.sx); return; }
+    const hot = !!carry && carry.p === c.fault, sp = bubbleSpot(c, cx, topY - 2, 18, 19);
+    const tip = sp.tip - (hot && (t * 4 | 0) % 2 ? 1 : 0);
+    const [ix, iy] = bub(ctx, sp.cx, tip, 18, 19, hot, sp.up, sp.sx);
+    const s = partSprite(c.fault);
+    ctx.drawImage(s, ix + ((18 - s.width) >> 1), iy + ((16 - s.height) >> 1));
+    patienceBar(ctx, c, ix + 2, iy + 16, 14);
+    // framstegsstapeln över mekanikerns arbetsplats (håller sig inom bild)
+    if (c.prog > 0) {
+      const s2 = spotOf(c.bay), px = clamp(s2.x, 18, FW - 18), py = Math.max(viewTop() + 3, s2.y - 47);
+      progressBar(ctx, px, py, c.prog, working === c, t);
+      occupy(px - 17, py - 2, 34, 8);
+    }
+  }
   function meDrawable(ctx) {
     const spinC = cars.find((c) => c.tj && c.tj.spin);
     const airC = airing && cars.includes(airing) ? airing : null;
@@ -1944,7 +2296,7 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
     let img = null, lift = 11;
     if (carry.p !== undefined) img = partSprite(carry.p);
     else if (carry.wrench !== undefined) { img = wrenchImg(walker.dir === 'left' ? 1 : 0); lift = 14; }
-    else if (carry.wheel) { img = carry.old ? kindFlat(carry.wheel) : kindWheel(carry.wheel); lift = 9; }
+    else if (carry.wheel) { img = bigTire(carry.wheel, carry.old); lift = 14 - BIG_R[carry.wheel] + (carry.old ? 1 : 0); }
     else if (carry.hose) { img = nozzleImg(); lift = 15; }
     if (!img) return;
     const x = px - (img.width >> 1), y = Math.round(walker.py) - lift - img.height;
@@ -2068,6 +2420,24 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
     // avgaspuffar ur motorn när den går
     if (running && Math.random() < 0.08) addFx(x0 + 4, y0 + 7, -6 - Math.random() * 6, -8, -4, 0.6, 'rgba(210,210,215,0.6)');
   }
+  // magnetskålen (9×4) med skruvarna som ligger i den
+  function drawBowl(ctx, c) {
+    const j = c.tj, { x, y } = bowlPos(c);
+    ctx.fillStyle = 'rgba(20,12,30,0.3)'; ctx.fillRect(x + 1, y + 4, 8, 1);
+    ctx.fillStyle = '#5a1410'; ctx.fillRect(x + 1, y, 7, 4); ctx.fillRect(x, y + 1, 9, 2);
+    ctx.fillStyle = '#e8604a'; ctx.fillRect(x + 1, y, 7, 1);
+    ctx.fillStyle = '#c8322a'; ctx.fillRect(x + 1, y + 1, 1, 2); ctx.fillRect(x + 7, y + 1, 1, 2);
+    ctx.fillStyle = '#3a3c44'; ctx.fillRect(x + 2, y + 1, 5, 2);
+    ctx.fillStyle = '#5a5e66'; ctx.fillRect(x + 2, y + 1, 5, 1);
+    // skruvar ute, minus den som är i luften på väg ner och den som skruvas i just nu
+    let n = j.bolts.filter((b) => !b).length - (t < j.flying ? 1 : 0) - (j.spin && !j.spin.out ? 1 : 0);
+    const spots = [[2, 1], [4, 1], [6, 1], [3, 2], [5, 2]];
+    for (let k = 0; k < Math.min(n, spots.length); k++) {
+      const [bx, by] = spots[k];
+      ctx.fillStyle = '#eef2f6'; ctx.fillRect(x + bx, y + by, 1, 1);
+      if (by === 1) { ctx.fillStyle = '#9aa0aa'; ctx.fillRect(x + bx, y + by + 1, 1, 1); }
+    }
+  }
   function drawPile(ctx, p) {
     const im = pileImg(p.n);
     ctx.drawImage(im, p.x - (im.width >> 1), p.y - im.height + 1);
@@ -2150,8 +2520,23 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
 
   function drawCar(ctx, c) {
     const s = c.spec, art = carArt(c), f = c.face, L = c.L, gY = carGY(c), x = Math.round(c.x);
-    ctx.drawImage(art.img[f], x - 1, gY - art.gy);
-    if (c.brake) ctx.drawImage(art.brake[f], x - 1, gY - art.gy);
+    // Ett platt (eller halvfyllt) däck: bilen lutar – delen över det hjulet står
+    // en pixel lägre (en pixels lutning över hela bilen ser ut just så i pixlar).
+    // Bilden delas i en dörrskarv/B-stolpe (spec.sag), så att pixelsteget följer
+    // en linje som redan finns i karossen. En sur kund som kör iväg på sitt
+    // platta däck lutar hela vägen ut.
+    const tj = c.tj, sagging = tj && !(c.fixed && tj.aired) && (tj.tire === 'flat' || (tj.tire === 'new' && tj.air < 0.5));
+    const split = f ? L - s.sag + 1 : s.sag + 1;                           // bildkolumnen där nästa del börjar
+    const flatCol = sagging ? (f ? L - s.wheels[tj.wheel] : s.wheels[tj.wheel] + 1) : 0;
+    const sagR = sagging && flatCol >= split ? 1 : 0, sagL = sagging && !sagR ? 1 : 0;
+    const blit = (im) => {
+      if (!sagging) { ctx.drawImage(im, x - 1, gY - art.gy); return; }
+      const H = im.height;
+      ctx.drawImage(im, 0, 0, split, H, x - 1, gY - art.gy + sagL, split, H);
+      ctx.drawImage(im, split, 0, art.W - split, H, x - 1 + split, gY - art.gy + sagR, art.W - split, H);
+    };
+    blit(art.img[f]);
+    if (c.brake) blit(art.brake[f]);
     const P = (q, h, col) => { ctx.fillStyle = col; ctx.fillRect(sx(c, q), gY - h, 1, 1); };
     const broken = !c.fixed && c.prog < 0.7;
     // trasig strålkastare: mörk och sprucken, glapper ibland, glassplitter på banan
@@ -2229,13 +2614,13 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
     const j = c.tj, still = c.state !== 'drive' && c.state !== 'leave';
     s.wheels.forEach((wx, i) => {
       const q = f ? L - 1 - wx : wx, cx = x + q, cy = gY - s.r;
-      if (!j || i !== j.wheel || c.state === 'leave' || (c.fixed && j.aired)) { ctx.drawImage(wheelArt(s.r, rim, fr, c.tk), cx - s.r, gY - 2 * s.r); return; }
+      if (!j || i !== j.wheel || (c.fixed && j.aired)) { ctx.drawImage(wheelArt(s.r, rim, fr, c.tk), cx - s.r, gY - 2 * s.r); return; }
       if (j.tire === 'off') { ctx.drawImage(hubCarImg(s.r, j.n), cx - s.r, cy - s.r); return; }
       const soft = j.tire === 'flat' || j.air < 0.5;
       if (soft) ctx.drawImage(j.tire === 'flat' ? flatArt(s.r, rim) : kindFlat(j.mounted), cx - s.r - 2, gY - 2 * s.r);
       else ctx.drawImage(kindWheel(j.mounted), cx - s.r, gY - 2 * s.r);
       if (!still) return;
-      const oy = soft ? 1 : 0;
+      const oy = soft ? 2 : 0;
       for (let k = 0; k < j.n; k++) {
         const [bx, by] = boltPos(s.r, j.n, k);
         const spin = j.spin && j.spin.i === k;
@@ -2361,10 +2746,10 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
   }
   // däckbytets bubbla: det platta däcket, minibilen uppifrån med det
   // punkterade hjulet blinkande och vilken sorts nytt däck som behövs
-  function drawTireBubble(ctx, c, cx, tip) {
-    const j = c.tj, IW = 31, IH = 26;
+  function drawTireBubble(ctx, c, cx, tip, up = false, sx = cx) {
+    const j = c.tj, IW = TB_W, IH = 26;
     const hot = !!carry && !carry.old && carry.wheel === j.want && j.tire === 'off';
-    const [ix, iy] = bubble(ctx, cx, tip - (hot && (t * 4 | 0) % 2 ? 1 : 0), IW, IH, hot);
+    const [ix, iy] = bub(ctx, cx, tip - (hot && (t * 4 | 0) % 2 ? 1 : 0), IW, IH, hot, up, sx);
     if (j.tire === 'flat') {
       const fl = flatArt(6, 'alloy');
       ctx.drawImage(fl, ix, iy + 2);
@@ -2374,7 +2759,13 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
       ctx.drawImage(im, ix + 8 - r, iy + 8 - r);
       if (j.tire === 'off') { ctx.fillStyle = '#2e8a48'; ctx.fillRect(ix + 15, iy + 1, 1, 3); ctx.fillRect(ix + 14, iy + 2, 3, 1); }   // "+"
     }
-    drawMiniCar(ctx, c, ix + 21, iy);
+    drawMiniCar(ctx, c, ix + 24, iy);
+    // V eller H bredvid det punkterade hjulet på minibilen (med luft till
+    // pyset, minibilen och bubblans kant)
+    if (j.tire !== 'new') {
+      const L = c.face ? 'V' : 'H', lx = c.face ? ix + 23 - textW(SMALL, L) : ix + 34, ly = iy + (j.wheel ? 1 : 9);
+      ctxText(ctx, SMALL, L, lx, ly, (t * 4 | 0) % 2 ? '#e02a1a' : '#8a1a14');
+    }
     const s = TIRE_TXT[j.want], w = textW(SMALL, s);
     ctxText(ctx, SMALL, s, ix + ((IW - w) >> 1), iy + 17, TIRE_COL[j.want]);
     patienceBar(ctx, c, ix + 2, iy + 23, IW - 4);
@@ -2400,9 +2791,9 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
     });
     ctx.fillStyle = '#fff4c0'; ctx.fillRect(x0 + 5, y0 + 1, 1, 1);
   }
-  function readyBubble(ctx, cx, tip) {
+  function readyBubble(ctx, cx, tip, up = false, sx = cx) {
     const s = 'SÄNK', IW = textW(SMALL, s) + 14, IH = 9;
-    const [ix, iy] = bubble(ctx, cx, tip, IW, IH, true);
+    const [ix, iy] = bub(ctx, cx, tip, IW, IH, true, up, sx);
     ctx.fillStyle = '#2e8a48';
     for (const [x, y] of [[0, 4], [1, 5], [2, 6], [3, 5], [4, 4], [5, 3], [6, 2]]) ctx.fillRect(ix + 1 + x, iy + y, 1, 1);
     ctxText(ctx, SMALL, s, ix + 9, iy + 3, '#17151a');
@@ -2413,8 +2804,8 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
   // siffror en bra ordning de första gångerna.
   function drawHubBubble(ctx, c) {
     const g = hubGeom(c), j = c.tj;
-    bubble(ctx, g.cx, g.tip, 31, 31, false);
-    ctx.drawImage(hubFaceImg(j.tire === 'flat' ? 'flat' : j.mounted), g.ix, g.iy);
+    bub(ctx, g.cx, g.tip, 31, 31, false, g.up, g.sx);
+    ctx.drawImage(j.tire === 'flat' ? hubFaceImg('flat', c.tk) : hubFaceImg('new', j.mounted || j.want), g.ix, g.iy);
     const learnStar = j.tire === 'new' && needTip('SKRUVA FAST');
     const order = learnStar ? starOrder(j.n, j.order.length ? j.order[0] : 0) : null;
     g.bolts.forEach((p, k) => {
@@ -2427,6 +2818,13 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
         for (let a = 0; a < 16; a++) {
           const an = -Math.PI / 2 + a / 16 * Math.PI * 2;
           ctx.fillStyle = a / 16 < prog ? '#ffd23f' : 'rgba(23,21,26,0.35)';
+          ctx.fillRect(p.x + Math.round(Math.cos(an) * 4), p.y + Math.round(Math.sin(an) * 4), 1, 1);
+        }
+      } else if (j.queued === k) {   // köad: nästa skruv blinkar med en hel grön ring (då syns det att klicket tog)
+        const on = (t * 8 | 0) % 2 === 0;
+        for (let a = 0; a < 16; a++) {
+          const an = a / 16 * Math.PI * 2;
+          ctx.fillStyle = on ? '#45d864' : '#1f6b34';     // ljus mot däcket, mörk mot fälgen
           ctx.fillRect(p.x + Math.round(Math.cos(an) * 4), p.y + Math.round(Math.sin(an) * 4), 1, 1);
         }
       }
@@ -2455,7 +2853,7 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
   function drawGaugeBubble(ctx, c) {
     const j = c.tj, IW = 29, IH = 21, g = wheelBubbleAt(c, IW, IH);
     const green = j.air >= GREEN_LO && j.air <= GREEN_HI;
-    const [ix, iy] = bubble(ctx, g.cx, g.tip, IW, IH, green);
+    const [ix, iy] = bub(ctx, g.cx, g.tip, IW, IH, green, g.up, g.sx);
     const cx = ix + 14, cy = iy + 12;
     for (let a = 0; a <= 40; a++) {
       const f = a / 40, an = Math.PI + f * Math.PI;
@@ -2476,46 +2874,146 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
     for (let a = 0; a < 12; a++) { const an = a / 12 * Math.PI * 2, rr = a % 2 ? r * 0.55 : r; ctx.fillRect(x + Math.round(Math.cos(an) * rr), y + Math.round(Math.sin(an) * rr), 2, 2); }
     ctx.fillStyle = '#ffe27a'; ctx.fillRect(x - 2, y - 2, 5, 5);
   }
-  // pilen med hjälptext som visar nästa steg
-  function hintArrow(ctx, x, y, txt, time) {
+  // Pilen med hjälptext som visar nästa steg. al: var skylten helst hamnar i
+  // förhållande till pilen – 'c' mitt över, 'l' ut åt vänster, 'r' ut åt höger.
+  // Skylten provar platser i tur och ordning (ovanför målet, lite högre, under
+  // målet, bredvid med pilen i sidled, längre ner) och tar den första som inte
+  // täcker en bubbla, mekanikern, en ägare eller en väggskylt – finns ingen
+  // helt ledig tar den platsen som täcker minst. Hamnar den en bit bort går en
+  // prickad linje till målet. Ligger målet utanför det synliga (fyll-lägets
+  // kamera) pekar pilen mot kanten: upp under topplisten eller ner mot nederkanten.
+  function hintArrow(ctx, x, y, txt, time, al = 'c') {
     const w = textW(SMALL, txt) + 6, bob = Math.round(Math.abs(Math.sin(time * 5)) * 2);
-    const down = y - 18 - bob > 28;                     // pilen pekar ner – eller upp om det är trångt
-    const bx = clamp(Math.round(x - w / 2), 1, FW - w - 1), by = down ? y - 18 - bob : y + 8 + bob;
+    const tx = Math.round(x), ty = Math.round(y), top = viewTop() + 2, bot = viewBot() - 2;
+    const xs = (a) => clamp(Math.round(a === 'l' ? tx - w + 5 : a === 'r' ? tx - 5 : tx - w / 2), 1, FW - w - 1);
+    const order = al === 'l' ? ['l', 'c', 'r'] : al === 'r' ? ['r', 'c', 'l'] : ['c', 'l', 'r'];
+    const cands = [];                                     // { bx, by, d: pilens riktning }
+    const vert = (by, d) => { for (const a of order) cands.push({ bx: xs(a), by, d }); };
+    // dolt mål: skylten vid kanten, rakt ovanför/under – eller en bit åt sidan
+    const mx = Math.round(walker.px), my = Math.round(walker.py), still = !walker.path.length;
+    const sides = [tx + 6, tx - w - 6, mx + 12, mx - 12 - w];   // vid sidan av målet – eller av mekanikern
+    const edge = (by, d) => { vert(by, d); for (const bx of sides) if (bx >= 1 && bx + w < FW) cands.push({ bx, by, d }); };
+    // (bakväggen är full av skyltar – längre ner finns alltid en ledig rad)
+    if (ty < top) for (const g of [0, 6, 12, 18, 24, 30, 36, 42]) edge(top + 3 + g, 'upp');
+    else if (ty > bot) for (const g of [0, 6, 12, 18, 24, 30, 36]) edge(bot - 14 - g, 'ner');
+    else {
+      for (const g of [0, 6, 12, 18, 24, 30]) vert(ty - 18 - g, 'ner');
+      for (const g of [0, 6, 12, 18]) vert(ty + 8 + g, 'upp');
+      for (const dy of [0, -8, 8, -16, 16]) { cands.push({ bx: tx + 7, by: ty - 4 + dy, d: 'vä' }); cands.push({ bx: tx - 7 - w, by: ty - 4 + dy, d: 'hö' }); }
+      for (const g of [24, 30, 36, 42]) vert(ty + 8 + g, 'upp');
+      // längre bort åt sidan (t.ex. när mekanikern står rakt under målet), med snett streck dit
+      for (const g of [0, 12, 24, 36]) for (const bx of [tx + 14, tx - 14 - w, ...sides.slice(2)]) { cands.push({ bx, by: ty + 8 + g, d: 'upp' }); cands.push({ bx, by: ty - 18 - g, d: 'ner' }); }
+    }
+    // står mekanikern redan vid målet: texten kan stå fritt under fötterna eller över huvudet
+    if (still && tx > mx - 18 && tx < mx + 18 && ty > my - 56 && ty < my + 12) {
+      for (const by of [my + 4, my - 56]) cands.push({ bx: clamp(mx - (w >> 1), 1, FW - w - 1), by, d: 'fri' });
+    }
+    const rectOf = (c) => (c.d === 'ner' ? { x: c.bx, y: c.by - 2, w, h: 15 } : c.d === 'upp' ? { x: c.bx, y: c.by - 3, w, h: 14 }
+      : c.d === 'vä' ? { x: c.bx - 4, y: c.by, w: w + 6, h: 9 } : c.d === 'hö' ? { x: c.bx, y: c.by, w: w + 6, h: 9 } : { x: c.bx, y: c.by, w, h: 9 });
+    // hur illa en plats är: bubblor väger tyngst, sedan skyltar, ägare och mekanikern
+    const W8 = { b: 3, sign: 2, own: 2, me: 2 };
+    const score = (r) => { let a = 0; for (const k of HINT_AVOID) if (W8[k]) a += W8[k] * overlapArea(r, [k], 1); return a; };
+    const inView = (r) => r.y >= top - 2 && r.y + r.h <= bot + 3 && r.x >= 0 && r.x + r.w <= FW;
+    let pick = null;
+    if (lastHint && lastHint.txt === txt && Math.abs(lastHint.tx - tx) <= 1 && Math.abs(lastHint.ty - ty) <= 1) {
+      const r = rectOf(lastHint.c);
+      if (inView(r) && !score(r)) pick = { ...lastHint.c, r };
+    }
+    let best = null, bestA = 1e9;
+    for (const c of pick ? [] : cands) {
+      const r = rectOf(c);
+      if (!inView(r)) continue;
+      const a = score(r);
+      if (!a) { pick = { ...c, r }; break; }
+      if (a < bestA) { bestA = a; best = { ...c, r }; }
+    }
+    pick ||= best;
+    if (!pick) return;
+    lastHint = { txt, tx, ty, c: { bx: pick.bx, by: pick.by, d: pick.d } };
+    occ.push({ ...pick.r, k: 'hint', txt });
+    const d = pick.d;
+    const bx = d === 'vä' ? pick.bx + bob : d === 'hö' ? pick.bx - bob : pick.bx;
+    const by = d === 'ner' ? pick.by - bob : d === 'upp' ? pick.by + bob : pick.by;
     ctx.fillStyle = '#17151a'; ctx.fillRect(bx, by, w, 9);
-    ctx.fillStyle = '#ffd23f'; ctx.fillRect(bx, down ? by + 8 : by, w, 1);
-    ctxText(ctx, SMALL, txt, bx + 3, by + 2, '#ffd23f');
-    const ax = Math.round(x);
     ctx.fillStyle = '#ffd23f';
-    if (down) { const ay = by + 10; ctx.fillRect(ax - 2, ay, 5, 1); ctx.fillRect(ax - 1, ay + 1, 3, 1); ctx.fillRect(ax, ay + 2, 1, 1); }
-    else { const ay = by - 3; ctx.fillRect(ax, ay, 1, 1); ctx.fillRect(ax - 1, ay + 1, 3, 1); ctx.fillRect(ax - 2, ay + 2, 5, 1); }
+    if (d === 'ner') ctx.fillRect(bx, by + 8, w, 1); else if (d === 'upp') ctx.fillRect(bx, by, w, 1);
+    else if (d !== 'fri') ctx.fillRect(d === 'vä' ? bx : bx + w - 1, by, 1, 9);
+    ctxText(ctx, SMALL, txt, bx + 3, by + 2, '#ffd23f');
+    ctx.fillStyle = '#ffd23f';
+    if (d === 'ner' || d === 'upp') {
+      const ax = clamp(tx, bx + 2, bx + w - 3);
+      // prickad linje från pilspetsen till målet (rak eller snett) när skylten står en bit bort
+      const stem = (x0, y0, y1) => {
+        const n = Math.max(Math.abs(tx - x0), Math.abs(y1 - y0));
+        if (n < 3) return;
+        for (let i = 2; i <= n; i += 2) ctx.fillRect(Math.round(x0 + (tx - x0) * i / n), Math.round(y0 + (y1 - y0) * i / n), 1, 1);
+      };
+      if (d === 'ner') {
+        const ay = by + 10; ctx.fillRect(ax - 2, ay, 5, 1); ctx.fillRect(ax - 1, ay + 1, 3, 1); ctx.fillRect(ax, ay + 2, 1, 1);
+        if (ty <= bot && ty - 6 > ay + 2) stem(ax, ay + 2, ty - 6);
+      } else {
+        const ay = by - 3; ctx.fillRect(ax, ay, 1, 1); ctx.fillRect(ax - 1, ay + 1, 3, 1); ctx.fillRect(ax - 2, ay + 2, 5, 1);
+        if (ty >= top && ty + 6 < ay) stem(ax, ay, ty + 6);
+      }
+    } else if (d !== 'fri') {                             // pilen i sidled, mot målet
+      const s = d === 'vä' ? -1 : 1, ax = d === 'vä' ? bx - 1 : bx + w, ay = by + 4;
+      ctx.fillRect(ax, ay - 2, 1, 5); ctx.fillRect(ax + s, ay - 1, 1, 3); ctx.fillRect(ax + 2 * s, ay, 1, 1);
+    }
   }
   // stegraden under topplisten: bilens färg, vilket hjul och vilken sort, och
   // stegen med det nästa tänt (klara steg gröna, kommande grå)
+  // (i fyll-läget ligger båda raderna under den synliga överkanten, som topplisten)
   function drawStepRow(ctx, c) {
-    ctx.fillStyle = 'rgba(23,21,26,0.82)'; ctx.fillRect(0, 18, FW, 9);
-    if (!c) { const s = 'VÄNTAR PÅ NÄSTA BIL...'; ctxText(ctx, SMALL, s, (FW - textW(SMALL, s)) >> 1, 20, '#8a8494'); return; }
+    const sy = (globalThis.SF?.view?.safe?.y0 | 0), y = sy + 18;
+    ctx.fillStyle = 'rgba(23,21,26,0.82)'; ctx.fillRect(0, y, FW, 9);
+    if (!c) {
+      const coming = cars.some((k) => k.state === 'drive' || k.state === 'exit');
+      const s = coming ? 'EN BIL KÖR IN...' : 'VÄNTAR PÅ NÄSTA BIL...';
+      ctxText(ctx, SMALL, s, (FW - textW(SMALL, s)) >> 1, y + 2, coming ? '#d8d2c0' : '#8a8494');
+      return;
+    }
+    drawJobCard(ctx, c, sy);
     const list = c.tj ? STEPS : STEPS_PART, st = stageOf(c), idx = st === 'KLART' ? list.length : list.indexOf(st);
-    const pre = c.tj ? posTxt(c) + ' ' + TIRE_TXT[c.tj.want] : PART_NAMES[c.fault];
     const ws = list.map((s) => textW(SMALL, s) + 2), gap = 7;
-    const total = 7 + textW(SMALL, pre) + 6 + ws.reduce((a, v) => a + v, 0) + gap * (list.length - 1);
+    const total = ws.reduce((a, v) => a + v, 0) + gap * (list.length - 1);
     let x = Math.max(2, (FW - total) >> 1);
-    ctx.fillStyle = '#17151a'; ctx.fillRect(x, 20, 6, 5);
-    ctx.fillStyle = css(c.color); ctx.fillRect(x + 1, 21, 4, 3);
-    x += 8;
-    ctxText(ctx, SMALL, pre, x, 20, c.tj ? TIRE_COL[c.tj.want] === '#2f6db5' ? '#7ab0ff' : '#ffb070' : '#d8d2c0');
-    x += textW(SMALL, pre) + 6;
     list.forEach((s, i) => {
       const now = i === idx;
-      if (now) { ctx.fillStyle = (t * 2 | 0) % 2 ? '#ffd23f' : '#f0b429'; ctx.fillRect(x, 19, ws[i], 7); }
-      ctxText(ctx, SMALL, s, x + 1, 20, now ? '#17151a' : i < idx ? '#6fbf73' : '#8a8494');
+      if (now) { ctx.fillStyle = (t * 2 | 0) % 2 ? '#ffd23f' : '#f0b429'; ctx.fillRect(x, y + 1, ws[i], 7); }
+      ctxText(ctx, SMALL, s, x + 1, y + 2, now ? '#17151a' : i < idx ? '#6fbf73' : '#8a8494');
       x += ws[i];
       if (i < list.length - 1) {
         ctx.fillStyle = i < idx ? '#4a7a4c' : '#5a5462';
         const ax = x + 2;
-        ctx.fillRect(ax, 20, 1, 1); ctx.fillRect(ax + 1, 21, 1, 1); ctx.fillRect(ax + 2, 22, 1, 1); ctx.fillRect(ax + 1, 23, 1, 1); ctx.fillRect(ax, 24, 1, 1);
+        ctx.fillRect(ax, y + 2, 1, 1); ctx.fillRect(ax + 1, y + 3, 1, 1); ctx.fillRect(ax + 2, y + 4, 1, 1); ctx.fillRect(ax + 1, y + 5, 1, 1); ctx.fillRect(ax, y + 6, 1, 1);
         x += gap;
       }
     });
+  }
+  // jobbkortet i topplisten mellan rubriken och poängen: vilken bil (minibilen
+  // uppifrån i bilens färg, det punkterade hjulet blinkar), vilket hjul och
+  // vilken sorts däck – eller vad som är fel på bilen
+  function drawJobCard(ctx, c, sy) {
+    let x = textW(BIG, 'BILVERKSTADEN') + 12;
+    ctx.fillStyle = '#3a3440'; ctx.fillRect(x - 5, sy + 3, 1, 12);
+    if (c.tj) {
+      drawMiniCar(ctx, c, x, sy + 2);
+      x += 13;
+      const p = posTxt(c);
+      ctxText(ctx, SMALL, p, x, sy + 7, '#f4f1ea');
+      x += textW(SMALL, p) + 5;
+      const s = TIRE_TXT[c.tj.want], w = textW(SMALL, s) + 4, col = TIRE_COL[c.tj.want];
+      ctx.fillStyle = css(mul(hex(col), 0.45)); ctx.fillRect(x, sy + 5, w, 9);
+      ctx.fillStyle = col; ctx.fillRect(x + 1, sy + 5, w - 2, 9);
+      ctx.fillStyle = css(mix(hex(col), 0xffffff, 0.35)); ctx.fillRect(x + 1, sy + 5, w - 2, 1);
+      ctxText(ctx, SMALL, s, x + 2, sy + 7, '#fff8ec');
+      return;
+    }
+    ctx.fillStyle = '#17151a'; ctx.fillRect(x, sy + 5, 9, 9);
+    ctx.fillStyle = css(c.color); ctx.fillRect(x + 1, sy + 6, 7, 7);
+    ctx.fillStyle = css(mix(c.color, 0xffffff, 0.35)); ctx.fillRect(x + 1, sy + 6, 7, 1);
+    x += 13;
+    ctxText(ctx, SMALL, JOB_TXT[c.fault], x, sy + 7, '#f4f1ea');
   }
 }
 
@@ -2526,6 +3024,7 @@ function honkBubble(ctx, x, y) {
   ctx.fillStyle = '#fff6d8'; ctx.fillRect(bx, by, w, h);
   ctx.fillStyle = '#1c1a22'; ctx.fillRect(x - 1, by + h + 1, 3, 1); ctx.fillRect(x, by + h + 2, 1, 1);
   ctxText(ctx, SMALL, str, bx + 3, by + 2, '#c0282a');
+  return { x: bx - 1, y: by - 1, w: w + 2, h: h + 4 };
 }
 // framstegsstapel med en liten skiftnyckel till vänster; ränder rullar när man jobbar
 const WRENCH = ['..#.#', '..###', '.##..', '##...', '#....'];
@@ -2757,44 +3256,71 @@ function spillImg(L) {
   return (IMG[key] = P.flush());
 }
 
-// navet i navbubblan (31×31, centrum 15,15): skruvarna ritas ovanpå av bubblan.
-// state: 'flat' = punkterat hjul · true = nytt hjul monterat · false = naken trumma
-function hubFaceImg(state) {
-  const key = 'hub' + state;
+// navet i navbubblan (31×31, centrum 15,15): skruvarna ritas ovanpå av bubblan
+// (på bultcirkeln r = 8). state: 'flat' = det punkterade hjulet, 'new' = det nya
+// hjulet (kind = däcksorten: vinter har dubbar, stort grova klackar, litet
+// tunnare gummi och en färgad lapp på slitbanan som i däckstället), annars den
+// nakna bromsskivan med navet.
+function hubFaceImg(state, kind = 'sommar') {
+  const key = 'hubf' + state + kind;
   if (IMG[key]) return IMG[key];
   const W = 31, H = 31, P = new Pix(W, H), cx = 15, cy = 15;
-  const ring = (r0, r1, c, a = 1) => {
-    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-      const d = Math.hypot(x - cx, y - cy);
-      if (d >= r0 && d < r1) P.px(x, y, c, a);
+  const at = (fn) => { for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { const dx = x - cx, dy = y - cy; fn(x, y, Math.hypot(dx, dy), Math.atan2(dy, dx), -(dx + dy) / 30); } };
+  const flat = state === 'flat', isNew = state === 'new';
+  if (flat || isNew) {
+    const tIn = kind === 'litet' && isNew ? 11.5 : 10.5, tOut = 15.2;
+    // däcket framifrån: slitbana ytterst, sidovägg med glans uppe till vänster
+    at((x, y, d, a, lit) => {
+      if (d < tIn || d >= tOut) return;
+      let c = d > 14 ? 0x121216 : d > 12.8 ? 0x24242b : mix(0x1b1b20, 0x34343d, clamp(lit * 1.6 + 0.2, 0, 1));
+      if (d < tIn + 1) c = 0x0e0e12;                                            // fälgkanten skuggar
+      if (d > 12.8 && d <= 14) {                                                // slitbanans mönster
+        const k = Math.cos(a * (kind === 'stort' ? 14 : 24));
+        if (kind === 'stort' ? k > 0.3 : k > 0.75) c = 0x3a3a44;
+        if (kind === 'vinter' && Math.cos(a * 12) > 0.93) c = 0xd8dce4;          // dubbarna
+      }
+      if (lit > 0.33 && d > 11.8 && d < 12.8) c = 0x4a4a54;                       // sidoväggens glansbåge
+      if (kind === 'stort' && isNew && d > 14 && Math.cos(a * 14) > 0.3) c = 0x2a2a32;  // klackarna sticker ut
+      P.px(x, y, c);
+    });
+    if (flat) { // platt: buken hänger nertill och gummit veckar sig
+      for (let x = cx - 12; x <= cx + 12; x++) { P.px(x, 27, 0x1b1b20); P.px(x, 28, 0x1b1b20); P.px(x, 29, 0x101014); }
+      for (let x = cx - 9; x <= cx + 9; x++) P.px(x, 30, 0x0c0c10, 0.8);
+      P.hl(cx - 13, 26, 4, 0x26262e); P.hl(cx + 10, 26, 4, 0x26262e);
+      P.hl(cx - 6, 27, 3, 0x3a3a44); P.hl(cx + 4, 28, 2, 0x3a3a44);              // veck i gummit
+      P.px(cx + 12, cy - 4, 0xdce0e8); P.px(cx + 13, cy - 4, 0x8a8e96);          // spiken
+    } else {    // nytt: en färgad lapp på slitbanan (sorten, som i däckstället)
+      const col = hex(TIRE_COL[kind]);
+      for (let j = 0; j < 3; j++) for (let i = 0; i < 3; i++) P.px(cx + 9 + i, cy - 11 + j, j === 0 ? mix(col, 0xffffff, 0.3) : col);
+      P.px(cx + 10, cy - 10, 0xfff8ec);
     }
-  };
-  if (state === 'flat' || state === true) {
-    // däcket framifrån
-    ring(10.5, 15.2, 0x1b1b20);
-    ring(13.6, 15.2, 0x26262e);
-    ring(10.5, 11.6, 0x101014);
-    if (state === 'flat') { // platt: buken hänger nertill + lite ur form
-      for (let x = cx - 11; x <= cx + 11; x++) { P.px(x, 28, 0x1b1b20); P.px(x, 29, 0x101014); }
-      for (let x = cx - 8; x <= cx + 8; x++) P.px(x, 30, 0x0c0c10, 0.8);
-      P.hl(cx - 12, 27, 4, 0x26262e); P.hl(cx + 9, 27, 4, 0x26262e);
-    } else { // nytt: mönsterknastrar och en glansbåge
-      for (let a = 0; a < 24; a++) { const an = a / 24 * Math.PI * 2; P.px(cx + Math.round(Math.cos(an) * 13), cy + Math.round(Math.sin(an) * 13), a % 2 ? 0x30303a : 0x16161b); }
-      P.px(cx - 8, cy - 11, 0x3c3c46); P.px(cx - 10, cy - 8, 0x3c3c46);
+    // fälgen: kant, fem ekrar och navkapseln i mitten
+    const alloy = TIRE_RIM[kind] === 'alloy', rimC = mul(alloy ? 0xc8ccd4 : 0xa8aeb8, flat ? 0.85 : 1);
+    at((x, y, d, a, lit) => {
+      if (d >= tIn) return;
+      let c;
+      if (d > tIn - 1.3) c = mix(0x6a6e78, 0xdce0e8, clamp(lit + 0.5, 0, 1));                     // fälgkanten
+      else if (d > 4.5) c = alloy
+        ? (Math.cos(5 * (a + Math.PI / 2)) > 0.35 ? mix(rimC, 0xffffff, clamp(lit, 0, 0.4)) : mix(0x2a2c32, 0x4a4e56, lit + 0.5))
+        : mix(mul(rimC, 0.8), rimC, lit + 0.5);                                                  // plåtfälg
+      else if (d > 3.2) c = mix(0x5a5e66, 0xb4bac4, clamp(lit + 0.5, 0, 1));                        // navkapselns kant
+      else c = d < 1.2 ? 0x8a8e96 : mix(0x8a8e96, 0xe4e8ee, clamp(lit + 0.6, 0, 1));               // navkapseln
+      P.px(x, y, c);
+    });
+    if (!alloy) for (let k = 0; k < 6; k++) { // plåtfälgens hål
+      const an = k / 6 * Math.PI * 2 + 0.26; P.px(cx + Math.round(Math.cos(an) * 5.6), cy + Math.round(Math.sin(an) * 5.6), 0x2a2c32);
     }
-    // fälgen
-    ring(4.5, 10.5, state === 'flat' ? 0x9aa0aa : 0xc8ccd4);
-    ring(9.2, 10.5, 0x6a6e78);
-    for (let a = 0; a < 5; a++) { const an = -Math.PI / 2 + a / 5 * Math.PI * 2; // ekrar
-      for (let r = 5; r <= 9; r++) P.px(cx + Math.round(Math.cos(an) * r), cy + Math.round(Math.sin(an) * r), 0x8a8e98); }
-    P.px(cx - 3, cy - 6, 0xffffff, 0.7); P.px(cx - 5, cy - 4, 0xffffff, 0.5); // glans
+    P.px(cx - 1, cy - 2, 0xffffff); P.px(cx - 6, cy - 7, 0xffffff, 0.6); P.px(cx - 7, cy - 5, 0xffffff, 0.4); // glans
   } else {
-    // naken bromstrumma
-    ring(2.5, 12.2, 0x3a3c44);
-    ring(10.6, 12.2, 0x2a2b31);
-    ring(2.5, 4.2, 0x1a1a20);
-    ring(6.5, 7.4, 0x4a4c56, 0.8); // svarvspår
-    P.px(cx - 4, cy - 6, 0x6a6e78); P.px(cx - 6, cy - 3, 0x5a5e68); // slitglans
+    // naken bromsskiva med borrade hål, navet och ett rött bromsok
+    at((x, y, d, a, lit) => {
+      if (d >= 12.2) return;
+      let c = d > 11 ? 0x3a3c44 : d > 5.2 ? mix(0x7a7e88, 0xc4c8d0, clamp(lit + 0.5, 0, 1)) : d > 4.2 ? 0x2a2b31 : mix(0x4a4c56, 0x8a8e98, lit + 0.5);
+      if (d > 5.2 && d < 11 && Math.abs(d - 9.6) < 0.5 && Math.cos(a * 9) > 0.8) c = 0x2a2b31;   // borrade hål
+      if (Math.abs(d - 7.4) < 0.4) c = mix(c, 0x3a3c44, 0.4);                                    // svarvspår
+      P.px(x, y, c);
+    });
+    P.rect(cx - 12, cy - 5, 4, 10, 0xc8322a); P.vl(cx - 12, cy - 5, 10, 0xff7a6a); P.vl(cx - 9, cy - 5, 10, 0x7a1a14);   // bromsoket
     P.px(cx, cy, 0x0c0c10);
   }
   return (IMG[key] = P.flush());
@@ -3043,13 +3569,14 @@ function paintShop() {
   drum(P, 2, 91, 14, 21, 0xc8322a);
   for (let x = 4; x < 14; x++) P.px(x, 77, x % 2 ? 0x2a2b30 : 0xf4f1ea);
   P.hl(6, 66, 7, 0x2a2b30); P.hl(7, 67, 5, 0xd8342a); P.hl(8, 68, 3, 0xa82820); P.vl(9, 69, 2, 0x2a2b30);
-  // en kvast lutad mot väggen
-  P.line(108, 60, 104, 86, 0xb07a40); P.line(109, 60, 105, 86, 0x8a5a2c);
-  for (let i = 0; i < 7; i++) P.line(101 + i, 91, 103 + i * 0.5, 86, i % 2 ? 0xd8b060 : 0xb8903c);
-  P.hl(102, 86, 7, 0x3a6ac0);
-  // första hjälpen
-  P.rect(102, 40, 11, 10, 0x17151a); P.rect(103, 41, 9, 8, 0xf4f1ea); P.hl(103, 41, 9, 0xffffff); P.hl(103, 48, 9, 0xc8c2b2);
-  P.rect(106, 42, 3, 6, 0x35a855); P.rect(104, 44, 7, 2, 0x35a855);
+  // en kvast lutad mot väggen (mellan verktygstavlan och däckstället)
+  P.line(94, 62, 90, 86, 0xb07a40); P.line(95, 62, 91, 86, 0x8a5a2c);
+  for (let i = 0; i < 7; i++) P.line(87 + i, 91, 89 + i * 0.5, 86, i % 2 ? 0xd8b060 : 0xb8903c);
+  P.hl(88, 86, 7, 0x3a6ac0);
+  // första hjälpen på den nedre väggen
+  P.rect(72, 66, 11, 10, 0x17151a); P.rect(73, 67, 9, 8, 0xf4f1ea); P.hl(73, 67, 9, 0xffffff); P.hl(73, 74, 9, 0xc8c2b2);
+  P.rect(76, 68, 3, 6, 0x35a855); P.rect(74, 70, 7, 2, 0x35a855);
+  P.hl(73, 76, 10, 0x2a2420, 0.3);
 
   // ---------- skylten BILSERVICE ----------
   const sw = textW(BIG, 'BILSERVICE') + 10, sx0 = 192 - (sw >> 1);
@@ -3066,22 +3593,43 @@ function paintShop() {
     P.rect(x0 + 1, y0 + 1, w - 2, h - 2, 0xf4f1ea); P.hl(x0 + 2, y0 + 1, w - 4, 0xffffff); P.hl(x0 + 1, y0 + h - 2, w - 2, 0xd9d0bc);
     P.hl(x0 + 2, y0 + h, w - 3, 0x2a2420, 0.25);
   };
-  STATIONS.forEach((cx) => plaque(cx));
-  // DÄCK: fyra liggande däck
-  { const cx = STATIONS[0]; for (let k = 0; k < 4; k++) tireSide(P, cx, 95 - k * 5, 22); tireTop(P, cx, 74, 22); P.hl(cx - 10, 96, 21, 0x140c1e, 0.35); }
+  STATIONS.forEach((cx, i) => { if (i) plaque(cx); });   // däckstället har egna skyltar
   // DÄCKSTÄLLET: stativ i två plan som väggdäcken står på (hjulen ritas live ovanpå)
   {
     const rx0 = RACK.x0 - 7, rx1 = RACK.x1 + 7, top = RACK.y0 - 3;
+    // ställets rygg: perforerad plåt som gör däcken tydliga mot väggen
+    for (let y = top + 1; y <= RACK.y1; y++) for (let x = rx0 + 2; x <= rx1 - 2; x++) {
+      let c = mix(0xb4b8be, 0x9aa0a8, (y - top) / (RACK.y1 - top) * 0.7 + (bayer(x, y) - 0.5) * 0.12);
+      if ((x - rx0) % 4 === 1 && (y - top) % 4 === 2) c = 0x6a6e76;                  // hålen
+      else if ((x - rx0) % 4 === 1 && (y - top) % 4 === 3) c = mix(c, 0xffffff, 0.25);
+      if (x === rx0 + 2) c = mul(c, 0.8);
+      P.px(x, y, c);
+    }
     for (const sy of [RACK.mid, RACK.y1 - 1]) { // hyllskenor: ljus ovansida, mörk kant
-      P.hl(rx0, sy, rx1 - rx0 + 1, 0x9aa0aa); P.hl(rx0, sy + 1, rx1 - rx0 + 1, 0x2a2b31);
+      P.hl(rx0, sy, rx1 - rx0 + 1, 0xd0d4dc); P.hl(rx0, sy + 1, rx1 - rx0 + 1, 0x3a3e46);
+      P.hl(rx0 + 2, sy + 2, rx1 - rx0 - 3, 0x2a2b31, 0.3);
     }
     for (const sx of [rx0, rx1 - 1]) { // stolpar med fötter och väggfäste
-      P.vl(sx, top, RACK.y1 + 1 - top, 0x5a5e68); P.vl(sx + 1, top, RACK.y1 + 1 - top, 0x3a3e46);
+      P.vl(sx, top, RACK.y1 + 1 - top, 0x6a7280); P.vl(sx + 1, top, RACK.y1 + 1 - top, 0x3a3e46);
+      for (let y = top + 3; y < RACK.y1; y += 5) P.px(sx, y, 0x2a2e36);                  // stolparnas hål
       P.hl(sx - 1, RACK.y1 + 1, 4, 0x17151a);
       P.px(sx, top - 1, 0x2a2b31); P.px(sx + 1, top - 1, 0x2a2b31);
     }
-    P.hl(rx0, top, rx1 - rx0 + 1, 0x4a4e58); // topplisten
+    P.hl(rx0, top, rx1 - rx0 + 1, 0x4a4e58); P.hl(rx0, top + 1, rx1 - rx0 + 1, 0x8a8e96); // topplisten
     P.hl(rx0 + 2, RACK.y1 + 2, rx1 - rx0 - 3, 0x140c1e, 0.3); // skuggan under stället
+    // DÄCK-skylten på topplisten
+    const hw = textW(SMALL, 'DÄCK') + 8, hx = STATIONS[0] - (hw >> 1), hy = top - 9;
+    P.vl(hx + 4, hy + 8, 2, 0x2a2b31); P.vl(hx + hw - 5, hy + 8, 2, 0x2a2b31);
+    P.rect(hx, hy, hw, 9, 0x17151a); P.rect(hx + 1, hy + 1, hw - 2, 7, 0x2a2b31); P.hl(hx + 1, hy + 1, hw - 2, 0x4a4e58);
+    text(P, SMALL, 'DÄCK', hx + 4, hy + 3, 0xffd23f);
+    // en färgad skylt per fack: SOMMAR, VINTER, STORT, LITET
+    for (const sl of SLOTS) {
+      const s = TIRE_TXT[sl.kind], w = textW(SMALL, s) + 4, x = sl.x - (w >> 1), y = slotSignY(sl), col = hex(TIRE_COL[sl.kind]);
+      P.rect(x, y, w, 7, mul(col, 0.45)); P.rect(x + 1, y, w - 2, 7, col);
+      P.hl(x + 1, y, w - 2, mix(col, 0xffffff, 0.35)); P.hl(x + 1, y + 6, w - 2, mul(col, 0.7));
+      P.hl(x + 1, y + 7, w - 2, 0x140c1e, 0.3);
+      text(P, SMALL, s, x + 2, y + 1, 0xfff8ec);
+    }
   }
   // OLJA: blått fat med handpump + två dunkar
   {
@@ -3210,6 +3758,7 @@ function paintShop() {
   // ---------- ikoner och texter (efter pixelmålningen) ----------
   const cv = P.flush(), c2 = cv.getContext('2d');
   STATIONS.forEach((cx, i) => {
+    if (!i) return;                                   // däckstället har egna skyltar
     const s = partSprite(i);
     c2.drawImage(s, cx - (s.width >> 1), 41 + ((15 - s.height) >> 1));
     const w = textW(SMALL, PART_NAMES[i]);

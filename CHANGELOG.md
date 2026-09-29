@@ -10,6 +10,12 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.40.0] – 2026-09-29 – Däckbyte i bilverkstaden
+- Bilverkstaden: riktigt däckbyte steg för steg – bilen kör in, hissa, hämta skruvdragaren, skruva ur skruvarna en i taget, lyft av däcket, lägg det i stapeln, hämta rätt däck, skruva fast i kryss, fyll luft och sänk
+- Det punkterade hjulet syns på bilen, och en arbetsorder visar vilket hjul och vilket däck bilen ska ha
+- Skruvarna flyger ner i en magnetskål och tillbaka, däckstället har skyltar för sommar, vinter, stort och litet
+- Kameran följer mekanikern så att allt syns även på mobilen
+
 ## [0.39.0] – 2026-09-29 – Leksakslådan öppnar
 - Leksakslådan har öppnat på Söder, bredvid kyrkogården – en rosa leksaksaffär med modelltåg och nalle i skyltfönstret
 - Squishy-dumplings i bambukorgar (pastell, glitter och jul), squishy-mat som ostkub, smörpaket, jordgubbslåda och kattass

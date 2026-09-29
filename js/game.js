@@ -29,7 +29,7 @@ export const JOBS = {
   pizzeria: { id: 'pizzeria', icon: '🍕', name: 'Pizzerian', verb: 'Baka rätt pizza och servera rätt kund', wage: 20, oops: 8 },
   posten: { id: 'posten', icon: '📮', name: 'Posten', verb: 'Sortera paketen till rätt rullbur', wage: 10, oops: 5 },
   bensinmack: { id: 'bensinmack', icon: '⛽', name: 'Pixelmacken', verb: 'Tanka bilarna och sälj korv i kiosken', wage: 10, oops: 5 },
-  bilverkstad: { id: 'bilverkstad', icon: '🔧', name: 'Bilverkstan', verb: 'Hämta rätt del och laga bilarna', wage: 12, oops: 5 },
+  bilverkstad: { id: 'bilverkstad', icon: '🔧', name: 'Bilverkstan', verb: 'Byt däck steg för steg och laga bilarna', wage: 12, oops: 5 },
   tvatteri: { id: 'tvatteri', icon: '🧺', name: 'Tvätteriet', verb: 'Tvätta, torka, vik och lämna rätt påse', wage: 16, oops: 6 },
   kafe: { id: 'kafe', icon: '☕', name: 'Kaféet', verb: 'Gör rätt dryck och servera rätt gäst', wage: 14, oops: 6 },
   kok: { id: 'kok', icon: '🍳', name: 'Burgarköket', verb: 'Bygg rätterna som beställs i köket', wage: 11, oops: 5 },
