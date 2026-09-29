@@ -348,11 +348,13 @@ A.sleepFlow = () => {
     { label: 'Inte än', onClick: closeModal },
     { label: '😴 Sov', cls: 'btn-go', onClick: () => {
       closeModal();
-      play('sleep');
-      const { rent, eventText } = g.sleep();
-      setTimeout(() => play('morning'), 600);
       // veckosammanfattningen är alltid det första man ser när man vaknat
-      openWeek(A, { morning: true, rentPaid: rent, eventText });
+      const wake = () => { const { rent, eventText } = g.sleep(); openWeek(A, { morning: true, rentPaid: rent, eventText }); };
+      // klickade man på sängen lägger sig figuren under täcket först (room.js spelar natten)
+      if (A.scene?.bedtime?.(wake)) return;
+      play('sleep');
+      wake();
+      setTimeout(() => play('morning'), 600);
     } },
   ]);
 };

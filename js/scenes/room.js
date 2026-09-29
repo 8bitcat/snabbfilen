@@ -22,6 +22,19 @@
 // i förrådspanelen öppnar lagrets förråd). Bär man en matsäck (A.carrying) ritas
 // figuren med bär-bildrutorna. Kommer man hem från staden tas kopplet av
 // (petStore().walkEnd()); byte av delrum räknas inte som att komma hem.
+//
+// Badrummen (Carl 2026-09-29: "toan aldrig mitt i rummet"): varje bostad har ett eget
+// BADRUM (husvagnen en TOA-skrubb) som sista delrum, med dörr i bakväggen från ett av
+// rummen (PLANS …bath/doors) och eget kakel, klinker, handdukar och lampa (BATH,
+// paintBathWall, bathFixtures).
+// Toaletten och handfatet står där i startmöbleringen – en sparad bostad där toan står
+// i rummet får behålla den, och badrummet seedas då utan en toalett till (seedFor).
+//
+// Sömnen (scene.bedtime, anropas av A.sleepFlow i main.js och av golvmadrassen): har man
+// gått fram till sängen lägger sig figuren under täcket (sleeperArt: samma sprite som när
+// man går, med slutna ögon, huvudet på kudden), lamporna släcks, zzz stiger, månen lyser
+// genom fönstren, sedan gryr det, figuren kliver upp och först då räknas natten
+// (onWake: g.sleep + veckan). Klockan står still under tiden; ett klick spolar fram.
 import { drawPerson } from '../core/people.js';
 import { openAvatarEditor, avatarTagColors } from '../core/avatar.js';
 import { Pix, SMALL, ctxText, textW, text, mix, mul, css, hash, bayer } from '../core/floor-pix.js';
@@ -34,6 +47,7 @@ import { tintSprite, spriteBaseColor, isHex } from '../core/recolor.js';
 import { createPetLayer } from '../pets/layer.js';
 import { petStore } from '../pets/sim.js';
 import { itemBox, itemSolid, PET_ITEMS } from '../pets/items.js';
+import { openWeek } from '../core/week.js';
 
 // Husdjursprylens fotavtryck på golvet – samma mått som lagret (js/pets/layer.js footprint)
 // ställer ut prylar efter: korgar/lådor/bur/klösträd har ett eget (itemSolid), skålar,
@@ -55,6 +69,8 @@ const RUG = { w: 90, h: 48 };
 const WIN_Y = [17, 49];             // fönstrens glas (över-/underkant); takvåningen har högre fönster
 // sant mellan två delrum i samma bostad (dörren i bakväggen) – då är man inte "hemkommen"
 let hopping = false;
+// tipset om att toan kan flyttas in i badrummet visas en gång per spelomgång (fitRoom)
+let toiletHinted = false;
 
 export const ATLAS = typeof Image !== 'undefined' ? new Image() : null;
 if (ATLAS) ATLAS.src = 'assets/interior.png';
@@ -68,24 +84,44 @@ if (ATLAS) ATLAS.src = 'assets/interior.png';
 // outside = vad som ritas UTANFÖR en smal lokal så att hela 384×216 används (Carls
 // mobilfyllningsregel): 'gard' = husvagnens gårdsplätt, 'trapphus' = Förortsettans
 // trapphus. Lokaler utan outside och partition < 384 beskärs i stället med contentBox.
+//
+// Badrummet (bath) är alltid det SISTA delrummet (deco-nycklarna hem:N för de gamla
+// rummen ändras aldrig). doors = { delrum: dörrens vänsterkant } – bara de rummen har en
+// dörr dit, på en plats som är fri i startmöbleringen; badrummet har dörrar tillbaka
+// till just dem. Ett delrum kan ha egen partition, outside, winY och view (frostat glas i
+// badrummen). Ett badrum är smalare än lokalen bara där utsidan (gården, trapphuset) fyller
+// resten av skärmen – annars är det lika brett som lokalen, så att mobilfyllningen inte får
+// större svarta fält i badrummet än i rummen. tiles = kakelstilen (BATH), towels = handdukskrokarnas x,
+// lamp = taklampan. fixAt = var husvagnens/Ettans fasta detaljer (almanackan, tejpen,
+// fuktfläcken …) sitter: lokalerna förlängdes åt höger för dörren till toan/badrummet.
 const PLANS = {
   husvagn: {
-    partition: 148, worn: 'husvagn', outside: 'gard',
-    rooms: [{ name: 'HUSVAGNEN', wall: 0xd8ccb0, wallDk: 0x8c7c62, floorA: 0x9c8c70, floorB: 0x80705a, windows: [[84, 118]], view: 'tomt' }],
+    partition: 184, fixAt: 148, worn: 'husvagn', outside: 'gard',
+    rooms: [
+      { name: 'HUSVAGNEN', wall: 0xd8ccb0, wallDk: 0x8c7c62, floorA: 0x9c8c70, floorB: 0x80705a, windows: [[84, 118]], view: 'tomt' },
+      { name: 'TOA', bath: true, doors: { 0: 144 }, partition: 124, wall: 0xd8ccb0, wallDk: 0x8c7c62, floorA: 0x9c8c70, floorB: 0x80705a, windows: [], towels: [64], lamp: 'lysror' },
+    ],
   },
   rum: {
     partition: 176, shabby: true,
-    rooms: [{ name: 'RUMMET', wall: 0x8c7a62, wallDk: 0x6a5c48, floorA: 0xcbb894, floorB: 0xb09a74, windows: [[80, 120]] }],
+    rooms: [
+      { name: 'RUMMET', wall: 0x8c7a62, wallDk: 0x6a5c48, floorA: 0xcbb894, floorB: 0xb09a74, windows: [[80, 120]] },
+      { name: 'BADRUM', bath: true, tiles: 'sliten', doors: { 0: 138 }, wall: 0xe2ddd0, wallDk: 0xa39a86, floorA: 0x9c968a, floorB: 0x8c8678, windows: [[70, 92]], winY: [16, 34], view: 'frost', towels: [16], lamp: 'glodlampa' },
+    ],
   },
   hoghus: {
-    partition: 244, worn: 'hoghus', outside: 'trapphus',
-    rooms: [{ name: 'ETTAN', wall: 0xb4ac9c, wallDk: 0x787064, floorA: 0xb8a88a, floorB: 0x9e8e72, windows: [[72, 116], [150, 198]], view: 'betong' }],
+    partition: 284, fixAt: 244, worn: 'hoghus', outside: 'trapphus',
+    rooms: [
+      { name: 'ETTAN', wall: 0xb4ac9c, wallDk: 0x787064, floorA: 0xb8a88a, floorB: 0x9e8e72, windows: [[72, 116], [150, 198]], view: 'betong' },
+      { name: 'BADRUM', bath: true, tiles: '70tal', doors: { 0: 246 }, partition: 196, wall: 0xc88a3a, wallDk: 0x6a4020, floorA: 0x7a5236, floorB: 0x6a4630, windows: [[94, 118]], winY: [16, 36], view: 'frost', towels: [134], lamp: 'plafond' },
+    ],
   },
   lagenhet: {
     partition: 310,
     rooms: [
       { name: 'VARDAGSRUM', wall: 0x6e88a0, wallDk: 0x4e6478, floorA: 0xd9cbaf, floorB: 0xc0ac88, windows: [[80, 120], [134, 174]] },
       { name: 'SOVRUM', wall: 0x8a7f9a, wallDk: 0x685e78, floorA: 0xd0c2b0, floorB: 0xb8a892, windows: [[100, 140]] },
+      { name: 'BADRUM', bath: true, tiles: 'vit', doors: { 0: 178 }, wall: 0xf0f0ea, wallDk: 0xc4c4bc, floorA: 0xb4b8bc, floorB: 0xa4a8ac, windows: [[96, 126], [206, 236]], winY: [16, 38], view: 'frost', towels: [146], lamp: 'plafond' },
     ],
   },
   radhus: { // hela bredden (mobilfyllningen) – tre trädgårdsfönster i rad i vardagsrummet
@@ -93,6 +129,7 @@ const PLANS = {
     rooms: [
       { name: 'VARDAGSRUM', wall: 0xd8c8a4, wallDk: 0xa08c68, floorA: 0xdcc8a4, floorB: 0xc2ac86, windows: [[80, 130], [150, 200], [284, 326]], view: 'tradgard' },
       { name: 'SOVRUM', wall: 0xa4b6c6, wallDk: 0x788a9a, floorA: 0xd6c8b2, floorB: 0xbeb096, windows: [[110, 160], [250, 300]], view: 'tradgard' },
+      { name: 'BADRUM', bath: true, tiles: 'bla', doors: { 1: 30 }, wall: 0xa6cfe0, wallDk: 0x7aa4b8, floorA: 0xf0eee8, floorB: 0x6a9ec0, windows: [[150, 186], [250, 286]], winY: [16, 38], view: 'frost', towels: [128, 312], lamp: 'plafond' },
     ],
   },
   villa: {
@@ -101,6 +138,7 @@ const PLANS = {
       { name: 'VARDAGSRUM', wall: 0xc4b190, wallDk: 0x9a8a6a, floorA: 0xefe6d2, floorB: 0xd9ccb2, windows: [[80, 120], [134, 172], [240, 280]] },
       { name: 'SOVRUM', wall: 0xb8a0a8, wallDk: 0x907880, floorA: 0xe8ded0, floorB: 0xd2c4b2, windows: [[110, 150], [210, 250]] },
       { name: 'KÖK', wall: 0xa8b8a0, wallDk: 0x808f78, floorA: 0xe2e6da, floorB: 0xc8cec0, windows: [[110, 150], [230, 270]] },
+      { name: 'BADRUM', bath: true, tiles: 'marmor', doors: { 1: 30 }, wall: 0xf2eee8, wallDk: 0xb8ae9c, floorA: 0xece6da, floorB: 0xdcd4c6, windows: [[250, 296]], winY: [16, 40], view: 'frost', towels: [180, 314], lamp: 'spots' },
     ],
   },
   takvaning: {
@@ -109,9 +147,13 @@ const PLANS = {
       { name: 'VARDAGSRUM', wall: 0xe6dcc8, wallDk: 0xb0a284, floorA: 0xf2eee6, floorB: 0xdcd6cc, windows: [[70, 280]], view: 'stad' },
       { name: 'SOVRUM', wall: 0x9c8cac, wallDk: 0x6e6082, floorA: 0xe8e0d4, floorB: 0xd2c8b8, windows: [[100, 150], [200, 250]], view: 'stad' },
       { name: 'KÖK', wall: 0xd2dad2, wallDk: 0x8a9a8c, floorA: 0xe8eae2, floorB: 0xcccec4, windows: [[100, 150], [230, 280]], view: 'stad' },
+      { name: 'BADRUM', bath: true, tiles: 'skiffer', doors: { 1: 30 }, wall: 0x3e4248, wallDk: 0x2a2d32, floorA: 0x34373c, floorB: 0x2c2f34, windows: [[160, 272]], view: 'stad', towels: [128], lamp: 'spots' },
     ],
   },
 };
+const DOOR_W = 30; // dörrarna i bakväggen (skylten ovanför visar rummet bakom)
+// det som syns utanför ett smalt delrum (badrummet kan ha ett eget)
+const outsideOf = (plan, def) => (def.outside !== undefined ? def.outside : plan.outside) || null;
 
 // Startmöbleringen per bostad och delrum. fx = startmöbel (kan flyttas, inte säljas).
 const SEEDS = {
@@ -120,9 +162,9 @@ const SEEDS = {
     { k: 'kladskap', v: 1, x: 118, y: 94, fx: 1 }, { k: 'koksbord', v: 0, x: 80, y: 176 }, { k: 'pall', v: 0, x: 108, y: 180 },
     { k: 'lillmatta', v: 6, x: 38, y: 206 }, { k: 'soptunna', v: 0, x: 130, y: 206 },
   ],
-  'rum:0': [
-    { k: 'sang', v: 0, x: 14, y: 133, fx: 1 }, { k: 'garderob', v: 0, x: 106, y: 96, fx: 1 },
-    { k: 'kylskap', v: 0, x: 150, y: 94, fx: 1 }, { k: 'dass', v: 0, x: 138, y: 174, fx: 1 },
+  'rum:0': [ // garderoben och kylskåpet under fönstret, BADRUM-dörren längst till höger (dasset står i badrummet)
+    { k: 'sang', v: 0, x: 14, y: 133, fx: 1 }, { k: 'garderob', v: 0, x: 71, y: 96, fx: 1 },
+    { k: 'kylskap', v: 0, x: 118, y: 94, fx: 1 },
   ],
   'hoghus:0': [ // ett rum och kök: pentryt sitter under det högra fönstret, radiatorn under det vänstra
     { k: 'enkelsang', v: 4, x: 14, y: 140, fx: 1 }, { k: 'kylskap', v: 0, x: 122, y: 94, fx: 1 },
@@ -185,10 +227,69 @@ const SEEDS = {
     { k: 'kokso', v: 1, x: 110, y: 160 }, { k: 'bordM', v: 2, x: 200, y: 182 }, { k: 'matstol', v: 1, x: 186, y: 180 }, { k: 'matstol', v: 1, x: 254, y: 180 },
     { k: 'vaxtS', v: 0, x: 340, y: 140 }, { k: 'soptunna', v: 0, x: 60, y: 110 }, { k: 'lillblomma', v: 0, x: 30, y: 206 },
   ],
+  // ---- badrummen (sista delrummet): toalett, handfat med spegel, dusch eller badkar, handdukar ----
+  // Toaletten, handfatet och duschen/badkaret är startmöbler (fx: går att flytta, inte sälja).
+  // Glest nog för att skyltarna (TOALETT, HANDFAT, BADKAR …) inte ska krocka.
+  'husvagn:1': [ // toaskrubben: toa, litet tvättställ på väggen med spegel ovanför, soptunna
+    { k: 'toalett', v: 3, x: 16, y: 100, fx: 1 }, { k: 'tvattstall', v: 1, x: 38, y: 80, fx: 1 },
+    { k: 'rundspegel', v: 0, x: 38, y: 60 }, { k: 'soptunna', v: 1, x: 58, y: 104 }, { k: 'lillmatta', v: 0, x: 16, y: 128 },
+  ],
+  'rum:1': [ // Lilla rummets sjabbiga badrum: dasset, ett sprucket handfat och en dusch med plastdraperi
+    { k: 'dass', v: 0, x: 10, y: 104, fx: 1 }, { k: 'handfat', v: 1, x: 49, y: 98, fx: 1 },
+    { k: 'rundspegel', v: 1, x: 49, y: 66 }, { k: 'dusch', v: 1, x: 72, y: 120, fx: 1 }, { k: 'lillmatta', v: 4, x: 72, y: 142 },
+  ],
+  'hoghus:1': [ // 70-talsbadrummet: rosa toa, badkar och en hylla med handdukar
+    { k: 'toalett', v: 2, x: 16, y: 100, fx: 1 }, { k: 'handfat', v: 1, x: 50, y: 98, fx: 1 },
+    { k: 'rundspegel', v: 2, x: 50, y: 66 }, { k: 'badkar', v: 0, x: 78, y: 112, fx: 1 },
+    { k: 'badhylla', v: 3, x: 108, y: 100 }, { k: 'lillmatta', v: 3, x: 76, y: 140 },
+  ],
+  'lagenhet:2': [ // vitkaklat: toa, handfat, dusch, handdukshylla, tvättmaskin + torktumlare och linneskåp
+    { k: 'toalett', v: 3, x: 16, y: 100, fx: 1 }, { k: 'handfat', v: 1, x: 50, y: 98, fx: 1 },
+    { k: 'rundspegel', v: 0, x: 50, y: 66 }, { k: 'dusch', v: 5, x: 73, y: 120, fx: 1 },
+    { k: 'badhylla', v: 3, x: 106, y: 100 }, { k: 'tvattmaskin', v: 0, x: 126, y: 100, fx: 1 }, { k: 'torktumlare', v: 0, x: 144, y: 100 },
+    { k: 'linneskap', v: 4, x: 176, y: 98 }, { k: 'fredslilja', v: 1, x: 234, y: 104 }, { k: 'lillmatta', v: 7, x: 73, y: 142 },
+  ],
+  'radhus:2': [ // blått kakel: badkar med badanka, tvättmaskin och torktumlare, en bänk under det andra fönstret
+    { k: 'toalett', v: 0, x: 16, y: 100, fx: 1 }, { k: 'handfat', v: 1, x: 50, y: 98, fx: 1 },
+    { k: 'rundspegel', v: 2, x: 50, y: 66 }, { k: 'badkar', v: 1, x: 78, y: 112, fx: 1 },
+    { k: 'badhylla', v: 3, x: 108, y: 100 }, { k: 'blomkruka', v: 1, x: 128, y: 102 },
+    { k: 'tvattmaskin', v: 0, x: 152, y: 100, fx: 1 }, { k: 'torktumlare', v: 0, x: 170, y: 100 },
+    { k: 'linneskap', v: 1, x: 212, y: 98 }, { k: 'badbank', v: 1, x: 244, y: 102 }, { k: 'fredslilja', v: 0, x: 298, y: 104 },
+    { k: 'lillmatta', v: 0, x: 76, y: 140 }, { k: 'rundmatta', v: 2, x: 250, y: 150 },
+  ],
+  'villa:3': [ // marmor: handfat under medicinskåpet, badkar, dusch, tvättpelare och en bänk under fönstret
+    { k: 'toalett', v: 3, x: 16, y: 100, fx: 1 }, { k: 'handfat', v: 1, x: 50, y: 98, fx: 1 }, { k: 'medicinskap', v: 0, x: 42, y: 72 },
+    { k: 'badkar', v: 1, x: 80, y: 112, fx: 1 }, { k: 'dusch', v: 4, x: 118, y: 120, fx: 1 },
+    { k: 'badhylla', v: 3, x: 158, y: 100 }, { k: 'badhylla', v: 0, x: 176, y: 100 }, { k: 'tvattpelare', v: 0, x: 204, y: 104, fx: 1 },
+    { k: 'badbank', v: 1, x: 248, y: 100 }, { k: 'fredslilja', v: 0, x: 314, y: 112 }, { k: 'rundmatta', v: 0, x: 82, y: 150 },
+  ],
+  'takvaning:3': [ // skiffer: vitt porslin mot det mörka kaklet, regndusch, badkaret under panoramafönstret och levande ljus
+    { k: 'toalett', v: 5, x: 16, y: 100, fx: 1 }, { k: 'handfat', v: 1, x: 50, y: 98, fx: 1 }, { k: 'medicinskap', v: 0, x: 42, y: 72 },
+    { k: 'dusch', v: 6, x: 80, y: 120, fx: 1 }, { k: 'badhylla', v: 3, x: 124, y: 100 },
+    { k: 'badkar', v: 0, x: 202, y: 104, fx: 1 }, { k: 'ljusgrupp', v: 0, x: 232, y: 106 }, { k: 'gummitrad', v: 0, x: 300, y: 104 },
+    { k: 'rundmatta', v: 1, x: 200, y: 130 },
+  ],
 };
 // Startmöbleringen måste stå rätt från början (annars flyttas den vid första besöket
 // med en toast) – tools/room-check.mjs kontrollerar varje delrum mot fits().
-const seedFor = (home, sub) => (SEEDS[`${home}:${sub}`] || []).map((d) => ({ ...d }));
+// have(i) = delrum i:s sparade lista (undefined = inte seedat än). Står det redan en
+// toalett (startmöbel) i ett annat delrum – en sparad bostad där toan stod i rummet –
+// seedas badrummet utan en toalett till (spelaren flyttar själv in den med Möblera);
+// ligger Lilla rummets dass i förrådet seedas inget nytt dass heller.
+function seedFor(home, sub, have = () => undefined, storage = []) {
+  const list = (SEEDS[`${home}:${sub}`] || []).map((d) => ({ ...d }));
+  const plan = PLANS[home];
+  if (!plan?.rooms[sub]?.bath) return list;
+  const toiletElsewhere = plan.rooms.some((r, i) => i !== sub && (have(i) || []).some((d) => d && d.fx && functionOf(d.k) === 'toalett'));
+  return list.filter((d) => functionOf(d.k) !== 'toalett' || !(toiletElsewhere || (d.k === 'dass' && storage.some((it) => it?.k === 'dass'))));
+}
+// Startmöbler som har bytt plats i startmöbleringen: står de kvar orörda på den gamla
+// platsen i en sparad bostad flyttas de till den nya (Lilla rummet fick BADRUM-dörren där
+// garderoben och kylskåpet stod). Det spelaren själv har flyttat står kvar – och dasset
+// som stod mitt i rummet får stå kvar tills spelaren flyttar det.
+const MOVED_SEEDS = {
+  'rum:0': [{ k: 'garderob', from: [106, 96], to: [71, 96] }, { k: 'kylskap', from: [150, 94], to: [118, 94] }],
+};
 
 // Möbler som är "djupa" (sängar, soffor, bord): hindret är halva höjden. Övriga
 // (skåp, hyllor, lampor) står upp – bara foten är hinder.
@@ -268,6 +369,8 @@ function footOf(k, v, r, x, y) {
   return { t: 'solid', r: [x - 1, y - sh, x + w + 1, y + 1], w, h };
 }
 const overlaps = (a, b) => a[2] > b[0] && a[0] < b[2] && a[3] > b[1] && a[1] < b[3];
+// fönstren som ritas: inte utanför lokalen och inte bakom en dörr
+const visibleWindows = (def, RIGHT, subDoors) => def.windows.filter(([wx0, wx1]) => !(wx1 > RIGHT - 5 || subDoors.some((sd) => wx1 > sd.x0 - 4 && wx0 < sd.x1 + 4)));
 
 export function makeRoom(A, { visit = false } = {}) {
   const hopped = hopping; // kom vi genom en dörr i bakväggen (inte hem från staden)?
@@ -278,13 +381,26 @@ export function makeRoom(A, { visit = false } = {}) {
   const sub = Math.max(0, Math.min(plan.rooms.length - 1, A.roomSub | 0));
   A.roomSub = sub;
   const roomDef = plan.rooms[sub];
-  const RIGHT = plan.partition || FW;
+  const RIGHT = roomDef.partition ?? (plan.partition || FW);
+  const outside = outsideOf(plan, roomDef);
   const decoKey = `${home}:${sub}`;
 
   // deco-listan: min egen (seedas vid behov) eller värdens (read-only)
+  const savedList = (i) => (visit ? A.visitTarget?.deco?.[`${home}:${i}`] : g.deco[`${home}:${i}`]);
+  const seedHere = (i) => seedFor(home, i, savedList, visit ? [] : g.storage);
+  // Vid besök: värdens lista rörs aldrig, men en sparfil som värden inte har öppnat sedan
+  // badrummen kom (kylskåpet framför nya BADRUM-dörren …) visas som värden kommer att se
+  // den – i en kopia där startmöblerna flyttats (MOVED_SEEDS) och det som står i vägen
+  // knuffats undan (settle). Kopian görs en gång per lista som världen skickar.
+  const visitCopies = new WeakMap();
   function decoList() {
-    if (visit) return A.visitTarget?.deco?.[decoKey] || seedFor(home, sub);
-    if (!g.deco[decoKey]) { g.deco[decoKey] = seedFor(home, sub); g.save(); }
+    if (visit) {
+      const own = A.visitTarget?.deco?.[decoKey];
+      if (!Array.isArray(own)) return seedHere(sub);
+      if (!visitCopies.has(own)) { const copy = own.map((d) => ({ ...d })); settle(copy, false); visitCopies.set(own, copy); }
+      return visitCopies.get(own);
+    }
+    if (!g.deco[decoKey]) { g.deco[decoKey] = seedHere(sub); g.save(); }
     return g.deco[decoKey];
   }
 
@@ -308,14 +424,45 @@ export function makeRoom(A, { visit = false } = {}) {
   const petPlacing = () => !!L?.placing;
 
   // ---------- delrumsdörrar + bakgrund ----------
-  const subDoors = plan.rooms.map((r, i) => i).filter((i) => i !== sub)
-    .map((i, n) => ({ to: i, name: plan.rooms[i].name, x0: RIGHT - 48 - n * 44, x1: RIGHT - 18 - n * 44 }));
+  // En dörr till varje annat delrum, från höger (RIGHT - 48, sedan 44 px åt vänster per
+  // dörr) – utom badrummet: dit leder bara de rum som står i dess doors, och dörren sitter
+  // på sin egen plats (de gamla dörrarna och möblerna står kvar där de alltid har stått).
+  // I badrummet finns dörrar tillbaka till just de rummen.
+  const subDoors = [];
+  plan.rooms.forEach((r, i) => {
+    if (i === sub) return;
+    if (r.bath) { const at = r.doors?.[sub]; if (at != null) subDoors.push({ to: i, name: r.name, x0: at, x1: at + DOOR_W }); return; }
+    if (roomDef.bath && roomDef.doors?.[i] == null) return;
+    const n = subDoors.filter((sd) => !plan.rooms[sd.to].bath).length;
+    subDoors.push({ to: i, name: r.name, x0: RIGHT - 48 - n * 44, x1: RIGHT - 18 - n * 44 });
+  });
   const doorRects = [...(sub === 0 ? [[DOOR.x0 - 2, 26, DOOR.x1 + 2, WALL_Y]] : []), ...subDoors.map((sd) => [sd.x0 - 2, 26, sd.x1 + 2, WALL_Y])];
   // fönstren som faktiskt ritas (samma urval som i buildBg), med karm: väggsaker får inte hänga där
-  const winY = plan.winY || WIN_Y;
-  const winDrawn = roomDef.windows.filter(([wx0, wx1]) => !(wx1 > RIGHT - 5 || subDoors.some((sd) => wx1 > sd.x0 - 4 && wx0 < sd.x1 + 4)));
+  const winY = roomDef.winY || plan.winY || WIN_Y;
+  const winDrawn = visibleWindows(roomDef, RIGHT, subDoors);
   const windowRects = winDrawn.map(([wx0, wx1]) => [wx0 - 2, winY[0] - 2, wx1 + 2, winY[1] + 2]);
+  // där möblernas skyltar inte får hamna: dörrarna med karm och skylt (paintDoor) och fönstren
+  // med karm – exakt det som ritas, så att en skylt får plats i en smal glipa mellan dem
+  const doorSign = (x0, x1, name) => { const w = textW(SMALL, name) + 8, sx = Math.round((x0 + x1) / 2 - w / 2); return [sx, 20, sx + w, 29]; };
+  const plateAvoid = [
+    ...(sub === 0 ? [[DOOR.x0 - 1, 27, DOOR.x1 + 1, WALL_Y], doorSign(DOOR.x0, DOOR.x1, visit ? 'HEM' : 'UT')] : []),
+    ...subDoors.flatMap((sd) => [[sd.x0 - 1, 27, sd.x1 + 1, WALL_Y], doorSign(sd.x0, sd.x1, sd.name)]),
+    ...winDrawn.map(([wx0, wx1]) => [wx0 - 2, winY[0] - 2, wx1 + 2, winY[1] + 3]),
+  ];
   const bg = buildBg(roomDef, RIGHT, subDoors, sub === 0, plan, visit);
+  let moonImg = null; // månljuset genom fönstren (sömnen) – ritas första gången det behövs
+  const moonLayer = () => moonImg || (moonImg = buildMoon(winDrawn, winY, roomDef.view || 'sky', RIGHT));
+  // två arbetsdukar för sömnen: gryningens blandade bakgrund och ljuslagret (se draw)
+  let blendCv = null, lightCv = null;
+  const canvasFW = () => { const c = document.createElement('canvas'); c.width = FW; c.height = FH; c.getContext('2d').imageSmoothingEnabled = false; return c; };
+  const lightLayer = () => lightCv || (lightCv = canvasFW());
+  function blendBg(a, b, u) {
+    const c = blendCv || (blendCv = canvasFW()), x = c.getContext('2d');
+    x.globalAlpha = 1; x.drawImage(a, 0, 0);
+    x.globalAlpha = u; x.drawImage(b, 0, 0);
+    x.globalAlpha = 1;
+    return c;
+  }
 
   // ---------- var får möbler stå? ----------
   // De andra möblernas fotavtryck (räknas en gång per sökning – fitRoom prövar tusentals lägen)
@@ -381,28 +528,39 @@ export function makeRoom(A, { visit = false } = {}) {
 
   // finns en möbel med funktionen fn utställd i något av bostadens delrum? (delrum man
   // inte varit i än räknas med sin startmöblering)
-  const homeHasFunction = (fn) => plan.rooms.some((r, i) => (g.deco[`${home}:${i}`] || seedFor(home, i)).some((d) => functionOf(d.k) === fn));
+  const homeHasFunction = (fn) => plan.rooms.some((r, i) => (g.deco[`${home}:${i}`] || seedHere(i)).some((d) => functionOf(d.k) === fn));
 
   // ---------- äldre sparfiler: se till att allt får plats i (den mindre) lokalen ----------
-  // Lilla rummet krympte och fick ett dass, och väggsaker får inte längre hänga över
-  // fönstren: det som står fel knuffas till närmaste lediga plats, annars till förrådet.
-  // Är förrådet fullt får möbeln stå kvar (inne i lokalen, så att den går att plocka
-  // upp) – inget försvinner någonsin, spelaren flyttar den själv med Möblera.
-  function fitRoom() {
-    if (visit) return;
-    const list = decoList();
+  // Lilla rummet krympte, väggsaker får inte längre hänga över fönstren och bostäderna
+  // fick dörrar till badrummet: startmöbler som står orörda på en gammal startplats flyttas
+  // till den nya (MOVED_SEEDS), annat som står fel knuffas till närmaste lediga plats,
+  // annars till förrådet. Är förrådet fullt får möbeln stå kvar (inne i lokalen, så att
+  // den går att plocka upp) – inget försvinner någonsin, spelaren flyttar den med Möblera.
+  // (Dasset seedas numera i badrummet – ett dass som står i rummet får stå kvar.)
+  // Badrumsdörrarna är nya (Carl 2026-09-29): det som knuffas undan för dem får en egen toast.
+  const newDoorZones = subDoors.filter((sd) => roomDef.bath || plan.rooms[sd.to].bath).map((sd) => [sd.x0 - 2, 26, sd.x1 + 2, WALL_Y + 15]);
+  const byNewDoor = (d) => { const r = footOf(d.k, d.v, d.r, d.x, d.y).r; return newDoorZones.some((z) => overlaps(r, z)); };
+  // Flyttar orörda startmöbler till sina nya platser och knuffar det som står fel till
+  // närmaste lediga plats. own = spelarens egen lista (då kan det som inte får plats alls
+  // läggas i förrådet); vid besök (kopian) står det kvar. → vad som hände (till toasterna)
+  function settle(list, own) {
     let changed = false, nudged = 0, stored = 0;
-    const stuck = [];
-    if (home === 'rum' && sub === 0 && list.length < MAX_PER_ROOM && !list.some((d) => functionOf(d.k) === 'toalett') && !g.storage.some((it) => it.k === 'dass')) {
-      list.push({ k: 'dass', v: 0, x: 138, y: 174, fx: 1 });
-      changed = true;
+    const stuck = [], byDoor = [];
+    for (const m of MOVED_SEEDS[decoKey] || []) {
+      const i = list.findIndex((d) => d && d.fx && d.k === m.k && d.x === m.from[0] && d.y === m.from[1] && !d.r);
+      if (i >= 0 && fits(m.k, list[i].v, 0, m.to[0], m.to[1], list, i)) { list[i].x = m.to[0]; list[i].y = m.to[1]; changed = true; }
     }
     for (let i = list.length - 1; i >= 0; i--) {
       const d = list[i];
-      if (!knownKind(d.k) || fits(d.k, d.v, d.r, d.x, d.y, list, i)) continue;
-      changed = true;
+      if (!d || !knownKind(d.k) || fits(d.k, d.v, d.r, d.x, d.y, list, i)) continue;
       const spot = nearestSpot(d, list, i);
-      if (spot) { d.x = spot.x; d.y = spot.y; if (!d.fx) nudged++; continue; } // startmöbler knuffas tyst
+      if (spot) { // startmöbler knuffas tyst
+        if (!d.fx) { nudged++; if (byNewDoor(d)) byDoor.push(nameOf(d.k)); }
+        d.x = spot.x; d.y = spot.y; changed = true;
+        continue;
+      }
+      if (!own) continue;
+      changed = true;
       if (g.storage.length < MAX_STORAGE) {
         list.splice(i, 1);
         g.storage.push({ k: d.k, v: d.v, ...(d.c ? { c: d.c } : {}), ...(d.fx ? { fx: 1 } : {}), ...(d.r ? { r: d.r } : {}) });
@@ -416,18 +574,37 @@ export function makeRoom(A, { visit = false } = {}) {
         stuck.push(nameOf(d.k));
       }
     }
+    return { changed, nudged, stored, stuck, byDoor };
+  }
+  function fitRoom() {
+    if (visit) return;
+    const { changed, nudged, stored, stuck, byDoor } = settle(decoList(), true);
     if (changed) g.save();
+    const few = (names) => `${names.slice(0, 2).join(' och ')}${names.length > 2 ? ' m.fl.' : ''}`;
     if (stored) toast(`📦 ${home === 'rum' ? 'Rummet är mindre nu – ' : ''}${stored === 1 ? 'en möbel fick' : `${stored} möbler fick`} inte plats och ligger i förrådet.`);
+    else if (byDoor.length) toast(`🚪 Nu finns en dörr till badrummet här – ${few(byDoor)} flyttades lite åt sidan.`);
     else if (nudged) toast(`🛋️ ${nudged === 1 ? 'En möbel knuffades' : `${nudged} möbler knuffades`} till en ledig plats.`);
     if (stuck.length) toast(`⚠️ Förrådet är fullt – ${stuck.slice(0, 2).join(', ')}${stuck.length > 2 ? ' m.fl.' : ''} står i vägen. Flytta med 🛋️ Möblera!`, 'bad');
+    // En sparad bostad där toan står kvar i rummet (Lilla rummets dass): badrummet har ingen
+    // – ett tips en gång per spelomgång om att den går att flytta in dit.
+    const bathIdx = plan.rooms.findIndex((r) => r.bath);
+    if (!toiletHinted && bathIdx >= 0 && bathIdx !== sub && decoList().some((d) => functionOf(d.k) === 'toalett')
+      && !(g.deco[`${home}:${bathIdx}`] || seedHere(bathIdx)).some((d) => functionOf(d.k) === 'toalett')) {
+      toiletHinted = true;
+      const [it, pr] = decoList().some((d) => d.k === 'dass') ? ['dasset', 'det'] : ['toan', 'den'];
+      toast(`🚽 Tips: ${it} kan stå i ${home === 'husvagn' ? 'toaskrubben' : 'badrummet'} nu – lägg ${pr} i förrådet med 🛋️ Möblera och ställ ut ${pr} där inne.`);
+    }
   }
   fitRoom();
 
   // ---------- vad man gör vid funktionsmöblerna ----------
-  function actFor(fn, kind) {
+  // Sängen: man har gått fram till den (bedFor) – säger man ja till att sova lägger sig
+  // figuren just där (bedtime). En ny promenad glömmer sängen.
+  let bedFor = null, seq = null; // seq = pågående sömnsekvens (se bedtime)
+  function actFor(fn, kind, p) {
     if (visit || !fn) return null;
     switch (fn) {
-      case 'sova': return () => A.sleepFlow();
+      case 'sova': return () => { bedFor = p ? { k: p.k, decoIdx: p.decoIdx } : null; A.sleepFlow(); };
       case 'garderob': return () => { play('click'); openAvatarEditor({ onDone: (av) => { A.avatar = av; toast('👕 Snyggt!', 'good'); } }); };
       case 'ata': return () => openFridge(A);
       case 'toalett': return () => useToilet(A, kind);
@@ -462,8 +639,9 @@ export function makeRoom(A, { visit = false } = {}) {
     // ingen säng utställd någonstans hemma? då får madrassen på golvet duga
     if (!visit && !homeHasFunction('sova') && !(decor.carry && functionOf(decor.carry.k) === 'sova')) {
       const m = makeMattressProp(list, RIGHT);
-      if (m) { m.act = () => floorSleep(A); props.push(m); }
+      if (m) { m.act = () => { bedFor = { k: m.k, decoIdx: undefined }; floorSleep(A); }; props.push(m); }
     }
+    spreadPlates(props, plateAvoid, RIGHT);
     const furn = props.map((p) => p.solid).filter(Boolean);
     // det möblerna skymmer (från ovankant till fotlinjen): där går inga djur och där ställs
     // inga husdjursprylar – annars hamnar kattkorgen bakom sänggaveln
@@ -485,7 +663,7 @@ export function makeRoom(A, { visit = false } = {}) {
     for (const sd of subDoors) hotRects.push({ id: 'sub' + sd.to, act: () => { hopping = true; A.roomSub = sd.to; play('door'); A.go(A.sceneName); }, r: [sd.x0, 34, sd.x1, WALL_Y + 6], go: [(sd.x0 + sd.x1) / 2, WALL_Y + 12] });
     for (const p of props) {
       if (!p.solid) continue;
-      const act = p.act || actFor(p.fn, p.k);
+      const act = p.act || actFor(p.fn, p.k, p);
       if (!act) continue;
       hotRects.push({ id: p.k, act, r: [p.solid[0], p.top, p.solid[2], p.solid[3] + 2], go: [(p.solid[0] + p.solid[2]) / 2, p.solid[3] + 5] });
     }
@@ -606,6 +784,7 @@ export function makeRoom(A, { visit = false } = {}) {
   }
   function toggleDecor(force) {
     if (visit) return;
+    if (seq && force !== false) return; // man möblerar inte om medan man sover
     const was = decor.on;
     decor.on = force !== undefined ? !!force : !decor.on;
     if (!decor.on && decor.carry) dropCarry(); // lyft möbel läggs tillbaka (låg kvar i listan)
@@ -695,7 +874,51 @@ export function makeRoom(A, { visit = false } = {}) {
   let px = visit ? DOOR.cx : Math.min(RIGHT - 40, 100), py = WALL_Y + 34;
   [px, py] = nearestFree(px, py);
   let path = [], onArrive = null, dir = 'down', t = 0;
-  function walkTo(x, y, cb) { path = findPath(px, py, x, y); onArrive = cb || null; if (!path.length) { const d = onArrive; onArrive = null; d?.(); } }
+  function walkTo(x, y, cb) { bedFor = null; path = findPath(px, py, x, y); onArrive = cb || null; if (!path.length) { const d = onArrive; onArrive = null; d?.(); } }
+
+  // ---------- sömnen: under täcket, zzz, natt → morgon ----------
+  // bedtime(onWake): har man just gått fram till en säng (eller madrassen) lägger sig
+  // figuren i den. Sekvensen (SLEEP) spelas upp i update/draw; klockan står still under
+  // tiden (tickReal i main.js hinner inte räkna ner mättheten eller passera midnatt), och
+  // när figuren har klivit upp anropas onWake – det är där natten räknas (g.sleep) och
+  // veckan visas. false = ingen säng att lägga sig i (då sover anroparen direkt).
+  const findBed = (key) => key && props.find((q) => q.k === key.k && q.decoIdx === key.decoIdx && q.fn === 'sova');
+  function bedtime(onWake) {
+    if (visit || seq) return false;
+    const bed = findBed(bedFor);
+    if (!bed) return false;
+    if (decor.on) toggleDecor(false);
+    path = []; onArrive = null;
+    g.min = Math.min(g.min, 24 * 60 - 2); // högst 23:58: realtidsklockan får inte passera midnatt (svimma) under sekvensen
+    seq = { t: 0, key: bedFor, onWake, x: px, y: py, min: g.min, hunger: g.hunger, energy: g.energy,
+      night0: isNight(g), hold: null, sounds: new Set() };
+    return true;
+  }
+  const sleepPhase = () => sleepState(seq);
+  // spola fram: först till gryningen, sedan till slutet
+  function skipSleep() {
+    if (!seq) return;
+    seq.t = seq.t < SLEEP.dawn ? SLEEP.dawn : Math.max(seq.t, SLEEP.light);
+  }
+  function finishSleep(now = true) {
+    const s = seq;
+    if (!s) return;
+    seq = null; bedFor = null;
+    g.min = s.min; g.hunger = s.hunger; g.energy = s.energy;
+    px = s.x; py = s.y; dir = 'down';
+    if (now) s.onWake?.(); else setTimeout(() => s.onWake?.(), 0);
+  }
+  function updateSleep(dt) {
+    const s = seq;
+    // klockan står still medan man somnar (tickReal har redan tickat den här rutan)
+    g.min = s.min; g.hunger = s.hunger; g.energy = s.energy;
+    if (s.hold == null) s.t += dt; else s.t = s.hold;
+    const cue = (id, at, fn) => { if (s.t >= at && !s.sounds.has(id)) { s.sounds.add(id); fn(); } };
+    cue('lie', SLEEP.lie, () => play('sleep'));
+    cue('off', SLEEP.off, () => play('click'));
+    cue('morning', SLEEP.dawn + 0.3, () => play('morning'));
+    if (s.t >= SLEEP.end) finishSleep();
+  }
 
   // ---------- husdjuren (bara i det egna hemmet) ----------
   // Lagret får möblernas gångbarhet (furnGrid – utan husdjurens egna prylar, djuren ska
@@ -745,12 +968,29 @@ export function makeRoom(A, { visit = false } = {}) {
   return {
     get worldX() { return px; },
     get worldY() { return py; },
-    // Mobilfyllningen (fit i main.js): smala lokaler utan egen utsida (Lilla rummet,
-    // Lägenheten) beskärs till lokalens verkliga bredd så att ingen död yta fyller
-    // skärmen. Husvagnen och Förortsettan ritar i stället gården/trapphuset – full vy.
-    contentBox: RIGHT < FW && !plan.outside ? { x: 0, y: 0, w: RIGHT, h: FH } : undefined,
+    // Mobilfyllningen (fit i main.js): smala lokaler utan egen utsida (Lilla rummet och
+    // Lägenheten, med sina badrum) beskärs till lokalens verkliga bredd så att ingen död
+    // yta fyller skärmen. Husvagnen och Förortsettan ritar i stället gården/trapphuset.
+    contentBox: RIGHT < FW && !outside ? { x: 0, y: 0, w: RIGHT, h: FH } : undefined,
     toggleDecor,
+    bedtime,
+    get asleep() { return !!seq; },
     _debug: {
+      // sömnsekvensen: läget just nu (null = vaken) och en fryst tidpunkt för skärmbilder
+      // (hold(t) låser sekvensen vid t sekunder, hold(null) släpper den)
+      sleep: () => {
+        const st = sleepPhase();
+        if (!st) return null;
+        const bed = findBed(seq.key);
+        return { t: st.t, lying: st.lying, dim: st.dim, warm: st.warm, moon: st.moon, bg: st.bg, zs: st.zs.length, bed: bed?.k || null, min: g.min, day: g.day };
+      },
+      hold: (tt) => { if (seq) seq.hold = tt; return !!seq; },
+      bedFor: () => bedFor,
+      // figuren i sängen som bild (för testerna: finns avatarens hudfärg på kudden?)
+      sleeperArtFor: (d, look, covered = true) => { const a = sleeperArt(look || A.avatar.look, d, covered); return a ? { img: a.img, flip: a.flip, head: a.head } : null; },
+      sleeperArt: (covered = true) => { const b = findBed(seq?.key || bedFor); if (!b) return null; const d = b.k === 'madrass' ? { k: 'madrass' } : decoList()[b.decoIdx]; return sleeperArt(A.avatar.look, d, covered)?.img || null; },
+      rooms: () => plan.rooms.map((r, i) => ({ name: r.name, bath: !!r.bath, i })),
+      subDoors: () => subDoors.map((sd) => ({ ...sd })),
       spot: (id) => { const h = hotRects.find((h) => h.id === id); return h ? { x: (h.r[0] + h.r[2]) / 2, y: (h.r[1] + h.r[3]) / 2 } : null; },
       tile: (a, b) => ({ x: Math.min(RIGHT - 20, 30 + a * 40), y: Math.min(FH - 10, WALL_Y + 15 + b * 18) }),
       // för testerna: lyft möbel i (i deco-listan) / förrådspost, rotera, släpp vid (x, y)
@@ -762,6 +1002,9 @@ export function makeRoom(A, { visit = false } = {}) {
       canPlace: (x, y) => !!decor.carry && canPlaceCarry(x, y),
       props: () => props.map((p) => ({ k: p.k, fn: p.fn, solid: p.solid })),
       walls: () => wallItems.map((w) => ({ k: w.k, x: w.x, top: w.top })),
+      // skyltarna över möblerna (rektangeln som ritas) och det de inte får täcka
+      plates: () => props.filter((p) => p.label).map((p) => { const w = textW(SMALL, p.label) + 8; return { k: p.k, label: p.label, r: [p.plateX - w / 2, p.plateY - 1, p.plateX + w / 2, p.plateY + 8] }; }),
+      plateAvoid: () => plateAvoid.map((r) => [...r]),
       // står varje post i listan rätt (som fitRoom ser det)? – för startmöbleringstestet
       allFit: () => { const list = decoList(); return list.every((d, i) => !knownKind(d.k) || fits(d.k, d.v, d.r, d.x, d.y, list, i)); },
       // de poster som inte står rätt, och om det är en husdjurspryl som stör (för testerna)
@@ -772,7 +1015,7 @@ export function makeRoom(A, { visit = false } = {}) {
           return { k: d.k, x: d.x, y: d.y, onPet: ft.t === 'solid' && petRects().some((r) => overlaps(ft.r, r)), hidesPet: ft.t === 'solid' && petBehind(d.x, d.y, ft.w, ft.h) };
         });
       },
-      seeds: () => seedFor(home, sub),
+      seeds: () => seedHere(sub),
       windows: windowRects, doors: doorRects,
       partition: RIGHT,
       // husdjurslagret (null vid besök) och figurens läge/väg – för tools/pets-home-test.mjs
@@ -783,6 +1026,7 @@ export function makeRoom(A, { visit = false } = {}) {
 
     update(dt) {
       t += dt;
+      if (seq) updateSleep(dt);
       if (path.length) {
         const [gx, gy] = path[0];
         const dx = gx - px, dy = gy - py, dist = Math.hypot(dx, dy), step = 62 * dt;
@@ -797,10 +1041,11 @@ export function makeRoom(A, { visit = false } = {}) {
       if (visit && !A.visitTarget) A.go('city');
     },
 
-    move(x, y) { decor.mx = x; decor.my = y; L?.move(x, y); },
+    move(x, y) { decor.mx = x; decor.my = y; if (!seq) L?.move(x, y); },
     // mobilen: dra möbeln med fingret och släpp – då ställs den där man släppte
     // (tryck för att plocka upp + tryck för att ställa ner fungerar som förut)
     up(x, y) {
+      if (seq) return;
       const p = decor.press;
       decor.press = null;
       if (!decor.on || !p) return;
@@ -811,6 +1056,7 @@ export function makeRoom(A, { visit = false } = {}) {
       if (canPlaceCarry(x, y)) { play('ok'); commitPlace(); } else play('fel');
     },
     down(x, y) {
+      if (seq) { skipSleep(); return; } // ett klick medan man sover spolar fram till morgonen
       decor.mx = x; decor.my = y;
       if (decor.on) {
         // husdjursprylarna (skål, låda, korg, bur, säckar …) flyttas som möbler: lagret håller
@@ -847,11 +1093,15 @@ export function makeRoom(A, { visit = false } = {}) {
       if (y > WALL_Y && x < RIGHT) walkTo(x, y);
     },
     key(k) {
+      if (seq) { if (k === 'Escape' || k === ' ' || k === 'Enter') skipSleep(); return; }
       if (L && L.key(k)) return; // Esc: lägg tillbaka prylen/säcken man håller i
       if (k === 'Escape' && decor.on) toggleDecor(false);
       if ((k === 'r' || k === 'R') && decor.on && decor.carry) rotateCarry();
     },
     exit() {
+      // byts scenen mitt i sömnen (sker inte i spelet – klicken spolar bara fram) sover man
+      // ändå klart: natten räknas och veckan visas när den nya scenen har tagit över
+      if (seq) finishSleep(false);
       toggleDecor(false);
       document.querySelector('#decor-panel')?.classList.add('hidden');
       if (document.body.classList.contains('decor-on')) { document.body.classList.remove('decor-on'); window.dispatchEvent(new Event('resize')); }
@@ -870,22 +1120,41 @@ export function makeRoom(A, { visit = false } = {}) {
 
     draw(ctx) {
       ctx.setTransform(A.pxs, 0, 0, A.pxs, 0, 0);
-      const night = isNight(g);
-      ctx.drawImage(bg(night), 0, 0);
-      drawWindowLife(ctx, roomDef.view || 'sky', winDrawn, winY[0], winY[1], t, night); // grannar, bilar, katten på staketet
+      // sömnen styr ljuset: som vanligt → natt med släckta lampor → morgon
+      const st = sleepPhase();
+      const night = !st || st.bg === 'now' ? isNight(g) : st.bg === 'dark' ? 'dark' : false;
+      // gryningen: natten (släckta lampor) tonar över i dagsljus i takt med att det ljusnar
+      const dawnU = st && st.bg === 'day' && st.t < SLEEP.light ? ease((st.t - SLEEP.dawn) / (SLEEP.light - SLEEP.dawn)) : null;
+      const bgImg = dawnU == null ? bg(night) : blendBg(bg('dark'), bg(false), dawnU);
+      ctx.drawImage(bgImg, 0, 0);
+      drawWindowLife(ctx, roomDef.view || 'sky', winDrawn, winY[0], winY[1], t, dawnU == null ? !!night : dawnU < 0.5); // grannar, bilar, katten på staketet
       for (const w of wallItems) w.draw(ctx);
       if (plan.shabby) drawSpider(ctx, RIGHT, t);
       for (const r of rugs) r.draw(ctx);
 
       const folks = worldFolksHere(A);
-      const drawables = props.map((p) => ({ fy: p.sort, draw: () => p.draw(ctx) }));
+      // sängen man sover i ritas med figuren under täcket
+      const sleeper = st?.lying ? findBed(seq.key) : null;
+      let headAt = null;
+      const drawSleeper = (c, p) => {
+        const d = p.k === 'madrass' ? { k: 'madrass', x: p.x, y: p.base } : decoList()[p.decoIdx];
+        const art = d && sleeperArt(A.avatar.look, d, st.lying === 2);
+        if (!art) { p.draw(c); return; }
+        const top = p.top + art.oy, left = d.x + art.ox;
+        if (p.k !== 'madrass') { c.fillStyle = 'rgba(20,12,28,0.22)'; c.fillRect(d.x + 1, p.sort - 1, art.bw - 2, 2); }
+        drawArt(c, art, left, top);
+        headAt = [left + art.head[0], top + art.head[1]];
+      };
+      const drawables = props.map((p) => ({ fy: p.sort, draw: () => { if (p === sleeper) drawSleeper(ctx, p); else p.draw(ctx); } }));
+      for (const p of props) if (p.drawPlate && p.label && p !== sleeper) drawables.push({ fy: p.plateFy ?? p.sort + 0.01, draw: () => p.drawPlate(ctx) });
       const mine = worldMyEmote();
       // husdjuren, deras prylar och olyckor (plus mätare/bubblor/spöken med fy ≥ 10000 överst)
       if (L) for (const d of L.drawables()) drawables.push({ fy: d.fy, draw: () => d.draw(ctx) });
-      drawables.push({ fy: py, draw: () => {
-        // bär man en matsäck (A.carrying) ritas figuren med bär-bildrutorna
-        const frame = A.carrying ? (path.length ? CARRY_SEQ[Math.floor(t * 8.5) % 4] : 9)
-          : path.length ? WALK_SEQ[Math.floor(t * 8.5) % 4] : (Math.sin(t * 2) > 0.9 ? 4 : 0);
+      if (!sleeper) drawables.push({ fy: py, draw: () => {
+        // bär man en matsäck (A.carrying) ritas figuren med bär-bildrutorna; nyvaken: sträcker på sig
+        const frame = st ? (st.t >= SLEEP.up && st.t < SLEEP.up + 0.35 ? 4 : 0)
+          : A.carrying ? (path.length ? CARRY_SEQ[Math.floor(t * 8.5) % 4] : 9)
+            : path.length ? WALK_SEQ[Math.floor(t * 8.5) % 4] : (Math.sin(t * 2) > 0.9 ? 4 : 0);
         drawPerson(ctx, px, py, A.avatar.look, dir, frame);
         if (folks.length) nameTag(ctx, px, py - 50, A.avatar);
         if (mine) emoteBubble(ctx, px, py - 60, mine);
@@ -917,7 +1186,39 @@ export function makeRoom(A, { visit = false } = {}) {
         ctxText(ctx, SMALL, 'MÖBLERA: KLICKA PÅ EN MÖBEL', 7, 6, '#ffd23f');
       }
 
-      if (night) { ctx.fillStyle = 'rgba(10,12,40,0.22)'; ctx.fillRect(0, 0, FW, FH); }
+      if (!st) { if (night) { ctx.fillStyle = `rgba(10,12,40,${NIGHT_DIM})`; ctx.fillRect(0, 0, FW, FH); } return; }
+      // sömnen: mörkret sänker sig, fönstren lyser svagt (himlen dämpas inte som rummet),
+      // månljuset faller in över golvet, zzz stiger – och i gryningen ett rosa sken
+      if (st.dim > 0) { ctx.fillStyle = `rgba(8,10,34,${st.dim.toFixed(3)})`; ctx.fillRect(0, 0, FW, FH); }
+      // Ljuset genom fönstren (fönsterglaset, gryningshimlen och månljuset på vägg och golv)
+      // ritas i ett eget lager som möblerna, väggsakerna och sängen sedan stansas ur – så att
+      // månstrimmorna ligger på golvet bakom möblerna och inte ovanpå nattygsbordet.
+      const glow = st.dim > 0.05, dawnSky = dawnU != null ? Math.sin(Math.PI * dawnU) * 0.5 : 0;
+      if (winDrawn.length && (glow || st.moon > 0 || dawnSky > 0.01)) {
+        const lc = lightLayer(), lx = lc.getContext('2d');
+        lx.globalCompositeOperation = 'source-over';
+        lx.clearRect(0, 0, FW, FH);
+        if (glow) {
+          lx.globalAlpha = Math.min(1, st.dim / SLEEP_DIM) * 0.8;
+          for (const [x0, x1] of winDrawn) lx.drawImage(bgImg, x0, winY[0], x1 - x0, winY[1] - winY[0], x0, winY[0], x1 - x0, winY[1] - winY[0]);
+        }
+        if (dawnSky > 0.01) { // gryningshimlen: blekt lila uppe, persika nere vid horisonten
+          lx.globalAlpha = dawnSky;
+          const gr = lx.createLinearGradient(0, winY[0], 0, winY[1]);
+          gr.addColorStop(0, '#b8b4ec'); gr.addColorStop(0.55, '#f4b0a0'); gr.addColorStop(1, '#ffc080');
+          lx.fillStyle = gr;
+          for (const [x0, x1] of winDrawn) lx.fillRect(x0, winY[0], x1 - x0, winY[1] - winY[0]);
+        }
+        if (st.moon > 0) { lx.globalAlpha = st.moon; lx.drawImage(moonLayer(), 0, 0); }
+        lx.globalAlpha = 1;
+        lx.globalCompositeOperation = 'destination-out';
+        for (const w of wallItems) w.draw(lx);
+        for (const p of props) { if (p === sleeper) drawSleeper(lx, p); else { p.draw(lx); p.drawPlate?.(lx); } }
+        lx.globalCompositeOperation = 'source-over';
+        ctx.drawImage(lc, 0, 0);
+      }
+      if (st.warm > 0) { ctx.fillStyle = `rgba(255,164,96,${st.warm.toFixed(3)})`; ctx.fillRect(0, 0, FW, FH); }
+      if (headAt && st.zs.length) drawZzz(ctx, st.zs, headAt[0], headAt[1]);
     },
   };
 }
@@ -937,8 +1238,7 @@ export function renderHomePreview(A, homeId, sub = 0, { night = false } = {}) {
     roomSub: sub, sceneName: '__visning', view: A.view, go() {} };
   let scene;
   try { scene = makeRoom(fake, { visit: true }); } finally { hopping = hop; }
-  const RIGHT = plan.partition || FW;
-  const w = RIGHT < FW && !plan.outside ? RIGHT : FW; // smala lokaler: bara rummet, inte den mörka ytan bortom
+  const w = scene.contentBox?.w || FW; // smala lokaler (och badrum): bara rummet, inte den mörka ytan bortom
   const full = document.createElement('canvas');
   full.width = FW; full.height = FH;
   const fctx = full.getContext('2d');
@@ -963,8 +1263,8 @@ function spriteProp(d, decoIdx, sign) {
   const x = d.x, base = d.y, top = base - fh;
   const fn = functionOf(d.k);
   const label = sign ? labelOf(d.k) : null;
-  return {
-    k: d.k, fn, decoIdx, fx: d.fx, sort: base, top,
+  const p = {
+    k: d.k, fn, decoIdx, fx: d.fx, sort: base, top, label, plateX: x + fw / 2, plateY: top - 9,
     solid: [x - 1, base - solidH(d.k, fh), x + fw + 1, base + 1],
     draw(ctx) {
       ctx.fillStyle = 'rgba(20,12,28,0.22)';
@@ -972,9 +1272,63 @@ function spriteProp(d, decoIdx, sign) {
       ctx.fillRect(x + 3, base + 1, fw - 6, 1);
       const a = furnView(d.k, d.v, d.c, d.r); // cachad per (ruta, färg)
       if (a) drawArt(ctx, a, x, top);
-      if (label) ctxPlate(ctx, x + fw / 2, top - 9, label);
     },
+    // skylten ritas för sig (plateFy, se spreadPlates) – ovanpå möbler den hamnar över
+    drawPlate(ctx) { if (label) ctxPlate(ctx, p.plateX, p.plateY, label); },
   };
+  return p;
+}
+// Skyltarna över funktionsmöblerna får inte täcka varandra (badrummet: toa, handfat och
+// badkar tätt ihop): den som står längst fram behåller sin plats, en skylt som krockar
+// flyttas upp en rad i taget.
+// Skyltarna ska inte heller hamna över dörrarna, dörrskyltarna eller fönstren (avoid):
+// en skylt får då glida lite åt sidan (så länge den står över sin möbel), sjunka några
+// pixlar ner på möbeln eller flyttas upp en rad – det som flyttar den minst vinner. Blir
+// någon skylt utan fri plats prövas ordningen om med den skylten först (två skyltar som
+// trängs under samma fönster).
+const plateHits = (r, list) => list.some((q) => r[0] < q[2] && r[2] > q[0] && r[1] < q[3] && r[3] > q[1]);
+function placePlates(list, avoid, right) {
+  const placed = [], out = new Map(), stuck = [];
+  for (const p of list) {
+    const w = textW(SMALL, p.label) + 8, x = p.plateX;
+    const rectAt = (cx, y) => [cx - w / 2, y - 1, cx + w / 2, y + 8];
+    const lo = p.solid ? p.solid[0] + 1 : x, hi = p.solid ? p.solid[2] - 1 : x; // skylten mitt över möbeln
+    const y0 = p.top - 9;
+    let best = null;
+    for (const dy of [0, 1, 2, 3, 4, 5, 6, 7, 8, -10, -20, -30]) for (let dx = -16; dx <= 16; dx++) {
+      const cx = x + dx, r = rectAt(cx, y0 + dy);
+      if ((dx && (cx < lo || cx > hi)) || r[0] < 1 || r[2] > right - 1 || r[1] < 1) continue;
+      if (plateHits(r, placed) || plateHits(r, avoid)) continue;
+      const cost = Math.abs(dx) + (dy > 0 ? dy * 3 : -dy);
+      if (!best || cost < best.cost) best = { cx, y: y0 + dy, cost };
+    }
+    if (!best) { // inget fritt läge: som förr, uppåt tills den inte täcker en annan skylt
+      stuck.push(p);
+      let y = y0;
+      for (let n = 0; n < 4 && plateHits(rectAt(x, y), placed); n++) y -= 10;
+      best = { cx: x, y };
+    }
+    const r = rectAt(best.cx, best.y);
+    placed.push(r);
+    out.set(p, { cx: best.cx, y: best.y, r });
+  }
+  return { out, stuck };
+}
+function spreadPlates(props, avoid = [], right = FW) {
+  const list = props.filter((q) => q.label).sort((a, b) => b.sort - a.sort || a.plateX - b.plateX);
+  let res = placePlates(list, avoid, right);
+  for (let n = 0; n < 3 && res.stuck.length; n++) {
+    const again = placePlates([...res.stuck, ...list.filter((p) => !res.stuck.includes(p))], avoid, right);
+    if (again.stuck.length >= res.stuck.length) break;
+    res = again;
+  }
+  for (const p of list) {
+    const { cx, y, r } = res.out.get(p);
+    p.plateX = cx; p.plateY = y;
+    // Skylten ritas i sorteringen strax efter den främsta möbel den hamnar över (en skylt
+    // som glidit in över garderoben ska inte skymmas av den), men bakom figurer framför.
+    p.plateFy = props.reduce((fy, q) => (q !== p && q.solid && plateHits(r, [[q.solid[0], q.top, q.solid[2], q.sort]]) ? Math.max(fy, q.sort) : fy), p.sort) + 0.01;
+  }
 }
 // väggsak: hänger på bakväggen med underkant y, inget hinder
 function wallProp(d, decoIdx) {
@@ -1058,13 +1412,14 @@ function makeMattressProp(list, RIGHT) {
   if (x < 0) return null;
   const img = mattressArt();
   return {
-    k: 'madrass', fn: 'sova', sort: y, top: y - h,
+    k: 'madrass', fn: 'sova', sort: y, top: y - h, x, base: y, w, h,
     solid: [x - 1, y - 8, x + w + 1, y + 1],
     act: null, // sätts av rummet: floorSleep (golvet ger sämre sömn)
     draw(ctx) { ctx.drawImage(img, x, y - h); ctxPlate(ctx, x + w / 2, y - h - 9, 'GOLVET'); },
   };
 }
 // Sova på golvet: som sängen, fast sämre (kvalitet 0,75) – och en påminnelse om förrådet.
+// Samma sekvens som i sängen (figuren under en filt på madrassen), sedan veckan.
 function floorSleep(A) {
   const g = A.game;
   openModal('😴 Sova på golvet', `<p style="font-size:20px">Ingen säng är utställd – den ligger i förrådet. Golvet är hårt, kallt och lite dammigt, men du somnar.</p>
@@ -1072,15 +1427,314 @@ function floorSleep(A) {
     { label: 'Inte än', onClick: closeModal },
     { label: '😴 Sov ändå', cls: 'btn-go', onClick: () => {
       closeModal();
+      const wake = () => {
+        const { rent, eventText } = g.sleep(0.75);
+        openWeek(A, { morning: true, rentPaid: rent, eventText });
+        toast('🛏️ Aj, ryggen … Golvet är inget att sova på – ställ ut sängen med 🛋️ Möblera!', 'bad');
+      };
+      if (A.scene?.bedtime?.(wake)) return;
       play('sleep');
-      const { rent, eventText } = g.sleep(0.75);
+      wake();
       setTimeout(() => play('morning'), 600);
-      toast(`☀️ God morgon! ${g.dayName}, dag ${g.day}. Aj, ryggen …`, 'good');
-      if (rent) toast(`💸 Hyra betald: ${fmt(rent)}`, g.money < 0 ? 'bad' : '');
-      if (g.money < 0) toast('⚠️ Du är skyldig hyresvärden pengar – jobba ihop dem!', 'bad');
-      if (eventText) setTimeout(() => toast(eventText, 'good'), 900);
     } },
   ]);
+}
+
+// ================= sömnen =================
+// Tidslinjen (sekunder): figuren lägger sig (lie), drar upp täcket (cover), lamporna
+// släcks (off), mörkt (dark), gryning (dawn), ljust (light), täcket av (uncover), upp
+// (up), klart (end → onWake). NIGHT_DIM = rummets vanliga kvällsdunkel.
+const SLEEP = { lie: 0.35, cover: 0.62, off: 0.95, dark: 2.1, dawn: 3.25, light: 4.35, uncover: 4.45, up: 4.8, end: 5.35 };
+const NIGHT_DIM = 0.22, SLEEP_DIM = 0.6;
+const ease = (u) => { u = Math.max(0, Math.min(1, u)); return u * u * (3 - 2 * u); };
+// Läget i sekvensen: dim = mörkret över rummet, warm = gryningens rosa, moon = månljuset,
+// bg = vilken bakgrund ('now' = som vanligt, 'dark' = natt med släckta lampor, 'day'),
+// lying = 0 står, 1 ligger med täcket nere vid bröstet, 2 under täcket.
+function sleepState(s) {
+  if (!s) return null;
+  const t = s.t, a0 = s.night0 ? NIGHT_DIM : 0;
+  const offAt = s.night0 ? SLEEP.off : (SLEEP.off + SLEEP.dark) / 2; // en dagslur: bytet sker i skymningen
+  let dim = a0, warm = 0, moon = 0;
+  if (t >= SLEEP.off && t < SLEEP.dawn) dim = a0 + (SLEEP_DIM - a0) * ease((t - SLEEP.off) / (SLEEP.dark - SLEEP.off));
+  else if (t >= SLEEP.dawn) {
+    const u = (t - SLEEP.dawn) / (SLEEP.light - SLEEP.dawn);
+    dim = SLEEP_DIM * (1 - ease(u));
+    warm = 0.2 * Math.sin(Math.PI * Math.max(0, Math.min(1, u)));
+  }
+  if (t >= offAt && t < SLEEP.dawn) moon = ease((t - offAt) / (SLEEP.dark - offAt));
+  else if (t >= SLEEP.dawn) moon = 1 - ease((t - SLEEP.dawn) / 0.5);
+  const bg = t < offAt ? 'now' : t < SLEEP.dawn ? 'dark' : 'day';
+  const lying = t < SLEEP.lie || t >= SLEEP.up ? 0 : t < SLEEP.cover || t >= SLEEP.uncover ? 1 : 2;
+  return { t, dim, warm, moon, bg, lying, zs: zzzAt(t) };
+}
+// zzz: en bokstav var 0,55:e sekund medan det är mörkt, var och en lever 1,7 s
+// (räknas ur tiden, så att en fryst bild – testernas hold – ändå visar flera)
+function zzzAt(t) {
+  const out = [];
+  for (let i = 0; ; i++) {
+    const born = SLEEP.off + 0.2 + i * 0.55;
+    if (born > SLEEP.dawn - 0.2 || born > t) break;
+    const age = t - born;
+    if (age < 1.7) out.push({ i, age });
+  }
+  return out;
+}
+// bokstäverna: liten z (4×4) och stor Z (5×5)
+const ZGLYPH = {
+  s: ['1111', '0010', '0100', '1111'],
+  b: ['11111', '00010', '00100', '01000', '11111'],
+};
+function drawZ(ctx, x, y, big, a) {
+  const G = big ? ZGLYPH.b : ZGLYPH.s;
+  ctx.globalAlpha = a;
+  ctx.fillStyle = '#17151a';
+  for (let r = 0; r < G.length; r++) for (let c = 0; c < G[r].length; c++) if (G[r][c] === '1') ctx.fillRect(x + c - 1, y + r - 1, 3, 3);
+  ctx.fillStyle = '#f4f1ea';
+  for (let r = 0; r < G.length; r++) for (let c = 0; c < G[r].length; c++) if (G[r][c] === '1') ctx.fillRect(x + c, y + r, 1, 1);
+  ctx.globalAlpha = 1;
+}
+// zzz ur huvudet (hx, hy = pannan): stiger snett uppåt, gungar lite, växer och tonar ut
+function drawZzz(ctx, zs, hx, hy) {
+  for (const z of zs) {
+    const x = Math.round(hx + 3 + z.age * 7 + Math.sin(z.age * 4 + z.i) * 2);
+    const y = Math.round(hy - 3 - z.age * 15);
+    const a = z.age < 0.15 ? z.age / 0.15 : z.age > 1.3 ? Math.max(0, (1.7 - z.age) / 0.4) : 1;
+    drawZ(ctx, x, y, z.age > 0.6, a);
+  }
+}
+
+// Månljuset: ett svagt sken runt fönstren, blåvita fläckar på golvet snett nedanför dem
+// (månen står högt till vänster) och månen själv i det första fönstret – genom frostat
+// glas bara ett mjölkigt sken.
+function buildMoon(wins, winY, view, RIGHT) {
+  const P = new Pix(FW, FH);
+  const [wy0, wy1] = winY;
+  wins.forEach(([x0, x1], i) => {
+    P.ell((x0 + x1) / 2, (wy0 + wy1) / 2, (x1 - x0) / 2 + 10, (wy1 - wy0) / 2 + 9, 0xb4c8ff, 0.14, 4);
+    const len = 62;
+    for (let y = WALL_Y; y < WALL_Y + len; y++) {
+      const s = (y - WALL_Y) * 0.55, fade = 1 - (y - WALL_Y) / len;
+      for (let x = Math.round(x0 + s); x < x1 + s && x < RIGHT - 4; x++) if (bayer(x, y) < fade * 0.9) P.px(x, y, 0xc8d8ff, 0.2);
+    }
+    if (i === 0 && view !== 'frost' && view !== 'betong') { // (Ettan: höghuset mittemot fyller fönstret – ingen måne)
+      const mx = x0 + 8, my = wy0 + 7;
+      P.ell(mx, my, 8, 8, 0xe8ecff, 0.3, 4);
+      for (let dy = -3; dy <= 3; dy++) for (let dx = -3; dx <= 3; dx++) {
+        if (Math.hypot(dx, dy) > 3.3) continue;
+        P.px(mx + dx, my + dy, (dx === 1 && dy === -1) || (dx === -1 && dy === 1) ? 0xd8d2b4 : dx + dy > 2 ? 0xe0dac0 : 0xf8f4e0);
+      }
+    }
+  });
+  return P.flush();
+}
+
+// ---------- figuren i sängen ----------
+// Var huvudet hamnar i sängens bildruta (atlasens vy, ospeglad – speglade vyer speglas
+// som hela bilden). front: huvudet uppåt, c = huvudets mittkolumn, fold = raden där
+// täckets vikta kant ligger (hakan syns just ovanför), x0..x1 = kantens bredd, end =
+// täckets nederkant. side: liggande med huvudet åt vänster (huvudet vridet ett kvarts
+// varv), c = huvudets mittrad (dubbelsängen: den främre kudden), top = kolumnen där håret
+// börjar, y0..y1 = täckets höjd, end = täckets högra kant. blanket = madrassen har inget
+// täcke – en filt ritas.
+const SLEEPER_AT = {
+  sang: { c: 9, fold: 12, x0: 1, x1: 32, end: 24 },
+  enkelsang: { c: 9, fold: 12, x0: 1, x1: 17, end: 24 },
+  tvarsang: { side: true, c: 10, top: 3, y0: 4, y1: 20, end: 27 },
+  tvardubbel: { side: true, c: 23, top: 3, y0: 5, y1: 29, end: 27 },
+  madrass: { side: true, c: 9, top: 2, y0: 4, y1: 14, end: 32, blanket: true },
+};
+const SLEEP_TOP = 12; // luft ovanför sängen i bilden (håret når upp över sänggaveln)
+// Avatarens huvud (samma sprite som när man går: hudfärg, frisyr, skägg – men utan hatt,
+// glasögon, hörlurar och väska) med slutna ögon, plus översta tröjraderna. Ögonen ritas
+// alltid som de vanliga (stjärn-, hjärt-, cyborg-, gråt- och spiralögon ska inte lysa i
+// sömnen) och hittas genom att rita figuren en gång till med magentafärgade ögon: de
+// pixlar som skiljer är ögonen (och glansen bredvid) – de målas över med huden och får
+// ett stängt ögonlock (mörkare på ljus hud, nästan svart på mörk hud så att det syns).
+// → { P: Pix (24 bred), PS: samma med benan igenfylld (sidvyerna), rows, torso: första
+// tröjraden, skin, hair } (cachat per utseende)
+const headCache = new WeakMap();
+const lumOf = (c) => 0.299 * (c >> 16) + 0.587 * ((c >> 8) & 255) + 0.114 * (c & 255);
+function sleeperHead(look) {
+  if (!look || typeof look !== 'object') return null;
+  if (headCache.has(look)) return headCache.get(look);
+  const L = { ...look, eyes: 'normal', hat: null, glasses: false, phones: false, bag: null };
+  const kid = !!look.kid;
+  const headTop = kid ? 14 : 6, torso = kid ? 25 : 18, eyeRow = headTop + (kid ? 6 : 7);
+  const render = (lk) => {
+    const c = document.createElement('canvas');
+    c.width = 24; c.height = 40;
+    const x = c.getContext('2d');
+    x.imageSmoothingEnabled = false;
+    drawPerson(x, 12, 39, lk, 'down', 0);
+    return x.getImageData(0, 0, 24, 40).data;
+  };
+  const a = render(L), b = render({ ...L, eyeColor: '#ff00ff' });
+  const bottom = torso + 6;
+  let hairTop = 0;
+  while (hairTop < torso && ![...Array(24).keys()].some((x) => a[(hairTop * 24 + x) * 4 + 3] > 0)) hairTop++;
+  const rows = bottom - hairTop;
+  const P = new Pix(24, rows);
+  for (let y = hairTop; y < bottom; y++) for (let x = 0; x < 24; x++) {
+    const i = (y * 24 + x) * 4;
+    if (a[i + 3] > 0) P.px(x, y - hairTop, (a[i] << 16) | (a[i + 1] << 8) | a[i + 2], a[i + 3] / 255);
+  }
+  // slutna ögon
+  const eye = new Set();
+  const key = (x, y) => y * 24 + x;
+  for (let y = eyeRow - 3; y <= eyeRow + 2; y++) for (let x = 4; x < 20; x++) {
+    const i = (y * 24 + x) * 4;
+    if (a[i] !== b[i] || a[i + 1] !== b[i + 1] || a[i + 2] !== b[i + 2]) eye.add(key(x, y));
+  }
+  if (eye.size) {
+    for (const k of [...eye]) { // glansen (vita pixlar) intill ögat hör också till ögat
+      const x = k % 24, y = (k / 24) | 0;
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const i = ((y + dy) * 24 + x + dx) * 4;
+        if (a[i] > 235 && a[i + 1] > 235 && a[i + 2] > 235) eye.add(key(x + dx, y + dy));
+      }
+    }
+    const skin = isHex(look.skin) ? parseInt(look.skin.slice(1), 16) : 0xeabf98;
+    const lid = lumOf(skin) < 115 ? mix(skin, 0x080404, 0.72) : mix(skin, 0x2a1a14, 0.62);
+    for (const k of eye) P.px(k % 24, ((k / 24) | 0) - hairTop, skin);
+    // ett streck per öga i ögats nedersta rad (smala ögon förlängs utåt till två pixlar)
+    const sides = [[...eye].filter((k) => k % 24 < 12), [...eye].filter((k) => k % 24 >= 12)];
+    sides.forEach((ks, s) => {
+      if (!ks.length) return;
+      const xs = ks.map((k) => k % 24), ys = ks.map((k) => (k / 24) | 0);
+      let x0 = Math.min(...xs), x1 = Math.max(...xs);
+      const y = Math.max(...ys);
+      if (x1 === x0) { if (s === 0) x0--; else x1++; }
+      for (let x = x0; x <= x1; x++) P.px(x, y - hairTop, lid);
+    });
+  }
+  // Sidvyerna (huvudet vridet ett kvarts varv): benan i håret – en smal hudstrimma med hår
+  // på båda sidor ovanför ögonbrynen – blir annars ett streck in i ansiktet (ett "+" med de
+  // vridna ögonlocken). Den fylls med hårfärgen bredvid.
+  const PS = new Pix(24, rows);
+  PS.d.set(P.d);
+  const d = PS.d, at = (x, y) => (y * 24 + x) * 4;
+  const skinSet = new Set();
+  for (let x = 10; x <= 13; x++) { const i = at(x, eyeRow + 1 - hairTop); if (d[i + 3] > 200) skinSet.add((d[i] << 16) | (d[i + 1] << 8) | d[i + 2]); }
+  const isSkin = (x, y) => { const i = at(x, y); return d[i + 3] > 200 && skinSet.has((d[i] << 16) | (d[i + 1] << 8) | d[i + 2]); };
+  const opaque = (x, y) => d[at(x, y) + 3] > 200;
+  for (let y = 0; y < eyeRow - 3 - hairTop; y++) {
+    for (let x = 1; x < 23; x++) {
+      if (!isSkin(x, y) || isSkin(x - 1, y) || !opaque(x - 1, y)) continue;
+      let e = x; while (e < 23 && isSkin(e, y)) e++;
+      if (e - x <= 2 && e < 24 && opaque(e, y) && !isSkin(e, y)) {
+        const i = at(x - 1, y), c = (d[i] << 16) | (d[i + 1] << 8) | d[i + 2];
+        for (let xx = x; xx < e; xx++) PS.px(xx, y, c);
+      }
+      x = e;
+    }
+  }
+  const res = { P, PS, rows, torso: torso - hairTop, skin: isHex(look.skin) ? parseInt(look.skin.slice(1), 16) : 0xeabf98,
+    hair: isHex(look.hair) ? parseInt(look.hair.slice(1), 16) : 0x3b2619 };
+  headCache.set(look, res);
+  return res;
+}
+// Bilden av figuren i sängen d (deco-posten, eller { k: 'madrass' }): sängens egen ruta i
+// sin färg, huvudet på kudden och täcket med en vikt lakanskant under hakan och kroppens
+// form under. covered = false: man har just lagt sig, täcket ligger nere vid bröstet.
+// → { img, sx, sy, sw, sh, flip, oy: bildens överkant relativt sängens, head: [x, y] }
+const sleeperCache = new WeakMap();
+function sleeperArt(look, d, covered) {
+  const vw = d.k === 'madrass' ? { k: 'madrass', v: 0, flip: false } : viewOf(d.k, d.v, d.r);
+  const at = SLEEPER_AT[vw.k];
+  const head = sleeperHead(look);
+  if (!at || !head) return null;
+  const bed = vw.k === 'madrass' ? { img: mattressArt(), sx: 0, sy: 0, sw: 34, sh: 16 } : furnArt(vw.k, vw.v, d.c);
+  if (!bed) return null;
+  let m = sleeperCache.get(look);
+  if (!m) { m = new Map(); sleeperCache.set(look, m); }
+  const ck = `${vw.k}|${vw.v}|${d.c || ''}|${covered ? 1 : 0}`;
+  let out = m.get(ck);
+  if (!out) { out = composeSleeper(bed, at, head, covered, vw.k === 'madrass'); if (m.size > 40) m.clear(); m.set(ck, out); }
+  return { ...out, flip: vw.flip, head: vw.flip ? [out.sw - 1 - out.head[0], out.head[1]] : out.head };
+}
+// en hand som vilar på täckets kant: hud med ljus ovankant och mörk kontur
+function sleeperHand(P, x, y, w, h, skin) {
+  P.rect(x, y, w, h, skin);
+  if (w > h) P.hl(x, y, w, mix(skin, 0xffffff, 0.25)); else P.vl(x, y, h, mix(skin, 0xffffff, 0.25));
+  P.box(x - 1, y - 1, w + 2, h + 2, mul(skin, 0.45), 0.55);
+}
+// Filten på golvmadrassen: den ullfärg som skiljer sig mest från håret (rött hår på en
+// rödbrun filt flöt ihop) – [bas, mörk, ränder]
+const BLANKETS = [[0x9a4a3a, 0x7a3a2e, 0xe8dcc0], [0x3e5a86, 0x2e4468, 0xe8dcc0], [0x5a7040, 0x44562e, 0xf0e4b8]];
+const colDist = (a, b) => Math.hypot((a >> 16) - (b >> 16), ((a >> 8) & 255) - ((b >> 8) & 255), (a & 255) - (b & 255));
+function composeSleeper(bed, at, head, covered, mattress) {
+  // MX = luft på sidorna: stora frisyrer (afro) får sticka ut över sängkanten i stället för
+  // att klippas rakt av. Bilden ritas MX px till vänster om sängen (ox).
+  const MX = 5, M = SLEEP_TOP, W = bed.sw + MX * 2, H = bed.sh + M;
+  const P = new Pix(W, H, -MX, 0); // koordinaterna nedan är sängens egna (0 = sängens vänsterkant)
+  P.ctx.imageSmoothingEnabled = false;
+  P.ctx.drawImage(bed.img, bed.sx, bed.sy, bed.sw, bed.sh, MX, M, bed.sw, bed.sh);
+  P.img = P.ctx.getImageData(0, 0, W, H); P.d = P.img.data;
+  const bedPx = P.d.slice(); // sängen före figuren (sidvyernas sänggavel ritas om ovanpå håret)
+  const hd = (at.side ? head.PS : head.P).d, HR = head.rows, T = head.torso;
+  const shift = covered ? 0 : 4;          // täcket nere: kanten 4 px längre ner, tröjan syns
+  const upTo = covered ? T : T + 5;       // källrader som ritas (huvudet, och tröjan om täcket är nere)
+  const src = (x, y) => { const i = (y * 24 + x) * 4; return hd[i + 3] ? [(hd[i] << 16) | (hd[i + 1] << 8) | hd[i + 2], hd[i + 3] / 255] : null; };
+  const SHEET = 0xf4f0e6, SHEET_LO = 0xcfc8b8, SHEET_END = 0x8a8478;
+  let hx, hy;
+  if (!at.side) {
+    // huvudet uppåt: källans första tröjrad hamnar på kantens rad
+    const ox = at.c - 12, oy = M + at.fold - T;
+    for (let y = 0; y < Math.min(HR, upTo); y++) for (let x = 0; x < 24; x++) { const p = src(x, y); if (p) P.px(ox + x, oy + y, p[0], p[1]); }
+    const fy = M + at.fold + shift;
+    for (let x = at.x0; x < at.x1; x++) {
+      const end = x === at.x0 || x === at.x1 - 1;
+      P.px(x, fy, end ? SHEET_END : SHEET); P.px(x, fy + 1, end ? SHEET_END : SHEET_LO);
+    }
+    P.darken(at.x0 + 1, fy + 2, at.x1 - at.x0 - 2, 1, 0.78);
+    // kroppen under täcket: skugga längs sidorna, ljus kant till vänster, fötterna längst ner
+    const yEnd = M + at.end;
+    for (let y = fy + 3; y < yEnd - 1; y++) {
+      const hw = y < fy + 6 ? 6 : 5;
+      P.darken(at.c - hw - 1, y, 1, 1, 0.84); P.darken(at.c + hw, y, 1, 1, 0.84);
+      P.px(at.c - hw, y, 0xffffff, 0.12);
+    }
+    for (const fx of [at.c - 3, at.c + 1]) { P.px(fx, yEnd - 3, 0xffffff, 0.16); P.px(fx + 1, yEnd - 3, 0xffffff, 0.16); P.darken(fx, yEnd - 2, 2, 1, 0.85); }
+    if (covered) for (const hx0 of [at.c - 7, at.c + 5]) sleeperHand(P, hx0, fy - 1, 3, 2, head.skin); // händerna på täcket
+    hx = at.c; hy = oy + T - 11;
+  } else {
+    // liggande åt vänster: källan vrids ett kvarts varv moturs (håret åt vänster)
+    const ox = at.top, oy = M + at.c - 12;
+    for (let y = 0; y < Math.min(HR, upTo); y++) for (let x = 0; x < 24; x++) { const p = src(x, y); if (p) P.px(ox + y, oy + 23 - x, p[0], p[1]); }
+    // sänggaveln står framför huvudet: dess pixlar ritas om ovanpå håret (madrassen har ingen)
+    if (!mattress) for (let y = 0; y < H; y++) for (let x = 0; x < at.top; x++) {
+      const i = (y * W + x + MX) * 4;
+      if (bedPx[i + 3] > 200) P.px(x, y, (bedPx[i] << 16) | (bedPx[i + 1] << 8) | bedPx[i + 2]);
+    }
+    const fx = at.top + T + shift;
+    const y0 = M + at.y0, y1 = M + at.y1;
+    if (mattress) { // filten: ull med två ljusa ränder vid fotänden, i en färg som skiljer sig från håret
+      const [wool, woolDk, stripe] = BLANKETS.reduce((b, cand) => (colDist(cand[0], head.hair) > colDist(b[0], head.hair) ? cand : b));
+      for (let y = y0 + 1; y <= y1; y++) for (let x = fx; x < at.end; x++) {
+        let c = mix(wool, woolDk, hash(x >> 1, y, 77) * 0.5);
+        if (x === at.end - 4 || x === at.end - 6) c = stripe;
+        if (y === y0 + 1) c = mix(c, 0xffffff, 0.12);
+        if (y === y1 || x === at.end - 1) c = mul(woolDk, 0.45);
+        P.px(x, y, c);
+      }
+    }
+    for (let y = y0; y < y1 + (mattress ? 1 : 0); y++) {
+      const end = y === y0 || y === y1 - (mattress ? 0 : 1);
+      P.px(fx, y, end ? SHEET_END : SHEET); P.px(fx + 1, y, end ? SHEET_END : SHEET_LO);
+    }
+    P.darken(fx + 2, y0 + 1, 1, y1 - y0 - 1, 0.78);
+    const c = M + at.c;
+    for (let x = fx + 3; x < at.end - 1; x++) {
+      const hw = x < fx + 6 ? 6 : 5;
+      P.darken(x, c - hw - 1, 1, 1, 0.84); P.darken(x, c + hw, 1, 1, 0.84);
+      P.px(x, c - hw, 0xffffff, 0.12);
+    }
+    for (const fy of [c - 3, c + 1]) { P.px(at.end - 3, fy, 0xffffff, 0.16); P.px(at.end - 3, fy + 1, 0xffffff, 0.16); P.darken(at.end - 2, fy, 1, 2, 0.85); }
+    if (covered) for (const hy0 of [c - 7, c + 5]) sleeperHand(P, fx - 1, hy0, 2, 3, head.skin);
+    hx = ox + 6; hy = oy + 4;
+  }
+  // ox/oy = bildens hörn relativt sängens, bw = sängens egen bredd (skuggan under den)
+  return { img: P.flush(), sx: 0, sy: 0, sw: W, sh: H, ox: -MX, oy: -M, bw: bed.sw, head: [hx + MX, hy] };
 }
 
 // ---------- funktionerna man gör vid möblerna ----------
@@ -1188,14 +1842,19 @@ const winStyle = (plan, view) => (view === 'stad' ? 'steel' : plan.worn === 'hus
 
 function buildBg(roomDef, RIGHT, subDoors, hasExit, plan, visit) {
   const lyx = !!plan.lyx, shabby = !!plan.shabby, worn = plan.worn || null;
-  const [wy0, wy1] = plan.winY || WIN_Y;
+  const bath = roomDef.bath ? BATH[roomDef.tiles] || null : null; // kakelstilen (husvagnens toa har plastväggar)
+  const outside = outsideOf(plan, roomDef);
+  const anchor = roomDef.bath ? RIGHT : plan.fixAt || RIGHT; // var de fasta detaljerna sitter
+  const [wy0, wy1] = roomDef.winY || plan.winY || WIN_Y;
   const view = roomDef.view || 'sky', style = winStyle(plan, view);
   // fönstren som faktiskt ritas (inte bakom en dörr eller utanför lokalen)
-  const wins = roomDef.windows.filter(([wx0, wx1]) => !(wx1 > RIGHT - 5 || subDoors.some((sd) => wx1 > sd.x0 - 4 && wx0 < sd.x1 + 4)));
+  const wins = visibleWindows(roomDef, RIGHT, subDoors);
   const cache = {};
+  // night: false = dag, true = kväll med lamporna tända, 'dark' = natt med släckta lampor (sömnen)
   return (night) => {
-    const key = night ? 'n' : 'd';
+    const key = night === 'dark' ? 'o' : night ? 'n' : 'd';
     if (cache[key]) return cache[key];
+    const lit = !!night && night !== 'dark';
     const P = new Pix(FW, FH);
     const wall = night ? mul(roomDef.wall, 0.8) : roomDef.wall;
     const wallDk = night ? mul(roomDef.wallDk, 0.8) : roomDef.wallDk;
@@ -1203,6 +1862,7 @@ function buildBg(roomDef, RIGHT, subDoors, hasExit, plan, visit) {
     // golvet
     const TW2 = 23, TH2 = 15;
     for (let y = WALL_Y; y < FH; y++) for (let x = 0; x < FW; x++) {
+      if (bath) { P.px(x, y, bathFloor(x, y, bath)); continue; }
       if (worn === 'husvagn') { P.px(x, y, caravanFloor(x, y, roomDef)); continue; }
       const tx = (x / TW2) | 0, ty = ((y - WALL_Y) / TH2) | 0;
       const lx = x - tx * TW2, ly = (y - WALL_Y) - ty * TH2;
@@ -1226,9 +1886,10 @@ function buildBg(roomDef, RIGHT, subDoors, hasExit, plan, visit) {
       P.px(x, y, c);
     }
 
-    // väggen med bröstpanel (husvagnen och Förortsettan har egna väggar)
-    if (worn === 'husvagn') paintCaravanWall(P, RIGHT, wall, wallDk);
-    else if (worn === 'hoghus') paintEttaWall(P, RIGHT, wall, wallDk);
+    // väggen med bröstpanel (badrummen har kakel, husvagnen och Förortsettan egna väggar)
+    if (bath) paintBathWall(P, RIGHT, bath, !!night);
+    else if (worn === 'husvagn') paintCaravanWall(P, RIGHT, wall, wallDk, anchor, !roomDef.bath);
+    else if (worn === 'hoghus') paintEttaWall(P, RIGHT, wall, wallDk, anchor);
     else for (let y = 5; y < WALL_Y; y++) for (let x = 4; x < FW - 4; x++) {
       let c = mix(mul(wall, 0.8), wall, Math.min(1, (y - 5) / 20) + (bayer(x, y) - 0.5) * 0.12);
       if (x % 27 === 0) c = mul(c, 0.9); else if (x % 27 === 1) c = mix(c, 0xffffff, 0.05);
@@ -1243,34 +1904,12 @@ function buildBg(roomDef, RIGHT, subDoors, hasExit, plan, visit) {
       if (y >= WALL_Y - 2) c = mul(wallDk, 0.55);
       P.px(x, y, c);
     }
-    if (!worn) {
+    if (!worn && !bath) {
       P.hl(4, 5, FW - 8, mul(wall, 0.6));
       P.hl(4, WALL_Y - 2, FW - 8, mix(wallDk, 0xffffff, 0.25));
     }
-    if (lyx) { P.hl(4, WALL_Y - 20, FW - 8, 0xf0d070); P.hl(4, WALL_Y - 19, FW - 8, 0xc8a24a); }
-    if (view === 'stad') ceilingSpots(P, RIGHT, night); // takvåningens infällda spotlights
-
-    // dörrarna: ut (bara rum 0) + delrumsdörrar
-    const paintDoor = (x0, x1, signText, signCol) => {
-      for (let y = 28; y < WALL_Y; y++) for (let x = x0; x < x1; x++) {
-        let c = mix(0x5a4632, 0x6a5238, hash(x >> 1, y >> 2, 7) * 0.6 + (bayer(x, y) - 0.5) * 0.1);
-        if ((y - 28) % 22 < 2 || x === x0 + ((x1 - x0) >> 1)) c = mul(c, 0.7);
-        P.px(x, y, c);
-      }
-      P.box(x0 - 1, 27, x1 - x0 + 2, WALL_Y - 27, 0x2e2418);
-      P.box(x0, 28, x1 - x0, WALL_Y - 28, 0x8a7050);
-      P.rect(x1 - 6, 54, 2, 4, 0xd8b24a);
-      const tw = textW(SMALL, signText) + 8;
-      const sx = Math.round((x0 + x1) / 2 - tw / 2);
-      P.rect(sx, 20, tw, 9, 0x1d2b1f); P.box(sx, 20, tw, 9, 0x0e1510);
-      text(P, SMALL, signText, sx + 4, 22, signCol);
-    };
-    if (hasExit) {
-      paintDoor(DOOR.x0, DOOR.x1, visit ? 'HEM' : 'UT', 0x6fe08a);
-      for (let y = WALL_Y + 1; y < WALL_Y + 9; y++) for (let x = DOOR.cx - 13; x < DOOR.cx + 13; x++) P.px(x, y, (x + y) % 2 ? 0x4a4038 : 0x3e352e);
-      P.box(DOOR.cx - 13, WALL_Y + 1, 26, 8, 0x2a2018);
-    }
-    for (const sd of subDoors) paintDoor(sd.x0, sd.x1, sd.name, 0xffd23f);
+    if (lyx && !bath) { P.hl(4, WALL_Y - 20, FW - 8, 0xf0d070); P.hl(4, WALL_Y - 19, FW - 8, 0xc8a24a); }
+    if (view === 'stad' && !roomDef.bath) ceilingSpots(P, RIGHT, lit); // takvåningens infällda spotlights
 
     // fönster: karm, utsikten (samma landskap genom alla fönster i rummet), spröjs, bänk
     for (const [wx0, wx1] of wins) {
@@ -1280,7 +1919,7 @@ function buildBg(roomDef, RIGHT, subDoors, hasExit, plan, visit) {
       if (style !== 'caravan') P.box(wx0 - 2, wy0 - 2, ww + 4, wh + 4, style === 'steel' ? 0x14161c : mul(wall, 0.5));
       P.clip(wx0, wy0, wx1, wy1);
       paintView(P, view, wx0, wx1, wy0, wy1, night, shabby);
-      if (worn === 'hoghus') for (let y = wy0; y < wy1; y++) for (let x = wx0; x < wx1; x++) if (hash(x >> 1, y >> 2, 25) > 0.93) P.px(x, y, 0xb8b09a, 0.25); // flottiga rutor
+      if (worn === 'hoghus' && !roomDef.bath) for (let y = wy0; y < wy1; y++) for (let x = wx0; x < wx1; x++) if (hash(x >> 1, y >> 2, 25) > 0.93) P.px(x, y, 0xb8b09a, 0.25); // flottiga rutor
       P.clip();
       if (style === 'classic') {
         const mc = worn === 'hoghus' ? 0xe2ddcc : 0xf0ece0;
@@ -1308,15 +1947,16 @@ function buildBg(roomDef, RIGHT, subDoors, hasExit, plan, visit) {
         for (let x = Math.round(wx0 + s); x < wx1 + s; x++) if (bayer(x, y) < fade * 0.85) P.px(x, y, 0xfff6dc, 0.1);
       }
     }
-    if (worn === 'husvagn') caravanFixtures(P, RIGHT, wins, wy0, wy1, night, hasExit, wall, wallDk);
-    if (worn === 'hoghus') ettaFixtures(P, RIGHT, wins, wy0, wy1, night, hasExit, wall, wallDk);
+    if (roomDef.bath) bathFixtures(P, RIGHT, roomDef, bath, lit, !!night, wall);
+    else if (worn === 'husvagn') caravanFixtures(P, RIGHT, wins, wy0, wy1, lit, hasExit, wall, wallDk, anchor);
+    else if (worn === 'hoghus') ettaFixtures(P, RIGHT, wins, wy0, wy1, lit, hasExit, wall, wallDk);
 
     // avdelarvägg + världen utanför lokalen: husvagnen har sin gårdsplätt och
     // Förortsettan trapphuset (Carls mobilfyllningsregel: ingen död yta i bild) –
     // övriga smala lokaler blir mörka och beskärs i fyll-läget av contentBox
     if (RIGHT < FW) {
-      if (plan.outside === 'gard') paintGard(P, RIGHT, night);
-      else if (plan.outside === 'trapphus') paintTrapphus(P, RIGHT, night);
+      if (outside === 'gard') paintGard(P, RIGHT, !!night);
+      else if (outside === 'trapphus') paintTrapphus(P, RIGHT, !!night);
       else for (let y = 5; y < FH; y++) for (let x = RIGHT; x < FW; x++) P.px(x, y, mix(0x17131c, 0x221c28, (bayer(x, y) - 0.5) * 0.4 + 0.5));
       for (let y = 5; y < FH; y++) {
         P.px(RIGHT - 3, y, mul(wallDk, 0.5)); P.px(RIGHT - 2, y, mix(wallDk, 0xffffff, 0.15));
@@ -1324,10 +1964,33 @@ function buildBg(roomDef, RIGHT, subDoors, hasExit, plan, visit) {
       }
     }
 
-    if (shabby) paintShabby(P, RIGHT, wall, wallDk, night, hasExit, roomDef);
+    if (shabby && !roomDef.bath) paintShabby(P, RIGHT, wall, wallDk, lit, hasExit, roomDef, subDoors);
+
+    // dörrarna: ut (bara rum 0) + delrumsdörrar – sist på väggen, så att sprickor, fläckar
+    // och flagnande tapet aldrig hamnar ovanpå en dörr eller dess skylt
+    const paintDoor = (x0, x1, signText, signCol) => {
+      for (let y = 28; y < WALL_Y; y++) for (let x = x0; x < x1; x++) {
+        let c = mix(0x5a4632, 0x6a5238, hash(x >> 1, y >> 2, 7) * 0.6 + (bayer(x, y) - 0.5) * 0.1);
+        if ((y - 28) % 22 < 2 || x === x0 + ((x1 - x0) >> 1)) c = mul(c, 0.7);
+        P.px(x, y, c);
+      }
+      P.box(x0 - 1, 27, x1 - x0 + 2, WALL_Y - 27, 0x2e2418);
+      P.box(x0, 28, x1 - x0, WALL_Y - 28, 0x8a7050);
+      P.rect(x1 - 6, 54, 2, 4, 0xd8b24a);
+      const tw = textW(SMALL, signText) + 8;
+      const sx = Math.round((x0 + x1) / 2 - tw / 2);
+      P.rect(sx, 20, tw, 9, 0x1d2b1f); P.box(sx, 20, tw, 9, 0x0e1510);
+      text(P, SMALL, signText, sx + 4, 22, signCol);
+    };
+    if (hasExit) {
+      paintDoor(DOOR.x0, DOOR.x1, visit ? 'HEM' : 'UT', 0x6fe08a);
+      for (let y = WALL_Y + 1; y < WALL_Y + 9; y++) for (let x = DOOR.cx - 13; x < DOOR.cx + 13; x++) P.px(x, y, (x + y) % 2 ? 0x4a4038 : 0x3e352e);
+      P.box(DOOR.cx - 13, WALL_Y + 1, 26, 8, 0x2a2018);
+    }
+    for (const sd of subDoors) paintDoor(sd.x0, sd.x1, sd.name, 0xffd23f);
 
     // ljuskäglor + AO
-    if (!shabby && !worn) for (let sx = 60; sx < RIGHT - 20; sx += 85) P.ell(sx, WALL_Y + 23, 22, 10, 0xfff3d0, night ? 0.05 : 0.1, 4);
+    if (!shabby && !worn && night !== 'dark') for (let sx = 60; sx < RIGHT - 20; sx += 85) P.ell(sx, WALL_Y + 23, 22, 10, 0xfff3d0, night ? 0.05 : 0.1, 4);
     for (let y = WALL_Y; y < WALL_Y + 4; y++) for (let x = 0; x < RIGHT; x++) {
       if (hasExit && x >= DOOR.cx - 13 && x < DOOR.cx + 13) continue;
       if (bayer(x, y) < 1 - (y - WALL_Y) / 4) P.px(x, y, 0x1a1426, 0.18);
@@ -1348,11 +2011,23 @@ function buildBg(roomDef, RIGHT, subDoors, hasExit, plan, visit) {
 //   betong   – Förortsettan: höghuset mittemot, med grannar som rör sig i fönstren
 //   tradgard – radhusets trädgård: plankstaket, äppelträd, grill, grannarnas tegeltak
 //   stad     – takvåningens panorama: skylinen, TV-tornet, ån med bron och terrassen
+//   frost    – badrummens frostade glas (ingen utsikt)
 function paintView(P, view, x0, x1, y0, y1, night, dirty) {
   if (view === 'tomt') return viewTomt(P, x0, x1, y0, y1, night);
   if (view === 'betong') return viewBetong(P, x0, x1, y0, y1, night);
   if (view === 'tradgard') return viewTradgard(P, x0, x1, y0, y1, night);
   if (view === 'stad') return viewStad(P, x0, x1, y0, y1, night);
+  if (view === 'frost') { // badrummens frostade glas: mjölkigt, ljusare upptill, ett svagt kornigt mönster
+    for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) {
+      const t = (y - y0) / (y1 - y0);
+      let c = night ? mix(0x3a4666, 0x262c44, t) : mix(0xf0f4f6, 0xc8d6e0, t);
+      if (((x + y) % 3) === 0) c = mix(c, 0xffffff, night ? 0.06 : 0.25);
+      if (hash(x, y, 26) > 0.9) c = mul(c, 0.94);
+      if (dirty && hash(x >> 1, y >> 1, 23) > 0.9) c = mix(c, 0x9a9070, 0.3);
+      P.px(x, y, c);
+    }
+    return;
+  }
   const sky0 = night ? 0x101838 : 0x8ed0ea, sky1 = night ? 0x1c2140 : 0xbfe6f2;
   for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) {
     let c = mix(sky0, sky1, (y - y0) / (y1 - y0) + (bayer(x, y) - 0.5) * 0.08);
@@ -1656,6 +2331,148 @@ function drawWindowLife(ctx, view, wins, wy0, wy1, t, night) {
   }
 }
 
+// ================= badrummen =================
+// Kakel och klinker per stil. wall/wall2 = plattorna (wall2 varannan platta), grout = fogen,
+// tw×th = plattans mått, offset = förskjutna rader, half = kaklat upp från den höjden (ovanför
+// målad vägg i färgen paint), band = en rad dekorplattor, vein = marmorådring, gold =
+// mässingslist, worn = sprucket och smutsigt (Lilla rummet). Golvet: floor/floor2 (checker =
+// schackrutor), fgrout, fw×fh. towel = handdukarnas färger.
+const BATH = {
+  sliten: { wall: 0xe2ddd0, grout: 0x9c9280, tw: 8, th: 8, floor: 0x9c968a, floor2: 0x8c8678, fgrout: 0x5e584c, fw: 7, fh: 5, towel: [0xc9423a, 0xd8ccb0], worn: true },
+  '70tal': { wall: 0xc88a3a, wall2: 0xa8682c, grout: 0x5a3a1c, tw: 9, th: 9, band: 0x5a8a3a, floor: 0x7a5236, floor2: 0x6a4630, fgrout: 0x3a2618, fw: 8, fh: 6, towel: [0xe07a2e, 0x46a35a] },
+  vit: { wall: 0xf0f0ea, grout: 0xc4c4bc, tw: 12, th: 6, offset: true, band: 0x3a7bd5, floor: 0xb4b8bc, floor2: 0xa4a8ac, fgrout: 0x74787c, fw: 8, fh: 6, towel: [0x3a7bd5, 0xf4f1ea] },
+  bla: { wall: 0xa6cfe0, wall2: 0x96c2d6, grout: 0x7aa4b8, tw: 9, th: 9, half: 38, paint: 0xf2efe6, floor: 0xf0eee8, floor2: 0x6a9ec0, fgrout: 0xb8c4c8, fw: 10, fh: 7, checker: true, towel: [0xf0c020, 0xf4f1ea] },
+  marmor: { wall: 0xf2eee8, grout: 0xd6cfc2, tw: 24, th: 14, vein: 0xb0a898, gold: true, floor: 0xece6da, floor2: 0xdcd4c6, fgrout: 0xc4baa8, fw: 23, fh: 15, towel: [0x2f6a64, 0xd8b24a] },
+  skiffer: { wall: 0x3e4248, wall2: 0x363a40, grout: 0x25282c, tw: 20, th: 10, offset: true, gold: true, floor: 0x34373c, floor2: 0x2c2f34, fgrout: 0x1e2024, fw: 23, fh: 15, towel: [0xf4f1ea, 0x8a6a4a] },
+};
+function bathFloor(x, y, B) {
+  const yy = y - WALL_Y;
+  const tx = Math.floor(x / B.fw), ty = Math.floor(yy / B.fh), lx = x - tx * B.fw, ly = yy - ty * B.fh;
+  let c = B.checker ? (((tx + ty) & 1) ? B.floor2 : B.floor) : mix(B.floor, B.floor2, hash(tx, ty, 131) * 0.7);
+  c = mul(c, 0.97 + hash(tx, ty, 132) * 0.05);
+  if (B.vein) { const v = Math.sin(x * 0.21 + yy * 0.43 + Math.sin(x * 0.07 + yy * 0.05) * 3); if (v > 0.97) c = mix(c, B.vein, 0.4); else if (v > 0.94) c = mix(c, B.vein, 0.15); }
+  if (B.worn) { if (hash(tx, ty, 133) > 0.85) c = mix(c, 0x6a6048, 0.2); if (hash(x >> 1, y >> 1, 134) > 0.97) c = mul(c, 0.85); }
+  if (lx === 0 || ly === 0) return B.worn ? mix(B.fgrout, 0x3a3226, hash(x, y, 135) * 0.6) : B.fgrout;
+  if (lx === 1 || ly === 1) return mix(c, 0xffffff, 0.12);
+  return c;
+}
+// Kaklet på bakväggen (och golvlisten); night = dämpat
+function paintBathWall(P, RIGHT, B, night) {
+  const y0 = B.half || 5;
+  const bandRow = B.band ? Math.floor((WALL_Y - 26 - y0) / B.th) : -1;
+  for (let y = 5; y < WALL_Y; y++) for (let x = 4; x < RIGHT; x++) {
+    let c;
+    if (B.half && y < B.half) c = mix(mul(B.paint, 0.86), B.paint, Math.min(1, (y - 5) / 16) + (bayer(x, y) - 0.5) * 0.08);
+    else {
+      const row = Math.floor((y - y0) / B.th), ox = B.offset && (row & 1) ? B.tw >> 1 : 0;
+      const tx = Math.floor((x - 4 + ox) / B.tw), lx = (x - 4 + ox) - tx * B.tw, ly = (y - y0) - row * B.th;
+      c = B.wall2 && ((tx + row) & 1) ? B.wall2 : B.wall;
+      if (row === bandRow) c = ((tx & 1) ? mix(B.band, 0xffffff, 0.15) : B.band);
+      c = mul(c, 0.97 + hash(tx, row, 141) * 0.05);
+      if (B.vein) { const v = Math.sin(x * 0.17 + y * 0.29 + Math.sin(x * 0.05 + y * 0.11) * 3.2); if (v > 0.97) c = mix(c, B.vein, 0.45); else if (v > 0.93) c = mix(c, B.vein, 0.16); }
+      if (lx > 1 && ly > 1 && lx - ly === 2 && lx < B.tw - 2 && hash(tx, row, 142) > 0.45) c = mix(c, 0xffffff, 0.2); // glansen
+      if (B.worn) {
+        const k = hash(tx, row, 143);
+        if (k > 0.965) c = mix(0x9a9488, 0x8a8478, hash(x, y, 144)); // en platta har ramlat ner – bruket syns
+        else if (k > 0.88 && Math.abs(lx - ly - 1) === 0 && lx > 0) c = mul(B.grout, 0.8); // spricka
+        c = mix(c, 0x8a7a58, Math.max(0, (y - (WALL_Y - 26)) / 90)); // smutsigt nertill
+      }
+      if (lx === 0 || ly === 0) c = B.worn && hash(x, y, 145) > 0.8 ? 0x4a4a36 : B.grout; // mögel i fogarna
+      else if (lx === 1 || ly === 1) c = mix(c, 0xffffff, 0.14);
+      else if (lx === B.tw - 1 || ly === B.th - 1) c = mul(c, 0.93);
+    }
+    if (y >= WALL_Y - 2) c = mul(B.grout, 0.7); // golvlisten
+    P.px(x, y, night ? mul(c, 0.8) : c);
+  }
+  const top = B.half ? B.paint : B.wall;
+  P.hl(4, 5, RIGHT - 4, mul(top, night ? 0.45 : 0.6));
+  if (B.half) { P.hl(4, B.half - 1, RIGHT - 4, mul(B.paint, night ? 0.6 : 0.75)); P.hl(4, B.half, RIGHT - 4, night ? 0xb8b8b4 : 0xf8f8f4); } // kakelkanten
+  if (B.gold) { P.hl(4, WALL_Y - 22, RIGHT - 4, night ? 0xa88a3a : 0xd8b24a); P.hl(4, WALL_Y - 21, RIGHT - 4, night ? 0x86682c : 0xa8823a); }
+}
+// Badrummets fasta detaljer: taklampan (lit = tänd på kvällen), handdukar på krokar,
+// ventilen uppe i hörnet och (Lilla rummet) spindelväv och fuktfläck, (husvagnen)
+// takluckan och toapappret.
+function bathFixtures(P, RIGHT, def, B, lit, night, wall) {
+  const wins = def.windows || [];
+  const clear = (x, r) => x - r > 8 && x + r < RIGHT - 52 && !wins.some(([a, b]) => x + r > a - 4 && x - r < b + 4);
+  const lampX = [Math.round(RIGHT * 0.3), Math.round(RIGHT * 0.45), Math.round(RIGHT * 0.2), 40].find((x) => clear(x, 7)) ?? 40;
+  if (def.lamp === 'glodlampa') bareBulb(P, lampX, 24, lit);
+  else if (def.lamp === 'plafond') {
+    P.rect(lampX - 7, 5, 14, 2, 0xd8d4c8); P.rect(lampX - 6, 7, 12, 3, lit ? 0xfff6d8 : night ? 0x9a968a : 0xf4f0e6);
+    P.hl(lampX - 5, 10, 10, lit ? 0xf0e0b0 : 0xc8c2b4);
+    if (lit) { P.ell(lampX, 13, 34, 14, 0xfff0c0, 0.2, 4); P.ell(lampX, WALL_Y + 18, 40, 10, 0xfff3d0, 0.08, 4); }
+  } else if (def.lamp === 'spots') ceilingSpots(P, RIGHT - 40, lit);
+  else if (def.lamp === 'lysror') {
+    const lx = Math.round(RIGHT / 2) - 18;
+    P.rect(lx, 7, 22, 3, 0xe0dcd0); P.hl(lx, 9, 22, 0x9a968a); P.hl(lx + 1, 8, 20, lit ? 0xfffbe0 : 0xf4f0e4);
+    if (lit) P.ell(lx + 11, 12, 30, 12, 0xf0f8ff, 0.2, 4);
+    // takluckan (ventilationen) och toapappret på väggen bredvid toan
+    const vx = Math.round(RIGHT / 2) + 10;
+    P.rect(vx, 6, 14, 3, 0xb8bcc2); P.hl(vx, 6, 14, 0xdce0e4); P.hl(vx + 1, 8, 12, 0x6a6e74);
+    for (let x = vx + 2; x < vx + 13; x += 3) P.px(x, 7, 0x4a4e54);
+    P.rect(26, 66, 6, 2, 0xa8acb2); P.rect(27, 68, 4, 5, 0xf4f0e6); P.vl(30, 68, 5, 0xc8c4b8); P.px(28, 73, 0xf4f0e6);
+  }
+  // ventilen uppe till vänster
+  if (B) {
+    P.rect(8, 9, 9, 6, mix(B.grout, 0xffffff, 0.5)); P.box(8, 9, 9, 6, mul(B.grout, 0.8));
+    for (let y = 10; y < 14; y += 2) P.hl(9, y, 7, mul(B.grout, 0.6));
+  }
+  // handdukar: en blank stång med två handdukar, skugga på väggen bakom
+  const [t1, t2] = B?.towel || [0xc9423a, 0xf0e8d8];
+  for (const tx of def.towels || []) {
+    P.rect(tx - 7, 41, 15, 1, 0xd8dce0); P.hl(tx - 7, 42, 15, 0x8a8e94);
+    P.rect(tx - 8, 40, 2, 4, 0x9a9ea4); P.rect(tx + 7, 40, 2, 4, 0x9a9ea4);
+    [[tx - 6, t1, 15], [tx + 1, t2, 12]].forEach(([x0, col, len]) => {
+      P.darken(x0 + 5, 44, 1, len, 0.82);
+      for (let y = 42; y < 42 + len; y++) for (let x = x0; x < x0 + 5; x++) {
+        let c = col;
+        if (y === 42) c = mul(col, 0.85);                      // över stången
+        else if (x === x0) c = mix(col, 0xffffff, 0.2);
+        else if (x === x0 + 4) c = mul(col, 0.8);
+        if (y >= 42 + len - 4 && y < 42 + len - 2) c = mix(c, 0xffffff, 0.45); // randen nertill
+        if (y === 42 + len - 1 && (x & 1)) c = mul(c, 0.7);   // fransarna
+        P.px(x, y, night ? mul(c, 0.8) : c);
+      }
+    });
+  }
+  if (B?.worn) { // Lilla rummets badrum: spindelväv, fuktfläck i taket, rostrand
+    paintWeb(P, RIGHT - 5, 5, -1, 16, wall, RIGHT);
+    for (let y = 6; y < 22; y++) for (let x = RIGHT - 44; x < RIGHT - 18; x++) {
+      const d = Math.hypot((x - (RIGHT - 31)) / 13, (y - 9) / 9) + (hash(x, y, 146) - 0.5) * 0.35;
+      if (d < 1) P.px(x, y, 0x6a5430, d > 0.8 ? 0.35 : 0.18);
+    }
+  }
+}
+// spindelväv i ett hörn: strålar + bågar (dirX = 1 åt höger, -1 åt vänster)
+function paintWeb(P, cx, cy, dirX, r, wall, RIGHT) {
+  const col = mix(wall, 0xffffff, 0.55);
+  for (const a of [0, 0.3, 0.62, 0.95, 1.27, 1.57]) {
+    for (let d = 2; d < r; d++) {
+      const x = Math.round(cx + Math.cos(a) * d * dirX), y = Math.round(cy + Math.sin(a) * d);
+      if (y >= 6 && x > 4 && x < RIGHT - 4 && (d + (a * 7 | 0)) % 2 === 0) P.px(x, y, col, 0.75);
+    }
+  }
+  for (const rr of [5, 9, 13, 17]) {
+    if (rr >= r) break;
+    for (let a = 0; a <= 1.57; a += 0.08) {
+      const sag = Math.sin(a * 2) * 1.5;
+      const x = Math.round(cx + Math.cos(a) * rr * dirX), y = Math.round(cy + Math.sin(a) * rr + sag);
+      if (y >= 6 && x > 4 && x < RIGHT - 4) P.px(x, y, col, 0.6);
+    }
+  }
+}
+// naken glödlampa på sladd från taket (lit = tänd)
+function bareBulb(P, bx, by, lit) {
+  for (let y = 5; y < by - 4; y++) P.px(bx, y, 0x2a2420);
+  P.rect(bx - 1, by - 5, 3, 3, 0x3a3530); P.px(bx - 1, by - 5, 0x5a5550);
+  const glass = lit ? 0xfff0a8 : 0xe4dfc8, glassDk = lit ? 0xe6c860 : 0xb8b09a;
+  P.rect(bx - 2, by - 2, 5, 5, glass); P.px(bx - 2, by - 2, glassDk); P.px(bx + 2, by - 2, glassDk); P.px(bx - 2, by + 2, glassDk); P.px(bx + 2, by + 2, glassDk);
+  P.px(bx + 1, by + 1, glassDk); P.px(bx - 1, by - 1, 0xffffff);
+  P.rect(bx - 1, by + 3, 3, 1, glassDk);
+  if (lit) { P.ell(bx, by + 2, 28, 16, 0xffe9a0, 0.16, 3); P.ell(bx, by, 9, 7, 0xfff6c8, 0.35, 2); P.ell(bx, WALL_Y + 14, 34, 9, 0xfff3d0, 0.1, 4); }
+  else P.ell(bx, WALL_Y + 20, 26, 9, 0xfff3d0, 0.06, 4);
+}
+
 // ---------- husvagnen ----------
 // Linoleum i stora rutor, gulnad och sliten: ett gångstråk mitt i, fläckar och skarvar.
 function caravanFloor(x, y, def) {
@@ -1675,7 +2492,9 @@ function caravanFloor(x, y, def) {
 }
 // Väggarna: gulnade plastpaneler med nitar under det rundade taket, träimiterad
 // plastmatta längs nederkanten med en aluminiumlist, rostränder och silvertejp.
-function paintCaravanWall(P, RIGHT, wall, wallDk) {
+// E = där rostfläcken och tejpen sitter (husvagnens gamla gavel – vagnen förlängdes för
+// toadörren); details = false i toaskrubben (där får bara rostränderna plats).
+function paintCaravanWall(P, RIGHT, wall, wallDk, E = RIGHT, details = true) {
   const PANEL = 26, LOW = WALL_Y - 24;
   for (let y = 5; y < WALL_Y; y++) for (let x = 4; x < RIGHT; x++) {
     let c;
@@ -1698,12 +2517,13 @@ function paintCaravanWall(P, RIGHT, wall, wallDk) {
   for (let x = PANEL; x < RIGHT - 3; x += PANEL) for (let y = 12; y < LOW - 2; y += 9) { P.px(x, y, 0x8a8478); P.px(x + 1, y, 0xf0ece0); }
   for (let x = 8; x < RIGHT - 4; x += 9) { P.px(x, 9, 0x8a8478); P.px(x, 8, 0xf0ece0, 0.8); }
   caravanRust(P, PANEL * 3, 12, 14, 1); caravanRust(P, PANEL * 5, 12, 20, 2);
+  if (!details) return;
   // rostfläck vid golvlisten och silvertejp över en spricka
-  for (let y = LOW + 2; y < WALL_Y - 2; y++) for (let x = RIGHT - 34; x < RIGHT - 18; x++) {
-    const d = Math.hypot((x - (RIGHT - 26)) / 8, (y - (WALL_Y - 6)) / 7) + (hash(x, y, 74) - 0.5) * 0.5;
+  for (let y = LOW + 2; y < WALL_Y - 2; y++) for (let x = E - 34; x < E - 18; x++) {
+    const d = Math.hypot((x - (E - 26)) / 8, (y - (WALL_Y - 6)) / 7) + (hash(x, y, 74) - 0.5) * 0.5;
     if (d < 1) P.px(x, y, d < 0.5 ? 0x7a3a18 : 0x9a5226, d < 0.5 ? 0.8 : 0.5);
   }
-  const tx = RIGHT - 30, ty = 24;
+  const tx = E - 30, ty = 24;
   P.line(tx - 4, ty - 6, tx + 3, ty + 9, mul(wall, 0.5));
   P.rect(tx - 5, ty, 12, 5, 0xb8bcc2); P.hl(tx - 5, ty, 12, 0xdce0e4); P.hl(tx - 5, ty + 4, 12, 0x8a8e94);
   P.rect(tx - 2, ty - 3, 5, 11, 0xb8bcc2, 0.9); P.vl(tx - 2, ty - 3, 11, 0xdce0e4, 0.8);
@@ -1719,7 +2539,7 @@ function caravanRust(P, x, y, len, seed) {
 // Kokvrån under fönstret (skåp, laminatskiva, två kokplattor, en bucklig kastrull och en
 // liten diskho), rutiga gardiner på ett snöre, ett lysrör i taket, jackan på kroken vid
 // dörren och en almanacka från 1987.
-function caravanFixtures(P, RIGHT, wins, wy0, wy1, night, hasExit, wall, wallDk) {
+function caravanFixtures(P, RIGHT, wins, wy0, wy1, lit, hasExit, wall, wallDk, E = RIGHT) {
   const [wx0, wx1] = wins[0] || [84, 118];
   caravanRust(P, wx0 - 3, wy1 + 3, 11, 5); caravanRust(P, wx1 + 2, wy1 + 3, 17, 6);
   // kokvrån
@@ -1737,7 +2557,7 @@ function caravanFixtures(P, RIGHT, wins, wy0, wy1, night, hasExit, wall, wallDk)
   P.rect(k0 - 1, top, k1 - k0 + 2, 3, 0xc8c0b0); P.hl(k0 - 1, top, k1 - k0 + 2, 0xe0dace); P.hl(k0 - 1, top + 2, k1 - k0 + 2, 0x8a8478);
   // kokplattorna (vänster) och kastrullen
   P.rect(k0 + 2, top - 2, 15, 2, 0x1e1c20);
-  for (const bx of [k0 + 5, k0 + 12]) { P.hl(bx - 2, top - 2, 5, 0x3a3438); P.hl(bx - 1, top - 1, 3, night ? 0x8a2a1a : 0x4a3a3a); }
+  for (const bx of [k0 + 5, k0 + 12]) { P.hl(bx - 2, top - 2, 5, 0x3a3438); P.hl(bx - 1, top - 1, 3, lit ? 0x8a2a1a : 0x4a3a3a); }
   P.rect(k0 + 8, top + 4, 1, 1, 0xf0ece0); P.rect(k0 + 11, top + 4, 1, 1, 0xf0ece0);
   const px0 = k0 + 9;
   P.rect(px0, top - 7, 7, 5, 0xa8acb2); P.hl(px0, top - 7, 7, 0xd8dce0); P.vl(px0 + 6, top - 6, 4, 0x7a7e84); P.px(px0 + 2, top - 5, 0x8a8e94);
@@ -1759,9 +2579,9 @@ function caravanFixtures(P, RIGHT, wins, wy0, wy1, night, hasExit, wall, wallDk)
     P.hl(gx0, wy0 + 16, gx1 - gx0, 0x8a2a24, 0.6);
   }
   // lysröret i taket
-  const lx = Math.round(RIGHT / 2) - 10;
-  P.rect(lx, 7, 22, 3, 0xe0dcd0); P.hl(lx, 9, 22, 0x9a968a); P.hl(lx + 1, 8, 20, night ? 0xfffbe0 : 0xf4f0e4);
-  if (night) P.ell(lx + 11, 12, 30, 12, 0xf0f8ff, 0.2, 4);
+  const lx = Math.round(E / 2) - 10;
+  P.rect(lx, 7, 22, 3, 0xe0dcd0); P.hl(lx, 9, 22, 0x9a968a); P.hl(lx + 1, 8, 20, lit ? 0xfffbe0 : 0xf4f0e4);
+  if (lit) P.ell(lx + 11, 12, 30, 12, 0xf0f8ff, 0.2, 4);
   // jackan på kroken vid dörren
   if (hasExit) {
     const jx = 12, jy = 34;
@@ -1777,7 +2597,7 @@ function caravanFixtures(P, RIGHT, wins, wy0, wy1, night, hasExit, wall, wallDk)
     }
   }
   // almanacka från 1987 ovanför klädskåpet
-  const ax = RIGHT - 24, ay = 16;
+  const ax = E - 24, ay = 16;
   P.rect(ax, ay, 11, 14, 0xf4efe0); P.rect(ax, ay, 11, 4, 0xc9323a); P.px(ax + 5, ay - 1, 0x3a3a40);
   for (let r = 0; r < 4; r++) for (let q = 0; q < 4; q++) P.px(ax + 2 + q * 2, ay + 6 + r * 2, r === 2 && q === 1 ? 0xc9323a : 0x8a8478);
   P.darken(ax + 11, ay + 1, 1, 14, 0.8); P.darken(ax + 1, ay + 14, 11, 1, 0.8);
@@ -1787,7 +2607,7 @@ function caravanFixtures(P, RIGHT, wins, wy0, wy1, night, hasExit, wall, wallDk)
 // 70-talstapet i bruna och orange ränder med ringar – solblekt upptill, smutsig nertill –
 // med en sockel i stället för bröstpanel, ljusa fläckar där tavlor har hängt, en tapetvåd
 // som släppt och en fuktfläck i taket.
-function paintEttaWall(P, RIGHT, wall, wallDk) {
+function paintEttaWall(P, RIGHT, wall, wallDk, E = RIGHT) {
   const SKIRT = WALL_Y - 5;
   for (let y = 5; y < WALL_Y; y++) for (let x = 4; x < RIGHT; x++) {
     let c;
@@ -1807,7 +2627,7 @@ function paintEttaWall(P, RIGHT, wall, wallDk) {
   }
   P.hl(4, 5, RIGHT - 4, mul(wall, 0.5)); P.hl(4, 6, RIGHT - 4, mul(wall, 0.7));
   // ljusa rektanglar där tavlor har hängt, med spikhålen kvar
-  for (const [gx, gy, gw, gh] of [[RIGHT - 42, 20, 16, 13], [140, 24, 10, 12]]) {
+  for (const [gx, gy, gw, gh] of [[E - 42, 20, 16, 13], [140, 24, 10, 12]]) {
     for (let y = gy; y < gy + gh; y++) for (let x = gx; x < gx + gw; x++) P.px(x, y, mix(P.get(x, y), 0xf0e6d0, 0.3));
     P.px(gx + (gw >> 1), gy - 2, 0x3a3228);
   }
@@ -1816,15 +2636,15 @@ function paintEttaWall(P, RIGHT, wall, wallDk) {
   for (let i = 0; i < 9; i++) { for (let x = sx - i; x <= sx; x++) P.px(x, 6 + i, 0xd8d0c0); }
   for (let i = 0; i < 8; i++) for (let x = sx + 1; x < sx + 9 - i; x++) P.px(x, 7 + i, i === 7 || x === sx + 8 - i ? 0x8a7a58 : 0xe6dcc6);
   // fuktfläcken i taket
-  for (let y = 6; y < 24; y++) for (let x = RIGHT - 30; x < RIGHT - 4; x++) {
-    const d = Math.hypot((x - (RIGHT - 16)) / 13, (y - 8) / 11) + (hash(x, y, 82) - 0.5) * 0.3;
+  for (let y = 6; y < 24; y++) for (let x = E - 30; x < E - 4; x++) {
+    const d = Math.hypot((x - (E - 16)) / 13, (y - 8) / 11) + (hash(x, y, 82) - 0.5) * 0.3;
     if (d < 1) P.px(x, y, 0x6a5430, d > 0.82 ? 0.35 : 0.18);
   }
 }
 // Radiatorn under vänstra fönstret (med en strumpa på tork), pentryt under det högra
 // (laminatskiva, två plattor, diskho med kran, diskställ, skåp), plafonden i taket med
 // döda flugor, strömbrytare, porttelefon och ett eluttag.
-function ettaFixtures(P, RIGHT, wins, wy0, wy1, night, hasExit, wall, wallDk) {
+function ettaFixtures(P, RIGHT, wins, wy0, wy1, lit, hasExit, wall, wallDk) {
   const [a, b] = [wins[0], wins[1] || null];
   if (a) {
     const r0 = a[0] + 3, r1 = a[1] - 3, rt = WALL_Y - 20, rb = WALL_Y - 7;
@@ -1867,9 +2687,9 @@ function ettaFixtures(P, RIGHT, wins, wy0, wy1, night, hasExit, wall, wallDk) {
   }
   // plafonden i taket (med döda flugor i)
   const px = a && b ? Math.round((a[1] + b[0]) / 2) : Math.round(RIGHT / 2);
-  P.rect(px - 6, 5, 12, 2, 0xd8d4c8); P.rect(px - 5, 7, 10, 2, night ? 0xfff6d8 : 0xf0ece0); P.hl(px - 4, 9, 8, night ? 0xf0e0b0 : 0xd8d2c4);
+  P.rect(px - 6, 5, 12, 2, 0xd8d4c8); P.rect(px - 5, 7, 10, 2, lit ? 0xfff6d8 : 0xf0ece0); P.hl(px - 4, 9, 8, lit ? 0xf0e0b0 : 0xd8d2c4);
   P.px(px - 2, 8, 0x3a3228); P.px(px + 2, 7, 0x3a3228);
-  if (night) { P.ell(px, 12, 34, 14, 0xfff0c0, 0.22, 4); P.ell(px, WALL_Y + 18, 40, 10, 0xfff3d0, 0.08, 4); }
+  if (lit) { P.ell(px, 12, 34, 14, 0xfff0c0, 0.22, 4); P.ell(px, WALL_Y + 18, 40, 10, 0xfff3d0, 0.08, 4); }
   if (hasExit) {
     // porttelefon och strömbrytare bredvid dörren, med smuts runt omkring
     const ix = DOOR.x1 + 5;
@@ -2045,7 +2865,7 @@ function paintTrapphus(P, x0, night) {
     P.px(ax + dx + (w >> 1), ay + dy, sh(0xc9323a));
   }
   // trappautomaten (lyser varmt på kvällen)
-  const tx = x0 + 100, ty = 56;
+  const tx = Math.min(x0 + 100, FW - 14), ty = 56; // (smalt trapphus när Ettan fick badrumsdörren: automaten får plats ändå)
   P.rect(tx, ty, 6, 8, sh(0xe8e2cc)); P.box(tx, ty, 6, 8, sh(0xa8a088));
   P.rect(tx + 2, ty + 3, 2, 2, night ? 0xffa040 : 0xc08030);
   if (night) P.ell(tx + 3, ty + 4, 7, 6, 0xffa040, 0.3, 3);
@@ -2086,17 +2906,17 @@ function paintTrapphus(P, x0, night) {
 }
 
 // takvåningens infällda spotlights i taket
-function ceilingSpots(P, RIGHT, night) {
+function ceilingSpots(P, RIGHT, lit) {
   for (let x = 40; x < RIGHT - 20; x += 64) {
-    P.rect(x - 2, 6, 5, 2, 0xc8ccd4); P.hl(x - 1, 7, 3, night ? 0xfff6d8 : 0xf4f4f0);
-    if (night) P.ell(x, 14, 12, 9, 0xfff0c8, 0.2, 4);
+    P.rect(x - 2, 6, 5, 2, 0xc8ccd4); P.hl(x - 1, 7, 3, lit ? 0xfff6d8 : 0xf4f4f0);
+    if (lit) P.ell(x, 14, 12, 9, 0xfff0c8, 0.2, 4);
   }
 }
 
 // ---------- Lilla rummets förfall ----------
 // Sprickor, fuktfläckar, flagnande tapet, spindelväv i hörnen, en naken glödlampa
-// (lyser på natten) och slitet golv. Allt deterministiskt ur hash().
-function paintShabby(P, RIGHT, wall, wallDk, night, hasExit, roomDef) {
+// (lit = tänd på kvällen) och slitet golv. Allt deterministiskt ur hash().
+function paintShabby(P, RIGHT, wall, wallDk, lit, hasExit, roomDef, subDoors = []) {
   const crackDk = mul(wall, 0.42), crackLt = mix(wall, 0xffffff, 0.18);
   // sprickor: taggiga linjer nedåt från taklisten och ut från fönstret
   const crack = (x, y, len, seed, drift = 0) => {
@@ -2134,36 +2954,12 @@ function paintShabby(P, RIGHT, wall, wallDk, night, hasExit, roomDef) {
     const y = fy0 + 12 + i, x0 = fx0 + i, x1 = fx0 + 12 + Math.max(0, 6 - i);
     for (let x = x0; x <= x1 && x < RIGHT - 5; x++) if (y < WALL_Y - 3) P.px(x, y, x === x0 || x === x1 || i === 10 ? 0x8a7a58 : 0xe6dcc0);
   }
-  // spindelväv i övre hörnen: strålar + bågar
-  const web = (cx, cy, dirX, r) => {
-    const col = mix(wall, 0xffffff, 0.55);
-    for (const a of [0, 0.3, 0.62, 0.95, 1.27, 1.57]) {
-      for (let d = 2; d < r; d++) {
-        const x = Math.round(cx + Math.cos(a) * d * dirX), y = Math.round(cy + Math.sin(a) * d);
-        if (y >= 6 && x > 4 && x < RIGHT - 4 && (d + (a * 7 | 0)) % 2 === 0) P.px(x, y, col, 0.75);
-      }
-    }
-    for (const rr of [5, 9, 13, 17]) {
-      if (rr >= r) break;
-      for (let a = 0; a <= 1.57; a += 0.08) {
-        const sag = Math.sin(a * 2) * 1.5;
-        const x = Math.round(cx + Math.cos(a) * rr * dirX), y = Math.round(cy + Math.sin(a) * rr + sag);
-        if (y >= 6 && x > 4 && x < RIGHT - 4) P.px(x, y, col, 0.6);
-      }
-    }
-  };
-  web(5, 5, 1, 20); web(RIGHT - 5, 5, -1, 16);
-  // naken glödlampa på sladd från taket – bredvid fönstret och dörren, inte framför dem
-  const clear = (x) => x > 12 && x < RIGHT - 12 && !roomDef.windows.some(([a, b]) => x + 5 > a - 4 && x - 5 < b + 4) && !(hasExit && x + 5 > DOOR.x0 - 3 && x - 5 < DOOR.x1 + 3);
-  const bx = [Math.round(RIGHT * 0.5) + 8, 70, RIGHT - 40, 20].find(clear) ?? Math.round(RIGHT * 0.5), by = 24;
-  for (let y = 5; y < by - 4; y++) P.px(bx, y, 0x2a2420);
-  P.rect(bx - 1, by - 5, 3, 3, 0x3a3530); P.px(bx - 1, by - 5, 0x5a5550);
-  const glass = night ? 0xfff0a8 : 0xe4dfc8, glassDk = night ? 0xe6c860 : 0xb8b09a;
-  P.rect(bx - 2, by - 2, 5, 5, glass); P.px(bx - 2, by - 2, glassDk); P.px(bx + 2, by - 2, glassDk); P.px(bx - 2, by + 2, glassDk); P.px(bx + 2, by + 2, glassDk);
-  P.px(bx + 1, by + 1, glassDk); P.px(bx - 1, by - 1, 0xffffff);
-  P.rect(bx - 1, by + 3, 3, 1, glassDk);
-  if (night) { P.ell(bx, by + 2, 28, 16, 0xffe9a0, 0.16, 3); P.ell(bx, by, 9, 7, 0xfff6c8, 0.35, 2); P.ell(bx, WALL_Y + 14, 34, 9, 0xfff3d0, 0.1, 4); }
-  else P.ell(bx, WALL_Y + 20, 26, 9, 0xfff3d0, 0.06, 4);
+  // spindelväv i övre hörnen
+  paintWeb(P, 5, 5, 1, 20, wall, RIGHT); paintWeb(P, RIGHT - 5, 5, -1, 16, wall, RIGHT);
+  // naken glödlampa på sladd från taket – bredvid fönstret och dörrarna, inte framför dem
+  const clear = (x) => x > 12 && x < RIGHT - 12 && !roomDef.windows.some(([a, b]) => x + 5 > a - 4 && x - 5 < b + 4) && !(hasExit && x + 5 > DOOR.x0 - 3 && x - 5 < DOOR.x1 + 3)
+    && !subDoors.some((sd) => x + 5 > sd.x0 - 3 && x - 5 < sd.x1 + 3);
+  bareBulb(P, [Math.round(RIGHT * 0.5) + 8, 70, RIGHT - 40, 20].find(clear) ?? Math.round(RIGHT * 0.5), 24, lit);
   // golvet: repor och en gammal fläck vid dörren
   const scratch = 0x6a5a40;
   for (let i = 0; i < 9; i++) {

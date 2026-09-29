@@ -10,6 +10,13 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.44.0] – 2026-09-29 – Sova i sängen och egna badrum
+- Sova på riktigt: klicka på sängen och säg ja – figuren lägger sig under täcket med huvudet på kudden, lamporna släcks, månen lyser in, zzz stiger och sedan kommer gryningen och figuren kliver upp och sträcker på sig (klick hoppar fram)
+- Funkar i alla bostäder och med alla sängar, även golvmadrassen och husvagnens brits
+- Varje bostad har ett eget BADRUM (husvagnen en liten TOA) bakom en dörr – toaletten står aldrig mitt i rummet längre, med handfat och dusch eller badkar
+- Gamla sparfiler: dasset som redan står i Lilla rummet får stå kvar tills du flyttar det med Möblera (ett tips visas)
+- Möbelskyltarna (SÄNG, KYLSKÅP …) krockar inte längre med varandra eller med dörrarna
+
 ## [0.43.0] – 2026-09-29 – Flygterminalen och incheckningen
 - FLYGTERMINALEN: flygplatsens dörr leder nu in i en stor gåbar avgångshall med glasväggar – plan som landar och lyfter, tankbilen under vingen, signalgubben och trappbilen, bagagebandet, avgångstavlan som bläddrar, säkerhetskontrollen med bågen som piper, gaterna och PIXEL KAFFE
 - Nytt jobb: INCHECKNINGEN – kolla passen (falska finns!), väg väskorna, välj plats, skriv rätt bagagelapp och skicka iväg surfbrädor och hundburar till specialbagaget; 18 kr per resenär
