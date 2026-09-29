@@ -1,7 +1,7 @@
 {
-  "version": "0.50.1",
+  "version": "0.51.0",
   "date": "2026-09-29",
-  "title": "Numret på ryggen",
+  "title": "Pixelhögskolan och de utbildade jobben",
   "files": [
     "CHANGELOG.md",
     "assets/interior.png",
@@ -70,6 +70,8 @@
     "js/game.js",
     "js/jobs/jobb-bensin.js",
     "js/jobs/jobb-burgare.js",
+    "js/jobs/jobb-datorbygge.js",
+    "js/jobs/jobb-finans.js",
     "js/jobs/jobb-flyg.js",
     "js/jobs/jobb-frukt.js",
     "js/jobs/jobb-incheck.js",
@@ -134,6 +136,7 @@
     "js/scenes/shop-pantbank.js",
     "js/scenes/shop-skor.js",
     "js/scenes/shop-terminal.js",
+    "js/scenes/shop-universitet.js",
     "js/scenes/skraplott.js",
     "js/scenes/walkable.js",
     "js/shops/bostad.js",

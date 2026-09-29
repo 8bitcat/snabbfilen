@@ -1731,7 +1731,7 @@ function paintKontor3(b, night, opts) {
   travertine(P, L, shaftB, b.w, 14);
   P.hl(L, shaftB, b.w, 0xf8f6f0); P.darken(L, shaftB + 14, b.w, 1, 0.7);
   K.ledges.push([L, shaftB - 1, b.w, 1]);
-  const name = 'PIXEL TOWER', nx = centerX(BIG, name, cx);
+  const name = String(b.sign || 'PIXEL TOWER').toUpperCase(), nx = centerX(BIG, name, cx); // (husets skylt – PIXELHÖGSKOLAN; LED-kronan säger PIXEL TOWER)
   signText(P, BIG, name, nx, shaftB + 4, 0x5a626e, { shadow: 0xb8b2a4, hi: 0x8a929e, lo: 0x3a404a });
   K.texts.push([...textGlow(BIG, name, 1, 0x7ad0ff, K.wx(nx), K.wy(shaftB + 4), false), 0.95]);
   const panes = lobbyFloor(K, shaftB + 14, { stone: 0xe8e2d4, stoneFn: (Q, x, y, w, h) => travertine(Q, x, y, w, h), wall: 0xe0e4ea, planters: true });

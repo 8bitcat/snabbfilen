@@ -10,6 +10,14 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.51.0] – 2026-09-29 – Pixelhögskolan och de utbildade jobben
+- Pixelhögskolan i downtown har öppnat: skriv in dig på expeditionen i Datorteknik (600 kr) eller Ekonomi (900 kr).
+- Gå fyra föreläsningar i Aula 1 (två timmar var, högst en per kurs och dag) – läraren skriver på tavlan och texten rullar under.
+- Skriv tentan i biblioteket: minst 2 rätt av 3 ger examen och diplom. Underkänd? Omtenta tidigast nästa dag.
+- Med examen i Datorteknik får du jobb på PIXEL DATA: plocka processor, minne, grafikkort, disk och nätagg ur hyllorna efter ordern, kylpasta och kylare, tryck på startknappen – BIOS OK och en kollega bär iväg datorn (12 kr per rätt, +25 kr per färdig dator).
+- Med examen i Ekonomi handlar du aktier på Finanshuset: fyra skärmar med kurser och kundlappar – KÖP eller SÄLJ när priset är rätt (26 kr per affär).
+- Sockeln vid skolans entré säger nu PIXELHÖGSKOLAN (LED-kronan högst upp säger fortfarande PIXEL TOWER).
+
 ## [0.50.1] – 2026-09-29 – Numret på ryggen
 - Kungsladugårds matchtröja har nu spelarens nummer på ryggen: köper du Julias tröja står det 34 på din rygg i staden, och varje spelare har sitt eget nummer.
 - Numret syns redan i matchställdialogen när du vrider figuren bakifrån – och andra spelare ser det också.

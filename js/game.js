@@ -41,7 +41,20 @@ export const JOBS = {
   // missOops = avdrag per patient som tröttnar och går hem (stats.miss, egen rad – inte ett fel).
   vard: { id: 'vard', icon: '🏥', name: 'Vårdcentralen', verb: 'Ta emot patienterna och skicka dem rätt', wage: 13, oops: 5, bonus: 10, bonusPer: 'akutfall först', boxLabel: '🚑 Akutfall först', missOops: 5, missPer: 'patient som går hem' },
   kok: { id: 'kok', icon: '🍳', name: 'Burgarköket', verb: 'Bygg rätterna som beställs i köket', wage: 11, oops: 5 },
+  // de utbildade jobben i downtown: kraver = kursen på Pixelhögskolan som måste vara klar
+  datorbygge: { id: 'datorbygge', icon: '🖥️', name: 'Pixel Data', verb: 'Bygg datorerna precis som beställningen säger', wage: 12, oops: 6, bonus: 25, bonusPer: 'färdig dator', boxLabel: '🖥️ Färdiga datorer', kraver: 'datorteknik' },
+  finans: { id: 'finans', icon: '📈', name: 'Finanshuset', verb: 'Köp och sälj aktierna åt kunderna i rätt läge', wage: 26, oops: 12, kraver: 'ekonomi' },
 };
+// Pixelhögskolan (universitetet i downtown). En kurs = terminsavgift → föreläsningar
+// (2 timmar var, högst en per kurs och dag) → tenta i biblioteket (minst 2 rätt av 3).
+// Examen öppnar det utbildade jobbet (job). Underkänd = omtenta tidigast nästa dag.
+export const COURSES = {
+  datorteknik: { id: 'datorteknik', icon: '💻', name: 'Datorteknik', fee: 600, lectures: 4, job: 'datorbygge',
+    blurb: 'Processorer, minnen, grafikkort och nätaggregat – lär dig bygga datorer som ett proffs.' },
+  ekonomi: { id: 'ekonomi', icon: '📊', name: 'Ekonomi', fee: 900, lectures: 4, job: 'finans',
+    blurb: 'Aktier, kurser och budget – köp billigt, sälj dyrt och håll koll på kunderna.' },
+};
+export const courseOf = (id) => COURSES[id] || null;
 export const JOB_TITLES = ['Nybörjare', 'Van', 'Proffs', 'Mästare', 'Legendar'];
 export const levelOf = (shifts) => Math.min(5, 1 + Math.floor(shifts / 3));
 export const payMult = (level) => 1 + 0.15 * (level - 1);
@@ -396,6 +409,7 @@ export class Game {
     this.home = 'husvagn';                // alla börjar i husvagnen (Carl 2026-09-28)
     this.fridge = { nudlar: 1 };          // itemId -> antal
     this.toys = {};                       // köpta leksaker (Leksakslådan): id -> antal
+    this.edu = {};                        // Pixelhögskolan: kurs-id -> { lect, day, tenta, tentaDay, klar }
     this.jobs = Object.fromEntries(Object.keys(JOBS).map((k) => [k, 0])); // antal jobbade pass per jobb
     this.earned = 0;                      // totalt intjänat
     this.wardrobe = [];                   // köpta plagg: katalog-id (+ gamla 'kind:v' som alias, se wardrobeKeys)
@@ -457,6 +471,13 @@ export class Game {
         g.money = Math.round(+p.money || 0); g.hunger = clamp(p.hunger); g.energy = clamp(p.energy);
         g.home = homeOf(p.home).id;
         g.toys = {}; for (const [k, v] of Object.entries(p.toys && typeof p.toys === 'object' ? p.toys : {})) if ((v | 0) > 0) g.toys[k] = Math.min(999, v | 0);
+        g.edu = {};
+        for (const [k, e] of Object.entries(p.edu && typeof p.edu === 'object' ? p.edu : {})) {
+          if (!e || typeof e !== 'object') continue;
+          const c = COURSES[k];
+          if (!c) { g.edu[k] = e; continue; }   // kurs från en nyare version: följer med orörd
+          g.edu[k] = { ...e, lect: Math.max(0, Math.min(c.lectures, e.lect | 0)), day: e.day | 0, tenta: Math.max(0, e.tenta | 0), tentaDay: e.tentaDay | 0, klar: !!e.klar };
+        }
         g.fridge = {}; for (const [k, v] of Object.entries(p.fridge || {})) { if (!foodOf(k)) keep.fridge[k] = v; else if (v > 0) g.fridge[k] = Math.min(20, v | 0); }
         for (const k of Object.keys(g.jobs)) g.jobs[k] = Math.max(0, p.jobs?.[k] | 0);
         for (const [k, v] of Object.entries(p.jobs || {})) if (!(k in g.jobs)) keep.jobs[k] = v;
@@ -617,12 +638,69 @@ export class Game {
 
   // ---------- jobb ----------
   canWork(jobId) {
+    const need = JOBS[jobId]?.kraver;
+    if (need && !this.edu?.[need]?.klar) return { ok: false, msg: `Här krävs en examen i ${COURSES[need]?.name || need} från Pixelhögskolan.` };
     if (this.energy < 20) return { ok: false, msg: 'Du är för trött för att jobba – gå hem och sov.' };
     // flygplatsen går dygnet runt – men sista nattpasset börjar 23:00
     if (JOBS[jobId]?.nattoppet) return this.min > 23 * 60 ? { ok: false, msg: 'Sista nattpasset har redan gått – nästa pass börjar 07:00.' } : { ok: true };
     if (this.min > 20 * 60) return { ok: false, msg: 'För sent att börja ett pass – jobben öppnar 07:00 igen.' };
     if (this.min < 7 * 60) return { ok: false, msg: 'Jobbet öppnar 07:00.', waitTo: 7 * 60 };
     return { ok: true };
+  }
+  // ---------- Pixelhögskolan ----------
+  hasDegree(id) { return !!this.edu[id]?.klar; }
+  enroll(id) {
+    const c = COURSES[id];
+    if (!c) return { ok: false, msg: 'Den kursen finns inte.' };
+    if (this.edu[id]) return { ok: false, msg: `Du är redan antagen till ${c.name}.` };
+    if (this.money < c.fee) return { ok: false, msg: `Terminsavgiften är ${fmt(c.fee)} – pengarna räcker inte.` };
+    this.money -= c.fee;
+    this.edu[id] = { lect: 0, day: 0, tenta: 0, tentaDay: 0, klar: false };
+    this.save();
+    return { ok: true };
+  }
+  // får jag gå på en föreläsning nu? (salen själv har öppettiderna)
+  canLecture(id) {
+    const e = this.edu[id], c = COURSES[id];
+    if (!c) return { ok: false, msg: 'Den kursen finns inte.' };
+    if (!e) return { ok: false, msg: `Anmäl dig till ${c.name} i expeditionen först.` };
+    if (e.klar) return { ok: false, msg: `Du har redan examen i ${c.name}!` };
+    if (e.lect >= c.lectures) return { ok: false, msg: 'Alla föreläsningar är klara – skriv tentan i biblioteket!' };
+    if (e.day === this.day) return { ok: false, msg: 'Dagens föreläsning är redan gjord – nästa är i morgon.' };
+    if (this.energy < 15) return { ok: false, msg: 'Du är för trött för att hänga med – sov först.' };
+    return { ok: true };
+  }
+  // en föreläsning: 2 timmar och lite ork
+  attendLecture(id) {
+    const chk = this.canLecture(id);
+    if (!chk.ok) return chk;
+    const e = this.edu[id];
+    e.lect += 1; e.day = this.day;
+    this.energy = clamp(this.energy - 10);
+    this.passTime(2 * 60);
+    this.save();
+    return { ok: true, lect: e.lect, of: COURSES[id].lectures };
+  }
+  canExam(id) {
+    const e = this.edu[id], c = COURSES[id];
+    if (!c || !e) return { ok: false, msg: 'Du går inte den kursen.' };
+    if (e.klar) return { ok: false, msg: `Du har redan examen i ${c.name}!` };
+    if (e.lect < c.lectures) return { ok: false, msg: `Tentan kommer efter alla ${c.lectures} föreläsningar (du har gått ${e.lect}).` };
+    if (e.tentaDay === this.day) return { ok: false, msg: 'Du har redan skrivit en tenta i dag – omtentan är i morgon.' };
+    return { ok: true };
+  }
+  // tentan: right av of rätt, minst två tredjedelar = godkänd → examen (en timme)
+  takeExam(id, right, of = 3) {
+    const chk = this.canExam(id);
+    if (!chk.ok) return chk;
+    const e = this.edu[id];
+    right = Math.max(0, Math.min(of, right | 0));
+    const pass = right >= Math.ceil((of * 2) / 3);
+    e.tentaDay = this.day; e.tenta += 1;
+    if (pass) e.klar = true;
+    this.passTime(60);
+    this.save();
+    return { ok: true, pass, right, of };
   }
   // Snabbspola fram till en klockslag samma dag (t.ex. när en butik öppnar).
   waitUntil(targetMin) {

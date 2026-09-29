@@ -125,6 +125,9 @@ const DOOR_SCENES = [
   ['bio', './scenes/shop-bio.js', 'makeShopBio'],
   ['kebab', './scenes/shop-kebab.js', 'makeShopKebab'],
   ['pantbank', './scenes/shop-pantbank.js', 'makePantbank'],
+  ['universitet', './scenes/shop-universitet.js', 'makeShopUniversitet'],
+  ['jobbdatorbygge', './jobs/jobb-datorbygge.js', 'makeJobbDatorbygge'],
+  ['jobbfinans', './jobs/jobb-finans.js', 'makeJobbFinans'],
 ];
 const DOOR_STATE = {};   // namn → 'laddar' | 'klar' | 'fel'
 for (const [n, file, fn] of DOOR_SCENES) {
