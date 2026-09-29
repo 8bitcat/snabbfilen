@@ -8,7 +8,7 @@ import { renderHomePreview } from '../scenes/room.js';
 
 export function openHousing(A, { firstTime = false, onDone } = {}) {
   const g = A.game;
-  const body = `<p style="font-size:19px;margin-top:0">${firstTime
+  const body = `<p style="font-size:var(--f2);margin-top:0">${firstTime
     ? 'Var vill du bo? Lilla rummet är gratis att flytta in i – resten får du spara till.'
     : `💰 <b>${fmt(g.money)}</b> · Hyran dras varje måndag morgon.`}</p>
     <div class="plist">${HOMES.map((h) => {
@@ -61,9 +61,9 @@ export function openHouseSign(A, b, { toAgent } = {}) {
         <small class="sp">Insats <b>${h.deposit ? fmt(h.deposit) : 'gratis'}</b> · hyra ${fmt(h.rent)}/vecka${h.restBonus > 0 ? ` · 😴 +${h.restBonus} energi` : ''}${h.restBonus < 0 ? ` · <span class="bad">🥶 −${Math.abs(h.restBonus)} energi</span>` : ''}</small></span>
     </div>`).join('');
   const dlg = openModal(`${b?.icon || '🏠'} ${b?.sign || 'Bostadshuset'}`, `
-    <p style="font-size:19px;margin-top:0">Här bor du inte${homes.length ? ' – men här finns:' : '.'}</p>
+    <p style="font-size:var(--f2);margin-top:0">Här bor du inte${homes.length ? ' – men här finns:' : '.'}</p>
     ${rows ? `<div class="plist">${rows}</div>` : ''}
-    <p style="font-size:18px;margin-bottom:0">🔑 Vill du flytta hit? Det ordnar mäklaren på <b>Bostadsbyrån</b>.</p>`, [
+    <p style="font-size:var(--f2);margin-bottom:0">🔑 Vill du flytta hit? Det ordnar mäklaren på <b>Bostadsbyrån</b>.</p>`, [
     { label: 'Okej', onClick: closeModal },
     ...(toAgent ? [{ label: '🔑 Till Bostadsbyrån', cls: 'btn-go', onClick: () => { closeModal(); toAgent(); } }] : []),
   ]);
@@ -100,10 +100,10 @@ function lookInside(A, id, opts) {
   let sub = 0, night = false;
   const here = g.home === id, afford = g.money >= h.deposit;
   const dlg = openModal(`👁 ${h.icon} ${h.name}`, `
-    <p style="font-size:19px;margin-top:0">Så här ser det ut när du flyttar in.</p>
+    <p style="font-size:var(--f2);margin-top:0">Så här ser det ut när du flyttar in.</p>
     <div class="look-tabs" data-tabs></div>
     <div class="homelook-pic" data-view></div>
-    <p class="sp" style="font-size:17px;margin:6px 0 0">Insats <b>${h.deposit ? fmt(h.deposit) : 'gratis'}</b> · hyra ${fmt(h.rent)}/vecka</p>`, [
+    <p class="sp" style="font-size:var(--f2);margin:6px 0 0">Insats <b>${h.deposit ? fmt(h.deposit) : 'gratis'}</b> · hyra ${fmt(h.rent)}/vecka</p>`, [
     { label: opts.back ? '← Tillbaka' : '← Alla bostäder', onClick: () => { closeModal(); if (opts.back) opts.back(); else openHousing(A, opts); } },
     ...(here || opts.noMove ? [] : [{ label: afford ? '🔑 Flytta hit' : `Insats ${fmt(h.deposit)}`, cls: afford ? 'btn-go' : '', onClick: () => { if (!afford) { toast(`Du behöver ${fmt(h.deposit)} i insats.`, 'bad'); return; } moveHome(A, id, opts.onDone); } }]),
   ]);

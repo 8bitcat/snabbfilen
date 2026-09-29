@@ -472,8 +472,8 @@ export function makeShopIkea(A, opts = {}) {
     const rooms2 = [...new Set(f2.rooms.map((r) => r.name.replace(/ \d+$/, '')))];
     const depts = [...new Set(f1.depts.map((r) => r.name.replace(/ \d+$/, '')))];
     openModal('ℹ️ Varuhusguide – MÖBELJÄTTEN', `
-      <p style="font-size:19px;margin-top:0">Följ den gula gången – den tar dig genom hela varuhuset. Rulltrapporna och hissen går mellan planen.</p>
-      <div style="display:flex;gap:18px;flex-wrap:wrap;font-size:18px">
+      <p style="font-size:var(--f2);margin-top:0">Följ den gula gången – den tar dig genom hela varuhuset. Rulltrapporna och hissen går mellan planen.</p>
+      <div style="display:flex;gap:18px;flex-wrap:wrap;font-size:var(--f2)">
         <div><b>🛋️ PLAN 2 · UTSTÄLLNING</b><ul>${li(rooms2)}<li>🍽️ Restaurang</li></ul></div>
         <div><b>🏷️ PLAN 1 · ENTRÉPLAN</b><ul>${li(depts)}<li>📦 Självbetjäningslager</li><li>🧾 Kassor</li><li>🌭 Bistro</li><li>🎈 Småland</li></ul></div>
       </div>

@@ -1469,11 +1469,11 @@ export function makeShopKebab(A) {
           <button class="btn btn-small ${on(m) ? 'btn-gold' : ''}" data-pick="${m.id}" data-key="${i + 1}">${on(m) ? '✓ Vald' : m.main ? 'Välj' : '+ Lägg till'} <kbd>${i + 1}</kbd></button>
         </div>`).join('');
       const sas = KEBAB_SASER.map((s) => `<button class="btn btn-small ${pick.sauce === s.id ? 'btn-gold' : ''}" data-sas="${s.id}" data-key="${s.name[0]}" ${hasMain ? '' : 'disabled'}>${s.icon} ${s.name} <kbd>${s.name[0]}</kbd></button>`).join(' ');
-      const body = `<p style="font-size:19px;margin:0 0 8px">💰 <b>${fmt(g.money)}</b> · 🍽️ Mättnad <b>${Math.round(g.hunger)}</b>/100 · ⚡ Energi <b>${Math.round(g.energy)}</b>/100</p>
+      const body = `<p style="font-size:var(--f2);margin:0 0 8px">💰 <b>${fmt(g.money)}</b> · 🍽️ Mättnad <b>${Math.round(g.hunger)}</b>/100 · ⚡ Energi <b>${Math.round(g.energy)}</b>/100</p>
         <div class="plist">${rows}</div>
-        <p style="font-size:18px;margin:10px 0 4px">${COOK_NAME}: <i>"Vitlök eller stark?"</i></p>
+        <p style="font-size:var(--f2);margin:10px 0 4px">${COOK_NAME}: <i>"Vitlök eller stark?"</i></p>
         <div style="display:flex;gap:6px;flex-wrap:wrap">${sas}</div>
-        <p style="font-size:16px;margin:10px 0 0;color:#6d6660">Du får maten på en bricka och sätter dig vid ett ledigt bord eller vid fönstret. Mättnaden och energin kommer medan du äter – bara när du sitter!</p>`;
+        <p style="font-size:var(--f1);margin:10px 0 0;color:#6d6660">Du får maten på en bricka och sätter dig vid ett ledigt bord eller vid fönstret. Mättnaden och energin kommer medan du äter – bara när du sitter!</p>`;
       const can = list.length > 0 && g.money >= price;
       const dlg = openModal(MENU_TITLE, body, [
         { label: 'Nej tack', onClick: closeModal },

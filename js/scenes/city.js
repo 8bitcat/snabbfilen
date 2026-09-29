@@ -296,7 +296,7 @@ export function makeCity(A) {
         <span class="nm">${esc(m.namn)}<br><small class="sp">+${m.matt} mätthet · +${m.orka} ork</small></span>
         <button class="btn btn-small ${g.money >= m.pris ? 'btn-go' : ''}" data-glass="${m.id}" ${g.money >= m.pris ? '' : 'disabled'}>${m.pris} kr</button>
       </div>`).join('');
-    const dlg = openModal('🍦 Glasståndet', `<p style="font-size:19px;margin-top:0">Vilken smak? Slå dig sedan ner vid borden och njut!<br>💰 <b>${g.money} kr</b></p><div class="plist">${rows}</div>`,
+    const dlg = openModal('🍦 Glasståndet', `<p style="font-size:var(--f2);margin-top:0">Vilken smak? Slå dig sedan ner vid borden och njut!<br>💰 <b>${g.money} kr</b></p><div class="plist">${rows}</div>`,
       [{ label: 'Inte nu', onClick: closeModal }]);
     dlg.querySelectorAll('[data-glass]').forEach((btn) => (btn.onclick = () => {
       const m = GLASS_MENY.find((x) => x.id === btn.dataset.glass);
@@ -324,7 +324,7 @@ export function makeCity(A) {
     const hour = g.min / 60;
     if (b.open && (hour < b.open[0] || hour >= b.open[1])) {
       if (hour < b.open[0]) {
-        openModal(`🔒 ${esc(b.sign)}`, `<p style="font-size:20px;margin-top:0">Stängt just nu – öppnar ${clock(b.open[0] * 60)}.</p>`, [
+        openModal(`🔒 ${esc(b.sign)}`, `<p style="font-size:var(--f2);margin-top:0">Stängt just nu – öppnar ${clock(b.open[0] * 60)}.</p>`, [
           { label: 'Gå därifrån', onClick: closeModal },
           { label: '⏩ Vänta tills det öppnar', cls: 'btn-go', onClick: () => { closeModal(); g.waitUntil(b.open[0] * 60); enter(b); } },
         ]);
@@ -366,7 +366,7 @@ export function makeCity(A) {
     else if (b.enter === 'mobler') A.go('mobler');
     else if (b.enter === 'kafe') {
       // kaféet är både fik och arbetsplats
-      openModal('☕ Kaféet', '<p style="font-size:20px;margin-top:0">Vill du fika, eller jobba ett pass bakom disken som barista?</p>', [
+      openModal('☕ Kaféet', '<p style="font-size:var(--f2);margin-top:0">Vill du fika, eller jobba ett pass bakom disken som barista?</p>', [
         { label: '☕ Fika', cls: 'btn-go', onClick: () => { closeModal(); A.go('kafe'); } },
         { label: '💼 Jobba ett pass', onClick: () => { closeModal(); A.startJob('kafe'); } },
       ]);
@@ -404,7 +404,7 @@ export function makeCity(A) {
     const intro = from.broken
       ? 'Kuren är krossad, bänken saknas och tidtabellen är översprejad. Men bussen kommer ändå – antagligen.'
       : `Vart vill du åka? Bussen kostar <b>${BUS_FARE} kr</b> och tar en kvart.`;
-    const body = `<p style="font-size:19px;margin-top:0">${intro}</p><div class="plist">${others.map((s) => `
+    const body = `<p style="font-size:var(--f2);margin-top:0">${intro}</p><div class="plist">${others.map((s) => `
       <div class="prow shoprow"><span style="font-size:28px;text-align:center">${s.broken ? '🚏' : '🚌'}</span>
         <span class="nm">${esc(s.name)}<br><small class="sp">${esc(s.district)}${s.broken ? ' · hållplatsen är trasig' : ''}</small></span>
         <button class="btn btn-small ${g.money >= BUS_FARE ? 'btn-go' : ''}" data-bus="${s.id}" ${g.money >= BUS_FARE ? '' : 'disabled'}>Åk hit</button></div>`).join('')}</div>`;
@@ -435,7 +435,7 @@ export function makeCity(A) {
     if (!bi) { openBusDialog(from); return; } // bussen hann gå medan man gick fram – vanliga dialogen
     S.traffic.hold?.(from.id);
     const dests = (S.traffic.destinations?.(from.id) || []).filter((s) => s.id !== from.id);
-    const body = `<p style="font-size:19px;margin-top:0">Dörrarna står öppna${from.broken ? ' – kuren är sönder men bussen går' : ''}. Resan kostar <b>${BUS_FARE} kr</b>.</p><div class="plist">${dests.map((s) => `
+    const body = `<p style="font-size:var(--f2);margin-top:0">Dörrarna står öppna${from.broken ? ' – kuren är sönder men bussen går' : ''}. Resan kostar <b>${BUS_FARE} kr</b>.</p><div class="plist">${dests.map((s) => `
       <div class="prow shoprow"><span style="font-size:28px;text-align:center">${s.broken ? '🚏' : '🚌'}</span>
         <span class="nm">${esc(s.name)}<br><small class="sp">${esc(s.district)} · ${s.stops} hållplats${s.stops === 1 ? '' : 'er'} bort</small></span>
         <button class="btn btn-small ${g.money >= BUS_FARE ? 'btn-go' : ''}" data-bus="${s.id}" ${g.money >= BUS_FARE ? '' : 'disabled'}>Kliv på</button></div>`).join('')}</div>`;
@@ -780,7 +780,7 @@ export function makeCity(A) {
   function taxiMenu() {
     if (!taxi) return;
     const tx = S.traffic.taxi?.();
-    openModal('🚕 Din taxi', `<p style="font-size:19px;margin-top:0">${tx?.state === 'framme' ? 'Taxin står och väntar vid trottoarkanten' : 'Taxin är på väg'} – till <b>${esc(taxi.dest.icon || '')} ${esc(taxi.dest.sign || '')}</b> för <b>${taxi.kr} kr</b>.</p>`, [
+    openModal('🚕 Din taxi', `<p style="font-size:var(--f2);margin-top:0">${tx?.state === 'framme' ? 'Taxin står och väntar vid trottoarkanten' : 'Taxin är på väg'} – till <b>${esc(taxi.dest.icon || '')} ${esc(taxi.dest.sign || '')}</b> för <b>${taxi.kr} kr</b>.</p>`, [
       { label: '❌ Avbeställ', onClick: () => { closeModal(); cancelTaxi(); toast('🚕 Taxin är avbeställd.'); } },
       { label: '🚶 Gå till taxin', cls: 'btn-go', onClick: () => { closeModal(); const c = tx || { x: taxi.curb.x, curbY: taxi.curb.y }; walker.walkTo(c.x, c.curbY); } },
     ]);
@@ -890,7 +890,16 @@ export function makeCity(A) {
       const x = sx + cam.x, y = sy + cam.y;
       // klick på en fotgängare → hen stannar, vänder sig mot en och säger något med sin egen röst.
       // Nära: direkt (man sitter kvar på bänken). Längre bort: hen väntar medan man går fram.
-      const who = S.life.personAt?.(x, y);
+      // Den som står BAKOM en buss, taxi eller ledig bänk (längre bort i bild) tar inte klicket – det
+      // som står framför ska gå att kliva på / sätta sig på (annars fångade en väntande resenär klicket
+      // på bussdörren och en förbipasserande klicket på bänken).
+      let who = S.life.personAt?.(x, y);
+      if (who) {
+        const car = S.traffic.busDoorHit?.(x, y) || (taxi && S.traffic.taxiHit?.(x, y) ? S.traffic.taxi?.() : null);
+        const bench = S.props.seatAt?.(x, y, (s) => !S.life.seatBusy?.(s.id) && !remoteSat(s));
+        const front = Math.max(car ? car.y : -1e9, bench ? bench.y : -1e9);
+        if (who.y + (who.oy || 0) < front) who = null;
+      }
       if (who) {
         const turn = () => { if (!sitting) { const dx = who.x - walker.px, dy = who.y - walker.py; walker.dir = Math.abs(dx) > Math.abs(dy) * 1.6 ? (dx < 0 ? 'left' : 'right') : dy < 0 ? 'up' : 'down'; } };
         const d = Math.hypot(who.x - walker.px, who.y - walker.py);

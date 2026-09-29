@@ -1507,8 +1507,8 @@ export function makeShopElektronik(A, opts = {}) {
   // ---------- gå ut ----------
   function exit() {
     if (cart) {
-      openModal('📦 Obetald vara', `<p style="font-size:20px;margin-top:0">Du bär på <b>${esc(cart.name)}</b> (${GAME.fmt ? GAME.fmt(cart.price) : cart.price + ' kr'}) som inte är betald.</p>
-        <p style="font-size:18px">Betala i kassan – eller ställ tillbaka den innan du går. Larmbågarna vid dörren piper annars!</p>`, [
+      openModal('📦 Obetald vara', `<p style="font-size:var(--f2);margin-top:0">Du bär på <b>${esc(cart.name)}</b> (${GAME.fmt ? GAME.fmt(cart.price) : cart.price + ' kr'}) som inte är betald.</p>
+        <p style="font-size:var(--f2)">Betala i kassan – eller ställ tillbaka den innan du går. Larmbågarna vid dörren piper annars!</p>`, [
         { label: '↩ Ställ tillbaka och gå', onClick: () => { closeModal(); cart = null; scan = null; leave(); } },
         { label: '🧾 Till kassan', cls: 'btn-go', onClick: () => { closeModal(); goPay(); } },
       ]);

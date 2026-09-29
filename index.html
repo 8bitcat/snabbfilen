@@ -37,6 +37,20 @@
       } catch (e) { /* gamla webbläsare: som förut */ }
     })();
   </script>
+  <script>
+    // Pixeltypsnittet (Pixelstad, css/style.css): --f1..--f4 = 1–4 skärmpixlar per bokstavspixel ≈ 12/24/36/48 px,
+    // avrundat så att en bokstavspixel blir HELA skärmpixlar vid den här skalan (Windows 125 %, iPhone …).
+    // Körs efter skriptet ovan (då är mobilens devicePixelRatio redan rättad).
+    (function () {
+      var fonts = function () {
+        var d = window.devicePixelRatio || 1, st = document.documentElement.style;
+        for (var k = 1; k <= 4; k++) st.setProperty('--f' + k, (12 * Math.max(1, Math.round(k * d)) / d) + 'px');
+      };
+      fonts();
+      window.addEventListener('resize', fonts);
+      if (window.visualViewport) window.visualViewport.addEventListener('resize', fonts);
+    })();
+  </script>
   <title>Snabbfilen</title>
   <meta name="description" content="Livet i Pixelstaden: jobba, käka, klä dig snyggt och spara till drömhuset.">
   <link rel="preconnect" href="https://fonts.googleapis.com">

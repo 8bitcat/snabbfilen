@@ -1439,16 +1439,16 @@ const DIALOG_CSS = `<style>
   .lk-pic{border:3px solid var(--ink);box-shadow:3px 3px 0 var(--ink);line-height:0;touch-action:none;user-select:none}
   .lk canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
   .lk-r{flex:1;min-width:230px;display:flex;flex-direction:column;gap:6px}
-  .lk-kat{font-size:15px;margin:0;color:var(--muted)}
-  .lk-desc{font-size:18px;line-height:1.15;margin:0}
-  .lk-own{font-size:17px;margin:0}
-  .lk-price{font-size:24px;margin:2px 0 0;line-height:1}
-  .lk-money{font-size:17px;margin:0;display:flex;flex-wrap:wrap;gap:0 14px}
+  .lk-kat{font-size:var(--f1);margin:0;color:var(--muted)}
+  .lk-desc{font-size:var(--f2);line-height:1.15;margin:0}
+  .lk-own{font-size:var(--f2);margin:0}
+  .lk-price{font-size:var(--f3);margin:2px 0 0;line-height:1}
+  .lk-money{font-size:var(--f2);margin:0;display:flex;flex-wrap:wrap;gap:0 14px}
   .lk-money span{white-space:nowrap}
-  .lk-hint{font-size:15px;line-height:1.15;color:var(--muted);margin:0;text-align:center}
+  .lk-hint{font-size:var(--f1);line-height:1.15;color:var(--muted);margin:0;text-align:center}
   .lk-list .prow{grid-template-columns:auto 1fr auto;cursor:pointer}
   .lk-list .ico{border:2px solid var(--ink);line-height:0}
-  .lk-list .nm small{color:var(--muted);font-size:15px}
+  .lk-list .nm small{color:var(--muted);font-size:var(--f1)}
 </style>`;
 function crispCanvas(w, h, S) {
   const dpr = globalThis.devicePixelRatio || 1, D = Math.max(1, Math.round(S * dpr));
@@ -1937,7 +1937,7 @@ export function makeShopLeksaker(A, opts = {}) {
         <button class="btn btn-small btn-go" data-buy="${esc(T.id)}" ${i < 9 ? `data-key="${i + 1}"` : ''}>🛍️ ${fmt(T.pris)}${i < 9 ? ` <kbd>${i + 1}</kbd>` : ''}</button>
       </div>`).join('');
     const head = title || (kat === 'alla' ? '🧸 Leksakslådan – hela sortimentet' : `${KAT_ICON[kat]} ${KAT_NAME[kat]}`);
-    const dlg = openModal(head, `${DIALOG_CSS}<p style="font-size:18px;margin:0 0 8px">💰 Du har <b>${fmt(g.money)}</b> · klicka på en leksak för att se den närmare.</p><div class="plist lk-list">${rows}</div>`, [{ label: 'Stäng', onClick: closeModal }]);
+    const dlg = openModal(head, `${DIALOG_CSS}<p style="font-size:var(--f2);margin:0 0 8px">💰 Du har <b>${fmt(g.money)}</b> · klicka på en leksak för att se den närmare.</p><div class="plist lk-list">${rows}</div>`, [{ label: 'Stäng', onClick: closeModal }]);
     dlg.querySelectorAll('[data-ico]').forEach((el) => el.replaceChildren(toyIcon(el.dataset.ico, 2)));
     dlg.querySelectorAll('[data-open]').forEach((el) => (el.onclick = (e) => { if (e.target.closest('[data-buy]')) return; openToy(el.dataset.open); }));
     dlg.querySelectorAll('[data-buy]').forEach((b) => (b.onclick = () => { const T = toyById(b.dataset.buy); closeModal(); const r = buyToy(b.dataset.buy); if (!r.ok && r.poor && T) sayPoor(T); }));

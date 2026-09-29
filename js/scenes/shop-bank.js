@@ -1462,7 +1462,7 @@ export function makeShopBank(A) {
     play('click');
     openKassa(i);
   }
-  const moneyBox = (label, val, bg) => `<div style="flex:1;min-width:130px;background:${bg};border:2px solid var(--ink);padding:4px 8px"><small class="sp">${label}</small><br><b style="font-size:24px">${val}</b></div>`;
+  const moneyBox = (label, val, bg) => `<div style="flex:1;min-width:130px;background:${bg};border:2px solid var(--ink);padding:4px 8px"><small class="sp">${label}</small><br><b style="font-size:var(--f3)">${val}</b></div>`;
   function openKassa(i, receipt = '') {
     dlg = { kind: 'kassa', win: i };
     const s = saldoOf(g), m = Math.floor(g.money), r = nextInterest(g), dn = daysToMonday(g), fresh = s - minOf(g);
@@ -1471,16 +1471,16 @@ export function makeShopBank(A) {
       return `<button class="btn btn-small${kind === 'in' ? ' btn-go' : ' btn-gold'}" data-${kind}="${kr}" ${ok ? '' : 'disabled'}>${label}</button>`;
     };
     const row = (kind) => [50, 100, 500, 1000].map((kr) => btn(kind, kr, groupNum(kr))).join('') + btn(kind, kind === 'in' ? m : s, `Allt (${fmt(Math.max(0, kind === 'in' ? m : s))})`);
-    const body = `${receipt ? `<p style="font-size:18px;margin:0 0 8px;background:#e4f6e8;border:2px dashed #2a8a4a;padding:4px 8px">🧾 ${receipt}</p>` : ''}
+    const body = `${receipt ? `<p style="font-size:var(--f2);margin:0 0 8px;background:#e4f6e8;border:2px dashed #2a8a4a;padding:4px 8px">🧾 ${receipt}</p>` : ''}
       <div style="display:flex;gap:8px;flex-wrap:wrap">${moneyBox('💰 På fickan', fmt(g.money), g.money < 0 ? '#ffe3e3' : '#fff')}${moneyBox('🏦 Sparkontot', fmt(s), '#eaf6ee')}</div>
-      ${g.money < 0 ? `<p class="bad" style="font-size:17px;margin:6px 0 0">⚠️ Du har en skuld på ${fmt(-g.money)}. Ta ut från sparkontot så är den betald.</p>` : ''}
-      <p style="font-size:17px;margin:8px 0">📈 <b>${pctTxt()} % ränta</b> varje måndag morgon på det som legat kvar hela veckan – för dig blir det <b class="ok">+${fmt(r)}</b> ${dn === 1 ? 'i morgon bitti' : `om ${dn} dagar`}.${fresh > 0 ? ` <small class="sp">(${fmt(fresh)} som du satt in i veckan ger ränta från nästa vecka.)</small>` : ''}${s > CAP() ? ` <small class="sp">(Räntan räknas på högst ${fmt(CAP())}.)</small>` : ''}</p>
-      <div style="display:grid;grid-template-columns:auto 1fr;gap:6px 10px;align-items:center;font-size:18px">
+      ${g.money < 0 ? `<p class="bad" style="font-size:var(--f2);margin:6px 0 0">⚠️ Du har en skuld på ${fmt(-g.money)}. Ta ut från sparkontot så är den betald.</p>` : ''}
+      <p style="font-size:var(--f2);margin:8px 0">📈 <b>${pctTxt()} % ränta</b> varje måndag morgon på det som legat kvar hela veckan – för dig blir det <b class="ok">+${fmt(r)}</b> ${dn === 1 ? 'i morgon bitti' : `om ${dn} dagar`}.${fresh > 0 ? ` <small class="sp">(${fmt(fresh)} som du satt in i veckan ger ränta från nästa vecka.)</small>` : ''}${s > CAP() ? ` <small class="sp">(Räntan räknas på högst ${fmt(CAP())}.)</small>` : ''}</p>
+      <div style="display:grid;grid-template-columns:auto 1fr;gap:6px 10px;align-items:center;font-size:var(--f2)">
         <b>⬆️ Sätt in</b><span style="display:flex;gap:4px;flex-wrap:wrap">${row('in')}</span>
         <b>⬇️ Ta ut</b><span style="display:flex;gap:4px;flex-wrap:wrap">${row('ut')}</span>
-        <b>✏️ Eget</b><span style="display:flex;gap:4px;flex-wrap:wrap;align-items:center"><input id="bank-kr" type="number" min="1" step="1" inputmode="numeric" placeholder="kr" style="width:96px;font:inherit;font-size:18px;padding:2px 6px;border:2px solid var(--ink)"><button class="btn btn-small btn-go" data-own="in">Sätt in</button><button class="btn btn-small btn-gold" data-own="ut">Ta ut</button></span>
+        <b>✏️ Eget</b><span style="display:flex;gap:4px;flex-wrap:wrap;align-items:center"><input id="bank-kr" type="number" min="1" step="1" inputmode="numeric" placeholder="kr" style="width:96px;font:inherit;font-size:var(--f2);padding:2px 6px;border:2px solid var(--ink)"><button class="btn btn-small btn-go" data-own="in">Sätt in</button><button class="btn btn-small btn-gold" data-own="ut">Ta ut</button></span>
       </div>
-      <p class="sp" style="font-size:15px;margin:10px 0 0">🔒 Pengarna på banken är trygga. Hyran dras först från fickan – räcker den inte tar banken resten från sparkontot, så du slipper hamna i skuld.</p>`;
+      <p class="sp" style="font-size:var(--f1);margin:10px 0 0">🔒 Pengarna på banken är trygga. Hyran dras först från fickan – räcker den inte tar banken resten från sparkontot, så du slipper hamna i skuld.</p>`;
     const el = openModal(`🏦 Kassa ${i + 1} – Pixelbanken`, body, [
       { label: '📄 Kontoutdrag', onClick: () => openStatement(() => openKassa(i)) },
       { label: 'Klar', cls: 'btn-go', onClick: closeModal },
@@ -1522,10 +1522,10 @@ export function makeShopBank(A) {
     const rows = log.length ? log.map((e) => {
       const [ic, nm, sg] = LOG_TXT[e.t] || ['•', String(e.t), 1];
       const when = `${DAY_NAMES[(Math.max(1, e.d | 0) - 1) % 7]} · dag ${e.d | 0}${e.m != null ? ' · ' + clock(e.m) : ''}`;
-      return `<div class="prow" style="grid-template-columns:40px 1fr auto"><span style="font-size:24px;text-align:center">${ic}</span><span class="nm">${esc(nm)}<br><small class="sp">${esc(when)}</small></span><b class="${sg > 0 ? 'ok' : 'bad'}" style="font-size:20px">${sg > 0 ? '+' : '−'}${fmt(e.n)}</b></div>`;
-    }).join('') : '<p style="font-size:18px">Inga händelser än. Sätt in pengar i kassan så börjar kontot växa!</p>';
+      return `<div class="prow" style="grid-template-columns:40px 1fr auto"><span style="font-size:var(--f3);text-align:center">${ic}</span><span class="nm">${esc(nm)}<br><small class="sp">${esc(when)}</small></span><b class="${sg > 0 ? 'ok' : 'bad'}" style="font-size:var(--f2)">${sg > 0 ? '+' : '−'}${fmt(e.n)}</b></div>`;
+    }).join('') : '<p style="font-size:var(--f2)">Inga händelser än. Sätt in pengar i kassan så börjar kontot växa!</p>';
     const dn = daysToMonday(g);
-    openModal('📄 Kontoutdrag – Sparkonto', `<p style="font-size:19px;margin-top:0">🏦 Saldo: <b>${fmt(saldoOf(g))}</b> · 📈 räntan ${dn === 1 ? 'i morgon' : 'på måndag'}: <b class="ok">+${fmt(nextInterest(g))}</b></p><div class="plist">${rows}</div>`, [
+    openModal('📄 Kontoutdrag – Sparkonto', `<p style="font-size:var(--f2);margin-top:0">🏦 Saldo: <b>${fmt(saldoOf(g))}</b> · 📈 räntan ${dn === 1 ? 'i morgon' : 'på måndag'}: <b class="ok">+${fmt(nextInterest(g))}</b></p><div class="plist">${rows}</div>`, [
       ...(back ? [{ label: '↩ Tillbaka', onClick: back }] : []),
       { label: 'Stäng', cls: 'btn-go', onClick: closeModal },
     ]);
@@ -1542,14 +1542,14 @@ export function makeShopBank(A) {
     dlg = { kind: 'atm' };
     const s = saldoOf(g);
     const ab = (kr, label) => `<button class="btn btn-small" data-atm="${kr}" ${kr > 0 && kr <= s ? '' : 'disabled'} style="background:#1e8a4a;color:#fff;text-shadow:1px 1px 0 #0a3a1e">${label}</button>`;
-    const body = `<div style="background:#0d2a22;border:4px solid #4a5058;box-shadow:inset 0 0 0 2px #1e8a4a;color:#bfffd0;padding:10px 12px;font-size:19px;line-height:1.25">
+    const body = `<div style="background:#0d2a22;border:4px solid #4a5058;box-shadow:inset 0 0 0 2px #1e8a4a;color:#bfffd0;padding:10px 12px;font-size:var(--f2);line-height:1.25">
         <div style="display:flex;justify-content:space-between"><span>SPARKONTO</span><b>${fmt(s)}</b></div>
         <div style="display:flex;justify-content:space-between;opacity:.75"><span>PÅ FICKAN</span><span>${fmt(g.money)}</span></div>
         ${s > 0 ? `<div style="margin-top:8px">VÄLJ BELOPP:</div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:6px">${[100, 200, 500, 1000, 2000].map((kr) => ab(kr, groupNum(kr) + ' kr')).join('')}${ab(s, 'ALLT')}</div>`
           : '<div style="margin-top:8px">KONTOT ÄR TOMT.<br>SÄTT IN PENGAR I KASSAN FÖRST.</div>'}
       </div>
-      <p class="sp" style="font-size:15px;margin:8px 0 0">🏧 Bankomaten tar bara ut – vill du sätta in går du till kassan. Uttaget dras från sparkontot.</p>`;
+      <p class="sp" style="font-size:var(--f1);margin:8px 0 0">🏧 Bankomaten tar bara ut – vill du sätta in går du till kassan. Uttaget dras från sparkontot.</p>`;
     const el = openModal('🏧 Bankomat – Pixelbanken', body, [{ label: 'Avbryt', onClick: closeModal }]);
     el.querySelectorAll('[data-atm]').forEach((b) => (b.onclick = () => { hush(); closeModal(); atmWithdraw(+b.dataset.atm); }));
     return el;
@@ -1588,15 +1588,15 @@ export function makeShopBank(A) {
     const amounts = [...new Set([s > 0 ? s : null, 500, 1000, 5000].filter(Boolean))].slice(0, 4);
     const rows = amounts.map((kr) => `<tr style="border-top:2px dashed #c8bca8"><td style="padding:3px 4px"><b>${fmt(kr)}</b>${kr === s ? ' <small class="sp">(ditt)</small>' : ''}</td><td>${fmt(growOf(kr, 1))}</td><td>${fmt(growOf(kr, 4))}</td><td class="ok"><b>${fmt(growOf(kr, 10))}</b></td></tr>`).join('');
     const name = esc(A.avatar?.name || 'du');
-    const body = `<p style="font-size:19px;margin-top:0">"Hej ${name}! Ett sparkonto hos oss ger <b>${pctTxt()} % ränta varje vecka</b> på det som legat kvar hela veckan, måndag till måndag. Räntan sätts in varje måndag morgon – och veckan därpå får du ränta på räntan!"</p>
-      <div style="background:#fff;border:2px solid var(--ink);padding:6px 10px;font-size:18px">
+    const body = `<p style="font-size:var(--f2);margin-top:0">"Hej ${name}! Ett sparkonto hos oss ger <b>${pctTxt()} % ränta varje vecka</b> på det som legat kvar hela veckan, måndag till måndag. Räntan sätts in varje måndag morgon – och veckan därpå får du ränta på räntan!"</p>
+      <div style="background:#fff;border:2px solid var(--ink);padding:6px 10px;font-size:var(--f2)">
         <div style="display:flex;justify-content:space-between"><span>🏦 Ditt saldo</span><b>${fmt(s)}</b></div>
         <div style="display:flex;justify-content:space-between"><span>📈 Ränta ${dn === 1 ? 'i morgon' : `om ${dn} dagar`}</span><b class="ok">+${fmt(r)}</b></div>
-        ${fresh > 0 ? `<div style="font-size:15px" class="sp">${fmt(fresh)} har du satt in i veckan – de ger ränta från nästa vecka.</div>` : ''}
+        ${fresh > 0 ? `<div style="font-size:var(--f1)" class="sp">${fmt(fresh)} har du satt in i veckan – de ger ränta från nästa vecka.</div>` : ''}
       </div>
-      <p style="font-size:18px;margin:10px 0 4px"><b>🧮 Räntekalkyl</b> – hela veckor, om pengarna får ligga kvar:</p>
-      <table style="width:100%;font-size:17px;border-collapse:collapse;text-align:left"><tr><th>Insatt</th><th>1 vecka</th><th>4 veckor</th><th>10 veckor</th></tr>${rows}</table>
-      <p class="sp" style="font-size:15px;margin:10px 0 0">🔒 Tryggt: pengarna på banken rörs bara av hyran, och bara när fickan inte räcker (autogiro). Räntan räknas på högst ${fmt(CAP())}. ${ATM_24 ? 'Bankomaten tar ut dygnet runt.' : 'I bankomaten tar du ut utan att köa.'}</p>`;
+      <p style="font-size:var(--f2);margin:10px 0 4px"><b>🧮 Räntekalkyl</b> – hela veckor, om pengarna får ligga kvar:</p>
+      <table style="width:100%;font-size:var(--f2);border-collapse:collapse;text-align:left"><tr><th>Insatt</th><th>1 vecka</th><th>4 veckor</th><th>10 veckor</th></tr>${rows}</table>
+      <p class="sp" style="font-size:var(--f1);margin:10px 0 0">🔒 Tryggt: pengarna på banken rörs bara av hyran, och bara när fickan inte räcker (autogiro). Räntan räknas på högst ${fmt(CAP())}. ${ATM_24 ? 'Bankomaten tar ut dygnet runt.' : 'I bankomaten tar du ut utan att köa.'}</p>`;
     return openModal('💼 Rådgivaren – Sparkonto', body, [
       { label: '📄 Kontoutdrag', onClick: () => openStatement(() => openAdvisor()) },
       { label: '🏦 Till kassan', onClick: () => { closeModal(); if (seat) { [walker.px, walker.py] = seat.exit; seat = null; } goKassa(null); } },

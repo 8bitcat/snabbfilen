@@ -1,9 +1,11 @@
 {
-  "version": "0.54.2",
-  "date": "2026-09-29",
-  "title": "Mobilen i datorns upplösning",
+  "version": "0.55.0",
+  "date": "2026-09-30",
+  "title": "Pixelmenyer",
   "files": [
     "CHANGELOG.md",
+    "assets/fonts/pixelstad-fet.otf",
+    "assets/fonts/pixelstad.otf",
     "assets/interior.png",
     "css/style.css",
     "index.html",

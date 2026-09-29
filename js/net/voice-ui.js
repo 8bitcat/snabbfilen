@@ -45,7 +45,7 @@ function refreshButton() {
 // ---------- panelen ----------
 function panelHtml() {
   const s = voiceState(), info = worldInfo();
-  if (!s.supported) return '<p style="font-size:19px;margin-top:0">Den här webbläsaren kan tyvärr inte skicka röst. Prova Chrome, Edge eller Safari.</p>';
+  if (!s.supported) return '<p style="font-size:var(--f2);margin-top:0">Den här webbläsaren kan tyvärr inte skicka röst. Prova Chrome, Edge eller Safari.</p>';
   const others = playersList();
   const inGroup = new Set((s.group?.members || []).map((m) => m.id).filter(Boolean));
   const pending = new Set(s.sent.map((x) => x.id));
@@ -58,7 +58,7 @@ function panelHtml() {
   const heard = s.links.filter((l) => l.got).map((l) => `<div class="vrow"><span class="nm">${l.talking ? '🗣️' : '🙂'} ${esc(l.name)}<br><small class="sp">${l.grupp ? '👥 gruppen' : '📍 nära'}${l.nara && !l.grupp ? ` · ${Math.round(l.vol * 100)} %` : ''}</small></span>
       <button class="btn btn-small" data-vhush="${esc(l.id)}">${l.hushed ? '🔈 Hör igen' : '🔇 Tysta'}</button></div>`).join('');
   return `
-    <p style="font-size:18px;margin-top:0">Prata med de andra i Pixelstaden! Mikrofonen är <b>alltid avstängd</b> tills du själv slår på den.</p>
+    <p style="font-size:var(--f2);margin-top:0">Prata med de andra i Pixelstaden! Mikrofonen är <b>alltid avstängd</b> tills du själv slår på den.</p>
     <div class="vbox">
       <div class="vhead"><b>🗣️ Röst i närheten</b>
         <button class="btn btn-small ${s.nara ? 'btn-red' : 'btn-go'}" data-vnara>${s.nara ? 'Stäng av' : 'Slå på'}</button></div>
@@ -67,7 +67,7 @@ function panelHtml() {
     <div class="vbox">
       <div class="vhead"><b>👥 Röstgrupp</b>${s.group ? '<button class="btn btn-small btn-red" data-vlamna>🚪 Lämna</button>' : '<button class="btn btn-small btn-go" data-vskapa>➕ Skapa grupp</button>'}</div>
       <small class="sp">${s.group ? (members ? `Med i gruppen: <b>${members}</b>. Ni hörs överallt i stan, var ni än är.` : 'Gruppen är skapad – bjud in kompisar nedan. Ni hörs överallt i stan, var ni än är.') : 'En grupp hörs överallt i stan, var ni än är. Den du bjuder in måste tacka ja.'}</small>
-      ${others.length ? `<div class="vlist">${rows}</div>` : `<p class="sp" style="font-size:16px;margin:6px 0 0">${info.open ? 'Ingen annan är i Pixelstaden just nu.' : '📡 Kopplar upp mot världen…'}</p>`}
+      ${others.length ? `<div class="vlist">${rows}</div>` : `<p class="sp" style="font-size:var(--f1);margin:6px 0 0">${info.open ? 'Ingen annan är i Pixelstaden just nu.' : '📡 Kopplar upp mot världen…'}</p>`}
     </div>
     ${s.mic ? `<div class="vbox"><div class="vhead"><b>${s.micMuted ? '🔇 Din mikrofon är tyst' : s.talkingSelf ? '🗣️ Du pratar' : '🎙️ Din mikrofon är på'}</b>
       <button class="btn btn-small" data-vmic>${s.micMuted ? '🎙️ Slå på' : '🔇 Tysta'}</button></div></div>` : ''}
@@ -108,8 +108,8 @@ function refreshPanel() {
 function showInvite({ namn, accept, decline }) {
   let answered = false;
   const ask = () => {
-    openModal('🎙️ Prata ihop?', `<p style="font-size:20px;margin-top:0"><b>${esc(namn)}</b> bjuder in dig till en röstgrupp – ni hör varandra överallt i stan.</p>
-      <p style="font-size:17px">Går du med slås din mikrofon på (webbläsaren frågar första gången). Du kan lämna gruppen när du vill via 🎙️.</p>`, [
+    openModal('🎙️ Prata ihop?', `<p style="font-size:var(--f2);margin-top:0"><b>${esc(namn)}</b> bjuder in dig till en röstgrupp – ni hör varandra överallt i stan.</p>
+      <p style="font-size:var(--f2)">Går du med slås din mikrofon på (webbläsaren frågar första gången). Du kan lämna gruppen när du vill via 🎙️.</p>`, [
       { label: '🎙️ Gå med', cls: 'btn-go', onClick: async () => { answered = true; closeModal(); await accept(); } },
       { label: 'Nej tack', onClick: () => { answered = true; closeModal(); decline(); } },
     ], { closable: false });

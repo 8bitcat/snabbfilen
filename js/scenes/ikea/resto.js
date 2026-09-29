@@ -42,16 +42,16 @@ export function openMenu(A, { onPay, onCancel }) {
   const qty = Object.fromEntries(MENU.map((m) => [m.id, m.id === 'kottbullar' ? 1 : 0]));
   const rows = MENU.map((m) => `<div class="ik-row" data-id="${m.id}" style="display:flex;align-items:center;gap:10px;margin:4px 0">
       <span data-dish="${m.id}" style="width:66px;display:inline-flex;justify-content:center"></span>
-      <span style="flex:1;font-size:19px"><b>${m.name}</b><br><small class="sp">+${m.fill} mätthet${m.energy ? ` · +${m.energy} energi` : ''}</small></span>
-      <b style="font-size:20px;min-width:52px;text-align:right">${m.price} kr</b>
+      <span style="flex:1;font-size:var(--f2)"><b>${m.name}</b><br><small class="sp">+${m.fill} mätthet${m.energy ? ` · +${m.energy} energi` : ''}</small></span>
+      <b style="font-size:var(--f2);min-width:52px;text-align:right">${m.price} kr</b>
       <button class="btn btn-small" data-minus="${m.id}">−</button>
-      <b data-q="${m.id}" style="font-size:20px;min-width:18px;text-align:center">0</b>
+      <b data-q="${m.id}" style="font-size:var(--f2);min-width:18px;text-align:center">0</b>
       <button class="btn btn-small" data-plus="${m.id}">+</button>
     </div>`).join('');
   const dlg = openModal('🍽️ Restaurangen – MENY', `
-    <p style="font-size:18px;margin-top:0">Ta en bricka och välj – du betalar i kassan och sätter dig sedan vid ett ledigt bord.</p>
+    <p style="font-size:var(--f2);margin-top:0">Ta en bricka och välj – du betalar i kassan och sätter dig sedan vid ett ledigt bord.</p>
     ${rows}
-    <p style="font-size:20px;margin-bottom:0" data-sum></p>`, [
+    <p style="font-size:var(--f2);margin-bottom:0" data-sum></p>`, [
     { label: 'Nej tack', onClick: () => { closeModal(); onCancel?.(); } },
     { label: '🧾 Till kassan', cls: 'btn-go', onClick: () => {
       const items = MENU.flatMap((m) => Array(qty[m.id]).fill(m.id));
@@ -83,8 +83,8 @@ export const KIOSK = [
 ];
 export function openKiosk(A, { onBuy }) {
   const g = A.game;
-  openModal('🌭 Bistron vid utgången', `<p style="font-size:20px;margin-top:0">Korv med bröd – med senap och ketchup – eller en mjukglass?</p>
-    <p style="font-size:17px">Du får den i handen och sätter dig vid bistroborden här bredvid – mättheten kommer medan du äter.</p>
+  openModal('🌭 Bistron vid utgången', `<p style="font-size:var(--f2);margin-top:0">Korv med bröd – med senap och ketchup – eller en mjukglass?</p>
+    <p style="font-size:var(--f2)">Du får den i handen och sätter dig vid bistroborden här bredvid – mättheten kommer medan du äter.</p>
     <p class="sp">Du har ${fmt(g.money)} · Mätthet ${Math.round(g.hunger)}/100</p>`, [
     { label: 'Nej tack', onClick: closeModal },
     ...KIOSK.map((k) => ({ label: `${k.icon} ${k.name} (${k.price} kr)`, cls: k.id === 'korv' ? 'btn-go' : '', onClick: () => {

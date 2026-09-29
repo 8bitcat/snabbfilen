@@ -196,25 +196,25 @@ export function renderCityMap() {
 
 // ---------- dialogen ----------
 const CSS = `
-.cm-wrap{position:relative;overflow-x:auto;overflow-y:hidden;border:3px solid #17151a;background:#17151a;border-radius:4px;touch-action:pan-x;-webkit-overflow-scrolling:touch}
+.cm-wrap{position:relative;overflow-x:auto;overflow-y:hidden;border:3px solid #17151a;background:#17151a;touch-action:pan-x;-webkit-overflow-scrolling:touch}
 .cm-map{position:relative}
 .cm-map canvas{display:block;image-rendering:pixelated}
-.cm-ic{position:absolute;transform:translate(-50%,-100%);border:2px solid #17151a;background:#f4f1ea;border-radius:6px;padding:0;
-  width:22px;height:22px;line-height:18px;font-size:13px;text-align:center;cursor:pointer;box-shadow:0 2px 0 #17151a}
+.cm-ic{position:absolute;transform:translate(-50%,-100%);border:2px solid #17151a;background:#f4f1ea;padding:0;
+  width:22px;height:22px;line-height:18px;font-size:var(--f1);text-align:center;cursor:pointer;box-shadow:0 2px 0 #17151a}
 .cm-ic:hover,.cm-ic.on{background:#ffd23f;z-index:3}
 .cm-ic.shut{filter:grayscale(.7);opacity:.8}
-.cm-me{position:absolute;transform:translate(-50%,-100%);pointer-events:none;z-index:4;font:bold 11px/1 monospace;color:#17151a;
-  background:#ffd23f;border:2px solid #17151a;border-radius:6px;padding:2px 4px;white-space:nowrap;animation:cmbob 1s ease-in-out infinite}
+.cm-me{position:absolute;transform:translate(-50%,-100%);pointer-events:none;z-index:4;font:bold var(--f1)/1 var(--font);color:#17151a;
+  background:#ffd23f;border:2px solid #17151a;padding:2px 4px;white-space:nowrap;animation:cmbob 1s ease-in-out infinite}
 .cm-me::after{content:'';position:absolute;left:50%;bottom:-7px;margin-left:-5px;border:5px solid transparent;border-top-color:#17151a}
 .cm-dot{position:absolute;width:10px;height:10px;margin:-5px 0 0 -5px;border:2px solid #17151a;border-radius:50%;pointer-events:none;z-index:4;animation:cmblink .8s steps(2) infinite}
 @keyframes cmbob{50%{margin-top:-3px}}
 @keyframes cmblink{50%{opacity:.35}}
-.cm-info{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px;min-height:44px;font-size:17px}
-.cm-info .cm-big{font-size:28px}
-.cm-info b{font-size:18px}
-.cm-info small{display:block;opacity:.8;font-size:15px}
+.cm-info{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px;min-height:44px;font-size:var(--f2)}
+.cm-info .cm-big{font-size:var(--f3)}
+.cm-info b{font-size:var(--f2)}
+.cm-info small{display:block;opacity:.8;font-size:var(--f1)}
 .cm-info .grow{flex:1;min-width:160px}
-.cm-hint{margin:0 0 6px;font-size:16px;opacity:.85}
+.cm-hint{margin:0 0 6px;font-size:var(--f1);opacity:.85}
 `;
 // mode 'karta' | 'taxi'. A.guideTo(id) och A.taxiTo(id) gör jobbet (main.js / city.js).
 export function openCityMap(A, { mode = 'karta', select = null } = {}) {

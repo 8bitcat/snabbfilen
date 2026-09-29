@@ -10,6 +10,14 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.55.0] – 2026-09-30 – Pixelmenyer
+- PIXELMENYER: all text i menyerna, dialogerna, knapparna och meddelandena är nu riktig pixeltext – ett eget typsnitt, "Pixelstad", byggt på stadens egna skyltbokstäver, med gemener, å ä ö och en pixelfetstil.
+- Texten ritas bara i storlekar där varje bokstavspixel blir hela skärmpixlar, så den är knivskarp på datorn (även med 125 % skalning i Windows) och på mobilen – också iPhone 13 mini.
+- Rubrikerna är stora och klumpiga som skyltarna i stan, småtexten liten och tydlig; raka pixelhörn överallt, en större ✕-knapp och veckans läge i en kolumn.
+- Bussen: en resenär som väntar bakom bussen fångar inte längre klicket på bussdörren (och samma sak vid taxin).
+- Taxin som fastnar i kö eller vid rödljus står vid trottoarkanten efter högst 22 sekunder.
+- En förbipasserande bakom en ledig bänk fångar inte längre klicket när du vill sätta dig.
+
 ## [0.54.2] – 2026-09-29 – Mobilen i datorns upplösning
 - Mobilen i datorns upplösning: på en telefon i liggande läge läggs hela sidan ut som på en datorskärm och skalas ner lika mycket – menyerna blir inte längre jättestora och figurskaparen syns hel (alla flikar, namnet och Spara-knappen på en gång).
 - Spelbilden är lika knivskarp som förut (varje spelpixel på hela skärmpixlar), både på iPhone och Android.

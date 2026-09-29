@@ -2240,15 +2240,15 @@ export function makeShopNarbutik(A) {
     const rows = gs.map(({ f, n }) => `<div class="prow shoprow">
         <span style="font-size:28px;text-align:center">${f.icon}</span>
         <span class="nm">${esc(f.name)} × ${n}<br><small class="sp">${fmt(narPrice(f))}/st · Stormarknaden ${fmt(f.price)} · +${f.fill} mätthet</small></span>
-        <b style="font-size:20px">${fmt(narPrice(f) * n)}</b>
+        <b style="font-size:var(--f2)">${fmt(narPrice(f) * n)}</b>
         <button class="btn btn-small" data-back="${esc(f.id)}" title="Lägg tillbaka en">↩ Lägg tillbaka</button>
       </div>`).join('');
-    const body = `<p style="font-size:19px;margin-top:0">Expediten har slagit in allt bakom plexiglaset. 💰 Du har <b>${fmt(g.money)}</b>.</p>
-      <p style="font-size:16px;margin:0 0 6px;opacity:.85">🏪 <b>ALLTID ÖPPET · LITE DYRARE</b> – allt kostar 20 % mer än på Stormarknaden (där hade det blivit ${fmt(ord)}).</p>
+    const body = `<p style="font-size:var(--f2);margin-top:0">Expediten har slagit in allt bakom plexiglaset. 💰 Du har <b>${fmt(g.money)}</b>.</p>
+      <p style="font-size:var(--f1);margin:0 0 6px;opacity:.85">🏪 <b>ALLTID ÖPPET · LITE DYRARE</b> – allt kostar 20 % mer än på Stormarknaden (där hade det blivit ${fmt(ord)}).</p>
       <div class="plist">${rows}</div>
-      <p style="font-size:24px;display:flex;justify-content:space-between;border-top:3px dashed var(--ink);padding-top:8px;margin-bottom:6px"><span>SUMMA</span><b>${fmt(sum)}</b></p>
-      ${afford ? `<p style="font-size:18px;margin:0">Maten hamnar i kylskåpet där hemma. Efter köpet har du ${fmt(g.money - sum)} kvar.</p>`
-        : `<p class="bad" style="font-size:20px;margin:0"><b>⚠️ Pengarna räcker inte!</b> Du har ${fmt(g.money)} – det fattas <b>${fmt(sum - g.money)}</b>. Lägg tillbaka något.</p>`}`;
+      <p style="font-size:var(--f3);display:flex;justify-content:space-between;border-top:3px dashed var(--ink);padding-top:8px;margin-bottom:6px"><span>SUMMA</span><b>${fmt(sum)}</b></p>
+      ${afford ? `<p style="font-size:var(--f2);margin:0">Maten hamnar i kylskåpet där hemma. Efter köpet har du ${fmt(g.money - sum)} kvar.</p>`
+        : `<p class="bad" style="font-size:var(--f2);margin:0"><b>⚠️ Pengarna räcker inte!</b> Du har ${fmt(g.money)} – det fattas <b>${fmt(sum - g.money)}</b>. Lägg tillbaka något.</p>`}`;
     if (!afford) play('fel');
     const dlg = openModal('🧾 Disken – Närbutiken 24/7', body, [
       { label: 'Avbryt', onClick: () => { closeModal(); cancelScan(); } },
@@ -2268,8 +2268,8 @@ export function makeShopNarbutik(A) {
   // ---------- gå ut ----------
   function exit() {
     if (basket.length) {
-      openModal('🧺 Obetalda varor', `<p style="font-size:20px;margin-top:0">Du har <b>${basket.length}</b> ${basket.length === 1 ? 'vara' : 'varor'} i korgen som inte är betalda (${fmt(total())}).</p>
-        <p style="font-size:18px">Betala vid disken – eller ställ tillbaka allt innan du går. Expediten ser allt i den runda spegeln.</p>`, [
+      openModal('🧺 Obetalda varor', `<p style="font-size:var(--f2);margin-top:0">Du har <b>${basket.length}</b> ${basket.length === 1 ? 'vara' : 'varor'} i korgen som inte är betalda (${fmt(total())}).</p>
+        <p style="font-size:var(--f2)">Betala vid disken – eller ställ tillbaka allt innan du går. Expediten ser allt i den runda spegeln.</p>`, [
         { label: '↩ Ställ tillbaka allt och gå', onClick: () => { closeModal(); basket = []; scan = null; leave(); } },
         { label: '🧾 Till disken', cls: 'btn-go', onClick: () => { closeModal(); goPay(); } },
       ]);
@@ -2291,8 +2291,8 @@ export function makeShopNarbutik(A) {
     if (L.open) { showTicket(); return; } // en lott som inte är färdigskrapad
     const left = lottLeft(g);
     if (!left) { expSay('Rullen är slut. Kom i morgon.'); hint('🍀 Slut på lotter för i dag.'); return; }
-    openModal('🍀 Lyckoskrap', `<p style="font-size:20px;margin-top:0">En skraplott kostar <b>${LOTT_PRIS} kr</b>. Skrapa fram sex belopp – <b>tre lika</b> och du vinner beloppet: 100, 500 eller 1 000 kr!</p>
-      <p style="font-size:17px;margin:0">De flesta lotter är nitlotter – det är liten chans att vinna. 💰 Du har <b>${fmt(g.money)}</b> · ${left} ${left === 1 ? 'lott' : 'lotter'} kvar på rullen i dag (högst ${LOTT_PER_DAG}).</p>`, [
+    openModal('🍀 Lyckoskrap', `<p style="font-size:var(--f2);margin-top:0">En skraplott kostar <b>${LOTT_PRIS} kr</b>. Skrapa fram sex belopp – <b>tre lika</b> och du vinner beloppet: 100, 500 eller 1 000 kr!</p>
+      <p style="font-size:var(--f2);margin:0">De flesta lotter är nitlotter – det är liten chans att vinna. 💰 Du har <b>${fmt(g.money)}</b> · ${left} ${left === 1 ? 'lott' : 'lotter'} kvar på rullen i dag (högst ${LOTT_PER_DAG}).</p>`, [
       { label: 'Nej tack', onClick: closeModal },
       { label: `🍀 Köp en lott – ${LOTT_PRIS} kr`, cls: 'btn-go', disabled: g.money < LOTT_PRIS, onClick: () => { closeModal(); buyAndShow(); } },
     ]);

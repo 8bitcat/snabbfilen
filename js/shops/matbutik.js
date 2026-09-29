@@ -5,7 +5,7 @@ import { FOOD, fmt } from '../game.js';
 
 export function openFoodShop(A) {
   const g = A.game;
-  const body = `<p style="font-size:19px;margin-top:0">💰 <b>${fmt(g.money)}</b> · Mätthet: <b>${Math.round(g.hunger)}/100</b></p>
+  const body = `<p style="font-size:var(--f2);margin-top:0">💰 <b>${fmt(g.money)}</b> · Mätthet: <b>${Math.round(g.hunger)}/100</b></p>
     <div class="plist">${FOOD.map((f) => `<div class="prow shoprow">
       <span style="font-size:28px;text-align:center">${f.icon}</span>
       <span class="nm">${f.name}<br><small class="sp">+${f.fill} mätthet · ${fmt(f.price)}</small></span>

@@ -366,10 +366,10 @@ export function makeShopBio(A, opts = {}) {
         <span class="nm"><b>${esc(f.titel)}</b><br><small class="sp">${esc(f.genre)} · ${esc(f.alder)} · 2 tim</small><br><small>${esc(f.blurb)}</small></span>
         <button class="btn btn-small btn-go" data-film="${f.id}" data-key="${i + 1}" ${!har && g.money < BIO_PRIS.biljett ? 'disabled' : ''}>${har ? (har.id === f.id ? '✓ Din' : '🔁 Byt') : `🎟️ ${fmt(BIO_PRIS.biljett)}`} <kbd>${i + 1}</kbd></button>
       </div>`).join('');
-    const body = `<p style="font-size:19px;margin:0 0 8px">💰 <b>${fmt(g.money)}</b> · ⚡ Energi <b>${Math.round(g.energy)}</b>/100 · 🕒 ${clock(g.min)}</p>
-      ${har ? `<p style="font-size:18px;margin:0 0 8px">🎟️ Du har en biljett till <b>${esc(har.titel)}</b> – byta film kostar inget.</p>` : ''}
+    const body = `<p style="font-size:var(--f2);margin:0 0 8px">💰 <b>${fmt(g.money)}</b> · ⚡ Energi <b>${Math.round(g.energy)}</b>/100 · 🕒 ${clock(g.min)}</p>
+      ${har ? `<p style="font-size:var(--f2);margin:0 0 8px">🎟️ Du har en biljett till <b>${esc(har.titel)}</b> – byta film kostar inget.</p>` : ''}
       <div class="plist">${rows}</div>
-      <p style="font-size:16px;margin:10px 0 0;color:#6d6660">Filmen börjar när du satt dig i salongen och tar 2 timmar. Efteråt är du utvilad: +${BIO_EFFEKT.energi} energi. Sista biljetten säljs ${clock(SISTA_BILJETT * 60)}.</p>`;
+      <p style="font-size:var(--f1);margin:10px 0 0;color:#6d6660">Filmen börjar när du satt dig i salongen och tar 2 timmar. Efteråt är du utvilad: +${BIO_EFFEKT.energi} energi. Sista biljetten säljs ${clock(SISTA_BILJETT * 60)}.</p>`;
     const dlg = openModal('🎟️ Biljettluckan – BIO PIXEL', body, [{ label: 'Nej tack', onClick: closeModal }]);
     dlg.querySelectorAll('canvas[data-po]').forEach((cv) => { const x = cv.getContext('2d'); x.imageSmoothingEnabled = false; x.drawImage(posterCanvas(FILMER[+cv.dataset.po].id), 0, 0); });
     dlg.querySelectorAll('[data-film]').forEach((b) => (b.onclick = () => {
@@ -384,13 +384,13 @@ export function makeShopBio(A, opts = {}) {
     if (!isOpen()) { talk.say('🔒 Godisbaren är stängd.', meAt); play('fel'); return; }
     if (!popOpen()) { talkGodis.say(`Tyvärr, vi har stängt baren för i kväll (${clock(SISTA_POPCORN * 60)}). Välkommen åter!`, godisAt); play('fel'); return; }
     if (me.pop) { nag('🍿 ' + (me.state === 'sit' ? MSG_ATUPP : 'Ät upp popcornen du har först!')); return; }
-    const body = `<p style="font-size:19px;margin:0 0 8px">💰 <b>${fmt(g.money)}</b> · 🍽️ Mättnad <b>${Math.round(g.hunger)}</b>/100 · ⚡ Energi <b>${Math.round(g.energy)}</b>/100</p>
+    const body = `<p style="font-size:var(--f2);margin:0 0 8px">💰 <b>${fmt(g.money)}</b> · 🍽️ Mättnad <b>${Math.round(g.hunger)}</b>/100 · ⚡ Energi <b>${Math.round(g.energy)}</b>/100</p>
       <div class="plist"><div class="prow" style="grid-template-columns:52px 1fr auto">
         <canvas data-pop width="8" height="11" style="width:32px;height:44px;image-rendering:pixelated;background:#3c1420;border:2px solid #c8a44a"></canvas>
         <span class="nm">🍿 <b>Popcorn, stor bägare</b><br><small class="sp">+${BIO_EFFEKT.popcornMatt} mättnad · +${BIO_EFFEKT.popcornEnergi} energi – äts tugga för tugga när du sitter</small></span>
         <button class="btn btn-small btn-go" data-buy="pop" data-key="1" ${g.money < BIO_PRIS.popcorn ? 'disabled' : ''}>🍿 ${fmt(BIO_PRIS.popcorn)} <kbd>1</kbd></button>
       </div></div>
-      <p style="font-size:16px;margin:10px 0 0;color:#6d6660">Ta med bägaren in i salongen och ät under filmen – eller slå dig ner på soffan. Ut på gatan får den inte följa med!</p>`;
+      <p style="font-size:var(--f1);margin:10px 0 0;color:#6d6660">Ta med bägaren in i salongen och ät under filmen – eller slå dig ner på soffan. Ut på gatan får den inte följa med!</p>`;
     const dlg = openModal('🍿 Godis & popcorn', body, [{ label: 'Nej tack', onClick: closeModal }]);
     const cv = dlg.querySelector('canvas[data-pop]');
     if (cv) { const x = cv.getContext('2d'); x.imageSmoothingEnabled = false; x.drawImage(bucketImg(7, 7), 0, 0); }
@@ -1191,7 +1191,7 @@ export function makeShopBio(A, opts = {}) {
   // bägaren erbjuds "ät upp snabbt och gå" – resten räknas in (ätregeln: uppäten sittande).
   function askLeave() {
     const pop = !!(me.pop && me.pop.left > 0);
-    openModal('🎬 Gå mitt i filmen?', `<p style="font-size:20px;margin-top:0">${esc(show.film.titel)} är inte slut än. Går du nu missar du slutet – och får bara så mycket energi som du hunnit se.${pop ? ' Popcornen får inte följa med ut – den äter du upp innan du går.' : ''}</p>`, [
+    openModal('🎬 Gå mitt i filmen?', `<p style="font-size:var(--f2);margin-top:0">${esc(show.film.titel)} är inte slut än. Går du nu missar du slutet – och får bara så mycket energi som du hunnit se.${pop ? ' Popcornen får inte följa med ut – den äter du upp innan du går.' : ''}</p>`, [
       { label: '🍿 Stanna kvar', cls: 'btn-go', onClick: closeModal },
       pop
         ? { label: '😋 Ät upp snabbt och gå', onClick: () => { closeModal(); gobble(); leaveShow(); } }

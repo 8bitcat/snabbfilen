@@ -1593,19 +1593,19 @@ function openBuy(A, it, { onBought, back } = {}) {
       background:linear-gradient(#f6ecf2 0 70%, #b88ab0 70% 71%, #e3cfe0 71% 100%)}
     .acb-fig{display:flex;flex-direction:column;align-items:center}
     .acb-fig canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
-    .acb-fig small{font-size:16px;line-height:1;background:var(--ink);color:#fff;padding:2px 6px 1px;margin-bottom:6px;white-space:nowrap}
-    .acb-arrow{font-size:22px;padding-bottom:40px;color:var(--ink)}
+    .acb-fig small{font-size:var(--f1);line-height:1;background:var(--ink);color:#fff;padding:2px 6px 1px;margin-bottom:6px;white-space:nowrap}
+    .acb-arrow{font-size:var(--f2);padding-bottom:40px;color:var(--ink)}
     .acb-turn{display:flex;gap:6px;align-items:center}
-    .acb-view{font-size:17px;min-width:92px;text-align:center}
+    .acb-view{font-size:var(--f2);min-width:92px;text-align:center}
     .acb-r{flex:1;min-width:230px;display:flex;flex-direction:column;gap:8px}
-    .acb-dept{font-size:16px;color:var(--muted);margin:0}
-    .acb-price{font-size:28px;margin:0;line-height:1}
-    .acb-money{font-size:19px;margin:0}
+    .acb-dept{font-size:var(--f1);color:var(--muted);margin:0}
+    .acb-price{font-size:var(--f3);margin:0;line-height:1}
+    .acb-money{font-size:var(--f2);margin:0}
     .acb-sws{display:flex;flex-wrap:wrap;gap:6px}
     .acb-sw{width:28px;height:28px;padding:0;border:3px solid var(--ink);background:var(--c);cursor:pointer;box-shadow:2px 2px 0 var(--ink)}
     .acb-sw.on{outline:3px solid #ffd23f;outline-offset:1px;transform:translate(-1px,-1px)}
-    .acb-hint{font-size:17px;line-height:1.1;color:var(--muted);margin:0}
-    .acb-wear{font-size:19px;display:flex;gap:8px;align-items:center;cursor:pointer}
+    .acb-hint{font-size:var(--f2);line-height:1.1;color:var(--muted);margin:0}
+    .acb-wear{font-size:var(--f2);display:flex;gap:8px;align-items:center;cursor:pointer}
     .acb-wear input{width:20px;height:20px}
   </style>
   <div class="acb">
@@ -1625,7 +1625,7 @@ function openBuy(A, it, { onBought, back } = {}) {
       <p class="acb-dept">${esc(sec.title)}${group ? ' · ' + esc(group) : ''}</p>
       <p class="acb-price">${own ? '<b class="ok">✓ Den här är din!</b>' : `Pris: <b>${rea ? `<s>${fmt(it.price)}</s> ` : ''}${fmt(price)}</b>${rea ? ' <b class="bad">REA</b>' : ''}`}</p>
       <p class="acb-money">💰 Du har <b>${fmt(g.money)}</b>${own ? '' : short > 0 ? ` · <b class="bad">du saknar ${fmt(short)}</b>` : ` · kvar efter köpet: <b>${fmt(g.money - price)}</b>`}</p>
-      ${field && !worn ? `<div><b style="font-size:19px">Prova färg:</b></div>
+      ${field && !worn ? `<div><b style="font-size:var(--f2)">Prova färg:</b></div>
       <div class="acb-sws" data-sws>${sw.map((c) => swBtn(c, c === color)).join('')}</div>
       ${sug && color !== sug ? `<p class="acb-hint">👀 Första rutan är skyltdockans färg – vi valde en som syns mot ${AGAINST[it.slot] || 'dig'}.</p>` : ''}
       <p class="acb-hint">🎨 Färgerna här är bara för att prova – när den är din väljer du fritt i garderoben där hemma.</p>` : ''}
@@ -1694,14 +1694,14 @@ function openKat(A, { sec, ids, title, onBought } = {}) {
       <i data-fig="${esc(it.id)}"></i><b>${esc(plain(it.name))}</b><small>${own ? '✓ Din' : (p < it.price ? '🔥 ' : '') + fmt(p)}</small></button>`;
   };
   const body = `<style>
-    .ack-top{font-size:18px;margin:0 0 6px}
-    .ack-g{font-size:17px;margin:10px 0 4px;color:var(--muted)}
+    .ack-top{font-size:var(--f2);margin:0 0 6px}
+    .ack-g{font-size:var(--f2);margin:10px 0 4px;color:var(--muted)}
     .ack-grid{display:flex;flex-wrap:wrap;gap:6px}
     .ack-t{width:92px;display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 2px 3px;border:3px solid var(--ink);background:#fbf3f8;cursor:pointer;box-shadow:2px 2px 0 var(--ink);font:inherit}
     .ack-t i{display:flex;align-items:flex-end;justify-content:center;min-height:48px;background:linear-gradient(#f6ecf2 0 78%, #e3cfe0 78%);width:100%}
     .ack-t canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
-    .ack-t b{font-size:14px;line-height:1;text-align:center;min-height:28px;display:flex;align-items:center}
-    .ack-t small{font-size:15px;line-height:1}
+    .ack-t b{font-size:var(--f1);line-height:1;text-align:center;min-height:28px;display:flex;align-items:center}
+    .ack-t small{font-size:var(--f1);line-height:1}
     .ack-t.own{background:#e2f6e6}.ack-t.own small{color:#2f8f46;font-weight:bold}
     .ack-t.dyr small{color:#b83d3d}
   </style>

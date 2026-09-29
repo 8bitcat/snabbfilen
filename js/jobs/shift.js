@@ -28,7 +28,7 @@ export function startJobFlow(A, jobId, sceneName) {
   const chk = g.canWork(jobId);
   if (!chk.ok) {
     if (chk.waitTo) {
-      openModal(`${job.icon} ${job.name}`, `<p style="font-size:20px;margin-top:0">${chk.msg}</p>`, [
+      openModal(`${job.icon} ${job.name}`, `<p style="font-size:var(--f2);margin-top:0">${chk.msg}</p>`, [
         { label: 'Gå därifrån', onClick: closeModal },
         { label: '⏩ Vänta tills det öppnar', cls: 'btn-go', onClick: () => { closeModal(); g.waitUntil(chk.waitTo); startJobFlow(A, jobId, sceneName); } },
       ]);
@@ -46,10 +46,10 @@ export function startJobFlow(A, jobId, sceneName) {
     TIP_JOBS.has(jobId) ? `🪙 Snabb service ger <b>dricks</b> – den går rakt ner i lönen` : null,
     `⏱️ Ett pass tar 4 timmar.`,
   ].filter(Boolean);
-  openModal(`${job.icon} ${job.name}`, `<p style="font-size:21px;margin-top:0"><b>${job.verb}!</b></p>
-    <p style="font-size:19px">${rows.join('<br>')}</p>
-    ${g.hunger <= 0 ? '<p class="bad" style="font-size:18px">🥴 Du är utsvulten – du jobbar yr och får halv lön!</p>' : ''}
-    ${g.energy < 40 ? '<p style="font-size:18px">😪 Du är ganska trött – sista passet för i dag?</p>' : ''}`, [
+  openModal(`${job.icon} ${job.name}`, `<p style="font-size:var(--f2);margin-top:0"><b>${job.verb}!</b></p>
+    <p style="font-size:var(--f2)">${rows.join('<br>')}</p>
+    ${g.hunger <= 0 ? '<p class="bad" style="font-size:var(--f2)">🥴 Du är utsvulten – du jobbar yr och får halv lön!</p>' : ''}
+    ${g.energy < 40 ? '<p style="font-size:var(--f2)">😪 Du är ganska trött – sista passet för i dag?</p>' : ''}`, [
     { label: 'En annan gång', onClick: closeModal },
     ...(jobId === 'burgare' ? [{ label: '💼 Jobba ihop', onClick: () => coopPicker(A, jobId, sceneName) }] : []),
     { label: '🔨 Jobba ett pass', cls: 'btn-go', onClick: () => { closeModal(); A.shiftJob = jobId; A.go(sceneName, { onDone: (stats) => finishShift(A, jobId, stats) }); } },
@@ -68,7 +68,7 @@ function coopPicker(A, jobId, sceneName) {
   const rows = list.map((p) => `<div class="prow"><span class="nm">${esc(p.av?.name || '?')}</span>
     <button class="btn btn-small btn-go" data-bjud="${esc(p.id)}">💼 Bjud & börja</button></div>`).join('');
   const dlg = openModal('💼 Jobba ihop – med vem?', `
-    <p style="font-size:19px;margin-top:0">Kompisen får en inbjudan och hoppar rakt in på ditt pass.
+    <p style="font-size:var(--f2);margin-top:0">Kompisen får en inbjudan och hoppar rakt in på ditt pass.
     Ni <b>delar på lönen</b>, extraborden rullas fram och kunderna strömmar in!</p>
     <div class="plist">${rows}</div>`, [
     { label: 'Tillbaka', onClick: () => { closeModal(); startJobFlow(A, jobId, sceneName); } },
@@ -89,7 +89,7 @@ function finishShift(A, jobId, stats) {
   const tips = Math.max(0, Math.round(stats.dricksKr || 0));
   const res = A.game.endShift(jobId, base * mult + tips, stats);
   play('coin');
-  const line = (l, r) => `<div style="display:flex;justify-content:space-between;font-size:20px"><span>${l}</span><b>${r}</b></div>`;
+  const line = (l, r) => `<div style="display:flex;justify-content:space-between;font-size:var(--f2)"><span>${l}</span><b>${r}</b></div>`;
   openModal(`${job.icon} Passet är slut!`, `
     ${line('✅ Rätt', stats.ok + (res.newRecord ? ' 🏅 NYTT REKORD!' : ''))}
     ${line('❌ Fel', stats.fel)}
@@ -103,7 +103,7 @@ function finishShift(A, jobId, stats) {
     ${res.starving ? line('🥴 Yr av hunger', 'halv lön!') : ''}
     ${res.doubled ? line('💰 Extrapass', 'DUBBEL LÖN!') : ''}
     ${line('💰 Lön', fmt(res.finalPay))}
-    ${res.nightEnd ? '<p style="font-size:18px;margin-bottom:0">🌙 Nattpasset tog slut vid midnatt – nattbussen tar dig hem till sängen.</p>' : ''}`, [
+    ${res.nightEnd ? '<p style="font-size:var(--f2);margin-bottom:0">🌙 Nattpasset tog slut vid midnatt – nattbussen tar dig hem till sängen.</p>' : ''}`, [
     { label: res.nightEnd ? '🌙 Ta lönen och åk hem' : '💰 Ta lönen', cls: 'btn-go', onClick: () => { closeModal(); afterShift(A, jobId, res.nightEnd); } },
   ], { closable: false });
 }
@@ -118,7 +118,7 @@ function afterShift(A, jobId, nightEnd = false) {
 
 // Avbryt mitt i (Escape i minispelet): ingen lön, men en timme och lite ork försvann.
 export function abortShift(A) {
-  openModal('🚪 Sluta i förtid?', '<p style="font-size:20px">Går du hem nu får du ingen lön för passet.</p>', [
+  openModal('🚪 Sluta i förtid?', '<p style="font-size:var(--f2)">Går du hem nu får du ingen lön för passet.</p>', [
     { label: 'Jobba vidare', cls: 'btn-go', onClick: closeModal },
     { label: 'Gå hem', cls: 'btn-red', onClick: () => { closeModal(); A.game.passTime(60); A.game.energy = Math.max(0, A.game.energy - 10); A.game.save(); toast('Du smet från jobbet…', 'bad'); afterShift(A, A.shiftJob); } },
   ]);

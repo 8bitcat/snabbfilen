@@ -235,7 +235,7 @@ export function openAvatarPicker({ title = '🧑 Vem spelar?', text = 'Välj din
   const list = listAvatars();
   if (!list.length) return openAvatarEditor({ fresh: true, onDone: onPick, onCancel });
   const cur = loadAvatar();
-  const body = `<p style="font-size:19px;margin-top:0">${esc(text)}</p>
+  const body = `<p style="font-size:var(--f2);margin-top:0">${esc(text)}</p>
     <div class="av-pick">${list.map((a, i) => `<div class="av-card ${cur.id === a.id ? 'on' : ''}" style="--pc:${esc(avatarColor(a))}">
         <button class="av-card-main" data-pick="${i}"><span data-face="${i}"></span><b>${esc(a.name)}</b></button>
         <div class="av-card-tools"><button class="btn btn-small" data-edit="${i}" title="Ändra ${esc(a.name)}">✏️</button><button class="btn btn-small" data-del="${i}" title="Ta bort ${esc(a.name)}">🗑</button></div>
@@ -387,28 +387,28 @@ function injectStyle() {
   st.id = 'av-style-v2';
   st.textContent = `
 .dlg-avatar .av-tabs { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 4px; }
-.dlg-avatar .av-tab { flex-direction: row; justify-content: center; gap: 4px; padding: 3px 4px 2px; font-size: 15px; }
-.dlg-avatar .av-tab i { font-size: 16px; }
-.dlg-avatar .av-sub { font: 16px var(--head); font-weight: 400; text-transform: uppercase; letter-spacing: .8px; color: var(--muted); margin: 4px 0 5px; }
+.dlg-avatar .av-tab { flex-direction: row; justify-content: center; gap: 4px; padding: 3px 4px 2px; font-size: var(--f1); }
+.dlg-avatar .av-tab i { font-size: var(--f1); }
+.dlg-avatar .av-sub { font: var(--f1) var(--head); font-weight: 400; text-transform: uppercase; letter-spacing: .8px; color: var(--muted); margin: 4px 0 5px; }
 .dlg-avatar .av-tile i[data-c] { display: block; width: 60px; height: 60px; background: #ece4d5; }
 .dlg-avatar .av-tiles.tall .av-tile i[data-c] { width: 48px; height: 82px; background: none; }
-.dlg-avatar .av-more { font-size: 17px; line-height: 1; color: var(--muted); margin: -2px 0 8px; }
-.dlg-avatar .av-sw.av-std { background: repeating-linear-gradient(45deg, #fff 0 4px, #dcd6cc 4px 8px); font: 14px/26px var(--head); color: var(--ink); text-align: center; }
+.dlg-avatar .av-more { font-size: var(--f2); line-height: 1; color: var(--muted); margin: -2px 0 8px; }
+.dlg-avatar .av-sw.av-std { background: repeating-linear-gradient(45deg, #fff 0 4px, #dcd6cc 4px 8px); font: var(--f1)/26px var(--head); color: var(--ink); text-align: center; }
 /* täta rutnät: bara bilder (namnet står i rubriken, i verktygstipset och läses upp) */
 .dlg-avatar .av-sec h4 { display: flex; align-items: baseline; gap: 8px; min-width: 0; margin: 8px 0 5px; }
-.dlg-avatar .av-now { font: 17px var(--font); line-height: 1.05; text-transform: none; letter-spacing: 0; color: var(--ink); background: #fff4c7;
+.dlg-avatar .av-now { font: var(--f2) var(--font); line-height: 1.05; text-transform: none; letter-spacing: 0; color: var(--ink); background: #fff4c7;
   border: 2px solid var(--ink); padding: 0 6px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dlg-avatar .av-now.peek { background: #fff; border-style: dashed; }
 .dlg-avatar .av-tiles.bare { grid-template-columns: repeat(auto-fill, minmax(var(--tw, 68px), 1fr)); gap: 5px; margin-bottom: 6px; }
 .dlg-avatar .av-tiles.bare .av-tile { padding: 2px; }
 .dlg-avatar .av-tiles.bare .av-tile span { display: none; }
-.dlg-avatar .av-tiles .av-tile.on::after { top: -6px; right: -6px; width: 16px; height: 16px; font-size: 13px; line-height: 13px; z-index: 1; }
-.dlg-avatar .av-tile .lk { position: absolute; top: -6px; left: -6px; right: auto; width: 16px; height: 16px; font-size: 11px; line-height: 14px; font-style: normal;
+.dlg-avatar .av-tiles .av-tile.on::after { top: -6px; right: -6px; width: 16px; height: 16px; font-size: var(--f1); line-height: 13px; z-index: 1; }
+.dlg-avatar .av-tile .lk { position: absolute; top: -6px; left: -6px; right: auto; width: 16px; height: 16px; font-size: var(--f1); line-height: 14px; font-style: normal;
   text-align: center; background: #fff; border: 2px solid var(--ink); box-sizing: border-box; z-index: 1; }
 .dlg-avatar .av-tile.av-notown { border-style: dashed; }
 /* grupper: knappar som filtrerar rutnätet, en grupp i taget */
 .dlg-avatar .av-chips { position: relative; display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 6px; }
-.dlg-avatar .av-chip { font: 16px var(--font); line-height: 1; color: var(--ink); background: var(--paper2); border: 2px solid var(--ink); box-shadow: 1px 1px 0 var(--ink);
+.dlg-avatar .av-chip { font: var(--f1) var(--font); line-height: 1; color: var(--ink); background: var(--paper2); border: 2px solid var(--ink); box-shadow: 1px 1px 0 var(--ink);
   padding: 2px 6px 1px; cursor: pointer; white-space: nowrap; flex: none; }
 .dlg-avatar .av-chip b { font-weight: 400; color: var(--muted); margin-left: 4px; }
 .dlg-avatar .av-chip.has { background: #fff4c7; }
@@ -419,14 +419,14 @@ function injectStyle() {
 .dlg-avatar .av-chip:focus-visible { outline: 3px solid var(--blue); outline-offset: 1px; }
 .dlg-avatar .av-panel .av-sws { gap: 5px; }
 .dlg-avatar .av-panel .av-sw { width: 28px; height: 28px; }
-.dlg-avatar .av-panel .av-own b { font-size: 19px; }
+.dlg-avatar .av-panel .av-own b { font-size: var(--f2); }
 @media (max-width: 639px) {
   .dlg-avatar .av-tabs { grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 3px; }
-  .dlg-avatar .av-tab { font-size: 13px; padding: 1px 2px 0; }
-  .dlg-avatar .av-tab i { font-size: 14px; }
+  .dlg-avatar .av-tab { font-size: var(--f1); padding: 1px 2px 0; }
+  .dlg-avatar .av-tab i { font-size: var(--f1); }
   .dlg-avatar .av-chips { flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; padding-bottom: 4px; scrollbar-width: thin; }
-  .dlg-avatar .av-chip { font-size: 15px; }
-  .dlg-avatar .av-now { font-size: 15px; }
+  .dlg-avatar .av-chip { font-size: var(--f1); }
+  .dlg-avatar .av-now { font-size: var(--f1); }
   .dlg-avatar .av-panel .av-sw { width: 30px; height: 30px; }
 }
 @media (max-height: 540px) and (min-width: 640px) {

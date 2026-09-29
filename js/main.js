@@ -393,7 +393,7 @@ function checkCollapse() {
   if (!g.collapsed) return;
   g.collapsed = false;
   A.go('room');
-  openModal('😵 Utmattad!', `<p style="font-size:20px">Du somnade där du stod och vaknar hemma – stel, hungrig och inte alls utvilad. Gå och lägg dig i tid nästa gång!</p>`,
+  openModal('😵 Utmattad!', `<p style="font-size:var(--f2)">Du somnade där du stod och vaknar hemma – stel, hungrig och inte alls utvilad. Gå och lägg dig i tid nästa gång!</p>`,
     [{ label: 'Aj då', cls: 'btn-go', onClick: () => { closeModal(); openWeek(A, { morning: true }); } }]);
 }
 
@@ -404,10 +404,10 @@ A.sleepFlow = () => {
   // sparkontot: räntan i morgon bitti och det autogirot tar om fickan inte räcker till hyran
   const ranta = monday && g.bankNextInterest ? g.bankNextInterest() : 0;
   const autogiro = monday && g.bank > 0 ? Math.min(g.bank + ranta, Math.max(0, g.homeInfo.rent - Math.max(0, g.money))) : 0;
-  openModal('😴 Sova', `<p style="font-size:20px">Sova till i morgon 07:00?</p>
-    ${g.hunger < 30 ? '<p style="font-size:18px" class="bad">Du är hungrig – du sover dåligt på tom mage.</p>' : ''}
-    ${monday ? `<p style="font-size:18px">💸 I morgon är det måndag: hyran ${fmt(g.homeInfo.rent)} dras.${autogiro ? ` Fickan räcker inte – banken tar ${fmt(autogiro)} från sparkontot.` : ''}</p>` : ''}
-    ${ranta ? `<p style="font-size:18px">📈 Räntan på sparkontot kommer i morgon bitti: +${fmt(ranta)}.</p>` : ''}`, [
+  openModal('😴 Sova', `<p style="font-size:var(--f2)">Sova till i morgon 07:00?</p>
+    ${g.hunger < 30 ? '<p style="font-size:var(--f2)" class="bad">Du är hungrig – du sover dåligt på tom mage.</p>' : ''}
+    ${monday ? `<p style="font-size:var(--f2)">💸 I morgon är det måndag: hyran ${fmt(g.homeInfo.rent)} dras.${autogiro ? ` Fickan räcker inte – banken tar ${fmt(autogiro)} från sparkontot.` : ''}</p>` : ''}
+    ${ranta ? `<p style="font-size:var(--f2)">📈 Räntan på sparkontot kommer i morgon bitti: +${fmt(ranta)}.</p>` : ''}`, [
     { label: 'Inte än', onClick: closeModal },
     { label: '😴 Sov', cls: 'btn-go', onClick: () => {
       closeModal();
@@ -453,7 +453,7 @@ onInvite((m) => {
   if (modalOpen()) return; // stör inte mitt i en dialog – kompisen kan bjuda igen
   const namn = esc(String(m.namn || 'En kompis').slice(0, 16));
   play('knock');
-  openModal('💼 Jobba ihop?', `<p style="font-size:20px">${namn} jobbar på <b>Burgarbaren</b> och bjuder in dig till passet – häng med och dela disken!</p>`, [
+  openModal('💼 Jobba ihop?', `<p style="font-size:var(--f2)">${namn} jobbar på <b>Burgarbaren</b> och bjuder in dig till passet – häng med och dela disken!</p>`, [
     { label: '💼 Häng med!', cls: 'btn-go', onClick: () => { if (leaveBlocked()) return; closeModal(); startShiftNow(A, 'burgare', 'jobbburgare'); } },
     { label: 'Inte nu', onClick: closeModal },
   ]);
@@ -484,10 +484,10 @@ function openWorldDialog() {
   const role = info.role === 'host' ? 'du håller i världen' : info.role === 'client' && info.open ? 'ansluten' : `kopplar upp${info.tries ? ` (försök ${info.tries + 1})` : ''}`;
   // kommer man inte fram till världen gång på gång stoppar nätet troligen direktkontakten (world.js ICE)
   const stuck = !info.open && info.tries >= 2
-    ? `<p style="font-size:17px;background:#fff1d6;border:2px solid #c9a24a;padding:6px 8px">📡 Du kommer inte fram till de andra – nätet du sitter på stoppar troligen spelets direktkontakt. Prova ett annat wifi eller mobilens nät, eller en annan webbläsare.</p>` : '';
+    ? `<p style="font-size:var(--f2);background:#fff1d6;border:2px solid #c9a24a;padding:6px 8px">📡 Du kommer inte fram till de andra – nätet du sitter på stoppar troligen spelets direktkontakt. Prova ett annat wifi eller mobilens nät, eller en annan webbläsare.</p>` : '';
   const dlg = openModal('👥 Pixelstaden online', `
-    <p style="font-size:19px;margin-top:0">${info.open ? `<b>${info.online}</b> ${info.online === 1 ? 'spelare (bara du) i världen just nu.' : 'spelare i världen just nu.'}` : '📡 Kopplar upp mot världen…'}</p>
-    ${list.length ? `<div class="plist">${rows}</div>` : info.open ? '<p style="font-size:18px">Du är ensam i stan – tipsa någon om länken så ses ni här!</p>' : ''}${stuck}
+    <p style="font-size:var(--f2);margin-top:0">${info.open ? `<b>${info.online}</b> ${info.online === 1 ? 'spelare (bara du) i världen just nu.' : 'spelare i världen just nu.'}` : '📡 Kopplar upp mot världen…'}</p>
+    ${list.length ? `<div class="plist">${rows}</div>` : info.open ? '<p style="font-size:var(--f2)">Du är ensam i stan – tipsa någon om länken så ses ni här!</p>' : ''}${stuck}
     <p class="world-diag">Du ser bara dem som är på samma ställe som du. v${esc(info.version)} · ${role}${info.world !== 'varlden' ? ` · värld: ${esc(info.world)}` : ''}</p>`,
   [
     ...(A.sceneName === 'visit' ? [{ label: '🚗 Åk hem', cls: 'btn-red', onClick: () => { closeModal(); A.visitTarget = null; A.game.passTime(20); A.game.save(); A.go('city'); } }] : []),
@@ -515,7 +515,7 @@ function openWorldDialog() {
 function openDiary() {
   const g = A.game;
   const plagg = g.wardrobeCount();
-  const line = (l, r) => `<div style="display:flex;justify-content:space-between;font-size:20px"><span>${l}</span><b>${r}</b></div>`;
+  const line = (l, r) => `<div style="display:flex;justify-content:space-between;font-size:var(--f2)"><span>${l}</span><b>${r}</b></div>`;
   const jobRows = Object.values(JOBS).map((j) => {
     const n = g.jobs[j.id], b = g.best[j.id];
     return line(`${j.icon} ${j.name}`, n ? `${n} pass · ${JOB_TITLES[levelOf(n) - 1]}${b.ok ? ` · 🏅 ${b.ok} rätt / ${fmt(b.pay)}` : ''}` : 'aldrig jobbat');
@@ -544,9 +544,9 @@ function checkWin() {
   g.won = true;
   g.save();
   play('fanfare');
-  openModal('🏆 Du har lyckats i Pixelstaden!', `<p style="font-size:22px;margin-top:0">Egen villa och <b>${fmt(total)}</b> ${g.bank ? `(${fmt(g.bank)} av dem på banken)` : 'på fickan'} – från ett litet rum till toppen på ${g.day} dagar!</p>
-    <p style="font-size:19px">💰 Totalt intjänat: <b>${fmt(g.earned)}</b><br>🔨 Jobbade pass: <b>${Object.values(g.jobs).reduce((a, b) => a + b, 0)}</b></p>
-    <p style="font-size:19px">Staden är din – spela vidare, bjud hem kompisarna och visa upp villan! 🎉</p>`,
+  openModal('🏆 Du har lyckats i Pixelstaden!', `<p style="font-size:var(--f2);margin-top:0">Egen villa och <b>${fmt(total)}</b> ${g.bank ? `(${fmt(g.bank)} av dem på banken)` : 'på fickan'} – från ett litet rum till toppen på ${g.day} dagar!</p>
+    <p style="font-size:var(--f2)">💰 Totalt intjänat: <b>${fmt(g.earned)}</b><br>🔨 Jobbade pass: <b>${Object.values(g.jobs).reduce((a, b) => a + b, 0)}</b></p>
+    <p style="font-size:var(--f2)">Staden är din – spela vidare, bjud hem kompisarna och visa upp villan! 🎉</p>`,
     [{ label: '🎉 Tack!', cls: 'btn-go', onClick: closeModal }]);
 }
 
@@ -613,8 +613,8 @@ function boot() {
     startWorld(A); // den öppna världen: koppla upp tyst i bakgrunden
     if (firstRun) {
       openModal('🌆 Välkommen till Pixelstaden!', `<div class="who">${''}<div>
-        <p style="font-size:20px;margin-top:0">Här börjar ditt nya liv, <b>${A.avatar.name}</b>! Du har <b>${fmt(A.game.money)}</b> på fickan.</p>
-        <p style="font-size:19px">Alla börjar i en rostig husvagn ute i förorten. Tjäna pengar på stadens jobb, köp mat så du orkar, klä dig snyggt – och spara ihop till en bättre bostad hos bostadsbyrån!</p></div></div>`,
+        <p style="font-size:var(--f2);margin-top:0">Här börjar ditt nya liv, <b>${A.avatar.name}</b>! Du har <b>${fmt(A.game.money)}</b> på fickan.</p>
+        <p style="font-size:var(--f2)">Alla börjar i en rostig husvagn ute i förorten. Tjäna pengar på stadens jobb, köp mat så du orkar, klä dig snyggt – och spara ihop till en bättre bostad hos bostadsbyrån!</p></div></div>`,
         [{ label: '🚐 Till husvagnen', cls: 'btn-go', onClick: () => { closeModal(); A.game.home = 'husvagn'; A.game.save(); A.go('room'); weekFirst(); } }],
         { closable: false });
     } else {

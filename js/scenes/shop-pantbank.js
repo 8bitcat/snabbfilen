@@ -1508,10 +1508,10 @@ export function makePantbank(A) {
     const d = deal;
     const sell = d.kind === 'salj';
     const line = sell ? `Jag ger dig ${d.amount} kronor. Inte en krona mer.` : `${d.amount} kronor i lån. ${d.skuld} tillbaka senast ${dayLabel(g.day + DAYS())} – annars är den min.`;
-    const body = `<div style="display:flex;gap:12px;align-items:center"><span data-pbface></span><p style="font-size:20px;margin:0">«${esc(line)}»</p></div>
-      <div class="plist" style="margin-top:8px"><div class="prow shoprow"><span data-dealfurn></span><span class="nm">${esc(d.name)}<br><small class="sp">Katalogpris ${fmt(katalogOf(d.item.k)?.price || 0)}</small></span><b style="font-size:20px">${fmt(d.amount)}</b><span></span></div></div>
-      ${sell ? `<p style="font-size:17px;margin:8px 0 0">Säljer du får du <b>${fmt(d.amount)}</b> direkt och möbeln är borta för gott – <b>INGA RETURER</b>.</p>`
-        : `<p style="font-size:17px;margin:8px 0 0">Du får <b>${fmt(d.amount)}</b> nu. Betala tillbaka <b>${fmt(d.skuld)}</b> (lånet + ${Math.round(INTEREST() * 100)} % ränta) senast <b>${dayLabel(g.day + DAYS())}</b> så får du tillbaka möbeln. Annars behåller pantbanken den.</p>`}`;
+    const body = `<div style="display:flex;gap:12px;align-items:center"><span data-pbface></span><p style="font-size:var(--f2);margin:0">«${esc(line)}»</p></div>
+      <div class="plist" style="margin-top:8px"><div class="prow shoprow"><span data-dealfurn></span><span class="nm">${esc(d.name)}<br><small class="sp">Katalogpris ${fmt(katalogOf(d.item.k)?.price || 0)}</small></span><b style="font-size:var(--f2)">${fmt(d.amount)}</b><span></span></div></div>
+      ${sell ? `<p style="font-size:var(--f2);margin:8px 0 0">Säljer du får du <b>${fmt(d.amount)}</b> direkt och möbeln är borta för gott – <b>INGA RETURER</b>.</p>`
+        : `<p style="font-size:var(--f2);margin:8px 0 0">Du får <b>${fmt(d.amount)}</b> nu. Betala tillbaka <b>${fmt(d.skuld)}</b> (lånet + ${Math.round(INTEREST() * 100)} % ränta) senast <b>${dayLabel(g.day + DAYS())}</b> så får du tillbaka möbeln. Annars behåller pantbanken den.</p>`}`;
     const dlg = openModal(sell ? '🔍 Pantlånaren synar – sälja?' : '🔍 Pantlånaren synar – låna?', body, [
       { label: 'Nej tack', onClick: () => { closeDlg(); declineDeal(); } },
       { label: sell ? `🤝 Affär – ${fmt(d.amount)}` : `🤝 Låna ${fmt(d.amount)}`, cls: 'btn-go', onClick: () => { closeDlg(); acceptDeal(); } },
@@ -1654,7 +1654,7 @@ export function makePantbank(A) {
     const st = g.storage, pl = pantList(g), full = pl.length >= MAXP();
     const tabs = [['salj', '💰 Sälj'], ['pant', '🤝 Låna mot pant'], ['panter', `🧾 Mina panter (${pl.length})`]];
     let rows = '', intro = '';
-    const row = (furn, name, sub, price, btn) => `<div class="prow shoprow">${furn}<span class="nm">${name}<br><small class="sp">${sub}</small></span><b style="font-size:20px">${price}</b>${btn}</div>`;
+    const row = (furn, name, sub, price, btn) => `<div class="prow shoprow">${furn}<span class="nm">${name}<br><small class="sp">${sub}</small></span><b style="font-size:var(--f2)">${price}</b>${btn}</div>`;
     if (tab === 'salj') {
       intro = `Pantlånaren köper möbler ur ditt förråd för <b>halva katalogpriset</b>. Såld är såld – <b>inga returer</b>.`;
       rows = st.map((it, i) => (g.sellable(it)
@@ -1681,10 +1681,10 @@ export function makePantbank(A) {
           fmt(p.skuld), `<button class="btn btn-small ${can ? 'btn-go' : ''}" data-losa="${p.nr}" ${can ? '' : 'disabled'}>📦 Lös ut</button>`);
       }).join('');
     }
-    if (!rows && tab !== 'panter') rows = '<p style="font-size:18px">Förrådet är tomt. Köp möbler på MÖBELJÄTTEN – eller ställ undan något hemma i Möblera-läget så hamnar det i förrådet.</p>';
-    const body = `<div style="display:flex;gap:12px;align-items:center"><span data-pbface></span><p style="font-size:19px;margin:0">«${esc(pick(PB_DESK))}»<br><small class="sp">💰 Du har <b>${fmt(g.money)}</b> · 📦 ${st.length} i förrådet</small></p></div>
+    if (!rows && tab !== 'panter') rows = '<p style="font-size:var(--f2)">Förrådet är tomt. Köp möbler på MÖBELJÄTTEN – eller ställ undan något hemma i Möblera-läget så hamnar det i förrådet.</p>';
+    const body = `<div style="display:flex;gap:12px;align-items:center"><span data-pbface></span><p style="font-size:var(--f2);margin:0">«${esc(pick(PB_DESK))}»<br><small class="sp">💰 Du har <b>${fmt(g.money)}</b> · 📦 ${st.length} i förrådet</small></p></div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 6px">${tabs.map(([id, label]) => `<button class="btn btn-small ${id === tab ? 'btn-gold' : ''}" data-tab="${id}">${label}</button>`).join('')}</div>
-      <p style="font-size:17px;margin:0 0 8px">${intro}</p><div class="plist">${rows}</div>`;
+      <p style="font-size:var(--f2);margin:0 0 8px">${intro}</p><div class="plist">${rows}</div>`;
     const dlg = openModal('💍 Pantbanken', body, [{ label: 'Stäng', onClick: closeDlg }]);
     faceInto(dlg);
     dlg.querySelectorAll('[data-furn]').forEach((el) => { const it = st[+el.dataset.furn]; if (it) furnInto(el, itemOf(it)); });

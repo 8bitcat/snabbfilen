@@ -2467,14 +2467,14 @@ export function makeShopMat(A) {
     const rows = gs.map(({ f, n }) => `<div class="prow shoprow">
         <span style="font-size:28px;text-align:center">${f.icon}</span>
         <span class="nm">${esc(f.name)} × ${n}<br><small class="sp">${fmt(f.price)}/st · +${f.fill} mätthet</small></span>
-        <b style="font-size:20px">${fmt(f.price * n)}</b>
+        <b style="font-size:var(--f2)">${fmt(f.price * n)}</b>
         <button class="btn btn-small" data-back="${esc(f.id)}" title="Lägg tillbaka en">↩ Lägg tillbaka</button>
       </div>`).join('');
-    const body = `<p style="font-size:19px;margin-top:0">Kassörskan har slagit in allt. 💰 Du har <b>${fmt(g.money)}</b>.</p>
+    const body = `<p style="font-size:var(--f2);margin-top:0">Kassörskan har slagit in allt. 💰 Du har <b>${fmt(g.money)}</b>.</p>
       <div class="plist">${rows}</div>
-      <p style="font-size:24px;display:flex;justify-content:space-between;border-top:3px dashed var(--ink);padding-top:8px;margin-bottom:6px"><span>SUMMA</span><b>${fmt(sum)}</b></p>
-      ${afford ? `<p style="font-size:18px;margin:0">Maten hamnar i kylskåpet där hemma. Efter köpet har du ${fmt(g.money - sum)} kvar.</p>`
-        : `<p class="bad" style="font-size:20px;margin:0"><b>⚠️ Pengarna räcker inte!</b> Du har ${fmt(g.money)} – det fattas <b>${fmt(sum - g.money)}</b>. Lägg tillbaka något.</p>`}`;
+      <p style="font-size:var(--f3);display:flex;justify-content:space-between;border-top:3px dashed var(--ink);padding-top:8px;margin-bottom:6px"><span>SUMMA</span><b>${fmt(sum)}</b></p>
+      ${afford ? `<p style="font-size:var(--f2);margin:0">Maten hamnar i kylskåpet där hemma. Efter köpet har du ${fmt(g.money - sum)} kvar.</p>`
+        : `<p class="bad" style="font-size:var(--f2);margin:0"><b>⚠️ Pengarna räcker inte!</b> Du har ${fmt(g.money)} – det fattas <b>${fmt(sum - g.money)}</b>. Lägg tillbaka något.</p>`}`;
     if (!afford) play('fel');
     const dlg = openModal(`🧾 Kassa ${K1.n}`, body, [
       { label: 'Avbryt', onClick: () => { closeModal(); cancelScan(); } },
@@ -2560,17 +2560,17 @@ export function makeShopMat(A) {
       return `<div class="prow shoprow">
         <span style="font-size:28px;text-align:center">${f.icon}</span>
         <span class="nm">${esc(f.name)}<br><small class="sp">+${f.fill} mätthet</small></span>
-        <b style="font-size:20px">${fmt(price)}</b>
+        <b style="font-size:var(--f2)">${fmt(price)}</b>
         <button class="btn btn-small ${ok ? 'btn-go' : ''}" data-eat="${esc(f.id)}" ${ok ? '' : 'disabled'}>😋 Ät</button>
       </div>`;
     }).join('') + (korv ? `<div class="prow shoprow">
         <span style="font-size:28px;text-align:center">${korv.icon}</span>
         <span class="nm">${esc(korv.name)}<br><small class="sp">köps vid grillen · +${korv.fill} mätthet</small></span>
-        <b style="font-size:20px">${fmt(korv.price)}</b>
+        <b style="font-size:var(--f2)">${fmt(korv.price)}</b>
         <button class="btn btn-small" data-grill="1">🌭 Till grillen</button>
       </div>` : '');
-    const dlg = openModal('😋 Ät här', `<p style="font-size:19px;margin-top:0">Slå dig ner vid disken! Allt kostar ${EAT_EXTRA} kr extra när du äter här, och att äta tar en kvart. Maten ställs framför dig – du sitter kvar tills den är uppäten.<br>💰 <b>${fmt(g.money)}</b> · Mätthet <b>${Math.round(g.hunger)}/100</b></p>
-      ${g.money < cheapest ? '<p class="bad" style="font-size:19px"><b>Du har inte råd med något just nu</b> – jobba ett pass först!</p>' : ''}
+    const dlg = openModal('😋 Ät här', `<p style="font-size:var(--f2);margin-top:0">Slå dig ner vid disken! Allt kostar ${EAT_EXTRA} kr extra när du äter här, och att äta tar en kvart. Maten ställs framför dig – du sitter kvar tills den är uppäten.<br>💰 <b>${fmt(g.money)}</b> · Mätthet <b>${Math.round(g.hunger)}/100</b></p>
+      ${g.money < cheapest ? '<p class="bad" style="font-size:var(--f2)"><b>Du har inte råd med något just nu</b> – jobba ett pass först!</p>' : ''}
       <div class="plist">${rows}</div>`, [{ label: 'Inte nu', onClick: closeModal }]);
     dlg.querySelectorAll('[data-eat]').forEach((b) => (b.onclick = () => {
       const r = orderHere(b.dataset.eat);
@@ -2660,8 +2660,8 @@ export function makeShopMat(A) {
       return;
     }
     if (basket.length) {
-      openModal('🧺 Obetalda varor', `<p style="font-size:20px;margin-top:0">Du har <b>${basket.length}</b> ${basket.length === 1 ? 'vara' : 'varor'} i korgen som inte är betalda (${fmt(total())}).</p>
-        <p style="font-size:18px">Gå till kassan och betala – eller ställ tillbaka allt innan du går.</p>`, [
+      openModal('🧺 Obetalda varor', `<p style="font-size:var(--f2);margin-top:0">Du har <b>${basket.length}</b> ${basket.length === 1 ? 'vara' : 'varor'} i korgen som inte är betalda (${fmt(total())}).</p>
+        <p style="font-size:var(--f2)">Gå till kassan och betala – eller ställ tillbaka allt innan du går.</p>`, [
         { label: '↩ Ställ tillbaka allt och gå', onClick: () => { closeModal(); basket = []; belt = null; leave(); } },
         { label: '🧾 Till kassan', cls: 'btn-go', onClick: () => { closeModal(); goKassa(); } },
       ]);

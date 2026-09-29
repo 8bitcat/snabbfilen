@@ -1178,9 +1178,9 @@ export function makeShopBurgarbar(A) {
         <button class="btn btn-small btn-go" data-buy="${i}" data-key="${i + 1}" ${g.money < m.price ? 'disabled' : ''}>🍔 ${fmt(m.price)} <kbd>${i + 1}</kbd></button>
       </div>`;
     }).join('');
-    const body = `<p style="font-size:19px;margin:0 0 8px">💰 <b>${fmt(g.money)}</b> · 🍽️ Mättnad <b>${Math.round(g.hunger)}</b>/100 · ⚡ Energi <b>${Math.round(g.energy)}</b>/100</p>
+    const body = `<p style="font-size:var(--f2);margin:0 0 8px">💰 <b>${fmt(g.money)}</b> · 🍽️ Mättnad <b>${Math.round(g.hunger)}</b>/100 · ⚡ Energi <b>${Math.round(g.energy)}</b>/100</p>
       <div class="plist">${rows}</div>
-      <p style="font-size:16px;margin:10px 0 0;color:#6d6660">Du får en bricka och sätter dig vid ett ledigt bord. Mättnaden och energin kommer medan du äter – bara när du sitter!</p>`;
+      <p style="font-size:var(--f1);margin:10px 0 0;color:#6d6660">Du får en bricka och sätter dig vid ett ledigt bord. Mättnaden och energin kommer medan du äter – bara när du sitter!</p>`;
     const dlg = openModal('🍔 Burgarbaren – vad får det lov att vara?', body, [{ label: 'Nej tack', onClick: closeModal }]);
     dlg.querySelectorAll('canvas[data-ic]').forEach((cv) => {
       const x = cv.getContext('2d'); x.imageSmoothingEnabled = false;
@@ -1198,14 +1198,14 @@ export function makeShopBurgarbar(A) {
   function openJobs() {
     if (me.order) { nag(MSG_ATUPP); return; }   // ingen smiter in på ett pass med maten kvar
     const bj = JOBS.burgare, kj = JOBS.kok;
-    const body = `<p style="font-size:20px;margin-top:0"><b>Vi behöver folk – välj ditt pass!</b></p>
+    const body = `<p style="font-size:var(--f2);margin-top:0"><b>Vi behöver folk – välj ditt pass!</b></p>
       <div class="plist">
       <div class="prow" style="grid-template-columns:1fr auto"><span class="nm">🍽️ <b>Servera</b><br><small class="sp">${bj.verb}. ${bj.wage} kr per rätt, −${bj.oops} kr per fel.</small></span>
         <button class="btn btn-small btn-go" data-jobb="burgare">🍽️ Servera</button></div>
       <div class="prow" style="grid-template-columns:1fr auto"><span class="nm">👨‍🍳 <b>Jobba i köket</b><br><small class="sp">${kj ? `${kj.verb}. ${kj.wage} kr per rätt, −${kj.oops} kr per fel.` : 'Bygg rätterna som beställs – grillen väntar!'}</small></span>
         <button class="btn btn-small btn-go" data-jobb="kok">👨‍🍳 Köket</button></div>
       </div>
-      <p style="font-size:16px;margin:10px 0 0;color:#6d6660">Ett pass tar 4 timmar. Chefen betalar direkt efter passet.</p>`;
+      <p style="font-size:var(--f1);margin:10px 0 0;color:#6d6660">Ett pass tar 4 timmar. Chefen betalar direkt efter passet.</p>`;
     const dlg = openModal('🍔 Jobba på Burgarbaren?', body, [{ label: 'En annan gång', onClick: closeModal }]);
     dlg.querySelectorAll('[data-jobb]').forEach((b) => (b.onclick = () => {
       const id = b.dataset.jobb;

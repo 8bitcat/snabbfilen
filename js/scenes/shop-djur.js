@@ -1450,30 +1450,30 @@ const DIALOG_CSS = `<style>
   .dj-por{border:3px solid var(--ink);box-shadow:3px 3px 0 var(--ink);line-height:0}
   .dj canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
   .dj-stage{border:3px solid var(--ink);line-height:0;background:#e9dcc0}
-  .dj-cap{font-size:15px;color:var(--muted)}
+  .dj-cap{font-size:var(--f1);color:var(--muted)}
   .dj-r{flex:1;min-width:250px;display:flex;flex-direction:column;gap:6px}
   .dj-row{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
-  .dj-lbl{font-size:17px}
-  .dj-desc{font-size:17px;line-height:1.15;margin:0}
-  .dj-desc span{color:var(--muted);font-size:16px}
-  .dj-price{font-size:24px;margin:2px 0 0;line-height:1}
-  .dj-plus{font-size:18px}
-  .dj-money{font-size:17px;margin:0;display:flex;flex-wrap:wrap;gap:0 14px}
+  .dj-lbl{font-size:var(--f2)}
+  .dj-desc{font-size:var(--f2);line-height:1.15;margin:0}
+  .dj-desc span{color:var(--muted);font-size:var(--f1)}
+  .dj-price{font-size:var(--f3);margin:2px 0 0;line-height:1}
+  .dj-plus{font-size:var(--f2)}
+  .dj-money{font-size:var(--f2);margin:0;display:flex;flex-wrap:wrap;gap:0 14px}
   .dj-money span{white-space:nowrap}
   .dj-kit b,.dj-money b,.dj-price b,.dj-plus b{white-space:nowrap}
-  .dj-hint{font-size:15px;line-height:1.15;color:var(--muted);margin:0}
-  .dj-sex{font-size:17px;padding:3px 10px;border:3px solid var(--ink);background:#fff;cursor:pointer;box-shadow:2px 2px 0 var(--ink);font-family:inherit}
+  .dj-hint{font-size:var(--f1);line-height:1.15;color:var(--muted);margin:0}
+  .dj-sex{font-size:var(--f2);padding:3px 10px;border:3px solid var(--ink);background:#fff;cursor:pointer;box-shadow:2px 2px 0 var(--ink);font-family:inherit}
   .dj-sex.on{background:#ffd23f;transform:translate(-1px,-1px)}
-  .dj-name{font-size:18px;padding:3px 8px;border:3px solid var(--ink);width:150px;font-family:inherit}
+  .dj-name{font-size:var(--f2);padding:3px 8px;border:3px solid var(--ink);width:150px;font-family:inherit}
   .dj-kit{display:grid;grid-template-columns:1fr 1fr;gap:3px 10px}
-  .dj-kit label{display:flex;gap:5px;align-items:center;font-size:15px;line-height:1.05;cursor:pointer}
+  .dj-kit label{display:flex;gap:5px;align-items:center;font-size:var(--f1);line-height:1.05;cursor:pointer}
   .dj-kit input{width:17px;height:17px;flex:none;margin:0}
   .dj-kit canvas{flex:none}
   .dj-kit em{font-style:normal;color:var(--muted)}
   .dj-kit .free{color:#2f8f46}
   .dj-gift{width:17px;text-align:center;flex:none}
   .dj-ico{border:3px solid var(--ink);box-shadow:3px 3px 0 var(--ink);background:#f3ecdf;padding:8px;line-height:0}
-  .dj-qty{display:flex;gap:6px;align-items:center;font-size:20px}
+  .dj-qty{display:flex;gap:6px;align-items:center;font-size:var(--f2)}
   .dj-qty b{min-width:26px;text-align:center}
 </style>`;
 
@@ -1718,7 +1718,7 @@ function openItemDialog(A, k, { onBuy } = {}) {
       <p class="dj-hint">Passar: ${forWho}</p>
       <p class="dj-hint">💡 ${extra}</p>
       <p class="dj-hint">📦 Hemma har du: <b>${inv}</b> i förrådet${placed ? ` · <b>${placed}</b> utställda` : ''}</p>
-      <div class="dj-qty"><b style="font-size:18px">Antal:</b><button class="btn btn-small" data-q="-1">−</button><b data-n>1</b><button class="btn btn-small" data-q="1">+</button></div>
+      <div class="dj-qty"><b style="font-size:var(--f2)">Antal:</b><button class="btn btn-small" data-q="-1">−</button><b data-n>1</b><button class="btn btn-small" data-q="1">+</button></div>
       <p class="dj-price" data-price></p>
       <p class="dj-money" data-money></p>
     </div>

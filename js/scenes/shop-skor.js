@@ -1874,22 +1874,22 @@ function openShoeDialog(A, api, item, { colors = [], ci = 0, where = '', onBuy, 
       background:linear-gradient(#f4ead8 0 70%, #8a6a2a 70% 71%, #c8955a 71% 100%)}
     .skb-fig{display:flex;flex-direction:column;align-items:center}
     .skb-fig canvas,.skb-zoom canvas,.skb-shelf canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
-    .skb-fig small,.skb-zoom small{font-size:16px;line-height:1;background:var(--ink);color:#fff;padding:2px 6px 1px;margin-bottom:6px;white-space:nowrap}
-    .skb-arrow{font-size:22px;padding-bottom:40px;color:var(--ink)}
+    .skb-fig small,.skb-zoom small{font-size:var(--f1);line-height:1;background:var(--ink);color:#fff;padding:2px 6px 1px;margin-bottom:6px;white-space:nowrap}
+    .skb-arrow{font-size:var(--f2);padding-bottom:40px;color:var(--ink)}
     .skb-zooms{display:flex;gap:8px;align-items:flex-end}
     .skb-zoom{display:flex;flex-direction:column;align-items:center;border:3px solid var(--ink);background:#e9dcc4;padding:6px 6px 0}
     .skb-turn{display:flex;gap:6px;align-items:center}
-    .skb-view{font-size:17px;min-width:92px;text-align:center}
+    .skb-view{font-size:var(--f2);min-width:92px;text-align:center}
     .skb-r{flex:1;min-width:230px;display:flex;flex-direction:column;gap:8px}
-    .skb-dept{font-size:16px;color:var(--muted);margin:0;display:flex;gap:8px;align-items:center}
-    .skb-price{font-size:28px;margin:0;line-height:1}
-    .skb-money{font-size:19px;margin:0}
+    .skb-dept{font-size:var(--f1);color:var(--muted);margin:0;display:flex;gap:8px;align-items:center}
+    .skb-price{font-size:var(--f3);margin:0;line-height:1}
+    .skb-money{font-size:var(--f2);margin:0}
     .skb-sws{display:flex;flex-wrap:wrap;gap:6px}
     .skb-sw{width:28px;height:28px;padding:0;border:3px solid var(--ink);background:var(--c);cursor:pointer;box-shadow:2px 2px 0 var(--ink)}
     .skb-sws.small .skb-sw{width:24px;height:24px}
     .skb-sw.on{outline:3px solid #ffd23f;outline-offset:1px;transform:translate(-1px,-1px)}
-    .skb-hint{font-size:17px;line-height:1.1;color:var(--muted);margin:0}
-    .skb-wear{font-size:19px;display:flex;gap:8px;align-items:center;cursor:pointer}
+    .skb-hint{font-size:var(--f2);line-height:1.1;color:var(--muted);margin:0}
+    .skb-wear{font-size:var(--f2);display:flex;gap:8px;align-items:center;cursor:pointer}
     .skb-wear input{width:20px;height:20px}
   </style>
   <div class="skb">
@@ -1914,9 +1914,9 @@ function openShoeDialog(A, api, item, { colors = [], ci = 0, where = '', onBuy, 
       <p class="skb-dept">${esc(where || 'Skobutiken')}</p>
       <p class="skb-price">${owned ? '<b class="ok">✓ De här är dina!</b>' : `Pris: <b>${price !== item.price ? `<s>${fmt(item.price)}</s> ` : ''}${fmt(price)}</b>${price !== item.price ? ' <b class="bad">REA</b>' : ''}`}</p>
       <p class="skb-money">💰 Du har <b>${fmt(g.money)}</b>${owned ? '' : short > 0 ? ` · <b class="bad">du saknar ${fmt(short)}</b>` : ` · kvar efter köpet: <b>${fmt(g.money - price)}</b>`}</p>
-      <div><b style="font-size:19px">Prova färg:</b></div>
+      <div><b style="font-size:var(--f2)">Prova färg:</b></div>
       <div class="skb-sws" data-sws>${mainSw.map((c) => swBtn(c, c === main.toLowerCase(), 'data-c')).join('')}</div>
-      ${uses2 ? `<div><b style="font-size:19px">Detaljfärg</b> <span class="skb-hint">(sula, snören, ränder):</span></div>
+      ${uses2 ? `<div><b style="font-size:var(--f2)">Detaljfärg</b> <span class="skb-hint">(sula, snören, ränder):</span></div>
       <div class="skb-sws small" data-dts>${detSw.map((c) => swBtn(c, c === det.toLowerCase(), 'data-a')).join('')}</div>` : ''}
       <p class="skb-hint">🎨 Färgerna är bara för att prova – när skorna är dina väljer du fritt bland alla färger i garderoben där hemma.</p>
       ${colors.length > 1 ? `<p class="skb-hint">👟 Första färgerna är de som står på hyllan.</p>` : ''}
@@ -1983,14 +1983,14 @@ function openCatalogDialog(A, api, groups, onPick) {
       <b>${worn ? '👟 På dig' : own ? '✓ Din' : fmt(api.price(it))}</b></button>`;
   };
   const body = `<style>
-    .skk-sec h3{margin:8px 0 4px;font-size:20px}
+    .skk-sec h3{margin:8px 0 4px;font-size:var(--f2)}
     .skk-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:6px}
     .skk-it{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 4px;border:3px solid var(--ink);background:#f4ead8;cursor:pointer;box-shadow:2px 2px 0 var(--ink);font:inherit}
     .skk-it.own{background:#dff3e2}
     .skk-it canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
-    .skk-it span{font-size:16px;line-height:1;text-align:center}
-    .skk-it b{font-size:16px}
-    .skk-top{margin:0 0 4px;font-size:18px}
+    .skk-it span{font-size:var(--f1);line-height:1;text-align:center}
+    .skk-it b{font-size:var(--f1)}
+    .skk-top{margin:0 0 4px;font-size:var(--f2)}
   </style>
   <p class="skk-top">🪑 Du sitter på provpallen. Välj ett par så får du prova dem! 💰 Du har <b>${fmt(g.money)}</b>.</p>
   ${secs.map((s) => `<div class="skk-sec"><h3>${esc(s.name)}</h3><div class="skk-grid">${s.list.map(cell).join('')}</div></div>`).join('')}`;

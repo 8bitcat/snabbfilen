@@ -1992,7 +1992,7 @@ export function createTraffic(env) {
     // 🚕 den beställda taxin (callTaxi): kör fram till kunden och stannar med mitten mitt för
     // hen vid trottoarkanten ('kommer' → 'framme'), väntar tills kunden klivit in (city.js tar
     // över bakom toningen) – eller har just släppt av en kund ('avstigning') och kör sedan vidare
-    // som vanlig trafik. Fastnar den på vägen (köer, rödljus) står den på plats efter 40 s.
+    // som vanlig trafik. Fastnar den på vägen (köer, rödljus) står den på plats efter 22 s.
     if (c.fare) {
       const f = c.fare;
       f.t += dt;
@@ -2001,7 +2001,7 @@ export function createTraffic(env) {
         if (d < 70) c.blink = 1;
         lim(vStop(d), 'taxi');
         if ((d < 2.5 && c.v < 3) || d < -3) { f.state = 'framme'; f.t = 0; }
-        else if (f.t > 40) { c.s = sOfFront(rm, c.dir, f.front); c.v = 0; f.state = 'framme'; f.t = 0; }
+        else if (f.t > 22) { c.s = sOfFront(rm, c.dir, f.front); c.v = 0; f.state = 'framme'; f.t = 0; }
       } else if (f.state === 'framme') { lim(0, 'taxi'); c.blink = 1; }
       else if (f.state === 'avstigning') { lim(0, 'taxi'); c.blink = 1; if (f.t > 2.6) { c.fare = null; c.blink = 0; } }
     }

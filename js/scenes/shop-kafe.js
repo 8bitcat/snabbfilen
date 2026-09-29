@@ -1744,9 +1744,9 @@ export function makeShopKafe(A) {
         <button class="btn btn-small btn-go" data-buy="${i}" data-key="${i + 1}" ${g.money < price ? 'disabled' : ''}>☕ ${fmt(price)} <kbd>${i + 1}</kbd></button>
       </div>`;
     }).join('');
-    const body = `<p style="font-size:19px;margin:0 0 8px">💰 <b>${fmt(g.money)}</b> · 🍽️ Mättnad <b>${Math.round(g.hunger)}</b>/100 · ⚡ Energi <b>${Math.round(g.energy)}</b>/100</p>
+    const body = `<p style="font-size:var(--f2);margin:0 0 8px">💰 <b>${fmt(g.money)}</b> · 🍽️ Mättnad <b>${Math.round(g.hunger)}</b>/100 · ⚡ Energi <b>${Math.round(g.energy)}</b>/100</p>
       <div class="plist">${rows}</div>
-      <p style="font-size:16px;margin:10px 0 0;color:#6d6660">Fikat tar en kvart – du bär brickan till ett ledigt bord och sitter kvar tills det är uppätet. Mättnaden och energin kommer medan du fikar. Koffeinet biter sämre för varje kopp samma dag${n ? ` (du har druckit ${n} i dag)` : ''}.</p>`;
+      <p style="font-size:var(--f1);margin:10px 0 0;color:#6d6660">Fikat tar en kvart – du bär brickan till ett ledigt bord och sitter kvar tills det är uppätet. Mättnaden och energin kommer medan du fikar. Koffeinet biter sämre för varje kopp samma dag${n ? ` (du har druckit ${n} i dag)` : ''}.</p>`;
     const dlg = openModal('☕ Kaféet – vad får det lov att vara?', body, [{ label: 'Nej tack', onClick: closeModal }]);
     dlg.querySelectorAll('canvas[data-ic]').forEach((cv) => {
       const x = cv.getContext('2d'); x.imageSmoothingEnabled = false;

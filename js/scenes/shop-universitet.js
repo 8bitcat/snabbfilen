@@ -710,16 +710,16 @@ export function makeShopUniversitet(A /* , opts */) {
       const st = courseStatus(c.id), job = GM.JOBS?.[c.job];
       const btn = st.key === 'ny'
         ? `<button class="btn btn-go" data-kurs="${c.id}" ${g.money < c.fee ? 'disabled' : ''}>📝 Anmäl mig – ${GM.fmt(c.fee)}</button>`
-        : `<span style="font-size:18px"><b>${st.txt}</b></span>`;
+        : `<span style="font-size:var(--f2)"><b>${st.txt}</b></span>`;
       return `<div style="border:3px solid var(--ink);padding:8px 10px;margin:8px 0;background:rgba(255,255,255,.35)">
-        <div style="font-size:21px"><b>${c.icon} ${esc(c.name)}</b></div>
-        <div style="font-size:17px;margin:4px 0">${esc(c.blurb)}</div>
-        <div style="font-size:17px">📚 ${c.lectures} föreläsningar i Aula 1 (2 timmar var, en om dagen) · ✏️ tenta i biblioteket</div>
-        ${job ? `<div style="font-size:17px">💼 Examen ger jobb: <b>${job.icon} ${esc(job.name)}</b> – ${job.wage} kr per rätt</div>` : ''}
+        <div style="font-size:var(--f2)"><b>${c.icon} ${esc(c.name)}</b></div>
+        <div style="font-size:var(--f2);margin:4px 0">${esc(c.blurb)}</div>
+        <div style="font-size:var(--f2)">📚 ${c.lectures} föreläsningar i Aula 1 (2 timmar var, en om dagen) · ✏️ tenta i biblioteket</div>
+        ${job ? `<div style="font-size:var(--f2)">💼 Examen ger jobb: <b>${job.icon} ${esc(job.name)}</b> – ${job.wage} kr per rätt</div>` : ''}
         <div style="margin-top:6px">${btn}</div></div>`;
     }).join('');
-    const dlg = openModal('🎓 Studentexpeditionen', `<p style="font-size:19px;margin-top:0">"Välkommen till Pixelhögskolan! Vilken utbildning lockar?"</p>${rows}
-      <p style="font-size:16px;margin-bottom:0">Föreläsningarna går 08–17. Sätt dig i en ledig bänk i Aula 1 när du är antagen.</p>`, [
+    const dlg = openModal('🎓 Studentexpeditionen', `<p style="font-size:var(--f2);margin-top:0">"Välkommen till Pixelhögskolan! Vilken utbildning lockar?"</p>${rows}
+      <p style="font-size:var(--f1);margin-bottom:0">Föreläsningarna går 08–17. Sätt dig i en ledig bänk i Aula 1 när du är antagen.</p>`, [
       { label: 'Tack, hej!', onClick: closeModal },
     ]);
     dlg.querySelectorAll('[data-kurs]').forEach((b) => (b.onclick = () => {
@@ -748,7 +748,7 @@ export function makeShopUniversitet(A /* , opts */) {
     const ch = lectureChoices();
     if (!ch.length) { lecturer.talk.say(whyNoLecture(), lectAt(), 5); return; }
     const btns = ch.map((c) => ({ label: `${c.icon} ${esc(c.name)} (${eduOf(c.id).lect + 1} av ${c.lectures})`, cls: 'btn-go', onClick: () => { closeModal(); startLecture(c.id); } }));
-    openModal('📚 Föreläsning i Aula 1', `<p style="font-size:20px;margin-top:0">Föreläsningen tar <b>2 timmar</b> och lite ork. Anteckna flitigt – det kommer på tentan!</p>`,
+    openModal('📚 Föreläsning i Aula 1', `<p style="font-size:var(--f2);margin-top:0">Föreläsningen tar <b>2 timmar</b> och lite ork. Anteckna flitigt – det kommer på tentan!</p>`,
       [{ label: 'Inte nu', onClick: closeModal }, ...btns]);
   }
   function startLecture(id) {
@@ -779,7 +779,7 @@ export function makeShopUniversitet(A /* , opts */) {
       librarian.talk.say(msg, librAt(), 5); return;
     }
     if (ch.length === 1) { startExam(ch[0].id); return; }
-    openModal('✏️ Tentabordet', '<p style="font-size:20px;margin-top:0">Vilken tenta vill du skriva?</p>', [{ label: 'Inte nu', onClick: closeModal }, ...ch.map((c) => ({ label: `${c.icon} ${esc(c.name)}`, cls: 'btn-go', onClick: () => { closeModal(); startExam(c.id); } }))]);
+    openModal('✏️ Tentabordet', '<p style="font-size:var(--f2);margin-top:0">Vilken tenta vill du skriva?</p>', [{ label: 'Inte nu', onClick: closeModal }, ...ch.map((c) => ({ label: `${c.icon} ${esc(c.name)}`, cls: 'btn-go', onClick: () => { closeModal(); startExam(c.id); } }))]);
   }
   function pickQuiz(id) {
     const pool = (QUIZ[id] || []).slice(), out = [];
@@ -796,8 +796,8 @@ export function makeShopUniversitet(A /* , opts */) {
   function showQuestion() {
     const E = me.exam; if (!E) return;
     const c = COURSES()[E.id], Q = E.qs[E.i];
-    const dlg = openModal(`✏️ Tenta i ${esc(c.name)} – fråga ${E.i + 1} av ${E.qs.length}`, `<p style="font-size:21px;margin-top:0"><b>${esc(Q.q)}</b></p>
-      ${Q.opts.map((o, i) => `<button class="btn" style="display:block;width:100%;margin:6px 0;text-align:left;font-size:19px" data-svar="${i}">${'ABC'[i]}. ${esc(o.s)}</button>`).join('')}`, [], { closable: false });
+    const dlg = openModal(`✏️ Tenta i ${esc(c.name)} – fråga ${E.i + 1} av ${E.qs.length}`, `<p style="font-size:var(--f2);margin-top:0"><b>${esc(Q.q)}</b></p>
+      ${Q.opts.map((o, i) => `<button class="btn" style="display:block;width:100%;margin:6px 0;text-align:left;font-size:var(--f2)" data-svar="${i}">${'ABC'[i]}. ${esc(o.s)}</button>`).join('')}`, [], { closable: false });
     dlg.querySelectorAll('[data-svar]').forEach((b) => (b.onclick = () => answer(+b.dataset.svar)));
   }
   function answer(i) {
@@ -817,13 +817,13 @@ export function makeShopUniversitet(A /* , opts */) {
       play('fanfare');
       const job = GM.JOBS?.[c.job];
       openModal('🎓 GODKÄND – EXAMEN!', `<div style="text-align:center"><img src="${diplomaURL(c)}" alt="Examensbevis" style="width:360px;max-width:100%;image-rendering:pixelated"></div>
-        <p style="font-size:20px">${r.right} av ${r.of} rätt – du har nu examen i <b>${esc(c.name)}</b>!</p>
-        ${job ? `<p style="font-size:19px">💼 Nu kan du jobba som <b>${job.icon} ${esc(job.name)}</b> i downtown – ${job.wage} kr per rätt.</p>` : ''}`, [{ label: '🎉 Hurra!', cls: 'btn-go', onClick: closeModal }]);
+        <p style="font-size:var(--f2)">${r.right} av ${r.of} rätt – du har nu examen i <b>${esc(c.name)}</b>!</p>
+        ${job ? `<p style="font-size:var(--f2)">💼 Nu kan du jobba som <b>${job.icon} ${esc(job.name)}</b> i downtown – ${job.wage} kr per rätt.</p>` : ''}`, [{ label: '🎉 Hurra!', cls: 'btn-go', onClick: closeModal }]);
       librarian.talk.say('Grattis till examen! 🎓', librAt(), 4);
     } else {
       play('fel');
-      openModal('✏️ Underkänd', `<p style="font-size:20px;margin-top:0">${r.right} av ${r.of} rätt – det krävs ${Math.ceil((r.of * 2) / 3)} för godkänt.</p>
-        <p style="font-size:19px">Omtentan kan du skriva i morgon. Läs på: tavlan i Aula 1 och bokhyllorna har svaren!</p>`, [{ label: 'Okej…', cls: 'btn-go', onClick: closeModal }]);
+      openModal('✏️ Underkänd', `<p style="font-size:var(--f2);margin-top:0">${r.right} av ${r.of} rätt – det krävs ${Math.ceil((r.of * 2) / 3)} för godkänt.</p>
+        <p style="font-size:var(--f2)">Omtentan kan du skriva i morgon. Läs på: tavlan i Aula 1 och bokhyllorna har svaren!</p>`, [{ label: 'Okej…', cls: 'btn-go', onClick: closeModal }]);
       talkMe.say('Suck. Omtenta i morgon…', meAt, 4);
     }
   }

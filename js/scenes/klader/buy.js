@@ -144,47 +144,47 @@ const CSS = `
   .klb-stage{display:flex;align-items:flex-end;gap:6px;padding:10px 12px 0;border:3px solid var(--ink);box-shadow:3px 3px 0 var(--ink)}
   .klb-fig{display:flex;flex-direction:column;align-items:center}
   .klb-fig canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
-  .klb-fig small{font-size:16px;line-height:1;background:var(--ink);color:#fff;padding:2px 6px 1px;margin-bottom:6px;white-space:nowrap}
-  .klb-arrow{font-size:22px;padding-bottom:40px;color:var(--ink)}
+  .klb-fig small{font-size:var(--f1);line-height:1;background:var(--ink);color:#fff;padding:2px 6px 1px;margin-bottom:6px;white-space:nowrap}
+  .klb-arrow{font-size:var(--f2);padding-bottom:40px;color:var(--ink)}
   .klb-turn{display:flex;gap:6px;align-items:center}
-  .klb-view{font-size:17px;min-width:92px;text-align:center}
+  .klb-view{font-size:var(--f2);min-width:92px;text-align:center}
   .klb-r{flex:1;min-width:230px;display:flex;flex-direction:column;gap:8px}
-  .klb-dept{font-size:16px;color:var(--muted);margin:0}
-  .klb-price{font-size:28px;margin:0;line-height:1}
-  .klb-money{font-size:19px;margin:0}
+  .klb-dept{font-size:var(--f1);color:var(--muted);margin:0}
+  .klb-price{font-size:var(--f3);margin:0;line-height:1}
+  .klb-money{font-size:var(--f2);margin:0}
   .klb-sws{display:flex;flex-wrap:wrap;gap:6px}
   .klb-sw{width:30px;height:30px;padding:0;border:3px solid var(--ink);background:var(--c);cursor:pointer;box-shadow:2px 2px 0 var(--ink)}
   .klb-sws.small .klb-sw{width:24px;height:24px}
   .klb-sw.on{outline:3px solid #ffd23f;outline-offset:1px;transform:translate(-1px,-1px)}
-  .klb-hint{font-size:17px;line-height:1.1;color:var(--muted);margin:0}
-  .klb-wear{font-size:19px;display:flex;gap:8px;align-items:center;cursor:pointer}
+  .klb-hint{font-size:var(--f2);line-height:1.1;color:var(--muted);margin:0}
+  .klb-wear{font-size:var(--f2);display:flex;gap:8px;align-items:center;cursor:pointer}
   .klb-wear input{width:20px;height:20px}
   .klg{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:8px}
   .klg-card{display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 4px 5px;border:3px solid var(--ink);background:var(--bg,#fbf6ea);box-shadow:2px 2px 0 var(--ink);cursor:pointer;font:inherit;color:inherit}
   .klg-card:hover,.klg-card:focus-visible{transform:translate(-1px,-1px);box-shadow:3px 3px 0 var(--ink);outline:none}
   .klg-card canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
-  .klg-name{font-size:16px;line-height:1;text-align:center;min-height:32px;display:flex;align-items:center;hyphens:manual}
-  .klg-price{font-size:17px;line-height:1;background:#f0d048;border:2px solid var(--ink);padding:1px 5px 0}
+  .klg-name{font-size:var(--f1);line-height:1;text-align:center;min-height:32px;display:flex;align-items:center;hyphens:manual}
+  .klg-price{font-size:var(--f2);line-height:1;background:#f0d048;border:2px solid var(--ink);padding:1px 5px 0}
   .klg-card.own .klg-price{background:#45b964;color:#fff}
   .klg-card.rea .klg-price{background:#ff8a80}
   .klg-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap;margin:0 0 8px}
   .klk-parts{display:flex;flex-direction:column;gap:5px}
-  .klk-part{display:flex;align-items:center;gap:8px;font-size:18px;cursor:pointer}
+  .klk-part{display:flex;align-items:center;gap:8px;font-size:var(--f2);cursor:pointer}
   .klk-part input{width:20px;height:20px}
   .klk-part b{margin-left:auto}
   .klk-back{display:flex;gap:10px;align-items:center}
   .klk-back canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges;flex:none}
   .klk-back p{margin:0}
-  .klb-note{font-size:17px;line-height:1.1;margin:0;padding:4px 6px;border:2px solid var(--ink);background:#e4f6e4}
+  .klb-note{font-size:var(--f2);line-height:1.1;margin:0;padding:4px 6px;border:2px solid var(--ink);background:#e4f6e4}
   .klp{display:flex;flex-direction:column;gap:8px;align-items:center}
   .klp canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges;border:3px solid var(--ink);box-shadow:3px 3px 0 var(--ink)}
   .klp-roster{display:flex;flex-wrap:wrap;gap:4px 6px;justify-content:center;max-width:560px}
-  .klp-roster span{font-size:17px;line-height:1;border:2px solid var(--ink);background:#f6efe6;padding:2px 5px 1px;white-space:nowrap}
+  .klp-roster span{font-size:var(--f2);line-height:1;border:2px solid var(--ink);background:#f6efe6;padding:2px 5px 1px;white-space:nowrap}
   .klp-roster b{background:#7a1f2e;color:#fff;padding:0 3px;margin-right:2px}
   @media (max-height:480px){
     #modal:has(.kl-dlg){padding:6px}
     .kl-dlg .dlg-head{padding:4px 10px}
-    .kl-dlg .dlg-head h2{font-size:21px}
+    .kl-dlg .dlg-head h2{font-size:var(--f2)}
     .kl-dlg .dlg-body{padding:8px 10px}
     .kl-dlg .dlg-foot{position:sticky;bottom:0;z-index:2;background:var(--paper);padding:6px 10px;border-top:3px solid var(--ink)}
     .kl-dlg .klb-hint{display:none}
@@ -192,11 +192,11 @@ const CSS = `
     .kl-dlg .klb-r{gap:5px;min-width:210px}
     .kl-dlg .klb-stage{padding:6px 8px 0}
     .kl-dlg .klb-turn .btn{padding:2px 6px}
-    .kl-dlg .klb-price{font-size:24px}
+    .kl-dlg .klb-price{font-size:var(--f3)}
     .kl-dlg .klb-sw{width:26px;height:26px}
     .kl-dlg .klb-sws.small .klb-sw{width:22px;height:22px}
-    .kl-dlg .klk-part{font-size:17px}
-    .kl-dlg .klp-roster span{font-size:15px}
+    .kl-dlg .klk-part{font-size:var(--f2)}
+    .kl-dlg .klp-roster span{font-size:var(--f1)}
   }
 `;
 const stageBg = (key) => { const [c1, c2, c3] = (DEPT[key] || DEPT.mid).stage; return `background:linear-gradient(${c1} 0 72%, ${c3} 72% 73%, ${c2} 73% 100%)`; };
@@ -243,10 +243,10 @@ export function openBuy(A, it, opts = {}) {
       <p class="klb-dept">${esc(opts.where || th.title)}${opts.title ? ` · ${esc(nameOf(it))}` : ''}</p>
       <p class="klb-price">${isOwned ? '<b class="ok">✓ Den här är din!</b>' : `Pris: <b>${rea ? `<s>${fmt(it.price)}</s> ` : ''}${fmt(price)}</b>${rea ? ' <b class="bad">REA</b>' : ''}`}</p>
       <p class="klb-money">💰 Du har <b>${fmt(g.money)}</b>${isOwned ? '' : short > 0 ? ` · <b class="bad">du saknar ${fmt(short)}</b>` : ` · kvar efter köpet: <b>${fmt(g.money - price)}</b>`}</p>
-      ${field ? `<div><b style="font-size:19px">Prova färg:</b></div>
+      ${field ? `<div><b style="font-size:var(--f2)">Prova färg:</b></div>
       <div class="klb-sws" data-sws>${sw.map((c) => swBtn(c, c === color, 'data-c')).join('')}</div>
       ${color !== dollColor ? `<p class="klb-hint">👀 Första rutan är ${opts.fromDoll ? 'dockans' : 'plaggets'} färg – vi valde en som syns mot ${AGAINST[it.slot] || 'dig'}.</p>` : ''}` : ''}
-      ${det.map((d, i) => `<div><b style="font-size:19px">${i === 0 && d.f !== 'print2' ? 'Detaljfärg' : d.f === 'print2' ? 'Tryckfärg' : 'Detaljfärg'}</b> <span class="klb-hint">(${esc(d.part)}):</span></div>
+      ${det.map((d, i) => `<div><b style="font-size:var(--f2)">${i === 0 && d.f !== 'print2' ? 'Detaljfärg' : d.f === 'print2' ? 'Tryckfärg' : 'Detaljfärg'}</b> <span class="klb-hint">(${esc(d.part)}):</span></div>
       <div class="klb-sws small" data-det="${i}">${d.list.map((c) => swBtn(c, c === d.v, 'data-a')).join('')}</div>`).join('')}
       ${field ? '<p class="klb-hint">🎨 Färgerna här är bara för att prova – när plagget är ditt väljer du fritt bland alla färger i garderoben där hemma.</p>' : ''}
       ${opts.note ? `<p class="klb-hint">${opts.note}</p>` : ''}
@@ -368,8 +368,8 @@ export function openKit(A, kit) {
   const anyOwned = own.some(Boolean), allOwned = own.every(Boolean);
   const icon = kit.icon || '⚽';
   const wearLabel = kit.wearLabel || (allOwned ? '👕 Ta på mig matchstället' : '👕 Ta på mig det jag har');
-  const back = kit.back ? `<div class="klk-back"><i data-back></i><div><p class="klb-price" style="font-size:24px">${esc(kit.player || '')}</p><p class="klb-hint">Så ser ryggen ut – nummer och förnamn har bara lagets spelare.</p></div></div>`
-    : kit.player ? `<p class="klb-price" style="font-size:24px">${esc(kit.player)}</p>` : '';
+  const back = kit.back ? `<div class="klk-back"><i data-back></i><div><p class="klb-price" style="font-size:var(--f3)">${esc(kit.player || '')}</p><p class="klb-hint">Så ser ryggen ut – nummer och förnamn har bara lagets spelare.</p></div></div>`
+    : kit.player ? `<p class="klb-price" style="font-size:var(--f3)">${esc(kit.player)}</p>` : '';
   const body = `<style>${CSS}</style>
   <div class="klb">
     <div class="klb-l">

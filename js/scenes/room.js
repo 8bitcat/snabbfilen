@@ -1538,8 +1538,8 @@ function makeMattressProp(list, RIGHT) {
 // Samma sekvens som i sängen (figuren under en filt på madrassen), sedan veckan.
 function floorSleep(A) {
   const g = A.game;
-  openModal('😴 Sova på golvet', `<p style="font-size:20px">Ingen säng är utställd – den ligger i förrådet. Golvet är hårt, kallt och lite dammigt, men du somnar.</p>
-    <p style="font-size:18px" class="bad">Sämre sömn än i en säng. Ställ ut sängen med 🛋️ Möblera!</p>`, [
+  openModal('😴 Sova på golvet', `<p style="font-size:var(--f2)">Ingen säng är utställd – den ligger i förrådet. Golvet är hårt, kallt och lite dammigt, men du somnar.</p>
+    <p style="font-size:var(--f2)" class="bad">Sämre sömn än i en säng. Ställ ut sängen med 🛋️ Möblera!</p>`, [
     { label: 'Inte än', onClick: closeModal },
     { label: '😴 Sov ändå', cls: 'btn-go', onClick: () => {
       closeModal();
@@ -3133,13 +3133,13 @@ function openFridge(A) {
   const g = A.game;
   const items = Object.entries(g.fridge).filter(([, n]) => n > 0);
   const body = items.length
-    ? `<p style="font-size:19px;margin-top:0">Mätthet: <b>${Math.round(g.hunger)}/100</b></p><div class="plist">${items.map(([id, n]) => {
+    ? `<p style="font-size:var(--f2);margin-top:0">Mätthet: <b>${Math.round(g.hunger)}/100</b></p><div class="plist">${items.map(([id, n]) => {
       const f = foodOf(id);
       return `<div class="prow"><span style="font-size:28px;text-align:center">${f.icon}</span>
         <span class="nm">${f.name} ×${n}<br><small class="sp">+${f.fill} mätthet</small></span>
         <button class="btn btn-small btn-go" data-eat="${id}">Ät</button></div>`;
     }).join('')}</div>`
-    : `<p style="font-size:20px">Kylskåpet är tomt! 🕸️<br><small>Gå till MAT-butiken i Pixelstaden och handla.</small></p>`;
+    : `<p style="font-size:var(--f2)">Kylskåpet är tomt! 🕸️<br><small>Gå till MAT-butiken i Pixelstaden och handla.</small></p>`;
   const dlg = openModal('🧊 Kylskåpet', body, [{ label: 'Stäng', onClick: closeModal }]);
   dlg.querySelectorAll('[data-eat]').forEach((b) => (b.onclick = () => {
     const f = foodOf(b.dataset.eat);

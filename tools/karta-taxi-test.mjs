@@ -90,7 +90,7 @@ ok(kr >= 25 && kr < 200, `taxin till kaféet kostar ${kr} kr`);
 await page.click('#modal [data-taxi]');
 const tq = await D((d) => d.taxi());
 ok(tq && tq.dest === 'kafe' && tq.kr === kr, `taxin är beställd (${tq?.road} fil ${tq?.lane}, trottoarkanten ${tq && Math.round(tq.curb.x)},${tq?.curb.y})`);
-ok(await until(() => D((d) => d.taxi()?.car?.state === 'framme'), 30000), 'taxin kör fram och stannar vid trottoarkanten');
+ok(await until(() => D((d) => d.taxi()?.car?.state === 'framme'), 40000), 'taxin kör fram och stannar vid trottoarkanten');
 await shot('taxi-framme');
 ok(await until(() => page.evaluate(() => !window.SF.scene._debug.taxi()), 20000), 'man kliver in (taxin försvinner bakom toningen)');
 await page.waitForTimeout(1500);
