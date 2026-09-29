@@ -10,6 +10,9 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.53.1] – 2026-09-29 – Missade patienter kostar inget
+- Vårdcentralen: en patient som tröttnar och går hem kostar inget längre – den ger bara 0 kr (syns fortfarande som en egen rad på lönebeskedet).
+
 ## [0.53.0] – 2026-09-29 – Småsaker på bord
 - Småsaker kan stå PÅ bord: i Möblera-läget hamnar datorn, bordslampan, brödrosten, kaffebryggaren, blomkrukorna, ljusen och de andra småsakerna uppe på skivan när du håller dem över ett bord, en byrå, en bänk eller en låg hylla.
 - Datorn på skrivbordet och den gamla TV:n på TV-bänken går att använda – du går fram till bordet.

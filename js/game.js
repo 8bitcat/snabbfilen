@@ -38,8 +38,9 @@ export const JOBS = {
   kafe: { id: 'kafe', icon: '☕', name: 'Kaféet', verb: 'Gör rätt dryck och servera rätt gäst', wage: 14, oops: 6 },
   // Vårdcentralen (Söder, öppet 08–17 enligt huset i map.js): receptionen. bonus = kr per
   // akutfall som tas emot FÖRST (stats.boxes); bonusPer/boxLabel är raderna i passdialogerna.
-  // missOops = avdrag per patient som tröttnar och går hem (stats.miss, egen rad – inte ett fel).
-  vard: { id: 'vard', icon: '🏥', name: 'Vårdcentralen', verb: 'Ta emot patienterna och skicka dem rätt', wage: 13, oops: 5, bonus: 10, bonusPer: 'akutfall först', boxLabel: '🚑 Akutfall först', missOops: 5, missPer: 'patient som går hem' },
+  // En patient som tröttnar och går hem räknas som missad (stats.miss, egen rad) men kostar inget
+  // (Carl 2026-09-29: missad = 0 kr) – shift.js kan fortfarande dra missOops om ett jobb vill.
+  vard: { id: 'vard', icon: '🏥', name: 'Vårdcentralen', verb: 'Ta emot patienterna och skicka dem rätt', wage: 13, oops: 5, bonus: 10, bonusPer: 'akutfall först', boxLabel: '🚑 Akutfall först' },
   kok: { id: 'kok', icon: '🍳', name: 'Burgarköket', verb: 'Bygg rätterna som beställs i köket', wage: 11, oops: 5 },
   // de utbildade jobben i downtown: kraver = kursen på Pixelhögskolan som måste vara klar
   datorbygge: { id: 'datorbygge', icon: '🖥️', name: 'Pixel Data', verb: 'Bygg datorerna precis som beställningen säger', wage: 12, oops: 6, bonus: 25, bonusPer: 'färdig dator', boxLabel: '🖥️ Färdiga datorer', kraver: 'datorteknik' },

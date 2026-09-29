@@ -7,8 +7,8 @@
 //   2) Klicka på rätt dörr: LÄKARE, SJUKSKÖTERSKA, LABB eller AKUTEN. Bilderna på
 //      dörrarna visar vilka besvär som hör till vilket rum.
 // Rätt rum = lön. Fel rum = avdrag (personalen i dörren skickar vidare patienten).
-// Väntar någon för länge går hen hem = missad, med ett eget avdrag (JOBS.vard.missOops,
-// egen rad i passdialogen och på lönebeskedet – inte ett "fel"). AKUT-patienterna (röd blinkande
+// Väntar någon för länge går hen hem = missad: 0 kr för den patienten (Carl 2026-09-29),
+// en egen rad på lönebeskedet – inte ett "fel". AKUT-patienterna (röd blinkande
 // bubbla, ingen nummerlapp – de står i AKUT-rutan vid entrén, ambulansen syns
 // utanför glaset) ger BONUS om de tas emot FÖRST, innan någon annan ropas in
 // (stats.boxes × JOBS.vard.bonus).
@@ -977,8 +977,7 @@ export function makeJobbVard(A, { onDone } = {}) {
   }
   function leave(p, late) {
     if (late) {
-      // räknas bara som missad (som i de andra jobben) – avdraget för den som går hem är en
-      // egen rad i passdialogen och på lönebeskedet (JOBS.vard.missOops), inte ett "fel"
+      // räknas bara som missad (som i de andra jobben): 0 kr, en egen rad på lönebeskedet, inte ett "fel"
       stats.miss++;
       say(p.x, Math.min(p.y - 50, 96), p.akut ? 'FÖR SENT!' : 'GICK HEM!', '#ff6a6a');
       play('miss');
