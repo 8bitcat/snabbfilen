@@ -10,6 +10,11 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.52.0] – 2026-09-29 – Prata med folk i staden
+- Klicka på folk i staden: personen stannar, vänder sig mot dig och säger något i en pratbubbla – med sin egen röst.
+- Vad de säger beror på tiden och vädret (God morgon!, Usch, vilket regn!), vilka de är (barn vill leka, kostymfolket har bråttom till mötet, joggaren kan inte stanna) och vad de bär på (hunden, kaffet, resväskan).
+- Står de en bit bort väntar de medan du går fram. Sitter du på en bänk kan du prata med grannen utan att resa dig.
+
 ## [0.51.0] – 2026-09-29 – Pixelhögskolan och de utbildade jobben
 - Pixelhögskolan i downtown har öppnat: skriv in dig på expeditionen i Datorteknik (600 kr) eller Ekonomi (900 kr).
 - Gå fyra föreläsningar i Aula 1 (två timmar var, högst en per kurs och dag) – läraren skriver på tavlan och texten rullar under.

@@ -1,4 +1,4 @@
 // Skrivs av tools/release.mjs vid varje släpp – ändra inte för hand.
-export const VERSION = '0.51.0';
+export const VERSION = '0.52.0';
 export const DATE = '2026-09-29';
-export const TITLE = 'Pixelhögskolan och de utbildade jobben';
+export const TITLE = 'Prata med folk i staden';

@@ -3579,6 +3579,68 @@ export function createLife(env, traffic, props) {
     cleanup();
   }
 
+  // ---------- prata med folk (klick i city.js) ----------
+  // Personen stannar (inte mitt på övergångsstället – och joggaren springer vidare), vänder sig mot
+  // en och säger något som passar: tid på dygnet, vädret, vem hen är och vad hen bär på. Rösten är
+  // personens egen (look → voices.js), bubblan ritas av city.js via talks().
+  const SMALLTALK = {
+    morgon: ['God morgon!', 'Tidigt uppe, du med?', 'Jag behöver kaffe …'],
+    dag: ['Hej hej!', 'Hallå där!', 'Trevligt att ses!', 'Känner vi varandra?', 'Fin stad, va?', 'Har du varit på Burgarbaren?', 'Jag ska bara handla lite.', 'Hej! Allt bra?'],
+    kvall: ['God kväll!', 'Snart dags att gå hem.', 'Vilken fin kväll.'],
+    natt: ['Oj, är du också vaken?', 'Sent nu – nattbussen går snart.'],
+    sol: ['Vilket väder!', 'Äntligen sol!', 'Perfekt dag för glass.'],
+    regn: ['Usch, vilket regn!', 'Glömde du paraplyet?', 'Jag blir blöt ända in!'],
+    'snö': ['Snö! Ska vi bygga en snögubbe?', 'Akta så du inte halkar!'],
+    dimma: ['Jag ser knappt var jag går.'],
+    kallt: ['Brr, så kallt!', 'Jag fryser om fingrarna.'],
+    varmt: ['Puh, vad varmt!'],
+    barn: ['Hej! Vill du leka?', 'Jag har lov i dag!', 'Titta, jag kan hoppa!', 'Jag ska bli brandman!', 'Mamma säger att jag inte får prata med främlingar!'],
+    kostym: ['Ursäkta, jag har ett möte.', 'Aktierna går upp i dag!', 'Har du sett kurserna på Finanshuset?', 'Tid är pengar!', 'Jag är lite sen.'],
+    jogg: ['Kan inte stanna!', 'Puh … tre kilometer kvar!', 'Spring med!'],
+    hund: ['Han är snäll, du får klappa!', 'Vi är ute på promenad.', 'Hon älskar parken.'],
+    kaffe: ['Bästa kaffet i stan!', 'Har du provat kaféet?'],
+    resvaska: ['Jag ska ut och flyga!', 'Vet du var bussen till flygplatsen går?'],
+    glass: ['Mmm, glass!'],
+    sitter: ['Skönt att sitta en stund.', 'Sätt dig du med!'],
+    telefon: ['Vänta, jag pratar i telefon!', 'Jag ringer tillbaka sen!'],
+  };
+  function smalltalk(p) {
+    const w = W(), h = env.hour, t = w.temp ?? 15, pools = [];
+    const add = (k, n = 1) => { for (let i = 0; i < n; i++) pools.push(SMALLTALK[k]); };
+    if (p.call > 0) add('telefon', 4);
+    if (p.jogger) add('jogg', 4);
+    if (p.look.kid) add('barn', 3);
+    if (p.suit) add('kostym', 3);
+    if (p.dog) add('hund', 2);
+    if (p.carry === 'kaffe') add('kaffe');
+    if (p.carry === 'resvaska') add('resvaska', 2);
+    if (p.carry === 'glass') add('glass');
+    if (p.sit) add('sitter');
+    if (w.kind === 'sol' ? h >= 8 && h < 19 : SMALLTALK[w.kind] && w.kind !== 'moln') add(w.kind, 2);
+    if (t < 3) add('kallt'); else if (t > 22 && h >= 9 && h < 20) add('varmt');
+    add(h < 5 || h >= 22 ? 'natt' : h < 10 ? 'morgon' : h >= 18 ? 'kvall' : 'dag', 2);
+    add('dag');
+    const pool = pick(pools);
+    let s = pick(pool);
+    if (s === p.lastSaid) s = pick(pool); // helst inte samma sak två gånger i rad
+    return s;
+  }
+  // stå kvar och vänta på den som är på väg fram (klick på någon en bit bort)
+  function holdFor(p, secs, fx, fy) {
+    const lead = p.leader || p;
+    if (p.jogger || lead.onCross >= 0 || lead.door) return false;
+    lead.hold = Math.max(lead.hold || 0, secs);
+    for (const q of [lead, lead.comp].filter(Boolean)) if (!q.sit) q.face = faceTo(fx - q.x, (fy - q.y) * 0.6);
+    return true;
+  }
+  function talkTo(p, fx, fy) {
+    const text = smalltalk(p);
+    p.lastSaid = text;
+    p.talk = { text, t: 2.2 + text.length * 0.06 };
+    holdFor(p, p.talk.t + 0.6, fx, fy);
+    return text;
+  }
+
   // ==================================================================
   return {
     obstacles: [],
@@ -3595,7 +3657,7 @@ export function createLife(env, traffic, props) {
       updBus();
       for (const p of peds) if (!p.leader) { movePed(p, dt); sampleTrail(p, dt); }
       for (const p of peds) if (p.leader) updComp(p, dt);
-      for (const p of peds) { updShow(p, dt); if (p.phoneT > 0) p.phoneT -= dt; if (p.photo > 0) p.photo -= dt; if (p.caller) updCall(p, dt); }
+      for (const p of peds) { updShow(p, dt); if (p.phoneT > 0) p.phoneT -= dt; if (p.photo > 0) p.photo -= dt; if (p.caller) updCall(p, dt); if (p.talk && (p.talk.t -= dt) <= 0) p.talk = null; }
       for (const p of peds) if (p.dog) updDog(p, dt);
       dogSocial();
       updBirdsG(dt);
@@ -3611,6 +3673,26 @@ export function createLife(env, traffic, props) {
     positions() {
       const out = [];
       for (const p of peds) if (!p.hidden) out.push({ x: p.x + p.ox, y: p.y + p.oy });
+      return out;
+    },
+    // klick på folk: den synliga fotgängaren under pekaren (närmast mitten av figuren vinner)
+    personAt(x, y) {
+      let best = null, bd = 1e9;
+      for (const p of peds) {
+        if (p.hidden || p.gone) continue;
+        const X = p.x + p.ox, Y = p.y + p.oy, hgt = p.look.kid ? 24 : 33;
+        if (x < X - 6 || x > X + 6 || y < Y - hgt || y > Y + 2) continue;
+        const d = Math.abs(x - X) + Math.abs(y - (Y - hgt / 2)) * 0.5;
+        if (d < bd) { bd = d; best = p; }
+      }
+      return best;
+    },
+    talkTo,
+    holdFor,
+    // pratbubblorna just nu (världskoordinater: fotpunkten x, bubblans spets y) – city.js ritar dem
+    talks() {
+      const out = [];
+      for (const p of peds) if (p.talk && !p.hidden && !p.gone && visible(p.x, p.y, 40)) out.push({ id: p.id, x: Math.round(p.x + p.ox), y: Math.round(p.y + p.oy) - (p.look.kid ? 26 : 34), text: p.talk.text, voice: p.look });
       return out;
     },
     // sittplatser som fotgängarna har tagit (så att spelaren inte sätter sig i knät på någon)

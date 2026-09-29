@@ -6,7 +6,7 @@
 import { openHouseSign } from '../shops/bostad.js';
 import { CITY, BUILDINGS, ALL_BUILDINGS, doorCenter, artPos, artBox, baseOf, isNightHour, BUS_STOPS, busStopById,
   DISTRICTS, districtAt, districtByName, MAP_OBSTACLES, RIVER } from '../city/map.js';
-import { createWalker, selfDrawable, folkDrawables, nameTag } from './walkable.js';
+import { createWalker, selfDrawable, folkDrawables, nameTag, sayBubble } from './walkable.js';
 import { drawPerson } from '../core/people.js';
 import { openModal, closeModal, toast, esc } from '../core/ui.js';
 import { play } from '../core/sound.js';
@@ -700,6 +700,21 @@ export function makeCity(A) {
       const chip = signChips.find((c) => sx >= c.x - 2 && sx < c.x + c.w + 2 && sy >= c.y - 2 && sy < c.y + c.h + 4);
       if (chip) { if (sitting) standUp(); const dc = doorCenter(chip.b); walker.walkTo(dc.x, dc.y, () => enter(chip.b)); return; }
       const x = sx + cam.x, y = sy + cam.y;
+      // klick på en fotgängare → hen stannar, vänder sig mot en och säger något med sin egen röst.
+      // Nära: direkt (man sitter kvar på bänken). Längre bort: hen väntar medan man går fram.
+      const who = S.life.personAt?.(x, y);
+      if (who) {
+        const turn = () => { if (!sitting) { const dx = who.x - walker.px, dy = who.y - walker.py; walker.dir = Math.abs(dx) > Math.abs(dy) * 1.6 ? (dx < 0 ? 'left' : 'right') : dy < 0 ? 'up' : 'down'; } };
+        const d = Math.hypot(who.x - walker.px, who.y - walker.py);
+        if (d < 64) { S.life.talkTo(who, walker.px, walker.py); turn(); return; }
+        if (sitting) standUp();
+        S.life.holdFor(who, Math.min(6, d / 40 + 1), walker.px, walker.py);
+        walker.walkTo(who.x + (walker.px < who.x ? -14 : 14), who.y + 2, () => {
+          if (who.gone || who.hidden || Math.hypot(who.x - walker.px, who.y - walker.py) > 60) return;
+          S.life.talkTo(who, walker.px, walker.py); turn();
+        });
+        return;
+      }
       if (sitting) standUp(); // res dig först – klicket fortsätter som vanligt
       // klick på en buss som står vid en hållplats → håll den, gå till framdörren och kliv på
       const bi = S.traffic.busDoorHit?.(x, y);
@@ -734,6 +749,8 @@ export function makeCity(A) {
       const cx = Math.round(cam.x), cy = Math.round(cam.y);
       ctx.setTransform(A.pxs, 0, 0, A.pxs, -cx * A.pxs, -cy * A.pxs);
       drawWorld(ctx, cx, cy, VW, VH);
+      // fotgängarnas repliker (klick på folk) – överst i världen, med personens egen röst
+      guard('pratet', () => { for (const b of S.life.talks?.() || []) sayBubble(ctx, b.x, b.y, b.text, { voice: b.voice, x0: cx, x1: cx + VW }); });
       ctx.setTransform(A.pxs, 0, 0, A.pxs, 0, 0);
       drawFolkMarkers(ctx, cx, cy);
       guard('husnamnen', () => drawSignChips(ctx, cx, cy));
