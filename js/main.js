@@ -26,6 +26,7 @@ import { makeJobbBensin } from './jobs/jobb-bensin.js';
 import { makeJobbVerkstad } from './jobs/jobb-verkstad.js';
 import { makeJobbTvatt } from './jobs/jobb-tvatt.js';
 import { makeJobbKafe } from './jobs/jobb-kafe.js';
+import { makeJobbVard } from './jobs/jobb-vard.js';
 import { makeShopBurgarbar } from './scenes/shop-burgarbar.js';
 import { makeJobbKok } from './jobs/jobb-kok.js';
 import { makeShopTerminal } from './scenes/shop-terminal.js';
@@ -101,6 +102,7 @@ const SCENES = {
   jobbverkstad: (a, o) => makeJobbVerkstad(a, o),
   jobbtvatt: (a, o) => makeJobbTvatt(a, o),
   jobbkafe: (a, o) => makeJobbKafe(a, o),
+  jobbvard: (a, o) => makeJobbVard(a, o), // Vårdcentralens reception (js/jobs/jobb-vard.js)
   burgarbar: (a, o) => makeShopBurgarbar(a, o),
   jobbkok: (a, o) => makeJobbKok(a, o),
   terminal: (a, o) => makeShopTerminal(a, o),
@@ -120,6 +122,9 @@ const ENGINES = { flygplats: 'jobbflyg', frukt: 'jobbfrukt', burgare: 'jobbburga
 const DOOR_SCENES = [
   ['bank', './scenes/shop-bank.js', 'makeShopBank'],
   ['elektronik', './scenes/shop-elektronik.js', 'makeShopElektronik'],
+  ['bio', './scenes/shop-bio.js', 'makeShopBio'],
+  ['kebab', './scenes/shop-kebab.js', 'makeShopKebab'],
+  ['pantbank', './scenes/shop-pantbank.js', 'makePantbank'],
 ];
 const DOOR_STATE = {};   // namn → 'laddar' | 'klar' | 'fel'
 for (const [n, file, fn] of DOOR_SCENES) {
@@ -146,6 +151,9 @@ Object.assign(A, {
   hasScene: (n) => typeof SCENES[n] === 'function' && DOOR_STATE[n] !== 'fel',
   jobReady: (id) => !!JOBS[id] && A.hasScene(ENGINES[id]), // jobbet finns OCH har en jobbscen
 });
+
+// Vårdcentralens reception (egen rad, eftersom ENGINES-raden ovan ändras av flera samtidigt)
+ENGINES.vard = 'jobbvard';
 
 // ---------- skala canvasen till fönstret ----------
 // MOBILFYLLNING: spelet fyller HELA ytan under HUD-raden på alla enheter, med
@@ -416,6 +424,7 @@ const PLACE_AWAY = {
   jobbflyg: '✈️ jobbar på flygplatsen', jobbfrukt: '🍊 jobbar på fruktfabriken', jobbburgare: '🍔 jobbar på Burgarbaren',
   jobbpizzeria: '🍕 jobbar på pizzerian', jobbposten: '📦 jobbar på Posten', jobbbensin: '⛽ jobbar på macken',
   jobbverkstad: '🔧 jobbar på bilverkstaden', jobbtvatt: '🧺 jobbar på tvätteriet', jobbkafe: '☕ jobbar på kaféet',
+  jobbvard: '🏥 jobbar på vårdcentralen',
   mat: '🛒 i mataffären', klader: '👕 i klädaffären', mobler: '🛋️ på MÖBELJÄTTEN', moblergammal: '🛋️ på MÖBELJÄTTEN',
   bostad: '🔑 på bostadsbyrån', kafe: '☕ på kaféet', djur: '🐾 i djuraffären', narbutik: '🏪 i närbutiken', terminal: '✈️ på flygplatsen', jobbincheck: '🛄 jobbar i incheckningen', leksaker: '🧸 i leksaksaffären',
 };
@@ -510,6 +519,7 @@ function openDiary() {
     ${line('🛋️ Möbler', `${Object.values(g.deco).flat().filter((d) => !d.fx).length} placerade · ${g.storage.length} i förrådet`)}
     ${line('💰 På fickan', fmt(g.money))}
     ${g.bank ? line('🏦 På banken', fmt(g.bank)) : ''}
+    ${g.pant?.length ? line('💍 I pantbanken', g.pant.map((p) => `nr ${p.nr}: ${fmt(p.skuld)} senast dag ${p.sista}`).join(' · ')) : ''}
     ${line('💵 Totalt intjänat', fmt(g.earned))}
     <div style="border-top:3px dashed var(--ink);margin:8px 0"></div>
     ${jobRows}

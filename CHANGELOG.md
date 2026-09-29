@@ -10,6 +10,13 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.50.0] – 2026-09-29 – Bion, kebaben, pantbanken, lotterna och vårdcentralen
+- BIO PIXEL öppnar: foajé med biljettlucka, popcornbar och affischer, och en riktig salong – köp biljett (90 kr), välj bland sex filmer, sätt dig, ljuset släcks, ridån går upp och en egen pixelfilm spelas medan publiken skrattar, gråter och kastar popcorn. Efteråt +15 energi (2 timmar går)
+- KEBAB GRILL i förorten: beställ kebabrulle, falafel, pommes och läsk, se kocken göra maten och ät sittande bit för bit
+- PANTBANKEN: sälj möbler ur förrådet för halva priset, eller låna pengar mot pant – betala tillbaka med ränta inom en vecka, annars behåller pantlånaren möbeln
+- SKRAPLOTTER i närbutiken: 25 kr, skrapa fram tre lika och vinn upp till 1 000 kr
+- Nytt jobb på VÅRDCENTRALEN: ta emot patienterna i receptionen och skicka dem till rätt rum – läkare, sjuksköterska, labb eller akuten; akutfall först ger bonus
+
 ## [0.49.0] – 2026-09-29 – Garderoben: skor, accessoarer, frisör och fotboll
 - KLÄDAFFÄREN har fått en våning till: gå uppför trappan till SPORT & FOTBOLL
 - Hela KUNGSLADUGÅRD-laget står där i matchställ med nummer och förnamn på ryggen, och lagfotot hänger på väggen – köp lagets tröja och shorts

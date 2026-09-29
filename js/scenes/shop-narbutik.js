@@ -24,6 +24,11 @@
 // Möten i de smala gångarna: kunderna kliver undan i en lucka ("Efter dig!") eller
 // trycker sig mot hyllan och drar in magen när någon klämmer sig förbi – figuren
 // blockeras aldrig.
+//
+// SKRAPLOTTER: lotter-stället LYCKOSKRAP står på golvet framför diskens högra ände. Klicka
+// → köp en lott (25 kr) → lotten läggs upp över bilden och man skrapar fram sex belopp med
+// musen/fingret. Tre lika = vinst (100/500/1000 kr, liten chans). Rättvis slump med seed per
+// dag – reglerna och sparfältet g.lott bor i js/scenes/skraplott.js.
 import { Pix, SMALL, BIG, ctxText, textW, text, eachTextPixel, mix, mul, hash, bayer } from '../core/floor-pix.js';
 import { drawPerson, makeLook } from '../core/people.js';
 import { openModal, closeModal, toast, esc, modalOpen } from '../core/ui.js';
@@ -31,6 +36,7 @@ import { FOOD, foodOf, fmt } from '../game.js';
 import { play, audioContext, isMuted } from '../core/sound.js';
 import { createWalker, selfDrawable, folkDrawables, WALK_SEQ, createSpeech } from './walkable.js';
 import { worldFolksHere } from '../net/world.js';
+import { LOTT_PRIS, LOTT_PER_DAG, lottOf, lottLeft, buyLott, settleLott, createTicket, lottPrize } from './skraplott.js';
 
 // Närbutikens pris: Stormarknadens + 20 %, uppåt till hel krona (heltalsräkning, inga flyttalsfel)
 export const narPrice = (f) => Math.ceil((f.price * 120) / 100 - 1e-9);
@@ -85,6 +91,7 @@ const COOLER = { x0: 142, x1: 162, base: 118 };      // en liten energidryckskyl
 const SODA = { x0: 578, x1: 600, base: 194 };        // läskbackar staplade i hörnet
 const GLASS = { x0: 84, x1: 122, top: 160, lid: 168, base: 176 }; // glassboxen bredvid frysen
 const NEWS = { x0: 126, x1: 150, base: 238 };        // tidningsställ med utländska tidningar
+const LOTT = { x0: 114, x1: 140, top: 99, base: 131 }; // lotter-stället LYCKOSKRAP framför diskens högra ände
 const MAX_BASKET = 10;
 
 // allt man inte kan gå igenom (hyllorna blockerar hela sin bildhöjd – då kan ingen
@@ -108,6 +115,7 @@ const OBST = [
   [SODA.x0, SODA.base - 20, SODA.x1, SODA.base],
   [GLASS.x0, GLASS.top - 2, GLASS.x1, GLASS.base],
   [NEWS.x0, NEWS.base - 16, NEWS.x1, NEWS.base],
+  [LOTT.x0, CNT.base - 2, LOTT.x1, LOTT.base],
 ];
 
 // lysrören som hänger i taket: x och golvpunkten under (armaturen ritas CH högre upp).
@@ -1608,6 +1616,44 @@ function paintNews() {
     groundShadow(P, (x0 + x1) / 2, base + 1, w / 2, 2, 0.35);
   });
 }
+// ---------- lotter-stället LYCKOSKRAP: en plexilåda med tre rullar på en fot ----------
+function paintLott() {
+  const { x0, x1, top, base } = LOTT, w = x1 - x0;
+  return sprite(x0 - 2, top - 2, w + 5, base - top + 5, (P) => {
+    const GREENS = [0x0a3a22, 0x125a34, 0x1e7a4a, 0x3aa86a, 0x7ad89a], GOLDS = [0x6a4a0a, 0x9a7414, 0xd0a42a, 0xf4d050, 0xfff4b0];
+    // foten: svart plåtfot med ett rör upp
+    P.rect(x0 + 5, base - 2, w - 10, 2, 0x1a1a1e); P.hl(x0 + 5, base - 2, w - 10, 0x4a4a52);
+    P.vl(x0 + (w >> 1) - 1, base - 6, 4, 0x5a5e68); P.vl(x0 + (w >> 1), base - 6, 4, 0x2a2a30);
+    // lådan: grön rygg med guldkant, tre fack med lotter som hänger ut i remsor
+    const by0 = top + 8, by1 = base - 6;
+    for (let y = by0; y < by1; y++) for (let x = x0 + 1; x < x1 - 1; x++) {
+      const e = Math.min(x - x0 - 1, y - by0, x1 - 2 - x, by1 - 1 - y);
+      P.px(x, y, e === 0 ? GOLDS[1] : tone(GREENS, 0.55 - (y - by0) / 60 + (((x + y) >> 1) % 5 === 0 ? 0.08 : 0), x, y));
+    }
+    const lanes = [x0 + 4, x0 + 11, x0 + 18], cols = [[0x3aa86a, 0xf4d050], [0xd8323a, 0xfff4b0], [0x3a6ad8, 0xf4d050]];
+    lanes.forEach((lx, k) => {
+      P.hl(lx - 1, by0 + 3, 7, 0x0a1a10);                                  // facket
+      const len = 6 + ((k * 5) % 7);                                        // remsan med lotter ut ur facket
+      for (let j = 0; j < len; j++) {
+        const y = by0 + 4 + j, [c1, c2] = cols[k];
+        for (let i = 0; i < 5; i++) P.px(lx + i, y, j % 5 === 4 ? mix(c1, 0xffffff, 0.5) : (i === 1 || i === 3) && j % 5 === 1 ? c2 : i === 0 ? mix(c1, 0xffffff, 0.3) : i === 4 ? mul(c1, 0.7) : c1);
+        if (j % 5 === 4) for (let i = 0; i < 5; i += 2) P.px(lx + i, y, 0x0a1a10);    // perforeringen
+      }
+      P.px(lx + 2, by0 + 4 + len, cols[k][0]); P.px(lx + 1, by0 + 4 + len, mul(cols[k][0], 0.7)); // en lott som böjer sig
+    });
+    // plexifronten: blank med reflexer
+    for (let y = by0 + 1; y < by1 - 1; y++) for (let x = x0 + 2; x < x1 - 2; x++) P.px(x, y, 0xd8f0ff, 0.12);
+    glare(P, x0 + 2, by0 + 1, w - 4, by1 - by0 - 2, 0.35, 11, 3);
+    // skylten överst: LOTTER i guld på svart med en klöver, och prislappen
+    P.rect(x0, top, w, 8, 0x141016); P.hl(x0, top, w, GOLDS[3]); P.hl(x0, top + 7, w, GOLDS[1]);
+    const lw = textW(SM, 'LOTTER');
+    text(P, SM, 'LOTTER', x0 + ((w - lw) >> 1), top + 2, GOLDS[3]);
+    P.hl(x0 + ((w - lw) >> 1), top + 2, lw, GOLDS[4], 0.5);
+    { const tw = handW(SM, '25:-', 61) + 3, S = skew(P, x1 - tw + 1, 5, 1); S.rect(x1 - tw + 1, by1 - 7, tw, 7, 0xffd23f); S.hl(x1 - tw + 1, by1 - 7, tw, 0xfff08a); hand(S, SM, '25:-', x1 - tw + 2, by1 - 6, 0xc8141a, 61); }
+    outline(P, OUT, 0.55);
+    groundShadow(P, (x0 + x1) / 2, base + 1, w / 2 - 2, 1.6, 0.35);
+  });
+}
 // ---------- läskbackar staplade i hörnet ----------
 function paintSoda() {
   return sprite(SODA.x0 - 2, SODA.base - 26, SODA.x1 - SODA.x0 + 4, 30, (P) => {
@@ -1766,6 +1812,7 @@ function art() {
     soda: paintSoda(),
     glass: paintGlass(),
     news: paintNews(),
+    lott: paintLott(),
     tubeOn: paintTube(true), tubeBrokenOn: paintTube(true, true), tubeBrokenOff: paintTube(false, true),
     tubeGlow: paintGlow(40, 13, 0xf8fff0, 0.26),
     halo: paintGlow(26, 9, 0xfcfff4, 0.7),
@@ -2232,6 +2279,82 @@ export function makeShopNarbutik(A) {
   }
   function leave() { ring(); play('door'); A.go('city'); }
 
+  // ---------- skraplotterna (lotter-stället vid disken) ----------
+  // Lotten ligger uppe över bilden medan man skrapar (ticket); allt om regler, slump och
+  // sparfältet g.lott finns i js/scenes/skraplott.js.
+  let ticket = null, lottSpark = -9;
+  const LOTT_RELEASE = ['pointerup', 'pointercancel', 'blur'];
+  const releaseLott = () => { ticket?.up(); };
+  const pickOne = (L) => L[Math.floor(Math.random() * L.length)];
+  function offerLott() {
+    const L = lottOf(g);
+    if (L.open) { showTicket(); return; } // en lott som inte är färdigskrapad
+    const left = lottLeft(g);
+    if (!left) { expSay('Rullen är slut. Kom i morgon.'); hint('🍀 Slut på lotter för i dag.'); return; }
+    openModal('🍀 Lyckoskrap', `<p style="font-size:20px;margin-top:0">En skraplott kostar <b>${LOTT_PRIS} kr</b>. Skrapa fram sex belopp – <b>tre lika</b> och du vinner beloppet: 100, 500 eller 1 000 kr!</p>
+      <p style="font-size:17px;margin:0">De flesta lotter är nitlotter – det är liten chans att vinna. 💰 Du har <b>${fmt(g.money)}</b> · ${left} ${left === 1 ? 'lott' : 'lotter'} kvar på rullen i dag (högst ${LOTT_PER_DAG}).</p>`, [
+      { label: 'Nej tack', onClick: closeModal },
+      { label: `🍀 Köp en lott – ${LOTT_PRIS} kr`, cls: 'btn-go', disabled: g.money < LOTT_PRIS, onClick: () => { closeModal(); buyAndShow(); } },
+    ]);
+  }
+  function buyAndShow() {
+    const r = buyLott(g);
+    if (!r.ok) { play('fel'); toast('🍀 ' + r.msg, 'bad'); if (r.open) showTicket(); return r; }
+    play('coin');
+    expSay(pickOne(['Lycka till.', 'Skrapa försiktigt.', 'Min kusin vann en gång. Tror jag.']), undefined, true);
+    showTicket();
+    return r;
+  }
+  function showTicket() {
+    const o = lottOf(g).open;
+    if (!o) return false;
+    walker.stop();
+    if (scan) cancelScan();
+    ticket = createTicket(o, {
+      onScratch: scratchSound,
+      onDone: () => {
+        const r = settleLott(g);
+        if (r.prize) {
+          play('fanfare');
+          toast(`🍀 VINST! Tre lika – ${fmt(r.prize)} i fickan!`, 'good');
+          expSay(r.prize >= 1000 ? 'TUSEN?! Jag sa ju det. Min kusin...' : 'Grattis! Det händer inte ofta.', undefined, true);
+          pops.push({ x: walker.px, y: walker.py - 50, s: `+${r.prize}`, t: 0 });
+        } else {
+          play('miss');
+          expSay(pickOne(['Nästa gång kanske.', 'Nitlott. Som vanligt.', 'Ingen tur i dag.']), undefined, true);
+        }
+        return r;
+      },
+      canMore: () => !lottOf(g).open && lottLeft(g) > 0 && g.money >= LOTT_PRIS,
+      onMore: () => { ticket = null; play('click'); buyAndShow(); },
+      onClose: () => { ticket = null; play('click'); },
+    });
+    return true;
+  }
+  // skrapljud: kort brus som låter som ett mynt mot silver
+  function scratchSound() {
+    if (isMuted()) return;
+    try {
+      const c = audioContext();
+      if (!c) return;
+      const len = Math.floor(c.sampleRate * 0.06), b = c.createBuffer(1, len, c.sampleRate), d = b.getChannelData(0);
+      for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len);
+      const s = c.createBufferSource(), f = c.createBiquadFilter(), gn = c.createGain();
+      s.buffer = b; f.type = 'bandpass'; f.frequency.value = 2400 + Math.random() * 1600; f.Q.value = 1.3; gn.gain.value = 0.05;
+      s.connect(f); f.connect(gn); gn.connect(c.destination); s.start();
+    } catch { /* ljud är aldrig ett krav */ }
+  }
+  // en gnista på stället då och då (klövern blänker)
+  function liveLott(ctx) {
+    if (t - lottSpark > 2.6) lottSpark = t + Math.random() * 1.5;
+    const k = t - lottSpark;
+    if (k >= 0 && k < 0.3) {
+      const x = LOTT.x1 - 4, y = LOTT.top + 3;
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(x, y, 1, 1);
+      if (k < 0.15) { ctx.fillRect(x - 1, y, 3, 1); ctx.fillRect(x, y - 1, 1, 3); }
+    }
+  }
+
   // ---------- klickbara platser ----------
   // mina egna tankar: pratar en kund alldeles intill väntar tanken tills kundens bubbla är klar
   let pendingHint = null;
@@ -2257,6 +2380,7 @@ export function makeShopNarbutik(A) {
     hushall: '🧻 Batterier, värmeljus och toapapper i bal.',
   };
   const spots = [
+    { id: 'lotter', r: [LOTT.x0 - 2, LOTT.top - 2, LOTT.x1 + 2, LOTT.base], go: [127, 137], act: () => { walker.dir = 'up'; offerLott(); } },
     ...R.displays.map((s) => ({ id: s.f.id, food: s, r: s.r, go: s.go, act: () => addToBasket(s) })),
     { id: 'disk', r: [CNT.x0 + 20, PLEX.top - 4, GRILL.x0 - 2, CNT.base], go: PAY, act: () => { walker.dir = 'up'; startScan(); } },
     { id: 'dorr', r: [DOOR.x0 - 6, FRONT_Y - 12, DOOR.x1 + 6, H], go: [DOOR_X, FRONT_Y - 5], act: exit },
@@ -2286,7 +2410,7 @@ export function makeShopNarbutik(A) {
   const spotById = (id) => spots.find((s) => s.id === id);
   const focusSpot = () => {
     const h = hoverId && t - hoverT < 4 && spotById(hoverId);
-    if (h && (h.food || h.id === 'disk' || h.id === 'dorr')) return h;
+    if (h && (h.food || h.id === 'disk' || h.id === 'dorr' || h.id === 'lotter')) return h;
     if (walker.path.length) return null;
     return spots.find((s) => s.food && Math.abs(walker.px - s.go[0]) < 8 && Math.abs(walker.py - s.go[1]) < 8) || null;
   };
@@ -2388,6 +2512,7 @@ export function makeShopNarbutik(A) {
       hintTxt = basket.length >= MAX_BASKET ? 'KORGEN ÄR FULL' : `+${f.fill} MÄTT - KLICKA SÅ HAMNAR DEN I KORGEN`;
     } else if (s.id === 'disk') { name = 'DISKEN'; price = basket.length ? `${total()} KR` : ''; hintTxt = basket.length ? 'KLICKA SÅ BETALAR DU' : 'PLOCKA VAROR FÖRST'; col = '#ffa43a'; }
     else if (s.id === 'dorr') { name = 'UTGÅNG'; price = ''; hintTxt = basket.length ? 'BETALA FÖRST!' : 'TILLBAKA UT I FÖRORTEN'; col = '#ffa43a'; }
+    else if (s.id === 'lotter') { name = 'LYCKOSKRAP'; price = `${LOTT_PRIS} KR`; hintTxt = lottLeft(g) ? 'TRE LIKA BELOPP = VINST!' : 'SLUT PÅ LOTTER I DAG'; col = '#6ae08a'; }
     else return;
     const nw = textW(BG, name), pw = price ? textW(BG, price) : 0, hw = textW(SM, hintTxt);
     const w = Math.max(nw + pw + (price ? 8 : 0) + (icon ? 14 : 0), hw + (icon ? 14 : 0)) + 12, h = 22;
@@ -2457,6 +2582,7 @@ export function makeShopNarbutik(A) {
     add(SODA.base, SODA.x0 - 2, SODA.base - 26, SODA.x1 + 2, SODA.base + 4, () => put(ctx, R.soda));
     add(GLASS.base, GLASS.x0 - 2, GLASS.top - 4, GLASS.x1 + 3, GLASS.base + 4, () => put(ctx, R.glass));
     add(NEWS.base, NEWS.x0 - 2, NEWS.base - 22, NEWS.x1 + 3, NEWS.base + 4, () => put(ctx, R.news));
+    add(LOTT.base, LOTT.x0 - 2, LOTT.top - 2, LOTT.x1 + 3, LOTT.base + 3, () => { put(ctx, R.lott); liveLott(ctx); });
     GONDOLAS.forEach((G, i) => add(G.base, G.x0 - 3, G.base - GH - 22, G.x1 + 3, G.base + 6, () => {
       put(ctx, R.gondolas[i]);
       for (const s of R.displays) if (s.d.kind === 'gondola' && s.d.g === i) displayTag(ctx, s, focus);
@@ -2740,9 +2866,29 @@ export function makeShopNarbutik(A) {
     viewMax: { w: W, h: H },
     get worldX() { return walker.px; },
     get worldY() { return walker.py; },
-    enter() { ring(); pendingHello = 0.7; },
-    exit() { talk.clear(); talkExp.clear(); talkCat.clear(); for (const n of npcs) n.talk.clear(); },
+    enter() {
+      ring(); pendingHello = 0.7;
+      if (lottOf(g).open) setTimeout(() => hint('🍀 Jag har en oskrapad lott i fickan! Klicka på lotter-stället.'), 1600);
+      // släpper man musen/fingret UTANFÖR spelvyn (i ramen, utanför fönstret) når inte up() scenen –
+      // då måste lotten ändå sluta skrapa, annars skrapar vanliga musrörelser vidare
+      for (const ev of LOTT_RELEASE) window.addEventListener(ev, releaseLott);
+    },
+    exit() {
+      for (const ev of LOTT_RELEASE) window.removeEventListener(ev, releaseLott);
+      talk.clear(); talkExp.clear(); talkCat.clear(); for (const n of npcs) n.talk.clear();
+      // går man ut mitt i skrapandet skrapas lotten klart i farten – vinsten följer med
+      if (lottOf(g).open) { const r = settleLott(g); toast(r.prize ? `🍀 Du skrapade klart lotten på vägen ut – VINST ${fmt(r.prize)}!` : '🍀 Du skrapade klart lotten på vägen ut – nitlott.', r.prize ? 'good' : ''); }
+      ticket = null;
+    },
     _debug: {
+      // skraplotterna: tillståndet, köp utan dialog, rutornas lägen i vyn, skrapa allt
+      lott: () => { const L = lottOf(g); return { salt: L.salt, dag: L.dag, n: L.n, kopt: L.kopt, vunnit: L.vunnit, left: lottLeft(g), open: L.open ? { ...L.open, fields: [...L.open.fields] } : null, ticket: !!ticket, result: ticket?.result || null }; },
+      lottOffer: () => offerLott(),
+      lottBuy: () => buyAndShow(),
+      lottRects: () => ticket?.rects() || null,
+      lottReveal: () => ticket?.revealAll() || null,
+      lottClose: () => { ticket = null; },
+      lottPrize: (salt, day, n) => lottPrize(salt, day, n),
       spot: (id) => {
         const P = {
           gang1: [260, 90], gang2: [300, 158], gang3: [300, 226], kyl: [FRIDGE.x0 + 3.5 * FRIDGE.dw, 40], katt: [cat.x, cat.y - 4],
@@ -2824,6 +2970,7 @@ export function makeShopNarbutik(A) {
       for (let i = flies.length - 1; i >= 0; i--) { flies[i].t += dt; if (flies[i].t > 0.4) flies.splice(i, 1); }
       for (let i = pops.length - 1; i >= 0; i--) { pops[i].t += dt; if (pops[i].t > 1) pops.splice(i, 1); }
       updateHint();
+      ticket?.update(dt);
       // pärlridån svajar när någon går förbi den och klingar av (per sekund, inte per bildruta)
       curtSway = Math.max(0, curtSway - dt * 0.6);
       if (Math.abs(walker.px - 132) < 20 && walker.py < 150 && walker.path.length) curtSway = Math.max(curtSway, 0.5);
@@ -2835,6 +2982,7 @@ export function makeShopNarbutik(A) {
 
     down(sx, sy) {
       hoverId = null;
+      if (ticket) { ticket.down(sx, sy); return; } // lotten ligger uppe: man skrapar
       for (const h of panelHits) if (sx >= h.r[0] && sx <= h.r[2] && sy >= h.r[1] && sy <= h.r[3]) { h.act(); return; }
       const x = sx + cam.x, y = sy + cam.y;
       // katten först (den ligger ovanpå saker)
@@ -2851,7 +2999,8 @@ export function makeShopNarbutik(A) {
       if (s) { clickSpot(s, x); return; }
       if (y > WALL_Y) walker.walkTo(x, y);
     },
-    move(sx, sy) { hoverId = spotAt(sx + cam.x, sy + cam.y)?.id || null; hoverT = t; },
+    move(sx, sy) { if (ticket) { ticket.move(sx, sy); return; } hoverId = spotAt(sx + cam.x, sy + cam.y)?.id || null; hoverT = t; },
+    up() { ticket?.up(); },
 
     draw(ctx) {
       syncView(A);
@@ -2867,7 +3016,8 @@ export function makeShopNarbutik(A) {
       ctx.setTransform(A.pxs, 0, 0, A.pxs, 0, 0);
       drawPanel(ctx);
       const focus = focusSpot();
-      if (focus) bigLabel(ctx, focus, walker.py - cam.y > VH - 50);
+      if (ticket) ticket.draw(ctx, VW, VH, A.view?.safe);
+      else if (focus) bigLabel(ctx, focus, walker.py - cam.y > VH - 50);
     },
   };
 }

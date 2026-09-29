@@ -38,7 +38,8 @@ export function startJobFlow(A, jobId, sceneName) {
   const lvl = levelOf(g.jobs[jobId]);
   const dubbel = g.eventIs('dubbel') && g.event.job === jobId;
   const rows = [
-    `💵 ${job.wage} kr per rätt · −${job.oops} kr per fel${job.bonus ? ` · +${job.bonus} kr per färdig låda` : ''}`,
+    `💵 ${job.wage} kr per rätt · −${job.oops} kr per fel${job.bonus ? ` · +${job.bonus} kr per ${job.bonusPer || 'färdig låda'}` : ''}`,
+    job.missOops ? `💨 −${job.missOops} kr per ${job.missPer || 'missad'}` : null,
     `⭐ Din nivå: <b>${JOB_TITLES[lvl - 1]}</b> (lön ×${payMult(lvl).toFixed(2).replace('.', ',')})`,
     g.best[jobId].ok ? `🏅 Ditt rekord: <b>${g.best[jobId].ok} rätt</b> · bästa lön ${fmt(g.best[jobId].pay)}` : null,
     dubbel ? `💰 <b class="ok">EXTRAPASS I DAG – DUBBEL LÖN!</b>` : null,
@@ -84,7 +85,7 @@ function finishShift(A, jobId, stats) {
   const job = JOBS[jobId];
   const lvl = levelOf(A.game.jobs[jobId]);
   const mult = payMult(lvl);
-  const base = Math.max(0, stats.ok * job.wage + (stats.boxes || 0) * (job.bonus || 0) - stats.fel * job.oops);
+  const base = Math.max(0, stats.ok * job.wage + (stats.boxes || 0) * (job.bonus || 0) - stats.fel * job.oops - (stats.miss || 0) * (job.missOops || 0));
   const tips = Math.max(0, Math.round(stats.dricksKr || 0));
   const res = A.game.endShift(jobId, base * mult + tips, stats);
   play('coin');
@@ -92,8 +93,8 @@ function finishShift(A, jobId, stats) {
   openModal(`${job.icon} Passet är slut!`, `
     ${line('✅ Rätt', stats.ok + (res.newRecord ? ' 🏅 NYTT REKORD!' : ''))}
     ${line('❌ Fel', stats.fel)}
-    ${stats.boxes !== undefined ? line('📦 Färdiga lådor', stats.boxes) : ''}
-    ${stats.miss ? line('💨 Missade', stats.miss) : ''}
+    ${stats.boxes !== undefined ? line(job.boxLabel || '📦 Färdiga lådor', stats.boxes) : ''}
+    ${stats.miss ? line('💨 Missade', stats.miss + (job.missOops ? ` (−${fmt(stats.miss * job.missOops)})` : '')) : ''}
     <div style="border-top:3px dashed var(--ink);margin:8px 0"></div>
     ${stats.delat ? line('👥 Jobbat ihop', `${stats.delat} pers – lagets ${stats.lagOk || 0} rätt delas lika`) : ''}
     ${line('Grundlön', fmt(base))}

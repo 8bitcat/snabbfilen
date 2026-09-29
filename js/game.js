@@ -36,6 +36,10 @@ export const JOBS = {
   bilverkstad: { id: 'bilverkstad', icon: '🔧', name: 'Bilverkstan', verb: 'Byt däck steg för steg och laga bilarna', wage: 12, oops: 5 },
   tvatteri: { id: 'tvatteri', icon: '🧺', name: 'Tvätteriet', verb: 'Tvätta, torka, vik och lämna rätt påse', wage: 16, oops: 6 },
   kafe: { id: 'kafe', icon: '☕', name: 'Kaféet', verb: 'Gör rätt dryck och servera rätt gäst', wage: 14, oops: 6 },
+  // Vårdcentralen (Söder, öppet 08–17 enligt huset i map.js): receptionen. bonus = kr per
+  // akutfall som tas emot FÖRST (stats.boxes); bonusPer/boxLabel är raderna i passdialogerna.
+  // missOops = avdrag per patient som tröttnar och går hem (stats.miss, egen rad – inte ett fel).
+  vard: { id: 'vard', icon: '🏥', name: 'Vårdcentralen', verb: 'Ta emot patienterna och skicka dem rätt', wage: 13, oops: 5, bonus: 10, bonusPer: 'akutfall först', boxLabel: '🚑 Akutfall först', missOops: 5, missPer: 'patient som går hem' },
   kok: { id: 'kok', icon: '🍳', name: 'Burgarköket', verb: 'Bygg rätterna som beställs i köket', wage: 11, oops: 5 },
 };
 export const JOB_TITLES = ['Nybörjare', 'Van', 'Proffs', 'Mästare', 'Legendar'];
@@ -332,6 +336,15 @@ export const gadgetOf = (id) => GADGETS.find((x) => x.id === id) || null;
 // Slutmålet: äg Villan med rejält på fickan.
 export const WIN_MONEY = 10000;
 
+// Pantbanken (js/scenes/shop-pantbank.js): lån mot pant. Pantlånaren lånar ut PANT_RATE av
+// katalogpriset mot en möbel ur förrådet. Lånet + PANT_INTEREST ska betalas tillbaka senast
+// PANT_DAYS dagar efter lånedagen (till och med den dagen) – annars behåller pantbanken möbeln.
+// Att sälja rakt av ger mer (halva katalogpriset, sellStorage) men då är möbeln borta för gott.
+// Panterna ligger i g.pant: [{ nr, k, v, c?, r?, lan, skuld, dag, sista }], g.pantNr = senaste kvittonumret.
+export const PANT_RATE = 0.4, PANT_INTEREST = 0.2, PANT_DAYS = 7, MAX_PANT = 4;
+export const pantLoanOf = (kind) => { const f = katalogOf(kind); return f ? Math.max(1, Math.round(f.price * PANT_RATE)) : 0; };
+export const pantDebtOf = (lan) => Math.ceil((Math.round(lan) * (100 + PANT_INTEREST * 100)) / 100 - 1e-9); // heltal, inga flyttalsfel
+
 // Banken (Pixelbanken i finanskvarteret, js/scenes/shop-bank.js): ett sparkonto med ränta
 // som betalas ut varje måndag morgon. Pengarna på kontot är trygga – de rörs bara av en
 // sak: hyran, och bara när handkassan inte räcker (autogiro), så att man inte hamnar i
@@ -393,6 +406,9 @@ export class Game {
     this.event = null;                    // dagens händelse { id, job? }
     this.best = Object.fromEntries(Object.keys(JOBS).map((k) => [k, { ok: 0, pay: 0 }])); // rekord per jobb
     this.collapsed = false;               // somnade utmattad i natt (sätts av passTime)
+    this.pant = [];                       // möbler som står i pantbanken mot ett lån (se PANT_*)
+    this.pantNr = 0;                      // senaste pantkvittots nummer
+    this.lott = null;                     // skraplotterna i närbutiken: { salt, dag, n, open, kopt, vunnit } (shop-narbutik.js)
     this.bank = 0;                        // sparkontot på banken (kr) – ränta varje måndag
     this.bankMin = 0;                     // veckans lägsta saldo sedan måndag morgon – räntan räknas på det
     this.bankLog = [];                    // kontoutdraget: { d: dag, m: minut, t: 'in'|'ut'|'atm'|'ranta'|'hyra', n: kr }
@@ -421,6 +437,7 @@ export class Game {
         out.gadgets = [...data.gadgets, ...k.gadgets.filter((id) => !data.gadgets.includes(id))];
         out.deco = { ...data.deco };
         for (const [key, list] of Object.entries(k.deco)) out.deco[key] = [...(data.deco[key] || []), ...list];
+        if (k.pant?.length) out.pant = [...data.pant, ...k.pant];
       }
       localStorage.setItem(SAVE_KEY, JSON.stringify(out));
     } catch { /* full/blockerad */ }
@@ -473,6 +490,13 @@ export class Game {
         const gl = Array.isArray(p.gadgets) ? p.gadgets : [];
         g.gadgets = [...new Set(gl.filter((id) => typeof id === 'string' && gadgetOf(id)))];
         keep.gadgets = gl.filter((id) => !(typeof id === 'string' && gadgetOf(id)));
+        // pantbanken: panter med okänd möbel (från en nyare version) följer med orörda
+        const okPant = (it) => it && typeof it === 'object' && (it.nr | 0) > 0 && (it.sista | 0) > 0;
+        g.pant = (Array.isArray(p.pant) ? p.pant : []).filter((it) => okPant(it) && knownKind(it.k))
+          .map((it) => ({ ...cleanItem(it), nr: it.nr | 0, lan: Math.max(0, Math.round(+it.lan || 0)), skuld: Math.max(0, Math.round(+it.skuld || 0)), dag: Math.max(1, it.dag | 0), sista: it.sista | 0 }));
+        keep.pant = (Array.isArray(p.pant) ? p.pant : []).filter((it) => okPant(it) && !knownKind(it.k));
+        g.pantNr = Math.max(0, p.pantNr | 0, ...g.pant.map((it) => it.nr), ...keep.pant.map((it) => it.nr | 0)); // kvittonumren upprepas aldrig
+        if (p.lott && typeof p.lott === 'object') g.lott = p.lott; // skraplotterna tolkas i närbutiken
         g.won = !!p.won;
         g.bank = Math.max(0, Math.round(+p.bank || 0));
         g.bankMin = p.bankMin == null ? g.bank : Math.max(0, Math.min(g.bank, Math.round(+p.bankMin || 0)));
@@ -550,6 +574,7 @@ export class Game {
       if (ev.id === 'tjuga') this.money += 20;
       eventText = `${ev.icon} ${ev.text.replace('{job}', JOBS[this.event.job]?.name || '')}`;
     }
+    this.pantMorning();
     this.save();
     return { rent, eventText, gadgetBonus, interest, rentFromBank };
   }
@@ -824,6 +849,51 @@ export class Game {
   logBank(t, n) {
     this.bankLog.push({ d: this.day, m: Math.floor(this.min), t, n: Math.round(n) });
     if (this.bankLog.length > BANK_LOG_MAX) this.bankLog.splice(0, this.bankLog.length - BANK_LOG_MAX);
+  }
+
+  // ---------- pantbanken ----------
+  // Pantsätt möbel nr idx i förrådet: pengarna direkt, möbeln står i pantbanken tills lånet
+  // + räntan är betalt (lösas ut senast dag `sista`). Startmöbler (fx) tas inte emot.
+  pawnStorage(idx) {
+    const it = this.storage[idx];
+    if (!this.sellable(it)) return { ok: false, msg: 'Den tar pantlånaren inte emot.' };
+    if (this.pant.length >= MAX_PANT) return { ok: false, msg: `Högst ${MAX_PANT} panter åt gången – lös ut något först.` };
+    const lan = pantLoanOf(it.k), skuld = pantDebtOf(lan);
+    this.storage.splice(idx, 1);
+    const p = { ...it, nr: ++this.pantNr, lan, skuld, dag: this.day, sista: this.day + PANT_DAYS };
+    delete p.fx;
+    this.pant.push(p);
+    this.money += lan;
+    this.save();
+    return { ok: true, pant: p, lan, skuld, sista: p.sista };
+  }
+  // dagar kvar att lösa ut panten (0 = i dag är sista dagen, < 0 = förfallen)
+  pantDaysLeft(p) { return (p?.sista | 0) - this.day; }
+  // Lös ut pant nr: skulden betalas och möbeln kommer tillbaka till förrådet
+  redeemPant(nr) {
+    const i = this.pant.findIndex((p) => p.nr === nr);
+    const p = this.pant[i];
+    if (!p) return { ok: false, msg: 'Den panten finns inte.' };
+    if (this.pantDaysLeft(p) < 0) return { ok: false, msg: 'För sent – lånet har förfallit och möbeln är pantbankens.' };
+    if (this.money < p.skuld) return { ok: false, msg: `Du har inte råd – det kostar ${fmt(p.skuld)} att lösa ut den.` };
+    if (this.storage.length >= MAX_STORAGE) return { ok: false, msg: 'Förrådet är fullt – möblera hemma först!' };
+    this.pant.splice(i, 1);
+    this.money -= p.skuld;
+    const { nr: _nr, lan, skuld, dag, sista, ...item } = p;
+    this.storage.push(item);
+    this.save();
+    return { ok: true, item, skuld };
+  }
+  // Varje morgon (sleep): förfallna lån – pantbanken behåller möbeln. Sista dagen = påminnelse.
+  pantMorning() {
+    const lost = this.pant.filter((p) => this.pantDaysLeft(p) < 0);
+    if (lost.length) {
+      this.pant = this.pant.filter((p) => this.pantDaysLeft(p) >= 0);
+      toast(`💍 Pantbanken behöll ${lost.map((p) => katalogOf(p.k)?.name || 'möbeln').join(', ')} – lånet förföll.`, 'bad');
+    }
+    const last = this.pant.filter((p) => this.pantDaysLeft(p) === 0);
+    if (last.length) toast(`💍 Sista dagen i dag att lösa ut ${last.map((p) => katalogOf(p.k)?.name || 'panten').join(', ')} i pantbanken!`);
+    return lost;
   }
 
   // ---------- bostad ----------
