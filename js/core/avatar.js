@@ -108,6 +108,8 @@ export function cleanLook(raw) {
     bottomPrint: reg('bottomPrint', L.bottomPrint, 'none'), pants2: col(L.pants2, null),
     shoeType: reg('shoeType', L.shoeType, 'normal'), shoes2: col(L.shoes2, null),
     neck: reg('neck', L.neck, 'none'), neckColor: col(L.neckColor, null), jewel: reg('jewel', L.jewel, 'none'),
+    // ryggnumret på fotbollströjan (lagets spelare) – bara med när det finns, så att andra figurer är oförändrade
+    ...(Number.isInteger(L.shirtNum) && L.shirtNum >= 0 && L.shirtNum <= 99 ? { shirtNum: L.shirtNum } : {}),
   };
 }
 

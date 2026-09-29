@@ -1,4 +1,4 @@
 // Skrivs av tools/release.mjs vid varje släpp – ändra inte för hand.
-export const VERSION = '0.50.0';
+export const VERSION = '0.50.1';
 export const DATE = '2026-09-29';
-export const TITLE = 'Bion, kebaben, pantbanken, lotterna och vårdcentralen';
+export const TITLE = 'Numret på ryggen';

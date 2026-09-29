@@ -357,6 +357,10 @@ export function openKit(A, kit) {
   const look = (sel) => {
     let L = { ...A.avatar.look };
     parts.forEach((p, i) => { if (sel[i] || own[i]) L = { ...L, ...wearPatch(p.it, kitColors(p.it, p.colors), L) }; });
+    // ryggnumret: lagets spelare har sitt nummer på tröjan (Nr 34 · Julia → 34), andra lag inget
+    if (parts.some((p, i) => p.it.slot === 'top' && (sel[i] || own[i]))) {
+      if (kit.back && kit.back.number !== undefined && kit.back.number !== null) L.shirtNum = +kit.back.number; else delete L.shirtNum;
+    }
     return L;
   };
   const toBuy = () => parts.filter((p, i) => state[i] && !own[i]);

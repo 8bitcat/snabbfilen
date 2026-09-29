@@ -18,6 +18,19 @@ import { TAG, mix, ramp, far, toneOf } from './util.js';
 const neckTee = (R) => { const { rect, put, skin, ty0, K } = R; rect(11, ty0, 2, 1, skin.lo); if (!K) { put(11, ty0 + 1, skin.lo); put(12, ty0 + 1, skin.lo); } };
 const stripesFB = (R) => { const { rect, put, acc, ty0, ty1, tw } = R; for (let y = ty0 + 2; y < ty1 - 1; y += 2) { rect(13 - tw, y, tw * 2 - 3, 1, acc.base); put(10 + tw, y, acc.lo); } };
 const vestFB = (R) => { const { rect, put, skin, shirt, ty0, tw, back } = R; rect(12 - tw + 1, ty0, tw * 2 - 2, 1, skin.base); put(12 - tw, ty0, skin.lo); put(11 + tw, ty0, skin.lo); put(10, ty0, shirt.base); put(13, ty0, shirt.base); if (!back) rect(11, ty0 + 1, 2, 1, skin.lo); };
+// Ryggnumret (look.shirtNum, 0–99) på fotbollströjan: 3×5-siffror mitt på ryggen, vita på mörka
+// tröjor och mörka på ljusa. Utan shirtNum ritas ingenting (de gamla figurerna är oförändrade).
+const BACK_DIGITS = ['111101101101111', '010110010010111', '110001010100111', '110001010001110', '101101111001001',
+  '111100110001110', '011100111101111', '111001010010010', '111101111101111', '111101111001110'];
+const backNumber = (R) => {
+  const n = R.L.shirtNum;
+  if (n === null || n === undefined || !(n >= 0 && n <= 99)) return;
+  const s = String(n | 0), w = s.length * 4 - 1, c0 = R.shirt.base;
+  const lum = (((c0 >> 16) & 255) * 0.299 + ((c0 >> 8) & 255) * 0.587 + (c0 & 255) * 0.114) / 255;
+  const col = lum < 0.6 ? 0xf4f1ea : 0x1d1d22;
+  const x0 = 12 - Math.ceil(w / 2), y0 = R.ty0 + (R.K ? 1 : 3);
+  [...s].forEach((d, i) => { const g = BACK_DIGITS[+d]; for (let j = 0; j < 15; j++) if (g[j] === '1') R.put(x0 + i * 4 + (j % 3), y0 + ((j / 3) | 0), col); });
+};
 const dotsFB = (R) => { const { put, acc, ty0, ty1, tw } = R; for (let y = ty0 + 1; y < ty1 - 1; y++) for (let x = 12 - tw + 1; x < 11 + tw; x++) if ((x * 3 + y * 7) % 5 === 0) put(x, y, acc.base); };
 
 export const TOP_REG = {
@@ -551,7 +564,7 @@ const TOPS_NEW = {
       put(10, ty0, acc.base); put(13, ty0, acc.lo); put(11, ty0, skin.lo); put(12, ty0, skin.lo);
       put(11, ty0 + 1, acc.base); put(12, ty0 + 1, acc.lo);
       if (!K) { put(14, ty0 + 2, acc.hi); put(15, ty0 + 2, acc.base); put(14, ty0 + 3, acc.base); put(15, ty0 + 3, acc.lo); } },
-    back(R) { R.rect(10, R.ty0, 4, 1, R.acc.base); },
+    back(R) { R.rect(10, R.ty0, 4, 1, R.acc.base); backNumber(R); },
     side(R) { const { rect, put, skin, acc, torsoTop } = R; rect(12, torsoTop, 3, 1, acc.base); put(15, torsoTop, skin.lo); put(15, torsoTop + 1, acc.lo); },
     afterArms(R) { cuffs(R, R.acc); },
   },

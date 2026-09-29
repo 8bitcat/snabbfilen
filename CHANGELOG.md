@@ -10,6 +10,12 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.50.1] – 2026-09-29 – Numret på ryggen
+- Kungsladugårds matchtröja har nu spelarens nummer på ryggen: köper du Julias tröja står det 34 på din rygg i staden, och varje spelare har sitt eget nummer.
+- Numret syns redan i matchställdialogen när du vrider figuren bakifrån – och andra spelare ser det också.
+- Andra lags tröjor har inget ryggnummer; tar du på dig en annan lagtröja försvinner det.
+- Numret sitter lågt på ryggen så att långt hår inte skymmer det (bara midjelångt hår täcker, precis som på plan).
+
 ## [0.50.0] – 2026-09-29 – Bion, kebaben, pantbanken, lotterna och vårdcentralen
 - BIO PIXEL öppnar: foajé med biljettlucka, popcornbar och affischer, och en riktig salong – köp biljett (90 kr), välj bland sex filmer, sätt dig, ljuset släcks, ridån går upp och en egen pixelfilm spelas medan publiken skrattar, gråter och kastar popcorn. Efteråt +15 energi (2 timmar går)
 - KEBAB GRILL i förorten: beställ kebabrulle, falafel, pommes och läsk, se kocken göra maten och ät sittande bit för bit

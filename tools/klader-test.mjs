@@ -149,12 +149,21 @@ const julia = kungs.findIndex((k) => k.n === 34);
 await clickSpot('kungs' + julia);
 ok(await waitFor(() => /Kungsladugårds matchställ/.test(document.querySelector('#modal .dlg-head h2')?.textContent || '') && /Nr 34 · Julia/.test(document.querySelector('#modal').innerText), 12000), 'klick på nr 34 → matchställdialogen "Nr 34 · Julia"');
 ok(await page.evaluate(() => { const c = document.querySelector('#modal [data-back] canvas'); if (!c) return false; const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; let n = 0; for (let i = 0; i < d.length; i += 4) if (d[i] > 230 && d[i + 1] > 230 && d[i + 2] > 220) n++; return n > 200; }), 'ryggen i stort i dialogen: vita tryckpixlar (nummer + förnamn)');
+// vrid figurerna till ryggen: den nya har 34 på tröjan (ljusa sifferpixlar), den nuvarande inget nummer
+await page.click('#modal [data-turn="1"]');
+await page.click('#modal [data-turn="1"]');
+const nr = await page.evaluate(() => {
+  const n = (sel) => { const c = document.querySelector(`#modal [data-fig="${sel}"] canvas`); if (!c) return -1; const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; let k = 0; for (let i = 0; i < d.length; i += 4) if (d[i] === 0xf4 && d[i + 1] === 0xf1 && d[i + 2] === 0xea && d[i + 3] === 255) k++; return k; };
+  return { view: document.querySelector('#modal [data-view]').textContent, nu: n('now'), nytt: n('new') };
+});
+ok(nr.nytt > 0 && nr.nu === 0, `bakifrån i dialogen (${nr.view}): numret syns på den nya tröjan (${nr.nytt} px), inte på nuvarande kläder`);
 await shot('klader-g-dlg-matchstall');
 s0 = await state();
 await page.click('#modal .dlg-foot .btn-go');
 await page.waitForTimeout(200);
 s1 = await state();
 ok(s1.wardrobe.includes('top-football') && s1.wardrobe.includes('bottom-sportShorts') && !s1.wardrobe.includes('shoes-cleats'), 'tröja + shorts köpta (skorna var inte ikryssade)');
+ok(s1.look.shirtNum === 34, `Julias tröja har nummer 34 på ryggen (shirtNum ${s1.look.shirtNum})`);
 ok(s0.money - s1.money === 390 + 229, `betalt ${s0.money - s1.money} kr (390 + 229)`);
 ok(s1.look.top === 'football' && s1.look.shirt === '#7a1f2e' && s1.look.accent === '#d9434b' && s1.look.bottom === 'sportShorts', 'figuren har vinröd matchtröja med ljusröda ärmslut och svarta shorts');
 
@@ -172,9 +181,19 @@ await page.click('#modal .dlg-foot .btn-go');
 await page.waitForTimeout(200);
 s1 = await state();
 ok(s1.money === s0.money && s1.look.shirt === '#8ec8ef' && s1.look.pants === '#f4f1ea' && !(await modalOpen()), `Ta på: Malmös himmelsblå tröja + vita shorts, inget köp (shirt ${s1.look.shirt}, pants ${s1.look.pants})`);
+ok(!('shirtNum' in s1.look), 'Malmös tröja har inget ryggnummer (bara Kungsladugårds spelare har nummer)');
 const pl = await D('plates');
 const ti = (c) => teams0.findIndex((t) => t.city === c);
 ok(pl.teams[malmo] === 'PÅ DIG' && pl.teams[ti('STOCKHOLM')] === 'TA PÅ DIG' && pl.teams[ti('GÖTEBORG')] === 'PRIS' && pl.kit === 'TA PÅ DIG', `lapparna: Malmö PÅ DIG, Stockholm TA PÅ DIG, Göteborg pris, matchstället TA PÅ DIG (${pl.teams.join(', ')} · ${pl.kit})`);
+// varje spelare har sitt eget nummer: tröjan är redan min → "Ta på" som nr 7 Alice och nr 23 Noomi
+for (const n of [7, 23]) {
+  await D('open', 'kungs' + kungs.findIndex((k) => k.n === n));
+  await page.waitForTimeout(200);
+  await page.click('#modal .dlg-foot .btn-go');
+  await page.waitForTimeout(200);
+  s1 = await state();
+  ok(s1.look.shirtNum === n && s1.look.shirt === '#7a1f2e', `Kungsladugård nr ${n}: numret ${n} på ryggen (shirtNum ${s1.look.shirtNum})`);
+}
 
 // ---- fotbollsskorna på väggen ----
 await clickSpot('skor-rosa');
