@@ -46,7 +46,8 @@ import { openWeek } from './core/week.js';
 import { mountChat, isChatOpen } from './core/chat.js';
 import { initVoiceUI } from './net/voice-ui.js';
 import { play, unlockAudio, toggleMute, isMuted } from './core/sound.js';
-import { CITY } from './city/map.js';
+import { CITY, buildingById } from './city/map.js';
+import { openCityMap } from './city/citymap.js'; // 🗺️ kartan och 🚕 taxin
 
 const $ = (s) => document.querySelector(s);
 const cv = $('#scene'), ctx = cv.getContext('2d');
@@ -571,6 +572,35 @@ function boot() {
     wb.id = 'hud-week'; wb.className = 'btn btn-small'; wb.title = 'Veckan: hyra, checklista och sparmål'; wb.textContent = '📅';
     wb.onclick = () => openWeek(A);
     $('#hud-diary').before(wb);
+  }
+  // 🗺️ kartan och 🚕 taxin (Carl 2026-09-29): tryck på ett ställe på kartan → 🧭 en pil i staden
+  // visar vägen (A.guideTo) eller 🚕 en taxi hämtar en vid trottoarkanten (A.taxiTo, city.js)
+  A.openMap = (mode = 'karta', select = null) => { play('click'); return openCityMap(A, { mode, select }); };
+  A.guideTo = (id) => {
+    const b = buildingById(id);
+    if (!b) return;
+    A.guide = { id: b.id };
+    toast(A.sceneName === 'city' ? `🧭 Följ pilen till ${b.icon || ''} ${b.sign || ''}!` : `🧭 När du kommer ut i stan visar en pil vägen till ${b.icon || ''} ${b.sign || ''}.`, 'good');
+  };
+  A.taxiTo = (id) => {
+    if (!buildingById(id)) return;
+    if (/^jobb/.test(A.sceneName || '')) { toast('🚕 Du är mitt i ett pass – beställ taxin när du har slutat.', 'bad'); return; }
+    if (A.sceneName === 'city' && A.scene?.callTaxi) { A.scene.callTaxi(id); return; }
+    // inifrån: ut på trottoaren (hemma: genom ytterdörren), där beställs taxin (city.js)
+    A.pendingTaxi = id;
+    if (A.sceneName === 'room') { A.roomSub = 0; if (A.visitTarget) A.visitTarget = null; else A.leftHome = true; }
+    play('door');
+    A.go('city');
+  };
+  for (const [id, icon, title, fn] of [
+    ['hud-map', '🗺️', 'Kartan – tryck på ett ställe så visar en pil vägen dit', () => A.openMap('karta')],
+    ['hud-taxi', '🚕', 'Ring efter en taxi', () => (A.sceneName === 'city' && A.scene?.taxiBusy?.() ? A.scene.taxiMenu() : A.openMap('taxi'))],
+  ]) {
+    if (document.getElementById(id)) continue;
+    const b = document.createElement('button');
+    b.id = id; b.className = 'btn btn-small'; b.title = title; b.textContent = icon;
+    b.onclick = fn;
+    $('#hud-friends').before(b);
   }
   $('#decor-btn').onclick = () => A.scene?.toggleDecor?.();
   document.querySelectorAll('#emotes button').forEach((b) => (b.onclick = () => sendEmote(A, b.dataset.e)));

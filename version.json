@@ -1,7 +1,7 @@
 {
-  "version": "0.53.1",
+  "version": "0.54.0",
   "date": "2026-09-29",
-  "title": "Missade patienter kostar inget",
+  "title": "Kartan och taxin",
   "files": [
     "CHANGELOG.md",
     "assets/interior.png",
@@ -14,6 +14,7 @@
     "js/city/buildings-south.js",
     "js/city/buildings-suburb.js",
     "js/city/buildings-work.js",
+    "js/city/citymap.js",
     "js/city/facade-kit.js",
     "js/city/fallback-v2.js",
     "js/city/ground.js",

@@ -10,6 +10,13 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.54.0] – 2026-09-29 – Kartan och taxin
+- 🗺️ KARTAN: en ny knapp överst tar fram en pixelkarta över hela Pixelstaden – gatorna, parken, floden med broarna och alla hus, och en skylt DU ÄR HÄR.
+- Tryck på ett ställe på kartan: du ser namnet, öppettiderna och hur långt dit det är.
+- 🧭 Visa vägen: en guldpil vid fötterna visar vägen, en röd nål svävar över dörren och syns den inte pekar en skylt i bildkanten åt rätt håll. Tryck på lappen nere till vänster så går du dit själv – × tar bort pilen.
+- 🚕 TAXI: ring efter en taxi med den nya knappen (eller från kartan). Taxin kör fram till trottoarkanten där du står, du kliver in och kliver ur vid dörren dit du ska. 25 kr i startavgift plus 10 kr per 100 meter – perfekt hem till husvagnen sent på kvällen.
+- Beställer du taxi hemifrån eller från en butik går du ut på trottoaren och taxin kommer. Tryck på 🚕 igen för att avbeställa.
+
 ## [0.53.1] – 2026-09-29 – Missade patienter kostar inget
 - Vårdcentralen: en patient som tröttnar och går hem kostar inget längre – den ger bara 0 kr (syns fortfarande som en egen rad på lönebeskedet).
 

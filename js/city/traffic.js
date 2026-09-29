@@ -1989,6 +1989,22 @@ export function createTraffic(env) {
       const want = c.dwell > 0.9 && c.dwell < 5.0 ? 1 : 0;
       c.door += Math.sign(want - c.door) * Math.min(Math.abs(want - c.door), dt * 2.5);
     }
+    // 🚕 den beställda taxin (callTaxi): kör fram till kunden och stannar med mitten mitt för
+    // hen vid trottoarkanten ('kommer' → 'framme'), väntar tills kunden klivit in (city.js tar
+    // över bakom toningen) – eller har just släppt av en kund ('avstigning') och kör sedan vidare
+    // som vanlig trafik. Fastnar den på vägen (köer, rödljus) står den på plats efter 40 s.
+    if (c.fare) {
+      const f = c.fare;
+      f.t += dt;
+      if (f.state === 'kommer') {
+        const d = ahead(f.front);
+        if (d < 70) c.blink = 1;
+        lim(vStop(d), 'taxi');
+        if ((d < 2.5 && c.v < 3) || d < -3) { f.state = 'framme'; f.t = 0; }
+        else if (f.t > 40) { c.s = sOfFront(rm, c.dir, f.front); c.v = 0; f.state = 'framme'; f.t = 0; }
+      } else if (f.state === 'framme') { lim(0, 'taxi'); c.blink = 1; }
+      else if (f.state === 'avstigning') { lim(0, 'taxi'); c.blink = 1; if (f.t > 2.6) { c.fare = null; c.blink = 0; } }
+    }
     // sväng in i Infarten?
     if (c.turn) {
       const tn = TURNS[rm.id], center = front - c.dir * c.L / 2, d = (tn.at - center) * c.dir;
@@ -2499,6 +2515,59 @@ export function createTraffic(env) {
     vehicles: () => cars.map((c) => (c.road.axis === 'x'
       ? { x0: lo(c), x1: hi(c), y: c.cross, dir: c.dir, v: c.v, kind: c.kind, why: c.why, tut: c.tut > 0, road: c.road.id, axis: 'x', door: c.door || 0, dwell: c.dwell || 0, stop: c.stopId, at: c.at || null, line: !!c.line, id: c.id || null, rider: !!(ride && ride.bus === c) }
       : { x0: c.cross - (c.kind === 'plog' ? 19 : 13), x1: c.cross + (c.kind === 'plog' ? 19 : 13), y: hi(c), y0: lo(c), y1: hi(c), dir: c.dir, v: c.v, kind: c.kind, why: c.why, tut: c.tut > 0, road: c.road.id, axis: 'y', door: 0, dwell: 0, stop: null, at: null, line: false, id: null, rider: false })),
+
+    // ---------- 🚕 taxin (city.js: 🚕-knappen och kartan) ----------
+    // callTaxi({ road, lane, x }) beställer en taxi i den vågräta gatans fil: den dyker upp utanför
+    // bild uppströms, kör fram och stannar med mitten på x (fare 'kommer' → 'framme').
+    // taxi() = { x, y, curbY, state } för den beställda taxin (null = ingen), taxiHit(x, y) = klick
+    // på den, taxiBoard() = kunden klev in (taxin försvinner bakom toningen), taxiDrop({ road, lane, x })
+    // = en taxi står där och släpper av kunden, cancelTaxi() = beställningen avbryts (den kör vidare).
+    callTaxi({ road = 'pixelgatan', lane = 0, x } = {}) {
+      const rm = rmById(road), ln = rm?.lanes[lane];
+      if (!rm || rm.axis !== 'x' || !ln || !Number.isFinite(x)) return false;
+      for (const o of cars) if (o.fare) o.fare = null; // en beställning i taget
+      const L = SPECS.taxi.L, cx = Math.max(rm.a0 + L, Math.min(rm.a1 - L, x)), front = cx + ln.dir * L / 2;
+      const v = env.view;
+      // fronten strax utanför bild (eller minst 140 px uppströms) – aldrig i en annan bil
+      const startX = ln.dir > 0 ? Math.min(v ? v.x - 12 : cx - 200, front - 140) : Math.max(v ? v.x + v.w + 12 : cx + 200, front + 140);
+      let s = sOfFront(rm, ln.dir, startX);
+      for (let k = 0; k < 12 && clash(rm, ln.i, s, L + 10); k++) s -= L + GAP + 14;
+      const c = makeCar(rm, ln.i, 'taxi', s, false);
+      c.turn = null; c.cruise = 56; c.v = 50;
+      c.fare = { state: 'kommer', front, x: cx, t: 0 };
+      cars.push(c);
+      return true;
+    },
+    taxi() {
+      const c = cars.find((o) => o.fare);
+      if (!c || c.road.axis !== 'x') return null;
+      const near = c.road.lanes[c.lane].cross < (c.road.c0 + c.road.c1) / 2;
+      return { x: lo(c) + c.L / 2, y: c.cross, curbY: near ? c.road.c0 - 5 : c.road.c1 + 5, state: c.fare.state, road: c.road.id, lane: c.lane };
+    },
+    taxiHit(x, y) {
+      const c = cars.find((o) => o.fare);
+      return !!c && c.road.axis === 'x' && x >= lo(c) - 2 && x <= hi(c) + 2 && y >= c.cross - 26 && y <= c.cross + 3;
+    },
+    taxiBoard() {
+      const i = cars.findIndex((o) => o.fare);
+      if (i < 0) return false;
+      cars.splice(i, 1);
+      return true;
+    },
+    taxiDrop({ road = 'pixelgatan', lane = 0, x } = {}) {
+      const rm = rmById(road), ln = rm?.lanes[lane];
+      if (!rm || rm.axis !== 'x' || !ln || !Number.isFinite(x)) return false;
+      const L = SPECS.taxi.L, cx = Math.max(rm.a0 + L, Math.min(rm.a1 - L, x));
+      const s = sOfFront(rm, ln.dir, cx + ln.dir * L / 2);
+      // bilar som står just där försvinner (det sker bakom toningen)
+      for (let i = cars.length - 1; i >= 0; i--) { const o = cars[i]; if (o.road === rm && o.lane === ln.i && !o.line && o.s - o.L < s + GAP + 6 && o.s > s - L - GAP - 6) cars.splice(i, 1); }
+      const c = makeCar(rm, ln.i, 'taxi', s, false);
+      c.turn = null; c.v = 0; c.cruise = 56;
+      c.fare = { state: 'avstigning', front: cx + ln.dir * L / 2, x: cx, t: 0 };
+      cars.push(c);
+      return true;
+    },
+    cancelTaxi() { for (const o of cars) if (o.fare) { o.fare = null; o.blink = 0; } },
 
     // ---------- linje 4 (bussen på riktigt) – hur scenen kopplar in det: se filhuvudet ----------
     /** Hållplatserna i körordning. */

@@ -5,7 +5,8 @@
 // kraschar en, lever resten.
 import { openHouseSign } from '../shops/bostad.js';
 import { CITY, BUILDINGS, ALL_BUILDINGS, doorCenter, artPos, artBox, baseOf, isNightHour, BUS_STOPS, busStopById,
-  DISTRICTS, districtAt, districtByName, MAP_OBSTACLES, RIVER } from '../city/map.js';
+  DISTRICTS, districtAt, districtByName, MAP_OBSTACLES, RIVER, buildingById } from '../city/map.js';
+import { taxiQuote, metersBetween } from '../city/citymap.js'; // 🗺️ kartan: taxipriset och avstånden
 import { createWalker, selfDrawable, folkDrawables, nameTag, sayBubble } from './walkable.js';
 import { drawPerson } from '../core/people.js';
 import { openModal, closeModal, toast, esc } from '../core/ui.js';
@@ -352,6 +353,7 @@ export function makeCity(A) {
     g.passTime(g.eventIs('regn') ? 10 : 5);
     g.save();
     if (g.collapsed) return;
+    if (A.guide?.id === b.id) A.guide = null; // 🧭 framme – pilen har gjort sitt
     play('door');
     const dc = doorCenter(b);
     A.cityPos = [dc.x, dc.y + 4];
@@ -612,8 +614,183 @@ export function makeCity(A) {
     if (a > 0) { ctx.fillStyle = `rgba(4,4,10,${a.toFixed(3)})`; ctx.fillRect(0, 0, VW, VH); }
   }
 
+  // ---------- 🧭 vägvisaren (kartan: A.guideTo) ----------
+  // En pil på marken framför figuren pekar längs gångvägen mot dörren (A*: walker.findPath,
+  // räknas om två gånger i sekunden), en nål svävar över dörren och syns den inte står en skylt
+  // i bildkanten. Nere till vänster en lapp: "TILL <STÄLLET> · 240 M ×" – tryck på lappen (eller
+  // skylten) så går figuren dit själv, × tar bort pilen. Framme eller in genom dörren → borta.
+  let guidePath = null, guideT = 0, guideRects = [];
+  const guideB = () => (A.guide && !A.attract ? buildingById(A.guide.id) : null);
+  function updGuide(dt) {
+    const b = guideB();
+    if (!b) { guidePath = null; return; }
+    const dc = doorCenter(b);
+    if (Math.hypot(walker.px - dc.x, walker.py - dc.y) < 30) {
+      A.guide = null; guidePath = null;
+      if (!taxi) { toast(`🧭 Framme vid ${b.icon || ''} ${b.sign || ''}!`, 'good'); play('ok'); }
+      return;
+    }
+    if ((guideT -= dt) <= 0 || !guidePath) {
+      guideT = 0.5;
+      guidePath = typeof walker.findPath === 'function' ? walker.findPath(walker.px, walker.py, dc.x, dc.y) : [[dc.x, dc.y]];
+    }
+  }
+  const walkToGuide = () => { const b = guideB(); if (!b) return; if (sitting) standUp(); const dc = doorCenter(b); walker.walkTo(dc.x, dc.y); };
+  // pilen: en polygon rastrerad i 16 riktningar (samma pixelkorn som staden), guld med mörk kant
+  const ARROWS = new Map();
+  function arrowImg(ang) {
+    const q = ((Math.round(ang / (Math.PI / 8)) % 16) + 16) % 16;
+    if (ARROWS.has(q)) return ARROWS.get(q);
+    const a = q * Math.PI / 8, N = 21, H = 10, ca = Math.cos(a), sa = Math.sin(a);
+    const poly = [[-7, -2.3], [1.5, -2.3], [1.5, -6.6], [8.6, 0], [1.5, 6.6], [1.5, 2.3], [-7, 2.3]];
+    const inside = (px, py) => { // punkten vriden tillbaka till pilens egen riktning (→)
+      const lx = px * ca + py * sa, ly = -px * sa + py * ca;
+      let inn = false;
+      for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) { const [xi, yi] = poly[i], [xj, yj] = poly[j]; if ((yi > ly) !== (yj > ly) && lx < (xj - xi) * (ly - yi) / (yj - yi) + xi) inn = !inn; }
+      return inn ? ly : null;
+    };
+    const m = [];
+    for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) m.push(inside(x - H + 0.5, y - H + 0.5));
+    const c = document.createElement('canvas'); c.width = N; c.height = N;
+    const g2 = c.getContext('2d');
+    for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+      const v = m[y * N + x];
+      if (v !== null) { g2.fillStyle = v < -0.8 ? '#ffe680' : v < 1.2 ? '#ffd23f' : '#d99a18'; g2.fillRect(x, y, 1, 1); continue; }
+      const nb = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => { const X = x + dx, Y = y + dy; return X >= 0 && Y >= 0 && X < N && Y < N && m[Y * N + X] !== null; });
+      if (nb) { g2.fillStyle = '#17151a'; g2.fillRect(x, y, 1, 1); }
+    }
+    ARROWS.set(q, c);
+    return c;
+  }
+  // nålen över dörren
+  const PIN = ['...###...', '..#rrr#..', '.#rrrrr#.', '#rrwwrrr#', '#rrwwrrr#', '#rrrrrrd#', '.#rrrrd#.', '..#rrd#..', '...#d#...', '....#....'];
+  const PIN_C = { '#': '#17151a', r: '#e0402a', w: '#fff2c0', d: '#a02a1e' };
+  function drawPin(ctx, x, y) {
+    PIN.forEach((row, j) => { for (let i = 0; i < row.length; i++) { const c = PIN_C[row[i]]; if (c) { ctx.fillStyle = c; ctx.fillRect(x - 4 + i, y + j, 1, 1); } } });
+  }
+  // i världen: nålen och pilen (efter drawWorld – vägvisningen ligger ovanpå allt)
+  function drawGuide(ctx) {
+    const b = guideB();
+    if (!b || riding || fade.phase) return;
+    const dc = doorCenter(b), bob = Math.round(Math.sin(t * 4) * 2);
+    ctx.fillStyle = 'rgba(20,12,28,0.35)'; ctx.fillRect(Math.round(dc.x) - 3, baseOf(b) + 1, 7, 2);
+    drawPin(ctx, Math.round(dc.x), baseOf(b) - 34 + bob);
+    const wp = (guidePath || []).find(([x, y]) => Math.hypot(x - walker.px, y - walker.py) > 14) || [dc.x, dc.y];
+    const ang = Math.atan2(wp[1] - walker.py, wp[0] - walker.px);
+    const r = 17 + Math.round(Math.sin(t * 6) * 2);
+    const img = arrowImg(ang);
+    ctx.drawImage(img, Math.round(walker.px + Math.cos(ang) * r) - 10, Math.round(walker.py - 4 + Math.sin(ang) * r * 0.7) - 10);
+  }
+  // i skärmrymden: skylten i bildkanten (när dörren inte syns) och lappen nere till vänster
+  function drawGuideHud(ctx, cx, cy) {
+    guideRects = [];
+    const b = guideB();
+    if (!b || riding || fade.phase) return;
+    const sb = safeBox(), dc = doorCenter(b), m = metersBetween({ x: walker.px, y: walker.py }, dc);
+    const chip = (x, y, text, fg, bg) => { const w = textW(SMALL, text) + 8; ctx.fillStyle = '#17151a'; ctx.fillRect(x - 1, y - 1, w + 2, 11); ctx.fillStyle = bg; ctx.fillRect(x, y, w, 9); ctxText(ctx, SMALL, text, x + 4, y + 2, fg); return w; };
+    const name = String(b.sign || b.id).toUpperCase();
+    // skylten i kanten
+    const sx = dc.x - cx, sy = baseOf(b) - 20 - cy;
+    if (sx < sb.x0 || sx > sb.x1 || sy < sb.y0 || sy > sb.y1) {
+      const mx = (sb.x0 + sb.x1) / 2, my = (sb.y0 + sb.y1) / 2, ang = Math.atan2(sy - my, sx - mx);
+      const ex = Math.max(sb.x0 + 14, Math.min(sb.x1 - 14, sx)), ey = Math.max(sb.y0 + 24, Math.min(sb.y1 - 34, sy));
+      const img = arrowImg(ang);
+      ctx.drawImage(img, Math.round(ex) - 10, Math.round(ey) - 10);
+      const text = `${name} ${m} M`, w = textW(SMALL, text) + 8;
+      const lx = Math.round(Math.max(sb.x0 + 2, Math.min(sb.x1 - w - 2, ex - w / 2))), ly = Math.round(ey + (ang > 0 ? -22 : 12));
+      chip(lx, ly, text, '#ffd23f', '#2a2430');
+      guideRects.push({ kind: 'go', r: [Math.min(lx, ex - 12), Math.min(ly, ey - 12), Math.max(lx + w, ex + 12), Math.max(ly + 10, ey + 12)] });
+    }
+    // lappen: TILL … · 240 M  ×
+    const text = `TILL ${name} - ${m} M`, x = sb.x0 + 4, y = sb.y1 - 15;
+    const w = chip(x, y, text, '#f4f1ea', '#2a2430');
+    const xx = x + w + 3; chip(xx, y, '×', '#ffd23f', '#6a2a30');
+    guideRects.push({ kind: 'cancel', r: [xx - 3, y - 4, xx + 14, y + 13] }, { kind: 'go', r: [x - 2, y - 4, x + w + 2, y + 13] });
+  }
+
+  // ---------- 🚕 taxin (A.taxiTo / kartan) ----------
+  // Beställningen: taxin (traffic.callTaxi) kör fram i gatans fil närmast figuren och stannar vid
+  // trottoarkanten mitt för hen – figuren går till kanten och väntar. När taxin står där kliver man
+  // in (bakom toningen: betala, tiden går) och kliver ur vid trottoarkanten närmast målets dörr,
+  // där en taxi står och släpper av; sista biten går man (pilen visar dörren). Står man inte vid
+  // bilen på 45 s kör chauffören vidare (gratis). Klick på taxin = gå dit.
+  let taxi = null; // { dest, kr, min, m, road, lane, curb, wait, boarded }
+  // gatan och trottoarkanten närmast punkten: norr/söder om Pixelgatan (parken hör dit) eller Södergatan
+  const pickupFor = (x, y) => {
+    const cx = Math.max(70, Math.min(CITY.W - 70, x));
+    if (y < (CITY.ROAD[0] + CITY.ROAD[1]) / 2) return { road: 'pixelgatan', lane: 0, curb: { x: cx, y: CITY.ROAD[0] - 5 } };
+    if (y < CITY.BACK_S[1]) return { road: 'pixelgatan', lane: 1, curb: { x: cx, y: CITY.ROAD[1] + 5 } };
+    if (y < (CITY.ROAD_S[0] + CITY.ROAD_S[1]) / 2) return { road: 'sodergatan', lane: 0, curb: { x: cx, y: CITY.ROAD_S[0] - 5 } };
+    return { road: 'sodergatan', lane: 1, curb: { x: cx, y: CITY.ROAD_S[1] + 5 } };
+  };
+  function callTaxi(id) {
+    const b = buildingById(id);
+    if (!b) return false;
+    if (taxi) { toast('🚕 Din taxi är redan på väg – vänta vid trottoarkanten.'); return false; }
+    const q = taxiQuote({ x: walker.px, y: walker.py }, b);
+    if (g.money < q.kr) { toast(`🚕 Taxin till ${b.sign} kostar ${q.kr} kr – du har inte råd.`, 'bad'); play('fel'); return false; }
+    if (riding) { toast('🚕 Kliv av bussen först.'); return false; }
+    const p = pickupFor(walker.px, walker.py);
+    if (!S.traffic.callTaxi?.({ road: p.road, lane: p.lane, x: p.curb.x })) { toast('🚕 Ingen taxi svarar just nu – försök igen om en stund.', 'bad'); return false; }
+    taxi = { dest: b, ...q, ...p, wait: 0, boarded: false };
+    if (sitting) standUp();
+    walker.walkTo(p.curb.x, p.curb.y);
+    play('click');
+    toast(`🚕 Taxin är på väg! ${q.kr} kr till ${b.icon || ''} ${b.sign || ''} – vänta vid trottoarkanten.`, 'good');
+    return true;
+  }
+  function cancelTaxi(msg) {
+    if (!taxi) return;
+    S.traffic.cancelTaxi?.();
+    taxi = null;
+    if (msg) toast(msg, 'bad');
+  }
+  function updTaxi(dt) {
+    if (!taxi || taxi.boarded) return;
+    const tx = S.traffic.taxi?.();
+    if (!tx) { taxi = null; return; }
+    if (tx.state !== 'framme') return;
+    taxi.wait += dt;
+    const near = Math.abs(walker.px - tx.x) < 26 && Math.abs(walker.py - tx.curbY) < 14;
+    if (near && !walker.path.length && fade.phase === 0 && taxi.wait > 0.5) boardTaxi(tx);
+    else if (taxi.wait > 45) cancelTaxi('🚕 Chauffören tröttnade på att vänta och körde vidare. Beställ igen med 🚕.');
+  }
+  function boardTaxi(tx) {
+    taxi.boarded = true;
+    walker.stop();
+    walker.dir = tx.curbY < tx.y ? 'down' : 'up';
+    play('door');
+    fade.phase = 1; fade.cb = () => {
+      const T0 = taxi; taxi = null;
+      S.traffic.taxiBoard?.();
+      const b = T0.dest, dc = doorCenter(b), drop = pickupFor(dc.x, baseOf(b) + 8);
+      g.money -= T0.kr; g.passTime(T0.min); g.save();
+      S.traffic.taxiDrop?.({ road: drop.road, lane: drop.lane, x: drop.curb.x });
+      walker.px = drop.curb.x; walker.py = drop.curb.y; walker.stop(); walker.snapFree();
+      A.cityPos = [walker.px, walker.py];
+      Object.assign(cam, camTarget());
+      checkDistrict(true);
+      // sista biten till dörren går man själv (pilen visar vägen om den är lång)
+      if (Math.hypot(dc.x - walker.px, dc.y - walker.py) > 70) A.guide = { id: b.id };
+      walker.walkTo(dc.x, dc.y);
+      play('coin');
+      toast(`🚕 Framme vid ${b.icon || ''} ${b.sign || ''} – ${T0.kr} kr, ${T0.min} minuter.`, 'good');
+    };
+  }
+  function taxiMenu() {
+    if (!taxi) return;
+    const tx = S.traffic.taxi?.();
+    openModal('🚕 Din taxi', `<p style="font-size:19px;margin-top:0">${tx?.state === 'framme' ? 'Taxin står och väntar vid trottoarkanten' : 'Taxin är på väg'} – till <b>${esc(taxi.dest.icon || '')} ${esc(taxi.dest.sign || '')}</b> för <b>${taxi.kr} kr</b>.</p>`, [
+      { label: '❌ Avbeställ', onClick: () => { closeModal(); cancelTaxi(); toast('🚕 Taxin är avbeställd.'); } },
+      { label: '🚶 Gå till taxin', cls: 'btn-go', onClick: () => { closeModal(); const c = tx || { x: taxi.curb.x, curbY: taxi.curb.y }; walker.walkTo(c.x, c.curbY); } },
+    ]);
+  }
+
   const spotOf = (b) => { const dc = doorCenter(b); return { x: dc.x - cam.x, y: baseOf(b) + 12 - cam.y }; };
   return {
+    // 🚕/🧭 för main.js (A.taxiTo, 🚕-knappen)
+    callTaxi, taxiBusy: () => !!taxi, taxiMenu,
+    exit() { cancelTaxi(); }, // går man in någonstans kör den beställda taxin vidare
     get worldX() { return walker.px; },
     get worldY() { return walker.py; },
     get worldSit() { return sitting ? { dir: sitting.seat.dir || 'down' } : null; }, // andra ser mig sitta på bänken
@@ -649,6 +826,10 @@ export function makeCity(A) {
       markers: () => markers.map((m) => ({ ...m })),
       chips: () => signChips.map((c) => ({ label: c.label, x: c.x, y: c.y, w: c.w, h: c.h, id: c.b.id })), // husnamnen i överkanten (tools/mobil-stad-test.mjs)
       pets: () => (pets ? pets._debug.followers() : []), // husdjuren på promenad (tools/pets-walk-test.mjs)
+      // 🧭/🚕 (tools/karta-taxi-test.mjs)
+      guide: () => { const b = guideB(); if (!b) return null; const wp = (guidePath || []).find(([x, y]) => Math.hypot(x - walker.px, y - walker.py) > 14); return { id: b.id, path: (guidePath || []).length, next: wp || null, rects: guideRects.map((q) => ({ kind: q.kind, r: [...q.r] })) }; },
+      taxi: () => (taxi ? { dest: taxi.dest.id, kr: taxi.kr, min: taxi.min, curb: { ...taxi.curb }, road: taxi.road, lane: taxi.lane, wait: taxi.wait, car: S.traffic.taxi?.() || null } : null),
+      pickupFor,
     },
 
     update(dt) {
@@ -671,6 +852,10 @@ export function makeCity(A) {
         if (r.phase === 'framme') finishRide();
       } else if (riding) { riding = false; walker.snapFree(); } // bussen försvann – stå kvar där man är
       A.cityPos = [walker.px, walker.py];
+      // 🚕 en taxi beställd inifrån (A.taxiTo) – nu när man står på trottoaren; 🧭 pilen; taxin
+      if (A.pendingTaxi && !A.attract && fade.phase === 0) { const id = A.pendingTaxi; A.pendingTaxi = null; callTaxi(id); }
+      updGuide(dt);
+      updTaxi(dt);
       if (pets) guard('husdjuren.update', () => pets.update(dt, walker.px, walker.py, (x, y) => walker.walkable(x, y), { hidden: riding }));
       updateEnv(dt);
       if (banner) banner.t += dt;
@@ -693,6 +878,9 @@ export function makeCity(A) {
       if (A.attract || fade.phase) return;
       // klick under bussresan → hoppa fram till målet (toningen)
       if (riding) { S.traffic.skipRide?.(); return; }
+      // 🧭 vägvisarens lapp och skylt: × tar bort pilen, annars går figuren dit själv
+      const gr = guideRects.find((q) => sx >= q.r[0] && sx < q.r[2] && sy >= q.r[1] && sy < q.r[3]);
+      if (gr) { if (gr.kind === 'cancel') { A.guide = null; guidePath = null; play('click'); toast('🧭 Pilen är borta.'); } else walkToGuide(); return; }
       // klick på en kompis-pil i kanten → gå mot den spelaren
       const m = markers.find((mk) => sx >= mk.x && sx < mk.x + mk.w && sy >= mk.y && sy < mk.y + mk.h);
       if (m) { standUp(); walker.walkTo(m.fx, m.fy + 4); return; }
@@ -717,6 +905,8 @@ export function makeCity(A) {
       }
       if (sitting) standUp(); // res dig först – klicket fortsätter som vanligt
       // klick på en buss som står vid en hållplats → håll den, gå till framdörren och kliv på
+      // klick på den beställda taxin → gå till trottoarkanten vid den (man kliver in när den står still)
+      if (taxi && S.traffic.taxiHit?.(x, y)) { const tx = S.traffic.taxi?.(); if (tx) { if (sitting) standUp(); walker.walkTo(tx.x, tx.curbY); } return; }
       const bi = S.traffic.busDoorHit?.(x, y);
       if (bi) { S.traffic.hold?.(bi.stop.id); walker.walkTo(bi.board.x, bi.board.y, () => openBoardDialog(bi.stop)); return; }
       // klick på en busshållplats → gå dit och välj resmål
@@ -751,9 +941,11 @@ export function makeCity(A) {
       drawWorld(ctx, cx, cy, VW, VH);
       // fotgängarnas repliker (klick på folk) – överst i världen, med personens egen röst
       guard('pratet', () => { for (const b of S.life.talks?.() || []) sayBubble(ctx, b.x, b.y, b.text, { voice: b.voice, x0: cx, x1: cx + VW }); });
+      guard('vägvisaren', () => drawGuide(ctx));
       ctx.setTransform(A.pxs, 0, 0, A.pxs, 0, 0);
       drawFolkMarkers(ctx, cx, cy);
       guard('husnamnen', () => drawSignChips(ctx, cx, cy));
+      guard('vägvisarlappen', () => drawGuideHud(ctx, cx, cy));
       drawOverlay(ctx);
     },
   };
