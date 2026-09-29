@@ -10,6 +10,12 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.38.0] – 2026-09-29 – Garderoben: nya frisyrer och ansikten
+- Garderoben: en ny figurmotor med lager – 89 frisyrer, 16 hårfärgseffekter och över 180 nya ansiktsval (ögon, bryn, näsa, mun, öron, kinder, smink, fräknar och märken, skägg)
+- Över 350 nya plagg är ritade: tröjor, jackor, byxor, kjolar, skor, hattar, glasögon, halsband och smycken – de börjar säljas i klädaffären och stans nya butiker i nästa släpp
+- Redigeraren visar valen i grupper så att allt ryms utan långa listor, även på mobilen
+- Alla gamla figurer ser exakt ut som förut
+
 ## [0.37.0] – 2026-09-29 – Äta på riktigt och Burgarbarens menypelare
 - Äta på riktigt: maten man köper för att äta på plats bär man i handen, sätter sig med och äter bit för bit – mättnad och energi kommer medan man äter
 - Sitter man och äter reser man sig inte förrän det är uppätet, och med maten i handen kommer man inte ut: "DU MÅSTE SÄTTA DIG OCH ÄTA UPP!" – i Stormarknaden, Kaféet, Burgarbaren och Möbeljätten

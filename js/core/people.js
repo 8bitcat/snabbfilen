@@ -10,7 +10,7 @@
 // js/core/people/*.js – ett nytt val = en ny post där. Se docs/PEOPLE-ARKITEKTUR.md.
 import { SW, SH, toInt, mul, mix, ramp, far, toneOf, TAG } from './people/util.js';
 import { HAIR_REG, HAIR_FX_REG } from './people/hair.js';
-import { EYE_REG, BROW_REG, NOSE_REG, MOUTH_REG, EAR_REG, CHEEK_REG, MAKEUP_REG, MARK_REG, BEARD_REG } from './people/face.js';
+import { EYE_REG, BROW_REG, NOSE_REG, MOUTH_REG, EAR_REG, CHEEK_REG, MAKEUP_REG, MARK_REG, BEARD_REG, EYE_COLORS, LIP_COLORS, SHADOW_COLORS } from './people/face.js';
 import { TOP_REG, TOP_PRINT_REG } from './people/tops.js';
 import { BOTTOM_REG, BOTTOM_PRINT_REG, SHOE_REG } from './people/bottoms.js';
 import { HAT_REG, GLASSES_REG, BAG_REG, NECK_REG, JEWEL_REG, HAIR_ACC_REG, PHONES_REG } from './people/acc.js';
@@ -91,10 +91,14 @@ export const entryOf = (field, v) => LOOK_FIELDS[field]?.reg[idOf(field, v)] || 
 export const labelOf = (field, v) => entryOf(field, v)?.label || String(v);
 // Alla giltiga värden för ett fält, i registrets ordning
 export const listOf = (field) => Object.keys(LOOK_FIELDS[field].reg).map((id) => valueOf(field, id));
+// Som listOf, men med de gamla värdena först i sin gamla ordning (listan växer bara i slutet)
+const stableList = (field, old) => { const all = listOf(field); return [...old.filter((v) => all.includes(v)), ...all.filter((v) => !old.includes(v))]; };
 
 // Alla giltiga värden (även sådana som bara avatarer använder – kunder slumpas aldrig fram dem).
-// Byggs ur registren: ett nytt val i ett register hamnar automatiskt här.
-export const HAIR_STYLES = listOf('style');
+// Byggs ur registren: ett nytt val i ett register hamnar automatiskt här. Början av listorna är
+// densamma som före registren; nya val läggs till efter. Använd ändå värdena, inte index.
+export const HAIR_STYLES = stableList('style', ['short', 'side', 'long', 'ponytail', 'bun', 'curly', 'afro', 'spiky', 'bald', 'mohawk',
+  'bob', 'buzz', 'braids', 'pigtails', 'wavy', 'mullet', 'curtains', 'space', 'dreads', 'fade']);
 export const TOP_TYPES = listOf('top');
 export const BOTTOM_TYPES = listOf('bottom');
 export const HAT_TYPES = listOf('hat');
@@ -148,6 +152,70 @@ export function makeLook(rng = Math.random) {
   return look;
 }
 
+// ---------- rikare slumpfigurer ----------
+// makeLookRich(rng) ger kunder som använder de nya registren (frisyrer, ansikten, plagg …).
+// Tänkt för NYA NPC-grupper – makeLook ovan lämnas orörd så att gamla kunder ser ut som förut.
+// Grunden (ålder, hud, färger, kropp) kommer från makeLook, sedan byts en del val ut.
+// Utklädnader, fest, uniformer, ansiktsmålning o.d. hoppas över: stadsfolk ska se vardagliga ut.
+// Posterna i skippa-listorna är grupper ('Fest'), grupper i ett fält ('shoeType:Sport') eller
+// enstaka val ('bottom#tutu'). Okända namn gör inget, så registren kan växa fritt.
+const RICH_SKIP = new Set([
+  'Utklädnad', 'Fest & maskerad', 'Fest', 'Uniformer & yrken', 'Uniform & yrken', 'Hjälmar', 'Roliga', 'Roliga glasögon',
+  'Sagoväsen', 'Saker i munnen', 'Ansiktsmålning', 'Kul', 'Instrument & sport', 'Humör', 'Effekter', 'Handskar', 'Set',
+  'shoeType:Sport', 'shoeType:Hemma', 'glasses:Sport',
+  'eyes#crossed', 'mouth#drool', 'neck#bib', 'neck#ruff', 'neck#lei', 'top#gi', 'shoeType#barefoot', 'hairAcc#pencil',
+  'bottom#lucia', 'bottom#weddingDress', 'bottom#princess', 'bottom#gown', 'bottom#folkdrakt', 'bottom#tutu', 'bottom#pajamas',
+  'bottom#snowsuit', 'bottom#skiPants',
+]);
+const RICH_ADULT_ONLY = new Set(['Tatueringar', 'Rynkor', 'Grått', 'Piercingar', 'Piercing', 'Toppar', 'top#suit', 'shoeType#heels']);
+const RICH_POOL = new Map();
+function richPool(field, kid) {
+  const key = field + (kid ? ':barn' : '');
+  let pool = RICH_POOL.get(key);
+  if (!pool) {
+    const F = LOOK_FIELDS[field], defId = idOf(field, F.def);
+    const skip = (set, id, g) => set.has(g) || set.has(`${field}:${g}`) || set.has(`${field}#${id}`);
+    pool = Object.keys(F.reg).filter((id) => {
+      if (id === 'none' || id === defId) return false;
+      const g = F.reg[id].group || '';
+      return !skip(RICH_SKIP, id, g) && !(kid && skip(RICH_ADULT_ONLY, id, g));
+    }).map((id) => valueOf(field, id));
+    RICH_POOL.set(key, pool);
+  }
+  return pool;
+}
+
+export function makeLookRich(rng = Math.random) {
+  const L = makeLook(rng);
+  const K = L.kid;
+  const vary = (field, p) => { if (rng() < p) { const pool = richPool(field, K); if (pool.length) L[field] = pick(rng, pool); } };
+  // hår
+  vary('style', 0.7);
+  if (rng() < 0.12) { vary('hairFx', 1); L.hair2 = pick(rng, HAIR); }
+  // ansikte (oftast som vanligt)
+  vary('eyes', 0.3); vary('brows', 0.25); vary('nose', 0.2); vary('mouth', 0.25); vary('ears', 0.04);
+  vary('cheeks', 0.12); vary('marks', 0.1);
+  if (!K) {
+    vary('makeup', 0.16);
+    if (L.makeup) { L.lipColor = pick(rng, LIP_COLORS); L.shadowColor = pick(rng, SHADOW_COLORS); }
+    if (L.beard) vary('beard', 0.6);
+  }
+  if (rng() < 0.3) L.eyeColor = pick(rng, EYE_COLORS);
+  // kläder
+  vary('top', 0.75); vary('topPrint', 0.18);
+  vary('bottom', 0.7); vary('bottomPrint', 0.08);
+  vary('shoeType', 0.6);
+  L.print2 = pick(rng, SHIRT); L.pants2 = pick(rng, SHIRT); L.shoes2 = pick(rng, SHOES); L.neckColor = pick(rng, SHIRT);
+  // accessoarer: byt ut en del av dem makeLook redan gett, lägg till några nya
+  if (L.hat) vary('hat', 0.6); else if (!L.phones) vary('hairAcc', K ? 0.18 : 0.07);
+  if (L.glasses) vary('glasses', 0.5);
+  if (L.bag) vary('bag', 0.5);
+  if (L.phones) vary('phones', 0.5);
+  vary('neck', K ? 0.06 : 0.14);
+  vary('jewel', K ? 0.05 : 0.16);
+  return L;
+}
+
 export const SHOPKEEPER = {
   skin: '#eabf98', hair: '#4a2f1d', style: 'short', hat: 'cap', cap: '#c9323a', top: 'tee', shirt: '#c9323a', accent: '#f4f1ea',
   bottom: 'pants', pants: '#2d3a5c', shoes: '#1c1c1c', glasses: false, beard: false, phones: false, kid: false,
@@ -162,7 +230,8 @@ function norm(L = {}) {
   if (n.beard === true) n.beard = 'full';
   n.top = n.top || 'tee';
   n.bottom = n.bottom || 'pants';
-  n.build = n.kid ? 4 : (n.build || 5);
+  // bara 4/5/6 – ett orimligt värde (t.ex. 1e9 från orensad data) skulle annars låsa ritningen
+  n.build = n.kid ? 4 : (n.build === 4 || n.build === 6 ? n.build : 5);
   return n;
 }
 
@@ -184,8 +253,14 @@ const SRC = { [TAG.torso]: 'shirt', [TAG.sleeve]: 'shirt', [TAG.top]: 'shirt', [
 
 const optRamp = (h) => (typeof h === 'string' && /^#[0-9a-f]{6}$/i.test(h) ? ramp(parseInt(h.slice(1), 16)) : null);
 
+// Har registerposten någon krok? (räknas ut en gång per post – de flesta har inga)
+const HOOK_NAMES = ['afterLegs', 'afterHips', 'beforeTorso', 'afterTorso', 'beforeArms', 'afterArms', 'afterHead', 'afterFace', 'afterHair', 'last'];
+const HAS_HOOKS = new WeakMap();
+const hasHooks = (e) => { let h = HAS_HOOKS.get(e); if (h === undefined) { h = HOOK_NAMES.some((k) => typeof e[k] === 'function'); HAS_HOOKS.set(e, h); } return h; };
+
 // ---------- spriten ----------
 const CACHE = new WeakMap();
+const OUTLINE_SRC = new Uint8ClampedArray(SW * SH * 4); // kopian konturen läser från (återanvänds)
 
 function render(L0, dir, frame) {
   const L = norm(L0);
@@ -206,6 +281,14 @@ function render(L0, dir, frame) {
     tags[p] = R.tag;
   };
   const rect = (x, y, w, h, c) => { for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) put(x + i, y + j, c); };
+  // sudda (genomskinligt igen) – t.ex. hår som en hjälm ska dölja. Konturen läggs efteråt, så kanten blir rätt.
+  const erase = (x, y) => {
+    if (flip) x = SW - 1 - x;
+    if (x < 0 || y < 0 || x >= SW || y >= SH) return;
+    const p = y * SW + x;
+    d[p * 4 + 3] = 0; tags[p] = TAG.none;
+  };
+  const eraseRect = (x, y, w, h) => { for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) erase(x + i, y + j); };
   const has = (x, y) => { if (flip) x = SW - 1 - x; return x >= 0 && y >= 0 && x < SW && y < SH && d[(y * SW + x) * 4 + 3] > 0; };
   const topAt = (x, fb) => { for (let y = 0; y < SH; y++) if (has(x, y)) return y; return fb; }; // översta ritade pixeln i kolumnen
   const get = (x, y) => { if (flip) x = SW - 1 - x; if (x < 0 || y < 0 || x >= SW || y >= SH) return -1; const i = (y * SW + x) * 4; return d[i + 3] ? (d[i] << 16) | (d[i + 1] << 8) | d[i + 2] : -1; };
@@ -247,8 +330,9 @@ function render(L0, dir, frame) {
     fn.call(e, R, arg);
     R.tag = keep;
   };
+  const hooked = HOOK_ORDER.filter((f) => hasHooks(E[f])); // fälten vars poster har krokar, i krokordning
   const hook = (name) => {
-    for (const f of HOOK_ORDER) { const e = E[f]; if (e[name]) { R.tag = FIELD_TAG[f]; e[name](R); } }
+    for (const f of hooked) { const e = E[f]; if (e[name]) { R.tag = FIELD_TAG[f]; e[name](R); } }
     R.tag = TAG.none;
   };
 
@@ -270,7 +354,7 @@ function render(L0, dir, frame) {
 
   Object.assign(R, {
     L, dir, frame, view, side, back, front: view === 'front', flip, K, adult: !K, SW, SH, TAG,
-    put, rect, has, topAt, get, tagAt, each, pattern, draw, E, id,
+    put, rect, erase, eraseRect, has, topAt, get, tagAt, each, pattern, draw, E, id,
     mix, mul, ramp, far, toneOf, toInt,
     // färger (ramper { hi, base, lo, dk } om inget annat sägs)
     skin: skinR, hair: hairR, shirt: shirtR, acc: accR,
@@ -570,17 +654,18 @@ function render(L0, dir, frame) {
   hook('last');
 
   // ---------- kontur ----------
-  const src = new Uint8ClampedArray(d);
+  // Varje genomskinlig pixel intill figuren får en mörk ton av grannen. Grannen väljs i
+  // ordningen ovanför > vänster > höger > under (samma resultat som den gamla slingan).
+  const src = OUTLINE_SRC; src.set(d);
+  const ROW = SW * 4;
   for (let y = 0; y < SH; y++) for (let x = 0; x < SW; x++) {
     const i = (y * SW + x) * 4;
     if (src[i + 3]) continue;
     let best = -1;
-    for (const [dx, dy] of [[0, 1], [0, -1], [1, 0], [-1, 0]]) {
-      const xx = x + dx, yy = y + dy;
-      if (xx < 0 || yy < 0 || xx >= SW || yy >= SH) continue;
-      const j = (yy * SW + xx) * 4;
-      if (src[j + 3]) { best = j; if (dy === -1) break; }
-    }
+    if (y > 0 && src[i - ROW + 3]) best = i - ROW;
+    else if (x > 0 && src[i - 1]) best = i - 4;
+    else if (x < SW - 1 && src[i + 7]) best = i + 4;
+    else if (y < SH - 1 && src[i + ROW + 3]) best = i + ROW;
     if (best < 0) continue;
     d[i] = src[best] * 0.28 + 14; d[i + 1] = src[best + 1] * 0.24 + 10; d[i + 2] = src[best + 2] * 0.3 + 20; d[i + 3] = 255;
   }

@@ -6,7 +6,7 @@ plagg och accessoar är en post i ett register. Ett nytt val = en ny post i rät
 Motorn tar hand om lagerordning, ramper, kontur, cache och alla fyra riktningar.
 
 ```
-js/core/people.js          MOTORN – lager, ramper, kontur, cache, drawPerson/portrait/makeLook,
+js/core/people.js          MOTORN – lager, ramper, kontur, cache, drawPerson/portrait/makeLook/makeLookRich,
                            LOOK_FIELDS/LOOK_COLORS, listorna (HAIR_STYLES, TOP_TYPES …)
 js/core/people/util.js     färgverktyg (ramp, mix, mul, far, toneOf, toInt), SW/SH, TAG
 js/core/people/hair.js     HAIR_REG (frisyrer), HAIR_FX_REG (slingor/toppar/ombré/tvåfärgat)
@@ -16,10 +16,16 @@ js/core/people/tops.js     TOP_REG (överdelar), TOP_PRINT_REG (tryck/mönster)
 js/core/people/bottoms.js  BOTTOM_REG (byxor/kjolar/klänningar/overaller), BOTTOM_PRINT_REG, SHOE_REG
 js/core/people/acc.js      HAT_REG GLASSES_REG BAG_REG NECK_REG JEWEL_REG HAIR_ACC_REG PHONES_REG
 js/data/wardrobe.js        klädkatalogen (samlar wardrobe-tops/-bottoms/-acc.js) + hjälpfunktioner
-js/core/avatar.js          avatarredigeraren (flikar, lat rutritning, cleanLook)
+js/core/avatar.js          avatarredigeraren (flikar, gruppknappar, täta rutnät som ritas lat, cleanLook)
 ```
 
 Registerfilerna importerar **bara** från `util.js` (aldrig från `people.js` – cirkelberoende).
+
+**Hjälpfiler.** Blir en registerfil stor delas innehållet upp i hjälpfiler med samma prefix,
+som registerfilen importerar och slår ihop (t.ex. `hair-kort.js`, `hair-lockar.js`,
+`hair-kit.js` med delade ritfunktioner; `face-eyes.js`, `face-paint.js`, `face-kit.js`). Varje
+specialist äger sina prefix: `hair*`, `face*`, `tops*`, `bottoms*`, `acc*`. Motorn importerar
+fortfarande bara de fem registerfilerna ovan.
 
 ---
 
@@ -48,7 +54,7 @@ Ett look är ett rent JSON-objekt. Saknas ett fält ritas det som förut (bakåt
 | `neck` | NECK_REG | `'none'` | halsduk, slips, fluga, halsband |
 | `jewel` | JEWEL_REG | `'none'` | örhängen, piercing, armband, klocka |
 | `phones` | PHONES_REG | `false` | `true` = registerposten `over` (klassiska lurarna) |
-| `build` | 4/5/6 | 5 | kroppsbredd (barn alltid 4) |
+| `build` | 4/5/6 | 5 | kroppsbredd (barn alltid 4; andra värden ritas som 5) |
 | `kid` | bool | false | |
 | `apron` | bool | false | bara butiksbiträden (motorn ritar det) |
 
@@ -75,6 +81,8 @@ export const HAIR_REG = {
     side(R) { … },             // profil åt höger ('right'; 'left' speglas automatiskt)
     prep(R) { … },             // valfri: körs innan NÅGOT ritas – ändra färger/mått i R
     uses: ['accent'],          // valfri: färgfält redigeraren ska visa för posten
+    tile: 'torso',             // valfri: utsnitt i redigerarens ruta – head face neck torso legs side full
+                               //   (t.ex. handskar/klockor under Smycken, som annars visas som huvud)
     // valfria krokar (se lagerordningen): afterLegs afterHips beforeTorso afterTorso
     //   beforeArms afterArms afterHead afterFace afterHair last
   },
@@ -87,7 +95,12 @@ export const HAIR_REG = {
 * Saknas en vyfunktion ritas inget i den vyn (t.ex. ansiktsdetaljer bakifrån).
 * Funktionerna anropas som metoder (`this` = posten), så `back(R) { this.front(R); }` går bra.
 * Listorna `HAIR_STYLES`, `TOP_TYPES` … byggs ur registren vid inläsning – en ny post hamnar
-  automatiskt i dem, i redigeraren, i `cleanLook` och i kontaktarken.
+  automatiskt i dem, i redigeraren, i `cleanLook` och i kontaktarken. Listornas början är densamma
+  som före registren (de gamla värdena först, i gammal ordning – för `HAIR_STYLES` styrs det av en
+  fast lista i people.js); nya värden läggs till efter. Spara och jämför ändå **värden**, inte index.
+* `group` blir en gruppknapp i redigeraren. Har ett fält fler än 12 val i minst två grupper visas
+  en grupp i taget (plus "Alla"), så att gruppen ryms utan att man scrollar – håll grupperna runt
+  4–20 val. Poster utan `group` (t.ex. `none` och de gamla grundvalen) syns alltid först.
 
 ### Specialegenskaper per register
 
@@ -127,6 +140,7 @@ etikett – tonen (hi/base/lo/dk) följer med automatiskt, så skuggning och bor
 | grupp | fält |
 |---|---|
 | **rita** | `put(x, y, färg)`, `rect(x, y, w, h, färg)` – heltal, logiska koordinater (speglas i vänstervy) |
+| **sudda** | `erase(x, y)`, `eraseRect(x, y, w, h)` – gör pixlar genomskinliga igen (t.ex. hår som en hjälm döljer); konturen läggs efteråt |
 | **läsa** | `has(x, y)`, `get(x, y)` → färg eller −1, `topAt(x, fb)`, `tagAt(x, y)` |
 | **mönster** | `each(tag, (x, y, färg) => …)`, `pattern(tag, (x, y, färg) => ramp \| färg \| null, källramp?)` |
 | **övrigt** | `draw(fält)` ritar fältets aktuella post i vyn, `E` (poster per fält), `id` (id per fält), `L` (normaliserat look), `tag` (etiketten nya pixlar får) |
@@ -221,7 +235,8 @@ Ett plagg kan kombinera flera registerval (t.ex. huvtröja + kamouflagetryck).
 { id: 'top-hoodie-camo', slot: 'top', look: { top: 'hoodie', topPrint: 'camo' },
   name: 'Kamouflagehuvtröja', price: 450, dept: 'unisex', icon: '🧥',
   colors: { shirt: '#6b7a4a', print2: '#3f4a2c' },   // förslag: mannekäng + när man köper
-  group: 'Tröjor' },                                  // valfri underrubrik
+  group: 'Tröjor',                                    // valfri underrubrik
+  tile: 'torso' },                                    // valfritt utsnitt i redigeraren (TILE_VIEWS)
 ```
 * `slot`: `top bottom shoes hat glasses bag neck jewel hairAcc phones`. `look` får bara innehålla
   platsens modellfält (`SLOT_FIELDS`): top → `top, topPrint`; bottom → `bottom, bottomPrint`;
@@ -241,7 +256,13 @@ Hjälpfunktioner: `WARDROBE`, `SLOTS`, `SLOT_FIELDS`, `SLOT_LABELS`, `SLOT_CAN_B
 
 Redigeraren: `setAvatarWardrobe(() => ägdaId)` (nytt) eller `setAvatarLocks((kind, v) => låst?)`
 (gammalt, fortfarande kopplat i main.js – då syns bara plagg med `legacy`-nyckel + basplagg).
-`avatarCanWear(item)` säger om spelaren får ha plagget på sig.
+`avatarCanWear(item)` säger om spelaren får ha plagget på sig. Ett plagg man bär utan att äga
+(t.ex. från en äldre sparning) ligger kvar och syns med 🔒 och streckad ram tills man byter bort det.
+
+**Redigerarens rutor.** Rutnäten visar bara bilder; namnet på det valda står i sektionens rubrik
+och byts mot rutan under pekaren (eller med tangentbordsfokus). Utsnitten (`VIEWS` i avatar.js)
+ritas i heltalsskala: 3× (60 px) på dator och 2× (40 px, ansikte 3× = 45 px) i tätt läge
+(bredd < 640 px eller höjd < 540 px), gånger enhetens pixeltäthet så att pixlarna blir skarpa.
 
 ---
 
@@ -256,9 +277,17 @@ Redigeraren: `setAvatarWardrobe(() => ägdaId)` (nytt) eller `setAvatarLocks((ki
 4. **Läsbart i 1×.** En figur är ~16×32 synliga pixlar – en detalj är 1–2 pixlar. Hellre en tydlig
    pixel i kontrastfärg än tre som flyter ihop.
 5. **Gamla looks är pixellåsta.** Ändra inte befintliga poster, motorn, `makeLook` eller
-   slumptabellerna (`SKIN, HAIR, SHIRT, PANTS, SHOES, STYLES, TOPS, BOTTOMS`).
+   slumptabellerna (`SKIN, HAIR, SHIRT, PANTS, SHOES, STYLES, TOPS, BOTTOMS`). Stadens kunder
+   (`makeLook`) får därför inga nya val. Nya NPC-grupper kan använda `makeLookRich(rng)`: samma
+   grund som `makeLook`, men med nya frisyrer, ansikten och plagg. Vardagligt – grupperna i
+   `RICH_SKIP` (utklädnad, fest, uniformer, ansiktsmålning …) och `RICH_ADULT_ONLY` (smink,
+   tatueringar, piercingar … bara vuxna) hoppas över. Lägg till där om en ny grupp inte passar
+   stadsfolk. Samma frö ger samma figur.
 6. **Snabbt.** Ritas bara vid cachemiss men håll varje post billig (< 2 ms per sprite totalt,
-   i dag ~0,15 ms). Inga objekt/canvas per pixel.
+   i dag ~0,05 ms för vanliga looks och ~0,15 ms när alla fält är satta). Inga objekt, closures
+   eller canvas per pixel – skapa tabeller/mönster en gång vid inläsning, inte per anrop.
+   Motorn räknar ut vilka poster som har krokar en gång per post, och konturen läser från en
+   återanvänd buffert.
 7. **Svenska** etiketter och kommentarer.
 
 ## 8. Verktyg
@@ -268,8 +297,11 @@ Redigeraren: `setAvatarWardrobe(() => ägdaId)` (nytt) eller `setAvatarLocks((ki
 node tools/people-regress.mjs                 # MÅSTE visa "0 skillnader" – gamla looks pixelidentiska
 node tools/people-sheet.mjs --cat style       # kontaktark → tools/out/sheets/style-N.png (≤ 2000 px)
 node tools/people-sheet.mjs --cat top --from bomber      # bara nya poster från och med ett id
-node tools/people-sheet.mjs --cat katalog:top            # katalogens överdelar (+ katalogkontroll)
+node tools/people-sheet.mjs --cat katalog:top            # katalogens överdelar → katalog-top-N.png
 node tools/people-sheet.mjs --cat eyes --frames 0,1,5 --dirs down,right,up,left --scale 4
 node tools/avatar-snap.mjs                    # redigeraren i riktiga spelet: flikar, klick, konsolfel
 ```
-`people-sheet` skriver också antal val per register, ms/sprite, katalogproblem och konsolfel.
+`people-sheet` skriver också antal val per register, ms/sprite, katalogproblem, en registerkontroll
+(poster utan etikett/ritning, okänd `tile`, front utan side – info, kan vara avsiktligt) och konsolfel.
+Kontaktarken hamnar i `tools/out/sheets/` (ändra med `--out`, t.ex. en egen mapp per specialist så att
+parallella körningar inte skriver över varandra).

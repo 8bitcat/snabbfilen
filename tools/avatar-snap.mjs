@@ -1,10 +1,16 @@
 // Provkör avatarredigeraren i riktiga spelet (Playwright): öppnar den, går igenom alla
 // flikar, klickar på rutor, slumpar, provar båda låssystemen och sparar – och skriver ut
-// alla konsolfel. Tar skärmdumpar av flikarna till tools/out/avatar-<flik>.png.
+// alla konsolfel. Tar skärmdumpar av flikarna till tools/out/avatar-<flik>.png (som flikarna
+// öppnas: en grupp i taget), skriver hur många skärmhöjder panelen är och klickar sedan "Alla"
+// i varje sektion för att se att alla rutor går att rita.
 // Kontrollerar också att webbläsaren ritar figurerna bit för bit som baslinjen
 // (tools/people-baseline.json, som skrivs i Node).
 //   node tools/avatar-snap.mjs                 (servern: python -m http.server 8788)
 //   node tools/avatar-snap.mjs --tabs hair,top --port 8788 --mobile
+//   node tools/avatar-snap.mjs --tabs neck,hat --owned all --out tools/out/acc
+//       --owned all | id1,id2   flikarna visas med setAvatarWardrobe (alla / vissa katalogplagg ägda),
+//                               så att nya plagg syns i klädflikarna (annars bara gamla sortimentet)
+//       --out <mapp>            var skärmdumparna hamnar (standard tools/out)
 import { createRequire } from 'module';
 import fs from 'fs';
 const require = createRequire('D:/Qisy/QISYFrontend/QISYFrontend-1/package.json');
@@ -14,7 +20,8 @@ const arg = (k, d) => { const i = process.argv.indexOf('--' + k); return i < 0 ?
 const port = arg('port', '8788');
 const mobile = !!arg('mobile', false);
 const onlyTabs = arg('tabs', null);
-const outDir = 'tools/out';
+const owned = arg('owned', null);
+const outDir = String(arg('out', 'tools/out'));
 fs.mkdirSync(outDir, { recursive: true });
 
 const browser = await chromium.launch();
@@ -56,7 +63,18 @@ const bad = Object.entries(hashes).filter(([k, h]) => base.sprites[k] !== h).map
 log(`Webbläsaren mot baslinjen: ${Object.keys(hashes).length} sprites, ${bad.length} skillnader${bad.length ? ': ' + bad.slice(0, 10).join(', ') : ' ✓'}`);
 
 // ---------- 2. redigeraren med det gamla låssystemet (main.js: setAvatarLocks) ----------
-await page.evaluate(async () => { const A = await import('/js/core/avatar.js'); window.__av = A; A.openAvatarEditor({}); });
+const ownedIds = await page.evaluate(async (ow) => {
+  const A = await import('/js/core/avatar.js'); window.__av = A;
+  let ids = null;
+  if (ow) {
+    const W = await import('/js/data/wardrobe.js');
+    ids = ow === true || ow === 'all' ? W.WARDROBE.map((it) => it.id) : String(ow).split(',');
+    A.setAvatarWardrobe(() => ids);
+  }
+  A.openAvatarEditor({});
+  return ids;
+}, owned);
+if (ownedIds) log(`--owned: ${ownedIds.length} plagg ägda (setAvatarWardrobe) – låskontrollerna nedan gäller då inte`);
 await settle();
 const tabIds = await page.$$eval('.av-tab', (bs) => bs.map((b) => b.dataset.tab));
 log('Flikar:', tabIds.join(', '));
@@ -68,22 +86,33 @@ for (const t of tabIds) {
   // rulla igenom panelen så att de lata rutorna ritas
   await page.evaluate(async () => { const p = document.querySelector('.av-panel'); for (let y = 0; y <= p.scrollHeight; y += 300) { p.scrollTop = y; await new Promise((r) => setTimeout(r, 60)); } p.scrollTop = 0; });
   await settle();
-  const s = await page.evaluate(() => ({ tiles: document.querySelectorAll('.av-panel .av-tile').length, canvases: document.querySelectorAll('.av-panel .av-tile canvas').length, waiting: document.querySelectorAll('.av-panel i[data-c]').length, sw: document.querySelectorAll('.av-panel .av-sw').length, more: document.querySelector('.av-panel .av-more')?.textContent || '' }));
-  stats.push({ t, ...s });
+  const s = await page.evaluate(() => ({ tiles: document.querySelectorAll('.av-panel .av-tile').length, canvases: document.querySelectorAll('.av-panel .av-tile canvas').length, waiting: document.querySelectorAll('.av-panel i[data-c]').length, sw: document.querySelectorAll('.av-panel .av-sw').length, chips: document.querySelectorAll('.av-panel .av-chip').length, scroll: (() => { const p = document.querySelector('.av-panel'); return +(p.scrollHeight / p.clientHeight).toFixed(2); })(), more: document.querySelector('.av-panel .av-more')?.textContent || '' }));
   await page.locator('.dlg-avatar').screenshot({ path: `${outDir}/avatar-${t}${mobile ? '-mobil' : ''}.png` });
+  // gruppknapparna: "Alla" i varje sektion ⇒ alla rutor ska kunna ritas
+  const all = await page.evaluate(async () => {
+    const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+    for (;;) { const b = document.querySelector('.av-panel .av-chip[data-g="*"]:not(.on)'); if (!b) break; b.click(); await wait(40); }
+    const p = document.querySelector('.av-panel');
+    for (let y = 0; y <= p.scrollHeight; y += 300) { p.scrollTop = y; await wait(60); }
+    p.scrollTop = 0; await wait(150);
+    return { tiles: p.querySelectorAll('.av-tile').length, canvases: p.querySelectorAll('.av-tile canvas').length };
+  });
+  stats.push({ t, ...s, all });
 }
-for (const s of stats) log(`  ${s.t.padEnd(10)} rutor ${String(s.tiles).padStart(3)}  ritade ${String(s.canvases).padStart(3)}  väntar ${s.waiting}  färgrutor ${s.sw}  ${s.more}`);
+for (const s of stats) log(`  ${s.t.padEnd(10)} rutor ${String(s.tiles).padStart(3)}  ritade ${String(s.canvases).padStart(3)}  väntar ${s.waiting}  färgrutor ${String(s.sw).padStart(2)}  grupper ${String(s.chips).padStart(2)}  skärmar ${s.scroll}  | Alla: rutor ${s.all.tiles} ritade ${s.all.canvases}  ${s.more}`);
 
 // klicka runt: keps (ägd), huvtröja (ägd), klänning (ej ägd → ska inte finnas), färg, Std, slumpa
 const clickLog = await page.evaluate(async () => {
   const wait = (ms) => new Promise((r) => setTimeout(r, ms));
   const tab = async (id) => { document.querySelector(`.av-tab[data-tab="${id}"]`).click(); await wait(120); };
+  // gruppknapparna visar en grupp i taget – "Alla" så att alla plagg finns att klicka på
+  const alla = async () => { for (;;) { const b = document.querySelector('.av-panel .av-chip[data-g="*"]:not(.on)'); if (!b) break; b.click(); await wait(40); } };
   const out = [];
-  await tab('hat');
+  await tab('hat'); await alla();
   const cap = document.querySelector('.av-panel [data-item="hat-cap"]');
   out.push('keps finns: ' + !!cap); cap?.click(); await wait(80);
   out.push('krona syns (ska inte): ' + !!document.querySelector('.av-panel [data-item="hat-crown"]'));
-  await tab('top');
+  await tab('top'); await alla();
   document.querySelector('.av-panel [data-item="top-hoodie"]')?.click(); await wait(80);
   out.push('huvtröja på: ' + !!document.querySelector('.av-panel [data-item="top-hoodie"].on'));
   document.querySelector('.av-panel [data-k="shirt"][data-v=\'"#46a35a"\']')?.click(); await wait(80);

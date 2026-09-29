@@ -11,59 +11,18 @@
 // Ordningen här = ordningen i redigeraren. Ändra inte de gamla posterna – de är
 // pixellåsta av tools/people-regress.mjs.
 import { mix } from './util.js';
+// De gamla hjälparna ligger (oförändrade) i hair-kit.js så att de nya frisyrfilerna kan
+// dela dem utan cirkelberoende. De exporteras även härifrån som förut.
+import { capF, TIE, braid, TAIL, tail, L2R, R2L, backStd, backShort, backLong, sideTop, sideStd } from './hair-kit.js';
+import { HAIR_KORT } from './hair-kort.js';
+import { HAIR_MELLAN } from './hair-mellan.js';
+import { HAIR_LOCKAR } from './hair-lockar.js';
+import { HAIR_UPPSATT } from './hair-uppsatt.js';
+import { HAIR_FX } from './hair-fx.js';
+export { capF, TIE, braid, tail, L2R, R2L, backStd, backShort, backLong, sideTop, sideStd };
 
-// ---------- hjälpare: framifrån ----------
-// hårkalott: rows rader under hjässan
-export const capF = (R, rows) => {
-  const { rect, put, hair: H, h0 } = R;
-  rect(8, h0 - 1, 8, 1, H.base); rect(7, h0, 10, rows, H.base);
-  rect(9, h0 - 1, 3, 1, H.hi); rect(8, h0, 2, 1, H.hi);
-  for (let j = 0; j < rows; j++) put(16, h0 + j, H.lo);
-};
-export const TIE = 0xc9323a; // hårsnodd
-// fläta: 2 px bred, flätmönster, snodd + tofs i änden. xa bredvid ansiktet, xb nedanför hakan
-export const braid = (R, xa, xb, y0, dark) => {
-  const { put, rect, hair: H, h0, headH, K } = R;
-  const braidEnd = h0 + headH + (K ? 2 : 4);
-  const A = dark ? [H.lo, H.dk] : [H.base, H.lo], B = dark ? [H.base, H.lo] : [H.hi, H.base];
-  for (let y = y0; y < braidEnd; y++) { const x = y < h0 + headH ? xa : xb, c = (y - y0) % 2 ? B : A; put(x, y, c[0]); put(x + 1, y, c[1]); }
-  rect(xb, braidEnd, 2, 1, TIE); put(xb + (dark ? 1 : 0), braidEnd + 1, H.base); put(xb + (dark ? 0 : 1), braidEnd + 1, H.lo);
-};
-// tofs (råttsvans) på sidan av huvudet; x speglas med mx
-const TAIL = [[5], [4, 5], [3, 4, 5], [3, 4, 5], [3, 4], [3, 4], [4]];
-export const tail = (R, mx, dark) => {
-  const { put, hair: H, h0 } = R;
-  TAIL.forEach((xs, j) => xs.forEach((x, i) => put(mx(x), h0 + j, j === TAIL.length - 1 ? H.lo : i === 0 && j > 1 ? (dark ? H.lo : H.hi) : dark ? H.lo : H.base)));
-  put(mx(6), h0 + 1, TIE); put(mx(6), h0 + 2, TIE);
-};
-export const L2R = (x) => x, R2L = (x) => 23 - x;
-
-// ---------- hjälpare: bakifrån ----------
-// Standardnacken: hår ner till raden `bottom`; long = bredare (x 6–17)
-export const backStd = (R, bottom, long) => {
-  const { rect, put, hair: H, h0 } = R;
-  rect(8, h0 - 1, 8, 1, H.base); rect(7, h0, 10, bottom - h0, H.base);
-  if (long) rect(6, h0 + 1, 12, bottom - h0 - 1, H.base);
-  rect(9, h0 - 1, 3, 1, H.hi); rect(8, h0, 3, 1, H.hi); put(8, h0 + 1, H.hi);
-  for (let y = h0; y < bottom; y++) put(long ? 17 : 16, y, H.lo);
-  rect(long ? 7 : 8, bottom - 1, long ? 10 : 8, 1, H.lo);
-  return bottom;
-};
-export const backShort = (R) => backStd(R, R.h0 + R.headH - 3, false); // kort nacke
-export const backLong = (R) => backStd(R, R.h0 + R.headH + 3, true);   // ner på axlarna
-
-// ---------- hjälpare: från sidan ----------
-export const sideTop = (R) => { const { rect, put, hair: H, h0 } = R; rect(9, h0 - 1, 7, 1, H.base); rect(8, h0, 9, 3, H.base); rect(10, h0 - 1, 3, 1, H.hi); put(9, h0, H.hi); };
-// hjässa + nacke (nape=false: ingen kort nacke, t.ex. när långt hår ritas ovanpå) + lugg vid pannan
-export const sideStd = (R, nape = true) => {
-  const { rect, put, hair: H, h0 } = R;
-  sideTop(R);
-  rect(8, h0 + 3, 3, nape ? 4 : 0, H.base);
-  rect(16, h0 + 3, 1, 1, H.base); put(15, h0 + 3, H.base);
-};
-
-// ---------- frisyrerna ----------
-export const HAIR_REG = {
+// ---------- frisyrerna (de första 20 – pixellåsta) ----------
+const HAIR_OLD = {
   short: {
     label: 'Kort', group: 'Kort hår',
     front(R) { const { rect, hair: H, h0 } = R; capF(R, 3); rect(7, h0 + 3, 1, 3, H.base); rect(16, h0 + 3, 1, 3, H.lo); rect(8, h0 + 3, 3, 1, H.base); },
@@ -231,9 +190,21 @@ export const HAIR_REG = {
   },
 };
 
+// ---------- hela registret ----------
+// Underrubrikerna i redigeraren kommer i den här ordningen; inom en rubrik står de gamla
+// frisyrerna först och de nya efter (i filernas ordning). Frisyrer utan känd rubrik hamnar sist.
+const GROUP_ORDER = ['Kort hår', 'Lugg', 'Rakat', 'Mellanlångt', 'Långt hår', 'Lockar', 'Afro', 'Dreads & twists', 'Uppsatt', 'Hästsvansar', 'Flätor'];
+// några av de gamla frisyrerna flyttas till de nya underrubrikerna (bara rubriken – ritningen är orörd)
+const REGROUP = { afro: 'Afro', dreads: 'Dreads & twists', ponytail: 'Hästsvansar' };
+for (const id in REGROUP) HAIR_OLD[id] = { ...HAIR_OLD[id], group: REGROUP[id] };
+const ALL = { ...HAIR_OLD, ...HAIR_KORT, ...HAIR_MELLAN, ...HAIR_LOCKAR, ...HAIR_UPPSATT };
+const rank = (id) => { const g = GROUP_ORDER.indexOf(ALL[id].group); return g < 0 ? GROUP_ORDER.length : g; };
+export const HAIR_REG = Object.fromEntries(Object.keys(ALL).map((id, i) => [id, i]).sort((a, b) => rank(a[0]) - rank(b[0]) || a[1] - b[1]).map(([id]) => [id, ALL[id]]));
+
 // ---------- hårfärgseffekter (look.hairFx, andra färgen look.hair2 → R.hair2) ----------
 // Körs direkt efter frisyren (samma vy). Typiskt: R.pattern(TAG.hair, (x, y) => villkor ? R.hair2 : null)
-// – tonen (hi/base/lo/dk) behålls automatiskt. 'none' = ingen effekt.
+// – tonen (hi/base/lo/dk) behålls automatiskt. 'none' = ingen effekt. Effekterna ligger i hair-fx.js.
 export const HAIR_FX_REG = {
   none: { label: 'Ingen' },
+  ...HAIR_FX,
 };

@@ -2,10 +2,13 @@
 // och redigeraren där man klär ut den. `look` är ett rent JSON-objekt som drawPerson förstår
 // (det skickas över nätet i co-op) – kör alltid främmande data genom cleanAvatar/cleanLook.
 //
-// Redigeraren är byggd för hundratals val: flikar per kategori, rutnät som ritas lat
-// (bara synliga rutor, i omgångar), underrubriker ur registrens `group`. Val som ritas
+// Redigeraren är byggd för hundratals val: flikar per kategori, täta rutnät som ritas lat
+// (bara synliga rutor, i omgångar) och gruppknappar ur registrens `group` som visar en grupp
+// i taget, så att den ryms utan att man scrollar ("Alla" visar allt under underrubriker).
+// Namnet på det valda står i sektionens rubrik. Val som ritas
 // (frisyr, ansikte …) kommer ur registren i js/core/people/*.js, plaggen ur klädkatalogen
-// js/data/wardrobe.js – man ser bara plagg man äger (+ gratis basplagg).
+// js/data/wardrobe.js – man ser bara plagg man äger (+ gratis basplagg; ett plagg man bär
+// utan att äga det syns med 🔒 tills man byter bort det).
 import {
   makeLook, drawPerson, portrait, FIRST_NAMES,
   SKIN, HAIR, SHIRT, PANTS, SHOES, PHONE_COLORS, BAG_COLORS,
@@ -334,24 +337,33 @@ const LBL = {
   build: { 4: 'Smal', 5: 'Mellan', 6: 'Bred' },
 };
 
-// Utsnitt ur spriten (24×41, fötterna vid 12,39) för småbilderna i knapparna
+// Utsnitt ur spriten (24×41, fötterna vid 12,39) för småbilderna i knapparna.
+// scale = heltalsskala på dator, cscale = i tätt läge (mobil/låg skärm). Alla utsnitt utom
+// 'full' blir lika stora rutor (60 px på dator, 40–45 px tätt), så rutnätet blir jämnt.
 const VIEWS = {
-  head: { dir: 'down', crop: (L) => [2, L.kid ? 9 : 1, 20, 20], scale: 3 },
-  face: { dir: 'down', crop: (L) => [4, L.kid ? 12 : 4, 15, 15], scale: 4 },
-  neck: { dir: 'down', crop: (L) => [4, L.kid ? 18 : 10, 16, 16], scale: 4 },
-  torso: { dir: 'down', crop: (L) => [2, L.kid ? 16 : 12, 20, 20], scale: 3 },
-  legs: { dir: 'down', crop: (L) => [2, L.kid ? 21 : 20, 20, 20], scale: 3 },
-  side: { dir: 'right', crop: (L) => [2, L.kid ? 16 : 12, 20, 20], scale: 3 },
-  full: { dir: 'down', crop: () => [0, 0, 24, 41], scale: 2 },
+  head: { dir: 'down', crop: (L) => [2, L.kid ? 9 : 1, 20, 20], scale: 3, cscale: 2 },
+  face: { dir: 'down', crop: (L) => [4, L.kid ? 12 : 4, 15, 15], scale: 4, cscale: 3 },
+  neck: { dir: 'down', crop: (L) => [2, L.kid ? 16 : 8, 20, 20], scale: 3, cscale: 2 },
+  torso: { dir: 'down', crop: (L) => [2, L.kid ? 16 : 12, 20, 20], scale: 3, cscale: 2 },
+  legs: { dir: 'down', crop: (L) => [2, L.kid ? 21 : 20, 20, 20], scale: 3, cscale: 2 },
+  side: { dir: 'right', crop: (L) => [2, L.kid ? 16 : 12, 20, 20], scale: 3, cscale: 2 },
+  full: { dir: 'down', crop: () => [0, 0, 24, 41], scale: 2, cscale: 2 },
 };
+// En registerpost eller ett katalogplagg kan välja eget utsnitt med `tile: 'torso'` o.s.v.
+// (t.ex. handskar och klockor under Smycken, som annars visas som huvud).
+const viewFor = (fallback, ...hints) => { for (const h of hints) if (h && Object.hasOwn(VIEWS, h)) return VIEWS[h]; return fallback; };
+// Tätt läge: mindre rutor på mobil och låga skärmar (samma brytpunkter som style.css)
+const isCompact = () => typeof matchMedia === 'function' && matchMedia('(max-width: 639px), (max-height: 540px)').matches;
 
-function tileCanvas(look, view) {
+// s = skalan i CSS-pixlar; bitmappen ritas i s × enhetens pixeltäthet så att pixlarna blir skarpa
+function tileCanvas(look, view, s) {
   const src = document.createElement('canvas'); src.width = 24; src.height = 41;
   drawPerson(src.getContext('2d'), 12, 39, look, view.dir, 0);
-  const [sx, sy, sw, sh] = view.crop(look), s = view.scale;
-  const c = document.createElement('canvas'); c.width = sw * s; c.height = sh * s;
+  const [sx, sy, sw, sh] = view.crop(look), k = s * Math.max(1, Math.round(globalThis.devicePixelRatio || 1));
+  const c = document.createElement('canvas'); c.width = sw * k; c.height = sh * k;
+  c.style.width = sw * s + 'px'; c.style.height = sh * s + 'px';
   const x = c.getContext('2d'); x.imageSmoothingEnabled = false;
-  x.drawImage(src, sx, sy, sw, sh, 0, 0, sw * s, sh * s);
+  x.drawImage(src, sx, sy, sw, sh, 0, 0, sw * k, sh * k);
   return c;
 }
 
@@ -368,11 +380,44 @@ function injectStyle() {
 .dlg-avatar .av-tile i[data-c] { display: block; width: 60px; height: 60px; background: #ece4d5; }
 .dlg-avatar .av-tiles.tall .av-tile i[data-c] { width: 48px; height: 82px; background: none; }
 .dlg-avatar .av-more { font-size: 17px; line-height: 1; color: var(--muted); margin: -2px 0 8px; }
-.dlg-avatar .av-sw.av-std { background: repeating-linear-gradient(45deg, #fff 0 4px, #dcd6cc 4px 8px); font: 14px/30px var(--head); color: var(--ink); text-align: center; }
+.dlg-avatar .av-sw.av-std { background: repeating-linear-gradient(45deg, #fff 0 4px, #dcd6cc 4px 8px); font: 14px/26px var(--head); color: var(--ink); text-align: center; }
+/* täta rutnät: bara bilder (namnet står i rubriken, i verktygstipset och läses upp) */
+.dlg-avatar .av-sec h4 { display: flex; align-items: baseline; gap: 8px; min-width: 0; margin: 8px 0 5px; }
+.dlg-avatar .av-now { font: 17px var(--font); line-height: 1.05; text-transform: none; letter-spacing: 0; color: var(--ink); background: #fff4c7;
+  border: 2px solid var(--ink); padding: 0 6px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dlg-avatar .av-now.peek { background: #fff; border-style: dashed; }
+.dlg-avatar .av-tiles.bare { grid-template-columns: repeat(auto-fill, minmax(var(--tw, 68px), 1fr)); gap: 5px; margin-bottom: 6px; }
+.dlg-avatar .av-tiles.bare .av-tile { padding: 2px; }
+.dlg-avatar .av-tiles.bare .av-tile span { display: none; }
+.dlg-avatar .av-tiles .av-tile.on::after { top: -6px; right: -6px; width: 16px; height: 16px; font-size: 13px; line-height: 13px; z-index: 1; }
+.dlg-avatar .av-tile .lk { position: absolute; top: -6px; left: -6px; right: auto; width: 16px; height: 16px; font-size: 11px; line-height: 14px; font-style: normal;
+  text-align: center; background: #fff; border: 2px solid var(--ink); box-sizing: border-box; z-index: 1; }
+.dlg-avatar .av-tile.av-notown { border-style: dashed; }
+/* grupper: knappar som filtrerar rutnätet, en grupp i taget */
+.dlg-avatar .av-chips { position: relative; display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 6px; }
+.dlg-avatar .av-chip { font: 16px var(--font); line-height: 1; color: var(--ink); background: var(--paper2); border: 2px solid var(--ink); box-shadow: 1px 1px 0 var(--ink);
+  padding: 2px 6px 1px; cursor: pointer; white-space: nowrap; flex: none; }
+.dlg-avatar .av-chip b { font-weight: 400; color: var(--muted); margin-left: 4px; }
+.dlg-avatar .av-chip.has { background: #fff4c7; }
+.dlg-avatar .av-chip.has::before { content: "✓ "; color: var(--green2); }
+.dlg-avatar .av-chip.on { background: var(--gold); transform: translate(1px, 1px); box-shadow: none; }
+.dlg-avatar .av-chip.on b { color: var(--ink); }
+.dlg-avatar .av-chip:hover:not(.on) { background: #fffbe8; }
+.dlg-avatar .av-chip:focus-visible { outline: 3px solid var(--blue); outline-offset: 1px; }
+.dlg-avatar .av-panel .av-sws { gap: 5px; }
+.dlg-avatar .av-panel .av-sw { width: 28px; height: 28px; }
+.dlg-avatar .av-panel .av-own b { font-size: 19px; }
 @media (max-width: 639px) {
   .dlg-avatar .av-tabs { grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 3px; }
   .dlg-avatar .av-tab { font-size: 13px; padding: 1px 2px 0; }
   .dlg-avatar .av-tab i { font-size: 14px; }
+  .dlg-avatar .av-chips { flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; padding-bottom: 4px; scrollbar-width: thin; }
+  .dlg-avatar .av-chip { font-size: 15px; }
+  .dlg-avatar .av-now { font-size: 15px; }
+  .dlg-avatar .av-panel .av-sw { width: 30px; height: 30px; }
+}
+@media (max-height: 540px) and (min-width: 640px) {
+  .dlg-avatar .av-tabs { grid-template-columns: repeat(auto-fill, minmax(54px, 1fr)); gap: 3px; } /* bara ikoner här */
 }`;
   document.head.appendChild(st);
 }
@@ -440,7 +485,7 @@ export function openAvatarEditor({ onDone, onCancel, fresh = false } = {}) {
 
   const dlg = openModal('🧑 Min avatar', body, [
     { label: '🎲 Slumpa', cls: 'av-rand', onClick: () => randomize() },
-    { label: '↺ Återställ', cls: 'av-reset', onClick: () => { Object.assign(cur, start); input.value = cur.name; setErr(''); changed(); } },
+    { label: '↺ Återställ', cls: 'av-reset', onClick: () => { Object.assign(cur, start); input.value = cur.name; setErr(''); groupSel.clear(); changed(); } },
     { label: 'Avbryt', cls: 'av-cancel', onClick: () => { closeModal(); onCancel?.(); } },
     { label: '<span class="av-ico">💾 </span>Spara', cls: 'btn-go av-save', onClick: () => save() },
   ]);
@@ -470,7 +515,7 @@ export function openAvatarEditor({ onDone, onCancel, fresh = false } = {}) {
     drawn = '';
   };
   fit();
-  const onResize = () => fit();
+  const onResize = () => { fit(); if (isCompact() !== compact) renderPanel(); }; // tätt läge av/på ⇒ rita om rutorna
   window.addEventListener('resize', onResize);
 
   const tick = (now) => {
@@ -534,8 +579,8 @@ export function openAvatarEditor({ onDone, onCancel, fresh = false } = {}) {
       while (queue.length && performance.now() - t0 < 10) {
         const el = queue.shift();
         if (!el.isConnected) continue;
-        const [look, view] = pending[+el.dataset.c] || [];
-        if (look) el.replaceWith(tileCanvas(look, view));
+        const [look, view, s] = pending[+el.dataset.c] || [];
+        if (look) el.replaceWith(tileCanvas(look, view, s));
       }
       if (queue.length) raf = requestAnimationFrame(pump);
     };
@@ -563,25 +608,58 @@ export function openAvatarEditor({ onDone, onCancel, fresh = false } = {}) {
   };
 
   const same = (a, b) => (a ?? null) === (b ?? null) || (a === false && b === null) || (a === null && b === false);
+  // Vald grupp per sektion ('style', 'slot:top' …): en grupp i taget ryms utan att man scrollar.
+  // Första gången visas gruppen man har på sig; sedan ligger valet kvar tills man slumpar/återställer.
+  const groupSel = new Map();
+  const ALL = '*', CHIP_MIN = 12; // färre val än så: ett enda rutnät utan grupper
+  let compact = isCompact();
   const renderPanel = () => {
     const L = cur.look;
+    compact = isCompact();
     tabsEl.querySelectorAll('[data-tab]').forEach((b) => { const on = b.dataset.tab === tab; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
     const pending = [];
     const shown = new Set(); // färgfält som redan har rutor i fliken
     const owned = AVOWNED ? ownedIds() : null;
+    const scaleOf = (view) => (compact ? view.cscale : view.scale);
 
-    // en ruta: look = hur rutan ritas, attrs = data-attribut för klicket
-    const tile = ({ look, view, label, on, attrs, disabled = false, title }) => {
-      const i = pending.push([look, view]) - 1;
-      return `<button class="av-tile ${on ? 'on' : ''}" ${attrs} aria-pressed="${on}" ${disabled ? 'disabled' : ''} title="${esc(clean(title || label))}"><i data-c="${i}"></i>${label ? `<span>${esc(label)}</span>` : ''}</button>`;
+    // en ruta: look = hur rutan ritas, attrs = data-attribut för klicket, notOwned = bärs men ägs inte
+    const tile = ({ look, view, label, on, attrs, disabled = false, title, notOwned = false }) => {
+      const s = scaleOf(view), [, , sw, sh] = view.crop(look);
+      const i = pending.push([look, view, s]) - 1;
+      const name = clean(title || label);
+      const tip = notOwned ? `${name} – du har den på dig men äger den inte (finns i klädaffären)` : name;
+      return `<button class="av-tile ${on ? 'on' : ''} ${notOwned ? 'av-notown' : ''}" ${attrs} aria-pressed="${on}" ${disabled ? 'disabled' : ''} title="${esc(tip)}"${name ? ` aria-label="${esc(tip)}"` : ''}>`
+        + `<i data-c="${i}" style="width:${sw * s}px;height:${sh * s}px"></i>${notOwned ? '<i class="lk" aria-hidden="true">🔒</i>' : ''}${label ? `<span>${esc(label)}</span>` : ''}</button>`;
     };
-    const grid = (html, view) => `<div class="av-tiles ${view === VIEWS.full ? 'tall' : ''}">${html}</div>`;
-    // grupperar [{ group, html }] under underrubriker om det finns fler än en grupp
-    const grouped = (items, view) => {
+    // rutnät: 'full' (stora figurer med namn) eller täta bildrutor; --tw = minsta rutbredd
+    // (bredaste bilden i rutnätet + ram och luft)
+    const grid = (html, view) => {
+      if (view === VIEWS.full) return `<div class="av-tiles tall">${html}</div>`;
+      let w = 0;
+      for (const m of html.matchAll(/<i data-c="\d+" style="width:(\d+)px/g)) w = Math.max(w, +m[1]);
+      return `<div class="av-tiles bare" style="--tw:${(w || 60) + 8}px">${html}</div>`;
+    };
+    // [{ group, html, on }] → ett rutnät. Många val i flera grupper ⇒ gruppknappar som filtrerar
+    // (grupplösa val som "Ingen" syns alltid), "Alla" visar allt under underrubriker.
+    const grouped = (items, view, key) => {
       const order = [], by = new Map();
-      for (const it of items) { const g = it.group || ''; if (!by.has(g)) { by.set(g, []); order.push(g); } by.get(g).push(it.html); }
-      if (order.length < 2) return grid(items.map((it) => it.html).join(''), view);
-      return order.map((g) => `${g ? `<h5 class="av-sub">${esc(g)}</h5>` : ''}${grid(by.get(g).join(''), view)}`).join('');
+      let curG = null;
+      for (const it of items) {
+        const g = it.group || '';
+        if (!by.has(g)) { by.set(g, []); order.push(g); }
+        by.get(g).push(it.html);
+        if (it.on && curG === null) curG = g;
+      }
+      const named = order.filter(Boolean);
+      if (named.length < 2 || items.length <= CHIP_MIN) return grid(items.map((it) => it.html).join(''), view);
+      let sel = groupSel.get(key);
+      if (sel !== ALL && !named.includes(sel)) sel = curG && named.includes(curG) ? curG : named[0];
+      groupSel.set(key, sel);
+      const chip = (g, label, n) => `<button class="av-chip${g === sel ? ' on' : ''}${g === curG ? ' has' : ''}" data-grp="${esc(key)}" data-g="${esc(g)}" aria-pressed="${g === sel}"`
+        + ` title="${esc(g === curG ? `${label} – här finns det du har på dig` : label)}">${esc(label)}<b>${n}</b></button>`;
+      const chips = `<div class="av-chips" role="group" aria-label="Grupper">${chip(ALL, 'Alla', items.length)}${named.map((g) => chip(g, g, by.get(g).length)).join('')}</div>`;
+      if (sel === ALL) return chips + order.map((g) => `${g ? `<h5 class="av-sub">${esc(g)}</h5>` : ''}${grid(by.get(g).join(''), view)}`).join('');
+      return chips + grid([...(by.get('') || []), ...by.get(sel)].join(''), view);
     };
     // enkla värden (hud, ålder …)
     const tiles = (key, values, view, { labels = LBL[key], disabled = false, patch = null } = {}) =>
@@ -595,23 +673,34 @@ export function openAvatarEditor({ onDone, onCancel, fresh = false } = {}) {
       return grouped(Object.keys(F.reg).map((id) => {
         const v = valueOf(field, id), e = F.reg[id];
         return {
-          group: id === 'none' ? '' : e.group,
-          html: tile({ look: { ...L, [field]: v, ...(patch ? patch(v) : {}) }, view, label: e.label, on: curId === id, attrs: `data-k="${field}" data-v="${esc(JSON.stringify(v))}"`, disabled }),
+          group: id === 'none' ? '' : e.group, on: curId === id,
+          html: tile({ look: { ...L, [field]: v, ...(patch ? patch(v) : {}) }, view: viewFor(view, e.tile), label: e.label, on: curId === id, attrs: `data-k="${field}" data-v="${esc(JSON.stringify(v))}"`, disabled }),
         };
-      }), view);
+      }), view, field);
     };
+    const regNow = (field) => clean(entryOf(field, L[field])?.label || '');
     // plagg ur katalogen – bara de man äger (+ basplagg, + det man har på sig)
     const itemTiles = (slot, view, { patch = null } = {}) => {
       const all = itemsForSlot(slot), worn = wornItem(L, slot), empty = slotIsEmpty(L, slot);
       const usable = all.filter((it) => avatarCanWear(it, owned));
-      const list = worn && !usable.includes(worn) ? [worn, ...usable] : usable;
+      const wornLocked = !!worn && !usable.includes(worn); // bärs men ägs inte: syns, med 🔒
+      const list = wornLocked ? [worn, ...usable] : usable;
       const out = [];
       const main = Object.keys(SLOT_FIELDS[slot])[0];
-      if (SLOT_CAN_BE_EMPTY[slot]) out.push({ group: '', html: tile({ look: { ...lookWithoutSlot(slot, L), ...(patch ? patch() : {}) }, view, label: entryOf(main, SLOT_FIELDS[slot][main])?.label || 'Ingen', on: empty, attrs: `data-empty="${slot}"` }) });
-      if (!worn && !empty) out.push({ group: '', html: tile({ look: { ...L, ...(patch ? patch() : {}) }, view, label: 'Nuvarande', on: true, attrs: 'data-keep="1"' }) });
-      for (const it of list) out.push({ group: groupOf(it), html: tile({ look: { ...lookForItem(it, L), ...(patch ? patch() : {}) }, view, label: it.name, on: worn === it, attrs: `data-item="${esc(it.id)}"` }) });
+      if (SLOT_CAN_BE_EMPTY[slot]) out.push({ group: '', on: empty, html: tile({ look: { ...lookWithoutSlot(slot, L), ...(patch ? patch() : {}) }, view, label: entryOf(main, SLOT_FIELDS[slot][main])?.label || 'Ingen', on: empty, attrs: `data-empty="${slot}"` }) });
+      if (!worn && !empty) out.push({ group: '', on: true, html: tile({ look: { ...L, ...(patch ? patch() : {}) }, view, label: 'Nuvarande', on: true, attrs: 'data-keep="1"' }) });
+      for (const it of list) out.push({ group: groupOf(it), on: worn === it, html: tile({ look: { ...lookForItem(it, L), ...(patch ? patch() : {}) }, view: viewFor(view, it.tile, entryOf(main, it.look[main])?.tile), label: it.name, on: worn === it, attrs: `data-item="${esc(it.id)}"`, notOwned: wornLocked && it === worn }) });
       const locked = all.filter((it) => !list.includes(it)).length;
-      return grouped(out, view) + (locked ? `<p class="av-more">🔒 ${locked} fler i klädaffären</p>` : '');
+      return grouped(out, view, 'slot:' + slot)
+        + (wornLocked ? `<p class="av-more">🔒 ${esc(clean(worn.name))} har du på dig men äger inte – byter du bort den finns den i klädaffären.</p>` : '')
+        + (locked ? `<p class="av-more">🔒 ${locked} fler – köps i klädaffären och i stans nya butiker</p>` : '');
+    };
+    const itemNow = (slot) => {
+      const worn = wornItem(L, slot);
+      if (worn) return clean(worn.name);
+      if (!slotIsEmpty(L, slot)) return 'Nuvarande';
+      const main = Object.keys(SLOT_FIELDS[slot])[0];
+      return clean(entryOf(main, SLOT_FIELDS[slot][main])?.label || 'Ingen');
     };
     const swatches = (key, { dim = false, ownOnly = false } = {}) => {
       shown.add(key);
@@ -620,7 +709,8 @@ export function openAvatarEditor({ onDone, onCancel, fresh = false } = {}) {
       return `<div class="av-sws ${dim ? 'dim' : ''}">${std}${(ownOnly ? [] : pal).map((c) => `<button class="av-sw ${c === v ? 'on' : ''}" data-k="${key}" data-v="${esc(JSON.stringify(c))}" style="--c:${c}" aria-label="Färg ${c}" aria-pressed="${c === v}"></button>`).join('')}
         <label class="av-sw av-own ${own ? 'on' : ''}" style="--c:${own ? v : '#ffffff'}" title="Egen färg"><input type="color" data-own="${key}" value="${v || '#ffffff'}" aria-label="Egen färg"><b>${own ? '' : '+'}</b></label></div>`;
     };
-    const sec = (title, inner, hint = '') => `<section class="av-sec"><h4>${esc(title)}</h4>${hint ? `<p class="av-hint">${hint}</p>` : ''}${inner}</section>`;
+    // now = namnet på det man har valt (visas i rubriken; byts tillfälligt mot rutan under pekaren)
+    const sec = (title, inner, hint = '', now = '') => `<section class="av-sec"><h4>${esc(title)}${now ? `<span class="av-now" data-cur="${esc(now)}">${esc(now)}</span>` : ''}</h4>${hint ? `<p class="av-hint">${hint}</p>` : ''}${inner}</section>`;
     const colorSec = (key, opts = {}, hint = '') => sec(COLOR_TITLE[key] || 'Färg', swatches(key, opts), hint);
     // färgfält som de valda posterna säger att de använder (uses: ['accent', …])
     const extraColors = () => {
@@ -637,49 +727,49 @@ export function openAvatarEditor({ onDone, onCancel, fresh = false } = {}) {
     switch (tab) {
       case 'skin': html = sec('Hudton', tiles('skin', PAL.skin, VIEWS.head, { labels: null })) + sec('Egen färg', swatches('skin', { ownOnly: true }), 'Grön rymdvarelse? Välj vilken färg du vill.'); break;
       case 'hair':
-        html = sec('Frisyr', regTiles('style', VIEWS.head, { patch: noHead }), L.hat || L.phones || L.hairAcc !== 'none' ? 'Bilderna visas utan huvudbonad, hårspänne och hörlurar.' : '');
+        html = sec('Frisyr', regTiles('style', VIEWS.head, { patch: noHead }), L.hat || L.phones || L.hairAcc !== 'none' ? 'Bilderna visas utan huvudbonad, hårspänne och hörlurar.' : '', regNow('style'));
         break;
       case 'hairColor':
         html = colorSec('hair', {}, 'Gäller även skägg och ögonbryn.')
-          + sec('Slingor, toppar & tvåfärgat', regTiles('hairFx', VIEWS.head, { patch: noHead }))
+          + sec('Slingor, toppar & tvåfärgat', regTiles('hairFx', VIEWS.head, { patch: noHead }), '', regNow('hairFx'))
           + colorSec('hair2', { dim: L.hairFx === 'none' }, 'Den andra färgen i slingor, toppar och tvåfärgat hår.');
         break;
-      case 'eyes': html = sec('Ögon', regTiles('eyes', VIEWS.face, { patch: () => ({ glasses: false }) })) + colorSec('eyeColor', {}, 'Std = mörka ögon.'); break;
-      case 'brows': html = sec('Ögonbryn', regTiles('brows', VIEWS.face, { patch: () => ({ glasses: false }) }), 'Brynen har samma färg som håret.'); break;
-      case 'mouth': html = sec('Mun', regTiles('mouth', VIEWS.face)) + sec('Näsa', regTiles('nose', VIEWS.face)); break;
+      case 'eyes': html = sec('Ögon', regTiles('eyes', VIEWS.face, { patch: () => ({ glasses: false }) }), '', regNow('eyes')) + colorSec('eyeColor', {}, 'Std = mörka ögon.'); break;
+      case 'brows': html = sec('Ögonbryn', regTiles('brows', VIEWS.face, { patch: () => ({ glasses: false }) }), 'Brynen har samma färg som håret.', regNow('brows')); break;
+      case 'mouth': html = sec('Mun', regTiles('mouth', VIEWS.face), '', regNow('mouth')) + sec('Näsa', regTiles('nose', VIEWS.face), '', regNow('nose')); break;
       case 'makeup':
-        html = sec('Smink', regTiles('makeup', VIEWS.face, { patch: () => ({ glasses: false }) }))
+        html = sec('Smink', regTiles('makeup', VIEWS.face, { patch: () => ({ glasses: false }) }), '', regNow('makeup'))
           + colorSec('lipColor', { dim: L.makeup === 'none' }) + colorSec('shadowColor', { dim: L.makeup === 'none' });
         break;
       case 'face':
-        html = sec('Kinder', regTiles('cheeks', VIEWS.face))
-          + sec('Fräknar, märken & ansiktsmålning', regTiles('marks', VIEWS.face)) + colorSec('markColor', { dim: L.marks === 'none' })
-          + sec('Öron', regTiles('ears', VIEWS.head, { patch: noHead }));
+        html = sec('Kinder', regTiles('cheeks', VIEWS.face), '', regNow('cheeks'))
+          + sec('Fräknar, märken & ansiktsmålning', regTiles('marks', VIEWS.face), '', regNow('marks')) + colorSec('markColor', { dim: L.marks === 'none' })
+          + sec('Öron', regTiles('ears', VIEWS.head, { patch: noHead }), '', regNow('ears'));
         break;
-      case 'beard': html = sec('Skägg & mustasch', regTiles('beard', VIEWS.face, { disabled: L.kid }), L.kid ? 'Barn har inget skägg – byt till vuxen under 📏 Storlek.' : 'Skägget har samma färg som håret.'); break;
+      case 'beard': html = sec('Skägg & mustasch', regTiles('beard', VIEWS.face, { disabled: L.kid }), L.kid ? 'Barn har inget skägg – byt till vuxen under 📏 Storlek.' : 'Skägget har samma färg som håret.', regNow('beard')); break;
       case 'top':
-        html = sec('Överdel', itemTiles('top', VIEWS.torso, { patch: () => ({ apron: false, bag: null, neck: 'none' }) }), L.apron ? 'Bilderna visas utan förkläde.' : '')
+        html = sec('Överdel', itemTiles('top', VIEWS.torso, { patch: () => ({ apron: false, bag: null, neck: 'none' }) }), L.apron ? 'Bilderna visas utan förkläde.' : '', itemNow('top'))
           + colorSec('shirt') + colorSec('accent', {}, 'Ränder, dragkedja, krage, knappar och tryck.')
           + (L.topPrint !== 'none' ? colorSec('print2', {}, 'Mönstrets färg. Std = detaljfärgen.') : '');
         break;
       case 'bottom': {
         const cf = entryOf('bottom', L.bottom)?.colorField || 'pants';
-        html = sec('Underdel', itemTiles('bottom', VIEWS.legs, { patch: () => ({ apron: false, bag: null }) }), L.apron ? 'Bilderna visas utan förkläde.' : '')
+        html = sec('Underdel', itemTiles('bottom', VIEWS.legs, { patch: () => ({ apron: false, bag: null }) }), L.apron ? 'Bilderna visas utan förkläde.' : '', itemNow('bottom'))
           + colorSec(cf, {}, cf === 'shirt' ? 'Samma färg som överdelen.' : '')
           + (L.bottomPrint !== 'none' ? colorSec('pants2', {}, 'Mönstrets färg. Std = detaljfärgen.') : '');
         break;
       }
-      case 'shoes': html = sec('Skor', itemTiles('shoes', VIEWS.legs)) + colorSec('shoes'); break;
+      case 'shoes': html = sec('Skor', itemTiles('shoes', VIEWS.legs), '', itemNow('shoes')) + colorSec('shoes'); break;
       case 'hat':
-        html = sec('Huvudbonad', itemTiles('hat', VIEWS.head, { patch: () => ({ phones: false }) })) + colorSec('cap', { dim: !L.hat })
-          + sec('I håret', itemTiles('hairAcc', VIEWS.head, { patch: () => ({ hat: null }) }))
-          + sec('Hörlurar', itemTiles('phones', VIEWS.head)) + colorSec('phoneColor', { dim: !L.phones });
+        html = sec('Huvudbonad', itemTiles('hat', VIEWS.head, { patch: () => ({ phones: false }) }), '', itemNow('hat')) + colorSec('cap', { dim: !L.hat })
+          + sec('I håret', itemTiles('hairAcc', VIEWS.head, { patch: () => ({ hat: null }) }), '', itemNow('hairAcc'))
+          + sec('Hörlurar', itemTiles('phones', VIEWS.head), '', itemNow('phones')) + colorSec('phoneColor', { dim: !L.phones });
         break;
-      case 'glasses': html = sec('Glasögon', itemTiles('glasses', VIEWS.face)); break;
-      case 'bag': html = sec('Väska', itemTiles('bag', VIEWS.side)) + colorSec('bagColor', { dim: !L.bag }); break;
+      case 'glasses': html = sec('Glasögon', itemTiles('glasses', VIEWS.face), '', itemNow('glasses')); break;
+      case 'bag': html = sec('Väska', itemTiles('bag', VIEWS.side), '', itemNow('bag')) + colorSec('bagColor', { dim: !L.bag }); break;
       case 'neck':
-        html = sec('Hals', itemTiles('neck', VIEWS.neck, { patch: () => ({ bag: null }) })) + colorSec('neckColor', { dim: L.neck === 'none' }, 'Std = detaljfärgen.')
-          + sec('Smycken', itemTiles('jewel', VIEWS.head, { patch: () => ({ hat: null, phones: false }) }));
+        html = sec('Hals', itemTiles('neck', VIEWS.neck, { patch: () => ({ bag: null }) }), '', itemNow('neck')) + colorSec('neckColor', { dim: L.neck === 'none' }, 'Std = detaljfärgen.')
+          + sec('Smycken', itemTiles('jewel', VIEWS.head, { patch: () => ({ hat: null, phones: false }) }), '', itemNow('jewel'));
         break;
       case 'size':
         html = sec('Ålder', tiles('kid', [false, true], VIEWS.full, { patch: (v) => (v ? { beard: false } : { build: adultBuild }) }))
@@ -688,12 +778,19 @@ export function openAvatarEditor({ onDone, onCancel, fresh = false } = {}) {
     }
     html += extraColors();
     // behåll fokus + scroll när panelen ritas om
-    const act = document.activeElement, fk = act?.dataset?.k || act?.dataset?.item || act?.dataset?.empty, top = panel.scrollTop;
-    const fsel = act?.dataset ? (act.dataset.k ? `[data-k="${act.dataset.k}"][data-v='${act.dataset.v}']` : act.dataset.item ? `[data-item="${act.dataset.item}"]` : act.dataset.empty ? `[data-empty="${act.dataset.empty}"]` : null) : null;
+    const act = document.activeElement, ds = act && panel.contains(act) ? act.dataset : null, top = panel.scrollTop;
+    const q = (v) => (typeof CSS !== 'undefined' && CSS.escape ? CSS.escape(v) : String(v).replace(/["\\]/g, '\\$&'));
+    const fsel = !ds ? null : ds.k ? `[data-k="${q(ds.k)}"][data-v="${q(ds.v)}"]` : ds.item ? `[data-item="${q(ds.item)}"]`
+      : ds.empty ? `[data-empty="${q(ds.empty)}"]` : ds.grp ? `[data-grp="${q(ds.grp)}"][data-g="${q(ds.g)}"]` : null;
     panel.innerHTML = html;
     panel.scrollTop = top;
     lazy.start(pending);
-    if (fk && fsel && panel.contains(act) === false) {
+    // gruppremsan (mobil: rullar i sidled) visar den valda gruppen
+    panel.querySelectorAll('.av-chips').forEach((strip) => {
+      const on = strip.querySelector('.av-chip.on');
+      if (on && strip.scrollWidth > strip.clientWidth) strip.scrollLeft = Math.max(0, on.offsetLeft - 24);
+    });
+    if (fsel) {
       try { panel.querySelector(fsel)?.focus({ preventScroll: true }); } catch { /* ogiltig selektor */ }
     }
   };
@@ -712,10 +809,24 @@ export function openAvatarEditor({ onDone, onCancel, fresh = false } = {}) {
   panel.addEventListener('click', (e) => {
     const b = e.target.closest('button');
     if (!b || b.disabled || !panel.contains(b)) return;
+    if (b.dataset.grp) { groupSel.set(b.dataset.grp, b.dataset.g); renderPanel(); return; }
     if (b.dataset.item) { const it = itemById(b.dataset.item); if (it) setLook(lookForItem(it, cur.look)); return; }
     if (b.dataset.empty) { setLook(lookWithoutSlot(b.dataset.empty, cur.look)); return; }
     if (b.dataset.k) set(b.dataset.k, JSON.parse(b.dataset.v));
   });
+  // namnet på rutan under pekaren (eller med fokus) visas i sektionens rubrik; tillbaka när man lämnar den
+  const peek = (e, on) => {
+    const b = e.target.closest?.('.av-tile');
+    const now = b && panel.contains(b) ? b.closest('.av-sec')?.querySelector('.av-now') : null;
+    if (!now) return;
+    const name = on ? (b.getAttribute('title') || '').split(' – ')[0] : '';
+    now.textContent = name || now.dataset.cur;
+    now.classList.toggle('peek', !!name && name !== now.dataset.cur);
+  };
+  panel.addEventListener('pointerover', (e) => peek(e, true));
+  panel.addEventListener('pointerout', (e) => peek(e, false));
+  panel.addEventListener('focusin', (e) => peek(e, true));
+  panel.addEventListener('focusout', (e) => peek(e, false));
   // egen färg: uppdatera figuren medan man drar, rita om panelen när man släpper
   panel.addEventListener('input', (e) => { const k = e.target.dataset?.own; if (k && HEX.test(e.target.value)) set(k, e.target.value, false); });
   panel.addEventListener('change', (e) => { const k = e.target.dataset?.own; if (k && HEX.test(e.target.value)) set(k, e.target.value, true); });
@@ -728,6 +839,7 @@ export function openAvatarEditor({ onDone, onCancel, fresh = false } = {}) {
   }
 
   function randomize() {
+    groupSel.clear(); // grupperna följer det nya utseendet
     const L = makeLook(), kid = cur.look.kid;
     const owned = AVOWNED ? ownedIds() : null;
     const usable = (slot) => itemsForSlot(slot).filter((it) => avatarCanWear(it, owned));
