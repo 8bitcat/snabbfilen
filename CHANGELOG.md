@@ -10,6 +10,12 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.54.1] – 2026-09-29 – Alla kommer in i världen
+- Syskon på samma dator: två figurer i samma webbläsare (var sin flik) syns nu båda i världen – förr knuffade de ut varandra.
+- Samma figur i två flikar: den nya fliken tar över och den gamla pausar (rör den så tar den över igen) – ingen evig ut-och-in längre.
+- 👥-dialogen säger "ansluten" först när man faktiskt är inne, och den som inte kommer fram till de andra får ett tips om att prova ett annat nät.
+- Förberett för en relästation (TURN) så att spelare på strikta nät (mobilnät, skolnät) kommer in.
+
 ## [0.54.0] – 2026-09-29 – Kartan och taxin
 - 🗺️ KARTAN: en ny knapp överst tar fram en pixelkarta över hela Pixelstaden – gatorna, parken, floden med broarna och alla hus, och en skylt DU ÄR HÄR.
 - Tryck på ett ställe på kartan: du ser namnet, öppettiderna och hur långt dit det är.

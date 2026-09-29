@@ -55,12 +55,29 @@ const NET_KEY = (() => {
     return k;
   } catch { return Math.random().toString(36).slice(2, 12); }
 })();
+// Spelarnyckeln = webbläsarens nyckel + figurens id: samma figur igen (ny flik, omladdning,
+// tappad uppkoppling) ersätter den gamla anslutningen, men två figurer i samma webbläsare
+// (syskon i var sin flik) är två spelare – förr hade de samma nyckel och knuffade ut varandra.
+const myKey = () => { const id = typeof window !== 'undefined' ? window.SF?.avatar?.id : null; return id ? (NET_KEY + ':' + String(id)).slice(0, 64) : NET_KEY; };
+
+// Hur spelarna hittar varandra genom routrar och brandväggar (WebRTC/ICE). STUN räcker när två
+// enheter kan prata direkt; annars behövs en relästation (TURN) – utan den kommer den som sitter
+// på ett strikt nät (många mobilnät, skol- och gästnät) aldrig in i världen. PeerJS egna TURN
+// (eu-0/us-0.turn.peerjs.com) finns inte längre (ingen DNS-post 2026-09-29) och Open Relays fria
+// inloggning svarar inte, så i dag finns bara STUN. En fungerande relästation läggs in i TURN
+// nedan (tjänstens adresser + användarnamn/lösenord) – då gäller den för alla spelare direkt.
+const TURN = [];
+const ICE = { iceServers: [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302', 'stun:stun2.l.google.com:19302'] }, ...TURN] };
+const peerOpts = () => ({ debug: 0, config: ICE });
+
 let W = null;
 let retryTimer = null;
+// Diagnos till 👥-dialogen: hur många försök i rad som klient som inte kom fram till värden
+let failedJoins = 0;
 let idle = false;            // utloggad för att man varit inaktiv
 let lastActive = Date.now();
 
-export const worldInfo = () => ({ idle, dbg: FAST && W ? { hb: !!W.hb, heard: Date.now() - (W.lastHeard || 0), connOpen: !!W.conn?.open, timers: W.timers?.length, dead: !!W.dead, peerOpen: !!W.peer?.open, peerDestroyed: !!W.peer?.destroyed, players: [...W.players.keys()].map((k) => k.slice(0, 6)) } : undefined, role: W?.role || 'off', myId: W?.myId || null, online: W ? W.players.size + 1 : 1, open: !!W?.open, world: worldName(), local: LOCAL, version: VERSION });
+export const worldInfo = () => ({ idle, dbg: FAST && W ? { hb: !!W.hb, heard: Date.now() - (W.lastHeard || 0), connOpen: !!W.conn?.open, timers: W.timers?.length, dead: !!W.dead, peerOpen: !!W.peer?.open, peerDestroyed: !!W.peer?.destroyed, players: [...W.players.keys()].map((k) => k.slice(0, 6)) } : undefined, role: W?.role || 'off', myId: W?.myId || null, online: W ? W.players.size + 1 : 1, open: !!W?.open, world: worldName(), local: LOCAL, version: VERSION, tries: failedJoins, relay: TURN.length > 0 });
 
 // ---------- start & värdbyte ----------
 export function startWorld(A) {
@@ -81,11 +98,11 @@ function stopTimers(w) { for (const t of w?.timers || []) clearInterval(t); if (
 function killPeer(w) { w.dead = true; stopTimers(w); try { w.peer?.destroy(); } catch { /* ok */ } }
 function tryHost(A) {
   let peer;
-  try { peer = new window.Peer(worldId(), { debug: 0 }); } catch { scheduleRetry(A, 8000); return; }
+  try { peer = new window.Peer(worldId(), peerOpts()); } catch { scheduleRetry(A, 8000); return; }
   const w = baseState(A);
   w.role = 'host'; w.peer = peer; w.myId = worldId();
   peer.on('open', () => {
-    W = w; W.open = true;
+    W = w; W.open = true; failedJoins = 0;
     w.timers.push(setInterval(() => hostSweep(A, w), SWEEP_MS));
   });
   peer.on('error', (e) => {
@@ -104,7 +121,7 @@ function tryHost(A) {
 }
 function joinAsClient(A, { hostIfEmpty = false } = {}) {
   let peer;
-  try { peer = new window.Peer(undefined, { debug: 0 }); } catch { scheduleRetry(A, 8000); return; }
+  try { peer = new window.Peer(undefined, peerOpts()); } catch { scheduleRetry(A, 8000); return; }
   const w = baseState(A);
   w.role = 'client'; w.peer = peer;
   peer.on('call', callIn); // röstchatten (js/net/voice.js)
@@ -124,9 +141,10 @@ function joinAsClient(A, { hostIfEmpty = false } = {}) {
       w.timers.push(setInterval(() => clientPulse(A, w), PING_MS));
     });
     conn.on('data', (d) => { w.lastHeard = Date.now(); clientData(A, d, w); });
-    conn.on('close', () => { const wasOpen = W?.open; teardown(); if (wasOpen) scheduleRetry(A, 300); }); // värden försvann: kanske min tur
+    conn.on('close', () => { const wasOpen = W?.open; teardown(); if (wasOpen && !w.replaced) scheduleRetry(A, 300); }); // värden försvann: kanske min tur
   });
-  const bootTimer = setTimeout(() => { if (!w.open) { teardown(); scheduleRetry(A, 6000); } }, 10000);
+  // kom vi inte fram till värden på 10 s (oftast ett nät som stoppar direktkontakt – se ICE ovan)
+  const bootTimer = setTimeout(() => { if (!w.open) { failedJoins++; teardown(); scheduleRetry(A, 6000); } }, 10000);
   const oldOpen = () => clearTimeout(bootTimer);
   w._welcomed = oldOpen;
   W = w;
@@ -201,7 +219,7 @@ export const worldMarkActive = markActive;
 
 // ---------- min publicerade state ----------
 function myState(A) {
-  return { av: { name: A.avatar.name, look: A.avatar.look, color: A.avatar.color }, scene: myScene(A), x: A.scene?.worldX ?? 190, y: A.scene?.worldY ?? 174, home: A.game.home, deco: A.game.deco, key: NET_KEY, ver: VERSION, vo: voiceFlag() ? 1 : 0, si: mySit(A) };
+  return { av: { name: A.avatar.name, look: A.avatar.look, color: A.avatar.color }, scene: myScene(A), x: A.scene?.worldX ?? 190, y: A.scene?.worldY ?? 174, home: A.game.home, deco: A.game.deco, key: myKey(), ver: VERSION, vo: voiceFlag() ? 1 : 0, si: mySit(A) };
 }
 // Sitter jag? Scenen svarar med getter worldSit: null, 'down'/'up'/'left'/'right' eller
 // { dir, eat } (eat = maten står framför mig och jag tuggar). Skickas som 'd', 'u', 'l', 'r'
@@ -232,7 +250,7 @@ function cleanP(p, old = {}) {
     if (p.x !== undefined) { out.tx = Math.max(0, Math.min(4000, +p.x || 190)); if (out.x === undefined) out.x = out.tx; }
     if (p.y !== undefined) { out.ty2 = Math.max(0, Math.min(2000, +p.y || 174)); if (out.y === undefined) out.y = out.ty2; }
     if (p.home !== undefined) out.home = String(p.home).slice(0, 16);
-    if (typeof p.key === 'string') out.key = p.key.slice(0, 40);
+    if (typeof p.key === 'string') out.key = p.key.slice(0, 64);
     if (typeof p.ver === 'string') out.ver = p.ver.slice(0, 16);
     if (p.vo !== undefined) out.vo = p.vo ? 1 : 0;
     if (p.si !== undefined) out.si = /^[dulr]e?$/.test(String(p.si)) ? String(p.si) : '';
@@ -275,7 +293,7 @@ function hostData(A, conn, d) {
   if (d.t === 'hi') {
     const p = cleanP(d.p);
     // samma spelare igen (ny flik/omladdning/tappad uppkoppling) → ta bort den gamla
-    if (p.key) for (const [oid, op] of [...W.players]) if (oid !== id && op.key === p.key) dropPlayer(oid, true);
+    if (p.key) for (const [oid, op] of [...W.players]) if (oid !== id && op.key === p.key) { try { W.conns.get(oid)?.send({ t: 'replaced' }); } catch { /* stängd */ } dropPlayer(oid, true, 600); }
     if (W.players.size >= MAX_PLAYERS) { conn.close(); return; }
     p.seen = p.active = Date.now();
     W.conns.set(id, conn);
@@ -311,12 +329,14 @@ function hostDrop(A, conn) {
   const p = W.players.get(conn.peer);
   if (p && dropPlayer(conn.peer, false)) toast(`👋 ${p.av.name || 'Någon'} loggade ut.`);
 }
-function dropPlayer(id, quiet) {
+// closeMs: stäng anslutningen lite senare (så att ett sista meddelande hinner fram, t.ex. 'replaced')
+function dropPlayer(id, quiet, closeMs = 0) {
   const p = W.players.get(id), conn = W.conns.get(id);
   if (!p) return false;
   W.conns.delete(id);
   W.players.delete(id);
-  try { conn?.close(); } catch { /* ok */ }
+  const close = () => { try { conn?.close(); } catch { /* ok */ } };
+  if (closeMs) setTimeout(close, closeMs); else close();
   hostBroadcast({ t: 'leave', id, ...(quiet ? { quiet: 1 } : {}) });
   return true;
 }
@@ -337,7 +357,7 @@ function clientData(A, d, w) {
   if (W !== w || !d || typeof d !== 'object') return;
   if (d.t === 'pong') { w.hb = true; return; }
   if (d.t === 'world') {
-    w.open = true;
+    w.open = true; failedJoins = 0;
     w._welcomed?.();
     for (const [id, p] of d.players || []) if (id !== w.myId) w.players.set(id, cleanP(p));
     toast(`🌆 Du är med i Pixelstaden – ${w.players.size + 1} online!`, 'good');
@@ -354,6 +374,12 @@ function clientData(A, d, w) {
   } else if (d.t === 'say') {
     const p = w.players.get(d.id), text = cleanSay(d.text);
     if (p && text) p.say = { text, until: Date.now() + SAY_MS };
+  } else if (d.t === 'replaced') {
+    // samma figur spelar i en annan flik – den här pausar tills man rör den igen (markActive)
+    w.replaced = true;
+    idle = true;
+    clearTimeout(retryTimer);
+    toast('🗂️ Du spelar med samma figur i en annan flik – den här fliken är pausad. Rör den så tar den över igen.', 'wrap');
   } else if (d.t === 'leave') {
     const p = w.players.get(d.id);
     w.players.delete(d.id);
@@ -467,7 +493,7 @@ let talkSrc = () => false;     // pratar id (eller 'self') just nu? → 🗣️ 
 const TALK_EMOTE = '🗣️';
 export const setVoiceHooks = ({ on, talking } = {}) => { if (on) voiceFlag = on; if (talking) talkSrc = talking; };
 export const worldPlayer = (id) => (W?.players.get(id) || null);
-export const worldMyKey = () => NET_KEY; // fast per webbläsare – röstgrupperna följer nyckeln, inte spelar-id:t
+export const worldMyKey = () => myKey(); // fast per webbläsare och figur – röstgrupperna följer nyckeln, inte spelar-id:t
 
 // ---------- besök ----------
 export function playersList() {

@@ -481,10 +481,13 @@ function openWorldDialog() {
       ${p.scene === 'city' && !inJob ? `<button class="btn btn-small" data-goto="${esc(p.id)}">🚶 Gå dit</button>` : ''}
       ${coopJob ? '' : `<button class="btn btn-small btn-go" data-visit="${esc(p.id)}">🚗 Åk hem till</button>`}
     </div>`).join('');
-  const role = info.role === 'host' ? 'du håller i världen' : info.role === 'client' ? 'ansluten' : 'kopplar upp';
+  const role = info.role === 'host' ? 'du håller i världen' : info.role === 'client' && info.open ? 'ansluten' : `kopplar upp${info.tries ? ` (försök ${info.tries + 1})` : ''}`;
+  // kommer man inte fram till världen gång på gång stoppar nätet troligen direktkontakten (world.js ICE)
+  const stuck = !info.open && info.tries >= 2
+    ? `<p style="font-size:17px;background:#fff1d6;border:2px solid #c9a24a;padding:6px 8px">📡 Du kommer inte fram till de andra – nätet du sitter på stoppar troligen spelets direktkontakt. Prova ett annat wifi eller mobilens nät, eller en annan webbläsare.</p>` : '';
   const dlg = openModal('👥 Pixelstaden online', `
     <p style="font-size:19px;margin-top:0">${info.open ? `<b>${info.online}</b> ${info.online === 1 ? 'spelare (bara du) i världen just nu.' : 'spelare i världen just nu.'}` : '📡 Kopplar upp mot världen…'}</p>
-    ${list.length ? `<div class="plist">${rows}</div>` : info.open ? '<p style="font-size:18px">Du är ensam i stan – tipsa någon om länken så ses ni här!</p>' : ''}
+    ${list.length ? `<div class="plist">${rows}</div>` : info.open ? '<p style="font-size:18px">Du är ensam i stan – tipsa någon om länken så ses ni här!</p>' : ''}${stuck}
     <p class="world-diag">Du ser bara dem som är på samma ställe som du. v${esc(info.version)} · ${role}${info.world !== 'varlden' ? ` · värld: ${esc(info.world)}` : ''}</p>`,
   [
     ...(A.sceneName === 'visit' ? [{ label: '🚗 Åk hem', cls: 'btn-red', onClick: () => { closeModal(); A.visitTarget = null; A.game.passTime(20); A.game.save(); A.go('city'); } }] : []),
