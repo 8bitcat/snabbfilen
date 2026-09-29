@@ -302,6 +302,7 @@ ok(await page.evaluate(() => typeof window.SF.scene.exit === 'function'), 'scene
     localStorage.clear();
     localStorage.setItem('snabbfilen_avatar', JSON.stringify({ name: 'Mobil', look: { skin: '#e0a97f', hair: '#3b2619', style: 'long', top: 'tee', shirt: '#3a7bd5', pants: '#2d3a5c' }, color: '#ffd23f' }));
     localStorage.setItem('snabbfilen_save1', JSON.stringify({ v: 1, day: 3, min: 14 * 60, money: 20000, hunger: 80, energy: 90, home: 'rum', fridge: {}, jobs: {}, earned: 0, wardrobe: [] }));
+    localStorage.setItem('snabbfilen_zoom', 'nara'); localStorage.setItem('snabbfilen_zoom_dator', '1'); // provar NÄRA (valt med 🔍)
   });
   await mp.reload();
   await mp.waitForFunction(() => !!window.SF?.game, null, { timeout: 20000 });

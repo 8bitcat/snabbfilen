@@ -60,6 +60,26 @@ for (const engine of ['chromium', 'webkit']) {
     ok(!errs.length, errs.length ? `${namn}: fel ` + errs.join(' | ') : `${namn}: inga fel`);
     await ctx.close();
   }
+  // 1b) spelbilden som på datorn: VID som standard på telefonen i liggande läge, och den som stod på
+  // NÄRA sedan förr flyttas till VID en gång (sedan gäller ens eget val med 🔍)
+  for (const [fall, zoom, flagga] of [['utan eget val', null, null], ['NÄRA sedan förr', 'nara', null], ['NÄRA valt efter flytten', 'nara', '1']]) {
+    const c2 = await browser.newContext({ viewport: { width: 812, height: 375 }, screen: { width: 812, height: 375 }, deviceScaleFactor: 3, hasTouch: true, isMobile: true });
+    await c2.addInitScript(([s, z, f]) => { try {
+      localStorage.setItem('snabbfilen_avatar', JSON.stringify({ name: 'Mobil', look: {}, color: '#e04848' })); localStorage.setItem('snabbfilen_save1', JSON.stringify(s));
+      localStorage.setItem('snabbfilen_hud', 'pix'); localStorage.setItem('snabbfilen_tips_hus', '1');
+      if (!sessionStorage.getItem('satt')) { sessionStorage.setItem('satt', '1'); if (z) localStorage.setItem('snabbfilen_zoom', z); if (f) localStorage.setItem('snabbfilen_zoom_dator', f); }
+    } catch { /* ok */ } }, [save, zoom, flagga]);
+    const p2 = await c2.newPage();
+    await p2.goto(`http://localhost:${PORT}/index.html?mobfill=1&world=mz${Date.now().toString(36)}`, { waitUntil: 'commit', timeout: 60000 });
+    await p2.waitForFunction(() => !!window.SF?.game, null, { timeout: 60000 });
+    await p2.waitForTimeout(900);
+    await p2.evaluate(() => { document.querySelector('#modal:not(.hidden) .dlg-foot .btn')?.click(); window.SF.go('city'); });
+    await p2.waitForTimeout(800);
+    const r = await p2.evaluate(() => ({ W: window.SF.W, zoom: localStorage.getItem('snabbfilen_zoom') }));
+    const want = flagga ? 'nara' : 'vid';
+    ok(want === 'vid' ? r.W > 500 : r.W === 384, `iPhone 13 mini, ${fall}: ${want === 'vid' ? 'VID – lika mycket stad som på datorn' : 'ens eget NÄRA gäller'} (${r.W} spelpixlar bred, zoom ${r.zoom || 'standard'})`);
+    await c2.close();
+  }
   // 2) telefon stående: vanlig bredd
   const st = await boot(browser, { viewport: { width: 390, height: 844 }, deviceScaleFactor: 3, hasTouch: true, isMobile: true }, 's');
   const s2 = await state(st.page);

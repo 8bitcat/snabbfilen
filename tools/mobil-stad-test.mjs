@@ -25,6 +25,7 @@ async function boot(q) {
     localStorage.setItem('snabbfilen_save1', s);
     localStorage.setItem('snabbfilen_hud', 'pix');
     localStorage.setItem('snabbfilen_zoom', 'nara');
+    localStorage.setItem('snabbfilen_zoom_dator', '1'); // NÄRA valt med flit (flytten till VID har redan skett)
   }, SAVE);
   await p.reload();
   await p.waitForFunction(() => !!window.SF?.game, null, { timeout: 20000 });

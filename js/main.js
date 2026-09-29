@@ -177,15 +177,25 @@ const WIDE = {
 const fillMode = () => !A.attract && (!navigator.webdriver || new URLSearchParams(location.search).has('mobfill'));
 // Zoomvalet för fasta scener: 'fyll' täcker skärmen (jämn förstoring, pixelated),
 // 'ram' visar hela bilden i heltalsskala med pixelram. Pekskärm får fyll som standard.
+// Mobilen i datorns upplösning (Carl 2026-09-29/30: "får vi samma upplösning som på datorn?"):
+// en telefon i liggande läge (html.desk-mobil, se index.html) får VID som på datorn – samma
+// pixelstorlek och lika mycket av staden. Den som stod på NÄRA sedan förr flyttas till VID en
+// gång; därefter gäller ens eget val med 🔍 igen.
+const deskMobil = () => document.documentElement.classList.contains('desk-mobil');
+try {
+  if (deskMobil() && !localStorage.getItem('snabbfilen_zoom_dator')) {
+    if (localStorage.getItem('snabbfilen_zoom') === 'nara') localStorage.setItem('snabbfilen_zoom', 'vid');
+    localStorage.setItem('snabbfilen_zoom_dator', '1');
+  }
+} catch { /* ok */ }
 const zoomMode = () => {
   let z = null;
   try { z = localStorage.getItem('snabbfilen_zoom'); } catch { /* ok */ }
   if (z === 'ram' || z === 'vid' || z === 'nara') return z;
-  // Standard: mobilen NÄRA (samma bild som på datorn – stora pixlar – och fyller
-  // skärmen), datorn VID (ser mer värld). 🔍-knappen växlar nära → vid → ram.
-  // NÄRA bara på små pekskärmar (mobiler) – paddor och datorer får VID (ser mer värld)
+  // Standard: datorn och telefonen i liggande läge VID (ser lika mycket värld, samma pixelstorlek);
+  // en liten pekskärm i stående läge NÄRA (stora pixlar). 🔍-knappen växlar nära → vid → ram.
   const liten = Math.min(window.screen.width, window.screen.height) < 700;
-  return matchMedia('(pointer: coarse)').matches && liten ? 'nara' : 'vid';
+  return matchMedia('(pointer: coarse)').matches && liten && !deskMobil() ? 'nara' : 'vid';
 };
 A.view = { w: DESIGN_W, h: DESIGN_H, boxX: 0, boxY: 0, boxed: false, safe: { x0: 0, y0: 0, x1: DESIGN_W, y1: DESIGN_H } };
 function applySceneView() {

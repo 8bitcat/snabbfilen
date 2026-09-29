@@ -10,6 +10,10 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.55.1] – 2026-09-30 – Spelbilden som på datorn
+- Spelbilden som på datorn: på telefonen i liggande läge är VID nu standard – samma pixelstorlek och lika mycket av staden som på datorn (iPhone 13 mini: drygt 600 spelpixlar i bredd).
+- Stod du på NÄRA sedan förr flyttas du till VID en gång – vill du tillbaka trycker du på 🔍.
+
 ## [0.55.0] – 2026-09-30 – Pixelmenyer
 - PIXELMENYER: all text i menyerna, dialogerna, knapparna och meddelandena är nu riktig pixeltext – ett eget typsnitt, "Pixelstad", byggt på stadens egna skyltbokstäver, med gemener, å ä ö och en pixelfetstil.
 - Texten ritas bara i storlekar där varje bokstavspixel blir hela skärmpixlar, så den är knivskarp på datorn (även med 125 % skalning i Windows) och på mobilen – också iPhone 13 mini.

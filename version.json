@@ -1,7 +1,7 @@
 {
-  "version": "0.55.0",
+  "version": "0.55.1",
   "date": "2026-09-30",
-  "title": "Pixelmenyer",
+  "title": "Spelbilden som på datorn",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
