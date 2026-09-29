@@ -45,11 +45,20 @@
 //   L.itemAt(wx, wy)      – { id, k } för prylen under pekaren (även med ett djur i den) | null
 //   L.version             – räknas upp när prylarnas hinder ändras
 //   L._debug              – { actors, spot(petId|itemId|k|'bajs') → {x,y} (logiska px), pets(), items(),
-//                             meters() (skyltarnas lägen), think(id), goTo(id, x, y, run),
-//                             setMode(id, 'sleep'|'eat'|'toilet'|…) }
+//                             meters() (skyltarnas lägen), bubbles() (tillväxtbubblornas rutor),
+//                             think(id), goTo(id, x, y, run), setMode(id, 'sleep'|'eat'|'toilet'|…) }
 //   Lagret kopplar också spelklockan till butiken (store.setClock) så att djuraffärens adopt()
 //   alltid får rätt födelsedag, och visar butikens händelser som toasts ('kar', 'ungar', 'vaxte',
 //   'bajs', 'kiss', 'lada', 'hungrig', 'ute', 'hem' = djuret gick hem självt efter 6 h ute).
+//   Tillväxt av omsorg (sim.js growth()): djurmenyn har en TILLVÄXT-rad – mätare för hur långt
+//   djuret kommit i sitt stadium (dagens poäng som väntar på lek/leksak randigt efter) + "Växer
+//   inte än i dag – behöver lek, leksak, promenad". När djuret växer ('vaxte'): toast "🐕 Bamse
+//   har vuxit! Nu är han ung.", fanfar, glitter och en pratbubbla ("JAG HAR VUXIT!" / "NU ÄR JAG
+//   STOR!") över djuret, som ritas i sitt nya, större stadium. Bubblor som skulle krocka (två
+//   djur växer samtidigt) glider isär. Växte djuret medan man var borta visas toasten när lagret
+//   skapas och bubblan när man kommer in i djurets rum (store.growthNews/seenNews). En kastad
+//   boll som djuret hinner fram till räknas som lek (store.toyPlay). Kaninen gnager på sin
+//   gnagmorot.
 //   Mätaren: hjärta (glad), skål (mätt) och för hund bajs (kissnödig) ovanför varje djur –
 //   nedtonad på avstånd, tydlig nära/hover, blinkar röd ram vid kris. Skyltar som krockar
 //   glider isär i sidled, högst en skylthöjd upp, annars under fötterna – aldrig i torn.
@@ -85,6 +94,7 @@ import { PET_ITEMS, drawPetItem, itemBox, itemSolid, itemSpot, drawItemIcon, spl
 import * as SP from './sprites.js';
 import { openModal, closeModal, toast, esc, modalOpen } from '../core/ui.js';
 import { play } from '../core/sound.js';
+import { SMALL, ctxText, textW } from '../core/floor-pix.js';
 
 // Spritemodulen importeras som namnrymd: kontraktet (drawPet, drawPetIcon, petSize, drawPoop,
 // drawPuddle, SPECIES) krävs, resten (petBox, petNeck, breedOf, ICON_W/H) används om de finns.
@@ -114,7 +124,18 @@ const DIR_HOLD = 0.3;
 const STATE_HOLD = 0.25;
 const SPD = { katt: [15, 42], hund: [19, 50], kanin: [12, 30] };
 const EMO = { kar: '❤️', ungar: '🍼', vaxte: '🌱', bajs: '💩', kiss: '💦', lada: '🧻', hungrig: '🍽️', ute: '🌳', hem: '🏠' };
+export const SPECIES_EMO = { hund: '🐕', katt: '🐈', kanin: '🐇' };
 const GOOD = new Set(['kar', 'ungar', 'vaxte', 'ute']);
+const GROW_BUBBLE_S = 3.6;      // så länge "Jag har vuxit!"-bubblan syns över djuret
+// grodden i bubblan (L = blad, H = ljus kant, S = stjälk)
+const SPROUT = [
+  '.....HL',
+  'HL..HLL',
+  'LLL.LL.',
+  '.LLSL..',
+  '...S...',
+  '...S...',
+];
 const rnd = Math.random;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
@@ -274,10 +295,15 @@ export function createPetLayer(A, opts = {}) {
   }
 
   // ---------- aktörer ----------
-  function makeActor(p) {
+  // gång-/springfart efter art, storlek och stadium (räknas om när djuret växer)
+  function speedOf(p) {
     const sp = SPD[p.species] || SPD.katt;
     const size = Math.abs(petBox(p, 'idle', 'down').y0 || 10);
     const k = (p.species === 'hund' ? clamp(size / 14, 0.75, 1.15) : 1) * (p.stage === 'unge' ? 0.8 : p.stage === 'ung' ? 0.92 : 1);
+    return [sp[0] * k, sp[1] * k];
+  }
+  function makeActor(p) {
+    const [walkSp, runSp] = speedOf(p);
     let x = p.x, y = p.y;
     let inItem = null;
     if (x == null || y == null || !isFinite(x) || !isFinite(y)) {
@@ -290,9 +316,10 @@ export function createPetLayer(A, opts = {}) {
     }
     const a = {
       id: p.id, pet: p, x, y, vx: 0, vy: 0, z: 0, dir: rnd() < 0.5 ? 'left' : 'right', face: null, dirAge: 1, want: null, wantT: 0,
-      moving: false, running: false, phase: rnd() * 10, walkSp: sp[0] * k, runSp: sp[1] * k, speed: sp[0] * k,
+      moving: false, running: false, phase: rnd() * 10, walkSp, runSp, speed: walkSp,
       path: [], then: null, allow: inItem?.id || null, inItem: inItem?.id || null, mode: 'idle', pose: 'idle', modeT: 0.5 + rnd() * 2,
       onEnd: null, stuck: 0, walkT: 0, alpha: 0.45, follow: { on: false, t: 0 }, elev: null, tag: null, seenAt: t,
+      stage: p.stage, grewT: 0, grewStage: null,
     };
     if (inItem && PET_ITEMS[inItem.k]?.sangFor === p.species && isNight()) { a.mode = 'sleep'; a.pose = 'sleep'; a.modeT = 5; }
     return a;
@@ -305,7 +332,14 @@ export function createPetLayer(A, opts = {}) {
         if (p.room == null && !p.out) { p.room = room; p.x = null; p.y = null; }
         want.add(p.id);
         if (!actors.has(p.id)) actors.set(p.id, makeActor(p));
-        else actors.get(p.id).pet = p;
+        else {
+          const a = actors.get(p.id);
+          a.pet = p;
+          if (a.stage !== p.stage) { // har vuxit: större steg (ritas redan i sitt nya stadium)
+            const wasRun = a.speed === a.runSp;
+            [a.walkSp, a.runSp] = speedOf(p); a.speed = wasRun ? a.runSp : a.walkSp; a.stage = p.stage;
+          }
+        }
       }
     }
     for (const id of [...actors.keys()]) if (!want.has(id)) actors.delete(id);
@@ -416,15 +450,27 @@ export function createPetLayer(A, opts = {}) {
     const p = a.pet;
     const ball = items().find((i) => i.k === 'leksak-boll');
     const bone = items().find((i) => i.k === 'leksak-ben');
+    const carrot = items().find((i) => i.k === 'leksak-morot');
     const tree = items().find((i) => i.k === 'kattklostrad');
     const buddies = others(a).filter((o) => o.pet.species === p.species && !o.pet.out && ['idle', 'walk'].includes(o.mode) && o.pose !== 'sleep');
     const opts2 = [];
     if (ball && p.species !== 'kanin') opts2.push(() => go(a, ball.x - 5, ball.y + 1, { run: true, then: () => { kick(a, ball); setPose(a, 'play', 1.4); } }));
-    if (bone && p.species === 'hund') opts2.push(() => go(a, bone.x, bone.y + 3, { face: 'up', then: () => setPose(a, 'eat', 4 + rnd() * 3, null, 'up') }));
+    if (bone && p.species === 'hund') opts2.push(() => goToToy(a, bone, (f) => setPose(a, 'eat', 4 + rnd() * 3, null, f)));
+    // kaninen gnager på gnagmoroten (hoppar fram, nosar och knaprar en stund)
+    if (carrot && p.species === 'kanin') opts2.push(() => goToToy(a, carrot, (f) => setPose(a, 'eat', 3 + rnd() * 3, () => setPose(a, 'happy', 1.2), f)));
     if (tree && p.species === 'katt') opts2.push(() => go(a, tree.x + itemSpot(tree.k).dx, tree.y + itemSpot(tree.k).dy, { face: 'up', then: () => setPose(a, 'play', 2.5, null, 'up') }));
     if (buddies.length) opts2.push(() => chase(a, buddies[Math.floor(rnd() * buddies.length)]));
     if (!opts2.length) return false;
     return opts2[Math.floor(rnd() * opts2.length)]();
+  }
+  // Fram till en leksak på golvet (tuggben, gnagmorot): första punkten runt den som går att nå –
+  // framför, från sidorna, snett framför. Står leksaken mot en möbel, en skål eller väggen går
+  // djuret fram från en annan sida i stället för att ge upp. then(face) = åt vilket håll det tittar.
+  function goToToy(a, it, then) {
+    const sp = itemSpot(it.k);
+    const tries = [[sp.dx, sp.dy + 1, 'up'], [-9, 1, 'right'], [9, 1, 'left'], [-5, 6, 'up'], [5, 6, 'up'], [0, 9, 'up']];
+    for (const [dx, dy, face] of tries) if (go(a, it.x + dx, it.y + dy, { face, then: () => then(face) })) return true;
+    return false;
   }
   function chase(a, b) {
     // b springer iväg, a jagar – sedan leker de ansikte mot ansikte
@@ -626,7 +672,7 @@ export function createPetLayer(A, opts = {}) {
   }
 
   // ---------- effekter ----------
-  function spark(x, y, kind) { fx.push({ x, y, kind, t: 0, life: kind === 'pour' ? 0.7 : 0.9 }); }
+  function spark(x, y, kind) { fx.push({ x, y, kind, t: 0, life: kind === 'pour' ? 0.7 : kind === 'grow' ? 1.8 : 0.9 }); }
   function drawFx(ctx) {
     for (const f of fx) {
       const k = f.t / f.life;
@@ -640,6 +686,19 @@ export function createPetLayer(A, opts = {}) {
       } else if (f.kind === 'water') {
         ctx.fillStyle = 'rgba(140,210,245,0.9)';
         for (let i = 0; i < 4; i++) ctx.fillRect(Math.round(f.x - 3 + i * 2), Math.round(f.y - 9 + ((k * 1.8 + i * 0.3) % 1) * 8), 1, 2);
+      } else if (f.kind === 'grow') {
+        // små gröna/gula glittrande plus som stiger runt djuret som just vuxit
+        const cols = ['#8ee06a', '#ffe070', '#ffffff', '#5ac86a'];
+        for (let i = 0; i < 8; i++) {
+          const ang = i / 8 * Math.PI * 2 + k * 1.2, r = 7 + k * 8;
+          const gx = Math.round(f.x + Math.cos(ang) * r), gy = Math.round(f.y - k * 12 + Math.sin(ang) * r * 0.45);
+          if ((i + Math.floor(k * 10)) % 3 === 0) continue; // blinkar
+          ctx.globalAlpha = Math.max(0, 1 - k * 0.9);
+          ctx.fillStyle = cols[i % cols.length];
+          ctx.fillRect(gx, gy, 1, 1);
+          if (i % 2 === 0) { ctx.fillRect(gx - 1, gy, 3, 1); ctx.fillRect(gx, gy - 1, 1, 3); }
+        }
+        ctx.globalAlpha = 1;
       } else if (f.kind === 'clean') {
         const r = Math.round(2 + k * 6);
         ctx.fillStyle = `rgba(255,255,230,${(1 - k).toFixed(2)})`;
@@ -760,6 +819,77 @@ export function createPetLayer(A, opts = {}) {
     ctx.globalAlpha = 1;
   }
 
+  // Pratbubblan när djuret just vuxit: "JAG HAR VUXIT!" (ung) / "NU ÄR JAG STOR!" (vuxen) med en
+  // liten grön pil, tonas in och ut. Ritas där mätaren annars sitter (över huvudet), hålls i rummet.
+  // Växer två djur samtidigt (syskon ur samma kull, djur köpta samma dag) och står nära varandra
+  // skulle bubblorna täcka varandra: layoutBubbles låter den bakre glida en bit i sidled eller
+  // en rad upp (den som står närmast betraktaren behåller sin plats).
+  const BUB_H = 11, BUB_GAP = 4;
+  const bubbleText = (a) => (a.grewStage === 'vuxen' ? 'NU ÄR JAG STOR!' : 'JAG HAR VUXIT!');
+  function bubbleBase(a) {
+    const w = textW(SMALL, bubbleText(a)) + 16;
+    const hTop = meterBase(a).y0 + MH + 3; // = djurets huvudtopp (samma höjd som mätaren utgår från)
+    return { w, h: BUB_H, x0: clamp(Math.round(a.x) - (w >> 1), B.left - 4, B.right + 4 - w), y0: Math.round(hTop - BUB_H - 5) };
+  }
+  function layoutBubbles(dt) {
+    const list = [...actors.values()].filter((a) => a.grewT > 0).map((a) => ({ a, ...bubbleBase(a) }));
+    list.sort((m1, m2) => m2.a.y - m1.a.y);
+    const placed = [], k = Math.min(1, dt * 10);
+    for (const m of list) {
+      const a = m.a, ox = a.bOffX ?? 0, oy = a.bOffY ?? 0;
+      let best = null, bestCost = Infinity;
+      for (let row = 0; row <= 3; row++) {
+        const dy = -row * (m.h + 3 + BUB_GAP); // en rad upp: bubblan + spetsen + luft
+        for (let d = 0; d <= m.w; d += 2) for (const dx of d ? [d, -d] : [0]) {
+          const x0 = m.x0 + dx, y0 = m.y0 + dy;
+          if (x0 < B.left - 4 || x0 + m.w > B.right + 4 || y0 < 1) continue;
+          if (placed.some((q) => x0 < q.x1 + BUB_GAP && x0 + m.w > q.x0 - BUB_GAP && y0 - 1 < q.y1 + 1 && y0 + m.h + 3 > q.y0 - 1)) continue;
+          // nära hemplatsen, hellre en rad upp än långt i sidled (spetsen ska peka på djuret),
+          // och nära där bubblan redan är (ingen växling hit och dit)
+          const cost = Math.abs(dx) * 1.2 + Math.abs(dy) + 0.4 * (Math.abs(dx - ox) + Math.abs(dy - oy));
+          if (cost < bestCost) { bestCost = cost; best = [dx, dy]; }
+        }
+      }
+      const [dx, dy] = best || [0, 0];
+      placed.push({ x0: m.x0 + dx, x1: m.x0 + dx + m.w, y0: m.y0 + dy - 1, y1: m.y0 + dy + m.h + 3 });
+      if (a.bOffX == null) { a.bOffX = dx; a.bOffY = dy; } // ny bubbla: direkt på sin plats
+      else { a.bOffX = ox + (dx - ox) * k; a.bOffY = oy + (dy - oy) * k; }
+    }
+    for (const a of actors.values()) if (!(a.grewT > 0)) { a.bOffX = null; a.bOffY = null; }
+  }
+  function bubbleRect(a) {
+    const b = bubbleBase(a);
+    return { x0: b.x0 + Math.round(a.bOffX || 0), y0: b.y0 + Math.round(a.bOffY || 0), w: b.w, h: b.h };
+  }
+  function drawGrowBubble(ctx, a) {
+    const txt = bubbleText(a);
+    const life = GROW_BUBBLE_S - a.grewT;
+    const alpha = Math.min(1, life / 0.25, a.grewT / 0.4);
+    if (alpha <= 0.02) return;
+    const { x0, y0: yBase, w, h } = bubbleRect(a);
+    const cx = Math.round(a.x);
+    const bob = life < 0.3 ? Math.round((0.3 - life) * 10) : 0; // hoppar upp lite när den dyker upp
+    const y0 = yBase + bob;
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = '#17151a';
+    ctx.fillRect(x0, y0 - 1, w, h + 2); ctx.fillRect(x0 - 1, y0, w + 2, h);
+    ctx.fillStyle = '#f4f1ea';
+    ctx.fillRect(x0, y0, w, h);
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(x0 + 1, y0, w - 2, 1); // glans
+    // spetsen ned mot djuret
+    const sx = clamp(cx, x0 + 3, x0 + w - 4);
+    ctx.fillStyle = '#17151a'; ctx.fillRect(sx - 2, y0 + h, 5, 1); ctx.fillRect(sx - 1, y0 + h + 1, 3, 1); ctx.fillRect(sx, y0 + h + 2, 1, 1);
+    ctx.fillStyle = '#f4f1ea'; ctx.fillRect(sx - 1, y0 + h, 3, 1); ctx.fillRect(sx, y0 + h + 1, 1, 1);
+    // en liten grodd (växer) som vippar en pixel i takt
+    const ax = x0 + 3, ay = y0 + 2 - (Math.floor(life * 4) % 2);
+    SPROUT.forEach((row, j) => { for (let i = 0; i < row.length; i++) {
+      const c = row[i] === 'L' ? '#6ccf4a' : row[i] === 'H' ? '#a8f080' : row[i] === 'S' ? '#2f7a3a' : null;
+      if (c) { ctx.fillStyle = c; ctx.fillRect(ax + i, ay + j, 1, 1); }
+    } });
+    ctxText(ctx, SMALL, txt, x0 + 12, y0 + 3, '#17151a');
+    ctx.globalAlpha = 1;
+  }
+
   // ---------- ritning av ett djur ----------
   function animOf(a) {
     if (a.mode === 'jump') return 'run';
@@ -872,7 +1002,17 @@ export function createPetLayer(A, opts = {}) {
         // hundar och katter som är vakna springer efter
         for (const a of actors.values()) {
           if (a.pet.species === 'kanin' || a.pose === 'sleep' || a.pet.out || a.mode === 'jump' || a.elev) continue;
-          if (rnd() < 0.8) { a.mode = 'idle'; a.modeT = 0.25 + rnd() * 0.4; a.onEnd = () => { const b = store.itemById(it.id); if (b) go(a, b.x - 4, b.y + 1, { run: true, then: () => { kick(a, b); setPose(a, 'play', 1.5); } }); }; }
+          // leken räknas för tillväxten när djuret hunnit fram till bollen (store.toyPlay); målet är
+          // en ledig punkt bredvid bollen (ligger den mot en vägg/möbel fastnar djuret annars)
+          if (rnd() < 0.8) {
+            a.mode = 'idle'; a.modeT = 0.25 + rnd() * 0.4;
+            a.onEnd = () => {
+              const b = store.itemById(it.id);
+              if (!b) return;
+              const [tx, ty] = nearestFreePt(b.x - 4, b.y + 1);
+              go(a, tx, ty, { run: true, then: () => { kick(a, b); setPose(a, 'play', 1.5); store.toyPlay?.(a.pet.id); } });
+            };
+          }
         }
       });
       return;
@@ -887,6 +1027,26 @@ export function createPetLayer(A, opts = {}) {
     return `<div style="display:flex;align-items:center;gap:8px;font-size:17px;margin:2px 0"><span style="width:124px;white-space:nowrap">${label}</span>
       <span style="flex:1;height:12px;background:#3a3440;border:2px solid var(--ink);position:relative"><span style="position:absolute;left:0;top:0;bottom:0;width:${pct}%;background:${col}"></span></span>
       <b style="width:34px;text-align:right">${pct}</b></div>`;
+  }
+  // TILLVÄXT-raden: en mätare för hur långt djuret kommit i sitt stadium och vad det behöver
+  // i dag för att växa ("Växer: behöver lek, leksak, promenad"). Dagens poäng som väntar på
+  // dagens krav (lek och en leksak) syns randiga efter den fyllda delen.
+  function growRow(p) {
+    const G = store.growth ? store.growth(p) : null;
+    if (!G) return '';
+    const S = SPECIES[p.species] || {};
+    const goal = G.next ? (G.next === 'ung' ? S.ung : S.vuxen) || G.next : null;
+    const pct = Math.round(G.pct * 100);
+    const heldPct = G.next ? Math.round((G.pctHeld || 0) * 100) : 0;
+    const col = G.next ? (G.ready ? '#8ee06a' : '#4cc0a8') : '#58c46a';
+    const tip = G.next
+      ? `Tillväxtpoäng ${Math.round(G.grow)} av ${G.need} – nästa: ${goal}.${G.held > 0.5 ? ` ${Math.round(G.held)} poäng från i dag väntar: lek och en leksak behövs varje dag.` : ''}`
+      : 'Fullvuxen';
+    return `<div data-grow style="margin-top:6px">
+      <div style="display:flex;align-items:center;gap:8px;font-size:17px;margin:2px 0" title="${esc(tip)}"><span style="width:124px;white-space:nowrap">🌱 Tillväxt</span>
+        <span style="flex:1;height:12px;background:#3a3440;border:2px solid var(--ink);position:relative"><span style="position:absolute;left:0;top:0;bottom:0;width:${pct}%;background:${col}"></span>${heldPct > 0 ? `<span data-grow-held style="position:absolute;left:${pct}%;top:0;bottom:0;width:${heldPct}%;background:repeating-linear-gradient(90deg,${col} 0 3px,transparent 3px 6px);opacity:.75"></span>` : ''}</span>
+        <b style="width:34px;text-align:right">${G.next ? pct : '✔'}</b></div>
+      <p data-grow-text style="font-size:17px;margin:2px 0 0">${G.next ? `<span class="sp">Nästa: ${esc(goal.toLowerCase())}.</span> ` : ''}${esc(G.text)}</p></div>`;
   }
   function openPetMenu(petId) {
     const p = store.petById(petId);
@@ -913,6 +1073,7 @@ export function createPetLayer(A, opts = {}) {
           ${statBar('❤️ Glad', p.happy)}
           ${statBar('🥣 Mätt', p.hunger)}
           ${p.species === 'hund' ? statBar('💩 Kissnödig', p.toilet, true) : ''}
+          ${growRow(p)}
           ${status.length ? `<p style="font-size:17px;margin:8px 0 0">${status.join('<br>')}</p>` : ''}
         </div></div>`;
     const done = (fn) => () => { closeModal(); menuFor = null; if (a) { a.mode = 'idle'; a.modeT = 0.2; } fn?.(); };
@@ -1082,10 +1243,37 @@ export function createPetLayer(A, opts = {}) {
     return items().map((it) => itemRect(it)).filter(Boolean).map((r) => [r[0], r[1], r[2], r[3]]);
   }
 
+  // ---------- djuret har vuxit ----------
+  // Toast ("🐕 Bamse har vuxit! Nu är han ung."), fanfar, glitter och en pratbubbla över djuret
+  // (som redan ritas i sitt nya, större stadium). Händelser som ingen visat (spelaren var inte
+  // hemma när det hände) visas när lagret skapas.
+  function celebrate(a, stage) {
+    a.grewT = GROW_BUBBLE_S; a.grewStage = stage;
+    spark(a.x, a.y - 4 - a.z, 'grow');
+    if (!a.pet.out && a.mode !== 'jump' && !a.elev && a.pose !== 'sleep' && !(a.mode === 'pose' && ['poop', 'pee', 'eat'].includes(a.pose))) {
+      setPose(a, 'happy', 2.2, null, playerHere() ? facing(a.x, a.y, px(), py() - 4) : a.dir);
+    }
+  }
+  let fanfareAt = -99;
+  // Toasten visas en gång (ev.told) – när det händer, eller när man kommer hem. Pratbubblan
+  // (ev.seen) bara när djuret är här i rummet; står det i ett annat rum väntar bubblan tills
+  // man går in dit.
+  function showGrowth(ev) {
+    const p = store.petById(ev.petId);
+    const a = actors.get(ev.petId);
+    if (ev.told !== true) {
+      toast(`${SPECIES_EMO[ev.species || p?.species] || EMO.vaxte} ${ev.text}`, 'good');
+      if (t - fanfareAt > 2) { fanfareAt = t; play('fanfare'); }
+    }
+    if (a) celebrate(a, ev.stage || p?.stage);
+    store.seenNews?.(ev, { toast: true, bubble: !!a });
+  }
+
   // ---------- händelser → toasts ----------
   const unsub = store.listen((ev) => {
     if (opts.toasts === false) return;
     if (ev.home != null && ev.home !== home) return;
+    if (ev.type === 'vaxte') { showGrowth(ev); return; }
     const key = ev.type + '|' + ev.petId;
     if (toastSeen.has(key) && t - toastSeen.get(key) < 20) return;
     toastSeen.set(key, t);
@@ -1110,7 +1298,7 @@ export function createPetLayer(A, opts = {}) {
   }
   function autoPlace() {
     const inHome = store.items.filter((i) => i.home === home);
-    const order = ['kaninbur', 'hundkorg', 'kattkorg', 'kattlada', 'kattklostrad', 'matskal', 'vattenskal', 'sack-katt', 'sack-hund', 'sack-kanin', 'leksak-boll', 'leksak-ben'];
+    const order = ['kaninbur', 'hundkorg', 'kattkorg', 'kattlada', 'kattklostrad', 'matskal', 'vattenskal', 'sack-katt', 'sack-hund', 'sack-kanin', 'leksak-boll', 'leksak-ben', 'leksak-morot'];
     const done = [];
     for (const k of order) {
       if (!((store.inventory[k] | 0) > 0) || inHome.some((i) => i.k === k)) continue;
@@ -1152,6 +1340,13 @@ export function createPetLayer(A, opts = {}) {
   for (const a of actors.values()) if (a.pet.species === 'hund' && !isNight() && playerHere() && rnd() < 0.8 && !a.pet.out) {
     a.mode = 'idle'; a.modeT = 0.3 + rnd() * 0.5; a.onEnd = () => visitPlayer(a, 'sit');
   }
+  // djur som växte medan man var borta: toasten nu (om ingen visat den), pratbubblan över djuren
+  // i det här rummet – de andra får sin bubbla när man kommer in till dem
+  if (opts.toasts !== false && store.growthNews) {
+    for (const ev of store.growthNews(home)) {
+      if (store.petById(ev.petId)) showGrowth(ev); else store.seenNews(ev);
+    }
+  }
 
   const L = {
     get version() { return version; },
@@ -1176,7 +1371,7 @@ export function createPetLayer(A, opts = {}) {
         }
       }
       wasWalking = walkingNow;
-      for (const a of actors.values()) updActor(a, dt);
+      for (const a of actors.values()) { updActor(a, dt); if (a.grewT > 0) a.grewT = Math.max(0, a.grewT - dt); }
       updBalls(dt);
       for (const f of fx) f.t += dt;
       for (let i = fx.length - 1; i >= 0; i--) if (fx[i].t >= fx[i].life) fx.splice(i, 1);
@@ -1191,10 +1386,12 @@ export function createPetLayer(A, opts = {}) {
         a.alpha += (target - a.alpha) * Math.min(1, dt * 6);
       }
       layoutMeters(dt);
-      // skriv tillbaka positioner (sparas med simuleringens egna tider)
+      layoutBubbles(dt);
+      // skriv tillbaka positioner (sparas med simuleringens egna tider). Även en hund i koppel
+      // här inne: kan den inte hålla sig hamnar olyckan där den står (sim.js).
       if (lastSync > 0.5) {
         lastSync = 0;
-        for (const a of actors.values()) if (!a.pet.out) { a.pet.x = Math.round(a.x); a.pet.y = Math.round(a.y); a.pet.room = room; }
+        for (const a of actors.values()) if (!a.pet.out || playerHere()) { a.pet.x = Math.round(a.x); a.pet.y = Math.round(a.y); a.pet.room = room; }
         adoptLoose();
       }
       if (carrying() && !store.itemById(A.carrying.itemId)) setCarry(null);
@@ -1225,7 +1422,8 @@ export function createPetLayer(A, opts = {}) {
         if (inIt && inIt.k !== 'kaninbur' && inRect(itemRect(inIt, 2), a.x, a.y)) fy = inIt.y + (splitItem(inIt.k) ? -0.5 : 0.3);
         if (a.elev) { const tr = store.itemById(a.elev); if (tr) fy = tr.y + 0.3; }
         push(fy, (ctx) => drawActor(ctx, a), a.x);
-        push(TOP + a.y, (ctx) => drawMeter(ctx, a), a.x);
+        if (a.grewT > 0) push(TOP + 700 + a.y, (ctx) => drawGrowBubble(ctx, a), a.x); // "Jag har vuxit!" i stället för mätaren
+        else push(TOP + a.y, (ctx) => drawMeter(ctx, a), a.x);
       }
       push(TOP + 500, drawFx);
       const c = carrying();
@@ -1302,6 +1500,10 @@ export function createPetLayer(A, opts = {}) {
       items: () => items(),
       // mätarnas skyltar (logiska px): var de ritas, var hemplatsen är, och om de tonats ned
       meters: () => [...actors.values()].map((a) => ({ id: a.id, name: a.pet.name, ...meterRect(a), dim: !!a.mDim, petX: Math.round(a.x), petY: Math.round(a.y - a.z) })),
+      // tillväxtbubblan: sekunder kvar och stadiet den visar (0 = ingen bubbla)
+      grew: (id) => { const a = actors.get(id); return a ? { t: a.grewT, stage: a.grewStage, walkSp: a.walkSp } : null; },
+      // tillväxtbubblornas rutor just nu (logiska px, utan spetsen)
+      bubbles: () => [...actors.values()].filter((a) => a.grewT > 0).map((a) => ({ id: a.id, name: a.pet.name, ...bubbleRect(a), petX: Math.round(a.x) })),
       // SKÄRMkoordinater (logiska) för klicktester: djur-id, pryl-id, prylnyckel (k) eller 'bajs'
       spot(id) {
         const a = actors.get(id);
@@ -1375,12 +1577,16 @@ function itemCanvas(k, scale, state = {}) {
 export function createPetFollower(A, pet, { store = null } = {}) {
   const S = store || petStore();
   const sp = SPD[pet.species] || SPD.katt;
-  const size = Math.abs(petBox(pet, 'idle', 'down').y0 || 10);
-  const k = (pet.species === 'hund' ? clamp(size / 14, 0.75, 1.15) : 1) * (pet.stage === 'unge' ? 0.85 : 1);
+  const tune = () => { // farten efter storlek och stadium (räknas om om djuret växer på promenaden)
+    const size = Math.abs(petBox(pet, 'idle', 'down').y0 || 10);
+    const k = (pet.species === 'hund' ? clamp(size / 14, 0.75, 1.15) : 1) * (pet.stage === 'unge' ? 0.85 : 1);
+    a.walkSp = sp[0] * k; a.runSp = Math.max(sp[1] * k, 58); a.stage = pet.stage;
+  };
   const a = {
     pet, x: null, y: null, vx: 0, vy: 0, z: 0, dir: 'down', face: null, dirAge: 1, want: null, wantT: 0,
-    moving: false, running: false, phase: 0, walkSp: sp[0] * k, runSp: Math.max(sp[1] * k, 58), pose: 'idle',
+    moving: false, running: false, phase: 0, walkSp: 0, runSp: 58, pose: 'idle', stage: null,
   };
+  tune();
   const LEASH = 20;
   let t = 0, ox = null, oy = null, hvx = 0, hvy = 1, ownerMoving = false, still = 0, sniff = null;
   let outT = 0, business = null, drops = [], ownerDir = 'down';
@@ -1391,6 +1597,7 @@ export function createPetFollower(A, pet, { store = null } = {}) {
     update(dt, ownerX, ownerY, isFree) {
       dt = Math.min(0.1, Math.max(0, dt || 0));
       t += dt; outT += dt;
+      if (a.stage !== pet.stage) tune();
       const free = isFree ? (x, y) => !!isFree(x, y) : () => true;
       if (a.x == null) { // första bilden: ställ djuret bakom ägaren
         a.x = ownerX - 8; a.y = ownerY + 2;

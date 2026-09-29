@@ -18,8 +18,9 @@
 // I huvudmenyns bakgrundsstad (A.attract) rörs inte butiken alls – den stadens klocka
 // hör inte till spelarens spel och får aldrig nollställa djuren.
 import { petStore } from './sim.js';
-import { createPetFollower } from './layer.js';
+import { createPetFollower, SPECIES_EMO } from './layer.js';
 import { toast } from '../core/ui.js';
+import { play } from '../core/sound.js';
 
 const JUMP = 48;          // figuren flyttades längre än så på en bildruta (buss, teleport) → djuret ställs om bakom den
 const EMO = { ute: '🌳', hem: '🏠' };
@@ -30,8 +31,17 @@ function hookToasts(S) {
   if (hooked.has(S)) return;
   hooked.add(S);
   S.listen((ev) => {
-    if (!EMO[ev.type]) return;
     if (performance.now() - activeAt > 600) return; // staden visas inte – hemma sköter lagret sina toasts
+    // Djuret som går bredvid dig växte just (promenaden gav de sista tillväxtpoängen): visa det
+    // här. Djur som är hemma får sin toast och pratbubbla när du kommer hem (lagret).
+    if (ev.type === 'vaxte') {
+      if (!S.petById(ev.petId)?.out) return;
+      toast(`${SPECIES_EMO[ev.species] || '🌱'} ${ev.text}`, 'good');
+      try { play('fanfare'); } catch { /* ljudet är aldrig ett krav */ }
+      S.seenNews?.(ev);
+      return;
+    }
+    if (!EMO[ev.type]) return;
     toast(`${EMO[ev.type]} ${ev.text}`, ev.type === 'ute' ? 'good' : '');
   });
 }

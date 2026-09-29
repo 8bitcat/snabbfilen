@@ -4,7 +4,8 @@
 // ============================== API ==============================
 // PET_ITEMS = { id: { namn, pris, w, h, forArt:[arter], typ, desc, solid?, sangFor?, art?, portioner? } }
 //   id ∈ matskal, vattenskal, kattlada, hundkorg, kattkorg, kaninbur, kattklostrad,
-//        leksak-boll, leksak-ben, sack-katt, sack-hund, sack-kanin, koppel
+//        leksak-boll, leksak-ben, leksak-morot (kaninens gnagmorot), sack-katt, sack-hund,
+//        sack-kanin, koppel
 //   typ ∈ 'skal' | 'vatten' | 'lada' | 'sang' | 'bur' | 'klos' | 'leksak' | 'sack' | 'koppel'
 // drawPetItem(ctx, id, x, y, state = {})
 //   (x, y) = mitten av föremålets underkant (där det står på golvet), som drawPet.
@@ -32,6 +33,7 @@ export const PET_ITEMS = {
   kattklostrad: { namn: 'Klösträd', pris: 349, w: 19, h: 34, forArt: ['katt'], typ: 'klos', solid: true, desc: 'Klättra, klösa och sova högst upp – katter älskar det.' },
   'leksak-boll': { namn: 'Boll', pris: 29, w: 5, h: 5, forArt: ['hund', 'katt'], typ: 'leksak', desc: 'Klicka på bollen hemma så kastar du den.' },
   'leksak-ben': { namn: 'Tuggben', pris: 35, w: 11, h: 5, forArt: ['hund'], typ: 'leksak', desc: 'Något att tugga på när du är borta.' },
+  'leksak-morot': { namn: 'Gnagmorot', pris: 25, w: 12, h: 6, forArt: ['kanin'], typ: 'leksak', desc: 'En morot av flätad pil och hö att gnaga på – kaninens egen leksak.' },
   'sack-katt': { namn: 'Kattmat (säck)', pris: 89, w: 11, h: 15, forArt: ['katt'], typ: 'sack', art: 'katt', portioner: 10, desc: '10 skålar kattmat.' },
   'sack-hund': { namn: 'Hundmat (säck)', pris: 119, w: 13, h: 16, forArt: ['hund'], typ: 'sack', art: 'hund', portioner: 10, desc: '10 skålar hundmat.' },
   'sack-kanin': { namn: 'Kaninfoder (säck)', pris: 69, w: 11, h: 14, forArt: ['kanin'], typ: 'sack', art: 'kanin', portioner: 10, desc: '10 skålar kaninfoder med hö och morötter.' },
@@ -53,7 +55,7 @@ export const splitItem = (id) => id === 'kaninbur' || PET_ITEMS[id]?.typ === 'sa
 export function itemSolid(id) { const s = SOLID[id]; return s ? { x0: s[0], y0: s[1], x1: s[2], y1: s[3] } : null; }
 const SPOT = {
   matskal: [0, 5], vattenskal: [0, 5], kattlada: [0, -3], hundkorg: [0, -3], kattkorg: [0, -3],
-  kaninbur: [0, -3], kattklostrad: [0, 4], 'leksak-boll': [4, 1], 'leksak-ben': [0, 2],
+  kaninbur: [0, -3], kattklostrad: [0, 4], 'leksak-boll': [4, 1], 'leksak-ben': [0, 2], 'leksak-morot': [-2, 2],
   'sack-katt': [0, 3], 'sack-hund': [0, 3], 'sack-kanin': [0, 3], koppel: [0, 3],
 };
 export function itemSpot(id) { const s = SPOT[id] || [0, 4]; return { dx: s[0], dy: s[1] }; }
@@ -412,6 +414,21 @@ function paintBone() {
   ], { o: 0x7a6a58, W: 0xf6eedc, s: 0xd2c4a8 });
   return g;
 }
+// Gnagmoroten: en morot av flätad pil (rutigt fläta-mönster) med en grön blasttofs, liggande
+// på golvet med spetsen åt vänster – kaninens leksak.
+function paintCarrotToy() {
+  const g = new Grid(12, 6);
+  g.rows(0, 0, [
+    '.........G.H',
+    '......ooogGg',
+    '...oooLLLOg.',
+    '.oodOdOdOdo.',
+    'oOdOdOdOdo..',
+    '.oooooooo...',
+  ], { o: 0x7a3a14, O: 0xe8802a, d: 0xc4621e, L: 0xf6b060, g: 0x2f7a3a, G: 0x5cb040, H: 0x9ad860 });
+  g.set(4, 3, 0xf6b060); // glans på den tunna delen
+  return g;
+}
 function paintLeash() {
   const g = new Grid(11, 7);
   const r = 0xc03a3a;
@@ -449,7 +466,10 @@ function spriteFor(id, s) {
     case 'lada': { const lv = q(s.dirt, 8); return sprite(`lada|${lv}`, () => paintLitter(lv / 8)); }
     case 'sang': return s.layer === 'front' ? sprite(id + '|f', () => paintBasket(id, 'front')) : sprite(id, () => paintBasket(id));
     case 'klos': return sprite('klos', () => paintTree(0));
-    case 'leksak': if (id === 'leksak-boll') { const r = (s.rot | 0) & 3; return sprite('boll|' + r, () => paintBall(r)); } return sprite('ben', paintBone);
+    case 'leksak':
+      if (id === 'leksak-boll') { const r = (s.rot | 0) & 3; return sprite('boll|' + r, () => paintBall(r)); }
+      if (id === 'leksak-morot') return sprite('morot', paintCarrotToy);
+      return sprite('ben', paintBone);
     case 'sack': {
       const def = PET_ITEMS[id];
       const f = s.frac ?? (s.left != null ? s.left / def.portioner : 1);

@@ -30,7 +30,7 @@ const refill = (S) => { for (const b of S.items.filter((i) => i.k === 'matskal' 
 
 // ---------------------------------------------------------------------------
 section('Katalogen');
-for (const k of ['matskal', 'vattenskal', 'kattlada', 'hundkorg', 'kattkorg', 'kaninbur', 'kattklostrad', 'leksak-boll', 'leksak-ben', 'sack-katt', 'sack-hund', 'sack-kanin', 'koppel'])
+for (const k of ['matskal', 'vattenskal', 'kattlada', 'hundkorg', 'kattkorg', 'kaninbur', 'kattklostrad', 'leksak-boll', 'leksak-ben', 'leksak-morot', 'sack-katt', 'sack-hund', 'sack-kanin', 'koppel'])
   ok(PET_ITEMS[k] && PET_ITEMS[k].namn && PET_ITEMS[k].pris > 0 && PET_ITEMS[k].w > 0 && Array.isArray(PET_ITEMS[k].forArt), `PET_ITEMS.${k} finns (${PET_ITEMS[k]?.namn}, ${PET_ITEMS[k]?.pris} kr)`);
 
 // ---------------------------------------------------------------------------
@@ -197,18 +197,31 @@ section('Kaninen och buren');
 }
 
 // ---------------------------------------------------------------------------
-section('Växa');
+section('Växa (av omsorg – utförligt i tools/pets-grow-test.mjs)');
 {
+  // omskött valp: mat, en boll hemma, lek och fyra promenader om dagen
   const S = mk(7);
   const c = clock(S, { day: 10 });
   const p = S.adopt('hund', 'pudel', 'hona', 'Stella', HOME);
-  S.buyItem('sack-hund', 3); S.placeItem('matskal', HOME, 0, 120, 160);
+  S.buyItem('sack-hund', 5); S.placeItem('matskal', HOME, 0, 120, 160);
+  S.buyItem('leksak-boll'); S.placeItem('leksak-boll', HOME, 0, 200, 180);
   const stages = [];
-  for (let d = 0; d < 9; d++) { stages.push(p.stage); refill(S); c.to(23); c.to(7); }
+  for (let d = 0; d < 9; d++) {
+    stages.push(p.stage);
+    for (const h of [8, 12, 17, 21]) { refill(S); c.to(h); S.walkStart(p.id); c.adv(25, { playerHome: null, outdoors: true }); S.walkEnd(); S.pet(p.id); S.play(p.id); }
+    c.to(23); c.to(7);
+  }
   ok(stages[0] === 'unge' && stages[2] === 'unge', 'unge de första dagarna');
-  ok(stages[3] === 'ung', `ung efter 3 dagar (${stages.join(',')})`);
-  ok(stages[7] === 'vuxen' && p.stage === 'vuxen', 'vuxen efter 7 dagar');
+  ok(stages[3] === 'ung', `ung efter 3 dagar med god omsorg (${stages.join(',')})`);
+  ok(stages[7] === 'vuxen' && p.stage === 'vuxen', 'vuxen efter 7 dagar med god omsorg');
   ok(S.log.some((e) => e.type === 'vaxte'), 'händelse när djuret växer');
+  // bara mat – ingen lek, ingen leksak, inga promenader (bajsar inne): växer inte
+  const T = mk(7);
+  const t = clock(T, { day: 10 });
+  const q = T.adopt('hund', 'pudel', 'hona', 'Stella', HOME);
+  T.buyItem('sack-hund', 5); T.placeItem('matskal', HOME, 0, 120, 160);
+  for (let d = 0; d < 9; d++) { refill(T); t.to(23); t.to(7); }
+  ok(q.stage === 'unge', `försummad valp (bara mat, bajsar inne) är fortfarande valp efter 9 dagar (${Math.round(q.grow)} poäng)`);
 }
 
 // ---------------------------------------------------------------------------
@@ -370,9 +383,12 @@ section('Determinism och långkörning');
     S.adopt('katt', 'svart', 'hane', 'B', HOME, { room: 0, x: 120, y: 150 });
     S.adopt('hund', 'husky', 'hona', 'C', HOME, { room: 0, x: 160, y: 150 });
     S.adopt('hund', 'tax', 'hane', 'D', HOME, { room: 0, x: 200, y: 150 });
-    S.buyItem('sack-katt', 30); S.buyItem('sack-hund', 30); S.buyItem('matskal', 3); S.buyItem('kattlada');
-    for (let i = 0; i < 4; i++) S.placeItem('matskal', HOME, 0, 60 + i * 30, 160);
+    // Tillväxten kräver en leksak hemma (och lek – klapparna och promenaderna nedan): med bollen
+    // blir djuren vuxna och gladare, får fler kullar och når taket på 12 – då behövs sex skålar
+    S.buyItem('sack-katt', 30); S.buyItem('sack-hund', 30); S.buyItem('matskal', 5); S.buyItem('kattlada');
+    for (let i = 0; i < 6; i++) S.placeItem('matskal', HOME, 0, 50 + i * 26, 160);
     S.placeItem('kattlada', HOME, 0, 40, 190);
+    S.buyItem('leksak-boll'); S.placeItem('leksak-boll', HOME, 0, 220, 190);
     for (let d = 0; d < 40; d++) {
       for (const h of [9, 13, 17, 21]) {
         refill(S);
@@ -408,6 +424,9 @@ section('Födelsedag: klockan, framtiden och butiken utan lager');
   S.setClock(() => ({ day: gameDay, min: 12 * 60 }));
   const p = S.adopt('katt', 'vit', 'hona', 'Snöa', HOME);
   ok(p.bornDay === 10 && p.stage === 'unge', `adopt() utan day tar dagen från spelklockan (född dag ${p.bornDay})`);
+  // Tillväxt av omsorg: poäng som räcker till ung men inte vuxen – här prövas bara klockan och
+  // minsta tiden (omsorgen prövas i tools/pets-grow-test.mjs)
+  p.grow = 250;
   c.day = 10; c.min = 12 * 60; S.syncTo(10, 12 * 60, { home: HOME }); // lagret startar (tickar ikapp högst 3 dygn)
   c.adv(24 * 60); // dag 11
   ok(p.stage === 'unge' && p.bornDay === 10, `nästa midnatt är kattungen fortfarande unge (född dag ${p.bornDay}, hoppar inte till vuxen)`);
@@ -419,6 +438,7 @@ section('Födelsedag: klockan, framtiden och butiken utan lager');
   const T = mk(31);
   const t = clock(T, { day: 5 });
   const q = T.adopt('hund', 'tax', 'hane', 'Framtid', HOME, { day: 40 });
+  q.grow = 1000; // poängen räcker – minsta tiden ska räknas från den klampade dagen, inte dag 40
   for (let i = 0; i < 8; i++) t.adv(24 * 60);
   ok(q.bornDay <= 6 && q.stage === 'vuxen', `bornDay i framtiden klampas till spelets riktiga dag (född dag ${q.bornDay}, ${q.stage} dag ${t.day})`);
   // laddning klampar också

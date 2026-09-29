@@ -42,7 +42,7 @@ import { play } from '../core/sound.js';
 import { createWalker, selfDrawable, folkDrawables, iconBubble, WALK_SEQ } from './walkable.js';
 import { SPECIES, drawPet, drawPetIcon, petBox, breedOf, ICON_W, ICON_H } from '../pets/sprites.js';
 import { PET_ITEMS, drawPetItem, drawItemIcon } from '../pets/items.js';
-import { petStore, MAX_PETS } from '../pets/sim.js';
+import { petStore, MAX_PETS, TOYS_FOR } from '../pets/sim.js';
 
 const VW = 384;                        // skärmens bredd i spelpixlar
 const W = 768, H = 216, WALL_Y = 70;   // butikens storlek, väggens underkant
@@ -81,7 +81,7 @@ const SHORTN = { golden: 'GOLDEN', collie: 'COLLIE', jack: 'JACK RUSS.', schafer
 const shortName = (sp, id) => SHORTN[id] || (SPECIES[sp].breeds.find((b) => b.id === id)?.namn || id).toUpperCase();
 
 // ---------- varorna: var de står ----------
-const ITEM_EMOJI = { matskal: '🥣', vattenskal: '💧', kattlada: '🧻', hundkorg: '🧺', kattkorg: '🛏️', kaninbur: '🏠', kattklostrad: '🌳', 'leksak-boll': '⚾', 'leksak-ben': '🦴', 'sack-katt': '🐟', 'sack-hund': '🍖', 'sack-kanin': '🥕', koppel: '🦮' };
+const ITEM_EMOJI = { matskal: '🥣', vattenskal: '💧', kattlada: '🧻', hundkorg: '🧺', kattkorg: '🛏️', kaninbur: '🏠', kattklostrad: '🌳', 'leksak-boll': '⚾', 'leksak-ben': '🦴', 'leksak-morot': '🐇', 'sack-katt': '🐟', 'sack-hund': '🍖', 'sack-kanin': '🥕', koppel: '🦮' };
 const GTOP = GOND.y + 28, GBOT = GOND.y + 46;             // tillbehörshyllans hyllplan (varornas fötter)
 const WARES = [
   { k: 'kattklostrad', x: 36, y: PODIUM.y1 - 9, stand: 'podium' },
@@ -94,6 +94,7 @@ const WARES = [
   { k: 'koppel', x: GOND.x + 98, y: GTOP, stand: 'gond' },
   { k: 'leksak-boll', x: GOND.x + 34, y: GBOT, stand: 'gond' },
   { k: 'leksak-ben', x: GOND.x + 84, y: GBOT, stand: 'gond' },
+  { k: 'leksak-morot', x: GOND.x + 59, y: GBOT, stand: 'gond' },
 ];
 
 // ---------- personalen (grönt förkläde) ----------
@@ -104,7 +105,8 @@ const TIPS = [
   '💬 Katter behöver en kattlåda – och den måste tömmas ibland!',
   '💬 Hundar måste ut på promenad i koppel, annars blir det olyckor inne.',
   '💬 Maten: klicka på säcken hemma så bär du den, klicka sen på skålen så häller du upp.',
-  '💬 Alla djur här är ungar. De blir unga efter 3 dagar och vuxna efter en vecka.',
+  '💬 Alla djur här är ungar. De växer av mat, lek, en leksak och rätt toalett – tidigast unga efter 3 dagar och vuxna efter en vecka.',
+  '💬 Kaniner jagar inga bollar – men de älskar att gnaga på en gnagmorot!',
   '💬 Har du en hane och en hona av samma art kan de bli kära – och få ungar!',
   '💬 Kaniner trivs bäst i en bur med halm. Byt halm ibland så blir de glada.',
   '💬 Djuren har en liten mätare ovanför sig: hjärtat är glädje och skålen är hunger.',
@@ -719,6 +721,7 @@ export function makeShopDjur(A, opts = {}) {
           // flera exemplar på hyllan (småsaker i en liten hög)
           if (w.k === 'leksak-boll') for (const [dx, dy] of [[-9, 0], [-5, -1], [-1, 0], [3, -1], [-7, -3], [-3, -3], [7, 0]]) drawPetItem(ctx, w.k, w.x + dx, w.y + dy, { rot: dx + dy, hover: on && dx === 7 });
           else if (w.k === 'leksak-ben') for (const [dx, dy] of [[-8, 0], [4, 0], [-2, -2], [-6, -4], [6, -3]]) drawPetItem(ctx, w.k, w.x + dx, w.y + dy, { hover: on && dx === 4 });
+          else if (w.k === 'leksak-morot') for (const [dx, dy] of [[-4, -4], [-5, 0], [5, 0], [4, -3]]) drawPetItem(ctx, w.k, w.x + dx, w.y + dy, { hover: on && dx === 5 && dy === 0 });
           else {
             drawPetItem(ctx, w.k, w.x - 7, w.y - 1, { food: 0, water: 0 });
             drawPetItem(ctx, w.k, w.x + 5, w.y, { food: 0, water: 0, hover: on });
@@ -1484,7 +1487,9 @@ function sackCount(store, sp) {
   const s = store.sacksFor(sp);
   return s.inventory + s.placed.length + (s.opened > 0 ? 1 : 0);
 }
-// Startpaketet: det djuret behöver (förbockat om man saknar det) + trevliga tillval
+// Startpaketet: det djuret behöver (förbockat om man saknar det) + trevliga tillval. Ungen
+// växer bara med lek och en leksak hemma (sim.js, dagens krav) – därför är en billig leksak
+// förbockad om hemmet saknar en leksak för arten.
 function kitFor(sp, store) {
   const out = [];
   const firstPet = !store.gifts?.skal;
@@ -1492,17 +1497,22 @@ function kitFor(sp, store) {
   else if (!haveItem(store, 'matskal')) out.push({ k: 'matskal', on: true });
   const sacks = sackCount(store, sp);
   out.push({ k: 'sack-' + sp, on: sacks === 0, has: sacks });
+  const toys = TOYS_FOR[sp] || [];
+  const noToy = !toys.some((k) => haveItem(store, k));
+  const has = (k) => (haveItem(store, k) ? 1 : 0);
   if (sp === 'katt') {
-    out.push({ k: 'kattlada', on: !haveItem(store, 'kattlada'), has: haveItem(store, 'kattlada') ? 1 : 0 });
-    out.push({ k: 'kattkorg', on: false, has: haveItem(store, 'kattkorg') ? 1 : 0 });
-    out.push({ k: 'kattklostrad', on: false, has: haveItem(store, 'kattklostrad') ? 1 : 0 });
+    out.push({ k: 'kattlada', on: !haveItem(store, 'kattlada'), has: has('kattlada') });
+    out.push({ k: 'kattkorg', on: false, has: has('kattkorg') });
+    out.push({ k: 'leksak-boll', on: noToy, has: has('leksak-boll') });
+    out.push({ k: 'kattklostrad', on: false, has: has('kattklostrad') });
   } else if (sp === 'hund') {
     if (!store.gifts?.koppel && !store.hasLeash()) out.push({ k: 'koppel', free: true });
     else if (!store.hasLeash()) out.push({ k: 'koppel', on: true });
-    out.push({ k: 'hundkorg', on: !haveItem(store, 'hundkorg'), has: haveItem(store, 'hundkorg') ? 1 : 0 });
-    out.push({ k: 'leksak-ben', on: false, has: haveItem(store, 'leksak-ben') ? 1 : 0 });
+    out.push({ k: 'hundkorg', on: !haveItem(store, 'hundkorg'), has: has('hundkorg') });
+    out.push({ k: 'leksak-ben', on: noToy, has: has('leksak-ben') });
   } else if (sp === 'kanin') {
-    out.push({ k: 'kaninbur', on: !haveItem(store, 'kaninbur'), has: haveItem(store, 'kaninbur') ? 1 : 0 });
+    out.push({ k: 'kaninbur', on: !haveItem(store, 'kaninbur'), has: has('kaninbur') });
+    out.push({ k: 'leksak-morot', on: noToy, has: has('leksak-morot') });
   }
   if (!haveItem(store, 'vattenskal')) out.push({ k: 'vattenskal', on: false });
   return out;
@@ -1512,6 +1522,8 @@ const CARE = {
   hund: 'Hunden måste ut och gå i koppel – annars kan den bajsa och kissa inne. Den kan följa med dig i staden!',
   kanin: 'Kaninen trivs i en bur med halm och vill ha mat i skålen varje dag. Byt halm ibland.',
 };
+// Toaletten som räknas för tillväxten (sim.js: hunden ute, katten i ren låda, kaninen i buren)
+const GROW_TOA = { katt: 'kattlådan', hund: 'bajsa ute', kanin: 'buren' };
 // Porträttet: drawPetIcon (djuret sittande framifrån) i heltalsskala, beskuret kring
 // djuret och centrerat i en kvadratisk ruta på ca 120×120 CSS-px med mönstrad bakgrund.
 // Skalan väljs så att djuret fyller rutan (2 px luft på sidorna, 3 px ovanför): en
@@ -1593,7 +1605,7 @@ function openPetDialog(A, basePet, { onBuy } = {}) {
       </div>
       <b class="dj-lbl">Bra att ha hemma:</b>
       <div class="dj-kit">${kit.map(kitRow).join('')}</div>
-      <p class="dj-hint">🏠 ${CARE[sp]} 🌱 Ungen växer: ung efter 3 dagar, vuxen efter en vecka – och en hane och en hona kan bli kära och få ungar!</p>
+      <p class="dj-hint">🏠 ${CARE[sp]} 🌱 Ungen växer när den får mat, lek, en leksak och rätt toalett (${GROW_TOA[sp]}) – tidigast ung efter 3 dagar och vuxen efter en vecka. Och en hane och en hona kan bli kära och få ungar!</p>
       <p class="dj-price" data-price></p>
       <p class="dj-money" data-money></p>
     </div>

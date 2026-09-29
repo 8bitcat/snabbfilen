@@ -66,6 +66,37 @@
 //   listen(fn) → avprenumerera;  händelser { type, text, petId?, home? } (typ: 'kar', 'ungar',
 //       'vaxte', 'bajs', 'kiss', 'lada', 'hungrig', 'ute', 'hem')
 //   save() · load() · summary() → { count, lines[], hungry[], needWalk[], messes, dirtyLitter }
+//
+// ------------------------- TILLVÄXT AV OMSORG -------------------------
+// Djuren växer inte längre bara av ålder. De samlar tillväxtpoäng (p.grow, totalt) när de
+// mår bra och blir omskötta, och växer ett steg (unge → ung → vuxen) när poängen räcker
+// (GROW_AT) – men aldrig snabbare än en minsta tid i varje stadium (GROW_MIN_DAYS). Poängen
+// kommer löpande i fyra slag, vart och ett med ett tak per speldag (CARE_CAP):
+//   mat     – mätt (inte hungrig) och inte ledsen, poäng per timme
+//   lek     – Klappa/Leka i djurmenyn (bara en lekstund i taget räknas: Klappa var 20:e,
+//             Leka var 30:e speldminut), en kastad boll som djuret springer efter (toyPlay,
+//             var 10:e minut), promenad ute (per minut)
+//   leksak  – minst en leksak hemma: hund boll/tuggben, katt boll/klösträd, kanin gnagmoroten
+//   toa     – toaletten sköts rätt: HUNDEN gör sitt UTE på promenad, KATTEN i en ren kattlåda,
+//             KANINEN i en fräsch bur
+// DAGENS KRAV: lek och leksak KRÄVS. Dagens poäng (alla slag) väntar i care.held och räknas in
+// i tillväxten först när djuret har lekt (minst DAY_NEED.lek i dag – en lekstund, två klappar,
+// en promenad) och har en leksak hemma. Blir det inte så före midnatt är dagens poäng borta.
+// Försummelse ger inga poäng eller drar lite: svält, ledsen/ensam, bajs/kiss inne. Poängen
+// sjunker aldrig under stadiets golv – ett djur krymper aldrig.
+// Djur som var äldre när de kom hem (adopt med en födelsedag bakåt i tiden) har vuxit upp
+// hos uppfödaren: de får stadium efter ålder (STAGE_DAYS) den dag de kommer hem (homeDay).
+//   growth(p) → { stage, next, pct 0–1 (inom stadiet), held (dagens väntande poäng), pctHeld,
+//                 grow, need, daysLeft, ready, waiting (dagens krav inte uppfyllda),
+//                 today: { mat, lek, leksak, toa, inne, held, ok }, missing: ['lek','leksak',…],
+//                 text: 'Växer inte än i dag – behöver lek, leksak, promenad.' } (djurmenyns rad)
+//   toyPlay(petId) → true om leken räknades (lagret: djuret sprang efter bollen man kastade)
+//   growthNews(home?) → händelser 'vaxte' vars pratbubbla ingen visat än (lagret visar dem när
+//       man kommer in till djuret). seenNews(ev, { toast, bubble }) markerar toasten (ev.told)
+//       och/eller bubblan (ev.seen) som visad och sparar direkt.
+//   Nya fält per djur (bakåtkompatibelt – gamla sparfiler får dem vid load()):
+//     grow (poäng), stageDay (dagen stadiet började), homeDay (dagen djuret kom hem, null =
+//     okänt än), care { day, mat, lek, leksak, toa, inne, held } (dagens poäng per slag)
 // ==================================================================
 import { PET_ITEMS } from './items.js';
 
@@ -73,7 +104,30 @@ export const PETS_SAVE_KEY = 'snabbfilen_pets1';
 const GAME_SAVE_KEY = 'snabbfilen_save1';   // spelets egen sparnyckel (js/game.js SAVE_KEY) – saknas den är spelet nytt
 export const MAX_PETS = 12;
 export const ARTER = ['katt', 'hund', 'kanin'];
+// Ålder (dagar) då ett djur som vuxit upp hos uppfödaren är ungt resp. vuxet när det kommer hem.
 export const STAGE_DAYS = { ung: 3, vuxen: 7 };
+// Tillväxt av omsorg (se ovan). Full omsorg ≈ 50–56 poäng/dag → ung efter 3 dagar och vuxen 4 dagar
+// senare – aldrig snabbare än de gamla åldersreglerna. Halv omsorg tar ungefär dubbelt så lång tid,
+// och ett försummat djur växer inte alls.
+export const GROW_AT = { unge: 0, ung: 100, vuxen: 300 };   // poäng (totalt) som krävs för stadiet
+export const GROW_MIN_DAYS = { unge: 3, ung: 4 };            // minst så här många dagar i stadiet
+export const CARE_CAP = { mat: 12, lek: 20, leksak: 8, toa: 16 }; // högst så här mycket per dag och slag
+// Dagens krav: så mycket lek (i dag) innan dagens poäng räknas – och en leksak hemma
+export const DAY_NEED = { lek: 6 };
+export const CARE = {
+  matH: 0.6, leksakH: 0.4,            // per timme: mätt, leksak hemma
+  klapp: 3, lek: 6, lekIgen: 0,       // Klappa (första gången på en stund), Leka (första / tätt efter:
+                                      // inget – annars fyller man dagens lek med femton snabba klick)
+  boll: 3, promenadMin: 0.3,          // djuret springer efter en kastad boll; per minut ute på promenad
+  uteToa: 8, ladaToa: 7,              // hunden gör sitt ute; katten/kaninen i ren låda/bur
+  inne: -8, svaltH: -0.5, ledsenH: -0.25, // bajs/kiss inne; per timme svältande (<15) / ledsen (<25)
+};
+// Leksaker per art. Kaninens bur är dess toalett (och säng), inte dess leksak – kaninen har
+// gnagmoroten (bollen jagar den inte).
+export const TOYS_FOR = { hund: ['leksak-boll', 'leksak-ben'], katt: ['leksak-boll', 'kattklostrad'], kanin: ['leksak-morot'] };
+const RANK = { unge: 0, ung: 1, vuxen: 2 };
+const NEXT = { unge: 'ung', ung: 'vuxen', vuxen: null };
+const DIRTY = { kattlada: 0.7, kaninbur: 0.8 }; // så här smutsig räknas lådan/buren inte som skött
 const DAYMIN = 24 * 60;
 const OUT_MAX_MIN = 6 * 60;      // så länge ett djur orkar vara ute innan det går hem självt
 const URGE_GRACE_MIN = 90;       // speldminuter lagret får på sig att leda djuret till lådan
@@ -204,7 +258,10 @@ export function createPetStore({ storage = null, rng = Math.random, key = PETS_S
         bornDay: day, home: home ?? null, room: opts.room ?? null,
         x: isNum(opts.x) ? opts.x : null, y: isNum(opts.y) ? opts.y : null,
       });
-      p.stage = stageOf(Math.max(S.day, S.nowDay(), day) - p.bornDay); // S.day kan ligga efter (nyss nollställd butik) – spelklockan vet bäst
+      // Hemkomstdagen: S.day kan ligga efter (nyss nollställd butik) – spelklockan vet bäst. Vet
+      // butiken inte alls vilken dag det är (ingen klocka, aldrig tickad) avgörs den vid första synken.
+      const today = Math.max(S.day, S.nowDay(), day);
+      S._settleHome(p, today, !(S.clock || S.clockAbs != null));
       S.pets.push(p);
       if (!S.gifts.skal) { S.gifts.skal = true; S.inventory.matskal = (S.inventory.matskal | 0) + 1; }
       if (species === 'hund' && !S.gifts.koppel) { S.gifts.koppel = true; S.inventory.koppel = (S.inventory.koppel | 0) + 1; }
@@ -218,7 +275,25 @@ export function createPetStore({ storage = null, rng = Math.random, key = PETS_S
         home: o.home, room: o.room, x: o.x, y: o.y, following: false, out: false,
         lover: null, pregnantUntil: null, seed: Math.floor(S.rng() * 1e6),
         ...(o.mix ? { mix: o.mix } : {}), ...(o.breed2 ? { breed2: o.breed2 } : {}),
+        grow: 0, stageDay: o.bornDay, homeDay: o.homeDay ?? o.bornDay, care: null,
       };
+    },
+    // Stadium utan händelse (uppvuxen hos uppfödaren, migrering): poängen minst stadiets golv.
+    _setStage(p, st, stageDay) {
+      if (!(st in RANK)) st = 'unge';
+      p.stage = st;
+      p.stageDay = isNum(stageDay) ? stageDay : p.bornDay;
+      p.grow = Math.max(isNum(p.grow) ? p.grow : 0, GROW_AT[st]);
+    },
+    // Djuret kommer hem dag `day`: det som hunnit bli äldre hos uppfödaren får sitt stadium efter
+    // ålder (aldrig yngre än det redan är). Därefter växer det bara av omsorg.
+    // provisional: dagen är bara en gissning (ingen klocka än) – homeDay lämnas okänd (null)
+    // och avgörs vid första synken.
+    _settleHome(p, day, provisional = false) {
+      const born = isNum(p.bornDay) ? Math.min(p.bornDay, day) : day;
+      p.homeDay = provisional ? null : day;
+      const st = stageOf(day - born);
+      if ((RANK[st] ?? 0) > (RANK[p.stage] ?? 0)) S._setStage(p, st, Math.min(day, born + STAGE_DAYS[st]));
     },
     _freeName(species, sex) {
       const list = NAMN[species]?.[sex] || ['Tuss'];
@@ -364,7 +439,12 @@ export function createPetStore({ storage = null, rng = Math.random, key = PETS_S
       return back;
     },
     _endWalk(p) {
-      if (p.species === 'hund' && (p.outMin || 0) >= 4 && p.toilet > 5) S._business(p);
+      // Har hunden varit ute en stund utan att göra sitt räknas det som gjort. Gjorde den sitt
+      // redan på promenaden kissar den bara lite till – inga nya poäng och ingen ny toast.
+      if (p.species === 'hund' && (p.outMin || 0) >= 4 && p.toilet > 5) {
+        if (p.didBusiness) p.toilet = 0;
+        else S._business(p);
+      }
       p.out = false; p.outMin = 0; p.outTot = 0; p.didBusiness = false;
       p.room = null; p.x = null; p.y = null; // nästa lager i hemmet ställer djuret vid spelaren
     },
@@ -386,6 +466,7 @@ export function createPetStore({ storage = null, rng = Math.random, key = PETS_S
     _business(p) {
       p.toilet = 0;
       p.happy = clamp(p.happy + 8);
+      S._gain(p, 'toa', CARE.uteToa); // tillväxt: toaletten sköttes rätt – ute
       S._emit('ute', `${p.name} fick göra sitt ute. Duktig!`, { petId: p.id, home: p.home });
     },
     // Klappa: mycket glädje första gången, mindre om man klappar oavbrutet.
@@ -396,6 +477,7 @@ export function createPetStore({ storage = null, rng = Math.random, key = PETS_S
       const fresh = p.pattedAt == null || now - p.pattedAt > 20;
       p.happy = clamp(p.happy + (fresh ? 12 : 4));
       p.pattedAt = now;
+      if (fresh) S._gain(p, 'lek', CARE.klapp);
       S.save();
       return p.happy;
     },
@@ -408,8 +490,21 @@ export function createPetStore({ storage = null, rng = Math.random, key = PETS_S
       p.hunger = clamp(p.hunger - 3);
       if (p.species === 'hund') p.toilet = clamp(p.toilet + 3);
       p.playedAt = now;
+      S._gain(p, 'lek', fresh ? CARE.lek : CARE.lekIgen);
       S.save();
       return p.happy;
+    },
+    // Lagret: djuret sprang efter bollen som spelaren kastade (en gång per 10 speldminuter räknas).
+    toyPlay(petId) {
+      const p = S.petById(petId);
+      if (!p || p.out) return false;
+      const now = S.clockAbs ?? 0;
+      if (p.toyAt != null && now - p.toyAt < 10 && now >= p.toyAt) return false;
+      p.toyAt = now;
+      p.happy = clamp(p.happy + 4);
+      S._gain(p, 'lek', CARE.boll);
+      S.save();
+      return true;
     },
     rename(petId, name) {
       const p = S.petById(petId);
@@ -458,6 +553,7 @@ export function createPetStore({ storage = null, rng = Math.random, key = PETS_S
       if (!p) return null;
       const box = where.itemId ? S.itemById(where.itemId) : null;
       if (box && 'dirt' in box && box.dirt < 1) {
+        S._boxUsed(p, box);
         box.dirt = clamp(box.dirt + (box.k === 'kaninbur' ? 0.1 : 0.15), 0, 1);
         p.toilet = 0; p.urge = false; p.urgeMin = 0;
         S.save();
@@ -477,6 +573,7 @@ export function createPetStore({ storage = null, rng = Math.random, key = PETS_S
       if (S.messes.length > 40) S.messes.shift();
       p.toilet = 0; p.urge = false; p.urgeMin = 0;
       p.happy = clamp(p.happy - 4);
+      S._lose(p, -CARE.inne, true); // tillväxt: bajs/kiss inne drar lite
       const what = kind === 'kiss' ? 'kissat' : 'bajsat';
       S._emit(kind, p.species === 'hund' ? `${p.name} har ${what} inne! Gå ut med hunden oftare.`
         : p.species === 'katt' ? `${p.name} har ${what} på golvet – kattlådan behövs (och ska vara ren).`
@@ -514,25 +611,30 @@ export function createPetStore({ storage = null, rng = Math.random, key = PETS_S
       S._advance(from, to, ctx);
     },
     // född "i framtiden" (fel klocka när djuret köptes) → räknas från i dag (spelets riktiga
-    // dag), annars fastnar djuret som unge i veckor
+    // dag), annars fastnar djuret som unge i veckor (minsta tiden räknas från stageDay)
     _clampBorn(day) {
-      for (const p of S.pets) if (!isNum(p.bornDay) || p.bornDay > day) p.bornDay = day;
-    },
-    // Klockan sattes direkt (ny butik, liten bakåthoppning) utan dagsskifte: djur som hunnit
-    // bli äldre (t.ex. adopterade med en födelsedag bakåt i tiden) får rätt livsskede direkt
-    // i stället för nästa morgon. Bara framåt – ett djur blir aldrig yngre.
-    _restage(day) {
-      const RANK = { unge: 0, ung: 1, vuxen: 2 };
       for (const p of S.pets) {
-        const st = stageOf(day - (isNum(p.bornDay) ? p.bornDay : day));
-        if ((RANK[st] ?? 0) <= (RANK[p.stage] ?? 0)) continue;
-        p.stage = st;
-        S._emit('vaxte', st === 'vuxen' ? `${p.name} är vuxen nu!` : `${p.name} har vuxit – inte en liten unge längre.`, { petId: p.id, home: p.home });
+        if (!isNum(p.bornDay) || p.bornDay > day) p.bornDay = day;
+        if (!isNum(p.stageDay)) p.stageDay = p.bornDay;
+        if (p.stageDay > day) p.stageDay = day;
+        if (isNum(p.homeDay) && p.homeDay > day) p.homeDay = day;
+      }
+    },
+    // Klockan sattes direkt (ny butik, liten bakåthoppning) utan dagsskifte: djur vars
+    // hemkomstdag ännu inte var känd (adopterade innan butiken visste vilken dag det var,
+    // t.ex. med en födelsedag bakåt i tiden) får sitt stadium efter ålder direkt i stället för
+    // nästa morgon – de växte upp hos uppfödaren. Andra djur växer bara av omsorg (_checkGrow).
+    // Bara framåt – ett djur blir aldrig yngre.
+    _restage(day) {
+      for (const p of S.pets) {
+        if (p.homeDay == null) S._settleHome(p, day);
+        S._checkGrow(p, day);
       }
     },
     _advance(from, to, ctx) {
       S._migrate(ctx.home);
       S._clampBorn(dayOf(to));
+      for (const p of S.pets) if (p.homeDay == null) S._settleHome(p, dayOf(to));
       if (to - from > 3 * DAYMIN) from = to - 3 * DAYMIN;
       let t = from;
       while (t < to - 1e-9) {
@@ -600,6 +702,11 @@ export function createPetStore({ storage = null, rng = Math.random, key = PETS_S
         }
         // ---- toalett
         if (!p.out) S._toiletStep(p, live, H, m);
+        else if (p.toilet >= 100 && !ctx.outdoors && ctx.playerHome != null && ctx.playerHome === p.home) {
+          // koppel på men kvar inne (hemma hos spelaren): hunden kan inte hålla sig för evigt
+          if (ctx.playerRoom !== undefined) p.room = ctx.playerRoom;
+          S._mess(p, isNum(p.x) ? p.x + (S.rng() - 0.5) * 6 : null, isNum(p.y) ? p.y + 1 : null);
+        }
         // ---- glädje
         let dh = -1.5;
         if (p.hunger < 30) dh -= 4; else if (p.hunger > 70) dh += 0.5;
@@ -614,7 +721,7 @@ export function createPetStore({ storage = null, rng = Math.random, key = PETS_S
           if (p.species === 'katt' && H.litter.length && H.litter.every((b) => b.dirt >= 0.7)) dh -= 3;
           if (H.messes) dh -= 0.7 * Math.min(3, H.messes);
           if (p.species === 'hund' && p.toilet >= 80) dh -= 3;
-          if (H.toys) dh += p.species === 'kanin' ? 0.2 : 0.8;
+          if (H.toys) dh += p.species === 'kanin' && !H.toyFor.kanin ? 0.2 : 0.8;
           if (p.species === 'katt' && H.klos) dh += 0.8;
           if (p.species === 'kanin') dh += H.bur.length ? (H.bur.some((b) => b.dirt >= 0.8) ? -1.5 : 1) : -1.5;
           if (H.beds.some((b) => PET_ITEMS[b.k].sangFor === p.species)) dh += 0.5;
@@ -623,11 +730,14 @@ export function createPetStore({ storage = null, rng = Math.random, key = PETS_S
           if (H.pets.length > 1) dh += 0.5;
         }
         p.happy = clamp(p.happy + dh * h);
+        // ---- tillväxt av omsorg
+        S._careStep(p, m, day, H, ctx);
       }
       S._loveStep(day);
     },
     _homeInfo(home) {
       const its = S.items.filter((i) => i.home === home);
+      const has = (k) => its.some((i) => i.k === k);
       return {
         pets: S.pets.filter((p) => p.home === home && !p.out),
         litter: its.filter((i) => i.k === 'kattlada'),
@@ -635,9 +745,132 @@ export function createPetStore({ storage = null, rng = Math.random, key = PETS_S
         beds: its.filter((i) => PET_ITEMS[i.k]?.sangFor),
         water: its.filter((i) => i.k === 'vattenskal'),
         toys: its.some((i) => PET_ITEMS[i.k]?.typ === 'leksak'),
-        klos: its.some((i) => i.k === 'kattklostrad'),
+        klos: has('kattklostrad'),
+        toyFor: Object.fromEntries(ARTER.map((a) => [a, TOYS_FOR[a].some(has)])),
         messes: S.messes.filter((m) => m.home === home).length,
       };
+    },
+
+    // ------------------------------------------------------------------
+    //  Tillväxt av omsorg
+    // ------------------------------------------------------------------
+    // Dagens omsorgspoäng (nollas vid midnatt – väntande poäng som aldrig räknades in är då borta)
+    _care(p, day = S.day) {
+      if (!p.care || typeof p.care !== 'object' || p.care.day !== day) p.care = { day, mat: 0, lek: 0, leksak: 0, toa: 0, inne: 0, held: 0 };
+      return p.care;
+    },
+    // Dagens krav: djuret har lekt (minst DAY_NEED.lek i dag) och har haft en leksak hemma i dag.
+    _dayOk(c) { return !!c && (c.lek || 0) >= DAY_NEED.lek && (c.leksak || 0) > 0; },
+    // Poäng av ett slag, högst CARE_CAP per dag. Poängen väntar (care.held) tills dagens krav är
+    // uppfyllda – då räknas allt som väntat in i tillväxten på en gång, och resten av dagen direkt.
+    // Returnerar det som räknades i dagens slag.
+    _gain(p, kind, pts, day = S.day) {
+      if (!(pts > 0) || (isNum(p.homeDay) && day < p.homeDay)) return 0;
+      const c = S._care(p, day);
+      const got = Math.min(pts, Math.max(0, CARE_CAP[kind] - (c[kind] || 0)));
+      if (got <= 0) return 0;
+      c[kind] = (c[kind] || 0) + got;
+      c.held = (c.held || 0) + got;
+      if (S._dayOk(c)) {
+        p.grow = (isNum(p.grow) ? p.grow : GROW_AT[p.stage] || 0) + c.held;
+        c.held = 0;
+      }
+      return got;
+    },
+    // Försummelse drar lite – men aldrig under stadiets golv (ett djur krymper aldrig).
+    _lose(p, pts, inne = false, day = S.day) {
+      if (isNum(p.homeDay) && day < p.homeDay) return;
+      if (inne) S._care(p, day).inne += 1;
+      const floor = GROW_AT[p.stage] || 0;
+      p.grow = Math.max(floor, (isNum(p.grow) ? p.grow : floor) - Math.max(0, pts));
+    },
+    // Katten/kaninen använde lådan/buren: räknas bara om den var någorlunda ren (tömd).
+    _boxUsed(p, box) {
+      if ((box.dirt || 0) < (DIRTY[box.k] ?? 0.7)) S._gain(p, 'toa', CARE.ladaToa);
+    },
+    // Löpande (varje steg i simuleringen): mätt och glad → mat, leksak hemma → leksak, promenad →
+    // lek; svält och ledsamhet drar lite. Sedan: dags att växa?
+    _careStep(p, m, day, H, ctx) {
+      if (isNum(p.homeDay) && day < p.homeDay) return; // klockan tickar ikapp tid före hemkomsten
+      const h = m / 60, ok = p.happy >= 25;
+      S._care(p, day);
+      if (p.hunger >= 35 && ok) S._gain(p, 'mat', CARE.matH * h, day);
+      if (!p.out && ok && H.toyFor?.[p.species]) S._gain(p, 'leksak', CARE.leksakH * h, day);
+      if (p.out && ctx.outdoors) S._gain(p, 'lek', CARE.promenadMin * m, day);
+      const loss = (p.hunger < 15 ? -CARE.svaltH * h : 0) + (!ok ? -CARE.ledsenH * h : 0);
+      if (loss > 0) S._lose(p, loss, false, day);
+      if (p.stage === 'vuxen' && p.grow > GROW_AT.vuxen) p.grow = GROW_AT.vuxen; // färdigväxt
+      S._checkGrow(p, day);
+    },
+    // Växer ett steg när poängen räcker och djuret varit i stadiet minst GROW_MIN_DAYS dagar.
+    _checkGrow(p, day = S.day) {
+      const next = NEXT[p.stage];
+      if (!next) return false;
+      if (!isNum(p.grow) || p.grow < GROW_AT[next]) return false;
+      const since = isNum(p.stageDay) ? p.stageDay : isNum(p.bornDay) ? p.bornDay : day;
+      if (day - since < GROW_MIN_DAYS[p.stage]) return false;
+      p.stage = next;
+      p.stageDay = day;
+      const hen = p.sex === 'hona' ? 'hon' : 'han';
+      // told = toasten visad, seen = pratbubblan över djuret visad (lagret/promenaden sätter dem)
+      S._emit('vaxte', `${p.name} har vuxit! Nu är ${hen} ${next === 'vuxen' ? 'vuxen' : 'ung'}.`,
+        { petId: p.id, home: p.home, species: p.species, stage: next, seen: false, told: false });
+      S.save();
+      return true;
+    },
+    // Djurmenyns TILLVÄXT-rad: hur långt i stadiet, vad som saknas i dag och om tiden räcker.
+    growth(p) {
+      if (typeof p === 'string') p = S.petById(p);
+      if (!p) return null;
+      const stage = p.stage in RANK ? p.stage : 'unge', next = NEXT[stage];
+      const grow = isNum(p.grow) ? p.grow : GROW_AT[stage];
+      const c = p.care && p.care.day === S.day ? p.care : { mat: 0, lek: 0, leksak: 0, toa: 0, inne: 0, held: 0 };
+      const dayOk = S._dayOk(c), held = dayOk ? 0 : Math.max(0, c.held || 0);
+      const today = { mat: c.mat / CARE_CAP.mat, lek: c.lek / CARE_CAP.lek, leksak: c.leksak / CARE_CAP.leksak, toa: c.toa / CARE_CAP.toa, inne: c.inne | 0, held, ok: dayOk };
+      if (!next) return { stage, next: null, pct: 1, held: 0, pctHeld: 0, grow, need: GROW_AT[stage], daysLeft: 0, ready: false, waiting: false, today, missing: [], text: 'Fullvuxen.' };
+      const lo = GROW_AT[stage], need = GROW_AT[next];
+      const pct = Math.max(0, Math.min(1, (grow - lo) / (need - lo)));
+      const pctHeld = Math.max(0, Math.min(1 - pct, held / (need - lo)));
+      const since = isNum(p.stageDay) ? p.stageDay : isNum(p.bornDay) ? p.bornDay : S.day;
+      const daysLeft = Math.max(0, GROW_MIN_DAYS[stage] - (S.nowDay() - since));
+      const ready = grow >= need;
+      // vad som saknas (i dag): mat, lek, leksak hemma, toaletten
+      const H = S._homeInfo(p.home), missing = [];
+      const toy = H.toyFor[p.species];
+      if (p.hunger < 35) missing.push('mat');
+      if (p.happy < 25) missing.push('sällskap');
+      if (c.lek < CARE_CAP.lek * 0.5) missing.push('lek');
+      if (!toy) missing.push('leksak');
+      if (p.species === 'hund') { if (c.toa < CARE_CAP.toa / 2 || c.inne > 0) missing.push('promenad'); }
+      else if (p.species === 'katt') {
+        if (!H.litter.length) missing.push('kattlåda');
+        else if (H.litter.every((b) => b.dirt >= DIRTY.kattlada)) missing.push('tömd kattlåda');
+      } else if (!H.bur.length) missing.push('en bur');
+      else if (H.bur.every((b) => b.dirt >= DIRTY.kaninbur)) missing.push('ny halm i buren');
+      // dagens krav inte uppfyllda: ingen lek än i dag, ingen leksak (eller för ledsen för att leka
+      // med den). En leksak som nyss ställts fram hos ett glatt djur räknas inom tio minuter.
+      const waiting = !dayOk && ((c.lek || 0) < DAY_NEED.lek || (!((c.leksak || 0) > 0) && !(toy && p.happy >= 25)));
+      const word = next === 'vuxen' ? 'vuxen' : 'ung';
+      let text;
+      if (ready && daysLeft > 0) text = `Stor nog snart – blir ${word} om ${daysLeft === 1 ? '1 dag' : daysLeft + ' dagar'}.`;
+      else if (ready) text = `Blir ${word} vilken stund som helst!`;
+      else if (waiting) text = `Växer inte än i dag – behöver ${(missing.length ? missing : ['lek']).join(', ')}.`;
+      else if (missing.length) text = `Växer: behöver ${missing.join(', ')}.`;
+      else text = 'Växer så det knakar – allt är bra!';
+      return { stage, next, pct, held, pctHeld, grow, need, daysLeft, ready, waiting, today, missing, text };
+    },
+    // Tillväxthändelser vars pratbubbla ingen har visat än (spelaren var inte i rummet när det hände)
+    growthNews(home = null) {
+      return S.log.filter((e) => e.type === 'vaxte' && e.seen === false && (home == null || e.home == null || e.home === home));
+    },
+    // Visad: toasten (ev.told) och/eller pratbubblan över djuret (ev.seen). Sparas direkt – annars
+    // kommer den igen om fliken stängs före nästa autosparning.
+    seenNews(ev, { toast = true, bubble = true } = {}) {
+      if (!ev) return;
+      let changed = false;
+      if (toast && ev.told !== true) { ev.told = true; changed = true; }
+      if (bubble && ev.seen === false) { ev.seen = true; changed = true; }
+      if (changed) S.save();
     },
     _findBowl(p, desperate) {
       const bowls = S.items.filter((i) => i.home === p.home && i.k === 'matskal' && i.food > 0.01);
@@ -653,6 +886,7 @@ export function createPetStore({ storage = null, rng = Math.random, key = PETS_S
       if (p.species === 'katt') {
         const box = H.litter.filter((b) => b.dirt < 1).sort((a, b) => (sameRoom(b.room, p.room) - sameRoom(a.room, p.room)) || a.dirt - b.dirt)[0];
         if (box) {
+          S._boxUsed(p, box);
           box.dirt = clamp(box.dirt + 0.15, 0, 1);
           p.toilet = 0; p.urge = false; p.urgeMin = 0;
           if (box.dirt >= 0.99) S._emit('lada', `Kattlådan är full – ${p.name} vill ha den tömd!`, { petId: p.id, home: p.home, itemId: box.id });
@@ -660,7 +894,7 @@ export function createPetStore({ storage = null, rng = Math.random, key = PETS_S
         }
       } else if (p.species === 'kanin') {
         const cage = H.bur.find((b) => b.dirt < 1);
-        if (cage) { cage.dirt = clamp(cage.dirt + 0.1, 0, 1); p.toilet = 0; p.urge = false; p.urgeMin = 0; return; }
+        if (cage) { S._boxUsed(p, cage); cage.dirt = clamp(cage.dirt + 0.1, 0, 1); p.toilet = 0; p.urge = false; p.urgeMin = 0; return; }
       }
       // på golvet – nära där djuret är (eller på en slumpad plats om det inte syns)
       const x = isNum(p.x) ? p.x + (S.rng() - 0.5) * 6 : null, y = isNum(p.y) ? p.y + 1 : null;
@@ -668,13 +902,8 @@ export function createPetStore({ storage = null, rng = Math.random, key = PETS_S
     },
     _newDay(day) {
       S.day = day;
-      for (const p of S.pets) {
-        const st = stageOf(day - (isNum(p.bornDay) ? p.bornDay : day));
-        if (st !== p.stage) {
-          p.stage = st;
-          S._emit('vaxte', st === 'vuxen' ? `${p.name} är vuxen nu!` : `${p.name} har vuxit – inte en liten unge längre.`, { petId: p.id, home: p.home });
-        }
-      }
+      // en ny dag: den minsta tiden i stadiet kan just ha gått – växer den som samlat nog
+      for (const p of S.pets) S._checkGrow(p, day);
       // förlossningar
       for (const mom of [...S.pets]) {
         if (mom.pregnantUntil == null || day < mom.pregnantUntil) continue;
@@ -747,14 +976,27 @@ export function createPetStore({ storage = null, rng = Math.random, key = PETS_S
       if (!p || p.v !== 1) return S;
       const num = (v, d = 0) => (isNum(+v) && v !== null && v !== '' ? +v : d);
       const savedDay = Math.max(1, num(p.day, 1) | 0);
-      S.pets = (Array.isArray(p.pets) ? p.pets : []).filter((q) => q && ARTER.includes(q.species)).slice(0, MAX_PETS).map((q) => ({
-        ...q,
-        id: String(q.id), name: cleanName(q.name) || 'Tuss', breed: String(q.breed || ''), sex: q.sex === 'hona' ? 'hona' : 'hane',
-        bornDay: Math.min(savedDay, num(q.bornDay, 1)), stage: ['unge', 'ung', 'vuxen'].includes(q.stage) ? q.stage : 'unge',
-        hunger: clamp(num(q.hunger, 70)), happy: clamp(num(q.happy, 70)), toilet: clamp(num(q.toilet, 0)),
-        x: isNum(q.x) ? q.x : null, y: isNum(q.y) ? q.y : null, following: !!q.following, out: !!q.out,
-        lover: q.lover ? String(q.lover) : null, pregnantUntil: isNum(q.pregnantUntil) ? q.pregnantUntil : null,
-      }));
+      S.pets = (Array.isArray(p.pets) ? p.pets : []).filter((q) => q && ARTER.includes(q.species)).slice(0, MAX_PETS).map((q) => {
+        const bornDay = Math.min(savedDay, num(q.bornDay, 1));
+        const stage = ['unge', 'ung', 'vuxen'].includes(q.stage) ? q.stage : 'unge';
+        return {
+          ...q,
+          id: String(q.id), name: cleanName(q.name) || 'Tuss', breed: String(q.breed || ''), sex: q.sex === 'hona' ? 'hona' : 'hane',
+          bornDay, stage,
+          hunger: clamp(num(q.hunger, 70)), happy: clamp(num(q.happy, 70)), toilet: clamp(num(q.toilet, 0)),
+          x: isNum(q.x) ? q.x : null, y: isNum(q.y) ? q.y : null, following: !!q.following, out: !!q.out,
+          lover: q.lover ? String(q.lover) : null, pregnantUntil: isNum(q.pregnantUntil) ? q.pregnantUntil : null,
+          // Tillväxt av omsorg (nya fält – gamla sparfiler får dem här). Ett djur behåller alltid sitt
+          // stadium och får startpoäng som motsvarar det; minsta tiden räknas från när det (med de
+          // gamla åldersreglerna) nådde stadiet. homeDay = födelsedagen: inget växer längre av ålder.
+          grow: Math.max(GROW_AT[stage], isNum(q.grow) ? q.grow : 0),
+          stageDay: Math.min(savedDay, isNum(q.stageDay) ? q.stageDay : stage === 'unge' ? bornDay : bornDay + STAGE_DAYS[stage]),
+          homeDay: isNum(q.homeDay) ? Math.min(savedDay, q.homeDay) : q.homeDay === null ? null : bornDay,
+          care: q.care && typeof q.care === 'object' && isNum(q.care.day)
+            ? { day: q.care.day, mat: num(q.care.mat), lek: num(q.care.lek), leksak: num(q.care.leksak), toa: num(q.care.toa), inne: num(q.care.inne) | 0, held: num(q.care.held) }
+            : null,
+        };
+      });
       S.items = (Array.isArray(p.items) ? p.items : []).filter((i) => i && PET_ITEMS[i.k]).slice(0, 80).map((i) => {
         const it = { ...i, id: String(i.id), x: num(i.x), y: num(i.y) };
         if ('food' in it) it.food = clamp(num(it.food), 0, 1);

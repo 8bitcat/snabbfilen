@@ -10,6 +10,13 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.41.0] – 2026-09-29 – Husdjuren växer av omsorg
+- Husdjuren växer av omsorg: valpar, kattungar och kaninungar blir unga och sedan vuxna när de får mat, lek, en leksak hemma och sköts rätt på toaletten
+- Hunden gör sina behov ute på promenaden, katten i en ren kattlåda – bajs inne och smutsig låda ger ingen tillväxt
+- Tid krävs också: minst tre dagar som unge och fyra som ung, även med bästa omsorg
+- Djurmenyn visar en tillväxtmätare och vad djuret behöver, och när djuret växer blir det större och säger JAG HAR VUXIT!
+- Nytt i djuraffären: Gnagmorot, kaninens egen leksak
+
 ## [0.40.0] – 2026-09-29 – Däckbyte i bilverkstaden
 - Bilverkstaden: riktigt däckbyte steg för steg – bilen kör in, hissa, hämta skruvdragaren, skruva ur skruvarna en i taget, lyft av däcket, lägg det i stapeln, hämta rätt däck, skruva fast i kryss, fyll luft och sänk
 - Det punkterade hjulet syns på bilen, och en arbetsorder visar vilket hjul och vilket däck bilen ska ha
