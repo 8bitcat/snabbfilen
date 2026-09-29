@@ -343,7 +343,9 @@ export function makeCity(A) {
   // Under resan sitter figuren i bussfönstret (trafiken ritar den), kameran följer bussen
   // och vid målet kliver man av med alight(). Klick under resan hoppar fram (skipRide).
   let riding = false;   // spelaren sitter i bussen (traffic.ride() ≠ null)
-  let sitting = null;   // spelaren sitter på en bänk: { seat } från props.seats()
+  let sitting = null;
+  // en annan spelare sitter redan på platsen (world.js si) – sätt dig inte i knät på hen
+  const remoteSat = (s) => worldFolksHere(A).some((f) => f.sit && !f.walking && Math.abs(f.x - s.x) < 4 && Math.abs(f.y - s.y) < 4);   // spelaren sitter på en bänk: { seat } från props.seats()
   function boardNow(from, toId) {
     if (g.money < BUS_FARE) { toast(`🚌 Bussen kostar ${BUS_FARE} kr – du har inte råd.`, 'bad'); S.traffic.release?.(from.id); return; }
     const ok = S.traffic.board?.(from.id, toId, { look: A.avatar.look, dir: 'down' });
@@ -533,6 +535,7 @@ export function makeCity(A) {
   return {
     get worldX() { return walker.px; },
     get worldY() { return walker.py; },
+    get worldSit() { return sitting ? { dir: sitting.seat.dir || 'down' } : null; }, // andra ser mig sitta på bänken
     _debug: {
       spot: (id) => { const b = ALL_BUILDINGS.find((x) => x.id === id); return b ? spotOf(b) : null; },
       tile: (a, bb) => ({ x: 60 + a * 40 - cam.x, y: CITY.SIDEWALK_N[0] + 8 + bb * 10 - cam.y }),
@@ -624,10 +627,10 @@ export function makeCity(A) {
       const stop = busStopHit(x, y);
       if (stop) { walker.walkTo(stop.wait.x, stop.wait.y, () => openBusDialog(stop)); return; }
       // klick på en ledig bänkplats → gå dit och sätt dig
-      const seat = S.props.seatAt?.(x, y, (s) => !S.life.seatBusy?.(s.id));
+      const seat = S.props.seatAt?.(x, y, (s) => !S.life.seatBusy?.(s.id) && !remoteSat(s));
       if (seat) {
         walker.walkTo(seat.walk.x, seat.walk.y, () => {
-          if (S.life.seatBusy?.(seat.id)) { toast('🪑 Upptaget – någon hann före.'); return; }
+          if (S.life.seatBusy?.(seat.id) || remoteSat(seat)) { toast('🪑 Upptaget – någon hann före.'); return; }
           sitting = { seat };
           walker.stop();
           walker.px = seat.x; walker.py = seat.y; walker.dir = seat.dir || 'down'; // fotpunkten på sitsen (env.player håller platsen åt en)

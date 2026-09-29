@@ -10,6 +10,10 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.42.0] – 2026-09-29 – Vi sitter tillsammans
+- Andra spelare syns SITTANDE: sätter sig någon vid ett bord på caféet, i Burgarbaren, i Möbeljättens restaurang eller på en parkbänk ser alla andra figuren sitta där – och tugga när maten står framme
+- Platsen där en annan spelare sitter är upptagen: varken du eller stadens folk sätter sig i knät på dem, och den blir ledig igen när de reser sig
+
 ## [0.41.0] – 2026-09-29 – Husdjuren växer av omsorg
 - Husdjuren växer av omsorg: valpar, kattungar och kaninungar blir unga och sedan vuxna när de får mat, lek, en leksak hemma och sköts rätt på toaletten
 - Hunden gör sina behov ute på promenaden, katten i en ren kattlåda – bajs inne och smutsig låda ger ingen tillväxt

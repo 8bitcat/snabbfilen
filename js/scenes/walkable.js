@@ -129,7 +129,10 @@ export function folkDrawables(A, t) {
   return worldFolksHere(A).map((f) => ({
     fy: f.y,
     draw(ctx) {
-      drawPerson(ctx, f.x, f.y, f.av.look, 'down', f.walking ? WALK_SEQ[Math.floor(t * 8.5) % 4] : (Math.sin(t * 2 + f.x) > 0.9 ? 4 : 0));
+      // sitter spelaren (world.js si): sittande på platsen, tuggar då och då om maten står framme
+      const seated = f.sit && !f.walking;
+      const frame = seated ? (f.eat && Math.floor(t * 1.6 + f.x * 0.37) % 3 === 1 ? 6 : 5) : f.walking ? WALK_SEQ[Math.floor(t * 8.5) % 4] : (Math.sin(t * 2 + f.x) > 0.9 ? 4 : 0);
+      drawPerson(ctx, f.x, f.y, f.av.look, seated ? f.sit : 'down', frame);
       nameTag(ctx, f.x, f.y - 50, f.av);
       if (f.emote) emoteBubble(ctx, f.x, f.y - 58, f.emote);
       if (f.say) sayBubble(ctx, f.x, f.y - (f.emote ? 76 : 60), f.say);

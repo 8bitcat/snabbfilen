@@ -43,7 +43,7 @@ import { openModal, closeModal, toast } from '../core/ui.js';
 import { fmt } from '../game.js';
 import { play } from '../core/sound.js';
 import { createWalker, selfDrawable, folkDrawables, WALK_SEQ, nameTag, emoteBubble, iconBubble, sayBubble, createSpeech } from './walkable.js';
-import { worldFolksHere, worldMyEmote } from '../net/world.js';
+import { worldFolksHere, worldMyEmote, worldSeatsTaken } from '../net/world.js';
 
 const talk = createSpeech(); // repliker och beskrivningar som pratbubblor i scenen
 // regelns två repliker (samma i alla matställen)
@@ -2228,6 +2228,7 @@ export function makeShopKafe(A) {
   function update(dt) {
     t += dt;
     walker.update(dt);
+    worldSeatsTaken(A, seats); // där en annan spelare sitter är det upptaget
     updateMe(dt);
     updateBarista(dt);
     for (const G of guests) updateGuest(G, dt);
@@ -2243,6 +2244,8 @@ export function makeShopKafe(A) {
   return {
     get worldX() { return me.seat ? me.seat.x : walker.px; },
     get worldY() { return me.seat ? me.seat.y : walker.py; },
+    // andra spelare ser mig sitta vid bordet (och tugga när fikat står framme)
+    get worldSit() { return me.state === 'sit' && me.seat && !me.slide ? { dir: me.seat.dir, eat: me.item >= 0 } : null; },
     _debug: {
       spot: (id) => {
         const h = hot.find((h) => h.id === id);
@@ -2256,7 +2259,7 @@ export function makeShopKafe(A) {
       teleport: (x, y) => { if (me.state === 'sit') standUp(); walker.px = x; walker.py = y; walker.stop(); walker.snapFree(); cam.x = cams(); },
       tick: (sec) => { for (let i = 0; i < sec * 30; i++) update(1 / 30); },
       state: () => ({ me: me.state, seat: me.seat?.id || null, item: me.item, stage: me.stage, food: me.food ? { ...me.food } : null, x: Math.round(walker.px), y: Math.round(walker.py), barista: bar.phase, guests: guests.map((G) => G.state), money: g.money, hunger: g.hunger, energy: g.energy, say: talk.text(), door: +doorOpen.toFixed(2), doorForMe }),
-      seats: () => seats.map((s) => ({ id: s.id, x: s.x, y: s.y, occ: s.occ === 'me' ? 'me' : s.occ ? 'npc' : null })),
+      seats: () => seats.map((s) => ({ id: s.id, x: s.x, y: s.y, occ: s.occ === 'me' ? 'me' : s.occ?.state === 'remote' ? 'remote' : s.occ ? 'npc' : null })),
       // närmaste lediga bordsplats vänd mot oss (för testerna: s.x/s.y i skärmkoordinater)
       // för testerna: håll alla lediga platser upptagna (ingen syns där) / släpp en eller alla igen
       hold: () => freeSeats().map((s) => { s.occ = { state: 'hold' }; return s.id; }),

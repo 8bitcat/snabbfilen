@@ -44,7 +44,7 @@ import { openModal, closeModal } from '../core/ui.js';
 import { fmt, JOBS } from '../game.js';
 import { play } from '../core/sound.js';
 import { createWalker, selfDrawable, folkDrawables, WALK_SEQ, sayBubble, iconBubble, createSpeech } from './walkable.js';
-import { worldFolksHere } from '../net/world.js';
+import { worldFolksHere, worldSeatsTaken } from '../net/world.js';
 import { burgarMeny } from '../jobs/jobb-burgare.js';
 
 const talk = createSpeech(); // repliker och beskrivningar som pratbubblor i scenen
@@ -1735,6 +1735,7 @@ export function makeShopBurgarbar(A) {
   function update(dt) {
     t += dt;
     walker.update(dt);
+    worldSeatsTaken(A, seats); // där en annan spelare sitter är det upptaget
     updateMe(dt);
     updateKass(dt);
     updateKitchen(dt);
@@ -1763,6 +1764,8 @@ export function makeShopBurgarbar(A) {
   return {
     get worldX() { return me.seat ? me.seat.x : walker.px; },
     get worldY() { return me.seat ? me.seat.y : walker.py; },
+    // andra spelare ser mig sitta vid bordet (och tugga så länge brickan står framme)
+    get worldSit() { return me.state === 'sit' && me.seat && !me.slide ? { dir: me.seat.dir, eat: !!me.tray } : null; },
     _debug: {
       spot: (id) => {
         const h = hot.find((h) => h.id === id);

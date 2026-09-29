@@ -740,6 +740,7 @@ export function makeShopIkea(A, opts = {}) {
   return {
     get worldX() { return playerPos()[0]; },
     get worldY() { return playerPos()[1]; },
+    get worldSit() { return isSeated() ? { dir: 'down', eat: meal?.st === 'eat' } : null; }, // andra ser mig sitta och äta i restaurangen
     get floor() { return F.n; },
     _debug: {
       // skärmkoordinater till den första utställda möbeln av sorten – byter plan

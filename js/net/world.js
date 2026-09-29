@@ -201,7 +201,18 @@ export const worldMarkActive = markActive;
 
 // ---------- min publicerade state ----------
 function myState(A) {
-  return { av: { name: A.avatar.name, look: A.avatar.look, color: A.avatar.color }, scene: myScene(A), x: A.scene?.worldX ?? 190, y: A.scene?.worldY ?? 174, home: A.game.home, deco: A.game.deco, key: NET_KEY, ver: VERSION, vo: voiceFlag() ? 1 : 0 };
+  return { av: { name: A.avatar.name, look: A.avatar.look, color: A.avatar.color }, scene: myScene(A), x: A.scene?.worldX ?? 190, y: A.scene?.worldY ?? 174, home: A.game.home, deco: A.game.deco, key: NET_KEY, ver: VERSION, vo: voiceFlag() ? 1 : 0, si: mySit(A) };
+}
+// Sitter jag? Scenen svarar med getter worldSit: null, 'down'/'up'/'left'/'right' eller
+// { dir, eat } (eat = maten står framför mig och jag tuggar). Skickas som 'd', 'u', 'l', 'r'
+// + 'e' när jag äter – andra ritar mig då sittande på samma plats (worldX/worldY = platsen).
+const SIT_CODE = { down: 'd', up: 'u', left: 'l', right: 'r' };
+const SIT_DIR = { d: 'down', u: 'up', l: 'left', r: 'right' };
+function mySit(A) {
+  let s = null;
+  try { s = A.scene?.worldSit ?? null; } catch { s = null; }
+  const c = SIT_CODE[typeof s === 'string' ? s : s?.dir];
+  return c ? c + (s?.eat ? 'e' : '') : '';
 }
 function myScene(A) {
   if (A.sceneName === 'city') return 'city';
@@ -224,6 +235,7 @@ function cleanP(p, old = {}) {
     if (typeof p.key === 'string') out.key = p.key.slice(0, 40);
     if (typeof p.ver === 'string') out.ver = p.ver.slice(0, 16);
     if (p.vo !== undefined) out.vo = p.vo ? 1 : 0;
+    if (p.si !== undefined) out.si = /^[dulr]e?$/.test(String(p.si)) ? String(p.si) : '';
     if (p.deco !== undefined && p.deco && typeof p.deco === 'object') {
       out.deco = {};
       // upp till 24 delrum med 80 möbler var (de nya bostäderna har fler rum och mer bohag)
@@ -357,7 +369,7 @@ export function worldTick(A, myX, dt) {
   if (!W || !W.open) return;
   const now = performance.now();
   const myY = A.scene?.worldY ?? null;
-  const meta = JSON.stringify([A.avatar.look, A.avatar.name, myScene(A), A.game.home, A.game.deco, voiceFlag() ? 1 : 0]);
+  const meta = JSON.stringify([A.avatar.look, A.avatar.name, myScene(A), A.game.home, A.game.deco, voiceFlag() ? 1 : 0, mySit(A)]);
   const metaChanged = meta !== W.lastMeta;
   const posChanged = myX !== null && (Math.abs(myX - W.lastX) > 0.5 || Math.abs((myY ?? 0) - (W.lastY ?? 0)) > 0.5);
   if ((metaChanged || posChanged) && now - W.lastSent > 90) {
@@ -385,9 +397,20 @@ export function worldFolksHere(A) {
   const out = [];
   for (const [id, p] of W.players) {
     if (p.scene !== here) continue;
-    out.push({ id, av: p.av, x: p.x, y: p.y, vo: p.vo | 0, walking: Math.hypot((p.tx ?? p.x) - p.x, (p.ty2 ?? p.y) - p.y) > 1, emote: (p.emote && p.emote.until > Date.now() ? p.emote.e : null) || (talkSrc(id) ? TALK_EMOTE : null), say: p.say && p.say.until > Date.now() ? p.say.text : null });
+    out.push({ id, av: p.av, x: p.x, y: p.y, vo: p.vo | 0, walking: Math.hypot((p.tx ?? p.x) - p.x, (p.ty2 ?? p.y) - p.y) > 1, sit: p.si ? SIT_DIR[p.si[0]] : null, eat: p.si?.[1] === 'e', emote: (p.emote && p.emote.until > Date.now() ? p.emote.e : null) || (talkSrc(id) ? TALK_EMOTE : null), say: p.say && p.say.until > Date.now() ? p.say.text : null });
   }
   return out;
+}
+// Stolar där en annan spelare sitter blir upptagna ({ state: 'remote' }) så att varken jag
+// eller ställets folk sätter sig i knät på dem; platsen släpps när de reser sig eller går.
+// seats = scenens platser med x, y och occ (kaféet, Burgarbaren). Anropas varje bildruta.
+export function worldSeatsTaken(A, seats, tol = 4) {
+  const sitting = worldFolksHere(A).filter((f) => f.sit && !f.walking);
+  for (const s of seats) {
+    const who = sitting.find((f) => Math.abs(f.x - s.x) <= tol && Math.abs(f.y - s.y) <= tol);
+    if (who && !s.occ) s.occ = { state: 'remote', id: who.id };
+    else if (!who && s.occ?.state === 'remote') s.occ = null;
+  }
 }
 export const worldMyEmote = () => (W?.myEmote && W.myEmote.until > Date.now() ? W.myEmote.e : null) || (talkSrc('self') ? TALK_EMOTE : null);
 let mySay = null;
