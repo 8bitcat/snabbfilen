@@ -10,6 +10,10 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.46.1] – 2026-09-29 – Husskyltar och kyrkogården
+- Bostadshusen i stan (Tornhuset, radhusen, höghusen …) visar nu en skylt när du inte bor där: vilken bostad det är, vad den kostar och 👁 Titta in – flytta gör du hos mäklaren på Bostadsbyrån (🔑-knappen tar dig dit)
+- Kyrkogården: gravarna står inte längre på gångarna och häcken ligger inte över grinden – ny uppställning efter att Leksakslådan flyttade in
+
 ## [0.46.0] – 2026-09-29 – Riktiga ljud överallt
 - RIKTIGA LJUD: allt som låter i spelet är nu inspelningar (fria CC0-ljud) i stället för pip och syntar
 - Bakgrundsljud som skiftar där du går: trafiken på gatorna, fåglar och duvor i parken, vågor, måsar och båtmotorer vid kanalen, blåsten som tar i vid vattnet, regnet (dämpat när du är inne), snön, natten med syrsor

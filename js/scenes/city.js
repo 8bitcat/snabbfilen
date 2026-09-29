@@ -3,6 +3,7 @@
 // händer när man går in; konsten och livet kommer från modulerna i js/city/
 // (kontraktet: js/city/map.js + docs/STADEN.md). Modulerna laddas var för sig –
 // kraschar en, lever resten.
+import { openHouseSign } from '../shops/bostad.js';
 import { CITY, BUILDINGS, ALL_BUILDINGS, doorCenter, artPos, artBox, baseOf, isNightHour, BUS_STOPS, busStopById,
   DISTRICTS, districtAt, districtByName, MAP_OBSTACLES } from '../city/map.js';
 import { createWalker, selfDrawable, folkDrawables, nameTag } from './walkable.js';
@@ -278,6 +279,12 @@ export function makeCity(A) {
     if (kind === 'bostad' && id && !homeHere(b) && !HOMES.some((h) => h.id === id)) {
       const h = NEW_HOMES.find((x) => x.id === id);
       toast(`${b.icon || '🔑'} ${b.sign}: ${h ? `${h.name} hyrs snart ut – ${h.rent} kr/vecka. ` : ''}Fråga på Bostadsbyrån!`);
+      return;
+    }
+    // ett bostadshus man inte bor i: skylten (flytta gör man hos mäklaren på Bostadsbyrån)
+    if ((b.enter === 'hem' || kind === 'bostad' && id) && !homeHere(b)) {
+      play('click');
+      openHouseSign(A, b, { toAgent: () => { const ag = ALL_BUILDINGS.find((x) => x.enter === 'bostad'); if (!ag) return; const dc = doorCenter(ag); walker.walkTo(dc.x, dc.y, () => enter(ag)); } });
       return;
     }
     g.passTime(g.eventIs('regn') ? 10 : 5);

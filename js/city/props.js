@@ -2899,12 +2899,17 @@ export function createProps(env) {
   bed(560, 452, 40, ['red', 'yellow']); bed(1000, 452, 40, ['blue', 'white']);
 
   // =================== kyrkogården ===================
+  // (tomten krympte när Leksakslådan flyttade in: x 1000–1100, norra grinden 1060–1080, södra
+  // 1040–1060, mittgången vid y 567 – gravarna står i fyra kvarter utanför alla gångar och
+  // ingenting står framför grindarna. En grav är 22 px bred, fötterna i (x, y).)
   const KG = LOTS.find((l) => l.id === 'kyrkogard');
   if (KG) {
-    const rows = [[520, [1016, 1040, 1064, 1088, 1130, 1154, 1200]], [548, [1020, 1046, 1070, 1136, 1160, 1184]], [600, [1016, 1078, 1132, 1156, 1180, 1200]], [628, [1022, 1084, 1140, 1164, 1188]]]; // (granen står där 1178 låg)
-    rows.forEach(([y, xs], r) => xs.forEach((x, k) => grave((r + k) % 4, x + Math.round(hash(r, k, 61) * 4), y + Math.round(hash(r, k, 62) * 4))));
-    tree('gran', 1180, 524, false); tree('bjork', 1024, 612, false);
-    bench(1150, 590, true); parkLamp(1126, 592); hedge(1060, 506, 40);
+    const GRAVAR = [[1016, 522], [1040, 524], [1018, 544], [1040, 544],   // nordväst (norra gången går öster om dem)
+      [1014, 602], [1028, 630],                                               // sydväst (södra gången går öster om dem)
+      [1072, 600], [1088, 602], [1074, 628], [1088, 630]];                   // sydost (södra gången går väster om dem)
+    GRAVAR.forEach(([x, y], k) => grave(k % 4, x, y));
+    hedge(1006, 506, 48);                  // häcken längs norra muren, väster om grinden
+    parkLamp(1090, 540);                   // lyktan i nordöstra hörnet (inga trädkronor över gångarna)
   }
 
   // =================== Söder: trottoaren framför husen, gränderna, kajen ===================

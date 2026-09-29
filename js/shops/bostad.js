@@ -47,6 +47,39 @@ export function openHousing(A, { firstTime = false, onDone } = {}) {
   return dlg;
 }
 
+// Skylten vid ett bostadshus man inte bor i (Carl: "det är väl bara hos mäklaren vi kan flytta"):
+// vilken bostad det är, vad den kostar och att den hyrs ut via Bostadsbyrån. 👁 Titta in visar
+// den inifrån (utan flyttknapp), 🔑 Till Bostadsbyrån går dit (toAgent från staden).
+export function openHouseSign(A, b, { toAgent } = {}) {
+  const g = A.game;
+  const homes = (b?.homes || []).map((id) => HOMES.find((h) => h.id === id)).filter(Boolean);
+  const reopen = () => openHouseSign(A, b, { toAgent });
+  const rows = homes.map((h) => `<div class="prow shoprow homerow">
+      <span class="homepic-wrap"><span data-pic="${h.id}" style="font-size:28px;text-align:center">${h.icon}</span>
+        <button class="btn btn-small homelook" data-look="${h.id}" title="Se hur det ser ut inne">👁 Titta in</button></span>
+      <span class="nm">${h.name}<br><small class="sp">${h.desc}</small><br>
+        <small class="sp">Insats <b>${h.deposit ? fmt(h.deposit) : 'gratis'}</b> · hyra ${fmt(h.rent)}/vecka${h.restBonus > 0 ? ` · 😴 +${h.restBonus} energi` : ''}${h.restBonus < 0 ? ` · <span class="bad">🥶 −${Math.abs(h.restBonus)} energi</span>` : ''}</small></span>
+    </div>`).join('');
+  const dlg = openModal(`${b?.icon || '🏠'} ${b?.sign || 'Bostadshuset'}`, `
+    <p style="font-size:19px;margin-top:0">Här bor du inte${homes.length ? ' – men här finns:' : '.'}</p>
+    ${rows ? `<div class="plist">${rows}</div>` : ''}
+    <p style="font-size:18px;margin-bottom:0">🔑 Vill du flytta hit? Det ordnar mäklaren på <b>Bostadsbyrån</b>.</p>`, [
+    { label: 'Okej', onClick: closeModal },
+    ...(toAgent ? [{ label: '🔑 Till Bostadsbyrån', cls: 'btn-go', onClick: () => { closeModal(); toAgent(); } }] : []),
+  ]);
+  dlg.querySelectorAll('[data-pic]').forEach((el) => {
+    try {
+      const c = posterImage(el.dataset.pic);
+      if (!c) return;
+      c.className = 'homepic'; c.style.cursor = 'pointer';
+      c.onclick = () => lookInside(A, el.dataset.pic, { back: reopen, noMove: true });
+      el.replaceWith(c);
+    } catch { /* bilden är bara pynt */ }
+  });
+  dlg.querySelectorAll('[data-look]').forEach((x) => (x.onclick = () => lookInside(A, x.dataset.look, { back: reopen, noMove: true })));
+  return dlg;
+}
+
 function moveHome(A, id, onDone) {
   const g = A.game;
   const r = g.moveTo(id);
@@ -71,8 +104,8 @@ function lookInside(A, id, opts) {
     <div class="look-tabs" data-tabs></div>
     <div class="homelook-pic" data-view></div>
     <p class="sp" style="font-size:17px;margin:6px 0 0">Insats <b>${h.deposit ? fmt(h.deposit) : 'gratis'}</b> · hyra ${fmt(h.rent)}/vecka</p>`, [
-    { label: '← Alla bostäder', onClick: () => { closeModal(); openHousing(A, opts); } },
-    ...(here ? [] : [{ label: afford ? '🔑 Flytta hit' : `Insats ${fmt(h.deposit)}`, cls: afford ? 'btn-go' : '', onClick: () => { if (!afford) { toast(`Du behöver ${fmt(h.deposit)} i insats.`, 'bad'); return; } moveHome(A, id, opts.onDone); } }]),
+    { label: opts.back ? '← Tillbaka' : '← Alla bostäder', onClick: () => { closeModal(); if (opts.back) opts.back(); else openHousing(A, opts); } },
+    ...(here || opts.noMove ? [] : [{ label: afford ? '🔑 Flytta hit' : `Insats ${fmt(h.deposit)}`, cls: afford ? 'btn-go' : '', onClick: () => { if (!afford) { toast(`Du behöver ${fmt(h.deposit)} i insats.`, 'bad'); return; } moveHome(A, id, opts.onDone); } }]),
   ]);
   const view = dlg.querySelector('[data-view]'), tabs = dlg.querySelector('[data-tabs]');
   function draw() {
