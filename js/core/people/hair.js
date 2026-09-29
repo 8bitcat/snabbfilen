@@ -18,6 +18,10 @@ import { HAIR_KORT } from './hair-kort.js';
 import { HAIR_MELLAN } from './hair-mellan.js';
 import { HAIR_LOCKAR } from './hair-lockar.js';
 import { HAIR_UPPSATT } from './hair-uppsatt.js';
+// omgång 2 (frisören): fler frisyrer i alla grupper + gruppen Kul
+import { HAIR_KLIPP } from './hair-klipp.js';
+import { HAIR_KRULL } from './hair-krull.js';
+import { HAIR_FEST } from './hair-fest.js';
 import { HAIR_FX } from './hair-fx.js';
 export { capF, TIE, braid, tail, L2R, R2L, backStd, backShort, backLong, sideTop, sideStd };
 
@@ -193,11 +197,11 @@ const HAIR_OLD = {
 // ---------- hela registret ----------
 // Underrubrikerna i redigeraren kommer i den här ordningen; inom en rubrik står de gamla
 // frisyrerna först och de nya efter (i filernas ordning). Frisyrer utan känd rubrik hamnar sist.
-const GROUP_ORDER = ['Kort hår', 'Lugg', 'Rakat', 'Mellanlångt', 'Långt hår', 'Lockar', 'Afro', 'Dreads & twists', 'Uppsatt', 'Hästsvansar', 'Flätor'];
+const GROUP_ORDER = ['Kort hår', 'Lugg', 'Rakat', 'Mellanlångt', 'Långt hår', 'Lockar', 'Afro', 'Dreads & twists', 'Uppsatt', 'Hästsvansar', 'Flätor', 'Kul'];
 // några av de gamla frisyrerna flyttas till de nya underrubrikerna (bara rubriken – ritningen är orörd)
 const REGROUP = { afro: 'Afro', dreads: 'Dreads & twists', ponytail: 'Hästsvansar' };
 for (const id in REGROUP) HAIR_OLD[id] = { ...HAIR_OLD[id], group: REGROUP[id] };
-const ALL = { ...HAIR_OLD, ...HAIR_KORT, ...HAIR_MELLAN, ...HAIR_LOCKAR, ...HAIR_UPPSATT };
+const ALL = { ...HAIR_OLD, ...HAIR_KORT, ...HAIR_MELLAN, ...HAIR_LOCKAR, ...HAIR_UPPSATT, ...HAIR_KLIPP, ...HAIR_KRULL, ...HAIR_FEST };
 const rank = (id) => { const g = GROUP_ORDER.indexOf(ALL[id].group); return g < 0 ? GROUP_ORDER.length : g; };
 export const HAIR_REG = Object.fromEntries(Object.keys(ALL).map((id, i) => [id, i]).sort((a, b) => rank(a[0]) - rank(b[0]) || a[1] - b[1]).map(([id]) => [id, ALL[id]]));
 

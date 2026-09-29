@@ -12,6 +12,14 @@
 //   node tools/people-regress.mjs --png      skriv tools/out/regress-diff.png (gammal hash
 //                                            saknar pixlar, så bilden visar NYA spriten för
 //                                            varje avvikande look, 4 riktningar × 10 rutor)
+//   node tools/people-regress.mjs --update-hair   lägg till nya frisyrer i frisyrbaslinjen
+//                                            (tools/people-baseline-hair.json); de som redan
+//                                            finns där behålls. Med --alla skrivs alla om.
+//
+// Frisyrbaslinjen: VARJE frisyr i registret (inte bara de 20 äldsta som huvudbaslinjen
+// täcker) på vuxen och barn, utan huvudbonad / med mössa / med keps / med hörlurar –
+// en hash per utseende över 4 riktningar × 10 bildrutor. Släppta frisyrer ska se likadana
+// ut i alla sparfiler och hos kompisarna; en frisyr som försvunnit ur registret är ett fel.
 //
 // Uppsättningen utseenden fryses i baslinjen (fältet looks) så att nya val som
 // läggs till i registren inte ändrar vad som jämförs. makeLook(frö) kontrolleras
@@ -145,7 +153,51 @@ function png(w, h, rgba) {
   return Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), chunk('IHDR', ihdr), chunk('IDAT', zlib.deflateSync(raw)), chunk('IEND', Buffer.alloc(0))]);
 }
 
+// ---------- frisyrbaslinjen ----------
+const HAIR_BASE = path.join(ROOT, 'tools', 'people-baseline-hair.json');
+const HAIR_BAS = {
+  skin: '#e0a97f', hair: '#6b4226', top: 'tee', shirt: '#3a7bd5', accent: '#f0b429', bottom: 'jeans', pants: '#2d3a5c', shoes: '#c23b3b',
+  hat: null, cap: '#d9433b', glasses: false, beard: false, phones: false, phoneColor: '#d9433b', bag: null, build: 5, blush: false, kid: false,
+};
+const HAIR_VAR = { bar: {}, mossa: { hat: 'beanie' }, keps: { hat: 'cap' }, lurar: { phones: true } };
+// en hash per utseende (frisyr × vuxen/barn × variant) över alla riktningar och bildrutor
+function hairHashes(ids, bas, varianter) {
+  const ctx = fakeCanvas().getContext('2d'), out = {};
+  for (const id of ids) for (const kid of [false, true]) for (const [v, patch] of Object.entries(varianter)) {
+    const L = { ...bas, ...patch, style: id, kid, build: kid ? 4 : bas.build }, h = crypto.createHash('sha1');
+    for (const dir of DIRS) for (const fr of FRAMES) { P.drawPerson(ctx, 12, 39, L, dir, fr); h.update(Buffer.from(ctx.canvas._last._img.data.buffer)); }
+    out[`${id}|${kid ? 'barn' : 'vuxen'}|${v}`] = h.digest('hex').slice(0, 16);
+  }
+  return out;
+}
+// jämför (eller skriver med --update-hair) frisyrbaslinjen; ger antal fel
+function hairCheck() {
+  const now = P.HAIR_STYLES;
+  if (arg('update-hair')) {
+    const old = fs.existsSync(HAIR_BASE) && !arg('alla') ? JSON.parse(fs.readFileSync(HAIR_BASE, 'utf8')) : null;
+    const bas = old?.bas || HAIR_BAS, varianter = old?.varianter || HAIR_VAR;
+    const keep = old ? old.frisyrer.filter((id) => now.includes(id)) : [];
+    const add = now.filter((id) => !keep.includes(id));
+    const hashar = { ...(old ? Object.fromEntries(Object.entries(old.hashar).filter(([k]) => keep.includes(k.split('|')[0]))) : {}), ...hairHashes(add, bas, varianter) };
+    fs.writeFileSync(HAIR_BASE, JSON.stringify({ skapad: old?.skapad || new Date().toISOString(), uppdaterad: new Date().toISOString(), bas, varianter, frisyrer: [...keep, ...add], hashar }, null, 0));
+    console.log(`Frisyrbaslinjen: ${keep.length + add.length} frisyrer (${add.length} nya) → ${path.relative(ROOT, HAIR_BASE)}`);
+    return 0;
+  }
+  if (!fs.existsSync(HAIR_BASE)) { console.log('Frisyrbaslinjen saknas – kör med --update-hair.'); return 0; }
+  const HB = JSON.parse(fs.readFileSync(HAIR_BASE, 'utf8'));
+  const gone = HB.frisyrer.filter((id) => !now.includes(id)), fresh = now.filter((id) => !HB.frisyrer.includes(id));
+  const cur = hairHashes(HB.frisyrer.filter((id) => now.includes(id)), HB.bas, HB.varianter);
+  const bad = Object.keys(HB.hashar).filter((k) => k in cur && cur[k] !== HB.hashar[k]);
+  console.log(`Frisyrer: ${HB.frisyrer.length} i frisyrbaslinjen, ${Object.keys(HB.hashar).length} utseenden.`);
+  if (gone.length) console.log(`  ✗ FÖRSVUNNA ur registret (släppta id får aldrig tas bort eller byta namn): ${gone.join(', ')}`);
+  if (bad.length) { console.log(`  ✗ ${bad.length} utseenden ritas annorlunda än i frisyrbaslinjen:`); for (const k of bad.slice(0, arg('list') ? 1e9 : 30)) console.log(`    ${k}`); }
+  if (fresh.length) console.log(`  (${fresh.length} nya frisyrer utan baslinje – kör --update-hair när de är klara: ${fresh.join(', ')})`);
+  if (!gone.length && !bad.length) console.log('  0 skillnader – alla frisyrer är pixelidentiska med frisyrbaslinjen ✓');
+  return gone.length + bad.length;
+}
+
 // ---------- kör ----------
+if (arg('update-hair')) process.exit(hairCheck());
 if (arg('update') || !fs.existsSync(BASE)) {
   const looks = buildLooks();
   const { map, n, ms } = renderAll(looks);
@@ -166,7 +218,8 @@ console.log(`${B.looks.length} utseenden, ${n} sprites, ${(ms / n).toFixed(3)} m
 console.log(`makeLook(frö): ${mlOk ? 'samma kunder som baslinjen ✓' : 'SKILJER SIG ✗ – makeLook ger andra kunder än förut!'}`);
 if (!diff.length && !missing.length) {
   console.log('0 skillnader – alla sprites är pixelidentiska med baslinjen ✓');
-  process.exit(mlOk ? 0 : 1);
+  const hairBad = hairCheck();
+  process.exit(mlOk && !hairBad ? 0 : 1);
 }
 console.log(`${diff.length} sprites skiljer sig${missing.length ? `, ${missing.length} saknas` : ''}:`);
 const byLook = new Map();
@@ -189,4 +242,5 @@ if (arg('png') && byLook.size) {
   fs.writeFileSync(path.join(ROOT, 'tools', 'out', 'regress-diff.png'), png(W, H, buf));
   console.log('skrev tools/out/regress-diff.png');
 }
+hairCheck();
 process.exit(1);

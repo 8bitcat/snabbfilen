@@ -31,6 +31,17 @@ export const AVATAR_KEY = 'snabbfilen_avatar';
 let AVLOCKS = null, AVOWNED = null;
 export function setAvatarLocks(fn) { AVLOCKS = fn; }
 export function setAvatarWardrobe(getOwnedIds) { AVOWNED = getOwnedIds; }
+
+// ---------- frisören: frisyr och hårfärg byts i salongen (valbart, av som standard) ----------
+// setAvatarSalon(true) ⇒ garderoben hemma visar frisyren och hårfärgen men man kan inte byta
+// dem där – det gör man hos 💈 Frisören i stan (js/scenes/shop-frisor.js). Bara frisyren:
+// setAvatarSalon({ style: true, color: false }). En ny figur (fresh) väljer fritt som förut,
+// och openAvatarEditor({ salon: false }) släpper spärren för ett enskilt anrop.
+let SALON = { style: false, color: false };
+export function setAvatarSalon(on) {
+  SALON = on && typeof on === 'object' ? { style: !!on.style, color: !!on.color } : { style: !!on, color: !!on };
+}
+export const avatarSalon = () => ({ ...SALON });
 function ownedIds() {
   try { const v = AVOWNED?.(); return new Set(v instanceof Set ? v : Array.isArray(v) ? v : []); } catch { return new Set(); }
 }
@@ -449,8 +460,12 @@ function drawFloor(ctx, camX, camY) {
 let lastTab = 'skin';
 const clean = (s) => String(s ?? '').replace(/\u00ad/g, '');
 
-export function openAvatarEditor({ onDone, onCancel, fresh = false } = {}) {
+export function openAvatarEditor({ onDone, onCancel, fresh = false, salon = null } = {}) {
   injectStyle();
+  // frisyr/hårfärg som bara byts hos frisören (setAvatarSalon) – aldrig för en ny figur
+  const salonOn = !fresh && salon !== false;
+  const lockStyle = salonOn && SALON.style, lockColor = salonOn && SALON.color;
+  const salonLocked = (k) => (lockStyle && k === 'style') || (lockColor && (k === 'hair' || k === 'hairFx' || k === 'hair2'));
   const saved = fresh ? { name: '', look: defaultLook(), color: rnd(MARKER_COLORS) } : loadAvatar();
   const avId = fresh ? '' : saved.id; // en ny figur får ett eget id, även om namnet redan finns
   const cur = { name: saved.name || (fresh ? '' : rnd(FIRST_NAMES)), look: saved.look, color: saved.color };
@@ -716,7 +731,7 @@ export function openAvatarEditor({ onDone, onCancel, fresh = false } = {}) {
     const extraColors = () => {
       let h = '';
       for (const f of TAB_FIELDS[tab] || []) for (const k of entryOf(f, f === 'cheeks' ? L.cheeks : L[f])?.uses || []) {
-        if (shown.has(k) || !(k in LOOK_COLORS)) continue;
+        if (shown.has(k) || !(k in LOOK_COLORS) || salonLocked(k)) continue; // (hårfärgen byts hos frisören)
         h += colorSec(k);
       }
       return h;
@@ -727,9 +742,19 @@ export function openAvatarEditor({ onDone, onCancel, fresh = false } = {}) {
     switch (tab) {
       case 'skin': html = sec('Hudton', tiles('skin', PAL.skin, VIEWS.head, { labels: null })) + sec('Egen färg', swatches('skin', { ownOnly: true }), 'Grön rymdvarelse? Välj vilken färg du vill.'); break;
       case 'hair':
+        if (lockStyle) { // frisyren byts hos frisören (setAvatarSalon)
+          html = sec('Frisyr', grid(tile({ look: { ...L, ...noHead() }, view: VIEWS.head, label: '', on: true, attrs: 'data-salon="style" aria-disabled="true"', title: regNow('style') }), VIEWS.head),
+            '✂️ Frisyren byter du hos 💈 Frisören i stan – där finns alla frisyrer, och du ser dem på dig innan du bestämmer dig.', regNow('style'));
+          break;
+        }
         html = sec('Frisyr', regTiles('style', VIEWS.head, { patch: noHead }), L.hat || L.phones || L.hairAcc !== 'none' ? 'Bilderna visas utan huvudbonad, hårspänne och hörlurar.' : '', regNow('style'));
         break;
       case 'hairColor':
+        if (lockColor) { // hårfärgen fixar frisören (setAvatarSalon)
+          html = sec('Hårfärg', `<div class="av-sws"><span class="av-sw on" style="--c:${esc(L.hair)}" aria-label="Din hårfärg"></span>${L.hairFx !== 'none' && L.hair2 ? `<span class="av-sw" style="--c:${esc(L.hair2)}" aria-label="Andra färgen"></span>` : ''}</div>`,
+            '🎨 Hårfärg, slingor och toppar fixar 💈 Frisören i stan.', regNow('hairFx') !== 'Ingen' ? regNow('hairFx') : '');
+          break;
+        }
         html = colorSec('hair', {}, 'Gäller även skägg och ögonbryn.')
           + sec('Slingor, toppar & tvåfärgat', regTiles('hairFx', VIEWS.head, { patch: noHead }), '', regNow('hairFx'))
           + colorSec('hair2', { dim: L.hairFx === 'none' }, 'Den andra färgen i slingor, toppar och tvåfärgat hår.');
@@ -799,6 +824,7 @@ export function openAvatarEditor({ onDone, onCancel, fresh = false } = {}) {
   const firstUsable = (slot) => itemsForSlot(slot).find((it) => avatarCanWear(it));
   const setLook = (L, redraw = true) => { cur.look = cleanLook(L); changed(redraw); }; // nytt objekt → spritecachen ritar om
   const set = (k, v, redraw = true) => {
+    if (salonLocked(k)) return; // byts hos frisören
     const L = cur.look, patch = { [k]: v };
     if (k === 'kid') Object.assign(patch, v ? { beard: false } : { build: adultBuild });
     // färg på något man inte har på sig: ta på det första plagget man äger
@@ -865,6 +891,9 @@ export function openAvatarEditor({ onDone, onCancel, fresh = false } = {}) {
     if (look.hairFx !== 'none') look.hair2 = rnd(PAL.hair2);
     look.beard = kid || Math.random() > 0.3 ? false : rnd(listOf('beard').filter(Boolean));
     if (look.hat === 'crown' && chance(0.7)) look.cap = '#f0b429';
+    // det som byts hos frisören ligger kvar (setAvatarSalon)
+    if (lockStyle) look.style = cur.look.style;
+    if (lockColor) Object.assign(look, { hair: cur.look.hair, hairFx: cur.look.hairFx, hair2: cur.look.hair2 });
     setLook(look);
   }
 

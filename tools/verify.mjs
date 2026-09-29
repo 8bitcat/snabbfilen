@@ -5,6 +5,10 @@
 //   node tools/verify.mjs                (HEAD, port 8791)
 //   node tools/verify.mjs v0.14.0 --port 8792
 //   node tools/verify.mjs --extra tools/mp-test.mjs      (kör även fler testskript i kopian)
+//   node tools/verify.mjs --klad                          (+ klädaffärens, sko-, accessoar- och frisörtesterna)
+//
+// ALLTID körs dessutom (om skriptet finns i versionen): tools/garderob-kop-test.mjs – hela kedjan
+// dörren i staden → köp i klädaffären/skobutiken/accessoarbutiken/frisören → garderoben hemma.
 //
 // Loggen hamnar i tools/out/verify-<ref>.log. Slutkod 0 = allt grönt.
 import { execFileSync, spawn } from 'node:child_process';
@@ -16,7 +20,10 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const argv = process.argv.slice(2);
 const ref = argv.find((a, i) => !a.startsWith('--') && argv[i - 1] !== '--port' && argv[i - 1] !== '--extra') || 'HEAD';
 const port = argv.includes('--port') ? argv[argv.indexOf('--port') + 1] : '8791';
-const extras = argv.flatMap((a, i) => (a === '--extra' ? [argv[i + 1]] : [])).filter(Boolean);
+const ALWAYS = ['tools/garderob-kop-test.mjs'];
+const KLAD = ['tools/klader-test.mjs', 'tools/skor-test.mjs', 'tools/accessoarer-test.mjs', 'tools/frisor-test.mjs'];
+const extras = [...new Set([...ALWAYS, ...(argv.includes('--klad') ? KLAD : []),
+  ...argv.flatMap((a, i) => (a === '--extra' ? [argv[i + 1]] : [])).filter(Boolean)])];
 const dir = path.resolve(ROOT, '..', `snabbfilen-verify-${port}`);
 const git = (args) => execFileSync('git', args, { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -52,7 +59,10 @@ try {
     p.on('close', (c) => resolve(c ?? 1));
   });
   code = await runScript('tools/smoke.mjs');
-  for (const x of extras) { const c = await runScript(x); if (c !== 0) code = code || c; }
+  for (const x of extras) {
+    if (ALWAYS.includes(x) && !fs.existsSync(path.join(dir, x))) continue; // äldre version utan skriptet
+    const c = await runScript(x); if (c !== 0) code = code || c;
+  }
   const log = out.join('');
   const logFile = path.join(ROOT, 'tools/out', `verify-${ref.replace(/[^\w.-]/g, '_')}.log`);
   fs.mkdirSync(path.dirname(logFile), { recursive: true });

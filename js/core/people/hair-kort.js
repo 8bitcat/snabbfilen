@@ -4,29 +4,29 @@
 import { hs, capF, backShort, sideTop, sideStd, shaved, nz, col, mask, paint } from './hair-kit.js';
 
 // kort kalott utan lugg: hjässan + rows rader (framifrån/bakifrån)
-const topF = (R, rows = 2) => {
+export const topF = (R, rows = 2) => {
   const { rect, put, hair: H, h0 } = R;
   rect(8, h0 - 1, 8, 1, H.base); rect(7, h0, 10, rows, H.base);
   rect(9, h0 - 1, 3, 1, H.hi); rect(8, h0, 2, 1, H.hi);
   for (let j = 0; j < rows; j++) put(16, h0 + j, H.lo);
 };
 // rakad nacke bakifrån från rad y0 (nackens sista rad smalare)
-const shavedBack = (R, y0) => {
+export const shavedBack = (R, y0) => {
   const { rect, h0, headH } = R, s = shaved(R), y1 = h0 + headH - 4;
   if (y1 > y0) rect(7, y0, 10, y1 - y0, s.a);
   rect(8, y1, 8, 1, s.a);
   col(R, 16, y0, y1 - 1, s.b);
 };
 // rakad bakre del av skallen från sidan (bakom örat), rad y0 … nacken
-const shavedSide = (R, y0) => { const s = shaved(R); R.rect(8, y0, 3, R.h0 + 7 - y0, s.a); R.put(8, R.h0 + 6, s.b); };
+export const shavedSide = (R, y0) => { const s = shaved(R); R.rect(8, y0, 3, R.h0 + 7 - y0, s.a); R.put(8, R.h0 + 6, s.b); };
 // rakade tinningar framifrån (x 7 och 16), rad y0 … y1
-const shavedTemples = (R, y0, y1) => { const s = shaved(R); col(R, 7, y0, y1, s.a); col(R, 16, y0, y1, s.b); };
+export const shavedTemples = (R, y0, y1) => { const s = shaved(R); col(R, 7, y0, y1, s.a); col(R, 16, y0, y1, s.b); };
 // snaggat (som 'buzz', men egna – de gamla är låsta)
-const buzzF = (R) => { const { rect, hair: H, h0 } = R, s = shaved(R); rect(8, h0, 8, 1, H.lo); rect(7, h0 + 1, 10, 2, s.a); rect(7, h0 + 3, 1, 2, s.a); rect(16, h0 + 1, 1, 4, s.b); };
-const buzzS = (R) => { const { rect, hair: H, h0 } = R, s = shaved(R); rect(9, h0, 7, 1, H.lo); rect(8, h0 + 1, 8, 2, s.a); rect(8, h0 + 3, 3, 4, s.a); };
-const buzzB = (R) => { const { rect, hair: H, h0, headH } = R, s = shaved(R); rect(8, h0, 8, 1, H.lo); rect(7, h0 + 1, 10, headH - 4, s.a); col(R, 16, h0 + 1, h0 + headH - 4, s.b); };
+export const buzzF = (R) => { const { rect, hair: H, h0 } = R, s = shaved(R); rect(8, h0, 8, 1, H.lo); rect(7, h0 + 1, 10, 2, s.a); rect(7, h0 + 3, 1, 2, s.a); rect(16, h0 + 1, 1, 4, s.b); };
+export const buzzS = (R) => { const { rect, hair: H, h0 } = R, s = shaved(R); rect(9, h0, 7, 1, H.lo); rect(8, h0 + 1, 8, 2, s.a); rect(8, h0 + 3, 3, 4, s.a); };
+export const buzzB = (R) => { const { rect, hair: H, h0, headH } = R, s = shaved(R); rect(8, h0, 8, 1, H.lo); rect(7, h0 + 1, 10, headH - 4, s.a); col(R, 16, h0 + 1, h0 + headH - 4, s.b); };
 // punktagg: 2 px bred nertill, 1 px i spetsen
-const spike = (R, x, y0, tip, c) => { for (let y = y0; y >= tip; y--) R.rect(x, y, y - tip >= 2 ? 2 : 1, 1, c); };
+export const spike = (R, x, y0, tip, c) => { for (let y = y0; y >= tip; y--) R.rect(x, y, y - tip >= 2 ? 2 : 1, 1, c); };
 
 export const HAIR_KORT = {
   // ================= Kort hår =================

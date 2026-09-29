@@ -121,6 +121,9 @@ export const WARDROBE_TOPS = [
   { id: 'top-football', slot: 'top', look: { top: 'football' }, name: 'Fotbolls\u00adtröja', price: 390, dept: 'kille', icon: '⚽', colors: { shirt: '#f0b429', accent: '#3a7bd5' } },
   { id: 'top-football-num10', slot: 'top', look: { top: 'football', topPrint: 'num10' }, name: 'Fotbolls\u00adtröja nr 10', price: 449, dept: 'kille', icon: '⚽', colors: { shirt: '#f0b429', accent: '#3a7bd5', print2: '#3a7bd5' } },
   { id: 'top-football-num7', slot: 'top', look: { top: 'football', topPrint: 'num7' }, name: 'Fotbolls\u00adtröja nr 7', price: 449, dept: 'tjej', icon: '⚽', colors: { shirt: '#d9433b', accent: '#f4f1ea', print2: '#f4f1ea' } },
+  // klädaffärens plan 2 (KÄNDA LAG): randiga och tvärrandiga matchtröjor – lagens färger är förslag i butiken
+  { id: 'top-football-stripes', slot: 'top', look: { top: 'football', topPrint: 'vStripes' }, name: 'Randig fotbolls\u00adtröja', price: 499, dept: 'unisex', icon: '⚽', colors: { shirt: '#f4f1ea', accent: '#1f4fa0', print2: '#1f4fa0' } },
+  { id: 'top-football-hoops', slot: 'top', look: { top: 'football', topPrint: 'wideStripes' }, name: 'Tvärrandig fotbolls\u00adtröja', price: 499, dept: 'unisex', icon: '⚽', colors: { shirt: '#f4f1ea', accent: '#1f8a4c', print2: '#1f8a4c' } },
   { id: 'top-basket', slot: 'top', look: { top: 'basket' }, name: 'Basket\u00adlinne', price: 350, dept: 'kille', icon: '🏀', colors: { shirt: '#8e5bd1', accent: '#f0b429' } },
   { id: 'top-basket-num23', slot: 'top', look: { top: 'basket', topPrint: 'num23' }, name: 'Basket\u00adlinne nr 23', price: 399, dept: 'tjej', icon: '🏀', colors: { shirt: '#d9433b', accent: '#f4f1ea', print2: '#f4f1ea' } },
   { id: 'top-hockey', slot: 'top', look: { top: 'hockey' }, name: 'Hockey\u00adtröja', price: 690, dept: 'kille', icon: '🏒', colors: { shirt: '#3a7bd5', accent: '#f0b429' } },

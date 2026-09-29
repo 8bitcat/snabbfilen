@@ -5,9 +5,9 @@
 import { hs, capF, backStd, backShort, sideStd, shaved, dims, nz, row, col, mask, paint, plait, sleekF, sleekB, sleekS, TIE } from './hair-kit.js';
 
 // ritas bara där inget annat redan finns (öra, bål, armar ligger framför)
-const behind = (R, x, y, c) => { if (!R.has(x, y)) R.put(x, y, c); };
+export const behind = (R, x, y, c) => { if (!R.has(x, y)) R.put(x, y, c); };
 // hängande svans, w px bred från vänsterkanten x0, rad y0…y1, smalnar av i slutet
-const hang = (R, x0, y0, y1, w = 2, dark = false, bh = false) => {
+export const hang = (R, x0, y0, y1, w = 2, dark = false, bh = false) => {
   const { hair: H } = R, P = bh ? (x, y, c) => behind(R, x, y, c) : R.put;
   for (let y = y0; y <= y1; y++) {
     const end = y >= y1 - 1 && w > 1, ww = end ? w - 1 : w, off = end ? (y === y1 ? w >> 1 : 0) : 0;
@@ -16,8 +16,8 @@ const hang = (R, x0, y0, y1, w = 2, dark = false, bh = false) => {
   }
 };
 // bubbelsvans: runda bubblor (rader 2-4-4-2 px för w = 4) med en snodd emellan, rad y0…y1
-const BUBBLE = [0, 1, 1, 0]; // 0 = smal rad (w-2), 1 = bred rad (w)
-const bubbles = (R, x0, y0, y1, w = 4, bh = false) => {
+export const BUBBLE = [0, 1, 1, 0]; // 0 = smal rad (w-2), 1 = bred rad (w)
+export const bubbles = (R, x0, y0, y1, w = 4, bh = false) => {
   const { hair: H } = R, P = bh ? (x, y, c) => behind(R, x, y, c) : R.put;
   let y = y0;
   while (y <= y1) {
@@ -32,14 +32,14 @@ const bubbles = (R, x0, y0, y1, w = 4, bh = false) => {
   }
 };
 // knut (oval) med lindningsspår
-const bun = (R, cx, cy, rx, ry, tex = true) => {
+export const bun = (R, cx, cy, rx, ry, tex = true) => {
   const m = mask().oval(cx, cy, rx, ry);
   // nedersta raden mot huvudet blir mörk (skarven syns)
   let yb = -1; for (let y = 0; y < 40; y++) for (let x = 0; x < 24; x++) if (m.on(x, y)) yb = y;
   paint(R, m, { tex: (x, y, t) => (y === yb && R.has(x, y + 1) ? 'lo' : tex && t === 'base' && (x * 2 + y * 3) % 5 === 0 ? 'lo' : null) });
 };
 // palmtofs: kort tofs rakt upp på hjässan som faller ut åt sidorna (x = tofsens vänstra kolumn)
-const palm = (R, x) => {
+export const palm = (R, x) => {
   const { put, rect, hair: H, h0 } = R;
   rect(x, h0 - 2, 2, 1, TIE);
   put(x, h0 - 3, H.base); put(x + 1, h0 - 3, H.lo);
@@ -48,10 +48,10 @@ const palm = (R, x) => {
   put(x - 3, h0 - 4, H.base); put(x - 4, h0 - 3, H.lo); put(x + 4, h0 - 4, H.lo); put(x + 5, h0 - 3, H.dk);
 };
 // flätmönster (tvärgående ljusa/mörka band) på en mask
-const braidTex = (vertical) => (x, y) => { const k = vertical ? (y * 2 + (x & 1)) % 4 : (x * 2 + (y & 1)) % 4; return k === 0 ? 'hi' : k === 2 ? 'lo' : k === 3 ? 'dk' : 'base'; };
-const braidBand = (R, m, vertical) => paint(R, m, { tex: braidTex(vertical) });
+export const braidTex = (vertical) => (x, y) => { const k = vertical ? (y * 2 + (x & 1)) % 4 : (x * 2 + (y & 1)) % 4; return k === 0 ? 'hi' : k === 2 ? 'lo' : k === 3 ? 'dk' : 'base'; };
+export const braidBand = (R, m, vertical) => paint(R, m, { tex: braidTex(vertical) });
 // mittbena (hudlinje) framifrån
-const partF = (R) => { const { put, skin, hair: H, h0 } = R; put(11, h0, skin.base); put(11, h0 + 1, skin.base); put(11, h0 - 1, H.lo); put(12, h0, H.lo); };
+export const partF = (R) => { const { put, skin, hair: H, h0 } = R; put(11, h0, skin.base); put(11, h0 + 1, skin.base); put(11, h0 - 1, H.lo); put(12, h0, H.lo); };
 
 export const HAIR_UPPSATT = {
   // ================= Hästsvansar =================
@@ -241,16 +241,16 @@ export const HAIR_UPPSATT = {
 
 // ---------- hjälpare som används ovan (hoistade funktioner) ----------
 // mörk skåra mellan flätrader (hårbotten syns)
-function mix2(R) { const s = shaved(R); return s.b; }
+export function mix2(R) { const s = shaved(R); return s.b; }
 // smal fläta (1 px) med tydligt flätmönster, x = kolumnen
-function mini(R, x, y0, y1, dark) {
+export function mini(R, x, y0, y1, dark) {
   const { put, hair: H } = R;
   if (x % 2) { for (let y = y0; y <= y1; y++) put(x, y, dark ? H.dk : H.lo); return; } // skåra
   for (let y = y0; y <= y1; y++) { const k = (y + (x >> 1)) % 3; put(x, y, k === 0 ? (dark ? H.base : H.hi) : k === 1 ? (dark ? H.lo : H.base) : dark ? H.dk : H.lo); }
   if (nz(x, y1, 9) < 60) put(x, y1 + 1, dark ? H.lo : H.base);
 }
 // Pippiflätor som står rakt ut från sidorna (framifrån/bakifrån), med snodd och tofs
-function stick(R, y, back) {
+export function stick(R, y, back) {
   const { put, hair: H } = R;
   for (const side of [-1, 1]) {
     const x0 = side < 0 ? 6 : 17, d = side, dark = back ? side < 0 : side > 0;

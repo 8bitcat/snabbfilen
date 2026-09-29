@@ -3,15 +3,15 @@
 // under täckande huvudbonader (se hair-kit.js). Id:n får aldrig byta namn efter släpp.
 import { hs, capF, backStd, sideTop, shaved, dims, nz, row, col, mask, paint, curls, sleekF, sleekB, sleekS, TIE } from './hair-kit.js';
 
-const BEAD = 0xe0b24a, BEAD2 = 0xf4f1ea; // pärlor i dreads (guld + vit)
+export const BEAD = 0xe0b24a, BEAD2 = 0xf4f1ea; // pärlor i dreads (guld + vit)
 
 // rakade sidor (framifrån x 7/16 eller från sidan bakom örat)
-const shavedSidesF = (R, y0, y1) => { const s = shaved(R); col(R, 7, y0, y1, s.a); col(R, 16, y0, y1, s.b); };
-const shavedSideS = (R, y0) => { const s = shaved(R); R.rect(8, y0, 3, R.h0 + 7 - y0, s.a); R.put(8, R.h0 + 6, s.b); };
-const shavedBackB = (R, y0) => { const s = shaved(R), y1 = R.h0 + R.headH - 4; R.rect(7, y0, 10, y1 - y0, s.a); R.rect(8, y1, 8, 1, s.a); col(R, 16, y0, y1 - 1, s.b); };
+export const shavedSidesF = (R, y0, y1) => { const s = shaved(R); col(R, 7, y0, y1, s.a); col(R, 16, y0, y1, s.b); };
+export const shavedSideS = (R, y0) => { const s = shaved(R); R.rect(8, y0, 3, R.h0 + 7 - y0, s.a); R.put(8, R.h0 + 6, s.b); };
+export const shavedBackB = (R, y0) => { const s = shaved(R), y1 = R.h0 + R.headH - 4; R.rect(7, y0, 10, y1 - y0, s.a); R.rect(8, y1, 8, 1, s.a); col(R, 16, y0, y1 - 1, s.b); };
 
 // korkskruvslock: 2 px bred spiral från y0 till y1 (inklusive), x = vänsterkolumnen
-const ringlet = (R, x, y0, y1, dark) => {
+export const ringlet = (R, x, y0, y1, dark) => {
   const { put, hair: H } = R;
   for (let y = y0; y <= y1; y++) {
     const k = (y - y0) % 3;
@@ -21,7 +21,7 @@ const ringlet = (R, x, y0, y1, dark) => {
   put(x + (dark ? 1 : 0), y1 + 1, dark ? H.dk : H.lo);
 };
 // dread/loc: 1–2 px bred sträng med ränder, valfria pärlor
-const loc = (R, x, y0, y1, w, dark, beads) => {
+export const loc = (R, x, y0, y1, w, dark, beads) => {
   const { put, hair: H } = R;
   for (let y = y0; y <= y1; y++) {
     const k = (y - y0 + x) % 3 === 0;
@@ -35,7 +35,7 @@ const loc = (R, x, y0, y1, w, dark, beads) => {
   }
 };
 // twist: kort stående spiral, spetsen uppåt
-const twist = (R, x, yTip, yEnd) => {
+export const twist = (R, x, yTip, yEnd) => {
   const { put, hair: H } = R;
   for (let y = yTip; y <= yEnd; y++) put(x, y, y === yTip ? H.hi : (y - yTip) % 2 ? H.lo : H.base);
 };

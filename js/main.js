@@ -1,9 +1,9 @@
 // Snabbfilen – bootstrap. En canvas (384×216 logiska pixlar, CSS-skalad),
 // scener för staden/rummet/jobben, DOM-HUD överst och en vanlig rAF-loop.
-import { loadAvatar, openAvatarPicker, avatarPortrait, setAvatarLocks } from './core/avatar.js';
+import { loadAvatar, openAvatarPicker, avatarPortrait, setAvatarWardrobe, setAvatarSalon } from './core/avatar.js';
 import { openModal, closeModal, toast, modalOpen, esc } from './core/ui.js';
 import { onInvite, sendInvite } from './net/coop.js';
-import { Game, SAVE_KEY, WIN_MONEY, JOBS, JOB_TITLES, SORTIMENT, levelOf, fmt, clock } from './game.js';
+import { Game, SAVE_KEY, WIN_MONEY, JOBS, JOB_TITLES, levelOf, fmt, clock } from './game.js';
 import { makeCity } from './scenes/city.js';
 import { makeRoom } from './scenes/room.js';
 import { makeShopMobler } from './scenes/shop-mobler.js';
@@ -12,6 +12,11 @@ import { makeShopMat } from './scenes/shop-mat.js';
 import { makeShopBostad } from './scenes/shop-bostad.js';
 import { makeShopKafe } from './scenes/shop-kafe.js';
 import { makeShopKlader } from './scenes/shop-klader.js';
+// garderobens butiker i downtown: statiskt importerade (inte i bakgrunden som de andra dörrscenerna)
+// – då finns de direkt vid start, även för A.go('skor') i testerna och dörren första sekunden
+import { makeShopSkor } from './scenes/shop-skor.js';
+import { makeShopAccessoarer } from './scenes/shop-accessoarer.js';
+import { makeShopFrisor } from './scenes/shop-frisor.js';
 import { makeJobbFlyg } from './jobs/jobb-flyg.js';
 import { makeJobbFrukt } from './jobs/jobb-frukt.js';
 import { makeJobbBurgare } from './jobs/jobb-burgare.js';
@@ -83,7 +88,10 @@ const SCENES = {
   bostad: (a, o) => makeShopBostad(a, o),
   kafe: (a, o) => makeShopKafe(a, o),
   moblerGammal: (a, o) => makeShopMobler(a, o),
-  klader: (a, o) => makeShopKlader(a, o),
+  klader: (a, o) => makeShopKlader(a, o), // plan 1 mode, plan 2 sport & fotboll
+  skor: (a, o) => makeShopSkor(a, o), // 👟 SKOBUTIKEN i downtown
+  accessoarer: (a, o) => makeShopAccessoarer(a, o), // 👜 ACCESSOARER i downtown
+  frisor: (a, o) => makeShopFrisor(a, o), // 💈 FRISÖR i downtown
   jobbflyg: (a, o) => makeJobbFlyg(a, o),
   jobbfrukt: (a, o) => makeJobbFrukt(a, o),
   jobbburgare: (a, o) => makeJobbBurgare(a, o),
@@ -490,6 +498,7 @@ function openWorldDialog() {
 // 📊 Dagboken: vad man har gjort i Pixelstaden hittills.
 function openDiary() {
   const g = A.game;
+  const plagg = g.wardrobeCount();
   const line = (l, r) => `<div style="display:flex;justify-content:space-between;font-size:20px"><span>${l}</span><b>${r}</b></div>`;
   const jobRows = Object.values(JOBS).map((j) => {
     const n = g.jobs[j.id], b = g.best[j.id];
@@ -505,7 +514,7 @@ function openDiary() {
     <div style="border-top:3px dashed var(--ink);margin:8px 0"></div>
     ${jobRows}
     <div style="border-top:3px dashed var(--ink);margin:8px 0"></div>
-    ${line('👕 Köpta plagg', `${g.wardrobe.length} av ${SORTIMENT.length}`)}
+    ${line('👕 Köpta plagg', `${plagg.owned} av ${plagg.of}`)}
     ${g.won ? line('🏆 Slutmålet', 'KLART!') : line('🏆 Målet', `Villan + ${fmt(WIN_MONEY)}`)}`,
   [{ label: 'Snyggt jobbat', cls: 'btn-go', onClick: closeModal }]);
 }
@@ -529,8 +538,11 @@ function boot() {
   A.game = Game.load();
   const firstRun = !localStorage.getItem(SAVE_KEY);
   A.avatar = loadAvatar();
-  // garderoben visar 🔒 på plagg som inte är köpta i klädaffären än
-  setAvatarLocks((kind, v) => A.game.clothesLocked(kind, v));
+  // garderoben visar bara plagg man äger (klädkatalogens id; gamla 'kind:v' räknas) + basplaggen
+  setAvatarWardrobe(() => A.game.ownedWardrobeIds());
+  // frisyr och hårfärg byts hos 💈 Frisören i downtown (js/scenes/shop-frisor.js), inte gratis i
+  // garderoben hemma – en ny figur väljer fortfarande fritt (setAvatarSalon i js/core/avatar.js)
+  setAvatarSalon(true);
   // webbläsare släpper ljudet först efter en pekning
   document.addEventListener('pointerdown', unlockAudio, { capture: true });
   // HUD-knapparna: kompisar + ljud

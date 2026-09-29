@@ -2,6 +2,7 @@
 // och bostaden. Ingen rendering här – scenerna läser och kommandona ändrar.
 import { toast } from './core/ui.js';
 import { play } from './core/sound.js';
+import { WARDROBE, itemById, legacyKeyToId } from './data/wardrobe.js';
 
 export const SAVE_KEY = 'snabbfilen_save1';
 // Fält som gamla versioner sparade men som load() redan har flyttat in på nytt ställe
@@ -41,10 +42,11 @@ export const JOB_TITLES = ['Nybörjare', 'Van', 'Proffs', 'Mästare', 'Legendar'
 export const levelOf = (shifts) => Math.min(5, 1 + Math.floor(shifts / 3));
 export const payMult = (level) => 1 + 0.15 * (level - 1);
 
-// Klädaffärens sortiment: plagg och accessoarer som låses upp i garderoben när
-// man köpt dem. kind/v matchar look-fälten i people.js. Gratis från start är
-// bara basgrejerna (t-shirt, randig tröja, jeans, byxor) – resten jobbar man
-// ihop till, från kepsen för 90 kr hela vägen upp till kronan.
+// Klädaffärens FÖRSTA sortiment (före klädkatalogen): de 23 plaggen med gamla nycklar
+// 'kind:v' (kind/v = look-fälten i people.js). Allt som säljs i dag står i klädkatalogen
+// js/data/wardrobe.js, där de här plaggen har samma pris och nyckeln i `legacy`. Listan finns
+// kvar för gamla sparfiler och för kod som fortfarande frågar med 'kind:v' (clothesLocked,
+// buyClothes – t.ex. hörlurarna i elektronikbutiken).
 export const SORTIMENT = [
   { kind: 'hat', v: 'cap', icon: '🧢', name: 'Keps', price: 90 },
   { kind: 'top', v: 'vest', icon: '🎽', name: 'Linne', price: 100 },
@@ -71,6 +73,23 @@ export const SORTIMENT = [
   { kind: 'hat', v: 'crown', icon: '👑', name: 'Krona', price: 2500 },
 ];
 export const clothesKey = (kind, v) => `${kind}:${v}`;
+const isSortimentKey = (k) => SORTIMENT.some((s) => clothesKey(s.kind, s.v) === k);
+
+// Garderoben (g.wardrobe) sparar klädkatalogens id ('top-hoodie-camo'). Ett plagg ur det
+// första sortimentet står dessutom kvar med sin gamla nyckel som alias ('top-hoodie' +
+// 'top:hoodie'), så att en äldre version av spelet – och kod som frågar efter 'kind:v' –
+// fortfarande känner igen det. Gamla sparfiler migreras vid laddning: 'hat:cap' ⇒ + 'hat-cap'.
+// Katalog-id för en nyckel (katalog-id eller gammal 'kind:v'), annars null
+const wardrobeIdOf = (k) => (typeof k !== 'string' ? null : itemById(k) ? k : legacyKeyToId(k));
+function wardrobeKeys(list) {
+  const out = new Set();
+  for (const k of list) {
+    const id = wardrobeIdOf(k);
+    if (id) { out.add(id); const old = itemById(id).legacy; if (old) out.add(old); }
+    else if (isSortimentKey(k)) out.add(k); // gammal nyckel utan katalogpost (finns inga i dag)
+  }
+  return [...out];
+}
 
 // Möbelkatalogen (köps på MÖBELJÄTTEN, hamnar i förrådet och placeras hemma
 // med Möblera-läget). Fälten:
@@ -366,7 +385,7 @@ export class Game {
     this.toys = {};                       // köpta leksaker (Leksakslådan): id -> antal
     this.jobs = Object.fromEntries(Object.keys(JOBS).map((k) => [k, 0])); // antal jobbade pass per jobb
     this.earned = 0;                      // totalt intjänat
-    this.wardrobe = [];                   // upplåsta plagg, "kind:v"
+    this.wardrobe = [];                   // köpta plagg: katalog-id (+ gamla 'kind:v' som alias, se wardrobeKeys)
     this.storage = [];                    // möbler i förrådet, { k, v, c?, r?, fx? } (c = egen färg '#rrggbb', r = rotation 0–3)
     this.deco = {};                       // placerade möbler per rum: "hem:sub" -> [{ k, v, c?, x, y, r?, fx? }]
     this.gadgets = [];                    // prylar från elektronikbutiken (GADGETS-id), t.ex. ['fon12']
@@ -426,9 +445,12 @@ export class Game {
         for (const [k, v] of Object.entries(p.jobs || {})) if (!(k in g.jobs)) keep.jobs[k] = v;
         for (const [k, v] of Object.entries(p.best || {})) if (!(k in g.best)) keep.best[k] = v;
         g.earned = Math.max(0, +p.earned || 0);
-        const knownClothes = (k) => SORTIMENT.some((s) => clothesKey(s.kind, s.v) === k);
-        g.wardrobe = (Array.isArray(p.wardrobe) ? p.wardrobe : []).filter(knownClothes);
-        keep.wardrobe = (Array.isArray(p.wardrobe) ? p.wardrobe : []).filter((k) => typeof k === 'string' && !knownClothes(k));
+        // plaggen: katalog-id och gamla 'kind:v' (migreras till katalog-id, aliaset står kvar);
+        // okända id (plagg från en nyare version) ligger kvar i _keep
+        const knownClothes = (k) => !!wardrobeIdOf(k) || isSortimentKey(k);
+        const clothes = Array.isArray(p.wardrobe) ? p.wardrobe : [];
+        g.wardrobe = wardrobeKeys(clothes);
+        keep.wardrobe = clothes.filter((k) => typeof k === 'string' && !knownClothes(k));
         // fält som en nyare version lagt på en möbel följer med orörda; rotation (r) och
         // startmöbelflaggan (fx) tolkas – de kan ligga både hemma och i förrådet
         const extra = (it) => { const { k, v, x, y, fx, c, r, ...rest } = it; return rest; };
@@ -616,17 +638,57 @@ export class Game {
     return { finalPay, starving, doubled, newRecord, promoted: after > before, nightEnd };
   }
 
-  // ---------- kläder & möbler ----------
-  // Låst = finns i sortimentet men är inte köpt. Allt annat är gratis från start.
+  // ---------- kläder (klädkatalogen js/data/wardrobe.js) ----------
+  // Äger man plagget? id = katalog-id (en gammal 'kind:v' går också). Basplaggen äger alla.
+  ownsWardrobe(id) {
+    const it = itemById(wardrobeIdOf(id));
+    if (!it) return false;
+    return !!it.free || this.wardrobe.includes(it.id) || (!!it.legacy && this.wardrobe.includes(it.legacy));
+  }
+  // Alla ägda katalog-id, basplaggen inräknade – avatarredigeraren (setAvatarWardrobe i main.js)
+  ownedWardrobeIds() {
+    const out = new Set();
+    for (const it of WARDROBE) if (it.free) out.add(it.id);
+    for (const k of this.wardrobe) { const id = wardrobeIdOf(k); if (id) out.add(id); }
+    return [...out];
+  }
+  // Dagboken: köpta plagg av alla som säljs (basplaggen räknas inte)
+  wardrobeCount() {
+    const sold = WARDROBE.filter((it) => !it.free);
+    return { owned: sold.filter((it) => this.ownsWardrobe(it.id)).length, of: sold.length };
+  }
+  // REA-dagar ger 25 % rabatt på alla kläder, skor och accessoarer.
+  clothesPrice(s) { return Math.round(s.price * (this.eventIs('rea') ? 0.75 : 1)); }
+  // Köp ett plagg ur katalogen: { ok, msg?, item?, price? }
+  buyWardrobe(id) {
+    const it = itemById(wardrobeIdOf(id));
+    if (!it || it.free) return { ok: false, msg: 'Det plagget säljs inte här.' };
+    if (this.ownsWardrobe(it.id)) return { ok: false, msg: 'Den har du redan!' };
+    const price = this.clothesPrice(it);
+    if (this.money < price) return { ok: false, msg: 'Du har inte råd – dags att jobba ett pass!' };
+    this.money -= price;
+    for (const k of wardrobeKeys([it.id])) if (!this.wardrobe.includes(k)) this.wardrobe.push(k);
+    this.save();
+    return { ok: true, item: it, price };
+  }
+  // Samma sak under namnen sko- och accessoarbutikerna använder (shop-skor.js, shop-accessoarer.js)
+  ownsItem(id) { return this.ownsWardrobe(id); }
+  buyItem(id) { return this.buyWardrobe(id); }
+  itemPrice(item) { const it = typeof item === 'string' ? itemById(wardrobeIdOf(item)) : item; return it ? this.clothesPrice(it) : 0; }
+  ownedItemIds() { return this.ownedWardrobeIds(); }
+  // Gamla anropen med sortimentsnycklar (kind, v), t.ex. ('phones', true) i elektronikbutiken.
+  // Låst = finns i det första sortimentet men är inte köpt.
   clothesLocked(kind, v) {
     const s = SORTIMENT.find((s) => s.kind === kind && s.v === v);
-    return s && !this.wardrobe.includes(clothesKey(kind, v)) ? s : null;
+    if (!s) return null;
+    const key = clothesKey(kind, v), id = legacyKeyToId(key);
+    return (id ? this.ownsWardrobe(id) : this.wardrobe.includes(key)) ? null : s;
   }
-  // REA-dagar ger 25 % rabatt i klädaffären.
-  clothesPrice(s) { return Math.round(s.price * (this.eventIs('rea') ? 0.75 : 1)); }
   buyClothes(kind, v) {
     const s = this.clothesLocked(kind, v);
     if (!s) return { ok: false, msg: 'Den har du redan!' };
+    const id = legacyKeyToId(clothesKey(kind, v));
+    if (id) { const r = this.buyWardrobe(id); return r.ok ? { ...r, item: s } : r; }
     const price = this.clothesPrice(s);
     if (this.money < price) return { ok: false, msg: 'Du har inte råd – dags att jobba ett pass!' };
     this.money -= price;
@@ -634,6 +696,8 @@ export class Game {
     this.save();
     return { ok: true, item: s, price };
   }
+
+  // ---------- möbler ----------
   // Köp en möbel (variant v, egen färg c = '#rrggbb' eller null) till förrådet –
   // placeras hemma med Möblera-läget.
   buyFurniture(kind, v = 0, c = null) {

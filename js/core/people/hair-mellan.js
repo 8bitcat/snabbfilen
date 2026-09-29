@@ -3,23 +3,23 @@
 // under täckande huvudbonader (se hair-kit.js). Id:n får aldrig byta namn efter släpp.
 import { hs, capF, backStd, backShort, sideTop, sideStd, dims, nz, row, col, mask, paint } from './hair-kit.js';
 // S-våg: utåtförskjutning per rad (0–2 px, en pixel per rad = mjuka diagonaler)
-const WAVE = [0, 1, 2, 2, 1, 0];
+export const WAVE = [0, 1, 2, 2, 1, 0];
 
 // Hår som hänger bakom kroppen: ritas bara där inget annat redan finns (armar, bål och
 // öron ligger framför), så att långt hår syns bakom axlarna i stället för över dem.
-const behind = (R, x, y, c) => { if (!R.has(x, y)) R.put(x, y, c); };
-const behindRect = (R, x, y, w, h, c) => { for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) behind(R, x + i, y + j, c); };
+export const behind = (R, x, y, c) => { if (!R.has(x, y)) R.put(x, y, c); };
+export const behindRect = (R, x, y, w, h, c) => { for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) behind(R, x + i, y + j, c); };
 
 // ---------- framifrån ----------
 // hårgardiner bredvid ansiktet: w px breda, från rad `from` till `end` (inklusive)
-const curtF = (R, end, w = 2, from = R.h0 + 1) => {
+export const curtF = (R, end, w = 2, from = R.h0 + 1) => {
   const { rect, put, hair: H } = R, xl = 8 - w;
   rect(xl, from, w, end - from + 1, H.base); rect(16, from, w, end - from + 1, H.lo);
   put(xl, from + 1, H.hi); put(xl, from + 2, H.hi);
   row(R, end, xl, 7, H.lo); row(R, end, 16, 15 + w, H.dk);
 };
 // rak lugg ner till strax ovanför ögonen (vuxna: över brynen)
-const bangsF = (R, x0 = 8, x1 = 15) => {
+export const bangsF = (R, x0 = 8, x1 = 15) => {
   const { rect, put, hair: H, h0, K } = R, y1 = h0 + (K ? 3 : 4);
   rect(x0, h0 + 3, x1 - x0 + 1, y1 - h0 - 2, H.base); row(R, y1, x0, x1, H.lo);
   put(x0 + 2, h0 + 3, H.lo); put(x1 - 3, h0 + 3, H.lo);
@@ -27,16 +27,16 @@ const bangsF = (R, x0 = 8, x1 = 15) => {
 };
 // ---------- från sidan ----------
 // långt hår bakom örat ner till raden end
-const longS = (R, end, x0 = 7, w = 4) => {
+export const longS = (R, end, x0 = 7, w = 4) => {
   const { rect, hair: H, h0 } = R;
   sideStd(R, false); rect(x0, h0 + 1, w, end - h0, H.base); col(R, x0, h0 + 1, end, H.lo); row(R, end, x0, x0 + w - 1, H.lo);
 };
 // rak lugg från sidan
-const bangsS = (R) => { const { rect, hair: H, h0, K } = R, y1 = h0 + (K ? 3 : 4); rect(13, h0 + 3, 4, y1 - h0 - 2, H.base); row(R, y1, 14, 16, H.lo); };
+export const bangsS = (R) => { const { rect, hair: H, h0, K } = R, y1 = h0 + (K ? 3 : 4); rect(13, h0 + 3, 4, y1 - h0 - 2, H.base); row(R, y1, 14, 16, H.lo); };
 // ---------- bakifrån ----------
-const backTo = (R, end) => backStd(R, end + 1, true); // x 6–17 ner till raden end
+export const backTo = (R, end) => backStd(R, end + 1, true); // x 6–17 ner till raden end
 // hårstrån bakifrån: mörka lodräta streck
-const strands = (R, y0, y1, xs = [9, 12, 15]) => { for (const x of xs) col(R, x, y0, y1, R.hair.lo); };
+export const strands = (R, y0, y1, xs = [9, 12, 15]) => { for (const x of xs) col(R, x, y0, y1, R.hair.lo); };
 
 export const HAIR_MELLAN = {
   // ================= Lugg =================

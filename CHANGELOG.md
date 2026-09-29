@@ -10,6 +10,17 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.49.0] – 2026-09-29 – Garderoben: skor, accessoarer, frisör och fotboll
+- KLÄDAFFÄREN har fått en våning till: gå uppför trappan till SPORT & FOTBOLL
+- Hela KUNGSLADUGÅRD-laget står där i matchställ med nummer och förnamn på ryggen, och lagfotot hänger på väggen – köp lagets tröja och shorts
+- Matchtröjor i tolv kända lags färger (bara stadsnamnen) och fotbollsskor i neongult, gulgrönt, rosa, svart och vitt
+- Nya butiker i DOWNTOWN: SKOBUTIKEN med sneakers, kängor, stövlar och finskor (prova på pallen, skoputsen blankar dem) och ACCESSOARER med hattar, glasögon, hörlurar, väskor, halsband och scarfar, smycken och hårspännen
+- FRISÖREN i downtown: över 150 frisyrer i tolv grupper plus färgning, slingor och toppar – du ser dig själv med den nya frisyren innan du bestämmer dig, sedan klipper Sami
+- Frisyr och hårfärg byter du nu hos frisören – garderoben hemma visar din frisyr men byter den inte (en ny figur väljer fritt som förut)
+- Allt du köper i klädaffären, skobutiken och accessoarbutiken hamnar i garderoben hemma – nästan 400 plagg att samla, och dagboken räknar hur många du har
+- REA-dagar ger 25 % rabatt i alla tre butikerna
+- Gamla sparningar: allt du redan har köpt finns kvar
+
 ## [0.48.0] – 2026-09-29 – Elektronikbutiken och banken öppnar
 - BLIXT ELEKTRONIK öppnar i downtown: TV-vägg, telefoner, surfplattor, gamingriggar, datorer och hörlurar – gå fram, prova och bär lådan till kassan. Telefonen och plattan ger lite extra energi när du sover (dyrare modell = mer)
 - Möbeljätten säljer inte längre datorsakerna – de finns på BLIXT (det du redan äger är kvar)

@@ -388,7 +388,9 @@ export function worldTick(A, myX, dt) {
   }
 }
 
-// Alla som är på samma plats som jag: [{id, av, x, walking, emote}]
+// Alla som är på samma plats som jag: [{id, av, x, y, tx, ty, walking, emote}] – x/y glider mot
+// målet tx/ty (senaste positionen från nätet); en scen med våningar (klädaffären) ritar på målet
+// när hoppet är stort, så att ingen glider genom golvet mellan våningarna
 export function worldFolksHere(A) {
   if (!W || !W.open) return [];
   const here = myScene(A);
@@ -397,7 +399,7 @@ export function worldFolksHere(A) {
   const out = [];
   for (const [id, p] of W.players) {
     if (p.scene !== here) continue;
-    out.push({ id, av: p.av, x: p.x, y: p.y, vo: p.vo | 0, walking: Math.hypot((p.tx ?? p.x) - p.x, (p.ty2 ?? p.y) - p.y) > 1, sit: p.si ? SIT_DIR[p.si[0]] : null, eat: p.si?.[1] === 'e', emote: (p.emote && p.emote.until > Date.now() ? p.emote.e : null) || (talkSrc(id) ? TALK_EMOTE : null), say: p.say && p.say.until > Date.now() ? p.say.text : null });
+    out.push({ id, av: p.av, x: p.x, y: p.y, tx: p.tx ?? p.x, ty: p.ty2 ?? p.y, vo: p.vo | 0, walking: Math.hypot((p.tx ?? p.x) - p.x, (p.ty2 ?? p.y) - p.y) > 1, sit: p.si ? SIT_DIR[p.si[0]] : null, eat: p.si?.[1] === 'e', emote: (p.emote && p.emote.until > Date.now() ? p.emote.e : null) || (talkSrc(id) ? TALK_EMOTE : null), say: p.say && p.say.until > Date.now() ? p.say.text : null });
   }
   return out;
 }

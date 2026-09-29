@@ -254,10 +254,28 @@ Hjälpfunktioner: `WARDROBE`, `SLOTS`, `SLOT_FIELDS`, `SLOT_LABELS`, `SLOT_CAN_B
 `isWorn(item, look)`, `wornItem(look, slot)`, `slotIsEmpty(look, slot)`, `groupOf(item)`,
 `checkWardrobe()` → lista med problem.
 
-Redigeraren: `setAvatarWardrobe(() => ägdaId)` (nytt) eller `setAvatarLocks((kind, v) => låst?)`
-(gammalt, fortfarande kopplat i main.js – då syns bara plagg med `legacy`-nyckel + basplagg).
+Redigeraren: `setAvatarWardrobe(() => ägdaId)` – kopplat i main.js till `A.game.ownedWardrobeIds()`.
+(Det gamla `setAvatarLocks((kind, v) => låst?)` finns kvar men används inte: då syns bara plagg
+med `legacy`-nyckel + basplagg.)
 `avatarCanWear(item)` säger om spelaren får ha plagget på sig. Ett plagg man bär utan att äga
 (t.ex. från en äldre sparning) ligger kvar och syns med 🔒 och streckad ram tills man byter bort det.
+`setAvatarSalon(true)` – också kopplat i main.js: frisyr och hårfärg (hair, hairFx, hair2) byts hos
+💈 Frisören i downtown (js/scenes/shop-frisor.js), inte i garderoben hemma. Där syns bara den
+nuvarande frisyren och hårfärgen med en hänvisning till frisören, och Slumpa rör dem inte. En ny
+figur (`openAvatarEditor({ fresh: true })`, Nytt spel) väljer fritt; `{ salon: false }` släpper
+spärren för ett enskilt anrop.
+
+**Ägande och köp (js/game.js).** `g.wardrobe` sparar katalog-id (`'top-hoodie-camo'`). Plagg med
+`legacy` står dessutom kvar med den gamla nyckeln som alias (`'top-hoodie'` + `'top:hoodie'`), så att
+en äldre version av spelet känner igen dem; gamla sparfiler migreras så vid laddning. Okända id
+(plagg från en nyare version) ligger orörda i `_keep`.
+* `g.ownsWardrobe(id)` (basplagg = alltid), `g.ownedWardrobeIds()` (basplaggen inräknade),
+  `g.buyWardrobe(id)` → `{ ok, msg?, item?, price? }` (drar pengarna och sparar),
+  `g.clothesPrice(item)` (REA-dagar −25 %), `g.wardrobeCount()` → `{ owned, of }` (dagboken).
+* Samma sak under namnen butikerna använder: `ownsItem`, `buyItem`, `itemPrice(item|id)`, `ownedItemIds`.
+  Alla tar även en gammal nyckel (`'hat:cap'`).
+* Gamla anropen `g.clothesLocked(kind, v)` och `g.buyClothes(kind, v)` fungerar som förut
+  (t.ex. hörlurarna i elektronikbutiken) och köper via katalogen.
 
 **Redigerarens rutor.** Rutnäten visar bara bilder; namnet på det valda står i sektionens rubrik
 och byts mot rutan under pekaren (eller med tangentbordsfokus). Utsnitten (`VIEWS` i avatar.js)

@@ -1,304 +1,866 @@
-// KLÄDER – klädaffären man går runt i med sin egen figur. Butiken är dubbelt
-// så bred som skärmen (kameran följer figuren) och har två avdelningar:
-// TJEJER (rosa/lila, tapet och ljust trägolv) till vänster och KILLAR
-// (blått/grönt, panelvägg och grått trägolv) till höger. I mitten: dörren,
-// kassan och accessoarhyllan.
+// KLÄDER – klädaffären man går runt i med sin egen figur, nu i TVÅ VÅNINGAR.
 //
-// Varje plagg bärs av en mannekäng i en hel, färgglad outfit, med en lapp
-// (plaggets namn + pris, grön "DIN" när man äger det) och en liten gul
-// hänglapp på just det plagg som säljs. Hattarna står även på byster på
-// väggen och glasögon/hörlurar/väskor på hyllan i mitten. Står man vid en
-// vara (eller pekar på den) visas en namnskylt längst ner på skärmen. Klick
-// = köpdialogen, där man ser varan i stor skala på DIN figur och provar färger.
+// PLAN 1 · MODE (1280 px bred, kameran följer figuren): TJEJER till vänster, KILLAR till
+// höger och mitthallen med dörren, kassan, accessoarhyllan, hatthyllan och TRAPPAN UPP.
+// Varje avdelning har skyltdockor (ett plagg per docka, med lapp) och klädställningar – fyra
+// väggmoduler och fyra fristående – där HELA klädkatalogens över- och underdelar hänger på
+// galgar, sorterade i kategorier (egna avdelningens först, sedan unisex). Klick på en ställning
+// = bläddra bland alla dess plagg; klick på ett plagg eller en docka = prova på DIN figur och köp.
+//
+// PLAN 2 · SPORT & FOTBOLL: trappan kommer upp ur ett schakt i golvet. KUNGSLADUGÅRD – hela
+// laget som skyltdockor i matchställ (nummer + förnamn på ryggen, nummerskylt under), lagfotot
+// på väggen, fotbollsskorna ur lagfotot och matchstället till salu. KÄNDA LAG – tolv lags
+// matchställ med bara stadsnamn (inga märken, inga sponsorer), sporttröjor och mjukis. En
+// liten provplan med mål: klicka på bollen så skjuter du.
+//
+// Köpen registreras med katalog-id (g.buyWardrobe / g.ownsWardrobe i game.js). Lagen delar
+// tröjmodeller (katalogen tillåter inte två likadana plagg): äger man modellen säger lappen
+// TA PÅ DIG och dialogen klär på en i lagets färger. Klick på lagfotot = fotot i stort.
+//
+// MOBILEN (NÄRA-läget beskär upptill och nertill, main.js v.safe): en lodrät kamera följer
+// figuren inom det synliga radbandet, och skyltarna läggs alltid innanför det.
 import { drawPerson } from '../core/people.js';
-import { Pix, SMALL, BIG, ctxText, textW, text, mix, mul, hash, bayer, hex, css } from '../core/floor-pix.js';
-import { openModal, closeModal, toast, esc } from '../core/ui.js';
-import { SORTIMENT, clothesKey, fmt } from '../game.js';
+import { SMALL, BIG, ctxText, textW, mix, mul, hex, css } from '../core/floor-pix.js';
+import { toast } from '../core/ui.js';
 import { play } from '../core/sound.js';
-import { saveAvatar } from '../core/avatar.js';
-import { createWalker, selfDrawable, folkDrawables, createSpeech } from './walkable.js';
+import { createWalker, selfDrawable, createSpeech, WALK_SEQ, nameTag, emoteBubble, sayBubble } from './walkable.js';
+import { worldFolksHere } from '../net/world.js';
+import { itemById } from '../data/wardrobe.js';
+import * as D from './klader/data.js';
+import * as PT from './klader/paint.js';
+import { drawHanging, drawTeamDoll, isDressLike } from './klader/garment.js';
+import { openBuy, openBrowse, openKit, openPhoto, owns, priceOf, nameOf } from './klader/buy.js';
 
-const talk = createSpeech(); // repliker och beskrivningar som pratbubblor i scenen
+const { H, WALL_Y } = D;
+const STAIR_V = 44;                    // gångfart i trappan (px/s längs trappan)
+const talk = createSpeech();           // repliker och beskrivningar som pratbubblor i scenen
+let VW = 384;                          // mobilfyllning: vyn följer skärmen, klampad till våningen
 
-const VW = 384;                        // skärmens bredd i spelpixlar
-const W = 768, H = 216;                // butikens storlek
-const WALL_Y = 70;
-const MID0 = 296, MID1 = 472;          // mittdelen: dörr, kassa, accessoarer
-const DOOR = { x0: 368, x1: 400 };
-const ROW_Y = [104, 166];              // mannekängernas fötter, bakre/främre raden
-const COLS = [36, 90, 144, 198, 252];  // tjejavdelningen – killarnas speglas (W − x)
-const GOND = { x: 324, y: 116, w: 120, h: 72 }; // accessoarhyllan (fristående; gång mellan den och kassan)
-const DESK = { x: 404, y: 78, w: 64, h: 30 };   // kassadisken
-const sOf = (kind, v) => SORTIMENT.find((s) => s.kind === kind && s.v === v);
-const keyOf = (k) => { const [kind, v] = k.split(':'); return sOf(kind, kind === 'phones' ? true : v); };
-
-// ---------- avdelningarnas färger ----------
-const DEPT = {
-  tjej: { name: 'TJEJER', neon: 0xff8fd0, glow: 0xff4fb0, board: 0x2b1631, trim: 0xf28bb3, lbl: '#ff8fd0', stage: ['#fbe3ef', '#f0c4d9', '#d98fb4'] },
-  kille: { name: 'KILLAR', neon: 0x7fe0ff, glow: 0x2f9fe0, board: 0x0f1a2e, trim: 0x3fc4ff, lbl: '#7fe0ff', stage: ['#e0ebf8', '#c4d6ee', '#7f9cc4'] },
-  mid: { name: '', neon: 0xf0d048, glow: 0xe8b230, board: 0x17151a, trim: 0xe8b230, lbl: '#f0d048', stage: ['#f3ecdf', '#e6dcc8', '#b99a70'] },
-};
-
-// ---------- mannekängerna: hela outfits, plagget som säljs = k ----------
-const MANNE = { skin: '#ece6ee', style: 'bald', hair: '#ecd489', beard: false, glasses: false, phones: false, bag: null, blush: false, hat: null, top: 'tee', shirt: '#f4f1ea', accent: '#f4f1ea', bottom: 'jeans', pants: '#3f5f8f', shoes: '#1c1c1c', cap: '#d9433b' };
-const girl = (o) => ({ ...MANNE, build: 4, blush: true, ...o });
-const boy = (o) => ({ ...MANNE, build: 5, ...o });
-// [plagget, kolumn (0 = längst från mitten för tjejer, närmast mitten för killar), rad, outfit]
-const GIRLS = [
-  // plagget som säljs har en stark färg som skiljer sig från håret/resten av dockan
-  ['hat:crown', 0, 0, girl({ style: 'long', hair: '#3b2619', hat: 'crown', cap: '#f0b429', bottom: 'dress', shirt: '#8e5bd1', shoes: '#f2f2f2' })],
-  ['bottom:skirt', 1, 0, girl({ style: 'ponytail', hair: '#6b4226', top: 'stripes', shirt: '#f4f1ea', accent: '#b83d7a', bottom: 'skirt', pants: '#b83d7a' })],
-  ['bottom:dress', 2, 0, girl({ style: 'bun', hair: '#1d1714', top: 'vest', bottom: 'dress', shirt: '#f0b429', shoes: '#f2f2f2' })],
-  ['top:vest', 3, 0, girl({ style: 'wavy', hair: '#b7392b', top: 'vest', shirt: '#2aa39a', bottom: 'shorts', pants: '#f4f1ea', shoes: '#f28bb3' })],
-  ['top:hoodie', 4, 0, girl({ style: 'long', hair: '#3b2619', top: 'hoodie', shirt: '#f28bb3', bottom: 'jeans', pants: '#3f5f8f', shoes: '#f2f2f2' })],
-  ['top:sweater', 0, 1, girl({ style: 'bob', hair: '#1d1714', top: 'sweater', shirt: '#b9a3e8', bottom: 'skirt', pants: '#2f3440' })],
-  ['hat:beanie', 1, 1, girl({ style: 'braids', hair: '#d9a95c', hat: 'beanie', cap: '#d9433b', top: 'jacket', shirt: '#f4f1ea', accent: '#d9433b', bottom: 'jeans', pants: '#2d3a5c' })],
-  ['hat:bow', 2, 1, girl({ style: 'pigtails', hair: '#1d1714', hat: 'bow', cap: '#ff5fa8', top: 'tee', shirt: '#f0b429', accent: '#ff5fa8', bottom: 'skirt', pants: '#3a7bd5', shoes: '#f2f2f2' })],
-  ['hat:headband', 3, 1, girl({ style: 'long', hair: '#ecd489', hat: 'headband', cap: '#b83d7a', top: 'tee', shirt: '#e07a2e', accent: '#f4f1ea', bottom: 'jeans', pants: '#3f5f8f' })],
-  ['bottom:shorts', 4, 1, girl({ style: 'space', hair: '#c65fa0', top: 'tee', shirt: '#f4f1ea', accent: '#2aa39a', bottom: 'shorts', pants: '#2aa39a', shoes: '#f2f2f2' })],
-];
-const BOYS = [
-  ['top:hoodie', 0, 0, boy({ style: 'fade', hair: '#1d1714', top: 'hoodie', shirt: '#46a35a', bottom: 'pants', pants: '#2b2b30', shoes: '#f2f2f2' })],
-  ['hat:cap', 1, 0, boy({ style: 'short', hair: '#3b2619', hat: 'cap', cap: '#d9433b', top: 'tee', shirt: '#3a7bd5', accent: '#f4f1ea', bottom: 'jeans', pants: '#2d3a5c', shoes: '#f2f2f2' })],
-  ['top:hawaii', 2, 0, boy({ style: 'curtains', hair: '#d9a95c', top: 'hawaii', shirt: '#2aa39a', accent: '#f0b429', bottom: 'shorts', pants: '#e8e3d6', glasses: 'sun', shoes: '#6b3e1e', build: 6 })],
-  ['top:shirt', 3, 0, boy({ style: 'side', hair: '#6b4226', top: 'shirt', shirt: '#7fb8e8', accent: '#f4f1ea', bottom: 'pants', pants: '#9a8560', shoes: '#6b3e1e' })],
-  ['top:jacket', 4, 0, boy({ style: 'spiky', hair: '#1d1714', top: 'jacket', shirt: '#e07a2e', accent: '#2f3440', bottom: 'pants', pants: '#2b2b30' })],
-  ['bottom:shorts', 0, 1, boy({ style: 'buzz', hair: '#3b2619', top: 'tee', shirt: '#f0b429', accent: '#3a7bd5', bottom: 'shorts', pants: '#3a7bd5', shoes: '#f2f2f2' })],
-  ['hat:bucket', 1, 1, boy({ style: 'short', hair: '#1d1714', hat: 'bucket', cap: '#9fd356', top: 'stripes', shirt: '#2d3a5c', accent: '#f4f1ea', bottom: 'pants', pants: '#9a8560', build: 6 })],
-  ['hat:beanie', 2, 1, boy({ style: 'short', hair: '#a5692f', hat: 'beanie', cap: '#f0b429', top: 'sweater', shirt: '#26605a', bottom: 'jeans', pants: '#3f5f8f' })],
-  ['top:suit', 3, 1, boy({ style: 'side', hair: '#1d1714', top: 'suit', shirt: '#2d3a5c', accent: '#d9433b', bottom: 'pants', pants: '#2d3a5c', shoes: '#6b3e1e' })],
-  ['hat:tophat', 4, 1, boy({ style: 'short', hair: '#3b2619', hat: 'tophat', cap: '#1d1d22', top: 'suit', shirt: '#7a2e3e', accent: '#f0b429', bottom: 'pants', pants: '#1d1d22' })],
-];
-const DUMMIES = [
-  ...GIRLS.map(([k, c, r, look]) => ({ s: keyOf(k), dept: 'tjej', x: COLS[c], y: ROW_Y[r], look })),
-  // killarnas kolumn 0 står närmast mitten
-  ...BOYS.map(([k, c, r, look]) => ({ s: keyOf(k), dept: 'kille', x: W - COLS[COLS.length - 1 - c], y: ROW_Y[r], look })),
-];
-
-// ---------- byster på väggen (hattar) och accessoarhyllan ----------
-const BUST = { ...MANNE, skin: '#e9e2ea', top: 'tee', shirt: '#d9d0c8', accent: '#d9d0c8', build: 5 };
-const bust = (o) => ({ ...BUST, ...o });
-const HAT_Y = 56; // hyllplanets ovansida
-// 24 px mellan bysterna så att prislapparna ("150:-") får plats bredvid varandra
-const WALLS = [
-  ['hat:bow', 'tjej', 202, bust({ style: 'long', hair: '#1d1714', hat: 'bow', cap: '#ff5fa8', blush: true, build: 4 })],
-  ['hat:headband', 'tjej', 226, bust({ style: 'bob', hair: '#ecd489', hat: 'headband', cap: '#8e5bd1', blush: true, build: 4 })],
-  ['hat:beanie', 'tjej', 250, bust({ style: 'long', hair: '#b7392b', hat: 'beanie', cap: '#2aa39a', blush: true, build: 4 })],
-  ['hat:crown', 'tjej', 274, bust({ style: 'wavy', hair: '#1d1714', hat: 'crown', cap: '#f0b429', blush: true, build: 4 })],
-  ['hat:cap', 'kille', W - 274, bust({ style: 'short', hair: '#3b2619', hat: 'cap', cap: '#3a7bd5' })],
-  ['hat:bucket', 'kille', W - 250, bust({ style: 'short', hair: '#1d1714', hat: 'bucket', cap: '#f0b429' })],
-  ['hat:beanie', 'kille', W - 226, bust({ style: 'buzz', hair: '#3b2619', hat: 'beanie', cap: '#d9433b' })],
-  ['hat:tophat', 'kille', W - 202, bust({ style: 'short', hair: '#ecd489', hat: 'tophat', cap: '#1d1d22', accent: '#d9433b' })],
-].map(([k, dept, x, look]) => ({ s: keyOf(k), dept, x, y: HAT_Y, look }));
-const GTOP = GOND.y + 34, GBOT = GOND.y + 61; // hyllplanen i gondolen
-// Glasögonen står i stor skala på egna ställ, hörlurarna på en byst, väskorna på nedre hyllan
-const SHELF = [
-  ['glasses:round', GOND.x + 18, GTOP, null],
-  ['glasses:square', GOND.x + 46, GTOP, null],
-  ['glasses:sun', GOND.x + 74, GTOP, null],
-  ['phones:true', GOND.x + 102, GTOP, bust({ style: 'short', hair: '#3b2619', phones: true, phoneColor: '#d9433b' })],
-  ['bag:backpack', GOND.x + 30, GBOT, { bagColor: '#3a7bd5' }],
-  ['bag:shoulder', GOND.x + 90, GBOT, { bagColor: '#b83d7a' }],
-].map(([k, x, y, look]) => ({ s: keyOf(k), dept: 'mid', x, y, look: look || {} }));
-
-// kortnamn på mannekängernas lappar (lappen får vara högst ~48 px bred)
+// ---------- kortnamn på dockornas lappar (lappen får vara högst ~48 px bred) ----------
 const SHORT = {
-  'top:vest': 'LINNE', 'top:hoodie': 'HUVTRÖJA', 'top:hawaii': 'HAWAII', 'top:sweater': 'STICKAT', 'top:shirt': 'SKJORTA',
-  'top:jacket': 'JACKA', 'top:suit': 'KAVAJ', 'bottom:shorts': 'SHORTS', 'bottom:skirt': 'KJOL', 'bottom:dress': 'KLÄNNING',
-  'hat:cap': 'KEPS', 'hat:bucket': 'FISKEHATT', 'hat:headband': 'HÅRBAND', 'hat:beanie': 'MÖSSA', 'hat:bow': 'ROSETT',
-  'hat:tophat': 'HÖG HATT', 'hat:crown': 'KRONA',
+  'top-vest': 'LINNE', 'top-hoodie': 'HUVTRÖJA', 'top-hawaii': 'HAWAII', 'top-sweater': 'STICKAT', 'top-shirt': 'SKJORTA',
+  'top-jacket': 'JACKA', 'top-suit': 'KAVAJ', 'bottom-shorts': 'SHORTS', 'bottom-skirt': 'KJOL', 'bottom-dress': 'KLÄNNING',
+  'hat-cap': 'KEPS', 'hat-bucket': 'FISKEHATT', 'hat-headband': 'HÅRBAND', 'hat-beanie': 'MÖSSA', 'hat-bow': 'ROSETT',
+  'hat-tophat': 'HÖG HATT', 'hat-crown': 'KRONA',
 };
-// egna ikoner i dialogrubriken där sortimentets ikon krockar med ett annat plagg
-const ICON = { 'hat:headband': '💇' };
-const iconOf = (s) => ICON[clothesKey(s.kind, s.v)] || s.icon;
+const OK_CH = /[A-ZÅÄÖÉ0-9 \-+!.:,?/%'=]/;
+// text i spelets pixeltypsnitt: versaler, bara tecken som finns
+const pix = (s) => [...String(s).replace(/­/g, '').replace(/&/g, '+').replace(/·/g, '-').toUpperCase()].map((c) => (OK_CH.test(c) ? c : c === 'Ü' ? 'U' : ' ')).join('').replace(/ +/g, ' ').trim();
 // var på dockan (fötterna i 0,0, framifrån) plagget sitter – där hänger den gula lappen
-const HANG_AT = { hat: [5, -36], top: [6, -23], bottom: [5, -11] };
+const HANG_AT = { hat: [5, -36], top: [6, -23], bottom: [5, -11], shoes: [5, -2] };
+// dockans färger som förslag i köpdialogen
+function dollColors(it, look) {
+  const pick = (...f) => Object.fromEntries(f.filter((k) => look[k]).map((k) => [k, look[k]]));
+  switch (it.slot) {
+    case 'top': return pick('shirt', 'accent', 'print2');
+    case 'bottom': return isDressLike(it) ? pick('shirt', 'pants2') : pick('pants', 'pants2');
+    case 'hat': return { cap: look.cap };
+    case 'bag': return { bagColor: look.bagColor };
+    case 'phones': return { phoneColor: look.phoneColor };
+    default: return {};
+  }
+}
 
 const CLERK = { skin: '#c68a5c', hair: '#1d1714', style: 'bun', top: 'shirt', shirt: '#f4f1ea', accent: '#b83d7a', bottom: 'pants', pants: '#2d3a5c', shoes: '#1c1c1c', glasses: 'round', beard: false, phones: false, bag: null, hat: null, blush: true, build: 5 };
+const COACH_LOOK = { skin: '#a06a43', hair: '#1d1714', style: 'buzz', top: 'track', shirt: '#7a1f2e', accent: '#f4f1ea', bottom: 'trackPants', pants: '#1d1d22', pants2: '#f4f1ea', shoeType: 'sneakers', shoes: '#f4f1ea', shoes2: '#d9434b', beard: 'short', glasses: false, phones: false, bag: null, hat: null, build: 6 };
 const POSTER = [
-  girl({ skin: '#eec3a0', style: 'ponytail', hair: '#d9a95c', top: 'hoodie', shirt: '#f28bb3', bottom: 'skirt', pants: '#8e5bd1', hat: 'bow', cap: '#f0b429' }),
-  boy({ skin: '#a06a43', style: 'fade', hair: '#1d1714', top: 'jacket', shirt: '#3a7bd5', accent: '#f0b429', bottom: 'jeans', pants: '#2d3a5c', hat: 'cap', cap: '#46a35a' }),
+  D.girl({ skin: '#eec3a0', style: 'ponytail', hair: '#d9a95c', top: 'hoodie', shirt: '#f28bb3', bottom: 'skirt', pants: '#8e5bd1', hat: 'bow', cap: '#f0b429' }),
+  D.boy({ skin: '#a06a43', style: 'fade', hair: '#1d1714', top: 'jacket', shirt: '#3a7bd5', accent: '#f0b429', bottom: 'jeans', pants: '#2d3a5c', hat: 'cap', cap: '#46a35a' }),
 ];
-const PLANTS = [[306, 92], [304, 206], [464, 206]];
-const RACKS = [[120, 'tjej'], [W - 190, 'kille']]; // klädstänger på väggen (bara att titta på)
 
-export function makeShopKlader(A) {
+// ================= butikens innehåll (byggs en gång) =================
+const DUMMIES = [
+  ...D.GIRLS.map(([k, c, r, look, short]) => ({ it: D.itemOf(k), key: k, short, dept: 'tjej', x: D.COLS[c], y: D.ROW_Y[r], look })),
+  ...D.BOYS.map(([k, c, r, look, short]) => ({ it: D.itemOf(k), key: k, short, dept: 'kille', x: D.W1 - D.COLS[D.COLS.length - 1 - c], y: D.ROW_Y[r], look })),
+];
+// ställningar och väggmoduler: { kind, cat, dept, x, base?, items }
+const PLACES1 = [];
+for (const dept of ['tjej', 'kille']) for (const [catId, kind, i] of D.PLACES[dept]) {
+  const cat = D.catById(catId), items = D.catItems(cat);
+  if (kind === 'wall') PLACES1.push({ kind, cat, dept, items, x: dept === 'tjej' ? D.MOD_X[i] : D.W1 - D.MOD_X[i] - D.MOD_W });
+  else { const [x0, base] = D.RACK_SLOTS[i]; PLACES1.push({ kind, cat, dept, items, x: dept === 'tjej' ? x0 : D.W1 - x0 - D.RACK_W, base }); }
+}
+const PLACES2 = [
+  { kind: 'wall', cat: D.catById('spTrojor'), dept: 'sport', x: D.SPORT_MOD_X[0] },
+  { kind: 'wall', cat: D.catById('spMjukis'), dept: 'sport', x: D.SPORT_MOD_X[1] },
+  { kind: 'rack', cat: D.catById('spFotboll'), dept: 'sport', x: D.SPORT_RACK[0], base: D.SPORT_RACK[1] },
+].map((p) => ({ ...p, items: D.catItems(p.cat) }));
+const GTOP = PT.GTOP, GBOT = PT.GBOT;
+const SHELF = [
+  ['glasses:round', D.GOND.x + 18, GTOP, null],
+  ['glasses:square', D.GOND.x + 46, GTOP, null],
+  ['glasses:sun', D.GOND.x + 74, GTOP, null],
+  ['phones:true', D.GOND.x + 102, GTOP, D.bust({ style: 'short', hair: '#3b2619', phones: true, phoneColor: '#d9433b' })],
+  ['bag:backpack', D.GOND.x + 30, GBOT, { bagColor: '#3a7bd5' }],
+  ['bag:shoulder', D.GOND.x + 90, GBOT, { bagColor: '#b83d7a' }],
+].map(([k, x, y, look]) => ({ it: D.itemOf(k), key: k, dept: 'mid', x, y, look: look || {} }));
+const HATBUSTS = D.HAT_BUSTS.map(([k, look], i) => ({
+  it: D.itemOf(k), key: k, dept: 'mid', look,
+  x: D.HATS.x + (i < 4 ? 16 + i * 28 : 30 + (i - 4) * 28), y: i < 4 ? PT.HTOP : PT.HBOT,
+}));
+const KUNGS = D.KUNGS_PLAYERS.map(([n, name], i) => ({ n, name, i, ...D.KUNGS_POS[i], look: D.kungsLook(i) }));
+const TEAMS = D.TEAMS.map((tm, i) => ({ ...tm, i, ...D.TEAM_POS[i], look: D.teamLook(tm, i), it: itemById(tm.item) }));
+const KIT_LOOK = D.girl({ style: 'ponytail', hair: '#6b4226', top: 'football', shirt: D.KUNGS_KIT.shirt, accent: D.KUNGS_KIT.accent, bottom: 'sportShorts', pants: D.KUNGS_KIT.pants, pants2: D.KUNGS_KIT.pants, shoeType: 'cleats', shoes: '#e4f22e', shoes2: '#1d1d22' });
+const KSOCKS = { socks: D.KUNGS_KIT.socks, stripe: D.KUNGS_KIT.sockStripe };
+const BENCH = { x: 452, y: 122 };      // provbänken framför fotbollsskorna (y = benens fot)
+const cityName = (c) => c[0] + c.slice(1).toLowerCase();
+const cityGen = (c) => (/s$/i.test(c) ? cityName(c) : cityName(c) + 's');
+
+// Kungsladugårds matchställ som köps (tröjan = fotbollströjan i lagets färger, utan namn)
+function kungsKit(player = null) {
+  const cl = D.CLEATS[player ? player.i % D.CLEATS.length : 0];
+  return {
+    title: 'Kungsladugårds matchställ', where: 'Kungsladugård · plan 2', dept: 'kungs', icon: '⚽',
+    player: player ? `Nr ${player.n} · ${player.name}` : null,
+    // ryggen i stort: nummer och förnamn i spelets pixeltypsnitt (på dockan får namnet inte plats)
+    back: player ? { number: player.n, name: player.name, shirt: D.KUNGS_KIT.shirt, accent: D.KUNGS_KIT.accent } : null,
+    parts: [
+      { id: 'top-football', label: 'Matchtröja (vinröd)', colors: { shirt: D.KUNGS_KIT.shirt, accent: D.KUNGS_KIT.accent } },
+      { id: 'bottom-sportShorts', label: 'Svarta shorts', colors: { pants: D.KUNGS_KIT.pants, pants2: D.KUNGS_KIT.pants2 } },
+      { id: 'shoes-cleats', label: `Fotbollsskor (${cl.name.toLowerCase()})`, colors: { shoes: cl.shoes, shoes2: cl.shoes2 }, optional: !!player },
+    ],
+    wearLabel: '👕 Ta på mig matchstället',
+    ownedNote: '✓ Fotbollströjan har du redan – här tar du på dig den i Kungsladugårds vinröda färger.',
+    note: player
+      ? `Tröjan är lagets – vinröd med ljusröda ärmslut. Nummer och namn på ryggen har bara ${player.name} och hennes lagkompisar.`
+      : 'Vinröd tröja med ljusare röda ärmslut, svarta shorts och fotbollsskor – precis som laget. Nummer och namn på ryggen har bara lagets spelare.',
+  };
+}
+// Ett känt lags matchställ. Lagen delar tröjmodeller (vanlig, randig, tvärrandig – katalogen
+// tillåter inte två likadana plagg), så äger man modellen tar man bara på sig den i lagets färger.
+function teamKit(tm) {
+  const it = tm.it, gen = cityGen(tm.city);
+  return {
+    title: `${gen} matchställ`, where: 'Kända lag · plan 2', dept: 'lag', icon: '⚽',
+    parts: [
+      { id: it.id, label: `Matchtröja ${cityName(tm.city)}`, colors: tm.colors },
+      { id: 'bottom-sportShorts', label: 'Shorts', colors: { pants: tm.pants, pants2: tm.pants } },
+      { id: 'shoes-cleats', label: 'Fotbollsskor (svarta)', colors: { shoes: '#26242c', shoes2: '#f4f1ea' }, optional: true },
+    ],
+    wearLabel: `👕 Ta på mig i ${gen} färger`,
+    ownedNote: `✓ Tröjan har du redan! Det är ${it.id === 'top-football' ? 'den vanliga fotbollströjan' : nameOf(it).toLowerCase()} – samma modell för flera lag, bara färgerna skiljer. Här tar du på dig den i ${gen} färger.`,
+    note: `I ${gen} färger – utan klubbmärke och sponsorer. Samma tröja kan du färga i vilket lags färger du vill hemma i garderoben.`,
+  };
+}
+// Bär man just nu tröjan i de här färgerna? (lappen säger då PÅ DIG)
+const wearsShirt = (look, it, shirt) => look.top === 'football' && (look.topPrint || 'none') === (it?.look.topPrint || 'none') && String(look.shirt || '').toLowerCase() === shirt.toLowerCase();
+
+let ART = null;
+function art() {
+  if (ART) return ART;
+  const bg1 = PT.paintModules(PT.paintFloor1(), PLACES1.filter((p) => p.kind === 'wall').map((p) => ({ x: p.x, key: p.dept, sign: p.cat.sign })));
+  const bg2 = PT.paintModules(PT.paintFloor2(), PLACES2.filter((p) => p.kind === 'wall').map((p) => ({ x: p.x, key: p.dept, sign: p.cat.sign })));
+  const racks = new Map();
+  [...PLACES1, ...PLACES2].forEach((p, i) => { if (p.kind === 'rack') racks.set(p.cat.id, PT.rackImg(p.dept, p.cat.sign, i)); });
+  ART = {
+    bg1, bg2, racks,
+    pod: { tjej: PT.podiumImg('tjej'), kille: PT.podiumImg('kille'), kungs: PT.podiumImg('kungs'), lag: PT.podiumImg('lag') },
+    glow: PT.glowImg(), plant: PT.plantImg(), gond: PT.gondolaImg(), hats: PT.hatGondolaImg(), desk: PT.deskImg(),
+    stairs1: PT.stairArt(D.STAIRS1), stairs2: PT.stairArt(D.STAIRS2),
+    pitFront: PT.pitFrontImg(D.STAIRS2.pit[1] - D.STAIRS2.pit[0] + 2), goal: PT.goalImg(), bench: PT.benchImg(),
+  };
+  return ART;
+}
+
+export function makeShopKlader(A, opts = {}) {
   const g = A.game;
-  const walker = createWalker({ W, H, top: WALL_Y + 4, bottom: H - 6, spawn: [(DOOR.x0 + DOOR.x1) / 2, WALL_Y + 14] });
-  walker.setObstacles([
-    ...DUMMIES.map((d) => [d.x - 12, d.y - 6, d.x + 12, d.y + 22]),
-    // hela hyllans djup: man går runt den (framför eller i gången mot kassan), aldrig bakom
-    [GOND.x - 5, GOND.y + 2, GOND.x + GOND.w + 5, GOND.y + GOND.h],
-    [DESK.x, DESK.y, DESK.x + DESK.w, DESK.y + DESK.h],
-    ...PLANTS.map(([x, y]) => [x - 6, y - 4, x + 6, y + 2]),
-  ]);
-  walker.snapFree();
-  let t = 0, lockedCam = null, hoverId = null, hoverT = 0;
-  const camTarget = () => lockedCam ?? Math.max(0, Math.min(W - VW, walker.px - VW / 2));
-  const cam = { x: camTarget() };
-  const bg = paintStore();
-  const pod = { tjej: paintPodium('tjej'), kille: paintPodium('kille') };
-  const gondImg = paintGondola();
-  const deskImg = paintDesk();
-  const plantImg = paintPlant();
-  const glowImg = paintGlow();
-  const owned = (s) => g.wardrobe.includes(clothesKey(s.kind, s.v));
+  const P = art();
+  let lastLabel = null;
+  let t = 0, lockedCam = null, hoverId = null, hoverT = 0, fade = 0, nagAt = -9, floorT = 0; // floorT = när man kom till våningen
+  let climb = null;                 // { e, d, v } – medan man går i trappan
+  const ball = { x: D.BALL0[0], y: D.BALL0[1], z: 0, st: 'rest', t: 0, fx: 0, fy: 0, tx: 0, ty: 0 };
+  const syncView = () => { VW = Math.max(384, Math.min(A.W || 384, F.W)); };
 
-  // alla klickbara saker (världskoordinater)
-  const spots = [
-    { id: 'dorr', r: [DOOR.x0 - 2, 26, DOOR.x1 + 2, WALL_Y + 4], go: [(DOOR.x0 + DOOR.x1) / 2, WALL_Y + 10], act: () => { play('door'); A.go('city'); } },
-    ...WALLS.map((w, i) => ({ id: 'vagg' + i, item: w, r: [w.x - 11, 30, w.x + 11, WALL_Y - 2], go: [w.x, WALL_Y + 12] })),
+  // ---------- våningarna ----------
+  const mkWalker = (W, spawn, obstacles) => {
+    const w = createWalker({ W, H, top: WALL_Y + 4, bottom: H - 6, spawn });
+    w.speed = 80; // butiken är stor – lite raskare än i de små butikerna
+    w.setObstacles(obstacles);
+    w.snapFree();
+    return w;
+  };
+  const board1 = [D.STAIRS1.lx - D.STAIRS1.sx * 12, D.STAIRS1.ly], board2 = [D.STAIRS2.lx - D.STAIRS2.sx * 12, D.STAIRS2.ly];
+  const [p0, p1, pb, pl] = D.STAIRS2.pit;
+  const floor1 = {
+    n: 1, W: D.W1, bg: P.bg1, name: 'PLAN 1 - MODE', col: '#e8b230',
+    walker: mkWalker(D.W1, [(D.DOOR.x0 + D.DOOR.x1) / 2, WALL_Y + 14], [
+      ...DUMMIES.map((d) => [d.x - 12, d.y - 6, d.x + 12, d.y + 22]),
+      ...PLACES1.filter((p) => p.kind === 'rack').map((p) => [p.x - 2, p.base - 8, p.x + D.RACK_W + 2, p.base + 3]),
+      [D.GOND.x - 5, D.GOND.y + 2, D.GOND.x + D.GOND.w + 5, D.GOND.y + D.GOND.h],
+      [D.HATS.x - 4, D.HATS.y + 2, D.HATS.x + D.HATS.w + 4, D.HATS.y + D.HATS.h],
+      [D.DESK.x, D.DESK.y, D.DESK.x + D.DESK.w, D.DESK.y + D.DESK.h],
+      [D.STAIRS1.lx - 2, WALL_Y, D.MID1 - 4, D.STAIRS1.ly + 5],
+      ...D.PLANTS1.map(([x, y]) => [x - 6, y - 4, x + 6, y + 2]),
+    ]),
+  };
+  const floor2 = {
+    n: 2, W: D.W2, bg: P.bg2, name: 'PLAN 2 - SPORT + FOTBOLL', col: '#d9434b',
+    walker: mkWalker(D.W2, [board2[0] + 8, board2[1] + 14], [
+      ...KUNGS.map((k) => [k.x - 12, k.y - 6, k.x + 12, k.y + 20]),
+      ...TEAMS.map((k) => [k.x - 12, k.y - 6, k.x + 12, k.y + 20]),
+      [D.KIT_DOLL.x - 12, D.KIT_DOLL.y - 6, D.KIT_DOLL.x + 12, D.KIT_DOLL.y + 20],
+      [p0 - 3, pb - 14, p1 + 3, pl + 3],
+      [D.GOAL.x - 17, D.GOAL.y - 6, D.GOAL.x + 17, D.GOAL.y + 1],
+      [D.COACH.x - 6, D.COACH.y - 4, D.COACH.x + 6, D.COACH.y + 2],
+      [BENCH.x - 1, BENCH.y - 7, BENCH.x + PT.BENCH_W + 1, BENCH.y + 1],
+      ...PLACES2.filter((p) => p.kind === 'rack').map((p) => [p.x - 2, p.base - 8, p.x + D.RACK_W + 2, p.base + 3]),
+      ...D.PLANTS2.map(([x, y]) => [x - 6, y - 4, x + 6, y + 2]),
+    ]),
+  };
+  const floors = { 1: floor1, 2: floor2 };
+  let F = opts.floor === 2 ? floor2 : floor1;
+  if (opts.floor === 2) { F.walker.px = board2[0] + 8; F.walker.py = board2[1] + 14; F.walker.snapFree(); }
+  const W = () => F.walker;
+
+  // ---------- klickbara saker ----------
+  const itemSpot = (id, o, r, go, dept) => ({ id, item: o, r, go, dept, act: () => { hoverId = null; openBuy(A, o.it, { dept, colors: dollColors(o.it, o.look), fromDoll: true }); } });
+  const placeSpot = (p) => {
+    const r = p.kind === 'wall' ? [p.x, 27, p.x + D.MOD_W, WALL_Y - 2] : [p.x, p.base - 56, p.x + D.RACK_W, p.base + 2];
+    const go = p.kind === 'wall' ? [p.x + D.MOD_W / 2, WALL_Y + 12] : [p.x + D.RACK_W / 2, p.base + 14];
+    return { id: (p.kind === 'wall' ? 'mod-' : 'rack-') + p.cat.id, place: p, r, go, dept: p.dept, act: () => { hoverId = null; play('click'); openBrowse(A, p.cat, p.items, { dept: p.dept }); } };
+  };
+  const say = (msg) => { play('click'); talk.say(msg, () => ({ x: W().px, y: W().py - 44 }), undefined, { self: true }); };
+  floor1.spots = [
+    { id: 'dorr', r: [D.DOOR.x0 - 2, 26, D.DOOR.x1 + 2, WALL_Y + 4], go: [(D.DOOR.x0 + D.DOOR.x1) / 2, WALL_Y + 10], act: () => { play('door'); A.go('city'); } },
+    { id: 'trappa', stairs: true, r: [D.STAIRS1.lx - 14, D.STAIRS1.clip, D.MID1 - 4, D.STAIRS1.ly + 6], go: board1, act: () => startClimb() },
     // man ställer sig BREDVID dockan (på mittgångens sida), så att figuren inte skymmer lappen
-    ...DUMMIES.map((d, i) => ({ id: 'dummy' + i, item: d, r: [d.x - 12, d.y - 40, d.x + 12, d.y + 22], go: [d.x + (d.dept === 'tjej' ? 22 : -22), d.y + 3] })),
-    ...SHELF.map((it, i) => ({
-      id: 'hylla' + i, item: it,
-      r: it.y === GTOP ? [it.x - 13, GOND.y + 10, it.x + 13, GTOP + 7] : [it.x - 20, GTOP + 8, it.x + 20, GOND.y + GOND.h],
-      // väskorna står på nedre hyllan – ställ dig vid sidan av dem så att de syns
-      go: [it.y === GTOP ? it.x : it.x < GOND.x + GOND.w / 2 ? it.x - 22 : it.x + 22, GOND.y + GOND.h + 12],
-    })),
-    { id: 'kassa', r: [DESK.x, DESK.y - 30, DESK.x + DESK.w, DESK.y + DESK.h], go: [DESK.x + DESK.w / 2, DESK.y + DESK.h + 10], act: () => { play('click'); talk.say('Hej! 👋 Gå fram till en docka eller en hylla så får du prova plagget på dig.', { x: DESK.x + DESK.w / 2, y: DESK.y - 30 }); } },
-    ...[[8, 84], [W - 84, W - 8]].map(([a, b], i) => ({ id: 'prov' + i, r: [a, 18, b, WALL_Y], go: [(a + b) / 2, WALL_Y + 12], act: () => { play('click'); talk.say('🪞 Provhytten! Klickar jag på ett plagg ser jag det på mig innan jag köper.', () => ({ x: walker.px, y: walker.py - 44 })); } })),
-    ...RACKS.map(([x0], i) => ({ id: 'stang' + i, r: [x0 - 2, 16, x0 + 72, WALL_Y - 2], go: [x0 + 35, WALL_Y + 12], act: () => { play('click'); talk.say('👗 Stången är bara för att titta – allt som säljs står på dockorna och hyllorna.', () => ({ x: walker.px, y: walker.py - 44 })); } })),
+    ...DUMMIES.map((d, i) => itemSpot('dummy' + i, d, [d.x - 12, d.y - 40, d.x + 12, d.y + 22], [d.x + (d.dept === 'tjej' ? 22 : -22), d.y + 3], d.dept)),
+    ...SHELF.map((s, i) => itemSpot('hylla' + i, s,
+      s.y === GTOP ? [s.x - 13, D.GOND.y + 10, s.x + 13, GTOP + 7] : [s.x - 20, GTOP + 8, s.x + 20, D.GOND.y + D.GOND.h],
+      [s.y === GTOP ? s.x : s.x < D.GOND.x + D.GOND.w / 2 ? s.x - 22 : s.x + 22, D.GOND.y + D.GOND.h + 12], 'mid')),
+    ...HATBUSTS.map((b, i) => itemSpot('hatt' + i, b, [b.x - 12, b.y - 26, b.x + 12, b.y + 4], [b.x, D.HATS.y + D.HATS.h + 12], 'mid')),
+    ...PLACES1.map(placeSpot),
+    { id: 'kassa', r: [D.DESK.x, D.DESK.y - 30, D.DESK.x + D.DESK.w, D.DESK.y + D.DESK.h], go: [D.DESK.x + D.DESK.w / 2, D.DESK.y + D.DESK.h + 10], act: () => { play('click'); talk.say('Hej! 👋 Allt hänger på galgarna – klicka på en ställning så ser du alla plagg. Sport och fotboll finns en trappa upp!', { x: D.DESK.x + D.DESK.w / 2, y: D.DESK.y - 30 }); } },
+    ...[[8, 84], [D.W1 - 84, D.W1 - 8]].map(([a, b], i) => ({ id: 'prov' + i, r: [a, 18, b, WALL_Y], go: [(a + b) / 2, WALL_Y + 12], act: () => say('🪞 Provhytten! Klickar jag på ett plagg ser jag det på mig innan jag köper.') })),
   ];
-  for (const s of spots) if (s.item) s.act = () => { hoverId = null; openBuy(A, s.item); };
-  const spotAt = (x, y) => spots.find((h) => x >= h.r[0] && x <= h.r[2] && y >= h.r[1] && y <= h.r[3]);
-  // den vara man står vid (eller pekar på) får namnskylten nertill; musens pekning
-  // glöms efter en stund utan rörelse (main.js säger inte till när musen lämnar spelet)
+  floor2.spots = [
+    { id: 'trappa', stairs: true, r: [p0, pb - 14, p1 + 24, pl + 4], go: board2, act: () => startClimb() },
+    ...KUNGS.map((k) => ({ id: 'kungs' + k.i, kungs: k, r: [k.x - 12, k.y - 40, k.x + 12, k.y + 18], go: [k.x, k.y + (k.y < 150 ? 30 : 32)], dept: 'kungs', act: () => { hoverId = null; play('click'); openKit(A, kungsKit(k)); } })),
+    { id: 'matchstall', kit: true, r: [D.KIT_DOLL.x - 12, D.KIT_DOLL.y - 40, D.KIT_DOLL.x + 12, D.KIT_DOLL.y + 18], go: [D.KIT_DOLL.x, D.KIT_DOLL.y + 32], dept: 'kungs', act: () => { hoverId = null; play('click'); openKit(A, kungsKit()); } },
+    ...PT.SHOE_SPOTS.map((s) => ({ id: 'skor-' + s.c.id, cleat: s, r: [s.x - 2, s.y - 11, s.x + 18, s.y + 2], go: [s.x + 8, WALL_Y + 12], dept: 'kungs', act: () => {
+      hoverId = null; play('click');
+      openBuy(A, itemById('shoes-cleats'), { dept: 'kungs', where: 'Kungsladugård · fotbollsskorna ur lagfotot', title: `${s.c.name} fotbollsskor`, colors: { shoes: s.c.shoes, shoes2: s.c.shoes2 }, note: 'Samma fotbollsskor som laget har på lagfotot – färgen väljer du fritt hemma i garderoben.' });
+    } })),
+    // lagfotot: klick = fotot i stort med hela laget (syns också på mobilen, där väggen är beskuren)
+    { id: 'lagfoto', photo: true, r: [D.PHOTO.x, D.PHOTO.y, D.PHOTO.x + D.PHOTO.w, D.PHOTO.y + D.PHOTO.h + 10], go: [D.PHOTO.x + D.PHOTO.w / 2, WALL_Y + 12], dept: 'kungs', act: () => {
+      hoverId = null; play('click');
+      openPhoto(A, P.bg2, [D.PHOTO.x, D.PHOTO.y, D.PHOTO.w, D.PHOTO.h], 'Kungsladugård – laget 2026', D.KUNGS_PLAYERS);
+    } },
+    ...TEAMS.map((tm) => ({ id: 'lag' + tm.i, team: tm, r: [tm.x - 12, tm.y - 40, tm.x + 12, tm.y + 18], go: [tm.x, tm.y + (tm.y < 150 ? 30 : 32)], dept: 'lag', act: () => { hoverId = null; play('click'); openKit(A, teamKit(tm)); } })),
+    ...PLACES2.map(placeSpot),
+    { id: 'coach', r: [D.COACH.x - 8, D.COACH.y - 40, D.COACH.x + 8, D.COACH.y + 2], go: [D.COACH.x - 16, D.COACH.y + 10], act: () => { play('click'); talk.say(['Välkommen upp! ⚽ Laget står där borta – klicka på en spelare så provar du matchstället.', 'Skjut ett skott på provplanen – klicka på bollen!', 'Fotbollsskorna på väggen är samma som laget har på lagfotot.'][Math.floor(t / 4) % 3], { x: D.COACH.x, y: D.COACH.y - 44 }); } },
+    { id: 'boll', r: [D.PITCH.x0, D.PITCH.y0 + 18, D.PITCH.x1, D.PITCH.y1], go: [D.BALL0[0], D.BALL0[1] + 12], act: () => kick() },
+    { id: 'pokaler', r: [578, 30, 642, 58], go: [610, WALL_Y + 12], act: () => say('🏆 Pokalerna! Kungsladugård har vunnit en hel hylla.') },
+  ];
+  for (const f of [floor1, floor2]) for (const s of f.spots) s.floor = f.n;
+  const spotAt = (x, y) => F.spots.find((h) => x >= h.r[0] && x <= h.r[2] && y >= h.r[1] && y <= h.r[3]);
+  // den sak man står vid (eller pekar på) får namnskylten nertill; musens pekning glöms
+  // efter en stund utan rörelse (main.js säger inte till när musen lämnar spelet)
   const focusSpot = () => {
-    const h = hoverId && t - hoverT < 4 && spots.find((s) => s.id === hoverId);
-    if (h?.item) return h;
-    if (walker.path.length) return null;
-    return spots.find((s) => s.item && Math.abs(walker.px - s.go[0]) < 7 && Math.abs(walker.py - s.go[1]) < 7) || null;
+    if (climb) return null;
+    const h = hoverId && t - hoverT < 4 && F.spots.find((s) => s.id === hoverId);
+    if (h && h.act && !['dorr', 'kassa', 'coach', 'pokaler'].includes(h.id) && !h.id.startsWith('prov')) return h;
+    if (W().path.length) return null;
+    return F.spots.find((s) => (s.item || s.place || s.kungs || s.team || s.cleat || s.kit || s.stairs || s.photo) && Math.abs(W().px - s.go[0]) < 7 && Math.abs(W().py - s.go[1]) < 7) || null;
   };
 
+  // ---------- trappan ----------
+  const nag = (msg) => { if (t - nagAt > 1.2) { nagAt = t; toast(msg); } };
+  function startClimb() {
+    talk.clear();
+    climb = { e: F.n === 1 ? D.STAIRS1 : D.STAIRS2, d: -12, v: STAIR_V };
+    W().stop();
+    play('click');
+  }
+  function enterFloor(n, at) {
+    F = floors[n];
+    const w = F.walker;
+    w.stop(); w.px = at[0]; w.py = at[1]; w.snapFree(); w.dir = 'down';
+    hoverId = null;
+    floorT = t;
+    syncView();
+    snapCam();
+  }
+  function climbStep(dt) {
+    climb.d += climb.v * dt;
+    const e = climb.e;
+    if (climb.v > 0 && climb.d >= e.top) {
+      // försvunnen genom taket (plan 1) eller ner i schaktet (plan 2): byt våning
+      const other = e.n === 1 ? D.STAIRS2 : D.STAIRS1;
+      enterFloor(other.n, other.n === 1 ? board1 : board2);
+      climb = { e: other, d: other.top, v: -STAIR_V };
+      fade = 0.7;
+      play('slide');
+    } else if (climb.v < 0 && climb.d <= -12) {
+      const w = W(), b = e.n === 1 ? board1 : board2;
+      climb = null;
+      w.px = b[0]; w.py = b[1]; w.snapFree();
+      if (e.n === 2) { w.walkTo(b[0] + 6, b[1] + 16); toast('⚽ PLAN 2 – SPORT & FOTBOLL. Kungsladugård till vänster, kända lag till höger!', 'good'); }
+      else { w.walkTo(b[0] - 6, b[1] + 16); toast('👗 PLAN 1 – MODE. Tjejer till vänster, killar till höger.', 'good'); }
+    }
+  }
+  const climbPos = () => {
+    const e = climb.e;
+    return climb.d < 0 ? [e.lx + e.sx * climb.d, e.ly] : PT.stairPos(e, climb.d);
+  };
+  const climbDir = () => { const right = (climb.v > 0) === (climb.e.sx > 0); return right ? 'right' : 'left'; };
+  const playerPos = () => (climb ? climbPos() : [W().px, W().py]);
+
+  // ---------- bollen på provplanen ----------
+  function kick() {
+    if (ball.st !== 'rest') { say('Vänta tills bollen har rullat tillbaka!'); return; }
+    const w = W();
+    w.dir = 'up';
+    ball.st = 'fly'; ball.t = 0; ball.fx = ball.x; ball.fy = ball.y;
+    ball.tx = D.GOAL.x + Math.round((Math.random() - 0.5) * 18); ball.ty = D.GOAL.y - 5;
+    play('slide');
+  }
+  function ballStep(dt) {
+    if (ball.st === 'rest') return;
+    ball.t += dt;
+    if (ball.st === 'fly') {
+      const k = Math.min(1, ball.t / 0.55);
+      ball.x = ball.fx + (ball.tx - ball.fx) * k; ball.y = ball.fy + (ball.ty - ball.fy) * k; ball.z = Math.sin(k * Math.PI) * 12;
+      if (k >= 1) {
+        ball.st = 'net'; ball.t = 0; ball.z = 0;
+        play('ok');
+        // bubblan en bit åt sidan så att bollen i nätet syns
+        talk.say(['MÅÅÅL! ⚽', 'MÅL! HEJA KUNGSLADUGÅRD!', 'KRYSSET! 🎯'][Math.floor(Math.random() * 3)], () => ({ x: W().px + 46, y: W().py - 36 }), 2.2, { self: true });
+      }
+    } else if (ball.st === 'net' && ball.t > 1.3) { ball.st = 'back'; ball.t = 0; ball.fx = ball.x; ball.fy = ball.y; }
+    else if (ball.st === 'back') {
+      const k = Math.min(1, ball.t / 1.1), e = 1 - (1 - k) * (1 - k);
+      ball.x = ball.fx + (D.BALL0[0] - ball.fx) * e; ball.y = ball.fy + (D.BALL0[1] - ball.fy) * e;
+      if (k >= 1) { ball.st = 'rest'; ball.x = D.BALL0[0]; ball.y = D.BALL0[1]; }
+    }
+  }
+
+  // ---------- kameran ----------
+  // Sidled: följer figuren längs våningen. Höjdled: mobilens NÄRA-läge beskär upptill och
+  // nertill (main.js v.safe) – då följer en lodrät kamera figuren inom det synliga radbandet,
+  // så att lagfotot och skoväggen syns när man står vid väggen och dockraderna med sina lappar
+  // när man går ner (samma sätt som i terminalen). På datorn syns allt och ty förblir 0.
+  syncView();
+  const camTarget = () => lockedCam ?? Math.max(0, Math.min(F.W - VW, playerPos()[0] - VW / 2));
+  const band = () => {
+    const s = A.view?.safe;
+    const y0 = Math.max(0, Math.min(H - 96, Math.round(s?.y0 ?? 0)));
+    const y1 = Math.max(y0 + 96, Math.min(H, Math.round(s?.y1 ?? H)));
+    return { y0, y1, v: y1 - y0 };
+  };
+  const camYTarget = () => {
+    const b = band();
+    if (b.v >= H) return 0;
+    return Math.max(0, Math.min(H - b.v, Math.round(playerPos()[1] - b.v * 0.62)));
+  };
+  const cam = { x: camTarget(), y: camYTarget() };
+  let ty = 0;                        // radförskjutningen i senaste ritningen: skärm-y = värld-y + ty
+  const syncTy = () => { ty = band().y0 - Math.round(cam.y); };
+  const snapCam = () => { cam.x = camTarget(); cam.y = camYTarget(); syncTy(); };
+  syncTy();
+
+  // ---------- andra spelare (y + 1000 = plan 2) ----------
+  // Byter någon våning hoppar hens worldY ±1000, och nätet (world.js) låter figuren glida dit.
+  // Mellanläget ska inte synas: med målet (f.ty, world.js-patchen) ritas figuren direkt där den
+  // ska vara; utan det göms den medan den glider mellan våningarna och syns när den är framme.
+  const FLOOR_DY = 1000, TRANSIT = new Map(), LASTY = new Map(); // id → egen glidning { x, y } (med mål) / { t } (utan) · id → förra y
+  const floorOf = (y) => (y >= FLOOR_DY * 0.6 ? 2 : 1);
+  const onFloorBand = (y) => { const ly = y - (floorOf(y) === 2 ? FLOOR_DY : 0); return ly >= -8 && ly <= H + 40; };
+  let folkCache = [];
+  function folkStep(dt) {
+    const out = [], seen = new Set();
+    for (const f of worldFolksHere(A)) {
+      seen.add(f.id);
+      const hasTarget = Number.isFinite(f.ty);
+      const goal = hasTarget ? f.ty : f.y;
+      if (floorOf(goal) !== F.n) { TRANSIT.delete(f.id); continue; }
+      const base = F.n === 2 ? FLOOR_DY : 0;
+      if (hasTarget) {
+        // Ett stort hopp (våningsbyte): figuren dyker upp direkt vid målet och glider sedan
+        // själv härifrån med samma lag som world.js (max(62, 3·avstånd) px/s) – när nätets
+        // glidning hunnit ikapp tar den över igen. Ingen glidning genom tak eller golv.
+        const gx = Number.isFinite(f.tx) ? f.tx : f.x;
+        let tr = TRANSIT.get(f.id);
+        if (!tr && Math.abs(f.y - goal) > 60) { tr = { x: gx, y: goal }; TRANSIT.set(f.id, tr); }
+        if (tr) {
+          const dx = gx - tr.x, dy = goal - tr.y, dist = Math.hypot(dx, dy), step = Math.max(62, dist * 3) * dt;
+          if (dist <= step) { tr.x = gx; tr.y = goal; } else { tr.x += dx / dist * step; tr.y += dy / dist * step; }
+          if (Math.hypot(f.x - tr.x, f.y - tr.y) < 1) TRANSIT.delete(f.id);
+          else { out.push({ ...f, x: tr.x, y: tr.y - base, walking: dist > 1 }); continue; }
+        }
+        out.push({ ...f, y: f.y - base });
+        continue;
+      }
+      // utan mål: ett hopp (mycket fortare än man går) eller ett y mellan våningarna = på väg
+      const prev = LASTY.get(f.id), v = prev == null ? 0 : Math.abs(f.y - prev) / Math.max(dt, 1e-3);
+      LASTY.set(f.id, f.y);
+      let tr = TRANSIT.get(f.id);
+      if (!onFloorBand(f.y) || v > 400) { TRANSIT.set(f.id, { t: 0 }); continue; }
+      if (tr) {
+        // fortfarande i glidningen: göm tills den saktat in till gångfart (eller 1,6 s gått)
+        tr.t += dt;
+        if (v > 70 && tr.t < 1.6 && f.walking) continue;
+        TRANSIT.delete(f.id);
+      }
+      out.push({ ...f, y: f.y - base });
+    }
+    for (const id of TRANSIT.keys()) if (!seen.has(id)) TRANSIT.delete(id);
+    for (const id of LASTY.keys()) if (!seen.has(id)) LASTY.delete(id);
+    folkCache = out;
+  }
+  const folksHere = () => folkCache;
+  function folkDrawables() {
+    return folksHere().map((f) => ({
+      fy: f.y,
+      draw(ctx) {
+        drawPerson(ctx, f.x, f.y, f.av.look, 'down', f.walking ? WALK_SEQ[Math.floor(t * 8.5) % 4] : (Math.sin(t * 2 + f.x) > 0.9 ? 4 : 0));
+        nameTag(ctx, f.x, f.y - 50, f.av);
+        if (f.emote) emoteBubble(ctx, f.x, f.y - 58, f.emote);
+        if (f.say) sayBubble(ctx, f.x, f.y - (f.emote ? 76 : 60), f.say, { voice: f.av || f.id });
+      },
+    }));
+  }
+
+  // ---------- ritning ----------
+  function drawStairs(ctx, e, S) {
+    ctx.drawImage(S.back, S.x, S.y);
+    ctx.drawImage(S.steps, S.x, S.y);
+    if (climb && climb.e === e) {
+      ctx.save();
+      ctx.beginPath();
+      if (e.sy < 0) ctx.rect(S.x - 20, e.clip, S.w + 40, 400); else ctx.rect(S.x - 20, e.clip - 400, S.w + 40, 400);
+      ctx.clip();
+      const [x, y] = climbPos();
+      drawPerson(ctx, x, y, A.avatar.look, climbDir(), WALK_SEQ[Math.floor(t * 8.5) % 4]);
+      ctx.restore();
+    }
+    ctx.drawImage(S.front, S.x, S.y);
+    if (e.sy > 0) ctx.drawImage(P.pitFront, p0 - 1, pl - 1);
+  }
+  function drawGarments(ctx, p, focus) {
+    const on = focus?.place === p;
+    if (p.kind === 'wall') {
+      if (on) { ctx.fillStyle = 'rgba(255,230,128,.35)'; ctx.fillRect(p.x + 1, 38, D.MOD_W - 2, WALL_Y - 12 - 38); }
+      p.items.slice(0, 6).forEach((it, i) => {
+        const cx = p.x + 8 + i * 12;
+        drawHanging(ctx, it, cx, PT.MOD_RAIL);
+        if (owns(g, it)) ownDot(ctx, cx + 2, PT.MOD_RAIL + 2);
+      });
+    } else {
+      const img = P.racks.get(p.cat.id), top = p.base - PT.RACK_H + 1;
+      if (on) ctx.drawImage(P.glow, p.x + D.RACK_W / 2 - 20, p.base - 7);
+      ctx.drawImage(img, p.x, top);
+      p.items.slice(0, 5).forEach((it, i) => {
+        const cx = p.x + 10 + i * 13;
+        drawHanging(ctx, it, cx, top + PT.RACK_RAIL - 1);
+        if (owns(g, it)) ownDot(ctx, cx + 2, top + PT.RACK_RAIL + 1);
+      });
+      if (on) { ctx.strokeStyle = '#ffe070'; ctx.lineWidth = 1; ctx.strokeRect(p.x - 1.5, top - 1.5, D.RACK_W + 3, 13); }
+    }
+  }
+
+  function draw1(ctx, focus) {
+    // väggen: affischen, REA-skylten, plaggen i väggmodulerna
+    drawPoster(ctx);
+    if (g.eventIs('rea')) drawRea(ctx, t);
+    for (const p of PLACES1) if (p.kind === 'wall') drawGarments(ctx, p, focus);
+    const list = [...folkDrawables()];
+    if (!climb) list.push(selfDrawable(A, W(), t, { folksHere: folksHere().length }));
+    for (const d of DUMMIES) list.push({
+      fy: d.y,
+      draw: () => {
+        const on = focus?.item === d;
+        if (on) ctx.drawImage(P.glow, d.x - 20, d.y - 7);
+        ctx.drawImage(P.pod[d.dept], d.x - 12, d.y - 4);
+        drawPerson(ctx, d.x, d.y, d.look, 'down', 0);
+        const [hx, hy] = HANG_AT[d.it.slot] || HANG_AT.top;
+        hangTag(ctx, d.x + hx, d.y + hy, owns(g, d.it), on && Math.floor(t * 4) % 2 === 0);
+        dummyTag(ctx, d.x, d.y + 7, d.it, owns(g, d.it), g, d.dept, false, d.short);
+        if (on) sparkle(ctx, d, t);
+      },
+    });
+    for (const p of PLACES1) if (p.kind === 'rack') list.push({ fy: p.base, draw: () => drawGarments(ctx, p, focus) });
+    list.push({
+      fy: D.GOND.y + D.GOND.h,
+      draw: () => {
+        ctx.drawImage(P.gond, D.GOND.x, D.GOND.y);
+        for (const s of SHELF) {
+          const on = focus?.item === s;
+          if (on) { ctx.fillStyle = 'rgba(255,230,128,.45)'; ctx.fillRect(s.x - 13, s.y - (s.y === GTOP ? 23 : 17), 26, s.y === GTOP ? 23 : 17); }
+          if (s.it.slot === 'bag') drawBag(ctx, s.x, s.y, s.it.look.bag, s.look.bagColor);
+          else if (s.it.slot === 'glasses') drawGlassesStand(ctx, s.x, s.y, s.it.look.glasses);
+          else drawBust(ctx, s.x, s.y, s.look);
+          priceTag(ctx, s.x, s.y + 1, s.it, owns(g, s.it), g);
+        }
+      },
+    });
+    list.push({
+      fy: D.HATS.y + D.HATS.h,
+      draw: () => {
+        ctx.drawImage(P.hats, D.HATS.x, D.HATS.y);
+        for (const b of HATBUSTS) {
+          const on = focus?.item === b;
+          if (on) { ctx.fillStyle = 'rgba(255,230,128,.45)'; ctx.fillRect(b.x - 12, b.y - 24, 24, 24); }
+          drawBust(ctx, b.x, b.y, b.look);
+          priceTag(ctx, b.x, b.y + 1, b.it, owns(g, b.it), g);
+        }
+      },
+    });
+    list.push({
+      fy: D.DESK.y + D.DESK.h,
+      draw: () => {
+        drawPerson(ctx, D.DESK.x + 34, D.DESK.y + 14, CLERK, 'down', Math.sin(t * 1.7) > 0.93 ? 4 : 0);
+        ctx.drawImage(P.desk, D.DESK.x, D.DESK.y);
+      },
+    });
+    list.push({ fy: D.STAIRS1.ly + 4, draw: () => { if (focus?.stairs) stairGlow(ctx, D.STAIRS1); drawStairs(ctx, D.STAIRS1, P.stairs1); } });
+    for (const [x, y] of D.PLANTS1) list.push({ fy: y, draw: () => ctx.drawImage(P.plant, x - 11, y - 31) });
+    list.sort((a, b) => a.fy - b.fy).forEach((d) => d.draw(ctx));
+    // den valda dockans lapp överst (så att ingen som går förbi skymmer den), med ljus ram
+    if (focus && DUMMIES.includes(focus.item)) dummyTag(ctx, focus.item.x, focus.item.y + 7, focus.item.it, owns(g, focus.item.it), g, focus.item.dept, true, focus.item.short);
+  }
+
+  function draw2(ctx, focus) {
+    for (const p of PLACES2) if (p.kind === 'wall') drawGarments(ctx, p, focus);
+    // fotbollsskorna på väggen
+    for (const s of PT.SHOE_SPOTS) {
+      const on = focus?.cleat === s;
+      if (on) { ctx.fillStyle = 'rgba(255,230,128,.5)'; ctx.fillRect(s.x - 2, s.y - 11, 20, 12); }
+      ctx.drawImage(PT.cleatImg(s.c), s.x, s.y - 9);
+      if (owns(g, itemById('shoes-cleats'))) ownDot(ctx, s.x + 16, s.y - 9);
+    }
+    const list = [...folkDrawables()];
+    if (!climb) list.push(selfDrawable(A, W(), t, { folksHere: folksHere().length }));
+    for (const k of KUNGS) list.push({
+      fy: k.y,
+      draw: () => {
+        const on = focus?.kungs === k;
+        if (on) ctx.drawImage(P.glow, k.x - 20, k.y - 7);
+        ctx.drawImage(P.pod.kungs, k.x - 12, k.y - 4);
+        drawTeamDoll(ctx, k.x, k.y, k.look, 'up', { ...KSOCKS, number: k.n, name: k.name });
+        numberPlate(ctx, k.x, k.y + 7, k.n, k.name, on);
+      },
+    });
+    list.push({ fy: D.KIT_DOLL.y, draw: () => { drawKitDoll(ctx, focus?.kit); } });
+    for (const tm of TEAMS) list.push({ fy: tm.y, draw: () => drawTeam(ctx, tm, focus?.team === tm, true) });
+    for (const p of PLACES2) if (p.kind === 'rack') list.push({ fy: p.base, draw: () => drawGarments(ctx, p, focus) });
+    list.push({ fy: D.STAIRS2.pit[3], draw: () => { if (focus?.stairs) stairGlow(ctx, D.STAIRS2); drawStairs(ctx, D.STAIRS2, P.stairs2); } });
+    list.push({ fy: D.COACH.y, draw: () => { drawPerson(ctx, D.COACH.x, D.COACH.y, COACH_LOOK, 'down', Math.sin(t * 1.3) > 0.93 ? 4 : 0); whistle(ctx, D.COACH.x, D.COACH.y); } });
+    list.push({ fy: D.GOAL.y, draw: () => { ctx.drawImage(P.goal, D.GOAL.x - 16, D.GOAL.y - 19); if (ball.st === 'net' && Math.floor(ball.t * 10) % 2 === 0) { ctx.fillStyle = 'rgba(255,255,255,.55)'; ctx.fillRect(D.GOAL.x - 13, D.GOAL.y - 15, 26, 13); } } });
+    list.push({ fy: ball.y + (ball.st === 'net' ? -20 : 0), draw: () => drawBall(ctx, ball, focus?.id === 'boll', t) });
+    for (const [x, y] of D.PLANTS2) list.push({ fy: y, draw: () => ctx.drawImage(P.plant, x - 11, y - 31) });
+    list.push({ fy: BENCH.y, draw: () => ctx.drawImage(P.bench, BENCH.x, BENCH.y - 15) });
+    list.sort((a, b) => a.fy - b.fy).forEach((d) => d.draw(ctx));
+    // den valda dockans lapp överst: figuren står framför dockan och skymmer den annars
+    if (focus?.kungs) numberPlate(ctx, focus.kungs.x, focus.kungs.y + 7, focus.kungs.n, focus.kungs.name, true);
+    else if (focus?.team) drawTeam(ctx, focus.team, true, false);
+    else if (focus?.kit) drawKitDoll(ctx, true, false);
+  }
+  // Lagets matchställ (säljs): lappen FRÅN 390 KR, TA PÅ DIG när tröjan redan är din, PÅ DIG när man bär den
+  function kitState(it, shirt) {
+    if (wearsShirt(A.avatar.look, it, shirt)) return ['PÅ DIG', 'on'];
+    if (owns(g, it)) return ['TA PÅ DIG', 'have'];
+    return null;
+  }
+  function drawKitDoll(ctx, on, doll = true) {
+    const it = itemById('top-football');
+    if (doll) {
+      if (on) ctx.drawImage(P.glow, D.KIT_DOLL.x - 20, D.KIT_DOLL.y - 7);
+      ctx.drawImage(P.pod.kungs, D.KIT_DOLL.x - 12, D.KIT_DOLL.y - 4);
+      drawTeamDoll(ctx, D.KIT_DOLL.x, D.KIT_DOLL.y, KIT_LOOK, 'down', KSOCKS);
+    }
+    const st = kitState(it, D.KUNGS_KIT.shirt);
+    plate(ctx, D.KIT_DOLL.x, D.KIT_DOLL.y + 7, 'MATCHSTÄLL', st ? st[0] : `FRÅN ${priceOf(g, it)} KR`, st?.[1], '#d9434b', on);
+  }
+  function drawTeam(ctx, tm, on, doll = true) {
+    if (doll) {
+      if (on) ctx.drawImage(P.glow, tm.x - 20, tm.y - 7);
+      ctx.drawImage(P.pod.lag, tm.x - 12, tm.y - 4);
+      drawTeamDoll(ctx, tm.x, tm.y, tm.look, 'down', { socks: tm.socks, stripe: tm.socks });
+    }
+    const st = kitState(tm.it, tm.colors.shirt);
+    plate(ctx, tm.x, tm.y + 7, tm.city, st ? st[0] : `${priceOf(g, tm.it)} KR`, st?.[1], tm.colors.shirt === '#f4f1ea' ? tm.colors.accent : tm.colors.shirt, on);
+  }
+
   return {
-    get worldX() { return walker.px; },
-    get worldY() { return walker.py; },
+    get worldX() { return playerPos()[0]; },
+    get worldY() { return playerPos()[1] + (F.n === 2 ? 1000 : 0); },
+    get floor() { return F.n; },
+    viewMax: { get w() { return F.W; }, h: H },
     _debug: {
-      spot: (id) => { const h = spots.find((h) => h.id === id); return h ? { x: (h.r[0] + h.r[2]) / 2 - cam.x, y: (h.r[1] + h.r[3]) / 2 } : null; },
-      dummies: DUMMIES.map((d) => clothesKey(d.s.kind, d.s.v)),
+      floor: () => F.n,
+      goFloor: (n) => { climb = null; enterFloor(n === 2 ? 2 : 1, n === 2 ? [board2[0] + 8, board2[1] + 14] : [(D.DOOR.x0 + D.DOOR.x1) / 2, WALL_Y + 14]); return F.n; },
+      spot: (id) => { const h = F.spots.find((s) => s.id === id); return h ? { x: (h.r[0] + h.r[2]) / 2 - cam.x, y: (h.r[1] + h.r[3]) / 2 + ty } : null; },
+      spots: () => F.spots.map((s) => s.id),
+      dummies: DUMMIES.map((d) => d.it.legacy || d.it.id),
+      dummyIds: DUMMIES.map((d) => d.it.id),
       depts: DUMMIES.map((d) => d.dept),
-      lockCam: (x) => { lockedCam = x === null || x === undefined ? null : Math.max(0, Math.min(W - VW, x)); cam.x = camTarget(); },
-      teleport: (x, y) => { walker.px = x; walker.py = y; walker.stop(); walker.snapFree(); cam.x = camTarget(); },
+      places: () => [...PLACES1, ...PLACES2].map((p) => ({ id: p.cat.id, kind: p.kind, dept: p.dept, x: p.x, n: p.items.length, shown: p.items.slice(0, p.kind === 'wall' ? 6 : 5).map((it) => it.id), items: p.items.map((it) => it.id) })),
+      kungs: () => KUNGS.map((k) => ({ n: k.n, name: k.name, x: k.x, y: k.y })),
+      teams: () => TEAMS.map((tm) => ({ city: tm.city, item: tm.it?.id, x: tm.x, y: tm.y })),
+      lockCam: (x) => { lockedCam = x === null || x === undefined ? null : Math.max(0, Math.min(F.W - VW, x)); snapCam(); },
+      teleport: (x, y) => { const w = W(); climb = null; w.px = x; w.py = y; w.stop(); w.snapFree(); snapCam(); },
       hover: (id) => { hoverId = id || null; hoverT = t; },
-      cam: () => cam.x,
-      path: () => walker.path.map(([x, y]) => [Math.round(x), Math.round(y)]),
-      open: (id) => spots.find((h) => h.id === id)?.act?.(),
+      cam: () => ({ x: cam.x, y: cam.y, ty, band: band() }),
+      view: () => VW,
+      pos: () => { const [x, y] = playerPos(); return { x: Math.round(x), y: Math.round(y), floor: F.n }; },
+      path: () => W().path.map(([x, y]) => [Math.round(x), Math.round(y)]),
+      climb: () => (climb ? { floor: climb.e.n, d: Math.round(climb.d), v: climb.v } : null),
+      stairs: () => startClimb(),
+      ball: () => ({ st: ball.st, x: Math.round(ball.x), y: Math.round(ball.y) }),
+      kick: () => kick(),
+      open: (id) => F.spots.find((h) => h.id === id)?.act?.(),
+      focus: () => focusSpot()?.id || null,
+      // lapparnas rad 2 under lagdockorna (pris / TA PÅ DIG / PÅ DIG) och matchställsdockan
+      plates: () => ({ kit: kitState(itemById('top-football'), D.KUNGS_KIT.shirt)?.[0] || 'PRIS', teams: TEAMS.map((tm) => kitState(tm.it, tm.colors.shirt)?.[0] || 'PRIS') }),
+      label: () => lastLabel,       // senaste namnskylten (skärmrutan) – för mobiltestet
+      band: () => band(),
+      folks: () => folkCache.map((f) => ({ id: f.id, x: Math.round(f.x), y: Math.round(f.y) })), // andra spelare på våningen
+      owns: (id) => owns(g, itemById(id)),
     },
     update(dt) {
       t += dt;
-      walker.update(dt);
+      syncView();
+      if (climb) climbStep(dt); else W().update(dt);
+      ballStep(dt);
+      if (fade > 0) fade = Math.max(0, fade - dt * 1.6);
       const k = lockedCam !== null ? 1 : Math.min(1, dt * 6);
       cam.x += (camTarget() - cam.x) * k;
+      const ky = camYTarget() - cam.y;
+      cam.y = Math.abs(ky) < 0.5 ? camYTarget() : cam.y + ky * Math.min(1, dt * 5);
+      folkStep(dt);
     },
+    exit() { talk.clear(); }, // pratbubblan och rösten stannar i butiken
     down(sx, sy) {
-      const x = sx + cam.x, y = sy;
+      const x = sx + cam.x, y = sy - ty; // skärm → värld (radbandet kan vara förskjutet)
       hoverId = null; // skylten följer figuren igen tills musen rör sig
+      if (climb) { nag(climb.e.n === 1 && climb.v > 0 || climb.e.n === 2 && climb.v < 0 ? '⬆️ Vänta tills du är uppe!' : '⬇️ Vänta tills du är nere!'); return; }
       const h = spotAt(x, y);
-      if (h) { walker.walkTo(h.go[0], h.go[1], h.act); return; }
-      if (y > WALL_Y) walker.walkTo(x, y);
+      if (h) { W().walkTo(h.go[0], h.go[1], h.act); return; }
+      if (y > WALL_Y) W().walkTo(x, y);
     },
-    move(sx, sy) { hoverId = spotAt(sx + cam.x, sy)?.id || null; hoverT = t; },
+    move(sx, sy) { hoverId = spotAt(sx + cam.x, sy - ty)?.id || null; hoverT = t; },
     draw(ctx) {
+      syncView();
       const cx = Math.round(cam.x);
-      ctx.setTransform(A.pxs, 0, 0, A.pxs, -cx * A.pxs, 0);
-      ctx.drawImage(bg, 0, 0);
+      syncTy();
+      const b = band();
+      if (ty !== 0) {
+        // radbandet är förskjutet (mobilens NÄRA-läge): raderna utanför våningen ligger under
+        // beskärningen, men får ändå en mörk ton i stället för förra bildrutans rester
+        ctx.setTransform(A.pxs, 0, 0, A.pxs, 0, 0);
+        ctx.fillStyle = '#0e0d12'; ctx.fillRect(0, 0, VW, Math.max(H, A.H || H));
+      }
+      ctx.setTransform(A.pxs, 0, 0, A.pxs, -cx * A.pxs, ty * A.pxs);
+      ctx.drawImage(F.bg, cx, 0, VW, H, cx, 0, VW, H);
       const focus = focusSpot();
-      // väggen: affischen, REA-skylten, byster med hattar
-      drawPoster(ctx);
-      if (g.eventIs('rea')) drawRea(ctx, t);
-      for (const w of WALLS) {
-        drawBust(ctx, w.x, w.y, w.look);
-        priceTag(ctx, w.x, w.y + 4, w.s, owned(w.s), g);
-      }
-      const drawables = [...folkDrawables(A, t), selfDrawable(A, walker, t, { folksHere: A.worldFolksHere?.().length || 0 })];
-      for (const d of DUMMIES) drawables.push({
-        fy: d.y,
-        draw: () => {
-          const on = focus?.item === d;
-          if (on) ctx.drawImage(glowImg, d.x - 20, d.y - 7);
-          ctx.drawImage(pod[d.dept], d.x - 12, d.y - 4);
-          drawPerson(ctx, d.x, d.y, d.look, 'down', 0);
-          const [hx, hy] = HANG_AT[d.s.kind] || HANG_AT.top;
-          hangTag(ctx, d.x + hx, d.y + hy, owned(d.s), on && Math.floor(t * 4) % 2 === 0);
-          dummyTag(ctx, d.x, d.y + 7, d.s, owned(d.s), g, d.dept);
-          if (on) sparkle(ctx, d, t);
-        },
-      });
-      drawables.push({
-        fy: GOND.y + GOND.h,
-        draw: () => {
-          ctx.drawImage(gondImg, GOND.x, GOND.y);
-          for (const it of SHELF) {
-            const on = focus?.item === it;
-            if (on) { ctx.fillStyle = 'rgba(255,230,128,.45)'; ctx.fillRect(it.x - 13, it.y - (it.y === GTOP ? 23 : 17), 26, it.y === GTOP ? 23 : 17); }
-            if (it.s.kind === 'bag') drawBag(ctx, it.x, it.y, it.s.v, it.look.bagColor);
-            else if (it.s.kind === 'glasses') drawGlassesStand(ctx, it.x, it.y, it.s.v);
-            else drawBust(ctx, it.x, it.y, it.look);
-            priceTag(ctx, it.x, it.y + 1, it.s, owned(it.s), g);
-          }
-        },
-      });
-      drawables.push({
-        fy: DESK.y + DESK.h,
-        draw: () => {
-          drawPerson(ctx, DESK.x + 34, DESK.y + 14, CLERK, 'down', Math.sin(t * 1.7) > 0.93 ? 4 : 0);
-          ctx.drawImage(deskImg, DESK.x, DESK.y);
-        },
-      });
-      for (const [x, y] of PLANTS) drawables.push({ fy: y, draw: () => ctx.drawImage(plantImg, x - 11, y - 31) });
-      drawables.sort((a, b) => a.fy - b.fy).forEach((d) => d.draw(ctx));
-      // den valda dockans lapp överst (så att ingen som går förbi skymmer den), med ljus ram
-      if (focus && DUMMIES.includes(focus.item)) {
-        const d = focus.item;
-        dummyTag(ctx, d.x, d.y + 7, d.s, owned(d.s), g, d.dept, true);
-      }
+      if (F.n === 1) draw1(ctx, focus); else draw2(ctx, focus);
       talk.draw(ctx, { x0: cx, x1: cx + VW });
-      // pilar mot avdelningen man inte ser + namnskylten i skärmens nederkant
+      // skärmen: våningsskylt, pilar mot det man inte ser, namnskylten, tonad övergång –
+      // alltid inom den synliga rutan (b.y0–b.y1)
       ctx.setTransform(A.pxs, 0, 0, A.pxs, 0, 0);
-      if (cx > 150) edgeSign(ctx, 'tjej');
-      if (cx < W - VW - 150) edgeSign(ctx, 'kille');
-      // står man längst ner (t.ex. framför accessoarhyllan) hamnar skylten överst i stället
-      if (focus) bigLabel(ctx, focus, g, t, walker.py > H - 44);
+      if (t - floorT < 4) floorPlate(ctx, F, t - floorT, b.y0);
+      if (F.n === 1) {
+        if (cx > 150) edgeSign(ctx, 'TJEJER', DEPT_LBL.tjej, true, b.y1);
+        if (cx < F.W - VW - 150) edgeSign(ctx, 'KILLAR', DEPT_LBL.kille, false, b.y1);
+      } else {
+        if (cx > 330) edgeSign(ctx, 'KUNGSLADUGÅRD', DEPT_LBL.kungs, true, b.y1);
+        if (cx < F.W - VW - 330) edgeSign(ctx, 'KÄNDA LAG', DEPT_LBL.lag, false, b.y1);
+      }
+      // namnskylten nertill – eller upptill när figuren själv står längst ner i bild
+      lastLabel = null;
+      if (focus) bigLabel(ctx, focus, g, t, playerPos()[1] + ty > b.y1 - 44 ? b.y0 + (t - floorT < 4 ? 21 : 3) : b.y1 - 25);
+      if (fade > 0) { ctx.fillStyle = `rgba(14,13,18,${Math.min(1, fade * 1.4).toFixed(3)})`; ctx.fillRect(0, 0, VW, Math.max(H, A.H || H)); }
     },
   };
+
+  // ---------- namnskylten i skärmens nederkant ----------
+  function bigLabel(ctx, spot, g, t, y0) {
+    let name, right, hint, own = false, key = spot.dept || 'mid';
+    if (spot.item) {
+      const it = spot.item.it;
+      own = owns(g, it);
+      name = pix(nameOf(it)); right = own ? 'DIN!' : `${priceOf(g, it)} KR`;
+      hint = own ? 'KLICKA SÅ TAR DU PÅ DIG DEN' : 'KLICKA SÅ PROVAR DU DEN PÅ DIG';
+    } else if (spot.place) {
+      const p = spot.place, n = p.items.length, mine = p.items.filter((it) => owns(g, it)).length;
+      name = pix(p.cat.name); right = `${n} PLAGG`; hint = mine ? `${mine} ÄR DINA · KLICKA SÅ BLÄDDRAR DU` : 'KLICKA SÅ BLÄDDRAR DU BLAND ALLA';
+    } else if (spot.kungs) {
+      const k = spot.kungs;
+      name = pix(`NR ${k.n} ${k.name}`); right = 'KUNGSLADUGÅRD'; hint = 'KLICKA SÅ PROVAR DU MATCHSTÄLLET';
+    } else if (spot.kit || spot.team) {
+      // tröjmodellen delas av flera lag: äger man den tar man bara på sig den i lagets färger
+      const it = spot.kit ? itemById('top-football') : spot.team.it;
+      const shirt = spot.kit ? D.KUNGS_KIT.shirt : spot.team.colors.shirt;
+      const on = wearsShirt(A.avatar.look, it, shirt), have = owns(g, it);
+      own = on || have;
+      name = spot.kit ? 'KUNGSLADUGÅRDS MATCHSTÄLL' : pix(spot.team.city);
+      right = on ? 'PÅ DIG!' : have ? 'TRÖJAN HAR DU' : `${spot.kit ? 'FRÅN ' : ''}${priceOf(g, it)} KR`;
+      hint = have && !on ? 'KLICKA SÅ TAR DU PÅ DIG DEN I LAGETS FÄRGER' : spot.kit ? 'TRÖJA, SHORTS OCH FOTBOLLSSKOR' : 'KLICKA SÅ PROVAR DU MATCHSTÄLLET';
+    } else if (spot.photo) {
+      name = 'LAGFOTOT'; right = 'KUNGSLADUGÅRD'; hint = 'KLICKA SÅ SER DU HELA LAGET I STORT';
+    } else if (spot.cleat) {
+      const it = itemById('shoes-cleats'); own = owns(g, it);
+      name = pix(`${spot.cleat.c.name} fotbollsskor`); right = own ? 'DIN!' : `${priceOf(g, it)} KR`; hint = own ? 'KLICKA SÅ TAR DU PÅ DIG DEM' : 'KLICKA SÅ PROVAR DU DEM PÅ DIG';
+    } else if (spot.stairs) {
+      name = F.n === 1 ? 'TRAPPA UPP' : 'TRAPPA NER'; right = F.n === 1 ? 'PLAN 2' : 'PLAN 1'; hint = F.n === 1 ? 'SPORT + FOTBOLL · KUNGSLADUGÅRD' : 'MODE · TJEJER OCH KILLAR';
+      key = F.n === 1 ? 'kungs' : 'mid';
+    } else if (spot.id === 'boll') { name = 'PROVPLANEN'; right = ''; hint = 'KLICKA SÅ SKJUTER DU PÅ MÅL'; key = 'lag'; }
+    else return;
+    const lblC = DEPT_LBL[key] || '#f0d048';
+    name = pix(name); right = pix(right || ''); hint = pix(hint);
+    const nw = textW(BIG, name), pw = right ? textW(BIG, right) : 0, hw = textW(SMALL, hint);
+    let w = Math.max(nw + pw + (right ? 26 : 20), hw + 26), big = true;
+    if (w > VW - 8) { big = false; w = Math.max(textW(SMALL, name) + textW(SMALL, right) + 26, hw + 26); }
+    const h = 22, x0 = Math.round((VW - w) / 2);
+    lastLabel = { x0, y0, w, h, name };
+    ctx.fillStyle = '#0e0d12'; ctx.fillRect(x0 - 2, y0 - 2, w + 4, h + 4);
+    ctx.fillStyle = lblC; ctx.fillRect(x0 - 1, y0 - 1, w + 2, h + 2);
+    ctx.fillStyle = '#17151a'; ctx.fillRect(x0, y0, w, h);
+    hangTag(ctx, x0 + 4, y0 + 3, own, false);
+    const F2 = big ? BIG : SMALL;
+    ctxText(ctx, F2, name, x0 + 16, y0 + (big ? 3 : 4), '#ffffff');
+    if (right) ctxText(ctx, F2, right, x0 + 22 + textW(F2, name), y0 + (big ? 3 : 4), own ? '#6fe08a' : '#f0d048');
+    const blink = Math.floor(t * 2) % 2 === 0;
+    ctxText(ctx, SMALL, hint, x0 + 16, y0 + 14, blink ? lblC : '#c9c2d2');
+  }
+  // Våningsskylten: syns en stund när man kommer in eller byter våning, glider sedan upp
+  function floorPlate(ctx, F, age, top = 0) {
+    const lbl = F.name, w = textW(BIG, lbl) + 16, h = 15;
+    const x0 = Math.round((VW - w) / 2), y0 = top + 3 - Math.round(Math.max(0, age - 3.4) * 60);
+    ctx.fillStyle = '#0e0d12'; ctx.fillRect(x0 - 2, y0 - 2, w + 4, h + 4);
+    ctx.fillStyle = F.col; ctx.fillRect(x0 - 1, y0 - 1, w + 2, h + 2);
+    ctx.fillStyle = '#17151a'; ctx.fillRect(x0, y0, w, h);
+    ctxText(ctx, BIG, lbl, x0 + 8, y0 + 4, '#ffffff');
+  }
 }
 
-// ---------- ritning av varor och lappar ----------
+// ================= små ritningar =================
+const DEPT_LBL = Object.fromEntries(Object.entries(D.DEPT).map(([k, v]) => [k, v.lbl]));
 
+// grön prick = plagget är ditt
+function ownDot(ctx, x, y) {
+  ctx.fillStyle = '#17151a'; ctx.fillRect(x - 1, y - 1, 5, 5);
+  ctx.fillStyle = '#45b964'; ctx.fillRect(x, y, 3, 3);
+  ctx.fillStyle = '#8fe0a2'; ctx.fillRect(x, y, 3, 1);
+}
 // Mannekängens lapp: namnet överst, priset under (grön "DIN"-lapp när den är din)
-function dummyTag(ctx, x, y, s, isOwned, g, dept, hi = false) {
-  const name = SHORT[clothesKey(s.kind, s.v)] || s.name.toUpperCase();
-  const price = g.clothesPrice(s), rea = price !== s.price;
+function dummyTag(ctx, x, y, it, isOwned, g, dept, hi = false, short = null) {
+  const name = short || SHORT[it.id] || pix(nameOf(it));
+  const price = priceOf(g, it), rea = price !== it.price;
   const line2 = isOwned ? 'DIN' : `${price} KR`;
   const w = Math.max(textW(SMALL, name), textW(SMALL, line2)) + 6, h = 15;
   const x0 = Math.round(x - w / 2);
   if (hi) { ctx.fillStyle = '#ffe070'; ctx.fillRect(x0 - 2, y - 2, w + 4, h + 4); }
   ctx.fillStyle = '#17151a'; ctx.fillRect(x0 - 1, y - 1, w + 2, h + 2);
   ctx.fillStyle = isOwned ? '#45b964' : '#fbf6ea'; ctx.fillRect(x0, y, w, h);
-  ctx.fillStyle = isOwned ? '#2f8f46' : dept === 'tjej' ? '#f28bb3' : '#3a7bd5'; ctx.fillRect(x0, y, w, 2);
+  ctx.fillStyle = isOwned ? '#2f8f46' : D.DEPT[dept]?.tag || '#3a7bd5'; ctx.fillRect(x0, y, w, 2);
   ctxText(ctx, SMALL, name, x0 + Math.round((w - textW(SMALL, name)) / 2), y + 3, isOwned ? '#ffffff' : '#17151a');
   ctxText(ctx, SMALL, line2, x0 + Math.round((w - textW(SMALL, line2)) / 2), y + 9, isOwned ? '#ffffff' : rea ? '#c9323a' : '#6d4a10');
 }
-
+// Lapp under en lag-docka: rad 1 (namn/stad), rad 2 (pris / TA PÅ DIG / PÅ DIG), färgad topplist.
+// st: 'on' = man bär tröjan i de här färgerna (grön lapp), 'have' = tröjmodellen är ens egen (grön text)
+function plate(ctx, x, y, l1, l2, st, col, hi) {
+  const on = st === 'on' || st === true;
+  const w = Math.max(textW(SMALL, l1), textW(SMALL, l2)) + 4, h = 15, x0 = Math.round(x - w / 2);
+  if (hi) { ctx.fillStyle = '#ffe070'; ctx.fillRect(x0 - 2, y - 2, w + 4, h + 4); }
+  ctx.fillStyle = '#17151a'; ctx.fillRect(x0 - 1, y - 1, w + 2, h + 2);
+  ctx.fillStyle = on ? '#45b964' : '#fbf6ea'; ctx.fillRect(x0, y, w, h);
+  ctx.fillStyle = col || '#46a35a'; ctx.fillRect(x0, y, w, 2);
+  ctxText(ctx, SMALL, l1, x0 + Math.round((w - textW(SMALL, l1)) / 2), y + 3, on ? '#ffffff' : '#17151a');
+  ctxText(ctx, SMALL, l2, x0 + Math.round((w - textW(SMALL, l2)) / 2), y + 9, on ? '#ffffff' : st === 'have' ? '#2f8f46' : '#6d4a10');
+}
+// Nummerskylten under en Kungsladugård-spelare: numret i vinrött, förnamnet under
+function numberPlate(ctx, x, y, n, name, hi) {
+  const nm = pix(name), num = String(n);
+  const w = Math.max(textW(SMALL, nm), textW(SMALL, num) + 4) + 4, h = 15, x0 = Math.round(x - w / 2);
+  if (hi) { ctx.fillStyle = '#ffe070'; ctx.fillRect(x0 - 2, y - 2, w + 4, h + 4); }
+  ctx.fillStyle = '#17151a'; ctx.fillRect(x0 - 1, y - 1, w + 2, h + 2);
+  ctx.fillStyle = '#f6efe6'; ctx.fillRect(x0, y, w, h);
+  const nw = textW(SMALL, num) + 4, nx = Math.round(x - nw / 2);
+  ctx.fillStyle = '#7a1f2e'; ctx.fillRect(nx, y, nw, 7);
+  ctxText(ctx, SMALL, num, nx + 2, y + 1, '#ffffff');
+  ctxText(ctx, SMALL, nm, x0 + Math.round((w - textW(SMALL, nm)) / 2), y + 9, '#3a0d16');
+}
 // Liten prislapp under en vara på hyllan ("150:-" = 150 kronor)
-function priceTag(ctx, x, y, s, isOwned, g) {
-  const price = g.clothesPrice(s);
+function priceTag(ctx, x, y, it, isOwned, g) {
+  const price = priceOf(g, it);
   const lbl = isOwned ? 'DIN' : `${price}:-`;
   const w = textW(SMALL, lbl) + 4, x0 = Math.round(x - w / 2);
   ctx.fillStyle = '#17151a'; ctx.fillRect(x0 - 1, y - 1, w + 2, 9);
-  ctx.fillStyle = isOwned ? '#45b964' : price !== s.price ? '#ff8a80' : '#f0d048'; ctx.fillRect(x0, y, w, 7);
+  ctx.fillStyle = isOwned ? '#45b964' : price !== it.price ? '#ff8a80' : '#f0d048'; ctx.fillRect(x0, y, w, 7);
   ctxText(ctx, SMALL, lbl, x0 + 2, y + 1, isOwned ? '#ffffff' : '#3a2a10');
 }
-
 // Gul hänglapp (grön = din) som hänger i ett snöre från plagget som säljs
 function hangTag(ctx, x, y, isOwned, blink) {
-  ctx.fillStyle = '#3a3440'; ctx.fillRect(x - 1, y - 1, 1, 1); ctx.fillRect(x, y, 1, 1); ctx.fillRect(x + 1, y + 1, 1, 1); // snöret
+  ctx.fillStyle = '#3a3440'; ctx.fillRect(x - 1, y - 1, 1, 1); ctx.fillRect(x, y, 1, 1); ctx.fillRect(x + 1, y + 1, 1, 1);
   ctx.fillStyle = blink ? '#ffffff' : '#17151a'; ctx.fillRect(x + 1, y + 2, 6, 7);
   ctx.fillStyle = isOwned ? '#45b964' : '#f0d048'; ctx.fillRect(x + 2, y + 3, 4, 5);
   ctx.fillStyle = isOwned ? '#8fe0a2' : '#fff2a0'; ctx.fillRect(x + 2, y + 3, 4, 1);
   ctx.fillStyle = isOwned ? '#2f8f46' : '#c9982a'; ctx.fillRect(x + 2, y + 7, 4, 1);
-  ctx.fillStyle = '#17151a'; ctx.fillRect(x + 3, y + 4, 1, 1); // hålet
+  ctx.fillStyle = '#17151a'; ctx.fillRect(x + 3, y + 4, 1, 1);
+}
+// Glitter vid plagget på mannekängen man står vid
+function sparkle(ctx, d, t) {
+  const k = d.it.slot, y = k === 'hat' ? d.y - 40 : k === 'bottom' ? d.y - 10 : d.y - 22;
+  const ph = Math.floor(t * 5) % 4;
+  const x = d.x - 10;
+  ctx.fillStyle = '#fff6b0';
+  ctx.fillRect(x, y - 1 - (ph === 1 ? 1 : 0), 1, 3 + (ph === 1 ? 2 : 0));
+  ctx.fillRect(x - 1 - (ph === 1 ? 1 : 0), y, 3 + (ph === 1 ? 2 : 0), 1);
+  ctx.fillStyle = '#ffffff'; ctx.fillRect(x, y, 1, 1);
+  if (ph >= 2) { ctx.fillStyle = '#fff6b0'; ctx.fillRect(x + 1, y - 6, 1, 1); ctx.fillRect(x + 1, y - 4, 1, 1); ctx.fillRect(x, y - 5, 1, 1); ctx.fillRect(x + 2, y - 5, 1, 1); }
+}
+// Pulserande ram längs trappans fot när man står vid den
+function stairGlow(ctx, e) {
+  const x = e.lx - e.sx * 14, y = e.ly - 8;
+  ctx.fillStyle = 'rgba(255,230,128,.35)';
+  ctx.fillRect(Math.min(x, x + e.sx * 30), y, 30, 12);
+}
+// Skylt i skärmkanten mot det man inte ser just nu
+function edgeSign(ctx, lbl, col, left, bottom = H) {
+  const tw = textW(SMALL, lbl), w = tw + 13, x0 = left ? 3 : VW - w - 3, y0 = bottom - 14;
+  ctx.fillStyle = col; ctx.fillRect(x0 - 1, y0 - 1, w + 2, 11);
+  ctx.fillStyle = '#17151a'; ctx.fillRect(x0, y0, w, 9);
+  ctxText(ctx, SMALL, lbl, left ? x0 + 9 : x0 + 3, y0 + 2, col);
+  ctx.fillStyle = col;
+  for (let i = 0; i < 3; i++) ctx.fillRect(left ? x0 + 3 + i : x0 + w - 4 - i, y0 + 4 - i, 1, 1 + 2 * i);
+}
+// Affischen till vänster om dörren: två figurer i höstens outfits
+function drawPoster(ctx) {
+  const fx = D.MID0 + 14;
+  ctx.save();
+  ctx.beginPath(); ctx.rect(fx, 33, 44, 29); ctx.clip();
+  drawPerson(ctx, fx + 12, 70, POSTER[0], 'down', 0);
+  drawPerson(ctx, fx + 32, 70, POSTER[1], 'down', 0);
+  ctx.restore();
+  const ny = 'NYTT!', nw = textW(SMALL, ny) + 6, x0 = fx + 50 - nw;
+  ctx.fillStyle = '#17151a'; ctx.fillRect(x0 - 1, 57, nw + 2, 10);
+  ctx.fillStyle = '#d9433b'; ctx.fillRect(x0, 58, nw, 8);
+  ctx.fillStyle = '#ff7a6b'; ctx.fillRect(x0, 58, nw, 1);
+  ctxText(ctx, SMALL, ny, x0 + 3, 60, '#ffffff');
+}
+function drawRea(ctx, t) {
+  const on = Math.floor(t * 2) % 2 === 0;
+  const lbl = 'REA -25%';
+  const w = textW(BIG, lbl) + 10, x0 = (D.DESK.x + D.DESK.w / 2) - w / 2 | 0, y0 = 42;
+  ctx.fillStyle = '#17151a'; ctx.fillRect(x0 - 1, y0 - 1, w + 2, 13);
+  ctx.fillStyle = on ? '#d9433b' : '#b8323a'; ctx.fillRect(x0, y0, w, 11);
+  ctxText(ctx, BIG, lbl, x0 + 5, y0 + 2, '#ffffff');
+}
+// Visselpipan i snöre runt tränarens hals
+function whistle(ctx, x, y) {
+  ctx.fillStyle = '#e8e8ee'; ctx.fillRect(x - 1, y - 20, 1, 3); ctx.fillRect(x + 1, y - 20, 1, 3);
+  ctx.fillStyle = '#c9ccd6'; ctx.fillRect(x - 1, y - 17, 3, 2); ctx.fillStyle = '#6d717c'; ctx.fillRect(x + 1, y - 16, 1, 1);
+}
+function drawBall(ctx, b, hi, t) {
+  const x = Math.round(b.x), y = Math.round(b.y), z = Math.round(b.z);
+  ctx.fillStyle = 'rgba(20,12,30,.3)'; ctx.fillRect(x - 2, y + 1, 5, 1);
+  if (hi && b.st === 'rest' && Math.floor(t * 3) % 2 === 0) { ctx.fillStyle = '#ffe070'; ctx.fillRect(x - 4, y - 7 - z, 9, 9); }
+  const rows = ['.www.', 'wkwkw', 'wwkww', 'wkwkw', '.www.'];
+  const roll = b.st !== 'rest' ? Math.floor(t * 12) % 2 : 0;
+  rows.forEach((r, j) => { for (let i = 0; i < 5; i++) { const c = r[roll ? 4 - i : i]; if (c === '.') continue; ctx.fillStyle = c === 'k' ? '#26242c' : '#f4f1ea'; ctx.fillRect(x - 2 + i, y - 5 - z + j, 1, 1); } });
+  ctx.fillStyle = '#1d1822'; ctx.fillRect(x - 1, y - 6 - z, 3, 1); ctx.fillRect(x - 1, y - z, 3, 1); ctx.fillRect(x - 3, y - 4 - z, 1, 3); ctx.fillRect(x + 3, y - 4 - z, 1, 3);
 }
 
 // Glasögon i dubbel storlek på ett eget ställ: f båge, l glas, w glans, d mörkt glas, s blänk
@@ -309,7 +871,6 @@ const GLASS = {
 };
 const GLASS_FRAME = { round: '#7a4520', square: '#1f1f26', sun: '#1f1f26' };
 function drawGlassesStand(ctx, x, base, v) {
-  // fot + stång + näsbrygga i blank metall
   ctx.fillStyle = '#5a5058'; ctx.fillRect(x - 5, base - 2, 11, 2);
   ctx.fillStyle = '#a8a0aa'; ctx.fillRect(x - 4, base - 2, 9, 1);
   ctx.fillStyle = '#c9ccd6'; ctx.fillRect(x, base - 14, 1, 12);
@@ -320,8 +881,7 @@ function drawGlassesStand(ctx, x, base, v) {
   const x0 = x - 6, y0 = base - 20;
   map.forEach((row, j) => { for (let i = 0; i < row.length; i++) { const ch = row[i]; if (ch === '.') continue; ctx.fillStyle = pal[ch]; ctx.fillRect(x0 + i, y0 + j, 1, 1); } });
 }
-
-// Byst (huvud + axlar) på en liten fot – för hattar, glasögon och hörlurar
+// Byst (huvud + axlar) på en liten fot – för hattar och hörlurar
 function drawBust(ctx, x, base, look) {
   ctx.fillStyle = '#5a5058'; ctx.fillRect(x - 5, base - 2, 11, 2);
   ctx.fillStyle = '#8e8690'; ctx.fillRect(x - 4, base - 2, 9, 1);
@@ -333,39 +893,10 @@ function drawBust(ctx, x, base, look) {
   ctx.restore();
   ctx.fillStyle = '#4a4250'; ctx.fillRect(x - 6, base - 5, 13, 1);
 }
-
 // Väskor (pixelkartor): o kontur, h ljus, b bas, l skugga, d mörk, m metall, s rem
 const BAGS = {
-  backpack: [
-    '....oooo....',
-    '...o.dd.o...',
-    '.oooooooooo.',
-    'ohhhhhhhhhbo',
-    'ohbbbbbbbblo',
-    'ohbbbbmbbblo',
-    'ohbbbbbbbblo',
-    'ohbddddddblo',
-    'ohdlllllldlo',
-    'ohdllmllldlo',
-    'ohdlllllldlo',
-    'ohbddddddblo',
-    'olllllllllll',
-    '.oooooooooo.',
-  ],
-  shoulder: [
-    '...ssssss...',
-    '..s......s..',
-    '.s........s.',
-    '.s........s.',
-    'oooooooooooo',
-    'ohhhhhhhhhbo',
-    'ohbbbbbbbblo',
-    'odddddmddddo',
-    'ohbbbbbbbblo',
-    'ohbbbbbbbblo',
-    'ollllllllllo',
-    '.oooooooooo.',
-  ],
+  backpack: ['....oooo....', '...o.dd.o...', '.oooooooooo.', 'ohhhhhhhhhbo', 'ohbbbbbbbblo', 'ohbbbbmbbblo', 'ohbbbbbbbblo', 'ohbddddddblo', 'ohdlllllldlo', 'ohdllmllldlo', 'ohdlllllldlo', 'ohbddddddblo', 'olllllllllll', '.oooooooooo.'],
+  shoulder: ['...ssssss...', '..s......s..', '.s........s.', '.s........s.', 'oooooooooooo', 'ohhhhhhhhhbo', 'ohbbbbbbbblo', 'odddddmddddo', 'ohbbbbbbbblo', 'ohbbbbbbbblo', 'ollllllllllo', '.oooooooooo.'],
 };
 function drawBag(ctx, x, base, v, color) {
   const c = hex(color, 0x3a7bd5);
@@ -374,670 +905,4 @@ function drawBag(ctx, x, base, v, color) {
   const x0 = Math.round(x - map[0].length / 2), y0 = base - map.length;
   ctx.fillStyle = 'rgba(20,12,30,.25)'; ctx.fillRect(x0 + 1, base - 1, map[0].length - 1, 1);
   map.forEach((row, j) => { for (let i = 0; i < row.length; i++) { const ch = row[i]; if (ch === '.') continue; ctx.fillStyle = pal[ch]; ctx.fillRect(x0 + i, y0 + j, 1, 1); } });
-}
-
-// Glitter vid plagget på mannekängen man står vid
-function sparkle(ctx, d, t) {
-  const k = d.s.kind, y = k === 'hat' ? d.y - 40 : k === 'bottom' ? d.y - 10 : d.y - 22;
-  const ph = Math.floor(t * 5) % 4;
-  const x = d.x - 10; // vänster sida – hänglappen sitter till höger
-  ctx.fillStyle = '#fff6b0';
-  ctx.fillRect(x, y - 1 - (ph === 1 ? 1 : 0), 1, 3 + (ph === 1 ? 2 : 0));
-  ctx.fillRect(x - 1 - (ph === 1 ? 1 : 0), y, 3 + (ph === 1 ? 2 : 0), 1);
-  ctx.fillStyle = '#ffffff'; ctx.fillRect(x, y, 1, 1);
-  if (ph >= 2) { ctx.fillStyle = '#fff6b0'; ctx.fillRect(x + 1, y - 6, 1, 1); ctx.fillRect(x + 1, y - 4, 1, 1); ctx.fillRect(x, y - 5, 1, 1); ctx.fillRect(x + 2, y - 5, 1, 1); }
-}
-
-// Namnskylt i skärmens nederkant för varan man står vid / pekar på (skymmer aldrig
-// några andra lappar). Samma gula hänglapp som på plagget + "klicka för att prova".
-function bigLabel(ctx, spot, g, t, atTop = false) {
-  const s = spot.item.s;
-  const isOwned = g.wardrobe.includes(clothesKey(s.kind, s.v));
-  const name = s.name.toUpperCase(), price = isOwned ? 'DIN!' : `${g.clothesPrice(s)} KR`;
-  const hint = isOwned ? 'KLICKA SÅ TAR DU PÅ DIG DEN' : 'KLICKA SÅ PROVAR DU DEN PÅ DIG';
-  const nw = textW(BIG, name), pw = textW(BIG, price), hw = textW(SMALL, hint);
-  const w = Math.max(nw + pw + 26, hw + 26), h = 22;
-  const x0 = Math.round((VW - w) / 2), y0 = atTop ? 3 : H - h - 3;
-  const th = DEPT[spot.item.dept];
-  ctx.fillStyle = '#0e0d12'; ctx.fillRect(x0 - 2, y0 - 2, w + 4, h + 4);
-  ctx.fillStyle = th.lbl; ctx.fillRect(x0 - 1, y0 - 1, w + 2, h + 2);
-  ctx.fillStyle = '#17151a'; ctx.fillRect(x0, y0, w, h);
-  hangTag(ctx, x0 + 4, y0 + 3, isOwned, false);
-  ctxText(ctx, BIG, name, x0 + 16, y0 + 3, '#ffffff');
-  ctxText(ctx, BIG, price, x0 + 22 + nw, y0 + 3, isOwned ? '#6fe08a' : '#f0d048');
-  const blink = Math.floor(t * 2) % 2 === 0;
-  ctxText(ctx, SMALL, hint, x0 + 16, y0 + 14, blink ? th.lbl : '#c9c2d2');
-}
-
-// Skylt i skärmkanten mot avdelningen man inte ser just nu
-function edgeSign(ctx, dept) {
-  const th = DEPT[dept], left = dept === 'tjej';
-  const lbl = th.name, tw = textW(SMALL, lbl);
-  const w = tw + 13, x0 = left ? 3 : VW - w - 3, y0 = H - 14;
-  ctx.fillStyle = th.lbl; ctx.fillRect(x0 - 1, y0 - 1, w + 2, 11);
-  ctx.fillStyle = '#17151a'; ctx.fillRect(x0, y0, w, 9);
-  ctxText(ctx, SMALL, lbl, left ? x0 + 9 : x0 + 3, y0 + 2, th.lbl);
-  // pilspets mot avdelningen
-  ctx.fillStyle = th.lbl;
-  for (let i = 0; i < 3; i++) ctx.fillRect(left ? x0 + 3 + i : x0 + w - 4 - i, y0 + 4 - i, 1, 1 + 2 * i);
-}
-
-// Affischen till vänster om dörren: två figurer i höstens outfits
-function drawPoster(ctx) {
-  ctx.save();
-  ctx.beginPath(); ctx.rect(310, 33, 44, 29); ctx.clip();
-  drawPerson(ctx, 322, 70, POSTER[0], 'down', 0);
-  drawPerson(ctx, 342, 70, POSTER[1], 'down', 0);
-  ctx.restore();
-  // "NYTT!"-lappen klistrad ovanpå figurerna (annars skär byxorna av texten)
-  const ny = 'NYTT!', nw = textW(SMALL, ny) + 6, x0 = 360 - nw;
-  ctx.fillStyle = '#17151a'; ctx.fillRect(x0 - 1, 57, nw + 2, 10);
-  ctx.fillStyle = '#d9433b'; ctx.fillRect(x0, 58, nw, 8);
-  ctx.fillStyle = '#ff7a6b'; ctx.fillRect(x0, 58, nw, 1);
-  ctxText(ctx, SMALL, ny, x0 + 3, 60, '#ffffff');
-}
-
-function drawRea(ctx, t) {
-  const on = Math.floor(t * 2) % 2 === 0;
-  const lbl = 'REA -25%';
-  const w = textW(BIG, lbl) + 10, x0 = 436 - w / 2 | 0, y0 = 42;
-  ctx.fillStyle = '#17151a'; ctx.fillRect(x0 - 1, y0 - 1, w + 2, 13);
-  ctx.fillStyle = on ? '#d9433b' : '#b8323a'; ctx.fillRect(x0, y0, w, 11);
-  ctxText(ctx, BIG, lbl, x0 + 5, y0 + 2, '#ffffff');
-}
-
-// ================= förmålade bilder =================
-
-function disc(P, cx, cy, rx, ry, c) {
-  for (let y = Math.floor(cy - ry); y <= cy + ry; y++) for (let x = Math.floor(cx - rx); x <= cx + rx; x++) {
-    if (((x + 0.5 - cx) / rx) ** 2 + ((y + 0.5 - cy) / ry) ** 2 <= 1) P.px(x, y, c);
-  }
-}
-
-function paintPodium(dept) {
-  const P = new Pix(24, 12);
-  const top = dept === 'tjej' ? 0xf7eef3 : 0x4a5568, side = dept === 'tjej' ? 0xe7a9c8 : 0x2c3444, trim = dept === 'tjej' ? 0xc65fa0 : 0x3fc4ff;
-  for (let x = 0; x < 24; x++) {
-    const dx = (x + 0.5 - 12) / 11.5;
-    if (Math.abs(dx) >= 1) continue;
-    const e = Math.sqrt(1 - dx * dx) * 3.5;
-    const y0 = Math.round(3.5 - e), y1 = Math.round(3.5 + e);
-    for (let y = y0; y <= y1 + 5; y++) {
-      let c;
-      if (y <= y1) c = y === y0 ? mix(top, 0xffffff, 0.35) : top;
-      else if (y === y1 + 1) c = trim;
-      else c = mix(side, 0x000000, (y - y1) * 0.04 + (dx > 0.4 ? 0.12 : dx < -0.6 ? -0.05 : 0));
-      if (y === y1 + 5) c = mul(side, 0.6);
-      P.px(x, y, c);
-    }
-  }
-  // glans på toppen
-  P.hl(6, 2, 4, mix(top, 0xffffff, 0.6));
-  return P.flush();
-}
-
-function paintGlow() {
-  const P = new Pix(40, 16);
-  P.ell(20, 8, 19, 7, 0xfff0a0, 0.8, 4);
-  return P.flush();
-}
-
-function paintPlant() {
-  const P = new Pix(22, 32);
-  // blad (monstera-aktiga) i tre gröna toner
-  const leaves = [[11, 8, 6, 5, 0x2f7a3e], [6, 13, 5, 4, 0x3a8f48], [16, 13, 5, 4, 0x2f7a3e], [9, 17, 5, 4, 0x46a35a], [14, 18, 5, 3, 0x3a8f48], [11, 12, 4, 4, 0x56b866], [4, 19, 4, 3, 0x2f7a3e], [18, 19, 4, 3, 0x46a35a]];
-  for (const [x, y, rx, ry] of leaves) disc(P, x, y, rx + 0.6, ry + 0.6, 0x173d22);
-  for (const [x, y, rx, ry, c] of leaves) { disc(P, x, y, rx, ry, c); P.hl(x - rx + 2, y - ry + 1, Math.max(1, rx - 1), mix(c, 0xffffff, 0.3)); P.vl(x, y - ry + 1, ry * 2 - 1, mul(c, 0.8)); }
-  // stjälkar
-  P.vl(11, 18, 5, 0x2a5a2e); P.vl(9, 20, 3, 0x2a5a2e); P.vl(13, 20, 3, 0x2a5a2e);
-  // kruka
-  P.rect(6, 22, 10, 9, 0xf4f1ea); P.rect(5, 22, 12, 2, 0xffffff); P.vl(15, 24, 7, 0xcfc8b8); P.vl(6, 24, 7, 0xfbfaf6);
-  P.box(5, 22, 12, 2, 0x5a5048); P.vl(5, 24, 7, 0x5a5048); P.vl(16, 24, 7, 0x5a5048); P.hl(6, 31, 10, 0x5a5048);
-  P.hl(7, 26, 8, 0xe8b230);
-  return P.flush();
-}
-
-// Accessoarhyllan: skylt, två hyllplan, sockel. Varorna ritas ovanpå.
-function paintGondola() {
-  const { w, h } = GOND;
-  const P = new Pix(w, h);
-  const ink = 0x1d1822, wood = 0xc9a06b, woodLo = 0x9a7448, back = 0xefe6d6;
-  // bakstycke (perforerad skiva)
-  P.rect(2, 9, w - 4, h - 17, back);
-  for (let y = 12; y < h - 10; y += 4) for (let x = 5; x < w - 4; x += 4) P.px(x, y, 0xd6cab4);
-  P.box(1, 8, w - 2, h - 15, ink);
-  // skylt
-  P.rect(0, 0, w, 10, 0x17151a);
-  P.hl(1, 1, w - 2, 0x3a3440);
-  const lbl = 'ACCESSOARER';
-  text(P, SMALL, lbl, Math.round(w / 2 - textW(SMALL, lbl) / 2), 3, 0xf0d048);
-  P.rect(3, 3, 5, 5, 0xf28bb3); P.rect(w - 8, 3, 5, 5, 0x3fc4ff);
-  // hyllplan
-  for (const sy of [GTOP - GOND.y, GBOT - GOND.y]) {
-    P.rect(1, sy, w - 2, 2, wood); P.hl(1, sy, w - 2, mix(wood, 0xffffff, 0.3));
-    P.rect(1, sy + 2, w - 2, 2, woodLo);
-    P.hl(1, sy + 4, w - 2, mul(back, 0.8));
-  }
-  // sockel
-  P.rect(0, h - 7, w, 7, 0x3a3440); P.hl(0, h - 7, w, 0x5a5460); P.hl(0, h - 1, w, 0x17151a);
-  P.vl(0, 8, h - 8, ink); P.vl(w - 1, 8, h - 8, ink);
-  // liten skylt mellan väskorna
-  const vw = textW(SMALL, 'VÄSKOR') + 4, vx = Math.round(w / 2 - vw / 2) + 1;
-  P.rect(vx, 44, vw, 8, 0x17151a); text(P, SMALL, 'VÄSKOR', vx + 2, 46, 0xf28bb3);
-  return P.flush();
-}
-
-function paintDesk() {
-  const { w, h } = DESK;
-  const P = new Pix(w, h);
-  const ink = 0x1d1822;
-  // bänkskiva
-  P.rect(0, 8, w, 6, 0xe9e1d2); P.hl(0, 8, w, 0xfaf6ee); P.hl(0, 13, w, 0xb8ad98);
-  // front
-  P.rect(1, 14, w - 2, h - 15, 0xc9a06b);
-  for (let x = 3; x < w - 2; x += 6) P.vl(x, 15, h - 17, 0xb08850);
-  P.rect(1, 18, w - 2, 3, 0xf28bb3); P.rect(Math.round(w / 2), 18, Math.round(w / 2) - 1, 3, 0x3fc4ff);
-  P.hl(1, h - 2, w - 2, 0x7a5a38);
-  P.box(0, 8, w, h - 8, ink);
-  // kassaapparat
-  P.rect(34, 0, 16, 9, 0x2a2a32); P.rect(35, 1, 14, 4, 0x6fe08a); P.hl(36, 2, 6, 0x1d5a2c); P.hl(36, 3, 9, 0x2f8f46);
-  P.rect(33, 6, 18, 3, 0x3a3a44); P.hl(33, 6, 18, 0x5a5a64);
-  // påsar med logga + kortläsare
-  P.rect(6, 1, 9, 8, 0xf28bb3); P.box(6, 1, 9, 8, 0x8a3a60); P.hl(8, 0, 5, 0x8a3a60);
-  P.rect(16, 3, 8, 6, 0x3fc4ff); P.box(16, 3, 8, 6, 0x1f5a8a); P.hl(18, 2, 4, 0x1f5a8a);
-  P.rect(54, 4, 5, 5, 0x2a2a32); P.hl(55, 5, 3, 0x8fa0b8);
-  return P.flush();
-}
-
-// ---------- hela butiken (väggar, golv, inredning) ----------
-function paintStore() {
-  const P = new Pix(W, H);
-  // ===== väggar =====
-  // tjejer: rosa randig tapet med små hjärtan
-  const HEART = ['.#.#.', '#####', '.###.', '..#..'];
-  for (let y = 0; y < WALL_Y; y++) for (let x = 0; x < MID0; x++) {
-    const stripe = ((x / 8) | 0) % 2;
-    let c = stripe ? 0xeeb6d2 : 0xe3a0c4;
-    c = mix(c, 0xffffff, (bayer(x, y) - 0.5) * 0.05);
-    P.px(x, y, c);
-  }
-  for (let y = 8; y < 54; y += 12) for (let x = 2; x < MID0 - 6; x += 16) {
-    const ox = x + (((y / 12) | 0) % 2 ? 8 : 0) + 1;
-    HEART.forEach((row, j) => { for (let i = 0; i < 5; i++) if (row[i] === '#') P.px(ox + i, y + j, 0xfff0f7, 0.55); });
-  }
-  // killar: blå panelvägg (slatwall)
-  for (let y = 0; y < WALL_Y; y++) for (let x = MID1; x < W; x++) {
-    const r = y % 6;
-    let c = r === 5 ? 0x1f3350 : r === 0 ? 0x4a70a2 : 0x3a5f8f;
-    c = mix(c, 0x000000, (bayer(x, y) - 0.5) * 0.06 + (hash((x / 48) | 0, (y / 6) | 0, 3) - 0.5) * 0.06);
-    P.px(x, y, c);
-  }
-  // mitten: varm puts
-  for (let y = 0; y < WALL_Y; y++) for (let x = MID0; x < MID1; x++) {
-    let c = mix(0xefe5d2, 0xe4d8c0, hash(x >> 1, y >> 1, 9) * 0.35 + (bayer(x, y) - 0.5) * 0.15);
-    P.px(x, y, c);
-  }
-  // bröstpanel längst ner på väggen
-  for (let x = 0; x < W; x++) {
-    const zone = x < MID0 ? 0 : x < MID1 ? 1 : 2;
-    const base = [0xf8eef3, 0xb98a5e, 0x2f6b58][zone], trim = [0xd98fb4, 0x8a6440, 0x4f9c82][zone];
-    for (let y = WALL_Y - 12; y < WALL_Y; y++) {
-      let c = base;
-      if (y === WALL_Y - 12) c = trim;
-      else if (y === WALL_Y - 11) c = mix(trim, 0xffffff, 0.35);
-      else if (y >= WALL_Y - 2) c = mul(trim, 0.7);
-      else if (x % 24 === 0) c = mul(base, 0.88);
-      else if (x % 24 === 1) c = mix(base, 0xffffff, 0.25);
-      P.px(x, y, c);
-    }
-  }
-  // takskena med spotlights och ljuskäglor
-  P.rect(0, 0, W, 3, 0x2a2430); P.hl(0, 2, W, 0x4a4450);
-  for (let x = 20; x < W; x += 44) {
-    if (x > DOOR.x0 - 16 && x < DOOR.x1 + 16) continue;
-    P.ell(x, 20, 16, 26, 0xfff4dc, 0.22, 5);
-    P.rect(x - 2, 3, 5, 3, 0x1d1822); P.hl(x - 1, 5, 3, 0xfff6c8);
-  }
-  // pelare mellan avdelningarna
-  for (const px of [MID0, MID1]) {
-    P.rect(px - 5, 0, 10, WALL_Y, 0xdcd4c8);
-    P.vl(px - 5, 0, WALL_Y, 0xf2ece2); P.vl(px - 4, 0, WALL_Y, 0xe8e0d4);
-    P.vl(px + 3, 0, WALL_Y, 0xb8ae9e); P.vl(px + 4, 0, WALL_Y, 0x8a8070);
-    P.rect(px - 6, 3, 12, 3, 0xc9bfae); P.rect(px - 6, WALL_Y - 4, 12, 4, 0xa89e8c);
-  }
-
-  // ===== dörren i mitten + skylten KLÄDER =====
-  const lw = textW(BIG, 'KLÄDER', 2) + 16;
-  P.rect(384 - lw / 2, 5, lw, 20, 0x17151a); P.box(384 - lw / 2, 5, lw, 20, 0xe8b230);
-  P.box(384 - lw / 2 + 2, 7, lw - 4, 16, 0x5a4a20);
-  glowText(P, BIG, 'KLÄDER', 384 - textW(BIG, 'KLÄDER', 2) / 2, 9, 0xffe070, 0xe8b230, 2);
-  P.rect(DOOR.x0 - 2, 28, DOOR.x1 - DOOR.x0 + 4, WALL_Y - 28, 0x2a2430);
-  for (let i = 0; i < 2; i++) {
-    const gx = DOOR.x0 + 1 + i * 16;
-    for (let y = 30; y < WALL_Y - 1; y++) for (let x = gx; x < gx + 14; x++) {
-      let c = mix(0xa8d4e6, 0x6f9fb8, (y - 30) / 40);
-      if ((x - y + 400) % 17 < 2) c = mix(c, 0xffffff, 0.35);
-      P.px(x, y, c);
-    }
-    P.rect(gx + 2, 50, 10, 2, 0xc9c9d4); P.hl(gx + 2, 50, 10, 0xf2f2f6);
-  }
-  P.rect(DOOR.x0 + 5, 32, 22, 9, 0x1d2b1f); text(P, SMALL, 'UT', DOOR.x0 + 12, 34, 0x6fe08a);
-  // dörrmatta
-  P.rect(DOOR.x0 - 4, WALL_Y, DOOR.x1 - DOOR.x0 + 8, 10, 0x3a3640);
-  P.box(DOOR.x0 - 4, WALL_Y, DOOR.x1 - DOOR.x0 + 8, 10, 0x5a5460);
-  for (let x = DOOR.x0 - 2; x < DOOR.x1 + 2; x += 2) P.vl(x, WALL_Y + 2, 6, 0x2e2a34);
-
-  // affischram vänster om dörren (figurerna ritas levande)
-  P.rect(306, 29, 52, 37, 0x17151a);
-  P.rect(308, 31, 48, 33, 0xfbe3ef); P.rect(332, 31, 24, 33, 0xe0ebf8);
-  for (let y = 31; y < 64; y++) for (let x = 308; x < 356; x++) if ((x + y) % 7 === 0) P.px(x, y, 0xffffff, 0.5);
-  // KASSA-skylt
-  const kw = textW(SMALL, 'KASSA') + 10;
-  P.rect(436 - kw / 2, 30, kw, 10, 0x17151a); P.box(436 - kw / 2, 30, kw, 10, 0xe8b230);
-  text(P, SMALL, 'KASSA', 436 - kw / 2 + 5, 33, 0xf0d048);
-
-  // ===== avdelningarnas skyltar =====
-  deptSign(P, 'tjej', 241, 5);
-  deptSign(P, 'kille', W - 241, 5);
-
-  // ===== provhytter =====
-  fittingRooms(P, 8, 0xc65fa0, 0x8a3a70, 0xf7eef3);
-  fittingRooms(P, W - 84, 0x2d4a78, 0x1a2c4c, 0xdfe8f4);
-
-  // ===== speglar =====
-  mirror(P, 92, 0xd8b24a);
-  mirror(P, W - 112, 0xc9ccd6);
-
-  // ===== klädställning på väggen =====
-  for (const [x, dept] of RACKS) rack(P, x, dept);
-
-  // ===== hatthyllor (bysterna ritas levande) =====
-  hatShelf(P, 190, 0xf7eef3, 0xd98fb4);
-  hatShelf(P, W - 288, 0x3a4658, 0x3fc4ff);
-
-  // ===== golv =====
-  for (let y = WALL_Y; y < H; y++) for (let x = 0; x < W; x++) {
-    let c;
-    if (x < MID0) c = plank(x, y, 0xe2bcc6, 11);
-    else if (x >= MID1) c = plank(x, y, 0x98a6b8, 23);
-    else {
-      const tx = ((x - MID0) / 16) | 0, ty = ((y - WALL_Y) / 16) | 0;
-      c = (tx + ty) % 2 ? 0xeee6d8 : 0xe0d5c2;
-      c = mix(c, 0xd0c4ae, hash(x >> 2, y >> 2, 17) * 0.25);
-      if ((x - MID0) % 16 === 0 || (y - WALL_Y) % 16 === 0) c = 0xc9bca4;
-      if (hash(x, y, 4) > 0.985) c = mul(c, 0.94);
-    }
-    P.px(x, y, c);
-  }
-  // mattor under mannekängerna
-  rug(P, 10, 88, MID0 - 20, 108, 0xc9a0dc, 0xf28bb3, 0xfbe3ef, 31);
-  rug(P, MID1 + 10, 88, MID0 - 20, 108, 0x34507a, 0x3fc4ff, 0x7fb8e8, 37);
-  // mässingslist mellan avdelningarna
-  for (const px of [MID0, MID1]) { P.rect(px - 1, WALL_Y, 2, H - WALL_Y, 0xd8b24a); P.vl(px - 1, WALL_Y, H - WALL_Y, 0xf0d890); }
-  // skugga längs väggen
-  for (let i = 0; i < 5; i++) P.darken(0, WALL_Y + i, W, 1, 0.8 + i * 0.04);
-  // ljuspölar under mannekängerna och framför hyllorna
-  for (const d of DUMMIES) P.ell(d.x, d.y + 1, 18, 7, 0xfff6e0, 0.28, 4);
-  P.ell(GOND.x + GOND.w / 2, GOND.y + GOND.h, 64, 10, 0xfff6e0, 0.2, 4);
-
-  P.box(0, 0, W, H, 0x0e0d12);
-  return P.flush();
-}
-
-function plank(x, y, base, seed) {
-  const ph = 7, row = ((y - WALL_Y) / ph) | 0, yy = (y - WALL_Y) % ph;
-  const L = 36, off = (hash(row, 1, seed) * L) | 0;
-  const px = x + off, pi = (px / L) | 0, pin = px % L;
-  let c = mul(base, 0.93 + hash(pi, row, seed) * 0.12);
-  if (yy === ph - 1) c = mul(c, 0.8);
-  else if (pin === 0) c = mul(c, 0.84);
-  else if (yy === 0) c = mix(c, 0xffffff, 0.1);
-  else if (hash(px >> 3, y, seed + 1) > 0.9) c = mul(c, 0.96);
-  return c;
-}
-
-function rug(P, x0, y0, w, h, base, border, dots, seed) {
-  for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) {
-    const ex = Math.min(x - x0, x0 + w - 1 - x), ey = Math.min(y - y0, y0 + h - 1 - y), e = Math.min(ex, ey);
-    let c = base;
-    if (e < 3) c = border;
-    else if (e === 3) c = mix(border, 0xffffff, 0.3);
-    else if (e === 6) c = mix(base, border, 0.5);
-    else if ((x + y) % 12 === 0 || (x - y + 1200) % 12 === 0) c = mix(base, dots, 0.45);
-    c = mix(c, 0x000000, (bayer(x, y) - 0.5) * 0.06 + (hash(x >> 1, y >> 1, seed) - 0.5) * 0.04);
-    P.px(x, y, c);
-  }
-  // fransar
-  for (let x = x0 + 2; x < x0 + w - 2; x += 2) { P.px(x, y0 - 1, mix(border, 0xffffff, 0.4)); P.px(x, y0 + h, mix(border, 0xffffff, 0.4)); }
-}
-
-function glowText(P, F, s, x, y, c, glow, scale = 1) {
-  for (const [dx, dy] of [[-1, 0], [1, 0], [0, -1], [0, 1], [-1, -1], [1, 1], [1, -1], [-1, 1]]) text(P, F, s, x + dx, y + dy, glow, 0.35, scale);
-  text(P, F, s, x, y, c, 1, scale);
-}
-
-function deptSign(P, dept, cx, y) {
-  const th = DEPT[dept];
-  const tw = textW(BIG, th.name, 2), w = tw + 30, x0 = Math.round(cx - w / 2), h = 22;
-  P.ell(cx, y + h / 2, w * 0.7, h, th.glow, 0.2, 5);
-  P.rect(x0, y, w, h, th.board);
-  P.box(x0, y, w, h, mul(th.trim, 0.6));
-  P.box(x0 + 1, y + 1, w - 2, h - 2, th.trim);
-  // neontext
-  glowText(P, BIG, th.name, x0 + 15, y + 4, th.neon, th.glow, 2);
-  // ikoner på sidorna
-  if (dept === 'tjej') {
-    for (const ox of [x0 + 5, x0 + w - 10]) ['.#.#.', '#####', '#####', '.###.', '..#..'].forEach((row, j) => { for (let i = 0; i < 5; i++) if (row[i] === '#') P.px(ox + i, y + 8 + j, th.neon); });
-  } else {
-    for (const ox of [x0 + 5, x0 + w - 10]) ['..#..', '.###.', '#####', '..#..', '.#.#.'].forEach((row, j) => { for (let i = 0; i < 5; i++) if (row[i] === '#') P.px(ox + i, y + 8 + j, th.neon); });
-  }
-  // upphängning
-  P.vl(x0 + 8, 2, y - 2, 0x8a8e9a); P.vl(x0 + w - 9, 2, y - 2, 0x8a8e9a);
-}
-
-function fittingRooms(P, x0, cur, curLo, frame) {
-  const lbl = 'PROVHYTT';
-  const lw = textW(SMALL, lbl) + 8;
-  P.rect(x0 + 38 - lw / 2, 8, lw, 9, 0x17151a); text(P, SMALL, lbl, x0 + 38 - lw / 2 + 4, 10, 0xffffff);
-  for (let k = 0; k < 2; k++) {
-    const x = x0 + k * 40, w = 36, y = 20;
-    // ram + inre
-    P.rect(x, y, w, WALL_Y - y, frame);
-    P.rect(x + 3, y + 4, w - 6, WALL_Y - y - 4, 0x3a2e3a);
-    P.rect(x + 3, y + 4, w - 6, 2, 0x241c26);
-    // spegel + krok inne i hytten
-    P.rect(x + 22, y + 8, 7, 22, 0xb8d4e0); P.box(x + 21, y + 7, 9, 24, 0xd8b24a); P.px(x + 23, y + 10, 0xffffff); P.px(x + 24, y + 11, 0xffffff);
-    P.rect(x + 22, WALL_Y - 8, 8, 6, 0x6b4a33); P.hl(x + 22, WALL_Y - 8, 8, 0x8a6446); // pall
-    // stång + draperi (dras åt vänster, 3/5 av bredden)
-    P.rect(x + 1, y + 3, w - 2, 1, 0xc9ccd6);
-    const cw = k === 0 ? 20 : 26;
-    for (let yy = y + 4; yy < WALL_Y - 1; yy++) for (let xx = x + 3; xx < x + 3 + cw; xx++) {
-      const f = (xx - x) % 4;
-      let c = f === 0 ? curLo : f === 1 ? mix(cur, 0xffffff, 0.18) : cur;
-      if (yy === WALL_Y - 2 && (xx % 3 === 0)) c = curLo;
-      P.px(xx, yy, c);
-    }
-    for (let xx = x + 3; xx < x + 3 + cw; xx += 3) P.px(xx, y + 4, 0xe8e8ee);
-    P.box(x, y, w, WALL_Y - y, mul(frame, 0.7));
-  }
-}
-
-function mirror(P, x, frame) {
-  const y = 20, w = 20, h = WALL_Y - 22;
-  P.rect(x, y, w, h, frame); P.box(x, y, w, h, mul(frame, 0.6));
-  for (let yy = y + 2; yy < y + h - 2; yy++) for (let xx = x + 2; xx < x + w - 2; xx++) {
-    let c = mix(0xd4e8f0, 0x9cbccc, (yy - y) / h);
-    const d = (xx - x) + (yy - y) * 0.6;
-    if (d % 22 < 2 || d % 22 > 20.5) c = mix(c, 0xffffff, 0.5);
-    P.px(xx, yy, c);
-  }
-  P.hl(x + 1, y + 1, w - 2, mix(frame, 0xffffff, 0.4));
-}
-
-// Halvbredder per rad för plaggen på klädstången (hängande, sedda framifrån)
-const HANG = {
-  dress: [2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4],
-  tee: [2, 4, 4, 3, 3, 3, 3, 3, 3, 3, 3],
-  blouse: [2, 4, 4, 4, 3, 3, 3, 3, 3, 3, 3, 3, 3],
-  skirt: [3, 3, 3, 3, 4, 4, 4, 4, 4, 4],
-  shirt: [3, 4, 4, 4, 4, 3, 3, 3, 3, 3, 3, 3, 3],
-  jacket: [3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4],
-};
-function rack(P, x0, dept) {
-  const tj = dept === 'tjej';
-  const cols = tj ? [0xf28bb3, 0x8e5bd1, 0xff7a6b, 0xf0b429, 0x2aa39a, 0xb9a3e8, 0xd9433b] : [0x3a7bd5, 0x46a35a, 0x2d3a5c, 0xe07a2e, 0xd9433b, 0x5f7f99, 0xf0b429];
-  const kinds = tj ? ['dress', 'blouse', 'dress', 'skirt', 'dress', 'tee', 'dress'] : ['shirt', 'jacket', 'tee', 'shirt', 'jacket', 'tee', 'jacket'];
-  const y = 24;
-  P.rect(x0, y, 70, 2, 0xc9ccd6); P.hl(x0, y, 70, 0xf2f2f6); P.hl(x0, y + 2, 70, 0x6d717c);
-  P.rect(x0, y - 4, 2, 6, 0x8a8e9a); P.rect(x0 + 68, y - 4, 2, 6, 0x8a8e9a);
-  cols.forEach((c, i) => {
-    const cx = x0 + 7 + i * 9, kind = kinds[i], rows = HANG[kind];
-    const lo = mix(mul(c, 0.72), 0x2a1f3a, 0.12), hi = mix(c, 0xffffff, 0.28), dk = mix(mul(c, 0.5), 0x1a1426, 0.2);
-    P.px(cx, y - 1, 0x8a8e9a); P.px(cx + 1, y - 2, 0x8a8e9a); P.px(cx, y - 2, 0x8a8e9a); // krok
-    P.hl(cx - 3, y + 2, 7, 0x8a8e9a); // galge
-    const top = y + 3;
-    rows.forEach((hw, j) => {
-      for (let k = -hw; k <= hw; k++) P.px(cx + k, top + j, k === -hw ? hi : k === hw ? lo : c);
-      P.px(cx - hw - 1, top + j, dk); P.px(cx + hw + 1, top + j, dk); // kontur
-    });
-    P.hl(cx - rows[rows.length - 1], top + rows.length, rows[rows.length - 1] * 2 + 1, dk);
-    if (kind === 'dress') { P.hl(cx - 2, top + 5, 5, lo); P.px(cx - 1, top, 0xffffff, 0.4); }
-    if (kind === 'skirt') { P.hl(cx - 3, top, 7, dk); for (let j = 2; j < rows.length; j += 2) P.px(cx, top + j, lo); }
-    if (kind === 'shirt') { P.px(cx - 1, top, 0xf4f1ea); P.px(cx + 1, top, 0xf4f1ea); for (let j = 2; j < rows.length; j += 2) P.px(cx, top + j, 0xf4f1ea); }
-    if (kind === 'jacket') { for (let j = 1; j < rows.length; j++) P.px(cx, top + j, dk); P.px(cx - 1, top, 0xf4f1ea); P.hl(cx - 3, top + 9, 2, lo); P.hl(cx + 2, top + 9, 2, lo); }
-    if (kind === 'tee' || kind === 'blouse') { P.px(cx, top, dk); P.hl(cx - 1, top + 5, 3, tj ? 0xffffff : hi, 0.5); }
-  });
-  // vikta högar på låg hylla
-  P.rect(x0, WALL_Y - 13, 70, 2, tj ? 0xd98fb4 : 0x4f9c82);
-  for (let i = 0; i < 5; i++) {
-    const x = x0 + 3 + i * 14;
-    for (let j = 0; j < 3; j++) {
-      const c = cols[(i * 2 + j) % cols.length];
-      P.rect(x, WALL_Y - 16 - j * 3, 11, 3, c); P.hl(x, WALL_Y - 16 - j * 3, 11, mix(c, 0xffffff, 0.3)); P.px(x + 10, WALL_Y - 15 - j * 3, mul(c, 0.7));
-    }
-  }
-}
-
-function hatShelf(P, x0, top, trim) {
-  const w = 98;
-  P.rect(x0, HAT_Y, w, 2, top); P.hl(x0, HAT_Y, w, mix(top, 0xffffff, 0.4));
-  P.rect(x0, HAT_Y + 2, w, 2, trim); P.hl(x0, HAT_Y + 4, w, mul(trim, 0.55));
-  for (const bx of [x0 + 6, x0 + w - 8]) { P.rect(bx, HAT_Y + 4, 2, 5, 0x8a8e9a); P.px(bx + 2, HAT_Y + 4, 0x8a8e9a); }
-}
-
-// ================= köpdialogen: prova på DIN figur =================
-
-const SWATCHES = ['#f28bb3', '#ff7a6b', '#d9433b', '#e07a2e', '#f0b429', '#9fd356', '#46a35a', '#2aa39a', '#7fb8e8', '#3a7bd5', '#2d3a5c', '#8e5bd1', '#b9a3e8', '#b83d7a', '#f4f1ea', '#1d1d22'];
-const DETAILS = ['#f4f1ea', '#1d1d22', '#f0b429', '#d9433b', '#f28bb3', '#3a7bd5', '#46a35a', '#8e5bd1', '#2aa39a', '#e07a2e'];
-const DIRS = ['down', 'left', 'up', 'right'];
-const DIR_NAMES = ['Framifrån', 'Från sidan', 'Bakifrån', 'Från sidan'];
-// Överdelar där detaljfärgen (look.accent) är en del av plagget. Andra plagg rör aldrig
-// spelarens egen detaljfärg (den används t.ex. till ränderna på en randig tröja).
-const ACCENT_PART = { jacket: 'dragkedjan', shirt: 'kragen och knapparna', hawaii: 'mönstret', suit: 'slipsen' };
-
-const colorField = (s) => ({ top: 'shirt', bottom: s.v === 'dress' ? 'shirt' : 'pants', hat: 'cap', bag: 'bagColor', phones: 'phoneColor' })[s.kind] || null;
-function patchFor(s, color, accent) {
-  switch (s.kind) {
-    case 'top': return { top: s.v, shirt: color, ...(accent && ACCENT_PART[s.v] ? { accent } : {}) };
-    case 'bottom': return s.v === 'dress' ? { bottom: 'dress', shirt: color } : { bottom: s.v, pants: color };
-    case 'hat': return { hat: s.v, cap: color }; // den höga hattens band får spelarens egen detaljfärg
-    case 'glasses': return { glasses: s.v };
-    case 'bag': return { bag: s.v, bagColor: color };
-    case 'phones': return { phones: true, phoneColor: color };
-    default: return {};
-  }
-}
-
-// ---------- färger som syns: plagget ska inte smälta ihop med håret/tröjan ----------
-const rgbOf = (h) => {
-  const s = String(h || '').replace('#', '');
-  const n = parseInt(s.length === 3 ? s.replace(/./g, '$&$&') : s.slice(0, 6), 16) || 0;
-  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
-};
-// "redmean"-avstånd (0 … ~765), grovt hur olika två färger ser ut
-function cdist(a, b) {
-  const [r1, g1, b1] = rgbOf(a), [r2, g2, b2] = rgbOf(b), rm = (r1 + r2) / 2;
-  const dr = r1 - r2, dg = g1 - g2, db = b1 - b2;
-  return Math.sqrt((2 + rm / 256) * dr * dr + 4 * dg * dg + (2 + (255 - rm) / 256) * db * db);
-}
-// Vad plagget ligger mot på figuren: [färg, minsta avstånd]
-function avoidFor(s, L) {
-  const hair = L.style === 'bald' ? null : L.hair;
-  switch (s.kind) {
-    case 'hat': case 'phones': return [[hair, 170], [L.skin, 90]];
-    case 'bag': return s.v === 'backpack' ? [[L.shirt, 170], [hair, 110]] : [[L.shirt, 150], [L.pants, 150]];
-    case 'top': return [[L.shirt, 130], [L.pants, 90], [L.skin, 60]];
-    case 'bottom': return s.v === 'dress' ? [[L.shirt, 130], [L.pants, 90], [L.skin, 70]] : [[L.pants, 130], [L.shirt, 90], [L.skin, 70]];
-    default: return [];
-  }
-}
-// Första kandidaten som syns tillräckligt bra, annars den som syns bäst
-function pickColor(cands, avoid) {
-  const list = avoid.filter(([c]) => c);
-  let best = cands[0], bestScore = -Infinity;
-  for (const c of cands) {
-    const score = Math.min(Infinity, ...list.map(([x, m]) => cdist(c, x) - m));
-    if (score >= 0) return c;
-    if (score > bestScore) { bestScore = score; best = c; }
-  }
-  return best;
-}
-const AGAINST = { hat: 'ditt hår', phones: 'ditt hår', bag: 'din tröja', top: 'det du har på dig', bottom: 'det du har på dig' };
-
-// Från vilket håll syns plagget bäst på just DIN figur? Räknar pixlarna som skiljer
-// "du nu" från "med plagget" i varje riktning (framifrån vinner vid ungefär lika).
-// Ex: ryggsäcken → bakifrån, men från sidan om ett långt hår täcker ryggen.
-function bestDir(now, withIt) {
-  const px = (look, dir) => {
-    const c = document.createElement('canvas'); c.width = 28; c.height = 44;
-    const x = c.getContext('2d', { willReadFrequently: true });
-    drawPerson(x, 14, 41, look, dir, 0);
-    return x.getImageData(0, 0, 28, 44).data;
-  };
-  try {
-    const score = DIRS.map((dir, i) => {
-      const a = px(now, dir), b = px(withIt, dir);
-      let n = 0;
-      for (let k = 0; k < a.length; k += 4) if (a[k] !== b[k] || a[k + 1] !== b[k + 1] || a[k + 2] !== b[k + 2] || a[k + 3] !== b[k + 3]) n++;
-      return n * (i === 0 ? 1.6 : 1);
-    });
-    return score.indexOf(Math.max(...score));
-  } catch { return 0; }
-}
-
-// Figuren i heltalsskala (hela enhetspixlar) – aldrig suddig
-function figure(look, dir, S) {
-  const src = document.createElement('canvas'); src.width = 28; src.height = 44;
-  drawPerson(src.getContext('2d'), 14, 41, look, dir, 0);
-  const dpr = globalThis.devicePixelRatio || 1;
-  const D = Math.max(1, Math.round(S * dpr));
-  const c = document.createElement('canvas');
-  c.width = 28 * D; c.height = 44 * D;
-  c.style.width = (28 * D / dpr) + 'px'; c.style.height = (44 * D / dpr) + 'px';
-  const x = c.getContext('2d'); x.imageSmoothingEnabled = false;
-  x.drawImage(src, 0, 0, c.width, c.height);
-  return c;
-}
-
-function openBuy(A, item) {
-  const g = A.game, s = item.s, key = clothesKey(s.kind, s.v);
-  const me = A.avatar.look;
-  const field = colorField(s);
-  const th = DEPT[item.dept];
-  const dollColor = field ? (item.look[field] || '#3a7bd5') : null;
-  const sw = field ? [...new Set([dollColor, ...SWATCHES])] : [];
-  // förvald provfärg: dockans, om den syns mot spelarens hår/kläder – annars första som gör det
-  let color = field ? pickColor(sw, avoidFor(s, me)) : null;
-  const part = s.kind === 'top' ? ACCENT_PART[s.v] : null;
-  const dollAccent = item.look.accent || '#f4f1ea';
-  const dt = part ? [...new Set([dollAccent, ...DETAILS])] : [];
-  const pickAccent = () => pickColor(dt, [[color, 150]]);
-  let accent = part ? pickAccent() : undefined, accentPicked = false;
-  // dialogen öppnar från det håll där plagget syns bäst (ryggsäcken t.ex. bakifrån)
-  let dirI = bestDir(me, { ...me, ...patchFor(s, color, accent) });
-  const turned = dirI !== 0;
-  const isOwned = g.wardrobe.includes(key);
-  const price = g.clothesPrice(s);
-  const short = price - g.money;
-  const deptName = item.dept === 'tjej' ? 'Tjejavdelningen' : item.dept === 'kille' ? 'Killavdelningen' : 'Accessoarhyllan';
-  const [c1, c2, c3] = th.stage;
-  const note = {
-    glasses: 'Bågarna har en egen färg. På hyllan finns runda, fyrkantiga och solglasögon.',
-    bottom: s.v === 'dress' ? 'Klänningen får samma färg som tröjan.' : '',
-  }[s.kind] || '';
-  const turnNote = turned ? `🔄 ${esc(s.name)} syns bäst ${DIR_NAMES[dirI].toLowerCase()} på dig – vrid figuren så ser du den från alla håll.` : '';
-  const swBtn = (c, on, attr) => `<button class="klb-sw ${on ? 'on' : ''}" ${attr}="${c}" style="--c:${c}" aria-label="Färg ${c}"></button>`;
-  const body = `<style>
-    .klb{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start}
-    .klb-l{display:flex;flex-direction:column;gap:6px;align-items:center;flex:none}
-    .klb-stage{display:flex;align-items:flex-end;gap:6px;padding:10px 12px 0;border:3px solid var(--ink);box-shadow:3px 3px 0 var(--ink);
-      background:linear-gradient(${c1} 0 72%, ${c3} 72% 73%, ${c2} 73% 100%)}
-    .klb-fig{display:flex;flex-direction:column;align-items:center}
-    .klb-fig canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
-    .klb-fig small{font-size:16px;line-height:1;background:var(--ink);color:#fff;padding:2px 6px 1px;margin-bottom:6px;white-space:nowrap}
-    .klb-arrow{font-size:22px;padding-bottom:40px;color:var(--ink)}
-    .klb-turn{display:flex;gap:6px;align-items:center}
-    .klb-view{font-size:17px;min-width:92px;text-align:center}
-    .klb-r{flex:1;min-width:230px;display:flex;flex-direction:column;gap:8px}
-    .klb-dept{font-size:16px;color:var(--muted);margin:0}
-    .klb-price{font-size:28px;margin:0;line-height:1}
-    .klb-money{font-size:19px;margin:0}
-    .klb-sws{display:flex;flex-wrap:wrap;gap:6px}
-    .klb-sw{width:30px;height:30px;padding:0;border:3px solid var(--ink);background:var(--c);cursor:pointer;box-shadow:2px 2px 0 var(--ink)}
-    .klb-sws.small .klb-sw{width:24px;height:24px}
-    .klb-sw.on{outline:3px solid #ffd23f;outline-offset:1px;transform:translate(-1px,-1px)}
-    .klb-hint{font-size:17px;line-height:1.1;color:var(--muted);margin:0}
-    .klb-wear{font-size:19px;display:flex;gap:8px;align-items:center;cursor:pointer}
-    .klb-wear input{width:20px;height:20px}
-  </style>
-  <div class="klb">
-    <div class="klb-l">
-      <div class="klb-stage">
-        <div class="klb-fig" data-fig="now"><i></i><small>Du nu</small></div>
-        <div class="klb-arrow">➜</div>
-        <div class="klb-fig" data-fig="new"><i></i><small>Med ${esc(s.name.toLowerCase())}</small></div>
-      </div>
-      <div class="klb-turn">
-        <button class="btn btn-small" data-turn="-1" title="Vrid" aria-label="Vrid åt vänster">⟲ Vrid</button>
-        <b class="klb-view" data-view>${DIR_NAMES[dirI]}</b>
-        <button class="btn btn-small" data-turn="1" title="Vrid" aria-label="Vrid åt höger">Vrid ⟳</button>
-      </div>
-    </div>
-    <div class="klb-r">
-      <p class="klb-dept">${deptName}</p>
-      <p class="klb-price">${isOwned ? '<b class="ok">✓ Den här är din!</b>' : `Pris: <b>${price !== s.price ? `<s>${fmt(s.price)}</s> ` : ''}${fmt(price)}</b>${price !== s.price ? ' <b class="bad">REA</b>' : ''}`}</p>
-      <p class="klb-money">💰 Du har <b>${fmt(g.money)}</b>${isOwned ? '' : short > 0 ? ` · <b class="bad">du saknar ${fmt(short)}</b>` : ` · kvar efter köpet: <b>${fmt(g.money - price)}</b>`}</p>
-      ${field ? `<div><b style="font-size:19px">Prova färg:</b></div>
-      <div class="klb-sws" data-sws>${sw.map((c) => swBtn(c, c === color, 'data-c')).join('')}</div>
-      ${color !== dollColor ? `<p class="klb-hint">👀 Första rutan är dockans färg – vi valde en som syns mot ${AGAINST[s.kind]}.</p>` : ''}` : ''}
-      ${part ? `<div><b style="font-size:19px">Detaljfärg</b> <span class="klb-hint">(${part}):</span></div>
-      <div class="klb-sws small" data-dts>${dt.map((c) => swBtn(c, c === accent, 'data-a')).join('')}</div>` : ''}
-      ${field ? '<p class="klb-hint">🎨 Färgerna här är bara för att prova – när plagget är ditt väljer du fritt bland alla färger i garderoben där hemma.</p>' : ''}
-      ${note ? `<p class="klb-hint">${note}</p>` : ''}
-      ${turnNote ? `<p class="klb-hint">${turnNote}</p>` : ''}
-      ${isOwned ? '' : `<label class="klb-wear"><input type="checkbox" data-wear checked> Ta på mig den direkt</label>`}
-    </div>
-  </div>`;
-  const wear = () => {
-    A.avatar = saveAvatar({ ...A.avatar, look: { ...A.avatar.look, ...patchFor(s, color, accent) } });
-  };
-  const icon = iconOf(s);
-  const dlg = openModal(`${icon} ${s.name}`, body, [
-    { label: 'Stäng', onClick: closeModal },
-    isOwned
-      ? { label: '👕 Ta på mig den', cls: 'btn-go', onClick: () => { wear(); play('ok'); toast(`${icon} Snyggt! Du har ${s.name.toLowerCase()} på dig.`, 'good'); closeModal(); } }
-      : { label: `🛍️ Köp (${fmt(price)})`, cls: 'btn-go', disabled: short > 0, onClick: () => {
-        const wearIt = dlg.querySelector('[data-wear]')?.checked;
-        const r = g.buyClothes(s.kind, s.v);
-        if (!r.ok) { toast(r.msg, 'bad'); play('fel'); return; }
-        play('buy');
-        if (wearIt) wear();
-        toast(`${icon} ${s.name} är din!${wearIt ? ' Du har den på dig.' : ' Den hänger i garderoben där hemma.'}`, 'good');
-        closeModal();
-      } },
-  ]);
-  const big = window.innerHeight >= 620 && window.innerWidth >= 560 ? 5 : 4; // heltalsskala
-  const render = () => {
-    const dir = DIRS[dirI];
-    const now = A.avatar.look;
-    dlg.querySelector('[data-fig="now"] i').replaceChildren(figure(now, dir, 2));
-    dlg.querySelector('[data-fig="new"] i').replaceChildren(figure({ ...now, ...patchFor(s, color, accent) }, dir, big));
-    dlg.querySelector('[data-view]').textContent = DIR_NAMES[dirI];
-    dlg.querySelectorAll('[data-a]').forEach((x) => x.classList.toggle('on', x.dataset.a === accent));
-  };
-  dlg.querySelectorAll('[data-turn]').forEach((b) => (b.onclick = () => { dirI = (dirI + +b.dataset.turn + 4) % 4; play('click'); render(); }));
-  dlg.querySelectorAll('[data-c]').forEach((b) => (b.onclick = () => {
-    color = b.dataset.c;
-    dlg.querySelectorAll('[data-c]').forEach((x) => x.classList.toggle('on', x === b));
-    // detaljen följer med så att slipsen/knapparna inte försvinner i den nya färgen
-    if (part && !accentPicked) accent = pickAccent();
-    play('click');
-    render();
-  }));
-  dlg.querySelectorAll('[data-a]').forEach((b) => (b.onclick = () => {
-    accent = b.dataset.a; accentPicked = true;
-    play('click');
-    render();
-  }));
-  render();
 }
