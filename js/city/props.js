@@ -2654,7 +2654,7 @@ export function createProps(env) {
   parkLamp(1266, PB); bed(1312, PB, 44, ['pink', 'purple', 'white']); benchGroup(1378); parkLamp(1422, PB);
   bed(1478, PB, 44, ['red', 'orange', 'yellow']); benchGroup(1542); parkLamp(1592, PB); bed(1642, PB, 40, ['blue', 'white']);
   // nedre delen: lyktor, bänkar mot promenaden, träd, buskar och rabatter
-  for (const x of [170, 470, 760, 1100, 1330, 1620]) parkLamp(x, PD + 8);
+  for (const x of [170, 470, 760, 1100, 1446, 1620]) parkLamp(x, PD + 8); // (1330 → 1446: fri från paviljongens tak)
   for (const x of [250, 620, 1250, 1480]) bench(x, PD + 12, true);
   bench(906, 404, true); bench(962, 404, true);
   const PT = [[40, 404, 'ek'], [128, 384, 'lonn'], [214, 414, 'gran'], [330, 398, 'ek'], [418, 378, 'korsbar'], [544, 410, 'lonn'], [640, 390, 'gran'],
@@ -2910,8 +2910,8 @@ export function createProps(env) {
   // =================== Söder: trottoaren framför husen, gränderna, kajen ===================
   const FS = CITY.SIDEWALK_SN[0] + 6, CS = CITY.SIDEWALK_SN[1] - 5; // 646 mot fasaderna, 667 kantstenen
   // (björken som stod vid 1380 skymde vårdcentralens ambulansintag – nu vid kyrkogårdsstaketet 1108)
-  for (const [k, x] of [['lind', 50], ['korsbar', 170], ['bjork', 400], ['lind', 560], ['korsbar', 700], ['lind', 900], ['bjork', 1030], ['bjork', 1108], ['korsbar', 1150], ['lind', 1250], ['korsbar', 1490], ['lind', 1610]]) tree(k, x, CS);
-  for (const x of [110, 330, 470, 640, 770, 960, 1090, 1200, 1300, 1440, 1560, 1660]) lamp(x, CS + 1);
+  for (const [k, x] of [['lind', 50], ['korsbar', 170], ['bjork', 400], ['lind', 560], ['korsbar', 700], ['lind', 900], ['bjork', 1030], ['bjork', 1108], ['korsbar', 1150], ['lind', 1250], ['korsbar', 1490]]) /* (linden vid 1610 borta: mackens prisskylt står där) */ tree(k, x, CS);
+  for (const x of [110, 330, 470, 640, 770, 960, 1090, 1200, 1300, 1440, 1560]) lamp(x, CS + 1); // (1660 borta: den stod framför pump 2)
   hydrant(240, CS); bin(600, CS); hydrant(1010, CS); bin(1330, CS);
   // gatuskyltarna står öster om övergångsställena (trafikljusstolpen tar den västra sidan) men
   // plåten pekar VÄSTERUT över gatmynningen – åt öster täckte den postens brevlåda/dörr,

@@ -150,7 +150,7 @@ export const BUILDINGS_S = [
   S('bensinmack', 1600, 100, 64, { x0: 1636, x1: 1660, type: 'slide' }, {
     sign: 'PIXELMACKEN', icon: '⛽', enter: 'jobb:bensinmack', open: [6, 23], base: 596,
     yard: { kind: 'forecourt', rect: [1600, 596, 1700, 640] }, frontY: 640,
-    blocks: [[1604, 616, 1618, 624], [1680, 616, 1694, 624]], // pumpöarna under taket
+    // (pumpöarna: BUILDING_ART.bensinmack.obstacles)
   }),
 ];
 

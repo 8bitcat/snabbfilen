@@ -256,7 +256,8 @@ export function makeCity(A) {
   }
   const homeHere = (b) => (b.homes || []).includes(g.home);
   function enter(b) {
-    if (!b.enter) { toast(b.soon ? `${b.icon || '🚪'} ${b.soon}` : `☕ ${b.sign} öppnar snart – håll utkik!`); return; }
+    // huset kan ha ett eget besked (paviljongen: spelar musikkåren just nu?), annars soon-texten
+    if (!b.enter) { let besked = null; try { besked = ART()[b.kind]?.besked?.(env, g.min / 60) || null; } catch { besked = null; } toast(besked ? `${b.icon || '🚪'} ${besked}` : b.soon ? `${b.icon || '🚪'} ${b.soon}` : `☕ ${b.sign} öppnar snart – håll utkik!`); return; }
     const hour = g.min / 60;
     if (b.open && (hour < b.open[0] || hour >= b.open[1])) {
       if (hour < b.open[0]) {
@@ -403,7 +404,7 @@ export function makeCity(A) {
     for (const b of ALL_BUILDINGS) {
       if (b.x + b.w + 40 < cx || b.x - 40 > cx + vw) continue;
       const base = baseOf(b), box = artBox(b);
-      if (base + 4 < cy || box.y > cy + vh) continue;
+      if (Math.max(base, b.frontY ?? base) + 4 < cy || box.y > cy + vh) continue; // (macken når ner till frontY)
       items.push({ y: base, draw: () => {
         const img = buildingImg(b, night, snow), p = artPos(b, img);
         ctx.drawImage(img, p.x, p.y);
@@ -453,7 +454,7 @@ export function makeCity(A) {
       for (const b of ALL_BUILDINGS) {
         if (b.x + b.w + 40 < cx || b.x - 40 > cx + vw) continue;
         const base = baseOf(b);
-        if (base + 4 < cy || artBox(b).y > cy + vh) continue;
+        if (Math.max(base, b.frontY ?? base) + 4 < cy || artBox(b).y > cy + vh) continue;
         guard(`${b.kind}.glow`, () => { ctx.save(); art[b.kind]?.glow?.(ctx, b, stOf(b)); ctx.restore(); });
       }
       for (const [name, m] of [['fallback', S.fallback], ['props', S.props], ['traffic', S.traffic], ['life', S.life]]) guard(name + '.glow', () => { ctx.save(); m.glow?.(ctx, view); ctx.restore(); });

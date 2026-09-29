@@ -10,6 +10,15 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.45.0] – 2026-09-29 – Fasadrunda: macken, Söder och parken
+- PIXELMACKEN är en riktig bensinmack: tak över två pumpöar, bilar som svänger in, tankar (kronorna rullar på displayen) och kör vidare, och en stor prisskylt med BENSIN 95 och DIESEL som ändras under dagen – plus butik med KAFFE, biltvätt, luft/vatten och dammsugare
+- Radhusen: inga mörka streck tvärs över fasaden, mittenhuset har sin egen färg och inga halva fönster sticker fram bakom dörrarna
+- Pizzerian: blomlådorna ligger inte längre över skylten PIZZERIA NAPOLI – de sitter under översta våningens fönster
+- Tornhuset och vårdcentralen har fått tydliga skyltar (blåljus och jourlampa på vårdcentralen), kyrkporten och klockorna är skarpa, snötaken är rena
+- Bion släcker skyltarna när den stänger, och KASSA/POPCORN/POSTEN skyms inte längre av gatlyktorna
+- Parken: musikpaviljongen är en öppen paviljong där musikkåren ibland spelar (klicka för att se när), lekförrådet och WC:t är omgjorda med tydliga skyltar
+- Djuraffären har fått en pratare på trottoaren med dagens erbjudanden
+
 ## [0.44.0] – 2026-09-29 – Sova i sängen och egna badrum
 - Sova på riktigt: klicka på sängen och säg ja – figuren lägger sig under täcket med huvudet på kudden, lamporna släcks, månen lyser in, zzz stiger och sedan kommer gryningen och figuren kliver upp och sträcker på sig (klick hoppar fram)
 - Funkar i alla bostäder och med alla sängar, även golvmadrassen och husvagnens brits
