@@ -40,7 +40,9 @@ const PW = 62, PH = 72, PY = 20, PGAP = 5;       // planscherna
 const NP = Math.max(3, HOMES.length);
 const FEAT_W = Math.max(202, NP * PW + (NP - 1) * PGAP + 8);
 const SH = FEAT_W - 202;                         // så mycket längre galleriet blev
-const VW = 384, W = 600 + SH, H = 216;
+let VW = 384;                          // skärmens bredd – följer skärmen (mobilfyllning, viewMax)
+const W = 600 + SH, H = 216;
+const syncView = (A) => { VW = Math.max(384, Math.min(A.W || 384, W)); };
 const WALL_Y = 100;                              // golvet börjar här
 const WIN1 = { x: 52, y: 24, w: 80, h: 52 };     // glaset i väntrummets stora fönster
 const WIN2 = { x: 486 + SH, y: 24, w: 62, h: 48 }; // fönstret bakom mäklaren
@@ -2348,6 +2350,7 @@ export function makeShopBostad(A) {
   }
 
   return {
+    viewMax: { w: W, h: H }, // bred: mobilen och breda skärmar ser mer av kontoret
     get worldX() { return walker.px; },
     get worldY() { return walker.py; },
     _debug: {
@@ -2420,6 +2423,7 @@ export function makeShopBostad(A) {
     move(sx, sy) { hoverId = spotAt(sx + Math.round(cam.x), sy)?.id || null; hoverT = t; },
 
     draw(ctx) {
+      syncView(A);
       const cx = Math.round(cam.x);
       ctx.setTransform(A.pxs, 0, 0, A.pxs, -cx * A.pxs, 0);
       drawWorld(ctx, cx, VW);

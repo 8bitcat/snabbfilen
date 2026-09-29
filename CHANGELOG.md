@@ -10,6 +10,9 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.46.4] – 2026-09-29 – Djuraffären och mäklaren i bredbild
+- Djuraffären och mäklarkontoret på Bostadsbyrån fyller nu breda skärmar och mobilen i liggande läge – du ser mer av butiken på en gång i stället för en smal ruta
+
 ## [0.46.3] – 2026-09-29 – Radhusen blommar
 - Radhusen har fått liv framför varje hus: blomlådor under övervåningens fönster (egna blommor per hus, snö på vintern), rosenbuske och en cykel vid hus 1, blomkrukor vid trappan och en trädgårdstomte vid hus 3, solrosor och en trehjuling vid hus 5, dörrmattor vid alla dörrar
 - Katten vid Radhusen ligger inte längre gömd bakom häcken – den solar i gräset vid trappan

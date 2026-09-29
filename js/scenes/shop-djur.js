@@ -44,8 +44,9 @@ import { SPECIES, drawPet, drawPetIcon, petBox, breedOf, ICON_W, ICON_H } from '
 import { PET_ITEMS, drawPetItem, drawItemIcon } from '../pets/items.js';
 import { petStore, MAX_PETS, TOYS_FOR } from '../pets/sim.js';
 
-const VW = 384;                        // skärmens bredd i spelpixlar
+let VW = 384;                          // skärmens bredd i spelpixlar – följer skärmen (mobilfyllning, viewMax)
 const W = 768, H = 216, WALL_Y = 70;   // butikens storlek, väggens underkant
+const syncView = (A) => { VW = Math.max(384, Math.min(A.W || 384, W)); };
 const MID0 = 204, MID1 = 536;          // zongränser: katter | mitten | hundar
 const DOOR = { x0: 368, x1: 400 };
 const WIN = { x0: 8, x1: 198, y0: 6, y1: 58 };            // kattrummets fönster (yttre ram)
@@ -550,6 +551,7 @@ export function makeShopDjur(A, opts = {}) {
 
   // ---------- scenobjektet ----------
   return {
+    viewMax: { w: W, h: H }, // bred: mobilen och breda skärmar ser mer av butiken
     get worldX() { return walker.px; },
     get worldY() { return walker.py; },
     _debug: {
@@ -636,6 +638,7 @@ export function makeShopDjur(A, opts = {}) {
     move(sx, sy) { hoverId = spotAt(sx + cam.x, sy)?.id || null; hoverT = t; },
     key(k) { if (k === 'Escape') walker.stop(); },
     draw(ctx) {
+      syncView(A);
       const cx = Math.round(cam.x);
       ctx.setTransform(A.pxs, 0, 0, A.pxs, -cx * A.pxs, 0);
       ctx.imageSmoothingEnabled = false;
