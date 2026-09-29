@@ -94,6 +94,7 @@ import { PET_ITEMS, drawPetItem, itemBox, itemSolid, itemSpot, drawItemIcon, spl
 import * as SP from './sprites.js';
 import { openModal, closeModal, toast, esc, modalOpen } from '../core/ui.js';
 import { play } from '../core/sound.js';
+import { animalSound } from '../core/voices.js';
 import { SMALL, ctxText, textW } from '../core/floor-pix.js';
 
 // Spritemodulen importeras som namnrymd: kontraktet (drawPet, drawPetIcon, petSize, drawPoop,
@@ -945,6 +946,8 @@ export function createPetLayer(A, opts = {}) {
   // ---------- handlingar ----------
   function clickPet(a) {
     play('click');
+    // djuret låter (inspelade läten): hungrigt eller ledset om det behövs, annars som vanligt
+    try { const n = store.needs?.(a.pet) || null; animalSound(a.pet, n?.hungry ? 'hungrig' : n?.sad ? 'ledsen' : ''); } catch { /* ljudet är aldrig ett krav */ }
     a.path = []; a.then = null; a.mode = 'wait'; a.modeT = 8; a.follow.on = false;
     const side = px() < a.x ? -1 : 1;
     walkThen(a.x + side * 10, a.y + 2, () => { openPetMenu(a.pet.id); });
@@ -1121,6 +1124,7 @@ export function createPetLayer(A, opts = {}) {
     const before = p.happy;
     store.pet(petId);
     play('ok');
+    try { animalSound(p, p.species === 'katt' ? 'mjauspinn' : 'glad', { secs: 2.4 }); } catch { /* ok */ }   // katten spinner, hunden skäller glatt
     if (a) {
       a.elev = a.elev || null;
       const f = facing(a.x, a.y, px(), py() - 4);
@@ -1134,6 +1138,7 @@ export function createPetLayer(A, opts = {}) {
     if (!p) return;
     store.play(petId);
     play('click');
+    try { animalSound(p, 'glad'); } catch { /* ok */ }
     if (a) {
       const f = facing(a.x, a.y, px(), py() - 4);
       setPose(a, 'play', 2.4, () => { if (rnd() < 0.7) { const [x, y] = nearestFreePt(a.x + (rnd() - 0.5) * 70, a.y + (rnd() - 0.5) * 24); go(a, x, y, { run: true, then: () => setPose(a, 'happy', 1.2, null, facing(a.x, a.y, px(), py())) }); } }, f);

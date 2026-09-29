@@ -10,6 +10,10 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.46.2] – 2026-09-29 – Husdjuren och gästerna låter
+- Husdjuren låter på riktigt: klickar du på hunden eller katten skäller eller jamar den (hungrigt eller ledset om den behöver något), klappar du spinner katten och hunden skäller glatt, och leker ni blir de glada
+- Gästerna på caféet och i Burgarbaren pratar med sin egen röst (inte stolens)
+
 ## [0.46.1] – 2026-09-29 – Husskyltar och kyrkogården
 - Bostadshusen i stan (Tornhuset, radhusen, höghusen …) visar nu en skylt när du inte bor där: vilken bostad det är, vad den kostar och 👁 Titta in – flytta gör du hos mäklaren på Bostadsbyrån (🔑-knappen tar dig dit)
 - Kyrkogården: gravarna står inte längre på gångarna och häcken ligger inte över grinden – ny uppställning efter att Leksakslådan flyttade in

@@ -2219,7 +2219,7 @@ export function makeShopKafe(A) {
     // pratbubblor (ovanpå ljuset så att de syns även i kväll)
     for (const G of guests) if (G.bubble && G.bubble.until > t && G.seat && G.state === 'sit') {
       const [x, y] = seatPos(G.seat);
-      if (G.bubble.text) sayBubble(ctx, Math.round(x), Math.round(y) - (G.seat.front ? 38 : 42), G.bubble.text);
+      if (G.bubble.text) sayBubble(ctx, Math.round(x), Math.round(y) - (G.seat.front ? 38 : 42), G.bubble.text, { voice: G.look }); // gästens egen röst
       else iconBubble(ctx, Math.round(x) - 2, Math.round(y) - (G.seat.front ? 38 : 42), G.bubble.icon);
     }
     if (bar.bubble && bar.bubble.until > t) iconBubble(ctx, Math.round(bar.x) - 2, BARI_Y - 42, bar.bubble.icon);

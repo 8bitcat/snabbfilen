@@ -1727,7 +1727,7 @@ export function makeShopBurgarbar(A) {
       } else if (G.seat && G.state === 'sit' && G.bubble.text) {
         const [x, y] = seatPos(G.seat);
         if (!iView(x)) continue; // stolen utanför bild: hoppa över i stället för att klämma in bubblan
-        sayBubble(ctx, Math.round(x), Math.round(y) - (G.seat.front ? 36 : 42), G.bubble.text, { x0: cx, x1: cx + vw });
+        sayBubble(ctx, Math.round(x), Math.round(y) - (G.seat.front ? 36 : 42), G.bubble.text, { x0: cx, x1: cx + vw, voice: G.look }); // gästens egen röst
       }
     }
   }
