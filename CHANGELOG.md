@@ -10,6 +10,12 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.53.0] – 2026-09-29 – Småsaker på bord
+- Småsaker kan stå PÅ bord: i Möblera-läget hamnar datorn, bordslampan, brödrosten, kaffebryggaren, blomkrukorna, ljusen och de andra småsakerna uppe på skivan när du håller dem över ett bord, en byrå, en bänk eller en låg hylla.
+- Datorn på skrivbordet och den gamla TV:n på TV-bänken går att använda – du går fram till bordet.
+- Flyttar du bordet följer sakerna med. Lägger du det i förrådet eller säljer det hamnar sakerna på golvet där det stod.
+- Kompisar som hälsar på ser också sakerna på borden.
+
 ## [0.52.0] – 2026-09-29 – Prata med folk i staden
 - Klicka på folk i staden: personen stannar, vänder sig mot dig och säger något i en pratbubbla – med sin egen röst.
 - Vad de säger beror på tiden och vädret (God morgon!, Usch, vilket regn!), vilka de är (barn vill leka, kostymfolket har bråttom till mötet, joggaren kan inte stanna) och vad de bär på (hunden, kaffet, resväskan).

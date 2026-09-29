@@ -1,12 +1,12 @@
-# Snabbfilen – hela planen och var vi ligger (uppdaterad 2026-09-28 eftermiddag)
+# Snabbfilen – hela planen och var vi ligger (uppdaterad 2026-09-29 kväll)
 
 Varje del blir ett eget släpp så fort den är klar och provkörd (`tools/release.mjs` →
 `tools/verify.mjs` → push). Versionsnumren är riktmärken: det som blir klart först släpps
 först. Två agenter får aldrig skriva i samma fil samtidigt, så vissa delar väntar på att
 en fil blir ledig.
 
-**Live nu: v0.25.0.** Allt som är byggt men inte släppt ligger i arbetskopian och säkras på
-grenen `wip`.
+**Live nu: v0.53.0.** Hela planen nedan är byggd och släppt – det enda som återstår är
+mobilen steg 2 (se tabellen), som väntar på Carls besked.
 
 **Arbetsordning (Carl 2026-09-28 em):** huvudsessionen bygger som standard; agentkörningar
 startas EN i taget (inte parallellt) när kontogränsen tillåter, och pixelgrafiken körs
@@ -53,11 +53,28 @@ på riktigt** (välj kompis i startdialogen, DELAD LÖN, extraborden 4→10, kun
 Förorten med graffiti och trasiga hållplatsen, riktig buss, väder och årstider,
 A*-gång, sex nya jobb – pizzerian, posten, macken, bilverkstan, tvätteriet,
 baristan – djuraffären ÖPPNAD, Burgarbarens nya fasad; 33 filer, 125 kontroller).
-Burgarbaren-inne-körningen (restaurangen + kökjobbet) kör nu; därefter släpps resten
-av köerna i tur och ordning: bostäderna+husdjuren hemma, garderoben, däckbytet,
-flygterminalen, ljudet, leksaksaffären.
+0.28.1 verkstan lagad + skyltar i synliga rutan · 0.28.2 klotter bara på väggar ·
+**0.29.0 IN I BURGARBAREN + BURGARKÖKET** (gåbar diner med bricka och Doris; kökjobbet
+med beställningslappar, grill och dricks; fasaden nattsläckt; menypelaren med kollision;
+söder helt; garagetakets ventilation) · 0.29.1 dricksen blir lön (Burgarköket: +5/+10 kr
+per snabb rätt, egen rad i lönebeskedet). KÖR NU: bostäderna+husdjuren hemma, fasaderna
+(bion/pizzerian/djuraffären), stadsputsen (väder rätt + glasståndet), närbutiken.
+DÄREFTER: fasadfixar 2 (tornhuset, vårdcentralen, söder-sprickor), garderoben,
+däckbytet, flygterminalen, ljudet, leksaksaffären, fotbollsbutiken.
 
-## Pågår nu (agenterna kör)
+## Släppt 2026-09-29 (Carls lista och minnet)
+
+0.33 husnamn och meny på mobilen · 0.34 vädret rätt, glasståndet · 0.35 närbutiken ·
+0.36 bions fasad, pizzerians uteservering, djuraffären · 0.37 ätregeln, Burgarbarens priser ·
+0.38 garderoben · 0.39 Leksakslådan · 0.40 däckbytet · 0.41 husdjuren växer · 0.42 andra
+spelare syns sittande · 0.43 flygterminalen och incheckningsjobbet · 0.44 sova i sängen och
+badrum i varje bostad · 0.45 fasadrunda 2 · 0.46 riktiga ljud, husskyltar, kyrkogården,
+Radhusen · 0.47 **bron och downtown** · 0.48 elektronikbutiken och banken · 0.49 klädaffären
+i två våningar med Kungsladugård, skobutiken, accessoarer, frisören · 0.50 bion, kebaben,
+pantbanken, skraplotter, vårdcentralen · 0.50.1 numret på ryggen · 0.51 **Pixelhögskolan**,
+Pixel Data och Finanshuset · 0.52 prata med folk i staden · 0.53 småsaker på bord.
+
+## Så såg planen ut 2026-09-28 (allt i tabellerna är nu släppt)
 
 | Släpp | Innehåll | Agentkörning | Läge |
 |---|---|---|---|
@@ -79,9 +96,11 @@ flygterminalen, ljudet, leksaksaffären.
 | 0.35 | **Djuren ute i staden** i koppel (hunden bajsar ute) | storstaden + husdjuren |
 | 0.36 | **Downtown** med kontor, **universitetet** (utbildning), **datorbutiken** (bygga datorer som jobb) och **finansjobb** (räkna) – jobben kräver utbildning | storstaden + banken |
 | 0.37 | Stadens småställen: bio, kebab, kiosk med lotter, pantbank, vårdcentralen som jobb | storstaden |
-| 0.38 | **Staden på längden**: förorten 3–5 skärmbredder bort över en **stor bro**, förbi bilverkstaden (stökigare och skitigare), bussen tar en direkt. Bortom förorten: **landet** med gårdar och bondgårdar att bo på | storstaden |
+| 0.38 | **Staden på längden**: förorten 3–5 skärmbredder bort över en **stor bro som Brooklyn Bridge** (två höga stentorn med gotiska spetsbågar, bärkablar och solfjäderstag, gångbana ovanför körbanan) – förorten ska INTE sitta ihop med centrum som i dag. Förbi bilverkstaden (stökigare och skitigare), bussen tar en över bron. Bortom förorten: **landet** med gårdar och bondgårdar att bo på | storstaden |
+| – | **Husdjuren växer och blir stora**: kräver tid och omsorg – leka med dem, leksaker, mat, och toaletten (hundar bajsar UTE på promenad i koppel, katter i kattlådan). Utan omsorg växer de inte | bostäderna+husdjuren (room.js, js/pets) + djuren i koppel |
+| – | **Röstchatt**: 📞 Ring en kompis i 👥-listan (mottagaren svarar ja), mute, 🔊 över den som pratar, ev. närhetsljud. Aldrig öppen mikrofon mot främlingar – världen är öppen för alla | huvudsessionen (js/net) |
 | – | **Leksaksaffären**: gåbar butik med squishy-dumplings i bambukorgar (pastell, glitter, jul), squishy-mat (ost, smör, jordgubbe, iskuber, kattass), klämbordet (håll = ihoptryckt, släpp = fjädrar, pip och glitter), EGNA kawaii-figurer (inga Sanrio – spelet är publikt), plysch och andra leksaker, köpflöde, fasad med modelltåg | körning skriven (leksaksaffaren), återupptas efter gränsen |
-| – | **Mobilen steg 2**: fasta scener (rummet, butikerna, jobben) görs "breda" så de själva fyller hela vyn i stället för pixelramen – scen för scen via WIDE-tabellen i main.js | huvudsessionen, när respektive scenfil är ledig |
+| – | **Mobilen steg 2** (INTE byggd): fasta scener (rummet, jobben) görs "breda". Sedan 0.25.3 är NÄRA standard på mobilen (klassiska vyn överallt) och i VID fyller fasta scener redan skärmen med zoom – steget skulle bara visa lite mer av scenen på dator och padda, men kräver ny kantgrafik i ~15 scener. Väntar på Carls besked | Carl |
 | 1.0 | **Buggjakt och finputs** i alla scener (flimmer, z-ordning, överlapp, detaljnivå) | allt ovan |
 
 ## Vad jag behöver från Carl

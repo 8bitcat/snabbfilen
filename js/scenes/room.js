@@ -303,6 +303,35 @@ const frameName = (k, v) => (FRAMES[k + (v | 0)] ? k + (v | 0) : k + '0');
 const isWall = (k) => !!katalogOf(k)?.wall;
 // mattor ur arken: ligger platt på golvet, går att gå på, ritas under allt
 const isFlat = (k) => k !== 'matta' && /matta$/.test(k);
+// Småsaker som får stå PÅ bord, bänkar, byråer och låga hyllor: ställs de över en skiva hamnar
+// de uppe på den. Posten får då up = hur många pixlar ovanför sin sorteringslinje (skivans
+// fotlinje + 1) saken står – den ritas direkt efter bordet, har inget fotavtryck på golvet och
+// följer med när bordet flyttas. Försvinner bordet (förrådet, sålt) hamnar saken på golvet där.
+const ON_TABLE = new Set(['bordslampa', 'brodrost', 'fruktskal', 'kaffebryggare', 'tarta', 'mikro', 'telefon', 'dator', 'laptop', 'ljus',
+  'ljusgrupp', 'lillblomma', 'blomkruka', 'julljus', 'julfigur', 'spelkonsol', 'retrotv', 'minigran', 'bokstapel', 'parmar', 'nattlampa',
+  'gosedjur', 'gosegroda', 'byggklossar', 'palett', 'fredslilja', 'skivor', 'julklapp', 'datortorn', 'basketboll']);
+const SURFACES = new Set(['bordR', 'byra', 'bordM', 'sidobord', 'pelarbord', 'laghylla', 'soffbord', 'glasbord', 'tvbank', 'nattduksbord',
+  'kista', 'lagbyra', 'rullbord', 'koksbord', 'bankskap', 'diskbank', 'kokso', 'badbank', 'barnbord', 'skolbank', 'skrivbord', 'arbetsbank',
+  'skobank', 'piano', 'bredhylla', 'leksakslada', 'backar']);
+const TOP_IN = 4; // sakerna ställs så här många rader in på skivan (räknat från dess överkant i bilden)
+const TOP_ROW = new Map(); // vyns rutnamn → raden i bilden där sakernas fötter står (null = atlasen inte laddad)
+function surfaceRow(k, v, r) {
+  const vw = viewOf(k, v, r), name = frameName(vw.k, vw.v);
+  if (TOP_ROW.has(name)) return TOP_ROW.get(name);
+  const f = frameOf(vw.k, vw.v);
+  if (!f || typeof document === 'undefined' || !ATLAS?.complete || !ATLAS.naturalWidth) return null;
+  let row = null;
+  try { // skivans överkant = översta ogenomskinliga raden i bildens mittersta halva
+    const c = document.createElement('canvas'); c.width = f[2]; c.height = f[3];
+    const x = c.getContext('2d'); x.drawImage(ATLAS, f[0], f[1], f[2], f[3], 0, 0, f[2], f[3]);
+    const px = x.getImageData(0, 0, f[2], f[3]).data;
+    let top = f[3];
+    for (let col = Math.floor(f[2] * 0.25); col < Math.ceil(f[2] * 0.75); col++) for (let y = 0; y < top; y++) if (px[(y * f[2] + col) * 4 + 3] > 128) { top = y; break; }
+    row = Math.min(f[3] - 2, top + TOP_IN);
+  } catch { row = null; }
+  TOP_ROW.set(name, row);
+  return row;
+}
 // vad skylten över en funktionsmöbel säger
 const FN_LABEL = { sova: 'SÄNG', garderob: 'GARDEROB', ata: 'KYLSKÅP', toalett: 'TOALETT', tvatta: 'TVÄTTA', tv: 'TV' };
 const KIND_LABEL = { koksspis: 'SPIS', mikro: 'MIKRO', dusch: 'DUSCH', badkar: 'BADKAR', tvattmaskin: 'TVÄTT', tvattpelare: 'TVÄTT',
@@ -464,12 +493,35 @@ export function makeRoom(A, { visit = false } = {}) {
     return c;
   }
 
+  // ---------- småsaker på bord ----------
+  const isRider = (d) => !!d && d.up > 0;
+  // skivan som saken d står på (bordets fotlinje + 1, innanför kanterna), eller null
+  function surfaceOf(d, list, skip = -1) {
+    const { w } = dimsOf(d.k, d.v, d.r);
+    return list.find((s, j) => j !== skip && s !== d && s && SURFACES.has(s.k) && !isRider(s) && d.y === s.y + 1
+      && d.x >= s.x && d.x + w <= s.x + dimsOf(s.k, s.v, s.r).w) || null;
+  }
+  // hur högt en sak står på skivan s (up) – null = okänt än (atlasen laddas)
+  const upOn = (s) => { const row = surfaceRow(s.k, s.v, s.r); return row == null ? null : dimsOf(s.k, s.v, s.r).h - row + 1; };
+  // sakerna som står på bordet list[idx] (och var på skivan, räknat från bordets vänsterkant)
+  const ridersOf = (list, idx) => list.filter((d) => isRider(d) && surfaceOf(d, list) === list[idx]).map((d) => ({ d, dx: d.x - list[idx].x }));
+
   // ---------- var får möbler stå? ----------
   // De andra möblernas fotavtryck (räknas en gång per sökning – fitRoom prövar tusentals lägen)
-  const feetOf = (list, skip) => list.map((o, i) => (i === skip ? null : { wall: isWall(o.k), flat: o.k === 'matta' || isFlat(o.k), r: footOf(o.k, o.v, o.r, o.x, o.y).r }));
+  // (saker som står på ett bord har inget fotavtryck på golvet)
+  const feetOf = (list, skip) => list.map((o, i) => (i === skip || isRider(o) ? null : { wall: isWall(o.k), flat: o.k === 'matta' || isFlat(o.k), r: footOf(o.k, o.v, o.r, o.x, o.y).r }));
   // x/y som i deco-posten (vänsterkant + fotlinje; mattan överkant). skip = index i listan att bortse från.
-  function fits(k, v, r, x, y, list, skip = -1, feet = feetOf(list, skip)) {
+  // up > 0 = saken står på en skiva: den måste stå på ett bord i listan (rätt höjd, innanför
+  // kanterna) och inte på en annan sak där uppe.
+  function fits(k, v, r, x, y, list, skip = -1, feet = feetOf(list, skip), up = 0) {
     const ft = footOf(k, v, r, x, y);
+    if (up > 0) {
+      const s = surfaceOf({ k, v, r, x, y }, list, skip);
+      if (!s) return false;
+      const u = upOn(s);
+      if (u != null && Math.abs(u - up) > 1) return false;
+      return !list.some((o, j) => j !== skip && isRider(o) && o.y === y && x < o.x + dimsOf(o.k, o.v, o.r).w && x + ft.w > o.x);
+    }
     const [x0, y0, x1, y1] = ft.r;
     if (ft.t === 'wall') {
       if (x0 < 5 || x1 > RIGHT - 5 || y0 < WALL_TOP || y1 > WALL_Y - 3) return false;
@@ -504,7 +556,7 @@ export function makeRoom(A, { visit = false } = {}) {
     const feet = feetOf(list, skip);
     // de ritade rektanglarna för golvmöblerna: en väggsak ska helst inte hamna bakom dem,
     // och en golvmöbel ska helst inte skymma (eller skymmas av) en annan
-    const drawn = list.filter((o, j) => j !== skip && !isWall(o.k) && o.k !== 'matta' && !isFlat(o.k))
+    const drawn = list.filter((o, j) => j !== skip && !isWall(o.k) && o.k !== 'matta' && !isFlat(o.k) && !isRider(o))
       .map((o) => { const dm = dimsOf(o.k, o.v, o.r); return [o.x, o.y - dm.h, o.x + dm.w, o.y]; });
     const flat = d.k === 'matta' || isFlat(d.k);
     const cands = [];
@@ -550,31 +602,40 @@ export function makeRoom(A, { visit = false } = {}) {
       const i = list.findIndex((d) => d && d.fx && d.k === m.k && d.x === m.from[0] && d.y === m.from[1] && !d.r);
       if (i >= 0 && fits(m.k, list[i].v, 0, m.to[0], m.to[1], list, i)) { list[i].x = m.to[0]; list[i].y = m.to[1]; changed = true; }
     }
-    for (let i = list.length - 1; i >= 0; i--) {
-      const d = list[i];
-      if (!d || !knownKind(d.k) || fits(d.k, d.v, d.r, d.x, d.y, list, i)) continue;
-      const spot = nearestSpot(d, list, i);
-      if (spot) { // startmöbler knuffas tyst
-        if (!d.fx) { nudged++; if (byNewDoor(d)) byDoor.push(nameOf(d.k)); }
-        d.x = spot.x; d.y = spot.y; changed = true;
-        continue;
-      }
-      if (!own) continue;
-      changed = true;
-      if (g.storage.length < MAX_STORAGE) {
-        list.splice(i, 1);
-        g.storage.push({ k: d.k, v: d.v, ...(d.c ? { c: d.c } : {}), ...(d.fx ? { fx: 1 } : {}), ...(d.r ? { r: d.r } : {}) });
-        stored++;
-      } else {
-        const { w, h } = dimsOf(d.k, d.v, d.r);
-        d.x = Math.max(isWall(d.k) ? 5 : 8, Math.min(RIGHT - 5 - w, d.x));
-        d.y = isWall(d.k) ? Math.max(WALL_TOP + h, Math.min(WALL_Y - 3, d.y))
-          : d.k === 'matta' ? Math.max(WALL_Y + 2, Math.min(FH - 3 - h, d.y))
-            : isFlat(d.k) ? Math.max(WALL_Y + 2 + h, Math.min(FH - 3, d.y)) : Math.max(WALL_Y + 6, Math.min(FH - 4, d.y));
-        stuck.push(nameOf(d.k));
+    // saker på ett bord som inte (längre) står där: ner på golvet, där bordet stod
+    const fall = () => { let n = 0; list.forEach((d, i) => { if (isRider(d) && !fits(d.k, d.v, d.r, d.x, d.y, list, i, undefined, d.up)) { delete d.up; changed = true; n++; } }); return n; };
+    fall();
+    floorPass();
+    if (fall()) floorPass(); // ett bord som hamnade i förrådet tappar det som stod på det
+    return { changed, nudged, stored, stuck, byDoor };
+    function floorPass() {
+      for (let i = list.length - 1; i >= 0; i--) {
+        const d = list[i];
+        if (!d || isRider(d) || !knownKind(d.k) || fits(d.k, d.v, d.r, d.x, d.y, list, i)) continue;
+        const spot = nearestSpot(d, list, i);
+        if (spot) { // startmöbler knuffas tyst – ett bord tar med sig det som står på det
+          if (!d.fx) { nudged++; if (byNewDoor(d)) byDoor.push(nameOf(d.k)); }
+          const rid = SURFACES.has(d.k) ? ridersOf(list, i) : [];
+          d.x = spot.x; d.y = spot.y; changed = true;
+          for (const q of rid) { q.d.x = d.x + q.dx; q.d.y = d.y + 1; }
+          continue;
+        }
+        if (!own) continue;
+        changed = true;
+        if (g.storage.length < MAX_STORAGE) {
+          list.splice(i, 1);
+          g.storage.push({ k: d.k, v: d.v, ...(d.c ? { c: d.c } : {}), ...(d.fx ? { fx: 1 } : {}), ...(d.r ? { r: d.r } : {}) });
+          stored++;
+        } else {
+          const { w, h } = dimsOf(d.k, d.v, d.r);
+          d.x = Math.max(isWall(d.k) ? 5 : 8, Math.min(RIGHT - 5 - w, d.x));
+          d.y = isWall(d.k) ? Math.max(WALL_TOP + h, Math.min(WALL_Y - 3, d.y))
+            : d.k === 'matta' ? Math.max(WALL_Y + 2, Math.min(FH - 3 - h, d.y))
+              : isFlat(d.k) ? Math.max(WALL_Y + 2 + h, Math.min(FH - 3, d.y)) : Math.max(WALL_Y + 6, Math.min(FH - 4, d.y));
+          stuck.push(nameOf(d.k));
+        }
       }
     }
-    return { changed, nudged, stored, stuck, byDoor };
   }
   function fitRoom() {
     if (visit) return;
@@ -629,6 +690,7 @@ export function makeRoom(A, { visit = false } = {}) {
     const list = decoList();
     list.forEach((d, i) => {
       if (decor.carry && decor.carry.src === 'deco' && decor.carry.idx === i) return; // lyftad just nu
+      if (decor.carry?.riders?.some((q) => q.d === d)) return; // står på bordet man bär (ritas med spöket)
       if (d.k === 'matta') { rugs.push({ decoIdx: i, x: d.x, y: d.y, w: RUG.w, h: RUG.h, img: rugImg(d.v, d.c), draw: (ctx) => ctx.drawImage(rugImg(d.v, d.c), d.x, d.y) }); return; }
       if (d.k === 'vaxt') { props.push({ ...makePlantProp(d.x + 10, d.y), k: 'vaxt', decoIdx: i, fx: d.fx }); return; }
       if (isWall(d.k)) { const w = wallProp(d, i); if (w) wallItems.push(w); return; }
@@ -662,9 +724,11 @@ export function makeRoom(A, { visit = false } = {}) {
     if (sub === 0) hotRects.push({ id: 'dorr', act: exitAct, r: [DOOR.x0, 30, DOOR.x1, WALL_Y + 9], go: [DOOR.cx, WALL_Y + 12] });
     for (const sd of subDoors) hotRects.push({ id: 'sub' + sd.to, act: () => { hopping = true; A.roomSub = sd.to; play('door'); A.go(A.sceneName); }, r: [sd.x0, 34, sd.x1, WALL_Y + 6], go: [(sd.x0 + sd.x1) / 2, WALL_Y + 12] });
     for (const p of props) {
-      if (!p.solid) continue;
+      if (!p.solid && !p.hit) continue;
       const act = p.act || actFor(p.fn, p.k, p);
       if (!act) continue;
+      // en sak på ett bord (datorn på skrivbordet): man går fram till bordets framkant
+      if (!p.solid) { hotRects.push({ id: p.k, act, r: p.hit, go: [(p.hit[0] + p.hit[2]) / 2, p.sort + 5] }); continue; }
       hotRects.push({ id: p.k, act, r: [p.solid[0], p.top, p.solid[2], p.solid[3] + 2], go: [(p.solid[0] + p.solid[2]) / 2, p.solid[3] + 5] });
     }
     for (const w of wallItems) { // t.ex. tvättstället: gå fram till väggen under det
@@ -730,26 +794,58 @@ export function makeRoom(A, { visit = false } = {}) {
   }
 
   // ---------- möblera-läget ----------
-  // carry = möbeln man håller i: { src: 'deco'|'storage', idx, k, v, c, r, r0 (rotationen den hade), fx }
+  // carry = möbeln man håller i: { src: 'deco'|'storage', idx, k, v, c, r, r0 (rotationen den hade), fx,
+  //         riders (det som står på bordet man bär: [{ d, dx }] – följer med) }
   const decor = { on: false, carry: null, mx: 100, my: 150 };
   const carrySkip = () => (decor.carry?.src === 'deco' ? decor.carry.idx : -1);
+  const carryDeco = (idx) => { const list = decoList(), d = list[idx]; return d && { src: 'deco', idx, k: d.k, v: d.v, c: d.c, fx: d.fx, r: d.r | 0, r0: d.r | 0, riders: SURFACES.has(d.k) ? ridersOf(list, idx) : [] }; };
+  // var det man håller i hamnar: en småsak över en bordsskiva ställs uppe på skivan
+  // ({ x, y, up }), annars på golvet eller väggen som vanligt (posFor)
+  function placeFor(c, mx, my) {
+    const pos = posFor(c.k, c.v, c.r, mx, my);
+    if (!ON_TABLE.has(c.k)) return pos;
+    const { w } = dimsOf(c.k, c.v, c.r), list = decoList(), skip = carrySkip();
+    let best = null;
+    list.forEach((s, j) => {
+      if (j === skip || !s || !SURFACES.has(s.k) || isRider(s)) return;
+      const sd = dimsOf(s.k, s.v, s.r), u = upOn(s);
+      if (u == null || w > sd.w - 2 || mx < s.x || mx > s.x + sd.w || my < s.y - sd.h - 4 || my > s.y + 2) return;
+      if (!best || s.y > best.s.y) best = { s, sd, u };
+    });
+    if (!best) return pos;
+    const { s, sd, u } = best;
+    return { x: Math.max(s.x + 1, Math.min(s.x + sd.w - 1 - w, Math.round(mx - w / 2))), y: s.y + 1, up: u };
+  }
   function canPlaceCarry(mx, my) {
     const c = decor.carry;
-    const { x, y } = posFor(c.k, c.v, c.r, mx, my);
-    return fits(c.k, c.v, c.r, x, y, decoList(), carrySkip());
+    const { x, y, up } = placeFor(c, mx, my);
+    return fits(c.k, c.v, c.r, x, y, decoList(), carrySkip(), undefined, up || 0);
   }
+  const setUp = (d, up) => { if (!d) return; if (up > 0) d.up = up; else delete d.up; };
+  // efter att ett bord flyttats, vänts, lagts i förrådet eller sålts: det som stod på det
+  // följer med – eller hamnar på golvet om det inte får plats på skivan längre
+  const settleRiders = () => { if (settle(decoList(), true).changed) g.save(); };
   function commitPlace() {
     const c = decor.carry;
-    const pos = posFor(c.k, c.v, c.r, decor.mx, decor.my);
+    const pos = placeFor(c, decor.mx, decor.my);
     if (c.src === 'storage') {
       if (!g.placeFromStorage(c.idx, sub, pos.x, pos.y)) { play('fel'); toast('Rummet är fullt!', 'bad'); return; }
       const list = decoList();
       if (c.r) g.rotateDeco(sub, list.length - 1, c.r);
+      setUp(list[list.length - 1], pos.up);
     } else {
       g.moveDeco(sub, c.idx, pos.x, pos.y);
       g.rotateDeco(sub, c.idx, c.r);
+      const s = decoList()[c.idx];
+      setUp(s, pos.up);
+      if (c.riders?.length && s) {
+        const u = upOn(s), sw = dimsOf(s.k, s.v, s.r).w;
+        for (const { d, dx } of c.riders) { const w = dimsOf(d.k, d.v, d.r).w; d.x = Math.max(s.x + 1, Math.min(s.x + sw - 1 - w, s.x + dx)); d.y = s.y + 1; if (u != null) d.up = u; }
+      }
     }
+    g.save();
     decor.carry = null;
+    if (c.riders?.length) settleRiders();
     rebuild(); renderStoragePanel();
   }
   // 🔄 rotera möbeln man håller i (även tangenten R)
@@ -767,10 +863,11 @@ export function makeRoom(A, { visit = false } = {}) {
     if (!c) return;
     if (c.src === 'deco') {
       if (!g.decoToStorage(sub, c.idx)) { play('fel'); toast('Förrådet är fullt!', 'bad'); return; }
-      toast(`📦 ${nameOf(c.k)} ligger i förrådet.`);
+      toast(`📦 ${nameOf(c.k)} ligger i förrådet.${c.riders?.length ? ' Det som stod på skivan står nu på golvet.' : ''}`);
     }
     play('ok');
     decor.carry = null;
+    if (c.riders?.length) settleRiders();
     rebuild(); renderStoragePanel();
   }
   // lägg ner det man håller i utan att flytta det (rotationen återställs)
@@ -847,6 +944,7 @@ export function makeRoom(A, { visit = false } = {}) {
       if (c.src === 'storage') g.sellStorage(c.idx); else g.sellDeco(sub, c.idx);
       play('coin');
       decor.carry = null;
+      if (c.riders?.length) settleRiders(); // det som stod på bordet hamnar på golvet
       rebuild(); renderStoragePanel();
     };
     const done = document.querySelector('#decor-done');
@@ -994,23 +1092,27 @@ export function makeRoom(A, { visit = false } = {}) {
       spot: (id) => { const h = hotRects.find((h) => h.id === id); return h ? { x: (h.r[0] + h.r[2]) / 2, y: (h.r[1] + h.r[3]) / 2 } : null; },
       tile: (a, b) => ({ x: Math.min(RIGHT - 20, 30 + a * 40), y: Math.min(FH - 10, WALL_Y + 15 + b * 18) }),
       // för testerna: lyft möbel i (i deco-listan) / förrådspost, rotera, släpp vid (x, y)
-      pick: (idx) => { const d = decoList()[idx]; if (!d) return false; decor.carry = { src: 'deco', idx, k: d.k, v: d.v, c: d.c, fx: d.fx, r: d.r | 0, r0: d.r | 0 }; rebuild(); return true; },
+      pick: (idx) => { const c = carryDeco(idx); if (!c) return false; decor.carry = c; rebuild(); return true; },
       pickStorage: (idx) => { const it = g.storage[idx]; if (!it) return false; decor.carry = { src: 'storage', idx, k: it.k, v: it.v, c: it.c, fx: it.fx, r: it.r | 0, r0: it.r | 0 }; return true; },
       rotate: () => rotateCarry(),
       store: () => storeCarry(),
       drop: (x, y) => { decor.mx = x; decor.my = y; if (!decor.carry || !canPlaceCarry(x, y)) return false; commitPlace(); return true; },
       canPlace: (x, y) => !!decor.carry && canPlaceCarry(x, y),
-      props: () => props.map((p) => ({ k: p.k, fn: p.fn, solid: p.solid })),
+      props: () => props.map((p) => ({ k: p.k, fn: p.fn, solid: p.solid, hit: p.hit || null, decoIdx: p.decoIdx })),
+      // småsaker på bord: var saken skulle hamna under pekaren, och vad som står på vilket bord
+      placeFor: (x, y) => (decor.carry ? placeFor(decor.carry, x, y) : null),
+      riders: () => decoList().map((d, i) => ({ d, i })).filter(({ d }) => isRider(d)).map(({ d, i }) => ({ i, k: d.k, x: d.x, y: d.y, up: d.up, on: decoList().indexOf(surfaceOf(d, decoList(), i)) })),
+      surfaceUp: (idx) => { const s = decoList()[idx]; return s ? upOn(s) : null; },
       walls: () => wallItems.map((w) => ({ k: w.k, x: w.x, top: w.top })),
       // skyltarna över möblerna (rektangeln som ritas) och det de inte får täcka
       plates: () => props.filter((p) => p.label).map((p) => { const w = textW(SMALL, p.label) + 8; return { k: p.k, label: p.label, r: [p.plateX - w / 2, p.plateY - 1, p.plateX + w / 2, p.plateY + 8] }; }),
       plateAvoid: () => plateAvoid.map((r) => [...r]),
       // står varje post i listan rätt (som fitRoom ser det)? – för startmöbleringstestet
-      allFit: () => { const list = decoList(); return list.every((d, i) => !knownKind(d.k) || fits(d.k, d.v, d.r, d.x, d.y, list, i)); },
+      allFit: () => { const list = decoList(); return list.every((d, i) => !knownKind(d.k) || fits(d.k, d.v, d.r, d.x, d.y, list, i, undefined, d.up)); },
       // de poster som inte står rätt, och om det är en husdjurspryl som stör (för testerna)
       misfits: () => {
         const list = decoList();
-        return list.map((d, i) => ({ d, i })).filter(({ d, i }) => knownKind(d.k) && !fits(d.k, d.v, d.r, d.x, d.y, list, i)).map(({ d }) => {
+        return list.map((d, i) => ({ d, i })).filter(({ d, i }) => knownKind(d.k) && !fits(d.k, d.v, d.r, d.x, d.y, list, i, undefined, d.up)).map(({ d }) => {
           const ft = footOf(d.k, d.v, d.r, d.x, d.y);
           return { k: d.k, x: d.x, y: d.y, onPet: ft.t === 'solid' && petRects().some((r) => overlaps(ft.r, r)), hidesPet: ft.t === 'solid' && petBehind(d.x, d.y, ft.w, ft.h) };
         });
@@ -1068,15 +1170,16 @@ export function makeRoom(A, { visit = false } = {}) {
         }
         if (decor.carry) { if (canPlaceCarry(x, y)) { play('ok'); commitPlace(); } else play('fel'); return; }
         // plocka upp möbeln under pekaren (främst sorterad först; väggsaker och mattor sist)
-        const list = decoList();
+        // (en sak på ett bord ligger före bordet)
         const hit = [
-          ...props.filter((p) => p.decoIdx !== undefined).sort((a, b) => b.solid[3] - a.solid[3]).map((p) => ({ decoIdx: p.decoIdx, r: [p.solid[0], p.top, p.solid[2], p.solid[3] + 2] })),
+          ...props.filter((p) => p.decoIdx !== undefined && (p.solid || p.hit))
+            .map((p) => (p.solid ? { decoIdx: p.decoIdx, key: p.solid[3], r: [p.solid[0], p.top, p.solid[2], p.solid[3] + 2] } : { decoIdx: p.decoIdx, key: p.sort + 1, r: p.hit }))
+            .sort((a, b) => b.key - a.key),
           ...wallItems.map((w) => ({ decoIdx: w.decoIdx, r: [w.x, w.top, w.x + w.w, w.top + w.h] })),
           ...rugs.map((r) => ({ decoIdx: r.decoIdx, r: [r.x, r.y, r.x + r.w, r.y + r.h] })),
         ].find((p) => x >= p.r[0] && x <= p.r[2] && y >= p.r[1] && y <= p.r[3]);
         if (hit) {
-          const d = list[hit.decoIdx];
-          decor.carry = { src: 'deco', idx: hit.decoIdx, k: d.k, v: d.v, c: d.c, fx: d.fx, r: d.r | 0, r0: d.r | 0 };
+          decor.carry = carryDeco(hit.decoIdx);
           decor.press = { x, y }; // släpps den efter att ha dragits ställs den ner där (se up)
           rebuild(); updateSellBtn();
         }
@@ -1172,14 +1275,23 @@ export function makeRoom(A, { visit = false } = {}) {
       if (decor.on && decor.carry) {
         const { k, v, c, r } = decor.carry;
         const okHere = canPlaceCarry(decor.mx, decor.my);
-        const pos = posFor(k, v, r, decor.mx, decor.my);
+        const pos = placeFor(decor.carry, decor.mx, decor.my), lift = pos.up || 0;
         ctx.globalAlpha = 0.7;
         if (k === 'matta') ctx.drawImage(rugImg(v, c), pos.x, pos.y);
         else if (k === 'vaxt') { const p = makePlantProp(pos.x + 10, pos.y); p.draw(ctx); }
-        else { const a = furnView(k, v, c, r); if (a) drawArt(ctx, a, pos.x, pos.y - a.sh); }
+        else { const a = furnView(k, v, c, r); if (a) drawArt(ctx, a, pos.x, pos.y - lift - a.sh); }
+        // bordet man bär har med sig det som står på det
+        if (decor.carry.riders?.length) {
+          const u = upOn({ k, v, r }), sw = dimsOf(k, v, r).w;
+          for (const { d, dx } of decor.carry.riders) {
+            const a = furnView(d.k, d.v, d.c, d.r);
+            if (a) drawArt(ctx, a, Math.max(pos.x + 1, Math.min(pos.x + sw - 1 - a.sw, pos.x + dx)), pos.y + 1 - (u ?? d.up) - a.sh);
+          }
+        }
         ctx.globalAlpha = 1;
         ctx.fillStyle = okHere ? 'rgba(80,220,110,0.8)' : 'rgba(230,60,60,0.8)';
         if (isWall(k)) ctx.fillRect(pos.x, pos.y + 1, dimsOf(k, v, r).w, 2);
+        else if (lift) ctx.fillRect(pos.x, pos.y - lift, dimsOf(k, v, r).w, 1); // på skivan: linjen under saken
         else ctx.fillRect(decor.mx - 6 | 0, decor.my | 0, 12, 2);
       } else if (decor.on) {
         ctx.fillStyle = 'rgba(23,21,26,0.7)'; ctx.fillRect(4, 4, 150, 10);
@@ -1260,16 +1372,20 @@ function spriteProp(d, decoIdx, sign) {
   const f = frameOf(vw.k, vw.v);
   if (!f) return null;
   const [, , fw, fh] = f;
-  const x = d.x, base = d.y, top = base - fh;
+  // står saken på ett bord (up) ritas den så högt upp, direkt efter bordet – utan fotavtryck
+  // på golvet; klickytan (hit) är bilden
+  const lift = d.up > 0 ? d.up : 0;
+  const x = d.x, base = d.y, foot = base - lift, top = foot - fh;
   const fn = functionOf(d.k);
   const label = sign ? labelOf(d.k) : null;
   const p = {
     k: d.k, fn, decoIdx, fx: d.fx, sort: base, top, label, plateX: x + fw / 2, plateY: top - 9,
-    solid: [x - 1, base - solidH(d.k, fh), x + fw + 1, base + 1],
+    solid: lift ? null : [x - 1, base - solidH(d.k, fh), x + fw + 1, base + 1],
+    hit: lift ? [x, top, x + fw, foot + 1] : null,
     draw(ctx) {
       ctx.fillStyle = 'rgba(20,12,28,0.22)';
-      ctx.fillRect(x + 1, base - 1, fw - 2, 2);
-      ctx.fillRect(x + 3, base + 1, fw - 6, 1);
+      if (lift) ctx.fillRect(x + 1, foot - 1, fw - 2, 1); // skuggan på bordsskivan
+      else { ctx.fillRect(x + 1, base - 1, fw - 2, 2); ctx.fillRect(x + 3, base + 1, fw - 6, 1); }
       const a = furnView(d.k, d.v, d.c, d.r); // cachad per (ruta, färg)
       if (a) drawArt(ctx, a, x, top);
     },
@@ -1405,7 +1521,7 @@ function makeMattressProp(list, RIGHT) {
     if (tx < 8 || tx + w > RIGHT - 5 || ty < WALL_Y + 16 || ty > FH - 4) return false;
     const me = [tx - 1, ty - 8, tx + w + 1, ty + 1];
     if (me[2] > DOOR.x0 - 2 && me[0] < DOOR.x1 + 2 && me[1] < WALL_Y + 15) return false;
-    for (const o of list) { if (isWall(o.k) || o.k === 'matta' || isFlat(o.k)) continue; if (overlaps(me, footOf(o.k, o.v, o.r, o.x, o.y).r)) return false; }
+    for (const o of list) { if (isWall(o.k) || o.k === 'matta' || isFlat(o.k) || o.up > 0) continue; if (overlaps(me, footOf(o.k, o.v, o.r, o.x, o.y).r)) return false; }
     return true;
   };
   for (let ty = FH - 8; y < 0 && ty > WALL_Y + 16; ty -= 6) for (let tx = 10; x < 0 && tx + w < RIGHT - 5; tx += 6) if (free(tx, ty)) { x = tx; y = ty; }

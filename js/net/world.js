@@ -245,6 +245,7 @@ function cleanP(p, old = {}) {
         // r = rotationen (0–3, 0 skickas inte), sortnamn upp till 24 tecken
         out.deco[key] = list.slice(0, 80).map((d) => ({ k: String(d?.k || '').slice(0, 24), v: Math.max(0, d?.v | 0), x: +d?.x || 0, y: +d?.y || 0, ...(d?.fx ? { fx: 1 } : {}),
           ...((d?.r | 0) & 3 ? { r: (d.r | 0) & 3 } : {}),
+          ...(+d?.up > 0 && +d.up < 64 ? { up: Math.round(+d.up) } : {}), // småsaken står på ett bord (room.js)
           ...(typeof d?.c === 'string' && /^#[0-9a-f]{6}$/i.test(d.c) ? { c: d.c.toLowerCase() } : {}) }));
       }
     }

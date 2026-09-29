@@ -1,36 +1,29 @@
 # Snabbfilen – kvar att bygga
 
-Carls förslag som inte är byggda än (uppdaterad 2026-09-28). Varje punkt blir ett
+Carls förslag som inte är byggda än (uppdaterad 2026-09-29 kväll). Varje punkt blir ett
 eget släpp med versionsnummer när den är klar (se `CHANGELOG.md`).
 
-## Pågår (agenter) – släpps när det är klart
-- **Storstaden v2**: södra stadsdelen under parken, infarten, förorten (graffiti,
-  trasiga hus, fula butiker, trasig busshållplats), buss mellan hållplatserna, väder,
-  menytavla vid Burgarbaren. Kartkontraktet: `docs/STADEN.md`.
-- **Husdjur hemma** (djurlagret i rummet) och **fyra nya bostäder**: husvagnen,
-  förortsettan, radhuset, takvåningen (`js/city/places.js`).
-- **Sex nya jobb** (pizzeria, posten, macken, bilverkstan, tvätteriet, barista) är
-  byggda och kopplade i arbetskopian – släpps ihop med storstaden (dörrarna sitter där).
-- **Klädkatalogen**: ~250 nya plagg, ~200 stylingval, klädaffären i flera våningar.
+## Kvar
+- **Mobilen steg 2**: fasta scener (rummet, jobben) görs "breda" så att de visar mer av
+  scenen i stället för att zoomas. Väntar på Carls besked – sedan 0.25.3 är NÄRA standard
+  på mobilen (där gäller den klassiska vyn överallt), så det här märks bara i VID-läget
+  på dator och padda. Se `docs/PLAN.md`.
 
-## Nytt 2026-09-28
-1. **Veckosammanfattning** måndag–söndag som ALLTID visas först när man vaknar:
-   hyresdagen tydligt markerad (när pengarna dras), avklarade dagar grå så nästa dag
-   syns, en checklista på vad man måste göra, och hjälp att spara ihop pengar.
-2. **Bank** i staden där man kan sätta in sina pengar.
-3. **Downtown**: en stadsdel med kontor, en **datorbutik** där man bygger datorer som
-   jobb, och **finansjobb** där man räknar – jobben kräver utbildning.
-4. **Universitet** där man utbildar sig (låser upp downtown-jobben).
-5. **Burgarbaren uppstyrd som kaféet**: gå in vanligt, handla vid disken, hålla
-   brickan, klicka på ett bord för att sätta sig, brickan försvinner först när man
-   ätit upp, energin ökar bara när man sitter vid bordet. Vid disken kan man också
-   jobba: servera (finns) eller **jobba i köket och bygga alla rätterna** som beställs.
-6. **Fotbollsbutiken** – se `docs/FOTBOLLSBUTIKEN.md`.
+## Frågor till Carl
+- Husvagnen och Lilla rummet ligger långt från centrum sedan bron kom – räcker bussen?
+- Ska hårfärgen gå att byta hemma (i garderoben), eller bara hos frisören?
+- Lagtröjorna delar tröjmodell – räcker det att färgerna byts?
+- Lagfotot: 19 eller 20 spelare (listan kan ha varit avkapad)?
+- Vårdcentralen: ska en missad patient dra pengar, eller bara ge noll?
+- Barn med långt hår skymmer ryggnumret på matchtröjan (som på plan) – okej?
 
-## Äldre förslag
-- Djuren ute i staden (följare i koppel; `createPetFollower` finns i `js/pets/layer.js`).
-- Slutlig buggjakt (flimmer, z-ordning, överlapp) och detaljparitet i alla scener.
-- Stadens extra ställen (`js/city/places.js` SHOPS_EXTRA): vårdcentralen som jobb, bio,
-  pantbank, kebab, kiosk med lotter, närbutik med egen scen.
-- Småsaker som får stå på bord (flagga i KATALOG), förrådspanelen som täcker
-  canvasens högerkant i Möblera-läget, väggsaker över fönster.
+## Byggt och släppt (2026-09-28 – 09-29)
+Veckosammanfattningen, banken, downtown med Pixelhögskolan och de utbildade jobben
+(Pixel Data, Finanshuset), Burgarbaren inne med brickan och kökjobbet, fotbollsbutiken med
+Kungsladugård (numret på ryggen), chatten och pratbubblorna, sovanimationen, badrum i
+varje bostad, Burgarbarens luckor, närbutiken 24/7, flygterminalen med incheckningsjobbet,
+djuren i koppel, husdjuren som växer, bion, kebaben, pantbanken, skraplotterna,
+vårdcentralen, frisören, elektronikbutiken, skobutiken, accessoarbutiken, klädaffärens
+andra våning, bron och staden på längden, riktiga ljud, prata med folk i staden och
+småsaker på bord. Väggsaker hänger aldrig över fönstren (utom gardinerna) och
+förrådspanelen täcker inte rummet.
