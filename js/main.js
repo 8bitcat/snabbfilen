@@ -110,6 +110,8 @@ const ENGINES = { flygplats: 'jobbflyg', frukt: 'jobbfrukt', burgare: 'jobbburga
 // modulen hunnit laddas visas en tom ruta tills den är klar. Listan fylls på i takt med att
 // scenerna släpps; en scen som redan finns i SCENES (statisk import) lämnas orörd.
 const DOOR_SCENES = [
+  ['bank', './scenes/shop-bank.js', 'makeShopBank'],
+  ['elektronik', './scenes/shop-elektronik.js', 'makeShopElektronik'],
 ];
 const DOOR_STATE = {};   // namn → 'laddar' | 'klar' | 'fel'
 for (const [n, file, fn] of DOOR_SCENES) {
@@ -177,7 +179,9 @@ function applySceneView() {
 function fit() {
   const dpr = window.devicePixelRatio || 1;
   const box = $('#app').getBoundingClientRect();
-  const w = Math.max(64, box.width), h = Math.max(64, box.height);
+  // innehållsrutan: utan padding (Möblera-panelen reserverar plats till höger med padding-right)
+  const cs = getComputedStyle($('#app')), pad = (k) => parseFloat(cs[k]) || 0;
+  const w = Math.max(64, box.width - pad('paddingLeft') - pad('paddingRight')), h = Math.max(64, box.height - pad('paddingTop') - pad('paddingBottom'));
   const v = A.view;
   if (A.attract || !fillMode()) {
     // huvudmenyn: staden täcker fönstret (kanterna klipps) · testrobotar: gamla läget
@@ -377,9 +381,13 @@ function checkCollapse() {
 A.sleepFlow = () => {
   const g = A.game;
   const monday = g.day % 7 === 0; // i natt blir det måndag → hyra i morgon bitti
+  // sparkontot: räntan i morgon bitti och det autogirot tar om fickan inte räcker till hyran
+  const ranta = monday && g.bankNextInterest ? g.bankNextInterest() : 0;
+  const autogiro = monday && g.bank > 0 ? Math.min(g.bank + ranta, Math.max(0, g.homeInfo.rent - Math.max(0, g.money))) : 0;
   openModal('😴 Sova', `<p style="font-size:20px">Sova till i morgon 07:00?</p>
     ${g.hunger < 30 ? '<p style="font-size:18px" class="bad">Du är hungrig – du sover dåligt på tom mage.</p>' : ''}
-    ${monday ? `<p style="font-size:18px">💸 I morgon är det måndag: hyran ${fmt(g.homeInfo.rent)} dras.</p>` : ''}`, [
+    ${monday ? `<p style="font-size:18px">💸 I morgon är det måndag: hyran ${fmt(g.homeInfo.rent)} dras.${autogiro ? ` Fickan räcker inte – banken tar ${fmt(autogiro)} från sparkontot.` : ''}</p>` : ''}
+    ${ranta ? `<p style="font-size:18px">📈 Räntan på sparkontot kommer i morgon bitti: +${fmt(ranta)}.</p>` : ''}`, [
     { label: 'Inte än', onClick: closeModal },
     { label: '😴 Sov', cls: 'btn-go', onClick: () => {
       closeModal();
@@ -492,6 +500,7 @@ function openDiary() {
     ${line('🏠 Bostad', `${g.homeInfo.icon} ${g.homeInfo.name}`)}
     ${line('🛋️ Möbler', `${Object.values(g.deco).flat().filter((d) => !d.fx).length} placerade · ${g.storage.length} i förrådet`)}
     ${line('💰 På fickan', fmt(g.money))}
+    ${g.bank ? line('🏦 På banken', fmt(g.bank)) : ''}
     ${line('💵 Totalt intjänat', fmt(g.earned))}
     <div style="border-top:3px dashed var(--ink);margin:8px 0"></div>
     ${jobRows}
@@ -501,14 +510,15 @@ function openDiary() {
   [{ label: 'Snyggt jobbat', cls: 'btn-go', onClick: closeModal }]);
 }
 
-// Slutmålet: Villan + rejält på fickan → en enda stor gratulation.
+// Slutmålet: Villan + rejält med pengar (fickan och sparkontot tillsammans) → en enda stor gratulation.
 function checkWin() {
   const g = A.game;
-  if (g.won || g.home !== 'villa' || g.money < WIN_MONEY) return;
+  const total = g.money + (g.bank || 0);
+  if (g.won || g.home !== 'villa' || total < WIN_MONEY) return;
   g.won = true;
   g.save();
   play('fanfare');
-  openModal('🏆 Du har lyckats i Pixelstaden!', `<p style="font-size:22px;margin-top:0">Egen villa och <b>${fmt(g.money)}</b> på fickan – från ett litet rum till toppen på ${g.day} dagar!</p>
+  openModal('🏆 Du har lyckats i Pixelstaden!', `<p style="font-size:22px;margin-top:0">Egen villa och <b>${fmt(total)}</b> ${g.bank ? `(${fmt(g.bank)} av dem på banken)` : 'på fickan'} – från ett litet rum till toppen på ${g.day} dagar!</p>
     <p style="font-size:19px">💰 Totalt intjänat: <b>${fmt(g.earned)}</b><br>🔨 Jobbade pass: <b>${Object.values(g.jobs).reduce((a, b) => a + b, 0)}</b></p>
     <p style="font-size:19px">Staden är din – spela vidare, bjud hem kompisarna och visa upp villan! 🎉</p>`,
     [{ label: '🎉 Tack!', cls: 'btn-go', onClick: closeModal }]);

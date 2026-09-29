@@ -24,6 +24,7 @@ export const TIPS = [
   'I lagret på plan 1 står de stora möblerna i platta kartonger.',
   'Kaffe med påtår ingår – ta en paus i restaurangen.',
   'Barnen kan leka i Småland medan du handlar.',
+  'TV, datorer och spelkonsoler säljer vi inte längre – de finns på BLIXT ELEKTRONIK i Downtown!',
 ];
 const HELP_LINES = ['KAN JAG HJÄLPA TILL?', 'SOFFOR FINNS PÅ PLAN 2!', 'FÖLJ PILARNA!', 'HAR DU HITTAT RÄTT?', 'PROVSITT GÄRNA!'];
 

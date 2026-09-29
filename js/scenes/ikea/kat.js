@@ -3,8 +3,20 @@ import * as GAME from '../../game.js';
 import { FRAMES } from '../../data/frames.js';
 import { SMALL, textW } from '../../core/floor-pix.js';
 
-export const KAT = () => (Array.isArray(GAME.KATALOG) ? GAME.KATALOG : []);
-export const katOf = (k) => KAT().find((x) => x.kind === k) || null;
+// DATORSAKERNA säljs inte längre på MÖBELJÄTTEN utan i elektronikbutiken BLIXT i Downtown
+// (js/scenes/shop-elektronik.js). De ligger kvar i GAME.KATALOG – sparfiler, förrådet,
+// Möblera och försäljning hemma fungerar precis som förut – men varuhuset ställer inte ut dem.
+// En katalogpost med shop: 'elektronik' räknas också hit (om fler prylar läggs till).
+export const ELEKTRONIK = new Set(['tv', 'retrotv', 'spelkonsol', 'datortorn', 'dator', 'laptop', 'telefon']);
+export const isElektronik = (k) => { const kind = typeof k === 'string' ? k : k?.kind; return ELEKTRONIK.has(kind) || (typeof k === 'object' && k?.shop === 'elektronik'); };
+// vad en utställd elektronikpryl heter i varuhusets texter ("Gamingriggen är bara utställd")
+// – TV-sorten är både platt-TV:n (modell 1) och gamingriggarna (övriga modeller)
+const ELEK_NAMN = { retrotv: 'Retro-TV:n', spelkonsol: 'Spelkonsolen', datortorn: 'Datortornet', dator: 'Datorn', laptop: 'Den bärbara datorn', telefon: 'Telefonen' };
+export const elektronikName = (k, v = 0) => (k === 'tv' ? ((v | 0) === 1 ? 'TV:n' : 'Gamingriggen') : ELEK_NAMN[k] || 'Den');
+const ALL = () => (Array.isArray(GAME.KATALOG) ? GAME.KATALOG : []);
+// Möbeljättens sortiment = katalogen utan elektroniken
+export const KAT = () => ALL().filter((k) => k && !isElektronik(k));
+export const katOf = (k) => (isElektronik(k) ? null : ALL().find((x) => x.kind === k && !isElektronik(x)) || null);
 export const frameOf = (k, v) => FRAMES[k + (v | 0)] || FRAMES[k + '0'] || null;
 // platta saker som ligger på golvet (mattor) – ritas under allt annat och går att gå på
 export const isFlat = (k) => k === 'matta' || /matta$/.test(k);

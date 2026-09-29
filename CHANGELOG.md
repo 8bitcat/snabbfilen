@@ -10,6 +10,13 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.48.0] – 2026-09-29 – Elektronikbutiken och banken öppnar
+- BLIXT ELEKTRONIK öppnar i downtown: TV-vägg, telefoner, surfplattor, gamingriggar, datorer och hörlurar – gå fram, prova och bär lådan till kassan. Telefonen och plattan ger lite extra energi när du sover (dyrare modell = mer)
+- Möbeljätten säljer inte längre datorsakerna – de finns på BLIXT (det du redan äger är kvar)
+- PIXELBANKEN öppnar: sätt in och ta ut i kassan eller bankomaten, 2 % ränta varje måndag på det som legat kvar hela veckan, och räcker inte fickan till hyran tar banken resten från sparkontot (autogiro). Sov-rutan och veckosammanfattningen visar räntan och autogirot
+- Dagboken visar vad du har på banken, och slutmålet räknar fickan och banken tillsammans
+- Möblera-panelen täcker inte längre rummets högerkant på vanliga datorskärmar
+
 ## [0.47.0] – 2026-09-29 – Bron och downtown – staden på längden
 - STADEN PÅ LÄNGDEN: centrum → Infarten → DOWNTOWN → FLODEN → FÖRORTEN. Förorten sitter inte längre ihop med centrum – den ligger på andra sidan floden
 - STORA BRON: en hängbro som Brooklyn Bridge – två granittorn med gotiska spetsbågar som man går igenom, bärkablar i båge, hängstag, gångbanor i plank med lyktor och båtar som glider under. Kameran lyfter på bron så att tornen och kablarna syns

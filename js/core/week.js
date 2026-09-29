@@ -25,12 +25,13 @@ export function weekInfo(g) {
   const wd = weekday(g.day);
   const rent = g.homeInfo.rent;
   const daysToRent = 7 - wd;                         // hyran dras när man vaknar på måndagen
-  const need = Math.max(0, rent - g.money);
+  const saved = Math.max(0, Math.round(+g.bank || 0)); // sparkontot: räcker inte fickan tar autogirot resten av hyran därifrån
+  const need = Math.max(0, rent - g.money - saved);
   const perShift = payPerShift(g);
   const shifts = need ? Math.ceil(need / Math.max(1, perShift)) : 0;
   const fridge = Object.values(g.fridge || {}).reduce((a, n) => a + n, 0);
   const home = HOMES.find((h) => h.id === g.home) || g.homeInfo;
-  return { wd, rent, daysToRent, need, perShift, shifts, fridge, home };
+  return { wd, rent, daysToRent, need, perShift, shifts, fridge, home, saved };
 }
 
 // ---------- fönstren (pixelkonst, ritas i logiska pixlar och skalas i heltal) ----------
@@ -201,10 +202,19 @@ export function openWeek(A, { morning = false, rentPaid = 0, eventText = '' } = 
   }).join('');
   // nästa hyra
   const nextRent = w.daysToRent === 1 ? 'i morgon bitti' : `på måndag – om ${w.daysToRent} dagar`;
-  const enough = g.money >= w.rent;
-  const forecast = enough
-    ? `<p class="wk-ok">✅ Du har <b>${fmt(g.money)}</b> – det räcker till hyran (${fmt(w.rent)}) ${nextRent}.</p>`
-    : `<p class="wk-bad">⚠️ Du har <b>${fmt(g.money)}</b> men hyran är <b>${fmt(w.rent)}</b> ${nextRent}. Du behöver tjäna <b>${fmt(w.need)}</b> till – ungefär <b>${w.shifts} pass</b> (≈ ${fmt(w.perShift)} per pass).</p>`;
+  // räcker inte fickan tar autogirot resten av hyran från sparkontot (Game.sleep)
+  const enough = g.money + w.saved >= w.rent;
+  const fromBank = enough && g.money < w.rent ? w.rent - Math.max(0, g.money) : 0;
+  const forecast = !enough
+    ? `<p class="wk-bad">⚠️ Du har <b>${fmt(g.money)}</b>${w.saved ? ` och <b>${fmt(w.saved)}</b> på banken` : ''} men hyran är <b>${fmt(w.rent)}</b> ${nextRent}. Du behöver tjäna <b>${fmt(w.need)}</b> till – ungefär <b>${w.shifts} pass</b> (≈ ${fmt(w.perShift)} per pass).</p>`
+    : fromBank
+      ? `<p class="wk-ok">✅ ${g.money > 0 ? `Fickan har <b>${fmt(g.money)}</b> – resten av hyran, <b>${fmt(fromBank)}</b>,` : `Fickan är tom – hela hyran, <b>${fmt(w.rent)}</b>,`} tar banken från sparkontot ${nextRent}.</p>`
+      : `<p class="wk-ok">✅ Du har <b>${fmt(g.money)}</b> – det räcker till hyran (${fmt(w.rent)}) ${nextRent}.</p>`;
+  // i morse på banken: räntan och autogirot (läses ur kontoutdraget, så det syns hur man än somnade)
+  const bankToday = (t) => (g.bankLog || []).filter((e) => e && e.d === g.day && e.t === t).pop();
+  const ranta = morning && bankToday('ranta'), autogiro = morning && bankToday('hyra');
+  const bankNews = (ranta ? `<p class="wk-ok" style="margin-top:0">📈 Räntan kom in: <b>+${fmt(ranta.n)}</b> på sparkontot.</p>` : '')
+    + (autogiro ? `<p class="wk-bad" style="margin-top:0">🏦 Fickan räckte inte – <b>${fmt(autogiro.n)}</b> av hyran drogs från sparkontot (autogiro).</p>` : '');
   // checklista
   const todo = [];
   if (g.money < 0) todo.push([false, `Betala skulden: ${fmt(-g.money)}`]);
@@ -219,6 +229,7 @@ export function openWeek(A, { morning = false, rentPaid = 0, eventText = '' } = 
   const bar = (v, cls) => `<span class="wk-bar ${cls}"><i style="width:${Math.max(0, Math.min(100, Math.round(v)))}%"></i></span>`;
   const stats = `<div class="wk-stats">
     <div><span>💰 Pengar</span><b>${fmt(g.money)}</b></div>
+    ${w.saved ? `<div><span>🏦 På banken</span><b>${fmt(w.saved)}</b></div>` : ''}
     <div><span>🏠 Bostad</span><b>${esc(w.home?.icon || '')} ${esc(w.home?.name || '')}</b></div>
     <div><span>💸 Hyra per vecka</span><b>${fmt(w.rent)}</b></div>
     <div><span>📅 Nästa hyra</span><b>${w.daysToRent === 1 ? 'i morgon' : `om ${w.daysToRent} dagar`}</b></div>
@@ -229,10 +240,11 @@ export function openWeek(A, { morning = false, rentPaid = 0, eventText = '' } = 
   const head = morning ? `☀️ God morgon! ${esc(DAY_NAMES[w.wd])}, dag ${g.day}` : `📅 Vecka ${weekNo(g.day)} – ${esc(DAY_NAMES[w.wd])}, dag ${g.day}`;
   const body = `<div class="wk">
     ${morning && rentPaid ? `<p class="wk-bad" style="margin-top:0">💸 Hyran för veckan är dragen: ${fmt(rentPaid)}.</p>` : ''}
+    ${bankNews}
     <div class="wk-grid">${cells}</div>
     ${forecast}
     <div class="wk-cols"><div><h3>Att göra i dag</h3><ul class="wk-todo">${list}</ul></div><div><h3>Veckans läge</h3>${stats}</div></div>
-    <p class="wk-tip">Tips: hyran dras varje måndag morgon. Har du inte råd blir du skyldig hyresvärden – jobba ett extra pass innan söndag.</p>
+    <p class="wk-tip">Tips: hyran dras varje måndag morgon – först från fickan, och räcker den inte tar banken resten från sparkontot. Räcker inte det heller blir du skyldig hyresvärden – jobba ett extra pass innan söndag.</p>
   </div>`;
   const dlg = openModal(head, body, [{ label: morning ? '☀️ Ut i dagen!' : '▶ Till dagen', cls: 'btn-go', onClick: closeModal }]);
   dlg.classList.add('dlg-week');

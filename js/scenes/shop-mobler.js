@@ -10,6 +10,7 @@ import { createWalker, selfDrawable, folkDrawables } from './walkable.js';
 import { FRAMES } from '../data/frames.js';
 import { ATLAS, furnArt, furnBaseColor } from './room.js';
 import { isHex } from '../core/recolor.js';
+import { isElektronik } from './ikea/kat.js';
 
 const FW = 384, FH = 216;
 const WALL_Y = 60;
@@ -20,7 +21,8 @@ const SPOTS = [];
 {
   // tre rader, jämnt fördelade – rad 1 börjar efter dörren
   const ROWS_Y = [106, 158, 206];
-  const items = KATALOG.map((k) => ({ kind: k.kind, w: (k.kind === 'matta' ? [0, 0, 30, 16] : FRAMES[k.kind + '0'])[2] }));
+  // (datorsakerna säljs på BLIXT ELEKTRONIK i Downtown – inte här, se ELEKTRONIK i ikea/kat.js)
+  const items = KATALOG.filter((k) => !isElektronik(k)).map((k) => ({ kind: k.kind, w: (k.kind === 'matta' ? [0, 0, 30, 16] : FRAMES[k.kind + '0'])[2] }));
   const per = Math.ceil(items.length / ROWS_Y.length);
   ROWS_Y.forEach((y, row) => {
     const rowItems = items.slice(row * per, row * per + per);

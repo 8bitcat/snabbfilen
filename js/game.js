@@ -293,8 +293,36 @@ const DECO_KEY = /^[a-z][a-z0-9]*:\d{1,2}$/;
 // gamla sparfiler köpte möbler per id – mappa till katalog-poster
 const OLD_FURN = { matta: 'matta', lampa: 'lampa', vaxt: 'vaxtS', bokhylla: 'bokhylla', soffa: 'soffa', tv: 'tv', spis: 'spis' };
 
+// Prylarna i elektronikbutiken BLIXT (js/scenes/shop-elektronik.js): telefoner och
+// surfplattor. De ställs inte ut hemma som möbler – man bär dem med sig (g.gadgets = lista
+// med id, varje modell en gång). Nyttan (bonus) följer modellen – dyrare pryl, mer nytta:
+//   mobil  – väckarklockan: +bonus energi när man vaknar i sin säng
+//   platta – kvällsserien: +bonus energi om man lägger sig efter 20:00
+// Har man flera av samma sort räknas den bästa (gadgetBonus). (Datorsakerna – TV, dator,
+// laptop, konsol … – är vanliga möbler i KATALOG som säljs där, se ELEKTRONIK i
+// js/scenes/ikea/kat.js.)
+export const GADGETS = [
+  { id: 'fonmini', kind: 'mobil', icon: '📱', name: 'Blixtfon Mini', price: 900, bonus: 3 },
+  { id: 'fon12', kind: 'mobil', icon: '📱', name: 'Blixtfon 12', price: 1900, bonus: 5 },
+  { id: 'paronfon', kind: 'mobil', icon: '📱', name: 'Päronfon 16 Pro', price: 4500, bonus: 8 },
+  { id: 'platta', kind: 'platta', icon: '📲', name: 'Blixtplatta', price: 1500, bonus: 4 },
+  { id: 'paronplatta', kind: 'platta', icon: '📲', name: 'Päronplatta Pro', price: 3900, bonus: 7 },
+];
+export const gadgetOf = (id) => GADGETS.find((x) => x.id === id) || null;
+
 // Slutmålet: äg Villan med rejält på fickan.
 export const WIN_MONEY = 10000;
+
+// Banken (Pixelbanken i finanskvarteret, js/scenes/shop-bank.js): ett sparkonto med ränta
+// som betalas ut varje måndag morgon. Pengarna på kontot är trygga – de rörs bara av en
+// sak: hyran, och bara när handkassan inte räcker (autogiro), så att man inte hamnar i
+// skuld så länge det finns pengar på banken.
+// Räntan räknas på det som legat på kontot HELA veckan (veckans lägsta saldo, g.bankMin)
+// och på högst BANK_CAP kr – att sätta in på söndagen och ta ut på måndagen ger ingenting.
+export const BANK_RATE = 0.02;   // 2 % i veckan, avrundat till hel krona
+export const BANK_CAP = 20000;   // räntan räknas på högst så mycket (= högst 400 kr i veckan)
+export const BANK_LOG_MAX = 12;  // kontoutdraget: så många händelser sparas (nyast sist)
+export const bankInterest = (saldo) => Math.round(Math.min(BANK_CAP, Math.max(0, +saldo || 0)) * BANK_RATE);
 
 // Dagshändelser: slumpas fram på morgonen och gäller hela dagen. Hälften av
 // dagarna händer inget alls – då känns händelserna som något speciellt.
@@ -341,10 +369,14 @@ export class Game {
     this.wardrobe = [];                   // upplåsta plagg, "kind:v"
     this.storage = [];                    // möbler i förrådet, { k, v, c?, r?, fx? } (c = egen färg '#rrggbb', r = rotation 0–3)
     this.deco = {};                       // placerade möbler per rum: "hem:sub" -> [{ k, v, c?, x, y, r?, fx? }]
+    this.gadgets = [];                    // prylar från elektronikbutiken (GADGETS-id), t.ex. ['fon12']
     this.won = false;                     // slutmålet nått
     this.event = null;                    // dagens händelse { id, job? }
     this.best = Object.fromEntries(Object.keys(JOBS).map((k) => [k, { ok: 0, pay: 0 }])); // rekord per jobb
     this.collapsed = false;               // somnade utmattad i natt (sätts av passTime)
+    this.bank = 0;                        // sparkontot på banken (kr) – ränta varje måndag
+    this.bankMin = 0;                     // veckans lägsta saldo sedan måndag morgon – räntan räknas på det
+    this.bankLog = [];                    // kontoutdraget: { d: dag, m: minut, t: 'in'|'ut'|'atm'|'ranta'|'hyra', n: kr }
   }
 
   eventIs(id) { return this.event?.id === id; }
@@ -367,6 +399,7 @@ export class Game {
         out.fridge = { ...k.fridge, ...data.fridge };
         out.wardrobe = [...data.wardrobe, ...k.wardrobe.filter((w) => !data.wardrobe.includes(w))];
         out.storage = [...data.storage, ...k.storage];
+        out.gadgets = [...data.gadgets, ...k.gadgets.filter((id) => !data.gadgets.includes(id))];
         out.deco = { ...data.deco };
         for (const [key, list] of Object.entries(k.deco)) out.deco[key] = [...(data.deco[key] || []), ...list];
       }
@@ -381,7 +414,7 @@ export class Game {
       const p = JSON.parse(rawText || 'null');
       if (p && p.v !== 1) throw new Error('okänd sparversion ' + p.v);
       if (p && p.v === 1) {
-        const keep = { top: {}, jobs: {}, best: {}, fridge: {}, wardrobe: [], storage: [], deco: {} };
+        const keep = { top: {}, jobs: {}, best: {}, fridge: {}, wardrobe: [], storage: [], deco: {}, gadgets: [] };
         Object.defineProperty(g, '_keep', { value: keep, writable: true, enumerable: false });
         for (const [key, val] of Object.entries(p)) if (!(key in g) && !LEGACY_FIELDS.includes(key)) keep.top[key] = val;
         g.day = Math.max(1, p.day | 0); g.min = Math.min(DAY - 1, Math.max(0, +p.min || 0));
@@ -414,7 +447,15 @@ export class Game {
         }
         // gamla sparfiler: köpta möbler (id-lista) flyttas till förrådet
         if (Array.isArray(p.furniture)) for (const id of p.furniture) if (OLD_FURN[id]) g.storage.push({ k: OLD_FURN[id], v: 0 });
+        // prylarna: kända id (en gång var), okända (från en nyare version) följer med orörda
+        const gl = Array.isArray(p.gadgets) ? p.gadgets : [];
+        g.gadgets = [...new Set(gl.filter((id) => typeof id === 'string' && gadgetOf(id)))];
+        keep.gadgets = gl.filter((id) => !(typeof id === 'string' && gadgetOf(id)));
         g.won = !!p.won;
+        g.bank = Math.max(0, Math.round(+p.bank || 0));
+        g.bankMin = p.bankMin == null ? g.bank : Math.max(0, Math.min(g.bank, Math.round(+p.bankMin || 0)));
+        g.bankLog = (Array.isArray(p.bankLog) ? p.bankLog : []).filter((e) => e && typeof e === 'object').slice(-BANK_LOG_MAX)
+          .map((e) => ({ ...e, d: Math.max(1, e.d | 0), m: Math.max(0, Math.min(DAY - 1, e.m | 0)), t: String(e.t || ''), n: Math.max(0, Math.round(+e.n || 0)) }));
         if (p.event && EVENTS.some((e) => e.id === p.event.id)) g.event = { id: p.event.id, job: JOBS[p.event.job] ? p.event.job : undefined };
         for (const k of Object.keys(g.best)) g.best[k] = { ok: Math.max(0, p.best?.[k]?.ok | 0), pay: Math.max(0, p.best?.[k]?.pay | 0) };
       }
@@ -445,15 +486,33 @@ export class Game {
   // Hungrig sömn ger sämre vila, större bostad ger bonus. Morgonen kan bjuda
   // på en dagshändelse – hälften av dagarna händer inget alls.
   sleep(quality = 1) {
+    // prylarna: mobilens väckarklocka (sover man i sin säng) och kvällsserien på surfplattan
+    // (lägger man sig efter 20:00) – somnar man på gatan (quality < 1) hjälper ingen av dem
+    const inBed = quality >= 1, lateEvening = inBed && this.min >= 20 * 60;
+    const gadgetBonus = (inBed ? this.gadgetBonus('mobil') : 0) + (lateEvening ? this.gadgetBonus('platta') : 0);
     this.day += 1;
     this.min = 7 * 60;
     const rested = (55 + 45 * Math.min(1, this.hunger / 50)) * quality + this.homeInfo.restBonus;
-    this.energy = clamp(Math.max(this.energy, Math.round(rested)));
+    this.energy = clamp(Math.max(this.energy, Math.round(rested)) + gadgetBonus);
     this.hunger = clamp(this.hunger - 15);
-    let rent = 0;
-    if ((this.day - 1) % 7 === 0 && this.day > 1) { // måndag morgon: hyra
+    let rent = 0, interest = 0, rentFromBank = 0;
+    if ((this.day - 1) % 7 === 0 && this.day > 1) { // måndag morgon: räntan på sparkontot, sedan hyran
+      interest = bankInterest(Math.min(this.bank, this.bankMin));  // det som legat kvar hela veckan
+      if (interest > 0) { this.bank += interest; this.logBank('ranta', interest); }
       rent = this.homeInfo.rent;
+      const before = this.money;
       this.money -= rent;
+      // Hyran dras först från handkassan. Räcker den inte tar banken resten av HYRAN från
+      // sparkontot (autogiro) – skuld blir det bara om kontot också är tomt. En gammal skuld
+      // betalas inte automatiskt; den tar man själv hand om (ta ut på banken).
+      const short = rent - Math.max(0, before);
+      if (short > 0 && this.bank > 0) {
+        rentFromBank = Math.min(this.bank, short);
+        this.bank -= rentFromBank;
+        this.money += rentFromBank;
+        this.logBank('hyra', rentFromBank);
+      }
+      this.bankMin = this.bank;           // en ny räntevecka börjar
     }
     // dagens händelse
     this.event = null;
@@ -470,7 +529,22 @@ export class Game {
       eventText = `${ev.icon} ${ev.text.replace('{job}', JOBS[this.event.job]?.name || '')}`;
     }
     this.save();
-    return { rent, eventText };
+    return { rent, eventText, gadgetBonus, interest, rentFromBank };
+  }
+
+  // ---------- prylar (elektronikbutiken) ----------
+  hasGadget(kind) { return this.gadgets.some((id) => gadgetOf(id)?.kind === kind); }
+  // nyttan av den bästa prylen av en sort (0 om man inte har någon)
+  gadgetBonus(kind) { return this.gadgets.reduce((b, id) => { const x = gadgetOf(id); return x?.kind === kind ? Math.max(b, x.bonus | 0) : b; }, 0); }
+  buyGadget(id) {
+    const x = gadgetOf(id);
+    if (!x) return { ok: false, msg: 'Finns inte i butiken.' };
+    if (this.gadgets.includes(id)) return { ok: false, msg: 'Den har du redan!' };
+    if (this.money < x.price) return { ok: false, msg: 'Du har inte råd!' };
+    this.money -= x.price;
+    this.gadgets.push(id);
+    this.save();
+    return { ok: true, item: x };
   }
 
   // ---------- mat ----------
@@ -654,6 +728,38 @@ export class Game {
     this.money += Math.round(katalogOf(it.k).price / 2);
     this.save();
     return true;
+  }
+
+  // ---------- banken (sparkontot) ----------
+  // Sätta in från handkassan och ta ut till den – i kassan eller i bankomaten (via: 'atm').
+  // Hela kronor; allt eller inget. Svaret { ok, kr } eller { ok: false, msg }.
+  bankDeposit(kr) {
+    kr = Math.floor(+kr || 0);
+    if (kr <= 0) return { ok: false, msg: 'Välj hur mycket du vill sätta in.' };
+    if (kr > this.money) return { ok: false, msg: `Du har bara ${fmt(Math.max(0, this.money))} på fickan.` };
+    this.money -= kr;
+    this.bank += kr;
+    this.logBank('in', kr);
+    this.save();
+    return { ok: true, kr };
+  }
+  bankWithdraw(kr, { via = 'kassa' } = {}) {
+    kr = Math.floor(+kr || 0);
+    if (kr <= 0) return { ok: false, msg: 'Välj hur mycket du vill ta ut.' };
+    if (kr > this.bank) return { ok: false, msg: `Det finns bara ${fmt(this.bank)} på sparkontot.` };
+    this.bank -= kr;
+    this.bankMin = Math.min(this.bankMin, this.bank);   // uttag sänker veckans lägsta saldo (insättningar räknas från nästa vecka)
+    this.money += kr;
+    this.logBank(via === 'atm' ? 'atm' : 'ut', kr);
+    this.save();
+    return { ok: true, kr };
+  }
+  // räntan som betalas nästa måndag om inget mer tas ut (på det som legat kvar hela veckan)
+  bankNextInterest() { return bankInterest(Math.min(this.bank, this.bankMin)); }
+  // en rad i kontoutdraget (de senaste BANK_LOG_MAX sparas)
+  logBank(t, n) {
+    this.bankLog.push({ d: this.day, m: Math.floor(this.min), t, n: Math.round(n) });
+    if (this.bankLog.length > BANK_LOG_MAX) this.bankLog.splice(0, this.bankLog.length - BANK_LOG_MAX);
   }
 
   // ---------- bostad ----------

@@ -35,7 +35,7 @@ import { worldMyEmote } from '../net/world.js';
 import * as ROOM from './room.js';
 import * as MOB from './shop-mobler.js';
 import { VW, VH, H, OW, A_FLOOR, B_WALL, B_FLOOR, AISLE1, AISLE2, SPEED, clamp, camYFor, syncView } from './ikea/geo.js';
-import { KAT, katOf, frameOf, tagName, katSig } from './ikea/kat.js';
+import { KAT, katOf, frameOf, tagName, katSig, isElektronik, elektronikName } from './ikea/kat.js';
 import { buildFloors, DECOR } from './ikea/layout.js';
 import { furnish } from './ikea/furnish.js';
 import { paintFloorBg } from './ikea/paint.js';
@@ -130,7 +130,8 @@ export function makeShopIkea(A, opts = {}) {
       play('click');
       if (typeof MOB.openBuy === 'function') MOB.openBuy(A, c.ex.k);
       else toast('Köpdialogen laddas – försök igen om en stund.');
-    } else if (c.kind === 'decor') toast(`${DECOR[c.ex.k] || 'Den'} är bara utställd – den ingår i bostaden och säljs inte här.`);
+    } else if (c.kind === 'decor' && isElektronik(c.ex.k)) { play('chirp'); toast(`📺 ${elektronikName(c.ex.k, c.ex.v)} är bara utställd – TV, datorer och spelkonsoler köper du på BLIXT ELEKTRONIK i Downtown!`); }
+    else if (c.kind === 'decor') toast(`${DECOR[c.ex.k] || 'Den'} är bara utställd – den ingår i bostaden och säljs inte här.`);
     else if (c.kind === 'door') { play('door'); A.go('city'); }
     else if (c.kind === 'exit') { play('door'); toast('🛍️ Tack för besöket på MÖBELJÄTTEN – välkommen åter!', 'good'); A.go('city'); }
     else if (c.kind === 'esc') startEsc(c.esc);
@@ -697,6 +698,7 @@ export function makeShopIkea(A, opts = {}) {
     }
     else if (meal?.st === 'done') { msg = 'UPPÄTET!'; sub = 'KLICKA FÖR ATT GÅ VIDARE'; }
     else if (hl?.ex?.buy) { const kat = katOf(hl.ex.k); msg = `${tagName(hl.ex.k)}  ${kat?.price ?? '?'} KR`; sub = hover ? 'KLICKA FÖR ATT KÖPA' : 'KLICKA PÅ MÖBELN FÖR ATT KÖPA'; }
+    else if (hl?.ex && isElektronik(hl.ex.k)) { msg = `${elektronikName(hl.ex.k, hl.ex.v).toUpperCase()} ÄR BARA UTSTÄLLD`; sub = 'ELEKTRONIK FINNS PÅ BLIXT I DOWNTOWN'; }
     else if (hl?.ex) { msg = `${(DECOR[hl.ex.k] || '').toUpperCase()} INGÅR I BOSTADEN`; sub = 'SÄLJS INTE HÄR'; }
     else if (hl?.kind === 'esc') { msg = `RULLTRAPPA ${hl.esc.up ? 'UPP' : 'NER'}`; sub = `KLICKA - TILL PLAN ${hl.esc.to}`; }
     else if (hl?.kind === 'escArr') { msg = `RULLTRAPPA FRÅN PLAN ${hl.esc.to}`; sub = F.n === 2 ? 'BARA ANKOMST - ÅK NER EFTER RESTAURANGEN' : 'BARA ANKOMST - ÅK UPP VID ENTRÉN'; }

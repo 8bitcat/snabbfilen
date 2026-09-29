@@ -1,7 +1,7 @@
 {
-  "version": "0.47.0",
+  "version": "0.48.0",
   "date": "2026-09-29",
-  "title": "Bron och downtown – staden på längden",
+  "title": "Elektronikbutiken och banken öppnar",
   "files": [
     "CHANGELOG.md",
     "assets/interior.png",
@@ -105,9 +105,11 @@
     "js/scenes/ikea/plan.js",
     "js/scenes/ikea/resto.js",
     "js/scenes/room.js",
+    "js/scenes/shop-bank.js",
     "js/scenes/shop-bostad.js",
     "js/scenes/shop-burgarbar.js",
     "js/scenes/shop-djur.js",
+    "js/scenes/shop-elektronik.js",
     "js/scenes/shop-ikea.js",
     "js/scenes/shop-kafe.js",
     "js/scenes/shop-klader.js",

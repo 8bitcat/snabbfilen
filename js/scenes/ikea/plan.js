@@ -72,8 +72,10 @@ function roomTypeOf(raw, fallback) {
   return n;
 }
 
-// Inredning som står med men inte säljs här (ingår i bostaden).
-export const DECOR = { sang: 'Sängen', garderob: 'Garderoben', kylskap: 'Kylskåpet' };
+// Inredning som står med men inte säljs här (ingår i bostaden). TV:n i vardagsrummet och
+// gamingriggen i kontoret står kvar som utställning – elektroniken säljs på BLIXT i Downtown
+// (ELEKTRONIK i kat.js, varuhuset hänvisar dit när man klickar på dem).
+export const DECOR = { sang: 'Sängen', garderob: 'Garderoben', kylskap: 'Kylskåpet', tv: 'TV:n' };
 
 // ---------- recepten: handplacerade rum ----------
 // it: [sort, variant, x, rad | fotlinje, { c: egen färg }]  (x från rummets innerkant)
