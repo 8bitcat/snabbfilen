@@ -10,6 +10,12 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.54.2] – 2026-09-29 – Mobilen i datorns upplösning
+- Mobilen i datorns upplösning: på en telefon i liggande läge läggs hela sidan ut som på en datorskärm och skalas ner lika mycket – menyerna blir inte längre jättestora och figurskaparen syns hel (alla flikar, namnet och Spara-knappen på en gång).
+- Spelbilden är lika knivskarp som förut (varje spelpixel på hela skärmpixlar), både på iPhone och Android.
+- Håller du telefonen stående är allt som förut (spelet ber dig vända den).
+- Knapparna längst ner i alla dialoger (Köp, Spara, Stäng …) står nu still – bara innehållet rullar, så de syns alltid, även på den minsta mobilen.
+
 ## [0.54.1] – 2026-09-29 – Alla kommer in i världen
 - Syskon på samma dator: två figurer i samma webbläsare (var sin flik) syns nu båda i världen – förr knuffade de ut varandra.
 - Samma figur i två flikar: den nya fliken tar över och den gamla pausar (rör den så tar den över igen) – ingen evig ut-och-in längre.

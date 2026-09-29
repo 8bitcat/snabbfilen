@@ -14,7 +14,8 @@ export function toast(text, kind = '') {
 // ---------- Modal ----------
 export function openModal(title, bodyHtml, buttons = [], { closable = true } = {}) {
   const m = $('#modal');
-  const keepScroll = m.querySelector('.dlg')?.dataset.title === title ? m.querySelector('.dlg')?.scrollTop : 0;
+  // samma dialog igen (omritning): stå kvar där man var i innehållet (det är innehållet som rullar)
+  const keepScroll = m.querySelector('.dlg')?.dataset.title === title ? m.querySelector('.dlg-body')?.scrollTop : 0;
   m.innerHTML = `<div class="dlg"><div class="dlg-head"><h2>${title}</h2>${closable ? '<button class="btn btn-small x" data-close>✕</button>' : ''}</div>
     <div class="dlg-body">${bodyHtml}</div><div class="dlg-foot"></div></div>`;
   const foot = m.querySelector('.dlg-foot');
@@ -31,7 +32,7 @@ export function openModal(title, bodyHtml, buttons = [], { closable = true } = {
   m.classList.remove('hidden');
   const dlg = m.querySelector('.dlg');
   dlg.dataset.title = title;
-  if (keepScroll) dlg.scrollTop = keepScroll;
+  if (keepScroll) dlg.querySelector('.dlg-body').scrollTop = keepScroll;
   assignKeys(dlg);
   return dlg;
 }

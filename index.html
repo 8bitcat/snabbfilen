@@ -3,6 +3,40 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover">
+  <script>
+    // Mobilen i datorns upplösning (Carl 2026-09-29): en telefon i liggande läge lägger ut sidan som
+    // en datorskärm (~1280 px bred) och skalar ner allt lika mycket – menyerna, figurskaparen och
+    // spelbilden ser ut precis som på datorn. Stående: vanlig bredd (spelet ber en vända mobilen).
+    // Bredden väljs så att varje CSS-pixel blir ett HELT antal skärmpixlar (iPhone 13 mini: 2436
+    // skärmpixlar / 2 = 1218, iPhone 13: 1266) – då blir pixelmenyerna och spelbilden knivskarpa.
+    // devicePixelRatio rättas till enhetspixlar per CSS-pixel efter nedskalningen – Chromium räknar
+    // inte in den, WebKit (iPhone) gör det redan.
+    (function () {
+      var m = document.querySelector('meta[name=viewport]');
+      if (!m) return;
+      var base = window.devicePixelRatio || 1;
+      var phone = function () { return matchMedia('(pointer: coarse)').matches && Math.min(screen.width, screen.height) < 700; };
+      var landscape = function () { return screen.orientation && screen.orientation.type ? /landscape/.test(screen.orientation.type) : window.innerWidth > window.innerHeight; };
+      var deskW = function () { var phys = Math.round(Math.max(screen.width, screen.height) * base), k = Math.max(1, Math.round(phys / 1280)); return Math.round(phys / k); };
+      var set = function () {
+        var desk = phone() && landscape();
+        var want = desk ? 'width=' + deskW() + ', user-scalable=no, viewport-fit=cover' : 'width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover';
+        if (m.getAttribute('content') !== want) m.setAttribute('content', want);
+        document.documentElement.classList.toggle('desk-mobil', desk);
+      };
+      set();
+      window.addEventListener('orientationchange', function () { setTimeout(set, 60); });
+      window.addEventListener('resize', set);
+      if (!phone()) return;
+      try {
+        var d = Object.getOwnPropertyDescriptor(window, 'devicePixelRatio');
+        if (d && d.get && d.configurable) Object.defineProperty(window, 'devicePixelRatio', { configurable: true, get: function () {
+          var real = d.get.call(window), vv = (window.visualViewport && window.visualViewport.scale) || 1;
+          return Math.min(real, base * vv);
+        } });
+      } catch (e) { /* gamla webbläsare: som förut */ }
+    })();
+  </script>
   <title>Snabbfilen</title>
   <meta name="description" content="Livet i Pixelstaden: jobba, käka, klä dig snyggt och spara till drömhuset.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
