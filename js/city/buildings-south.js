@@ -59,6 +59,72 @@ function puffs(ctx, cx, cy, t, o = {}) {
 }
 const FLOWERS = [0xe83a4a, 0xf05a8a, 0xf8d040, 0xffffff, 0xb05ae0];
 // fasadlådans fönsterrutnät (samma formel som paintBuilding) → [x, y, w, h] i canvas-koordinater
+// Radhusens trädgårdsdetaljer (Carl: "lite mer detaljer på framsidan av varje hus – blommor
+// eller annat"). Hus 1: rosenbuske och en cykel mot väggen. Hus 3: krukor på var sida om trappan
+// och en trädgårdstomte i gräset. Hus 5: solrosor längs väggen och en trehjuling. Dörrmattor vid
+// alla tre. Vintertid: snö på busken, tomma krukor, inga solrosor, snö på sadeln och tomtens luva.
+// (Världskoordinater: tomten x 16–148, y 616–640, häckarna x 58–62 och 102–106, gångarna framför
+// dörrarna x 30–46, 76–92 och 118–134.)
+function radhusDetaljer(snow) {
+  const key = snow ? '_detSno' : '_det';
+  if (!SPECS.radhus[key]) {
+    const mk = (w, h, fn) => { const P = new Pix(w, h); fn(P); return P.flush(); };
+    const SNO = 0xf6f9fe, SNO2 = 0xdde5f0;
+    const I = {};
+    I.ros = mk(14, 12, (P) => {
+      bush(P, 7, 6, 6.5, 5.5, 931, 0x24502a, 0x3a7234, 0x55923c);
+      for (let k = 0; k < 10; k++) {
+        const x = 2 + ((hash(k, 1, 932) * 10) | 0), y = 1 + ((hash(k, 2, 932) * 7) | 0);
+        if (snow) { if (k < 6) P.px(x, Math.min(y, 3), SNO); } else { P.px(x, y, k % 3 ? 0xd8283a : 0xf06a7a); if (k % 4 === 0) P.px(x + 1, y, 0xa81a2a); }
+      }
+      P.hl(2, 11, 10, 0x000000, 0.25);
+    });
+    I.cykel = mk(14, 10, (P) => {
+      for (const cx of [3, 10]) { for (let a = 0; a < 16; a++) { const t = (a / 16) * Math.PI * 2; P.px(Math.round(cx + Math.cos(t) * 2.6), Math.round(6.5 + Math.sin(t) * 2.6), 0x2a2a30); } P.px(cx, 6, 0x8a8a94); }
+      P.line(3, 6, 6, 3, 0x3a7bd5); P.line(6, 3, 10, 6, 0x3a7bd5); P.line(6, 3, 7, 6, 0x3a7bd5); P.line(7, 6, 3, 6, 0x3a7bd5); P.line(9, 2, 10, 6, 0x3a7bd5);
+      P.hl(4, 2, 4, snow ? SNO : 0x2a2a30); P.hl(8, 1, 3, 0xc8ccd4); P.px(6, 7, 0x6a6a74);
+      if (snow) { P.hl(8, 0, 3, SNO); P.px(3, 3, SNO); }
+    });
+    I.kruka = mk(8, 10, (P) => {
+      P.rect(1, 5, 6, 4, 0xb8683a); P.hl(0, 5, 8, 0xd8885a); P.hl(1, 8, 6, 0x8a4a28); P.vl(6, 6, 2, 0x9a5430);
+      if (snow) { P.hl(1, 4, 6, SNO); P.hl(2, 3, 4, SNO2); return; }
+      for (let i = 0; i < 6; i++) { P.px(1 + i, 4, i % 2 ? 0x4f9a3a : 0x3f7a34); P.px(1 + i, 3 - (i % 2), 0x5aaa4a); }
+      for (const [x, y, c] of [[1, 1, 0xf4d23c], [3, 0, 0xe85a6a], [5, 1, 0xf4f0f4], [6, 2, 0xe85a6a], [2, 2, 0xb07ad8]]) P.px(x, y, c);
+    });
+    I.tomte = mk(7, 11, (P) => {
+      for (let r = 0; r < 4; r++) P.hl(3 - (r >> 1), r, 1 + (r >> 1) * 2, snow && r < 2 ? SNO : 0xd8283a);
+      P.hl(1, 4, 5, 0xd8283a); P.px(3, 0, snow ? SNO : 0xa81a2a);
+      P.hl(2, 5, 3, 0xf0c8a0); P.px(3, 5, 0xe8a080);                 // ansiktet
+      P.rect(1, 6, 5, 2, 0xf4f4f4); P.px(3, 8, 0xf4f4f4);             // skägget
+      P.rect(1, 8, 5, 2, 0x3a5aa8); P.px(0, 8, 0x3a5aa8); P.px(6, 8, 0x3a5aa8);
+      P.hl(1, 10, 2, 0x5a3a22); P.hl(4, 10, 2, 0x5a3a22);
+    });
+    I.solros = mk(7, 24, (P) => {
+      if (snow) return;
+      P.vl(3, 6, 18, 0x3f7a34); P.px(2, 12, 0x4f9a3a); P.px(1, 11, 0x4f9a3a); P.px(4, 16, 0x4f9a3a); P.px(5, 15, 0x4f9a3a);
+      for (let y = 0; y < 7; y++) for (let x = 0; x < 7; x++) { const d = Math.hypot(x - 3, y - 3); if (d < 3.4) P.px(x, y, d < 1.6 ? 0x6a3a1a : (x + y) % 2 ? 0xf4c828 : 0xe8a818); }
+      P.px(2, 2, 0x4a2a10); P.px(4, 3, 0x8a5a2a);
+    });
+    I.trehjul = mk(10, 8, (P) => {
+      for (const [cx, cy, r] of [[2, 6, 1.6], [8, 6, 1.6], [5, 5, 2.4]]) for (let a = 0; a < 12; a++) { const t = (a / 12) * Math.PI * 2; P.px(Math.round(cx + Math.cos(t) * r), Math.round(cy + Math.sin(t) * r), 0x2a2a30); }
+      P.line(2, 5, 8, 5, 0xd8283a); P.line(5, 5, 6, 1, 0xd8283a); P.hl(5, 1, 3, snow ? SNO : 0x2a2a30); P.hl(1, 3, 3, snow ? SNO : 0x3a3a44);
+    });
+    I.matta = mk(14, 3, (P) => { P.rect(0, 0, 14, 3, snow ? 0x8a8e98 : 0x7a4a34); for (let x = 1; x < 13; x += 2) P.px(x, 1, snow ? 0xaab0bc : 0xa87050); });
+    SPECS.radhus[key] = I;
+  }
+  const I = SPECS.radhus[key];
+  const at = (img, x, y, fy) => ({ y: fy, draw: (ctx) => ctx.drawImage(img, x, y) });
+  return [
+    at(I.matta, 31, 616, 616.03), at(I.matta, 77, 616, 616.03), at(I.matta, 119, 616, 616.03),
+    at(I.ros, 16, 607, 618),                                     // hus 1: rosenbusken vid väggen
+    at(I.cykel, 45, 609, 619),                                   //         cykeln lutad mot fasaden
+    at(I.kruka, 67, 609, 618.5), at(I.kruka, 92, 609, 618.5),    // hus 3: krukorna vid trappan
+    at(I.tomte, 95, 624, 635),                                   //         tomten i gräset
+    at(I.solros, 106, 595, 618), at(I.solros, 111, 598, 618), at(I.solros, 115, 596, 618.2), // hus 5: solrosorna
+    at(I.trehjul, 137, 626, 634),                                //         trehjulingen
+  ];
+}
+
 function winGrid(K, spec) {
   const b = K.b, gh = spec.groundH ?? 30, fh = spec.floorH ?? 22, ww = spec.winW ?? 10, sp = spec.winSp ?? 18, wh = spec.winH ?? 13;
   const upTop = K.ftop + 6, upBot = K.baseY - gh - 13, floors = Math.max(0, Math.floor((upBot - upTop) / fh));
@@ -323,6 +389,18 @@ const SPECS = {
         // brevlåda på väggen
         P.rect(x0 + 36, K.baseY - 16, 6, 4, 0x2a2a2a); P.hl(x0 + 36, K.baseY - 16, 6, 0x6a6a6a); P.px(x0 + 38, K.baseY - 15, 0xe8d070);
       }
+      // blomlådor under övervåningens fönster – varje hus sina egna blommor (vintertid snö i lådan)
+      const BLOM = [[0xd83a4a, 0xf4f0f4], [0xf4d23c, 0xe8883a], [0xb07ad8, 0xf0a0c8]];
+      for (const [wx, wy, ww, wh] of winGrid(K, SPECS.radhus)) {
+        const u = Math.max(0, Math.min(2, Math.floor((wx - K.fx0) / 44))), by = wy + wh + 2;
+        P.rect(wx - 1, by, ww + 2, 3, 0x8a5a36); P.hl(wx - 1, by, ww + 2, 0xb07a4a); P.hl(wx - 1, by + 3, ww + 2, 0x000000, 0.22);
+        for (let i = 0; i < ww + 2; i++) {
+          if (snow) { P.px(wx - 1 + i, by - 1, i % 3 ? 0xf6f9fe : 0xe2e9f3); continue; }
+          P.px(wx - 1 + i, by - 1, (i + u) % 2 ? 0x4f9a3a : 0x3f7a34);
+          if ((i + u) % 3 === 0) P.px(wx - 1 + i, by - 2, BLOM[u][(i >> 1) & 1]);
+          else if ((i + u) % 3 === 1) P.px(wx - 1 + i, by - 2, 0x5aaa4a);
+        }
+      }
       K.out.smoke = [0, 1, 2].map((u) => [K.fx0 + u * 44 + 35 + K.box.x, K.rtop - 5 + K.box.y]);
     },
     live(ctx, b, st, m) {
@@ -373,6 +451,7 @@ const SPECS = {
           }
         } });
       }
+      for (const d of radhusDetaljer(snow)) out.push(d);
       return out;
     },
   },

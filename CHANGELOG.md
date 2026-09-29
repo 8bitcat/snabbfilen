@@ -10,6 +10,10 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.46.3] – 2026-09-29 – Radhusen blommar
+- Radhusen har fått liv framför varje hus: blomlådor under övervåningens fönster (egna blommor per hus, snö på vintern), rosenbuske och en cykel vid hus 1, blomkrukor vid trappan och en trädgårdstomte vid hus 3, solrosor och en trehjuling vid hus 5, dörrmattor vid alla dörrar
+- Katten vid Radhusen ligger inte längre gömd bakom häcken – den solar i gräset vid trappan
+
 ## [0.46.2] – 2026-09-29 – Husdjuren och gästerna låter
 - Husdjuren låter på riktigt: klickar du på hunden eller katten skäller eller jamar den (hungrigt eller ledset om den behöver något), klappar du spinner katten och hunden skäller glatt, och leker ni blir de glada
 - Gästerna på caféet och i Burgarbaren pratar med sin egen röst (inte stolens)

@@ -2782,7 +2782,7 @@ export function createLife(env, traffic, props) {
     // trappstenen vid porten går ~5 px utanför dörren – katten ligger på dess högra ände
     if (home) cats.push({ x: home.door.x1 + 3, y: baseOf(home) + 3, pal: 0, st: 'sleep', t: rr(4, 10), tail: 0, tailT: 0, dir: -1 });
     const rh = byId('radhus');
-    if (rh) { const q = nav.nearest(Math.round(rh.door.x1 + 12), baseOf(rh) + 6, walk, 6); if (q) cats.push({ x: q[0], y: q[1], pal: 1, st: 'awake', t: rr(4, 10), tail: 0, tailT: 0, dir: 1 }); }
+    if (rh) { const q = nav.nearest(Math.round(rh.door.x0 - 10), baseOf(rh) + 9, walk, 6); /* i gräset vänster om trappan – inte bakom häcken */ if (q) cats.push({ x: q[0], y: q[1], pal: 1, st: 'awake', t: rr(4, 10), tail: 0, tailT: 0, dir: 1 }); }
     const ov = byId('overgivet');
     if (ov) { const q = nav.nearest(Math.round(ov.door.x0 - 10), baseOf(ov) + 4, walk, 6); if (q) cats.push({ x: q[0], y: q[1], pal: 2, st: 'sleep', t: rr(4, 10), tail: 0, tailT: 0, dir: 1, night: true }); }
   }
