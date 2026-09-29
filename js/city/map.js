@@ -3,9 +3,13 @@
 // (1 enhet = 1 spelpixel; en figur är ~24×40). Kameran visar 384×216.
 // Fullständig beskrivning för modulförfattare: docs/STADEN.md.
 //
-// Världen är 2720 × 820. Den gamla stadskärnan (v1, x 0–1700, y 0–420)
-// ligger kvar EXAKT där den låg – all befintlig konst passar. v2 lägger till
-// djup söderut (SÖDER) och en förort österut (FÖRORTEN).
+// Världen är 4000 × 820. Den gamla stadskärnan (v1, x 0–1700, y 0–420)
+// ligger kvar EXAKT där den låg – all befintlig konst passar. v2 lade till
+// djup söderut (SÖDER) och en förort österut (FÖRORTEN). v3 ("staden på
+// längden", Carl 2026-09-29) lägger DOWNTOWN direkt öster om Infarten,
+// sedan FLODEN med STORA BRON (Pixelgatan) och JÄRNBRON (Södergatan), och
+// flyttar hela förorten oförändrad SUB_DX = 1280 px österut – förorten
+// sitter inte längre ihop med centrum.
 //
 // Genomskärning uppifrån och ner (y) – gäller hela bredden:
 //     8–36    bakgatan bakom den norra husraden (gåbar, syns i gränderna)
@@ -24,14 +28,19 @@
 // Genomskärning i x:
 //      0–1700  CENTRUM (norra raden), PARKEN och SÖDER (södra raden)
 //   1700–1752  INFARTEN: en lodrät väg från bakgatan ner till Södergatan
-//   1752–2720  FÖRORTEN: höghus, närbutik, pantbank, kebab, övergivet hus,
-//              parkering, sliten lekplats, bilverkstad, tvätteri, garage …
+//   1752–2400  DOWNTOWN: finanskvarteret – skyskrapor, banken, elektronik,
+//              frisör, skor, accessoarer; FINANSTORGET i mellanbandet
+//   2400–3032  FLODEN: kajer (2400–2420, 3012–3032), vatten 2424–3008 från
+//              y 0 till 820 utom där broarna går: STORA BRON (y 186–306,
+//              hängbro à la Brooklyn Bridge) och JÄRNBRON (y 640–760)
+//   3032–4000  FÖRORTEN (v2-förorten + SUB_DX): höghus, närbutik, pantbank,
+//              kebab, övergivet hus, parkering, lekplats, bilverkstad, tvätteri …
 // Den södra raden är ritad som en kopia av den norra, DY_S = 454 px längre
 // ner: husbilden för ett södervänt hus är 190 px hög precis som en norrbild,
 // och bildens rad r motsvarar världens y = r + DY_S (se artBox).
 
 export const CITY = {
-  W: 2720, H: 820,
+  W: 4000, H: 820,             // OBS: net/world.js klämmer spelarnas x till 0–4000 – bredare kräver ny klämning där
   VIEW_W: 384, VIEW_H: 216,
   // --- norra halvan (v1, oförändrad; PARK växte söderut från [306, 420]) ---
   BACK: [8, 36],
@@ -43,8 +52,12 @@ export const CITY = {
   FOOT_TOP: 40,                // den norra husradens fotavtryck börjar här
   // --- v2 ---
   X_CITY: 1700,                // v1-stadens bredd: centrum, parken och söder ligger i x < 1700
-  INFARTEN: [1700, 1752],      // den lodräta vägen mellan centrum och förorten
-  X_SUB: 1752,                 // förorten börjar här
+  INFARTEN: [1700, 1752],      // den lodräta vägen mellan centrum och downtown
+  // --- v3: staden på längden ---
+  X_DT: 1752,                  // DOWNTOWN börjar här (finanskvarteret)
+  RIVER: [2400, 3032],         // FLODEN: västra kajen + vattnet + östra kajen (se RIVER/BRIDGES)
+  X_SUB: 3032,                 // förorten börjar här (var 1752 i v2)
+  SUB_DX: 1280,                // så långt österut förorten flyttades i v3 (v2-x + SUB_DX = v3-x)
   DY_S: 454,                   // BASE_S − BASE = ROAD_S[0] − ROAD[0]
   BACK_S: [462, 490],          // parkgången bakom de södra husen
   FOOT_TOP_S: 494,             // den södra husradens fotavtryck börjar här
@@ -78,6 +91,64 @@ export const LANES_I = [
 ];
 
 // ---------------------------------------------------------------------
+// FLODEN (v3). Flodrummet x 2400–3032 över hela höjden: en gåbar kaj på
+// varje strand (stenremsa med räcke mot vattnet), vattnet emellan. Floden
+// kommer norrifrån (utanför världen), går under STORA BRON och JÄRNBRON och
+// mynnar i kanalen längst söderut. Allt i flodrummet ritas av js/city/bridge.js
+// (vattnet, kajerna, broarna, tornen, kablarna, båtarna) – ground.js målar
+// bara en platshållare under.
+//   quayW/quayE  kajerna (gåbara: x 2400–2420 och 3012–3032, y 8–774)
+//   rails        kajräckena längs vattnet (hinder, 4 px)
+//   water        vattenytorna (hinder; is på vintern) – allt vatten utom under broarna
+// ---------------------------------------------------------------------
+const RX0 = CITY.RIVER[0], RX1 = CITY.RIVER[1], QW = 20, RAIL = 4;   // kajbredd, räckets bredd
+const WX0 = RX0 + QW + RAIL, WX1 = RX1 - QW - RAIL;                  // vattnet: 2424–3008
+// Broarnas däck (gåbart, samma y-band som gatan på land) och räcken (hinder).
+// Vattnet är allt i x WX0–WX1 som inte är däck eller räcke.
+const DECK_N = [CITY.SIDEWALK_N[0], CITY.SIDEWALK_S[1]];             // 186–306: Pixelgatan med trottoarer
+const DECK_S = [CITY.SIDEWALK_SN[0], CITY.SIDEWALK_SS[1]];           // 640–760: Södergatan med trottoarer
+export const BRIDGES = [
+  {
+    id: 'storabron', name: 'STORA BRON', kind: 'hangbro', road: 'pixelgatan',
+    x0: WX0, x1: WX1,
+    walk: [WX0, DECK_N[0], WX1, DECK_N[1]],                           // gåbart: norra trottoaren, körbanan, södra trottoaren
+    rails: [[WX0, DECK_N[0] - 5, WX1, DECK_N[0]], [WX0, DECK_N[1], WX1, DECK_N[1] + 5]],
+    // två stentorn med gotiska spetsbågar (à la Brooklyn Bridge) som däcket går igenom.
+    // legs = tornbenen utanför räckena (i vattnet), pier = mittpelaren mellan körfälten
+    // (mellan de två valven). Tornen får inte nå över världs-y 0 (kameran visar aldrig y < 0).
+    towers: [
+      { x0: 2556, x1: 2604, legs: [[2556, 163, 2604, 181], [2556, 311, 2604, 329]], pier: [2556, 246, 2604, 250] },
+      { x0: 2828, x1: 2876, legs: [[2828, 163, 2876, 181], [2828, 311, 2876, 329]], pier: [2828, 246, 2876, 250] },
+    ],
+  },
+  {
+    id: 'jarnbron', name: 'JÄRNBRON', kind: 'fackverk', road: 'sodergatan',
+    x0: WX0, x1: WX1,
+    walk: [WX0, DECK_S[0], WX1, DECK_S[1]],
+    rails: [[WX0, DECK_S[0] - 5, WX1, DECK_S[0]], [WX0, DECK_S[1], WX1, DECK_S[1] + 5]],
+    towers: [],
+  },
+];
+export const RIVER = {
+  x0: RX0, x1: RX1,                                                  // hela flodrummet
+  wx0: WX0, wx1: WX1,                                                // vattnet
+  quayW: [RX0, CITY.BACK[0], RX0 + QW, CITY.WALK_BOTTOM + 2],        // västra kajen (downtown-sidan)
+  quayE: [RX1 - QW, CITY.BACK[0], RX1, CITY.WALK_BOTTOM + 2],        // östra kajen (förortssidan)
+  // vattenytorna: norr om Stora bron, mellan broarna, söder om Järnbron (mynnar i kanalen)
+  water: [
+    [WX0, 0, WX1, DECK_N[0] - 5],
+    [WX0, DECK_N[1] + 5, WX1, DECK_S[0] - 5],
+    [WX0, DECK_S[1] + 5, WX1, CITY.H],
+  ],
+  // kajräckena mot vattnet (öppna där broarna ansluter)
+  rails: [
+    [RX0 + QW, 0, WX0, DECK_N[0] - 5], [RX0 + QW, DECK_N[1] + 5, WX0, DECK_S[0] - 5], [RX0 + QW, DECK_S[1] + 5, WX0, CITY.H],
+    [WX1, 0, RX1 - QW, DECK_N[0] - 5], [WX1, DECK_N[1] + 5, RX1 - QW, DECK_S[0] - 5], [WX1, DECK_S[1] + 5, RX1 - QW, CITY.H],
+  ],
+};
+export const inRiver = (x, y) => x >= RX0 && x < RX1 && y >= 0 && y < CITY.H;
+
+// ---------------------------------------------------------------------
 // Husen. Alla hus (norra raden, södra raden, förorten, fristående) har samma fält:
 //   id, kind      – kind väljer konsten i BUILDING_ART[kind] (samma som id)
 //   x, w          – fotavtryckets västra kant och bredd
@@ -90,10 +161,12 @@ export const LANES_I = [
 //                   framför ett indraget hus; huskonsten/marken målar den
 //   frontY        – (valfritt) y för husets främre lager: BUILDING_ART[kind].front()
 //                   ritas som ett eget y-sorterat föremål (t.ex. mackens tak över pumparna)
-//   door          – { x0, x1, type: 'swing'|'slide'|'open'|'roll'|'boarded' } i världs-x
+//   door          – { x0, x1, type } i världs-x; type (DOOR_TYPES): 'swing' (slagdörr),
+//                   'slide' (skjutdörr), 'open' (öppen portal), 'roll' (rullport),
+//                   'boarded' (igenspikad), 'revolve' (karuselldörr – kontorstornen)
 //   row           – 'n' (norra raden), 's' (södra raden), 'f' (fristående)
 //   face          – 'south': fasaden med dörren vetter söderut (mot kameran). Alla hus i v2.
-//   district      – 'CENTRUM' | 'PARKEN' | 'SÖDER' | 'FÖRORTEN' (se DISTRICTS)
+//   district      – 'CENTRUM' | 'PARKEN' | 'SÖDER' | 'DOWNTOWN' | 'FÖRORTEN' (se DISTRICTS)
 //   sign, icon    – namn på skylten och ikon i meddelanden
 //   enter         – vad som händer när man går in:
 //                     'hem'              spelarens bostad om hen bor här (homes), annars bostadsbyrån
@@ -139,7 +212,7 @@ export const BUILDINGS_S = [
   S('pizzeria', 172, 88, 100, { x0: 204, x1: 228, type: 'swing' }, { sign: 'PIZZERIA NAPOLI', icon: '🍕', enter: 'jobb:pizzeria', open: [11, 23] }),
   S('posten', 312, 92, 96, { x0: 346, x1: 370, type: 'swing' }, { sign: 'POSTEN', icon: '📮', enter: 'jobb:posten', open: [8, 18] }),
   S('djuraffar', 432, 180, 116, { x0: 508, x1: 536, type: 'swing' }, { sign: 'DJURAFFÄREN', icon: '🐾', enter: 'djur', open: [9, 19] }),
-  S('bio', 640, 176, 120, { x0: 710, x1: 746, type: 'slide' }, { sign: 'BIO PIXEL', icon: '🎬', open: [12, 24], soon: 'Kvällens film börjar 19:00 – biljettluckan öppnar snart!' }),
+  S('bio', 640, 176, 120, { x0: 710, x1: 746, type: 'slide' }, { sign: 'BIO PIXEL', icon: '🎬', open: [12, 24], enter: 'bio', soon: 'Kvällens film börjar 19:00 – biljettluckan öppnar snart!' }), // foajén och salongen (js/scenes/shop-bio.js)
   S('kyrka', 868, 132, 104, { x0: 922, x1: 946, type: 'swing' }, {
     sign: 'SÖDERKYRKAN', icon: '⛪', tower: { x0: 914, x1: 954, h: 212 },
     soon: 'Kyrkan är tyst och sval. Gudstjänst på söndag klockan 11.',
@@ -154,15 +227,52 @@ export const BUILDINGS_S = [
   }),
 ];
 
+// DOWNTOWN (v3): finanskvarteret mellan Infarten och floden. Höga hus i båda
+// raderna – skyskrapor med karuselldörrar, banken, elektronikbutiken, frisören,
+// skobutiken och accessoarbutiken. BANKGATAN (x 2080–2128) är tvärgatan i båda
+// raderna, i linje med FINANSTORGET mitt i mellanbandet. enter = scenen man går in i
+// (main.js laddar scenerna tåligt – saknas en visar dörren sin soon-text, se city.js
+// SCENE_DOORS). PIXEL TOWER rymmer Pixelhögskolan, FINANSHUSET finansjobbet och
+// GLASTORNET Pixel Data (datorjobbet) – båda jobben kräver examen från högskolan.
+// Höjder: norra raden högst ~176 (bilden börjar på y 0), södra raden får vara högre
+// (den syns över torget) men helst ≤ 220 så att torget inte försvinner bakom.
+export const DOOR_TYPES = ['swing', 'slide', 'open', 'roll', 'boarded', 'revolve'];
+const DN = (id, x, w, h, door, extra) => mk('n', 'DOWNTOWN', id, x, w, h, door, extra);
+const DS = (id, x, w, h, door, extra) => mk('s', 'DOWNTOWN', id, x, w, h, door, extra);
+export const BUILDINGS_D = [
+  DN('kontor1', 1768, 128, 170, { x0: 1816, x1: 1848, type: 'revolve' }, { sign: 'FINANSHUSET', icon: '📈', open: [7, 19], enter: 'jobb:finans',
+    soon: 'Finanshuset anställer bara folk med examen i Ekonomi från Pixelhögskolan. Kavaj och slips, tack!' }),
+  DN('bank', 1920, 160, 136, { x0: 1984, x1: 2016, type: 'swing' }, { sign: 'PIXELBANKEN', icon: '🏦', open: [9, 17], enter: 'bank',
+    soon: 'Banken öppnar snart – här ska du kunna sätta in lönen, spara och låna.' }),
+  DN('elektronik', 2128, 152, 124, { x0: 2188, x1: 2220, type: 'slide' }, { sign: 'ELEKTRONIK', icon: '📱', open: [10, 20], enter: 'elektronik',
+    soon: 'Elektronikbutiken öppnar snart – telefoner, surfplattor, datorer och tv-apparater!' }),
+  DN('kontor2', 2304, 80, 174, { x0: 2328, x1: 2356, type: 'revolve' }, { sign: 'BÖRSHUSET', icon: '📊', open: [8, 18],
+    soon: 'Öppnar snart – börsen. Här köps och säljs aktier från morgon till kväll.' }),
+  DS('kontor3', 1768, 120, 200, { x0: 1812, x1: 1844, type: 'revolve' }, { sign: 'PIXELHÖGSKOLAN', icon: '🎓', open: [8, 20], enter: 'universitet',
+    soon: 'Pixelhögskolan i Pixel Tower öppnar snart – kurser, föreläsningar och tentor.' }),
+  DS('skor', 1912, 96, 100, { x0: 1948, x1: 1972, type: 'swing' }, { sign: 'SKOBUTIKEN', icon: '👟', open: [10, 19], enter: 'skor',
+    soon: 'Skobutiken öppnar snart – sneakers, kängor, stövlar och finskor.' }),
+  DS('frisor', 2008, 72, 92, { x0: 2032, x1: 2056, type: 'swing' }, { sign: 'FRISÖR', icon: '💈', open: [9, 18], enter: 'frisor',
+    soon: 'Frisören öppnar snart – klippning, färgning och nya frisyrer.' }),
+  DS('accessoarer', 2128, 96, 96, { x0: 2164, x1: 2188, type: 'swing' }, { sign: 'ACCESSOARER', icon: '👜', open: [10, 19], enter: 'accessoarer',
+    soon: 'Accessoarbutiken öppnar snart – väskor, smycken, klockor och solglasögon.' }),
+  DS('kontor4', 2248, 136, 216, { x0: 2300, x1: 2332, type: 'revolve' }, { sign: 'GLASTORNET', icon: '🖥️', open: [7, 19], enter: 'jobb:datorbygge',
+    soon: 'Pixel Data på tolfte våningen anställer bara folk med examen i Datorteknik. Hissen går bara för anställda.' }),
+];
+
 // Förorten (FÖRORTEN): en norra rad längs Pixelgatan och en södra rad längs
 // Södergatan, samma geometri som i centrum. Här är allt slitet (district.worn = 1).
-const XN = (id, x, w, h, door, extra) => mk('n', 'FÖRORTEN', id, x, w, h, door, extra);
-const XS = (id, x, w, h, door, extra) => mk('s', 'FÖRORTEN', id, x, w, h, door, extra);
+// v3: koordinaterna nedan är v2:s (förorten låg då i x 1752–2720) – hela förorten
+// flyttas oförändrad SUB_DX österut här (hus, dörrar, tomter, hållplats, zebra …).
+const SX = CITY.SUB_DX;
+const subDoor = (d) => ({ ...d, x0: d.x0 + SX, x1: d.x1 + SX });
+const XN = (id, x, w, h, door, extra) => mk('n', 'FÖRORTEN', id, x + SX, w, h, subDoor(door), extra);
+const XS = (id, x, w, h, door, extra) => mk('s', 'FÖRORTEN', id, x + SX, w, h, subDoor(door), extra);
 export const BUILDINGS_X = [
   XN('hoghus', 1768, 168, 168, { x0: 1840, x1: 1864, type: 'swing' }, { sign: 'BETONGVÄGEN 1', icon: '🏢', enter: 'bostad:hoghus', homes: ['rum', 'hoghus'] }), // Lilla rummet (startbostaden) ligger i förorten
   XN('narbutik', 1964, 108, 104, { x0: 2004, x1: 2028, type: 'swing' }, { sign: 'NÄRBUTIK 24/7', icon: '🏪', enter: 'narbutik' }),
-  XN('pantbank', 2072, 76, 104, { x0: 2098, x1: 2122, type: 'swing' }, { sign: 'PANTBANKEN', icon: '💍', open: [10, 18], soon: 'Pantbanken: "Vi köper ditt guld!" – kom tillbaka när du har något att pantsätta.' }),
-  XN('kebab', 2148, 88, 104, { x0: 2180, x1: 2204, type: 'swing' }, { sign: 'KEBAB GRILL', icon: '🥙', open: [11, 24], soon: 'Grillen är trasig. "ÖPPNAR SNART" står det på en lapp från i fjol.' }),
+  XN('pantbank', 2072, 76, 104, { x0: 2098, x1: 2122, type: 'swing' }, { sign: 'PANTBANKEN', icon: '💍', open: [10, 18], enter: 'pantbank', soon: 'Pantbanken: "Vi köper ditt guld!" – kom tillbaka när du har något att pantsätta.' }), // js/scenes/shop-pantbank.js
+  XN('kebab', 2148, 88, 104, { x0: 2180, x1: 2204, type: 'swing' }, { sign: 'KEBAB GRILL', icon: '🥙', open: [11, 24], enter: 'kebab', soon: 'Grillen är trasig igen. "ÖPPET IGEN!" står det på lappen – kom tillbaka en annan dag.' }), // js/scenes/shop-kebab.js
   XN('overgivet', 2288, 104, 96, { x0: 2328, x1: 2352, type: 'boarded' }, { sign: '', icon: '🏚️', soon: 'Igenspikat. Det luktar fukt och någon har sprejat ett hjärta på dörren.' }),
   XN('hoghus2', 2420, 184, 170, { x0: 2500, x1: 2524, type: 'swing' }, { sign: 'BETONGVÄGEN 5', icon: '🏢', soon: 'Kodlåset är sönderslaget – men du bor inte här.' }),
   XS('bilverkstad', 1768, 160, 88, { x0: 1792, x1: 1840, type: 'roll' }, { sign: 'BILVERKSTAN', icon: '🔧', enter: 'jobb:bilverkstad', open: [7, 18] }),
@@ -184,31 +294,39 @@ export const FREESTANDING = [
   F('PARKEN', 'toalett', 762, 36, 452, 24, 30, { x0: 772, x1: 786, type: 'swing' }, { sign: 'WC', icon: '🚻', soon: 'Upptaget! Försök igen om en stund.' }),
   F('PARKEN', 'lekforrad', 1150, 32, 452, 22, 28, { x0: 1158, x1: 1174, type: 'swing' }, { sign: 'LEKFÖRRÅD', icon: '🧸', soon: 'Låst – nyckeln har parkvakten.' }),
   F('PARKEN', 'paviljong', 1296, 88, 444, 36, 44, { x0: 1328, x1: 1352, type: 'open' }, { sign: 'MUSIKPAVILJONGEN', icon: '🎺', soon: 'Ingen konsert just nu – kom tillbaka en annan dag!' }),
-  // förorten
-  F('FÖRORTEN', 'lamell', 2200, 200, 452, 40, 84, { x0: 2288, x1: 2312, type: 'swing' }, { sign: 'BETONGVÄGEN 7', icon: '🏢', soon: 'Porten är låst och kodlåset är sönderslaget. Du bor inte här.' }),
-  F('FÖRORTEN', 'husvagn', 2646, 48, 628, 22, 28, { x0: 2656, x1: 2668, type: 'swing' }, { sign: 'HUSVAGNEN', icon: '🚐', enter: 'bostad:husvagn', homes: ['husvagn'], lot: 'vagnsplatsen' }),
+  // förorten (v2-koordinater + SUB_DX)
+  F('FÖRORTEN', 'lamell', 2200 + SX, 200, 452, 40, 84, subDoor({ x0: 2288, x1: 2312, type: 'swing' }), { sign: 'BETONGVÄGEN 7', icon: '🏢', soon: 'Porten är låst och kodlåset är sönderslaget. Du bor inte här.' }),
+  F('FÖRORTEN', 'husvagn', 2646 + SX, 48, 628, 22, 28, subDoor({ x0: 2656, x1: 2668, type: 'swing' }), { sign: 'HUSVAGNEN', icon: '🚐', enter: 'bostad:husvagn', homes: ['husvagn'], lot: 'vagnsplatsen' }),
 ];
 
-export const ALL_BUILDINGS = [...BUILDINGS, ...BUILDINGS_S, ...BUILDINGS_X, ...FREESTANDING];
+export const ALL_BUILDINGS = [...BUILDINGS, ...BUILDINGS_S, ...BUILDINGS_D, ...BUILDINGS_X, ...FREESTANDING];
 export const buildingById = (id) => ALL_BUILDINGS.find((b) => b.id === id) || null;
 
 // ---------------------------------------------------------------------
 // Tomter: öppna, gåbara ytor. Marken målas av ground.js, staket/grejer
 // (med hinder och grindar där gates anger) av props.js. row 'm' = mellanbandet.
 // ---------------------------------------------------------------------
+// förortens tomter anges i v2-koordinater och flyttas SUB_DX österut (rect, grindar, infart)
+const subLot = (l) => ({
+  ...l, rect: [l.rect[0] + SX, l.rect[1], l.rect[2] + SX, l.rect[3]],
+  ...(l.gates ? { gates: l.gates.map((g) => (g.x0 !== undefined ? { ...g, x0: g.x0 + SX, x1: g.x1 + SX } : g)) } : {}),
+  ...(l.drive ? { drive: [l.drive[0] + SX, l.drive[1] + SX] } : {}),
+});
 export const LOTS = [
   { id: 'kyrkogard', kind: 'kyrkogard', name: 'KYRKOGÅRDEN', district: 'SÖDER', row: 's', rect: [1000, CITY.FOOT_TOP_S, 1100, CITY.BASE_S], fence: true, // (krympt: Leksakslådan står på östra delen)
     gates: [{ side: 'n', x0: 1060, x1: 1080 }, { side: 's', x0: 1040, x1: 1060 }] },
-  { id: 'parkering', kind: 'parkering', name: 'PARKERINGEN', district: 'FÖRORTEN', row: 'm', rect: [1768, 318, 2000, 452], fence: false,
-    drive: [1790, 1822] }, // infarten från Pixelgatan (bilar korsar trottoaren här)
-  { id: 'lekplats_x', kind: 'lekplats_x', name: 'LEKPLATSEN', district: 'FÖRORTEN', row: 'm', rect: [2030, 334, 2170, 452], fence: true,
-    gates: [{ side: 'n', x0: 2090, x1: 2106 }, { side: 's', x0: 2120, x1: 2136 }] },
-  { id: 'grusplan', kind: 'grusplan', name: 'GRUSPLANEN', district: 'FÖRORTEN', row: 'm', rect: [2430, 318, 2704, 452], fence: true,
-    gates: [{ side: 'n', x0: 2560, x1: 2576 }, { side: 's', x0: 2450, x1: 2466 }, { side: 'w', y0: 380, y1: 396 }] }, // w = hål i stängslet
-  { id: 'tomten', kind: 'tomten', name: 'TOMTEN', district: 'FÖRORTEN', row: 'n', rect: [2632, CITY.FOOT_TOP, 2712, CITY.BASE], fence: true,
-    gates: [{ side: 's', x0: 2660, x1: 2680 }] },
-  { id: 'atervinning', kind: 'atervinning', name: 'ÅTERVINNINGEN', district: 'FÖRORTEN', row: 's', rect: [2288, CITY.FOOT_TOP_S, 2380, CITY.BASE_S], fence: false },
-  { id: 'vagnsplatsen', kind: 'vagnsplatsen', name: 'VAGNSPLATSEN', district: 'FÖRORTEN', row: 's', rect: [2628, CITY.FOOT_TOP_S, 2712, CITY.BASE_S], fence: false },
+  ...[
+    { id: 'parkering', kind: 'parkering', name: 'PARKERINGEN', district: 'FÖRORTEN', row: 'm', rect: [1768, 318, 2000, 452], fence: false,
+      drive: [1790, 1822] }, // infarten från Pixelgatan (bilar korsar trottoaren här)
+    { id: 'lekplats_x', kind: 'lekplats_x', name: 'LEKPLATSEN', district: 'FÖRORTEN', row: 'm', rect: [2030, 334, 2170, 452], fence: true,
+      gates: [{ side: 'n', x0: 2090, x1: 2106 }, { side: 's', x0: 2120, x1: 2136 }] },
+    { id: 'grusplan', kind: 'grusplan', name: 'GRUSPLANEN', district: 'FÖRORTEN', row: 'm', rect: [2430, 318, 2704, 452], fence: true,
+      gates: [{ side: 'n', x0: 2560, x1: 2576 }, { side: 's', x0: 2450, x1: 2466 }, { side: 'w', y0: 380, y1: 396 }] }, // w = hål i stängslet
+    { id: 'tomten', kind: 'tomten', name: 'TOMTEN', district: 'FÖRORTEN', row: 'n', rect: [2632, CITY.FOOT_TOP, 2712, CITY.BASE], fence: true,
+      gates: [{ side: 's', x0: 2660, x1: 2680 }] },
+    { id: 'atervinning', kind: 'atervinning', name: 'ÅTERVINNINGEN', district: 'FÖRORTEN', row: 's', rect: [2288, CITY.FOOT_TOP_S, 2380, CITY.BASE_S], fence: false },
+    { id: 'vagnsplatsen', kind: 'vagnsplatsen', name: 'VAGNSPLATSEN', district: 'FÖRORTEN', row: 's', rect: [2628, CITY.FOOT_TOP_S, 2712, CITY.BASE_S], fence: false },
+  ].map(subLot),
 ];
 
 // ---------------------------------------------------------------------
@@ -253,14 +371,20 @@ function gapsOf(row, x0, x1, occ, names, edgeL, edgeR) {
 // Söder: den södra raden i x 0–1700 (gågator mitt för Parkgatan, kyrkan och Fabriksgatan).
 export const STREETS_S = gapsOf('s', 0, CITY.X_CITY, [...BUILDINGS_S, ...LOTS.filter((l) => l.row === 's' && l.district === 'SÖDER')],
   { 260: 'POSTGATAN', 816: 'KYRKOGATAN', 1212: 'VÅRDGATAN' }, true, false);
-// Förorten: båda raderna öster om Infarten, plus Infarten själv i båda raderna.
+// Downtown (v3): båda raderna mellan Infarten och floden. BANKGATAN i båda raderna
+// (norra: tvärgata, södra: gågata); den sista luckan (2384–2400) leder ner till kajen.
+export const STREETS_D = [
+  ...gapsOf('n', CITY.X_DT, RX0, BUILDINGS_D.filter((b) => b.row === 'n'), { 2080: 'BANKGATAN' }, false, false),
+  ...gapsOf('s', CITY.X_DT, RX0, BUILDINGS_D.filter((b) => b.row === 's'), { 2080: 'BANKGATAN' }, false, false),
+];
+// Förorten: båda raderna öster om floden, plus Infarten själv i båda raderna.
 export const STREETS_X = [
   { x0: CITY.INFARTEN[0], x1: CITY.INFARTEN[1], y0: CITY.BACK[1], y1: CITY.BASE, kind: 'street', name: 'INFARTEN', row: 'n', road: 'infarten' },
-  ...gapsOf('n', CITY.X_SUB, CITY.W, [...BUILDINGS_X.filter((b) => b.row === 'n'), ...LOTS.filter((l) => l.row === 'n')], { 2236: 'BETONGGATAN' }, false, true),
+  ...gapsOf('n', CITY.X_SUB, CITY.W, [...BUILDINGS_X.filter((b) => b.row === 'n'), ...LOTS.filter((l) => l.row === 'n')], { [2236 + SX]: 'BETONGGATAN' }, false, true),
   { x0: CITY.INFARTEN[0], x1: CITY.INFARTEN[1], y0: CITY.BACK_S[1], y1: CITY.BASE_S, kind: 'road', name: 'INFARTEN', row: 's', road: 'infarten' },
-  ...gapsOf('s', CITY.X_SUB, CITY.W, [...BUILDINGS_X.filter((b) => b.row === 's'), ...LOTS.filter((l) => l.row === 's' && l.district === 'FÖRORTEN')], { 2236: 'BETONGGATAN' }, false, true),
+  ...gapsOf('s', CITY.X_SUB, CITY.W, [...BUILDINGS_X.filter((b) => b.row === 's'), ...LOTS.filter((l) => l.row === 's' && l.district === 'FÖRORTEN')], { [2236 + SX]: 'BETONGGATAN' }, false, true),
 ];
-export const STREETS_ALL = [...STREETS, ...STREETS_S, ...STREETS_X];
+export const STREETS_ALL = [...STREETS, ...STREETS_S, ...STREETS_D, ...STREETS_X];
 
 // ---------------------------------------------------------------------
 // Övergångsställen. i är unikt över ALLA: CROSSWALKS_ALL[i].i === i.
@@ -269,24 +393,28 @@ export const STREETS_ALL = [...STREETS, ...STREETS_S, ...STREETS_X];
 // (x för vågräta vägar, y för Infarten).
 // ---------------------------------------------------------------------
 const cwX = (i, x0, x1, name, road, y0, y1, extra) => ({ i, x0, x1, name, road, y0, y1, lights: true, stop: { 1: x0 - 3, '-1': x1 + 3 }, ...extra });
-// Pixelgatan (v1: i 0–2 oförändrade; v2 lägger till Infarten och Betonggatan).
+// Pixelgatan (v1: i 0–2 oförändrade; v2 lägger till Infarten och Betonggatan; v3 Bankgatan).
+// Nya övergångsställen får NÄSTA lediga i (trafiken slår upp Infartens zebror som i 8 och 9)
+// och läggs SIST i sin väglista (props.js läser CROSSWALKS_S[0] och [1] på index).
 export const CROSSWALKS = [
   ...STREETS.filter((s) => s.kind === 'street').map((s, i) => cwX(i, s.x0, s.x1, s.name, 'pixelgatan', CITY.ROAD[0], CITY.ROAD[1])),
   cwX(3, CITY.INFARTEN[0], CITY.INFARTEN[1], 'INFARTEN', 'pixelgatan', CITY.ROAD[0], CITY.ROAD[1]),
-  cwX(4, 2236, 2288, 'BETONGGATAN', 'pixelgatan', CITY.ROAD[0], CITY.ROAD[1], { broken: true }),
+  cwX(4, 2236 + SX, 2288 + SX, 'BETONGGATAN', 'pixelgatan', CITY.ROAD[0], CITY.ROAD[1], { broken: true }),
+  cwX(10, 2080, 2128, 'BANKGATAN', 'pixelgatan', CITY.ROAD[0], CITY.ROAD[1]),
 ];
 // Södergatan.
 export const CROSSWALKS_S = [
   cwX(5, 260, 312, 'POSTGATAN', 'sodergatan', CITY.ROAD_S[0], CITY.ROAD_S[1]),
   cwX(6, 816, 868, 'KYRKOGATAN', 'sodergatan', CITY.ROAD_S[0], CITY.ROAD_S[1]),
   cwX(7, CITY.INFARTEN[0], CITY.INFARTEN[1], 'INFARTEN', 'sodergatan', CITY.ROAD_S[0], CITY.ROAD_S[1]),
+  cwX(11, 2080, 2128, 'BANKGATAN', 'sodergatan', CITY.ROAD_S[0], CITY.ROAD_S[1]),
 ];
 // Infarten: zebror där trottoarerna korsar vägen (inga ljus – bilarna väjer).
 export const CROSSWALKS_I = [
   { i: 8, x0: CITY.INFARTEN[0], x1: CITY.INFARTEN[1], y0: 282, y1: 302, name: 'INFARTEN', road: 'infarten', lights: false, stop: { 1: 279, '-1': 305 } },
   { i: 9, x0: CITY.INFARTEN[0], x1: CITY.INFARTEN[1], y0: 646, y1: 666, name: 'INFARTEN', road: 'infarten', lights: false, stop: { 1: 643, '-1': 669 } },
 ];
-export const CROSSWALKS_ALL = [...CROSSWALKS, ...CROSSWALKS_S, ...CROSSWALKS_I];
+export const CROSSWALKS_ALL = [...CROSSWALKS, ...CROSSWALKS_S, ...CROSSWALKS_I].sort((a, b) => a.i - b.i);
 
 // Trafikljusens stolpar (fotpunkt). En på varje trottoar vid varje övergångsställe med ljus.
 const poles = (c, yN, yS) => [
@@ -304,11 +432,13 @@ export const LIGHTS_ALL = [...LIGHTS, ...LIGHTS_S];
 // översprejad tidtabell.
 // ---------------------------------------------------------------------
 const stop = (id, name, district, x, y, road, lane, extra) => ({ id, name, district, x, y, road, lane, wait: { x: x + 30, y: y - 3 }, ...extra });
+// Nya hållplatser läggs SIST (props.js ritar kurerna på index: BUS_STOPS[1], [2], [3], [4] …).
 export const BUS_STOPS = [
   stop('pixeltorget', 'PIXELTORGET', 'CENTRUM', 610, CITY.SIDEWALK_S[1] - 3, 'pixelgatan', 1),
   stop('flygplatsen', 'FLYGPLATSEN', 'CENTRUM', 1626, CITY.SIDEWALK_S[1] - 3, 'pixelgatan', 1),
   stop('soderkyrkan', 'SÖDERKYRKAN', 'SÖDER', 1106, CITY.SIDEWALK_SS[1] - 3, 'sodergatan', 1),
-  stop('betongtorget', 'BETONGTORGET', 'FÖRORTEN', 2010, CITY.SIDEWALK_S[1] - 3, 'pixelgatan', 1, { broken: true }),
+  stop('betongtorget', 'BETONGTORGET', 'FÖRORTEN', 2010 + SX, CITY.SIDEWALK_S[1] - 3, 'pixelgatan', 1, { broken: true }),
+  stop('finanstorget', 'FINANSTORGET', 'DOWNTOWN', 2232, CITY.SIDEWALK_S[1] - 3, 'pixelgatan', 1),
 ];
 // v1: busshållplatsen i centrum (samma objektform som förut).
 export const BUS_STOP = { x: BUS_STOPS[0].x, y: BUS_STOPS[0].y };
@@ -358,12 +488,44 @@ export const PARK_LAYOUT = {
 // Förortens gångar (asfalt): gångvägen bakom den södra raden och stigen från hållplatsen.
 export const SUB_LAYOUT = {
   back: [CITY.X_SUB, CITY.BACK_S[0], CITY.W, CITY.BACK_S[1]],
-  paths: [[2004, CITY.SIDEWALK_S[1], 2026, CITY.BACK_S[0]]],
+  paths: [[2004 + SX, CITY.SIDEWALK_S[1], 2026 + SX, CITY.BACK_S[0]]],
+};
+// Downtowns mellanband (v3): FINANSTORGET – ett stenlagt torg från Infartens trottoar
+// till kajen, gåbart överallt. Rekvisitan (props.js) ställer statyn, fontänerna,
+// träden i planteringslådor, bänkarna, flaggstängerna och lyktorna här; livet
+// (life.js) lägger gånglinjer/noder över torget. axis = Bankgatans mittlinje.
+// back = bakgatan bakom den södra raden (leveranser, soptunnor, cyklar).
+// behind = ytor bakom de två höga tornen i södra raden (PIXEL TOWER och GLASTORNET): tornens
+// bilder reser sig över torgets södra kant och bakgatan, så en figur där syns inte (eller bara
+// med huvudet). Ytorna är hinder – man går fram till tornet men aldrig in bakom det.
+//   PIXEL TOWER: glaspyramiden (spets y 428 mitt på tornet, 1,45 px bredare per rad, full bredd
+//   från y 468) – trappat i 4-px-rader så att fötterna aldrig hamnar mer än ~6 px bakom glaset.
+//   GLASTORNET: krönet ligger på y ≈ 422 över hela bredden.
+const behindPyramid = (x0, x1, apexY, fullY) => {
+  const cx = (x0 + x1) >> 1, out = [];
+  for (let y = apexY + 8; y < fullY + 6; y += 4) {
+    const hw = Math.round(2 + (y - 6 - apexY) * 1.45);
+    out.push([Math.max(x0, cx - hw), y, Math.min(x1, cx + hw), y + 4]);
+  }
+  out.push([x0, fullY + 6, x1, CITY.FOOT_TOP_S]);
+  return out;
+};
+export const DOWNTOWN_LAYOUT = {
+  plaza: [1766, CITY.PARK[0], RX0, CITY.BACK_S[0]],
+  axis: 2104,
+  statue: { x: 2104, y: 392 },                                 // TJUREN (bronsstatyn) mitt på torget
+  fountains: [{ x: 1936, y: 396 }, { x: 2272, y: 396 }],       // två fontäner symmetriskt kring axeln
+  back: [1766, CITY.BACK_S[0], RX0, CITY.BACK_S[1]],
+  behind: [
+    ...behindPyramid(1768, 1888, 428, 468),                    // PIXEL TOWER (kontor3)
+    [2248, 428, 2384, CITY.FOOT_TOP_S],                        // GLASTORNET (kontor4)
+  ],
 };
 // Trottoarerna längs Infarten genom mellanbandet (väster: bara till parkgången – där står macken).
 const INFART_WALKS = [[1686, CITY.SIDEWALK_S[1], 1700, CITY.BACK_S[1]], [1752, CITY.SIDEWALK_S[1], 1766, CITY.BASE_S]];
 
-// Alla gångar med ytans slag (för marken/livet). PATH_RECTS = bara rektanglarna.
+// Alla gångar med ytans slag (för marken/livet/vädret). PATH_RECTS = bara rektanglarna.
+// kind: 'grus' | 'asfalt' | 'trottoar' | 'torg' (stenlagt torg – rekvisita FÅR stå där) | 'kaj'
 export const PATHS = [
   { rect: PARK_LAYOUT.promenade, kind: 'grus', district: 'PARKEN' },
   ...PARK_LAYOUT.paths.map((r) => ({ rect: r, kind: 'grus', district: 'PARKEN' })),
@@ -371,7 +533,13 @@ export const PATHS = [
   { rect: PARK_LAYOUT.back, kind: 'grus', district: 'PARKEN' },
   { rect: SUB_LAYOUT.back, kind: 'asfalt', district: 'FÖRORTEN' },
   ...SUB_LAYOUT.paths.map((r) => ({ rect: r, kind: 'asfalt', district: 'FÖRORTEN' })),
-  ...INFART_WALKS.map((r) => ({ rect: r, kind: 'trottoar', district: 'FÖRORTEN' })),
+  { rect: INFART_WALKS[0], kind: 'trottoar', district: 'CENTRUM' },
+  { rect: INFART_WALKS[1], kind: 'trottoar', district: 'DOWNTOWN' },
+  { rect: DOWNTOWN_LAYOUT.plaza, kind: 'torg', district: 'DOWNTOWN' },
+  { rect: DOWNTOWN_LAYOUT.back, kind: 'asfalt', district: 'DOWNTOWN' },
+  // kajerna – delade vid Pixelgatan och Södergatan (körbanorna är väg, inte gång; man korsar dem på broarnas trottoarer)
+  ...[RIVER.quayW, RIVER.quayE].flatMap((q) => [[q[1], CITY.ROAD[0]], [CITY.ROAD[1], CITY.ROAD_S[0]], [CITY.ROAD_S[1], q[3]]]
+    .map(([y0, y1]) => ({ rect: [q[0], y0, q[2], y1], kind: 'kaj', district: 'FLODEN' }))),
 ];
 export const PATH_RECTS = PATHS.map((p) => p.rect);
 
@@ -392,11 +560,15 @@ export const CANAL_RECT = [0, CITY.WALK_BOTTOM + 2, CITY.W, CITY.H];
 // allt ska ritas, tag = undertext på områdesskylten, spawn = bra plats att stå på.
 // ---------------------------------------------------------------------
 const XM = (CITY.INFARTEN[0] + CITY.INFARTEN[1]) / 2; // gränsen går mitt i Infarten
+const YB = (CITY.BACK_S[0] + CITY.BACK_S[1]) >> 1;      // floden: Stora bron norr om parkgången, Järnbron söder om den
 export const DISTRICTS = [
   { id: 'centrum', name: 'CENTRUM', tag: 'BUTIKER OCH JOBB PÅ PIXELGATAN', rects: [[0, 0, XM, CITY.PARK[0]]], worn: 0, spawn: { x: 640, y: 296 } },
   { id: 'parken', name: 'PARKEN', tag: 'FONTÄNEN, DAMMEN OCH LEKPLATSEN', rects: [[0, CITY.PARK[0], XM, CITY.BACK_S[1]]], worn: 0, spawn: { x: 934, y: 420 } },
   { id: 'soder', name: 'SÖDER', tag: 'KYRKAN, BION OCH BIBLIOTEKET', rects: [[0, CITY.BACK_S[1], XM, CITY.H]], worn: 0, spawn: { x: 934, y: 660 } },
-  { id: 'fororten', name: 'FÖRORTEN', tag: 'BETONG, GRAFFITI OCH BILLIGA HYROR', rects: [[XM, 0, CITY.W, CITY.H]], worn: 1, spawn: { x: 2040, y: 296 } },
+  { id: 'downtown', name: 'DOWNTOWN', tag: 'HÖGA HUS, BANKER OCH KOSTYMER', rects: [[XM, 0, RX0, CITY.H]], worn: 0, spawn: { x: 2104, y: 296 } },
+  { id: 'bron', name: 'STORA BRON', tag: 'HÄNGBRON ÖVER PIXELFLODEN', rects: [[RX0, 0, RX1, YB]], worn: 0, spawn: { x: 2716, y: 291 } },
+  { id: 'jarnbron', name: 'JÄRNBRON', tag: 'SÖDERGATAN ÖVER PIXELFLODEN', rects: [[RX0, YB, RX1, CITY.H]], worn: 0, spawn: { x: 2716, y: 745 } },
+  { id: 'fororten', name: 'FÖRORTEN', tag: 'BETONG, GRAFFITI OCH BILLIGA HYROR', rects: [[RX1, 0, CITY.W, CITY.H]], worn: 1, spawn: { x: 2040 + SX, y: 296 } },
 ];
 export const districtAt = (x, y) => DISTRICTS.find((d) => d.rects.some((r) => x >= r[0] && x < r[2] && y >= r[1] && y < r[3])) || DISTRICTS[0];
 export const districtByName = (name) => DISTRICTS.find((d) => d.name === name || d.id === name) || null;
@@ -410,12 +582,18 @@ export const doorFront = (b) => [b.door.x0 - 10, baseOf(b), b.door.x1 + 10, base
 export const doorCenter = (b) => ({ x: (b.door.x0 + b.door.x1) / 2, y: baseOf(b) + 12 });
 
 // Statiska hinder som kartan själv vet om: husens fotavtryck + deras blocks,
-// dammen och kanalen. Scenen lägger till modulernas hinder (props, trafik, liv).
+// dammen, kanalen och (v3) floden: vattnet, kajräckena, broräckena och tornens ben/mittpelare.
+// Scenen lägger till modulernas hinder (props, trafik, liv, bron).
+export const BRIDGE_OBSTACLES = BRIDGES.flatMap((b) => [...b.rails, ...b.towers.flatMap((t) => [...t.legs, ...(t.pier ? [t.pier] : [])])]);
 export const MAP_OBSTACLES = [
   ...ALL_BUILDINGS.map(footprint),
   ...ALL_BUILDINGS.flatMap((b) => b.blocks || []),
   ...WATER,
   CANAL_RECT,
+  ...RIVER.water,
+  ...RIVER.rails,
+  ...BRIDGE_OBSTACLES,
+  ...DOWNTOWN_LAYOUT.behind,                                  // bakom downtowns höga torn (syns inte där)
 ];
 
 // Grindens yta (för RESERVED och rekvisitans staket): 6 px in/ut från staketet.
@@ -435,12 +613,15 @@ export const RESERVED = [
   ...CROSSWALKS.map((c) => [c.x0 - 6, CITY.SIDEWALK_N[0], c.x1 + 6, CITY.SIDEWALK_N[1]]),
   ...CROSSWALKS.map((c) => [c.x0 - 6, CITY.SIDEWALK_S[0], c.x1 + 6, CITY.SIDEWALK_S[1]]),
   ...LIGHTS.map((l) => [l.x - 6, l.y - 8, l.x + 6, l.y + 3]),
-  ...PATH_RECTS,
+  ...PATHS.filter((p) => p.kind !== 'torg').map((p) => p.rect),              // gångarna (torget får möbleras)
   // --- v2 ---
   [0, CITY.ROAD_S[0], CITY.W, CITY.ROAD_S[1]],                               // Södergatan
   [1100, CITY.SIDEWALK_SN[0], 1212, CITY.SIDEWALK_SN[0] + 24],                // Leksakslådans skyltfönster och dörr
   [CITY.INFARTEN[0], CITY.ROAD[0], CITY.INFARTEN[1], CITY.ROAD_S[1]],        // Infarten
-  ...[...BUILDINGS_S, ...BUILDINGS_X, ...FREESTANDING].flatMap((b) => [footprint(b), doorFront(b), ...(b.blocks || []), ...(b.yard ? [b.yard.rect] : [])]),
+  ...[...BUILDINGS_S, ...BUILDINGS_D, ...BUILDINGS_X, ...FREESTANDING].flatMap((b) => [footprint(b), doorFront(b), ...(b.blocks || []), ...(b.yard ? [b.yard.rect] : [])]),
+  // --- v3 ---
+  [RX0, 0, RX1, CITY.H],                                                     // hela flodrummet: bara bridge.js ställer saker där
+  ...DOWNTOWN_LAYOUT.behind,                                                 // bakom de höga tornen (skyms ändå)
   ...CROSSWALKS_S.flatMap((c) => sidewalkEnds(c, CITY.SIDEWALK_SN, CITY.SIDEWALK_SS)),
   ...LIGHTS_S.map((l) => [l.x - 6, l.y - 8, l.x + 6, l.y + 3]),
   ...LOTS.flatMap((l) => (l.gates || []).map((g) => gateRect(l, g))),
@@ -476,6 +657,12 @@ export function artBox(b) {
 export const inRect = (x, y, r) => x >= r[0] && x < r[2] && y >= r[1] && y < r[3];
 export const isNightHour = (h) => h >= 19.5 || h < 6.5;
 
+// Alla enter-värden som scenen (city.js enter()) känner. Scennamnen i andra raden leder in i en egen
+// scen (city.js SCENE_DOORS → main.js): butikerna i downtown, Pixelhögskolan, bion, kebaben och pantbanken.
+export const ENTER_RE = new RegExp('^(hem|bostad|mat|klader|mobler|kafe|djur|burgare|frukt|flyg|glass|narbutik|leksaker'
+  + '|bank|elektronik|frisor|skor|accessoarer|universitet|bio|kebab|pantbank'
+  + '|jobb:[a-z]+|bostad:[a-z]+)$');
+
 // Kontroll av kontraktet: returnerar en lista med problem (tom = allt stämmer).
 // Körs av röktestet – kör den själv om du flyttar något.
 export function validateMap() {
@@ -486,6 +673,7 @@ export function validateMap() {
   const roads = ROADS.map((r) => [r.id, [r.x0, r.y0, r.x1, r.y1]]);
   const pond = [PARK_LAYOUT.pond.cx - PARK_LAYOUT.pond.rx, PARK_LAYOUT.pond.cy - PARK_LAYOUT.pond.ry, PARK_LAYOUT.pond.cx + PARK_LAYOUT.pond.rx, PARK_LAYOUT.pond.cy + PARK_LAYOUT.pond.ry];
   const blocks = ALL_BUILDINGS.flatMap((x) => x.blocks || []);
+  const river = [RX0, 0, RX1, CITY.H], wet = [...RIVER.water, CANAL_RECT];
   for (const b of ALL_BUILDINGS) {
     const fp = footprint(b), df = doorFront(b);
     if (b.door.x0 < b.x || b.door.x1 > b.x + b.w) out.push(`${b.id}: dörren ligger utanför fasaden`);
@@ -498,17 +686,51 @@ export function validateMap() {
     if (!DISTRICTS.some((d) => d.name === b.district)) out.push(`${b.id}: okänd stadsdel ${b.district}`);
     if (b.row === 's' && (b.top !== CITY.FOOT_TOP_S || b.base > CITY.BASE_S || b.base < CITY.FOOT_TOP_S + 60)) out.push(`${b.id}: fel base/top för södra raden`);
     if (b.row === 'n' && (b.top !== CITY.FOOT_TOP || b.base !== CITY.BASE)) out.push(`${b.id}: fel base/top för norra raden`);
-    if (b.enter && !/^(hem|bostad|mat|klader|mobler|kafe|djur|burgare|frukt|flyg|glass|narbutik|leksaker|jobb:[a-z]+|bostad:[a-z]+)$/.test(b.enter)) out.push(`${b.id}: okänd enter ${b.enter}`);
+    if (b.enter && !ENTER_RE.test(b.enter)) out.push(`${b.id}: okänd enter ${b.enter}`);
+    if (!DOOR_TYPES.includes(b.door.type)) out.push(`${b.id}: okänd dörrtyp ${b.door.type}`);
+    if (!b.enter && !b.soon && !b.sign) out.push(`${b.id}: varken enter, soon eller skylt – klicket säger ingenting`);
+    // v3: ingenting står i flodrummet, och ingen dörr öppnas mot vattnet
+    if (hit(fp, river)) out.push(`${b.id} står i floden`);
+    for (const r of wet) if (hit(df, r)) out.push(`dörren till ${b.id} öppnas mot vattnet`);
   }
   for (const l of LOTS) for (const b of ALL_BUILDINGS) if (b.lot !== l.id && hit(l.rect, footprint(b))) out.push(`tomten ${l.id} överlappar ${b.id}`);
+  for (const l of LOTS) if (hit(l.rect, river)) out.push(`tomten ${l.id} ligger i floden`);
   const ids = new Set();
   for (const b of ALL_BUILDINGS) { if (ids.has(b.id)) out.push(`dubbelt id ${b.id}`); ids.add(b.id); }
   CROSSWALKS_ALL.forEach((c, k) => { if (c.i !== k) out.push(`övergångsställe ${k} har i=${c.i}`); });
+  for (const c of CROSSWALKS_ALL) if (hit([c.x0, c.y0, c.x1, c.y1], river)) out.push(`övergångsstället ${c.name} ligger på en bro`);
   for (const l of LIGHTS_ALL) for (const [id, fp] of fps) if (hit([l.x - 2, l.y - 2, l.x + 2, l.y + 1], fp)) out.push(`trafikljuset vid övergångsställe ${l.crosswalk} står i ${id}`);
   for (const s of BUS_STOPS) {
     for (const [id, fp] of fps) if (hit([s.x - 24, s.y - 14, s.x + 24, s.y + 2], fp)) out.push(`busshållplatsen ${s.id} står i ${id}`);
     for (const [id, r] of roads) if (hit([s.x - 24, s.y - 1, s.x + 24, s.y + 1], r)) out.push(`busshållplatsen ${s.id} står på vägen ${id}`);
+    if (hit([s.x - 60, s.y - 14, s.x + 90, s.y + 2], river)) out.push(`busshållplatsen ${s.id} (eller bussens stoppyta) ligger på en bro`);
+    if (!DISTRICTS.some((d) => d.name === s.district)) out.push(`busshållplatsen ${s.id}: okänd stadsdel ${s.district}`);
   }
+  // floden: varje vågrät väg som korsar floden har en bro vars gåbara däck täcker vägen + trottoarerna,
+  // däcken ligger aldrig i vattnet, och vattnet + räckena + däcken täcker hela vattenbredden
+  for (const r of ROADS) {
+    if (r.axis !== 'x' || r.x1 <= RX0 || r.x0 >= RX1) continue;
+    const br = BRIDGES.find((b) => b.road === r.id);
+    if (!br) out.push(`vägen ${r.id} korsar floden utan bro`);
+    else if (br.walk[1] > r.y0 || br.walk[3] < r.y1) out.push(`bron ${br.id} täcker inte vägen ${r.id}`);
+  }
+  for (const b of BRIDGES) {
+    for (const r of RIVER.water) if (hit(b.walk, r)) out.push(`bron ${b.id}: däcket ligger i vattnet`);
+    for (const t of b.towers) if (t.legs.some((l) => hit(l, b.walk))) out.push(`bron ${b.id}: ett tornben står på däcket`);
+  }
+  for (let y = 0; y < CITY.H; y += 2) {
+    const n = [...RIVER.water, ...BRIDGES.flatMap((b) => [b.walk, ...b.rails])].filter((r) => y >= r[1] && y < r[3] && r[0] <= RIVER.wx0 && r[2] >= RIVER.wx1).length;
+    if (n !== 1) { out.push(`floden vid y ${y}: ${n ? 'dubbelt' : 'hål'} (vatten/däck/räcke ska täcka vattenbredden exakt en gång)`); break; }
+  }
+  // gångarna (PATHS) går aldrig över en körbana – där korsar man på övergångsställen och broarnas trottoarer
+  for (const p of PATHS) for (const [id, r] of roads) if (hit(p.rect, r)) out.push(`gången ${p.kind} ${p.rect.join(',')} korsar vägen ${id}`);
+  // ytorna bakom downtowns torn: inga dörrar, hållplatser eller gångar där
+  for (const r of DOWNTOWN_LAYOUT.behind) {
+    for (const b of ALL_BUILDINGS) if (hit(r, doorFront(b))) out.push(`dörren till ${b.id} ligger bakom ett torn`);
+    for (const p of PATHS) if (p.kind !== 'torg' && p.kind !== 'asfalt' && hit(r, p.rect)) out.push(`gången ${p.rect.join(',')} ligger bakom ett torn`);
+  }
+  if (CITY.W > 4000) out.push(`världen är ${CITY.W} bred – net/world.js klämmer spelarnas x till 0–4000`);
+  if (CITY.X_SUB !== RX1) out.push('X_SUB ska vara flodens östra kant (CITY.RIVER[1])');
   for (let y = 0; y < CITY.H; y += 20) for (let x = 0; x < CITY.W; x += 20) if (!DISTRICTS.some((d) => d.rects.some((r) => inRect(x, y, r)))) { out.push(`(${x},${y}) hör inte till någon stadsdel`); break; }
   return out;
 }

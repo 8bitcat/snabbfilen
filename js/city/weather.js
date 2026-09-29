@@ -44,7 +44,7 @@
 // hundra fillRect (≈ 0,1–1 ms i en 384 × 216-vy).
 // Ritas alltid bara i view-rektangeln.
 import { hash, bayer, mix, mul, Pix, SMALL, ctxText, textW } from '../core/floor-pix.js';
-import { CITY, ROADS, PATHS, LOTS, STREETS_ALL, PARK_LAYOUT, ALL_BUILDINGS, footprint } from './map.js';
+import { CITY, ROADS, PATHS, LOTS, STREETS_ALL, PARK_LAYOUT, ALL_BUILDINGS, RIVER, footprint } from './map.js';
 
 export const V2 = true;
 export const SEASONS = ['vår', 'sommar', 'höst', 'vinter'];
@@ -171,12 +171,20 @@ const ICON = {
   blåst: ['.......', 'wwwww..', '.....w.', 'wwwwww.', '.......', 'wwww.w.', '....w..'],
 };
 const ICOL = { y: '#ffd23f', Y: '#fff1a0', w: '#e8eef6', W: '#ffffff', g: '#9aa4b2', b: '#6fb2ff' };
+// Väderbrickans mått { w, h } – samma som drawWeatherBadge ritar (scenen håller husnamnen
+// i överkanten borta från brickan).
+export function weatherBadgeSize(w) {
+  if (!w) return { w: 0, h: 0 };
+  const t = `${weatherName(w)} ${w.temp}`.toUpperCase(), s = w.season.toUpperCase();
+  const windy = Math.abs(w.wind || 0) >= 22;
+  const tw = textW(SMALL, t) + 4, sw = textW(SMALL, s) + (windy ? 8 : 0);
+  return { w: 7 + 3 + Math.max(tw, sw) + 5, h: 17 };
+}
 export function drawWeatherBadge(ctx, x, y, w) {
   if (!w) return;
   const t = `${weatherName(w)} ${w.temp}`.toUpperCase(), s = w.season.toUpperCase();
   const windy = Math.abs(w.wind || 0) >= 22;
-  const tw = textW(SMALL, t) + 4, sw = textW(SMALL, s) + (windy ? 8 : 0);
-  const bw = 7 + 3 + Math.max(tw, sw) + 5, bh = 17;
+  const { w: bw, h: bh } = weatherBadgeSize(w);
   x = Math.round(x - bw); y = Math.round(y);
   ctx.fillStyle = 'rgba(16,18,30,0.72)'; ctx.fillRect(x, y, bw, bh);
   ctx.fillStyle = 'rgba(255,255,255,0.14)'; ctx.fillRect(x, y, bw, 1);
@@ -582,7 +590,11 @@ function zones() {
     ...(LOTS || []).filter((l) => /parkering|grusplan|atervinning|vagnsplatsen/.test(l?.kind || '')).map((l) => l.rect?.slice()),
     ...(STREETS_ALL || []).filter((s) => s && (s.kind === 'alley' || s.kind === 'street')).map((s) => [s.x0, s.y0, s.x1, s.y1])].filter(isRect);
   const road = (ROADS || []).map((r) => ({ r, rect: [r.x0, r.y0, r.x1, r.y1] })).filter(({ r, rect }) => isRect(rect) && Array.isArray(r.lanes));
-  const water = CITY.CANAL ? [[0, CITY.CANAL[0], W, CITY.H]] : [];
+  // vatten: kanalen + (v3) floden. Gångbanden (bakgatan, parkgången, kajen …) tar slut vid floden –
+  // där är det vatten (snö och pölar hamnar inte på det; isen lägger sig där när kanalen fryser)
+  const river = (RIVER?.water || []).filter(isRect).map((r) => r.slice());
+  const water = [...(CITY.CANAL ? [[0, CITY.CANAL[0], W, CITY.H]] : []), ...river];
+  for (const r of river) { const kept = subtract(walk, r); walk.length = 0; walk.push(...kept); }
   // pölarna: på hårda ytor, tätast i rännstenarna
   const puddles = [];
   let i = 0;

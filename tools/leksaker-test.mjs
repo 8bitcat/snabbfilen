@@ -27,7 +27,9 @@ await page.evaluate(() => document.querySelector('#modal:not(.hidden) .dlg-foot 
 const map = await page.evaluate(async () => { const m = await import('./js/city/map.js'); const b = m.ALL_BUILDINGS.find((x) => x.id === 'leksaker'); return { finns: !!b, sign: b?.sign, problem: m.validateMap ? m.validateMap() : [] }; });
 ok(map.finns && map.sign === 'LEKSAKSLÅDAN', `Leksakslådan står i staden (${map.sign})`);
 ok(Array.isArray(map.problem) && map.problem.length === 0, `kartan är konsekvent (${(map.problem || []).join('; ') || 'inga problem'})`);
-await page.evaluate(() => { const A = window.SF; A.game.min = 12 * 60; A.go('city'); A.scene._debug.enter('leksaker'); });
+// (v3: Lilla rummet ligger i förortens höghus på andra sidan floden – figuren ställs en bit bort på
+// trottoaren framför affären och går därifrån till dörren, så att testet prövar dörren och inte promenaden)
+await page.evaluate(() => { const A = window.SF; A.game.min = 12 * 60; A.go('city'); const d = A.scene._debug, b = d.buildings.find((x) => x.id === 'leksaker'); d.teleport((b.door.x0 + b.door.x1) / 2 + 70, b.base + 22); d.enter('leksaker'); });
 let inne = false;
 for (let i = 0; i < 60 && !inne; i++) { await page.waitForTimeout(250); inne = await page.evaluate(() => window.SF.sceneName === 'leksaker'); }
 ok(inne, 'dörren leder in i leksaksaffären');

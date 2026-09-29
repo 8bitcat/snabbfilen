@@ -10,6 +10,15 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.47.0] – 2026-09-29 – Bron och downtown – staden på längden
+- STADEN PÅ LÄNGDEN: centrum → Infarten → DOWNTOWN → FLODEN → FÖRORTEN. Förorten sitter inte längre ihop med centrum – den ligger på andra sidan floden
+- STORA BRON: en hängbro som Brooklyn Bridge – två granittorn med gotiska spetsbågar som man går igenom, bärkablar i båge, hängstag, gångbanor i plank med lyktor och båtar som glider under. Kameran lyfter på bron så att tornen och kablarna syns
+- JÄRNBRON över floden vid Södergatan, med fackverk
+- DOWNTOWN – finanskvarteret: skyskrapor med karuselldörrar (Finanshuset, Börshuset, Pixel Tower som blir Pixelhögskolan, Glastornet), Pixelbanken, elektronikbutiken, skobutiken, frisören och accessoarbutiken, Finanstorget med tjuren och fontänerna – och folk i kavaj och slips
+- Butikerna i downtown öppnar i de kommande släppen – dörrarna säger "öppnar snart" tills dess
+- Buss till Finanstorget, och bussen kör ut på Stora bron innan den tonar
+- Floden fryser på vintern och har inga snöpölar – vattnet och tornen går inte att gå i
+
 ## [0.46.4] – 2026-09-29 – Djuraffären och mäklaren i bredbild
 - Djuraffären och mäklarkontoret på Bostadsbyrån fyller nu breda skärmar och mobilen i liggande läge – du ser mer av butiken på en gång i stället för en smal ruta
 

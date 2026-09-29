@@ -8,10 +8,16 @@
 // staden (1 enhet = 1 spelpixel). Alla småfigurer målas EN gång till cachade
 // canvasar – per bildruta blir det bara drawImage/fillRect.
 //
-// Fotgängarna går på ett eget gångnät över hela världen (2720 × 820): gånglinjer
+// Fotgängarna går på ett eget gångnät över hela världen (4000 × 820): gånglinjer
 // på bakgatan, trottoarerna, promenaden, parkgången, kajen, noder i alla gränder,
 // vid alla dörrar (även de fristående husens), övergångsställena (även Infartens
 // och Södergatans), lekplatserna, hundrastgården, parkeringen och grusplanen.
+// v3 (staden på längden): DOWNTOWN har Finanstorget (ringar kring tjuren och
+// fontänerna, två tvärstråk) och kostymfolk – kavaj/dräkt, portfölj, kaffe i handen
+// och telefonen mot örat; kontorsfolket går in på morgonen och ut på kvällen.
+// Gånglinjerna bryts vid floden och fortsätter bara över STORA BRON och JÄRNBRON
+// (där man stannar vid räcket och tittar ut över vattnet); kajerna längs floden är
+// en egen promenad (norr–söder) med måsar, och i floden mellan broarna simmar svanar.
 // Kanterna mellan noderna räknas ut EN gång mot hindren på ett 2-px-rutnät; per
 // figur blir det en liten Dijkstra (binär hög) över nätet när den väljer ett
 // nytt mål. Vägen korsas bara vid övergångsställena och bara när
@@ -28,7 +34,7 @@
 //   platserna själv ur hindren. Extra: busySeats() → Set med upptagna plats-id,
 //   seatBusy(id), dogs() (för tools/dog-test.mjs), _debug.
 import * as MAP from './map.js';
-import { drawPerson, makeLook } from '../core/people.js';
+import { drawPerson, makeLook, isValid } from '../core/people.js';
 import { Pix, mix, mul, hash } from '../core/floor-pix.js';
 
 // ---------- kartan (tåligt: allt som saknas får ett v1-värde) ----------
@@ -56,6 +62,15 @@ const midOf = (a, d) => (a ? Math.round((a[0] + a[1]) / 2) : d);
 const ROAD_N = CITY.ROAD, ROAD_S = CITY.ROAD_S || [CITY.ROAD[0] + 454, CITY.ROAD[1] + 454];
 const XI = CITY.INFARTEN || [1700, 1752];
 const X_SUB = CITY.X_SUB || XI[1];
+const SDX = CITY.SUB_DX || 0;                          // v3: förortens fasta platser nedan står i v2-x + SDX
+// v3: downtown (finanskvarteret) och floden med broarna
+const RIV = MAP.RIVER || null;
+const BRIDGES = MAP.BRIDGES || [];
+const DTL = MAP.DOWNTOWN_LAYOUT || null;
+const DT0 = CITY.X_DT || XI[1], DT1 = RIV ? RIV.x0 : DT0;   // downtown: x 1752–2400
+const inWater = (x, y) => !!RIV && RIV.water.some((r) => x >= r[0] && x < r[2] && y >= r[1] && y < r[3]);
+// finns plagget/väskan i figurmotorn? (nya plagg kommer successivt – annars ett äldre)
+const hasLook = (field, v) => { try { return isValid(field, v); } catch { return false; } };
 // gånglinjerna (fotpunkternas y)
 const Y_BACK = 22, Y_N = 203, Y_S = 291, Y_PROM = 340;
 const Y_BKS = midOf(CITY.BACK_S, 476);                 // parkgången bakom den södra raden
@@ -109,12 +124,25 @@ const PLACES = {
   tvatteri: { w: 1, stay: [10, 30], carry: [['tvatt', 0.65]] },
   kiosk: { w: 2.2, stay: [3, 8], carry: [['glass', 0.9]], warm: true }, // glasståndet (förr kiosken)
   toalett: { w: 0.35, stay: [5, 12], carry: [] },
+  // DOWNTOWN (v3): banken, butikerna och kontorstornen (kontoren: office = kostymfolkets arbetsplats)
+  bank: { w: 1.4, stay: [10, 30], carry: [], suit: 2 },
+  elektronik: { w: 2.2, stay: [14, 34], carry: [['elpase', 0.5], ['tvlada', 0.14]] },
+  skor: { w: 1.5, stay: [10, 26], carry: [['skokasse', 0.62]] },
+  frisor: { w: 1, stay: [30, 70], carry: [], hair: true },
+  accessoarer: { w: 1.3, stay: [8, 22], carry: [['smyckespase', 0.55]], sun: true },
+  kontor1: { w: 0.5, stay: [60, 200], carry: [], office: true },
+  kontor2: { w: 0.5, stay: [60, 200], carry: [], office: true },
+  kontor3: { w: 0.5, stay: [60, 200], carry: [], office: true },
+  kontor4: { w: 0.5, stay: [60, 200], carry: [], office: true },
 };
 // bostadshusen: folk kommer ut ur dem och går hem igen
 const HOMES = ['hem', 'radhus', 'tornhuset', 'hoghus', 'hoghus2', 'lamell', 'husvagn'];
+// kontorstornen i downtown: kostymfolket går in på morgonen och kommer ut på eftermiddagen
+const OFFICES = ['kontor1', 'kontor2', 'kontor3', 'kontor4'];
 const isOpen = (b, h) => !b.open || (h >= b.open[0] && h < b.open[1]) || (b.open[1] > 24 && h < b.open[1] - 24);
 // butiker man kan fönstershoppa vid (norra och södra raden)
-const WINDOW_SHOPS = ['bostad', 'mat', 'klader', 'mobler', 'kafe', 'burgare', 'frukt', 'pizzeria', 'posten', 'djuraffar', 'bio', 'narbutik', 'pantbank'];
+const WINDOW_SHOPS = ['bostad', 'mat', 'klader', 'mobler', 'kafe', 'burgare', 'frukt', 'pizzeria', 'posten', 'djuraffar', 'bio', 'narbutik', 'pantbank',
+  'elektronik', 'skor', 'frisor', 'accessoarer'];
 const enterable = (b) => b && b.door && b.door.type !== 'boarded' && b.door.type !== 'roll';
 
 // =====================================================================
@@ -621,7 +649,67 @@ const CARRY_MAPS = {
   glass: { rows: ['.pw.', 'pppw', 'cccc', '.cc.', '.c..'], pal: { p: 0xf4a8c0, w: 0xf8f0d8, c: 0xd89a4a }, ax: 1, ay: 3 },
   // tvättpåse från tvätteriet
   tvatt: { rows: ['..kk...', '.BBBB..', 'BbwBBBd', 'BwwbBBd', 'BBBBBBd', '.ddddd.'], pal: { k: 0x2a2630, B: 0x3a6ab0, b: 0x5a8ad0, w: 0xf4f4f0, d: 0x284a80 }, ax: 3, ay: 0 },
+  // --- DOWNTOWN (v3) ---
+  // elektronikbutikens vita plastpåse: blått band, gul blixt, en mobilkartong sticker upp
+  elpase: { rows: [
+    '.k...k.',
+    '.kGGGk.',
+    'WWGgGWW',
+    'WBBBBBw',
+    'WBYYBBw',
+    'WBBYBBw',
+    'WWWWWWw',
+    'WWWWWWw',
+    'wwwwwww',
+  ], pal: { k: 0x2a2630, G: 0x3a3c44, g: 0x8a8e98, W: 0xf2f4f6, w: 0xc6ccd4, B: 0x2a5ad0, Y: 0xf2c83a }, ax: 3, ay: 0 },
+  // platt tv-kartong med tryck (bärs med båda händerna, som möbelkartongen)
+  tvlada: { rows: [
+    'KKKKKKKKKKKKKKK',
+    'kkkkkkkkkkkkkkd',
+    'kSSSSSSSSSSSkkd',
+    'kSbbbbbbbbbSkRd',
+    'kSbBbbbbbbbSkkd',
+    'kSbbBbbbbCbSkkd',
+    'kSbbbbbbbbbSkkd',
+    'kSSSSSSSSSSSkkd',
+    'kkkkkSSSkkkkkkd',
+    'kkkkSSSSSkkLLkd',
+    'ddddddddddddddd',
+  ], pal: { K: 0xe0bc80, k: 0xc49a60, d: 0x98723e, S: 0xb8bcc4, b: 0x1e2a44, B: 0x5a8ad0, C: 0x9ad0f0, R: 0xd23a2e, L: 0xf2efe6 }, ax: 7, ay: 0 },
+  // skobutikens papperskasse – den röda skokartongen sticker upp
+  skokasse: { rows: [
+    '.k..k.',
+    '.kRRk.',
+    'PPRrPP',
+    'PpPPPd',
+    'PpWWPd',
+    'PpPPPd',
+    'PpPPPd',
+    'dddddd',
+  ], pal: { k: 0x3a2a1e, R: 0xd23a2e, r: 0xf06a5a, P: 0xc89a5e, p: 0xdcb47a, d: 0x9a723c, W: 0xf4efe4 }, ax: 2, ay: 0 },
+  // accessoarbutikens lilla blanksvarta påse med guldsnören
+  smyckespase: { rows: [
+    '.gg.',
+    'g..g',
+    'KKKK',
+    'KkKK',
+    'KGKK',
+    'KKKK',
+    'dddd',
+  ], pal: { g: 0xe8b830, K: 0x1c1c22, k: 0x4a4a56, G: 0xf0c848, d: 0x0c0c10 }, ax: 1, ay: 0 },
+  // portfölj i läder med mässingslås (när figurmotorn inte har en egen)
+  portfolj: { rows: [
+    '..ddd..',
+    '..d.d..',
+    'LLLLLLL',
+    'LlLLLLd',
+    'LlLGLLd',
+    'LlLLLLd',
+    'ddddddd',
+  ], pal: { L: 0x6a3e22, l: 0x8a5a34, d: 0x3a2210, G: 0xe8b830 }, ax: 3, ay: 0 },
 };
+// saker som bärs med båda händerna framför magen (bildrutorna 7–9)
+const BOXES = new Set(['kartong', 'tvlada']);
 const PASE_COLORS = [0xd24a8a, 0x2a2a30, 0xe8c13a, 0x3a8ad0, 0xf4f1ea, 0x46a35a];
 const CASE_COLORS = [0x2a8a8a, 0xc9323a, 0x2a2a30, 0xb8bcc4, 0x3a5fb0, 0xe0a02a];
 const UMB_COLORS = [0xc9323a, 0x2a2e48, 0x1e1e24, 0xe8c13a, 0x2f8f6f, 0x3a7bd5, 0x8e5bd1, 0xe07a2e];
@@ -872,6 +960,139 @@ export function _sheet() {
 }
 
 // =====================================================================
+//  Telefonen mot örat (v3): figurmotorn har ingen sådan pose, så figuren ritas som
+//  vanligt och armen på telefonsidan görs om pixel för pixel – underarmen och handen
+//  suddas (och får ny kontur), en upplyft arm med handen och mobilen vid örat ritas in.
+//  Mått ur people.js (vuxen, bildrutorna 0–2): bålen börjar på rad 18, huvudet på rad 6,
+//  armarna på x 12 ∓ tw (tw = look.build). Framifrån: personens högra hand (vänster i bild),
+//  bakifrån: höger i bild; från sidan: närmaste armen (bålen från stå-bilden, benen från
+//  gå-bilden så att figuren fortfarande går). Cachas per utseende, riktning och bildruta.
+//  Bär figuren en väska i handen (portfölj, handväska …) hänger den i den högra handen –
+//  då tar man telefonen med den vänstra (framifrån/bakifrån); från sidan skymmer kroppen
+//  den armen, så där syns bara väskan (vanliga figuren).
+// =====================================================================
+const HELD_BAGS = new Set(['briefcase', 'handbag', 'shoppingBag', 'sportsBag', 'skateboard']);
+const CALL_CACHE = new WeakMap();
+function callSprite(L, dir, frame, suit) {
+  if (!L || typeof document === 'undefined') return null;
+  let m = CALL_CACHE.get(L);
+  if (!m) { m = new Map(); CALL_CACHE.set(L, m); }
+  const key = dir + frame;
+  if (m.has(key)) return m.get(key);
+  let out = null;
+  try { out = dir === 'left' ? flipX(callSprite(L, 'right', frame, suit)) : paintCall(L, dir, frame, suit); } catch { out = null; }
+  m.set(key, out);
+  return out;
+}
+function paintCall(L, dir, frame, suit) {
+  const W = 24, H = 40;
+  const grab = (f) => {
+    const c = mkCanvas(W, H + 4), g = c.getContext('2d', { willReadFrequently: true });
+    drawPerson(g, 12, 39, L, dir, f);
+    const d = g.getImageData(0, 0, W, H).data;
+    for (let i = 3; i < d.length; i += 4) if (d[i] < 250) { d[i - 3] = d[i - 2] = d[i - 1] = d[i] = 0; }   // skuggan bort
+    return d;
+  };
+  const d = grab(dir === 'right' ? 0 : frame);
+  if (dir === 'right' && frame) { const w = grab(frame); for (let i = 29 * W * 4; i < d.length; i++) d[i] = w[i]; }   // benen går
+  const at = (x, y) => (y * W + x) * 4;
+  const inside = (x, y) => x >= 0 && y >= 0 && x < W && y < H;
+  const get = (x, y) => { const i = at(x, y); return d[i + 3] ? (d[i] << 16) | (d[i + 1] << 8) | d[i + 2] : -1; };
+  // vilka pixlar är figur (inte kontur)? en konturpixel har exakt den mörka tonen av en granne
+  const olOf = (i) => [d[i] * 0.28 + 14, d[i + 1] * 0.24 + 10, d[i + 2] * 0.3 + 20];
+  const real = new Uint8Array(W * H), touched = new Uint8Array(W * H);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const i = at(x, y);
+    if (!d[i + 3]) continue;
+    let ol = false;
+    for (const [dx, dy] of [[0, -1], [-1, 0], [1, 0], [0, 1]]) {
+      if (!inside(x + dx, y + dy)) continue;
+      const j = at(x + dx, y + dy);
+      if (!d[j + 3]) continue;
+      const o = olOf(j);
+      if (Math.abs(d[i] - (o[0] | 0)) <= 1 && Math.abs(d[i + 1] - (o[1] | 0)) <= 1 && Math.abs(d[i + 2] - (o[2] | 0)) <= 1) { ol = true; break; }
+    }
+    if (!ol) real[y * W + x] = 1;
+  }
+  const set = (x, y, c) => { if (!inside(x, y)) return; const i = at(x, y); d[i] = (c >> 16) & 255; d[i + 1] = (c >> 8) & 255; d[i + 2] = c & 255; d[i + 3] = 255; real[y * W + x] = 1; touched[y * W + x] = 1; };
+  const clear = (x, y) => { if (!inside(x, y)) return; const i = at(x, y); d[i] = d[i + 1] = d[i + 2] = d[i + 3] = 0; real[y * W + x] = 0; touched[y * W + x] = 1; };
+  const T0 = 18, tw = L.build || 5, sw = frame === 1 ? 1 : frame === 2 ? -1 : 0;
+  const PHONE = 0x1c1c22, PHONE_HI = 0x5a5e6a, PHONE_EDGE = 0x4a4e5c, PHONE_TOP = 0x9aa0ac, CUFF = 0xecebe6;
+  const paint = set;
+  const other = HELD_BAGS.has(L.bag);                  // väskan i högra handen → telefonen i den vänstra
+  if (other && dir !== 'down' && dir !== 'up') return null;
+  if (dir === 'down' || dir === 'up') {
+    // framifrån: vänster arm i bild (x0 = 12 − tw − 2); bakifrån: höger arm (x0 = 12 + tw) – med väska tvärtom
+    const left = (dir === 'down') !== other, x0 = left ? 12 - tw - 2 : 12 + tw, len = 8 + (left ? sw : -sw);
+    const sHi = get(x0, T0 + 2), sLo = get(x0 + 1, T0 + 2), sk = get(x0 + (left ? 0 : 1), T0 + len - 1), skLo = get(x0 + (left ? 1 : 0), T0 + len - 1);
+    if (sHi < 0 || sk < 0) return null;
+    // sudda underarmen och handen (och deras kontur) – från höfterna och neråt bara armens egna färger
+    // (en kjol som vidgar sig får stå kvar)
+    const armCol = new Set([sHi, sLo, sk, skLo]);
+    for (let y = T0 + 4; y <= T0 + len + 1; y++) for (let x = left ? x0 - 1 : x0; x <= (left ? x0 + 1 : x0 + 2); x++) {
+      if (!inside(x, y)) continue;
+      if (y >= 27 && real[y * W + x] && !armCol.has(get(x, y))) continue;
+      clear(x, y);
+    }
+    // upplyft underarm: från armbågen (x0, rad 21) upp längs huvudets sida till handen vid käken
+    const hx = left ? 6 : 16, tip = 16;               // handens vänstra kolumn, underarmens översta rad
+    for (let y = T0 + 3; y >= tip; y--) {
+      const u = (T0 + 3 - y) / (T0 + 3 - tip), x = Math.round(x0 + (hx - x0) * u);
+      paint(x, y, left ? sHi : sLo); paint(x + 1, y, left ? sLo : sHi);
+    }
+    if (suit) { paint(hx, tip, CUFF); paint(hx + 1, tip, 0xcfcdc6); }   // skjortmanschetten
+    // handen (2 × 3) runt mobilens nedre del, mobilen (2 × 5) vid örat
+    const ox = left ? hx : hx + 1, ix = left ? hx + 1 : hx;   // mobilens yttre kant (blank) och inre
+    for (let y = 10; y <= 14; y++) { paint(ox, y, y === 10 ? PHONE_TOP : PHONE_EDGE); paint(ix, y, y === 10 ? PHONE_HI : PHONE); }
+    for (let y = 13; y <= 15; y++) { paint(hx, y, left ? sk : skLo); paint(hx + 1, y, left ? skLo : sk); }
+  } else {
+    // från sidan (höger): bålen målas om där den hängande armen låg (x 11–13) …
+    const sLo = get(11, T0 + 3), sB = get(12, T0 + 3), sHi = get(13, T0 + 3), sk = get(12, T0 + 7), skLo = get(11, T0 + 7);
+    if (sB < 0 || sk < 0) return null;
+    for (let y = T0 + 1; y <= T0 + 8; y++) { const c = get(10, y); if (c >= 0) for (let x = 11; x <= 13; x++) set(x, y, c); }
+    // … och armen lyfts: överarmen snett fram till armbågen, underarmen upp till örat
+    for (let k = 0; k <= 3; k++) { const x = 11 + k, y = T0 + 1 + k; set(x, y, sLo); set(x + 1, y, sB); set(x + 2, y, sHi); }
+    for (let y = T0 + 3; y >= 16; y--) { const u = (T0 + 3 - y) / (T0 + 3 - 16), x = Math.round(14 + (12 - 14) * u); set(x, y, sB); set(x + 1, y, sHi); }
+    if (suit) { set(12, 16, CUFF); set(13, 16, 0xcfcdc6); }
+    for (let y = 10; y <= 14; y++) { set(11, y, y === 10 ? PHONE_TOP : PHONE_EDGE); set(12, y, y === 10 ? PHONE_HI : PHONE); }
+    for (let y = 13; y <= 15; y++) { set(12, y, sk); set(13, y, y === 15 ? skLo : sk); }
+  }
+  // ny kontur runt det som ändrats: varje pixel i (eller intill) det ändrade som inte är figur blir
+  // en mörk ton av sin figurgranne (ovanför > vänster > höger > under, som people.js) – eller genomskinlig
+  const src = new Uint8ClampedArray(d);
+  const isReal = (x, y) => inside(x, y) && real[y * W + x] === 1;
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    if (real[y * W + x]) continue;
+    let near = touched[y * W + x] === 1;
+    for (const [dx, dy] of [[0, -1], [-1, 0], [1, 0], [0, 1]]) if (!near && inside(x + dx, y + dy) && touched[(y + dy) * W + x + dx]) near = true;
+    if (!near) continue;
+    const i = at(x, y);
+    let b = -1;
+    if (isReal(x, y - 1)) b = at(x, y - 1); else if (isReal(x - 1, y)) b = at(x - 1, y); else if (isReal(x + 1, y)) b = at(x + 1, y); else if (isReal(x, y + 1)) b = at(x, y + 1);
+    if (b < 0) { d[i] = d[i + 1] = d[i + 2] = d[i + 3] = 0; continue; }
+    d[i] = src[b] * 0.28 + 14; d[i + 1] = src[b + 1] * 0.24 + 10; d[i + 2] = src[b + 2] * 0.3 + 20; d[i + 3] = 255;
+  }
+  const c = mkCanvas(W, H), g = c.getContext('2d'), im = g.createImageData(W, H);
+  im.data.set(d); g.putImageData(im, 0, 0);
+  return c;
+}
+
+// Förhandsvisning (utveckling): kostymfolk i telefon i alla riktningar och bildrutor, 1:1.
+export function _callSheet(looks) {
+  const c = mkCanvas(24 * 12 + 8, 44 * looks.length + 4), g = c.getContext('2d');
+  g.fillStyle = '#9a9488'; g.fillRect(0, 0, c.width, c.height);
+  looks.forEach((L, j) => {
+    let i = 0;
+    for (const dir of ['down', 'right', 'left', 'up']) for (const f of [0, 1, 2]) {
+      const s = callSprite(L, dir, f, true);
+      if (s) g.drawImage(s, 4 + i * 24, 2 + j * 44);
+      i++;
+    }
+  });
+  return c.toDataURL('image/png');
+}
+
+// =====================================================================
 //  Utseenden: årstid, väder, stadsdel
 // =====================================================================
 function dress(L0, o) {
@@ -893,6 +1114,44 @@ function dress(L0, o) {
     if (rnd() < 0.55) L.hat = pick(['capBack', 'cap', 'beanie', 'capBack', 'bucket']);
     if (rnd() < 0.2) L.neck = 'chain';
     L.phones = rnd() < 0.3;
+  }
+  // DOWNTOWN (v3): finanskvarterets folk går i kavaj och slips, mörka byxor och blanka skor
+  // (inte barn, inte ungdomsgänget; på vintern en rock över)
+  if (o.suit && !L.kid && !o.youth && rnd() < 0.92) { // finanskvarteret: nästan alla vuxna i kavaj eller dräkt (Carl: "kostymklädda")
+    // kostym (kavaj + byxor) eller dräkt (blazer + penn-/rak kjol), mörka toner, vit skjorta och slips;
+    // ordentlig frisyr i naturlig hårfärg; portfölj eller handväska; på vintern rock och halsduk
+    const dräkt = rnd() < 0.38;
+    L.top = dräkt && hasLook('top', 'blazer') ? 'blazer' : 'suit';
+    if (winter && rnd() < 0.7) { const c = pick(['coat', 'trench', 'coat']); if (hasLook('top', c)) L.top = c; }
+    else if (cool && rnd() < 0.3 && hasLook('top', 'trench')) L.top = 'trench';
+    L.bottom = dräkt ? (hasLook('bottom', 'pencil') ? 'pencil' : 'skirt') : (hasLook('bottom', 'suitPants') ? 'suitPants' : 'pants');
+    L.shirt = pick(['#2f3440', '#1f2330', '#3a3f4c', '#2d3a5c', '#4a4038', '#5a5f6a', '#262a36', '#6a6e78']);
+    L.pants = rnd() < 0.7 ? L.shirt : pick(['#2b2b30', '#2d3a5c', '#1f2330', '#3a3f4c']);   // oftast samma tyg som kavajen
+    L.accent = pick(['#c9323a', '#3a7bd5', '#e8b230', '#2f8a5a', '#8a3ac9', '#b02a4a', '#1f4a8a']);   // slipsen/scarfen
+    const firstOk = (field, list, def) => { for (const v of list) if (hasLook(field, v)) return v; return def; };
+    L.shoeType = dräkt && rnd() < 0.55 ? firstOk('shoeType', ['heels', 'ballerina'], 'normal') : firstOk('shoeType', ['dressShoes'], 'normal');
+    L.shoes = pick(['#1c1c1c', '#3a2a1e', '#1c1c1c', '#2f2f36']);
+    L.hair = pick(['#1d1714', '#3b2619', '#3b2619', '#6b4226', '#a5692f', '#d9a95c', '#b9b3ab', '#e6e2da', '#1d1714']);
+    // ordentliga frisyrer (de som finns i motorn)
+    const styles = (dräkt ? ['bob', 'lob', 'sleek', 'lowBun', 'bun', 'ponytail', 'lowPony', 'frenchBraid', 'pixie', 'long', 'bob']
+      : ['short', 'side', 'crew', 'quiff', 'slick', 'hardPart', 'buzz', 'fade', 'short', 'side', 'bald']).filter((s) => hasLook('style', s));
+    if (styles.length) L.style = pick(styles);
+    L.hat = null; L.hairAcc = 'none'; L.hairFx = 'none'; L.hair2 = null;
+    L.phones = false; L.beard = rnd() < 0.75 ? false : L.beard; L.makeup = dräkt ? L.makeup : 'none'; L.marks = 'none';
+    if (L.glasses === 'sun' || (L.glasses && !['square', 'round', 'halfRim'].includes(L.glasses))) L.glasses = false;
+    if (rnd() < 0.28) L.glasses = firstOk('glasses', [pick(['halfRim', 'square', 'round'])], false);
+    const bag = rnd();
+    L.bag = bag < 0.5 && hasLook('bag', 'briefcase') ? 'briefcase' : bag < 0.66 ? (dräkt && hasLook('bag', 'handbag') ? 'handbag' : hasLook('bag', 'messenger') ? 'messenger' : 'shoulder') : null;
+    L.bagColor = pick(['#2a2a2e', '#5a3a22', '#1c1c1c', '#6b4a33']);
+    // halsen: halsduk på vintern, pärlhalsband till dräkten, passerkort i band (på väg till kontoret)
+    L.neck = 'none';
+    if (winter && rnd() < 0.6) L.neck = firstOk('neck', [pick(['scarf', 'scarfLong', 'scarf'])], 'none');
+    else if (dräkt && rnd() < 0.3) L.neck = firstOk('neck', ['pearls'], 'none');
+    else if (rnd() < 0.18) L.neck = firstOk('neck', ['lanyard'], 'none');
+    L.neckColor = L.neck === 'lanyard' ? pick(['#2a5ad0', '#c9323a', '#2f8a5a']) : null;
+    if (winter && rnd() < 0.25) L.hat = firstOk('hat', [pick(['flatCap', 'fedora', 'beret'])], null);
+    o.suited = true;
+    return L;
   }
   if (L.kid && winter) { L.top = 'puffer'; L.bottom = 'snowsuit'; L.hat = pick(['pompom', 'beanie', 'pompom', 'ushanka']); L.shoeType = 'winterBoots'; L.neck = rnd() < 0.5 ? pick(['scarf', 'scarfStripe']) : L.neck; }
   else if (L.kid && kind === 'regn') { L.top = 'raincoat'; L.bottom = 'rainPants'; L.shoeType = 'rubberBoots'; L.shirt = pick(['#f0b429', '#d9433b', '#3a7bd5', '#46a35a']); }
@@ -955,6 +1214,9 @@ function rasterNav(obstacles) {
   if (CITY.SIDEWALK_SS) fill([4, CITY.SIDEWALK_SS[0], CW - 4, CITY.SIDEWALK_SS[1]], 2);
   if (CITY.QUAY) fill([4, CITY.QUAY[0], CW - 4, WALK_BOTTOM], 2);
   for (const p of PATHS) fill(p.rect, 2);
+  // (v3) kajerna längs floden går norr–söder tvärs genom hela världen – men körbanorna vid
+  // brofästena är fortfarande gata: där går man inte (bara vid övergångsställena, som överallt)
+  for (const p of PATHS) if (p.kind === 'kaj') for (const r of [ROAD_N, ROAD_S]) fill([p.rect[0], r[0], p.rect[2], r[1]], 0);
   if (PARK.plaza) disc(PARK.plaza.cx, PARK.plaza.cy, PARK.plaza.r - 2, 2);
   // övergångsställena över de vågräta gatorna
   for (const c of CROSS_ALL) if (c.road !== 'infarten') fill([c.x0 + 6, c.y0 ?? ROAD_N[0], c.x1 - 6, c.y1 ?? ROAD_N[1]], 2);
@@ -1113,20 +1375,26 @@ function buildNav(obstacles) {
   const gmid = (g) => Math.round((g.x0 + g.x1) / 2);
   const infW = XI[0] - 7, infE = XI[1] + 7;
   const subPaths = (SUB.paths || []).map((r) => Math.round((r[0] + r[2]) / 2));
+  // v3: kajerna längs floden (en nod på varje gånglinje, sedan kajpromenaden norr–söder),
+  // broarnas brofästen (gånglinjerna bryts vid vattnet och fortsätter bara över däcken) och
+  // Finanstorgets stråk (x där torget knyts till trottoaren och bakgatan)
+  const QX = RIV ? [Math.round((RIV.quayW[0] + RIV.quayW[2]) / 2) - 2, Math.round((RIV.quayE[0] + RIV.quayE[2]) / 2) + 4] : [];
+  const BRX = RIV ? [RIV.wx0 + 6, RIV.wx1 - 6] : [];
+  const PLX = DTL ? [DTL.plaza[0] + 22, ...(DTL.fountains || []).map((f) => f.x), DTL.axis, DTL.plaza[2] - 30].map(Math.round) : [];
 
   // ---- gånglinjerna ----
-  const Bk = line(Y_BACK, [6, CW - 6, ...gN.map((g) => g.cx)], 'b');
-  const N = line(Y_N, [6, CW - 6, ...gN.map((g) => g.cx), ...rowN.map(dX), ...cwP.map(cwMid)], 'n');
-  const S = line(Y_S, [6, CW - 6, ...cwP.map(cwMid), ...stopsP.flatMap((s) => [s.x - 42, s.x + 30, s.x + 44]), infW, infE, ...subPaths,
+  const Bk = line(Y_BACK, [6, CW - 6, ...gN.map((g) => g.cx), ...QX], 'b');
+  const N = line(Y_N, [6, CW - 6, ...gN.map((g) => g.cx), ...rowN.map(dX), ...cwP.map(cwMid), ...QX, ...BRX], 'n');
+  const S = line(Y_S, [6, CW - 6, ...cwP.map(cwMid), ...stopsP.flatMap((s) => [s.x - 42, s.x + 30, s.x + 44]), infW, infE, ...subPaths, ...QX, ...BRX, ...PLX,
     ...(lekX && gate(lekX, 'n') ? [gmid(gate(lekX, 'n'))] : []), ...(grus && gate(grus, 'n') ? [gmid(gate(grus, 'n'))] : []), ...(park?.drive ? [Math.round((park.drive[0] + park.drive[1]) / 2)] : [])], 's');
   const Pm = prom ? line(Y_PROM, [prom[0] + 4, prom[2] - 4, ...cwP.filter((c) => c.x1 <= prom[2]).map(cwMid), pl.cx - 40, pl.cx + 40, ...walks, ...(PARK.dogGate ? [Math.round((PARK.dogGate[0] + PARK.dogGate[1]) / 2)] : [])], 'p', prom[0], prom[2]) : [];
-  const BkS = CITY.BACK_S ? line(Y_BKS, [6, CW - 6, ...walks, ...gS.map((g) => g.cx), ...rowF.filter((b) => Math.abs(baseOf(b) + 9 - Y_BKS) < 26).map(dX), infW, infE, ...subPaths,
+  const BkS = CITY.BACK_S ? line(Y_BKS, [6, CW - 6, ...walks, ...gS.map((g) => g.cx), ...rowF.filter((b) => Math.abs(baseOf(b) + 9 - Y_BKS) < 26).map(dX), infW, infE, ...subPaths, ...QX, ...PLX,
     ...(kyrk && gate(kyrk, 'n') ? [gmid(gate(kyrk, 'n'))] : []), ...(lekX && gate(lekX, 's') ? [gmid(gate(lekX, 's'))] : []), ...(grus && gate(grus, 's') ? [gmid(gate(grus, 's'))] : []),
     ...(aterv ? [Math.round((aterv.rect[0] + aterv.rect[2]) / 2)] : []), ...(vagn ? [Math.round((vagn.rect[0] + vagn.rect[2]) / 2)] : [])], 'k') : [];
   const SN = CITY.SIDEWALK_SN ? line(Y_SN, [6, CW - 6, ...gS.map((g) => g.cx), ...rowS.map(dX), ...cwS.map(cwMid), infW, infE, ...(kyrk && gate(kyrk, 's') ? [gmid(gate(kyrk, 's'))] : []),
-    ...rowF.filter((b) => Math.abs(baseOf(b) + 9 - Y_SN) < 30).map(dX), ...(aterv ? [Math.round((aterv.rect[0] + aterv.rect[2]) / 2)] : []), ...(vagn ? [Math.round((vagn.rect[0] + vagn.rect[2]) / 2)] : [])], 'sn') : [];
-  const SS = CITY.SIDEWALK_SS ? line(Y_SS, [6, CW - 6, ...cwS.map(cwMid), ...stopsS.flatMap((s) => [s.x - 42, s.x + 30, s.x + 44])], 'ss') : [];
-  const Q = CITY.QUAY ? line(Y_Q, [6, CW - 6], 'q') : [];
+    ...rowF.filter((b) => Math.abs(baseOf(b) + 9 - Y_SN) < 30).map(dX), ...(aterv ? [Math.round((aterv.rect[0] + aterv.rect[2]) / 2)] : []), ...(vagn ? [Math.round((vagn.rect[0] + vagn.rect[2]) / 2)] : []), ...QX, ...BRX], 'sn') : [];
+  const SS = CITY.SIDEWALK_SS ? line(Y_SS, [6, CW - 6, ...cwS.map(cwMid), ...stopsS.flatMap((s) => [s.x - 42, s.x + 30, s.x + 44]), ...QX, ...BRX], 'ss') : [];
+  const Q = CITY.QUAY ? line(Y_Q, [6, CW - 6, ...QX], 'q') : [];
 
   // ---- tvärförbindelser ----
   // gränder och tvärgator i norra raden: bakgatan ↔ trottoaren
@@ -1183,6 +1451,48 @@ function buildNav(obstacles) {
   for (const g of gS) if (BkS.length && SN.length) link(at(BkS, g.cx), at(SN, g.cx));
   // kajen: några trappor ner från bortre trottoaren
   if (Q.length && SS.length) for (let x = 120; x < CW - 60; x += 240) link(at(SS, x), at(Q, x));
+  // v3: kajpromenaden längs floden – från bakgatan ner till kanalkajen på båda stränderna
+  // (gatorna korsas inte här: där bryts länken av sig själv, man går till övergångsstället)
+  const quayNodes = [];
+  for (const qx of QX) {
+    const chain = [Bk, N, S, BkS, SN, SS, Q].filter((L) => L.length).map((L) => at(L, qx)).filter((i) => i >= 0 && Math.abs(nodes[i].x - qx) < 12);
+    for (let k = 1; k < chain.length; k++) link(chain[k - 1], chain[k]);
+    quayNodes.push(...chain);
+  }
+  // v3: Finanstorget – en ring kring tjuren, ringar kring fontänerna och två tvärstråk (norr och söder
+  // om statyn), knutna till trottoaren (Pixelgatan) och bakgatan bakom den södra raden
+  const plazaRing = [], fountRings = [], plazaAll = [];
+  if (DTL && S.length) {
+    const [px0, py0, px1, py1] = DTL.plaza, st = DTL.statue, yN = py0 + 16, yS = py1 - 14;
+    const ringAt = (cx, cy, rx, ry, n, tag) => {
+      const ids = [];
+      for (let k = 0; k < n; k++) { const a = k * 2 * Math.PI / n; const i = node(cx + Math.cos(a) * rx, cy + Math.sin(a) * ry, tag); if (i >= 0 && !ids.includes(i)) ids.push(i); }
+      for (let k = 0; k < ids.length; k++) link(ids[k], ids[(k + 1) % ids.length]);
+      return ids;
+    };
+    if (st) plazaRing.push(...ringAt(st.x, st.y, 46, 27, 10, 'tjur'));
+    for (const f of DTL.fountains || []) fountRings.push(ringAt(f.x, f.y, 42, 23, 8, 'fontän'));
+    const top = line(yN, [px0 + 10, px1 - 12, ...PLX], 'torgN', px0 + 6, px1 - 6);
+    // det södra stråket går bara mellan skyskraporna i den södra raden: bakom ett högt hus skulle
+    // bara huvudet sticka upp över taket (hela figuren skyms först på bakgatan)
+    let bx0 = px0 + 10, bx1 = px1 - 12;
+    for (const t of ALL_B.filter((b) => b.row === 's' && b.h >= 150 && b.x < px1 && b.x + b.w > px0)) {
+      if (t.x + t.w / 2 < (px0 + px1) / 2) bx0 = Math.max(bx0, t.x + t.w + 6); else bx1 = Math.min(bx1, t.x - 6);
+    }
+    const bot = bx1 - bx0 > 40 ? line(yS, [bx0, bx1, ...PLX], 'torgS', bx0, bx1) : [];
+    plazaAll.push(...plazaRing, ...fountRings.flat(), ...top, ...bot);
+    for (const x of PLX) { if (top.length) link(at(S, x), at(top, x)); if (BkS.length && bot.length && x >= bx0 && x <= bx1) link(at(bot, x), at(BkS, x)); }
+    const closest = (ids, x, y) => ids.reduce((b, i) => (Math.hypot(nodes[i].x - x, nodes[i].y - y) < Math.hypot(nodes[b].x - x, nodes[b].y - y) ? i : b), ids[0]);
+    for (const R of [plazaRing, ...fountRings]) {
+      if (!R.length || !top.length || !bot.length) continue;
+      const cx = R.reduce((s, i) => s + nodes[i].x, 0) / R.length, cy = R.reduce((s, i) => s + nodes[i].y, 0) / R.length;
+      link(closest(R, cx, cy - 40), closest(top, cx, yN)); link(closest(R, cx, cy + 40), closest(bot, cx, yS));
+      link(closest(R, cx - 70, cy), closest(top, cx - 60, yN)); link(closest(R, cx + 70, cy), closest(bot, cx + 60, yS));
+    }
+  }
+  // noderna på broarnas trottoarer (över vattnet) – där stannar man vid räcket och tittar ut
+  const onBridge = (i) => !!RIV && nodes[i].x > RIV.wx0 + 14 && nodes[i].x < RIV.wx1 - 14;
+  const bridgeNodes = { n: N.filter(onBridge), s: S.filter(onBridge), sn: SN.filter(onBridge), ss: SS.filter(onBridge) };
 
   // ---- tomterna ----
   const special = {};
@@ -1338,11 +1648,22 @@ function buildNav(obstacles) {
   const endsOf = (ids) => (ids.length ? [ids[0], ids[ids.length - 1]].filter((i) => nodes[i].x < 16 || nodes[i].x > CW - 16).map((i) => ({ n: i, dir: nodes[i].x < CW / 2 ? -1 : 1 })) : []);
   const exits = [...endsOf(N), ...endsOf(S), ...endsOf(SN), ...endsOf(SS), ...endsOf(Q), ...endsOf(BkS), ...endsOf(Bk).map((e) => ({ ...e, back: true }))];
   const curbSet = new Set(curbs);
-  const spawnNodes = [...N, ...S, ...Pm, ...BkS, ...SN, ...SS, ...Q].filter((i) => !curbSet.has(i));
+  const spawnNodes = [...N, ...S, ...Pm, ...BkS, ...SN, ...SS, ...Q, ...plazaAll].filter((i) => !curbSet.has(i));
   const parkNodes = [...Pm, ...ring, ...BkS.filter((i) => nodes[i].x < XI[0]), ...['lekP', 'kyrk', 'lekX', 'grus', 'parkering'].map((k) => special[k]).filter((i) => i >= 0)];
   const lines = { Bk, N, S, Pm, BkS, SN, SS, Q };
+  // v3: de långa linjerna bryts vid floden – runs() delar en linje i sammanhängande bitar (joggarna)
+  const linked = (a, b) => nodes[a].adj.some((e) => e.a === b || e.b === b);
+  const runs = (ids) => {
+    const out = [];
+    let cur = [];
+    for (const i of ids) { if (cur.length && !linked(cur[cur.length - 1], i)) { out.push(cur); cur = []; } cur.push(i); }
+    if (cur.length) out.push(cur);
+    return out;
+  };
+  const plaza = { ring: plazaRing, fountains: fountRings, all: plazaAll };
 
-  return { G, walk, paved, grass, los, nearest, pathTo, gridPath, nodes, edges, route, lines, ring, doorNode, windows, stops, exits, spawnNodes, parkNodes, special, nearNode, at };
+  return { G, walk, paved, grass, los, nearest, pathTo, gridPath, nodes, edges, route, lines, ring, doorNode, windows, stops, exits, spawnNodes, parkNodes, special, nearNode, at,
+    runs, plaza, quayNodes, bridgeNodes, quayX: QX };
 }
 
 // =====================================================================
@@ -1471,7 +1792,10 @@ export function createLife(env, traffic, props) {
   function lookFor(o = {}) {
     let L = makeLook();
     for (let i = 0; i < 40 && !!L.kid !== !!o.kid; i++) L = makeLook();
-    return dress(L, { ...o, w: env.weather, rain: env.rain });
+    const oo = { ...o, w: env.weather, rain: env.rain };
+    L = dress(L, oo);
+    o.suited = !!oo.suited;             // kostymfolk (downtown) – spawn() ger dem portfölj, kaffe och mobil
+    return L;
   }
   function mkPed(look) {
     return {
@@ -1482,9 +1806,27 @@ export function createLife(env, traffic, props) {
       onCross: -1, look4bus: false, spot: null, wj: [rr(-1, 1), rr(0, 1)], kind: 'folk',
       sit: null, seatT: null, wantSeat: null, stop: null, hang: null, play: null, jump: false, gest: 0, gestT: rr(1, 4),
       showMove: false, stillT: 1, showDir: 'down', dirT: 0, leaves: 0,
+      suit: false, caller: false, call: 0, callT: rr(2, 10), photo: 0,
     };
   }
   const subAt = (x) => x >= X_SUB - 10;
+  const dtAt = (x) => x >= XI[1] - 8 && x < DT1 + 24;   // v3: downtown (och brofästet) – kostym och kavaj
+  // kostymfolket: raskt tempo, svart paraply, kaffe på morgonen, portfölj (om figuren inte har en egen)
+  // och ibland telefonen mot örat (bara den som har en hand ledig: inget i händerna – en portfölj eller
+  // handväska i högra handen går bra, då tar man telefonen med den vänstra, se callSprite)
+  function suitUp(p) {
+    p.suit = true;
+    p.speed = rr(30, 39);
+    p.umb = pick([0x1e1e24, 0x2a2e48, 0x1e1e24, 0xc9323a]);
+    const h = env.hour;
+    if (!p.carry) {
+      const r = rnd();
+      if (r < (h >= 6.5 && h < 11 ? 0.34 : 0.14)) p.carry = 'kaffe';
+      else if (r < 0.5 && !p.look.bag) p.carry = 'portfolj';
+    }
+    p.caller = !p.carry && rnd() < 0.42;
+    if (p.caller && rnd() < 0.4) { p.call = rr(4, 14); p.callT = rr(6, 18); }
+  }
   function addDog(p, late) {
     const br = ri(0, DOGS.length - 1);
     p.dog = { br, x: p.x - 8, y: p.y, dir: 1, fr: 0, anim: 0, act: 'walk', t: 0, tx: p.x, ty: p.y, tie: null, moving: false, dirT: 0, bark: 0, wag: 0, cool: rr(2, 6), free: null };
@@ -1494,23 +1836,30 @@ export function createLife(env, traffic, props) {
   function addExtras(p) {
     const h = env.hour, late = h < 6 || h >= 21;
     if (p.look.kid || p.kind !== 'folk') return;
-    if (rnd() < (late ? 0.4 : 0.22)) addDog(p, late);
+    if (rnd() < (p.suit ? 0.04 : late ? 0.4 : 0.22)) addDog(p, late);
     else if (!late && rnd() < 0.2 && ordinary() < targetCount(h)) {
-      const c = mkPed(lookFor({ kid: rnd() < 0.5, sub: subAt(p.x) }));
+      const o = { kid: !p.suit && rnd() < 0.5, sub: subAt(p.x), suit: dtAt(p.x) };
+      const c = mkPed(lookFor(o));
       c.leader = p; c.x = p.x - 6; c.y = p.y; c.node = p.node; c.umb = rnd() < 0.5 ? c.umb : null;
+      if (o.suited) { suitUp(c); c.caller = false; c.call = 0; }   // (sällskapet pratar med ledaren, inte i telefon)
       p.comp = c; p.speed = Math.min(p.speed, 30);
+      if (p.comp && p.call > 0) p.call = 0;
       peds.push(c);
     }
-    if (!p.dog && rnd() < 0.12) p.carry = pick(['kasse', 'pase', 'kasse', 'frakt', 'kaffe', 'tidning']);
+    if (!p.dog && !p.suit && rnd() < 0.12) p.carry = pick(['kasse', 'pase', 'kasse', 'frakt', 'kaffe', 'tidning']);
   }
   function spawn(kind, arg, o = {}) {
     const h = env.hour, late = h < 6 || h >= 21.5, w = W();
     const jogOk = kind !== 'door' && !o.special && ((h >= 6 && h < 10) || (h >= 16.5 && h < 21)) && !(w.kind === 'regn' && (w.intensity ?? 0.6) > 0.7);
     const jog = jogOk && rnd() < 0.11;
     const at = kind === 'node' ? nodes[arg] : kind === 'edge' ? nodes[arg.n] : kind === 'door' ? doorCenter(arg) : { x: camCX(), y: camCY() };
-    const p = mkPed(lookFor({ kid: o.kid ?? (!late && !jog && rnd() < 0.1), jog, youth: o.youth, sub: subAt(at.x) }));
+    // kontorsdörrarna och banken släpper ut kostymfolk även utanför downtown-bandet
+    const office = kind === 'door' && (OFFICES.includes(arg.id) || arg.id === 'bank');
+    const lo = { kid: o.kid ?? (!late && !jog && !dtAt(at.x) && rnd() < 0.1), jog, youth: o.youth, sub: subAt(at.x), suit: o.suit ?? (office || dtAt(at.x)) };
+    const p = mkPed(lookFor(lo));
     if (o.special) p.kind = o.special;
     if (jog) { p.jogger = true; p.speed = rr(58, 70); p.umb = null; }
+    else if (lo.suited) suitUp(p);
     if (kind === 'node') {
       const n = nodes[arg];
       p.node = arg; p.x = n.x; p.y = n.y;
@@ -1560,14 +1909,53 @@ export function createLife(env, traffic, props) {
     }
     return out;
   }
+  // ---------- kaffevagnen på Finanstorget (rekvisitans föremål kind 'kaffevagn') ----------
+  // Man ställer sig framför luckan en stund och går därifrån med en pappmugg i handen.
+  let coffeeSpot = null;
+  function findCoffee() {
+    const P = PR();
+    const items = P && typeof P.items === 'function' ? safe(() => P.items(), []) : [];
+    const cart = (items || []).find((it) => it && it.kind === 'kaffevagn' && Number.isFinite(it.x));
+    if (!cart) return;
+    const q = nav.nearest(Math.round(cart.x), Math.round(cart.y) + 9, paved, 8);
+    if (!q) return;
+    const nn = nav.nearNode(q[0], q[1], null, 140);
+    if (nn < 0 || !nav.pathTo(nodes[nn].x, nodes[nn].y, q[0], q[1], 24)) return;
+    coffeeSpot = { x: q[0], y: q[1], node: nn, cx: cart.x, cy: cart.y };
+  }
+  function coffeePlan() {
+    const c = coffeeSpot;
+    if (!c) return [];
+    const q = nav.nearest(c.x + ri(-7, 7), c.y + ri(0, 4), paved, 4) || [c.x, c.y];
+    return [{ k: 'go', n: c.node }, { k: 'goto', x: q[0], y: q[1], at: c.node }, { k: 'wait', t: rr(3, 7), face: 'up' }, { k: 'give', item: 'kaffe' }, { k: 'goto', x: nodes[c.node].x, y: nodes[c.node].y, at: c.node }];
+  }
+  // downtown: närhet till finanskvarteret (0–1) – styr torget, kontoren och kaffevagnen
+  const dtNear = () => { const x = camCX(); return x > DT0 - 200 && x < DT1 + 260 ? 1 : 0; };
+  const rushAM = (h) => h >= 7 && h < 9.6, rushPM = (h) => h >= 16 && h < 18.8;
   function planFor(p) {
     const st = [], h = env.hour, dark = env.dark > 0.3, m = mood();
     if (p.jogger) return jogPlan(p);
+    // kostymfolket på morgonen: raka vägen till kontoret (in genom karuselldörren – sedan är man på jobbet)
+    if (p.suit && rushAM(h) && rnd() < 0.7) {
+      const offs = OFFICES.map(byId).filter((b) => b && nav.doorNode[b.id] !== undefined);
+      if (offs.length) {
+        const b = wpick(offs.map((b) => [b, nearW(doorCenter(b).x, baseOf(b), 300) + 0.01]));
+        if (rnd() < 0.3 && coffeeSpot) st.push(...coffeePlan());
+        st.push({ k: 'go', n: nav.doorNode[b.id] }, { k: 'door', b, t: 0, home: true });
+        return st;
+      }
+    }
     const n = ri(1, 3);
     for (let i = 0; i < n; i++) {
-      const shops = placeList(h);
+      const shops = placeList(h).filter(([b]) => !PLACES[b.id].office || (p.suit && !rushPM(h))).map(([b, w]) => [b, w * (p.suit && PLACES[b.id].suit ? PLACES[b.id].suit : 1)]);
       const opts = [];
       if (shops.length) opts.push(['shop', (m.wet ? 5 : 3) * (p.dog ? 0.45 : 1)]);
+      // v3: Finanstorget, kaffevagnen, broarna och kajerna längs floden
+      if (!m.wet && h >= 7 && h < 22 && nav.plaza.all.length) opts.push(['plaza', (0.5 + 2.2 * dtNear()) * m.nice]);
+      if (coffeeSpot && h >= 6.5 && h < 18 && !p.carry && !p.dog) opts.push(['coffee', (p.suit ? 1.6 : 0.5) * dtNear() * (m.cold ? 1.5 : 1)]);
+      const riverNear = RIV ? nearW((RIV.x0 + RIV.x1) / 2, camCY(), 320) : 0;
+      if (!m.wet && h >= 6.5 && h < 23 && nav.bridgeNodes.n.length) opts.push(['bridge', 2.6 * m.nice * riverNear]);
+      if (!m.wet && h >= 7 && h < 22 && nav.quayNodes.length) opts.push(['quayview', 1.2 * m.nice * riverNear]);
       if (!dark && nav.windows.length) opts.push(['window', 1.4]);
       if (!m.wet && h >= 6.5 && h < 22 && nav.parkNodes.length) opts.push(['park', (p.dog ? 4 : 2) * m.nice]);
       if (h >= 6 && h < 23.5 && nav.stops.length) opts.push(['bus', m.wet ? 2.4 : 1.3]);
@@ -1620,6 +2008,34 @@ export function createLife(env, traffic, props) {
         st.push({ k: 'go', n: s.node }, { k: 'bus', stop: s, t: rr(10, 30) });
       } else if (a === 'alley') {
         st.push({ k: 'go', n: nearNodes(nav.lines.Bk, 200) }, { k: 'go', n: nearNodes(nav.lines.Bk, 200) });
+      } else if (a === 'plaza') {
+        // över Finanstorget: runt tjuren (stanna och titta – ibland en bild med mobilen), förbi fontänerna
+        const P = nav.plaza, k = ri(1, 3);
+        for (let j = 0; j < k; j++) {
+          const nn = nearNodes(P.all, 220);
+          st.push({ k: 'go', n: nn });
+          const N0 = nodes[nn], st0 = DTL?.statue, fo = (DTL?.fountains || []).find((f) => Math.hypot(f.x - N0.x, (f.y - N0.y) * 1.6) < 60);
+          if (P.ring.includes(nn) && st0 && rnd() < 0.6) st.push({ k: 'wait', t: rr(3, 9), face: faceTo(st0.x - N0.x, st0.y - N0.y), photo: !p.suit && rnd() < 0.4 });
+          else if (fo && rnd() < 0.5) st.push({ k: 'wait', t: rr(3, 8), face: faceTo(fo.x - N0.x, fo.y - N0.y) });
+        }
+      } else if (a === 'coffee') {
+        st.push(...coffeePlan());
+      } else if (a === 'bridge') {
+        // ut på bron: stanna vid räcket och titta ut över floden (norrut eller söderut), ta en bild
+        const side = rnd() < 0.5 ? 'n' : 's', B = nav.bridgeNodes[side].length ? nav.bridgeNodes[side] : nav.bridgeNodes.n;
+        const nn = nearNodes(B, 260), N0 = nodes[nn], br = BRIDGES[0];
+        const ry = side === 'n' ? br.rails[0][3] + 4 : br.rails[1][1] - 4;
+        const spot = nav.nearest(Math.round(N0.x + rr(-10, 10)), ry, paved, 6);
+        st.push({ k: 'go', n: nn });
+        if (spot) st.push({ k: 'goto', x: spot[0], y: spot[1], at: nn }, { k: 'wait', t: rr(5, 16), face: side === 'n' ? 'up' : 'down', photo: rnd() < 0.35 }, { k: 'goto', x: N0.x, y: N0.y, at: nn });
+      } else if (a === 'quayview') {
+        // kajen: gå fram till räcket och titta på vattnet (västra kajen österut, östra kajen västerut)
+        const nn = nearNodes(nav.quayNodes, 240), N0 = nodes[nn];
+        const west = nav.quayX.length && Math.abs(N0.x - nav.quayX[0]) < Math.abs(N0.x - nav.quayX[1]);
+        const tx = west ? RIV.x0 + 16 : RIV.x1 - 17, ty = N0.y + Math.round(rr(-18, 18));
+        const spot = inWater(west ? tx + 12 : tx - 12, ty) ? nav.nearest(tx, ty, paved, 5) : null;
+        st.push({ k: 'go', n: nn });
+        if (spot) st.push({ k: 'goto', x: spot[0], y: spot[1], at: nn }, { k: 'wait', t: rr(5, 14), face: west ? 'right' : 'left' }, { k: 'goto', x: N0.x, y: N0.y, at: nn });
       } else {
         st.push({ k: 'go', n: nearNodes(nav.spawnNodes) });
         if (rnd() < 0.3) st.push({ k: 'wait', t: rr(1, 4), face: pick(['down', 'left', 'right']) });
@@ -1631,7 +2047,10 @@ export function createLife(env, traffic, props) {
   // joggarna springer längs de långa raka gångarna: promenaden, parkgången, kajen, bakgatan
   function jogPlan(p) {
     const L = nav.lines;
-    const routes = [L.Pm, L.Q, L.BkS.filter((i) => nodes[i].x < XI[0]), L.BkS.filter((i) => nodes[i].x > XI[1]), L.SS].filter((r) => r.length > 3);
+    // (v3: kajen, parkgången och bakgatan bryts vid floden – varje sammanhängande bit är en egen runda;
+    // Pixelgatans södra trottoar från Infarten över Stora bron är joggarnas favorit)
+    const overBridge = RIV ? L.S.filter((i) => nodes[i].x > DT0 && nodes[i].x < RIV.x1 + 200) : [];
+    const routes = [L.Pm, ...nav.runs(L.Q), ...nav.runs(L.BkS.filter((i) => nodes[i].x < XI[0])), ...nav.runs(L.BkS.filter((i) => nodes[i].x > XI[1])), ...nav.runs(L.SS), ...nav.runs(overBridge)].filter((r) => r.length > 3);
     if (!routes.length) return [{ k: 'leave' }];
     const r = wpick(routes.map((r) => [r, nearW(nodes[r[r.length >> 1]].x, nodes[r[0]].y, 300) + 0.01]));
     const a = r[0], b = r[r.length - 1];
@@ -1664,7 +2083,15 @@ export function createLife(env, traffic, props) {
         if (s.at !== undefined && p.node !== s.at) return;
         p.path = [{ x: s.x, y: s.y, gate: -1, noOff: !!s.noOff }];
         return;
-      case 'wait': p.hold = s.t; p.face = s.face || p.face; p.jump = !!s.jump; return;
+      case 'wait': p.hold = s.t; p.face = s.face || p.face; p.jump = !!s.jump; p.photo = s.photo ? s.t : 0; if (s.photo) p.call = 0; return;
+      // (v3) en avstickare som går runt hindren (kaffevagnen, räcket på bron, kajkanten)
+      case 'goto':
+        if (s.at !== undefined && p.node !== s.at) return;
+        p.path = nav.pathTo(p.x, p.y, s.x, s.y, 24) || [];
+        if (p.path.length) p.path[p.path.length - 1].noOff = true;
+        return;
+      // (v3) fick något i handen (kaffet från kaffevagnen) – och lägger på luren
+      case 'give': if (!p.carry && !p.look.kid) { p.carry = s.item; p.caller = false; p.call = 0; } return;
       case 'seat': {
         const seat = s.seat, info = seatInfo(seat);
         if (!info || p.node !== info.node || !seatFree(seat, p)) return;
@@ -1857,7 +2284,15 @@ export function createLife(env, traffic, props) {
     const shop = PLACES[b.id];
     if (!shop || p.look.kid || p.jogger) return;
     if (b.id === 'flyg' && p.carry === 'resvaska') { p.carry = null; if (rnd() < 0.8) p.flew = true; return; }
-    for (const [kind, prob] of shop.carry) if (rnd() < prob) { p.carry = kind; break; }
+    // frisören: ut med en ny frisyr (ibland ny färg); accessoarbutiken: nya solglasögon när solen skiner
+    if (shop.hair) {
+      const L = { ...p.look }, styles = ['bob', 'lob', 'pixie', 'short', 'side', 'quiff', 'fade', 'undercut', 'curtains', 'sleek', 'buzz', 'wavy', 'bun'].filter((s) => s !== L.style && hasLook('style', s));
+      if (styles.length) L.style = pick(styles);
+      if (rnd() < 0.25) L.hair = pick(['#d9a95c', '#ecd489', '#b7392b', '#6b4226', '#1d1714']);
+      p.look = L;
+    }
+    if (shop.sun && mood().warm && !p.look.glasses && rnd() < 0.5 && hasLook('glasses', 'sun')) p.look = { ...p.look, glasses: 'sun' };
+    for (const [kind, prob] of shop.carry) if (rnd() < prob) { p.carry = kind; p.caller = false; p.call = 0; break; }
   }
 
   // ---------- dörrarna: gå in, var borta en stund, kom ut igen ----------
@@ -2207,14 +2642,21 @@ export function createLife(env, traffic, props) {
   }
   function targetCount(h) {
     const n = h < 5 ? 3 : h < 6.5 ? 4 : h < 8 ? 10 : h < 16 ? 15 : h < 19 ? 16 : h < 21 ? 10 : h < 23 ? 7 : 4;
-    return Math.max(2, Math.round(n * weatherFactor()));
+    // (v3) finanskvarteret myllrar på dagen – mest i rusningen morgon och eftermiddag
+    const dt = dtNear() && h >= 7 && h < 19 ? (rushAM(h) || rushPM(h) ? 1.4 : 1.2) : 1;
+    return Math.max(2, Math.round(n * dt * weatherFactor()));
   }
   const ordinary = () => { let n = 0; for (const p of peds) if (p.kind === 'folk') n++; return n; };
   // Nya figurer dyker upp strax utanför bild (eller kommer ut ur en butik/ett hus),
-  // så att det alltid är liv där spelaren är – världen är sju skärmar bred och fyra hög.
+  // så att det alltid är liv där spelaren är – världen är tio skärmar bred och fyra hög.
   function spawnSomewhere(initial) {
     const h = env.hour;
     const doors = ALL_B.filter((b) => enterable(b) && nav.doorNode[b.id] !== undefined && ((PLACES[b.id] && isOpen(b, h)) || HOMES.includes(b.id)) && camD(doorCenter(b).x, baseOf(b)) < 330);
+    // (v3) eftermiddagsrusningen: kontorsfolket strömmar ut genom karuselldörrarna
+    if (rushPM(h) && dtNear() && rnd() < (initial ? 0.25 : 0.4)) {
+      const offs = doors.filter((b) => OFFICES.includes(b.id));
+      if (offs.length) return spawn('door', pick(offs));
+    }
     if (rnd() < (initial ? 0.2 : 0.3) && doors.length) return spawn('door', pick(doors));
     const cands = nav.spawnNodes.filter((i) => {
       const n = nodes[i];
@@ -2392,9 +2834,18 @@ export function createLife(env, traffic, props) {
   const spotsOf = (list) => list.map(([x, y]) => nav.nearest(Math.round(x), Math.round(y), walk, 10)).filter(Boolean);
   const FLOCK = spotsOf([[1040, 207], [470, 209], [1395, 206], [720, 293], [1110, 294], [170, 293], [905, 386], [962, 352],
     [620, 352], [1470, 358], [150, 356], [560, 24], [1300, 24], [800, 210], [1560, 294],
-    [230, 652], [700, 655], [1010, 660], [1500, 652], [400, 742], [900, 741], [1300, 738], [2060, 296], [1880, 205], [2230, 300], [1900, 430], [2110, 472]]);
-  const GULL_SPOTS = spotsOf([[150, 766], [480, 764], [820, 768], [1180, 766], [1520, 764], [1900, 766], [2280, 768], [2600, 765], [2196, 205], [1150, 207], [640, 740], [2420, 742]]);
-  const CROW_SPOTS = spotsOf([[1060, 560], [1150, 610], [1110, 520], [2520, 360], [2640, 420], [2060, 360], [2320, 610], [1790, 420], [2560, 28], [2350, 476], [1850, 470]]);
+    [230, 652], [700, 655], [1010, 660], [1500, 652], [400, 742], [900, 741], [1300, 738], [2060 + SDX, 296], [1880 + SDX, 205], [2230 + SDX, 300], [1900 + SDX, 430], [2110 + SDX, 472],
+    // v3: Finanstorget (kring tjuren, fontänerna och bänkarna) och downtowns trottoarer
+    ...(DTL ? [[DTL.statue.x - 30, DTL.statue.y + 36], [DTL.statue.x + 40, DTL.statue.y - 34], [DTL.plaza[0] + 60, 330], [DTL.axis + 40, 452],
+      ...(DTL.fountains || []).map((f) => [f.x + 8, f.y + 34]), [2010, 297], [1860, 655]] : [])]);
+  // måsarna: kanalkajen, och (v3) broarnas trottoarer vid räckena och kajerna längs floden
+  const riverGulls = RIV ? [[RIV.wx0 + 40, 190], [RIV.wx0 + 250, 190], [RIV.wx1 - 70, 190], [RIV.wx0 + 110, 302], [RIV.wx1 - 150, 302],
+    [RIV.wx0 + 90, 644], [RIV.wx1 - 60, 756], [RIV.quayW[0] + 8, 110], [RIV.quayW[0] + 8, 560], [RIV.quayE[0] + 12, 420], [RIV.quayE[0] + 12, 90], [RIV.quayE[0] + 12, 710]] : [];
+  const GULL_SPOTS = spotsOf([[150, 766], [480, 764], [820, 768], [1180, 766], [1520, 764], [1900 + SDX, 766], [2280 + SDX, 768], [2600 + SDX, 765], [2196 + SDX, 205], [1150, 207], [640, 740], [2420 + SDX, 742], ...riverGulls]);
+  // (kråkorna på kyrkogården håller sig innanför muren även när tomten krympt – Leksakslådan tog östra delen)
+  const KGX = (LOTS.find((l) => l.id === 'kyrkogard')?.rect || [1000, 0, 1212])[2];
+  const CROW_SPOTS = spotsOf([[1060, 560], [Math.min(1150, KGX - 20), 610], [Math.min(1110, KGX - 30), 520], [2520 + SDX, 360], [2640 + SDX, 420], [2060 + SDX, 360], [2320 + SDX, 610], [1790 + SDX, 420], [2560 + SDX, 28], [2350 + SDX, 476], [1850 + SDX, 470],
+    ...(DTL ? [[DTL.back[0] + 132, 476], [DTL.back[2] - 8, 476]] : [])]);   // (i gränderna – bakgatan bakom tornen är hinder)
   const birdsG = [];
   const SPEC = {
     duva: { sets: () => S.pig, flee: 20, spd: 9, spots: FLOCK, day: true },
@@ -2677,7 +3128,61 @@ export function createLife(env, traffic, props) {
   const swans = [];
   if (CITY.CANAL) for (let i = 0; i < 2; i++) swans.push({ x: rr(200, CW - 200), y: CITY.CANAL[0] + 12 + i * 3, dir: pick([-1, 1]), v: rr(4, 7), ph: rnd() * 6 });
   const frozen = () => { const w = W(); return (w.snowCover || 0) > 0.45 || (w.season === 'vinter' && (w.temp ?? 0) < -1); };
+  // (v3) i floden mellan Stora bron och Järnbron: ett svanpar och några gräsänder som driver
+  // sakta med strömmen och simmar tillbaka. Samma isregel som vädret (då är floden blankis).
+  const RW = RIV && RIV.water[1] ? RIV.water[1] : null;
+  const riverIce = () => { const w = W(); return (w.season === 'vinter' && (w.temp ?? 15) <= 0) || (w.snowCover || 0) > 0.25; };
+  const riverBirds = [];
+  if (RW) {
+    const rx = (m) => rr(RW[0] + m, RW[2] - m), ry = (m) => rr(RW[1] + m, RW[3] - m);
+    const sx = rx(60), sy = ry(40);
+    riverBirds.push({ swan: true, x: sx, y: sy, tx: sx, ty: sy, dir: 1, t: rr(2, 6), ph: rnd() * 6 }, { swan: true, x: sx + 14, y: sy + 3, tx: sx, ty: sy, dir: 1, t: rr(2, 6), ph: rnd() * 6, follow: 0 });
+    for (let i = 0; i < 3; i++) { const x = rx(30), y = ry(20); riverBirds.push({ v: i % 2, x, y, tx: x, ty: y, dir: pick([-1, 1]), t: rr(1, 5), dab: 0, ph: rnd() * 6 }); }
+  }
+  function updRiver(dt) {
+    if (!RW || riverIce()) return;
+    for (const d of riverBirds) {
+      if (Math.abs(d.x - camCX()) > 600) continue;
+      d.t -= dt;
+      if (d.dab > 0) { d.dab -= dt; continue; }
+      if (d.follow !== undefined) { const L = riverBirds[d.follow]; d.tx = L.x - L.dir * 13; d.ty = L.y + 2; }
+      const dx = d.tx - d.x, dy = d.ty - d.y, dd = Math.hypot(dx, dy), sp = d.swan ? 4 : 6;
+      if (dd > 0.4) { d.x += dx / dd * Math.min(dd, sp * dt); d.y += dy / dd * Math.min(dd, sp * dt); if (Math.abs(dx) > 1.5) d.dir = dx < 0 ? -1 : 1; }
+      d.y += 0.6 * dt;                                         // strömmen för söderut mot kanalen
+      d.x = clamp(d.x, RW[0] + 8, RW[2] - 8); d.y = clamp(d.y, RW[1] + 16, RW[3] - 8);
+      if (d.t <= 0 && d.follow === undefined) {
+        d.t = rr(3, 9);
+        if (!d.swan && rnd() < 0.3) d.dab = rr(1, 2.4);
+        else { d.tx = clamp(d.x + rr(-70, 70), RW[0] + 20, RW[2] - 20); d.ty = clamp(d.y + rr(-30, 18), RW[1] + 24, RW[3] - 14); }
+      }
+    }
+  }
+  function riverItems(out) {
+    if (!RW || riverIce()) return;
+    const t = env.t;
+    for (const d of riverBirds) {
+      if (!visible(d.x, d.y, 24)) continue;
+      const x = Math.round(d.x), y = Math.round(d.y), bob = Math.sin(t * (d.swan ? 1.4 : 2.2) + d.ph) > 0.65 ? 1 : 0;
+      const moving = Math.hypot(d.tx - d.x, d.ty - d.y) > 0.5 && !(d.dab > 0);
+      if (d.swan) {
+        const img = d.dir < 0 ? S.swan.l : S.swan.r;
+        out.push({ x, y: d.y, draw: (ctx) => {
+          ctx.drawImage(img, x - (img.width >> 1), y - img.height + 3 + bob);
+          ctx.fillStyle = 'rgba(210,236,250,.5)'; ctx.fillRect(x - 6, y + 2, 12, 1);
+          if (moving) { ctx.fillStyle = 'rgba(230,246,255,.35)'; ctx.fillRect(x - d.dir * 10, y + 1, 3, 1); ctx.fillRect(x - d.dir * 14, y, 3, 1); ctx.fillRect(x - d.dir * 14, y + 3, 3, 1); }
+        } });
+      } else {
+        const set = S.duck[d.v], spr = d.dab > 0 ? set.dab : set.swim, img = d.dir < 0 ? spr.l : spr.r;
+        out.push({ x, y: d.y, draw: (ctx) => {
+          ctx.drawImage(img, x - (img.width >> 1), y - img.height + 2 + bob);
+          ctx.fillStyle = 'rgba(210,236,250,.55)'; ctx.fillRect(x - 5, y + 1, 10, 1);
+          if (moving) { ctx.fillStyle = 'rgba(230,246,255,.4)'; ctx.fillRect(x - d.dir * 8, y, 2, 1); ctx.fillRect(x - d.dir * 11, y - 1, 2, 1); ctx.fillRect(x - d.dir * 11, y + 1, 2, 1); }
+        } });
+      }
+    }
+  }
   function updWater(dt) {
+    updRiver(dt);
     if (frozen()) return;
     for (const d of ducks) {
       d.t -= dt;
@@ -2702,6 +3207,7 @@ export function createLife(env, traffic, props) {
     }
   }
   function waterItems(out) {
+    riverItems(out);
     if (frozen()) return;
     const t = env.t;
     for (const d of ducks) {
@@ -2825,7 +3331,7 @@ export function createLife(env, traffic, props) {
   // ------------------------------------------------------------------
   const snowmen = [];
   {
-    const areas = [[560, 372, 880, 452], [1236, 360, 1460, 452], [1480, 372, 1668, 452], [150, 424, 380, 456], [20, 620, 146, 638], [2040, 350, 2160, 440], [2450, 334, 2690, 444], [2200, 316, 2400, 404]];
+    const areas = [[560, 372, 880, 452], [1236, 360, 1460, 452], [1480, 372, 1668, 452], [150, 424, 380, 456], [20, 620, 146, 638], [2040 + SDX, 350, 2160 + SDX, 440], [2450 + SDX, 334, 2690 + SDX, 444], [2200 + SDX, 316, 2400 + SDX, 404]];
     const clear = (x, y) => { for (let dy = -6; dy <= 1; dy += 2) for (let dx = -8; dx <= 8; dx += 2) if (!walk(x + dx, y + dy)) return false; return !paved(x, y) || y > 600; };
     areas.forEach((r, i) => {
       for (let k = 0; k < 24; k++) {
@@ -2893,11 +3399,30 @@ export function createLife(env, traffic, props) {
     }
   }
   function underRoof(p) { return !!(p.sit && p.sit.kind === 'busskur') || !!(p.spot && p.spot.roof); }
+  // ---------- telefonen mot örat (v3, mest kostymfolket i downtown) ----------
+  function updCall(p, dt) {
+    if (p.call > 0) { p.call -= dt; if (p.call <= 0) p.callT = rr(8, 26); return; }
+    p.callT -= dt;
+    if (p.callT <= 0) {
+      if (!p.carry && !p.sit && !p.door && !p.comp && !p.leader && !p.hang && !(p.photo > 0) && !p.look.kid) p.call = rr(5, 16);
+      else p.callT = rr(3, 8);
+    }
+  }
+  const onCall = (p, frame) => p.call > 0 && !p.sit && !p.look.kid && frame <= 2 && !p.carry && !(p.photo > 0);
+  // kroppen: vanliga figuren – eller, i telefon, samma figur med armen uppe och mobilen vid örat
+  function drawBody(ctx, p, X, Y, dir, frame) {
+    if (!onCall(p, frame)) { drawPerson(ctx, X, Y, p.look, dir, frame); return; }
+    const img = callSprite(p.look, dir, frame, p.suit);
+    if (!img) { drawPerson(ctx, X, Y, p.look, dir, frame); return; }
+    ctx.fillStyle = 'rgba(20,12,30,.28)';                 // skuggan (samma som drawPerson)
+    ctx.fillRect(X - 5, Y - 1, 10, 2); ctx.fillRect(X - 4, Y + 1, 8, 1);
+    ctx.drawImage(img, X - 12, Y - 39);
+  }
   function drawPed(ctx, p) {
     const X = Math.round(p.x + p.ox);
     let Y = Math.round(p.y + p.oy);
     const dir = p.showDir || 'down';
-    const box = p.carry === 'kartong';
+    const box = BOXES.has(p.carry);
     let frame;
     if (p.sit) frame = p.carry === 'glass' || p.carry === 'burgare' || (p.carry === 'kaffe' && Math.sin(env.t * 0.9 + p.seed) > 0.4) ? 6 : 5;
     else if (p.showMove) frame = box ? [7, 9, 8, 9][Math.floor(p.anim) % 4] : WALK_SEQ[Math.floor(p.anim) % 4];
@@ -2929,8 +3454,8 @@ export function createLife(env, traffic, props) {
       if (spr) ctx.drawImage(spr.r, X + 7, Y - spr.h + 2);
     }
     if (!p.sit && p.carry === 'resvaska' && side) drawCase(ctx, p, X, Y, dir, h);
-    if (!p.sit && box && dir === 'up') drawCarry(ctx, 'kartong', X - 7, Y - 27, 'r');
-    drawPerson(ctx, X, Y, p.look, dir, frame);
+    if (!p.sit && box && dir === 'up') drawCarry(ctx, p.carry, X - 7, Y - 27, 'r');
+    drawBody(ctx, p, X, Y, dir, frame);
     // framför: kasse i handen, kartong, resväska bredvid, paraplyets duk, mobilen
     if (!p.sit && p.carry && !box && p.carry !== 'resvaska') {
       const spr = p.carry === 'pase' ? S.pase[p.carryCol] : S.carry[p.carry];
@@ -2941,8 +3466,10 @@ export function createLife(env, traffic, props) {
     }
     if (!p.sit && box && dir !== 'up') {
       const bx = dir === 'right' ? X + 1 : dir === 'left' ? X - 16 : X - 8;
-      drawCarry(ctx, 'kartong', bx, Y - 26, 'r');
+      drawCarry(ctx, p.carry, bx, Y - 26, 'r');
     }
+    // (v3) mobilen upp för en bild: framifrån hålls den framför ansiktet, bakifrån syns den över axeln
+    if (p.photo > 0 && !p.showMove && !p.sit) drawPhoto(ctx, p, X, Y, dir);
     if (!p.sit && p.carry === 'resvaska' && !side) drawCase(ctx, p, X, Y, dir, h);
     if (p.hang && p.phoneT > 0 && dir === 'down' && !p.showMove) {
       // mobilen lyser i handen
@@ -2956,6 +3483,25 @@ export function createLife(env, traffic, props) {
     }
     if (alpha < 1) ctx.globalAlpha = 1;
     if (clip) ctx.restore();
+  }
+  // mobilen som tar en bild (turister på bron och vid tjuren): framifrån håller man den framför bröstet
+  // och tittar ner på skärmen, bakifrån syns skärmen (med utsikten) snett upp till höger om huvudet,
+  // från sidan hålls den ut framför ansiktet. Blixten smäller av ibland.
+  function drawPhoto(ctx, p, X, Y, dir) {
+    const flash = Math.floor(env.t * 12 + p.seed * 7) % 34 === 0;
+    const R = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(x, y, w, h); }, SK = p.look.skin || '#e0a97f';
+    if (dir === 'up') {
+      const x = X + 3, y = Y - 38;
+      R(x, y, 6, 5, '#1a1a20'); R(x + 1, y + 1, 4, 3, env.dark > 0.3 ? '#27405e' : '#6aa8d8'); R(x + 1, y + 3, 4, 1, env.dark > 0.3 ? '#2a3a2e' : '#5a8a5a');
+      R(x - 1, y + 3, 1, 2, SK); R(x + 6, y + 3, 1, 2, SK);
+    } else if (dir === 'down') {
+      R(X - 2, Y - 21, 4, 5, '#1a1a20'); R(X - 1, Y - 20, 1, 1, '#7a8290'); R(X - 3, Y - 18, 1, 2, SK); R(X + 2, Y - 18, 1, 2, SK);
+      if (flash) { R(X - 1, Y - 23, 1, 1, '#ffffff'); R(X - 3, Y - 21, 1, 1, '#fff4c8'); R(X + 1, Y - 21, 1, 1, '#fff4c8'); }
+    } else {
+      const s = dir === 'right' ? 1 : -1, x = X + s * 6 - (s < 0 ? 2 : 0);
+      R(x, Y - 32, 2, 5, '#1a1a20'); R(x + (s > 0 ? 1 : 0), Y - 31, 1, 3, env.dark > 0.3 ? '#9ad0f0' : '#6a8ab0'); R(x, Y - 27, 2, 1, SK);
+      if (flash) { R(x + (s > 0 ? 2 : -1), Y - 31, 1, 1, '#ffffff'); }
+    }
   }
   function drawCarry(ctx, k, x, y, side) {
     const spr = S.carry[k];
@@ -3024,6 +3570,7 @@ export function createLife(env, traffic, props) {
     updCam();
     lastCam = [camCX(), camCY()];
     findFlora();
+    findCoffee();
     seedBirds();
     seedSquirrels();
     if (env.dark > 0.3) for (const pg of birdsG) { if (pg.sp === 'sparv') { pg.st = 'h'; pg.t = rr(5, 40); } else if (pg.sp !== 'mas') { pg.st = 'a'; pg.t = rr(5, 40); } } // på natten sover fåglarna
@@ -3048,7 +3595,7 @@ export function createLife(env, traffic, props) {
       updBus();
       for (const p of peds) if (!p.leader) { movePed(p, dt); sampleTrail(p, dt); }
       for (const p of peds) if (p.leader) updComp(p, dt);
-      for (const p of peds) { updShow(p, dt); if (p.phoneT > 0) p.phoneT -= dt; }
+      for (const p of peds) { updShow(p, dt); if (p.phoneT > 0) p.phoneT -= dt; if (p.photo > 0) p.photo -= dt; if (p.caller) updCall(p, dt); }
       for (const p of peds) if (p.dog) updDog(p, dt);
       dogSocial();
       updBirdsG(dt);
@@ -3111,8 +3658,15 @@ export function createLife(env, traffic, props) {
           ctx.fillStyle = 'rgba(170,215,255,0.35)'; ctx.fillRect(X - 2, Y - 19, 5, 6);
           ctx.fillStyle = 'rgba(210,235,255,0.9)'; ctx.fillRect(X, Y - 17, 1, 2);
         }
+        // (v3) mobilen som tar en bild: skärmen lyser (bakifrån syns den, framifrån lyser den upp bröstet)
+        for (const p of peds) if (p.photo > 0 && !p.showMove && !p.sit && visible(p.x, p.y, 10)) {
+          const X = Math.round(p.x + p.ox), Y = Math.round(p.y + p.oy), d = p.showDir;
+          if (d === 'up') { ctx.fillStyle = 'rgba(150,200,255,0.3)'; ctx.fillRect(X + 2, Y - 39, 8, 7); ctx.fillStyle = 'rgba(190,225,255,0.85)'; ctx.fillRect(X + 4, Y - 37, 4, 3); }
+          else if (d === 'down') { ctx.fillStyle = 'rgba(170,215,255,0.3)'; ctx.fillRect(X - 3, Y - 22, 6, 7); }
+        }
       }
     },
-    _debug: { nav, peds: () => peds, birds: birdsG, squirrels, ducks, swans, cats, snowmen, seats, seatUse, hangs: HANGS, plays: PLAYS, spawn, planFor, buildings: ALL_B, butterflies, bfHomes: () => BF_HOMES, trees: () => trees, bushes: () => bushes },
+    _debug: { nav, peds: () => peds, birds: birdsG, squirrels, ducks, swans, cats, snowmen, seats, seatUse, hangs: HANGS, plays: PLAYS, spawn, planFor, buildings: ALL_B, butterflies, bfHomes: () => BF_HOMES, trees: () => trees, bushes: () => bushes,
+      riverBirds, coffee: () => coffeeSpot },
   };
 }

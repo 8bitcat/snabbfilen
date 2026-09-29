@@ -1,12 +1,14 @@
 {
-  "version": "0.46.4",
+  "version": "0.47.0",
   "date": "2026-09-29",
-  "title": "Djuraffären och mäklaren i bredbild",
+  "title": "Bron och downtown – staden på längden",
   "files": [
     "CHANGELOG.md",
     "assets/interior.png",
     "css/style.css",
     "index.html",
+    "js/city/bridge.js",
+    "js/city/buildings-downtown.js",
     "js/city/buildings-leksaker.js",
     "js/city/buildings-shops.js",
     "js/city/buildings-south.js",

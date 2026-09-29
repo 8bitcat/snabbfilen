@@ -49,11 +49,22 @@ export const HOME_BUILDING = {
 };
 export const homeBuildingId = (homeId) => HOME_BUILDING[homeId] || 'hem';
 
-// Butiker utan egen scen ännu: vart dörren leder i dag och ett förslag.
+// Butikerna och ställena utöver v1: vart dörren leder (map.js enter) och vad som finns där.
+// Scenerna laddas tåligt av main.js (saknas en visar dörren husets soon-text – city.js SCENE_DOORS).
 export const SHOPS_EXTRA = [
-  { id: 'narbutik', building: 'narbutik', enter: 'narbutik', idea: 'Egen scen: trång butik med galler, dyrare än Stormarknad men öppen sent; allt kostar +20 %.' },
-  { id: 'pantbank', building: 'pantbank', enter: null, idea: 'Sälj möbler ur förrådet för halva priset, låna pengar mot pant.' },
-  { id: 'kebab', building: 'kebab', enter: null, idea: 'Ät direkt (som kaféet): kebabrulle 45 kr, mättar 55.' },
-  { id: 'kiosk', building: 'kiosk', enter: 'glass', idea: 'Glasståndet: kulglass, två kulor eller mjukglass – sätt dig vid borden. (Lotter och kvällstidningar kan få ett eget ställe.)' },
-  { id: 'bio', building: 'bio', enter: null, idea: 'Se en film (80 kr, 2 h): +energi/humör, bara kvällar.' },
+  { id: 'narbutik', building: 'narbutik', enter: 'narbutik', idea: 'Trång butik med galler, dyrare än Stormarknad men öppen dygnet runt – och skraplotterna.' },
+  { id: 'pantbank', building: 'pantbank', enter: 'pantbank', idea: 'Sälj möbler ur förrådet för halva priset, låna pengar mot pant (js/scenes/shop-pantbank.js).' },
+  { id: 'kebab', building: 'kebab', enter: 'kebab', idea: 'Kebab Grill: kebabrulle, falafel, pommes och läsk – ät sittande (js/scenes/shop-kebab.js).' },
+  { id: 'kiosk', building: 'kiosk', enter: 'glass', idea: 'Glasståndet: kulglass, två kulor eller mjukglass – sätt dig vid borden.' },
+  { id: 'bio', building: 'bio', enter: 'bio', idea: 'BIO PIXEL: biljett, popcorn och kvällens film i salongen (js/scenes/shop-bio.js).' },
+  // DOWNTOWN (v3, finanskvarteret) – Carls beställning: bank, elektronik, frisör, skor och accessoarer
+  { id: 'bank', building: 'bank', enter: 'bank', idea: 'PIXELBANKEN: sätt in lönen, spara med ränta, ta ut i bankomaten (js/scenes/shop-bank.js).' },
+  { id: 'elektronik', building: 'elektronik', enter: 'elektronik', idea: 'Telefoner, surfplattor, datorer och tv-apparater (js/scenes/shop-elektronik.js).' },
+  { id: 'frisor', building: 'frisor', enter: 'frisor', idea: 'Klippning och färgning i stolen framför spegeln (js/scenes/shop-frisor.js).' },
+  { id: 'skor', building: 'skor', enter: 'skor', idea: 'Sneakers, kängor, stövlar och finskor – prova och köp (js/scenes/shop-skor.js).' },
+  { id: 'accessoarer', building: 'accessoarer', enter: 'accessoarer', idea: 'Väskor, smycken, klockor, solglasögon och hattar (js/scenes/shop-accessoarer.js).' },
+  { id: 'universitet', building: 'kontor3', enter: 'universitet', idea: 'Pixelhögskolan i Pixel Tower: kurser, föreläsningar och tentor (js/scenes/shop-universitet.js).' },
 ];
+// Downtowns kontorstorn: FINANSHUSET (kontor1) = jobbet finans, GLASTORNET (kontor4) = Pixel Data
+// (jobbet datorbygge) – båda kräver examen från Pixelhögskolan (JOBS[id].kraver i game.js).
+// BÖRSHUSET (kontor2) har bara soon-text än.

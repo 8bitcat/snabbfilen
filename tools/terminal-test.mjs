@@ -30,7 +30,9 @@ await page.waitForTimeout(700);
 await page.evaluate(() => document.querySelector('#modal:not(.hidden) .dlg-foot .btn')?.click());
 
 // 1) dörren i staden → terminalen
-await page.evaluate(() => { const A = window.SF; A.game.min = 10 * 60; A.go('city'); A.scene._debug.enter('flyg'); });
+// (v3: Lilla rummet ligger i förortens höghus på andra sidan floden – figuren ställs en bit bort på
+// trottoaren framför flygplatsen, så att promenaden inte äter speltid och klockkontrollen nedan håller)
+await page.evaluate(() => { const A = window.SF; A.game.min = 10 * 60; A.go('city'); const d = A.scene._debug, b = d.buildings.find((x) => x.id === 'flyg'); d.teleport((b.door.x0 + b.door.x1) / 2 - 70, b.base + 22); d.enter('flyg'); });
 ok(await until(async () => (await scene()) === 'terminal', 30000), 'flygplatsens dörr leder in i terminalen');
 
 // 2) stationschefen → incheckningspasset → lönen → kvar i terminalen

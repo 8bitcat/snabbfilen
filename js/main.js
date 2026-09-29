@@ -103,6 +103,40 @@ const SCENES = {
 };
 const ENGINES = { flygplats: 'jobbflyg', frukt: 'jobbfrukt', burgare: 'jobbburgare', pizzeria: 'jobbpizzeria', posten: 'jobbposten', bensinmack: 'jobbbensin', bilverkstad: 'jobbverkstad', tvatteri: 'jobbtvatt', kafe: 'jobbkafe', kok: 'jobbkok', incheckning: 'jobbincheck' };
 
+// Ställena som staden leder in i (map.js enter → city.js SCENE_DOORS): downtowns butiker, bion,
+// kebaben, pantbanken, Pixelhögskolan och de utbildade jobben. De laddas i bakgrunden, var för
+// sig och tåligt (spelet startar utan att vänta på dem): saknas en modul eller kraschar den vid
+// laddningen visar dörren i staden husets soon-text i stället (A.hasScene). Går man in innan
+// modulen hunnit laddas visas en tom ruta tills den är klar. Listan fylls på i takt med att
+// scenerna släpps; en scen som redan finns i SCENES (statisk import) lämnas orörd.
+const DOOR_SCENES = [
+];
+const DOOR_STATE = {};   // namn → 'laddar' | 'klar' | 'fel'
+for (const [n, file, fn] of DOOR_SCENES) {
+  if (SCENES[n]) continue;
+  let make = null;
+  DOOR_STATE[n] = 'laddar';
+  import(file).then((m) => {
+    if (typeof m[fn] !== 'function') throw new Error(`${fn} saknas i ${file}`);
+    make = m[fn]; DOOR_STATE[n] = 'klar';
+  }).catch((e) => { DOOR_STATE[n] = 'fel'; console.error(`scenen ${n} kunde inte laddas:`, e); });
+  // modulen klar → scenen; annars en tom väntescen som byter till den riktiga när den laddats
+  SCENES[n] = (a, o) => (make ? make(a, o) : {
+    t: 0,
+    update(dt) {
+      this.t += dt;
+      if (make) a.go(n, o);
+      else if (DOOR_STATE[n] === 'fel' || this.t > 20) { a.go('city'); toast('🚪 Det gick inte att komma in just nu – försök igen om en stund.', 'bad'); }
+    },
+    draw() { /* bakgrunden (loopen fyller rutan) tills scenen är laddad */ },
+  });
+}
+for (const [id, sc] of [['datorbygge', 'jobbdatorbygge'], ['finans', 'jobbfinans']]) if (!ENGINES[id] && SCENES[sc]) ENGINES[id] = sc;
+Object.assign(A, {
+  hasScene: (n) => typeof SCENES[n] === 'function' && DOOR_STATE[n] !== 'fel',
+  jobReady: (id) => !!JOBS[id] && A.hasScene(ENGINES[id]), // jobbet finns OCH har en jobbscen
+});
+
 // ---------- skala canvasen till fönstret ----------
 // MOBILFYLLNING: spelet fyller HELA ytan under HUD-raden på alla enheter, med
 // exakt samma pixelkorn som förut (heltal device-pixlar per spelpixel). I
@@ -369,6 +403,10 @@ const PLACE_AWAY = {
   mat: '🛒 i mataffären', klader: '👕 i klädaffären', mobler: '🛋️ på MÖBELJÄTTEN', moblergammal: '🛋️ på MÖBELJÄTTEN',
   bostad: '🔑 på bostadsbyrån', kafe: '☕ på kaféet', djur: '🐾 i djuraffären', narbutik: '🏪 i närbutiken', terminal: '✈️ på flygplatsen', jobbincheck: '🛄 jobbar i incheckningen', leksaker: '🧸 i leksaksaffären',
 };
+// ställena bakom stadens dörrar (DOOR_SCENES) – bara där ingen text redan finns
+for (const [k, v] of Object.entries({ bank: '🏦 på banken', elektronik: '📱 i elektronikbutiken', frisor: '💈 hos frisören', skor: '👟 i skobutiken',
+  accessoarer: '👜 i accessoarbutiken', bio: '🎬 på bion', kebab: '🥙 på kebaben', pantbank: '💍 på pantbanken', universitet: '🎓 på Pixelhögskolan',
+  jobbdatorbygge: '🖥️ bygger datorer på Pixel Data', jobbfinans: '📈 handlar aktier på Finanshuset' })) PLACE_AWAY[k] ??= v;
 function placeOf(p, info) {
   const s = String(p.scene || 'away');
   if (s === 'city') return '🏙️ i staden';

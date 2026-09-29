@@ -48,7 +48,7 @@
 //            r.phase === 'framme' → const p = traffic.alight(); ställ figuren på p.
 //   klick under resan → traffic.skipRide() (tona direkt till målet).
 import { Pix, mix, mul, hash, bayer, SMALL, BIG, text, textW, ctxText } from '../core/floor-pix.js';
-import { CITY, ROADS, CROSSWALKS_ALL, LIGHTS_ALL, LOTS, buildingById } from './map.js';
+import { CITY, ROADS, CROSSWALKS_ALL, LIGHTS_ALL, LOTS, buildingById, BRIDGES } from './map.js';
 
 export const V2 = true;
 
@@ -1372,7 +1372,9 @@ const RM = ROADS.map((r) => {
 });
 const rmById = (id) => RM.find((m) => m.id === id) || null;
 // hur många fordon per körfält (bussarna på linje 4 räknas in, plogen kommer utöver)
-const TARGET = { pixelgatan: [8, 8], sodergatan: [6, 6], infarten: [0, 0] };
+// (v3: världen växte från 2720 till CITY.W px – lika tät trafik som förut, alltså fler fordon)
+const DENS = CITY.W / 2720;
+const TARGET = { pixelgatan: [Math.round(8 * DENS), Math.round(8 * DENS)], sodergatan: [Math.round(6 * DENS), Math.round(6 * DENS)], infarten: [0, 0] };
 
 // ---------- busslinje 4 ----------
 // Linjen kör österut längs Pixelgatan (PIXELTORGET → FLYGPLATSEN → BETONGTORGET), runt
@@ -1419,6 +1421,16 @@ const RIDE_SHOW = 4.2;       // så länge man ser bussen köra iväg innan skä
 const JUMP_MIN = 640;        // kortare resor än så åker man hela vägen i bild
 const APPROACH = 176;        // efter toningen: så långt före hållplatsen bussen dyker upp
 const FADE_OUT = 0.6, FADE_HOLD = 0.3, FADE_IN = 0.7;
+// v3: en resa som går ut över floden visar bron – toningen väntar tills bussen kommit ut mitt på
+// bron (mellan Stora brons torn, så att båda tornen och kablarnas båge syns runt bussen; mitten av
+// Järnbron). Bara när brofästet ligger nära när toningen annars skulle ha börjat (RIVER_NEAR);
+// annars tonar resan som förut. Efter bron tonar den och hoppar fram till strax före målet som vanligt
+// (resan ska inte bli långsammare än att gå – spelklockan går medan man åker).
+const RIVER_NEAR = 480;
+const BRIDGE_SPAN = Object.fromEntries((BRIDGES || []).map((b) => {
+  const t = b.towers || [], mid = t.length ? Math.round(t.reduce((a, q) => a + (q.x0 + q.x1) / 2, 0) / t.length) : Math.round((b.x0 + b.x1) / 2);
+  return [b.road, { w0: b.x0, w1: b.x1, mid }];
+}));
 const KINDS = [['sedan', 30], ['halvkombi', 24], ['taxi', 10], ['skapbil', 10], ['pickup', 9], ['glassbil', 6], ['moped', 7]];
 
 // Förhandsvisning (verktyg): alla fordonstyper åt båda hållen, fram-/bakifrån, rost, plog, moped och stolparnas lägen på ett ark.
@@ -1579,9 +1591,12 @@ export function createTraffic(env) {
       if (rm.axis !== 'x') continue;
       for (const lane of rm.lanes) {
         const list = inLane(rm, lane.i), want = TARGET[rm.id][lane.i], key = rm.id + lane.i;
-        // en plog per körfält (båda filerna röjs): rundor medan det snöar, sedan ett sista varv
-        const lanePlow = list.some((c) => c.kind === 'plog' && !c.turn);
-        if (lanePlow) plowSeen[key] = T;
+        // en plog per körfält (båda filerna röjs): rundor medan det snöar, sedan ett sista varv.
+        // (v3: vägarna är 4000 px – när plogen hunnit mer än halvvägs får nästa ge sig ut från kanten,
+        // annars hinner nysnön lägga sig igen innan den är tillbaka; högst två per körfält)
+        const lanePlows = list.filter((c) => c.kind === 'plog' && !c.turn);
+        const lanePlow = lanePlows.length >= 2 || lanePlows.some((c) => c.s < rm.len * 0.55);
+        if (lanePlows.length) plowSeen[key] = T;
         const needPlow = snowy && !done(key) && !lanePlow;
         // Infarten: en egen plog svänger in från de östra filerna (Pixelgatan → västra filen söderut,
         // Södergatan → östra filen norrut) – sedan fortsätter den ut i tvärgatan i andra änden
@@ -1639,8 +1654,10 @@ export function createTraffic(env) {
     cars.push(c); lineBuses.push(c);
     return c;
   }
-  // tre bussar jämnt fördelade över slingan; den första närmar sig Pixeltorget
-  if (LEGS.length) for (let k = 0; k < 3; k++) makeLineBus((stopFront(LINE[0], LEGS[0].dir) - 200 + M + (k * LOOP) / 3) % LOOP);
+  // bussarna jämnt fördelade över slingan; den första närmar sig Pixeltorget (tre i v2 – v3:s längre
+  // slinga, över bron till förorten och med FINANSTORGET, får en till så att turtätheten består)
+  const NBUS = Math.max(3, Math.round(3 * DENS));
+  if (LEGS.length) for (let k = 0; k < NBUS; k++) makeLineBus((stopFront(LINE[0], LEGS[0].dir) - 200 + M + (k * LOOP) / NBUS) % LOOP);
   refill(wx(), true);
 
   function puff(c, snow) {
@@ -2085,6 +2102,20 @@ export function createTraffic(env) {
   // Resan: 'ombord' (dörrarna stängs) → 'åker' (skärmen följer bussen) → ev. 'tonar' (långa
   // resor: svart, bussen flyttas till strax före målet, tillbaka) → 'åker' → 'framme' (dörrarna
   // öppna vid målet – scenen hämtar spelaren med alight()).
+  // bussen är på väg ut på bron och resan fortsätter bortom den (se RIVER_NEAR)
+  function overBridge(c, r) {
+    const sp = BRIDGE_SPAN[c.road?.id];
+    if (!sp || c.road.axis !== 'x') return false;
+    const dir = c.dir, front = dir > 0 ? hi(c) : lo(c), mid = (lo(c) + hi(c)) / 2;
+    const start = dir > 0 ? sp.w0 : sp.w1;
+    if ((mid - sp.mid) * dir > 24) return false;                                            // bussen är mitt på bron – nu får den tona
+    const ahead = (start - front) * dir;                                                    // kvar till brofästet (< 0 = redan på bron)
+    if (r.bridge) return true;                                                              // redan på väg över: fortsätt tills bussen är förbi
+    if (ahead > RIVER_NEAR) return false;
+    // målet ligger bortom bron (eller på en annan väg – då kör bussen över bron först)
+    const leg = legOfStop(r.to), toX = boardPoint(r.to).x;
+    return leg?.rm !== c.road || (toX - start) * dir > 0;
+  }
   function jumpTo(c, st) {
     const leg = legOfStop(st), front = stopFront(st, leg.dir) - leg.dir * APPROACH;
     place(c, leg, sOfFront(leg.rm, leg.dir, front), true);
@@ -2098,8 +2129,11 @@ export function createTraffic(env) {
       if (c.dwell <= 0 && c.v > 1) { r.phase = 'åker'; r.t = 0; r.far = r.skip || routeDist(c, r.to) > JUMP_MIN; }
     } else if (r.phase === 'åker') {
       r.t += dt;
+      const bridge = !r.skip && !r.arrived && r.far && overBridge(c, r);
+      if (r.bridge && !bridge && !r.skip) r.far = routeDist(c, r.to) > APPROACH + 120;   // ute på bron – hoppa fram (om hoppet går framåt)
+      r.bridge = bridge;
       if (r.arrived && c.door > 0.85) { r.phase = 'framme'; r.t = 0; r.exit = boardPoint(r.to); }
-      else if (r.far && !r.arrived && (r.t > RIDE_SHOW || r.skip)) { r.phase = 'tonar'; r.ft = 0; }
+      else if (r.far && !r.arrived && !bridge && (r.t > RIDE_SHOW || r.skip)) { r.phase = 'tonar'; r.ft = 0; }
     } else if (r.phase === 'tonar') {
       r.ft += dt;
       if (!r.jumped && r.ft >= FADE_OUT) { jumpTo(c, r.to); r.jumped = true; r.jumps++; }
