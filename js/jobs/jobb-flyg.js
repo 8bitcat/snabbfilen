@@ -3,6 +3,10 @@
 // bär den till rätt vagn (A/B/C/D). Fel vagn ger avdrag, väskor som rullar
 // förbi räknas som missade.
 //
+// JOBBA IHOP: flera kan dela passet (💼-inbjudan, js/net/coop.js). Skiftledaren kör bandet och
+// vagnarna, medarbetarna ser samma väskor rulla och deras handlingar blir önskemål som ledaren
+// avgör – se "jobba tillsammans" i makeJobbFlyg.
+//
 // Bagagehallen ritas på stadens detaljnivå: stora fönster ut mot plattan där
 // flygplan och bagagetåg taxar förbi, ett lamellband med rullar och gummi-
 // ridåer, röntgenmaskin med skärm, vagnar med kapell och last, personal bakom
@@ -13,6 +17,7 @@ import { createWalker, selfDrawable, folkDrawables, WALK_SEQ } from '../scenes/w
 import { planOf, drawShiftHud, drawTimeUp, makePops, abortShift } from './shift.js';
 import { drawPerson } from '../core/people.js';
 import { play } from '../core/sound.js';
+import { makeShiftCoop } from '../net/coop.js';
 
 const FW = 384, FH = 216;
 const BELT_Y = 72;
@@ -994,23 +999,341 @@ function xraySprite(body) {
   return c;
 }
 
+// ======================= jobba ihop: det som skickas mellan bagagearbetarna =======================
+// En väskas utseende som ETT tal: destinationen (A–D) och färgen (CASE_COLORS) – samma väska ser
+// likadan ut hos alla, på bandet, i famnen och i vagnen.
+const NB = CASE_COLORS.length;
+const bagCode = (b) => b.cat * NB + Math.max(0, CASE_COLORS.indexOf(b.body));
+function mkBag(id, code, x = 0) {
+  const c = Math.max(0, code | 0);
+  return { id, cat: clamp((c / NB) | 0, 0, TAG.length - 1), body: CASE_COLORS[c % NB], x };
+}
+// ljuden som skiftledarens utfall får spela hos den det gäller
+const LJUD = new Set(['ok', 'fel', 'miss', 'click']);
+
 export function makeJobbFlyg(A, { onDone }) {
   const stats = { ok: 0, fel: 0, miss: 0 };
   const P = planOf(A);   // passets plan: längd (P.seconds), väsktakt (P.pace), speltid (P.gameMin)
   const walker = createWalker({ top: BELT_Y + 16, bottom: FH - 26, spawn: [190, 130] });
   walker.setObstacles([[WET.x, WET.y - 6, WET.x + 17, WET.y], [CAGE.x, CAGE.y - 8, CAGE.x + 36, CAGE.y], [KIOSK.x, KIOSK.y - 6, KIOSK.x + 13, KIOSK.y]]);
   const pops = makePops();
+  const popLog = [];   // de senaste puffarnas text (provet läser dem: syntes "HANN FÖRE!"?)
+  const addPop = pops.add;
+  pops.add = (x, y, txt, c) => { popLog.push(txt); if (popLog.length > 30) popLog.shift(); addPop(x, y, txt, c); };
+  // väskorna på bandet: { id, cat, body, x } (items[0] har kommit längst) – carry = den jag bär
   let items = [], t = 0, seq = 0, spawnIn = 1.0, carry = null, done = false, doneT = 0, reported = false;
-  const speed = () => 20 + 14 * Math.min(1, t / P.seconds);
+  // bandets fart: skiftledarens (ihop går det lite fortare) – en medarbetare får den med snappen
+  const speed = () => (lead ? (20 + 14 * Math.min(1, t / P.seconds)) * (coop.active ? 1.1 : 1) : mateBs);
   const startMin = A.game?.min ?? 12 * 60;
   const mode = viewMode(((startMin + P.gameMin / 2) / 60) % 24);   // ljuset mitt i passet
   const night = mode === 'natt';
   const G = art(mode);
-  // bara för syns skull: bandets läge, vagnarnas last, trafiken ute, personalen
+  // bara för syns skull: bandets läge, trafiken ute, personalen. Vagnarnas last (de tio senaste
+  // per vagn) är gemensam när man jobbar ihop.
   let beltOff = 0;
   const loads = [[], [], [], []];
   const traffic = { planes: [], next: 3, far: null, farNext: 8 };
   const crew = { x: 70, tx: 70, wait: 1.2, lift: 0, dir: 'down', walking: false };
+
+  // ---------- jobba tillsammans (delat pass via js/net/coop.js) ----------
+  // Skiftledaren (den som varit längst i bagagehallen) kör det gemensamma: bandet (när väskorna
+  // kommer ut ur luckan, farten, det som rullar förbi och blir MISS) och de fyra vagnarna med
+  // lasten – och håller reda på vilken väska var och en bär. Läget delas ~3 ggr/s; medarbetarna ser
+  // samma band – väskorna rullar vidare i ledarens fart hos dem mellan lägena – och skickar varje
+  // handling på något gemensamt som ett numrerat önskemål med det de såg, det de bär och var de
+  // står: ta en väska från bandet, lasta den i en vagn. Skiftledaren kör samma kod åt dem och är
+  // ENDA domaren: en väska tas från bandet EN gång och räknas i en vagn EN gång (id:t). Det man bär
+  // är ens eget – men går man hem med en väska i famnen lägger ramparbetaren tillbaka den på bandet.
+  // Poängen går till den som lastade; lagets rätt, fel och missade delas lika vid passets slut.
+  // Ihop kommer väskorna tätare och bandet går lite fortare.
+  const coop = makeShiftCoop(A, 'away:jobbflyg');
+  let snapIn = 0, lead = true, wasLead = true, wasCoop = false, maxN = 1, snaps = 0, mateBs = 20, mateSeq = 0, known = false;
+  let pend = null, queued = null;             // medarbetarens önskemål som väntar på svar (och ett köat klick)
+  let reqN = (Math.random() * 1e6) | 0;       // önskemålens löpnummer (samma nummer två gånger = samma önskemål)
+  const team = { ok: 0, fel: 0, miss: 0 };    // LAGETS räkning – delas lika vid passets slut
+  const held = new Map();                     // spelar-id → väskan hen bär (skiftledarens bok – hos medarbetaren ur snappen)
+  const dropped = new Set();                  // (skiftledaren) väskor som redan räknats i en vagn
+  const fell = new Set();                     // väskor som nyss rullade förbi slutet här
+  const seenReq = new Map();                  // (skiftledaren) id → senaste önskemålets nummer
+  const absent = new Map();                   // (skiftledaren) id → sedan när den som bär inte syns i hallen
+  const mate = () => coop.active && !coop.leader;
+  const meId = () => coop.myId || '';
+  const snapAsap = () => { snapIn = 0; };
+  const int = (v, dflt) => (Number.isInteger(v) ? v : dflt);
+  const str = (v) => (typeof v === 'string' ? v.slice(0, 64) : '');
+  const hudTitle = () => (maxN > 1 ? 'FLYGPLATSEN IHOP' : 'FLYGPLATSEN');
+  const noteFell = (id) => { fell.add(id); if (fell.size > 60) fell.delete(fell.values().next().value); };
+  const bagOf = (b) => ({ id: b.id, cat: b.cat, body: b.body });
+  // en väska i önskemålen, svaren och snappen: [id, kod] (0 = inget)
+  const bagEnc = (b) => (b ? [b.id, bagCode(b)] : 0);
+  const bagDec = (a) => (Array.isArray(a) && Number.isInteger(a[0]) ? bagOf(mkBag(a[0], a[1])) : null);
+  // en väska rullade förbi slutet av bandet
+  const missed = () => { play('miss'); pops.add(FW - 20, BELT_Y + 10, 'MISS!', '#d8d2c0'); };
+
+  function sendSnap() {
+    known = true;
+    const me = meId(), ho = [...held].filter(([by]) => by !== me);
+    if (carry && me) ho.push([me, carry]);
+    coop.send({
+      t: 'snap',
+      // bandet: väskorna [id, kod, x·10] och farten·100; nyss förbi slutet (id)
+      it: items.map((it) => [it.id, bagCode(it), Math.round(it.x * 10)]), bs: Math.round(speed() * 100), rf: [...fell].slice(-8),
+      // vagnarna: per vagn [id, kod, id, kod, …] (äldst först)
+      cg: loads.map((L) => L.flatMap((q) => [q.id, bagCode(q)])),
+      // vem som bär vilken väska: [spelar-id, id, kod]
+      ho: ho.map(([by, b]) => [by, b.id, bagCode(b)]),
+      tm: [team.ok, team.fel, team.miss],
+      sq: seq,   // (nästa id – tar någon annan över fortsätter numreringen efter det)
+    });
+  }
+  function applySnap(m) {
+    known = true;
+    if (Number.isFinite(m.sq)) mateSeq = Math.max(mateSeq, m.sq | 0);
+    if (Array.isArray(m.it)) {
+      const next = [], rf = new Set(Array.isArray(m.rf) ? m.rf : []);
+      for (const a of m.it.slice(0, 40)) {
+        if (!Array.isArray(a)) continue;
+        const id = int(a[0], -1), x = (a[2] | 0) / 10;
+        if (fell.has(id)) continue;   // (rullade just förbi här – den kommer inte tillbaka)
+        let it = items.find((q) => q.id === id);
+        if (!it) it = mkBag(id, a[1], x);
+        it.gx = x; it.taken = false;
+        next.push(it);
+      }
+      // borta hos skiftledaren: rullade förbi (MISS syns här också) – annars tog någon den
+      for (const it of items) if (!next.includes(it)) { if (rf.has(it.id)) { noteFell(it.id); missed(); } else it.taken = true; }
+      items = next;
+    }
+    if (Number.isFinite(m.bs)) mateBs = clamp(m.bs / 100, 0, 90);
+    if (Array.isArray(m.cg)) for (let ci = 0; ci < CARTS.length; ci++) {
+      const a = Array.isArray(m.cg[ci]) ? m.cg[ci] : [], L = [];
+      for (let j = 0; j + 1 < a.length && L.length < 10; j += 2) {
+        const id = int(a[j], 0);
+        L.push(loads[ci].find((q) => q.id === id) || bagOf(mkBag(id, a[j + 1])));
+      }
+      loads[ci] = L;
+    }
+    if (Array.isArray(m.ho)) {
+      held.clear();
+      for (const h of m.ho.slice(0, 12)) if (Array.isArray(h) && str(h[0]) && Number.isInteger(h[1])) held.set(str(h[0]), bagOf(mkBag(h[1], h[2])));
+    }
+    // det jag bär enligt skiftledarens bok (inte mitt i ett önskemål – då kommer svaret strax)
+    if (!pend) {
+      const mine = held.get(meId());
+      if (mine) { if (!carry || carry.id !== mine.id) carry = bagOf(mine); }
+      else if (carry && items.some((it) => it.id === carry.id)) carry = null;   // (lagd tillbaka på bandet)
+    }
+    if (Array.isArray(m.tm)) { team.ok = m.tm[0] | 0; team.fel = m.tm[1] | 0; team.miss = m.tm[2] | 0; }
+    snaps++;
+  }
+  // Medarbetarens band mellan ledarens lägen: väskorna rullar vidare i ledarens fart (var och en
+  // glider mjukt mot där den borde vara) och det som når slutet är missat – nästa snap rättar allt.
+  function mateTick(dt) {
+    const sp = mateBs * dt, f = Math.min(1, dt * 6);
+    for (const it of items) {
+      if (it.gx === undefined) it.gx = it.x;
+      it.gx += sp; it.x += sp;
+      const e = it.gx - it.x;
+      it.x = Math.abs(e) > 24 ? it.gx : it.x + e * f;
+    }
+    for (let i = items.length - 1; i >= 0; i--) if (items[i].x > FW + 12) { const it = items.splice(i, 1)[0]; noteFell(it.id); missed(); }
+  }
+  // JAG tar över passet: hoppa över gamla id:n (bandet, vagnarna, det alla bär – inga krockar),
+  // bandet rullar vidare från där det syns och nästa väska kommer snart. (Väskan hos den som gick
+  // läggs tillbaka på bandet av sweepGone.)
+  function takeOver() {
+    const mine = held.get(meId());
+    if (mine && !carry) carry = bagOf(mine);
+    held.delete(meId());
+    const ids = [...items.map((it) => it.id), ...loads.flat().map((q) => q.id), ...[...held.values()].map((b) => b.id), carry ? carry.id : -1];
+    seq = Math.max(seq, mateSeq, 1 + Math.max(-1, ...ids));
+    for (const it of items) { if (it.gx !== undefined) it.x = it.gx; it.gx = undefined; it.taken = false; }
+    items.sort((a, b) => b.x - a.x);
+    for (const q of loads.flat()) dropped.add(q.id);
+    spawnIn = Math.min(spawnIn, 1);
+    pend = null; queued = null;
+    snapAsap();
+  }
+  // jag blir medarbetare: nästa snap bestämmer bandet. En väska jag tog i min egen värld innan vi
+  // möttes får ett eget id (krockar aldrig med ledarens) – den gemensamma behåller sitt.
+  function becomeMate() {
+    if (carry && !known) carry = { ...carry, id: -1 - ((Math.random() * 1e9) | 0) };
+    for (const it of items) it.gx = undefined;
+    held.clear();
+  }
+  // (skiftledaren) väskan hos någon som gått läggs tillbaka på bandet vid luckan
+  function releaseHeld(by) {
+    const b = held.get(by);
+    if (!b) return;
+    held.delete(by);
+    if (!dropped.has(b.id) && !items.some((q) => q.id === b.id)) items.push({ ...b, x: -12 });
+    snapAsap();
+  }
+  // (skiftledaren) den som gått ur hallen (en stund – inte bara ett ögonblick) bär inget längre
+  function sweepGone() {
+    const ids = new Set([meId(), ...coop.peers().map((f) => f.id)]);
+    for (const by of [...held.keys()]) {
+      if (ids.has(by)) { absent.delete(by); continue; }
+      if (!absent.has(by)) absent.set(by, t);
+      if (t - absent.get(by) > 1.5) { absent.delete(by); releaseHeld(by); }
+    }
+  }
+  // mitt pass är slut: väskan jag bär läggs tillbaka på bandet (kollegan kan ta den)
+  function letGo() {
+    if (!coop.active) return;
+    if (mate()) { coop.send({ t: 'lamna' }); carry = null; return; }
+    if (carry) { const b = carry; carry = null; if (!dropped.has(b.id) && !items.some((q) => q.id === b.id)) items.push({ ...b, x: -12 }); }
+    sendSnap(); coop.sentSnap();
+  }
+
+  // Bagagearbetaren som gör något med det gemensamma: jag själv, eller – hos skiftledaren – en
+  // medarbetare vars önskemål körs åt hen (x, y = där hen står). Det hen bär följer med önskemålet
+  // och tillbaka i svaret.
+  const meK = () => ({ by: meId(), fx: [], x: walker.px, y: walker.py, get carry() { return carry; }, set carry(v) { carry = v; } });
+  const forK = (by, c, x, y) => ({ by, fx: [], x: clamp(x, 0, FW), y: clamp(y, 0, FH), carry: c, remote: true });
+  // (skiftledaren) det kollegan bär: det jag gett hen – annars det hen säger, om väskan inte ligger
+  // på bandet, redan räknats eller bärs av någon annan (t.ex. efter ett ledarbyte)
+  function claimOf(by, c) {
+    const h = held.get(by);
+    if (h) return h;
+    const b = bagDec(c);
+    if (!b) return null;
+    if (items.some((q) => q.id === b.id) || dropped.has(b.id) || (carry && carry.id === b.id) || [...held.values()].some((q) => q.id === b.id)) return null;
+    return b;
+  }
+  // Utfallet av en handling: [slag, vem (spelar-id; '' = alla i hallen), ...]. Det som gäller mig
+  // (eller alla) syns och hörs här direkt – ensam gäller allt mig; i ett delat pass (eller när jag
+  // kör en medarbetares önskemål) följer resten med svaret ut.
+  function fx(k, who, kind, ...a) {
+    const me = meId(), ut = coop.active || !!k.remote;
+    if (!who || who === me || !ut) doFx(kind, a);
+    if (ut && who !== me) k.fx.push([kind, who, ...a]);
+  }
+  function doFx(kind, a) {
+    if (kind === 's') { if (LJUD.has(a[0])) play(a[0]); }
+    else if (kind === 'p') pops.add(+a[0] || 0, +a[1] || 0, String(a[2]).slice(0, 48), String(a[3] || '#f4f1ea'));
+    else if (kind === 'H') hannFore(+a[0] || 0, +a[1] || 0);   // någon annan hann först
+    else if (kind === 'o') stats.ok++;
+    else if (kind === 'f') stats.fel++;
+  }
+  const kLjud = (k, s) => fx(k, k.by, 's', s);                                                            // hörs hos den det gäller
+  const kSay = (k, txt, c = '#d8d2c0') => fx(k, k.by, 'p', Math.round(k.x), Math.round(k.y) - 30, txt, c);   // bara hos den det gäller
+  const kPop = (k, x, y, txt, c) => fx(k, '', 'p', x, y, txt, c);                                         // syns hos alla i hallen
+  function hannFore(x, y) { play('miss'); pops.add(x, y, 'HANN FÖRE!', '#ff6a6a'); }
+
+  // ---------- det gemensamma (körs av skiftledaren – eller den ensamma – åt bagagearbetaren k) ----------
+  // ta väskan id från bandet
+  function doPick(k, id) {
+    const it = items.find((q) => q.id === id);
+    if (!it) {   // borta: rullade förbi – eller någon annan hann före
+      if (fell.has(id)) { kLjud(k, 'miss'); kSay(k, 'MISSADE!'); } else fx(k, k.by, 'H', Math.round(k.x), Math.round(k.y) - 30);
+      return;
+    }
+    if (k.carry) { kSay(k, 'HÄNDERNA FULLA!'); return; }
+    items.splice(items.indexOf(it), 1);
+    it.taken = true;
+    k.carry = bagOf(it);
+    if (k.remote) held.set(k.by, k.carry);
+    kLjud(k, 'ok');
+  }
+  // lasta väskan jag bär i vagn idx (rätt eller fel destination) – samma väska räknas bara EN gång
+  function doDrop(k, idx) {
+    const c = k.carry, cart = CARTS[idx];
+    if (!c) return;
+    k.carry = null;
+    if (k.remote) held.delete(k.by);
+    if (dropped.has(c.id)) return;   // (ett önskemål som kom två gånger – den ligger redan i en vagn)
+    dropped.add(c.id);
+    if (idx === c.cat) { team.ok++; fx(k, k.by, 'o'); kLjud(k, 'ok'); kPop(k, cart.x + 30, cart.y - 34, '+7', '#8ee03c'); }
+    else { team.fel++; fx(k, k.by, 'f'); kLjud(k, 'fel'); kPop(k, cart.x + 30, cart.y - 34, 'FEL VAGN!', '#ff6a6a'); }
+    loads[idx].push(bagOf(c));
+    if (loads[idx].length > 10) loads[idx].shift();
+  }
+  // En handling på något gemensamt: ensam (eller som skiftledare) görs den direkt, som
+  // medarbetare blir den ett önskemål till skiftledaren – med det man såg, bär och var man står.
+  function shared(m, runIt) {
+    if (mate()) { if (!pend) ask({ t: 'do', ...m, x: Math.round(walker.px), y: Math.round(walker.py) }); return; }
+    const k = meK();
+    runIt(k);
+    publish(k, false);
+  }
+  // skiftledaren: läget ut direkt efter en handling (FÖRE svaret – då har den som frågade redan
+  // det nya läget när svaret kommer) och utfallet till alla
+  function publish(k, svar) {
+    if (!svar && !(coop.active && coop.leader && coop.settled)) return;
+    sendSnap(); coop.sentSnap(); snapIn = 0.35;
+    if (svar) coop.send({ t: 'res', by: k.by, fx: k.fx, s: 1, c: bagEnc(k.carry) });
+    else if (k.fx.length) coop.send({ t: 'res', by: k.by, fx: k.fx });
+  }
+  // medarbetarens önskemål: man väntar på skiftledarens svar (högst 2,5 s – sedan kan man försöka
+  // igen). n = löpnumret: kommer samma önskemål fram två gånger görs det EN gång (provet skickar två).
+  function ask(m, n = 1) {
+    m.n = ++reqN; m.c = bagEnc(carry);
+    for (let i = 0; i < n; i++) coop.send(m);
+    pend = { t: 2.5 };
+  }
+  function answered() {
+    pend = null;
+    if (queued && !done) { const q = queued; queued = null; api.down(q[0], q[1]); }
+  }
+  coop.on('snap', (m) => { if (!coop.leader) applySnap(m); });
+  coop.on('res', (m) => {   // ledarens utfall: puffarna hos alla – poängen och det man bär hos den det gäller
+    const me = coop.myId, mine = m.by === me;
+    if (coop.leader && !mine) return;   // (skiftledaren har redan visat det hos sig)
+    if (mine && m.s && 'c' in m) carry = bagDec(m.c);
+    for (const f of (Array.isArray(m.fx) ? m.fx : []).slice(0, 24)) {
+      if (!Array.isArray(f)) continue;
+      const who = str(f[1]);
+      if (!who || who === me) doFx(f[0], f.slice(2));
+    }
+    if (mine && m.s) answered();
+  });
+  coop.on('do', (m, from) => {   // en medarbetares handling på något gemensamt – körs här, åt hen
+    if (!coop.leader || !coop.settled || done) return;   // (bara den som kör bandet avgör)
+    if (Number.isInteger(m.n)) { if (seenReq.get(from) === m.n) return; seenReq.set(from, m.n); }   // (samma önskemål igen)
+    const k = forK(from, claimOf(from, m.c), +m.x || 0, +m.y || 0);
+    if (m.a === 'ta') doPick(k, int(m.id, -1));
+    else if (m.a === 'vagn') doDrop(k, clamp(int(m.i, 0), 0, CARTS.length - 1));
+    else return;
+    publish(k, true);
+  });
+  // en kollega går hem (passet slut): väskan hen bar läggs tillbaka på bandet
+  coop.on('lamna', (m, from) => { if (coop.leader) releaseHeld(from); });
+
+  // ---------- på plats (klicket har gått fram): det egna först, sedan det gemensamma ----------
+  function tryPick(target) {
+    if (!items.includes(target) || Math.abs(target.x - walker.px) >= 18) {
+      if (target.taken && coop.active) hannFore(walker.px, walker.py - 30);   // (ihop: någon annan tog den)
+      else { play('miss'); pops.add(walker.px, walker.py - 30, 'MISSADE!', '#d8d2c0'); }
+      return;
+    }
+    shared({ a: 'ta', id: target.id }, (k) => doPick(k, target.id));
+  }
+  function toCart(idx) { if (carry) shared({ a: 'vagn', i: idx, id: carry.id }, (k) => doDrop(k, idx)); }
+
+  // skiftledarens (och den ensammas) band: nya väskor ur luckan (tätare med vanan – och ihop), bandet
+  // går, det som når slutet är missat – och läget ut till medarbetarna ~3 ggr/s
+  function leadTick(dt) {
+    spawnIn -= dt;
+    if (spawnIn <= 0) {
+      if (coop.active && items.some((it) => it.x < 10)) spawnIn = 0.15;   // (ihop: luckan är full – nästa väska väntar ett ögonblick)
+      else {
+        spawnIn = (2.4 - 1.0 * Math.min(1, t / P.seconds) + hash(seq, 9) * 0.5) * P.pace * (coop.active ? 0.45 : 1);
+        items.push(mkBag(seq, ((Math.random() * 4) | 0) * NB + ((hash(seq, 31) * NB) | 0), -12));
+        seq++;
+        if (coop.active) snapAsap();
+      }
+    }
+    for (const it of items) it.x += speed() * dt;
+    for (let i = items.length - 1; i >= 0; i--) if (items[i].x > FW + 12) {
+      const it = items.splice(i, 1)[0];
+      stats.miss++; team.miss++;
+      noteFell(it.id);
+      missed();
+    }
+    if (coop.active || maxN > 1) sweepGone();
+    if (coop.active) { snapIn -= dt; if (snapIn <= 0) { snapIn = 0.35; sendSnap(); coop.sentSnap(); } }
+  }
 
   function updateVisuals(dt) {
     // flygplan som taxar förbi (ett i taget) + ett som lyfter långt bort
@@ -1191,36 +1514,124 @@ export function makeJobbFlyg(A, { onDone }) {
     },
   });
 
-  return {
-    _debug: {
-      forcePick() { const it = items[0]; if (!it) return null; carry = { cat: it.cat, body: it.body }; items.shift(); return carry; },
-      forceDrop(right = true) { if (!carry) return null; dropAtCart(right ? carry.cat : (carry.cat + 1) % 4); return stats; },
-      stats,
+  // ---------- debug-API för proven ----------
+  const dbg = {
+    stats,
+    // (smoke) första väskan på bandet rakt i händerna – hos en medarbetare en egen väska (eget id)
+    forcePick(cat) {
+      if (mate()) {
+        const c = Number.isInteger(cat) ? clamp(cat, 0, TAG.length - 1) : items[0] ? items[0].cat : 0;
+        carry = bagOf(mkBag(-1 - ((Math.random() * 1e9) | 0), c * NB));
+        return carry;
+      }
+      const it = items[0];
+      if (!it) return null;
+      carry = null;
+      shared({ a: 'ta', id: it.id }, (k) => doPick(k, it.id));
+      return carry;
     },
+    // lasta det jag bär: rätt = i destinationens vagn, fel = i vagnen bredvid
+    forceDrop(right = true) { if (!carry) return null; toCart(right ? carry.cat : (carry.cat + 1) % 4); return stats; },
+    // ---------- jobba tillsammans (tools/coop-flyg-test.mjs) ----------
+    coop: () => ({ leader: coop.leader, active: coop.active, mates: coop.peers().length, settled: coop.settled, myId: coop.myId }),
+    lag: () => ({ ...team, maxN }),
+    title: () => hudTitle(),
+    // bandets fart nu och vad den vore ensam (ihop går det lite fortare)
+    speed: () => ({ v: Math.round(speed() * 100) / 100, solo: Math.round((20 + 14 * Math.min(1, t / P.seconds)) * 100) / 100 }),
+    // lugnt i hallen (skiftledaren/solo): inga nya väskor, bandet töms
+    calm() { spawnIn = 1e9; items = []; snapAsap(); return 0; },
+    auto(on = true) { spawnIn = on ? 0.3 : 1e9; return on; },
+    // lägg en väska på bandet (skiftledaren/solo): destination 0–3 (A–D) vid x
+    forceBag(cat = 0, x = 120) {
+      if (mate()) return null;
+      const it = mkBag(seq, clamp(cat | 0, 0, TAG.length - 1) * NB + ((hash(seq, 31) * NB) | 0), x);
+      seq++;
+      items.push(it); items.sort((a, b) => b.x - a.x);
+      snapAsap();
+      return { id: it.id, cat: it.cat };
+    },
+    items: () => items.map((it) => ({ id: it.id, cat: it.cat, x: Math.round(it.x) })),
+    carts: () => loads.map((L) => L.map((q) => q.id)),
+    carrying: () => (carry ? { id: carry.id, cat: carry.cat } : null),
+    // vem bär vilken väska enligt boken (skiftledaren: kollegorna; medarbetaren: alla, ur snappen)
+    held: () => Object.fromEntries([...held].map(([by, b]) => [by, b.id])),
+    // som när man kommit fram: ta väskan id från bandet / lasta det jag bär i vagn i (hos en
+    // medarbetare blir det önskemål till skiftledaren)
+    pickId(id) {
+      const it = items.find((q) => q.id === id);
+      if (!it) return false;
+      walker.stop(); walker.px = clamp(it.x, 12, FW - 12); walker.py = BELT_Y + 20;
+      tryPick(it);
+      return true;
+    },
+    cartAct(i) { toCart(clamp(i | 0, 0, CARTS.length - 1)); return true; },
+    // provet: medarbetaren skickar SAMMA vagn-önskemål två gånger (som om svaret dröjde) – räknas EN gång
+    dropTwice(i) {
+      if (!mate() || pend || !carry) return false;
+      ask({ t: 'do', a: 'vagn', i: clamp(i | 0, 0, CARTS.length - 1), id: carry.id, x: Math.round(walker.px), y: Math.round(walker.py) }, 2);
+      return true;
+    },
+    drop() { carry = null; },
+    // klickpunkter i spelkoordinater (för test via down(x, y)): 'band:<id>' 'vagn:<0-3>'
+    spot(name) {
+      const [w, a] = String(name).split(':'), n = +a;
+      if (w === 'band') { const it = items.find((q) => q.id === n); return it ? [Math.round(it.x), BELT_Y + 6] : null; }
+      if (w === 'vagn') return CARTS[n] ? [CARTS[n].x + (CARTS[n].w >> 1), CARTS[n].y - 10] : null;
+      return null;
+    },
+    // där bagagearbetaren står när klicket gått fram (samma mål som klicket går till)
+    standAt(name) {
+      const [w, a] = String(name).split(':'), n = +a;
+      if (w === 'band') { const it = items.find((q) => q.id === n); return it ? [Math.round(it.x), BELT_Y + 20] : null; }
+      if (w === 'vagn') return CARTS[n] ? [CARTS[n].x + CARTS[n].w / 2, CARTS[n].y - 20] : null;
+      return null;
+    },
+    teleport(x, y) { walker.px = x; walker.py = y; walker.stop(); },
+    // sant när bagagearbetaren står still och inte väntar på skiftledarens svar
+    idle: () => !pend && !queued && walker.path.length === 0,
+    pending: () => !!pend,
+    time: () => t,
+    pops: () => popLog.slice(),
+  };
+
+  const api = {
+    _debug: dbg,
     get worldX() { return walker.px; },
     get worldY() { return walker.py; },
+    exit() { coop.dispose(); },
     update(dt) {
       pops.update(dt);
       updateVisuals(dt);
-      if (done) { doneT += dt; if (doneT > 1.2 && !reported) { reported = true; onDone(stats); } return; }
+      if (done) {
+        coop.tick(); coop.resign();   // MITT pass är slut – lämna över ledningen direkt (även på lönebeskedet)
+        doneT += dt;
+        if (doneT > 1.2 && !reported) {
+          reported = true;
+          if (maxN > 1) {   // jobbat ihop: laget delar lika på rätt, fel och missade
+            const sh = (v) => Math.round(v / maxN);
+            onDone({ ok: sh(team.ok), fel: sh(team.fel), miss: sh(team.miss), delat: maxN, lagOk: team.ok, lagFel: team.fel });
+          } else onDone(stats);
+        }
+        return;
+      }
       t += dt;
-      if (t >= P.seconds) { done = true; return; }
+      if (t >= P.seconds) { done = true; pend = null; queued = null; letGo(); return; }
       walker.update(dt);
+      if (pend) { pend.t -= dt; if (pend.t <= 0) answered(); }   // inget svar (ledaren gick?) – då får man försöka igen
+      coop.tick();
+      if (coop.active) maxN = Math.max(maxN, coop.peers().length + 1);
+      if (coop.active !== wasCoop) {   // en kollega kom in: väskorna kommer tätare och bandet går fortare
+        wasCoop = coop.active;
+        if (wasCoop) { play('knock'); pops.add(FW / 2, 120, 'NI JOBBAR IHOP!', '#8ee03c'); }
+      }
+      // Skiftledaren (eller solo) kör bandet och vagnarna; medarbetare följer ledarens läge
+      const iLead = !coop.active || (coop.leader && coop.settled);
+      if (iLead && !wasLead) takeOver();
+      else if (!iLead && wasLead) becomeMate();
+      wasLead = lead = iLead;
       beltOff += speed() * dt;
       if (beltOff > 1e6) beltOff -= 64 * 15625;
-      spawnIn -= dt;
-      if (spawnIn <= 0) {
-        spawnIn = (2.4 - 1.0 * Math.min(1, t / P.seconds) + hash(seq, 9) * 0.5) * P.pace;   // tätare med vanan
-        items.push({ cat: (Math.random() * 4) | 0, body: CASE_COLORS[(hash(seq, 31) * CASE_COLORS.length) | 0], x: -12 });
-        seq++;
-      }
-      for (const it of items) it.x += speed() * dt;
-      for (let i = items.length - 1; i >= 0; i--) if (items[i].x > FW + 12) {
-        items.splice(i, 1);
-        stats.miss++;
-        play('miss');
-        pops.add(FW - 20, BELT_Y + 10, 'MISS!', '#d8d2c0');
-      }
+      if (iLead) leadTick(dt); else mateTick(dt);
     },
     down(x, y) {
       if (done) return;
@@ -1229,22 +1640,19 @@ export function makeJobbFlyg(A, { onDone }) {
         walker.walkTo(EXIT.wx, EXIT.wy, () => { if (!done) abortShift(A); });
         return;
       }
+      if (pend) { queued = [x, y]; return; }   // väntar på skiftledarens svar – klicket tas strax
       if (y < BELT_Y + 18 && !carry) {
         let best = null, bd = 1e9;
         for (const it of items) { const d = Math.abs(it.x - x); if (d < 18 && d < bd) { best = it; bd = d; } }
         if (best) {
           const target = best;
-          walker.walkTo(Math.max(12, Math.min(FW - 12, target.x + speed() * 0.9)), BELT_Y + 20, () => {
-            const i = items.indexOf(target);
-            if (i >= 0 && Math.abs(target.x - walker.px) < 18) { items.splice(i, 1); carry = { cat: target.cat, body: target.body }; play('ok'); }
-            else { play('miss'); pops.add(walker.px, walker.py - 30, 'MISSADE!', '#d8d2c0'); }
-          });
+          walker.walkTo(Math.max(12, Math.min(FW - 12, target.x + speed() * 0.9)), BELT_Y + 20, () => tryPick(target));
           return;
         }
       }
       const cart = CARTS.find((cVagn) => x > cVagn.x - 6 && x < cVagn.x + cVagn.w + 6 && y > cVagn.y - 30);
       if (cart) {
-        walker.walkTo(cart.x + cart.w / 2, cart.y - 20, () => { if (carry) dropAtCart(CARTS.indexOf(cart)); });
+        walker.walkTo(cart.x + cart.w / 2, cart.y - 20, () => { if (carry) toCart(CARTS.indexOf(cart)); });
         return;
       }
       walker.walkTo(x, y);
@@ -1265,17 +1673,12 @@ export function makeJobbFlyg(A, { onDone }) {
       drawables.sort((a, b) => a.fy - b.fy).forEach((d) => d.draw(ctx));
       ctx.drawImage(G.fore, 0, 0);
       if (carry) drawCase(ctx, carry, walker.px, walker.py - 46);
+      // det kollegorna bär (skiftledaren håller reda på vem som bär vilken väska)
+      if (coop.active) for (const f of coop.peers()) { const b = held.get(f.id); if (b) drawCase(ctx, b, f.x, f.y - 46); }
       pops.draw(ctx);
-      drawShiftHud(ctx, { W: FW }, { t, dur: P.seconds, ok: stats.ok, fel: stats.fel, title: 'FLYGPLATSEN' });
+      drawShiftHud(ctx, { W: FW }, { t, dur: P.seconds, ok: maxN > 1 ? team.ok : stats.ok, fel: maxN > 1 ? team.fel : stats.fel, title: hudTitle() });
       if (done) drawTimeUp(ctx, { W: FW, H: FH });
     },
   };
-
-  function dropAtCart(idx) {
-    if (idx === carry.cat) { stats.ok++; play('ok'); pops.add(CARTS[idx].x + 30, CARTS[idx].y - 34, '+7', '#8ee03c'); }
-    else { stats.fel++; play('fel'); pops.add(CARTS[idx].x + 30, CARTS[idx].y - 34, 'FEL VAGN!', '#ff6a6a'); }
-    loads[idx].push({ body: carry.body, cat: carry.cat });
-    if (loads[idx].length > 10) loads[idx].shift();
-    carry = null;
-  }
+  return api;
 }

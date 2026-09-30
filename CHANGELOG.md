@@ -10,6 +10,12 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.68.0] – 2026-09-30 – Jobba ihop på Flygplatsen
+- Jobba ihop på Flygplatsen: bjud in en kompis med 💼 Jobba ihop när du börjar passet (eller via 👥 mitt i passet) – ni lastar från samma band till samma fyra vagnar.
+- En väska på bandet kan bara en ta – hinner båda dit får den som kom för sent höra "HANN FÖRE!". Du ser väskan kollegan bär.
+- Den som lastar väskan får poängen (eller felet); lagets räkning delas lika på lönebeskedet.
+- När ni är fler kommer väskorna ungefär dubbelt så ofta och bandet går lite fortare. Går den som leder passet hem tar någon annan över direkt, och väskor som någon bar läggs tillbaka på bandet.
+
 ## [0.67.0] – 2026-09-30 – Jobba ihop i Incheckningen
 - Jobba ihop i Incheckningen: bjud in en kompis med 💼 Jobba ihop när du börjar passet (eller via 👥 mitt i passet) – ni delar disk 3, kön och väskorna.
 - Den som trycker GODKÄNN eller NEKA på skärmen har resenären tills boardingkortet är lämnat – kollegan ser "KOLLEGANS RESENÄR". Väskorna kan båda ta hand om: skriva ut lappen, sätta den på väskan och skicka den (eller ställa den i specialskåpet) medan den andra väljer plats.
