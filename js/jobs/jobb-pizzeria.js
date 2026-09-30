@@ -20,7 +20,7 @@
 import { drawPerson, makeLook } from '../core/people.js';
 import { Pix, SMALL, ctxText, textW, text, eachTextPixel, mix, mul, css, hash, bayer } from '../core/floor-pix.js';
 import { createWalker, selfDrawable, folkDrawables, WALK_SEQ } from '../scenes/walkable.js';
-import { SHIFT_SECONDS, drawShiftHud, drawTimeUp, makePops, abortShift } from './shift.js';
+import { planOf, drawShiftHud, drawTimeUp, makePops, abortShift } from './shift.js';
 import { play } from '../core/sound.js';
 import { FRAMES } from '../data/frames.js';
 import { ATLAS } from '../scenes/room.js';
@@ -54,6 +54,9 @@ const BINS = [
 // rutiga bord (kunden sitter på stolen bakom bordet, vänd mot oss)
 const TABLES = [{ x: 256, y: 146 }, { x: 326, y: 146 }, { x: 44, y: 208 }, { x: 128, y: 208 }]
   .map((tb) => ({ ...tb, sx: tb.x + 11, sy: tb.y - 8 }));
+// en van bagare får ett bord till: mitt i övre raden (luckan 280–326 räcker precis – gången på
+// var sida är 9 px, bubblorna nuddar inte varandra). Fler får inte plats i matsalen.
+const EXTRA_TABLES = [{ x: 291, y: 146 }].map((tb) => ({ ...tb, sx: tb.x + 11, sy: tb.y - 8 }));
 // TA MED-kön: skylten först, sedan bubbla + kund, bubbla + kund (bagaren serverar från höger)
 const TAKE = [{ x: 292, y: 212 }, { x: 358, y: 212 }];   // TA MED-platserna
 const SIGN = { x: 240, y: 208 };                          // TA MED-skylten
@@ -361,6 +364,8 @@ const inMouth = (x, y) => x >= OV.mx0 && x < OV.mx1 && y >= OV.mTop && y < OV.by
 
 export function makeJobbPizzeria(A, { onDone } = {}) {
   const stats = { ok: 0, fel: 0, miss: 0, brand: 0 };
+  const P = planOf(A);   // passets plan: längd (P.seconds), kundtakt (P.pace), extra bord (P.extra)
+  const tables = [...TABLES, ...EXTRA_TABLES.slice(0, P.extra)];
   const wage = JOBS?.pizzeria?.wage;
   const walker = createWalker({ top: 96, bottom: FH - 5, spawn: [WS.x, STAND_Y] });
   walker.setObstacles([
@@ -369,13 +374,13 @@ export function makeJobbPizzeria(A, { onDone } = {}) {
     [PASS.x0, 84, PASS.x1, 93],                            // passet
     [ISL.x0, ISL.front + 1, ISL.x1, ISL.base],             // bänken
     // övre bordsraden spärras ända upp till väggen: bagaren ska aldrig gå bakom deras bubblor
-    ...TABLES.map((tb) => [tb.x - 2, tb.y > AISLE_Y ? tb.y - 16 : WALL_B, tb.x + 24, tb.y + 1]),
+    ...tables.map((tb) => [tb.x - 2, tb.y > AISLE_Y ? tb.y - 16 : WALL_B, tb.x + 24, tb.y + 1]),
     [TREE.x - 8, TREE.y - 7, TREE.x + 8, TREE.y + 1],
     [BARREL.x - 8, BARREL.y - 7, BARREL.x + 8, BARREL.y + 1],
     [SIGN.x - 12, SIGN.y - 5, SIGN.x + 12, SIGN.y + 1],
     [PLANT.x, PLANT.y - 7, PLANT.x + 22, PLANT.y + 1],
     // nedre radens bubbelzoner (hela vägen ner till kanten): bagaren ska aldrig stå bakom en bubbla
-    ...TABLES.filter((tb) => tb.y > AISLE_Y).map((tb) => [tb.x - BUBBLE_W - 4, AISLE_Y, tb.x - 1, FH]),
+    ...tables.filter((tb) => tb.y > AISLE_Y).map((tb) => [tb.x - BUBBLE_W - 4, AISLE_Y, tb.x - 1, FH]),
     ...TAKE.map((sp) => [sp.x - BUBBLE_W - 10, AISLE_Y + 12, sp.x - 7, FH]),
   ]);
   const pops = makePops();
@@ -392,7 +397,7 @@ export function makeJobbPizzeria(A, { onDone } = {}) {
   const glow = () => (cache.glow ||= ovenGlow());
 
   // ---------- kunder ----------
-  function freeTables() { return TABLES.filter((tb) => !customers.some((k) => k.table === tb)); }
+  function freeTables() { return tables.filter((tb) => !customers.some((k) => k.table === tb)); }
   function freeSpots() { return [0, 1].filter((s) => !customers.some((k) => k.take && k.spot === s)); }
   function spawn(now, kind, take) {
     const tbs = freeTables(), sps = freeSpots();
@@ -400,7 +405,7 @@ export function makeJobbPizzeria(A, { onDone } = {}) {
     if (take === undefined) take = sps.length > 0 && (!tbs.length || Math.random() < 0.34);
     if (take && !sps.length) take = false;
     if (!take && !tbs.length) take = true;
-    const pat = (take ? 44 : 50) - 8 * Math.min(1, t / SHIFT_SECONDS);
+    const pat = (take ? 44 : 50) - 8 * Math.min(1, t / P.seconds);
     const k = { look: makeLook(), take, wish: kind ?? ((Math.random() * PIZZAS.length) | 0), patience: pat, pmax: pat, eat: 0, id: seq++, dir: 'left', state: 'walk', x: FW + 12, y: AISLE_Y };
     if (take) {
       k.spot = now ? sps[0] : sps[(Math.random() * sps.length) | 0];
@@ -772,7 +777,7 @@ export function makeJobbPizzeria(A, { onDone } = {}) {
       updParts(dt);
       if (done) { doneT += dt; if (doneT > 1.2 && !reported) { reported = true; onDone?.(stats); } return; }
       t += dt;
-      if (t >= SHIFT_SECONDS) { done = true; return; }
+      if (t >= P.seconds) { done = true; return; }
       walker.update(dt);
       if (workT > 0) workT -= dt;
       if (trashT > 0) trashT -= dt;
@@ -790,9 +795,9 @@ export function makeJobbPizzeria(A, { onDone } = {}) {
       // gnistor från elden
       if (Math.random() < dt * 2.5) parts.push({ k: 'spark', x: 103 + Math.random() * 10, y: 52, vx: Math.random() * 8 - 2, vy: -10 - Math.random() * 6, life: 0.6, age: 0 });
       for (const p of parts) if (p.k === 'spark' && p.y < archTop(Math.round(p.x)) + 1) p.age = p.life;
-      // nya kunder
+      // nya kunder (en van bagare får fler – P.pace; tålamodet är detsamma)
       custIn -= dt;
-      if (custIn <= 0) { custIn = 8.5 - 3 * Math.min(1, t / SHIFT_SECONDS) + hash(seq, 3) * 2.5; spawn(false); }
+      if (custIn <= 0) { custIn = (8.5 - 3 * Math.min(1, t / P.seconds) + hash(seq, 3) * 2.5) * P.pace; spawn(false); }
       for (const k of customers) {
         if (k.state === 'walk' || k.state === 'leave') {
           const sp = (k.state === 'walk' ? 36 : 42) * dt, wp = k.path[0];
@@ -872,7 +877,7 @@ export function makeJobbPizzeria(A, { onDone } = {}) {
       drawables.push({ fy: SIGN.y, draw: () => ctx.drawImage(D.sign, D.signAt[0], D.signAt[1]) });
       const aok = atlasOk();
       if (aok) drawables.push({ fy: PLANT.y, draw: () => { const f = FRAMES.vaxtS0; ctx.drawImage(ATLAS, f[0], f[1], f[2], f[3], PLANT.x, PLANT.y - f[3], f[2], f[3]); } });
-      for (const tb of TABLES) {
+      for (const tb of tables) {
         const k = customers.find((c) => c.table === tb);
         if (aok) drawables.push({ fy: tb.sy - 0.5, draw: () => { const f = FRAMES[CHAIR_F]; ctx.drawImage(ATLAS, f[0], f[1], f[2], f[3], tb.sx - (f[2] >> 1), tb.sy + 1 - CHAIR_LIFT - f[3], f[2], f[3]); } });
         drawables.push({
@@ -925,7 +930,7 @@ export function makeJobbPizzeria(A, { onDone } = {}) {
         ctxText(ctx, SMALL, s, ((FW - w) >> 1) + 4, 21, '#ffd23f');
         ctx.globalAlpha = 1;
       }
-      drawShiftHud(ctx, { W: FW }, { t, dur: SHIFT_SECONDS, ok: stats.ok, fel: stats.fel, title: 'PIZZERIA NAPOLI' });
+      drawShiftHud(ctx, { W: FW }, { t, dur: P.seconds, ok: stats.ok, fel: stats.fel, title: 'PIZZERIA NAPOLI' });
       if (done) drawTimeUp(ctx, { W: FW, H: FH });
     },
   };

@@ -59,6 +59,29 @@ export const courseOf = (id) => COURSES[id] || null;
 export const JOB_TITLES = ['Nybörjare', 'Van', 'Proffs', 'Mästare', 'Legendar'];
 export const levelOf = (shifts) => Math.min(5, 1 + Math.floor(shifts / 3));
 export const payMult = (level) => 1 + 0.15 * (level - 1);
+// PASSET EFTER VANAN (Carl 2026-09-30: "allteftersom man har jobbat ska fler kunder komma och
+// tiden bli lite längre … fler stolar, kunderna ska ha samma timer"). Nivån (levelOf) styr:
+//   seconds  passets längd i verkliga sekunder: 60 s som nybörjare, +8 % per nivå (Legendar 79 s)
+//   pace     gånger väntetiden mellan nya kunder – 1 som nybörjare, Legendar 0,58 (72 % fler);
+//            kundernas tålamod är detsamma (scenerna räknar det mot passets andel, t / seconds)
+//   extra    extra platser (bord, stolar, fack …) som öppnas: nivå − 1, var scen tar vad den har
+// En van (nivå 2+) väljer vid passets början VANLIGT eller LÄNGRE pass (1,5 × tiden: 6 timmar
+// speltid, mer ork går åt). Jobbar man ihop bestämmer den som bjöd in – nivån och längden
+// följer med inbjudan, så en van kan ta med en nybörjare på ett långt pass.
+export const LONG_SHIFT = 1.5;
+export const canLongShift = (level) => level >= 2;
+export function shiftPlan(level = 1, len = 'vanligt') {
+  const lvl = Math.max(1, Math.min(5, level | 0 || 1)), long = len === 'langt';
+  const k = long ? LONG_SHIFT : 1;
+  return {
+    lvl, len: long ? 'langt' : 'vanligt',
+    seconds: Math.round(60 * (1 + 0.08 * (lvl - 1)) * k),
+    gameMin: Math.round(240 * k),
+    pace: 1 / (1 + 0.18 * (lvl - 1)),
+    extra: lvl - 1,
+    energy: Math.round(35 * k),
+  };
+}
 
 // Klädaffärens FÖRSTA sortiment (före klädkatalogen): de 23 plaggen med gamla nycklar
 // 'kind:v' (kind/v = look-fälten i people.js). Allt som säljs i dag står i klädkatalogen
@@ -715,9 +738,9 @@ export class Game {
     this._saveIn = (this._saveIn ?? 10) - dt;
     if (this._saveIn <= 0) { this._saveIn = 10; this.save(); }
   }
-  // Ett pass = 4 timmar speltid. Lönen räknas ut av minispelet; yr av hunger =
-  // halv lön, extrapass-dagar = dubbel lön. Rekord (flest rätt, bästa lön) sparas.
-  endShift(jobId, pay, stats = {}) {
+  // Ett pass = 4 timmar speltid (längre pass 6, se shiftPlan). Lönen räknas ut av minispelet;
+  // yr av hunger = halv lön, extrapass-dagar = dubbel lön. Rekord (flest rätt, bästa lön) sparas.
+  endShift(jobId, pay, stats = {}, plan = shiftPlan(levelOf(this.jobs[jobId]))) {
     const starving = this.hunger <= 0;
     const doubled = this.eventIs('dubbel') && this.event.job === jobId;
     let finalPay = Math.max(0, Math.round(starving ? pay / 2 : pay));
@@ -726,12 +749,13 @@ export class Game {
     this.jobs[jobId] += 1;
     this.money += finalPay;
     this.earned += finalPay;
-    this.energy = clamp(this.energy - 35);
+    this.energy = clamp(this.energy - plan.energy);
     // ett nattpass slutar vid midnatt (nightEnd): man tar nattbussen hem och sover i stället
-    // för att somna där man står
+    // för att somna där man står (även ett långt pass som började sent – t.ex. när en kompis
+    // bjöd in på kvällen)
     const left = DAY - 1 - this.min;
-    const nightEnd = !!JOBS[jobId]?.nattoppet && left < 4 * 60;
-    this.passTime(nightEnd ? Math.max(0, left) : 4 * 60);
+    const nightEnd = (!!JOBS[jobId]?.nattoppet || plan.len === 'langt') && left < plan.gameMin;
+    this.passTime(nightEnd ? Math.max(0, left) : plan.gameMin);
     const b = this.best[jobId];
     const newRecord = (stats.ok || 0) > b.ok;
     b.ok = Math.max(b.ok, stats.ok || 0);

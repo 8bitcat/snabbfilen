@@ -53,12 +53,13 @@
 import { drawPerson, makeLook } from '../core/people.js';
 import { Pix, SMALL, BIG, ctxText, textW, text, mix, mul, css, hex, hash, bayer } from '../core/floor-pix.js';
 import { createWalker, selfDrawable, folkDrawables, WALK_SEQ } from '../scenes/walkable.js';
-import { drawShiftHud, drawTimeUp, abortShift } from './shift.js';
+import { planOf, drawShiftHud, drawTimeUp, abortShift } from './shift.js';
 import { play, audioContext, isMuted } from '../core/sound.js';
 
 const FW = 384, FH = 216;
 // Verkstadens pass är längre än de andra jobbens 60 s (ett däckbyte tar en
 // halv minut även när allt går rätt) – men är fortfarande 4 timmar på klockan.
+// SHIFT_T är nybörjarens pass; det växer i samma takt som de andra jobbens (shiftT i scenen).
 const SHIFT_T = 90;
 const FLOOR_Y = 92;            // golvet börjar (bakväggens fot)
 const RUN = 70;                // lyftbanans längd
@@ -834,6 +835,11 @@ const foldName = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/
 
 export function makeJobbVerkstad(A, { onDone } = {}) {
   const stats = { ok: 0, fel: 0, miss: 0, dack: 0, kryss: 0 };
+  // passets plan: verkstadens 90 s växer som de andras 60 s (P.seconds / 60), bilarna kommer
+  // tätare med vanan (P.pace) och klockan går P.gameMin minuter. Inga extra lyftar – de fyra
+  // fyller verkstaden, och en femte skulle behöva ny grafik.
+  const P = planOf(A);
+  const shiftT = SHIFT_T * P.seconds / 60;
   const walker = createWalker({ top: 100, bottom: FH - 4, spawn: [164, 120] });
   const piles = PILE_XS.map((x, i) => ({ i, x, y: PROP_FOOT, n: 3 }));
   walker.setObstacles([
@@ -2001,8 +2007,8 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
       // av/på för bilar som kommer av sig själva (tester vill ha lugn och ro)
       autoCars(on = true) { autoCars = !!on; if (on) carIn = Math.min(carIn, 1); return autoCars; },
       // passets klocka i sekunder (läs, eller sätt för att spola)
-      time(s) { if (Number.isFinite(s)) t = clamp(s, 0, SHIFT_T); return t; },
-      shiftSeconds: SHIFT_T,
+      time(s) { if (Number.isFinite(s)) t = clamp(s, 0, shiftT); return t; },
+      shiftSeconds: shiftT,
       // klickpunkter (canvasens spelkoordinater, kameran inräknad) för
       // reservdelshyllorna (1–4; 0 = däckstället) och bilar
       stationSpot: (i = 1) => (i <= 0 ? { x: SLOTS[0].x, y: 62 - camR } : { x: PART_X[clamp(i, 1, 4)], y: 80 - camR }),
@@ -2042,7 +2048,7 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
       if (compRun > 0) compPh += dt * 14;
       if (done) { doneT += dt; if (doneT > 1.2 && !reported) { reported = true; onDone?.(stats); } return; }
       t += dt;
-      if (t >= SHIFT_T) { done = true; working = null; return; }
+      if (t >= shiftT) { done = true; working = null; return; }
       walker.update(dt);
       keyHold = Math.max(0, keyHold - dt);
       hintCool = Math.max(0, hintCool - dt);
@@ -2050,7 +2056,7 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
       // nya bilar – punkteringar är vanligast
       if (autoCars) carIn -= dt;
       if (carIn <= 0) {
-        carIn = 8.5 - 2.5 * Math.min(1, t / SHIFT_T) + Math.random() * 3;
+        carIn = (8.5 - 2.5 * Math.min(1, t / shiftT) + Math.random() * 3) * P.pace;
         const free = freeBays();
         if (free.length) {
           const b = free[(Math.random() * free.length) | 0];
@@ -2188,7 +2194,7 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
       for (const c of cars) if (c.owner.show) occupy(Math.round(c.owner.x) - 6, Math.round(c.owner.y) - 43, 12, 44, 'own');
       ctx.drawImage(bg(), 0, 0);
       drawLights(ctx, t);
-      drawClock(ctx, startMin + (t / SHIFT_T) * 240);
+      drawClock(ctx, startMin + (t / shiftT) * P.gameMin);
       drawRackTires(ctx);
       for (const b of BAYS) drawPort(ctx, b);
       drawHoseFloor(ctx);
@@ -2240,7 +2246,7 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
       if (h && needTip(h.key)) hintArrow(ctx, h.x, h.y, h.txt, t, h.al);
       pops.draw(ctx, fitPop);
       ctx.setTransform(A.pxs, 0, 0, A.pxs, 0, 0);
-      drawShiftHud(ctx, { W: FW }, { t, dur: SHIFT_T, ok: stats.ok, fel: stats.fel, title: 'BILVERKSTADEN' });
+      drawShiftHud(ctx, { W: FW }, { t, dur: shiftT, ok: stats.ok, fel: stats.fel, title: 'BILVERKSTADEN' });
       drawStepRow(ctx, fc);
       if (done) drawTimeUp(ctx, { W: FW, H: FH });
     },

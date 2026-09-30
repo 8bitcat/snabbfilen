@@ -11,7 +11,7 @@
 // Ett pixelkorn: heltal, skala 1.
 import { Pix, SMALL, BIG, ctxText, textW, text, eachTextPixel, mix, mul, css, hash, bayer } from '../core/floor-pix.js';
 import { createWalker, selfDrawable, folkDrawables, WALK_SEQ } from '../scenes/walkable.js';
-import { SHIFT_SECONDS, drawShiftHud, drawTimeUp, makePops, abortShift } from './shift.js';
+import { planOf, drawShiftHud, drawTimeUp, makePops, abortShift } from './shift.js';
 import { drawPerson } from '../core/people.js';
 import { play } from '../core/sound.js';
 
@@ -1218,6 +1218,7 @@ function pline(ctx, x0, y0, x1, y1) {
 
 export function makeJobbFrukt(A, { onDone }) {
   const stats = { ok: 0, fel: 0, miss: 0, boxes: 0 };
+  const P = planOf(A);   // passets plan: längd (P.seconds), frukttakt (P.pace), speltid (P.gameMin)
   const walker = createWalker({ top: BELT_Y + 14, bottom: FH - 6, spawn: [120, 140] });
   walker.setObstacles([
     [BOX.x - 2, BOX.y - 10, BOX.x + BOX.w + 2, BOX.y + BOX.h],
@@ -1231,11 +1232,11 @@ export function makeJobbFrukt(A, { onDone }) {
   const pops = makePops();
   let items = [], t = 0, seq = 0, spawnIn = 0.8, carry = null, done = false, doneT = 0, reported = false;
   let order = newOrder(seq++), boxFlash = 0;
-  const speed = () => 22 + 12 * Math.min(1, t / SHIFT_SECONDS);
+  const speed = () => 22 + 12 * Math.min(1, t / P.seconds);
 
   // bara för syns skull: ljusläget, bandets läge, lådans innehåll, kollegan
   const startMin = A.game?.min ?? 12 * 60;
-  const mode = viewMode(((startMin + 120) / 60) % 24);
+  const mode = viewMode(((startMin + P.gameMin / 2) / 60) % 24);   // ljuset mitt i passet
   const G = art(mode);
   const NK = mode === 'natt' ? 0.8 : mode === 'skymning' ? 0.9 : 1, nc = (c) => css(mul(c, NK));
   const AXLE = [0x1e4a2e, 0x9aa2a6, 0xd8dee2, 0x3a4246].map(nc), FLAP = [0x4a5652, 0x343e3a, 0x1e2624].map(nc);
@@ -1265,7 +1266,7 @@ export function makeJobbFrukt(A, { onDone }) {
 
   // levande: klockvisare, lampflimmer, ånga, lysdioder
   function drawWallLive(ctx) {
-    const m = startMin + (Math.min(t, SHIFT_SECONDS) / SHIFT_SECONDS) * 240;
+    const m = startMin + (Math.min(t, P.seconds) / P.seconds) * P.gameMin;
     const ma = ((m % 60) / 60) * Math.PI * 2, ha = (((m / 60) % 12) / 12) * Math.PI * 2;
     ctx.fillStyle = '#2a2c30';
     pline(ctx, CLOCK.x, CLOCK.y, CLOCK.x + Math.sin(ha) * 2.6, CLOCK.y - Math.cos(ha) * 2.6);
@@ -1457,13 +1458,13 @@ export function makeJobbFrukt(A, { onDone }) {
       updateVisuals(dt);
       if (done) { doneT += dt; if (doneT > 1.2 && !reported) { reported = true; onDone(stats); } return; }
       t += dt;
-      if (t >= SHIFT_SECONDS) { done = true; return; }
+      if (t >= P.seconds) { done = true; return; }
       walker.update(dt);
       beltOff += speed() * dt;
       if (beltOff > 1e6) beltOff -= SURF_PERIOD * 20000;
       spawnIn -= dt;
       if (spawnIn <= 0) {
-        spawnIn = 1.6 - 0.5 * Math.min(1, t / SHIFT_SECONDS) + hash(seq, 43) * 0.4;
+        spawnIn = (1.6 - 0.5 * Math.min(1, t / P.seconds) + hash(seq, 43) * 0.4) * P.pace;   // tätare med vanan
         const wanted = order.need.filter((n) => n.got < n.n).map((n) => n.f);
         const f = Math.random() < 0.6 && wanted.length ? wanted[(Math.random() * wanted.length) | 0] : (Math.random() * FRUITS.length) | 0;
         items.push({ f, x: -8 });
@@ -1522,7 +1523,7 @@ export function makeJobbFrukt(A, { onDone }) {
       ctx.drawImage(G.fore, 0, 0);
 
       pops.draw(ctx);
-      drawShiftHud(ctx, { W: FW }, { t, dur: SHIFT_SECONDS, ok: stats.ok, fel: stats.fel, title: 'FRUKTFABRIKEN' });
+      drawShiftHud(ctx, { W: FW }, { t, dur: P.seconds, ok: stats.ok, fel: stats.fel, title: 'FRUKTFABRIKEN' });
       if (done) drawTimeUp(ctx, { W: FW, H: FH });
     },
   };

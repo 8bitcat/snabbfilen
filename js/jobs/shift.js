@@ -1,25 +1,45 @@
 // Arbetspasset: samma flöde för alla jobb. Intro-dialog → minispel (60 s verklig
-// tid = 4 h speltid) → lönebesked. Lön = rätt × styckpris − fel × avdrag, gånger
-// nivåbonusen. Är man utsvulten halveras lönen (yr i huvudet).
+// tid = 4 h speltid; längre med vanan, se shiftPlan i game.js) → lönebesked. Lön = rätt ×
+// styckpris − fel × avdrag, gånger nivåbonusen. Är man utsvulten halveras lönen (yr i huvudet).
+//
+// Passets plan (A.shiftPlan = shiftPlan(nivå, längd)) läses av minispelen med planOf(A):
+// P.seconds (passets längd), P.pace (gånger väntetiden mellan kunder), P.extra (extra platser),
+// P.gameMin (speltiden passet motsvarar). Jobbar man ihop (A.coop = { sid, job, scene, host })
+// kommer planen från den som bjöd in.
 import { openModal, closeModal, toast, esc } from '../core/ui.js';
 import { sendInvite } from '../net/coop.js';
-import { JOBS, JOB_TITLES, levelOf, payMult, fmt } from '../game.js';
+import { JOBS, JOB_TITLES, levelOf, payMult, fmt, shiftPlan, canLongShift } from '../game.js';
 import { SMALL, BIG, ctxText, textW } from '../core/floor-pix.js';
 import { play } from '../core/sound.js';
 
-export const SHIFT_SECONDS = 60;
+export const SHIFT_SECONDS = 60; // (nybörjarens vanliga pass – minispelen läser planOf(A).seconds)
+export const planOf = (A) => A?.shiftPlan || shiftPlan(1);
+// Jobb där man kan jobba ihop på riktigt (delat pass: en kör kunderna, alla serverar)
+export const COOP_JOBS = new Set(['burgare']);
+const newSid = () => Math.random().toString(36).slice(2, 10).replace(/[^a-z0-9]/g, '') || 'pass';
+// får man ta ett längre pass nu? (vanliga jobb stänger 24 – ett långt pass börjar senast 18)
+const longOk = (g, jobId) => !!JOBS[jobId]?.nattoppet || g.min <= 18 * 60;
+
+// In i passet med planen (och det gemensamma passet, om man jobbar ihop)
+function beginShift(A, jobId, sceneName, plan, coop = null) {
+  A.shiftJob = jobId;
+  A.shiftPlan = plan;
+  A.coop = coop;
+  A.go(sceneName, { onDone: (stats) => finishShift(A, jobId, stats) });
+}
 
 // Jobb där gästerna ger dricks (minispelet räknar stats.dricksKr). Dricksen läggs
 // på lönen efter nivåbonusen – den följer bara med i hunger-halveringen och extrapasset.
 const TIP_JOBS = new Set(['kok']);
 
-// Rakt in i passet (t.ex. via 💼 Jobba ihop-inbjudan): samma öppettids- och
-// ork-kontroller som vanligt, men utan introdialogen – man har redan tackat ja.
-export function startShiftNow(A, jobId, sceneName) {
+// Rakt in i passet via 💼-inbjudan: samma öppettids- och ork-kontroller som vanligt, men utan
+// introdialogen – man har redan tackat ja. inv = inbjudan { sid, len, lvl, from }: passets
+// längd och nivå är den inbjudandes.
+export function startShiftNow(A, jobId, sceneName, inv = null) {
   const chk = A.game.canWork(jobId);
   if (!chk.ok) { toast(chk.msg, 'bad'); return false; }
-  A.shiftJob = jobId;
-  A.go(sceneName, { onDone: (stats) => finishShift(A, jobId, stats) });
+  const plan = inv ? shiftPlan(inv.lvl, inv.len) : shiftPlan(levelOf(A.game.jobs[jobId]));
+  beginShift(A, jobId, sceneName, plan, inv?.sid ? { sid: inv.sid, job: jobId, scene: sceneName, host: inv.from || null } : null);
   return true;
 }
 
@@ -36,6 +56,7 @@ export function startJobFlow(A, jobId, sceneName) {
     return;
   }
   const lvl = levelOf(g.jobs[jobId]);
+  const plan = shiftPlan(lvl), canLong = canLongShift(lvl), longNow = canLong && longOk(g, jobId);
   const dubbel = g.eventIs('dubbel') && g.event.job === jobId;
   const rows = [
     `💵 ${job.wage} kr per rätt · −${job.oops} kr per fel${job.bonus ? ` · +${job.bonus} kr per ${job.bonusPer || 'färdig låda'}` : ''}`,
@@ -44,41 +65,73 @@ export function startJobFlow(A, jobId, sceneName) {
     g.best[jobId].ok ? `🏅 Ditt rekord: <b>${g.best[jobId].ok} rätt</b> · bästa lön ${fmt(g.best[jobId].pay)}` : null,
     dubbel ? `💰 <b class="ok">EXTRAPASS I DAG – DUBBEL LÖN!</b>` : null,
     TIP_JOBS.has(jobId) ? `🪙 Snabb service ger <b>dricks</b> – den går rakt ner i lönen` : null,
-    `⏱️ Ett pass tar 4 timmar.`,
+    lvl > 1 ? `👥 Som ${JOB_TITLES[lvl - 1].toLowerCase()} får du <b>fler kunder</b>${plan.extra ? ' och fler platser' : ''} – passet är lite längre`
+      : `👥 Ju fler pass du jobbar, desto fler kunder och platser`,
+    canLong ? `⏱️ Ett pass tar 4 timmar – ett <b>längre pass</b> 6 timmar${longNow ? '' : ' (börjar senast 18:00)'}.` : `⏱️ Ett pass tar 4 timmar.`,
+    COOP_JOBS.has(jobId) ? `💼 Jobba ihop: bjud in en kompis till passet` : null,
   ].filter(Boolean);
   openModal(`${job.icon} ${job.name}`, `<p style="font-size:var(--f2);margin-top:0"><b>${job.verb}!</b></p>
     <p style="font-size:var(--f2)">${rows.join('<br>')}</p>
     ${g.hunger <= 0 ? '<p class="bad" style="font-size:var(--f2)">🥴 Du är utsvulten – du jobbar yr och får halv lön!</p>' : ''}
     ${g.energy < 40 ? '<p style="font-size:var(--f2)">😪 Du är ganska trött – sista passet för i dag?</p>' : ''}`, [
     { label: 'En annan gång', onClick: closeModal },
-    ...(jobId === 'burgare' ? [{ label: '💼 Jobba ihop', onClick: () => coopPicker(A, jobId, sceneName) }] : []),
-    { label: '🔨 Jobba ett pass', cls: 'btn-go', onClick: () => { closeModal(); A.shiftJob = jobId; A.go(sceneName, { onDone: (stats) => finishShift(A, jobId, stats) }); } },
+    ...(COOP_JOBS.has(jobId) ? [{ label: '💼 Jobba ihop', onClick: () => coopPicker(A, jobId, sceneName) }] : []),
+    ...(canLong ? [
+      { label: '🔨 Vanligt pass', cls: 'btn-go', onClick: () => { closeModal(); beginShift(A, jobId, sceneName, shiftPlan(lvl)); } },
+      ...(longNow ? [{ label: '💪 Längre pass', cls: 'btn-go', onClick: () => { closeModal(); beginShift(A, jobId, sceneName, shiftPlan(lvl, 'langt')); } }] : []),
+    ] : [
+      { label: '🔨 Jobba ett pass', cls: 'btn-go', onClick: () => { closeModal(); beginShift(A, jobId, sceneName, shiftPlan(lvl)); } },
+    ]),
   ]);
 }
 
 // 💼 Välj vem du vill jobba ihop med INNAN passet: inbjudan skickas och du går
 // direkt in – kompisen hoppar in bredvid dig. Ni delar lönen, borden dubbleras
 // och kunderna strömmar in. (Carls design: väljaren hör hemma i startdialogen.)
+// Den som bjuder in bestämmer passet: är man van väljer man vanligt eller längre pass här, och
+// kompisen (även en nybörjare) jobbar på ens nivå – fler kunder och platser – och lika länge.
 function coopPicker(A, jobId, sceneName) {
-  const list = A.playersList?.() || [];
+  const g = A.game, list = A.playersList?.() || [];
   if (!list.length) {
     toast('Ingen annan är i Pixelstaden just nu – börja passet, så kan kompisar hoppa in via 👥!', 'bad');
     return;
   }
+  const lvl = levelOf(g.jobs[jobId]), longNow = canLongShift(lvl) && longOk(g, jobId);
+  let len = 'vanligt';
   const rows = list.map((p) => `<div class="prow"><span class="nm">${esc(p.av?.name || '?')}</span>
     <button class="btn btn-small btn-go" data-bjud="${esc(p.id)}">💼 Bjud & börja</button></div>`).join('');
+  const lenRow = longNow ? `<p style="font-size:var(--f2)" class="coop-len">
+    <button class="btn btn-small btn-go" data-len="vanligt">🔨 Vanligt pass</button>
+    <button class="btn btn-small" data-len="langt">💪 Längre pass</button></p>` : '';
   const dlg = openModal('💼 Jobba ihop – med vem?', `
     <p style="font-size:var(--f2);margin-top:0">Kompisen får en inbjudan och hoppar rakt in på ditt pass.
-    Ni <b>delar på lönen</b>, extraborden rullas fram och kunderna strömmar in!</p>
+    Ni <b>delar på lönen</b>, extraborden rullas fram och kunderna strömmar in!${lvl > 1 ? ` Ni jobbar på din nivå (${JOB_TITLES[lvl - 1]}).` : ''}</p>
+    ${lenRow}
     <div class="plist">${rows}</div>`, [
     { label: 'Tillbaka', onClick: () => { closeModal(); startJobFlow(A, jobId, sceneName); } },
   ]);
+  dlg.querySelectorAll('[data-len]').forEach((b) => (b.onclick = () => {
+    len = b.dataset.len;
+    dlg.querySelectorAll('[data-len]').forEach((o) => o.classList.toggle('btn-go', o === b));
+  }));
   dlg.querySelectorAll('[data-bjud]').forEach((b) => (b.onclick = () => {
     closeModal();
-    sendInvite(b.dataset.bjud, jobId, A.avatar?.name || '');
-    toast('💼 Inbjudan skickad – in på passet med dig!', 'good');
-    startShiftNow(A, jobId, sceneName);
+    const sid = newSid();
+    sendInvite(b.dataset.bjud, jobId, A.avatar?.name || '', { sid, len, lvl });
+    toast(`💼 Inbjudan skickad – in på ${len === 'langt' ? 'det långa ' : ''}passet med dig!`, 'good');
+    beginShift(A, jobId, sceneName, shiftPlan(lvl, len), { sid, job: jobId, scene: sceneName, host: null });
   }));
+}
+
+// 👥 mitt i ett pass: bjud in fler till samma pass (samma plan). Ett pass man började ensam blir
+// ett gemensamt pass nu – kompisen hamnar hos en, ingen annan.
+export function inviteToShift(A, toId) {
+  const jobId = A.shiftJob;
+  if (!jobId || !COOP_JOBS.has(jobId)) return false;
+  if (!A.coop) A.coop = { sid: newSid(), job: jobId, scene: A.sceneName, host: null };
+  const P = planOf(A);
+  sendInvite(toId, jobId, A.avatar?.name || '', { sid: A.coop.sid, len: P.len, lvl: P.lvl });
+  return true;
 }
 
 function finishShift(A, jobId, stats) {
@@ -87,7 +140,7 @@ function finishShift(A, jobId, stats) {
   const mult = payMult(lvl);
   const base = Math.max(0, stats.ok * job.wage + (stats.boxes || 0) * (job.bonus || 0) - stats.fel * job.oops - (stats.miss || 0) * (job.missOops || 0));
   const tips = Math.max(0, Math.round(stats.dricksKr || 0));
-  const res = A.game.endShift(jobId, base * mult + tips, stats);
+  const res = A.game.endShift(jobId, base * mult + tips, stats, planOf(A));
   play('coin');
   const line = (l, r) => `<div style="display:flex;justify-content:space-between;font-size:var(--f2)"><span>${l}</span><b>${r}</b></div>`;
   openModal(`${job.icon} Passet är slut!`, `
@@ -102,6 +155,7 @@ function finishShift(A, jobId, stats) {
     ${tips ? line(`🪙 Dricks (${stats.dricks} ggr)`, '+' + fmt(tips)) : ''}
     ${res.starving ? line('🥴 Yr av hunger', 'halv lön!') : ''}
     ${res.doubled ? line('💰 Extrapass', 'DUBBEL LÖN!') : ''}
+    ${planOf(A).len === 'langt' ? line('💪 Längre pass', `${Math.round(planOf(A).gameMin / 60)} timmar`) : ''}
     ${line('💰 Lön', fmt(res.finalPay))}
     ${res.nightEnd ? '<p style="font-size:var(--f2);margin-bottom:0">🌙 Nattpasset tog slut vid midnatt – nattbussen tar dig hem till sängen.</p>' : ''}`, [
     { label: res.nightEnd ? '🌙 Ta lönen och åk hem' : '💰 Ta lönen', cls: 'btn-go', onClick: () => { closeModal(); afterShift(A, jobId, res.nightEnd); } },
@@ -112,6 +166,8 @@ function finishShift(A, jobId, stats) {
 // nattpasset tog slut vid midnatt, hem till sängen (sömnfrågan öppnas direkt).
 function afterShift(A, jobId, nightEnd = false) {
   A.shiftJob = null;
+  A.shiftPlan = null;
+  A.coop = null;
   if (nightEnd) { A.roomSub = 0; A.go('room'); setTimeout(() => A.sleepFlow?.(), 350); return; }
   A.go(JOBS[jobId]?.back || 'city');
 }

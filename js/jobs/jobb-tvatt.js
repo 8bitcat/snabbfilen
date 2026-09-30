@@ -22,7 +22,7 @@
 import { drawPerson, makeLook } from '../core/people.js';
 import { Pix, SMALL, BIG, ctxText, textW, text, mix, mul, css, hash, bayer } from '../core/floor-pix.js';
 import { createWalker, selfDrawable, folkDrawables, WALK_SEQ } from '../scenes/walkable.js';
-import { SHIFT_SECONDS, drawShiftHud, drawTimeUp, makePops, abortShift } from './shift.js';
+import { planOf, drawShiftHud, drawTimeUp, makePops, abortShift } from './shift.js';
 import { play } from '../core/sound.js';
 import { FRAMES } from '../data/frames.js';
 import { ATLAS } from '../scenes/room.js';
@@ -952,6 +952,9 @@ function drawItem(ctx, it, cx, by, t) {
 // ======================= själva jobbet =======================
 export function makeJobbTvatt(A, { onDone }) {
   const stats = { ok: 0, fel: 0, miss: 0, missfargat: 0 };
+  // passets plan: längd (P.seconds) och kundtakt (P.pace). Bänken får inga extra platser –
+  // dörrarna står till vänster och vikbordet/tvättvagnen till höger.
+  const P = planOf(A);
   const walker = createWalker({ top: FLOOR_Y + 4, bottom: FH - 4, spawn: [200, 118] });
   walker.setObstacles([
     [AUTO.x - 6, FLOOR_Y, AUTO.x + 8, AUTO.base + 2],
@@ -1009,7 +1012,7 @@ export function makeJobbTvatt(A, { onDone }) {
   }
   function sitDown(k) {
     k.state = 'sit'; k.dir = 'down'; k.dropped = true;
-    k.pmax = 48 - 10 * Math.min(1, t / SHIFT_SECONDS); k.patience = k.pmax;
+    k.pmax = 48 - 10 * Math.min(1, t / P.seconds); k.patience = k.pmax;
   }
   function leave(k) {
     k.state = 'leave';
@@ -1199,13 +1202,13 @@ export function makeJobbTvatt(A, { onDone }) {
       pops.update(dt);
       if (done) { doneT += dt; if (doneT > 1.2 && !reported) { reported = true; onDone(stats); } return; }
       t += dt;
-      if (t >= SHIFT_SECONDS) { done = true; queued = null; walker.stop(); return; }
+      if (t >= P.seconds) { done = true; queued = null; walker.stop(); return; }
       if (!folding) walker.update(dt);
       ticketT = Math.max(0, ticketT - dt);
       // nya kunder
       custIn -= dt;
-      // (första två kommer tätt så att det blir fart direkt, sedan var 4–9:e sekund)
-      if (custIn <= 0) custIn = spawnCustomer() ? (seq < 2 ? 3 : 6.6 - 2.4 * Math.min(1, t / SHIFT_SECONDS) + hash(seq, 3) * 2.2) : 1;
+      // (första två kommer tätt så att det blir fart direkt, sedan var 4–9:e sekund – tätare med vanan)
+      if (custIn <= 0) custIn = spawnCustomer() ? (seq < 2 ? 3 : 6.6 - 2.4 * Math.min(1, t / P.seconds) + hash(seq, 3) * 2.2) * P.pace : 1;
       // tvättmaskinerna: trumman byter håll var 1,6 s (som en riktig maskin), centrifugen går fort
       for (const w of washers) {
         if (w.state !== 'run') continue;
@@ -1322,7 +1325,7 @@ export function makeJobbTvatt(A, { onDone }) {
         ctx.fillStyle = '#bfe6ff'; ctx.fillRect(bx, by, w, 1);
       }
       pops.draw(ctx);
-      drawShiftHud(ctx, { W: FW }, { t, dur: SHIFT_SECONDS, ok: stats.ok, fel: stats.fel, title: 'TVÄTTERIET' });
+      drawShiftHud(ctx, { W: FW }, { t, dur: P.seconds, ok: stats.ok, fel: stats.fel, title: 'TVÄTTERIET' });
       if (done) drawTimeUp(ctx, { W: FW, H: FH });
     },
   };

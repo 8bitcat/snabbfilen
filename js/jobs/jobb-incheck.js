@@ -27,7 +27,7 @@
 // skärmen. HUD, stegremsan och UTGÅNG ligger alltid innanför den synliga rutan.
 import { Pix, SMALL, BIG, ctxText, textW, text, mix, mul, css, hash, bayer } from '../core/floor-pix.js';
 import { createWalker, selfDrawable, folkDrawables, WALK_SEQ, createSpeech } from '../scenes/walkable.js';
-import { SHIFT_SECONDS, drawShiftHud, drawTimeUp, makePops, abortShift } from './shift.js';
+import { planOf, drawShiftHud, drawTimeUp, makePops, abortShift } from './shift.js';
 import { drawPerson, makeLook, FIRST_NAMES, HAIR, SKIN, STYLES } from '../core/people.js';
 import { play } from '../core/sound.js';
 import { JOBS } from '../game.js';
@@ -1315,8 +1315,11 @@ export function makeJobbIncheck(A, { onDone } = {}) {
   walker.dir = 'up';
   const pops = makePops();
   const talkP = createSpeech(), talkQ = createSpeech(), talkMe = createSpeech();
+  // passets plan: längd (P.seconds), resenärstakt (P.pace), speltid (P.gameMin). Kön behåller
+  // sina sex platser (sjunde skulle stå i stolsraden) och stolarna är bara kuliss.
+  const P = planOf(A);
   const startMin = A.game?.min ?? 12 * 60;
-  const mode = viewMode(((startMin + 120) / 60) % 24);
+  const mode = viewMode(((startMin + P.gameMin / 2) / 60) % 24);   // ljuset mitt i passet
   const night = mode === 'natt';
   const G = {
     back: paintBack(mode),
@@ -1901,7 +1904,7 @@ export function makeJobbIncheck(A, { onDone } = {}) {
     if (cleaner) { cleaner.x += cleaner.dir * 7 * dt; if (cleaner.x > 176 || cleaner.x < 70) cleaner.dir *= -1; }
     if (done) { doneT += dt; if (doneT > 1.2 && !reported) { reported = true; onDone?.(stats); } return; }
     t += dt;
-    if (t >= SHIFT_SECONDS) { done = true; return; }
+    if (t >= P.seconds) { done = true; return; }
     walker.update(dt);
     updColleague(dt);
     if (jamT > 0) jamT -= dt;
@@ -1915,10 +1918,10 @@ export function makeJobbIncheck(A, { onDone } = {}) {
     if (kioskPrint) { kioskPrint.t += dt; if (kioskPrint.t >= T_PRINT) { carry = { k: 'tag', di: kioskPrint.di }; kioskPrint = null; play('click'); } }
     // boardingkortet
     if (cardT >= 0 && !cardReady) { cardT += dt; if (cardT >= T_CARD) { cardReady = true; play('click'); } }
-    // nya resenärer
+    // nya resenärer (tätare med vanan – P.pace)
     spawnIn -= dt;
     if (spawnIn <= 0) {
-      spawnIn = (night ? 8.5 : 5.2) - 1.5 * Math.min(1, t / SHIFT_SECONDS) + Math.random() * 2;
+      spawnIn = ((night ? 8.5 : 5.2) - 1.5 * Math.min(1, t / P.seconds) + Math.random() * 2) * P.pace;
       spawn();
     }
     for (const p of npcs) updNpc(p, dt);
@@ -2018,7 +2021,7 @@ export function makeJobbIncheck(A, { onDone } = {}) {
     ctx.restore();
   }
   function drawClock(ctx) {
-    const m = startMin + (Math.min(t, SHIFT_SECONDS) / SHIFT_SECONDS) * 240;
+    const m = startMin + (Math.min(t, P.seconds) / P.seconds) * P.gameMin;
     const s = `${String(Math.floor(m / 60) % 24).padStart(2, '0')}:${String(Math.floor(m % 60)).padStart(2, '0')}`;
     const x = 74, y = 22;
     ctx.fillStyle = '#6a7078'; ctx.fillRect(x + 4, 19, 1, 3); ctx.fillRect(x + 20, 19, 1, 3);
@@ -2382,7 +2385,7 @@ export function makeJobbIncheck(A, { onDone } = {}) {
   }
   // klockan i topplisten (speltiden under passet) – väggklockan göms av beskärningen på mobilen
   function hudClock(ctx, b) {
-    const m = startMin + (Math.min(t, SHIFT_SECONDS) / SHIFT_SECONDS) * 240;
+    const m = startMin + (Math.min(t, P.seconds) / P.seconds) * P.gameMin;
     const s = `${String(Math.floor(m / 60) % 24).padStart(2, '0')}:${String(Math.floor(m % 60)).padStart(2, '0')}`;
     const x = b.x0 + 4 + textW(BIG, 'INCHECKNINGEN') + 10, y = b.y0 + 4;
     if (x + 26 > b.x1 - 170) return;                                // ingen plats (smal ruta)
@@ -2573,7 +2576,7 @@ export function makeJobbIncheck(A, { onDone } = {}) {
       // topplisten (shift.js) ritas från vänsterkanten av den synliga rutan och lika bred som den
       ctx.save();
       ctx.translate(b.x0, 0);
-      drawShiftHud(ctx, { W: b.x1 - b.x0 }, { t, dur: SHIFT_SECONDS, ok: stats.ok, fel: stats.fel, title: 'INCHECKNINGEN' });
+      drawShiftHud(ctx, { W: b.x1 - b.x0 }, { t, dur: P.seconds, ok: stats.ok, fel: stats.fel, title: 'INCHECKNINGEN' });
       ctx.restore();
       hudClock(ctx, b);
       if (done) drawTimeUp(ctx, { W: FW, H: FH });

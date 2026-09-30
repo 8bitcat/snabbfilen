@@ -238,10 +238,13 @@ function myScene(A, sub = A.roomSub) {
   if (A.sceneName === 'visit') return 'home:' + (A.visitTarget?.id || 'me') + ':' + (sub | 0);
   // butiker och jobb: osynlig för andra, men de ser VAR man är (äldre versioner läser det som 'away')
   const where = String(A.sceneName || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 24);
+  // jobbar man ihop (💼-inbjudan, js/jobs/shift.js) bär platsen passets id: bara de i SAMMA
+  // pass ser varandra – andra som råkar jobba på samma ställe har sina egna pass
+  if (where && A.coop?.sid && A.coop.scene === A.sceneName) return 'away:' + where + '.' + A.coop.sid;
   return where ? 'away:' + where : 'away';
 }
 const isAway = (s) => String(s).startsWith('away');
-const cleanScene = (s) => (s === 'city' || /^away(:[a-z0-9]{1,24})?$/.test(String(s)) || /^home:[\w-]{1,64}:\d$/.test(String(s)) ? String(s) : 'away');
+const cleanScene = (s) => (s === 'city' || /^away(:[a-z0-9]{1,24}(\.[a-z0-9]{1,12})?)?$/.test(String(s)) || /^home:[\w-]{1,64}:\d$/.test(String(s)) ? String(s) : 'away');
 function cleanP(p, old = {}) {
   const out = { ...old };
   if (p && typeof p === 'object') {
@@ -422,8 +425,10 @@ export function worldTick(A, myX, dt) {
 export function worldFolksHere(A, sub) {
   if (!W || !W.open) return [];
   const here = myScene(A, sub ?? A.roomSub);
-  // kollegor på samma jobb/i samma butik ser numera varandra (exakt samma away-nyckel
-  // krävs) – grunden för att jobba tillsammans; olika ställen ser fortfarande inget
+  // I butikerna ser man alla som är där. I ett JOBB bara dem man jobbar ihop med (samma pass-id
+  // i nyckeln, se myScene) – jobbar man ensam är man ensam, även om en kompis har ett eget pass
+  // på samma ställe (Carl 2026-09-30: "man ska bara dyka upp ihop om man väljer att börja jobba ihop")
+  if (/^away:jobb[a-z0-9]*$/.test(here)) return [];
   const out = [];
   for (const [id, p] of W.players) {
     if (p.scene !== here) continue;

@@ -15,7 +15,7 @@
 import { drawPerson, makeLook } from '../core/people.js';
 import { Pix, SMALL, ctxText, textW, text, mix, mul, css, hash, bayer } from '../core/floor-pix.js';
 import { createWalker, selfDrawable, folkDrawables, WALK_SEQ, createSpeech } from '../scenes/walkable.js';
-import { SHIFT_SECONDS, drawShiftHud, drawTimeUp, makePops, abortShift } from './shift.js';
+import { planOf, drawShiftHud, drawTimeUp, makePops, abortShift } from './shift.js';
 import { play } from '../core/sound.js';
 import { JOBS } from '../game.js';
 import { burgarMeny } from './jobb-burgare.js';
@@ -557,6 +557,7 @@ function drawGauge(ctx, x, y, tid, tOk, tBrann) {
 export function makeJobbKok(A, { onDone } = {}) {
   const stats = { ok: 0, fel: 0, miss: 0, dricks: 0, dricksKr: 0, brand: 0 }; // dricksKr läggs på lönen (shift.js)
   const wage = JOBS.kok?.wage ?? 11;   // huvudagenten lägger in JOBS.kok i game.js
+  const P = planOf(A);   // passets plan: längd (P.seconds) och lapptakt (P.pace) efter vanan
   const walker = createWalker({ top: 92, bottom: FH - 5, spawn: [TRAY.x, STAND_Y] });
   walker.setObstacles([
     [ISL.x0, ISL.front + 1, ISL.x1, ISL.base],               // bänkön (kocken står bakom, som i pizzerian)
@@ -994,7 +995,7 @@ export function makeJobbKok(A, { onDone } = {}) {
       updParts(dt);
       if (done) { doneT += dt; if (doneT > 1.2 && !reported) { reported = true; onDone?.(stats); } return; }
       t += dt;
-      if (t >= SHIFT_SECONDS) { done = true; return; }
+      if (t >= P.seconds) { done = true; return; }
       walker.update(dt);
       if (workT > 0) workT -= dt;
       if (bellT > 0) bellT -= dt;
@@ -1026,10 +1027,10 @@ export function makeJobbKok(A, { onDone } = {}) {
         m.t += dt;
         if (m.t >= m.dur) { m.fas = 'klar'; play('ok'); pops.add(typ === 'lask' ? 170 : typ === 'shake' ? 206 : 240, 26, 'KLAR!', '#8ee03c'); }
       }
-      // nya beställningar på skenan
+      // nya beställningar på skenan (en van kock får fler lappar – P.pace; gästerna väntar lika länge)
       orderIn -= dt;
       if (orderIn <= 0) {
-        orderIn = 8.5 - 3.5 * Math.min(1, t / SHIFT_SECONDS) + hash(seq, 3) * 2.5;
+        orderIn = (8.5 - 3.5 * Math.min(1, t / P.seconds) + hash(seq, 3) * 2.5) * P.pace;
         spawnOrder(seq === 0 ? 0 : undefined);   // första lappen är alltid en vanlig burgare
       }
       // tålamodet rinner ut
@@ -1124,7 +1125,7 @@ export function makeJobbKok(A, { onDone } = {}) {
         ctx.globalAlpha = 1;
       }
       drawNextRow(ctx);
-      drawShiftHud(ctx, { W: FW }, { t, dur: SHIFT_SECONDS, ok: stats.ok, fel: stats.fel, title: 'BURGARKÖKET' });
+      drawShiftHud(ctx, { W: FW }, { t, dur: P.seconds, ok: stats.ok, fel: stats.fel, title: 'BURGARKÖKET' });
       if (done) drawTimeUp(ctx, { W: FW, H: FH });
     },
   };

@@ -19,11 +19,19 @@ onJob((ev) => {
   CUR?._recv(ev);
 });
 
-// 💼 Jobbinbjudningar: skickas till EN spelare (to), oavsett var hen är i staden
+// 💼 Jobbinbjudningar: skickas till EN spelare (to), oavsett var hen är i staden. sid = det
+// gemensamma passets id (bara de med samma sid ser varandra i jobbet), len/lvl = passets längd
+// och nivå – den som bjuder in bestämmer.
 export const onInvite = (cb) => { inviteCb = cb; };
-export const sendInvite = (toId, job, namn) => sendJob({ k: 'invite', to: String(toId), job: String(job), namn: String(namn || '').slice(0, 16) });
+export const sendInvite = (toId, job, namn, { sid = '', len = 'vanligt', lvl = 1 } = {}) => sendJob({
+  k: 'invite', to: String(toId), job: String(job), namn: String(namn || '').slice(0, 16),
+  sid: String(sid).replace(/[^a-z0-9]/g, '').slice(0, 12), len: len === 'langt' ? 'langt' : 'vanligt', lvl: Math.max(1, Math.min(5, lvl | 0 || 1)),
+});
 
-export function makeShiftCoop(A, key) {
+// base = jobbets nyckel ('away:jobbburgare'); passets id (A.coop.sid, js/jobs/shift.js) läggs
+// till – två par som jobbar ihop på samma ställe samtidigt hör aldrig varandras meddelanden.
+// (Id:t kan komma till mitt i passet: bjuder man in via 👥 blir ett ensamt pass gemensamt.)
+export function makeShiftCoop(A, base) {
   const started = Date.now();
   const mates = new Map(); // id → { start, slut, seen } (bara de som hälsat räknas i ledarvalet)
   const handlers = {};
@@ -31,7 +39,7 @@ export function makeShiftCoop(A, key) {
   let resigned = false; // mitt pass är slut – jag leder aldrig mer i detta skift
   const lastSnap = { id: null, t: 0 }; // vem som senast KÖRDE världen (aktiv ledare har företräde)
   const c = {
-    key,
+    get key() { return base + (A.coop?.sid ? '.' + A.coop.sid : ''); },
     get myId() { return worldMyId(); },
     // kollegorna: alla på samma ställe enligt världen (syns även som figurer i scenen)
     peers() { return worldFolksHere(A); },
@@ -64,7 +72,7 @@ export function makeShiftCoop(A, key) {
     // så att två inte kör var sin värld under anslutningsögonblicket
     get settled() { return mates.size > 0 || Date.now() - started > 2500; },
     on(t, cb) { handlers[t] = cb; },
-    send(m) { return sendJob({ k: key, ...m }); },
+    send(m) { return sendJob({ k: this.key, ...m }); },
     tick() {
       const now = Date.now();
       if (now - helloAt > 2000) { helloAt = now; this.send({ t: 'hej', start: started, slut: resigned ? 1 : 0 }); }
@@ -72,7 +80,7 @@ export function makeShiftCoop(A, key) {
       for (const id of [...mates.keys()]) if (!here.has(id)) mates.delete(id);
     },
     _recv({ from, m }) {
-      if (!m || m.k !== key || !from) return;
+      if (!m || m.k !== this.key || !from) return;
       if (m.t === 'hej') {
         const old = mates.get(from);
         mates.set(from, { start: Math.min(+m.start || Date.now(), old ? old.start : Infinity), slut: m.slut ? 1 : old?.slut || 0, seen: Date.now() });

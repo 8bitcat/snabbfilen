@@ -10,7 +10,7 @@
 // som rör sig ritas varje bildruta. Ett pixelkorn: heltal, skala 1.
 import { Pix, SMALL, BIG, ctxText, textW, text, mix, mul, css, hash, bayer } from '../core/floor-pix.js';
 import { createWalker, selfDrawable, folkDrawables, WALK_SEQ } from '../scenes/walkable.js';
-import { SHIFT_SECONDS, drawShiftHud, drawTimeUp, makePops, abortShift } from './shift.js';
+import { planOf, drawShiftHud, drawTimeUp, makePops, abortShift } from './shift.js';
 import { drawPerson } from '../core/people.js';
 import { play } from '../core/sound.js';
 
@@ -996,13 +996,14 @@ function xraySprite(body) {
 
 export function makeJobbFlyg(A, { onDone }) {
   const stats = { ok: 0, fel: 0, miss: 0 };
+  const P = planOf(A);   // passets plan: längd (P.seconds), väsktakt (P.pace), speltid (P.gameMin)
   const walker = createWalker({ top: BELT_Y + 16, bottom: FH - 26, spawn: [190, 130] });
   walker.setObstacles([[WET.x, WET.y - 6, WET.x + 17, WET.y], [CAGE.x, CAGE.y - 8, CAGE.x + 36, CAGE.y], [KIOSK.x, KIOSK.y - 6, KIOSK.x + 13, KIOSK.y]]);
   const pops = makePops();
   let items = [], t = 0, seq = 0, spawnIn = 1.0, carry = null, done = false, doneT = 0, reported = false;
-  const speed = () => 20 + 14 * Math.min(1, t / SHIFT_SECONDS);
+  const speed = () => 20 + 14 * Math.min(1, t / P.seconds);
   const startMin = A.game?.min ?? 12 * 60;
-  const mode = viewMode(((startMin + 120) / 60) % 24);
+  const mode = viewMode(((startMin + P.gameMin / 2) / 60) % 24);   // ljuset mitt i passet
   const night = mode === 'natt';
   const G = art(mode);
   // bara för syns skull: bandets läge, vagnarnas last, trafiken ute, personalen
@@ -1132,8 +1133,8 @@ export function makeJobbFlyg(A, { onDone }) {
     // panelens lampor
     ctx.fillStyle = '#5aff8a'; ctx.fillRect(18, 26, 2, 2);
     ctx.fillStyle = Math.floor(t * 1.5) % 2 ? '#ffb020' : '#5a4010'; ctx.fillRect(18, 30, 2, 2);
-    // klockan: passet är fyra timmar
-    const m = startMin + (Math.min(t, SHIFT_SECONDS) / SHIFT_SECONDS) * 240;
+    // klockan: passet är fyra timmar (ett längre pass sex – P.gameMin)
+    const m = startMin + (Math.min(t, P.seconds) / P.seconds) * P.gameMin;
     const ma = ((m % 60) / 60) * Math.PI * 2, ha = (((m / 60) % 12) / 12) * Math.PI * 2;
     ctx.fillStyle = '#2a2c30';
     pline(ctx, CLOCK.x, CLOCK.y, CLOCK.x + Math.sin(ha) * 2.4, CLOCK.y - Math.cos(ha) * 2.4);
@@ -1203,13 +1204,13 @@ export function makeJobbFlyg(A, { onDone }) {
       updateVisuals(dt);
       if (done) { doneT += dt; if (doneT > 1.2 && !reported) { reported = true; onDone(stats); } return; }
       t += dt;
-      if (t >= SHIFT_SECONDS) { done = true; return; }
+      if (t >= P.seconds) { done = true; return; }
       walker.update(dt);
       beltOff += speed() * dt;
       if (beltOff > 1e6) beltOff -= 64 * 15625;
       spawnIn -= dt;
       if (spawnIn <= 0) {
-        spawnIn = 2.4 - 1.0 * Math.min(1, t / SHIFT_SECONDS) + hash(seq, 9) * 0.5;
+        spawnIn = (2.4 - 1.0 * Math.min(1, t / P.seconds) + hash(seq, 9) * 0.5) * P.pace;   // tätare med vanan
         items.push({ cat: (Math.random() * 4) | 0, body: CASE_COLORS[(hash(seq, 31) * CASE_COLORS.length) | 0], x: -12 });
         seq++;
       }
@@ -1265,7 +1266,7 @@ export function makeJobbFlyg(A, { onDone }) {
       ctx.drawImage(G.fore, 0, 0);
       if (carry) drawCase(ctx, carry, walker.px, walker.py - 46);
       pops.draw(ctx);
-      drawShiftHud(ctx, { W: FW }, { t, dur: SHIFT_SECONDS, ok: stats.ok, fel: stats.fel, title: 'FLYGPLATSEN' });
+      drawShiftHud(ctx, { W: FW }, { t, dur: P.seconds, ok: stats.ok, fel: stats.fel, title: 'FLYGPLATSEN' });
       if (done) drawTimeUp(ctx, { W: FW, H: FH });
     },
   };

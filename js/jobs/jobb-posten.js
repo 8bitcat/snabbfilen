@@ -15,7 +15,7 @@
 // heltal, skala 1.
 import { Pix, SMALL, BIG, ctxText, textW, text, mix, mul, css, hash, bayer } from '../core/floor-pix.js';
 import { createWalker, selfDrawable, folkDrawables, WALK_SEQ } from '../scenes/walkable.js';
-import { SHIFT_SECONDS, drawShiftHud, drawTimeUp, makePops, abortShift } from './shift.js';
+import { planOf, drawShiftHud, drawTimeUp, makePops, abortShift } from './shift.js';
 import { drawPerson, makeLook } from '../core/people.js';
 import { play } from '../core/sound.js';
 
@@ -938,6 +938,9 @@ function drawAvi(ctx, ix, iy, num) {
 
 export function makeJobbPosten(A, { onDone }) {
   const stats = { ok: 0, fel: 0, miss: 0, sorterat: 0, kunder: 0, omtaliga: 0, krasch: 0 };
+  // passets plan: längd (P.seconds), takt på bandet och vid disken (P.pace), speltid (P.gameMin).
+  // Disken har inga fler kundplatser – nummerautomaten och frimärksautomaten står på var sida.
+  const P = planOf(A);
   const G = art();
   const walker = createWalker({ top: WALK_TOP, bottom: WALK_BOT, spawn: [150, 118] });
   walker.setObstacles([[SCALE.colX + 5, SCALE.y0 + 1, SCALE.colX + 9, SCALE.y0 + 7]]);
@@ -962,7 +965,7 @@ export function makeJobbPosten(A, { onDone }) {
   for (let i = 0; i < shelf.length; i++) if (hash(i, 7, 90) < 0.78) shelf[i] = newParcel();
   let customers = [];
 
-  const beltSpeed = () => 15 + 10 * Math.min(1, t / SHIFT_SECONDS);
+  const beltSpeed = () => 15 + 10 * Math.min(1, t / P.seconds);
   function makeItem(opts = {}) {
     let kind = opts.kind;
     if (!kind) { let r = Math.random(), acc = 0; kind = KIND_IDS.find((k) => (acc += KINDS[k].p) >= r) || 'paketS'; }
@@ -1054,7 +1057,7 @@ export function makeJobbPosten(A, { onDone }) {
       // lägg en försändelse mitt på bandet: region 0–4 (VÄSTER, NORR, SÖDER, ÖSTER, UTRIKES), kind se KINDS
       forceItem(reg, kind, x = 120) { const it = makeItem({ reg, kind }); it.x = x; items.push(it); items.sort((a, b) => a.x - b.x); return { reg: it.reg, kind: it.kind, fragile: it.fragile }; },
       // hoppa fram i passet (sekunder) – för att testa slutet
-      skip(s) { t = Math.min(SHIFT_SECONDS - 0.05, t + s); return t; },
+      skip(s) { t = Math.min(P.seconds - 0.05, t + s); return t; },
       items: () => items.map((it) => ({ reg: it.reg, kind: it.kind, x: Math.round(it.x), fragile: it.fragile })),
       pickItem(i = 0) { const it = items[i]; if (!it) return null; carry = null; pickFromBelt(it); return { reg: it.reg, kind: it.kind, fragile: it.fragile }; },
       // lägg en ny försändelse direkt i händerna (som forcePlate + pickPlate i burgarbaren)
@@ -1108,7 +1111,7 @@ export function makeJobbPosten(A, { onDone }) {
       updateFx(dt);
       if (done) { doneT += dt; if (doneT > 1.2 && !reported) { reported = true; onDone(stats); } return; }
       t += dt;
-      if (t >= SHIFT_SECONDS) { done = true; return; }
+      if (t >= P.seconds) { done = true; return; }
       const moving = walker.update(dt);
       if (!walker.path.length && run) setRun(false);
       // spring med ömtåligt → det skakar sönder
@@ -1128,7 +1131,7 @@ export function makeJobbPosten(A, { onDone }) {
         else {
           items.unshift(nextItem);
           nextItem = makeItem();
-          spawnIn = 3.3 - 1.1 * Math.min(1, t / SHIFT_SECONDS) + Math.random() * 0.7;
+          spawnIn = (3.3 - 1.1 * Math.min(1, t / P.seconds) + Math.random() * 0.7) * P.pace;
         }
       }
       const sp = beltSpeed() * dt;
@@ -1144,10 +1147,10 @@ export function makeJobbPosten(A, { onDone }) {
         play('miss');
         pops.add(BIN.x0 + 12, 58, it.fragile ? 'KRASCH!' : 'RETUR!', it.fragile ? '#ff6a6a' : '#d8d2c0');
       }
-      // kunder vid utlämningen
+      // kunder vid utlämningen (fler med vanan – P.pace; de väntar lika länge)
       custIn -= dt;
       if (custIn <= 0) {
-        custIn = 12 - 3 * Math.min(1, t / SHIFT_SECONDS) + Math.random() * 4;
+        custIn = (12 - 3 * Math.min(1, t / P.seconds) + Math.random() * 4) * P.pace;
         if (addCustomer(false)) play('door');
       }
       for (const k of customers) {
@@ -1285,7 +1288,7 @@ export function makeJobbPosten(A, { onDone }) {
       for (const s of shards) if (!s.landed) { ctx.fillStyle = s.c; ctx.fillRect(Math.round(s.x), Math.round(s.y), 1, 1); }
       drawBubbles(ctx);
       pops.draw(ctx);
-      drawShiftHud(ctx, { W: FW }, { t, dur: SHIFT_SECONDS, ok: stats.ok, fel: stats.fel, title: 'POSTEN' });
+      drawShiftHud(ctx, { W: FW }, { t, dur: P.seconds, ok: stats.ok, fel: stats.fel, title: 'POSTEN' });
       if (t < 7 && !done) drawHint(ctx);
       if (done) drawTimeUp(ctx, { W: FW, H: FH });
     },
@@ -1362,7 +1365,7 @@ export function makeJobbPosten(A, { onDone }) {
       ctx.fillStyle = '#d8dce2'; ctx.fillRect(x + ph, 87, 1, 1);
     }
   }
-  function beltOffset() { return t * (15 + 5 * Math.min(1, t / SHIFT_SECONDS)); }
+  function beltOffset() { return t * (15 + 5 * Math.min(1, t / P.seconds)); }
   function drawLaser(ctx) {
     const flick = 0.55 + 0.3 * Math.sin(clk * 40);
     ctx.fillStyle = `rgba(255,60,50,${(0.25 * flick).toFixed(2)})`;
@@ -1423,8 +1426,8 @@ export function makeJobbPosten(A, { onDone }) {
     if (Math.floor(clk * 1.5) % 2) { ctx.fillStyle = '#5ad0a0'; ctx.fillRect(371, 40, 5, 1); ctx.fillRect(371, 42, 3, 1); }
   }
   function drawLive(ctx) {
-    // klockan: passet är fyra timmar
-    const m = startMin + (Math.min(t, SHIFT_SECONDS) / SHIFT_SECONDS) * 240;
+    // klockan: passet är fyra timmar (ett längre pass sex – P.gameMin)
+    const m = startMin + (Math.min(t, P.seconds) / P.seconds) * P.gameMin;
     const ma = ((m % 60) / 60) * Math.PI * 2, ha = (((m / 60) % 12) / 12) * Math.PI * 2;
     ctx.fillStyle = '#2a2c30';
     pline(ctx, CLOCK.x, CLOCK.y, CLOCK.x + Math.sin(ha) * 2.6, CLOCK.y - Math.cos(ha) * 2.6);

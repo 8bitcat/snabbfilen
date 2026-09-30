@@ -30,10 +30,9 @@
 import { Pix, SMALL, BIG, ctxText, textW, text, mix, mul, css, hash, bayer } from '../core/floor-pix.js';
 import { createWalker, folkDrawables, emoteBubble, WALK_SEQ, createSpeech, sayLines } from '../scenes/walkable.js';
 import { worldMyEmote } from '../net/world.js';
-import { SHIFT_SECONDS, drawShiftHud, drawTimeUp, makePops, abortShift } from './shift.js';
+import { planOf, drawShiftHud, drawTimeUp, makePops, abortShift } from './shift.js';
 import { drawPerson, makeLook } from '../core/people.js';
 import { play } from '../core/sound.js';
-import { levelOf } from '../game.js';
 
 const FW = 384, FH = 216;
 const XL = -32, XR = 416, WW = XR - XL;      // hela lokalen i världskoordinater (kärnan = 0–384)
@@ -817,8 +816,9 @@ function bubble(ctx, cx, tip, iw, ih, hot = false, edge = null, bx = null) {
 export function makeJobbVard(A, { onDone } = {}) {
   const stats = { ok: 0, fel: 0, miss: 0, boxes: 0, patienter: 0, akut: 0, felrum: 0 };
   const G = art();
-  const lvl = levelOf(A.game?.jobs?.vard || 0);
-  const pace = 1 - 0.05 * (lvl - 1);                 // högre nivå = fler patienter
+  // passets plan (shift.js): längd (P.seconds), speltid (P.gameMin) och P.pace – högre nivå =
+  // tätare mellan patienterna. Inga extra stolar: de 16 i sittgrupperna räcker även i högsta takt.
+  const P = planOf(A);
   const startMin = A.game?.min ?? 10 * 60;
   const myLook = { ...(A.avatar?.look || {}), neck: 'lanyard', neckColor: '#3aa050' };
   const pops = makePops();
@@ -861,7 +861,7 @@ export function makeJobbVard(A, { onDone } = {}) {
   // ---------- patienterna ----------
   function newPatient(sym, { seated = false, akut = false } = {}) {
     const s = SYMS[sym], isAkut = akut || !!s.akut;
-    const prog = Math.min(1, t / SHIFT_SECONDS);
+    const prog = Math.min(1, t / P.seconds);
     const pmax = isAkut ? 17 : 36 - 10 * prog;
     const p = {
       id: seq++, look: makeLook(), sym, akut: isAkut, num: null, state: 'in', w: mkWalker(ENTRY.cx, 110),
@@ -1184,8 +1184,8 @@ export function makeJobbVard(A, { onDone } = {}) {
       else ctxText(ctx, BIG, nuNo, NU.x0 + 17, NU.y0 + 3, '#ff4a2a');
       ctxText(ctx, SMALL, String(nuWin + 1), NU.x0 + 28, NU.y0 + 11, '#ffb02a');
     } else if (!nuNo) ctxText(ctx, BIG, '---', NU.x0 + 17, NU.y0 + 3, '#5a1a10');
-    // klockan: passet är fyra timmar
-    const m = startMin + (Math.min(t, SHIFT_SECONDS) / SHIFT_SECONDS) * 240;
+    // klockan: passet är fyra timmar (ett längre pass sex – P.gameMin)
+    const m = startMin + (Math.min(t, P.seconds) / P.seconds) * P.gameMin;
     hand(ctx, ((m / 60) % 12) / 12, 3, '#2a2c30'); hand(ctx, (m % 60) / 60, 5, '#4a4e56');
     ctx.fillStyle = '#d8342c'; ctx.fillRect(CLOCK.x, CLOCK.y, 1, 1);
     // dörrarna som står öppna: rummet innanför och personalen i dörren
@@ -1327,7 +1327,7 @@ export function makeJobbVard(A, { onDone } = {}) {
       giveUp(id) { const p = patients.find((q) => (id === undefined || q.id === id) && (q.state === 'wait' || q.state === 'desk')); if (!p) return null; if (p.state === 'wait') p.pat = 0; else p.deskPat = 0; api.update(0.001); return stats; },
       // en patient kommer in genom entrén på riktigt (akut = med ambulansen utanför); returnerar id
       komIn(akut = false) { const p = spawn(!!akut); return p ? p.id : null; },
-      skip(s) { t = Math.min(SHIFT_SECONDS - 0.05, t + s); return t; },
+      skip(s) { t = Math.min(P.seconds - 0.05, t + s); return t; },
       auto(on = true) { autoSpawn = !!on; return autoSpawn; },
       clear() { for (const p of patients) { freeSeat(p); freeWin(p); } patients = []; return 0; },
       player: () => ({ x: Math.round(walker.px), y: Math.round(walker.py), win: myWin(), path: walker.path.length }),
@@ -1360,7 +1360,7 @@ export function makeJobbVard(A, { onDone } = {}) {
       updateWorld(dt);
       if (done) { doneT += dt; if (doneT > 1.2 && !reported) { reported = true; onDone?.(stats); } return; }
       t += dt;
-      if (t >= SHIFT_SECONDS) { done = true; return; }
+      if (t >= P.seconds) { done = true; return; }
       walker.update(dt);
       updatePatients(dt);
       hintT = wins.some((p) => p && p.state === 'desk') ? hintT + dt : 0;
@@ -1368,15 +1368,15 @@ export function makeJobbVard(A, { onDone } = {}) {
       // nya patienter: tätare mot slutet av passet
       spawnIn -= dt;
       if (spawnIn <= 0) {
-        const prog = Math.min(1, t / SHIFT_SECONDS);
+        const prog = Math.min(1, t / P.seconds);
         spawn(false);
-        spawnIn = (4.4 - 1.6 * prog + R() * 1.4) * pace;
+        spawnIn = (4.4 - 1.6 * prog + R() * 1.4) * P.pace;
       }
       // akutfall: minst ett per pass, sedan ibland
       akutIn -= dt;
       if (akutIn <= 0) {
         if (!patients.some((p) => p.akut && p.state !== 'enter')) spawn(true);
-        akutIn = (akutSpawned ? 16 : 6) + R() * 12;
+        akutIn = ((akutSpawned ? 16 : 6) + R() * 12) * P.pace;
       }
     },
     down(sx, sy) { handleDown(sx - ox(), sy - camY()); },
@@ -1414,7 +1414,7 @@ export function makeJobbVard(A, { onDone } = {}) {
       // (från raden ovanför: beskärningen avrundas, så en bråkdel av den raden syns)
       const sy = A.view?.safe?.y0 | 0;
       if (sy > 0) { ctx.fillStyle = '#17151a'; ctx.fillRect(0, sy - 1, vw, HUD_H + 1); }
-      drawShiftHud(ctx, { W: vw }, { t, dur: SHIFT_SECONDS, ok: stats.ok, fel: stats.fel, title: 'VÅRDCENTRALEN' });
+      drawShiftHud(ctx, { W: vw }, { t, dur: P.seconds, ok: stats.ok, fel: stats.fel, title: 'VÅRDCENTRALEN' });
       if (!done) drawHint(ctx, vw, o);
       if (done) drawTimeUp(ctx, { W: vw, H: FH });
     },

@@ -14,7 +14,7 @@
 import { drawPerson, makeLook } from '../core/people.js';
 import { Pix, SMALL, BIG, ctxText, textW, text, mix, mul, css, hash, bayer, hex } from '../core/floor-pix.js';
 import { createWalker, selfDrawable, folkDrawables, WALK_SEQ } from '../scenes/walkable.js';
-import { SHIFT_SECONDS, drawShiftHud, drawTimeUp, makePops, abortShift } from './shift.js';
+import { planOf, drawShiftHud, drawTimeUp, makePops, abortShift } from './shift.js';
 import { play } from '../core/sound.js';
 import { JOBS } from '../game.js';
 
@@ -594,6 +594,9 @@ function rope(ctx, ax, ay, bx, by, sag, thick = false) {
 
 export function makeJobbBensin(A, { onDone }) {
   const stats = { ok: 0, fel: 0, miss: 0, bilar: 0, kiosk: 0, spill: 0 };
+  // passets plan: längd (P.seconds) och takt på bilar och kunder (P.pace). Inga extra platser:
+  // en fjärde pumpö skulle kräva ny grafik, och kioskdisken rymmer bara tre kunder.
+  const P = planOf(A);
   const walker = createWalker({ top: 88, bottom: 188, left: 4, right: 380, spawn: [58, SERVE_Y] });
   walker.speed = 76;                                 // macken är större än burgarbaren – lite raskare steg
   const pops = makePops();
@@ -695,7 +698,7 @@ export function makeJobbBensin(A, { onDone }) {
     wash = wash ?? Math.random() < 0.35;
     const s = KINDS[kind], el = fuel === 'EL';
     const color = kind === 'skap' && Math.random() < 0.5 ? 0xeceef0 : CAR_COLORS[(Math.random() * CAR_COLORS.length) | 0];
-    const pmax = 31 - 6 * Math.min(1, t / SHIFT_SECONDS);
+    const pmax = 31 - 6 * Math.min(1, t / P.seconds);
     const c = {
       id: seq++, kind, s, isl: I.i, need: { fuel, wash }, fuelDone: false, washDone: false,
       fill: 0.08 + Math.random() * 0.34, charge: 0.12 + Math.random() * 0.3, plug: null,
@@ -882,7 +885,7 @@ export function makeJobbBensin(A, { onDone }) {
   function addCust(wish, placed = false) {
     const i = freeSpot();
     if (i < 0) return null;
-    const pmax = 25 - 5 * Math.min(1, t / SHIFT_SECONDS);
+    const pmax = 25 - 5 * Math.min(1, t / P.seconds);
     const x = KSPOTS[i];
     const k = { id: seq++, look: makeLook(), spot: i, wish: wish ?? ITEMS[(Math.random() * 3) | 0], patience: pmax, pmax, got: null,
       dir: placed ? 'up' : 'right', x: placed ? x : -12, y: placed ? KY : ENTRY_Y, state: placed ? 'wait' : 'in', path: placed ? [] : [[x, ENTRY_Y], [x, KY]] };
@@ -1160,7 +1163,7 @@ export function makeJobbBensin(A, { onDone }) {
       pops.update(dt);
       if (done) { doneT += dt; if (doneT > 1.2 && !reported) { reported = true; onDone(stats); } return; }
       t += dt;
-      if (t >= SHIFT_SECONDS) { done = true; busy = null; return; }
+      if (t >= P.seconds) { done = true; busy = null; return; }
       // det jag håller på med just nu låser mig på platsen
       if (busy) {
         busy.t += dt;
@@ -1174,12 +1177,12 @@ export function makeJobbBensin(A, { onDone }) {
       } else walker.update(dt);
       // slangen räcker inte längre än så här
       if (carry && (carry.k === 'noz' || carry.k === 'kabel') && !hoseOk(walker.px, walker.py)) { returnCarry(); play('slide'); }
-      // nya bilar och kunder
-      const prog = Math.min(1, t / SHIFT_SECONDS);
+      // nya bilar och kunder (tätare med vanan – P.pace; tålamodet är detsamma)
+      const prog = Math.min(1, t / P.seconds);
       carIn -= dt;
-      if (carIn <= 0) carIn = spawnCar() ? 6.8 - 2.6 * prog + Math.random() * 1.8 : 0.6;
+      if (carIn <= 0) carIn = spawnCar() ? (6.8 - 2.6 * prog + Math.random() * 1.8) * P.pace : 0.6;
       custIn -= dt;
-      if (custIn <= 0) { const k = addCust(); custIn = k ? 7.5 - 2.8 * prog + Math.random() * 2 : 1; if (k) play('door'); }
+      if (custIn <= 0) { const k = addCust(); custIn = k ? (7.5 - 2.8 * prog + Math.random() * 2) * P.pace : 1; if (k) play('door'); }
       // bilarna
       for (const c of cars) {
         if (c.state === 'in' || c.state === 'out') moveCar(c, dt);
@@ -1297,7 +1300,7 @@ export function makeJobbBensin(A, { onDone }) {
         ctx.fillStyle = '#3a8ad8'; ctx.fillRect(ix + 2, iy + 14, Math.max(1, Math.round(14 * p)), 2);
       }
       pops.draw(ctx);
-      drawShiftHud(ctx, { W: FW }, { t, dur: SHIFT_SECONDS, ok: stats.ok, fel: stats.fel, title: 'BENSINMACKEN' });
+      drawShiftHud(ctx, { W: FW }, { t, dur: P.seconds, ok: stats.ok, fel: stats.fel, title: 'BENSINMACKEN' });
       if (done) drawTimeUp(ctx, { W: FW, H: FH });
     },
   };

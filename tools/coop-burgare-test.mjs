@@ -1,5 +1,7 @@
 // JOBBA TILLSAMMANS i Burgarbaren: två riktiga webbläsare i samma värld.
-// Kollar: kollegan syns i jobbscenen, exakt EN skiftledare (senioritet), ledarens
+// Kollar: jobbar man var för sig på samma ställe ser man INTE varandra (egna pass);
+// den vana (Kalle, Proffs) bjuder in nybörjaren (Julia) till ett LÄNGRE pass på sin nivå
+// via startdialogens 💼 Jobba ihop; kollegan syns i jobbscenen, exakt EN skiftledare (senioritet), ledarens
 // tallrikar dyker upp hos medarbetaren, medarbetaren kan plocka en tallrik
 // (önskemål → ledaren tar bort den hos sig) och servera en kund – och det är
 // SERVITÖREN som får poängen, inte ledaren.
@@ -24,7 +26,7 @@ async function boot(name) {
   await p.evaluate((n) => {
     localStorage.clear();
     localStorage.setItem('snabbfilen_avatar', JSON.stringify({ id: n.toLowerCase(), name: n, look: { skin: '#eabf98', shirt: n === 'Kalle' ? '#3a78d8' : '#d84a8a' }, color: '#3a78d8' }));
-    localStorage.setItem('snabbfilen_save1', JSON.stringify({ v: 1, day: 3, min: 600, money: 500, hunger: 70, energy: 90, home: 'rum', fridge: {}, jobs: { burgare: 2 }, earned: 0, wardrobe: [], storage: [], deco: {}, won: false }));
+    localStorage.setItem('snabbfilen_save1', JSON.stringify({ v: 1, day: 3, min: 600, money: 500, hunger: 70, energy: 90, home: 'rum', fridge: {}, jobs: { burgare: n === 'Kalle' ? 6 : 0 }, earned: 0, wardrobe: [], storage: [], deco: {}, won: false }));
   }, name);
   await p.reload();
   await p.waitForFunction(() => !!window.SF?.game, null, { timeout: 20000 });
@@ -32,17 +34,49 @@ async function boot(name) {
 }
 const D = (p, expr) => p.evaluate(`(() => { const D = SF.scene?._debug; return D ? (${expr}) : null; })()`);
 
+const clickBtn = (p, re) => p.evaluate((src) => { const r = new RegExp(src); for (const b of document.querySelectorAll('#modal button')) if (r.test(b.textContent)) { b.click(); return true; } return false; }, re.source);
+const startFlow = (p) => p.evaluate(async () => { const m = await import('/js/jobs/shift.js'); m.startJobFlow(SF, 'burgare', 'jobbburgare'); });
 const A = await boot('Kalle');
 const okOnline1 = await until(() => A.evaluate(() => SF.worldInfo().open), 25000, 500);
 ok(!!okOnline1, 'Kalle är uppkopplad i världen (värd eller klient)');
-await A.evaluate(() => SF.go('jobbburgare', { onDone: () => SF.go('city') }));
-await A.waitForFunction(() => !!SF.scene?._debug?.coop, null, { timeout: 10000 });
-
 const B = await boot('Julia');
 const both = await until(() => B.evaluate(() => SF.worldInfo().online === 2), 30000, 500);
 ok(!!both, 'två spelare i samma värld');
+
+// 0. VAR FÖR SIG: Julia jobbar sitt eget pass, Kalle börjar ett eget – ingen dyker upp hos den andra
 await B.evaluate(() => SF.go('jobbburgare', { onDone: () => SF.go('city') }));
-await B.waitForFunction(() => !!SF.scene?._debug?.coop, null, { timeout: 10000 });
+await startFlow(A);
+await until(() => A.evaluate(() => /Vanligt pass/.test(document.querySelector('#modal')?.textContent || '') ? 1 : 0), 5000, 200);
+const flowTxt = await A.evaluate(() => document.querySelector('#modal').textContent);
+ok(/Längre pass/.test(flowTxt) && /Jobba ihop/.test(flowTxt), 'Kalle (Proffs) väljer vanligt eller längre pass – och kan jobba ihop');
+await clickBtn(A, /Vanligt pass/);
+await A.waitForFunction(() => SF.sceneName === 'jobbburgare' && !!SF.scene?._debug?.coop, null, { timeout: 10000 });
+await new Promise((r) => setTimeout(r, 5000));
+const soloA = await D(A, 'D.coop()'), soloB = await D(B, 'D.coop()');
+const seeA = await A.evaluate(() => SF.worldFolksHere().length), seeB = await B.evaluate(() => SF.worldFolksHere().length);
+ok(soloA?.mates === 0 && soloB?.mates === 0 && seeA === 0 && seeB === 0 && soloA.leader && soloB.leader, `var för sig: ingen ser den andra i Burgarbaren (${seeA}/${seeB}) – båda kör sitt eget pass`);
+const bordSolo = (await D(A, 'D.lag()'))?.bord, bordNy = (await D(B, 'D.lag()'))?.bord;
+const durA = await A.evaluate(() => SF.shiftPlan?.seconds);
+ok(bordSolo === 6 && bordNy === 4 && durA === 70, `Proffset har 6 bord och ${durA} s pass, nybörjaren 4 bord (${bordSolo}/${bordNy})`);
+await A.evaluate(() => { SF.shiftJob = null; SF.shiftPlan = null; SF.coop = null; SF.go('city'); });
+await B.evaluate(() => SF.go('city'));
+await new Promise((r) => setTimeout(r, 800));
+
+// 1. IHOP: Kalle bjuder in Julia till ett LÄNGRE pass via startdialogens 💼 Jobba ihop
+await startFlow(A);
+await until(() => A.evaluate(() => /Jobba ihop/.test(document.querySelector('#modal')?.textContent || '') ? 1 : 0), 5000, 200);
+await clickBtn(A, /Jobba ihop/);
+await until(() => A.evaluate(() => document.querySelector('#modal [data-bjud]') ? 1 : 0), 5000, 200);
+await A.evaluate(() => document.querySelector('#modal [data-len="langt"]')?.click());
+await A.evaluate(() => document.querySelector('#modal [data-bjud]')?.click());
+await A.waitForFunction(() => SF.sceneName === 'jobbburgare' && !!SF.scene?._debug?.coop, null, { timeout: 10000 });
+const inv1 = await until(() => B.evaluate(() => { const el = document.getElementById('modal'); return el && !el.classList.contains('hidden') && /Jobba ihop/.test(el.textContent) ? el.textContent : ''; }), 10000, 300);
+ok(/längre pass/.test(inv1 || ''), `Julia får inbjudan till ett längre pass (${(inv1 || '').replace(/\s+/g, ' ').slice(0, 70)})`);
+await clickBtn(B, /Häng med/);
+await B.waitForFunction(() => SF.sceneName === 'jobbburgare' && !!SF.scene?._debug?.coop, null, { timeout: 10000 });
+const planB = await B.evaluate(() => ({ ...SF.shiftPlan, sid: SF.coop?.sid })), planA = await A.evaluate(() => ({ ...SF.shiftPlan, sid: SF.coop?.sid }));
+ok(planB.len === 'langt' && planB.lvl === 3 && planB.seconds === planA.seconds && planA.seconds === 104 && planB.sid && planB.sid === planA.sid,
+  `Julia (nybörjare) jobbar på Kalles nivå och passlängd: ${planB.lvl}, ${planB.len}, ${planB.seconds} s, samma pass ${planB.sid}`);
 
 const synced = await until(async () => {
   const a = await D(A, 'D.coop()'), b = await D(B, 'D.coop()');
@@ -55,6 +89,10 @@ let L = A, G = B, ln = 'Kalle', gn = 'Julia';
 if (synced && synced.b.leader && !synced.a.leader) { L = B; G = A; ln = 'Julia'; gn = 'Kalle'; }
 ok(synced && (synced.a.leader !== synced.b.leader), `exakt EN skiftledare (${ln} leder – var först in)`);
 
+// köket står still under diskproven (en van ledare har fullt ös – annars kan köket ställa en ny
+// likadan tallrik på samma plats innan provet hinner se att den gamla är borta)
+await L.evaluate(() => { SF.shiftPlan.pace = 60; });
+await new Promise((r) => setTimeout(r, 3500));
 await D(L, 'D.forcePlate(2)');
 const sees = await until(async () => { const pl = await D(G, 'D.plates()'); return pl && pl.some((p) => p.d === 2) ? pl : null; }, 6000, 300);
 ok(!!sees, `${gn} ser ledarens tallrik på disken inom någon sekund`);
@@ -101,17 +139,19 @@ if (cust) {
   }
 }
 
-// 💼 inbjudan: medarbetaren går hem till stan, ledaren bjuder in – dialog + Häng med!
-await G.evaluate(() => SF.go('city'));
+// 💼 inbjudan mitt i passet (👥): medarbetaren går hem till stan, ledaren bjuder in igen – dialog + Häng med!
+await G.evaluate(() => { SF.shiftJob = null; SF.shiftPlan = null; SF.coop = null; SF.go('city'); });
 await new Promise((r) => setTimeout(r, 700));
 const gId = await G.evaluate(() => SF.worldInfo().myId);
-await L.evaluate(async (to) => { const m = await import('/js/net/coop.js'); m.sendInvite(to, 'burgare', SF.game ? (JSON.parse(localStorage.getItem('snabbfilen_avatar')) || {}).name : ''); }, gId);
+await L.evaluate(async (to) => { const m = await import('/js/jobs/shift.js'); m.inviteToShift(SF, to); }, gId);
 const invited = await until(() => G.evaluate(() => { const el = document.getElementById('modal'); return el && !el.classList.contains('hidden') && /Jobba ihop/.test(el.textContent) ? 1 : 0; }), 8000, 300);
 ok(!!invited, `${gn} får inbjudan i en dialog ("Jobba ihop?")`);
 if (invited) {
   await G.evaluate(() => { for (const b of document.querySelectorAll('#modal button')) if (/Häng med/.test(b.textContent)) { b.click(); break; } });
   const joined = await until(() => G.evaluate(() => (SF.sceneName === 'jobbburgare' ? 1 : 0)), 8000, 300);
   ok(!!joined, `"Häng med!" tar ${gn} rakt in på passet`);
+  const back = await until(async () => { const c = await D(G, 'D.coop()'); return c && c.mates === 1 ? c : null; }, 12000, 400);
+  ok(!!back, `${gn} är tillbaka i SAMMA pass (ser ${ln} igen)`);
 }
 
 // LEDARBYTE (osynk-fixen): ledaren lämnar – medarbetaren tar över inom sekunder,

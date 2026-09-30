@@ -2,7 +2,7 @@
 // scener för staden/rummet/jobben, DOM-HUD överst och en vanlig rAF-loop.
 import { loadAvatar, openAvatarPicker, avatarPortrait, setAvatarWardrobe, setAvatarSalon } from './core/avatar.js';
 import { openModal, closeModal, toast, modalOpen, esc } from './core/ui.js';
-import { onInvite, sendInvite } from './net/coop.js';
+import { onInvite } from './net/coop.js';
 import { Game, SAVE_KEY, WIN_MONEY, JOBS, JOB_TITLES, levelOf, fmt, clock } from './game.js';
 import { makeCity } from './scenes/city.js';
 import { makeApartment } from './scenes/apartment.js'; // hemmet: den löpande lägenheten (rummen i rad, room.js per rum)
@@ -34,7 +34,7 @@ import { makeJobbIncheck } from './jobs/jobb-incheck.js';
 import { makeShopLeksaker } from './scenes/shop-leksaker.js';
 import { makeShopDjur } from './scenes/shop-djur.js';
 import { makeShopNarbutik } from './scenes/shop-narbutik.js';
-import { startJobFlow, startShiftNow } from './jobs/shift.js';
+import { startJobFlow, startShiftNow, inviteToShift, COOP_JOBS } from './jobs/shift.js';
 import { openFoodShop } from './shops/matbutik.js';
 import { openHousing } from './shops/bostad.js';
 import { startWorld, worldTick, worldInfo, playersList, visitPlayer, sendEmote, sendSay, worldFolksHere, playerName } from './net/world.js';
@@ -483,16 +483,21 @@ function placeOf(p, info) {
     if (owner === info.myId) return '🏠 hemma hos dig!';
     return `🏠 hos ${playerName(owner) || 'en kompis'}`;
   }
-  return PLACE_AWAY[s.slice(5)] || '💼 upptagen';
+  return PLACE_AWAY[s.slice(5).split('.')[0]] || '💼 upptagen';
 }
-// 💼 Jobbinbjudan: en kompis vill jobba ihop – fråga snällt och häng med
-onInvite((m) => {
-  if (!m || m.to !== worldInfo().myId || String(m.job) !== 'burgare') return;
-  if (modalOpen()) return; // stör inte mitt i en dialog – kompisen kan bjuda igen
+// 💼 Jobbinbjudan: en kompis vill jobba ihop – fråga snällt och häng med. Man hamnar i
+// kompisens pass (sid) med kompisens nivå och passlängd.
+onInvite((m, from) => {
+  const job = String(m?.job || '');
+  if (!m || m.to !== worldInfo().myId || !COOP_JOBS.has(job) || !JOBS[job] || !ENGINES[job] || !m.sid) return;
   const namn = esc(String(m.namn || 'En kompis').slice(0, 16));
+  if (A.shiftJob) { toast(`💼 ${namn} vill jobba ihop – men du är mitt i ett pass.`, 'bad'); return; }
+  if (modalOpen()) return; // stör inte mitt i en dialog – kompisen kan bjuda igen
   play('knock');
-  openModal('💼 Jobba ihop?', `<p style="font-size:var(--f2)">${namn} jobbar på <b>Burgarbaren</b> och bjuder in dig till passet – häng med och dela disken!</p>`, [
-    { label: '💼 Häng med!', cls: 'btn-go', onClick: () => { if (leaveBlocked()) return; closeModal(); startShiftNow(A, 'burgare', 'jobbburgare'); } },
+  const lang = m.len === 'langt';
+  openModal('💼 Jobba ihop?', `<p style="font-size:var(--f2)">${namn} jobbar på <b>${esc(JOBS[job].name)}</b> och bjuder in dig till ${lang ? 'ett <b>längre pass</b> (6 timmar)' : 'passet'} – häng med och jobba ihop!</p>
+    ${(m.lvl | 0) > 1 ? `<p style="font-size:var(--f2)">⭐ Ni jobbar på ${namn}s nivå (${esc(JOB_TITLES[(m.lvl | 0) - 1] || '')}) – fler kunder!</p>` : ''}`, [
+    { label: '💼 Häng med!', cls: 'btn-go', onClick: () => { if (leaveBlocked()) return; closeModal(); startShiftNow(A, job, ENGINES[job], { sid: m.sid, len: m.len, lvl: m.lvl, from }); } },
     { label: 'Inte nu', onClick: closeModal },
   ]);
 });
@@ -510,7 +515,7 @@ function openWorldDialog() {
   const info = worldInfo();
   const list = playersList();
   const inJob = A.sceneName.startsWith('jobb');
-  const coopJob = A.sceneName === 'jobbburgare' ? 'burgare' : null; // jobb man kan bjuda in till (fler kommer)
+  const coopJob = inJob && COOP_JOBS.has(A.shiftJob) ? A.shiftJob : null; // passet man kan bjuda in till
   const verTag = (v) => (v === info.version ? '' : ` <span class="old">${v ? 'v' + esc(v) : 'gammal version'}</span>`);
   const rows = list.map((p, i) => `<div class="prow">
       <span data-face="${i}"></span>
@@ -537,7 +542,7 @@ function openWorldDialog() {
   });
   dlg.querySelectorAll('[data-visit]').forEach((b) => (b.onclick = () => { if (leaveBlocked()) return; closeModal(); visitPlayer(A, b.dataset.visit); }));
   dlg.querySelectorAll('[data-jobba]').forEach((b) => (b.onclick = () => {
-    sendInvite(b.dataset.jobba, 'burgare', A.avatar?.name || '');
+    inviteToShift(A, b.dataset.jobba);
     toast('💼 Inbjudan skickad – häng kvar på passet så länge!', 'good');
     closeModal();
   }));

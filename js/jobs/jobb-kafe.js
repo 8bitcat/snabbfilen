@@ -17,7 +17,7 @@ import { drawPerson, makeLook } from '../core/people.js';
 import { Pix, SMALL, ctxText, textW, text, mix, mul, css, hash, bayer } from '../core/floor-pix.js';
 import { createWalker, folkDrawables, emoteBubble, WALK_SEQ } from '../scenes/walkable.js';
 import { worldMyEmote } from '../net/world.js';
-import { SHIFT_SECONDS, drawShiftHud, drawTimeUp, makePops, abortShift } from './shift.js';
+import { planOf, drawShiftHud, drawTimeUp, makePops, abortShift } from './shift.js';
 import { play } from '../core/sound.js';
 
 const FW = 384, FH = 216;
@@ -345,6 +345,9 @@ function checkMark(ctx, x, y) {
 // ======================= jobbet =======================
 export function makeJobbKafe(A, { onDone } = {}) {
   const stats = { ok: 0, fel: 0, miss: 0, drycker: 0, bakverk: 0, gaster: 0 };
+  // passets plan: längd (P.seconds) och gästtakt (P.pace). Disken har inga fler platser –
+  // kassan och espressomaskinen står på var sida om de tre, och bubblorna fyller fönsterremsan.
+  const P = planOf(A);
   const walker = createWalker({ top: 116, bottom: 197, left: 8, right: 376, spawn: [200, 152] });
   walker.speed = 92;   // baristan är snabb i benen – stationerna ligger spridda över hela lokalen
   walker.setObstacles([
@@ -808,7 +811,7 @@ export function makeJobbKafe(A, { onDone } = {}) {
       for (let i = notes.length - 1; i >= 0; i--) if (notes[i].age > 2.2) notes.splice(i, 1);
       if (done) { doneT += dt; if (doneT > 1.2 && !reported) { reported = true; onDone?.(stats); } return; }
       t += dt;
-      if (t >= SHIFT_SECONDS) { done = true; busy = null; queued = null; walker.stop(); return; }
+      if (t >= P.seconds) { done = true; busy = null; queued = null; walker.stop(); return; }
       if (busy) {
         if (!busy.frozen) {
           busy.t += dt;
@@ -824,12 +827,12 @@ export function makeJobbKafe(A, { onDone } = {}) {
         restock[k] += dt;
         if (restock[k] > 4.5) { restock[k] = 0; stock[k]++; }
       }
-      // nya gäster
+      // nya gäster (en van barista får fler – P.pace; tålamodet följer passets förlopp som vanligt)
       custIn -= dt;
       if (custIn <= 0) {
-        const prog = Math.min(1, t / SHIFT_SECONDS);
+        const prog = Math.min(1, t / P.seconds);
         const s = freeSpot();
-        if (s >= 0) { customers.push(newCustomer(s, prog)); custIn = 6 - 2 * prog + hash(seq, 7) * 2.2; }
+        if (s >= 0) { customers.push(newCustomer(s, prog)); custIn = (6 - 2 * prog + hash(seq, 7) * 2.2) * P.pace; }
         else custIn = 1;
       }
       for (const k of customers) {
@@ -885,7 +888,7 @@ export function makeJobbKafe(A, { onDone } = {}) {
       drawTalk(ctx);
       drawCupTag(ctx);
       pops.draw(ctx);
-      drawShiftHud(ctx, { W: FW }, { t, dur: SHIFT_SECONDS, ok: stats.ok, fel: stats.fel, title: 'KAFÉET' });
+      drawShiftHud(ctx, { W: FW }, { t, dur: P.seconds, ok: stats.ok, fel: stats.fel, title: 'KAFÉET' });
       if (done) drawTimeUp(ctx, { W: FW, H: FH });
     },
   };

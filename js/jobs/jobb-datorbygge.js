@@ -11,7 +11,8 @@
 // Rätt modell = rätt (+lön), fel modell = fel (delen åker tillbaka). Kylaren kräver processor och
 // kylpasta först. När allt i ordern sitter i: tryck på STARTKNAPPEN → fläktarna snurrar, skärmen
 // säger BIOS OK och kollegan bär iväg datorn (stats.boxes = färdiga datorer, JOBS.bonus per dator).
-// 60 s pass via shift.js som de andra jobben. Escape = avbryt passet.
+// Passet via shift.js som de andra jobben (60 s för en nybörjare, längre med vanan – planOf;
+// nästa låda kommer när den förra är buren, så takten styrs av en själv). Escape = avbryt passet.
 //
 // _debug: state(), order(), bins() (id, x, y), spot(id) → { x, y } (skärm), pick(id) (ta delen
 //   direkt), install() (sätt i det man bär), power(), finish() (spola till slutet av passet),
@@ -19,7 +20,7 @@
 import { drawPerson, makeLook } from '../core/people.js';
 import { Pix, SMALL, text, textW, ctxText, mix, mul, hash } from '../core/floor-pix.js';
 import { createWalker, selfDrawable, folkDrawables, WALK_SEQ, createSpeech } from '../scenes/walkable.js';
-import { SHIFT_SECONDS, drawShiftHud, drawTimeUp, makePops, abortShift } from './shift.js';
+import { planOf, drawShiftHud, drawTimeUp, makePops, abortShift } from './shift.js';
 import { play } from '../core/sound.js';
 import { JOBS } from '../game.js';
 
@@ -202,6 +203,7 @@ function paintBg() {
 // ---------- scenen ----------
 export function makeJobbDatorbygge(A, { onDone } = {}) {
   let t = 0, done = false, doneT = 0, reported = false;
+  const P = planOf(A);   // passets plan: längden (P.seconds) växer med vanan
   const stats = { ok: 0, fel: 0, miss: 0, boxes: 0 };
   const pops = makePops();
   const talk = createSpeech(), talkMate = createSpeech();
@@ -281,7 +283,7 @@ export function makeJobbDatorbygge(A, { onDone } = {}) {
     pops.update(dt);
     if (done) { doneT += dt; if (doneT > 1.2 && !reported) { reported = true; onDone?.({ ...stats }); } return; }
     t += dt;
-    if (t >= SHIFT_SECONDS) { done = true; play('fanfare'); return; }
+    if (t >= P.seconds) { done = true; play('fanfare'); return; }
     walker.update(dt);
     if (slideIn > 0) slideIn = Math.max(0, slideIn - dt * 2.2);
     if (power) {
@@ -420,7 +422,7 @@ export function makeJobbDatorbygge(A, { onDone } = {}) {
       drawCarry(ctx);
       talk.draw(ctx, { x0: 0, x1: FW }); talkMate.draw(ctx, { x0: 0, x1: FW });
       pops.draw(ctx);
-      drawShiftHud(ctx, A, { t, dur: SHIFT_SECONDS, ok: stats.ok, fel: stats.fel, title: `PIXEL DATA - ${stats.boxes} ${stats.boxes === 1 ? 'DATOR' : 'DATORER'}` });
+      drawShiftHud(ctx, A, { t, dur: P.seconds, ok: stats.ok, fel: stats.fel, title: `PIXEL DATA - ${stats.boxes} ${stats.boxes === 1 ? 'DATOR' : 'DATORER'}` });
       if (done) drawTimeUp(ctx, A);
     },
     _debug: {
@@ -434,7 +436,7 @@ export function makeJobbDatorbygge(A, { onDone } = {}) {
       tool: (id) => { benchTool(id); return { ...box }; },
       power: () => { pressPower(); return !!power; },
       tick: (sec) => { for (let i = 0; i < sec * 30; i++) update(1 / 30); },
-      finish: () => { t = SHIFT_SECONDS - 0.01; update(0.02); for (let i = 0; i < 60; i++) update(0.05); },
+      finish: () => { t = P.seconds - 0.01; update(0.02); for (let i = 0; i < 60; i++) update(0.05); },
       wanted: () => { const o = order; return PARTS.filter((p) => o[p.kind] === p.v).map((p) => p.id); },
     },
   };

@@ -8,14 +8,15 @@
 //   SÄLJ 50 PIXEL – ÖVER 130 KR   → tryck SÄLJ när kursen är över gränsen
 // Gränsen syns som en gul streckad linje i grafen, och knappen lyser när läget är rätt.
 // Rätt = affären klar (+lön), för dyrt/för billigt eller fel knapp = fel, lappen som hinner
-// gå ut = kunden lägger på (miss). 60 s pass via shift.js. Escape = avbryt.
+// gå ut = kunden lägger på (miss). Passet via shift.js (60 s för en nybörjare, längre och
+// tätare order med vanan – planOf). Escape = avbryt.
 //
 // _debug: state(), stocks(), tickets(), force(i, typ, gräns) (lägg en order), setPrice(i, p),
 //   trade(i, typ) (samma som knappen), spot(i, typ) → { x, y }, finish(), stats.
 import { drawPerson, makeLook } from '../core/people.js';
 import { Pix, SMALL, BIG, text, textW, ctxText, mix, mul, hash } from '../core/floor-pix.js';
 import { createSpeech } from '../scenes/walkable.js';
-import { SHIFT_SECONDS, drawShiftHud, drawTimeUp, makePops, abortShift } from './shift.js';
+import { planOf, drawShiftHud, drawTimeUp, makePops, abortShift } from './shift.js';
 import { play } from '../core/sound.js';
 
 const FW = 384, FH = 216;
@@ -76,6 +77,7 @@ function paintBg() {
 
 export function makeJobbFinans(A, { onDone } = {}) {
   let t = 0, done = false, doneT = 0, reported = false;
+  const P = planOf(A);   // passets plan: längd (P.seconds) och ordertakt (P.pace) efter vanan
   const stats = { ok: 0, fel: 0, miss: 0 };
   const pops = makePops();
   // kurserna: slumpvandring som dras mot medelvärdet, ibland ett ryck
@@ -135,10 +137,11 @@ export function makeJobbFinans(A, { onDone } = {}) {
     pops.update(dt);
     if (done) { doneT += dt; if (doneT > 1.2 && !reported) { reported = true; onDone?.({ ...stats }); } return; }
     t += dt;
-    if (t >= SHIFT_SECONDS) { done = true; play('fanfare'); return; }
+    if (t >= P.seconds) { done = true; play('fanfare'); return; }
     stepPrices(dt);
     nextT -= dt;
-    if (nextT <= 0) { newTicket(); nextT = 3.2 + rnd() * 2.6 - Math.min(1.5, t / 40); }
+    // (tätare mot slutet av passet; en van mäklare får fler order – P.pace, samma tid att hinna)
+    if (nextT <= 0) { newTicket(); nextT = (3.2 + rnd() * 2.6 - 1.5 * Math.min(1, t / P.seconds)) * P.pace; }
     for (let i = 0; i < 4; i++) {
       const tk = tickets[i];
       if (!tk) continue;
@@ -246,7 +249,7 @@ export function makeJobbFinans(A, { onDone } = {}) {
       if (meLook) drawPerson(ctx, 192, 214, meLook, 'up', 5);
       for (const m of mates) m.talk.draw(ctx, { x0: 0, x1: FW });
       pops.draw(ctx);
-      drawShiftHud(ctx, A, { t, dur: SHIFT_SECONDS, ok: stats.ok, fel: stats.fel, title: `FINANSHUSET - ${stats.ok} AFFÄRER` });
+      drawShiftHud(ctx, A, { t, dur: P.seconds, ok: stats.ok, fel: stats.fel, title: `FINANSHUSET - ${stats.ok} AFFÄRER` });
       if (done) drawTimeUp(ctx, A);
     },
     _debug: {
@@ -259,7 +262,7 @@ export function makeJobbFinans(A, { onDone } = {}) {
       trade: (i, typ) => { trade(i, typ); return { ...stats }; },
       spot: (i, typ) => { const B = BTN(i, typ); return { x: B.x + (B.w >> 1), y: B.y + (B.h >> 1) }; },
       tick: (sec) => { for (let k = 0; k < sec * 30; k++) update(1 / 30); },
-      finish: () => { t = SHIFT_SECONDS - 0.01; update(0.02); for (let k = 0; k < 60; k++) update(0.05); },
+      finish: () => { t = P.seconds - 0.01; update(0.02); for (let k = 0; k < 60; k++) update(0.05); },
     },
   };
 }

@@ -10,6 +10,13 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.58.0] – 2026-09-30 – Passen växer med vanan
+- Jobbar ni var för sig på samma ställe dyker ni inte längre upp i varandras pass. Man jobbar ihop bara om någon bjuder in (💼 Jobba ihop i startdialogen, eller via 👥 mitt i passet) – annars kör man själv.
+- Ju fler pass du har jobbat på ett jobb, desto fler kunder kommer, och passet blir lite längre. Kunderna har samma tålamod som förut – det är bara fler att hinna med.
+- Fler platser när du blir van: Burgarbaren ställer fram ett bord till för varje nivå (åtta som Legendar), och pizzerian får ett tredje bord i övre raden.
+- När du är Van väljer du vid passets början mellan vanligt pass (4 timmar) och längre pass (6 timmar, halva tiden till och mer ork går åt). Ett längre pass börjar senast 18:00.
+- Den som bjuder in bestämmer: passets längd och nivå följer med inbjudan, så en van kan ta med en nybörjare på ett långt pass med många kunder.
+
 ## [0.57.0] – 2026-09-30 – Den löpande lägenheten
 - Hemmet är en löpande lägenhet: alla rum ligger i rad i en och samma bild – vardagsrum, sovrum, kök och badrummet sist. Man går mellan rummen genom öppningar i mellanväggarna (badrummet har en dörr som står öppen), inga dörrar i bakväggen längre.
 - Tryck var som helst i lägenheten, även i rummet bredvid, så går figuren dit genom öppningarna – lite raskare när det är flera rum att gå igenom. Kameran följer med, på datorn och på mobilen.
