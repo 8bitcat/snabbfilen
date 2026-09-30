@@ -38,6 +38,10 @@ export const STRIP_PHONE = 14;
 const phoneHud = () => typeof document !== 'undefined' && document.documentElement.classList.contains('desk-mobil');
 // Remsans höjd i spelpixlar (0 = ingen remsa: raden överst, eller huvudmenyn)
 export const stripHeight = (A) => (isPixHud() && !A?.attract ? (phoneHud() ? STRIP_PHONE : STRIP_H) : 0);
+// Telefonen i liggande läge: passets tid och poäng står i remsan i stället för överst i scenen –
+// där beskärs bilden upptill, och en mörk rad över scenen skymde disken (Carl 2026-09-30:
+// "sakerna på disken … fastnar bakom"). Minispelen lämnar läget i A.shiftHud (drawShiftHud).
+export const shiftInStrip = () => isPixHud() && phoneHud();
 
 let strip = null;
 function ensureStrip() {
@@ -116,6 +120,19 @@ function drawPhoneStrip(ctx, A, g, Wv) {
   const money = Math.round(g.money);
   const moneyTxt = (money < 0 ? '-' : '') + Math.abs(money).toLocaleString('sv-SE').replace(/ /g, ' ') + ' KR';
   ctxText(ctx, SMALL, moneyTxt, x + 7, y, money < 0 ? '#ff6a6a' : PAPER); x += 7 + textW(SMALL, moneyTxt) + 8;
+  // mitt i ett pass: jobbet, poängen och tiden kvar (klockan står still under passet och
+  // mat/sömn ändras först när det är slut)
+  const sh = A.shiftHud;
+  if (sh && performance.now() - sh.at < 600) {
+    ctxText(ctx, SMALL, sh.title, x, y, GOLD); x += textW(SMALL, sh.title) + 8;
+    const sc = `+${sh.ok} -${sh.fel}`;
+    ctxText(ctx, SMALL, sc, x, y, PAPER); x += textW(SMALL, sc) + 8;
+    const bw = 64, left = Math.max(0, 1 - sh.t / sh.dur);
+    ctx.fillStyle = PAPER2; ctx.fillRect(x - 1, y - 1, bw + 2, 6);
+    ctx.fillStyle = '#3a3542'; ctx.fillRect(x, y, bw, 4);
+    ctx.fillStyle = left < 0.2 ? RED : GREEN; ctx.fillRect(x, y, Math.round(bw * left), 4);
+    return;
+  }
   const day = `${String(g.dayName || '').slice(0, 3).toUpperCase()} ${clock(g.min)}`;
   ctxText(ctx, SMALL, day, x, y, PAPER2); x += textW(SMALL, day) + 10;
   bar(ctx, x, y, 34, g.hunger, burger); x += 34 + 9 + 8;

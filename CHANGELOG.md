@@ -10,6 +10,10 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.65.1] – 2026-09-30 – Disken syns på mobilen
+- Mobilen i liggande läge: passets tid och poäng står nu i den tunna raden överst i stället för som en mörk rad över scenen – den skymde tallrikarna på disken i Burgarbaren (och det som stod överst i de andra jobben).
+- När scenen är högre än skärmen (särskilt med 🔍 NÄRA eller när Safaris adressfält syns) följer bilden figuren i höjdled: står du vid disken syns disken, går du ner till borden följer bilden med. Gäller jobben, butikerna och hemmet – staden har sin egen kamera som förut.
+
 ## [0.65.0] – 2026-09-30 – Jobba ihop på Bilverkstaden
 - Jobba ihop på Bilverkstaden: bjud in en kompis med 💼 Jobba ihop när du börjar passet (eller via 👥 mitt i passet) – ni delar de fyra liftarna, bilarna, de två skiftnycklarna, luftslangen och däckhögarna.
 - Ni kan jobba på olika bilar samtidigt. En mutter som snurrar tillhör den som snurrar, och en reparation vid fronten gör en åt gången. Varje nyckel och slangen finns bara på ett ställe.

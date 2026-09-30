@@ -11,6 +11,7 @@ import { sendInvite } from '../net/coop.js';
 import { JOBS, JOB_TITLES, levelOf, payMult, fmt, shiftPlan, canLongShift } from '../game.js';
 import { SMALL, BIG, ctxText, textW } from '../core/floor-pix.js';
 import { play } from '../core/sound.js';
+import { shiftInStrip } from '../core/hud-pix.js';
 
 export const SHIFT_SECONDS = 60; // (nybörjarens vanliga pass – minispelen läser planOf(A).seconds)
 export const planOf = (A) => A?.shiftPlan || shiftPlan(1);
@@ -180,9 +181,12 @@ export function abortShift(A) {
   ]);
 }
 
-// Gemensam topplist i minispelen: tidsstapel + räkneverk.
+// Gemensam topplist i minispelen: tidsstapel + räkneverk. (Telefonen i liggande läge: i
+// pixelremsan ovanför bilden i stället – överst i scenen skymde den disken, se hud-pix.js.)
 export function drawShiftHud(ctx, A, { t, dur, ok, fel, title }) {
-  const sy = (globalThis.SF?.view?.safe?.y0 | 0); // fyll-lägets beskärning: remsan nedanför kanten
+  const SF = globalThis.SF;
+  if (SF && shiftInStrip()) { SF.shiftHud = { t, dur, ok, fel, title, at: performance.now() }; return; }
+  const sy = (SF?.view?.safe?.y0 | 0); // fyll-lägets beskärning: remsan nedanför kanten
   ctx.fillStyle = 'rgba(23,21,26,0.85)'; ctx.fillRect(0, sy, A.W, 18);
   ctxText(ctx, BIG, title, 4, sy + 5, '#f4f1ea');
   const bw = 110, bx = A.W - bw - 4;

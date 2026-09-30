@@ -282,14 +282,12 @@ function fit() {
     cv.style.width = cw + 'px'; cv.style.height = ch + 'px';
     cv.style.position = 'absolute';
     cv.style.left = ((w - cw) / 2) + 'px';
-    // beskärningen tas mest upptill (väggkonst) – golvet, disken och dörren nertill behålls
-    cv.style.top = (stripCss + Math.min(0, ah - ch) * 0.7 + Math.max(0, ah - ch) / 2) + 'px';
     // den SYNLIGA rutan i spelpixlar – skyltar och HUD i scenerna klämmer sig innanför
-    const cropT = Math.max(0, (ch - ah) * 0.7), cropB = Math.max(0, (ch - ah) * 0.3), cropL = Math.max(0, (cw - w) / 2);
-    v.safe = {
-      x0: Math.ceil(cropL / cw * A.W), x1: A.W - Math.ceil(cropL / cw * A.W),
-      y0: Math.ceil(cropT / ch * A.H), y1: A.H - Math.ceil(cropB / ch * A.H),
-    };
+    // (höjdledet sätts av followCrop, som också flyttar bilden i höjdled)
+    const cropL = Math.max(0, (cw - w) / 2);
+    v.safe = { x0: Math.ceil(cropL / cw * A.W), x1: A.W - Math.ceil(cropL / cw * A.W), y0: 0, y1: A.H };
+    v.crop = { ch, ah, stripCss, rows: cbh, oy: cby, f: null, scene: null, top: '' };
+    followCrop(0);
     if (sEl) { sEl.style.position = 'absolute'; sEl.style.left = '0'; sEl.style.top = '0'; }
     layoutStrip(A, dpr, Math.max(DESIGN_W, Math.ceil(w * dpr / s)), w);
     return;
@@ -297,6 +295,7 @@ function fit() {
   cv.style.position = ''; cv.style.left = ''; cv.style.top = '';
   if (sEl) { sEl.style.position = ''; sEl.style.left = ''; sEl.style.top = ''; }
   v.safe = { x0: 0, y0: 0, x1: A.W, y1: A.H }; // hela rutan syns i ram/vid-lägena
+  v.crop = null;
   if (cv.width !== v.w * s) cv.width = v.w * s;
   if (cv.height !== v.h * s) cv.height = v.h * s;
   // de sista device-pixlarna (mindre än en spelpixel) fylls med en omärkbar sträckning
@@ -706,6 +705,31 @@ function boot() {
   requestAnimationFrame(tick);
 }
 
+// Bilden i höjdled (fyll-läget): är den högre än skärmen beskärs den – mest upptill (väggkonst;
+// golvet, disken och dörren nertill behålls). I en scen med en figur (worldY) och utan egen
+// kamera i höjdled följer beskärningen i stället figuren: på telefonen (särskilt i NÄRA) syns då
+// disken när man står vid den och borden när man går ner (Carl 2026-09-30, Burgarbaren:
+// "sakerna på disken … fastnar bakom"). Flyttas i hela device-pixlar – bilden förblir skarp.
+function followCrop(dt) {
+  const c = A.view.crop; if (!c) return;
+  const extra = Math.max(0, c.ch - c.ah);
+  const cap = WIDE[A.sceneName] || A.scene?.viewMax || null;
+  const y = extra > 0.5 && A.scene && A.sceneName !== 'city' && (!cap || cap.h <= DESIGN_H) ? A.scene.worldY : null;
+  let f = 0.7;
+  if (Number.isFinite(y)) {
+    const vis = c.rows * c.ah / c.ch; // synliga rader
+    f = Math.max(0, Math.min(1, (y - c.oy - 18 - vis / 2) / Math.max(1, c.rows - vis))); // (figurens mitt ≈ 18 px ovanför fötterna)
+  }
+  const snap = c.f == null || !dt || c.scene !== A.scene;
+  c.scene = A.scene;
+  c.f = snap ? f : c.f + (f - c.f) * Math.min(1, dt * 4);
+  const dpr = window.devicePixelRatio || 1;
+  const cropT = Math.round(extra * c.f * dpr) / dpr, cropB = extra - cropT;
+  const top = (c.stripCss - cropT + Math.max(0, c.ah - c.ch) / 2) + 'px';
+  if (top !== c.top) { c.top = top; cv.style.top = top; }
+  A.view.safe.y0 = Math.ceil(cropT / c.ch * A.H); A.view.safe.y1 = A.H - Math.ceil(cropB / c.ch * A.H);
+}
+
 // ---------- loopen ----------
 let last = performance.now();
 function tick(now) {
@@ -714,6 +738,7 @@ function tick(now) {
   if (A.scene) {
     if (!modalOpen() && !isMenuOpen() && !A.sceneName.startsWith('jobb')) A.game.tickReal(dt);
     A.scene.update?.(dt);
+    followCrop(dt);
     worldTick(A, A.scene.worldX ?? null, dt);
     recTick(A, dt); // bakgrundsljudet där man är + musiken (tyst före första klicket, vid mute och i dold flik)
     rawSetTransform(1, 0, 0, 1, 0, 0);
