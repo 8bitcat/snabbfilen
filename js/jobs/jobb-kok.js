@@ -12,6 +12,8 @@
 // beställning = dricks! Allt görs med den egna figuren som går mellan
 // stationerna (klick-och-gå). Allt statiskt målas EN gång (rummet, ön);
 // rätterna är procedurella pixelkartor i skala 1 som cachas per tillstånd.
+// Jobbar man ihop (💼, js/jobs/shift.js) delar kockarna skenan, grillen, fritösen,
+// maskinerna och brickan – se "jobba tillsammans" nedan.
 import { drawPerson, makeLook } from '../core/people.js';
 import { Pix, SMALL, ctxText, textW, text, mix, mul, css, hash, bayer } from '../core/floor-pix.js';
 import { createWalker, selfDrawable, folkDrawables, WALK_SEQ, createSpeech } from '../scenes/walkable.js';
@@ -19,6 +21,7 @@ import { planOf, drawShiftHud, drawTimeUp, makePops, abortShift } from './shift.
 import { play } from '../core/sound.js';
 import { JOBS } from '../game.js';
 import { burgarMeny } from './jobb-burgare.js';
+import { makeShiftCoop } from '../net/coop.js';
 
 const FW = 384, FH = 216;
 const WALL_B = 88;                       // bakväggen möter golvet
@@ -71,6 +74,29 @@ const STEG_NAMN = {
   pommes: 'FRITÖSEN: NER - VÄNTA - UPP - SALTA', lask: 'LÄSKAUTOMATEN', shake: 'MILKSHAKEMASKINEN', glass: 'GLASSMASKINEN',
 };
 const isBurgare = (r) => RECEPT[r].steg.length > 1;
+const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+
+// ---------- jobba ihop: det som skickas mellan kockarna ----------
+const MASK = ['lask', 'shake', 'glass'];                  // maskinerna i snappen (index = kod)
+const MASK_X = { lask: 170, shake: 206, glass: 240 };     // där maskinernas rop syns
+const TYPER = ['biff', 'burgare', 'pommes', 'lask', 'shake', 'glass'];   // det man bär (index = kod)
+const LJUD = new Set(['click', 'miss', 'slide', 'ok', 'fel', 'box', 'coin', 'chirp']);
+// En sak – det man bär, eller det som står på brickan – som fyra tal:
+// [typ, rätt (−1), smak (−1), 1 saltad | 2 bränd | 4 redan räknad som fel]. 0 = tomt.
+const itemEnc = (c) => (c ? [TYPER.indexOf(c.typ), c.recept ?? -1, c.smak ?? -1, (c.saltad ? 1 : 0) | (c.brand ? 2 : 0) | (c.feld ? 4 : 0)] : 0);
+function itemDec(a) {
+  if (!Array.isArray(a)) return null;
+  const typ = TYPER[a[0] | 0], f = a[3] | 0;
+  if (!typ) return null;
+  let c;
+  if (typ === 'biff') c = { typ, brand: !!(f & 2) };
+  else if (typ === 'burgare') { const r = a[1] | 0; if (!RECEPT[r] || !isBurgare(r)) return null; c = { typ, recept: r }; }
+  else if (typ === 'pommes') c = { typ, saltad: !!(f & 1), brand: !!(f & 2) };
+  else if (typ === 'shake') c = { typ, smak: clamp(a[2] | 0, 0, 2) };
+  else c = { typ, smak: undefined };   // läsk, glass
+  if (f & 4) c.feld = true;
+  return c;
+}
 
 // ---------- pixelrutnät (sprites byggs som rutnät, konturen läggs på sist) ----------
 const newCanvas = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; };
@@ -190,7 +216,8 @@ function carrySprite(c) {
 }
 
 // ---------- beställningslappen på skenan ----------
-function drawTicket(ctx, o, x, blink) {
+// mark = färgen på märket i nedre vänstra hörnet när en kock bygger lappen (bara ihop)
+function drawTicket(ctx, o, x, blink, mark = null) {
   const y = RAIL_Y + 6, left = Math.max(0, o.kvar / o.max);
   ctx.fillStyle = 'rgba(20,14,10,0.3)'; ctx.fillRect(x + 1, y + 1, TICKET_W, TICKET_H);   // skugga
   ctx.fillStyle = '#fffdf4'; ctx.fillRect(x, y, TICKET_W, TICKET_H);
@@ -205,6 +232,7 @@ function drawTicket(ctx, o, x, blink) {
   const rec = RECEPT[o.recept];
   const mk = rec.id === 'shake' ? SMAKER[o.smak][0] + rec.mark : rec.mark;
   ctxText(ctx, SMALL, mk, x + ((TICKET_W - textW(SMALL, mk)) >> 1), y + TICKET_H - 6, '#b8281e');
+  if (mark) { ctx.fillStyle = mark; ctx.fillRect(x + 1, y + TICKET_H - 5, 2, 4); }   // (märket får plats vänster om texten)
   if (o.kvar < 8 && blink) {
     // varningslampan ritas INNANFÖR lappen – skenan är tät (lapp 16 px, delning 17)
     // så en platta utanför högerkanten skulle skymma nästa lapps tålamodsrand
@@ -568,6 +596,9 @@ export function makeJobbKok(A, { onDone } = {}) {
     [305, 181, 327, 199],                                    // hinken (moppen är platt och gåbar)
   ]);
   const pops = makePops();
+  const popLog = [];   // de senaste puffarnas text (provet läser dem: syntes "HANN FÖRE!"?)
+  const addPop = pops.add;
+  pops.add = (x, y, txt, c) => { popLog.push(txt); if (popLog.length > 30) popLog.shift(); addPop(x, y, txt, c); };
   const talk = createSpeech();
   // Bella – servitrisen som syns i luckan och tar rätterna (samma utseende varje pass)
   let bseed = 7;
@@ -582,12 +613,13 @@ export function makeJobbKok(A, { onDone } = {}) {
   }
 
   let orders = [], t = 0, seq = 0, orderIn = 0.5, saidIntro = false;
+  let nid = 0;                         // id:n till det som står på stationerna (biffar, korgar, koppar, brickan)
   let carry = null;                    // { typ, recept?, smak?, saltad?, brand?, feld? }
   let tray = null;                     // { recept, lager: [], klar } – burgaren på tråget
-  const grill = [null, null, null];    // { sida: 0|1, tid, brand } per platta
-  const fritos = [null, null];         // { tid, brand } per korg
-  const maskin = { lask: null, shake: null, glass: null };   // { fas: 'fyller'|'klar', t, dur, smak }
-  const bricka = [null, null, null];
+  const grill = [null, null, null];    // { id, sida: 0|1, tid, brand, by } per platta (by = kocken som lade på den)
+  const fritos = [null, null];         // { id, tid, brand, by } per korg
+  const maskin = { lask: null, shake: null, glass: null };   // { id, fas: 'fyller'|'klar', t, dur, smak }
+  const bricka = [null, null, null];   // saken + { id, by } (by = kocken som ställde dit den)
   let bellT = 0, trashT = 0, workT = 0, hover = null, parts = [];
   let done = false, doneT = 0, reported = false;
   const cache = {};
@@ -600,8 +632,10 @@ export function makeJobbKok(A, { onDone } = {}) {
   // brända saker ger EN gång fel när man försöker använda dem – sedan bara påminnelser
   function felOnce(obj, txt, x, y) {
     if (obj.feld) { hint(txt, x, y); return; }
-    obj.feld = true; stats.fel++; play('fel'); pops.add(x, y, txt, '#ff6a6a');
+    obj.feld = true; felMin(); play('fel'); pops.add(x, y, txt, '#ff6a6a');
   }
+  // ett fel med det egna (tråget, saltet, det man bär): mitt – och lagets, som skiftledaren räknar
+  function felMin() { stats.fel++; if (mate()) coop.send({ t: 'fel' }); else { team.fel++; snapAsap(); } }
   function puff(x, y, cols, n = 10, spread = 10) {
     for (let i = 0; i < n; i++) parts.push({ k: 'puff', x: x + (Math.random() * 2 - 1) * spread, y: y + (Math.random() * 2 - 1) * 3, vx: (Math.random() * 2 - 1) * 10, vy: -4 - Math.random() * 8, life: 0.5 + Math.random() * 0.3, age: 0, c: cols[i % cols.length] });
   }
@@ -613,6 +647,253 @@ export function makeJobbKok(A, { onDone } = {}) {
   }
   function smoke(x, y) { parts.push({ k: 'smoke', x: x + Math.random() * 8 - 4, y, vx: Math.random() * 6 - 3, vy: -10 - Math.random() * 6, life: 1.5, age: 0 }); }
   const lagerCols = (id) => { const L = LAGER[id]; return Object.values(L.pal); };
+
+  // ---------- jobba tillsammans (delat pass via js/net/coop.js) ----------
+  // Skiftledaren (den som varit längst i köket) kör det gemensamma: lapparna på skenan (nya
+  // beställningar och gästernas tålamod), grillen, fritösen, läsk-, shake- och glassmaskinen och
+  // brickan vid luckan med klockan. Läget delas ~3 ggr/s; medarbetarna ser samma kök och skickar
+  // varje handling vid en gemensam station som ett önskemål – skiftledaren kör samma kod åt dem
+  // (med det de bär i händerna) och är ENDA domaren: en biff tas från grillen EN gång, en lapp
+  // serveras EN gång. Tråget (burgaren man bygger), backarna, saltet, soptunnan och det man bär
+  // är var och ens egna – två kockar bygger var sin burgare, och den som börjar på ett tråg tar
+  // första burgarlappen som ingen annan redan bygger (lappen får ett märke). Poängen och dricksen
+  // går till kocken som ställde rätten på brickan – den som lagade den – vem som än ringer i
+  // klockan. Lagets rätt, fel och missade delas lika vid passets slut; dricksen behåller var och
+  // en (den läggs på lönen efter nivåbonusen, shift.js). Ihop kommer lapparna tätare.
+  const coop = makeShiftCoop(A, 'away:jobbkok');
+  let snapIn = 0, wasLead = true, wasCoop = false, maxN = 1, snaps = 0;
+  let pend = null, queued = null;          // medarbetarens önskemål som väntar på svar (och ett köat klick)
+  const team = { ok: 0, fel: 0, miss: 0 }; // LAGETS räkning – delas lika vid passets slut
+  const mate = () => coop.active && !coop.leader;
+  const snapAsap = () => { snapIn = 0; };
+  const int = (v, dflt) => (Number.isInteger(v) ? v : dflt);
+  const str = (v) => (typeof v === 'string' ? v.slice(0, 80) : '');
+  const here = (id) => id === coop.myId || coop.peers().some((f) => f.id === id);
+  // bygger en ANNAN kock redan den här lappen? (den som gått därifrån räknas inte)
+  const annans = (o) => coop.active && !!o.kock && o.kock !== coop.myId && here(o.kock);
+  const sendSnap = () => coop.send({
+    t: 'snap',
+    // lapp: [id, rätt, smak (−1), tålamod·10, kocken som bygger den ('' = ingen)]
+    or: orders.map((o) => [o.id, o.recept, o.smak ?? -1, Math.round(o.kvar * 10), o.kock || '']),
+    // grillen: per platta [id, sida, tid·100, bränd, vems] eller 0 (hundradelarna avrundas nedåt)
+    gr: grill.map((b) => (b ? [b.id, b.sida, Math.floor(b.tid * 100), b.brand ? 1 : 0, b.by || ''] : 0)),
+    // fritösen: per korg [id, tid·100, bränd, vems] eller 0
+    fr: fritos.map((f) => (f ? [f.id, Math.floor(f.tid * 100), f.brand ? 1 : 0, f.by || ''] : 0)),
+    // maskinerna (MASK-ordning): [id, klar, t·100, smak (−1)] eller 0
+    ma: MASK.map((typ) => { const m = maskin[typ]; return m ? [m.id, m.fas === 'klar' ? 1 : 0, Math.floor(m.t * 100), m.smak ?? -1] : 0; }),
+    // brickan: per plats [id, vem som ställde dit den, ...saken (itemEnc)] eller 0
+    br: bricka.map((it) => (it ? [it.id, it.by || '', ...itemEnc(it)] : 0)),
+    tm: [team.ok, team.fel, team.miss],
+  });
+  const applySnap = (m) => {
+    if (Array.isArray(m.or)) {
+      const next = [];
+      for (const a of m.or.slice(0, MAX_TICKETS)) {
+        if (!Array.isArray(a)) continue;
+        const id = a[0] | 0, r = clamp(a[1] | 0, 0, RECEPT.length - 1);
+        seq = Math.max(seq, id + 1);   // (tar jag över passet senare fortsätter numreringen härifrån – inga krockar)
+        let o = orders.find((q) => q.id === id);
+        if (!o) { o = { id }; if (snaps) play('chirp'); }   // en ny lapp plingar hos alla
+        o.recept = r; o.max = RECEPT[r].max;
+        o.smak = RECEPT[r].id === 'shake' ? clamp(a[2] | 0, 0, 2) : undefined;
+        o.kvar = clamp((a[3] | 0) / 10, 0, o.max);
+        o.kock = str(a[4]);
+        next.push(o);
+      }
+      orders = next;
+    }
+    if (Array.isArray(m.gr)) for (let i = 0; i < 3; i++) {
+      const a = m.gr[i];
+      if (!Array.isArray(a)) { grill[i] = null; continue; }
+      const id = a[0] | 0, old = grill[i] && grill[i].id === id ? grill[i] : null, b = old || { id };
+      b.sida = a[1] ? 1 : 0; b.tid = Math.max(0, (a[2] | 0) / 100); b.brand = !!a[3]; b.by = str(a[4]);
+      grill[i] = b;
+      ropaGrill(i, !old);
+    }
+    if (Array.isArray(m.fr)) for (let i = 0; i < 2; i++) {
+      const a = m.fr[i];
+      if (!Array.isArray(a)) { fritos[i] = null; continue; }
+      const id = a[0] | 0, old = fritos[i] && fritos[i].id === id ? fritos[i] : null, f = old || { id };
+      f.tid = Math.max(0, (a[1] | 0) / 100); f.brand = !!a[2]; f.by = str(a[3]);
+      fritos[i] = f;
+      ropaKorg(i, !old);
+    }
+    if (Array.isArray(m.ma)) MASK.forEach((typ, j) => {
+      const a = m.ma[j];
+      if (!Array.isArray(a)) { maskin[typ] = null; return; }
+      const id = a[0] | 0, old = maskin[typ] && maskin[typ].id === id ? maskin[typ] : null, mm = old || { id, dur: FYLL_TID[typ] };
+      mm.fas = a[1] ? 'klar' : 'fyller'; mm.t = Math.max(0, (a[2] | 0) / 100);
+      mm.smak = typ === 'shake' ? clamp(a[3] | 0, 0, 2) : undefined;
+      maskin[typ] = mm;
+      ropaMaskin(typ, !old);
+    });
+    if (Array.isArray(m.br)) for (let s = 0; s < 3; s++) {
+      const a = m.br[s], it = Array.isArray(a) ? itemDec(a.slice(2)) : null;
+      bricka[s] = it ? Object.assign(it, { id: a[0] | 0, by: str(a[1]) }) : null;
+    }
+    if (Array.isArray(m.tm)) { team.ok = m.tm[0] | 0; team.fel = m.tm[1] | 0; team.miss = m.tm[2] | 0; }
+    for (const x of [...grill, ...fritos, ...MASK.map((typ) => maskin[typ]), ...bricka]) if (x) nid = Math.max(nid, (x.id | 0) + 1);
+    snaps++;
+  };
+  // Medarbetarens kök: grillen, fritösen och maskinerna tickar vidare mellan ledarens lägen
+  // (rättas vid nästa snap) och lapparnas tålamod rinner. Ropen ("VÄND MIG!", "KLAR!",
+  // "BRÄNNS!") kommer EN gång per steg – vare sig steget tickade fram här eller kom med snappen.
+  const biffSteg = (b) => b.sida * 3 + (b.brand ? 2 : b.tid >= T_SIDE ? 1 : 0);
+  const korgSteg = (f) => (f.brand ? 2 : f.tid >= T_FRY ? 1 : 0);
+  function brannPop(b, x) { play('miss'); pops.add(x, 46, 'BRÄNNS!', '#ff6a6a'); if (b.by === coop.myId) stats.brand++; }
+  function ropaGrill(i, fresh) {
+    const b = grill[i];
+    if (!b) return;
+    const s = biffSteg(b);
+    if (fresh || b.said === undefined) { b.said = s; return; }
+    if (s <= b.said) return;
+    b.said = s;
+    if (b.brand) brannPop(b, GRILL.slots[i]);
+    else if (s % 3 === 1) { play('ok'); pops.add(GRILL.slots[i], 46, b.sida === 0 ? 'VÄND MIG!' : 'KLAR!', b.sida === 0 ? '#ffd23f' : '#8ee03c'); }
+  }
+  function ropaKorg(i, fresh) {
+    const f = fritos[i];
+    if (!f) return;
+    const s = korgSteg(f);
+    if (fresh || f.said === undefined) { f.said = s; return; }
+    if (s <= f.said) return;
+    f.said = s;
+    if (f.brand) brannPop(f, FRIT.korgar[i]);
+    else { play('ok'); pops.add(FRIT.korgar[i], 42, 'UPP MED KORGEN!', '#8ee03c'); }
+  }
+  function ropaMaskin(typ, fresh) {
+    const m = maskin[typ];
+    if (!m) return;
+    const s = m.fas === 'klar' ? 1 : 0;
+    if (fresh || m.said === undefined) { m.said = s; return; }
+    if (s > m.said) { m.said = s; play('ok'); pops.add(MASK_X[typ], 26, 'KLAR!', '#8ee03c'); }
+  }
+  function mateTick(dt) {
+    grill.forEach((b, i) => {
+      if (!b) return;
+      b.tid += dt;
+      if (b.tid >= T_BRANN) b.brand = true;
+      ropaGrill(i, false);
+      if (b.brand && Math.random() < dt * 7) smoke(GRILL.slots[i], 52);
+    });
+    fritos.forEach((f, i) => {
+      if (!f) return;
+      f.tid += dt;
+      if (f.tid >= T_FRY_BRANN) f.brand = true;
+      ropaKorg(i, false);
+      if (f.brand && Math.random() < dt * 7) smoke(FRIT.korgar[i], 50);
+    });
+    for (const typ of MASK) {
+      const m = maskin[typ];
+      if (m && m.fas === 'fyller') { m.t += dt; if (m.t >= m.dur) m.fas = 'klar'; }
+      ropaMaskin(typ, false);
+    }
+    for (const o of orders) o.kvar = Math.max(0, o.kvar - dt);
+  }
+
+  // Kocken som gör något vid en gemensam station: jag själv, eller – hos skiftledaren – en
+  // medarbetare vars önskemål körs åt hen. Det hen bär följer med önskemålet och tillbaka i svaret.
+  const cookMe = () => ({ by: coop.myId || '', fx: [], get carry() { return carry; }, set carry(v) { carry = v; } });
+  const cookFor = (by, c) => ({ by, fx: [], carry: c, remote: true });
+  // Utfallet av en handling: [slag, vem (spelar-id; '' = alla i köket), ...]. Det som gäller mig
+  // (eller alla) syns och hörs här direkt – ensam gäller allt mig; i ett delat pass (eller när
+  // jag kör en medarbetares önskemål) följer resten med svaret ut.
+  function fx(k, who, kind, ...a) {
+    const me = coop.myId || '', ut = coop.active || !!k.remote;
+    if (!who || who === me || !ut) doFx(kind, a);
+    if (ut && who !== me) k.fx.push([kind, who, ...a]);
+  }
+  function doFx(kind, a) {
+    if (kind === 'h') hint(String(a[0]).slice(0, 48), +a[1] || 0, +a[2] || 0);
+    else if (kind === 'H') { play('miss'); pops.add(+a[0] || 0, +a[1] || 0, 'HANN FÖRE!', '#ff6a6a'); }   // någon annan hann först
+    else if (kind === 's') { if (LJUD.has(a[0])) play(a[0]); }
+    else if (kind === 'p') pops.add(+a[0] || 0, +a[1] || 0, String(a[2]).slice(0, 48), String(a[3] || '#f4f1ea'));
+    else if (kind === 'w') workT = 0.3;
+    else if (kind === 'f') stats.fel++;
+    else if (kind === 'o') { const kr = clamp(a[0] | 0, 0, 10); stats.ok++; if (kr) { stats.dricks++; stats.dricksKr += kr; } }   // serverat (+ dricks)
+    else if (kind === 'u') puff(+a[0] || 0, GRILL.slotY, [0xfff0d0, 0xffffff, 0xffc040], 6, 5);   // biffen vänds
+    else if (kind === 'k') bellT = 0.55;                                                            // klockan ringer
+    else if (kind === 'B') bellaSay(String(a[0]).slice(0, 80));
+  }
+  const kHint = (k, txt, x, y) => fx(k, k.by, 'h', txt, x, y);
+  const kLjud = (k, s) => fx(k, k.by, 's', s);
+  const kPop = (k, x, y, txt, c) => fx(k, '', 'p', x, y, txt, c);   // syns hos alla i köket
+  const kWork = (k) => fx(k, k.by, 'w');
+  // felOnce vid en gemensam station (brickan): felet är kockens eget, men räknas i laget här
+  function kFelOnce(k, obj, txt, x, y) {
+    if (obj.feld) { kHint(k, txt, x, y); return; }
+    obj.feld = true; team.fel++; fx(k, k.by, 'f'); kLjud(k, 'fel'); fx(k, k.by, 'p', x, y, txt, '#ff6a6a');
+  }
+  // De gemensamma stationerna. id(i) = vad kocken såg där när hen klickade (−1 = tomt); har det
+  // ändrats när handlingen väl görs hann någon annan före (grillen räknar sidan också – en
+  // biff som redan vänts vänds inte igen).
+  const STN = {
+    grill: { n: 3, id: (i) => (grill[i] ? grill[i].id * 2 + grill[i].sida : -1), at: (i) => [GRILL.slots[i], 48], run: (k, i) => doGrill(k, i) },
+    fritos: { n: 2, id: (i) => (fritos[i] ? fritos[i].id : -1), at: (i) => [FRIT.korgar[i], 44], run: (k, i) => doFritos(k, i) },
+    maskin: { n: 3, id: (i) => (maskin[MASK[i]] ? maskin[MASK[i]].id : -1), at: (i) => [MASK_X[MASK[i]], 26], run: (k, i, s) => doMaskin(k, MASK[i], s >= 0 && s < 3 ? s : undefined) },
+    // brickan: bara den som vill TA något därifrån kan hinna efter (den som ställer dit tar en ledig plats)
+    bricka: { n: 3, id: (i) => (bricka[i] ? bricka[i].id : -1), at: (i) => [BRICKA.spots[i], 52], run: (k, i) => doBricka(k, i), stale: (i, v, k) => !k.carry && STN.bricka.id(i) !== v },
+    // klockan: id = hur mycket som stod på brickan – är den tom nu ringde någon annan först
+    klocka: { n: 1, id: () => bricka.filter(Boolean).length, at: () => [BELL.x - 10, 46], run: (k) => doBell(k), stale: (i, v) => v > 0 && !bricka.some(Boolean) },
+  };
+  for (const s of Object.values(STN)) s.stale ||= (i, v) => s.id(i) !== v;
+  // En handling vid en gemensam station: ensam (eller som skiftledare) görs den direkt, som
+  // medarbetare blir den ett önskemål till skiftledaren (med det man bär). v = det man såg vid klicket.
+  function shared(key, i, v, s = -1) {
+    const st = STN[key];
+    // (fältet heter st – k är platsnyckeln som coop.send() lägger på)
+    if (mate()) { if (!pend) ask({ t: 'do', st: key, i, v, s, c: itemEnc(carry) }); return; }
+    const k = cookMe();
+    if (st.stale(i, v, k)) fx(k, k.by, 'H', ...st.at(i));
+    else st.run(k, i, s);
+    publish(k, false);
+  }
+  // skiftledaren: läget ut direkt efter en handling (FÖRE svaret – då har den som frågade redan
+  // det nya läget när svaret kommer) och utfallet till alla
+  function publish(k, svar) {
+    if (!svar && !(coop.active && coop.leader && coop.settled)) return;
+    sendSnap(); coop.sentSnap(); snapIn = 0.35;
+    if (svar) coop.send({ t: 'res', by: k.by, fx: k.fx, c: itemEnc(k.carry) });
+    else if (k.fx.length) coop.send({ t: 'res', by: k.by, fx: k.fx });
+  }
+  // medarbetarens önskemål: kocken väntar på ledarens svar (högst 2,5 s – sedan kan man försöka igen)
+  function ask(m) { coop.send(m); pend = { t: 2.5 }; }
+  function answered() {
+    pend = null;
+    if (queued && !done) { const q = queued; queued = null; api.down(q[0], q[1]); }
+  }
+  // ihop: lappen jag börjar bygga på tråget märks som min (skiftledaren håller i märkningen)
+  function paLappen(o) {
+    if (o.kock && here(o.kock)) return;   // någon (kanske jag) bygger den redan
+    o.kock = coop.myId;                   // syns direkt – nästa snap bekräftar
+    if (mate()) coop.send({ t: 'tag', id: o.id }); else snapAsap();
+  }
+  coop.on('snap', (m) => { if (!coop.leader) applySnap(m); });
+  coop.on('res', (m) => {   // ledarens utfall: puffarna hos alla – händerna, poängen och dricksen hos den det gäller
+    const me = coop.myId, mine = m.by === me;
+    if (coop.leader && !mine) return;   // (skiftledaren har redan visat det hos sig)
+    for (const f of (Array.isArray(m.fx) ? m.fx : []).slice(0, 48)) {
+      if (!Array.isArray(f)) continue;
+      const who = str(f[1]);
+      if (!who || who === me) doFx(f[0], f.slice(2));
+    }
+    if (mine) { if ('c' in m) carry = itemDec(m.c); answered(); }
+  });
+  coop.on('do', (m, from) => {   // en medarbetares handling vid en gemensam station – körs här, åt hen
+    if (!coop.leader) return;
+    const st = Object.hasOwn(STN, m.st) ? STN[m.st] : null;
+    if (!st) return;
+    const i = clamp(int(m.i, 0), 0, st.n - 1), k = cookFor(from, itemDec(m.c));
+    if (st.stale(i, int(m.v, -1), k)) fx(k, from, 'H', ...st.at(i));
+    else st.run(k, i, int(m.s, -1));
+    publish(k, true);
+  });
+  coop.on('fel', () => { if (coop.leader) { team.fel++; snapAsap(); } });   // en medarbetares egna fel räknas i laget
+  coop.on('tag', (m, from) => {   // en medarbetare börjar bygga en lapp: den blir hens (om ingen hann före)
+    if (!coop.leader) return;
+    const o = orders.find((q) => q.id === int(m.id, -1));
+    if (o && !(o.kock && here(o.kock))) { o.kock = from; snapAsap(); }
+  });
 
   // ---------- beställningarna ----------
   function pickRecept() {
@@ -627,6 +908,7 @@ export function makeJobbKok(A, { onDone } = {}) {
     const o = { recept: r, smak: RECEPT[r].id === 'shake' ? (smak ?? ((Math.random() * 3) | 0)) : undefined, kvar: RECEPT[r].max, max: RECEPT[r].max, id: seq++ };
     orders.push(o);
     play('chirp');
+    snapAsap();
     return o;
   }
   function matches(o, it) {
@@ -639,37 +921,41 @@ export function makeJobbKok(A, { onDone } = {}) {
   // ---------- grillen ----------
   function checkBrand(b, x, what) {
     if (b.brand || b.tid < (what === 'fry' ? T_FRY_BRANN : T_BRANN)) return;
-    b.brand = true; stats.brand++;
+    b.brand = true;
+    if (!coop.active || !b.by || b.by === coop.myId) stats.brand++;   // ihop: den brända är hens som lade på den
     play('miss'); pops.add(x, 46, 'BRÄNNS!', '#ff6a6a');
   }
-  function actGrill(i) {
+  // Stationerna görs av en kock k (se "jobba tillsammans"): k.carry är det hen bär, och allt
+  // som ska synas och höras går via k – ensam är det bara jag, precis som förut.
+  function doGrill(k, i) {
     const x = GRILL.slots[i], b = grill[i];
-    walker.dir = 'up';
-    if (!b) { grill[i] = { sida: 0, tid: 0, brand: false }; play('click'); pops.add(x, 48, 'RÅ BIFF PÅ!', '#f4f1ea'); workT = 0.3; return; }
+    if (!b) { grill[i] = { id: nid++, sida: 0, tid: 0, brand: false, by: k.by }; kLjud(k, 'click'); kPop(k, x, 48, 'RÅ BIFF PÅ!', '#f4f1ea'); kWork(k); return; }
     if (b.brand) {
-      if (carry) { hint('HÄNDERNA ÄR FULLA', x, 48); return; }
-      carry = { typ: 'biff', brand: true }; grill[i] = null; play('miss'); pops.add(x, 48, 'BRÄND - SLÄNG DEN', '#ff6a6a'); return;
+      if (k.carry) { kHint(k, 'HÄNDERNA ÄR FULLA', x, 48); return; }
+      k.carry = { typ: 'biff', brand: true }; grill[i] = null; kLjud(k, 'miss'); kPop(k, x, 48, 'BRÄND - SLÄNG DEN', '#ff6a6a'); return;
     }
     if (b.sida === 0) {
-      if (b.tid < T_SIDE) { hint('LÅT DEN STEKA KLART', x, 48); return; }
-      b.sida = 1; b.tid = 0; play('slide'); pops.add(x, 48, 'VÄND!', '#f4f1ea');
-      puff(x, GRILL.slotY, [0xfff0d0, 0xffffff, 0xffc040], 6, 5); workT = 0.3; return;
+      if (b.tid < T_SIDE) { kHint(k, 'LÅT DEN STEKA KLART', x, 48); return; }
+      b.sida = 1; b.tid = 0; kLjud(k, 'slide'); kPop(k, x, 48, 'VÄND!', '#f4f1ea');
+      fx(k, '', 'u', x); kWork(k); return;
     }
-    if (b.tid < T_SIDE) { hint('ANDRA SIDAN STEKER ÄN', x, 48); return; }
-    if (carry) { hint('HÄNDERNA ÄR FULLA', x, 48); return; }
-    carry = { typ: 'biff', brand: false }; grill[i] = null; play('ok'); workT = 0.3;
+    if (b.tid < T_SIDE) { kHint(k, 'ANDRA SIDAN STEKER ÄN', x, 48); return; }
+    if (k.carry) { kHint(k, 'HÄNDERNA ÄR FULLA', x, 48); return; }
+    k.carry = { typ: 'biff', brand: false }; grill[i] = null; kLjud(k, 'ok'); kWork(k);
   }
+  // v = det kocken såg vid plattan när hen klickade (se STN)
+  function actGrill(i, v = STN.grill.id(i)) { walker.dir = 'up'; shared('grill', i, v); }
   // ---------- fritösen ----------
-  function actFritos(i) {
+  function doFritos(k, i) {
     const x = FRIT.korgar[i], f = fritos[i];
-    walker.dir = 'up';
-    if (!f) { fritos[i] = { tid: 0, brand: false }; play('click'); pops.add(x, 44, 'POMMES NER!', '#f4f1ea'); workT = 0.3; return; }
-    if (f.tid < T_FRY && !f.brand) { hint('INTE KLARA ÄN', x, 44); return; }
-    if (carry) { hint('HÄNDERNA ÄR FULLA', x, 44); return; }
-    carry = { typ: 'pommes', saltad: false, brand: f.brand }; fritos[i] = null;
-    play(f.brand ? 'miss' : 'ok');
-    pops.add(x, 44, f.brand ? 'BRÄNDA...' : 'UPP MED KORGEN!', f.brand ? '#ff6a6a' : '#8ee03c'); workT = 0.3;
+    if (!f) { fritos[i] = { id: nid++, tid: 0, brand: false, by: k.by }; kLjud(k, 'click'); kPop(k, x, 44, 'POMMES NER!', '#f4f1ea'); kWork(k); return; }
+    if (f.tid < T_FRY && !f.brand) { kHint(k, 'INTE KLARA ÄN', x, 44); return; }
+    if (k.carry) { kHint(k, 'HÄNDERNA ÄR FULLA', x, 44); return; }
+    k.carry = { typ: 'pommes', saltad: false, brand: f.brand }; fritos[i] = null;
+    kLjud(k, f.brand ? 'miss' : 'ok');
+    kPop(k, x, 44, f.brand ? 'BRÄNDA...' : 'UPP MED KORGEN!', f.brand ? '#ff6a6a' : '#8ee03c'); kWork(k);
   }
+  function actFritos(i, v = STN.fritos.id(i)) { walker.dir = 'up'; shared('fritos', i, v); }
   function actSalt() {
     walker.dir = 'up';
     if (!carry || carry.typ !== 'pommes') { hint('TA UPP POMMES FÖRST', SALT.x, 40); return; }
@@ -679,20 +965,20 @@ export function makeJobbKok(A, { onDone } = {}) {
     puff(walker.px, walker.py - 26, [0xffffff, 0xf0f4f6], 8, 5); workT = 0.3;
   }
   // ---------- läsk, milkshake och glass ----------
-  function actMaskin(typ, smak) {
-    walker.dir = 'up';
-    const mx = typ === 'lask' ? 170 : typ === 'shake' ? 206 : 240;
+  function doMaskin(k, typ, smak) {
+    const mx = MASK_X[typ];
     const m = maskin[typ];
     if (m?.fas === 'klar') {
-      if (carry) { hint('HÄNDERNA ÄR FULLA', mx, 26); return; }
-      carry = { typ, smak: m.smak }; maskin[typ] = null; play('ok'); workT = 0.3; return;
+      if (k.carry) { kHint(k, 'HÄNDERNA ÄR FULLA', mx, 26); return; }
+      k.carry = { typ, smak: m.smak }; maskin[typ] = null; kLjud(k, 'ok'); kWork(k); return;
     }
-    if (m) { hint('MASKINEN ÄR IGÅNG', mx, 26); return; }
-    if (typ === 'shake' && smak === undefined) { hint('VÄLJ SMAK PÅ KNAPPARNA', mx, 26); return; }
-    maskin[typ] = { fas: 'fyller', t: 0, dur: FYLL_TID[typ], smak };
-    play('click'); workT = 0.3;
-    if (typ === 'shake') pops.add(mx, 26, SMAKER[smak] + '!', '#f4f1ea');
+    if (m) { kHint(k, 'MASKINEN ÄR IGÅNG', mx, 26); return; }
+    if (typ === 'shake' && smak === undefined) { kHint(k, 'VÄLJ SMAK PÅ KNAPPARNA', mx, 26); return; }
+    maskin[typ] = { id: nid++, fas: 'fyller', t: 0, dur: FYLL_TID[typ], smak };
+    kLjud(k, 'click'); kWork(k);
+    if (typ === 'shake') kPop(k, mx, 26, SMAKER[smak] + '!', '#f4f1ea');
   }
+  function actMaskin(typ, smak, v = STN.maskin.id(MASK.indexOf(typ))) { walker.dir = 'up'; shared('maskin', MASK.indexOf(typ), v, smak ?? -1); }
   // ---------- tråget: bygg burgaren i receptets ordning ----------
   function actLager(id) {
     const kx = walker.px, srcX = id === 'biff' ? kx : id === 'underbrod' ? BROD.xU : id === 'overbrod' ? BROD.xO : id === 'dressing' ? DRESS.x : BINS.find((b) => b.id === id).x;
@@ -700,12 +986,14 @@ export function makeJobbKok(A, { onDone } = {}) {
     if (id === 'biff' && carry.brand) { felOnce(carry, 'BRÄNT KÖTT! SLÄNG DET', TRAY.x, 96); return; }
     if (tray?.klar) { hint('LYFT BURGAREN FÖRST', TRAY.x, 96); return; }
     if (!tray) {
-      const o = orders.find((c) => isBurgare(c.recept));
+      // ihop: den första burgarlappen som ingen annan kock redan bygger (finns ingen sådan – den första)
+      const o = orders.find((c) => isBurgare(c.recept) && !annans(c)) || orders.find((c) => isBurgare(c.recept));
       if (!o) { hint('INGEN BURGARE ÄR BESTÄLLD', TRAY.x, 96); return; }
       tray = { recept: o.recept, lager: [], klar: false };
+      if (coop.active) paLappen(o);
     }
     const steg = RECEPT[tray.recept].steg, next = steg[tray.lager.length];
-    if (id !== next) { stats.fel++; play('fel'); pops.add(TRAY.x, 96, `OOPS! NÄSTA: ${STEG_NAMN[next]}`, '#ff6a6a'); return; }
+    if (id !== next) { felMin(); play('fel'); pops.add(TRAY.x, 96, `OOPS! NÄSTA: ${STEG_NAMN[next]}`, '#ff6a6a'); return; }
     tray.lager.push(id);
     if (id === 'biff') carry = null;
     sprinkle(srcX, ISL.top + 2, lagerCols(id), id === 'biff' ? 8 : 12);
@@ -721,21 +1009,20 @@ export function makeJobbKok(A, { onDone } = {}) {
     hint('BÖRJA MED UNDERBRÖDET', TRAY.x, 96);
   }
   // ---------- brickan och klockan vid luckan ----------
-  function actBricka(spot) {
-    walker.dir = 'up';
+  function doBricka(k, spot) {
     const x = BRICKA.spots[spot];
-    if (!carry && bricka[spot]) { carry = bricka[spot]; bricka[spot] = null; play('click'); return; }
-    if (!carry) { hint('HÄMTA EN FÄRDIG RÄTT FÖRST', x, 52); return; }
-    if (carry.typ === 'biff') { hint('BIFFEN SKA PÅ EN BURGARE', x, 52); return; }
-    if (carry.brand) { felOnce(carry, 'BRÄNT! SLÄNG DET', x, 52); return; }
-    if (carry.typ === 'pommes' && !carry.saltad) { hint('SALTA POMMESEN FÖRST!', x, 52); return; }
+    if (!k.carry && bricka[spot]) { k.carry = itemDec(itemEnc(bricka[spot])); bricka[spot] = null; kLjud(k, 'click'); return; }   // (utan brickans id och kock)
+    if (!k.carry) { kHint(k, 'HÄMTA EN FÄRDIG RÄTT FÖRST', x, 52); return; }
+    if (k.carry.typ === 'biff') { kHint(k, 'BIFFEN SKA PÅ EN BURGARE', x, 52); return; }
+    if (k.carry.brand) { kFelOnce(k, k.carry, 'BRÄNT! SLÄNG DET', x, 52); return; }
+    if (k.carry.typ === 'pommes' && !k.carry.saltad) { kHint(k, 'SALTA POMMESEN FÖRST!', x, 52); return; }
     let s = bricka[spot] ? bricka.findIndex((v) => !v) : spot;
-    if (s < 0) { hint('BRICKAN ÄR FULL - RING I KLOCKAN', x, 52); return; }
-    bricka[s] = carry; carry = null; play('click'); workT = 0.3;
+    if (s < 0) { kHint(k, 'BRICKAN ÄR FULL - RING I KLOCKAN', x, 52); return; }
+    bricka[s] = { ...k.carry, id: nid++, by: k.by }; k.carry = null; kLjud(k, 'click'); kWork(k);   // by: rätten är hens
   }
-  function actBell() {
-    walker.dir = 'up';
-    bellT = 0.55; play('box');
+  function actBricka(spot, v = STN.bricka.id(spot)) { walker.dir = 'up'; shared('bricka', spot, v); }
+  function doBell(k) {
+    fx(k, '', 'k'); fx(k, '', 's', 'box');   // PLING – syns och hörs hos alla
     let served = 0, rest = null;
     for (let s = 0; s < 3; s++) {
       const it = bricka[s];
@@ -743,19 +1030,22 @@ export function makeJobbKok(A, { onDone } = {}) {
       const oi = orders.findIndex((o) => matches(o, it));
       if (oi < 0) { rest = it; continue; }
       const o = orders.splice(oi, 1)[0];
-      bricka[s] = null; served++; stats.ok++;
-      play('coin');
-      pops.add(BRICKA.spots[s], 52, `+${wage} TACK!`, '#8ee03c');
-      if (o.kvar / o.max > 0.6) { // snabb mat ger dricks – blixtsnabb ger mer; allt går rakt ner i lönen
-        const kr = o.kvar / o.max > 0.85 ? 10 : 5;
-        stats.dricks++; stats.dricksKr += kr;
-        pops.add(BRICKA.spots[s], 42, `+${kr} DRICKS!`, '#ffd23f');
-        bellaSay(kr >= 10 ? 'BLIXTSNABBT! GÄSTEN GAV EN TIA I DRICKS! 💰' : 'SNABBT JOBBAT! GÄSTEN GAV DRICKS! 💰');
+      bricka[s] = null; served++; team.ok++;
+      // poängen och dricksen till kocken som ställde dit rätten, vem som än ringde (ensam: jag)
+      const kock = (coop.active || k.remote) && it.by ? it.by : k.by;
+      // snabb mat ger dricks – blixtsnabb ger mer; allt går rakt ner i lönen
+      const kr = o.kvar / o.max > 0.6 ? (o.kvar / o.max > 0.85 ? 10 : 5) : 0;
+      fx(k, kock, 'o', kr); fx(k, kock, 's', 'coin');
+      kPop(k, BRICKA.spots[s], 52, `+${wage} TACK!`, '#8ee03c');
+      if (kr) {
+        kPop(k, BRICKA.spots[s], 42, `+${kr} DRICKS!`, '#ffd23f');
+        fx(k, '', 'B', kr >= 10 ? 'BLIXTSNABBT! GÄSTEN GAV EN TIA I DRICKS! 💰' : 'SNABBT JOBBAT! GÄSTEN GAV DRICKS! 💰');
       }
     }
-    if (!served && !rest) hint('STÄLL MATEN PÅ BRICKAN FÖRST', BELL.x - 10, 46);
-    else if (!served && rest) hint('INGEN HAR BESTÄLLT DET HÄR', BELL.x - 10, 46);
+    if (!served && !rest) kHint(k, 'STÄLL MATEN PÅ BRICKAN FÖRST', BELL.x - 10, 46);
+    else if (!served && rest) kHint(k, 'INGEN HAR BESTÄLLT DET HÄR', BELL.x - 10, 46);
   }
+  function actBell(v = STN.klocka.id()) { walker.dir = 'up'; shared('klocka', 0, v); }
   function actTrash() {
     if (!carry) { hint('INGET ATT SLÄNGA', TRASH.x, TRASH.y - 30); return; }
     carry = null; trashT = 0.6; play('miss');
@@ -791,15 +1081,18 @@ export function makeJobbKok(A, { onDone } = {}) {
     if (Math.abs(x - TRASH.x) <= 12 && y >= TRASH.y - 28 && y <= TRASH.y + 2) return { k: 'sopor', namn: 'SOPTUNNAN' };
     return null;
   }
+  // (vid de gemensamma stationerna minns kocken vad hen såg när hen klickade – har det ändrats
+  // när hen kommer fram hann någon annan före)
   function doStation(s) {
-    if (s.k === 'grill') walker.walkTo(GRILL.slots[s.i], 95, () => actGrill(s.i));
-    else if (s.k === 'fritos') walker.walkTo(FRIT.korgar[s.i], 95, () => actFritos(s.i));
+    if (s.k === 'grill') { const v = STN.grill.id(s.i); walker.walkTo(GRILL.slots[s.i], 95, () => actGrill(s.i, v)); }
+    else if (s.k === 'fritos') { const v = STN.fritos.id(s.i); walker.walkTo(FRIT.korgar[s.i], 95, () => actFritos(s.i, v)); }
     else if (s.k === 'salt') walker.walkTo(SALT.x + 3, 95, actSalt);
-    else if (s.k === 'lask') walker.walkTo(170, 95, () => actMaskin('lask'));
-    else if (s.k === 'shake') walker.walkTo(206, 95, () => actMaskin('shake', s.smak));
-    else if (s.k === 'glass') walker.walkTo(240, 95, () => actMaskin('glass'));
-    else if (s.k === 'klocka') walker.walkTo(BELL.x - 8, 95, actBell);
-    else if (s.k === 'bricka') walker.walkTo(BRICKA.spots[s.spot], 95, () => actBricka(s.spot));
+    else if (s.k === 'lask' || s.k === 'shake' || s.k === 'glass') {
+      const v = STN.maskin.id(MASK.indexOf(s.k));
+      walker.walkTo(MASK_X[s.k], 95, () => actMaskin(s.k, s.k === 'shake' ? s.smak : undefined, v));
+    }
+    else if (s.k === 'klocka') { const v = STN.klocka.id(); walker.walkTo(BELL.x - 8, 95, () => actBell(v)); }
+    else if (s.k === 'bricka') { const v = STN.bricka.id(s.spot); walker.walkTo(BRICKA.spots[s.spot], 95, () => actBricka(s.spot, v)); }
     else if (s.k === 'lager') walker.walkTo(s.ax, STAND_Y, () => actLager(s.id));
     else if (s.k === 'trag') walker.walkTo(TRAY.x, STAND_Y, actTray);
     else if (s.k === 'sopor') walker.walkTo(TRASH.x - 16, TRASH.y - 2, actTrash);
@@ -812,13 +1105,14 @@ export function makeJobbKok(A, { onDone } = {}) {
     state: () => ({
       carry: beskriv(carry),
       trag: tray ? { recept: RECEPT[tray.recept].id, lager: [...tray.lager], klar: !!tray.klar } : null,
-      grill: grill.map((b) => (b ? { sida: b.sida, tid: +b.tid.toFixed(2), brand: b.brand } : null)),
-      fritos: fritos.map((f) => (f ? { tid: +f.tid.toFixed(2), brand: f.brand } : null)),
-      maskin: Object.fromEntries(Object.entries(maskin).map(([k, m]) => [k, m ? { fas: m.fas, smak: m.smak !== undefined ? SMAKER[m.smak] : undefined } : null])),
+      grill: grill.map((b) => (b ? { id: b.id, sida: b.sida, tid: +b.tid.toFixed(2), brand: b.brand, by: b.by } : null)),
+      fritos: fritos.map((f) => (f ? { id: f.id, tid: +f.tid.toFixed(2), brand: f.brand } : null)),
+      maskin: Object.fromEntries(Object.entries(maskin).map(([k, m]) => [k, m ? { id: m.id, fas: m.fas, smak: m.smak !== undefined ? SMAKER[m.smak] : undefined } : null])),
       bricka: bricka.map(beskriv),
       nasta: orders[0] ? RECEPT[orders[0].recept].id : null,
     }),
-    orders: () => orders.map((o) => ({ recept: RECEPT[o.recept].id, namn: RECEPT[o.recept].namn, smak: o.smak !== undefined ? SMAKER[o.smak] : undefined, kvar: +o.kvar.toFixed(1) })),
+    // (kock = spelar-id för den som bygger lappen – bara ihop)
+    orders: () => orders.map((o) => ({ id: o.id, recept: RECEPT[o.recept].id, namn: RECEPT[o.recept].namn, smak: o.smak !== undefined ? SMAKER[o.smak] : undefined, kvar: +o.kvar.toFixed(1), kock: o.kock || null })),
     // forceOrder('burgare' | 'gron' | 'stora' | 'pommes' | 'lask' | 'shake' | 'glass', smak 0-2)
     forceOrder: (recept, smak) => { const o = spawnOrder(REC_IX[recept] ?? 0, smak); return o ? dbg.orders()[orders.length - 1] : null; },
     // testhjälp: sänker alla lappars tålamod (varningslampan tänds under 8 s kvar)
@@ -829,6 +1123,8 @@ export function makeJobbKok(A, { onDone } = {}) {
     // perfekt biff läggs på tråget). Fritösen: 'pommesner', 'pommesklar', 'pommesbrann',
     // 'pommesupp', 'salta'. Maskinerna: 'lask', 'glass', 'shake' eller 'shake:jordgubb'
     // (fyller och tar direkt). Övrigt: 'trag' (lyft/lägg), 'bricka', 'klocka', 'sopor'.
+    // Ihop: 'stek'/'brann'/'pommesklar'/'pommesbrann' gäller hos skiftledaren; hos en medarbetare
+    // blir stegen vid grillen, fritösen, maskinerna, brickan och klockan önskemål (ett i taget).
     step(namn) {
       const [id, arg] = String(namn).split(':');
       if (LAGER[id] && id !== 'biff') actLager(id);
@@ -852,6 +1148,7 @@ export function makeJobbKok(A, { onDone } = {}) {
       else if (id === 'bricka') actBricka(bricka.findIndex((v) => !v) < 0 ? 0 : bricka.findIndex((v) => !v));
       else if (id === 'klocka') actBell();
       else if (id === 'sopor') actTrash();
+      snapAsap();
       return dbg.state();
     },
     // Genväg: lyft det som är klart, ställ på brickan och ring i klockan.
@@ -872,6 +1169,47 @@ export function makeJobbKok(A, { onDone } = {}) {
       klocka: [BELL.x, 62], sopor: [TRASH.x, TRASH.y - 12],
     })[id] || null,
     busy: () => walker.path.length > 0,
+    // ---------- jobba tillsammans (tools/coop-kok-test.mjs) ----------
+    coop: () => ({ leader: coop.leader, active: coop.active, mates: coop.peers().length, settled: coop.settled, myId: coop.myId }),
+    lag: () => ({ ...team, maxN }),
+    brickan: () => bricka.map((it) => (it ? { id: it.id, by: it.by, ...beskriv(it) } : null)),
+    // lugnt i köket (skiftledaren/solo): inga nya lappar, skenan och de gemensamma stationerna töms
+    calm() { orderIn = 1e9; orders = []; grill.fill(null); fritos.fill(null); for (const typ of MASK) maskin[typ] = null; bricka.fill(null); snapAsap(); },
+    // lägg en biff direkt på grillen (skiftledaren/solo): sida 0/1 (null = töm plattan), tid =
+    // sekunder på den sidan. Returnerar biffens id.
+    forceGrill(slot = 0, sida = 0, tid = 0) {
+      const i = clamp(slot | 0, 0, 2);
+      grill[i] = sida === null ? null : { id: nid++, sida: sida ? 1 : 0, tid: +tid || 0, brand: false, by: coop.myId || '' };
+      snapAsap();
+      return grill[i] ? grill[i].id : null;
+    },
+    // lägg något direkt i händerna (det man bär är ens eget): 'lask' | 'glass' | 'shake:jordgubb' |
+    // 'pommes' (saltad) | 'biff' | 'burgare:gron' | annat = tomma händer
+    give(namn) {
+      const [id, arg] = String(namn).split(':');
+      if (id === 'shake') carry = { typ: 'shake', smak: Math.max(0, SMAKER.findIndex((s) => s.toLowerCase() === String(arg || 'vanilj').toLowerCase())) };
+      else if (id === 'pommes') carry = { typ: 'pommes', saltad: true, brand: false };
+      else if (id === 'biff') carry = { typ: 'biff', brand: false };
+      else if (id === 'burgare') carry = { typ: 'burgare', recept: REC_IX[arg || 'burgare'] ?? 0 };
+      else if (id === 'lask' || id === 'glass') carry = { typ: id, smak: undefined };
+      else carry = null;
+      return beskriv(carry);
+    },
+    // ställ kocken direkt på en plats (för klicktester vid stationerna)
+    place(x, y, dir = 'up') { walker.stop(); walker.px = x; walker.py = y; walker.dir = dir; },
+    // där kocken står vid en station (samma mål som klicket går till)
+    standAt: (id) => ({
+      grill0: [GRILL.slots[0], 95], grill1: [GRILL.slots[1], 95], grill2: [GRILL.slots[2], 95],
+      fritos0: [FRIT.korgar[0], 95], fritos1: [FRIT.korgar[1], 95], salt: [SALT.x + 3, 95],
+      lask: [MASK_X.lask, 95], shake: [MASK_X.shake, 95], glass: [MASK_X.glass, 95],
+      bricka0: [BRICKA.spots[0], 95], bricka1: [BRICKA.spots[1], 95], bricka2: [BRICKA.spots[2], 95],
+      klocka: [BELL.x - 8, 95], trag: [TRAY.x, STAND_Y], sopor: [TRASH.x - 16, TRASH.y - 2],
+    })[id] || null,
+    // sant när kocken står still och inte väntar på skiftledarens svar
+    idle: () => !pend && !queued && walker.path.length === 0,
+    pending: () => !!pend,
+    time: () => t,
+    pops: () => popLog.slice(),
   };
 
   // ---------- dynamisk ritning ----------
@@ -970,7 +1308,7 @@ export function makeJobbKok(A, { onDone } = {}) {
   // nedersta raden: nästa beställning med stegen i rätt ordning (gjorda = grå, nästa = vit)
   function drawNextRow(ctx) {
     ctx.fillStyle = 'rgba(23,21,26,0.85)'; ctx.fillRect(0, FH - 12, FW, 12);
-    const o = orders[0];
+    const o = orders.find((c) => !annans(c)) || orders[0];   // (ihop: hoppa över lappar en annan kock bygger)
     let x = 4;
     const put = (s, c) => { ctxText(ctx, SMALL, s, x, FH - 9, c); x += textW(SMALL, s) + 4; };
     if (!o) { put('INGA BESTÄLLNINGAR JUST NU - PASSA PÅ ATT LÄGGA PÅ BIFFAR!', '#ffd23f'); return; }
@@ -984,65 +1322,103 @@ export function makeJobbKok(A, { onDone } = {}) {
     } else put(STEG_NAMN[rec.steg[0]], '#ffd23f');
   }
 
-  return {
+  // skiftledarens (och den ensammas) kök: grillen, fritösen, maskinerna och lapparna på skenan
+  function leadTick(dt) {
+    // grillen steker
+    grill.forEach((b, i) => {
+      if (!b) return;
+      const fore = b.tid;
+      b.tid += dt;
+      if (!b.brand) {
+        if (fore < T_SIDE && b.tid >= T_SIDE) { play('ok'); pops.add(GRILL.slots[i], 46, b.sida === 0 ? 'VÄND MIG!' : 'KLAR!', b.sida === 0 ? '#ffd23f' : '#8ee03c'); }
+        checkBrand(b, GRILL.slots[i]);
+      } else if (Math.random() < dt * 7) smoke(GRILL.slots[i], 52);
+    });
+    // fritösen fräser
+    fritos.forEach((f, i) => {
+      if (!f) return;
+      const fore = f.tid;
+      f.tid += dt;
+      if (!f.brand) {
+        if (fore < T_FRY && f.tid >= T_FRY) { play('ok'); pops.add(FRIT.korgar[i], 42, 'UPP MED KORGEN!', '#8ee03c'); }
+        checkBrand(f, FRIT.korgar[i], 'fry');
+      } else if (Math.random() < dt * 7) smoke(FRIT.korgar[i], 50);
+    });
+    // maskinerna fyller
+    for (const [typ, m] of Object.entries(maskin)) {
+      if (!m || m.fas !== 'fyller') continue;
+      m.t += dt;
+      if (m.t >= m.dur) { m.fas = 'klar'; play('ok'); pops.add(MASK_X[typ], 26, 'KLAR!', '#8ee03c'); }
+    }
+    // nya beställningar på skenan (en van kock får fler lappar – P.pace; gästerna väntar lika
+    // länge; ihop kommer de tätare – skenan har ändå bara plats för MAX_TICKETS)
+    orderIn -= dt;
+    if (orderIn <= 0) {
+      orderIn = (8.5 - 3.5 * Math.min(1, t / P.seconds) + hash(seq, 3) * 2.5) * P.pace * (coop.active ? 0.45 : 1);
+      spawnOrder(seq === 0 ? 0 : undefined);   // första lappen är alltid en vanlig burgare
+    }
+    // tålamodet rinner ut (en gäst som tröttnar hörs hos alla i köket)
+    for (let i = orders.length - 1; i >= 0; i--) {
+      const o = orders[i];
+      o.kvar -= dt;
+      if (o.kvar <= 0) {
+        orders.splice(i, 1);
+        stats.miss++; team.miss++; play('miss');
+        const x = LUCK.x0 + 10 + i * TICKET_PITCH;
+        pops.add(x, 40, 'EN GÄST TRÖTTNADE...', '#d8d2c0');
+        if (coop.active) { coop.send({ t: 'res', by: '', fx: [['s', '', 'miss'], ['p', '', x, 40, 'EN GÄST TRÖTTNADE...', '#d8d2c0']] }); snapAsap(); }
+      }
+    }
+    if (coop.active) { snapIn -= dt; if (snapIn <= 0) { snapIn = 0.35; sendSnap(); coop.sentSnap(); } }
+  }
+
+  const api = {
     _debug: dbg,
     get worldX() { return walker.px; },
     get worldY() { return walker.py; },
     enter() {},
-    exit() { talk.clear(); },
+    exit() { talk.clear(); coop.dispose(); },
     update(dt) {
       pops.update(dt);
       updParts(dt);
-      if (done) { doneT += dt; if (doneT > 1.2 && !reported) { reported = true; onDone?.(stats); } return; }
+      if (done) {
+        coop.tick(); coop.resign();   // MITT pass är slut – lämna över ledningen direkt (även på lönebeskedet)
+        doneT += dt;
+        if (doneT > 1.2 && !reported) {
+          reported = true;
+          if (maxN > 1) {   // jobbat ihop: laget delar lika på rätt, fel och missade – dricksen är var och ens egen
+            const sh = (v) => Math.round(v / maxN);
+            onDone?.({ ok: sh(team.ok), fel: sh(team.fel), miss: sh(team.miss), delat: maxN, lagOk: team.ok, lagFel: team.fel, dricks: stats.dricks, dricksKr: stats.dricksKr, brand: stats.brand });
+          } else onDone?.(stats);
+        }
+        return;
+      }
       t += dt;
-      if (t >= P.seconds) { done = true; return; }
+      if (t >= P.seconds) { done = true; pend = null; queued = null; return; }
       walker.update(dt);
       if (workT > 0) workT -= dt;
       if (bellT > 0) bellT -= dt;
       if (trashT > 0) trashT -= dt;
+      if (pend) { pend.t -= dt; if (pend.t <= 0) answered(); }   // inget svar (ledaren gick?) – då får man försöka igen
+      coop.tick();
+      if (coop.active) maxN = Math.max(maxN, coop.peers().length + 1);
+      if (coop.active !== wasCoop) {   // en kollega kom in: fullt ös på skenan
+        wasCoop = coop.active;
+        if (wasCoop) { play('knock'); pops.add(FW >> 1, 160, 'NI JOBBAR IHOP!', '#8ee03c'); }
+      }
       if (!saidIntro && t > 0.8) { saidIntro = true; bellaSay('HEJ KOCKEN! BYGG DET SOM STÅR PÅ LAPPARNA OCH RING I KLOCKAN! 🍔'); }
-      // grillen steker
-      grill.forEach((b, i) => {
-        if (!b) return;
-        const fore = b.tid;
-        b.tid += dt;
-        if (!b.brand) {
-          if (fore < T_SIDE && b.tid >= T_SIDE) { play('ok'); pops.add(GRILL.slots[i], 46, b.sida === 0 ? 'VÄND MIG!' : 'KLAR!', b.sida === 0 ? '#ffd23f' : '#8ee03c'); }
-          checkBrand(b, GRILL.slots[i]);
-        } else if (Math.random() < dt * 7) smoke(GRILL.slots[i], 52);
-      });
-      // fritösen fräser
-      fritos.forEach((f, i) => {
-        if (!f) return;
-        const fore = f.tid;
-        f.tid += dt;
-        if (!f.brand) {
-          if (fore < T_FRY && f.tid >= T_FRY) { play('ok'); pops.add(FRIT.korgar[i], 42, 'UPP MED KORGEN!', '#8ee03c'); }
-          checkBrand(f, FRIT.korgar[i], 'fry');
-        } else if (Math.random() < dt * 7) smoke(FRIT.korgar[i], 50);
-      });
-      // maskinerna fyller
-      for (const [typ, m] of Object.entries(maskin)) {
-        if (!m || m.fas !== 'fyller') continue;
-        m.t += dt;
-        if (m.t >= m.dur) { m.fas = 'klar'; play('ok'); pops.add(typ === 'lask' ? 170 : typ === 'shake' ? 206 : 240, 26, 'KLAR!', '#8ee03c'); }
+      // Skiftledaren (eller solo) kör skenan och stationerna; medarbetare följer ledarens läge
+      const iLead = !coop.active || (coop.leader && coop.settled);
+      if (iLead && !wasLead) {
+        // JAG tar över passet: hoppa över gamla id:n (lappar, biffar, korgar, koppar och det på
+        // brickan – inga krockar) och låt nästa lapp komma snart
+        seq = Math.max(seq, 1 + orders.reduce((mx, o) => Math.max(mx, o.id | 0), -1));
+        nid = Math.max(nid, 1 + [...grill, ...fritos, ...MASK.map((typ) => maskin[typ]), ...bricka].reduce((mx, x) => Math.max(mx, x ? x.id | 0 : -1), -1));
+        orderIn = Math.min(orderIn, 2);
+        snapAsap();
       }
-      // nya beställningar på skenan (en van kock får fler lappar – P.pace; gästerna väntar lika länge)
-      orderIn -= dt;
-      if (orderIn <= 0) {
-        orderIn = (8.5 - 3.5 * Math.min(1, t / P.seconds) + hash(seq, 3) * 2.5) * P.pace;
-        spawnOrder(seq === 0 ? 0 : undefined);   // första lappen är alltid en vanlig burgare
-      }
-      // tålamodet rinner ut
-      for (let i = orders.length - 1; i >= 0; i--) {
-        const o = orders[i];
-        o.kvar -= dt;
-        if (o.kvar <= 0) {
-          orders.splice(i, 1);
-          stats.miss++; play('miss');
-          pops.add(LUCK.x0 + 10 + i * TICKET_PITCH, 40, 'EN GÄST TRÖTTNADE...', '#d8d2c0');
-        }
-      }
+      wasLead = iLead;
+      if (iLead) leadTick(dt); else mateTick(dt);
       if (orders.some((o) => o.kvar < 9)) bellaSay('SKYNDA DIG - EN GÄST HAR VÄNTAT LÄNGE!');
       // Bella går av och an där ute
       if (bella.pauseT > 0) bella.pauseT -= dt;
@@ -1056,6 +1432,7 @@ export function makeJobbKok(A, { onDone } = {}) {
     move(x, y) { hover = done ? null : stationAt(x, y); },
     down(x, y) {
       if (done) return;
+      if (pend) { queued = [x, y]; return; }   // väntar på skiftledarens svar – klicket tas strax
       const s = stationAt(x, y);
       if (s) { doStation(s); return; }
       walker.walkTo(x, y);
@@ -1079,9 +1456,10 @@ export function makeJobbKok(A, { onDone } = {}) {
       drawBell(ctx);
       // soptunnans lock slår upp
       if (trashT > 0) { ctx.fillStyle = '#6a747e'; ctx.fillRect(TRASH.x + 6, TRASH.y - 34, 12, 3); ctx.fillStyle = '#a8b2bc'; ctx.fillRect(TRASH.x + 7, TRASH.y - 34, 10, 1); }
-      // beställningslapparna på skenan
+      // beställningslapparna på skenan (ihop: grönt märke = jag bygger den, blått = en kollega)
       const blink = (t * 4 | 0) % 2;
-      orders.slice(0, MAX_TICKETS).forEach((o, i) => drawTicket(ctx, o, LUCK.x0 + 2 + i * TICKET_PITCH, blink));
+      const mark = (o) => (!coop.active || !o.kock ? null : o.kock === coop.myId ? '#45b964' : annans(o) ? '#3a78d8' : null);
+      orders.slice(0, MAX_TICKETS).forEach((o, i) => drawTicket(ctx, o, LUCK.x0 + 2 + i * TICKET_PITCH, blink, mark(o)));
       // figurerna + ön (tråget och burgarbygget ritas med ön, framför kocken bakom bänken)
       const drawables = [...folkDrawables(A, t), selfDrawable(A, walker, t, { carry: !!carry || workT > 0 })];
       if (carry) {
@@ -1125,8 +1503,9 @@ export function makeJobbKok(A, { onDone } = {}) {
         ctx.globalAlpha = 1;
       }
       drawNextRow(ctx);
-      drawShiftHud(ctx, { W: FW }, { t, dur: P.seconds, ok: stats.ok, fel: stats.fel, title: 'BURGARKÖKET' });
+      drawShiftHud(ctx, { W: FW }, { t, dur: P.seconds, ok: maxN > 1 ? team.ok : stats.ok, fel: maxN > 1 ? team.fel : stats.fel, title: maxN > 1 ? 'BURGARKÖKET IHOP' : 'BURGARKÖKET' });
       if (done) drawTimeUp(ctx, { W: FW, H: FH });
     },
   };
+  return api;
 }

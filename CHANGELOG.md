@@ -10,6 +10,13 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.61.0] – 2026-09-30 – Jobba ihop i Burgarköket
+- Jobba ihop i Burgarköket: bjud in en kompis med 💼 Jobba ihop när du börjar passet (eller via 👥 mitt i passet) – ni delar lapparna, grillen, fritösen, maskinerna och brickan vid luckan.
+- Var och en bygger sina burgare på sin egen bricka. Börjar du på en burgare tar du första lappen som ingen annan bygger – ett litet hörn på lappen visar vems den är (grönt = din, blått = kollegans).
+- Den som lägger rätten på brickan får poängen och dricksen – dricksen delas inte. Lagets rätt och fel delas lika på lönebeskedet.
+- Hinner båda till samma burgare på grillen eller samma korg gäller bara den första – den som kom för sent får höra "HANN FÖRE!".
+- När ni är fler kommer beställningarna tätare. Går den som leder passet hem tar någon annan över direkt.
+
 ## [0.60.0] – 2026-09-30 – Jobba ihop på pizzerian
 - Jobba ihop på Pizzeria Napoli: bjud in en kompis med 💼 Jobba ihop när du börjar passet (eller via 👥 mitt i passet) – ni har samma matsal och samma vedugn.
 - Var och en bakar på sin bänk, men ugnen delar ni: den ena kan baka och den andra ta ut, packa och servera. Den som serverar får poängen, och lagets rätt delas lika på lönebeskedet.
