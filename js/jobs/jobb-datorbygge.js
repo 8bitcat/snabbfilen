@@ -14,14 +14,22 @@
 // Passet via shift.js som de andra jobben (60 s för en nybörjare, längre med vanan – planOf;
 // nästa låda kommer när den förra är buren, så takten styrs av en själv). Escape = avbryt passet.
 //
+// JOBBA IHOP: flera kan dela passet (💼-inbjudan, js/net/coop.js). Man bygger SAMMA dator – en
+// bänk, en låda och en orderskärm, som på bilden – och delar upp jobbet som man vill (en hämtar i
+// hyllorna, en skruvar). Skiftledaren avgör allt som gäller lådan och ordern, medarbetarnas
+// handlingar blir önskemål – se "jobba tillsammans" i makeJobbDatorbygge.
+//
 // _debug: state(), order(), bins() (id, x, y), spot(id) → { x, y } (skärm), pick(id) (ta delen
-//   direkt), install() (sätt i det man bär), power(), finish() (spola till slutet av passet),
-//   stats.
+//   direkt), install() (sätt i det man bär), tool(id), power(), finish() (spola till slutet av
+//   passet), stats – och för jobba ihop (tools/coop-datorbygge-test.mjs): coop(), lag(), title(),
+//   held(), carrying(), setOrder(ix), standAt(id), teleport(x, y), toolTwice(id), handled(),
+//   idle(), pops().
 import { drawPerson, makeLook } from '../core/people.js';
 import { Pix, SMALL, text, textW, ctxText, mix, mul, hash } from '../core/floor-pix.js';
 import { createWalker, selfDrawable, folkDrawables, WALK_SEQ, createSpeech } from '../scenes/walkable.js';
 import { planOf, drawShiftHud, drawTimeUp, makePops, abortShift } from './shift.js';
 import { play } from '../core/sound.js';
+import { makeShiftCoop } from '../net/coop.js';
 import { JOBS } from '../game.js';
 
 const FW = 384, FH = 216;
@@ -200,25 +208,42 @@ function paintBg() {
   return BG;
 }
 
+// ---------- jobba ihop: det som skickas mellan byggarna ----------
+// ljuden som skiftledarens utfall får spela hos den det gäller (eller hos alla)
+const LJUD = new Set(['click', 'ok', 'fel', 'miss', 'slide', 'coin']);
+// platserna på moderkortet (i snappen: delens nummer i PARTS, −1 = tom)
+const SLOTS = ['cpu', 'ram', 'gpu', 'ssd', 'psu'];
+// det man såg vid bänken när man klickade: ordernumret · 256 + det som satt i (bitarna) – har det
+// ändrats när man väl är framme, och går det inte längre, hann någon annan före
+const BIT = { cpu: 1, ram: 2, gpu: 4, ssd: 8, psu: 16, pasta: 32, kylare: 64, upptagen: 128 };
+const BUD_ST = ['away', 'in', 'take', 'out'];   // kollegan från lagret som bär iväg datorn
+const MATE_LINES = ['Snyggt bygge!', 'Kunden blir glad!', 'Den tar jag!', 'Nästa order kommer!'];
+const pIx = (id) => PARTS.findIndex((p) => p.id === id);
+const partAt = (ix) => (Number.isInteger(ix) && ix >= 0 && ix < PARTS.length ? PARTS[ix] : null);
+
 // ---------- scenen ----------
 export function makeJobbDatorbygge(A, { onDone } = {}) {
   let t = 0, done = false, doneT = 0, reported = false;
   const P = planOf(A);   // passets plan: längden (P.seconds) växer med vanan
   const stats = { ok: 0, fel: 0, miss: 0, boxes: 0 };
   const pops = makePops();
+  const popLog = [];   // de senaste puffarnas text (provet läser dem: syntes "HANN FÖRE!"?)
+  const addPop = pops.add;
+  pops.add = (x, y, txt, c) => { popLog.push(txt); if (popLog.length > 30) popLog.shift(); addPop(x, y, txt, c); };
   const talk = createSpeech(), talkMate = createSpeech();
   const walker = createWalker({ W: FW, H: FH, left: 6, right: FW - 6, top: WALL_Y + 6, bottom: FH - 10, spawn: [STAND[0], STAND[1] + 20] });
   walker.speed = 118;
   walker.setObstacles([[BENCH.x0, BENCH.top, BENCH.x1, BENCH.y], [PALLET.x0, PALLET.y - 12, PALLET.x1, PALLET.y + 2], [CART.x0, CART.y - 10, CART.x1, CART.y + 2], [360, 188, 372, 200]]);
   const meAt = () => ({ x: walker.px, y: walker.py - 46 });
 
-  // ordern och det som sitter i datorn
-  let seq = 0, order = null, box = null, carry = null, power = null, slideIn = 0, slideOut = null;
-  const rngOrder = () => ORDERS[(hash(seq, 17, 91) * ORDERS.length) | 0];
+  // ordern (ix = vilken av ORDERS) och det som sitter i datorn
+  let seq = 0, maxNr = 0, order = null, box = null, carry = null, power = null, slideIn = 0, slideOut = null;
+  const emptyBox = () => ({ cpu: null, pasta: false, kylare: false, ram: null, gpu: null, ssd: null, psu: null });
   function newOrder() {
-    seq += 1;
-    order = { ...rngOrder(), nr: seq };
-    box = { cpu: null, pasta: false, kylare: false, ram: null, gpu: null, ssd: null, psu: null };
+    seq += 1; maxNr = Math.max(maxNr, seq);
+    const ix = (hash(seq, 17, 91) * ORDERS.length) | 0;
+    order = { ...ORDERS[ix], nr: seq, ix };
+    box = emptyBox();
     power = null; slideIn = seq > 1 ? 1 : 0;   // första lådan står redan på bänken
   }
   newOrder();
@@ -226,79 +251,359 @@ export function makeJobbDatorbygge(A, { onDone } = {}) {
   const complete = () => needs().every((k) => box[k]) && box.pasta && box.kylare;
   // kollegan som bär iväg den färdiga datorn
   const mate = { look: { ...makeLook(() => 0.37), kid: false, shirt: '#3a7bd5', top: 'tee', hat: 'cap', cap: '#1a2a4a' }, x: FW + 20, y: STAND[1] - 6, state: 'away', carry: false };
+  const TAKE_X = CASE.x + CASE.w + 14;
+
+  // ---------- jobba tillsammans (delat pass via js/net/coop.js) ----------
+  // Man bygger SAMMA dator: verkstaden har en bänk, en datorlåda och en orderskärm, och den bilden
+  // gäller ihop också (två bänkar hade krävt nya möbler och en delad orderskärm som inte ryms). Arbetet
+  // delar man som man vill – en hämtar i hyllorna, en skruvar – och båda ser på orderskärmen vad som
+  // redan sitter i. Skiftledaren (den som varit längst i verkstaden) kör det gemensamma: ordern, det
+  // som sitter i lådan, kylpastan och kylaren, startknappen och fläktarna, kollegan från lagret och
+  // nästa låda – och håller reda på vilken del var och en bär (hyllorna tar aldrig slut, så det man
+  // bär är ens eget; skiftledarens bok gör bara att alla ser det i ens händer). Läget delas ~3 ggr/s;
+  // medarbetarna skickar varje handling som ett numrerat önskemål med det de såg vid bänken (ordern
+  // och vad som satt i), det de bär och var de står: ta en del ur hyllan, sätta i den, kylpasta,
+  // kylare och startknappen. Skiftledaren kör samma kod åt dem och är ENDA domaren: varje plats i
+  // lådan fylls EN gång och datorn startas EN gång – den som kommer för sent ser HANN FÖRE! och delen
+  // åker tillbaka i hyllan (inget fel). Poängen går till den som satte i delen, datorbonusen till den
+  // som tryckte på startknappen; lagets rätt, fel och färdiga datorer delas lika vid passets slut.
+  // Ihop går det fortare mellan lådorna: kollegan från lagret kommer redan när fläktarna går igång
+  // och datorn startar snabbare – nästa låda står på bänken nästan direkt.
+  const coop = makeShiftCoop(A, 'away:jobbdatorbygge');
+  let snapIn = 0, wasLead = true, wasCoop = false, maxN = 1, handled = 0;
+  let pend = null, queued = null;                    // medarbetarens önskemål som väntar på svar (och ett köat klick)
+  let reqN = (Math.random() * 1e6) | 0;              // önskemålens löpnummer (samma nummer två gånger = samma önskemål)
+  const team = { ok: 0, fel: 0, miss: 0, boxes: 0 }; // LAGETS räkning – delas lika vid passets slut
+  const held = new Map();                            // spelar-id → delen hen bär (PARTS-index; skiftledarens bok – hos medarbetaren ur snappen)
+  const seenReq = new Map();                         // (skiftledaren) id → senaste önskemålets nummer
+  const absent = new Map();                          // (skiftledaren) id → sedan när den som bär inte syns i verkstaden
+  const medarb = () => coop.active && !coop.leader;
+  const meId = () => coop.myId || '';
+  const snapAsap = () => { snapIn = 0; };
+  const int = (v, dflt) => (Number.isInteger(v) ? v : dflt);
+  const str = (v) => (typeof v === 'string' ? v.slice(0, 64) : '');
+  const hudTitle = () => (maxN > 1 ? 'PIXEL DATA IHOP' : 'PIXEL DATA');
+  const bits = () => SLOTS.reduce((b, k) => b | (box[k] ? BIT[k] : 0), 0) | (box.pasta ? BIT.pasta : 0) | (box.kylare ? BIT.kylare : 0) | (power || slideOut ? BIT.upptagen : 0);
+  const sig = () => order.nr * 256 + bits();
+  const powT = () => (coop.active ? 1.6 : 2.2);        // fläktarna till BIOS OK (ihop lite snabbare)
+  const budFart = () => (coop.active ? 150 : 120);     // kollegan från lagret (ihop springer hen)
+
+  function sendSnap() {
+    const me = meId(), ho = [...held].filter(([by]) => by !== me);
+    if (carry && me) ho.push([me, pIx(carry.id)]);
+    coop.send({
+      t: 'snap',
+      // ordern [nummer, vilken], lådan [cpu, ram, gpu, ssd, psu (PARTS-index, −1 = tom), kylpasta, kylare]
+      o: [order.nr, order.ix],
+      bx: [...SLOTS.map((k) => (box[k] ? PARTS.findIndex((p) => p.kind === k && p.v === box[k]) : -1)), box.pasta ? 1 : 0, box.kylare ? 1 : 0],
+      // startknappen [fläktarnas tid·100, vem som tryckte], lådan in/ut ·100, kollegan från lagret [läge, x, bär]
+      pw: power ? [Math.round(power.t * 100), power.by || ''] : 0,
+      sl: [Math.round(slideIn * 100), slideOut ? Math.round(slideOut.t * 100) : -1],
+      nb: [BUD_ST.indexOf(mate.state), Math.round(mate.x), mate.carry ? 1 : 0],
+      ho,   // vem som bär vilken del: [spelar-id, PARTS-index]
+      tm: [team.ok, team.fel, team.miss, team.boxes],
+    });
+  }
+  function applySnap(m) {
+    if (Array.isArray(m.o) && Number.isInteger(m.o[0]) && m.o[0] > 0) {
+      const nr = m.o[0], ix = clamp(m.o[1] | 0, 0, ORDERS.length - 1);
+      if (nr !== order.nr || ix !== order.ix) order = { ...ORDERS[ix], nr, ix };
+      seq = nr; maxNr = Math.max(maxNr, nr);
+    }
+    if (Array.isArray(m.bx)) {
+      const b = emptyBox();
+      SLOTS.forEach((k, j) => { const p = partAt(m.bx[j]); if (p && p.kind === k) b[k] = p.v; });
+      b.pasta = !!m.bx[5]; b.kylare = !!m.bx[6];
+      box = b;
+    }
+    if (Array.isArray(m.pw)) {
+      const pt = Math.max(0, (m.pw[0] | 0) / 100);
+      if (!power || Math.abs(power.t - pt) > 0.3) power = { t: pt, by: '' };
+      power.by = str(m.pw[1]);
+    } else if (m.pw === 0) power = null;
+    if (Array.isArray(m.sl)) {
+      // (lådan glider vidare här mellan lägena – bara ett tydligt hopp rättas)
+      const si = clamp((m.sl[0] | 0) / 100, 0, 1), so = m.sl[1] | 0;
+      if (Math.abs(slideIn - si) > 0.2) slideIn = si;
+      if (so < 0) slideOut = null;
+      else if (!slideOut || Math.abs(slideOut.t - so / 100) > 0.2) slideOut = { t: clamp(so / 100, 0, 0.5) };
+    }
+    if (Array.isArray(m.nb)) {
+      mate.state = BUD_ST[clamp(m.nb[0] | 0, 0, BUD_ST.length - 1)];
+      mate.carry = !!m.nb[2];
+      const x = +m.nb[1] || 0;
+      if (Math.abs(mate.x - x) > 10) mate.x = x;
+    }
+    if (Array.isArray(m.ho)) {
+      held.clear();
+      for (const h of m.ho.slice(0, 12)) if (Array.isArray(h) && str(h[0]) && partAt(h[1])) held.set(str(h[0]), h[1]);
+    }
+    // det jag bär enligt skiftledarens bok (inte mitt i ett önskemål – då kommer svaret strax)
+    if (!pend) { const mine = partAt(held.get(meId())); carry = mine ? { id: mine.id } : null; }
+    if (Array.isArray(m.tm)) { team.ok = m.tm[0] | 0; team.fel = m.tm[1] | 0; team.miss = m.tm[2] | 0; team.boxes = m.tm[3] | 0; }
+  }
+  // Medarbetarens verkstad mellan ledarens lägen: lådan glider, fläktarna snurrar och kollegan från
+  // lagret går vidare – men bara skiftledaren räknar datorn och sätter upp nästa order.
+  function mateTick(dt) {
+    if (slideIn > 0) slideIn = Math.max(0, slideIn - dt * 2.2);
+    if (power) power.t += dt;
+    if (mate.state === 'in') { mate.x -= budFart() * dt; if (mate.x <= TAKE_X) { mate.x = TAKE_X; mate.state = 'take'; } }
+    else if (mate.state === 'take') { if (slideOut) slideOut.t = Math.min(0.5, slideOut.t + dt); }
+    else if (mate.state === 'out') { mate.x += 110 * dt; if (mate.x > FW + 24) { mate.state = 'away'; mate.carry = false; } }
+  }
+  // JAG tar över passet: nästa order får ett nummer över allt som synts (inga krockar), delen jag
+  // bar enligt boken är min, och lådan, fläktarna och kollegan från lagret fortsätter där de var.
+  // (Delen hos den som gick åker tillbaka i hyllan – sweepGone.)
+  function takeOver() {
+    const mine = partAt(held.get(meId()));
+    if (mine && !carry) carry = { id: mine.id };
+    held.delete(meId());
+    seq = Math.max(seq, maxNr, order.nr);
+    pend = null; queued = null;
+    snapAsap();
+  }
+  // jag blir medarbetare: nästa snap bestämmer ordern och lådan. En del jag tog i min egen verkstad
+  // innan vi möttes anmäls till skiftledaren (hyllorna är samma) – så syns den i mina händer hos alla.
+  function becomeMate() {
+    held.clear();
+    if (carry) ask({ t: 'do', a: 'ta', id: carry.id, v: -1, x: Math.round(walker.px), y: Math.round(walker.py) });
+  }
+  // (skiftledaren) den som gått ur verkstaden (en stund – inte bara ett ögonblick) bär inget längre
+  function sweepGone() {
+    const ids = new Set([meId(), ...coop.peers().map((f) => f.id)]);
+    for (const by of [...held.keys()]) {
+      if (ids.has(by)) { absent.delete(by); continue; }
+      if (!absent.has(by)) absent.set(by, t);
+      if (t - absent.get(by) > 1.5) { absent.delete(by); held.delete(by); snapAsap(); }   // (delen åker tillbaka i hyllan)
+    }
+  }
+  // mitt pass är slut: delen jag bär åker tillbaka i hyllan
+  function letGo() {
+    if (!coop.active) return;
+    carry = null;
+    if (medarb()) { coop.send({ t: 'lamna' }); return; }
+    sendSnap(); coop.sentSnap();
+  }
+
+  // Byggaren som gör något med det gemensamma: jag själv, eller – hos skiftledaren – en medarbetare
+  // vars önskemål körs åt hen. v = det hen såg vid bänken när hen klickade. Det hen bär följer med
+  // önskemålet och tillbaka i svaret.
+  const meK = (v) => ({ by: meId(), fx: [], v, get carry() { return carry; }, set carry(c) { carry = c; } });
+  const forK = (by, c, v) => ({ by, fx: [], v, carry: c, remote: true });
+  const kOf = (by) => (!by || by === meId() ? meK() : forK(by, null));
+  // (skiftledaren) det kollegan bär: det som står i boken
+  const claimOf = (by) => { const p = partAt(held.get(by)); return p ? { id: p.id } : null; };
+  // Utfallet av en handling: [slag, vem (spelar-id; '' = alla i verkstaden), ...]. Det som gäller mig
+  // (eller alla) syns och hörs här direkt – ensam gäller allt mig; i ett delat pass (eller när jag kör
+  // en medarbetares önskemål) följer resten med svaret ut.
+  const delat = (k) => coop.active || !!k.remote;
+  function fx(k, who, kind, ...a) {
+    const me = meId(), ut = delat(k);
+    if (!who || who === me || !ut) doFx(kind, a);
+    if (ut && who !== me) k.fx.push([kind, who, ...a]);
+  }
+  function doFx(kind, a) {
+    if (kind === 's') { if (LJUD.has(a[0])) play(a[0]); }
+    else if (kind === 'p') pops.add(CASE.x + CASE.w / 2, CASE.y - ((a[2] | 0) || 4), String(a[0]).slice(0, 40), String(a[1] || '#f4f1ea'));
+    else if (kind === 'M') talk.say(String(a[0]).slice(0, 60), meAt, +a[1] || 2);
+    else if (kind === 'H') hannFore();
+    else if (kind === 'o') stats.ok += 1;
+    else if (kind === 'f') stats.fel += 1;
+    else if (kind === 'b') stats.boxes += 1;   // jag tryckte på startknappen: datorbonusen är min
+    else if (kind === 'D') talkMate.say(MATE_LINES[(a[0] | 0) % MATE_LINES.length], () => ({ x: mate.x, y: mate.y - 46 }), 2);
+  }
+  const kLjud = (k, s) => fx(k, k.by, 's', s);                          // hörs hos den det gäller
+  const kPop = (k, txt, col, dy) => fx(k, '', 'p', txt, col, dy || 4);   // vid datorlådan – syns hos alla
+  const kPopMe = (k, txt, col) => fx(k, k.by, 'p', txt, col, 4);        // vid datorlådan – bara hos den det gäller
+  const kSay = (k, txt, secs) => fx(k, k.by, 'M', txt, secs);           // pratbubblan ovanför den det gäller
+  function hannFore() { play('miss'); pops.add(walker.px, walker.py - 58, 'HANN FÖRE!', '#ff6a6a'); }
+  // (ihop) det jag såg när jag klickade: en annan order då – eller var platsen tom?
+  const seenNr = (k) => (Number.isInteger(k.v) && k.v >= 0 ? k.v >> 8 : order.nr);
+  const seenBits = (k) => (Number.isInteger(k.v) && k.v >= 0 ? k.v & 255 : bits());
+  const late = (k) => delat(k) && seenNr(k) !== order.nr;
+  const wasFree = (k, bit) => delat(k) && !(seenBits(k) & bit);
+  // någon annan hann före: delen åker tillbaka i hyllan – inget fel
+  function fore(k) { fx(k, k.by, 'H'); k.carry = null; }
+  function kWrong(k, msg) {
+    team.fel += 1; fx(k, k.by, 'f'); kLjud(k, 'fel');
+    kPop(k, msg, '#ff6a5a');
+    k.carry = null;                      // delen åker tillbaka i lådan
+  }
+
+  // ---------- det gemensamma (körs av skiftledaren – eller den ensamma – åt byggaren k) ----------
+  // ta delen id ur hyllan (hyllorna tar aldrig slut)
+  function doPick(k, id) {
+    if (k.carry) { kSay(k, 'Jag bär redan något – sätt i det först!', 2); return; }
+    k.carry = { id }; kLjud(k, 'click');
+  }
+  // sätt i delen k bär – varje plats fylls EN gång
+  function doInstall(k) {
+    const c = k.carry;
+    if (!c) return;
+    const p = partOf(c.id);
+    if (!p) { k.carry = null; return; }
+    if (power || slideOut) { kPopMe(k, 'VÄNTA PÅ NÄSTA LÅDA!', '#ffd23f'); return; }
+    if (p.kind === 'gpu' && !order.gpu) { if (late(k)) fore(k); else kWrong(k, 'INGET GRAFIKKORT!'); return; }
+    if (box[p.kind]) { if (late(k) || wasFree(k, BIT[p.kind])) fore(k); else kWrong(k, 'SITTER REDAN EN ' + KIND_NAME[p.kind] + '!'); return; }
+    if (p.v !== order[p.kind]) { if (late(k)) fore(k); else kWrong(k, 'FEL MODELL!'); return; }
+    box[p.kind] = p.v; k.carry = null;
+    team.ok += 1; fx(k, k.by, 'o'); kLjud(k, 'ok');
+    kPop(k, '+ ' + KIND_NAME[p.kind], '#8ee03c');
+    if (complete()) kSay(k, 'Allt sitter i – tryck på startknappen!', 3);
+  }
+  // kylpastan och kylaren ligger på bänken bredvid lådan
+  function doTool(k, id) {
+    if (power || slideOut) { kPopMe(k, 'VÄNTA PÅ NÄSTA LÅDA!', '#ffd23f'); return; }
+    if (k.carry) { kSay(k, 'Sätt i delen jag bär först!', 2); return; }
+    if (!box.cpu) { if (late(k)) fx(k, k.by, 'H'); else { kPopMe(k, 'PROCESSORN FÖRST!', '#ffd23f'); kLjud(k, 'miss'); } return; }
+    const hann = late(k) || wasFree(k, BIT[id]);
+    if (id === 'pasta') {
+      if (box.pasta) { if (hann) fx(k, k.by, 'H'); else kPopMe(k, 'PASTAN ÄR PÅ!', '#ffd23f'); return; }
+      box.pasta = true; team.ok += 1; fx(k, k.by, 'o'); kLjud(k, 'click'); kPop(k, '+ KYLPASTA', '#8ee03c');
+    } else {
+      if (box.kylare) { if (hann) fx(k, k.by, 'H'); return; }
+      if (!box.pasta) { kWrong(k, 'KYLPASTA FÖRST!'); return; }
+      box.kylare = true; team.ok += 1; fx(k, k.by, 'o'); kLjud(k, 'ok'); kPop(k, '+ KYLARE', '#8ee03c');
+    }
+    if (complete()) kSay(k, 'Allt sitter i – tryck på startknappen!', 3);
+  }
+  // startknappen – datorn startas EN gång, bonusen blir den som tryckte
+  function doPower(k) {
+    if (power || slideOut) { if (wasFree(k, BIT.upptagen)) fx(k, k.by, 'H'); return; }
+    if (!complete()) {
+      if (late(k)) { fx(k, k.by, 'H'); return; }
+      const miss = [...needs().filter((kk) => !box[kk]).map((kk) => KIND_NAME[kk]), ...(!box.pasta ? ['KYLPASTA'] : []), ...(!box.kylare ? ['KYLARE'] : [])];
+      kPopMe(k, 'SAKNAS: ' + miss[0], '#ffd23f'); kLjud(k, 'miss'); return;
+    }
+    power = { t: 0, by: k.by }; fx(k, '', 's', 'slide');
+    if (coop.active && mate.state === 'away') mate.state = 'in';   // (ihop: kollegan från lagret kommer redan nu)
+  }
+  // En handling på det gemensamma (framme vid hyllan eller bänken; v = det jag såg när jag klickade):
+  // ensam (eller som skiftledare) görs den direkt, som medarbetare blir den ett önskemål till
+  // skiftledaren – med det jag såg, bär och var jag står.
+  function act(a, id = null, v = sig()) {
+    if (medarb()) { if (!pend) ask({ t: 'do', a, id, v, x: Math.round(walker.px), y: Math.round(walker.py) }); return; }
+    const k = meK(v);
+    if (a === 'ta') doPick(k, id);
+    else if (a === 'in') doInstall(k);
+    else if (a === 'verktyg') doTool(k, id);
+    else if (a === 'start') doPower(k);
+    else return;
+    publish(k, false);
+  }
+  // skiftledaren: läget ut direkt efter en handling (FÖRE svaret – då har den som frågade redan det
+  // nya läget när svaret kommer) och utfallet till alla
+  function publish(k, svar) {
+    if (!svar && !(coop.active && coop.leader && coop.settled)) return;
+    sendSnap(); coop.sentSnap(); snapIn = 0.35;
+    if (svar) coop.send({ t: 'res', by: k.by, fx: k.fx, s: 1, c: k.carry ? pIx(k.carry.id) : -1 });
+    else if (k.fx.length) coop.send({ t: 'res', by: k.by, fx: k.fx });
+  }
+  // medarbetarens önskemål: man väntar på skiftledarens svar (högst 2,5 s – sedan kan man försöka
+  // igen). n = löpnumret: kommer samma önskemål fram två gånger görs det EN gång (provet skickar två).
+  function ask(m, n = 1) {
+    m.n = ++reqN; m.c = carry ? pIx(carry.id) : -1;
+    for (let i = 0; i < n; i++) coop.send(m);
+    pend = { t: 2.5 };
+  }
+  function answered() {
+    pend = null;
+    if (queued && !done) { const q = queued; queued = null; api.down(q[0], q[1]); }
+  }
+  coop.on('snap', (m) => { if (!coop.leader) applySnap(m); });
+  coop.on('res', (m) => {   // ledarens utfall: puffarna hos alla – poängen och det man bär hos den det gäller
+    const me = coop.myId, mine = m.by === me;
+    if (coop.leader && !mine) return;   // (skiftledaren har redan visat det hos sig)
+    if (mine && m.s && 'c' in m) { const p = partAt(m.c); carry = p ? { id: p.id } : null; }
+    for (const f of (Array.isArray(m.fx) ? m.fx : []).slice(0, 24)) {
+      if (!Array.isArray(f)) continue;
+      const who = str(f[1]);
+      if (!who || who === me) doFx(f[0], f.slice(2));
+    }
+    if (mine && m.s) answered();
+  });
+  coop.on('do', (m, from) => {   // en medarbetares handling på det gemensamma – körs här, åt hen
+    if (!coop.leader || !coop.settled || done) return;   // (bara den som kör verkstaden avgör)
+    if (Number.isInteger(m.n)) { if (seenReq.get(from) === m.n) return; seenReq.set(from, m.n); }   // (samma önskemål igen)
+    const k = forK(from, claimOf(from), int(m.v, -1));
+    if (m.a === 'ta') { const p = partAt(pIx(str(m.id))); if (!p) return; doPick(k, p.id); }
+    else if (m.a === 'in') doInstall(k);
+    else if (m.a === 'verktyg') doTool(k, m.id === 'kylare' ? 'kylare' : 'pasta');
+    else if (m.a === 'start') doPower(k);
+    else return;
+    handled += 1;
+    if (k.carry) held.set(from, pIx(k.carry.id)); else held.delete(from);
+    publish(k, true);
+  });
+  // en kollega går hem (passet slut): delen hen bar åker tillbaka i hyllan
+  coop.on('lamna', (m, from) => { if (coop.leader && held.delete(from)) snapAsap(); });
 
   function pickBin(b) {
     if (carry) { talk.say('Jag bär redan något – sätt i det först!', meAt, 2); return; }
     const [x, y] = binFront(b);
-    walker.walkTo(x, y, () => { walker.dir = 'up'; carry = { id: b.id }; play('click'); });
+    walker.walkTo(x, y, () => { walker.dir = 'up'; act('ta', b.id); });
   }
   function toBench(fn) { walker.walkTo(STAND[0], STAND[1], () => { walker.dir = 'up'; fn(); }); }
-  function install() {
-    if (!carry) return;
-    const p = partOf(carry.id), want = order[p.kind];
-    if (power || slideOut) { pops.add(CASE.x + CASE.w / 2, CASE.y - 4, 'VÄNTA PÅ NÄSTA LÅDA!', '#ffd23f'); return; }
-    if (p.kind === 'gpu' && !order.gpu) { wrong('INGET GRAFIKKORT!'); return; }
-    if (box[p.kind]) { wrong('SITTER REDAN EN ' + KIND_NAME[p.kind] + '!'); return; }
-    if (p.v !== want) { wrong('FEL MODELL!'); return; }
-    box[p.kind] = p.v; carry = null;
-    stats.ok += 1; play('ok');
-    pops.add(CASE.x + CASE.w / 2, CASE.y - 4, '+ ' + KIND_NAME[p.kind], '#8ee03c');
-    if (complete()) talk.say('Allt sitter i – tryck på startknappen!', meAt, 3);
-  }
-  function wrong(msg) {
-    stats.fel += 1; play('fel');
-    pops.add(CASE.x + CASE.w / 2, CASE.y - 4, msg, '#ff6a5a');
-    carry = null;                      // delen åker tillbaka i lådan
-  }
-  function benchTool(id) {
-    // kylpastan och kylaren ligger på bänken bredvid lådan
-    if (power || slideOut) { pops.add(CASE.x + CASE.w / 2, CASE.y - 4, 'VÄNTA PÅ NÄSTA LÅDA!', '#ffd23f'); return; }
-    if (carry) { talk.say('Sätt i delen jag bär först!', meAt, 2); return; }
-    if (!box.cpu) { pops.add(CASE.x + CASE.w / 2, CASE.y - 4, 'PROCESSORN FÖRST!', '#ffd23f'); play('miss'); return; }
-    if (id === 'pasta') {
-      if (box.pasta) { pops.add(CASE.x + CASE.w / 2, CASE.y - 4, 'PASTAN ÄR PÅ!', '#ffd23f'); return; }
-      box.pasta = true; stats.ok += 1; play('click'); pops.add(CASE.x + CASE.w / 2, CASE.y - 4, '+ KYLPASTA', '#8ee03c');
-    } else {
-      if (box.kylare) return;
-      if (!box.pasta) { wrong('KYLPASTA FÖRST!'); return; }
-      box.kylare = true; stats.ok += 1; play('ok'); pops.add(CASE.x + CASE.w / 2, CASE.y - 4, '+ KYLARE', '#8ee03c');
-    }
-    if (complete()) talk.say('Allt sitter i – tryck på startknappen!', meAt, 3);
-  }
-  function pressPower() {
-    if (power || slideOut) return;
-    if (!complete()) {
-      const miss = [...needs().filter((k) => !box[k]).map((k) => KIND_NAME[k]), ...(!box.pasta ? ['KYLPASTA'] : []), ...(!box.kylare ? ['KYLARE'] : [])];
-      pops.add(CASE.x + CASE.w / 2, CASE.y - 4, 'SAKNAS: ' + miss[0], '#ffd23f'); play('miss'); return;
-    }
-    power = { t: 0 }; play('slide');
-  }
 
   // klickytor
   const hitCase = (x, y) => x >= CASE.x - 4 && x <= CASE.x + CASE.w + 4 && y >= CASE.y - 4 && y <= BENCH.top + 2;
   const TOOL = { pasta: [BENCH.x0 + 4, BENCH.top - 6, BENCH.x0 + 16, BENCH.top + 2], kylare: [BENCH.x0 + 16, BENCH.top - 18, BENCH.x0 + 32, BENCH.top + 2] };
   const inR = (r, x, y) => x >= r[0] && x <= r[2] && y >= r[1] && y <= r[3];
 
-  function update(dt) {
-    pops.update(dt);
-    if (done) { doneT += dt; if (doneT > 1.2 && !reported) { reported = true; onDone?.({ ...stats }); } return; }
-    t += dt;
-    if (t >= P.seconds) { done = true; play('fanfare'); return; }
-    walker.update(dt);
+  // skiftledarens (och den ensammas) verkstad: fläktarna, datorn räknas, kollegan från lagret bär
+  // iväg den och nästa låda glider in – och läget ut till medarbetarna ~3 ggr/s
+  function leadTick(dt) {
     if (slideIn > 0) slideIn = Math.max(0, slideIn - dt * 2.2);
     if (power) {
       power.t += dt;
-      if (power.t > 2.2 && !slideOut) {
-        stats.boxes += 1; play('coin');
-        pops.add(CASE.x + CASE.w / 2, CASE.y - 12, 'FÄRDIG DATOR!', '#8ee03c');
-        mate.state = 'in'; slideOut = { t: 0 };
-        talkMate.say(['Snyggt bygge!', 'Kunden blir glad!', 'Den tar jag!', 'Nästa order kommer!'][seq % 4], () => ({ x: mate.x, y: mate.y - 46 }), 2);
+      if (power.t > powT() && !slideOut) {
+        const k = kOf(power.by);   // (bonusen till den som tryckte på startknappen)
+        team.boxes += 1; fx(k, k.by, 'b'); fx(k, '', 's', 'coin');
+        kPop(k, 'FÄRDIG DATOR!', '#8ee03c', 12);
+        if (mate.state !== 'take') mate.state = 'in';
+        slideOut = { t: 0 };
+        fx(k, '', 'D', seq % 4);
+        publish(k, false);
       }
     }
     // kollegan går in, tar datorn och går ut
-    if (mate.state === 'in') { mate.x -= 120 * dt; if (mate.x <= CASE.x + CASE.w + 14) { mate.x = CASE.x + CASE.w + 14; mate.state = 'take'; } }
-    else if (mate.state === 'take') { slideOut.t += dt; if (slideOut.t > 0.5) { mate.state = 'out'; mate.carry = true; newOrder(); slideOut = null; } }
+    if (mate.state === 'in') { mate.x -= budFart() * dt; if (mate.x <= TAKE_X) { mate.x = TAKE_X; mate.state = 'take'; } }
+    else if (mate.state === 'take') { if (slideOut) { slideOut.t += dt; if (slideOut.t > 0.5) { mate.state = 'out'; mate.carry = true; newOrder(); slideOut = null; snapAsap(); } } }
     else if (mate.state === 'out') { mate.x += 110 * dt; if (mate.x > FW + 24) { mate.state = 'away'; mate.carry = false; } }
+    if (coop.active || maxN > 1) sweepGone();
+    if (coop.active) { snapIn -= dt; if (snapIn <= 0) { snapIn = 0.35; sendSnap(); coop.sentSnap(); } }
+  }
+
+  function update(dt) {
+    pops.update(dt);
+    if (done) {
+      coop.tick(); coop.resign();   // MITT pass är slut – lämna över ledningen direkt (även på lönebeskedet)
+      doneT += dt;
+      if (doneT > 1.2 && !reported) {
+        reported = true;
+        if (maxN > 1) {   // jobbat ihop: laget delar lika på rätt, fel och färdiga datorer
+          const sh = (v) => Math.round(v / maxN);
+          onDone?.({ ok: sh(team.ok), fel: sh(team.fel), miss: sh(team.miss), boxes: sh(team.boxes), delat: maxN, lagOk: team.ok, lagFel: team.fel });
+        } else onDone?.({ ...stats });
+      }
+      return;
+    }
+    t += dt;
+    if (t >= P.seconds) { done = true; play('fanfare'); pend = null; queued = null; letGo(); return; }
+    walker.update(dt);
+    if (pend) { pend.t -= dt; if (pend.t <= 0) answered(); }   // inget svar (ledaren gick?) – då får man försöka igen
+    coop.tick();
+    if (coop.active) maxN = Math.max(maxN, coop.peers().length + 1);
+    if (coop.active !== wasCoop) {   // en kollega kom in: det går fortare mellan lådorna
+      wasCoop = coop.active;
+      if (wasCoop) { play('knock'); pops.add(FW / 2, 96, 'NI JOBBAR IHOP!', '#8ee03c'); }
+    }
+    // Skiftledaren (eller solo) kör verkstaden; medarbetare följer ledarens läge
+    const iLead = !coop.active || (coop.leader && coop.settled);
+    if (iLead && !wasLead) takeOver();
+    else if (!iLead && wasLead) becomeMate();
+    wasLead = iLead;
+    if (iLead) leadTick(dt); else mateTick(dt);
   }
 
   // ---------- ritning ----------
@@ -394,15 +699,18 @@ export function makeJobbDatorbygge(A, { onDone } = {}) {
     ctx.drawImage(s, Math.round(walker.px + ox - s.width / 2), Math.round(walker.py - 20 - s.height / 2));
   }
 
-  return {
+  const api = {
     get worldX() { return walker.px; },
     get worldY() { return walker.py; },
     update,
+    exit() { coop.dispose(); },
     down(x, y) {
       if (done) return;
-      if (hitCase(x, y) && Math.abs(x - POWER.x) <= 4 && Math.abs(y - POWER.y) <= 4) { toBench(pressPower); return; }
-      for (const [id, r] of Object.entries(TOOL)) if (inR(r, x, y)) { toBench(() => benchTool(id)); return; }
-      if (hitCase(x, y)) { toBench(() => (carry ? install() : complete() ? pressPower() : talk.say('Hämta delarna i hyllorna!', meAt, 2))); return; }
+      if (pend) { queued = [x, y]; return; }   // väntar på skiftledarens svar – klicket tas strax
+      const v = sig();   // (det jag ser vid bänken nu – följer med handlingen)
+      if (hitCase(x, y) && Math.abs(x - POWER.x) <= 4 && Math.abs(y - POWER.y) <= 4) { toBench(() => act('start', null, v)); return; }
+      for (const [id, r] of Object.entries(TOOL)) if (inR(r, x, y)) { toBench(() => act('verktyg', id, v)); return; }
+      if (hitCase(x, y)) { toBench(() => (carry ? act('in', null, v) : complete() ? act('start', null, v) : talk.say('Hämta delarna i hyllorna!', meAt, 2))); return; }
       for (const b of BINS) if (x >= b.x - 2 && x <= b.x + b.w + 2 && y >= b.y - 10 && y <= b.y + 26) { pickBin(b); return; }
       if (y > WALL_Y + 4) walker.walkTo(x, y);
     },
@@ -420,9 +728,15 @@ export function makeJobbDatorbygge(A, { onDone } = {}) {
         if (mate.carry) { c.fillStyle = '#16161c'; c.fillRect(Math.round(mate.x) + 2, mate.y - 30, 14, 18); c.fillStyle = '#4a8ad8'; c.fillRect(Math.round(mate.x) + 13, mate.y - 28, 2, 14); } } });
       items.sort((a, b) => a.fy - b.fy).forEach((d) => d.draw(ctx));
       drawCarry(ctx);
+      // det kollegorna bär (skiftledaren håller reda på vem som bär vilken del)
+      if (coop.active) for (const f of coop.peers()) {
+        const p = partAt(held.get(f.id));
+        if (p) { const s = spr(p.id); ctx.drawImage(s, Math.round(f.x - s.width / 2), Math.round(f.y - 20 - s.height / 2)); }
+      }
       talk.draw(ctx, { x0: 0, x1: FW }); talkMate.draw(ctx, { x0: 0, x1: FW });
       pops.draw(ctx);
-      drawShiftHud(ctx, A, { t, dur: P.seconds, ok: stats.ok, fel: stats.fel, title: `PIXEL DATA - ${stats.boxes} ${stats.boxes === 1 ? 'DATOR' : 'DATORER'}` });
+      const n = maxN > 1 ? team.boxes : stats.boxes;
+      drawShiftHud(ctx, A, { t, dur: P.seconds, ok: maxN > 1 ? team.ok : stats.ok, fel: maxN > 1 ? team.fel : stats.fel, title: `${hudTitle()} - ${n} ${n === 1 ? 'DATOR' : 'DATORER'}` });
       if (done) drawTimeUp(ctx, A);
     },
     _debug: {
@@ -431,13 +745,43 @@ export function makeJobbDatorbygge(A, { onDone } = {}) {
       order: () => ({ ...order }),
       bins: () => BINS.map((b) => ({ id: b.id, x: b.x + (b.w >> 1), y: b.y + 10 })),
       spot: (id) => { if (id === 'lada') return { x: CASE.x + CASE.w / 2, y: CASE.y + 30 }; if (id === 'start') return { x: POWER.x + 1, y: POWER.y + 1 }; if (TOOL[id]) return { x: (TOOL[id][0] + TOOL[id][2]) >> 1, y: (TOOL[id][1] + TOOL[id][3]) >> 1 }; const b = binOf(id); return b ? { x: b.x + (b.w >> 1), y: b.y + 10 } : null; },
-      pick: (id) => { carry = { id }; return carry; },
-      install: () => { install(); return { ...box }; },
-      tool: (id) => { benchTool(id); return { ...box }; },
-      power: () => { pressPower(); return !!power; },
+      // ta delen direkt (hos en medarbetare blir det ett önskemål till skiftledaren)
+      pick: (id) => { if (medarb()) { act('ta', id); return null; } carry = { id }; return carry; },
+      install: () => { act('in'); return { ...box }; },
+      tool: (id) => { act('verktyg', id); return { ...box }; },
+      power: () => { act('start'); return !!power; },
       tick: (sec) => { for (let i = 0; i < sec * 30; i++) update(1 / 30); },
       finish: () => { t = P.seconds - 0.01; update(0.02); for (let i = 0; i < 60; i++) update(0.05); },
       wanted: () => { const o = order; return PARTS.filter((p) => o[p.kind] === p.v).map((p) => p.id); },
+      // ---------- jobba tillsammans (tools/coop-datorbygge-test.mjs) ----------
+      coop: () => ({ leader: coop.leader, active: coop.active, mates: coop.peers().length, settled: coop.settled, myId: coop.myId }),
+      lag: () => ({ ...team, maxN }),
+      title: () => hudTitle(),
+      // vem bär vilken del enligt boken (skiftledaren: kollegorna; medarbetaren: alla, ur snappen)
+      held: () => Object.fromEntries([...held].map(([by, ix]) => [by, PARTS[ix]?.id || null])),
+      carrying: () => carry?.id || null,
+      // ny order (skiftledaren/solo): ORDERS[ix] i en tom låda – numret över allt som synts
+      setOrder(ix) {
+        if (medarb()) return null;
+        seq = Math.max(seq, maxNr) + 1; maxNr = seq;
+        const i = clamp(ix | 0, 0, ORDERS.length - 1);
+        order = { ...ORDERS[i], nr: seq, ix: i };
+        box = emptyBox(); power = null; slideOut = null; slideIn = 0;
+        if (mate.state === 'in' || mate.state === 'take') { mate.state = 'away'; mate.x = FW + 20; }
+        snapAsap();
+        return order.nr;
+      },
+      // där byggaren står när klicket gått fram: 'lada' 'start' 'pasta' 'kylare' eller en hylla (del-id)
+      standAt: (id) => { if (id === 'lada' || id === 'start' || TOOL[id]) return [STAND[0], STAND[1]]; const b = binOf(id); return b ? binFront(b) : null; },
+      teleport: (x, y) => { walker.px = x; walker.py = y; walker.stop(); },
+      // provet: medarbetaren skickar SAMMA önskemål (kylpasta/kylare) två gånger – görs EN gång
+      toolTwice: (id) => { if (!medarb() || pend) return false; ask({ t: 'do', a: 'verktyg', id, v: sig(), x: Math.round(walker.px), y: Math.round(walker.py) }, 2); return true; },
+      handled: () => handled,   // (skiftledaren) hur många önskemål som körts
+      idle: () => !pend && !queued && walker.path.length === 0,
+      pending: () => !!pend,
+      time: () => t,
+      pops: () => popLog.slice(),
     },
   };
+  return api;
 }

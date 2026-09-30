@@ -10,6 +10,12 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.70.0] – 2026-09-30 – Jobba ihop på alla jobb
+- Nu kan man jobba ihop på ALLA jobb: Datorbygget och Finanshuset är de sista. Bjud in med 💼 Jobba ihop när du börjar passet (eller via 👥 mitt i passet).
+- Datorbygget: ni bygger samma dator – beställningsskärmen visar i grönt vad som redan sitter i. Den som monterar en del får poängen, den som trycker på startknappen får datorbonusen. Kollegan som bär ut datorn kommer fortare när ni är fler.
+- Finanshuset: skärmarna och ordrarna är gemensamma. Klickar du på en order är den din (ram i din färg och "DIN") – kollegan får "KOLLEGANS ORDER". Klicka på den igen för att släppa den. Nya ordrar kommer dubbelt så ofta när ni är fler.
+- Hinner båda till samma sak gäller bara den första – den som kom för sent får höra "HANN FÖRE!". Lagets räkning delas lika på lönebeskedet.
+
 ## [0.69.0] – 2026-09-30 – Jobba ihop i Fruktfabriken
 - Jobba ihop i Fruktfabriken: bjud in en kompis med 💼 Jobba ihop när du börjar passet (eller via 👥 mitt i passet) – ni plockar från samma band till samma låda med samma beställningslapp.
 - En frukt på bandet kan bara en ta – hinner båda dit får den som kom för sent höra "HANN FÖRE!".
