@@ -10,6 +10,13 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.62.0] – 2026-09-30 – Jobba ihop på Posten
+- Jobba ihop på Posten: bjud in en kompis med 💼 Jobba ihop när du börjar passet (eller via 👥 mitt i passet) – ni sorterar från samma band till samma burar och tar hand om samma kunder vid disken.
+- Ett paket på bandet kan bara en ta – hinner båda dit får den som kom för sent höra "HANN FÖRE!". Samma sak med paketen på hyllan.
+- Den som sorterar eller lämnar ut får poängen; lagets rätt, fel och missade delas lika på lönebeskedet.
+- När ni är fler kommer paketen och kunderna ungefär dubbelt så ofta och bandet går lite fortare.
+- Går den som leder passet hem tar någon annan över direkt – bandet rullar vidare.
+
 ## [0.61.0] – 2026-09-30 – Jobba ihop i Burgarköket
 - Jobba ihop i Burgarköket: bjud in en kompis med 💼 Jobba ihop när du börjar passet (eller via 👥 mitt i passet) – ni delar lapparna, grillen, fritösen, maskinerna och brickan vid luckan.
 - Var och en bygger sina burgare på sin egen bricka. Börjar du på en burgare tar du första lappen som ingen annan bygger – ett litet hörn på lappen visar vems den är (grönt = din, blått = kollegans).

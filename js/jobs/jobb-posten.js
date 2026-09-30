@@ -18,6 +18,7 @@ import { createWalker, selfDrawable, folkDrawables, WALK_SEQ } from '../scenes/w
 import { planOf, drawShiftHud, drawTimeUp, makePops, abortShift } from './shift.js';
 import { drawPerson, makeLook } from '../core/people.js';
 import { play } from '../core/sound.js';
+import { makeShiftCoop } from '../net/coop.js';
 
 const FW = 384, FH = 216;
 const INK = 0x17151a, WHITE = 0xffffff;
@@ -936,6 +937,33 @@ function drawAvi(ctx, ix, iy, num) {
   ctxText(ctx, BIG, String(num), ix + 5, iy + 4, '#1c1a22');
 }
 
+// ======================= jobba ihop: det som skickas mellan sorterarna =======================
+// Kundens utseende ur ett frö: i ett delat pass skickar skiftledaren bara fröet (ett tal)
+// i stället för hela utseendet, och alla ritar ändå samma kund (som i pizzerian).
+function seedRng(seed) {
+  let s = seed >>> 0;
+  return () => { s = (s + 0x6D2B79F5) >>> 0; let t = s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+}
+const lookOf = (seed) => makeLook(seedRng(seed));
+// kundernas lägen i skiftledarens snap (index = kod)
+const CST = ['walk', 'wait', 'take', 'leave'];
+// en försändelses utseende som ETT tal: sort (KIND_IDS), region och variant
+const itemCode = (it) => (KIND_IDS.indexOf(it.kind) * REG.length + it.reg) * 3 + it.v;
+function codeItem(c) {
+  c = Math.max(0, c | 0);
+  const r = (c / 3) | 0;
+  return { kind: KIND_IDS[Math.min(KIND_IDS.length - 1, (r / REG.length) | 0)], reg: r % REG.length, v: c % 3 };
+}
+// en försändelse (pi = adressradens index i regionens places)
+function mkItem(id, kind, reg, v, pi, kg, x) {
+  const places = REG[reg].places, p = clamp(pi | 0, 0, places.length - 1);
+  const it = { id, kind, reg, v, pi: p, place: places[p], fragile: !!KINDS[kind].fragile, kg, x, scanned: false };
+  it.spr = itemSprite(it);
+  return it;
+}
+// ljuden som skiftledarens utfall får spela hos den det gäller
+const LJUD = new Set(['ok', 'click', 'coin', 'fel', 'miss']);
+
 export function makeJobbPosten(A, { onDone }) {
   const stats = { ok: 0, fel: 0, miss: 0, sorterat: 0, kunder: 0, omtaliga: 0, krasch: 0 };
   // passets plan: längd (P.seconds), takt på bandet och vid disken (P.pace), speltid (P.gameMin).
@@ -945,13 +973,17 @@ export function makeJobbPosten(A, { onDone }) {
   const walker = createWalker({ top: WALK_TOP, bottom: WALK_BOT, spawn: [150, 118] });
   walker.setObstacles([[SCALE.colX + 5, SCALE.y0 + 1, SCALE.colX + 9, SCALE.y0 + 7]]);
   const pops = makePops();
+  const popLog = [];   // de senaste puffarnas text (provet läser dem: syntes "HANN FÖRE!"?)
+  const addPop = pops.add;
+  pops.add = (x, y, txt, c) => { popLog.push(txt); if (popLog.length > 30) popLog.shift(); addPop(x, y, txt, c); };
   const startMin = A.game?.min ?? 12 * 60;
   let items = [], falling = [], flying = [], shards = [], dust = [];
+  // burarnas last: { id, it } per försändelse (den som flyger dit ritas först när den landat)
   const loads = CAGES.map(() => []);
   let t = 0, clk = 0, animT = 0, seq = 0, spawnIn = 1.4, custIn = 3.2, carry = null;
   let done = false, doneT = 0, reported = false;
   let run = false, shake = 0, warned = false, lastDown = { t: -9, x: 0, y: 0 }, dustIn = 0;
-  let scan = null, scanFlash = 0, binPile = [];
+  let scan = null, scanFlash = 0, binPile = [], beltPos = 0;
   let queueNo = 37 + ((Math.random() * 40) | 0);
   let nextItem = makeItem();
   const loader = { x: 22, dir: 'down', walking: false };
@@ -965,15 +997,14 @@ export function makeJobbPosten(A, { onDone }) {
   for (let i = 0; i < shelf.length; i++) if (hash(i, 7, 90) < 0.78) shelf[i] = newParcel();
   let customers = [];
 
-  const beltSpeed = () => 15 + 10 * Math.min(1, t / P.seconds);
+  // bandets fart: skiftledarens (ihop går det lite fortare) – en medarbetare får den med snappen
+  const beltSpeed = () => (lead ? (15 + 10 * Math.min(1, t / P.seconds)) * (coop.active ? 1.1 : 1) : mateBs);
   function makeItem(opts = {}) {
     let kind = opts.kind;
     if (!kind) { let r = Math.random(), acc = 0; kind = KIND_IDS.find((k) => (acc += KINDS[k].p) >= r) || 'paketS'; }
     const reg = opts.reg ?? (Math.random() < 0.14 ? 4 : (Math.random() * 4) | 0);
-    const K = KINDS[kind], place = REG[reg].places[(Math.random() * REG[reg].places.length) | 0];
-    const it = { id: seq++, kind, reg, v: (Math.random() * 3) | 0, fragile: !!K.fragile, place, kg: K.kg[0] + Math.random() * (K.kg[1] - K.kg[0]), x: SPAWN_X, scanned: false };
-    it.spr = itemSprite(it);
-    return it;
+    const K = KINDS[kind], pi = (Math.random() * REG[reg].places.length) | 0;
+    return mkItem(seq++, kind, reg, (Math.random() * 3) | 0, pi, K.kg[0] + Math.random() * (K.kg[1] - K.kg[0]), SPAWN_X);
   }
   const cellXY = (i) => { const c = i % SHELF.cols, r = (i / SHELF.cols) | 0; return { cx: SHELF.x0 + 2 + c * 12 + 5, bot: SHELF.row0 + (r + 1) * SHELF.rowH - 1 }; };
   const wanted = () => new Set(customers.filter((k) => k.state !== 'leave').map((k) => k.num));
@@ -984,134 +1015,566 @@ export function makeJobbPosten(A, { onDone }) {
     const want = wanted(), pool = shelf.filter((s) => s && !want.has(s.num));
     if (!pool.length) return null;
     const num = pool[(Math.random() * pool.length) | 0].num;
-    const k = { look: makeLook(), slot: SLOTS[si], num, x: instant ? SLOTS[si] : FW + 12, y: CUST_Y, state: instant ? 'wait' : 'walk', patience: 30, pmax: 30, id: seq++, dir: 'left', take: 0, parcel: null };
+    const ls = (Math.random() * 0x7fffffff) | 0;   // utseendet ur ett frö (skiftledaren skickar bara fröet)
+    const k = { ls, look: lookOf(ls), slot: SLOTS[si], num, x: instant ? SLOTS[si] : FW + 12, y: CUST_Y, state: instant ? 'wait' : 'walk', patience: 30, pmax: 30, id: seq++, dir: 'left', take: 0, parcel: null };
     customers.push(k);
     if (instant) queueNo++;
     return k;
   }
   function custLeave(k, happy) {
     k.state = 'leave'; k.dir = 'right';
-    if (!happy) { stats.miss++; play('miss'); pops.add(k.x, POP_BUBBLE, 'GICK HEM...', '#d8d2c0'); }   // '…' finns inte i typsnittet
+    if (!happy) { stats.miss++; team.miss++; play('miss'); pops.add(k.x, POP_BUBBLE, 'GICK HEM...', '#d8d2c0'); }   // '…' finns inte i typsnittet
   }
-  function pickFromBelt(it) {
-    const i = items.indexOf(it);
-    if (i < 0) return false;
-    items.splice(i, 1);
-    if (carry && carry.src === 'belt') {      // byt: det jag bär läggs på bandet där det nya låg
-      const old = carry.item; old.x = it.x; items.push(old); items.sort((a, b) => a.x - b.x);
-      play('click');
-    } else play('ok');
-    carry = { src: 'belt', item: it };
-    shake = 0; warned = false;
-    return true;
+  // en försändelse rullade av bandet och ner i RETUR (own: min värld – ett glas som krossas räknas)
+  function retur(it) {
+    falling.push({ it, x: it.x, y: BELT.foot, vy: 10, vx: 14, rot: 0, own: lead });
+    play('miss');
+    pops.add(BIN.x0 + 12, 58, it.fragile ? 'KRASCH!' : 'RETUR!', it.fragile ? '#ff6a6a' : '#d8d2c0');
   }
-  // lägg försändelsen i en bur (rätt eller fel region)
-  function dropInCage(ci) {
-    const it = carry.item, cg = CAGES[ci], right = it.reg === cg.reg;
-    if (right) {
-      stats.ok++; stats.sorterat++;
-      if (it.fragile) stats.omtaliga++;
-      play('coin');
-      pops.add(cg.cx, 144, it.fragile ? 'HELT! BRA!' : 'RÄTT BUR!', '#8ee03c');
-    } else {
-      stats.fel++;
-      play('fel');
-      pops.add(cg.cx, 144, 'FEL BUR!', '#ff6a6a');
+
+  // ---------- jobba tillsammans (delat pass via js/net/coop.js) ----------
+  // Skiftledaren (den som varit längst i hallen) kör det gemensamma: rullbandet (kollegan i
+  // bilen lägger på nya försändelser, farten, det som rullar ner i RETUR), de fem rullburarna
+  // med lasten, utlämningshyllan och kunderna vid disken med sitt tålamod. Läget delas ~3 ggr/s;
+  // medarbetarna ser samma hall – bandet rullar vidare hos dem mellan lägena – och skickar varje
+  // handling på något gemensamt som ett önskemål med det de såg och det de bär: ta en
+  // försändelse från bandet, lägga den i en bur, ta/ställa ett paket på hyllan, lämna ut till en
+  // kund. Skiftledaren kör samma kod åt dem och är ENDA domaren: en försändelse tas från bandet
+  // EN gång och räknas i en bur EN gång (id:t), ett hyllpaket tas och lämnas ut EN gång. Det man
+  // bär (och skakar sönder om man springer) är ens eget. Poängen går till den som sorterade eller
+  // lämnade ut; lagets rätt, fel och missade delas lika vid passets slut. Ihop kommer
+  // försändelserna och kunderna tätare och bandet går lite fortare (disken har inga fler platser).
+  const coop = makeShiftCoop(A, 'away:jobbposten');
+  let snapIn = 0, lead = true, wasLead = true, wasCoop = false, maxN = 1, snaps = 0, mateBs = 15;
+  let pend = null, queued = null;          // medarbetarens önskemål som väntar på svar (och ett köat klick)
+  const team = { ok: 0, fel: 0, miss: 0 }; // LAGETS räkning – delas lika vid passets slut
+  const sorted = new Set();                // (skiftledaren) försändelser som redan räknats i en bur
+  const fell = new Set();                  // försändelser som nyss rullade ner i RETUR här
+  const mate = () => coop.active && !coop.leader;
+  const snapAsap = () => { snapIn = 0; };
+  const int = (v, dflt) => (Number.isInteger(v) ? v : dflt);
+  const str = (v) => (typeof v === 'string' ? v.slice(0, 80) : '');
+  const noteFell = (id) => { fell.add(id); if (fell.size > 60) fell.delete(fell.values().next().value); };
+  // en försändelse: [id, kod (itemCode), adressrad, x·10, kg·100]
+  const itemEnc = (it) => [it.id, itemCode(it), it.pi, Math.round(it.x * 10), Math.round(it.kg * 100)];
+  function itemDec(a) {
+    if (!Array.isArray(a)) return null;
+    const c = codeItem(a[1]);
+    return mkItem(int(a[0], -1), c.kind, c.reg, c.v, a[2] | 0, Math.max(0, (a[4] | 0) / 100), (a[3] | 0) / 10);
+  }
+  // det man bär: 0 = inget, [1, ...försändelsen] från bandet, [2, nummer, färg, kg·100, fack] från hyllan
+  const carryEnc = (c) => (!c ? 0 : c.src === 'belt' ? [1, ...itemEnc(c.item)] : [2, c.num, c.col, Math.round((c.kg || 0) * 100), c.cell ?? -1]);
+  function carryDec(a) {
+    if (!Array.isArray(a)) return null;
+    if (a[0] === 1) { const it = itemDec(a.slice(1)); return it ? { src: 'belt', item: it } : null; }
+    if (a[0] === 2) return { src: 'shelf', num: a[1] | 0, col: clamp(a[2] | 0, 0, BOX_COLS.length - 1), kg: Math.max(0, (a[3] | 0) / 100), cell: int(a[4], -1), pop: 0 };
+    return null;
+  }
+  const sendSnap = () => coop.send({
+    t: 'snap',
+    // bandet: försändelserna (itemEnc) och farten·100; nyss nere i RETUR (id); kollegan i bilen:
+    // nästa försändelse [kod, adressrad] och tiden tills den läggs ner·10
+    it: items.map(itemEnc), bs: Math.round(beltSpeed() * 100), rf: [...fell].slice(-8),
+    nx: [itemCode(nextItem), nextItem.pi], si: Math.round(Math.min(spawnIn, 99) * 10),
+    // burarna: per bur [id, kod, id, kod, …] (äldst först)
+    cg: loads.map((L) => L.flatMap((q) => [q.id, itemCode(q.it)])),
+    // kund: [id, plats (SLOTS-index), avinumret, läge (CST), x, tålamod·10 (tar emot: tid kvar·10), utseendefrö, paketets färg (−1 = inget), kg·100]
+    cu: customers.map((k) => [k.id, SLOTS.indexOf(k.slot), k.num, CST.indexOf(k.state), Math.round(k.x), Math.round((k.state === 'take' ? k.take : k.patience) * 10), k.ls | 0,
+      k.parcel ? k.parcel.col : -1, k.parcel ? Math.round(k.parcel.kg * 100) : 0]),
+    // hyllan: per fack [nummer, färg, kg·100, nyss påfyllt·10] eller 0
+    sh: shelf.map((s) => (s ? [s.num, s.col, Math.round(s.kg * 100), Math.max(0, Math.round(s.pop * 10))] : 0)),
+    qn: queueNo,
+    tm: [team.ok, team.fel, team.miss],
+  });
+  const applySnap = (m) => {
+    if (Array.isArray(m.it)) {
+      const next = [], rf = new Set(Array.isArray(m.rf) ? m.rf : []);
+      for (const a of m.it.slice(0, 40)) {
+        if (!Array.isArray(a)) continue;
+        const id = int(a[0], -1);
+        if (fell.has(id)) continue;   // (rullade just ner i RETUR här – den kommer inte tillbaka)
+        let it = items.find((q) => q.id === id);
+        if (!it) { it = itemDec(a); if (!it) continue; it.gx = it.x; } else it.gx = (a[3] | 0) / 10;
+        it.taken = false;
+        next.push(it);
+      }
+      // borta hos skiftledaren: rullade ner i RETUR (det syns här också) – annars tog någon den
+      for (const it of items) if (!next.includes(it)) { if (rf.has(it.id)) { noteFell(it.id); retur(it); } else it.taken = true; }
+      items = next;
     }
-    // kasta i (ömtåligt läggs försiktigt)
-    const L = loads[ci], k = Math.min(LOAD_MAX - 1, L.length + flying.filter((f) => f.ci === ci).length);
-    const sp = loadSpot(ci, k);
-    flying.push({ it, ci, x0: walker.px, y0: walker.py - 16, x1: sp.x, y1: sp.y, t: 0, dur: it.fragile ? 0.5 : 0.32, arc: it.fragile ? 4 : 14 });
-    carry = null; shake = 0;
+    if (Number.isFinite(m.bs)) mateBs = clamp(m.bs / 100, 0, 90);
+    if (Array.isArray(m.nx)) {
+      const c = codeItem(m.nx[0]), pi = m.nx[1] | 0;
+      if (nextItem.kind !== c.kind || nextItem.reg !== c.reg || nextItem.v !== c.v || nextItem.pi !== pi) nextItem = mkItem(-1, c.kind, c.reg, c.v, pi, 1, SPAWN_X);
+    }
+    if (Number.isFinite(m.si)) spawnIn = m.si / 10;
+    if (Array.isArray(m.cg)) for (let ci = 0; ci < CAGES.length; ci++) {
+      const a = Array.isArray(m.cg[ci]) ? m.cg[ci] : [], L = [];
+      for (let j = 0; j + 1 < a.length && L.length < LOAD_MAX; j += 2) {
+        const id = int(a[j], 0);
+        L.push(loads[ci].find((q) => q.id === id) || { id, it: codeItem(a[j + 1]) });
+      }
+      loads[ci] = L;
+    }
+    if (Array.isArray(m.cu)) {
+      const next = [];
+      for (const c of m.cu.slice(0, 8)) {
+        if (!Array.isArray(c)) continue;
+        const id = int(c[0], -1), st = CST[c[3] | 0] || 'wait', x = +c[4] || 0;
+        let k = customers.find((q) => q.id === id);
+        const was = k ? k.state : null;
+        if (!k) { k = { id, x, y: CUST_Y, dir: 'left', take: 0, patience: 30, pmax: 30, parcel: null }; if (snaps && st === 'walk') play('door'); }
+        if (k.ls !== (c[6] | 0) || !k.look) { k.ls = c[6] | 0; k.look = lookOf(k.ls); }
+        k.slot = SLOTS[clamp(c[1] | 0, 0, SLOTS.length - 1)]; k.num = c[2] | 0; k.state = st; k.gx = x;
+        if (st === 'take') k.take = (c[5] | 0) / 10; else if (st !== 'leave') k.patience = clamp((c[5] | 0) / 10, 0, k.pmax);
+        k.parcel = (c[7] | 0) >= 0 ? { num: k.num, col: clamp(c[7] | 0, 0, BOX_COLS.length - 1), kg: Math.max(0, (c[8] | 0) / 100) } : null;
+        k.dir = st === 'walk' ? 'left' : st === 'leave' ? 'right' : 'down';
+        // det som händer vid disken syns och hörs hos alla: diskvågen visar paketet, den som tröttnade går
+        if (was && was !== st) {
+          if (st === 'take' && k.parcel) counterShow = { kg: k.parcel.kg, t: 1.6 };
+          else if (st === 'leave' && !k.parcel) { play('miss'); pops.add(k.x, POP_BUBBLE, 'GICK HEM...', '#d8d2c0'); }
+          else if (st === 'wait') play('click');
+        }
+        next.push(k);
+      }
+      customers = next;
+    }
+    if (Array.isArray(m.sh)) for (let i = 0; i < shelf.length; i++) {
+      const a = m.sh[i];
+      if (!Array.isArray(a)) { shelf[i] = null; continue; }
+      const num = a[0] | 0;
+      if (shelf[i] && shelf[i].num === num) continue;
+      shelf[i] = { num, col: clamp(a[1] | 0, 0, BOX_COLS.length - 1), kg: Math.max(0, (a[2] | 0) / 100), pop: (a[3] | 0) / 10 };
+    }
+    if (Number.isFinite(m.qn)) queueNo = m.qn | 0;
+    if (Array.isArray(m.tm)) { team.ok = m.tm[0] | 0; team.fel = m.tm[1] | 0; team.miss = m.tm[2] | 0; }
+    snaps++;
+  };
+  // Medarbetarens hall mellan ledarens lägen: bandet rullar vidare i ledarens fart (varje
+  // försändelse glider mjukt mot där den borde vara), det som når slutet rullar ner i RETUR,
+  // kunderna går sin väg och tålamodet rinner – nästa snap rättar allt.
+  function mateTick(dt) {
+    const sp = mateBs * dt, f = Math.min(1, dt * 6);
+    for (const it of items) {
+      const was = it.x;
+      if (it.gx === undefined) it.gx = it.x;
+      it.gx += sp; it.x += sp;
+      const e = it.gx - it.x;
+      it.x = Math.abs(e) > 24 ? it.gx : it.x + e * f;
+      if (was < SCAN_X && it.x >= SCAN_X) { scan = { it, t: 2.2 }; scanFlash = 0.25; }
+    }
+    for (let i = items.length - 1; i >= 0; i--) if (items[i].x > BELT.x1 + 2) { const it = items.splice(i, 1)[0]; noteFell(it.id); retur(it); }
+    spawnIn -= dt;
+    for (const k of customers) {
+      if (k.gx === undefined) k.gx = k.x;
+      if (k.state === 'walk') { const d = k.slot - k.gx, st = 36 * dt; k.gx = Math.abs(d) <= st ? k.slot : k.gx + Math.sign(d) * st; }
+      else if (k.state === 'leave') k.gx += 40 * dt;
+      else { k.gx = k.slot; if (k.state === 'wait') k.patience = Math.max(0, k.patience - dt); else k.take = Math.max(0, k.take - dt); }
+      const e = k.gx - k.x;
+      k.x = Math.abs(e) > 24 ? k.gx : k.x + e * Math.min(1, dt * 10);
+    }
+    for (const s of shelf) if (s && s.pop > 0) s.pop -= dt;
   }
+  // JAG tar över passet: hoppa över gamla id:n (bandet, burarna, kunderna och det jag bär – inga
+  // krockar), allt fortsätter från där det syns, och nästa försändelse och kund kommer snart
+  function takeOver() {
+    const ids = [...items.map((it) => it.id), ...customers.map((k) => k.id), ...loads.flat().map((q) => q.id), carry && carry.src === 'belt' ? carry.item.id : -1];
+    seq = Math.max(seq, 1 + Math.max(-1, ...ids));
+    for (const it of items) { if (it.gx !== undefined) it.x = it.gx; it.gx = undefined; }
+    items.sort((a, b) => a.x - b.x);
+    for (const k of customers) { if (k.gx !== undefined) k.x = k.gx; k.gx = undefined; if (k.state === 'wait' || k.state === 'take') k.x = k.slot; }
+    nextItem = makeItem({ kind: nextItem.kind, reg: nextItem.reg });
+    spawnIn = Math.min(spawnIn, 1); custIn = Math.min(custIn, 2);
+    usedNums.clear();
+    for (const s of shelf) if (s) usedNums.add(s.num);
+    for (const k of customers) if (k.state !== 'leave') usedNums.add(k.num);
+    if (carry && carry.src === 'shelf') usedNums.add(carry.num);
+    for (const q of loads.flat()) sorted.add(q.id);
+    shelf.refill = {};
+    snapAsap();
+  }
+  // jag blir medarbetare: det jag bär från bandet får ett eget id (krockar aldrig med ledarens)
+  function becomeMate() {
+    if (carry && carry.src === 'belt') carry.item.id = -1 - ((Math.random() * 1e9) | 0);
+    for (const it of items) it.gx = undefined;
+    for (const k of customers) k.gx = undefined;
+  }
+
+  // Sorteraren som gör något med det gemensamma: jag själv, eller – hos skiftledaren – en
+  // medarbetare vars önskemål körs åt hen (x, y = där hen står). Det hen bär följer med
+  // önskemålet och tillbaka i svaret.
+  const meK = () => ({ by: coop.myId || '', fx: [], x: walker.px, y: walker.py, get carry() { return carry; }, set carry(v) { carry = v; } });
+  const forK = (by, c, x, y) => ({ by, fx: [], x: clamp(x, 0, FW), y: clamp(y, 0, FH), carry: c, remote: true });
+  // Utfallet av en handling: [slag, vem (spelar-id; '' = alla i hallen), ...]. Det som gäller mig
+  // (eller alla) syns och hörs här direkt – ensam gäller allt mig; i ett delat pass (eller när jag
+  // kör en medarbetares önskemål) följer resten med svaret ut.
+  function fx(k, who, kind, ...a) {
+    const me = coop.myId || '', ut = coop.active || !!k.remote;
+    if (!who || who === me || !ut) doFx(kind, a);
+    if (ut && who !== me) k.fx.push([kind, who, ...a]);
+  }
+  function doFx(kind, a) {
+    if (kind === 's') { if (LJUD.has(a[0])) play(a[0]); }
+    else if (kind === 'p') pops.add(+a[0] || 0, +a[1] || 0, String(a[2]).slice(0, 48), String(a[3] || '#f4f1ea'));
+    else if (kind === 'H') { play('miss'); pops.add(+a[0] || 0, +a[1] || 0, 'HANN FÖRE!', '#ff6a6a'); }   // någon annan hann först
+    else if (kind === 'o') { stats.ok++; if (a[0] === 'k') stats.kunder++; else { stats.sorterat++; if (a[1]) stats.omtaliga++; } }   // rätt bur / rätt paket
+    else if (kind === 'f') stats.fel++;
+    else if (kind === 'y') {   // en försändelse flyger ner i buren: [id, kod, bur, x0, y0, plats i buren]
+      const it = codeItem(a[1]), ci = clamp(a[2] | 0, 0, CAGES.length - 1), sp = loadSpot(ci, clamp(a[5] | 0, 0, LOAD_MAX - 1));
+      it.spr = itemSprite(it); it.fragile = !!KINDS[it.kind].fragile;
+      flying.push({ id: a[0] | 0, it, ci, x0: +a[3] || 0, y0: +a[4] || 0, x1: sp.x, y1: sp.y, t: 0, dur: it.fragile ? 0.5 : 0.32, arc: it.fragile ? 4 : 14 });
+    }
+  }
+  const kLjud = (k, s) => fx(k, k.by, 's', s);
+  const kSay = (k, txt, c = '#d8d2c0') => fx(k, k.by, 'p', Math.round(k.x), Math.round(k.y) - 58, txt, c);   // bara hos den det gäller
+  const kPop = (k, x, y, txt, c) => fx(k, '', 'p', x, y, txt, c);                                            // syns hos alla i hallen
+  const hannFore = (x, y) => { play('miss'); pops.add(x, y, 'HANN FÖRE!', '#ff6a6a'); };
+
+  // ---------- det gemensamma (körs av skiftledaren – eller den ensamma – åt sorteraren k) ----------
+  // ta försändelsen id från bandet; bär hen redan en från bandet byts de (den läggs där den nya låg)
+  function doPick(k, id) {
+    const it = items.find((q) => q.id === id);
+    if (!it) {
+      if (fell.has(id)) { kLjud(k, 'miss'); kSay(k, 'MISSADE!'); } else fx(k, k.by, 'H', Math.round(k.x), Math.round(k.y) - 58);
+      return;
+    }
+    if (k.carry && k.carry.src === 'shelf') { kSay(k, 'HÄNDERNA FULLA!'); return; }
+    items.splice(items.indexOf(it), 1);
+    it.taken = true;
+    if (k.carry && k.carry.src === 'belt') {
+      const old = k.carry.item;
+      old.x = it.x; old.taken = false; old.gx = undefined;
+      if (k.remote) old.id = seq++;   // (medarbetarens exemplar får ett nytt id – inga krockar)
+      items.push(old); items.sort((a, b) => a.x - b.x);
+      kLjud(k, 'click');
+    } else kLjud(k, 'ok');
+    k.carry = { src: 'belt', item: it };
+    if (!k.remote) { shake = 0; warned = false; }
+  }
+  // lägg försändelsen i bur ci (rätt eller fel region) – samma försändelse räknas bara EN gång
+  function doCage(k, ci) {
+    const c = k.carry, cg = CAGES[ci];
+    if (!c || c.src !== 'belt') return;
+    const it = c.item, right = it.reg === cg.reg;
+    k.carry = null;
+    if (!k.remote) shake = 0;
+    if (sorted.has(it.id)) return;   // (ett önskemål som kom två gånger – den ligger redan i en bur)
+    sorted.add(it.id);
+    if (right) { team.ok++; fx(k, k.by, 'o', 's', it.fragile ? 1 : 0); kLjud(k, 'coin'); kPop(k, cg.cx, 144, it.fragile ? 'HELT! BRA!' : 'RÄTT BUR!', '#8ee03c'); }
+    else { team.fel++; fx(k, k.by, 'f'); kLjud(k, 'fel'); kPop(k, cg.cx, 144, 'FEL BUR!', '#ff6a6a'); }
+    // kasta i (ömtåligt läggs försiktigt): lasten hör till buren direkt, flygturen syns hos alla
+    const L = loads[ci];
+    L.push({ id: it.id, it });
+    if (L.length > LOAD_MAX) L.shift();
+    fx(k, '', 'y', it.id, itemCode(it), ci, Math.round(k.x), Math.round(k.y) - 16, L.length - 1);
+  }
+  // hyllans fack i: ta paketet, ställa tillbaka det man bär, eller byta. v = numret hen såg i facket
+  // (−1 = tomt) – står något annat där nu hann någon annan före
+  function doShelf(k, i, v) {
+    const s = shelf[i], c = k.carry;
+    if (c && c.src === 'belt') { kSay(k, 'HÄNDERNA FULLA!'); return; }
+    if (!c) {
+      if (!s || (v >= 0 && s.num !== v)) { if (v >= 0) fx(k, k.by, 'H', Math.round(k.x), Math.round(k.y) - 58); return; }
+      k.carry = { src: 'shelf', ...s, cell: i }; shelf[i] = null; kLjud(k, 'ok');
+      return;
+    }
+    if (!s) { shelf[i] = { num: c.num, col: c.col, kg: c.kg, pop: 0 }; k.carry = null; kLjud(k, 'click'); return; }
+    if (v >= 0 && s.num !== v) { fx(k, k.by, 'H', Math.round(k.x), Math.round(k.y) - 58); return; }
+    shelf[i] = { num: c.num, col: c.col, kg: c.kg, pop: 0 };   // byt: ställ in det jag bär, ta det andra
+    k.carry = { src: 'shelf', ...s, cell: i };
+    kLjud(k, 'click');
+  }
+  // lämna ut paketet till kunden cid (wrong: provet lämnar medvetet fel)
+  function doServe(k, cid, wrong = false) {
+    const cu = customers.find((q) => q.id === cid), c = k.carry;
+    if (!c || c.src !== 'shelf') return;
+    if (!cu || cu.state !== 'wait') { if (cu && cu.parcel) fx(k, k.by, 'H', Math.round(cu.x), POP_BUBBLE); return; }   // någon annan hann före
+    if (!wrong && c.num === cu.num) {
+      team.ok++; fx(k, k.by, 'o', 'k'); kLjud(k, 'coin');
+      kPop(k, cu.x, POP_FREE, 'TACK!', '#8ee03c');
+      cu.state = 'take'; cu.take = 0.9; cu.parcel = { num: c.num, col: c.col, kg: c.kg };
+      counterShow = { kg: c.kg, t: 1.6 };
+      usedNums.delete(c.num);
+      k.carry = null;
+    } else {
+      team.fel++; fx(k, k.by, 'f'); kLjud(k, 'fel');
+      kPop(k, cu.x, POP_BUBBLE, 'FEL PAKET!', '#ff6a6a');
+      cu.patience = Math.max(2, cu.patience - 5);
+    }
+  }
+  // En handling på något gemensamt: ensam (eller som skiftledare) görs den direkt, som
+  // medarbetare blir den ett önskemål till skiftledaren – med det man såg och det man bär.
+  function shared(m, runIt) {
+    if (mate()) { if (!pend) ask({ t: 'do', ...m, c: carryEnc(carry), x: Math.round(walker.px), y: Math.round(walker.py) }); return; }
+    const k = meK();
+    runIt(k);
+    publish(k, false);
+  }
+  // skiftledaren: läget ut direkt efter en handling (FÖRE svaret – då har den som frågade redan
+  // det nya läget när svaret kommer) och utfallet till alla
+  function publish(k, svar) {
+    if (!svar && !(coop.active && coop.leader && coop.settled)) return;
+    sendSnap(); coop.sentSnap(); snapIn = 0.35;
+    if (svar) coop.send({ t: 'res', by: k.by, fx: k.fx, c: carryEnc(k.carry) });
+    else if (k.fx.length) coop.send({ t: 'res', by: k.by, fx: k.fx });
+  }
+  // medarbetarens önskemål: sorteraren väntar på ledarens svar (högst 2,5 s – sedan kan man försöka igen)
+  function ask(m) { coop.send(m); pend = { t: 2.5 }; }
+  function answered() {
+    pend = null;
+    if (queued && !done) { const q = queued; queued = null; api.down(q[0], q[1]); }
+  }
+  coop.on('snap', (m) => { if (!coop.leader) applySnap(m); });
+  coop.on('res', (m) => {   // ledarens utfall: puffarna hos alla – händerna och poängen hos den det gäller
+    const me = coop.myId, mine = m.by === me;
+    if (coop.leader && !mine) return;   // (skiftledaren har redan visat det hos sig)
+    for (const f of (Array.isArray(m.fx) ? m.fx : []).slice(0, 24)) {
+      if (!Array.isArray(f)) continue;
+      const who = str(f[1]);
+      if (!who || who === me) doFx(f[0], f.slice(2));
+    }
+    if (mine) { if ('c' in m) { carry = carryDec(m.c); shake = 0; warned = false; } answered(); }
+  });
+  coop.on('do', (m, from) => {   // en medarbetares handling på något gemensamt – körs här, åt hen
+    if (!coop.leader) return;
+    const k = forK(from, carryDec(m.c), +m.x || 0, +m.y || 0);
+    if (m.a === 'ta') doPick(k, int(m.id, -1));
+    else if (m.a === 'bur') doCage(k, clamp(int(m.ci, 0), 0, CAGES.length - 1));
+    else if (m.a === 'hylla') doShelf(k, clamp(int(m.i, 0), 0, shelf.length - 1), int(m.v, -1));
+    else if (m.a === 'kund') doServe(k, int(m.id, -1), !!m.w);
+    else return;
+    publish(k, true);
+  });
+  coop.on('fel', () => { if (coop.leader) { team.fel++; snapAsap(); } });   // en medarbetares egna fel (skakade sönder) räknas i laget
+
+  // ---------- på plats (klicket har gått fram): det egna först, sedan det gemensamma ----------
+  function tryPick(target) {
+    if (!items.includes(target) || Math.abs(target.x - walker.px) >= 18) {
+      if (target.taken && coop.active) hannFore(walker.px, walker.py - 58);   // (ihop: någon annan tog den)
+      else { play('miss'); pops.add(walker.px, walker.py - 58, 'MISSADE!', '#d8d2c0'); }
+      return;
+    }
+    shared({ a: 'ta', id: target.id }, (k) => doPick(k, target.id));
+  }
+  function toCage(ci) { if (carry && carry.src === 'belt') shared({ a: 'bur', ci, id: carry.item.id }, (k) => doCage(k, ci)); }
+  // v0 = numret i facket när jag klickade (−1 = tomt)
+  function atShelf(i, v0) {
+    const s = shelf[i];
+    if (carry && carry.src === 'belt') { pops.add(walker.px, walker.py - 58, 'HÄNDERNA FULLA!', '#d8d2c0'); return; }
+    if (!carry && v0 >= 0 && (!s || s.num !== v0)) { if (coop.active) hannFore(walker.px, walker.py - 58); return; }   // (ihop: någon annan tog det)
+    if (!carry && !s) return;
+    const v = s ? s.num : -1;
+    shared({ a: 'hylla', i, v }, (k) => doShelf(k, i, v));
+  }
+  function toCustomer(cu, wrong = false) {
+    if (!carry || carry.src !== 'shelf') return;
+    if (cu.state !== 'wait') { if (coop.active && cu.parcel) hannFore(cu.x, POP_BUBBLE); return; }
+    shared({ a: 'kund', id: cu.id, w: wrong ? 1 : 0 }, (k) => doServe(k, cu.id, wrong));
+  }
+  // skakade sönder (sprang med glas): felet är mitt – och lagets, som skiftledaren räknar
   function crash() {
     if (!carry || carry.src !== 'belt') return;
     stats.fel++; stats.krasch++;
+    if (mate()) coop.send({ t: 'fel' }); else { team.fel++; snapAsap(); }
     play('fel');
     pops.add(walker.px, walker.py - 58, 'KRASCH!', '#ff6a6a');
     for (let k = 0; k < 14; k++) shards.push({ x: walker.px + (Math.random() - 0.5) * 6, y: walker.py - 14, vx: (Math.random() - 0.5) * 60, vy: -30 - Math.random() * 40, fy: walker.py + (Math.random() - 0.3) * 6, life: 3 + Math.random(), c: ['#e8f4ff', '#bfe0f0', '#ffffff', '#c4955a'][k % 4] });
     carry = null; shake = 0; run = false; walker.speed = WALK_SPEED;
   }
-  function serveTo(k, forceWrong = false) {
-    if (!carry || carry.src !== 'shelf' || k.state !== 'wait') return;
-    if (!forceWrong && carry.num === k.num) {
-      stats.ok++; stats.kunder++;
-      play('coin');
-      pops.add(k.x, POP_FREE, 'TACK!', '#8ee03c');
-      k.state = 'take'; k.take = 0.9; k.parcel = { num: carry.num, col: carry.col, kg: carry.kg };
-      counterShow = { kg: carry.kg, t: 1.6 };
-      usedNums.delete(carry.num);
-      carry = null;
-    } else {
-      stats.fel++;
-      play('fel');
-      pops.add(k.x, POP_BUBBLE, 'FEL PAKET!', '#ff6a6a');
-      k.patience = Math.max(2, k.patience - 5);
-    }
-  }
   function setRun(on) { run = !!on; walker.speed = run ? RUN_SPEED : WALK_SPEED; }
 
-  return {
-    _debug: {
-      stats,
-      // lägg en försändelse mitt på bandet: region 0–4 (VÄSTER, NORR, SÖDER, ÖSTER, UTRIKES), kind se KINDS
-      forceItem(reg, kind, x = 120) { const it = makeItem({ reg, kind }); it.x = x; items.push(it); items.sort((a, b) => a.x - b.x); return { reg: it.reg, kind: it.kind, fragile: it.fragile }; },
-      // hoppa fram i passet (sekunder) – för att testa slutet
-      skip(s) { t = Math.min(P.seconds - 0.05, t + s); return t; },
-      items: () => items.map((it) => ({ reg: it.reg, kind: it.kind, x: Math.round(it.x), fragile: it.fragile })),
-      pickItem(i = 0) { const it = items[i]; if (!it) return null; carry = null; pickFromBelt(it); return { reg: it.reg, kind: it.kind, fragile: it.fragile }; },
-      // lägg en ny försändelse direkt i händerna (som forcePlate + pickPlate i burgarbaren)
-      forcePick(reg = 0, kind = 'paketS') { const it = makeItem({ reg, kind }); carry = { src: 'belt', item: it }; shake = 0; warned = false; return { reg: it.reg, kind: it.kind, fragile: it.fragile }; },
-      // sortera det jag bär: rätt = i regionens bur, fel = i buren bredvid
-      sort(right = true) { if (!carry || carry.src !== 'belt') return null; const r = carry.item.reg; dropInCage(right ? r : (r + 1) % CAGES.length); return stats; },
-      // en väntande kund vid disken (ställer sig direkt; är platserna tagna används en som redan står där)
-      forceCustomer() {
-        let k = addCustomer(true);
-        if (!k) { k = customers.find((c) => c.state === 'walk'); if (k) { k.x = k.slot; k.state = 'wait'; k.dir = 'down'; queueNo++; } }
-        if (!k) k = customers.find((c) => c.state === 'wait');
-        return k ? k.num : null;
-      },
-      shelf: () => shelf.map((s) => (s ? s.num : null)),
-      customers: () => customers.map((k) => ({ num: k.num, state: k.state, x: Math.round(k.x) })),
-      // plocka paketet med numret num från hyllan (utan num: första väntande kundens nummer)
-      pickShelf(num) {
-        if (num === undefined) num = customers.find((k) => k.state === 'wait')?.num;
-        const i = shelf.findIndex((s) => s && s.num === num);
-        if (i < 0) return null;
-        if (carry && carry.src === 'shelf' && !shelf[carry.cell]) shelf[carry.cell] = { num: carry.num, col: carry.col, kg: carry.kg, pop: 0 };
-        carry = { src: 'shelf', ...shelf[i], cell: i }; shelf[i] = null;
-        return num;
-      },
-      serve(right = true) {
-        if (!carry || carry.src !== 'shelf') return null;
-        const w = customers.filter((k) => k.state === 'wait');
-        const k = right ? w.find((c) => c.num === carry.num) : (w.find((c) => c.num !== carry.num) || w[0]);
-        if (!k) return null;
-        serveTo(k, !right);
-        return stats;
-      },
-      crash() { if (!carry || carry.src !== 'belt') return null; crash(); return stats; },
-      // en väntande kund tröttnar och går hem (utan num: första väntande): stats.miss +1
-      giveUp(num) {
-        const k = customers.find((c) => c.state === 'wait' && (num === undefined || c.num === num));
-        if (!k) return null;
-        custLeave(k, false);
-        return stats;
-      },
-      setRun,
-      carrying: () => (carry ? (carry.src === 'belt' ? { src: 'belt', reg: carry.item.reg, kind: carry.item.kind, fragile: carry.item.fragile } : { src: 'shelf', num: carry.num }) : null),
-      teleport(x, y) { walker.px = x; walker.py = y; walker.stop(); },
+  // skiftledarens (och den ensammas) hall: bandet, kunderna vid disken och hyllan
+  function leadTick(dt) {
+    // bandet: kollegan lastar ur bilen och lägger på bandet (ihop kommer det tätare)
+    spawnIn -= dt;
+    if (spawnIn <= 0) {
+      if (items.some((it) => it.x < SPAWN_X + 22)) spawnIn = 0.25;
+      else {
+        items.unshift(nextItem);
+        nextItem = makeItem();
+        spawnIn = (3.3 - 1.1 * Math.min(1, t / P.seconds) + Math.random() * 0.7) * P.pace * (coop.active ? 0.45 : 1);
+        if (coop.active) snapAsap();
+      }
+    }
+    const sp = beltSpeed() * dt;
+    for (const it of items) {
+      const was = it.x;
+      it.x += sp;
+      if (was < SCAN_X && it.x >= SCAN_X) { scan = { it, t: 2.2 }; scanFlash = 0.25; }
+    }
+    for (let i = items.length - 1; i >= 0; i--) if (items[i].x > BELT.x1 + 2) {
+      const it = items.splice(i, 1)[0];
+      stats.miss++; team.miss++;
+      noteFell(it.id);
+      retur(it);
+    }
+    // kunder vid utlämningen (fler med vanan – P.pace; de väntar lika länge; ihop kommer de tätare)
+    custIn -= dt;
+    if (custIn <= 0) {
+      custIn = (12 - 3 * Math.min(1, t / P.seconds) + Math.random() * 4) * P.pace * (coop.active ? 0.45 : 1);
+      if (addCustomer(false)) { play('door'); if (coop.active) snapAsap(); }
+    }
+    for (const k of customers) {
+      if (k.state === 'walk') {
+        const d = k.slot - k.x, st = 36 * dt;
+        if (Math.abs(d) <= st) { k.x = k.slot; k.state = 'wait'; k.dir = 'down'; queueNo++; play('click'); }
+        else k.x += Math.sign(d) * st;
+      } else if (k.state === 'wait') {
+        k.patience -= dt;
+        if (k.patience <= 0) custLeave(k, false);
+      } else if (k.state === 'take') {
+        k.take -= dt;
+        if (k.take <= 0) custLeave(k, true);
+      } else if (k.state === 'leave') k.x += 40 * dt;
+    }
+    customers = customers.filter((k) => k.x < FW + 16);
+    // tomma fack fylls på efter en stund
+    for (let i = 0; i < shelf.length; i++) {
+      if (shelf[i]) { if (shelf[i].pop > 0) shelf[i].pop -= dt; continue; }
+      if (carry && carry.src === 'shelf' && carry.cell === i) continue;
+      shelf.refill ||= {};
+      shelf.refill[i] = (shelf.refill[i] ?? 6 + Math.random() * 6) - dt;
+      if (shelf.refill[i] <= 0) { delete shelf.refill[i]; shelf[i] = newParcel(0.5); }
+    }
+    if (coop.active) { snapIn -= dt; if (snapIn <= 0) { snapIn = 0.35; sendSnap(); coop.sentSnap(); } }
+  }
+
+  // ---------- debug-API för proven ----------
+  const dbg = {
+    stats,
+    // lägg en försändelse mitt på bandet: region 0–4 (VÄSTER, NORR, SÖDER, ÖSTER, UTRIKES), kind se KINDS
+    forceItem(reg, kind, x = 120) { const it = makeItem({ reg, kind }); it.x = x; items.push(it); items.sort((a, b) => a.x - b.x); snapAsap(); return { id: it.id, reg: it.reg, kind: it.kind, fragile: it.fragile }; },
+    // hoppa fram i passet (sekunder) – för att testa slutet
+    skip(s) { t = Math.min(P.seconds - 0.05, t + s); return t; },
+    items: () => items.map((it) => ({ id: it.id, reg: it.reg, kind: it.kind, x: Math.round(it.x), fragile: it.fragile })),
+    pickItem(i = 0) { const it = items[i]; if (!it) return null; if (!mate()) carry = null; shared({ a: 'ta', id: it.id }, (k) => doPick(k, it.id)); return { reg: it.reg, kind: it.kind, fragile: it.fragile }; },
+    // lägg en ny försändelse direkt i händerna (som forcePlate + pickPlate i burgarbaren)
+    forcePick(reg = 0, kind = 'paketS') {
+      const it = makeItem({ reg, kind });
+      if (mate()) it.id = -1 - ((Math.random() * 1e9) | 0);   // (medarbetarens egen – krockar aldrig med ledarens id:n)
+      carry = { src: 'belt', item: it }; shake = 0; warned = false;
+      return { reg: it.reg, kind: it.kind, fragile: it.fragile };
     },
+    // sortera det jag bär: rätt = i regionens bur, fel = i buren bredvid
+    sort(right = true) { if (!carry || carry.src !== 'belt') return null; const r = carry.item.reg; toCage(right ? r : (r + 1) % CAGES.length); return stats; },
+    // en väntande kund vid disken (ställer sig direkt; är platserna tagna används en som redan står där)
+    forceCustomer() {
+      let k = addCustomer(true);
+      if (!k) { k = customers.find((c) => c.state === 'walk'); if (k) { k.x = k.slot; k.state = 'wait'; k.dir = 'down'; queueNo++; } }
+      if (!k) k = customers.find((c) => c.state === 'wait');
+      snapAsap();
+      return k ? k.num : null;
+    },
+    shelf: () => shelf.map((s) => (s ? s.num : null)),
+    customers: () => customers.map((k) => ({ id: k.id, num: k.num, state: k.state, x: Math.round(k.x) })),
+    // plocka paketet med numret num från hyllan (utan num: första väntande kundens nummer)
+    pickShelf(num) {
+      if (num === undefined) num = customers.find((k) => k.state === 'wait')?.num;
+      const i = shelf.findIndex((s) => s && s.num === num);
+      if (i < 0) return null;
+      if (mate()) { shared({ a: 'hylla', i, v: num }, () => {}); return num; }
+      if (carry && carry.src === 'shelf' && !shelf[carry.cell]) shelf[carry.cell] = { num: carry.num, col: carry.col, kg: carry.kg, pop: 0 };
+      carry = { src: 'shelf', ...shelf[i], cell: i }; shelf[i] = null;
+      snapAsap();
+      return num;
+    },
+    serve(right = true) {
+      if (!carry || carry.src !== 'shelf') return null;
+      const w = customers.filter((k) => k.state === 'wait');
+      const k = right ? w.find((c) => c.num === carry.num) : (w.find((c) => c.num !== carry.num) || w[0]);
+      if (!k) return null;
+      toCustomer(k, !right);
+      return stats;
+    },
+    crash() { if (!carry || carry.src !== 'belt') return null; crash(); return stats; },
+    // en väntande kund tröttnar och går hem (utan num: första väntande): stats.miss +1
+    giveUp(num) {
+      const k = customers.find((c) => c.state === 'wait' && (num === undefined || c.num === num));
+      if (!k) return null;
+      custLeave(k, false);
+      snapAsap();
+      return stats;
+    },
+    setRun,
+    carrying: () => (carry ? (carry.src === 'belt' ? { src: 'belt', id: carry.item.id, reg: carry.item.reg, kind: carry.item.kind, fragile: carry.item.fragile } : { src: 'shelf', num: carry.num }) : null),
+    teleport(x, y) { walker.px = x; walker.py = y; walker.stop(); },
+    // ---------- jobba tillsammans (tools/coop-posten-test.mjs) ----------
+    coop: () => ({ leader: coop.leader, active: coop.active, mates: coop.peers().length, settled: coop.settled, myId: coop.myId }),
+    lag: () => ({ ...team, maxN }),
+    title: () => (maxN > 1 ? 'POSTEN IHOP' : 'POSTEN'),
+    // lugnt i hallen (skiftledaren/solo): inga nya försändelser eller kunder, bandet och disken töms
+    calm() { spawnIn = 1e9; custIn = 1e9; items = []; customers = []; snapAsap(); },
+    cages: () => loads.map((L) => L.map((q) => q.id)),
+    // som när man kommit fram: ta försändelsen id från bandet / lägg det jag bär i bur ci / hyllans
+    // fack i / lämna ut till kunden id (hos en medarbetare blir det önskemål till skiftledaren)
+    pickId(id) {
+      const it = items.find((q) => q.id === id);
+      if (!it) return false;
+      walker.stop(); walker.px = clamp(it.x, 12, FW - 12); walker.py = WALK_TOP + 1;
+      tryPick(it);
+      return true;
+    },
+    cageAct(ci) { toCage(clamp(ci | 0, 0, CAGES.length - 1)); return true; },
+    shelfAct(i, v) { const s = shelf[i]; atShelf(i, v ?? (s ? s.num : -1)); return s ? s.num : null; },   // (v = numret jag såg där)
+    serveId(id) { const k = customers.find((c) => c.id === id); if (k) toCustomer(k); return !!k; },
+    // provet: medarbetaren skickar SAMMA bur-önskemål två gånger (som om svaret dröjde) – räknas EN gång
+    cageTwice(ci) {
+      if (!mate() || pend || !carry || carry.src !== 'belt') return false;
+      const m = { t: 'do', a: 'bur', ci: clamp(ci | 0, 0, CAGES.length - 1), id: carry.item.id, c: carryEnc(carry), x: Math.round(walker.px), y: Math.round(walker.py) };
+      coop.send(m); ask(m);
+      return true;
+    },
+    drop() { carry = null; },
+    // klickpunkter i spelkoordinater (för test via down(x, y)): 'band:<id>' 'bur:<0-4>' 'hylla:<0-11>' 'kund:<id>'
+    spot(name) {
+      const [w, a] = String(name).split(':'), n = +a;
+      if (w === 'band') { const it = items.find((q) => q.id === n); return it ? [Math.round(it.x), 70] : null; }
+      if (w === 'bur') return CAGES[n] ? [CAGES[n].cx, 185] : null;
+      if (w === 'hylla') { if (!(n >= 0 && n < shelf.length)) return null; const c = cellXY(n); return [c.cx, c.bot - 5]; }
+      if (w === 'kund') { const k = customers.find((q) => q.id === n); return k ? [Math.round(k.x), 60] : null; }
+      return null;
+    },
+    // där sorteraren står när klicket gått fram (samma mål som klicket går till)
+    standAt(name) {
+      const [w, a] = String(name).split(':'), n = +a;
+      if (w === 'band') { const it = items.find((q) => q.id === n); return it ? [Math.round(it.x), WALK_TOP + 1] : null; }
+      if (w === 'bur') return CAGES[n] ? [CAGES[n].cx, WALK_BOT - 4] : null;
+      if (w === 'hylla') { if (!(n >= 0 && n < shelf.length)) return null; const c = cellXY(n); return [clamp(c.cx, SHELF.x0 + 4, SHELF.x1 - 4), WALK_TOP + 1]; }
+      if (w === 'kund') { const k = customers.find((q) => q.id === n); return k ? [Math.round(k.x), WALK_TOP + 1] : null; }
+      return null;
+    },
+    // sant när sorteraren står still och inte väntar på skiftledarens svar
+    idle: () => !pend && !queued && walker.path.length === 0,
+    pending: () => !!pend,
+    time: () => t,
+    pops: () => popLog.slice(),
+  };
+
+  const api = {
+    _debug: dbg,
     get worldX() { return walker.px; },
     get worldY() { return walker.py; },
+    exit() { coop.dispose(); },
     update(dt) {
       clk += dt;
       pops.update(dt);
       animT += dt * (run && walker.path.length ? 1.7 : 1);
       updateFx(dt);
-      if (done) { doneT += dt; if (doneT > 1.2 && !reported) { reported = true; onDone(stats); } return; }
+      if (done) {
+        coop.tick(); coop.resign();   // MITT pass är slut – lämna över ledningen direkt (även på lönebeskedet)
+        doneT += dt;
+        if (doneT > 1.2 && !reported) {
+          reported = true;
+          if (maxN > 1) {   // jobbat ihop: laget delar lika på rätt, fel och missade – sorterat och utlämnat är ens eget
+            const sh = (v) => Math.round(v / maxN);
+            onDone?.({ ok: sh(team.ok), fel: sh(team.fel), miss: sh(team.miss), delat: maxN, lagOk: team.ok, lagFel: team.fel,
+              sorterat: stats.sorterat, kunder: stats.kunder, omtaliga: stats.omtaliga, krasch: stats.krasch });
+          } else onDone?.(stats);
+        }
+        return;
+      }
       t += dt;
-      if (t >= P.seconds) { done = true; return; }
+      if (t >= P.seconds) { done = true; pend = null; queued = null; return; }
       const moving = walker.update(dt);
       if (!walker.path.length && run) setRun(false);
       // spring med ömtåligt → det skakar sönder
@@ -1124,60 +1587,24 @@ export function makeJobbPosten(A, { onDone }) {
         dustIn -= dt;
         if (dustIn <= 0) { dustIn = 0.07; dust.push({ x: walker.px + (Math.random() - 0.5) * 4, y: walker.py, age: 0 }); }
       }
-      // bandet: kollegan lastar ur bilen och lägger på bandet
-      spawnIn -= dt;
-      if (spawnIn <= 0) {
-        if (items.some((it) => it.x < SPAWN_X + 22)) spawnIn = 0.25;
-        else {
-          items.unshift(nextItem);
-          nextItem = makeItem();
-          spawnIn = (3.3 - 1.1 * Math.min(1, t / P.seconds) + Math.random() * 0.7) * P.pace;
-        }
+      if (pend) { pend.t -= dt; if (pend.t <= 0) answered(); }   // inget svar (ledaren gick?) – då får man försöka igen
+      coop.tick();
+      if (coop.active) maxN = Math.max(maxN, coop.peers().length + 1);
+      if (coop.active !== wasCoop) {   // en kollega kom in: fullt ös på bandet och vid disken
+        wasCoop = coop.active;
+        if (wasCoop) { play('knock'); pops.add(144, 120, 'NI JOBBAR IHOP!', '#8ee03c'); }
       }
-      const sp = beltSpeed() * dt;
-      for (const it of items) {
-        const was = it.x;
-        it.x += sp;
-        if (was < SCAN_X && it.x >= SCAN_X) { scan = { it, t: 2.2 }; scanFlash = 0.25; }
-      }
-      for (let i = items.length - 1; i >= 0; i--) if (items[i].x > BELT.x1 + 2) {
-        const it = items.splice(i, 1)[0];
-        falling.push({ it, x: it.x, y: BELT.foot, vy: 10, vx: 14, rot: 0 });
-        stats.miss++;
-        play('miss');
-        pops.add(BIN.x0 + 12, 58, it.fragile ? 'KRASCH!' : 'RETUR!', it.fragile ? '#ff6a6a' : '#d8d2c0');
-      }
-      // kunder vid utlämningen (fler med vanan – P.pace; de väntar lika länge)
-      custIn -= dt;
-      if (custIn <= 0) {
-        custIn = (12 - 3 * Math.min(1, t / P.seconds) + Math.random() * 4) * P.pace;
-        if (addCustomer(false)) play('door');
-      }
-      for (const k of customers) {
-        if (k.state === 'walk') {
-          const d = k.slot - k.x, st = 36 * dt;
-          if (Math.abs(d) <= st) { k.x = k.slot; k.state = 'wait'; k.dir = 'down'; queueNo++; play('click'); }
-          else k.x += Math.sign(d) * st;
-        } else if (k.state === 'wait') {
-          k.patience -= dt;
-          if (k.patience <= 0) custLeave(k, false);
-        } else if (k.state === 'take') {
-          k.take -= dt;
-          if (k.take <= 0) custLeave(k, true);
-        } else if (k.state === 'leave') k.x += 40 * dt;
-      }
-      customers = customers.filter((k) => k.x < FW + 16);
-      // tomma fack fylls på efter en stund
-      for (let i = 0; i < shelf.length; i++) {
-        if (shelf[i]) { if (shelf[i].pop > 0) shelf[i].pop -= dt; continue; }
-        if (carry && carry.src === 'shelf' && carry.cell === i) continue;
-        shelf.refill ||= {};
-        shelf.refill[i] = (shelf.refill[i] ?? 6 + Math.random() * 6) - dt;
-        if (shelf.refill[i] <= 0) { delete shelf.refill[i]; shelf[i] = newParcel(0.5); }
-      }
+      // Skiftledaren (eller solo) kör bandet, burarna, hyllan och disken; medarbetare följer ledarens läge
+      const iLead = !coop.active || (coop.leader && coop.settled);
+      if (iLead && !wasLead) takeOver();
+      else if (!iLead && wasLead) becomeMate();
+      wasLead = lead = iLead;
+      beltPos += beltSpeed() * dt;
+      if (iLead) leadTick(dt); else mateTick(dt);
     },
     down(x, y) {
       if (done) return;
+      if (pend) { queued = [x, y]; return; }   // väntar på skiftledarens svar – klicket tas strax
       const dbl = clk - lastDown.t < 0.38 && Math.hypot(x - lastDown.x, y - lastDown.y) < 16;
       lastDown = { t: clk, x, y };
       setRun(dbl);
@@ -1191,10 +1618,7 @@ export function makeJobbPosten(A, { onDone }) {
           const target = best;
           const eta = Math.hypot(target.x - walker.px, WALK_TOP + 1 - walker.py) / walker.speed;
           const px = clamp(target.x + beltSpeed() * eta * 0.95, BELT.x0 + 6, BELT.x1 - 2);
-          walker.walkTo(px, WALK_TOP + 1, () => {
-            if (items.includes(target) && Math.abs(target.x - walker.px) < 18) pickFromBelt(target);
-            else { play('miss'); pops.add(walker.px, walker.py - 58, 'MISSADE!', '#d8d2c0'); }
-          });
+          walker.walkTo(px, WALK_TOP + 1, () => tryPick(target));
           return;
         }
       }
@@ -1205,18 +1629,8 @@ export function makeJobbPosten(A, { onDone }) {
           const { cx, bot } = cellXY(i), d = Math.hypot(cx - x, (bot - 5 - y) * 0.8);
           if (d < bd) { bd = d; bi = i; }
         }
-        const cell = cellXY(bi);
-        walker.walkTo(clamp(cell.cx, SHELF.x0 + 4, SHELF.x1 - 4), WALK_TOP + 1, () => {
-          const s = shelf[bi];
-          if (!carry && s) { carry = { src: 'shelf', ...s, cell: bi }; shelf[bi] = null; play('ok'); }
-          else if (carry && carry.src === 'shelf' && !s) { shelf[bi] = { num: carry.num, col: carry.col, kg: carry.kg, pop: 0 }; carry = null; play('click'); }
-          else if (carry && carry.src === 'shelf' && s) {   // byt: ställ in det jag bär, ta det andra
-            shelf[bi] = { num: carry.num, col: carry.col, kg: carry.kg, pop: 0 };
-            carry = { src: 'shelf', ...s, cell: bi };
-            play('click');
-          }
-          else if (carry && carry.src === 'belt') pops.add(walker.px, walker.py - 58, 'HÄNDERNA FULLA!', '#d8d2c0');
-        });
+        const cell = cellXY(bi), v0 = shelf[bi] ? shelf[bi].num : -1;
+        walker.walkTo(clamp(cell.cx, SHELF.x0 + 4, SHELF.x1 - 4), WALK_TOP + 1, () => atShelf(bi, v0));
         return;
       }
       // kunden vid disken
@@ -1228,7 +1642,7 @@ export function makeJobbPosten(A, { onDone }) {
           walker.walkTo(kk.x, WALK_TOP + 1, () => {
             if (!carry) pops.add(kk.x, POP_BUBBLE, 'NR ' + kk.num + ' TACK!', '#f4f1ea');
             else if (carry.src === 'belt') pops.add(walker.px, walker.py - 58, 'SKA SORTERAS!', '#d8d2c0');
-            else serveTo(kk);
+            else toCustomer(kk);
           });
           return;
         }
@@ -1239,7 +1653,7 @@ export function makeJobbPosten(A, { onDone }) {
         walker.walkTo(cg.cx, WALK_BOT, () => {
           if (!carry) return;
           if (carry.src === 'shelf') { pops.add(cg.cx, 144, 'SKA TILL KUND!', '#d8d2c0'); return; }
-          dropInCage(CAGES.indexOf(cg));
+          toCage(CAGES.indexOf(cg));
         });
         return;
       }
@@ -1288,11 +1702,12 @@ export function makeJobbPosten(A, { onDone }) {
       for (const s of shards) if (!s.landed) { ctx.fillStyle = s.c; ctx.fillRect(Math.round(s.x), Math.round(s.y), 1, 1); }
       drawBubbles(ctx);
       pops.draw(ctx);
-      drawShiftHud(ctx, { W: FW }, { t, dur: P.seconds, ok: stats.ok, fel: stats.fel, title: 'POSTEN' });
+      drawShiftHud(ctx, { W: FW }, { t, dur: P.seconds, ok: maxN > 1 ? team.ok : stats.ok, fel: maxN > 1 ? team.fel : stats.fel, title: maxN > 1 ? 'POSTEN IHOP' : 'POSTEN' });
       if (t < 7 && !done) drawHint(ctx);
       if (done) drawTimeUp(ctx, { W: FW, H: FH });
     },
   };
+  return api;
 
   // ---------- levande effekter ----------
   function updateFx(dt) {
@@ -1310,8 +1725,8 @@ export function makeJobbPosten(A, { onDone }) {
     for (let i = falling.length - 1; i >= 0; i--) if (falling[i].y > BIN.front + 16) {
       const it = falling[i].it;
       if (it.fragile) {
-        // glaset går sönder i lådan: skärvor yr upp över kanten
-        stats.krasch++;
+        // glaset går sönder i lådan: skärvor yr upp över kanten (räknas där bandet körs)
+        if (falling[i].own) stats.krasch++;
         play('fel');
         for (let k = 0; k < 10; k++) shards.push({ x: BIN.x0 + 6 + Math.random() * 12, y: BIN.rim, vx: (Math.random() - 0.5) * 40, vy: -40 - Math.random() * 30, fy: BIN.rim, life: 1.2 + Math.random() * 0.6, c: ['#e8f4ff', '#bfe0f0', '#ffffff', '#c4955a'][k % 4] });
       }
@@ -1319,12 +1734,9 @@ export function makeJobbPosten(A, { onDone }) {
       if (binPile.length > 4) binPile.shift();
       falling.splice(i, 1);
     }
+    // (lasten ligger redan i buren – den ritas där när flygturen landat)
     for (const f of flying) f.t += dt;
-    for (let i = flying.length - 1; i >= 0; i--) if (flying[i].t >= flying[i].dur) {
-      const f = flying.splice(i, 1)[0], L = loads[f.ci];
-      L.push({ it: f.it, x: f.x1, y: f.y1 });
-      if (L.length > LOAD_MAX) { L.shift(); L.forEach((q, n) => { const sp = loadSpot(f.ci, n); q.x = sp.x; q.y = sp.y; }); }
-    }
+    for (let i = flying.length - 1; i >= 0; i--) if (flying[i].t >= flying[i].dur) flying.splice(i, 1);
     // kollegan i bilen: går mot bandet med nästa försändelse strax innan den läggs ner
     const target = spawnIn < 1.1 && !done ? SPAWN_X - 6 : 20;
     const d = target - loader.x;
@@ -1354,18 +1766,17 @@ export function makeJobbPosten(A, { onDone }) {
     if (facing === 'up' && sorter.reach > 0) { ctx.fillStyle = '#f6f4ee'; ctx.fillRect(203 + ((clk * 3) | 0) % 3 * 2, 44, 2, 3); }
   }
   function drawBelt(ctx) {
-    const off = Math.floor(beltOffset()) % SURF_PERIOD;
+    const off = Math.floor(beltPos) % SURF_PERIOD;
     ctx.drawImage(G.surf, SURF_PERIOD - 1 - off, 0, BELT.x1 - BELT.x0, BELT.h, BELT.x0, BELT.top, BELT.x1 - BELT.x0, BELT.h);
     ctx.drawImage(G.belt, 0, 0);
     // rullarna under bandet snurrar
-    const ph = Math.floor(beltOffset() / 2) % 4;
+    const ph = Math.floor(beltPos / 2) % 4;
     for (let x = BELT.x0 + 6; x < BELT.x1 - 4; x += 16) {
       ctx.fillStyle = '#6a7078'; ctx.fillRect(x, 86, 4, 3);
       ctx.fillStyle = '#9aa0a8'; ctx.fillRect(x, 86, 4, 1);
       ctx.fillStyle = '#d8dce2'; ctx.fillRect(x + ph, 87, 1, 1);
     }
   }
-  function beltOffset() { return t * (15 + 5 * Math.min(1, t / P.seconds)); }
   function drawLaser(ctx) {
     const flick = 0.55 + 0.3 * Math.sin(clk * 40);
     ctx.fillStyle = `rgba(255,60,50,${(0.25 * flick).toFixed(2)})`;
@@ -1469,7 +1880,11 @@ export function makeJobbPosten(A, { onDone }) {
       draw(ctx) {
         const ox = cg.x0 - CAGE_OX, oy = CAGE_OY;
         ctx.drawImage(C.back, ox, oy);
-        for (const q of loads[i]) { const m = miniSprite(q.it); ctx.drawImage(m, q.x, q.y - m.height + 1); }
+        loads[i].forEach((q, n) => {
+          if (flying.length && flying.some((f) => f.id === q.id)) return;   // (på väg ner i buren – syns när den landat)
+          const m = miniSprite(q.it), sp = loadSpot(i, n);
+          ctx.drawImage(m, sp.x, sp.y - m.height + 1);
+        });
         ctx.drawImage(C.front, ox, oy);
       },
     };
