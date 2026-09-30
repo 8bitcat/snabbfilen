@@ -55,9 +55,10 @@ async function boot(q) {
   await p.evaluate(() => document.querySelector('#modal:not(.hidden) .dlg-foot .btn')?.click());
   await p.evaluate(() => { const A = window.SF; A.game.min = 11 * 60; A.go('city'); A.scene._debug.teleport(560, 300); });
   await p.waitForTimeout(4500);
-  const view = await p.evaluate(() => ({ ...window.SF.view.safe, W: window.SF.W, H: window.SF.H }));
+  const view = await p.evaluate(() => ({ ...window.SF.view.safe, W: window.SF.W, H: window.SF.H, pxs: window.SF.pxs }));
   const chips = await p.evaluate(() => window.SF.scene._debug.chips());
-  ok(view.y0 > 0, `staden: NÄRA-läget beskär överkanten (synligt från rad ${view.y0})`);
+  // telefonen (liggande): samma skala i alla scener – NÄRA är ett steg närmare (13 mini: 5 → 6), staden visar precis skärmen
+  ok(view.pxs === 6 && view.y0 === 0, `staden: NÄRA på telefonen = ett steg närmare (skala ${view.pxs}, vy ${view.W}×${view.H})`);
   ok(chips.length >= 2, `staden: husnamn i överkanten (${chips.map((x) => x.label).join(', ')})`);
   ok(chips.every((x) => x.y >= view.y0 && x.x >= view.x0 - 1 && x.x + x.w <= view.x1 + 1), 'staden: namnen ligger inne i den synliga rutan');
   ok(chips.every((a, i) => chips.every((b, j) => i === j || a.y !== b.y || a.x + a.w + 2 <= b.x || b.x + b.w + 2 <= a.x)), 'staden: namnen överlappar inte varandra');

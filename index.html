@@ -15,6 +15,7 @@
       var m = document.querySelector('meta[name=viewport]');
       if (!m) return;
       var base = window.devicePixelRatio || 1;
+      window.__baseDpr = base; // skärmens verkliga skala (main.js räknar telefonens spelskala på den fysiska skärmen)
       var phone = function () { return matchMedia('(pointer: coarse)').matches && Math.min(screen.width, screen.height) < 700; };
       var landscape = function () { return screen.orientation && screen.orientation.type ? /landscape/.test(screen.orientation.type) : window.innerWidth > window.innerHeight; };
       var deskW = function () { var phys = Math.round(Math.max(screen.width, screen.height) * base), k = Math.max(1, Math.round(phys / 1280)); return Math.round(phys / k); };

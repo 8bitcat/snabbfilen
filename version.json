@@ -1,7 +1,7 @@
 {
-  "version": "0.55.1",
+  "version": "0.56.0",
   "date": "2026-09-30",
-  "title": "Spelbilden som på datorn",
+  "title": "Närmare på mobilen",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",

@@ -198,8 +198,30 @@ const zoomMode = () => {
   return matchMedia('(pointer: coarse)').matches && liten && !deskMobil() ? 'nara' : 'vid';
 };
 A.view = { w: DESIGN_W, h: DESIGN_H, boxX: 0, boxY: 0, boxed: false, safe: { x0: 0, y0: 0, x1: DESIGN_W, y1: DESIGN_H } };
+// Telefonen i liggande läge: EN skala i alla scener (Carl 2026-09-30: "utgå från Burgarbaren, gör
+// en lite större än där och ha samma storlek i staden och inomhus"). Skalan (hela skärmpixlar per
+// spelpixel) räknas på telefonens FYSISKA skärmhöjd – ~PHONE_VIEW_H spelpixlar på hela höjden – så
+// att figuren inte byter storlek när Safaris adressfält visas/göms (iPhone 13 mini: 5, ~20 % större
+// än i Burgarbaren förr). 🔍: NÄRA = en pixel större skala, RAM = en mindre. Staden visar precis
+// skärmen; lokaler som är större beskärs (mest upptill), mindre får mörka kanter – inget förstoras.
+const PHONE_VIEW_H = 200;
+const phoneBaseScale = () => {
+  const phys = Math.min(window.screen.width, window.screen.height) * (window.__baseDpr || window.devicePixelRatio || 1);
+  return Math.round(phys / (PHONE_VIEW_H + stripHeight(A)));
+};
+const phoneScale = () => fillMode() && deskMobil();
 function applySceneView() {
-  const v = A.view, cap = fillMode() && zoomMode() !== 'nara' ? (WIDE[A.sceneName] || (A.scene && A.scene.viewMax) || null) : null; // NÄRA = klassiska vyn överallt; scenen kan ange viewMax
+  const v = A.view;
+  if (phoneScale()) {
+    const cap = WIDE[A.sceneName] || (A.scene && A.scene.viewMax) || null;
+    A.W = cap ? Math.max(Math.min(DESIGN_W, v.w), Math.min(v.w, cap.w)) : DESIGN_W;
+    A.H = A.sceneName === 'city' ? v.h : cap ? Math.max(DESIGN_H, Math.min(v.h, cap.h)) : DESIGN_H;
+    v.boxX = Math.max(0, (v.w - A.W) >> 1);
+    v.boxY = Math.max(0, (v.h - A.H) >> 1);
+    v.boxed = A.W !== v.w || A.H !== v.h;
+    return;
+  }
+  const cap = fillMode() && zoomMode() !== 'nara' ? (WIDE[A.sceneName] || (A.scene && A.scene.viewMax) || null) : null; // NÄRA = klassiska vyn överallt; scenen kan ange viewMax
   A.W = Math.max(DESIGN_W, Math.min(v.w, cap ? cap.w : DESIGN_W));
   A.H = Math.max(DESIGN_H, Math.min(v.h, cap ? cap.h : DESIGN_H));
   v.boxX = Math.max(0, (v.w - A.W) >> 1);
@@ -227,14 +249,18 @@ function fit() {
     return;
   }
   const strip = stripHeight(A);
-  const s = Math.max(2, Math.floor(Math.min(w * dpr / DESIGN_W, h * dpr / (DESIGN_H + strip))));
+  const phone = phoneScale();
+  const zoomStep = { nara: 1, vid: 0, ram: -1 }[zoomMode()] || 0;
+  const s = phone
+    ? Math.max(2, phoneBaseScale() + zoomStep)
+    : Math.max(2, Math.floor(Math.min(w * dpr / DESIGN_W, h * dpr / (DESIGN_H + strip))));
   A.pxs = s;
-  v.w = Math.max(DESIGN_W, Math.floor(w * dpr / s));
-  v.h = Math.max(DESIGN_H, Math.floor(h * dpr / s) - strip);
+  v.w = phone ? Math.floor(w * dpr / s) : Math.max(DESIGN_W, Math.floor(w * dpr / s));
+  v.h = phone ? Math.floor(h * dpr / s) - strip : Math.max(DESIGN_H, Math.floor(h * dpr / s) - strip);
   applySceneView();
   const stripCss = strip ? strip * s / dpr : 0;
   const sEl = document.getElementById('hudpix');
-  if (v.boxed && zoomMode() !== 'ram') {
+  if (v.boxed && (phone || zoomMode() !== 'ram')) {
     // FYLL SKÄRMEN: canvasen är bara spelbilden (384×216 i heltalsskala) och
     // förstoras sedan jämnt tills ytan är täckt. Blir beskärningen orimlig
     // (stående läge) fylls bara bredden. Mätarremsan ligger kvar överst.
@@ -249,7 +275,9 @@ function fit() {
     if (cv.height !== cbh * s) cv.height = cbh * s;
     const bw = cbw * s / dpr, bh = cbh * s / dpr, ah = Math.max(1, h - stripCss);
     const kC = Math.min(w / bw, ah / bh), kV = Math.max(w / bw, ah / bh);
-    const k = kV <= kC * 1.6 ? kV : kC; // täck ytan; bara vid orimlig beskärning (stående) fylls ena leden
+    // täck ytan; bara vid orimlig beskärning (stående) fylls ena leden · telefonen: samma skala
+    // överallt (k = 1) – lokalen beskärs eller får mörka kanter i stället för att förstoras
+    const k = phone ? 1 : kV <= kC * 1.6 ? kV : kC;
     const cw = bw * k, ch = bh * k;
     cv.style.width = cw + 'px'; cv.style.height = ch + 'px';
     cv.style.position = 'absolute';

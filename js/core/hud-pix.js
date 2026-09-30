@@ -31,8 +31,13 @@ export function apply() {
   window.dispatchEvent(new Event('resize')); // canvasen får plats som frigörs
 }
 
+// Telefonen i liggande läge (html.desk-mobil, index.html): en tunn remsa på en rad – namn, pengar,
+// dag och klocka, mat- och sömnmätaren – och HUD-knapparna ligger ovanpå dess högra del (css).
+// Mer höjd till spelet, så att figuren kan synas större (Carl 2026-09-30).
+export const STRIP_PHONE = 14;
+const phoneHud = () => typeof document !== 'undefined' && document.documentElement.classList.contains('desk-mobil');
 // Remsans höjd i spelpixlar (0 = ingen remsa: raden överst, eller huvudmenyn)
-export const stripHeight = (A) => (isPixHud() && !A?.attract ? STRIP_H : 0);
+export const stripHeight = (A) => (isPixHud() && !A?.attract ? (phoneHud() ? STRIP_PHONE : STRIP_H) : 0);
 
 let strip = null;
 function ensureStrip() {
@@ -99,6 +104,24 @@ function folkIcon(ctx, x, y) {
   ctx.fillRect(x + 5, y + 1, 2, 2); ctx.fillRect(x + 4, y + 3, 4, 3);
 }
 
+// Telefonens remsa: allt på en rad (knapparna ligger ovanpå högerdelen, se css html.desk-mobil)
+function drawPhoneStrip(ctx, A, g, Wv) {
+  const H = STRIP_PHONE, y = 5;
+  ctx.fillStyle = INK; ctx.fillRect(0, 0, Wv, H);
+  ctx.fillStyle = PAPER2; ctx.fillRect(0, H - 1, Wv, 1);
+  let x = 4;
+  const name = String(A.avatar?.name || '').toUpperCase().slice(0, 12);
+  ctxText(ctx, SMALL, name, x, y, GOLD); x += textW(SMALL, name) + 8;
+  coin(ctx, x, y);
+  const money = Math.round(g.money);
+  const moneyTxt = (money < 0 ? '-' : '') + Math.abs(money).toLocaleString('sv-SE').replace(/ /g, ' ') + ' KR';
+  ctxText(ctx, SMALL, moneyTxt, x + 7, y, money < 0 ? '#ff6a6a' : PAPER); x += 7 + textW(SMALL, moneyTxt) + 8;
+  const day = `${String(g.dayName || '').slice(0, 3).toUpperCase()} ${clock(g.min)}`;
+  ctxText(ctx, SMALL, day, x, y, PAPER2); x += textW(SMALL, day) + 10;
+  bar(ctx, x, y, 34, g.hunger, burger); x += 34 + 9 + 8;
+  bar(ctx, x, y, 34, g.energy, zz);
+}
+
 // Ritas varje bildruta från spelets loop (ctx-argumentet är spelbildens och används inte)
 export function drawPixHud(_ctx, A) {
   const g = A.game; if (!g) return;
@@ -106,6 +129,7 @@ export function drawPixHud(_ctx, A) {
   const ctx = c.getContext('2d');
   ctx.setTransform(A.pxs, 0, 0, A.pxs, 0, 0);
   ctx.imageSmoothingEnabled = false;
+  if (phoneHud()) { drawPhoneStrip(ctx, A, g, Math.round(c.width / A.pxs)); return; }
   const H = STRIP_H, Wv = Math.max(W, Math.round(c.width / A.pxs)); // remsan kan vara bredare än 384 (mobilfyllning)
   ctx.fillStyle = INK; ctx.fillRect(0, 0, Wv, H);
   ctx.fillStyle = '#2b2733'; ctx.fillRect(0, 0, Wv, 1);

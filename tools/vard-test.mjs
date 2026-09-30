@@ -254,7 +254,9 @@ else {
   await mp.waitForTimeout(1600);   // mätarremsan överst sätter sig efter ~1 s (safe.y0 ändras några rader)
   const MD = (fn, arg) => mp.evaluate(([f, a]) => new Function('d', 'a', 'return (' + f + ')(d, a)')(window.SF.scene._debug, a), [fn.toString(), arg]);
   const v = await mp.evaluate(() => ({ safe: { ...window.SF.view.safe }, cy: window.SF.scene._debug.camY(), hb: window.SF.scene._debug.hudBottom() }));
-  ok(v.safe.y0 > 0 && v.cy > 0, `mobilen beskär överkanten och lokalen flyttas ner (safe.y0 ${v.safe.y0}, camY ${v.cy})`);
+  // (telefonen: samma skala som i staden – överkanten beskärs; lokalen flyttas ner bara om skyltarna annars
+  // hamnar under remsan, det kollar nästa rad)
+  ok(v.safe.y0 > 0 && v.cy >= 0, `mobilen beskär överkanten (safe.y0 ${v.safe.y0}, lokalen flyttad ${v.cy} rader)`);
   ok(50 + v.cy >= v.safe.y0 + 18, `dörrskyltarna ligger helt under passets remsa (skylt rad ${50 + v.cy}, remsan slutar ${v.safe.y0 + 18})`);
   ok(v.safe.y1 - v.cy >= 168, `man själv vid luckan och bakre stolsraden syns nertill (lokalens rad ${v.safe.y1 - v.cy} längst ner)`);
   // fel rum: personalens bubbla "FEL RUM! GÅ TILL LABBET!" hamnar under remsan

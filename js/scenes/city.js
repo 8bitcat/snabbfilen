@@ -27,7 +27,9 @@ await Promise.all(['buildings-shops', 'buildings-work', 'buildings-south', 'buil
   import(`../city/${n}.js`).then((m) => { MODS[n] = m; }).catch((e) => console.error(`stadsmodulen ${n} kunde inte laddas:`, e))));
 
 let VW = CITY.VIEW_W, VH = CITY.VIEW_H; // mobilfyllning: vyn följer skärmen, klampad till världen
-const syncView = (A) => { VW = Math.max(CITY.VIEW_W, Math.min(A.W || CITY.VIEW_W, CITY.W)); VH = Math.max(CITY.VIEW_H, Math.min(A.H || CITY.VIEW_H, CITY.H)); };
+// (telefonen: vyn kan vara lägre än 216 – staden visas närmare, se PHONE_VIEW_H i main.js)
+const syncView = (A) => { VW = Math.max(160, Math.min(A.W || CITY.VIEW_W, CITY.W)); VH = Math.max(120, Math.min(A.H || CITY.VIEW_H, CITY.H)); };
+const phoneView = () => typeof document !== 'undefined' && document.documentElement.classList.contains('desk-mobil');
 export const BUS_FARE = 10, BUS_MINUTES = 15;
 
 // Spelare i staden som inte syns i bild får en pil med namnet i skärmkanten, så att man
@@ -237,7 +239,8 @@ export function makeCity(A) {
   // var figuren står i höjdled: 62 % ner i bilden – men när NÄRA-läget beskär överkanten
   // (mobilen) räknas det i den SYNLIGA rutan och längre ner (74 %), så att mer av husfasaderna
   // med skyltarna syns ovanför figuren
-  const camAnchorY = () => { const s = globalThis.SF?.view?.safe; if (!s || !(s.y0 > 0)) return VH * 0.62; const y1 = Math.min(VH, s.y1 || VH); return s.y0 + (y1 - s.y0) * 0.74; };
+  // (telefonen: figuren mitt i bild – då finns det alltid yta under den att trycka på när man vill gå nedåt)
+  const camAnchorY = () => { if (phoneView()) return VH * 0.5; const s = globalThis.SF?.view?.safe; if (!s || !(s.y0 > 0)) return VH * 0.62; const y1 = Math.min(VH, s.y1 || VH); return s.y0 + (y1 - s.y0) * 0.74; };
   const camY = () => {
     let y = walker.py - camAnchorY();
     const f = bridgeLift(walker.px, walker.py);
@@ -899,6 +902,8 @@ export function makeCity(A) {
         const bench = S.props.seatAt?.(x, y, (s) => !S.life.seatBusy?.(s.id) && !remoteSat(s));
         const front = Math.max(car ? car.y : -1e9, bench ? bench.y : -1e9);
         if (who.y + (who.oy || 0) < front) who = null;
+        // en dörr (och ytan framför den) går före folk som råkar gå förbi – man ska komma in
+        else if (ALL_BUILDINGS.some((b) => x >= b.door.x0 - 8 && x < b.door.x1 + 8 && facadeHit(b, x, y))) who = null;
       }
       if (who) {
         const turn = () => { if (!sitting) { const dx = who.x - walker.px, dy = who.y - walker.py; walker.dir = Math.abs(dx) > Math.abs(dy) * 1.6 ? (dx < 0 ? 'left' : 'right') : dy < 0 ? 'up' : 'down'; } };

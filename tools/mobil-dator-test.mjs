@@ -75,9 +75,19 @@ for (const engine of ['chromium', 'webkit']) {
     await p2.waitForTimeout(900);
     await p2.evaluate(() => { document.querySelector('#modal:not(.hidden) .dlg-foot .btn')?.click(); window.SF.go('city'); });
     await p2.waitForTimeout(800);
-    const r = await p2.evaluate(() => ({ W: window.SF.W, zoom: localStorage.getItem('snabbfilen_zoom') }));
+    const r = await p2.evaluate(() => ({ W: window.SF.W, pxs: window.SF.pxs, zoom: localStorage.getItem('snabbfilen_zoom') }));
     const want = flagga ? 'nara' : 'vid';
-    ok(want === 'vid' ? r.W > 500 : r.W === 384, `iPhone 13 mini, ${fall}: ${want === 'vid' ? 'VID – lika mycket stad som på datorn' : 'ens eget NÄRA gäller'} (${r.W} spelpixlar bred, zoom ${r.zoom || 'standard'})`);
+    // telefonen: VID = skala 5 på 13 mini (figuren ~20 % större än i Burgarbaren förr), NÄRA ett steg närmare (6)
+    ok(want === 'vid' ? r.pxs === 5 : r.pxs === 6, `iPhone 13 mini, ${fall}: ${want === 'vid' ? 'VID – skala 5' : 'ens eget NÄRA gäller – skala 6'} (${r.pxs} skärmpixlar per spelpixel, ${r.W} bred, zoom ${r.zoom || 'standard'})`);
+    if (!flagga && !zoom) {
+      // samma storlek ute och inne, och figuren mitt i bild i staden (yta att trycka på under den)
+      const sc = {};
+      for (const n of ['city', 'burgarbar', 'room']) { await p2.evaluate((x) => window.SF.go(x), n); await p2.waitForTimeout(700); sc[n] = await p2.evaluate(() => window.SF.pxs); }
+      ok(sc.city === sc.burgarbar && sc.city === sc.room, `samma skala i staden, Burgarbaren och hemma (${sc.city}, ${sc.burgarbar}, ${sc.room})`);
+      await p2.evaluate(() => window.SF.go('city')); await p2.waitForTimeout(900);
+      const at = await p2.evaluate(() => { const d = window.SF.scene._debug, c = d.cam(), q = d.pos(); return (q.y - c.y) / window.SF.H; });
+      ok(at > 0.35 && at < 0.62, `staden: figuren står mitt i bild (${Math.round(at * 100)} % ner)`);
+    }
     await c2.close();
   }
   // 2) telefon stående: vanlig bredd

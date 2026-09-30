@@ -10,6 +10,14 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.56.0] – 2026-09-30 – Närmare på mobilen
+- Närmare på mobilen: figuren är lika stor överallt – i staden, i Burgarbaren, hemma och i alla butiker – och lite större än den var i Burgarbaren förut. Man ser lite mindre av staden, men figuren syns tydligt.
+- Figuren står mitt i bilden i staden, så det finns alltid yta under den att trycka på när man vill gå nedåt.
+- Mätarna ligger på en tunn rad överst tillsammans med knapparna – mer plats åt spelet.
+- Storleken ändras inte när Safaris adressfält visas eller göms. Vill du ännu närmare trycker du på 🔍 (NÄRA), och en gång till för att se mer (RAM).
+- Hemma och på jobben blir det mörka kanter på sidorna där rummet är smalare än skärmen.
+- Dörrarna går före folk som går förbi: trycker du på en dörr eller ytan framför den går du in, även om någon passerar just där.
+
 ## [0.55.1] – 2026-09-30 – Spelbilden som på datorn
 - Spelbilden som på datorn: på telefonen i liggande läge är VID nu standard – samma pixelstorlek och lika mycket av staden som på datorn (iPhone 13 mini: drygt 600 spelpixlar i bredd).
 - Stod du på NÄRA sedan förr flyttas du till VID en gång – vill du tillbaka trycker du på 🔍.

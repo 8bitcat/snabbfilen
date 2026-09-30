@@ -473,6 +473,11 @@ body { padding-bottom: env(safe-area-inset-bottom); }
 /* ---------- zoomval (fyll skärmen inne i rum/butiker) ---------- */
 #app { position: relative; }
 #hudpix { z-index: 2; }
+/* Telefonen i liggande läge (html.desk-mobil): knapparna ligger i den tunna mätarremsan (en rad,
+   hud-pix.js) i stället för på en egen rad ovanför – mer höjd till spelet, figuren syns större */
+html.desk-mobil body.hud-pix #hud { position: absolute; top: 0; right: 0; z-index: 7; background: none; border: 0; padding: 2px 4px; }
+html.desk-mobil body.hud-pix .hud-btns { gap: 4px; }
+html.desk-mobil body.hud-pix .hud-btns .btn { padding: 1px 5px; }
 
 /* ---------- innehallsruta: pixelmönster bakom spelbilden (band ser avsiktliga ut) ---------- */
 #app { background: repeating-conic-gradient(#100e15 0% 25%, #151221 0% 50%) 0 0 / 16px 16px; }
