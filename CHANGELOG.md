@@ -10,6 +10,12 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.65.0] – 2026-09-30 – Jobba ihop på Bilverkstaden
+- Jobba ihop på Bilverkstaden: bjud in en kompis med 💼 Jobba ihop när du börjar passet (eller via 👥 mitt i passet) – ni delar de fyra liftarna, bilarna, de två skiftnycklarna, luftslangen och däckhögarna.
+- Ni kan jobba på olika bilar samtidigt. En mutter som snurrar tillhör den som snurrar, och en reparation vid fronten gör en åt gången. Varje nyckel och slangen finns bara på ett ställe.
+- Hinner båda till samma sak gäller bara den första – den som kom för sent får höra "HANN FÖRE!". Den som sänker liften får betalt för bilen; lagets rätt och fel delas lika på lönebeskedet.
+- När ni är fler kommer bilarna ungefär dubbelt så ofta. Går den som leder passet hem tar någon annan över direkt, och verktyg som någon höll i lämnas tillbaka.
+
 ## [0.64.0] – 2026-09-30 – Jobba ihop på Tvätteriet
 - Jobba ihop på Tvätteriet: bjud in en kompis med 💼 Jobba ihop när du börjar passet (eller via 👥 mitt i passet) – ni delar disken, de sex tvättmaskinerna, de fyra torktumlarna, vikbordet och kunderna.
 - Varje tvätt finns på ett enda ställe: hinner båda till samma maskin eller samma påse gäller bara den första – den som kom för sent får höra "HANN FÖRE!". En plats på vikbordet där någon viker är upptagen.

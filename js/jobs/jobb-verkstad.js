@@ -50,10 +50,14 @@
 // ('panel:2', 'hjul:3:fram', 'bult:3:0', 'skruvdragare', 'kompressor', 'stapel',
 // 'dack:vinter' …), tire(bay), hud(), hint(), autoCars(av/på), time(s), idle(),
 // me(), cam() (kameran i fyll-läget), occupied() (rutorna som inte får täckas) m.fl.
+//
+// JOBBA IHOP: flera kan dela passet – bilarna på de fyra lyftarna, skruvdragarna, luftslangen och
+// staplarna med gamla hjul är gemensamma (se "jobba tillsammans" nedan), det man bär är ens eget.
 import { drawPerson, makeLook } from '../core/people.js';
 import { Pix, SMALL, BIG, ctxText, textW, text, mix, mul, css, hex, hash, bayer } from '../core/floor-pix.js';
 import { createWalker, selfDrawable, folkDrawables, WALK_SEQ } from '../scenes/walkable.js';
 import { planOf, drawShiftHud, drawTimeUp, abortShift } from './shift.js';
+import { makeShiftCoop } from '../net/coop.js';
 import { play, audioContext, isMuted } from '../core/sound.js';
 
 const FW = 384, FH = 216;
@@ -833,13 +837,31 @@ function loadTips() { try { const o = JSON.parse(localStorage.getItem(TIPS_KEY) 
 function saveTips(o) { try { localStorage.setItem(TIPS_KEY, JSON.stringify(o)); } catch { /* privat läge */ } }
 const foldName = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]/g, '');
 
+// ======================= jobba ihop: det som skickas mellan mekanikerna =======================
+// Ägarnas utseende ur ett frö: i ett delat pass skickar skiftledaren bara fröet (ett tal) i
+// stället för hela utseendet, och alla ritar ändå samma människor (som på Macken och i Tvätteriet).
+function seedRng(seed) {
+  let s = seed >>> 0;
+  return () => { s = (s + 0x6D2B79F5) >>> 0; let t = s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+}
+const lookOf = (seed) => makeLook(seedRng(seed));
+const CAR_KINDS = Object.keys(SPECS);                                  // bilmodellerna (index = kod i snappen)
+const CAR_ST = ['drive', 'exit', 'park', 'raise', 'wait', 'ready', 'lower', 'board', 'leave'];
+const TIRE_ST = ['flat', 'off', 'new'];                                // däckbytets hjul
+const W_AT = ['cart', 'floor', 'hand'];                                // var en skruvdragare är
+const DIRS = ['down', 'up', 'left', 'right'];
+// ljuden som skiftledarens utfall får spela hos den det gäller, och hjälptexternas nycklar
+const LJUD = new Set(['ok', 'click', 'fel', 'knock', 'door', 'box', 'coin', 'miss', 'slide', 'honk']);
+const TIP_KEYS = new Set(['HISSA', 'SÄNK', 'DEL', 'LAGA', 'SKRUVDRAGARE', 'SKRUVAR', 'DÄCK AV', 'STAPEL', 'NYTT DÄCK', 'SKRUVA FAST', 'LUFT']);
+
 export function makeJobbVerkstad(A, { onDone } = {}) {
   const stats = { ok: 0, fel: 0, miss: 0, dack: 0, kryss: 0 };
   // passets plan: verkstadens 90 s växer som de andras 60 s (P.seconds / 60), bilarna kommer
   // tätare med vanan (P.pace) och klockan går P.gameMin minuter. Inga extra lyftar – de fyra
   // fyller verkstaden, och en femte skulle behöva ny grafik.
+  // (läses varje bildruta – planen är samma objekt hela passet)
   const P = planOf(A);
-  const shiftT = SHIFT_T * P.seconds / 60;
+  const shiftT = () => SHIFT_T * P.seconds / 60;
   const walker = createWalker({ top: 100, bottom: FH - 4, spawn: [164, 120] });
   const piles = PILE_XS.map((x, i) => ({ i, x, y: PROP_FOOT, n: 3 }));
   walker.setObstacles([
@@ -852,6 +874,9 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
   ]);
   for (const b of BAYS) Object.assign(b, { lift: 0, moving: 0, port: 0, hum: 0, press: 0 });
   const pops = makeShopPops();
+  const popLog = [];                  // de senaste puffarnas text (provet läser dem: syntes "HANN FÖRE!"?)
+  const addPop = pops.add.bind(pops);
+  pops.add = (x, y, txt, col, o) => { popLog.push(txt); if (popLog.length > 30) popLog.shift(); addPop(x, y, txt, col, o); };
   let cars = [], fx = [], notes = [], t = 0, seq = 0, carIn = 0.8, carry = null;
   let done = false, doneT = 0, reported = false, autoCars = true;
   const hold = { on: false, bay: -1, wheel: -1 };
@@ -859,8 +884,9 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
   let focus = -1, pulse = 0, pulseCar = null, airing = null, spinTick = 0, hissTick = 0;
   let compRun = 0, compIn = 7, compPh = 0, shake = 0, stowIn = 0, hoseCar = null;
   const hoseBack = { t: 0, x: 0, y: 0 };
-  // skruvdragarna: en på varje verktygsvagn; de kan också ligga på golvet eller bäras
-  const wrenches = CARTS.map((k, i) => ({ id: i, at: 'cart', cart: i, x: 0, y: 0 }));
+  // skruvdragarna: en på varje verktygsvagn; de kan också ligga på golvet eller bäras (by = av vem)
+  const wrenches = CARTS.map((k, i) => ({ id: i, at: 'cart', cart: i, x: 0, y: 0, by: '' }));
+  let hoseBy = null;                  // (ihop) en kollega har luftslangen – hens id; min egen syns i carry
   const tips = loadTips();
   const startMin = Number.isFinite(A.game?.min) ? A.game.min : 8 * 60;
   let bgc = null;
@@ -994,13 +1020,15 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
     const kind = kindWish && SPECS[kindWish] ? kindWish : pickKind(), s = SPECS[kind], pal = COLORS[kind];
     const parkX = b.lx + ((RUN - s.L) >> 1);
     const pm = fault === 0 ? PATIENCE_TIRE : PATIENCE;
+    const ci = (Math.random() * pal.length) | 0, ls = (Math.random() * 0x7fffffff) | 0;   // (färgen och ägaren som tal – det skickas ihop)
     const c = {
       id: seq++, bay: b, kind, spec: s, L: s.L, face: b.face, tk: tireKindFor(kind),
-      color: pal[(Math.random() * pal.length) | 0], variant: (Math.random() * 3) | 0,
+      ci, color: pal[ci], variant: (Math.random() * 3) | 0, ls,
       fault, parkX, x: b.face ? FW + 6 : -s.L - 6, v: 0, dist: 0, rise: 0, brake: false, delay: 0.7,
-      state: 'drive', prog: 0, patience: pm, pmax: pm, fixed: false, gaveUp: false, lastWork: -9, nag: 0,
+      state: 'drive', prog: 0, patience: pm, pmax: pm, fixed: false, gaveUp: false, lastWork: -9, nag: 0, nagN: 0,
       honk: 0, flash: 0, wait: 0, driver: true, puddle: 0, drip: null, dripIn: 0.6, smokeIn: 0, sparkIn: 1,
-      owner: { look: makeLook(), x: 0, y: 0, dir: 'down', show: false, walk: false, angry: 0, happy: 0 },
+      rb: null, rbT: -9,                                   // (ihop) vem som lagar felet vid fronten just nu
+      owner: { look: lookOf(ls), x: 0, y: 0, dir: 'down', show: false, walk: false, angry: 0, happy: 0 },
     };
     c.tj = fault === 0 ? tireJob(c) : null;
     return c;
@@ -1087,20 +1115,538 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
       addFx(x, y, Math.cos(a) * 34, Math.sin(a) * 22 - 8, 30, 0.7, i % 2 ? '#ffe27a' : '#ffffff');
     }
   }
+  // (ihop) någon annan hann före: puffen där tipsen hamnar, i rött
+  function hannFore() {
+    const back = walker.py < 160;
+    play('miss');
+    pops.add(walker.px, back ? walker.py + 5 : walker.py - 58, 'HANN FÖRE!', '#ff6a6a', { tag: 'tips', minY: back ? walker.py - 6 : 0 });
+  }
+
+  // ---------- jobba tillsammans (delat pass via js/net/coop.js) ----------
+  // Skiftledaren (den som varit längst i verkstaden) kör det gemensamma: bilarna på de fyra lyftarna
+  // (när de kör in, felet eller däckbytet, tålamodet, lyften, skruvarna, luften, lagningen och
+  // betalningen), de två skruvdragarna, luftslangen och staplarna med gamla hjul. Läget delas ~3 ggr/s;
+  // medarbetarna ser samma verkstad – bilarna rullar, ägarna går och lyftarna åker vidare hos dem
+  // mellan lägena – och skickar varje handling på något gemensamt som ett önskemål med det de bär och
+  // var de står: hissa och sänka, ta och lägga tillbaka skruvdragare, slang, delar och däck, skruva
+  // (varje skruv), ta av och sätta på hjulet, lägga det gamla i stapeln, laga vid fronten (hjärtslag
+  // medan man håller inne) och släppa luften. Skiftledaren kör samma kod åt dem och är ENDA domaren:
+  // en skruvdragare och slangen finns på ETT ställe (på vagnen, på golvet eller i EN persons händer –
+  // skiftledaren håller reda på vem som bär vad), en skruv snurras av EN (den andra ser HANN FÖRE!),
+  // felet vid fronten lagas av EN åt gången, och en bil betalar EN gång. Luften fylls hos den som har
+  // slangen (mätaren och släppet avgörs där, som tankningen på Macken) – skiftledaren får mätarläget.
+  // Poängen går till den som gjorde det; lagets rätt, fel och missade delas lika vid passets slut. Ihop
+  // kommer bilarna tätare (det finns ingen femte lyft – samma fyra platser, ingen ny grafik).
+  const coop = makeShiftCoop(A, 'away:jobbverkstad');
+  let snapIn = 0, wasLead = true, wasCoop = false, maxN = 1, snaps = 0;
+  let pend = null, queued = null, mdown = false;  // medarbetarens önskemål som väntar på svar (och ett köat klick)
+  let replaying = false;                          // (det köade klicket tas nu)
+  let airOwn = null, airBeat = 0, beatIn = 0, stopSent = -9;
+  const team = { ok: 0, fel: 0, miss: 0 };        // LAGETS räkning – delas lika vid passets slut
+  const hands = new Map();                        // vad kollegorna bär: id → samma form som carry (hos skiftledaren: sanningen)
+  const absent = new Map();                       // (skiftledaren) id → sedan när kollegan inte syns i verkstaden
+  const mate = () => coop.active && !coop.leader;
+  const meId = () => coop.myId || '';
+  // är det jag? ('' = ensam/offline; har ingen annan någonsin varit här är allt mitt)
+  const isMe = (id) => id === meId() || id === '' || id == null || (!coop.active && maxN === 1);
+  const byK = (k, id) => (k.remote ? id === k.by : isMe(id));
+  const snapAsap = () => { snapIn = 0; };
+  const int = (v, dflt) => (Number.isInteger(v) ? v : dflt);
+  const str = (v) => (typeof v === 'string' ? v.slice(0, 40) : '');
+  const carById = (id) => cars.find((c) => c.id === id) || null;
+  const hoseHolder = () => (hasHose() ? meId() : hoseBy);
+  const hudTitle = () => (maxN > 1 ? 'BILVERKSTADEN IHOP' : 'BILVERKSTADEN');
+  // det man ser vid en plats när man klickar (har det ändrats när man väl är framme hann någon före)
+  const sigCar = (c) => (c ? c.id * 16 + CAR_ST.indexOf(c.state) : -1);
+  const sigTire = (c) => (c && c.tj ? c.id * 4 + TIRE_ST.indexOf(c.tj.tire) : -1);
+  const cartSig = (ci) => { const w = wrenches.find((x) => x.at === 'cart' && x.cart === ci); return w ? w.id : -1; };
+  const hoseSig = () => (hoseHolder() == null ? 0 : 1);
+  // panelen: bara HISSA (bilen stod nere) och SÄNK (bilen var klar) kan hinnas före
+  const stalePanel = (b, v) => v >= 0 && (v % 16 === 2 || v % 16 === 5) && v !== sigCar(carOf(b));
+  const staleCart = (ci, v) => v >= 0 && !wrenches.some((w) => w.id === v && w.at === 'cart' && w.cart === ci);
+
+  // det man bär: 0 = inget · [0, del] · [1, skruvdragarens nr] · [2] slangen · [3, däcksort, gammalt, från bil]
+  const carryEnc = (c) => (!c ? 0 : c.p !== undefined ? [0, c.p] : c.wrench !== undefined ? [1, c.wrench] : c.hose ? [2]
+    : c.wheel ? [3, TIRE_KINDS.indexOf(c.wheel), c.old ? 1 : 0, c.from ?? -1] : 0);
+  function carryDec(a) {
+    if (!Array.isArray(a)) return null;
+    if (a[0] === 0) return { p: clamp(a[1] | 0, 1, 4) };
+    if (a[0] === 1) return { wrench: clamp(a[1] | 0, 0, wrenches.length - 1) };
+    if (a[0] === 2) return { hose: true };
+    if (a[0] === 3) { const wheel = TIRE_KINDS[clamp(a[1] | 0, 0, 3)]; return a[2] ? { wheel, old: true, from: int(a[3], -1) } : { wheel, old: false }; }
+    return null;
+  }
+  const sameCarry = (a, b) => JSON.stringify(carryEnc(a)) === JSON.stringify(carryEnc(b));
+  const handEnc = (id, h) => { const e = carryEnc(h); return Array.isArray(e) ? [[id, ...e]] : []; };
+  // bil: [id, lyft, modell, färg, variant, fel, däcksort, läge (CAR_ST), x·10, tålamod·10, max·10, flaggor (klar 1,
+  // tröttnade 2, föraren i 4, jobbas på 8, porten rullar upp 16), lagat·100, oljepöl·10, ägaren, däckbytet, lagas av, tjat]
+  const ownEnc = (c) => { const o = c.owner; return [c.ls | 0, Math.round(o.x), Math.round(o.y), Math.max(0, DIRS.indexOf(o.dir)), (o.show ? 1 : 0) | (o.walk ? 2 : 0), Math.round(o.angry * 10), Math.round(o.happy * 10)]; };
+  // däckbytet: [hjul, sort, skruvar, skruvarna som bitar, däcket (TIRE_ST), monterat, luft·1000, flaggor (luftat 1, för lite 2,
+  // sen 4, slirat 8), skruven som snurrar [nr, tid·100, ut, köad, av vem] eller 0, köad, senaste, ordningen]
+  function tjEnc(c) {
+    const j = c.tj;
+    if (!j) return 0;
+    return [j.wheel, TIRE_KINDS.indexOf(j.want), j.n, j.bolts.reduce((a, v, q) => a | (v ? 1 << q : 0), 0), TIRE_ST.indexOf(j.tire), j.mounted ? TIRE_KINDS.indexOf(j.mounted) : -1,
+      Math.round(j.air * 1000), (j.aired ? 1 : 0) | (j.lowFel ? 2 : 0) | (j.late ? 4 : 0) | (j.slip ? 8 : 0),
+      j.spin ? [j.spin.i, Math.round(j.spin.t * 100), j.spin.out ? 1 : 0, j.spin.q ? 1 : 0, j.spin.by || ''] : 0,
+      j.queued ?? -1, j.last, j.order.slice(0, 6)];
+  }
+  const carEnc = (c) => [c.id, c.bay.i, CAR_KINDS.indexOf(c.kind), c.ci | 0, c.variant | 0, c.fault, TIRE_KINDS.indexOf(c.tk), CAR_ST.indexOf(c.state),
+    Math.round(c.x * 10), Math.round(c.patience * 10), Math.round(c.pmax * 10),
+    (c.fixed ? 1 : 0) | (c.gaveUp ? 2 : 0) | (c.driver ? 4 : 0) | (t - c.lastWork < 3 ? 8 : 0) | (c.delay > 0 ? 16 : 0),
+    Math.round(c.prog * 100), Math.round(c.puddle * 10), ownEnc(c), tjEnc(c), c.rb != null && t - c.rbT < 0.7 ? c.rb : '', c.nagN | 0];
+  // skruvdragare: [var (W_AT), vagnen, x, y, vem som bär den]
+  const wEnc = (w) => [W_AT.indexOf(w.at), w.cart | 0, Math.round(w.x), Math.round(w.y), w.at === 'hand' ? w.by || '' : ''];
+  const sendSnap = () => coop.send({
+    t: 'snap',
+    ca: cars.map(carEnc),
+    by: BAYS.map((b) => [Math.round(b.lift * 10), b.moving ? 1 : 0, b.pressUp ? 1 : 0]),   // lyftarna
+    wr: wrenches.map(wEnc),
+    hl: hoseHolder() || '',                                                              // vem som har slangen
+    pi: piles.map((p) => p.n),                                                           // staplarna med gamla hjul
+    // vad var och en bär: [spelarens id, ...carryEnc] (skiftledaren själv också)
+    ha: [...handEnc(meId(), carry), ...[...hands].flatMap(([id, h]) => handEnc(id, h))],
+    tm: [team.ok, team.fel, team.miss],
+    sq: seq,   // (nästa id – tar någon annan över fortsätter numreringen efter det)
+  });
+  // en bil ur snappen: samma objekt som förut om det är samma bil (det jag håller på med pekar på den)
+  function carDec(a) {
+    if (!Array.isArray(a) || a.length < 18) return null;
+    const id = int(a[0], -1);
+    if (id < 0) return null;
+    const b = BAYS[clamp(a[1] | 0, 0, 3)], kind = CAR_KINDS[clamp(a[2] | 0, 0, CAR_KINDS.length - 1)], fault = clamp(a[5] | 0, 0, 4);
+    const pal = COLORS[kind], ci = clamp(a[3] | 0, 0, pal.length - 1);
+    let c = carById(id);
+    if (c && (c.kind !== kind || c.bay !== b || c.fault !== fault)) c = null;   // (samma id, en annan bil)
+    const fresh = !c;
+    if (!c) {
+      const s = SPECS[kind];
+      c = { id, bay: b, kind, spec: s, L: s.L, face: b.face, fault, parkX: b.lx + ((RUN - s.L) >> 1), x: (+a[8] || 0) / 10, v: 0, dist: 0, rise: 0,
+        brake: false, delay: 0, prog: 0, lastWork: -9, nag: 0, nagN: a[17] | 0, honk: 0, flash: 0, wait: 0, puddle: 0, drip: null, dripIn: 0.6,
+        smokeIn: 0, sparkIn: 1, rb: null, rbT: -9, tj: null,
+        owner: { look: null, x: 0, y: 0, dir: 'down', show: false, walk: false, angry: 0, happy: 0 } };
+    }
+    const hear = !fresh && snaps > 0, was = c.state, wasGave = !!c.gaveUp, wasFixed = !!c.fixed, wasLate = !!(c.tj && c.tj.late);
+    c.ci = ci; c.color = pal[ci]; c.variant = clamp(a[4] | 0, 0, 2); c.tk = TIRE_KINDS[clamp(a[6] | 0, 0, 3)];
+    c.state = CAR_ST[clamp(a[7] | 0, 0, CAR_ST.length - 1)];
+    c.gx = (+a[8] || 0) / 10;
+    c.pmax = Math.max(1, (a[10] | 0) / 10); c.patience = clamp((a[9] | 0) / 10, 0, c.pmax);
+    const fl = a[11] | 0;
+    c.fixed = !!(fl & 1); c.gaveUp = !!(fl & 2); c.driver = !!(fl & 4); c.wk = !!(fl & 8); c.dl = !!(fl & 16);
+    // lagningen vid fronten: min egen går här medan jag håller inne (skiftledaren ligger lite efter)
+    const pg = clamp((a[12] | 0) / 100, 0, 1);
+    c.prog = working === c && !c.fixed ? Math.max(c.prog, pg) : pg;
+    c.puddle = clamp((a[13] | 0) / 10, 0, 1);
+    const o = c.owner, oa = Array.isArray(a[14]) ? a[14] : [];
+    if (!o.look || c.ls !== (oa[0] | 0)) { c.ls = oa[0] | 0; o.look = lookOf(c.ls); }
+    o.gx = +oa[1] || 0; o.gy = +oa[2] || 0;
+    if (fresh || !o.show) { o.x = o.gx; o.y = o.gy; }
+    o.dir = DIRS[clamp(oa[3] | 0, 0, 3)]; o.show = !!((oa[4] | 0) & 1); o.walk = !!((oa[4] | 0) & 2);
+    o.angry = Math.max(0, (oa[5] | 0) / 10); o.happy = Math.max(0, (oa[6] | 0) / 10);
+    if (Array.isArray(a[15])) tjDec(c, a[15], hear);
+    else c.tj = null;
+    c.rb = str(a[16]) || null;
+    // det som händer vid lyften hörs och syns hos alla
+    if (hear) {
+      if (was === 'drive' && c.state === 'exit') play('door');
+      if (was === 'board' && c.state === 'leave') { play('door'); if (c.gaveUp) { c.honk = 1.3; play('honk'); } }
+      if (!wasGave && c.gaveUp) { play('miss'); eventPops(c, null, ['TRÖTTNADE!', '#d8d2c0']); dropMine(c); }
+      if ((a[17] | 0) > (c.nagN | 0)) { if (!wasLate) play('miss'); eventPops(c, null, ['SKYNDA PÅ!', '#ff9a6a']); }
+      if (!wasFixed && c.fixed) c.flash = 1;
+    }
+    c.nagN = a[17] | 0;
+    return c;
+  }
+  function tjDec(c, e, hear) {
+    const j = c.tj || (c.tj = { wrongT: -9, flying: -9, bang: 0, spin: null, queued: null, order: [], bolts: [], last: -1 });
+    j.wheel = e[0] ? 1 : 0; j.want = TIRE_KINDS[clamp(e[1] | 0, 0, 3)]; j.n = clamp(e[2] | 0, 4, 5);
+    const prev = j.bolts, tireWas = j.tire, bits = e[3] | 0;
+    j.bolts = Array.from({ length: j.n }, (_, q) => !!(bits & (1 << q)));
+    j.tire = TIRE_ST[clamp(e[4] | 0, 0, 2)];
+    j.mounted = (e[5] | 0) >= 0 ? TIRE_KINDS[clamp(e[5] | 0, 0, 3)] : null;
+    if (c.id !== airOwn) j.air = clamp((e[6] | 0) / 1000, 0, 1.02);   // (luften jag själv fyller går här)
+    const fl = e[7] | 0;
+    j.aired = !!(fl & 1); j.lowFel = !!(fl & 2); j.late = !!(fl & 4); j.slip = !!(fl & 8);
+    const sp = e[8], old = j.spin;
+    if (Array.isArray(sp)) {
+      const s = { i: clamp(sp[0] | 0, 0, j.n - 1), t: clamp((sp[1] | 0) / 100, 0, SPIN_T), out: !!sp[2], q: !!sp[3], by: str(sp[4]) };
+      const same = old && old.i === s.i && old.out === s.out && old.by === s.by;
+      if (same && s.t > old.t - 0.2) s.t = Math.max(s.t, old.t);   // (samma skruv: hoppa inte bakåt)
+      else if (hear && !s.out && c.state === 'wait') {              // skruven plockas upp ur skålen och sätts i navet
+        const bp = bowlPos(c), wx = wheelX(c, j.wheel), wy = wheelCY(c), T = 0.2;
+        addFx(bp.x + 4, bp.y + 1, (wx - bp.x - 4) / T, (wy - bp.y - 1) / T, 0, T, '#eef2f6', 1, false);
+      }
+      j.spin = s;
+    } else j.spin = null;
+    j.queued = (e[9] | 0) >= 0 ? e[9] | 0 : null;
+    j.last = int(e[10], -1);
+    j.order = Array.isArray(e[11]) ? e[11].slice(0, 6).map((q) => q | 0) : [];
+    // en skruv som kom ut hoppar ner i skruvskålen, som hos den som skruvar
+    if (hear && tireWas === 'flat' && j.tire === 'flat' && c.state === 'wait') {
+      for (let q = 0; q < j.n; q++) {
+        if (!prev[q] || j.bolts[q]) continue;
+        const wx = wheelX(c, j.wheel), wy = wheelCY(c), bp = bowlPos(c), T = 0.42, g = 230;
+        addFx(wx, wy, (bp.x + 3 - wx) / T, (bp.y + 1 - wy) / T - g * T / 2, g, T, '#e8ecf2', 1, false);
+        j.flying = t + T;
+      }
+    }
+  }
+  const applySnap = (m) => {
+    if (Number.isFinite(m.sq)) seq = Math.max(seq, m.sq | 0);
+    const me = meId();
+    if (Array.isArray(m.by)) BAYS.forEach((b, i) => {
+      const a = m.by[i];
+      if (!Array.isArray(a)) return;
+      const mv = a[1] ? 1 : 0;
+      if (mv && !b.moving && snaps) { b.press = 0.35; b.hum = 0; }   // (knappen på panelen lyser en stund)
+      b.lift = clamp((+a[0] || 0) / 10, 0, LIFT_H); b.moving = mv; b.pressUp = !!a[2];
+    });
+    if (Array.isArray(m.ca)) {
+      const next = [];
+      for (const a of m.ca.slice(0, 8)) { const c = carDec(a); if (c && !next.includes(c)) next.push(c); }
+      for (const c of cars) if (!next.includes(c)) dropMine(c);   // (bilen körde: det jag höll på med där släpps)
+      cars = next;
+    }
+    if (Array.isArray(m.wr)) wrenches.forEach((w, i) => {
+      const a = m.wr[i];
+      if (!Array.isArray(a)) return;
+      w.at = W_AT[clamp(a[0] | 0, 0, 2)]; w.cart = clamp(a[1] | 0, 0, CARTS.length - 1);
+      w.x = +a[2] || 0; w.y = +a[3] || 0; w.by = str(a[4]);
+    });
+    hoseBy = typeof m.hl === 'string' && m.hl && m.hl !== me ? str(m.hl) : null;
+    if (Array.isArray(m.pi)) piles.forEach((p, i) => { p.n = clamp(m.pi[i] | 0, 0, PILE_MAX); });
+    if (Array.isArray(m.ha)) {
+      let mine = null;
+      hands.clear();
+      for (const h of m.ha.slice(0, 12)) {
+        if (!Array.isArray(h)) continue;
+        const it = carryDec(h.slice(1));
+        if (!it) continue;
+        if (h[0] === me) mine = it; else hands.set(str(h[0]), it);
+      }
+      if (!sameCarry(carry, mine)) carry = mine;
+    }
+    if (Array.isArray(m.tm)) { team.ok = m.tm[0] | 0; team.fel = m.tm[1] | 0; team.miss = m.tm[2] | 0; }
+    snaps++;
+  };
+  // (medarbetaren) bilen tröttnade eller körde: sluta hålla inne och fylla luft där
+  function dropMine(c) {
+    if (hold.bay === c.bay.i) hold.on = false;
+    if (airing === c) airing = null;
+    if (pulseCar === c) { pulseCar = null; pulse = 0; }
+    if (airOwn === c.id) airOwn = null;
+  }
+  // Medarbetarens verkstad mellan ledarens lägen: bilarna rullar in och ut, lyftarna åker, ägarna går,
+  // skruvarna snurrar och tålamodet rinner – nästa snap rättar allt.
+  function mateTick(dt) {
+    for (const c of cars) {
+      const b = c.bay, o = c.owner, dirIn = c.face ? -1 : 1;
+      o.angry = Math.max(0, o.angry - dt); o.happy = Math.max(0, o.happy - dt);
+      c.honk = Math.max(0, c.honk - dt); c.flash = Math.max(0, c.flash - dt);
+      if (c.tj) c.tj.bang = Math.max(0, c.tj.bang - dt);
+      if (c.gx === undefined) c.gx = c.x;
+      if (c.state === 'drive' && !c.dl) {
+        const d = (c.parkX - c.gx) * dirIn;
+        if (d > 0) c.gx += Math.min(d, clamp(d * 1.9, 9, 52) * dt) * dirIn;
+      } else if (c.state === 'leave' && b.port >= 0.7) { c.gv = Math.min(46, (c.gv || 0) + 38 * dt); c.gx -= c.gv * dt * dirIn; }
+      if (c.state === 'raise') b.lift = Math.min(LIFT_H, b.lift + dt * LIFT_H / 1.1);
+      else if (c.state === 'lower') b.lift = Math.max(0, b.lift - dt * LIFT_H / 1.1);
+      if (c.state === 'park' || c.state === 'wait') c.patience = Math.max(0, c.patience - dt * (c.wk ? 0.35 : 1));
+      // bilen glider mjukt efter "spöket", hjulen rullar och bilen åker upp på rampen
+      const ox = c.x, ex = c.gx - c.x;
+      if (Math.abs(ex) > 24) c.x = c.gx; else c.x += ex * Math.min(1, dt * 10);
+      c.dist += (c.x - ox) * dirIn;
+      const moving = c.state === 'drive' || c.state === 'leave';
+      c.rise = moving ? Math.round(RAMP * clamp(1 - Math.abs(c.x - c.parkX) / 22, 0, 1)) : RAMP;
+      c.brake = c.state === 'drive' && (c.parkX - c.x) * dirIn < 18;
+      // ägaren går till sin plats (ur bilen) eller till dörren (in i bilen)
+      if (o.gx === undefined) { o.gx = o.x; o.gy = o.y; }
+      if (o.walk && (c.state === 'exit' || c.state === 'board')) {
+        const [tx, ty] = c.state === 'exit' ? [ownerSpot(c).x, b.ownY] : [doorX(c), b.base + 2];
+        const dx = tx - o.gx, dy = ty - o.gy, d = Math.hypot(dx, dy), st = (c.state === 'board' && c.gaveUp ? 40 : 31) * dt;
+        if (d <= st) { o.gx = tx; o.gy = ty; } else { o.gx += dx / d * st; o.gy += dy / d * st; }
+      }
+      const dx = o.gx - o.x, dy = o.gy - o.y;
+      if (Math.hypot(dx, dy) > 24) { o.x = o.gx; o.y = o.gy; } else { const f = Math.min(1, dt * 10); o.x += dx * f; o.y += dy * f; }
+      if (c.state === 'drive' && !c.dl) driveSmoke(c, dt);
+      carSigns(c, dt);
+      // skruven som snurrar (min egen: jag gick därifrån = den stannar – säg till skiftledaren)
+      const j = c.tj;
+      if (!j || !j.spin) continue;
+      if (c.state !== 'wait') { j.spin = null; continue; }
+      const mine = j.spin.by === meId();
+      if (mine && !(hasWrench() && atWheel(c, j.wheel))) {
+        j.spin = null; j.queued = null;
+        if (t - stopSent > 0.4) { stopSent = t; coop.send({ t: 'avbryt' }); }
+        continue;
+      }
+      j.spin.t = Math.min(SPIN_T, j.spin.t + dt);
+      if (mine) { c.lastWork = t; if ((spinTick -= dt) <= 0) { spinTick = 0.07; play('click'); } }
+      spinSparks(c);
+    }
+  }
+  // JAG tar över passet: hoppa över gamla id:n (inga krockar), bilarna kör vidare från där de syns,
+  // ägarna går vidare, lyftarna fortsätter – och nästa bil kommer snart
+  function takeOver() {
+    seq = Math.max(seq, 1 + Math.max(-1, ...cars.map((c) => c.id)));
+    for (const c of cars) {
+      const o = c.owner;
+      if (c.gx !== undefined) c.x = c.gx;
+      if (o.gx !== undefined) { o.x = o.gx; o.y = o.gy; }
+      c.v = c.gv || 0; c.delay = c.dl ? 0.3 : 0; c.lastWork = c.wk ? t : -9; c.nag = t; c.rbT = t;
+      if (c.tj) { c.tj.wrongT = -9; c.tj.flying = -9; }
+      c.gx = undefined; o.gx = o.gy = undefined;
+    }
+    carIn = Math.min(carIn, 2);
+    pend = null; airOwn = null;
+    snapAsap();
+  }
+  // jag blir medarbetare: nästa snap bestämmer var allt är (och vad alla bär)
+  function becomeMate() {
+    for (const c of cars) { c.gx = undefined; c.owner.gx = c.owner.gy = undefined; }
+    hands.clear();
+  }
+  // (skiftledaren) en skruvdragare hem till sin vagn (eller den andra – är båda upptagna: på golvet framför)
+  function homeWrench(w) {
+    const free = (ci) => !wrenches.some((o) => o !== w && o.at === 'cart' && o.cart === ci);
+    const ci = free(w.id) ? w.id : free(1 - w.id) ? 1 - w.id : -1;
+    if (ci >= 0) Object.assign(w, { at: 'cart', cart: ci, by: '' });
+    else Object.assign(w, { at: 'floor', x: CARTS[w.id].x, y: CARTS[w.id].y + 9, by: '' });
+  }
+  // (skiftledaren) det någon bar när hen gick: skruvdragaren hem, slangen till kompressorn, ett gammalt
+  // hjul i stapeln – inget försvinner (delar och nya däck går tillbaka i hyllan)
+  function setDown(h, by = null) {
+    if (!h) return;
+    if (h.wrench !== undefined) { const w = wrenches[h.wrench]; if (w && w.at === 'hand' && (by == null || w.by === by)) homeWrench(w); }
+    else if (h.hose) { if (by != null && hoseBy === by) hoseBy = null; }
+    else if (h.wheel && h.old) { const p = piles.reduce((a, q) => (q.n < a.n ? q : a)); p.n = Math.min(PILE_MAX, p.n + 1); }
+  }
+  // (skiftledaren) den som gått från verkstaden (en stund – inte bara ett ögonblick) bär inget längre,
+  // skruvar inte och lagar inte längre
+  function sweepGone() {
+    const ids = new Set([meId(), ...coop.peers().map((f) => f.id)]);
+    const gone = (id) => {
+      if (!id) return false;
+      if (ids.has(id)) { absent.delete(id); return false; }
+      if (!absent.has(id)) absent.set(id, t);
+      return t - absent.get(id) > 1.5;
+    };
+    for (const [id, h] of [...hands]) if (gone(id)) { hands.delete(id); setDown(h, id); snapAsap(); }
+    for (const w of wrenches) if (w.at === 'hand' && !isMe(w.by) && gone(w.by)) { homeWrench(w); snapAsap(); }
+    if (hoseBy && gone(hoseBy)) { hoseBy = null; snapAsap(); }
+    for (const c of cars) {
+      const s = c.tj && c.tj.spin;
+      if (s && !isMe(s.by) && gone(s.by)) { c.tj.spin = null; c.tj.queued = null; }
+      if (c.rb != null && !isMe(c.rb) && gone(c.rb)) c.rb = null;
+    }
+  }
+  // mitt pass är slut: det jag bär läggs tillbaka åt kollegorna, och skruven jag höll på med stannar
+  function letGo() {
+    if (!coop.active) return;
+    const h = carry;
+    carry = null; airing = null; hold.on = false; pulse = 0; pulseCar = null; working = null;
+    if (mate()) { coop.send({ t: 'lamna', c: carryEnc(h) }); return; }
+    setDown(h);
+    for (const c of cars) {
+      if (c.tj && c.tj.spin && isMe(c.tj.spin.by)) { c.tj.spin = null; c.tj.queued = null; }
+      if (isMe(c.rb)) c.rb = null;
+    }
+    sendSnap();
+  }
+  // (skiftledaren) vad kollegan bär: det skiftledaren vet. Vet den inget (en ny skiftledare) gäller det
+  // kollegan säger att hen bär – en skruvdragare, slangen eller ett gammalt hjul bara om det stämmer
+  function handOf(by, claim) {
+    if (hands.has(by)) return hands.get(by);
+    const it = carryDec(claim);
+    if (!it) return null;
+    if (it.wrench !== undefined) { const w = wrenches[it.wrench]; return w && w.at === 'hand' && w.by === by ? it : null; }
+    if (it.hose) return hoseBy === by ? it : null;
+    if (it.wheel && it.old) return [carry, ...hands.values()].some((h) => h && h.wheel && h.old && h.from === it.from) ? null : it;
+    return it;   // (delar och nya däck finns det hur många som helst av)
+  }
+
+  // Mekanikern som gör något med det gemensamma: jag själv, eller – hos skiftledaren – en medarbetare
+  // vars önskemål körs åt hen. Det hen bär, var hen står och vilken bil hen fyllde luft i följer med
+  // önskemålet (och det hen bär tillbaka i svaret).
+  const meK = () => ({ by: meId(), fx: [], get carry() { return carry; }, set carry(v) { carry = v; },
+    get x() { return walker.px; }, get y() { return walker.py; }, get dir() { return walker.dir; } });
+  const forK = (by, c, m = {}) => ({ by, fx: [], carry: c, remote: true, x: +m.x || 0, y: +m.y || 0, dir: DIRS[clamp(m.d | 0, 0, 3)], hc: int(m.hc, -1) });
+  const myState = () => ({ c: carryEnc(carry), x: Math.round(walker.px), y: Math.round(walker.py), d: Math.max(0, DIRS.indexOf(walker.dir)), hc: hoseCar ? hoseCar.id : -1 });
+  // Utfallet av en handling: [slag, vem (spelar-id; '' = alla i verkstaden), ...]. Det som gäller mig (eller
+  // alla) syns och hörs här direkt – ensam gäller allt mig; i ett delat pass (eller när jag kör en
+  // medarbetares önskemål) följer resten med svaret ut.
+  function utfall(k, who, kind, ...a) {
+    const me = meId(), sprid = coop.active || !!k.remote;
+    if (!who || who === me || !sprid) doFx(kind, a);
+    if (sprid && who !== me) k.fx.push([kind, who, ...a]);
+  }
+  const popArg = (v) => (Array.isArray(v) ? [String(v[0]).slice(0, 32), String(v[1] || '#ffd23f')] : null);
+  function doFx(kind, a) {
+    switch (kind) {
+      case 's': if (LJUD.has(a[0])) play(a[0]); break;
+      case 'p': pops.add(+a[0] || 0, +a[1] || 0, String(a[2]).slice(0, 32), String(a[3] || '#d8d2c0'), { tag: 'tips', minY: +a[4] || 0 }); break;
+      case 'T': tipAt(String(a[0]).slice(0, 48), String(a[1] || '#ffd23f'), !!a[2]); break;
+      case 'e': { const c = carById(a[0] | 0); if (c) eventPops(c, popArg(a[1]), popArg(a[2])); break; }
+      case 'x': sparkle(+a[0] || 0, +a[1] || 0, clamp(a[2] | 0, 1, 32)); break;
+      case 'H': hannFore(); break;
+      case 'o': stats.ok += clamp(a[0] | 0, 1, 3); break;
+      case 'f': stats.fel++; break;
+      case 'd': stats.dack++; break;
+      case 'k': stats.kryss++; break;
+      case 'l': if (TIP_KEYS.has(a[0])) learn(a[0]); break;
+      case 'h': hold.on = false; keyHold = 0; break;            // sluta hålla inne
+      case 'Q': shake = 0.3; hold.on = false; pulse = 0; pulseCar = null; airing = null; break;   // PANG i min slang
+      case 'A': stowIn = 0.7; break;                            // slangen rullas in av sig själv
+      case 'S': {                                               // slangen rullas in till kompressorn
+        const h = handPos();
+        Object.assign(hoseBack, { t: 0.4, x: h.x, y: h.y });
+        airing = null; hold.on = false; pulse = 0; pulseCar = null; stowIn = 0;
+        play('slide');
+        break;
+      }
+      case 'B': {                                               // däcket smällde: stjärnan och gummibitarna
+        const c = carById(a[0] | 0), j = c && c.tj;
+        if (!j) break;
+        j.bang = 0.3;
+        const wx = wheelX(c, j.wheel), wy = wheelCY(c);
+        for (let i = 0; i < 24; i++) {
+          const an = (i / 24) * Math.PI * 2 + Math.random() * 0.2;
+          addFx(wx, wy, Math.cos(an) * (40 + Math.random() * 30), Math.sin(an) * 34 - 12, 140, 0.6, i % 3 ? '#2a2a30' : '#f4f1ea', i % 4 ? 1 : 2);
+        }
+        break;
+      }
+      case 'U': {                                               // för mycket luft pyser ut vid ventilen
+        const c = carById(a[0] | 0), j = c && c.tj;
+        if (!j) break;
+        const wx = wheelX(c, j.wheel), wy = wheelCY(c) - c.spec.r + 1;
+        for (let i = 0; i < 8; i++) addFx(wx + (Math.random() - 0.5) * 3, wy, (Math.random() - 0.5) * 30, -20 - Math.random() * 20, -6, 0.6, 'rgba(255,255,255,0.8)');
+        break;
+      }
+    }
+  }
+  const kLjud = (k, s) => utfall(k, k.by, 's', s);                                          // hörs hos den det gäller
+  const kTip = (k, txt, col = '#ffd23f', sound = true) => utfall(k, k.by, 'T', txt, col, sound ? 1 : 0);
+  const kSay = (k, x, y, txt, col = '#d8d2c0', minY = 0) => utfall(k, k.by, 'p', Math.round(x), Math.round(y), txt, col, minY);
+  const kLearn = (k, key) => utfall(k, k.by, 'l', key);
+  const kEvent = (k, c, car, owner) => utfall(k, '', 'e', c.id, car || 0, owner || 0);       // bilens och ägarens ord: hos alla
+  const kSparkle = (k, x, y, n = 16) => utfall(k, '', 'x', Math.round(x), Math.round(y), n);
+  // skiftledaren: läget ut direkt efter en handling (FÖRE svaret – då har den som frågade redan det
+  // nya läget när svaret kommer) och utfallet till alla
+  function publish(k, svar) {
+    if (k.remote) { if (k.carry) hands.set(k.by, k.carry); else hands.delete(k.by); }
+    if (!svar && !(coop.active && coop.leader && coop.settled)) return;
+    sendSnap(); coop.sentSnap(); snapIn = 0.35;
+    if (svar) coop.send({ t: 'res', by: k.by, fx: k.fx, c: carryEnc(k.carry), s: 1 });
+    else if (k.fx.length) coop.send({ t: 'res', by: k.by, fx: k.fx });
+  }
+  // medarbetarens önskemål: mekanikern väntar på ledarens svar (högst 2,5 s – sedan kan man försöka igen)
+  function ask(m) { coop.send(m); pend = { t: 2.5 }; }
+  function answered() {
+    pend = null;
+    if (!airing && !(pulse > 0)) airOwn = null;   // (luften jag släppte är avgjord – snappen gäller igen)
+  }
+  // En handling på något gemensamt: ensam (eller som skiftledare) görs den direkt, som medarbetare blir
+  // den ett önskemål till skiftledaren. stale() = det man såg har ändrats (ihop: någon hann före).
+  // must: skickas även om ett annat önskemål väntar (att rulla in slangen får aldrig försvinna).
+  function shared(a, m, run, stale = null, must = false) {
+    if (mate()) {
+      if (stale && stale()) { hannFore(); return; }   // (det syns redan här)
+      if (!pend || must) ask({ t: 'do', a, ...m, ...myState() });
+      return;
+    }
+    const k = meK();
+    if (coop.active && stale && stale()) utfall(k, k.by, 'H');
+    else run(k);
+    publish(k, false);
+  }
+  coop.on('snap', (m) => { if (!coop.leader) applySnap(m); });
+  coop.on('res', (m) => {   // ledarens utfall: puffarna hos alla – händerna och poängen hos den det gäller
+    const me = coop.myId, mine = m.by === me;
+    if (coop.leader && !mine) return;   // (skiftledaren har redan visat det hos sig)
+    for (const f of (Array.isArray(m.fx) ? m.fx : []).slice(0, 32)) {
+      if (!Array.isArray(f)) continue;
+      const who = str(f[1]);
+      if (!who || who === me) doFx(f[0], f.slice(2));
+    }
+    if (mine) { if ('c' in m) carry = carryDec(m.c); if (m.s) answered(); }
+  });
+  coop.on('do', (m, from) => {   // en medarbetares handling på något gemensamt – körs här, åt hen
+    if (!coop.leader) return;
+    const k = forK(from, handOf(from, m.c), m), b = BAYS[clamp(int(m.b, 0), 0, 3)], c = carOf(b), v = int(m.v, -1);
+    const i = int(m.i, 0), how = m.how ? 'key' : 'click';
+    const tireOk = () => !!c && !!c.tj && (v < 0 || sigTire(c) === v);
+    switch (m.a) {
+      case 'panel': if (stalePanel(b, v)) utfall(k, from, 'H'); else doPanel(k, b); break;
+      case 'hjul': if (!tireOk()) utfall(k, from, 'H'); else doWheel(k, c, clamp(i, 0, 1), how); break;
+      case 'bult': if (!tireOk()) utfall(k, from, 'H'); else doBolt(k, c, clamp(i, -1, c.tj.n - 1), how); break;
+      case 'dack': doRack(k, SLOTS[clamp(i, 0, SLOTS.length - 1)]); break;
+      case 'del': doStation(k, clamp(i, 1, 4)); break;
+      case 'stapel': doPile(k, piles[clamp(i, 0, piles.length - 1)]); break;
+      case 'vagn': { const ci = clamp(i, 0, CARTS.length - 1); if (staleCart(ci, v)) utfall(k, from, 'H'); else doCart(k, ci); break; }
+      case 'golv': { const w = wrenches[clamp(i, 0, wrenches.length - 1)]; if (w.at !== 'floor') utfall(k, from, 'H'); else takeWrench(w, k); break; }
+      case 'komp': { const hh = hoseHolder(); if (v === 0 && hh != null && hh !== from) utfall(k, from, 'H'); else doComp(k); break; }
+      case 'slang': stowHose(k); break;
+      case 'luft': if (c && c.id === int(m.id, -1)) doLuft(k, c, (+m.air || 0) / 1000); break;
+      case 'laga': if (c && c.id === int(m.id, -1) && !c.tj && c.state === 'wait' && k.carry && k.carry.p !== undefined && k.carry.p !== c.fault) wrongPart(c, k); break;
+      default: return;
+    }
+    publish(k, true);
+  });
+  // hjärtslag: medarbetaren håller inne vid fronten med rätt del – skiftledaren lagar åt hen
+  coop.on('laga', (m, from) => {
+    if (!coop.leader) return;
+    const c = carOf(BAYS[clamp(int(m.b, 0), 0, 3)]), h = handOf(from, m.c);
+    if (!c || c.id !== int(m.id, -1) || c.tj || c.state !== 'wait' || !h || h.p !== c.fault) return;
+    if (c.rb != null && c.rb !== from && t - c.rbT < 0.7) {   // någon annan lagar redan
+      const k = forK(from, h);
+      utfall(k, from, 'H'); utfall(k, from, 'h');
+      publish(k, false);
+      return;
+    }
+    if (c.rb !== from) snapAsap();
+    c.rb = from; c.rbT = t; c.lastWork = t;
+  });
+  // luften medarbetaren fyller just nu (mätaren syns hos alla och kompressorn går)
+  coop.on('luft', (m, from) => {
+    if (!coop.leader || hoseBy !== from) return;
+    const c = carOf(BAYS[clamp(int(m.b, 0), 0, 3)]), j = c && c.tj;
+    if (!j || c.id !== int(m.id, -1) || c.state !== 'wait' || j.aired || j.tire !== 'new' || j.bolts.some((q) => !q)) return;
+    j.air = clamp((+m.air || 0) / 1000, 0, 1.02); c.lastWork = t;
+    compRun = Math.max(compRun, 0.6);
+  });
+  // medarbetaren gick från hjulet mitt i en skruv: den stannar
+  coop.on('avbryt', (m, from) => {
+    if (!coop.leader) return;
+    for (const c of cars) if (c.tj && c.tj.spin && c.tj.spin.by === from) { c.tj.spin = null; c.tj.queued = null; snapAsap(); }
+  });
+  // en kollega går hem (passet slut): det hen bar läggs tillbaka, skruven och lagningen släpps
+  coop.on('lamna', (m, from) => {
+    if (!coop.leader) return;
+    const h = handOf(from, m.c);
+    hands.delete(from);
+    setDown(h, from);
+    for (const c of cars) {
+      if (c.tj && c.tj.spin && c.tj.spin.by === from) { c.tj.spin = null; c.tj.queued = null; }
+      if (c.rb === from) c.rb = null;
+    }
+    snapAsap();
+  });
 
   // ---------- händelser ----------
+  // (k = mekanikern det gäller – se "jobba tillsammans". Ensam är k alltid jag och allt sker direkt, som förut.)
   function giveUp(c) {
     const j = c.tj;
     // Med ett löst, avtaget eller ännu tomt nytt hjul kan kunden inte köra – hen
     // blir bara argare. En kund som redan blivit sen väntar kvar ända tills
     // lyften sänks (och säger ÄNTLIGEN!) i stället för att köra iväg mitt i.
+    // (nagN räknar tjatet – medarbetarna ser SKYNDA PÅ! när det växer)
     if (j && (j.late || j.tire === 'off' || j.bolts.some((b) => !b) || j.spin || (j.tire === 'new' && !j.aired))) {
-      if (!j.late) { j.late = true; c.nag = t; c.owner.angry = 2; eventPops(c, null, ['SKYNDA PÅ!', '#ff9a6a']); play('miss'); }
-      else if (t - c.nag > 5) { c.nag = t; c.owner.angry = 1.6; eventPops(c, null, ['SKYNDA PÅ!', '#ff9a6a']); }
+      if (!j.late) { j.late = true; c.nag = t; c.nagN++; c.owner.angry = 2; eventPops(c, null, ['SKYNDA PÅ!', '#ff9a6a']); play('miss'); }
+      else if (t - c.nag > 5) { c.nag = t; c.nagN++; c.owner.angry = 1.6; eventPops(c, null, ['SKYNDA PÅ!', '#ff9a6a']); }
       c.patience = 0;
       return;
     }
-    stats.miss++;
+    stats.miss++; team.miss++;
     play('miss');
     c.gaveUp = true; c.state = 'lower'; c.bay.moving = c.bay.lift > 0 ? 1 : 0; c.bay.pressUp = false;
     c.owner.angry = 1.6;
@@ -1112,52 +1658,54 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
   // ett fel kostar tålamod (men lämnar alltid några sekunder kvar) – och ger
   // aldrig tillbaka tålamod till en kund som redan väntat ut sig
   const annoy = (c, s) => { c.patience = Math.min(c.patience, Math.max(3, c.patience - s)); };
-  function wrongPart(c) {
-    stats.fel++;
-    play('fel');
-    eventPops(c, ['FEL DEL!', '#ff6a6a'], ['SUR!', '#ff9a6a']);
+  // (felen räknas hos den som gjorde dem – och i lagets räkning)
+  function wrongPart(c, k = meK()) {
+    team.fel++; utfall(k, k.by, 'f');
+    kLjud(k, 'fel');
+    kEvent(k, c, ['FEL DEL!', '#ff6a6a'], ['SUR!', '#ff9a6a']);
     c.owner.angry = 2.2;
     annoy(c, 6);
-    hold.on = false; keyHold = 0;
+    utfall(k, k.by, 'h');
   }
-  function wrongWheel(c) {
+  function wrongWheel(c, k = meK()) {
     const j = c.tj;
     if (t - j.wrongT < 1.5) return;
     j.wrongT = t;
-    stats.fel++; play('fel');
+    team.fel++; utfall(k, k.by, 'f'); kLjud(k, 'fel');
     c.owner.angry = 1.8; annoy(c, 4);
-    eventPops(c, ['FEL HJUL!', '#ff6a6a'], [posTxt(c) + '!', '#ff9a6a']);
+    kEvent(k, c, ['FEL HJUL!', '#ff6a6a'], [posTxt(c) + '!', '#ff9a6a']);
   }
-  function wrongTire(c) {
-    stats.fel++; play('fel');
+  function wrongTire(c, k = meK()) {
+    team.fel++; utfall(k, k.by, 'f'); kLjud(k, 'fel');
     c.owner.angry = 2; annoy(c, 5);
-    eventPops(c, ['FEL DÄCK!', '#ff6a6a'], [TIRE_TXT[c.tj.want] + '!', '#ff9a6a']);
+    kEvent(k, c, ['FEL DÄCK!', '#ff6a6a'], [TIRE_TXT[c.tj.want] + '!', '#ff9a6a']);
   }
-  // lagningen är klar – bilen väntar på att lyften sänks
-  function finish(c) {
-    c.fixed = true; c.state = 'ready'; c.prog = 1; c.flash = 1; c.puddle = 0; c.drip = null;
-    if (!c.tj) carry = null;
-    hold.on = false; keyHold = 0;
-    play('ok');
-    eventPops(c, ['KLART!', '#8ee03c'], ['BRA!', '#ffd23f']);
+  // lagningen är klar – bilen väntar på att lyften sänks (delen är förbrukad)
+  function finish(c, k = meK()) {
+    c.fixed = true; c.state = 'ready'; c.prog = 1; c.flash = 1; c.puddle = 0; c.drip = null; c.rb = null;
+    if (!c.tj) k.carry = null;
+    utfall(k, k.by, 'h');
+    kLjud(k, 'ok');
+    kEvent(k, c, ['KLART!', '#8ee03c'], ['BRA!', '#ffd23f']);
     c.owner.happy = 0.8; c.owner.angry = 0;
-    sparkle(Math.round(c.x + c.L / 2), carGY(c) - carArt(c).topH + 8, 12);
+    kSparkle(k, Math.round(c.x + c.L / 2), carGY(c) - carArt(c).topH + 8, 12);
   }
-  // lyften sänks: kunden betalar (ett däckbyte räknas som tre rätt)
-  function payOut(c) {
+  // lyften sänks: kunden betalar (ett däckbyte räknas som tre rätt) – poängen till den som sänkte
+  function payOut(c, k = meK()) {
     const n = c.tj ? (c.tj.late ? 1 : 3) : 1;
-    stats.ok += n;
-    if (c.tj) stats.dack++;
-    play('coin');
-    eventPops(c, ['+' + n, '#8ee03c'], [c.tj && c.tj.late ? 'ÄNTLIGEN!' : 'TACK!', '#ffd23f']);
+    team.ok += n; utfall(k, k.by, 'o', n);
+    if (c.tj) utfall(k, k.by, 'd');
+    kLjud(k, 'coin');
+    kEvent(k, c, ['+' + n, '#8ee03c'], [c.tj && c.tj.late ? 'ÄNTLIGEN!' : 'TACK!', '#ffd23f']);
     c.owner.happy = 1.6; c.owner.angry = 0;
-    sparkle(Math.round(c.x + c.L / 2), carGY(c) - carArt(c).topH + 8);
+    kSparkle(k, Math.round(c.x + c.L / 2), carGY(c) - carArt(c).topH + 8);
   }
 
   // en bil på en ledig lyft direkt (för tester/_debug). arg: felets nummer
   // (0 däck … 4 batteri), dess namn ('dack', 'olja' …) eller en bilmodell
   // ('sedan', 'pickup' …, ger däckbyte). opts: { fault, car, wheel: 0 bak | 1
-  // fram, tire: däcksort, bay, raised: redan uppe, drive: kör in från porten }
+  // fram, tire: däcksort, bay, raised: redan uppe, drive: kör in från porten,
+  // patience: kundens tålamod i sekunder – provet för jobba ihop vill ha gott om tid }
   function forceCar(arg, opts = {}) {
     if (arg && typeof arg === 'object') { opts = arg; arg = opts.fault ?? opts.car; }
     const free = freeBays();
@@ -1174,6 +1722,7 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
     const c = makeCar(b, f, kind);
     if (c.tj && (opts.wheel === 0 || opts.wheel === 1)) c.tj.wheel = opts.wheel;
     if (c.tj && TIRE_KINDS.includes(opts.tire)) { c.tk = opts.tire; c.tj.want = opts.tire; }
+    if (opts.patience > 0) c.patience = c.pmax = +opts.patience;
     if (!opts.drive) {
       c.x = c.parkX; c.rise = RAMP; c.driver = false; c.delay = 0;
       Object.assign(c.owner, { show: true, ...ownerSpot(c) });
@@ -1181,6 +1730,7 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
     }
     b.moving = 0;
     cars.push(c);
+    snapAsap();
     return b.i;
   }
 
@@ -1207,15 +1757,7 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
         c.x += step * dirIn; c.dist += step; c.v = v;
         c.rise = Math.round(RAMP * clamp(1 - (d - step) / 22, 0, 1));
         c.brake = d < 18;
-        // rostigt avgasrör: svart rök när bilen kör in
-        if (c.fault === 3) {
-          c.smokeIn -= dt;
-          if (c.smokeIn <= 0) {
-            c.smokeIn = 0.07;
-            const ex = sx(c, 0), ey = carGY(c) - carArt(c).eh;
-            addFx(ex - dirIn * 2, ey, -dirIn * (8 + Math.random() * 8), -6 - Math.random() * 6, -4, 0.9, Math.random() < 0.5 ? '#3a3a40' : '#5a5a62', 2);
-          }
-        }
+        driveSmoke(c, dt);
         if (d - step <= 0.01) {
           c.x = c.parkX; c.rise = RAMP; c.brake = false; c.state = 'exit';
           c.driver = false;
@@ -1257,7 +1799,22 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
       c.patience -= dt * (t - c.lastWork < 3 ? 0.35 : 1);
       if (c.patience <= 0) giveUp(c);
     }
-    // felens egna små tecken medan bilen står på lyften
+    carSigns(c, dt);
+  }
+  // rostigt avgasrör: svart rök när bilen kör in
+  function driveSmoke(c, dt) {
+    if (c.fault !== 3) return;
+    c.smokeIn -= dt;
+    if (c.smokeIn <= 0) {
+      const dirIn = c.face ? -1 : 1;
+      c.smokeIn = 0.07;
+      const ex = sx(c, 0), ey = carGY(c) - carArt(c).eh;
+      addFx(ex - dirIn * 2, ey, -dirIn * (8 + Math.random() * 8), -6 - Math.random() * 6, -4, 0.9, Math.random() < 0.5 ? '#3a3a40' : '#5a5a62', 2);
+    }
+  }
+  // felens egna små tecken medan bilen står på lyften (bara för ögat – hos alla i verkstaden)
+  function carSigns(c, dt) {
+    const b = c.bay;
     const shows = (c.state === 'park' || c.state === 'raise' || c.state === 'wait') && !c.fixed;
     if (shows && (c.state !== 'park' || c.fault === 0)) {
       if (c.fault === 1) {   // olja droppar ner på golvet
@@ -1321,21 +1878,22 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
   }
   // i vilken ordning kryssmönstret går om man börjar på skruv s0 (för hjälpsiffrorna)
   function starOrder(n, s0 = 0) { return n === 4 ? [s0, s0 + 2, s0 + 1, s0 + 3].map((k) => k % 4) : [0, 1, 2, 3, 4].map((m) => (s0 + 2 * m) % 5); }
-  function startBolt(c, bi, fromQ = false) {
+  // (k = den som skruvar – skruven är hens tills den sitter/är ute: spin.by)
+  function startBolt(c, bi, fromQ = false, k = meK()) {
     const j = c.tj, out = j.tire === 'flat';
-    const cand = (k) => j.bolts[k] === out;       // ut: skruvar som sitter i · in: tomma hål
-    if (bi >= 0 && !cand(bi)) { tipAt(out ? 'DEN ÄR REDAN UTE' : 'DEN SITTER REDAN', '#d8d2c0', false); play('click'); return; }
+    const cand = (q) => j.bolts[q] === out;       // ut: skruvar som sitter i · in: tomma hål
+    if (bi >= 0 && !cand(bi)) { kTip(k, out ? 'DEN ÄR REDAN UTE' : 'DEN SITTER REDAN', '#d8d2c0', false); kLjud(k, 'click'); return; }
     if (bi < 0) {
-      for (let s = 1; s <= j.n; s++) { const k = (j.last + s + j.n) % j.n; if (cand(k)) { bi = k; break; } }
+      for (let s = 1; s <= j.n; s++) { const q = (j.last + s + j.n) % j.n; if (cand(q)) { bi = q; break; } }
       if (bi < 0) return;
     }
-    j.spin = { i: bi, t: 0, out, q: fromQ }; j.slip = false;
+    j.spin = { i: bi, t: 0, out, q: fromQ, by: k.by }; j.slip = false;
     c.lastWork = t;
     if (!out) {    // skruven plockas upp ur skålen och sätts i navet
       const bp = bowlPos(c), wx = wheelX(c, j.wheel), wy = wheelCY(c), T = 0.2;
       addFx(bp.x + 4, bp.y + 1, (wx - bp.x - 4) / T, (wy - bp.y - 1) / T, 0, T, '#eef2f6', 1, false);
     }
-    play('click');
+    kLjud(k, 'click');
   }
   // nästa skruv i tur (för kön): den man klickade på, annars nästa efter den som snurrar
   function nextBolt(j, bi) {
@@ -1348,92 +1906,104 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
   // Klick medan en skruv snurrar: i början = för snabbt (fel), mot slutet köas
   // nästa skruv (den blinkar i navbubblan). Ett klick alldeles efter att en köad
   // skruv börjat snurra räknas inte som för snabbt – det var nog kön man inte såg.
-  function boltClick(c, bi, how) {
+  function boltClick(c, bi, how, k = meK()) {
     const j = c.tj;
     if (j.spin) {
+      if (!byK(k, j.spin.by)) { utfall(k, k.by, 'H'); return; }   // (ihop: en kollega skruvar här just nu)
       const p = j.spin.t / SPIN_T;
       if (j.spin.q && j.spin.t < 0.3) return;
       if (how === 'key') { if (p >= 0.55) j.queued = nextBolt(j, bi); return; }   // nedhållen tangent: nästa skruv när den här är klar
-      if (p < 0.6) { slip(c); return; }
+      if (p < 0.6) { slip(c, k); return; }
       j.queued = nextBolt(j, bi);
       return;
     }
-    startBolt(c, bi);
+    startBolt(c, bi, false, k);
   }
   // man klickade medan skruven snurrade: dragaren slirar, skruven börjar om
-  function slip(c) {
+  function slip(c, k = meK()) {
     const j = c.tj;
     if (!j.slip) {
-      j.slip = true; stats.fel++; play('fel');
+      j.slip = true; team.fel++; utfall(k, k.by, 'f'); kLjud(k, 'fel');
       c.owner.angry = 1.2;
-      eventPops(c, ['FÖR SNABBT!', '#ff6a6a'], ['FÖRSIKTIGT!', '#ff9a6a']);
+      kEvent(k, c, ['FÖR SNABBT!', '#ff6a6a'], ['FÖRSIKTIGT!', '#ff9a6a']);
     }
     j.spin.t = 0;
   }
-  function boltDone(c) {
-    const j = c.tj, k = j.spin.i, out = j.spin.out;
-    j.bolts[k] = !out; j.last = k; j.spin = null;
-    const wx = wheelX(c, j.wheel), wy = wheelCY(c), side = (j.wheel === 1) !== !!c.face ? 1 : -1;
+  function boltDone(c, k = meK()) {
+    const j = c.tj, bi = j.spin.i, out = j.spin.out;
+    j.bolts[bi] = !out; j.last = bi; j.spin = null;
+    const wx = wheelX(c, j.wheel), wy = wheelCY(c);
     if (out) {   // skruven hoppar ur i en båge ner i skruvskålen på golvet
       const bp = bowlPos(c), T = 0.42, g = 230;
       addFx(wx, wy, (bp.x + 3 - wx) / T, (bp.y + 1 - wy) / T - g * T / 2, g, T, '#e8ecf2', 1, false);
       j.flying = t + T;
     }
-    else j.order.push(k);
-    play('click');
+    else j.order.push(bi);
+    kLjud(k, 'click');
     const inN = j.bolts.filter(Boolean).length;
-    if (out && inN === 0) { learn('SKRUVAR'); play('ok'); eventPops(c, ['SKRUVARNA UTE!', '#8ee03c'], null); }
+    if (out && inN === 0) { kLearn(k, 'SKRUVAR'); kLjud(k, 'ok'); kEvent(k, c, ['SKRUVARNA UTE!', '#8ee03c'], null); }
     if (!out && inN === j.n) {
-      learn('SKRUVA FAST');
+      kLearn(k, 'SKRUVA FAST');
       if (isStar(j.order, j.n)) {
-        stats.ok++; stats.kryss++;
-        play('box');
-        eventPops(c, ['KRYSSMÖNSTER! +1', '#ffd23f'], ['PROFFSIGT!', '#8ee03c']);
-        sparkle(wx, wy - 4, 12);
-      } else { play('ok'); eventPops(c, ['FASTSKRUVAT!', '#8ee03c'], null); }
+        team.ok++; utfall(k, k.by, 'o', 1); utfall(k, k.by, 'k');
+        kLjud(k, 'box');
+        kEvent(k, c, ['KRYSSMÖNSTER! +1', '#ffd23f'], ['PROFFSIGT!', '#8ee03c']);
+        kSparkle(k, wx, wy - 4, 12);
+      } else { kLjud(k, 'ok'); kEvent(k, c, ['FASTSKRUVAT!', '#8ee03c'], null); }
     }
     const q = j.queued;
     j.queued = null;
-    if (q !== null && j.bolts.some((b) => b === out)) startBolt(c, q, true);
+    if (q !== null && j.bolts.some((b) => b === out)) startBolt(c, q, true, k);
   }
-  function pang(c) {
+  // för mycket luft: däcket smäller (k = den som fyllde – hos hen skakar bilden och handtaget släpps)
+  function pang(c, k = meK()) {
     const j = c.tj;
-    stats.fel++; play('fel'); play('knock');
-    j.air = 0; j.bang = 0.3; shake = 0.3; hold.on = false; pulse = 0; pulseCar = null; airing = null;
+    team.fel++; utfall(k, k.by, 'f'); kLjud(k, 'fel'); kLjud(k, 'knock');
+    j.air = 0;
+    utfall(k, k.by, 'Q');
     c.owner.angry = 2.4;
-    eventPops(c, ['PANG!', '#ffffff'], ['OJ OJ!', '#ff9a6a']);
-    const wx = wheelX(c, j.wheel), wy = wheelCY(c);
-    for (let i = 0; i < 24; i++) {
-      const a = (i / 24) * Math.PI * 2 + Math.random() * 0.2;
-      addFx(wx, wy, Math.cos(a) * (40 + Math.random() * 30), Math.sin(a) * 34 - 12, 140, 0.6, i % 3 ? '#2a2a30' : '#f4f1ea', i % 4 ? 1 : 2);
-    }
+    kEvent(k, c, ['PANG!', '#ffffff'], ['OJ OJ!', '#ff9a6a']);
+    utfall(k, '', 'B', c.id);                             // stjärnan och gummibitarna syns hos alla
   }
   // man släppte luften: grönt = klart, för mycket = fel och luft släpps ut, för lite = fyll på mer
-  function judgeAir(c) {
+  function judgeAir(c, k = meK()) {
     const j = c.tj;
     if (!j || j.aired || j.tire !== 'new' || c.state !== 'wait') return;
     if (j.air >= GREEN_LO && j.air <= GREEN_HI) {
-      j.aired = true; learn('LUFT');
-      finish(c);
-      eventPops(c, ['LAGOM!', '#8ee03c'], ['PERFEKT!', '#ffd23f']);
-      stowIn = 0.7;                                       // slangen rullas in av sig själv
+      j.aired = true; kLearn(k, 'LUFT');
+      finish(c, k);
+      kEvent(k, c, ['LAGOM!', '#8ee03c'], ['PERFEKT!', '#ffd23f']);
+      utfall(k, k.by, 'A');                               // slangen rullas in av sig själv
     } else if (j.air > GREEN_HI) {
-      stats.fel++; play('fel');
+      team.fel++; utfall(k, k.by, 'f'); kLjud(k, 'fel');
       c.owner.angry = 1.6;
       j.air = 0.46;
-      eventPops(c, ['FÖR MYCKET LUFT!', '#ff6a6a'], null);
-      const wx = wheelX(c, j.wheel), wy = wheelCY(c) - c.spec.r + 1;
-      for (let i = 0; i < 8; i++) addFx(wx + (Math.random() - 0.5) * 3, wy, (Math.random() - 0.5) * 30, -20 - Math.random() * 20, -6, 0.6, 'rgba(255,255,255,0.8)');
-    } else if (j.air > 0.04) tipAt('MER LUFT - HÅLL INNE', '#d8d2c0', false);
+      kEvent(k, c, ['FÖR MYCKET LUFT!', '#ff6a6a'], null);
+      utfall(k, '', 'U', c.id);                           // luften pyser ut vid ventilen
+    } else if (j.air > 0.04) kTip(k, 'MER LUFT - HÅLL INNE', '#d8d2c0', false);
   }
   // man lämnar ett halvfyllt däck: fel (en gång per däck)
-  function lowAir(c) {
+  function lowAir(c, k = meK()) {
     const j = c && c.tj;
     if (!j || j.aired || j.lowFel || j.tire !== 'new' || j.air <= 0.04 || j.air >= GREEN_LO) return false;
-    j.lowFel = true; stats.fel++; play('fel');
+    j.lowFel = true; team.fel++; utfall(k, k.by, 'f'); kLjud(k, 'fel');
     c.owner.angry = 1.4;
-    eventPops(c, ['FÖR LITE LUFT!', '#ff6a6a'], null);
+    kEvent(k, c, ['FÖR LITE LUFT!', '#ff6a6a'], null);
     return true;
+  }
+  // (skiftledaren) en medarbetare släppte luften vid mätarläget v – samma bedömning som för mig
+  function doLuft(k, c, v) {
+    const j = c && c.tj;
+    if (!j || c.state !== 'wait' || j.aired || j.tire !== 'new' || !k.carry || !k.carry.hose) return;
+    j.air = clamp(v, 0, 1.02); c.lastWork = t;
+    if (j.air >= 1) pang(c, k); else judgeAir(c, k);
+  }
+  // (skiftledaren) en skruv i navbubblan (bi = −1: nästa) – bara med en skruvdragare i handen
+  function doBolt(k, c, bi, how) {
+    const j = c.tj;
+    if (c.state !== 'wait' || !k.carry || k.carry.wrench === undefined) return;
+    if (!j.spin && !((j.tire === 'flat' && j.bolts.some(Boolean)) || (j.tire === 'new' && j.bolts.some((q) => !q)))) return;
+    boltClick(c, bi, how, k);
   }
 
   // ---------- att bära ----------
@@ -1441,30 +2011,35 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
     const dir = walker.dir, ox = dir === 'left' ? -7 : dir === 'right' ? 7 : 0;
     return { x: Math.round(walker.px) + ox, y: Math.round(walker.py) - 14 };
   }
-  function dropWrench() {
+  // (k = mekanikern som bär – se "jobba tillsammans"; hens plats och håll följer med önskemålet)
+  function dropWrench(k = meK()) {
     // läggs ner bakom fötterna (bort från hjulet och skruvskålen)
-    const w = wrenches[carry.wrench], dir = walker.dir;
+    const w = wrenches[k.carry.wrench], dir = k.dir;
     const ox = dir === 'left' ? 8 : dir === 'right' ? -8 : 7;
-    Object.assign(w, { at: 'floor', x: clamp(Math.round(walker.px + ox), 8, FW - 8), y: Math.min(FH - 4, Math.round(walker.py) + 2) });
-    carry = null;
-    play('click');
+    Object.assign(w, { at: 'floor', x: clamp(Math.round(k.x + ox), 8, FW - 8), y: Math.min(FH - 4, Math.round(k.y) + 2), by: '' });
+    k.carry = null;
+    kLjud(k, 'click');
   }
-  function stowHose() {
-    if (!hasHose()) return;
-    lowAir(hoseCar);
-    const h = handPos();
-    Object.assign(hoseBack, { t: 0.4, x: h.x, y: h.y });
-    carry = null; airing = null; hold.on = false; pulse = 0; pulseCar = null; stowIn = 0;
-    play('slide');
+  function stowHose(k = meK()) {
+    if (!k.carry || !k.carry.hose) return;
+    lowAir(k.remote ? carById(k.hc) : hoseCar, k);
+    k.carry = null;
+    if (k.remote) hoseBy = null;
+    utfall(k, k.by, 'S');                                 // hos den som bar den: slangen rullas in till kompressorn
   }
   // gör händerna fria innan man tar något nytt: slangen rullas in, en del går
   // tillbaka i hyllan, skruvdragaren läggs på golvet. Ett hjul måste läggas rätt.
-  function freeHands() {
-    if (!carry) return true;
-    if (carry.hose) { stowHose(); return true; }
-    if (carry.p !== undefined) { carry = null; return true; }
-    if (carry.wrench !== undefined) { dropWrench(); return true; }
+  function freeHands(k = meK()) {
+    if (!k.carry) return true;
+    if (k.carry.hose) { stowHose(k); return true; }
+    if (k.carry.p !== undefined) { k.carry = null; return true; }
+    if (k.carry.wrench !== undefined) { dropWrench(k); return true; }
     return false;
+  }
+  // slangen rullas in av sig själv (efter LAGOM!) – ihop ett önskemål som aldrig får försvinna
+  function stowMine() {
+    if (!hasHose()) return;
+    shared('slang', {}, (k) => stowHose(k), null, true);
   }
   function carryName() {
     if (!carry) return null;
@@ -1475,159 +2050,205 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
   }
 
   // ---------- handlingar på plats ----------
-  function actPanel(b) {
-    const c = carOf(b);
+  // act…(): framme vid platsen (hos mig – vändningen och fokus är mina). Det gemensamma görs av
+  // do…(k, …): direkt ensam och hos skiftledaren, som önskemål hos en medarbetare (se shared).
+  // v = det man såg när man klickade (ihop: har det ändrats hann någon före).
+  function actPanel(b, v = sigCar(carOf(b))) {
     focus = b.i;
     walker.dir = panelSpot(b).dir;
-    if (!c || c.state === 'drive' || c.state === 'exit') { tipAt(c ? 'VÄNTA PÅ BILEN' : 'INGEN BIL HÄR', '#d8d2c0'); return; }
+    shared('panel', { b: b.i, v }, (k) => doPanel(k, b), () => stalePanel(b, v));
+  }
+  function doPanel(k, b) {
+    const c = carOf(b);
+    if (!c || c.state === 'drive' || c.state === 'exit') { kTip(k, c ? 'VÄNTA PÅ BILEN' : 'INGEN BIL HÄR', '#d8d2c0'); return; }
     if (c.state === 'park') {
       c.state = 'raise'; b.moving = 1; b.press = 0.35; b.pressUp = true; b.hum = 0;
-      learn('HISSA');
-      play('click');
+      kLearn(k, 'HISSA');
+      kLjud(k, 'click');
       return;
     }
     if (c.state === 'ready') {
       c.state = 'lower'; b.moving = 1; b.press = 0.35; b.pressUp = false; b.hum = 0;
-      learn('SÄNK');
-      payOut(c);
-      play('click');
+      kLearn(k, 'SÄNK');
+      payOut(c, k);
+      kLjud(k, 'click');
       return;
     }
     if (c.state === 'wait') {
       const j = c.tj;
-      if (j && j.tire === 'off') tipAt('HJULET SITTER INTE PÅ!', '#ff9a6a');
-      else if (j && (j.bolts.some((k) => !k) || j.spin)) tipAt('SKRUVA FAST HJULET FÖRST!', '#ff9a6a');
-      else if (j && !lowAir(c)) tipAt(j.tire === 'flat' ? 'BYT DÄCKET FÖRST' : 'FYLL LUFT I DÄCKET FÖRST', '#ff9a6a');
-      else if (!j) tipAt('LAGA BILEN FÖRST', '#ff9a6a');
+      if (j && j.tire === 'off') kTip(k, 'HJULET SITTER INTE PÅ!', '#ff9a6a');
+      else if (j && (j.bolts.some((q) => !q) || j.spin)) kTip(k, 'SKRUVA FAST HJULET FÖRST!', '#ff9a6a');
+      else if (j && !lowAir(c, k)) kTip(k, j.tire === 'flat' ? 'BYT DÄCKET FÖRST' : 'FYLL LUFT I DÄCKET FÖRST', '#ff9a6a');
+      else if (!j) kTip(k, 'LAGA BILEN FÖRST', '#ff9a6a');
     }
   }
-  function actWheel(c, i, how) {
-    const j = c.tj, b = c.bay;
-    if (!j || cars.indexOf(c) < 0) return;
-    focus = b.i;
+  function actWheel(c, i, how, v = sigTire(c)) {
+    if (!c.tj || cars.indexOf(c) < 0) return;
+    focus = c.bay.i;
     walker.dir = wheelSpot(c, i).dir;
-    if (c.state === 'park' || c.state === 'raise') { tipAt(c.state === 'park' ? 'HISSA UPP BILEN FÖRST!' : 'VÄNTA - LYFTEN GÅR UPP'); return; }
-    if (c.state === 'ready') { tipAt('KLART - SÄNK LYFTEN!'); return; }
+    // med luftslangen fylls däcket hos mig (mätaren och släppet avgörs där jag står, som tankningen på Macken)
+    if (hasHose()) { doWheel(meK(), c, i, how); return; }
+    shared('hjul', { b: c.bay.i, i, how: how === 'key' ? 1 : 0, v }, (k) => doWheel(k, c, i, how), () => v >= 0 && sigTire(c) !== v);
+  }
+  function doWheel(k, c, i, how) {
+    const j = c.tj;
+    if (!j || cars.indexOf(c) < 0) return;
+    if (c.state === 'park' || c.state === 'raise') { kTip(k, c.state === 'park' ? 'HISSA UPP BILEN FÖRST!' : 'VÄNTA - LYFTEN GÅR UPP'); return; }
+    if (c.state === 'ready') { kTip(k, 'KLART - SÄNK LYFTEN!'); return; }
     if (c.state !== 'wait') return;
-    const right = i === j.wheel;
+    const right = i === j.wheel, cr = k.carry;
     c.lastWork = t;
-    if (carry && carry.wheel) {
-      if (carry.old) { tipAt('LÄGG DET GAMLA I STAPELN'); return; }
-      if (j.tire !== 'off') { tipAt(right ? 'TA AV DET PUNKTERADE FÖRST' : 'FEL HJUL - ' + posTxt(c)); return; }
-      if (!right) { tipAt('FEL HJUL - ' + posTxt(c)); return; }
-      if (carry.wheel !== j.want) { wrongTire(c); return; }
-      j.tire = 'new'; j.mounted = carry.wheel; j.bolts.fill(false); j.order = []; j.last = -1; j.air = 0; j.lowFel = false;
-      carry = null;
-      learn('NYTT DÄCK');
-      play('knock');
-      eventPops(c, ['PÅ PLATS!', '#8ee03c'], null);
+    if (cr && cr.wheel) {
+      if (cr.old) { kTip(k, 'LÄGG DET GAMLA I STAPELN'); return; }
+      if (j.tire !== 'off') { kTip(k, right ? 'TA AV DET PUNKTERADE FÖRST' : 'FEL HJUL - ' + posTxt(c)); return; }
+      if (!right) { kTip(k, 'FEL HJUL - ' + posTxt(c)); return; }
+      if (cr.wheel !== j.want) { wrongTire(c, k); return; }
+      j.tire = 'new'; j.mounted = cr.wheel; j.bolts.fill(false); j.order = []; j.last = -1; j.air = 0; j.lowFel = false;
+      k.carry = null;
+      kLearn(k, 'NYTT DÄCK');
+      kLjud(k, 'knock');
+      kEvent(k, c, ['PÅ PLATS!', '#8ee03c'], null);
       return;
     }
-    if (hasHose()) {
-      if (!right) { tipAt('FEL HJUL - ' + posTxt(c)); return; }
-      if (j.tire !== 'new' || j.bolts.some((k) => !k)) { tipAt(j.tire === 'new' ? 'SKRUVA FAST HJULET FÖRST' : 'BYT DÄCKET FÖRST'); return; }
-      if (how === 'key') { pulse = PULSE_T; pulseCar = c; hoseCar = c; }
+    if (cr && cr.hose) {
+      if (!right) { kTip(k, 'FEL HJUL - ' + posTxt(c)); return; }
+      if (j.tire !== 'new' || j.bolts.some((q) => !q)) { kTip(k, j.tire === 'new' ? 'SKRUVA FAST HJULET FÖRST' : 'BYT DÄCKET FÖRST'); return; }
+      if (how === 'key' && !k.remote) { pulse = PULSE_T; pulseCar = c; hoseCar = c; }
       return;                                           // med musen fylls det så länge man håller inne (update)
     }
-    if (carry && carry.p !== undefined) { wrongPart(c); return; }
-    const wrench = hasWrench();
+    if (cr && cr.p !== undefined) { wrongPart(c, k); return; }
+    const wrench = !!cr && cr.wrench !== undefined;
     if (j.tire === 'flat') {
       if (j.bolts.some(Boolean)) {
-        if (!wrench) { tipAt('HÄMTA SKRUVDRAGAREN'); return; }
-        if (!right) { wrongWheel(c); return; }
-        boltClick(c, -1, how);
+        if (!wrench) { kTip(k, 'HÄMTA SKRUVDRAGAREN'); return; }
+        if (!right) { wrongWheel(c, k); return; }
+        boltClick(c, -1, how, k);
         return;
       }
-      if (!right) { tipAt('FEL HJUL - ' + posTxt(c)); return; }
+      if (!right) { kTip(k, 'FEL HJUL - ' + posTxt(c)); return; }
       if (j.spin) return;
       // alla skruvar ute: lyft av hjulet (skruvdragaren läggs på golvet)
-      if (wrench) dropWrench();
-      carry = { wheel: j.want, old: true, from: c.id };
+      if (wrench) dropWrench(k);
+      k.carry = { wheel: j.want, old: true, from: c.id };
       j.tire = 'off';
-      play('door');
-      eventPops(c, ['AV!', '#8ee03c'], null);
+      kLjud(k, 'door');
+      kEvent(k, c, ['AV!', '#8ee03c'], null);
       return;
     }
-    if (j.tire === 'off') { tipAt(right ? 'HÄMTA ' + TIRE_GET[j.want] : 'FEL HJUL - ' + posTxt(c)); return; }
-    if (j.bolts.some((k) => !k)) {
-      if (!wrench) { tipAt('TA SKRUVDRAGAREN'); return; }
-      if (!right) { wrongWheel(c); return; }
-      boltClick(c, -1, how);
+    if (j.tire === 'off') { kTip(k, right ? 'HÄMTA ' + TIRE_GET[j.want] : 'FEL HJUL - ' + posTxt(c)); return; }
+    if (j.bolts.some((q) => !q)) {
+      if (!wrench) { kTip(k, 'TA SKRUVDRAGAREN'); return; }
+      if (!right) { wrongWheel(c, k); return; }
+      boltClick(c, -1, how, k);
       return;
     }
-    if (!j.aired) tipAt(right ? 'HÄMTA LUFTSLANGEN' : 'FEL HJUL - ' + posTxt(c));
+    if (!j.aired) kTip(k, right ? 'HÄMTA LUFTSLANGEN' : 'FEL HJUL - ' + posTxt(c));
+  }
+  // klick på en skruv i navbubblan (utan att gå – man står redan vid hjulet). Ett klick som köades
+  // medan skiftledaren svarade (man såg inte att skruven redan snurrade) räknas som mellanslaget:
+  // det köar nästa skruv mot slutet, men slirar aldrig (FÖR SNABBT) för att nätet var långsamt.
+  function hubClick(c, bi) {
+    focus = c.bay.i;
+    const v = sigTire(c), how = replaying ? 'key' : 'click';
+    shared('bult', { b: c.bay.i, i: bi, how: how === 'key' ? 1 : 0, v }, (k) => boltClick(c, bi, how, k), () => sigTire(c) !== v);
   }
   function actRack(sl) {
     walker.dir = 'up';
-    if (carry && carry.wheel && carry.old) { tipAt('LÄGG DET GAMLA I STAPELN'); return; }
-    if (carry && carry.wheel) {
-      if (carry.wheel === sl.kind) { carry = null; play('click'); pops.add(sl.x, PICK_Y + 12, 'TILLBAKA', '#d8d2c0', { tag: 'tips', minY: PICK_Y + 4 }); return; }
-      carry = { wheel: sl.kind, old: false };            // byt: det andra hjulet ställs tillbaka
-      play('ok');
+    shared('dack', { i: SLOTS.indexOf(sl) }, (k) => doRack(k, sl));
+  }
+  function doRack(k, sl) {
+    if (k.carry && k.carry.wheel && k.carry.old) { kTip(k, 'LÄGG DET GAMLA I STAPELN'); return; }
+    if (k.carry && k.carry.wheel) {
+      if (k.carry.wheel === sl.kind) { k.carry = null; kLjud(k, 'click'); kSay(k, sl.x, PICK_Y + 12, 'TILLBAKA', '#d8d2c0', PICK_Y + 4); return; }
+      k.carry = { wheel: sl.kind, old: false };          // byt: det andra hjulet ställs tillbaka
+      kLjud(k, 'ok');
       return;
     }
-    freeHands();
-    carry = { wheel: sl.kind, old: false };
-    play('ok');
+    freeHands(k);
+    k.carry = { wheel: sl.kind, old: false };
+    kLjud(k, 'ok');
   }
   function actStation(p) {
     walker.dir = 'up';
-    if (carry && carry.p === p) { carry = null; play('click'); pops.add(PART_X[p], PICK_Y + 12, 'TILLBAKA', '#d8d2c0', { tag: 'tips', minY: PICK_Y + 4 }); return; }
-    if (!freeHands()) { tipAt(carry.old ? 'LÄGG DET GAMLA I STAPELN' : 'HÄNDERNA ÄR FULLA'); return; }
-    carry = { p };
-    play('ok');
+    shared('del', { i: p }, (k) => doStation(k, p));
+  }
+  function doStation(k, p) {
+    if (k.carry && k.carry.p === p) { k.carry = null; kLjud(k, 'click'); kSay(k, PART_X[p], PICK_Y + 12, 'TILLBAKA', '#d8d2c0', PICK_Y + 4); return; }
+    if (!freeHands(k)) { kTip(k, k.carry.old ? 'LÄGG DET GAMLA I STAPELN' : 'HÄNDERNA ÄR FULLA'); return; }
+    k.carry = { p };
+    kLjud(k, 'ok');
   }
   function actPile(p) {
     walker.dir = 'up';
-    if (carry && carry.wheel && carry.old) {
-      p.n = Math.min(PILE_MAX, p.n + 1); carry = null;
-      learn('DÄCK AV');
-      play('box');
-      pops.add(p.x, p.y + 10, 'I STAPELN!', '#8ee03c', { tag: 'tips', minY: p.y + 2 });
+    shared('stapel', { i: piles.indexOf(p) }, (k) => doPile(k, p));
+  }
+  function doPile(k, p) {
+    if (k.carry && k.carry.wheel && k.carry.old) {
+      p.n = Math.min(PILE_MAX, p.n + 1); k.carry = null;
+      kLearn(k, 'DÄCK AV');
+      kLjud(k, 'box');
+      kSay(k, p.x, p.y + 10, 'I STAPELN!', '#8ee03c', p.y + 2);
       return;
     }
-    tipAt(carry && carry.wheel ? 'NYA HJUL SKA PÅ BILEN' : 'HÄR LÄGGS GAMLA HJUL', '#d8d2c0');
+    kTip(k, k.carry && k.carry.wheel ? 'NYA HJUL SKA PÅ BILEN' : 'HÄR LÄGGS GAMLA HJUL', '#d8d2c0');
   }
-  function takeWrench(w) {
-    if (hasWrench()) { tipAt('DU HAR REDAN EN', '#d8d2c0'); return; }
-    if (!freeHands()) { tipAt(carry.old ? 'LÄGG DET GAMLA I STAPELN' : 'HÄNDERNA ÄR FULLA'); return; }
-    w.at = 'hand'; carry = { wrench: w.id };
-    learn('SKRUVDRAGARE');
-    play('ok');
+  function takeWrench(w, k = meK()) {
+    if (k.carry && k.carry.wrench !== undefined) { kTip(k, 'DU HAR REDAN EN', '#d8d2c0'); return; }
+    if (!freeHands(k)) { kTip(k, k.carry.old ? 'LÄGG DET GAMLA I STAPELN' : 'HÄNDERNA ÄR FULLA'); return; }
+    w.at = 'hand'; w.by = k.by; k.carry = { wrench: w.id };
+    kLearn(k, 'SKRUVDRAGARE');
+    kLjud(k, 'ok');
   }
-  function actCart(ci) {
+  // en skruvdragare som ligger på golvet (ihop: tog någon den under tiden hann hen före)
+  function grabFloor(w) {
+    shared('golv', { i: w.id }, (k) => takeWrench(w, k), () => w.at !== 'floor');
+  }
+  function actCart(ci, v = cartSig(ci)) {
     walker.dir = 'up';
+    // (medarbetaren) står vagnen tom och händerna är tomma går man själv vidare till den närmaste – inget önskemål
+    if (mate() && cartSig(ci) < 0 && !hasWrench() && !staleCart(ci, v)) { doCart(meK(), ci); return; }
+    shared('vagn', { i: ci, v }, (k) => doCart(k, ci), () => staleCart(ci, v));
+  }
+  function doCart(k, ci) {
     const w = wrenches.find((x) => x.at === 'cart' && x.cart === ci);
-    if (hasWrench()) {
-      if (!w) { Object.assign(wrenches[carry.wrench], { at: 'cart', cart: ci }); carry = null; play('click'); pops.add(CARTS[ci].x, CARTS[ci].y + 10, 'TILLBAKA', '#d8d2c0', { tag: 'tips' }); return; }
-      tipAt('DU HAR REDAN EN', '#d8d2c0');
+    if (k.carry && k.carry.wrench !== undefined) {
+      if (!w) { Object.assign(wrenches[k.carry.wrench], { at: 'cart', cart: ci, by: '' }); k.carry = null; kLjud(k, 'click'); kSay(k, CARTS[ci].x, CARTS[ci].y + 10, 'TILLBAKA'); return; }
+      kTip(k, 'DU HAR REDAN EN', '#d8d2c0');
       return;
     }
     if (!w) {
+      if (k.remote) { utfall(k, k.by, 'H'); return; }   // (ihop: en kollega tog den just)
       // vagnens egen dragare ligger någon annanstans (på golvet vid ett hjul, som
       // man kanske inte ser i fyll-läget) – gå och hämta den närmaste
       const o = nearestWrench();
       if (!o) { tipAt('SKRUVDRAGAREN ÄR BORTA', '#d8d2c0'); return; }
       tipAt(o.at === 'floor' ? 'DEN LIGGER VID HJULET' : 'DEN ANDRA VAGNEN', '#d8d2c0', false);
-      if (o.at === 'cart') go(cartSpot(o.cart), () => actCart(o.cart));
-      else go({ x: o.x, y: o.y }, () => takeWrench(o));
+      if (o.at === 'cart') { const ov = o.id; go(cartSpot(o.cart), () => actCart(o.cart, ov)); }
+      else go({ x: o.x, y: o.y }, () => grabFloor(o));
       return;
     }
-    takeWrench(w);
+    takeWrench(w, k);
   }
-  function actComp() {
+  function actComp(v = hoseSig()) {
     walker.dir = 'up';
-    if (hasHose()) { stowHose(); return; }
-    if (!freeHands()) { tipAt(carry.old ? 'LÄGG DET GAMLA I STAPELN' : 'HÄNDERNA ÄR FULLA'); return; }
-    carry = { hose: true };
-    play('ok');
+    shared('komp', { v }, (k) => doComp(k), () => v === 0 && hoseHolder() != null && !isMe(hoseHolder()));
+  }
+  function doComp(k) {
+    if (k.carry && k.carry.hose) { stowHose(k); return; }
+    const hh = hoseHolder();
+    if (hh != null && !byK(k, hh)) { utfall(k, k.by, 'H'); return; }   // (ihop: en kollega har slangen)
+    if (!freeHands(k)) { kTip(k, k.carry.old ? 'LÄGG DET GAMLA I STAPELN' : 'HÄNDERNA ÄR FULLA'); return; }
+    k.carry = { hose: true };
+    if (k.remote) hoseBy = k.by;
+    kLjud(k, 'ok');
   }
 
   // ---------- de gamla felen: håll inne vid bilens front ----------
-  function workFx(c, dt) {
-    workTick -= dt;
+  // (quiet: en kollega lagar – gnistorna syns men klicken hörs bara hos hen)
+  function workFx(c, dt, quiet = false) {
+    if (!quiet) workTick -= dt;
     const art = carArt(c), gY = carGY(c), dirIn = c.face ? -1 : 1;
-    if (workTick <= 0) { workTick = 0.26; play('click'); }
+    if (!quiet && workTick <= 0) { workTick = 0.26; play('click'); }
     const rnd = Math.random;
     if (c.fault === 1) {        // olja: gyllene stråle ner i motorn, ånga
       const [hx, hy] = hoodSpot(c);
@@ -1746,7 +2367,8 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
     if (i < 0) i = c.tj.wheel;
     const s = wheelSpot(c, i);
     if (hasHose()) { hold.on = true; hold.bay = b.i; hold.wheel = i; }
-    go(s, () => actWheel(c, i, 'click'));
+    const v = sigTire(c);
+    go(s, () => actWheel(c, i, 'click', v));
   }
   // närmaste arbetsplats för mellanslag/Enter
   function nearestWork() {
@@ -1814,7 +2436,7 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
     const w = nearestWrench();
     if (!w) return false;
     place(w.at === 'cart' ? cartSpot(w.cart) : { x: w.x, y: w.y });
-    if (w.at === 'cart') actCart(w.cart); else takeWrench(w);
+    if (w.at === 'cart') actCart(w.cart); else grabFloor(w);
     return hasWrench();
   }
   function tireInfo(c) {
@@ -1945,7 +2567,139 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
       steps: list.map((s, i) => ({ name: s, state: i < idx ? 'klar' : i === idx ? 'nu' : 'kvar' })) };
   }
 
-  return {
+  // ---------- varje bildruta: det gemensamma och det egna ----------
+  // Skiftledarens (och den ensammas) verkstad: nya bilar, bilarna på lyftarna, skruvarna som snurrar
+  // (allas), lagningen en kollega håller inne med – och läget ut till medarbetarna ~3 ggr/s.
+  function leadTick(dt) {
+    // nya bilar – punkteringar är vanligast (ihop kommer de tätare: samma fyra lyftar)
+    if (autoCars) carIn -= dt;
+    if (carIn <= 0) {
+      carIn = (8.5 - 2.5 * Math.min(1, t / shiftT()) + Math.random() * 3) * P.pace * (coop.active ? 0.45 : 1);
+      const free = freeBays();
+      if (free.length) {
+        const b = free[(Math.random() * free.length) | 0];
+        const recent = cars.filter((c) => c.state !== 'leave').map((c) => c.fault);
+        let f = Math.random() < 0.6 ? 0 : 1 + ((Math.random() * 4) | 0);
+        if (f && recent.includes(f)) f = 1 + (f % 4);
+        cars.push(makeCar(b, f));
+        if (coop.active) snapAsap();
+      }
+    }
+    for (const c of cars) stepCar(c, dt);
+    cars = cars.filter((c) => !c.gone);
+    // däckbytet: skruvarna som snurrar – min egen (skruvdragaren i handen, vid hjulet) och kollegornas
+    // (så länge de är kvar och har en skruvdragare – går de från hjulet säger de till)
+    for (const c of cars) {
+      const j = c.tj;
+      if (!j) continue;
+      if (c.state !== 'wait') { j.spin = null; continue; }
+      if (!j.spin) continue;
+      const by = j.spin.by, mine = isMe(by);
+      const ok = mine ? hasWrench() && atWheel(c, j.wheel) : coop.peers().some((f) => f.id === by) && hands.get(by)?.wrench !== undefined;
+      if (!ok) { j.spin = null; j.queued = null; if (!mine) snapAsap(); continue; }
+      j.spin.t += dt; c.lastWork = t;
+      if (mine && (spinTick -= dt) <= 0) { spinTick = 0.07; play('click'); }
+      spinSparks(c);
+      if (j.spin.t >= SPIN_T) {
+        const k = mine ? meK() : forK(by, hands.get(by) || null);
+        boltDone(c, k);
+        publish(k, false);
+      }
+    }
+    // de gamla felen: en kollega håller inne vid fronten (hjärtslagen) – lagningen går här
+    for (const c of cars) {
+      if (c.rb == null || isMe(c.rb) || c.tj) continue;
+      if (c.state !== 'wait' || t - c.rbT > 0.6) { c.rb = null; snapAsap(); continue; }   // (släppte – eller hörs inte längre)
+      c.prog = Math.min(1, c.prog + dt / REPAIR_T); c.lastWork = t;
+      workFx(c, dt, true);
+      if (c.prog >= 1) {
+        const k = forK(c.rb, hands.get(c.rb) || null);
+        kLearn(k, 'LAGA'); finish(c, k);
+        publish(k, false);
+      }
+    }
+    if (coop.active || maxN > 1) sweepGone();
+    if (coop.active) { snapIn -= dt; if (snapIn <= 0) { snapIn = 0.35; sendSnap(); coop.sentSnap(); } }
+  }
+  // gnistor vid navet när en skruv snurrar
+  function spinSparks(c) {
+    const j = c.tj;
+    if (Math.random() < 0.4) addFx(wheelX(c, j.wheel) + Math.round((Math.random() - 0.5) * 4), wheelCY(c) + Math.round((Math.random() - 0.5) * 4), (Math.random() - 0.5) * 36, -10 - Math.random() * 24, 110, 0.25, Math.random() < 0.5 ? '#ffe27a' : '#ffffff');
+  }
+  // (alla) luften jag fyller: pulsen från mellanslaget, och slangen vid hjulet medan man håller inne.
+  // Ihop avgörs släppet av skiftledaren – som medarbetare skickas mätarläget dit (under tiden var 0,25 s)
+  function myAir(dt) {
+    if (pulse > 0 && (pulse -= dt) <= 0 && pulseCar) { const c = pulseCar; pulseCar = null; airing = null; airDone(c); }
+    for (const c of cars) {
+      const j = c.tj;
+      if (!j || c.state !== 'wait') continue;
+      const fill = hasHose() && j.tire === 'new' && !j.aired && j.bolts.every(Boolean) && atWheel(c, j.wheel)
+        && ((hold.on && hold.bay === c.bay.i && hold.wheel === j.wheel) || (pulse > 0 && pulseCar === c));
+      if (!fill) continue;
+      airing = c; hoseCar = c;
+      j.air = Math.min(1.02, j.air + AIR_RATE * dt); c.lastWork = t;
+      compRun = Math.max(compRun, 0.6);
+      if ((hissTick -= dt) <= 0) { hissTick = 0.32; sfx('luft'); }   // tryckluften pyser
+      const vx = wheelX(c, j.wheel), vy = wheelCY(c) - c.spec.r + 2;
+      if (Math.random() < 0.5) addFx(vx + (Math.random() - 0.5) * 2, vy, (Math.random() - 0.5) * 14, -8 - Math.random() * 8, -4, 0.35, 'rgba(255,255,255,0.75)');
+      if (mate()) { airOwn = c.id; if ((airBeat -= dt) <= 0) { airBeat = 0.25; coop.send({ t: 'luft', b: c.bay.i, id: c.id, air: Math.round(j.air * 1000) }); } }
+      if (j.air >= 1) airBang(c);
+    }
+  }
+  // släppt (eller pulsen slut): grönt = klart, för mycket = fel, för lite = fyll på mer
+  function airDone(c) {
+    if (!c || !c.tj) return;
+    if (!mate()) { const k = meK(); judgeAir(c, k); publish(k, false); return; }
+    airOwn = c.id;
+    ask({ t: 'do', a: 'luft', b: c.bay.i, id: c.id, air: Math.round(c.tj.air * 1000), ...myState() });
+  }
+  // för mycket: PANG (som medarbetare slutar jag fylla direkt – smällen kommer med svaret)
+  function airBang(c) {
+    if (!mate()) { const k = meK(); pang(c, k); publish(k, false); return; }
+    airing = null; hold.on = false; pulse = 0; pulseCar = null;
+    airOwn = c.id;
+    ask({ t: 'do', a: 'luft', b: c.bay.i, id: c.id, air: Math.round(c.tj.air * 1000), ...myState() });
+  }
+  // (alla) de gamla felen: håll inne vid fronten med rätt del. Ensam och som skiftledare lagas det här;
+  // som medarbetare lagar skiftledaren åt mig (hjärtslag medan jag håller inne) – stapeln går här under tiden
+  function myRepair(dt) {
+    working = null;
+    const holding = hold.on || keyHold > 0;
+    if (!holding || hold.bay < 0 || walker.path.length) return;
+    const b = BAYS[hold.bay], c = carOf(b), s = spotOf(b);
+    const near = Math.hypot(walker.px - s.x, walker.py - s.y) < 6;
+    if (!near || !c || c.tj) return;
+    if (c.state === 'park' || c.state === 'raise') {
+      if (c.state === 'park') tipAt('HISSA UPP BILEN FÖRST!');
+      hold.on = false; keyHold = 0;
+    } else if (c.state === 'wait') {
+      walker.dir = faceCar(b, s.x);
+      if (!carry || carry.p === undefined) {
+        tipAt(carry ? 'FEL SAK I HÄNDERNA' : 'HÄMTA RÄTT DEL!');
+        hold.on = false; keyHold = 0;
+      } else if (c.rb != null && !isMe(c.rb) && (mate() || t - c.rbT < 0.7)) {   // (ihop: en kollega lagar redan)
+        tipAt('UPPTAGET', '#d8d2c0');
+        hold.on = false; keyHold = 0;
+      } else if (mate()) {
+        if (carry.p !== c.fault) { hold.on = false; keyHold = 0; if (!pend) ask({ t: 'do', a: 'laga', b: b.i, id: c.id, ...myState() }); return; }
+        working = c;
+        workFx(c, dt);
+        c.lastWork = t;
+        c.prog = Math.max(c.prog, Math.min(0.98, c.prog + dt / REPAIR_T));   // (visning – skiftledaren säger när det är klart)
+        if ((beatIn -= dt) <= 0) { beatIn = 0.25; coop.send({ t: 'laga', b: b.i, id: c.id, c: carryEnc(carry) }); }
+      } else if (carry.p !== c.fault) { const k = meK(); wrongPart(c, k); publish(k, false); }
+      else {
+        c.rb = meId(); c.rbT = t;
+        c.prog = Math.min(1, c.prog + dt / REPAIR_T);
+        c.lastWork = t;
+        working = c;
+        workFx(c, dt);
+        if (c.prog >= 1) { const k = meK(); kLearn(k, 'LAGA'); finish(c, k); publish(k, false); }
+      }
+    }
+  }
+
+  const self = {
     _debug: {
       stats,
       parts: PART_IDS,
@@ -1969,7 +2723,8 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
       // ger spelaren reservdel p i händerna (0 = ett sommarhjul ur däckstället)
       pickPart(p = 1) { p = clamp(p | 0, 0, 4); carry = p === 0 ? { wheel: 'sommar', old: false } : { p }; return p; },
       carrying: () => carryName(),
-      cars: () => cars.map((c) => ({ bay: c.bay.i, fault: c.fault, kind: c.kind, state: c.state, stage: stageOf(c), prog: c.prog, patience: +c.patience.toFixed(2), tire: c.tj ? c.tj.want : null })),
+      cars: () => cars.map((c) => ({ id: c.id, bay: c.bay.i, fault: c.fault, kind: c.kind, color: c.color, state: c.state, stage: stageOf(c), prog: c.prog, patience: +c.patience.toFixed(2),
+        tire: c.tj ? c.tj.want : null, fixed: !!c.fixed, spinBy: c.tj && c.tj.spin ? c.tj.spin.by : null, rb: c.rb || null })),
       // de puffar som syns just nu: [{x, y, txt, tag}] (y är rutans överkant)
       pops: () => pops.list(),
       // laga direkt: right=true → en väntande bil blir klar och betald (ok +1, däckbyte +3);
@@ -1997,18 +2752,18 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
         if (c && c.tj) actWheel(c, c.tj.wheel, 'click');
         return s;
       },
-      release() { hold.on = false; keyHold = 0; if (airing) { const c = airing; airing = null; judgeAir(c); } },
+      release() { hold.on = false; keyHold = 0; if (airing) { const c = airing; airing = null; airDone(c); } },
       // låt kunden vid lyft `bay` tröttna nästan direkt (test av sur kund som kör iväg)
       expire(bay = 0) { const c = carOf(BAYS[bay]); if (!c || (c.state !== 'wait' && c.state !== 'park')) return false; c.patience = 0.05; c.lastWork = -9; return true; },
       teleport(x, y) { walker.stop(); walker.px = x; walker.py = y; },
-      // står figuren still (framme vid målet)?
-      idle: () => !walker.path.length,
+      // står figuren still (framme vid målet) – och väntar inte på skiftledarens svar?
+      idle: () => !walker.path.length && !pend && !queued,
       me: () => ({ x: Math.round(walker.px), y: Math.round(walker.py), dir: walker.dir }),
       // av/på för bilar som kommer av sig själva (tester vill ha lugn och ro)
       autoCars(on = true) { autoCars = !!on; if (on) carIn = Math.min(carIn, 1); return autoCars; },
       // passets klocka i sekunder (läs, eller sätt för att spola)
-      time(s) { if (Number.isFinite(s)) t = clamp(s, 0, shiftT); return t; },
-      shiftSeconds: shiftT,
+      time(s) { if (Number.isFinite(s)) t = clamp(s, 0, shiftT()); return t; },
+      get shiftSeconds() { return shiftT(); },
       // klickpunkter (canvasens spelkoordinater, kameran inräknad) för
       // reservdelshyllorna (1–4; 0 = däckstället) och bilar
       stationSpot: (i = 1) => (i <= 0 ? { x: SLOTS[0].x, y: 62 - camR } : { x: PART_X[clamp(i, 1, 4)], y: 80 - camR }),
@@ -2017,9 +2772,76 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
       cam: () => ({ y: camR, top: viewTop(), bot: viewBot(), target: Math.round(camTarget()) }),
       // rutorna som var upptagna förra bildrutan (bubblor, mekanikern, skyltar, hjälpskylt, puffar)
       occupied: () => occ.map((o) => ({ ...o })),
+      // ---------- jobba tillsammans (tools/coop-verkstad-test.mjs) ----------
+      coop: () => ({ leader: coop.leader, active: coop.active, mates: coop.peers().length, settled: coop.settled, myId: coop.myId }),
+      lag: () => ({ ...team, maxN }),
+      title: () => hudTitle(),
+      // lugnt i verkstaden (skiftledaren/solo): inga nya bilar, lyftarna tomma, verktygen hemma
+      calm() {
+        autoCars = false; cars = []; carry = null; hoseBy = null; hands.clear();
+        hold.on = false; keyHold = 0; airing = null; pulse = 0; pulseCar = null; working = null;
+        for (const b of BAYS) Object.assign(b, { lift: 0, moving: 0, press: 0 });
+        for (const w of wrenches) Object.assign(w, { at: 'cart', cart: w.id, by: '' });
+        snapAsap();
+      },
+      // en bil som står uppe är klar och väntar på SÄNK (skiftledaren/solo)
+      ready(bay = 0) {
+        const c = carOf(BAYS[clamp(bay | 0, 0, 3)]);
+        if (!c || (c.state !== 'wait' && c.state !== 'park')) return false;
+        if (c.tj) { Object.assign(c.tj, { tire: 'new', mounted: c.tj.want, spin: null, air: (GREEN_LO + GREEN_HI) / 2, aired: true }); c.tj.bolts.fill(true); }
+        c.bay.lift = LIFT_H; c.bay.moving = 0; c.fixed = true; c.state = 'ready'; c.prog = 1; c.rb = null;
+        snapAsap();
+        return true;
+      },
+      // Som när man kommit fram till platsen (hos en medarbetare blir det ett önskemål till skiftledaren):
+      // 'panel' bay · 'hjul' bay (hjul 0/1, annars det punkterade) · 'bult' bay skruv (−1 = nästa) · 'vagn' 0/1 ·
+      // 'golv' skruvdragare · 'dack' sort · 'del' 1–4 · 'stapel' 0/1 · 'kompressor'. v = det man såg (inget = som nu)
+      act(key, a, b, v) {
+        switch (foldName(key)) {
+          case 'panel': { const bay = BAYS[clamp(a | 0, 0, 3)]; place(panelSpot(bay)); actPanel(bay, v ?? sigCar(carOf(bay))); return true; }
+          case 'hjul': {
+            const c = carOf(BAYS[clamp(a | 0, 0, 3)]);
+            if (!c || !c.tj) return false;
+            const i = b === 0 || b === 1 ? b : c.tj.wheel;
+            place(wheelSpot(c, i)); actWheel(c, i, 'click', v ?? sigTire(c));
+            return true;
+          }
+          case 'bult': { const c = carOf(BAYS[clamp(a | 0, 0, 3)]); if (!c || !c.tj) return false; place(wheelSpot(c, c.tj.wheel)); hubClick(c, Number.isInteger(b) ? b : -1); return true; }
+          case 'vagn': { const ci = clamp(a | 0, 0, 1); place(cartSpot(ci)); actCart(ci, v ?? cartSig(ci)); return true; }
+          case 'golv': { const w = wrenches[clamp(a | 0, 0, 1)]; if (w.at !== 'floor') return false; place({ x: w.x, y: w.y }); grabFloor(w); return true; }
+          case 'dack': { const sl = SLOTS.find((s) => s.kind === a) || SLOTS[0]; place(slotSpot(sl)); actRack(sl); return true; }
+          case 'del': { const p = clamp(a | 0, 1, 4); place(partSpot(p)); actStation(p); return true; }
+          case 'stapel': { const p = piles[clamp(a | 0, 0, 1)]; place(pileSpot(p)); actPile(p); return true; }
+          case 'kompressor': place(compSpot()); actComp(v ?? hoseSig()); return true;
+        }
+        return false;
+      },
+      // fyll luft till v vid bilen på lyft bay och släpp (man har slangen och hjulet sitter fast)
+      luft(bay = 0, v = (GREEN_LO + GREEN_HI) / 2) {
+        const c = carOf(BAYS[clamp(bay | 0, 0, 3)]), j = c && c.tj;
+        if (!j || !hasHose() || c.state !== 'wait' || j.tire !== 'new' || j.bolts.some((q) => !q)) return false;
+        place(wheelSpot(c, j.wheel)); focus = c.bay.i; hoseCar = c; airing = null;
+        j.air = v;
+        if (v >= 1) airBang(c); else airDone(c);
+        return true;
+      },
+      // provet: medarbetaren skickar SAMMA önskemål två gånger (som om svaret dröjde) – räknas EN gång
+      twice(a, bay = 0) {
+        if (!mate() || pend) return false;
+        const c = carOf(BAYS[clamp(bay | 0, 0, 3)]);
+        const m = { t: 'do', a, b: bay | 0, i: c && c.tj ? c.tj.wheel : 0, how: 0, v: a === 'panel' ? sigCar(c) : sigTire(c), ...myState() };
+        coop.send(m); ask(m);
+        return true;
+      },
+      hands: () => [...hands].map(([id, h]) => ({ id, carrying: h.p !== undefined ? h.p : h.wrench !== undefined ? 'skruvdragare' : h.hose ? 'slang' : (h.old ? 'gammalt:' : 'hjul:') + h.wheel })),
+      hose: () => hoseHolder(),
+      pending: () => !!pend,
+      // de senaste puffarnas text (även de som redan bleknat)
+      popLog: () => popLog.slice(),
     },
     get worldX() { return walker.px; },
     get worldY() { return walker.py; },
+    exit() { coop.dispose(); },
     update(dt) {
       stepCam(dt);
       pops.update(dt);
@@ -2046,97 +2868,65 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
       compRun = Math.max(0, compRun - dt);
       if ((compIn -= dt) <= 0) { compIn = 14 + Math.random() * 10; compRun = Math.max(compRun, 2.4); }
       if (compRun > 0) compPh += dt * 14;
-      if (done) { doneT += dt; if (doneT > 1.2 && !reported) { reported = true; onDone?.(stats); } return; }
+      if (done) {
+        coop.tick(); coop.resign();   // MITT pass är slut – lämna över ledningen direkt (även på lönebeskedet)
+        doneT += dt;
+        if (doneT > 1.2 && !reported) {
+          reported = true;
+          if (maxN > 1) {   // jobbat ihop: laget delar lika på rätt, fel och missade
+            const sh = (v) => Math.round(v / maxN);
+            onDone?.({ ok: sh(team.ok), fel: sh(team.fel), miss: sh(team.miss), delat: maxN, lagOk: team.ok, lagFel: team.fel, dack: stats.dack, kryss: stats.kryss });
+          } else onDone?.(stats);
+        }
+        return;
+      }
       t += dt;
-      if (t >= shiftT) { done = true; working = null; return; }
+      if (t >= shiftT()) { done = true; working = null; pend = null; queued = null; letGo(); return; }
       walker.update(dt);
       keyHold = Math.max(0, keyHold - dt);
       hintCool = Math.max(0, hintCool - dt);
-      if (stowIn > 0 && (stowIn -= dt) <= 0) stowHose();
-      // nya bilar – punkteringar är vanligast
-      if (autoCars) carIn -= dt;
-      if (carIn <= 0) {
-        carIn = (8.5 - 2.5 * Math.min(1, t / shiftT) + Math.random() * 3) * P.pace;
-        const free = freeBays();
-        if (free.length) {
-          const b = free[(Math.random() * free.length) | 0];
-          const recent = cars.filter((c) => c.state !== 'leave').map((c) => c.fault);
-          let f = Math.random() < 0.6 ? 0 : 1 + ((Math.random() * 4) | 0);
-          if (f && recent.includes(f)) f = 1 + (f % 4);
-          cars.push(makeCar(b, f));
-        }
+      if (stowIn > 0 && (stowIn -= dt) <= 0) stowMine();
+      if (pend) { pend.t -= dt; if (pend.t <= 0) answered(); }   // inget svar (ledaren gick?) – då får man försöka igen
+      coop.tick();
+      if (coop.active) maxN = Math.max(maxN, coop.peers().length + 1);
+      if (coop.active !== wasCoop) {   // en kollega kom in: bilarna kommer tätare
+        wasCoop = coop.active;
+        if (wasCoop) { play('knock'); pops.add(FW >> 1, 120, 'NI JOBBAR IHOP!', '#8ee03c'); }
       }
-      for (const c of cars) stepCar(c, dt);
-      cars = cars.filter((c) => !c.gone);
-      // däckbytet: skruvar som snurrar och luft som fylls
-      if (pulse > 0 && (pulse -= dt) <= 0 && pulseCar) { const c = pulseCar; pulseCar = null; airing = null; judgeAir(c); }
-      for (const c of cars) {
-        const j = c.tj;
-        if (!j) continue;
-        if (c.state !== 'wait') { j.spin = null; continue; }
-        if (j.spin) {
-          if (!hasWrench() || !atWheel(c, j.wheel)) { j.spin = null; j.queued = null; }
-          else {
-            j.spin.t += dt; c.lastWork = t;
-            if ((spinTick -= dt) <= 0) { spinTick = 0.07; play('click'); }
-            if (Math.random() < 0.4) addFx(wheelX(c, j.wheel) + Math.round((Math.random() - 0.5) * 4), wheelCY(c) + Math.round((Math.random() - 0.5) * 4), (Math.random() - 0.5) * 36, -10 - Math.random() * 24, 110, 0.25, Math.random() < 0.5 ? '#ffe27a' : '#ffffff');
-            if (j.spin.t >= SPIN_T) boltDone(c);
-          }
-        }
-        const fill = hasHose() && j.tire === 'new' && !j.aired && j.bolts.every(Boolean) && atWheel(c, j.wheel)
-          && ((hold.on && hold.bay === c.bay.i && hold.wheel === j.wheel) || (pulse > 0 && pulseCar === c));
-        if (fill) {
-          airing = c; hoseCar = c;
-          j.air = Math.min(1.02, j.air + AIR_RATE * dt); c.lastWork = t;
-          compRun = Math.max(compRun, 0.6);
-          if ((hissTick -= dt) <= 0) { hissTick = 0.32; sfx('luft'); }   // tryckluften pyser
-          const vx = wheelX(c, j.wheel), vy = wheelCY(c) - c.spec.r + 2;
-          if (Math.random() < 0.5) addFx(vx + (Math.random() - 0.5) * 2, vy, (Math.random() - 0.5) * 14, -8 - Math.random() * 8, -4, 0.35, 'rgba(255,255,255,0.75)');
-          if (j.air >= 1) pang(c);
-        }
-      }
-      // de gamla felen: håll inne vid fronten
-      working = null;
-      const holding = hold.on || keyHold > 0;
-      if (holding && hold.bay >= 0 && !walker.path.length) {
-        const b = BAYS[hold.bay], c = carOf(b), s = spotOf(b);
-        const near = Math.hypot(walker.px - s.x, walker.py - s.y) < 6;
-        if (near && c && !c.tj) {
-          if (c.state === 'park' || c.state === 'raise') {
-            if (c.state === 'park') tipAt('HISSA UPP BILEN FÖRST!');
-            hold.on = false; keyHold = 0;
-          } else if (c.state === 'wait') {
-            walker.dir = faceCar(b, s.x);
-            if (!carry || carry.p === undefined) {
-              tipAt(carry ? 'FEL SAK I HÄNDERNA' : 'HÄMTA RÄTT DEL!');
-              hold.on = false; keyHold = 0;
-            } else if (carry.p !== c.fault) wrongPart(c);
-            else {
-              c.prog = Math.min(1, c.prog + dt / REPAIR_T);
-              c.lastWork = t;
-              working = c;
-              workFx(c, dt);
-              if (c.prog >= 1) { learn('LAGA'); finish(c); }
-            }
-          }
-        }
+      // Skiftledaren (eller solo) kör verkstaden; medarbetare följer ledarens läge
+      const iLead = !coop.active || (coop.leader && coop.settled);
+      if (iLead && !wasLead) takeOver();
+      else if (!iLead && wasLead) becomeMate();
+      wasLead = iLead;
+      if (iLead) leadTick(dt); else mateTick(dt);
+      // det egna: luften jag fyller och felet jag lagar vid fronten
+      myAir(dt);
+      myRepair(dt);
+      // det köade klicket (det kom medan skiftledaren svarade) – släppt knapp = ingen hållning
+      if (!pend && queued && !done) {
+        const q = queued;
+        queued = null; replaying = true;
+        try { self.down(q[0], q[1]); } finally { replaying = false; }
+        if (!mdown) hold.on = false;
       }
     },
     down(x, y) {
       if (done) return;
       // klick på topplisten/stegraden når inte scenen (i fyll-läget ligger dolda saker under den)
       if (y < winTop() - 1) return;
+      mdown = true;
+      if (pend) { queued = [x, y]; return; }              // väntar på skiftledarens svar – klicket tas strax
       y += camR;                                          // canvasrad → scenrad
       hold.on = false; hold.bay = -1; hold.wheel = -1;
       // 1) navbubblan: klicka på en skruv (eller var som helst i den = nästa skruv)
       const hb = hubHit(x, y);
-      if (hb) { focus = hb.c.bay.i; boltClick(hb.c, hb.k, 'click'); return; }
+      if (hb) { hubClick(hb.c, hb.k); return; }
       // 2) en skruvdragare som ligger på golvet
       const fw = wrenches.find((w) => w.at === 'floor' && Math.abs(x - w.x) <= 7 && y >= w.y - 9 && y <= w.y + 3);
-      if (fw) { go({ x: fw.x, y: fw.y }, () => takeWrench(fw)); return; }
+      if (fw) { go({ x: fw.x, y: fw.y }, () => grabFloor(fw)); return; }
       // 3) lyftarnas manöverpaneler
       const pb = BAYS.find((b) => x >= b.panelX - 4 && x <= b.panelX + 10 && y >= b.panelY - 6 && y <= b.panelY + 13);
-      if (pb) { focus = pb.i; go(panelSpot(pb), () => actPanel(pb)); return; }
+      if (pb) { focus = pb.i; const v = sigCar(carOf(pb)); go(panelSpot(pb), () => actPanel(pb, v)); return; }
       // 4) bakväggen: däckstället och reservdelshyllorna
       if (y >= 34 && y < PICK_Y + 8) {
         if (x >= RACK.x0 - 7 && x <= RACK.x1 + 7) {
@@ -2156,21 +2946,22 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
         if (p > 0) { go(partSpot(p), () => actStation(p)); return; }
       }
       // 5) kompressorn (luftslangen)
-      if (Math.abs(x - COMP.x) <= 18 && y >= COMP.y - 28 && y <= COMP.y + 4) { go(compSpot(), actComp); return; }
+      if (Math.abs(x - COMP.x) <= 18 && y >= COMP.y - 28 && y <= COMP.y + 4) { const v = hoseSig(); go(compSpot(), () => actComp(v)); return; }
       // 6) staplarna för gamla hjul
       const pl = piles.find((p) => Math.abs(x - p.x) <= 14 && y >= p.y - 14 - p.n * 5 && y <= p.y + 4);
       if (pl) { go(pileSpot(pl), () => actPile(pl)); return; }
       // 7) verktygsvagnarna (skruvdragarna)
       const ci = CARTS.findIndex((k) => Math.abs(x - k.x) <= 14 && y >= k.y - 34 && y <= k.y + 3);
-      if (ci >= 0) { go(cartSpot(ci), () => actCart(ci)); return; }
+      if (ci >= 0) { const v = cartSig(ci); go(cartSpot(ci), () => actCart(ci, v)); return; }
       // 8) en bil (bubblan, bilen, hjulen eller lyften)
       const c = carAtPoint(x, y);
       if (c) { clickCar(c, x, y); return; }
       walker.walkTo(x, y);
     },
     up() {
+      mdown = false;
       hold.on = false;
-      if (airing && !(pulse > 0 && pulseCar === airing)) { const c = airing; airing = null; judgeAir(c); }
+      if (airing && !(pulse > 0 && pulseCar === airing)) { const c = airing; airing = null; airDone(c); }
     },
     key(k) {
       if (k === 'Escape' && !done) { abortShift(A); return; }
@@ -2194,12 +2985,21 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
       for (const c of cars) if (c.owner.show) occupy(Math.round(c.owner.x) - 6, Math.round(c.owner.y) - 43, 12, 44, 'own');
       ctx.drawImage(bg(), 0, 0);
       drawLights(ctx, t);
-      drawClock(ctx, startMin + (t / shiftT) * P.gameMin);
+      drawClock(ctx, startMin + (t / shiftT()) * P.gameMin);
       drawRackTires(ctx);
       for (const b of BAYS) drawPort(ctx, b);
       drawHoseFloor(ctx);
       const drawables = [...folkDrawables(A, t)];
       drawables.push(meDrawable(ctx));
+      // det kollegorna bär (de står vända mot oss) – och skruvdragaren som snurrar vid ett hjul där en kollega skruvar
+      if (coop.active) for (const f of coop.peers()) {
+        const h = hands.get(f.id);
+        if (h) drawables.push({ fy: f.y + 0.01, draw: () => drawItem(ctx, h, Math.round(f.x), Math.round(f.y), 'down') });
+      }
+      for (const c of cars) {
+        if (!c.tj || !c.tj.spin || isMe(c.tj.spin.by) || c.state !== 'wait') continue;
+        drawables.push({ fy: c.bay.base + 6, draw: () => drawToolAtWheel(ctx, c, wheelSpot(c, c.tj.wheel).dir, true) });
+      }
       for (const b of BAYS) drawables.push({ fy: b.base, draw: () => drawBay(ctx, b, carOf(b)) });
       for (const c of cars) {
         if (!c.owner.show) continue;
@@ -2246,11 +3046,13 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
       if (h && needTip(h.key)) hintArrow(ctx, h.x, h.y, h.txt, t, h.al);
       pops.draw(ctx, fitPop);
       ctx.setTransform(A.pxs, 0, 0, A.pxs, 0, 0);
-      drawShiftHud(ctx, { W: FW }, { t, dur: shiftT, ok: stats.ok, fel: stats.fel, title: 'BILVERKSTADEN' });
+      // ihop visar räkneverket lagets rätt och fel
+      drawShiftHud(ctx, { W: FW }, { t, dur: shiftT(), ok: maxN > 1 ? team.ok : stats.ok, fel: maxN > 1 ? team.fel : stats.fel, title: hudTitle() });
       drawStepRow(ctx, fc);
       if (done) drawTimeUp(ctx, { W: FW, H: FH });
     },
   };
+  return self;
 
   // ---------- ritning per bildruta ----------
   // en bils bubbla (fel, däck, nav, luftmätare eller SÄNK), tut och framsteg
@@ -2277,7 +3079,7 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
     }
   }
   function meDrawable(ctx) {
-    const spinC = cars.find((c) => c.tj && c.tj.spin);
+    const spinC = cars.find((c) => c.tj && c.tj.spin && isMe(c.tj.spin.by));   // (min egen skruv – inte en kollegas)
     const airC = airing && cars.includes(airing) ? airing : null;
     const busy = working || spinC || airC;
     if (busy) {
@@ -2297,18 +3099,19 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
     } };
   }
   // det jag bär, i händerna framför kroppen (bakom när jag går uppåt)
-  function drawCarried(ctx) {
-    const h = handPos(), px = h.x;
+  function drawCarried(ctx) { drawItem(ctx, carry, handPos().x, Math.round(walker.py), walker.dir); }
+  // något som bärs: px = händernas x, fy = fötternas rad (även det kollegorna bär)
+  function drawItem(ctx, it, px, fy, dir) {
     let img = null, lift = 11;
-    if (carry.p !== undefined) img = partSprite(carry.p);
-    else if (carry.wrench !== undefined) { img = wrenchImg(walker.dir === 'left' ? 1 : 0); lift = 14; }
-    else if (carry.wheel) { img = bigTire(carry.wheel, carry.old); lift = 14 - BIG_R[carry.wheel] + (carry.old ? 1 : 0); }
-    else if (carry.hose) { img = nozzleImg(); lift = 15; }
+    if (it.p !== undefined) img = partSprite(it.p);
+    else if (it.wrench !== undefined) { img = wrenchImg(dir === 'left' ? 1 : 0); lift = 14; }
+    else if (it.wheel) { img = bigTire(it.wheel, it.old); lift = 14 - BIG_R[it.wheel] + (it.old ? 1 : 0); }
+    else if (it.hose) { img = nozzleImg(); lift = 15; }
     if (!img) return;
-    const x = px - (img.width >> 1), y = Math.round(walker.py) - lift - img.height;
-    if (carry.hose) {   // slangen hänger från munstycket ner till golvet
+    const x = px - (img.width >> 1), y = fy - lift - img.height;
+    if (it.hose) {   // slangen hänger från munstycket ner till golvet
       ctx.fillStyle = '#a82820';
-      for (let yy = y + img.height; yy <= Math.round(walker.py); yy++) ctx.fillRect(px + (((yy >> 2) & 1) ? 1 : 0) - 1, yy, 1, 1);
+      for (let yy = y + img.height; yy <= fy; yy++) ctx.fillRect(px + (((yy >> 2) & 1) ? 1 : 0) - 1, yy, 1, 1);
     }
     ctx.drawImage(img, x, y);
   }
@@ -2340,7 +3143,11 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
     } else if (hoseBack.t > 0) {
       const k = hoseBack.t / 0.4;
       ex = Math.round(HOSE_OUT.x + (hoseBack.x - HOSE_OUT.x) * k); ey = Math.round(COMP.y + 2 + (walker.py + 1 - COMP.y - 2) * k);
-    } else return;
+    } else {
+      const f = hoseBy && coop.active ? coop.peers().find((q) => q.id === hoseBy) : null;   // (en kollega har slangen)
+      if (!f) return;
+      ex = Math.round(f.x); ey = Math.round(f.y) + 1;
+    }
     const ax = HOSE_OUT.x + 2, ay = COMP.y + 2;
     ctx.fillStyle = '#8a1a14';
     for (let y = HOSE_OUT.y; y <= ay; y++) ctx.fillRect(ax, y, 1, 1);
@@ -2412,7 +3219,7 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
     const need = running ? 0.75 : 0.62, ang = Math.PI * (1.15 + need * 0.7);
     ctx.fillStyle = '#d8342a'; ctx.fillRect(x0 + 10 + Math.round(Math.cos(ang) * 1.4), y0 + 16 + Math.round(Math.sin(ang) * 1.4), 1, 1);
     // den ihoprullade slangen på handtaget (borta när man bär den)
-    if (!hasHose() && hoseBack.t <= 0) {
+    if (!hasHose() && !hoseBy && hoseBack.t <= 0) {
       const hx = x0 + 31, hy = y0 + 9;
       for (const [rx, ry, dy] of [[3, 5, 0], [2.5, 4.5, 1], [3, 5, 2]]) {
         for (let a = 0; a < 20; a++) {
@@ -3000,7 +3807,7 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
   // uppifrån i bilens färg, det punkterade hjulet blinkar), vilket hjul och
   // vilken sorts däck – eller vad som är fel på bilen
   function drawJobCard(ctx, c, sy) {
-    let x = textW(BIG, 'BILVERKSTADEN') + 12;
+    let x = textW(BIG, hudTitle()) + 12;
     ctx.fillStyle = '#3a3440'; ctx.fillRect(x - 5, sy + 3, 1, 12);
     if (c.tj) {
       drawMiniCar(ctx, c, x, sy + 2);
