@@ -10,6 +10,13 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.63.0] – 2026-09-30 – Jobba ihop på Macken
+- Jobba ihop på Macken: bjud in en kompis med 💼 Jobba ihop när du börjar passet (eller via 👥 mitt i passet) – ni tar hand om samma bilar vid pumparna och samma kunder i kiosken.
+- Pistolerna, laddkabeln och skrapan vid varje ö kan bara en hålla åt gången – du ser kollegans slang eller skrapa i handen. Varje bil tankas av en och tvättas av en.
+- Hinner båda till samma bil eller samma kund gäller bara den första – den som kom för sent får höra "HANN FÖRE!".
+- Den som tankar, tvättar eller serverar får poängen; lagets rätt och fel delas lika på lönebeskedet.
+- När ni är fler kommer bilarna och kunderna ungefär dubbelt så ofta. Går den som leder passet hem tar någon annan över direkt.
+
 ## [0.62.0] – 2026-09-30 – Jobba ihop på Posten
 - Jobba ihop på Posten: bjud in en kompis med 💼 Jobba ihop när du börjar passet (eller via 👥 mitt i passet) – ni sorterar från samma band till samma burar och tar hand om samma kunder vid disken.
 - Ett paket på bandet kan bara en ta – hinner båda dit får den som kom för sent höra "HANN FÖRE!". Samma sak med paketen på hyllan.

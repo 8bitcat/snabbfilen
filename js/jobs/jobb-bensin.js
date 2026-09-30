@@ -9,12 +9,15 @@
 // KIOSKEN: kunder ställer sig vid disken och vill ha korv, kaffe eller en
 // tidning. Hämta varan (korvgrillen, kaffemaskinen, tidningsstället) och räck
 // över den bakom disken.
+// JOBBA IHOP: flera kan dela passet – pumpöarna, bilarna och kunderna är gemensamma (se
+// "jobba tillsammans" nedan), det man håller i och kioskvarorna man hämtar är ens egna.
 // Allt ritas pixel för pixel i skala 1: bakgrunden en gång (Pix), bilarna som
 // cachade sprites per bil, pumpar/stolpar/hinkar och all rörelse varje bildruta.
 import { drawPerson, makeLook } from '../core/people.js';
 import { Pix, SMALL, BIG, ctxText, textW, text, mix, mul, css, hash, bayer, hex } from '../core/floor-pix.js';
 import { createWalker, selfDrawable, folkDrawables, WALK_SEQ } from '../scenes/walkable.js';
 import { planOf, drawShiftHud, drawTimeUp, makePops, abortShift } from './shift.js';
+import { makeShiftCoop } from '../net/coop.js';
 import { play } from '../core/sound.js';
 import { JOBS } from '../game.js';
 
@@ -592,6 +595,31 @@ function rope(ctx, ax, ay, bx, by, sag, thick = false) {
   }
 }
 
+// ======================= jobba ihop: det som skickas mellan mackbiträdena =======================
+// Förarnas och kioskkundernas utseende ur ett frö: i ett delat pass skickar skiftledaren bara fröet
+// (ett tal) i stället för hela utseendet, och alla ritar ändå samma människor (som på Posten).
+function seedRng(seed) {
+  let s = seed >>> 0;
+  return () => { s = (s + 0x6D2B79F5) >>> 0; let t = s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+}
+const lookOf = (seed) => makeLook(seedRng(seed));
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const KIND_IDS = Object.keys(KINDS);
+const FUEL_IDS = ['95', '98', 'D', 'EL'];
+const CAR_ST = ['in', 'wait', 'pay', 'out'];       // bilarnas lägen i skiftledarens snap (index = kod)
+const CUST_ST = ['in', 'wait', 'out'];             // kioskkundernas
+const PARTS = ['noz', 'kabel', 'raka'];            // pumpöns delar – gemensamma, EN håller i var och en
+const PART = new Set(PARTS);
+const CARRY_K = [...PARTS, ...ITEMS];              // allt man kan hålla i (kioskvarorna är ens egna)
+const IN_CAR = 0;                                  // laddkabeln sitter i en elbil
+// ljuden som skiftledarens utfall får spela hos den det gäller
+const LJUD = new Set(['ok', 'click', 'coin', 'fel', 'miss', 'buy', 'slide', 'box']);
+// Vägarna – samma hos alla, så en medarbetare kan låta bilar och kunder rulla/gå vidare mellan
+// skiftledarens lägen: in från vägen till pumpön och ut igen, in till disken och ut igen.
+const routeIn = (cx) => [[cx + 34, ROAD_Y], [cx + 9, PARK_Y + 12], [cx, PARK_Y]];
+const routeOut = (x, L) => [[x - 12, PARK_Y + 22], [x - 30, ROAD_Y], [-L, ROAD_Y]];
+const custRoute = (spot, st) => (st === 'in' ? [[KSPOTS[spot], ENTRY_Y], [KSPOTS[spot], KY]] : st === 'out' ? [[KSPOTS[spot], ENTRY_Y], [-16, ENTRY_Y]] : []);
+
 export function makeJobbBensin(A, { onDone }) {
   const stats = { ok: 0, fel: 0, miss: 0, bilar: 0, kiosk: 0, spill: 0 };
   // passets plan: längd (P.seconds) och takt på bilar och kunder (P.pace). Inga extra platser:
@@ -600,8 +628,13 @@ export function makeJobbBensin(A, { onDone }) {
   const walker = createWalker({ top: 88, bottom: 188, left: 4, right: 380, spawn: [58, SERVE_Y] });
   walker.speed = 76;                                 // macken är större än burgarbaren – lite raskare steg
   const pops = makePops();
+  const popLog = [];                                 // de senaste puffarnas text (provet läser dem: syntes "HANN FÖRE!"?)
+  const addPop = pops.add;
+  pops.add = (x, y, txt, c) => { popLog.push(txt); if (popLog.length > 30) popLog.shift(); addPop(x, y, txt, c); };
   const wage = JOBS?.bensinmack?.wage;                // kr per rätt sätts i game.js
   const plus = (s) => (wage ? `+${wage} ${s}` : s);
+  // pumpöarna: munstyckena (noz), laddkabeln och rakan är true när de hänger på sin plats, annars
+  // id:t på den som håller i dem ('' utan nät) – och kabeln är IN_CAR när den sitter i en elbil
   const islands = ISL.map((cx, i) => ({ i, cx, car: null, noz: [true, true, true], cable: true, raka: true, last: 0 }));
   let cars = [], custs = [], puffs = [], puddles = [], drops = [];
   let t = 0, seq = 0, carIn = 0.3, custIn = 2.2, carry = null, busy = null;
@@ -613,14 +646,18 @@ export function makeJobbBensin(A, { onDone }) {
   const counterSpr = () => (cache.counter ||= paintCounter());
 
   // ---------- hinder för gåendet ----------
+  // (en bil som står vid pumpen står alltid mitt för sin ö)
+  let obstKey = '';
   function refreshObstacles() {
+    const parked = cars.filter((c) => c.state === 'wait' || c.state === 'pay');
+    obstKey = parked.map((c) => c.id + ':' + c.isl).join(',');
     walker.setObstacles([
       [DISK.x0, DISK.top, DISK.x1 + 1, DISK.base + 1],   // disken
       [0, DISK.base + 2, KX1 - 1, 190],                  // kundernas golv
       ...ISL.map((cx) => [cx - 35, 80, cx + 33, 102]),    // pumpöarna
       [123, 150, 151, 190],                              // luft/vatten
       [360, 156, 384, 190],                              // gasolburen
-      ...cars.filter((c) => c.state === 'wait' || c.state === 'pay').map((c) => [c.x - c.s.L / 2 + 2, PARK_Y - 10, c.x + c.s.L / 2 - 2, PARK_Y + 2]),
+      ...parked.map((c) => { const x = ISL[c.isl]; return [x - c.s.L / 2 + 2, PARK_Y - 10, x + c.s.L / 2 - 2, PARK_Y + 2]; }),
     ]);
   }
   refreshObstacles();
@@ -645,15 +682,364 @@ export function makeJobbBensin(A, { onDone }) {
     livePops.push({ x, y, w, t0: t });
   }
   // puffar vid en bil: i höjd med mitt huvud över taket – men bredvid mig, aldrig
-  // över mitt eget ansikte, när jag står bakom bilen
-  function carPop(c, txt, col) {
+  // över mitt eget ansikte, när jag står bakom bilen (cx = bilens mitt)
+  function carPop(c, txt, col) { carPopX(c.x, txt, col); }
+  function carPopX(cx, txt, col) {
     const w = textW(SMALL, txt) + 4;
-    let x = Math.round(c.x);
+    let x = Math.round(cx);
     if (walker.py > PARK_Y - 34 && walker.py < PARK_Y + 6 && Math.abs(walker.px - x) < (w >> 1) + 13) {
-      x = walker.px >= c.x ? Math.round(walker.px) - 13 - (w >> 1) : Math.round(walker.px) + 13 + (w >> 1);
+      x = walker.px >= cx ? Math.round(walker.px) - 13 - (w >> 1) : Math.round(walker.px) + 13 + (w >> 1);
     }
     pop(x, PARK_Y - 44, txt, col);
   }
+  const hannFore = (x, y) => { play('miss'); pop(x, y, 'HANN FÖRE!', C_FEL); };   // någon annan hann först
+
+  // ---------- jobba tillsammans (delat pass via js/net/coop.js) ----------
+  // Skiftledaren (den som varit längst på macken) kör det gemensamma: bilarna som rullar in till
+  // de tre pumpöarna (vad de vill ha, tålamodet, laddningen, betalningen), pumpöarnas munstycken,
+  // laddkablar och rakor, och kunderna vid kioskdisken. Läget delas ~3 ggr/s; medarbetarna ser
+  // samma mack – bilarna rullar och kunderna går vidare hos dem mellan lägena – och skickar varje
+  // handling på något gemensamt som ett önskemål med det de håller i: ta ett munstycke/kabeln/
+  // rakan, börja och sluta tanka, koppla in och dra ur laddkabeln, börja och sluta tvätta rutan,
+  // räcka över en vara till en kund. Skiftledaren kör samma kod åt dem och är ENDA domaren: ett
+  // munstycke hålls av EN, en bil tankas och tvättas av EN åt gången (märket tk/tv) och räknas EN
+  // gång, en kund får sin vara EN gång. Tankningen själv (mätaren och klicket i gröna zonen) går
+  // hos den som tankar – skiftledaren får mätarläget med stoppet. Varorna i kiosken (korv, kaffe,
+  // tidning) och det man bär är ens egna. Poängen går till den som gjorde det; lagets rätt, fel
+  // och missade delas lika vid passets slut. Ihop kommer bilarna och kunderna tätare (en fjärde
+  // pumpö finns inte – det är samma tre öar och tre platser vid disken).
+  const coop = makeShiftCoop(A, 'away:jobbbensin');
+  let snapIn = 0, wasLead = true, wasCoop = false, maxN = 1, snaps = 0;
+  let pend = null, queued = null;          // medarbetarens önskemål som väntar på svar (och ett köat klick)
+  const team = { ok: 0, fel: 0, miss: 0 }; // LAGETS räkning – delas lika vid passets slut
+  const mate = () => coop.active && !coop.leader;
+  const meId = () => coop.myId || '';
+  const snapAsap = () => { snapIn = 0; };
+  const int = (v, dflt) => (Number.isInteger(v) ? v : dflt);
+  const str = (v) => (typeof v === 'string' ? v.slice(0, 80) : '');
+  const carById = (id) => cars.find((c) => c.id === id);
+  // vem håller i en del: 1 = hänger på sin plats, 0 = kabeln sitter i en bil, annars spelar-id
+  const hEnc = (h) => (h === true ? 1 : h === IN_CAR ? 0 : String(h));
+  const hDec = (v) => (v === 1 ? true : v === 0 ? IN_CAR : typeof v === 'string' ? v.slice(0, 40) : true);
+  // det man håller i: 0 = inget, annars [sort (CARRY_K), ö, munstyckets fack]
+  const carryEnc = (c) => (!c ? 0 : [CARRY_K.indexOf(c.k), c.isl ?? -1, c.j ?? -1]);
+  function carryDec(a) {
+    if (!Array.isArray(a)) return null;
+    const kk = CARRY_K[a[0] | 0];
+    if (!kk) return null;
+    if (!PART.has(kk)) return { k: kk };
+    const isl = clamp(a[1] | 0, 0, ISL.length - 1);
+    if (kk !== 'noz') return { k: kk, isl };
+    const j = clamp(a[2] | 0, 0, GRADES.length - 1);
+    return { k: 'noz', isl, j, fuel: GRADES[j] };
+  }
+  // bil: [id, ö, sort, färg, förarens frö, bränsle, vill tvätta, flaggor (tankad 1, tvättad 2, smutsig 4,
+  // har tutat 8), mätaren·1000, mätaren från början·1000, laddning·1000, kabeln i (−1), tålamod·10,
+  // max·10, läge (CAR_ST), x, y, vägpunkter kvar, fart, tankas av ('' ingen = 0), tvättas av, tvätt·10, betalar·10]
+  const carEnc = (c) => [c.id, c.isl, KIND_IDS.indexOf(c.kind), c.ci, c.ls | 0, FUEL_IDS.indexOf(c.need.fuel), c.need.wash ? 1 : 0,
+    (c.fuelDone ? 1 : 0) | (c.washDone ? 2 : 0) | (c.dirty ? 4 : 0) | (c.honked ? 8 : 0),
+    Math.round(c.fill * 1000), Math.round(c.fill0 * 1000), Math.round(c.charge * 1000), c.plug ?? -1,
+    Math.round(c.patience * 10), Math.round(c.pmax * 10), CAR_ST.indexOf(c.state), Math.round(c.x), Math.round(c.y),
+    c.path.length, Math.round(c.spd), c.tk ?? 0, c.tv ?? 0, Math.round(c.tvT * 10), Math.round(c.payT * 10)];
+  // kund: [id, plats, önskan, läge (CUST_ST), x, y, tålamod·10, max·10, utseendefrö, fick (−1), vägpunkter kvar]
+  const custEnc = (k) => [k.id, k.spot, ITEMS.indexOf(k.wish), CUST_ST.indexOf(k.state), Math.round(k.x), Math.round(k.y),
+    Math.round(k.patience * 10), Math.round(k.pmax * 10), k.ls | 0, k.got ? ITEMS.indexOf(k.got) : -1, k.path.length];
+  const sendSnap = () => coop.send({
+    t: 'snap',
+    ca: cars.map(carEnc), ku: custs.map(custEnc),
+    // pumpöarna: [munstycke 95, 98, diesel, kabeln, rakan (hEnc), literräknaren·100]
+    is: islands.map((I) => [...I.noz.map(hEnc), hEnc(I.cable), hEnc(I.raka), Math.round(I.last * 100)]),
+    tm: [team.ok, team.fel, team.miss],
+    sq: seq,   // (nästa id – tar någon annan över fortsätter numreringen efter det)
+  });
+  const applySnap = (m) => {
+    if (Number.isFinite(m.sq)) seq = Math.max(seq, m.sq | 0);
+    if (Array.isArray(m.is)) for (let i = 0; i < islands.length; i++) {
+      const a = m.is[i], I = islands[i];
+      if (!Array.isArray(a)) continue;
+      I.noz = [hDec(a[0]), hDec(a[1]), hDec(a[2])];
+      I.cable = hDec(a[3]); I.raka = hDec(a[4]);
+      I.last = Math.max(0, (+a[5] || 0) / 100);
+    }
+    // det jag höll i från en pumpö är inte mitt längre (bilen körde, en ny ledare tog tillbaka det): släpp
+    if (carry && PART.has(carry.k) && holderOf(carry) !== meId()) { carry = null; if (busy && busy.kind !== 'prep') busy = null; }
+    if (Array.isArray(m.ca)) {
+      const next = [];
+      for (const a of m.ca.slice(0, 12)) {
+        if (!Array.isArray(a)) continue;
+        const id = int(a[0], -1), isl = clamp(a[1] | 0, 0, ISL.length - 1), st = CAR_ST[a[14] | 0] || 'wait';
+        const kind = KIND_IDS[clamp(a[2] | 0, 0, KIND_IDS.length - 1)], ci = clamp(a[3] | 0, 0, CAR_COLORS.length - 1), ls = a[4] | 0;
+        const fuel = FUEL_IDS[clamp(a[5] | 0, 0, FUEL_IDS.length - 1)], fl = a[7] | 0;
+        let c = carById(id);
+        if (c && (c.kind !== kind || c.ci !== ci || c.ls !== ls || c.need.fuel !== fuel)) { if (busy && busy.car === c) busy = null; c = null; }   // (samma id, en annan bil)
+        const was = c ? c.state : null;
+        if (!c) {
+          c = { id, kind, s: KINDS[kind], ci, ls, need: { fuel, wash: false }, roll: 0, spd: 0, puffT: 0, path: [], x: +a[15] || 0, y: +a[16] || 0, honked: !!(fl & 8), klar: false };
+          c.spr = paintCar(kind, CAR_COLORS[ci], lookOf(ls), fuel === 'EL', id * 7 + 3);
+        }
+        c.isl = isl; c.need.wash = !!a[6];
+        c.fuelDone = !!(fl & 1); c.washDone = !!(fl & 2); c.dirty = !!(fl & 4);
+        if ((fl & 8) && !c.honked) play('honk');   // föraren tutar – det hörs hos alla
+        c.honked = !!(fl & 8);
+        const mine = !!busy && busy.car === c;
+        if (!(mine && busy.kind === 'fuel')) c.fill = Math.max(0, (a[8] | 0) / 1000);   // (min egen tankning går här)
+        c.fill0 = Math.max(0, (a[9] | 0) / 1000);
+        c.charge = clamp((a[10] | 0) / 1000, 0, 1);
+        const pl = a[11] | 0;
+        c.plug = pl >= 0 && pl < ISL.length ? pl : null;
+        c.pmax = Math.max(1, (a[13] | 0) / 10); c.patience = clamp((a[12] | 0) / 10, 0, c.pmax);
+        c.state = st;
+        c.gx = +a[15] || 0; c.gy = +a[16] || 0;
+        const route = st === 'in' ? routeIn(ISL[isl]) : st === 'out' ? routeOut(ISL[isl], c.s.L) : [];
+        c.gpath = route.slice(Math.max(0, route.length - clamp(a[17] | 0, 0, route.length)));
+        c.gspd = Math.max(0, +a[18] || 0);
+        c.tk = typeof a[19] === 'string' ? a[19].slice(0, 40) : null;
+        c.tv = typeof a[20] === 'string' ? a[20].slice(0, 40) : null;
+        c.tvT = Math.max(0, (a[21] | 0) / 10);
+        c.payT = Math.max(0, (a[22] | 0) / 10);
+        // enligt skiftledaren tankar/tvättar jag inte längre den här bilen: sluta
+        if (mine && ((busy.kind === 'fuel' && c.tk !== meId()) || (busy.kind === 'wash' && c.tv !== meId()))) busy = null;
+        if (!was) c.klar = c.charge >= 1;
+        else sayKlar(c);
+        if (was === 'in' && st === 'wait') play('door');
+        if (was && was !== 'out' && st === 'out') mateLeave(c);
+        next.push(c);
+      }
+      if (busy && busy.car && !next.includes(busy.car)) busy = null;
+      cars = next;
+      for (const I of islands) I.car = cars.find((c) => c.isl === I.i && c.state !== 'out') || null;
+      const key = cars.filter((c) => c.state === 'wait' || c.state === 'pay').map((c) => c.id + ':' + c.isl).join(',');
+      if (key !== obstKey) refreshObstacles();
+    }
+    if (Array.isArray(m.ku)) {
+      const next = [];
+      for (const a of m.ku.slice(0, 8)) {
+        if (!Array.isArray(a)) continue;
+        const id = int(a[0], -1), spot = clamp(a[1] | 0, 0, KSPOTS.length - 1), st = CUST_ST[a[3] | 0] || 'wait';
+        let k = custs.find((q) => q.id === id);
+        const was = k ? k.state : null;
+        if (!k) { k = { id, x: +a[4] || 0, y: +a[5] || 0, dir: st === 'wait' ? 'up' : 'right', path: [] }; if (snaps && st === 'in') play('door'); }
+        if (k.ls !== (a[8] | 0) || !k.look) { k.ls = a[8] | 0; k.look = lookOf(k.ls); }
+        k.spot = spot; k.wish = ITEMS[clamp(a[2] | 0, 0, ITEMS.length - 1)]; k.state = st;
+        k.pmax = Math.max(1, (a[7] | 0) / 10); k.patience = clamp((a[6] | 0) / 10, 0, k.pmax);
+        k.got = (a[9] | 0) >= 0 ? ITEMS[clamp(a[9] | 0, 0, ITEMS.length - 1)] : null;
+        k.gx = +a[4] || 0; k.gy = +a[5] || 0;
+        const route = custRoute(spot, st);
+        k.gpath = route.slice(Math.max(0, route.length - clamp(a[10] | 0, 0, route.length)));
+        // en kund som tröttnade går – det syns och hörs hos alla
+        if (was === 'wait' && st === 'out' && !k.got) { play('miss'); pop(k.x, KY - 62, 'GICK HEM...', C_GREY); }
+        next.push(k);
+      }
+      custs = next;
+    }
+    if (Array.isArray(m.tm)) { team.ok = m.tm[0] | 0; team.fel = m.tm[1] | 0; team.miss = m.tm[2] | 0; }
+    snaps++;
+  };
+  // elbilen är fulladdad: "KLAR!" EN gång – vare sig laddningen tickade klart här eller kom med snappen
+  function sayKlar(c) {
+    if (c.klar || c.plug == null || c.charge < 1) return;
+    c.klar = true; play('box'); carPop(c, 'KLAR!', C_EL);
+  }
+  // (medarbetaren) en bil kör från pumpen: slangen jag håller i vid den bilen följer inte med
+  function mateLeave(c) {
+    if (busy && busy.car === c) busy = null;
+    if (carry && carry.isl === c.isl && (carry.k === 'noz' || carry.k === 'kabel') && Math.hypot(walker.px - c.x, walker.py - CAR_Y) < 50) returnCarry();
+    if (c.fuelDone && (!c.need.wash || c.washDone)) play('coin');
+    else { play('miss'); carPop(c, 'KÖR IVÄG!', C_GREY); }
+  }
+  // Medarbetarens mack mellan ledarens lägen: bilarna rullar vidare längs samma väg (ett "spöke"
+  // går från ledarens senaste läge och bilen glider mjukt efter), laddningen, en kollegas tankning
+  // och tålamodet tickar, kunderna går – nästa snap rättar allt.
+  function mateTick(dt) {
+    for (const c of cars) {
+      if (c.gx === undefined) { c.gx = c.x; c.gy = c.y; }
+      if (c.state === 'in' || c.state === 'out') {
+        const wp = c.gpath && c.gpath[0];
+        if (wp) {
+          const dx = wp[0] - c.gx, dy = wp[1] - c.gy, d = Math.hypot(dx, dy);
+          let sp;
+          if (c.state === 'in') { sp = 66; if (c.gpath.length === 1) sp = Math.max(14, Math.min(sp, d * 2.4)); }
+          else { c.gspd = Math.min(62, (c.gspd || 0) + 55 * dt); sp = c.gspd; }
+          const step = sp * dt;
+          if (d <= step) { c.gx = wp[0]; c.gy = wp[1]; c.gpath.shift(); } else { c.gx += dx / d * step; c.gy += dy / d * step; }
+        }
+        if (c.state === 'out' && c.need.fuel !== 'EL') {
+          c.puffT -= dt;
+          if (c.puffT <= 0) { c.puffT = 0.09; puffs.push({ x: c.x + c.s.L / 2 + 1, y: c.y - 3, a: 0, vx: 8 + Math.random() * 6 }); }
+        }
+      } else if (c.state === 'wait') {
+        if (c.plug != null && c.charge < 1) c.charge = Math.min(1, c.charge + dt / CHARGE_T);
+        sayKlar(c);
+        const mine = !!busy && busy.car === c;
+        if (c.tk != null && !mine) { c.fill = Math.min(1.12, c.fill + FILL_RATE * dt); oilDrip(c); }   // en kollega tankar
+        if (c.tv != null && !mine) c.tvT += dt;
+        if (!mine && c.tk == null && c.tv == null && !(c.plug != null && c.charge < 1)) c.patience = Math.max(0, c.patience - dt);
+      } else if (c.state === 'pay') c.payT = Math.max(0, c.payT - dt);
+      const ox = c.x, oy = c.y, ex = c.gx - c.x, ey = c.gy - c.y;
+      if (Math.hypot(ex, ey) > 24) { c.x = c.gx; c.y = c.gy; }
+      else { const f = Math.min(1, dt * 8); c.x += ex * f; c.y += ey * f; }
+      c.roll += Math.hypot(c.x - ox, c.y - oy);
+    }
+    for (const k of custs) {
+      if (k.gx === undefined) { k.gx = k.x; k.gy = k.y; }
+      if (k.state === 'in' || k.state === 'out') {
+        const wp = k.gpath && k.gpath[0], sp = (k.state === 'in' ? 36 : 42) * dt;
+        if (wp) {
+          const dx = wp[0] - k.gx, dy = wp[1] - k.gy, d = Math.hypot(dx, dy);
+          k.dir = Math.abs(dx) >= Math.abs(dy) ? (dx < 0 ? 'left' : 'right') : dy < 0 ? 'up' : 'down';
+          if (d <= sp) { k.gx = wp[0]; k.gy = wp[1]; k.gpath.shift(); } else { k.gx += dx / d * sp; k.gy += dy / d * sp; }
+        }
+      } else { k.dir = 'up'; k.patience = Math.max(0, k.patience - dt); }
+      const ex = k.gx - k.x, ey = k.gy - k.y;
+      if (Math.hypot(ex, ey) > 24) { k.x = k.gx; k.y = k.gy; }
+      else { const f = Math.min(1, dt * 10); k.x += ex * f; k.y += ey * f; }
+    }
+  }
+  // JAG tar över passet: hoppa över gamla id:n (bilar och kunder – inga krockar), bilarna kör vidare
+  // från där de syns längs samma väg, och nästa bil och kund kommer snart
+  function takeOver() {
+    const ids = [...cars.map((c) => c.id), ...custs.map((k) => k.id)];
+    seq = Math.max(seq, 1 + Math.max(-1, ...ids));
+    for (const c of cars) {
+      if (c.gx !== undefined) { c.x = c.gx; c.y = c.gy; }
+      if (c.state === 'wait' || c.state === 'pay') { c.x = ISL[c.isl]; c.y = PARK_Y; c.path = []; }
+      else if (c.state === 'in') c.path = c.gpath && c.gpath.length ? c.gpath : routeIn(ISL[c.isl]).slice(-1);
+      else c.path = c.gpath || [];
+      c.spd = c.gspd || 0;
+      c.gx = c.gy = undefined; c.gpath = null;
+    }
+    for (const k of custs) {
+      if (k.gx !== undefined) { k.x = k.gx; k.y = k.gy; }
+      if (k.state === 'wait') { k.x = KSPOTS[k.spot]; k.y = KY; k.path = []; }
+      else k.path = k.gpath && k.gpath.length ? k.gpath : k.state === 'in' ? custRoute(k.spot, 'in').slice(-1) : [];
+      k.gx = k.gy = undefined; k.gpath = null;
+    }
+    for (const I of islands) I.car = cars.find((c) => c.isl === I.i && c.state !== 'out') || null;
+    carIn = Math.min(carIn, 1.5); custIn = Math.min(custIn, 2);
+    refreshObstacles();
+    snapAsap();
+  }
+  // jag blir medarbetare: nästa snap bestämmer var allt är
+  function becomeMate() {
+    for (const c of cars) { c.gx = undefined; c.gpath = null; }
+    for (const k of custs) { k.gx = undefined; k.gpath = null; }
+  }
+  // (skiftledaren) den som gått från macken håller inte i något längre: munstycken, kablar och rakor
+  // hänger på sin plats igen, och bilen hen tankade eller tvättade är fri
+  function sweepGone() {
+    const ids = new Set([meId(), ...coop.peers().map((f) => f.id)]);
+    const gone = (h) => typeof h === 'string' && !ids.has(h);
+    for (const I of islands) {
+      for (let j = 0; j < I.noz.length; j++) if (gone(I.noz[j])) I.noz[j] = true;
+      if (gone(I.cable)) I.cable = true;
+      if (gone(I.raka)) I.raka = true;
+    }
+    for (const c of cars) { if (gone(c.tk)) c.tk = null; if (gone(c.tv)) { c.tv = null; c.tvT = 0; } }
+  }
+  // mitt pass är slut: det jag håller i tillbaka, och bilen jag tankade eller tvättade är fri
+  function letGo() {
+    if (!coop.active) return;
+    if (mate()) coop.send({ t: 'tillbaka', c: carryEnc(carry), alla: 1 });
+    else {
+      if (carry && PART.has(carry.k)) putBack(carry, meId(), true);
+      for (const c of cars) { if (c.tk === meId()) c.tk = null; if (c.tv === meId()) { c.tv = null; c.tvT = 0; } }
+      sendSnap();
+    }
+    carry = null;
+  }
+
+  // Mackbiträdet som gör något med det gemensamma: jag själv, eller – hos skiftledaren – en
+  // medarbetare vars önskemål körs åt hen. Det hen håller i följer med önskemålet och tillbaka i svaret.
+  const meK = () => ({ by: meId(), fx: [], get carry() { return carry; }, set carry(v) { carry = v; } });
+  const forK = (by, c) => ({ by, fx: [], carry: c, remote: true });
+  // Utfallet av en handling: [slag, vem (spelar-id; '' = alla på macken), ...]. Det som gäller mig
+  // (eller alla) syns och hörs här direkt – ensam gäller allt mig; i ett delat pass (eller när jag
+  // kör en medarbetares önskemål) följer resten med svaret ut.
+  function fx(k, who, kind, ...a) {
+    const me = meId(), ut = coop.active || !!k.remote;
+    if (!who || who === me || !ut) doFx(kind, a);
+    if (ut && who !== me) k.fx.push([kind, who, ...a]);
+  }
+  function doFx(kind, a) {
+    if (kind === 's') { if (LJUD.has(a[0])) play(a[0]); }
+    else if (kind === 'p') pop(+a[0] || 0, +a[1] || 0, String(a[2]).slice(0, 48), String(a[3] || C_GREY));
+    else if (kind === 'c') carPopX(+a[0] || 0, String(a[1]).slice(0, 48), String(a[2] || C_GREY));   // puff vid en bil
+    else if (kind === 'H') hannFore(+a[0] || 0, +a[1] || 0);
+    else if (kind === 'o') { stats.ok++; if (a[0] === 'k') stats.kiosk++; }   // rätt (k = i kiosken)
+    else if (kind === 'f') { stats.fel++; if (a[0] === 's') stats.spill++; }  // fel (s = spill)
+    else if (kind === 'T' || kind === 'W') {   // tankningen/tvätten börjar – den går hos mig
+      const c = carById(a[0]);
+      if (!c || c.state !== 'wait') return;
+      busy = kind === 'T' ? { kind: 'fuel', car: c, t: 0 } : { kind: 'wash', car: c, t: 0, dur: 1.3 };
+      walker.dir = 'down';
+      play(kind === 'T' ? 'click' : 'slide');
+    }
+    else if (kind === 'u') puddles.push({ x: +a[0] || 0, y: +a[1] || 0, r: clamp(+a[2] || 7, 2, 30), age: 0 });   // spillpölen
+    else if (kind === 'd') drawer = 0.9;   // kassalådan åker ut
+  }
+  const kLjud = (k, s) => fx(k, k.by, 's', s);
+  const kCar = (k, c, txt, col) => fx(k, k.by, 'c', Math.round(c.x), txt, col);      // bara hos den det gäller
+  const kCarAll = (k, c, txt, col) => fx(k, '', 'c', Math.round(c.x), txt, col);     // syns hos alla på macken
+  const kPop = (k, x, y, txt, col) => fx(k, '', 'p', Math.round(x), Math.round(y), txt, col);
+  const kSay = (k, x, y, txt, col = C_GREY) => fx(k, k.by, 'p', Math.round(x), Math.round(y), txt, col);
+  // En handling på något gemensamt: ensam (eller som skiftledare) görs den direkt, som medarbetare
+  // blir den ett önskemål till skiftledaren – med det man håller i. must: skickas även om ett annat
+  // önskemål väntar (att sluta tanka eller tvätta får aldrig försvinna).
+  function shared(m, runIt, must = false) {
+    if (mate()) { if (!pend || must) ask({ t: 'do', ...m, c: carryEnc(carry) }); return; }
+    const k = meK();
+    runIt(k);
+    publish(k, false);
+  }
+  // skiftledaren: läget ut direkt efter en handling (FÖRE svaret – då har den som frågade redan
+  // det nya läget när svaret kommer) och utfallet till alla
+  function publish(k, svar) {
+    if (!svar && !(coop.active && coop.leader && coop.settled)) return;
+    if (k.remote && k.carry && PART.has(k.carry.k) && holderOf(k.carry) !== k.by) k.carry = null;   // (inte hens längre)
+    sendSnap(); coop.sentSnap(); snapIn = 0.35;
+    if (svar) coop.send({ t: 'res', by: k.by, fx: k.fx, c: carryEnc(k.carry) });
+    else if (k.fx.length) coop.send({ t: 'res', by: k.by, fx: k.fx });
+  }
+  // medarbetarens önskemål: mackbiträdet väntar på ledarens svar (högst 2,5 s – sedan kan man försöka igen)
+  function ask(m) { coop.send(m); pend = { t: 2.5 }; }
+  function answered() {
+    pend = null;
+    if (queued && !done) { const q = queued; queued = null; self.down(q[0], q[1]); }
+  }
+  coop.on('snap', (m) => { if (!coop.leader) applySnap(m); });
+  coop.on('res', (m) => {   // ledarens utfall: puffarna hos alla – händerna och poängen hos den det gäller
+    const me = coop.myId, mine = m.by === me;
+    if (coop.leader && !mine) return;   // (skiftledaren har redan visat det hos sig)
+    for (const f of (Array.isArray(m.fx) ? m.fx : []).slice(0, 24)) {
+      if (!Array.isArray(f)) continue;
+      const who = str(f[1]);
+      if (!who || who === me) doFx(f[0], f.slice(2));
+    }
+    if (mine) { if ('c' in m) carry = carryDec(m.c); answered(); }
+  });
+  coop.on('do', (m, from) => {   // en medarbetares handling på något gemensamt – körs här, åt hen
+    if (!coop.leader) return;
+    const k = forK(from, carryDec(m.c)), id = int(m.id, -1);
+    if (k.carry && PART.has(k.carry.k) && holderOf(k.carry) !== from) k.carry = null;   // (det hen trodde hen höll i är inte hens)
+    if (m.a === 'ta') doTake(k, clamp(int(m.isl, 0), 0, ISL.length - 1), PARTS[clamp(int(m.p, 0), 0, 2)], clamp(int(m.j, 0), 0, 2));
+    else if (m.a === 'tanka') doTanka(k, id);
+    else if (m.a === 'stopp') doStopp(k, id, (+m.f || 0) / 1000, !!m.au);
+    else if (m.a === 'plugg') doPlugg(k, id);
+    else if (m.a === 'ur') doUr(k, id);
+    else if (m.a === 'tvatta') doTvatta(k, id);
+    else if (m.a === 'tvattat') doTvattat(k, id);
+    else if (m.a === 'kund') doKund(k, id);
+    else return;
+    publish(k, true);
+  });
+  // en medarbetare lade tillbaka det hen höll i (och – när hens pass är slut – släpper bilen hen höll på med)
+  coop.on('tillbaka', (m, from) => {
+    if (!coop.leader) return;
+    const c = carryDec(m.c);
+    if (c && PART.has(c.k)) putBack(c, from);
+    if (m.alla) for (const car of cars) { if (car.tk === from) car.tk = null; if (car.tv === from) { car.tv = null; car.tvT = 0; } }
+    snapAsap();
+  });
 
   // ---------- bära ----------
   const hands = () => { const d = walker.dir; return [Math.round(walker.px) + (d === 'left' ? -7 : d === 'right' ? 7 : 0), Math.round(walker.py) - 15]; };
@@ -662,13 +1048,31 @@ export function makeJobbBensin(A, { onDone }) {
     if (c.k === 'noz') return [cx + bayX(c.j) + 6, DISP_Y + 34];
     return [cx + CHG_X + 5, CHG_Y + 22];
   }
+  const holderOf = (c) => { const I = islands[c.isl]; return !I ? null : c.k === 'noz' ? I.noz[c.j] : c.k === 'kabel' ? I.cable : I.raka; };
+  // delen hänger på sin plats igen – om den var hens som lägger tillbaka den (force: det vet jag redan)
+  function putBack(c, by, force = false) {
+    const I = islands[c.isl];
+    if (!I || !PART.has(c.k) || (!force && holderOf(c) !== by)) return;
+    if (c.k === 'noz') I.noz[c.j] = true;
+    else if (c.k === 'kabel') I.cable = true;
+    else I.raka = true;
+  }
+  // lägg ifrån mig det jag håller i: munstycket i pumpen, kabeln på kroken, rakan i hinken (en
+  // kioskvara försvinner). Ihop är pumpöarna gemensamma – som medarbetare säger jag till
+  // skiftledaren (utan att vänta på svar) och ser det hänga där direkt
   function returnCarry() {
     if (!carry) return;
-    const I = islands[carry.isl];
-    if (carry.k === 'noz') I.noz[carry.j] = true;
-    else if (carry.k === 'kabel') I.cable = true;
-    else if (carry.k === 'raka') I.raka = true;
+    if (PART.has(carry.k)) {
+      if (mate()) coop.send({ t: 'tillbaka', c: carryEnc(carry) });
+      else if (coop.active) snapAsap();
+      putBack(carry, meId(), true);
+    }
     carry = null;
+  }
+  // (skiftledaren) det mackbiträdet k håller i hänger på sin plats igen
+  function retK(k) {
+    if (k.carry && PART.has(k.carry.k)) putBack(k.carry, k.by, !k.remote);
+    k.carry = null;
   }
   function hoseOk(tx, ty) {
     if (!carry || (carry.k !== 'noz' && carry.k !== 'kabel')) return true;
@@ -697,16 +1101,18 @@ export function makeJobbBensin(A, { onDone }) {
     if (kind === 'skap' && fuel !== 'D') kind = 'sedan';
     wash = wash ?? Math.random() < 0.35;
     const s = KINDS[kind], el = fuel === 'EL';
-    const color = kind === 'skap' && Math.random() < 0.5 ? 0xeceef0 : CAR_COLORS[(Math.random() * CAR_COLORS.length) | 0];
+    const ci = kind === 'skap' && Math.random() < 0.5 ? 4 : (Math.random() * CAR_COLORS.length) | 0;   // (4 = den vita skåpbilen)
+    const ls = (Math.random() * 0x7fffffff) | 0;   // förarens utseende ur ett frö (skiftledaren skickar bara fröet)
     const pmax = 31 - 6 * Math.min(1, t / P.seconds);
     const c = {
-      id: seq++, kind, s, isl: I.i, need: { fuel, wash }, fuelDone: false, washDone: false,
+      id: seq++, kind, s, ci, ls, isl: I.i, need: { fuel, wash }, fuelDone: false, washDone: false,
       fill: 0.08 + Math.random() * 0.34, charge: 0.12 + Math.random() * 0.3, plug: null,
       patience: pmax, pmax, honked: false, dirty: wash, roll: 0, spd: 0, puffT: 0,
       x: FW + s.L / 2 + 6, y: ROAD_Y, state: 'in', path: [], payT: 0,
+      tk: null, tv: null, tvT: 0, tkT: 0, klar: false,   // tk/tv: vem som tankar/tvättar just nu (null = ingen)
     };
     c.fill0 = c.fill;
-    c.spr = paintCar(kind, color, makeLook(), el, c.id * 7 + 3);
+    c.spr = paintCar(kind, CAR_COLORS[ci], lookOf(ls), el, c.id * 7 + 3);
     I.car = c;
     return c;
   }
@@ -717,7 +1123,7 @@ export function makeJobbBensin(A, { onDone }) {
     if (cars.some((o) => (o.state === 'in' || o.state === 'out') && o.y > 186 && o.x > FW - 50)) return null;
     const I = free[(Math.random() * free.length) | 0];
     const c = makeCar(I);
-    c.path = [[I.cx + 34, ROAD_Y], [I.cx + 9, PARK_Y + 12], [I.cx, PARK_Y]];
+    c.path = routeIn(I.cx);
     cars.push(c);
     return c;
   }
@@ -755,93 +1161,165 @@ export function makeJobbBensin(A, { onDone }) {
     if (busy && busy.car === c) busy = null;
     if (carry && carry.isl === c.isl && (carry.k === 'noz' || carry.k === 'kabel') && Math.hypot(walker.px - c.x, walker.py - CAR_Y) < 50) returnCarry();
     if (c.plug != null) { islands[c.plug].cable = true; c.plug = null; }
+    c.tk = null; c.tv = null;
     c.state = 'out'; c.spd = 0;
-    c.path = [[c.x - 12, PARK_Y + 22], [c.x - 30, ROAD_Y], [-c.s.L, ROAD_Y]];
+    c.path = routeOut(c.x, c.s.L);
     islands[c.isl].car = null;
     if (!angry) stats.bilar++;
     refreshObstacles();
   }
   const carTopY = (c, x) => { const i = Math.max(0, Math.min(c.s.L - 1, Math.round(x - (c.x - c.s.L / 2)))); return Math.round(c.y) - 1 - c.spr.ht[i] - TOPD; };
+  // spillet droppar från tanklocket när mätaren gått över
+  function oilDrip(c) {
+    if (c.fill > 1 && Math.random() < 0.6) drops.push({ x: Math.round(c.x - c.s.L / 2 + c.s.fuel) + (Math.random() * 3 | 0), y: PARK_Y - 2, vy: 4, a: 0, oil: true });
+  }
   function checkDone(c) {
     if (c.fuelDone && (!c.need.wash || c.washDone)) { c.state = 'pay'; c.payT = 1.1; }
   }
+  // Framme vid bilen (på plats – klicket har gått fram). Det gemensamma görs av skiftledaren åt
+  // mackbiträdet k (se "jobba tillsammans"): k.carry är det hen håller i, och allt som ska synas och
+  // höras går via k – ensam är det bara jag, precis som förut.
   function nozzleAt(c) {
     if (c.state !== 'wait' || !carry || carry.k !== 'noz') return;
-    if (c.fuelDone) { carPop(c, 'REDAN FULL', C_GREY); returnCarry(); return; }
-    if (carry.fuel !== c.need.fuel) {
-      stats.fel++; play('fel');
-      carPop(c, c.need.fuel === 'EL' ? 'ELBIL!' : 'FEL BRÄNSLE!', C_FEL);
-      returnCarry();
+    shared({ a: 'tanka', id: c.id }, (k) => doTanka(k, c.id));
+  }
+  function doTanka(k, id) {
+    const c = carById(id);
+    if (!c || c.state !== 'wait' || !k.carry || k.carry.k !== 'noz') return;
+    if (c.fuelDone) { kCar(k, c, 'REDAN FULL', C_GREY); retK(k); return; }
+    if (k.carry.fuel !== c.need.fuel) {
+      team.fel++; fx(k, k.by, 'f'); kLjud(k, 'fel');
+      kCarAll(k, c, c.need.fuel === 'EL' ? 'ELBIL!' : 'FEL BRÄNSLE!', C_FEL);
+      retK(k);
       return;
     }
-    busy = { kind: 'fuel', car: c, t: 0 };
-    walker.dir = 'down';
-    play('click');
+    if (c.tk != null && c.tk !== k.by) { fx(k, k.by, 'H', Math.round(c.x), PARK_Y - 44); return; }   // någon annan tankar redan
+    c.tk = k.by; c.tkT = 0;
+    fx(k, k.by, 'T', c.id);
   }
+  // släpp handtaget: i gröna zonen = fullt, för tidigt = MER! (munstycket sitter kvar), för sent = spill
   function stopFuel(auto = false) {
     if (!busy || busy.kind !== 'fuel') return;
     const c = busy.car;
     busy = null;
+    if (mate()) { ask({ t: 'do', a: 'stopp', id: c.id, f: Math.round(c.fill * 1000), au: auto ? 1 : 0, c: carryEnc(carry) }); return; }
+    const k = meK();
+    judgeFuel(k, c, auto);
+    publish(k, false);
+  }
+  // (skiftledaren) en medarbetare släppte handtaget vid mätarläget f
+  function doStopp(k, id, f, auto) {
+    const c = carById(id);
+    if (!c || c.state !== 'wait' || c.fuelDone || (c.tk != null && c.tk !== k.by)) return;   // (redan avgjort)
+    c.fill = clamp(f, c.fill0, 1.12);
+    judgeFuel(k, c, auto);
+  }
+  function judgeFuel(k, c, auto) {
+    c.tk = null; c.tkT = 0;
     const f = c.fill;
-    if (!auto && f < ZONE) { carPop(c, 'MER!', C_INFO); play('click'); return; }   // håller kvar munstycket
-    if (f <= 1) { stats.ok++; play('coin'); carPop(c, plus('FULLT!'), C_OK); }
+    if (!auto && f < ZONE) { kCar(k, c, 'MER!', C_INFO); kLjud(k, 'click'); return; }   // håller kvar munstycket
+    if (f <= 1) { team.ok++; fx(k, k.by, 'o'); kLjud(k, 'coin'); kCarAll(k, c, plus('FULLT!'), C_OK); }
     else {
-      stats.fel++; stats.spill++; play('fel');
-      carPop(c, 'SPILL!', C_FEL);
+      team.fel++; fx(k, k.by, 'f', 's'); kLjud(k, 'fel');
+      kCarAll(k, c, 'SPILL!', C_FEL);
       // pölen rinner ut bakom bakhjulet (ritas efter bilen, så den syns hel)
-      puddles.push({ x: Math.round(c.x - c.s.L / 2 + c.s.fuel + 7), y: PARK_Y + 2, r: 7 + Math.round((f - 1) * 50), age: 0 });
+      fx(k, '', 'u', Math.round(c.x - c.s.L / 2 + c.s.fuel + 7), PARK_Y + 2, 7 + Math.round((f - 1) * 50));
     }
     c.fuelDone = true;
     islands[c.isl].last = (c.fill - c.fill0) * 55;
-    returnCarry();
+    retK(k);
     checkDone(c);
   }
   function plugAt(c) {
     if (c.state !== 'wait' || !carry || carry.k !== 'kabel') return;
-    if (c.need.fuel !== 'EL') { stats.fel++; play('fel'); carPop(c, 'INGEN ELBIL!', C_FEL); returnCarry(); return; }
-    if (c.fuelDone || c.plug != null) { carPop(c, 'REDAN KLAR', C_GREY); returnCarry(); return; }
-    c.plug = carry.isl;
-    islands[carry.isl].cable = 'bil';
-    carry = null;
-    play('click');
-    carPop(c, 'LADDAR...', C_EL);
+    shared({ a: 'plugg', id: c.id }, (k) => doPlugg(k, c.id));
+  }
+  function doPlugg(k, id) {
+    const c = carById(id);
+    if (!c || c.state !== 'wait' || !k.carry || k.carry.k !== 'kabel') return;
+    if (c.need.fuel !== 'EL') { team.fel++; fx(k, k.by, 'f'); kLjud(k, 'fel'); kCarAll(k, c, 'INGEN ELBIL!', C_FEL); retK(k); return; }
+    if (c.fuelDone || c.plug != null) { kCar(k, c, 'REDAN KLAR', C_GREY); retK(k); return; }
+    c.plug = k.carry.isl;
+    islands[k.carry.isl].cable = IN_CAR;
+    k.carry = null;
+    kLjud(k, 'click');
+    kCarAll(k, c, 'LADDAR...', C_EL);
   }
   function unplug(c) {
     if (c.plug == null) return;
-    if (c.charge < 1) { carPop(c, 'LADDAR...', C_EL); return; }
+    shared({ a: 'ur', id: c.id }, (k) => doUr(k, c.id));
+  }
+  function doUr(k, id) {
+    const c = carById(id);
+    if (!c || c.state !== 'wait') return;
+    if (c.plug == null) { fx(k, k.by, 'H', Math.round(c.x), PARK_Y - 44); return; }   // någon annan drog ur den
+    if (c.charge < 1) { kCar(k, c, 'LADDAR...', C_EL); return; }
     islands[c.plug].cable = true;
     c.plug = null; c.fuelDone = true;
-    stats.ok++; play('coin');
-    carPop(c, plus('LADDAD!'), C_OK);
+    team.ok++; fx(k, k.by, 'o'); kLjud(k, 'coin');
+    kCarAll(k, c, plus('LADDAD!'), C_OK);
     checkDone(c);
   }
   function washAt(c) {
     if (c.state !== 'wait') return;
+    shared({ a: 'tvatta', id: c.id }, (k) => doTvatta(k, c.id));
+  }
+  function doTvatta(k, id) {
+    const c = carById(id);
+    if (!c || c.state !== 'wait') return;
     if (!c.need.wash || c.washDone) {
-      if (c.plug != null && c.charge >= 1) unplug(c);
-      else carPop(c, 'REDAN REN', C_GREY);
+      if (c.plug != null && c.charge >= 1) doUr(k, id);
+      else kCar(k, c, 'REDAN REN', C_GREY);
       return;
     }
-    busy = { kind: 'wash', car: c, t: 0, dur: 1.3 };
-    walker.dir = 'down';
-    play('slide');
+    if (!k.carry || k.carry.k !== 'raka') return;
+    if (c.tv != null && c.tv !== k.by) { fx(k, k.by, 'H', Math.round(c.x), PARK_Y - 44); return; }   // någon annan tvättar redan
+    c.tv = k.by; c.tvT = 0;
+    fx(k, k.by, 'W', c.id);
   }
   function finishWash(c) {
     busy = null;
+    shared({ a: 'tvattat', id: c.id }, (k) => doTvattat(k, c.id), true);
+  }
+  function doTvattat(k, id) {
+    const c = carById(id);
+    if (!c || c.state !== 'wait' || c.washDone || (c.tv != null && c.tv !== k.by)) return;
+    c.tv = null; c.tvT = 0;
     c.washDone = true; c.dirty = false;
-    stats.ok++; play('ok');
-    carPop(c, plus('BLANKT!'), C_OK);
-    returnCarry();
+    team.ok++; fx(k, k.by, 'o'); kLjud(k, 'ok');
+    kCarAll(k, c, plus('BLANKT!'), C_OK);
+    retK(k);
     checkDone(c);
   }
-  function goCar(c) {
-    const x0 = c.x - c.s.L / 2;
-    if (carry && carry.k === 'noz') walkTo(x0 + c.s.fuel, CAR_Y, () => nozzleAt(c));
-    else if (carry && carry.k === 'kabel') walkTo(x0 + c.s.port + 2, CAR_Y, () => plugAt(c));
-    else if (carry && carry.k === 'raka') walkTo(x0 + c.s.ws, CAR_Y, () => washAt(c));
-    else if (c.plug != null) walkTo(x0 + c.s.port + 2, CAR_Y, () => unplug(c));
-    else walkTo(x0 + c.s.L / 2, CAR_Y);
+  // en kollega tankar bilen: mätaren går här också (hens klick avgör – kommer inget stopp rann det över)
+  function remoteFuel(c, dt) {
+    if (!coop.active || c.tk === meId()) { c.tk = null; return; }
+    c.fill = Math.min(1.12, c.fill + FILL_RATE * dt);
+    oilDrip(c);
+    if (c.fill < 1.12) { c.tkT = 0; return; }
+    c.tkT = (c.tkT || 0) + dt;
+    if (c.tkT > 2.5) {
+      const j = GRADES.indexOf(c.need.fuel), k = forK(c.tk, { k: 'noz', isl: c.isl, j, fuel: c.need.fuel });
+      judgeFuel(k, c, true);
+      publish(k, true);
+    }
   }
+  // en kollega tvättar rutan (kommer inget "klart" får den vänta på nästa som tar rakan)
+  function remoteWash(c, dt) {
+    if (!coop.active || c.tv === meId()) { c.tv = null; c.tvT = 0; return; }
+    c.tvT += dt;
+    if (c.tvT > 1.3 + 3) { c.tv = null; c.tvT = 0; }
+  }
+  // dit man går vid bilen och vad man gör där – beror på vad man håller i
+  function carSpot(c) {
+    const x0 = c.x - c.s.L / 2;
+    if (carry && carry.k === 'noz') return [x0 + c.s.fuel, CAR_Y, () => nozzleAt(c)];
+    if (carry && carry.k === 'kabel') return [x0 + c.s.port + 2, CAR_Y, () => plugAt(c)];
+    if (carry && carry.k === 'raka') return [x0 + c.s.ws, CAR_Y, () => washAt(c)];
+    if (c.plug != null) return [x0 + c.s.port + 2, CAR_Y, () => unplug(c)];
+    return [x0 + c.s.L / 2, CAR_Y, undefined];
+  }
+  function goCar(c) { const [x, y, cb] = carSpot(c); walkTo(x, y, cb); }
 
   // ---------- pumpöarna ----------
   function islandHit(x, y) {
@@ -854,30 +1332,35 @@ export function makeJobbBensin(A, { onDone }) {
     }
     return null;
   }
+  const partX = (I, part, j) => (part === 'noz' ? I.cx + bayX(j) + 4 : part === 'kabel' ? I.cx + CHG_X + 5 : I.cx + BUCKET_X + 4);
+  const isFree = (I, part, j) => (part === 'noz' ? I.noz[j] === true : part === 'kabel' ? I.cable === true : I.raka === true);
   function takeFrom(hit) {
-    const { I, part, j } = hit;
-    if (part === 'noz') {
-      if (carry && carry.k === 'noz' && carry.isl === I.i && carry.j === j) { returnCarry(); play('click'); return; }
-      if (!I.noz[j]) return;
-      returnCarry();
-      I.noz[j] = false; carry = { k: 'noz', isl: I.i, j, fuel: GRADES[j] };
-    } else if (part === 'kabel') {
-      if (carry && carry.k === 'kabel' && carry.isl === I.i) { returnCarry(); play('click'); return; }
-      if (I.cable !== true) { pop(I.cx + CHG_X + 5, STAND - 44, 'SITTER I BILEN', C_GREY); return; }
-      returnCarry();
-      I.cable = false; carry = { k: 'kabel', isl: I.i };
-    } else {
-      if (carry && carry.k === 'raka') { returnCarry(); play('click'); return; }
-      if (!I.raka) return;
-      returnCarry();
-      I.raka = false; carry = { k: 'raka', isl: I.i };
+    const { I, part } = hit, j = hit.j | 0;
+    // samma sak som jag håller i: häng tillbaka den (rakan går alltid hem till sin egen hink)
+    if (carry && carry.k === part && (part === 'raka' || (carry.isl === I.i && (part !== 'noz' || carry.j === j)))) { returnCarry(); play('click'); return; }
+    if (!isFree(I, part, j)) {
+      if (part === 'kabel' && I.cable === IN_CAR) pop(I.cx + CHG_X + 5, STAND - 44, 'SITTER I BILEN', C_GREY);
+      else if (coop.active) hannFore(partX(I, part, j), STAND - 44);   // (ihop: en kollega håller i den)
+      return;
     }
-    play('click');
+    shared({ a: 'ta', isl: I.i, p: PARTS.indexOf(part), j }, (k) => doTake(k, I.i, part, j));
+  }
+  // ta munstycke j / kabeln / rakan på ö isl – det hen håller i läggs ifrån först
+  function doTake(k, isl, part, j) {
+    const I = islands[isl];
+    if (!isFree(I, part, j)) {
+      if (part === 'kabel' && I.cable === IN_CAR) kSay(k, I.cx + CHG_X + 5, STAND - 44, 'SITTER I BILEN');
+      else fx(k, k.by, 'H', partX(I, part, j), STAND - 44);
+      return;
+    }
+    retK(k);
+    if (part === 'noz') { I.noz[j] = k.by; k.carry = { k: 'noz', isl, j, fuel: GRADES[j] }; }
+    else if (part === 'kabel') { I.cable = k.by; k.carry = { k: 'kabel', isl }; }
+    else { I.raka = k.by; k.carry = { k: 'raka', isl }; }
+    kLjud(k, 'click');
   }
   function goIsland(hit) {
-    const cx = hit.I.cx;
-    const tx = hit.part === 'noz' ? cx + bayX(hit.j) + 4 : hit.part === 'kabel' ? cx + CHG_X + 5 : cx + BUCKET_X + 4;
-    walkTo(tx, LANE_Y, () => takeFrom(hit));
+    walkTo(partX(hit.I, hit.part, hit.j), LANE_Y, () => takeFrom(hit));
   }
 
   // ---------- kiosken ----------
@@ -887,27 +1370,36 @@ export function makeJobbBensin(A, { onDone }) {
     if (i < 0) return null;
     const pmax = 25 - 5 * Math.min(1, t / P.seconds);
     const x = KSPOTS[i];
-    const k = { id: seq++, look: makeLook(), spot: i, wish: wish ?? ITEMS[(Math.random() * 3) | 0], patience: pmax, pmax, got: null,
-      dir: placed ? 'up' : 'right', x: placed ? x : -12, y: placed ? KY : ENTRY_Y, state: placed ? 'wait' : 'in', path: placed ? [] : [[x, ENTRY_Y], [x, KY]] };
+    const ls = (Math.random() * 0x7fffffff) | 0;   // utseendet ur ett frö (skiftledaren skickar bara fröet)
+    const k = { id: seq++, ls, look: lookOf(ls), spot: i, wish: wish ?? ITEMS[(Math.random() * 3) | 0], patience: pmax, pmax, got: null,
+      dir: placed ? 'up' : 'right', x: placed ? x : -12, y: placed ? KY : ENTRY_Y, state: placed ? 'wait' : 'in', path: placed ? [] : custRoute(i, 'in') };
     custs.push(k);
     return k;
   }
   function custLeave(k) { k.state = 'out'; k.path = [[k.x, ENTRY_Y], [-16, ENTRY_Y]]; }
-  function give(k) {
-    if (k.state !== 'wait' || !carry || !ITEMS.includes(carry.k)) return;
+  // framme bakom disken: räck över det jag bär
+  function give(cu) {
+    if (!carry || !ITEMS.includes(carry.k)) return;
+    if (cu.state !== 'wait') { if (coop.active && cu.got) hannFore(cu.x, KY - 62); return; }   // (ihop: en kollega hann före)
+    shared({ a: 'kund', id: cu.id }, (k) => doKund(k, cu.id));
+  }
+  function doKund(k, id) {
+    const cu = custs.find((q) => q.id === id);
+    if (!k.carry || !ITEMS.includes(k.carry.k)) return;
+    if (!cu || cu.state !== 'wait') { fx(k, k.by, 'H', cu ? Math.round(cu.x) : 52, KY - 62); return; }   // någon annan hann före
     const py = KY - 62;
-    if (carry.k === k.wish) {
-      stats.ok++; stats.kiosk++;
-      play('buy');
-      pop(k.x, py, plus('TACK!'), C_OK);
-      k.got = carry.k; drawer = 0.9;
-      custLeave(k);
+    if (k.carry.k === cu.wish) {
+      team.ok++; fx(k, k.by, 'o', 'k');
+      kLjud(k, 'buy');
+      kPop(k, cu.x, py, plus('TACK!'), C_OK);
+      cu.got = k.carry.k; fx(k, '', 'd');
+      custLeave(cu);
     } else {
-      stats.fel++;
-      play('fel');
-      pop(k.x, py, 'FEL VARA!', C_FEL);
+      team.fel++; fx(k, k.by, 'f');
+      kLjud(k, 'fel');
+      kPop(k, cu.x, py, 'FEL VARA!', C_FEL);
     }
-    carry = null;
+    k.carry = null;
   }
   function custAt(x, y) {
     return custs.find((k) => k.state === 'wait' && Math.abs(k.x - x) < 12 && y > k.y - 60 && y < k.y + 3)
@@ -929,18 +1421,67 @@ export function makeJobbBensin(A, { onDone }) {
     if (item === 'tidning') { rackGone = (Math.random() * 12) | 0; rackT = 3; }
   }
 
+  // skiftledarens (och den ensammas) mack: nya bilar och kunder, bilarna vid pumparna och kunderna vid disken
+  function leadTick(dt) {
+    // nya bilar och kunder (tätare med vanan – P.pace; tålamodet är detsamma; ihop kommer de tätare)
+    const prog = Math.min(1, t / P.seconds), ihop = coop.active ? 0.45 : 1;
+    carIn -= dt;
+    if (carIn <= 0) { const c = spawnCar(); carIn = c ? (6.8 - 2.6 * prog + Math.random() * 1.8) * P.pace * ihop : 0.6; if (c && coop.active) snapAsap(); }
+    custIn -= dt;
+    if (custIn <= 0) { const k = addCust(); custIn = k ? (7.5 - 2.8 * prog + Math.random() * 2) * P.pace * ihop : 1; if (k) { play('door'); if (coop.active) snapAsap(); } }
+    // bilarna
+    for (const c of cars) {
+      if (c.state === 'in' || c.state === 'out') moveCar(c, dt);
+      else if (c.state === 'wait') {
+        if (c.plug != null && c.charge < 1) {
+          c.charge = Math.min(1, c.charge + dt / CHARGE_T);
+          if (c.charge >= 1) { c.klar = true; play('box'); carPop(c, 'KLAR!', C_EL); }
+        }
+        const mine = !!busy && busy.car === c;
+        if (c.tk != null && !mine) remoteFuel(c, dt);
+        if (c.tv != null && !mine) remoteWash(c, dt);
+        const serviced = mine || c.tk != null || c.tv != null || (c.plug != null && c.charge < 1);
+        if (!serviced) {
+          c.patience -= dt;
+          if (c.patience < 7 && !c.honked) { c.honked = true; play('honk'); }
+          if (c.patience <= 0) { stats.miss++; team.miss++; play('miss'); carPop(c, 'KÖR IVÄG!', C_GREY); carLeave(c, true); if (coop.active) snapAsap(); }
+        }
+      } else if (c.state === 'pay') { c.payT -= dt; if (c.payT <= 0) { play('coin'); carLeave(c); if (coop.active) snapAsap(); } }
+    }
+    if (cars.some((c) => c.gone)) cars = cars.filter((c) => !c.gone);
+    // kunderna i kiosken
+    for (const k of custs) {
+      if (k.state === 'in' || k.state === 'out') {
+        const sp = (k.state === 'in' ? 36 : 42) * dt, wp = k.path[0];
+        if (wp) {
+          const dx = wp[0] - k.x, dy = wp[1] - k.y, d = Math.hypot(dx, dy);
+          k.dir = Math.abs(dx) >= Math.abs(dy) ? (dx < 0 ? 'left' : 'right') : dy < 0 ? 'up' : 'down';
+          if (d <= sp) { k.x = wp[0]; k.y = wp[1]; k.path.shift(); if (!k.path.length && k.state === 'in') { k.state = 'wait'; k.dir = 'up'; } }
+          else { k.x += dx / d * sp; k.y += dy / d * sp; }
+        } else if (k.state === 'out') k.gone = true;
+      } else if (k.state === 'wait') {
+        k.patience -= dt;
+        if (k.patience <= 0) { stats.miss++; team.miss++; play('miss'); pop(k.x, KY - 62, 'GICK HEM...', C_GREY); custLeave(k); if (coop.active) snapAsap(); }
+      }
+    }
+    if (custs.some((k) => k.gone)) custs = custs.filter((k) => !k.gone);
+    if (coop.active || maxN > 1) sweepGone();
+    if (coop.active) { snapIn -= dt; if (snapIn <= 0) { snapIn = 0.35; sendSnap(); coop.sentSnap(); } }
+  }
+
   // ---------- rita ----------
   function drawIsland(ctx, I) {
     const cx = I.cx, dx0 = cx + DISP_X, dy0 = DISP_Y;
-    // pumpen med literräknaren
+    // pumpen med literräknaren (räknar även när en kollega tankar)
     ctx.drawImage(dispSpr(), dx0, dy0);
-    const fueling = busy && busy.kind === 'fuel' && busy.car.isl === I.i ? busy.car : null;
+    const fueling = (busy && busy.kind === 'fuel' && busy.car.isl === I.i ? busy.car : null)
+      || cars.find((c) => c.isl === I.i && c.state === 'wait' && c.tk != null) || null;
     const lit = fueling ? (fueling.fill - fueling.fill0) * 55 : I.last;
     const s = lit.toFixed(2), tw = textW(SMALL, s);
     ctxText(ctx, SMALL, s, dx0 + DISP_W - 4 - tw, dy0 + 7, fueling ? '#9dffb4' : '#5fd87e');
     GRADES.forEach((g, j) => {
       const bx = cx + bayX(j);
-      if (!I.noz[j]) return;
+      if (I.noz[j] !== true) return;
       ctx.drawImage(nozzleSprite(g), bx + 1, dy0 + 22);
       // slangen hänger ner i hålet
       ctx.fillStyle = '#101014'; ctx.fillRect(bx + 7, dy0 + 26, 1, 8); ctx.fillRect(bx + 6, dy0 + 25, 1, 1);
@@ -965,7 +1506,7 @@ export function makeJobbBensin(A, { onDone }) {
     }
     // hinken med rakan
     ctx.drawImage(bucketSprite(), cx + BUCKET_X, BUCKET_Y);
-    if (I.raka) {
+    if (I.raka === true) {
       ctx.fillStyle = '#1c2a5a'; ctx.fillRect(cx + BUCKET_X + 5, BUCKET_Y - 8, 1, 9);
       ctx.fillStyle = '#6aa8f0'; ctx.fillRect(cx + BUCKET_X + 4, BUCKET_Y - 8, 1, 9);
       ctx.fillStyle = '#2a2430'; ctx.fillRect(cx + BUCKET_X + 4, BUCKET_Y - 10, 2, 2);
@@ -975,9 +1516,11 @@ export function makeJobbBensin(A, { onDone }) {
     const s = c.s, x0 = Math.round(c.x - s.L / 2), g = Math.round(c.y) - 1, sp = c.spr;
     ctx.fillStyle = 'rgba(16,14,20,0.45)'; ctx.fillRect(x0 + 2, g - 2, s.L - 4, 3);
     ctx.fillStyle = 'rgba(16,14,20,0.24)'; ctx.fillRect(x0 - 1, g + 1, s.L + 2, 1); ctx.fillRect(x0 + 3, g + 2, s.L - 6, 1);
-    if (c.dirty && busy && busy.kind === 'wash' && busy.car === c) {
+    // rutan blir ren bakom rakan – min egen tvätt, eller en kollegas
+    const wp = busy && busy.kind === 'wash' && busy.car === c ? busy.t / busy.dur : c.tv != null ? c.tvT / 1.3 : -1;
+    if (c.dirty && wp >= 0) {
       ctx.drawImage(sp.dirty, x0 - 2, g - sp.gy);
-      const w = Math.max(1, Math.round(sp.W * Math.min(1, busy.t / busy.dur)));
+      const w = Math.max(1, Math.round(sp.W * Math.min(1, wp)));
       ctx.drawImage(sp.clean, 0, 0, w, sp.H, x0 - 2, g - sp.gy, w, sp.H);
     } else ctx.drawImage(c.dirty ? sp.dirty : sp.clean, x0 - 2, g - sp.gy);
     const ph = Math.floor(c.roll / 3) % 2;
@@ -992,7 +1535,7 @@ export function makeJobbBensin(A, { onDone }) {
     }
     if (c.state !== 'wait') return;
     const left = Math.max(0, Math.min(1, c.patience / c.pmax));
-    const fueling = busy && busy.kind === 'fuel' && busy.car === c;
+    const fueling = (busy && busy.kind === 'fuel' && busy.car === c) || c.tk != null;
     if (fueling || (!c.fuelDone && c.fill > c.fill0 + 0.005)) {
       const inZone = c.fill >= ZONE && c.fill <= 1;
       const [ix, iy] = bubble(ctx, bx, tip, 38, 18, inZone, true);
@@ -1040,14 +1583,24 @@ export function makeJobbBensin(A, { onDone }) {
     if (carry.k === 'raka' && busy && busy.kind === 'wash') return;       // rakan ritas på rutan
     drawCarried(ctx, walker.px, walker.py, walker.dir, carry.k);
   }
-  // slangar och kablar: från pumpen till handen, och kablar som sitter i elbilar
+  // en slang/kabel från pumpen/stolpen till händerna i (hx, hy), med munstycket/kontakten i handen
+  function hoseTo(ctx, c, hx, hy) {
+    const [ox, oy] = hoseOrigin(c);
+    const sag = Math.max(4, 22 - Math.abs(hx - ox) * 0.2);
+    rope(ctx, ox, oy, hx, hy + 1, sag, c.k === 'kabel');
+    if (c.k === 'noz') ctx.drawImage(nozzleSprite(c.fuel, true), hx - 3, hy - 2);
+    else ctx.drawImage(plugSprite(), hx - 3, hy - 2);
+  }
+  // slangar och kablar: från pumpen till handen (min och kollegornas), och kablar som sitter i elbilar
   function drawHoses(ctx) {
-    if (carry && (carry.k === 'noz' || carry.k === 'kabel')) {
-      const [ox, oy] = hoseOrigin(carry), [hx, hy] = hands();
-      const sag = Math.max(4, 22 - Math.abs(hx - ox) * 0.2);
-      rope(ctx, ox, oy, hx, hy + 1, sag, carry.k === 'kabel');
-      if (carry.k === 'noz') ctx.drawImage(nozzleSprite(carry.fuel, true), hx - 3, hy - 2);
-      else ctx.drawImage(plugSprite(), hx - 3, hy - 2);
+    if (carry && (carry.k === 'noz' || carry.k === 'kabel')) { const [hx, hy] = hands(); hoseTo(ctx, carry, hx, hy); }
+    if (coop.active) for (const f of coop.peers()) {
+      const hx = Math.round(f.x), hy = Math.round(f.y) - 15;
+      for (const I of islands) {
+        for (let j = 0; j < GRADES.length; j++) if (I.noz[j] === f.id) hoseTo(ctx, { k: 'noz', isl: I.i, j, fuel: GRADES[j] }, hx, hy);
+        if (I.cable === f.id) hoseTo(ctx, { k: 'kabel', isl: I.i }, hx, hy);
+        if (I.raka === f.id && !cars.some((c) => c.tv === f.id)) drawCarried(ctx, f.x, f.y, 'down', 'raka');
+      }
     }
     for (const c of cars) {
       if (c.plug == null) continue;
@@ -1057,17 +1610,27 @@ export function makeJobbBensin(A, { onDone }) {
     }
   }
   function drawWash(ctx) {
-    if (!busy || busy.kind !== 'wash') return;
-    const c = busy.car, x0 = Math.round(c.x - c.s.L / 2), p = busy.t / busy.dur;
-    const bx = x0 + 3 + Math.round(p * (c.s.L - 14)) + Math.round(Math.sin(busy.t * 18) * 3);
+    if (busy && busy.kind === 'wash') washAnim(ctx, busy.car, busy.t / busy.dur, busy.t, Math.round(walker.px), Math.round(walker.py) - 15);
+    // en kollega tvättar: rakan går över rutan här också
+    if (coop.active) for (const c of cars) {
+      if (c.tv == null || c.tv === meId() || c.state !== 'wait' || (busy && busy.car === c)) continue;
+      const f = coop.peers().find((q) => q.id === c.tv);
+      washAnim(ctx, c, Math.min(1, c.tvT / 1.3), c.tvT, f ? Math.round(f.x) : null, f ? Math.round(f.y) - 15 : null);
+    }
+  }
+  // rakan på rutan vid p (0–1); tt = tvättens tid (svischet och löddret), hx/hy = händerna (null: bara bladet)
+  function washAnim(ctx, c, p, tt, hx, hy) {
+    const x0 = Math.round(c.x - c.s.L / 2);
+    const bx = x0 + 3 + Math.round(p * (c.s.L - 14)) + Math.round(Math.sin(tt * 18) * 3);
     const by = Math.round(c.y) - 1 - c.s.hood - 5;
     // skaftet upp till händerna
-    const hx = Math.round(walker.px), hy = Math.round(walker.py) - 15;
-    const n = Math.max(1, Math.abs(by - hy), Math.abs(bx + 5 - hx));
-    for (let i = 0; i <= n; i++) {
-      const x = Math.round(hx + (bx + 5 - hx) * i / n), y = Math.round(hy + (by - 2 - hy) * i / n);
-      ctx.fillStyle = '#17151a'; ctx.fillRect(x - 1, y, 3, 1);
-      ctx.fillStyle = i % 3 ? '#2f6fd0' : '#6aa8f0'; ctx.fillRect(x, y, 1, 1);
+    if (hx != null) {
+      const n = Math.max(1, Math.abs(by - hy), Math.abs(bx + 5 - hx));
+      for (let i = 0; i <= n; i++) {
+        const x = Math.round(hx + (bx + 5 - hx) * i / n), y = Math.round(hy + (by - 2 - hy) * i / n);
+        ctx.fillStyle = '#17151a'; ctx.fillRect(x - 1, y, 3, 1);
+        ctx.fillStyle = i % 3 ? '#2f6fd0' : '#6aa8f0'; ctx.fillRect(x, y, 1, 1);
+      }
     }
     // bladet: svamp, metall och gummilist – med lödder runt
     ctx.fillStyle = '#17151a'; ctx.fillRect(bx - 1, by - 3, 13, 5);
@@ -1075,147 +1638,199 @@ export function makeJobbBensin(A, { onDone }) {
     ctx.fillStyle = '#c4ccd4'; ctx.fillRect(bx, by - 1, 11, 1);
     ctx.fillStyle = '#2a2430'; ctx.fillRect(bx, by, 11, 1);
     ctx.fillStyle = '#ffffff';
-    for (let i = 0; i < 4; i++) ctx.fillRect(bx - 3 + ((i * 5 + Math.floor(busy.t * 20)) % 17), by + 1 + (i & 1), 1, 1);
+    for (let i = 0; i < 4; i++) ctx.fillRect(bx - 3 + ((i * 5 + Math.floor(tt * 20)) % 17), by + 1 + (i & 1), 1, 1);
     if (Math.random() < 0.6) drops.push({ x: bx + (Math.random() * 11 | 0), y: by + 1, vy: 10, a: 0 });
   }
 
-  const self = {
-    _debug: {
-      stats,
-      // en bil som redan står vid en ledig pump; fuel: '95'|'98'|'D'|'EL'. Returnerar öns index.
-      // Är alla öar upptagna (eller den begärda) flyttas bilen som står där bort först.
-      forceCar(fuel, wash = false, isl) {
-        const I = (isl != null ? islands[isl] : islands.find((k) => !k.car)) || islands[0];
-        if (!I) return null;
-        if (I.car) {
-          const old = I.car;
-          if (busy && busy.car === old) busy = null;
-          if (carry && carry.isl === I.i) returnCarry();
-          if (old.plug != null) { islands[old.plug].cable = true; old.plug = null; }
-          cars = cars.filter((o) => o !== old);
-          I.car = null;
-        }
-        const c = makeCar(I, { fuel: fuel ?? '95', wash });
-        c.x = I.cx; c.y = PARK_Y; c.state = 'wait'; c.path = [];
-        cars.push(c);
-        refreshObstacles();
-        return I.i;
-      },
-      // tanka/ladda bilen vid ö i (eller första väntande): right=true → rätt munstycke
-      // och stopp i gröna zonen (+1 rätt); false → fel munstycke (+1 fel).
-      fuel(i, right = true) {
-        const c = (i != null && islands[i] ? islands[i].car : null) || cars.find((k) => k.state === 'wait' && !k.fuelDone);
-        if (!c || c.state !== 'wait') return null;
-        busy = null; returnCarry();
-        const I = islands[c.isl], x0 = c.x - c.s.L / 2;
-        walker.stop();
-        if (c.need.fuel === 'EL' && right) {
-          I.cable = false; carry = { k: 'kabel', isl: c.isl };
-          walker.px = x0 + c.s.port + 2; walker.py = CAR_Y;
-          plugAt(c); c.charge = 1; unplug(c);
-        } else {
-          const g = right ? c.need.fuel : c.need.fuel === '95' ? '98' : '95', j = GRADES.indexOf(g);
-          I.noz[j] = false; carry = { k: 'noz', isl: c.isl, j, fuel: g };
-          walker.px = x0 + c.s.fuel; walker.py = CAR_Y;
-          nozzleAt(c);
-          if (busy && busy.kind === 'fuel') { c.fill = 0.95; stopFuel(); }
-        }
-        return { ...stats };
-      },
-      // tvätta rutan på bilen vid ö i (måste vilja ha tvätt)
-      wash(i) {
-        const c = (i != null && islands[i] ? islands[i].car : null) || cars.find((k) => k.state === 'wait' && k.need.wash && !k.washDone);
-        if (!c) return null;
-        busy = null; returnCarry();
-        islands[c.isl].raka = false; carry = { k: 'raka', isl: c.isl };
-        walker.stop(); walker.px = c.x - c.s.L / 2 + c.s.ws; walker.py = CAR_Y;
-        washAt(c);
-        if (busy && busy.kind === 'wash') finishWash(c);
-        return { ...stats };
-      },
-      // en kioskkund som redan står vid disken; returnerar önskan ('korv'|'kaffe'|'tidning')
-      // (är alla platser tagna går kunden på plats 0 hem först)
-      forceCustomer(wish) {
-        if (freeSpot() < 0) custs = custs.filter((k) => !(k.spot === 0 && k.state !== 'out'));
-        const k = addCust(wish, true);
-        return k ? k.wish : null;
-      },
-      pickItem(id = 'korv') { busy = null; returnCarry(); carry = { k: id }; return id; },
-      // räck över det jag bär (eller rätt/fel vara om jag inte bär något) till en väntande kund
-      serve(right = true) {
-        const waiting = custs.filter((k) => k.state === 'wait');
-        if (!waiting.length) return null;
-        let k;
-        if (carry && ITEMS.includes(carry.k)) k = waiting.find((c) => (right ? c.wish === carry.k : c.wish !== carry.k)) || waiting[0];
-        else { k = waiting[0]; busy = null; returnCarry(); carry = { k: right ? k.wish : ITEMS[(ITEMS.indexOf(k.wish) + 1) % 3] }; }
-        walker.stop(); walker.px = k.x; walker.py = SERVE_Y;
-        give(k);
-        return { ...stats };
-      },
-      carrying: () => (carry ? (carry.k === 'noz' ? carry.fuel : carry.k) : null),
-      cars: () => cars.map((c) => ({ isl: c.isl, state: c.state, fuel: c.need.fuel, wash: c.need.wash, fill: c.fill, charge: c.charge })),
-      customers: () => custs.map((k) => ({ spot: k.spot, state: k.state, wish: k.wish })),
-      stage(fn) { fn({ cars, custs, islands, walker, puddles, setCarry: (c) => (carry = c), setBusy: (b) => (busy = b), setT: (v) => (t = v), makeCar, refreshObstacles, finishWash, stopFuel, setDrawer: (v) => (drawer = v) }); },
+  // ---------- debug-API för proven ----------
+  const dbg = {
+    stats,
+    // en bil som redan står vid en ledig pump; fuel: '95'|'98'|'D'|'EL'. Returnerar öns index.
+    // Är alla öar upptagna (eller den begärda) flyttas bilen som står där bort först.
+    forceCar(fuel, wash = false, isl) {
+      const I = (isl != null ? islands[isl] : islands.find((k) => !k.car)) || islands[0];
+      if (!I) return null;
+      if (I.car) {
+        const old = I.car;
+        if (busy && busy.car === old) busy = null;
+        if (carry && carry.isl === I.i) returnCarry();
+        if (old.plug != null) { islands[old.plug].cable = true; old.plug = null; }
+        cars = cars.filter((o) => o !== old);
+        I.car = null;
+      }
+      const c = makeCar(I, { fuel: fuel ?? '95', wash });
+      c.x = I.cx; c.y = PARK_Y; c.state = 'wait'; c.path = [];
+      cars.push(c);
+      refreshObstacles();
+      snapAsap();
+      return I.i;
     },
+    // en bil som kör in från vägen till ö isl (provet: rullar den hos medarbetaren också?)
+    driveIn(fuel = '95', isl = 0) {
+      const I = islands[isl];
+      if (!I || I.car) return null;
+      const c = makeCar(I, { fuel, wash: false });
+      c.path = routeIn(I.cx);
+      cars.push(c);
+      snapAsap();
+      return c.id;
+    },
+    // tanka/ladda bilen vid ö i (eller första väntande): right=true → rätt munstycke
+    // och stopp i gröna zonen (+1 rätt); false → fel munstycke (+1 fel).
+    fuel(i, right = true) {
+      const c = (i != null && islands[i] ? islands[i].car : null) || cars.find((k) => k.state === 'wait' && !k.fuelDone);
+      if (!c || c.state !== 'wait') return null;
+      busy = null; returnCarry();
+      const I = islands[c.isl], x0 = c.x - c.s.L / 2;
+      walker.stop();
+      if (c.need.fuel === 'EL' && right) {
+        I.cable = meId(); carry = { k: 'kabel', isl: c.isl };
+        walker.px = x0 + c.s.port + 2; walker.py = CAR_Y;
+        plugAt(c); c.charge = 1; unplug(c);
+      } else {
+        const g = right ? c.need.fuel : c.need.fuel === '95' ? '98' : '95', j = GRADES.indexOf(g);
+        I.noz[j] = meId(); carry = { k: 'noz', isl: c.isl, j, fuel: g };
+        walker.px = x0 + c.s.fuel; walker.py = CAR_Y;
+        nozzleAt(c);
+        if (busy && busy.kind === 'fuel') { c.fill = 0.95; stopFuel(); }
+      }
+      return { ...stats };
+    },
+    // tvätta rutan på bilen vid ö i (måste vilja ha tvätt)
+    wash(i) {
+      const c = (i != null && islands[i] ? islands[i].car : null) || cars.find((k) => k.state === 'wait' && k.need.wash && !k.washDone);
+      if (!c) return null;
+      busy = null; returnCarry();
+      islands[c.isl].raka = meId(); carry = { k: 'raka', isl: c.isl };
+      walker.stop(); walker.px = c.x - c.s.L / 2 + c.s.ws; walker.py = CAR_Y;
+      washAt(c);
+      if (busy && busy.kind === 'wash') finishWash(c);
+      return { ...stats };
+    },
+    // en kioskkund som redan står vid disken; returnerar önskan ('korv'|'kaffe'|'tidning')
+    // (är alla platser tagna går kunden på plats 0 hem först)
+    forceCustomer(wish) {
+      if (freeSpot() < 0) custs = custs.filter((k) => !(k.spot === 0 && k.state !== 'out'));
+      const k = addCust(wish, true);
+      snapAsap();
+      return k ? k.wish : null;
+    },
+    pickItem(id = 'korv') { busy = null; returnCarry(); carry = { k: id }; return id; },
+    // räck över det jag bär (eller rätt/fel vara om jag inte bär något) till en väntande kund
+    serve(right = true) {
+      const waiting = custs.filter((k) => k.state === 'wait');
+      if (!waiting.length) return null;
+      let k;
+      if (carry && ITEMS.includes(carry.k)) k = waiting.find((c) => (right ? c.wish === carry.k : c.wish !== carry.k)) || waiting[0];
+      else { k = waiting[0]; busy = null; returnCarry(); carry = { k: right ? k.wish : ITEMS[(ITEMS.indexOf(k.wish) + 1) % 3] }; }
+      walker.stop(); walker.px = k.x; walker.py = SERVE_Y;
+      give(k);
+      return { ...stats };
+    },
+    carrying: () => (carry ? (carry.k === 'noz' ? carry.fuel : carry.k) : null),
+    cars: () => cars.map((c) => ({ id: c.id, isl: c.isl, kind: c.kind, state: c.state, fuel: c.need.fuel, wash: c.need.wash, fill: c.fill, charge: c.charge,
+      fuelDone: c.fuelDone, washDone: c.washDone, plug: c.plug, tk: c.tk, tv: c.tv, x: Math.round(c.x), y: Math.round(c.y) })),
+    customers: () => custs.map((k) => ({ id: k.id, spot: k.spot, state: k.state, wish: k.wish, got: k.got, x: Math.round(k.x) })),
+    stage(fn) { fn({ cars, custs, islands, walker, puddles, setCarry: (c) => (carry = c), setBusy: (b) => (busy = b), setT: (v) => (t = v), makeCar, refreshObstacles, finishWash, stopFuel, setDrawer: (v) => (drawer = v) }); },
+    // ---------- jobba tillsammans (tools/coop-bensin-test.mjs) ----------
+    coop: () => ({ leader: coop.leader, active: coop.active, mates: coop.peers().length, settled: coop.settled, myId: coop.myId }),
+    lag: () => ({ ...team, maxN }),
+    title: () => (maxN > 1 ? 'BENSINMACKEN IHOP' : 'BENSINMACKEN'),
+    // lugnt på macken (skiftledaren/solo): inga nya bilar eller kunder, gården och disken töms
+    calm() { carIn = 1e9; custIn = 1e9; busy = null; cars = []; custs = []; for (const I of islands) I.car = null; refreshObstacles(); snapAsap(); },
+    // pumpöarna: vem håller i munstyckena (95, 98, diesel), kabeln och rakan (1 = på plats, 0 = i bilen, annars id)
+    islands: () => islands.map((I) => ({ noz: I.noz.map(hEnc), cable: hEnc(I.cable), raka: hEnc(I.raka), car: I.car ? I.car.id : null })),
+    // som när man kommit fram: ta en del från ö isl ('noz' fack j / 'kabel' / 'raka') / gör det man
+    // gör vid bilen id med det man håller i / räck över det man bär till kunden id (hos en
+    // medarbetare blir det önskemål till skiftledaren)
+    take(isl, part = 'noz', j = 0) {
+      const I = islands[isl];
+      if (!I || !PART.has(part)) return false;
+      walker.stop(); walker.px = partX(I, part, j | 0); walker.py = LANE_Y;
+      takeFrom({ I, part, j: j | 0 });
+      return true;
+    },
+    carAct(id) {
+      const c = carById(id);
+      if (!c) return false;
+      const [x, y, cb] = carSpot(c);
+      walker.stop(); walker.px = x; walker.py = y;
+      cb?.();
+      return true;
+    },
+    custAct(id) {
+      const k = custs.find((q) => q.id === id);
+      if (!k) return false;
+      walker.stop(); walker.px = k.x; walker.py = SERVE_Y;
+      give(k);
+      return true;
+    },
+    // släpp tankhandtaget vid mätarläget f (0,95 = i gröna zonen)
+    release(f = 0.95) { if (!busy || busy.kind !== 'fuel') return false; busy.car.fill = f; stopFuel(); return true; },
+    busy: () => (busy ? busy.kind : null),
+    // provet: medarbetaren skickar SAMMA önskemål två gånger (som om svaret dröjde) – räknas EN gång
+    twice(a, id) {
+      if (!mate() || pend) return false;
+      const m = { t: 'do', a, id, c: carryEnc(carry) };
+      coop.send(m); ask(m);
+      return true;
+    },
+    teleport(x, y) { walker.px = x; walker.py = y; walker.stop(); },
+    drop() { busy = null; returnCarry(); },
+    // sant när mackbiträdet står still, inte håller på med något och inte väntar på skiftledarens svar
+    idle: () => !pend && !queued && !busy && walker.path.length === 0,
+    pending: () => !!pend,
+    time: () => t,
+    pops: () => popLog.slice(),
+  };
+
+  const self = {
+    _debug: dbg,
     get worldX() { return walker.px; },
     get worldY() { return walker.py; },
+    exit() { coop.dispose(); },
     update(dt) {
       pops.update(dt);
-      if (done) { doneT += dt; if (doneT > 1.2 && !reported) { reported = true; onDone(stats); } return; }
+      if (done) {
+        coop.tick(); coop.resign();   // MITT pass är slut – lämna över ledningen direkt (även på lönebeskedet)
+        doneT += dt;
+        if (doneT > 1.2 && !reported) {
+          reported = true;
+          if (maxN > 1) {   // jobbat ihop: laget delar lika på rätt, fel och missade
+            const sh = (v) => Math.round(v / maxN);
+            onDone({ ok: sh(team.ok), fel: sh(team.fel), miss: sh(team.miss), delat: maxN, lagOk: team.ok, lagFel: team.fel, bilar: stats.bilar, kiosk: stats.kiosk, spill: stats.spill });
+          } else onDone(stats);
+        }
+        return;
+      }
       t += dt;
-      if (t >= P.seconds) { done = true; busy = null; return; }
+      if (t >= P.seconds) { done = true; busy = null; pend = null; queued = null; letGo(); return; }
       // det jag håller på med just nu låser mig på platsen
       if (busy) {
         busy.t += dt;
         if (busy.kind === 'fuel') {
           const c = busy.car;
           c.fill += FILL_RATE * dt;
-          if (c.fill > 1 && Math.random() < 0.6) drops.push({ x: Math.round(c.x - c.s.L / 2 + c.s.fuel) + (Math.random() * 3 | 0), y: PARK_Y - 2, vy: 4, a: 0, oil: true });
+          oilDrip(c);
           if (c.fill >= 1.12) stopFuel(true);
         } else if (busy.kind === 'wash') { if (busy.t >= busy.dur) finishWash(busy.car); }
         else if (busy.kind === 'prep' && busy.t >= busy.dur) finishPrep(busy.item);
       } else walker.update(dt);
       // slangen räcker inte längre än så här
       if (carry && (carry.k === 'noz' || carry.k === 'kabel') && !hoseOk(walker.px, walker.py)) { returnCarry(); play('slide'); }
-      // nya bilar och kunder (tätare med vanan – P.pace; tålamodet är detsamma)
-      const prog = Math.min(1, t / P.seconds);
-      carIn -= dt;
-      if (carIn <= 0) carIn = spawnCar() ? (6.8 - 2.6 * prog + Math.random() * 1.8) * P.pace : 0.6;
-      custIn -= dt;
-      if (custIn <= 0) { const k = addCust(); custIn = k ? (7.5 - 2.8 * prog + Math.random() * 2) * P.pace : 1; if (k) play('door'); }
-      // bilarna
-      for (const c of cars) {
-        if (c.state === 'in' || c.state === 'out') moveCar(c, dt);
-        else if (c.state === 'wait') {
-          if (c.plug != null && c.charge < 1) {
-            c.charge = Math.min(1, c.charge + dt / CHARGE_T);
-            if (c.charge >= 1) { play('box'); carPop(c, 'KLAR!', C_EL); }
-          }
-          const serviced = (busy && busy.car === c) || (c.plug != null && c.charge < 1);
-          if (!serviced) {
-            c.patience -= dt;
-            if (c.patience < 7 && !c.honked) { c.honked = true; play('honk'); }
-            if (c.patience <= 0) { stats.miss++; play('miss'); carPop(c, 'KÖR IVÄG!', C_GREY); carLeave(c, true); }
-          }
-        } else if (c.state === 'pay') { c.payT -= dt; if (c.payT <= 0) { play('coin'); carLeave(c); } }
+      if (pend) { pend.t -= dt; if (pend.t <= 0) answered(); }   // inget svar (ledaren gick?) – då får man försöka igen
+      coop.tick();
+      if (coop.active) maxN = Math.max(maxN, coop.peers().length + 1);
+      if (coop.active !== wasCoop) {   // en kollega kom in: bilarna och kunderna kommer tätare
+        wasCoop = coop.active;
+        if (wasCoop) { play('knock'); pop(FW >> 1, 120, 'NI JOBBAR IHOP!', C_OK); }
       }
-      if (cars.some((c) => c.gone)) cars = cars.filter((c) => !c.gone);
-      // kunderna i kiosken
-      for (const k of custs) {
-        if (k.state === 'in' || k.state === 'out') {
-          const sp = (k.state === 'in' ? 36 : 42) * dt, wp = k.path[0];
-          if (wp) {
-            const dx = wp[0] - k.x, dy = wp[1] - k.y, d = Math.hypot(dx, dy);
-            k.dir = Math.abs(dx) >= Math.abs(dy) ? (dx < 0 ? 'left' : 'right') : dy < 0 ? 'up' : 'down';
-            if (d <= sp) { k.x = wp[0]; k.y = wp[1]; k.path.shift(); if (!k.path.length && k.state === 'in') { k.state = 'wait'; k.dir = 'up'; } }
-            else { k.x += dx / d * sp; k.y += dy / d * sp; }
-          } else if (k.state === 'out') k.gone = true;
-        } else if (k.state === 'wait') {
-          k.patience -= dt;
-          if (k.patience <= 0) { stats.miss++; play('miss'); pop(k.x, KY - 62, 'GICK HEM...', C_GREY); custLeave(k); }
-        }
-      }
-      if (custs.some((k) => k.gone)) custs = custs.filter((k) => !k.gone);
+      // Skiftledaren (eller solo) kör gården och kiosken; medarbetare följer ledarens läge
+      const iLead = !coop.active || (coop.leader && coop.settled);
+      if (iLead && !wasLead) takeOver();
+      else if (!iLead && wasLead) becomeMate();
+      wasLead = iLead;
+      if (iLead) leadTick(dt); else mateTick(dt);
       // småsaker: avgaser, droppar, pölar, kassalådan, korvgrillen, tidningsstället
       for (const p of puffs) { p.a += dt; p.x += p.vx * dt; p.y -= 6 * dt; }
       puffs = puffs.filter((p) => p.a < 0.9);
@@ -1229,6 +1844,7 @@ export function makeJobbBensin(A, { onDone }) {
     down(x, y) {
       if (done) return;
       if (busy) { if (busy.kind === 'fuel') stopFuel(); return; }
+      if (pend) { queued = [x, y]; return; }   // väntar på skiftledarens svar – klicket tas strax
       // kioskens stationer
       if (x < KX1 - 1 && y >= 36 && y <= 87) {
         const st = STATIONS.find((s) => x >= s.x0 && x <= s.x1);
@@ -1300,7 +1916,7 @@ export function makeJobbBensin(A, { onDone }) {
         ctx.fillStyle = '#3a8ad8'; ctx.fillRect(ix + 2, iy + 14, Math.max(1, Math.round(14 * p)), 2);
       }
       pops.draw(ctx);
-      drawShiftHud(ctx, { W: FW }, { t, dur: P.seconds, ok: stats.ok, fel: stats.fel, title: 'BENSINMACKEN' });
+      drawShiftHud(ctx, { W: FW }, { t, dur: P.seconds, ok: maxN > 1 ? team.ok : stats.ok, fel: maxN > 1 ? team.fel : stats.fel, title: maxN > 1 ? 'BENSINMACKEN IHOP' : 'BENSINMACKEN' });
       if (done) drawTimeUp(ctx, { W: FW, H: FH });
     },
   };
