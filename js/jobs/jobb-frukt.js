@@ -3,6 +3,10 @@
 // bär-frames) till lådan och släpper. Ordersedeln på anslagstavlan visar vad
 // lådan behöver – fel frukt i lådan ger avdrag. Full låda = bonus och ny order.
 //
+// JOBBA IHOP: flera kan dela passet (💼-inbjudan, js/net/coop.js). Skiftledaren kör bandet och
+// lådan, medarbetarna ser samma frukter rulla och samma ordersedel, och deras handlingar blir
+// önskemål som ledaren avgör – se "jobba tillsammans" i makeJobbFrukt.
+//
 // Packhallen ritas på stadens detaljnivå: tegelvägg med industrifönster och
 // målad bröstning, rör med ventil och manometer, emaljlampor, fruktvaskare och
 // sorteringsmaskin i var sin ände av ett rullband med ram, rullar och drivmotor,
@@ -14,6 +18,7 @@ import { createWalker, selfDrawable, folkDrawables, WALK_SEQ } from '../scenes/w
 import { planOf, drawShiftHud, drawTimeUp, makePops, abortShift } from './shift.js';
 import { drawPerson } from '../core/people.js';
 import { play } from '../core/sound.js';
+import { makeShiftCoop } from '../net/coop.js';
 
 const FW = 384, FH = 216;
 const BELT_Y = 74;             // bandets mitt
@@ -1216,6 +1221,11 @@ function pline(ctx, x0, y0, x1, y1) {
   }
 }
 
+// ======================= jobba ihop: det som skickas mellan fruktplockarna =======================
+// ljuden som skiftledarens utfall får spela hos den det gäller (box = lådan klar – hörs hos alla)
+const LJUD = new Set(['ok', 'fel', 'miss', 'box']);
+const fruitIdx = (v) => clamp(v | 0, 0, FRUITS.length - 1);
+
 export function makeJobbFrukt(A, { onDone }) {
   const stats = { ok: 0, fel: 0, miss: 0, boxes: 0 };
   const P = planOf(A);   // passets plan: längd (P.seconds), frukttakt (P.pace), speltid (P.gameMin)
@@ -1230,11 +1240,18 @@ export function makeJobbFrukt(A, { onDone }) {
     [CRATES.x, CRATES.y - 6, CRATES.x + 20, CRATES.y],
   ]);
   const pops = makePops();
+  const popLog = [];   // de senaste puffarnas text (provet läser dem: syntes "HANN FÖRE!"?)
+  const addPop = pops.add;
+  pops.add = (x, y, txt, c) => { popLog.push(txt); if (popLog.length > 30) popLog.shift(); addPop(x, y, txt, c); };
+  // frukterna på bandet: { id, f, x } (items[0] har kommit längst) – carry = frukten jag bär { id, f }
   let items = [], t = 0, seq = 0, spawnIn = 0.8, carry = null, done = false, doneT = 0, reported = false;
   let order = newOrder(seq++), boxFlash = 0;
-  const speed = () => 22 + 12 * Math.min(1, t / P.seconds);
+  // bandets fart: skiftledarens (ihop går det lite fortare) – en medarbetare får den med snappen
+  const soloSpeed = () => 22 + 12 * Math.min(1, t / P.seconds);
+  const speed = () => (lead ? soloSpeed() * (coop.active ? 1.1 : 1) : mateBs);
 
-  // bara för syns skull: ljusläget, bandets läge, lådans innehåll, kollegan
+  // bara för syns skull: ljusläget, bandets läge, kollegan. Lådans innehåll (packed) och
+  // ordernumret är gemensamma när man jobbar ihop.
   const startMin = A.game?.min ?? 12 * 60;
   const mode = viewMode(((startMin + P.gameMin / 2) / 60) % 24);   // ljuset mitt i passet
   const G = art(mode);
@@ -1244,6 +1261,331 @@ export function makeJobbFrukt(A, { onDone }) {
   let packed = [], shown = [];
   const rejects = [];
   const crew = { x: 298, tx: 298, wait: 1.5, lift: 0, dir: 'down', walking: false };
+
+  // ---------- jobba tillsammans (delat pass via js/net/coop.js) ----------
+  // Skiftledaren (den som varit längst i packhallen) kör det gemensamma: bandet (när frukterna
+  // kommer ut ur vaskaren, farten, det som åker in i sorteringen och blir missat) och LÅDAN –
+  // ordersedeln, vad som redan ligger i, när den är full och nästa order sätts upp – och håller
+  // reda på vilken frukt var och en bär. Läget delas ~3 ggr/s; medarbetarna ser samma band –
+  // frukterna rullar vidare i ledarens fart hos dem mellan lägena – och samma låda, och skickar
+  // varje handling på något gemensamt som ett numrerat önskemål med det de såg, det de bär och var
+  // de står: ta en frukt från bandet, lägga frukten i lådan. Skiftledaren kör samma kod åt dem och
+  // är ENDA domaren: en frukt tas från bandet EN gång och räknas i lådan EN gång (id:t). Det man bär
+  // är ens eget – men går man hem med en frukt i handen lägger vaskaren tillbaka den på bandet.
+  // Poängen går till den som packade frukten. Lådan är EN och delas: den som lägger i SISTA frukten
+  // gör den klar och får lådbonusen. Lagets rätt, fel, missade och färdiga lådor delas lika vid
+  // passets slut. Ihop kommer frukterna tätare och bandet går lite fortare.
+  const coop = makeShiftCoop(A, 'away:jobbfrukt');
+  let snapIn = 0, lead = true, wasLead = true, wasCoop = false, maxN = 1, mateBs = 22, mateSeq = 0, known = false;
+  let pend = null, queued = null;                   // medarbetarens önskemål som väntar på svar (och ett köat klick)
+  let reqN = (Math.random() * 1e6) | 0;             // önskemålens löpnummer (samma nummer två gånger = samma önskemål)
+  const team = { ok: 0, fel: 0, miss: 0, boxes: 0 }; // LAGETS räkning – delas lika vid passets slut
+  const held = new Map();                           // spelar-id → frukten hen bär (skiftledarens bok – hos medarbetaren ur snappen)
+  const dropped = new Set();                        // frukter som redan räknats i lådan (medarbetaren: de senaste, ur snappen)
+  const fell = new Set();                           // frukter som nyss åkte in i sorteringen här
+  const seenReq = new Map();                        // (skiftledaren) id → senaste önskemålets nummer
+  const absent = new Map();                         // (skiftledaren) id → sedan när den som bär inte syns i hallen
+  const mate = () => coop.active && !coop.leader;
+  const meId = () => coop.myId || '';
+  const snapAsap = () => { snapIn = 0; };
+  const int = (v, dflt) => (Number.isInteger(v) ? v : dflt);
+  const str = (v) => (typeof v === 'string' ? v.slice(0, 64) : '');
+  const hudTitle = () => (maxN > 1 ? 'FRUKTFABRIKEN IHOP' : 'FRUKTFABRIKEN');
+  const noteFell = (id) => { fell.add(id); if (fell.size > 60) fell.delete(fell.values().next().value); };
+  const ownId = () => -1 - ((Math.random() * 1e9) | 0);   // en frukt som aldrig legat på bandet (krockar aldrig med ledarens)
+  // frukten man bär i önskemålen, svaren och snappen: [id, sort] (0 = inget)
+  const fruitEnc = (c) => (c ? [c.id, c.f] : 0);
+  const fruitDec = (a) => (Array.isArray(a) && Number.isInteger(a[0]) ? { id: a[0], f: fruitIdx(a[1]) } : null);
+  // en frukt åkte in i sorteringsmaskinen (räkneverket blinkar)
+  const sortedIn = () => { sorted++; sortBlink = 0.5; };
+
+  function sendSnap() {
+    known = true;
+    const me = meId(), ho = [...held].filter(([by]) => by !== me);
+    if (carry && me) ho.push([me, carry]);
+    coop.send({
+      t: 'snap',
+      // bandet: frukterna [id, sort, x·10] och farten·100; nyss in i sorteringen (id) och räkneverket där
+      it: items.map((it) => [it.id, it.f, Math.round(it.x * 10)]), bs: Math.round(speed() * 100), rf: [...fell].slice(-8), so: sorted,
+      // lådan: ordersedeln [sort, antal, i lådan, …], ordernumret och frukterna som ligger i (sort)
+      od: order.need.flatMap((n) => [n.f, n.n, n.got]), on: orderNo, pk: packed,
+      // vem som bär vilken frukt: [spelar-id, id, sort] – och de senast packade (id)
+      ho: ho.map(([by, c]) => [by, c.id, c.f]), dr: [...dropped].slice(-16),
+      tm: [team.ok, team.fel, team.miss, team.boxes],
+      sq: seq,   // (nästa id – tar någon annan över fortsätter numreringen efter det)
+    });
+  }
+  function applySnap(m) {
+    known = true;
+    if (Number.isFinite(m.sq)) mateSeq = Math.max(mateSeq, m.sq | 0);
+    if (Array.isArray(m.it)) {
+      const next = [], rf = new Set(Array.isArray(m.rf) ? m.rf : []);
+      for (const a of m.it.slice(0, 40)) {
+        if (!Array.isArray(a)) continue;
+        const id = int(a[0], -1), x = (a[2] | 0) / 10;
+        if (fell.has(id)) continue;   // (åkte just in i sorteringen här – den kommer inte tillbaka)
+        let it = items.find((q) => q.id === id);
+        if (!it) it = { id, f: 0, x };
+        it.f = fruitIdx(a[1]); it.gx = x; it.taken = false;
+        next.push(it);
+      }
+      // borta hos skiftledaren: åkte in i sorteringen (det syns här också) – annars tog någon den
+      for (const it of items) if (!next.includes(it)) { if (rf.has(it.id)) { noteFell(it.id); sortedIn(); } else it.taken = true; }
+      items = next;
+    }
+    if (Number.isFinite(m.bs)) mateBs = clamp(m.bs / 100, 0, 90);
+    if (Number.isFinite(m.so)) sorted = Math.max(0, m.so | 0);
+    // lådan: ordersedeln, ny order (sedeln glider ner) och det som ligger i
+    if (Array.isArray(m.od)) {
+      const need = [];
+      for (let j = 0; j + 2 < m.od.length && need.length < FRUITS.length; j += 3) {
+        const n = clamp(m.od[j + 1] | 0, 1, 9);
+        need.push({ f: fruitIdx(m.od[j]), n, got: clamp(m.od[j + 2] | 0, 0, n) });
+      }
+      if (need.length) order = { need };
+    }
+    if (Number.isInteger(m.on) && m.on !== orderNo) { orderNo = m.on; slipIn = 0.6; }
+    if (Array.isArray(m.pk)) packed = m.pk.slice(0, PACK_POS.length).map(fruitIdx);
+    if (Array.isArray(m.ho)) {
+      held.clear();
+      for (const h of m.ho.slice(0, 12)) if (Array.isArray(h) && str(h[0]) && Number.isInteger(h[1])) held.set(str(h[0]), { id: h[1], f: fruitIdx(h[2]) });
+    }
+    if (Array.isArray(m.dr)) for (const id of m.dr.slice(0, 16)) if (Number.isInteger(id)) dropped.add(id);
+    // det jag bär enligt skiftledarens bok (inte mitt i ett önskemål – då kommer svaret strax)
+    if (!pend) {
+      const mine = held.get(meId());
+      if (mine) { if (!carry || carry.id !== mine.id) carry = { ...mine }; }
+      else if (carry && items.some((it) => it.id === carry.id)) carry = null;   // (lagd tillbaka på bandet)
+    }
+    if (Array.isArray(m.tm)) { team.ok = m.tm[0] | 0; team.fel = m.tm[1] | 0; team.miss = m.tm[2] | 0; team.boxes = m.tm[3] | 0; }
+  }
+  // Medarbetarens band mellan ledarens lägen: frukterna rullar vidare i ledarens fart (var och en
+  // glider mjukt mot där den borde vara) och det som når slutet åker in i sorteringen – nästa snap rättar allt.
+  function mateTick(dt) {
+    const sp = mateBs * dt, f = Math.min(1, dt * 6);
+    for (const it of items) {
+      if (it.gx === undefined) it.gx = it.x;
+      it.gx += sp; it.x += sp;
+      const e = it.gx - it.x;
+      it.x = Math.abs(e) > 24 ? it.gx : it.x + e * f;
+    }
+    for (let i = items.length - 1; i >= 0; i--) if (items[i].x > FW + 8) { const it = items.splice(i, 1)[0]; noteFell(it.id); sortedIn(); }
+  }
+  // JAG tar över passet: hoppa över gamla id:n (bandet, det alla bär, det som packats – inga
+  // krockar), bandet rullar vidare från där det syns och nästa frukt kommer snart. Lådan och
+  // ordersedeln fortsätter som de var. (Frukten hos den som gick läggs tillbaka av sweepGone.)
+  function takeOver() {
+    const mine = held.get(meId());
+    if (mine && !carry) carry = { ...mine };
+    held.delete(meId());
+    const ids = [...items.map((it) => it.id), ...[...held.values()].map((c) => c.id), ...dropped, carry ? carry.id : -1];
+    seq = Math.max(seq, mateSeq, 1 + Math.max(-1, ...ids));
+    for (const it of items) { if (it.gx !== undefined) it.x = it.gx; it.gx = undefined; it.taken = false; }
+    items.sort((a, b) => b.x - a.x);
+    spawnIn = Math.min(spawnIn, 1);
+    pend = null; queued = null;
+    snapAsap();
+  }
+  // jag blir medarbetare: nästa snap bestämmer bandet och lådan. En frukt jag tog i min egen värld
+  // innan vi möttes får ett eget id (krockar aldrig med ledarens) – den gemensamma behåller sitt.
+  function becomeMate() {
+    if (carry && !known) carry = { ...carry, id: ownId() };
+    for (const it of items) it.gx = undefined;
+    held.clear();
+  }
+  // (skiftledaren) frukten hos någon som gått läggs tillbaka på bandet vid vaskaren
+  function releaseHeld(by) {
+    const c = held.get(by);
+    if (!c) return;
+    held.delete(by);
+    if (!dropped.has(c.id) && !items.some((q) => q.id === c.id)) items.push({ id: c.id, f: c.f, x: -8 });
+    snapAsap();
+  }
+  // (skiftledaren) den som gått ur hallen (en stund – inte bara ett ögonblick) bär inget längre
+  function sweepGone() {
+    const ids = new Set([meId(), ...coop.peers().map((f) => f.id)]);
+    for (const by of [...held.keys()]) {
+      if (ids.has(by)) { absent.delete(by); continue; }
+      if (!absent.has(by)) absent.set(by, t);
+      if (t - absent.get(by) > 1.5) { absent.delete(by); releaseHeld(by); }
+    }
+  }
+  // mitt pass är slut: frukten jag bär läggs tillbaka på bandet (kollegan kan ta den)
+  function letGo() {
+    if (!coop.active) return;
+    if (mate()) { coop.send({ t: 'lamna' }); carry = null; return; }
+    if (carry) { const c = carry; carry = null; if (!dropped.has(c.id) && !items.some((q) => q.id === c.id)) items.push({ id: c.id, f: c.f, x: -8 }); }
+    sendSnap(); coop.sentSnap();
+  }
+
+  // Fruktplockaren som gör något med det gemensamma: jag själv, eller – hos skiftledaren – en
+  // medarbetare vars önskemål körs åt hen (x, y = där hen står). Det hen bär följer med önskemålet
+  // och tillbaka i svaret.
+  const meK = () => ({ by: meId(), fx: [], x: walker.px, y: walker.py, get carry() { return carry; }, set carry(v) { carry = v; } });
+  const forK = (by, c, x, y) => ({ by, fx: [], x: clamp(x, 0, FW), y: clamp(y, 0, FH), carry: c, remote: true });
+  // (skiftledaren) det kollegan bär: det jag gett hen – annars det hen säger, om frukten inte ligger
+  // på bandet, redan packats eller bärs av någon annan (t.ex. efter ett ledarbyte)
+  function claimOf(by, c) {
+    const h = held.get(by);
+    if (h) return h;
+    const b = fruitDec(c);
+    if (!b) return null;
+    if (items.some((q) => q.id === b.id) || dropped.has(b.id) || (carry && carry.id === b.id) || [...held.values()].some((q) => q.id === b.id)) return null;
+    return b;
+  }
+  // Utfallet av en handling: [slag, vem (spelar-id; '' = alla i hallen), ...]. Det som gäller mig
+  // (eller alla) syns och hörs här direkt – ensam gäller allt mig; i ett delat pass (eller när jag
+  // kör en medarbetares önskemål) följer resten med svaret ut.
+  function fx(k, who, kind, ...a) {
+    const me = meId(), ut = coop.active || !!k.remote;
+    if (!who || who === me || !ut) doFx(kind, a);
+    if (ut && who !== me) k.fx.push([kind, who, ...a]);
+  }
+  function doFx(kind, a) {
+    if (kind === 's') { if (LJUD.has(a[0])) play(a[0]); }
+    else if (kind === 'p') pops.add(+a[0] || 0, +a[1] || 0, String(a[2]).slice(0, 48), String(a[3] || '#f4f1ea'));
+    else if (kind === 'H') hannFore(+a[0] || 0, +a[1] || 0);   // någon annan hann först
+    else if (kind === 'o') stats.ok++;
+    else if (kind === 'f') stats.fel++;
+    else if (kind === 'b') stats.boxes++;   // jag lade i sista frukten: lådbonusen är min
+    else if (kind === 'K') { boxFlash = 0.8; shown = a.slice(0, PACK_POS.length).map(fruitIdx); slipIn = 0.6; }   // lådan klar: guldkant + ny sedel
+    else if (kind === 'R') rejects.push({ f: fruitIdx(a[0]), x: BOX.x + BOX.w / 2, y: BTOP - 4, vx: -40 - Math.random() * 30, vy: -110, t: 0 });   // fel frukt studsar ut
+  }
+  const kLjud = (k, s) => fx(k, k.by, 's', s);                                                            // hörs hos den det gäller
+  const kSay = (k, txt, c = '#d8d2c0') => fx(k, k.by, 'p', Math.round(k.x), Math.round(k.y) - 30, txt, c);   // bara hos den det gäller
+  const kPop = (k, x, y, txt, c) => fx(k, '', 'p', x, y, txt, c);                                         // syns hos alla i hallen
+  function hannFore(x, y) { play('miss'); pops.add(x, y, 'HANN FÖRE!', '#ff6a6a'); }
+
+  // ---------- det gemensamma (körs av skiftledaren – eller den ensamma – åt fruktplockaren k) ----------
+  // ta frukten id från bandet
+  function doPick(k, id) {
+    const it = items.find((q) => q.id === id);
+    if (!it) {   // borta: åkte in i sorteringen – eller någon annan hann före
+      if (fell.has(id)) { kLjud(k, 'miss'); kSay(k, 'MISSADE!'); } else fx(k, k.by, 'H', Math.round(k.x), Math.round(k.y) - 30);
+      return;
+    }
+    if (k.carry) { kSay(k, 'HÄNDERNA FULLA!'); return; }
+    items.splice(items.indexOf(it), 1);
+    it.taken = true;
+    k.carry = { id: it.id, f: it.f };
+    if (k.remote) held.set(k.by, k.carry);
+    kLjud(k, 'ok');
+  }
+  // lägg frukten jag bär i lådan (rätt eller fel sort) – samma frukt räknas bara EN gång. Sista
+  // frukten som fattades gör lådan klar: bonusen till den som lade i den, ny order till alla.
+  function doDrop(k) {
+    const c = k.carry;
+    if (!c) return;
+    k.carry = null;
+    if (k.remote) held.delete(k.by);
+    if (dropped.has(c.id)) return;   // (ett önskemål som kom två gånger – den ligger redan i lådan)
+    dropped.add(c.id);
+    const slot = order.need.find((n) => n.f === c.f && n.got < n.n);
+    if (slot) {
+      slot.got++; team.ok++; fx(k, k.by, 'o');
+      packed = [...packed, c.f];
+      kLjud(k, 'ok'); kPop(k, BOX.x + BOX.w / 2, BOX.y - 16, '+' + 4, '#8ee03c');
+      if (order.need.every((n) => n.got >= n.n)) {
+        team.boxes++; fx(k, k.by, 'b');
+        fx(k, '', 'K', ...packed);
+        packed = [];
+        fx(k, '', 's', 'box'); kPop(k, BOX.x + BOX.w / 2, BOX.y - 24, 'LÅDA KLAR! +20', '#ffd23f');
+        order = newOrder(seq++);
+        orderNo++;
+      }
+    } else {
+      team.fel++; fx(k, k.by, 'f');
+      kLjud(k, 'fel'); kPop(k, BOX.x + BOX.w / 2, BOX.y - 16, 'FEL FRUKT!', '#ff6a6a');
+      fx(k, '', 'R', c.f);
+    }
+  }
+  // En handling på något gemensamt: ensam (eller som skiftledare) görs den direkt, som
+  // medarbetare blir den ett önskemål till skiftledaren – med det man såg, bär och var man står.
+  function shared(m, runIt) {
+    if (mate()) { if (!pend) ask({ t: 'do', ...m, x: Math.round(walker.px), y: Math.round(walker.py) }); return; }
+    const k = meK();
+    runIt(k);
+    publish(k, false);
+  }
+  // skiftledaren: läget ut direkt efter en handling (FÖRE svaret – då har den som frågade redan
+  // det nya läget när svaret kommer) och utfallet till alla
+  function publish(k, svar) {
+    if (!svar && !(coop.active && coop.leader && coop.settled)) return;
+    sendSnap(); coop.sentSnap(); snapIn = 0.35;
+    if (svar) coop.send({ t: 'res', by: k.by, fx: k.fx, s: 1, c: fruitEnc(k.carry) });
+    else if (k.fx.length) coop.send({ t: 'res', by: k.by, fx: k.fx });
+  }
+  // medarbetarens önskemål: man väntar på skiftledarens svar (högst 2,5 s – sedan kan man försöka
+  // igen). n = löpnumret: kommer samma önskemål fram två gånger görs det EN gång (provet skickar två).
+  function ask(m, n = 1) {
+    m.n = ++reqN; m.c = fruitEnc(carry);
+    for (let i = 0; i < n; i++) coop.send(m);
+    pend = { t: 2.5 };
+  }
+  function answered() {
+    pend = null;
+    if (queued && !done) { const q = queued; queued = null; api.down(q[0], q[1]); }
+  }
+  coop.on('snap', (m) => { if (!coop.leader) applySnap(m); });
+  coop.on('res', (m) => {   // ledarens utfall: puffarna hos alla – poängen och det man bär hos den det gäller
+    const me = coop.myId, mine = m.by === me;
+    if (coop.leader && !mine) return;   // (skiftledaren har redan visat det hos sig)
+    if (mine && m.s && 'c' in m) carry = fruitDec(m.c);
+    for (const f of (Array.isArray(m.fx) ? m.fx : []).slice(0, 24)) {
+      if (!Array.isArray(f)) continue;
+      const who = str(f[1]);
+      if (!who || who === me) doFx(f[0], f.slice(2));
+    }
+    if (mine && m.s) answered();
+  });
+  coop.on('do', (m, from) => {   // en medarbetares handling på något gemensamt – körs här, åt hen
+    if (!coop.leader || !coop.settled || done) return;   // (bara den som kör bandet avgör)
+    if (Number.isInteger(m.n)) { if (seenReq.get(from) === m.n) return; seenReq.set(from, m.n); }   // (samma önskemål igen)
+    const k = forK(from, claimOf(from, m.c), +m.x || 0, +m.y || 0);
+    if (m.a === 'ta') doPick(k, int(m.id, -1));
+    else if (m.a === 'lada') doDrop(k);
+    else return;
+    publish(k, true);
+  });
+  // en kollega går hem (passet slut): frukten hen bar läggs tillbaka på bandet
+  coop.on('lamna', (m, from) => { if (coop.leader) releaseHeld(from); });
+
+  // ---------- på plats (klicket har gått fram): det egna först, sedan det gemensamma ----------
+  function tryPick(target) {
+    if (!items.includes(target) || Math.abs(target.x - walker.px) >= 16) {
+      if (target.taken && coop.active) hannFore(walker.px, walker.py - 30);   // (ihop: någon annan tog den)
+      else { play('miss'); pops.add(walker.px, walker.py - 30, 'MISSADE!', '#d8d2c0'); }
+      return;
+    }
+    shared({ a: 'ta', id: target.id }, (k) => doPick(k, target.id));
+  }
+  function toBox() { if (carry) shared({ a: 'lada', id: carry.id }, (k) => doDrop(k)); }
+
+  // skiftledarens (och den ensammas) band: nya frukter ur vaskaren (tätare med vanan – och ihop),
+  // bandet går, det som når slutet åker in i sorteringen – och läget ut till medarbetarna ~3 ggr/s
+  function leadTick(dt) {
+    spawnIn -= dt;
+    if (spawnIn <= 0) {
+      if (coop.active && items.some((it) => it.x < 8)) spawnIn = 0.15;   // (ihop: utloppet är fullt – nästa frukt väntar ett ögonblick)
+      else {
+        spawnIn = (1.6 - 0.5 * Math.min(1, t / P.seconds) + hash(seq, 43) * 0.4) * P.pace * (coop.active ? 0.45 : 1);
+        const wanted = order.need.filter((n) => n.got < n.n).map((n) => n.f);
+        const f = Math.random() < 0.6 && wanted.length ? wanted[(Math.random() * wanted.length) | 0] : (Math.random() * FRUITS.length) | 0;
+        items.push({ id: seq, f, x: -8 });
+        seq++;
+        if (coop.active) snapAsap();
+      }
+    }
+    for (const it of items) it.x += speed() * dt;
+    for (let i = items.length - 1; i >= 0; i--) if (items[i].x > FW + 8) {
+      const it = items.splice(i, 1)[0];
+      stats.miss++; team.miss++;
+      noteFell(it.id);
+      sortedIn();
+    }
+    if (coop.active || maxN > 1) sweepGone();
+    if (coop.active) { snapIn -= dt; if (snapIn <= 0) { snapIn = 0.35; sendSnap(); coop.sentSnap(); } }
+  }
 
   function updateVisuals(dt) {
     slipIn = Math.max(0, slipIn - dt);
@@ -1442,36 +1784,136 @@ export function makeJobbFrukt(A, { onDone }) {
   const sprDrawable = (fy, get) => ({ fy, draw(ctx) { const S = get(mode); ctx.drawImage(S.img, S.x, S.y); } });
   const props = () => [sprDrawable(STACK.y, stackArt), sprDrawable(BIN.y, binArt), sprDrawable(MOP.y, mopArt), sprDrawable(JACK.y, jackArt), sprDrawable(CRATES.y, cratesArt)];
 
-  return {
-    _debug: {
-      forcePick() { const it = items[0]; if (!it) return null; carry = { f: it.f }; items.shift(); return carry; },
-      forceDrop() { if (!carry) return null; dropInBox(); return stats; },
-      needFruit() { const slot = order.need.find((n) => n.got < n.n); return slot ? slot.f : -1; },
-      setCarry(f) { carry = { f }; },
-      stats,
+  // ---------- debug-API för proven ----------
+  const left = () => order.need.reduce((s, n) => s + n.n - n.got, 0);
+  const dbg = {
+    stats,
+    // (smoke) första frukten på bandet rakt i handen – hos en medarbetare en egen frukt (eget id)
+    forcePick() {
+      if (mate()) { carry = { id: ownId(), f: items[0] ? items[0].f : 0 }; return carry; }
+      const it = items[0];
+      if (!it) return null;
+      carry = null;
+      shared({ a: 'ta', id: it.id }, (k) => doPick(k, it.id));
+      return carry;
     },
+    // (smoke) lägg det jag bär i lådan (hos en medarbetare blir det ett önskemål till skiftledaren)
+    forceDrop() { if (!carry) return null; toBox(); return stats; },
+    needFruit() { const slot = order.need.find((n) => n.got < n.n); return slot ? slot.f : -1; },
+    // en sort som ordersedeln INTE vill ha just nu (fel frukt i lådan)
+    wrongFruit() { return FRUITS.findIndex((_, f) => !order.need.some((n) => n.f === f && n.got < n.n)); },
+    // (smoke) en frukt av sort f rakt i handen (eget id – den har aldrig legat på bandet)
+    setCarry(f) { carry = { id: ownId(), f: fruitIdx(f) }; },
+    // ---------- jobba tillsammans (tools/coop-frukt-test.mjs) ----------
+    coop: () => ({ leader: coop.leader, active: coop.active, mates: coop.peers().length, settled: coop.settled, myId: coop.myId }),
+    lag: () => ({ ...team, maxN }),
+    title: () => hudTitle(),
+    // bandets fart nu och vad den vore ensam (ihop går det lite fortare)
+    speed: () => ({ v: Math.round(speed() * 100) / 100, solo: Math.round(soloSpeed() * 100) / 100 }),
+    // lugnt i hallen (skiftledaren/solo): inga nya frukter, bandet töms
+    calm() { spawnIn = 1e9; items = []; snapAsap(); return 0; },
+    auto(on = true) { spawnIn = on ? 0.3 : 1e9; return on; },
+    // lägg en frukt av sort f på bandet vid x (skiftledaren/solo)
+    forceFruit(f = 0, x = 120) {
+      if (mate()) return null;
+      const it = { id: seq, f: fruitIdx(f), x };
+      seq++;
+      items.push(it); items.sort((a, b) => b.x - a.x);
+      snapAsap();
+      return { id: it.id, f: it.f };
+    },
+    // ny ordersedel (skiftledaren/solo): [[sort, antal], …] – tom låda
+    setOrder(list) {
+      if (mate() || !Array.isArray(list) || !list.length) return null;
+      order = { need: list.slice(0, FRUITS.length).map(([f, n]) => ({ f: fruitIdx(f), n: clamp(n | 0, 1, 9), got: 0 })) };
+      packed = []; orderNo++; slipIn = 0.6;
+      snapAsap();
+      return orderNo;
+    },
+    items: () => items.map((it) => ({ id: it.id, f: it.f, x: Math.round(it.x) })),
+    // lådan: ordernumret, sedeln [sort, antal, i lådan], hur många som fattas, det som ligger i
+    order: () => ({ no: orderNo, need: order.need.map((n) => [n.f, n.n, n.got]), left: left(), packed: packed.slice() }),
+    carrying: () => (carry ? { id: carry.id, f: carry.f } : null),
+    // vem bär vilken frukt enligt boken (skiftledaren: kollegorna; medarbetaren: alla, ur snappen)
+    held: () => Object.fromEntries([...held].map(([by, c]) => [by, c.id])),
+    // som när man kommit fram: ta frukten id från bandet / lägga det jag bär i lådan (hos en
+    // medarbetare blir det önskemål till skiftledaren)
+    pickId(id) {
+      const it = items.find((q) => q.id === id);
+      if (!it) return false;
+      walker.stop(); walker.px = clamp(it.x, 12, FW - 12); walker.py = BELT_Y + 18;
+      tryPick(it);
+      return true;
+    },
+    boxAct() { toBox(); return true; },
+    // provet: medarbetaren skickar SAMMA låd-önskemål två gånger (som om svaret dröjde) – räknas EN gång
+    dropTwice() {
+      if (!mate() || pend || !carry) return false;
+      ask({ t: 'do', a: 'lada', id: carry.id, x: Math.round(walker.px), y: Math.round(walker.py) }, 2);
+      return true;
+    },
+    drop() { carry = null; },
+    // klickpunkter i spelkoordinater (för test via down(x, y)): 'band:<id>' 'lada'
+    spot(name) {
+      const [w, a] = String(name).split(':'), n = +a;
+      if (w === 'band') { const it = items.find((q) => q.id === n); return it ? [Math.round(it.x), BELT_Y + 4] : null; }
+      if (w === 'lada') return [BOX.x + (BOX.w >> 1), BOX.y + 4];
+      return null;
+    },
+    // där fruktplockaren står när klicket gått fram (samma mål som klicket går till)
+    standAt(name) {
+      const [w, a] = String(name).split(':'), n = +a;
+      if (w === 'band') { const it = items.find((q) => q.id === n); return it ? [Math.round(it.x), BELT_Y + 18] : null; }
+      if (w === 'lada') return [BOX.x - 8, BOX.y + 8];
+      return null;
+    },
+    teleport(x, y) { walker.px = x; walker.py = y; walker.stop(); },
+    // sant när fruktplockaren står still och inte väntar på skiftledarens svar
+    idle: () => !pend && !queued && walker.path.length === 0,
+    pending: () => !!pend,
+    time: () => t,
+    pops: () => popLog.slice(),
+  };
+
+  const api = {
+    _debug: dbg,
     get worldX() { return walker.px; },
     get worldY() { return walker.py; },
+    exit() { coop.dispose(); },
     update(dt) {
       pops.update(dt);
       boxFlash = Math.max(0, boxFlash - dt);
       updateVisuals(dt);
-      if (done) { doneT += dt; if (doneT > 1.2 && !reported) { reported = true; onDone(stats); } return; }
+      if (done) {
+        coop.tick(); coop.resign();   // MITT pass är slut – lämna över ledningen direkt (även på lönebeskedet)
+        doneT += dt;
+        if (doneT > 1.2 && !reported) {
+          reported = true;
+          if (maxN > 1) {   // jobbat ihop: laget delar lika på rätt, fel, missade och färdiga lådor
+            const sh = (v) => Math.round(v / maxN);
+            onDone({ ok: sh(team.ok), fel: sh(team.fel), miss: sh(team.miss), boxes: sh(team.boxes), delat: maxN, lagOk: team.ok, lagFel: team.fel });
+          } else onDone(stats);
+        }
+        return;
+      }
       t += dt;
-      if (t >= P.seconds) { done = true; return; }
+      if (t >= P.seconds) { done = true; pend = null; queued = null; letGo(); return; }
       walker.update(dt);
+      if (pend) { pend.t -= dt; if (pend.t <= 0) answered(); }   // inget svar (ledaren gick?) – då får man försöka igen
+      coop.tick();
+      if (coop.active) maxN = Math.max(maxN, coop.peers().length + 1);
+      if (coop.active !== wasCoop) {   // en kollega kom in: frukterna kommer tätare och bandet går fortare
+        wasCoop = coop.active;
+        if (wasCoop) { play('knock'); pops.add(FW / 2, 120, 'NI JOBBAR IHOP!', '#8ee03c'); }
+      }
+      // Skiftledaren (eller solo) kör bandet och lådan; medarbetare följer ledarens läge
+      const iLead = !coop.active || (coop.leader && coop.settled);
+      if (iLead && !wasLead) takeOver();
+      else if (!iLead && wasLead) becomeMate();
+      wasLead = lead = iLead;
       beltOff += speed() * dt;
       if (beltOff > 1e6) beltOff -= SURF_PERIOD * 20000;
-      spawnIn -= dt;
-      if (spawnIn <= 0) {
-        spawnIn = (1.6 - 0.5 * Math.min(1, t / P.seconds) + hash(seq, 43) * 0.4) * P.pace;   // tätare med vanan
-        const wanted = order.need.filter((n) => n.got < n.n).map((n) => n.f);
-        const f = Math.random() < 0.6 && wanted.length ? wanted[(Math.random() * wanted.length) | 0] : (Math.random() * FRUITS.length) | 0;
-        items.push({ f, x: -8 });
-        seq++;
-      }
-      for (const it of items) it.x += speed() * dt;
-      for (let i = items.length - 1; i >= 0; i--) if (items[i].x > FW + 8) { items.splice(i, 1); stats.miss++; sorted++; sortBlink = 0.5; }
+      if (iLead) leadTick(dt); else mateTick(dt);
     },
     down(x, y) {
       if (done) return;
@@ -1480,23 +1922,20 @@ export function makeJobbFrukt(A, { onDone }) {
         walker.walkTo(EXIT.wx, EXIT.wy, () => { if (!done) abortShift(A); });
         return;
       }
+      if (pend) { queued = [x, y]; return; }   // väntar på skiftledarens svar – klicket tas strax
       // klick på en frukt på bandet → gå dit och plocka
       if (y < BELT_Y + 16 && !carry) {
         let best = null, bd = 1e9;
         for (const it of items) { const d = Math.abs(it.x - x); if (d < 16 && d < bd) { best = it; bd = d; } }
         if (best) {
           const target = best;
-          walker.walkTo(Math.max(12, Math.min(FW - 12, target.x + speed() * 0.9)), BELT_Y + 18, () => {
-            const i = items.indexOf(target);
-            if (i >= 0 && Math.abs(target.x - walker.px) < 16) { items.splice(i, 1); carry = { f: target.f }; play('ok'); }
-            else { play('miss'); pops.add(walker.px, walker.py - 30, 'MISSADE!', '#d8d2c0'); }
-          });
+          walker.walkTo(Math.max(12, Math.min(FW - 12, target.x + speed() * 0.9)), BELT_Y + 18, () => tryPick(target));
           return;
         }
       }
       // klick på lådan → bär dit och släpp
       if (x > BOX.x - 8 && x < BOX.x + BOX.w + 8 && y > BOX.y - 20) {
-        walker.walkTo(BOX.x - 8, BOX.y + 8, () => { if (carry) dropInBox(); });
+        walker.walkTo(BOX.x - 8, BOX.y + 8, () => toBox());
         return;
       }
       walker.walkTo(x, y);
@@ -1518,33 +1957,16 @@ export function makeJobbFrukt(A, { onDone }) {
       const drawables = [...folkDrawables(A, t), selfDrawable(A, walker, t, { carry: !!carry }), boxDrawable(), truckDrawable(), ...props()];
       drawables.sort((a, b) => a.fy - b.fy).forEach((d) => d.draw(ctx));
       if (carry) drawFruit(ctx, carry.f, walker.px, walker.py - 44); // frukten över huvudet
+      // det kollegorna bär (skiftledaren håller reda på vem som bär vilken frukt)
+      if (coop.active) for (const f of coop.peers()) { const c = held.get(f.id); if (c) drawFruit(ctx, c.f, f.x, f.y - 44); }
       // fel frukt studsar ut ur lådan
       for (const r of rejects) ctx.drawImage(fruitSprite(r.f), Math.round(r.x) - FC, Math.round(r.y) - FC);
       ctx.drawImage(G.fore, 0, 0);
 
       pops.draw(ctx);
-      drawShiftHud(ctx, { W: FW }, { t, dur: P.seconds, ok: stats.ok, fel: stats.fel, title: 'FRUKTFABRIKEN' });
+      drawShiftHud(ctx, { W: FW }, { t, dur: P.seconds, ok: maxN > 1 ? team.ok : stats.ok, fel: maxN > 1 ? team.fel : stats.fel, title: hudTitle() });
       if (done) drawTimeUp(ctx, { W: FW, H: FH });
     },
   };
-
-  function dropInBox() {
-    const slot = order.need.find((n) => n.f === carry.f && n.got < n.n);
-    if (slot) {
-      slot.got++; stats.ok++;
-      packed = [...packed, carry.f];
-      play('ok'); pops.add(BOX.x + BOX.w / 2, BOX.y - 16, '+' + 4, '#8ee03c');
-      if (order.need.every((n) => n.got >= n.n)) {
-        stats.boxes++; boxFlash = 0.8;
-        shown = packed; packed = [];
-        play('box'); pops.add(BOX.x + BOX.w / 2, BOX.y - 24, 'LÅDA KLAR! +20', '#ffd23f');
-        order = newOrder(seq++);
-        orderNo++; slipIn = 0.6;
-      }
-    } else {
-      stats.fel++; play('fel'); pops.add(BOX.x + BOX.w / 2, BOX.y - 16, 'FEL FRUKT!', '#ff6a6a');
-      rejects.push({ f: carry.f, x: BOX.x + BOX.w / 2, y: BTOP - 4, vx: -40 - Math.random() * 30, vy: -110, t: 0 });
-    }
-    carry = null;
-  }
+  return api;
 }

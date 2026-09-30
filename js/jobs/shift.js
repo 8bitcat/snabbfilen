@@ -16,7 +16,7 @@ import { shiftInStrip } from '../core/hud-pix.js';
 export const SHIFT_SECONDS = 60; // (nybörjarens vanliga pass – minispelen läser planOf(A).seconds)
 export const planOf = (A) => A?.shiftPlan || shiftPlan(1);
 // Jobb där man kan jobba ihop på riktigt (delat pass: en kör kunderna, alla serverar)
-export const COOP_JOBS = new Set(['burgare', 'kafe', 'pizzeria', 'kok', 'posten', 'bensinmack', 'tvatteri', 'bilverkstad', 'vard', 'incheckning', 'flygplats']);
+export const COOP_JOBS = new Set(['burgare', 'kafe', 'pizzeria', 'kok', 'posten', 'bensinmack', 'tvatteri', 'bilverkstad', 'vard', 'incheckning', 'flygplats', 'frukt']);
 const newSid = () => Math.random().toString(36).slice(2, 10).replace(/[^a-z0-9]/g, '') || 'pass';
 // får man ta ett längre pass nu? (vanliga jobb stänger 24 – ett långt pass börjar senast 18)
 const longOk = (g, jobId) => !!JOBS[jobId]?.nattoppet || g.min <= 18 * 60;

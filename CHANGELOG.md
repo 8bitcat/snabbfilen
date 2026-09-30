@@ -10,6 +10,12 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.69.0] – 2026-09-30 – Jobba ihop i Fruktfabriken
+- Jobba ihop i Fruktfabriken: bjud in en kompis med 💼 Jobba ihop när du börjar passet (eller via 👥 mitt i passet) – ni plockar från samma band till samma låda med samma beställningslapp.
+- En frukt på bandet kan bara en ta – hinner båda dit får den som kom för sent höra "HANN FÖRE!".
+- Den som lägger i den sista frukten som fattas gör lådan klar och får lådbonusen – alla ser KLAR-blinket och får nästa lapp. Lagets rätt, fel och lådor delas lika på lönebeskedet.
+- När ni är fler kommer frukten ungefär dubbelt så ofta och bandet går lite fortare. Går den som leder passet hem tar någon annan över direkt, och frukt som någon höll i läggs tillbaka på bandet.
+
 ## [0.68.0] – 2026-09-30 – Jobba ihop på Flygplatsen
 - Jobba ihop på Flygplatsen: bjud in en kompis med 💼 Jobba ihop när du börjar passet (eller via 👥 mitt i passet) – ni lastar från samma band till samma fyra vagnar.
 - En väska på bandet kan bara en ta – hinner båda dit får den som kom för sent höra "HANN FÖRE!". Du ser väskan kollegan bär.
