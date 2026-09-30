@@ -19,6 +19,7 @@ import { createWalker, folkDrawables, emoteBubble, WALK_SEQ } from '../scenes/wa
 import { worldMyEmote } from '../net/world.js';
 import { planOf, drawShiftHud, drawTimeUp, makePops, abortShift } from './shift.js';
 import { play } from '../core/sound.js';
+import { makeShiftCoop } from '../net/coop.js';
 
 const FW = 384, FH = 216;
 const WHITE = 0xffffff;
@@ -70,6 +71,16 @@ function drinkOf(c) {
   return -1;
 }
 const cupKey = (c) => (c.mug ? (c.skum ? 'cho' : 'kak') : c.konst ? 'lat' : c.skum ? 'cap' : 'esp');
+
+// Gästens utseende ur ett frö: i ett delat pass skickar skiftledaren bara fröet (ett tal)
+// i stället för hela utseendet, och alla ritar ändå samma gäst.
+function seedRng(seed) {
+  let s = seed >>> 0;
+  return () => { s = (s + 0x6D2B79F5) >>> 0; let t = s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+}
+const lookOf = (seed) => makeLook(seedRng(seed));
+// gästernas lägen i skiftledarens snap (index = kod)
+const GST = ['walk', 'wait', 'happy', 'leave', 'exit'];
 
 // ======================= små målarverktyg =======================
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
@@ -369,6 +380,127 @@ export function makeJobbKafe(A, { onDone } = {}) {
     back: paintBack(), counter: paintCounter(), glass: paintGlass(), bench: paintBench(), crates: paintCrates(), bucket: paintBucket(), rack: paintRack(),
   }));
 
+  // ---------- jobba tillsammans (delat pass via js/net/coop.js) ----------
+  // Skiftledaren (den som varit längst i kaféet) kör gästerna och montern och delar läget
+  // ~3 ggr/s; medarbetarna ser samma kafé och skickar det som rör det gemensamma – ta ett
+  // bakverk ur montern, servera en gäst – som önskemål. Ledaren är ENDA domaren (ingen gäst
+  // serveras två gånger, montern går aldrig minus) och svarar med utfallet. Kvarnen, maskinen
+  // och bakbänken är var och ens egna: koppen i handen är ens egen. Poängen går till den som
+  // serverar; lagets räkning delas lika vid passets slut. Disken har bara tre platser, så när
+  // man är fler kommer gästerna tätare och bagaren fyller på montern fortare.
+  const coop = makeShiftCoop(A, 'away:jobbkafe');
+  let snapIn = 0, wasLead = true, wasCoop = false, maxN = 1, snaps = 0, noBake = false;
+  const team = { ok: 0, fel: 0, miss: 0 }; // LAGETS räkning – delas lika vid passets slut
+  const mate = () => coop.active && !coop.leader;
+  const snapAsap = () => { snapIn = 0; };
+  const sendSnap = () => coop.send({
+    t: 'snap',
+    // gäst: [id, plats, läge (GST), x, dryck, bakverk, fått (1 dryck, 2 bakverk), tålamod·10, max·10, utseendefrö]
+    cu: customers.map((k) => [k.id, k.spot, GST.indexOf(k.state), Math.round(k.x), k.drink, k.pastry,
+      (k.gotDrink ? 1 : 0) | (k.gotPastry ? 2 : 0), Math.round(k.patience * 10), Math.round(k.pmax * 10), k.ls | 0]),
+    st: stock.slice(),
+    tm: [team.ok, team.fel, team.miss],
+  });
+  const yOf = (st) => (st === 'walk' ? CUST_Y - 2 : st === 'leave' || st === 'exit' ? CUST_Y - 3 : CUST_Y);
+  const applySnap = (m) => {
+    if (Array.isArray(m.st)) for (let i = 0; i < 3; i++) stock[i] = clamp(m.st[i] | 0, 0, 4);
+    const seen = new Set();
+    for (const c of (Array.isArray(m.cu) ? m.cu : []).slice(0, 12)) {
+      if (!Array.isArray(c)) continue;
+      const id = c[0] | 0, st = GST[c[2] | 0] || 'walk', x = +c[3] || 0, ls = c[9] | 0;
+      seen.add(id);
+      let k = customers.find((q) => q.id === id);
+      const was = k ? k.state : null;
+      if (!k) { k = { id, x, t: 1.1 }; customers.push(k); }
+      if (k.ls !== ls || !k.look) { k.ls = ls; k.look = lookOf(ls); }
+      k.spot = clamp(c[1] | 0, 0, SPOTS.length - 1); k.state = st; k.gx = x; k.y = yOf(st);
+      k.dir = st === 'leave' ? 'left' : st === 'walk' || st === 'exit' ? 'right' : 'down';
+      k.drink = clamp(c[4] | 0, 0, DRINKS.length - 1); k.pastry = clamp(c[5] | 0, -1, PASTRIES.length - 1);
+      k.gotDrink = !!(c[6] & 1); k.gotPastry = !!(c[6] & 2);
+      k.patience = (c[7] | 0) / 10; k.pmax = (c[8] | 0) / 10 || 40;
+      // det som händer vid disken hörs hos alla: beställningen ropas, den som tröttnade går
+      if (st === 'wait' && was !== 'wait' && (was || snaps)) { play('chirp'); sayOrder(k); }
+      if (st === 'leave' && was === 'wait') { play('miss'); sayK(k, 36, 'GICK...'); }
+    }
+    customers = customers.filter((k) => seen.has(k.id));
+    if (Array.isArray(m.tm)) { team.ok = m.tm[0] | 0; team.fel = m.tm[1] | 0; team.miss = m.tm[2] | 0; }
+    snaps++;
+  };
+  // medarbetarnas vy: gästerna går som hos ledaren och rättas mjukt mot ledarens lägen
+  const stepX = (k, x, dt) => {
+    if (k.state === 'walk') { const tx = SPOTS[k.spot], sp = 38 * dt; return Math.abs(tx - x) <= sp ? tx : x + Math.sign(tx - x) * sp; }
+    return x + (k.state === 'leave' ? -44 : k.state === 'exit' ? 44 : 0) * dt;
+  };
+  const tweenGuests = (dt) => {
+    for (const k of customers) {
+      k.gx = stepX(k, k.gx ?? k.x, dt);
+      k.x = stepX(k, k.x, dt);
+      const d = k.gx - k.x;
+      k.x = Math.abs(d) > 24 ? k.gx : k.x + d * Math.min(1, dt * 6);
+    }
+  };
+  // medarbetarens önskemål: baristan väntar på ledarens svar (högst 2 s – sedan kan man försöka igen)
+  function ask(m) { coop.send(m); startBusy('svar', 2, () => {}); }
+  function answered() {
+    if (busy && busy.kind === 'svar') busy = null;
+    if (queued && !busy) { const q = queued; queued = null; handleDown(q[0], q[1]); }
+  }
+  // ledarens dom över en servering – för egna och medarbetares (byId = den som serverade)
+  function leaderServe(custId, d, p, byId) {
+    const k = customers.find((q) => q.id === custId);
+    const r = k ? judge(k, d, p) : { dr: 0, pr: 0, happy: 0, gone: 1 };
+    coop.send({ t: 'res', a: 'serve', by: byId, cust: custId, dr: r.dr, pr: r.pr, ha: r.happy, go: r.gone });
+    const mine = byId === coop.myId;
+    if (r.gone) { if (mine) { play('miss'); if (k) sayK(k, 36, 'HANN FÖRE!', '#ff6a6a'); } }
+    else { showServe(k, r, mine); if (mine) takeResult(r); }
+    snapAsap();
+  }
+  const int = (v, dflt) => (Number.isInteger(v) ? v : dflt);
+  coop.on('snap', (m) => { if (!coop.leader) applySnap(m); });
+  coop.on('res', (m) => { // ledarens utfall: puffarna hos alla, händerna och poängen hos den som gjorde det
+    const mine = m.by === coop.myId;
+    if (coop.leader && !mine) return; // (ledaren har redan visat det hos sig)
+    if (m.a === 'serve') {
+      const k = customers.find((q) => q.id === m.cust);
+      const r = { dr: m.dr | 0, pr: m.pr | 0, happy: m.ha ? 1 : 0 };
+      if (m.go) { if (mine) { play('miss'); if (k) sayK(k, 36, 'HANN FÖRE!', '#ff6a6a'); } }
+      else {
+        if (k) { // syns direkt – nästa snap bekräftar
+          if (r.dr === 1) k.gotDrink = true;
+          if (r.pr === 1) k.gotPastry = true;
+          if (r.happy) { k.state = 'happy'; k.t = 1.1; }
+        }
+        showServe(k, r, mine);
+        if (mine) takeResult(r);
+      }
+      if (mine) answered();
+    } else if (mine && m.a === 'tag') {
+      const c = clamp(m.col | 0, 0, 2);
+      if (m.ok) { // det jag höll gick tillbaka i montern hos ledaren
+        const h = int(m.h, -1);
+        if (h >= 0 && h < 3) stock[h] = Math.min(4, stock[h] + 1);
+        stock[c] = Math.max(0, stock[c] - 1);
+        pastry = c; play('click');
+      } else { say(MON_COLS[c], STN_Y, 'SLUT - VÄNTA'); play('miss'); }
+      answered();
+    }
+  });
+  coop.on('tag', (m, from) => { // medarbetare tar ett bakverk ur montern (och ställer tillbaka det hen höll)
+    if (!coop.leader) return;
+    const c = int(m.col, -1), h = int(m.h, -1);
+    if (c < 0 || c > 2) return;
+    const ok = stock[c] > 0 ? 1 : 0;
+    if (ok) { if (h >= 0 && h < 3) stock[h] = Math.min(4, stock[h] + 1); stock[c]--; }
+    coop.send({ t: 'res', a: 'tag', by: from, col: c, h, ok });
+    snapAsap();
+  });
+  coop.on('tillbaka', (m) => { // medarbetare ställer tillbaka ett bakverk i montern
+    if (!coop.leader) return;
+    const c = int(m.col, -1);
+    if (c >= 0 && c < 3) { stock[c] = Math.min(4, stock[c] + 1); snapAsap(); }
+  });
+  coop.on('serve', (m, from) => { if (coop.leader) leaderServe(int(m.cust, -1), clamp(int(m.d, -2), -2, 3), clamp(int(m.p, -1), -1, 2), from); });
+
   // ---------- hjälpare ----------
   const waiting = () => customers.filter((k) => k.state === 'wait');
   function freeSpot() {
@@ -379,9 +511,9 @@ export function makeJobbKafe(A, { onDone } = {}) {
   function newCustomer(s, prog, standing = false) {
     // en dryck tar 6–11 s med gång, och tre gäster kan stå i kö – tålamodet
     // räcker till att vänta på två före sig även i slutet av passet
-    const pmax = 40 - 8 * prog;
+    const pmax = 40 - 8 * prog, ls = (Math.random() * 0x7fffffff) | 0;
     return {
-      id: seq++, look: makeLook(), spot: s, x: standing ? SPOTS[s] : -14, y: standing ? CUST_Y : CUST_Y - 2,
+      id: seq++, ls, look: lookOf(ls), spot: s, x: standing ? SPOTS[s] : -14, y: standing ? CUST_Y : CUST_Y - 2,
       state: standing ? 'wait' : 'walk', dir: standing ? 'down' : 'right',
       drink: pickDrink(), pastry: Math.random() < 0.42 ? (Math.random() * 3) | 0 : -1,
       gotDrink: false, gotPastry: false, patience: pmax, pmax, t: 0,
@@ -434,41 +566,73 @@ export function makeJobbKafe(A, { onDone } = {}) {
     if (!cup) { say(DISK_X, 150, 'INGET ATT DISKA'); play('miss'); return; }
     startBusy('disk', 0.5, () => { cup = null; play('slide'); say(DISK_X, 150, 'SLASK!'); });
   }
+  // montern är gemensam: en medarbetare frågar skiftledaren, som håller räkningen
   function actMonter(k) {
-    if (pastry === k) { pastry = null; stock[k] = Math.min(4, stock[k] + 1); play('click'); return; }
+    if (pastry === k) {
+      pastry = null; stock[k] = Math.min(4, stock[k] + 1); play('click');
+      if (mate()) coop.send({ t: 'tillbaka', col: k }); else snapAsap();
+      return;
+    }
     if (stock[k] <= 0) { say(MON_COLS[k], STN_Y, 'SLUT - VÄNTA'); play('miss'); return; }
     startBusy('monter', 0.3, () => {
+      if (mate()) { ask({ t: 'tag', col: k, h: pastry ?? -1 }); return; }
+      // (en kollega kan ha hunnit ta det sista medan jag sträckte mig efter det)
+      if (stock[k] <= 0) { say(MON_COLS[k], STN_Y, 'SLUT - VÄNTA'); play('miss'); return; }
       if (pastry !== null) stock[pastry] = Math.min(4, stock[pastry] + 1);
-      pastry = k; stock[k]--; play('click');
+      pastry = k; stock[k]--; play('click'); snapAsap();
     }, { col: k });
   }
 
-  function serveTo(k) {
-    if (k.state !== 'wait') return;
-    let gave = false;
-    const py = 36;
-    if (cup && !k.gotDrink) {
-      const d = drinkOf(cup);
-      if (d < 0) { sayK(k, py, 'INTE KLAR!', '#ffd23f'); play('miss'); }   // koppen stannar i handen
-      else {
-        if (d === k.drink) { k.gotDrink = true; stats.ok++; stats.drycker++; gave = true; sayK(k, py, 'MUMS!', '#8ee03c'); }
-        else { stats.fel++; sayK(k, py, 'FEL DRYCK!', '#ff6a6a'); play('fel'); }
-        cup = null;
-      }
-    }
-    if (pastry !== null && k.pastry >= 0 && !k.gotPastry) {
-      if (pastry === k.pastry) { k.gotPastry = true; stats.ok++; stats.bakverk++; gave = true; sayK(k, py - 9, 'GOTT!', '#8ee03c'); }
-      else { stats.fel++; sayK(k, py - 9, 'FEL BAKVERK!', '#ff6a6a'); play('fel'); }
-      pastry = null;
-    }
-    if (gave) {
+  // Domen över en servering: d = drycken i handen (drinkOf; −1 = inte klar, −2 = ingen kopp),
+  // p = bakverket (−1 = inget). Ändrar gästen och lagets räkning och ger utfallet:
+  // dr/pr 0 = inget hände, 1 = rätt, 2 = fel (lämnas ändå ifrån sig), dr 3 = inte klar (stannar
+  // i handen); happy = gästen fick allt; gone = gästen väntade inte längre (någon hann före).
+  function judge(k, d, p) {
+    const r = { dr: 0, pr: 0, happy: 0, gone: 0 };
+    if (k.state !== 'wait') { r.gone = 1; return r; }
+    if (d > -2 && !k.gotDrink) { r.dr = d < 0 ? 3 : d === k.drink ? 1 : 2; if (r.dr === 1) k.gotDrink = true; }
+    if (p >= 0 && k.pastry >= 0 && !k.gotPastry) { r.pr = p === k.pastry ? 1 : 2; if (r.pr === 1) k.gotPastry = true; }
+    if (r.dr === 1 || r.pr === 1) {
       k.patience = Math.min(k.pmax, k.patience + 5);
-      if (k.gotDrink && (k.pastry < 0 || k.gotPastry)) {
-        k.state = 'happy'; k.t = 1.1; stats.gaster++;
-        sayK(k, py + 9, 'TACK!', '#8ee03c');
-        play(k.pastry >= 0 ? 'box' : 'coin');
-      } else play('coin');
+      if (k.gotDrink && (k.pastry < 0 || k.gotPastry)) { k.state = 'happy'; k.t = 1.1; r.happy = 1; }
     }
+    team.ok += (r.dr === 1) + (r.pr === 1);
+    team.fel += (r.dr === 2) + (r.pr === 2);
+    return r;
+  }
+  // utfallet vid disken: puffarna syns hos alla, ljuden hörs hos den som serverade
+  function showServe(k, r, mine) {
+    const py = 36, s = (y, txt, c) => { if (k) sayK(k, y, txt, c); };
+    if (r.dr === 3) { s(py, 'INTE KLAR!', '#ffd23f'); if (mine) play('miss'); }   // koppen stannar i handen
+    else if (r.dr === 1) s(py, 'MUMS!', '#8ee03c');
+    else if (r.dr === 2) { s(py, 'FEL DRYCK!', '#ff6a6a'); if (mine) play('fel'); }
+    if (r.pr === 1) s(py - 9, 'GOTT!', '#8ee03c');
+    else if (r.pr === 2) { s(py - 9, 'FEL BAKVERK!', '#ff6a6a'); if (mine) play('fel'); }
+    if (r.dr === 1 || r.pr === 1) {
+      if (r.happy) { s(py + 9, 'TACK!', '#8ee03c'); if (mine) play(k && k.pastry >= 0 ? 'box' : 'coin'); }
+      else if (mine) play('coin');
+    }
+  }
+  // mitt eget utfall: poängen till mig, och det jag lämnade ifrån mig går ur händerna
+  function takeResult(r) {
+    if (r.dr === 1) { stats.ok++; stats.drycker++; } else if (r.dr === 2) stats.fel++;
+    if (r.dr === 1 || r.dr === 2) cup = null;
+    if (r.pr === 1) { stats.ok++; stats.bakverk++; } else if (r.pr === 2) stats.fel++;
+    if (r.pr === 1 || r.pr === 2) pastry = null;
+    if (r.happy) stats.gaster++;
+  }
+  function serveTo(k) {
+    const r = judge(k, cup ? drinkOf(cup) : -2, pastry ?? -1);
+    if (r.gone) return;
+    showServe(k, r, true);
+    takeResult(r);
+  }
+  // servera: ensam som förut; i ett delat pass avgör skiftledaren
+  function serveAct(k) {
+    if (!coop.active) { serveTo(k); return; }
+    const d = cup ? drinkOf(cup) : -2, p = pastry ?? -1;
+    if (coop.leader) leaderServe(k.id, d, p, coop.myId);
+    else if (d > -2 || p >= 0) ask({ t: 'serve', cust: k.id, d, p });
   }
 
   function handleDown(x, y) {
@@ -476,7 +640,7 @@ export function makeJobbKafe(A, { onDone } = {}) {
     if (busy) { queued = [x, y]; return; }
     // en väntande gäst (bubblan, huvudet eller disken framför hen)
     const k = customers.find((c) => c.state === 'wait' && Math.abs(c.x - x) < 17 && y >= 38 && y < CT.face);
-    if (k) { go(k.x, WORK_Y, 'up', () => serveTo(k)); return; }
+    if (k) { go(k.x, WORK_Y, 'up', () => serveAct(k)); return; }
     // disken: monter, maskin, kvarn
     if (y >= 44 && y < CT.base + 6) {
       if (x >= MON.x0 && x < MON.x1) {
@@ -742,7 +906,8 @@ export function makeJobbKafe(A, { onDone } = {}) {
         if (pastryK !== undefined) k.pastry = pastryK;
         customers.push(k);
         sayOrder(k);
-        return { spot: s, x: SPOTS[s], drink: k.drink, pastry: k.pastry };
+        snapAsap();
+        return { id: k.id, spot: s, x: SPOTS[s], drink: k.drink, pastry: k.pastry };
       },
       // lägg en färdig dryck i händerna (hoppar över stegen)
       makeDrink(d) {
@@ -760,7 +925,7 @@ export function makeJobbKafe(A, { onDone } = {}) {
       pickPastry(k = 0) { pastry = k; return pastry; },
       // montern: läs av eller sätt antalet kvar av en sort (0 = slut)
       stock: () => stock.slice(),
-      setStock(k, n) { stock[k] = clamp(n | 0, 0, 4); return stock[k]; },
+      setStock(k, n) { stock[k] = clamp(n | 0, 0, 4); snapAsap(); return stock[k]; },
       // servera direkt: right = till en gäst som vill ha det jag bär, annars till en som inte vill det
       serve(right = true) {
         if (!cup && pastry === null) return null;
@@ -769,9 +934,17 @@ export function makeJobbKafe(A, { onDone } = {}) {
         const wrong = (k) => (cup && !k.gotDrink && d !== k.drink) || (pastry !== null && !k.gotPastry && k.pastry >= 0 && k.pastry !== pastry);
         const k = waiting().find(right ? wants : wrong) || waiting()[0];
         if (!k) return null;
-        serveTo(k);
+        serveAct(k);
         return stats;
       },
+      // jobba tillsammans (tools/coop-kafe-test.mjs)
+      coop: () => ({ leader: coop.leader, active: coop.active, mates: coop.peers().length, settled: coop.settled, myId: coop.myId }),
+      lag: () => ({ ...team, maxN, platser: SPOTS.length }),
+      customersDbg: () => customers.map((k) => ({ i: k.id, st: k.state, d: k.drink, p: k.pastry, gd: k.gotDrink, gp: k.gotPastry, spot: k.spot, x: Math.round(k.x) })),
+      // lugnt i kaféet (ledaren/solo): inga nya gäster, och de som står vid disken försvinner
+      calm() { custIn = 1e9; customers = []; snapAsap(); },
+      // bagaren tar paus (false) eller bakar igen (true) – för prov av montern
+      bake(on = true) { noBake = !on; restock.fill(0); },
       customers: () => customers.map((k) => ({ spot: k.spot, x: k.x, state: k.state, drink: k.drink, pastry: k.pastry, gotDrink: k.gotDrink, gotPastry: k.gotPastry })),
       carrying: () => ({ drink: drinkOf(cup), cup: cup ? { ...cup } : null, pastry }),
       dose: () => dose,
@@ -809,7 +982,18 @@ export function makeJobbKafe(A, { onDone } = {}) {
       for (const s of talk) s.age += dt;
       for (let i = talk.length - 1; i >= 0; i--) if (talk[i].age > 2.1) talk.splice(i, 1);
       for (let i = notes.length - 1; i >= 0; i--) if (notes[i].age > 2.2) notes.splice(i, 1);
-      if (done) { doneT += dt; if (doneT > 1.2 && !reported) { reported = true; onDone?.(stats); } return; }
+      if (done) {
+        coop.tick(); coop.resign(); // MITT pass är slut – lämna över ledningen direkt (även på lönebeskedet)
+        doneT += dt;
+        if (doneT > 1.2 && !reported) {
+          reported = true;
+          if (maxN > 1) { // jobbat ihop: laget delar lika på alltihop
+            const sh = (v) => Math.round(v / maxN);
+            onDone?.({ ok: sh(team.ok), fel: sh(team.fel), miss: sh(team.miss), delat: maxN, lagOk: team.ok, lagFel: team.fel });
+          } else onDone?.(stats);
+        }
+        return;
+      }
       t += dt;
       if (t >= P.seconds) { done = true; busy = null; queued = null; walker.stop(); return; }
       if (busy) {
@@ -821,46 +1005,67 @@ export function makeJobbKafe(A, { onDone } = {}) {
           }
         }
       } else walker.update(dt);
-      // bagaren fyller på montern
-      for (let k = 0; k < 3; k++) {
-        if (stock[k] >= 4) { restock[k] = 0; continue; }
-        restock[k] += dt;
-        if (restock[k] > 4.5) { restock[k] = 0; stock[k]++; }
+      coop.tick();
+      if (coop.active) maxN = Math.max(maxN, coop.peers().length + 1);
+      if (coop.active !== wasCoop) { // en kollega kom in: fullt ös vid disken
+        wasCoop = coop.active;
+        if (wasCoop) { play('knock'); say(FW / 2, 140, 'NI JOBBAR IHOP!', '#8ee03c'); }
       }
-      // nya gäster (en van barista får fler – P.pace; tålamodet följer passets förlopp som vanligt)
-      custIn -= dt;
-      if (custIn <= 0) {
-        const prog = Math.min(1, t / P.seconds);
-        const s = freeSpot();
-        if (s >= 0) { customers.push(newCustomer(s, prog)); custIn = (6 - 2 * prog + hash(seq, 7) * 2.2) * P.pace; }
-        else custIn = 1;
+      // Skiftledaren (eller solo) kör gästerna och montern; medarbetare följer ledarens läge
+      const iLead = !coop.active || (coop.leader && coop.settled);
+      if (iLead && !wasLead) {
+        // JAG tar över passet: hoppa över gamla gäst-id:n (inga krockar) och släpp in
+        // nästa gäst snart, så att disken aldrig står still
+        seq = Math.max(seq, 1 + customers.reduce((mx, k) => Math.max(mx, k.id | 0), -1));
+        custIn = Math.min(custIn, 2);
+        for (const k of customers) { k.gx = undefined; if (k.state === 'wait' || k.state === 'happy') k.x = SPOTS[k.spot]; }
+        snapAsap();
       }
-      for (const k of customers) {
-        if (k.state === 'walk') {
-          const tx = SPOTS[k.spot], sp = 38 * dt;
-          if (Math.abs(tx - k.x) <= sp) {
-            k.x = tx; k.y = CUST_Y; k.state = 'wait'; k.dir = 'down'; play('chirp');
-            sayOrder(k);
-          }
-          else { k.x += Math.sign(tx - k.x) * sp; k.dir = tx < k.x ? 'left' : 'right'; }
-        } else if (k.state === 'wait') {
-          k.patience -= dt;
-          if (k.patience <= 0) { k.state = 'leave'; k.dir = 'left'; k.y = CUST_Y - 3; stats.miss++; play('miss'); sayK(k, 36, 'GICK...'); }
-        } else if (k.state === 'happy') {
-          k.t -= dt;
-          if (k.t <= 0) { k.state = 'exit'; k.dir = 'right'; k.y = CUST_Y - 3; }
-        } else if (k.state === 'leave') {
-          k.x -= 44 * dt;
-          if (k.x < -16) k.gone = true;
-        } else if (k.state === 'exit') {
-          k.x += 44 * dt;
-          if (k.x > FW + 16) k.gone = true;
+      wasLead = iLead;
+      if (iLead) {
+        // bagaren fyller på montern (fortare när man är flera – montern töms ju fortare)
+        if (!noBake) for (let k = 0; k < 3; k++) {
+          if (stock[k] >= 4) { restock[k] = 0; continue; }
+          restock[k] += dt;
+          if (restock[k] > (coop.active ? 2.5 : 4.5)) { restock[k] = 0; stock[k]++; }
         }
-      }
-      customers = customers.filter((k) => !k.gone);
+        // nya gäster (en van barista får fler – P.pace; tålamodet följer passets förlopp som vanligt)
+        custIn -= dt;
+        if (custIn <= 0) {
+          const prog = Math.min(1, t / P.seconds);
+          const s = freeSpot();
+          if (s >= 0) { customers.push(newCustomer(s, prog)); custIn = (6 - 2 * prog + hash(seq, 7) * 2.2) * P.pace * (coop.active ? 0.45 : 1); } // fullt ös när man är fler
+          else custIn = coop.active ? 0.5 : 1;
+        }
+        for (const k of customers) {
+          if (k.state === 'walk') {
+            const tx = SPOTS[k.spot], sp = 38 * dt;
+            if (Math.abs(tx - k.x) <= sp) {
+              k.x = tx; k.y = CUST_Y; k.state = 'wait'; k.dir = 'down'; play('chirp');
+              sayOrder(k);
+            }
+            else { k.x += Math.sign(tx - k.x) * sp; k.dir = tx < k.x ? 'left' : 'right'; }
+          } else if (k.state === 'wait') {
+            k.patience -= dt;
+            if (k.patience <= 0) { k.state = 'leave'; k.dir = 'left'; k.y = CUST_Y - 3; stats.miss++; team.miss++; play('miss'); sayK(k, 36, 'GICK...'); }
+          } else if (k.state === 'happy') {
+            k.t -= dt;
+            if (k.t <= 0) { k.state = 'exit'; k.dir = 'right'; k.y = CUST_Y - 3; }
+          } else if (k.state === 'leave') {
+            k.x -= 44 * dt;
+            if (k.x < -16) k.gone = true;
+          } else if (k.state === 'exit') {
+            k.x += 44 * dt;
+            if (k.x > FW + 16) k.gone = true;
+          }
+        }
+        customers = customers.filter((k) => !k.gone);
+        if (coop.active) { snapIn -= dt; if (snapIn <= 0) { snapIn = 0.35; sendSnap(); coop.sentSnap(); } }
+      } else tweenGuests(dt);
     },
     down(x, y) { handleDown(x, y); },
     key(kk) { if (kk === 'Escape' && !done) abortShift(A); },
+    exit() { coop.dispose(); },
     draw(ctx) {
       const Ly = layers();
       ctx.setTransform(A.pxs, 0, 0, A.pxs, 0, 0);
@@ -888,7 +1093,7 @@ export function makeJobbKafe(A, { onDone } = {}) {
       drawTalk(ctx);
       drawCupTag(ctx);
       pops.draw(ctx);
-      drawShiftHud(ctx, { W: FW }, { t, dur: P.seconds, ok: stats.ok, fel: stats.fel, title: 'KAFÉET' });
+      drawShiftHud(ctx, { W: FW }, { t, dur: P.seconds, ok: maxN > 1 ? team.ok : stats.ok, fel: maxN > 1 ? team.fel : stats.fel, title: maxN > 1 ? 'KAFÉET IHOP' : 'KAFÉET' });
       if (done) drawTimeUp(ctx, { W: FW, H: FH });
     },
   };

@@ -10,6 +10,13 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.59.0] – 2026-09-30 – Jobba ihop på Kaféet
+- Jobba ihop på Kaféet: bjud in en kompis med 💼 Jobba ihop när du börjar passet (eller via 👥 mitt i passet) – ni står bakom samma disk med samma gäster.
+- Var och en har sin egen kopp vid kvarnen och maskinen; bakverken tar ni ur samma monter. Den som serverar får poängen, och lagets rätt delas lika på lönebeskedet.
+- Hinner båda till samma gäst får bara den första serveringen – den som kom för sent får höra "HANN FÖRE!" och behåller sin kopp.
+- När ni är fler kommer gästerna tätare och bagaren fyller på montern fortare.
+- Går den som leder passet hem tar någon annan över direkt – kaféet fortsätter.
+
 ## [0.58.0] – 2026-09-30 – Passen växer med vanan
 - Jobbar ni var för sig på samma ställe dyker ni inte längre upp i varandras pass. Man jobbar ihop bara om någon bjuder in (💼 Jobba ihop i startdialogen, eller via 👥 mitt i passet) – annars kör man själv.
 - Ju fler pass du har jobbat på ett jobb, desto fler kunder kommer, och passet blir lite längre. Kunderna har samma tålamod som förut – det är bara fler att hinna med.
