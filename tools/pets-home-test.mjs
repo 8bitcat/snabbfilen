@@ -235,13 +235,12 @@ console.log('   → tools/out/pets-home-8-sekvens.png');
 // ---------- 9. Följ mig genom dörren ----------
 console.log('\n9. katten följer med till sovrummet');
 await ev((id) => { window.__pets.setFollowing(id, true); }, ids.katt);
-const door = await ev(() => window.SF.scene._debug.spot('sub1'));
-await clickAt(door.x, door.y);
-ok(await until(() => window.SF.roomSub === 1 && !!window.SF.scene._debug.layer?.(), null, 10000), 'figuren gick genom dörren till SOVRUM');
+await ev(() => window.SF.scene._debug.goRoom(1));
+ok(await until(() => window.SF.roomSub === 1 && !!window.SF.scene._debug.layer?.(), null, 20000), 'figuren gick genom öppningen till SOVRUM');
 await wait(800);
 const inBed = await ev((id) => window.SF.scene._debug.layer()._debug.pets().map((p) => p.id), ids.katt);
 ok(inBed.includes(ids.katt) && !inBed.includes(ids.hund), `katten (Följ mig) följde med, hunden stannade (${inBed.join(', ')})`);
-ok(await ev((id) => !window.__pets.petById(id).out, ids.hund), 'hunden har inget koppel på (dörren i bakväggen räknas inte som hemkomst/utgång)');
+ok(await ev((id) => !window.__pets.petById(id).out, ids.hund), 'hunden har inget koppel på (öppningen i mellanväggen räknas inte som hemkomst/utgång)');
 await canvasPng('pets-home-9-sovrum');
 await ev((id) => window.__pets.setFollowing(id, false), ids.katt);
 

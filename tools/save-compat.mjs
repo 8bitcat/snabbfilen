@@ -104,7 +104,9 @@ await broken.ctx.close();
   const old = JSON.parse(fx.localStorage.snabbfilen_save1);
   const shelves = Array.from({ length: 40 }, (_, i) => ({ k: 'bredhylla', v: i % 3, x: 200 + (i % 4) * 30, y: 100 + ((i / 4) | 0) * 12, c: '#aa00' + String(i).padStart(2, '0') }));
   const full = { ...old, home: 'rum', storage: Array.from({ length: 80 }, (_, i) => ({ k: 'stol', v: i % 4 })), deco: { 'rum:0': [{ k: 'sang', v: 0, x: 14, y: 133, fx: 1 }, ...shelves] } };
-  const total = (s) => (s.storage || []).length + Object.values(s.deco || {}).flat().filter((d) => d.k !== 'dass').length;
+  // (bara rummet med spelarens möbler räknas – badrummets startmöblering ställs in när den
+  // löpande lägenheten visar det, och inget flyttas dit av sig självt)
+  const total = (s) => (s.storage || []).length + (s.deco?.['rum:0'] || []).filter((d) => d.k !== 'dass').length;
   const enterRoom = async (page) => { await page.evaluate(() => { window.SF.roomSub = 0; window.SF.go('room'); }); await page.waitForTimeout(400); };
   const { ctx, page } = await boot({ ...fx.localStorage, snabbfilen_save1: JSON.stringify(full) });
   await enterRoom(page);

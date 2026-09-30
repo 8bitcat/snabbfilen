@@ -1,7 +1,7 @@
 {
-  "version": "0.56.0",
+  "version": "0.57.0",
   "date": "2026-09-30",
-  "title": "Närmare på mobilen",
+  "title": "Den löpande lägenheten",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
@@ -99,6 +99,7 @@
     "js/pets/sim.js",
     "js/pets/sprite-data.js",
     "js/pets/sprites.js",
+    "js/scenes/apartment.js",
     "js/scenes/bio/film.js",
     "js/scenes/bio/paint.js",
     "js/scenes/city.js",

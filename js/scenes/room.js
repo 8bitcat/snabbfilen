@@ -152,8 +152,23 @@ const PLANS = {
   },
 };
 const DOOR_W = 30; // dörrarna i bakväggen (skylten ovanför visar rummet bakom)
+// Den löpande lägenheten (js/scenes/apartment.js): rummen i rad med en mellanvägg (WALLW) emellan och
+// en öppning i den på golvets höjd (DY0–DY1). SIDE_FREE = så långt in från väggen ingen golvmöbel
+// får stå framför öppningen. GO_Y = var figuren går igenom.
+export const APT = { WALLW: 8, DY0: 124, DY1: 170, GO_Y: 150 };
+const SIDE_FREE = 26;
 // det som syns utanför ett smalt delrum (badrummet kan ha ett eget)
 const outsideOf = (plan, def) => (def.outside !== undefined ? def.outside : plan.outside) || null;
+// Lägenhetens rum (js/scenes/apartment.js): bredd (partition), namn, badrum, om rummet har en utsida
+// (gården/trapphuset) och väggens/golvets färger (mellanväggarna ritas i dem).
+export function homeRooms(A, visit = false) {
+  const home = visit ? A.visitTarget?.home || 'rum' : A.game.home;
+  const plan = PLANS[home] || PLANS.rum;
+  return {
+    home, lyx: !!plan.lyx, shabby: !!plan.shabby,
+    rooms: plan.rooms.map((r, i) => ({ i, name: r.name, bath: !!r.bath, w: r.partition ?? (plan.partition || FW), outside: !!outsideOf(plan, r), wall: r.wall, wallDk: r.wallDk, floorA: r.floorA, floorB: r.floorB })),
+  };
+}
 
 // Startmöbleringen per bostad och delrum. fx = startmöbel (kan flyttas, inte säljas).
 const SEEDS = {
@@ -182,7 +197,7 @@ const SEEDS = {
   ],
   'villa:0': [
     { k: 'soffa', v: 0, x: 112, y: 182 }, { k: 'fatolj', v: 3, x: 164, y: 166 }, { k: 'bordR', v: 0, x: 150, y: 200 },
-    { k: 'tv', v: 0, x: 176, y: 151 }, { k: 'bokhylla', v: 0, x: 180, y: 96 }, { k: 'spis', v: 1, x: 336, y: 131 },
+    { k: 'tv', v: 0, x: 176, y: 151 }, { k: 'bokhylla', v: 0, x: 180, y: 96 }, { k: 'spis', v: 1, x: 296, y: 131 },
     { k: 'lampa', v: 0, x: 320, y: 151 }, { k: 'vaxt', v: 0, x: 48, y: 151 }, { k: 'matta', v: 0, x: 100, y: 156 },
   ],
   'villa:1': [
@@ -192,7 +207,7 @@ const SEEDS = {
   'villa:2': [ // (kylskåpet står till vänster om SOVRUM-dörren, som börjar vid x=290)
     { k: 'kylskap', v: 0, x: 270, y: 94, fx: 1 },
     { k: 'bordM', v: 0, x: 130, y: 160 }, { k: 'matstol', v: 0, x: 114, y: 158 }, { k: 'matstol', v: 0, x: 186, y: 158 },
-    { k: 'byra', v: 0, x: 60, y: 96 }, { k: 'vaxtS', v: 0, x: 340, y: 140 },
+    { k: 'byra', v: 0, x: 60, y: 96 }, { k: 'vaxtS', v: 0, x: 330, y: 140 },
   ],
   'radhus:0': [ // vardagsrum med kokvrå och trädgårdsfönster (SOVRUM-dörren börjar vid x=336)
     { k: 'bredhylla', v: 0, x: 82, y: 96 }, { k: 'tv', v: 1, x: 163, y: 96 },
@@ -216,7 +231,7 @@ const SEEDS = {
     { k: 'vaxt', v: 0, x: 250, y: 206 }, { k: 'fredslilja', v: 0, x: 350, y: 206 },
   ],
   'takvaning:1': [ // sovrummet med stadsutsikt
-    { k: 'nattduksbord', v: 3, x: 22, y: 120 }, { k: 'sang', v: 2, x: 40, y: 133, fx: 1 }, { k: 'nattduksbord', v: 3, x: 76, y: 120 },
+    { k: 'nattduksbord', v: 3, x: 22, y: 110 }, { k: 'sang', v: 2, x: 40, y: 133, fx: 1 }, { k: 'nattduksbord', v: 3, x: 76, y: 120 },
     { k: 'lagbyra', v: 6, x: 112, y: 96 }, { k: 'rundspegel', v: 2, x: 168, y: 44 }, { k: 'garderob', v: 1, x: 254, y: 96, fx: 1 },
     { k: 'golvlampa', v: 2, x: 96, y: 150 }, { k: 'rundmatta', v: 4, x: 50, y: 188 },
     { k: 'tv', v: 1, x: 160, y: 204 }, { k: 'klockblomma', v: 0, x: 340, y: 206 },
@@ -225,7 +240,7 @@ const SEEDS = {
     { k: 'diskbank', v: 1, x: 100, y: 96 }, { k: 'bankskap', v: 5, x: 150, y: 96 }, { k: 'koksspis', v: 0, x: 200, y: 96 },
     { k: 'kylskap', v: 0, x: 218, y: 94, fx: 1 }, { k: 'overskap', v: 1, x: 152, y: 60 },
     { k: 'kokso', v: 1, x: 110, y: 160 }, { k: 'bordM', v: 2, x: 200, y: 182 }, { k: 'matstol', v: 1, x: 186, y: 180 }, { k: 'matstol', v: 1, x: 254, y: 180 },
-    { k: 'vaxtS', v: 0, x: 340, y: 140 }, { k: 'soptunna', v: 0, x: 60, y: 110 }, { k: 'lillblomma', v: 0, x: 30, y: 206 },
+    { k: 'vaxtS', v: 0, x: 330, y: 140 }, { k: 'soptunna', v: 0, x: 60, y: 110 }, { k: 'lillblomma', v: 0, x: 30, y: 206 },
   ],
   // ---- badrummen (sista delrummet): toalett, handfat med spegel, dusch eller badkar, handdukar ----
   // Toaletten, handfatet och duschen/badkaret är startmöbler (fx: går att flytta, inte sälja).
@@ -401,14 +416,20 @@ const overlaps = (a, b) => a[2] > b[0] && a[0] < b[2] && a[3] > b[1] && a[1] < b
 // fönstren som ritas: inte utanför lokalen och inte bakom en dörr
 const visibleWindows = (def, RIGHT, subDoors) => def.windows.filter(([wx0, wx1]) => !(wx1 > RIGHT - 5 || subDoors.some((sd) => wx1 > sd.x0 - 4 && wx0 < sd.x1 + 4)));
 
-export function makeRoom(A, { visit = false } = {}) {
-  const hopped = hopping; // kom vi genom en dörr i bakväggen (inte hem från staden)?
-  hopping = false;
+// core = rumsläget i den löpande lägenheten (js/scenes/apartment.js): rummet är ett av flera i rad.
+//   { hopped, sides: [{ side: 'L'|'R', y0, y1 }] (dörröppningarna i mellanväggarna), active() (står
+//   figuren här?), dx() (rummets vänsterkant på skärmen, spelpixlar) } – då finns inga dörrar i
+//   bakväggen, figuren ritas/flyttas bara i det aktiva rummet och lägenheten sköter kameran.
+export function makeRoom(A, { visit = false, sub: subOpt = null, core = null } = {}) {
+  const hopped = core ? !!core.hopped : hopping; // kom vi genom en dörr i bakväggen (inte hem från staden)?
+  if (!core) hopping = false;
   const g = A.game;
   const home = visit ? A.visitTarget?.home || 'rum' : g.home;
   const plan = PLANS[home] || PLANS.rum;
-  const sub = Math.max(0, Math.min(plan.rooms.length - 1, A.roomSub | 0));
-  A.roomSub = sub;
+  const sub = Math.max(0, Math.min(plan.rooms.length - 1, (core ? subOpt : A.roomSub) | 0));
+  if (!core) A.roomSub = sub;
+  const isActive = () => !core || core.active();
+  const sides = core ? core.sides || [] : [];
   const roomDef = plan.rooms[sub];
   const RIGHT = roomDef.partition ?? (plan.partition || FW);
   const outside = outsideOf(plan, roomDef);
@@ -458,7 +479,8 @@ export function makeRoom(A, { visit = false } = {}) {
   // på sin egen plats (de gamla dörrarna och möblerna står kvar där de alltid har stått).
   // I badrummet finns dörrar tillbaka till just de rummen.
   const subDoors = [];
-  plan.rooms.forEach((r, i) => {
+  // (i lägenheten finns inga dörrar i bakväggen – rummen hänger ihop genom mellanväggarnas öppningar)
+  if (!core) plan.rooms.forEach((r, i) => {
     if (i === sub) return;
     if (r.bath) { const at = r.doors?.[sub]; if (at != null) subDoors.push({ to: i, name: r.name, x0: at, x1: at + DOOR_W }); return; }
     if (roomDef.bath && roomDef.doors?.[i] == null) return;
@@ -466,6 +488,8 @@ export function makeRoom(A, { visit = false } = {}) {
     subDoors.push({ to: i, name: r.name, x0: RIGHT - 48 - n * 44, x1: RIGHT - 18 - n * 44 });
   });
   const doorRects = [...(sub === 0 ? [[DOOR.x0 - 2, 26, DOOR.x1 + 2, WALL_Y]] : []), ...subDoors.map((sd) => [sd.x0 - 2, 26, sd.x1 + 2, WALL_Y])];
+  // öppningarna i mellanväggarna (lägenheten): där får inga golvmöbler stå – vägen till nästa rum är fri
+  const sideRects = sides.map((sd) => (sd.side === 'L' ? [0, sd.y0 - 10, SIDE_FREE, sd.y1 + 6] : [RIGHT - SIDE_FREE, sd.y0 - 10, RIGHT + 2, sd.y1 + 6]));
   // fönstren som faktiskt ritas (samma urval som i buildBg), med karm: väggsaker får inte hänga där
   const winY = roomDef.winY || plan.winY || WIN_Y;
   const winDrawn = visibleWindows(roomDef, RIGHT, subDoors);
@@ -532,6 +556,7 @@ export function makeRoom(A, { visit = false } = {}) {
     if (ft.t === 'flat') return x0 >= 6 && x1 <= RIGHT - 4 && y0 >= WALL_Y + 2 && y1 <= FH - 3;
     if (x < 8 || x + ft.w > RIGHT - 5 || y < WALL_Y + 6 || y > FH - 4) return false;
     for (const dr of doorRects) if (x1 > dr[0] && x0 < dr[2] && y1 > WALL_Y && y0 < WALL_Y + 15) return false; // fritt framför dörrarna
+    if (sideRects.some((r) => overlaps(ft.r, r))) return false; // fritt framför öppningarna till nästa rum
     if (petRects().some((r) => overlaps(ft.r, r))) return false; // inte ovanpå husdjurens skålar, korgar och lådor
     if (petBehind(x, y, ft.w, ft.h)) return false; // och inte så att möbeln skymmer en pryl bakom sig
     return !feet.some((o) => o && !o.wall && !o.flat && overlaps(ft.r, o.r));
@@ -590,7 +615,9 @@ export function makeRoom(A, { visit = false } = {}) {
   // den går att plocka upp) – inget försvinner någonsin, spelaren flyttar den med Möblera.
   // (Dasset seedas numera i badrummet – ett dass som står i rummet får stå kvar.)
   // Badrumsdörrarna är nya (Carl 2026-09-29): det som knuffas undan för dem får en egen toast.
-  const newDoorZones = subDoors.filter((sd) => roomDef.bath || plan.rooms[sd.to].bath).map((sd) => [sd.x0 - 2, 26, sd.x1 + 2, WALL_Y + 15]);
+  // (lägenheten: öppningarna i mellanväggarna är det nya)
+  const newDoorZones = core ? sideRects.map((r) => [...r])
+    : subDoors.filter((sd) => roomDef.bath || plan.rooms[sd.to].bath).map((sd) => [sd.x0 - 2, 26, sd.x1 + 2, WALL_Y + 15]);
   const byNewDoor = (d) => { const r = footOf(d.k, d.v, d.r, d.x, d.y).r; return newDoorZones.some((z) => overlaps(r, z)); };
   // Flyttar orörda startmöbler till sina nya platser och knuffar det som står fel till
   // närmaste lediga plats. own = spelarens egen lista (då kan det som inte får plats alls
@@ -643,7 +670,7 @@ export function makeRoom(A, { visit = false } = {}) {
     if (changed) g.save();
     const few = (names) => `${names.slice(0, 2).join(' och ')}${names.length > 2 ? ' m.fl.' : ''}`;
     if (stored) toast(`📦 ${home === 'rum' ? 'Rummet är mindre nu – ' : ''}${stored === 1 ? 'en möbel fick' : `${stored} möbler fick`} inte plats och ligger i förrådet.`);
-    else if (byDoor.length) toast(`🚪 Nu finns en dörr till badrummet här – ${few(byDoor)} flyttades lite åt sidan.`);
+    else if (byDoor.length) toast(core ? `🚪 Nu går man mellan rummen genom en öppning här – ${few(byDoor)} flyttades lite åt sidan.` : `🚪 Nu finns en dörr till badrummet här – ${few(byDoor)} flyttades lite åt sidan.`);
     else if (nudged) toast(`🛋️ ${nudged === 1 ? 'En möbel knuffades' : `${nudged} möbler knuffades`} till en ledig plats.`);
     if (stuck.length) toast(`⚠️ Förrådet är fullt – ${stuck.slice(0, 2).join(', ')}${stuck.length > 2 ? ' m.fl.' : ''} står i vägen. Flytta med 🛋️ Möblera!`, 'bad');
     // En sparad bostad där toan står kvar i rummet (Lilla rummets dass): badrummet har ingen
@@ -699,7 +726,7 @@ export function makeRoom(A, { visit = false } = {}) {
       if (p) props.push(p);
     });
     // ingen säng utställd någonstans hemma? då får madrassen på golvet duga
-    if (!visit && !homeHasFunction('sova') && !(decor.carry && functionOf(decor.carry.k) === 'sova')) {
+    if (!visit && (!core || sub === 0) && !homeHasFunction('sova') && !(decor.carry && functionOf(decor.carry.k) === 'sova')) { // (lägenheten: madrassen i första rummet)
       const m = makeMattressProp(list, RIGHT);
       if (m) { m.act = () => { bedFor = { k: m.k, decoIdx: undefined }; floorSleep(A); }; props.push(m); }
     }
@@ -971,7 +998,7 @@ export function makeRoom(A, { visit = false } = {}) {
   rebuild();
   let px = visit ? DOOR.cx : Math.min(RIGHT - 40, 100), py = WALL_Y + 34;
   [px, py] = nearestFree(px, py);
-  let path = [], onArrive = null, dir = 'down', t = 0;
+  let path = [], onArrive = null, dir = 'down', t = 0, stride = 0; // stride: gången sträcka (benen följer den)
   function walkTo(x, y, cb) { bedFor = null; path = findPath(px, py, x, y); onArrive = cb || null; if (!path.length) { const d = onArrive; onArrive = null; d?.(); } }
 
   // ---------- sömnen: under täcket, zzz, natt → morgon ----------
@@ -1031,9 +1058,11 @@ export function makeRoom(A, { visit = false } = {}) {
       try { store.syncTo(g.day, g.min, { home: g.home, playerHome: null, playerRoom: null, outdoors: false }); } catch (e) { console.error('husdjuren: synken vid hemkomst', e); }
       store.walkEnd();
     }
-    const inDoorway = (x, y) => y < WALL_Y + 16 && ((sub === 0 && x > DOOR.x0 - 4 && x < DOOR.x1 + 4) || subDoors.some((sd) => x > sd.x0 - 4 && x < sd.x1 + 4));
+    const inDoorway = (x, y) => (y < WALL_Y + 16 && ((sub === 0 && x > DOOR.x0 - 4 && x < DOOR.x1 + 4) || subDoors.some((sd) => x > sd.x0 - 4 && x < sd.x1 + 4)))
+      || sideRects.some((r) => x >= r[0] && x < r[2] && y >= r[1] && y < r[3]);
     const walker = {
-      get px() { return px; }, get py() { return py; }, get dir() { return dir; }, get path() { return path; },
+      // (lägenheten: i ett rum man inte står i finns ingen spelare för djuren)
+      get px() { return isActive() ? px : null; }, get py() { return isActive() ? py : null; }, get dir() { return dir; }, get path() { return isActive() ? path : []; },
       walkTo, stop() { path = []; onArrive = null; },
     };
     L = createPetLayer(A, {
@@ -1041,6 +1070,7 @@ export function makeRoom(A, { visit = false } = {}) {
       bounds: { left: 8, right: RIGHT - 6, top: WALL_Y + 4, bottom: FH - 4 },
       isFree: (x, y) => furnFree(x, y) && !inDoorway(x, y),
       onObstacles: (list) => { petObstacles = list; rebuild(); },
+      ...(core ? { here: isActive, playerRoom: () => A.roomSub, liveAll: true } : {}),
     });
     petObstacles = L.obstacles();
     rebuild();
@@ -1064,12 +1094,31 @@ export function makeRoom(A, { visit = false } = {}) {
   }
 
   return {
+    // lägenheten (core): figurens läge i rummet, flytta in/ut den och gå dit
+    core: core ? {
+      sub, width: RIGHT, outside: !!outside,
+      player: () => ({ x: px, y: py, dir, walking: path.length > 0 }),
+      place(x, y, d = dir) { path = []; onArrive = null; [px, py] = nearestFree(x, y); dir = d; },
+      walkTo: (x, y, cb) => walkTo(x, y, cb),
+      stop() { path = []; onArrive = null; },
+      sleepSt: () => sleepPhase(),
+      // djur som följer dig ("Följ mig") kliver med genom öppningen till rummet to (x, y där)
+      hopPets(to, x, y) {
+        if (visit || !L) return 0;
+        const s = petStore();
+        let n = 0;
+        for (const p of s.pets) if (p.home === home && p.following && !p.out && p.room === sub) { p.room = to; p.x = x; p.y = y + (n % 2 ? 6 : -4); n++; }
+        if (n) s.save();
+        return n;
+      },
+      decorOn: () => decor.on, carrying: () => !!decor.carry,
+    } : null,
     get worldX() { return px; },
     get worldY() { return py; },
     // Mobilfyllningen (fit i main.js): smala lokaler utan egen utsida (Lilla rummet och
     // Lägenheten, med sina badrum) beskärs till lokalens verkliga bredd så att ingen död
     // yta fyller skärmen. Husvagnen och Förortsettan ritar i stället gården/trapphuset.
-    contentBox: RIGHT < FW && !outside ? { x: 0, y: 0, w: RIGHT, h: FH } : undefined,
+    contentBox: !core && RIGHT < FW && !outside ? { x: 0, y: 0, w: RIGHT, h: FH } : undefined,
     toggleDecor,
     bedtime,
     get asleep() { return !!seq; },
@@ -1129,9 +1178,11 @@ export function makeRoom(A, { visit = false } = {}) {
     update(dt) {
       t += dt;
       if (seq) updateSleep(dt);
-      if (path.length) {
+      if (path.length && isActive()) {
         const [gx, gy] = path[0];
-        const dx = gx - px, dy = gy - py, dist = Math.hypot(dx, dy), step = 62 * dt;
+        // (lägenheten: på väg genom flera rum går figuren raskare)
+        const dx = gx - px, dy = gy - py, dist = Math.hypot(dx, dy), step = (core?.brisk?.() ? 100 : 62) * dt;
+        stride += Math.min(step, dist);
         dir = Math.abs(dx) > Math.abs(dy) * 1.2 ? (dx < 0 ? 'left' : 'right') : dy < 0 ? 'up' : 'down';
         if (dist <= step) {
           px = gx; py = gy;
@@ -1222,9 +1273,11 @@ export function makeRoom(A, { visit = false } = {}) {
     },
 
     draw(ctx) {
-      ctx.setTransform(A.pxs, 0, 0, A.pxs, 0, 0);
+      const ox = core ? Math.round(core.dx()) : 0; // (lägenheten: rummets vänsterkant på skärmen)
+      ctx.setTransform(A.pxs, 0, 0, A.pxs, ox * A.pxs, 0);
       // sömnen styr ljuset: som vanligt → natt med släckta lampor → morgon
-      const st = sleepPhase();
+      // (lägenheten: sover man i ett annat rum mörknar och ljusnar det här rummet i samma takt)
+      const own = sleepPhase(), st = own || core?.sleepOf?.() || null;
       const night = !st || st.bg === 'now' ? isNight(g) : st.bg === 'dark' ? 'dark' : false;
       // gryningen: natten (släckta lampor) tonar över i dagsljus i takt med att det ljusnar
       const dawnU = st && st.bg === 'day' && st.t < SLEEP.light ? ease((st.t - SLEEP.dawn) / (SLEEP.light - SLEEP.dawn)) : null;
@@ -1235,9 +1288,9 @@ export function makeRoom(A, { visit = false } = {}) {
       if (plan.shabby) drawSpider(ctx, RIGHT, t);
       for (const r of rugs) r.draw(ctx);
 
-      const folks = worldFolksHere(A);
+      const folks = worldFolksHere(A, sub); // (lägenheten: de som står i just det här rummet)
       // sängen man sover i ritas med figuren under täcket
-      const sleeper = st?.lying ? findBed(seq.key) : null;
+      const sleeper = own?.lying ? findBed(seq.key) : null;
       let headAt = null;
       const drawSleeper = (c, p) => {
         const d = p.k === 'madrass' ? { k: 'madrass', x: p.x, y: p.base } : decoList()[p.decoIdx];
@@ -1253,11 +1306,11 @@ export function makeRoom(A, { visit = false } = {}) {
       const mine = worldMyEmote();
       // husdjuren, deras prylar och olyckor (plus mätare/bubblor/spöken med fy ≥ 10000 överst)
       if (L) for (const d of L.drawables()) drawables.push({ fy: d.fy, draw: () => d.draw(ctx) });
-      if (!sleeper) drawables.push({ fy: py, draw: () => {
+      if (!sleeper && isActive()) drawables.push({ fy: py, draw: () => {
         // bär man en matsäck (A.carrying) ritas figuren med bär-bildrutorna; nyvaken: sträcker på sig
         const frame = st ? (st.t >= SLEEP.up && st.t < SLEEP.up + 0.35 ? 4 : 0)
-          : A.carrying ? (path.length ? CARRY_SEQ[Math.floor(t * 8.5) % 4] : 9)
-            : path.length ? WALK_SEQ[Math.floor(t * 8.5) % 4] : (Math.sin(t * 2) > 0.9 ? 4 : 0);
+          : A.carrying ? (path.length ? CARRY_SEQ[Math.floor(stride / 7.3) % 4] : 9)
+            : path.length ? WALK_SEQ[Math.floor(stride / 7.3) % 4] : (Math.sin(t * 2) > 0.9 ? 4 : 0);
         drawPerson(ctx, px, py, A.avatar.look, dir, frame);
         if (folks.length) nameTag(ctx, px, py - 50, A.avatar);
         if (mine) emoteBubble(ctx, px, py - 60, mine);

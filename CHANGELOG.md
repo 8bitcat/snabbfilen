@@ -10,6 +10,16 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.57.0] – 2026-09-30 – Den löpande lägenheten
+- Hemmet är en löpande lägenhet: alla rum ligger i rad i en och samma bild – vardagsrum, sovrum, kök och badrummet sist. Man går mellan rummen genom öppningar i mellanväggarna (badrummet har en dörr som står öppen), inga dörrar i bakväggen längre.
+- Tryck var som helst i lägenheten, även i rummet bredvid, så går figuren dit genom öppningarna – lite raskare när det är flera rum att gå igenom. Kameran följer med, på datorn och på mobilen.
+- På mobilen blir det inga mörka kanter i de större bostäderna; lägenheten fortsätter åt sidorna. Husvagnen slutar med gården och Ettan med trapphuset. (Lilla rummet är smalare än skärmen och står i mitten.)
+- Sover man mörknar hela lägenheten, och i gryningen ljusnar alla rum samtidigt.
+- Möblera gäller rummet du trycker i – trycker du i rummet bredvid byter du rum att möblera. En möbel flyttas mellan rummen via 📦 Förrådet.
+- Husdjur som följer dig ("Följ mig") går med genom öppningarna. Djuren i de andra rummen fortsätter leva som vanligt.
+- Kompisar som hälsar på syns i det rum de står i, även i rummet bredvid.
+- Dina möbler ligger kvar där de stod. Står något mitt i en ny öppning flyttas det lite åt sidan (en toast säger vad).
+
 ## [0.56.0] – 2026-09-30 – Närmare på mobilen
 - Närmare på mobilen: figuren är lika stor överallt – i staden, i Burgarbaren, hemma och i alla butiker – och lite större än den var i Burgarbaren förut. Man ser lite mindre av staden, men figuren syns tydligt.
 - Figuren står mitt i bilden i staden, så det finns alltid yta under den att trycka på när man vill gå nedåt.

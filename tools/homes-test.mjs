@@ -80,20 +80,18 @@ for (const H of HOMES) {
   await wait(700);
   ok(moved.ok, `flyttade in (insats dragen: ${JSON.stringify(await ev(() => window.SF.game.money))} kr kvar)`);
 
-  // contentBox-regeln (mobilfyllningen)
-  const cb = await ev(() => window.SF.scene.contentBox || null);
-  ok(H.cb === null ? cb === null : cb && cb.w === H.cb, `contentBox ${H.cb === null ? 'utelämnad (fyller hela 384)' : `beskär till ${H.cb} px`} (${JSON.stringify(cb)})`);
+  // den löpande lägenheten: alla rum i rad i en bild (ingen contentBox – lägenheten är så bred som rummen)
+  const apt = await ev(() => ({ ...window.SF.scene._debug.apt(), cb: window.SF.scene.contentBox || null }));
+  ok(apt.cb === null && apt.rooms.filter((r) => !r.bath).length === H.subs && apt.rooms.filter((r) => r.bath).length === 1 && apt.rooms[apt.rooms.length - 1].bath && apt.W >= apt.rooms.reduce((a, r) => a + r.w, 0), `lägenheten: ${apt.rooms.map((r) => r.name).join(' → ')} i rad (${apt.W} px bred)`);
 
-  // gå igenom alla delrum via dörrarna i bakväggen, kontrollera startmöbleringen
+  // gå igenom alla rum genom öppningarna i mellanväggarna, kontrollera startmöbleringen
   ok(await ev(() => window.SF.scene._debug.allFit()), 'delrum 0: startmöbleringen står rätt (allFit)');
   const route = [...Array(H.subs).keys()].slice(1);
   if (route.length) route.push(0);
   for (const target of route) {
-    const s = await ev((t) => window.SF.scene._debug.spot('sub' + t), target);
-    if (!s) { ok(false, `dörren till delrum ${target} hittades inte`); continue; }
-    await sceneDown(s.x, s.y);
-    const came = await until((t) => window.SF.roomSub === t && !!window.SF.scene?._debug, target);
-    ok(came, `gick genom dörren till delrum ${target}`);
+    await ev((t) => window.SF.scene._debug.goRoom(t), target);
+    const came = await until((t) => window.SF.roomSub === t && !!window.SF.scene?._debug, target, 40000);
+    ok(came, `gick genom öppningen till rum ${target}`);
     if (came && target !== 0) ok(await ev(() => window.SF.scene._debug.allFit()), `delrum ${target}: startmöbleringen står rätt (allFit)`);
   }
 
@@ -117,9 +115,9 @@ for (const H of HOMES) {
     return -1;
   }, H.subs);
   if (bedSub !== (await ev(() => window.SF.roomSub))) {
-    const s = await ev((t) => window.SF.scene._debug.spot('sub' + t), bedSub);
-    await sceneDown(s.x, s.y);
-    await until((t) => window.SF.roomSub === t, bedSub);
+    await ev((t) => window.SF.scene._debug.goRoom(t), bedSub);
+    await until((t) => window.SF.roomSub === t, bedSub, 40000);
+    await wait(900); // kameran hinner ikapp
   }
   const day0 = await ev(() => window.SF.game.day);
   const bedSpot = await ev(() => window.SF.scene._debug.spot('sang') || window.SF.scene._debug.spot('enkelsang'));

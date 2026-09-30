@@ -203,6 +203,11 @@ export function createPetLayer(A, opts = {}) {
   const B = { left: 8, right: 376, top: 92, bottom: 212, ...(opts.bounds || {}) };
   const sceneFree = opts.isFree || (() => true);
   const walker = opts.walker || null;
+  // den löpande lägenheten: flera rum igång samtidigt – here() säger om spelaren står i just det här
+  // rummet (djur i koppel och djur som ska ställas vid spelaren hör till det rummet), playerRoom()
+  // vilket rum det är, liveAll att alla bostadens rum styrs av sina lager
+  const here = opts.here || (() => true);
+  const playerRoomNow = opts.playerRoom || (() => room);
   const actors = new Map();
   const fx = [];
   const ballV = new Map();
@@ -329,7 +334,7 @@ export function createPetLayer(A, opts = {}) {
     const want = new Set();
     for (const p of store.pets) {
       if (p.home !== home) continue;
-      if (p.out || p.room === room || p.room == null) {
+      if ((p.out && here()) || p.room === room || (p.room == null && here())) {
         if (p.room == null && !p.out) { p.room = room; p.x = null; p.y = null; }
         want.add(p.id);
         if (!actors.has(p.id)) actors.set(p.id, makeActor(p));
@@ -1276,7 +1281,7 @@ export function createPetLayer(A, opts = {}) {
 
   // ---------- händelser → toasts ----------
   const unsub = store.listen((ev) => {
-    if (opts.toasts === false) return;
+    if (opts.toasts === false || !here()) return; // (lägenheten: rummet man står i säger det – en gång)
     if (ev.home != null && ev.home !== home) return;
     if (ev.type === 'vaxte') { showGrowth(ev); return; }
     const key = ev.type + '|' + ev.petId;
@@ -1337,8 +1342,9 @@ export function createPetLayer(A, opts = {}) {
     if (n) { version++; opts.onObstacles?.(obstacles()); store.save(); }
     return n;
   }
-  adoptLoose();
-  if (opts.autoPlace !== false && store.pets.some((p) => p.home === home)) autoPlace();
+  // (den löpande lägenheten: bara rummet man står i tar hand om lösa och nyköpta prylar)
+  if (here()) adoptLoose();
+  if (here() && opts.autoPlace !== false && store.pets.some((p) => p.home === home)) autoPlace();
 
   syncActors();
   // hundar hälsar när man kommer in
@@ -1346,12 +1352,16 @@ export function createPetLayer(A, opts = {}) {
     a.mode = 'idle'; a.modeT = 0.3 + rnd() * 0.5; a.onEnd = () => visitPlayer(a, 'sit');
   }
   // djur som växte medan man var borta: toasten nu (om ingen visat den), pratbubblan över djuren
-  // i det här rummet – de andra får sin bubbla när man kommer in till dem
-  if (opts.toasts !== false && store.growthNews) {
+  // i det här rummet – de andra får sin bubbla när man kommer in till dem (den löpande
+  // lägenheten: när man går in i rummet, lagret finns redan)
+  function growthHere() {
+    if (opts.toasts === false || !store.growthNews) return;
     for (const ev of store.growthNews(home)) {
       if (store.petById(ev.petId)) showGrowth(ev); else store.seenNews(ev);
     }
   }
+  let wasHere = here();
+  if (wasHere) growthHere();
 
   const L = {
     get version() { return version; },
@@ -1359,11 +1369,14 @@ export function createPetLayer(A, opts = {}) {
       dt = Math.min(0.1, Math.max(0, dt || 0));
       t += dt;
       if (opts.sync !== false && A.game) {
-        store.syncTo(A.game.day, A.game.min, { home: A.game.home, playerHome: home, playerRoom: room, outdoors: false });
+        store.syncTo(A.game.day, A.game.min, { home: A.game.home, playerHome: home, playerRoom: playerRoomNow(), outdoors: false });
       }
-      store.setLive(home, room);
+      store.setLive(home, room, !!opts.liveAll);
       lastSync += dt;
       syncActors();
+      const hereNow = here();
+      if (hereNow && !wasHere) growthHere();
+      wasHere = hereNow;
       // spelaren börjar gå en bit: lediga djur hänger ibland med en stund (hundar oftast)
       const walkingNow = !!walker?.path?.length;
       if (walkingNow && !wasWalking) {
@@ -1397,7 +1410,7 @@ export function createPetLayer(A, opts = {}) {
       if (lastSync > 0.5) {
         lastSync = 0;
         for (const a of actors.values()) if (!a.pet.out || playerHere()) { a.pet.x = Math.round(a.x); a.pet.y = Math.round(a.y); a.pet.room = room; }
-        adoptLoose();
+        if (here()) adoptLoose();
       }
       if (carrying() && !store.itemById(A.carrying.itemId)) setCarry(null);
     },

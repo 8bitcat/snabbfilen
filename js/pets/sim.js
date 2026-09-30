@@ -60,7 +60,8 @@
 //       syncTo är enklast: anropa varje bildruta med spelklockan – den tickar skillnaden
 //       sedan förra anropet (sömn, arbetspass och snabbspolning räknas då automatiskt).
 //       ctx.home = spelarens nuvarande bostad → djur och prylar flyttar med vid flytt.
-//   setLive(home, room) · clearLive()  (lagret: djuren i rummet styrs av lagret just nu)
+//   setLive(home, room, all) · clearLive()  (lagret: djuren i rummet styrs av lagret just nu;
+//                      all = hela bostaden – den löpande lägenheten har alla rum igång samtidigt)
 //   petsIn(home, room) · itemsIn(home, room) · messesIn(home, room) · petById(id) · itemById(id)
 //   hasLeash() · sacksFor(species) · needs(pet) → { hungry, sad, toilet, critical }
 //   listen(fn) → avprenumerera;  händelser { type, text, petId?, home? } (typ: 'kar', 'ungar',
@@ -585,11 +586,11 @@ export function createPetStore({ storage = null, rng = Math.random, key = PETS_S
     // ------------------------------------------------------------------
     //  Tid
     // ------------------------------------------------------------------
-    setLive(home, room) { S.live = { home, room, abs: S.clockAbs ?? 0 }; },
+    setLive(home, room, all = false) { S.live = { home, room, all: !!all, abs: S.clockAbs ?? 0 }; },
     clearLive() { S.live = null; },
     isLive(p, abs = S.clockAbs) {
       const L = S.live;
-      return !!L && !p.out && p.home === L.home && sameRoom(p.room, L.room) && (abs ?? 0) - L.abs <= 3;
+      return !!L && !p.out && p.home === L.home && (L.all || sameRoom(p.room, L.room)) && (abs ?? 0) - L.abs <= 3;
     },
     syncTo(day, minOfDay, ctx = {}) {
       const abs = (Math.max(1, day | 0) - 1) * DAYMIN + (+minOfDay || 0);

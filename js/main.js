@@ -5,7 +5,7 @@ import { openModal, closeModal, toast, modalOpen, esc } from './core/ui.js';
 import { onInvite, sendInvite } from './net/coop.js';
 import { Game, SAVE_KEY, WIN_MONEY, JOBS, JOB_TITLES, levelOf, fmt, clock } from './game.js';
 import { makeCity } from './scenes/city.js';
-import { makeRoom } from './scenes/room.js';
+import { makeApartment } from './scenes/apartment.js'; // hemmet: den löpande lägenheten (rummen i rad, room.js per rum)
 import { makeShopMobler } from './scenes/shop-mobler.js';
 import { makeShopIkea } from './scenes/shop-ikea.js';
 import { makeShopMat } from './scenes/shop-mat.js';
@@ -83,8 +83,8 @@ const A = {
 
 const SCENES = {
   city: (a, o) => makeCity(a, o),
-  room: (a, o) => makeRoom(a, o),
-  visit: (a) => makeRoom(a, { visit: true }),
+  room: (a, o) => makeApartment(a, o),
+  visit: (a) => makeApartment(a, { visit: true }),
   mobler: (a, o) => makeShopIkea(a, o),
   mat: (a, o) => makeShopMat(a, o),
   bostad: (a, o) => makeShopBostad(a, o),

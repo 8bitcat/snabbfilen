@@ -232,10 +232,10 @@ function mySit(A) {
   const c = SIT_CODE[typeof s === 'string' ? s : s?.dir];
   return c ? c + (s?.eat ? 'e' : '') : '';
 }
-function myScene(A) {
+function myScene(A, sub = A.roomSub) {
   if (A.sceneName === 'city') return 'city';
-  if (A.sceneName === 'room') return 'home:' + (W?.myId || 'me') + ':' + (A.roomSub | 0);
-  if (A.sceneName === 'visit') return 'home:' + (A.visitTarget?.id || 'me') + ':' + (A.roomSub | 0);
+  if (A.sceneName === 'room') return 'home:' + (W?.myId || 'me') + ':' + (sub | 0);
+  if (A.sceneName === 'visit') return 'home:' + (A.visitTarget?.id || 'me') + ':' + (sub | 0);
   // butiker och jobb: osynlig för andra, men de ser VAR man är (äldre versioner läser det som 'away')
   const where = String(A.sceneName || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 24);
   return where ? 'away:' + where : 'away';
@@ -418,9 +418,10 @@ export function worldTick(A, myX, dt) {
 // Alla som är på samma plats som jag: [{id, av, x, y, tx, ty, walking, emote}] – x/y glider mot
 // målet tx/ty (senaste positionen från nätet); en scen med våningar (klädaffären) ritar på målet
 // när hoppet är stort, så att ingen glider genom golvet mellan våningarna
-export function worldFolksHere(A) {
+// sub: ett annat rum i samma bostad (den löpande lägenheten visar grannrummen också)
+export function worldFolksHere(A, sub) {
   if (!W || !W.open) return [];
-  const here = myScene(A);
+  const here = myScene(A, sub ?? A.roomSub);
   // kollegor på samma jobb/i samma butik ser numera varandra (exakt samma away-nyckel
   // krävs) – grunden för att jobba tillsammans; olika ställen ser fortfarande inget
   const out = [];

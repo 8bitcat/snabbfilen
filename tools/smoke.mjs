@@ -337,13 +337,15 @@ await page.waitForTimeout(200);
 await page.evaluate(() => { window.SF.roomSub = 0; window.SF.go('room'); });
 await page.waitForTimeout(400);
 await shot('20-villan-vardagsrum');
-await page.evaluate(() => { const p = window.SF.scene._debug.spot('sub1'); window.SF.scene.down(p.x, p.y); });
+// den löpande lägenheten: tryck på golvet i sovrummet → figuren går dit genom öppningen
+await page.evaluate(() => { const a = window.SF.scene._debug.apt(); window.SF.scene.down(a.rooms[1].ox - a.camX + 40, 170); });
 let inBedroom = false;
-for (let i = 0; i < 16 && !inBedroom; i++) {
+for (let i = 0; i < 40 && !inBedroom; i++) {
   await page.waitForTimeout(300);
   inBedroom = await page.evaluate(() => window.SF.roomSub === 1 && window.SF.sceneName === 'room');
 }
-ok(inBedroom, 'gick genom dörren till SOVRUM (delrum)');
+ok(inBedroom, 'gick genom öppningen till SOVRUM (lägenheten)');
+await page.waitForTimeout(700);
 await shot('21-villan-sovrum');
 await page.evaluate(() => { window.SF.roomSub = 0; window.SF.go('room'); });
 await page.waitForTimeout(300);

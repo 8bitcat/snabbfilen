@@ -90,12 +90,12 @@ async function boot(save) {
 // gå till delrummet sub i hemmet (utan promenad – för uppställning)
 const enterSub = async (sub) => { await ev((s) => { document.querySelector('#toasts').innerHTML = ''; window.SF.roomSub = s; window.SF.go('room'); }, sub); await wait(250); };
 const moveHome = async (id) => { await ev((id) => { const g = window.SF.game; g.money = 100000; g.moveTo(id); g.min = 22 * 60; window.SF.roomSub = 0; window.SF.go('city'); window.SF.go('room'); }, id); await wait(500); };
-// gå genom dörren till delrummet to (klick på dörren, figuren går dit)
+// gå till rummet to i den löpande lägenheten (figuren går genom öppningarna i mellanväggarna)
 async function walkThrough(to) {
-  const s = await dbg('spot', 'sub' + to);
-  if (!s) return false;
-  await sceneDown(s.x, s.y);
-  return until((t) => window.SF.roomSub === t && !!window.SF.scene?._debug, to, 10000);
+  await ev((t) => window.SF.scene._debug.goRoom(t), to);
+  const ok = await until((t) => window.SF.roomSub === t && !!window.SF.scene?._debug, to, 30000);
+  await wait(900); // kameran hinner ikapp
+  return ok;
 }
 // hudfärgens och hårets pixlar i figuren-i-sängen-bilden
 const sleeperPixels = () => ev(([skin, hair]) => {
@@ -173,13 +173,13 @@ for (const id of HOMES) {
   const rooms = await dbg('rooms');
   const bath = rooms.findIndex((r) => r.bath);
   ok(bath === rooms.length - 1 && bath > 0, `${id}: ${rooms.length} delrum, badrummet (${rooms[bath]?.name}) är det sista (${rooms.map((r) => r.name).join(', ')})`);
-  // alla delrum seedas (startmöbleringen), sedan: vilket rum leder till badrummet?
+  // alla delrum seedas (startmöbleringen). Den löpande lägenheten: badrummet ligger sist, och man
+  // går in dit genom öppningen från rummet bredvid.
   // Skyltarna över möblerna får inte täcka varandra, dörrarna, dörrskyltarna eller fönstren.
   let via = -1;
   const parts = [], plateBad = [];
   for (let i = 0; i < rooms.length; i++) {
     await enterSub(i);
-    if (i !== bath && (await dbg('subDoors')).some((sd) => sd.to === bath)) via = i;
     parts.push(await ev(() => window.SF.scene._debug.partition));
     const plates = await dbg('plates'), avoid = await dbg('plateAvoid');
     const hit = (a, b) => a[0] < b[2] && a[2] > b[0] && a[1] < b[3] && a[3] > b[1];
@@ -188,6 +188,8 @@ for (const id of HOMES) {
       if (plates.some((q, k) => k > j && hit(p.r, q.r))) plateBad.push(`${rooms[i].name}: ${p.label} krockar med en annan skylt`);
     });
   }
+  const apt = await dbg('apt');
+  if (bath > 0 && apt.rooms[bath]?.bath && apt.rooms[bath].ox > apt.rooms[bath - 1].ox + apt.rooms[bath - 1].w) via = bath - 1;
   ok(!plateBad.length, `${id}: skyltarna över möblerna täcker inte dörrar, fönster eller varandra${plateBad.length ? ' – ' + plateBad.join('; ') : ''}`);
   // mobilfyllningen: badrummet är lika brett som lokalen (utom där gården/trapphuset fyller ut)
   ok(parts[bath] === parts[0] || id === 'husvagn' || id === 'hoghus', `${id}: badrummet är ${parts[bath]} px brett (lokalen ${parts[0]} px)`);
@@ -198,7 +200,7 @@ for (const id of HOMES) {
   ok(rooms.every((r, i) => i === bath || toiletsIn(i).length === 0), `${id}: ingen toalett i de andra rummen`);
   const bathKinds = (deco[`${id}:${bath}`] || []).map((d) => d.k);
   ok(bathKinds.some((k) => k === 'handfat' || k === 'tvattstall') && (id === 'husvagn' || bathKinds.some((k) => k === 'dusch' || k === 'badkar')), `${id}: handfat${id === 'husvagn' ? '' : ' och dusch/badkar'} i badrummet (${bathKinds.join(', ')})`);
-  ok(via >= 0, `${id}: dörren till badrummet sitter i ${rooms[via]?.name}`);
+  ok(via >= 0, `${id}: öppningen till badrummet går från ${rooms[via]?.name}`);
   // gå in genom dörren
   await enterSub(via);
   ok(await walkThrough(bath), `${id}: gick genom dörren in i ${rooms[bath].name}`);
@@ -402,7 +404,9 @@ console.log('\ngamla sparfiler');
   await enterSub(0);
   const s0 = await ev(() => JSON.parse(JSON.stringify(window.SF.game.deco['rum:0'])));
   const at = (k) => s0.find((d) => d.k === k);
-  ok(at('dass')?.x === 138 && at('dass')?.y === 174, `dasset står kvar mitt i rummet (${at('dass')?.x},${at('dass')?.y}) tills spelaren flyttar det`);
+  // (den löpande lägenheten: öppningen till badrummet sitter i högerväggen – det orörda startdasset
+  // flyttas tyst ur öppningen men står kvar i rummet)
+  ok(at('dass')?.x <= 138 && at('dass')?.x >= 100 && at('dass')?.y === 174, `dasset står kvar i rummet (${at('dass')?.x},${at('dass')?.y}) tills spelaren flyttar det`);
   ok(at('bokhylla')?.x === 60 && at('bokhylla')?.y === 200 && at('bokhylla')?.v === 1, 'spelarens egen bokhylla står kvar orörd');
   ok(at('garderob')?.x === 71 && at('kylskap')?.x === 118, `orörda startmöbler flyttade till de nya platserna (garderob ${at('garderob')?.x}, kylskåp ${at('kylskap')?.x}) – BADRUM-dörren är fri`);
   ok(s0.length === 5 && await dbg('allFit') && !/knuffades|ligger i förrådet|flyttades lite/.test(bootToasts + await ev(() => document.querySelector('#toasts').textContent)), 'inget försvann, allt står rätt, ingen knuff-toast');
@@ -431,7 +435,7 @@ console.log('\ngamla sparfiler');
   const lag = [{ k: 'kylskap', v: 0, x: 214, y: 94, fx: 1 }, { k: 'soffa', v: 2, x: 60, y: 180 }, { k: 'tv', v: 1, x: 100, y: 120 }, { k: 'bokhylla', v: 0, x: 186, y: 96 }];
   await boot(SAVE({ home: 'lagenhet', min: 12 * 60, deco: { 'lagenhet:0': lag, 'lagenhet:1': [{ k: 'sang', v: 5, x: 40, y: 133, fx: 1 }, { k: 'garderob', v: 3, x: 196, y: 96, fx: 1 }] } }));
   const lagToasts = await toastLog();
-  ok(/dörr till badrummet.*flyttades lite åt sidan/.test(lagToasts), `toasten säger varför bokhyllan flyttades (${lagToasts.slice(0, 90)})`);
+  ok(/knuffades till en ledig plats|flyttades lite åt sidan/.test(lagToasts), `toasten säger att bokhyllan (som stod i kylskåpet) flyttades (${lagToasts.slice(0, 90)})`);
   await enterSub(0);
   const l0 = await ev(() => JSON.parse(JSON.stringify(window.SF.game.deco['lagenhet:0'])));
   ok(l0.length === 4 && l0.filter((d) => d.k !== 'bokhylla').every((d) => lag.some((o) => o.k === d.k && o.x === d.x && o.y === d.y && o.v === d.v)), 'lägenhetens egna möbler står kvar (bokhyllan framför nya BADRUM-dörren knuffas bara undan)');
