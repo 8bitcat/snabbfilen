@@ -22,6 +22,7 @@ import { Pix, SMALL, ctxText, textW, text, eachTextPixel, mix, mul, css, hash, b
 import { createWalker, selfDrawable, folkDrawables, WALK_SEQ } from '../scenes/walkable.js';
 import { planOf, drawShiftHud, drawTimeUp, makePops, abortShift } from './shift.js';
 import { play } from '../core/sound.js';
+import { makeShiftCoop } from '../net/coop.js';
 import { FRAMES } from '../data/frames.js';
 import { ATLAS } from '../scenes/room.js';
 import { JOBS } from '../game.js';
@@ -57,6 +58,7 @@ const TABLES = [{ x: 256, y: 146 }, { x: 326, y: 146 }, { x: 44, y: 208 }, { x: 
 // en van bagare får ett bord till: mitt i övre raden (luckan 280–326 räcker precis – gången på
 // var sida är 9 px, bubblorna nuddar inte varandra). Fler får inte plats i matsalen.
 const EXTRA_TABLES = [{ x: 291, y: 146 }].map((tb) => ({ ...tb, sx: tb.x + 11, sy: tb.y - 8 }));
+const ALL_TABLES = [...TABLES, ...EXTRA_TABLES];   // jobbar man ihop står alla framme (index = bordets nummer i snappen)
 // TA MED-kön: skylten först, sedan bubbla + kund, bubbla + kund (bagaren serverar från höger)
 const TAKE = [{ x: 292, y: 212 }, { x: 358, y: 212 }];   // TA MED-platserna
 const SIGN = { x: 240, y: 208 };                          // TA MED-skylten
@@ -123,6 +125,41 @@ function kindOf(pz) {
   return PIZZAS.findIndex((p) => [...p.tops].sort().join(',') === key);
 }
 const perfect = (kind) => ({ sauce: true, cheese: true, tops: [...PIZZAS[kind].tops], bake: T_OK + 1.5 });
+const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+
+// ---------- jobba ihop: det som skickas mellan bagarna ----------
+// Kundens utseende ur ett frö: i ett delat pass skickar skiftledaren bara fröet (ett tal)
+// i stället för hela utseendet, och alla ritar ändå samma kund (som i kaféet).
+function seedRng(seed) {
+  let s = seed >>> 0;
+  return () => { s = (s + 0x6D2B79F5) >>> 0; let t = s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+}
+const lookOf = (seed) => makeLook(seedRng(seed));
+// kundernas lägen i skiftledarens snap (index = kod)
+const GST = ['walk', 'sit', 'eat', 'leave'];
+// En pizza som två tal: [f, gräddning i hundradelar] där f = sås 1 | ost 2 | pålägg 4 << i
+// (TOPS-ordning). Hundradelarna avrundas nedåt – gräddningsgraden blir aldrig högre hos
+// mottagaren än hos avsändaren (gränserna 2,25 / 4,5 / 9 s är jämna hundradelar).
+const pzEnc = (pz) => [(pz.sauce ? 1 : 0) | (pz.cheese ? 2 : 0) | TOPS.reduce((m, tp, i) => m | (pz.tops.includes(tp.id) ? 4 << i : 0), 0), Math.floor(pz.bake * 100)];
+function pzDec(a) {
+  const f = Array.isArray(a) ? a[0] | 0 : 0, b = Array.isArray(a) ? +a[1] || 0 : 0;
+  return { sauce: !!(f & 1), cheese: !!(f & 2), tops: TOPS.filter((_, i) => f & (4 << i)).map((tp) => tp.id), bake: clamp(b / 100, 0, 60) };
+}
+// serveringens utfall (0 = rätt) – koden skickas, texten slås upp hos var och en
+const WHY = [null, 'FEL PIZZA!', 'BRÄND!', 'FÖR BLEK!', 'I KARTONG, TACK!', 'PÅ TALLRIK, TACK!'];
+// resten av en kunds väg från (x, y): närmaste sträckan på vägen (vid lika den senare) och
+// punkterna efter den – så kan vem som helst gå vidare med en kund från där hen står
+function restOf(route, x, y) {
+  let bi = 0, bd = Infinity;
+  for (let i = 0; i + 1 < route.length; i++) {
+    const [ax, ay] = route[i], [bx, by] = route[i + 1];
+    const L2 = (bx - ax) ** 2 + (by - ay) ** 2 || 1;
+    const q = clamp(((x - ax) * (bx - ax) + (y - ay) * (by - ay)) / L2, 0, 1);
+    const d = Math.hypot(ax + (bx - ax) * q - x, ay + (by - ay) * q - y);
+    if (d <= bd + 0.5) { bd = d; bi = i; }
+  }
+  return route.slice(bi + 1).map((p) => [p[0], p[1]]);
+}
 
 // ---------- pixelrutnät (sprites byggs som rutnät, konturen läggs på sist) ----------
 const newCanvas = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; };
@@ -365,10 +402,10 @@ const inMouth = (x, y) => x >= OV.mx0 && x < OV.mx1 && y >= OV.mTop && y < OV.by
 export function makeJobbPizzeria(A, { onDone } = {}) {
   const stats = { ok: 0, fel: 0, miss: 0, brand: 0 };
   const P = planOf(A);   // passets plan: längd (P.seconds), kundtakt (P.pace), extra bord (P.extra)
-  const tables = [...TABLES, ...EXTRA_TABLES.slice(0, P.extra)];
+  let tables = [...TABLES, ...EXTRA_TABLES.slice(0, P.extra)];   // jobbar man ihop: alla (allTables)
   const wage = JOBS?.pizzeria?.wage;
   const walker = createWalker({ top: 96, bottom: FH - 5, spawn: [WS.x, STAND_Y] });
-  walker.setObstacles([
+  const obstacles = () => [
     [2, 84, 21, 97],                                       // soptunnan
     [74, 84, 168, 95],                                     // vedugnen
     [PASS.x0, 84, PASS.x1, 93],                            // passet
@@ -382,7 +419,8 @@ export function makeJobbPizzeria(A, { onDone } = {}) {
     // nedre radens bubbelzoner (hela vägen ner till kanten): bagaren ska aldrig stå bakom en bubbla
     ...tables.filter((tb) => tb.y > AISLE_Y).map((tb) => [tb.x - BUBBLE_W - 4, AISLE_Y, tb.x - 1, FH]),
     ...TAKE.map((sp) => [sp.x - BUBBLE_W - 10, AISLE_Y + 12, sp.x - 7, FH]),
-  ]);
+  ];
+  walker.setObstacles(obstacles());
   const pops = makePops();
   let customers = [], t = 0, seq = 0, custIn = 3.5, carry = null, bench = null, parts = [];
   const oven = [null, null];
@@ -399,6 +437,19 @@ export function makeJobbPizzeria(A, { onDone } = {}) {
   // ---------- kunder ----------
   function freeTables() { return tables.filter((tb) => !customers.some((k) => k.table === tb)); }
   function freeSpots() { return [0, 1].filter((s) => !customers.some((k) => k.take && k.spot === s)); }
+  // vägen in från gatan till bordet (TA MED-platsen) och ut igen – samma hos alla i ett delat pass
+  function walkPath(k) {
+    if (k.take) { const sp = TAKE[k.spot]; return [[sp.x, AISLE_Y], [sp.x, sp.y]]; }
+    return [[k.table.x - 10, AISLE_Y], [k.table.x - 10, k.table.sy], [k.table.sx, k.table.sy]];
+  }
+  function leavePath(k, x = k.x) {
+    return k.take ? [[x, AISLE_Y], [FW + 16, AISLE_Y]]
+      : [[k.table.x - 10, k.table.sy], [k.table.x - 10, AISLE_Y], [FW + 16, AISLE_Y]];
+  }
+  const seatOf = (k) => (k.take ? [TAKE[k.spot].x, TAKE[k.spot].y] : [k.table.sx, k.table.sy]);
+  // hela vägen i kundens läge, från början (medarbetarnas vy, och när en ny skiftledare tar över)
+  const routeOf = (k) => (k.state === 'walk' ? [[FW + 12, AISLE_Y], ...walkPath(k)]
+    : k.state === 'leave' ? [seatOf(k), ...leavePath(k, seatOf(k)[0])] : []);
   function spawn(now, kind, take) {
     const tbs = freeTables(), sps = freeSpots();
     if (!tbs.length && !sps.length) return null;
@@ -406,23 +457,18 @@ export function makeJobbPizzeria(A, { onDone } = {}) {
     if (take && !sps.length) take = false;
     if (!take && !tbs.length) take = true;
     const pat = (take ? 44 : 50) - 8 * Math.min(1, t / P.seconds);
-    const k = { look: makeLook(), take, wish: kind ?? ((Math.random() * PIZZAS.length) | 0), patience: pat, pmax: pat, eat: 0, id: seq++, dir: 'left', state: 'walk', x: FW + 12, y: AISLE_Y };
-    if (take) {
-      k.spot = now ? sps[0] : sps[(Math.random() * sps.length) | 0];
-      const sp = TAKE[k.spot];
-      k.path = [[sp.x, AISLE_Y], [sp.x, sp.y]];
-    } else {
-      k.table = now ? tbs[0] : tbs[(Math.random() * tbs.length) | 0];
-      k.path = [[k.table.x - 10, AISLE_Y], [k.table.x - 10, k.table.sy], [k.table.sx, k.table.sy]];
-    }
+    const ls = (Math.random() * 0x7fffffff) | 0;   // utseendet ur ett frö (skiftledaren skickar bara fröet)
+    const k = { ls, look: lookOf(ls), take, wish: kind ?? ((Math.random() * PIZZAS.length) | 0), patience: pat, pmax: pat, eat: 0, id: seq++, dir: 'left', state: 'walk', x: FW + 12, y: AISLE_Y };
+    if (take) k.spot = now ? sps[0] : sps[(Math.random() * sps.length) | 0];
+    else k.table = now ? tbs[0] : tbs[(Math.random() * tbs.length) | 0];
+    k.path = walkPath(k);
     if (now) { const [x, y] = k.path[k.path.length - 1]; k.x = x; k.y = y; k.path = []; k.state = 'sit'; k.dir = 'down'; }
     customers.push(k);
     return k;
   }
   function leave(k) {
     k.state = 'leave';
-    k.path = k.take ? [[k.x, AISLE_Y], [FW + 16, AISLE_Y]]
-      : [[k.table.x - 10, k.table.sy], [k.table.x - 10, AISLE_Y], [FW + 16, AISLE_Y]];
+    k.path = leavePath(k);
   }
   // nedre raden = TA MED-kön och borden under gången: bubblan står vid sidan
   const lowRow = (k) => k.take || k.table.y > AISLE_Y;
@@ -445,6 +491,185 @@ export function makeJobbPizzeria(A, { onDone } = {}) {
     });
   }
   const servePoint = (k) => (k.take ? [k.x + 16, k.y] : [k.table.x + 29, k.table.y + 1]);
+
+  // ---------- jobba tillsammans (delat pass via js/net/coop.js) ----------
+  // Skiftledaren (den som varit längst i pizzerian) kör matsalen – kunderna vid borden och i
+  // TA MED-kön, tålamodet och nya gäster – och VEDUGNEN: pizzorna i ugnen är gemensamma och
+  // gräddas hos ledaren. Läget delas ~3 ggr/s; medarbetarna ser samma matsal och samma ugn och
+  // skickar det som rör det gemensamma som önskemål: skjuta in en pizza, ta ut en pizza,
+  // servera en kund. Ledaren är ENDA domaren (en pizza tas ut EN gång, en kund serveras EN gång)
+  // och svarar med utfallet. Bänken, backarna, passets tallrikar/kartonger och soptunnan är var
+  // och ens egna: degen man bygger och det man bär är ens eget (bänken har bara en arbetsplats –
+  // delad skulle två bagare få turas om vid varje pålägg, och passet tar aldrig slut på tallrikar).
+  // Ugnen blir överlämningen: den ena bakar, den andra tar ut, packar och serverar. Poängen går
+  // till den som serverar; lagets räkning delas lika vid passets slut. När man är fler rullas
+  // extrabordet fram och gästerna kommer tätare.
+  const coop = makeShiftCoop(A, 'away:jobbpizzeria');
+  let snapIn = 0, wasLead = true, wasCoop = false, maxN = 1;
+  let pend = null, queued = null;          // medarbetarens önskemål som väntar på svar (och ett köat klick)
+  const mineIds = new Set();               // ugnens pizzor som JAG sköt in (bränns de är det min brända)
+  const team = { ok: 0, fel: 0, miss: 0 }; // LAGETS räkning – delas lika vid passets slut
+  const mate = () => coop.active && !coop.leader;
+  const snapAsap = () => { snapIn = 0; };
+  const int = (v, dflt) => (Number.isInteger(v) ? v : dflt);
+  // alla bord fram – en gång för alla, så att ingen som sitter vid extrabordet blir utan bord
+  function allTables() {
+    if (tables.length >= ALL_TABLES.length) return false;
+    tables = ALL_TABLES.slice();
+    walker.setObstacles(obstacles());
+    return true;
+  }
+  const sendSnap = () => coop.send({
+    t: 'snap',
+    // kund: [id, bord 0–4 (TA MED: −1/−2), önskan, läge (GST), x, y, tålamod·10 (äter: tid kvar·10), max·10, utseendefrö, kartong]
+    cu: customers.filter((k) => GST.includes(k.state)).map((k) => [k.id, k.take ? -1 - k.spot : ALL_TABLES.indexOf(k.table), k.wish, GST.indexOf(k.state),
+      Math.round(k.x), Math.round(k.y), Math.round((k.state === 'eat' ? k.eat : k.patience) * 10), Math.round(k.pmax * 10), k.ls | 0, k.box ? 1 : 0]),
+    // ugnen: per plats [id, pizzan (pzEnc)] eller 0
+    ov: oven.map((pz) => (pz ? [pz.id | 0, ...pzEnc(pz)] : 0)),
+    tm: [team.ok, team.fel, team.miss],
+  });
+  const applySnap = (m) => {
+    if (Array.isArray(m.ov)) for (let s = 0; s < 2; s++) {
+      const o = m.ov[s];
+      if (!Array.isArray(o)) { oven[s] = null; continue; }
+      const id = o[0] | 0, old = oven[s] && oven[s].id === id ? oven[s] : null, pz = pzDec(o.slice(1));
+      oven[s] = { ...pz, id, said: old?.said ?? stageOf(pz.bake) };   // said: vad ugnen redan ropat (KLAR!/BRÄNNS!)
+    }
+    const seen = new Set();
+    for (const c of (Array.isArray(m.cu) ? m.cu : []).slice(0, 16)) {
+      if (!Array.isArray(c)) continue;
+      const id = c[0] | 0, wh = c[1] | 0, st = GST[c[3] | 0] || 'sit', x = +c[4] || 0, y = +c[5] || 0, ls = c[8] | 0;
+      seen.add(id);
+      let k = customers.find((q) => q.id === id);
+      const was = k ? k.state : null;
+      if (!k) { k = { id, x, y, dir: 'left', eat: 0 }; customers.push(k); }
+      if (k.ls !== ls || !k.look) { k.ls = ls; k.look = lookOf(ls); }
+      k.take = wh < 0;
+      if (k.take) { k.spot = clamp(-1 - wh, 0, TAKE.length - 1); k.table = undefined; }
+      else { k.table = ALL_TABLES[clamp(wh, 0, ALL_TABLES.length - 1)]; k.spot = undefined; }
+      k.wish = clamp(c[2] | 0, 0, PIZZAS.length - 1); k.state = st;
+      k.pmax = (c[7] | 0) / 10 || 50;
+      if (st === 'eat') k.eat = (c[6] | 0) / 10; else k.patience = (c[6] | 0) / 10;
+      // pizzan på bordet / kartongen i famnen: alltid kundens egen, gyllene
+      if (st === 'eat' && (!k.served || kindOf(k.served) !== k.wish)) k.served = perfect(k.wish);
+      k.box = c[9] ? (k.box && kindOf(k.box) === k.wish ? k.box : perfect(k.wish)) : null;
+      k.gx = x; k.gy = y; k.gpath = null;
+      if (!was) { k.x = x; k.y = y; }
+      // en kund som tröttnade går – det hörs hos alla
+      if (st === 'leave' && was === 'sit' && !k.box) { play('miss'); pops.add(k.x, popY(k) + 12, 'GICK HEM!', '#d8d2c0'); }
+    }
+    customers = customers.filter((k) => seen.has(k.id));
+    if (Array.isArray(m.tm)) { team.ok = m.tm[0] | 0; team.fel = m.tm[1] | 0; team.miss = m.tm[2] | 0; }
+  };
+  // medarbetarens vy: kunderna går sin väg som hos ledaren – ett "spöke" går vidare från
+  // ledarens senaste läge längs samma väg, och figuren glider mjukt efter
+  function tweenGuests(dt) {
+    for (const k of customers) {
+      if (k.state === 'sit') k.patience = Math.max(0, k.patience - dt);
+      else if (k.state === 'eat') k.eat = Math.max(0, k.eat - dt);
+      if (k.gx === undefined) { k.gx = k.x; k.gy = k.y; }
+      if (k.state === 'walk' || k.state === 'leave') {
+        if (!k.gpath) k.gpath = restOf(routeOf(k), k.gx, k.gy);
+        const wp = k.gpath[0], sp = (k.state === 'walk' ? 36 : 42) * dt;
+        if (wp) {
+          const dx = wp[0] - k.gx, dy = wp[1] - k.gy, d = Math.hypot(dx, dy);
+          k.dir = Math.abs(dx) >= Math.abs(dy) ? (dx < 0 ? 'left' : 'right') : dy < 0 ? 'up' : 'down';
+          if (d <= sp) { k.gx = wp[0]; k.gy = wp[1]; k.gpath.shift(); }
+          else { k.gx += dx / d * sp; k.gy += dy / d * sp; }
+        }
+      }
+      const dx = k.gx - k.x, dy = k.gy - k.y;
+      if (Math.hypot(dx, dy) > 24) { k.x = k.gx; k.y = k.gy; }
+      else { const f = Math.min(1, dt * 8); k.x += dx * f; k.y += dy * f; }
+    }
+  }
+  // medarbetarens ugn: gräddningen tickar vidare mellan ledarens lägen (rättas vid nästa snap)
+  function mateOven(dt) {
+    for (let s = 0; s < 2; s++) {
+      const pz = oven[s];
+      if (!pz) continue;
+      pz.bake += dt;
+      const b = stageOf(pz.bake), said = pz.said ?? b;
+      if (b === 3 && said < 3) { play('ok'); pops.add(SLOT_X[s], OVEN_POP_Y, 'KLAR!', '#8ee03c'); }
+      if (b === 4 && said < 4) { play('miss'); if (mineIds.has(pz.id)) stats.brand++; pops.add(SLOT_X[s], OVEN_POP_Y, 'BRÄNNS!', '#ff6a6a'); }
+      pz.said = Math.max(said, b);
+      if (b === 4 && Math.random() < dt * 10) smoke(SLOT_X[s], archTop(SLOT_X[s]) + 1);
+    }
+  }
+  // medarbetarens önskemål: bagaren väntar på ledarens svar (högst 2,5 s – sedan kan man försöka igen)
+  function ask(m) { coop.send(m); pend = { t: 2.5 }; }
+  function answered() {
+    pend = null;
+    if (queued && !done) { const q = queued; queued = null; api.down(q[0], q[1]); }
+  }
+  function hannFore(x, y) { play('miss'); pops.add(x, y, 'HANN FÖRE!', '#ff6a6a'); }
+  // ledarens dom över en servering – för egna och medarbetares (byId = den som serverade)
+  function leaderServe(custId, pz, box, byId) {
+    const k = customers.find((q) => q.id === custId), mine = byId === coop.myId;
+    if (!k || k.state !== 'sit') {   // kunden har redan fått sin pizza (eller gått): någon hann före
+      coop.send({ t: 'res', a: 'serve', by: byId, cust: custId, go: 1 });
+      if (mine) hannFore(k ? k.x : FW >> 1, k ? popY(k) : 120);
+      return;
+    }
+    const w = judge(k, pz, box);
+    coop.send({ t: 'res', a: 'serve', by: byId, cust: custId, w });
+    showServe(k, w, mine);
+    if (mine) takeResult(w);
+    snapAsap();
+  }
+  coop.on('snap', (m) => { if (!coop.leader) applySnap(m); });
+  coop.on('res', (m) => {   // ledarens utfall: puffarna hos alla, händerna och poängen hos den som gjorde det
+    const mine = m.by === coop.myId;
+    if (coop.leader && !mine) return;   // (ledaren har redan visat det hos sig)
+    const s = int(m.s, 0) & 1;
+    if (m.a === 'serve') {
+      const k = customers.find((q) => q.id === m.cust);
+      if (m.go) { if (mine) hannFore(k ? k.x : FW >> 1, k ? popY(k) : 120); }
+      else {
+        const w = clamp(int(m.w, 1), 0, WHY.length - 1);
+        if (k && !w && k.state === 'sit') { served(k, perfect(k.wish)); k.gpath = null; }   // syns direkt – nästa snap bekräftar
+        showServe(k, w, mine);
+        if (mine) takeResult(w);
+      }
+    } else if (m.a === 'in') {
+      if (m.ok) {
+        const id = int(m.id, -1);
+        if (mine) {
+          if (carry && carry.on === 'spade') { oven[s] = { ...carry.pz, id, said: stageOf(carry.pz.bake) }; carry = null; }
+          mineIds.add(id); play('slide'); work();
+        }
+        puff(SLOT_X[s], 58, [0xffc040, 0xff7a1c, 0xfff0a0], 6, 6);
+      } else if (mine) hint('UGNEN ÄR FULL', OV.cx, OVEN_POP_Y);
+    } else if (m.a === 'ut') {
+      if (m.ok) {
+        const pz = pzDec(m.pz);
+        if (oven[s] && oven[s].id === int(m.id, -1)) oven[s] = null;
+        if (mine && !carry) { carry = { pz, on: 'spade' }; play('slide'); work(); }
+        ovenPop(s, pz);
+      } else if (mine) hannFore(SLOT_X[s], OVEN_POP_Y);
+    }
+    if (mine) answered();
+  });
+  coop.on('in', (m, from) => {   // medarbetare skjuter in sin pizza (ledaren numrerar den)
+    if (!coop.leader) return;
+    const want = int(m.s, 0) & 1, s = !oven[want] ? want : !oven[1 - want] ? 1 - want : -1;
+    if (s < 0) { coop.send({ t: 'res', a: 'in', by: from, ok: 0, s: want }); return; }
+    oven[s] = { ...pzDec(m.pz), id: seq++ };
+    coop.send({ t: 'res', a: 'in', by: from, ok: 1, s, id: oven[s].id });
+    puff(SLOT_X[s], 58, [0xffc040, 0xff7a1c, 0xfff0a0], 6, 6);
+    snapAsap();
+  });
+  coop.on('ut', (m, from) => {   // medarbetare tar ut just DEN pizzan (id) – är den borta hann någon före
+    if (!coop.leader) return;
+    const id = int(m.id, -1), s = oven.findIndex((pz) => pz && pz.id === id);
+    if (s < 0) { coop.send({ t: 'res', a: 'ut', by: from, ok: 0, s: int(m.s, 0) & 1 }); return; }
+    const pz = oven[s];
+    oven[s] = null;
+    coop.send({ t: 'res', a: 'ut', by: from, ok: 1, s, id, pz: pzEnc(pz) });
+    ovenPop(s, pz);
+    snapAsap();
+  });
+  coop.on('serve', (m, from) => { if (coop.leader) leaderServe(int(m.cust, -1), pzDec(m.pz), !!m.b, from); });
 
   // ---------- hjälpare: tips, partiklar ----------
   // en upplysning (inte ett fel): mjukt klick, inte "miss"-ljudet som betyder att en kund gick
@@ -527,24 +752,47 @@ export function makeJobbPizzeria(A, { onDone } = {}) {
     if (s < 0) { hint('UGNEN ÄR FULL', OV.cx, OVEN_POP_Y); return true; }
     oven[s] = carry.pz; carry = null; play('slide'); work();
     puff(SLOT_X[s], 58, [0xffc040, 0xff7a1c, 0xfff0a0], 6, 6);
+    if (coop.active) {   // (skiftledaren) ugnens pizzor numreras här – och kollegorna ser den åka in
+      oven[s].id = seq++; mineIds.add(oven[s].id);
+      coop.send({ t: 'res', a: 'in', by: coop.myId, ok: 1, s, id: oven[s].id });
+      snapAsap();
+    }
     return true;
+  }
+  // puffen när en pizza tas ut: hur blev den?
+  function ovenPop(s, pz) {
+    const st = stageOf(pz.bake);
+    pops.add(SLOT_X[s], OVEN_POP_Y, st === 3 ? 'GYLLENE!' : st === 4 ? 'BRÄND!' : 'BLEK!', st === 3 ? '#8ee03c' : '#ffd23f');
   }
   function ovenOut(slot) {
     const s = oven[slot] ? slot : oven[1 - slot] ? 1 - slot : -1;
     if (s < 0) return false;
-    carry = { pz: oven[s], on: 'spade' }; oven[s] = null; play('slide'); work();
-    const st = stageOf(carry.pz.bake);
-    pops.add(SLOT_X[s], OVEN_POP_Y, st === 3 ? 'GYLLENE!' : st === 4 ? 'BRÄND!' : 'BLEK!', st === 3 ? '#8ee03c' : '#ffd23f');
+    const pz = oven[s];
+    carry = { pz, on: 'spade' }; oven[s] = null; play('slide'); work();
+    ovenPop(s, pz);
+    if (coop.active) { coop.send({ t: 'res', a: 'ut', by: coop.myId, ok: 1, s, id: pz.id | 0, pz: pzEnc(pz) }); snapAsap(); }
     return true;
+  }
+  // ugnen är gemensam: en medarbetare frågar skiftledaren, som håller i båda platserna
+  function askIn(slot) {
+    const s = !oven[slot] ? slot : !oven[1 - slot] ? 1 - slot : -1;
+    if (s < 0) { hint('UGNEN ÄR FULL', OV.cx, OVEN_POP_Y); return; }
+    ask({ t: 'in', s, pz: pzEnc(carry.pz) });
+  }
+  function askOut(slot) {
+    const s = oven[slot] ? slot : oven[1 - slot] ? 1 - slot : -1;
+    if (s < 0) { hint('UGNEN ÄR TOM', OV.cx, OVEN_POP_Y); return; }
+    ask({ t: 'ut', s, id: oven[s].id | 0 });
   }
   function actOven(slot) {
     walker.dir = slot === 0 ? 'right' : 'left';   // står vid sidan, vänd mot munnen
     if (carry) {
       if (carry.on !== 'spade') { hint('DEN ÄR REDAN PACKAD', OV.cx, OVEN_POP_Y); return; }
-      ovenIn(slot);
+      if (mate()) askIn(slot); else ovenIn(slot);
       return;
     }
-    if (!ovenOut(slot)) hint('UGNEN ÄR TOM', OV.cx, OVEN_POP_Y);
+    if (mate()) askOut(slot);
+    else if (!ovenOut(slot)) hint('UGNEN ÄR TOM', OV.cx, OVEN_POP_Y);
   }
   function actVessel(kind) {
     walker.dir = 'up';
@@ -595,27 +843,39 @@ export function makeJobbPizzeria(A, { onDone } = {}) {
   function tryServe(k) {
     if (!carry) { hint('HÄMTA PIZZAN FÖRST', k.x, popY(k)); return; }
     if (carry.on === 'spade') { hint(k.take ? 'I EN KARTONG FÖRST' : 'PÅ EN TALLRIK FÖRST', k.x, popY(k)); return; }
-    serveTo(k);
+    serveAct(k);
   }
-  function serveTo(k) {
-    const pz = carry.pz, kind = kindOf(pz), st = stageOf(pz.bake);
-    let why = null;
-    if (kind !== k.wish) why = 'FEL PIZZA!';
-    else if (st >= 4) why = 'BRÄND!';
-    else if (st < 3) why = 'FÖR BLEK!';
-    else if ((carry.on === 'kartong') !== k.take) why = k.take ? 'I KARTONG, TACK!' : 'PÅ TALLRIK, TACK!';
+  // Domen över en servering: 0 = rätt, annars koden i WHY. Rätt pizza → kunden äter (tallrik)
+  // eller går med kartongen; lagets räkning följer med.
+  function whyOf(k, pz, box) {
+    const kind = kindOf(pz), st = stageOf(pz.bake);
+    return kind !== k.wish ? 1 : st >= 4 ? 2 : st < 3 ? 3 : box !== k.take ? (k.take ? 4 : 5) : 0;
+  }
+  function served(k, pz) { if (k.take) { k.box = pz; leave(k); } else { k.state = 'eat'; k.eat = 5; k.served = pz; } }
+  function judge(k, pz, box) {
+    const w = whyOf(k, pz, box);
+    if (!w) { team.ok++; served(k, pz); } else team.fel++;
+    return w;
+  }
+  // utfallet vid bordet: puffarna syns hos alla, ljuden hörs hos den som serverade
+  function showServe(k, w, mine) {
+    if (!k) return;
     const py = popY(k);
-    if (!why) {
-      stats.ok++;
-      play('coin');
-      pops.add(k.x, py, wage ? `+${wage} GRAZIE!` : 'GRAZIE!', '#8ee03c');
-      if (k.take) { k.box = pz; leave(k); } else { k.state = 'eat'; k.eat = 5; k.served = pz; }
-    } else {
-      stats.fel++;
-      play('fel');
-      pops.add(k.x, py, why, '#ff6a6a');
-    }
-    carry = null;
+    if (!w) { if (mine) play('coin'); pops.add(k.x, py, wage ? `+${wage} GRAZIE!` : 'GRAZIE!', '#8ee03c'); }
+    else { if (mine) play('fel'); pops.add(k.x, py, WHY[w], '#ff6a6a'); }
+  }
+  // mitt eget utfall: poängen till mig, och pizzan går ur händerna (även en fel)
+  function takeResult(w) { if (!w) stats.ok++; else stats.fel++; carry = null; }
+  function serveTo(k) {
+    const w = judge(k, carry.pz, carry.on === 'kartong');
+    showServe(k, w, true);
+    takeResult(w);
+  }
+  // servera: ensam som förut; i ett delat pass avgör skiftledaren
+  function serveAct(k) {
+    if (!coop.active) { serveTo(k); return; }
+    if (coop.leader) leaderServe(k.id, carry.pz, carry.on === 'kartong', coop.myId);
+    else ask({ t: 'serve', cust: k.id, pz: pzEnc(carry.pz), b: carry.on === 'kartong' ? 1 : 0 });
   }
 
   // ---------- rita ----------
@@ -714,9 +974,17 @@ export function makeJobbPizzeria(A, { onDone } = {}) {
       // Tvinga fram en kund som redan väntar på plats. kind 0–4 = MARGHERITA,
       // VESUVIO, HAWAII, CAPRICCIOSA, KEBABPIZZA; take true = TA MED (kartong),
       // false = äter här (tallrik). Utelämnat = slump. Returnerar kunden eller null.
-      forceCustomer(kind, take) { const k = spawn(true, kind, take); return k ? { kind: k.wish, take: k.take, x: k.x, y: k.y } : null; },
+      forceCustomer(kind, take) { const k = spawn(true, kind, take); snapAsap(); return k ? { id: k.id, kind: k.wish, take: k.take, x: k.x, y: k.y } : null; },
       // Samma kund, men hen kommer gående in från gatan (för att testa gången).
-      forceWalkIn(kind, take) { const k = spawn(false, kind, take); return k ? { kind: k.wish, take: k.take, x: k.x, y: k.y } : null; },
+      forceWalkIn(kind, take) { const k = spawn(false, kind, take); snapAsap(); return k ? { id: k.id, kind: k.wish, take: k.take, x: k.x, y: k.y } : null; },
+      // Lägg en pizza direkt i ugnen (skiftledaren/solo): slot 0/1, kind 0–4 (null = töm platsen),
+      // bake = sekunder i ugnen hittills. Returnerar pizzans id.
+      forceOven(slot = 0, kind = 0, bake = 0) {
+        const s = slot ? 1 : 0;
+        oven[s] = kind === null ? null : { ...perfect(kind), bake, id: seq++ };
+        snapAsap();
+        return oven[s] ? oven[s].id : null;
+      },
       // Lägg en färdig, gyllene pizza i händerna – förpackad för första väntande
       // kunden (eller för kind/on om de anges: on = 'tallrik' | 'kartong' | 'spade').
       makePizza(kind, on) {
@@ -728,13 +996,14 @@ export function makeJobbPizzeria(A, { onDone } = {}) {
       // Ett stationssteg direkt, utan gång: 'deg' | 'sas' | 'ost' | 'skinka' | 'ananas' |
       // 'champinjoner' | 'kebab' | 'lyft' (bänk → spade) | 'ugn' (in i ugnen) |
       // 'grädda' (allt i ugnen blir gyllene) | 'bränn' | 'ut' | 'tallrik' | 'kartong' | 'släng'
+      // (ugnen är skiftledarens: 'ugn'/'ut' blir önskemål hos en medarbetare, 'grädda'/'bränn' gäller hos ledaren)
       step(name) {
         if (BINS.some((b) => b.id === name)) actBin(name);
         else if (name === 'lyft') actBench();
-        else if (name === 'ugn') { if (!carry && bench) actBench(); ovenIn(oven[0] ? 1 : 0); }
-        else if (name === 'grädda') oven.forEach((pz) => { if (pz) pz.bake = T_OK + 1.5; });
-        else if (name === 'bränn') oven.forEach((pz) => { if (pz) pz.bake = T_BURN + 1; });
-        else if (name === 'ut') { const s = oven[0] && (!oven[1] || oven[0].bake >= oven[1].bake) ? 0 : 1; ovenOut(s); }
+        else if (name === 'ugn') { if (!carry && bench) actBench(); if (!mate()) ovenIn(oven[0] ? 1 : 0); else if (carry && carry.on === 'spade') askIn(oven[0] ? 1 : 0); }
+        else if (name === 'grädda') { oven.forEach((pz) => { if (pz) pz.bake = T_OK + 1.5; }); snapAsap(); }
+        else if (name === 'bränn') { oven.forEach((pz) => { if (pz) pz.bake = T_BURN + 1; }); snapAsap(); }
+        else if (name === 'ut') { const s = oven[0] && (!oven[1] || oven[0].bake >= oven[1].bake) ? 0 : 1; if (mate()) askOut(s); else ovenOut(s); }
         else if (name === 'tallrik' || name === 'kartong') actVessel(name);
         else if (name === 'släng' || name === 'slang') actTrash();
         return { bench: api._debug.bench(), carry: api._debug.carrying(), oven: api._debug.oven() };
@@ -749,21 +1018,37 @@ export function makeJobbPizzeria(A, { onDone } = {}) {
           const match = carry && sit.find((c) => c.wish === kindOf(carry.pz) && c.take === (carry.on === 'kartong'));
           const k = match || sit[0];
           if (!match || stageOf(carry.pz.bake) !== 3) carry = { pz: perfect(k.wish), on: k.take ? 'kartong' : 'tallrik' };
-          serveTo(k);
+          serveAct(k);
         } else {
           if (!carry) carry = { pz: perfect(sit[0].wish), on: sit[0].take ? 'kartong' : 'tallrik' };
           if (carry.on === 'spade') carry.on = 'tallrik';
           const kind = kindOf(carry.pz), box = carry.on === 'kartong';
           const k = sit.find((c) => c.wish !== kind || c.take !== box) || sit[0];
           if (k.wish === kind && k.take === box) carry.pz.bake = T_BURN + 3;
-          serveTo(k);
+          serveAct(k);
         }
         return stats;
       },
       busy: () => walker.path.length > 0,
       carrying: () => (carry ? { kind: kindOf(carry.pz), on: carry.on, stage: stageOf(carry.pz.bake) } : null),
       bench: () => (bench ? { sauce: bench.sauce, cheese: bench.cheese, tops: [...bench.tops], kind: kindOf(bench) } : null),
-      oven: () => oven.map((pz) => (pz ? { kind: kindOf(pz), bake: +pz.bake.toFixed(2), stage: stageOf(pz.bake) } : null)),
+      oven: () => oven.map((pz) => (pz ? { id: pz.id, kind: kindOf(pz), bake: +pz.bake.toFixed(2), stage: stageOf(pz.bake) } : null)),
+      // jobba tillsammans (tools/coop-pizzeria-test.mjs)
+      coop: () => ({ leader: coop.leader, active: coop.active, mates: coop.peers().length, settled: coop.settled, myId: coop.myId }),
+      lag: () => ({ ...team, maxN, bord: tables.length }),
+      customersDbg: () => customers.map((k) => ({ i: k.id, st: k.state, w: k.wish, take: !!k.take, ti: k.take ? -1 - k.spot : ALL_TABLES.indexOf(k.table), x: Math.round(k.x), y: Math.round(k.y) })),
+      // lugnt i matsalen (ledaren/solo): inga nya gäster, och de som är där försvinner
+      calm() { custIn = 1e9; customers = []; snapAsap(); },
+      // ställ bagaren direkt på en plats (för klicktester vid ugnen och borden)
+      place(x, y, dir = 'down') { walker.stop(); walker.px = x; walker.py = y; walker.dir = dir; },
+      standAt: (id) => ({ ugn0: [OVEN_STAND[0], 97], ugn1: [OVEN_STAND[1], 97], tallrik: [PASS.plates, 97], kartong: [PASS.boxes, 97], bank: [WS.x, STAND_Y] })[id] || null,
+      servePointOf(id) { const k = customers.find((c) => c.id === id); return k ? servePoint(k) : null; },
+      // klickpunkten på en kund (mitt på kroppen)
+      customerSpot(id) { const k = customers.find((c) => c.id === id); return k ? [Math.round(k.x), Math.round(k.y) - 20] : null; },
+      // sant när bagaren står still och inte väntar på ledarens svar
+      idle: () => !pend && !queued && walker.path.length === 0,
+      pending: () => !!pend,
+      time: () => t,
       customers: () => customers.filter((c) => c.state === 'sit').map((c) => ({ kind: c.wish, take: c.take, x: Math.round(c.x), y: Math.round(c.y) })),
       walking: () => customers.filter((c) => c.state === 'walk' || c.state === 'leave').map((c) => ({ kind: c.wish, take: c.take, state: c.state, x: Math.round(c.x), y: Math.round(c.y) })),
       // klickpunkter i spelkoordinater för stationerna (för test via down(x, y))
@@ -775,29 +1060,65 @@ export function makeJobbPizzeria(A, { onDone } = {}) {
     update(dt) {
       pops.update(dt);
       updParts(dt);
-      if (done) { doneT += dt; if (doneT > 1.2 && !reported) { reported = true; onDone?.(stats); } return; }
+      if (done) {
+        coop.tick(); coop.resign();   // MITT pass är slut – lämna över ledningen direkt (även på lönebeskedet)
+        doneT += dt;
+        if (doneT > 1.2 && !reported) {
+          reported = true;
+          if (maxN > 1) {   // jobbat ihop: laget delar lika på alltihop
+            const sh = (v) => Math.round(v / maxN);
+            onDone?.({ ok: sh(team.ok), fel: sh(team.fel), miss: sh(team.miss), delat: maxN, lagOk: team.ok, lagFel: team.fel });
+          } else onDone?.(stats);
+        }
+        return;
+      }
       t += dt;
-      if (t >= P.seconds) { done = true; return; }
+      if (t >= P.seconds) { done = true; pend = null; queued = null; return; }
       walker.update(dt);
       if (workT > 0) workT -= dt;
       if (trashT > 0) trashT -= dt;
-      // ugnen gräddar
-      for (let s = 0; s < 2; s++) {
-        const pz = oven[s];
-        if (!pz) continue;
-        const a = stageOf(pz.bake);
-        pz.bake += dt;
-        const b = stageOf(pz.bake);
-        if (a < 3 && b === 3) { play('ok'); pops.add(SLOT_X[s], OVEN_POP_Y, 'KLAR!', '#8ee03c'); }
-        if (a < 4 && b === 4) { play('miss'); stats.brand++; pops.add(SLOT_X[s], OVEN_POP_Y, 'BRÄNNS!', '#ff6a6a'); }
-        if (b === 4 && Math.random() < dt * 10) smoke(SLOT_X[s], archTop(SLOT_X[s]) + 1);
+      if (pend) { pend.t -= dt; if (pend.t <= 0) answered(); }   // inget svar (ledaren gick?) – då får man försöka igen
+      coop.tick();
+      if (coop.active) maxN = Math.max(maxN, coop.peers().length + 1);
+      if (coop.active !== wasCoop) {   // en kollega kom in: extrabordet fram och fullt ös i matsalen
+        wasCoop = coop.active;
+        if (wasCoop) { const more = allTables(); play('knock'); pops.add(FW >> 1, 148, more ? 'NI JOBBAR IHOP - ETT BORD TILL!' : 'NI JOBBAR IHOP!', '#8ee03c'); }
       }
+      // Skiftledaren (eller solo) kör matsalen och ugnen; medarbetare följer ledarens läge
+      const iLead = !coop.active || (coop.leader && coop.settled);
+      if (iLead && !wasLead) {
+        // JAG tar över passet: hoppa över gamla id:n (kunder och ugnens pizzor – inga krockar),
+        // låt kunderna gå vidare från där de står och släpp in nästa gäst snart
+        seq = Math.max(seq, 1 + customers.reduce((mx, k) => Math.max(mx, k.id | 0), -1), 1 + oven.reduce((mx, pz) => Math.max(mx, pz ? pz.id | 0 : -1), -1));
+        custIn = Math.min(custIn, 2);
+        for (const k of customers) {
+          k.gx = k.gy = k.gpath = undefined;
+          if (k.state === 'walk' || k.state === 'leave') k.path = restOf(routeOf(k), k.x, k.y);
+          else { [k.x, k.y] = seatOf(k); k.path = []; }
+        }
+        snapAsap();
+      }
+      wasLead = iLead;
+      if (iLead) {
+        // ugnen gräddar
+        for (let s = 0; s < 2; s++) {
+          const pz = oven[s];
+          if (!pz) continue;
+          const a = stageOf(pz.bake);
+          pz.bake += dt;
+          const b = stageOf(pz.bake);
+          if (a < 3 && b === 3) { play('ok'); pops.add(SLOT_X[s], OVEN_POP_Y, 'KLAR!', '#8ee03c'); }
+          if (a < 4 && b === 4) { play('miss'); if (!coop.active || mineIds.has(pz.id)) stats.brand++; pops.add(SLOT_X[s], OVEN_POP_Y, 'BRÄNNS!', '#ff6a6a'); }
+          if (b === 4 && Math.random() < dt * 10) smoke(SLOT_X[s], archTop(SLOT_X[s]) + 1);
+        }
+      } else mateOven(dt);
       // gnistor från elden
       if (Math.random() < dt * 2.5) parts.push({ k: 'spark', x: 103 + Math.random() * 10, y: 52, vx: Math.random() * 8 - 2, vy: -10 - Math.random() * 6, life: 0.6, age: 0 });
       for (const p of parts) if (p.k === 'spark' && p.y < archTop(Math.round(p.x)) + 1) p.age = p.life;
-      // nya kunder (en van bagare får fler – P.pace; tålamodet är detsamma)
+      if (!iLead) { tweenGuests(dt); return; }
+      // nya kunder (en van bagare får fler – P.pace; tålamodet är detsamma; ihop kommer de tätare)
       custIn -= dt;
-      if (custIn <= 0) { custIn = (8.5 - 3 * Math.min(1, t / P.seconds) + hash(seq, 3) * 2.5) * P.pace; spawn(false); }
+      if (custIn <= 0) { custIn = (8.5 - 3 * Math.min(1, t / P.seconds) + hash(seq, 3) * 2.5) * P.pace * (coop.active ? 0.45 : 1); spawn(false); }
       for (const k of customers) {
         if (k.state === 'walk' || k.state === 'leave') {
           const sp = (k.state === 'walk' ? 36 : 42) * dt, wp = k.path[0];
@@ -809,17 +1130,19 @@ export function makeJobbPizzeria(A, { onDone } = {}) {
           } else k.state = k.state === 'walk' ? 'sit' : 'gone';
         } else if (k.state === 'sit') {
           k.patience -= dt;
-          if (k.patience <= 0) { leave(k); stats.miss++; play('miss'); pops.add(k.x, popY(k) + 12, 'GICK HEM!', '#d8d2c0'); }
+          if (k.patience <= 0) { leave(k); stats.miss++; team.miss++; play('miss'); pops.add(k.x, popY(k) + 12, 'GICK HEM!', '#d8d2c0'); }
         } else if (k.state === 'eat') {
           k.eat -= dt;
           if (k.eat <= 0) leave(k);
         }
       }
       customers = customers.filter((k) => k.state !== 'gone');
+      if (coop.active) { snapIn -= dt; if (snapIn <= 0) { snapIn = 0.35; sendSnap(); coop.sentSnap(); } }
     },
     move(x, y) { hover = done ? null : stationAt(x, y); },
     down(x, y) {
       if (done) return;
+      if (pend) { queued = [x, y]; return; }   // väntar på skiftledarens svar – klicket tas strax
       const k = customerAt(x, y);
       if (k) { const [sx, sy] = servePoint(k); walker.walkTo(sx, sy, () => { if (k.state === 'sit') tryServe(k); }); return; }
       const s = stationAt(x, y);
@@ -827,6 +1150,7 @@ export function makeJobbPizzeria(A, { onDone } = {}) {
       walker.walkTo(x, y);
     },
     key(kk) { if (kk === 'Escape' && !done) abortShift(A); },
+    exit() { coop.dispose(); },
     draw(ctx) {
       ctx.setTransform(A.pxs, 0, 0, A.pxs, 0, 0);
       ctx.drawImage(bg(), 0, 0);
@@ -930,7 +1254,7 @@ export function makeJobbPizzeria(A, { onDone } = {}) {
         ctxText(ctx, SMALL, s, ((FW - w) >> 1) + 4, 21, '#ffd23f');
         ctx.globalAlpha = 1;
       }
-      drawShiftHud(ctx, { W: FW }, { t, dur: P.seconds, ok: stats.ok, fel: stats.fel, title: 'PIZZERIA NAPOLI' });
+      drawShiftHud(ctx, { W: FW }, { t, dur: P.seconds, ok: maxN > 1 ? team.ok : stats.ok, fel: maxN > 1 ? team.fel : stats.fel, title: maxN > 1 ? 'PIZZERIA NAPOLI IHOP' : 'PIZZERIA NAPOLI' });
       if (done) drawTimeUp(ctx, { W: FW, H: FH });
     },
   };
