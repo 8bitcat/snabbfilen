@@ -1,7 +1,7 @@
 {
-  "version": "0.66.0",
+  "version": "0.67.0",
   "date": "2026-09-30",
-  "title": "Jobba ihop på Vårdcentralen",
+  "title": "Jobba ihop i Incheckningen",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",

@@ -10,6 +10,13 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.67.0] – 2026-09-30 – Jobba ihop i Incheckningen
+- Jobba ihop i Incheckningen: bjud in en kompis med 💼 Jobba ihop när du börjar passet (eller via 👥 mitt i passet) – ni delar disk 3, kön och väskorna.
+- Den som trycker GODKÄNN eller NEKA på skärmen har resenären tills boardingkortet är lämnat – kollegan ser "KOLLEGANS RESENÄR". Väskorna kan båda ta hand om: skriva ut lappen, sätta den på väskan och skicka den (eller ställa den i specialskåpet) medan den andra väljer plats.
+- Den som kom in via inbjudan börjar vid lappskrivaren, och en hjälprad förklarar uppdelningen.
+- Hinner båda till samma sak gäller bara den första – den som kom för sent får höra "HANN FÖRE!". Den som gör det får poängen; lagets räkning delas lika på lönebeskedet.
+- När ni är fler kommer resenärerna ungefär dubbelt så ofta. Går den som leder passet hem tar någon annan över direkt.
+
 ## [0.66.0] – 2026-09-30 – Jobba ihop på Vårdcentralen
 - Jobba ihop på Vårdcentralen: bjud in en kompis med 💼 Jobba ihop när du börjar passet (eller via 👥 mitt i passet) – ni delar väntrummet, patienterna, båda luckorna och nummertavlan.
 - Ropar du in en patient är den din tills du skickat vidare den – kollegan ser "KOLLEGANS PATIENT". Så kan ni ta var sin patient vid var sin lucka samtidigt.
