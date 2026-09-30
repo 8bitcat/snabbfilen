@@ -10,6 +10,12 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.64.0] – 2026-09-30 – Jobba ihop på Tvätteriet
+- Jobba ihop på Tvätteriet: bjud in en kompis med 💼 Jobba ihop när du börjar passet (eller via 👥 mitt i passet) – ni delar disken, de sex tvättmaskinerna, de fyra torktumlarna, vikbordet och kunderna.
+- Varje tvätt finns på ett enda ställe: hinner båda till samma maskin eller samma påse gäller bara den första – den som kom för sent får höra "HANN FÖRE!". En plats på vikbordet där någon viker är upptagen.
+- Du ser vad kollegan bär och när hen viker. Den som lämnar ut påsen får poängen; lagets rätt och fel delas lika på lönebeskedet.
+- När ni är fler kommer kunderna ungefär dubbelt så ofta. Går den som leder passet hem tar någon annan över direkt, och tvätt som någon höll i hamnar på vikbordet.
+
 ## [0.63.0] – 2026-09-30 – Jobba ihop på Macken
 - Jobba ihop på Macken: bjud in en kompis med 💼 Jobba ihop när du börjar passet (eller via 👥 mitt i passet) – ni tar hand om samma bilar vid pumparna och samma kunder i kiosken.
 - Pistolerna, laddkabeln och skrapan vid varje ö kan bara en hålla åt gången – du ser kollegans slang eller skrapa i handen. Varje bil tankas av en och tvättas av en.

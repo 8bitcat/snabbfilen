@@ -19,10 +19,14 @@
 // på bänken) så att luckor, displayer, nummerlappar och kunder syns. Maskinernas
 // puffar dyker upp under maskinen vid golvet, inte över skyltarna. Klick under
 // vikningen köas och utförs när påsen är knuten.
+//
+// JOBBA IHOP: flera kan dela passet – kunderna, disken, maskinerna och vikbordet är gemensamma
+// (se "jobba tillsammans" nedan), det man bär och vikningen man håller på med är ens egna.
 import { drawPerson, makeLook } from '../core/people.js';
 import { Pix, SMALL, BIG, ctxText, textW, text, mix, mul, css, hash, bayer } from '../core/floor-pix.js';
 import { createWalker, selfDrawable, folkDrawables, WALK_SEQ } from '../scenes/walkable.js';
 import { planOf, drawShiftHud, drawTimeUp, makePops, abortShift } from './shift.js';
+import { makeShiftCoop } from '../net/coop.js';
 import { play } from '../core/sound.js';
 import { FRAMES } from '../data/frames.js';
 import { ATLAS } from '../scenes/room.js';
@@ -949,6 +953,22 @@ function drawItem(ctx, it, cx, by, t) {
   drawTag(ctx, x + s.width - 5, y + (it.kind === 'folded' ? 3 : it.kind === 'bag' ? 7 : 5), o.num);
 }
 
+// ======================= jobba ihop: det som skickas mellan kollegorna =======================
+// Kundernas utseende ur ett frö: i ett delat pass skickar skiftledaren bara fröet (ett tal) i
+// stället för hela utseendet, och alla ritar ändå samma människor (som på Posten och Macken).
+const lookOf = (seed) => makeLook(rng(seed));
+const KINDS = ['bag', 'wet', 'dry', 'folded'];   // det man bär – och det som ligger på disken och vikbordet
+const K_ST = ['walk', 'sit', 'leave'];           // kundernas lägen i skiftledarens snap (index = kod)
+const M_ST = ['idle', 'run', 'done'];            // maskinernas
+const DIRS = ['down', 'up', 'left', 'right'];
+// ljuden som skiftledarens utfall får spela hos den det gäller
+const LJUD = new Set(['ok', 'click', 'coin', 'fel', 'miss', 'slide', 'box', 'door']);
+const C_GREY = '#d8d2c0', C_OK = '#8ee03c', C_FEL = '#ff6a6a';
+// Kundernas vägar – samma hos alla, så en medarbetare kan låta dem gå vidare mellan skiftledarens
+// lägen: in (nummerlappen, disken, framför bänken, platsen) och ut genom UT-dörren.
+const walkRoute = (k) => [[AUTO.x + 12, AUTO.base + 4], [k.slot.x, FLOOR_Y + 6], [k.seat.x, SEAT_Y + 12], [k.seat.x, SEAT_Y]];
+const leaveRoute = (k) => [[k.seat.x, SEAT_Y + 14], [8, OUT_Y], [-18, OUT_Y]];
+
 // ======================= själva jobbet =======================
 export function makeJobbTvatt(A, { onDone }) {
   const stats = { ok: 0, fel: 0, miss: 0, missfargat: 0 };
@@ -967,124 +987,589 @@ export function makeJobbTvatt(A, { onDone }) {
     [CART.x - 2, CART.fy - 9, CART.x + 32, CART.fy],
   ]);
   const pops = makePops();
+  const popLog = [];                  // de senaste puffarnas text (provet läser dem: syntes "HANN FÖRE!"?)
+  const addPop = pops.add;
+  pops.add = (x, y, txt, c) => { popLog.push(txt); if (popLog.length > 30) popLog.shift(); addPop(x, y, txt, c); };
   const washers = WASHERS.map((w) => ({ ...w, state: 'idle', o: null, tt: 0, rot: 0 }));
   const dryers = DRYERS.map((d) => ({ ...d, state: 'idle', o: null, tt: 0, rot: 0 }));
   const cslots = CSLOTS.map((x) => ({ x, item: null, res: null }));
-  const tslots = TSLOTS.map((x) => ({ x, item: null }));
+  // vikbordets platser: det som ligger där (item) – eller vikningen som pågår där: fb = vem som
+  // viker, fo = tvätten, ft = hur länge. En plats där någon viker är låst för alla andra.
+  const tslots = TSLOTS.map((x) => ({ x, item: null, fb: null, fo: null, ft: 0 }));
   const seats = SEATS.map((x) => ({ x, k: null }));
   let customers = [], t = 0, seq = 0, custIn = 0.6, carry = null, folding = null;
-  let queued = null;                  // klick som kom medan man vek – utförs när vikningen är klar
+  let queued = null;                  // klick som kom medan man vek (eller väntade på skiftledaren) – utförs sedan
   let nextNum = 10 + ((Math.random() * 70) | 0), shownNum = nextNum - 1, ticketT = 0;
   let done = false, doneT = 0, reported = false;
+  let testPat = 0;                    // (provet) kundernas tålamod i sekunder – 0 = som vanligt
   const cache = {};
   const bg = () => (cache.bg ||= paintLaundry());
   const prop = (k, fn) => (cache[k] ||= fn());
 
   // ---------- kunder och ordrar ----------
-  function newOrder(cls) {
-    const C = CLS[cls], g = [];
-    for (let i = 0; i < 3; i++) g.push(C.cols[(Math.random() * C.cols.length) | 0]);
+  // Ordern: id = kundens id (samma hos alla i ett delat pass), num = nummerlappen; ci och si är
+  // plaggens och påsens färger som index (det är dem skiftledaren skickar).
+  function newOrder(cls, id = seq++) {
+    const C = CLS[cls], ci = [];
+    for (let i = 0; i < 3; i++) ci.push((Math.random() * C.cols.length) | 0);
     const num = nextNum; nextNum = nextNum >= 99 ? 10 : nextNum + 1;
-    return { num, cls, g, sack: SACKS[(Math.random() * SACKS.length) | 0], stained: false, dyed: 0, dye: 0 };
+    const si = (Math.random() * SACKS.length) | 0;
+    return { id, num, cls, ci, g: ci.map((j) => C.cols[j]), si, sack: SACKS[si], stained: false, dyed: 0, dye: 0 };
   }
   function spawnCustomer(instant = false, cls) {
     const seat = seats.find((s) => !s.k), slot = cslots.find((s) => !s.item && !s.res);
     if (!seat || !slot) return null;
-    const o = newOrder(cls ?? ((Math.random() * 3) | 0));
-    const k = { look: makeLook(), o, seat, slot, id: seq++, x: -12, y: IN_Y, dir: 'right', state: 'walk', plan: [], patience: 0, pmax: 1, shake: 0, bagOut: null };
+    const id = seq++, o = newOrder(cls ?? ((Math.random() * 3) | 0), id);
+    const ls = (Math.random() * 0x7fffffff) | 0;   // utseendet ur ett frö (skiftledaren skickar bara fröet)
+    const k = { look: lookOf(ls), ls, o, seat, slot, id, x: -12, y: IN_Y, dir: 'right', state: 'walk', plan: [], patience: 0, pmax: 1, shake: 0, bagOut: null };
     o.cust = k; seat.k = k; slot.res = k;
     if (instant) {
       slot.item = { kind: 'bag', o }; slot.res = null; shownNum = o.num;
       k.x = seat.x; k.y = SEAT_Y; sitDown(k);
-    } else {
-      k.plan = [
-        { to: [AUTO.x + 12, AUTO.base + 4] },
-        { wait: 0.6, face: 'left', fn: () => { shownNum = o.num; ticketT = 0.6; play('click'); } },
-        { to: [slot.x, FLOOR_Y + 6] },
-        { wait: 0.6, face: 'up', fn: () => { slot.item = { kind: 'bag', o }; slot.res = null; k.dropped = true; play('slide'); } },
-        { to: [seat.x, SEAT_Y + 12] },
-        { to: [seat.x, SEAT_Y], face: 'down' },
-        { fn: () => sitDown(k) },
-      ];
-    }
+    } else k.plan = walkInPlan(k);
     customers.push(k);
     return k;
   }
+  // vägen in: lappen i automaten, påsen på disken, sedan fram till bänken och sätta sig
+  function walkInPlan(k) {
+    const [auto, slot, front, seat] = walkRoute(k);
+    return [
+      { to: auto },
+      { wait: 0.6, face: 'left', fn: () => { shownNum = k.o.num; ticketT = 0.6; play('click'); } },
+      { to: slot },
+      { wait: 0.6, face: 'up', fn: () => { k.slot.item = { kind: 'bag', o: k.o }; if (k.slot.res === k) k.slot.res = null; k.dropped = true; play('slide'); snapAsap(); } },
+      { to: front },
+      { to: seat, face: 'down' },
+      { fn: () => sitDown(k) },
+    ];
+  }
   function sitDown(k) {
     k.state = 'sit'; k.dir = 'down'; k.dropped = true;
-    k.pmax = 48 - 10 * Math.min(1, t / P.seconds); k.patience = k.pmax;
+    k.pmax = testPat || 48 - 10 * Math.min(1, t / P.seconds); k.patience = k.pmax;
   }
   function leave(k) {
     k.state = 'leave';
     if (k.seat.k === k) k.seat.k = null;
-    k.plan = [{ to: [k.x, SEAT_Y + 14] }, { to: [8, OUT_Y] }, { to: [-18, OUT_Y] }];
+    k.plan = leaveRoute(k).map((p) => ({ to: p }));
   }
-  // kunden gick: städa bort allt som hörde till ordern
+  const custById = (id) => customers.find((k) => k.id === id);
+  // kunden gick: städa bort allt som hörde till ordern (även det en kollega bar – hen ser det i nästa snap)
   function purge(o) {
-    for (const s of cslots) { if (s.item?.o === o) s.item = null; if (s.res === o.cust) s.res = null; }
-    for (const s of tslots) if (s.item?.o === o) s.item = null;
+    for (const s of cslots) { if (s.item?.o === o) s.item = null; if (s.res?.o === o) s.res = null; }
+    for (const s of tslots) { if (s.item?.o === o) s.item = null; if (s.fo === o) { s.fb = null; s.fo = null; s.ft = 0; } }
     for (const m of [...washers, ...dryers]) if (m.o === o) { m.o = null; m.state = 'idle'; m.tt = 0; }
-    if (carry?.o === o) { carry = null; pops.add(walker.px, walker.py + 3, 'KUNDEN GICK', '#d8d2c0'); }
+    if (carry?.o === o) { carry = null; pops.add(walker.px, walker.py + 3, 'KUNDEN GICK', C_GREY); }
     if (folding?.o === o) folding = null;
+    for (const [id, h] of [...hands]) if (h.o === o) hands.delete(id);
   }
 
-  // ---------- handgrepp ----------
-  function pickCounter(s) {
-    if (s.item) {
-      if (!carry) { carry = s.item; s.item = null; play('ok'); }
-      else if (carry.kind === 'bag') { const tmp = s.item; s.item = carry; carry = tmp; play('click'); }
-      else pops.add(s.x, POP_Y, 'HÄNDERNA FULLA', '#d8d2c0');
-    } else if (carry?.kind === 'bag' && !s.res) { s.item = carry; carry = null; play('click'); }
+  // ---------- jobba tillsammans (delat pass via js/net/coop.js) ----------
+  // Skiftledaren (den som varit längst i tvätteriet) kör det gemensamma: kunderna (när de kommer,
+  // vad de vill ha tvättat, tålamodet, platsen på bänken och på disken), de sex tvättmaskinerna och
+  // fyra torktumlarna med sina tider, vikbordet och NU-tavlan. Läget delas ~3 ggr/s; medarbetarna
+  // ser samma tvätteri – kunderna går och trummorna snurrar vidare hos dem mellan lägena – och
+  // skickar varje handling på något gemensamt som ett önskemål med det de såg och det de bär: ta en
+  // påse från disken (eller ställa dit en), lasta och tömma en maskin, ta eller lägga något på
+  // vikbordet, börja vika och knyta påsen, lämna påsen till kunden. Skiftledaren kör samma kod åt
+  // dem och är ENDA domaren: varje tvätt finns på ETT ställe – disken, en maskin, vikbordet eller i
+  // EN persons händer (skiftledaren håller reda på vem som bär vad) – en maskin lastas och töms av
+  // EN, platsen på vikbordet där någon viker är låst för alla andra, och en kund får sin påse EN
+  // gång. Själva vikningen går hos den som viker. Poängen går till den som gjorde det; lagets rätt,
+  // fel och missade delas lika vid passets slut. Ihop kommer kunderna tätare (bänken och disken har
+  // samma platser – ingen ny grafik).
+  const coop = makeShiftCoop(A, 'away:jobbtvatt');
+  let snapIn = 0, wasLead = true, wasCoop = false, maxN = 1, snaps = 0;
+  let pend = null;                         // medarbetarens önskemål som väntar på svar
+  const team = { ok: 0, fel: 0, miss: 0 }; // LAGETS räkning – delas lika vid passets slut
+  const hands = new Map();                 // vad kollegorna bär: id → { kind, o } (hos skiftledaren: sanningen)
+  const absent = new Map();                // (skiftledaren) id → sedan när kollegan inte syns i tvätteriet
+  const mate = () => coop.active && !coop.leader;
+  const meId = () => coop.myId || '';
+  const snapAsap = () => { snapIn = 0; };
+  const int = (v, dflt) => (Number.isInteger(v) ? v : dflt);
+  const str = (v) => (typeof v === 'string' ? v.slice(0, 80) : '');
+  // order: [nummer, program, plaggens färger ×3, påsen, missfärgad (0 = nej, annars 1 + maskinens program), färgat·100]
+  const ordEnc = (o) => [o.num, o.cls, ...o.ci, o.si, o.stained ? 1 + o.dyed : 0, Math.round(o.dye * 100)];
+  function ordDec(old, id, e) {
+    const cls = clamp(e[1] | 0, 0, CLS.length - 1), C = CLS[cls];
+    const ci = [0, 1, 2].map((j) => clamp(e[2 + j] | 0, 0, C.cols.length - 1)), si = clamp(e[5] | 0, 0, SACKS.length - 1);
+    const same = old && old.id === id && old.cls === cls && old.si === si && old.ci.every((v, j) => v === ci[j]);
+    const o = same ? old : { id, cls, ci, g: ci.map((j) => C.cols[j]), si, sack: SACKS[si], stained: false, dyed: 0, dye: 0 };
+    const sd = clamp(e[6] | 0, 0, CLS.length);
+    o.num = clamp(e[0] | 0, 0, 99); o.stained = sd > 0; o.dyed = sd > 0 ? sd - 1 : 0; o.dye = clamp((e[7] | 0) / 100, 0, 1);
+    return o;
   }
-  function useWasher(w) {
+  // en sak (påsen, korgen, den vikta påsen): [sort (KINDS), orderns id] eller 0
+  const itemEnc = (it) => (it ? [KINDS.indexOf(it.kind), it.o.id] : 0);
+  function itemDec(a) {
+    if (!Array.isArray(a) || !KINDS[a[0] | 0]) return null;
+    const c = custById(int(a[1], -1));
+    return c ? { kind: KINDS[a[0] | 0], o: c.o } : null;
+  }
+  // maskin: [läge (M_ST), tid·10, orderns id] eller 0 (tiden avrundas nedåt – medarbetaren ligger aldrig före)
+  const machEnc = (m) => (m.state === 'idle' || !m.o ? 0 : [M_ST.indexOf(m.state), Math.floor(m.tt * 10), m.o.id]);
+  // kund: [id, platsen på bänken, platsen på disken, läge (K_ST), x, y, tålamod·10, max·10, utseendefrö,
+  // flaggor (påsen ligger på disken 1, fick sin påse 2, står still en stund 4), vägpunkter kvar, håll (DIRS), ...ordern]
+  function custEnc(k) {
+    const st = k.plan[0];
+    return [k.id, seats.indexOf(k.seat), cslots.indexOf(k.slot), K_ST.indexOf(k.state), Math.round(k.x), Math.round(k.y),
+      Math.round(k.patience * 10), Math.round(k.pmax * 10), k.ls | 0,
+      (k.dropped ? 1 : 0) | (k.bagOut ? 2 : 0) | (st && st.wait !== undefined ? 4 : 0), k.plan.filter((s) => s.to).length,
+      Math.max(0, DIRS.indexOf(k.dir)), ...ordEnc(k.o)];
+  }
+  const sendSnap = () => coop.send({
+    t: 'snap',
+    ku: customers.map(custEnc),
+    di: cslots.map((s) => itemEnc(s.item)),                          // disken
+    tv: washers.map(machEnc), to: dryers.map(machEnc),                // tvättmaskinerna och torktumlarna
+    // vikbordet: 0, en sak [sort, id] – eller vikningen som pågår [4, id, vem som viker, tid·10]
+    bo: tslots.map((s) => (s.fb != null && s.fo ? [4, s.fo.id, s.fb, Math.floor(s.ft * 10)] : itemEnc(s.item))),
+    // vad var och en bär: [spelarens id, sort, orderns id] (skiftledaren själv också)
+    ha: [...(carry ? [[meId(), ...itemEnc(carry)]] : []), ...[...hands].map(([id, h]) => [id, ...itemEnc(h)])],
+    nu: [nextNum, shownNum],
+    tm: [team.ok, team.fel, team.miss],
+    sq: seq,   // (nästa id – tar någon annan över fortsätter numreringen efter det)
+  });
+  function machDec(m, a, dryer) {
+    const c = Array.isArray(a) ? custById(int(a[2], -1)) : null;
+    if (!c) { m.state = 'idle'; m.o = null; m.tt = 0; return; }
+    const st = M_ST[clamp(a[0] | 0, 1, 2)], fresh = m.o !== c.o;
+    m.o = c.o; m.tt = Math.max(0, (a[1] | 0) / 10);
+    if (st === 'run') m.state = 'run';
+    else if (m.state !== 'done' || fresh) finishMachine(m, dryer, !snaps);
+  }
+  const applySnap = (m) => {
+    if (Number.isFinite(m.sq)) seq = Math.max(seq, m.sq | 0);
+    const me = meId();
+    if (Array.isArray(m.ku)) {
+      const next = [];
+      for (const a of m.ku.slice(0, 12)) {
+        if (!Array.isArray(a) || a.length < 20) continue;
+        const id = int(a[0], -1);
+        if (id < 0 || next.some((q) => q.id === id)) continue;
+        const st = K_ST[a[3] | 0] || 'sit';
+        let k = custById(id);
+        const was = k ? k.state : null, hadDropped = k ? !!k.dropped : true;
+        if (!k) k = { id, x: +a[4] || 0, y: +a[5] || 0, dir: 'right', plan: [], patience: 0, pmax: 1, shake: 0, bagOut: null };
+        if (k.ls !== (a[8] | 0) || !k.look) { k.ls = a[8] | 0; k.look = lookOf(k.ls); }
+        k.o = ordDec(k.o, id, a.slice(12)); k.o.cust = k;
+        k.seat = seats[clamp(a[1] | 0, 0, seats.length - 1)]; k.slot = cslots[clamp(a[2] | 0, 0, cslots.length - 1)];
+        k.state = st;
+        k.pmax = Math.max(1, (a[7] | 0) / 10); k.patience = clamp((a[6] | 0) / 10, 0, k.pmax);
+        const fl = a[9] | 0;
+        k.dropped = !!(fl & 1); k.bagOut = fl & 2 ? k.o : null; k.gwait = !!(fl & 4);
+        k.dir = DIRS[clamp(a[11] | 0, 0, 3)];
+        k.gx = +a[4] || 0; k.gy = +a[5] || 0;
+        const route = st === 'walk' ? walkRoute(k) : st === 'leave' ? leaveRoute(k) : [];
+        k.gpath = route.slice(Math.max(0, route.length - clamp(a[10] | 0, 0, route.length)));
+        // det som händer vid disken och på bänken hörs och syns hos alla
+        if (was && !hadDropped && k.dropped) play('slide');
+        if (was === 'sit' && st === 'leave' && !k.bagOut) { play('miss'); pops.add(k.x, k.y - 64, 'GICK HEM!', C_GREY); }
+        next.push(k);
+      }
+      customers = next;
+      for (const s of seats) s.k = null;
+      for (const s of cslots) s.res = null;
+      for (const k of customers) { if (k.state !== 'leave') k.seat.k = k; if (k.state === 'walk' && !k.dropped) k.slot.res = k; }
+    }
+    if (Array.isArray(m.di)) cslots.forEach((s, i) => { s.item = itemDec(m.di[i]); });
+    if (Array.isArray(m.tv)) washers.forEach((w, i) => machDec(w, m.tv[i], false));
+    if (Array.isArray(m.to)) dryers.forEach((d, i) => machDec(d, m.to[i], true));
+    if (Array.isArray(m.bo)) tslots.forEach((s, i) => {
+      const a = m.bo[i];
+      if (Array.isArray(a) && a[0] === 4) {
+        const c = custById(int(a[1], -1));
+        s.item = null; s.fo = c ? c.o : null; s.fb = c ? str(a[2]) : null; s.ft = Math.max(0, (a[3] | 0) / 10);
+      } else { s.item = itemDec(a); s.fb = null; s.fo = null; s.ft = 0; }
+    });
+    const gone = (o) => { const c = custById(o.id); return !c || (c.state === 'leave' && !c.bagOut); };
+    // min vikning gäller bara så länge platsen är låst åt mig (kunden kan ha tröttnat och gått)
+    if (folding && !(folding.s.fb === me && folding.s.fo === folding.o)) {
+      if (gone(folding.o)) pops.add(walker.px, walker.py + 3, 'KUNDEN GICK', C_GREY);
+      folding = null;
+    }
+    if (Array.isArray(m.ha)) {
+      const prev = carry;
+      let mine = null;
+      hands.clear();
+      for (const h of m.ha.slice(0, 12)) {
+        if (!Array.isArray(h)) continue;
+        const it = itemDec(h.slice(1));
+        if (!it) continue;
+        if (h[0] === me) mine = it; else hands.set(str(h[0]), it);
+      }
+      carry = mine && prev && prev.o === mine.o && prev.kind === mine.kind ? prev : mine;
+      if (prev && !carry && gone(prev.o)) pops.add(walker.px, walker.py + 3, 'KUNDEN GICK', C_GREY);
+    }
+    if (Array.isArray(m.nu)) {
+      nextNum = clamp(m.nu[0] | 0, 10, 99);
+      const sn = m.nu[1] | 0;
+      if (sn !== shownNum) { if (snaps) { ticketT = 0.6; play('click'); } shownNum = sn; }
+    }
+    if (Array.isArray(m.tm)) { team.ok = m.tm[0] | 0; team.fel = m.tm[1] | 0; team.miss = m.tm[2] | 0; }
+    snaps++;
+  };
+  // Medarbetarens tvätteri mellan ledarens lägen: trummorna snurrar och tiderna går, en kollegas
+  // vikning fortsätter, kunderna går vidare längs samma väg och tålamodet rinner – nästa snap rättar allt.
+  function mateTick(dt) {
+    tickMachines(dt);
+    for (const s of tslots) if (s.fb != null && folding?.s !== s) s.ft += dt;
+    for (const k of customers) {
+      if (k.gx === undefined) { k.gx = k.x; k.gy = k.y; }
+      if (k.state === 'sit') { k.dir = 'down'; k.patience = Math.max(0, k.patience - dt); }
+      else if (!k.gwait) {
+        const wp = k.gpath && k.gpath[0], sp = (k.state === 'leave' ? 42 : 36) * dt;
+        if (wp) {
+          const dx = wp[0] - k.gx, dy = wp[1] - k.gy, d = Math.hypot(dx, dy);
+          k.dir = k.state === 'walk' && k.gpath.length === 1 && d < 14 ? 'down' : Math.abs(dx) >= Math.abs(dy) ? (dx < 0 ? 'left' : 'right') : dy < 0 ? 'up' : 'down';
+          if (d <= sp) { k.gx = wp[0]; k.gy = wp[1]; k.gpath.shift(); } else { k.gx += dx / d * sp; k.gy += dy / d * sp; }
+        }
+      }
+      const ex = k.gx - k.x, ey = k.gy - k.y;
+      if (Math.hypot(ex, ey) > 24) { k.x = k.gx; k.y = k.gy; }
+      else { const f = Math.min(1, dt * 10); k.x += ex * f; k.y += ey * f; }
+    }
+  }
+  // JAG tar över passet: hoppa över gamla id:n (inga krockar), kunderna går vidare från där de syns
+  // längs samma väg (lappen, påsen, bänken), maskinerna och vikbordet fortsätter, nästa kund kommer snart
+  function takeOver() {
+    seq = Math.max(seq, 1 + Math.max(-1, ...customers.map((k) => k.id)));
+    for (const k of customers) {
+      if (!k.gpath) continue;   // (en egen kund från förut, ingen snap emellan – dess plan gäller)
+      if (k.gx !== undefined) { k.x = k.gx; k.y = k.gy; }
+      const n = k.gpath.length;
+      if (k.state === 'sit') { k.x = k.seat.x; k.y = SEAT_Y; k.plan = []; }
+      else if (k.state === 'walk') {
+        // (planen: 0 till automaten, 1 lappen, 2 till disken, 3 påsen, 4 fram till bänken, 5 till platsen, 6 sätta sig)
+        const from = k.dropped ? (n >= 2 ? 4 : n === 1 ? 5 : 6) : n >= 4 ? 0 : n === 3 ? (k.gwait ? 1 : 2) : 3;
+        k.plan = walkInPlan(k).slice(from);
+      } else k.plan = leaveRoute(k).slice(-Math.max(1, n)).map((p) => ({ to: p }));
+      k.gx = k.gy = undefined; k.gpath = null; k.gwait = false;
+    }
+    for (const s of seats) s.k = null;
+    for (const s of cslots) s.res = null;
+    for (const k of customers) { if (k.state !== 'leave') k.seat.k = k; if (k.state === 'walk' && !k.dropped) k.slot.res = k; }
+    custIn = Math.min(custIn, 2);
+    pend = null;
+    snapAsap();
+  }
+  // jag blir medarbetare: nästa snap bestämmer var allt är (och vad alla bär)
+  function becomeMate() {
+    for (const k of customers) { k.gx = undefined; k.gpath = null; }
+    hands.clear();
+  }
+  // (skiftledaren) en vikning som släpps: den torra tvätten ligger kvar på platsen
+  function unlockFold(s) {
+    if (s.fo && !s.item && customers.some((k) => k.o === s.fo && k.state !== 'leave')) s.item = { kind: 'dry', o: s.fo };
+    s.fb = null; s.fo = null; s.ft = 0;
+    snapAsap();
+  }
+  // (skiftledaren) tvätten någon bar när hen gick läggs på vikbordet (eller disken) – ingen tvätt försvinner
+  function setDown(it) {
+    if (!it || !customers.some((k) => k.o === it.o && k.state !== 'leave')) return;
+    const s = tslots.find((q) => !q.item && q.fb == null) || cslots.find((q) => !q.item && !q.res);
+    if (s) s.item = { kind: it.kind, o: it.o };
+  }
+  // (skiftledaren) den som gått från tvätteriet (en stund – inte bara ett ögonblick) bär inget längre
+  // och viker inte längre: tvätten läggs på vikbordet
+  function sweepGone() {
+    const ids = new Set([meId(), ...coop.peers().map((f) => f.id)]);
+    const gone = (id) => {
+      if (ids.has(id)) { absent.delete(id); return false; }
+      if (!absent.has(id)) absent.set(id, t);
+      return t - absent.get(id) > 1.5;
+    };
+    for (const [id, h] of [...hands]) if (gone(id)) { hands.delete(id); setDown(h); snapAsap(); }
+    for (const s of tslots) if (s.fb != null && folding?.s !== s && gone(s.fb)) unlockFold(s);
+  }
+  // mitt pass är slut: det jag bär läggs på vikbordet åt kollegorna, och vikningen jag höll på med släpps
+  function letGo() {
+    if (!coop.active) return;
+    const c = carry, f = folding;
+    carry = null; folding = null;
+    if (mate()) { coop.send({ t: 'lamna', c: itemEnc(c) }); return; }
+    if (f) unlockFold(f.s);
+    setDown(c);
+    sendSnap();
+  }
+  // (skiftledaren) vad kollegan bär: det skiftledaren vet. Vet den inget (en ny skiftledare) gäller det
+  // kollegan säger att hen bär – om den tvätten inte redan finns någon annanstans.
+  const placed = (o) => cslots.some((s) => s.item?.o === o) || tslots.some((s) => s.item?.o === o || s.fo === o)
+    || washers.some((w) => w.o === o) || dryers.some((d) => d.o === o) || carry?.o === o || folding?.o === o || [...hands.values()].some((h) => h.o === o);
+  function handOf(by, claim) {
+    const h = hands.get(by);
+    if (h || !Array.isArray(claim)) return h || null;
+    const c = custById(int(claim[1], -1)), kind = KINDS[claim[0] | 0];
+    if (!c || !kind || c.state === 'leave' || !c.dropped || placed(c.o)) return null;
+    const it = { kind, o: c.o };
+    hands.set(by, it);
+    return it;
+  }
+
+  // Tvätterskan som gör något med det gemensamma: jag själv, eller – hos skiftledaren – en
+  // medarbetare vars önskemål körs åt hen. Det hen bär följer med önskemålet och tillbaka i svaret.
+  const meK = () => ({ by: meId(), fx: [], get carry() { return carry; }, set carry(v) { carry = v; } });
+  const forK = (by, c) => ({ by, fx: [], carry: c, remote: true });
+  // Utfallet av en handling: [slag, vem (spelar-id; '' = alla i tvätteriet), ...]. Det som gäller mig
+  // (eller alla) syns och hörs här direkt – ensam gäller allt mig; i ett delat pass (eller när jag
+  // kör en medarbetares önskemål) följer resten med svaret ut.
+  function fx(k, who, kind, ...a) {
+    const me = meId(), ut = coop.active || !!k.remote;
+    if (!who || who === me || !ut) doFx(kind, a);
+    if (ut && who !== me) k.fx.push([kind, who, ...a]);
+  }
+  function doFx(kind, a) {
+    if (kind === 's') { if (LJUD.has(a[0])) play(a[0]); }
+    else if (kind === 'p') pops.add(+a[0] || 0, +a[1] || 0, String(a[2]).slice(0, 48), String(a[3] || C_GREY));
+    else if (kind === 'H') hannFore(+a[0] || 0, +a[1] || 0);
+    else if (kind === 'o') stats.ok++;
+    else if (kind === 'f') stats.fel++;
+    else if (kind === 'm') stats.missfargat++;
+    else if (kind === 'k') { const c = custById(a[0] | 0); if (c) c.shake = 0.5; }   // kunden skakar på huvudet
+    else if (kind === 'V') {   // vikningen börjar – den går hos mig
+      const s = tslots[a[0] | 0];
+      if (!s || !s.fo || s.fo.id !== (a[1] | 0)) return;
+      folding = { s, o: s.fo, tt: 0 };
+      walker.stop(); walker.dir = 'down'; play('slide');
+    }
+  }
+  const kLjud = (k, s) => fx(k, k.by, 's', s);
+  const kSay = (k, x, y, txt, col = C_GREY) => fx(k, k.by, 'p', Math.round(x), Math.round(y), txt, col);   // bara hos den det gäller
+  const kPop = (k, x, y, txt, col) => fx(k, '', 'p', Math.round(x), Math.round(y), txt, col);            // syns hos alla
+  const hannFore = (x, y) => { play('miss'); pops.add(x, y, 'HANN FÖRE!', C_FEL); };   // någon annan hann först
+  // skiftledaren: läget ut direkt efter en handling (FÖRE svaret – då har den som frågade redan
+  // det nya läget när svaret kommer) och utfallet till alla
+  function publish(k, svar) {
+    if (!svar && !(coop.active && coop.leader && coop.settled)) return;
+    sendSnap(); coop.sentSnap(); snapIn = 0.35;
+    if (svar) coop.send({ t: 'res', by: k.by, fx: k.fx, c: itemEnc(k.carry) });
+    else if (k.fx.length) coop.send({ t: 'res', by: k.by, fx: k.fx });
+  }
+  // medarbetarens önskemål: tvätterskan väntar på ledarens svar (högst 2,5 s – sedan kan man försöka igen)
+  function ask(m) { coop.send(m); pend = { t: 2.5 }; }
+  function answered() {
+    pend = null;
+    if (folding && folding.asked) folding = null;   // (vikningen är knuten – svaret eller nästa snap säger vad jag bär)
+  }
+  coop.on('snap', (m) => { if (!coop.leader) applySnap(m); });
+  coop.on('res', (m) => {   // ledarens utfall: puffarna hos alla – händerna och poängen hos den det gäller
+    const me = coop.myId, mine = m.by === me;
+    if (coop.leader && !mine) return;   // (skiftledaren har redan visat det hos sig)
+    for (const f of (Array.isArray(m.fx) ? m.fx : []).slice(0, 24)) {
+      if (!Array.isArray(f)) continue;
+      const who = str(f[1]);
+      if (!who || who === me) doFx(f[0], f.slice(2));
+    }
+    if (mine) { if ('c' in m) carry = itemDec(m.c); answered(); }
+  });
+  coop.on('do', (m, from) => {   // en medarbetares handling på något gemensamt – körs här, åt hen
+    if (!coop.leader) return;
+    const k = forK(from, handOf(from, m.c));
+    if (m.a === 'kund') doDeliver(k, int(m.id, -1));
+    else if (m.a === 'vikt') doFolded(k, clamp(int(m.i, 0), 0, tslots.length - 1), int(m.v, -1));
+    else {
+      const st = Object.hasOwn(STN, m.a) ? STN[m.a] : null;
+      if (!st) return;
+      const i = clamp(int(m.i, 0), 0, st.n - 1);
+      if (st.stale(i, int(m.v, -1))) fx(k, from, 'H', ...st.at(i));
+      else st.run(k, i);
+    }
+    if (k.carry) hands.set(from, k.carry); else hands.delete(from);
+    publish(k, true);
+  });
+  // en kollega går hem (passet slut): det hen bar läggs på vikbordet, vikningen hen höll på med släpps
+  coop.on('lamna', (m, from) => {
+    if (!coop.leader) return;
+    const h = handOf(from, m.c);
+    hands.delete(from);
+    for (const s of tslots) if (s.fb === from && folding?.s !== s) unlockFold(s);
+    setDown(h);
+    snapAsap();
+  });
+
+  // ---------- handgrepp ----------
+  // De gemensamma platserna. sig(i) = vad man ser där (−1 = tomt, −2 = någon viker där); har det
+  // ändrats när handlingen väl görs hann någon annan före. Disken och vikbordet: bara det man
+  // ville TA kan försvinna – en tom plats som fyllts under tiden tar man som den är (som ensam).
+  const sigItem = (it) => (it ? it.o.id * 4 + KINDS.indexOf(it.kind) : -1);
+  const STN = {
+    disk: { n: CSLOTS.length, sig: (i) => sigItem(cslots[i].item), at: (i) => [cslots[i].x, POP_Y], run: (k, i) => doCounter(k, i),
+      stale: (i, v) => v >= 0 && STN.disk.sig(i) !== v },
+    tvatt: { n: WASHERS.length, sig: (i) => (washers[i].o ? washers[i].o.id : -1), at: (i) => [washers[i].x + 12, POP_Y], run: (k, i) => doWasher(k, i) },
+    tork: { n: DRYERS.length, sig: (i) => (dryers[i].o ? dryers[i].o.id : -1), at: (i) => [dryers[i].x + 14, POP_Y], run: (k, i) => doDryer(k, i) },
+    bord: { n: TSLOTS.length, sig: (i) => (tslots[i].fb != null ? -2 : sigItem(tslots[i].item)), at: (i) => [tslots[i].x, TABLE.top - 14], run: (k, i) => doTable(k, i),
+      stale: (i, v) => { const c = STN.bord.sig(i); return c !== v && (v >= 0 || c === -2); } },
+  };
+  for (const s of Object.values(STN)) s.stale ||= (i, v) => s.sig(i) !== v;
+  // (medarbetaren) ingenting gemensamt kan ändras – bara en puff: den tas här direkt, utan att fråga
+  function inert(key, i) {
+    const kd = carry?.kind;
+    if (key === 'disk') return cslots[i].item ? !!carry && kd !== 'bag' : kd !== 'bag';
+    if (key === 'bord') { const s = tslots[i]; return s.fb != null || (!s.item && !carry); }
+    const m = key === 'tvatt' ? washers[i] : dryers[i];
+    return m.state === 'run' || (m.state === 'idle' && kd !== (key === 'tvatt' ? 'bag' : 'wet')) || (m.state === 'done' && !!carry);
+  }
+  // Framme vid en gemensam plats (v = det jag såg där när jag klickade): ensam (eller som
+  // skiftledare) görs det direkt, som medarbetare blir det ett önskemål till skiftledaren.
+  function arrive(key, i, v) {
+    const st = STN[key];
+    if (mate()) {
+      if (st.stale(i, v)) { hannFore(...st.at(i)); return; }   // (det syns redan här: någon hann före)
+      if (inert(key, i)) { st.run(meK(), i); return; }
+      if (!pend) ask({ t: 'do', a: key, i, v, c: itemEnc(carry) });
+      return;
+    }
+    const k = meK();
+    if (coop.active && st.stale(i, v)) fx(k, k.by, 'H', ...st.at(i));
+    else st.run(k, i);
+    publish(k, false);
+  }
+  function doCounter(k, i) {
+    const s = cslots[i];
+    if (s.item) {
+      if (!k.carry) { k.carry = s.item; s.item = null; kLjud(k, 'ok'); }
+      else if (k.carry.kind === 'bag') { const tmp = s.item; s.item = k.carry; k.carry = tmp; kLjud(k, 'click'); }
+      else kSay(k, s.x, POP_Y, 'HÄNDERNA FULLA');
+    } else if (k.carry?.kind === 'bag' && !s.res) { s.item = k.carry; k.carry = null; kLjud(k, 'click'); }
+  }
+  function doWasher(k, i) {
+    const w = washers[i];
     // puffen lite till vänster om mitten, så den inte hamnar på figuren som står i springan till höger
-    const pop = (txt, col) => pops.add(w.x + 12, POP_Y, txt, col);
+    const say = (txt, col) => kSay(k, w.x + 12, POP_Y, txt, col);
     if (w.state === 'idle') {
-      if (carry?.kind === 'bag') {
-        const o = carry.o; carry = null;
+      if (k.carry?.kind === 'bag') {
+        const o = k.carry.o; k.carry = null;
         w.o = o; w.state = 'run'; w.tt = 0;
         if (w.cls !== o.cls) {
           o.stained = true; o.dyed = w.cls; o.dye = 0;
-          stats.fel++; play('fel');
-          pop('FEL MASKIN!', '#ff6a6a');
-        } else { play('door'); pop(CLS[w.cls].name + '!', '#8ee03c'); }
-      } else if (carry) pop('INTE HÄR', '#d8d2c0');
-    } else if (w.state === 'run') pop('TVÄTTAR...', '#9ad0f4');
+          team.fel++; fx(k, k.by, 'f'); kLjud(k, 'fel');
+          kPop(k, w.x + 12, POP_Y, 'FEL MASKIN!', C_FEL);
+        } else { kLjud(k, 'door'); say(CLS[w.cls].name + '!', C_OK); }
+      } else if (k.carry) say('INTE HÄR', C_GREY);
+    } else if (w.state === 'run') say('TVÄTTAR...', '#9ad0f4');
     else if (w.state === 'done') {
-      if (!carry) { carry = { kind: 'wet', o: w.o }; w.o = null; w.state = 'idle'; play('ok'); }
-      else pop('HÄNDERNA FULLA', '#d8d2c0');
+      if (!k.carry) { k.carry = { kind: 'wet', o: w.o }; w.o = null; w.state = 'idle'; kLjud(k, 'ok'); }
+      else say('HÄNDERNA FULLA', C_GREY);
     }
   }
-  function useDryer(d) {
+  function doDryer(k, i) {
+    const d = dryers[i];
     // puffen under tumlarkolumnen, en bit från springan där figuren står
-    const pop = (txt, col) => pops.add(d.x + 14, POP_Y, txt, col);
+    const say = (txt, col) => kSay(k, d.x + 14, POP_Y, txt, col);
     if (d.state === 'idle') {
-      if (carry?.kind === 'wet') { d.o = carry.o; carry = null; d.state = 'run'; d.tt = 0; play('door'); pop('TORKAR!', '#ffb070'); }
-      else if (carry) pop(carry.kind === 'bag' ? 'TVÄTTA FÖRST' : 'INTE HÄR', '#d8d2c0');
-    } else if (d.state === 'run') pop('TORKAR...', '#ffb070');
+      if (k.carry?.kind === 'wet') { d.o = k.carry.o; k.carry = null; d.state = 'run'; d.tt = 0; kLjud(k, 'door'); say('TORKAR!', '#ffb070'); }
+      else if (k.carry) say(k.carry.kind === 'bag' ? 'TVÄTTA FÖRST' : 'INTE HÄR', C_GREY);
+    } else if (d.state === 'run') say('TORKAR...', '#ffb070');
     else if (d.state === 'done') {
-      if (!carry) { carry = { kind: 'dry', o: d.o }; d.o = null; d.state = 'idle'; play('ok'); }
-      else pop('HÄNDERNA FULLA', '#d8d2c0');
+      if (!k.carry) { k.carry = { kind: 'dry', o: d.o }; d.o = null; d.state = 'idle'; kLjud(k, 'ok'); }
+      else say('HÄNDERNA FULLA', C_GREY);
     }
   }
-  // ett klick i lokalen: gå dit och gör det som finns där. Under vikningen
-  // köas klicket (som i kaféet) och utförs så fort påsen är knuten.
+  // vikbordet: torr tvätt på en ledig plats = börja vika (platsen låses åt mig), annars lägga
+  // ifrån sig, ta eller byta. Vikningen själv går hos den som viker (doFx 'V').
+  function doTable(k, i) {
+    const s = tslots[i];
+    if (s.fb != null) { kSay(k, s.x, TABLE.top - 14, 'UPPTAGET'); return; }   // en kollega viker här
+    if (!s.item) {
+      if (k.carry?.kind === 'dry') { s.fb = k.by; s.fo = k.carry.o; s.ft = 0; k.carry = null; fx(k, k.by, 'V', i, s.fo.id); }
+      else if (k.carry) { s.item = k.carry; k.carry = null; kLjud(k, 'click'); }
+    } else if (!k.carry) { k.carry = s.item; s.item = null; kLjud(k, 'ok'); }
+    else { const tmp = s.item; s.item = k.carry; k.carry = tmp; kLjud(k, 'click'); }
+  }
+  // påsen är knuten (own: min egen vikning – den vet jag redan är min)
+  function doFolded(k, i, oid, own = false) {
+    const s = tslots[i];
+    if (!s || !s.fo || s.fo.id !== oid || (!own && s.fb !== k.by)) return;   // (vikningen hann avbrytas – kunden gick)
+    k.carry = { kind: 'folded', o: s.fo };
+    s.fb = null; s.fo = null; s.ft = 0;
+    kLjud(k, 'box');
+  }
+  function foldDone() {
+    const f = folding, i = tslots.indexOf(f.s);
+    if (mate()) {   // säg till skiftledaren och håll påsen tills svaret kommer
+      f.tt = FOLD_T;
+      if (!f.asked) { f.asked = true; ask({ t: 'do', a: 'vikt', i, v: f.o.id, c: 0 }); }
+      return;
+    }
+    folding = null;
+    const k = meK();
+    doFolded(k, i, f.o.id, true);
+    publish(k, false);
+  }
+  // lämna påsen till kunden (på bänken)
+  function toCustomer(c) {
+    if (!carry || c.state !== 'sit') { if (coop.active && carry && c.bagOut) hannFore(Math.round(c.x), Math.round(c.y) - 64); return; }   // (ihop: en kollega hann före)
+    if (mate()) {
+      if (carry.kind !== 'folded') { pops.add(c.x, c.y - 64, 'INTE KLAR ÄN', C_GREY); return; }
+      if (!pend) ask({ t: 'do', a: 'kund', id: c.id, c: itemEnc(carry) });
+      return;
+    }
+    const k = meK();
+    doDeliver(k, c.id);
+    publish(k, false);
+  }
+  function doDeliver(k, id) {
+    const c = custById(id);
+    if (!k.carry) return;
+    if (!c || c.state !== 'sit') {   // någon annan lämnade redan påsen (eller kunden gick)
+      if (c && c.bagOut && (coop.active || k.remote)) fx(k, k.by, 'H', Math.round(c.x), Math.round(c.y) - 64);
+      return;
+    }
+    const px = c.x, py = c.y - 64;
+    if (k.carry.kind !== 'folded') { kSay(k, px, py, 'INTE KLAR ÄN'); return; }
+    if (k.carry.o.id !== c.id) {
+      team.fel++; fx(k, k.by, 'f'); kLjud(k, 'fel'); fx(k, '', 'k', c.id);
+      kPop(k, px, py, 'FEL PÅSE!', C_FEL);
+      return;
+    }
+    const o = k.carry.o; k.carry = null;
+    c.bagOut = o;
+    if (o.stained) { fx(k, k.by, 'm'); kLjud(k, 'miss'); kPop(k, px, py, 'MISSFÄRGAT!', '#ff9ac0'); }
+    else { team.ok++; fx(k, k.by, 'o'); kLjud(k, 'coin'); kPop(k, px, py, 'TACK!', C_OK); }
+    leave(c);
+  }
+  function finishMachine(m, dryer, quiet = false) {
+    m.state = 'done'; m.tt = dryer ? DRY_T : WASH_T;
+    if (!dryer && m.o?.stained) m.o.dye = 1;
+    if (m.boxFor !== m.o?.id) { m.boxFor = m.o?.id; if (!quiet) play('box'); }   // (KLAR-plinget EN gång per tvätt)
+  }
+  // tvättmaskinerna: trumman byter håll var 1,6 s (som en riktig maskin), centrifugen går fort
+  function tickMachines(dt) {
+    for (const w of washers) {
+      if (w.state !== 'run' || !w.o) continue;
+      w.tt += dt;
+      const spin = w.tt > WASH_T - SPIN_T;
+      w.rot += dt * (spin ? 16 : 3.4 * (Math.sin(w.tt * 1.96) >= 0 ? 1 : -1));
+      if (w.o.stained) w.o.dye = Math.min(1, w.tt / (WASH_T - SPIN_T));
+      if (w.tt >= WASH_T) finishMachine(w, false);
+    }
+    for (const d of dryers) {
+      if (d.state !== 'run' || !d.o) continue;
+      d.tt += dt; d.rot += dt * 4.2;
+      if (d.tt >= DRY_T) finishMachine(d, true);
+    }
+  }
+  const hitMachine = (list, x, y, pad) => list.find((m) => x >= m.x && x < m.x + m.w && y >= m.y - pad && y < m.y + m.h + 4);
+  // ett klick i lokalen: gå dit och gör det som finns där. Under vikningen (och medan skiftledaren
+  // svarar på ett önskemål) köas klicket och utförs så fort påsen är knuten.
   function handleDown(x, y) {
     if (done) return;
-    if (folding) { queued = [x, y]; return; }
+    if (folding || pend) { queued = [x, y]; return; }
     // disken (påsen eller dess bubbla)
     if (x >= COUNTER.x0 && x < COUNTER.x1 && y >= 32 && y < FLOOR_Y + 4) {
       const s = cslots.reduce((b, c) => (Math.abs(c.x - x) < Math.abs(b.x - x) ? c : b));
-      if (Math.abs(s.x - x) < 12) { walker.walkTo(s.x, STAND_Y, () => pickCounter(s)); return; }
+      if (Math.abs(s.x - x) < 12) { const i = cslots.indexOf(s), v = STN.disk.sig(i); walker.walkTo(s.x, STAND_Y, () => arrive('disk', i, v)); return; }
     }
     const w = hitMachine(washers, x, y, 6);
-    if (w) { walker.walkTo(washerStandX(w), STAND_Y, () => { walker.dir = 'left'; useWasher(w); }); return; }
+    if (w) { const i = washers.indexOf(w), v = STN.tvatt.sig(i); walker.walkTo(washerStandX(w), STAND_Y, () => { walker.dir = 'left'; arrive('tvatt', i, v); }); return; }
     const d = hitMachine(dryers, x, y, 2);
-    if (d) { walker.walkTo(DRYER_STAND_X, STAND_Y, () => { walker.dir = d.x < DRYER_STAND_X ? 'left' : 'right'; useDryer(d); }); return; }
-    // vikbordet
+    if (d) { const i = dryers.indexOf(d), v = STN.tork.sig(i); walker.walkTo(DRYER_STAND_X, STAND_Y, () => { walker.dir = d.x < DRYER_STAND_X ? 'left' : 'right'; arrive('tork', i, v); }); return; }
+    // vikbordet (ihop: en plats där en kollega viker hoppas över)
     if (x >= TABLE.x0 - 4 && x < TABLE.x1 + 4 && y >= TABLE.top - 26 && y < TABLE.fy) {
-      const s = tslots.reduce((b, c) => (Math.abs(c.x - x) < Math.abs(b.x - x) ? c : b));
-      walker.walkTo(s.x, WORK_Y, () => useTable(s));
+      const open = tslots.filter((q) => q.fb == null);
+      const s = (open.length ? open : tslots).reduce((b, c) => (Math.abs(c.x - x) < Math.abs(b.x - x) ? c : b));
+      const i = tslots.indexOf(s), v = STN.bord.sig(i);
+      walker.walkTo(s.x, WORK_Y, () => arrive('bord', i, v));
       return;
     }
     // en väntande kund (bubblan eller figuren): ställ dig snett vid sidan om hen,
@@ -1092,169 +1577,227 @@ export function makeJobbTvatt(A, { onDone }) {
     const k = customers.find((c) => c.state === 'sit' && Math.abs(c.x - x) < 12 && y > c.y - 62 && y < c.y + 4);
     if (k) {
       const side = walker.px < k.x ? -12 : 12;
-      walker.walkTo(k.x + side, k.y + 14, () => { walker.dir = side < 0 ? 'right' : 'left'; deliver(k); });
+      walker.walkTo(k.x + side, k.y + 14, () => { walker.dir = side < 0 ? 'right' : 'left'; toCustomer(k); });
       return;
     }
     walker.walkTo(x, y);
   }
-  function useTable(s) {
-    if (folding) return;
-    if (!s.item) {
-      if (carry?.kind === 'dry') { folding = { s, o: carry.o, tt: 0 }; carry = null; walker.stop(); walker.dir = 'down'; play('slide'); }
-      else if (carry) { s.item = carry; carry = null; play('click'); }
-    } else if (!carry) { carry = s.item; s.item = null; play('ok'); }
-    else { const tmp = s.item; s.item = carry; carry = tmp; play('click'); }
-  }
-  function deliver(k) {
-    if (!carry || k.state !== 'sit') return;
-    if (carry.kind !== 'folded') { pops.add(k.x, k.y - 64, 'INTE KLAR ÄN', '#d8d2c0'); return; }
-    if (carry.o.cust !== k) {
-      stats.fel++; play('fel'); k.shake = 0.5;
-      pops.add(k.x, k.y - 64, 'FEL PÅSE!', '#ff6a6a');
-      return;
-    }
-    const o = carry.o; carry = null;
-    k.bagOut = o;
-    if (o.stained) { stats.missfargat++; play('miss'); pops.add(k.x, k.y - 64, 'MISSFÄRGAT!', '#ff9ac0'); }
-    else { stats.ok++; play('coin'); pops.add(k.x, k.y - 64, 'TACK!', '#8ee03c'); }
-    leave(k);
-  }
-  function finishMachine(m, dryer) {
-    m.state = 'done'; m.tt = dryer ? DRY_T : WASH_T;
-    if (!dryer && m.o?.stained) m.o.dye = 1;
-    play('box');
-  }
-  const hitMachine = (list, x, y, pad) => list.find((m) => x >= m.x && x < m.x + m.w && y >= m.y - pad && y < m.y + m.h + 4);
 
-  return {
-    _debug: {
-      stats,
-      // en kund sitter direkt på bänken och påsen ligger på disken; returnerar
-      // numret. Är bänken/disken full tas den äldsta kunden bort (utan miss).
-      forceCustomer(cls) {
-        let k = spawnCustomer(true, cls);
-        if (!k) {
-          const old = customers.find((c) => c.state !== 'leave' && c.o !== carry?.o && (c.seat.k === c || c.slot.res === c || cslots.some((s) => s.item?.o === c.o)));
-          if (old) {
-            purge(old.o);
-            if (old.seat.k === old) old.seat.k = null;
-            if (old.slot.res === old) old.slot.res = null;
-            customers.splice(customers.indexOf(old), 1);
-          }
-          k = spawnCustomer(true, cls);
+  // skiftledarens (och den ensammas) tvätteri: nya kunder, maskinerna, kunderna på väg och på bänken
+  function leadTick(dt) {
+    // nya kunder (första två kommer tätt så att det blir fart direkt, sedan var 4–9:e sekund –
+    // tätare med vanan; ihop kommer de tätare)
+    const ihop = coop.active ? 0.45 : 1;
+    custIn -= dt;
+    if (custIn <= 0) {
+      const k = spawnCustomer();
+      custIn = k ? (seq < 2 ? 3 : 6.6 - 2.4 * Math.min(1, t / P.seconds) + hash(seq, 3) * 2.2) * P.pace * ihop : 1;
+      if (k && coop.active) snapAsap();
+    }
+    tickMachines(dt);
+    // en kollega som viker men aldrig säger att påsen är knuten (somnad mobil?) släpper platsen
+    for (const s of tslots) if (s.fb != null && folding?.s !== s) { s.ft += dt; if (s.ft > FOLD_T + 4) unlockFold(s); }
+    // kunderna
+    for (const k of customers) {
+      if (k.state === 'sit') {
+        k.patience -= dt;
+        if (k.patience <= 0) {
+          stats.miss++; team.miss++; play('miss'); pops.add(k.x, k.y - 64, 'GICK HEM!', C_GREY);
+          purge(k.o); leave(k);
+          if (coop.active) snapAsap();
         }
-        return k ? k.o.num : null;
-      },
-      // plocka en påse från disken (utan att gå): ett ordernummer (10–99), en
-      // diskplats (0–2) eller inget = första påsen som ligger där. Det man bar
-      // släpps (bara i testläget).
-      pickBag(which) {
-        if (folding) folding = null;
-        queued = null; carry = null;
-        let s = which >= 10 ? cslots.find((c) => c.item?.o.num === which) : cslots[which ?? -1];
-        if (!s?.item) s = cslots.find((c) => c.item?.kind === 'bag');
-        if (!s) return null;
-        carry = s.item; s.item = null;
-        return { num: carry.o.num, cls: carry.o.cls };
-      },
-      // hela kedjan direkt: rätt (eller fel) maskin → klar → torktumlare → klar → vikt påse i händerna
-      process(right = true) {
-        if (carry?.kind !== 'bag') return null;
-        const fits = (m) => (right ? m.cls === carry.o.cls : m.cls !== carry.o.cls);
-        let w = washers.find((m) => m.state === 'idle' && fits(m));
-        if (!w) { w = washers.find(fits); if (w.o) purge(w.o); w.state = 'idle'; w.o = null; }
-        useWasher(w); finishMachine(w, false); useWasher(w);
-        let d = dryers.find((m) => m.state === 'idle');
-        if (!d) { d = dryers[0]; if (d.o) purge(d.o); d.state = 'idle'; d.o = null; }
-        useDryer(d); finishMachine(d, true); useDryer(d);
-        carry = { kind: 'folded', o: carry.o };
-        return { num: carry.o.num, stained: carry.o.stained };
-      },
-      // allt i ett för röktestet: ny kund → påsen → maskin → tork → vikt → till kunden.
-      // forceRight: rätt maskin → ok +1. forceWrong: fel maskin (missfärgat) → fel +1,
-      // påsen lämnas ändå till rätt kund som går hem sur (ingen ok).
-      forceRight() { const n = this.forceCustomer(); if (n === null || !this.pickBag(n) || !this.process(true)) return null; return this.serve(true); },
-      forceWrong() { const n = this.forceCustomer(); if (n === null || !this.pickBag(n) || !this.process(false)) return null; return this.serve(true); },
-      // lämna påsen: rätt kund (samma nummer) eller en annan (tvingar fram en om det behövs)
-      serve(right = true) {
-        if (carry?.kind !== 'folded') return null;
-        let k = customers.find((c) => c.state === 'sit' && (right ? c === carry.o.cust : c !== carry.o.cust));
-        if (!k && !right) { const keep = carry; this.forceCustomer(); carry = keep; k = customers.find((c) => c.state === 'sit' && c !== carry.o.cust); }
-        if (!k) return null;
-        deliver(k);
-        return stats;
-      },
-      finishAll() { for (const w of washers) if (w.state === 'run') finishMachine(w, false); for (const d of dryers) if (d.state === 'run') finishMachine(d, true); },
-      carrying: () => (carry ? { kind: carry.kind, num: carry.o.num, cls: carry.o.cls, stained: carry.o.stained } : null),
-      machines: () => ({ washers: washers.map((w) => ({ cls: w.cls, state: w.state, num: w.o?.num ?? null })), dryers: dryers.map((d) => ({ state: d.state, num: d.o?.num ?? null })) }),
-      customers: () => customers.filter((k) => k.state === 'sit').map((k) => ({ num: k.o.num, cls: k.o.cls, patience: +k.patience.toFixed(1) })),
-      // sant när figuren står still och varken viker eller har ett köat klick (för klicktester)
-      idle: () => !folding && !queued && walker.path.length === 0,
-      folding: () => (folding ? { num: folding.o.num, tt: +folding.tt.toFixed(2) } : null),
-      queued: () => (queued ? [...queued] : null),
-      where: () => ({ x: Math.round(walker.px), y: Math.round(walker.py), dir: walker.dir }),
-      // för förhandsbilder: ställ upp lägen direkt
-      stage(fn) { return fn({ washers, dryers, cslots, tslots, customers, spawnCustomer, newOrder, walker, setCarry: (c) => { carry = c; }, setFolding: (f) => { folding = f; } }); },
+        continue;
+      }
+      const step = k.plan[0];
+      if (!step) continue;
+      if (step.to) {
+        const sp = (k.state === 'leave' ? 42 : 36) * dt, [tx, ty] = step.to;
+        const dx = tx - k.x, dy = ty - k.y, d = Math.hypot(dx, dy);
+        k.dir = step.face && d < 14 ? step.face : Math.abs(dx) >= Math.abs(dy) ? (dx < 0 ? 'left' : 'right') : dy < 0 ? 'up' : 'down';
+        if (d <= sp) { k.x = tx; k.y = ty; k.plan.shift(); } else { k.x += dx / d * sp; k.y += dy / d * sp; }
+      } else if (step.wait !== undefined) {
+        if (step.face) k.dir = step.face;
+        step.wait -= dt;
+        if (step.wait <= 0) { step.fn?.(); k.plan.shift(); }
+      } else { k.plan.shift(); step.fn?.(); }
+    }
+    customers = customers.filter((k) => !(k.state === 'leave' && !k.plan.length));
+    if (coop.active || maxN > 1) sweepGone();
+    if (coop.active) { snapIn -= dt; if (snapIn <= 0) { snapIn = 0.35; sendSnap(); coop.sentSnap(); } }
+  }
+
+  // ---------- debug-API för proven ----------
+  const dbg = {
+    stats,
+    // en kund sitter direkt på bänken och påsen ligger på disken; returnerar
+    // numret. Är bänken/disken full tas den äldsta kunden bort (utan miss).
+    forceCustomer(cls) {
+      let k = spawnCustomer(true, cls);
+      if (!k) {
+        const old = customers.find((c) => c.state !== 'leave' && c.o !== carry?.o && (c.seat.k === c || c.slot.res === c || cslots.some((s) => s.item?.o === c.o)));
+        if (old) {
+          purge(old.o);
+          if (old.seat.k === old) old.seat.k = null;
+          if (old.slot.res === old) old.slot.res = null;
+          customers.splice(customers.indexOf(old), 1);
+        }
+        k = spawnCustomer(true, cls);
+      }
+      snapAsap();
+      return k ? k.o.num : null;
     },
+    // plocka en påse från disken (utan att gå): ett ordernummer (10–99), en
+    // diskplats (0–2) eller inget = första påsen som ligger där. Det man bar
+    // släpps (bara i testläget).
+    pickBag(which) {
+      if (folding) { const s = folding.s; s.fb = null; s.fo = null; s.ft = 0; folding = null; }
+      queued = null; carry = null;
+      let s = which >= 10 ? cslots.find((c) => c.item?.o.num === which) : cslots[which ?? -1];
+      if (!s?.item) s = cslots.find((c) => c.item?.kind === 'bag');
+      if (!s) return null;
+      carry = s.item; s.item = null;
+      return { num: carry.o.num, cls: carry.o.cls };
+    },
+    // hela kedjan direkt: rätt (eller fel) maskin → klar → torktumlare → klar → vikt påse i händerna
+    process(right = true) {
+      if (carry?.kind !== 'bag') return null;
+      const fits = (m) => (right ? m.cls === carry.o.cls : m.cls !== carry.o.cls);
+      let w = washers.find((m) => m.state === 'idle' && fits(m));
+      if (!w) { w = washers.find(fits); if (w.o) purge(w.o); w.state = 'idle'; w.o = null; }
+      const k = meK(), wi = washers.indexOf(w);
+      doWasher(k, wi); finishMachine(w, false); doWasher(k, wi);
+      let d = dryers.find((m) => m.state === 'idle');
+      if (!d) { d = dryers[0]; if (d.o) purge(d.o); d.state = 'idle'; d.o = null; }
+      const di = dryers.indexOf(d);
+      doDryer(k, di); finishMachine(d, true); doDryer(k, di);
+      carry = { kind: 'folded', o: carry.o };
+      return { num: carry.o.num, stained: carry.o.stained };
+    },
+    // allt i ett för röktestet: ny kund → påsen → maskin → tork → vikt → till kunden.
+    // forceRight: rätt maskin → ok +1. forceWrong: fel maskin (missfärgat) → fel +1,
+    // påsen lämnas ändå till rätt kund som går hem sur (ingen ok).
+    forceRight() { const n = this.forceCustomer(); if (n === null || !this.pickBag(n) || !this.process(true)) return null; return this.serve(true); },
+    forceWrong() { const n = this.forceCustomer(); if (n === null || !this.pickBag(n) || !this.process(false)) return null; return this.serve(true); },
+    // lämna påsen: rätt kund (samma nummer) eller en annan (tvingar fram en om det behövs)
+    serve(right = true) {
+      if (carry?.kind !== 'folded') return null;
+      let k = customers.find((c) => c.state === 'sit' && (right ? c.id === carry.o.id : c.id !== carry.o.id));
+      if (!k && !right) { const keep = carry; this.forceCustomer(); carry = keep; k = customers.find((c) => c.state === 'sit' && c.id !== carry.o.id); }
+      if (!k) return null;
+      toCustomer(k);
+      return stats;
+    },
+    finishAll() { for (const w of washers) if (w.state === 'run') finishMachine(w, false); for (const d of dryers) if (d.state === 'run') finishMachine(d, true); snapAsap(); },
+    carrying: () => (carry ? { kind: carry.kind, num: carry.o.num, cls: carry.o.cls, stained: carry.o.stained, id: carry.o.id } : null),
+    machines: () => ({ washers: washers.map((w) => ({ cls: w.cls, state: w.state, num: w.o?.num ?? null, id: w.o?.id ?? null, tt: +w.tt.toFixed(2) })),
+      dryers: dryers.map((d) => ({ state: d.state, num: d.o?.num ?? null, id: d.o?.id ?? null, tt: +d.tt.toFixed(2) })) }),
+    customers: () => customers.filter((k) => k.state === 'sit').map((k) => ({ id: k.id, num: k.o.num, cls: k.o.cls, patience: +k.patience.toFixed(1) })),
+    // sant när figuren står still, varken viker, har ett köat klick eller väntar på skiftledaren
+    idle: () => !folding && !queued && !pend && walker.path.length === 0,
+    folding: () => (folding ? { num: folding.o.num, tt: +folding.tt.toFixed(2) } : null),
+    queued: () => (queued ? [...queued] : null),
+    where: () => ({ x: Math.round(walker.px), y: Math.round(walker.py), dir: walker.dir }),
+    // för förhandsbilder: ställ upp lägen direkt
+    // (en vikning { s, o, tt } låser sin plats på vikbordet, precis som en riktig)
+    stage(fn) {
+      const setFolding = (f) => { folding = f; if (f?.s) { f.s.fb = meId(); f.s.fo = f.o; f.s.ft = 0; } };
+      return fn({ washers, dryers, cslots, tslots, customers, hands, spawnCustomer, newOrder, walker, setCarry: (c) => { carry = c; }, setFolding });
+    },
+    // ---------- jobba tillsammans (tools/coop-tvatt-test.mjs) ----------
+    coop: () => ({ leader: coop.leader, active: coop.active, mates: coop.peers().length, settled: coop.settled, myId: coop.myId }),
+    lag: () => ({ ...team, maxN }),
+    title: () => (maxN > 1 ? 'TVÄTTERIET IHOP' : 'TVÄTTERIET'),
+    // lugnt i tvätteriet (skiftledaren/solo): inga nya kunder, allt töms – och kunderna som
+    // tvingas fram sedan har gott om tålamod
+    calm() {
+      custIn = 1e9; testPat = 300; carry = null; folding = null; queued = null;
+      customers = []; hands.clear();
+      for (const s of seats) s.k = null;
+      for (const s of cslots) { s.item = null; s.res = null; }
+      for (const s of tslots) { s.item = null; s.fb = null; s.fo = null; s.ft = 0; }
+      for (const m of [...washers, ...dryers]) { m.state = 'idle'; m.o = null; m.tt = 0; }
+      snapAsap();
+    },
+    // en kund som kommer in genom dörren (tar lapp, lämnar påsen på disken, sätter sig); returnerar id:t
+    walkIn(cls = 0) { const k = spawnCustomer(false, cls); snapAsap(); return k ? k.id : null; },
+    all: () => customers.map((k) => ({ id: k.id, num: k.o.num, cls: k.o.cls, state: k.state, dropped: !!k.dropped, got: !!k.bagOut, x: Math.round(k.x), y: Math.round(k.y) })),
+    counter: () => cslots.map((s) => (s.item ? { kind: s.item.kind, id: s.item.o.id, num: s.item.o.num } : null)),
+    table: () => tslots.map((s) => ({ item: s.item ? { kind: s.item.kind, id: s.item.o.id } : null, fb: s.fb, fo: s.fo ? s.fo.id : null })),
+    hands: () => [...hands].map(([id, h]) => ({ id, kind: h.kind, oid: h.o.id })),
+    // vad jag ser vid en plats ('disk'|'tvatt'|'tork'|'bord', index) – det ett klick där tar med sig
+    sig: (key, i) => (STN[key] ? STN[key].sig(i) : null),
+    // som när man kommit fram till platsen (v = det man såg när man klickade; inget = som nu).
+    // Hos en medarbetare blir det ett önskemål till skiftledaren.
+    act(key, i, v) {
+      const st = STN[key];
+      if (!st || !(i >= 0 && i < st.n)) return false;
+      const at = key === 'disk' ? [cslots[i].x, STAND_Y] : key === 'tvatt' ? [washerStandX(washers[i]), STAND_Y] : key === 'tork' ? [DRYER_STAND_X, STAND_Y] : [tslots[i].x, WORK_Y];
+      walker.stop(); walker.px = at[0]; walker.py = at[1];
+      arrive(key, i, v ?? st.sig(i));
+      return true;
+    },
+    // gå fram till kunden id och lämna det man bär
+    deliver(id) {
+      const c = custById(id);
+      if (!c) return false;
+      walker.stop(); walker.px = c.x + 12; walker.py = c.y + 14;
+      toCustomer(c);
+      return true;
+    },
+    // provet: medarbetaren skickar SAMMA önskemål två gånger (som om svaret dröjde) – räknas EN gång
+    twice(key, i, v) {
+      if (!mate() || pend) return false;
+      const m = key === 'kund' ? { t: 'do', a: 'kund', id: i, c: itemEnc(carry) } : { t: 'do', a: key, i, v: v ?? STN[key].sig(i), c: itemEnc(carry) };
+      coop.send(m); ask(m);
+      return true;
+    },
+    pending: () => !!pend,
+    time: () => t,
+    pops: () => popLog.slice(),
+    teleport(x, y) { walker.px = x; walker.py = y; walker.stop(); },
+  };
+
+  const self = {
+    _debug: dbg,
     get worldX() { return walker.px; },
     get worldY() { return walker.py; },
+    exit() { coop.dispose(); },
     update(dt) {
       pops.update(dt);
-      if (done) { doneT += dt; if (doneT > 1.2 && !reported) { reported = true; onDone(stats); } return; }
+      if (done) {
+        coop.tick(); coop.resign();   // MITT pass är slut – lämna över ledningen direkt (även på lönebeskedet)
+        doneT += dt;
+        if (doneT > 1.2 && !reported) {
+          reported = true;
+          if (maxN > 1) {   // jobbat ihop: laget delar lika på rätt, fel och missade
+            const sh = (v) => Math.round(v / maxN);
+            onDone({ ok: sh(team.ok), fel: sh(team.fel), miss: sh(team.miss), delat: maxN, lagOk: team.ok, lagFel: team.fel, missfargat: stats.missfargat });
+          } else onDone(stats);
+        }
+        return;
+      }
       t += dt;
-      if (t >= P.seconds) { done = true; queued = null; walker.stop(); return; }
+      if (t >= P.seconds) { done = true; queued = null; pend = null; walker.stop(); letGo(); return; }
       if (!folding) walker.update(dt);
       ticketT = Math.max(0, ticketT - dt);
-      // nya kunder
-      custIn -= dt;
-      // (första två kommer tätt så att det blir fart direkt, sedan var 4–9:e sekund – tätare med vanan)
-      if (custIn <= 0) custIn = spawnCustomer() ? (seq < 2 ? 3 : 6.6 - 2.4 * Math.min(1, t / P.seconds) + hash(seq, 3) * 2.2) * P.pace : 1;
-      // tvättmaskinerna: trumman byter håll var 1,6 s (som en riktig maskin), centrifugen går fort
-      for (const w of washers) {
-        if (w.state !== 'run') continue;
-        w.tt += dt;
-        const spin = w.tt > WASH_T - SPIN_T;
-        w.rot += dt * (spin ? 16 : 3.4 * (Math.sin(w.tt * 1.96) >= 0 ? 1 : -1));
-        if (w.o.stained) w.o.dye = Math.min(1, w.tt / (WASH_T - SPIN_T));
-        if (w.tt >= WASH_T) finishMachine(w, false);
+      for (const k of customers) k.shake = Math.max(0, k.shake - dt);
+      // vikningen (min egen – den går här, även när jag är medarbetare)
+      if (folding) { folding.tt += dt; if (folding.tt >= FOLD_T) foldDone(); }
+      if (pend) { pend.t -= dt; if (pend.t <= 0) answered(); }   // inget svar (ledaren gick?) – då får man försöka igen
+      coop.tick();
+      if (coop.active) maxN = Math.max(maxN, coop.peers().length + 1);
+      if (coop.active !== wasCoop) {   // en kollega kom in: kunderna kommer tätare
+        wasCoop = coop.active;
+        if (wasCoop) { play('knock'); pops.add(FW >> 1, 120, 'NI JOBBAR IHOP!', C_OK); }
       }
-      for (const d of dryers) {
-        if (d.state !== 'run') continue;
-        d.tt += dt; d.rot += dt * 4.2;
-        if (d.tt >= DRY_T) finishMachine(d, true);
-      }
-      // vikningen
-      if (folding) {
-        folding.tt += dt;
-        if (folding.tt >= FOLD_T) { carry = { kind: 'folded', o: folding.o }; folding = null; play('box'); }
-      }
+      // Skiftledaren (eller solo) kör tvätteriet; medarbetare följer ledarens läge
+      const iLead = !coop.active || (coop.leader && coop.settled);
+      if (iLead && !wasLead) takeOver();
+      else if (!iLead && wasLead) becomeMate();
+      wasLead = iLead;
+      if (iLead) leadTick(dt); else mateTick(dt);
       // det köade klicket (även om vikningen avbröts för att kunden gick)
-      if (!folding && queued) { const q = queued; queued = null; handleDown(q[0], q[1]); }
-      // kunderna
-      for (const k of customers) {
-        k.shake = Math.max(0, k.shake - dt);
-        if (k.state === 'sit') {
-          k.patience -= dt;
-          if (k.patience <= 0) {
-            stats.miss++; play('miss'); pops.add(k.x, k.y - 64, 'GICK HEM!', '#d8d2c0');
-            purge(k.o); leave(k);
-          }
-          continue;
-        }
-        const step = k.plan[0];
-        if (!step) continue;
-        if (step.to) {
-          const sp = (k.state === 'leave' ? 42 : 36) * dt, [tx, ty] = step.to;
-          const dx = tx - k.x, dy = ty - k.y, d = Math.hypot(dx, dy);
-          k.dir = step.face && d < 14 ? step.face : Math.abs(dx) >= Math.abs(dy) ? (dx < 0 ? 'left' : 'right') : dy < 0 ? 'up' : 'down';
-          if (d <= sp) { k.x = tx; k.y = ty; k.plan.shift(); } else { k.x += dx / d * sp; k.y += dy / d * sp; }
-        } else if (step.wait !== undefined) {
-          if (step.face) k.dir = step.face;
-          step.wait -= dt;
-          if (step.wait <= 0) { step.fn?.(); k.plan.shift(); }
-        } else { k.plan.shift(); step.fn?.(); }
-      }
-      customers = customers.filter((k) => !(k.state === 'leave' && !k.plan.length));
+      if (!folding && !pend && queued) { const q = queued; queued = null; handleDown(q[0], q[1]); }
     },
     down(x, y) { handleDown(x, y); },
     key(kk) { if (kk === 'Escape' && !done) abortShift(A); },
@@ -1269,6 +1812,11 @@ export function makeJobbTvatt(A, { onDone }) {
       if (carry) {
         const dir = walker.dir, ox = dir === 'left' ? -7 : dir === 'right' ? 7 : 0;
         drawables.push({ fy: walker.py + (dir === 'up' ? -0.01 : 0.01), draw: () => drawItem(ctx, carry, Math.round(walker.px) + ox, Math.round(walker.py) - 11, t) });
+      }
+      // det kollegorna bär (de står vända mot oss)
+      if (coop.active) for (const f of coop.peers()) {
+        const h = hands.get(f.id);
+        if (h) drawables.push({ fy: f.y + 0.01, draw: () => drawItem(ctx, h, Math.round(f.x), Math.round(f.y) - 11, t) });
       }
       // rekvisita
       const table = prop('table', paintTable), bench = prop('bench', paintBench), board = prop('board', paintIronBoard), rack = prop('rack', paintRack);
@@ -1295,7 +1843,7 @@ export function makeJobbTvatt(A, { onDone }) {
       // gröna pilar över vikbordets lediga platser när man bär torr tvätt
       if (carry?.kind === 'dry' && !folding && (t * 3 | 0) % 2 === 0) {
         for (const s of tslots) {
-          if (s.item) continue;
+          if (s.item || s.fb != null) continue;
           const ax = s.x, ay = TABLE.top - 9;
           ctx.fillStyle = '#17151a'; ctx.fillRect(ax - 3, ay - 1, 7, 4); ctx.fillRect(ax - 2, ay + 3, 5, 1); ctx.fillRect(ax - 1, ay + 4, 3, 1);
           ctx.fillStyle = '#8ee03c'; ctx.fillRect(ax - 2, ay, 5, 2); ctx.fillRect(ax - 1, ay + 2, 3, 1); ctx.fillRect(ax, ay + 3, 1, 1);
@@ -1303,7 +1851,7 @@ export function makeJobbTvatt(A, { onDone }) {
       }
       for (const k of customers) {
         if (k.state !== 'sit') continue;
-        const hot = carry?.kind === 'folded' && carry.o.cust === k;
+        const hot = carry?.kind === 'folded' && carry.o.id === k.id;
         const cx = Math.round(k.x), tip = Math.round(k.y) - 36 - (hot && (t * 4 | 0) % 2 ? 1 : 0);
         const [ix, iy] = bubble(ctx, cx, tip, 18, 19, hot);
         drawTicket(ctx, ix + 1, iy + 1, k.o.num);
@@ -1325,14 +1873,16 @@ export function makeJobbTvatt(A, { onDone }) {
         ctx.fillStyle = '#bfe6ff'; ctx.fillRect(bx, by, w, 1);
       }
       pops.draw(ctx);
-      drawShiftHud(ctx, { W: FW }, { t, dur: P.seconds, ok: stats.ok, fel: stats.fel, title: 'TVÄTTERIET' });
+      drawShiftHud(ctx, { W: FW }, { t, dur: P.seconds, ok: maxN > 1 ? team.ok : stats.ok, fel: maxN > 1 ? team.fel : stats.fel, title: maxN > 1 ? 'TVÄTTERIET IHOP' : 'TVÄTTERIET' });
       if (done) drawTimeUp(ctx, { W: FW, H: FH });
     },
   };
+  return self;
 
   // ---------- rita: kunderna ----------
   function drawCustomer(ctx, k) {
-    const moving = k.state !== 'sit' && !!k.plan[0]?.to;
+    // (hos en medarbetare går kunden längs skiftledarens väg – gpath – i stället för en egen plan)
+    const moving = k.state !== 'sit' && (k.gpath ? !k.gwait && k.gpath.length > 0 : !!k.plan[0]?.to);
     const carrying = !!k.bagOut;
     const frame = k.state === 'sit' ? 5 : moving ? (carrying ? [7, 9, 8, 9] : WALK_SEQ)[Math.floor(t * 8.5 + k.id * 0.37) % 4] : carrying ? 9 : 0;
     const sx = k.shake > 0 ? Math.round(Math.sin(k.shake * 40)) : 0;
@@ -1420,13 +1970,18 @@ export function makeJobbTvatt(A, { onDone }) {
     const out = ticketT > 0 ? 4 : 2;
     ctx.fillStyle = '#fff6ea'; ctx.fillRect(x - 2, top + 12, 5, out); ctx.fillStyle = '#f29ab0'; ctx.fillRect(x - 2, top + 11 + out, 5, 1);
   }
-  // vikbordets innehåll: saker på platserna och vikningen
+  // vikbordets innehåll: saker på platserna och vikningen (min egen och kollegornas)
   function drawTableTop(ctx) {
     const sy = TABLE.top + 9;
-    for (const s of tslots) if (s.item) drawItem(ctx, s.item, s.x, sy, t);
-    if (!folding) return;
-    const f = folding, o = f.o, per = (FOLD_T - 0.2) / 3, k = Math.min(2, (f.tt / per) | 0), ph = (f.tt - k * per) / per;
-    const x = f.s.x, y = sy;
+    for (const s of tslots) {
+      if (s.item) drawItem(ctx, s.item, s.x, sy, t);
+      else if (s.fo && folding?.s !== s) drawFold(ctx, s.x, sy, s.fo, Math.min(s.ft, FOLD_T));   // en kollega viker här
+    }
+    if (folding) drawFold(ctx, folding.s.x, sy, folding.o, folding.tt);
+  }
+  // en vikning vid (x, y) som pågått tt sekunder: plaggen viks ett i taget och läggs i en stapel
+  function drawFold(ctx, x, y, o, tt) {
+    const per = (FOLD_T - 0.2) / 3, k = Math.min(2, (tt / per) | 0), ph = (tt - k * per) / per;
     // redan vikta plagg i en stapel till höger
     for (let i = 0; i < k; i++) {
       const c = gcol(o, i), yy = y - 2 - i * 2;
@@ -1434,7 +1989,7 @@ export function makeJobbTvatt(A, { onDone }) {
       ctx.fillStyle = css(c); ctx.fillRect(x + 4, yy, 9, 1);
       ctx.fillStyle = css(lite(c, 0.3)); ctx.fillRect(x + 5, yy, 7, 1);
     }
-    if (f.tt < FOLD_T - 0.2) {
+    if (tt < FOLD_T - 0.2) {
       const c = gcol(o, k), C = css(c), D = css(mul(c, 0.72)), Lc = css(lite(c, 0.3));
       const gx = x - 10;
       if (ph < 0.35) {            // plagget ligger utbrett (tröja)
