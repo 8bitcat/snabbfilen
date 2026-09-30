@@ -27,9 +27,14 @@
 // ~22 nertill, och passets remsa ligger de 18 raderna närmast under kanten. Då flyttas
 // lokalen ner (camY) tills dörrskyltarna ligger helt under remsan, personalens bubblor
 // kläms under den och remsan får ogenomskinlig botten – ingen text skymtar igenom den.
+//
+// JOBBA IHOP: flera kan dela passet – patienterna, väntrummet, luckorna, NU-tavlan och dörrarna är
+// gemensamma (se "jobba tillsammans" nedan). En patient man ropat in är LÅST åt en: bara man själv
+// skickar hen vidare, så två sköterskor tar var sin patient vid var sin lucka.
 import { Pix, SMALL, BIG, ctxText, textW, text, mix, mul, css, hash, bayer } from '../core/floor-pix.js';
 import { createWalker, folkDrawables, emoteBubble, WALK_SEQ, createSpeech, sayLines } from '../scenes/walkable.js';
 import { worldMyEmote } from '../net/world.js';
+import { makeShiftCoop } from '../net/coop.js';
 import { planOf, drawShiftHud, drawTimeUp, makePops, abortShift } from './shift.js';
 import { drawPerson, makeLook } from '../core/people.js';
 import { play } from '../core/sound.js';
@@ -812,6 +817,21 @@ function bubble(ctx, cx, tip, iw, ih, hot = false, edge = null, bx = null) {
   return [x0 + 1, y0 + 1];
 }
 
+// ======================= jobba ihop: det som skickas mellan kollegorna =======================
+// Patienternas utseende ur ett frö: i ett delat pass skickar skiftledaren bara fröet (ett tal) i
+// stället för hela utseendet, och alla ritar ändå samma människor (som i Verkstaden och Tvätteriet).
+function seedRng(seed) {
+  let s = seed >>> 0;
+  return () => { s = (s + 0x6D2B79F5) >>> 0; let t = s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+}
+const lookOf = (seed) => makeLook(seedRng(seed));
+// patienternas lägen i skiftledarens snap (index = kod) – och lägena där hen går längs A*-vägen
+const P_ST = ['in', 'toTicket', 'ticket', 'toSeat', 'sit', 'wait', 'toSpot', 'called', 'desk', 'toDoor', 'atDoor', 'enter', 'leave', 'out'];
+const WALKS = new Set(['toTicket', 'toSeat', 'toSpot', 'called', 'toDoor', 'leave']);
+const DIRS = ['down', 'up', 'left', 'right'];
+// ljuden som skiftledarens utfall får spela hos den det gäller
+const LJUD = new Set(['ok', 'click', 'coin', 'fel', 'miss', 'box']);
+
 // ======================= jobbet =======================
 export function makeJobbVard(A, { onDone } = {}) {
   const stats = { ok: 0, fel: 0, miss: 0, boxes: 0, patienter: 0, akut: 0, felrum: 0 };
@@ -822,6 +842,9 @@ export function makeJobbVard(A, { onDone } = {}) {
   const startMin = A.game?.min ?? 10 * 60;
   const myLook = { ...(A.avatar?.look || {}), neck: 'lanyard', neckColor: '#3aa050' };
   const pops = makePops();
+  const popLog = [];                  // de senaste puffarnas text (provet läser dem: syntes "HANN FÖRE!"?)
+  const addPop = pops.add;
+  pops.add = (x, y, txt, c) => { popLog.push(txt); if (popLog.length > 30) popLog.shift(); addPop(x, y, txt, c); };
   const talkDoor = ROOMS.map(() => createSpeech());
   // spelaren står bakom disken och går mellan luckorna
   const walker = createWalker({ W: XR, H: FH, left: DESK.x0 + 4, right: XR - 4, top: WORK_Y - 4, bottom: 198, spawn: [WIN[0], WORK_Y] });
@@ -844,29 +867,342 @@ export function makeJobbVard(A, { onDone } = {}) {
   for (const [gx, gy] of GROUPS) for (let k = 0; k < 4; k++) seats.push({ x: gx + k * 18, y: gy, occ: null });
   const akutSpots = AKUT_SPOTS.map(([x, y]) => ({ x, y, occ: null }));
   const wins = [null, null];                     // vem som är på väg till / står vid luckan
-  const doors = ROOMS.map(() => ({ open: 0, hold: 0, staff: 0 }));
+  // dörrarna; sayN/sayTxt/sayT = personalens senaste replik (följer med snappen – alla hör den)
+  const doors = ROOMS.map(() => ({ open: 0, hold: 0, staff: 0, sayN: 0, sayTxt: '', sayT: 0 }));
   let patients = [], t = 0, clk = 0, seq = 0, ticketNo = 20 + ((Math.random() * 50) | 0);
   let spawnIn = 1.6, akutIn = 14 + Math.random() * 8, akutSpawned = 0, autoSpawn = true;
   let done = false, doneT = 0, reported = false;
-  let nuNo = null, nuWin = 0, nuFlash = 0, entryOpen = 0, entrySound = 0, amb = null;
+  let nuNo = null, nuWin = 0, nuFlash = 0, nuN = 0, entryOpen = 0, entrySound = 0, amb = null;   // (nuN = utrop nr)
   let calls = 0, sends = 0, hintT = 0, nextGlow = 0;
 
   const R = Math.random;
   const pick = (a) => a[(R() * a.length) | 0];
   const say = (x, y, s, c = '#d8d2c0') => { const hw = (textW(SMALL, s) + 4) >> 1; pops.add(clamp(Math.round(x), hw + 2, FW - hw - 2), y, s, c); };
-  const myWin = () => { const i = Math.abs(walker.px - WIN[0]) <= Math.abs(walker.px - WIN[1]) ? 0 : 1; return Math.abs(walker.px - WIN[i]) < 14 ? i : -1; };
-  const nearWin = () => (Math.abs(walker.px - WIN[0]) <= Math.abs(walker.px - WIN[1]) ? 0 : 1);
+  // luckan vid x (−1 = ingen) och den närmaste – för mig själv (walker) eller en kollega (ihop)
+  const winAt = (x) => { const i = Math.abs(x - WIN[0]) <= Math.abs(x - WIN[1]) ? 0 : 1; return Math.abs(x - WIN[i]) < 14 ? i : -1; };
+  const nearAt = (x) => (Math.abs(x - WIN[0]) <= Math.abs(x - WIN[1]) ? 0 : 1);
+  const myWin = () => winAt(walker.px);
+  const nearWin = () => nearAt(walker.px);
   const waiting = () => patients.filter((p) => p.state === 'wait');
+
+  // ---------- jobba tillsammans (delat pass via js/net/coop.js) ----------
+  // Skiftledaren (den som varit längst på vårdcentralen) kör det gemensamma: patienterna (när de
+  // kommer in, besvären, akutfallen med ambulansen, nummerlapparna, tålamodet, stolarna och
+  // AKUT-rutan, vart de ska och vägen dit), de två luckorna, NU-tavlan och dörrarna med personalen.
+  // Läget delas ~3 ggr/s; medarbetarna ser samma väntrum – patienterna går vidare längs samma
+  // A*-väg hos dem mellan lägena – och skickar varje handling på något gemensamt som ett önskemål
+  // med det de såg och var de står: ropa in en patient (bubblan), NÄSTA, och skicka patienten vid
+  // luckan till ett rum (eller ge rummet som mål medan hen är på väg). Skiftledaren kör samma kod
+  // åt dem och är ENDA domaren: en patient ropas in EN gång (den andra ser HANN FÖRE!) och är
+  // sedan LÅST åt den som ropade in hen – bara hen skickar patienten vidare, så två sköterskor tar
+  // var sin patient vid var sin lucka (ihop ställer sig patienten helst vid en lucka där ingen
+  // kollega står). Går en kollega hem (eller försvinner en stund) släpps hens lås. Det egna: var man
+  // står, vilken lucka man jobbar vid och patienten man har framför sig – man bär inget. Poängen
+  // (rätt rum, fel rum, akutbonusen) går till den som skickade; lagets rätt, fel, missade och
+  // bonusar delas lika vid passets slut. Ihop kommer patienterna tätare (samma 16 stolar och två
+  // luckor – ingen ny grafik).
+  const coop = makeShiftCoop(A, 'away:jobbvard');
+  let snapIn = 0, wasLead = true, wasCoop = false, maxN = 1, snaps = 0;
+  let pend = null, queued = null;                   // medarbetarens önskemål som väntar på svar (och ett köat klick)
+  let reqN = (Math.random() * 1e6) | 0;             // önskemålens löpnummer (samma nummer två gånger = samma önskemål)
+  let lastNu = 0;                                    // (medarbetaren) NU-tavlans senaste utrop
+  const team = { ok: 0, fel: 0, miss: 0, boxes: 0 }; // LAGETS räkning – delas lika vid passets slut
+  const seenReq = new Map();                         // (skiftledaren) id → senaste önskemålets nummer
+  const absent = new Map();                          // (skiftledaren) id → sedan när kollegan inte syns i receptionen
+  const mate = () => coop.active && !coop.leader;
+  const meId = () => coop.myId || '';
+  // är det jag? ('' = ingens – ensam, eller släppt av en kollega som gått; har ingen annan någonsin varit här är allt mitt)
+  const isMe = (id) => id === meId() || id === '' || id == null || (!coop.active && maxN === 1);
+  const snapAsap = () => { snapIn = 0; };
+  const int = (v, dflt) => (Number.isInteger(v) ? v : dflt);
+  const str = (v) => (typeof v === 'string' ? v.slice(0, 64) : '');
+  const patById = (id) => patients.find((p) => p.id === id) || null;
+  const hudTitle = () => (maxN > 1 ? 'VÅRDCENTRALEN IHOP' : 'VÅRDCENTRALEN');
+  // står en annan sköterska (inte by) vid luckan wi?
+  const staffed = (wi, by) => coop.active && [{ id: meId(), x: walker.px, y: walker.py }, ...coop.peers()]
+    .some((f) => f.id !== by && Math.abs(f.x - WIN[wi]) < 14 && f.y >= WORK_Y - 8);
+
+  // patient: [id, besvär, flaggor (akut 1, arg 2, sitter 4), nummerlapp, läge (P_ST), x, y, håll (DIRS), stol, AKUT-plats,
+  // lucka, rum, mål, fel rum, tålamod·10, max·10, vid luckan·10, max·10, passerad, utseendefrö, låst åt, tid·100, fart]
+  const ix = (v) => (v === null || v === undefined ? -1 : v);
+  const patEnc = (p) => [p.id, p.sym, (p.akut ? 1 : 0) | (p.angry ? 2 : 0) | (p.sat ? 4 : 0), ix(p.num), P_ST.indexOf(p.state),
+    Math.round(p.x), Math.round(p.y), Math.max(0, DIRS.indexOf(p.dir)), p.seat ? seats.indexOf(p.seat) : -1, p.spot ? akutSpots.indexOf(p.spot) : -1,
+    ix(p.win), ix(p.room), ix(p.dest), ix(p.wrong), Math.round(p.pat * 10), Math.round(p.pmax * 10), Math.round(p.deskPat * 10), Math.round(p.deskMax * 10),
+    p.passed | 0, p.ls | 0, p.by || '', Math.round(Math.max(0, p.t) * 100), Math.round(p.w.speed)];
+  const sendSnap = () => coop.send({
+    t: 'snap',
+    pa: patients.map(patEnc),
+    nu: [nuNo || '', nuWin, nuN],                                                           // NU-tavlan
+    // dörrarna: [öppen·10, personalen i dörren·10, replik nr, repliken, kvar·10]
+    dr: doors.map((d) => [Math.round(Math.max(0, d.hold) * 10), Math.round(Math.max(0, d.staff) * 10), d.sayN, d.sayTxt, Math.round(d.sayT * 10)]),
+    am: amb ? Math.round(amb.t * 10) : -1,                                                   // ambulansen utanför
+    tk: ticketNo, ak: akutSpawned,                                                            // nästa nummerlapp, akutfall hittills
+    tm: [team.ok, team.fel, team.miss, team.boxes],
+    sq: seq,   // (nästa id – tar någon annan över fortsätter numreringen efter det)
+  });
+  // en patient ur snappen: samma objekt som förut om det är samma patient (det man tittar på pekar på hen)
+  function patDec(a) {
+    if (!Array.isArray(a) || a.length < 23) return null;
+    const id = int(a[0], -1);
+    if (id < 0) return null;
+    const sym = clamp(a[1] | 0, 0, SYMS.length - 1), fl = a[2] | 0, x = +a[5] || 0, y = +a[6] || 0;
+    let p = patById(id);
+    if (p && (p.sym !== sym || p.akut !== !!(fl & 1))) p = null;   // (samma id, en annan patient)
+    const fresh = !p;
+    if (!p) p = { id, sym, akut: !!(fl & 1), w: mkWalker(x, y), x, y, dir: 'down', num: null, state: 'wait', t: 0, ls: null, look: null, by: '', sentBy: null };
+    const was = fresh ? null : p.state, hadNum = p.num !== null;
+    const opt = (v, n) => (Number.isInteger(v) && v >= 0 ? Math.min(v, n - 1) : null);
+    p.angry = !!(fl & 2); p.sat = fl & 4 ? 1 : 0;
+    p.num = Number.isInteger(a[3]) && a[3] >= 0 ? a[3] : null;
+    p.state = P_ST[clamp(a[4] | 0, 0, P_ST.length - 1)];
+    p.gx = x; p.gy = y;
+    if (!WALKS.has(p.state)) p.dir = DIRS[clamp(a[7] | 0, 0, 3)];
+    const si = opt(a[8], seats.length), ai = opt(a[9], akutSpots.length);
+    p.seat = si === null ? null : seats[si]; p.spot = ai === null ? null : akutSpots[ai];
+    p.win = opt(a[10], WIN.length); p.room = opt(a[11], ROOMS.length); p.dest = opt(a[12], ROOMS.length); p.wrong = opt(a[13], ROOMS.length);
+    p.pmax = Math.max(1, (a[15] | 0) / 10); p.pat = clamp((a[14] | 0) / 10, 0, p.pmax);
+    p.deskMax = Math.max(1, (a[17] | 0) / 10); p.deskPat = clamp((a[16] | 0) / 10, 0, p.deskMax);
+    p.passed = Math.max(0, a[18] | 0);
+    if (p.ls !== (a[19] | 0) || !p.look) { p.ls = a[19] | 0; p.look = lookOf(p.ls); }
+    p.by = str(a[20]);
+    p.t = Math.max(0, (a[21] | 0) / 100);
+    p.w.speed = clamp(a[22] | 0, 20, 90);
+    p.repath = WALKS.has(p.state);    // (går hen: vidare mot målet från där skiftledaren ser hen)
+    if (p.state !== was) p.hide = false;
+    // det som händer i väntrummet hörs och syns hos alla
+    if (!fresh && snaps > 0) {
+      if (!hadNum && p.num !== null) play('click');                                           // nummerlappen
+      if (was !== 'leave' && was !== 'out' && p.state === 'leave' && p.angry) {               // gick hem / för sent
+        say(p.x, Math.min(p.y - 50, 96), p.akut ? 'FÖR SENT!' : 'GICK HEM!', '#ff6a6a'); play('miss');
+      }
+    }
+    return p;
+  }
+  // (efter en snap eller ett ledarbyte) stolarna, AKUT-rutan och luckorna ur patienternas lägen
+  function occupy() {
+    for (const s of seats) s.occ = null;
+    for (const s of akutSpots) s.occ = null;
+    wins[0] = wins[1] = null;
+    for (const p of patients) {
+      if (p.seat) p.seat.occ = p;
+      if (p.spot) p.spot.occ = p;
+      if (p.win !== null && (p.state === 'called' || p.state === 'desk')) wins[p.win] = p;
+    }
+  }
+  const applySnap = (m) => {
+    if (Number.isFinite(m.sq)) seq = Math.max(seq, m.sq | 0);
+    if (Array.isArray(m.pa)) {
+      const next = [];
+      for (const a of m.pa.slice(0, 40)) { const p = patDec(a); if (p && !next.includes(p)) next.push(p); }
+      patients = next;
+      occupy();
+    }
+    if (Array.isArray(m.nu)) {
+      nuNo = str(m.nu[0]) || null; nuWin = clamp(m.nu[1] | 0, 0, 1);
+      if ((m.nu[2] | 0) !== lastNu) { if (snaps && nuNo) nuFlash = 1.6; lastNu = m.nu[2] | 0; }   // ett nytt utrop blinkar
+    }
+    if (Array.isArray(m.dr)) doors.forEach((d, i) => {
+      const a = m.dr[i];
+      if (!Array.isArray(a)) return;
+      d.hold = (a[0] | 0) / 10; d.staff = (a[1] | 0) / 10;
+      if ((a[2] | 0) !== d.sayN) {                        // personalen säger något i dörren
+        d.sayN = a[2] | 0; d.sayTxt = str(a[3]); d.sayT = (a[4] | 0) / 10;
+        if (d.sayTxt && d.sayT > 0.2) talk(i, d.sayTxt, d.sayT);
+      }
+    });
+    if (Number.isFinite(m.am)) { if (m.am < 0) amb = null; else if (!amb || Math.abs(amb.t - m.am / 10) > 0.5) amb = { t: m.am / 10, x: 60 }; }
+    if (Number.isFinite(m.tk)) ticketNo = m.tk | 0;
+    if (Number.isFinite(m.ak)) akutSpawned = m.ak | 0;
+    if (Array.isArray(m.tm)) { team.ok = m.tm[0] | 0; team.fel = m.tm[1] | 0; team.miss = m.tm[2] | 0; team.boxes = m.tm[3] | 0; }
+    snaps++;
+  };
+  // vart en patient som går är på väg (samma mål hos alla – A*-vägen dit likaså)
+  function destOf(p) {
+    if (p.state === 'toTicket') return [AUTO.x, AUTO.y + 8];
+    if (p.state === 'toSeat') return p.seat ? [p.seat.x, p.seat.y + 8] : null;
+    if (p.state === 'toSpot') return p.spot ? [p.spot.x, p.spot.y] : null;
+    if (p.state === 'called') return p.win !== null ? [WIN[p.win], PAT_Y] : null;
+    if (p.state === 'toDoor') return p.room !== null ? [ROOMS[p.room].cx, FLOOR_Y + 6] : null;
+    if (p.state === 'leave') return [ENTRY.cx, FLOOR_Y + 6];
+    return null;
+  }
+  // Medarbetarens väntrum mellan ledarens lägen: patienterna går vidare mot sina mål, glider in på
+  // stolen, genom dörrarna och ut – och tålamodet rinner. Nästa snap rättar allt.
+  function mateTick(dt) {
+    for (const p of patients) {
+      if (p.gx === undefined) { p.gx = p.x; p.gy = p.y; }
+      if (WALKS.has(p.state)) {
+        if (p.repath) {
+          p.repath = false;
+          const d = destOf(p);
+          p.w.px = p.gx; p.w.py = p.gy;
+          if (d) p.w.walkTo(d[0], d[1]); else p.w.stop();
+        }
+        if (p.w.path.length) { p.w.update(dt); p.dir = p.w.dir; }
+        p.gx = p.w.px; p.gy = p.w.py;
+      } else {
+        if (p.w.path.length) p.w.stop();
+        if (p.state === 'in') p.gy = Math.min(FLOOR_Y + 6, p.gy + 38 * dt);
+        else if (p.state === 'sit' && p.seat) { p.t = Math.max(0, p.t - dt); const k = clamp(1 - p.t / 0.22, 0, 1); p.gx = p.seat.x; p.gy = p.seat.y + 8 - 8 * k; }
+        else if (p.state === 'wait') p.pat = Math.max(0, p.pat - dt);
+        else if (p.state === 'desk') p.deskPat = Math.max(0, p.deskPat - dt);
+        else if (p.state === 'ticket' || p.state === 'atDoor') p.t = Math.max(0, p.t - dt);
+        else if (p.state === 'enter') { if (p.t > 0) { p.t -= dt; p.gy -= 14 * dt; } else p.hide = true; }
+        else if (p.state === 'out') { if (p.gy >= GLASS.y0 + 34) p.gy -= 36 * dt; else p.hide = true; }
+      }
+      // figuren glider mjukt efter "spöket"
+      const ex = p.gx - p.x, ey = p.gy - p.y;
+      if (Math.hypot(ex, ey) > 24) { p.x = p.gx; p.y = p.gy; } else { const f = Math.min(1, dt * 10); p.x += ex * f; p.y += ey * f; }
+    }
+  }
+  // JAG tar över passet: hoppa över gamla id:n (inga krockar), patienterna går vidare från där de syns
+  // mot samma mål (lappen, stolen, luckan, dörren, utgången) och nästa patient kommer snart
+  function takeOver() {
+    seq = Math.max(seq, 1 + Math.max(-1, ...patients.map((p) => p.id)));
+    nuN = Math.max(nuN, lastNu);
+    for (const p of patients) {
+      if (p.gx !== undefined) { p.x = p.gx; p.y = p.gy; }
+      p.gx = p.gy = undefined; p.repath = false; p.hide = false;
+      p.w.stop(); p.w.px = p.x; p.w.py = p.y;
+    }
+    occupy();
+    for (const p of patients) resume(p);
+    spawnIn = Math.min(spawnIn, 2); akutIn = Math.min(akutIn, 10);
+    pend = null; queued = null;
+    snapAsap();
+  }
+  // (den nya skiftledaren) en patient som var på väg går vidare dit – med samma steg efteråt som förut
+  function resume(p) {
+    if (p.state === 'toTicket') go(p, AUTO.x, AUTO.y + 8, 'toTicket', () => atTicket(p));
+    else if (p.state === 'toSeat') { if (p.seat) go(p, p.seat.x, p.seat.y + 8, 'toSeat', () => atSeat(p)); else goSeat(p); }
+    else if (p.state === 'toSpot') { if (p.spot) go(p, p.spot.x, p.spot.y, 'toSpot', () => atSpot(p)); else goSpot(p); }
+    else if (p.state === 'called') { if (p.win !== null) go(p, WIN[p.win], PAT_Y, 'called', () => atWin(p)); else goSeat(p); }
+    else if (p.state === 'toDoor') { if (p.room !== null) go(p, ROOMS[p.room].cx, FLOOR_Y + 6, 'toDoor', () => atDoor(p, 0.7)); else leave(p, false); }
+    else if (p.state === 'leave') go(p, ENTRY.cx, FLOOR_Y + 6, 'leave', () => atOut(p));
+    else if (p.state === 'sit' && !p.seat) { p.state = 'wait'; p.sat = 0; }
+  }
+  // jag blir medarbetare: nästa snap bestämmer var alla är (skiftledarens gång-steg gäller inte här)
+  function becomeMate() {
+    for (const p of patients) { p.w.stop(); p.gx = p.gy = undefined; }
+  }
+  // (skiftledaren) den som gått från receptionen (en stund – inte bara ett ögonblick) har inga
+  // patienter längre: låsen släpps, så att de som är kvar kan skicka dem vidare
+  function sweepGone() {
+    const ids = new Set([meId(), ...coop.peers().map((f) => f.id)]);
+    const gone = (id) => {
+      if (!id) return false;
+      if (ids.has(id)) { absent.delete(id); return false; }
+      if (!absent.has(id)) absent.set(id, t);
+      return t - absent.get(id) > 1.5;
+    };
+    for (const p of patients) if (p.by && !isMe(p.by) && gone(p.by)) { p.by = ''; snapAsap(); }
+  }
+  // mitt pass är slut: patienterna jag ropat in släpps åt kollegorna
+  function letGo() {
+    if (!coop.active) return;
+    if (mate()) { coop.send({ t: 'lamna' }); return; }
+    for (const p of patients) if (p.by === meId()) p.by = '';
+    sendSnap(); coop.sentSnap();
+  }
+
+  // Sköterskan som gör något med det gemensamma: jag själv, eller – hos skiftledaren – en
+  // medarbetare vars önskemål körs åt hen. Var hen står (x) följer med önskemålet: patienten
+  // ställer sig vid hens lucka.
+  const meK = () => ({ by: meId(), fx: [], x: walker.px });
+  const forK = (by, m = {}) => ({ by, fx: [], remote: true, x: clamp(+m.x || WIN[0], DESK.x0, XR) });
+  const kOf = (by) => (isMe(by) ? meK() : forK(by));
+  const myState = () => ({ x: Math.round(walker.px), y: Math.round(walker.py) });
+  // Utfallet av en handling: [slag, vem (spelar-id; '' = alla i receptionen), ...]. Det som gäller mig
+  // (eller alla) syns och hörs här direkt – ensam gäller allt mig; i ett delat pass (eller när jag
+  // kör en medarbetares önskemål) följer resten med svaret ut.
+  function utfall(k, who, kind, ...a) {
+    const me = meId(), sprid = coop.active || !!k.remote;
+    if (!who || who === me || !sprid) doFx(kind, a);
+    if (sprid && who !== me) k.fx.push([kind, who, ...a]);
+  }
+  function doFx(kind, a) {
+    if (kind === 's') { if (LJUD.has(a[0])) play(a[0]); }
+    else if (kind === 'p') say(+a[0] || 0, +a[1] || 0, String(a[2]).slice(0, 40), String(a[3] || '#d8d2c0'));
+    else if (kind === 'H') hannFore(+a[0] || 0, +a[1] || 0);
+    else if (kind === 'o') { stats.ok++; stats.patienter++; }
+    else if (kind === 'f') { stats.fel++; stats.felrum++; }
+    else if (kind === 'b') stats.boxes++;
+    else if (kind === 'W') walker.walkTo(WIN[clamp(a[0] | 0, 0, 1)], WORK_Y, () => { walker.dir = 'up'; });   // till luckan där patienten ställer sig
+  }
+  const kLjud = (k, s) => utfall(k, k.by, 's', s);                                                    // hörs hos den det gäller
+  const kSay = (k, x, y, txt, col) => utfall(k, k.by, 'p', Math.round(x), Math.round(y), txt, col);   // syns hos den det gäller
+  const kPop = (k, x, y, txt, col) => utfall(k, '', 'p', Math.round(x), Math.round(y), txt, col);     // syns hos alla
+  const hannFore = (x, y) => { play('miss'); say(x, y, 'HANN FÖRE!', '#ff6a6a'); };                  // någon annan hann först
+  // skiftledaren: läget ut direkt efter en handling (FÖRE svaret – då har den som frågade redan det
+  // nya läget när svaret kommer) och utfallet till alla
+  function publish(k, svar) {
+    if (!svar && !(coop.active && coop.leader && coop.settled)) return;
+    sendSnap(); coop.sentSnap(); snapIn = 0.35;
+    if (svar) coop.send({ t: 'res', by: k.by, fx: k.fx, s: 1 });
+    else if (k.fx.length) coop.send({ t: 'res', by: k.by, fx: k.fx });
+  }
+  // medarbetarens önskemål: sköterskan väntar på ledarens svar (högst 2,5 s – sedan kan man försöka
+  // igen). n = löpnumret: kommer samma önskemål fram två gånger görs det EN gång (provet skickar två).
+  function ask(m, n = 1) {
+    m.n = ++reqN;
+    for (let i = 0; i < n; i++) coop.send(m);
+    pend = { t: 2.5 };
+  }
+  function answered() { pend = null; }
+  // ett klick som gör något: väntar medarbetaren på svar tas det så fort svaret kommit
+  function klick(fn) {
+    if (mate() && pend) { queued = fn; return; }
+    fn();
+  }
+  coop.on('snap', (m) => { if (!coop.leader) applySnap(m); });
+  coop.on('res', (m) => {   // ledarens utfall: puffarna hos alla – poängen och gången till luckan hos den det gäller
+    const me = coop.myId, mine = m.by === me;
+    if (coop.leader && !mine) return;   // (skiftledaren har redan visat det hos sig)
+    for (const f of (Array.isArray(m.fx) ? m.fx : []).slice(0, 24)) {
+      if (!Array.isArray(f)) continue;
+      const who = str(f[1]);
+      if (!who || who === me) doFx(f[0], f.slice(2));
+    }
+    if (mine && m.s) answered();
+  });
+  coop.on('do', (m, from) => {   // en medarbetares handling på något gemensamt – körs här, åt hen
+    if (!coop.leader || !coop.settled || done) return;   // (bara den som kör väntrummet avgör)
+    if (Number.isInteger(m.n)) { if (seenReq.get(from) === m.n) return; seenReq.set(from, m.n); }   // (samma önskemål igen)
+    const k = forK(from, m), p = patById(int(m.id, -1));
+    switch (m.a) {
+      case 'ropa':     // bubblan: bara om patienten fortfarande väntar – annars hann någon annan före
+        if (p && p.state === 'wait') call(p, k);
+        else if (!(p && p.by === from)) utfall(k, from, 'H', Math.round(k.x), 92);
+        break;
+      case 'nasta': callNext(k); break;
+      case 'skicka': { // dörren: patienten vid luckan – bara den som ropade in hen (eller ingen, om låset släppts)
+        const ri = clamp(int(m.r, 0), 0, ROOMS.length - 1);
+        if (p && (p.state === 'desk' || p.state === 'called') && (!p.by || p.by === from)) skicka(p, ri, k);
+        else if (!(p && p.sentBy === from)) utfall(k, from, 'H', Math.round(k.x), 92);
+        break;
+      }
+      default: return;
+    }
+    publish(k, true);
+  });
+  // en kollega går hem (passet slut): hens patienter släpps
+  coop.on('lamna', (m, from) => {
+    if (!coop.leader) return;
+    for (const p of patients) if (p.by === from) p.by = '';
+    snapAsap();
+  });
 
   // ---------- patienterna ----------
   function newPatient(sym, { seated = false, akut = false } = {}) {
     const s = SYMS[sym], isAkut = akut || !!s.akut;
     const prog = Math.min(1, t / P.seconds);
     const pmax = isAkut ? 17 : 36 - 10 * prog;
+    const ls = (R() * 0x7fffffff) | 0;   // utseendet ur ett frö (ihop skickar skiftledaren bara fröet)
     const p = {
-      id: seq++, look: makeLook(), sym, akut: isAkut, num: null, state: 'in', w: mkWalker(ENTRY.cx, 110),
+      id: seq++, ls, look: lookOf(ls), sym, akut: isAkut, num: null, state: 'in', w: mkWalker(ENTRY.cx, 110),
       x: ENTRY.cx, y: 97, dir: 'down', seat: null, spot: null, win: null, room: null, dest: null, wrong: null,
       pat: pmax, pmax, deskPat: isAkut ? 11 : 15, deskMax: isAkut ? 11 : 15, passed: 0, t: 0, angry: false, sat: 0,
+      by: '', sentBy: null,   // by = sköterskan som ropade in patienten (låset), sentBy = den som skickade hen till ett rum
     };
     if (seated) {
       if (isAkut) {
@@ -909,57 +1245,76 @@ export function makeJobbVard(A, { onDone } = {}) {
     free.sort((a, b) => Math.hypot(a.x - p.x, a.y - p.y) - Math.hypot(b.x - p.x, b.y - p.y));
     const st = free[Math.min(free.length - 1, (R() * 3) | 0)];
     st.occ = p; p.seat = st;
-    go(p, st.x, st.y + 8, 'toSeat', () => { p.state = 'sit'; p.t = 0.22; p.dir = 'down'; });
+    go(p, st.x, st.y + 8, 'toSeat', () => atSeat(p));
   }
   function goSpot(p) {
     const sp = akutSpots.find((q) => !q.occ);
     if (!sp) { goSeat(p); return; }
     sp.occ = p; p.spot = sp;
-    go(p, sp.x, sp.y, 'toSpot', () => { p.state = 'wait'; p.dir = 'down'; });
+    go(p, sp.x, sp.y, 'toSpot', () => atSpot(p));
   }
-  // ropa in en patient till en ledig lucka (den man står vid i första hand)
-  function call(p) {
+  // framme: vid automaten, framför stolen, i AKUT-rutan, vid dörren, vid utgången
+  function atTicket(p) { p.state = 'ticket'; p.t = 0.9; p.dir = 'up'; }
+  function atSeat(p) { p.state = 'sit'; p.t = 0.22; p.dir = 'down'; }
+  function atSpot(p) { p.state = 'wait'; p.dir = 'down'; }
+  function atDoor(p, secs) { p.state = 'atDoor'; p.t = secs; p.dir = 'up'; openDoor(p.room, p); }
+  function atOut(p) { p.state = 'out'; p.dir = 'up'; }
+  // Ropa in en patient till en ledig lucka: den sköterskan k står vid i första hand (ihop helst en
+  // lucka där ingen kollega står). Patienten är sedan LÅST åt k – bara k skickar hen vidare.
+  // (k = den som gör det – se "jobba tillsammans". Ensam är k alltid jag och allt sker direkt.)
+  function call(p, k = meK()) {
     if (!p || p.state !== 'wait') return false;
-    const mine = myWin();
-    let wi = mine >= 0 && !wins[mine] ? mine : !wins[nearWin()] ? nearWin() : wins[0] ? (wins[1] ? -1 : 1) : 0;
-    if (wi < 0) { say(WIN[0] + 26, 92, 'LUCKORNA ÄR FULLA!', '#ffd23f'); play('miss'); return false; }
+    const mine = winAt(k.x), order = [mine, nearAt(k.x), 0, 1].filter((w) => w >= 0);
+    const wi = order.find((w) => !wins[w] && !staffed(w, k.by)) ?? order.find((w) => !wins[w]) ?? -1;
+    if (wi < 0) { kSay(k, WIN[0] + 26, 92, 'LUCKORNA ÄR FULLA!', '#ffd23f'); kLjud(k, 'miss'); return false; }
     // akutfall först: alla andra akutpatienter som väntar blev passerade
     for (const q of patients) if (q !== p && q.akut && q.state === 'wait') q.passed++;
-    calls++;
-    wins[wi] = p; p.win = wi;
+    if (!k.remote) calls++;
+    wins[wi] = p; p.win = wi; p.by = k.by;
     freeSeat(p);
     if (p.sat) { p.y = p.y + 8; p.sat = 0; }
-    nuNo = p.akut ? 'AKUT' : String(p.num % 1000).padStart(3, '0'); nuWin = wi; nuFlash = 1.6;
-    play('ok');
-    go(p, WIN[wi], PAT_Y, 'called', () => { p.state = 'desk'; p.dir = 'down'; if (p.dest !== null) { const d = p.dest; p.dest = null; send(p, d); } });
+    nuNo = p.akut ? 'AKUT' : String(p.num % 1000).padStart(3, '0'); nuWin = wi; nuFlash = 1.6; nuN++;
+    kLjud(k, 'ok');
+    go(p, WIN[wi], PAT_Y, 'called', () => atWin(p));
     // man går själv till luckan om man inte redan har någon framför sig
     const cur = mine >= 0 ? wins[mine] : null;
-    if (!cur || cur === p) walker.walkTo(WIN[wi], WORK_Y, () => { walker.dir = 'up'; });
+    if (!cur || cur === p) utfall(k, k.by, 'W', wi);
     return true;
   }
-  function callNext() {
-    const list = waiting().filter((p) => !p.akut && p.num !== null).sort((a, b) => a.num - b.num);
-    nextGlow = 0.4;
-    if (!list.length) { const ak = waiting().find((p) => p.akut); if (ak) return call(ak); say(NEXT.x0 + 12, 96, 'INGEN I KÖN', '#d8d2c0'); play('miss'); return false; }
-    return call(list[0]);
+  // framme vid luckan: har patienten redan fått ett rum går hen dit direkt (poängen är den som gav rummet)
+  function atWin(p) {
+    p.state = 'desk'; p.dir = 'down';
+    if (p.dest === null) return;
+    const d = p.dest, k = kOf(p.by);
+    p.dest = null;
+    send(p, d, k);
+    publish(k, false);
   }
-  // skicka patienten till ett rum: rätt = lön (+ bonus för akutfall först), fel = avdrag
-  function send(p, ri) {
+  function callNext(k = meK()) {
+    const list = waiting().filter((p) => !p.akut && p.num !== null).sort((a, b) => a.num - b.num);
+    if (!k.remote) nextGlow = 0.4;
+    if (!list.length) { const ak = waiting().find((p) => p.akut); if (ak) return call(ak, k); kSay(k, NEXT.x0 + 12, 96, 'INGEN I KÖN', '#d8d2c0'); kLjud(k, 'miss'); return false; }
+    return call(list[0], k);
+  }
+  // skicka patienten till ett rum: rätt = lön (+ bonus för akutfall först), fel = avdrag – hos k,
+  // och i lagets räkning
+  function send(p, ri, k = meK()) {
     const right = SYMS[p.sym].room;
     const r = ROOMS[ri];
     freeWin(p);
-    sends++;
+    if (!k.remote) sends++;
+    p.sentBy = k.by;
     if (ri === right) {
-      stats.ok++; stats.patienter++;
-      if (p.akut && p.passed === 0) { stats.boxes++; say(WIN[0] + 26, 92, 'AKUT FÖRST! BONUS!', '#ffd23f'); play('box'); }
-      else { say(p.x, 94, 'RÄTT RUM!', '#8ee03c'); play('coin'); }
+      team.ok++; utfall(k, k.by, 'o');
+      if (p.akut && p.passed === 0) { team.boxes++; utfall(k, k.by, 'b'); kPop(k, WIN[0] + 26, 92, 'AKUT FÖRST! BONUS!', '#ffd23f'); kLjud(k, 'box'); }
+      else { kPop(k, p.x, 94, 'RÄTT RUM!', '#8ee03c'); kLjud(k, 'coin'); }
     } else {
-      stats.fel++; stats.felrum++;
+      team.fel++; utfall(k, k.by, 'f');
       p.wrong = ri;
-      say(p.x, 94, 'FEL RUM!', '#ff6a6a'); play('fel');
+      kPop(k, p.x, 94, 'FEL RUM!', '#ff6a6a'); kLjud(k, 'fel');
     }
     p.room = ri;
-    go(p, r.cx, FLOOR_Y + 6, 'toDoor', () => { p.state = 'atDoor'; p.t = 0.7; p.dir = 'up'; openDoor(ri, p); });
+    go(p, r.cx, FLOOR_Y + 6, 'toDoor', () => atDoor(p, 0.7));
   }
   function openDoor(ri, p) {
     const d = doors[ri];
@@ -972,21 +1327,24 @@ export function makeJobbVard(A, { onDone } = {}) {
   // spets och kant 5 till) hamnar under passets remsa – aldrig text under remsan.
   const doorTip = (s) => Math.max(DOOR_TOP + 4, hudBottom() + 2 + sayLines(s, 124, 5).length * 7 + 4 + 5);
   function doorSay(ri, s, secs) {
-    const r = ROOMS[ri];
-    talkDoor[ri].say(s, () => ({ x: r.cx, y: doorTip(s) }), secs, { voice: STAFF[ri] });
+    const d = doors[ri];
+    d.sayN++; d.sayTxt = s; d.sayT = secs;   // (repliken följer med snappen – kollegorna hör den också)
+    talk(ri, s, secs);
   }
+  function talk(ri, s, secs) { talkDoor[ri].say(s, () => ({ x: ROOMS[ri].cx, y: doorTip(s) }), secs, { voice: STAFF[ri] }); }
   function leave(p, late) {
     if (late) {
       // räknas bara som missad (som i de andra jobben): 0 kr, en egen rad på lönebeskedet, inte ett "fel"
-      stats.miss++;
+      stats.miss++; team.miss++;
       say(p.x, Math.min(p.y - 50, 96), p.akut ? 'FÖR SENT!' : 'GICK HEM!', '#ff6a6a');
       play('miss');
       p.angry = true;
+      if (coop.active) snapAsap();
     }
     freeSeat(p); freeWin(p);
     if (p.sat) { p.y += 8; p.sat = 0; }
     p.w.speed = late ? 60 : 50;
-    go(p, ENTRY.cx, FLOOR_Y + 6, 'leave', () => { p.state = 'out'; p.dir = 'up'; });
+    go(p, ENTRY.cx, FLOOR_Y + 6, 'leave', () => atOut(p));
   }
   // Vem en dörrklick (eller tangent 1–4) gäller – och vems bubbla som lyser: den som STÅR
   // FRAMME vid en lucka går alltid före den som fortfarande är på väg (först min lucka, sedan
@@ -994,9 +1352,10 @@ export function makeJobbVard(A, { onDone } = {}) {
   // och går dit när hen kommer fram – i första hand någon som inte redan fått ett rum.
   // (Förut fick den som var på väg till min lucka dörrens rum, fast en annan patient stod
   // och väntade vid andra luckan – en snabb spelare skickade då fel person till fel rum.)
+  // (Ihop gäller den bara mina patienter – de en kollega ropat in är låsta åt hen.)
   function deskTarget() {
     const mine = myWin(), idx = mine >= 0 ? mine : nearWin(), order = [idx, 1 - idx];
-    const find = (ok) => { for (const wi of order) { const p = wins[wi]; if (p && ok(p)) return { p, wi, idx }; } return null; };
+    const find = (ok) => { for (const wi of order) { const p = wins[wi]; if (p && isMe(p.by) && ok(p)) return { p, wi, idx }; } return null; };
     return find((p) => p.state === 'desk') || find((p) => p.state === 'called' && p.dest === null) || find((p) => p.state === 'called');
   }
   function sendFromDesk(ri) {
@@ -1006,9 +1365,38 @@ export function makeJobbVard(A, { onDone } = {}) {
     // står patienten vid den andra luckan går man dit – men patienten skickas direkt, så att
     // inget klick kan gå förlorat om man hinner klicka på något annat under tiden
     if (wi !== idx) walker.walkTo(WIN[wi], WORK_Y, () => { walker.dir = 'up'; });
-    if (p.state === 'desk') send(p, ri);
-    else { p.dest = ri; say(p.x, 94, ROOMS[ri].name + '!', css(mix(ROOMS[ri].col, WHITE, 0.4))); play('click'); }
+    if (mate()) { sends++; ask({ t: 'do', a: 'skicka', id: p.id, r: ri, ...myState() }); return true; }
+    const k = meK();
+    skicka(p, ri, k);
+    publish(k, false);
     return true;
+  }
+  // (alla) patienten vid luckan till rummet ri – eller rummet som mål, om hen fortfarande är på väg
+  function skicka(p, ri, k) {
+    p.by = k.by;
+    if (p.state === 'desk') send(p, ri, k);
+    else { p.dest = ri; kSay(k, p.x, 94, ROOMS[ri].name + '!', css(mix(ROOMS[ri].col, WHITE, 0.4))); kLjud(k, 'click'); }
+  }
+  // klick på en väntande patient: ensam (eller som skiftledare) ropas hen in direkt, som
+  // medarbetare blir det ett önskemål till skiftledaren (hann någon före syns det här direkt)
+  function ropaKlick(p) {
+    if (mate()) {
+      if (p.state !== 'wait') { if (!isMe(p.by)) hannFore(walker.px, 92); return; }
+      calls++;
+      ask({ t: 'do', a: 'ropa', id: p.id, ...myState() });
+      return;
+    }
+    const k = meK();
+    if (p.state === 'wait') call(p, k);
+    else if (coop.active && !isMe(p.by)) utfall(k, k.by, 'H', Math.round(walker.px), 92);
+    publish(k, false);
+  }
+  // NÄSTA (knappen, NU-tavlan, Enter): den som stått längst i kön – till min lucka
+  function nastaKlick() {
+    if (mate()) { nextGlow = 0.4; calls++; ask({ t: 'do', a: 'nasta', ...myState() }); return; }
+    const k = meK();
+    callNext(k);
+    publish(k, false);
   }
 
   // ---------- uppdateringen ----------
@@ -1016,7 +1404,7 @@ export function makeJobbVard(A, { onDone } = {}) {
     for (const p of patients) {
       if (p.state === 'in') {                            // genom skjutdörrarna och in
         p.y += 38 * dt;
-        if (p.y >= FLOOR_Y + 6) { p.y = FLOOR_Y + 6; if (p.akut) goSpot(p); else go(p, AUTO.x, AUTO.y + 8, 'toTicket', () => { p.state = 'ticket'; p.t = 0.9; p.dir = 'up'; }); }
+        if (p.y >= FLOOR_Y + 6) { p.y = FLOOR_Y + 6; if (p.akut) goSpot(p); else go(p, AUTO.x, AUTO.y + 8, 'toTicket', () => atTicket(p)); }
       } else if (p.state === 'ticket') {
         p.t -= dt;
         if (p.t <= 0.45 && p.num === null) { p.num = ticketNo++; play('click'); }
@@ -1037,7 +1425,7 @@ export function makeJobbVard(A, { onDone } = {}) {
         if (p.t <= 0) {
           if (p.wrong !== null) {                         // personalen skickar vidare till rätt rum
             const ri = SYMS[p.sym].room; p.wrong = null; p.room = ri;
-            go(p, ROOMS[ri].cx, FLOOR_Y + 6, 'toDoor', () => { p.state = 'atDoor'; p.t = 0.6; p.dir = 'up'; openDoor(ri, p); });
+            go(p, ROOMS[ri].cx, FLOOR_Y + 6, 'toDoor', () => atDoor(p, 0.6));
           } else { p.state = 'enter'; p.t = 0.6; doors[p.room].hold = Math.max(doors[p.room].hold, 0.9); }
         }
       } else if (p.state === 'enter') {
@@ -1063,10 +1451,32 @@ export function makeJobbVard(A, { onDone } = {}) {
     entryOpen = clamp(entryOpen + (near ? 3 : -1.6) * dt, 0, 1);
     entrySound -= dt;
     if (was === 0 && entryOpen > 0 && entrySound <= 0) { play('door'); entrySound = 1.2; }
-    for (const d of doors) { d.hold -= dt; d.staff -= dt; d.open = clamp(d.open + (d.hold > 0 ? 5 : -3) * dt, 0, 1); }
+    for (const d of doors) { d.hold -= dt; d.staff -= dt; d.sayT = Math.max(0, d.sayT - dt); d.open = clamp(d.open + (d.hold > 0 ? 5 : -3) * dt, 0, 1); }
     if (amb) { amb.t += dt; if (amb.t > 7.5) amb = null; }
     if (nuFlash > 0) nuFlash -= dt;
     if (nextGlow > 0) nextGlow -= dt;
+  }
+  // Skiftledarens (och den ensammas) vårdcentral: patienterna, nya patienter och akutfall – och
+  // läget ut till medarbetarna ~3 ggr/s
+  function leadTick(dt) {
+    updatePatients(dt);
+    if (autoSpawn) {
+      // nya patienter: tätare mot slutet av passet – och ihop tätare (samma 16 stolar och två luckor)
+      spawnIn -= dt;
+      if (spawnIn <= 0) {
+        const prog = Math.min(1, t / P.seconds);
+        if (spawn(false) && coop.active) snapAsap();
+        spawnIn = (4.4 - 1.6 * prog + R() * 1.4) * P.pace * (coop.active ? 0.45 : 1);
+      }
+      // akutfall: minst ett per pass, sedan ibland
+      akutIn -= dt;
+      if (akutIn <= 0) {
+        if (!patients.some((p) => p.akut && p.state !== 'enter') && spawn(true) && coop.active) snapAsap();
+        akutIn = ((akutSpawned ? 16 : 6) + R() * 12) * P.pace * (coop.active ? 0.7 : 1);
+      }
+    }
+    if (coop.active || maxN > 1) sweepGone();
+    if (coop.active) { snapIn -= dt; if (snapIn <= 0) { snapIn = 0.35; sendSnap(); coop.sentSnap(); } }
   }
 
   // ---------- klicken ----------
@@ -1101,10 +1511,13 @@ export function makeJobbVard(A, { onDone } = {}) {
   }
   function handleDown(x, y) {
     if (done) return;
+    if (mate() && pend) { queued = () => handleDown(x, y); return; }   // väntar på skiftledarens svar – klicket tas strax
     // 1) en patient (bubblan eller figuren)
     const p = patientAt(x, y);
     if (p) {
-      if (p.state === 'wait') { call(p); return; }
+      if (p.state === 'wait') { ropaKlick(p); return; }
+      // (ihop: en patient en kollega ropat in är hens)
+      if (!isMe(p.by)) { say(p.x, 94, 'KOLLEGANS PATIENT', '#d8d2c0'); return; }
       // patienten vid luckan: gå dit
       walker.walkTo(WIN[p.win], WORK_Y, () => { walker.dir = 'up'; });
       return;
@@ -1113,7 +1526,7 @@ export function makeJobbVard(A, { onDone } = {}) {
     const r = ROOMS.find((q) => x >= q.x0 - 4 && x <= q.x1 + 4 && y >= SIGN_Y - 2 && y <= FLOOR_Y + 6);
     if (r) { sendFromDesk(r.i); return; }
     // 3) NÄSTA-knappen eller NU-tavlan
-    if ((x >= NEXT.x0 - 2 && x <= NEXT.x1 + 2 && y >= NEXT.y0 - 4 && y <= DESK.face + 2) || (x >= NU.x0 && x <= NU.x1 && y >= NU.y0 && y <= NU.y1 + 11)) { callNext(); return; }
+    if ((x >= NEXT.x0 - 2 && x <= NEXT.x1 + 2 && y >= NEXT.y0 - 4 && y <= DESK.face + 2) || (x >= NU.x0 && x <= NU.x1 && y >= NU.y0 && y <= NU.y1 + 11)) { nastaKlick(); return; }
     // 4) luckorna / personalytan: gå dit
     if (x >= DESK.x0 && y >= DESK.top - 30) {
       if (y < DESK.base) { const wi = Math.abs(x - WIN[0]) < Math.abs(x - WIN[1]) ? 0 : 1; walker.walkTo(WIN[wi], WORK_Y, () => { walker.dir = 'up'; }); }
@@ -1145,7 +1558,7 @@ export function makeJobbVard(A, { onDone } = {}) {
     else if (p.state === 'ticket') frame = 9;
     else if (!moving) frame = Math.sin(clk * 2 + p.id) > 0.9 ? 4 : 0;
     const clip = p.state === 'in' || p.state === 'out' ? [GLASS.x0, GLASS.y0, GLASS.x1 - GLASS.x0, FLOOR_Y + 12 - GLASS.y0]
-      : p.state === 'enter' ? [ROOMS[p.room].x0 + 1, DOOR_TOP, ROOMS[p.room].x1 - ROOMS[p.room].x0 - 2, FLOOR_Y + 12 - DOOR_TOP] : null;
+      : p.state === 'enter' && p.room !== null ? [ROOMS[p.room].x0 + 1, DOOR_TOP, ROOMS[p.room].x1 - ROOMS[p.room].x0 - 2, FLOOR_Y + 12 - DOOR_TOP] : null;
     if (clip) { ctx.save(); ctx.beginPath(); ctx.rect(...clip); ctx.clip(); }
     drawPerson(ctx, p.x, p.y, p.look, dir, frame);
     if (clip) ctx.restore();
@@ -1283,7 +1696,7 @@ export function makeJobbVard(A, { onDone } = {}) {
   // dörrarnas bilder eller luckorna.
   function drawHint(ctx, vw, o) {
     let s = null;
-    const atDesk = wins.some((p) => p && p.state === 'desk');
+    const atDesk = wins.some((p) => p && p.state === 'desk' && isMe(p.by));
     if (t < 6 && !calls) s = 'KLICKA PÅ EN PATIENT - ELLER NÄSTA';
     else if (atDesk && sends < 2 && hintT > 2.5) s = 'SKICKA TILL RÄTT DÖRR - TITTA PÅ BILDERNA!';
     else if (!calls && t > 8) s = 'KLICKA PÅ EN PATIENT I VÄNTRUMMET!';
@@ -1305,31 +1718,67 @@ export function makeJobbVard(A, { onDone } = {}) {
       syms: SYMS.map((s) => s.id),
       rooms: ROOMS.map((r) => r.id),
       // en patient som redan väntar (sitter, eller står i AKUT-rutan): sym = id eller index
-      forcePatient(sym = 'feber', { akut = false } = {}) { const i = symIndex(sym); const p = newPatient(i < 0 ? 0 : i, { seated: true, akut: akut || SYMS[i]?.akut }); return p ? p.id : null; },
-      patients: () => patients.map((p) => ({ id: p.id, sym: SYMS[p.sym].id, akut: p.akut, num: p.num, state: p.state, x: Math.round(p.x), y: Math.round(p.y), win: p.win, room: p.room, dest: p.dest, passed: p.passed, pat: +p.pat.toFixed(1) })),
+      forcePatient(sym = 'feber', { akut = false } = {}) { const i = symIndex(sym); const p = newPatient(i < 0 ? 0 : i, { seated: true, akut: akut || SYMS[i]?.akut }); snapAsap(); return p ? p.id : null; },
+      // (by = sköterskan patienten är låst åt, '' = ingen)
+      patients: () => patients.map((p) => ({ id: p.id, sym: SYMS[p.sym].id, akut: p.akut, num: p.num, state: p.state, x: Math.round(p.x), y: Math.round(p.y), win: p.win, room: p.room, dest: p.dest, passed: p.passed, pat: +p.pat.toFixed(1), by: p.by || '' })),
       // vem nästa dörrklick gäller: { id, win } (den som står framme går före den som är på väg)
       target: () => { const tg = deskTarget(); return tg ? { id: tg.p.id, win: tg.wi, state: tg.p.state } : null; },
       camY: () => camY(),
       // dörrarnas pratbubblor: text, spetsens y och bubblans överkant i lokalens koordinater (null = ingen)
       talk: () => talkDoor.map((s, i) => { const txt = s.text(); if (!txt) return null; const tip = doorTip(txt); return { room: ROOMS[i].id, text: txt, tip, top: tip - sayLines(txt, 124, 5).length * 7 - 4 - 5 }; }),
       hudBottom: () => hudBottom(),
-      // ropa in (utan id = NÄSTA-knappen)
-      call(id) { if (id === undefined) return callNext(); return call(patients.find((p) => p.id === id)); },
-      // alla som är på väg till en lucka ställer sig där direkt
-      arrive() { for (const p of patients) if (p.state === 'called') { p.w.stop(); p.x = WIN[p.win]; p.y = PAT_Y; p.state = 'desk'; p.dir = 'down'; if (p.dest !== null) { const d = p.dest; p.dest = null; send(p, d); } } return patients.filter((p) => p.state === 'desk').map((p) => p.id); },
+      // ropa in (utan id = NÄSTA-knappen) – ensam/skiftledaren, direkt
+      call(id) { const k = meK(), r = id === undefined ? callNext(k) : call(patById(id), k); publish(k, false); return r; },
+      // alla som är på väg till en lucka ställer sig där direkt (ensam/skiftledaren)
+      arrive() { for (const p of patients) if (p.state === 'called') { p.w.stop(); p.x = WIN[p.win]; p.y = PAT_Y; atWin(p); } snapAsap(); return patients.filter((p) => p.state === 'desk').map((p) => p.id); },
       // skicka patienten vid luckan (id, annars den vid min lucka / första vid disken) till ett rum
       send(room, id) {
         const ri = roomIndex(room); if (ri < 0) return null;
         const p = id !== undefined ? patients.find((q) => q.id === id && q.state === 'desk') : (wins[myWin()]?.state === 'desk' ? wins[myWin()] : patients.find((q) => q.state === 'desk'));
-        if (!p) return null; send(p, ri); return stats;
+        if (!p) return null;
+        const k = meK(); send(p, ri, k); publish(k, false); return stats;
       },
-      sendRight(right = true) { const p = patients.find((q) => q.state === 'desk'); if (!p) return null; const ri = SYMS[p.sym].room; send(p, right ? ri : (ri + 1) % ROOMS.length); return stats; },
+      sendRight(right = true) { const p = patients.find((q) => q.state === 'desk'); if (!p) return null; const ri = SYMS[p.sym].room, k = meK(); send(p, right ? ri : (ri + 1) % ROOMS.length, k); publish(k, false); return stats; },
       giveUp(id) { const p = patients.find((q) => (id === undefined || q.id === id) && (q.state === 'wait' || q.state === 'desk')); if (!p) return null; if (p.state === 'wait') p.pat = 0; else p.deskPat = 0; api.update(0.001); return stats; },
       // en patient kommer in genom entrén på riktigt (akut = med ambulansen utanför); returnerar id
-      komIn(akut = false) { const p = spawn(!!akut); return p ? p.id : null; },
+      komIn(akut = false) { const p = spawn(!!akut); snapAsap(); return p ? p.id : null; },
       skip(s) { t = Math.min(P.seconds - 0.05, t + s); return t; },
       auto(on = true) { autoSpawn = !!on; return autoSpawn; },
-      clear() { for (const p of patients) { freeSeat(p); freeWin(p); } patients = []; return 0; },
+      clear() { for (const p of patients) { freeSeat(p); freeWin(p); } patients = []; snapAsap(); return 0; },
+      // ---------- jobba tillsammans (tools/coop-vard-test.mjs) ----------
+      coop: () => ({ leader: coop.leader, active: coop.active, mates: coop.peers().length, settled: coop.settled, myId: coop.myId }),
+      lag: () => ({ ...team, maxN }),
+      title: () => hudTitle(),
+      // lugnt i receptionen (skiftledaren/solo): inga nya patienter, väntrummet och luckorna tomma
+      calm() { autoSpawn = false; for (const p of patients) { freeSeat(p); freeWin(p); } patients = []; snapAsap(); return 0; },
+      // Som ett klick (hos en medarbetare blir det ett önskemål till skiftledaren): 'ropa' id (bubblan) ·
+      // 'nasta' (NÄSTA-knappen) · 'skicka' rum (dörren – patienten vid min lucka, som dörrklicket)
+      act(key, a) {
+        if (done) return false;
+        if (key === 'ropa') { const p = patById(a); if (!p) return false; klick(() => ropaKlick(p)); return true; }
+        if (key === 'nasta') { klick(() => nastaKlick()); return true; }
+        if (key === 'skicka') { const ri = roomIndex(a); if (ri < 0) return false; klick(() => sendFromDesk(ri)); return true; }
+        return false;
+      },
+      // ställ sköterskan vid lucka wi (0/1); returnerar luckan hen står vid
+      lucka(wi = 0) { walker.stop(); walker.px = WIN[clamp(wi | 0, 0, 1)]; walker.py = WORK_Y; walker.dir = 'up'; return myWin(); },
+      // provet: medarbetaren skickar SAMMA önskemål två gånger (som om svaret dröjde) – räknas EN gång
+      twice(key, a) {
+        if (!mate() || pend) return false;
+        let m = null;
+        if (key === 'nasta') m = { t: 'do', a: 'nasta', ...myState() };
+        else if (key === 'ropa') m = { t: 'do', a: 'ropa', id: a, ...myState() };
+        else if (key === 'skicka') { const tg = deskTarget(), ri = roomIndex(a); if (tg && ri >= 0) m = { t: 'do', a: 'skicka', id: tg.p.id, r: ri, ...myState() }; }
+        if (!m) return false;
+        ask(m, 2);
+        return true;
+      },
+      // står sköterskan still – och väntar inte på skiftledarens svar?
+      idle: () => !walker.path.length && !pend && !queued,
+      pending: () => !!pend,
+      // de senaste puffarnas text (även de som redan bleknat)
+      popLog: () => popLog.slice(),
+      time: () => t,
       player: () => ({ x: Math.round(walker.px), y: Math.round(walker.py), win: myWin(), path: walker.path.length }),
       teleport(x, y) { walker.px = x; walker.py = y; walker.stop(); walker.dir = 'up'; },
       doors: () => doors.map((d) => ({ open: +d.open.toFixed(2), staff: d.staff > 0 })),
@@ -1353,44 +1802,56 @@ export function makeJobbVard(A, { onDone } = {}) {
     },
     get worldX() { return walker.px; },
     get worldY() { return walker.py; },
-    exit() { for (const s of talkDoor) s.clear(); },
+    exit() { for (const s of talkDoor) s.clear(); coop.dispose(); },
     update(dt) {
       clk += dt;
       pops.update(dt);
       updateWorld(dt);
-      if (done) { doneT += dt; if (doneT > 1.2 && !reported) { reported = true; onDone?.(stats); } return; }
+      if (done) {
+        coop.tick(); coop.resign();   // MITT pass är slut – lämna över ledningen direkt (även på lönebeskedet)
+        doneT += dt;
+        if (doneT > 1.2 && !reported) {
+          reported = true;
+          if (maxN > 1) {   // jobbat ihop: laget delar lika på rätt, fel, missade och akutbonusarna
+            const sh = (v) => Math.round(v / maxN);
+            onDone?.({ ok: sh(team.ok), fel: sh(team.fel), miss: sh(team.miss), boxes: sh(team.boxes), delat: maxN, lagOk: team.ok, lagFel: team.fel,
+              patienter: stats.patienter, akut: stats.akut, felrum: stats.felrum });
+          } else onDone?.(stats);
+        }
+        return;
+      }
       t += dt;
-      if (t >= P.seconds) { done = true; return; }
+      if (t >= P.seconds) { done = true; pend = null; queued = null; letGo(); return; }
       walker.update(dt);
-      updatePatients(dt);
-      hintT = wins.some((p) => p && p.state === 'desk') ? hintT + dt : 0;
-      if (!autoSpawn) return;
-      // nya patienter: tätare mot slutet av passet
-      spawnIn -= dt;
-      if (spawnIn <= 0) {
-        const prog = Math.min(1, t / P.seconds);
-        spawn(false);
-        spawnIn = (4.4 - 1.6 * prog + R() * 1.4) * P.pace;
+      if (pend) { pend.t -= dt; if (pend.t <= 0) answered(); }   // inget svar (ledaren gick?) – då får man försöka igen
+      coop.tick();
+      if (coop.active) maxN = Math.max(maxN, coop.peers().length + 1);
+      if (coop.active !== wasCoop) {   // en kollega kom in: patienterna kommer tätare
+        wasCoop = coop.active;
+        if (wasCoop) { play('knock'); say(FW >> 1, 96, 'NI JOBBAR IHOP!', '#8ee03c'); }
       }
-      // akutfall: minst ett per pass, sedan ibland
-      akutIn -= dt;
-      if (akutIn <= 0) {
-        if (!patients.some((p) => p.akut && p.state !== 'enter')) spawn(true);
-        akutIn = ((akutSpawned ? 16 : 6) + R() * 12) * P.pace;
-      }
+      // Skiftledaren (eller solo) kör vårdcentralen; medarbetare följer ledarens läge
+      const iLead = !coop.active || (coop.leader && coop.settled);
+      if (iLead && !wasLead) takeOver();
+      else if (!iLead && wasLead) becomeMate();
+      wasLead = iLead;
+      if (iLead) leadTick(dt); else mateTick(dt);
+      hintT = wins.some((p) => p && p.state === 'desk' && isMe(p.by)) ? hintT + dt : 0;
+      // det köade klicket (det kom medan skiftledaren svarade)
+      if (!pend && queued && !done) { const q = queued; queued = null; q(); }
     },
     down(sx, sy) { handleDown(sx - ox(), sy - camY()); },
     key(k) {
       if (k === 'Escape' && !done) abortShift(A);
-      else if (!done && (k === 'Enter' || k === ' ' || k === 'n' || k === 'N')) callNext();
-      else if (!done && k >= '1' && k <= '4') sendFromDesk(+k - 1);
+      else if (!done && (k === 'Enter' || k === ' ' || k === 'n' || k === 'N')) klick(() => nastaKlick());
+      else if (!done && k >= '1' && k <= '4') klick(() => sendFromDesk(+k - 1));
     },
     draw(ctx) {
       const o = ox(), vw = FW + o * 2, cy = camY();
       ctx.setTransform(A.pxs, 0, 0, A.pxs, o * A.pxs, cy * A.pxs);
       drawBack(ctx);
       const ds = [];
-      for (const p of patients) ds.push({ fy: p.y + (p.state === 'wait' && p.sat ? 0.2 : 0), draw: () => drawPatient(ctx, p) });
+      for (const p of patients) if (!p.hide) ds.push({ fy: p.y + (p.state === 'wait' && p.sat ? 0.2 : 0), draw: () => drawPatient(ctx, p) });
       for (const [gx, gy] of GROUPS) ds.push({ fy: gy - 0.5, draw: () => ctx.drawImage(G.group, gx - GROUP_OX, gy - GROUP_OY) });
       ds.push({ fy: AUTO.y, draw: () => ctx.drawImage(G.automat, AUTO.x - 9, AUTO.y - 34) });
       ds.push({ fy: COOLER.y, draw: () => ctx.drawImage(G.cooler, COOLER.x - 8, COOLER.y - 32) });
@@ -1414,7 +1875,7 @@ export function makeJobbVard(A, { onDone } = {}) {
       // (från raden ovanför: beskärningen avrundas, så en bråkdel av den raden syns)
       const sy = A.view?.safe?.y0 | 0;
       if (sy > 0) { ctx.fillStyle = '#17151a'; ctx.fillRect(0, sy - 1, vw, HUD_H + 1); }
-      drawShiftHud(ctx, { W: vw }, { t, dur: P.seconds, ok: stats.ok, fel: stats.fel, title: 'VÅRDCENTRALEN' });
+      drawShiftHud(ctx, { W: vw }, { t, dur: P.seconds, ok: maxN > 1 ? team.ok : stats.ok, fel: maxN > 1 ? team.fel : stats.fel, title: hudTitle() });
       if (!done) drawHint(ctx, vw, o);
       if (done) drawTimeUp(ctx, { W: vw, H: FH });
     },

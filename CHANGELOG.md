@@ -10,6 +10,13 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.66.0] – 2026-09-30 – Jobba ihop på Vårdcentralen
+- Jobba ihop på Vårdcentralen: bjud in en kompis med 💼 Jobba ihop när du börjar passet (eller via 👥 mitt i passet) – ni delar väntrummet, patienterna, båda luckorna och nummertavlan.
+- Ropar du in en patient är den din tills du skickat vidare den – kollegan ser "KOLLEGANS PATIENT". Så kan ni ta var sin patient vid var sin lucka samtidigt.
+- Trycker båda NÄSTA på en gång får bara en patienten – den andra får höra "HANN FÖRE!". Personalens "FEL RUM!" hörs hos alla.
+- Rätt rum, fel rum och akutbonusen går till den som skickade patienten; lagets räkning delas lika på lönebeskedet.
+- När ni är fler kommer patienterna ungefär dubbelt så ofta och ambulansen oftare. Går den som leder passet hem tar någon annan över direkt.
+
 ## [0.65.1] – 2026-09-30 – Disken syns på mobilen
 - Mobilen i liggande läge: passets tid och poäng står nu i den tunna raden överst i stället för som en mörk rad över scenen – den skymde tallrikarna på disken i Burgarbaren (och det som stod överst i de andra jobben).
 - När scenen är högre än skärmen (särskilt med 🔍 NÄRA eller när Safaris adressfält syns) följer bilden figuren i höjdled: står du vid disken syns disken, går du ner till borden följer bilden med. Gäller jobben, butikerna och hemmet – staden har sin egen kamera som förut.
