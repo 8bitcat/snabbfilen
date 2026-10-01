@@ -468,6 +468,39 @@ canvas.homepic { width: 128px; height: auto; image-rendering: pixelated; border:
 .lm-natt { font-size: var(--f2); margin: 8px 0; }
 .lm-natt .up { color: var(--green); }
 .lm-natt .down { color: var(--red2); }
+
+/* ---------- 🍳 köket: spisen och receptboken (js/scenes/kok.js) ---------- */
+.dlg-kok { max-width: 820px; }
+.kok-tabs { display: flex; gap: 6px; margin: 0 0 8px; }
+.kok-tabs .av-tab.on { background: #fff4c7; outline: 3px solid var(--gold); outline-offset: -1px; }
+.kok-note { font-size: var(--f2); margin: 4px 0 10px; }
+.kok-port { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin: 0 0 6px; }
+.kok-dish { display: block; image-rendering: pixelated; image-rendering: crisp-edges; border: 3px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); background: #faf2ea; }
+.kok-list { display: grid; gap: 8px; }
+.kok-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: center; background: #fff; border: 3px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); padding: 6px 8px; }
+.kok-row.ready { background: #effae9; }
+.kok-row .kok-dish { width: 96px; height: 64px; }
+.kok-txt { font-size: var(--f2); line-height: 1.1; min-width: 0; }
+.kok-txt p { font-size: var(--f1); margin: 4px 0; line-height: 1.2; }
+.kok-txt small { display: block; font-size: var(--f1); color: var(--muted); margin-top: 4px; }
+.kok-stars { color: #d89a10; letter-spacing: 1px; }
+.kok-ings { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.kok-ing { font-size: var(--f1); line-height: 1; padding: 3px 5px; border: 2px solid var(--ink); background: #effae9; }
+.kok-ing.no { background: #ffe6e0; color: var(--red2); }
+.kok-book { display: grid; gap: 10px; }
+.kok-page { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 12px; align-items: start; background: #fffaf0; border: 3px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); padding: 8px 10px; }
+.kok-page.kan { background: #f4fbef; }
+.kok-pic { position: relative; }
+.kok-pic .kok-dish { width: 144px; height: 96px; }
+.kok-no { position: absolute; right: 4px; bottom: 4px; font-size: var(--f1); background: #fffaf0; border: 2px solid var(--ink); padding: 1px 4px; }
+.kok-kan { font-size: var(--f1); color: var(--green); margin-top: 6px; }
+.kok-page .btn { margin-top: 6px; }
+.kok-res .kok-dish { width: 144px; height: 96px; margin: 0 0 8px; }
+@media (max-width: 760px) {
+  .kok-row { grid-template-columns: auto minmax(0, 1fr); }
+  .kok-row .btn { grid-column: 1 / -1; }
+  .kok-page { grid-template-columns: 1fr; }
+}
 @media (max-width: 760px) {
   .lm-row { grid-template-columns: 1fr; gap: 6px; }
   .lm-mini { grid-template-columns: repeat(2, minmax(0, 1fr)); }

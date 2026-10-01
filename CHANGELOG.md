@@ -10,6 +10,15 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.73.0] – 2026-10-02 – Laga mat hemma
+- Laga mat hemma! Varje bostad har en spis och Pixelstadens kokbok på ett ställ bredvid. Boken har 24 recept med en pixelbild av varje rätt – läs ett recept så kan du laga det (tre klassiker kan du redan).
+- Mataffären säljer råvaror: frukt och grönt i lådorna, ägg, mjölk, ost, smör och yoghurt i mejeriet, limpa och tortilla i bageriet, pasta, ris, mjöl, havregryn, tomater och bönor på hyllorna – och kyckling, köttfärs, bacon, fisk och bär i frysen. Välj 1, 5 eller 10 åt gången.
+- Köket: välj ett recept vid spisen så hjälper spelet dig steg för steg – fyll grytan med vatten, vrid på plattan, koka pastan, stek baconet, hacka löken på skärbrädan, vispa i bunken, häll av vattnet och blanda allt i pannan. Fyra plattor, två grytor och två stekpannor, ugn och mixer. En pil visar vad du ska göra.
+- Recept med kött och kyckling: köttbullar, spaghetti och köttfärssås, tacos, chili, kyckling med ris, ugnskyckling, kycklingwrap och carbonara – plus pannkakor, pizza, äppelkaka, smoothie och mycket mer.
+- Storkok ×5 och megakok ×10: råvarorna fem eller tio gånger – en portion äter du direkt, resten blir matlådor i kylskåpet som du värmer när du vill.
+- Ju mer du lagar desto bättre kock: kocknivåer från Nybörjarkock till Stjärnkock och stjärnor per rätt ger mer mättnad.
+- Kylskåpet visar råvarorna (frukt kan du äta som den är) och matlådorna.
+
 ## [0.72.0] – 2026-10-01 – Livsmål och lycka
 - Livsmål: välj hur högt du siktar i fyra mål – 💰 Rikedom, 😊 Lycka, 🎓 Utbildning och 💼 Karriär – på Lätt, Normal eller Svår. Du har klarat livet i Pixelstaden när alla fyra är nådda samtidigt. Nya spelare väljer direkt efter välkomsten, och den som redan spelar får välja nästa gång spelet startar.
 - 🎯 i HUD:en visar hur långt du har kommit i varje mål, och där kan du ändra nivåerna. Veckorutan och dagboken visar också livsmålen.

@@ -11,6 +11,9 @@
 //               kampanjpall och blomsterstånd.
 //
 // Maten i FOOD (game.js) står på bestämda hyllplatser med en stor gul prislapp.
+// RÅVAROR (laga mat hemma, Carl 2026-10-01): varje fruktlåda, mejerikylarnas dörrar, bageriet,
+// en del hyllplatser och frysfacken (köttfärs, kyckling, bacon, fisk, bär) säljer en råvara –
+// klick → välj antal (1/5/10, till storkok och megakok) → korgen → kassan → skafferiet hemma.
 // Klick på en vara → figuren går dit och lägger den i korgen (korgen syns i
 // figurens händer och i en panel uppe till vänster). I kassan läggs varorna på
 // rullbandet, kassörskan piper in dem och man betalar allt på en gång
@@ -42,7 +45,8 @@
 import { Pix, SMALL, BIG, ctxText, textW, text, eachTextPixel, mix, mul, hash, bayer } from '../core/floor-pix.js';
 import { drawPerson, makeLook } from '../core/people.js';
 import { openModal, closeModal, toast, esc, modalOpen } from '../core/ui.js';
-import { FOOD, foodOf, fmt, SAVE_KEY } from '../game.js';
+import { FOOD, foodOf, ravaraOf, varaOf, fmt, SAVE_KEY } from '../game.js';
+import { ravaraIcon } from '../core/ravara-art.js'; // råvarornas små bilder (korgen, bandet, skylten)
 import { play } from '../core/sound.js';
 import { createWalker, selfDrawable, folkDrawables, WALK_SEQ, createSpeech } from './walkable.js';
 import { worldFolksHere } from '../net/world.js';
@@ -73,8 +77,8 @@ const GCOLS = [[252, 384], [408, 540]];
 const GCATS = ['pasta', 'konserv', 'frukost', 'dryck', 'fika', 'godis'];
 const GONDOLAS = GCATS.map((cat, i) => ({ cat, x0: GCOLS[i % 2][0], x1: GCOLS[i % 2][1], base: ROWS[i >> 1] }));
 const FREEZERS = [
-  { x0: 574, x1: 756, base: 150, secs: ['pizza', 'glass', 'gront', 'glass2'] },
-  { x0: 574, x1: 756, base: 214, secs: ['fisk', 'bar', 'pommes', 'glass'] },
+  { x0: 574, x1: 756, base: 150, secs: ['pizza', 'glass', 'kott', 'kyckling'] },
+  { x0: 574, x1: 756, base: 214, secs: ['fisk', 'bar', 'bacon', 'glass'] },
 ];
 const KASSOR = [
   { x0: 280, x1: 372, base: 346, n: 1, open: true },
@@ -103,7 +107,7 @@ const SCALE = { x: 229, base: 190 };            // fruktvågen med påsrulle
 const CAGE = { x0: 502, x1: 524, base: 160 };
 const RESTOCK = [490, 161];
 const DROP = { x: 394, base: 346 };             // tomma korgar efter kassan
-const MAX_BASKET = 12;
+const MAX_BASKET = 60; // (likadana varor åker som en post på rullbandet – storkok och megakok)
 const EAT_EXTRA = 5; // game.buyFood tar 5 kr extra för eatNow
 const EAT_BITES = 4; // så många tuggor en portion tar (mättheten delas lika på dem)
 const BITE_EVERY = 1.35, BITE_FIRST = 0.9, BITE_SHOW = 0.6; // sek mellan tuggor, första tuggan, tuggrörelsen
@@ -557,6 +561,7 @@ function iconFor(id) {
   return { pal: { k: OUT, a: r[3], b: r[2], c: r[1], w: 0xf4f1ea }, map: ['.kkkkkkk.', 'kaaaaaabk', 'kabbbbbck', 'kawwwwwck', 'kabbbbbck', 'kabbbbbck', 'kcccccccck', '.kkkkkkk.'] };
 }
 function drawIcon(ctx, id, x, y) {
+  if (!foodOf(id) && ravaraOf(id)) { ctx.drawImage(ravaraIcon(id), x - 1, y - 3); return; } // råvaran (12 × 12)
   const ic = iconFor(id);
   ic.map.forEach((row, j) => { for (let i = 0; i < row.length; i++) { const ch = row[i]; if (ch === '.' || !(ch in ic.pal)) continue; ctx.fillStyle = hexs(ic.pal[ch]); ctx.fillRect(x + i, y + j, 1, 1); } });
 }
@@ -742,6 +747,31 @@ function layoutFood() {
   return out;
 }
 
+// ================= råvarorna (laga mat hemma) =================
+// Var råvarorna (RAVAROR i game.js) finns: varje fruktlåda på öarna, mejerikylarnas dörrar 0–4,
+// bageriet (limpa, tortilla), några hyllplatser och frysfacken. kind styr prislappen: lådorna har
+// sina krittavlor, resten en liten gul lapp.
+const RAVA_DAIRY = ['agg', 'mjolk', 'ost', 'smor', 'yoghurt'];
+const RAVA_GOND = { pasta: [0, 6], ris: [0, 40], krossade: [1, 6], bonor: [1, 40], havre: [2, 6], mjol: [4, 6] };
+const RAVA_FRYS = { kottfars: [0, 2], kyckling: [0, 3], fisk: [1, 0], bar: [1, 1], bacon: [1, 2] };
+function layoutRava() {
+  const out = [];
+  const add = (id, r, go, glow, tag, kind, extra = {}) => { const rv = ravaraOf(id); if (rv) out.push({ id, rv, r, go, glow, tag, kind, ...extra }); };
+  ISLANDS.forEach((isl, ii) => {
+    const w = isl.x1 - isl.x0, cw = Math.floor((w - 4) / 3);
+    for (const tier of [1, 0]) for (let i = 0; i < 3; i++) { // främre raden först – den ligger närmast och vinner klicket
+      const cx = isl.x0 + 2 + i * (cw + 1), ty = tier === 0 ? isl.base - 30 : isl.base - 20;
+      add(isl.crates[tier][i], [cx, ty - 7, cx + cw, ty + 8], [cx + cw / 2, isl.base + 10], [cx, ty - 7, cw, 15], [cx + cw / 2, ty - 8], 'crate', { isl: ii });
+    }
+  });
+  RAVA_DAIRY.forEach((id, d) => { const x = DAIRY.x0 + d * DAIRY.dw; add(id, [x, DAIRY.top, x + DAIRY.dw, DAIRY.base], [x + DAIRY.dw / 2, DAIRY.base + 13], [x + 2, 34, DAIRY.dw - 4, 46], [x + DAIRY.dw / 2, DAIRY.base - 12], 'wall'); });
+  const bw = (BAKERY.x1 - BAKERY.x0) / 2;
+  ['brod', 'tortilla'].forEach((id, k) => { const x = BAKERY.x0 + k * bw; add(id, [x, BAKERY.top - 6, x + bw, BAKERY.base], [x + bw / 2, BAKERY.base + 13], [x + 2, BAKERY.top + 4, bw - 4, BAKERY.base - BAKERY.top - 8], [x + bw / 2, BAKERY.base - 12], 'wall'); });
+  for (const [id, [gi, dx]] of Object.entries(RAVA_GOND)) { const G = GONDOLAS[gi], x = G.x0 + dx, w = 32; add(id, [x - 2, G.base - 68, x + w + 2, G.base], [x + w / 2 + 24, G.base + 11], [x - 1, G.base - 36, w + 2, 32], [x + w / 2, G.base - 30], 'gondola', { gi }); }
+  for (const [id, [fi, sec]] of Object.entries(RAVA_FRYS)) { const F = FREEZERS[fi], sw = FSEC(F), x = F.x0 + sec * sw; add(id, [x, F.base - 64, x + sw, F.base], [x + sw / 2 + 24, F.base + 11], [x + 2, F.base - 38, sw - 4, 20], [x + sw / 2, F.base - 44], 'freezer', { fi }); }
+  return out;
+}
+
 // ================= förmålade bilder =================
 let ART = null;
 function art() {
@@ -749,6 +779,7 @@ function art() {
   const displays = layoutFood();
   ART = {
     displays,
+    rava: layoutRava(),
     bg: paintBackground(displays),
     islands: ISLANDS.map((isl, i) => paintIsland(isl, i)),
     gondolas: GONDOLAS.map((G, i) => paintGondola(G, i, displays)),
@@ -1542,7 +1573,7 @@ function paintIsland(isl, idx) {
         }
         // handtagshål i kortänden och en liten griffeltavla på framsidan
         P.rect(cx + 1, ty + 3, 2, 2, WOOD[0]); P.rect(cx + cw - 3, ty + 3, 2, 2, WOOD[0]);
-        chalkS(P, cx + cw / 2, ty + 1, PRICES[(idx * 6 + tier * 3 + i) % PRICES.length]);
+        chalkS(P, cx + cw / 2, ty + 1, ravaraOf(kind) ? priceLbl(ravaraOf(kind).price) : PRICES[(idx * 6 + tier * 3 + i) % PRICES.length]);
       }
     });
     // ben och slagskugga
@@ -1747,6 +1778,14 @@ function frozen(P, kind, x0, y0, w, h, seed) {
       P.rect(bx, by, 9, 7, 0x2a62b0); P.hl(bx, by, 9, 0x6a9ad8); P.hl(bx, by + 6, 9, 0x1a3a70);
       for (let k = 0; k < 3; k++) P.hl(bx + 2, by + 2 + k, 5, k === 1 ? 0xf8a030 : 0xe07a20);
       P.px(bx + 1, by + 1, 0xffffff);
+    }
+  } else if (kind === 'kott' || kind === 'kyckling' || kind === 'bacon') { // tråg under plast med etikett
+    const meat = kind === 'kott' ? [0x7a1418, 0xb02a2a, 0xd8504a, 0xf08a80] : kind === 'kyckling' ? [0xb87a6a, 0xe0a898, 0xf4c8b8, 0xfae0d4] : [0x8a2424, 0xc84a44, 0xf09088, 0xffe0d8];
+    for (let j = 0; j < 2; j++) for (let i = 0; i < Math.floor(w / 11); i++) {
+      const bx = x0 + i * 11 + (j & 1) * 2, by = y0 + j * 9;
+      P.rect(bx, by, 10, 8, 0xf4f4f0); P.hl(bx, by + 7, 10, 0xb8c0c8);
+      for (let y = 1; y < 6; y++) for (let x = 1; x < 9; x++) P.px(bx + x, by + y, kind === 'bacon' ? (y % 2 ? meat[1] : meat[3]) : meat[1 + Math.floor(hash(x, y + j, seed + i) * 3)]);
+      P.px(bx + 2, by + 1, 0xffffff); P.hl(bx + 6, by + 6, 3, kind === 'kyckling' ? 0xf0c030 : 0x2a6ab8);
     }
   } else { // gen:<id> – en okänd rätt i frysen
     const c = PACKS[Math.floor(hash(kind.length, kind.charCodeAt(4), 5) * PACKS.length)];
@@ -2409,11 +2448,11 @@ export function makeShopMat(A) {
   });
 
   // ---------- korgen ----------
-  const total = () => basket.reduce((s, id) => s + (foodOf(id)?.price || 0), 0);
+  const total = () => basket.reduce((s, id) => s + (varaOf(id)?.price || 0), 0);
   const groups = () => {
     const m = new Map();
     for (const id of basket) m.set(id, (m.get(id) || 0) + 1);
-    return [...m].map(([id, n]) => ({ f: foodOf(id), n })).filter((x) => x.f);
+    return [...m].map(([id, n]) => ({ f: varaOf(id), n })).filter((x) => x.f);
   };
   function removeOne(id) { const i = basket.lastIndexOf(id); if (i >= 0) basket.splice(i, 1); }
   function addToBasket(s) {
@@ -2431,11 +2470,33 @@ export function makeShopMat(A) {
     return true;
   }
 
+  // en råvara: välj antal (1, 5 eller 10 – storkok och megakok) → korgen
+  function pickRava(s) {
+    if (dish) { handsFull(); return; }
+    const rv = s.rv, room = MAX_BASKET - basket.length;
+    if (room <= 0) { play('fel'); toast('🧺 Korgen är full – gå till kassan och betala!', 'bad'); return; }
+    const opts = [1, 5, 10].filter((n) => n <= room);
+    openModal(`${rv.icon} ${rv.name}`, `<p style="font-size:var(--f2);margin-top:0">${fmt(rv.price)} styck · ${rv.raw ? `går att äta som den är (+${rv.raw} mätthet) eller laga mat av` : 'råvara till matlagningen hemma'}. Hur många vill du ha?</p><p style="font-size:var(--f1);color:#6d6660">5 eller 10 av varje räcker till ett storkok eller megakok vid spisen.</p>`,
+      [...opts.map((n) => ({ label: `${n} st · ${fmt(rv.price * n)}`, cls: n === 1 ? 'btn-go' : 'btn-gold', onClick: () => { closeModal(); addRava(s, n); } })), { label: 'Avbryt', onClick: closeModal }]);
+  }
+  function addRava(s, n) {
+    n = Math.max(1, Math.min(n | 0, MAX_BASKET - basket.length));
+    if (belt) cancelScan();
+    const first = !hasBasket;
+    hasBasket = true; bag = false;
+    for (let k = 0; k < n; k++) basket.push(s.id);
+    play('ok');
+    flies.push({ id: s.id, x0: s.tag[0], y0: s.tag[1] + 8, t: 0 });
+    pops.push({ x: s.tag[0], y: s.tag[1] - 2, s: `+${n}`, t: 0 });
+    if (first) toast(`🧺 ${s.rv.icon} ${s.rv.name} i korgen! Betala i kassan när du handlat klart.`, 'good');
+    return true;
+  }
+
   // ---------- kassan ----------
   function startScan() {
     if (dish) { handsFull(); return; }
     if (!basket.length) { say('cashier', 'HEJ! TA EN VARA FÖRST'); toast('🧺 Korgen är tom – klicka på en vara med stor gul prislapp.'); return; }
-    belt = { items: basket.map((id, i) => ({ id, x: BELT.x0 - i * 11, st: 'belt' })), total: 0, doneT: 0 };
+    belt = { items: groups().map(({ f, n }, i) => ({ id: f.id, n, x: BELT.x0 - i * 11, st: 'belt' })), total: 0, doneT: 0 }; // likadana varor = en post
     say('cashier', 'HEJ HEJ!');
     play('click');
   }
@@ -2452,8 +2513,8 @@ export function makeShopMat(A) {
     let paid = 0, n = 0;
     const left = [];
     for (const id of basket) {
-      const r = g.buyFood(id);
-      if (r.ok) { paid += foodOf(id).price; n++; } else left.push(id);
+      const r = g.buyVara(id); // färdigmat → kylskåpet, råvaror → skafferiet
+      if (r.ok) { paid += varaOf(id).price; n++; } else left.push(id);
     }
     basket = left;
     belt = null; receiptOpen = false;
@@ -2466,7 +2527,7 @@ export function makeShopMat(A) {
     receiptOpen = true;
     const rows = gs.map(({ f, n }) => `<div class="prow shoprow">
         <span style="font-size:28px;text-align:center">${f.icon}</span>
-        <span class="nm">${esc(f.name)} × ${n}<br><small class="sp">${fmt(f.price)}/st · +${f.fill} mätthet</small></span>
+        <span class="nm">${esc(f.name)} × ${n}<br><small class="sp">${fmt(f.price)}/st · ${f.fill ? `+${f.fill} mätthet` : 'råvara till köket'}</small></span>
         <b style="font-size:var(--f2)">${fmt(f.price * n)}</b>
         <button class="btn btn-small" data-back="${esc(f.id)}" title="Lägg tillbaka en">↩ Lägg tillbaka</button>
       </div>`).join('');
@@ -2676,6 +2737,7 @@ export function makeShopMat(A) {
   const LOOK = '👀 Det här är bara att titta på – varorna med stor gul prislapp kan du köpa!';
   const spots = [
     ...R.displays.map((s) => ({ id: s.f.id, food: s, r: s.r, go: s.go, act: () => addToBasket(s) })),
+    ...R.rava.map((s) => ({ id: 'r:' + s.id, rava: s, r: s.r, go: s.go, act: () => pickRava(s) })),
     { id: 'kassa', r: [K1.x0, K1.base - 60, K1.x1 + 16, K1.base + 6], go: [K1.x0 + 50, K1.base + 12], act: () => { walker.dir = 'up'; startScan(); } },
     { id: 'kassa2', r: [KASSOR[1].x0, KASSOR[1].base - 60, KASSOR[1].x1 + 16, KASSOR[1].base + 6], go: null, act: () => { hint('🔒 Kassa 2 är stängd – gå till kassa 1!'); goKassa(); } },
     { id: 'dorr', r: [DOOR.x0 - 6, FRONT_Y - 30, DOOR.x1 + 6, H], go: [DOOR_X, FRONT_Y - 6], act: goOut },
@@ -2822,6 +2884,10 @@ export function makeShopMat(A) {
       icon = f.id; name = shortName(f); price = `${f.price} KR`;
       if (s.food.d.kind === 'grill') hintTxt = dish ? 'ÄT UPP DIN KORV FÖRST' : `+${f.fill} MÄTT - KÖP OCH ÄT VID DISKEN`;
       else hintTxt = dish ? 'HÄNDERNA ÄR FULLA - ÄT FÖRST' : basket.length >= MAX_BASKET ? 'KORGEN ÄR FULL' : `+${f.fill} MÄTT - KLICKA SÅ HAMNAR DEN I KORGEN`;
+    } else if (s.rava) {
+      const rv = s.rava.rv;
+      icon = rv.id; name = rv.name.toUpperCase().replace(/[^A-ZÅÄÖÉ0-9 ]/g, '').slice(0, 14).trim(); price = `${rv.price} KR`;
+      hintTxt = dish ? 'HÄNDERNA ÄR FULLA - ÄT FÖRST' : basket.length >= MAX_BASKET ? 'KORGEN ÄR FULL' : 'RÅVARA - KLICKA OCH VÄLJ HUR MÅNGA';
     } else if (s.id === 'kassa') { name = 'KASSA 1'; price = basket.length ? `${total()} KR` : ''; hintTxt = dish ? 'ÄT UPP KORVEN FÖRST' : basket.length ? 'KLICKA SÅ BETALAR DU' : 'PLOCKA VAROR FÖRST'; col = '#6fe08a'; }
     else if (s.id === 'athar') {
       name = 'ÄT HÄR'; col = '#6fe08a';
@@ -2858,7 +2924,7 @@ export function makeShopMat(A) {
         allDone = false;
         it.t += dt;
         prevX = it.x;
-        if (it.t > 0.2) { it.st = 'bag'; it.t = 0; belt.total += foodOf(it.id)?.price || 0; play('click'); belt.flash = 0.12; }
+        if (it.t > 0.2) { it.st = 'bag'; it.t = 0; belt.total += (varaOf(it.id)?.price || 0) * (it.n || 1); play('click'); belt.flash = 0.12; }
       } else if (it.st === 'bag') {
         it.t += dt; it.x += dt * 40;
         if (it.t < 0.35) allDone = false; else it.st = 'done';
@@ -2892,16 +2958,19 @@ export function makeShopMat(A) {
     const focus = focusSpot();
     // prislapparna på väggkylarna (mejeriet och smörgåskylen) sitter på bakväggen
     for (const s of R.displays) if (s.d.kind === 'dairy' || s.d.kind === 'sandw') { wallClip(ctx, s); displayTag(ctx, s, focus); }
+    for (const s of R.rava) if (s.kind === 'wall') ravaTag(ctx, s, focus);
     const items = [];
     const add = (fy, x0, y0, x1, y1, draw) => { if (inView(x0, y0, x1, y1)) items.push({ fy, draw }); };
-    ISLANDS.forEach((isl, i) => add(isl.base, isl.x0 - 8, isl.base - 44, isl.x1 + 8, isl.base + 8, () => put(ctx, R.islands[i])));
+    ISLANDS.forEach((isl, i) => add(isl.base, isl.x0 - 8, isl.base - 44, isl.x1 + 8, isl.base + 8, () => { put(ctx, R.islands[i]); for (const s of R.rava) if (s.kind === 'crate' && s.isl === i) ravaTag(ctx, s, focus); }));
     GONDOLAS.forEach((G, i) => add(G.base, G.x0 - 4, G.base - 70, G.x1 + 4, G.base + 10, () => {
       put(ctx, R.gondolas[i]);
       for (const s of R.displays) if (s.d.kind === 'gondola' && s.d.g === i) displayTag(ctx, s, focus);
+      for (const s of R.rava) if (s.kind === 'gondola' && s.gi === i) ravaTag(ctx, s, focus);
     }));
     FREEZERS.forEach((F, i) => add(F.base, F.x0 - 4, F.base - 64, F.x1 + 4, F.base + 8, () => {
       put(ctx, R.freezers[i]);
       for (const s of R.displays) if (s.d.kind === 'freezer' && s.d.f === i) { ctx.fillStyle = '#e8e8e8'; ctx.fillRect(Math.round(s.tag[0]), s.tag[1] + 19, 1, F.base - 40 - s.tag[1] - 19); displayTag(ctx, s, focus); }
+      for (const s of R.rava) if (s.kind === 'freezer' && s.fi === i) ravaTag(ctx, s, focus);
       fog(ctx, F);
     }));
     KASSOR.forEach((K, i) => {
@@ -3016,6 +3085,20 @@ export function makeShopMat(A) {
     }
   }
   // prislappen på en matplats (med ljus ram när man står där eller pekar)
+  // råvarornas prislappar: lådorna har krittavlorna, resten en liten gul lapp – och glöden när man pekar
+  function ravaTag(ctx, s, focus) {
+    const on = focus === spotById('r:' + s.id);
+    if (on) {
+      const [gx, gy, gw, gh] = s.glow, a = 0.28 + Math.sin(t * 6) * 0.12;
+      ctx.fillStyle = `rgba(255,236,120,${a.toFixed(3)})`; ctx.fillRect(gx, gy, gw, gh);
+      ctx.fillStyle = '#ffe070'; ctx.fillRect(gx - 1, gy - 1, gw + 2, 1); ctx.fillRect(gx - 1, gy + gh, gw + 2, 1); ctx.fillRect(gx - 1, gy, 1, gh); ctx.fillRect(gx + gw, gy, 1, gh);
+    }
+    if (s.kind === 'crate') return;
+    const lbl = priceLbl(s.rv.price), w = textW(SM, lbl) + 4, x = Math.round(s.tag[0] - w / 2), y = Math.round(s.tag[1]);
+    ctx.fillStyle = '#17151a'; ctx.fillRect(x - 1, y - 1, w + 2, 9);
+    ctx.fillStyle = on && Math.floor(t * 4) % 2 ? '#fff6a0' : '#f8d838'; ctx.fillRect(x, y, w, 7);
+    ctxText(ctx, SM, lbl, x + 2, y + 1, '#c0202a');
+  }
   function displayTag(ctx, s, focus) {
     const on = focus === spotById(s.f.id);
     if (on) {
@@ -3103,6 +3186,7 @@ export function makeShopMat(A) {
       if (it.st === 'done' || it.x < BELT.x0 - 2) continue;
       const x = Math.round(it.x) - 4, y = it.st === 'bag' ? top - 7 - Math.round(Math.sin(Math.min(1, it.t / 0.35) * Math.PI) * 5) : top - 5;
       drawIcon(ctx, it.id, x, y);
+      if ((it.n || 1) > 1) ctxText(ctx, SM, String(it.n), x + 1, y - 7, '#ffffff');
     }
   }
   function liveGrill(ctx) {
@@ -3158,6 +3242,8 @@ export function makeShopMat(A) {
       },
       basket: () => groups().map(({ f, n }) => ({ id: f.id, name: f.name, n, price: f.price })),
       basketIds: () => [...basket],
+      rava: () => R.rava.map((s) => ({ id: s.id, kind: s.kind, go: s.go, tag: s.tag, price: s.rv.price })),
+      addRava: (id, n = 1) => { const s = R.rava.find((x) => x.id === id); return s ? addRava(s, n) : false; },
       total: () => total(),
       // lägg en vara i korgen (korven vid grillen går aldrig i korgen – den köps med ett klick på grillen)
       pick: (id) => { const s = spots.find((x) => x.id === id && x.food && x.food.d.kind !== 'grill'); return s ? addToBasket(s.food) : false; },

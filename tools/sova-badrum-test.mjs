@@ -33,6 +33,7 @@ const { chromium } = require('playwright');
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = path.join(ROOT, 'tools/out/sova-badrum/');
 const PORT = process.env.SMOKE_PORT || process.env.PORT || 8788;
+const KOKET = new Set(['koksspis', 'receptbok']);   // köket (spisen och receptboken) ställs in i bostäder utan dem
 fs.mkdirSync(OUT, { recursive: true });
 let fails = 0;
 const ok = (c, m) => { console.log((c ? 'ok: ' : 'FEL: ') + m); if (!c) fails++; };
@@ -409,7 +410,8 @@ console.log('\ngamla sparfiler');
   ok(at('dass')?.x <= 138 && at('dass')?.x >= 100 && at('dass')?.y === 174, `dasset står kvar i rummet (${at('dass')?.x},${at('dass')?.y}) tills spelaren flyttar det`);
   ok(at('bokhylla')?.x === 60 && at('bokhylla')?.y === 200 && at('bokhylla')?.v === 1, 'spelarens egen bokhylla står kvar orörd');
   ok(at('garderob')?.x === 71 && at('kylskap')?.x === 118, `orörda startmöbler flyttade till de nya platserna (garderob ${at('garderob')?.x}, kylskåp ${at('kylskap')?.x}) – BADRUM-dörren är fri`);
-  ok(s0.length === 5 && await dbg('allFit') && !/knuffades|ligger i förrådet|flyttades lite/.test(bootToasts + await ev(() => document.querySelector('#toasts').textContent)), 'inget försvann, allt står rätt, ingen knuff-toast');
+  // (spisen och receptboken som köket ställer in räknas inte här – de är nya startmöbler)
+  ok(s0.filter((d) => !KOKET.has(d.k)).length === 5 && await dbg('allFit') && !/knuffades|ligger i förrådet|flyttades lite/.test(bootToasts + await ev(() => document.querySelector('#toasts').textContent)), 'inget försvann, allt står rätt, ingen knuff-toast');
   ok(await walkThrough(1), 'gick in i Lilla rummets BADRUM');
   const bath = await ev(() => JSON.parse(JSON.stringify(window.SF.game.deco['rum:1'])));
   ok(!bath.some((d) => d.k === 'dass' || d.k === 'toalett') && bath.some((d) => d.k === 'handfat') && bath.some((d) => d.k === 'dusch'), `badrummet seedades utan en toa till (${bath.map((d) => d.k).join(', ')})`);
@@ -438,7 +440,7 @@ console.log('\ngamla sparfiler');
   ok(/knuffades till en ledig plats|flyttades lite åt sidan/.test(lagToasts), `toasten säger att bokhyllan (som stod i kylskåpet) flyttades (${lagToasts.slice(0, 90)})`);
   await enterSub(0);
   const l0 = await ev(() => JSON.parse(JSON.stringify(window.SF.game.deco['lagenhet:0'])));
-  ok(l0.length === 4 && l0.filter((d) => d.k !== 'bokhylla').every((d) => lag.some((o) => o.k === d.k && o.x === d.x && o.y === d.y && o.v === d.v)), 'lägenhetens egna möbler står kvar (bokhyllan framför nya BADRUM-dörren knuffas bara undan)');
+  ok(l0.filter((d) => !KOKET.has(d.k)).length === 4 && l0.filter((d) => d.k !== 'bokhylla' && !KOKET.has(d.k)).every((d) => lag.some((o) => o.k === d.k && o.x === d.x && o.y === d.y && o.v === d.v)), 'lägenhetens egna möbler står kvar (bokhyllan framför nya BADRUM-dörren knuffas bara undan)');
   const bh = l0.find((d) => d.k === 'bokhylla');
   ok(!!bh && await dbg('allFit'), `bokhyllan finns kvar (${bh?.x},${bh?.y}) och allt står rätt`);
   const l1 = await ev(() => JSON.parse(JSON.stringify(window.SF.game.deco['lagenhet:1'])));

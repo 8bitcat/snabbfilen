@@ -137,7 +137,8 @@ console.log('\nE. fullt förråd – inget försvinner');
   await page.waitForTimeout(300);
   const s = await state(); const t = await toasts();
   const room = s.deco['rum:0'].filter((d) => d.k !== 'dass');
-  ok(room.length === 41 && s.storage.length === 80, `41 möbler kvar i rummet, förrådet exakt 80 (${room.length} + ${s.storage.length})`);
+  // (41 + spisen och receptboken som köket ställer in i en bostad utan dem)
+  ok(room.length === 43 && s.storage.length === 80, `43 möbler kvar i rummet, förrådet exakt 80 (${room.length} + ${s.storage.length})`);
   ok(shelves.every((sh) => room.some((d) => d.k === 'bredhylla' && d.c === sh.c)), 'alla 40 färgade hyllor finns kvar med sin färg');
   ok(room.every((d) => d.x >= 8 && d.x + 47 <= s.partition - 5 || d.k !== 'bredhylla'), 'hyllorna står inne i lokalen (går att plocka upp)');
   ok(/Förrådet är fullt/.test(t), `toast: ${t}`);
@@ -146,7 +147,7 @@ console.log('\nE. fullt förråd – inget försvinner');
   await page.evaluate(() => { window.SF.roomSub = 0; window.SF.go('room'); });
   await page.waitForTimeout(300);
   const s2 = await state();
-  ok(s2.deco['rum:0'].filter((d) => d.k !== 'dass').length === 41 && s2.storage.length === 80, 'efter omladdning: fortfarande 41 + 80');
+  ok(s2.deco['rum:0'].filter((d) => d.k !== 'dass').length === 43 && s2.storage.length === 80, 'efter omladdning: fortfarande 43 + 80');
 }
 
 // ---------- F. panelen döljer inte canvasen ----------

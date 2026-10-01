@@ -22,6 +22,95 @@ export const FOOD = [
 ];
 export const foodOf = (id) => FOOD.find((f) => f.id === id);
 
+// RÅVAROR (Carl 2026-10-01: "laga mat hemma, köpa frukten inne på affären, lära sig recept i en
+// bok"): köps i mataffären (fruktlådorna, mejerikylarna, bageriet, hyllorna och frysen – platserna
+// står i shop-mat.js) och hamnar i skafferiet hemma (g.skafferi). raw = mätthet om man äter den
+// som den är (0 = går inte att äta rå). id:n får aldrig byta namn (sparfilen).
+export const RAVAROR = [
+  // frukt och grönt (fruktlådorna)
+  { id: 'applR', icon: '🍎', name: 'Rött äpple', price: 6, raw: 8 }, { id: 'applG', icon: '🍏', name: 'Grönt äpple', price: 6, raw: 8 },
+  { id: 'apels', icon: '🍊', name: 'Apelsin', price: 7, raw: 8 }, { id: 'banan', icon: '🍌', name: 'Banan', price: 5, raw: 10 },
+  { id: 'citron', icon: '🍋', name: 'Citron', price: 6, raw: 0 }, { id: 'druva', icon: '🍇', name: 'Vindruvor', price: 15, raw: 10 },
+  { id: 'paron', icon: '🍐', name: 'Päron', price: 7, raw: 8 }, { id: 'kiwi', icon: '🥝', name: 'Kiwi', price: 6, raw: 6 },
+  { id: 'avokado', icon: '🥑', name: 'Avokado', price: 14, raw: 0 }, { id: 'tomat', icon: '🍅', name: 'Tomat', price: 5, raw: 4 },
+  { id: 'paprika', icon: '🫑', name: 'Paprika', price: 10, raw: 4 }, { id: 'lime', icon: '🍋', name: 'Lime', price: 6, raw: 0 },
+  { id: 'melon', icon: '🍈', name: 'Melon', price: 25, raw: 15 }, { id: 'vmelon', icon: '🍉', name: 'Vattenmelon', price: 35, raw: 20 },
+  { id: 'ananas', icon: '🍍', name: 'Ananas', price: 25, raw: 15 }, { id: 'potatis', icon: '🥔', name: 'Potatis', price: 4, raw: 0 },
+  { id: 'lok', icon: '🧅', name: 'Gul lök', price: 4, raw: 0 }, { id: 'morot', icon: '🥕', name: 'Morot', price: 4, raw: 5 },
+  { id: 'plommon', icon: '🍑', name: 'Plommon', price: 6, raw: 6 }, { id: 'persika', icon: '🍑', name: 'Persika', price: 8, raw: 8 },
+  { id: 'granat', icon: '🍎', name: 'Granatäpple', price: 18, raw: 8 }, { id: 'champ', icon: '🍄', name: 'Champinjoner', price: 12, raw: 0 },
+  { id: 'aubergine', icon: '🍆', name: 'Aubergine', price: 12, raw: 0 }, { id: 'rodlok', icon: '🧅', name: 'Rödlök', price: 5, raw: 0 },
+  // mejeri (kylarna), bageri, hyllorna och frysen
+  { id: 'agg', icon: '🥚', name: 'Ägg', price: 28, raw: 0 }, { id: 'mjolk', icon: '🥛', name: 'Mjölk', price: 14, raw: 6 },
+  { id: 'ost', icon: '🧀', name: 'Ost', price: 35, raw: 8 }, { id: 'smor', icon: '🧈', name: 'Smör', price: 30, raw: 0 },
+  { id: 'yoghurt', icon: '🥣', name: 'Yoghurt', price: 18, raw: 14 },
+  { id: 'brod', icon: '🍞', name: 'Limpa', price: 25, raw: 12 }, { id: 'tortilla', icon: '🫓', name: 'Tortillabröd', price: 22, raw: 6 },
+  { id: 'pasta', icon: '🍝', name: 'Pasta', price: 15, raw: 0 }, { id: 'ris', icon: '🍚', name: 'Ris', price: 18, raw: 0 },
+  { id: 'mjol', icon: '🌾', name: 'Vetemjöl', price: 12, raw: 0 }, { id: 'havre', icon: '🥣', name: 'Havregryn', price: 15, raw: 0 },
+  { id: 'krossade', icon: '🥫', name: 'Krossade tomater', price: 10, raw: 0 }, { id: 'bonor', icon: '🫘', name: 'Bönor', price: 12, raw: 0 },
+  { id: 'fisk', icon: '🐟', name: 'Fiskfilé', price: 45, raw: 0 }, { id: 'bar', icon: '🫐', name: 'Frysta bär', price: 25, raw: 6 },
+  // kött och kyckling (Carl 2026-10-01: "glöm inte kyckling och kött") – i frysen
+  { id: 'kyckling', icon: '🍗', name: 'Kycklingfilé', price: 55, raw: 0 }, { id: 'kottfars', icon: '🥩', name: 'Köttfärs', price: 50, raw: 0 },
+  { id: 'bacon', icon: '🥓', name: 'Bacon', price: 30, raw: 0 },
+];
+export const ravaraOf = (id) => RAVAROR.find((r) => r.id === id) || null;
+// en vara i mataffären: färdigmat (FOOD) eller råvara (RAVAROR)
+export const varaOf = (id) => foodOf(id) || ravaraOf(id);
+
+// RECEPTEN i receptboken som ligger vid spisen från början (Pixelstadens kokbok). Man lär sig
+// ett recept genom att läsa det i boken (en kvart); KLASSIKER kan man redan. min = speltid vid
+// spisen, fill = mätthet, glad = lycka (högst +10 om dagen från maten), energi = ork.
+// Kockvanan: lagar man samma rätt flera gånger blir den godare (KOCK_STEG: 3 och 6 gånger → +10 %
+// och +20 % mätthet, och en extra lyckopoäng på varje steg).
+export const RECEPT = [
+  { id: 'fruktsallad', icon: '🥗', name: 'Fruktsallad', ing: ['applR', 'banan', 'apels'], min: 15, fill: 28, glad: 2, energi: 2, blurb: 'Skär frukten i bitar och blanda i en skål. Snabbt och fräscht!' },
+  { id: 'omelett', icon: '🍳', name: 'Omelett', ing: ['agg', 'ost', 'tomat'], min: 15, fill: 38, glad: 1, energi: 0, blurb: 'Vispa äggen, häll i stekpannan och strö över ost och tomat.' },
+  { id: 'ostmacka', icon: '🥪', name: 'Lyxig ostmacka', ing: ['brod', 'smor', 'ost', 'paprika'], min: 10, fill: 32, glad: 1, energi: 0, blurb: 'Tjocka skivor limpa, smör, ost och knaprig paprika.' },
+  { id: 'pannkakor', icon: '🥞', name: 'Pannkakor med bär', ing: ['mjol', 'agg', 'mjolk', 'bar'], min: 30, fill: 50, glad: 3, energi: 0, blurb: 'Vispa smeten, stek tunna pannkakor och toppa med bär.' },
+  { id: 'grot', icon: '🥣', name: 'Havregrynsgröt', ing: ['havre', 'mjolk', 'applR'], min: 10, fill: 35, glad: 1, energi: 5, blurb: 'Koka gryn och mjölk, riv i ett äpple. Bästa frukosten.' },
+  { id: 'smoothie', icon: '🥤', name: 'Bärsmoothie', ing: ['banan', 'bar', 'yoghurt'], min: 5, fill: 22, glad: 2, energi: 6, blurb: 'Allt i mixern – brrrr – och i ett stort glas.' },
+  { id: 'pastapomodoro', icon: '🍝', name: 'Pasta pomodoro', ing: ['pasta', 'krossade', 'lok', 'ost'], min: 30, fill: 60, glad: 2, energi: 0, blurb: 'Fräs löken, häll i tomaterna, koka pastan och riv ost över.' },
+  { id: 'potatissoppa', icon: '🍲', name: 'Potatissoppa', ing: ['potatis', 'lok', 'morot', 'smor'], min: 40, fill: 55, glad: 2, energi: 2, blurb: 'Koka grönsakerna mjuka och mixa till en len soppa.' },
+  { id: 'tacos', icon: '🌮', name: 'Tacos', ing: ['tortilla', 'kottfars', 'tomat', 'ost'], min: 30, fill: 66, glad: 4, energi: 0, blurb: 'Stek köttfärsen med kryddor, fyll tortillan med tomat och ost. Fredagsmys!' },
+  { id: 'kottbullar', icon: '🍖', name: 'Köttbullar med potatis', ing: ['kottfars', 'agg', 'potatis', 'smor'], min: 45, fill: 72, glad: 4, energi: 2, blurb: 'Rulla små bullar, stek dem gyllene och koka potatis. Mormors favorit.' },
+  { id: 'kottfarssas', icon: '🍝', name: 'Spaghetti och köttfärssås', ing: ['pasta', 'kottfars', 'krossade', 'lok'], min: 40, fill: 72, glad: 3, energi: 2, blurb: 'Bryn färsen med löken, låt såsen puttra och koka pastan.' },
+  { id: 'chili', icon: '🌶️', name: 'Chili con carne', ing: ['kottfars', 'bonor', 'krossade', 'lok'], min: 45, fill: 68, glad: 2, energi: 3, blurb: 'Färs, bönor och tomat som puttrar länge. Lite starkt!' },
+  { id: 'kycklingris', icon: '🍗', name: 'Kyckling med ris', ing: ['kyckling', 'ris', 'paprika'], min: 30, fill: 66, glad: 3, energi: 3, blurb: 'Stek kycklingen med paprika och servera med ris.' },
+  { id: 'ugnskyckling', icon: '🍗', name: 'Ugnskyckling med potatis', ing: ['kyckling', 'potatis', 'citron', 'smor'], min: 50, fill: 74, glad: 4, energi: 3, blurb: 'Kyckling och potatisklyftor i ugnen med citron och smör.' },
+  { id: 'kycklingwrap', icon: '🌯', name: 'Kycklingwrap', ing: ['kyckling', 'tortilla', 'tomat', 'ost'], min: 20, fill: 55, glad: 3, energi: 0, blurb: 'Stekt kyckling, tomat och ost i en rullad tortilla.' },
+  { id: 'carbonara', icon: '🍝', name: 'Pasta carbonara', ing: ['pasta', 'bacon', 'agg', 'ost'], min: 25, fill: 68, glad: 4, energi: 0, blurb: 'Knaprig bacon, äggula och ost blandas med den varma pastan.' },
+  { id: 'bonchili', icon: '🫘', name: 'Bönchili', ing: ['bonor', 'krossade', 'paprika', 'lok'], min: 35, fill: 54, glad: 2, energi: 2, blurb: 'Chili utan kött – bönor, paprika och tomat.' },
+  { id: 'hempizza', icon: '🍕', name: 'Hemgjord pizza', ing: ['mjol', 'krossade', 'ost', 'champ'], min: 50, fill: 72, glad: 4, energi: 0, blurb: 'Kavla degen, bred på tomat, ost och svamp – in i ugnen!' },
+  { id: 'fiskpotatis', icon: '🐟', name: 'Ugnsfisk med potatis', ing: ['fisk', 'potatis', 'citron', 'smor'], min: 45, fill: 68, glad: 3, energi: 3, blurb: 'Fisken i ugnen med citron och smör, kokt potatis bredvid.' },
+  { id: 'svamprisotto', icon: '🍚', name: 'Svamprisotto', ing: ['ris', 'champ', 'lok', 'ost'], min: 40, fill: 62, glad: 3, energi: 0, blurb: 'Rör i riset tills det är krämigt, stek svampen gyllene.' },
+  { id: 'wok', icon: '🥘', name: 'Grönsakswok', ing: ['ris', 'paprika', 'morot', 'aubergine'], min: 30, fill: 56, glad: 2, energi: 3, blurb: 'Het panna, snabba tag – grönsakerna ska knastra.' },
+  { id: 'guacamole', icon: '🥑', name: 'Guacamole med chips', ing: ['avokado', 'lime', 'tomat', 'rodlok', 'tortilla'], min: 15, fill: 30, glad: 3, energi: 0, blurb: 'Mosa avokadon med lime, tomat och rödlök. Ugnsrosta tortillan till chips.' },
+  { id: 'appelkaka', icon: '🥧', name: 'Äppelkaka', ing: ['applG', 'mjol', 'smor', 'agg'], min: 50, fill: 34, glad: 6, energi: 0, blurb: 'Smuldeg, äppelklyftor och in i ugnen. Det doftar i hela huset!' },
+  { id: 'tropisk', icon: '🍍', name: 'Tropisk fruktskål', ing: ['ananas', 'melon', 'kiwi', 'granat'], min: 15, fill: 40, glad: 4, energi: 3, blurb: 'Ananas, melon, kiwi och granatäppelkärnor – som semester.' },
+];
+export const KLASSIKER = ['fruktsallad', 'omelett', 'ostmacka'];
+export const RECEPT_LAS_MIN = 15;
+// Kockvanan per rätt: så många lagade portioner av den ger ★★ och ★★★ (+10 % / +20 % mätthet)
+export const KOCK_STEG = [5, 15];
+export const receptOf = (id) => RECEPT.find((r) => r.id === id) || null;
+export const kockStjarnor = (n) => 1 + KOCK_STEG.filter((s) => (n | 0) >= s).length;   // 1–3 stjärnor
+// Kocknivån (Carl 2026-10-01: "ju mer man lagat mat desto mer mättnad och bättre blir man som
+// kock"): alla lagade portioner tillsammans (g.kockPortioner) → titel och +5 % mätthet per nivå
+export const KOCK_TITLAR = ['Nybörjarkock', 'Hemmakock', 'Kökschef', 'Mästerkock', 'Stjärnkock'];
+export const KOCK_NIVA_P = [0, 10, 30, 70, 150];
+export const kockNiva = (p) => KOCK_NIVA_P.filter((x) => (p | 0) >= x).length;           // 1–5
+// Portionerna (Carl: "storkok som är 5X portioner på en gång och megakok som är 10X – då ska man
+// också ha råvarorna för det"): råvarorna × n och lite längre tid vid spisen (tid). En portion
+// äter man direkt, resten blir matlådor i kylskåpet (g.matlador, högst MAX_MATLADOR).
+export const PORTIONER = [
+  { id: 'vanlig', n: 1, icon: '🍽️', name: 'Vanlig', tid: 1 },
+  { id: 'storkok', n: 5, icon: '🍲', name: 'Storkok', tid: 1.5 },
+  { id: 'megakok', n: 10, icon: '🏭', name: 'Megakok', tid: 2 },
+];
+export const portionOf = (n) => PORTIONER.find((p) => p.n === (n | 0) || p.id === n) || PORTIONER[0];
+export const MAX_MATLADOR = 30;
+export const MAX_RAVA = 40;               // högst så många av varje råvara i skafferiet (räcker till ett megakok)
+
 // Jobben. wage = kr per rätt, oops = avdrag per fel, bonus = kr per färdig låda (packjobb).
 // nattoppet = passen går även efter 20 (flygplatsen stänger aldrig), back = scenen man
 // står kvar i efter passet (annars staden).
@@ -139,7 +228,8 @@ function wardrobeKeys(list) {
 //   wall      hänger på bakväggen (ingen hinderyta, ritas bakom allt på golvet)
 //   overWindow väggsak som får hänga över fönstren (gardiner) – andra väggsaker får det inte
 //   function  vad man kan göra vid möbeln hemma: sova, garderob, ata (öppna kylskåpet),
-//             toalett, tvatta, tv – funktionen följer möbeln vart den än står
+//             laga (spisen: laga mat ur receptboken), toalett, tvatta, tv – funktionen följer
+//             möbeln vart den än står
 //   views     vyerna som möbeln roterar igenom (🔄 i Möblera-läget): [sort, varianttabell?]
 //             per vy – [fram], [höger sida], [bak]; vänster sida = höger sida speglad.
 //             Två vyer = fram/sida (+ speglade). Utan views speglas möbeln bara (r 0 ↔ 1).
@@ -210,10 +300,10 @@ export const KATALOG = [
   { kind: 'flakt', icon: '💨', name: 'Köksfläkt', price: 600, vars: 2, room: 'KÖK', wall: true },
   { kind: 'bankskap', icon: '🗄️', name: 'Köksbänk', price: 700, vars: 8, room: 'KÖK' },
   { kind: 'diskbank', icon: '🚰', name: 'Diskbänk', price: 1400, vars: 4, room: 'KÖK' },
-  { kind: 'koksspis', icon: '🍳', name: 'Köksspis', price: 1600, vars: 2, room: 'KÖK', function: 'ata' },
+  { kind: 'koksspis', icon: '🍳', name: 'Köksspis', price: 1600, vars: 2, room: 'KÖK', function: 'laga' },
   { kind: 'kyl', icon: '🧊', name: 'Kylskåp', price: 1800, vars: 6, room: 'KÖK', function: 'ata' },
   { kind: 'dryckeskyl', icon: '🥤', name: 'Dryckeskyl', price: 2200, vars: 1, room: 'KÖK' },
-  { kind: 'kokso', icon: '🥘', name: 'Köksö med ugn', price: 2400, vars: 4, room: 'KÖK' },
+  { kind: 'kokso', icon: '🥘', name: 'Köksö med ugn', price: 2400, vars: 4, room: 'KÖK', function: 'laga' },
   // ---- BADRUM ----
   { kind: 'strykbrada', icon: '👔', name: 'Strykbräda', price: 200, vars: 3, room: 'BADRUM' },
   { kind: 'kattlada', icon: '📦', name: 'Kattlåda', price: 250, vars: 4, room: 'BADRUM' },
@@ -323,7 +413,8 @@ const KAT_BY_KIND = new Map(KATALOG.map((k) => [k.kind, k]));
 export const katalogOf = (kind) => KAT_BY_KIND.get(kind);
 // Möbler som bara finns som startmöblering (inte i katalogen) och vad man gör vid dem.
 // kylskap/vaxt är de gamla startmöblerna, dass är Lilla rummets usla toalett.
-export const FX_KINDS = { kylskap: 'ata', dass: 'toalett', vaxt: null };
+// receptbok = Pixelstadens kokbok på sitt ställ vid spisen (laga mat hemma, Carl 2026-10-01)
+export const FX_KINDS = { kylskap: 'ata', dass: 'toalett', vaxt: null, receptbok: 'recept' };
 export const knownKind = (k) => !!(katalogOf(k) || k in FX_KINDS);
 // Vad man kan göra vid en möbel (null = inget) – följer sorten, alltså möbeln vart den än står.
 export const functionOf = (k) => katalogOf(k)?.function || FX_KINDS[k] || null;
@@ -473,6 +564,11 @@ export class Game {
     this.energy = 90;
     this.home = 'husvagn';                // alla börjar i husvagnen (Carl 2026-09-28)
     this.fridge = { nudlar: 1 };          // itemId -> antal
+    this.skafferi = {};                   // råvaror hemma (RAVAROR-id -> antal)
+    this.recept = [...KLASSIKER];         // recepten man kan (lärda ur receptboken)
+    this.kockat = {};                     // lagade portioner per rätt (kockvanan, ★)
+    this.kockPortioner = 0;               // alla lagade portioner (kocknivån)
+    this.matlador = {};                   // matlådor i kylskåpet: recept-id -> antal (storkok/megakok)
     this.toys = {};                       // köpta leksaker (Leksakslådan): id -> antal
     this.edu = {};                        // Pixelhögskolan: kurs-id -> { lect, day, tenta, tentaDay, klar }
     this.jobs = Object.fromEntries(Object.keys(JOBS).map((k) => [k, 0])); // antal jobbade pass per jobb
@@ -520,6 +616,7 @@ export class Game {
         out.jobs = { ...k.jobs, ...data.jobs };
         out.best = { ...k.best, ...data.best };
         out.fridge = { ...k.fridge, ...data.fridge };
+        out.skafferi = { ...k.skafferi, ...data.skafferi };
         out.wardrobe = [...data.wardrobe, ...k.wardrobe.filter((w) => !data.wardrobe.includes(w))];
         out.storage = [...data.storage, ...k.storage];
         out.gadgets = [...data.gadgets, ...k.gadgets.filter((id) => !data.gadgets.includes(id))];
@@ -538,7 +635,7 @@ export class Game {
       const p = JSON.parse(rawText || 'null');
       if (p && p.v !== 1) throw new Error('okänd sparversion ' + p.v);
       if (p && p.v === 1) {
-        const keep = { top: {}, jobs: {}, best: {}, fridge: {}, wardrobe: [], storage: [], deco: {}, gadgets: [] };
+        const keep = { top: {}, jobs: {}, best: {}, fridge: {}, skafferi: {}, wardrobe: [], storage: [], deco: {}, gadgets: [] };
         Object.defineProperty(g, '_keep', { value: keep, writable: true, enumerable: false });
         for (const [key, val] of Object.entries(p)) if (!(key in g) && !LEGACY_FIELDS.includes(key)) keep.top[key] = val;
         g.day = Math.max(1, p.day | 0); g.min = Math.min(DAY - 1, Math.max(0, +p.min || 0));
@@ -553,6 +650,13 @@ export class Game {
           g.edu[k] = { ...e, lect: Math.max(0, Math.min(c.lectures, e.lect | 0)), day: e.day | 0, tenta: Math.max(0, e.tenta | 0), tentaDay: e.tentaDay | 0, klar: !!e.klar };
         }
         g.fridge = {}; for (const [k, v] of Object.entries(p.fridge || {})) { if (!foodOf(k)) keep.fridge[k] = v; else if (v > 0) g.fridge[k] = Math.min(20, v | 0); }
+        // köket: råvarorna, recepten man kan och kockvanan (okända id från en nyare version följer med orörda)
+        g.skafferi = {};
+        for (const [k, v] of Object.entries(p.skafferi && typeof p.skafferi === 'object' ? p.skafferi : {})) { if (!ravaraOf(k)) keep.skafferi[k] = v; else if ((v | 0) > 0) g.skafferi[k] = Math.min(MAX_RAVA, v | 0); }
+        if (Array.isArray(p.recept)) g.recept = [...new Set([...KLASSIKER, ...p.recept.filter((id) => typeof id === 'string')])];
+        g.kockat = {}; for (const [k, v] of Object.entries(p.kockat && typeof p.kockat === 'object' ? p.kockat : {})) if ((v | 0) > 0) g.kockat[k] = Math.min(9999, v | 0);
+        g.kockPortioner = Math.max(0, p.kockPortioner | 0);
+        g.matlador = {}; for (const [k, v] of Object.entries(p.matlador && typeof p.matlador === 'object' ? p.matlador : {})) if ((v | 0) > 0) g.matlador[k] = Math.min(MAX_MATLADOR, v | 0);
         for (const k of Object.keys(g.jobs)) g.jobs[k] = Math.max(0, p.jobs?.[k] | 0);
         for (const [k, v] of Object.entries(p.jobs || {})) if (!(k in g.jobs)) keep.jobs[k] = v;
         for (const [k, v] of Object.entries(p.best || {})) if (!(k in g.best)) keep.best[k] = v;
@@ -790,6 +894,94 @@ export class Game {
     this.passTime(15);
     this.save();
     return true;
+  }
+  // ---------- köket: råvaror, receptboken och spisen ----------
+  // Köp en vara i mataffären: färdigmat → kylskåpet (buyFood), råvara → skafferiet
+  buyVara(id) {
+    if (foodOf(id)) return this.buyFood(id);
+    const r = ravaraOf(id);
+    if (!r) return { ok: false, msg: 'Den varan finns inte.' };
+    if (this.money < r.price) return { ok: false, msg: 'Du har inte råd!' };
+    if ((this.skafferi[id] | 0) >= MAX_RAVA) return { ok: false, msg: `Skafferiet är fullt av ${r.name.toLowerCase()}.` };
+    this.money -= r.price;
+    this.skafferi[id] = (this.skafferi[id] | 0) + 1;
+    this.save();
+    return { ok: true };
+  }
+  // ät en råvara som den är (ett äpple, en banan …): 5 minuter
+  eatRaw(id) {
+    const r = ravaraOf(id);
+    if (!r || !r.raw || !(this.skafferi[id] > 0)) return false;
+    this.useRava(id);
+    this.hunger = clamp(this.hunger + r.raw);
+    this.passTime(5);
+    this.save();
+    return true;
+  }
+  useRava(id, n = 1) { this.skafferi[id] = (this.skafferi[id] | 0) - n; if (this.skafferi[id] <= 0) delete this.skafferi[id]; }
+  knowsRecipe(id) { return this.recept.includes(id); }
+  // läs ett recept i receptboken – en kvart, sen kan man laga rätten
+  learnRecipe(id) {
+    const r = receptOf(id);
+    if (!r) return { ok: false, msg: 'Det receptet finns inte i boken.' };
+    if (this.knowsRecipe(id)) return { ok: false, msg: `Du kan redan ${r.name.toLowerCase()}.` };
+    this.recept.push(id);
+    this.passTime(RECEPT_LAS_MIN);
+    this.save();
+    return { ok: true, recipe: r };
+  }
+  // vad saknas för att laga rätten i n portioner? (tom lista = allt finns hemma)
+  missingFor(id, n = 1) { return (receptOf(id)?.ing || []).filter((x) => (this.skafferi[x] | 0) < n); }
+  canCook(id, n = 1) {
+    const r = receptOf(id);
+    if (!r) return { ok: false, msg: 'Det receptet finns inte.' };
+    if (!this.knowsRecipe(id)) return { ok: false, msg: `Läs receptet på ${r.name.toLowerCase()} i receptboken först.` };
+    const miss = this.missingFor(id, n);
+    if (miss.length) return { ok: false, missing: miss, msg: `Det fattas ${miss.map((x) => ravaraOf(x)?.name.toLowerCase() || x).join(', ')}${n > 1 ? ` (${n} av varje till ${portionOf(n).name.toLowerCase()})` : ''} – handla i mataffären.` };
+    return { ok: true };
+  }
+  get kockNiva() { return kockNiva(this.kockPortioner); }
+  // hur mycket en portion av rätten mättar just nu: grundvärdet + rättens stjärnor + kocknivån
+  portionFill(id) {
+    const r = receptOf(id);
+    if (!r) return 0;
+    return Math.round(r.fill * (1 + 0.1 * (kockStjarnor(this.kockat[id]) - 1)) * (1 + 0.05 * (this.kockNiva - 1)));
+  }
+  matladorAntal() { return Object.values(this.matlador).reduce((a, b) => a + (b | 0), 0); }
+  // Laga rätten (köket, js/scenes/koket.js): råvarorna × n går åt, klockan går (längre för storkok),
+  // en portion äts direkt (mätthet + lycka + ork), resten blir matlådor. Kockvanan per rätt och
+  // kocknivån gör maten godare.
+  cook(id, n = 1) {
+    n = portionOf(n).n;
+    const chk = this.canCook(id, n);
+    if (!chk.ok) return chk;
+    const r = receptOf(id);
+    for (const x of r.ing) this.useRava(x, n);
+    const starsBefore = kockStjarnor(this.kockat[id]), nivaBefore = this.kockNiva;
+    this.kockat[id] = (this.kockat[id] | 0) + n;
+    this.kockPortioner = (this.kockPortioner | 0) + n;
+    const stars = kockStjarnor(this.kockat[id]), niva = this.kockNiva;
+    const fill = this.portionFill(id);
+    this.passTime(Math.round(r.min * portionOf(n).tid));
+    this.hunger = clamp(this.hunger + fill);
+    this.energy = clamp(this.energy + (r.energi | 0));
+    const glad = this.glad((r.glad | 0) + (stars - 1), '', 'mat', 10);
+    const room = Math.max(0, MAX_MATLADOR - this.matladorAntal()), lador = Math.min(n - 1, room);
+    if (lador) this.matlador[id] = (this.matlador[id] | 0) + lador;
+    this.save();
+    return { ok: true, recipe: r, n, fill, glad, energi: r.energi | 0, stars, betterNow: stars > starsBefore, niva, nyNiva: niva > nivaBefore, lador, overflow: n - 1 - lador };
+  }
+  // en matlåda ur kylskåpet: värm och ät (10 minuter)
+  eatMatlada(id) {
+    if (!(this.matlador[id] > 0)) return null;
+    this.matlador[id] -= 1;
+    if (!this.matlador[id]) delete this.matlador[id];
+    const r = receptOf(id), fill = this.portionFill(id);
+    this.hunger = clamp(this.hunger + fill);
+    this.passTime(10);
+    const glad = this.glad(1, '', 'mat', 10);
+    this.save();
+    return { recipe: r, fill, glad };
   }
 
   // ---------- jobb ----------

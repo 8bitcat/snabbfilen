@@ -111,10 +111,11 @@ await broken.ctx.close();
   const { ctx, page } = await boot({ ...fx.localStorage, snabbfilen_save1: JSON.stringify(full) });
   await enterRoom(page);
   const s1 = await stored(page);
-  ok(total(s1) === 121 && s1.storage.length === 80, `hemma: ${total(s1)} möbler kvar av 121, förrådet ${s1.storage.length} (taket är 80)`);
+  // 121 + spisen och receptboken som köket ställer in i en bostad utan dem (inget försvinner)
+  ok(total(s1) === 123 && s1.storage.length === 80, `hemma: ${total(s1)} möbler (121 + spis och receptbok), förrådet ${s1.storage.length} (taket är 80)`);
   for (let i = 0; i < 2; i++) { await page.reload(); await page.waitForFunction(() => !!window.SF?.game, null, { timeout: 20000 }); await enterRoom(page); }
   const s2 = await stored(page);
-  ok(total(s2) === 121 && s2.storage.length === 80, `efter två omladdningar: ${total(s2)} möbler, förrådet ${s2.storage.length}`);
+  ok(total(s2) === 123 && s2.storage.length === 80, `efter två omladdningar: ${total(s2)} möbler, förrådet ${s2.storage.length}`);
   const all = [...s2.storage, ...Object.values(s2.deco).flat()];
   ok(shelves.every((sh) => all.some((d) => d.k === 'bredhylla' && d.c === sh.c)), 'alla 40 färgade hyllor kvar med sin färg');
   ok(all.filter((d) => d.k === 'stol').length === 80 && all.some((d) => d.k === 'sang' && d.fx), '80 stolar och sängen kvar');

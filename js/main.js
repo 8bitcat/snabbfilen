@@ -6,6 +6,7 @@ import { onInvite } from './net/coop.js';
 import { Game, SAVE_KEY, WIN_MONEY, JOBS, JOB_TITLES, levelOf, fmt, clock, REALTIME_RATE, setPetCounter } from './game.js';
 import { openGoals, celebrateGoals } from './core/livsmal.js'; // 🎯 livsmålen
 import { petStore } from './pets/sim.js';
+import { makeKoket } from './scenes/koket.js';
 import { makeCity } from './scenes/city.js';
 import { makeApartment } from './scenes/apartment.js'; // hemmet: den löpande lägenheten (rummen i rad, room.js per rum)
 import { makeShopMobler } from './scenes/shop-mobler.js';
@@ -87,6 +88,7 @@ const SCENES = {
   city: (a, o) => makeCity(a, o),
   room: (a, o) => makeApartment(a, o),
   visit: (a) => makeApartment(a, { visit: true }),
+  koket: (a) => makeKoket(a), // 🍳 matlagningen hemma (spisen → recept → steg för steg)
   mobler: (a, o) => makeShopIkea(a, o),
   mat: (a, o) => makeShopMat(a, o),
   bostad: (a, o) => makeShopBostad(a, o),
@@ -475,7 +477,7 @@ const PLACE_AWAY = {
 // ställena bakom stadens dörrar (DOOR_SCENES) – bara där ingen text redan finns
 for (const [k, v] of Object.entries({ bank: '🏦 på banken', elektronik: '📱 i elektronikbutiken', frisor: '💈 hos frisören', skor: '👟 i skobutiken',
   accessoarer: '👜 i accessoarbutiken', bio: '🎬 på bion', kebab: '🥙 på kebaben', pantbank: '💍 på pantbanken', universitet: '🎓 på Pixelhögskolan',
-  jobbdatorbygge: '🖥️ bygger datorer på Pixel Data', jobbfinans: '📈 handlar aktier på Finanshuset' })) PLACE_AWAY[k] ??= v;
+  jobbdatorbygge: '🖥️ bygger datorer på Pixel Data', jobbfinans: '📈 handlar aktier på Finanshuset', koket: '🍳 lagar mat hemma' })) PLACE_AWAY[k] ??= v;
 function placeOf(p, info) {
   const s = String(p.scene || 'away');
   if (s === 'city') return '🏙️ i staden';
@@ -762,7 +764,7 @@ function tick(now) {
   const dt = Math.min(0.05, (now - last) / 1000);
   last = now;
   if (A.scene) {
-    if (!modalOpen() && !isMenuOpen() && !A.sceneName.startsWith('jobb')) {
+    if (!modalOpen() && !isMenuOpen() && !A.sceneName.startsWith('jobb') && A.sceneName !== 'koket') {   // (i köket räknar Game.cook tiden)
       A.game.tickReal(dt);
       if (worldFolksHere(A).length) A.game.kompisTid(dt * REALTIME_RATE);              // kompisar i närheten gör en glad
     }

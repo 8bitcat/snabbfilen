@@ -1,7 +1,7 @@
 {
-  "version": "0.72.0",
-  "date": "2026-10-01",
-  "title": "Livsmål och lycka",
+  "version": "0.73.0",
+  "date": "2026-10-02",
+  "title": "Laga mat hemma",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
@@ -57,6 +57,7 @@
     "js/core/people/hair.js",
     "js/core/people/tops.js",
     "js/core/people/util.js",
+    "js/core/ravara-art.js",
     "js/core/rec.js",
     "js/core/recolor.js",
     "js/core/sound.js",
@@ -124,6 +125,8 @@
     "js/scenes/klader/data.js",
     "js/scenes/klader/garment.js",
     "js/scenes/klader/paint.js",
+    "js/scenes/kok.js",
+    "js/scenes/koket.js",
     "js/scenes/room.js",
     "js/scenes/shop-accessoarer.js",
     "js/scenes/shop-bank.js",

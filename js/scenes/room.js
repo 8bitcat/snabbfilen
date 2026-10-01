@@ -39,7 +39,8 @@ import { drawPerson } from '../core/people.js';
 import { openAvatarEditor, avatarTagColors } from '../core/avatar.js';
 import { Pix, SMALL, ctxText, textW, text, mix, mul, css, hash, bayer } from '../core/floor-pix.js';
 import { openModal, closeModal, toast } from '../core/ui.js';
-import { foodOf, katalogOf, functionOf, viewOf, rotStates, knownKind, fmt, MAX_STORAGE, MAX_PER_ROOM } from '../game.js';
+import { foodOf, ravaraOf, receptOf, katalogOf, functionOf, viewOf, rotStates, knownKind, fmt, MAX_STORAGE, MAX_PER_ROOM } from '../game.js';
+import { openKok } from './kok.js'; // spisen och receptboken
 import { play } from '../core/sound.js';
 import { worldFolksHere, worldMyEmote } from '../net/world.js';
 import { FRAMES } from '../data/frames.js';
@@ -237,7 +238,7 @@ const SEEDS = {
     { k: 'tv', v: 1, x: 160, y: 204 }, { k: 'klockblomma', v: 0, x: 340, y: 206 },
   ],
   'takvaning:2': [ // köket: diskbänk under fönstret, köksö, matbord för sex (kylskåpet mellan spisen och fönstret)
-    { k: 'diskbank', v: 1, x: 100, y: 96 }, { k: 'bankskap', v: 5, x: 150, y: 96 }, { k: 'koksspis', v: 0, x: 200, y: 96 },
+    { k: 'diskbank', v: 1, x: 100, y: 96 }, { k: 'bankskap', v: 5, x: 150, y: 96 }, { k: 'koksspis', v: 0, x: 200, y: 96, fx: 1 },
     { k: 'kylskap', v: 0, x: 218, y: 94, fx: 1 }, { k: 'overskap', v: 1, x: 152, y: 60 },
     { k: 'kokso', v: 1, x: 110, y: 160 }, { k: 'bordM', v: 2, x: 200, y: 182 }, { k: 'matstol', v: 1, x: 186, y: 180 }, { k: 'matstol', v: 1, x: 254, y: 180 },
     { k: 'vaxtS', v: 0, x: 330, y: 140 }, { k: 'soptunna', v: 0, x: 60, y: 110 }, { k: 'lillblomma', v: 0, x: 30, y: 206 },
@@ -285,6 +286,19 @@ const SEEDS = {
     { k: 'rundmatta', v: 1, x: 200, y: 130 },
   ],
 };
+// KÖKET (Carl 2026-10-01: "en receptbok som ligger vid spisen när man börjar spelet"): varje
+// bostad har en spis (koksspis, function 'laga') och receptboken på sitt ställ bredvid – startmöbler.
+// En sparad bostad utan dem får dem i köket nästa gång man går in där (addKitchen i makeRoom).
+const KOK = {
+  'husvagn:0': [{ k: 'koksspis', v: 0, x: 143, y: 96, fx: 1 }, { k: 'receptbok', v: 0, x: 161, y: 96, fx: 1 }],   // (till höger om klädskåpet – fönstret och dörren hålls fria från skyltarna)
+  'rum:0': [{ k: 'koksspis', v: 0, x: 136, y: 96, fx: 1 }, { k: 'receptbok', v: 0, x: 154, y: 96, fx: 1 }],   // (till höger om kylskåpet)
+  'hoghus:0': [{ k: 'koksspis', v: 0, x: 142, y: 96, fx: 1 }, { k: 'receptbok', v: 0, x: 160, y: 96, fx: 1 }],
+  'lagenhet:0': [{ k: 'koksspis', v: 0, x: 234, y: 96, fx: 1 }, { k: 'receptbok', v: 0, x: 252, y: 96, fx: 1 }],
+  'radhus:0': [{ k: 'koksspis', v: 0, x: 278, y: 96, fx: 1 }, { k: 'receptbok', v: 0, x: 296, y: 96, fx: 1 }],
+  'villa:2': [{ k: 'receptbok', v: 0, x: 232, y: 96, fx: 1 }, { k: 'koksspis', v: 0, x: 250, y: 96, fx: 1 }],
+  'takvaning:2': [{ k: 'receptbok', v: 0, x: 236, y: 96, fx: 1 }],
+};
+for (const [key, list] of Object.entries(KOK)) SEEDS[key] = [...(SEEDS[key] || []), ...list];
 // Startmöbleringen måste stå rätt från början (annars flyttas den vid första besöket
 // med en toast) – tools/room-check.mjs kontrollerar varje delrum mot fits().
 // have(i) = delrum i:s sparade lista (undefined = inte seedat än). Står det redan en
@@ -313,8 +327,10 @@ const SOLID_LOW = new Set(['soffa', 'fatolj', 'stol', 'bordR', 'bordM', 'byra', 
   'kokso', 'diskbank', 'bankskap', 'badkar', 'dusch', 'djurbadd', 'golvkudde', 'molnkudde', 'stjarnkudde', 'badbank', 'strykbrada',
   'lagbyra', 'tvbank', 'nattduksbord', 'kista', 'leksakslada', 'backar', 'kontorsstol', 'skolstol', 'barnstol', 'pall', 'dass']);
 const solidH = (k, fh) => (SOLID_LOW.has(k) ? Math.round(fh * 0.5) : Math.min(13, Math.round(fh * 0.4)));
-const frameOf = (k, v) => FRAMES[k + (v | 0)] || FRAMES[k + '0'];
-const frameName = (k, v) => (FRAMES[k + (v | 0)] ? k + (v | 0) : k + '0');
+// startmöbler som lånar en bild ur atlasen (receptboken = läspulpeten med den uppslagna boken)
+const FRAME_AS = { receptbok: 'laspulpet' };
+const frameOf = (k, v) => { const kk = FRAME_AS[k] || k; return FRAMES[kk + (v | 0)] || FRAMES[kk + '0']; };
+const frameName = (k, v) => { const kk = FRAME_AS[k] || k; return FRAMES[kk + (v | 0)] ? kk + (v | 0) : kk + '0'; };
 const isWall = (k) => !!katalogOf(k)?.wall;
 // mattor ur arken: ligger platt på golvet, går att gå på, ritas under allt
 const isFlat = (k) => k !== 'matta' && /matta$/.test(k);
@@ -348,12 +364,12 @@ function surfaceRow(k, v, r) {
   return row;
 }
 // vad skylten över en funktionsmöbel säger
-const FN_LABEL = { sova: 'SÄNG', garderob: 'GARDEROB', ata: 'KYLSKÅP', toalett: 'TOALETT', tvatta: 'TVÄTTA', tv: 'TV' };
+const FN_LABEL = { sova: 'SÄNG', garderob: 'GARDEROB', ata: 'KYLSKÅP', laga: 'SPIS', recept: 'RECEPT', toalett: 'TOALETT', tvatta: 'TVÄTTA', tv: 'TV' };
 const KIND_LABEL = { koksspis: 'SPIS', mikro: 'MIKRO', dusch: 'DUSCH', badkar: 'BADKAR', tvattmaskin: 'TVÄTT', tvattpelare: 'TVÄTT',
   handfat: 'HANDFAT', tvattstall: 'HANDFAT', dator: 'DATOR', laptop: 'DATOR', spelkonsol: 'KONSOL', dass: 'DASSET', kladskap: 'KLÄDSKÅP', linneskap: 'LINNESKÅP' };
 const labelOf = (k) => { const fn = functionOf(k); return fn ? KIND_LABEL[k] || FN_LABEL[fn] : null; };
 // namn på startmöbler som inte finns i katalogen (till förrådspanelen)
-const FX_NAMES = { kylskap: 'Kylskåp', dass: 'Dasset', vaxt: 'Monstera' };
+const FX_NAMES = { kylskap: 'Kylskåp', dass: 'Dasset', vaxt: 'Monstera', receptbok: 'Receptboken' };
 export const nameOf = (k) => katalogOf(k)?.name || FX_NAMES[k] || k;
 
 // ---------- möbelbilder (atlas, omfärgade eller mattor) ----------
@@ -664,8 +680,21 @@ export function makeRoom(A, { visit = false, sub: subOpt = null, core = null } =
       }
     }
   }
+  // Köket i en sparad bostad: saknas spis (något som lagar mat) eller receptbok i hela bostaden –
+  // även i förrådet – ställs startmöblerna ut i köket (KOK). Står de fel knuffar settle undan dem.
+  function addKitchen(list) {
+    const add = KOK[decoKey];
+    if (!add || visit) return 0;
+    const all = [...plan.rooms.flatMap((r, i) => (i === sub ? list : g.deco[`${home}:${i}`] || [])), ...g.storage];
+    let n = 0;
+    const put = (k) => { const d = add.find((x) => x.k === k); if (d) { list.push({ ...d }); n++; } };
+    if (!all.some((d) => d && functionOf(d.k) === 'laga')) put('koksspis');
+    if (!all.some((d) => d && d.k === 'receptbok')) put('receptbok');
+    return n;
+  }
   function fitRoom() {
     if (visit) return;
+    if (addKitchen(decoList())) { g.save(); toast('🍳 Nu finns en spis och en receptbok i köket – laga mat hemma!', 'good'); }
     const { changed, nudged, stored, stuck, byDoor } = settle(decoList(), true);
     if (changed) g.save();
     const few = (names) => `${names.slice(0, 2).join(' och ')}${names.length > 2 ? ' m.fl.' : ''}`;
@@ -695,6 +724,8 @@ export function makeRoom(A, { visit = false, sub: subOpt = null, core = null } =
       case 'sova': return () => { bedFor = p ? { k: p.k, decoIdx: p.decoIdx } : null; A.sleepFlow(); };
       case 'garderob': return () => { play('click'); openAvatarEditor({ onDone: (av) => { A.avatar = av; toast('👕 Snyggt!', 'good'); } }); };
       case 'ata': return () => openFridge(A);
+      case 'laga': return () => openKok(A, 'laga');
+      case 'recept': return () => openKok(A, 'bok');
       case 'toalett': return () => useToilet(A, kind);
       case 'tvatta': return () => wash(A, kind);
       case 'tv': return () => watchTv(A, kind);
@@ -3186,17 +3217,44 @@ export function emoteBubble(ctx, x, y, e, k = 1) {
 function openFridge(A) {
   const g = A.game;
   const items = Object.entries(g.fridge).filter(([, n]) => n > 0);
-  const body = items.length
-    ? `<p style="font-size:var(--f2);margin-top:0">Mätthet: <b>${Math.round(g.hunger)}/100</b></p><div class="plist">${items.map(([id, n]) => {
+  // råvarorna (skafferiet): frukt och sånt som går att äta som det är får en Ät-knapp – resten lagar man mat av vid spisen
+  const rava = Object.entries(g.skafferi || {}).filter(([id, n]) => n > 0 && ravaraOf(id));
+  const ravaRows = rava.map(([id, n]) => {
+    const r = ravaraOf(id);
+    return `<div class="prow"><span style="font-size:28px;text-align:center">${r.icon}</span>
+      <span class="nm">${r.name} ×${n}<br><small class="sp">${r.raw ? `+${r.raw} mätthet som den är` : 'råvara – laga mat vid spisen'}</small></span>
+      ${r.raw ? `<button class="btn btn-small btn-go" data-raw="${id}">Ät</button>` : '<span></span>'}</div>`;
+  }).join('');
+  // matlådorna från storkok och megakok: värm och ät
+  const lador = Object.entries(g.matlador || {}).filter(([id, n]) => n > 0 && receptOf(id));
+  const ladRows = lador.map(([id, n]) => {
+    const r = receptOf(id);
+    return `<div class="prow"><span style="font-size:28px;text-align:center">${r.icon}</span>
+      <span class="nm">${r.name} ×${n}<br><small class="sp">matlåda · +${g.portionFill(id)} mätthet</small></span>
+      <button class="btn btn-small btn-go" data-lada="${id}">♨️ Värm & ät</button></div>`;
+  }).join('');
+  const body = items.length || rava.length || lador.length
+    ? `<p style="font-size:var(--f2);margin-top:0">Mätthet: <b>${Math.round(g.hunger)}/100</b></p>${lador.length ? `<h3 style="margin:10px 0 4px">🍱 Matlådor</h3><div class="plist">${ladRows}</div>` : ''}${items.length ? `<div class="plist">${items.map(([id, n]) => {
       const f = foodOf(id);
       return `<div class="prow"><span style="font-size:28px;text-align:center">${f.icon}</span>
         <span class="nm">${f.name} ×${n}<br><small class="sp">+${f.fill} mätthet</small></span>
         <button class="btn btn-small btn-go" data-eat="${id}">Ät</button></div>`;
-    }).join('')}</div>`
+    }).join('')}</div>` : ''}${rava.length ? `<h3 style="margin:10px 0 4px">🧺 Råvaror</h3><div class="plist">${ravaRows}</div>` : ''}`
     : `<p style="font-size:var(--f2)">Kylskåpet är tomt! 🕸️<br><small>Gå till MAT-butiken i Pixelstaden och handla.</small></p>`;
-  const dlg = openModal('🧊 Kylskåpet', body, [{ label: 'Stäng', onClick: closeModal }]);
+  const dlg = openModal('🧊 Kylskåpet', body, [
+    { label: 'Stäng', onClick: closeModal },
+    { label: '🍳 Till spisen', onClick: () => { closeModal(); openKok(A, 'laga'); } },
+  ]);
   dlg.querySelectorAll('[data-eat]').forEach((b) => (b.onclick = () => {
     const f = foodOf(b.dataset.eat);
     if (A.game.eatFromFridge(b.dataset.eat)) { play('ok'); toast(`${f.icon} Mums! +${f.fill} mätthet`, 'good'); openFridge(A); }
+  }));
+  dlg.querySelectorAll('[data-raw]').forEach((b) => (b.onclick = () => {
+    const r = ravaraOf(b.dataset.raw);
+    if (A.game.eatRaw(b.dataset.raw)) { play('ok'); toast(`${r.icon} Mums! +${r.raw} mätthet`, 'good'); openFridge(A); }
+  }));
+  dlg.querySelectorAll('[data-lada]').forEach((b) => (b.onclick = () => {
+    const res = A.game.eatMatlada(b.dataset.lada);
+    if (res) { play('ok'); toast(`♨️ ${res.recipe.icon} ${res.recipe.name} – precis lika gott i dag! +${res.fill} mätthet${res.glad ? `, +${res.glad} 😊` : ''}`, 'good'); openFridge(A); }
   }));
 }
