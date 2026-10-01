@@ -219,7 +219,14 @@ export const worldMarkActive = markActive;
 
 // ---------- min publicerade state ----------
 function myState(A) {
-  return { av: { name: A.avatar.name, look: A.avatar.look, color: A.avatar.color }, scene: myScene(A), x: A.scene?.worldX ?? 190, y: A.scene?.worldY ?? 174, home: A.game.home, deco: A.game.deco, key: myKey(), ver: VERSION, vo: voiceFlag() ? 1 : 0, si: mySit(A) };
+  return { av: { name: A.avatar.name, look: A.avatar.look, color: A.avatar.color }, scene: myScene(A), x: A.scene?.worldX ?? 190, y: A.scene?.worldY ?? 174, home: A.game.home, deco: A.game.deco, key: myKey(), ver: VERSION, vo: voiceFlag() ? 1 : 0, si: mySit(A), fd: myRide(A) };
+}
+// Åker jag på något (cykel, elsparkcykel, moppe – city.js worldRide = { id, c })? Skickas som
+// 'id:#färg' så att andra ritar mig på samma fordon (js/core/fordon-art.js).
+function myRide(A) {
+  let r = null;
+  try { r = A.scene?.worldRide ?? null; } catch { r = null; }
+  return r && /^[a-z]{2,16}$/.test(String(r.id)) && /^#[0-9a-f]{6}$/i.test(String(r.c)) ? `${r.id}:${String(r.c).toLowerCase()}` : '';
 }
 // Sitter jag? Scenen svarar med getter worldSit: null, 'down'/'up'/'left'/'right' eller
 // { dir, eat } (eat = maten står framför mig och jag tuggar). Skickas som 'd', 'u', 'l', 'r'
@@ -257,6 +264,7 @@ function cleanP(p, old = {}) {
     if (typeof p.ver === 'string') out.ver = p.ver.slice(0, 16);
     if (p.vo !== undefined) out.vo = p.vo ? 1 : 0;
     if (p.si !== undefined) out.si = /^[dulr]e?$/.test(String(p.si)) ? String(p.si) : '';
+    if (p.fd !== undefined) out.fd = /^[a-z]{2,16}:#[0-9a-f]{6}$/i.test(String(p.fd)) ? String(p.fd).toLowerCase() : '';
     if (p.deco !== undefined && p.deco && typeof p.deco === 'object') {
       out.deco = {};
       // upp till 24 delrum med 80 möbler var (de nya bostäderna har fler rum och mer bohag)
@@ -399,7 +407,7 @@ export function worldTick(A, myX, dt) {
   if (!W || !W.open) return;
   const now = performance.now();
   const myY = A.scene?.worldY ?? null;
-  const meta = JSON.stringify([A.avatar.look, A.avatar.name, myScene(A), A.game.home, A.game.deco, voiceFlag() ? 1 : 0, mySit(A)]);
+  const meta = JSON.stringify([A.avatar.look, A.avatar.name, myScene(A), A.game.home, A.game.deco, voiceFlag() ? 1 : 0, mySit(A), myRide(A)]);
   const metaChanged = meta !== W.lastMeta;
   const posChanged = myX !== null && (Math.abs(myX - W.lastX) > 0.5 || Math.abs((myY ?? 0) - (W.lastY ?? 0)) > 0.5);
   if ((metaChanged || posChanged) && now - W.lastSent > 90) {
@@ -432,7 +440,7 @@ export function worldFolksHere(A, sub) {
   const out = [];
   for (const [id, p] of W.players) {
     if (p.scene !== here) continue;
-    out.push({ id, av: p.av, x: p.x, y: p.y, tx: p.tx ?? p.x, ty: p.ty2 ?? p.y, vo: p.vo | 0, walking: Math.hypot((p.tx ?? p.x) - p.x, (p.ty2 ?? p.y) - p.y) > 1, sit: p.si ? SIT_DIR[p.si[0]] : null, eat: p.si?.[1] === 'e', emote: (p.emote && p.emote.until > Date.now() ? p.emote.e : null) || (talkSrc(id) ? TALK_EMOTE : null), say: p.say && p.say.until > Date.now() ? p.say.text : null });
+    out.push({ id, av: p.av, x: p.x, y: p.y, tx: p.tx ?? p.x, ty: p.ty2 ?? p.y, vo: p.vo | 0, walking: Math.hypot((p.tx ?? p.x) - p.x, (p.ty2 ?? p.y) - p.y) > 1, sit: p.si ? SIT_DIR[p.si[0]] : null, eat: p.si?.[1] === 'e', ride: p.fd ? { id: p.fd.split(':')[0], c: p.fd.split(':')[1] } : null, emote: (p.emote && p.emote.until > Date.now() ? p.emote.e : null) || (talkSrc(id) ? TALK_EMOTE : null), say: p.say && p.say.until > Date.now() ? p.say.text : null });
   }
   return out;
 }

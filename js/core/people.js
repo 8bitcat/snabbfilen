@@ -683,6 +683,14 @@ function spriteFor(look, dir, frame) {
   return s;
 }
 
+// Figuren som bild utan skugga (24×40, fötterna vid (12, 39)) – för den som sitter på något
+// som ritar egen skugga (cykeln, mopeden i js/core/fordon-art.js).
+export function personSprite(look, dir = 'down', frame = 0) {
+  if (!['down', 'up', 'left', 'right'].includes(dir)) dir = 'down';
+  frame = frame | 0;
+  return spriteFor(look, dir, frame < 0 || frame > 9 ? 0 : frame);
+}
+
 // dir: 'down' | 'up' | 'left' | 'right'; frame: se överst
 export function drawPerson(ctx, fx, fy, L, dir = 'down', frame = 0) {
   if (!['down', 'up', 'left', 'right'].includes(dir)) dir = 'down';

@@ -486,6 +486,21 @@ export const GADGETS = [
 ];
 export const gadgetOf = (id) => GADGETS.find((x) => x.id === id) || null;
 
+// FORDONEN (Carl 2026-10-01: "köpa cykel, elsparkcykel och moppe"): säljs i GARAGET i förorten
+// (js/scenes/shop-fordon.js), ritas av js/core/fordon-art.js. I staden åker man med 🚲-knappen och
+// kommer fram fortare: fart × gångfarten (klockan går lika fort, så resan tar mindre speltid).
+// g.fordon = [{ id, c }] (en av varje modell, c = färgen), g.akerMed = id som man åker på | null.
+// Påhittade modeller – inga riktiga märken. Hjälmen till moppen ingår.
+export const FORDON = [
+  { id: 'begcykel', typ: 'cykel', icon: '🚲', name: 'Begagnad herrcykel', den: 'herrcykeln', price: 450, fart: 1.5, colors: ['#7a8a6a', '#5a5a7a', '#8a5a4a'], blurb: 'Lite rost och gnisslar i kurvorna – men den rullar!' },
+  { id: 'stadscykel', typ: 'cykel', icon: '🚲', name: 'Stadscykel med korg', den: 'stadscykeln', price: 1600, fart: 1.7, colors: ['#3a7bd5', '#d9433b', '#46a35a', '#f4f1ea', '#c65fa0'], blurb: 'Korg, pakethållare, lampa och stänkskärmar. Perfekt till mataffären.' },
+  { id: 'elspark', typ: 'spark', icon: '🛴', name: 'Elsparkcykel', den: 'elsparkcykeln', price: 2900, fart: 1.9, colors: ['#2f3440', '#e8e3d6', '#2aa39a'], blurb: 'Stå på och glid tyst genom stan – inga pedaler, bara gasreglaget.' },
+  { id: 'racer', typ: 'racer', icon: '🚴', name: 'Racercykel', den: 'racercykeln', price: 3800, fart: 2.1, colors: ['#d9433b', '#1d1714', '#f0b429', '#2aa39a'], blurb: 'Lätt som en fjäder, med böjt styre. Snabbast utan motor.' },
+  { id: 'moppe', typ: 'moppe', icon: '🛵', name: 'Moppe', den: 'moppen', price: 8900, fart: 2.6, colors: ['#e0a02a', '#d9433b', '#3a7bd5', '#46a35a', '#1d1714'], blurb: 'Klassisk moped med blank tank, krom och backspegel. Hjälmen ingår. Brum brum!' },
+];
+export const fordonOf = (id) => FORDON.find((x) => x.id === id) || null;
+export const OMLACK = 150;   // måla om ett fordon man redan har
+
 // Det gamla slutmålet (före livsmålen): Villan med rejält på fickan. Bara för sparfiler som
 // redan klarade det (g.won) – i dag vinner man med livsmålen nedan.
 export const WIN_MONEY = 10000;
@@ -603,6 +618,8 @@ export class Game {
     this.storage = [];                    // möbler i förrådet, { k, v, c?, r?, fx? } (c = egen färg '#rrggbb', r = rotation 0–3)
     this.deco = {};                       // placerade möbler per rum: "hem:sub" -> [{ k, v, c?, x, y, r?, fx? }]
     this.gadgets = [];                    // prylar från elektronikbutiken (GADGETS-id), t.ex. ['fon12']
+    this.fordon = [];                     // fordonen från garaget: [{ id, c }] (FORDON-id, färg '#rrggbb')
+    this.akerMed = null;                  // fordonet man åker på i staden (id) – null = går
     this.won = false;                     // slutmålet nått
     this.event = null;                    // dagens händelse { id, job? }
     this.best = Object.fromEntries(Object.keys(JOBS).map((k) => [k, { ok: 0, pay: 0 }])); // rekord per jobb
@@ -691,6 +708,14 @@ export class Game {
             ? { ...b, dag: b.dag | 0, v: Math.max(0, b.v | 0), vat: b.vat | 0, torr: Math.max(0, b.torr | 0), vissen: !!b.vissen } : null));
           g.odling[home] = { ...gd, beds, trad: { skord: gd.trad?.skord | 0 } };
         }
+        // fordonen: okända modeller (från en nyare version) följer med orörda
+        g.fordon = [];
+        for (const f of Array.isArray(p.fordon) ? p.fordon : []) {
+          if (!f || typeof f !== 'object' || typeof f.id !== 'string' || g.fordon.some((x) => x.id === f.id)) continue;
+          const F = fordonOf(f.id);
+          g.fordon.push(F ? { ...f, c: /^#[0-9a-f]{6}$/i.test(f.c) ? f.c.toLowerCase() : F.colors[0] } : f);
+        }
+        g.akerMed = typeof p.akerMed === 'string' && fordonOf(p.akerMed) && g.fordon.some((x) => x.id === p.akerMed) ? p.akerMed : null;
         for (const k of Object.keys(g.jobs)) g.jobs[k] = Math.max(0, p.jobs?.[k] | 0);
         for (const [k, v] of Object.entries(p.jobs || {})) if (!(k in g.jobs)) keep.jobs[k] = v;
         for (const [k, v] of Object.entries(p.best || {})) if (!(k in g.best)) keep.best[k] = v;
@@ -988,6 +1013,41 @@ export class Game {
     this.gadgets.push(id);
     this.save();
     return { ok: true, item: x };
+  }
+
+  // ---------- fordonen (garaget) ----------
+  hasFordon(id) { return this.fordon.some((x) => x.id === id); }
+  fordonFarg(id) { return this.fordon.find((x) => x.id === id)?.c || fordonOf(id)?.colors[0] || '#3a7bd5'; }
+  ownedFordon() { return this.fordon.filter((x) => fordonOf(x.id)).map((x) => ({ ...fordonOf(x.id), c: x.c })); }
+  // fordonet man åker på just nu (med färgen) – null = går
+  get aker() { const F = this.akerMed && fordonOf(this.akerMed); return F && this.hasFordon(F.id) ? { ...F, c: this.fordonFarg(F.id) } : null; }
+  buyFordon(id, c) {
+    const F = fordonOf(id);
+    if (!F) return { ok: false, msg: 'Finns inte i garaget.' };
+    if (this.hasFordon(id)) return { ok: false, msg: 'Den har du redan!' };
+    if (this.money < F.price) return { ok: false, msg: `Den kostar ${fmt(F.price)} – du har inte råd.` };
+    const col = F.colors.includes(c) ? c : F.colors[0];
+    this.money -= F.price;
+    this.fordon.push({ id, c: col });
+    this.akerMed = id;                                    // man åker iväg på den direkt
+    const glad = this.glad(5, '', 'fordonkop', 5);
+    this.save();
+    return { ok: true, fordon: F, glad };
+  }
+  paintFordon(id, c) {
+    const F = fordonOf(id), f = this.fordon.find((x) => x.id === id);
+    if (!F || !f) return { ok: false, msg: 'Den har du inte.' };
+    if (!F.colors.includes(c) || f.c === c) return { ok: false, msg: 'Den har redan den färgen.' };
+    if (this.money < OMLACK) return { ok: false, msg: `Att måla om kostar ${fmt(OMLACK)} – du har inte råd.` };
+    this.money -= OMLACK;
+    f.c = c;
+    this.save();
+    return { ok: true };
+  }
+  setAker(id) {
+    this.akerMed = id && this.hasFordon(id) && fordonOf(id) ? id : null;
+    this.save();
+    return this.akerMed;
   }
 
   // ---------- mat ----------

@@ -1,7 +1,7 @@
 {
-  "version": "0.75.0",
+  "version": "0.76.0",
   "date": "2026-10-02",
-  "title": "Musik hemma",
+  "title": "Cykel, elsparkcykel och moppe",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
@@ -31,6 +31,7 @@
     "js/core/avatar.js",
     "js/core/chat.js",
     "js/core/floor-pix.js",
+    "js/core/fordon-art.js",
     "js/core/fx.js",
     "js/core/hemmusik.js",
     "js/core/hud-pix.js",
@@ -136,6 +137,7 @@
     "js/scenes/shop-burgarbar.js",
     "js/scenes/shop-djur.js",
     "js/scenes/shop-elektronik.js",
+    "js/scenes/shop-fordon.js",
     "js/scenes/shop-frisor.js",
     "js/scenes/shop-ikea.js",
     "js/scenes/shop-kafe.js",

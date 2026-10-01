@@ -3,6 +3,7 @@
 // hinder-rektanglar och får gång med utslätade vägar. Dessutom gemensam
 // ritning av andra spelare (världen) och namnskyltar/pratbubblor.
 import { drawPerson } from '../core/people.js';
+import { drawRide, rideLift } from '../core/fordon-art.js';   // cykeln/moppen i staden
 import { avatarTagColors } from '../core/avatar.js';
 import { SMALL, ctxText, textW } from '../core/floor-pix.js';
 import { worldFolksHere, worldMyEmote, worldMySay } from '../net/world.js';
@@ -114,8 +115,28 @@ export function createWalker({ W: WW = FW, H: WH = FH, left = 8, right = WW - 8,
   return W;
 }
 
-// Min figur som drawable (med namnskylt när andra är här, bär-frames vid carry)
-export function selfDrawable(A, walker, t, { carry = false, folksHere = 0 } = {}) {
+// Min figur som drawable (med namnskylt när andra är här, bär-frames vid carry).
+// ride = { id, c }: figuren åker på ett fordon (game.js FORDON) – det står kvar åt det håll man
+// åkte när man stannar (gående vänder sig mot kameran).
+let rideDir = 'right';
+export function selfDrawable(A, walker, t, { carry = false, folksHere = 0, ride = null } = {}) {
+  if (ride) {
+    selfAt = { x: walker.px, y: walker.py, scene: A?.sceneName ?? null };
+    const moving = walker.path.length > 0;
+    if (moving) rideDir = walker.dir;
+    const lift = rideLift(ride.id);
+    return {
+      fy: walker.py,
+      draw(ctx) {
+        if (!drawRide(ctx, ride.id, walker.px, walker.py, rideDir, t, moving, A.avatar.look, ride.c)) drawPerson(ctx, walker.px, walker.py, A.avatar.look, walker.dir, 0);
+        if (folksHere) nameTag(ctx, walker.px, walker.py - 50 - lift, A.avatar);
+        const mine = worldMyEmote();
+        if (mine) emoteBubble(ctx, walker.px, walker.py - 60 - lift, mine);
+        const said = worldMySay();
+        if (said) sayBubble(ctx, walker.px, walker.py - (mine ? 78 : 62) - lift, said, { voice: 'self' });
+      },
+    };
+  }
   selfAt = { x: walker.px, y: walker.py, scene: A?.sceneName ?? null }; // repliker ovanför mig = min röst
   return {
     fy: walker.py,
@@ -134,12 +155,25 @@ export function selfDrawable(A, walker, t, { carry = false, folksHere = 0 } = {}
   };
 }
 // Andra spelare på samma plats som drawables
+const folkDir = new Map();   // andra spelares färdriktning på fordon (id → dir)
 export function folkDrawables(A, t) {
   return worldFolksHere(A).map((f) => ({
     fy: f.y,
     draw(ctx) {
       // sitter spelaren (world.js si): sittande på platsen, tuggar då och då om maten står framme
       const seated = f.sit && !f.walking;
+      // på cykel/moppe: åt det håll de rör sig (står de still: dit de senast åkte)
+      if (f.ride && !seated) {
+        const dx = f.tx - f.x, dy = f.ty - f.y;
+        if (f.walking) folkDir.set(f.id, Math.abs(dx) > Math.abs(dy) * 1.2 ? (dx < 0 ? 'left' : 'right') : dy < 0 ? 'up' : 'down');
+        if (drawRide(ctx, f.ride.id, f.x, f.y, folkDir.get(f.id) || 'right', t, f.walking, f.av.look, f.ride.c)) {
+          const lift = rideLift(f.ride.id);
+          nameTag(ctx, f.x, f.y - 50 - lift, f.av);
+          if (f.emote) emoteBubble(ctx, f.x, f.y - 58 - lift, f.emote);
+          if (f.say) sayBubble(ctx, f.x, f.y - (f.emote ? 76 : 60) - lift, f.say, { voice: f.av || f.id });
+          return;
+        }
+      }
       const frame = seated ? (f.eat && Math.floor(t * 1.6 + f.x * 0.37) % 3 === 1 ? 6 : 5) : f.walking ? WALK_SEQ[Math.floor(t * 8.5) % 4] : (Math.sin(t * 2 + f.x) > 0.9 ? 4 : 0);
       drawPerson(ctx, f.x, f.y, f.av.look, seated ? f.sit : 'down', frame);
       nameTag(ctx, f.x, f.y - 50, f.av);

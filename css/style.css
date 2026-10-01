@@ -595,3 +595,11 @@ html.desk-mobil body.hud-pix .hud-btns .btn { padding: 1px 5px; }
   .dlg-foot { padding: 0 10px 8px; gap: 6px; }
   .dlg-foot .btn { font-size: var(--f2); padding: 4px 10px; }
 }
+/* 🚲 GARAGET: köpdialogen (js/scenes/shop-fordon.js) */
+.fd { display: flex; gap: 12px; align-items: center; margin-bottom: 8px; }
+.fd-big { width: 288px; height: 168px; image-rendering: pixelated; border: 2px solid var(--ink); background: #f4f1ea; flex: none; }
+.fd-side { display: flex; flex-direction: column; gap: 6px; }
+.fd-sws { display: flex; flex-wrap: wrap; gap: 6px; }
+.fd-sw { width: 28px; height: 28px; border: 2px solid var(--ink); cursor: pointer; padding: 0; box-shadow: 2px 2px 0 #000; }
+.fd-sw.on { outline: 3px solid var(--gold); outline-offset: 1px; }
+@media (max-width: 560px) { .fd { flex-direction: column; } .fd-big { width: 192px; height: 112px; } }

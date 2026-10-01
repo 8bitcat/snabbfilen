@@ -277,7 +277,7 @@ export const BUILDINGS_X = [
   XN('hoghus2', 2420, 184, 170, { x0: 2500, x1: 2524, type: 'swing' }, { sign: 'BETONGVÄGEN 5', icon: '🏢', soon: 'Kodlåset är sönderslaget – men du bor inte här.' }),
   XS('bilverkstad', 1768, 160, 88, { x0: 1792, x1: 1840, type: 'roll' }, { sign: 'BILVERKSTAN', icon: '🔧', enter: 'jobb:bilverkstad', open: [7, 18] }),
   XS('tvatteri', 1956, 100, 100, { x0: 1992, x1: 2016, type: 'swing' }, { sign: 'TVÄTTERI', icon: '🧺', enter: 'jobb:tvatteri', open: [8, 20] }),
-  XS('garage', 2084, 152, 52, { x0: 2140, x1: 2176, type: 'roll' }, { sign: 'GARAGEN', icon: '🚗', soon: 'Garagelängan – någon skruvar på en moped där inne.' }),
+  XS('garage', 2084, 152, 52, { x0: 2140, x1: 2176, type: 'roll' }, { sign: 'GARAGEN', icon: '🛵', open: [9, 19], enter: 'fordon', soon: 'Garaget: cyklar, elsparkcyklar och mopeder – Kenta skruvar på en moppe där inne.' }), // js/scenes/shop-fordon.js
   XS('lagerhall', 2408, 192, 92, { x0: 2488, x1: 2536, type: 'roll' }, { sign: 'LAGER 3', icon: '🏭', soon: 'Övergiven lagerhall. Någon har sprejat "PIXEL 4 EVER" på porten.' }),
 ];
 
@@ -658,9 +658,9 @@ export const inRect = (x, y, r) => x >= r[0] && x < r[2] && y >= r[1] && y < r[3
 export const isNightHour = (h) => h >= 19.5 || h < 6.5;
 
 // Alla enter-värden som scenen (city.js enter()) känner. Scennamnen i andra raden leder in i en egen
-// scen (city.js SCENE_DOORS → main.js): butikerna i downtown, Pixelhögskolan, bion, kebaben och pantbanken.
+// scen (city.js SCENE_DOORS → main.js): butikerna i downtown, Pixelhögskolan, bion, kebaben, pantbanken och garaget.
 export const ENTER_RE = new RegExp('^(hem|bostad|mat|klader|mobler|kafe|djur|burgare|frukt|flyg|glass|narbutik|leksaker'
-  + '|bank|elektronik|frisor|skor|accessoarer|universitet|bio|kebab|pantbank'
+  + '|bank|elektronik|frisor|skor|accessoarer|universitet|bio|kebab|pantbank|fordon'
   + '|jobb:[a-z]+|bostad:[a-z]+)$');
 
 // Kontroll av kontraktet: returnerar en lista med problem (tom = allt stämmer).

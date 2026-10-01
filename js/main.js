@@ -8,6 +8,7 @@ import { openGoals, celebrateGoals } from './core/livsmal.js'; // 🎯 livsmåle
 import { petStore } from './pets/sim.js';
 import { makeKoket } from './scenes/koket.js';
 import { makeTradgard } from './scenes/tradgard.js';
+import { makeShopFordon, rideHud, openRide } from './scenes/shop-fordon.js'; // 🚲 garaget och åka/gå-knappen
 import { hemMusikTick, stopHemMusik } from './core/hemmusik.js';
 import { makeCity } from './scenes/city.js';
 import { makeApartment } from './scenes/apartment.js'; // hemmet: den löpande lägenheten (rummen i rad, room.js per rum)
@@ -92,6 +93,7 @@ const SCENES = {
   visit: (a) => makeApartment(a, { visit: true }),
   koket: (a) => makeKoket(a), // 🍳 matlagningen hemma (spisen → recept → steg för steg)
   tradgard: (a) => makeTradgard(a), // 🌱 trädgården bakom bostaden (dörren hemma)
+  fordon: (a) => makeShopFordon(a), // 🚲 GARAGET i förorten: cyklar, elsparkcyklar och mopeder
   mobler: (a, o) => makeShopIkea(a, o),
   mat: (a, o) => makeShopMat(a, o),
   bostad: (a, o) => makeShopBostad(a, o),
@@ -412,6 +414,7 @@ function renderHud() {
   const nearby = worldFolksHere(A).length;
   $('#emotes').classList.toggle('hidden', nearby === 0);
   $('#decor-btn').classList.toggle('hidden', A.sceneName !== 'room');
+  rideHud(A); // 🚲 syns när man har ett fordon
   const key = `${g.day}|${Math.floor(g.min)}|${g.money}|${Math.round(g.hunger)}|${Math.round(g.energy)}|${Math.round(g.lycka)}|${A.avatar?.name}|${online}`;
   if (key === hudKey) return;
   hudKey = key;
@@ -481,7 +484,7 @@ const PLACE_AWAY = {
 // ställena bakom stadens dörrar (DOOR_SCENES) – bara där ingen text redan finns
 for (const [k, v] of Object.entries({ bank: '🏦 på banken', elektronik: '📱 i elektronikbutiken', frisor: '💈 hos frisören', skor: '👟 i skobutiken',
   accessoarer: '👜 i accessoarbutiken', bio: '🎬 på bion', kebab: '🥙 på kebaben', pantbank: '💍 på pantbanken', universitet: '🎓 på Pixelhögskolan',
-  jobbdatorbygge: '🖥️ bygger datorer på Pixel Data', jobbfinans: '📈 handlar aktier på Finanshuset', koket: '🍳 lagar mat hemma', tradgard: '🌱 i trädgården' })) PLACE_AWAY[k] ??= v;
+  jobbdatorbygge: '🖥️ bygger datorer på Pixel Data', jobbfinans: '📈 handlar aktier på Finanshuset', koket: '🍳 lagar mat hemma', tradgard: '🌱 i trädgården', fordon: '🔧 i garaget' })) PLACE_AWAY[k] ??= v;
 function placeOf(p, info) {
   const s = String(p.scene || 'away');
   if (s === 'city') return '🏙️ i staden';
@@ -667,6 +670,13 @@ function boot() {
     b.id = id; b.className = 'btn btn-small'; b.title = title; b.textContent = icon;
     b.onclick = fn;
     $('#hud-friends').before(b);
+  }
+  // 🚲 åka eller gå (syns när man har köpt ett fordon i GARAGET – shop-fordon.js rideHud)
+  if (!document.getElementById('hud-fordon')) {
+    const fb = document.createElement('button');
+    fb.id = 'hud-fordon'; fb.className = 'btn btn-small hidden'; fb.title = 'Åka eller gå';
+    fb.onclick = () => openRide(A);
+    $('#hud-friends').before(fb);
   }
   $('#decor-btn').onclick = () => A.scene?.toggleDecor?.();
   document.querySelectorAll('#emotes button').forEach((b) => (b.onclick = () => sendEmote(A, b.dataset.e)));

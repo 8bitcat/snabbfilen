@@ -10,6 +10,13 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.76.0] – 2026-10-02 – Cykel, elsparkcykel och moppe
+- GARAGET har öppnat i garagelängan i förorten (9–19)! Mekanikern Kenta säljer fem fordon: begagnad herrcykel (450 kr), stadscykel med korg (1 600), elsparkcykel (2 900), racercykel (3 800) och moppe (8 900 – hjälmen ingår).
+- Klicka på ett fordon: du ser dig själv på det, väljer färg och köper. Har du det redan kan du måla om det (150 kr).
+- Åk genom stan! Cykeln går nästan dubbelt så fort som att gå och moppen 2,6 gånger så fort – du kommer fram på kortare speltid. Hjulen snurrar, moppen puttrar och ryker, och du har hjälm på dig.
+- 🚲-knappen uppe till höger växlar mellan att åka och gå (har du flera fordon väljer du vilket). Fordonet står parkerat utanför när du går in någonstans.
+- Kompisarna ser dig cykla eller åka moppe, och du ser dem. Första turen för dagen gör en glad.
+
 ## [0.75.0] – 2026-10-02 – Musik hemma
 - Sätt på musik hemma! Har du en TV, dator, laptop, spelkonsol, gammal TV eller en skivsamling hemma kan du spela ALLA låtar i Pixelstaden: stadens, parkens, Söders, nattens, förortens, caféets, klädaffärens, stormarknadens, Burgarbarens jukeboxlåt – och fotbollsfilmernas KBK-signatur och träningslåt.
 - Klicka på TV:n (eller datorn/konsolen): "Titta en stund" som förut – eller "🎵 Musik". Skivsamlingen öppnar musiken direkt.

@@ -188,6 +188,7 @@ const SCENE_DOORS = {
   bank: 'bank', elektronik: 'elektronik', frisor: 'frisor', skor: 'skor', accessoarer: 'accessoarer', // downtown
   universitet: 'universitet',                                                                        // Pixelhögskolan (PIXEL TOWER)
   bio: 'bio', kebab: 'kebab', pantbank: 'pantbank',                                                  // Söder och förorten
+  fordon: 'fordon',                                                                                  // GARAGET i förorten (cyklar och mopeder)
 };
 // Kameran på STORA BRON: på däcket lyfts kameran så att tornens spetsbågar, krönen och kablarnas
 // båge kommer med (mjukt in och ut vid brofästena) – figuren hålls ändå minst BRIDGE_FOOT px ovanför
@@ -215,6 +216,12 @@ export function makeCity(A) {
   let walker;
   try { walker = MODS.walk.createCityWalker(bounds); } catch (e) { console.error('gångmotorn walk.js startade inte – använder den enkla:', e); walker = createWalker(bounds); }
   walker.speed = 110;
+  // 🚲 fordonet man åker på (game.js FORDON, 🚲-knappen i HUD:en): fortare genom stan
+  const GANG = 110;
+  const fordon = () => (A.attract ? null : g.aker);
+  const applyRide = () => { const F = fordon(); walker.speed = GANG * (F ? F.fart : 1); };
+  applyRide();
+  let rullar = false;
   env.obstacles = [...MAP_OBSTACLES, ...artObstacles(), ...(S.props.obstacles || []), ...(S.traffic.obstacles || []), ...(S.fallback.obstacles || []), ...(S.bridge.obstacles || []), ...(S.life.obstacles || [])];
   walker.setObstacles(env.obstacles);
   walker.snapFree();
@@ -514,7 +521,8 @@ export function makeCity(A) {
           if (worldFolksHere(A).length) nameTag(ctx, s.x, s.y - 46, A.avatar);
         } });
       } else {
-        const me = selfDrawable(A, walker, t, { folksHere: worldFolksHere(A).length });
+        const F = fordon();
+        const me = selfDrawable(A, walker, t, { folksHere: worldFolksHere(A).length, ride: F ? { id: F.id, c: F.c } : null });
         items.push({ y: me.fy + 0.01, draw: () => me.draw(ctx) });
       }
       if (pets && !riding) guard('husdjuren', () => { for (const d of pets.drawables()) items.push({ y: d.fy, draw: () => d.draw(ctx) }); });
@@ -797,6 +805,8 @@ export function makeCity(A) {
     get worldX() { return walker.px; },
     get worldY() { return walker.py; },
     get worldSit() { return sitting ? { dir: sitting.seat.dir || 'down' } : null; }, // andra ser mig sitta på bänken
+    get worldRide() { const F = fordon(); return F && !riding && !sitting ? { id: F.id, c: F.c } : null; }, // andra ser mig cykla
+    rideChanged: applyRide,   // 🚲-knappen bytte fordon (eller till att gå)
     _debug: {
       spot: (id) => { const b = ALL_BUILDINGS.find((x) => x.id === id); return b ? spotOf(b) : null; },
       tile: (a, bb) => ({ x: 60 + a * 40 - cam.x, y: CITY.SIDEWALK_N[0] + 8 + bb * 10 - cam.y }),
@@ -833,6 +843,8 @@ export function makeCity(A) {
       guide: () => { const b = guideB(); if (!b) return null; const wp = (guidePath || []).find(([x, y]) => Math.hypot(x - walker.px, y - walker.py) > 14); return { id: b.id, path: (guidePath || []).length, next: wp || null, rects: guideRects.map((q) => ({ kind: q.kind, r: [...q.r] })) }; },
       taxi: () => (taxi ? { dest: taxi.dest.id, kr: taxi.kr, min: taxi.min, curb: { ...taxi.curb }, road: taxi.road, lane: taxi.lane, wait: taxi.wait, car: S.traffic.taxi?.() || null } : null),
       pickupFor,
+      // 🚲 fordonet (tools/fordon-test.mjs)
+      fordon: () => ({ id: fordon()?.id || null, speed: walker.speed, dir: walker.dir }),
     },
 
     update(dt) {
@@ -855,6 +867,10 @@ export function makeCity(A) {
         if (r.phase === 'framme') finishRide();
       } else if (riding) { riding = false; walker.snapFree(); } // bussen försvann – stå kvar där man är
       A.cityPos = [walker.px, walker.py];
+      // första turen för dagen på cykeln/moppen gör en glad (vinden i håret)
+      const mv = walker.path.length > 0 && !riding;
+      if (mv && !rullar && fordon()) g.glad?.(1, '', 'fordon', 2);
+      rullar = mv;
       // 🚕 en taxi beställd inifrån (A.taxiTo) – nu när man står på trottoaren; 🧭 pilen; taxin
       if (A.pendingTaxi && !A.attract && fade.phase === 0) { const id = A.pendingTaxi; A.pendingTaxi = null; callTaxi(id); }
       updGuide(dt);
