@@ -22,6 +22,7 @@
 import { audioContext, isMuted, setPlayHook } from './sound.js';
 import { setVoiceSampler, voicesStats } from './voices.js';
 import { pickMusic, musicFrame, setDuck as musicSetDuck, musicDuckVoice } from './music.js';
+import { hemPick } from './hemmusik.js';   // musik man själv satt på hemma
 import { readState, recipe } from './ambience.js';
 
 const BASE = new URL('../../assets/audio/rec/', import.meta.url).href;
@@ -320,7 +321,7 @@ export function recTick(A, dt) {
     const s = readState(A);
     // musiken som förut (den sköter själv av/på, mute och flik)
     try {
-      musicFrame(pickMusic({ scene: s.scene, district: s.district || 'centrum', night: clamp01((s.dark ?? 0) / 0.5), canal: 0 }));
+      musicFrame(pickMusic({ scene: s.scene, district: s.district || 'centrum', night: clamp01((s.dark ?? 0) / 0.5), canal: 0, hem: hemPick(A) }));
     } catch { /* ok */ }
     const c = audioContext();
     if (!c) return;

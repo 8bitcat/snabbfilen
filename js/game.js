@@ -252,7 +252,8 @@ function wardrobeKeys(list) {
 //   wall      hänger på bakväggen (ingen hinderyta, ritas bakom allt på golvet)
 //   overWindow väggsak som får hänga över fönstren (gardiner) – andra väggsaker får det inte
 //   function  vad man kan göra vid möbeln hemma: sova, garderob, ata (öppna kylskåpet),
-//             laga (spisen: laga mat ur receptboken), toalett, tvatta, tv – funktionen följer
+//             laga (spisen: laga mat ur receptboken), toalett, tvatta, tv (titta eller musik),
+//             musik (skivsamlingen: sätt på en låt, js/core/hemmusik.js) – funktionen följer
 //             möbeln vart den än står
 //   views     vyerna som möbeln roterar igenom (🔄 i Möblera-läget): [sort, varianttabell?]
 //             per vy – [fram], [höger sida], [bak]; vänster sida = höger sida speglad.
@@ -284,7 +285,7 @@ export const KATALOG = [
   { kind: 'sidobord', icon: '🟫', name: 'Sidobord med duk', price: 280, vars: 6, room: 'VARDAGSRUM' },
   { kind: 'pelarbord', icon: '🍵', name: 'Runt pelarbord', price: 300, vars: 6, room: 'VARDAGSRUM' },
   { kind: 'laghylla', icon: '📚', name: 'Låg bokhylla', price: 350, vars: 2, room: 'VARDAGSRUM' },
-  { kind: 'skivor', icon: '💿', name: 'Skivsamling', price: 400, vars: 2, room: 'VARDAGSRUM' },
+  { kind: 'skivor', icon: '💿', name: 'Skivsamling', price: 400, vars: 2, room: 'VARDAGSRUM', function: 'musik' },
   { kind: 'smalhylla', icon: '📚', name: 'Smal bokhylla', price: 400, vars: 2, room: 'VARDAGSRUM' },
   { kind: 'soffbord', icon: '☕', name: 'Soffbord', price: 400, vars: 4, room: 'VARDAGSRUM' },
   { kind: 'mellanhylla', icon: '📚', name: 'Bokhylla med två hyllplan', price: 450, vars: 2, room: 'VARDAGSRUM' },

@@ -10,6 +10,13 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.75.0] – 2026-10-02 – Musik hemma
+- Sätt på musik hemma! Har du en TV, dator, laptop, spelkonsol, gammal TV eller en skivsamling hemma kan du spela ALLA låtar i Pixelstaden: stadens, parkens, Söders, nattens, förortens, caféets, klädaffärens, stormarknadens, Burgarbarens jukeboxlåt – och fotbollsfilmernas KBK-signatur och träningslåt.
+- Klicka på TV:n (eller datorn/konsolen): "Titta en stund" som förut – eller "🎵 Musik". Skivsamlingen öppnar musiken direkt.
+- Låten går hemma i stället för hemma-låten tills du stänger av den eller lägger dig, även om du går ut och kommer hem igen. Färgglada noter stiger ur prylen som spelar.
+- Klangen följer prylen: skivspelaren låter fullt och högst, TV:n och datorn som högtalare i rummet, laptopen och den gamla TV:n som en liten radio.
+- Musik gör en glad (högst +6 lycka om dagen).
+
 ## [0.74.0] – 2026-10-02 – Odla i trädgården
 - Odla i trädgården! Radhuset och villan har en trädgård bakom huset, husvagnen en grustomt med pallkragar och takvåningen en terrass med krukor. Gå ut genom ytterdörren och välj "Trädgården" (eller "Ut i stan").
 - Så potatis, morötter, gul lök, rödlök, tomater eller paprika – fröpåsarna kostar 8–15 kr. Vattna varje dag (vattenkannan på bänken vattnar allt på en gång) så växer plantorna en dag varje natt. Två dagar utan vatten och de vissnar. Regniga dagar vattnar åt dig.

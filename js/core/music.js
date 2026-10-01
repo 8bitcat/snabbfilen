@@ -362,12 +362,13 @@ async function defaultLoad(ctx, key) {
 }
 
 // ---------------------------------------------------------------- vilken låt var?
-// pickMusic({ scene, district, night, canal }) → { track, fx, lvl }
+// pickMusic({ scene, district, night, canal, hem }) → { track, fx, lvl }
 // scene = A.sceneName, district = 'centrum'|'parken'|'soder'|'downtown'|'bron'|'jarnbron'|'fororten',
 // night = 0–1 (mörker), canal = 0–1 (nära vattnet: kanalen eller floden). Ute ligger musiken
 // ungefär i nivå med ambiensen (0…+3 dB, även i mono på en mobilhögtalare – granska-efter.mjs); där
 // det är tyst (parken, vid vattnet – där är ambiensen själv låg) lägre (−2,2 resp. −5,2 dB) så att
 // fåglarna och skvalpet får höras – men inte så lågt att den försvinner.
+// hem = låten man själv satt på hemma (js/core/hemmusik.js hemPick) – går före hemma-låten.
 export function pickMusic(s = {}) {
   const sc = String(s.scene || 'city');
   const night = (s.night || 0) > 0.6;
@@ -380,7 +381,7 @@ export function pickMusic(s = {}) {
       const track = TRACKS[d] ? d : ({ bron: 'soder', jarnbron: 'soder' }[d] || 'centrum');
       return { track, fx: 'none', lvl: +((d === 'parken' ? 0.7 : 0.9) * water).toFixed(2) };
     }
-    case 'room': case 'visit': return { track: night ? 'natt' : 'hemma', fx: 'none', lvl: night ? 0.8 : 0.9 };
+    case 'room': case 'visit': return sc === 'room' && s.hem ? s.hem : { track: night ? 'natt' : 'hemma', fx: 'none', lvl: night ? 0.8 : 0.9 };
     // (butik.mp3 är ljus: 'radio'-klangens topp vid 1,4 kHz lyfter den ≈ 3 dB K-vägt – därav lägre lvl)
     case 'mat': return { track: 'butik', fx: 'inne', lvl: 0.9 };
     case 'narbutik': return { track: 'butik', fx: 'radio', lvl: 0.65 };

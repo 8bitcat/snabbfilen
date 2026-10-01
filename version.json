@@ -1,7 +1,7 @@
 {
-  "version": "0.74.0",
+  "version": "0.75.0",
   "date": "2026-10-02",
-  "title": "Odla i trädgården",
+  "title": "Musik hemma",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
@@ -32,6 +32,7 @@
     "js/core/chat.js",
     "js/core/floor-pix.js",
     "js/core/fx.js",
+    "js/core/hemmusik.js",
     "js/core/hud-pix.js",
     "js/core/livsmal.js",
     "js/core/menu.js",

@@ -8,6 +8,7 @@ import { openGoals, celebrateGoals } from './core/livsmal.js'; // 🎯 livsmåle
 import { petStore } from './pets/sim.js';
 import { makeKoket } from './scenes/koket.js';
 import { makeTradgard } from './scenes/tradgard.js';
+import { hemMusikTick, stopHemMusik } from './core/hemmusik.js';
 import { makeCity } from './scenes/city.js';
 import { makeApartment } from './scenes/apartment.js'; // hemmet: den löpande lägenheten (rummen i rad, room.js per rum)
 import { makeShopMobler } from './scenes/shop-mobler.js';
@@ -455,6 +456,7 @@ A.sleepFlow = () => {
     { label: 'Inte än', onClick: closeModal },
     { label: '😴 Sov', cls: 'btn-go', onClick: () => {
       closeModal();
+      stopHemMusik(A); // man stänger av musiken när man lägger sig
       // veckosammanfattningen är alltid det första man ser när man vaknat
       const wake = () => { const { rent, eventText, odlat } = g.sleep(); openWeek(A, { morning: true, rentPaid: rent, eventText, odlat }); };
       // klickade man på sängen lägger sig figuren under täcket först (room.js spelar natten)
@@ -774,6 +776,7 @@ function tick(now) {
     followCrop(dt);
     worldTick(A, A.scene.worldX ?? null, dt);
     recTick(A, dt); // bakgrundsljudet där man är + musiken (tyst före första klicket, vid mute och i dold flik)
+    hemMusikTick(A); // filmlåtarna man satt på hemma (de andra låtarna går via musiken ovan)
     rawSetTransform(1, 0, 0, 1, 0, 0);
     ctx.fillStyle = '#14121a';
     ctx.fillRect(0, 0, cv.width, cv.height);

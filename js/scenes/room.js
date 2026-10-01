@@ -41,6 +41,7 @@ import { Pix, SMALL, ctxText, textW, text, mix, mul, css, hash, bayer } from '..
 import { openModal, closeModal, toast } from '../core/ui.js';
 import { foodOf, ravaraOf, receptOf, tradgardOf, katalogOf, functionOf, viewOf, rotStates, knownKind, fmt, MAX_STORAGE, MAX_PER_ROOM } from '../game.js';
 import { openKok } from './kok.js'; // spisen och receptboken
+import { openMusik, stopHemMusik, SPELARE } from '../core/hemmusik.js'; // musik hemma
 import { play } from '../core/sound.js';
 import { worldFolksHere, worldMyEmote } from '../net/world.js';
 import { FRAMES } from '../data/frames.js';
@@ -364,7 +365,7 @@ function surfaceRow(k, v, r) {
   return row;
 }
 // vad skylten över en funktionsmöbel säger
-const FN_LABEL = { sova: 'SÄNG', garderob: 'GARDEROB', ata: 'KYLSKÅP', laga: 'SPIS', recept: 'RECEPT', toalett: 'TOALETT', tvatta: 'TVÄTTA', tv: 'TV' };
+const FN_LABEL = { sova: 'SÄNG', garderob: 'GARDEROB', ata: 'KYLSKÅP', laga: 'SPIS', recept: 'RECEPT', toalett: 'TOALETT', tvatta: 'TVÄTTA', tv: 'TV', musik: 'MUSIK' };
 const KIND_LABEL = { koksspis: 'SPIS', mikro: 'MIKRO', dusch: 'DUSCH', badkar: 'BADKAR', tvattmaskin: 'TVÄTT', tvattpelare: 'TVÄTT',
   handfat: 'HANDFAT', tvattstall: 'HANDFAT', dator: 'DATOR', laptop: 'DATOR', spelkonsol: 'KONSOL', dass: 'DASSET', kladskap: 'KLÄDSKÅP', linneskap: 'LINNESKÅP' };
 const labelOf = (k) => { const fn = functionOf(k); return fn ? KIND_LABEL[k] || FN_LABEL[fn] : null; };
@@ -718,6 +719,7 @@ export function makeRoom(A, { visit = false, sub: subOpt = null, core = null } =
   // Sängen: man har gått fram till den (bedFor) – säger man ja till att sova lägger sig
   // figuren just där (bedtime). En ny promenad glömmer sängen.
   let bedFor = null, seq = null; // seq = pågående sömnsekvens (se bedtime)
+  let notesDrawn = 0;            // noterna ur prylen som spelar musik (för testerna)
   function actFor(fn, kind, p) {
     if (visit || !fn) return null;
     switch (fn) {
@@ -728,7 +730,8 @@ export function makeRoom(A, { visit = false, sub: subOpt = null, core = null } =
       case 'recept': return () => openKok(A, 'bok');
       case 'toalett': return () => useToilet(A, kind);
       case 'tvatta': return () => wash(A, kind);
-      case 'tv': return () => watchTv(A, kind);
+      case 'tv': return () => tvMenu(A, kind, p);
+      case 'musik': return () => openMusik(A, kind, p ? { k: p.k, decoIdx: p.decoIdx } : {});
     }
     return null;
   }
@@ -1174,6 +1177,7 @@ export function makeRoom(A, { visit = false, sub: subOpt = null, core = null } =
       },
       hold: (tt) => { if (seq) seq.hold = tt; return !!seq; },
       bedFor: () => bedFor,
+      notes: () => notesDrawn,   // hur många noter som ritades senast (musik hemma)
       // figuren i sängen som bild (för testerna: finns avatarens hudfärg på kudden?)
       sleeperArtFor: (d, look, covered = true) => { const a = sleeperArt(look || A.avatar.look, d, covered); return a ? { img: a.img, flip: a.flip, head: a.head } : null; },
       sleeperArt: (covered = true) => { const b = findBed(seq?.key || bedFor); if (!b) return null; const d = b.k === 'madrass' ? { k: 'madrass' } : decoList()[b.decoIdx]; return sleeperArt(A.avatar.look, d, covered)?.img || null; },
@@ -1364,6 +1368,14 @@ export function makeRoom(A, { visit = false, sub: subOpt = null, core = null } =
         } });
       }
       drawables.sort((a, b) => a.fy - b.fy).forEach((d) => d.draw(ctx));
+      // musiken man satt på (hemmusik.js): noter stiger ur prylen; är prylen borta tystnar den
+      notesDrawn = 0;
+      const hm = !visit && A.hemMusik;
+      if (hm && (hm.sub | 0) === sub) {
+        const src = props.find((q) => q.k === hm.k && q.decoIdx === hm.decoIdx) || props.find((q) => q.k === hm.k);
+        if (src) notesDrawn = drawNotes(ctx, src, t);
+        else if (!decor.on) { stopHemMusik(A); toast('🎵 Musiken tystnade – prylen som spelade är borta.'); }
+      }
 
       // spöket i möblera-läget
       if (decor.on && decor.carry) {
@@ -1983,6 +1995,17 @@ function wash(A, kind) {
   g.save();
   toast(msg, 'good');
 }
+// TV:n, datorn, laptopen och konsolen: titta/surfa/spela en stund – eller sätta på musik (hemmusik.js)
+function tvMenu(A, kind, p) {
+  play('click');
+  const S = SPELARE[kind] || SPELARE.tv;
+  const titta = { dator: '💻 Surfa en stund', laptop: '💻 Surfa en stund', spelkonsol: '🎮 Spela en runda' }[kind] || '📺 Titta en stund';
+  openModal(`${S.icon} ${S.namn[0].toUpperCase()}${S.namn.slice(1)}`, `<p style="font-size:var(--f2);margin-top:0">${titta.slice(3)} (en halvtimme) – eller sätta på musik?</p>`, [
+    { label: titta, cls: 'btn-go', onClick: () => { closeModal(); watchTv(A, kind); } },
+    { label: '🎵 Musik', cls: 'btn-gold', onClick: () => openMusik(A, kind, p ? { k: p.k, decoIdx: p.decoIdx } : {}) },
+    { label: 'Stäng', onClick: closeModal },
+  ]);
+}
 function watchTv(A, kind) {
   const g = A.game;
   play('click');
@@ -1991,6 +2014,27 @@ function watchTv(A, kind) {
   const h = g.glad ? g.glad(3, '', 'tv', 6) : 0;                                           // lite skärmtid gör en glad – högst +6 om dagen
   g.save();
   toast(msg + (h ? ` +${h} 😊` : ''));
+}
+
+// tre noter som stiger och vajar ur prylen som spelar (en av dem dubbel), med mörk skugga
+const NOTE_COL = ['#ffd23f', '#8edc4c', '#6ac8ff'];
+function drawNotes(ctx, p, t) {
+  const cx = p.hit ? (p.hit[0] + p.hit[2]) / 2 : p.solid ? (p.solid[0] + p.solid[2]) / 2 : p.plateX;
+  const top = p.hit ? p.hit[1] : p.top;
+  if (cx == null || top == null) return 0;
+  for (let i = 0; i < 3; i++) {
+    const u = ((t + i * 0.8) % 2.4) / 2.4;
+    const x = Math.round(cx - 3 + (i - 1) * 6 + Math.sin(u * 6 + i * 2) * 3), y = Math.round(top - 10 - u * 24);
+    ctx.globalAlpha = u < 0.15 ? u / 0.15 : u > 0.7 ? Math.max(0, (1 - u) / 0.3) : 1;
+    for (const [d, c] of [[1, '#1a1622'], [0, NOTE_COL[i]]]) {
+      ctx.fillStyle = c;
+      ctx.fillRect(x + d, y + d + 5, 3, 2); ctx.fillRect(x + d + 2, y + d, 1, 6);                 // huvudet och skaftet
+      if (i === 1) { ctx.fillRect(x + d + 6, y + d + 5, 3, 2); ctx.fillRect(x + d + 8, y + d, 1, 6); ctx.fillRect(x + d + 2, y + d, 7, 1); }   // dubbelnoten
+      else { ctx.fillRect(x + d + 3, y + d + 1, 1, 1); ctx.fillRect(x + d + 4, y + d + 2, 1, 2); }   // flaggan
+    }
+  }
+  ctx.globalAlpha = 1;
+  return 3;
 }
 
 // mattor: två mönster (museum/rand), valfri bottenfärg c – cachade
