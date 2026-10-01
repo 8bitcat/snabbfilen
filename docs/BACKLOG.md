@@ -4,12 +4,25 @@ Carls förslag som inte är byggda än (uppdaterad 2026-09-29 kväll). Varje pun
 eget släpp med versionsnummer när den är klar (se `CHANGELOG.md`).
 
 ## Kvar
+- **Fotbollsfilmerna på bion** (Carl 2026-10-01): två filmer om Kungsladugård i bions
+  filmmotor (`js/scenes/bio/film.js`).
+  1. *Kungsladugård – en stillsam början*: lilla cupen mot Näset, Hovås/Billdal, Sandarna
+     (väldigt stor seger) och final mot Älvsborg. Vi vinner allt, både stort och med
+     uddamålet, och lyfter pokalen.
+  2. Uppföljaren *… ut i världen*: Häcken, Manchester United, Juventus och final mot
+     Barcelona. Motståndarnas mål görs av riktiga spelare från lagen (namn i texten).
+  Julia, Märta, Nina, Ellen och Alice G gör och passar målen, resten av laget spelar med.
+  Ett hårt träningsmontage med många animationer. Bara förnamn; inga klubbmärken eller
+  sponsorer. Carl önskade "Eye of the Tiger" – den är upphovsrättsskyddad och spelet har
+  bara CC0-ljud, så montaget får en egen 80-talslåt i samma anda.
 - **Mobilen steg 2**: fasta scener (rummet, jobben) görs "breda" så att de visar mer av
   scenen i stället för att zoomas. Väntar på Carls besked – sedan 0.25.3 är NÄRA standard
   på mobilen (där gäller den klassiska vyn överallt), så det här märks bara i VID-läget
   på dator och padda. Se `docs/PLAN.md`.
 
 ## Frågor till Carl
+- Fotbollsfilmen: vilket nummer har Alice G (7 eller 9)? Okej med en egen träningslåt i
+  stället för "Eye of the Tiger"?
 - Husvagnen och Lilla rummet ligger långt från centrum sedan bron kom – räcker bussen?
 - Ska hårfärgen gå att byta hemma (i garderoben), eller bara hos frisören?
 - Lagtröjorna delar tröjmodell – räcker det att färgerna byts?
