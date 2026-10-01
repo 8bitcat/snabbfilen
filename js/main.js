@@ -706,15 +706,19 @@ function boot() {
 }
 
 // Bilden i höjdled (fyll-läget): är den högre än skärmen beskärs den – mest upptill (väggkonst;
-// golvet, disken och dörren nertill behålls). I en scen med en figur (worldY) och utan egen
-// kamera i höjdled följer beskärningen i stället figuren: på telefonen (särskilt i NÄRA) syns då
-// disken när man står vid den och borden när man går ner (Carl 2026-09-30, Burgarbaren:
-// "sakerna på disken … fastnar bakom"). Flyttas i hela device-pixlar – bilden förblir skarp.
+// golvet, disken och dörren nertill behålls). I hemmet och i jobben utan egen kamera i höjdled
+// följer beskärningen i stället figuren: på telefonen (särskilt i NÄRA) syns då disken när man
+// står vid den och borden när man går ner (Carl 2026-09-30, Burgarbaren: "sakerna på disken …
+// fastnar bakom"). Butikerna, bion och vårdcentralen/incheckningen/verkstaden har egna kameror
+// som läser A.view.safe – där står beskärningen still (annars följer två kameror samtidigt).
+// Flyttas i hela device-pixlar – bilden förblir skarp.
+const OWN_CAM_Y = new Set(['jobbvard', 'jobbincheck', 'jobbverkstad']);
+const followsY = (n) => n === 'room' || n === 'visit' || (n.startsWith('jobb') && !OWN_CAM_Y.has(n));
 function followCrop(dt) {
   const c = A.view.crop; if (!c) return;
   const extra = Math.max(0, c.ch - c.ah);
   const cap = WIDE[A.sceneName] || A.scene?.viewMax || null;
-  const y = extra > 0.5 && A.scene && A.sceneName !== 'city' && (!cap || cap.h <= DESIGN_H) ? A.scene.worldY : null;
+  const y = extra > 0.5 && A.scene && followsY(A.sceneName) && (!cap || cap.h <= DESIGN_H) ? A.scene.worldY : null;
   let f = 0.7;
   if (Number.isFinite(y)) {
     const vis = c.rows * c.ah / c.ch; // synliga rader

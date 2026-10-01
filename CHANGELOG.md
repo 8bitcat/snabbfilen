@@ -10,6 +10,16 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.71.0] – 2026-10-01 – KBK-filmerna på bion
+- Två nya filmer på BIO PIXEL om Kungsladugårds flicklag (KBK): KUNGSLADUGÅRD – EN STILLSAM BÖRJAN (17:00) och KUNGSLADUGÅRD – UT I VÄRLDEN (17:45). Affischerna står på varsitt PREMIÄR-staffli i foajén och båda står på biografens ljusskylt.
+- Julia, Märta, Nina, Ellen och Alice G gör och passar målen, och Lily står i mål – alla med sitt eget hår och sin egen hudton. Motståndarna är tjejlag: i lilla cupen Näset, Hovås/Billdal, Sandarna (10-0!) och Älvsborg i finalen, i Champions League damlagen från Häcken, Manchester United, Juventus och Barcelona.
+- Hårt träningsmontage med en egen 80-talsrocklåt: löpning i gryningen, koner, armhävningar, nickar i regnet, läktartrappor, jonglering till 100 och däckdragning.
+- Filmerna börjar med KBK-introlåten – ingen tyst början längre.
+- Skotten går i anime: bilden fryser, skytten i närbild med fartlinjer och en stor blixt – SKOTTTTTT! (eller NIIIICK!) – sen slow motion när bollen flyger med eldsvans, skakning och vitt blixtljus när den går i nät.
+- I Champions League-finalen får Barcelona straff – Lily räddar den med guldaura och flygande räddning upp i krysset. RÄDDNING!
+- Ljud i filmerna: domarens visselpipa, sparkar, nätet, publikens jubel och "oooh", regnet och pokalfanfaren.
+- Mobilen i liggande läge: i affärerna, på bion och i vård-, incheckning- och verkstadsjobben följde två kameror med samtidigt så att bilden hamnade fel – nu följer bara en.
+
 ## [0.70.0] – 2026-09-30 – Jobba ihop på alla jobb
 - Nu kan man jobba ihop på ALLA jobb: Datorbygget och Finanshuset är de sista. Bjud in med 💼 Jobba ihop när du börjar passet (eller via 👥 mitt i passet).
 - Datorbygget: ni bygger samma dator – beställningsskärmen visar i grönt vad som redan sitter i. Den som monterar en del får poängen, den som trycker på startknappen får datorbonusen. Kollegan som bär ut datorn kommer fortare när ni är fler.

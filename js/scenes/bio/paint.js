@@ -37,6 +37,7 @@ export const F = {
   KLO: { x: 522, y: 164 },                           // gripklon (godisautomat med gosedjur)
   MEDALJ: { x: 312, y: 176 },                        // guldmedaljongen i mattan
   STANDEE: { x: 444, y: 156 },
+  EASELS: [[212, 190], [408, 190]],                  // stafflierna med fotbollsfilmernas affischer (PREMIÄR!)
   BIN: { x: 232, y: 134 },
   PALMS: [[22, 132], [556, 132]],
   LAMPS: [52, 246, 386], SCONCES: [247, 386, 500], KLOCKA: { x: 227, y: 13 },
@@ -563,6 +564,28 @@ export function paintStandee() {
   text(P, SMALL, 'NY', sx - 3, sy - 3, 0xc8262e);
   outline(P, 0x1a0e08);
   return { img: P.flush(), ox: 17, oy: 52 };
+}
+// Staffliet med en affisch (fotbollsfilmerna – väggen har bara plats för sex): tre ben i trä,
+// guldram, en röd PREMIÄR-skylt överst och en skugga på mattan. Fötterna i (18, 58).
+export function paintEasel(id) {
+  const w = 36, h = 60, P = new Pix(w, h);
+  const wood = (X, Y, s) => jit(0x7a5434, X, Y, s, 0.1);
+  for (let y = 4; y < 58; y++) P.px(18, y, mul(0x7a5434, 0.75));                              // bakre benet
+  for (let y = 46; y < 58; y++) { const k = (y - 46) / 11; P.px(Math.round(11 - k * 7), y, wood(11, y, 66)); P.px(Math.round(12 - k * 7), y, mul(0x7a5434, 0.8)); P.px(Math.round(25 + k * 7), y, wood(25, y, 67)); P.px(Math.round(26 + k * 7), y, mul(0x7a5434, 0.7)); }
+  const fx = 3, fy = 8, fw = POSTER_W + 4, fh = POSTER_H + 4;
+  area(P, fx, fy, fw, fh, (X, Y, a, b) => (a === 0 || b === 0 ? GOLD.hi : a === fw - 1 || b === fh - 1 ? GOLD.lo : (a === 1 || b === 1 || a === fw - 2 || b === fh - 2) ? GOLD.base : null));
+  const img = posterCanvas(id), c2 = img.getContext('2d').getImageData(0, 0, POSTER_W, POSTER_H).data;
+  for (let j = 0; j < POSTER_H; j++) for (let k = 0; k < POSTER_W; k++) { const o = (j * POSTER_W + k) * 4; if (c2[o + 3]) P.px(fx + 2 + k, fy + 2 + j, (c2[o] << 16) | (c2[o + 1] << 8) | c2[o + 2]); }
+  for (let d = 0; d < 10; d++) P.px(fx + 6 + d, fy + 24 - d, WHITE, 0.14);                   // glansen
+  area(P, 1, fy + fh, w - 2, 2, (X, Y, a, b) => (b === 0 ? wood(X, Y, 68) : mul(0x7a5434, 0.6)));   // hyllan
+  // PREMIÄR-skylten
+  area(P, 2, 0, 32, 8, (X, Y, a, b) => (b === 0 ? VEL.hi : b === 7 ? VEL.dk : a === 0 || a === 31 ? VEL.lo : VEL.base));
+  const s = 'PREMIÄR', tx = 2 + ((32 - textW(SMALL, s)) >> 1);
+  text(P, SMALL, s, tx + 1, 3, VEL.dk); text(P, SMALL, s, tx, 2, 0xffd23f);
+  outline(P, 0x1a0e08);
+  for (let x = 4; x < 33; x++) P.px(x, 58, 0x000000, 0.28);                                    // skuggan på mattan
+  for (let x = 7; x < 30; x++) P.px(x, 59, 0x000000, 0.18);
+  return { img: P.flush(), ox: 18, oy: 58 };
 }
 export function paintPalm() {
   const P = new Pix(24, 40);

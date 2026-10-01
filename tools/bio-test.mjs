@@ -70,15 +70,36 @@ const shot = (name) => page.screenshot({ path: OUT + name });
 const waitSay = (key, src, ms = 12000) => waitFor(([k, s]) => new RegExp(s).test(window.SF.scene._debug.state()[k] || ''), ms, [key, src]);
 const saveUrl = (name, url) => fs.writeFileSync(OUT + name, Buffer.from(url.split(',')[1], 'base64'));
 
-// ---------- programmet: samma sex filmer som fasaden, 20–40 s var ----------
+// ---------- programmet: samma åtta filmer som fasaden (sex 20–40 s + de två fotbollsfilmerna) ----------
 await page.evaluate(() => window.SF.go('bio'));
-await page.waitForTimeout(500);
+await page.waitForFunction(() => window.SF.sceneName === 'bio' && !!window.SF.scene?._debug, null, { timeout: 20000 });   // (bion laddas när man går in)
+await page.waitForTimeout(300);
 ok(await scene() === 'bio', "SF.go('bio') öppnar bion");
 await D('hideFolk');
 const films = await D('films');
 const FASAD = ['PIXELHÄMNAREN 3', 'KÄRLEK PÅ PIXELGATAN', 'TURBOPOLIS', 'SOMMAR I STAN', 'SISTA NATTBUSSEN', 'AMORE PÅ SÖDER'];
-ok(films.length === 6 && FASAD.every((t) => films.some((f) => f.titel === t)), `sex filmer, samma som på fasaden: ${films.map((f) => f.titel).join(', ')}`);
-ok(films.every((f) => f.langd >= 20 && f.langd <= 40), `varje film är 20–40 s lång (${films.map((f) => f.langd).join(' / ')})`);
+const KBKF = ['KUNGSLADUGÅRD - EN STILLSAM BÖRJAN', 'KUNGSLADUGÅRD - UT I VÄRLDEN'];
+ok(films.length === 8 && [...FASAD, ...KBKF].every((t) => films.some((f) => f.titel === t)), `åtta filmer: ${films.map((f) => f.titel).join(', ')}`);
+ok(films.filter((f) => !/^KUNGSLADUGÅRD/.test(f.titel)).every((f) => f.langd >= 20 && f.langd <= 40), `de sex vanliga filmerna är 20–40 s (${films.map((f) => f.langd).join(' / ')})`);
+ok(films.filter((f) => /^KUNGSLADUGÅRD/.test(f.titel)).every((f) => f.langd >= 60 && f.langd <= 130), 'fotbollsfilmerna är 60–130 s (träning, flera matcher med anime-skott, pokalen)');
+// fotbollsfilmerna: introlåt, träningsmontage med musik, de fem gör målen, Lily räddar straffen
+const fb = await page.evaluate(async () => {
+  const m = await import('/js/scenes/bio/film.js');
+  return ['kbk1', 'kbk2'].map((id) => {
+    const f = m.filmById(id); let t = 0; const music = [];
+    for (const s of f.shots) { if (m.filmMusicAt(f, t + s.d / 2) === 'traning') music.push(+t.toFixed(1)); t += s.d; }
+    const subs = f.shots.flatMap((s) => (s.subs || []).map((x) => x[2])).join(' ');
+    const sfx = m.filmSfxBetween(f, 0, 999).map((q) => q.kind);
+    return { id, music: music.length, intro: m.filmMusicAt(f, 0.5), subs, cutins: sfx.filter((k) => k === 'cutin').length };
+  });
+});
+ok(fb.every((f) => f.intro === 'intro'), 'båda fotbollsfilmerna börjar med introlåten (inte tyst)');
+ok(fb.every((f) => f.music >= 3), `båda fotbollsfilmerna har ett träningsmontage med musik (${fb.map((f) => f.music).join(' + ')} tagningar)`);
+ok(['JULIA', 'MÄRTA', 'NINA', 'ELLEN', 'ALICE G'].every((n) => fb.every((f) => f.subs.includes(n))), 'Julia, Märta, Nina, Ellen och Alice G gör eller passar mål i båda filmerna');
+ok(['NÄSET', 'HOVÅS', 'SANDARNA', 'ÄLVSBORG'].every((n) => fb[0].subs.includes(n) || n === 'NÄSET' || n === 'HOVÅS') && /CHAMPIONS LEAGUE/.test(fb[1].subs) && /TOONE/.test(fb[1].subs) && /PAJOR/.test(fb[1].subs), 'lilla cupen mot Sandarna och Älvsborg, Champions League med damlagens riktiga målskyttar');
+ok(/LILY RÄDDAR STRAFFEN/.test(fb[1].subs), 'Lily räddar en straff i finalen');
+ok(fb.every((f) => f.cutins >= 5), `skotten går i anime med närbild (${fb.map((f) => f.cutins).join(' + ')} närbilder)`);
+ok(await D('spot', 'staffli0') && await D('spot', 'staffli1'), 'fotbollsfilmernas affischer står på staffli i foajén');
 ok(films.every((f) => f.cues >= 3), 'varje film har minst tre ställen där publiken reagerar');
 const cityBio = await page.evaluate(async () => { const m = await import('/js/city/map.js'); const b = m.buildingById?.('bio'); return b ? { open: b.open || null, enter: b.enter || null } : null; });
 const hrs = await D('hours');
@@ -93,7 +114,7 @@ saveUrl('pano-foaje.png', await D('panorama', 'foaje', 2));
 await clickSpot('lucka');
 ok(await waitFor(() => !document.querySelector('#modal').classList.contains('hidden'), 9000), 'klick på luckan → figuren går fram och biljettdialogen öppnas');
 ok(/Biljettluckan/.test(await modalTitle()), `rubrik: ${await modalTitle()}`);
-ok(await page.evaluate(() => document.querySelectorAll('#modal [data-film]').length) === 6 && await page.evaluate(() => document.querySelectorAll('#modal canvas[data-po]').length) === 6, 'dialogen visar alla sex filmer med affisch');
+ok(await page.evaluate(() => document.querySelectorAll('#modal [data-film]').length) === 8 && await page.evaluate(() => document.querySelectorAll('#modal canvas[data-po]').length) === 8, 'dialogen visar alla åtta filmer med affisch');
 ok(/90 kr/.test(await modalText()) && /2 timmar/.test(await modalText()), 'dialogen säger priset och att filmen tar 2 timmar');
 await shot('biljettluckan.png');
 ok(await clickIn('[data-film="turbo"]'), 'köp biljett till TURBOPOLIS');
@@ -422,7 +443,8 @@ await wide.reload();
 await wide.waitForFunction(() => !!window.SF?.game, null, { timeout: 20000 });
 await wide.waitForTimeout(500);
 await wide.evaluate(() => { window.SF.game.min = 19 * 60; window.SF.go('bio'); });
-await wide.waitForTimeout(1200);
+await wide.waitForFunction(() => window.SF.sceneName === 'bio' && !!window.SF.scene?._debug, null, { timeout: 20000 });
+await wide.waitForTimeout(600);
 const vw = await wide.evaluate(() => window.SF.W);
 ok(vw > 384, `bred skärm: vyn är ${vw} px bred (scenens viewMax)`);
 await wide.screenshot({ path: OUT + 'bred-foaje.png' });
@@ -446,7 +468,8 @@ await mob.reload();
 await mob.waitForFunction(() => !!window.SF?.game, null, { timeout: 20000 });
 await mob.waitForTimeout(500);
 await mob.evaluate(() => { window.SF.game.min = 16 * 60; window.SF.go('bio'); });
-await mob.waitForTimeout(800);
+await mob.waitForFunction(() => window.SF.sceneName === 'bio' && !!window.SF.scene?._debug, null, { timeout: 20000 });   // (bion laddas när man går in)
+await mob.waitForTimeout(500);
 const MD = (fn, ...a) => mob.evaluate(([fn, a]) => window.SF.scene._debug[fn](...a), [fn, a]);
 const mSafe = await mob.evaluate(() => window.SF.view.safe);
 ok(mSafe.y0 > 20, `mobilen beskär överkanten (safe ${mSafe.y0}–${mSafe.y1})`);

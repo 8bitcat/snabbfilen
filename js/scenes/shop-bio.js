@@ -40,9 +40,11 @@ import { play } from '../core/sound.js';
 import { createWalker, selfDrawable, WALK_SEQ, sayBubble, sayLines, createSpeech, nameTag } from './walkable.js';
 import * as WORLD from '../net/world.js';
 import * as MAP from '../city/map.js';
-import { FILMER, filmById, drawFilm, filmLight, filmCues, posterCanvas, FW as FILM_W, FH as FILM_H } from './bio/film.js';
+import { FILMER, filmById, drawFilm, filmLight, filmCues, filmMusicAt, filmAmbAt, filmSfxBetween, posterCanvas, FW as FILM_W, FH as FILM_H } from './bio/film.js';
+import { filmMusic } from './bio/filmmusik.js';
+import { filmSfx, filmAmb } from './bio/filmljud.js';
 import {
-  W, H, F, S, SEAT_XS, paintFoaje, paintBoothFront, paintCounter, paintSalonDoors, paintSofa, paintStandee,
+  W, H, F, S, SEAT_XS, paintFoaje, paintBoothFront, paintCounter, paintSalonDoors, paintSofa, paintStandee, paintEasel,
   paintPalm, paintBin, paintPost, paintKlo, bucketImg, drawSlideDoors, paintSalong, paintSeatRow, drawCurtain,
 } from './bio/paint.js';
 
@@ -146,6 +148,9 @@ export function makeShopBio(A, opts = {}) {
   const bgS = () => (cache.s ||= paintSalong());
   const booth = paintBoothFront(), counter = paintCounter(), sdFrames = paintSalonDoors(), sofa = paintSofa();
   const standee = paintStandee(), palm = paintPalm(), bin = paintBin(), post = paintPost(), klo = paintKlo();
+  // affischerna som inte får plats på väggen (de två fotbollsfilmerna) står på staffli
+  const EASEL_FILMS = FILMER.slice(F.POSTERS.length);
+  const easels = F.EASELS.slice(0, EASEL_FILMS.length).map((_, i) => paintEasel(EASEL_FILMS[i].id));
   const rowImgs = S.ROW_Y.map((_, k) => paintSeatRow(k));
 
   // ---------- hinder och gång ----------
@@ -155,6 +160,7 @@ export function makeShopBio(A, opts = {}) {
     [F.SOFA.x - 42, F.SOFA.y - 24, F.SOFA.x + 42, F.SOFA.y - 3],
     [F.KLO.x - 13, F.KLO.y - 5, F.KLO.x + 13, F.KLO.y + 1],
     [F.STANDEE.x - 11, F.STANDEE.y - 4, F.STANDEE.x + 11, F.STANDEE.y + 1],
+    ...F.EASELS.slice(0, EASEL_FILMS.length).map(([x, y]) => [x - 14, y - 3, x + 14, y + 1]),
     [F.BIN.x - 6, F.BIN.y - 4, F.BIN.x + 6, F.BIN.y + 1],
     ...F.PALMS.map(([x, y]) => [x - 7, y - 4, x + 7, y + 1]),
     [F.USHER.x - 5, F.USHER.y - 4, F.USHER.x + 5, F.USHER.y + 1],
@@ -492,6 +498,7 @@ export function makeShopBio(A, opts = {}) {
   }
   function endShow() {
     show = null;
+    filmMusic(null); filmAmb(null);
     salon.visad = true;
     for (const G of aud) if (G.state === 'sit') G.leaveT = t + 1.5 + Math.random() * 16;
   }
@@ -508,12 +515,15 @@ export function makeShopBio(A, opts = {}) {
     if (ph === 'film') {
       const ft = filmT();
       for (const q of filmCues(show.film, show.lastFilmT, ft)) react(q.kind);
+      for (const q of filmSfxBetween(show.film, show.lastFilmT, ft)) filmSfx(q.kind);   // visselpipan, sparken, jublet …
       show.lastFilmT = ft;
     }
     if (show.t >= show.total && !show.given) {
       giveReward(1);
       for (const G of aud) if (G.state === 'sit' && Math.random() < 0.45) say(G, EFTERAT[(Math.random() * EFTERAT.length) | 0], 3);
     }
+    filmMusic(ph === 'film' ? filmMusicAt(show.film, filmT()) : null);            // träningslåten i fotbollsfilmerna
+    filmAmb(ph === 'film' ? filmAmbAt(show.film, filmT()) : null);                // läktarsorlet, regnet
     if (show.t >= show.total + LJUS) endShow();
   }
   // mörker 0..1 och ridån 0 (stängd) … 1 (öppen)
@@ -806,6 +816,7 @@ export function makeShopBio(A, opts = {}) {
     { id: 'kartong', r: [F.STANDEE.x - 18, F.STANDEE.y - 52, F.STANDEE.x + 26, F.STANDEE.y + 2], go: () => [F.STANDEE.x, F.STANDEE.y + 10], act: () => { walker.dir = 'up'; talk.say('😎 PIXELHÄMNAREN i naturlig storlek – han ser nästan levande ut!', meAt); play('click'); } },
     { id: 'klo', r: [F.KLO.x - 13, F.KLO.y - 46, F.KLO.x + 13, F.KLO.y + 2], go: () => [F.KLO.x, F.KLO.y + 9], act: () => { walker.dir = 'up'; talk.say(['🧸 Gripklon! Jag har aldrig sett någon vinna här …', '🧸 Den gula nallen ligger nästan vid luckan. Nästan.', '🧸 Klon är för slapp – den tappar allt.'][(Math.random() * 3) | 0], meAt); play('click'); } },
     ...F.POSTERS.map((_, i) => posterSpot(i)),
+    ...easels.map((_, i) => { const [x, y] = F.EASELS[i], f = EASEL_FILMS[i]; return { id: 'staffli' + i, r: [x - 18, y - 58, x + 18, y + 2], go: () => [x, y + 12], act: () => { walker.dir = 'up'; talk.say(`🎬 PREMIÄR! ${f.titel} – ${f.genre}, ${f.alder}. ${f.blurb}`, meAt, 6); play('click'); } }; }),
   ];
   const hotS = [
     { id: 'utgang', r: [S.DOOR.x0 - 4, S.DOOR.top - 16, S.DOOR.x1 + 4, S.WALL_Y + 8], go: () => SDOOR_SPOT, act: () => goFoaje() },
@@ -946,6 +957,7 @@ export function makeShopBio(A, opts = {}) {
       }
     });
     add(F.STANDEE.y, (c) => c.drawImage(standee.img, F.STANDEE.x - standee.ox, F.STANDEE.y - standee.oy));
+    easels.forEach((e, i) => { const [x, y] = F.EASELS[i]; add(y, (c) => c.drawImage(e.img, x - e.ox, y - e.oy)); });
     add(F.BIN.y, (c) => c.drawImage(bin.img, F.BIN.x - bin.ox, F.BIN.y - bin.oy));
     for (const [px, py] of F.PALMS) add(py, (c) => c.drawImage(palm.img, px - palm.ox, py - palm.oy));
     for (const P of folk) if (P.state !== 'away' && P.state !== 'inside' && P.state !== 'sofa') add(P.w.py, (c) => {
@@ -1317,6 +1329,7 @@ export function makeShopBio(A, opts = {}) {
       return why;
     },
     exit() {
+      filmMusic(null); filmAmb(null);
       for (const [el, ev] of UNLOAD) el.removeEventListener(ev, onPage, true);
       const any = settleAll();                            // popcornen, biljetten tillbaka, delbelöningen
       me.pop = null; me.order = null;
@@ -1347,6 +1360,7 @@ export function makeShopBio(A, opts = {}) {
         else if (h === 'kartong') label = 'PIXELHÄMNAREN 3 - PREMIÄR!';
         else if (h === 'klo') label = 'GRIPKLON';
         else if (h.startsWith('affisch')) { const f = FILMER[+h.slice(7)]; label = `${f.titel} - ${f.genre} ${f.alder}`; }
+        else if (h.startsWith('staffli')) { const f = FILMER[F.POSTERS.length + +h.slice(7)]; label = `PREMIÄR! ${f.titel}`; }
         else if (h === 'utgang') label = 'UTGÅNG - TILL FOAJÉN';
         else if (h === 'nodutgang') label = 'NÖDUTGÅNG';
         else if (h === 'duk') label = 'DUKEN';

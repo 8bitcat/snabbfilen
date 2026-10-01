@@ -1,7 +1,8 @@
 // BIO PIXEL – filmerna som går på duken i salongen (js/scenes/shop-bio.js) och
-// affischerna i foajén. Samma sex filmer som fasadens ljusskylt (buildings-south.js):
-// PIXELHÄMNAREN 3, KÄRLEK PÅ PIXELGATAN, TURBOPOLIS, SOMMAR I STAN, SISTA NATTBUSSEN
-// och AMORE PÅ SÖDER.
+// affischerna i foajén. Samma filmer som fasadens ljusskylt (buildings-south.js):
+// PIXELHÄMNAREN 3, KÄRLEK PÅ PIXELGATAN, TURBOPOLIS, SOMMAR I STAN, SISTA NATTBUSSEN,
+// AMORE PÅ SÖDER och de två fotbollsfilmerna om Kungsladugård (fotboll.js – deras
+// affischer står på staffli i foajén, väggen har plats för sex).
 //
 // Varje film är en rad tagningar (shots) på 240 × 80 spelpixlar – ett pixelkorn, samma
 // figurer som i resten av spelet (drawPerson) och spelets pixeltypsnitt för titlar och
@@ -12,6 +13,7 @@
 // light = tagningens huvudfärg – duken lyser upp publikens huvuden i den färgen.
 import { Pix, SMALL, BIG, text, textW, ctxText, mix, mul, hash, bayer } from '../../core/floor-pix.js';
 import { drawPerson } from '../../core/people.js';
+import { FILM_KBK1, FILM_KBK2, kbkPoster } from './fotboll.js';
 
 export const FW = 240, FH = 80;
 const WALK = [1, 3, 2, 3];
@@ -1012,13 +1014,20 @@ export const FILMER = [
   { id: 'sommar', titel: 'SOMMAR I STAN', typ: 'romkom', genre: 'FEELGOOD', alder: 'BTL', tid: '20:00', blurb: 'En glass, en sten, en hund – och den bästa sommaren någonsin.', shots: FILM_SOMMAR },
   { id: 'nattbuss', titel: 'SISTA NATTBUSSEN', typ: 'action', genre: 'SPÄNNING', alder: '11 ÅR', tid: '22:45', blurb: 'En pizza, ett ösregn och linje 4 som går utan dig.', shots: FILM_NATTBUSS },
   { id: 'amore', titel: 'AMORE PÅ SÖDER', typ: 'romkom', genre: 'ROMANTIK', alder: 'BTL', tid: '20:15', blurb: 'En spaghetti för två på Söders mysigaste trattoria.', shots: FILM_AMORE },
+  { id: 'kbk1', titel: 'KUNGSLADUGÅRD - EN STILLSAM BÖRJAN', typ: 'sport', genre: 'SPORT', alder: 'BTL', tid: '17:00', blurb: 'Julia, Märta, Nina, Ellen, Alice G och Lily i mål tränar hårt inför lilla cupen – Näset, Hovås/Billdal, Sandarna och finalen mot Älvsborg.', shots: FILM_KBK1 },
+  { id: 'kbk2', titel: 'KUNGSLADUGÅRD - UT I VÄRLDEN', typ: 'sport', genre: 'SPORT', alder: 'BTL', tid: '17:45', blurb: 'Champions League: Häcken, Manchester United, Juventus – och finalen mot Barcelona. Klarar Lily straffen?', shots: FILM_KBK2 },
 ];
 for (const f of FILMER) {
-  f.shots = [VINJETT, ...f.shots];
+  // en film med introlåt (fotbollsfilmerna) har den redan över vinjetten – ingen tyst början
+  f.shots = [f.shots[0].music ? { ...VINJETT, music: f.shots[0].music } : VINJETT, ...f.shots];
   f.langd = f.shots.reduce((a, s) => a + s.d, 0);
-  f.cues = [];
+  f.cues = []; f.sfx = [];
   let t0 = 0;
-  for (const s of f.shots) { for (const [at, kind] of s.cues || []) f.cues.push({ at: t0 + at, kind }); t0 += s.d; }
+  for (const s of f.shots) {
+    for (const [at, kind] of s.cues || []) f.cues.push({ at: t0 + at, kind });
+    for (const [at, kind] of s.sfx || []) f.sfx.push({ at: t0 + at, kind });              // ljudeffekterna (filmljud.js)
+    t0 += s.d;
+  }
 }
 export const filmById = (id) => FILMER.find((f) => f.id === id) || null;
 
@@ -1028,6 +1037,11 @@ function shotAt(film, t) {
   const s = film.shots[film.shots.length - 1];
   return { s, u: s.d };
 }
+// tagningens musik just nu ('traning' i fotbollsfilmernas träningsmontage, annars null)
+export function filmMusicAt(film, t) { return shotAt(film, t).s.music || null; }
+// tagningens sorl just nu ('publik', 'regn' eller null) och ljudeffekterna mellan t0 och t1
+export function filmAmbAt(film, t) { return shotAt(film, t).s.amb || null; }
+export function filmSfxBetween(film, t0, t1) { return film.sfx.filter((q) => q.at > t0 && q.at <= t1); }
 // dukens ljus just nu (för publikens ansikten i salongen)
 export function filmLight(film, t) { return shotAt(film, t).s.light ?? 0x4a4a6a; }
 // reaktionerna mellan t0 och t1 (för salongens publik)
@@ -1099,6 +1113,8 @@ export function posterCanvas(id) {
     area(P, 3, 22, 20, 10, (X, Y, i, j) => (j === 9 ? 0x141418 : j < 1 ? 0xe85a5a : (i % 4 === 1 && j > 1 && j < 5) ? 0xf8d890 : 0xc8262e));
     A(5, 32, 0x141418); A(6, 32, 0x141418); A(18, 32, 0x141418); A(19, 32, 0x141418);
     title('SISTA', 2, 0xffb030, 0x2a1404); title('NATT-', 9, 0xffb030, 0x2a1404); title('BUSSEN', 15, 0xffb030, 0x2a1404);
+  } else if (id === 'kbk1' || id === 'kbk2') {
+    kbkPoster(P, id);
   } else {
     // AMORE: solnedgång, hjärta och paret – samma motiv som fasadens montrar
     area(P, 0, 0, w, h, (X, Y, i, j) => (j < 12 ? qmix(0xf8a0b8, 0xf8c4a0, j / 12, X, Y, 3) : qmix(0xf8c4a0, 0xe89060, (j - 12) / 24, X, Y, 3)));

@@ -1977,11 +1977,14 @@ const FILMER = {
   karlek: { titel: 'KÄRLEK PÅ PIXELGATAN', tid: '18:30', typ: 'romkom' },
   sommar: { titel: 'SOMMAR I STAN', tid: '20:00', typ: 'romkom' },
   amore: { titel: 'AMORE PÅ SÖDER', tid: '20:15', typ: 'romkom' },
+  kbk1: { titel: 'KBK STILLSAM BÖRJAN', tid: '17:00', typ: 'sport' },
+  kbk2: { titel: 'KBK UT I VÄRLDEN', tid: '17:45', typ: 'sport' },
 };
-const BIOPAR = [['hamnaren', 'karlek'], ['turbo', 'sommar'], ['nattbuss', 'amore']];
+// (fotbollsfilmerna om Kungsladugård – KBK – går som ett eget par före kvällens filmer)
+const BIOPAR = [['kbk1', 'kbk2'], ['hamnaren', 'karlek'], ['turbo', 'sommar'], ['nattbuss', 'amore']];
 const BIO_SLOT = 9, BIO_BOKSTAV = 0.035;
 // efter kvällens sista föreställning (och fram till morgonen) tackar tavlan för ikväll
-const BIO_SENT = [{ titel: 'TACK FÖR IKVÄLL!', tid: '' }, { titel: 'IMORGON FRÅN', tid: '18:30' }];
+const BIO_SENT = [{ titel: 'TACK FÖR IKVÄLL!', tid: '' }, { titel: 'IMORGON FRÅN', tid: '17:00' }];
 const bioTid = (f) => { const [hh, mm] = f.tid.split(':').map(Number); return hh + mm / 60; };
 // paren som fortfarande är aktuella: dagtid hela programmet, på kvällen bara par där
 // någon film inte har börjat (eller började för mindre än en kvart sedan)

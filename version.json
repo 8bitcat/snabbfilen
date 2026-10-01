@@ -1,7 +1,7 @@
 {
-  "version": "0.70.0",
-  "date": "2026-09-30",
-  "title": "Jobba ihop på alla jobb",
+  "version": "0.71.0",
+  "date": "2026-10-01",
+  "title": "KBK-filmerna på bion",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
@@ -101,6 +101,9 @@
     "js/pets/sprites.js",
     "js/scenes/apartment.js",
     "js/scenes/bio/film.js",
+    "js/scenes/bio/filmljud.js",
+    "js/scenes/bio/filmmusik.js",
+    "js/scenes/bio/fotboll.js",
     "js/scenes/bio/paint.js",
     "js/scenes/city.js",
     "js/scenes/ikea/art-market.js",
