@@ -39,7 +39,7 @@ import { drawPerson } from '../core/people.js';
 import { openAvatarEditor, avatarTagColors } from '../core/avatar.js';
 import { Pix, SMALL, ctxText, textW, text, mix, mul, css, hash, bayer } from '../core/floor-pix.js';
 import { openModal, closeModal, toast } from '../core/ui.js';
-import { foodOf, ravaraOf, receptOf, katalogOf, functionOf, viewOf, rotStates, knownKind, fmt, MAX_STORAGE, MAX_PER_ROOM } from '../game.js';
+import { foodOf, ravaraOf, receptOf, tradgardOf, katalogOf, functionOf, viewOf, rotStates, knownKind, fmt, MAX_STORAGE, MAX_PER_ROOM } from '../game.js';
 import { openKok } from './kok.js'; // spisen och receptboken
 import { play } from '../core/sound.js';
 import { worldFolksHere, worldMyEmote } from '../net/world.js';
@@ -732,9 +732,19 @@ export function makeRoom(A, { visit = false, sub: subOpt = null, core = null } =
     }
     return null;
   }
+  const toCity = () => { A.roomSub = 0; A.leftHome = true; play('door'); A.go('city'); }; // staden ställer en vid det egna husets dörr
+  // bostäder med uteplats (game.js TRADGARD): ut i stan eller ut i trädgården/på tomten/terrassen
   const exitAct = visit
     ? () => { A.visitTarget = null; A.roomSub = 0; g.passTime(20); g.save(); play('door'); toast('🚗 Hemma igen.'); A.go('city'); }
-    : () => { A.roomSub = 0; A.leftHome = true; play('door'); A.go('city'); }; // staden ställer en vid det egna husets dörr
+    : () => {
+      const T = tradgardOf(g.home);
+      // (testrobotar går rakt ut i stan, utom med ?tradgard i adressen)
+      if (!T || (navigator.webdriver && !new URLSearchParams(location.search).has('tradgard'))) { toCity(); return; }
+      openModal('🚪 Vart vill du gå?', `<p style="font-size:var(--f2);margin-top:0">Ut i Pixelstaden – eller ut ${T.namn === 'Terrassen' ? 'på terrassen' : T.namn === 'Tomten' ? 'på tomten' : 'i trädgården'} och odla?</p>`, [
+        { label: `${T.icon} ${T.namn}`, cls: 'btn-gold', onClick: () => { closeModal(); play('door'); A.roomSub = 0; A.go('tradgard'); } },
+        { label: '🏙️ Ut i stan', cls: 'btn-go', onClick: () => { closeModal(); toCity(); } },
+      ]);
+    };
 
   // ---------- props byggs ur deco (görs om efter varje ändring) ----------
   // freeGrid = gångbart för spelaren (möbler + husdjurens korgar/lådor), furnGrid = djurens

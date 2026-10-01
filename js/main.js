@@ -7,6 +7,7 @@ import { Game, SAVE_KEY, WIN_MONEY, JOBS, JOB_TITLES, levelOf, fmt, clock, REALT
 import { openGoals, celebrateGoals } from './core/livsmal.js'; // 🎯 livsmålen
 import { petStore } from './pets/sim.js';
 import { makeKoket } from './scenes/koket.js';
+import { makeTradgard } from './scenes/tradgard.js';
 import { makeCity } from './scenes/city.js';
 import { makeApartment } from './scenes/apartment.js'; // hemmet: den löpande lägenheten (rummen i rad, room.js per rum)
 import { makeShopMobler } from './scenes/shop-mobler.js';
@@ -89,6 +90,7 @@ const SCENES = {
   room: (a, o) => makeApartment(a, o),
   visit: (a) => makeApartment(a, { visit: true }),
   koket: (a) => makeKoket(a), // 🍳 matlagningen hemma (spisen → recept → steg för steg)
+  tradgard: (a) => makeTradgard(a), // 🌱 trädgården bakom bostaden (dörren hemma)
   mobler: (a, o) => makeShopIkea(a, o),
   mat: (a, o) => makeShopMat(a, o),
   bostad: (a, o) => makeShopBostad(a, o),
@@ -454,7 +456,7 @@ A.sleepFlow = () => {
     { label: '😴 Sov', cls: 'btn-go', onClick: () => {
       closeModal();
       // veckosammanfattningen är alltid det första man ser när man vaknat
-      const wake = () => { const { rent, eventText } = g.sleep(); openWeek(A, { morning: true, rentPaid: rent, eventText }); };
+      const wake = () => { const { rent, eventText, odlat } = g.sleep(); openWeek(A, { morning: true, rentPaid: rent, eventText, odlat }); };
       // klickade man på sängen lägger sig figuren under täcket först (room.js spelar natten)
       if (A.scene?.bedtime?.(wake)) return;
       play('sleep');
@@ -477,7 +479,7 @@ const PLACE_AWAY = {
 // ställena bakom stadens dörrar (DOOR_SCENES) – bara där ingen text redan finns
 for (const [k, v] of Object.entries({ bank: '🏦 på banken', elektronik: '📱 i elektronikbutiken', frisor: '💈 hos frisören', skor: '👟 i skobutiken',
   accessoarer: '👜 i accessoarbutiken', bio: '🎬 på bion', kebab: '🥙 på kebaben', pantbank: '💍 på pantbanken', universitet: '🎓 på Pixelhögskolan',
-  jobbdatorbygge: '🖥️ bygger datorer på Pixel Data', jobbfinans: '📈 handlar aktier på Finanshuset', koket: '🍳 lagar mat hemma' })) PLACE_AWAY[k] ??= v;
+  jobbdatorbygge: '🖥️ bygger datorer på Pixel Data', jobbfinans: '📈 handlar aktier på Finanshuset', koket: '🍳 lagar mat hemma', tradgard: '🌱 i trädgården' })) PLACE_AWAY[k] ??= v;
 function placeOf(p, info) {
   const s = String(p.scene || 'away');
   if (s === 'city') return '🏙️ i staden';

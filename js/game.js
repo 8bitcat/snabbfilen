@@ -111,6 +111,30 @@ export const portionOf = (n) => PORTIONER.find((p) => p.n === (n | 0) || p.id ==
 export const MAX_MATLADOR = 30;
 export const MAX_RAVA = 40;               // högst så många av varje råvara i skafferiet (räcker till ett megakok)
 
+// TRÄDGÅRDEN (Carl 2026-10-01: "vi fixar odla i trädgården"): bostäder med en uteplats har
+// odlingsbäddar – husvagnen pallkragar på tomten, radhuset och villan i trädgården, takvåningen
+// krukor på terrassen (js/scenes/tradgard.js). Så (fröpåsen kostar fro), vattna varje dag, skörda
+// när det är moget – skörden hamnar i skafferiet och lagas till mat vid spisen. En bädd växer en dag
+// per natt om den vattnades under dagen; två torra dygn i rad och den vissnar. Regniga dagar vattnar
+// allt. Villans äppelträd ger äpplen var TRAD_DAGAR:e dag.
+export const GRODOR = [
+  { id: 'potatis', name: 'Potatis', icon: '🥔', dagar: 4, skord: [4, 6], fro: 15 },
+  { id: 'morot', name: 'Morötter', icon: '🥕', dagar: 3, skord: [4, 6], fro: 10 },
+  { id: 'lok', name: 'Gul lök', icon: '🧅', dagar: 3, skord: [3, 5], fro: 8 },
+  { id: 'rodlok', name: 'Rödlök', icon: '🧅', dagar: 3, skord: [3, 5], fro: 8 },
+  { id: 'tomat', name: 'Tomater', icon: '🍅', dagar: 5, skord: [3, 6], fro: 12 },
+  { id: 'paprika', name: 'Paprika', icon: '🫑', dagar: 5, skord: [2, 4], fro: 14 },
+];
+export const grodaOf = (id) => GRODOR.find((x) => x.id === id) || null;
+export const TRADGARD = {
+  husvagn: { beds: 3, namn: 'Tomten', icon: '🚐' },
+  radhus: { beds: 6, namn: 'Trädgården', icon: '🏡' },
+  villa: { beds: 8, namn: 'Trädgården', icon: '🏡', trad: true },
+  takvaning: { beds: 4, namn: 'Terrassen', icon: '🏙️' },
+};
+export const tradgardOf = (home) => TRADGARD[home] || null;
+export const TRAD_DAGAR = 3;
+
 // Jobben. wage = kr per rätt, oops = avdrag per fel, bonus = kr per färdig låda (packjobb).
 // nattoppet = passen går även efter 20 (flygplatsen stänger aldrig), back = scenen man
 // står kvar i efter passet (annars staden).
@@ -569,6 +593,7 @@ export class Game {
     this.kockat = {};                     // lagade portioner per rätt (kockvanan, ★)
     this.kockPortioner = 0;               // alla lagade portioner (kocknivån)
     this.matlador = {};                   // matlådor i kylskåpet: recept-id -> antal (storkok/megakok)
+    this.odling = {};                     // trädgårdarna per bostad: { beds: [null | { g, dag, v, vat, torr, vissen }], trad: { skord } }
     this.toys = {};                       // köpta leksaker (Leksakslådan): id -> antal
     this.edu = {};                        // Pixelhögskolan: kurs-id -> { lect, day, tenta, tentaDay, klar }
     this.jobs = Object.fromEntries(Object.keys(JOBS).map((k) => [k, 0])); // antal jobbade pass per jobb
@@ -657,6 +682,14 @@ export class Game {
         g.kockat = {}; for (const [k, v] of Object.entries(p.kockat && typeof p.kockat === 'object' ? p.kockat : {})) if ((v | 0) > 0) g.kockat[k] = Math.min(9999, v | 0);
         g.kockPortioner = Math.max(0, p.kockPortioner | 0);
         g.matlador = {}; for (const [k, v] of Object.entries(p.matlador && typeof p.matlador === 'object' ? p.matlador : {})) if ((v | 0) > 0) g.matlador[k] = Math.min(MAX_MATLADOR, v | 0);
+        // trädgårdarna: bäddar med okänd gröda (från en nyare version) följer med orörda
+        g.odling = {};
+        for (const [home, gd] of Object.entries(p.odling && typeof p.odling === 'object' ? p.odling : {})) {
+          if (!gd || typeof gd !== 'object') continue;
+          const beds = (Array.isArray(gd.beds) ? gd.beds : []).slice(0, 12).map((b) => (b && typeof b === 'object' && typeof b.g === 'string'
+            ? { ...b, dag: b.dag | 0, v: Math.max(0, b.v | 0), vat: b.vat | 0, torr: Math.max(0, b.torr | 0), vissen: !!b.vissen } : null));
+          g.odling[home] = { ...gd, beds, trad: { skord: gd.trad?.skord | 0 } };
+        }
         for (const k of Object.keys(g.jobs)) g.jobs[k] = Math.max(0, p.jobs?.[k] | 0);
         for (const [k, v] of Object.entries(p.jobs || {})) if (!(k in g.jobs)) keep.jobs[k] = v;
         for (const [k, v] of Object.entries(p.best || {})) if (!(k in g.best)) keep.best[k] = v;
@@ -748,6 +781,7 @@ export class Game {
     // (lägger man sig efter 20:00) – somnar man på gatan (quality < 1) hjälper ingen av dem
     const inBed = quality >= 1, lateEvening = inBed && this.min >= 20 * 60;
     const gadgetBonus = (inBed ? this.gadgetBonus('mobil') : 0) + (lateEvening ? this.gadgetBonus('platta') : 0);
+    const igar = this.day;                                                                   // dagen som tar slut (trädgården)
     // lyckan i natt: dagen som gick (ledig eller inte, hungrig, utmattad) och hemmet man vaknar i
     const natt = [];
     const glad = (n, t) => { if (n) natt.push({ t, n }); };
@@ -789,6 +823,7 @@ export class Game {
     if (this.money < 0) glad(-4, 'Skulder');
     this.lycka = clamp(this.lycka + natt.reduce((a, x) => a + x.n, 0));
     this.gladNatt = natt;
+    const odlat = this.growGarden(igar);                                                    // trädgården växer (eller torkar)
     // dagens händelse
     this.event = null;
     let eventText = null;
@@ -803,9 +838,88 @@ export class Game {
       if (ev.id === 'tjuga') this.money += 20;
       eventText = `${ev.icon} ${ev.text.replace('{job}', JOBS[this.event.job]?.name || '')}`;
     }
+    if (this.eventIs('regn')) this.waterGarden(-1, true);                                   // regnet vattnar trädgården
     this.pantMorning();
     this.save();
-    return { rent, eventText, gadgetBonus, interest, rentFromBank };
+    return { rent, eventText, gadgetBonus, interest, rentFromBank, odlat };
+  }
+
+  // ---------- trädgården ----------
+  // trädgården i bostaden (null utan uteplats) – bäddarna skapas tomma första gången
+  garden(home = this.home) {
+    const T = tradgardOf(home);
+    if (!T) return null;
+    const gd = (this.odling[home] ||= { beds: [], trad: { skord: 0 } });
+    while (gd.beds.length < T.beds) gd.beds.push(null);
+    gd.trad ||= { skord: 0 };
+    return gd;
+  }
+  bedState(b) {
+    if (!b) return 'tom';
+    if (b.vissen) return 'vissen';
+    const G = grodaOf(b.g);
+    if (G && b.v >= G.dagar) return 'mogen';
+    return b.vat === this.day ? 'vattnad' : 'torr';
+  }
+  plant(idx, gId) {
+    const gd = this.garden(), G = grodaOf(gId);
+    if (!gd || !G) return { ok: false, msg: 'Här går det inte att odla.' };
+    if (gd.beds[idx]) return { ok: false, msg: 'Det växer redan något där.' };
+    if (this.money < G.fro) return { ok: false, msg: `Fröpåsen kostar ${fmt(G.fro)} – du har inte råd.` };
+    this.money -= G.fro;
+    gd.beds[idx] = { g: gId, dag: this.day, v: 0, vat: this.day, torr: 0, vissen: false };   // (man vattnar när man sår)
+    this.passTime(10);
+    const glad = this.glad(2, '', 'tradgard', 8);
+    this.save();
+    return { ok: true, groda: G, glad };
+  }
+  // vattna en bädd (idx) eller alla (idx < 0); regn = utan tid och lycka. Svaret: antal vattnade.
+  waterGarden(idx = -1, regn = false) {
+    const gd = this.garden();
+    if (!gd) return 0;
+    let n = 0;
+    gd.beds.forEach((b, i) => { if ((idx < 0 || i === idx) && b && !b.vissen && this.bedState(b) !== 'mogen' && b.vat !== this.day) { b.vat = this.day; n++; } });
+    if (n && !regn) { this.passTime(Math.min(15, 3 * n)); this.glad(1, '', 'tradgard', 8); this.save(); }
+    return n;
+  }
+  harvest(idx) {
+    const gd = this.garden(), b = gd?.beds[idx];
+    if (!b || this.bedState(b) !== 'mogen') return { ok: false, msg: 'Det är inte moget än.' };
+    const G = grodaOf(b.g), n = G.skord[0] + Math.floor(Math.random() * (G.skord[1] - G.skord[0] + 1));
+    const fick = Math.max(0, Math.min(n, MAX_RAVA - (this.skafferi[G.id] | 0)));
+    if (fick) this.skafferi[G.id] = (this.skafferi[G.id] | 0) + fick;
+    gd.beds[idx] = null;
+    this.passTime(10);
+    const glad = this.glad(3, '', 'tradgard', 8);
+    this.save();
+    return { ok: true, groda: G, n: fick, glad };
+  }
+  clearBed(idx) { const gd = this.garden(); if (!gd || !gd.beds[idx]?.vissen) return false; gd.beds[idx] = null; this.passTime(5); this.save(); return true; }
+  // villans äppelträd: moget var TRAD_DAGAR:e dag
+  treeReady() { const T = tradgardOf(this.home), gd = this.garden(); return !!(T?.trad && gd && this.day - (gd.trad.skord | 0) >= TRAD_DAGAR); }
+  harvestTree() {
+    if (!this.treeReady()) return { ok: false, msg: 'Äpplena är inte mogna än.' };
+    const gd = this.garden(), n = Math.min(3 + Math.floor(Math.random() * 3), MAX_RAVA - (this.skafferi.applR | 0));
+    if (n > 0) this.skafferi.applR = (this.skafferi.applR | 0) + n;
+    gd.trad.skord = this.day;
+    this.passTime(10);
+    const glad = this.glad(2, '', 'tradgard', 8);
+    this.save();
+    return { ok: true, n: Math.max(0, n), glad };
+  }
+  // på natten (Game.sleep): vattnad under dagen = en dag till; två torra dygn = vissen
+  growGarden(igar) {
+    const gd = this.odling[this.home];
+    if (!gd) return null;
+    let vaxte = 0, vissnade = 0, mogna = 0;
+    for (const b of gd.beds) {
+      if (!b || b.vissen) continue;
+      const G = grodaOf(b.g);
+      if (!G || b.v >= G.dagar) continue;
+      if (b.vat === igar) { b.v++; b.torr = 0; vaxte++; if (b.v >= G.dagar) mogna++; }
+      else if (++b.torr >= 2) { b.vissen = true; vissnade++; }
+    }
+    return { vaxte, vissnade, mogna };
   }
 
   // ---------- lyckan och livsmålen ----------

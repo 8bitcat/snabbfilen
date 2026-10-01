@@ -1,7 +1,7 @@
 {
-  "version": "0.73.0",
+  "version": "0.74.0",
   "date": "2026-10-02",
-  "title": "Laga mat hemma",
+  "title": "Odla i trädgården",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
@@ -149,6 +149,7 @@
     "js/scenes/shop-terminal.js",
     "js/scenes/shop-universitet.js",
     "js/scenes/skraplott.js",
+    "js/scenes/tradgard.js",
     "js/scenes/walkable.js",
     "js/shops/bostad.js",
     "js/shops/matbutik.js",

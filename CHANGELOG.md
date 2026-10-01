@@ -10,6 +10,13 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.74.0] – 2026-10-02 – Odla i trädgården
+- Odla i trädgården! Radhuset och villan har en trädgård bakom huset, husvagnen en grustomt med pallkragar och takvåningen en terrass med krukor. Gå ut genom ytterdörren och välj "Trädgården" (eller "Ut i stan").
+- Så potatis, morötter, gul lök, rödlök, tomater eller paprika – fröpåsarna kostar 8–15 kr. Vattna varje dag (vattenkannan på bänken vattnar allt på en gång) så växer plantorna en dag varje natt. Två dagar utan vatten och de vissnar. Regniga dagar vattnar åt dig.
+- Skörden hamnar i skafferiet och går att laga mat av i köket. Villans äppelträd ger röda äpplen var tredje dag.
+- Radhuset har sex bäddar, villan åtta, takvåningen fyra krukor och husvagnen tre pallkragar. Plantorna syns växa: blast, blommor, röda tomater och gnistor när det är dags att skörda.
+- Morgonrutan berättar vad som hände i trädgården i natt, och "Att göra i dag" påminner om att vattna och skörda. Att odla gör en gladare.
+
 ## [0.73.0] – 2026-10-02 – Laga mat hemma
 - Laga mat hemma! Varje bostad har en spis och Pixelstadens kokbok på ett ställ bredvid. Boken har 24 recept med en pixelbild av varje rätt – läs ett recept så kan du laga det (tre klassiker kan du redan).
 - Mataffären säljer råvaror: frukt och grönt i lådorna, ägg, mjölk, ost, smör och yoghurt i mejeriet, limpa och tortilla i bageriet, pasta, ris, mjöl, havregryn, tomater och bönor på hyllorna – och kyckling, köttfärs, bacon, fisk och bär i frysen. Välj 1, 5 eller 10 åt gången.

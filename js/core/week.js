@@ -186,7 +186,7 @@ function paintWindow(ctx, d, t) {
   }
 }
 
-export function openWeek(A, { morning = false, rentPaid = 0, eventText = '' } = {}) {
+export function openWeek(A, { morning = false, rentPaid = 0, eventText = '', odlat = null } = {}) {
   const g = A.game;
   const w = weekInfo(g);
   const firstWeek = g.day - w.wd === 1; // vecka 1: man flyttade in på måndagen, ingen hyra dragen
@@ -214,6 +214,9 @@ export function openWeek(A, { morning = false, rentPaid = 0, eventText = '' } = 
   // i morse på banken: räntan och autogirot (läses ur kontoutdraget, så det syns hur man än somnade)
   const bankToday = (t) => (g.bankLog || []).filter((e) => e && e.d === g.day && e.t === t).pop();
   const ranta = morning && bankToday('ranta'), autogiro = morning && bankToday('hyra');
+  // i natt i trädgården (Game.growGarden): vad som växte, mognade och vissnade
+  const od = morning && odlat && (odlat.vaxte || odlat.vissnade) ? [odlat.mogna ? `<b>${odlat.mogna}</b> ${odlat.mogna === 1 ? 'bädd är mogen' : 'bäddar är mogna'} att skörda` : '', odlat.vaxte - (odlat.mogna | 0) > 0 ? `${odlat.vaxte - (odlat.mogna | 0)} växte en dag till` : '', odlat.vissnade ? `<b>${odlat.vissnade}</b> vissnade (två dagar utan vatten)` : ''].filter(Boolean).join(', ') : '';
+  const gardenNews = od ? `<p class="${odlat.vissnade && !odlat.mogna ? 'wk-bad' : 'wk-ok'}" style="margin-top:0">🌱 I natt i trädgården: ${od}.</p>` : '';
   const bankNews = (ranta ? `<p class="wk-ok" style="margin-top:0">📈 Räntan kom in: <b>+${fmt(ranta.n)}</b> på sparkontot.</p>` : '')
     + (autogiro ? `<p class="wk-bad" style="margin-top:0">🏦 Fickan räckte inte – <b>${fmt(autogiro.n)}</b> av hyran drogs från sparkontot (autogiro).</p>` : '');
   // checklista
@@ -223,6 +226,13 @@ export function openWeek(A, { morning = false, rentPaid = 0, eventText = '' } = 
   todo.push([g.hunger >= 50, g.hunger >= 50 ? 'Du är mätt' : 'Ät något – du är hungrig']);
   todo.push([w.fridge > 0, w.fridge > 0 ? `Mat i kylen (${w.fridge} st)` : 'Handla mat till kylen']);
   todo.push([g.energy >= 40, g.energy >= 40 ? 'Du är utvilad' : 'Du är trött – sov i tid i kväll']);
+  // trädgården: torra bäddar att vattna och mogna att skörda
+  const gd = g.garden?.();
+  if (gd) {
+    const torr = gd.beds.filter((b) => g.bedState(b) === 'torr').length, mogna = gd.beds.filter((b) => g.bedState(b) === 'mogen').length;
+    if (gd.beds.some(Boolean)) todo.push([!torr, torr ? `Vattna trädgården (${torr} ${torr === 1 ? 'bädd' : 'bäddar'})` : 'Trädgården är vattnad']);
+    if (mogna) todo.push([false, `Skörda i trädgården – ${mogna} ${mogna === 1 ? 'bädd är mogen' : 'bäddar är mogna'}`]);
+  }
   const glad = Math.round(g.lycka ?? 60);
   todo.push([glad >= 40, glad >= 40 ? 'Du är på gott humör' : `Gör något roligt – du är nere${glad < GLAD_LAG ? ' och sover sämre' : ''} (bio, djuren, kompisar, en ledig dag)`]);
   const ev = g.event?.id ? EVENTS.find((e) => e.id === g.event.id) : null;
@@ -244,7 +254,7 @@ export function openWeek(A, { morning = false, rentPaid = 0, eventText = '' } = 
   const head = morning ? `☀️ God morgon! ${esc(DAY_NAMES[w.wd])}, dag ${g.day}` : `📅 Vecka ${weekNo(g.day)} – ${esc(DAY_NAMES[w.wd])}, dag ${g.day}`;
   const body = `<div class="wk">
     ${morning && rentPaid ? `<p class="wk-bad" style="margin-top:0">💸 Hyran för veckan är dragen: ${fmt(rentPaid)}.</p>` : ''}
-    ${bankNews}
+    ${bankNews}${gardenNews}
     ${morning ? gladNattHtml(g) : ''}
     <div class="wk-grid">${cells}</div>
     ${forecast}
