@@ -50,9 +50,8 @@ import {
 
 // ================= priser, effekter och öppettider =================
 export const BIO_PRIS = { biljett: 90, popcorn: 35 };
-// Förslag på värden: en film = 2 speltimmar i en mjuk biofåtölj → +15 energi (lika mycket
-// som en burgare + läsk). Spelet har ingen humörmätare än: humor = förslaget (+20) om en
-// sådan läggs till – tills dess syns glädjen i pratbubblan efter filmen.
+// En film = 2 speltimmar i en mjuk biofåtölj → +15 energi (lika mycket som en burgare + läsk)
+// och +20 lycka (humor → g.glad, högst +25 om dagen från bion – går man mitt i får man en del).
 // Popcornen: +14 mättnad (2 per tugga, 7 tuggor) och +2 energi när bägaren är tom.
 export const BIO_EFFEKT = { minuter: 120, energi: 15, humor: 20, popcornMatt: 14, popcornEnergi: 2, tuggor: 7 };
 export const BIO_OPEN = [12, 24];
@@ -486,15 +485,17 @@ export function makeShopBio(A, opts = {}) {
     if (g.min < target) g.passTime(target - g.min);
     const e = showEnergy(frac);
     g.energy = c100(g.energy + e);
-    me.reward = { film: show.film.id, energi: e, humor: Math.round(BIO_EFFEKT.humor * frac), full: frac >= 0.999 };
+    const h = g.glad ? g.glad(Math.round(BIO_EFFEKT.humor * frac), '', 'bio', 25) : 0;     // lyckan (game.js)
+    me.reward = { film: show.film.id, energi: e, humor: h, full: frac >= 0.999 };
     if (frac >= 0.999 && !me.sett.includes(show.film.id)) me.sett.push(show.film.id);
     g.save();
     if (quiet) return;
+    const glad = h > 0 ? `, +${h} 😊 lycka` : '';
     if (frac >= 0.999) {
       play('fanfare');
-      toast(`🎬 ${show.film.titel}: vilken film! +${e} ⚡ energi`, 'good');
+      toast(`🎬 ${show.film.titel}: vilken film! +${e} ⚡ energi${glad}`, 'good');
       talk.say(`😄 VILKEN FILM! Jag känner mig utvilad och glad.`, meAt, 4);
-    } else if (e > 0) toast(`🎬 Du gick mitt i filmen – +${e} ⚡ energi ändå.`, '');
+    } else if (e > 0 || h > 0) toast(`🎬 Du gick mitt i filmen – +${e} ⚡ energi${glad} ändå.`, '');
   }
   function endShow() {
     show = null;

@@ -1,5 +1,5 @@
 // Pixelmätarna: en remsa (384×28 spelpixlar) direkt OVANFÖR spelbilden, på en egen canvas i
-// exakt samma pixelkorn – porträtt, namn, pengar, dag och klocka, mat- och sömnmätare,
+// exakt samma pixelkorn – porträtt, namn, pengar, dag och klocka, mat-, sömn- och lyckomätare,
 // antal online. Den ligger utanför scenen och skymmer aldrig något i spelet. Växlas mot
 // HUD-raden i inställningarna ("Mätare: pixel / rad"); valet sparas per webbläsare.
 import { portrait } from './people.js';
@@ -97,6 +97,14 @@ function zz(ctx, x, y) {
   ctx.fillRect(x, y, 4, 1); ctx.fillRect(x + 2, y + 1, 1, 1); ctx.fillRect(x + 1, y + 2, 1, 1); ctx.fillRect(x, y + 3, 4, 1);
   ctx.fillRect(x + 4, y + 2, 2, 1); ctx.fillRect(x + 5, y + 3, 1, 1); ctx.fillRect(x + 4, y + 4, 2, 1);
 }
+// lyckan: en gul smiley som blir ledsen när lyckan är låg (v = g.lycka)
+const smiley = (v) => (ctx, x, y) => {
+  ctx.fillStyle = '#b07a12'; ctx.fillRect(x + 1, y, 4, 6); ctx.fillRect(x, y + 1, 6, 4);
+  ctx.fillStyle = '#ffd23f'; ctx.fillRect(x + 1, y + 1, 4, 4);
+  ctx.fillStyle = '#5a3a08'; ctx.fillRect(x + 1, y + 1, 1, 1); ctx.fillRect(x + 4, y + 1, 1, 1);
+  if (v < 30) { ctx.fillRect(x + 2, y + 3, 2, 1); ctx.fillRect(x + 1, y + 4, 1, 1); ctx.fillRect(x + 4, y + 4, 1, 1); }
+  else { ctx.fillRect(x + 1, y + 3, 1, 1); ctx.fillRect(x + 4, y + 3, 1, 1); ctx.fillRect(x + 2, y + 4, 2, 1); }
+};
 function coin(ctx, x, y) {
   ctx.fillStyle = '#b07a12'; ctx.fillRect(x + 1, y, 3, 5); ctx.fillRect(x, y + 1, 5, 3);
   ctx.fillStyle = GOLD; ctx.fillRect(x + 1, y + 1, 3, 3);
@@ -118,7 +126,7 @@ function drawPhoneStrip(ctx, A, g, Wv) {
   ctxText(ctx, SMALL, name, x, y, GOLD); x += textW(SMALL, name) + 8;
   coin(ctx, x, y);
   const money = Math.round(g.money);
-  const moneyTxt = (money < 0 ? '-' : '') + Math.abs(money).toLocaleString('sv-SE').replace(/ /g, ' ') + ' KR';
+  const moneyTxt = (money < 0 ? '-' : '') + Math.abs(money).toLocaleString('sv-SE').replace(/\s/g, ' ') + ' KR';
   ctxText(ctx, SMALL, moneyTxt, x + 7, y, money < 0 ? '#ff6a6a' : PAPER); x += 7 + textW(SMALL, moneyTxt) + 8;
   // mitt i ett pass: jobbet, poängen och tiden kvar (klockan står still under passet och
   // mat/sömn ändras först när det är slut)
@@ -135,8 +143,9 @@ function drawPhoneStrip(ctx, A, g, Wv) {
   }
   const day = `${String(g.dayName || '').slice(0, 3).toUpperCase()} ${clock(g.min)}`;
   ctxText(ctx, SMALL, day, x, y, PAPER2); x += textW(SMALL, day) + 10;
-  bar(ctx, x, y, 34, g.hunger, burger); x += 34 + 9 + 8;
-  bar(ctx, x, y, 34, g.energy, zz);
+  bar(ctx, x, y, 28, g.hunger, burger); x += 28 + 9 + 7;
+  bar(ctx, x, y, 28, g.energy, zz); x += 28 + 9 + 7;
+  bar(ctx, x, y, 28, g.lycka ?? 60, smiley(g.lycka ?? 60));
 }
 
 // Ritas varje bildruta från spelets loop (ctx-argumentet är spelbildens och används inte)
@@ -162,16 +171,20 @@ export function drawPixHud(_ctx, A) {
   ctxText(ctx, SMALL, name, tx, 3, GOLD);
   coin(ctx, tx, 10);
   const money = Math.round(g.money);
-  const moneyTxt = (money < 0 ? '-' : '') + Math.abs(money).toLocaleString('sv-SE').replace(/ /g, ' ') + ' KR';
+  const moneyTxt = (money < 0 ? '-' : '') + Math.abs(money).toLocaleString('sv-SE').replace(/\s/g, ' ') + ' KR';
   ctxText(ctx, SMALL, moneyTxt, tx + 7, 10, money < 0 ? '#ff6a6a' : PAPER);
   const day = `${String(g.dayName || '').toUpperCase()} DAG ${g.day}  ${clock(g.min)}`;
   ctxText(ctx, SMALL, day, tx, 17, PAPER2);
-  // mätare: mat + sömn
-  const mx = Math.max(136, ((Wv / 2) | 0) - 76); // mätarna i mitten när remsan är bred
+  // mätare: mat, sömn och lycka (smalare när remsan bara är 384 bred – plats för ONLINE till höger)
+  const bw = Wv >= 470 ? 64 : 46, step = bw + 9 + (Wv >= 470 ? 15 : 10);
+  const mx = Math.max(128, ((Wv / 2) | 0) - ((step * 3) >> 1)); // mätarna i mitten när remsan är bred
+  const lycka = g.lycka ?? 60;
   ctxText(ctx, SMALL, 'MAT', mx, 3, PAPER2);
-  bar(ctx, mx, 12, 64, g.hunger, burger);
-  ctxText(ctx, SMALL, 'SÖMN', mx + 88, 3, PAPER2);
-  bar(ctx, mx + 88, 12, 64, g.energy, zz);
+  bar(ctx, mx, 12, bw, g.hunger, burger);
+  ctxText(ctx, SMALL, 'SÖMN', mx + step, 3, PAPER2);
+  bar(ctx, mx + step, 12, bw, g.energy, zz);
+  ctxText(ctx, SMALL, 'LYCKA', mx + step * 2, 3, PAPER2);
+  bar(ctx, mx + step * 2, 12, bw, lycka, smiley(lycka));
   // höger: online + skuld / dagens händelse
   const online = A.worldInfo?.().online || 1;
   const onTxt = online > 1 ? `${online} ONLINE` : 'ENSAM I STAN';

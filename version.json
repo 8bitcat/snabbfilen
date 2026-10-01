@@ -1,7 +1,7 @@
 {
-  "version": "0.71.0",
+  "version": "0.72.0",
   "date": "2026-10-01",
-  "title": "KBK-filmerna på bion",
+  "title": "Livsmål och lycka",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
@@ -33,6 +33,7 @@
     "js/core/floor-pix.js",
     "js/core/fx.js",
     "js/core/hud-pix.js",
+    "js/core/livsmal.js",
     "js/core/menu.js",
     "js/core/music.js",
     "js/core/people.js",

@@ -6,7 +6,8 @@
 // Under fönstren: prognosen för hyran, en checklista och veckans läge. Läser bara
 // spelets tillstånd – ändrar ingenting.
 import { openModal, closeModal, esc } from './ui.js';
-import { DAY_NAMES, HOMES, JOBS, EVENTS, fmt, levelOf, payMult } from '../game.js';
+import { DAY_NAMES, HOMES, JOBS, EVENTS, fmt, levelOf, payMult, GLAD_LAG } from '../game.js';
+import { goalsMini, gladNattHtml } from './livsmal.js';
 
 const SHORT = ['MÅN', 'TIS', 'ONS', 'TOR', 'FRE', 'LÖR', 'SÖN'];
 const weekday = (day) => (day - 1) % 7;            // 0 = måndag
@@ -222,6 +223,8 @@ export function openWeek(A, { morning = false, rentPaid = 0, eventText = '' } = 
   todo.push([g.hunger >= 50, g.hunger >= 50 ? 'Du är mätt' : 'Ät något – du är hungrig']);
   todo.push([w.fridge > 0, w.fridge > 0 ? `Mat i kylen (${w.fridge} st)` : 'Handla mat till kylen']);
   todo.push([g.energy >= 40, g.energy >= 40 ? 'Du är utvilad' : 'Du är trött – sov i tid i kväll']);
+  const glad = Math.round(g.lycka ?? 60);
+  todo.push([glad >= 40, glad >= 40 ? 'Du är på gott humör' : `Gör något roligt – du är nere${glad < GLAD_LAG ? ' och sover sämre' : ''} (bio, djuren, kompisar, en ledig dag)`]);
   const ev = g.event?.id ? EVENTS.find((e) => e.id === g.event.id) : null;
   if (g.event?.id) todo.push([true, 'I dag: ' + esc(eventText || (ev ? `${ev.icon} ${ev.text.replace('{job}', JOBS[g.event.job]?.name || 'jobbet')}` : g.event.id))]);
   const list = todo.map(([ok, t]) => `<li class="${ok ? 'ok' : ''}"><span>${ok ? '✓' : '☐'}</span>${t}</li>`).join('');
@@ -236,14 +239,17 @@ export function openWeek(A, { morning = false, rentPaid = 0, eventText = '' } = 
     <div><span>🍎 Mat i kylen</span><b>${w.fridge} st</b></div>
     <div><span>⚡ Energi</span>${bar(g.energy, 'en')}</div>
     <div><span>🍔 Mättnad</span>${bar(g.hunger, 'hu')}</div>
+    <div><span>😊 Lycka</span>${bar(glad, 'gl')}</div>
   </div>`;
   const head = morning ? `☀️ God morgon! ${esc(DAY_NAMES[w.wd])}, dag ${g.day}` : `📅 Vecka ${weekNo(g.day)} – ${esc(DAY_NAMES[w.wd])}, dag ${g.day}`;
   const body = `<div class="wk">
     ${morning && rentPaid ? `<p class="wk-bad" style="margin-top:0">💸 Hyran för veckan är dragen: ${fmt(rentPaid)}.</p>` : ''}
     ${bankNews}
+    ${morning ? gladNattHtml(g) : ''}
     <div class="wk-grid">${cells}</div>
     ${forecast}
     <div class="wk-cols"><div><h3>Att göra i dag</h3><ul class="wk-todo">${list}</ul></div><div><h3>Veckans läge</h3>${stats}</div></div>
+    ${goalsMini(g)}
     <p class="wk-tip">Tips: hyran dras varje måndag morgon – först från fickan, och räcker den inte tar banken resten från sparkontot. Räcker inte det heller blir du skyldig hyresvärden – jobba ett extra pass innan söndag.</p>
   </div>`;
   const dlg = openModal(head, body, [{ label: morning ? '☀️ Ut i dagen!' : '▶ Till dagen', cls: 'btn-go', onClick: closeModal }]);

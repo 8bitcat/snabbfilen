@@ -1136,7 +1136,8 @@ export function createPetLayer(A, opts = {}) {
       setPose(a, p.species === 'katt' ? 'love' : 'happy', 2.2, null, f);
     }
     const word = { katt: 'spinner', hund: 'viftar på svansen', kanin: 'nosar glatt' }[p.species] || 'blir glad';
-    toast(`🤚 ${p.name} ${word}! (glad ${Math.round(before)} → ${Math.round(p.happy)})`, 'good');
+    const jag = A.game?.glad ? A.game.glad(2, '', 'djur', 10) : 0;                            // djuren gör en själv glad också (högst +10 om dagen)
+    toast(`🤚 ${p.name} ${word}! (glad ${Math.round(before)} → ${Math.round(p.happy)})${jag ? ` · +${jag} 😊` : ''}`, 'good');
   }
   function doPlay(petId) {
     const p = store.petById(petId), a = actors.get(petId);
@@ -1148,7 +1149,8 @@ export function createPetLayer(A, opts = {}) {
       const f = facing(a.x, a.y, px(), py() - 4);
       setPose(a, 'play', 2.4, () => { if (rnd() < 0.7) { const [x, y] = nearestFreePt(a.x + (rnd() - 0.5) * 70, a.y + (rnd() - 0.5) * 24); go(a, x, y, { run: true, then: () => setPose(a, 'happy', 1.2, null, facing(a.x, a.y, px(), py())) }); } }, f);
     }
-    toast(`🎾 ${p.name} leker!`, 'good');
+    const jag = A.game?.glad ? A.game.glad(3, '', 'djur', 10) : 0;
+    toast(`🎾 ${p.name} leker!${jag ? ` · +${jag} 😊` : ''}`, 'good');
   }
   function openItemMenu(it) {
     const def = PET_ITEMS[it.k];

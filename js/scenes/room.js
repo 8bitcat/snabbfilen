@@ -1945,10 +1945,11 @@ function wash(A, kind) {
 function watchTv(A, kind) {
   const g = A.game;
   play('click');
-  const msg = { dator: '💻 Du surfar en stund. Var tog timmen vägen?', laptop: '💻 Lite skärmtid i soffan.', spelkonsol: '🎮 En runda till … bara en till.' }[kind] || '📺 Du zappar en stund. Inget bra på, som vanligt.';
+  const msg = { dator: '💻 Du surfar en stund. Var tog timmen vägen?', laptop: '💻 Lite skärmtid i soffan.', spelkonsol: '🎮 En runda till … bara en till.' }[kind] || '📺 Du zappar en stund och hittar en rolig serie.';
   g.passTime(30);
+  const h = g.glad ? g.glad(3, '', 'tv', 6) : 0;                                           // lite skärmtid gör en glad – högst +6 om dagen
   g.save();
-  toast(msg);
+  toast(msg + (h ? ` +${h} 😊` : ''));
 }
 
 // mattor: två mönster (museum/rand), valfri bottenfärg c – cachade

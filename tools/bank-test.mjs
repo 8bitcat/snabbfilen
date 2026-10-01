@@ -279,9 +279,17 @@ ok(wk.need === 0 && wk.saved === 5000, `hyresprognosen räknar med sparkontot (b
 await page.evaluate(() => document.querySelector('#hud-diary')?.click());
 ok(await waitFor(() => /På banken/.test(document.querySelector('#modal')?.innerText || ''), 3000), 'dagboken visar raden 🏦 På banken');
 await closeDlg();
-await page.evaluate(() => { const g = window.SF.game; Object.assign(g, { home: 'villa', money: 5000, bank: 6000, bankMin: 6000, won: false }); });
-ok(await waitFor(() => window.SF.game.won === true, 4000), 'slutmålet: Villan + 5 000 på fickan + 6 000 på banken räcker');
-ok(/6 000 kr av dem på banken|av dem på banken/.test(await modalText()), 'gratulationen nämner pengarna på banken');
+// livsmålen (rikedom = fickan + sparkontot): normal rikedom 10 000, de andra målen redan nådda
+await page.evaluate(() => {
+  const g = window.SF.game;
+  Object.assign(g, { mal: { rik: 'normal', lycka: 'latt', utb: 'latt', karr: 'latt' }, malKlar: 0, lycka: 70, money: 5000, bank: 4000, bankMin: 4000 });
+  g.edu = { datorteknik: { lect: 4, day: 1, tenta: 0, tentaDay: 0, klar: false } }; g.jobs.burgare = 3;
+});
+await page.waitForTimeout(400);
+ok(await page.evaluate(() => !window.SF.game.malKlar), 'livsmålen: 5 000 på fickan + 4 000 på banken räcker inte till 10 000');
+await page.evaluate(() => { window.SF.game.bank = 6000; window.SF.game.bankMin = 6000; });
+ok(await waitFor(() => window.SF.game.malKlar > 0, 4000), 'livsmålen: 5 000 på fickan + 6 000 på banken räknas som rikedom – alla fyra nådda');
+ok(/klarat livet i Pixelstaden/.test(await page.evaluate(() => document.querySelector('#modal')?.innerText || '')) && /11\s000/.test(await modalText()), 'gratulationen räknar med pengarna på banken');
 await closeDlg();
 
 console.log(errs.length ? 'KONSOLFEL:\n' + errs.join('\n') : 'inga konsolfel');

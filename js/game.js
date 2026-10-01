@@ -370,8 +370,48 @@ export const GADGETS = [
 ];
 export const gadgetOf = (id) => GADGETS.find((x) => x.id === id) || null;
 
-// Slutmålet: äg Villan med rejält på fickan.
+// Det gamla slutmålet (före livsmålen): Villan med rejält på fickan. Bara för sparfiler som
+// redan klarade det (g.won) – i dag vinner man med livsmålen nedan.
 export const WIN_MONEY = 10000;
+
+// LIVSMÅLEN (Carl 2026-10-01, "fortsätt" på förslaget om mer djup): som i Jones in the Fast Lane
+// väljer man i början hur högt man siktar i fyra mål – och man har klarat livet i Pixelstaden när
+// ALLA fyra är nådda samtidigt. Varje mål har tre nivåer (lätt/normal/svår); g.mal = { rik, lycka,
+// utb, karr } med nivåns id. Vad som räknas (malStatus):
+//   rik    pengar på fickan + sparkontot
+//   lycka  lyckomätaren (g.lycka) just då
+//   utb    utbildningspoäng: 1 per föreläsning på Pixelhögskolan, 2 till per examen (två kurser = 12)
+//   karr   bästa titeln på något jobb (2 = Van, 3 = Proffs, 5 = Legendar – JOB_TITLES)
+export const MAL_NIVAER = [
+  { id: 'latt', icon: '🌱', name: 'Lätt' },
+  { id: 'normal', icon: '⭐', name: 'Normal' },
+  { id: 'svar', icon: '🔥', name: 'Svår' },
+];
+export const MAL = {
+  rik: { id: 'rik', icon: '💰', name: 'Rikedom', latt: 3000, normal: 10000, svar: 25000, blurb: 'Pengar på fickan och på banken.' },
+  lycka: { id: 'lycka', icon: '😊', name: 'Lycka', latt: 60, normal: 75, svar: 90, blurb: 'Lyckomätaren – bio, djur, kompisar, ett fint hem och lediga dagar.' },
+  utb: { id: 'utb', icon: '🎓', name: 'Utbildning', latt: 4, normal: 6, svar: 12, blurb: 'Pixelhögskolan: 1 poäng per föreläsning, 2 till för en examen.' },
+  karr: { id: 'karr', icon: '💼', name: 'Karriär', latt: 2, normal: 3, svar: 5, blurb: 'Bästa titeln på något jobb – jobba många pass på samma ställe.' },
+};
+export const malNiva = (id) => MAL_NIVAER.find((n) => n.id === id) || MAL_NIVAER[1];
+export const malTarget = (key, niva) => MAL[key]?.[malNiva(niva).id] ?? 0;
+// hur målet visas: 3 000 kr · 75 · 6 poäng · Proffs
+export const malText = (key, v) => (key === 'rik' ? fmt(v) : key === 'karr' ? JOB_TITLES[Math.max(0, Math.min(4, v - 1))] : key === 'utb' ? `${v} poäng` : String(v));
+const cleanMal = (m) => (m && typeof m === 'object' ? Object.fromEntries(Object.keys(MAL).map((k) => [k, malNiva(m[k]).id])) : null);
+
+// LYCKAN (g.lycka 0–100, börjar på LYCKA_START): den tredje mätaren bredvid mat och sömn.
+//   upp:  bion, husdjuren (klappa/leka, köpa ett djur), kompisar (vara nära, hälsa på), nya kläder
+//         och leksaker, TV:n hemma, en ledig dag, ett fint hem och möbler, djur hemma (på morgonen)
+//   ner:  vardagen (−3 per natt), varje pass, för många pass samma dag, husvagnen och
+//         Förortsettan, att svälta, att somna utmattad och skulder
+// Mycket glad (≥ GLAD_HOG) = 5 % dricks på passen och bättre sömn; nere (< GLAD_LAG) = sämre sömn
+// och (< GLAD_LON) 10 % lägre lön. Däremellan märks inget – därför börjar man på 60.
+export const LYCKA_START = 60, GLAD_HOG = 80, GLAD_LAG = 30, GLAD_LON = 25;
+export const gladPayMult = (l) => (l >= GLAD_HOG ? 1.05 : l < GLAD_LON ? 0.9 : 1);
+export const gladSleep = (l) => (l >= GLAD_HOG ? 5 : l < GLAD_LAG ? -5 : 0);
+// husdjuren hemma (petStore i pets/sim.js) – main.js kopplar in räknaren, game.js importerar inte djuren
+let petCount = () => 0;
+export const setPetCounter = (fn) => { petCount = typeof fn === 'function' ? fn : () => 0; };
 
 // Pantbanken (js/scenes/shop-pantbank.js): lån mot pant. Pantlånaren lånar ut PANT_RATE av
 // katalogpriset mot en möbel ur förrådet. Lånet + PANT_INTEREST ska betalas tillbaka senast
@@ -407,14 +447,15 @@ export const EVENTS = [
 // negativ – husvagnen är kall och Förortsettan högljudd). Ordningen (hyran, billigast först)
 // är den som bostadsbyrån och planschväggen visar. Nya spel börjar i husvagnen. Planlösningarna ligger i
 // js/scenes/room.js (PLANS/SEEDS), husen i staden i js/city/places.js.
+// glad = lyckan varje morgon av att bo där (husvagnen är kall och trång, takvåningen en dröm).
 export const HOMES = [
-  { id: 'husvagn', icon: '🚐', name: 'Husvagnen', deposit: 0, rent: 150, restBonus: -10, desc: 'En rostig husvagn på tomten i förorten. Billigast i stan – om du tål kylan.' },
-  { id: 'hoghus', icon: '🏢', name: 'Förortsettan', deposit: 500, rent: 250, restBonus: -5, desc: 'Ett rum och kök på sjunde våningen i Betongvägen 1. Hissen går ibland.' },
-  { id: 'rum', icon: '🛏️', name: 'Lilla rummet', deposit: 0, rent: 350, restBonus: 0, desc: 'En säng, ett kylskåp och en garderob. Men det är ditt.' },
-  { id: 'lagenhet', icon: '🏢', name: 'Lägenheten', deposit: 1500, rent: 600, restBonus: 10, desc: 'Riktigt kök, soffa och utsikt över Pixelstaden.' },
-  { id: 'radhus', icon: '🏡', name: 'Radhuset', deposit: 4000, rent: 800, restBonus: 15, desc: 'Eget radhus på Söder med en liten trädgård. Grannarna grillar på lördagar.' },
-  { id: 'villa', icon: '🏡', name: 'Villan', deposit: 8000, rent: 1000, restBonus: 20, desc: 'Eget hus med trädgård. Hit kan kompisarna komma.' },
-  { id: 'takvaning', icon: '🏙️', name: 'Takvåningen', deposit: 20000, rent: 2000, restBonus: 25, desc: 'Högst upp i Tornhuset – terrass med utsikt över hela Pixelstaden.' },
+  { id: 'husvagn', icon: '🚐', name: 'Husvagnen', deposit: 0, rent: 150, restBonus: -10, glad: -4, desc: 'En rostig husvagn på tomten i förorten. Billigast i stan – om du tål kylan.' },
+  { id: 'hoghus', icon: '🏢', name: 'Förortsettan', deposit: 500, rent: 250, restBonus: -5, glad: -2, desc: 'Ett rum och kök på sjunde våningen i Betongvägen 1. Hissen går ibland.' },
+  { id: 'rum', icon: '🛏️', name: 'Lilla rummet', deposit: 0, rent: 350, restBonus: 0, glad: 0, desc: 'En säng, ett kylskåp och en garderob. Men det är ditt.' },
+  { id: 'lagenhet', icon: '🏢', name: 'Lägenheten', deposit: 1500, rent: 600, restBonus: 10, glad: 1, desc: 'Riktigt kök, soffa och utsikt över Pixelstaden.' },
+  { id: 'radhus', icon: '🏡', name: 'Radhuset', deposit: 4000, rent: 800, restBonus: 15, glad: 2, desc: 'Eget radhus på Söder med en liten trädgård. Grannarna grillar på lördagar.' },
+  { id: 'villa', icon: '🏡', name: 'Villan', deposit: 8000, rent: 1000, restBonus: 20, glad: 3, desc: 'Eget hus med trädgård. Hit kan kompisarna komma.' },
+  { id: 'takvaning', icon: '🏙️', name: 'Takvåningen', deposit: 20000, rent: 2000, restBonus: 25, glad: 4, desc: 'Högst upp i Tornhuset – terrass med utsikt över hela Pixelstaden.' },
 ];
 // Okänd bostad (t.ex. i en sparfil från en annan version) → Lilla rummet, aldrig husvagnen.
 export const homeOf = (id) => HOMES.find((h) => h.id === id) || HOMES.find((h) => h.id === 'rum') || HOMES[0];
@@ -450,6 +491,15 @@ export class Game {
     this.bank = 0;                        // sparkontot på banken (kr) – ränta varje måndag
     this.bankMin = 0;                     // veckans lägsta saldo sedan måndag morgon – räntan räknas på det
     this.bankLog = [];                    // kontoutdraget: { d: dag, m: minut, t: 'in'|'ut'|'atm'|'ranta'|'hyra', n: kr }
+    this.lycka = LYCKA_START;             // lyckomätaren 0–100 (se glad)
+    this.mal = null;                      // livsmålen { rik, lycka, utb, karr } (nivåernas id) – null = inte valda än
+    this.malKlar = 0;                     // dagen då alla livsmål nåddes (0 = inte än)
+    this.passIdag = 0;                    // pass jobbade i dag (för många i rad tär på lyckan)
+    this.sistaPass = 0;                   // dagen för senaste passet – ingen i dag = ledig dag (+ lycka på natten)
+    this.gladNatt = [];                   // vad som ändrade lyckan i natt: [{ t, n }] – visas i veckorutan på morgonen
+    Object.defineProperty(this, '_gladDag', { value: { day: 0 }, writable: true, enumerable: false });   // dagens tak per källa (sparas inte)
+    Object.defineProperty(this, '_sadMin', { value: 0, writable: true, enumerable: false });             // hungriga minuter mot nästa −1
+    Object.defineProperty(this, '_kompisMin', { value: 0, writable: true, enumerable: false });          // minuter nära kompisar mot nästa +1
   }
 
   eventIs(id) { return this.event?.id === id; }
@@ -548,6 +598,14 @@ export class Game {
         g.bankLog = (Array.isArray(p.bankLog) ? p.bankLog : []).filter((e) => e && typeof e === 'object').slice(-BANK_LOG_MAX)
           .map((e) => ({ ...e, d: Math.max(1, e.d | 0), m: Math.max(0, Math.min(DAY - 1, e.m | 0)), t: String(e.t || ''), n: Math.max(0, Math.round(+e.n || 0)) }));
         if (p.event && EVENTS.some((e) => e.id === p.event.id)) g.event = { id: p.event.id, job: JOBS[p.event.job] ? p.event.job : undefined };
+        // livsmålen och lyckan (sparfiler före livsmålen: lyckan börjar på LYCKA_START, målen väljs)
+        g.lycka = p.lycka == null ? LYCKA_START : clamp(p.lycka);
+        g.mal = cleanMal(p.mal);
+        g.malKlar = Math.max(0, p.malKlar | 0);
+        g.sistaPass = Math.max(0, p.sistaPass | 0);
+        g.passIdag = g.sistaPass === g.day ? Math.max(0, p.passIdag | 0) : 0;
+        g.gladNatt = (Array.isArray(p.gladNatt) ? p.gladNatt : []).filter((x) => x && typeof x === 'object').slice(0, 12)
+          .map((x) => ({ t: String(x.t || '').slice(0, 40), n: Math.round(+x.n || 0) }));
         for (const k of Object.keys(g.best)) g.best[k] = { ok: Math.max(0, p.best?.[k]?.ok | 0), pay: Math.max(0, p.best?.[k]?.pay | 0) };
       }
     } catch (err) {
@@ -565,7 +623,12 @@ export class Game {
     this.min += minutes;
     const eaten = Math.min(this.hunger, minutes * HUNGER_PER_MIN);
     this.hunger -= eaten;
-    if (this.hunger <= 0) this.energy = Math.max(0, this.energy - (minutes * HUNGER_PER_MIN - eaten) * 0.6);
+    if (this.hunger <= 0) {
+      this.energy = Math.max(0, this.energy - (minutes * HUNGER_PER_MIN - eaten) * 0.6);
+      // svälta gör en ledsen: −1 lycka per hungrig timme
+      this._sadMin += minutes;
+      if (this._sadMin >= 60) { const n = Math.floor(this._sadMin / 60); this._sadMin -= n * 60; this.lycka = clamp(this.lycka - n); }
+    }
     if (this.min >= DAY) { // förbi midnatt: du somnar där du står
       this.min = DAY - 1;
       this.sleep(0.55);
@@ -581,11 +644,25 @@ export class Game {
     // (lägger man sig efter 20:00) – somnar man på gatan (quality < 1) hjälper ingen av dem
     const inBed = quality >= 1, lateEvening = inBed && this.min >= 20 * 60;
     const gadgetBonus = (inBed ? this.gadgetBonus('mobil') : 0) + (lateEvening ? this.gadgetBonus('platta') : 0);
+    // lyckan i natt: dagen som gick (ledig eller inte, hungrig, utmattad) och hemmet man vaknar i
+    const natt = [];
+    const glad = (n, t) => { if (n) natt.push({ t, n }); };
+    glad(-3, 'Vardagen');
+    if (this.sistaPass !== this.day) glad(6, 'Ledig dag');
+    if (quality < 1) glad(-8, 'Somnade utmattad');
+    else if (this.hunger <= 10) glad(-3, 'Hungrig i sängen');
+    const sleepGlad = gladSleep(this.lycka);                                                // lyckan påverkar sömnen
     this.day += 1;
     this.min = 7 * 60;
-    const rested = (55 + 45 * Math.min(1, this.hunger / 50)) * quality + this.homeInfo.restBonus;
+    this.passIdag = 0;
+    const rested = (55 + 45 * Math.min(1, this.hunger / 50)) * quality + this.homeInfo.restBonus + sleepGlad;
     this.energy = clamp(Math.max(this.energy, Math.round(rested)) + gadgetBonus);
     this.hunger = clamp(this.hunger - 15);
+    glad(this.homeInfo.glad || 0, this.homeInfo.name);
+    const mobler = this.placedFurniture();
+    glad(mobler >= 30 ? 3 : mobler >= 15 ? 2 : mobler >= 5 ? 1 : 0, 'Fint möblerat');
+    let pets = 0; try { pets = petCount(this.home) | 0; } catch { pets = 0; }
+    glad(Math.min(4, pets * 2), pets === 1 ? 'Djuret hemma' : 'Djuren hemma');
     let rent = 0, interest = 0, rentFromBank = 0;
     if ((this.day - 1) % 7 === 0 && this.day > 1) { // måndag morgon: räntan på sparkontot, sedan hyran
       interest = bankInterest(Math.min(this.bank, this.bankMin));  // det som legat kvar hela veckan
@@ -605,6 +682,9 @@ export class Game {
       }
       this.bankMin = this.bank;           // en ny räntevecka börjar
     }
+    if (this.money < 0) glad(-4, 'Skulder');
+    this.lycka = clamp(this.lycka + natt.reduce((a, x) => a + x.n, 0));
+    this.gladNatt = natt;
     // dagens händelse
     this.event = null;
     let eventText = null;
@@ -615,7 +695,7 @@ export class Game {
         const jobs = Object.keys(JOBS);
         this.event.job = jobs[(Math.random() * jobs.length) | 0];
       }
-      if (ev.id === 'middag') this.hunger = clamp(this.hunger + 35);
+      if (ev.id === 'middag') { this.hunger = clamp(this.hunger + 35); this.lycka = clamp(this.lycka + 3); }
       if (ev.id === 'tjuga') this.money += 20;
       eventText = `${ev.icon} ${ev.text.replace('{job}', JOBS[this.event.job]?.name || '')}`;
     }
@@ -623,6 +703,58 @@ export class Game {
     this.save();
     return { rent, eventText, gadgetBonus, interest, rentFromBank };
   }
+
+  // ---------- lyckan och livsmålen ----------
+  // Ändra lyckan med n. key + cap = högst cap per dag från den källan (bion, djuren, kompisar …),
+  // så att man inte kan klappa katten till 100. why = en toast med skälet (tomt = tyst – t.ex. när
+  // stället redan visar en egen toast). Svaret är hur mycket lyckan faktiskt ändrades.
+  glad(n, why = '', key = null, cap = Infinity) {
+    n = Math.round(+n || 0);
+    if (!n) return 0;
+    if (key && n > 0) {
+      if (this._gladDag.day !== this.day) this._gladDag = { day: this.day };
+      const used = this._gladDag[key] || 0;
+      n = Math.max(0, Math.min(n, cap - used));
+      if (!n) return 0;
+      this._gladDag[key] = used + n;
+    }
+    const before = this.lycka;
+    this.lycka = clamp(this.lycka + n);
+    const d = this.lycka - before;
+    if (why && d) toast(`${d > 0 ? '😊' : '😞'} ${why}: ${d > 0 ? '+' : ''}${d} lycka`, d > 0 ? 'good' : 'bad');
+    return d;
+  }
+  // Nära kompisar (världen, main.js): +1 lycka per 15 minuter tillsammans, högst 8 om dagen
+  kompisTid(minutes) {
+    this._kompisMin += Math.max(0, +minutes || 0);
+    if (this._kompisMin < 15) return 0;
+    const n = Math.floor(this._kompisMin / 15);
+    this._kompisMin -= n * 15;
+    return this.glad(n, '', 'kompis', 8);
+  }
+  // möbler man själv har ställt ut hemma (inte startmöblerna)
+  placedFurniture() {
+    let n = 0;
+    for (const [key, list] of Object.entries(this.deco)) if (key.startsWith(this.home + ':') && Array.isArray(list)) n += list.filter((d) => d && !d.fx).length;
+    return n;
+  }
+  utbPoang() {
+    let p = 0;
+    for (const [id, e] of Object.entries(this.edu || {})) if (COURSES[id] && e) p += Math.min(COURSES[id].lectures, e.lect | 0) + (e.klar ? 2 : 0);
+    return p;
+  }
+  bestLevel() { return Math.max(1, ...Object.values(this.jobs).map((n) => levelOf(n | 0))); }
+  // Var står man i livsmålen? [{ key, icon, name, have, need, done, k (0–1) }] – tom lista utan mål
+  malStatus() {
+    if (!this.mal) return [];
+    const have = { rik: Math.round(this.money + (this.bank || 0)), lycka: Math.round(this.lycka), utb: this.utbPoang(), karr: this.bestLevel() };
+    return Object.values(MAL).map((M) => {
+      const need = malTarget(M.id, this.mal[M.id]), h = have[M.id];
+      const k = M.id === 'karr' ? Math.max(0, Math.min(1, (h - 1) / Math.max(1, need - 1))) : Math.max(0, Math.min(1, h / Math.max(1, need)));
+      return { key: M.id, icon: M.icon, name: M.name, niva: this.mal[M.id], have: h, need, done: h >= need, k };
+    });
+  }
+  setMal(m) { this.mal = cleanMal(m); this.save(); return this.mal; }
 
   // ---------- prylar (elektronikbutiken) ----------
   hasGadget(kind) { return this.gadgets.some((id) => gadgetOf(id)?.kind === kind); }
@@ -743,10 +875,15 @@ export class Game {
   endShift(jobId, pay, stats = {}, plan = shiftPlan(levelOf(this.jobs[jobId]))) {
     const starving = this.hunger <= 0;
     const doubled = this.eventIs('dubbel') && this.event.job === jobId;
-    let finalPay = Math.max(0, Math.round(starving ? pay / 2 : pay));
+    const gladMult = gladPayMult(this.lycka);                                               // glad = dricks, nere = sämre lön
+    let finalPay = Math.max(0, Math.round((starving ? pay / 2 : pay) * gladMult));
     if (doubled) finalPay *= 2;
     const before = levelOf(this.jobs[jobId]);
     this.jobs[jobId] += 1;
+    // passet tär på lyckan – mer om det är långt eller det tredje i dag
+    this.passIdag = this.sistaPass === this.day ? this.passIdag + 1 : 1;
+    this.sistaPass = this.day;
+    const gladPass = this.glad(-3 - (plan.len === 'langt' ? 2 : 0) - (this.passIdag >= 3 ? 4 : 0));
     this.money += finalPay;
     this.earned += finalPay;
     this.energy = clamp(this.energy - plan.energy);
@@ -763,7 +900,7 @@ export class Game {
     this.save();
     const after = levelOf(this.jobs[jobId]);
     if (after > before) { play('fanfare'); toast(`⭐ Befordran på ${JOBS[jobId].name}! Du är nu ${JOB_TITLES[after - 1]}.`, 'good'); }
-    return { finalPay, starving, doubled, newRecord, promoted: after > before, nightEnd };
+    return { finalPay, starving, doubled, newRecord, promoted: after > before, nightEnd, gladMult, gladPass, passIdag: this.passIdag };
   }
 
   // ---------- kläder (klädkatalogen js/data/wardrobe.js) ----------
@@ -796,6 +933,7 @@ export class Game {
     if (this.money < price) return { ok: false, msg: 'Du har inte råd – dags att jobba ett pass!' };
     this.money -= price;
     for (const k of wardrobeKeys([it.id])) if (!this.wardrobe.includes(k)) this.wardrobe.push(k);
+    this.glad(4, '', 'nytt', 10);                                                           // nya kläder gör en glad (högst +10 om dagen)
     this.save();
     return { ok: true, item: it, price };
   }

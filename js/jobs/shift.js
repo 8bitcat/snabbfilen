@@ -156,8 +156,10 @@ function finishShift(A, jobId, stats) {
     ${tips ? line(`🪙 Dricks (${stats.dricks} ggr)`, '+' + fmt(tips)) : ''}
     ${res.starving ? line('🥴 Yr av hunger', 'halv lön!') : ''}
     ${res.doubled ? line('💰 Extrapass', 'DUBBEL LÖN!') : ''}
+    ${res.gladMult > 1 ? line('😊 Glad på jobbet', '+5 % dricks') : res.gladMult < 1 ? line('😞 Nere i dag', '−10 % lön') : ''}
     ${planOf(A).len === 'langt' ? line('💪 Längre pass', `${Math.round(planOf(A).gameMin / 60)} timmar`) : ''}
     ${line('💰 Lön', fmt(res.finalPay))}
+    ${res.gladPass ? line(`😊 Lycka${res.passIdag >= 3 ? ` (${res.passIdag}:e passet i dag)` : planOf(A).len === 'langt' ? ' (långt pass)' : ''}`, `${res.gladPass} → ${Math.round(A.game.lycka)}`) : ''}
     ${res.nightEnd ? '<p style="font-size:var(--f2);margin-bottom:0">🌙 Nattpasset tog slut vid midnatt – nattbussen tar dig hem till sängen.</p>' : ''}`, [
     { label: res.nightEnd ? '🌙 Ta lönen och åk hem' : '💰 Ta lönen', cls: 'btn-go', onClick: () => { closeModal(); afterShift(A, jobId, res.nightEnd); } },
   ], { closable: false });

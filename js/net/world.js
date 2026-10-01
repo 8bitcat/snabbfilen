@@ -520,7 +520,8 @@ export function visitPlayer(A, id) {
   if (A.game.collapsed) return false;
   A.visitTarget = { id, name: p.av.name, home: p.home || 'rum', deco: p.deco || {} };
   play('door');
-  toast(`🏠 Du är hemma hos ${p.av.name || 'en kompis'}!`, 'good');
+  const h = A.game.glad ? A.game.glad(4, '', 'besok', 8) : 0;                              // att hälsa på gör en glad (högst +8 om dagen)
+  toast(`🏠 Du är hemma hos ${p.av.name || 'en kompis'}!${h ? ` +${h} 😊` : ''}`, 'good');
   A.go('visit');
   return true;
 }

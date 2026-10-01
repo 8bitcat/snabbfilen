@@ -1881,6 +1881,7 @@ export function makeShopLeksaker(A, opts = {}) {
     g.money -= pris;
     const own = toysOf(g);
     own[id] = (own[id] | 0) + 1;
+    g.glad?.(3, '', 'nytt', 10);                                                            // nya saker gör en glad (samma tak som kläderna)
     g.save();
     play('buy');
     bought.push({ id, pris, t: Math.round(t * 10) / 10 });

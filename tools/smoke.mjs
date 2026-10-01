@@ -329,9 +329,15 @@ await page.waitForTimeout(200);
 ok((await page.locator('.dlg-head h2').textContent())?.includes('Din resa'), 'dagboken öppnas');
 await page.keyboard.press('Escape');
 await page.waitForTimeout(200);
-await page.evaluate(() => { window.SF.game.home = 'villa'; window.SF.game.money = 15000; window.SF.game.save(); });
+// livsmålen (lätt): rikedom, lycka, en kurs på Pixelhögskolan och Van på ett jobb → gratulationen
+await page.evaluate(() => {
+  const g = window.SF.game;
+  Object.assign(g, { home: 'villa', money: 15000, lycka: 70, mal: { rik: 'latt', lycka: 'latt', utb: 'latt', karr: 'latt' }, malKlar: 0 });
+  g.edu = { datorteknik: { lect: 4, day: 1, tenta: 0, tentaDay: 0, klar: false } }; g.jobs.burgare = Math.max(3, g.jobs.burgare | 0);
+  g.save();
+});
 await page.waitForTimeout(600);
-ok((await page.locator('.dlg-head h2').textContent().catch(() => ''))?.includes('lyckats'), 'vinstdialogen visas');
+ok((await page.locator('.dlg-head h2').textContent().catch(() => ''))?.includes('klarat livet'), 'vinstdialogen visas (alla livsmål nådda)');
 await page.click('.dlg-foot .btn-go');
 await page.waitForTimeout(200);
 await page.evaluate(() => { window.SF.roomSub = 0; window.SF.go('room'); });

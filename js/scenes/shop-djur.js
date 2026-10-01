@@ -1684,6 +1684,7 @@ function openPetDialog(A, basePet, { onBuy } = {}) {
     const extras = [...checked];
     for (const k of extras) store.buyItem(k);
     g.money -= tot;
+    g.glad?.(10, '', 'nyttdjur', 10);                                                       // ett nytt husdjur – lyckan (game.js)
     g.save();
     play('buy');
     // ett enda kvitto per köp (flera toasts staplas annars över nästa dialog)

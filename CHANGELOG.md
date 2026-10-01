@@ -10,6 +10,15 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.72.0] – 2026-10-01 – Livsmål och lycka
+- Livsmål: välj hur högt du siktar i fyra mål – 💰 Rikedom, 😊 Lycka, 🎓 Utbildning och 💼 Karriär – på Lätt, Normal eller Svår. Du har klarat livet i Pixelstaden när alla fyra är nådda samtidigt. Nya spelare väljer direkt efter välkomsten, och den som redan spelar får välja nästa gång spelet startar.
+- 🎯 i HUD:en visar hur långt du har kommit i varje mål, och där kan du ändra nivåerna. Veckorutan och dagboken visar också livsmålen.
+- Ny mätare: 😊 LYCKA bredvid mat och sömn. Gladare blir du av bion, att klappa och leka med djuren, ett nytt husdjur, kompisar i närheten, att hälsa på någon, nya kläder och leksaker, TV:n hemma, en ledig dag och ett fint möblerat hem.
+- Lyckan sjunker lite varje natt, av varje pass (mer för långa pass och det tredje passet samma dag), av att bo i husvagnen eller Förortsettan, av att svälta, somna utmattad eller ha skulder.
+- Mycket glad (80+): 5 % dricks på passen och bättre sömn. Nere (under 30): sämre sömn, och under 25 blir lönen 10 % lägre. På morgonen står det i veckorutan vad som ändrade lyckan i natt.
+- Det gamla slutmålet (Villan + 10 000 kr) ersätts av livsmålen – den som redan klarade det behåller pokalen.
+- Mobilen: pengarna i den tunna remsan visades som "1?234 KR" – nu "1 234 KR".
+
 ## [0.71.0] – 2026-10-01 – KBK-filmerna på bion
 - Två nya filmer på BIO PIXEL om Kungsladugårds flicklag (KBK): KUNGSLADUGÅRD – EN STILLSAM BÖRJAN (17:00) och KUNGSLADUGÅRD – UT I VÄRLDEN (17:45). Affischerna står på varsitt PREMIÄR-staffli i foajén och båda står på biografens ljusskylt.
 - Julia, Märta, Nina, Ellen och Alice G gör och passar målen, och Lily står i mål – alla med sitt eget hår och sin egen hudton. Motståndarna är tjejlag: i lilla cupen Näset, Hovås/Billdal, Sandarna (10-0!) och Älvsborg i finalen, i Champions League damlagen från Häcken, Manchester United, Juventus och Barcelona.

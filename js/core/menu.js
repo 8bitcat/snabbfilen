@@ -36,7 +36,7 @@ function summaryOf(id, isCurrent) {
     const p = JSON.parse(raw);
     const home = HOMES.find((h) => h.id === p.home);
     const shifts = Object.values(p.jobs || {}).reduce((a, b) => a + (b | 0), 0);
-    return { money: Math.round(+p.money || 0), home: home ? `${home.icon} ${home.name}` : '🏠 ' + (p.home || '?'), day: p.day | 0, shifts, won: !!p.won };
+    return { money: Math.round(+p.money || 0), home: home ? `${home.icon} ${home.name}` : '🏠 ' + (p.home || '?'), day: p.day | 0, shifts, won: !!p.won || (p.malKlar | 0) > 0 };   // 🏆 = livsmålen (eller gamla slutmålet)
   } catch { return null; }
 }
 

@@ -3,7 +3,9 @@
 import { loadAvatar, openAvatarPicker, avatarPortrait, setAvatarWardrobe, setAvatarSalon } from './core/avatar.js';
 import { openModal, closeModal, toast, modalOpen, esc } from './core/ui.js';
 import { onInvite } from './net/coop.js';
-import { Game, SAVE_KEY, WIN_MONEY, JOBS, JOB_TITLES, levelOf, fmt, clock } from './game.js';
+import { Game, SAVE_KEY, WIN_MONEY, JOBS, JOB_TITLES, levelOf, fmt, clock, REALTIME_RATE, setPetCounter } from './game.js';
+import { openGoals, celebrateGoals } from './core/livsmal.js'; // 🎯 livsmålen
+import { petStore } from './pets/sim.js';
 import { makeCity } from './scenes/city.js';
 import { makeApartment } from './scenes/apartment.js'; // hemmet: den löpande lägenheten (rummen i rad, room.js per rum)
 import { makeShopMobler } from './scenes/shop-mobler.js';
@@ -405,7 +407,7 @@ function renderHud() {
   const nearby = worldFolksHere(A).length;
   $('#emotes').classList.toggle('hidden', nearby === 0);
   $('#decor-btn').classList.toggle('hidden', A.sceneName !== 'room');
-  const key = `${g.day}|${Math.floor(g.min)}|${g.money}|${Math.round(g.hunger)}|${Math.round(g.energy)}|${A.avatar?.name}|${online}`;
+  const key = `${g.day}|${Math.floor(g.min)}|${g.money}|${Math.round(g.hunger)}|${Math.round(g.energy)}|${Math.round(g.lycka)}|${A.avatar?.name}|${online}`;
   if (key === hudKey) return;
   hudKey = key;
   $('#hud-friends').textContent = online > 1 ? `👥 ${online}` : '👥';
@@ -416,6 +418,7 @@ function renderHud() {
   money.classList.toggle('debt', g.money < 0);
   setBar('#bar-hunger', g.hunger);
   setBar('#bar-energy', g.energy);
+  setBar('#bar-lycka', g.lycka);
   $('#hud-name').textContent = A.avatar?.name || '';
 }
 function setBar(sel, v) {
@@ -574,28 +577,33 @@ function openDiary() {
     ${jobRows}
     <div style="border-top:3px dashed var(--ink);margin:8px 0"></div>
     ${line('👕 Köpta plagg', `${plagg.owned} av ${plagg.of}`)}
-    ${g.won ? line('🏆 Slutmålet', 'KLART!') : line('🏆 Målet', `Villan + ${fmt(WIN_MONEY)}`)}`,
-  [{ label: 'Snyggt jobbat', cls: 'btn-go', onClick: closeModal }]);
+    ${line('😊 Lycka', `${Math.round(g.lycka)} av 100`)}
+    ${g.mal ? line('🎯 Livsmålen', g.malKlar ? `ALLA NÅDDA dag ${g.malKlar}! 🏆` : `${g.malStatus().filter((s) => s.done).length} av 4 nådda`) : line('🎯 Livsmålen', 'inte valda än')}
+    ${g.won ? line('🏆 Gamla slutmålet', `Villan + ${fmt(WIN_MONEY)} – KLART!`) : ''}`,
+  [
+    { label: '🎯 Livsmålen', onClick: () => { closeModal(); openGoals(A); } },
+    { label: 'Snyggt jobbat', cls: 'btn-go', onClick: closeModal },
+  ]);
 }
 
-// Slutmålet: Villan + rejält med pengar (fickan och sparkontot tillsammans) → en enda stor gratulation.
+// Livsmålen: alla fyra nådda samtidigt → en enda stor gratulation (g.malKlar = dagen). Man spelar
+// vidare; höjer man nivåerna efteråt firas det inte igen.
 function checkWin() {
   const g = A.game;
-  const total = g.money + (g.bank || 0);
-  if (g.won || g.home !== 'villa' || total < WIN_MONEY) return;
-  g.won = true;
+  if (!g.mal || g.malKlar) return;
+  const S = g.malStatus();
+  if (!S.length || !S.every((s) => s.done)) return;
+  g.malKlar = g.day;
   g.save();
-  play('fanfare');
-  openModal('🏆 Du har lyckats i Pixelstaden!', `<p style="font-size:var(--f2);margin-top:0">Egen villa och <b>${fmt(total)}</b> ${g.bank ? `(${fmt(g.bank)} av dem på banken)` : 'på fickan'} – från ett litet rum till toppen på ${g.day} dagar!</p>
-    <p style="font-size:var(--f2)">💰 Totalt intjänat: <b>${fmt(g.earned)}</b><br>🔨 Jobbade pass: <b>${Object.values(g.jobs).reduce((a, b) => a + b, 0)}</b></p>
-    <p style="font-size:var(--f2)">Staden är din – spela vidare, bjud hem kompisarna och visa upp villan! 🎉</p>`,
-    [{ label: '🎉 Tack!', cls: 'btn-go', onClick: closeModal }]);
+  celebrateGoals(A);
 }
 
 // ---------- uppstart ----------
 function boot() {
   A.game = Game.load();
   const firstRun = !localStorage.getItem(SAVE_KEY);
+  // lyckan på morgonen räknar djuren hemma (game.js importerar inte djuren själv)
+  setPetCounter((home) => petStore().petsHome(home).length);
   A.avatar = loadAvatar();
   // garderoben visar bara plagg man äger (klädkatalogens id; gamla 'kind:v' räknas) + basplaggen
   setAvatarWardrobe(() => A.game.ownedWardrobeIds());
@@ -617,6 +625,13 @@ function boot() {
     wb.id = 'hud-week'; wb.className = 'btn btn-small'; wb.title = 'Veckan: hyra, checklista och sparmål'; wb.textContent = '📅';
     wb.onclick = () => openWeek(A);
     $('#hud-diary').before(wb);
+  }
+  // 🎯 livsmålen: hur långt man har kommit (och ändra nivåerna)
+  if (!document.getElementById('hud-goals')) {
+    const gb = document.createElement('button');
+    gb.id = 'hud-goals'; gb.className = 'btn btn-small'; gb.title = 'Livsmålen: rikedom, lycka, utbildning och karriär'; gb.textContent = '🎯';
+    gb.onclick = () => openGoals(A);
+    $('#hud-week').before(gb);
   }
   // 🗺️ kartan och 🚕 taxin (Carl 2026-09-29): tryck på ett ställe på kartan → 🧭 en pil i staden
   // visar vägen (A.guideTo) eller 🚕 en taxi hämtar en vid trottoarkanten (A.taxiTo, city.js)
@@ -657,12 +672,19 @@ function boot() {
       openModal('🌆 Välkommen till Pixelstaden!', `<div class="who">${''}<div>
         <p style="font-size:var(--f2);margin-top:0">Här börjar ditt nya liv, <b>${A.avatar.name}</b>! Du har <b>${fmt(A.game.money)}</b> på fickan.</p>
         <p style="font-size:var(--f2)">Alla börjar i en rostig husvagn ute i förorten. Tjäna pengar på stadens jobb, köp mat så du orkar, klä dig snyggt – och spara ihop till en bättre bostad hos bostadsbyrån!</p></div></div>`,
-        [{ label: '🚐 Till husvagnen', cls: 'btn-go', onClick: () => { closeModal(); A.game.home = 'husvagn'; A.game.save(); A.go('room'); weekFirst(); } }],
+        [{ label: '🚐 Till husvagnen', cls: 'btn-go', onClick: () => { closeModal(); A.game.home = 'husvagn'; A.game.save(); A.go('room'); goalsFirst(weekFirst); } }],
         { closable: false });
     } else {
       A.go('room');
-      weekFirst();
+      goalsFirst(weekFirst);
     }
+  };
+  // Livsmålen väljs innan veckan visas: nya spelare direkt efter välkomsten, sparfiler från före
+  // livsmålen första gången de kommer in. (Testrobotar slipper rutan, utom med ?mal i adressen.)
+  const goalsFirst = (then) => {
+    const robot = navigator.webdriver && !new URLSearchParams(location.search).has('mal');
+    if (A.game.mal || robot) { then(); return; }
+    openGoals(A, { pick: true, first: true, onDone: then });
   };
   // veckan är det första man möts av när man kommer in (men inte efter en uppdatering mitt i spelet)
   const weekFirst = () => {
@@ -740,7 +762,10 @@ function tick(now) {
   const dt = Math.min(0.05, (now - last) / 1000);
   last = now;
   if (A.scene) {
-    if (!modalOpen() && !isMenuOpen() && !A.sceneName.startsWith('jobb')) A.game.tickReal(dt);
+    if (!modalOpen() && !isMenuOpen() && !A.sceneName.startsWith('jobb')) {
+      A.game.tickReal(dt);
+      if (worldFolksHere(A).length) A.game.kompisTid(dt * REALTIME_RATE);              // kompisar i närheten gör en glad
+    }
     A.scene.update?.(dt);
     followCrop(dt);
     worldTick(A, A.scene.worldX ?? null, dt);
