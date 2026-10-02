@@ -167,11 +167,38 @@ export const COURSES = {
     blurb: 'Processorer, minnen, grafikkort och nätaggregat – lär dig bygga datorer som ett proffs.' },
   ekonomi: { id: 'ekonomi', icon: '📊', name: 'Ekonomi', fee: 900, lectures: 4, job: 'finans',
     blurb: 'Aktier, kurser och budget – köp billigt, sälj dyrt och håll koll på kunderna.' },
+  // (inget eget jobb: examen krävs för att bli biträdande chef och chef – ROLLER nedan)
+  ledarskap: { id: 'ledarskap', icon: '🧭', name: 'Ledarskap', fee: 800, lectures: 3, job: null,
+    blurb: 'Leda ett lag, lägga schema, ta hand om kunderna och hålla budgeten – för dig som vill bli chef.' },
 };
 export const courseOf = (id) => COURSES[id] || null;
 export const JOB_TITLES = ['Nybörjare', 'Van', 'Proffs', 'Mästare', 'Legendar'];
 export const levelOf = (shifts) => Math.min(5, 1 + Math.floor(shifts / 3));
 export const payMult = (level) => 1 + 0.15 * (level - 1);
+// KARRIÄRSTEGARNA (djupförslaget, Carl 2026-10-02 "fortsätt med allt"): på varje arbetsplats kan man
+// söka sig uppåt – Medarbetare → Skiftledare → Biträdande chef → Chef. Varje steg kräver vana (titeln
+// på jobbet, JOB_TITLES), de två översta examen i Ledarskap på Pixelhögskolan, chefen dessutom några
+// pass som biträdande chef – och rätt kläder när man söker (klädkoden, kollas på intervjun i
+// js/core/karriar.js). Rollen ger lönelyft (lon), ett eget beslut inför passet (js/jobs/shift.js:
+// skiftledare väljer fokus, chefen även priserna) och för de två översta en veckolön på måndagen –
+// om man jobbat minst CHEF_PASS pass där veckan som gick. g.roller[jobb] = rollens index.
+export const ROLLER = [
+  { id: 'medarb', namn: 'Medarbetare', icon: '👕', lon: 1 },
+  { id: 'skift', namn: 'Skiftledare', icon: '📋', lon: 1.2, niva: 3, klader: 'prydlig' },
+  { id: 'bitr', namn: 'Biträdande chef', icon: '🗂️', lon: 1.4, niva: 4, kurs: 'ledarskap', klader: 'skjorta', veckolon: 150 },
+  { id: 'chef', namn: 'Chef', icon: '👔', lon: 1.7, niva: 5, kurs: 'ledarskap', passIRoll: 3, klader: 'kavaj', veckolon: 400 },
+];
+export const CHEF_PASS = 2;
+// klädkoderna (look.top – plaggen i js/core/people/tops.js, säljs i klädaffären)
+const SLAPPT = ['tank', 'crop', 'tube', 'vest', 'pyjamas', 'bathrobe', 'robe', 'vampire', 'pirate', 'santa', 'armor', 'astronaut', 'hero', 'lucia'];
+const SKJORTA = ['shirt', 'oxford', 'blouse', 'polo', 'flannel', 'western', 'bowling', 'workshirt', 'waistcoat', 'slipover', 'vsweater', 'turtleneck', 'cardigan', 'peplum', 'wrap', 'blazer', 'suit', 'tuxedo', 'chef', 'doctor', 'nurse', 'pilot', 'police'];
+const KAVAJ = ['suit', 'blazer', 'waistcoat', 'tuxedo'];
+export const KLADKOD = {
+  prydlig: { namn: 'prydliga kläder', tips: 'inget linne, ingen magtröja, inga pyjamas eller maskeradkläder', ok: (top) => !SLAPPT.includes(top || 'tee') },
+  skjorta: { namn: 'skjorta eller blus', tips: 'skjorta, blus, piké, kofta, stickad väst – eller arbetskläder som kockrock', ok: (top) => SKJORTA.includes(top) },
+  kavaj: { namn: 'kavaj eller kostym', tips: 'kavaj med slips, blazer, kostymväst eller smoking', ok: (top) => KAVAJ.includes(top) },
+};
+export const rollOf = (g, jobId) => ROLLER[Math.max(0, Math.min(ROLLER.length - 1, g.roller?.[jobId] | 0))];
 // PASSET EFTER VANAN (Carl 2026-09-30: "allteftersom man har jobbat ska fler kunder komma och
 // tiden bli lite längre … fler stolar, kunderna ska ha samma timer"). Nivån (levelOf) styr:
 //   seconds  passets längd i verkliga sekunder: 60 s som nybörjare, +8 % per nivå (Legendar 79 s)
@@ -623,6 +650,10 @@ export class Game {
     this.festDag = 0;                     // dagen för senaste festen hemma (en om dagen, js/core/fest.js)
     this.fester = 0;                      // fester man har haft
     this.sambo = null;                    // bor ihop (js/net/sambo.js): { key, namn, hem, roll: 'vard'|'inflyttad', hu, sedan, ver, stamp, egen }
+    this.roller = {};                     // karriärstegarna: jobb-id → rollens index i ROLLER (0 = medarbetare)
+    this.rollPass = {};                   // pass i nuvarande roll per jobb (chefen kräver några som biträdande chef)
+    this.veckoPass = {};                  // pass per jobb sedan måndag (veckolönen kräver CHEF_PASS)
+    this.sokt = {};                       // dagen man senast sökte befordran per jobb (en intervju om dagen)
     this.won = false;                     // slutmålet nått
     this.event = null;                    // dagens händelse { id, job? }
     this.best = Object.fromEntries(Object.keys(JOBS).map((k) => [k, { ok: 0, pay: 0 }])); // rekord per jobb
@@ -724,6 +755,9 @@ export class Game {
         }
         g.festDag = Math.max(0, p.festDag | 0); g.fester = Math.max(0, p.fester | 0);
         g.sambo = cleanSambo(p.sambo);
+        // karriärstegarna: okända jobb (från en nyare version) följer med orörda
+        const counts = (o, max) => Object.fromEntries(Object.entries(o && typeof o === 'object' ? o : {}).filter(([, v]) => (v | 0) > 0).map(([k, v]) => [k, Math.min(max, v | 0)]));
+        g.roller = counts(p.roller, ROLLER.length - 1); g.rollPass = counts(p.rollPass, 9999); g.veckoPass = counts(p.veckoPass, 99); g.sokt = counts(p.sokt, 1e7);
         g.akerMed = typeof p.akerMed === 'string' && fordonOf(p.akerMed) && g.fordon.some((x) => x.id === p.akerMed) ? p.akerMed : null;
         for (const k of Object.keys(g.jobs)) g.jobs[k] = Math.max(0, p.jobs?.[k] | 0);
         for (const [k, v] of Object.entries(p.jobs || {})) if (!(k in g.jobs)) keep.jobs[k] = v;
@@ -837,10 +871,11 @@ export class Game {
     glad(mobler >= 30 ? 3 : mobler >= 15 ? 2 : mobler >= 5 ? 1 : 0, 'Fint möblerat');
     let pets = 0; try { pets = petCount(this.home) | 0; } catch { pets = 0; }
     glad(Math.min(4, pets * 2), pets === 1 ? 'Djuret hemma' : 'Djuren hemma');
-    let rent = 0, interest = 0, rentFromBank = 0;
+    let rent = 0, interest = 0, rentFromBank = 0, chefslon = [];
     if ((this.day - 1) % 7 === 0 && this.day > 1) { // måndag morgon: räntan på sparkontot, sedan hyran
       interest = bankInterest(Math.min(this.bank, this.bankMin));  // det som legat kvar hela veckan
       if (interest > 0) { this.bank += interest; this.logBank('ranta', interest); }
+      chefslon = this.betalaChefslon();                       // veckolönen (karriärstegarna) före hyran
       rent = this.hyra;                                       // (bor man ihop betalar man halva)
       const before = this.money;
       this.money -= rent;
@@ -877,7 +912,43 @@ export class Game {
     if (this.eventIs('regn')) this.waterGarden(-1, true);                                   // regnet vattnar trädgården
     this.pantMorning();
     this.save();
-    return { rent, eventText, gadgetBonus, interest, rentFromBank, odlat };
+    return { rent, eventText, gadgetBonus, interest, rentFromBank, odlat, chefslon };
+  }
+
+  // ---------- karriärstegarna ----------
+  // nästa steg på jobbet och vad som fattas (kläderna kollas på intervjun):
+  // { roll, nasta, ok, saknas: [text], soktIdag }
+  befordran(jobId) {
+    const i = this.roller[jobId] | 0, nasta = ROLLER[i + 1] || null, roll = ROLLER[i];
+    if (!nasta) return { roll, nasta: null, ok: false, saknas: [], soktIdag: false };
+    const saknas = [];
+    const niva = levelOf(this.jobs[jobId] | 0);
+    if (niva < nasta.niva) { const kvar = (nasta.niva - 1) * 3 - (this.jobs[jobId] | 0); saknas.push(`titeln ${JOB_TITLES[nasta.niva - 1]} (${kvar} pass till)`); }
+    if (nasta.kurs && !this.edu[nasta.kurs]?.klar) saknas.push(`examen i ${COURSES[nasta.kurs]?.name || nasta.kurs} på Pixelhögskolan`);
+    if (nasta.passIRoll && (this.rollPass[jobId] | 0) < nasta.passIRoll) saknas.push(`${nasta.passIRoll - (this.rollPass[jobId] | 0)} pass till som ${roll.namn.toLowerCase()}`);
+    return { roll, nasta, ok: !saknas.length, saknas, soktIdag: (this.sokt[jobId] | 0) === this.day };
+  }
+  befordra(jobId) {
+    const b = this.befordran(jobId);
+    if (!b.ok) return null;
+    this.roller[jobId] = (this.roller[jobId] | 0) + 1;
+    this.rollPass[jobId] = 0;
+    this.glad(6, '', 'befordran', 6);
+    this.save();
+    return b.nasta;
+  }
+  // måndag morgon: veckolönen för jobb där man är biträdande chef/chef och jobbat minst CHEF_PASS pass
+  betalaChefslon() {
+    const out = [];
+    for (const [jobId, i] of Object.entries(this.roller)) {
+      const R = ROLLER[i | 0];
+      if (!R?.veckolon || !JOBS[jobId]) continue;
+      const ok = (this.veckoPass[jobId] | 0) >= CHEF_PASS;
+      if (ok) { this.money += R.veckolon; this.earned += R.veckolon; }
+      out.push({ job: jobId, roll: R.namn, kr: ok ? R.veckolon : 0, pass: this.veckoPass[jobId] | 0 });
+    }
+    this.veckoPass = {};
+    return out;
   }
 
   // ---------- trädgården ----------
@@ -1257,6 +1328,8 @@ export class Game {
     if (doubled) finalPay *= 2;
     const before = levelOf(this.jobs[jobId]);
     this.jobs[jobId] += 1;
+    this.rollPass[jobId] = (this.rollPass[jobId] | 0) + 1;     // karriärstegarna: pass i rollen och i veckan
+    this.veckoPass[jobId] = (this.veckoPass[jobId] | 0) + 1;
     // passet tär på lyckan – mer om det är långt eller det tredje i dag
     this.passIdag = this.sistaPass === this.day ? this.passIdag + 1 : 1;
     this.sistaPass = this.day;

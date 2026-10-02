@@ -10,6 +10,14 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.79.0] – 2026-10-02 – Karriärstegar
+- Karriärstegar! På varje jobb kan du klättra: Medarbetare → Skiftledare → Biträdande chef → Chef.
+- Skiftledare: bli Proffs på jobbet och kom i prydliga kläder. Biträdande chef: Mästare, examen i Ledarskap och skjorta eller blus. Chef: Legendar, tre pass som biträdande chef och kavaj eller kostym.
+- Efter ett pass säger chefen till när du kan söka befordran. På intervjun kollar chefen dina kläder och ställer tre frågor om hur man leder ett lag – två rätt så är du befordrad. En intervju om dagen.
+- Befattningen ger mer lön (×1,2 / ×1,4 / ×1,7). Inför passet väljer du dagens fokus: 🏃 tempo (fler kunder, +10 %) eller 🎯 noggrannhet (fel kostar hälften). Som chef sätter du också priserna: låga ger fler kunder, höga ger mer per rätt.
+- Biträdande chef och chef får chefslön varje måndag (150 / 400 kr) – om du jobbat minst två pass där under veckan.
+- Ny kurs på Pixelhögskolan: Ledarskap (3 föreläsningar) – lyssna, beröm, schema med vila.
+
 ## [0.78.0] – 2026-10-02 – Bo ihop
 - Bo ihop! Öppna 👥 och tryck "🏠 Flytta ihop" vid en kompis som är online. Säger hen ja flyttar hen in hos dig – ni delar hem, möbler och trädgård och kan sova där båda två.
 - Hyran delas på två: var och en betalar halva veckohyran.

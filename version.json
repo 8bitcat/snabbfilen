@@ -1,7 +1,7 @@
 {
-  "version": "0.78.0",
+  "version": "0.79.0",
   "date": "2026-10-02",
-  "title": "Bo ihop",
+  "title": "Karriärstegar",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
@@ -36,6 +36,7 @@
     "js/core/fx.js",
     "js/core/hemmusik.js",
     "js/core/hud-pix.js",
+    "js/core/karriar.js",
     "js/core/livsmal.js",
     "js/core/menu.js",
     "js/core/music.js",

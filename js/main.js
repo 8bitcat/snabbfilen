@@ -3,7 +3,7 @@
 import { loadAvatar, openAvatarPicker, avatarPortrait, setAvatarWardrobe, setAvatarSalon } from './core/avatar.js';
 import { openModal, closeModal, toast, modalOpen, esc } from './core/ui.js';
 import { onInvite } from './net/coop.js';
-import { Game, SAVE_KEY, WIN_MONEY, JOBS, JOB_TITLES, levelOf, fmt, clock, REALTIME_RATE, setPetCounter, homeOf } from './game.js';
+import { Game, SAVE_KEY, WIN_MONEY, JOBS, JOB_TITLES, levelOf, fmt, clock, REALTIME_RATE, setPetCounter, homeOf, rollOf } from './game.js';
 import { openGoals, celebrateGoals } from './core/livsmal.js'; // 🎯 livsmålen
 import { petStore } from './pets/sim.js';
 import { makeKoket } from './scenes/koket.js';
@@ -465,7 +465,7 @@ A.sleepFlow = () => {
       closeModal();
       stopHemMusik(A); // man stänger av musiken när man lägger sig
       // veckosammanfattningen är alltid det första man ser när man vaknat
-      const wake = () => { const { rent, eventText, odlat } = g.sleep(); openWeek(A, { morning: true, rentPaid: rent, eventText, odlat }); };
+      const wake = () => { const { rent, eventText, odlat, chefslon } = g.sleep(); openWeek(A, { morning: true, rentPaid: rent, eventText, odlat, chefslon }); };
       // klickade man på sängen lägger sig figuren under täcket först (room.js spelar natten)
       if (A.scene?.bedtime?.(wake)) return;
       play('sleep');
@@ -588,7 +588,8 @@ function openDiary() {
   const line = (l, r) => `<div style="display:flex;justify-content:space-between;font-size:var(--f2)"><span>${l}</span><b>${r}</b></div>`;
   const jobRows = Object.values(JOBS).map((j) => {
     const n = g.jobs[j.id], b = g.best[j.id];
-    return line(`${j.icon} ${j.name}`, n ? `${n} pass · ${JOB_TITLES[levelOf(n) - 1]}${b.ok ? ` · 🏅 ${b.ok} rätt / ${fmt(b.pay)}` : ''}` : 'aldrig jobbat');
+    const R = rollOf(g, j.id);   // karriärstegarna: befattningen om man har en
+    return line(`${j.icon} ${j.name}`, n ? `${n} pass · ${JOB_TITLES[levelOf(n) - 1]}${R.lon > 1 ? ` · ${R.icon} ${R.namn}` : ''}${b.ok ? ` · 🏅 ${b.ok} rätt / ${fmt(b.pay)}` : ''}` : 'aldrig jobbat');
   }).join('');
   openModal('📊 Din resa i Pixelstaden', `
     ${line('📅 Dag', `${g.day} (${g.dayName})`)}

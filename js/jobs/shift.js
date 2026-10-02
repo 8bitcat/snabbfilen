@@ -8,7 +8,8 @@
 // kommer planen från den som bjöd in.
 import { openModal, closeModal, toast, esc } from '../core/ui.js';
 import { sendInvite } from '../net/coop.js';
-import { JOBS, JOB_TITLES, levelOf, payMult, fmt, shiftPlan, canLongShift } from '../game.js';
+import { JOBS, JOB_TITLES, levelOf, payMult, fmt, shiftPlan, canLongShift, rollOf } from '../game.js';
+import { karriarRad, openIntervju, chefOf } from '../core/karriar.js'; // karriärstegarna
 import { SMALL, BIG, ctxText, textW } from '../core/floor-pix.js';
 import { play } from '../core/sound.js';
 import { shiftInStrip } from '../core/hud-pix.js';
@@ -21,9 +22,25 @@ const newSid = () => Math.random().toString(36).slice(2, 10).replace(/[^a-z0-9]/
 // får man ta ett längre pass nu? (vanliga jobb stänger 24 – ett långt pass börjar senast 18)
 const longOk = (g, jobId) => !!JOBS[jobId]?.nattoppet || g.min <= 18 * 60;
 
+// KARRIÄRSTEGARNA: skiftledare och uppåt bestämmer inför passet. Fokus: tempo (fler kunder, +10 %
+// lön) eller noggrannhet (fel kostar hälften). Chefen sätter också priserna: låga (fler kunder,
+// lägre styckpris) eller höga (färre kunder, högre styckpris). A.beslut minns valet mellan passen.
+const FOKUS = { tempo: { pace: 0.9, lon: 1.1, oops: 1 }, noggrann: { pace: 1, lon: 1, oops: 0.5 } };
+const PRISER = { lag: { pace: 0.85, styck: 0.85 }, vanlig: { pace: 1, styck: 1 }, hog: { pace: 1.2, styck: 1.3 } };
+const beslutOf = (A, jobId) => {
+  const R = rollOf(A.game, jobId), idx = A.game.roller?.[jobId] | 0;
+  if (!idx) return null;
+  const b = A.beslut || {};
+  return { fokus: FOKUS[b.fokus] ? b.fokus : 'noggrann', pris: R.id === 'chef' && PRISER[b.pris] ? b.pris : 'vanlig', chef: R.id === 'chef' };
+};
+const withBeslut = (plan, B) => (B ? { ...plan, pace: plan.pace * FOKUS[B.fokus].pace * PRISER[B.pris].pace } : plan);
+
 // In i passet med planen (och det gemensamma passet, om man jobbar ihop)
 function beginShift(A, jobId, sceneName, plan, coop = null) {
   A.shiftJob = jobId;
+  // (inbjuden till någon annans pass: deras plan gäller – ens egna beslut bara när man leder själv)
+  A.shiftBeslut = coop?.host ? null : beslutOf(A, jobId);
+  plan = withBeslut(plan, A.shiftBeslut);
   A.shiftPlan = plan;
   A.coop = coop;
   A.go(sceneName, { onDone: (stats) => finishShift(A, jobId, stats) });
@@ -70,9 +87,19 @@ export function startJobFlow(A, jobId, sceneName) {
       : `👥 Ju fler pass du jobbar, desto fler kunder och platser`,
     canLong ? `⏱️ Ett pass tar 4 timmar – ett <b>längre pass</b> 6 timmar${longNow ? '' : ' (börjar senast 18:00)'}.` : `⏱️ Ett pass tar 4 timmar.`,
     COOP_JOBS.has(jobId) ? `💼 Jobba ihop: bjud in en kompis till passet` : null,
+    karriarRad(g, jobId),
   ].filter(Boolean);
-  openModal(`${job.icon} ${job.name}`, `<p style="font-size:var(--f2);margin-top:0"><b>${job.verb}!</b></p>
-    <p style="font-size:var(--f2)">${rows.join('<br>')}</p>
+  // skiftledare och uppåt: dagens beslut (sparas i A.beslut)
+  const B0 = beslutOf(A, jobId);
+  const beslut = B0 ? `<div class="kr-beslut" style="font-size:var(--f2);margin:6px 0">📋 <b>Dagens fokus:</b>
+      <button class="btn btn-small ${B0.fokus === 'tempo' ? 'btn-gold' : ''}" data-fokus="tempo">🏃 Tempo – fler kunder, +10 % lön</button>
+      <button class="btn btn-small ${B0.fokus === 'noggrann' ? 'btn-gold' : ''}" data-fokus="noggrann">🎯 Noggrannhet – fel kostar hälften</button>
+      ${B0.chef ? `<br>👔 <b>Priserna i dag:</b>
+      <button class="btn btn-small ${B0.pris === 'lag' ? 'btn-gold' : ''}" data-pris="lag">Låga – fler kunder, −15 % per rätt</button>
+      <button class="btn btn-small ${B0.pris === 'vanlig' ? 'btn-gold' : ''}" data-pris="vanlig">Vanliga</button>
+      <button class="btn btn-small ${B0.pris === 'hog' ? 'btn-gold' : ''}" data-pris="hog">Höga – färre kunder, +30 % per rätt</button>` : ''}</div>` : '';
+  const dlg0 = openModal(`${job.icon} ${job.name}`, `<p style="font-size:var(--f2);margin-top:0"><b>${job.verb}!</b></p>
+    <p style="font-size:var(--f2)">${rows.join('<br>')}</p>${beslut}
     ${g.hunger <= 0 ? '<p class="bad" style="font-size:var(--f2)">🥴 Du är utsvulten – du jobbar yr och får halv lön!</p>' : ''}
     ${g.energy < 40 ? '<p style="font-size:var(--f2)">😪 Du är ganska trött – sista passet för i dag?</p>' : ''}`, [
     { label: 'En annan gång', onClick: closeModal },
@@ -84,6 +111,12 @@ export function startJobFlow(A, jobId, sceneName) {
       { label: '🔨 Jobba ett pass', cls: 'btn-go', onClick: () => { closeModal(); beginShift(A, jobId, sceneName, shiftPlan(lvl)); } },
     ]),
   ]);
+  dlg0?.querySelectorAll('[data-fokus],[data-pris]').forEach((b) => (b.onclick = () => {
+    A.beslut = { ...(A.beslut || {}), ...(b.dataset.fokus ? { fokus: b.dataset.fokus } : { pris: b.dataset.pris }) };
+    const key = b.dataset.fokus ? 'fokus' : 'pris';
+    dlg0.querySelectorAll(`[data-${key}]`).forEach((o) => o.classList.toggle('btn-gold', o === b));
+    play('click');
+  }));
 }
 
 // 💼 Välj vem du vill jobba ihop med INNAN passet: inbjudan skickas och du går
@@ -135,13 +168,19 @@ export function inviteToShift(A, toId) {
   return true;
 }
 
+// (testerna: avsluta passet direkt med de här siffrorna, som om minispelet tagit slut)
+export const endShiftNow = (A, stats) => { if (A.shiftJob) finishShift(A, A.shiftJob, { ok: 0, fel: 0, ...stats }); };
 function finishShift(A, jobId, stats) {
   const job = JOBS[jobId];
   const lvl = levelOf(A.game.jobs[jobId]);
-  const mult = payMult(lvl);
-  const base = Math.max(0, stats.ok * job.wage + (stats.boxes || 0) * (job.bonus || 0) - stats.fel * job.oops - (stats.miss || 0) * (job.missOops || 0));
+  // karriärstegarna: rollens lönelyft och dagens beslut (priserna ändrar styckpriset, noggrannhet halverar avdraget)
+  const R = rollOf(A.game, jobId), B = A.shiftBeslut || null;
+  const styck = B ? PRISER[B.pris].styck : 1, oopsK = B ? FOKUS[B.fokus].oops : 1, fokusK = B ? FOKUS[B.fokus].lon : 1;
+  const mult = payMult(lvl) * R.lon * fokusK;
+  const base = Math.max(0, Math.round(stats.ok * job.wage * styck) + (stats.boxes || 0) * (job.bonus || 0) - Math.round(stats.fel * job.oops * oopsK) - (stats.miss || 0) * (job.missOops || 0));
   const tips = Math.max(0, Math.round(stats.dricksKr || 0));
   const res = A.game.endShift(jobId, base * mult + tips, stats, planOf(A));
+  const bf = A.game.befordran(jobId);
   play('coin');
   const line = (l, r) => `<div style="display:flex;justify-content:space-between;font-size:var(--f2)"><span>${l}</span><b>${r}</b></div>`;
   openModal(`${job.icon} Passet är slut!`, `
@@ -152,7 +191,10 @@ function finishShift(A, jobId, stats) {
     <div style="border-top:3px dashed var(--ink);margin:8px 0"></div>
     ${stats.delat ? line('👥 Jobbat ihop', `${stats.delat} pers – lagets ${stats.lagOk || 0} rätt delas lika`) : ''}
     ${line('Grundlön', fmt(base))}
-    ${mult > 1 ? line(`⭐ ${JOB_TITLES[lvl - 1]}-bonus`, '×' + mult.toFixed(2).replace('.', ',')) : ''}
+    ${payMult(lvl) > 1 ? line(`⭐ ${JOB_TITLES[lvl - 1]}-bonus`, '×' + payMult(lvl).toFixed(2).replace('.', ',')) : ''}
+    ${R.lon > 1 ? line(`${R.icon} ${R.namn}`, '×' + R.lon.toFixed(1).replace('.', ',')) : ''}
+    ${B && B.fokus === 'tempo' ? line('🏃 Tempo', '+10 %') : B ? line('🎯 Noggrannhet', 'fel kostar hälften') : ''}
+    ${B && B.pris !== 'vanlig' ? line(B.pris === 'hog' ? '👔 Höga priser' : '👔 Låga priser', B.pris === 'hog' ? '+30 % per rätt' : '−15 % per rätt') : ''}
     ${tips ? line(`🪙 Dricks (${stats.dricks} ggr)`, '+' + fmt(tips)) : ''}
     ${res.starving ? line('🥴 Yr av hunger', 'halv lön!') : ''}
     ${res.doubled ? line('💰 Extrapass', 'DUBBEL LÖN!') : ''}
@@ -160,7 +202,9 @@ function finishShift(A, jobId, stats) {
     ${planOf(A).len === 'langt' ? line('💪 Längre pass', `${Math.round(planOf(A).gameMin / 60)} timmar`) : ''}
     ${line('💰 Lön', fmt(res.finalPay))}
     ${res.gladPass ? line(`😊 Lycka${res.passIdag >= 3 ? ` (${res.passIdag}:e passet i dag)` : planOf(A).len === 'langt' ? ' (långt pass)' : ''}`, `${res.gladPass} → ${Math.round(A.game.lycka)}`) : ''}
-    ${res.nightEnd ? '<p style="font-size:var(--f2);margin-bottom:0">🌙 Nattpasset tog slut vid midnatt – nattbussen tar dig hem till sängen.</p>' : ''}`, [
+    ${res.nightEnd ? '<p style="font-size:var(--f2);margin-bottom:0">🌙 Nattpasset tog slut vid midnatt – nattbussen tar dig hem till sängen.</p>' : ''}
+    ${bf.nasta && bf.ok && !bf.soktIdag ? `<p style="font-size:var(--f2);margin-bottom:0" class="ok">⭐ ${chefOf(jobId)} har sett att du är duktig – sök befordran till <b>${bf.nasta.namn.toLowerCase()}</b>!</p>` : ''}`, [
+    ...(bf.nasta && bf.ok && !bf.soktIdag && !res.nightEnd ? [{ label: `📝 Sök befordran (${bf.nasta.namn.toLowerCase()})`, cls: 'btn-gold', onClick: () => { closeModal(); openIntervju(A, jobId, () => afterShift(A, jobId)); } }] : []),
     { label: res.nightEnd ? '🌙 Ta lönen och åk hem' : '💰 Ta lönen', cls: 'btn-go', onClick: () => { closeModal(); afterShift(A, jobId, res.nightEnd); } },
   ], { closable: false });
 }
@@ -170,6 +214,7 @@ function finishShift(A, jobId, stats) {
 function afterShift(A, jobId, nightEnd = false) {
   A.shiftJob = null;
   A.shiftPlan = null;
+  A.shiftBeslut = null;
   A.coop = null;
   if (nightEnd) { A.roomSub = 0; A.go('room'); setTimeout(() => A.sleepFlow?.(), 350); return; }
   A.go(JOBS[jobId]?.back || 'city');

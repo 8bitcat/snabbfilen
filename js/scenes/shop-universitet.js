@@ -82,6 +82,10 @@ const LECTURES = {
     lines: ['VÄLKOMNA! I DAG: BÖRSEN.', 'EN AKTIE ÄR EN LITEN BIT AV ETT FÖRETAG.', 'KURSEN GÅR UPP OCH NER HELA DAGEN – KÖP LÅGT, SÄLJ HÖGT!', 'KUNDEN SÄTTER GRÄNSEN. HÅLL DIG TILL DEN.', 'TACK FÖR I DAG – PLUGGA INFÖR TENTAN!'],
     board: 'borsen',
   },
+  ledarskap: {
+    lines: ['HEJ ALLIHOP! I DAG: ATT LEDA ETT LAG.', 'EN BRA CHEF LYSSNAR FÖRST OCH BESTÄMMER SEN.', 'SCHEMAT: TILLRÄCKLIGT MÅNGA PÅ VARJE PASS – OCH ALLA FÅR VILA.', 'BERÖM DET SOM GÅR BRA. LÖS PROBLEMEN LUGNT, ETT I TAGET.', 'TACK! NÄSTA GÅNG: KUNDERNA OCH BUDGETEN.'],
+    board: 'ledare',
+  },
 };
 // Tentafrågor: [fråga, rätt svar, fel, fel] – tre slumpas per tenta, svaren blandas.
 const QUIZ = {
@@ -100,6 +104,14 @@ const QUIZ = {
     ['Vad är ränta?', 'Det man får för att låna ut pengar', 'En avgift för att gå in på banken', 'En sorts aktie'],
     ['Vad är en budget?', 'En plan för inkomster och utgifter', 'Ett kontokort', 'En aktie i banken'],
     ['Du köper 10 aktier för 20 kr styck. Vad kostar det?', '200 kr', '30 kr', '2 kr'],
+  ],
+  ledarskap: [
+    ['Vad gör en bra ledare först?', 'Lyssnar på laget', 'Bestämmer allt själv', 'Går hem tidigt'],
+    ['Hur ska ett bra schema vara?', 'Tillräckligt många på varje pass – och alla får vila', 'Chefen jobbar aldrig', 'Samma person jobbar alla pass'],
+    ['Någon i laget har gjort ett jättebra jobb. Vad gör du?', 'Berömmer hen', 'Säger ingenting', 'Tar åt dig äran'],
+    ['Det blir stressigt och fel. Vad hjälper?', 'Lugn – ett problem i taget', 'Skrika på alla', 'Låtsas att allt är bra'],
+    ['En kund är missnöjd. Vad gör du?', 'Lyssnar, ber om ursäkt och löser det', 'Skyller på kollegan', 'Går därifrån'],
+    ['Vad är en budget för ett ställe?', 'En plan för vad man tjänar och vad det kostar', 'Ett sorts schema för rasterna', 'Chefens lön'],
   ],
 };
 
@@ -606,12 +618,24 @@ const BOARDS = {
     (c, k) => chalkText(c, '10 X 20 KR = 200 KR', BOARD.x0 + 102, BOARD.y0 + 28, k),
     (c, k) => chalkText(c, 'RÄNTA 2%', BOARD.x0 + 102, BOARD.y0 + 38, k),
   ],
+  // LEDARSKAP: laget som en pil uppåt – CHEF, tre i laget, LYSSNA / BERÖM / SCHEMA
+  ledare: [
+    (c, k) => chalkText(c, 'ATT LEDA ETT LAG', BOARD.x0 + 6, BOARD.y0 + 4, k),
+    (c, k) => { chalkBox(c, BOARD.x0 + 34, BOARD.y0 + 13, 26, 9, k, '#f8e878'); if (k > 0.6) chalkText(c, 'CHEF', BOARD.x0 + 38, BOARD.y0 + 15, 1, '#f8e878'); },
+    (c, k) => { for (let i = 0; i < 3; i++) if (k > i / 3) { chalkLine(c, BOARD.x0 + 47, BOARD.y0 + 22, BOARD.x0 + 20 + i * 27, BOARD.y0 + 30, 1); chalkBox(c, BOARD.x0 + 12 + i * 27, BOARD.y0 + 30, 16, 9, 1, '#a8d8f0'); } },
+    (c, k) => { if (k > 0.5) chalkText(c, 'LAGET', BOARD.x0 + 34, BOARD.y0 + 42, 1, '#a8d8f0'); },
+    (c, k) => chalkText(c, '1 LYSSNA', BOARD.x0 + 100, BOARD.y0 + 14, k, '#a8f0a8'),
+    (c, k) => chalkText(c, '2 BERÖM', BOARD.x0 + 100, BOARD.y0 + 24, k, '#f8e878'),
+    (c, k) => chalkText(c, '3 SCHEMA + VILA', BOARD.x0 + 100, BOARD.y0 + 34, k, '#f0a8a8'),
+    (c, k) => chalkText(c, 'ETT PROBLEM I TAGET!', BOARD.x0 + 100, BOARD.y0 + 44, k),
+  ],
   // mellan föreläsningarna: schemat och en gammal formel
   idle: [
     (c) => chalkText(c, 'VÄLKOMMEN TILL AULA 1', BOARD.x0 + 6, BOARD.y0 + 5),
     (c) => chalkText(c, 'FÖRELÄSNINGAR 8-17', BOARD.x0 + 6, BOARD.y0 + 15, 1, '#f8e878'),
     (c) => chalkText(c, 'DATORTEKNIK', BOARD.x0 + 10, BOARD.y0 + 25, 1, '#a8d8f0'),
     (c) => chalkText(c, 'EKONOMI', BOARD.x0 + 10, BOARD.y0 + 33, 1, '#f0a8a8'),
+    (c) => chalkText(c, 'LEDARSKAP', BOARD.x0 + 70, BOARD.y0 + 33, 1, '#a8f0a8'),
     (c) => chalkText(c, 'ANMÄLAN I EXPEDITIONEN!', BOARD.x0 + 6, BOARD.y0 + 43),
     (c) => { chalkText(c, '1+1=2', BOARD.x0 + 128, BOARD.y0 + 30, 1, '#c8d0c8'); chalk(c, BOARD.x0 + 152, BOARD.y0 + 31); chalk(c, BOARD.x0 + 155, BOARD.y0 + 31); chalkLine(c, BOARD.x0 + 151, BOARD.y0 + 34, BOARD.x0 + 156, BOARD.y0 + 34, 1, '#c8d0c8'); },
   ],
@@ -715,7 +739,7 @@ export function makeShopUniversitet(A /* , opts */) {
         <div style="font-size:var(--f2)"><b>${c.icon} ${esc(c.name)}</b></div>
         <div style="font-size:var(--f2);margin:4px 0">${esc(c.blurb)}</div>
         <div style="font-size:var(--f2)">📚 ${c.lectures} föreläsningar i Aula 1 (2 timmar var, en om dagen) · ✏️ tenta i biblioteket</div>
-        ${job ? `<div style="font-size:var(--f2)">💼 Examen ger jobb: <b>${job.icon} ${esc(job.name)}</b> – ${job.wage} kr per rätt</div>` : ''}
+        ${job ? `<div style="font-size:var(--f2)">💼 Examen ger jobb: <b>${job.icon} ${esc(job.name)}</b> – ${job.wage} kr per rätt</div>` : c.id === 'ledarskap' ? `<div style="font-size:var(--f2)">💼 Examen krävs för att bli <b>biträdande chef</b> och <b>chef</b> på jobben</div>` : ''}
         <div style="margin-top:6px">${btn}</div></div>`;
     }).join('');
     const dlg = openModal('🎓 Studentexpeditionen', `<p style="font-size:var(--f2);margin-top:0">"Välkommen till Pixelhögskolan! Vilken utbildning lockar?"</p>${rows}
@@ -818,7 +842,7 @@ export function makeShopUniversitet(A /* , opts */) {
       const job = GM.JOBS?.[c.job];
       openModal('🎓 GODKÄND – EXAMEN!', `<div style="text-align:center"><img src="${diplomaURL(c)}" alt="Examensbevis" style="width:360px;max-width:100%;image-rendering:pixelated"></div>
         <p style="font-size:var(--f2)">${r.right} av ${r.of} rätt – du har nu examen i <b>${esc(c.name)}</b>!</p>
-        ${job ? `<p style="font-size:var(--f2)">💼 Nu kan du jobba som <b>${job.icon} ${esc(job.name)}</b> i downtown – ${job.wage} kr per rätt.</p>` : ''}`, [{ label: '🎉 Hurra!', cls: 'btn-go', onClick: closeModal }]);
+        ${job ? `<p style="font-size:var(--f2)">💼 Nu kan du jobba som <b>${job.icon} ${esc(job.name)}</b> i downtown – ${job.wage} kr per rätt.</p>` : c.id === 'ledarskap' ? `<p style="font-size:var(--f2)">💼 Nu kan du söka befordran till <b>biträdande chef</b> och <b>chef</b> på jobben du är van vid.</p>` : ''}`, [{ label: '🎉 Hurra!', cls: 'btn-go', onClick: closeModal }]);
       librarian.talk.say('Grattis till examen! 🎓', librAt(), 4);
     } else {
       play('fel');
@@ -897,6 +921,7 @@ export function makeShopUniversitet(A /* , opts */) {
     const on = Object.values(COURSES()).find((c) => eduOf(c.id) && !eduOf(c.id).klar);
     if (on?.id === 'datorteknik') return '"Datorns delar": CPU räknar, RAM minns, PSU ger ström. Kylpasta på processorn!';
     if (on?.id === 'ekonomi') return '"Börsen för nybörjare": köp under kundens gräns, sälj över den. 10 × 20 kr = 200 kr.';
+    if (on?.id === 'ledarskap') return '"Chef på riktigt": lyssna först, beröm det som går bra, schema med vila. En budget = vad man tjänar och vad det kostar.';
     return ['"Pixelstadens historia", del 1–12. Tjocka!', 'En hel hylla om kokkonst. Hungrig nu.', '"Sagan om den sista nattbussen". Den har jag läst!'][Math.floor(t) % 3];
   }
   let globeSpin = 0, globeAng = 0;
