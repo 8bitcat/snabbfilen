@@ -10,6 +10,7 @@ import { makeKoket } from './scenes/koket.js';
 import { makeTradgard } from './scenes/tradgard.js';
 import { makeShopFordon, rideHud, openRide } from './scenes/shop-fordon.js'; // 🚲 garaget och åka/gå-knappen
 import { makeJobbTruck } from './jobs/jobb-truck.js'; // 🚚 eget företag: passet i foodtruckens lucka
+import { makeLandet } from './scenes/landet.js'; // 🌾 LANDET öster om förorten
 import { hemMusikTick, stopHemMusik } from './core/hemmusik.js';
 import { festTick, openFest, festInvites } from './core/fest.js'; // 🎉 fest hemma
 import { samboInit, inviteSambo, splitSambo, samboPartnerOnline } from './net/sambo.js'; // 🏠 bo ihop
@@ -98,6 +99,7 @@ const SCENES = {
   tradgard: (a) => makeTradgard(a), // 🌱 trädgården bakom bostaden (dörren hemma)
   fordon: (a) => makeShopFordon(a), // 🚲 GARAGET i förorten: cyklar, elsparkcyklar och mopeder
   jobbtruck: (a, o) => makeJobbTruck(a, o || {}), // 🚚 foodtrucken: i luckan (js/core/foretag.js)
+  landet: (a) => makeLandet(a), // 🌾 landet: kossor, får, traktorn, gården och stallet
   mobler: (a, o) => makeShopIkea(a, o),
   mat: (a, o) => makeShopMat(a, o),
   bostad: (a, o) => makeShopBostad(a, o),
@@ -490,7 +492,7 @@ const PLACE_AWAY = {
 // ställena bakom stadens dörrar (DOOR_SCENES) – bara där ingen text redan finns
 for (const [k, v] of Object.entries({ bank: '🏦 på banken', elektronik: '📱 i elektronikbutiken', frisor: '💈 hos frisören', skor: '👟 i skobutiken',
   accessoarer: '👜 i accessoarbutiken', bio: '🎬 på bion', kebab: '🥙 på kebaben', pantbank: '💍 på pantbanken', universitet: '🎓 på Pixelhögskolan',
-  jobbdatorbygge: '🖥️ bygger datorer på Pixel Data', jobbfinans: '📈 handlar aktier på Finanshuset', koket: '🍳 lagar mat hemma', tradgard: '🌱 i trädgården', fordon: '🔧 i garaget', jobbtruck: '🚚 står i sin foodtruck' })) PLACE_AWAY[k] ??= v;
+  jobbdatorbygge: '🖥️ bygger datorer på Pixel Data', jobbfinans: '📈 handlar aktier på Finanshuset', koket: '🍳 lagar mat hemma', tradgard: '🌱 i trädgården', fordon: '🔧 i garaget', jobbtruck: '🚚 står i sin foodtruck', landet: '🌾 ute på landet' })) PLACE_AWAY[k] ??= v;
 function placeOf(p, info) {
   const s = String(p.scene || 'away');
   if (s === 'city') return '🏙️ i staden';

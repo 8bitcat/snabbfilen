@@ -204,6 +204,16 @@ function bridgeLift(x, y) {
 }
 
 let lastDistrictId = null; // områdesskylten visas bara när man kommer till ett nytt område
+// vägskylten vid stadsgränsen: grön vägvisare LANDET med en pil och en ko
+function drawLandetSkylt(ctx, x, y) {
+  ctx.fillStyle = 'rgba(20,12,30,.25)'; ctx.fillRect(x - 3, y - 1, 8, 2);
+  ctx.fillStyle = '#5a5e66'; ctx.fillRect(x, y - 26, 2, 26);
+  ctx.fillStyle = '#1e1a24'; ctx.fillRect(x - 17, y - 38, 36, 14);
+  ctx.fillStyle = '#2a7a3a'; ctx.fillRect(x - 16, y - 37, 31, 12); ctx.fillRect(x + 15, y - 35, 2, 8); ctx.fillRect(x + 17, y - 33, 1, 4);
+  ctx.fillStyle = '#f4f1ea'; ctx.fillRect(x - 16, y - 37, 31, 1);
+  ctxText(ctx, SMALL, 'LANDET', x - 13, y - 34, '#f4f1ea');
+  ctx.fillStyle = '#f4f1ea'; ctx.fillRect(x - 14, y - 28, 6, 2); ctx.fillStyle = '#1e1a1c'; ctx.fillRect(x - 12, y - 28, 2, 1);
+}
 
 export function makeCity(A) {
   const g = A.game;
@@ -522,6 +532,8 @@ export function makeCity(A) {
     add('traffic', () => S.traffic.items());
     add('life', () => S.life.items());
     for (const d of folkDrawables(A, t)) items.push({ y: d.fy, draw: () => d.draw(ctx) });
+    // 🌾 vägskylten LANDET → vid stadsgränsen (södra trottoaren längst österut)
+    if (cx + vw > CITY.W - 80) items.push({ y: CITY.SIDEWALK_S[1] - 4, draw: () => drawLandetSkylt(ctx, CITY.W - 22, CITY.SIDEWALK_S[1] - 4) });
     const TP = truckPos();
     if (TP && TP.x > cx - 80 && TP.x < cx + vw + 80) {
       const T = g.truck, open = truckOppen(g);
@@ -887,6 +899,11 @@ export function makeCity(A) {
         if (r.phase === 'framme') finishRide();
       } else if (riding) { riding = false; walker.snapFree(); } // bussen försvann – stå kvar där man är
       A.cityPos = [walker.px, walker.py];
+      // 🌾 österut förbi stadsgränsen på Pixelgatan: ut på LANDET (js/scenes/landet.js)
+      if (!A.attract && fade.phase === 0 && !riding && walker.px >= CITY.W - 8 && walker.py >= CITY.SIDEWALK_N[0] && walker.py <= CITY.SIDEWALK_S[1]) {
+        walker.stop(); fade.phase = 1; fade.a = 0;
+        fade.cb = () => { A.landetFran = { y: walker.py }; A.go('landet'); };
+      }
       // första turen för dagen på cykeln/moppen gör en glad (vinden i håret)
       const mv = walker.path.length > 0 && !riding;
       if (mv && !rullar && fordon()) g.glad?.(1, '', 'fordon', 2);
@@ -927,6 +944,8 @@ export function makeCity(A) {
       const chip = signChips.find((c) => sx >= c.x - 2 && sx < c.x + c.w + 2 && sy >= c.y - 2 && sy < c.y + c.h + 4);
       if (chip) { if (sitting) standUp(); const dc = doorCenter(chip.b); walker.walkTo(dc.x, dc.y, () => enter(chip.b)); return; }
       const x = sx + cam.x, y = sy + cam.y;
+      // 🌾 skylten LANDET → (eller längst ut på gatan): gå österut ut på landet
+      if (x >= CITY.W - 40 && y >= CITY.SIDEWALK_N[0] && y <= CITY.SIDEWALK_S[1] + 4) { if (sitting) standUp(); walker.walkTo(CITY.W - 5, Math.max(CITY.SIDEWALK_N[0] + 4, Math.min(CITY.SIDEWALK_S[1] - 4, y))); return; }
       // 🚚 foodtrucken: gå fram till luckan och öppna truckrutan
       const TP = truckPos();
       if (TP && x >= TP.x - 36 && x <= TP.x + 36 && y >= TP.y - 52 && y <= TP.y + 4) { if (sitting) standUp(); walker.walkTo(TP.x - 8, TP.y + 14, () => openTruck(A)); return; }

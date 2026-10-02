@@ -10,6 +10,14 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.81.0] – 2026-10-02 – Landet
+- LANDET! Gå (eller cykla) österut på Pixelgatan förbi den gröna skylten LANDET → vid stadsgränsen så kommer du ut på landsvägen, förbi ortsskylten PIXELSTADEN.
+- Böljande kullar med lapptäcke av åkrar och en gammal väderkvarn, som glider förbi långsammare än marken. Moln på dagen, stjärnor på natten.
+- Kohagen med svartvita och bruna kossor, fårhagen bakom stenmuren och hönsen på gården. De betar och går omkring – klicka på dem så svarar de (MUUU! BÄÄÄ! KLUCK!) och du blir lite gladare.
+- En traktor skördar vetefältet rad för rad och lämnar stubb efter sig. Bredvid lyser rapsfältet gult och en bäck slingrar sig under stenbron.
+- GÅRDEN – ett falurött boningshus med ladugård och silo – är till salu. STALLET har hästar i hagen och RIDBANAN har färgglada hinder. Snart kan du köpa gården och bli bonde, och köpa en häst att rida.
+- Bussen från hållplatsen LANDET går till Betongtorget (10 kr). Frisk luft på landet gör en glad.
+
 ## [0.80.0] – 2026-10-02 – Eget företag: foodtrucken
 - Starta eget företag: en foodtruck! Kenta i GARAGET säljer en begagnad truck (14 900 kr) – tavlan står vid porten.
 - Ställ trucken i parken vid fontänen, på Tjurtorget i downtown eller på parkeringen i förorten. Där syns den i staden med ditt namn på taket ("ANNAS KÖK"), menytavla och personal i luckan.

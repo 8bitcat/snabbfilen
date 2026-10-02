@@ -1,7 +1,7 @@
 {
-  "version": "0.80.0",
+  "version": "0.81.0",
   "date": "2026-10-02",
-  "title": "Eget företag: foodtrucken",
+  "title": "Landet",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
@@ -95,6 +95,8 @@
     "js/jobs/jobb-vard.js",
     "js/jobs/jobb-verkstad.js",
     "js/jobs/shift.js",
+    "js/landet/djur.js",
+    "js/landet/karta.js",
     "js/main.js",
     "js/net/coop.js",
     "js/net/sambo.js",
@@ -135,6 +137,7 @@
     "js/scenes/klader/paint.js",
     "js/scenes/kok.js",
     "js/scenes/koket.js",
+    "js/scenes/landet.js",
     "js/scenes/room.js",
     "js/scenes/shop-accessoarer.js",
     "js/scenes/shop-bank.js",
