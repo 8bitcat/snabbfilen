@@ -16,10 +16,12 @@
 import { drawPerson } from '../core/people.js';
 import { Pix, SMALL, BIG, ctxText, textW, text, mix, mul, hash, bayer } from '../core/floor-pix.js';
 import { openModal, closeModal, toast, esc } from '../core/ui.js';
-import { FORDON, fordonOf, fmt, OMLACK } from '../game.js';
+import { FORDON, fordonOf, fmt, OMLACK, TRUCK_PRIS } from '../game.js';
 import * as SND from '../core/sound.js';
 import { createWalker, selfDrawable, folkDrawables, createSpeech, WALK_SEQ } from './walkable.js';
 import { drawVehicle, drawRide } from '../core/fordon-art.js';
+import { openTruckKop } from '../core/foretag.js';   // 🚚 eget företag: foodtrucken säljs här
+import { truckIcon } from '../jobs/jobb-truck.js';
 
 const play = (n) => { try { SND.play(n); } catch { /* ljud är aldrig ett krav */ } };
 
@@ -44,6 +46,7 @@ const SHOW = [
 const KENTA = { skin: '#e0a97f', hair: '#6b4226', style: 'short', beard: 'stubble', hat: 'cap', cap: '#d9433b',
   top: 'tee', shirt: '#2d3a5c', accent: '#f0b429', bottom: 'pants', pants: '#2d3a5c', shoes: '#1c1c1c' };
 const KENTA_POS = { x: 300, y: 172 };
+const SKYLT = { x: 74, y: 126 };   // griffeltavlan: FOODTRUCK TILL SALU
 const KENTA_SAY = [
   'Hej! Kolla in fordonen – klicka på det du gillar. 🔧',
   'Med cykel kommer du fram nästan dubbelt så fort genom stan!',
@@ -51,6 +54,7 @@ const KENTA_SAY = [
   'Tryck på 🚲-knappen uppe till höger när du vill gå i stället.',
   'Den begagnade gnisslar lite, men den håller i hundra år.',
   'Elsparkcykeln är tyst som en mus. Perfekt i parken.',
+  'Har du sett tavlan? Jag säljer en foodtruck – starta ett eget företag! 🚚',
 ];
 
 // ================= bakgrunden =================
@@ -171,6 +175,22 @@ function drawDrum(ctx) {
   ctx.fillStyle = '#f4f1ea'; ctx.fillRect(x + 28, y - 14, 4, 4); ctx.fillStyle = '#1a1a1a'; ctx.fillRect(x + 30, y - 13, 1, 2);
   ctx.fillStyle = '#e8c838'; for (let k = 0; k < 7; k++) ctx.fillRect(x + 34 + k, y - 6 + (k & 1), 1, 1);   // slangen
 }
+// griffeltavlan vid porten: en liten truck i krita, rätterna och priset (SÅLD när man köpt den)
+function drawSkylt(ctx, sald) {
+  const { x, y } = SKYLT;
+  ctx.fillStyle = 'rgba(20,12,28,.25)'; ctx.fillRect(x - 12, y - 1, 24, 3);
+  ctx.fillStyle = '#5a3a1e'; ctx.fillRect(x - 11, y - 26, 2, 26); ctx.fillRect(x + 9, y - 26, 2, 26);
+  ctx.fillStyle = '#26342a'; ctx.fillRect(x - 10, y - 27, 20, 20); ctx.fillStyle = '#8a6a3e'; ctx.fillRect(x - 11, y - 28, 22, 1); ctx.fillRect(x - 11, y - 7, 22, 1);
+  ctx.fillStyle = '#e8e4d8'; ctx.fillRect(x - 7, y - 23, 10, 6); ctx.fillRect(x + 3, y - 21, 4, 4);
+  ctx.fillStyle = '#26342a'; ctx.fillRect(x - 6, y - 22, 6, 3);
+  ctx.fillStyle = '#e8e4d8'; ctx.fillRect(x - 6, y - 16, 2, 2); ctx.fillRect(x + 3, y - 16, 2, 2);
+  ctx.save(); ctx.globalAlpha = 0.9; ctx.drawImage(truckIcon('korv'), 0, 0, 12, 12, x - 9, y - 14, 7, 7); ctx.drawImage(truckIcon('dricka'), 0, 0, 12, 12, x + 2, y - 14, 7, 7); ctx.restore();
+  if (sald) { ctx.save(); ctx.translate(x, y - 17); ctx.rotate(-0.4); ctx.fillStyle = '#d9433b'; ctx.fillRect(-11, -3, 22, 6); ctx.restore(); ctxText(ctx, SMALL, 'SÅLD', x - 8, y - 20, '#f4f1ea'); return; }
+  // prislappen som på fordonen
+  const lbl = String(TRUCK_PRIS), w = textW(SMALL, lbl) + 6, lx = Math.round(x - w / 2), ly = y + 5;
+  ctx.fillStyle = '#f0d048'; ctx.fillRect(lx, ly, w, 9); ctx.fillStyle = '#8a6a2a'; ctx.fillRect(lx, ly + 8, w, 1);
+  ctxText(ctx, SMALL, lbl, lx + 3, ly + 2, '#3a2a10');
+}
 function drawTires(ctx) {
   const { x, y } = TIRES;
   ctx.fillStyle = 'rgba(20,12,28,.25)'; ctx.fillRect(x - 12, y - 1, 24, 3);
@@ -188,7 +208,7 @@ export function makeShopFordon(A) {
   if (!BG) BG = paintBg();
   const walker = createWalker({ W: FW, H: FH, left: 6, right: FW - 6, top: WALL_Y + 6, bottom: FH - 4, spawn: [44, WALL_Y + 12] });
   const obst = SHOW.map((s) => [s.x - 17, s.y - 6, s.x + 17, s.y + 2]);
-  obst.push([BENCH.x0, WALL_Y, BENCH.x1, WALL_Y + 6], [LIFT.x0, LIFT.y - 8, LIFT.x1, LIFT.y + 2], [DRUM.x - 1, DRUM.y - 6, DRUM.x + 36, DRUM.y + 1], [TIRES.x - 12, TIRES.y - 6, TIRES.x + 12, TIRES.y + 1]);
+  obst.push([SKYLT.x - 11, SKYLT.y - 4, SKYLT.x + 11, SKYLT.y + 1], [BENCH.x0, WALL_Y, BENCH.x1, WALL_Y + 6], [LIFT.x0, LIFT.y - 8, LIFT.x1, LIFT.y + 2], [DRUM.x - 1, DRUM.y - 6, DRUM.x + 36, DRUM.y + 1], [TIRES.x - 12, TIRES.y - 6, TIRES.x + 12, TIRES.y + 1]);
   walker.setObstacles(obst); walker.snapFree();
   walker.speed = 64;
   let t = 0, hover = null, kentaLook = 'right', greeted = false;
@@ -200,6 +220,7 @@ export function makeShopFordon(A) {
     { id: 'dorr', r: [DOOR.x0, DOOR.y0, DOOR.x1, WALL_Y + 6], go: [(DOOR.x0 + DOOR.x1) / 2, WALL_Y + 10], label: 'UT', act: () => { play('door'); A.go('city'); } },
     ...SHOW.map((s) => ({ id: s.id, r: [s.x - 18, s.y - 34, s.x + 18, s.y + 12], go: [s.x, s.y + 12], label: fordonOf(s.id).name.toUpperCase(), act: () => openFordon(A, s.id) })),
     { id: 'kenta', r: [KENTA_POS.x - 9, KENTA_POS.y - 34, KENTA_POS.x + 9, KENTA_POS.y + 2], go: [KENTA_POS.x - 14, KENTA_POS.y + 6], label: 'KENTA', act: () => { kentaLook = 'left'; kSay(KENTA_SAY[sayIdx++ % KENTA_SAY.length], 4); } },
+    { id: 'foodtruck', r: [SKYLT.x - 13, SKYLT.y - 28, SKYLT.x + 13, SKYLT.y + 2], go: [SKYLT.x, SKYLT.y + 10], label: g.truck ? 'DIN FOODTRUCK' : 'FOODTRUCK TILL SALU', act: () => openTruckKop(A) },
     { id: 'hjalmar', r: [SHELF.x0, 18, SHELF.x1, 56], go: [(SHELF.x0 + SHELF.x1) / 2, WALL_Y + 10], label: 'HJÄLMAR', act: () => kSay('Hjälmarna? En följer med moppen – säkerheten först! ⛑️', 4) },
   ];
   const spotAt = (x, y) => spots().find((s) => x >= s.r[0] && x <= s.r[2] && y >= s.r[1] && y <= s.r[3]);
@@ -245,7 +266,7 @@ export function makeShopFordon(A) {
       ctx.drawImage(BG, 0, 0);
       const items = SHOW.map((s) => ({ fy: s.y, draw: () => drawShow(ctx, s) }));
       items.push({ fy: KENTA_POS.y, draw: () => drawKenta(ctx) });
-      items.push({ fy: DRUM.y, draw: () => drawDrum(ctx) }, { fy: TIRES.y, draw: () => drawTires(ctx) });
+      items.push({ fy: DRUM.y, draw: () => drawDrum(ctx) }, { fy: TIRES.y, draw: () => drawTires(ctx) }, { fy: SKYLT.y, draw: () => drawSkylt(ctx, !!g.truck) });
       items.push(...folkDrawables(A, t), selfDrawable(A, walker, t));
       items.sort((a, b) => a.fy - b.fy).forEach((d) => d.draw(ctx));
       talkK.draw(ctx); talkMe.draw(ctx);

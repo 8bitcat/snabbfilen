@@ -17,6 +17,9 @@ import { clock, JOBS, HOMES } from '../game.js';
 import * as GAME from '../game.js'; // (namnrymd: COURSES finns bara när Pixelhögskolan är inkopplad i game.js)
 import { WORKPLACES, NEW_HOMES } from '../city/places.js';
 import { createPetWalk } from '../pets/outdoors.js'; // husdjuren på promenad (hunden i koppel)
+import { drawTruck, TRUCK_RECT } from '../core/truck-art.js';               // 🚚 foodtrucken (eget företag)
+import { openTruck, truckOppen, truckNamn } from '../core/foretag.js';
+import { makeLookRich } from '../core/people.js';
 
 // Stadsmodulerna. buildings-* ger BUILDING_ART, ground/props/traffic/life livet,
 // weather vädret, walk gångmotorn och fallback-v2 platshållare för allt som
@@ -223,8 +226,15 @@ export function makeCity(A) {
   applyRide();
   let rullar = false;
   env.obstacles = [...MAP_OBSTACLES, ...artObstacles(), ...(S.props.obstacles || []), ...(S.traffic.obstacles || []), ...(S.fallback.obstacles || []), ...(S.bridge.obstacles || []), ...(S.life.obstacles || [])];
-  walker.setObstacles(env.obstacles);
+  // 🚚 foodtrucken (eget företag, js/core/foretag.js) står på sin plats och är ett hinder
+  const truckPos = () => { const T = !A.attract && g.truck; return T ? GAME.truckPlatsOf(T.plats) : null; };
+  const setObst = () => { const TP = truckPos(); walker.setObstacles(TP ? [...env.obstacles, [TP.x + TRUCK_RECT.x0, TP.y + TRUCK_RECT.y0, TP.x + TRUCK_RECT.x1, TP.y + TRUCK_RECT.y1]] : env.obstacles); };
+  setObst();
   walker.snapFree();
+  // personalens och kundens utseende (samma person hela tiden: slumpen sås med id:t)
+  const seeded = (str) => { let h = 2166136261; for (const ch of String(str)) h = Math.imul(h ^ ch.charCodeAt(0), 16777619); return () => { h = Math.imul(h ^ (h >>> 15), 2246822507); h = Math.imul(h ^ (h >>> 13), 3266489909); h ^= h >>> 16; return (h >>> 0) / 4294967296; }; };
+  const looks = new Map();
+  const lookOf = (id) => { if (!looks.has(id)) looks.set(id, makeLookRich(seeded(id))); return looks.get(id); };
   // första gången i staden: hur man tar sig in någonstans (Carl: "man förstår inte vad man ska göra")
   if (!A.attract) {
     let seen = false;
@@ -512,6 +522,13 @@ export function makeCity(A) {
     add('traffic', () => S.traffic.items());
     add('life', () => S.life.items());
     for (const d of folkDrawables(A, t)) items.push({ y: d.fy, draw: () => d.draw(ctx) });
+    const TP = truckPos();
+    if (TP && TP.x > cx - 80 && TP.x < cx + vw + 80) {
+      const T = g.truck, open = truckOppen(g);
+      items.push({ y: TP.y, draw: () => drawTruck(ctx, TP.x, TP.y, { open, markis: T.uppg.includes('markis'), namn: truckNamn(A), meny: g.truckMeny().map((m) => m.id), staff: T.personal.map((x) => lookOf(x.id)), t, night: env.dark > 0.25 }) });
+      // en kund vid luckan när den är öppen (byts då och då)
+      if (open) { const k = Math.floor(t / 14); items.push({ y: TP.y + 10, draw: () => drawPerson(ctx, TP.x - 10, TP.y + 10, lookOf(`kund${k}`), 'up', Math.sin(t * 2) > 0.9 ? 4 : 0) }); }
+    }
     if (!A.attract) {
       if (riding) { /* figuren sitter i bussfönstret – trafiken ritar den (ride.look) */ }
       else if (sitting) {
@@ -807,6 +824,7 @@ export function makeCity(A) {
     get worldSit() { return sitting ? { dir: sitting.seat.dir || 'down' } : null; }, // andra ser mig sitta på bänken
     get worldRide() { const F = fordon(); return F && !riding && !sitting ? { id: F.id, c: F.c } : null; }, // andra ser mig cykla
     rideChanged: applyRide,   // 🚲-knappen bytte fordon (eller till att gå)
+    truckChanged: () => { setObst(); walker.snapFree(); },   // 🚚 trucken flyttad, köpt eller såld
     _debug: {
       spot: (id) => { const b = ALL_BUILDINGS.find((x) => x.id === id); return b ? spotOf(b) : null; },
       tile: (a, bb) => ({ x: 60 + a * 40 - cam.x, y: CITY.SIDEWALK_N[0] + 8 + bb * 10 - cam.y }),
@@ -845,6 +863,8 @@ export function makeCity(A) {
       pickupFor,
       // 🚲 fordonet (tools/fordon-test.mjs)
       fordon: () => ({ id: fordon()?.id || null, speed: walker.speed, dir: walker.dir }),
+      walkable: (x, y) => walker.walkable(x, y),
+      truck: () => { const TP = truckPos(); return TP ? { x: TP.x - cam.x, y: TP.y - 20 - cam.y, plats: g.truck.plats, open: truckOppen(g) } : null; },
     },
 
     update(dt) {
@@ -907,6 +927,9 @@ export function makeCity(A) {
       const chip = signChips.find((c) => sx >= c.x - 2 && sx < c.x + c.w + 2 && sy >= c.y - 2 && sy < c.y + c.h + 4);
       if (chip) { if (sitting) standUp(); const dc = doorCenter(chip.b); walker.walkTo(dc.x, dc.y, () => enter(chip.b)); return; }
       const x = sx + cam.x, y = sy + cam.y;
+      // 🚚 foodtrucken: gå fram till luckan och öppna truckrutan
+      const TP = truckPos();
+      if (TP && x >= TP.x - 36 && x <= TP.x + 36 && y >= TP.y - 52 && y <= TP.y + 4) { if (sitting) standUp(); walker.walkTo(TP.x - 8, TP.y + 14, () => openTruck(A)); return; }
       // klick på en fotgängare → hen stannar, vänder sig mot en och säger något med sin egen röst.
       // Nära: direkt (man sitter kvar på bänken). Längre bort: hen väntar medan man går fram.
       // Den som står BAKOM en buss, taxi eller ledig bänk (längre bort i bild) tar inte klicket – det

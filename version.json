@@ -1,7 +1,7 @@
 {
-  "version": "0.79.0",
+  "version": "0.80.0",
   "date": "2026-10-02",
-  "title": "Karriärstegar",
+  "title": "Eget företag: foodtrucken",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
@@ -33,6 +33,7 @@
     "js/core/fest.js",
     "js/core/floor-pix.js",
     "js/core/fordon-art.js",
+    "js/core/foretag.js",
     "js/core/fx.js",
     "js/core/hemmusik.js",
     "js/core/hud-pix.js",
@@ -66,6 +67,7 @@
     "js/core/recolor.js",
     "js/core/sound.js",
     "js/core/squish.js",
+    "js/core/truck-art.js",
     "js/core/ui.js",
     "js/core/version-ui.js",
     "js/core/voices.js",
@@ -88,6 +90,7 @@
     "js/jobs/jobb-kok.js",
     "js/jobs/jobb-pizzeria.js",
     "js/jobs/jobb-posten.js",
+    "js/jobs/jobb-truck.js",
     "js/jobs/jobb-tvatt.js",
     "js/jobs/jobb-vard.js",
     "js/jobs/jobb-verkstad.js",

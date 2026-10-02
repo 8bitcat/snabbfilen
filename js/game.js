@@ -528,6 +528,48 @@ export const FORDON = [
 export const fordonOf = (id) => FORDON.find((x) => x.id === id) || null;
 export const OMLACK = 150;   // måla om ett fordon man redan har
 
+// EGET FÖRETAG: FOODTRUCKEN (djupförslaget steg 3, Carl 2026-10-02 "fortsätt med allt"). Köps i GARAGET
+// (shop-fordon.js), står på en av TRUCK_PLATSER i staden (city.js ritar den, klick → js/core/foretag.js).
+// Man jobbar själv i luckan (minispelet js/scenes/jobb-truck.js: kunder beställer, man lagar och
+// serverar – försäljningen går direkt till en) och anställer personal som håller öppet varje dag
+// (truckDag i sleep: kunder × snittpris × marginal − löner). Ryktet (0–5 ★) växer med bra service och
+// sjunker med missnöjda kunder och för höga priser. Platshyran dras på måndagen.
+export const TRUCK_PRIS = 14900;
+export const TRUCK_PLATSER = [
+  { id: 'parken', namn: 'Parken vid fontänen', icon: '⛲', x: 862, y: 378, bas: 10, tol: 1, hyra: 300, blurb: 'Familjer, hundägare och joggare – lagom med folk hela dagen.' },
+  { id: 'downtown', namn: 'Tjurtorget i downtown', icon: '🐂', x: 1948, y: 360, bas: 15, tol: 1.2, hyra: 650, blurb: 'Kontorsfolk med fickorna fulla – högst hyra men flest kunder.' },
+  { id: 'fororten', namn: 'Parkeringen i förorten', icon: '🏚️', x: 3070, y: 376, bas: 7, tol: 0.85, hyra: 150, blurb: 'Billigast hyra – men folk har inte så mycket pengar.' },
+];
+export const truckPlatsOf = (id) => TRUCK_PLATSER.find((x) => x.id === id) || TRUCK_PLATSER[0];
+// menyn: pris = vanligt pris (kr), kost = råvarorna per portion, kraver = uppgraderingen som behövs
+export const TRUCK_MENY = [
+  { id: 'korv', namn: 'Korv med bröd', icon: '🌭', pris: 25, kost: 7, tid: 1.4 },
+  { id: 'dricka', namn: 'Dricka', icon: '🥤', pris: 15, kost: 3, tid: 0 },
+  { id: 'burgare', namn: 'Hamburgare', icon: '🍔', pris: 55, kost: 16, tid: 2.6, kraver: 'grill' },
+  { id: 'taco', namn: 'Taco', icon: '🌮', pris: 40, kost: 11, tid: 1, kraver: 'tacobar' },
+  { id: 'glass', namn: 'Glass', icon: '🍦', pris: 25, kost: 6, tid: 0, kraver: 'frys' },
+];
+export const truckRattOf = (id) => TRUCK_MENY.find((x) => x.id === id) || null;
+export const TRUCK_UPPG = [
+  { id: 'grill', namn: 'Stor grill', icon: '🔥', pris: 2500, blurb: 'Hamburgare på menyn – dyrast och godast.' },
+  { id: 'tacobar', namn: 'Tacobar', icon: '🌮', pris: 1800, blurb: 'Tacos på menyn – snabba att göra.' },
+  { id: 'frys', namn: 'Glassfrys', icon: '🍦', pris: 1500, blurb: 'Glass på menyn – barnen älskar det.' },
+  { id: 'markis', namn: 'Randig markis och ljusslinga', icon: '🎪', pris: 1200, blurb: 'Syns på långt håll: 10 % fler kunder.' },
+];
+export const TRUCK_PRISER = { lag: { namn: 'Låga', mult: 0.8, kunder: 1.25 }, vanlig: { namn: 'Vanliga', mult: 1, kunder: 1 }, hog: { namn: 'Höga', mult: 1.3, kunder: 0.75 } };
+export const TRUCK_MAX_PERSONAL = 2;
+const TRUCK_NAMN = ['Sanna', 'Omar', 'Lisa', 'Kalle', 'Fatima', 'Jonte', 'Elin', 'Ali', 'Greta', 'Nils', 'Mira', 'Pelle'];
+// dagens sökande (samma hela dagen): skicklighet 1–3, dagslön efter skicklighet
+export function truckSokande(day) {
+  const out = [];
+  for (let i = 0; i < 3; i++) {
+    const h = Math.abs(Math.sin(day * 12.9898 + i * 78.233) * 43758.5453) % 1;
+    const skill = 1 + Math.floor(h * 3);
+    out.push({ id: `s${day}-${i}`, namn: TRUCK_NAMN[Math.floor(h * 997 + i * 5) % TRUCK_NAMN.length], skill, lon: [0, 180, 260, 360][skill] });
+  }
+  return out;
+}
+
 // Det gamla slutmålet (före livsmålen): Villan med rejält på fickan. Bara för sparfiler som
 // redan klarade det (g.won) – i dag vinner man med livsmålen nedan.
 export const WIN_MONEY = 10000;
@@ -654,6 +696,7 @@ export class Game {
     this.rollPass = {};                   // pass i nuvarande roll per jobb (chefen kräver några som biträdande chef)
     this.veckoPass = {};                  // pass per jobb sedan måndag (veckolönen kräver CHEF_PASS)
     this.sokt = {};                       // dagen man senast sökte befordran per jobb (en intervju om dagen)
+    this.truck = null;                    // eget företag: { plats, priser, uppg: [], personal: [{ id, namn, skill, lon }], rykte, kopt, sald, logg: [] }
     this.won = false;                     // slutmålet nått
     this.event = null;                    // dagens händelse { id, job? }
     this.best = Object.fromEntries(Object.keys(JOBS).map((k) => [k, { ok: 0, pay: 0 }])); // rekord per jobb
@@ -758,6 +801,7 @@ export class Game {
         // karriärstegarna: okända jobb (från en nyare version) följer med orörda
         const counts = (o, max) => Object.fromEntries(Object.entries(o && typeof o === 'object' ? o : {}).filter(([, v]) => (v | 0) > 0).map(([k, v]) => [k, Math.min(max, v | 0)]));
         g.roller = counts(p.roller, ROLLER.length - 1); g.rollPass = counts(p.rollPass, 9999); g.veckoPass = counts(p.veckoPass, 99); g.sokt = counts(p.sokt, 1e7);
+        g.truck = cleanTruck(p.truck);
         g.akerMed = typeof p.akerMed === 'string' && fordonOf(p.akerMed) && g.fordon.some((x) => x.id === p.akerMed) ? p.akerMed : null;
         for (const k of Object.keys(g.jobs)) g.jobs[k] = Math.max(0, p.jobs?.[k] | 0);
         for (const [k, v] of Object.entries(p.jobs || {})) if (!(k in g.jobs)) keep.jobs[k] = v;
@@ -876,6 +920,7 @@ export class Game {
       interest = bankInterest(Math.min(this.bank, this.bankMin));  // det som legat kvar hela veckan
       if (interest > 0) { this.bank += interest; this.logBank('ranta', interest); }
       chefslon = this.betalaChefslon();                       // veckolönen (karriärstegarna) före hyran
+      if (this.truck) { const h = truckPlatsOf(this.truck.plats).hyra; this.money -= h; this.truck.platshyra = h; }   // foodtruckens platshyra
       rent = this.hyra;                                       // (bor man ihop betalar man halva)
       const before = this.money;
       this.money -= rent;
@@ -895,6 +940,7 @@ export class Game {
     this.lycka = clamp(this.lycka + natt.reduce((a, x) => a + x.n, 0));
     this.gladNatt = natt;
     const odlat = this.growGarden(igar);                                                    // trädgården växer (eller torkar)
+    const truckDag = this.truckDag(igar);                                                   // foodtrucken: personalens dag
     // dagens händelse
     this.event = null;
     let eventText = null;
@@ -912,7 +958,97 @@ export class Game {
     if (this.eventIs('regn')) this.waterGarden(-1, true);                                   // regnet vattnar trädgården
     this.pantMorning();
     this.save();
-    return { rent, eventText, gadgetBonus, interest, rentFromBank, odlat, chefslon };
+    return { rent, eventText, gadgetBonus, interest, rentFromBank, odlat, chefslon, truckDag };
+  }
+
+  // ---------- eget företag: foodtrucken ----------
+  buyTruck() {
+    if (this.truck) return { ok: false, msg: 'Du har redan en foodtruck!' };
+    if (this.money < TRUCK_PRIS) return { ok: false, msg: `Foodtrucken kostar ${fmt(TRUCK_PRIS)} – du har inte råd än.` };
+    this.money -= TRUCK_PRIS;
+    this.truck = { plats: 'parken', priser: 'vanlig', uppg: [], personal: [], rykte: 2, kopt: this.day, sald: 0, logg: [] };
+    this.glad(6, '', 'truckkop', 6);
+    this.save();
+    return { ok: true };
+  }
+  truckMeny() { const T = this.truck; return T ? TRUCK_MENY.filter((m) => !m.kraver || T.uppg.includes(m.kraver)) : []; }
+  flyttaTruck(plats) {
+    const T = this.truck, P = TRUCK_PLATSER.find((x) => x.id === plats);
+    if (!T || !P || T.plats === plats) return false;
+    T.plats = plats; this.passTime(30); this.save();
+    return true;
+  }
+  truckPriser(niva) { if (this.truck && TRUCK_PRISER[niva]) { this.truck.priser = niva; this.save(); } }
+  buyTruckUppg(id) {
+    const T = this.truck, U = TRUCK_UPPG.find((x) => x.id === id);
+    if (!T || !U) return { ok: false, msg: 'Finns inte.' };
+    if (T.uppg.includes(id)) return { ok: false, msg: 'Den har du redan.' };
+    if (this.money < U.pris) return { ok: false, msg: `${U.namn} kostar ${fmt(U.pris)} – du har inte råd.` };
+    this.money -= U.pris; T.uppg.push(id); this.save();
+    return { ok: true, uppg: U };
+  }
+  anstall(sokande) {
+    const T = this.truck;
+    if (!T || !sokande) return { ok: false, msg: 'Ingen att anställa.' };
+    if (T.personal.length >= TRUCK_MAX_PERSONAL) return { ok: false, msg: `Det får bara plats ${TRUCK_MAX_PERSONAL} i trucken.` };
+    if (T.personal.some((x) => x.id === sokande.id)) return { ok: false, msg: 'Hen jobbar redan hos dig.' };
+    T.personal.push({ id: sokande.id, namn: sokande.namn, skill: sokande.skill | 0, lon: sokande.lon | 0 });
+    this.save();
+    return { ok: true };
+  }
+  avskeda(id) { const T = this.truck; if (!T) return; T.personal = T.personal.filter((x) => x.id !== id); this.save(); }
+  // snittpriset en kund betalar (en rätt + ibland dricka) och marginalen
+  truckSnitt() {
+    const T = this.truck, M = this.truckMeny().filter((m) => m.id !== 'dricka'), P = TRUCK_PRISER[T?.priser] || TRUCK_PRISER.vanlig;
+    if (!T || !M.length) return { pris: 0, kost: 0 };
+    const pris = M.reduce((a, m) => a + m.pris, 0) / M.length + 15 * 0.5, kost = M.reduce((a, m) => a + m.kost, 0) / M.length + 3 * 0.5;
+    return { pris: pris * P.mult, kost };
+  }
+  // personalens dag (sleep: dagen som gick). Utan personal är trucken stängd när man inte jobbar själv.
+  truckDag(dag) {
+    const T = this.truck;
+    if (!T || !T.personal.length) return null;
+    const P = truckPlatsOf(T.plats), pr = TRUCK_PRISER[T.priser] || TRUCK_PRISER.vanlig;
+    const staff = T.personal.reduce((a, x) => a + [0, 0.8, 1, 1.2][x.skill | 0], 0) * (T.personal.length > 1 ? 0.9 : 1);
+    // priserna: höga priser skrämmer bort folk där plånböckerna är tunna (tol), låga lockar fler
+    const prisK = pr.kunder * (T.priser === 'hog' ? Math.min(1.15, P.tol) : 1);
+    const vader = this.eventIs('regn') ? 0.6 : 1;
+    const kunder = Math.round(P.bas * (1 + 0.12 * T.rykte) * staff * prisK * (T.uppg.includes('markis') ? 1.1 : 1) * vader);
+    const { pris, kost } = this.truckSnitt();
+    const intakt = Math.round(kunder * pris), varor = Math.round(kunder * kost), loner = T.personal.reduce((a, x) => a + x.lon, 0);
+    const vinst = intakt - varor - loner;
+    this.money += vinst; if (vinst > 0) this.earned += vinst;
+    T.sald += kunder;
+    // ryktet: duktig personal lyfter det långsamt, höga priser sänker det
+    const skillSnitt = T.personal.reduce((a, x) => a + (x.skill | 0), 0) / T.personal.length;
+    T.rykte = Math.max(0, Math.min(5, T.rykte + (skillSnitt - 1.8) * 0.08 - (T.priser === 'hog' ? 0.06 : 0) + (T.priser === 'lag' ? 0.03 : 0)));
+    const rad = { dag, kunder, intakt, varor, loner, vinst, plats: P.id, regn: vader < 1 };
+    T.logg = [rad, ...(T.logg || [])].slice(0, 14);
+    return rad;
+  }
+  // ett eget pass i luckan (js/scenes/jobb-truck.js): sald = [rätt-id …] som serverats, arga = missnöjda kunder
+  truckPass({ sald = [], fel = 0, arga = 0 } = {}) {
+    const T = this.truck;
+    if (!T) return null;
+    const pr = TRUCK_PRISER[T.priser] || TRUCK_PRISER.vanlig;
+    let intakt = 0, varor = 0;
+    for (const id of sald) { const m = truckRattOf(id); if (!m) continue; intakt += Math.round(m.pris * pr.mult); varor += m.kost; }
+    const vinst = intakt - varor;
+    this.money += vinst; if (vinst > 0) this.earned += vinst;
+    T.sald += sald.length;
+    const fore = T.rykte;
+    T.rykte = Math.max(0, Math.min(5, T.rykte + Math.min(0.4, sald.length * 0.025) - (fel + arga) * 0.08));
+    this.energy = clamp(this.energy - 30);
+    this.passTime(240);
+    const glad = this.glad(sald.length >= 8 ? 3 : 1, '', 'truck', 4);
+    this.save();
+    return { intakt, varor, vinst, rykte: T.rykte, rykteFore: fore, glad };
+  }
+  saljTruck() {
+    if (!this.truck) return 0;
+    const kr = Math.round(TRUCK_PRIS * 0.55 + this.truck.uppg.reduce((a, id) => a + (TRUCK_UPPG.find((u) => u.id === id)?.pris || 0) * 0.4, 0));
+    this.money += kr; this.truck = null; this.save();
+    return kr;
   }
 
   // ---------- karriärstegarna ----------
@@ -1661,6 +1797,20 @@ export class Game {
 }
 
 const clamp = (v) => Math.max(0, Math.min(100, Math.round(+v || 0)));
+// foodtrucken: bara kända platser/priser/uppgraderingar
+function cleanTruck(t) {
+  if (!t || typeof t !== 'object') return null;
+  return {
+    ...t,
+    plats: TRUCK_PLATSER.some((x) => x.id === t.plats) ? t.plats : 'parken',
+    priser: TRUCK_PRISER[t.priser] ? t.priser : 'vanlig',
+    uppg: (Array.isArray(t.uppg) ? t.uppg : []).filter((id) => TRUCK_UPPG.some((u) => u.id === id)),
+    personal: (Array.isArray(t.personal) ? t.personal : []).filter((x) => x && typeof x === 'object').slice(0, TRUCK_MAX_PERSONAL)
+      .map((x) => ({ id: String(x.id || '').slice(0, 20), namn: String(x.namn || '?').slice(0, 16), skill: Math.max(1, Math.min(3, x.skill | 0)), lon: Math.max(0, x.lon | 0) })),
+    rykte: Math.max(0, Math.min(5, +t.rykte || 0)), kopt: t.kopt | 0, sald: Math.max(0, t.sald | 0),
+    logg: (Array.isArray(t.logg) ? t.logg : []).slice(0, 14),
+  };
+}
 // bo ihop: bara giltiga poster följer med (okänd bostad → ingen sambo)
 function cleanSambo(s) {
   if (!s || typeof s !== 'object' || typeof s.key !== 'string' || !s.key || !HOMES.some((h) => h.id === s.hem)) return null;

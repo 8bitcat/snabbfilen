@@ -10,6 +10,13 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.80.0] – 2026-10-02 – Eget företag: foodtrucken
+- Starta eget företag: en foodtruck! Kenta i GARAGET säljer en begagnad truck (14 900 kr) – tavlan står vid porten.
+- Ställ trucken i parken vid fontänen, på Tjurtorget i downtown eller på parkeringen i förorten. Där syns den i staden med ditt namn på taket ("ANNAS KÖK"), menytavla och personal i luckan.
+- Jobba i luckan själv: kunderna ställer sig vid luckan och beställer. Grilla korv och hamburgare, gör tacos, skopa glass och ta dricka ur kylen, ställ det på hyllan och lämna till rätt kund. Allt du säljer är ditt.
+- Sköt företaget: köp stor grill (hamburgare), tacobar, glassfrys och en randig markis med ljusslinga. Välj låga, vanliga eller höga priser, anställ upp till två (dagens sökande) och se bokföringen.
+- Personalen håller öppet varje dag – på morgonen ser du hur det gick i går. Ryktet (★) växer med bra service. Platshyran dras på måndagen, och regn ger färre kunder.
+
 ## [0.79.0] – 2026-10-02 – Karriärstegar
 - Karriärstegar! På varje jobb kan du klättra: Medarbetare → Skiftledare → Biträdande chef → Chef.
 - Skiftledare: bli Proffs på jobbet och kom i prydliga kläder. Biträdande chef: Mästare, examen i Ledarskap och skjorta eller blus. Chef: Legendar, tre pass som biträdande chef och kavaj eller kostym.

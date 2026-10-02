@@ -186,7 +186,7 @@ function paintWindow(ctx, d, t) {
   }
 }
 
-export function openWeek(A, { morning = false, rentPaid = 0, eventText = '', odlat = null, chefslon = [] } = {}) {
+export function openWeek(A, { morning = false, rentPaid = 0, eventText = '', odlat = null, chefslon = [], truckDag = null } = {}) {
   const g = A.game;
   const w = weekInfo(g);
   const firstWeek = g.day - w.wd === 1; // vecka 1: man flyttade in på måndagen, ingen hyra dragen
@@ -220,6 +220,10 @@ export function openWeek(A, { morning = false, rentPaid = 0, eventText = '', odl
   const chefNews = morning && chefslon?.length ? chefslon.map((c) => c.kr
     ? `<p class="wk-ok" style="margin-top:0">💼 Chefslön från ${esc(JOBS[c.job]?.name || c.job)}: <b>+${fmt(c.kr)}</b> (${esc(c.roll.toLowerCase())}).</p>`
     : `<p class="wk-bad" style="margin-top:0">💼 Ingen chefslön från ${esc(JOBS[c.job]?.name || c.job)} – du jobbade bara ${c.pass} ${c.pass === 1 ? 'pass' : 'pass'} där förra veckan (minst 2).</p>`).join('') : '';
+  // foodtrucken (eget företag): personalens dag i går och platshyran på måndagen
+  const td = morning && truckDag;
+  const truckNews = (td ? `<p class="${td.vinst >= 0 ? 'wk-ok' : 'wk-bad'}" style="margin-top:0">🚚 Foodtrucken i går: ${td.kunder} kunder${td.regn ? ' (regn 🌧️)' : ''} – försäljning ${fmt(td.intakt)}, råvaror och löner ${fmt(td.varor + td.loner)}: <b>${td.vinst >= 0 ? '+' : ''}${fmt(td.vinst)}</b>.</p>` : '')
+    + (morning && rentPaid && g.truck?.platshyra ? `<p class="wk-bad" style="margin-top:0">🚚 Platshyran för trucken: ${fmt(g.truck.platshyra)}.</p>` : '');
   const gardenNews = od ? `<p class="${odlat.vissnade && !odlat.mogna ? 'wk-bad' : 'wk-ok'}" style="margin-top:0">🌱 I natt i trädgården: ${od}.</p>` : '';
   const bankNews = (ranta ? `<p class="wk-ok" style="margin-top:0">📈 Räntan kom in: <b>+${fmt(ranta.n)}</b> på sparkontot.</p>` : '')
     + (autogiro ? `<p class="wk-bad" style="margin-top:0">🏦 Fickan räckte inte – <b>${fmt(autogiro.n)}</b> av hyran drogs från sparkontot (autogiro).</p>` : '');
@@ -258,7 +262,7 @@ export function openWeek(A, { morning = false, rentPaid = 0, eventText = '', odl
   const head = morning ? `☀️ God morgon! ${esc(DAY_NAMES[w.wd])}, dag ${g.day}` : `📅 Vecka ${weekNo(g.day)} – ${esc(DAY_NAMES[w.wd])}, dag ${g.day}`;
   const body = `<div class="wk">
     ${morning && rentPaid ? `<p class="wk-bad" style="margin-top:0">💸 Hyran för veckan är dragen: ${fmt(rentPaid)}.</p>` : ''}
-    ${bankNews}${chefNews}${gardenNews}
+    ${bankNews}${chefNews}${truckNews}${gardenNews}
     ${morning ? gladNattHtml(g) : ''}
     <div class="wk-grid">${cells}</div>
     ${forecast}
