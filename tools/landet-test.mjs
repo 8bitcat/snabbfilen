@@ -69,7 +69,8 @@ const t1 = await D(() => SF.scene._debug.traktor());
 ok(Math.abs(t1.x - t0.x) > 20 || t1.rad !== t0.rad, `traktorn kör (x ${t0.x} → ${t1.x}, rad ${t0.rad} → ${t1.rad})`);
 // ---------- 5. gården, stallet ----------
 await D(() => SF.scene._debug.act('gard')); await sleep(150);
-ok(/GÅRDEN är till salu/.test(await toasts()), 'gården: till salu');
+ok(/Gården till salu/.test(await D(() => document.querySelector('#modal:not(.hidden) .dlg-head h2')?.textContent || '')), 'gården: till salu (köprutan)');
+await D(() => { const m = document.querySelector('#modal'); m.classList.add('hidden'); m.innerHTML = ''; });
 await D(() => SF.scene._debug.act('stall')); await sleep(150);
 ok(/Stallet/.test(await toasts()), 'stallet: hästar snart');
 await D(() => SF.scene._debug.teleport(880, 205)); await sleep(500); await shot('03-garden');

@@ -241,6 +241,13 @@ export function openWeek(A, { morning = false, rentPaid = 0, eventText = '', odl
     if (gd.beds.some(Boolean)) todo.push([!torr, torr ? `Vattna trädgården (${torr} ${torr === 1 ? 'bädd' : 'bäddar'})` : 'Trädgården är vattnad']);
     if (mogna) todo.push([false, `Skörda i trädgården – ${mogna} ${mogna === 1 ? 'bädd är mogen' : 'bäddar är mogna'}`]);
   }
+  // bondgården: djuren ska ha mat varje dag, äggen samlas och korna mjölkas
+  if (g.bondeHar?.()) {
+    const B = g.bonde;
+    todo.push([(B.fodrad | 0) === g.day, (B.fodrad | 0) === g.day ? 'Djuren har fått mat' : 'Fodra djuren i ladugården']);
+    if ((B.djur.hona | 0)) todo.push([(B.agg | 0) === g.day, (B.agg | 0) === g.day ? 'Äggen är samlade' : 'Samla äggen i hönsgården']);
+    if ((B.djur.ko | 0)) todo.push([(B.mjolkat | 0) === g.day, (B.mjolkat | 0) === g.day ? 'Korna är mjölkade' : 'Mjölka korna']);
+  }
   const glad = Math.round(g.lycka ?? 60);
   todo.push([glad >= 40, glad >= 40 ? 'Du är på gott humör' : `Gör något roligt – du är nere${glad < GLAD_LAG ? ' och sover sämre' : ''} (bio, djuren, kompisar, en ledig dag)`]);
   const ev = g.event?.id ? EVENTS.find((e) => e.id === g.event.id) : null;

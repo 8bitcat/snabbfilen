@@ -1,6 +1,6 @@
 // Bostäderna (Carl 2026-09-28 natt):
 //  1) nya spel börjar i husvagnen
-//  2) listan: Husvagnen, Förortsettan, Lilla rummet, Lägenheten, Radhuset, Villan, Takvåningen
+//  2) listan: Husvagnen, Förortsettan, Lilla rummet, Lägenheten, Radhuset, Villan, Gården (i landet), Takvåningen
 //  3) 👁 Titta in visar bilder inifrån varje bostad (alla delrum, dag/kväll) utan att
 //     spelet ändras – varken hemmet, möblerna eller sparfilen.
 // Kör: node tools/bostad-titta-test.mjs   (servern på 8788, eller SMOKE_PORT)
@@ -68,8 +68,8 @@ await page.waitForTimeout(300);
 await page.evaluate(() => { window.SF.game.money = 600; window.SF.openHousing(); });
 await page.waitForTimeout(300);
 const names = await page.evaluate(() => [...document.querySelectorAll('#modal .homerow .nm')].map((n) => n.childNodes[0].textContent.trim()));
-ok(names.join('|') === 'Husvagnen|Förortsettan|Lilla rummet|Lägenheten|Radhuset|Villan|Takvåningen', `ordningen i listan (${names.join(', ')})`);
-ok(await page.locator('#modal [data-look]').count() === 7, 'alla sju har en 👁 Titta in-knapp');
+ok(names.join('|') === 'Husvagnen|Förortsettan|Lilla rummet|Lägenheten|Radhuset|Villan|Gården|Takvåningen', `ordningen i listan (${names.join(', ')})`);
+ok(await page.locator('#modal [data-look]').count() === 8, 'alla åtta har en 👁 Titta in-knapp');
 
 // 3) titta in i varje bostad
 const before = await page.evaluate(() => ({ home: window.SF.game.home, deco: JSON.stringify(window.SF.game.deco), save: localStorage.getItem('snabbfilen_save1'), scene: window.SF.sceneName }));
@@ -109,7 +109,7 @@ await page.waitForTimeout(200);
 ok(/Radhuset/.test(await page.locator('#modal h2').textContent()), 'klick på planschbilden öppnar Titta in');
 await page.click('#modal .dlg-foot button:first-child'); // ← Alla bostäder
 await page.waitForTimeout(200);
-ok(await page.locator('#modal .homerow').count() === 7, '"← Alla bostäder" tar en tillbaka till listan');
+ok(await page.locator('#modal .homerow').count() === 8, '"← Alla bostäder" tar en tillbaka till listan');
 const after = await page.evaluate(() => ({ home: window.SF.game.home, deco: JSON.stringify(window.SF.game.deco), save: localStorage.getItem('snabbfilen_save1'), scene: window.SF.sceneName }));
 ok(after.home === before.home && after.deco === before.deco && after.scene === before.scene, 'titta in ändrade varken hemmet, möblerna eller scenen');
 ok(after.save === before.save, 'sparfilen är orörd efter alla förhandsbilder');

@@ -144,6 +144,18 @@ const PLANS = {
       { name: 'BADRUM', bath: true, tiles: 'marmor', doors: { 1: 30 }, wall: 0xf2eee8, wallDk: 0xb8ae9c, floorA: 0xece6da, floorB: 0xdcd4c6, windows: [[250, 296]], winY: [16, 40], view: 'frost', towels: [180, 314], lamp: 'spots' },
     ],
   },
+  // Gården i landet (js/scenes/landet.js): villans planlösning i lantstil – furu, linoljegrönt och en
+  // vedspis; fönstren ser ut över kullarna, hagen och ladan (view 'landet'). Ytterdörren leder ut på
+  // gårdsplanen i landet, inte till stan.
+  gard: {
+    partition: 0, lyx: true,
+    rooms: [
+      { name: 'VARDAGSRUM', wall: 0xd8c39a, wallDk: 0xa08a62, floorA: 0xc8a878, floorB: 0xb08e60, windows: [[80, 120], [134, 172], [240, 280]], view: 'landet' },
+      { name: 'SOVRUM', wall: 0xb8c8a8, wallDk: 0x889878, floorA: 0xd0b48a, floorB: 0xb8986c, windows: [[110, 150], [210, 250]], view: 'landet' },
+      { name: 'LANTKÖK', wall: 0xe8d8b4, wallDk: 0xb0a07c, floorA: 0xc89a6a, floorB: 0xb0845a, windows: [[110, 150], [230, 270]], view: 'landet' },
+      { name: 'BADRUM', bath: true, tiles: 'vit', doors: { 1: 30 }, wall: 0xe8eee8, wallDk: 0xb0b8b0, floorA: 0xd8d0c0, floorB: 0xc4bcac, windows: [[250, 296]], winY: [16, 40], view: 'frost', towels: [180, 314], lamp: 'plafond' },
+    ],
+  },
   takvaning: {
     partition: 0, lyx: true, winY: [12, 56],
     rooms: [
@@ -275,6 +287,25 @@ const SEEDS = {
     { k: 'linneskap', v: 1, x: 212, y: 98 }, { k: 'badbank', v: 1, x: 244, y: 102 }, { k: 'fredslilja', v: 0, x: 298, y: 104 },
     { k: 'lillmatta', v: 0, x: 76, y: 140 }, { k: 'rundmatta', v: 2, x: 250, y: 150 },
   ],
+  // Gården: samma platser som villans rum (de står rätt), lantligare möbler
+  'gard:0': [
+    { k: 'kuddsoffa', v: 1, x: 112, y: 182 }, { k: 'fatolj', v: 1, x: 164, y: 166 }, { k: 'bordR', v: 2, x: 150, y: 200 },
+    { k: 'retrotv', v: 0, x: 176, y: 151 }, { k: 'bokhylla', v: 1, x: 180, y: 96 }, { k: 'tegelspis', v: 1, x: 296, y: 131 },
+    { k: 'lampa', v: 1, x: 320, y: 151 }, { k: 'vaxt', v: 0, x: 48, y: 151 }, { k: 'rutmatta', v: 1, x: 100, y: 156 },
+  ],
+  'gard:1': [
+    { k: 'sang', v: 4, x: 40, y: 133, fx: 1 }, { k: 'garderob', v: 2, x: 250, y: 96, fx: 1 },
+    { k: 'byra', v: 1, x: 160, y: 96 }, { k: 'spegel', v: 1, x: 220, y: 94 }, { k: 'matta', v: 1, x: 80, y: 150 },
+  ],
+  'gard:2': [
+    { k: 'kylskap', v: 0, x: 270, y: 94, fx: 1 },
+    { k: 'bordM', v: 1, x: 130, y: 160 }, { k: 'matstol', v: 1, x: 114, y: 158 }, { k: 'matstol', v: 1, x: 186, y: 158 },
+    { k: 'byra', v: 2, x: 60, y: 96 }, { k: 'vaxtS', v: 0, x: 330, y: 140 },
+  ],
+  'gard:3': [
+    { k: 'toalett', v: 0, x: 16, y: 100, fx: 1 }, { k: 'handfat', v: 0, x: 50, y: 98, fx: 1 },
+    { k: 'badkar', v: 0, x: 80, y: 112, fx: 1 }, { k: 'badhylla', v: 1, x: 158, y: 100 }, { k: 'fredslilja', v: 0, x: 314, y: 112 }, { k: 'rundmatta', v: 1, x: 82, y: 150 },
+  ],
   'villa:3': [ // marmor: handfat under medicinskåpet, badkar, dusch, tvättpelare och en bänk under fönstret
     { k: 'toalett', v: 3, x: 16, y: 100, fx: 1 }, { k: 'handfat', v: 1, x: 50, y: 98, fx: 1 }, { k: 'medicinskap', v: 0, x: 42, y: 72 },
     { k: 'badkar', v: 1, x: 80, y: 112, fx: 1 }, { k: 'dusch', v: 4, x: 118, y: 120, fx: 1 },
@@ -298,6 +329,7 @@ const KOK = {
   'lagenhet:0': [{ k: 'koksspis', v: 0, x: 234, y: 96, fx: 1 }, { k: 'receptbok', v: 0, x: 252, y: 96, fx: 1 }],
   'radhus:0': [{ k: 'koksspis', v: 0, x: 278, y: 96, fx: 1 }, { k: 'receptbok', v: 0, x: 296, y: 96, fx: 1 }],
   'villa:2': [{ k: 'receptbok', v: 0, x: 232, y: 96, fx: 1 }, { k: 'koksspis', v: 0, x: 250, y: 96, fx: 1 }],
+  'gard:2': [{ k: 'receptbok', v: 0, x: 232, y: 96, fx: 1 }, { k: 'koksspis', v: 1, x: 250, y: 96, fx: 1 }],
   'takvaning:2': [{ k: 'receptbok', v: 0, x: 236, y: 96, fx: 1 }],
 };
 for (const [key, list] of Object.entries(KOK)) SEEDS[key] = [...(SEEDS[key] || []), ...list];
@@ -736,7 +768,11 @@ export function makeRoom(A, { visit = false, sub: subOpt = null, core = null } =
     }
     return null;
   }
-  const toCity = () => { A.roomSub = 0; A.leftHome = true; play('door'); A.go('city'); }; // staden ställer en vid det egna husets dörr
+  const toCity = () => {
+    // Gården ligger i landet: ut på gårdsplanen där (js/scenes/landet.js)
+    if (g.home === 'gard') { A.roomSub = 0; A.landetFran = { gard: true }; play('door'); A.go('landet'); return; }
+    A.roomSub = 0; A.leftHome = true; play('door'); A.go('city');
+  }; // staden ställer en vid det egna husets dörr
   // bostäder med uteplats (game.js TRADGARD): ut i stan eller ut i trädgården/på tomten/terrassen
   const exitAct = visit
     ? () => { A.visitTarget = null; A.roomSub = 0; g.passTime(20); g.save(); play('door'); toast('🚗 Hemma igen.'); A.go('city'); }
@@ -2289,6 +2325,7 @@ function paintView(P, view, x0, x1, y0, y1, night, dirty) {
   if (view === 'betong') return viewBetong(P, x0, x1, y0, y1, night);
   if (view === 'tradgard') return viewTradgard(P, x0, x1, y0, y1, night);
   if (view === 'stad') return viewStad(P, x0, x1, y0, y1, night);
+  if (view === 'landet') return viewLandet(P, x0, x1, y0, y1, night);
   if (view === 'frost') { // badrummens frostade glas: mjölkigt, ljusare upptill, ett svagt kornigt mönster
     for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) {
       const t = (y - y0) / (y1 - y0);
@@ -2422,6 +2459,30 @@ function viewBetong(P, x0, x1, y0, y1, night) {
       else if (r > 0.4) for (let x = c.x; x < c.x + c.w; x++) if (x % 3) P.px(x, by - 2, [0xd9433b, 0xf4f1ea, 0x3a7bd5, 0xf0c020][x % 4], 0.9);
     }
   }
+}
+// Gårdens fönster: böljande kullar med häckar, gärdsgården, hagen med en ko och den röda ladan
+function viewLandet(P, x0, x1, y0, y1, night) {
+  const H = y1 - y0;
+  for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) {
+    const far = y0 + H * 0.38 + Math.sin(x / 14) * 3 + Math.sin(x / 5) * 1;
+    const near = y0 + H * 0.58 + Math.sin(x / 20 + 1) * 2;
+    let c;
+    if (y < far) c = skyPx(x, y, (y - y0) / Math.max(1, far - y0), night, 41);
+    else if (y < near) { c = ((Math.floor(x / 9) + Math.floor(y / 3)) % 3) ? (night ? 0x1e3020 : 0x6aa84a) : (night ? 0x22341e : 0x8ab84e); if (Math.abs((y - far) - 3 - Math.sin(x / 7)) < 0.6) c = night ? 0x10200f : 0x2e6a26; }
+    else c = night ? 0x1a2c18 : mix(0x5aa042, 0x4a9038, hash(x >> 1, y >> 1, 42));
+    P.px(x, y, c);
+  }
+  if (!night) cloudsIn(P, x0, x1, y0, y0 + Math.round(H * 0.3), 43);
+  // den röda ladan på kullen
+  const lx = Math.round((x0 + x1) / 2) + 6, ly = y0 + Math.round(H * 0.5);
+  P.rect(lx - 7, ly - 5, 14, 6, night ? 0x3a1612 : 0xa8382a); for (let j = 0; j < 4; j++) P.hl(lx - 7 + j, ly - 6 - j, 14 - j * 2, night ? 0x222226 : 0x5a5a62);
+  P.rect(lx - 2, ly - 3, 4, 4, night ? 0x1a0c0a : 0x6a2018); if (night) P.px(lx + 4, ly - 3, 0xf8d070);
+  // gärdsgården (snedställda slanor)
+  const fy = y0 + Math.round(H * 0.74);
+  for (let x = x0; x < x1; x++) { if ((x - x0) % 6 === 0) { P.vl(x, fy - 4, 6, night ? 0x2a2014 : 0x6a4a2a); } P.px(x, fy - 2 + ((x >> 1) & 1), night ? 0x34281a : 0x8a6038); }
+  // en ko i hagen
+  const kx = x0 + Math.round((x1 - x0) * 0.25), ky = y0 + Math.round(H * 0.68);
+  if (!night) { P.rect(kx, ky - 3, 7, 3, 0xf4f1ea); P.px(kx + 2, ky - 3, 0x1e1a1c); P.px(kx + 5, ky - 2, 0x1e1a1c); P.rect(kx + 7, ky - 4, 2, 2, 0xf4f1ea); P.px(kx + 1, ky, 0x1e1a1c); P.px(kx + 5, ky, 0x1e1a1c); }
 }
 function viewTradgard(P, x0, x1, y0, y1, night) {
   const H = y1 - y0, roofY = y0 + Math.round(H * 0.3), fenceY = y0 + Math.round(H * 0.56), lawnY = y0 + Math.round(H * 0.8);

@@ -726,7 +726,25 @@ function picGeneric(P, x, y, w, h, seed) {
   P.rect(hx + 10, hy + 5, 4, 8, 0x5a3a24);
   for (const wx of [hx + 3, hx + 17]) { P.rect(wx, hy + 3, 4, 4, 0x8ec4e8); P.box(wx - 1, hy + 2, 6, 6, 0xf6f2ea); }
 }
-const PICS = { rum: picRum, lagenhet: picLagenhet, villa: picVilla, husvagn: picHusvagn, hoghus: picHoghus, radhus: picRadhus, takvaning: picTakvaning };
+// Gården i landet: kullar med häckar, röd lada och boningshus, gärdsgård och en ko
+function picGard(P, x, y, w, h) {
+  vgrad(P, x, y, w, 18, 0x6ab0ea, 0xd8eefa, 5);
+  disc(P, x + 10, y + 6, 3, 3, 0xfff6c0); cloud(P, x + w - 22, y + 5, 4);
+  for (let i = 0; i < w; i++) { const t = 15 + Math.round(Math.sin(i / 7) * 3); for (let j = t; j < h; j++) P.px(x + i, y + j, (Math.floor(i / 8) + Math.floor(j / 4)) % 3 ? 0x6aa84a : 0x8ab84e); P.px(x + i, y + t, 0x2e6a26); }
+  for (let j = 26; j < h; j++) for (let i = 0; i < w; i++) P.px(x + i, y + j, mix(0x5aa042, 0x3e8a32, (j - 26) / 20));
+  // ladan och boningshuset
+  const lx = x + 30, ly = y + 14;
+  for (let j = 0; j < 10; j++) P.hl(lx, ly + j, 16, j === 0 ? 0x6a2018 : 0xa8382a); for (let j = 0; j < 5; j++) P.hl(lx - 1 + j, ly - 1 - j, 18 - j * 2, 0x4a4a52);
+  P.rect(lx + 5, ly + 4, 6, 6, 0x6a2018); P.line(lx + 5, ly + 4, lx + 10, ly + 9, 0xf4f1ea); P.line(lx + 10, ly + 4, lx + 5, ly + 9, 0xf4f1ea);
+  const hx = x + 8, hy = y + 17;
+  for (let j = 0; j < 8; j++) P.hl(hx, hy + j, 16, j === 0 ? 0x6a2018 : 0xb03c2e); P.vl(hx, hy, 8, 0xf4f1ea); P.vl(hx + 15, hy, 8, 0xf4f1ea);
+  for (let j = 0; j < 4; j++) P.hl(hx - 1 + j, hy - 1 - j, 18 - j * 2, 0x8a3a2a);
+  P.rect(hx + 3, hy + 2, 3, 3, 0x9ad0f0); P.rect(hx + 10, hy + 2, 3, 3, 0x9ad0f0);
+  // gärdsgården och en ko
+  for (let i = 0; i < w; i++) { if (i % 5 === 0) P.vl(x + i, y + 30, 4, 0x6a4a2a); P.px(x + i, y + 31 + ((i >> 1) & 1), 0x8a6038); }
+  P.rect(x + w - 16, y + 35, 8, 4, 0xf4f1ea); P.px(x + w - 14, y + 35, 0x1e1a1c); P.px(x + w - 10, y + 36, 0x1e1a1c); P.rect(x + w - 8, y + 34, 3, 3, 0xf4f1ea); P.px(x + w - 15, y + 39, 0x1e1a1c); P.px(x + w - 10, y + 39, 0x1e1a1c);
+}
+const PICS = { rum: picRum, lagenhet: picLagenhet, villa: picVilla, husvagn: picHusvagn, hoghus: picHoghus, radhus: picRadhus, takvaning: picTakvaning, gard: picGard };
 
 // ================= rummet (väggar, golv, allt på väggen) =================
 function parquet(x, y) {

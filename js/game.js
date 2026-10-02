@@ -655,9 +655,21 @@ export const HOMES = [
   { id: 'lagenhet', icon: '🏢', name: 'Lägenheten', deposit: 1500, rent: 600, restBonus: 10, glad: 1, desc: 'Riktigt kök, soffa och utsikt över Pixelstaden.' },
   { id: 'radhus', icon: '🏡', name: 'Radhuset', deposit: 4000, rent: 800, restBonus: 15, glad: 2, desc: 'Eget radhus på Söder med en liten trädgård. Grannarna grillar på lördagar.' },
   { id: 'villa', icon: '🏡', name: 'Villan', deposit: 8000, rent: 1000, restBonus: 20, glad: 3, desc: 'Eget hus med trädgård. Hit kan kompisarna komma.' },
+  { id: 'gard', icon: '🚜', name: 'Gården', deposit: 16000, rent: 1400, restBonus: 25, glad: 4, desc: 'Ett falurött hus på landet med ladugård, hönsgård och hagar fulla av djur. Bli bonde!' },
   { id: 'takvaning', icon: '🏙️', name: 'Takvåningen', deposit: 20000, rent: 2000, restBonus: 25, glad: 4, desc: 'Högst upp i Tornhuset – terrass med utsikt över hela Pixelstaden.' },
 ];
 // Okänd bostad (t.ex. i en sparfil från en annan version) → Lilla rummet, aldrig husvagnen.
+// BONDGÅRDEN (Carl 2026-10-02: "köpa en gård och bli bonde … skaffa djur"): bor man på Gården (HOMES
+// 'gard', i landet – js/scenes/landet.js) blir djuren i hagarna ens egna. Fodra dem varje dag i
+// ladugården (annars blir de hungriga och ger inget), samla ägg i hönsgården, mjölka korna (en gång
+// om dagen) och klipp fåren (en gång i veckan). Ägg och mjölk hamnar i skafferiet (laga mat!), ullen
+// i ladugården – sälj allt i GÅRDSBUTIKEN vid vägen. Fler djur köps i ladugården.
+export const GARDSDJUR = {
+  hona: { namn: 'Höna', fler: 'Höns', icon: '🐔', pris: 150, max: 14, foder: 1 },
+  ko: { namn: 'Ko', fler: 'Kor', icon: '🐄', pris: 4500, max: 9, foder: 8 },
+  far: { namn: 'Får', fler: 'Får', icon: '🐑', pris: 900, max: 14, foder: 3 },
+};
+export const GARD_PRIS = { agg: 12, mjolk: 8, ull: 50 };   // vad gårdsbutiken betalar (ägg/st, mjölk/l, ull/kg)
 export const homeOf = (id) => HOMES.find((h) => h.id === id) || HOMES.find((h) => h.id === 'rum') || HOMES[0];
 
 const DAY = 24 * 60;
@@ -696,6 +708,7 @@ export class Game {
     this.rollPass = {};                   // pass i nuvarande roll per jobb (chefen kräver några som biträdande chef)
     this.veckoPass = {};                  // pass per jobb sedan måndag (veckolönen kräver CHEF_PASS)
     this.sokt = {};                       // dagen man senast sökte befordran per jobb (en intervju om dagen)
+    this.bonde = null;                    // bondgården: { djur: { hona, ko, far }, fodrad, agg, mjolkat, klippt, ull } (dagar) – skapas när man flyttar in på Gården
     this.truck = null;                    // eget företag: { plats, priser, uppg: [], personal: [{ id, namn, skill, lon }], rykte, kopt, sald, logg: [] }
     this.won = false;                     // slutmålet nått
     this.event = null;                    // dagens händelse { id, job? }
@@ -802,6 +815,7 @@ export class Game {
         const counts = (o, max) => Object.fromEntries(Object.entries(o && typeof o === 'object' ? o : {}).filter(([, v]) => (v | 0) > 0).map(([k, v]) => [k, Math.min(max, v | 0)]));
         g.roller = counts(p.roller, ROLLER.length - 1); g.rollPass = counts(p.rollPass, 9999); g.veckoPass = counts(p.veckoPass, 99); g.sokt = counts(p.sokt, 1e7);
         g.truck = cleanTruck(p.truck);
+        g.bonde = cleanBonde(p.bonde);
         g.akerMed = typeof p.akerMed === 'string' && fordonOf(p.akerMed) && g.fordon.some((x) => x.id === p.akerMed) ? p.akerMed : null;
         for (const k of Object.keys(g.jobs)) g.jobs[k] = Math.max(0, p.jobs?.[k] | 0);
         for (const [k, v] of Object.entries(p.jobs || {})) if (!(k in g.jobs)) keep.jobs[k] = v;
@@ -936,6 +950,7 @@ export class Game {
       }
       this.bankMin = this.bank;           // en ny räntevecka börjar
     }
+    if (this.home === 'gard' && this.bonde && (this.bonde.fodrad | 0) < igar) glad(-3, 'Hungriga djur');   // ofodrade djur tär på lyckan
     if (this.money < 0) glad(-4, 'Skulder');
     this.lycka = clamp(this.lycka + natt.reduce((a, x) => a + x.n, 0));
     this.gladNatt = natt;
@@ -1791,12 +1806,99 @@ export class Game {
     if (this.money < h.deposit) return { ok: false, msg: `Insatsen är ${fmt(h.deposit)} – du har inte råd än.` };
     this.money -= h.deposit;
     this.home = h.id;
+    if (h.id === 'gard' && !this.bonde) this.bonde = { djur: { hona: 6, ko: 2, far: 4 }, fodrad: this.day, agg: 0, mjolkat: 0, klippt: 0, ull: 0 };   // djuren ingår
     this.save();
     return { ok: true };
+  }
+
+  // ---------- bondgården (Gården i landet) ----------
+  bondeHar() { return this.home === 'gard' && !!this.bonde; }
+  fodderKostnad() { const d = this.bonde?.djur || {}; return Object.entries(GARDSDJUR).reduce((a, [k, D]) => a + (d[k] | 0) * D.foder, 0); }
+  // mätta i dag? (fodrade i dag eller i går – fodret räcker ett dygn)
+  djurMatta() { return !!this.bonde && (this.bonde.fodrad | 0) >= this.day - 1; }
+  fodra() {
+    const B = this.bonde;
+    if (!this.bondeHar()) return { ok: false, msg: 'Det här är inte din gård.' };
+    if ((B.fodrad | 0) === this.day) return { ok: false, msg: 'Djuren har redan fått mat i dag.' };
+    const kr = this.fodderKostnad();
+    if (this.money < kr) return { ok: false, msg: `Fodret kostar ${fmt(kr)} – du har inte råd.` };
+    this.money -= kr; B.fodrad = this.day;
+    this.passTime(20);
+    const glad = this.glad(2, '', 'bonde', 6);
+    this.save();
+    return { ok: true, kr, glad };
+  }
+  samlaAgg() {
+    const B = this.bonde;
+    if (!this.bondeHar()) return { ok: false, msg: 'Det här är inte din gård.' };
+    if ((B.agg | 0) === this.day) return { ok: false, msg: 'Du har redan samlat äggen i dag – kom tillbaka i morgon.' };
+    if (!this.djurMatta()) return { ok: false, msg: 'Hönsen är hungriga och värper inte – fodra djuren i ladugården!' };
+    const n = Math.min(B.djur.hona | 0, MAX_RAVA - (this.skafferi.agg | 0));
+    B.agg = this.day;
+    if (n > 0) this.skafferi.agg = (this.skafferi.agg | 0) + n;
+    this.passTime(10);
+    const glad = this.glad(1, '', 'bonde', 6);
+    this.save();
+    return { ok: true, n, full: n < (B.djur.hona | 0), glad };
+  }
+  mjolka() {
+    const B = this.bonde;
+    if (!this.bondeHar()) return { ok: false, msg: 'Det här är inte din gård.' };
+    if (!(B.djur.ko | 0)) return { ok: false, msg: 'Du har inga kor än – köp i ladugården.' };
+    if ((B.mjolkat | 0) === this.day) return { ok: false, msg: 'Korna är redan mjölkade i dag.' };
+    if (!this.djurMatta()) return { ok: false, msg: 'Korna är hungriga och ger ingen mjölk – fodra djuren i ladugården!' };
+    const vill = (B.djur.ko | 0) * 3, n = Math.min(vill, MAX_RAVA - (this.skafferi.mjolk | 0));
+    B.mjolkat = this.day;
+    if (n > 0) this.skafferi.mjolk = (this.skafferi.mjolk | 0) + n;
+    this.passTime(20);
+    const glad = this.glad(1, '', 'bonde', 6);
+    this.save();
+    return { ok: true, n, full: n < vill, glad };
+  }
+  klippa() {
+    const B = this.bonde;
+    if (!this.bondeHar()) return { ok: false, msg: 'Det här är inte din gård.' };
+    if (!(B.djur.far | 0)) return { ok: false, msg: 'Du har inga får än – köp i ladugården.' };
+    const kvar = 7 - (this.day - (B.klippt | 0));
+    if (B.klippt && kvar > 0) return { ok: false, msg: `Ullen växer fortfarande – klipp igen om ${kvar} ${kvar === 1 ? 'dag' : 'dagar'}.` };
+    if (!this.djurMatta()) return { ok: false, msg: 'Fåren är hungriga – fodra djuren i ladugården först!' };
+    const n = (B.djur.far | 0) * 2;
+    B.klippt = this.day; B.ull = Math.min(999, (B.ull | 0) + n);
+    this.passTime(30);
+    const glad = this.glad(2, '', 'bonde', 6);
+    this.save();
+    return { ok: true, n, glad };
+  }
+  kopDjur(sort) {
+    const D = GARDSDJUR[sort], B = this.bonde;
+    if (!this.bondeHar() || !D) return { ok: false, msg: 'Det går inte.' };
+    if ((B.djur[sort] | 0) >= D.max) return { ok: false, msg: `Det får inte plats fler ${D.fler.toLowerCase()} i hagen.` };
+    if (this.money < D.pris) return { ok: false, msg: `${D.namn} kostar ${fmt(D.pris)} – du har inte råd.` };
+    this.money -= D.pris; B.djur[sort] = (B.djur[sort] | 0) + 1;
+    this.glad(2, '', 'djurkop', 4);
+    this.save();
+    return { ok: true, djur: D };
+  }
+  // gårdsbutiken: sälj ägg, mjölk (ur skafferiet) och ull (ur ladugården)
+  saljGard(vad, n) {
+    n = Math.max(0, n | 0);
+    const har = vad === 'ull' ? (this.bonde?.ull | 0) : (this.skafferi[vad] | 0), pris = GARD_PRIS[vad];
+    if (!pris || !n || n > har) return { ok: false, msg: 'Du har inte så mycket.' };
+    if (vad === 'ull') this.bonde.ull -= n; else { this.skafferi[vad] -= n; if (!this.skafferi[vad]) delete this.skafferi[vad]; }
+    const kr = n * pris;
+    this.money += kr; this.earned += kr;
+    this.save();
+    return { ok: true, kr };
   }
 }
 
 const clamp = (v) => Math.max(0, Math.min(100, Math.round(+v || 0)));
+// bondgården: djuren inom gränserna, dagarna som heltal
+function cleanBonde(b) {
+  if (!b || typeof b !== 'object') return null;
+  const d = b.djur && typeof b.djur === 'object' ? b.djur : {};
+  return { ...b, djur: Object.fromEntries(Object.entries(GARDSDJUR).map(([k, D]) => [k, Math.max(0, Math.min(D.max, d[k] | 0))])), fodrad: b.fodrad | 0, agg: b.agg | 0, mjolkat: b.mjolkat | 0, klippt: b.klippt | 0, ull: Math.max(0, b.ull | 0) };
+}
 // foodtrucken: bara kända platser/priser/uppgraderingar
 function cleanTruck(t) {
   if (!t || typeof t !== 'object') return null;

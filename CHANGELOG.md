@@ -10,6 +10,13 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.82.0] – 2026-10-02 – Gården – bli bonde
+- Bli bonde! GÅRDEN på landet är till salu (insats 16 000 kr, hyra 1 400 kr i veckan) – klicka på dörren eller köp den hos Bostadsbyrån. Djuren ingår: 6 höns, 2 kor och 4 får.
+- Hemma på gården: vardagsrum med tegelspis, sovrum, lantkök med spis och receptbok och ett badrum. Genom fönstren ser du kullarna, ladan och kon i hagen. Ytterdörren leder ut på gårdsplanen.
+- Ladugården: fodra djuren varje dag (fodret kostar efter hur många djur du har) och köp fler höns, kor och får. Hungriga djur ger inget och gör dig ledsen.
+- Klicka på hönsen för att samla ägg, på korna för att mjölka dem och på fåren för att klippa ullen (en gång i veckan). Ägg och mjölk hamnar i skafferiet – laga mat av dem!
+- Gårdsbutiken vid vägen köper ägg, mjölk och ull. Morgonrutan påminner: fodra, samla ägg, mjölka.
+
 ## [0.81.0] – 2026-10-02 – Landet
 - LANDET! Gå (eller cykla) österut på Pixelgatan förbi den gröna skylten LANDET → vid stadsgränsen så kommer du ut på landsvägen, förbi ortsskylten PIXELSTADEN.
 - Böljande kullar med lapptäcke av åkrar och en gammal väderkvarn, som glider förbi långsammare än marken. Moln på dagen, stjärnor på natten.
