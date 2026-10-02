@@ -10,6 +10,13 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.77.0] – 2026-10-02 – Fest hemma
+- Ha fest hemma! Tryck på 🎉 uppe till höger när du är hemma: välj hur stor festen ska vara (Lilla rummet rymmer 3 gäster, villan 10 och takvåningen 12), vad du bjuder på – chips och dricka, pizza eller pizza och tårta – och vilka kompisar online som ska få en inbjudan.
+- Gästerna kommer in genom dörren en och en, dansar i takt med jukeboxlåten, pratar, äter vid festbordet och presenterar sig om du klickar på dem. Girlanger, ballonger, en discokula med färgade ljusprickar och konfetti.
+- Festen pågår i tre timmar (🥳 avslutar den tidigare). Du blir gladare hela tiden och maten mättar.
+- Kompisar som bjuds in får "🎉 Fest hos …! Åk dit?" och ser pyntet när de kommer – och blir glada av att gå på fest.
+- Efteråt ligger det muggar, chipspåsar, tallrikar och konfetti på golvet – klicka på skräpet för att städa. En fest om dagen, senast klockan 20.
+
 ## [0.76.0] – 2026-10-02 – Cykel, elsparkcykel och moppe
 - GARAGET har öppnat i garagelängan i förorten (9–19)! Mekanikern Kenta säljer fem fordon: begagnad herrcykel (450 kr), stadscykel med korg (1 600), elsparkcykel (2 900), racercykel (3 800) och moppe (8 900 – hjälmen ingår).
 - Klicka på ett fordon: du ser dig själv på det, väljer färg och köper. Har du det redan kan du måla om det (150 kr).

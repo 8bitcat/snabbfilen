@@ -39,6 +39,7 @@ export const SPELARE = {
   dator: { namn: 'datorn', icon: '🖥️', fx: 'inne', lvl: 1.25 },
   laptop: { namn: 'laptopen', icon: '💻', fx: 'radio', lvl: 1.15 },
   retrotv: { namn: 'den gamla TV:n', icon: '📺', fx: 'radio', lvl: 1.1 },
+  fest: { namn: 'festen', icon: '🎉', fx: 'none', lvl: 1.45 },   // festlåten (js/core/fest.js) – ingen pryl
 };
 export const kanSpela = (kind) => !!SPELARE[kind];
 

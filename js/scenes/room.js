@@ -42,6 +42,7 @@ import { openModal, closeModal, toast } from '../core/ui.js';
 import { foodOf, ravaraOf, receptOf, tradgardOf, katalogOf, functionOf, viewOf, rotStates, knownKind, fmt, MAX_STORAGE, MAX_PER_ROOM } from '../game.js';
 import { openKok } from './kok.js'; // spisen och receptboken
 import { openMusik, stopHemMusik, SPELARE } from '../core/hemmusik.js'; // musik hemma
+import { createFestRoom, festHere } from '../core/fest.js'; // 🎉 fest hemma
 import { play } from '../core/sound.js';
 import { worldFolksHere, worldMyEmote } from '../net/world.js';
 import { FRAMES } from '../data/frames.js';
@@ -1120,6 +1121,11 @@ export function makeRoom(A, { visit = false, sub: subOpt = null, core = null } =
     rebuild();
     [px, py] = nearestFree(px, py);
   }
+  // ---------- 🎉 festen (js/core/fest.js): gästerna, pyntet och skräpet ----------
+  // (på besök: bara pyntet, om värden har fest – gästerna finns hos värden)
+  const festRoom = createFestRoom(A, { sub, home, right: RIGHT, wallY: WALL_Y, bottom: FH - 4, visit: !!visit,
+    door: sub === 0 ? DOOR : (subDoors[0] || { x0: 20, x1: 40 }), walkable, findPath });
+
   // 🐾 Djurprylar i förrådspanelen (Möblera): lagrets egen dialog – ställ ut, flytta, plocka upp
   function syncPetBtn() {
     const foot = document.querySelector('#decor-panel .dp-foot');
@@ -1178,6 +1184,8 @@ export function makeRoom(A, { visit = false, sub: subOpt = null, core = null } =
       hold: (tt) => { if (seq) seq.hold = tt; return !!seq; },
       bedFor: () => bedFor,
       notes: () => notesDrawn,   // hur många noter som ritades senast (musik hemma)
+      fest: () => festRoom.debug(),   // 🎉 gästernas lägen, skräpet, festbordet (tools/fest-test.mjs)
+      festMess: () => festRoom.messAt(),
       // figuren i sängen som bild (för testerna: finns avatarens hudfärg på kudden?)
       sleeperArtFor: (d, look, covered = true) => { const a = sleeperArt(look || A.avatar.look, d, covered); return a ? { img: a.img, flip: a.flip, head: a.head } : null; },
       sleeperArt: (covered = true) => { const b = findBed(seq?.key || bedFor); if (!b) return null; const d = b.k === 'madrass' ? { k: 'madrass' } : decoList()[b.decoIdx]; return sleeperArt(A.avatar.look, d, covered)?.img || null; },
@@ -1235,6 +1243,7 @@ export function makeRoom(A, { visit = false, sub: subOpt = null, core = null } =
           if (!path.length) { dir = 'down'; const cb = onArrive; onArrive = null; cb?.(); }
         } else { px += dx / dist * step; py += dy / dist * step; }
       }
+      festRoom.update(dt);
       L?.update(dt); // djuren: rörelser, behov och simuleringen mot spelklockan
       if (visit && !A.visitTarget) A.go('city');
     },
@@ -1283,6 +1292,8 @@ export function makeRoom(A, { visit = false, sub: subOpt = null, core = null } =
       }
       // djur (meny), prylar (säck, skål, låda …) och olyckor får klicket före möblerna
       if (L && L.down(x, y)) return;
+      const fd = festRoom.down(x, y);   // 🎉 städa skräpet / prata med en festgäst
+      if (fd) { walkTo(fd.go[0], fd.go[1], fd.act); return; }
       for (const h of hotRects) {
         if (x >= h.r[0] && x <= h.r[2] && y >= h.r[1] && y <= h.r[3]) {
           walkTo(h.go[0], h.go[1], h.act || undefined);
@@ -1298,6 +1309,7 @@ export function makeRoom(A, { visit = false, sub: subOpt = null, core = null } =
       if ((k === 'r' || k === 'R') && decor.on && decor.carry) rotateCarry();
     },
     exit() {
+      festRoom.exit();
       // byts scenen mitt i sömnen (sker inte i spelet – klicken spolar bara fram) sover man
       // ändå klart: natten räknas och veckan visas när den nya scenen har tagit över
       if (seq) finishSleep(false);
@@ -1330,6 +1342,8 @@ export function makeRoom(A, { visit = false, sub: subOpt = null, core = null } =
       ctx.drawImage(bgImg, 0, 0);
       drawWindowLife(ctx, roomDef.view || 'sky', winDrawn, winY[0], winY[1], t, dawnU == null ? !!night : dawnU < 0.5); // grannar, bilar, katten på staketet
       for (const w of wallItems) w.draw(ctx);
+      const festNu = festHere(A, { visit: !!visit, home, sub });
+      if (festNu) festRoom.drawWall(ctx);   // girlanger, ballonger och discokulan
       if (plan.shabby) drawSpider(ctx, RIGHT, t);
       for (const r of rugs) r.draw(ctx);
 
@@ -1351,6 +1365,7 @@ export function makeRoom(A, { visit = false, sub: subOpt = null, core = null } =
       const mine = worldMyEmote();
       // husdjuren, deras prylar och olyckor (plus mätare/bubblor/spöken med fy ≥ 10000 överst)
       if (L) for (const d of L.drawables()) drawables.push({ fy: d.fy, draw: () => d.draw(ctx) });
+      for (const d of festRoom.drawables()) drawables.push({ fy: d.fy, draw: () => d.draw(ctx) });   // festgästerna, festbordet, skräpet
       if (!sleeper && isActive()) drawables.push({ fy: py, draw: () => {
         // bär man en matsäck (A.carrying) ritas figuren med bär-bildrutorna; nyvaken: sträcker på sig
         const frame = st ? (st.t >= SLEEP.up && st.t < SLEEP.up + 0.35 ? 4 : 0)
@@ -1371,11 +1386,13 @@ export function makeRoom(A, { visit = false, sub: subOpt = null, core = null } =
       // musiken man satt på (hemmusik.js): noter stiger ur prylen; är prylen borta tystnar den
       notesDrawn = 0;
       const hm = !visit && A.hemMusik;
-      if (hm && (hm.sub | 0) === sub) {
+      if (hm && hm.dev !== 'fest' && (hm.sub | 0) === sub) {
         const src = props.find((q) => q.k === hm.k && q.decoIdx === hm.decoIdx) || props.find((q) => q.k === hm.k);
         if (src) notesDrawn = drawNotes(ctx, src, t);
         else if (!decor.on) { stopHemMusik(A); toast('🎵 Musiken tystnade – prylen som spelade är borta.'); }
       }
+      if (festNu) festRoom.drawLight(ctx, !!night);   // discokulans ljusprickar och konfettin
+      festRoom.drawTalk(ctx);
 
       // spöket i möblera-läget
       if (decor.on && decor.carry) {

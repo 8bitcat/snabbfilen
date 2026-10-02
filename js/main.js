@@ -10,6 +10,7 @@ import { makeKoket } from './scenes/koket.js';
 import { makeTradgard } from './scenes/tradgard.js';
 import { makeShopFordon, rideHud, openRide } from './scenes/shop-fordon.js'; // 🚲 garaget och åka/gå-knappen
 import { hemMusikTick, stopHemMusik } from './core/hemmusik.js';
+import { festTick, openFest, festInvites } from './core/fest.js'; // 🎉 fest hemma
 import { makeCity } from './scenes/city.js';
 import { makeApartment } from './scenes/apartment.js'; // hemmet: den löpande lägenheten (rummen i rad, room.js per rum)
 import { makeShopMobler } from './scenes/shop-mobler.js';
@@ -415,6 +416,8 @@ function renderHud() {
   $('#emotes').classList.toggle('hidden', nearby === 0);
   $('#decor-btn').classList.toggle('hidden', A.sceneName !== 'room');
   rideHud(A); // 🚲 syns när man har ett fordon
+  const fb = document.getElementById('hud-fest');   // 🎉 bara hemma (inte på besök)
+  if (fb) { fb.classList.toggle('hidden', !(A.sceneName === 'room' && !A.visitTarget)); const ft = A.fest ? '🥳' : '🎉'; if (fb.textContent !== ft) fb.textContent = ft; }
   const key = `${g.day}|${Math.floor(g.min)}|${g.money}|${Math.round(g.hunger)}|${Math.round(g.energy)}|${Math.round(g.lycka)}|${A.avatar?.name}|${online}`;
   if (key === hudKey) return;
   hudKey = key;
@@ -671,6 +674,14 @@ function boot() {
     b.onclick = fn;
     $('#hud-friends').before(b);
   }
+  // 🎉 fest hemma (js/core/fest.js) – och inbjudningar från kompisar
+  festInvites(A);
+  if (!document.getElementById('hud-fest')) {
+    const fb = document.createElement('button');
+    fb.id = 'hud-fest'; fb.className = 'btn btn-small hidden'; fb.title = 'Ha fest hemma!'; fb.textContent = '🎉';
+    fb.onclick = () => { play('click'); openFest(A); };
+    $('#hud-friends').before(fb);
+  }
   // 🚲 åka eller gå (syns när man har köpt ett fordon i GARAGET – shop-fordon.js rideHud)
   if (!document.getElementById('hud-fordon')) {
     const fb = document.createElement('button');
@@ -787,6 +798,7 @@ function tick(now) {
     worldTick(A, A.scene.worldX ?? null, dt);
     recTick(A, dt); // bakgrundsljudet där man är + musiken (tyst före första klicket, vid mute och i dold flik)
     hemMusikTick(A); // filmlåtarna man satt på hemma (de andra låtarna går via musiken ovan)
+    festTick(A);     // 🎉 festen: tiden, lyckan, slutet (och besökarnas glädje)
     rawSetTransform(1, 0, 0, 1, 0, 0);
     ctx.fillStyle = '#14121a';
     ctx.fillRect(0, 0, cv.width, cv.height);

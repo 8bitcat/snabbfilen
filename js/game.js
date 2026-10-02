@@ -620,6 +620,8 @@ export class Game {
     this.gadgets = [];                    // prylar från elektronikbutiken (GADGETS-id), t.ex. ['fon12']
     this.fordon = [];                     // fordonen från garaget: [{ id, c }] (FORDON-id, färg '#rrggbb')
     this.akerMed = null;                  // fordonet man åker på i staden (id) – null = går
+    this.festDag = 0;                     // dagen för senaste festen hemma (en om dagen, js/core/fest.js)
+    this.fester = 0;                      // fester man har haft
     this.won = false;                     // slutmålet nått
     this.event = null;                    // dagens händelse { id, job? }
     this.best = Object.fromEntries(Object.keys(JOBS).map((k) => [k, { ok: 0, pay: 0 }])); // rekord per jobb
@@ -715,6 +717,7 @@ export class Game {
           const F = fordonOf(f.id);
           g.fordon.push(F ? { ...f, c: /^#[0-9a-f]{6}$/i.test(f.c) ? f.c.toLowerCase() : F.colors[0] } : f);
         }
+        g.festDag = Math.max(0, p.festDag | 0); g.fester = Math.max(0, p.fester | 0);
         g.akerMed = typeof p.akerMed === 'string' && fordonOf(p.akerMed) && g.fordon.some((x) => x.id === p.akerMed) ? p.akerMed : null;
         for (const k of Object.keys(g.jobs)) g.jobs[k] = Math.max(0, p.jobs?.[k] | 0);
         for (const [k, v] of Object.entries(p.jobs || {})) if (!(k in g.jobs)) keep.jobs[k] = v;
