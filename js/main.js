@@ -3,7 +3,7 @@
 import { loadAvatar, openAvatarPicker, avatarPortrait, setAvatarWardrobe, setAvatarSalon } from './core/avatar.js';
 import { openModal, closeModal, toast, modalOpen, esc } from './core/ui.js';
 import { onInvite } from './net/coop.js';
-import { Game, SAVE_KEY, WIN_MONEY, JOBS, JOB_TITLES, levelOf, fmt, clock, REALTIME_RATE, setPetCounter } from './game.js';
+import { Game, SAVE_KEY, WIN_MONEY, JOBS, JOB_TITLES, levelOf, fmt, clock, REALTIME_RATE, setPetCounter, homeOf } from './game.js';
 import { openGoals, celebrateGoals } from './core/livsmal.js'; // 🎯 livsmålen
 import { petStore } from './pets/sim.js';
 import { makeKoket } from './scenes/koket.js';
@@ -11,6 +11,7 @@ import { makeTradgard } from './scenes/tradgard.js';
 import { makeShopFordon, rideHud, openRide } from './scenes/shop-fordon.js'; // 🚲 garaget och åka/gå-knappen
 import { hemMusikTick, stopHemMusik } from './core/hemmusik.js';
 import { festTick, openFest, festInvites } from './core/fest.js'; // 🎉 fest hemma
+import { samboInit, inviteSambo, splitSambo, samboPartnerOnline } from './net/sambo.js'; // 🏠 bo ihop
 import { makeCity } from './scenes/city.js';
 import { makeApartment } from './scenes/apartment.js'; // hemmet: den löpande lägenheten (rummen i rad, room.js per rum)
 import { makeShopMobler } from './scenes/shop-mobler.js';
@@ -454,10 +455,10 @@ A.sleepFlow = () => {
   const monday = g.day % 7 === 0; // i natt blir det måndag → hyra i morgon bitti
   // sparkontot: räntan i morgon bitti och det autogirot tar om fickan inte räcker till hyran
   const ranta = monday && g.bankNextInterest ? g.bankNextInterest() : 0;
-  const autogiro = monday && g.bank > 0 ? Math.min(g.bank + ranta, Math.max(0, g.homeInfo.rent - Math.max(0, g.money))) : 0;
+  const autogiro = monday && g.bank > 0 ? Math.min(g.bank + ranta, Math.max(0, g.hyra - Math.max(0, g.money))) : 0;
   openModal('😴 Sova', `<p style="font-size:var(--f2)">Sova till i morgon 07:00?</p>
     ${g.hunger < 30 ? '<p style="font-size:var(--f2)" class="bad">Du är hungrig – du sover dåligt på tom mage.</p>' : ''}
-    ${monday ? `<p style="font-size:var(--f2)">💸 I morgon är det måndag: hyran ${fmt(g.homeInfo.rent)} dras.${autogiro ? ` Fickan räcker inte – banken tar ${fmt(autogiro)} från sparkontot.` : ''}</p>` : ''}
+    ${monday ? `<p style="font-size:var(--f2)">💸 I morgon är det måndag: hyran ${fmt(g.hyra)} dras${g.sambo ? ` (din halva – ni bor ihop)` : ''}.${autogiro ? ` Fickan räcker inte – banken tar ${fmt(autogiro)} från sparkontot.` : ''}</p>` : ''}
     ${ranta ? `<p style="font-size:var(--f2)">📈 Räntan på sparkontot kommer i morgon bitti: +${fmt(ranta)}.</p>` : ''}`, [
     { label: 'Inte än', onClick: closeModal },
     { label: '😴 Sov', cls: 'btn-go', onClick: () => {
@@ -495,6 +496,12 @@ function placeOf(p, info) {
     const owner = s.split(':')[1];
     if (owner === p.id) return '🏠 hemma';
     if (owner === info.myId) return '🏠 hemma hos dig!';
+    // bor ihop: hushållets id (js/net/sambo.js)
+    if (owner.startsWith('sb-')) {
+      if (A.game.sambo?.hu === owner) return p.hu === owner ? '🏠 hemma hos er' : '🏠 hemma hos dig!';
+      const who = playersList().filter((q) => q.hu === owner).map((q) => q.av?.name || '?');
+      return who.length ? `🏠 hemma hos ${esc(who.join(' och '))}` : '🏠 hemma';
+    }
     return `🏠 hos ${playerName(owner) || 'en kompis'}`;
   }
   return PLACE_AWAY[s.slice(5).split('.')[0]] || '💼 upptagen';
@@ -537,23 +544,29 @@ function openWorldDialog() {
       ${coopJob ? `<button class="btn btn-small btn-gold" data-jobba="${esc(p.id)}">💼 Jobba ihop</button>` : ''}
       ${p.scene === 'city' && !inJob ? `<button class="btn btn-small" data-goto="${esc(p.id)}">🚶 Gå dit</button>` : ''}
       ${coopJob ? '' : `<button class="btn btn-small btn-go" data-visit="${esc(p.id)}">🚗 Åk hem till</button>`}
+      ${!A.game.sambo && !inJob && p.key && p.ver === info.version ? `<button class="btn btn-small btn-gold" data-sambo="${i}" title="Flytta ihop – dela hem, möbler och hyra">🏠 Flytta ihop</button>` : ''}
     </div>`).join('');
+  // 🏠 bor man ihop syns det överst (flytta isär längst ner)
+  const S = A.game.sambo;
+  const samboRad = S ? `<p style="font-size:var(--f2);margin-top:0;background:#eaf6e4;border:2px solid #46a35a;padding:6px 8px">🏠 Du bor ihop med <b>${esc(S.namn || 'en kompis')}</b> i ${esc(A.game.homeInfo.name)} sedan dag ${S.sedan}. Hyran delas: <b>${fmt(A.game.hyra)}</b> var i veckan. ${samboPartnerOnline() ? 'Hen är online – hemmet synkas.' : 'Hen är inte online just nu – det ni ändrar synkas när ni ses.'}</p>` : '';
   const role = info.role === 'host' ? 'du håller i världen' : info.role === 'client' && info.open ? 'ansluten' : `kopplar upp${info.tries ? ` (försök ${info.tries + 1})` : ''}`;
   // kommer man inte fram till världen gång på gång stoppar nätet troligen direktkontakten (world.js ICE)
   const stuck = !info.open && info.tries >= 2
     ? `<p style="font-size:var(--f2);background:#fff1d6;border:2px solid #c9a24a;padding:6px 8px">📡 Du kommer inte fram till de andra – nätet du sitter på stoppar troligen spelets direktkontakt. Prova ett annat wifi eller mobilens nät, eller en annan webbläsare.</p>` : '';
   const dlg = openModal('👥 Pixelstaden online', `
-    <p style="font-size:var(--f2);margin-top:0">${info.open ? `<b>${info.online}</b> ${info.online === 1 ? 'spelare (bara du) i världen just nu.' : 'spelare i världen just nu.'}` : '📡 Kopplar upp mot världen…'}</p>
+    ${samboRad}<p style="font-size:var(--f2);margin-top:0">${info.open ? `<b>${info.online}</b> ${info.online === 1 ? 'spelare (bara du) i världen just nu.' : 'spelare i världen just nu.'}` : '📡 Kopplar upp mot världen…'}</p>
     ${list.length ? `<div class="plist">${rows}</div>` : info.open ? '<p style="font-size:var(--f2)">Du är ensam i stan – tipsa någon om länken så ses ni här!</p>' : ''}${stuck}
     <p class="world-diag">Du ser bara dem som är på samma ställe som du. v${esc(info.version)} · ${role}${info.world !== 'varlden' ? ` · värld: ${esc(info.world)}` : ''}</p>`,
   [
     ...(A.sceneName === 'visit' ? [{ label: '🚗 Åk hem', cls: 'btn-red', onClick: () => { closeModal(); A.visitTarget = null; A.game.passTime(20); A.game.save(); A.go('city'); } }] : []),
+    ...(S ? [{ label: '🏠 Flytta isär', onClick: () => openModal('🏠 Flytta isär?', `<p style="font-size:var(--f2);margin-top:0">Vill du och ${esc(S.namn || 'din sambo')} flytta isär? ${S.roll === 'inflyttad' ? `Du flyttar tillbaka till ${esc(homeOf(S.egen?.home).name)} med dina gamla möbler.` : `${esc(S.namn || 'Din sambo')} flyttar ut och du betalar hela hyran igen.`}</p>`, [{ label: '🏠 Ja, flytta isär', cls: 'btn-red', onClick: () => { closeModal(); splitSambo(); } }, { label: 'Nej', onClick: closeModal }]) }] : []),
     { label: 'Stäng', cls: 'btn-go', onClick: closeModal },
   ]);
   dlg.querySelectorAll('[data-face]').forEach((el) => {
     const p = list[+el.dataset.face];
     el.replaceWith(avatarPortrait({ name: p.av.name, look: p.av.look, color: p.av.color }, 40));
   });
+  dlg.querySelectorAll('[data-sambo]').forEach((b) => (b.onclick = () => { const p = list[+b.dataset.sambo]; if (inviteSambo(p)) closeModal(); }));
   dlg.querySelectorAll('[data-visit]').forEach((b) => (b.onclick = () => { if (leaveBlocked()) return; closeModal(); visitPlayer(A, b.dataset.visit); }));
   dlg.querySelectorAll('[data-jobba]').forEach((b) => (b.onclick = () => {
     inviteToShift(A, b.dataset.jobba);
@@ -676,6 +689,7 @@ function boot() {
   }
   // 🎉 fest hemma (js/core/fest.js) – och inbjudningar från kompisar
   festInvites(A);
+  samboInit(A);   // 🏠 bo ihop: synka det delade hemmet när sambon är online
   if (!document.getElementById('hud-fest')) {
     const fb = document.createElement('button');
     fb.id = 'hud-fest'; fb.className = 'btn btn-small hidden'; fb.title = 'Ha fest hemma!'; fb.textContent = '🎉';

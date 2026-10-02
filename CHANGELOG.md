@@ -10,6 +10,13 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.78.0] – 2026-10-02 – Bo ihop
+- Bo ihop! Öppna 👥 och tryck "🏠 Flytta ihop" vid en kompis som är online. Säger hen ja flyttar hen in hos dig – ni delar hem, möbler och trädgård och kan sova där båda två.
+- Hyran delas på två: var och en betalar halva veckohyran.
+- Är ni hemma samtidigt är ni i samma rum och ser varandra. Kompisar som hälsar på kommer hem till er båda.
+- Möblerar en av er om, eller sår något i trädgården, får den andra det också. Det fungerar även när den andra inte är online – då kommer ändringarna fram nästa gång ni är inne samtidigt.
+- Flytta isär gör man i 👥-rutan. Den som flyttade in får tillbaka sitt gamla hem med sina gamla möbler, och den andra bor kvar och betalar hela hyran igen. Flyttar en isär medan den andra är borta får den andra veta det nästa gång ni ses.
+
 ## [0.77.0] – 2026-10-02 – Fest hemma
 - Ha fest hemma! Tryck på 🎉 uppe till höger när du är hemma: välj hur stor festen ska vara (Lilla rummet rymmer 3 gäster, villan 10 och takvåningen 12), vad du bjuder på – chips och dricka, pizza eller pizza och tårta – och vilka kompisar online som ska få en inbjudan.
 - Gästerna kommer in genom dörren en och en, dansar i takt med jukeboxlåten, pratar, äter vid festbordet och presenterar sig om du klickar på dem. Girlanger, ballonger, en discokula med färgade ljusprickar och konfetti.

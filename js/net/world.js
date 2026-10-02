@@ -219,8 +219,11 @@ export const worldMarkActive = markActive;
 
 // ---------- min publicerade state ----------
 function myState(A) {
-  return { av: { name: A.avatar.name, look: A.avatar.look, color: A.avatar.color }, scene: myScene(A), x: A.scene?.worldX ?? 190, y: A.scene?.worldY ?? 174, home: A.game.home, deco: A.game.deco, key: myKey(), ver: VERSION, vo: voiceFlag() ? 1 : 0, si: mySit(A), fd: myRide(A), fe: A.fest ? 1 : 0 };
+  return { av: { name: A.avatar.name, look: A.avatar.look, color: A.avatar.color }, scene: myScene(A), x: A.scene?.worldX ?? 190, y: A.scene?.worldY ?? 174, home: A.game.home, deco: A.game.deco, key: myKey(), ver: VERSION, vo: voiceFlag() ? 1 : 0, si: mySit(A), fd: myRide(A), fe: A.fest ? 1 : 0, hu: myHu(A) };
 }
+// Bor jag ihop med någon (js/net/sambo.js)? Hushållets id – då är vi hemma i SAMMA rum (myScene)
+// och den som hälsar på hamnar hos oss båda.
+function myHu(A) { const S = A.game?.sambo; return S && S.hu && S.hem === A.game.home ? S.hu : ''; }
 // Åker jag på något (cykel, elsparkcykel, moppe – city.js worldRide = { id, c })? Skickas som
 // 'id:#färg' så att andra ritar mig på samma fordon (js/core/fordon-art.js).
 function myRide(A) {
@@ -241,8 +244,8 @@ function mySit(A) {
 }
 function myScene(A, sub = A.roomSub) {
   if (A.sceneName === 'city') return 'city';
-  if (A.sceneName === 'room') return 'home:' + (W?.myId || 'me') + ':' + (sub | 0);
-  if (A.sceneName === 'visit') return 'home:' + (A.visitTarget?.id || 'me') + ':' + (sub | 0);
+  if (A.sceneName === 'room') return 'home:' + (myHu(A) || W?.myId || 'me') + ':' + (sub | 0);
+  if (A.sceneName === 'visit') return 'home:' + (A.visitTarget?.hu || A.visitTarget?.id || 'me') + ':' + (sub | 0);
   // butiker och jobb: osynlig för andra, men de ser VAR man är (äldre versioner läser det som 'away')
   const where = String(A.sceneName || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 24);
   // jobbar man ihop (💼-inbjudan, js/jobs/shift.js) bär platsen passets id: bara de i SAMMA
@@ -264,6 +267,7 @@ function cleanP(p, old = {}) {
     if (typeof p.ver === 'string') out.ver = p.ver.slice(0, 16);
     if (p.vo !== undefined) out.vo = p.vo ? 1 : 0;
     if (p.si !== undefined) out.si = /^[dulr]e?$/.test(String(p.si)) ? String(p.si) : '';
+    if (p.hu !== undefined) out.hu = /^sb-[a-z0-9]{1,12}$/.test(String(p.hu)) ? String(p.hu) : '';   // 🏠 hushållet (bor ihop)
     if (p.fe !== undefined) out.fe = p.fe ? 1 : 0;   // 🎉 fest hemma (besökare ser pyntet)
     if (p.fd !== undefined) out.fd = /^[a-z]{2,16}:#[0-9a-f]{6}$/i.test(String(p.fd)) ? String(p.fd).toLowerCase() : '';
     if (p.deco !== undefined && p.deco && typeof p.deco === 'object') {
@@ -408,7 +412,7 @@ export function worldTick(A, myX, dt) {
   if (!W || !W.open) return;
   const now = performance.now();
   const myY = A.scene?.worldY ?? null;
-  const meta = JSON.stringify([A.avatar.look, A.avatar.name, myScene(A), A.game.home, A.game.deco, voiceFlag() ? 1 : 0, mySit(A), myRide(A), A.fest ? 1 : 0]);
+  const meta = JSON.stringify([A.avatar.look, A.avatar.name, myScene(A), A.game.home, A.game.deco, voiceFlag() ? 1 : 0, mySit(A), myRide(A), A.fest ? 1 : 0, myHu(A)]);
   const metaChanged = meta !== W.lastMeta;
   const posChanged = myX !== null && (Math.abs(myX - W.lastX) > 0.5 || Math.abs((myY ?? 0) - (W.lastY ?? 0)) > 0.5);
   if ((metaChanged || posChanged) && now - W.lastSent > 90) {
@@ -513,7 +517,7 @@ export const worldMyKey = () => myKey(); // fast per webbläsare och figur – r
 // ---------- besök ----------
 export function playersList() {
   if (!W || !W.open) return [];
-  return [...W.players].map(([id, p]) => ({ id, av: p.av, scene: p.scene, home: p.home, x: p.x, y: p.y, ver: p.ver || null }));
+  return [...W.players].map(([id, p]) => ({ id, av: p.av, scene: p.scene, home: p.home, x: p.x, y: p.y, ver: p.ver || null, key: p.key || null, hu: p.hu || '' }));
 }
 // Namnet på den som har ett visst spelar-id (för "hemma hos …")
 export function playerName(id) {
@@ -527,7 +531,7 @@ export function visitPlayer(A, id) {
   A.game.passTime(20); // resan dit
   A.game.save();
   if (A.game.collapsed) return false;
-  A.visitTarget = { id, name: p.av.name, home: p.home || 'rum', deco: p.deco || {} };
+  A.visitTarget = { id, name: p.av.name, home: p.home || 'rum', deco: p.deco || {}, hu: p.hu || '' };
   play('door');
   const h = A.game.glad ? A.game.glad(4, '', 'besok', 8) : 0;                              // att hälsa på gör en glad (högst +8 om dagen)
   toast(`🏠 Du är hemma hos ${p.av.name || 'en kompis'}!${h ? ` +${h} 😊` : ''}`, 'good');

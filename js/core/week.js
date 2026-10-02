@@ -24,7 +24,7 @@ function payPerShift(g) {
 
 export function weekInfo(g) {
   const wd = weekday(g.day);
-  const rent = g.homeInfo.rent;
+  const rent = g.hyra ?? g.homeInfo.rent;   // (bor man ihop delas hyran)
   const daysToRent = 7 - wd;                         // hyran dras när man vaknar på måndagen
   const saved = Math.max(0, Math.round(+g.bank || 0)); // sparkontot: räcker inte fickan tar autogirot resten av hyran därifrån
   const need = Math.max(0, rent - g.money - saved);

@@ -622,6 +622,7 @@ export class Game {
     this.akerMed = null;                  // fordonet man åker på i staden (id) – null = går
     this.festDag = 0;                     // dagen för senaste festen hemma (en om dagen, js/core/fest.js)
     this.fester = 0;                      // fester man har haft
+    this.sambo = null;                    // bor ihop (js/net/sambo.js): { key, namn, hem, roll: 'vard'|'inflyttad', hu, sedan, ver, stamp, egen }
     this.won = false;                     // slutmålet nått
     this.event = null;                    // dagens händelse { id, job? }
     this.best = Object.fromEntries(Object.keys(JOBS).map((k) => [k, { ok: 0, pay: 0 }])); // rekord per jobb
@@ -640,13 +641,16 @@ export class Game {
     this.gladNatt = [];                   // vad som ändrade lyckan i natt: [{ t, n }] – visas i veckorutan på morgonen
     Object.defineProperty(this, '_gladDag', { value: { day: 0 }, writable: true, enumerable: false });   // dagens tak per källa (sparas inte)
     Object.defineProperty(this, '_sadMin', { value: 0, writable: true, enumerable: false });             // hungriga minuter mot nästa −1
-    Object.defineProperty(this, '_kompisMin', { value: 0, writable: true, enumerable: false });          // minuter nära kompisar mot nästa +1
+    Object.defineProperty(this, '_kompisMin', { value: 0, writable: true, enumerable: false });
+    Object.defineProperty(this, '_samboSig', { value: null, writable: true, enumerable: false });        // det delade hemmet senast det sparades (bor ihop)          // minuter nära kompisar mot nästa +1
   }
 
   eventIs(id) { return this.event?.id === id; }
 
   get dayName() { return DAY_NAMES[(this.day - 1) % 7]; }
   get homeInfo() { return homeOf(this.home); }
+  // veckohyran man själv betalar: bor man ihop delas den på två (avrundat uppåt)
+  get hyra() { const r = this.homeInfo.rent; return this.sambo && this.sambo.hem === this.home ? Math.ceil(r / 2) : r; }
 
   // ---------- spara/ladda ----------
   // Sparfilen får aldrig tappa data mellan versioner: det som den här versionen inte
@@ -654,6 +658,7 @@ export class Game {
   // och skrivs tillbaka orört, så att en äldre flik aldrig raderar något nyare.
   save() {
     try {
+      if (this.sambo) this.samboTouch();   // bor ihop: ändrades det delade hemmet? → ny version att synka
       const { _saveIn, collapsed, ...data } = this;
       const k = this._keep;
       const out = { ...(k?.top || {}), v: 1, ...data };
@@ -718,6 +723,7 @@ export class Game {
           g.fordon.push(F ? { ...f, c: /^#[0-9a-f]{6}$/i.test(f.c) ? f.c.toLowerCase() : F.colors[0] } : f);
         }
         g.festDag = Math.max(0, p.festDag | 0); g.fester = Math.max(0, p.fester | 0);
+        g.sambo = cleanSambo(p.sambo);
         g.akerMed = typeof p.akerMed === 'string' && fordonOf(p.akerMed) && g.fordon.some((x) => x.id === p.akerMed) ? p.akerMed : null;
         for (const k of Object.keys(g.jobs)) g.jobs[k] = Math.max(0, p.jobs?.[k] | 0);
         for (const [k, v] of Object.entries(p.jobs || {})) if (!(k in g.jobs)) keep.jobs[k] = v;
@@ -780,6 +786,7 @@ export class Game {
       try { if (rawText) localStorage.setItem(`${SAVE_KEY}_undanlagd_${Date.now()}`, rawText); } catch { /* full */ }
       console.warn('Sparfilen kunde inte läsas och lades undan:', err?.message);
     }
+    if (g.sambo) g._samboSig = JSON.stringify(g.samboSnap());   // (att ladda räknas inte som en ändring)
     return g;
   }
 
@@ -834,7 +841,7 @@ export class Game {
     if ((this.day - 1) % 7 === 0 && this.day > 1) { // måndag morgon: räntan på sparkontot, sedan hyran
       interest = bankInterest(Math.min(this.bank, this.bankMin));  // det som legat kvar hela veckan
       if (interest > 0) { this.bank += interest; this.logBank('ranta', interest); }
-      rent = this.homeInfo.rent;
+      rent = this.hyra;                                       // (bor man ihop betalar man halva)
       const before = this.money;
       this.money -= rent;
       // Hyran dras först från handkassan. Räcker den inte tar banken resten av HYRAN från
@@ -1507,10 +1514,71 @@ export class Game {
     return lost;
   }
 
+  // ---------- bo ihop (Carl 2026-10-02, alternativ A; nätet i js/net/sambo.js) ----------
+  // Värden bjuder in, den andra flyttar in i värdens bostad. Båda sparfilerna har en kopia av det
+  // delade hemmet: möblerna i alla rum (deco 'hem:rum') och trädgården (odling[hem]). Varje ändring
+  // ger en ny version (ver, stamp) – när båda är online tar den äldre kopian över den nyare.
+  // Den inflyttade sparar sitt gamla hem (egen) och får tillbaka det om ni flyttar isär.
+  samboSnap(hem = this.sambo?.hem) {
+    const deco = {};
+    for (const [k, v] of Object.entries(this.deco)) if (k.startsWith(hem + ':')) deco[k] = v;
+    return { deco, odling: this.odling[hem] || null };
+  }
+  samboTouch() {
+    const sig = JSON.stringify(this.samboSnap());
+    if (this._samboSig !== null && sig !== this._samboSig) { this.sambo.ver = (this.sambo.ver | 0) + 1; this.sambo.stamp = Date.now(); }
+    this._samboSig = sig;
+  }
+  // ta över den andras (nyare) kopia av det delade hemmet
+  samboAdopt(snap, ver, stamp) {
+    const S = this.sambo;
+    if (!S || !snap || typeof snap !== 'object') return false;
+    for (const k of Object.keys(this.deco)) if (k.startsWith(S.hem + ':')) delete this.deco[k];
+    for (const [k, v] of Object.entries(snap.deco || {})) if (k.startsWith(S.hem + ':') && Array.isArray(v)) this.deco[k] = v.filter((d) => d && typeof d === 'object' && typeof d.k === 'string').slice(0, MAX_PER_ROOM);
+    if (snap.odling && typeof snap.odling === 'object') this.odling[S.hem] = snap.odling; else delete this.odling[S.hem];
+    S.ver = ver | 0; S.stamp = +stamp || Date.now();
+    this._samboSig = JSON.stringify(this.samboSnap());
+    this.save();
+    return true;
+  }
+  // flytta ihop: vard = den andra flyttar in hos mig; inflyttad = jag flyttar in (snap = värdens hem)
+  flyttaIhop({ key, namn, hem, roll, hu, snap = null }) {
+    hem = homeOf(hem).id;
+    const S = { key: String(key).slice(0, 64), namn: String(namn || '').slice(0, 16), hem, roll: roll === 'inflyttad' ? 'inflyttad' : 'vard', hu: String(hu || '').slice(0, 16), sedan: this.day, ver: 1, stamp: Date.now(), egen: null };
+    if (S.roll === 'inflyttad') {
+      const egen = this.samboSnap(hem);   // (hade jag samma sorts bostad förut får jag tillbaka mina möbler där)
+      S.egen = { home: this.home, deco: egen.deco, odling: egen.odling };
+      this.home = hem;
+    }
+    this.sambo = S;
+    this._samboSig = null;
+    if (snap) { this.samboAdopt(snap, 1, S.stamp); }
+    this._samboSig = JSON.stringify(this.samboSnap());
+    this.glad(5, '', 'sambo', 5);
+    this.save();
+    return S;
+  }
+  // flytta isär: den inflyttade får tillbaka sitt gamla hem (och sina möbler där), värden bor kvar
+  flyttaIsar() {
+    const S = this.sambo;
+    if (!S) return null;
+    if (S.roll === 'inflyttad') {
+      for (const k of Object.keys(this.deco)) if (k.startsWith(S.hem + ':')) delete this.deco[k];
+      Object.assign(this.deco, S.egen?.deco || {});
+      if (S.egen?.odling) this.odling[S.hem] = S.egen.odling; else delete this.odling[S.hem];
+      this.home = homeOf(S.egen?.home || 'husvagn').id;
+    }
+    this.sambo = null;
+    this._samboSig = null;
+    this.save();
+    return S;
+  }
+
   // ---------- bostad ----------
   moveTo(homeId) {
     const h = homeOf(homeId);
     if (h.id === this.home) return { ok: false, msg: 'Du bor redan här.' };
+    if (this.sambo) return { ok: false, msg: `Du bor ihop med ${this.sambo.namn || 'en kompis'} – flytta isär först (👥 i menyraden).` };
     if (this.money < h.deposit) return { ok: false, msg: `Insatsen är ${fmt(h.deposit)} – du har inte råd än.` };
     this.money -= h.deposit;
     this.home = h.id;
@@ -1520,3 +1588,9 @@ export class Game {
 }
 
 const clamp = (v) => Math.max(0, Math.min(100, Math.round(+v || 0)));
+// bo ihop: bara giltiga poster följer med (okänd bostad → ingen sambo)
+function cleanSambo(s) {
+  if (!s || typeof s !== 'object' || typeof s.key !== 'string' || !s.key || !HOMES.some((h) => h.id === s.hem)) return null;
+  const egen = s.egen && typeof s.egen === 'object' ? { home: homeOf(s.egen.home).id, deco: s.egen.deco && typeof s.egen.deco === 'object' ? s.egen.deco : {}, odling: s.egen.odling && typeof s.egen.odling === 'object' ? s.egen.odling : null } : null;
+  return { ...s, key: s.key.slice(0, 64), namn: String(s.namn || '').slice(0, 16), roll: s.roll === 'inflyttad' ? 'inflyttad' : 'vard', hu: /^sb-[a-z0-9]{1,12}$/.test(String(s.hu)) ? s.hu : '', sedan: Math.max(0, s.sedan | 0), ver: Math.max(0, s.ver | 0), stamp: +s.stamp || 0, egen };
+}
