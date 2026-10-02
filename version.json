@@ -1,7 +1,7 @@
 {
-  "version": "0.82.0",
+  "version": "0.83.0",
   "date": "2026-10-02",
-  "title": "Gården – bli bonde",
+  "title": "Hästen och hinderbanan",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
@@ -96,6 +96,7 @@
     "js/jobs/jobb-verkstad.js",
     "js/jobs/shift.js",
     "js/landet/djur.js",
+    "js/landet/hast-art.js",
     "js/landet/karta.js",
     "js/main.js",
     "js/net/coop.js",
@@ -118,6 +119,7 @@
     "js/scenes/bio/fotboll.js",
     "js/scenes/bio/paint.js",
     "js/scenes/city.js",
+    "js/scenes/hopp.js",
     "js/scenes/ikea/art-market.js",
     "js/scenes/ikea/art-props.js",
     "js/scenes/ikea/art-transit.js",

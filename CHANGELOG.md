@@ -10,6 +10,13 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.83.0] – 2026-10-02 – Hästen och hinderbanan
+- Egen häst! I STALLET på landet säljer ridskolan hästar (12 000 kr): välj fux, brun, svart eller skimmel och ge den ett namn. Den bor i stallet och går i hagen.
+- Sköt om hästen varje dag: mata den (havre och hö, 20 kr) och borsta den. En häst som trivs hoppar bättre – en som inte trivs kan vägra vid hindren. Stallhyran är 250 kr i veckan (gratis om du äger Gården).
+- Rid ut! Sitt upp på hästen med hjälm, sadel och tyglar och trava runt på landet – mycket fortare än att gå.
+- HINDERBANAN på ridbanan: hästen galopperar själv och du trycker för att hoppa precis före varje hinder. Rivning eller vägran = 4 fel. Tävla mot ridskolans ryttare om blå, röd och gul rosett och prispengar.
+- Tre klasser: lätt, medelsvår och svår (högre hinder, fler hinder, snabbare galopp). En felfri runda öppnar nästa klass.
+
 ## [0.82.0] – 2026-10-02 – Gården – bli bonde
 - Bli bonde! GÅRDEN på landet är till salu (insats 16 000 kr, hyra 1 400 kr i veckan) – klicka på dörren eller köp den hos Bostadsbyrån. Djuren ingår: 6 höns, 2 kor och 4 får.
 - Hemma på gården: vardagsrum med tegelspis, sovrum, lantkök med spis och receptbok och ett badrum. Genom fönstren ser du kullarna, ladan och kon i hagen. Ytterdörren leder ut på gårdsplanen.

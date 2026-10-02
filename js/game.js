@@ -670,6 +670,28 @@ export const GARDSDJUR = {
   far: { namn: 'Får', fler: 'Får', icon: '🐑', pris: 900, max: 14, foder: 3 },
 };
 export const GARD_PRIS = { agg: 12, mjolk: 8, ull: 50 };   // vad gårdsbutiken betalar (ägg/st, mjölk/l, ull/kg)
+
+// HÄSTEN (Carl 2026-10-02: "ha häst att rida med och hoppa runt med på en bana över hinder"): köps i
+// STALLET på landet och bor där (stallhyra på måndagen – gratis om man äger Gården). Mata och borsta
+// den varje dag: trivseln (0–100) sjunker annars, och en häst som inte trivs vägrar ibland vid
+// hindren. Man rider den på landet (js/scenes/landet.js) och hoppar på RIDBANAN (js/scenes/hopp.js):
+// tre klasser, rivning = 4 fel, vägran = 4 fel, placering mot ridskolans ryttare → rosett och pris.
+// En felfri runda öppnar nästa klass.
+export const HAST_PRIS = 12000, HAST_STALL = 250, HAST_MAT = 20;
+export const HASTFARGER = [
+  { id: 'fux', namn: 'Fux', blurb: 'rödbrun med ljus man' },
+  { id: 'brun', namn: 'Brun', blurb: 'mörkbrun med svart man' },
+  { id: 'svart', namn: 'Svart', blurb: 'blank och kolsvart' },
+  { id: 'skimmel', namn: 'Skimmel', blurb: 'vit med grå prickar' },
+];
+export const HASTNAMN = ['Blixten', 'Stjärna', 'Sessan', 'Max', 'Molly', 'Ronja', 'Tor', 'Freja', 'Kanel', 'Luna', 'Pärla', 'Storm'];
+export const HOPPKLASSER = [
+  { id: 'latt', namn: 'Lätt klass', icon: '🟢', hojd: 9, hinder: 7, pris: [500, 250, 120], tider: [26.5, 28.4, 30.2] },
+  { id: 'medel', namn: 'Medelsvår klass', icon: '🟡', hojd: 13, hinder: 9, pris: [1200, 600, 300], tider: [32.0, 33.8, 36.1] },
+  { id: 'svar', namn: 'Svår klass', icon: '🔴', hojd: 17, hinder: 11, pris: [2500, 1200, 600], tider: [37.4, 39.0, 41.6] },
+];
+// ridskolans ryttare (påhittade) som man tävlar mot
+export const HOPPRYTTARE = [{ namn: 'Sanna', hast: 'Stjärnfall' }, { namn: 'Omar', hast: 'Kometen' }, { namn: 'Greta', hast: 'Silverpil' }];
 export const homeOf = (id) => HOMES.find((h) => h.id === id) || HOMES.find((h) => h.id === 'rum') || HOMES[0];
 
 const DAY = 24 * 60;
@@ -708,6 +730,7 @@ export class Game {
     this.rollPass = {};                   // pass i nuvarande roll per jobb (chefen kräver några som biträdande chef)
     this.veckoPass = {};                  // pass per jobb sedan måndag (veckolönen kräver CHEF_PASS)
     this.sokt = {};                       // dagen man senast sökte befordran per jobb (en intervju om dagen)
+    this.hast = null;                     // hästen: { namn, farg, kopt, trivsel, matad, borstad, klass (upplåst index), rosetter: { latt: [1:a, 2:a, 3:e], … }, hopp }
     this.bonde = null;                    // bondgården: { djur: { hona, ko, far }, fodrad, agg, mjolkat, klippt, ull } (dagar) – skapas när man flyttar in på Gården
     this.truck = null;                    // eget företag: { plats, priser, uppg: [], personal: [{ id, namn, skill, lon }], rykte, kopt, sald, logg: [] }
     this.won = false;                     // slutmålet nått
@@ -816,6 +839,7 @@ export class Game {
         g.roller = counts(p.roller, ROLLER.length - 1); g.rollPass = counts(p.rollPass, 9999); g.veckoPass = counts(p.veckoPass, 99); g.sokt = counts(p.sokt, 1e7);
         g.truck = cleanTruck(p.truck);
         g.bonde = cleanBonde(p.bonde);
+        g.hast = cleanHast(p.hast);
         g.akerMed = typeof p.akerMed === 'string' && fordonOf(p.akerMed) && g.fordon.some((x) => x.id === p.akerMed) ? p.akerMed : null;
         for (const k of Object.keys(g.jobs)) g.jobs[k] = Math.max(0, p.jobs?.[k] | 0);
         for (const [k, v] of Object.entries(p.jobs || {})) if (!(k in g.jobs)) keep.jobs[k] = v;
@@ -935,6 +959,7 @@ export class Game {
       if (interest > 0) { this.bank += interest; this.logBank('ranta', interest); }
       chefslon = this.betalaChefslon();                       // veckolönen (karriärstegarna) före hyran
       if (this.truck) { const h = truckPlatsOf(this.truck.plats).hyra; this.money -= h; this.truck.platshyra = h; }   // foodtruckens platshyra
+      if (this.hast) { this.hast.stallhyra = this.home === 'gard' ? 0 : HAST_STALL; this.money -= this.hast.stallhyra; }   // stallhyran (gratis för bönder)
       rent = this.hyra;                                       // (bor man ihop betalar man halva)
       const before = this.money;
       this.money -= rent;
@@ -951,6 +976,11 @@ export class Game {
       this.bankMin = this.bank;           // en ny räntevecka börjar
     }
     if (this.home === 'gard' && this.bonde && (this.bonde.fodrad | 0) < igar) glad(-3, 'Hungriga djur');   // ofodrade djur tär på lyckan
+    if (this.hast) {   // hästen: hungrig/oborstad → trivseln sjunker; mätt och borstad → den stiger
+      const H = this.hast, mat = (H.matad | 0) >= igar, borst = (H.borstad | 0) >= igar;
+      H.trivsel = Math.max(0, Math.min(100, (H.trivsel | 0) + (mat ? 4 : -18) + (borst ? 4 : -6)));
+      if (!mat) glad(-2, `${H.namn} var hungrig`);
+    }
     if (this.money < 0) glad(-4, 'Skulder');
     this.lycka = clamp(this.lycka + natt.reduce((a, x) => a + x.n, 0));
     this.gladNatt = natt;
@@ -1811,6 +1841,62 @@ export class Game {
     return { ok: true };
   }
 
+  // ---------- hästen ----------
+  buyHast(farg, namn) {
+    if (this.hast) return { ok: false, msg: `Du har redan ${this.hast.namn}!` };
+    if (!HASTFARGER.some((f) => f.id === farg)) return { ok: false, msg: 'Välj en häst.' };
+    if (this.money < HAST_PRIS) return { ok: false, msg: `En häst kostar ${fmt(HAST_PRIS)} – du har inte råd än.` };
+    namn = String(namn || '').replace(/[^\p{L}\p{N} '-]/gu, '').trim().slice(0, 14) || HASTNAMN[0];
+    this.money -= HAST_PRIS;
+    this.hast = { namn, farg, kopt: this.day, trivsel: 70, matad: this.day, borstad: 0, klass: 0, rosetter: {}, hopp: 0 };
+    this.glad(8, '', 'hastkop', 8);
+    this.save();
+    return { ok: true, hast: this.hast };
+  }
+  mataHast() {
+    const H = this.hast;
+    if (!H) return { ok: false, msg: 'Du har ingen häst.' };
+    if ((H.matad | 0) === this.day) return { ok: false, msg: `${H.namn} har redan ätit i dag.` };
+    if (this.money < HAST_MAT) return { ok: false, msg: `Havre och hö kostar ${fmt(HAST_MAT)}.` };
+    this.money -= HAST_MAT; H.matad = this.day; H.trivsel = Math.min(100, (H.trivsel | 0) + 6);
+    this.passTime(10);
+    const glad = this.glad(2, '', 'hast', 6);
+    this.save();
+    return { ok: true, glad };
+  }
+  borstaHast() {
+    const H = this.hast;
+    if (!H) return { ok: false, msg: 'Du har ingen häst.' };
+    if ((H.borstad | 0) === this.day) return { ok: false, msg: `${H.namn} är redan blank och fin i dag.` };
+    H.borstad = this.day; H.trivsel = Math.min(100, (H.trivsel | 0) + 8);
+    this.passTime(15);
+    const glad = this.glad(3, '', 'hast', 6);
+    this.save();
+    return { ok: true, glad };
+  }
+  // en hoppning är klar: fel (rivningar + vägringar × 4), tid i sekunder → placering mot ridskolan
+  hoppResultat(klass, fel, tid) {
+    const K = HOPPKLASSER.find((k) => k.id === klass), H = this.hast;
+    if (!K || !H) return null;
+    // ridskolans ryttare: 0 fel (lätt/medel) eller 4 fel ibland i svår klass – tiderna efter klassen
+    const andra = HOPPRYTTARE.map((r, i) => ({ ...r, fel: K.id === 'svar' && i === 2 ? 4 : 0, tid: K.tider[i] }));
+    const alla = [...andra, { namn: 'Du', hast: H.namn, fel, tid, du: true }].sort((a, b) => a.fel - b.fel || a.tid - b.tid);
+    const plats = alla.findIndex((x) => x.du) + 1;
+    const pris = K.pris[plats - 1] || 0;
+    this.money += pris; if (pris) this.earned += pris;
+    H.rosetter ||= {}; H.rosetter[K.id] ||= [0, 0, 0];
+    if (plats <= 3) H.rosetter[K.id][plats - 1]++;
+    const index = HOPPKLASSER.indexOf(K);
+    const upplast = fel === 0 && index === (H.klass | 0) && index < HOPPKLASSER.length - 1;
+    if (upplast) H.klass = index + 1;
+    H.hopp = (H.hopp | 0) + 1;
+    this.passTime(45);
+    this.energy = clamp(this.energy - 12);
+    const glad = this.glad(plats === 1 ? 6 : plats <= 3 ? 4 : 2, '', 'hopp', 8);
+    this.save();
+    return { plats, pris, alla, upplast, glad, felfri: fel === 0 };
+  }
+
   // ---------- bondgården (Gården i landet) ----------
   bondeHar() { return this.home === 'gard' && !!this.bonde; }
   fodderKostnad() { const d = this.bonde?.djur || {}; return Object.entries(GARDSDJUR).reduce((a, [k, D]) => a + (d[k] | 0) * D.foder, 0); }
@@ -1893,6 +1979,11 @@ export class Game {
 }
 
 const clamp = (v) => Math.max(0, Math.min(100, Math.round(+v || 0)));
+// hästen: färg, namn och siffror inom gränserna
+function cleanHast(h) {
+  if (!h || typeof h !== 'object' || !HASTFARGER.some((f) => f.id === h.farg)) return null;
+  return { ...h, namn: String(h.namn || 'Hästen').slice(0, 14), trivsel: Math.max(0, Math.min(100, h.trivsel | 0)), matad: h.matad | 0, borstad: h.borstad | 0, kopt: h.kopt | 0, klass: Math.max(0, Math.min(HOPPKLASSER.length - 1, h.klass | 0)), rosetter: h.rosetter && typeof h.rosetter === 'object' ? h.rosetter : {}, hopp: Math.max(0, h.hopp | 0) };
+}
 // bondgården: djuren inom gränserna, dagarna som heltal
 function cleanBonde(b) {
   if (!b || typeof b !== 'object') return null;

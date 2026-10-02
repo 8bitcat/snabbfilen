@@ -72,7 +72,8 @@ await D(() => SF.scene._debug.act('gard')); await sleep(150);
 ok(/Gården till salu/.test(await D(() => document.querySelector('#modal:not(.hidden) .dlg-head h2')?.textContent || '')), 'gården: till salu (köprutan)');
 await D(() => { const m = document.querySelector('#modal'); m.classList.add('hidden'); m.innerHTML = ''; });
 await D(() => SF.scene._debug.act('stall')); await sleep(150);
-ok(/Stallet/.test(await toasts()), 'stallet: hästar snart');
+ok(/hästar till salu/.test(await D(() => document.querySelector('#modal:not(.hidden) .dlg-head h2')?.textContent || '')), 'stallet: hästar till salu');
+await D(() => { const m = document.querySelector('#modal'); m.classList.add('hidden'); m.innerHTML = ''; });
 await D(() => SF.scene._debug.teleport(880, 205)); await sleep(500); await shot('03-garden');
 await D(() => SF.scene._debug.teleport(1880, 420)); await sleep(500); await shot('04-ridbanan');
 // ---------- 7. cykeln, kvällen, natten ----------

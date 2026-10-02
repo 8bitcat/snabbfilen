@@ -8,11 +8,12 @@
 import { createCityWalker } from '../city/walk.js';
 import { selfDrawable, folkDrawables, createSpeech, nameTag } from './walkable.js';
 import { worldFolksHere } from '../net/world.js';
-import { openModal, closeModal, toast } from '../core/ui.js';
+import { openModal, closeModal, toast, esc } from '../core/ui.js';
 import { play } from '../core/sound.js';
 import { SMALL, BIG, ctxText, textW } from '../core/floor-pix.js';
 import { CITY, busStopById } from '../city/map.js';
-import { fmt, homeOf, GARDSDJUR, GARD_PRIS } from '../game.js';
+import { fmt, homeOf, GARDSDJUR, GARD_PRIS, HAST_PRIS, HAST_STALL, HAST_MAT, HASTFARGER, HASTNAMN, HOPPKLASSER } from '../game.js';
+import { drawHastEnsam, drawHastRyttare } from '../landet/hast-art.js';   // din egen häst (rida, hinderbanan)
 import { LW, LH, L, KOHAGE, FARHAGE, HONSGARD, VETE, HASTHAGE, RIDBANA, HUS, HINDER, HALLPLATS, ORTSSKYLT, SPANG, GRIND, landHinder, paintLand, skyCanvas, hillsCanvas, husBild, husPos } from '../landet/karta.js';
 import { drawKo, drawFar, drawHast, drawHona, drawTraktor, drawTrad } from '../landet/djur.js';
 
@@ -31,14 +32,17 @@ export function makeLandet(A) {
   const from = A.landetFran || null; A.landetFran = null;
   const spawnY = from?.y ? Math.max(L.VERGE_N[0] + 4, Math.min(L.VERGE_S[1] - 4, from.y)) : L.VERGE_S[0] + 10;
   const gardDorr = [(HUS.gard.door.x0 + HUS.gard.door.x1) / 2, HUS.gard.base + 10];
-  const walker = createCityWalker({ W: LW, H: LH, left: 2, right: LW - 6, top: L.HORIZON + 10, bottom: L.BOTTOM, spawn: from?.gard ? gardDorr : from?.buss ? [HALLPLATS.x + 10, HALLPLATS.y + 6] : [14, spawnY] });
-  const fordon = () => g.aker;
-  const applyRide = () => { const F = fordon(); walker.speed = GANG * (F ? F.fart : 1); };
+  const walker = createCityWalker({ W: LW, H: LH, left: 2, right: LW - 6, top: L.HORIZON + 10, bottom: L.BOTTOM, spawn: from?.bana ? [(GRIND.bana[0] + GRIND.bana[1]) / 2, RIDBANA[1] - 10] : from?.gard ? gardDorr : from?.buss ? [HALLPLATS.x + 10, HALLPLATS.y + 6] : [14, spawnY] });
+  const fordon = () => (A.ridHast ? null : g.aker);
+  // rider man sin häst går det fortare (trav/galopp) – hästen följer bara med på landet
+  if (from?.bana && g.hast) A.ridHast = true;
+  if (!g.hast) A.ridHast = false;
+  const applyRide = () => { const F = fordon(); walker.speed = A.ridHast ? GANG * 2.2 : GANG * (F ? F.fart : 1); };
   applyRide();
   walker.setObstacles([...landHinder(), [BUTIK.x - 16, BUTIK.y - 6, BUTIK.x + 16, BUTIK.y + 1]]);
   walker.snapFree();
   const talk = createSpeech();
-  let t = 0, hover = null, banner = 0;
+  let t = 0, hover = null, banner = 0, ridDir = 'right';
   const fade = { a: 1, phase: 2, cb: null };    // tona in när man kommer
   const cam = { x: 0, y: 0 };
   const camTarget = () => ({ x: Math.max(0, Math.min(LW - VW, walker.px - VW / 2)), y: Math.max(0, Math.min(LH - VH, walker.py - VH * 0.66)) });
@@ -54,6 +58,8 @@ export function makeLandet(A) {
   const agd = () => g.bondeHar?.();
   const antal = (sort, def) => (agd() ? (g.bonde.djur[sort] | 0) : def);
   add('ko', KOHAGE, antal('ko', 6)); add('far', FARHAGE, antal('far', 9)); add('hona', HONSGARD, antal('hona', 6)); add('hast', HASTHAGE, 4);
+  if (g.hast) add('hast', HASTHAGE, 1, { egen: true });
+  djur.forEach((d) => { if (d.egen) d.farg = g.hast.farg; });
   // nyköpta djur springer in i hagen
   function synkaDjur() {
     if (!agd()) return;
@@ -101,14 +107,14 @@ export function makeLandet(A) {
     { id: 'gard', r: [HUS.gard.door.x0 - 6, HUS.gard.base - 40, HUS.gard.door.x1 + 6, HUS.gard.base], go: gardDorr, label: g.home === 'gard' ? 'HEM' : 'GÅRDEN – TILL SALU', act: gardDorren },
     { id: 'lada', r: [HUS.lada.door.x0, HUS.lada.base - 42, HUS.lada.door.x1, HUS.lada.base], go: [(HUS.lada.door.x0 + HUS.lada.door.x1) / 2, HUS.lada.base + 8], label: 'LADUGÅRDEN', act: ladan },
     { id: 'butik', r: [BUTIK.x - 18, BUTIK.y - 30, BUTIK.x + 18, BUTIK.y + 2], go: [BUTIK.x, BUTIK.y + 8], label: 'GÅRDSBUTIKEN', act: butiken },
-    { id: 'stall', r: [HUS.stall.door.x0 - 4, HUS.stall.base - 36, HUS.stall.door.x1 + 4, HUS.stall.base], go: [(HUS.stall.door.x0 + HUS.stall.door.x1) / 2, HUS.stall.base + 8], label: 'STALLET', act: () => { play('door'); toast('🐴 Stallet: snart kan du köpa en egen häst här – och rida på hinderbanan!'); } },
-    { id: 'ridbana', r: [RIDBANA[0], RIDBANA[1], RIDBANA[2], RIDBANA[3]], go: [(GRIND.bana[0] + GRIND.bana[1]) / 2, RIDBANA[1] - 8], label: 'RIDBANAN', act: () => toast('🏇 Hinderbanan – med en egen häst kan du hoppa här (snart!).') },
+    { id: 'stall', r: [HUS.stall.door.x0 - 4, HUS.stall.base - 36, HUS.stall.door.x1 + 4, HUS.stall.base], go: [(HUS.stall.door.x0 + HUS.stall.door.x1) / 2, HUS.stall.base + 8], label: 'STALLET', act: stallet },
+    { id: 'ridbana', r: [RIDBANA[0], RIDBANA[1], RIDBANA[2], RIDBANA[3]], go: [(GRIND.bana[0] + GRIND.bana[1]) / 2, RIDBANA[1] - 8], label: 'RIDBANAN – HINDERBANAN', act: hinderbanan },
     { id: 'buss', r: [HALLPLATS.x - 12, HALLPLATS.y - 34, HALLPLATS.x + 14, HALLPLATS.y + 2], go: [HALLPLATS.x + 2, HALLPLATS.y + 6], label: 'BUSS TILL STAN', act: bussen },
     { id: 'skylt', r: [ORTSSKYLT.x - 14, ORTSSKYLT.y - 30, ORTSSKYLT.x + 14, ORTSSKYLT.y + 2], go: [ORTSSKYLT.x, ORTSSKYLT.y + 8], label: 'TILLBAKA TILL STAN', act: tillStan },
   ];
   // ---------- gården: köpa, gå hem, ladugården, gårdsbutiken ----------
   function gardDorren() {
-    if (g.home === 'gard') { play('door'); A.roomSub = 0; A.go('room'); return; }
+    if (g.home === 'gard') { play('door'); A.ridHast = false; A.roomSub = 0; A.go('room'); return; }
     const H = homeOf('gard');
     play('knock');
     openModal('🏡 Gården till salu', `<p style="font-size:var(--f2);margin-top:0">Den gamle bonden ska flytta till stan och säljer Gården: falurött boningshus med lantkök, ladugård, silo, hönsgård och hagar – <b>djuren ingår</b> (6 höns, 2 kor och 4 får)!</p>
@@ -162,6 +168,70 @@ export function makeLandet(A) {
     toast(txt + (r.glad ? ` +${r.glad} 😊` : ''), 'good');
     return true;
   }
+  // ---------- hästen: stallet, rida, hinderbanan ----------
+  const stars = (v) => '🟩'.repeat(Math.round(v / 20)) + '⬜'.repeat(5 - Math.round(v / 20));
+  function stallet() {
+    play('door');
+    const H = g.hast;
+    if (!H) return kopHast();
+    const draw = () => {
+      const idagMat = (H.matad | 0) === g.day, idagBorst = (H.borstad | 0) === g.day;
+      const ros = HOPPKLASSER.map((K) => { const r = H.rosetter?.[K.id] || [0, 0, 0]; return r.some(Boolean) ? `${K.icon} ${r[0] ? '🥇' + r[0] : ''} ${r[1] ? '🥈' + r[1] : ''} ${r[2] ? '🥉' + r[2] : ''}` : ''; }).filter(Boolean).join(' · ');
+      const dlg = openModal(`🐴 ${H.namn}`, `<div class="fd"><canvas class="fd-big" width="96" height="56"></canvas>
+        <div class="fd-side" style="font-size:var(--f2)">Trivsel<br><b>${stars(H.trivsel)}</b><br>${idagMat ? '✅ har ätit' : '🥕 hungrig'}<br>${idagBorst ? '✅ borstad' : '🪮 vill bli borstad'}</div></div>
+        <p style="font-size:var(--f2);margin:0">${H.trivsel < 45 ? '😟 En häst som inte trivs kan vägra vid hindren. Mata och borsta den varje dag!' : '😊 ' + H.namn + ' trivs och är redo att rida.'}${ros ? `<br>🎀 Rosetter: ${ros}` : ''}<br><small class="sp">Stallhyra ${g.home === 'gard' ? 'gratis – du har ju en gård' : fmt(HAST_STALL) + ' i veckan (gratis om du äger Gården)'}.</small></p>`, [
+        ...(!idagMat ? [{ label: `🥕 Mata · ${fmt(HAST_MAT)}`, cls: 'btn-go', onClick: () => { const r = g.mataHast(); if (!r.ok) { toast(r.msg, 'bad'); return; } play('ok'); toast(`🥕 ${H.namn} mumsar havre och hö!${r.glad ? ` +${r.glad} 😊` : ''}`, 'good'); draw(); } }] : []),
+        ...(!idagBorst ? [{ label: '🪮 Borsta', cls: 'btn-go', onClick: () => { const r = g.borstaHast(); if (!r.ok) { toast(r.msg, 'bad'); return; } play('ok'); toast(`🪮 ${H.namn} blänker!${r.glad ? ` +${r.glad} 😊` : ''}`, 'good'); draw(); } }] : []),
+        A.ridHast ? { label: '🏠 Ställ in hästen', onClick: () => { closeModal(); A.ridHast = false; applyRide(); toast(`🐴 ${H.namn} går ut i hagen.`); } } : { label: '🏇 Rid ut', cls: 'btn-gold', onClick: () => { closeModal(); A.ridHast = true; applyRide(); play('fanfare'); toast(`🏇 Du sitter upp på ${H.namn}! Rid till ridbanan för att hoppa.`, 'good'); } },
+        { label: 'Stäng', onClick: closeModal },
+      ]);
+      const c = dlg.querySelector('.fd-big').getContext('2d');
+      c.fillStyle = '#e8d4aa'; c.fillRect(0, 0, 96, 56); c.fillStyle = '#c8b48a'; c.fillRect(0, 48, 96, 8);
+      drawHastEnsam(c, 48, 50, 'right', 'sta', 0, H.farg, { sadel: true });
+    };
+    draw();
+  }
+  function kopHast() {
+    let farg = 'fux', namn = HASTNAMN[Math.floor(Math.random() * HASTNAMN.length)];
+    const draw = () => {
+      const sw = HASTFARGER.map((f) => `<button class="btn btn-small ${f.id === farg ? 'btn-gold' : ''}" data-farg="${f.id}" title="${esc(f.blurb)}">${esc(f.namn)}</button>`).join(' ');
+      const dlg = openModal('🐴 Stallet – hästar till salu', `<div class="fd"><canvas class="fd-big" width="96" height="56"></canvas>
+        <div class="fd-side"><span class="fb-lbl">Färg</span><div>${sw}</div><span class="fb-lbl" style="margin-top:6px">Namn</span><input class="hast-namn" maxlength="14" value="${esc(namn)}" style="font:var(--f2) var(--font);width:120px;padding:2px 4px"></div></div>
+        <p style="font-size:var(--f2);margin:0">Ridskolan säljer en snäll häst som är van vid hinder. Den bor i stallet – mata och borsta den varje dag, rid på landet och hoppa på hinderbanan!<br>💰 Du har <b>${fmt(g.money)}</b> · Pris <b>${fmt(HAST_PRIS)}</b> · stallhyra ${g.home === 'gard' ? 'gratis (du har en gård)' : fmt(HAST_STALL) + '/vecka'}</p>`, [
+        { label: `🐴 Köp · ${fmt(HAST_PRIS)}`, cls: 'btn-go', onClick: () => {
+          const r = g.buyHast(farg, dlg.querySelector('.hast-namn')?.value || namn);
+          if (!r.ok) { toast(r.msg, 'bad'); play('fel'); return; }
+          closeModal(); play('fanfare');
+          add('hast', HASTHAGE, 1, { egen: true }); djur[djur.length - 1].farg = farg;
+          toast(`🐴 Grattis till ${r.hast.namn}! Hästen står i hagen – klicka på stallet för att rida ut.`, 'good');
+        } },
+        { label: 'Stäng', onClick: closeModal },
+      ]);
+      dlg.querySelector('.hast-namn').oninput = (e) => { namn = e.target.value; };
+      const c = dlg.querySelector('.fd-big').getContext('2d');
+      c.fillStyle = '#e8d4aa'; c.fillRect(0, 0, 96, 56); c.fillStyle = '#c8b48a'; c.fillRect(0, 48, 96, 8);
+      drawHastEnsam(c, 48, 50, 'right', 'sta', 0, farg, { sadel: true });
+      dlg.querySelectorAll('[data-farg]').forEach((b) => (b.onclick = () => { farg = b.dataset.farg; namn = dlg.querySelector('.hast-namn')?.value || namn; play('click'); draw(); }));
+    };
+    draw();
+  }
+  function hinderbanan() {
+    const H = g.hast;
+    if (!H) { toast('🏇 Hinderbanan – köp en häst i stallet så kan du hoppa här!'); return; }
+    if (!A.ridHast) { toast(`🏇 Hämta ${H.namn} i stallet och rid hit först!`); return; }
+    if (g.energy < 15) { toast('😪 Du är för trött för att hoppa i dag.', 'bad'); return; }
+    const rader = HOPPKLASSER.map((K, i) => {
+      const last = i > (H.klass | 0), r = H.rosetter?.[K.id] || [0, 0, 0];
+      return `<div class="prow" style="grid-template-columns:auto 1fr auto"><span style="font-size:22px">${K.icon}</span><span class="nm">${esc(K.namn)} – ${K.hinder} hinder<br><small class="sp">${last ? `🔒 gör en felfri runda i ${esc(HOPPKLASSER[i - 1].namn.toLowerCase())} först` : `1:a pris ${fmt(K.pris[0])}${r.some(Boolean) ? ` · 🥇${r[0]} 🥈${r[1]} 🥉${r[2]}` : ''}`}</small></span>
+        <button class="btn btn-small btn-go" data-klass="${K.id}" ${last ? 'disabled' : ''}>Hoppa</button></div>`;
+    }).join('');
+    const dlg = openModal('🏆 Hinderbanan', `<p style="font-size:var(--f2);margin-top:0">Rid runt banan och hoppa över alla hinder – tryck precis innan hindret! Varje rivning eller vägran ger 4 fel. Du tävlar mot ridskolans ryttare om rosetterna och prispengarna.</p><div class="plist">${rader}</div>`, [{ label: 'Inte nu', onClick: closeModal }]);
+    dlg.querySelectorAll('[data-klass]').forEach((b) => (b.onclick = () => { closeModal(); startHopp(b.dataset.klass); }));
+  }
+  function startHopp(klass) {
+    if (fade.phase === 1) return;
+    fade.phase = 1; fade.cb = () => A.go('hopp', { klass, onDone: (res) => efterHopp(A, res) });
+  }
   function bussen() {
     openModal('🚌 Busshållplats LANDET', `<p style="font-size:var(--f2);margin-top:0">Linje 4 går till <b>Betongtorget</b> i förorten. Biljetten kostar ${fmt(10)}.</p>`, [
       { label: '🚌 Åk till stan', cls: 'btn-go', onClick: () => { closeModal(); if (g.money < 10) { toast('Du har inte råd med bussen.', 'bad'); return; } g.money -= 10; g.passTime(15); g.save(); play('door'); toTown(busStop ? [busStop.x, busStop.y + 8] : [CITY.W - 40, 296]); } },
@@ -176,6 +246,7 @@ export function makeLandet(A) {
   }
   function toTown(pos) {
     if (fade.phase === 1) return;
+    if (A.ridHast) { A.ridHast = false; toast(`🐴 Du ställer in ${g.hast?.namn || 'hästen'} i stallet.`); }
     fade.phase = 1; fade.cb = () => { A.cityPos = pos; A.go('city'); };
   }
   const spotAt = (x, y) => spots().find((s) => x >= s.r[0] && x <= s.r[2] && y >= s.r[1] && y <= s.r[3]);
@@ -280,12 +351,17 @@ export function makeLandet(A) {
       for (const tr of TRAD) if (tr.x > cx - 40 && tr.x < cx + VW + 40) items.push({ fy: tr.y, draw: () => drawTrad(ctx, tr.x, tr.y, tr.s, t) });
       for (const d of [...fenceDrawables(KOHAGE, TRA), ...fenceDrawables(FARHAGE, TRA, null, true), ...fenceDrawables(HONSGARD, VIT), ...fenceDrawables(HASTHAGE, VIT, GRIND.hage), ...fenceDrawables(RIDBANA, VIT, GRIND.bana)]) items.push({ fy: d.fy, draw: () => d.draw(ctx) });
       for (const h of HINDER) items.push({ fy: h.y, draw: () => drawHinder(ctx, h) });
-      for (const d of djur) if (d.x > cx - 40 && d.x < cx + VW + 40) items.push({ fy: d.y, draw: () => { if (d.sort === 'ko') drawKo(ctx, d.x, d.y, d.dir, d.fr, d.flack); else if (d.sort === 'far') drawFar(ctx, d.x, d.y, d.dir, d.fr); else if (d.sort === 'hast') drawHast(ctx, d.x, d.y, d.dir, d.fr, d.farg); else drawHona(ctx, d.x, d.y, d.dir, d.fr); } });
+      for (const d of djur) if (d.x > cx - 40 && d.x < cx + VW + 40 && !(d.egen && A.ridHast)) items.push({ fy: d.y, draw: () => { if (d.sort === 'ko') drawKo(ctx, d.x, d.y, d.dir, d.fr, d.flack); else if (d.sort === 'far') drawFar(ctx, d.x, d.y, d.dir, d.fr); else if (d.sort === 'hast') drawHast(ctx, d.x, d.y, d.dir, d.fr, d.farg); else drawHona(ctx, d.x, d.y, d.dir, d.fr); } });
       items.push({ fy: trak.y, draw: () => drawTraktor(ctx, trak.x, trak.y, trak.dir, t, trak.vanta <= 0) });
       items.push({ fy: ORTSSKYLT.y, draw: () => drawOrtsskylt(ctx) }, { fy: HALLPLATS.y, draw: () => drawHallplats(ctx) }, { fy: BUTIK.y, draw: () => drawButik(ctx, agd()) });
       items.push(...folkDrawables(A, t));
       const F = fordon();
-      items.push(selfDrawable(A, walker, t, { folksHere: worldFolksHere(A).length, ride: F ? { id: F.id, c: F.c } : null }));
+      if (A.ridHast && g.hast) {
+        // på hästen: travar när man rör sig, står still annars (åt det håll man senast red)
+        const ror = walker.path.length > 0;
+        if (ror && (walker.dir === 'left' || walker.dir === 'right')) ridDir = walker.dir;
+        items.push({ fy: walker.py, draw: () => drawHastRyttare(ctx, walker.px, walker.py, ridDir, ror ? 'trav' : 'sta', Math.floor(t * 8) % 4, g.hast.farg, A.avatar.look) });
+      } else items.push(selfDrawable(A, walker, t, { folksHere: worldFolksHere(A).length, ride: F ? { id: F.id, c: F.c } : null }));
       items.sort((a, b) => a.fy - b.fy).forEach((d) => d.draw(ctx));
       // traktorns damm
       if (trak.vanta <= 0) for (let k = 0; k < 4; k++) { const u = (t * 1.6 + k / 4) % 1; ctx.fillStyle = `rgba(200,180,120,${(0.4 * (1 - u)).toFixed(2)})`; ctx.fillRect(Math.round(trak.x + (trak.dir === 'right' ? -26 : 26) * (1 + u * 0.4)), Math.round(trak.y - 6 - u * 10), 3 + Math.round(u * 3), 3); }
@@ -321,6 +397,7 @@ export function makeLandet(A) {
       const d = djurAt(x, y);
       if (d) {
         // på den egna gården: man ställer sig vid hagens staket och sköter djuret
+        if (d.egen) { walker.walkTo(Math.max(HASTHAGE[0] + 8, Math.min(HASTHAGE[2] - 8, d.x)), HASTHAGE[1] - 8, () => { prata(d); stallet(); }); return; }
         const pen = d.pen, egen = agd() && d.sort !== 'hast';
         if (egen) { walker.walkTo(Math.max(pen[0] + 8, Math.min(pen[2] - 8, d.x)), pen[3] + 8, () => { prata(d); sysslan(d); }); return; }
         walker.walkTo(d.x + (walker.px < d.x ? -16 : 16), Math.min(L.BOTTOM - 2, d.y + 6), () => prata(d));
@@ -340,13 +417,31 @@ export function makeLandet(A) {
       walkable: (x, y) => walker.walkable(x, y),
       spot: (id) => { const s = spots().find((q) => q.id === id); return s ? { x: Math.round((s.r[0] + s.r[2]) / 2 - cam.x), y: Math.round((s.r[1] + s.r[3]) / 2 - cam.y) } : null; },
       act: (id) => { const s = spots().find((q) => q.id === id); if (!s) return false; s.act(); return true; },
-      djur: () => djur.map((d) => ({ sort: d.sort, x: Math.round(d.x), y: Math.round(d.y), state: d.state, pen: d.pen })),
+      djur: () => djur.map((d) => ({ sort: d.sort, x: Math.round(d.x), y: Math.round(d.y), state: d.state, pen: d.pen, egen: !!d.egen })),
+      rider: () => !!A.ridHast,
+      fart: () => walker.speed,
       djurSkarm: (sort) => { const d = djur.find((q) => q.sort === sort); return d ? { x: Math.round(d.x - cam.x), y: Math.round(d.y - 8 - cam.y) } : null; },
       traktor: () => ({ x: Math.round(trak.x), y: Math.round(trak.y), rad: trak.rad, klara: trak.klara.length }),
       prat: () => talk.text(),
       fade: () => fade.phase,
     },
   };
+}
+// efter hoppningen (js/scenes/hopp.js): placeringen mot ridskolan, rosetten och priset – sedan står man
+// vid ridbanans grind på hästen igen
+function efterHopp(A, res) {
+  const g = A.game, r = g.hoppResultat(res.klass, res.fel, res.tid);
+  A.landetFran = { bana: true };
+  A.go('landet');
+  if (!r) return;
+  const K = HOPPKLASSER.find((k) => k.id === res.klass);
+  const ros = ['🥇 1:a plats – blå rosett!', '🥈 2:a plats – röd rosett!', '🥉 3:e plats – gul rosett!'][r.plats - 1] || `${r.plats}:e plats`;
+  const rows = r.alla.map((x, i) => `<div style="display:flex;justify-content:space-between;font-size:var(--f2)"><span>${i + 1}. ${x.du ? `<b>Du</b> på ${esc(x.hast)}` : `${esc(x.namn)} på ${esc(x.hast)}`}</span><b>${x.fel} fel · ${x.tid.toFixed(1).replace('.', ',')} s</b></div>`).join('');
+  play(r.plats === 1 ? 'fanfare' : 'ok');
+  setTimeout(() => openModal(`🏆 ${K.namn}: ${ros}`, `${rows}
+    <div style="border-top:3px dashed var(--ink);margin:8px 0"></div>
+    <p style="font-size:var(--f2);margin:0">${res.rivna ? `🪵 ${res.rivna} ${res.rivna === 1 ? 'rivning' : 'rivningar'}. ` : ''}${res.vagran ? `🐴 ${res.vagran} ${res.vagran === 1 ? 'vägran' : 'vägringar'} – mata och borsta hästen så trivs den bättre. ` : ''}${r.felfri ? '✨ Felfri runda! ' : ''}${r.pris ? `💰 Prispengar: <b>${fmt(r.pris)}</b>. ` : ''}${r.upplast ? `<br>🔓 <b>${esc(HOPPKLASSER[HOPPKLASSER.indexOf(K) + 1].namn)}</b> är öppen nu!` : ''}${r.glad ? ` +${r.glad} 😊` : ''}</p>`,
+  [{ label: '🎉 Härligt!', cls: 'btn-go', onClick: closeModal }]), 450);
 }
 // marken målas en gång (dag) – nattversionen är samma bild, mörkare och blåare
 let DAY = null, NIGHT = null;
