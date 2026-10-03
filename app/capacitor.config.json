@@ -8,5 +8,17 @@
     "scrollEnabled": false,
     "allowsLinkPreview": false,
     "preferredContentMode": "mobile"
+  },
+  "plugins": {
+    "CapacitorUpdater": {
+      "autoUpdate": false,
+      "updateUrl": "",
+      "channelUrl": "",
+      "statsUrl": "",
+      "appReadyTimeout": 15000,
+      "resetWhenUpdate": true,
+      "autoDeleteFailed": true,
+      "autoDeletePrevious": true
+    }
   }
 }
