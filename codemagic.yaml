@@ -15,7 +15,7 @@ workflows:
         distribution_type: app_store
         bundle_identifier: io.eightbitcat.pixelcity
       vars:
-        APP_STORE_APPLE_ID: 0000000000    # TODO: appens Apple ID (siffrorna) när appen finns i App Store Connect
+        APP_STORE_APPLE_ID: 6818844405    # Pixelcity i App Store Connect (App Information → Apple ID)
         XCODE_PROJECT: App.xcodeproj
         XCODE_SCHEME: App
       node: 22
