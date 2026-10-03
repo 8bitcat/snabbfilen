@@ -1,0 +1,48 @@
+# Snabbfilen som iOS-app: Codemagic bygger app/ (Capacitor) på en Mac i molnet och skickar
+# bygget till TestFlight. Spelet självt är detsamma som på webben – app/build.mjs kopierar
+# filerna i version.json till app/www och lägger PeerJS + typsnitt lokalt.
+#   Starta: Codemagic → snabbfilen → Start new build → ios-testflight
+#   Före första bygget: APP_STORE_APPLE_ID nedan (App Store Connect → appen → App Information → Apple ID)
+workflows:
+  ios-testflight:
+    name: iOS → TestFlight
+    max_build_duration: 45
+    instance_type: mac_mini_m2
+    integrations:
+      app_store_connect: Codemagic        # API-nyckelns namn i Codemagic (Integrations → Developer Portal)
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: io.eightbitcat.snabbfilen
+      vars:
+        APP_STORE_APPLE_ID: 0000000000    # TODO: appens Apple ID (siffrorna) när appen finns i App Store Connect
+        XCODE_PROJECT: App.xcodeproj
+        XCODE_SCHEME: App
+      node: 22
+      xcode: latest
+    scripts:
+      - name: Installera
+        script: cd app && npm ci
+      - name: Spelet in i appen
+        script: cd app && node build.mjs && npx cap sync ios
+      - name: Signering
+        script: xcode-project use-profiles
+      - name: Version och byggnummer
+        script: |
+          VERSION=$(node -p "require('./version.json').version")
+          LATEST=$(app-store-connect get-latest-testflight-build-number "$APP_STORE_APPLE_ID" 2>/dev/null || echo 0)
+          BUILD=$((LATEST + 1))
+          echo "Snabbfilen $VERSION (bygge $BUILD)"
+          sed -i '' -E "s/MARKETING_VERSION = [^;]+;/MARKETING_VERSION = $VERSION;/; s/CURRENT_PROJECT_VERSION = [^;]+;/CURRENT_PROJECT_VERSION = $BUILD;/" app/ios/App/App.xcodeproj/project.pbxproj
+      - name: Bygg ipa
+        script: |
+          cd app/ios/App
+          xcode-project build-ipa --project "$XCODE_PROJECT" --scheme "$XCODE_SCHEME"
+    artifacts:
+      - app/ios/App/build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        submit_to_app_store: false

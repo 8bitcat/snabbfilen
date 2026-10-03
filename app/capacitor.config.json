@@ -1,0 +1,12 @@
+{
+  "appId": "io.eightbitcat.snabbfilen",
+  "appName": "Snabbfilen",
+  "webDir": "www",
+  "backgroundColor": "#1c1a22",
+  "ios": {
+    "contentInset": "never",
+    "scrollEnabled": false,
+    "allowsLinkPreview": false,
+    "preferredContentMode": "mobile"
+  }
+}

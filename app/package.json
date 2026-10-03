@@ -1,0 +1,19 @@
+{
+  "name": "snabbfilen-app",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "sync": "node build.mjs && npx cap sync ios"
+  },
+  "dependencies": {
+    "@capacitor/core": "^8.5.2",
+    "@capacitor/ios": "^8.5.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.5.2",
+    "@fontsource/jersey-10": "^5.3.0",
+    "@fontsource/vt323": "^5.3.0",
+    "peerjs": "^1.5.4"
+  }
+}
