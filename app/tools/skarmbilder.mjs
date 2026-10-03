@@ -5,8 +5,9 @@
 //   node app/tools/skarmbilder.mjs [iphone|ipad] [--bara id,id] [--rubriker]
 //     → app/store/skarmbilder/<enhet>-<nr>-<id>.png (+ <enhet>-<id>-ra.png utan rubrik)
 //     --bara      ta bara de här bilderna      --rubriker  gör bara om rubrikerna på redan tagna bilder
-// Urvalet och ordningen är Carls (2026-10-03): staden, frisören, trädgården, husdjuren, festen i ett
-// riktigt möblerat hem (app/tools/fest-hem.json), pizzerian, leksaksaffären, klädaffären – ingen häst.
+// Urvalet och ordningen är Carls (2026-10-03): staden, leksaksaffären, klädaffären, frisörens frisyrmeny,
+// husdjuren, festen i ett riktigt möblerat hem (app/tools/fest-hem.json), pizzerian och mer av staden
+// – ingen häst och ingen trädgård.
 // Servern på 8788 (annan port: PORT=…).
 import { createRequire } from 'module';
 import fs from 'fs';
@@ -28,13 +29,12 @@ const ENHETER = {
 // rubrik + underrad per bild, i den ordning de visas i App Store (högst tio)
 const BILDER = [
   { id: 'stan', rubrik: 'Ett helt liv i Pixelstaden', under: 'Jobba, handla, plugga och träffa folk' },
-  { id: 'frisor', rubrik: 'Fixa dig hos frisören', under: 'Ny frisyr, ny hårfärg, ny stil' },
-  { id: 'odla', rubrik: 'Odla i din trädgård', under: 'Så, vattna och skörda – laga mat av det' },
+  { id: 'leksaker', rubrik: 'Shoppa i stan', under: 'Leksaker, möbler, mat och mycket mer' },
+  { id: 'klader', rubrik: 'Klä dig som du vill', under: 'Kläder, skor och accessoarer' },
+  { id: 'frisor', rubrik: 'Fixa dig hos frisören', under: 'Välj bland massor av frisyrer och hårfärger' },
   { id: 'husdjur', rubrik: 'Skaffa eget husdjur', under: 'Kattungar, valpar och kaninungar som växer upp hemma' },
   { id: 'fest', rubrik: 'Bjud hem kompisarna', under: 'Inred ditt hem och ha fest' },
   { id: 'jobb', rubrik: 'Jobba dig uppåt', under: '14 jobb – från pizzabagare till chef' },
-  { id: 'leksaker', rubrik: 'Shoppa i stan', under: 'Leksaker, möbler, mat och mycket mer' },
-  { id: 'klader', rubrik: 'Klä dig som du vill', under: 'Kläder, skor och accessoarer' },
   { id: 'soder', rubrik: 'Upptäck hela staden', under: 'Söder, parken, förorten och downtown' },
   { id: 'kvall', rubrik: 'Staden lever dygnet runt', under: 'Dag och natt, sol och regn' },
 ];
@@ -60,7 +60,7 @@ for (const [enhet, E] of Object.entries(ENHETER)) {
   const D = (fn, arg) => p.evaluate(fn, arg);
   const vila = (ms) => p.waitForTimeout(ms);
   const stad = async () => { await D(() => { document.querySelectorAll('#toasts .toast').forEach((t) => t.remove()); const m = document.querySelector('#modal'); m.classList.add('hidden'); m.innerHTML = ''; document.querySelector('#sf-update')?.remove(); }); };
-  const ta = async (id) => { await stad(); await vila(150); await p.screenshot({ path: path.join(OUT, `${enhet}-${id}-ra.png`) }); console.log(enhet, id); };
+  const ta = async (id) => { if (id === 'frisor') await D(() => document.querySelectorAll('#toasts .toast').forEach((t) => t.remove())); else await stad(); await vila(150); await p.screenshot({ path: path.join(OUT, `${enhet}-${id}-ra.png`) }); console.log(enhet, id); };
   // klick i scenen på en klickbar sak (scenkoordinater → sidkoordinater, som tools/frisor-test.mjs)
   const klicka = async (id) => {
     const pt = await D((id) => {
@@ -84,9 +84,9 @@ for (const [enhet, E] of Object.entries(ENHETER)) {
     frisor: async () => {
       await D(() => { window.SF.game.min = 11 * 60; window.SF.go('frisor'); });
       await vila(2500);
-      // figuren i stol 2, Sami klipper: ny frisyr och hårfärg mitt i klippningen
-      await D(() => { const d = window.SF.scene._debug; d.sit(1); d.samiNow(); d.buy({ ...window.SF.avatar.look, style: 'bob', hair: '#c65fa0' }); d.seqAt(2.6); });
-      await vila(400);
+      // figuren i stol 2 med frisyrväljaren öppen – menyn med alla frisyrer och hårfärger (Carl)
+      await D(() => { const d = window.SF.scene._debug; d.sit(1); d.samiNow(); if (!document.querySelector('#modal:not(.hidden)')) d.openChooser(); });
+      await vila(2500);
     },
     odla: async () => {
       await D(() => {
