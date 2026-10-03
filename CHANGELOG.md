@@ -10,6 +10,10 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.83.2] – 2026-10-03 – Hela skärmen i appen
+- Appen Pixelcity på iPhone: stadsbilden bakom startmenyn täcker hela skärmen – det svarta bandet på ena sidan är borta.
+- Knapparna uppe till höger och mätarremsan håller sig innanför telefonens rundade hörn och kameran, åt vilket håll du än vrider telefonen.
+
 ## [0.83.1] – 2026-10-03 – Appen hämtar nya versioner själv
 - Förberett för appen Pixelcity på iPhone: appen hämtar nya versioner av spelet själv och visar samma "Ny version"-ruta som här på webben. Din sparning ligger kvar. På webben ändras ingenting.
 

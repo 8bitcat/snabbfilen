@@ -1,7 +1,7 @@
 {
-  "version": "0.83.1",
+  "version": "0.83.2",
   "date": "2026-10-03",
-  "title": "Appen hämtar nya versioner själv",
+  "title": "Hela skärmen i appen",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",

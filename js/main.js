@@ -256,6 +256,9 @@ function fit() {
     // huvudmenyn: staden täcker fönstret (kanterna klipps) · testrobotar: gamla läget
     A.W = DESIGN_W; A.H = DESIGN_H;
     v.w = DESIGN_W; v.h = DESIGN_H; v.boxX = 0; v.boxY = 0; v.boxed = false;
+    // (fyll-lägets placering får inte följa med hit – då hamnade staden snett bakom huvudmenyn i
+    // appen, med ett svart band på ena sidan; utan den centrerar #app bilden över hela skärmen)
+    cv.style.position = ''; cv.style.left = ''; cv.style.top = '';
     const s = Math.max(2, A.attract ? Math.ceil(Math.max(w * dpr / A.W, h * dpr / A.H)) : Math.floor(Math.min(w * dpr / A.W, h * dpr / (A.H + stripHeight(A)))));
     A.pxs = s;
     cv.width = A.W * s;

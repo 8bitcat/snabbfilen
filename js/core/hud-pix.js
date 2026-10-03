@@ -53,12 +53,24 @@ function ensureStrip() {
   app.insertBefore(strip, scene);
   return strip;
 }
+// Skärmens säkra kant till vänster (kameran/rundade hörn på en telefon i liggande läge, i appen
+// och i Safari): telefonremsans text börjar innanför den. Läses ur CSS env() via en osynlig sond.
+let padL = 0, probe = null;
+function safeLeftCss() {
+  if (!probe) {
+    probe = document.createElement('div');
+    probe.style.cssText = 'position:fixed;left:0;top:0;width:0;height:0;visibility:hidden;pointer-events:none;padding-left:env(safe-area-inset-left,0px)';
+    document.body.append(probe);
+  }
+  return parseFloat(getComputedStyle(probe).paddingLeft) || 0;
+}
 // Anropas från fit(): ger remsan samma skala som spelbilden (heltal device-pixlar per spelpixel)
 export function layoutStrip(A, dpr, wLogical = W, cssW = 0) {
   const c = ensureStrip(); if (!c) return;
   const h = stripHeight(A);
   c.classList.toggle('hidden', h === 0);
   if (!h) return;
+  padL = phoneHud() ? Math.ceil(safeLeftCss() * dpr / A.pxs) : 0;
   c.width = wLogical * A.pxs; c.height = h * A.pxs;
   c.style.width = (cssW || (wLogical * A.pxs / dpr)) + 'px';
   c.style.height = (h * A.pxs / dpr) + 'px';
@@ -121,7 +133,7 @@ function drawPhoneStrip(ctx, A, g, Wv) {
   const H = STRIP_PHONE, y = 5;
   ctx.fillStyle = INK; ctx.fillRect(0, 0, Wv, H);
   ctx.fillStyle = PAPER2; ctx.fillRect(0, H - 1, Wv, 1);
-  let x = 4;
+  let x = 4 + padL;
   const name = String(A.avatar?.name || '').toUpperCase().slice(0, 12);
   ctxText(ctx, SMALL, name, x, y, GOLD); x += textW(SMALL, name) + 8;
   coin(ctx, x, y);
