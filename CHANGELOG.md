@@ -10,6 +10,9 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.83.1] – 2026-10-03 – Appen hämtar nya versioner själv
+- Förberett för appen Pixelcity på iPhone: appen hämtar nya versioner av spelet själv och visar samma "Ny version"-ruta som här på webben. Din sparning ligger kvar. På webben ändras ingenting.
+
 ## [0.83.0] – 2026-10-02 – Hästen och hinderbanan
 - Egen häst! I STALLET på landet säljer ridskolan hästar (12 000 kr): välj fux, brun, svart eller skimmel och ge den ett namn. Den bor i stallet och går i hagen.
 - Sköt om hästen varje dag: mata den (havre och hö, 20 kr) och borsta den. En häst som trivs hoppar bättre – en som inte trivs kan vägra vid hindren. Stallhyran är 250 kr i veckan (gratis om du äger Gården).

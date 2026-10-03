@@ -1,7 +1,7 @@
 {
-  "version": "0.83.0",
-  "date": "2026-10-02",
-  "title": "Hästen och hinderbanan",
+  "version": "0.83.1",
+  "date": "2026-10-03",
+  "title": "Appen hämtar nya versioner själv",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",

@@ -29,6 +29,30 @@ const ss = {
   del(k) { try { sessionStorage.removeItem(k); } catch { /* ok */ } },
 };
 
+// ---------------------------------------------------------------- appen (Pixelcity, iOS)
+// I appen (Capacitor, app/) ligger spelet inbyggt. Nya versioner hämtas som ett paket – app/www
+// packat av app/paket.mjs och uppladdat till GitHub-releasen v<version> – med samma ruta och
+// samma väntan som på webben, men i stället för att ladda om sidan byter uppdateringspluginet
+// (@capgo/capacitor-updater) till det nya paketet. Svarar ett nytt paket inte med notifyAppReady
+// inom tio sekunder går pluginet själv tillbaka till det förra. Appen går aldrig bakåt i version.
+const APP = (() => { try { return window.Capacitor?.isNativePlatform?.() ? window.Capacitor.Plugins?.CapacitorUpdater || null : null; } catch { return null; } })();
+const WEBB = 'https://8bitcat.github.io/snabbfilen/';
+const PAKET = (v) => `https://github.com/8bitcat/snabbfilen/releases/download/v${v}/pixelcity-${v}.zip`;
+const APP_FEL_MAX = 5;   // misslyckade nedladdningar av samma version innan appen slutar försöka (tills nästa start)
+const nyare = (a, b) => {
+  const x = String(a).split('.').map((n) => +n || 0), y = String(b).split('.').map((n) => +n || 0);
+  for (let i = 0; i < 3; i++) if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) > (y[i] || 0);
+  return false;
+};
+// "paketet fungerar" sägs först när spelet är igång – kraschar ett nytt paket innan dess går pluginet
+// tillbaka till det förra (appReadyTimeout 15 s i app/capacitor.config.json)
+if (APP) {
+  const t0 = Date.now();
+  const iv = setInterval(() => {
+    if (window.SF?.game) { clearInterval(iv); try { APP.notifyAppReady(); } catch { /* ok */ } } else if (Date.now() - t0 > 14000) clearInterval(iv);
+  }, 300);
+}
+
 // ---------------------------------------------------------------- säkerhetskopior
 // Allt spelet sparar ligger under nycklar som börjar med "snabbfilen" (sparning, avatar,
 // ljud, djur …). En kopia tas varje gång versionen byts, de tre senaste sparas.
@@ -224,8 +248,23 @@ async function reloadNow() {
   window.dispatchEvent(new Event('sf:before-reload')); // andra moduler (t.ex. djuren) sparar sig
   try { window.SF?.game?.save(); } catch { /* spelet sparar ändå regelbundet */ }
   if (banner) banner.querySelector('.txt').innerHTML = `⬇️ Hämtar v${esc(v)} …`;
+  if (APP) { await bytPaket(v); return; }
   try { await prefetchNew(); } catch { /* ladda om ändå */ }
   location.reload();
+}
+// appen: ladda ner paketet och byt till det (set() laddar om i det nya paketet – inget efter körs).
+// Finns paketet inte än (det laddas upp strax efter pushen) försöker nästa versionskoll igen.
+async function bytPaket(v) {
+  try {
+    const b = await APP.download({ url: PAKET(v), version: v });
+    await APP.set({ id: b.id });
+  } catch {
+    const fel = +(ss.get('sf_app_fel_' + v) || 0) + 1;
+    ss.set('sf_app_fel_' + v, String(fel));
+    ss.del('sf_upd_tries_' + v); ss.del('sf_upd_target'); ss.del('sf_quiet_start');
+    reloading = false; pending = null;
+    if (banner) { banner.remove(); banner = null; }
+  }
 }
 
 function tick() {
@@ -245,10 +284,11 @@ function tick() {
 
 async function checkForUpdate() {
   try {
-    const res = await fetch('version.json?' + Date.now(), { cache: 'no-store' });
+    const res = await fetch((APP ? WEBB : '') + 'version.json?' + Date.now(), { cache: 'no-store' });
     if (!res.ok) return;
     const d = await res.json();
     if (!d?.version || d.version === VERSION) return;
+    if (APP && (!nyare(d.version, VERSION) || +(ss.get('sf_app_fel_' + d.version) || 0) >= APP_FEL_MAX)) return;
     if (pending?.version === d.version) return;
     if (+(ss.get('sf_upd_tries_' + d.version) || 0) >= MAX_TRIES) return;
     pending = { version: String(d.version), title: String(d.title || ''), critical: !!d.critical, files: Array.isArray(d.files) ? d.files.map(String) : [] };
