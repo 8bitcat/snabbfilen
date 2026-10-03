@@ -5,6 +5,8 @@
 //   2. en nyare version på webben → samma ruta som på webben → paketet hämtas från GitHub-releasen
 //      och appen byter till det (download + set) i stället för att ladda om sidan
 //   3. går nedladdningen fel försvinner rutan och nästa koll försöker igen; appen går aldrig bakåt
+//   5. paketets SHA-256 hämtas från GitHub-releasen (pluginet kräver den, som det riktiga gör här);
+//      finns releasen inte än blir det ingen nedladdning, bara ett besked
 //   4. på webben (utan Capacitor) är allt som förut: version.json läses från sidan själv
 //   node tools/app-uppdatering-test.mjs      (servern på 8788; annan port: SMOKE_PORT=8791 eller PORT=…)
 import { createRequire } from 'module';
@@ -16,7 +18,7 @@ let fails = 0;
 const ok = (c, m) => { console.log(c ? `ok: ${m}` : `FEL: ${m}`); if (!c) fails++; };
 const browser = await chromium.launch();
 
-async function sida({ app, webbVersion, nedladdningFel = false }) {
+async function sida({ app, webbVersion, nedladdningFel = false, utanRelease = false }) {
   const ctx = await browser.newContext({ viewport: { width: 1100, height: 700 } });
   const p = await ctx.newPage();
   const errs = [];
@@ -28,7 +30,7 @@ async function sida({ app, webbVersion, nedladdningFel = false }) {
         isNativePlatform: () => true,
         Plugins: { CapacitorUpdater: {
           notifyAppReady: async () => { window.__app.ready++; window.__app.readyGame = !!window.SF?.game; return {}; },
-          download: async (o) => { window.__app.download.push(o); if (window.__appFel ?? fel) throw new Error('404'); return { id: 'paket-' + o.version, version: o.version }; },
+          download: async (o) => { window.__app.download.push(o); if (!o.checksum) throw new Error('Checksum required'); if (window.__appFel ?? fel) throw new Error('404'); return { id: 'paket-' + o.version, version: o.version }; },
           set: async (o) => { window.__app.set.push(o); },
         } },
       };
@@ -36,6 +38,12 @@ async function sida({ app, webbVersion, nedladdningFel = false }) {
   }
   // version.json på webben (appen läser den därifrån) – sidans egen version.json lämnas orörd
   const hamtade = [];
+  // GitHub-releasen med paketets SHA-256 (digest), som api.github.com svarar
+  await p.route('https://api.github.com/repos/8bitcat/snabbfilen/releases/tags/*', (r) => {
+    const v = r.request().url().split('/tags/v')[1];
+    if (utanRelease) return r.fulfill({ status: 404, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: '{"message":"Not Found"}' });
+    r.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify({ tag_name: 'v' + v, assets: [{ name: `pixelcity-${v}.zip`, digest: 'sha256:' + 'ab'.repeat(32) }] }) });
+  });
   await p.route('https://8bitcat.github.io/snabbfilen/version.json*', (r) => { hamtade.push(r.request().url()); r.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify({ version: webbVersion, title: 'Provversionen', files: [] }) }); });
   await p.goto(`http://localhost:${PORT}/index.html?nomenu&world=appupd${Date.now().toString(36)}`);
   await p.evaluate(() => {
@@ -63,6 +71,7 @@ const until = async (p, fn, ms = 20000) => { const t0 = Date.now(); while (Date.
   ok(await until(p, () => window.__app.set.length === 1, 20000), 'efter nedräkningen: appen byter paket (set)');
   const d = await p.evaluate(() => window.__app);
   ok(d.download[0]?.url === 'https://github.com/8bitcat/snabbfilen/releases/download/v9.9.9/pixelcity-9.9.9.zip' && d.download[0]?.version === '9.9.9', `paketet hämtas från GitHub-releasen (${d.download[0]?.url})`);
+  ok(d.download[0]?.checksum === 'ab'.repeat(32), 'med paketets SHA-256 från GitHub-releasen (checksum)');
   ok(d.set[0]?.id === 'paket-9.9.9', 'set med det nedladdade paketets id');
   ok(!errs.length, `inga fel (${errs.slice(0, 2).join(' | ')})`);
   await ctx.close();
@@ -76,6 +85,15 @@ const until = async (p, fn, ms = 20000) => { const t0 = Date.now(); while (Date.
   ok((await p.evaluate(() => window.__app.set.length)) === 0, 'inget paketbyte när nedladdningen misslyckas');
   await p.evaluate(() => { window.__appFel = false; window.dispatchEvent(new Event('focus')); });
   ok(await until(p, () => window.__app.set.length === 1, 20000), 'nästa koll: hämtas igen och byter');
+  ok(!errs.length, `inga fel (${errs.slice(0, 2).join(' | ')})`);
+  await ctx.close();
+}
+// ---------- 5: releasen finns inte än → ingen nedladdning, ett besked, rutan försvinner ----------
+{
+  const { p, ctx, errs } = await sida({ app: true, webbVersion: '9.9.9', utanRelease: true });
+  await p.evaluate(() => window.dispatchEvent(new Event('focus')));
+  ok(await until(p, () => /Kunde inte hämta v9\.9\.9/.test(document.querySelector('#toasts')?.textContent || ''), 20000), 'releasen saknas: beskedet "Kunde inte hämta … försöker igen"');
+  ok((await p.evaluate(() => window.__app.download.length)) === 0 && !(await p.evaluate(() => !!document.querySelector('#sf-update'))), 'ingen nedladdning utan kontrollsumma, rutan borta');
   ok(!errs.length, `inga fel (${errs.slice(0, 2).join(' | ')})`);
   await ctx.close();
 }

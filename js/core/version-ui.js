@@ -194,6 +194,8 @@ function showBanner() {
     banner.querySelector('button').onclick = () => reloadNow();
     document.body.append(banner);
   }
+  // appen hämtar paketet: läget står kvar i rutan (nedräkningen skrev annars över det varje sekund)
+  if (reloading) { banner.querySelector('.txt').innerHTML = `⬇️ Hämtar v${esc(pending.version)} …`; return; }
   const why = blocker();
   const head = `✨ Snabbfilen v${esc(pending.version)} har kommit${pending.title ? ': ' + esc(pending.title) : ''}!`;
   banner.querySelector('.txt').innerHTML = why
@@ -252,13 +254,28 @@ async function reloadNow() {
   try { await prefetchNew(); } catch { /* ladda om ändå */ }
   location.reload();
 }
+// paketets SHA-256 – uppdateringspluginet kräver den ("Checksum required") och GitHub anger den
+// (digest) för varje releasefil; api.github.com svarar med CORS för alla ursprung
+async function paketSumma(v) {
+  const r = await fetch(`https://api.github.com/repos/8bitcat/snabbfilen/releases/tags/v${v}`, { cache: 'no-store' });
+  if (!r.ok) throw new Error(`releasen v${v} finns inte än`);
+  const a = ((await r.json()).assets || []).find((x) => x.name === `pixelcity-${v}.zip`);
+  const m = /^sha256:([0-9a-f]{64})$/.exec(a?.digest || '');
+  if (!m) throw new Error('paketet finns inte på releasen än');
+  return m[1];
+}
 // appen: ladda ner paketet och byt till det (set() laddar om i det nya paketet – inget efter körs).
 // Finns paketet inte än (det laddas upp strax efter pushen) försöker nästa versionskoll igen.
 async function bytPaket(v) {
   try {
-    const b = await APP.download({ url: PAKET(v), version: v });
+    const checksum = await paketSumma(v);
+    const b = await Promise.race([
+      APP.download({ url: PAKET(v), version: v, checksum }),
+      new Promise((_, nej) => setTimeout(() => nej(new Error('nedladdningen tog för lång tid')), 120000)),
+    ]);
     await APP.set({ id: b.id });
-  } catch {
+  } catch (e) {
+    toast(`Kunde inte hämta v${esc(v)} just nu – försöker igen om en stund. (${esc(String(e?.message || e).slice(0, 90))})`, 'wrap');
     const fel = +(ss.get('sf_app_fel_' + v) || 0) + 1;
     ss.set('sf_app_fel_' + v, String(fel));
     ss.del('sf_upd_tries_' + v); ss.del('sf_upd_target'); ss.del('sf_quiet_start');
