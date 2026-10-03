@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>sv</string>
 	<key>CFBundleDisplayName</key>
-        <string>Snabbfilen</string>
+        <string>Pixelcity</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -68,7 +68,7 @@
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Snabbfilen använder mikrofonen till röstchatten, så att du kan prata med kompisar som är nära dig i spelet.</string>
+	<string>Pixelcity använder mikrofonen till röstchatten, så att du kan prata med kompisar som är nära dig i spelet.</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 </dict>

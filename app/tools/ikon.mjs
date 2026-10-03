@@ -89,7 +89,7 @@ const out = await p.evaluate(async () => {
     return c.toDataURL('image/png');
   };
   const s = scene();
-  return { ikon: big(s, 1024, 16, '#1c1a22'), splash: big(s, 2732, 8, '#1c1a22', -110, 'SNABBFILEN'), liten: big(s, 256, 4, '#1c1a22') };
+  return { ikon: big(s, 1024, 16, '#1c1a22'), splash: big(s, 2732, 8, '#1c1a22', -110, 'PIXELCITY'), liten: big(s, 256, 4, '#1c1a22') };
 });
 await b.close();
 const save = (f, d) => { fs.writeFileSync(f, Buffer.from(d.split(',')[1], 'base64')); console.log('skrev', path.relative(APP, f)); };

@@ -1,4 +1,4 @@
-# Snabbfilen som iOS-app: Codemagic bygger app/ (Capacitor) på en Mac i molnet och skickar
+# Snabbfilen som iOS-app (Pixelcity i App Store): Codemagic bygger app/ (Capacitor) på en Mac i molnet och skickar
 # bygget till TestFlight. Spelet självt är detsamma som på webben – app/build.mjs kopierar
 # filerna i version.json till app/www och lägger PeerJS + typsnitt lokalt.
 #   Starta: Codemagic → snabbfilen → Start new build → ios-testflight
@@ -13,7 +13,7 @@ workflows:
     environment:
       ios_signing:
         distribution_type: app_store
-        bundle_identifier: io.eightbitcat.snabbfilen
+        bundle_identifier: io.eightbitcat.pixelcity
       vars:
         APP_STORE_APPLE_ID: 0000000000    # TODO: appens Apple ID (siffrorna) när appen finns i App Store Connect
         XCODE_PROJECT: App.xcodeproj
@@ -32,7 +32,7 @@ workflows:
           VERSION=$(node -p "require('./version.json').version")
           LATEST=$(app-store-connect get-latest-testflight-build-number "$APP_STORE_APPLE_ID" 2>/dev/null || echo 0)
           BUILD=$((LATEST + 1))
-          echo "Snabbfilen $VERSION (bygge $BUILD)"
+          echo "Pixelcity $VERSION (bygge $BUILD)"
           sed -i '' -E "s/MARKETING_VERSION = [^;]+;/MARKETING_VERSION = $VERSION;/; s/CURRENT_PROJECT_VERSION = [^;]+;/CURRENT_PROJECT_VERSION = $BUILD;/" app/ios/App/App.xcodeproj/project.pbxproj
       - name: Bygg ipa
         script: |
