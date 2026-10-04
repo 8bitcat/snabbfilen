@@ -10,6 +10,9 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.83.4] – 2026-10-04 – Pixelcity hämtar själv
+- I appen heter uppdateringsrutan nu Pixelcity: "✨ Pixelcity v… har kommit!". Det här är också första versionen som appen hämtar helt själv.
+
 ## [0.83.3] – 2026-10-03 – Appen uppdaterar sig själv
 - Appen Pixelcity kan nu hämta nya versioner av spelet själv på riktigt: uppdateringen kontrolleras mot GitHub innan den installeras. Medan den hämtas står det "Hämtar …" i rutan, och går något fel får du veta det och appen försöker igen om en stund.
 

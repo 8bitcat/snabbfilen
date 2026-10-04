@@ -66,7 +66,7 @@ const until = async (p, fn, ms = 20000) => { const t0 = Date.now(); while (Date.
   ok(await until(p, () => window.__app.ready === 1, 6000), 'appen: notifyAppReady en gång');
   ok(await p.evaluate(() => window.__app.readyGame), 'notifyAppReady först när spelet är igång (SF.game finns)');
   await p.evaluate(() => window.dispatchEvent(new Event('focus')));
-  ok(await until(p, () => /v9\.9\.9 har kommit/.test(document.querySelector('#sf-update')?.textContent || ''), 8000), 'nyare version på webben → samma ruta som på webben');
+  ok(await until(p, () => /Pixelcity v9\.9\.9 har kommit/.test(document.querySelector('#sf-update')?.textContent || ''), 8000), 'nyare version på webben → samma ruta som på webben, med appens namn Pixelcity');
   ok(hamtade.length > 0, `version.json lästes från webben (${hamtade[0]?.slice(0, 60)}…)`);
   ok(await until(p, () => window.__app.set.length === 1, 20000), 'efter nedräkningen: appen byter paket (set)');
   const d = await p.evaluate(() => window.__app);

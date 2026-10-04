@@ -1,7 +1,7 @@
 {
-  "version": "0.83.3",
-  "date": "2026-10-03",
-  "title": "Appen uppdaterar sig själv",
+  "version": "0.83.4",
+  "date": "2026-10-04",
+  "title": "Pixelcity hämtar själv",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",

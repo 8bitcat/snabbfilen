@@ -197,7 +197,7 @@ function showBanner() {
   // appen hämtar paketet: läget står kvar i rutan (nedräkningen skrev annars över det varje sekund)
   if (reloading) { banner.querySelector('.txt').innerHTML = `⬇️ Hämtar v${esc(pending.version)} …`; return; }
   const why = blocker();
-  const head = `✨ Snabbfilen v${esc(pending.version)} har kommit${pending.title ? ': ' + esc(pending.title) : ''}!`;
+  const head = `✨ ${APP ? 'Pixelcity' : 'Snabbfilen'} v${esc(pending.version)} har kommit${pending.title ? ': ' + esc(pending.title) : ''}!`;   // (appen heter Pixelcity)
   banner.querySelector('.txt').innerHTML = why
     ? `${head} <span class="sub">Spelet sparas och laddas om när ${why}.</span>`
     : `${head} <span class="sub">Sparar och laddar om om ${countdown} s – allt du har är kvar.</span>`;
