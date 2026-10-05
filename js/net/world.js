@@ -19,13 +19,15 @@ import { toast } from '../core/ui.js';
 import { cleanAvatar } from '../core/avatar.js';
 import { play } from '../core/sound.js';
 import { VERSION } from '../version.js';
+import { isBlockedKey, tvatta, loggaSay } from './skydd.js';
 
 const WORLD_VERSION = 'v2';
 // ?world=xyz ger en egen liten värld (används av testerna, funkar för privata också).
 // Körs spelet lokalt (utvecklingsserver, testrobotar) hamnar man ALDRIG i den riktiga
 // världen utan att be om det med ?world=varlden – annars kan en testrobot bli värd för
-// de riktiga spelarna och sedan försvinna.
-const LOCAL = /^(localhost|127\.|\[?::1\]?$|10\.|192\.168\.|0\.0\.0\.0)/.test(location.hostname) || location.protocol === 'file:';
+// de riktiga spelarna och sedan försvinna. Appen (Capacitor, capacitor://localhost) är
+// INTE lokal: där spelar familjen i samma värld som på webben.
+const LOCAL = location.protocol !== 'capacitor:' && (/^(localhost|127\.|\[?::1\]?$|10\.|192\.168\.|0\.0\.0\.0)/.test(location.hostname) || location.protocol === 'file:');
 const worldName = () => new URLSearchParams(location.search).get('world') || (LOCAL ? 'lokal' : 'varlden');
 const worldId = () => 'snabbfilen-' + WORLD_VERSION + '-' + worldName().toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 24);
 
@@ -258,7 +260,7 @@ const cleanScene = (s) => (s === 'city' || /^away(:[a-z0-9]{1,24}(\.[a-z0-9]{1,1
 function cleanP(p, old = {}) {
   const out = { ...old };
   if (p && typeof p === 'object') {
-    if (p.av) out.av = cleanAvatar(p.av);
+    if (p.av) { out.av = cleanAvatar(p.av); out.av.name = tvatta(out.av.name); }   // fula ord i namnet → *** (skydd.js)
     if (p.scene !== undefined) out.scene = cleanScene(p.scene);
     if (p.x !== undefined) { out.tx = Math.max(0, Math.min(4000, +p.x || 190)); if (out.x === undefined) out.x = out.tx; }
     if (p.y !== undefined) { out.ty2 = Math.max(0, Math.min(2000, +p.y || 174)); if (out.y === undefined) out.y = out.ty2; }
@@ -316,8 +318,7 @@ function hostData(A, conn, d) {
     W.players.set(id, p);
     conn.send({ t: 'world', you: id, players: [[W.myId, myState(A)], ...[...W.players].filter(([pid]) => pid !== id)] });
     hostBroadcast({ t: 'join', id, p }, id);
-    play('knock');
-    toast(`👋 ${p.av.name || 'Någon'} är i Pixelstaden!`, 'good');
+    if (!isBlockedKey(p.key)) { play('knock'); toast(`👋 ${p.av.name || 'Någon'} är i Pixelstaden!`, 'good'); }
   } else if (d.t === 'up') {
     const old = W.players.get(id);
     if (!old) return;
@@ -331,7 +332,8 @@ function hostData(A, conn, d) {
   } else if (d.t === 'say') {
     const p = W.players.get(id), text = cleanSay(d.text);
     if (!p || !text) return;
-    p.say = { text, until: Date.now() + SAY_MS };
+    loggaSay(p.key, text);
+    p.say = { text: tvatta(text), until: Date.now() + SAY_MS };
     hostBroadcast({ t: 'say', id, text }, id);
   } else if (d.t === 'job') {
     if (!known || !d.m || typeof d.m !== 'object') return;
@@ -343,7 +345,7 @@ function hostDrop(A, conn) {
   if (!W || W.role !== 'host') return;
   if (W.conns.get(conn.peer) !== conn) return; // redan ersatt av en nyare anslutning
   const p = W.players.get(conn.peer);
-  if (p && dropPlayer(conn.peer, false)) toast(`👋 ${p.av.name || 'Någon'} loggade ut.`);
+  if (p && dropPlayer(conn.peer, false) && !isBlockedKey(p.key)) toast(`👋 ${p.av.name || 'Någon'} loggade ut.`);
 }
 // closeMs: stäng anslutningen lite senare (så att ett sista meddelande hinner fram, t.ex. 'replaced')
 function dropPlayer(id, quiet, closeMs = 0) {
@@ -379,8 +381,7 @@ function clientData(A, d, w) {
     toast(`🌆 Du är med i Pixelstaden – ${w.players.size + 1} online!`, 'good');
   } else if (d.t === 'join') {
     w.players.set(d.id, cleanP(d.p));
-    play('knock');
-    toast(`👋 ${w.players.get(d.id).av.name || 'Någon'} är i Pixelstaden!`, 'good');
+    if (!isBlockedKey(w.players.get(d.id).key)) { play('knock'); toast(`👋 ${w.players.get(d.id).av.name || 'Någon'} är i Pixelstaden!`, 'good'); }
   } else if (d.t === 'up') {
     const old = w.players.get(d.id);
     if (old) w.players.set(d.id, cleanP(d.p, old));
@@ -389,7 +390,7 @@ function clientData(A, d, w) {
     if (p) p.emote = { e: String(d.e).slice(0, 4), until: Date.now() + EMOTE_MS };
   } else if (d.t === 'say') {
     const p = w.players.get(d.id), text = cleanSay(d.text);
-    if (p && text) p.say = { text, until: Date.now() + SAY_MS };
+    if (p && text) { loggaSay(p.key, text); p.say = { text: tvatta(text), until: Date.now() + SAY_MS }; }
   } else if (d.t === 'replaced') {
     // samma figur spelar i en annan flik – den här pausar tills man rör den igen (markActive)
     w.replaced = true;
@@ -399,7 +400,7 @@ function clientData(A, d, w) {
   } else if (d.t === 'leave') {
     const p = w.players.get(d.id);
     w.players.delete(d.id);
-    if (p && !d.quiet) toast(`👋 ${p.av.name || 'Någon'} loggade ut.`);
+    if (p && !d.quiet && !isBlockedKey(p.key)) toast(`👋 ${p.av.name || 'Någon'} loggade ut.`);
   } else if (d.t === 'job') {
     if (d.m && typeof d.m === 'object') jobIn({ from: d.id, m: d.m });
   }
@@ -444,7 +445,7 @@ export function worldFolksHere(A, sub) {
   if (/^away:jobb[a-z0-9]*$/.test(here)) return [];
   const out = [];
   for (const [id, p] of W.players) {
-    if (p.scene !== here) continue;
+    if (p.scene !== here || isBlockedKey(p.key)) continue;   // blockerade finns inte för en (skydd.js)
     out.push({ id, av: p.av, x: p.x, y: p.y, tx: p.tx ?? p.x, ty: p.ty2 ?? p.y, vo: p.vo | 0, walking: Math.hypot((p.tx ?? p.x) - p.x, (p.ty2 ?? p.y) - p.y) > 1, sit: p.si ? SIT_DIR[p.si[0]] : null, eat: p.si?.[1] === 'e', ride: p.fd ? { id: p.fd.split(':')[0], c: p.fd.split(':')[1] } : null, emote: (p.emote && p.emote.until > Date.now() ? p.emote.e : null) || (talkSrc(id) ? TALK_EMOTE : null), say: p.say && p.say.until > Date.now() ? p.say.text : null });
   }
   return out;
@@ -465,7 +466,7 @@ let mySay = null;
 export const worldMySay = () => (mySay && mySay.until > Date.now() ? mySay.text : null);
 // Säg något: bubblan visas alltid ovanför en själv, och skickas till alla i världen
 export function sendSay(A, text) {
-  const t = cleanSay(text);
+  const t = cleanSay(tvatta(text));
   if (!t) return;
   mySay = { text: t, until: Date.now() + SAY_MS };
   markActive();
@@ -488,7 +489,7 @@ export function sendEmote(A, e) {
 // reliable, så ordningen är garanterad.
 const jobCbs = new Set(); // coop.js (jobba ihop) och voice.js (röstchatten)
 export const onJob = (cb) => { jobCbs.add(cb); };
-const jobIn = (ev) => { for (const cb of jobCbs) { try { cb(ev); } catch (e) { console.error('jobbkanalen:', e); } } };
+const jobIn = (ev) => { if (isBlockedKey(W?.players.get(ev.from)?.key)) return; for (const cb of jobCbs) { try { cb(ev); } catch (e) { console.error('jobbkanalen:', e); } } };
 export const worldMyId = () => (W?.open ? W.myId : null);
 export function sendJob(m) {
   if (!W || !W.open || !m || typeof m !== 'object') return false;
@@ -517,7 +518,7 @@ export const worldMyKey = () => myKey(); // fast per webbläsare och figur – r
 // ---------- besök ----------
 export function playersList() {
   if (!W || !W.open) return [];
-  return [...W.players].map(([id, p]) => ({ id, av: p.av, scene: p.scene, home: p.home, x: p.x, y: p.y, ver: p.ver || null, key: p.key || null, hu: p.hu || '' }));
+  return [...W.players].filter(([, p]) => !isBlockedKey(p.key)).map(([id, p]) => ({ id, av: p.av, scene: p.scene, home: p.home, x: p.x, y: p.y, ver: p.ver || null, key: p.key || null, hu: p.hu || '' }));
 }
 // Namnet på den som har ett visst spelar-id (för "hemma hos …")
 export function playerName(id) {

@@ -17,6 +17,7 @@
 //   {k:'voice', t:'ja'|'nej', to, gid}    svaret till den som bjöd
 //   {k:'voice', t:'med', gid, keys}       gruppens medlemmar (tas bara emot från en medlem)
 //   {k:'voice', t:'lamna', gid}           jag lämnar gruppen
+import { isBlockedKey } from './skydd.js';
 import { onJob, sendJob, onCall, worldPeer, worldMyId, worldFolksHere, worldPlayer, worldMyKey, playersList, setVoiceHooks, worldMarkActive, playerName } from './world.js';
 import { toast } from '../core/ui.js';
 import { setDuck } from '../core/rec.js';
@@ -105,6 +106,7 @@ function distTo(f) {
 }
 function reasons(id, loose = false) {
   const r = { nara: false, grupp: false, vol: 0 };
+  if (isBlockedKey(keyOf(id))) return r;   // blockerad (skydd.js): aldrig någon röst åt något håll
   if (S.group) { const k = keyOf(id); if (k && S.group.keys.has(k)) r.grupp = true; }
   if (S.nara && S.A) {
     const f = worldFolksHere(S.A).find((p) => p.id === id);

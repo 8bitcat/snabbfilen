@@ -49,6 +49,7 @@ import { startJobFlow, startShiftNow, inviteToShift, COOP_JOBS } from './jobs/sh
 import { openFoodShop } from './shops/matbutik.js';
 import { openHousing } from './shops/bostad.js';
 import { startWorld, worldTick, worldInfo, playersList, visitPlayer, sendEmote, sendSay, worldFolksHere, playerName } from './net/world.js';
+import { block, unblock, blockedList, openAnmal, SUPPORT } from './net/skydd.js';
 import { openMenu, mountMenuButton, isMenuOpen, shouldShowMenuAtBoot } from './core/menu.js';
 import { drawPixHud, isPixHud, apply as applyHud, stripHeight, layoutStrip } from './core/hud-pix.js';
 import { musicTick } from './core/music.js';
@@ -550,11 +551,15 @@ function openWorldDialog() {
   const rows = list.map((p, i) => `<div class="prow">
       <span data-face="${i}"></span>
       <span class="nm">${esc(p.av.name || '?')}${verTag(p.ver)}<br><small class="sp">${placeOf(p, info)}</small></span>
-      ${coopJob ? `<button class="btn btn-small btn-gold" data-jobba="${esc(p.id)}">💼 Jobba ihop</button>` : ''}
+      <span class="pbtns">${coopJob ? `<button class="btn btn-small btn-gold" data-jobba="${esc(p.id)}">💼 Jobba ihop</button>` : ''}
       ${p.scene === 'city' && !inJob ? `<button class="btn btn-small" data-goto="${esc(p.id)}">🚶 Gå dit</button>` : ''}
       ${coopJob ? '' : `<button class="btn btn-small btn-go" data-visit="${esc(p.id)}">🚗 Åk hem till</button>`}
       ${!A.game.sambo && !inJob && p.key && p.ver === info.version ? `<button class="btn btn-small btn-gold" data-sambo="${i}" title="Flytta ihop – dela hem, möbler och hyra">🏠 Flytta ihop</button>` : ''}
+      ${p.key ? `<button class="btn btn-small" data-block="${i}" title="Blockera – du ser och hör inte hen längre">🚫 Blockera</button><button class="btn btn-small" data-anmal="${i}" title="Anmäl till oss som gör spelet">⚑ Anmäl</button>` : ''}</span>
     </div>`).join('');
+  // 🚫 blockerade spelare (js/net/skydd.js) – syns inte i världen; här går det att ångra
+  const blockade = blockedList();
+  const blockRad = blockade.length ? `<div class="plist-block" style="margin-top:8px;border-top:3px dashed var(--ink);padding-top:6px"><p style="font-size:var(--f2);margin:0 0 4px"><b>🚫 Blockerade (${blockade.length})</b> – du ser och hör dem inte.</p>${blockade.map((b) => `<div class="prow" style="font-size:var(--f2)"><span class="nm">${esc(b.namn)}</span><button class="btn btn-small" data-unblock="${esc(b.key)}">Ta bort blockering</button></div>`).join('')}</div>` : '';
   // 🏠 bor man ihop syns det överst (flytta isär längst ner)
   const S = A.game.sambo;
   const samboRad = S ? `<p style="font-size:var(--f2);margin-top:0;background:#eaf6e4;border:2px solid #46a35a;padding:6px 8px">🏠 Du bor ihop med <b>${esc(S.namn || 'en kompis')}</b> i ${esc(A.game.homeInfo.name)} sedan dag ${S.sedan}. Hyran delas: <b>${fmt(A.game.hyra)}</b> var i veckan. ${samboPartnerOnline() ? 'Hen är online – hemmet synkas.' : 'Hen är inte online just nu – det ni ändrar synkas när ni ses.'}</p>` : '';
@@ -565,7 +570,8 @@ function openWorldDialog() {
   const dlg = openModal('👥 Pixelstaden online', `
     ${samboRad}<p style="font-size:var(--f2);margin-top:0">${info.open ? `<b>${info.online}</b> ${info.online === 1 ? 'spelare (bara du) i världen just nu.' : 'spelare i världen just nu.'}` : '📡 Kopplar upp mot världen…'}</p>
     ${list.length ? `<div class="plist">${rows}</div>` : info.open ? '<p style="font-size:var(--f2)">Du är ensam i stan – tipsa någon om länken så ses ni här!</p>' : ''}${stuck}
-    <p class="world-diag">Du ser bara dem som är på samma ställe som du. v${esc(info.version)} · ${role}${info.world !== 'varlden' ? ` · värld: ${esc(info.world)}` : ''}</p>`,
+    ${blockRad}
+    <p class="world-diag">Du ser bara dem som är på samma ställe som du. Någon som är dum? Blockera eller anmäl – eller mejla ${SUPPORT}. v${esc(info.version)} · ${role}${info.world !== 'varlden' ? ` · värld: ${esc(info.world)}` : ''}</p>`,
   [
     ...(A.sceneName === 'visit' ? [{ label: '🚗 Åk hem', cls: 'btn-red', onClick: () => { closeModal(); A.visitTarget = null; A.game.passTime(20); A.game.save(); A.go('city'); } }] : []),
     ...(S ? [{ label: '🏠 Flytta isär', onClick: () => openModal('🏠 Flytta isär?', `<p style="font-size:var(--f2);margin-top:0">Vill du och ${esc(S.namn || 'din sambo')} flytta isär? ${S.roll === 'inflyttad' ? `Du flyttar tillbaka till ${esc(homeOf(S.egen?.home).name)} med dina gamla möbler.` : `${esc(S.namn || 'Din sambo')} flyttar ut och du betalar hela hyran igen.`}</p>`, [{ label: '🏠 Ja, flytta isär', cls: 'btn-red', onClick: () => { closeModal(); splitSambo(); } }, { label: 'Nej', onClick: closeModal }]) }] : []),
@@ -576,6 +582,18 @@ function openWorldDialog() {
     el.replaceWith(avatarPortrait({ name: p.av.name, look: p.av.look, color: p.av.color }, 40));
   });
   dlg.querySelectorAll('[data-sambo]').forEach((b) => (b.onclick = () => { const p = list[+b.dataset.sambo]; if (inviteSambo(p)) closeModal(); }));
+  dlg.querySelectorAll('[data-block]').forEach((b) => (b.onclick = () => {
+    const p = list[+b.dataset.block];
+    if (!block(p.key, p.av.name)) return;
+    if (A.followPlayer === p.id) A.followPlayer = null;
+    toast(`🚫 ${p.av.name || 'Spelaren'} är blockerad – du ser och hör inte hen längre. Ångra i 👥.`, 'wrap');
+    openWorldDialog();
+  }));
+  dlg.querySelectorAll('[data-anmal]').forEach((b) => (b.onclick = () => {
+    const p = list[+b.dataset.anmal];
+    openAnmal({ key: p.key, namn: p.av.name }, { mig: A.avatar?.name, version: info.version, world: info.world, efter: () => { if (A.followPlayer === p.id) A.followPlayer = null; } });
+  }));
+  dlg.querySelectorAll('[data-unblock]').forEach((b) => (b.onclick = () => { unblock(b.dataset.unblock); toast('Blockeringen är borttagen.', 'good'); openWorldDialog(); }));
   dlg.querySelectorAll('[data-visit]').forEach((b) => (b.onclick = () => { if (leaveBlocked()) return; closeModal(); visitPlayer(A, b.dataset.visit); }));
   dlg.querySelectorAll('[data-jobba]').forEach((b) => (b.onclick = () => {
     inviteToShift(A, b.dataset.jobba);

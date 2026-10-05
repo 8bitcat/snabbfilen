@@ -329,6 +329,8 @@ kbd {
 .prow .old { font: var(--f1) var(--font); color: #fff; background: var(--red2); padding: 0 4px; vertical-align: 2px; }
 .world-diag { font-size: var(--f1); color: var(--muted); margin: 8px 0 0; }
 .plist .prow { grid-template-columns: 44px 1fr auto auto; }
+/* knapparna i 👥-raden: en grupp till höger som radbryts (Jobba ihop, Gå dit, Åk hem till, Flytta ihop, Blockera, Anmäl) */
+.prow .pbtns { grid-column: 3 / -1; display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
 
 /* ---------- Huvudmenyn / pausmenyn (js/core/menu.js) ---------- */
 #menu { position: fixed; inset: 0; z-index: 45; /* under #modal (50): dialoger från menyn (redigeraren, bekräftelser, nyheter) ligger alltid överst */ display: flex; align-items: center; justify-content: center; padding: 12px; background: rgba(10, 8, 14, .28); overflow: auto; }
