@@ -46,9 +46,11 @@ https://8bitcat.github.io/snabbfilen/support.html
 https://8bitcat.github.io/snabbfilen/
 ```
 
-**Skärmbilder:** `D:\GamesProjects\snabbfilen\app\store\skarmbilder`
-- iPhone 6,9": filerna `iphone-1-…` till `iphone-9-…` i den ordningen (2868 × 1320)
-- iPad 13": filerna `ipad-1-…` till `ipad-9-…` (2752 × 2064)
+**Skärmbilder** (dra in i nummerordning 1–9):
+- iPhone 6,5" (2778 × 1284): `D:\GamesProjects\snabbfilen\app\store\ladda-upp\iPhone 6,5 tum`
+- iPad 13" (2752 × 2064): `D:\GamesProjects\snabbfilen\app\store\ladda-upp\iPad 13 tum`
+
+**Game Center:** kryssa **inte** i (spelet använder inte Game Center).
 
 **Copyright**
 ```
