@@ -4,7 +4,7 @@
 //   2. Anna blockerar Bosse i 👥-rutan: hans figur, bubblor och inbjudningar (jobbkanalen) finns inte
 //      längre för henne; blockeringen står i 👥-rutan och överlever en omladdning
 //   3. "Ta bort blockering" → Bosse syns igen
-//   4. Anmäl: rutan, skälen, e-posten till support@8bitcat.io med det han skrivit – och han blir blockerad
+//   4. Anmäl: rutan, skälen, e-posten till hello@8bitcat.io med det han skrivit – och han blir blockerad
 //   node tools/skydd-test.mjs            (servern på 8788; annan port: SMOKE_PORT=8791 eller PORT=…)
 import { createRequire } from 'module';
 const require = createRequire('D:/Qisy/QISYFrontend/QISYFrontend-1/package.json');
@@ -97,7 +97,7 @@ ok(/Anmäl/.test(await A.evaluate(() => document.querySelector('#modal .dlg-head
 await A.evaluate(() => { document.querySelector('#modal input[value="stor"]').checked = true; document.querySelector('#modal .anmal-text').value = 'Han följer efter mig hela tiden'; });
 await A.evaluate(() => [...document.querySelectorAll('#modal button')].find((b) => /Anmäl och blockera/.test(b.textContent))?.click());
 const mail = decodeURIComponent(await A.evaluate(() => window.__mailto || ''));
-ok(mail.startsWith('mailto:support@8bitcat.io?subject=Anmälan'), 'e-posten till support@8bitcat.io öppnas');
+ok(mail.startsWith('mailto:hello@8bitcat.io?subject=Anmälan'), 'e-posten till hello@8bitcat.io öppnas');
 ok(/följer efter/.test(mail) && /förstöra ditt hus/.test(mail) && /Spelarnyckel: \S+/.test(mail), 'med skälet, Annas text, det Bosse skrev och hans spelarnyckel');
 ok(await until(async () => (await folk(A)).length === 0, 4000), 'anmäld = blockerad direkt');
 

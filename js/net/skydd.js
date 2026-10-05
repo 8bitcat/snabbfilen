@@ -3,12 +3,12 @@
 //   BLOCKERA en blockerad spelare (spelarnyckeln, world.js key) finns inte längre för en: ingen figur,
 //            pratbubbla, röst, inbjudan eller "är i Pixelstaden". Listan sparas i webbläsaren/appen
 //            och ångras i 👥-rutan.
-//   ANMÄL    öppnar e-posten till support@8bitcat.io med vem, varför och vad hen skrivit senast –
+//   ANMÄL    öppnar e-posten till hello@8bitcat.io med vem, varför och vad hen skrivit senast –
 //            och blockerar spelaren direkt
 // world.js filtrerar (worldFolksHere, playersList, jobbkanalen, pratbubblorna), voice.js vägrar röst.
 import { openModal, closeModal, toast, esc } from '../core/ui.js';
 
-export const SUPPORT = 'support@8bitcat.io';
+export const SUPPORT = 'hello@8bitcat.io';
 const KEY = 'snabbfilen_blockerade';
 
 // ---------- blockerade spelare: nyckel → { namn, at } ----------

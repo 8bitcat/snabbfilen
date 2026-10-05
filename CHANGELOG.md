@@ -10,6 +10,9 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.84.1] – 2026-10-05 – Anmälan till hello@
+- Anmälningar och frågor går nu till hello@8bitcat.io (anmälan under 👥, supportsidan och integritetssidan).
+
 ## [0.84.0] – 2026-10-05 – Tryggt i stan
 - Tryggt i stan: tryck på 👥 – vid varje spelare finns nu 🚫 Blockera (du ser och hör inte hen längre) och ⚑ Anmäl (ett mejl till oss öppnas, och spelaren blockeras direkt). Blockeringen går att ta bort i samma ruta.
 - Fula ord i namn och chatt byts automatiskt mot ***.
