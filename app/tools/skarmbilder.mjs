@@ -23,8 +23,9 @@ const FEST_HEM = JSON.parse(fs.readFileSync(path.join(APP, 'tools', 'fest-hem.js
 fs.mkdirSync(OUT, { recursive: true });
 
 const ENHETER = {
-  iphone: { vp: [956, 440], dsf: 3 },
-  ipad: { vp: [1376, 1032], dsf: 2 },
+  iphone: { vp: [956, 440], dsf: 3 },     // 6,9" 2868×1320
+  iphone65: { vp: [926, 428], dsf: 3 },   // 6,5" 2778×1284 – det App Store Connect frågar efter för iPhone
+  ipad: { vp: [1376, 1032], dsf: 2 },     // 13" 2752×2064
 };
 // rubrik + underrad per bild, i den ordning de visas i App Store (högst tio)
 const BILDER = [
@@ -40,7 +41,7 @@ const BILDER = [
 ];
 
 const bara = process.argv.includes('--bara') ? process.argv[process.argv.indexOf('--bara') + 1].split(',') : null;
-const val = ['iphone', 'ipad'].includes(process.argv[2]) ? process.argv[2] : null;
+const val = Object.keys(ENHETER).includes(process.argv[2]) ? process.argv[2] : null;
 const browser = await chromium.launch();
 for (const [enhet, E] of Object.entries(ENHETER)) {
   if ((val && val !== enhet) || process.argv.includes('--rubriker')) continue;
