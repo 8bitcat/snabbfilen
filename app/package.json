@@ -1,6 +1,7 @@
 {
   "name": "snabbfilen-app",
   "private": true,
+  "appVersion": "1.0",
   "type": "module",
   "scripts": {
     "build": "node build.mjs",
