@@ -52,7 +52,8 @@ async function sida({ app, tillat = 'granted', dag = 2 }) {
   await p.reload();
   await p.waitForFunction(() => !!window.SF?.game, null, { timeout: 20000 });
   await p.waitForTimeout(500);
-  await p.evaluate(() => { const m = document.querySelector('#modal'); if (m && !m.classList.contains('hidden')) { m.classList.add('hidden'); m.innerHTML = ''; } });
+  // stäng startens rutor – men inte notisfrågan själv (på en långsam server hinner den komma först)
+  await p.evaluate(() => { const m = document.querySelector('#modal'); if (m && !m.classList.contains('hidden') && !/notiser/i.test(m.textContent)) { m.classList.add('hidden'); m.innerHTML = ''; } });
   return { p, ctx, errs };
 }
 const until = async (p, fn, ms = 15000) => { const t0 = Date.now(); while (Date.now() - t0 < ms) { if (await p.evaluate(fn)) return true; await p.waitForTimeout(150); } return false; };
