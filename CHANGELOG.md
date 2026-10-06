@@ -10,6 +10,10 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.85.0] – 2026-10-06 – Notiser i appen
+- Appen Pixelcity kan nu skicka notiser när det händer något i Pixelstaden, som när det blir Halloween eller jul. Spelet frågar en gång efter första dagen, och du kan slå på eller av dem under ⚙ Inställningar (där finns också en Prova-knapp).
+- Notiserna kommer bara några gånger om året, och ingenting skickas från telefonen. De fungerar i nästa version av appen i App Store.
+
 ## [0.84.1] – 2026-10-05 – Anmälan till hello@
 - Anmälningar och frågor går nu till hello@8bitcat.io (anmälan under 👥, supportsidan och integritetssidan).
 

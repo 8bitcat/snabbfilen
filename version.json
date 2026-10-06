@@ -1,7 +1,7 @@
 {
-  "version": "0.84.1",
-  "date": "2026-10-05",
-  "title": "Anmälan till hello@",
+  "version": "0.85.0",
+  "date": "2026-10-06",
+  "title": "Notiser i appen",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
@@ -41,6 +41,7 @@
     "js/core/livsmal.js",
     "js/core/menu.js",
     "js/core/music.js",
+    "js/core/notiser.js",
     "js/core/people.js",
     "js/core/people/acc.js",
     "js/core/people/bottoms.js",

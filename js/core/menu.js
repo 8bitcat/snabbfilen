@@ -8,10 +8,11 @@ import { listAvatars, loadAvatar, saveAvatar, deleteAvatar, avatarPortrait, avat
 import { isMuted, toggleMute, play } from './sound.js';
 import { isMusicOn, setMusic, musicTick } from './music.js';
 import { hudMode, setHudMode } from './hud-pix.js';
-import { openModal, closeModal, esc } from './ui.js';
+import { openModal, closeModal, esc, toast } from './ui.js';
 import { HOMES, JOBS, fmt, SAVE_KEY } from '../game.js';
 import { VERSION } from '../version.js';
 import { openNews, makeBackup } from './version-ui.js';
+import { notiserFinns, notiserPa, slaPa, slaAv, provNotis } from './notiser.js';
 
 const SKIP = 'sf_menu_skip';
 const saveKeyOf = (id) => 'snabbfilen_save:' + id;
@@ -130,6 +131,7 @@ function render() {
       <div class="menu-row"><span>🔊 Ljud</span><button class="btn btn-small ${isMuted() ? '' : 'btn-go'}" data-sound>${isMuted() ? 'AV' : 'PÅ'}</button></div>
       <div class="menu-row"><span>🎵 Musik</span><button class="btn btn-small ${isMusicOn() ? 'btn-go' : ''}" data-music>${isMusicOn() ? 'PÅ' : 'AV'}</button></div>
       <div class="menu-row"><span>📊 Mätare</span><button class="btn btn-small" data-hud>${hudMode() === 'pix' ? 'PIXEL uppe till vänster' : 'RAD överst'}</button></div>
+      ${notiserFinns() ? `<div class="menu-row"><span>🔔 Notiser</span><span>${notiserPa() ? '<button class="btn btn-small" data-notisprov>Prova</button> ' : ''}<button class="btn btn-small ${notiserPa() ? 'btn-go' : ''}" data-notiser>${notiserPa() ? 'PÅ' : 'AV'}</button></span></div>` : ''}
     </div>
     <div class="menu-sub">${list.length ? 'Vem spelar?' : 'Inga figurer än – tryck på Nytt spel!'}</div>
     <div class="menu-cards">${cards}</div>
@@ -144,6 +146,8 @@ function render() {
   root.querySelector('[data-sound]')?.addEventListener('click', () => { const m = toggleMute(); musicTick(); const b = document.getElementById('hud-mute'); if (b) b.textContent = m ? '🔇' : '🔊'; render(); });
   root.querySelector('[data-music]')?.addEventListener('click', () => { setMusic(!isMusicOn()); play('click'); render(); });
   root.querySelector('[data-hud]')?.addEventListener('click', () => { setHudMode(hudMode() === 'pix' ? 'rad' : 'pix'); play('click'); render(); });
+  root.querySelector('[data-notiser]')?.addEventListener('click', async () => { play('click'); if (notiserPa()) await slaAv(); else await slaPa(); render(); });
+  root.querySelector('[data-notisprov]')?.addEventListener('click', async () => { play('click'); toast(await provNotis() ? '🔔 Notisen kommer om fem sekunder.' : '🔕 Notisen gick inte att skicka.', 'good'); });
   root.querySelectorAll('[data-edit]').forEach((b) => (b.onclick = () => {
     const a = list.find((x) => x.id === b.dataset.edit);
     if (a.id !== curId) { switchTo(a); return; } // bytet laddar om; redigera hemma i garderoben

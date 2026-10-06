@@ -48,6 +48,7 @@ import { makeShopNarbutik } from './scenes/shop-narbutik.js';
 import { startJobFlow, startShiftNow, inviteToShift, COOP_JOBS } from './jobs/shift.js';
 import { openFoodShop } from './shops/matbutik.js';
 import { openHousing } from './shops/bostad.js';
+import { startNotiser } from './core/notiser.js';
 import { startWorld, worldTick, worldInfo, playersList, visitPlayer, sendEmote, sendSay, worldFolksHere, playerName } from './net/world.js';
 import { block, unblock, blockedList, openAnmal, SUPPORT } from './net/skydd.js';
 import { openMenu, mountMenuButton, isMenuOpen, shouldShowMenuAtBoot } from './core/menu.js';
@@ -737,6 +738,7 @@ function boot() {
 
   const begin = () => {
     startWorld(A); // den öppna världen: koppla upp tyst i bakgrunden
+    startNotiser(A); // 🔔 appen: lägg om notiserna, fråga en gång efter första dagen
     if (firstRun) {
       openModal('🌆 Välkommen till Pixelstaden!', `<div class="who">${''}<div>
         <p style="font-size:var(--f2);margin-top:0">Här börjar ditt nya liv, <b>${A.avatar.name}</b>! Du har <b>${fmt(A.game.money)}</b> på fickan.</p>
