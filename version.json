@@ -1,7 +1,7 @@
 {
-  "version": "0.85.0",
+  "version": "0.86.0",
   "date": "2026-10-06",
-  "title": "Notiser i appen",
+  "title": "Julvåningen",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
@@ -29,6 +29,7 @@
     "js/city/weather.js",
     "js/core/ambience.js",
     "js/core/avatar.js",
+    "js/core/brasa.js",
     "js/core/chat.js",
     "js/core/fest.js",
     "js/core/floor-pix.js",
@@ -138,6 +139,7 @@
     "js/scenes/klader/buy.js",
     "js/scenes/klader/data.js",
     "js/scenes/klader/garment.js",
+    "js/scenes/klader/jul.js",
     "js/scenes/klader/paint.js",
     "js/scenes/kok.js",
     "js/scenes/koket.js",

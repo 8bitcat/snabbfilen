@@ -8,7 +8,11 @@
 import { openModal, closeModal, modalOpen, toast } from './ui.js';
 
 // { id (1–899, ändras aldrig), datum 'MM-DD', kl (timme), titel, text, fran 'YYYY-MM-DD' (valfri: först från) }
-export const HANDELSER = [];
+export const HANDELSER = [
+  { id: 1, datum: '12-01', kl: 17, titel: 'Det är december! 🎄', text: 'Julvåningen i klädaffären är full av pynt – klä granen, tänd brasan och grilla marshmallows.' },
+  { id: 2, datum: '12-13', kl: 8, titel: 'Glad Lucia! 🕯️', text: 'Luciakläderna hänger på klädaffärens julvåning i Pixelstaden.' },
+  { id: 3, datum: '12-24', kl: 10, titel: 'God jul! 🎅', text: 'God jul från Pixelstaden! Tänd brasan och ha det mysigt.' },
+];
 
 const NYCKEL = 'snabbfilen_notiser';   // 'pa' | 'av' (saknas = inte frågat än)
 const BAS = 7000, PROV = 7999;         // spelets notis-id:n: BAS + händelsens id, PROV = provnotisen

@@ -3,7 +3,7 @@
 // i spelets pixelkorn; det som ändrar sig (plaggen, lapparna, figurerna) ritas levande.
 import { Pix, SMALL, BIG, textW, text, mix, mul, hash, bayer } from '../../core/floor-pix.js';
 import {
-  H, WALL_Y, W1, W2, MID0, MID1, DOOR, DESK, GOND, HATS, COLS, ROW_Y, MOD_X, MOD_W, RACK_W, STAIR, STAIRS1, STAIRS2,
+  H, WALL_Y, W1, W2, MID0, MID1, DOOR, DESK, GOND, HATS, COLS, ROW_Y, MOD_X, MOD_W, RACK_W, STAIR, STAIRS1, STAIRS2, STAIRS2UP, JULHALL_X0,
   KUNGS_X1, LAG_X0, PHOTO, SHOEWALL, PITCH, DEPT, CLEATS, SPORT_MOD_X, KUNGS_POS, TEAM_POS,
 } from './data.js';
 
@@ -13,11 +13,11 @@ export function disc(P, cx, cy, rx, ry, c, a = 1) {
     if (((x + 0.5 - cx) / rx) ** 2 + ((y + 0.5 - cy) / ry) ** 2 <= 1) P.px(x, y, c, a);
   }
 }
-function glowText(P, F, s, x, y, c, glow, scale = 1) {
+export function glowText(P, F, s, x, y, c, glow, scale = 1) {
   for (const [dx, dy] of [[-1, 0], [1, 0], [0, -1], [0, 1], [-1, -1], [1, 1], [1, -1], [-1, 1]]) text(P, F, s, x + dx, y + dy, glow, 0.35, scale);
   text(P, F, s, x, y, c, 1, scale);
 }
-function plank(x, y, base, seed, ph = 7, L = 36) {
+export function plank(x, y, base, seed, ph = 7, L = 36) {
   const row = ((y - WALL_Y) / ph) | 0, yy = (y - WALL_Y) % ph;
   const off = (hash(row, 1, seed) * L) | 0;
   const px = x + off, pi = (px / L) | 0, pin = px % L;
@@ -28,7 +28,7 @@ function plank(x, y, base, seed, ph = 7, L = 36) {
   else if (hash(px >> 3, y, seed + 1) > 0.9) c = mul(c, 0.96);
   return c;
 }
-function rug(P, x0, y0, w, h, base, border, dots, seed) {
+export function rug(P, x0, y0, w, h, base, border, dots, seed) {
   for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) {
     const ex = Math.min(x - x0, x0 + w - 1 - x), ey = Math.min(y - y0, y0 + h - 1 - y), e = Math.min(ex, ey);
     let c = base;
@@ -55,7 +55,7 @@ function turf(P, x0, y0, w, h, seed, lines = []) {
   // kant (gummilist)
   P.box(x0 - 1, y0 - 1, w + 2, h + 2, 0x24502c);
 }
-function sign(P, cx, y, lbl, board, trim, fg, F = SMALL) {
+export function sign(P, cx, y, lbl, board, trim, fg, F = SMALL) {
   const tw = textW(F, lbl), w = tw + 8, h = F === BIG ? 11 : 9, x0 = Math.round(cx - w / 2);
   P.rect(x0 + 1, y + h, w, 1, 0x000000, 0.25);
   P.rect(x0, y, w, h, board); P.box(x0, y, w, h, trim);
@@ -115,13 +115,13 @@ function mirror(P, x, frame) {
   }
   P.hl(x + 1, y + 1, w - 2, mix(frame, 0xffffff, 0.4));
 }
-function pillar(P, px) {
+export function pillar(P, px) {
   P.rect(px - 5, 0, 10, WALL_Y, 0xdcd4c8);
   P.vl(px - 5, 0, WALL_Y, 0xf2ece2); P.vl(px - 4, 0, WALL_Y, 0xe8e0d4);
   P.vl(px + 3, 0, WALL_Y, 0xb8ae9e); P.vl(px + 4, 0, WALL_Y, 0x8a8070);
   P.rect(px - 6, 3, 12, 3, 0xc9bfae); P.rect(px - 6, WALL_Y - 4, 12, 4, 0xa89e8c);
 }
-function spots(P, x0, x1, skip = []) {
+export function spots(P, x0, x1, skip = []) {
   P.rect(x0, 0, x1 - x0, 3, 0x2a2430); P.hl(x0, 2, x1 - x0, 0x4a4450);
   for (let x = x0 + 20; x < x1; x += 44) {
     if (skip.some(([a, b]) => x > a && x < b)) continue;
@@ -130,7 +130,7 @@ function spots(P, x0, x1, skip = []) {
   }
 }
 // bröstpanel längst ner på väggen, zon för zon: [x0, x1, bas, list]
-function wainscot(P, zones) {
+export function wainscot(P, zones) {
   for (const [x0, x1, base, trim] of zones) for (let x = x0; x < x1; x++) for (let y = WALL_Y - 12; y < WALL_Y; y++) {
     let c = base;
     if (y === WALL_Y - 12) c = trim;
@@ -143,7 +143,7 @@ function wainscot(P, zones) {
 }
 // Väggmodul: panel med skylt och en klädstång (plaggen hänger levande från stången vid y = 40)
 export const MOD_RAIL = 40;
-function wallModule(P, x0, key, lbl) {
+export function wallModule(P, x0, key, lbl) {
   const th = DEPT[key], w = MOD_W;
   const panel = key === 'tjej' ? 0xf6e4ee : key === 'kille' ? 0x2c4a70 : 0x2a2a34;
   const edge = key === 'tjej' ? 0xd98fb4 : key === 'kille' ? 0x1a2c4c : 0x14141a;
@@ -263,23 +263,27 @@ export function paintModules(bg, mods) {
 }
 
 // Taket över trappan på plan 1: räcket på plan 2, bjälken med skylt, skugga under
-function paintSlab(P, x0, x1, yBot) {
+export function paintSlab(P, x0, x1, yBot, jul = false) {
   const yTop = yBot - 10;
-  // plan 2 skymtar: tak, en hängande banderoll och ett fotbollsmål bakom räcket
+  // plan 2 (eller julvåningen) skymtar: tak, en hängande banderoll bakom räcket
   for (let y = 0; y < yTop; y++) for (let x = x0; x < x1; x++) {
-    let c = mix(0x4a4658, 0x6a6478, y / yTop);
+    let c = jul ? mix(0x2a4a34, 0x3a5e44, y / yTop) : mix(0x4a4658, 0x6a6478, y / yTop);
     if (y < 3) c = 0x2a2430;
     P.px(x, y, mix(c, 0x000000, (bayer(x, y) - 0.5) * 0.08));
   }
   // lampor i plan 2:s tak
   for (let x = x0 + 16; x < x1 - 8; x += 36) { P.rect(x - 3, 3, 7, 2, 0x1d1822); P.hl(x - 2, 4, 5, 0xfff6c8); P.ell(x, 10, 12, 10, 0xfff4dc, 0.18, 4); }
-  // banderoll SPORT & FOTBOLL
-  const lbl = 'SPORT + FOTBOLL';
+  // banderoll SPORT & FOTBOLL – eller GOD JUL med en girlang och ljus
+  const lbl = jul ? 'GOD JUL' : 'SPORT + FOTBOLL';
   const bw = textW(SMALL, lbl) + 22, bx = Math.round((x0 + x1) / 2 - bw / 2);
   P.vl(bx + 3, 3, 5, 0x8a8e9a); P.vl(bx + bw - 4, 3, 5, 0x8a8e9a);
-  P.rect(bx, 8, bw, 10, 0xd9434b); P.box(bx, 8, bw, 10, 0x7a1f2e); P.hl(bx + 1, 9, bw - 2, 0xff7a82);
+  const [bc, bd, bh] = jul ? [0x2f8f46, 0x173a24, 0x6fd08a] : [0xd9434b, 0x7a1f2e, 0xff7a82];
+  P.rect(bx, 8, bw, 10, bc); P.box(bx, 8, bw, 10, bd); P.hl(bx + 1, 9, bw - 2, bh);
   text(P, SMALL, lbl, bx + 11, 11, 0xffffff);
-  ball5(P, bx + 3, 10); ball5(P, bx + bw - 8, 10);
+  if (jul) {
+    for (const sx of [bx + 3, bx + bw - 8]) { P.rect(sx + 1, 10, 3, 5, 0xffd23f); P.hl(sx, 12, 5, 0xffd23f); P.px(sx + 2, 9, 0xfff0b0); }
+    for (let x = x0 + 2; x < x1 - 2; x++) { const yy = 3 + Math.round(Math.abs(Math.sin((x - x0) / 9)) * 3); P.px(x, yy, 0x1e5a32); P.px(x, yy + 1, 0x2f8f46); if ((x - x0) % 7 === 3) P.px(x, yy + 2, [0xd9433b, 0xffd23f, 0x3a7bd5][((x - x0) / 7 | 0) % 3]); }
+  } else { ball5(P, bx + 3, 10); ball5(P, bx + bw - 8, 10); }
   // räcket på plan 2 (glas + ledstång)
   for (let y = yTop - 12; y < yTop; y++) for (let x = x0 + 2; x < x1; x++) P.px(x, y, 0xcfe8f0, 0.3);
   P.hl(x0 + 2, yTop - 13, x1 - x0 - 2, 0x2a2a30); P.hl(x0 + 2, yTop - 12, x1 - x0 - 2, 0xc9a86a);
@@ -291,7 +295,7 @@ function paintSlab(P, x0, x1, yBot) {
     P.px(x, y, c);
   }
   P.vl(x0, yTop, 10, 0x4a4650);
-  const t2 = 'PLAN 2';
+  const t2 = jul ? 'PLAN 3' : 'PLAN 2';
   text(P, SMALL, t2, x0 + 8, yTop + 3, 0x6d4a10);
   arrowUp(P, x0 + 8 + textW(SMALL, t2) + 5, yTop + 5, 0xd9434b);
   // skugga på väggen under bjälken
@@ -299,8 +303,8 @@ function paintSlab(P, x0, x1, yBot) {
 }
 // pilar 5×5 (mitt i cx, cy)
 const ARROW_UP = ['..#..', '.###.', '#.#.#', '..#..', '..#..'];
-function arrowUp(P, cx, cy, c) { ARROW_UP.forEach((r, j) => { for (let i = 0; i < 5; i++) if (r[i] === '#') P.px(cx - 2 + i, cy - 2 + j, c); }); }
-function arrowDown(P, cx, cy, c) { ARROW_UP.forEach((r, j) => { for (let i = 0; i < 5; i++) if (r[i] === '#') P.px(cx - 2 + i, cy + 2 - j, c); }); }
+export function arrowUp(P, cx, cy, c) { ARROW_UP.forEach((r, j) => { for (let i = 0; i < 5; i++) if (r[i] === '#') P.px(cx - 2 + i, cy - 2 + j, c); }); }
+export function arrowDown(P, cx, cy, c) { ARROW_UP.forEach((r, j) => { for (let i = 0; i < 5; i++) if (r[i] === '#') P.px(cx - 2 + i, cy + 2 - j, c); }); }
 // liten fotboll 5×5
 function ball5(P, x, y) {
   ['.www.', 'wkwkw', 'wwkww', 'wkwkw', '.www.'].forEach((r, j) => { for (let i = 0; i < 5; i++) if (r[i] !== '.') P.px(x + i, y + j, r[i] === 'k' ? 0x26242c : 0xf4f1ea); });
@@ -383,13 +387,14 @@ export function stairArt(e) {
   if (e.sy < 0) { const xe = Math.round(e.lx + e.sx * e.run); for (let yy = e.clip; yy < floorLine; yy++) { put(front, xe, yy, 0x9a8e7a); put(front, xe + e.sx, yy, 0x6a5e4e); } }
   // skylt på beklädnaden (plan 1): TRAPPA UPP · PLAN 2 (under trappans höga del, före förrådsdörren)
   if (e.sy < 0) {
-    const lbl1 = 'TRAPPA UPP', lbl2 = 'PLAN 2';
-    const w = textW(SMALL, lbl1) + 10, cx = Math.round(e.lx + e.sx * 68), y0 = e.ly - 19;
+    const lbl1 = 'TRAPPA UPP', lbl2 = e.sign === 'jul' ? 'PLAN 3 - JUL' : `PLAN ${e.to || 2}`;
+    const w = Math.max(textW(SMALL, lbl1), textW(SMALL, lbl2) + 8) + 10, cx = Math.round(e.lx + e.sx * 68), y0 = e.ly - 19;
+    const [bg, dk, hi, fg] = e.sign === 'jul' ? [0x1e5a32, 0x0e2a18, 0xd9433b, 0xffe070] : [0x7a1f2e, 0x3a0d16, 0xd9434b, 0xffd0d8];
     front.rect(cx - w / 2 + 1, y0 + 1, w, 18, 0x000000, 0.2);
-    front.rect(cx - w / 2, y0, w, 18, 0x7a1f2e); front.box(cx - w / 2, y0, w, 18, 0x3a0d16); front.hl(cx - w / 2 + 1, y0 + 1, w - 2, 0xd9434b);
+    front.rect(cx - w / 2, y0, w, 18, bg); front.box(cx - w / 2, y0, w, 18, dk); front.hl(cx - w / 2 + 1, y0 + 1, w - 2, hi);
     text(front, SMALL, lbl1, cx - textW(SMALL, lbl1) / 2, y0 + 3, 0xffffff);
-    text(front, SMALL, lbl2, cx - textW(SMALL, lbl2) / 2 + 4, y0 + 10, 0xffd0d8);
-    arrowUp(front, cx - textW(SMALL, lbl2) / 2 - 3, y0 + 12, 0xffd0d8);
+    text(front, SMALL, lbl2, cx - textW(SMALL, lbl2) / 2 + 4, y0 + 10, fg);
+    arrowUp(front, cx - textW(SMALL, lbl2) / 2 - 3, y0 + 12, fg);
   }
   return { x: x0, y: yTop, w: W, h: Hh, back: back.flush(), steps: steps.flush(), front: front.flush() };
 }
@@ -406,7 +411,7 @@ export function pitFrontImg(w) {
 // Schaktet i golvet på plan 2 (målas på bakgrunden): schaktets vägg som mörknar nedåt, nedre
 // trapploppet som en skuggad siluett, en ledstång på väggen, plan 1:s rosa golv längst ner och
 // räcken bak och till vänster
-function paintPit(P, x0, x1, yb, yl) {
+export function paintPit(P, x0, x1, yb, yl) {
   for (let y = yb; y < yl; y++) for (let x = x0; x < x1; x++) {
     const t = (y - yb) / (yl - yb);
     let c = mix(0xdccfb8, 0x4a3e44, Math.min(1, t * 1.2));
@@ -503,13 +508,43 @@ export function paintFloor2() {
   // schaktet för trappan
   const [p0, p1, pb, pl] = STAIRS2.pit;
   paintPit(P, p0, p1, pb, pl);
+  paintJulHall(P, JULHALL_X0, W);
   // skugga längs väggen + ljuspölar
   for (let i = 0; i < 5; i++) P.darken(0, WALL_Y + i, W, 1, 0.8 + i * 0.04);
   for (const p of KUNGS_POS) P.ell(p.x, p.y + 1, 16, 6, 0xfff6e0, 0.2, 4);
   for (const p of TEAM_POS) P.ell(p.x, p.y + 1, 16, 6, 0xfff6e0, 0.24, 4);
-  for (const px of [KUNGS_X1, LAG_X0]) { P.rect(px - 1, WALL_Y, 2, H - WALL_Y, 0xd8b24a); P.vl(px - 1, WALL_Y, H - WALL_Y, 0xf0d890); }
+  for (const px of [KUNGS_X1, LAG_X0, JULHALL_X0]) { P.rect(px - 1, WALL_Y, 2, H - WALL_Y, 0xd8b24a); P.vl(px - 1, WALL_Y, H - WALL_Y, 0xf0d890); }
   P.box(0, 0, W, H, 0x0e0d12);
   return P.flush();
+}
+// Trapphallen upp till julvåningen (plan 2, x0–x1): mörkgrön vägg med guldstjärnor, en girlang
+// längs taket, takkanten med plan 3 som skymtar, en röd löpare fram till trappan och två små granar
+export function paintJulHall(P, x0, x1) {
+  const STAR = ['..#..', '.###.', '#####', '.#.#.'];
+  for (let y = 0; y < WALL_Y; y++) for (let x = x0; x < x1; x++) P.px(x, y, mix(0x1e4a2e, 0x173d26, hash(x >> 2, y >> 2, 91) * 0.5 + (bayer(x, y) - 0.5) * 0.2));
+  for (let y = 10; y < 56; y += 14) for (let x = x0 + 6; x < x1 - 6; x += 18) {
+    const ox = x + (((y / 14) | 0) % 2 ? 9 : 0);
+    STAR.forEach((row, j) => { for (let i = 0; i < 5; i++) if (row[i] === '#') P.px(ox + i, y + j, 0xe8c25a, 0.55); });
+  }
+  wainscot(P, [[x0, x1, 0x6a3a22, 0xc9a24a]]);
+  pillar(P, x0);
+  const [s0, s1] = STAIRS2UP.slab;
+  paintSlab(P, s0, s1, STAIRS2UP.clip, true);
+  // girlangen längs taket (utanför takkanten)
+  for (let x = x0 + 6; x < s0 - 2; x++) { const yy = 6 + Math.round(Math.abs(Math.sin((x - x0) / 8)) * 3); P.px(x, yy, 0x1e5a32); P.px(x, yy + 1, 0x2f8f46); P.px(x, yy + 2, 0x1e5a32, 0.6); }
+  // golvet: mörkt trä med en röd löpare fram till trappan
+  for (let y = WALL_Y; y < H; y++) for (let x = x0; x < x1; x++) {
+    let c = plank(x, y, 0x8a5a3a, 93, 6, 40);
+    const inRun = x >= STAIRS2UP.lx - 24 && x < STAIRS2UP.lx + 4 && y > STAIRS2UP.ly;
+    if (inRun) c = (x === STAIRS2UP.lx - 24 || x === STAIRS2UP.lx + 3) ? 0xe8c25a : mix(0xb02a30, 0x8a1e26, hash(x >> 1, y >> 1, 95) * 0.6);
+    P.px(x, y, c);
+  }
+  // två små granar i krukor framme vid kanten
+  for (const gx of [x0 + 40, x1 - 22]) {
+    for (let j = 0; j < 22; j++) { const w = Math.round(j * 0.45) + 1; for (let i = -w; i <= w; i++) P.px(gx + i, 178 + j, (i + j) % 5 === 0 ? 0x2f8f46 : i < 0 ? 0x1e6a3a : 0x17502c); }
+    P.px(gx, 176, 0xffd23f); P.px(gx - 1, 177, 0xffd23f); P.px(gx + 1, 177, 0xffd23f); P.px(gx, 177, 0xfff0b0);
+    P.rect(gx - 5, 200, 11, 8, 0xc9323a); P.hl(gx - 5, 200, 11, 0xff7a6b); P.hl(gx - 5, 207, 11, 0x5e0c0c);
+  }
 }
 
 // Läktarmålningen: tre bänkrader publik i lagfärger, strålkastare och en grön planlist
@@ -701,9 +736,9 @@ export function cleatImg(c) {
 // ================= fristående bilder =================
 export function podiumImg(key) {
   const P = new Pix(24, 12);
-  const top = { tjej: 0xf7eef3, kille: 0x4a5568, kungs: 0x8a2a3a, lag: 0x2e6b40 }[key] ?? 0xf7eef3;
-  const side = { tjej: 0xe7a9c8, kille: 0x2c3444, kungs: 0x5a1622, lag: 0x1e4a2c }[key] ?? 0xe7a9c8;
-  const trim = { tjej: 0xc65fa0, kille: 0x3fc4ff, kungs: 0xd9434b, lag: 0x9fe88a }[key] ?? 0xc65fa0;
+  const top = { tjej: 0xf7eef3, kille: 0x4a5568, kungs: 0x8a2a3a, lag: 0x2e6b40, jul: 0xf4f1ea }[key] ?? 0xf7eef3;
+  const side = { tjej: 0xe7a9c8, kille: 0x2c3444, kungs: 0x5a1622, lag: 0x1e4a2c, jul: 0xc9323a }[key] ?? 0xe7a9c8;
+  const trim = { tjej: 0xc65fa0, kille: 0x3fc4ff, kungs: 0xd9434b, lag: 0x9fe88a, jul: 0xe8c25a }[key] ?? 0xc65fa0;
   for (let x = 0; x < 24; x++) {
     const dx = (x + 0.5 - 12) / 11.5;
     if (Math.abs(dx) >= 1) continue;

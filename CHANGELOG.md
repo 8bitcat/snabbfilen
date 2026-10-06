@@ -10,6 +10,14 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.86.0] – 2026-10-06 – Julvåningen
+- Klädaffären har fått en tredje våning: JULVÅNINGEN! Gå upp för den nya trappan längst till höger på plan 2.
+- Julpynt att ta med hem: adventsstjärnor, en blinkande girlang, elektriska adventsljusstakar, julkalender, julbock, pepparkakshus, snögubbe, granar med julgranskulor i fyra färger, en gran med blinkande ljus och en julpyntad spis. Det gamla julpyntet finns där också.
+- Julkläder: tomtejacka, tomteluvor, jultröjor och luciakläder på dockorna och tröjväggen.
+- Brasan: grilla marshmallows vid brasan på julvåningen. Gyllenbrun är godast, men akta så att den inte fattar eld – då får du blåsa!
+- Hemma kan alla öppna spisar tändas och släckas, och vid en tänd brasa kan du grilla marshmallows. Brasan, julljusen och stjärnorna lyser på kvällen.
+- I appen: en notis den 1 december, på Lucia och på julafton (om du har slagit på notiserna).
+
 ## [0.85.0] – 2026-10-06 – Notiser i appen
 - Appen Pixelcity kan nu skicka notiser när det händer något i Pixelstaden, som när det blir Halloween eller jul. Spelet frågar en gång efter första dagen, och du kan slå på eller av dem under ⚙ Inställningar (där finns också en Prova-knapp).
 - Notiserna kommer bara några gånger om året, och ingenting skickas från telefonen. De fungerar i nästa version av appen i App Store.

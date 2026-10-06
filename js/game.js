@@ -303,7 +303,7 @@ export const KATALOG = [
   { kind: 'bordM', icon: '🍽️', name: 'Matbord', price: 600, vars: 4, room: 'KÖK' },
   { kind: 'soffa', icon: '🛋️', name: 'Soffa', price: 800, vars: 10, room: 'VARDAGSRUM', views: [['soffa'], ['sidosoffa', SOFFA_V], ['baksoffa', SOFFA_V]] },
   { kind: 'tv', icon: '🖥️', name: 'TV / dator', price: 1200, vars: 5, room: 'VARDAGSRUM', function: 'tv' },
-  { kind: 'spis', icon: '🔥', name: 'Öppen spis', price: 1500, vars: 3, room: 'VARDAGSRUM' },
+  { kind: 'spis', icon: '🔥', name: 'Öppen spis', price: 1500, vars: 3, room: 'VARDAGSRUM', function: 'brasa' },
   // startmöblerna (sang/garderob) säljs nu också – i alla färger arken har
   { kind: 'sang', icon: '🛏️', name: 'Dubbelsäng', price: 1800, vars: 14, room: 'SOVRUM', function: 'sova', views: [['sang'], ['tvardubbel', SANG_V]] },
   { kind: 'garderob', icon: '👔', name: 'Garderob', price: 1300, vars: 12, room: 'SOVRUM', function: 'garderob' },
@@ -322,11 +322,11 @@ export const KATALOG = [
   { kind: 'kuddsoffa', icon: '🛋️', name: 'Soffa med kuddar', price: 950, vars: 3, room: 'VARDAGSRUM' },
   { kind: 'blomtavla', icon: '🌷', name: 'Stor blomstertavla', price: 1100, vars: 1, room: 'VARDAGSRUM', wall: true },
   { kind: 'bredhylla', icon: '📚', name: 'Bred bokhylla', price: 1100, vars: 3, room: 'VARDAGSRUM' },
-  { kind: 'eldstad', icon: '🔥', name: 'Eldstad med sims', price: 1400, vars: 4, room: 'VARDAGSRUM' },
+  { kind: 'eldstad', icon: '🔥', name: 'Eldstad med sims', price: 1400, vars: 4, room: 'VARDAGSRUM', function: 'brasa' },
   { kind: 'stormatta', icon: '🟥', name: 'Stor matta', price: 1400, vars: 4, room: 'VARDAGSRUM' },
   { kind: 'vaggsvard', icon: '⚔️', name: 'Svärd på vägg', price: 1500, vars: 3, room: 'VARDAGSRUM', wall: true },
-  { kind: 'tegelspis', icon: '🧱', name: 'Tegelspis', price: 1600, vars: 4, room: 'VARDAGSRUM' },
-  { kind: 'murspis', icon: '🔥', name: 'Murad spis med skorsten', price: 2200, vars: 2, room: 'VARDAGSRUM' },
+  { kind: 'tegelspis', icon: '🧱', name: 'Tegelspis', price: 1600, vars: 4, room: 'VARDAGSRUM', function: 'brasa' },
+  { kind: 'murspis', icon: '🔥', name: 'Murad spis med skorsten', price: 2200, vars: 2, room: 'VARDAGSRUM', function: 'brasa' },
   { kind: 'moraklocka', icon: '🕰️', name: 'Moraklocka', price: 3500, vars: 1, room: 'VARDAGSRUM' },
   { kind: 'piano', icon: '🎹', name: 'Piano', price: 3500, vars: 3, room: 'VARDAGSRUM' },
   // ---- SOVRUM ----
@@ -460,6 +460,18 @@ export const KATALOG = [
   { kind: 'katthus', icon: '🐱', name: 'Katthus', price: 800, vars: 4, room: 'ÖVRIGT' },
   { kind: 'landskap', icon: '🏞️', name: 'Landskapsmålning', price: 900, vars: 1, room: 'ÖVRIGT', wall: true },
   { kind: 'kattrad', icon: '🐈', name: 'Klösträd', price: 1200, vars: 4, room: 'ÖVRIGT' },
+  // ---- JULVÅNINGEN (klädaffären plan 3, 2026-10-06) – säljs bara där (shop: 'jul') ----
+  // anim = bildrutor per variant som möbeln växlar mellan (blinkar), glow = lyser i kvällsmörkret
+  { kind: 'julkalender', icon: '📅', name: 'Julkalender', price: 60, vars: 1, room: 'ÖVRIGT', wall: true, shop: 'jul' },
+  { kind: 'snogubbe', icon: '⛄', name: 'Liten snögubbe', price: 90, vars: 1, room: 'ÖVRIGT', shop: 'jul' },
+  { kind: 'pepparkakshus', icon: '🏠', name: 'Pepparkakshus', price: 120, vars: 1, room: 'ÖVRIGT', shop: 'jul' },
+  { kind: 'julbock', icon: '🐐', name: 'Julbock', price: 180, vars: 1, room: 'ÖVRIGT', shop: 'jul' },
+  { kind: 'adventsstjarna', icon: '⭐', name: 'Adventsstjärna', price: 220, vars: 3, room: 'ÖVRIGT', wall: true, overWindow: true, glow: true, shop: 'jul' },
+  { kind: 'ljusgirlang', icon: '✨', name: 'Blinkande girlang', price: 250, vars: 1, room: 'ÖVRIGT', wall: true, overWindow: true, anim: 2, glow: true, shop: 'jul' },
+  { kind: 'adventsljus', icon: '🕯️', name: 'Adventsljusstake', price: 280, vars: 2, room: 'ÖVRIGT', wall: true, overWindow: true, glow: true, shop: 'jul' },
+  { kind: 'kulgran', icon: '🎄', name: 'Julgran med kulor', price: 950, vars: 4, room: 'ÖVRIGT', shop: 'jul' },
+  { kind: 'ljusgran', icon: '🎄', name: 'Julgran med blinkande ljus', price: 1200, vars: 1, room: 'ÖVRIGT', anim: 2, glow: true, shop: 'jul' },
+  { kind: 'julspis', icon: '🔥', name: 'Julpyntad spis', price: 2400, vars: 2, room: 'VARDAGSRUM', function: 'brasa', shop: 'jul' },
 ];
 const KAT_BY_KIND = new Map(KATALOG.map((k) => [k.kind, k]));
 export const katalogOf = (kind) => KAT_BY_KIND.get(kind);

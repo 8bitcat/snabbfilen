@@ -13,6 +13,7 @@ const O = 'Others.png', F = 'Fireplace.png', CH = 'Chairs.png', D = 'Dressers.pn
 // arken som de nya möblerna (2026-09-28) hämtas ur
 const P10 = 'Part 10 copiar.png', P11 = 'Part 11 copiar.png', HW = 'hospital wing.png', BS = 'Blacksmith.png', SC = 'School.png';
 const TE = 'Temple.png', DW = 'Doors, windows and curtains.png', X = 'Xmas.png', CF = 'cats furniture.png', BB = 'basketball.png';
+const EG = 'egna/';   // egenritade sprites i tools/atlas-egna/ (julpynt-art.py)
 const L1 = 'Candle 1.png', L2 = 'Candle 2.png', L3 = 'Candle 3.png', L4 = 'candle 4.png', L5 = 'Candle 5.png', L6 = 'Candle 6.png';
 
 // [namn, fil, sx, sy, sw, sh] – namn = kind + variantindex
@@ -230,6 +231,21 @@ const KINDS = [
   ['julfigur', 12, 13, [[X, 81, 3], [X, 94, 3], [X, 69, 3], [X, 178, 97]]],
   ['julsack', 11, 11, [[X, 194, 36], [X, 194, 52], [X, 194, 68]]],
   ['polkagris', 10, 16, [[X, 4, 160], [X, 4, 176]]],
+  // JULVÅNINGEN (klädaffären plan 3, 2026-10-06): blinkande gran och girlang (två bildrutor
+  // var ur arket – möblerna med anim i katalogen växlar mellan dem), snögubben, julkalendern,
+  // de julpyntade spisarna och brasans lågor (fyra bildrutor som ritas i spisarnas eldstäder)
+  ['ljusgran', 32, 48, [[X, 0, 96], [X, 32, 96]]],
+  ['ljusgirlang', 26, 7, [[X, 82, 168], [X, 114, 168]]],
+  ['snogubbe', 12, 11, [[X, 178, 99]]],
+  ['julkalender', 13, 11, [[X, 178, 131]]],
+  ['julspis', 32, 47, [[F, 0, 209], [F, 64, 209]]],
+  ['flamma', 12, 8, [[F, 58, 142], [F, 90, 142], [F, 122, 142], [F, 154, 142]]],
+  // egenritat julpynt (tools/julpynt-art.py → tools/atlas-egna/)
+  ['adventsstjarna', 13, 15, [[EG + 'adventsstjarna0.png', 0, 0], [EG + 'adventsstjarna1.png', 0, 0], [EG + 'adventsstjarna2.png', 0, 0]]],
+  ['adventsljus', 23, 14, [[EG + 'adventsljus0.png', 0, 0], [EG + 'adventsljus1.png', 0, 0]]],
+  ['julbock', 16, 19, [[EG + 'julbock0.png', 0, 0]]],
+  ['pepparkakshus', 16, 14, [[EG + 'pepparkakshus0.png', 0, 0]]],
+  ['kulgran', 32, 48, [[EG + 'kulgran0.png', 0, 0], [EG + 'kulgran1.png', 0, 0], [EG + 'kulgran2.png', 0, 0], [EG + 'kulgran3.png', 0, 0]]],
 ];
 for (const [kind, w, h, vars] of KINDS) vars.forEach(([file, sx, sy], i) => EXTRA.push([kind + i, file, sx, sy, w, h]));
 
@@ -238,7 +254,7 @@ const seen = new Set();
 for (const [name] of ALL) { if (seen.has(name)) throw new Error('Dubbel nyckel i atlasen: ' + name); seen.add(name); }
 
 const sheets = {};
-for (const [, file] of ALL) if (!sheets[file]) sheets[file] = fs.readFileSync(SRC + file).toString('base64');
+for (const [, file] of ALL) if (!sheets[file]) sheets[file] = fs.readFileSync(file.startsWith(EG) ? 'tools/atlas-egna/' + file.slice(EG.length) : SRC + file).toString('base64');
 
 const browser = await chromium.launch();
 const page = await browser.newPage();

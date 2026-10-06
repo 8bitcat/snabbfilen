@@ -1,4 +1,4 @@
-// KLÄDER – butikens data: mått för de två våningarna, avdelningarna, klädställningarnas
+// KLÄDER – butikens data: mått för de tre våningarna, avdelningarna, klädställningarnas
 // kategorier ur klädkatalogen (js/data/wardrobe.js), skyltdockorna, Kungsladugårds lag
 // och de kända lagens matchställ. Ingen ritning här – bara siffror och listor.
 import { WARDROBE, itemById, itemsForSlot, legacyKeyToId, groupOf } from '../../data/wardrobe.js';
@@ -23,12 +23,20 @@ export const RACK_W = 72;
 // Trappan upp: foten vid (lx, ly), stiger åt höger och försvinner genom taket (klipps vid clip).
 // FLAT = det plana första steget, STEP/RISE = stegets längd/höjd i pixlar.
 export const STAIR = { FLAT: 8, STEP: 5, RISE: 3 };
-export const STAIRS1 = { n: 1, lx: 660, ly: 100, sx: 1, sy: -1, run: 122, clip: 44, top: 108, slab: [684, 827] };
+export const STAIRS1 = { n: 1, to: 2, lx: 660, ly: 100, sx: 1, sy: -1, run: 122, clip: 44, top: 108, slab: [684, 827] };
 // Plan 2: trappan kommer upp ur ett schakt i golvet; man kliver av åt höger vid avsatsen.
-export const STAIRS2 = { n: 2, lx: 780, ly: 112, sx: -1, sy: 1, run: 122, clip: 126, top: 108, pit: [676, 772, 96, 126] };
+export const STAIRS2 = { n: 2, to: 1, lx: 780, ly: 112, sx: -1, sy: 1, run: 122, clip: 126, top: 108, pit: [676, 772, 96, 126] };
+// Plan 2 → plan 3 (julvåningen): en egen trapphall längst till höger på plan 2 (x 1280–1440)
+// med trappan upp, och schaktet längst till höger på plan 3 där den kommer upp
+export const STAIRS2UP = { n: 2, to: 3, lx: 1300, ly: 100, sx: 1, sy: -1, run: 122, clip: 44, top: 108, slab: [1324, 1428], sign: 'jul' };
+export const STAIRS3 = { n: 3, to: 2, lx: 1164, ly: 112, sx: -1, sy: 1, run: 122, clip: 126, top: 108, pit: [1060, 1156, 96, 126] };
+// trapporna parvis: den man går upp/ner i på en våning ↔ den man kommer ut ur på den andra
+export const STAIR_PAIRS = [[STAIRS1, STAIRS2], [STAIRS2UP, STAIRS3]];
+export const stairPair = (e) => { for (const [a, b] of STAIR_PAIRS) { if (a === e) return b; if (b === e) return a; } return null; };
 
 // ================= plan 2: SPORT & FOTBOLL =================
-export const W2 = 1280;
+export const W2 = 1440;                          // (1280–1440 = trapphallen upp till julvåningen)
+export const JULHALL_X0 = 1280;
 export const KUNGS_X1 = 560, LAG_X0 = 840;       // Kungsladugård | trapphallen | kända lag
 export const PHOTO = { x: 16, y: 6, w: 118, h: 51 };      // lagfotot (ram inräknad)
 export const SHOEWALL = { x: 432, w: 120 };               // fotbollsskorna på väggen
@@ -48,12 +56,14 @@ export const DEPT = {
   mid: { name: '', neon: 0xf0d048, glow: 0xe8b230, board: 0x17151a, trim: 0xe8b230, lbl: '#f0d048', tag: '#e8b230', stage: ['#f3ecdf', '#e6dcc8', '#b99a70'], title: 'Accessoarerna' },
   kungs: { name: 'KUNGSLADUGÅRD', neon: 0xffd0d8, glow: 0xd9434b, board: 0x3a0d16, trim: 0xd9434b, lbl: '#ff9aa6', tag: '#d9434b', stage: ['#f6e3e6', '#e8c4ca', '#a3485a'], title: 'Kungsladugård' },
   lag: { name: 'KÄNDA LAG', neon: 0xb8f07a, glow: 0x46a35a, board: 0x10261a, trim: 0x6fd08a, lbl: '#9fe88a', tag: '#46a35a', stage: ['#e4f2e2', '#c4e0c2', '#5f9a64'], title: 'Kända lag' },
+  jul: { name: 'JUL', neon: 0xfff0b0, glow: 0xd9433b, board: 0x173a24, trim: 0xd9433b, lbl: '#ffd23f', tag: '#c9323a', stage: ['#f3ecdf', '#e6dcc8', '#7a2a2e'], title: 'Julavdelningen' },
   sport: { name: 'SPORT', neon: 0xffd23f, glow: 0xe07a2e, board: 0x1a1a24, trim: 0xf0b429, lbl: '#ffd23f', tag: '#e07a2e', stage: ['#f3ecdf', '#e6dcc8', '#b99a70'], title: 'Sportavdelningen' },
 };
 
 // ================= klädställningarnas kategorier =================
 // groups = katalogens underrubriker (groupOf) för platsen, ids = plagg som alltid ska med.
 // Varje avdelning visar sina egna plagg först och sedan unisex. Sport och mjukis finns på plan 2.
+const JUL_TOPS = ['top-college-xmas', 'top-santa', 'top-lucia'];   // julvåningens tröjvägg
 const C = (id, dept, sign, name, slot, groups, extra = {}) => ({ id, dept, sign, name, slot, groups, ...extra });
 export const CATS = [
   // tjejer: fyra väggmoduler + fyra fristående ställningar
@@ -77,6 +87,8 @@ export const CATS = [
   // plan 2: sport (alla avdelningar)
   C('spTrojor', 'sport', 'SPORTTRÖJOR', 'Sporttröjor', 'top', ['Sport'], { icon: '🏅', all: true }),
   C('spMjukis', 'sport', 'MJUKIS + TRÄNING', 'Mjukis & träning', 'bottom', ['Mjukis & träning'], { icon: '🏃', all: true, ids: ['bottom-sportShorts', 'bottom-bikeShorts'] }),
+  // plan 3: julkläderna (de finns också i fest- och tröjställningarna på plan 1)
+  C('julKlader', 'jul', 'JULKLÄDER', 'Julkläder', 'top', [], { icon: '🎄', all: true, match: (it) => JUL_TOPS.includes(it.id) }),
   C('spFotboll', 'sport', 'FOTBOLLSTRÖJOR', 'Fotbollströjor', 'top', [], { icon: '⚽', all: true, match: (it) => it.look.top === 'football' }),
 ];
 export const catById = (id) => CATS.find((c) => c.id === id) || null;
@@ -212,3 +224,47 @@ export const teamLook = (tm, i) => {
     ...tm.colors, bottom: 'sportShorts', pants: tm.pants, pants2: tm.pants, shoeType: 'cleats', shoes: '#26242c', shoes2: '#f4f1ea' });
 };
 export const TEAM_POS = TEAMS.map((_, i) => (i < 6 ? { x: 872 + i * 44, y: 104 } : { x: 894 + (i - 6) * 44, y: 166 }));
+
+// ================= PLAN 3 · JULVÅNINGEN (Carl 2026-10-06) =================
+// JULKLÄDER till vänster (dockor, tröjväggen, tomteluvorna), JULTORGET i mitten (brasan där
+// man grillar marshmallows, den stora granen, kassan), JULPYNTET till höger (väggen med
+// stjärnor och girlanger, borden med småsaker, granarna) och trappan längst till höger.
+export const W3 = 1184;
+export const JUL_X1 = 344, TORG_X1 = 760;              // julkläder | jultorget | julpyntet
+export const JUL_MOD = { x: 24, w: 76 };               // tröjväggen (väggmodul)
+export const JUL_HATS = { x: 112, y: 24, w: 64 };      // tomteluvorna på väggen (byster på en hylla)
+export const JUL_WIN = [[196, 18, 58, 44], [478, 14, 84, 48], [1000, 18, 48, 44]]; // fönstren (snön faller)
+// dockorna: [katalog-id, x, y, outfit, kortnamn]
+const julDoll = (o) => ({ ...MANNE, build: 5, ...o });
+export const JUL_DOLLS = [
+  ['top-santa', 44, 104, julDoll({ style: 'short', hair: '#f4f1ea', top: 'santa', shirt: '#c9323a', bottom: 'pants', pants: '#c9323a', shoes: '#1c1c1c', hat: 'santa', cap: '#c9323a', beard: 'santa', build: 6 }), 'TOMTE'],
+  ['bottom-lucia', 104, 104, julDoll({ style: 'long', hair: '#ecd489', top: 'lucia', shirt: '#f6f3ec', accent: '#c9323a', bottom: 'lucia', pants2: '#c9323a', shoes: '#f2f2f2', blush: true, build: 4 }), 'LUCIA'],
+  ['top-college-xmas', 164, 104, julDoll({ style: 'messy', hair: '#6b4226', top: 'college', topPrint: 'xmas', shirt: '#c9323a', print2: '#f4f1ea', bottom: 'jeans', pants: '#2d3a5c' }), 'JULTRÖJA'],
+  ['top-lucia', 74, 166, julDoll({ style: 'bun', hair: '#3b2619', top: 'lucia', shirt: '#f4f1ea', accent: '#2f8f46', bottom: 'skirt', pants: '#f4f1ea', shoes: '#f2f2f2', blush: true, build: 4 }), 'TÄRNA'],
+  ['hat-santa', 134, 166, julDoll({ style: 'pigtails', hair: '#d9a95c', top: 'hoodie', shirt: '#2f8f46', bottom: 'jeans', pants: '#3f5f8f', hat: 'santa', cap: '#c9323a', blush: true, build: 4 }), 'TOMTELUVA'],
+  ['top-college-xmas', 254, 166, julDoll({ style: 'fade', hair: '#1d1714', top: 'college', topPrint: 'xmas', shirt: '#2f8f46', print2: '#f4f1ea', bottom: 'chinos', pants: '#b8a47a', hat: 'santa', cap: '#2f8f46' }), 'GRÖN JULTRÖJA'],
+];
+// jultorget
+export const JUL_BRASA = { x: 402, base: 84 };         // den julpyntade spisen (julspis1) vid väggen
+export const JUL_BENCH = [[392, 118], [446, 118]];     // sittstockar framför brasan [x, fot-y]
+export const JUL_LYKTOR = [[486, 92], [652, 92]];      // lyktstolparna på torget [x, fot-y]
+export const JUL_KALKE = { x: 500, base: 200 };        // kälken med julklappar
+export const JUL_GRAN = { x: 580, base: 168 };         // stora granen mitt på torget (mitten, foten)
+export const JUL_DESK = { x: 672, y: 78, w: 64, h: 30 };
+// julpyntet: väggsakerna [sort, variant, x, underkant-y] i två rader på ribbväggen, och
+// golvsakerna [sort, variant, x, fot-y] – småsakerna på tre bord, granarna och spisen på golvet
+export const PYNT_WALL = [
+  ['adventsstjarna', 0, 776, 38], ['adventsstjarna', 1, 800, 38], ['adventsstjarna', 2, 824, 38],
+  ['julkalender', 0, 850, 38], ['julstrumpa', 0, 878, 38], ['julklocka', 0, 900, 38],
+  ['girlang', 0, 772, 60], ['ljusgirlang', 0, 806, 60], ['adventsljus', 0, 840, 60], ['adventsljus', 1, 872, 60],
+];
+export const PYNT_TABLES = [[772, 124, 80], [862, 124, 80], [952, 124, 58]];  // borden [x, fot-y, bredd]
+export const PYNT_FLOOR = [
+  // på borden (y = bordsskivan)
+  ['julfigur', 0, 778, 108], ['polkagris', 0, 806, 108], ['julljus', 0, 830, 108],
+  ['julsack', 0, 868, 108], ['snogubbe', 0, 894, 108], ['pepparkakshus', 0, 916, 108],
+  ['julklapp', 0, 958, 108], ['minigran', 0, 986, 108],
+  // på golvet
+  ['julbock', 0, 778, 182], ['julgran', 1, 802, 190], ['kulgran', 0, 846, 190], ['ljusgran', 0, 890, 190], ['julspis', 0, 936, 190],
+];
+export const JUL_PLANTS = [[336, 206], [756, 206], [1036, 206]];

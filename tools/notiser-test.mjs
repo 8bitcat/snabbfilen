@@ -84,6 +84,7 @@ const installningar = async (p) => {
   // två händelser: en som gäller nu, en som väntar till ett datum långt fram
   const r = await p.evaluate(async () => {
     const N = await import('/js/core/notiser.js');
+    N.HANDELSER.length = 0;   // (bara provets händelser – inte julens)
     N.HANDELSER.push({ id: 3, datum: '10-31', kl: 16, titel: 'Halloween!', text: 'Klä ut dig' }, { id: 4, datum: '12-24', titel: 'God jul', text: 'Tomten', fran: '2999-01-01' });
     window.__n.schemalagda = []; window.__n.avbokade = []; window.__n.pending.push({ id: 7003 }, { id: 7010 });   // gamla från ett tidigare paket
     const antal = await N.planera(new Date('2026-10-06T12:00:00'));

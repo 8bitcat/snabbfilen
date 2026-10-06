@@ -1,4 +1,4 @@
-// KLÄDER – klädaffären man går runt i med sin egen figur, nu i TVÅ VÅNINGAR.
+// KLÄDER – klädaffären man går runt i med sin egen figur, nu i TRE VÅNINGAR.
 //
 // PLAN 1 · MODE (1280 px bred, kameran följer figuren): TJEJER till vänster, KILLAR till
 // höger och mitthallen med dörren, kassan, accessoarhyllan, hatthyllan och TRAPPAN UPP.
@@ -17,6 +17,12 @@
 // tröjmodeller (katalogen tillåter inte två likadana plagg): äger man modellen säger lappen
 // TA PÅ DIG och dialogen klär på en i lagets färger. Klick på lagfotot = fotot i stort.
 //
+// PLAN 3 · JULVÅNINGEN (2026-10-06): trappan upp går från plan 2:s nya trapphall längst till
+// höger. JULKLÄDER (dockor, tröjväggen, tomteluvorna), JULTORGET med brasan (grilla
+// marshmallows, js/core/brasa.js) och den stora granen, och JULPYNTET – stjärnor, girlanger,
+// granar med kulor eller blinkande ljus, den julpyntade spisen … Pyntet köps som möbler
+// (samma dialog som i möbelvaruhuset) och placeras hemma med Möblera.
+//
 // MOBILEN (NÄRA-läget beskär upptill och nertill, main.js v.safe): en lodrät kamera följer
 // figuren inom det synliga radbandet, och skyltarna läggs alltid innanför det.
 import { drawPerson } from '../core/people.js';
@@ -30,6 +36,12 @@ import * as D from './klader/data.js';
 import * as PT from './klader/paint.js';
 import { drawHanging, drawTeamDoll, isDressLike } from './klader/garment.js';
 import { openBuy, openBrowse, openKit, openPhoto, owns, priceOf, nameOf } from './klader/buy.js';
+import * as JUL from './klader/jul.js';
+import { openBuy as openFurnBuy } from './shop-mobler.js';
+import { furnArt, drawArt, drawFire, halo } from './room.js';
+import { openMarshmallow } from '../core/brasa.js';
+import { katalogOf } from '../game.js';
+import { FRAMES } from '../data/frames.js';
 
 const { H, WALL_Y } = D;
 const STAIR_V = 44;                    // gångfart i trappan (px/s längs trappan)
@@ -62,6 +74,7 @@ function dollColors(it, look) {
 }
 
 const CLERK = { skin: '#c68a5c', hair: '#1d1714', style: 'bun', top: 'shirt', shirt: '#f4f1ea', accent: '#b83d7a', bottom: 'pants', pants: '#2d3a5c', shoes: '#1c1c1c', glasses: 'round', beard: false, phones: false, bag: null, hat: null, blush: true, build: 5 };
+const TOMTE_LOOK = { skin: '#eec3a0', hair: '#f4f1ea', style: 'short', top: 'santa', shirt: '#c9323a', bottom: 'pants', pants: '#c9323a', shoes: '#1c1c1c', glasses: 'round', beard: 'santa', phones: false, bag: null, hat: 'santa', cap: '#c9323a', blush: true, build: 6 };
 const COACH_LOOK = { skin: '#a06a43', hair: '#1d1714', style: 'buzz', top: 'track', shirt: '#7a1f2e', accent: '#f4f1ea', bottom: 'trackPants', pants: '#1d1d22', pants2: '#f4f1ea', shoeType: 'sneakers', shoes: '#f4f1ea', shoes2: '#d9434b', beard: 'short', glasses: false, phones: false, bag: null, hat: null, build: 6 };
 const POSTER = [
   D.girl({ skin: '#eec3a0', style: 'ponytail', hair: '#d9a95c', top: 'hoodie', shirt: '#f28bb3', bottom: 'skirt', pants: '#8e5bd1', hat: 'bow', cap: '#f0b429' }),
@@ -85,6 +98,19 @@ const PLACES2 = [
   { kind: 'wall', cat: D.catById('spMjukis'), dept: 'sport', x: D.SPORT_MOD_X[1] },
   { kind: 'rack', cat: D.catById('spFotboll'), dept: 'sport', x: D.SPORT_RACK[0], base: D.SPORT_RACK[1] },
 ].map((p) => ({ ...p, items: D.catItems(p.cat) }));
+const PLACES3 = [{ kind: 'wall', cat: D.catById('julKlader'), dept: 'jul', x: D.JUL_MOD.x }].map((p) => ({ ...p, items: D.catItems(p.cat) }));
+const JULDOCKOR = D.JUL_DOLLS.map(([k, x, y, look, short]) => ({ it: D.itemOf(k), key: k, short, dept: 'jul', x, y, look }));
+const JULHATTAR = [['#c9323a', 'short', '#3b2619'], ['#2f8f46', 'long', '#d9a95c']].map(([cap, style, hair], i) => ({
+  it: D.itemOf('hat-santa'), key: 'hat-santa', dept: 'jul', x: D.JUL_HATS.x + 18 + i * 28, y: D.JUL_HATS.y + 36,
+  look: D.bust({ style, hair, hat: 'santa', cap, blush: i === 1, build: i ? 4 : 5 }), colors: { cap },
+}));
+// julpyntet: sorten, varianten, platsen och bildens mått (ur atlasen)
+const pyntOf = ([k, v, x, y], wall) => {
+  const kat = katalogOf(k), f = FRAMES[k + (kat?.anim ? (v | 0) * kat.anim : v)] || FRAMES[k + '0'];
+  return { k, v, x, y, w: f[2], h: f[3], wall, kat };
+};
+const PYNT = [...D.PYNT_WALL.map((e) => pyntOf(e, true)), ...D.PYNT_FLOOR.map((e) => pyntOf(e, false))];
+const onTable = (p) => (!p.wall && D.PYNT_TABLES.find(([x, foot, w]) => p.x >= x && p.x < x + w && p.y < foot)) || null;
 const GTOP = PT.GTOP, GBOT = PT.GBOT;
 const SHELF = [
   ['glasses:round', D.GOND.x + 18, GTOP, null],
@@ -150,14 +176,17 @@ function art() {
   if (ART) return ART;
   const bg1 = PT.paintModules(PT.paintFloor1(), PLACES1.filter((p) => p.kind === 'wall').map((p) => ({ x: p.x, key: p.dept, sign: p.cat.sign })));
   const bg2 = PT.paintModules(PT.paintFloor2(), PLACES2.filter((p) => p.kind === 'wall').map((p) => ({ x: p.x, key: p.dept, sign: p.cat.sign })));
+  const bg3 = JUL.paintFloor3();
   const racks = new Map();
   [...PLACES1, ...PLACES2].forEach((p, i) => { if (p.kind === 'rack') racks.set(p.cat.id, PT.rackImg(p.dept, p.cat.sign, i)); });
   ART = {
-    bg1, bg2, racks,
-    pod: { tjej: PT.podiumImg('tjej'), kille: PT.podiumImg('kille'), kungs: PT.podiumImg('kungs'), lag: PT.podiumImg('lag') },
+    bg1, bg2, bg3, racks,
+    pod: { tjej: PT.podiumImg('tjej'), kille: PT.podiumImg('kille'), kungs: PT.podiumImg('kungs'), lag: PT.podiumImg('lag'), jul: PT.podiumImg('jul') },
     glow: PT.glowImg(), plant: PT.plantImg(), gond: PT.gondolaImg(), hats: PT.hatGondolaImg(), desk: PT.deskImg(),
-    stairs1: PT.stairArt(D.STAIRS1), stairs2: PT.stairArt(D.STAIRS2),
+    stairs1: PT.stairArt(D.STAIRS1), stairs2: PT.stairArt(D.STAIRS2), stairs2up: PT.stairArt(D.STAIRS2UP), stairs3: PT.stairArt(D.STAIRS3),
     pitFront: PT.pitFrontImg(D.STAIRS2.pit[1] - D.STAIRS2.pit[0] + 2), goal: PT.goalImg(), bench: PT.benchImg(),
+    gran: JUL.granImg(), julDesk: JUL.julDeskImg(), tables: D.PYNT_TABLES.map(([, , w]) => JUL.julTableImg(w)),
+    stool: JUL.stoolImg(), lykta: JUL.lyktaImg(), kalke: JUL.kalkeImg(),
   };
   return ART;
 }
@@ -179,8 +208,11 @@ export function makeShopKlader(A, opts = {}) {
     w.snapFree();
     return w;
   };
-  const board1 = [D.STAIRS1.lx - D.STAIRS1.sx * 12, D.STAIRS1.ly], board2 = [D.STAIRS2.lx - D.STAIRS2.sx * 12, D.STAIRS2.ly];
+  const boardOf = (e) => [e.lx - e.sx * 12, e.ly];   // där man står vid trappans fot / avsats
+  const board1 = boardOf(D.STAIRS1), board2 = boardOf(D.STAIRS2), board3 = boardOf(D.STAIRS3);
   const [p0, p1, pb, pl] = D.STAIRS2.pit;
+  const [q0, q1, qb, ql] = D.STAIRS3.pit;
+  const UP = D.STAIRS2UP;
   const floor1 = {
     n: 1, W: D.W1, bg: P.bg1, name: 'PLAN 1 - MODE', col: '#e8b230',
     walker: mkWalker(D.W1, [(D.DOOR.x0 + D.DOOR.x1) / 2, WALL_Y + 14], [
@@ -205,10 +237,29 @@ export function makeShopKlader(A, opts = {}) {
       [BENCH.x - 1, BENCH.y - 7, BENCH.x + PT.BENCH_W + 1, BENCH.y + 1],
       ...PLACES2.filter((p) => p.kind === 'rack').map((p) => [p.x - 2, p.base - 8, p.x + D.RACK_W + 2, p.base + 3]),
       ...D.PLANTS2.map(([x, y]) => [x - 6, y - 4, x + 6, y + 2]),
+      [UP.lx - 2, WALL_Y, UP.lx + UP.run + 2, UP.ly + 5],                         // trappan upp till julvåningen
+      ...[D.JULHALL_X0 + 40, D.W2 - 22].map((x) => [x - 6, 194, x + 6, 208]),     // de små granarna i trapphallen
     ]),
   };
-  const floors = { 1: floor1, 2: floor2 };
-  let F = opts.floor === 2 ? floor2 : floor1;
+  const B = D.JUL_BRASA, G = D.JUL_GRAN, JD = D.JUL_DESK;
+  const floor3 = {
+    n: 3, W: D.W3, bg: P.bg3, name: 'PLAN 3 - JUL', col: '#2f8f46',
+    walker: mkWalker(D.W3, [board3[0], board3[1] + 18], [
+      ...JULDOCKOR.map((d) => [d.x - 12, d.y - 6, d.x + 12, d.y + 22]),
+      [B.x - 1, WALL_Y, B.x + 33, B.base + 2],
+      ...D.JUL_BENCH.map(([x, y]) => [x - 9, y - 7, x + 9, y + 1]),
+      ...D.JUL_LYKTOR.map(([x, y]) => [x - 3, y - 4, x + 3, y + 1]),
+      [D.JUL_KALKE.x - 1, D.JUL_KALKE.base - 8, D.JUL_KALKE.x + 33, D.JUL_KALKE.base + 1],
+      [G.x - 30, G.base - 12, G.x + 30, G.base + 1],
+      [JD.x, JD.y, JD.x + JD.w, JD.y + JD.h],
+      ...D.PYNT_TABLES.map(([x, foot, w]) => [x - 1, foot - 10, x + w + 1, foot + 1]),
+      ...PYNT.filter((p) => !p.wall && !onTable(p)).map((p) => [p.x - 1, p.y - 6, p.x + p.w + 1, p.y + 1]),
+      [q0 - 3, qb - 14, q1 + 3, ql + 3],
+      ...D.JUL_PLANTS.map(([x, y]) => [x - 6, y - 4, x + 6, y + 2]),
+    ]),
+  };
+  const floors = { 1: floor1, 2: floor2, 3: floor3 };
+  let F = floors[opts.floor] || floor1;
   if (opts.floor === 2) { F.walker.px = board2[0] + 8; F.walker.py = board2[1] + 14; F.walker.snapFree(); }
   const W = () => F.walker;
 
@@ -222,7 +273,7 @@ export function makeShopKlader(A, opts = {}) {
   const say = (msg) => { play('click'); talk.say(msg, () => ({ x: W().px, y: W().py - 44 }), undefined, { self: true }); };
   floor1.spots = [
     { id: 'dorr', r: [D.DOOR.x0 - 2, 26, D.DOOR.x1 + 2, WALL_Y + 4], go: [(D.DOOR.x0 + D.DOOR.x1) / 2, WALL_Y + 10], act: () => { play('door'); A.go('city'); } },
-    { id: 'trappa', stairs: true, r: [D.STAIRS1.lx - 14, D.STAIRS1.clip, D.MID1 - 4, D.STAIRS1.ly + 6], go: board1, act: () => startClimb() },
+    { id: 'trappa', stairs: D.STAIRS1, r: [D.STAIRS1.lx - 14, D.STAIRS1.clip, D.MID1 - 4, D.STAIRS1.ly + 6], go: board1, act: () => startClimb(D.STAIRS1) },
     // man ställer sig BREDVID dockan (på mittgångens sida), så att figuren inte skymmer lappen
     ...DUMMIES.map((d, i) => itemSpot('dummy' + i, d, [d.x - 12, d.y - 40, d.x + 12, d.y + 22], [d.x + (d.dept === 'tjej' ? 22 : -22), d.y + 3], d.dept)),
     ...SHELF.map((s, i) => itemSpot('hylla' + i, s,
@@ -234,7 +285,8 @@ export function makeShopKlader(A, opts = {}) {
     ...[[8, 84], [D.W1 - 84, D.W1 - 8]].map(([a, b], i) => ({ id: 'prov' + i, r: [a, 18, b, WALL_Y], go: [(a + b) / 2, WALL_Y + 12], act: () => say('🪞 Provhytten! Klickar jag på ett plagg ser jag det på mig innan jag köper.') })),
   ];
   floor2.spots = [
-    { id: 'trappa', stairs: true, r: [p0, pb - 14, p1 + 24, pl + 4], go: board2, act: () => startClimb() },
+    { id: 'trappa', stairs: D.STAIRS2, r: [p0, pb - 14, p1 + 24, pl + 4], go: board2, act: () => startClimb(D.STAIRS2) },
+    { id: 'trappa3', stairs: UP, r: [UP.lx - 14, UP.clip, UP.lx + UP.run + 2, UP.ly + 6], go: boardOf(UP), act: () => startClimb(UP) },
     ...KUNGS.map((k) => ({ id: 'kungs' + k.i, kungs: k, r: [k.x - 12, k.y - 40, k.x + 12, k.y + 18], go: [k.x, k.y + (k.y < 150 ? 30 : 32)], dept: 'kungs', act: () => { hoverId = null; play('click'); openKit(A, kungsKit(k)); } })),
     { id: 'matchstall', kit: true, r: [D.KIT_DOLL.x - 12, D.KIT_DOLL.y - 40, D.KIT_DOLL.x + 12, D.KIT_DOLL.y + 18], go: [D.KIT_DOLL.x, D.KIT_DOLL.y + 32], dept: 'kungs', act: () => { hoverId = null; play('click'); openKit(A, kungsKit()); } },
     ...PT.SHOE_SPOTS.map((s) => ({ id: 'skor-' + s.c.id, cleat: s, r: [s.x - 2, s.y - 11, s.x + 18, s.y + 2], go: [s.x + 8, WALL_Y + 12], dept: 'kungs', act: () => {
@@ -252,23 +304,40 @@ export function makeShopKlader(A, opts = {}) {
     { id: 'boll', r: [D.PITCH.x0, D.PITCH.y0 + 18, D.PITCH.x1, D.PITCH.y1], go: [D.BALL0[0], D.BALL0[1] + 12], act: () => kick() },
     { id: 'pokaler', r: [578, 30, 642, 58], go: [610, WALL_Y + 12], act: () => say('🏆 Pokalerna! Kungsladugård har vunnit en hel hylla.') },
   ];
-  for (const f of [floor1, floor2]) for (const s of f.spots) s.floor = f.n;
+  // plan 3: julvåningen
+  const pyntSpot = (p) => {
+    const tab = onTable(p);
+    return { id: `pynt-${p.k}${p.v}`, pynt: p, dept: 'jul', r: [p.x - 1, p.y - p.h - 1, p.x + p.w + 1, p.y + 1],
+      go: p.wall ? [p.x + p.w / 2, WALL_Y + 12] : [p.x + p.w / 2, (tab ? tab[1] : p.y) + 10],
+      act: () => { hoverId = null; play('click'); openFurnBuy(A, p.k); } };
+  };
+  floor3.spots = [
+    { id: 'trappa', stairs: D.STAIRS3, r: [q0, qb - 14, q1 + 24, ql + 4], go: board3, act: () => startClimb(D.STAIRS3) },
+    ...JULDOCKOR.map((d, i) => itemSpot('juldocka' + i, d, [d.x - 12, d.y - 40, d.x + 12, d.y + 22], [d.x + 22, d.y + 3], 'jul')),
+    ...JULHATTAR.map((b, i) => ({ id: 'julhatt' + i, item: b, r: [b.x - 12, b.y - 26, b.x + 12, b.y + 4], go: [b.x, WALL_Y + 12], dept: 'jul', act: () => { hoverId = null; openBuy(A, b.it, { dept: 'jul', colors: b.colors, fromDoll: true }); } })),
+    ...PLACES3.map(placeSpot),
+    { id: 'brasa', brasa: true, r: [B.x - 6, 26, B.x + 38, B.base + 4], go: [B.x + 16, B.base + 14], act: () => { hoverId = null; openMarshmallow(A, { title: '🍡 Grilla marshmallows vid brasan' }); } },
+    { id: 'storgran', r: [G.x - 30, G.base - JUL.GRAN_H + 4, G.x + 30, G.base - 12], go: [G.x, G.base + 12], act: () => say('🎄 Vilken gran! Granar till dig själv finns på julpyntet – med kulor eller med blinkande ljus.') },
+    { id: 'kassa', r: [JD.x, JD.y - 30, JD.x + JD.w, JD.y + JD.h], go: [JD.x + JD.w / 2, JD.y + JD.h + 10], act: () => { play('click'); talk.say(['God jul! 🎅 Julkläderna hänger till vänster och pyntet till höger.', 'Har du provat att grilla en marshmallow vid brasan? 🍡', 'Granen med blinkande ljus är årets julklapp! 🎄'][Math.floor(t / 4) % 3], { x: JD.x + JD.w / 2, y: JD.y - 30 }); } },
+    ...PYNT.map(pyntSpot),
+  ];
+  for (const f of [floor1, floor2, floor3]) for (const s of f.spots) s.floor = f.n;
   const spotAt = (x, y) => F.spots.find((h) => x >= h.r[0] && x <= h.r[2] && y >= h.r[1] && y <= h.r[3]);
   // den sak man står vid (eller pekar på) får namnskylten nertill; musens pekning glöms
   // efter en stund utan rörelse (main.js säger inte till när musen lämnar spelet)
   const focusSpot = () => {
     if (climb) return null;
     const h = hoverId && t - hoverT < 4 && F.spots.find((s) => s.id === hoverId);
-    if (h && h.act && !['dorr', 'kassa', 'coach', 'pokaler'].includes(h.id) && !h.id.startsWith('prov')) return h;
+    if (h && h.act && !['dorr', 'kassa', 'coach', 'pokaler', 'storgran'].includes(h.id) && !h.id.startsWith('prov')) return h;
     if (W().path.length) return null;
-    return F.spots.find((s) => (s.item || s.place || s.kungs || s.team || s.cleat || s.kit || s.stairs || s.photo) && Math.abs(W().px - s.go[0]) < 7 && Math.abs(W().py - s.go[1]) < 7) || null;
+    return F.spots.find((s) => (s.item || s.place || s.kungs || s.team || s.cleat || s.kit || s.stairs || s.photo || s.pynt || s.brasa) && Math.abs(W().px - s.go[0]) < 7 && Math.abs(W().py - s.go[1]) < 7) || null;
   };
 
   // ---------- trappan ----------
   const nag = (msg) => { if (t - nagAt > 1.2) { nagAt = t; toast(msg); } };
-  function startClimb() {
+  function startClimb(e) {
     talk.clear();
-    climb = { e: F.n === 1 ? D.STAIRS1 : D.STAIRS2, d: -12, v: STAIR_V };
+    climb = { e: e || F.spots.find((s) => s.stairs)?.stairs, d: -12, v: STAIR_V };
     W().stop();
     play('click');
   }
@@ -285,17 +354,18 @@ export function makeShopKlader(A, opts = {}) {
     climb.d += climb.v * dt;
     const e = climb.e;
     if (climb.v > 0 && climb.d >= e.top) {
-      // försvunnen genom taket (plan 1) eller ner i schaktet (plan 2): byt våning
-      const other = e.n === 1 ? D.STAIRS2 : D.STAIRS1;
-      enterFloor(other.n, other.n === 1 ? board1 : board2);
+      // försvunnen genom taket eller ner i schaktet: byt våning (trapporna går parvis, D.STAIR_PAIRS)
+      const other = D.stairPair(e);
+      enterFloor(other.n, boardOf(other));
       climb = { e: other, d: other.top, v: -STAIR_V };
       fade = 0.7;
       play('slide');
     } else if (climb.v < 0 && climb.d <= -12) {
-      const w = W(), b = e.n === 1 ? board1 : board2;
+      const w = W(), b = boardOf(e);
       climb = null;
       w.px = b[0]; w.py = b[1]; w.snapFree();
-      if (e.n === 2) { w.walkTo(b[0] + 6, b[1] + 16); toast('⚽ PLAN 2 – SPORT & FOTBOLL. Kungsladugård till vänster, kända lag till höger!', 'good'); }
+      if (e.n === 3) { w.walkTo(b[0], b[1] + 18); toast('🎄 PLAN 3 – JULVÅNINGEN! Julpyntet närmast, sedan brasan och granen – och julkläderna längst bort.', 'good'); }
+      else if (e.n === 2) { w.walkTo(b[0] + 6, b[1] + 16); toast('⚽ PLAN 2 – SPORT & FOTBOLL. Kungsladugård till vänster, kända lag till höger – och trappan till julvåningen längst till höger!', 'good'); }
       else { w.walkTo(b[0] - 6, b[1] + 16); toast('👗 PLAN 1 – MODE. Tjejer till vänster, killar till höger.', 'good'); }
     }
   }
@@ -359,13 +429,13 @@ export function makeShopKlader(A, opts = {}) {
   const snapCam = () => { cam.x = camTarget(); cam.y = camYTarget(); syncTy(); };
   syncTy();
 
-  // ---------- andra spelare (y + 1000 = plan 2) ----------
+  // ---------- andra spelare (y + 1000 = plan 2, y + 2000 = plan 3) ----------
   // Byter någon våning hoppar hens worldY ±1000, och nätet (world.js) låter figuren glida dit.
   // Mellanläget ska inte synas: med målet (f.ty, world.js-patchen) ritas figuren direkt där den
   // ska vara; utan det göms den medan den glider mellan våningarna och syns när den är framme.
   const FLOOR_DY = 1000, TRANSIT = new Map(), LASTY = new Map(); // id → egen glidning { x, y } (med mål) / { t } (utan) · id → förra y
-  const floorOf = (y) => (y >= FLOOR_DY * 0.6 ? 2 : 1);
-  const onFloorBand = (y) => { const ly = y - (floorOf(y) === 2 ? FLOOR_DY : 0); return ly >= -8 && ly <= H + 40; };
+  const floorOf = (y) => (y >= FLOOR_DY * 1.6 ? 3 : y >= FLOOR_DY * 0.6 ? 2 : 1);
+  const onFloorBand = (y) => { const ly = y - (floorOf(y) - 1) * FLOOR_DY; return ly >= -8 && ly <= H + 40; };
   let folkCache = [];
   function folkStep(dt) {
     const out = [], seen = new Set();
@@ -374,7 +444,7 @@ export function makeShopKlader(A, opts = {}) {
       const hasTarget = Number.isFinite(f.ty);
       const goal = hasTarget ? f.ty : f.y;
       if (floorOf(goal) !== F.n) { TRANSIT.delete(f.id); continue; }
-      const base = F.n === 2 ? FLOOR_DY : 0;
+      const base = (F.n - 1) * FLOOR_DY;
       if (hasTarget) {
         // Ett stort hopp (våningsbyte): figuren dyker upp direkt vid målet och glider sedan
         // själv härifrån med samma lag som world.js (max(62, 3·avstånd) px/s) – när nätets
@@ -435,7 +505,7 @@ export function makeShopKlader(A, opts = {}) {
       ctx.restore();
     }
     ctx.drawImage(S.front, S.x, S.y);
-    if (e.sy > 0) ctx.drawImage(P.pitFront, p0 - 1, pl - 1);
+    if (e.sy > 0) ctx.drawImage(P.pitFront, e.pit[0] - 1, e.pit[3] - 1);
   }
   function drawGarments(ctx, p, focus) {
     const on = focus?.place === p;
@@ -544,7 +614,8 @@ export function makeShopKlader(A, opts = {}) {
     list.push({ fy: D.KIT_DOLL.y, draw: () => { drawKitDoll(ctx, focus?.kit); } });
     for (const tm of TEAMS) list.push({ fy: tm.y, draw: () => drawTeam(ctx, tm, focus?.team === tm, true) });
     for (const p of PLACES2) if (p.kind === 'rack') list.push({ fy: p.base, draw: () => drawGarments(ctx, p, focus) });
-    list.push({ fy: D.STAIRS2.pit[3], draw: () => { if (focus?.stairs) stairGlow(ctx, D.STAIRS2); drawStairs(ctx, D.STAIRS2, P.stairs2); } });
+    list.push({ fy: D.STAIRS2.pit[3], draw: () => { if (focus?.stairs === D.STAIRS2) stairGlow(ctx, D.STAIRS2); drawStairs(ctx, D.STAIRS2, P.stairs2); } });
+    list.push({ fy: UP.ly + 4, draw: () => { if (focus?.stairs === UP) stairGlow(ctx, UP); drawStairs(ctx, UP, P.stairs2up); } });
     list.push({ fy: D.COACH.y, draw: () => { drawPerson(ctx, D.COACH.x, D.COACH.y, COACH_LOOK, 'down', Math.sin(t * 1.3) > 0.93 ? 4 : 0); whistle(ctx, D.COACH.x, D.COACH.y); } });
     list.push({ fy: D.GOAL.y, draw: () => { ctx.drawImage(P.goal, D.GOAL.x - 16, D.GOAL.y - 19); if (ball.st === 'net' && Math.floor(ball.t * 10) % 2 === 0) { ctx.fillStyle = 'rgba(255,255,255,.55)'; ctx.fillRect(D.GOAL.x - 13, D.GOAL.y - 15, 26, 13); } } });
     list.push({ fy: ball.y + (ball.st === 'net' ? -20 : 0), draw: () => drawBall(ctx, ball, focus?.id === 'boll', t) });
@@ -555,6 +626,67 @@ export function makeShopKlader(A, opts = {}) {
     if (focus?.kungs) numberPlate(ctx, focus.kungs.x, focus.kungs.y + 7, focus.kungs.n, focus.kungs.name, true);
     else if (focus?.team) drawTeam(ctx, focus.team, true, false);
     else if (focus?.kit) drawKitDoll(ctx, true, false);
+  }
+  // PLAN 3 · JULVÅNINGEN
+  function drawPynt(ctx, p, on) {
+    const a = furnArt(p.k, p.v);
+    if (!a) return;
+    if (on) { ctx.fillStyle = 'rgba(255,230,128,.4)'; ctx.fillRect(p.x - 2, p.y - p.h - 2, p.w + 4, p.h + 4); }
+    if (!p.wall) { ctx.fillStyle = 'rgba(20,12,28,0.2)'; ctx.fillRect(p.x + 1, p.y - 1, p.w - 2, 2); }
+    drawArt(ctx, a, p.x, p.y - p.h);
+    if (p.k === 'julspis') drawFire(ctx, { k: p.k, v: p.v }, p.x, p.y - p.h, p.w, false, 1);
+    furnTag(ctx, p.x + p.w / 2, p.y + (p.wall ? 2 : 3), p.kat.price);
+  }
+  function draw3(ctx, focus) {
+    const cx = cam.x;
+    JUL.drawSnow(ctx, t);
+    JUL.drawGarlandLights(ctx, t, cx, cx + VW);
+    for (const p of PLACES3) drawGarments(ctx, p, focus);
+    for (const b of JULHATTAR) {
+      const on = focus?.item === b;
+      if (on) { ctx.fillStyle = 'rgba(255,230,128,.45)'; ctx.fillRect(b.x - 12, b.y - 24, 24, 24); }
+      drawBust(ctx, b.x, b.y, b.look);
+      priceTag(ctx, b.x, b.y + 4, b.it, owns(g, b.it), g);
+    }
+    for (const p of PYNT) if (p.wall) drawPynt(ctx, p, focus?.pynt === p);
+    const list = [...folkDrawables()];
+    if (!climb) list.push(selfDrawable(A, W(), t, { folksHere: folksHere().length }));
+    for (const d of JULDOCKOR) list.push({
+      fy: d.y,
+      draw: () => {
+        const on = focus?.item === d;
+        if (on) ctx.drawImage(P.glow, d.x - 20, d.y - 7);
+        ctx.drawImage(P.pod.jul, d.x - 12, d.y - 4);
+        drawPerson(ctx, d.x, d.y, d.look, 'down', 0);
+        const [hx, hy] = HANG_AT[d.it.slot] || HANG_AT.top;
+        hangTag(ctx, d.x + hx, d.y + hy, owns(g, d.it), on && Math.floor(t * 4) % 2 === 0);
+        dummyTag(ctx, d.x, d.y + 7, d.it, owns(g, d.it), g, 'jul', false, d.short);
+        if (on) sparkle(ctx, d, t);
+      },
+    });
+    // brasan: den julpyntade spisen med eld och sken
+    list.push({ fy: B.base, draw: () => {
+      const a = furnArt('julspis', 1);
+      if (!a) return;
+      if (focus?.brasa) { ctx.fillStyle = 'rgba(255,230,128,.35)'; ctx.fillRect(B.x - 3, B.base - a.sh - 3, a.sw + 6, a.sh + 6); }
+      halo(ctx, B.x + 16, B.base - 10, 34, 14, '#ffb060', 0.12);
+      drawArt(ctx, a, B.x, B.base - a.sh);
+      drawFire(ctx, { k: 'julspis', v: 1 }, B.x, B.base - a.sh, a.sw, false, 0);
+    } });
+    for (const [x, y] of D.JUL_BENCH) list.push({ fy: y, draw: () => ctx.drawImage(P.stool, x - 10, y - 10) });
+    for (const [x, y] of D.JUL_LYKTOR) list.push({ fy: y, draw: () => { halo(ctx, x, y - 40, 12, 8, '#ffe7a0', 0.12); ctx.drawImage(P.lykta, x - 6, y - 47); } });
+    list.push({ fy: D.JUL_KALKE.base, draw: () => ctx.drawImage(P.kalke, D.JUL_KALKE.x, D.JUL_KALKE.base - 17) });
+    list.push({ fy: G.base, draw: () => { const x0 = G.x - JUL.GRAN_W / 2, y0 = G.base - JUL.GRAN_H; ctx.drawImage(P.gran, x0, y0); JUL.drawGranLights(ctx, x0, y0, t); } });
+    list.push({ fy: JD.y + JD.h, draw: () => { drawPerson(ctx, JD.x + 34, JD.y + 14, TOMTE_LOOK, 'down', Math.sin(t * 1.7) > 0.93 ? 4 : 0); ctx.drawImage(P.julDesk, JD.x, JD.y); } });
+    D.PYNT_TABLES.forEach(([x, foot], i) => list.push({ fy: foot, draw: () => {
+      ctx.drawImage(P.tables[i], x, foot - 17);
+      for (const p of PYNT) if (onTable(p)?.[0] === x) drawPynt(ctx, p, focus?.pynt === p);
+    } }));
+    for (const p of PYNT) if (!p.wall && !onTable(p)) list.push({ fy: p.y, draw: () => drawPynt(ctx, p, focus?.pynt === p) });
+    list.push({ fy: D.STAIRS3.pit[3], draw: () => { if (focus?.stairs) stairGlow(ctx, D.STAIRS3); drawStairs(ctx, D.STAIRS3, P.stairs3); } });
+    for (const [x, y] of D.JUL_PLANTS) list.push({ fy: y, draw: () => ctx.drawImage(P.plant, x - 11, y - 31) });
+    list.sort((a, b) => a.fy - b.fy).forEach((d) => d.draw(ctx));
+    if (focus && JULDOCKOR.includes(focus.item)) dummyTag(ctx, focus.item.x, focus.item.y + 7, focus.item.it, owns(g, focus.item.it), g, 'jul', true, focus.item.short);
   }
   // Lagets matchställ (säljs): lappen FRÅN 390 KR, TA PÅ DIG när tröjan redan är din, PÅ DIG när man bär den
   function kitState(it, shirt) {
@@ -584,18 +716,19 @@ export function makeShopKlader(A, opts = {}) {
 
   return {
     get worldX() { return playerPos()[0]; },
-    get worldY() { return playerPos()[1] + (F.n === 2 ? 1000 : 0); },
+    get worldY() { return playerPos()[1] + (F.n - 1) * 1000; },
     get floor() { return F.n; },
     viewMax: { get w() { return F.W; }, h: H },
     _debug: {
       floor: () => F.n,
-      goFloor: (n) => { climb = null; enterFloor(n === 2 ? 2 : 1, n === 2 ? [board2[0] + 8, board2[1] + 14] : [(D.DOOR.x0 + D.DOOR.x1) / 2, WALL_Y + 14]); return F.n; },
+      goFloor: (n) => { climb = null; enterFloor(n === 3 ? 3 : n === 2 ? 2 : 1, n === 3 ? [board3[0], board3[1] + 18] : n === 2 ? [board2[0] + 8, board2[1] + 14] : [(D.DOOR.x0 + D.DOOR.x1) / 2, WALL_Y + 14]); return F.n; },
       spot: (id) => { const h = F.spots.find((s) => s.id === id); return h ? { x: (h.r[0] + h.r[2]) / 2 - cam.x, y: (h.r[1] + h.r[3]) / 2 + ty } : null; },
       spots: () => F.spots.map((s) => s.id),
       dummies: DUMMIES.map((d) => d.it.legacy || d.it.id),
       dummyIds: DUMMIES.map((d) => d.it.id),
       depts: DUMMIES.map((d) => d.dept),
-      places: () => [...PLACES1, ...PLACES2].map((p) => ({ id: p.cat.id, kind: p.kind, dept: p.dept, x: p.x, n: p.items.length, shown: p.items.slice(0, p.kind === 'wall' ? 6 : 5).map((it) => it.id), items: p.items.map((it) => it.id) })),
+      pynt: () => PYNT.map((p) => ({ k: p.k, v: p.v, wall: p.wall, id: `pynt-${p.k}${p.v}` })),
+      places: () => [...PLACES1, ...PLACES2, ...PLACES3].map((p) => ({ id: p.cat.id, kind: p.kind, dept: p.dept, x: p.x, n: p.items.length, shown: p.items.slice(0, p.kind === 'wall' ? 6 : 5).map((it) => it.id), items: p.items.map((it) => it.id) })),
       kungs: () => KUNGS.map((k) => ({ n: k.n, name: k.name, x: k.x, y: k.y })),
       teams: () => TEAMS.map((tm) => ({ city: tm.city, item: tm.it?.id, x: tm.x, y: tm.y })),
       lockCam: (x) => { lockedCam = x === null || x === undefined ? null : Math.max(0, Math.min(F.W - VW, x)); snapCam(); },
@@ -606,7 +739,7 @@ export function makeShopKlader(A, opts = {}) {
       pos: () => { const [x, y] = playerPos(); return { x: Math.round(x), y: Math.round(y), floor: F.n }; },
       path: () => W().path.map(([x, y]) => [Math.round(x), Math.round(y)]),
       climb: () => (climb ? { floor: climb.e.n, d: Math.round(climb.d), v: climb.v } : null),
-      stairs: () => startClimb(),
+      stairs: (to) => startClimb(F.spots.find((s) => s.stairs && (!to || s.stairs.to === to))?.stairs),
       ball: () => ({ st: ball.st, x: Math.round(ball.x), y: Math.round(ball.y) }),
       kick: () => kick(),
       open: (id) => F.spots.find((h) => h.id === id)?.act?.(),
@@ -634,7 +767,7 @@ export function makeShopKlader(A, opts = {}) {
     down(sx, sy) {
       const x = sx + cam.x, y = sy - ty; // skärm → värld (radbandet kan vara förskjutet)
       hoverId = null; // skylten följer figuren igen tills musen rör sig
-      if (climb) { nag(climb.e.n === 1 && climb.v > 0 || climb.e.n === 2 && climb.v < 0 ? '⬆️ Vänta tills du är uppe!' : '⬇️ Vänta tills du är nere!'); return; }
+      if (climb) { nag((climb.e.sy < 0) === (climb.v > 0) ? '⬆️ Vänta tills du är uppe!' : '⬇️ Vänta tills du är nere!'); return; }
       const h = spotAt(x, y);
       if (h) { W().walkTo(h.go[0], h.go[1], h.act); return; }
       if (y > WALL_Y) W().walkTo(x, y);
@@ -654,7 +787,7 @@ export function makeShopKlader(A, opts = {}) {
       ctx.setTransform(A.pxs, 0, 0, A.pxs, -cx * A.pxs, ty * A.pxs);
       ctx.drawImage(F.bg, cx, 0, VW, H, cx, 0, VW, H);
       const focus = focusSpot();
-      if (F.n === 1) draw1(ctx, focus); else draw2(ctx, focus);
+      if (F.n === 1) draw1(ctx, focus); else if (F.n === 2) draw2(ctx, focus); else draw3(ctx, focus);
       talk.draw(ctx, { x0: cx, x1: cx + VW });
       // skärmen: våningsskylt, pilar mot det man inte ser, namnskylten, tonad övergång –
       // alltid inom den synliga rutan (b.y0–b.y1)
@@ -663,9 +796,12 @@ export function makeShopKlader(A, opts = {}) {
       if (F.n === 1) {
         if (cx > 150) edgeSign(ctx, 'TJEJER', DEPT_LBL.tjej, true, b.y1);
         if (cx < F.W - VW - 150) edgeSign(ctx, 'KILLAR', DEPT_LBL.kille, false, b.y1);
-      } else {
+      } else if (F.n === 2) {
         if (cx > 330) edgeSign(ctx, 'KUNGSLADUGÅRD', DEPT_LBL.kungs, true, b.y1);
-        if (cx < F.W - VW - 330) edgeSign(ctx, 'KÄNDA LAG', DEPT_LBL.lag, false, b.y1);
+        if (cx < F.W - VW - 330) edgeSign(ctx, cx < 700 ? 'KÄNDA LAG' : 'TRAPPAN TILL JUL', cx < 700 ? DEPT_LBL.lag : DEPT_LBL.jul, false, b.y1);
+      } else {
+        if (cx > 200) edgeSign(ctx, 'JULKLÄDER', DEPT_LBL.jul, true, b.y1);
+        if (cx < D.TORG_X1 - VW) edgeSign(ctx, 'JULPYNT', DEPT_LBL.jul, false, b.y1);
       }
       // namnskylten nertill – eller upptill när figuren själv står längst ner i bild
       lastLabel = null;
@@ -703,8 +839,14 @@ export function makeShopKlader(A, opts = {}) {
       const it = itemById('shoes-cleats'); own = owns(g, it);
       name = pix(`${spot.cleat.c.name} fotbollsskor`); right = own ? 'DIN!' : `${priceOf(g, it)} KR`; hint = own ? 'KLICKA SÅ TAR DU PÅ DIG DEM' : 'KLICKA SÅ PROVAR DU DEM PÅ DIG';
     } else if (spot.stairs) {
-      name = F.n === 1 ? 'TRAPPA UPP' : 'TRAPPA NER'; right = F.n === 1 ? 'PLAN 2' : 'PLAN 1'; hint = F.n === 1 ? 'SPORT + FOTBOLL · KUNGSLADUGÅRD' : 'MODE · TJEJER OCH KILLAR';
-      key = F.n === 1 ? 'kungs' : 'mid';
+      const e = spot.stairs;
+      name = e.sy < 0 ? 'TRAPPA UPP' : 'TRAPPA NER'; right = `PLAN ${e.to}`;
+      hint = { 1: 'MODE · TJEJER OCH KILLAR', 2: 'SPORT + FOTBOLL · KUNGSLADUGÅRD', 3: 'JULVÅNINGEN · PYNT, KLÄDER OCH BRASAN' }[e.to];
+      key = { 1: 'mid', 2: 'kungs', 3: 'jul' }[e.to];
+    } else if (spot.pynt) {
+      const p = spot.pynt;
+      name = pix(p.kat.name); right = `${p.kat.price} KR`; hint = p.kat.vars > 1 ? `${p.kat.vars} MODELLER · KLICKA SÅ VÄLJER DU` : 'KLICKA SÅ KÖPER DU - DEN HAMNAR I FÖRRÅDET'; key = 'jul';
+    } else if (spot.brasa) { name = 'BRASAN'; right = 'GRATIS'; hint = 'KLICKA SÅ GRILLAR DU MARSHMALLOWS'; key = 'jul';
     } else if (spot.id === 'boll') { name = 'PROVPLANEN'; right = ''; hint = 'KLICKA SÅ SKJUTER DU PÅ MÅL'; key = 'lag'; }
     else return;
     const lblC = DEPT_LBL[key] || '#f0d048';
@@ -790,6 +932,14 @@ function priceTag(ctx, x, y, it, isOwned, g) {
   ctx.fillStyle = '#17151a'; ctx.fillRect(x0 - 1, y - 1, w + 2, 9);
   ctx.fillStyle = isOwned ? '#45b964' : price !== it.price ? '#ff8a80' : '#f0d048'; ctx.fillRect(x0, y, w, 7);
   ctxText(ctx, SMALL, lbl, x0 + 2, y + 1, isOwned ? '#ffffff' : '#3a2a10');
+}
+// Prislapp under julpyntet ("250:-")
+function furnTag(ctx, x, y, price) {
+  const lbl = `${price}:-`, w = textW(SMALL, lbl) + 4, x0 = Math.round(x - w / 2);
+  ctx.fillStyle = '#17151a'; ctx.fillRect(x0 - 1, y - 1, w + 2, 9);
+  ctx.fillStyle = '#f0d048'; ctx.fillRect(x0, y, w, 7);
+  ctx.fillStyle = '#c9323a'; ctx.fillRect(x0, y, w, 1);
+  ctxText(ctx, SMALL, lbl, x0 + 2, y + 1, '#3a2a10');
 }
 // Gul hänglapp (grön = din) som hänger i ett snöre från plagget som säljs
 function hangTag(ctx, x, y, isOwned, blink) {

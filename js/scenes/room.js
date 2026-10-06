@@ -51,6 +51,7 @@ import { createPetLayer } from '../pets/layer.js';
 import { petStore } from '../pets/sim.js';
 import { itemBox, itemSolid, PET_ITEMS } from '../pets/items.js';
 import { openWeek } from '../core/week.js';
+import { openBrasa } from '../core/brasa.js'; // 🔥 brasan i spisarna + marshmallows
 
 // Husdjursprylens fotavtryck på golvet – samma mått som lagret (js/pets/layer.js footprint)
 // ställer ut prylar efter: korgar/lådor/bur/klösträd har ett eget (itemSolid), skålar,
@@ -398,7 +399,7 @@ function surfaceRow(k, v, r) {
   return row;
 }
 // vad skylten över en funktionsmöbel säger
-const FN_LABEL = { sova: 'SÄNG', garderob: 'GARDEROB', ata: 'KYLSKÅP', laga: 'SPIS', recept: 'RECEPT', toalett: 'TOALETT', tvatta: 'TVÄTTA', tv: 'TV', musik: 'MUSIK' };
+const FN_LABEL = { brasa: 'BRASA', sova: 'SÄNG', garderob: 'GARDEROB', ata: 'KYLSKÅP', laga: 'SPIS', recept: 'RECEPT', toalett: 'TOALETT', tvatta: 'TVÄTTA', tv: 'TV', musik: 'MUSIK' };
 const KIND_LABEL = { koksspis: 'SPIS', mikro: 'MIKRO', dusch: 'DUSCH', badkar: 'BADKAR', tvattmaskin: 'TVÄTT', tvattpelare: 'TVÄTT',
   handfat: 'HANDFAT', tvattstall: 'HANDFAT', dator: 'DATOR', laptop: 'DATOR', spelkonsol: 'KONSOL', dass: 'DASSET', kladskap: 'KLÄDSKÅP', linneskap: 'LINNESKÅP' };
 const labelOf = (k) => { const fn = functionOf(k); return fn ? KIND_LABEL[k] || FN_LABEL[fn] : null; };
@@ -416,11 +417,40 @@ export const canRecolor = (k) => k !== 'vaxt'; // monsteran är ritad för hand,
 // i heltalsskala, eller null om atlasen inte har laddats än.
 export function furnArt(k, v, c = null) {
   if (k === 'matta') return { img: rugImg(v, c), sx: 0, sy: 0, sw: RUG.w, sh: RUG.h };
+  const n = katalogOf(k)?.anim | 0;
+  if (n > 1) v = (v | 0) * n + animPhase(n);
   const f = frameOf(k, v);
   if (!f || !ATLAS?.complete) return null;
   const t = isHex(c) ? tintSprite(ATLAS, f, c, TINT_HINT[frameName(k, v)]) : null;
   return t ? { img: t, sx: 0, sy: 0, sw: f[2], sh: f[3] } : { img: ATLAS, sx: f[0], sy: f[1], sw: f[2], sh: f[3] };
 }
+// ---------- julljusen och brasan (julvåningen 2026-10-06) ----------
+// Blinkande pynt (katalogens anim) växlar bildruta i samma takt överallt. Spisarna har en
+// brasa (d.lit) – lågorna (flamma0–3 ur arket, 12×8) ritas i eldstaden, FIRE_AT = lågornas
+// övre vänstra hörn i möbelbilden per sort (eller sort + variant). Lyser något (katalogens
+// glow, eller en tänd brasa) ritas det igen ovanpå kvällsmörkret med ett varmt sken.
+const ANIM_MS = 650;
+const animPhase = (n) => Math.floor(performance.now() / ANIM_MS) % n;
+const FIRE_AT = { spis: [[8, 23]], eldstad: [[7, 12]], tegelspis0: [[7, 12]], tegelspis: [[7, 9]], murspis: [[5, 28], [15, 28]], julspis: [[5, 28], [15, 28]] };
+export const fireAt = (k, v) => FIRE_AT[k + (v | 0)] || FIRE_AT[k] || null;
+export function drawFire(ctx, d, x, top, fw, flip, seed = 0) {
+  const at = fireAt(d.k, d.v);
+  if (!at || !ATLAS?.complete) return;
+  at.forEach(([fx, fy], i) => {
+    const f = FRAMES['flamma' + ((Math.floor(performance.now() / 110) + seed + i * 2) % 4)];
+    if (!f) return;
+    const dx = flip ? fw - fx - f[2] : fx;
+    ctx.drawImage(ATLAS, f[0], f[1], f[2], f[3], x + dx, top + fy, f[2], f[3]);
+  });
+}
+// varmt sken i pixelrader (ingen kantutjämning): en ellips med låg täckning
+export function halo(ctx, cx, cy, rx, ry, color, a) {
+  ctx.globalAlpha = a; ctx.fillStyle = color;
+  for (let y = -ry; y <= ry; y++) { const w = Math.round(rx * Math.sqrt(1 - (y / ry) ** 2)); if (w > 0) ctx.fillRect(Math.round(cx) - w, Math.round(cy) + y, w * 2, 1); }
+  ctx.globalAlpha = 1;
+}
+const glows = (k) => !!katalogOf(k)?.glow;
+
 // Samma sak i rotationsläge r: rätt vy ur atlasen (soffan från sidan …) och om
 // den ska speglas – rita med drawArt.
 export function furnView(k, v, c = null, r = 0) {
@@ -765,6 +795,7 @@ export function makeRoom(A, { visit = false, sub: subOpt = null, core = null } =
       case 'tvatta': return () => wash(A, kind);
       case 'tv': return () => tvMenu(A, kind, p);
       case 'musik': return () => openMusik(A, kind, p ? { k: p.k, decoIdx: p.decoIdx } : {});
+      case 'brasa': return () => { const d = p ? decoList()[p.decoIdx] : null; if (d) openBrasa(A, d); };
     }
     return null;
   }
@@ -1457,7 +1488,13 @@ export function makeRoom(A, { visit = false, sub: subOpt = null, core = null } =
         ctxText(ctx, SMALL, 'MÖBLERA: KLICKA PÅ EN MÖBEL', 7, 6, '#ffd23f');
       }
 
-      if (!st) { if (night) { ctx.fillStyle = `rgba(10,12,40,${NIGHT_DIM})`; ctx.fillRect(0, 0, FW, FH); } return; }
+      if (!st) {
+        if (night) {
+          ctx.fillStyle = `rgba(10,12,40,${NIGHT_DIM})`; ctx.fillRect(0, 0, FW, FH);
+          for (const q of [...wallItems, ...props]) q.light?.(ctx); // julljusen och brasan lyser
+        }
+        return;
+      }
       // sömnen: mörkret sänker sig, fönstren lyser svagt (himlen dämpas inte som rummet),
       // månljuset faller in över golvet, zzz stiger – och i gryningen ett rosa sken
       if (st.dim > 0) { ctx.fillStyle = `rgba(8,10,34,${st.dim.toFixed(3)})`; ctx.fillRect(0, 0, FW, FH); }
@@ -1547,6 +1584,21 @@ function spriteProp(d, decoIdx, sign) {
       else { ctx.fillRect(x + 1, base - 1, fw - 2, 2); ctx.fillRect(x + 3, base + 1, fw - 6, 1); }
       const a = furnView(d.k, d.v, d.c, d.r); // cachad per (ruta, färg)
       if (a) drawArt(ctx, a, x, top);
+      if (d.lit) drawFire(ctx, d, x, top, fw, a?.flip, decoIdx | 0);
+    },
+    // i kvällsmörkret: det som lyser ritas igen ovanpå mörkret, med ett varmt sken
+    light(ctx) {
+      if (!d.lit && !glows(d.k)) return;   // (brasan tänds och släcks utan att rummet byggs om)
+      if (d.lit) {
+        const at = fireAt(d.k, d.v)?.[0] || [fw / 2 - 6, fh / 2];
+        halo(ctx, x + at[0] + 6, top + at[1] + 6, 46, 20, '#ff9d3a', 0.09);
+        halo(ctx, x + at[0] + 6, top + at[1] + 5, 24, 11, '#ffc76a', 0.12);
+        drawFire(ctx, d, x, top, fw, furnView(d.k, d.v, d.c, d.r)?.flip, decoIdx | 0);
+        return;
+      }
+      halo(ctx, x + fw / 2, top + fh * 0.45, Math.max(14, fw), Math.max(9, fh * 0.5), '#ffd98a', 0.1);
+      const a = furnView(d.k, d.v, d.c, d.r);
+      if (a) { ctx.globalAlpha = 0.8; drawArt(ctx, a, x, top); ctx.globalAlpha = 1; }
     },
     // skylten ritas för sig (plateFy, se spreadPlates) – ovanpå möbler den hamnar över
     drawPlate(ctx) { if (label) ctxPlate(ctx, p.plateX, p.plateY, label); },
@@ -1620,6 +1672,11 @@ function wallProp(d, decoIdx) {
       const a = furnView(d.k, d.v, d.c, d.r);
       if (a) drawArt(ctx, a, d.x, top);
     },
+    light: glows(d.k) ? (ctx) => {
+      halo(ctx, d.x + fw / 2, top + fh / 2, Math.max(14, fw), Math.max(10, fh), '#ffd98a', 0.1);
+      const a = furnView(d.k, d.v, d.c, d.r);
+      if (a) { ctx.globalAlpha = 0.85; drawArt(ctx, a, d.x, top); ctx.globalAlpha = 1; }
+    } : null,
   };
 }
 // matta ur arken: platt, gåbar, ritas under allt
