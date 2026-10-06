@@ -43,6 +43,7 @@ export const WARDROBE_BOTTOMS = [
   { id: 'bottom-leggings-leopard', slot: 'bottom', look: { bottom: 'leggings', bottomPrint: 'leopard' }, name: 'Leopard\u00adleggings', price: 249, dept: 'tjej', icon: '🐆', colors: { pants: '#d9a95c', pants2: '#3b2619' } },
   { id: 'bottom-leggings-stars', slot: 'bottom', look: { bottom: 'leggings', bottomPrint: 'stars' }, name: 'Stjärn\u00adleggings', price: 229, dept: 'tjej', icon: '⭐', colors: { pants: '#3f4fa8', pants2: '#f0e070' } },
   { id: 'bottom-leggings-stripesH', slot: 'bottom', look: { bottom: 'leggings', bottomPrint: 'stripesH' }, name: 'Randiga leggings', price: 219, dept: 'unisex', icon: '🧦', colors: { pants: '#f4f1ea', pants2: '#c9323a' } },
+  { id: 'bottom-leggings-skeleton', slot: 'bottom', look: { bottom: 'leggings', bottomPrint: 'skeleton' }, name: 'Skelett­byxor', price: 249, dept: 'unisex', icon: '💀', colors: { pants: '#1c1c22', pants2: '#f4f1ea' } },
   { id: 'bottom-pajamas', slot: 'bottom', look: { bottom: 'pajamas' }, name: 'Pyjamas\u00adbyxor', price: 229, dept: 'unisex', icon: '😴', colors: { pants: '#8fb3d9', pants2: '#f4f1ea' } },
   { id: 'bottom-pajamas-checks', slot: 'bottom', look: { bottom: 'pajamas', bottomPrint: 'checks' }, name: 'Rutiga pyjamas\u00adbyxor', price: 279, dept: 'unisex', icon: '😴', colors: { pants: '#3a7bd5', pants2: '#f4f1ea' } },
   { id: 'bottom-pajamas-hearts', slot: 'bottom', look: { bottom: 'pajamas', bottomPrint: 'hearts' }, name: 'Hjärt\u00adpyjamas', price: 259, dept: 'unisex', icon: '💗', colors: { pants: '#f2b8c9', pants2: '#c9323a' } },

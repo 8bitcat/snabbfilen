@@ -52,6 +52,7 @@ import { petStore } from '../pets/sim.js';
 import { itemBox, itemSolid, PET_ITEMS } from '../pets/items.js';
 import { openWeek } from '../core/week.js';
 import { openBrasa } from '../core/brasa.js'; // 🔥 brasan i spisarna + marshmallows
+import { myAction, folkAction, drawActing, actionByEmote } from '../core/drakt.js'; // 🎭 dräkternas rörelser
 
 // Husdjursprylens fotavtryck på golvet – samma mått som lagret (js/pets/layer.js footprint)
 // ställer ut prylar efter: korgar/lådor/bur/klösträd har ett eget (itemSolid), skålar,
@@ -1448,15 +1449,19 @@ export function makeRoom(A, { visit = false, sub: subOpt = null, core = null } =
         const frame = st ? (st.t >= SLEEP.up && st.t < SLEEP.up + 0.35 ? 4 : 0)
           : A.carrying ? (path.length ? CARRY_SEQ[Math.floor(stride / 7.3) % 4] : 9)
             : path.length ? WALK_SEQ[Math.floor(stride / 7.3) % 4] : (Math.sin(t * 2) > 0.9 ? 4 : 0);
-        drawPerson(ctx, px, py, A.avatar.look, dir, frame);
+        const act = !st && myAction();
+        if (act) drawActing(ctx, px, py, A.avatar.look, dir, act);
+        else drawPerson(ctx, px, py, A.avatar.look, dir, frame);
         if (folks.length) nameTag(ctx, px, py - 50, A.avatar);
-        if (mine) emoteBubble(ctx, px, py - 60, mine);
+        if (mine && !actionByEmote(mine)) emoteBubble(ctx, px, py - 60, mine);
       } });
       for (const f of folks) {
         drawables.push({ fy: f.y, draw: () => {
-          drawPerson(ctx, f.x, f.y, f.av.look, 'down', f.walking ? WALK_SEQ[Math.floor(t * 8.5) % 4] : (Math.sin(t * 2 + f.x) > 0.9 ? 4 : 0));
+          const act = folkAction(f.id, f.emote);
+          if (act) drawActing(ctx, f.x, f.y, f.av.look, 'down', act);
+          else drawPerson(ctx, f.x, f.y, f.av.look, 'down', f.walking ? WALK_SEQ[Math.floor(t * 8.5) % 4] : (Math.sin(t * 2 + f.x) > 0.9 ? 4 : 0));
           nameTag(ctx, f.x, f.y - 50, f.av);
-          if (f.emote) emoteBubble(ctx, f.x, f.y - 60, f.emote);
+          if (f.emote && !act) emoteBubble(ctx, f.x, f.y - 60, f.emote);
         } });
       }
       drawables.sort((a, b) => a.fy - b.fy).forEach((d) => d.draw(ctx));

@@ -1,7 +1,7 @@
 {
-  "version": "0.87.0",
+  "version": "0.88.0",
   "date": "2026-10-07",
-  "title": "Maskeradbutiken",
+  "title": "Dräkterna lever",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
@@ -31,6 +31,7 @@
     "js/core/avatar.js",
     "js/core/brasa.js",
     "js/core/chat.js",
+    "js/core/drakt.js",
     "js/core/fest.js",
     "js/core/floor-pix.js",
     "js/core/fordon-art.js",

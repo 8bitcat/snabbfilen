@@ -45,22 +45,29 @@ const PYNT = [
 const MANNE = { skin: '#ece6ee', style: 'bald', hair: '#ecd489', beard: false, glasses: false, phones: false, bag: null, blush: false, hat: null, top: 'tee', shirt: '#f4f1ea', accent: '#f4f1ea', bottom: 'jeans', pants: '#3f5f8f', shoes: '#1c1c1c', cap: '#d9433b', build: 5 };
 const doll = (o) => ({ ...MANNE, ...o });
 const DRAKTER = [
-  { id: 'haxa', namn: 'HÄXA', x: 92, y: 116, parts: [['hat-witch', { cap: '#26242c', accent: '#8e5bd1' }], ['top-robe', { shirt: '#26242c' }]],
+  { id: 'haxa', namn: 'HÄXA', x: 80, y: 116, parts: [['hat-witch', { cap: '#26242c', accent: '#8e5bd1' }], ['top-robe', { shirt: '#26242c' }]],
     look: doll({ style: 'long', hair: '#3b2619', hat: 'witch', cap: '#26242c', accent: '#8e5bd1', top: 'robe', shirt: '#26242c', bottom: 'skirt', pants: '#26242c', shoes: '#1c1c1c', build: 4 }) },
-  { id: 'trollkarl', namn: 'TROLLKARL', x: 140, y: 116, parts: [['hat-wizard', { cap: '#3f4fa8' }], ['top-robe-stars', { shirt: '#3f4fa8', print2: '#f8d860' }]],
+  { id: 'trollkarl', namn: 'TROLLKARL', x: 124, y: 116, parts: [['hat-wizard', { cap: '#3f4fa8' }], ['top-robe-stars', { shirt: '#3f4fa8', print2: '#f8d860' }]],
     look: doll({ style: 'short', hair: '#f4f1ea', beard: 'long', hat: 'wizard', cap: '#3f4fa8', top: 'robe', topPrint: 'stars', shirt: '#3f4fa8', print2: '#f8d860', bottom: 'pants', pants: '#2d3a5c' }) },
-  { id: 'vampyr', namn: 'VAMPYR', x: 188, y: 116, parts: [['top-vampire', { shirt: '#1d1d22', accent: '#b8262e' }]],
+  { id: 'vampyr', namn: 'VAMPYR', x: 168, y: 116, parts: [['top-vampire', { shirt: '#1d1d22', accent: '#b8262e' }]],
     look: doll({ style: 'side', hair: '#1d1714', top: 'vampire', shirt: '#1d1d22', accent: '#b8262e', bottom: 'suitPants', pants: '#1d1d22' }) },
-  { id: 'pirat', namn: 'PIRAT', x: 236, y: 116, parts: [['hat-pirate', { cap: '#1d1d22' }], ['top-pirate', { shirt: '#8a2a2e', accent: '#e8b830' }], ['glasses-eyepatch', {}]],
+  { id: 'pirat', namn: 'PIRAT', x: 212, y: 116, parts: [['hat-pirate', { cap: '#1d1d22' }], ['top-pirate', { shirt: '#8a2a2e', accent: '#e8b830' }], ['glasses-eyepatch', {}]],
     look: doll({ style: 'long', hair: '#6b4226', hat: 'pirate', cap: '#1d1d22', top: 'pirate', shirt: '#8a2a2e', accent: '#e8b830', glasses: 'eyepatch', bottom: 'pants', pants: '#3a2a1a' }) },
-  { id: 'hjalte', namn: 'SUPERHJÄLTE', x: 116, y: 176, parts: [['top-hero', { shirt: '#3a7bd5', accent: '#d9433b' }], ['glasses-heromask', {}]],
+  { id: 'hjalte', namn: 'HJÄLTE', x: 76, y: 176, parts: [['top-hero', { shirt: '#3a7bd5', accent: '#d9433b' }], ['glasses-heromask', {}]],
     look: doll({ style: 'short', hair: '#1d1714', top: 'hero', shirt: '#3a7bd5', accent: '#d9433b', glasses: 'heroMask', bottom: 'leggings', pants: '#3a7bd5' }) },
-  { id: 'djavul', namn: 'DJÄVUL', x: 164, y: 176, parts: [['hat-devil', { cap: '#d83a4a' }], ['top-vampire', { shirt: '#b8262e', accent: '#1d1d22' }]],
+  { id: 'djavul', namn: 'DJÄVUL', x: 116, y: 176, parts: [['hat-devil', { cap: '#d83a4a' }], ['top-vampire', { shirt: '#b8262e', accent: '#1d1d22' }]],
     look: doll({ style: 'messy', hair: '#1d1714', hat: 'devil', cap: '#d83a4a', top: 'vampire', shirt: '#b8262e', accent: '#1d1d22', bottom: 'pants', pants: '#7a1a20' }) },
-  { id: 'fe', namn: 'FÉ', x: 212, y: 176, parts: [['bag-fairywings', { bagColor: '#c8f0ff' }], ['bottom-tutu', { shirt: '#f2a0d8', pants2: '#f2a0d8' }], ['hat-tiara', {}, true]],
+  { id: 'fe', namn: 'FÉ', x: 156, y: 176, parts: [['bag-fairywings', { bagColor: '#c8f0ff' }], ['bottom-tutu', { shirt: '#f2a0d8', pants2: '#f2a0d8' }], ['hat-tiara', {}, true]],
     look: doll({ style: 'bun', hair: '#ecd489', bag: 'fairyWings', bagColor: '#c8f0ff', bottom: 'tutu', shirt: '#f2a0d8', pants2: '#f2a0d8', pants: '#f2a0d8', hat: 'tiara', blush: true, build: 4 }) },
-  { id: 'angel', namn: 'ÄNGEL', x: 260, y: 176, parts: [['bag-wings', { bagColor: '#f4f1ea' }], ['hat-halo', { cap: '#f8d860' }]],
+  { id: 'angel', namn: 'ÄNGEL', x: 196, y: 176, parts: [['bag-wings', { bagColor: '#f4f1ea' }], ['hat-halo', { cap: '#f8d860' }]],
     look: doll({ style: 'wavy', hair: '#d9a95c', bag: 'wings', bagColor: '#f4f1ea', hat: 'halo', cap: '#f8d860', top: 'tee', shirt: '#f4f1ea', bottom: 'skirt', pants: '#f4f1ea', blush: true, build: 4 }) },
+  // de nya Halloween-dräkterna (0.88): spöket (lakan), skelettet och pumpan
+  { id: 'spoke', namn: 'SPÖKE', x: 256, y: 116, parts: [['hat-ghost', { cap: '#f4f6fa' }]],
+    look: doll({ style: 'short', hair: '#3b2619', hat: 'ghost', cap: '#f4f6fa' }) },
+  { id: 'skelett', namn: 'SKELETT', x: 236, y: 176, parts: [['top-hoodie-skeleton', { shirt: '#1c1c22', print2: '#f4f1ea' }], ['bottom-leggings-skeleton', { pants: '#1c1c22', pants2: '#f4f1ea' }]],
+    look: doll({ style: 'buzz', hair: '#1d1714', top: 'hoodie', topPrint: 'skeleton', shirt: '#1c1c22', print2: '#f4f1ea', bottom: 'leggings', bottomPrint: 'skeleton', pants: '#1c1c22', pants2: '#f4f1ea' }) },
+  { id: 'pumpa', namn: 'PUMPA', x: 276, y: 176, parts: [['top-puffer-pumpkin', { shirt: '#e0701c', print2: '#1c1820' }]],
+    look: doll({ style: 'messy', hair: '#6b4226', top: 'puffer', topPrint: 'pumpkin', shirt: '#e0701c', print2: '#1c1820', bottom: 'pants', pants: '#2f6a2a', hat: 'beanie', cap: '#2f8f46' }) },
 ];
 // hattväggen: byster på två hyllor
 const HATTAR = [['hat-witch', '#26242c'], ['hat-catears', '#1d1d22'], ['hat-bunnyears', '#f4f1ea'], ['hat-unicorn', '#f2a0b8'],
@@ -68,6 +75,7 @@ const HATTAR = [['hat-witch', '#26242c'], ['hat-catears', '#1d1d22'], ['hat-bunn
 const HILDA = { skin: '#b8d8a0', hair: '#26242c', style: 'long', hat: 'witch', cap: '#26242c', accent: '#46a35a', top: 'robe', shirt: '#4a2a5a', bottom: 'skirt', pants: '#26242c', shoes: '#1c1c1c', glasses: 'round', beard: false, phones: false, bag: null, blush: false, build: 4 };
 const HILDA_SAY = [
   'Hihihi! Välkommen till Maskeraden! 🎃 Prova en dräkt – du ser dig själv i den direkt.',
+  'Har du en dräkt på dig? Tryck på 🎭-knappen så gör den sin grej – spöket skrämmer, fén trollar!',
   'Pumplyktorna tänder du hemma – klicka på pumpan så får den ljus i sig!',
   'Våga öppna spöklådan där borta … om du törs. 👻',
   'Häxhatten är min egen design. Den sitter som gjuten!',
@@ -176,7 +184,7 @@ export function makeShopMaskerad(A) {
     { id: 'provhytt', r: [FITTING.x, 18, FITTING.x + FITTING.w, WALL_Y], go: [FITTING.x + FITTING.w / 2, WALL_Y + 12], label: 'PROVHYTTEN', act: () => talk.say('🪞 Klicka på en dräkt så ser du dig själv i den innan du köper!', () => ({ x: walker.px, y: walker.py - 44 }), 3, { self: true }) },
     { id: 'hilda', r: [DESK.x, DESK.y - 34, DESK.x + DESK.w, DESK.y + DESK.h], go: [DESK.x + DESK.w / 2, DESK.y + DESK.h + 10], label: 'HÄXAN HILDA', act: () => hSay(HILDA_SAY[sayIdx++ % HILDA_SAY.length]) },
     { id: 'kittel', r: [KITTEL.x - 16, KITTEL.y - 22, KITTEL.x + 16, KITTEL.y + 2], go: [KITTEL.x, KITTEL.y + 12], label: 'TROLLDRYCK', act: () => { play('slide'); hSay('Rör inte min trolldryck! … Nåja, lukta får du. 🧪', 3); } },
-    { id: 'kista', r: [KISTA.x - 12, KISTA.y - 16, KISTA.x + 12, KISTA.y + 1], go: [KISTA.x, KISTA.y + 10], label: 'SPÖKLÅDAN', act: () => { if (kista > 0) return; kista = 2.4; play('fel'); talk.say('BUUU! 👻', () => ({ x: KISTA.x, y: KISTA.y - 40 }), 1.6); setTimeout(() => toast('😱 Spöket skrämde dig! (Spökdräkter kommer snart till butiken …)', 'good'), 600); } },
+    { id: 'kista', r: [KISTA.x - 12, KISTA.y - 16, KISTA.x + 12, KISTA.y + 1], go: [KISTA.x, KISTA.y + 10], label: 'SPÖKLÅDAN', act: () => { if (kista > 0) return; kista = 2.4; play('fel'); talk.say('BUUU! 👻', () => ({ x: KISTA.x, y: KISTA.y - 40 }), 1.6); setTimeout(() => toast('😱 Spöket skrämde dig! Spökdräkten hänger bland dräkterna – med den kan DU skrämmas (🎭-knappen).', 'good'), 600); } },
     ...PYNT.map((p) => { const d = dims(p); return { id: `pynt-${p.k}${p.v}`, pynt: p, r: [p.x - 1, p.y - d.h - 1, p.x + d.w + 1, p.y + 1], go: p.wall ? [p.x + d.w / 2, WALL_Y + 12] : [p.x + d.w / 2, p.y + 10], label: (katalogOf(p.k)?.name || p.k).toUpperCase(), act: () => { play('click'); openFurnBuy(A, p.k); } }; }),
   ];
   const spotAt = (x, y) => spots().find((s) => x >= s.r[0] && x <= s.r[2] && y >= s.r[1] && y <= s.r[3]);

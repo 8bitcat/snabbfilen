@@ -4,6 +4,8 @@
 //
 // frame: 0 stå · 1/2 gångsteg · 3 mellansteg (kroppen upp 1 px) · 4 andas in · 5 sitter
 //        6 sitter och äter · 7/8 bär (gångsteg) · 9 bär (står)
+//        10 båda armarna upp (spöket BU!, vampyren, hjälten) · 11 ena armen upp (trollspöet) –
+//        dräkternas rörelser (js/core/drakt.js); 0–9 är pixellåsta av tools/people-regress.mjs
 //
 // Det här är MOTORN: lagerordning, ramper, kontur, cache, drawPerson/portrait/makeLook.
 // Själva utseendena (frisyrer, ansikten, plagg, accessoarer) ligger i register i
@@ -341,7 +343,7 @@ function render(L0, dir, frame) {
   const shirtR = ramp(toInt(L.shirt, 0x3a7bd5)), accR = ramp(toInt(L.accent, 0xf4f1ea));
 
   // ---------- rörelse + proportioner ----------
-  const eat = frame === 6, carry = frame >= 7;
+  const eat = frame === 6, carry = frame >= 7 && frame <= 9, armsUp = frame === 10, wandUp = frame === 11;
   const walkA = frame === 1 || frame === 7, walkB = frame === 2 || frame === 8, sit = frame === 5 || eat;
   const bob = sit ? 1 : (frame === 3 || frame === 4) ? -1 : 0;
   const shoeTop = 37, legLen = K ? 5 : 8, hipH = K ? 1 : 2, torsoH = K ? 6 : 9, headH = K ? 11 : 12;
@@ -371,7 +373,7 @@ function render(L0, dir, frame) {
     sole: (toInt(L.shoes, 0) === 0xf2f2f2 || E.bottom.darkSole) ? 0xd9d6cc : 0xe9e6dc,
     darkShoe: L.shoes === '#1c1c1c' || L.shoes === '#2f2f36',
     // rörelse
-    sit, eat, carry, walkA, walkB, bob,
+    sit, eat, carry, walkA, walkB, bob, armsUp, wandUp,
     // mått
     shoeTop, legLen, hipH, torsoH, headH, legTop, hipTop, torsoTop, headTop, h0: headTop, eyeRow, tw, lw, armLen,
     ty0: torsoTop, ty1: hy, hy,
@@ -496,6 +498,20 @@ function render(L0, dir, frame) {
         put(left ? x0 + 1 : x0, torsoTop, shirt.base);
         return;
       }
+      if (armsUp || (wandUp && !left)) {   // armen upp: rakt upp bredvid huvudet (10) eller snett upp med trollspöet (11)
+        const len = armLen, out = left ? -1 : 1;
+        const sleeve = noSleeve ? 0 : longSleeve ? len - 2 : Math.min(3, len - 2);
+        for (let j = 0; j < len; j++) {
+          const y = torsoTop - j + (wandUp ? 1 : 0), x = x0 + out * Math.round(j * (wandUp ? 0.55 : 0.3));
+          const isHand = j >= len - 2, cloth = !isHand && j < sleeve;
+          const c = isHand ? skin : cloth ? ((T.sleeveAt && T.sleeveAt(R, j)) || shirt) : skin;
+          R.tag = cloth ? TAG.sleeve : TAG.skin;
+          put(x, y, left ? c.hi : c.base); put(x + 1, y, left ? c.base : c.lo);
+        }
+        R.tag = TAG.sleeve;
+        put(left ? x0 + 1 : x0, torsoTop, shirt.base); // axel
+        return;
+      }
       if (carry) {   // bär tallriken: armarna framåt, händerna ihop framför magen
         const len = armLen - 2;
         for (let j = 0; j < len; j++) {
@@ -577,6 +593,16 @@ function render(L0, dir, frame) {
         for (let k = 0; k < 4; k++) { const cl = k < 2 && longSleeve, c = cl ? C : Sk; R.tag = cl ? TAG.sleeve : TAG.skin; rect(12 + k, torsoTop + 3 - k, 2, 1, c.base); put(12 + k, torsoTop + 3 - k, c.lo); }
         R.tag = TAG.skin;
         put(16, torsoTop - 1, Sk.base); put(15, torsoTop - 1, Sk.lo);
+        return;
+      }
+      if (armsUp || wandUp) {   // armen upp: rakt upp (10) eller snett upp framåt med trollspöet (11)
+        const len = armLen, sleeve = noSleeve ? 0 : longSleeve ? len - 2 : 3;
+        for (let j = 0; j < len; j++) {
+          const x = 11 + (wandUp ? Math.round(j * 0.6) : 0), y = torsoTop + 1 - j;
+          const cloth = j < len - 2 && j < sleeve, c = cloth ? C : Sk;
+          R.tag = cloth ? TAG.sleeve : TAG.skin;
+          rect(x, y, 3, 1, c.base); put(x, y, c.lo); put(x + 2, y, c.hi);
+        }
         return;
       }
       if (carry) {   // armen rakt fram
@@ -688,14 +714,14 @@ function spriteFor(look, dir, frame) {
 export function personSprite(look, dir = 'down', frame = 0) {
   if (!['down', 'up', 'left', 'right'].includes(dir)) dir = 'down';
   frame = frame | 0;
-  return spriteFor(look, dir, frame < 0 || frame > 9 ? 0 : frame);
+  return spriteFor(look, dir, frame < 0 || frame > 11 ? 0 : frame);
 }
 
 // dir: 'down' | 'up' | 'left' | 'right'; frame: se överst
 export function drawPerson(ctx, fx, fy, L, dir = 'down', frame = 0) {
   if (!['down', 'up', 'left', 'right'].includes(dir)) dir = 'down';
   frame = frame | 0;
-  if (frame < 0 || frame > 9) frame = 0;
+  if (frame < 0 || frame > 11) frame = 0;
   const x = Math.round(fx), y = Math.round(fy);
   // skugga
   ctx.fillStyle = 'rgba(20,12,30,.28)';

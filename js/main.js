@@ -49,6 +49,7 @@ import { startJobFlow, startShiftNow, inviteToShift, COOP_JOBS } from './jobs/sh
 import { openFoodShop } from './shops/matbutik.js';
 import { openHousing } from './shops/bostad.js';
 import { startNotiser } from './core/notiser.js';
+import { startAction, actionFor } from './core/drakt.js'; // 🎭 dräkternas rörelser
 import { startWorld, worldTick, worldInfo, playersList, visitPlayer, sendEmote, sendSay, worldFolksHere, playerName } from './net/world.js';
 import { block, unblock, blockedList, openAnmal, SUPPORT } from './net/skydd.js';
 import { openMenu, mountMenuButton, isMenuOpen, shouldShowMenuAtBoot } from './core/menu.js';
@@ -429,6 +430,8 @@ function renderHud() {
   $('#emotes').classList.toggle('hidden', nearby === 0);
   $('#decor-btn').classList.toggle('hidden', A.sceneName !== 'room');
   rideHud(A); // 🚲 syns när man har ett fordon
+  const db = document.getElementById('hud-drakt');  // 🎭 bär man en dräkt med en rörelse
+  if (db) { const a = actionFor(A.avatar?.look); db.classList.toggle('hidden', !a); if (a && db.textContent !== a.e) { db.textContent = a.e; db.title = `🎭 ${a.namn}`; } }
   const fb = document.getElementById('hud-fest');   // 🎉 bara hemma (inte på besök)
   if (fb) { fb.classList.toggle('hidden', !(A.sceneName === 'room' && !A.visitTarget)); const ft = A.fest ? '🥳' : '🎉'; if (fb.textContent !== ft) fb.textContent = ft; }
   const key = `${g.day}|${Math.floor(g.min)}|${g.money}|${Math.round(g.hunger)}|${Math.round(g.energy)}|${Math.round(g.lycka)}|${A.avatar?.name}|${online}`;
@@ -725,6 +728,13 @@ function boot() {
     fb.id = 'hud-fest'; fb.className = 'btn btn-small hidden'; fb.title = 'Ha fest hemma!'; fb.textContent = '🎉';
     fb.onclick = () => { play('click'); openFest(A); };
     $('#hud-friends').before(fb);
+  }
+  // 🎭 dräktens rörelse (js/core/drakt.js) – syns när man bär en dräkt som kan något
+  if (!document.getElementById('hud-drakt')) {
+    const db = document.createElement('button');
+    db.id = 'hud-drakt'; db.className = 'btn btn-small hidden'; db.title = 'Dräktens rörelse';
+    db.onclick = () => startAction(A);
+    $('#hud-friends').before(db);
   }
   // 🚲 åka eller gå (syns när man har köpt ett fordon i GARAGET – shop-fordon.js rideHud)
   if (!document.getElementById('hud-fordon')) {

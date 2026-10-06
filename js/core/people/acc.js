@@ -266,6 +266,38 @@ export const HAT_REG = {
     b: 'mirror',
     s: [5, ['9.2o3.', '8.3o3.', '7.3o4.', '6.4o4.', '5.h4o4.', '5.h5o3.', '5.6O3.', '4.h7o2.', 'h12ol', '.12l.']],
   }, (R) => pal(R.cap, R.acc)),
+  // Spökdräkten (maskeradbutiken): ett lakan över hela figuren. Ritas sist (kroken last): allt
+  // ovanför fötterna suddas och lakanet läggs över – rundat huvud, vidgar sig nedåt, en fåll som
+  // böljar med gångstegen och svarta ögonhål. Bildruta 10 (BU!, js/core/drakt.js) lyfter två
+  // flikar som armar och öppnar munnen. Lakanets färg = look.cap (vitt, men går att färga).
+  ghost: {
+    label: 'Spök\u00addräkt', group: 'Utklädnad',
+    front() {}, back() {}, side() {},
+    last(R) {
+      const { put, rect, cap: C, h0, shoeTop, torsoTop, side, back, frame, K, eyeRow } = R;
+      const top = h0 - 1, bot = shoeTop - (K ? 2 : 3);
+      R.eraseRect(0, 0, SW, bot + 2);
+      const sw = side ? 1 : 0, cx = 12;
+      for (let y = top; y <= bot; y++) {
+        const j = y - top, half = (j < 3 ? [3, 5, 6][j] : j < 10 ? 6 : 6 + Math.min(3, (j - 10) >> 2)) - sw;
+        for (let x = cx - half; x < cx + half; x++) put(x, y, x < cx - half + 2 ? C.hi : x >= cx + half - 2 ? C.lo : C.base);
+      }
+      // fållen böljar: varannan/var tredje pixel hänger ner en rad till
+      const half = 9 - sw, ph = R.walkA ? 1 : R.walkB ? 2 : 0;
+      for (let x = cx - half; x < cx + half; x++) if ((x + ph) % 3 !== 0) put(x, bot + 1, (x + ph) % 3 === 1 ? C.lo : C.base);
+      // BU!: två flikar upp som armar
+      if (frame === 10) for (const s of side ? [1] : [-1, 1]) for (let j = 0; j < 9; j++) {
+        const x = cx + s * (6 + (j >> 2)) - (s < 0 ? 1 : 0);
+        put(x, torsoTop + 2 - j, C.base); put(x + s, torsoTop + 2 - j, s > 0 ? C.lo : C.hi);
+      }
+      if (frame === 11 && !side) for (let j = 0; j < 7; j++) { const x = cx + 6 + (j >> 1); put(x, torsoTop + 2 - j, C.base); put(x + 1, torsoTop + 2 - j, C.lo); }
+      if (back) return;
+      const ink = 0x1c1820;
+      if (side) { rect(14, eyeRow, 2, 2, ink); if (frame === 10) rect(15, eyeRow + 3, 1, 2, ink); return; }
+      rect(9, eyeRow, 2, 2, ink); rect(13, eyeRow, 2, 2, ink);
+      if (frame === 10) rect(11, eyeRow + 3, 2, 3, ink);           // munnen öppen: BUUU!
+    },
+  },
   // Ligger ovanpå håret (täcker inte hjässan, klipper inget): placeras efter hårets topp
   catEars: tpl('Kattöron', 'Utklädnad', (R) => topOf(R, R.side ? [11, 14] : [9, 14], R.h0 - 2, R.h0) - 3, {
     f: [8, ['h6.h', '2o4.2o', 'opo2.opo', '8l']],

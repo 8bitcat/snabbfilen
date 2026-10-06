@@ -959,6 +959,13 @@ const RAINBOW = [0xe23b3b, 0xf08a24, 0xf2cf2e, 0x46a35a, 0x3a7bd5, 0x8e5bd1].map
 const TIEDYE = [0xf28bb3, 0xf2cf2e, 0x2aa39a];
 export const BOTTOM_PRINT_REG = {
   none: { label: 'Inget' },
+  // skelettets benknotor (maskeradbutiken): en vit linje mitt i varje ben och ett knä
+  skeleton: printEntry('Skelettben', 'Utklädnad', (R, x, y) => {
+    if (y < R.legTop) return y === R.hy || y === R.hy + 1 ? R.pants2 : null;                 // höftbenet
+    if (y === R.legTop + (R.legLen >> 1)) return R.pants2;                                  // knät
+    const inside = R.tagAt(x - 1, y) === TAG.pants && R.tagAt(x + 1, y) === TAG.pants;
+    return inside ? R.pants2 : null;
+  }),
   checks: printEntry('Rutor', 'Rutor & ränder', (R, x, y) => ((((x >> 1) + (y >> 1)) & 1) ? R.pants2 : null)),
   tartan: printEntry('Skotskrutig', 'Rutor & ränder', (R, x, y) => {
     const a = x % 4 === 1, b = y % 4 === 1;

@@ -1242,6 +1242,18 @@ export const TOP_PRINT_REG = {
   zebra: overall('Zebra', (R) => (x, yy) => (md(x + [0, 1, 1, 0][md(yy, 4)] + (yy >> 2), 3) === 0 ? R.print : null)),
   tieDye: overall('Batik', (R) => { const mid = between(R.shirt, R.print, 0.5); return (x, yy) => { const dx = x - 11.5, dy = yy - 4, d = Math.floor(Math.hypot(dx, dy) * 0.8 + Math.atan2(dy, dx) * 0.95 + 20); return md(d, 3) === 0 ? R.print : md(d, 3) === 1 ? mid : null; }; }),
   ombre: overall('Tonad', (R) => { const a = between(R.shirt, R.print, 0.35), b = between(R.shirt, R.print, 0.7); return (x, yy) => { const t = yy / (R.K ? 6 : 9); return t > 0.75 ? R.print : t > 0.5 ? b : t > 0.25 ? a : null; }; }),
+  // Halloween (maskeradbutiken): skelettets revben och ryggrad, och pumpans ansikte på bröstet
+  skeleton: { ...overall('Skelett', (R) => (x, yy) => {
+    if (R.tagAt(x, R.ty0 + yy) === TAG.sleeve) return yy % 4 === 3 ? null : R.print;          // armbenen med leder
+    if (yy < 1) return null;
+    if (!R.side && (x === 11 || x === 12)) return R.print;                                   // ryggraden
+    if (R.side && x === 10) return R.print;
+    const rib = yy === 2 || yy === 4 || yy === 6, inset = yy === 6 ? 1 : 0;
+    return rib && x >= 8 + inset && x <= 15 - inset ? R.print : null;                        // revbenen
+  }), group: 'Utklädnad' },
+  pumpkin: { ...motif('Pumpa',
+    ['.kk.....kk.', '.kkk...kkk.', '.....k.....', 'k.........k', 'kkkkkkkkkkk', '.k.k.k.k.k.'],
+    ['kk...kk', '...k...', 'kkkkkkk', '.k.k.k.']), group: 'Utklädnad' },
   twoTone: overall('Tvåfärgad', (R) => (x) => ((R.side ? x >= 13 : R.back ? x < 12 : x >= 12) ? R.print : null)),
   splatter: overall('Färgstänk', (R) => (x, yy) => { const h = hash(x, yy + 3) % 9; return h === 0 ? R.print : h === 1 ? far(R.print) : h === 2 ? YELLOW : null; }),
   flames: overall('Flammor', (R) => { // lågorna slår upp från plaggets nederkant (även rockskört)

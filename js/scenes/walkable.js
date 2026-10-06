@@ -7,6 +7,7 @@ import { drawRide, rideLift } from '../core/fordon-art.js';   // cykeln/moppen i
 import { avatarTagColors } from '../core/avatar.js';
 import { SMALL, ctxText, textW } from '../core/floor-pix.js';
 import { worldFolksHere, worldMyEmote, worldMySay } from '../net/world.js';
+import { myAction, folkAction, drawActing, actionByEmote } from '../core/drakt.js';   // 🎭 dräkternas rörelser
 import { speak, heardBubble, guessAnimal, selfTalkMode } from '../core/voices.js';
 
 // Ljud när en pratbubbla dyker upp: heardBubble(text, x, y, voice, { pan, gain }) anropas
@@ -145,10 +146,12 @@ export function selfDrawable(A, walker, t, { carry = false, folksHere = 0, ride 
       const frame = carry
         ? (walking ? [7, 9, 8, 9][Math.floor(t * 8.5) % 4] : 9)
         : walking ? WALK_SEQ[Math.floor(t * 8.5) % 4] : (Math.sin(t * 2) > 0.9 ? 4 : 0);
-      drawPerson(ctx, walker.px, walker.py, A.avatar.look, walker.dir, frame);
+      const act = myAction();
+      if (act) drawActing(ctx, walker.px, walker.py, A.avatar.look, walker.dir, act); // 🎭 dräktens rörelse
+      else drawPerson(ctx, walker.px, walker.py, A.avatar.look, walker.dir, frame);
       if (folksHere) nameTag(ctx, walker.px, walker.py - 50, A.avatar);
       const mine = worldMyEmote();
-      if (mine) emoteBubble(ctx, walker.px, walker.py - 60, mine);
+      if (mine && !actionByEmote(mine)) emoteBubble(ctx, walker.px, walker.py - 60, mine);
       const said = worldMySay();
       if (said) sayBubble(ctx, walker.px, walker.py - (mine ? 78 : 62), said, { voice: 'self' });
     },
@@ -175,9 +178,11 @@ export function folkDrawables(A, t) {
         }
       }
       const frame = seated ? (f.eat && Math.floor(t * 1.6 + f.x * 0.37) % 3 === 1 ? 6 : 5) : f.walking ? WALK_SEQ[Math.floor(t * 8.5) % 4] : (Math.sin(t * 2 + f.x) > 0.9 ? 4 : 0);
-      drawPerson(ctx, f.x, f.y, f.av.look, seated ? f.sit : 'down', frame);
+      const act = !seated && folkAction(f.id, f.emote);   // 🎭 kompisens dräktrörelse
+      if (act) drawActing(ctx, f.x, f.y, f.av.look, 'down', act);
+      else drawPerson(ctx, f.x, f.y, f.av.look, seated ? f.sit : 'down', frame);
       nameTag(ctx, f.x, f.y - 50, f.av);
-      if (f.emote) emoteBubble(ctx, f.x, f.y - 58, f.emote);
+      if (f.emote && !act) emoteBubble(ctx, f.x, f.y - 58, f.emote);
       if (f.say) sayBubble(ctx, f.x, f.y - (f.emote ? 76 : 60), f.say, { voice: f.av || f.id });
     },
   }));

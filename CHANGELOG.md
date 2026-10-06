@@ -10,6 +10,15 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.88.0] – 2026-10-07 – Dräkterna lever
+- Dräkterna lever! Har du en dräkt på dig syns 🎭-knappen uppe till höger – tryck så gör dräkten sin grej, och dina kompisar ser det också:
+- 👻 Spöket lyfter armarna och skrämmer: BUUU!
+- 🪄 Fén svingar sitt trollspö och det gnistrar i alla färger.
+- ✨ Häxan och trollkarlen trollar med gröna gnistor.
+- 🧛 Vampyren slår ut med armarna – MUAHAHA! – och fladdermöss flyger runt.
+- 💀 Skelettet skramlar, 🎃 pumpan lyser, 🦸 hjälten tar sats och 😇 ängeln strålar.
+- Nya dräkter i maskeradbutiken: spökdräkt (ett lakan med ögonhål – det går att färga), skelettdräkt (tröja och byxor med ben) och pumpdräkt.
+
 ## [0.87.0] – 2026-10-07 – Maskeradbutiken
 - Det gamla övergivna huset i förorten har blivit MASKERADBUTIKEN – med neonskylt, skyltfönster där ett spöke svävar och häxkitteln bubblar, en häxa som flyger förbi månen och pumplyktor och ett skelett på trottoaren. Den svarta katten sover kvar vid dörren.
 - Dräkter: häxa (ny häxhatt!), trollkarl, vampyr, pirat, superhjälte, djävul, fé och ängel – köp hela dräkten eller bara det du saknar, och se dig själv i den innan du köper. Masker och öron på hattväggen.
