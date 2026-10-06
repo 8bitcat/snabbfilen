@@ -22,7 +22,7 @@ const SPOTS = [];
   // tre rader, jämnt fördelade – rad 1 börjar efter dörren
   const ROWS_Y = [106, 158, 206];
   // (datorsakerna säljs på BLIXT ELEKTRONIK i Downtown – inte här, se ELEKTRONIK i ikea/kat.js)
-  const items = KATALOG.filter((k) => !isElektronik(k) && k.shop !== 'jul').map((k) => ({ kind: k.kind, w: (k.kind === 'matta' ? [0, 0, 30, 16] : FRAMES[k.kind + '0'])[2] }));
+  const items = KATALOG.filter((k) => !isElektronik(k) && !k.shop).map((k) => ({ kind: k.kind, w: (k.kind === 'matta' ? [0, 0, 30, 16] : FRAMES[k.kind + '0'])[2] }));
   const per = Math.ceil(items.length / ROWS_Y.length);
   ROWS_Y.forEach((y, row) => {
     const rowItems = items.slice(row * per, row * per + per);

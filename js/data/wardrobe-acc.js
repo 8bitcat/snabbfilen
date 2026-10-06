@@ -48,6 +48,7 @@ export const WARDROBE_ACC = [
   { id: 'hat-propeller', slot: 'hat', look: { hat: 'propeller' }, name: 'Propeller\u00adkeps', price: 180, dept: 'unisex', icon: '🚁', colors: { cap: '#f0b429' } },
   { id: 'hat-catears', slot: 'hat', look: { hat: 'catEars' }, name: 'Kattöron', price: 150, dept: 'tjej', icon: '🐱', colors: { cap: '#2f3440' } },
   { id: 'hat-bunnyears', slot: 'hat', look: { hat: 'bunnyEars' }, name: 'Kanin\u00adöron', price: 150, dept: 'tjej', icon: '🐰', colors: { cap: '#f4f1ea' } },
+  { id: 'hat-witch', slot: 'hat', look: { hat: 'witch' }, name: 'Häx­hatt', price: 160, dept: 'unisex', icon: '🧙', colors: { cap: '#26242c', accent: '#8e5bd1' } },
   { id: 'hat-devil', slot: 'hat', look: { hat: 'devil' }, name: 'Djävuls\u00adhorn', price: 150, dept: 'unisex', icon: '😈', colors: { cap: '#d83a4a' } },
   { id: 'hat-unicorn', slot: 'hat', look: { hat: 'unicorn' }, name: 'Enhörnings\u00adhorn', price: 220, dept: 'tjej', icon: '🦄', colors: { cap: '#f2a0b8' } },
   { id: 'hat-halo', slot: 'hat', look: { hat: 'halo' }, name: 'Gloria', price: 300, dept: 'unisex', icon: '😇' },

@@ -273,7 +273,7 @@ export const BUILDINGS_X = [
   XN('narbutik', 1964, 108, 104, { x0: 2004, x1: 2028, type: 'swing' }, { sign: 'NÄRBUTIK 24/7', icon: '🏪', enter: 'narbutik' }),
   XN('pantbank', 2072, 76, 104, { x0: 2098, x1: 2122, type: 'swing' }, { sign: 'PANTBANKEN', icon: '💍', open: [10, 18], enter: 'pantbank', soon: 'Pantbanken: "Vi köper ditt guld!" – kom tillbaka när du har något att pantsätta.' }), // js/scenes/shop-pantbank.js
   XN('kebab', 2148, 88, 104, { x0: 2180, x1: 2204, type: 'swing' }, { sign: 'KEBAB GRILL', icon: '🥙', open: [11, 24], enter: 'kebab', soon: 'Grillen är trasig igen. "ÖPPET IGEN!" står det på lappen – kom tillbaka en annan dag.' }), // js/scenes/shop-kebab.js
-  XN('overgivet', 2288, 104, 96, { x0: 2328, x1: 2352, type: 'boarded' }, { sign: '', icon: '🏚️', soon: 'Igenspikat. Det luktar fukt och någon har sprejat ett hjärta på dörren.' }),
+  XN('maskerad', 2288, 104, 96, { x0: 2328, x1: 2352, type: 'swing' }, { sign: 'MASKERAD', icon: '🎃', open: [10, 22], enter: 'maskerad', soon: 'Maskeradbutiken har stängt för i kväll – spöket i fönstret vaktar. Öppet 10–22.' }), // js/scenes/shop-maskerad.js (det gamla övergivna huset)
   XN('hoghus2', 2420, 184, 170, { x0: 2500, x1: 2524, type: 'swing' }, { sign: 'BETONGVÄGEN 5', icon: '🏢', soon: 'Kodlåset är sönderslaget – men du bor inte här.' }),
   XS('bilverkstad', 1768, 160, 88, { x0: 1792, x1: 1840, type: 'roll' }, { sign: 'BILVERKSTAN', icon: '🔧', enter: 'jobb:bilverkstad', open: [7, 18] }),
   XS('tvatteri', 1956, 100, 100, { x0: 1992, x1: 2016, type: 'swing' }, { sign: 'TVÄTTERI', icon: '🧺', enter: 'jobb:tvatteri', open: [8, 20] }),
@@ -660,7 +660,7 @@ export const isNightHour = (h) => h >= 19.5 || h < 6.5;
 // Alla enter-värden som scenen (city.js enter()) känner. Scennamnen i andra raden leder in i en egen
 // scen (city.js SCENE_DOORS → main.js): butikerna i downtown, Pixelhögskolan, bion, kebaben, pantbanken och garaget.
 export const ENTER_RE = new RegExp('^(hem|bostad|mat|klader|mobler|kafe|djur|burgare|frukt|flyg|glass|narbutik|leksaker'
-  + '|bank|elektronik|frisor|skor|accessoarer|universitet|bio|kebab|pantbank|fordon'
+  + '|bank|elektronik|frisor|skor|accessoarer|universitet|bio|kebab|pantbank|fordon|maskerad'
   + '|jobb:[a-z]+|bostad:[a-z]+)$');
 
 // Kontroll av kontraktet: returnerar en lista med problem (tom = allt stämmer).

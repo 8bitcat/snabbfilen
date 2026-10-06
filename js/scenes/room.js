@@ -399,10 +399,10 @@ function surfaceRow(k, v, r) {
   return row;
 }
 // vad skylten över en funktionsmöbel säger
-const FN_LABEL = { brasa: 'BRASA', sova: 'SÄNG', garderob: 'GARDEROB', ata: 'KYLSKÅP', laga: 'SPIS', recept: 'RECEPT', toalett: 'TOALETT', tvatta: 'TVÄTTA', tv: 'TV', musik: 'MUSIK' };
+const FN_LABEL = { brasa: 'BRASA', lykta: 'PUMPA', sova: 'SÄNG', garderob: 'GARDEROB', ata: 'KYLSKÅP', laga: 'SPIS', recept: 'RECEPT', toalett: 'TOALETT', tvatta: 'TVÄTTA', tv: 'TV', musik: 'MUSIK' };
 const KIND_LABEL = { koksspis: 'SPIS', mikro: 'MIKRO', dusch: 'DUSCH', badkar: 'BADKAR', tvattmaskin: 'TVÄTT', tvattpelare: 'TVÄTT',
   handfat: 'HANDFAT', tvattstall: 'HANDFAT', dator: 'DATOR', laptop: 'DATOR', spelkonsol: 'KONSOL', dass: 'DASSET', kladskap: 'KLÄDSKÅP', linneskap: 'LINNESKÅP' };
-const labelOf = (k) => { const fn = functionOf(k); return fn ? KIND_LABEL[k] || FN_LABEL[fn] : null; };
+const labelOf = (k) => { const fn = functionOf(k); return fn && fn !== 'lykta' ? KIND_LABEL[k] || FN_LABEL[fn] : null; }; // (pumplyktorna slipper skylt)
 // namn på startmöbler som inte finns i katalogen (till förrådspanelen)
 const FX_NAMES = { kylskap: 'Kylskåp', dass: 'Dasset', vaxt: 'Monstera', receptbok: 'Receptboken' };
 export const nameOf = (k) => katalogOf(k)?.name || FX_NAMES[k] || k;
@@ -450,6 +450,9 @@ export function halo(ctx, cx, cy, rx, ry, color, a) {
   ctx.globalAlpha = 1;
 }
 const glows = (k) => !!katalogOf(k)?.glow;
+// en tänd pumplykta (d.lit): rutan med de lysande hålen (sort + 'L'), speglad som möbeln
+const litArt = (d) => (FRAMES[d.k + 'L' + (d.v | 0)] ? (() => { const a = furnArt(d.k + 'L', d.v, d.c); return a && { ...a, flip: viewOf(d.k, d.v, d.r).flip }; })() : null);
+const flicker = () => 0.85 + 0.15 * Math.sin(performance.now() / 90) * Math.sin(performance.now() / 37);
 
 // Samma sak i rotationsläge r: rätt vy ur atlasen (soffan från sidan …) och om
 // den ska speglas – rita med drawArt.
@@ -796,6 +799,13 @@ export function makeRoom(A, { visit = false, sub: subOpt = null, core = null } =
       case 'tv': return () => tvMenu(A, kind, p);
       case 'musik': return () => openMusik(A, kind, p ? { k: p.k, decoIdx: p.decoIdx } : {});
       case 'brasa': return () => { const d = p ? decoList()[p.decoIdx] : null; if (d) openBrasa(A, d); };
+      case 'lykta': return () => {   // 🎃 pumplyktan: tänd eller blås ut ljuset
+        const d = p ? decoList()[p.decoIdx] : null;
+        if (!d) return;
+        if (d.lit) { delete d.lit; play('slide'); toast('🎃 Du blåste ut ljuset i pumpan.'); }
+        else { d.lit = true; play('ok'); const gl = g.glad(1, '', 'pumpa', 2); toast(`🎃 Ljuset i pumpan är tänt!${gl ? ' Mysigt: +' + gl + ' lycka' : ''}`, 'good'); }
+        g.save();
+      };
     }
     return null;
   }
@@ -1582,13 +1592,19 @@ function spriteProp(d, decoIdx, sign) {
       ctx.fillStyle = 'rgba(20,12,28,0.22)';
       if (lift) ctx.fillRect(x + 1, foot - 1, fw - 2, 1); // skuggan på bordsskivan
       else { ctx.fillRect(x + 1, base - 1, fw - 2, 2); ctx.fillRect(x + 3, base + 1, fw - 6, 1); }
-      const a = furnView(d.k, d.v, d.c, d.r); // cachad per (ruta, färg)
+      const a = (d.lit && litArt(d)) || furnView(d.k, d.v, d.c, d.r); // cachad per (ruta, färg)
       if (a) drawArt(ctx, a, x, top);
       if (d.lit) drawFire(ctx, d, x, top, fw, a?.flip, decoIdx | 0);
     },
     // i kvällsmörkret: det som lyser ritas igen ovanpå mörkret, med ett varmt sken
     light(ctx) {
       if (!d.lit && !glows(d.k)) return;   // (brasan tänds och släcks utan att rummet byggs om)
+      if (d.lit && litArt(d)) {   // pumplyktan: ett fladdrande orange sken och de lysande hålen ovanpå mörkret
+        halo(ctx, x + fw / 2, top + fh / 2, 26, 14, '#ff9d3a', 0.1 * flicker());
+        halo(ctx, x + fw / 2, top + fh / 2, 13, 8, '#ffc76a', 0.12 * flicker());
+        drawArt(ctx, litArt(d), x, top);
+        return;
+      }
       if (d.lit) {
         const at = fireAt(d.k, d.v)?.[0] || [fw / 2 - 6, fh / 2];
         halo(ctx, x + at[0] + 6, top + at[1] + 6, 46, 20, '#ff9d3a', 0.09);

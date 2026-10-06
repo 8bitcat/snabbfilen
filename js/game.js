@@ -472,6 +472,18 @@ export const KATALOG = [
   { kind: 'kulgran', icon: '🎄', name: 'Julgran med kulor', price: 950, vars: 4, room: 'ÖVRIGT', shop: 'jul' },
   { kind: 'ljusgran', icon: '🎄', name: 'Julgran med blinkande ljus', price: 1200, vars: 1, room: 'ÖVRIGT', anim: 2, glow: true, shop: 'jul' },
   { kind: 'julspis', icon: '🔥', name: 'Julpyntad spis', price: 2400, vars: 2, room: 'VARDAGSRUM', function: 'brasa', shop: 'jul' },
+  // ---- MASKERADBUTIKEN (Halloween) – säljs bara där (shop: 'halloween') ----
+  // pumplyktan: function 'lykta' = tänd/släck ljuset (d.lit, room.js ritar pumplyktaL-rutan och skenet)
+  { kind: 'spindelnat', icon: '🕸️', name: 'Spindelnät', price: 40, vars: 1, room: 'ÖVRIGT', wall: true, overWindow: true, shop: 'halloween' },
+  { kind: 'pumpa', icon: '🎃', name: 'Pumpa', price: 60, vars: 2, room: 'ÖVRIGT', shop: 'halloween' },
+  { kind: 'fladdermoss', icon: '🦇', name: 'Fladdermöss', price: 90, vars: 1, room: 'ÖVRIGT', wall: true, overWindow: true, anim: 2, shop: 'halloween' },
+  { kind: 'pumplykta', icon: '🎃', name: 'Pumplykta', price: 120, vars: 3, room: 'ÖVRIGT', function: 'lykta', shop: 'halloween' },
+  { kind: 'gravsten', icon: '🪦', name: 'Gravsten', price: 150, vars: 5, room: 'ÖVRIGT', shop: 'halloween' },
+  { kind: 'haxkittel', icon: '🧪', name: 'Häxkittel', price: 250, vars: 1, room: 'ÖVRIGT', anim: 3, glow: true, shop: 'halloween' },
+  { kind: 'skelett', icon: '💀', name: 'Skelett', price: 350, vars: 1, room: 'ÖVRIGT', shop: 'halloween' },
+  { kind: 'fagelskramma', icon: '🎃', name: 'Fågelskrämma', price: 450, vars: 8, room: 'ÖVRIGT', shop: 'halloween' },
+  { kind: 'gargoyl', icon: '🗿', name: 'Gargoyl', price: 900, vars: 1, room: 'ÖVRIGT', shop: 'halloween' },
+  { kind: 'spoktrad', icon: '🌳', name: 'Spökträd', price: 1200, vars: 4, room: 'ÖVRIGT', shop: 'halloween' },
 ];
 const KAT_BY_KIND = new Map(KATALOG.map((k) => [k.kind, k]));
 export const katalogOf = (kind) => KAT_BY_KIND.get(kind);

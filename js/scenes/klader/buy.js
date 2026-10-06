@@ -376,7 +376,7 @@ export function openKit(A, kit) {
       <div class="klb-stage" style="${stageBg(key)}">
         <div class="klb-fig" data-fig="now"><i></i><small>Du nu</small></div>
         <div class="klb-arrow">➜</div>
-        <div class="klb-fig" data-fig="new"><i></i><small>I matchstället</small></div>
+        <div class="klb-fig" data-fig="new"><i></i><small>${esc(kit.newLabel || 'I matchstället')}</small></div>
       </div>
       <div class="klb-turn">
         <button class="btn btn-small" data-turn="-1" aria-label="Vrid åt vänster">⟲ Vrid</button>
@@ -442,7 +442,7 @@ export function openKit(A, kit) {
     dlg.querySelector('[data-view]').textContent = DIR_NAMES[dirI];
     const s = sum(), short = s - g.money;
     dlg.querySelector('[data-sum]').innerHTML = s ? `Att betala: <b>${fmt(s)}</b> · 💰 du har <b>${fmt(g.money)}</b>${short > 0 ? ` · <b class="bad">du saknar ${fmt(short)}</b>` : ''}`
-      : anyOwned ? (allOwned ? '✓ Hela matchstället är ditt.' : '✓ Det du har tar du på dig i lagets färger – eller kryssa i resten.') : '💰 Kryssa i det du vill köpa.';
+      : anyOwned ? (allOwned ? (kit.allOwnedText || '✓ Hela matchstället är ditt.') : (kit.someOwnedText || '✓ Det du har tar du på dig i lagets färger – eller kryssa i resten.')) : '💰 Kryssa i det du vill köpa.';
     dlg.querySelector('[data-wearrow]').style.display = s ? '' : 'none';
     if (go) {
       go.disabled = s ? short > 0 : !anyOwned;

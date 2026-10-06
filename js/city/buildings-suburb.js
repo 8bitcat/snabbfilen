@@ -13,6 +13,7 @@
 // live() ritar bara dörren, neon, tv-flimmer, rök, trummor – billiga drawImage/fillRect.
 import { Pix, SMALL, BIG, text, textW, eachTextPixel, mix, mul, hash, bayer } from '../core/floor-pix.js';
 import { ART_OVER, ART_BELOW, artBox, baseOf } from './map.js';
+import { FRAMES } from '../data/frames.js';
 
 const O = ART_OVER, WHITE = 0xffffff, OUT = 0x1c1a20;
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
@@ -668,7 +669,7 @@ const DOOR_ART = {
   narbutik: { h: 30, interior: (I, w, h) => { interiorBase(I, w, h, { wall0: 0xf0ece0, wall1: 0xc8c4b8, floor: 0xb8b0a0, lampCol: 0xe8f0ff }); for (let r = 0; r < 3; r++) { I.hl(1, 7 + r * 5, w - 2, 0x8a8a90); for (let x = 2; x < w - 2; x += 2) I.rect(x, 4 + r * 5, 1, 3, pick(SPRAY, x, r, 1)); } I.rect(w - 6, 12, 5, 10, 0x2a3a5a); I.rect(w - 5, 13, 3, 8, 0x6ab0f0); }, leaf: (S, w, h, n) => { glassLeaf(S, w, h, { night: n, label: 'DRAG', frame: 0x5a5a60 }); stickers(S, 3, 11, w - 12, h - 23, 7, w * 7); }, edge: 0x6a6a70, hinge: 'l' }, // klistermärkena under DRAG, till vänster om handtaget
   pantbank: { h: 30, interior: (I, w, h) => { interiorBase(I, w, h, { wall0: 0x6a5a48, wall1: 0x3a3028, floor: 0x5a4a3a, lampCol: 0xffe8b0 }); I.rect(2, 14, w - 4, 4, 0x8a6a40); I.hl(2, 14, w - 4, 0xc8a870); I.rect(3, 6, w - 6, 8, 0x9ab0c0, 0.5); I.px(w >> 1, 10, 0xffd23f); }, leaf: (S, w, h, n) => solidLeaf(S, w, h, 0x2a2a30, { night: n, window: [3, 4, w - 6, 9], grille: true, handle: 0xd8c060, mailslot: true, stickers: 1 }), edge: 0x4a4a50, hinge: 'r' },
   kebab: { h: 30, interior: (I, w, h) => { interiorBase(I, w, h, { wall0: 0xf0d8b0, wall1: 0xc8a878, floor: 0xa89070, lampCol: 0xffe0a0 }); I.rect(2, 12, w - 4, 6, 0xd8303a); I.hl(2, 12, w - 4, 0xf05a5a); I.rect(w - 7, 3, 5, 9, 0x3a2a1a); I.rect(w - 6, 4, 3, 7, 0x9a5a34); I.px(w - 5, 6, 0xc8804a); }, leaf: (S, w, h, n) => glassLeaf(S, w, h, { night: n, note: ['ÖPPET', 'IGEN!'], noteY: 4, notePaper: 0xf8f0c0, frame: 0x5a3a2a, stickers: 2 }), edge: 0x6a4a3a, hinge: 'l' },
-  overgivet: { h: 30, interior: (I, w, h) => { I.rect(0, 0, w, h, 0x0a0a0e); }, leaf: (S, w, h) => { boards(S, 0, 0, w, h, 77); S.hl(0, 0, w, 0x3a2a18); stencil(S, (w >> 1) - 3, 10, 'hjarta', 0xff5dc8, 0.95); S.px((w >> 1) - 1, 16, 0xff5dc8, 0.7); S.px((w >> 1) - 1, 17, 0xff5dc8, 0.5); tag(S, 2, 22, 'NEJ', 0xf4f1ea, 9); }, boarded: true },
+  maskerad: { h: 30, interior: (I, w, h) => { interiorBase(I, w, h, { wall0: 0x3a2448, wall1: 0x1e1228, floor: 0x2a1e30, lampCol: 0xffb060 }); I.rect(2, 12, w - 4, 3, 0xe8762a); I.rect(3, 4, 5, 8, 0xf4f1ea); I.px(4, 6, 0x1c1820); I.px(6, 6, 0x1c1820); I.rect(w - 9, 9, 6, 5, 0xe0701c); I.px(w - 7, 11, 0xffd23f); }, leaf: (S, w, h, n) => glassLeaf(S, w, h, { night: n, note: ['ÖPPET', 'BU!'], noteY: 4, notePaper: 0xffd8a0, frame: 0x2e1838, stickers: 1 }), edge: 0x4a2a5a, hinge: 'l' },
   bilverkstad: { h: 44, interior: (I, w, h) => { interiorBase(I, w, h, { wall0: 0x4a4e58, wall1: 0x22242c, floor: 0x3a3c44, lampCol: 0xfff0c0 }); I.rect(4, 18, w - 8, 10, 0x1a1c24); I.rect(6, 14, w - 12, 5, 0x2a3a5a); I.hl(7, 14, w - 14, 0x3a5a8a); I.rect(3, 28, 5, 3, 0x1a1a1e); I.rect(w - 8, 28, 5, 3, 0x1a1a1e); I.vl(2, 8, 24, 0x8a8a90); I.vl(w - 3, 8, 24, 0x8a8a90); I.rect((w >> 1) - 2, 4, 5, 2, 0xfff8e0); for (let k = 0; k < 6; k++) I.px(2 + k * 2, 6 + (k % 3), pick([0xd8303a, 0x3a7bd5, 0xffd23f], k, 1, 2)); }, leaf: (S, w, h) => rollLeaf(S, w, h, 0x9aa4ae, { tag: 'YO', dents: 3 }), roll: true },
   tvatteri: { h: 30, interior: (I, w, h) => { interiorBase(I, w, h, { wall0: 0xe8f0f4, wall1: 0xb8c8d0, floor: 0xa8b0b8, lampCol: 0xe8f4ff }); for (let x = 2; x < w - 6; x += 7) { I.rect(x, 8, 6, 12, 0xf0f0ee); I.box(x + 1, 11, 4, 4, 0x3a5a7a); I.rect(x + 2, 12, 2, 2, 0x1a2a3a); I.hl(x + 1, 9, 4, 0x8a8a90); } }, leaf: (S, w, h, n) => glassLeaf(S, w, h, { night: n, label: 'ÖPPET', stickers: 2, frame: 0x6a8aa0 }), edge: 0x7a8a98, hinge: 'l' },
   garage: { h: 34, interior: (I, w, h) => { interiorBase(I, w, h, { wall0: 0x3a3a3e, wall1: 0x1a1a1e, floor: 0x2e2e32, lamp: false }); I.rect(4, 16, w - 8, 12, 0x6a2a2a); I.hl(5, 16, w - 10, 0x8a3a3a); I.rect(6, 12, w - 12, 5, 0x2a3a4a); I.rect(2, 4, 7, 10, 0x4a4a4e); for (let k = 0; k < 4; k++) I.hl(3, 5 + k * 2, 5, pick([0xd8303a, 0x3a7bd5, 0xffd23f, 0x6fdc4c], k, 2, 3)); }, leaf: (S, w, h) => rollLeaf(S, w, h, 0x7a8a98, { tag: 'BTG', dents: 2, tagCol: 0xffd23f }), roll: true },
@@ -2149,71 +2150,193 @@ function football(P, x, y) {
 // Rivningskåk: hål i taket med bara takstolar, halvrasad skorsten, sot efter en
 // köksbrand, igenspikade och krossade fönster, sned rivningsskylt, madrass mot
 // väggen – och om natten ett par ögon i det mörka fönstret.
-function paintOvergivet(b, night, opts) {
+// MASKERADBUTIKEN (Carl 2026-10-06: "roliga fönster så man ser saker … halloween tema … massa
+// halloween saker framför butiken och skelett"). Det gamla övergivna huset är renoverat: plommonlila
+// puts, orange takfot, neonskylten MASKERAD, två skyltfönster som lever (spökdockan som svävar och
+// pumplyktorna till vänster – häxkitteln som bubblar, svarta katten och fladdermössen till höger),
+// en häxa på kvast som flyger förbi månen i vindsfönstret, en spindel i det andra och grön rök ur
+// skorstenen. Pyntet på trottoaren (pumplyktor, gravsten, skelett) ritas av maskItems.
+const MASK = { wall: 0x4a2a5a, dk: 0x2e1838, trim: 0xe8762a, trimDk: 0x9a4410, frame: 0x1a1420 };
+let ATL = null;   // möbelatlasen (pumporna, kitteln, skelettet) – laddas först när den behövs
+const atlas = () => { if (!ATL && typeof Image !== 'undefined') { ATL = new Image(); ATL.src = new URL('../../assets/interior.png', import.meta.url).href; } return ATL?.complete && ATL.naturalWidth ? ATL : null; };
+function atlasDraw(ctx, name, x, y) { const A = atlas(), f = FRAMES[name]; if (A && f) ctx.drawImage(A, f[0], f[1], f[2], f[3], x, y, f[2], f[3]); }
+function paintMaskerad(b, night, opts) {
   const C = begin(b, night, opts), { P, L, R, BY, FT, s } = C, W = b.w, N = C.night;
-  // ---- taket: papptak fullt av mossa, med ett hål rakt ner i mörkret ----
-  gravelRoof(P, L, 40, W, FT - 40, s, { night: N, puddles: 2, moss: 0.15, col: 0x565248 });
-  P.hl(L, 40, W, 0x76726a); P.hl(L, 41, W, 0x46423a);
-  const hx = L + 28, hy = 54, hw = 36, hh = 20;
-  area(P, hx, hy, hw, hh, (X, Y, i, j) => {
-    const edge = Math.min(i, hw - 1 - i, j * 1.6, (hh - 1 - j) * 1.6) + (hash(X, Y, s + 1) - 0.5) * 3;
-    if (edge < 0.5) return mul(0x6a5a44, 0.9);
-    return qmix(0x161009, 0x050305, j / hh, X, Y, 3);
-  });
-  for (let k = 0; k < 4; k++) { const rx = hx + 5 + k * 8; P.vl(rx, hy + 2, hh - 4, 0x4a3a26); P.vl(rx + 1, hy + 2, hh - 4, 0x2a2016); }
-  P.line(hx + 3, hy + hh - 6, hx + hw - 4, hy + hh - 9, 0x3a2c1c, 0.9); // en nedfallen läkt
-  weeds(P, L + 9, 47, 3, s + 2); weeds(P, R - 11, 45, 2, s + 3); weeds(P, hx + hw + 5, hy + hh, 2, s + 4);
+  // ---- taket: mörkt papptak; skorstenen ryker grönt (häxkitteln kokar på vinden) ----
+  gravelRoof(P, L, 40, W, FT - 40, s, { night: N, puddles: 1, col: 0x4a4452 });
+  P.hl(L, 40, W, 0x6a6472); P.hl(L, 41, W, 0x3a3442);
   if (C.snow) snowRoof(P, L + 1, 42, W - 2, FT - 46, s);
-  // skorstenen har tappat halva krönet – teglet ligger kvar på taket
   const kx = R - 30;
-  area(P, kx, 34, 8, 16, (X, Y, i, j) => (j < (i < 4 ? 0 : 3) - Math.floor(hash(X, 1, s + 6) * 3) ? null : brickPx(X, Y, 0x8a5a44, s + 5, { bw: 4, bh: 2 })));
-  P.vl(kx, 38, 12, mix(0x8a5a44, WHITE, 0.2)); P.vl(kx + 7, 38, 12, mul(0x8a5a44, 0.55));
-  for (const [bx, by] of [[kx - 6, 50], [kx + 10, 47], [kx - 11, 52]]) { P.rect(bx, by, 3, 2, 0x8a5a44); P.hl(bx, by, 3, 0xa8705a); }
-  birdsOn(C, L + 6, R - 36, 40, 3, 'krake');
-  // ---- fasaden: puts som släppt i stora sjok ----
-  plaster(P, L, FT, W, BY - FT, 0x9a9078, s + 7, { patches: 5 });
-  for (let k = 0; k < 7; k++) crack(P, L + 6 + Math.floor(hash(k, s, 8) * (W - 12)), FT + 4 + Math.floor(hash(k, s, 9) * 40), 8 + Math.floor(hash(k, s, 10) * 18), s + k, 0x000000, 0.4);
-  moss(P, L, BY - 22, W, 22, s + 11, 0.1);
-  rows(P, L, FT, W, [mix(0x8a8068, WHITE, 0.3), 0x8a8068, mul(0x8a8068, 0.55)]);
-  P.darken(L, FT + 3, W, 2, 0.8);
-  for (let y = FT; y < BY; y++) { P.px(L, y, mix(P.get(L, y), WHITE, 0.16)); P.px(R - 1, y, mul(P.get(R - 1, y), 0.7)); }
-  plinth(P, L, BY - 4, W, 4, 0x6a6254, s + 12);
-  // ---- fönstren: igenspikade och krossade; sot ur köksfönstret efter branden ----
-  const wy1 = FT + 12;
-  win(P, L + 10, wy1, 20, 18, { night: N, boarded: true, seed: 1, tagOn: 'RÖK' }, C.reg);
-  win(P, L + 42, wy1, 20, 18, { night: N, broken: true, curtain: 0x8a4a44, blind: 'broken', dirt: 1, seed: 2 }, C.reg);
-  win(P, L + 74, wy1, 20, 18, { night: N, broken: true, dirt: 1, seed: 3 }, C.reg);
-  area(P, L + 40, FT + 2, 26, 12, (X, Y, i, j) => { const a = (1 - j / 12) * 0.5 * (1 - Math.abs(i - 13) / 15); return hash(X, Y, s + 13) < a + 0.12 ? mix(P.get(X, Y), 0x120e0c, 0.7) : null; });
-  for (const sx of [L + 44, L + 51, L + 58]) streak(P, sx, wy1 - 4, 6, 0x1a1410, 0.5, sx);
-  const wy2 = BY - 46;
-  win(P, L + 10, wy2, 22, 20, { night: N, boarded: true, seed: 4, tagOn: 'ZOK' }, C.reg);
-  win(P, L + 78, wy2, 20, 20, { night: N, broken: true, dirt: 1, seed: 5 }, C.reg);
-  if (N) {
-    C.reg.eyes.push({ x: L + 84, y: wy2 + 9, per: 6.5, ph: 2.1 });             // något tittar ut ur mörkret
-    C.reg.flick.push({ x: L + 46, y: wy1 + 6, w: 12, h: 8, c: 0xd8e8ff, a: 0.1, mode: 'flick' }); // ett kallt sken ibland
+  area(P, kx, 28, 10, 22, (X, Y) => brickPx(X, Y, 0x6a4a5a, s + 5, { bw: 4, bh: 2 }));
+  P.hl(kx - 1, 27, 12, 0x2a2030); P.hl(kx - 1, 28, 12, 0x4a3a4a);
+  P.vl(kx, 29, 21, 0x8a6a7a); P.vl(kx + 9, 29, 21, 0x3a2a3a);
+  C.reg.smoke.push({ x: kx + 5, y: 25, n: 6, rate: 0.2, rise: 22, drift: 5, grow: 3, tone: 0x8af08a, nightTone: 0x5ac86a, alpha: 0.5 });
+  birdsOn(C, L + 6, kx - 6, 40, 2, 'krake');
+  // ---- fasaden: lila puts, orange takfot, mörkare sockel ----
+  plaster(P, L, FT, W, BY - FT, MASK.wall, s + 7);
+  rows(P, L, FT, W, [mix(MASK.trim, WHITE, 0.35), MASK.trim, MASK.trimDk, mul(MASK.wall, 0.6)]);
+  for (let x = L + 3; x < R - 2; x += 6) { P.px(x, FT + 4, MASK.trimDk); P.px(x + 1, FT + 5, mul(MASK.trimDk, 0.8)); } // tandlist
+  for (let y = FT; y < BY; y++) { P.px(L, y, mix(P.get(L, y), WHITE, 0.14)); P.px(R - 1, y, mul(P.get(R - 1, y), 0.7)); }
+  plinth(P, L, BY - 4, W, 4, 0x2a2030, s + 12);
+  // spindelnät i övre hörnen
+  for (const [cx, dir] of [[L + 1, 1], [R - 2, -1]]) {
+    for (let r = 2; r < 12; r++) { P.px(cx + dir * r, FT + 6, 0xe8ecf0, 0.55); P.px(cx, FT + 6 + r, 0xe8ecf0, 0.55); P.px(cx + dir * Math.round(r * 0.7), FT + 6 + Math.round(r * 0.7), 0xe8ecf0, 0.55); }
+    for (const rr of [5, 9]) for (let k = 0; k <= rr; k++) { const t = k / rr; P.px(cx + dir * Math.round(rr * (1 - t)), FT + 6 + Math.round(rr * t) + (k > 0 && k < rr ? 1 : 0), 0xe8ecf0, 0.45); }
   }
-  // ---- dörren (igenspikad – ritas av live) och skylten på sniskan ----
-  const { dx0, dx1 } = C, dT = BY - DOOR_ART[b.kind].h;
-  P.rect(dx0 - 2, dT - 2, dx1 - dx0 + 4, BY - dT + 2, 0x2a241c); P.rect(dx0 - 1, dT - 1, dx1 - dx0 + 2, BY - dT + 1, OUT);
-  P.rect(dx0 - 3, BY, dx1 - dx0 + 6, 2, 0x8a8272); P.hl(dx0 - 3, BY, dx1 - dx0 + 6, 0xa8a092);
-  const px0 = dx1 + 4, py0 = dT + 3; // "RIVNING PÅGÅR" – spikad i ena hörnet, hänger snett
-  area(P, px0, py0, 34, 15, (X, Y, i, j) => { const yy = Math.round(i * 0.18); return j < yy || j > yy + 12 ? null : jit(j - yy === 0 ? 0xf4eee0 : j - yy === 12 ? 0xb8b2a4 : 0xe8e2d2, X, Y, s + 14, 0.05); });
-  [['RIVNING', 3, 3], ['PÅGÅR', 6, 9]].forEach(([w2, ox, oy]) => { // texten lutar med brädan
-    let cx2 = px0 + ox;
-    for (const ch of w2) { text(P, SMALL, ch, cx2, py0 + oy + Math.round((cx2 - px0) * 0.18), 0xb02020, 0.95); cx2 += textW(SMALL, ch) + 1; }
-  });
-  P.px(px0 + 1, py0 + 1, 0x3a3a40);
-  // ---- klotter, affisch, bråte ----
-  piece(P, L + 4, BY - 28, 'ZOK', { c1: 0x3a9bff, c2: 0x9a5cff, cloud: 0x1a2a4a, drips: 5, sign: 'BTG' });
-  stencil(P, dx0 - 11, BY - 36, 'katt', 0xf4f1ea, 0.8);
-  tag(P, L + 56, dT + 30, 'KAOS', 0x6fdc4c, s + 15); tag(P, R - 30, wy2 - 12, 'NEJ', 0xff5dc8, s + 16);
-  poster(P, L + 60, FT + 34, 20, 16, 0xd8d0b8, ['LOPPIS', 'LÖRDAG'], s + 17);
-  mattress(P, R - 22, BY - 1, s + 18);
-  drainpipe(C, L + 2, FT + 3, BY, { gap: [FT + 26, FT + 40] });
-  weeds(P, L + 7, BY - 1, 4, s + 19); weeds(P, dx0 - 6, BY - 1, 3, s + 20); weeds(P, R - 8, BY - 1, 4, s + 21);
+  // ---- övervåningen: två spetsbågade fönster och ett runt vindsfönster med en pumpa ----
+  const uy = FT + 11, uw = 22, uh = 22, ux = [L + 10, R - 10 - uw];
+  for (const x of ux) gothicWindow(P, x, uy, uw, uh, N);
+  C.reg.ledges.push([ux[0] - 1, uy + uh + 1, uw + 2], [ux[1] - 1, uy + uh + 1, uw + 2]);
+  const ocx = L + (W >> 1), ocy = FT + 20;
+  for (let y = -8; y <= 8; y++) for (let x = -8; x <= 8; x++) { const d = Math.hypot(x, y); if (d <= 8) P.px(ocx + x, ocy + y, d > 6.6 ? MASK.frame : d > 5.6 ? MASK.trim : 0x1e1228); }
+  miniPumpkin(P, ocx - 4, ocy - 3, false);
+  C.reg.glows.push([ocx - 3, ocy - 1, 6, 3, 0xffb040, 0.6]);
+  // ---- skylten: neon MASKERAD på en mörk bräda, och UTKLÄDNAD + HALLOWEEN under ----
+  const sy0 = BY - 60, sy1 = BY - 42;
+  P.rect(L + 4, sy0, W - 8, sy1 - sy0, 0x1e1228); P.box(L + 4, sy0, W - 8, sy1 - sy0, MASK.trim); P.box(L + 5, sy0 + 1, W - 10, sy1 - sy0 - 2, MASK.trimDk);
+  const NB = bits(BIG, 'MASKERAD');
+  neon(C, 'MASKERAD', L + ((W - NB.w) >> 1), sy0 + 5 + NB.up, 0xff8a2a, { flick: 5 });
+  const sub = 'UTKLÄDNAD + HALLOWEEN', sw = textW(SMALL, sub);
+  text(P, SMALL, sub, L + ((W - sw) >> 1), sy1 + 2, 0xc8f070);
+  // fladdermöss som hänger under skylten (de flaxar till ibland – live)
+  const bats = [[L + 14, sy1 + 9], [R - 18, sy1 + 9]];
+  // ---- skyltfönstren ----
+  const { dx0, dx1 } = C, wy = BY - 33, wh = 27;
+  const W1 = { x: L + 4, w: dx0 - 4 - (L + 4) }, W2 = { x: dx1 + 4, w: R - 4 - (dx1 + 4) };
+  for (const w of [W1, W2]) displayWindow(P, w.x, wy, w.w, wh, N);
+  C.reg.ledges.push([W1.x - 2, wy + wh + 2, W1.w + 4], [W2.x - 2, wy + wh + 2, W2.w + 4]);
+  // markisen över dörren: lila med orange fransar
+  for (let x = dx0 - 3; x < dx1 + 3; x++) for (let y = 0; y < 5; y++) P.px(x, BY - 37 + y, y === 4 ? ((x & 1) ? MASK.trim : MASK.trimDk) : ((x >> 2) & 1 ? MASK.dk : 0x6a3a7a));
+  P.hl(dx0 - 3, BY - 37, dx1 - dx0 + 6, 0x8a5a9a);
+  // dörren (ritas av live) och tröskeln
+  const dT = BY - DOOR_ART[b.kind].h;
+  P.rect(dx0 - 2, dT - 2, dx1 - dx0 + 4, BY - dT + 2, MASK.frame); P.rect(dx0 - 1, dT - 1, dx1 - dx0 + 2, BY - dT + 1, OUT);
+  P.rect(dx0 - 3, BY, dx1 - dx0 + 6, 2, 0x4a3a50); P.hl(dx0 - 3, BY, dx1 - dx0 + 6, 0x6a5a70);
+  drainpipe(C, L + 2, FT + 3, BY, { col: 0x3a3048 });
   footShadow(P, L, W, BY);
-  decal(C, W, 18, (G) => { litter(G, 2, 1, W - 4, 7, s + 22); G.ell(24, 6, 6, 2, 0x2a3a2a, 0.35, 2); });
+  weeds(P, L + 5, BY - 1, 2, s + 19); weeds(P, R - 6, BY - 1, 2, s + 21);
+  // ---- det som rör sig (canvasens koordinater) ----
+  const t0 = hash(s, 1, 2) * 10;
+  C.reg.extra.push((ctx, t) => {
+    // vänster fönster: spökdockan som svävar, pumplyktor på hyllan
+    ctx.save(); ctx.beginPath(); ctx.rect(W1.x, wy, W1.w, wh); ctx.clip();
+    ghost(ctx, W1.x + 9, wy + 4 + Math.round(Math.sin(t * 1.6) * 2), t);
+    atlasDraw(ctx, 'pumplyktaL0', W1.x + W1.w - 19, wy + wh - 16);
+    ctx.restore();
+    // höger fönster: kitteln bubblar, katten blinkar, fladdermöss flaxar
+    ctx.save(); ctx.beginPath(); ctx.rect(W2.x, wy, W2.w, wh); ctx.clip();
+    atlasDraw(ctx, 'haxkittel' + (Math.floor(t * 3) % 3), W2.x + 3, wy + wh - 17);
+    cat(ctx, W2.x + W2.w - 9, wy + wh - 2, t);
+    for (let k = 0; k < 2; k++) { const u = (t * 0.35 + k * 0.5 + t0) % 1; bat(ctx, W2.x + Math.round(u * (W2.w + 8)) - 4, wy + 4 + k * 4 + Math.round(Math.sin(t * 5 + k) * 1.5), t + k); }
+    ctx.restore();
+    // vindsfönstret till vänster: en häxa på kvast flyger förbi månen var tionde sekund
+    const v = ((t + t0) % 10) / 10;
+    if (v < 0.4) { ctx.save(); ctx.beginPath(); ctx.rect(ux[0] + 1, uy + 3, uw - 2, uh - 4); ctx.clip(); witch(ctx, ux[0] - 10 + Math.round(v / 0.4 * (uw + 20)), uy + 9 + Math.round(Math.sin(v * 12) * 1)); ctx.restore(); }
+    // vindsfönstret till höger: spindeln klättrar upp och ner
+    const sp = (Math.sin(t * 0.7 + t0) + 1) / 2, sx2 = ux[1] + uw - 7, syy = uy + 4 + Math.round(sp * (uh - 10));
+    ctx.fillStyle = 'rgba(232,236,240,0.7)'; ctx.fillRect(sx2 + 1, uy + 2, 1, syy - uy - 2);
+    ctx.fillStyle = '#1c1820'; ctx.fillRect(sx2, syy, 3, 2); ctx.fillRect(sx2 - 1, syy + 1, 5, 1); ctx.fillRect(sx2 - 1, syy - 1, 1, 1); ctx.fillRect(sx2 + 3, syy - 1, 1, 1);
+    // fladdermössen under skylten slår med vingarna ibland
+    for (const [bx, by] of bats) bat(ctx, bx, by, Math.floor(t * 0.5 + bx) % 3 === 0 ? t : 0.0, true);
+  });
+  C.reg.glows.push([W1.x, wy, W1.w, wh, 0xffa040, 0.32], [W2.x, wy, W2.w, wh, 0x8af08a, 0.22]);
+  C.reg.glowFx.push((ctx, t, st, k) => {
+    // pumplyktan i fönstret och kittelns gröna sken fladdrar
+    const f = 0.75 + 0.25 * Math.sin(t * 9) * Math.sin(t * 4.3);
+    ctx.fillStyle = rgba(0xffb040, 0.35 * k * f); ctx.fillRect(W1.x + W1.w - 18, wy + wh - 13, 14, 9);
+    ctx.fillStyle = rgba(0x8af08a, 0.3 * k * f); ctx.fillRect(W2.x + 2, wy + wh - 20, 20, 8);
+  });
   return finish(C);
+}
+// spetsbågat fönster med mörk himmel och en måne (häxan och spindeln ritas levande)
+function gothicWindow(P, x, y, w, h, night) {
+  const cx = x + (w >> 1);
+  for (let j = -2; j < h + 2; j++) for (let i = -2; i < w + 2; i++) {
+    const X = x + i, Y = y + j;
+    const arch = j < 8 ? Math.abs(i + 0.5 - w / 2) <= (w / 2) * Math.sqrt(Math.max(0, 1 - ((8 - j) / 9) ** 2)) + (j < 0 ? -1 : 0) : true;
+    const archO = j < 8 ? Math.abs(i + 0.5 - w / 2) <= (w / 2 + 2) * Math.sqrt(Math.max(0, 1 - ((8 - j) / 11) ** 2)) : true;
+    if (!archO) continue;
+    if (!arch || i < 0 || i >= w || j >= h) { P.px(X, Y, MASK.frame); continue; }
+    let c = mix(0x1e2a5a, 0x4a3a7a, j / h);
+    if (Math.hypot(i - (w - 7), j - 7) < 3.5) c = 0xf4ecc0;                       // månen
+    else if (hash(i, j, 77) > 0.94) c = 0xd8d8f0;                                // stjärnor
+    P.px(X, Y, night ? c : mix(c, 0x8a9ac8, 0.25));
+  }
+  P.vl(cx, y + 2, h - 2, MASK.frame); P.hl(x, y + 12, w, MASK.frame);
+  P.hl(x - 2, y + h + 1, w + 4, MASK.trim); P.hl(x - 2, y + h + 2, w + 4, MASK.trimDk);
+}
+// skyltfönster: mörk butik inne, en orange duk på hyllan och prislappar
+function displayWindow(P, x, y, w, h, night) {
+  P.rect(x - 2, y - 2, w + 4, h + 4, MASK.frame); P.box(x - 1, y - 1, w + 2, h + 2, MASK.trim);
+  area(P, x, y, w, h, (X, Y, i, j) => qmix(0x3a2448, 0x1a1020, j / h, X, Y, 3));
+  P.rect(x, y + h - 4, w, 4, 0xc85a1a); P.hl(x, y + h - 4, w, 0xf08a3a);
+  for (let i = 0; i < w; i += 3) P.px(x + i, y + h - 1, 0x8a3a10);
+  P.hl(x - 2, y + h + 2, w + 4, 0x6a5a70); P.hl(x - 2, y + h + 3, w + 4, 0x3a2a40);
+  // glasets blänk
+  for (let k = 0; k < 6; k++) P.px(x + 2 + k, y + 2 + k, 0xffffff, 0.18);
+}
+// liten pumpa (8×6) till vindsfönstret
+function miniPumpkin(P, x, y) {
+  ['..gg....', '.oooooo.', 'oyoooyoo', 'oooyoooo', 'oyyyyyoo', '.oooooo.'].forEach((r, j) => { for (let i = 0; i < 8; i++) { const ch = r[i]; if (ch === '.') continue; P.px(x + i, y + j, ch === 'g' ? 0x4a5a1e : ch === 'y' ? 0xffd23f : 0xe0701c); } });
+}
+// spöket i skyltfönstret: ett lakan med svarta ögon och en fladdrande fåll (10×14)
+function ghost(ctx, x, y, t) {
+  const rows = ['...oooo...', '..owwwwo..', '.owwwwwwo.', '.owkwwkwo.', '.owkwwkwo.', '.owwwwwwo.', '.owwkkwwo.', 'owwwwwwwwo', 'owwwwwwwwo', 'owwwwwwwwo', 'owwwwwwwwo', 'owwwwwwwwo'];
+  rows.forEach((r, j) => { for (let i = 0; i < 10; i++) { const ch = r[i]; if (ch === '.') continue; ctx.fillStyle = ch === 'o' ? '#6a6a80' : ch === 'k' ? '#1c1820' : '#f4f6fa'; ctx.fillRect(x + i, y + j, 1, 1); } });
+  const ph = Math.floor(t * 4) % 2;
+  for (let i = 0; i < 10; i++) { const d = ((i + ph) % 3 === 0) ? 1 : 0; ctx.fillStyle = '#f4f6fa'; ctx.fillRect(x + i, y + 12, 1, 1 + d); ctx.fillStyle = '#6a6a80'; ctx.fillRect(x + i, y + 13 + d, 1, 1); }
+}
+// svarta katten (sitter, svansen viftar, ögonen blinkar)
+function cat(ctx, x, y, t) {
+  ctx.fillStyle = '#141018';
+  ctx.fillRect(x - 3, y - 7, 6, 7); ctx.fillRect(x - 2, y - 11, 5, 4); ctx.fillRect(x - 2, y - 12, 1, 1); ctx.fillRect(x + 2, y - 12, 1, 1);
+  const tw = Math.round(Math.sin(t * 2.2) * 2); ctx.fillRect(x + 3, y - 2, 2, 1); ctx.fillRect(x + 5, y - 4 + tw, 1, 3);
+  if ((t % 4) > 0.15) { ctx.fillStyle = '#ffd23f'; ctx.fillRect(x - 1, y - 10, 1, 1); ctx.fillRect(x + 1, y - 10, 1, 1); }
+}
+// fladdermus (5×3), vingarna upp/ner
+function bat(ctx, x, y, t, hang = false) {
+  ctx.fillStyle = '#1c1428';
+  if (hang) { ctx.fillRect(x, y - 3, 1, 3); ctx.fillRect(x - 1, y, 3, 2); if (t) { ctx.fillRect(x - 3, y - 1, 2, 1); ctx.fillRect(x + 2, y - 1, 2, 1); } return; }
+  const up = Math.floor(t * 8) % 2;
+  ctx.fillRect(x + 1, y, 3, 2);
+  if (up) { ctx.fillRect(x, y - 1, 1, 1); ctx.fillRect(x + 4, y - 1, 1, 1); } else { ctx.fillRect(x - 1, y + 1, 2, 1); ctx.fillRect(x + 4, y + 1, 2, 1); }
+  ctx.fillStyle = '#ffd23f'; ctx.fillRect(x + 2, y, 1, 1);
+}
+// häxan på kvasten (siluett)
+function witch(ctx, x, y) {
+  ctx.fillStyle = '#141018';
+  ctx.fillRect(x, y + 3, 12, 1);                         // kvasten
+  ctx.fillRect(x - 3, y + 2, 3, 3);                      // riset
+  ctx.fillRect(x + 5, y - 1, 3, 4);                      // kroppen
+  ctx.fillRect(x + 6, y - 3, 2, 2);                      // huvudet
+  ctx.fillRect(x + 5, y - 4, 4, 1); ctx.fillRect(x + 6, y - 6, 2, 2); ctx.fillRect(x + 7, y - 7, 1, 1); // hatten
+  ctx.fillRect(x + 3, y + 1, 2, 1);                      // kappan fladdrar
+}
+
+// Pyntet på trottoaren framför maskeradbutiken (världens koordinater, y-sorterat med folket):
+// en pumplykta och en gravsten till vänster om dörren, skelettet och en pumplykta till höger.
+// Pumplyktorna lyser på kvällen (de tända rutorna ur atlasen + ett sken i glow).
+function maskSpots(b) {
+  const by = baseOf(b), d0 = b.door.x0, d1 = b.door.x1;
+  return [
+    { name: 'gravsten1', x: d0 - 24, y: by + 4 },
+    { name: 'pumplykta0', lit: true, x: d0 - 40, y: by + 7 },
+    { name: 'pumplykta2', lit: true, x: d1 + 8, y: by + 8 },
+    { name: 'skelett0', x: d1 + 27, y: by + 4 },
+  ].filter((it) => it.x > b.x - 4 && it.x < b.x + b.w + 4);
+}
+function maskItems(b, st) {
+  const lit = (st.env?.dark ?? (st.night ? 0.5 : 0)) > 0.15;
+  return maskSpots(b).map((it) => {
+    const f = FRAMES[it.name] || [0, 0, 16, 16], w = f[2], h = f[3];
+    return { x: it.x + (w >> 1), y: it.y, draw: (ctx) => {
+      ctx.fillStyle = 'rgba(20,12,28,0.25)'; ctx.fillRect(it.x + 1, it.y - 1, w - 2, 2);
+      atlasDraw(ctx, it.lit && lit ? it.name.replace('pumplykta', 'pumplyktaL') : it.name, it.x, it.y - h);
+    } };
+  });
+}
+function maskObstacles(b) {
+  return maskSpots(b).map((it) => { const f = FRAMES[it.name] || [0, 0, 16, 16]; return [it.x, it.y - 4, it.x + f[2], it.y + 1]; });
 }
 
 // ======================= BILVERKSTAN =======================
@@ -2629,7 +2752,7 @@ const art = (paint) => ({ paint, live: liveX, glow: glowX });
 export const BUILDING_ART = {
   hoghus: art(paintHoghus), hoghus2: art(paintHoghus2),
   narbutik: { ...art(paintNarbutik), items: nbItems }, pantbank: art(paintPantbank), kebab: art(paintKebab),
-  overgivet: art(paintOvergivet), bilverkstad: art(paintBilverkstad), tvatteri: art(paintTvatteri),
+  maskerad: { ...art(paintMaskerad), items: maskItems, obstacles: maskObstacles }, bilverkstad: art(paintBilverkstad), tvatteri: art(paintTvatteri),
   garage: art(paintGarage), lagerhall: art(paintLagerhall),
   lamell: art(paintLamell), husvagn: art(paintHusvagn),
 };

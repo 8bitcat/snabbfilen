@@ -10,6 +10,14 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.87.0] – 2026-10-07 – Maskeradbutiken
+- Det gamla övergivna huset i förorten har blivit MASKERADBUTIKEN – med neonskylt, skyltfönster där ett spöke svävar och häxkitteln bubblar, en häxa som flyger förbi månen och pumplyktor och ett skelett på trottoaren. Den svarta katten sover kvar vid dörren.
+- Dräkter: häxa (ny häxhatt!), trollkarl, vampyr, pirat, superhjälte, djävul, fé och ängel – köp hela dräkten eller bara det du saknar, och se dig själv i den innan du köper. Masker och öron på hattväggen.
+- Halloween-pynt att ta hem: pumpor, pumplyktor med tre ansikten, gravstenar, skelett, häxkittel, fladdermöss, spindelnät, fågelskrämmor, en gargoyl och spökträd.
+- Pumplyktorna tänds hemma: klicka på pumpan så får den ljus – på kvällen lyser den orange.
+- Våga öppna spöklådan hos häxan Hilda …
+- I appen: notiser när Halloween-veckan börjar och på Halloween (om du har slagit på notiserna).
+
 ## [0.86.0] – 2026-10-06 – Julvåningen
 - Klädaffären har fått en tredje våning: JULVÅNINGEN! Gå upp för den nya trappan längst till höger på plan 2.
 - Julpynt att ta med hem: adventsstjärnor, en blinkande girlang, elektriska adventsljusstakar, julkalender, julbock, pepparkakshus, snögubbe, granar med julgranskulor i fyra färger, en gran med blinkande ljus och en julpyntad spis. Det gamla julpyntet finns där också.

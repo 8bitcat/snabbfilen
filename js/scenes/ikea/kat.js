@@ -15,8 +15,8 @@ const ELEK_NAMN = { retrotv: 'Retro-TV:n', spelkonsol: 'Spelkonsolen', datortorn
 export const elektronikName = (k, v = 0) => (k === 'tv' ? ((v | 0) === 1 ? 'TV:n' : 'Gamingriggen') : ELEK_NAMN[k] || 'Den');
 const ALL = () => (Array.isArray(GAME.KATALOG) ? GAME.KATALOG : []);
 // Möbeljättens sortiment = katalogen utan elektroniken
-export const KAT = () => ALL().filter((k) => k && !isElektronik(k) && k.shop !== 'jul'); // (julpyntet säljs på klädaffärens julvåning)
-export const katOf = (k) => (isElektronik(k) ? null : ALL().find((x) => x.kind === k && !isElektronik(x) && x.shop !== 'jul') || null);
+export const KAT = () => ALL().filter((k) => k && !isElektronik(k) && !k.shop); // (julpyntet och Halloween-pyntet har egna butiker)
+export const katOf = (k) => (isElektronik(k) ? null : ALL().find((x) => x.kind === k && !isElektronik(x) && !x.shop) || null);
 export const frameOf = (k, v) => FRAMES[k + (v | 0)] || FRAMES[k + '0'] || null;
 // platta saker som ligger på golvet (mattor) – ritas under allt annat och går att gå på
 export const isFlat = (k) => k === 'matta' || /matta$/.test(k);

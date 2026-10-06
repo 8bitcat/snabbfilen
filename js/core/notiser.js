@@ -9,6 +9,8 @@ import { openModal, closeModal, modalOpen, toast } from './ui.js';
 
 // { id (1–899, ändras aldrig), datum 'MM-DD', kl (timme), titel, text, fran 'YYYY-MM-DD' (valfri: först från) }
 export const HANDELSER = [
+  { id: 4, datum: '10-24', kl: 17, titel: 'Halloween-veckan! 🎃', text: 'Maskeradbutiken i förorten har dräkter, pumpor och skelett. Tänd en pumplykta hemma!' },
+  { id: 5, datum: '10-31', kl: 16, titel: 'Glad Halloween! 👻', text: 'Klä ut dig och skräm dina kompisar i Pixelstaden!' },
   { id: 1, datum: '12-01', kl: 17, titel: 'Det är december! 🎄', text: 'Julvåningen i klädaffären är full av pynt – klä granen, tänd brasan och grilla marshmallows.' },
   { id: 2, datum: '12-13', kl: 8, titel: 'Glad Lucia! 🕯️', text: 'Luciakläderna hänger på klädaffärens julvåning i Pixelstaden.' },
   { id: 3, datum: '12-24', kl: 10, titel: 'God jul! 🎅', text: 'God jul från Pixelstaden! Tänd brasan och ha det mysigt.' },

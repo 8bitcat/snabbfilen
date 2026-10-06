@@ -13,11 +13,15 @@ const O = 'Others.png', F = 'Fireplace.png', CH = 'Chairs.png', D = 'Dressers.pn
 // arken som de nya möblerna (2026-09-28) hämtas ur
 const P10 = 'Part 10 copiar.png', P11 = 'Part 11 copiar.png', HW = 'hospital wing.png', BS = 'Blacksmith.png', SC = 'School.png';
 const TE = 'Temple.png', DW = 'Doors, windows and curtains.png', X = 'Xmas.png', CF = 'cats furniture.png', BB = 'basketball.png';
-const EG = 'egna/';   // egenritade sprites i tools/atlas-egna/ (julpynt-art.py)
+const EG = 'egna/';
+const HC = '../Exterior/Halloween Content.png', HS = '../Exterior/Scarescrow.png';   // utomhusarken (Halloween)   // egenritade sprites i tools/atlas-egna/ (julpynt-art.py)
 const L1 = 'Candle 1.png', L2 = 'Candle 2.png', L3 = 'Candle 3.png', L4 = 'candle 4.png', L5 = 'Candle 5.png', L6 = 'Candle 6.png';
 
 // [namn, fil, sx, sy, sw, sh] – namn = kind + variantindex
 const PICKS = [
+  // gravstenarna (maskeradbutiken) – olika stora, en ruta var
+  ['gravsten0', HC, 144, 98, 16, 30], ['gravsten1', HC, 162, 113, 12, 14], ['gravsten2', HC, 176, 109, 16, 19],
+  ['gravsten3', HC, 194, 113, 12, 14], ['gravsten4', HC, 209, 108, 14, 19],
   // dubbelsängar (6 färger)
   ['sang0', B, 7, 269, 33, 34], ['sang1', B, 55, 269, 33, 34], ['sang2', B, 103, 269, 33, 34],
   ['sang3', B, 151, 269, 33, 34], ['sang4', B, 247, 269, 33, 34], ['sang5', B, 343, 269, 33, 34],
@@ -246,6 +250,18 @@ const KINDS = [
   ['julbock', 16, 19, [[EG + 'julbock0.png', 0, 0]]],
   ['pepparkakshus', 16, 14, [[EG + 'pepparkakshus0.png', 0, 0]]],
   ['kulgran', 32, 48, [[EG + 'kulgran0.png', 0, 0], [EG + 'kulgran1.png', 0, 0], [EG + 'kulgran2.png', 0, 0], [EG + 'kulgran3.png', 0, 0]]],
+  // MASKERADBUTIKEN (Halloween): fågelskrämmorna, spökträden och gargoylen ur arken (utomhusarken
+  // läses via ../Exterior/), pumporna och resten egenritat (tools/halloween-art.py)
+  ['fagelskramma', 32, 32, [0, 1, 2, 3, 4, 5, 6, 7].map((i) => [HS, i * 32, 0])],
+  ['spoktrad', 30, 37, [[HC, 1, 123], [HC, 33, 123], [HC, 65, 123], [HC, 97, 123]]],
+  ['gargoyl', 29, 40, [[HC, 193, 5]]],
+  ['pumpa', 18, 15, [[EG + 'pumpa0.png', 0, 0], [EG + 'pumpa1.png', 0, 0]]],
+  ['pumplykta', 18, 15, [0, 1, 2].map((i) => [EG + `pumplykta${i}.png`, 0, 0])],
+  ['pumplyktaL', 18, 15, [0, 1, 2].map((i) => [EG + `pumplyktaL${i}.png`, 0, 0])],
+  ['skelett', 15, 28, [[EG + 'skelett0.png', 0, 0]]],
+  ['haxkittel', 18, 16, [0, 1, 2].map((i) => [EG + `haxkittel${i}.png`, 0, 0])],
+  ['fladdermoss', 18, 8, [[EG + 'fladdermoss0.png', 0, 0], [EG + 'fladdermoss1.png', 0, 0]]],
+  ['spindelnat', 16, 16, [[EG + 'spindelnat0.png', 0, 0]]],
 ];
 for (const [kind, w, h, vars] of KINDS) vars.forEach(([file, sx, sy], i) => EXTRA.push([kind + i, file, sx, sy, w, h]));
 

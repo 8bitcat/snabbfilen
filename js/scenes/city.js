@@ -192,6 +192,7 @@ const SCENE_DOORS = {
   universitet: 'universitet',                                                                        // Pixelhögskolan (PIXEL TOWER)
   bio: 'bio', kebab: 'kebab', pantbank: 'pantbank',                                                  // Söder och förorten
   fordon: 'fordon',                                                                                  // GARAGET i förorten (cyklar och mopeder)
+  maskerad: 'maskerad',                                                                              // MASKERADBUTIKEN i förorten (Halloween)
 };
 // Kameran på STORA BRON: på däcket lyfts kameran så att tornens spetsbågar, krönen och kablarnas
 // båge kommer med (mjukt in och ut vid brofästena) – figuren hålls ändå minst BRIDGE_FOOT px ovanför

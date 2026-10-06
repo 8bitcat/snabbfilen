@@ -56,6 +56,7 @@ export const DEPT = {
   mid: { name: '', neon: 0xf0d048, glow: 0xe8b230, board: 0x17151a, trim: 0xe8b230, lbl: '#f0d048', tag: '#e8b230', stage: ['#f3ecdf', '#e6dcc8', '#b99a70'], title: 'Accessoarerna' },
   kungs: { name: 'KUNGSLADUGÅRD', neon: 0xffd0d8, glow: 0xd9434b, board: 0x3a0d16, trim: 0xd9434b, lbl: '#ff9aa6', tag: '#d9434b', stage: ['#f6e3e6', '#e8c4ca', '#a3485a'], title: 'Kungsladugård' },
   lag: { name: 'KÄNDA LAG', neon: 0xb8f07a, glow: 0x46a35a, board: 0x10261a, trim: 0x6fd08a, lbl: '#9fe88a', tag: '#46a35a', stage: ['#e4f2e2', '#c4e0c2', '#5f9a64'], title: 'Kända lag' },
+  halloween: { name: 'HALLOWEEN', neon: 0xffb060, glow: 0xe8762a, board: 0x1e1228, trim: 0xe8762a, lbl: '#ff9a3a', tag: '#e8762a', stage: ['#efe4f4', '#d8c4e4', '#6a3a7a'], title: 'Maskeradbutiken' },
   jul: { name: 'JUL', neon: 0xfff0b0, glow: 0xd9433b, board: 0x173a24, trim: 0xd9433b, lbl: '#ffd23f', tag: '#c9323a', stage: ['#f3ecdf', '#e6dcc8', '#7a2a2e'], title: 'Julavdelningen' },
   sport: { name: 'SPORT', neon: 0xffd23f, glow: 0xe07a2e, board: 0x1a1a24, trim: 0xf0b429, lbl: '#ffd23f', tag: '#e07a2e', stage: ['#f3ecdf', '#e6dcc8', '#b99a70'], title: 'Sportavdelningen' },
 };

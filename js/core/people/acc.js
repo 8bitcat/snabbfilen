@@ -260,6 +260,12 @@ export const HAT_REG = {
     b: [5, ['8.2o4.', '6.h2o5.', '5.h2ol5.', '4.h4ol4.', '3.h6ol3.', 'h12ol']],
     s: [5, ['3.2o9.', '5.h2o6.', '5.hosl5.', '5.h3ol4.', '4.h5ol3.', '.h11ol']],
   }, (R) => pal(R.cap, null, { s: 0xf8d860 })),
+  // Häxhatten (maskeradbutiken 2026-10-07): bred brätte, hög strut som viker sig, band i detaljfärgen
+  witch: hatT('Häx­hatt', 'Utklädnad', 8, {
+    f: [3, ['11.2o5.', '10.3o5.', '9.3o6.', '8.4o6.', '7.h4o6.', '6.h5o6.', '6.6O6.', '5.h7o5.', 'h16ol', '.16l.']],
+    b: 'mirror',
+    s: [5, ['9.2o3.', '8.3o3.', '7.3o4.', '6.4o4.', '5.h4o4.', '5.h5o3.', '5.6O3.', '4.h7o2.', 'h12ol', '.12l.']],
+  }, (R) => pal(R.cap, R.acc)),
   // Ligger ovanpå håret (täcker inte hjässan, klipper inget): placeras efter hårets topp
   catEars: tpl('Kattöron', 'Utklädnad', (R) => topOf(R, R.side ? [11, 14] : [9, 14], R.h0 - 2, R.h0) - 3, {
     f: [8, ['h6.h', '2o4.2o', 'opo2.opo', '8l']],

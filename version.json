@@ -1,7 +1,7 @@
 {
-  "version": "0.86.0",
-  "date": "2026-10-06",
-  "title": "Julvåningen",
+  "version": "0.87.0",
+  "date": "2026-10-07",
+  "title": "Maskeradbutiken",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
@@ -159,6 +159,7 @@
     "js/scenes/shop-kebab.js",
     "js/scenes/shop-klader.js",
     "js/scenes/shop-leksaker.js",
+    "js/scenes/shop-maskerad.js",
     "js/scenes/shop-mat.js",
     "js/scenes/shop-mobler.js",
     "js/scenes/shop-narbutik.js",
