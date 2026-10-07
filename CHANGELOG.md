@@ -10,6 +10,12 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.91.0] – 2026-10-07 – Marknaden
+- MARKNADEN har öppnat på Marknadstorget i Linnéstaden (varje dag 8–20)! Åtta stånd med randiga tak: grönsaker, frukt, ost och ägg, bröd, fisk, blommor, våfflor och godis. Handlarna ropar ut sina varor och kunderna står och handlar.
+- Gå fram till ett stånd och handla: grönsaker, frukt, ost, bröd och fisk hamnar i skafferiet hemma (lite billigare än i affären) – våfflor, kanelbullar, sockervadd, popcorn och blommor ger lycka direkt.
+- Karnevalsstämning: en karusell med hästar som snurrar (ett varv kostar 20 kr), en ballongförsäljare, ett lyckohjul där man kan vinna pengar eller en nalle, och en dragspelare som spelar en vals åt dig.
+- Vimplar och ljusslingor hänger från brunnens lykta ut över torget – på kvällen lyser de och karusellens lampor blinkar.
+
 ## [0.90.0] – 2026-10-07 – Butikerna i Linnéstaden
 - Butikerna i Linnéstaden har fått var sin stil: Kafé Linden med texten på markisen och halvgardiner, Gårdsbutiken med en uppslagen ladport, Pynt & Ting med rundbågade fönster och små kupolmarkiser, Bageriet med guldtext på glaset, Blomster med en glasfasad som ett orangeri, Loppisen med en handmålad skylt med hjärtan och Cykelverkstan med en halvöppen garageport.
 - Antikvariatet är mysigare: ett burspråk med varmt ljus, bokhyllor ända upp, en grön läslampa, en läsfåtölj och en katt som sover i fönstret och viftar på svansen.

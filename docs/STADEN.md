@@ -552,6 +552,10 @@ världen växte åt vänster, så alla gamla koordinater, sparfält och tester g
 - **Trafiken**: vägarna börjar i `X0`; tätheten skalar med `(W − X0) / 2720`.
 - **Kartan** (🗺️): kartpixel X ↔ världs-x (X + MX0)·K. **Nätet**: `net/world.js` klämmer x till −1200–4000.
 - **Musiken**: distriktet `linne` spelar parkens låt.
+- **Marknaden** (v0.91, `js/city/marknad.js`, en egen stadsmodul `S.market`): åtta stånd i torgets norra del (råvaror till
+  skafferiet till marknadspris ‑10 %, godsaker som ger lycka), karusellen, ballongförsäljaren, dragspelaren och lyckohjulet
+  söder om brunnen, vimpel‑ och ljusslingor från brunnens lykta. Öppet 8–20 (karusellen 10–20). Stånden är hinder;
+  klick → `stallAt` → gå fram → `openStall`. Gångarna kring brunnen och tvärs över torget hålls fria.
 - **Test**: `tools/linne-test.mjs`.
 - **Nästa släpp** (planen): marknaden på torget, Gårdsbutiken (köp närproducerat som råvaror),
   dekorationsbutiken Pynt & Ting.

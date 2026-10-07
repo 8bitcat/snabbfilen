@@ -26,7 +26,7 @@ import { makeLookRich } from '../core/people.js';
 // modulerna inte täcker ännu (marken/skjulen/staketen i v2-områdena).
 // v3: buildings-downtown (finanskvarterets hus) och bridge (floden, Stora bron, Järnbron).
 const MODS = {};
-await Promise.all(['buildings-shops', 'buildings-work', 'buildings-south', 'buildings-suburb', 'buildings-leksaker', 'buildings-downtown', 'buildings-linne', 'ground', 'props', 'traffic', 'life', 'weather', 'walk', 'fallback-v2', 'bridge'].map((n) =>
+await Promise.all(['buildings-shops', 'buildings-work', 'buildings-south', 'buildings-suburb', 'buildings-leksaker', 'buildings-downtown', 'buildings-linne', 'marknad', 'ground', 'props', 'traffic', 'life', 'weather', 'walk', 'fallback-v2', 'bridge'].map((n) =>
   import(`../city/${n}.js`).then((m) => { MODS[n] = m; }).catch((e) => console.error(`stadsmodulen ${n} kunde inte laddas:`, e))));
 
 let VW = CITY.VIEW_W, VH = CITY.VIEW_H; // mobilfyllning: vyn följer skärmen, klampad till världen
@@ -87,10 +87,11 @@ function sim() {
     ground: !MODS.ground?.V2, props: !MODS.props?.V2, traffic: !MODS.traffic?.V2,
   }), NONE);
   const bridge = safe('bridge', () => MODS.bridge?.createBridge?.(env), NONE);   // floden och broarna (v3)
-  env.obstacles = [...MAP_OBSTACLES, ...artObstacles(), ...(props.obstacles || []), ...(traffic.obstacles || []), ...(fallback.obstacles || []), ...(bridge.obstacles || [])];
+  const market = safe('marknad', () => MODS.marknad?.createMarket?.(env), NONE);  // marknaden på Marknadstorget (v4, Linnéstaden)
+  env.obstacles = [...MAP_OBSTACLES, ...artObstacles(), ...(props.obstacles || []), ...(traffic.obstacles || []), ...(fallback.obstacles || []), ...(bridge.obstacles || []), ...(market.obstacles || [])];
   const life = safe('life', () => MODS.life?.createLife(env, traffic, props), NONE); // props ger livet riktiga sittplatser (props.seats())
   const weather = safe('weather', () => MODS.weather?.createWeather(env), NO_WEATHER);
-  SIM = { props, traffic, life, fallback, weather, bridge };
+  SIM = { props, traffic, life, fallback, weather, bridge, market };
   return SIM;
 }
 
@@ -238,7 +239,7 @@ export function makeCity(A) {
   const applyRide = () => { const F = fordon(); walker.speed = GANG * (F ? F.fart : 1); };
   applyRide();
   let rullar = false;
-  env.obstacles = [...MAP_OBSTACLES, ...artObstacles(), ...(S.props.obstacles || []), ...(S.traffic.obstacles || []), ...(S.fallback.obstacles || []), ...(S.bridge.obstacles || []), ...(S.life.obstacles || [])];
+  env.obstacles = [...MAP_OBSTACLES, ...artObstacles(), ...(S.props.obstacles || []), ...(S.traffic.obstacles || []), ...(S.fallback.obstacles || []), ...(S.bridge.obstacles || []), ...(S.life.obstacles || []), ...(S.market?.obstacles || [])];
   // 🚚 foodtrucken (eget företag, js/core/foretag.js) står på sin plats och är ett hinder
   const truckPos = () => { const T = !A.attract && g.truck; return T ? GAME.truckPlatsOf(T.plats) : null; };
   const setObst = () => { const TP = truckPos(); walker.setObstacles(TP ? [...env.obstacles, [TP.x + TRUCK_RECT.x0, TP.y + TRUCK_RECT.y0, TP.x + TRUCK_RECT.x1, TP.y + TRUCK_RECT.y1]] : env.obstacles); };
@@ -534,6 +535,7 @@ export function makeCity(A) {
     add('props', () => S.props.items());
     add('traffic', () => S.traffic.items());
     add('life', () => S.life.items());
+    add('marknad', () => S.market.items());
     for (const d of folkDrawables(A, t)) items.push({ y: d.fy, draw: () => d.draw(ctx) });
     // 🌾 vägskylten LANDET → vid stadsgränsen (södra trottoaren längst österut)
     if (cx + vw > CITY.W - 80) items.push({ y: CITY.SIDEWALK_S[1] - 4, draw: () => drawLandetSkylt(ctx, CITY.W - 22, CITY.SIDEWALK_S[1] - 4) });
@@ -574,7 +576,7 @@ export function makeCity(A) {
         if (Math.max(base, b.frontY ?? base) + 4 < cy || artBox(b).y > cy + vh) continue;
         guard(`${b.kind}.glow`, () => { ctx.save(); art[b.kind]?.glow?.(ctx, b, stOf(b)); ctx.restore(); });
       }
-      for (const [name, m] of [['fallback', S.fallback], ['bridge', S.bridge], ['props', S.props], ['traffic', S.traffic], ['life', S.life]]) guard(name + '.glow', () => { ctx.save(); m.glow?.(ctx, view); ctx.restore(); });
+      for (const [name, m] of [['fallback', S.fallback], ['bridge', S.bridge], ['props', S.props], ['traffic', S.traffic], ['life', S.life], ['marknad', S.market]]) guard(name + '.glow', () => { ctx.save(); m.glow?.(ctx, view); ctx.restore(); });
       guard('weather.glow', () => { ctx.save(); S.weather.glow?.(ctx, view); ctx.restore(); });
     }
   }
@@ -920,7 +922,7 @@ export function makeCity(A) {
       updateEnv(dt);
       if (banner) banner.t += dt;
       if (fade.phase === 0) checkDistrict(false);
-      for (const [name, m] of [['fallback', S.fallback], ['bridge', S.bridge], ['props', S.props], ['traffic', S.traffic], ['life', S.life]]) guard(name + '.update', () => m.update?.(dt));
+      for (const [name, m] of [['fallback', S.fallback], ['bridge', S.bridge], ['props', S.props], ['traffic', S.traffic], ['life', S.life], ['marknad', S.market]]) guard(name + '.update', () => m.update?.(dt));
       // dörrarna öppnas när någon är nära
       for (const b of ALL_BUILDINGS) {
         const dc = doorCenter(b), base = baseOf(b), half = (b.door.x1 - b.door.x0) / 2 + 14;
@@ -958,6 +960,9 @@ export function makeCity(A) {
       // Den som står BAKOM en buss, taxi eller ledig bänk (längre bort i bild) tar inte klicket – det
       // som står framför ska gå att kliva på / sätta sig på (annars fångade en väntande resenär klicket
       // på bussdörren och en förbipasserande klicket på bänken).
+      // 🎪 marknaden: ett stånd, karusellen, ballongerna, lyckohjulet → gå fram och handla
+      const ms = S.market?.stallAt?.(x, y);
+      if (ms) { if (sitting) standUp(); walker.walkTo(ms.walk.x, ms.walk.y, () => { walker.dir = 'up'; MODS.marknad?.openStall?.(A, ms, S.market); }); return; }
       let who = S.life.personAt?.(x, y);
       if (who) {
         const car = S.traffic.busDoorHit?.(x, y) || (taxi && S.traffic.taxiHit?.(x, y) ? S.traffic.taxi?.() : null);

@@ -1,7 +1,7 @@
 {
-  "version": "0.90.0",
+  "version": "0.91.0",
   "date": "2026-10-07",
-  "title": "Butikerna i Linnéstaden",
+  "title": "Marknaden",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
@@ -23,6 +23,7 @@
     "js/city/ground.js",
     "js/city/life.js",
     "js/city/map.js",
+    "js/city/marknad.js",
     "js/city/places.js",
     "js/city/props.js",
     "js/city/traffic.js",

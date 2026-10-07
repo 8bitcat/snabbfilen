@@ -74,6 +74,32 @@ ok(shops.every((s) => s.wins >= 1 && s.keeper && s.look && s.greet), 'varje buti
 await sleep(800);
 await p.locator('#scene').screenshot({ path: 'tools/out/linne-dag.png' }).catch(() => {});
 
+// ---------- marknaden (v0.91) ----------
+await D(() => { SF.game.min = 12 * 60; SF.game.money = 500; });
+const mk = await D(async () => {
+  const S = SF.scene._debug.sim(), M = S.market, MK = await import('/js/city/marknad.js');
+  const n = M.stalls.length, it = M.items().length;
+  const g = SF.game, st = M.stallAt(-996, 340), before = { m: g.money, k: g.skafferi.morot | 0 };
+  MK.openStall(SF, st, M);
+  const btn = [...document.querySelectorAll('#modal [data-vara]')].find((b) => b.dataset.vara === 'morot');
+  btn?.click();
+  const after = { m: g.money, k: g.skafferi.morot | 0 };
+  document.querySelector('#modal').classList.add('hidden');
+  const k = M.stallAt(-912, 420), m0 = g.money, glad0 = g.glad === undefined ? 0 : 0;
+  MK.openStall(SF, k, M);
+  const ride = [...document.querySelectorAll('#modal button')].find((b) => /Åk/.test(b.textContent));
+  ride?.click();
+  const ob = M.obstacles.length;
+  return { n, it, st: st?.id, before, after, kar: k?.id, rode: m0 - g.money, ob };
+});
+ok(mk.n >= 12 && mk.it > 15, `marknaden: ${mk.n} stånd och attraktioner, ${mk.it} saker att rita`);
+ok(mk.st === 'gront' && mk.after.k === mk.before.k + 1 && mk.after.m < mk.before.m, `köpte en morot på grönsaksståndet (${mk.before.m - mk.after.m} kr) – den ligger i skafferiet`);
+ok(mk.kar === 'karusell' && mk.rode === 20, 'ett varv på karusellen kostar 20 kr');
+ok(await D(() => !SF.scene._debug.walkable(-996, 346) && SF.scene._debug.walkable(-996, 362)), 'stånden är hinder, man står framför dem och handlar');
+await D(() => { const m = document.querySelector('#modal'); m.classList.add('hidden'); m.innerHTML = ''; SF.scene._debug.teleport(-760, 330); });
+await sleep(1200);
+await p.locator('#scene').screenshot({ path: 'tools/out/linne-marknad.png' }).catch(() => {});
+
 // ---------- 3: gå dit från centrum ----------
 await D(() => SF.scene._debug.teleport(120, 296)); await sleep(300);
 const steps = await D(() => SF.scene._debug.walkTo(-700, 300));
