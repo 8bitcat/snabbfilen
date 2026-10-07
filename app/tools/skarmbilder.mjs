@@ -2,9 +2,10 @@
 // ?mobfill=1) och varje bild får en rubrik i spelets röda dialogstil ovanför.
 //   iphone  6,9" liggande 2868×1320 (956×440 @3x)
 //   ipad    13"  liggande 2752×2064 (1376×1032 @2x)
-//   node app/tools/skarmbilder.mjs [iphone|ipad] [--bara id,id] [--rubriker]
+//   node app/tools/skarmbilder.mjs [iphone|iphone65|ipad] [--bara id,id] [--rubriker] [--lang en]
 //     → app/store/skarmbilder/<enhet>-<nr>-<id>.png (+ <enhet>-<id>-ra.png utan rubrik)
 //     --bara      ta bara de här bilderna      --rubriker  gör bara om rubrikerna på redan tagna bilder
+//     --lang xx   spelet och rubrikerna på det språket (docs/SPRAK.md) → app/store/skarmbilder/<xx>/
 // Urvalet och ordningen är Carls (2026-10-03): staden, leksaksaffären, klädaffären, frisörens frisyrmeny,
 // husdjuren, festen i ett riktigt möblerat hem (app/tools/fest-hem.json), pizzerian och mer av staden
 // – ingen häst och ingen trädgård.
@@ -17,7 +18,8 @@ const require = createRequire('D:/Qisy/QISYFrontend/QISYFrontend-1/package.json'
 const { chromium } = require('playwright');
 
 const APP = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const OUT = path.join(APP, 'store', 'skarmbilder');
+const LANG = process.argv.includes('--lang') ? process.argv[process.argv.indexOf('--lang') + 1] : 'sv';
+const OUT = path.join(APP, 'store', 'skarmbilder', ...(LANG === 'sv' ? [] : [LANG]));
 const PORT = process.env.PORT || 8788;
 const FEST_HEM = JSON.parse(fs.readFileSync(path.join(APP, 'tools', 'fest-hem.json'), 'utf8'));   // villans vardagsrum, möblerat
 fs.mkdirSync(OUT, { recursive: true });
@@ -39,6 +41,20 @@ const BILDER = [
   { id: 'soder', rubrik: 'Upptäck hela staden', under: 'Söder, parken, förorten och downtown' },
   { id: 'kvall', rubrik: 'Staden lever dygnet runt', under: 'Dag och natt, sol och regn' },
 ];
+// samma rubriker på de andra språken, i samma ordning (staden och stadsdelarna med sina lokala namn)
+const RUBRIKER = {
+  en: [['A whole life in Pixel City', 'Work, shop, study and meet people'], ['Go shopping in town', 'Toys, furniture, food and much more'], ['Dress the way you like', 'Clothes, shoes and accessories'], ['Get a new look at the salon', 'Loads of hairstyles and hair colors'], ['Get your own pet', 'Kittens, puppies and bunnies that grow up at home'], ['Invite your friends over', 'Decorate your home and throw a party'], ['Work your way up', '14 jobs – from pizza baker to boss'], ['Explore the whole city', 'Southside, the park, Eastside and downtown'], ['The city never sleeps', 'Day and night, sun and rain']],
+  es: [['Toda una vida en Ciudad Píxel', 'Trabaja, compra, estudia y conoce gente'], ['De compras por la ciudad', 'Juguetes, muebles, comida y mucho más'], ['Vístete como quieras', 'Ropa, zapatos y accesorios'], ['Cambia de look en la peluquería', 'Montones de peinados y colores de pelo'], ['Adopta tu propia mascota', 'Gatitos, cachorros y conejitos que crecen en casa'], ['Invita a tus amigos', 'Decora tu casa y monta una fiesta'], ['Asciende en el trabajo', '14 trabajos – de pizzero a jefe'], ['Explora toda la ciudad', 'Barrio Sur, el parque, las afueras y Las Torres'], ['La ciudad nunca duerme', 'Día y noche, con sol y con lluvia']],
+  de: [['Ein ganzes Leben in Pixelstadt', 'Arbeiten, einkaufen, lernen und Leute treffen'], ['Shoppen in der Stadt', 'Spielzeug, Möbel, Essen und vieles mehr'], ['Zieh an, was du willst', 'Kleidung, Schuhe und Accessoires'], ['Neuer Look beim Friseur', 'Jede Menge Frisuren und Haarfarben'], ['Hol dir ein Haustier', 'Kätzchen, Welpen und Häschen, die zu Hause groß werden'], ['Lade deine Freunde ein', 'Richte dein Zuhause ein und feiere eine Party'], ['Arbeite dich hoch', '14 Jobs – vom Pizzabäcker bis zum Chef'], ['Entdecke die ganze Stadt', 'Südstadt, Stadtpark, Vorstadt und City'], ['Die Stadt lebt rund um die Uhr', 'Tag und Nacht, Sonne und Regen']],
+  fr: [['Toute une vie à Pixelville', 'Travaille, achète, étudie et rencontre du monde'], ['Fais du shopping en ville', 'Jouets, meubles, nourriture et bien plus'], ['Habille-toi comme tu veux', 'Vêtements, chaussures et accessoires'], ['Change de look chez le coiffeur', 'Plein de coiffures et de couleurs'], ['Adopte ton propre animal', 'Chatons, chiots et lapereaux qui grandissent chez toi'], ['Invite tes amis', 'Décore ta maison et fais la fête'], ['Grimpe les échelons', '14 métiers – de pizzaiolo à patron'], ['Explore toute la ville', 'Rive Gauche, le parc, la banlieue et les gratte-ciel'], ['La ville vit jour et nuit', 'Au soleil comme sous la pluie']],
+  pl: [['Całe życie w Pikselowie', 'Pracuj, rób zakupy, ucz się i poznawaj ludzi'], ['Zakupy w mieście', 'Zabawki, meble, jedzenie i dużo więcej'], ['Ubierz się, jak chcesz', 'Ubrania, buty i dodatki'], ['Nowa fryzura u fryzjera', 'Mnóstwo fryzur i kolorów włosów'], ['Zaadoptuj zwierzaka', 'Kotki, szczeniaki i króliczki, które rosną w domu'], ['Zaproś znajomych', 'Urządź dom i zrób imprezę'], ['Pnij się w górę', '14 prac – od pizzermana do szefa'], ['Odkryj całe miasto', 'Zarzecze, park, osiedle i City'], ['Miasto żyje całą dobę', 'Dzień i noc, słońce i deszcz']],
+  it: [['Una vita intera a Pixelopoli', 'Lavora, fai shopping, studia e conosci gente'], ['Shopping in città', 'Giocattoli, mobili, cibo e molto altro'], ['Vestiti come vuoi', 'Abiti, scarpe e accessori'], ['Nuovo look dal parrucchiere', 'Tantissime acconciature e colori'], ['Adotta un animale', 'Gattini, cuccioli e coniglietti che crescono a casa'], ['Invita gli amici', 'Arreda la casa e organizza una festa'], ['Fai carriera', '14 lavori – da pizzaiolo a capo'], ['Esplora tutta la città', 'Oltrefiume, il parco, la periferia e Porta Nuova'], ['La città vive giorno e notte', 'Con il sole e con la pioggia']],
+  pt: [['Uma vida inteira em Pixelópolis', 'Trabalha, faz compras, estuda e conhece pessoas'], ['Compras na cidade', 'Brinquedos, móveis, comida e muito mais'], ['Veste-te como quiseres', 'Roupa, sapatos e acessórios'], ['Novo visual no cabeleireiro', 'Montes de penteados e cores de cabelo'], ['Adota o teu animal', 'Gatinhos, cachorrinhos e coelhinhos que crescem em casa'], ['Convida os amigos', 'Decora a tua casa e faz uma festa'], ['Sobe na carreira', '14 empregos – de pizzaiolo a chefe'], ['Explora a cidade toda', 'Margem Sul, o parque, o subúrbio e a Baixa'], ['A cidade vive dia e noite', 'Com sol e com chuva']],
+};
+if (LANG !== 'sv') {
+  if (!RUBRIKER[LANG]) throw new Error(`inga rubriker för --lang ${LANG}`);
+  BILDER.forEach((B, i) => { [B.rubrik, B.under] = RUBRIKER[LANG][i]; });
+}
 
 const bara = process.argv.includes('--bara') ? process.argv[process.argv.indexOf('--bara') + 1].split(',') : null;
 const val = Object.keys(ENHETER).includes(process.argv[2]) ? process.argv[2] : null;
@@ -48,7 +64,7 @@ for (const [enhet, E] of Object.entries(ENHETER)) {
   const ctx = await browser.newContext({ viewport: { width: E.vp[0], height: E.vp[1] }, deviceScaleFactor: E.dsf, isMobile: true, hasTouch: true });
   const p = await ctx.newPage();
   p.on('pageerror', (e) => console.log('sidfel:', e.message));
-  await p.goto(`http://localhost:${PORT}/index.html?nomenu&mobfill=1&tradgard&world=store${Date.now().toString(36)}`);
+  await p.goto(`http://localhost:${PORT}/index.html?nomenu&mobfill=1&tradgard&lang=${LANG}&world=store${Date.now().toString(36)}`);
   await p.evaluate((deco) => {
     localStorage.clear();
     localStorage.setItem('snabbfilen_tips_hus', '1');
@@ -177,7 +193,11 @@ for (const enhet of Object.keys(ENHETER)) {
         q.putImageData(d, 0, 0);
         return c2;
       };
-      const k1 = Math.max(2, Math.round(band * 0.42 / 12)), k2 = Math.max(1, Math.round(band * 0.2 / 12));
+      // längre rubriker på andra språk: ett pixelkorn mindre tills texten ryms med marginal
+      const ryms = (t, k) => { const m = document.createElement('canvas').getContext('2d'); m.font = `400 ${12 * k}px Pixelstad`; return m.measureText(t).width + 3 * k <= W * 0.92; };
+      let k1 = Math.max(2, Math.round(band * 0.42 / 12)), k2 = Math.max(1, Math.round(band * 0.2 / 12));
+      while (k1 > 2 && !ryms(B.rubrik, k1)) k1--;
+      while (k2 > 1 && !ryms(B.under, k2)) k2--;
       const t1 = txt(B.rubrik, '#ffffff', '#3a0a10', k1), t2 = txt(B.under, '#f6d2c8', null, k2);
       g.drawImage(t1, Math.round((W - t1.width) / 2), Math.round(band * 0.40 - 8 * k1));
       g.drawImage(t2, Math.round((W - t2.width) / 2), Math.round(band * 0.80 - 8 * k2));

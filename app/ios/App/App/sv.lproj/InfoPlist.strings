@@ -1,0 +1,3 @@
+/* Pixelcity – sv */
+"CFBundleDisplayName" = "Pixelcity";
+"NSMicrophoneUsageDescription" = "Pixelcity använder mikrofonen till röstchatten, så att du kan prata med kompisar som är nära dig i spelet.";
