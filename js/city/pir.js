@@ -89,11 +89,12 @@ function deckArt() {
 // räckets stolpar och överliggare: en bit per 12 px (y-sorteras för sig), lyktor på pirens räcke
 function railPieces() {
   const [wx0, wy0, wx1] = PIER.walk, [dx0, dy0, dx1, dy1] = PIER.deck, out = [];
+  // (ljuspölen hamnar på plankorna innanför räcket, inte ute på vattnet)
   const vRail = (x, ya, yb, lamp) => out.push({ x, y: yb, s: spr(8, yb - ya + 22, 3, yb - ya + 20, (P) => {
     for (let y = ya - yb; y <= 0; y++) { P.px(0, y - 8, WOOD[4]); P.px(1, y - 8, WOOD[2]); }        // överliggaren
     P.vl(0, -10, 10, WOOD[3]); P.vl(1, -10, 10, WOOD[1]);                                           // stolpen
     if (lamp) { P.vl(0, -18, 8, 0x2a2a30); P.rect(-1, -24, 4, 6, 0x2a2a30); P.rect(0, -23, 2, 4, 0xf0e8c0); P.hl(-2, -25, 6, 0x3a3a44); }
-  }), lamp: lamp ? [x + 1, yb - 21] : null, refl: true });
+  }), lamp: lamp ? [x + 1, yb - 21] : null, refl: true, pool: lamp ? [x + (x >= wx1 ? -8 : 9), yb + 2] : null });
   let k = 0;
   for (let y = wy0 + 12; y <= dy0; y += 12, k++) { vRail(wx0 - 1, y - 12, y, k % 3 === 1); vRail(wx1, y - 12, y, k % 3 === 2); }
   for (let y = dy0 + 12; y <= dy1; y += 12, k++) vRail(wx1, y - 12, y, k % 3 === 0);
@@ -115,8 +116,8 @@ function railPieces() {
     P.rect(-1, -33, 4, 7, 0x2a2a30); P.rect(0, -32, 2, 5, 0xf0e8c0); P.px(0, -32, 0xfffaf0);       // lyktan
     P.hl(-2, -34, 6, 0x3a3a44); P.hl(-1, -35, 4, 0x3a3a44); P.px(0, -36, 0x4a4a54);               // taket
   });
-  for (const x of SLAMPS) out.push({ x, y: dy1 + 0.2, s: POST, lamp: [x + 1, dy1 - 30], refl: true, top: [x + 1, dy1 - 36] });
-  for (const x of NLAMPS) out.push({ x, y: dy0 + 1.2, s: POST, lamp: [x + 1, dy0 - 29], refl: false, top: [x + 1, dy0 - 35] });
+  for (const x of SLAMPS) out.push({ x, y: dy1 + 0.2, s: POST, lamp: [x + 1, dy1 - 30], refl: true, top: [x + 1, dy1 - 36], pool: [x + 1, dy1 - 6] });
+  for (const x of NLAMPS) out.push({ x, y: dy0 + 1.2, s: POST, lamp: [x + 1, dy0 - 29], refl: false, top: [x + 1, dy0 - 35], pool: [x + 1, dy0 + 6] });
   return out;
 }
 // det som hänger: fisknät över det södra räcket, bojar på rep ner mot vattnet, livbojar
@@ -404,6 +405,10 @@ export function createPier(env) {
   const PX = Math.round((wx0 + wx1) / 2), QY = Q0 + 1;
   const DECK = deckArt(), RAILS = railPieces(), HANG = hangingArt(), BASKET = basketArt(), BUCKET = bucketArt();
   const BH = [0, 1, 2, 3].map(boatH), BV = [0, 1].map(boatV);
+  // kvällsljusen som runda, trappstegade sken (fyrkantiga rutor syntes som grå lådor – Carl 2026-10-07)
+  const HALO = spr(30, 30, 15, 15, (P) => P.ell(0, 0, 13, 13, 0xffc070, 0.3, 5));
+  const HALO_S = spr(18, 18, 9, 9, (P) => P.ell(0, 0, 7, 7, 0xffb060, 0.34, 4));
+  const POOL = spr(28, 10, 14, 5, (P) => P.ell(0, 0, 12, 3.6, 0xffc070, 0.26, 4));
   const CH_D = chairArt('down'), CH_U = chairArt('up'), BENCH = benchArt(), KIKARE = kikareArt(), REP = repArt();
   const DACKS = DACK.map(([, c]) => dackArt(c));
   const GULL = [[gullArt(1, false), gullArt(1, true)], [gullArt(-1, false), gullArt(-1, true)]];
@@ -582,7 +587,8 @@ export function createPier(env) {
   // ---------- ritningen ----------
   const items = () => {
     const t = env.t || 0, out = [];
-    out.push({ y: wy0 - 1, draw: (ctx) => put(ctx, DECK, 0, 0) });
+    // (däcket ritas inte här utan som mark i under() – som föremål med y vid kajen sållades det bort
+    // när kameran gick längre ner än kajen, och då stod borden på vattnet)
     for (const r of RAILS) out.push({ x: r.x, y: r.y, draw: (ctx) => put(ctx, r.s, r.x0 ?? r.x, Math.floor(r.y)) });
     out.push({ x: (dx0 + dx1) / 2, y: dy1 + 1, draw: (ctx) => put(ctx, HANG, dx0, dy1) });
     // båtarna: guppar, repen spänns ner till pollarna på kajen
@@ -690,8 +696,9 @@ export function createPier(env) {
     for (const r of RAILS) if (r.lamp) {
       const [x, y] = r.lamp, f = 0.85 + 0.15 * Math.sin(t * 3 + x);
       ctx.fillStyle = rgba(0xffe0a0, 0.9 * k * f); ctx.fillRect(x - 1, y, 2, 4);
-      ctx.fillStyle = rgba(0xffc070, 0.18 * k * f); ctx.fillRect(x - 6, y - 4, 12, 12);
-      ctx.fillStyle = rgba(0xffc070, 0.12 * k); ctx.fillRect(x - 9, y + 26, 18, 5);       // ljuspöl på plankorna
+      ctx.globalAlpha = k * f; put(ctx, HALO, x, y + 2);                                   // skenet runt lyktan
+      if (r.pool) { ctx.globalAlpha = k; put(ctx, POOL, r.pool[0], r.pool[1]); }           // ljuspölen på plankorna
+      ctx.globalAlpha = 1;
     }
     // ljusslingor mellan parasollen och fram till Sjöbodens vägg
     const pts = [[PARASOLS[0][0] - 16, TY - 50], ...PARASOLS.map(([x]) => [x, TY - 56]), [SJO_X[0] - 1, TY - 62]];
@@ -700,7 +707,7 @@ export function createPier(env) {
       for (let x = ax; x <= bx; x += 4) { const u = (x - ax) / Math.max(1, bx - ax), y = Math.round(ay + (by - ay) * u + Math.sin(u * Math.PI) * 5), tw = 0.7 + 0.3 * Math.sin(t * 2 + x); ctx.fillStyle = rgba(0xffd070, 0.85 * k * tw); ctx.fillRect(x, y, 1, 1); ctx.fillStyle = rgba(0xffb050, 0.15 * k); ctx.fillRect(x - 1, y - 1, 3, 3); }
     }
     // lyktorna på Sjöbodens bord fladdrar
-    for (const x of DUKAR) { const f = 0.75 + 0.25 * Math.sin(t * 9 + x) * Math.sin(t * 5.3); ctx.fillStyle = rgba(0xffe0a0, 0.9 * k * f); ctx.fillRect(x, TY - 20, 1, 3); ctx.fillStyle = rgba(0xffb060, 0.2 * k * f); ctx.fillRect(x - 6, TY - 25, 13, 12); }
+    for (const x of DUKAR) { const f = 0.75 + 0.25 * Math.sin(t * 9 + x) * Math.sin(t * 5.3); ctx.fillStyle = rgba(0xffe0a0, 0.9 * k * f); ctx.fillRect(x, TY - 20, 1, 3); ctx.globalAlpha = k * f; put(ctx, HALO_S, x, TY - 19); ctx.globalAlpha = 1; }
     // lyktorna speglar sig i vattnet (de på pirens och bryggans södra räcke)
     for (const r of RAILS) if (r.lamp && r.refl) { const [x, y] = r.lamp, off = r.top ? 38 : 34; for (let j = 0; j < 6; j++) { ctx.fillStyle = rgba(0xffd090, 0.14 * k * (1 - j / 6)); ctx.fillRect(x - 1 + Math.round(Math.sin(t * 2 + j) * 1), y + off + j * 2, 3, 1); } }
     ctx.restore();
@@ -710,8 +717,13 @@ export function createPier(env) {
     return null;
   }
   function kikareAt(x, y) { return x >= KIK.x - 6 && x < KIK.x + 7 && y >= KIK.y - 27 && y < KIK.y + 3 ? { walk: { x: KIK.x, y: LANE + 1 } } : null; }
+  // piren och bryggans plankor ligger som mark: ritas direkt efter vattnet, före allt som står på dem
+  function under(ctx, view) {
+    if (view && (view.x > wx1 + 8 || view.x + view.w < dx0 - 8 || view.y > dy1 + 20 || view.y + view.h < Q0)) return;
+    put(ctx, DECK, 0, 0);
+  }
   return {
-    items, obstacles, seats, glow, fisherAt, kikareAt,
+    items, under, obstacles, seats, glow, fisherAt, kikareAt,
     // bubblorna ovanför pirens eget folk (city.js ritar dem överst, som fotgängarnas)
     talks() {
       const out = [];

@@ -10,6 +10,10 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.93.1] – 2026-10-07 – Bryggans plankor och lyktsken
+- Plankorna på piren och bryggan försvann när man gick långt ut på bryggan, så att borden och stolarna stod på vattnet. Nu ligger plankorna kvar.
+- Lyktorna på piren lyser med runda, mjuka sken på kvällen i stället för fyrkantiga rutor, och ljuspölarna hamnar på plankorna i stället för ute på vattnet.
+
 ## [0.93.0] – 2026-10-07 – Livet vid piren
 - Bryggan vid Sjöboden är mycket större. Längst ut i väster finns en utsiktsplats med bänkar vid räcket, där man sitter och tittar ut över vattnet. Där står också två randiga däckstolar och en myntkikare.
 - Borden har fått stolar. Sätt dig vid ett parasollbord eller vid Sjöbodens bord med rutig duk och en lykta som fladdrar på kvällen. Fotgängarna sätter sig också.

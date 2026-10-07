@@ -507,6 +507,7 @@ export function makeCity(A) {
     ctx.drawImage(groundImg(night), cx - WX0, cy, vw, vh, cx, cy, vw, vh);
     guard('ground.groundLive', () => MODS.ground?.groundLive?.(ctx, env, view));
     guard('bridge.riverLive', () => MODS.bridge?.riverLive?.(ctx, env, view)); // vattnet i floden (före vädret: isen lägger sig ovanpå)
+    guard('pir.under', () => S.pier?.under?.(ctx, view));                       // pirens och bryggans plankor (mark, under allt som står på dem)
     guard('weather.drawBack', () => S.weather.drawBack?.(ctx, view));
     guard('ground.groundOver', () => MODS.ground?.groundOver?.(ctx, env, view)); // fotspår m.m. skarpt OVANPÅ snötäcket
 
