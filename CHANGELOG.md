@@ -10,6 +10,12 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.90.0] – 2026-10-07 – Butikerna i Linnéstaden
+- Butikerna i Linnéstaden har fått var sin stil: Kafé Linden med texten på markisen och halvgardiner, Gårdsbutiken med en uppslagen ladport, Pynt & Ting med rundbågade fönster och små kupolmarkiser, Bageriet med guldtext på glaset, Blomster med en glasfasad som ett orangeri, Loppisen med en handmålad skylt med hjärtan och Cykelverkstan med en halvöppen garageport.
+- Antikvariatet är mysigare: ett burspråk med varmt ljus, bokhyllor ända upp, en grön läslampa, en läsfåtölj och en katt som sover i fönstret och viftar på svansen.
+- Skyltfönstren lever: expediten går fram och tillbaka bakom disken, och när du kommer fram till dörren vinkar hen och säger något. Det ångar ur kaffekopparna, ljusen fladdrar hos Pynt & Ting, hjulet snurrar i cykelverkstan och en fjäril fladdrar bland blommorna.
+- Dörrarna täcker inte längre skyltarna, och träden och lyktorna står inte längre framför butikerna.
+
 ## [0.89.0] – 2026-10-07 – Linnéstaden
 - Ny stadsdel: LINNÉSTADEN, väster om centrum! Gå åt vänster förbi Pixelgatan 1 – eller ta buss 4 till den nya hållplatsen MARKNADSTORGET.
 - Mysiga landshövdingehus i glada färger med vita knutar, snickarglädje över fönstren och blomlådor överallt – och ett hus med en stor väggmålning.

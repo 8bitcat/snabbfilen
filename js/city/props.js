@@ -3816,8 +3816,9 @@ export function createProps(env) {
   if (LINNE_LAYOUT) {
     const LL = LINNE_LAYOUT;
     // --- norra trottoaren (Pixelgatan) ---
-    for (const [k, x] of [['korsbar', -1196], ['lind', -1104], ['lind', -972], ['lind', -672], ['korsbar', -540], ['lind', -440], ['lind', -310], ['korsbar', -206], ['lind', -92]]) tree(k, x, NC);
-    for (const x of [-1124, -1024, -906, -742, -616, -488, -372, -250, -150, -36]) parkLamp(x, NC);
+    // (träden står framför landshövdingehusen – inte framför butikernas skyltar och skyltfönster)
+    for (const [k, x] of [['korsbar', -1172], ['lind', -1112], ['lind', -540], ['korsbar', -468], ['lind', -312], ['korsbar', -232], ['lind', -20]]) tree(k, x, NC);
+    for (const x of [-1080, -976, -862, -672, -570, -440, -340, -204, -92]) parkLamp(x, NC);   // i gränderna – aldrig framför en dörr
     hydrant(-1050, NC); bin(-700, NC); bin(-262, NC);
     // --- södra trottoaren: parklyktor vid kanten, lindar mot odlingen och parken, kuren vid Marknadstorget ---
     for (const x of [-1150, -1050, -970, -880, -740, -640, -470, -380, -280, -170, -70]) parkLamp(x, SC);
@@ -3865,8 +3866,8 @@ export function createProps(env) {
     for (const x of [-430, -290, -60]) parkLamp(x, 354);
     for (const [x, y, f] of [[-452, 452, 'pink'], [-300, 452, null], [-130, 452, 'white'], [-232, 378, 'purple']]) bush(x, y, f);
     // --- södra raden (Kajgatan/Södergatan): lindar och lyktor vid kanten, skyltar ---
-    for (const [k, x] of [['lind', -1176], ['korsbar', -1070], ['lind', -906], ['lind', -790], ['korsbar', -660], ['lind', -560], ['lind', -430], ['korsbar', -270], ['lind', -150], ['lind', -24]]) tree(k, x, CS);
-    for (const x of [-1110, -1030, -840, -720, -610, -500, -380, -220, -90]) parkLamp(x, CS + 1);
+    for (const [k, x] of [['lind', -1176], ['korsbar', -1100], ['lind', -790], ['korsbar', -710], ['lind', -560], ['lind', -480], ['korsbar', -430], ['lind', -270], ['lind', -150], ['korsbar', -60]]) tree(k, x, CS);
+    for (const x of [-1140, -1040, -880, -750, -640, -520, -400, -320, -220, -100]) parkLamp(x, CS + 1);
     sign('KAJGATAN', -922, CS - 2, -1); sign('TRÄDGÅRDSGATAN', -296, CS - 2, 1);
     bin(-700, CS); hydrant(-452, CS);
     // --- bortre trottoaren och kajen: bänkar mot kanalen, lyktor, pollare, livbojar och båtarna ---

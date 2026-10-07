@@ -56,6 +56,21 @@ const art = await D(async () => {
 ok(art.missing.length === 0, 'varje hus har egen konst' + (art.missing.length ? ' – saknas: ' + art.missing.join(', ') : ''));
 ok(art.painted === art.n * 2, `alla ${art.n} hus målas dag och natt (med snö)`);
 ok(art.items > 30 && art.items === art.obs, `${art.items} trottoarmöbler med hinder`);
+// v0.90: butikerna har var sin stil, skyltfönster med expedit och skylten sitter ovanför dörren
+const shops = await D(async () => {
+  const L = await import('/js/city/buildings-linne.js'), M = await import('/js/city/map.js');
+  const out = [];
+  for (const b of M.BUILDINGS_L) {
+    const S = L._SPEC[b.kind];
+    if (S.type !== 'shop') continue;
+    L.BUILDING_ART[b.kind].paint(b, false, {});
+    const m = L._meta(b.id, false);
+    out.push({ id: b.id, style: S.shop.style, wins: m?.wins?.length || 0, keeper: (m?.wins || []).some((w) => w.keeper && w.img), look: !!S.look, greet: !!S.greet });
+  }
+  return out;
+});
+ok(new Set(shops.map((s) => s.style)).size === shops.length, `${shops.length} butiker med var sin fasadstil (${shops.map((s) => s.style).join(', ')})`);
+ok(shops.every((s) => s.wins >= 1 && s.keeper && s.look && s.greet), 'varje butik har skyltfönster med en expedit som hälsar' + (shops.filter((s) => !(s.wins && s.keeper && s.look && s.greet)).map((s) => ' – ' + s.id).join('')));
 await sleep(800);
 await p.locator('#scene').screenshot({ path: 'tools/out/linne-dag.png' }).catch(() => {});
 
