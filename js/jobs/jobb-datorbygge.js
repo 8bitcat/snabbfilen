@@ -31,6 +31,7 @@ import { planOf, drawShiftHud, drawTimeUp, makePops, abortShift } from './shift.
 import { play } from '../core/sound.js';
 import { makeShiftCoop } from '../net/coop.js';
 import { JOBS } from '../game.js';
+import { $t } from '../core/i18n.js';
 
 const FW = 384, FH = 216;
 const WALL_Y = 124;                          // golvet börjar
@@ -60,15 +61,15 @@ const PARTS = [
   { id: 'psu7', kind: 'psu', v: '750 W', label: '750W' },
 ];
 const partOf = (id) => PARTS.find((p) => p.id === id);
-const KIND_NAME = { cpu: 'PROCESSOR', ram: 'MINNE', gpu: 'GRAFIKKORT', ssd: 'SSD', psu: 'NÄTAGGREGAT' };
+const KIND_NAME = { cpu: $t('PROCESSOR'), ram: $t('MINNE'), gpu: $t('GRAFIKKORT'), ssd: $t('SSD'), psu: $t('NÄTAGGREGAT') };
 // beställningarna (gpu: null = inget grafikkort)
 const ORDERS = [
-  { name: 'KONTOR', cpu: 'PX3', ram: '8 GB', gpu: null, ssd: '500 GB', psu: '450 W' },
-  { name: 'SKOLDATOR', cpu: 'PX5', ram: '16 GB', gpu: null, ssd: '500 GB', psu: '450 W' },
-  { name: 'GAMING', cpu: 'PX7', ram: '32 GB', gpu: 'RX 80', ssd: '1 TB', psu: '750 W' },
-  { name: 'STREAMING', cpu: 'PX7', ram: '16 GB', gpu: 'RX 60', ssd: '1 TB', psu: '750 W' },
-  { name: 'BUDGETSPEL', cpu: 'PX5', ram: '16 GB', gpu: 'RX 60', ssd: '500 GB', psu: '450 W' },
-  { name: 'FILMKLIPP', cpu: 'PX7', ram: '32 GB', gpu: 'RX 60', ssd: '1 TB', psu: '750 W' },
+  { name: $t('KONTOR'), cpu: 'PX3', ram: '8 GB', gpu: null, ssd: '500 GB', psu: '450 W' },
+  { name: $t('SKOLDATOR'), cpu: 'PX5', ram: '16 GB', gpu: null, ssd: '500 GB', psu: '450 W' },
+  { name: $t('GAMING'), cpu: 'PX7', ram: '32 GB', gpu: 'RX 80', ssd: '1 TB', psu: '750 W' },
+  { name: $t('STREAMING'), cpu: 'PX7', ram: '16 GB', gpu: 'RX 60', ssd: '1 TB', psu: '750 W' },
+  { name: $t('BUDGETSPEL'), cpu: 'PX5', ram: '16 GB', gpu: 'RX 60', ssd: '500 GB', psu: '450 W' },
+  { name: $t('FILMKLIPP'), cpu: 'PX7', ram: '32 GB', gpu: 'RX 60', ssd: '1 TB', psu: '750 W' },
 ];
 // hyllorna: vänster CPU + RAM (2 rader × 3), höger GPU/SSD/PSU (3 rader × 2)
 const BINS = [];
@@ -154,9 +155,9 @@ function paintBg() {
   }
   for (let x = 0; x < FW; x++) { P.px(x, WALL_Y, 0x2a2e34); P.px(x, WALL_Y + 3, 0x000000, 0.2); }
   // PIXEL DATA-skylten och fönstret mot downtown (vänster), lagerskylt (höger)
-  const s = 'PIXEL DATA', sw = textW(SMALL, s) + 10;
+  const s = $t('PIXEL DATA'), sw = textW(SMALL, s) + 10;
   P.rect(12, 20, sw, 11, 0x1a2a4a); P.box(12, 20, sw, 11, 0x3a7bd5); text(P, SMALL, s, 17, 23, 0xf4f6fa); P.px(14, 22, 0x4ad8e8); P.px(14, 27, 0xe84aa0);
-  P.rect(262, 20, 24, 8, 0xf4f1ea); P.box(262, 20, 24, 8, 0x8a8e98); text(P, SMALL, 'LAGER', 264, 21, 0x2a2e34);
+  P.rect(262, 20, 24, 8, 0xf4f1ea); P.box(262, 20, 24, 8, 0x8a8e98); text(P, SMALL, $t('LAGER'), 264, 21, 0x2a2e34);
   // hyllorna (stålhyllor med lådor och etiketter)
   const shelf = (x0, x1, rows) => {
     P.rect(x0 - 3, rows[0] - 4, 3, WALL_Y - rows[0] + 4, 0x5a6270); P.rect(x1, rows[0] - 4, 3, WALL_Y - rows[0] + 4, 0x5a6270);
@@ -217,7 +218,7 @@ const SLOTS = ['cpu', 'ram', 'gpu', 'ssd', 'psu'];
 // ändrats när man väl är framme, och går det inte längre, hann någon annan före
 const BIT = { cpu: 1, ram: 2, gpu: 4, ssd: 8, psu: 16, pasta: 32, kylare: 64, upptagen: 128 };
 const BUD_ST = ['away', 'in', 'take', 'out'];   // kollegan från lagret som bär iväg datorn
-const MATE_LINES = ['Snyggt bygge!', 'Kunden blir glad!', 'Den tar jag!', 'Nästa order kommer!'];
+const MATE_LINES = [$t('Snyggt bygge!'), $t('Kunden blir glad!'), $t('Den tar jag!'), $t('Nästa order kommer!')];
 const pIx = (id) => PARTS.findIndex((p) => p.id === id);
 const partAt = (ix) => (Number.isInteger(ix) && ix >= 0 && ix < PARTS.length ? PARTS[ix] : null);
 
@@ -282,7 +283,7 @@ export function makeJobbDatorbygge(A, { onDone } = {}) {
   const snapAsap = () => { snapIn = 0; };
   const int = (v, dflt) => (Number.isInteger(v) ? v : dflt);
   const str = (v) => (typeof v === 'string' ? v.slice(0, 64) : '');
-  const hudTitle = () => (maxN > 1 ? 'PIXEL DATA IHOP' : 'PIXEL DATA');
+  const hudTitle = () => (maxN > 1 ? $t('PIXEL DATA IHOP') : $t('PIXEL DATA'));
   const bits = () => SLOTS.reduce((b, k) => b | (box[k] ? BIT[k] : 0), 0) | (box.pasta ? BIT.pasta : 0) | (box.kylare ? BIT.kylare : 0) | (power || slideOut ? BIT.upptagen : 0);
   const sig = () => order.nr * 256 + bits();
   const powT = () => (coop.active ? 1.6 : 2.2);        // fläktarna till BIOS OK (ihop lite snabbare)
@@ -416,7 +417,7 @@ export function makeJobbDatorbygge(A, { onDone } = {}) {
   const kPop = (k, txt, col, dy) => fx(k, '', 'p', txt, col, dy || 4);   // vid datorlådan – syns hos alla
   const kPopMe = (k, txt, col) => fx(k, k.by, 'p', txt, col, 4);        // vid datorlådan – bara hos den det gäller
   const kSay = (k, txt, secs) => fx(k, k.by, 'M', txt, secs);           // pratbubblan ovanför den det gäller
-  function hannFore() { play('miss'); pops.add(walker.px, walker.py - 58, 'HANN FÖRE!', '#ff6a6a'); }
+  function hannFore() { play('miss'); pops.add(walker.px, walker.py - 58, $t('HANN FÖRE!'), '#ff6a6a'); }
   // (ihop) det jag såg när jag klickade: en annan order då – eller var platsen tom?
   const seenNr = (k) => (Number.isInteger(k.v) && k.v >= 0 ? k.v >> 8 : order.nr);
   const seenBits = (k) => (Number.isInteger(k.v) && k.v >= 0 ? k.v & 255 : bits());
@@ -433,7 +434,7 @@ export function makeJobbDatorbygge(A, { onDone } = {}) {
   // ---------- det gemensamma (körs av skiftledaren – eller den ensamma – åt byggaren k) ----------
   // ta delen id ur hyllan (hyllorna tar aldrig slut)
   function doPick(k, id) {
-    if (k.carry) { kSay(k, 'Jag bär redan något – sätt i det först!', 2); return; }
+    if (k.carry) { kSay(k, $t('Jag bär redan något – sätt i det först!'), 2); return; }
     k.carry = { id }; kLjud(k, 'click');
   }
   // sätt i delen k bär – varje plats fylls EN gång
@@ -442,38 +443,38 @@ export function makeJobbDatorbygge(A, { onDone } = {}) {
     if (!c) return;
     const p = partOf(c.id);
     if (!p) { k.carry = null; return; }
-    if (power || slideOut) { kPopMe(k, 'VÄNTA PÅ NÄSTA LÅDA!', '#ffd23f'); return; }
-    if (p.kind === 'gpu' && !order.gpu) { if (late(k)) fore(k); else kWrong(k, 'INGET GRAFIKKORT!'); return; }
-    if (box[p.kind]) { if (late(k) || wasFree(k, BIT[p.kind])) fore(k); else kWrong(k, 'SITTER REDAN EN ' + KIND_NAME[p.kind] + '!'); return; }
-    if (p.v !== order[p.kind]) { if (late(k)) fore(k); else kWrong(k, 'FEL MODELL!'); return; }
+    if (power || slideOut) { kPopMe(k, $t('VÄNTA PÅ NÄSTA LÅDA!'), '#ffd23f'); return; }
+    if (p.kind === 'gpu' && !order.gpu) { if (late(k)) fore(k); else kWrong(k, $t('INGET GRAFIKKORT!')); return; }
+    if (box[p.kind]) { if (late(k) || wasFree(k, BIT[p.kind])) fore(k); else kWrong(k, $t`SITTER REDAN EN ${KIND_NAME[p.kind]}!`); return; }
+    if (p.v !== order[p.kind]) { if (late(k)) fore(k); else kWrong(k, $t('FEL MODELL!')); return; }
     box[p.kind] = p.v; k.carry = null;
     team.ok += 1; fx(k, k.by, 'o'); kLjud(k, 'ok');
     kPop(k, '+ ' + KIND_NAME[p.kind], '#8ee03c');
-    if (complete()) kSay(k, 'Allt sitter i – tryck på startknappen!', 3);
+    if (complete()) kSay(k, $t('Allt sitter i – tryck på startknappen!'), 3);
   }
   // kylpastan och kylaren ligger på bänken bredvid lådan
   function doTool(k, id) {
-    if (power || slideOut) { kPopMe(k, 'VÄNTA PÅ NÄSTA LÅDA!', '#ffd23f'); return; }
-    if (k.carry) { kSay(k, 'Sätt i delen jag bär först!', 2); return; }
-    if (!box.cpu) { if (late(k)) fx(k, k.by, 'H'); else { kPopMe(k, 'PROCESSORN FÖRST!', '#ffd23f'); kLjud(k, 'miss'); } return; }
+    if (power || slideOut) { kPopMe(k, $t('VÄNTA PÅ NÄSTA LÅDA!'), '#ffd23f'); return; }
+    if (k.carry) { kSay(k, $t('Sätt i delen jag bär först!'), 2); return; }
+    if (!box.cpu) { if (late(k)) fx(k, k.by, 'H'); else { kPopMe(k, $t('PROCESSORN FÖRST!'), '#ffd23f'); kLjud(k, 'miss'); } return; }
     const hann = late(k) || wasFree(k, BIT[id]);
     if (id === 'pasta') {
-      if (box.pasta) { if (hann) fx(k, k.by, 'H'); else kPopMe(k, 'PASTAN ÄR PÅ!', '#ffd23f'); return; }
-      box.pasta = true; team.ok += 1; fx(k, k.by, 'o'); kLjud(k, 'click'); kPop(k, '+ KYLPASTA', '#8ee03c');
+      if (box.pasta) { if (hann) fx(k, k.by, 'H'); else kPopMe(k, $t('PASTAN ÄR PÅ!'), '#ffd23f'); return; }
+      box.pasta = true; team.ok += 1; fx(k, k.by, 'o'); kLjud(k, 'click'); kPop(k, $t('+ KYLPASTA'), '#8ee03c');
     } else {
       if (box.kylare) { if (hann) fx(k, k.by, 'H'); return; }
-      if (!box.pasta) { kWrong(k, 'KYLPASTA FÖRST!'); return; }
-      box.kylare = true; team.ok += 1; fx(k, k.by, 'o'); kLjud(k, 'ok'); kPop(k, '+ KYLARE', '#8ee03c');
+      if (!box.pasta) { kWrong(k, $t('KYLPASTA FÖRST!')); return; }
+      box.kylare = true; team.ok += 1; fx(k, k.by, 'o'); kLjud(k, 'ok'); kPop(k, $t('+ KYLARE'), '#8ee03c');
     }
-    if (complete()) kSay(k, 'Allt sitter i – tryck på startknappen!', 3);
+    if (complete()) kSay(k, $t('Allt sitter i – tryck på startknappen!'), 3);
   }
   // startknappen – datorn startas EN gång, bonusen blir den som tryckte
   function doPower(k) {
     if (power || slideOut) { if (wasFree(k, BIT.upptagen)) fx(k, k.by, 'H'); return; }
     if (!complete()) {
       if (late(k)) { fx(k, k.by, 'H'); return; }
-      const miss = [...needs().filter((kk) => !box[kk]).map((kk) => KIND_NAME[kk]), ...(!box.pasta ? ['KYLPASTA'] : []), ...(!box.kylare ? ['KYLARE'] : [])];
-      kPopMe(k, 'SAKNAS: ' + miss[0], '#ffd23f'); kLjud(k, 'miss'); return;
+      const miss = [...needs().filter((kk) => !box[kk]).map((kk) => KIND_NAME[kk]), ...(!box.pasta ? [$t('KYLPASTA')] : []), ...(!box.kylare ? [$t('KYLARE')] : [])];
+      kPopMe(k, $t`SAKNAS: ${miss[0]}`, '#ffd23f'); kLjud(k, 'miss'); return;
     }
     power = { t: 0, by: k.by }; fx(k, '', 's', 'slide');
     if (coop.active && mate.state === 'away') mate.state = 'in';   // (ihop: kollegan från lagret kommer redan nu)
@@ -539,7 +540,7 @@ export function makeJobbDatorbygge(A, { onDone } = {}) {
   coop.on('lamna', (m, from) => { if (coop.leader && held.delete(from)) snapAsap(); });
 
   function pickBin(b) {
-    if (carry) { talk.say('Jag bär redan något – sätt i det först!', meAt, 2); return; }
+    if (carry) { talk.say($t('Jag bär redan något – sätt i det först!'), meAt, 2); return; }
     const [x, y] = binFront(b);
     walker.walkTo(x, y, () => { walker.dir = 'up'; act('ta', b.id); });
   }
@@ -559,7 +560,7 @@ export function makeJobbDatorbygge(A, { onDone } = {}) {
       if (power.t > powT() && !slideOut) {
         const k = kOf(power.by);   // (bonusen till den som tryckte på startknappen)
         team.boxes += 1; fx(k, k.by, 'b'); fx(k, '', 's', 'coin');
-        kPop(k, 'FÄRDIG DATOR!', '#8ee03c', 12);
+        kPop(k, $t('FÄRDIG DATOR!'), '#8ee03c', 12);
         if (mate.state !== 'take') mate.state = 'in';
         slideOut = { t: 0 };
         fx(k, '', 'D', seq % 4);
@@ -596,7 +597,7 @@ export function makeJobbDatorbygge(A, { onDone } = {}) {
     if (coop.active) maxN = Math.max(maxN, coop.peers().length + 1);
     if (coop.active !== wasCoop) {   // en kollega kom in: det går fortare mellan lådorna
       wasCoop = coop.active;
-      if (wasCoop) { play('knock'); pops.add(FW / 2, 96, 'NI JOBBAR IHOP!', '#8ee03c'); }
+      if (wasCoop) { play('knock'); pops.add(FW / 2, 96, $t('NI JOBBAR IHOP!'), '#8ee03c'); }
     }
     // Skiftledaren (eller solo) kör verkstaden; medarbetare följer ledarens läge
     const iLead = !coop.active || (coop.leader && coop.settled);
@@ -612,8 +613,8 @@ export function makeJobbDatorbygge(A, { onDone } = {}) {
     ctx.fillStyle = '#0e1a2e'; ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
     const k = slideIn > 0 ? 1 - slideIn : 1;
     if (k < 0.5 && Math.floor(t * 12) % 2) return;                                  // skärmen blinkar till när ordern byts
-    ctxText(ctx, SMALL, `ORDER ${order.nr} - ${order.name}`, x0 + 3, y0 + 2, '#f0c850');
-    const rows = [['cpu', order.cpu], ['ram', order.ram], ['gpu', order.gpu || 'INGET'], ['ssd', order.ssd], ['psu', order.psu], ['kyl', 'KYLARE']];
+    ctxText(ctx, SMALL, $t`ORDER ${order.nr} - ${order.name}`, x0 + 3, y0 + 2, '#f0c850');
+    const rows = [['cpu', order.cpu], ['ram', order.ram], ['gpu', order.gpu || $t('INGET')], ['ssd', order.ssd], ['psu', order.psu], ['kyl', $t('KYLARE')]];
     rows.forEach(([kk, v], i) => {
       const cx = x0 + 3 + (i % 2) * 52, cy = y0 + 9 + Math.floor(i / 2) * 6;
       const got = kk === 'kyl' ? box.kylare : kk === 'gpu' && !order.gpu ? true : !!box[kk];
@@ -710,7 +711,7 @@ export function makeJobbDatorbygge(A, { onDone } = {}) {
       const v = sig();   // (det jag ser vid bänken nu – följer med handlingen)
       if (hitCase(x, y) && Math.abs(x - POWER.x) <= 4 && Math.abs(y - POWER.y) <= 4) { toBench(() => act('start', null, v)); return; }
       for (const [id, r] of Object.entries(TOOL)) if (inR(r, x, y)) { toBench(() => act('verktyg', id, v)); return; }
-      if (hitCase(x, y)) { toBench(() => (carry ? act('in', null, v) : complete() ? act('start', null, v) : talk.say('Hämta delarna i hyllorna!', meAt, 2))); return; }
+      if (hitCase(x, y)) { toBench(() => (carry ? act('in', null, v) : complete() ? act('start', null, v) : talk.say($t('Hämta delarna i hyllorna!'), meAt, 2))); return; }
       for (const b of BINS) if (x >= b.x - 2 && x <= b.x + b.w + 2 && y >= b.y - 10 && y <= b.y + 26) { pickBin(b); return; }
       if (y > WALL_Y + 4) walker.walkTo(x, y);
     },
@@ -736,7 +737,7 @@ export function makeJobbDatorbygge(A, { onDone } = {}) {
       talk.draw(ctx, { x0: 0, x1: FW }); talkMate.draw(ctx, { x0: 0, x1: FW });
       pops.draw(ctx);
       const n = maxN > 1 ? team.boxes : stats.boxes;
-      drawShiftHud(ctx, A, { t, dur: P.seconds, ok: maxN > 1 ? team.ok : stats.ok, fel: maxN > 1 ? team.fel : stats.fel, title: `${hudTitle()} - ${n} ${n === 1 ? 'DATOR' : 'DATORER'}` });
+      drawShiftHud(ctx, A, { t, dur: P.seconds, ok: maxN > 1 ? team.ok : stats.ok, fel: maxN > 1 ? team.fel : stats.fel, title: n === 1 ? $t`${hudTitle()} - ${n} DATOR` : $t`${hudTitle()} - ${n} DATORER` });
       if (done) drawTimeUp(ctx, A);
     },
     _debug: {

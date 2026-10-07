@@ -10,6 +10,12 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.95.0] – 2026-10-08 – Spelet på åtta språk
+- Spelet finns nu på åtta språk: svenska, engelska, spanska, tyska, franska, polska, italienska och portugisiska. Spelet väljer enhetens språk av sig själv, och i menyn under ⚙ Inställningar → 🌍 Språk kan du byta när du vill. Ditt sparade spel följer med.
+- Varje språk har sina egna lokala namn. Pixelstaden, stadsdelarna, gatorna, butikerna och alla personer heter som man gör i det landet. På engelska heter spelet THE FAST LANE, på tyska ÜBERHOLSPUR och på polska SZYBKI PAS. Sjöboden heter till exempel RYBACZÓWKA på polska och La Cabane på franska.
+- Pengarna visas i landets valuta: kronor på svenska, dollar på engelska, euro på spanska, tyska, franska, italienska och portugisiska och złoty på polska.
+- Pixelbokstäverna har fått alla accenter som språken behöver, till exempel É, Ñ, Ü, Ç, Ł och Ż. Skyltarna i staden är översatta och kortade så att de får plats.
+
 ## [0.94.1] – 2026-10-07 – Nya versionen direkt vid start
 - Spelet letar efter en ny version direkt när det startar, inte efter fem sekunder. Står du kvar på startmenyn byts det till den nya versionen med en gång, utan nedräkning, och du kommer tillbaka till menyn. Mitt i spelet är det som förut: spelet sparas och byter när det passar.
 

@@ -53,6 +53,7 @@ import { itemBox, itemSolid, PET_ITEMS } from '../pets/items.js';
 import { openWeek } from '../core/week.js';
 import { openBrasa } from '../core/brasa.js'; // 🔥 brasan i spisarna + marshmallows
 import { myAction, folkAction, drawActing, actionByEmote } from '../core/drakt.js'; // 🎭 dräkternas rörelser
+import { $t, $n } from '../core/i18n.js';
 
 // Husdjursprylens fotavtryck på golvet – samma mått som lagret (js/pets/layer.js footprint)
 // ställer ut prylar efter: korgar/lådor/bur/klösträd har ett eget (itemSolid), skålar,
@@ -103,47 +104,47 @@ const PLANS = {
   husvagn: {
     partition: 184, fixAt: 148, worn: 'husvagn', outside: 'gard',
     rooms: [
-      { name: 'HUSVAGNEN', wall: 0xd8ccb0, wallDk: 0x8c7c62, floorA: 0x9c8c70, floorB: 0x80705a, windows: [[84, 118]], view: 'tomt' },
-      { name: 'TOA', bath: true, doors: { 0: 144 }, partition: 124, wall: 0xd8ccb0, wallDk: 0x8c7c62, floorA: 0x9c8c70, floorB: 0x80705a, windows: [], towels: [64], lamp: 'lysror' },
+      { name: $n('HUSVAGNEN'), wall: 0xd8ccb0, wallDk: 0x8c7c62, floorA: 0x9c8c70, floorB: 0x80705a, windows: [[84, 118]], view: 'tomt' },
+      { name: $n('TOA'), bath: true, doors: { 0: 144 }, partition: 124, wall: 0xd8ccb0, wallDk: 0x8c7c62, floorA: 0x9c8c70, floorB: 0x80705a, windows: [], towels: [64], lamp: 'lysror' },
     ],
   },
   rum: {
     partition: 176, shabby: true,
     rooms: [
-      { name: 'RUMMET', wall: 0x8c7a62, wallDk: 0x6a5c48, floorA: 0xcbb894, floorB: 0xb09a74, windows: [[80, 120]] },
-      { name: 'BADRUM', bath: true, tiles: 'sliten', doors: { 0: 138 }, wall: 0xe2ddd0, wallDk: 0xa39a86, floorA: 0x9c968a, floorB: 0x8c8678, windows: [[70, 92]], winY: [16, 34], view: 'frost', towels: [16], lamp: 'glodlampa' },
+      { name: $n('RUMMET'), wall: 0x8c7a62, wallDk: 0x6a5c48, floorA: 0xcbb894, floorB: 0xb09a74, windows: [[80, 120]] },
+      { name: $n('BADRUM'), bath: true, tiles: 'sliten', doors: { 0: 138 }, wall: 0xe2ddd0, wallDk: 0xa39a86, floorA: 0x9c968a, floorB: 0x8c8678, windows: [[70, 92]], winY: [16, 34], view: 'frost', towels: [16], lamp: 'glodlampa' },
     ],
   },
   hoghus: {
     partition: 284, fixAt: 244, worn: 'hoghus', outside: 'trapphus',
     rooms: [
-      { name: 'ETTAN', wall: 0xb4ac9c, wallDk: 0x787064, floorA: 0xb8a88a, floorB: 0x9e8e72, windows: [[72, 116], [150, 198]], view: 'betong' },
-      { name: 'BADRUM', bath: true, tiles: '70tal', doors: { 0: 246 }, partition: 196, wall: 0xc88a3a, wallDk: 0x6a4020, floorA: 0x7a5236, floorB: 0x6a4630, windows: [[94, 118]], winY: [16, 36], view: 'frost', towels: [134], lamp: 'plafond' },
+      { name: $n('ETTAN'), wall: 0xb4ac9c, wallDk: 0x787064, floorA: 0xb8a88a, floorB: 0x9e8e72, windows: [[72, 116], [150, 198]], view: 'betong' },
+      { name: $n('BADRUM'), bath: true, tiles: '70tal', doors: { 0: 246 }, partition: 196, wall: 0xc88a3a, wallDk: 0x6a4020, floorA: 0x7a5236, floorB: 0x6a4630, windows: [[94, 118]], winY: [16, 36], view: 'frost', towels: [134], lamp: 'plafond' },
     ],
   },
   lagenhet: {
     partition: 310,
     rooms: [
-      { name: 'VARDAGSRUM', wall: 0x6e88a0, wallDk: 0x4e6478, floorA: 0xd9cbaf, floorB: 0xc0ac88, windows: [[80, 120], [134, 174]] },
-      { name: 'SOVRUM', wall: 0x8a7f9a, wallDk: 0x685e78, floorA: 0xd0c2b0, floorB: 0xb8a892, windows: [[100, 140]] },
-      { name: 'BADRUM', bath: true, tiles: 'vit', doors: { 0: 178 }, wall: 0xf0f0ea, wallDk: 0xc4c4bc, floorA: 0xb4b8bc, floorB: 0xa4a8ac, windows: [[96, 126], [206, 236]], winY: [16, 38], view: 'frost', towels: [146], lamp: 'plafond' },
+      { name: $n('VARDAGSRUM'), wall: 0x6e88a0, wallDk: 0x4e6478, floorA: 0xd9cbaf, floorB: 0xc0ac88, windows: [[80, 120], [134, 174]] },
+      { name: $n('SOVRUM'), wall: 0x8a7f9a, wallDk: 0x685e78, floorA: 0xd0c2b0, floorB: 0xb8a892, windows: [[100, 140]] },
+      { name: $n('BADRUM'), bath: true, tiles: 'vit', doors: { 0: 178 }, wall: 0xf0f0ea, wallDk: 0xc4c4bc, floorA: 0xb4b8bc, floorB: 0xa4a8ac, windows: [[96, 126], [206, 236]], winY: [16, 38], view: 'frost', towels: [146], lamp: 'plafond' },
     ],
   },
   radhus: { // hela bredden (mobilfyllningen) – tre trädgårdsfönster i rad i vardagsrummet
     partition: 0,
     rooms: [
-      { name: 'VARDAGSRUM', wall: 0xd8c8a4, wallDk: 0xa08c68, floorA: 0xdcc8a4, floorB: 0xc2ac86, windows: [[80, 130], [150, 200], [284, 326]], view: 'tradgard' },
-      { name: 'SOVRUM', wall: 0xa4b6c6, wallDk: 0x788a9a, floorA: 0xd6c8b2, floorB: 0xbeb096, windows: [[110, 160], [250, 300]], view: 'tradgard' },
-      { name: 'BADRUM', bath: true, tiles: 'bla', doors: { 1: 30 }, wall: 0xa6cfe0, wallDk: 0x7aa4b8, floorA: 0xf0eee8, floorB: 0x6a9ec0, windows: [[150, 186], [250, 286]], winY: [16, 38], view: 'frost', towels: [128, 312], lamp: 'plafond' },
+      { name: $n('VARDAGSRUM'), wall: 0xd8c8a4, wallDk: 0xa08c68, floorA: 0xdcc8a4, floorB: 0xc2ac86, windows: [[80, 130], [150, 200], [284, 326]], view: 'tradgard' },
+      { name: $n('SOVRUM'), wall: 0xa4b6c6, wallDk: 0x788a9a, floorA: 0xd6c8b2, floorB: 0xbeb096, windows: [[110, 160], [250, 300]], view: 'tradgard' },
+      { name: $n('BADRUM'), bath: true, tiles: 'bla', doors: { 1: 30 }, wall: 0xa6cfe0, wallDk: 0x7aa4b8, floorA: 0xf0eee8, floorB: 0x6a9ec0, windows: [[150, 186], [250, 286]], winY: [16, 38], view: 'frost', towels: [128, 312], lamp: 'plafond' },
     ],
   },
   villa: {
     partition: 0, lyx: true,
     rooms: [
-      { name: 'VARDAGSRUM', wall: 0xc4b190, wallDk: 0x9a8a6a, floorA: 0xefe6d2, floorB: 0xd9ccb2, windows: [[80, 120], [134, 172], [240, 280]] },
-      { name: 'SOVRUM', wall: 0xb8a0a8, wallDk: 0x907880, floorA: 0xe8ded0, floorB: 0xd2c4b2, windows: [[110, 150], [210, 250]] },
-      { name: 'KÖK', wall: 0xa8b8a0, wallDk: 0x808f78, floorA: 0xe2e6da, floorB: 0xc8cec0, windows: [[110, 150], [230, 270]] },
-      { name: 'BADRUM', bath: true, tiles: 'marmor', doors: { 1: 30 }, wall: 0xf2eee8, wallDk: 0xb8ae9c, floorA: 0xece6da, floorB: 0xdcd4c6, windows: [[250, 296]], winY: [16, 40], view: 'frost', towels: [180, 314], lamp: 'spots' },
+      { name: $n('VARDAGSRUM'), wall: 0xc4b190, wallDk: 0x9a8a6a, floorA: 0xefe6d2, floorB: 0xd9ccb2, windows: [[80, 120], [134, 172], [240, 280]] },
+      { name: $n('SOVRUM'), wall: 0xb8a0a8, wallDk: 0x907880, floorA: 0xe8ded0, floorB: 0xd2c4b2, windows: [[110, 150], [210, 250]] },
+      { name: $n('KÖK'), wall: 0xa8b8a0, wallDk: 0x808f78, floorA: 0xe2e6da, floorB: 0xc8cec0, windows: [[110, 150], [230, 270]] },
+      { name: $n('BADRUM'), bath: true, tiles: 'marmor', doors: { 1: 30 }, wall: 0xf2eee8, wallDk: 0xb8ae9c, floorA: 0xece6da, floorB: 0xdcd4c6, windows: [[250, 296]], winY: [16, 40], view: 'frost', towels: [180, 314], lamp: 'spots' },
     ],
   },
   // Gården i landet (js/scenes/landet.js): villans planlösning i lantstil – furu, linoljegrönt och en
@@ -152,19 +153,19 @@ const PLANS = {
   gard: {
     partition: 0, lyx: true,
     rooms: [
-      { name: 'VARDAGSRUM', wall: 0xd8c39a, wallDk: 0xa08a62, floorA: 0xc8a878, floorB: 0xb08e60, windows: [[80, 120], [134, 172], [240, 280]], view: 'landet' },
-      { name: 'SOVRUM', wall: 0xb8c8a8, wallDk: 0x889878, floorA: 0xd0b48a, floorB: 0xb8986c, windows: [[110, 150], [210, 250]], view: 'landet' },
-      { name: 'LANTKÖK', wall: 0xe8d8b4, wallDk: 0xb0a07c, floorA: 0xc89a6a, floorB: 0xb0845a, windows: [[110, 150], [230, 270]], view: 'landet' },
-      { name: 'BADRUM', bath: true, tiles: 'vit', doors: { 1: 30 }, wall: 0xe8eee8, wallDk: 0xb0b8b0, floorA: 0xd8d0c0, floorB: 0xc4bcac, windows: [[250, 296]], winY: [16, 40], view: 'frost', towels: [180, 314], lamp: 'plafond' },
+      { name: $n('VARDAGSRUM'), wall: 0xd8c39a, wallDk: 0xa08a62, floorA: 0xc8a878, floorB: 0xb08e60, windows: [[80, 120], [134, 172], [240, 280]], view: 'landet' },
+      { name: $n('SOVRUM'), wall: 0xb8c8a8, wallDk: 0x889878, floorA: 0xd0b48a, floorB: 0xb8986c, windows: [[110, 150], [210, 250]], view: 'landet' },
+      { name: $n('LANTKÖK'), wall: 0xe8d8b4, wallDk: 0xb0a07c, floorA: 0xc89a6a, floorB: 0xb0845a, windows: [[110, 150], [230, 270]], view: 'landet' },
+      { name: $n('BADRUM'), bath: true, tiles: 'vit', doors: { 1: 30 }, wall: 0xe8eee8, wallDk: 0xb0b8b0, floorA: 0xd8d0c0, floorB: 0xc4bcac, windows: [[250, 296]], winY: [16, 40], view: 'frost', towels: [180, 314], lamp: 'plafond' },
     ],
   },
   takvaning: {
     partition: 0, lyx: true, winY: [12, 56],
     rooms: [
-      { name: 'VARDAGSRUM', wall: 0xe6dcc8, wallDk: 0xb0a284, floorA: 0xf2eee6, floorB: 0xdcd6cc, windows: [[70, 280]], view: 'stad' },
-      { name: 'SOVRUM', wall: 0x9c8cac, wallDk: 0x6e6082, floorA: 0xe8e0d4, floorB: 0xd2c8b8, windows: [[100, 150], [200, 250]], view: 'stad' },
-      { name: 'KÖK', wall: 0xd2dad2, wallDk: 0x8a9a8c, floorA: 0xe8eae2, floorB: 0xcccec4, windows: [[100, 150], [230, 280]], view: 'stad' },
-      { name: 'BADRUM', bath: true, tiles: 'skiffer', doors: { 1: 30 }, wall: 0x3e4248, wallDk: 0x2a2d32, floorA: 0x34373c, floorB: 0x2c2f34, windows: [[160, 272]], view: 'stad', towels: [128], lamp: 'spots' },
+      { name: $n('VARDAGSRUM'), wall: 0xe6dcc8, wallDk: 0xb0a284, floorA: 0xf2eee6, floorB: 0xdcd6cc, windows: [[70, 280]], view: 'stad' },
+      { name: $n('SOVRUM'), wall: 0x9c8cac, wallDk: 0x6e6082, floorA: 0xe8e0d4, floorB: 0xd2c8b8, windows: [[100, 150], [200, 250]], view: 'stad' },
+      { name: $n('KÖK'), wall: 0xd2dad2, wallDk: 0x8a9a8c, floorA: 0xe8eae2, floorB: 0xcccec4, windows: [[100, 150], [230, 280]], view: 'stad' },
+      { name: $n('BADRUM'), bath: true, tiles: 'skiffer', doors: { 1: 30 }, wall: 0x3e4248, wallDk: 0x2a2d32, floorA: 0x34373c, floorB: 0x2c2f34, windows: [[160, 272]], view: 'stad', towels: [128], lamp: 'spots' },
     ],
   },
 };
@@ -400,12 +401,12 @@ function surfaceRow(k, v, r) {
   return row;
 }
 // vad skylten över en funktionsmöbel säger
-const FN_LABEL = { brasa: 'BRASA', lykta: 'PUMPA', sova: 'SÄNG', garderob: 'GARDEROB', ata: 'KYLSKÅP', laga: 'SPIS', recept: 'RECEPT', toalett: 'TOALETT', tvatta: 'TVÄTTA', tv: 'TV', musik: 'MUSIK' };
-const KIND_LABEL = { koksspis: 'SPIS', mikro: 'MIKRO', dusch: 'DUSCH', badkar: 'BADKAR', tvattmaskin: 'TVÄTT', tvattpelare: 'TVÄTT',
-  handfat: 'HANDFAT', tvattstall: 'HANDFAT', dator: 'DATOR', laptop: 'DATOR', spelkonsol: 'KONSOL', dass: 'DASSET', kladskap: 'KLÄDSKÅP', linneskap: 'LINNESKÅP' };
+const FN_LABEL = { brasa: $t('BRASA'), lykta: $t('PUMPA'), sova: $t('SÄNG'), garderob: $t('GARDEROB'), ata: $t('KYLSKÅP'), laga: $t('SPIS'), recept: $t('RECEPT'), toalett: $t('TOALETT'), tvatta: $t('TVÄTTA'), tv: $t('TV'), musik: $t('MUSIK') };
+const KIND_LABEL = { koksspis: $t('SPIS'), mikro: $t('MIKRO'), dusch: $t('DUSCH'), badkar: $t('BADKAR'), tvattmaskin: $t('TVÄTT'), tvattpelare: $t('TVÄTT'),
+  handfat: $t('HANDFAT'), tvattstall: $t('HANDFAT'), dator: $t('DATOR'), laptop: $t('DATOR'), spelkonsol: $t('KONSOL'), dass: $t('DASSET'), kladskap: $t('KLÄDSKÅP'), linneskap: $t('LINNESKÅP') };
 const labelOf = (k) => { const fn = functionOf(k); return fn && fn !== 'lykta' ? KIND_LABEL[k] || FN_LABEL[fn] : null; }; // (pumplyktorna slipper skylt)
 // namn på startmöbler som inte finns i katalogen (till förrådspanelen)
-const FX_NAMES = { kylskap: 'Kylskåp', dass: 'Dasset', vaxt: 'Monstera', receptbok: 'Receptboken' };
+const FX_NAMES = { kylskap: $t('Kylskåp'), dass: $t('Dasset'), vaxt: $t('Monstera'), receptbok: $t('Receptboken') };
 export const nameOf = (k) => katalogOf(k)?.name || FX_NAMES[k] || k;
 
 // ---------- möbelbilder (atlas, omfärgade eller mattor) ----------
@@ -582,8 +583,8 @@ export function makeRoom(A, { visit = false, sub: subOpt = null, core = null } =
   // med karm – exakt det som ritas, så att en skylt får plats i en smal glipa mellan dem
   const doorSign = (x0, x1, name) => { const w = textW(SMALL, name) + 8, sx = Math.round((x0 + x1) / 2 - w / 2); return [sx, 20, sx + w, 29]; };
   const plateAvoid = [
-    ...(sub === 0 ? [[DOOR.x0 - 1, 27, DOOR.x1 + 1, WALL_Y], doorSign(DOOR.x0, DOOR.x1, visit ? 'HEM' : 'UT')] : []),
-    ...subDoors.flatMap((sd) => [[sd.x0 - 1, 27, sd.x1 + 1, WALL_Y], doorSign(sd.x0, sd.x1, sd.name)]),
+    ...(sub === 0 ? [[DOOR.x0 - 1, 27, DOOR.x1 + 1, WALL_Y], doorSign(DOOR.x0, DOOR.x1, visit ? $t('HEM') : $t('UT'))] : []),
+    ...subDoors.flatMap((sd) => [[sd.x0 - 1, 27, sd.x1 + 1, WALL_Y], doorSign(sd.x0, sd.x1, $t(sd.name))]),
     ...winDrawn.map(([wx0, wx1]) => [wx0 - 2, winY[0] - 2, wx1 + 2, winY[1] + 3]),
   ];
   const bg = buildBg(roomDef, RIGHT, subDoors, sub === 0, plan, visit);
@@ -762,22 +763,26 @@ export function makeRoom(A, { visit = false, sub: subOpt = null, core = null } =
   }
   function fitRoom() {
     if (visit) return;
-    if (addKitchen(decoList())) { g.save(); toast('🍳 Nu finns en spis och en receptbok i köket – laga mat hemma!', 'good'); }
+    if (addKitchen(decoList())) { g.save(); toast($t('🍳 Nu finns en spis och en receptbok i köket – laga mat hemma!'), 'good'); }
     const { changed, nudged, stored, stuck, byDoor } = settle(decoList(), true);
     if (changed) g.save();
-    const few = (names) => `${names.slice(0, 2).join(' och ')}${names.length > 2 ? ' m.fl.' : ''}`;
-    if (stored) toast(`📦 ${home === 'rum' ? 'Rummet är mindre nu – ' : ''}${stored === 1 ? 'en möbel fick' : `${stored} möbler fick`} inte plats och ligger i förrådet.`);
-    else if (byDoor.length) toast(core ? `🚪 Nu går man mellan rummen genom en öppning här – ${few(byDoor)} flyttades lite åt sidan.` : `🚪 Nu finns en dörr till badrummet här – ${few(byDoor)} flyttades lite åt sidan.`);
-    else if (nudged) toast(`🛋️ ${nudged === 1 ? 'En möbel knuffades' : `${nudged} möbler knuffades`} till en ledig plats.`);
-    if (stuck.length) toast(`⚠️ Förrådet är fullt – ${stuck.slice(0, 2).join(', ')}${stuck.length > 2 ? ' m.fl.' : ''} står i vägen. Flytta med 🛋️ Möblera!`, 'bad');
+    const mfl = (names) => (names.length > 2 ? ` ${$t('m.fl.')}` : '');
+    const few = (names) => `${names.slice(0, 2).join(` ${$t('och')} `)}${mfl(names)}`;
+    const mindre = home === 'rum';
+    if (stored) toast(stored === 1 ? (mindre ? $t('📦 Rummet är mindre nu – en möbel fick inte plats och ligger i förrådet.') : $t('📦 en möbel fick inte plats och ligger i förrådet.'))
+      : (mindre ? $t`📦 Rummet är mindre nu – ${stored} möbler fick inte plats och ligger i förrådet.` : $t`📦 ${stored} möbler fick inte plats och ligger i förrådet.`));
+    else if (byDoor.length) toast(core ? $t`🚪 Nu går man mellan rummen genom en öppning här – ${few(byDoor)} flyttades lite åt sidan.` : $t`🚪 Nu finns en dörr till badrummet här – ${few(byDoor)} flyttades lite åt sidan.`);
+    else if (nudged) toast(nudged === 1 ? $t('🛋️ En möbel knuffades till en ledig plats.') : $t`🛋️ ${nudged} möbler knuffades till en ledig plats.`);
+    if (stuck.length) { const vilka = `${stuck.slice(0, 2).join(', ')}${mfl(stuck)}`; toast($t`⚠️ Förrådet är fullt – ${vilka} står i vägen. Flytta med 🛋️ Möblera!`, 'bad'); }
     // En sparad bostad där toan står kvar i rummet (Lilla rummets dass): badrummet har ingen
     // – ett tips en gång per spelomgång om att den går att flytta in dit.
     const bathIdx = plan.rooms.findIndex((r) => r.bath);
     if (!toiletHinted && bathIdx >= 0 && bathIdx !== sub && decoList().some((d) => functionOf(d.k) === 'toalett')
       && !(g.deco[`${home}:${bathIdx}`] || seedHere(bathIdx)).some((d) => functionOf(d.k) === 'toalett')) {
       toiletHinted = true;
-      const [it, pr] = decoList().some((d) => d.k === 'dass') ? ['dasset', 'det'] : ['toan', 'den'];
-      toast(`🚽 Tips: ${it} kan stå i ${home === 'husvagn' ? 'toaskrubben' : 'badrummet'} nu – lägg ${pr} i förrådet med 🛋️ Möblera och ställ ut ${pr} där inne.`);
+      const dass = decoList().some((d) => d.k === 'dass'), skrubb = home === 'husvagn';
+      toast(dass ? (skrubb ? $t('🚽 Tips: dasset kan stå i toaskrubben nu – lägg det i förrådet med 🛋️ Möblera och ställ ut det där inne.') : $t('🚽 Tips: dasset kan stå i badrummet nu – lägg det i förrådet med 🛋️ Möblera och ställ ut det där inne.'))
+        : (skrubb ? $t('🚽 Tips: toan kan stå i toaskrubben nu – lägg den i förrådet med 🛋️ Möblera och ställ ut den där inne.') : $t('🚽 Tips: toan kan stå i badrummet nu – lägg den i förrådet med 🛋️ Möblera och ställ ut den där inne.')));
     }
   }
   fitRoom();
@@ -791,7 +796,7 @@ export function makeRoom(A, { visit = false, sub: subOpt = null, core = null } =
     if (visit || !fn) return null;
     switch (fn) {
       case 'sova': return () => { bedFor = p ? { k: p.k, decoIdx: p.decoIdx } : null; A.sleepFlow(); };
-      case 'garderob': return () => { play('click'); openAvatarEditor({ onDone: (av) => { A.avatar = av; toast('👕 Snyggt!', 'good'); } }); };
+      case 'garderob': return () => { play('click'); openAvatarEditor({ onDone: (av) => { A.avatar = av; toast($t('👕 Snyggt!'), 'good'); } }); };
       case 'ata': return () => openFridge(A);
       case 'laga': return () => openKok(A, 'laga');
       case 'recept': return () => openKok(A, 'bok');
@@ -803,8 +808,8 @@ export function makeRoom(A, { visit = false, sub: subOpt = null, core = null } =
       case 'lykta': return () => {   // 🎃 pumplyktan: tänd eller blås ut ljuset
         const d = p ? decoList()[p.decoIdx] : null;
         if (!d) return;
-        if (d.lit) { delete d.lit; play('slide'); toast('🎃 Du blåste ut ljuset i pumpan.'); }
-        else { d.lit = true; play('ok'); const gl = g.glad(1, '', 'pumpa', 2); toast(`🎃 Ljuset i pumpan är tänt!${gl ? ' Mysigt: +' + gl + ' lycka' : ''}`, 'good'); }
+        if (d.lit) { delete d.lit; play('slide'); toast($t('🎃 Du blåste ut ljuset i pumpan.')); }
+        else { d.lit = true; play('ok'); const gl = g.glad(1, '', 'pumpa', 2); toast(`${$t('🎃 Ljuset i pumpan är tänt!')}${gl ? ` ${$t`Mysigt: +${gl} lycka`}` : ''}`, 'good'); }
         g.save();
       };
     }
@@ -817,14 +822,14 @@ export function makeRoom(A, { visit = false, sub: subOpt = null, core = null } =
   }; // staden ställer en vid det egna husets dörr
   // bostäder med uteplats (game.js TRADGARD): ut i stan eller ut i trädgården/på tomten/terrassen
   const exitAct = visit
-    ? () => { A.visitTarget = null; A.roomSub = 0; g.passTime(20); g.save(); play('door'); toast('🚗 Hemma igen.'); A.go('city'); }
+    ? () => { A.visitTarget = null; A.roomSub = 0; g.passTime(20); g.save(); play('door'); toast($t('🚗 Hemma igen.')); A.go('city'); }
     : () => {
       const T = tradgardOf(g.home);
       // (testrobotar går rakt ut i stan, utom med ?tradgard i adressen)
       if (!T || (navigator.webdriver && !new URLSearchParams(location.search).has('tradgard'))) { toCity(); return; }
-      openModal('🚪 Vart vill du gå?', `<p style="font-size:var(--f2);margin-top:0">Ut i Pixelstaden – eller ut ${T.namn === 'Terrassen' ? 'på terrassen' : T.namn === 'Tomten' ? 'på tomten' : 'i trädgården'} och odla?</p>`, [
-        { label: `${T.icon} ${T.namn}`, cls: 'btn-gold', onClick: () => { closeModal(); play('door'); A.roomSub = 0; A.go('tradgard'); } },
-        { label: '🏙️ Ut i stan', cls: 'btn-go', onClick: () => { closeModal(); toCity(); } },
+      openModal($t('🚪 Vart vill du gå?'), `<p style="font-size:var(--f2);margin-top:0">${T.namn === 'Terrassen' ? $t('Ut i Pixelstaden – eller ut på terrassen och odla?') : T.namn === 'Tomten' ? $t('Ut i Pixelstaden – eller ut på tomten och odla?') : $t('Ut i Pixelstaden – eller ut i trädgården och odla?')}</p>`, [
+        { label: `${T.icon} ${$t(T.namn)}`, cls: 'btn-gold', onClick: () => { closeModal(); play('door'); A.roomSub = 0; A.go('tradgard'); } },
+        { label: $t('🏙️ Ut i stan'), cls: 'btn-go', onClick: () => { closeModal(); toCity(); } },
       ]);
     };
 
@@ -979,7 +984,7 @@ export function makeRoom(A, { visit = false, sub: subOpt = null, core = null } =
     const c = decor.carry;
     const pos = placeFor(c, decor.mx, decor.my);
     if (c.src === 'storage') {
-      if (!g.placeFromStorage(c.idx, sub, pos.x, pos.y)) { play('fel'); toast('Rummet är fullt!', 'bad'); return; }
+      if (!g.placeFromStorage(c.idx, sub, pos.x, pos.y)) { play('fel'); toast($t('Rummet är fullt!'), 'bad'); return; }
       const list = decoList();
       if (c.r) g.rotateDeco(sub, list.length - 1, c.r);
       setUp(list[list.length - 1], pos.up);
@@ -1012,8 +1017,8 @@ export function makeRoom(A, { visit = false, sub: subOpt = null, core = null } =
     const c = decor.carry;
     if (!c) return;
     if (c.src === 'deco') {
-      if (!g.decoToStorage(sub, c.idx)) { play('fel'); toast('Förrådet är fullt!', 'bad'); return; }
-      toast(`📦 ${nameOf(c.k)} ligger i förrådet.${c.riders?.length ? ' Det som stod på skivan står nu på golvet.' : ''}`);
+      if (!g.decoToStorage(sub, c.idx)) { play('fel'); toast($t('Förrådet är fullt!'), 'bad'); return; }
+      toast(`${$t`📦 ${nameOf(c.k)} ligger i förrådet.`}${c.riders?.length ? ` ${$t('Det som stod på skivan står nu på golvet.')}` : ''}`);
     }
     play('ok');
     decor.carry = null;
@@ -1039,7 +1044,7 @@ export function makeRoom(A, { visit = false, sub: subOpt = null, core = null } =
     // förrådspanelen tar plats till höger: body.decor-on ger #app en marginal och canvasen
     // räknas om (fit i main.js) så att panelen aldrig döljer rummets högerkant
     if (decor.on !== was) { document.body.classList.toggle('decor-on', decor.on); window.dispatchEvent(new Event('resize')); }
-    if (decor.on) { renderStoragePanel(); syncPetBtn(); toast('🛋️ Möblera: klicka på en möbel för att flytta, R eller 🔄 vrider den, eller välj ur förrådet.'); }
+    if (decor.on) { renderStoragePanel(); syncPetBtn(); toast($t('🛋️ Möblera: klicka på en möbel för att flytta, R eller 🔄 vrider den, eller välj ur förrådet.')); }
     else { if (L?.placing) L.key('Escape'); g.save(); } // en pryl i handen läggs tillbaka
   }
   function renderStoragePanel() {
@@ -1048,10 +1053,10 @@ export function makeRoom(A, { visit = false, sub: subOpt = null, core = null } =
     box.innerHTML = g.storage.length
       ? g.storage.map((it, i) => {
         const kat = katalogOf(it.k);
-        const hint = kat?.wall ? 'väggsak' : it.fx ? 'startmöbel' : functionOf(it.k) ? FN_LABEL[functionOf(it.k)].toLowerCase() : '';
+        const hint = kat?.wall ? $t('väggsak') : it.fx ? $t('startmöbel') : functionOf(it.k) ? FN_LABEL[functionOf(it.k)].toLowerCase() : '';
         return `<button class="dp-item" data-st="${i}"><span data-thumb="${i}"></span><span>${nameOf(it.k)}${hint ? `<small>${hint}</small>` : ''}</span></button>`;
       }).join('')
-      : '<div class="dp-empty">Tomt – köp möbler på MÖBELJÄTTEN, eller lägg något här med 📦.</div>';
+      : `<div class="dp-empty">${$t('Tomt – köp möbler på MÖBELJÄTTEN, eller lägg något här med 📦.')}</div>`;
     box.querySelectorAll('[data-thumb]').forEach((el) => { const it = g.storage[+el.dataset.thumb]; el.replaceWith(thumbCanvas(it.k, it.v, it.c)); });
     box.querySelectorAll('[data-st]').forEach((b) => (b.onclick = () => {
       const it = g.storage[+b.dataset.st];
@@ -1068,13 +1073,14 @@ export function makeRoom(A, { visit = false, sub: subOpt = null, core = null } =
     const paintBtn = document.querySelector('#decor-paint');
     if (paintBtn) {
       paintBtn.disabled = !c || !canRecolor(c.k);
-      paintBtn.title = c ? (canRecolor(c.k) ? 'Måla om möbeln du håller i – gratis' : 'Den här går inte att måla om') : 'Välj en möbel först';
+      paintBtn.title = c ? (canRecolor(c.k) ? $t('Måla om möbeln du håller i – gratis') : $t('Den här går inte att måla om')) : $t('Välj en möbel först');
       paintBtn.onclick = () => paintCarry();
     }
     const rotBtn = document.querySelector('#decor-rotate');
     if (rotBtn) {
       rotBtn.disabled = !c || c.k === 'vaxt';
-      rotBtn.textContent = c && rotStates(c.k) === 4 ? `🔄 Rotera (${['fram', 'höger', 'bak', 'vänster'][c.r]})` : '🔄 Rotera';
+      const vy = c ? [$t('fram'), $t('höger'), $t('bak'), $t('vänster')][c.r] : '';
+      rotBtn.textContent = c && rotStates(c.k) === 4 ? $t`🔄 Rotera (${vy})` : $t('🔄 Rotera');
       rotBtn.onclick = () => rotateCarry();
     }
     const storeBtn = document.querySelector('#decor-store');
@@ -1087,8 +1093,8 @@ export function makeRoom(A, { visit = false, sub: subOpt = null, core = null } =
     const item = c ? (c.src === 'storage' ? g.storage[c.idx] : decoList()[c.idx]) : null;
     const sellable = !!c && g.sellable(item);
     btn.disabled = !sellable;
-    btn.textContent = sellable ? `Sälj +${Math.round(katalogOf(c.k).price / 2)} kr` : c?.fx ? 'Sälj (startmöbel)' : 'Sälj';
-    btn.title = c?.fx ? 'Startmöblerna går att flytta men inte sälja' : '';
+    btn.textContent = sellable ? $t`Sälj +${Math.round(katalogOf(c.k).price / 2)} kr` : c?.fx ? $t('Sälj (startmöbel)') : $t('Sälj');
+    btn.title = c?.fx ? $t('Startmöblerna går att flytta men inte sälja') : '';
     btn.onclick = () => {
       if (!sellable) return;
       if (c.src === 'storage') g.sellStorage(c.idx); else g.sellDeco(sub, c.idx);
@@ -1112,7 +1118,7 @@ export function makeRoom(A, { visit = false, sub: subOpt = null, core = null } =
       if (!ok) return;
       c.c = hex || undefined;
       play('ok');
-      toast(hex ? '🎨 Nymålad!' : '🎨 Tillbaka i originalfärgen.', 'good');
+      toast(hex ? $t('🎨 Nymålad!') : $t('🎨 Tillbaka i originalfärgen.'), 'good');
       rebuild(); renderStoragePanel();
     } }));
   }
@@ -1212,7 +1218,7 @@ export function makeRoom(A, { visit = false, sub: subOpt = null, core = null } =
     if (!b) {
       b = document.createElement('button');
       b.id = 'decor-pets'; b.className = 'btn btn-small';
-      b.textContent = '🐾 Djurprylar'; b.title = 'Husdjurens prylar: ställ ut, flytta eller plocka upp';
+      b.textContent = $t('🐾 Djurprylar'); b.title = $t('Husdjurens prylar: ställ ut, flytta eller plocka upp');
       foot.insertBefore(b, document.querySelector('#decor-done'));
     }
     const s = L ? petStore() : null;
@@ -1471,7 +1477,7 @@ export function makeRoom(A, { visit = false, sub: subOpt = null, core = null } =
       if (hm && hm.dev !== 'fest' && (hm.sub | 0) === sub) {
         const src = props.find((q) => q.k === hm.k && q.decoIdx === hm.decoIdx) || props.find((q) => q.k === hm.k);
         if (src) notesDrawn = drawNotes(ctx, src, t);
-        else if (!decor.on) { stopHemMusik(A); toast('🎵 Musiken tystnade – prylen som spelade är borta.'); }
+        else if (!decor.on) { stopHemMusik(A); toast($t('🎵 Musiken tystnade – prylen som spelade är borta.')); }
       }
       if (festNu) festRoom.drawLight(ctx, !!night);   // discokulans ljusprickar och konfettin
       festRoom.drawTalk(ctx);
@@ -1500,7 +1506,7 @@ export function makeRoom(A, { visit = false, sub: subOpt = null, core = null } =
         else ctx.fillRect(decor.mx - 6 | 0, decor.my | 0, 12, 2);
       } else if (decor.on) {
         ctx.fillStyle = 'rgba(23,21,26,0.7)'; ctx.fillRect(4, 4, 150, 10);
-        ctxText(ctx, SMALL, 'MÖBLERA: KLICKA PÅ EN MÖBEL', 7, 6, '#ffd23f');
+        ctxText(ctx, SMALL, $t('MÖBLERA: KLICKA PÅ EN MÖBEL'), 7, 6, '#ffd23f');
       }
 
       if (!st) {
@@ -1768,22 +1774,22 @@ function makeMattressProp(list, RIGHT) {
     k: 'madrass', fn: 'sova', sort: y, top: y - h, x, base: y, w, h,
     solid: [x - 1, y - 8, x + w + 1, y + 1],
     act: null, // sätts av rummet: floorSleep (golvet ger sämre sömn)
-    draw(ctx) { ctx.drawImage(img, x, y - h); ctxPlate(ctx, x + w / 2, y - h - 9, 'GOLVET'); },
+    draw(ctx) { ctx.drawImage(img, x, y - h); ctxPlate(ctx, x + w / 2, y - h - 9, $t('GOLVET')); },
   };
 }
 // Sova på golvet: som sängen, fast sämre (kvalitet 0,75) – och en påminnelse om förrådet.
 // Samma sekvens som i sängen (figuren under en filt på madrassen), sedan veckan.
 function floorSleep(A) {
   const g = A.game;
-  openModal('😴 Sova på golvet', `<p style="font-size:var(--f2)">Ingen säng är utställd – den ligger i förrådet. Golvet är hårt, kallt och lite dammigt, men du somnar.</p>
-    <p style="font-size:var(--f2)" class="bad">Sämre sömn än i en säng. Ställ ut sängen med 🛋️ Möblera!</p>`, [
-    { label: 'Inte än', onClick: closeModal },
-    { label: '😴 Sov ändå', cls: 'btn-go', onClick: () => {
+  openModal($t('😴 Sova på golvet'), `<p style="font-size:var(--f2)">${$t('Ingen säng är utställd – den ligger i förrådet. Golvet är hårt, kallt och lite dammigt, men du somnar.')}</p>
+    <p style="font-size:var(--f2)" class="bad">${$t('Sämre sömn än i en säng. Ställ ut sängen med 🛋️ Möblera!')}</p>`, [
+    { label: $t('Inte än'), onClick: closeModal },
+    { label: $t('😴 Sov ändå'), cls: 'btn-go', onClick: () => {
       closeModal();
       const wake = () => {
         const { rent, eventText } = g.sleep(0.75);
         openWeek(A, { morning: true, rentPaid: rent, eventText });
-        toast('🛏️ Aj, ryggen … Golvet är inget att sova på – ställ ut sängen med 🛋️ Möblera!', 'bad');
+        toast($t('🛏️ Aj, ryggen … Golvet är inget att sova på – ställ ut sängen med 🛋️ Möblera!'), 'bad');
       };
       if (A.scene?.bedtime?.(wake)) return;
       play('sleep');
@@ -2092,14 +2098,14 @@ function composeSleeper(bed, at, head, covered, mattress) {
 
 // ---------- funktionerna man gör vid möblerna ----------
 const DASS_LINES = [
-  '🚽 *KLONK* … *gurgel* … Det spolade. Typ.',
-  '🚽 Locket ramlade av igen. Du satte dit det. Det ramlade av.',
-  '🚽 Grannen bankar i väggen: "SLUTA SPOLA!"',
-  '🚽 Vattnet snurrade åt fel håll, sedan åt rätt håll, sedan stannade det.',
-  '🚽 Pumpen fick jobba. Du också.',
-  '🚽 Något bubblade till nere i röret. Du väljer att inte tänka på det.',
+  $t('🚽 *KLONK* … *gurgel* … Det spolade. Typ.'),
+  $t('🚽 Locket ramlade av igen. Du satte dit det. Det ramlade av.'),
+  $t('🚽 Grannen bankar i väggen: "SLUTA SPOLA!"'),
+  $t('🚽 Vattnet snurrade åt fel håll, sedan åt rätt håll, sedan stannade det.'),
+  $t('🚽 Pumpen fick jobba. Du också.'),
+  $t('🚽 Något bubblade till nere i röret. Du väljer att inte tänka på det.'),
 ];
-const WC_LINES = ['🚽 Skönt. Livet går vidare.', '🚽 *spol* Fräscht och fint.', '🚽 Toapapper: check. Handtvätt: check.', '🚽 Lugnt och stilla. Bästa stunden på dagen.'];
+const WC_LINES = [$t('🚽 Skönt. Livet går vidare.'), $t('🚽 *spol* Fräscht och fint.'), $t('🚽 Toapapper: check. Handtvätt: check.'), $t('🚽 Lugnt och stilla. Bästa stunden på dagen.')];
 const pick = (arr) => arr[(Math.random() * arr.length) | 0];
 // spolningen: sus → nedåtsvep → gurgel (dasset klonkar dessutom)
 function flushSound(bad) {
@@ -2120,7 +2126,7 @@ function wash(A, kind) {
   const g = A.game;
   play('slide');
   const long = kind === 'dusch' || kind === 'badkar';
-  const msg = { dusch: '🚿 Fräsch och ren!', badkar: '🛁 Ett långt varmt bad. Ahh.', tvattmaskin: '🫧 Tvätten snurrar. Rena kläder i morgon!', tvattpelare: '🧺 Tvätt och tork i ett – lyx!' }[kind] || '🧼 Rena händer!';
+  const msg = { dusch: $t('🚿 Fräsch och ren!'), badkar: $t('🛁 Ett långt varmt bad. Ahh.'), tvattmaskin: $t('🫧 Tvätten snurrar. Rena kläder i morgon!'), tvattpelare: $t('🧺 Tvätt och tork i ett – lyx!') }[kind] || $t('🧼 Rena händer!');
   g.energy = Math.min(100, g.energy + (long ? 5 : 2));
   g.passTime(long ? 20 : 5);
   g.save();
@@ -2130,17 +2136,18 @@ function wash(A, kind) {
 function tvMenu(A, kind, p) {
   play('click');
   const S = SPELARE[kind] || SPELARE.tv;
-  const titta = { dator: '💻 Surfa en stund', laptop: '💻 Surfa en stund', spelkonsol: '🎮 Spela en runda' }[kind] || '📺 Titta en stund';
-  openModal(`${S.icon} ${S.namn[0].toUpperCase()}${S.namn.slice(1)}`, `<p style="font-size:var(--f2);margin-top:0">${titta.slice(3)} (en halvtimme) – eller sätta på musik?</p>`, [
+  const [ikon, gora] = { dator: ['💻', $t('Surfa en stund')], laptop: ['💻', $t('Surfa en stund')], spelkonsol: ['🎮', $t('Spela en runda')] }[kind] || ['📺', $t('Titta en stund')];
+  const titta = `${ikon} ${gora}`;
+  openModal(`${S.icon} ${S.namn[0].toUpperCase()}${S.namn.slice(1)}`, `<p style="font-size:var(--f2);margin-top:0">${$t`${gora} (en halvtimme) – eller sätta på musik?`}</p>`, [
     { label: titta, cls: 'btn-go', onClick: () => { closeModal(); watchTv(A, kind); } },
-    { label: '🎵 Musik', cls: 'btn-gold', onClick: () => openMusik(A, kind, p ? { k: p.k, decoIdx: p.decoIdx } : {}) },
-    { label: 'Stäng', onClick: closeModal },
+    { label: $t('🎵 Musik'), cls: 'btn-gold', onClick: () => openMusik(A, kind, p ? { k: p.k, decoIdx: p.decoIdx } : {}) },
+    { label: $t('Stäng'), onClick: closeModal },
   ]);
 }
 function watchTv(A, kind) {
   const g = A.game;
   play('click');
-  const msg = { dator: '💻 Du surfar en stund. Var tog timmen vägen?', laptop: '💻 Lite skärmtid i soffan.', spelkonsol: '🎮 En runda till … bara en till.' }[kind] || '📺 Du zappar en stund och hittar en rolig serie.';
+  const msg = { dator: $t('💻 Du surfar en stund. Var tog timmen vägen?'), laptop: $t('💻 Lite skärmtid i soffan.'), spelkonsol: $t('🎮 En runda till … bara en till.') }[kind] || $t('📺 Du zappar en stund och hittar en rolig serie.');
   g.passTime(30);
   const h = g.glad ? g.glad(3, '', 'tv', 6) : 0;                                           // lite skärmtid gör en glad – högst +6 om dagen
   g.save();
@@ -2369,11 +2376,11 @@ function buildBg(roomDef, RIGHT, subDoors, hasExit, plan, visit) {
       text(P, SMALL, signText, sx + 4, 22, signCol);
     };
     if (hasExit) {
-      paintDoor(DOOR.x0, DOOR.x1, visit ? 'HEM' : 'UT', 0x6fe08a);
+      paintDoor(DOOR.x0, DOOR.x1, visit ? $t('HEM') : $t('UT'), 0x6fe08a);
       for (let y = WALL_Y + 1; y < WALL_Y + 9; y++) for (let x = DOOR.cx - 13; x < DOOR.cx + 13; x++) P.px(x, y, (x + y) % 2 ? 0x4a4038 : 0x3e352e);
       P.box(DOOR.cx - 13, WALL_Y + 1, 26, 8, 0x2a2018);
     }
-    for (const sd of subDoors) paintDoor(sd.x0, sd.x1, sd.name, 0xffd23f);
+    for (const sd of subDoors) paintDoor(sd.x0, sd.x1, $t(sd.name), 0xffd23f);
 
     // ljuskäglor + AO
     if (!shabby && !worn && night !== 'dark') for (let sx = 60; sx < RIGHT - 20; sx += 85) P.ell(sx, WALL_Y + 23, 22, 10, 0xfff3d0, night ? 0.05 : 0.1, 4);
@@ -3256,17 +3263,17 @@ function paintTrapphus(P, x0, night) {
   for (const [dx, dy] of [[0, -4], [1, -3], [2, -2], [1, -1], [0, 0], [-1, -1], [-2, -2], [-1, -3]]) // rombfönstret (vänster dörrblad)
     P.px(hx + 9 + dx, ht + 12 + dy, sh(night ? 0x1a1c22 : 0x2a3038));
   P.px(hx + 9, ht + 10, sh(0x4a5a6a));
-  const hs = 'HISS', hsw = textW(SMALL, hs) + 6, hsx = hx + ((hw - hsw) >> 1);
+  const hs = $t('HISS'), hsw = textW(SMALL, hs) + 6, hsx = hx + ((hw - hsw) >> 1);
   P.rect(hsx, ht - 11, hsw, 9, sh(0x1d2b1f)); P.box(hsx, ht - 11, hsw, 9, sh(0x0e1510));
   text(P, SMALL, hs, hsx + 3, ht - 9, night ? 0x9aba7a : 0xffd23f);
   // lappen: snett tejpad, rödpennat TRASIG
   const nx = hx + 6, ny = ht + 22;
   for (let j = 0; j < 11; j++) P.hl(nx + (j > 5 ? 1 : 0), ny + j, 26, sh(0xf4efe0));
   P.hl(nx + 1, ny - 1, 8, sh(0xd8d4c8), 0.8); // tejpbiten
-  text(P, SMALL, 'TRASIG', nx + 2, ny + 3, 0xc9323a);
+  text(P, SMALL, $t('TRASIG'), nx + 2, ny + 3, 0xc9323a);
   P.hl(nx + 2, ny + 9, 22, sh(0x8a8478), 0.6);
   // 7 TR målat på putsen + anslagstavlan med lappar
-  text(P, SMALL, '7 TR', x0 + 58, 16, sh(0x6a675e));
+  text(P, SMALL, $t('7 TR'), x0 + 58, 16, sh(0x6a675e));
   const ax = x0 + 56, ay = 28;
   P.rect(ax, ay, 34, 24, sh(0x5a4632)); P.rect(ax + 2, ay + 2, 30, 20, sh(0x9a7a4e));
   for (let j = 0; j < 20; j++) for (let i = 0; i < 30; i++) if (hash(i, j, 108) > 0.88) P.px(ax + 2 + i, ay + 2 + j, sh(0x8a6a40));
@@ -3432,39 +3439,39 @@ function openFridge(A) {
   const ravaRows = rava.map(([id, n]) => {
     const r = ravaraOf(id);
     return `<div class="prow"><span style="font-size:28px;text-align:center">${r.icon}</span>
-      <span class="nm">${r.name} ×${n}<br><small class="sp">${r.raw ? `+${r.raw} mätthet som den är` : 'råvara – laga mat vid spisen'}</small></span>
-      ${r.raw ? `<button class="btn btn-small btn-go" data-raw="${id}">Ät</button>` : '<span></span>'}</div>`;
+      <span class="nm">${r.name} ×${n}<br><small class="sp">${r.raw ? $t`+${r.raw} mätthet som den är` : $t('råvara – laga mat vid spisen')}</small></span>
+      ${r.raw ? `<button class="btn btn-small btn-go" data-raw="${id}">${$t('Ät')}</button>` : '<span></span>'}</div>`;
   }).join('');
   // matlådorna från storkok och megakok: värm och ät
   const lador = Object.entries(g.matlador || {}).filter(([id, n]) => n > 0 && receptOf(id));
   const ladRows = lador.map(([id, n]) => {
     const r = receptOf(id);
     return `<div class="prow"><span style="font-size:28px;text-align:center">${r.icon}</span>
-      <span class="nm">${r.name} ×${n}<br><small class="sp">matlåda · +${g.portionFill(id)} mätthet</small></span>
-      <button class="btn btn-small btn-go" data-lada="${id}">♨️ Värm & ät</button></div>`;
+      <span class="nm">${r.name} ×${n}<br><small class="sp">${$t`matlåda · +${g.portionFill(id)} mätthet`}</small></span>
+      <button class="btn btn-small btn-go" data-lada="${id}">${$t('♨️ Värm & ät')}</button></div>`;
   }).join('');
   const body = items.length || rava.length || lador.length
-    ? `<p style="font-size:var(--f2);margin-top:0">Mätthet: <b>${Math.round(g.hunger)}/100</b></p>${lador.length ? `<h3 style="margin:10px 0 4px">🍱 Matlådor</h3><div class="plist">${ladRows}</div>` : ''}${items.length ? `<div class="plist">${items.map(([id, n]) => {
+    ? `<p style="font-size:var(--f2);margin-top:0">${$t('Mätthet:')} <b>${Math.round(g.hunger)}/100</b></p>${lador.length ? `<h3 style="margin:10px 0 4px">${$t('🍱 Matlådor')}</h3><div class="plist">${ladRows}</div>` : ''}${items.length ? `<div class="plist">${items.map(([id, n]) => {
       const f = foodOf(id);
       return `<div class="prow"><span style="font-size:28px;text-align:center">${f.icon}</span>
-        <span class="nm">${f.name} ×${n}<br><small class="sp">+${f.fill} mätthet</small></span>
-        <button class="btn btn-small btn-go" data-eat="${id}">Ät</button></div>`;
-    }).join('')}</div>` : ''}${rava.length ? `<h3 style="margin:10px 0 4px">🧺 Råvaror</h3><div class="plist">${ravaRows}</div>` : ''}`
-    : `<p style="font-size:var(--f2)">Kylskåpet är tomt! 🕸️<br><small>Gå till MAT-butiken i Pixelstaden och handla.</small></p>`;
-  const dlg = openModal('🧊 Kylskåpet', body, [
-    { label: 'Stäng', onClick: closeModal },
-    { label: '🍳 Till spisen', onClick: () => { closeModal(); openKok(A, 'laga'); } },
+        <span class="nm">${f.name} ×${n}<br><small class="sp">${$t`+${f.fill} mätthet`}</small></span>
+        <button class="btn btn-small btn-go" data-eat="${id}">${$t('Ät')}</button></div>`;
+    }).join('')}</div>` : ''}${rava.length ? `<h3 style="margin:10px 0 4px">${$t('🧺 Råvaror')}</h3><div class="plist">${ravaRows}</div>` : ''}`
+    : `<p style="font-size:var(--f2)">${$t('Kylskåpet är tomt! 🕸️<br><small>Gå till MAT-butiken i Pixelstaden och handla.</small>')}</p>`;
+  const dlg = openModal($t('🧊 Kylskåpet'), body, [
+    { label: $t('Stäng'), onClick: closeModal },
+    { label: $t('🍳 Till spisen'), onClick: () => { closeModal(); openKok(A, 'laga'); } },
   ]);
   dlg.querySelectorAll('[data-eat]').forEach((b) => (b.onclick = () => {
     const f = foodOf(b.dataset.eat);
-    if (A.game.eatFromFridge(b.dataset.eat)) { play('ok'); toast(`${f.icon} Mums! +${f.fill} mätthet`, 'good'); openFridge(A); }
+    if (A.game.eatFromFridge(b.dataset.eat)) { play('ok'); toast(`${f.icon} ${$t`Mums! +${f.fill} mätthet`}`, 'good'); openFridge(A); }
   }));
   dlg.querySelectorAll('[data-raw]').forEach((b) => (b.onclick = () => {
     const r = ravaraOf(b.dataset.raw);
-    if (A.game.eatRaw(b.dataset.raw)) { play('ok'); toast(`${r.icon} Mums! +${r.raw} mätthet`, 'good'); openFridge(A); }
+    if (A.game.eatRaw(b.dataset.raw)) { play('ok'); toast(`${r.icon} ${$t`Mums! +${r.raw} mätthet`}`, 'good'); openFridge(A); }
   }));
   dlg.querySelectorAll('[data-lada]').forEach((b) => (b.onclick = () => {
     const res = A.game.eatMatlada(b.dataset.lada);
-    if (res) { play('ok'); toast(`♨️ ${res.recipe.icon} ${res.recipe.name} – precis lika gott i dag! +${res.fill} mätthet${res.glad ? `, +${res.glad} 😊` : ''}`, 'good'); openFridge(A); }
+    if (res) { play('ok'); toast(`♨️ ${res.recipe.icon} ${$t`${res.recipe.name} – precis lika gott i dag! +${res.fill} mätthet`}${res.glad ? `, +${res.glad} 😊` : ''}`, 'good'); openFridge(A); }
   }));
 }

@@ -6,14 +6,15 @@
 // Spelaren väljer själv: en fråga en gång (efter första dagen) och PÅ/AV under ⚙ Inställningar.
 // På webben (och i app-byggen utan insticksmodulen) gör modulen ingenting.
 import { openModal, closeModal, modalOpen, toast } from './ui.js';
+import { $t } from './i18n.js';
 
 // { id (1–899, ändras aldrig), datum 'MM-DD', kl (timme), titel, text, fran 'YYYY-MM-DD' (valfri: först från) }
 export const HANDELSER = [
-  { id: 4, datum: '10-24', kl: 17, titel: 'Halloween-veckan! 🎃', text: 'Maskeradbutiken i förorten har dräkter, pumpor och skelett. Tänd en pumplykta hemma!' },
-  { id: 5, datum: '10-31', kl: 16, titel: 'Glad Halloween! 👻', text: 'Klä ut dig och skräm dina kompisar i Pixelstaden!' },
-  { id: 1, datum: '12-01', kl: 17, titel: 'Det är december! 🎄', text: 'Julvåningen i klädaffären är full av pynt – klä granen, tänd brasan och grilla marshmallows.' },
-  { id: 2, datum: '12-13', kl: 8, titel: 'Glad Lucia! 🕯️', text: 'Luciakläderna hänger på klädaffärens julvåning i Pixelstaden.' },
-  { id: 3, datum: '12-24', kl: 10, titel: 'God jul! 🎅', text: 'God jul från Pixelstaden! Tänd brasan och ha det mysigt.' },
+  { id: 4, datum: '10-24', kl: 17, titel: $t('Halloween-veckan! 🎃'), text: $t('Maskeradbutiken i förorten har dräkter, pumpor och skelett. Tänd en pumplykta hemma!') },
+  { id: 5, datum: '10-31', kl: 16, titel: $t('Glad Halloween! 👻'), text: $t('Klä ut dig och skräm dina kompisar i Pixelstaden!') },
+  { id: 1, datum: '12-01', kl: 17, titel: $t('Det är december! 🎄'), text: $t('Julvåningen i klädaffären är full av pynt – klä granen, tänd brasan och grilla marshmallows.') },
+  { id: 2, datum: '12-13', kl: 8, titel: $t('Glad Lucia! 🕯️'), text: $t('Luciakläderna hänger på klädaffärens julvåning i Pixelstaden.') },
+  { id: 3, datum: '12-24', kl: 10, titel: $t('God jul! 🎅'), text: $t('God jul från Pixelstaden! Tänd brasan och ha det mysigt.') },
 ];
 
 const NYCKEL = 'snabbfilen_notiser';   // 'pa' | 'av' (saknas = inte frågat än)
@@ -69,7 +70,7 @@ export async function slaPa() {
   const t = await tillatelse(true);
   if (t !== 'granted') {
     ls.set('av');
-    toast('🔕 Telefonen tillåter inga notiser från Pixelcity. Slå på dem under Inställningar → Notiser → Pixelcity.', 'wrap');
+    toast($t('🔕 Telefonen tillåter inga notiser från Pixelcity. Slå på dem under Inställningar → Notiser → Pixelcity.'), 'wrap');
     return false;
   }
   ls.set('pa');
@@ -86,7 +87,7 @@ export async function provNotis() {
   const P = plugin();
   if (!P || await tillatelse(false) !== 'granted') return false;
   try {
-    await P.schedule({ notifications: [{ id: PROV, title: 'Pixelcity', body: '🔔 Så här ser det ut när det händer något i Pixelstaden!', schedule: { at: new Date(Date.now() + 5000) } }] });
+    await P.schedule({ notifications: [{ id: PROV, title: 'Pixelcity', body: $t('🔔 Så här ser det ut när det händer något i Pixelstaden!'), schedule: { at: new Date(Date.now() + 5000) } }] });
     return true;
   } catch { return false; }
 }
@@ -100,9 +101,9 @@ export function startNotiser(A) {
     if (ls.get()) { clearInterval(koll); return; }
     if ((A.game?.day | 0) < 2 || modalOpen() || A.attract || !/^(room|city)$/.test(A.sceneName || '')) return;
     clearInterval(koll);
-    openModal('🔔 Vill du få notiser?', `<p style="font-size:var(--f2);margin-top:0">Pixelcity kan säga till när det händer något i Pixelstaden – som när det blir Halloween eller jul.</p><p style="font-size:var(--f2)">Det blir bara några gånger om året. Du kan ändra dig under ⚙ Inställningar.</p>`, [
-      { label: 'Nej tack', onClick: () => { ls.set('av'); closeModal(); } },
-      { label: '🔔 Ja tack', cls: 'btn-go', onClick: async () => { closeModal(); if (await slaPa()) toast('🔔 Notiserna är på!', 'good'); } },
+    openModal($t('🔔 Vill du få notiser?'), `<p style="font-size:var(--f2);margin-top:0">${$t('Pixelcity kan säga till när det händer något i Pixelstaden – som när det blir Halloween eller jul.')}</p><p style="font-size:var(--f2)">${$t('Det blir bara några gånger om året. Du kan ändra dig under ⚙ Inställningar.')}</p>`, [
+      { label: $t('Nej tack'), onClick: () => { ls.set('av'); closeModal(); } },
+      { label: $t('🔔 Ja tack'), cls: 'btn-go', onClick: async () => { closeModal(); if (await slaPa()) toast($t('🔔 Notiserna är på!'), 'good'); } },
     ], { closable: false });
   }, 5000);
 }

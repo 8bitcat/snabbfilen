@@ -20,6 +20,7 @@
 // höger och 1 px uppåt per rad – målet till höger blir ett parallellogram med nät bakom.
 import { Pix, SMALL, BIG, textW, ctxText, mix, mul, hash, bayer } from '../../core/floor-pix.js';
 import { drawPerson } from '../../core/people.js';
+import { $t, $n } from '../../core/i18n.js';
 
 const FW = 240, FH = 80, WHITE = 0xffffff;
 const WALK = [1, 3, 2, 3];
@@ -71,9 +72,9 @@ const KBK = {
   aliceG: kbk({ skin: '#eec3a0', hair: '#c49a5a', style: 'bun', shoes: '#3a6bc2' }),                       // mellanblont, uppsatt (numret: 7 eller 9 – Carl säger vilket)
   lily: kbk({ shirt: '#2aa35a', accent: '#1c1c1c', skin: '#f6d7bf', hair: '#ecd489', style: 'long', shoes: '#1c1c1c', shirtNum: 20 }),   // målvakten: långt blont
 };
-const NAMN = { julia: 'JULIA', marta: 'MÄRTA', nina: 'NINA', ellen: 'ELLEN', aliceG: 'ALICE G', lily: 'LILY' };
+const NAMN = { julia: $t('JULIA'), marta: $t('MÄRTA'), nina: $t('NINA'), ellen: $t('ELLEN'), aliceG: $t('ALICE G'), lily: $t('LILY') };
 // resten av laget (spelar med, namnen bara i eftertexterna)
-const RESTEN = ['KLARA', 'SAGA', 'VALENCIA', 'ALICE', 'ISABELLE', 'ELISA', 'NATALIA', 'KAJSA', 'MOA', 'ISABELLA', 'EDESSA', 'JULIE', 'NOOMI'];
+const RESTEN = [$t('KLARA'), $t('SAGA'), $t('VALENCIA'), $t('ALICE'), $t('ISABELLE'), $t('ELISA'), $t('NATALIA'), $t('KAJSA'), $t('MOA'), $t('ISABELLA'), $t('EDESSA'), $t('JULIE'), $t('NOOMI')];
 const SKINS = ['#f6d7bf', '#eec3a0', '#e0a97f', '#c68a5c', '#a06a43', '#744a2d', '#553522'];
 const HAIRS = ['#1d1714', '#3b2619', '#6b4226', '#a5692f', '#d9a95c', '#ecd489', '#b7392b'];
 // tjejfrisyrer (långt, svansar, knutar, flätor) – inga korta "pojkfrillor" i filmerna
@@ -85,14 +86,14 @@ const TRANAREN = { skin: '#e0a97f', hair: '#3b2619', style: 'short', top: 'hoodi
 
 // motståndarna (flicklag i lilla cupen, damlagen i Champions League)
 const LAG = {
-  naset: { namn: 'NÄSET', kort: 'NÄSET', shirt: '#2f8f46', accent: '#f4f1ea', pants: '#f4f1ea', kid: true },
-  hovas: { namn: 'HOVÅS/BILLDAL', kort: 'HOVÅS', shirt: '#3a7bd5', accent: '#f0c03a', pants: '#2d3a5c', kid: true },
-  sandarna: { namn: 'SANDARNA', kort: 'SANDARNA', shirt: '#f0c03a', accent: '#1c1c1c', pants: '#1c1c1c', kid: true },
-  alvsborg: { namn: 'ÄLVSBORG', kort: 'ÄLVSBORG', shirt: '#f4f1ea', accent: '#2c6fb7', pants: '#2c6fb7', kid: true },
-  hacken: { namn: 'HÄCKEN', kort: 'HÄCKEN', shirt: '#f6d02a', accent: '#1c1c1c', pants: '#1c1c1c', kid: false },
-  united: { namn: 'MANCHESTER UNITED', kort: 'MAN UTD', shirt: '#d0202a', accent: '#f4f1ea', pants: '#f4f1ea', kid: false },
-  juventus: { namn: 'JUVENTUS', kort: 'JUVENTUS', top: 'stripes', shirt: '#1c1c1c', accent: '#f4f1ea', pants: '#f4f1ea', kid: false },
-  barca: { namn: 'BARCELONA', kort: 'BARCELONA', top: 'stripes', shirt: '#a50044', accent: '#1f4fa0', pants: '#1f4fa0', kid: false },
+  naset: { namn: $t('NÄSET'), kort: $t('NÄSET'), shirt: '#2f8f46', accent: '#f4f1ea', pants: '#f4f1ea', kid: true },
+  hovas: { namn: $t('HOVÅS/BILLDAL'), kort: $t('HOVÅS'), shirt: '#3a7bd5', accent: '#f0c03a', pants: '#2d3a5c', kid: true },
+  sandarna: { namn: $t('SANDARNA'), kort: $t('SANDARNA'), shirt: '#f0c03a', accent: '#1c1c1c', pants: '#1c1c1c', kid: true },
+  alvsborg: { namn: $t('ÄLVSBORG'), kort: $t('ÄLVSBORG'), shirt: '#f4f1ea', accent: '#2c6fb7', pants: '#2c6fb7', kid: true },
+  hacken: { namn: $t('HÄCKEN'), kort: $t('HÄCKEN'), shirt: '#f6d02a', accent: '#1c1c1c', pants: '#1c1c1c', kid: false },
+  united: { namn: $t('MANCHESTER UNITED'), kort: $t('MAN UTD'), shirt: '#d0202a', accent: '#f4f1ea', pants: '#f4f1ea', kid: false },
+  juventus: { namn: $t('JUVENTUS'), kort: $t('JUVENTUS'), top: 'stripes', shirt: '#1c1c1c', accent: '#f4f1ea', pants: '#f4f1ea', kid: false },
+  barca: { namn: $t('BARCELONA'), kort: $t('BARCELONA'), top: 'stripes', shirt: '#a50044', accent: '#1f4fa0', pants: '#1f4fa0', kid: false },
 };
 // damspelarna: samma tjejfrisyrer men det som håller på en elitplan (svansar, knutar, flätor)
 const VSTYLES = ['ponytail', 'highPony', 'bun', 'longPony', 'lowPony', 'frenchBraid', 'messyBun', 'sleek', 'boxBraids', 'afroPuff'];
@@ -147,7 +148,7 @@ function scoreboard(c, a, b, na, nb, clock, flash = false, late = false) {
 }
 const clockStr = (min) => `${String(Math.floor(min)).padStart(2, '0')}:${String(Math.floor((min % 1) * 60)).padStart(2, '0')}`;
 // "MÅL!" i stor guldtext som studsar in
-function malText(c, k, text = 'MÅL!') {
+function malText(c, k, text = $t('MÅL!')) {
   if (k <= 0 || k >= 1) return;
   const s = 2, bounce = Math.round(Math.sin(Math.min(1, k * 4) * Math.PI) * -4);
   const flash = Math.floor(k * 14) & 1;
@@ -245,7 +246,7 @@ const BGS = {
     area(P, 150, 6, 18, 18, (X, Y) => (Math.hypot(X - 158, Y - 18) < 8 ? (Y < 16 ? 0xfff6c0 : 0xffe080) : null));
     treeline(P, 30, 0x2a4a2a, 0x3e6a34, 0x6a9a4a, 61);
     area(P, 20, 18, 34, 14, (X, Y, i, j) => (j < 3 ? (j === 0 ? 0x9a2a2a : 0x7a1e1e) : i === 0 || i === 33 ? 0x5a3a2a : (i > 13 && i < 20 && j > 5) ? 0x3a2a1e : (i % 8 === 3 && j > 4 && j < 9) ? 0xf0d890 : jit(0xb8442a, X, Y, 62, 0.08)));
-    drawSmallP(P, 'KBK', 28, 6 + 15 - 1, 0xf4f1ea);
+    drawSmallP(P, $t('KBK'), 28, 6 + 15 - 1, 0xf4f1ea);
     for (let x = 0; x < FW; x++) for (let y = 28; y < 36; y++) if ((x + y) % 4 === 0 || (x - y) % 4 === 0) P.px(x, y, 0x8a9aa0, 0.55);
     grass(P, 36, false, true);
   }),
@@ -264,7 +265,7 @@ const BGS = {
     area(P, 30, 10, 180, 3, (X, Y, i, j) => (j === 2 ? 0x2a2a34 : 0x6a6a76));         // taket
     for (const x of [32, 120, 207]) area(P, x, 13, 2, 16, () => 0x3a3a44);
     standPaint(P, 13, 29, false);
-    boards(P, 29, ['LILLA CUPEN', 'HEJA KBK', 'FOTBOLL ÄR KUL', 'KBK'], false);
+    boards(P, 29, [$t('LILLA CUPEN'), $t('HEJA KBK'), $t('FOTBOLL ÄR KUL'), $t('KBK')], false);
     grass(P, 36, false);
   }),
   // finalen: kväll, strålkastare, större läktare
@@ -272,7 +273,7 @@ const BGS = {
     sky(P, 30, 0x0a0e26, 0x2a2a58, true);
     standPaint(P, 8, 29, true);
     mast(P, 14, 6, 26); mast(P, 222, 6, 26);
-    boards(P, 29, ['FINAL', 'LILLA CUPEN', 'HEJA KBK', 'KBK'], true);
+    boards(P, 29, [$t('FINAL'), $t('LILLA CUPEN'), $t('HEJA KBK'), $t('KBK')], true);
     grass(P, 36, true);
   }),
   // Champions League: en jättearena i tre ringar, flaggor, kvällshimmel
@@ -284,7 +285,7 @@ const BGS = {
       P.vl(x, 0, 8, 0x8a8a94); area(P, x + 1, 0, 7, 4, (X, Y, i, j) => (j === 3 ? mul(col, 0.7) : col));
     }
     mast(P, 6, 4, 12); mast(P, 230, 4, 12);
-    boards(P, 29, ['CHAMPIONS LEAGUE', 'UT I VÄRLDEN', 'HEJA KBK', 'FINAL'], true);
+    boards(P, 29, [$t('CHAMPIONS LEAGUE'), $t('UT I VÄRLDEN'), $t('HEJA KBK'), $t('FINAL')], true);
     grass(P, 36, true);
   }),
   // stadionläktaren man springer uppför (träningslägret)
@@ -548,7 +549,7 @@ function narbild(c, k, t, look, kind, side, right = side !== 'opp') {
     c.drawImage(memo(`b${right}${kb}${nick}${f},${n},${p8}`, (x) => {                       // blixtarna, explosionen och texten
       for (let b = 0; b < 3; b++) bolt(x, tx + (b - 1) * 30, 0, tx + (b - 1) * 18 + (hash(b, f, 171) - 0.5) * 20, 30, f, 172 + b);
       smack(x, tx, 38, 66 * p8, 30 * p8, f, kb ? 0xff6a1a : 0x2a8ad8, kb ? 0xffe14a : 0xbfefff);
-      const s = nick ? `NI${'I'.repeat(1 + n)}CK!` : `SKOTT${'T'.repeat(n)}!`;
+      const s = nick ? $t`NI${'I'.repeat(1 + n)}CK!` : $t`SKOTT${'T'.repeat(n)}!`;
       const jx = Math.round((hash(1, f, 173) - 0.5) * 3), jy = Math.round((hash(2, f, 173) - 0.5) * 3);
       const sx = Math.round(tx - textW(BIG, s, 2) / 2) + jx;
       ctxText(x, BIG, s, sx + 2, 30 + jy + 2, kb ? '#5a0a10' : '#08142a', 2);
@@ -613,7 +614,7 @@ function matchShot(m) {
     if (scored && u - ug < 0.14) { c.fillStyle = `rgba(255,255,255,${(0.75 * (1 - (u - ug) / 0.14)).toFixed(2)})`; c.fillRect(0, 0, FW, FH); }
     const ha = m.ha + (scored && kb ? 1 : 0), hb = m.hb + (scored && !kb ? 1 : 0);
     const min = lerp(m.mins[0], m.mins[1], a / m.d);
-    scoreboard(c, ha, hb, 'KBK', m.opp.kort, clockStr(min), scored && u - ug < 2 && Math.floor(u * 8) & 1, m.late && min > m.late);
+    scoreboard(c, ha, hb, $t('KBK'), m.opp.kort, clockStr(min), scored && u - ug < 2 && Math.floor(u * 8) & 1, m.late && min > m.late);
     if (scored && kb) malText(c, (u - ug) / 1.8);
     if (scored && !kb) { const k = (u - ug) / 1.8; if (k > 0 && k < 1) outlined(c, BIG, `${m.opp.kort}...`, cx(BIG, `${m.opp.kort}...`), 18, '#d8d8e0', '#2a2a34'); }
     if (m.banner) matchBanner(c, u, m.banner[0], m.banner[1]);
@@ -633,7 +634,7 @@ function storseger(opp, total, names, bgKey, cr) {
     const who = names[i % names.length], pass = names[(i + 2) % names.length];
     anfall(c, t, { scorer: KBK[who], passer: KBK[pass], mates: [MATES[i % 9]], opp, keeper: opp.keeper, kind: i % 3 === 2 ? 'nick' : 'skott', t0: 0, tPass: per * 0.3, tShot: per * 0.48, tGoal: per * 0.62, from: [120, 66], trail: 'eld' });
     const scored = t >= per * 0.62, n = i + (scored ? 1 : 0);
-    scoreboard(c, n, 0, 'KBK', opp.kort, clockStr(lerp(5, 58, u / 7)), scored && Math.floor(u * 8) & 1);
+    scoreboard(c, n, 0, $t('KBK'), opp.kort, clockStr(lerp(5, 58, u / 7)), scored && Math.floor(u * 8) & 1);
     if (scored) { const s = `${NAMN[who]}!`; outlined(c, BIG, s, cx(BIG, s), 18, '#ffd23f', '#5a1a08'); }
   };
   fn.storseger = { total, per: 6.6 / total };
@@ -661,7 +662,7 @@ function narbildLily(c, k, t, look) {
     const tx = 82, f14 = Math.floor(t * 14), p8 = Math.round(pop * 8) / 8;
     c.drawImage(memo(`lily${f14},${p8}`, (x) => {                                             // explosionen och namnet
       smack(x, tx, 38, 56 * p8, 28 * p8, f14, 0x2aa35a, 0xffe14a, 0xfff6d8);
-      const s = 'LILY!', sx = Math.round(tx - textW(BIG, s, 2) / 2) + Math.round((hash(1, f14, 193) - 0.5) * 3);
+      const s = $t('LILY!'), sx = Math.round(tx - textW(BIG, s, 2) / 2) + Math.round((hash(1, f14, 193) - 0.5) * 3);
       ctxText(x, BIG, s, sx + 2, 32, '#06200e', 2);
       outlined(x, BIG, s, sx, 30, '#ffffff', '#06200e', 2);
     }), 0, 0);
@@ -748,14 +749,14 @@ function straffShot(m) {
       const pop = ease(clamp(hk / 0.15, 0, 1)) * (hk > 1.9 ? 1 - (hk - 1.9) / 0.3 : 1), f = Math.floor(u * 14);
       smack(c, 120, 26, 74 * pop, 20 * pop, f, 0x2aa35a, 0xffe14a, 0xfff6d8, 18);
       if (pop > 0.6) {
-        const s = 'RÄDDNING!', x = Math.round(120 - textW(BIG, s, 2) / 2) + Math.round((hash(1, f, 195) - 0.5) * 3);
+        const s = $t('RÄDDNING!'), x = Math.round(120 - textW(BIG, s, 2) / 2) + Math.round((hash(1, f, 195) - 0.5) * 3);
         ctxText(c, BIG, s, x + 2, 20, '#06200e', 2);
         outlined(c, BIG, s, x, 18, '#ffffff', '#06200e', 2);
       }
     }
     const min = lerp(m.mins[0], m.mins[1], u / m.d);
-    scoreboard(c, m.ha, m.hb, 'KBK', m.opp.kort, clockStr(min), false, true);
-    if (u < ST.run) matchBanner(c, u + 0.2, 'STRAFF!', `${m.opp.namn} - KBK`);
+    scoreboard(c, m.ha, m.hb, $t('KBK'), m.opp.kort, clockStr(min), false, true);
+    if (u < ST.run) matchBanner(c, u + 0.2, $t('STRAFF!'), $t`${m.opp.namn} - KBK`);
   };
   fn.straff = true;
   return fn;
@@ -899,8 +900,8 @@ export function kbkPoster(P, id) {
     area(P, 0, 0, w, h, (X, Y) => (Y < 24 ? qmix(0x4a0e1a, 0x9a2a3a, Y / 24, X, Y, 4) : jit((X + (h - Y)) >> 2 & 1 ? 0x4aa83e : 0x3f9636, X, Y, 211, 0.08)));
     for (let k = 0; k < 3; k++) { const x0 = 5 + k * 6; area(P, x0, 20, 3, 8, (X, Y, i, j) => (j < 2 ? 0xeec3a0 : j < 5 ? (i === 0 ? 0xa02a3a : 0x7a1e2e) : j < 7 ? 0x1c1c1c : 0xd8f040)); A(x0, 19, [0xd9a95c, 0x6b4226, 0x1d1714][k]); A(x0 + 1, 19, [0xd9a95c, 0x6b4226, 0x1d1714][k]); }
     area(P, 20, 26, 5, 5, (X, Y, i, j) => { const d = Math.hypot(i - 2, j - 2); return d > 2.4 ? null : d > 1.8 ? 0x2a2630 : (i + j) % 3 === 0 ? 0x2a2630 : 0xf6f6f2; });
-    title('KBK', 3, 0xffd23f, 0x3a0a08, BIG);
-    title('CUPEN', 12, 0xf4f1ea, 0x3a0a08);
+    title($t('KBK'), 3, 0xffd23f, 0x3a0a08, BIG);
+    title($t('CUPEN'), 12, 0xf4f1ea, 0x3a0a08);
   } else {
     area(P, 0, 0, w, h, (X, Y) => qmix(0x06081e, 0x1e2a5a, Y / h, X, Y, 4));
     for (let k = 0; k < 12; k++) A(Math.floor(hash(k, 1, 212) * w), Math.floor(hash(k, 2, 212) * 14), 0xb8c8f0);
@@ -909,7 +910,7 @@ export function kbkPoster(P, id) {
       const land = hash((i + 3) >> 1, j >> 1, 213) > 0.55;
       return d > 6.4 ? 0x0a1430 : land ? (i + j < 10 ? 0x8edc4c : 0x46a35a) : (i + j < 10 ? 0x6ab8f0 : 0x2c6fb7);
     });
-    title('KBK', 3, 0xffd23f, 0x3a0a08, BIG);
+    title($t('KBK'), 3, 0xffd23f, 0x3a0a08, BIG);
     drawText(P, BIG, '2', 20, 27, 0x3a0a08); drawText(P, BIG, '2', 19, 26, 0xe0505a);
   }
 }
@@ -946,12 +947,12 @@ function titel(c, u, rad1, rad2, theme) {
   const x1 = cx(BIG, rad1, 2) + Math.round((1 - k) * -60);
   outlined(c, BIG, rad1, x1, 16, '#ffd23f', '#3a0a08', 2);
   if (u > 0.6) { const k2 = ease((u - 0.6) / 0.6), x2 = cx(BIG, rad2) + Math.round((1 - k2) * 60); outlined(c, BIG, rad2, x2, 40, '#f4f1ea', '#3a0a08'); }
-  if (u > 1.6) { const s = 'BIO PIXEL PRESENTERAR'; ctxText(c, SMALL, s, cx(SMALL, s), 56, '#c8a44a'); }
+  if (u > 1.6) { const s = $t('BIO PIXEL PRESENTERAR'); ctxText(c, SMALL, s, cx(SMALL, s), 56, '#c8a44a'); }
 }
 function slut(c, u, rader, teaser) {
   R(c, 0, 0, FW, FH, 0x08060a);
   const k = ease(u / 0.6);
-  if (k > 0) outlined(c, BIG, 'SLUT', cx(BIG, 'SLUT'), 6, '#ffd23f', '#3a1a08');
+  if (k > 0) outlined(c, BIG, $t('SLUT'), cx(BIG, $t('SLUT')), 6, '#ffd23f', '#3a1a08');
   rader.forEach((s, i) => { if (u > 0.5 + i * 0.35) ctxText(c, SMALL, s, cx(SMALL, s), 20 + i * 8, i === 0 ? '#e8b230' : '#c8c0b0'); });
   if (teaser && u > 3) { const blink = Math.floor(u * 3) & 1; outlined(c, SMALL, teaser, cx(SMALL, teaser), FH - 10, blink ? '#ffd23f' : '#f4f1ea', '#3a1a08'); }
 }
@@ -964,7 +965,7 @@ const LAGET_LISTA = (resten) => {
   for (let i = 0; i < resten.length; i += 5) r.push(resten.slice(i, i + 5).join(', '));
   return r;
 };
-const HUVUDROLLER = 'JULIA  MÄRTA  NINA  ELLEN  ALICE G  LILY';
+const HUVUDROLLER = $t('JULIA  MÄRTA  NINA  ELLEN  ALICE G  LILY');
 // laget presenteras: tränaren, de fem och Lily i mål – namnen tänds en i taget ovanför
 // (skyltarna i två höjder så att de inte krockar)
 function presentation(c, u) {
@@ -980,9 +981,9 @@ function presentation(c, u) {
   ball(c, 224, 72, 0, 0);
 }
 export const FILM_KBK1 = ljudsatt([
-  { d: 4, light: 0x7a1e2e, music: 'intro', draw: (c, u) => titel(c, u, 'KUNGSLADUGÅRD', 'EN STILLSAM BÖRJAN', 'kbk') },
+  { d: 4, light: 0x7a1e2e, music: 'intro', draw: (c, u) => titel(c, u, $t('KUNGSLADUGÅRD'), $t('EN STILLSAM BÖRJAN'), 'kbk') },
   // laget på konstgräset – lilla cupen om en vecka
-  { d: 5.5, light: 0xe8a060, music: 'intro', sfx: [[2.9, 'vissla']], subs: [[0.6, 2.8, 'LILLA CUPEN BÖRJAR OM EN VECKA.'], [3.0, 5.4, 'DÅ ÄR DET DAGS ATT TRÄNA. HÅRT.']], draw: (c, u) => presentation(c, u) },
+  { d: 5.5, light: 0xe8a060, music: 'intro', sfx: [[2.9, 'vissla']], subs: [[0.6, 2.8, $n('LILLA CUPEN BÖRJAR OM EN VECKA.')], [3.0, 5.4, $n('DÅ ÄR DET DAGS ATT TRÄNA. HÅRT.')]], draw: (c, u) => presentation(c, u) },
   // TRÄNINGSMONTAGET: löprunda i gryningen
   { d: 5, light: 0xf0a060, music: 'traning', cues: [[0.4, 'heja']], draw: (c, u) => {
     c.drawImage(BGS.morgon(), 0, 0);
@@ -993,8 +994,8 @@ export const FILM_KBK1 = ljudsatt([
       person(c, x, y, L, 'right', walkF(u + i * 0.13, 12));
       if (Math.floor(u * 4 + i) % 4 === 0) { P1(c, x + 6, y - 26, 0xf4f1ea); P1(c, x + 7, y - 27, 0xe8e8ec); }   // andedräkt i morgonkylan
     }
-    dagSkylt(c, 'DAG 1');
-    if (u < 1.2) { const s = 'TRÄNING!'; outlined(c, BIG, s, cx(BIG, s, 2), 18, '#ffd23f', '#5a1a08', 2); }
+    dagSkylt(c, $t('DAG 1'));
+    if (u < 1.2) { const s = $t('TRÄNING!'); outlined(c, BIG, s, cx(BIG, s, 2), 18, '#ffd23f', '#5a1a08', 2); }
   } },
   // koner och skott
   { d: 6, light: 0x6ab84a, music: 'traning', cues: [[1.4, 'oj'], [3.8, 'heja']], sfx: [0, 1, 2, 3].flatMap((n) => [[n * 1.5 + 0.53, 'spark'], [n * 1.5 + 0.98, 'nat']]), draw: (c, u) => {
@@ -1015,10 +1016,10 @@ export const FILM_KBK1 = ljudsatt([
     if (k < 0.3) person(c, sx, sy, KBK.nina, 'right', walkF(u, 12));
     else person(c, sx, sy, KBK.nina, 'right', k < 0.45 ? 2 : 0);
     if (k >= 0.35) { const bk = clamp((k - 0.35) / 0.3, 0, 1); ball(c, lerp(sx + 5, 229, bk), lerp(sy, 64 - (n & 1) * 4, bk), lerp(1, 9, bk) + Math.sin(bk * Math.PI) * 4, u); }
-    dagSkylt(c, 'DAG 3');
+    dagSkylt(c, $t('DAG 3'));
   } },
   // styrka: armhävningar, upphopp och stegen
-  { d: 6, light: 0x9a6a40, music: 'traning', subs: [[0.8, 3.0, '...18, 19, 20!'], [3.4, 5.8, 'EN GÅNG TILL!']], draw: (c, u) => {
+  { d: 6, light: 0x9a6a40, music: 'traning', subs: [[0.8, 3.0, $n('...18, 19, 20!')], [3.4, 5.8, $n('EN GÅNG TILL!')]], draw: (c, u) => {
     c.drawImage(BGS.morgon(), 0, 0);
     person(c, 24, 68, TRANAREN, 'right', Math.floor(u * 2) & 1 ? 9 : 0);
     const upp = Math.floor(u * 2.4) & 1;
@@ -1034,7 +1035,7 @@ export const FILM_KBK1 = ljudsatt([
     const jx = 150 + ((u * 36) % 72);
     person(c, jx, 70 - (Math.floor(u * 16) & 1), KBK.julia, 'right', walkF(u, 18));
     person(c, 226, 70, KBK.marta, 'left', 0);
-    dagSkylt(c, 'DAG 5');
+    dagSkylt(c, $t('DAG 5'));
   } },
   // kvällspass i regnet: inlägg och nickar, laget samlas – KBK!
   { d: 6.5, light: 0x2a3a6a, music: 'traning', amb: 'regn', cues: [[2.2, 'heja'], [5.0, 'heja']], draw: (c, u) => {
@@ -1051,40 +1052,40 @@ export const FILM_KBK1 = ljudsatt([
         const dx = 120 - x, dy = 64 - y;
         person(c, x, y, L, Math.abs(dx) > Math.abs(dy) * 1.5 ? (dx > 0 ? 'right' : 'left') : dy > 0 ? 'down' : 'up', 0);
       });
-      if (u > 5) { const s = 'KBK!'; outlined(c, BIG, s, cx(BIG, s, 2), 12 - (Math.floor(u * 6) & 1), '#ffd23f', '#5a1a08', 2); }
+      if (u > 5) { const s = $t('KBK!'); outlined(c, BIG, s, cx(BIG, s, 2), 12 - (Math.floor(u * 6) & 1), '#ffd23f', '#5a1a08', 2); }
     }
     rain(c, u);
-    dagSkylt(c, 'DAG 7');
+    dagSkylt(c, $t('DAG 7'));
   } },
   // MATCH 1: Näset – Nina gör 1-0 på passning från Julia, KBK vinner 3-1
-  { d: 7, light: 0x5aa8e8, cues: [[3.5, 'heja']], subs: [[4.0, 6.9, 'NINA! PASSNING: JULIA. SLUTRESULTAT 3-1.']], draw: matchShot({
-    opp: LAG.naset, bg: 'cup', crowd: ['cup', 14, 28, 90, 0.5], ha: 0, hb: 0, mins: [11, 13], d: 7, banner: ['LILLA CUPEN - MATCH 1', 'KBK - NÄSET'],
+  { d: 7, light: 0x5aa8e8, cues: [[3.5, 'heja']], subs: [[4.0, 6.9, $n('NINA! PASSNING: JULIA. SLUTRESULTAT 3-1.')]], draw: matchShot({
+    opp: LAG.naset, bg: 'cup', crowd: ['cup', 14, 28, 90, 0.5], ha: 0, hb: 0, mins: [11, 13], d: 7, banner: [$t('LILLA CUPEN - MATCH 1'), $t('KBK - NÄSET')],
     goal: SHOT('kbk', KBK.nina, KBK.julia, 'skott'),
   }) },
   // MATCH 2: Hovås/Billdal – 1-1 i sista minuten, Märta gör 2-1 på passning från Ellen
-  { d: 7, light: 0x5aa8e8, cues: [[3.7, 'heja']], subs: [[0.4, 2.6, '1-1. EN MINUT KVAR...'], [4.2, 6.9, 'MÄRTA! PASSNING: ELLEN. UDDAMÅLET!']], draw: matchShot({
-    opp: LAG.hovas, bg: 'cup', crowd: ['cup', 14, 28, 90, 0.4], ha: 1, hb: 1, mins: [59, 60], late: 59, d: 7, banner: ['LILLA CUPEN - MATCH 2', 'KBK - HOVÅS/BILLDAL'],
+  { d: 7, light: 0x5aa8e8, cues: [[3.7, 'heja']], subs: [[0.4, 2.6, $n('1-1. EN MINUT KVAR...')], [4.2, 6.9, $n('MÄRTA! PASSNING: ELLEN. UDDAMÅLET!')]], draw: matchShot({
+    opp: LAG.hovas, bg: 'cup', crowd: ['cup', 14, 28, 90, 0.4], ha: 1, hb: 1, mins: [59, 60], late: 59, d: 7, banner: [$t('LILLA CUPEN - MATCH 2'), $t('KBK - HOVÅS/BILLDAL')],
     goal: SHOT('kbk', KBK.marta, KBK.ellen, 'skott', { tPass: 2.6, tShot: 3.3, tGoal: 3.65 }),
   }) },
   // MATCH 3: Sandarna – mål på mål
-  { d: 7, light: 0x5aa8e8, cues: [[1.0, 'heja'], [3.0, 'heja'], [5.0, 'heja']], subs: [[6.0, 7, 'SLUTRESULTAT: KBK 10-0 SANDARNA!']], draw: storseger(LAG.sandarna, 10, ['julia', 'aliceG', 'ellen', 'nina', 'marta'], 'cup', ['cup', 14, 28, 90]) },
+  { d: 7, light: 0x5aa8e8, cues: [[1.0, 'heja'], [3.0, 'heja'], [5.0, 'heja']], subs: [[6.0, 7, $n('SLUTRESULTAT: KBK 10-0 SANDARNA!')]], draw: storseger(LAG.sandarna, 10, ['julia', 'aliceG', 'ellen', 'nina', 'marta'], 'cup', ['cup', 14, 28, 90]) },
   // FINALEN mot Älvsborg (1/3): Älvsborg tar ledningen
-  { d: 6, light: 0x2a2a58, cues: [[3.5, 'oj']], subs: [[4.0, 5.9, 'NEJ! ÄLVSBORG LEDER 0-1.']], draw: matchShot({
-    opp: LAG.alvsborg, bg: 'final', crowd: ['final', 9, 28, 140, 0.5], night: true, ha: 0, hb: 0, mins: [20, 22], d: 6, banner: ['FINAL - LILLA CUPEN', 'KBK - ÄLVSBORG'],
+  { d: 6, light: 0x2a2a58, cues: [[3.5, 'oj']], subs: [[4.0, 5.9, $n('NEJ! ÄLVSBORG LEDER 0-1.')]], draw: matchShot({
+    opp: LAG.alvsborg, bg: 'final', crowd: ['final', 9, 28, 140, 0.5], night: true, ha: 0, hb: 0, mins: [20, 22], d: 6, banner: [$t('FINAL - LILLA CUPEN'), $t('KBK - ÄLVSBORG')],
     goal: SHOT('opp', LAG.alvsborg.p[0], LAG.alvsborg.p[1], 'skott'),
   }) },
   // (2/3): Ellen nickar in 1-1 på inlägg från Alice G
-  { d: 6, light: 0x2a2a58, cues: [[3.5, 'heja']], subs: [[4.0, 5.9, 'ELLEN NICKAR! INLÄGG: ALICE G. 1-1!']], draw: matchShot({
+  { d: 6, light: 0x2a2a58, cues: [[3.5, 'heja']], subs: [[4.0, 5.9, $n('ELLEN NICKAR! INLÄGG: ALICE G. 1-1!')]], draw: matchShot({
     opp: LAG.alvsborg, bg: 'final', crowd: ['final', 9, 28, 140, 0.5], night: true, ha: 0, hb: 1, mins: [41, 43], d: 6,
     goal: SHOT('kbk', KBK.ellen, KBK.aliceG, 'nick'),
   }) },
   // (3/3): sista minuten – Julia gör 2-1 på passning från Märta
-  { d: 7, light: 0x2a2a58, cues: [[3.6, 'heja'], [5.6, 'heja']], subs: [[0.3, 2.4, 'SISTA MINUTEN...'], [4.0, 6.9, 'JULIA! PASSNING: MÄRTA. 2-1 - SLUTSIGNAL!']], draw: matchShot({
+  { d: 7, light: 0x2a2a58, cues: [[3.6, 'heja'], [5.6, 'heja']], subs: [[0.3, 2.4, $n('SISTA MINUTEN...')], [4.0, 6.9, $n('JULIA! PASSNING: MÄRTA. 2-1 - SLUTSIGNAL!')]], draw: matchShot({
     opp: LAG.alvsborg, bg: 'final', crowd: ['final', 9, 28, 140, 0.5], night: true, ha: 1, hb: 1, mins: [59, 60], late: 59, d: 7,
     goal: SHOT('kbk', KBK.julia, KBK.marta, 'skott', { tPass: 2.5, tShot: 3.2, tGoal: 3.55 }),
   }) },
   // pokalen
-  { d: 6.5, light: 0xe8b230, amb: 'publik', sfx: [[0.7, 'pokal'], [1.0, 'mal'], [3.6, 'heja']], cues: [[1.2, 'heja'], [3.5, 'aww']], subs: [[1.0, 3.4, 'KBK VINNER LILLA CUPEN!'], [3.6, 6.4, 'KUNGSLADUGÅRD - MÄSTARE!']], draw: (c, u) => {
+  { d: 6.5, light: 0xe8b230, amb: 'publik', sfx: [[0.7, 'pokal'], [1.0, 'mal'], [3.6, 'heja']], cues: [[1.2, 'heja'], [3.5, 'aww']], subs: [[1.0, 3.4, $n('KBK VINNER LILLA CUPEN!')], [3.6, 6.4, $n('KUNGSLADUGÅRD - MÄSTARE!')]], draw: (c, u) => {
     c.drawImage(BGS.final(), 0, 0);
     crowd(c, 'final', 9, 28, 140, u, 1, 0.6);
     // pallen
@@ -1098,7 +1099,7 @@ export const FILM_KBK1 = ljudsatt([
     konfetti(c, u);
     blixtar(c, u);
   } },
-  { d: 6, light: 0x7a1e2e, music: 'intro', draw: (c, u) => slut(c, u, [HUVUDROLLER, 'OCH HELA KUNGSLADUGÅRD:', ...LAGET_LISTA(RESTEN)], 'FORTSÄTTNING FÖLJER: UT I VÄRLDEN') },
+  { d: 6, light: 0x7a1e2e, music: 'intro', draw: (c, u) => slut(c, u, [HUVUDROLLER, $t('OCH HELA KUNGSLADUGÅRD:'), ...LAGET_LISTA(RESTEN)], $t('FORTSÄTTNING FÖLJER: UT I VÄRLDEN')) },
 ]);
 
 // ======================================================================
@@ -1112,7 +1113,7 @@ function flygplan(c, x, y, t) {
   for (let i = 0; i < 9; i++) R(c, x + 10 + i * 3, y + 5, 2, 2, 0x6aa8d8);                   // fönstren
   R(c, x + 1, y - 2, 6, 6, 0x7a1e2e); R(c, x + 2, y - 2, 4, 1, 0xe0505a);                   // stjärtfenan
   R(c, x + 16, y + 9, 14, 3, 0xd8d8e0); R(c, x + 18, y + 12, 8, 1, 0xa8a8b0);               // vingen
-  ctxText(c, SMALL, 'KBK', x + 34, y + 2, '#7a1e2e');
+  ctxText(c, SMALL, $t('KBK'), x + 34, y + 2, '#7a1e2e');
   if (Math.floor(t * 4) & 1) P1(c, x + 2, y + 6, 0xff3a3a);
 }
 function moln(c, t, seed, sp, y0, col) {
@@ -1122,9 +1123,9 @@ function moln(c, t, seed, sp, y0, col) {
   }
 }
 export const FILM_KBK2 = ljudsatt([
-  { d: 4, light: 0x1e2a5a, music: 'intro', draw: (c, u) => titel(c, u, 'KUNGSLADUGÅRD', 'UT I VÄRLDEN', 'varld') },
+  { d: 4, light: 0x1e2a5a, music: 'intro', draw: (c, u) => titel(c, u, $t('KUNGSLADUGÅRD'), $t('UT I VÄRLDEN'), 'varld') },
   // flyget ut i världen
-  { d: 5.5, light: 0x6ab8f0, music: 'intro', subs: [[0.6, 2.8, 'CHAMPIONS LEAGUE. DE BÄSTA LAGEN.'], [3.0, 5.4, 'OCH KBK ÄR MED.']], draw: (c, u) => {
+  { d: 5.5, light: 0x6ab8f0, music: 'intro', subs: [[0.6, 2.8, $n('CHAMPIONS LEAGUE. DE BÄSTA LAGEN.')], [3.0, 5.4, $n('OCH KBK ÄR MED.')]], draw: (c, u) => {
     for (let y = 0; y < FH; y++) { c.fillStyle = css(mix(0x5aa8e8, 0xc8e8f8, y / FH)); c.fillRect(0, y, FW, 1); }
     moln(c, u, 141, 18, 44, 0xffffff);
     flygplan(c, 96 + Math.sin(u * 1.4) * 6, 22 + Math.sin(u * 2) * 2, u);
@@ -1139,8 +1140,8 @@ export const FILM_KBK2 = ljudsatt([
       const L = typeof k === 'string' ? KBK[k] : MATES[k];
       person(c, x, y, L, 'up', walkF(u + i * 0.2, 13));
     });
-    dagSkylt(c, 'TRÄNINGSLÄGRET');
-    if (u < 1.2) { const s = 'TRÄNING!'; outlined(c, BIG, s, 20, 18, '#ffd23f', '#5a1a08', 2); }
+    dagSkylt(c, $t('TRÄNINGSLÄGRET'));
+    if (u < 1.2) { const s = $t('TRÄNING!'); outlined(c, BIG, s, 20, 18, '#ffd23f', '#5a1a08', 2); }
   } },
   // jonglering till 100 och däcket
   { d: 6, light: 0x6ab84a, music: 'traning', cues: [[2.6, 'heja']], draw: (c, u) => {
@@ -1157,10 +1158,10 @@ export const FILM_KBK2 = ljudsatt([
     for (let k = 0; k < 14; k++) P1(c, jx - 4 - k, ty - 12 + k * 0.6, 0xc8b890);
     for (let j = -3; j <= 3; j++) for (let i = -6; i <= 6; i++) { const d = Math.hypot(i / 6, j / 3); if (d < 1 && d > 0.45) P1(c, jx - 22 + i, ty - 2 + j, d > 0.8 ? 0x14141a : 0x2e2e36); }
     if (Math.floor(u * 8) & 1) for (let k = 0; k < 3; k++) P1(c, jx - 30 - k * 3, ty - 1 - k, 0xb89a6a);   // dammet
-    dagSkylt(c, 'DAG 2');
+    dagSkylt(c, $t('DAG 2'));
   } },
   // kvällspasset: skott i krysset, målvakten räddar, sprint
-  { d: 6, light: 0x2a3a6a, music: 'traning', cues: [[1.6, 'oj'], [4.4, 'heja']], sfx: [[1.6, 'spark'], [1.9, 'nat'], [4.6, 'spark'], [4.9, 'nat']], subs: [[4.6, 5.9, 'VI ÄR REDO FÖR VÄRLDEN.']], draw: (c, u) => {
+  { d: 6, light: 0x2a3a6a, music: 'traning', cues: [[1.6, 'oj'], [4.4, 'heja']], sfx: [[1.6, 'spark'], [1.9, 'nat'], [4.6, 'spark'], [4.9, 'nat']], subs: [[4.6, 5.9, $n('VI ÄR REDO FÖR VÄRLDEN.')]], draw: (c, u) => {
     c.drawImage(BGS.kvall(), 0, 0);
     // tavlor i hörnen
     for (const [x, y] of [[226, 42], [232, 34]]) { for (let j = -3; j <= 3; j++) for (let i = -3; i <= 3; i++) { const d = Math.hypot(i, j); if (d < 3.5) P1(c, x + i, y + j, d < 1.2 ? 0xe8b230 : d < 2.4 ? 0xf4f1ea : 0xc9323a); } }
@@ -1169,51 +1170,51 @@ export const FILM_KBK2 = ljudsatt([
     const ax = ((u * 70) % 300) - 30;
     person(c, ax, 78, KBK.aliceG, 'right', walkF(u, 16));
     for (let k = 0; k < 4; k++) R(c, ax - 10 - k * 6, 70 + k * 2, 4, 1, 'rgba(244,241,234,.5)');
-    dagSkylt(c, 'DAG 6');
+    dagSkylt(c, $t('DAG 6'));
   } },
   // HÄCKEN: Felicia Schröder kvitterar, Julia gör 3-2
-  { d: 7, light: 0xf6d02a, cues: [[3.5, 'heja']], subs: [[0.3, 2.3, 'SCHRÖDER HAR KVITTERAT TILL 2-2...'], [4.0, 6.9, 'JULIA! PASSNING: NINA. KBK VINNER 3-2!']], draw: matchShot({
-    opp: LAG.hacken, bg: 'varld', crowd: ['varld', 6, 28, 220, 0.35], night: true, ha: 2, hb: 2, mins: [77, 79], d: 7, banner: ['CHAMPIONS LEAGUE - MATCH 1', 'KBK - HÄCKEN'],
+  { d: 7, light: 0xf6d02a, cues: [[3.5, 'heja']], subs: [[0.3, 2.3, $n('SCHRÖDER HAR KVITTERAT TILL 2-2...')], [4.0, 6.9, $n('JULIA! PASSNING: NINA. KBK VINNER 3-2!')]], draw: matchShot({
+    opp: LAG.hacken, bg: 'varld', crowd: ['varld', 6, 28, 220, 0.35], night: true, ha: 2, hb: 2, mins: [77, 79], d: 7, banner: [$t('CHAMPIONS LEAGUE - MATCH 1'), $t('KBK - HÄCKEN')],
     goal: SHOT('kbk', KBK.julia, KBK.nina, 'skott'),
   }) },
   // MANCHESTER UNITED: Ella Toone gör 1-0 …
-  { d: 6, light: 0xd0202a, cues: [[3.5, 'oj']], subs: [[4.0, 5.9, 'TOONE! 0-1 TILL UNITED.']], draw: matchShot({
-    opp: LAG.united, bg: 'varld', crowd: ['varld', 6, 28, 220, 0.3], night: true, ha: 0, hb: 0, mins: [8, 10], d: 6, banner: ['CHAMPIONS LEAGUE - MATCH 2', 'KBK - MANCHESTER UNITED'],
+  { d: 6, light: 0xd0202a, cues: [[3.5, 'oj']], subs: [[4.0, 5.9, $n('TOONE! 0-1 TILL UNITED.')]], draw: matchShot({
+    opp: LAG.united, bg: 'varld', crowd: ['varld', 6, 28, 220, 0.3], night: true, ha: 0, hb: 0, mins: [8, 10], d: 6, banner: [$t('CHAMPIONS LEAGUE - MATCH 2'), $t('KBK - MANCHESTER UNITED')],
     goal: SHOT('opp', LAG.united.p[0], LAG.united.p[1], 'skott'),
   }) },
   // … men KBK vänder: Alice G nickar in 4-1
-  { d: 7, light: 0xd0202a, cues: [[3.5, 'heja']], subs: [[0.3, 2.3, 'MEN KBK VÄNDER MATCHEN...'], [4.0, 6.9, 'ALICE G NICKAR IN 4-1! INLÄGG: MÄRTA.']], draw: matchShot({
+  { d: 7, light: 0xd0202a, cues: [[3.5, 'heja']], subs: [[0.3, 2.3, $n('MEN KBK VÄNDER MATCHEN...')], [4.0, 6.9, $n('ALICE G NICKAR IN 4-1! INLÄGG: MÄRTA.')]], draw: matchShot({
     opp: LAG.united, bg: 'varld', crowd: ['varld', 6, 28, 220, 0.4], night: true, ha: 3, hb: 1, mins: [70, 72], d: 7,
     goal: SHOT('kbk', KBK.aliceG, KBK.marta, 'nick'),
   }) },
   // JUVENTUS: Barbara Bonansea har gjort 1-1, Ellen avgör med uddamålet
-  { d: 7, light: 0xe8e8ec, cues: [[3.7, 'heja']], subs: [[0.3, 2.5, 'BONANSEA HAR KVITTERAT. 1-1...'], [4.2, 6.9, 'ELLEN! PASSNING: JULIA. UDDAMÅLET - 2-1!']], draw: matchShot({
-    opp: LAG.juventus, bg: 'varld', crowd: ['varld', 6, 28, 220, 0.35], night: true, ha: 1, hb: 1, mins: [88, 89], late: 88, d: 7, banner: ['CHAMPIONS LEAGUE - MATCH 3', 'KBK - JUVENTUS'],
+  { d: 7, light: 0xe8e8ec, cues: [[3.7, 'heja']], subs: [[0.3, 2.5, $n('BONANSEA HAR KVITTERAT. 1-1...')], [4.2, 6.9, $n('ELLEN! PASSNING: JULIA. UDDAMÅLET - 2-1!')]], draw: matchShot({
+    opp: LAG.juventus, bg: 'varld', crowd: ['varld', 6, 28, 220, 0.35], night: true, ha: 1, hb: 1, mins: [88, 89], late: 88, d: 7, banner: [$t('CHAMPIONS LEAGUE - MATCH 3'), $t('KBK - JUVENTUS')],
     goal: SHOT('kbk', KBK.ellen, KBK.julia, 'skott', { tPass: 2.6, tShot: 3.3, tGoal: 3.65 }),
   }) },
   // FINALEN mot Barcelona (1/4): Ewa Pajor gör 0-1
-  { d: 6, light: 0xa50044, cues: [[3.5, 'oj']], subs: [[4.0, 5.9, 'PAJOR! BARCELONA LEDER 0-1.']], draw: matchShot({
-    opp: LAG.barca, bg: 'varld', crowd: ['varld', 6, 28, 220, 0.4], night: true, ha: 0, hb: 0, mins: [14, 16], d: 6, banner: ['CHAMPIONS LEAGUE - FINAL', 'KBK - BARCELONA'],
+  { d: 6, light: 0xa50044, cues: [[3.5, 'oj']], subs: [[4.0, 5.9, $n('PAJOR! BARCELONA LEDER 0-1.')]], draw: matchShot({
+    opp: LAG.barca, bg: 'varld', crowd: ['varld', 6, 28, 220, 0.4], night: true, ha: 0, hb: 0, mins: [14, 16], d: 6, banner: [$t('CHAMPIONS LEAGUE - FINAL'), $t('KBK - BARCELONA')],
     goal: SHOT('opp', LAG.barca.p[0], LAG.barca.p[1], 'skott'),
   }) },
   // (2/4): Alexia Putellas har gjort 1-2, Nina kvitterar 2-2 på passning från Ellen
-  { d: 6, light: 0xa50044, cues: [[3.5, 'heja']], subs: [[0.3, 2.4, 'MÄRTA 1-1, PUTELLAS 1-2...'], [4.0, 5.9, 'NINA KVITTERAR! PASSNING: ELLEN. 2-2!']], draw: matchShot({
+  { d: 6, light: 0xa50044, cues: [[3.5, 'heja']], subs: [[0.3, 2.4, $n('MÄRTA 1-1, PUTELLAS 1-2...')], [4.0, 5.9, $n('NINA KVITTERAR! PASSNING: ELLEN. 2-2!')]], draw: matchShot({
     opp: LAG.barca, bg: 'varld', crowd: ['varld', 6, 28, 220, 0.45], night: true, ha: 1, hb: 2, mins: [74, 76], d: 6,
     goal: SHOT('kbk', KBK.nina, KBK.ellen, 'skott'),
   }) },
   // (3/4): STRAFF till Barcelona – Aitana Bonmatí skjuter, Lily räddar
   { d: 9.6, light: 0x2aa35a, amb: 'publik', cues: [[0.6, 'oj'], [ST.hit + 0.1, 'heja'], [ST.hit + 1.8, 'heja']],
     sfx: [[2.3, 'vissla'], [ST.cutA, 'cutin'], [ST.cutB, 'cutin'], [ST.fly + 0.05, 'spark'], [ST.fly + 0.08, 'swoosh'], [ST.hit, 'boom'], [ST.hit + 0.03, 'mal']],
-    subs: [[0.3, 2.3, 'STRAFF TILL BARCELONA! BONMATI SKA SLÅ...'], [6.0, 9.4, 'LILY RÄDDAR STRAFFEN! FORTFARANDE 2-2!']], draw: straffShot({
+    subs: [[0.3, 2.3, $n('STRAFF TILL BARCELONA! BONMATI SKA SLÅ...')], [6.0, 9.4, $n('LILY RÄDDAR STRAFFEN! FORTFARANDE 2-2!')]], draw: straffShot({
       opp: LAG.barca, taker: LAG.barca.p[4], bg: 'varld', crowd: ['varld', 6, 28, 220, 0.45], night: true, ha: 2, hb: 2, mins: [84, 85], d: 9.6,
     }) },
   // (4/4): 90:e minuten – Julia gör 3-2 på passning från Alice G
-  { d: 7, light: 0xa50044, cues: [[3.6, 'heja'], [5.6, 'heja']], subs: [[0.3, 2.4, '90 MINUTER SPELADE...'], [4.0, 6.9, 'JULIA! PASSNING: ALICE G. 3-2 - SLUTSIGNAL!']], draw: matchShot({
+  { d: 7, light: 0xa50044, cues: [[3.6, 'heja'], [5.6, 'heja']], subs: [[0.3, 2.4, $n('90 MINUTER SPELADE...')], [4.0, 6.9, $n('JULIA! PASSNING: ALICE G. 3-2 - SLUTSIGNAL!')]], draw: matchShot({
     opp: LAG.barca, bg: 'varld', crowd: ['varld', 6, 28, 220, 0.5], night: true, ha: 2, hb: 2, mins: [89, 90], late: 89, d: 7,
     goal: SHOT('kbk', KBK.julia, KBK.aliceG, 'skott', { tPass: 2.5, tShot: 3.2, tGoal: 3.55 }),
   }) },
   // Champions League-pokalen (den med de stora öronen) och fyrverkerierna
-  { d: 7, light: 0xe8b230, amb: 'publik', sfx: [[0.7, 'pokal'], [1.0, 'mal'], [3.8, 'mal']], cues: [[1.2, 'heja'], [4.0, 'grat']], subs: [[1.0, 3.6, 'KBK VINNER CHAMPIONS LEAGUE!'], [3.8, 6.9, 'KUNGSLADUGÅRD - BÄST I VÄRLDEN!']], draw: (c, u) => {
+  { d: 7, light: 0xe8b230, amb: 'publik', sfx: [[0.7, 'pokal'], [1.0, 'mal'], [3.8, 'mal']], cues: [[1.2, 'heja'], [4.0, 'grat']], subs: [[1.0, 3.6, $n('KBK VINNER CHAMPIONS LEAGUE!')], [3.8, 6.9, $n('KUNGSLADUGÅRD - BÄST I VÄRLDEN!')]], draw: (c, u) => {
     c.drawImage(BGS.varld(), 0, 0);
     fyrverkeri(c, u);
     crowd(c, 'varld', 6, 28, 220, u, 1, 0.7);
@@ -1226,5 +1227,5 @@ export const FILM_KBK2 = ljudsatt([
     konfetti(c, u, 90, 96);
     blixtar(c, u);
   } },
-  { d: 6, light: 0x1e2a5a, music: 'intro', draw: (c, u) => slut(c, u, [HUVUDROLLER, 'OCH HELA KUNGSLADUGÅRD:', ...LAGET_LISTA(RESTEN)], 'KBK - BÄST I VÄRLDEN') },
+  { d: 6, light: 0x1e2a5a, music: 'intro', draw: (c, u) => slut(c, u, [HUVUDROLLER, $t('OCH HELA KUNGSLADUGÅRD:'), ...LAGET_LISTA(RESTEN)], $t('KBK - BÄST I VÄRLDEN')) },
 ]);

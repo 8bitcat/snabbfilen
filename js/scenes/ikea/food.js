@@ -1,13 +1,15 @@
 // MÖBELJÄTTEN – restaurangen: menyn, handritade rätter i skala 1 (på tallrik),
 // brickan, serveringslinjen, bord och stolar.
 import { Pix, SMALL, BIG, text, textW, mix, mul, hash, bayer } from '../../core/floor-pix.js';
+import { $t } from '../../core/i18n.js';
 
 export const MENU = [
-  { id: 'kottbullar', name: 'Köttbullar med mos och lingonsylt', short: 'KÖTTBULLAR', sub: 'MED MOS OCH LINGON', price: 59, fill: 45, icon: '🍝' },
-  { id: 'korv', name: 'Korv med bröd', short: 'KORV MED BRÖD', price: 15, fill: 15, icon: '🌭' },
-  { id: 'bulle', name: 'Kanelbulle', short: 'KANELBULLE', price: 12, fill: 10, icon: '🥐' },
-  { id: 'kaffe', name: 'Kaffe (påtår ingår)', short: 'KAFFE', price: 10, fill: 3, energy: 6, icon: '☕' },
-  { id: 'saft', name: 'Lingonsaft', short: 'SAFT', price: 5, fill: 4, icon: '🧃' },
+  { id: 'kottbullar', name: $t('Köttbullar med mos och lingonsylt'), short: $t('KÖTTBULLAR'), sub: $t('MED MOS OCH LINGON'), price: 59, fill: 45, icon: '🍝' },
+  { id: 'korv', name: $t('Korv med bröd'), short: $t('KORV MED BRÖD'), price: 15, fill: 15, icon: '🌭' },
+  { id: 'bulle', name: $t('Kanelbulle'), short: $t('KANELBULLE'), price: 12, fill: 10, icon: '🥐' },
+  { id: 'kaffe', name: $t('Kaffe (påtår ingår)'), short: $t('KAFFE'), price: 10, fill: 3, energy: 6, icon: '☕' },
+  { id: 'saft', name: $t('Lingonsaft'), short: $t('SAFT'), price: 5,
+ fill: 4, icon: '🧃' },
 ];
 export const menuOf = (id) => MENU.find((m) => m.id === id);
 
@@ -195,7 +197,7 @@ export const trayStackImg = () => once('tstack', () => {
   P.hl(3, 3, 18, 0xa87048);
   // bestickkoppar
   for (const [x, c] of [[4, 0xc8ccd2], [10, 0xe8ecf0], [16, 0xc8ccd2]]) { P.rect(x, 18, 5, 6, 0x3a3e46); P.vl(x + 1, 15, 3, c); P.vl(x + 3, 14, 4, c); }
-  text(P, SMALL, 'BRICKA', 1, 26, 0xffffff);
+  text(P, SMALL, $t('BRICKA'), 1, 26, 0xffffff);
   return P.flush();
 });
 // varma disken med matbrickor bakom glas (w bred)
@@ -245,7 +247,7 @@ export const drinksImg = () => once('drinks', () => {
   const P = new Pix(32, 36);
   P.rect(0, 20, 32, 16, 0x9aa0a8); P.box(0, 20, 32, 16, 0x5a6068); P.hl(1, 21, 30, 0xd8dce2);
   // kaffemaskin
-  P.rect(2, 2, 13, 18, 0x2a2a32); P.rect(3, 3, 11, 5, 0x3a3e46); text(P, SMALL, 'KAFFE', 3, 4, 0xf6d02f);
+  P.rect(2, 2, 13, 18, 0x2a2a32); P.rect(3, 3, 11, 5, 0x3a3e46); text(P, SMALL, $t('KAFFE'), 3, 4, 0xf6d02f);
   P.rect(5, 10, 7, 5, 0x16161a); P.rect(7, 15, 3, 4, 0xfaf8f2); P.px(8, 15, 0x4a2a14);
   // saftmaskin: två behållare
   P.rect(17, 2, 13, 18, 0xc8ccd2); P.box(17, 2, 13, 18, 0x6a7078);
@@ -264,7 +266,7 @@ export const registerImg = () => once('reg', () => {
   P.rect(18, 3, 12, 9, 0x2a2a32); P.rect(19, 4, 10, 5, 0x5fd08a); P.hl(19, 4, 10, 0x9ff0b8);
   P.rect(4, 7, 6, 5, 0x3a3a44); P.rect(5, 8, 4, 2, 0x7fd0ff);
   // skylt
-  P.rect(2, 0, 14, 6, 0xf6cf2a); P.box(2, 0, 14, 6, 0x9a7a10); text(P, SMALL, 'KASSA', 2, 22, 0x1d51a0);
+  P.rect(2, 0, 14, 6, 0xf6cf2a); P.box(2, 0, 14, 6, 0x9a7a10); text(P, SMALL, $t('KASSA'), 2, 22, 0x1d51a0);
   P.px(5, 2, 0x1d51a0); P.hl(7, 2, 6, 0x1d51a0); P.hl(7, 4, 4, 0x1d51a0);
   return P.flush();
 });
@@ -275,7 +277,7 @@ export const trayCartImg = () => once('tcart', () => {
   for (let i = 0; i < 6; i++) { const y = 6 + i * 4; P.hl(2, y, 20, 0x9aa0a8); if (i % 2 === 0 || i === 3) { P.hl(3, y - 1, 18, 0x8a5a34); P.px(6, y - 2, 0xfaf8f2); P.px(12, y - 2, 0xc4142c); } }
   P.rect(2, 30, 20, 2, 0x5a6068);
   for (const x of [1, 19]) { P.rect(x, 32, 3, 3, 0x1c1c22); }
-  P.rect(4, 0, 16, 5, 0x1d51a0); text(P, SMALL, 'RETUR', 3, 0, 0xf6d02f);
+  P.rect(4, 0, 16, 5, 0x1d51a0); text(P, SMALL, $t('RETUR'), 3, 0, 0xf6d02f);
   return P.flush();
 });
 // bordet (björk, 42×17) – fotlinjen längst ner
@@ -308,19 +310,19 @@ export const chairImg = () => once('chair', () => {
 export function paintMenuBoard(P, x, y, w, h) {
   P.rect(x - 2, y - 2, w + 4, h + 4, 0x5a3a20); P.box(x - 2, y - 2, w + 4, h + 4, 0x3a2414); P.hl(x - 1, y - 1, w + 2, 0x8a5a30);
   for (let yy = y; yy < y + h; yy++) for (let xx = x; xx < x + w; xx++) P.px(xx, yy, mix(0x1e2a24, 0x26342c, hash(xx, yy, 5) * 0.8));
-  const t = 'MENY';
+  const t = $t('MENY');
   text(P, BIG, t, x + Math.round((w - textW(BIG, t)) / 2), y + 3, 0xf6cf2a);
   for (let xx = x + 6; xx < x + w - 6; xx += 2) P.px(xx, y + 12, 0x5a6a60);
 }
 // menyraderna på tavlan (efter att bakgrunden är klar – rätterna är canvasar)
 // menyn som en rad: rätt, namn och pris i varsin kolumn (tavlan är w bred)
-const LABEL = { kottbullar: 'KÖTTBULLAR', korv: 'KORV', bulle: 'BULLE', kaffe: 'KAFFE', saft: 'SAFT' };
+const LABEL = { kottbullar: $t('KÖTTBULLAR'), korv: $t('KORV'), bulle: $t('BULLE'), kaffe: $t('KAFFE'), saft: $t('SAFT') };
 export function drawMenuStrip(ctx, x, y, w, ctxText) {
   const ws = MENU.map((m) => Math.max(24, textW(SMALL, LABEL[m.id] || m.short)) + 6);
   const gap = (w - 4 - ws.reduce((a, b) => a + b, 0)) / Math.max(1, MENU.length - 1);
   let cx = x + 2;
   MENU.forEach((m, i) => {
-    const mid = Math.round(cx + ws[i] / 2), lbl = LABEL[m.id] || m.short, p = `${m.price}:-`;
+    const mid = Math.round(cx + ws[i] / 2), lbl = LABEL[m.id] || m.short, p = $t`${m.price}:-`;
     ctx.drawImage(dishImg(m.id, 2), mid - 11, y + 12);
     ctxText(ctx, SMALL, lbl, mid - (textW(SMALL, lbl) >> 1), y + 29, '#f4f1ea');
     ctxText(ctx, SMALL, p, mid - (textW(SMALL, p) >> 1), y + 35, '#f6cf2a');
@@ -333,6 +335,7 @@ export function drawMenuRows(ctx, x, y, w, ctxText, idx = MENU.map((_, i) => i))
     const m = MENU[mi], ry = y + 14 + i * 12;
     ctx.drawImage(dishImg(m.id, 2), x + 1, ry - 2);
     ctxText(ctx, SMALL, m.short, x + 24, ry + 1, '#f4f1ea');
-    ctxText(ctx, SMALL, `${m.price}:-`, x + 24, ry + 7, '#f6cf2a');
+    ctxText(ctx, SMALL, $t`${m.price}:-`, x + 24, ry + 7, '#f6cf2a');
+
   });
 }

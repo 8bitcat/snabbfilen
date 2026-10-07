@@ -16,6 +16,7 @@ import { EYE_REG, BROW_REG, NOSE_REG, MOUTH_REG, EAR_REG, CHEEK_REG, MAKEUP_REG,
 import { TOP_REG, TOP_PRINT_REG } from './people/tops.js';
 import { BOTTOM_REG, BOTTOM_PRINT_REG, SHOE_REG } from './people/bottoms.js';
 import { HAT_REG, GLASSES_REG, BAG_REG, NECK_REG, JEWEL_REG, HAIR_ACC_REG, PHONES_REG } from './people/acc.js';
+import { $n, LANG, list } from './i18n.js';
 
 export { shadeHex, TAG } from './people/util.js';
 
@@ -125,9 +126,15 @@ export const NECK_TYPES = listOf('neck');
 export const JEWEL_TYPES = listOf('jewel');
 export const PHONE_TYPES = listOf('phones');
 
-export const FIRST_NAMES = ['Alva', 'Elsa', 'Maja', 'Ella', 'Wilma', 'Saga', 'Nora', 'Vera', 'Liv', 'Stina', 'Ines', 'Greta',
-  'Oscar', 'Liam', 'Noah', 'Hugo', 'William', 'Elias', 'Ludvig', 'Sixten', 'Vincent', 'Frans', 'Kalle', 'Bosse',
-  'Ahmed', 'Leila', 'Yusuf', 'Mira', 'Kenji', 'Aiko', 'Mateo', 'Sofia', 'Ivan', 'Olga', 'Birgitta', 'Gunnar', 'Sven', 'Agneta'];
+const FIRST_NAMES_SV = [$n('Alva'), $n('Elsa'), $n('Maja'), $n('Ella'), $n('Wilma'), $n('Saga'), $n('Nora'), $n('Vera'), $n('Liv'), $n('Stina'), $n('Ines'), $n('Greta'),
+  $n('Oscar'), $n('Liam'), $n('Noah'), $n('Hugo'), $n('William'), $n('Elias'), $n('Ludvig'), $n('Sixten'), $n('Vincent'), $n('Frans'), $n('Kalle'), $n('Bosse'),
+  $n('Ahmed'), $n('Leila'), $n('Yusuf'), $n('Mira'), $n('Kenji'), $n('Aiko'), $n('Mateo'), $n('Sofia'), $n('Ivan'), $n('Olga'), $n('Birgitta'), $n('Gunnar'), $n('Sven'), $n('Agneta')];
+// på andra språk: landets egna vanliga förnamn (flickor och pojkar varannan), från språkets ordlista
+const zip = (a, b) => { const o = []; for (let k = 0; k < Math.max(a.length, b.length); k++) { if (a[k]) o.push(a[k]); if (b[k]) o.push(b[k]); } return o; };
+const FIRST_LOC = zip(list('girls', []), list('boys', [])).slice(0, 48);
+export const FIRST_NAMES = LANG === 'sv' || !FIRST_LOC.length ? FIRST_NAMES_SV : FIRST_LOC;
+export const GIRL_FIRST_NAMES = LANG === 'sv' ? null : new Set(list('girls', []));   // (incheckningen: inga flicknamn till skäggiga ansikten)
+
 
 const pick = (rng, a) => a[Math.floor(rng() * a.length)];
 

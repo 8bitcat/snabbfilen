@@ -3,18 +3,19 @@
 // sekunder och skickas till alla andra i världen (de ser den om de är på samma plats).
 import { modalOpen } from './ui.js';
 import { isMenuOpen } from './menu.js';
+import { $t } from './i18n.js';
 
 const MAX = 80;
 let A = null, bar = null, input = null;
 // Emojiväljaren (alla emoji går också att skriva in direkt, t.ex. Win + . eller mobilens tangentbord)
 const EMOJIS = [
-  ['Glad', '😀 😃 😄 😁 😆 😅 😂 🤣 😊 😇 🙂 😉 😍 🥰 😘 😋 😛 😜 🤪 😎 🤩 🥳 😏 🤗 🤭 🫡 🤔 🤫'],
-  ['Känslor', '😐 😑 😶 🙄 😬 😴 🤤 😪 😮 😲 😳 🥺 😢 😭 😤 😠 😡 🤯 😱 😨 😰 🤢 🤮 🤧 🥶 🥵 😵 💀 👻 🤖 👽 💩'],
-  ['Hjärtan', '❤️ 🧡 💛 💚 💙 💜 🖤 🤍 🤎 💖 💗 💓 💞 💕 💘 💝 💔 ❣️ 💯 ✨ ⭐ 🌟 💫 🔥 💥 🎉 🎊'],
-  ['Händer', '👋 🤚 ✋ 👌 🤌 ✌️ 🤞 🤟 🤘 🤙 👈 👉 👆 👇 👍 👎 ✊ 👊 👏 🙌 🫶 👐 🤝 🙏 💪'],
-  ['Djur', '🐶 🐱 🐭 🐹 🐰 🦊 🐻 🐼 🐨 🐯 🦁 🐮 🐷 🐸 🐵 🐔 🐧 🐦 🦆 🦉 🐴 🦄 🐝 🦋 🐢 🐍 🐙 🐬 🐳 🐟'],
-  ['Mat', '🍎 🍊 🍋 🍌 🍉 🍇 🍓 🍒 🥝 🍍 🥕 🌽 🍞 🧀 🍔 🍟 🍕 🌭 🥪 🌮 🍝 🍣 🍩 🍪 🎂 🍰 🧁 🍫 🍭 🍦 ☕ 🧃 🥤'],
-  ['Saker', '⚽ 🏀 🏈 🎾 🏐 🎮 🕹️ 🎲 🎨 🎵 🎶 🎸 🎤 🎧 📱 💻 🖥️ 💡 🎁 🎈 🏆 🥇 👑 💎 💰 🔑 🏠 🚗 🚌 ✈️ 🚀 🌈 ☀️ 🌙 ⛄ 🌧️'],
+  [$t('Glad'), '😀 😃 😄 😁 😆 😅 😂 🤣 😊 😇 🙂 😉 😍 🥰 😘 😋 😛 😜 🤪 😎 🤩 🥳 😏 🤗 🤭 🫡 🤔 🤫'],
+  [$t('Känslor'), '😐 😑 😶 🙄 😬 😴 🤤 😪 😮 😲 😳 🥺 😢 😭 😤 😠 😡 🤯 😱 😨 😰 🤢 🤮 🤧 🥶 🥵 😵 💀 👻 🤖 👽 💩'],
+  [$t('Hjärtan'), '❤️ 🧡 💛 💚 💙 💜 🖤 🤍 🤎 💖 💗 💓 💞 💕 💘 💝 💔 ❣️ 💯 ✨ ⭐ 🌟 💫 🔥 💥 🎉 🎊'],
+  [$t('Händer'), '👋 🤚 ✋ 👌 🤌 ✌️ 🤞 🤟 🤘 🤙 👈 👉 👆 👇 👍 👎 ✊ 👊 👏 🙌 🫶 👐 🤝 🙏 💪'],
+  [$t('Djur'), '🐶 🐱 🐭 🐹 🐰 🦊 🐻 🐼 🐨 🐯 🦁 🐮 🐷 🐸 🐵 🐔 🐧 🐦 🦆 🦉 🐴 🦄 🐝 🦋 🐢 🐍 🐙 🐬 🐳 🐟'],
+  [$t('Mat'), '🍎 🍊 🍋 🍌 🍉 🍇 🍓 🍒 🥝 🍍 🥕 🌽 🍞 🧀 🍔 🍟 🍕 🌭 🥪 🌮 🍝 🍣 🍩 🍪 🎂 🍰 🧁 🍫 🍭 🍦 ☕ 🧃 🥤'],
+  [$t('Saker'), '⚽ 🏀 🏈 🎾 🏐 🎮 🕹️ 🎲 🎨 🎵 🎶 🎸 🎤 🎧 📱 💻 🖥️ 💡 🎁 🎈 🏆 🥇 👑 💎 💰 🔑 🏠 🚗 🚌 ✈️ 🚀 🌈 ☀️ 🌙 ⛄ 🌧️'],
 ];
 
 function mount() {
@@ -23,7 +24,7 @@ function mount() {
   bar.id = 'chat';
   bar.className = 'hidden';
   bar.innerHTML = `<div class="chat-emojis hidden">${EMOJIS.map(([cat, list]) => `<div class="chat-cat"><b>${cat}</b><div>${[...list].filter((c) => c.trim()).map((e) => `<button type="button" data-emo="${e}">${e}</button>`).join('')}</div></div>`).join('')}</div>
-    <button class="btn btn-small" data-emopick title="Emoji">😀</button><input type="text" maxlength="${MAX}" placeholder="Skriv något till de andra …" autocomplete="off" spellcheck="false"><button class="btn btn-small btn-go" data-send>Skicka</button><button class="btn btn-small" data-close title="Stäng (Esc)">✕</button>`;
+    <button class="btn btn-small" data-emopick title="${$t('Emoji')}">😀</button><input type="text" maxlength="${MAX}" placeholder="${$t('Skriv något till de andra …')}" autocomplete="off" spellcheck="false"><button class="btn btn-small btn-go" data-send>${$t('Skicka')}</button><button class="btn btn-small" data-close title="${$t('Stäng (Esc)')}">✕</button>`;
   document.body.append(bar);
   input = bar.querySelector('input');
   const pick = bar.querySelector('.chat-emojis');
@@ -63,7 +64,7 @@ export function mountChat(app) {
   const host = document.querySelector('#hud .hud-btns');
   if (host && !document.getElementById('hud-chat')) {
     const b = document.createElement('button');
-    b.id = 'hud-chat'; b.className = 'btn btn-small'; b.title = 'Chatta (Enter)';
+    b.id = 'hud-chat'; b.className = 'btn btn-small'; b.title = $t('Chatta (Enter)');
     b.textContent = '💬';
     b.onclick = () => (isChatOpen() ? close() : openChat());
     host.insertBefore(b, host.querySelector('#hud-friends') || null);

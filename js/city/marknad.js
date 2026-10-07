@@ -13,9 +13,10 @@
 import { Pix, SMALL, text, textW, ctxText, mix, mul, hash } from '../core/floor-pix.js';
 import { drawPerson, makeLook } from '../core/people.js';
 import { LINNE_LAYOUT } from './map.js';
-import { ravaraOf, MAX_RAVA } from '../game.js';
+import { ravaraOf, MAX_RAVA, fmt } from '../game.js';
 import { openModal, closeModal, toast, esc } from '../core/ui.js';
 import { play } from '../core/sound.js';
+import { $t } from '../core/i18n.js';
 
 const WHITE = 0xffffff, OUT = 0x221a26;
 const rgba = (c, a) => `rgba(${(c >> 16) & 255},${(c >> 8) & 255},${c & 255},${Math.max(0, Math.min(1, a)).toFixed(3)})`;
@@ -30,33 +31,33 @@ const isOpen = (h, span = OPEN) => h >= span[0] && h < span[1];
 const YN = 352, YS = 440;
 const look = (o) => ({ build: 5, shoes: '#2a2a30', ...o });
 export const STALLS = [
-  { id: 'gront', name: 'GRÖNSAKER', icon: '🥕', x: -996, y: YN, canopy: [0x3a8a4a, 0xf4f0e6], cloth: 0x6aa848, goods: 'gront', vara: ['morot', 'potatis', 'lok', 'rodlok', 'tomat', 'paprika', 'champ'], rop: 'FÄRSKA MORÖTTER!',
+  { id: 'gront', name: $t('GRÖNSAKER'), icon: '🥕', x: -996, y: YN, canopy: [0x3a8a4a, 0xf4f0e6], cloth: 0x6aa848, goods: 'gront', vara: ['morot', 'potatis', 'lok', 'rodlok', 'tomat', 'paprika', 'champ'], rop: $t('FÄRSKA MORÖTTER!'),
     look: look({ skin: '#e0a97f', hair: '#6a4a2a', style: 'short', hat: 'straw', shirt: '#4a7aa8', pants: '#3a4a2a', apron: true }) },
-  { id: 'frukt', name: 'FRUKT', icon: '🍎', x: -948, y: YN, canopy: [0xd8443a, 0xf4f0e6], cloth: 0xf0c8c0, goods: 'frukt', vara: ['applR', 'applG', 'paron', 'plommon', 'druva', 'bar'], rop: 'SÖTA PLOMMON!',
+  { id: 'frukt', name: $t('FRUKT'), icon: '🍎', x: -948, y: YN, canopy: [0xd8443a, 0xf4f0e6], cloth: 0xf0c8c0, goods: 'frukt', vara: ['applR', 'applG', 'paron', 'plommon', 'druva', 'bar'], rop: $t('SÖTA PLOMMON!'),
     look: look({ skin: '#c68a5c', hair: '#1a1a1a', style: 'ponytail', shirt: '#e86a5a', pants: '#2d3a5c', apron: true }) },
-  { id: 'ost', name: 'OST', icon: '🧀', x: -900, y: YN, canopy: [0xe0b030, 0xf4f0e6], cloth: 0xf4e8b0, goods: 'ost', vara: ['ost', 'smor', 'agg', 'mjolk', 'yoghurt'], rop: 'SMAKA PÅ OSTEN!',
+  { id: 'ost', name: $t('OST'), icon: '🧀', x: -900, y: YN, canopy: [0xe0b030, 0xf4f0e6], cloth: 0xf4e8b0, goods: 'ost', vara: ['ost', 'smor', 'agg', 'mjolk', 'yoghurt'], rop: $t('SMAKA PÅ OSTEN!'),
     look: look({ skin: '#f6d7bf', hair: '#d8c8a0', style: 'bun', shirt: '#f4f1ea', pants: '#5a4a3a', apron: true }) },
-  { id: 'brod', name: 'BRÖD', icon: '🥖', x: -852, y: YN, canopy: [0x9a5a2a, 0xf4f0e6], cloth: 0xe8d0a0, goods: 'brod', vara: ['brod', 'mjol', 'havre'],
-    treat: [{ id: 'bulle', icon: '🥐', namn: 'Kanelbulle', pris: 15, matt: 8, glad: 2 }], rop: 'NYGRÄDDAT!',
+  { id: 'brod', name: $t('BRÖD'), icon: '🥖', x: -852, y: YN, canopy: [0x9a5a2a, 0xf4f0e6], cloth: 0xe8d0a0, goods: 'brod', vara: ['brod', 'mjol', 'havre'],
+    treat: [{ id: 'bulle', icon: '🥐', namn: $t('Kanelbulle'), pris: 15, matt: 8, glad: 2 }], rop: $t('NYGRÄDDAT!'),
     look: look({ skin: '#eec3a0', hair: '#8a5a2a', style: 'curly', shirt: '#f4f1ea', pants: '#f4f1ea', apron: true }) },
-  { id: 'fisk', name: 'FISK', icon: '🐟', x: -636, y: YN, canopy: [0x2a5a9a, 0xf4f0e6], cloth: 0xb8d4e8, goods: 'fisk', vara: ['fisk'], rop: 'FÅNGAD I MORSE!',
+  { id: 'fisk', name: $t('FISK'), icon: '🐟', x: -636, y: YN, canopy: [0x2a5a9a, 0xf4f0e6], cloth: 0xb8d4e8, goods: 'fisk', vara: ['fisk'], rop: $t('FÅNGAD I MORSE!'),
     look: look({ skin: '#e0a97f', hair: '#d8d8d8', style: 'short', hat: 'cap', cap: '#2a3a5a', shirt: '#2a3a5a', pants: '#3a3a44', beard: true, apron: true }) },
-  { id: 'blommor', name: 'BLOMMOR', icon: '💐', x: -588, y: YN, canopy: [0xe070a8, 0xf4f0e6], cloth: 0xf8d8e8, goods: 'blommor',
-    treat: [{ id: 'bukett', icon: '💐', namn: 'En bukett tulpaner', pris: 35, glad: 4, text: 'Du köper en bukett tulpaner – de luktar vår.' }], rop: 'TULPANER!',
+  { id: 'blommor', name: $t('BLOMMOR'), icon: '💐', x: -588, y: YN, canopy: [0xe070a8, 0xf4f0e6], cloth: 0xf8d8e8, goods: 'blommor',
+    treat: [{ id: 'bukett', icon: '💐', namn: $t('En bukett tulpaner'), pris: 35, glad: 4, text: $t('Du köper en bukett tulpaner – de luktar vår.') }], rop: $t('TULPANER!'),
     look: look({ skin: '#eabf98', hair: '#c8642a', style: 'long', shirt: '#5aa060', pants: '#2d3a5c', apron: true }) },
-  { id: 'vafflor', name: 'VÅFFLOR', icon: '🧇', x: -540, y: YN, canopy: [0xe8902a, 0xf4f0e6], cloth: 0xf8e0b0, goods: 'vafflor',
-    treat: [{ id: 'vaffla', icon: '🧇', namn: 'Våffla med sylt och grädde', pris: 25, matt: 12, glad: 3 }, { id: 'saft', icon: '🧃', namn: 'Hallonsaft', pris: 10, matt: 2, glad: 1 }], rop: 'VARMA VÅFFLOR!',
+  { id: 'vafflor', name: $t('VÅFFLOR'), icon: '🧇', x: -540, y: YN, canopy: [0xe8902a, 0xf4f0e6], cloth: 0xf8e0b0, goods: 'vafflor',
+    treat: [{ id: 'vaffla', icon: '🧇', namn: $t('Våffla med sylt och grädde'), pris: 25, matt: 12, glad: 3 }, { id: 'saft', icon: '🧃', namn: $t('Hallonsaft'), pris: 10, matt: 2, glad: 1 }], rop: $t('VARMA VÅFFLOR!'),
     look: look({ skin: '#a06a43', hair: '#2a1a12', style: 'afro', shirt: '#f0c040', pants: '#3a6ab0', apron: true }) },
-  { id: 'godis', name: 'GODIS', icon: '🍭', x: -492, y: YN, canopy: [0xe84a8a, 0xf8f0f4], cloth: 0xf8c8e0, goods: 'godis',
-    treat: [{ id: 'sockervadd', icon: '🍭', namn: 'Rosa sockervadd', pris: 20, matt: 3, glad: 4 }, { id: 'popcorn', icon: '🍿', namn: 'En strut popcorn', pris: 15, matt: 5, glad: 2 }], rop: 'SOCKERVADD!',
+  { id: 'godis', name: $t('GODIS'), icon: '🍭', x: -492, y: YN, canopy: [0xe84a8a, 0xf8f0f4], cloth: 0xf8c8e0, goods: 'godis',
+    treat: [{ id: 'sockervadd', icon: '🍭', namn: $t('Rosa sockervadd'), pris: 20, matt: 3, glad: 4 }, { id: 'popcorn', icon: '🍿', namn: $t('En strut popcorn'), pris: 15, matt: 5, glad: 2 }], rop: $t('SOCKERVADD!'),
     look: look({ skin: '#eec3a0', hair: '#e8a0c8', style: 'bob', shirt: '#9a6ab0', pants: '#2a2a34' }) },
   // söder om brunnen: karnevalen
-  { id: 'karusell', name: 'KARUSELLEN', icon: '🎠', x: -912, y: YS + 2, kind: 'karusell', pris: 20, rop: 'ETT VARV TILL!' },
-  { id: 'ballonger', name: 'BALLONGER', icon: '🎈', x: -826, y: YS, kind: 'ballong', pris: 15, rop: 'BALLONGER!',
+  { id: 'karusell', name: $t('KARUSELLEN'), icon: '🎠', x: -912, y: YS + 2, kind: 'karusell', pris: 20, rop: $t('ETT VARV TILL!') },
+  { id: 'ballonger', name: $t('BALLONGER'), icon: '🎈', x: -826, y: YS, kind: 'ballong', pris: 15, rop: $t('BALLONGER!'),
     look: look({ skin: '#e0a97f', hair: '#3b2619', style: 'short', hat: 'bucket', cap: '#e8443a', shirt: '#3a9bff', pants: '#2d3a5c' }) },
-  { id: 'dragspel', name: 'DRAGSPELAREN', icon: '🪗', x: -744, y: YS + 6, kind: 'musik',
+  { id: 'dragspel', name: $t('DRAGSPELAREN'), icon: '🪗', x: -744, y: YS + 6, kind: 'musik',
     look: look({ skin: '#eabf98', hair: '#a8a8a8', style: 'short', hat: 'cap', cap: '#3a3a44', shirt: '#8a2a24', pants: '#2a2a34', beard: true }) },
-  { id: 'lyckohjul', name: 'LYCKOHJULET', icon: '🎡', x: -640, y: YS, kind: 'hjul', pris: 10, rop: 'SNURRA OCH VINN!',
+  { id: 'lyckohjul', name: $t('LYCKOHJULET'), icon: '🎡', x: -640, y: YS, kind: 'hjul', pris: 10, rop: $t('SNURRA OCH VINN!'),
     look: look({ skin: '#c68a5c', hair: '#2a1a12', style: 'long', shirt: '#f4d23c', pants: '#2a2a34' }) },
 ];
 
@@ -172,7 +173,7 @@ function wheelSprites() {
     for (let y = -16; y <= 0; y++) for (let x = -18; x <= 17; x++) P.px(x, y, ((x + 40) >> 2) & 1 ? 0xf4d23c : 0xe8443a);
     P.hl(-19, -17, 38, 0xf8f4ec); P.hl(-19, -16, 38, 0xc8a050);
     for (const x of [-18, 17]) { P.vl(x, -44, 44, 0x6a4a2a); }
-    canopy(P, -19, 18, -46, 0x3a6ab0, 0xf4f0e6, 'LYCKOHJUL');
+    canopy(P, -19, 18, -46, 0x3a6ab0, 0xf4f0e6, $t('LYCKOHJUL'));
     P.rect(-1, -34, 3, 18, 0x6a4a2a);
     for (let k = 0; k < 3; k++) { P.rect(-14 + k * 4, -14, 3, 4, [0xb07a4a, 0xe070c0, 0x6ab0d0][k]); P.px(-13 + k * 4, -15, [0xb07a4a, 0xe070c0, 0x6ab0d0][k]); }   // priserna: nallar
     P.rect(7, -14, 8, 4, 0xfaf6ea); text(P, SMALL, '10', 8, -14, 0xd8303a, 0.9);
@@ -340,55 +341,55 @@ export function createMarket(env) {
 const marketPrice = (r) => Math.max(2, Math.round(r.price * 0.9));   // marknaden är lite billigare än affären
 export function openStall(A, s, M) {
   const g = A.game, h = (g.min ?? 720) / 60;
-  if (!isOpen(h)) { toast(`🌙 Marknaden har stängt – stånden öppnar ${OPEN[0]}.00.`, 'bad'); return; }
-  const money = () => `💰 <b>${g.money} kr</b>`;
+  if (!isOpen(h)) { toast($t`🌙 Marknaden har stängt – stånden öppnar ${OPEN[0]}.00.`, 'bad'); return; }
+  const money = () => $t`💰 <b>${g.money} kr</b>`;
   if (s.kind === 'karusell') {
-    if (!isOpen(h, KARUSELL)) { toast('🎠 Karusellen vilar – den går 10–20.'); return; }
-    openModal('🎠 Karusellen', `<p style="font-size:var(--f2);margin-top:0">Ett varv på karusellen kostar <b>${s.pris} kr</b>. Välj häst!<br>${money()}</p>`, [
-      { label: 'Inte nu', onClick: closeModal },
-      { label: `🎠 Åk (${s.pris} kr)`, cls: g.money >= s.pris ? 'btn-go' : '', onClick: () => {
+    if (!isOpen(h, KARUSELL)) { toast($t('🎠 Karusellen vilar – den går 10–20.')); return; }
+    openModal($t('🎠 Karusellen'), `<p style="font-size:var(--f2);margin-top:0">${$t`Ett varv på karusellen kostar <b>${s.pris} kr</b>. Välj häst!`}<br>${money()}</p>`, [
+      { label: $t('Inte nu'), onClick: closeModal },
+      { label: $t`🎠 Åk (${s.pris} kr)`, cls: g.money >= s.pris ? 'btn-go' : '', onClick: () => {
         closeModal();
-        if (g.money < s.pris) { play('fel'); toast('💸 Du har inte råd med ett varv.', 'bad'); return; }
-        g.money -= s.pris; g.passTime(10); g.glad?.(6, 'Karusellen', 'karusell', 12); g.save();
+        if (g.money < s.pris) { play('fel'); toast($t('💸 Du har inte råd med ett varv.'), 'bad'); return; }
+        g.money -= s.pris; g.passTime(10); g.glad?.(6, $t('Karusellen'), 'karusell', 12); g.save();
         M?.ride?.(A.scene?._debug?.env?.t || 0);
-        play('coin'); toast('🎠 Wiii! Du åker ett varv på den vita hästen – musiken spelar och allt snurrar. 😊', 'good');
+        play('coin'); toast($t('🎠 Wiii! Du åker ett varv på den vita hästen – musiken spelar och allt snurrar. 😊'), 'good');
       } },
     ]);
     return;
   }
   if (s.kind === 'ballong') {
-    openModal('🎈 Ballonger', `<p style="font-size:var(--f2);margin-top:0">En ballong kostar <b>${s.pris} kr</b>.<br>${money()}</p>`, [
-      { label: 'Inte nu', onClick: closeModal },
-      { label: `🎈 Köp en (${s.pris} kr)`, cls: g.money >= s.pris ? 'btn-go' : '', onClick: () => {
+    openModal($t('🎈 Ballonger'), `<p style="font-size:var(--f2);margin-top:0">${$t`En ballong kostar <b>${s.pris} kr</b>.`}<br>${money()}</p>`, [
+      { label: $t('Inte nu'), onClick: closeModal },
+      { label: $t`🎈 Köp en (${s.pris} kr)`, cls: g.money >= s.pris ? 'btn-go' : '', onClick: () => {
         closeModal();
-        if (g.money < s.pris) { play('fel'); toast('💸 Du har inte råd med en ballong.', 'bad'); return; }
-        g.money -= s.pris; g.glad?.(3, 'En ballong', 'ballong', 6); g.save();
-        const C = ['röd', 'gul', 'blå', 'grön', 'rosa', 'orange', 'lila'];
-        play('coin'); toast(`🎈 Du får en ${C[Math.floor(Math.random() * C.length)]} ballong! 😊`, 'good');
+        if (g.money < s.pris) { play('fel'); toast($t('💸 Du har inte råd med en ballong.'), 'bad'); return; }
+        g.money -= s.pris; g.glad?.(3, $t('En ballong'), 'ballong', 6); g.save();
+        const C = [$t('röd'), $t('gul'), $t('blå'), $t('grön'), $t('rosa'), $t('orange'), $t('lila')];
+        play('coin'); toast($t`🎈 Du får en ${C[Math.floor(Math.random() * C.length)]} ballong! 😊`, 'good');
       } },
     ]);
     return;
   }
   if (s.kind === 'musik') {
-    play('click'); g.glad?.(2, 'Dragspelaren', 'dragspel', 4); g.save();
-    toast('🪗 Dragspelaren nickar och spelar en vals bara för dig. 🎵', 'good');
+    play('click'); g.glad?.(2, $t('Dragspelaren'), 'dragspel', 4); g.save();
+    toast($t('🪗 Dragspelaren nickar och spelar en vals bara för dig. 🎵'), 'good');
     return;
   }
   if (s.kind === 'hjul') {
-    openModal('🎡 Lyckohjulet', `<p style="font-size:var(--f2);margin-top:0">Snurra hjulet för <b>${s.pris} kr</b> – vinn pengar eller en nalle!<br>${money()}</p>`, [
-      { label: 'Inte nu', onClick: closeModal },
-      { label: `🎡 Snurra (${s.pris} kr)`, cls: g.money >= s.pris ? 'btn-go' : '', onClick: () => {
+    openModal($t('🎡 Lyckohjulet'), `<p style="font-size:var(--f2);margin-top:0">${$t`Snurra hjulet för <b>${s.pris} kr</b> – vinn pengar eller en nalle!`}<br>${money()}</p>`, [
+      { label: $t('Inte nu'), onClick: closeModal },
+      { label: $t`🎡 Snurra (${s.pris} kr)`, cls: g.money >= s.pris ? 'btn-go' : '', onClick: () => {
         closeModal();
-        if (g.money < s.pris) { play('fel'); toast('💸 Du har inte råd att snurra.', 'bad'); return; }
+        if (g.money < s.pris) { play('fel'); toast($t('💸 Du har inte råd att snurra.'), 'bad'); return; }
         g.money -= s.pris; g.save();
         M?.spinWheel?.(A.scene?._debug?.env?.t || 0);
         play('click');
         const r = Math.random();
         setTimeout(() => {
-          if (r < 0.45) toast('🎡 Nitlott! Hjulet stannade på den vita rutan. Försök igen!');
-          else if (r < 0.75) { g.money += 20; g.save(); play('coin'); toast('🎡 Du vann 20 kr! 🎉', 'good'); }
-          else if (r < 0.9) { g.glad?.(5, 'Vann en nalle', 'lyckohjul', 10); g.save(); play('coin'); toast('🎡 Du vann en nalle! 🧸 😊', 'good'); }
-          else { g.money += 50; g.save(); play('coin'); toast('🎡 STORVINST – 50 kr! 🎉🎉', 'good'); }
+          if (r < 0.45) toast($t('🎡 Nitlott! Hjulet stannade på den vita rutan. Försök igen!'));
+          else if (r < 0.75) { g.money += 20; g.save(); play('coin'); toast($t('🎡 Du vann 20 kr! 🎉'), 'good'); }
+          else if (r < 0.9) { g.glad?.(5, $t('Vann en nalle'), 'lyckohjul', 10); g.save(); play('coin'); toast($t('🎡 Du vann en nalle! 🧸 😊'), 'good'); }
+          else { g.money += 50; g.save(); play('coin'); toast($t('🎡 STORVINST – 50 kr! 🎉🎉'), 'good'); }
         }, 2300);
       } },
     ]);
@@ -400,33 +401,33 @@ export function openStall(A, s, M) {
     if (!r) continue;
     const p = marketPrice(r), full = (g.skafferi?.[id] | 0) >= MAX_RAVA;
     rows.push(`<div class="prow shoprow"><span style="font-size:28px;text-align:center">${r.icon}</span>
-      <span class="nm">${esc(r.name)}<br><small class="sp">till skafferiet${(g.skafferi?.[id] | 0) ? ` · du har ${g.skafferi[id]}` : ''}</small></span>
-      <button class="btn btn-small ${g.money >= p && !full ? 'btn-go' : ''}" data-vara="${id}" ${g.money >= p && !full ? '' : 'disabled'}>${full ? 'fullt' : p + ' kr'}</button></div>`);
+      <span class="nm">${esc(r.name)}<br><small class="sp">${$t('till skafferiet')}${(g.skafferi?.[id] | 0) ? ` · ${$t`du har ${g.skafferi[id]}`}` : ''}</small></span>
+      <button class="btn btn-small ${g.money >= p && !full ? 'btn-go' : ''}" data-vara="${id}" ${g.money >= p && !full ? '' : 'disabled'}>${full ? $t('fullt') : fmt(p)}</button></div>`);
   }
   for (const m of s.treat || []) {
     rows.push(`<div class="prow shoprow"><span style="font-size:28px;text-align:center">${m.icon}</span>
-      <span class="nm">${esc(m.namn)}<br><small class="sp">${m.matt ? `+${m.matt} mätthet · ` : ''}😊 lycka</small></span>
-      <button class="btn btn-small ${g.money >= m.pris ? 'btn-go' : ''}" data-treat="${m.id}" ${g.money >= m.pris ? '' : 'disabled'}>${m.pris} kr</button></div>`);
+      <span class="nm">${esc(m.namn)}<br><small class="sp">${m.matt ? `${$t`+${m.matt} mätthet`} · ` : ''}${$t('😊 lycka')}</small></span>
+      <button class="btn btn-small ${g.money >= m.pris ? 'btn-go' : ''}" data-treat="${m.id}" ${g.money >= m.pris ? '' : 'disabled'}>${fmt(m.pris)}</button></div>`);
   }
-  const dlg = openModal(`${s.icon} ${esc(s.name.charAt(0) + s.name.slice(1).toLowerCase())}`, `<p style="font-size:var(--f2);margin-top:0">"${esc(s.rop.charAt(0) + s.rop.slice(1).toLowerCase())}" Marknadspris – lite billigare än i affären.<br>${money()}</p><div class="plist">${rows.join('')}</div>`,
-    [{ label: 'Klar', onClick: closeModal }]);
+  const dlg = openModal(`${s.icon} ${esc(s.name.charAt(0) + s.name.slice(1).toLowerCase())}`, `<p style="font-size:var(--f2);margin-top:0">"${esc(s.rop.charAt(0) + s.rop.slice(1).toLowerCase())}" ${$t('Marknadspris – lite billigare än i affären.')}<br>${money()}</p><div class="plist">${rows.join('')}</div>`,
+    [{ label: $t('Klar'), onClick: closeModal }]);
   const refresh = () => { closeModal(); openStall(A, s, M); };
   dlg.querySelectorAll('[data-vara]').forEach((b) => (b.onclick = () => {
     const r = ravaraOf(b.dataset.vara), p = marketPrice(r);
-    if (g.money < p) { play('fel'); toast('💸 Du har inte råd.', 'bad'); return; }
-    if ((g.skafferi[r.id] | 0) >= MAX_RAVA) { toast(`Skafferiet är fullt av ${r.name.toLowerCase()}.`, 'bad'); return; }
+    if (g.money < p) { play('fel'); toast($t('💸 Du har inte råd.'), 'bad'); return; }
+    if ((g.skafferi[r.id] | 0) >= MAX_RAVA) { toast($t`Skafferiet är fullt av ${r.name.toLowerCase()}.`, 'bad'); return; }
     g.money -= p; g.skafferi[r.id] = (g.skafferi[r.id] | 0) + 1; g.save();
-    play('coin'); toast(`${r.icon} ${r.name} till skafferiet – ${p} kr.`, 'good');
+    play('coin'); toast($t`${r.icon} ${r.name} till skafferiet – ${p} kr.`, 'good');
     refresh();
   }));
   dlg.querySelectorAll('[data-treat]').forEach((b) => (b.onclick = () => {
     const m = (s.treat || []).find((x) => x.id === b.dataset.treat);
-    if (!m || g.money < m.pris) { play('fel'); toast('💸 Du har inte råd.', 'bad'); return; }
+    if (!m || g.money < m.pris) { play('fel'); toast($t('💸 Du har inte råd.'), 'bad'); return; }
     g.money -= m.pris;
     if (m.matt) g.hunger = Math.min(100, g.hunger + m.matt);
-    g.glad?.(m.glad || 1, 'Marknaden', 'marknad', 10);
+    g.glad?.(m.glad || 1, $t('Marknaden'), 'marknad', 10);
     g.passTime(5); g.save();
     closeModal(); play('coin');
-    toast(m.text ? `${m.icon} ${m.text} 😊` : `${m.icon} Mums! ${m.namn}. 😊`, 'good');
+    toast(m.text ? `${m.icon} ${m.text} 😊` : $t`${m.icon} Mums! ${m.namn}. 😊`, 'good');
   }));
 }

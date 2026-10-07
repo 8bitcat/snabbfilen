@@ -33,6 +33,7 @@
 // höjdled, sitter man i salongen under filmen ligger hela duken i bild, och alla pratbubblor
 // hålls inom den synliga remsan.
 import { Pix, SMALL, textW, ctxText, mix, hash, bayer } from '../core/floor-pix.js';
+import { $t } from '../core/i18n.js';
 import { drawPerson, makeLook } from '../core/people.js';
 import { openModal, closeModal, toast, esc } from '../core/ui.js';
 import { fmt, clock, SAVE_KEY } from '../game.js';
@@ -62,9 +63,9 @@ export const MIN_VISNING = 30;                        // … och börjar bara om
 const CITY_BIO = (() => { try { return MAP.buildingById?.('bio') || null; } catch { return null; } })();
 export const HOURS = Array.isArray(CITY_BIO?.open) && CITY_BIO.open.length === 2 ? CITY_BIO.open : BIO_OPEN;
 const DIM = 2.6, CRED = 4.5, LJUS = 2.4;              // ljuset släcks · eftertexter · ljuset tänds (sekunder)
-const MSG_ATUPP = 'ÄT UPP FÖRST! 😋';
-const MSG_DORR = 'DU MÅSTE SÄTTA DIG OCH ÄTA UPP!';
-const MSG_VANTA = 'VÄNTA – KEVIN FYLLER DIN POPCORNBÄGARE!';
+const MSG_ATUPP = $t('ÄT UPP FÖRST! 😋');
+const MSG_DORR = $t('DU MÅSTE SÄTTA DIG OCH ÄTA UPP!');
+const MSG_VANTA = $t('VÄNTA – KEVIN FYLLER DIN POPCORNBÄGARE!');
 const SAY_W = 76;                                     // walkable.js: sayBubble() utan w
 const SALONG_DY = 300;                                // salongen ligger 300 px "nedanför" foajén för världen
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
@@ -82,25 +83,25 @@ const KEVIN = { skin: '#e0a97f', hair: '#a5692f', style: 'short', top: 'tee', sh
 const HARALD = { skin: '#c68a5c', hair: '#b9b3ab', style: 'short', beard: 'mustache', top: 'suit', shirt: '#5a1c28', accent: '#c8a44a', bottom: 'pants', pants: '#2b2b30', shoes: '#1c1c1c', hat: 'cap', cap: '#5a1c28', glasses: 'round', build: 6, phones: false, bag: null, kid: false };
 
 // publikens repliker
-const PRAT = ['VAD SKA VI SE?', 'JAG HAR HÖRT ATT DEN ÄR JÄTTEBRA!', 'SKICKA POPCORNEN!', 'STÄNG AV MOBILEN NU.', 'BÄSTA PLATSERNA I HUSET!', 'JAG HAR SETT DEN TRE GÅNGER.', 'SITT STILL, DU SPARKAR PÅ STOLEN!', 'NU SLÄCKS DET SNART!', 'HAR DU TAGIT MED NÄSDUKAR?'];
+const PRAT = [$t('VAD SKA VI SE?'), $t('JAG HAR HÖRT ATT DEN ÄR JÄTTEBRA!'), $t('SKICKA POPCORNEN!'), $t('STÄNG AV MOBILEN NU.'), $t('BÄSTA PLATSERNA I HUSET!'), $t('JAG HAR SETT DEN TRE GÅNGER.'), $t('SITT STILL, DU SPARKAR PÅ STOLEN!'), $t('NU SLÄCKS DET SNART!'), $t('HAR DU TAGIT MED NÄSDUKAR?')];
 const REACT = {
-  skratt: ['HAHA!', 'HIHI!', '😂', 'HA HA HA!', 'HAHAHA!', '🤣'],
-  grat: ['😢', 'SNYFT...', '😭', 'SÅ FINT...', 'BUHU!', '🥲'],
-  oj: ['OJ!', '😱', 'WOW!', 'OOOH!', 'AKTA!', '😮'],
-  aww: ['AWW!', '😍', '❤️', 'ÅÅH...', 'GULLIGT!', '🥰'],
-  heja: ['JAAA!', 'HEJA!', '👏', 'YES!', 'SNYGGT!', '🙌'],
+  skratt: [$t('HAHA!'), $t('HIHI!'), '😂', $t('HA HA HA!'), $t('HAHAHA!'), '🤣'],
+  grat: ['😢', $t('SNYFT...'), '😭', $t('SÅ FINT...'), $t('BUHU!'), '🥲'],
+  oj: [$t('OJ!'), '😱', $t('WOW!'), $t('OOOH!'), $t('AKTA!'), '😮'],
+  aww: [$t('AWW!'), '😍', '❤️', $t('ÅÅH...'), $t('GULLIGT!'), '🥰'],
+  heja: [$t('JAAA!'), $t('HEJA!'), '👏', $t('YES!'), $t('SNYGGT!'), '🙌'],
 };
-const EFTERAT = ['VILKEN FILM!', 'BRAVO!', '👏', 'DEN BÄSTA I ÅR!', 'JAG VILL SE DEN IGEN!', 'NU ÄR JAG HUNGRIG.'];
-const FOLK_KASSA = ['TVÅ BILJETTER, TACK!', 'EN TILL PIXELHÄMNAREN!', 'FINNS DET PLATSER KVAR?', 'EN VUXEN OCH ETT BARN.'];
-const FOLK_BAR = ['EN STOR POPCORN!', 'EXTRA SMÖR, TACK!', 'OCH EN LÄSK!', 'LÖSGODIS FÖR 20 KRONOR.'];
+const EFTERAT = [$t('VILKEN FILM!'), $t('BRAVO!'), '👏', $t('DEN BÄSTA I ÅR!'), $t('JAG VILL SE DEN IGEN!'), $t('NU ÄR JAG HUNGRIG.')];
+const FOLK_KASSA = [$t('TVÅ BILJETTER, TACK!'), $t('EN TILL PIXELHÄMNAREN!'), $t('FINNS DET PLATSER KVAR?'), $t('EN VUXEN OCH ETT BARN.')];
+const FOLK_BAR = [$t('EN STOR POPCORN!'), $t('EXTRA SMÖR, TACK!'), $t('OCH EN LÄSK!'), $t('LÖSGODIS FÖR 20 KRONOR.')];
 // eftertexterna per film (namnen är påhittade)
 const ROLLER = {
-  hamnaren: [['PIXELHÄMNAREN', 'KALLE KANT'], ['DOKTOR GLITCH', 'SVEN SPRITE']],
-  karlek: [['NORA', 'ELSA ÅHLÉN'], ['LEO', 'NOAH LJUNG']],
-  turbo: [['FÖRAREN', 'MAJA MOTOR'], ['POLISEN', 'IVAN BLÅLJUS']],
-  sommar: [['UNGEN', 'SAGA SOL'], ['GLASSFARBROR', 'GUNNAR KULA'], ['HUNDEN', 'VOFF']],
-  nattbuss: [['SPRINGAREN', 'YUSUF RUSH'], ['FÖRAREN', 'BOSSE RATT'], ['KATTEN', 'SIG SJÄLV']],
-  amore: [['SOFIA', 'SOFIA ROSSI'], ['MARCO', 'MATEO VERDI'], ['SERVITÖREN', 'LUIGI']],
+  hamnaren: [[$t('PIXELHÄMNAREN'), $t('KALLE KANT')], [$t('DOKTOR GLITCH'), $t('SVEN SPRITE')]],
+  karlek: [[$t('NORA'), $t('ELSA ÅHLÉN')], [$t('LEO'), $t('NOAH LJUNG')]],
+  turbo: [[$t('FÖRAREN'), $t('MAJA MOTOR')], [$t('POLISEN'), $t('IVAN BLÅLJUS')]],
+  sommar: [[$t('UNGEN'), $t('SAGA SOL')], [$t('GLASSFARBROR'), $t('GUNNAR KULA')], [$t('HUNDEN'), $t('VOFF')]],
+  nattbuss: [[$t('SPRINGAREN'), $t('YUSUF RUSH')], [$t('FÖRAREN'), $t('BOSSE RATT')], [$t('KATTEN'), $t('SIG SJÄLV')]],
+  amore: [[$t('SOFIA'), $t('SOFIA ROSSI')], [$t('MARCO'), $t('MATEO VERDI')], [$t('SERVITÖREN'), $t('LUIGI')]],
 };
 
 // ================= platser i foajén och salongen =================
@@ -231,7 +232,7 @@ export function makeShopBio(A, opts = {}) {
     g.money += BIO_PRIS.biljett;
     me.biljett = null;
     g.save();
-    if (!silent) { play('coin'); talk.say(`🎟️ ${why}Biljetten lämnades tillbaka – ${fmt(BIO_PRIS.biljett)} tillbaka i plånboken.`, meAt, 4); }
+    if (!silent) { play('coin'); talk.say($t`🎟️ ${why}Biljetten lämnades tillbaka – ${fmt(BIO_PRIS.biljett)} tillbaka i plånboken.`, meAt, 4); }
     return true;
   }
   const showEnergy = (frac) => (show ? Math.round(BIO_EFFEKT.energi * (show.minEff / BIO_EFFEKT.minuter) * frac) : 0);
@@ -316,7 +317,7 @@ export function makeShopBio(A, opts = {}) {
     walker.walkTo(s.ax, s.ay, () => {
       if (s.occ && s.occ !== 'me') {
         me.state = me.pop ? 'carry' : 'free';
-        talk.say('😕 Där sitter någon redan!', meAt);
+        talk.say($t('😕 Där sitter någon redan!'), meAt);
         return;
       }
       sitDown(s);
@@ -327,12 +328,12 @@ export function makeShopBio(A, opts = {}) {
   // ---------- köpen ----------
   function buyTicket(id) {
     const film = filmById(id);
-    if (!film) return { ok: false, msg: 'Den filmen går inte här.' };
-    if (!isOpen()) return { ok: false, msg: `Luckan är stängd – bion öppnar ${clock(HOURS[0] * 60)}.` };
-    if (!ticketsOpen()) return { ok: false, msg: 'Kvällens sista föreställning har redan börjat – välkommen åter i morgon!' };
-    if (me.biljett === id) return { ok: false, msg: 'Den biljetten har du redan!' };
+    if (!film) return { ok: false, msg: $t('Den filmen går inte här.') };
+    if (!isOpen()) return { ok: false, msg: $t`Luckan är stängd – bion öppnar ${clock(HOURS[0] * 60)}.` };
+    if (!ticketsOpen()) return { ok: false, msg: $t('Kvällens sista föreställning har redan börjat – välkommen åter i morgon!') };
+    if (me.biljett === id) return { ok: false, msg: $t('Den biljetten har du redan!') };
     if (me.biljett) { me.biljett = id; kass.handT = t; play('click'); return { ok: true, byte: true, film }; }   // byta film kostar inget
-    if (g.money < BIO_PRIS.biljett) return { ok: false, msg: 'Du har inte råd – en biljett kostar 90 kr.' };
+    if (g.money < BIO_PRIS.biljett) return { ok: false, msg: $t('Du har inte råd – en biljett kostar 90 kr.') };
     g.money -= BIO_PRIS.biljett;
     g.passTime(5);
     g.save();
@@ -342,11 +343,11 @@ export function makeShopBio(A, opts = {}) {
     return { ok: true, film };
   }
   function buyPopcorn() {
-    if (!isOpen()) return { ok: false, msg: 'Godisbaren är stängd.' };
-    if (!popOpen()) return { ok: false, msg: `Godisbaren har stängt för i kväll (${clock(SISTA_POPCORN * 60)}).` };
-    if (me.pop) return { ok: false, msg: 'Ät upp popcornen du har först!' };
-    if (me.order || me.state === 'waitPop') return { ok: false, msg: 'Kevin fyller redan din bägare!' };
-    if (g.money < BIO_PRIS.popcorn) return { ok: false, msg: 'Du har inte råd med popcorn.' };
+    if (!isOpen()) return { ok: false, msg: $t('Godisbaren är stängd.') };
+    if (!popOpen()) return { ok: false, msg: $t`Godisbaren har stängt för i kväll (${clock(SISTA_POPCORN * 60)}).` };
+    if (me.pop) return { ok: false, msg: $t('Ät upp popcornen du har först!') };
+    if (me.order || me.state === 'waitPop') return { ok: false, msg: $t('Kevin fyller redan din bägare!') };
+    if (g.money < BIO_PRIS.popcorn) return { ok: false, msg: $t('Du har inte råd med popcorn.') };
     if (me.state === 'sit') standUp();
     release();
     g.money -= BIO_PRIS.popcorn;
@@ -357,46 +358,46 @@ export function makeShopBio(A, opts = {}) {
     me.state = 'waitPop';
     godis.order = { t };
     if (Math.hypot(walker.px - BAR_SPOT[0], walker.py - BAR_SPOT[1]) > 12) walker.walkTo(...BAR_SPOT);
-    talkGodis.say('🍿 En stor popcorn, kommer strax!', godisAt);
+    talkGodis.say($t('🍿 En stor popcorn, kommer strax!'), godisAt);
     return { ok: true };
   }
 
   // ---------- biljettluckan ----------
   function openBiljett() {
-    if (!isOpen()) { talk.say(`🔒 Luckan är stängd – bion öppnar ${clock(HOURS[0] * 60)}.`, meAt); play('fel'); return; }
-    if (!ticketsOpen()) { talkKass.say('Kvällens sista föreställning har redan börjat – välkommen åter i morgon!', kassAt); play('fel'); return; }
+    if (!isOpen()) { talk.say($t`🔒 Luckan är stängd – bion öppnar ${clock(HOURS[0] * 60)}.`, meAt); play('fel'); return; }
+    if (!ticketsOpen()) { talkKass.say($t('Kvällens sista föreställning har redan börjat – välkommen åter i morgon!'), kassAt); play('fel'); return; }
     const har = me.biljett ? filmById(me.biljett) : null;
     const rows = FILMER.map((f, i) => `<div class="prow" style="grid-template-columns:60px 1fr auto;${har?.id === f.id ? 'background:#fff4c8' : ''}">
         <canvas data-po="${i}" width="26" height="36" style="width:52px;height:72px;image-rendering:pixelated;border:2px solid #c8a44a"></canvas>
-        <span class="nm"><b>${esc(f.titel)}</b><br><small class="sp">${esc(f.genre)} · ${esc(f.alder)} · 2 tim</small><br><small>${esc(f.blurb)}</small></span>
-        <button class="btn btn-small btn-go" data-film="${f.id}" data-key="${i + 1}" ${!har && g.money < BIO_PRIS.biljett ? 'disabled' : ''}>${har ? (har.id === f.id ? '✓ Din' : '🔁 Byt') : `🎟️ ${fmt(BIO_PRIS.biljett)}`} <kbd>${i + 1}</kbd></button>
+        <span class="nm"><b>${esc(f.titel)}</b><br><small class="sp">${esc(f.genre)} · ${esc(f.alder)} · ${$t('2 tim')}</small><br><small>${esc(f.blurb)}</small></span>
+        <button class="btn btn-small btn-go" data-film="${f.id}" data-key="${i + 1}" ${!har && g.money < BIO_PRIS.biljett ? 'disabled' : ''}>${har ? (har.id === f.id ? $t('✓ Din') : $t('🔁 Byt')) : `🎟️ ${fmt(BIO_PRIS.biljett)}`} <kbd>${i + 1}</kbd></button>
       </div>`).join('');
-    const body = `<p style="font-size:var(--f2);margin:0 0 8px">💰 <b>${fmt(g.money)}</b> · ⚡ Energi <b>${Math.round(g.energy)}</b>/100 · 🕒 ${clock(g.min)}</p>
-      ${har ? `<p style="font-size:var(--f2);margin:0 0 8px">🎟️ Du har en biljett till <b>${esc(har.titel)}</b> – byta film kostar inget.</p>` : ''}
+    const body = `<p style="font-size:var(--f2);margin:0 0 8px">💰 <b>${fmt(g.money)}</b> · ⚡ ${$t('Energi')} <b>${Math.round(g.energy)}</b>/100 · 🕒 ${clock(g.min)}</p>
+      ${har ? `<p style="font-size:var(--f2);margin:0 0 8px">${$t`🎟️ Du har en biljett till <b>${esc(har.titel)}</b> – byta film kostar inget.`}</p>` : ''}
       <div class="plist">${rows}</div>
-      <p style="font-size:var(--f1);margin:10px 0 0;color:#6d6660">Filmen börjar när du satt dig i salongen och tar 2 timmar. Efteråt är du utvilad: +${BIO_EFFEKT.energi} energi. Sista biljetten säljs ${clock(SISTA_BILJETT * 60)}.</p>`;
-    const dlg = openModal('🎟️ Biljettluckan – BIO PIXEL', body, [{ label: 'Nej tack', onClick: closeModal }]);
+      <p style="font-size:var(--f1);margin:10px 0 0;color:#6d6660">${$t`Filmen börjar när du satt dig i salongen och tar 2 timmar. Efteråt är du utvilad: +${BIO_EFFEKT.energi} energi. Sista biljetten säljs ${clock(SISTA_BILJETT * 60)}.`}</p>`;
+    const dlg = openModal($t('🎟️ Biljettluckan – BIO PIXEL'), body, [{ label: $t('Nej tack'), onClick: closeModal }]);
     dlg.querySelectorAll('canvas[data-po]').forEach((cv) => { const x = cv.getContext('2d'); x.imageSmoothingEnabled = false; x.drawImage(posterCanvas(FILMER[+cv.dataset.po].id), 0, 0); });
     dlg.querySelectorAll('[data-film]').forEach((b) => (b.onclick = () => {
       const r = buyTicket(b.dataset.film);
       closeModal();
       if (!r.ok) { talkKass.say('😳 ' + r.msg, kassAt); play('fel'); return; }
-      talkKass.say(r.byte ? `Visst! Nu gäller den ${r.film.titel}.` : `Varsågod – ${r.film.titel}, salong 1! Sätt dig var du vill.`, kassAt);
+      talkKass.say(r.byte ? $t`Visst! Nu gäller den ${r.film.titel}.` : $t`Varsågod – ${r.film.titel}, salong 1! Sätt dig var du vill.`, kassAt);
     }));
   }
   // ---------- popcornbaren ----------
   function openPopcorn() {
-    if (!isOpen()) { talk.say('🔒 Godisbaren är stängd.', meAt); play('fel'); return; }
-    if (!popOpen()) { talkGodis.say(`Tyvärr, vi har stängt baren för i kväll (${clock(SISTA_POPCORN * 60)}). Välkommen åter!`, godisAt); play('fel'); return; }
-    if (me.pop) { nag('🍿 ' + (me.state === 'sit' ? MSG_ATUPP : 'Ät upp popcornen du har först!')); return; }
-    const body = `<p style="font-size:var(--f2);margin:0 0 8px">💰 <b>${fmt(g.money)}</b> · 🍽️ Mättnad <b>${Math.round(g.hunger)}</b>/100 · ⚡ Energi <b>${Math.round(g.energy)}</b>/100</p>
+    if (!isOpen()) { talk.say($t('🔒 Godisbaren är stängd.'), meAt); play('fel'); return; }
+    if (!popOpen()) { talkGodis.say($t`Tyvärr, vi har stängt baren för i kväll (${clock(SISTA_POPCORN * 60)}). Välkommen åter!`, godisAt); play('fel'); return; }
+    if (me.pop) { nag('🍿 ' + (me.state === 'sit' ? MSG_ATUPP : $t('Ät upp popcornen du har först!'))); return; }
+    const body = `<p style="font-size:var(--f2);margin:0 0 8px">💰 <b>${fmt(g.money)}</b> · 🍽️ ${$t('Mättnad')} <b>${Math.round(g.hunger)}</b>/100 · ⚡ ${$t('Energi')} <b>${Math.round(g.energy)}</b>/100</p>
       <div class="plist"><div class="prow" style="grid-template-columns:52px 1fr auto">
         <canvas data-pop width="8" height="11" style="width:32px;height:44px;image-rendering:pixelated;background:#3c1420;border:2px solid #c8a44a"></canvas>
-        <span class="nm">🍿 <b>Popcorn, stor bägare</b><br><small class="sp">+${BIO_EFFEKT.popcornMatt} mättnad · +${BIO_EFFEKT.popcornEnergi} energi – äts tugga för tugga när du sitter</small></span>
+        <span class="nm">🍿 <b>${$t('Popcorn, stor bägare')}</b><br><small class="sp">${$t`+${BIO_EFFEKT.popcornMatt} mättnad · +${BIO_EFFEKT.popcornEnergi} energi – äts tugga för tugga när du sitter`}</small></span>
         <button class="btn btn-small btn-go" data-buy="pop" data-key="1" ${g.money < BIO_PRIS.popcorn ? 'disabled' : ''}>🍿 ${fmt(BIO_PRIS.popcorn)} <kbd>1</kbd></button>
       </div></div>
-      <p style="font-size:var(--f1);margin:10px 0 0;color:#6d6660">Ta med bägaren in i salongen och ät under filmen – eller slå dig ner på soffan. Ut på gatan får den inte följa med!</p>`;
-    const dlg = openModal('🍿 Godis & popcorn', body, [{ label: 'Nej tack', onClick: closeModal }]);
+      <p style="font-size:var(--f1);margin:10px 0 0;color:#6d6660">${$t('Ta med bägaren in i salongen och ät under filmen – eller slå dig ner på soffan. Ut på gatan får den inte följa med!')}</p>`;
+    const dlg = openModal($t('🍿 Godis & popcorn'), body, [{ label: $t('Nej tack'), onClick: closeModal }]);
     const cv = dlg.querySelector('canvas[data-pop]');
     if (cv) { const x = cv.getContext('2d'); x.imageSmoothingEnabled = false; x.drawImage(bucketImg(7, 7), 0, 0); }
     dlg.querySelector('[data-buy]')?.addEventListener('click', () => {
@@ -408,10 +409,10 @@ export function makeShopBio(A, opts = {}) {
 
   // ---------- in och ut ----------
   function trySalong() {
-    if (!isOpen()) { talk.say(`🔒 Salongen är låst tills bion öppnar ${clock(HOURS[0] * 60)}.`, meAt); play('fel'); return; }   // platsvakten har inte kommit än
-    if (!me.biljett) { talkVakt.say('🎟️ Biljett, tack! Luckan finns där borta vid entrén.', vaktAt); play('fel'); vakt.stopT = t; return; }
+    if (!isOpen()) { talk.say($t`🔒 Salongen är låst tills bion öppnar ${clock(HOURS[0] * 60)}.`, meAt); play('fel'); return; }   // platsvakten har inte kommit än
+    if (!me.biljett) { talkVakt.say($t('🎟️ Biljett, tack! Luckan finns där borta vid entrén.'), vaktAt); play('fel'); vakt.stopT = t; return; }
     vakt.ripT = t;
-    talkVakt.say('Tack! Sätt dig var du vill – trevlig film! 🎬', vaktAt);
+    talkVakt.say($t('Tack! Sätt dig var du vill – trevlig film! 🎬'), vaktAt);
     play('click');
     sdOpenT = t + 0.9;
     pendingRoom = { at: t + 0.45, to: 'salong' };
@@ -427,7 +428,7 @@ export function makeShopBio(A, opts = {}) {
     if (!show && (salon.visad || !aud.length)) populateSalon();
     cam.x = camTarget(); cam.y = camYTarget();
     play('door');
-    if (me.biljett) talk.say('🎬 Sätt dig på en ledig plats – filmen börjar när du sitter!', meAt);
+    if (me.biljett) talk.say($t('🎬 Sätt dig på en ledig plats – filmen börjar när du sitter!'), meAt);
   }
   function goFoaje() {
     if (me.state === 'sit') standUp();
@@ -461,15 +462,15 @@ export function makeShopBio(A, opts = {}) {
     // klocka (2 min/s) går också under filmen, så en kort visning kan dra över några
     // minuter – men aldrig fram till midnattskollapsen.
     const startMin = g.min, minEff = Math.max(0, Math.min(BIO_EFFEKT.minuter, SLUT_SENAST - startMin));
-    if (minEff < MIN_VISNING) { refundTicket(false, 'Kvällens sista visning är slut! '); return; }
+    if (minEff < MIN_VISNING) { refundTicket(false, $t('Kvällens sista visning är slut!') + ' '); return; }
     me.biljett = null;
     const p0 = film.langd * (1 - minEff / BIO_EFFEKT.minuter);                     // sent in: filmen har redan börjat
     const filmDur = film.langd - p0;
     show = { film, t: 0, startMin, minEff, p0, filmDur, total: DIM + filmDur + CRED, lastFilmT: p0, given: false };
     if (me.pop) me.biteT = 3;
-    if (p0 > 0.5) talk.say('🤫 Oj, den har redan börjat!', meAt);
+    if (p0 > 0.5) talk.say($t('🤫 Oj, den har redan börjat!'), meAt);
     const s = aud.filter((G) => G.state === 'sit');
-    if (s.length) say(s[(Math.random() * s.length) | 0], 'SCH, NU BÖRJAR DEN!', 2.4);
+    if (s.length) say(s[(Math.random() * s.length) | 0], $t('SCH, NU BÖRJAR DEN!'), 2.4);
     play('box');
   }
   const showPhase = () => {
@@ -490,12 +491,12 @@ export function makeShopBio(A, opts = {}) {
     if (frac >= 0.999 && !me.sett.includes(show.film.id)) me.sett.push(show.film.id);
     g.save();
     if (quiet) return;
-    const glad = h > 0 ? `, +${h} 😊 lycka` : '';
+    const glad = h > 0 ? `, ${$t`+${h} 😊 lycka`}` : '';
     if (frac >= 0.999) {
       play('fanfare');
-      toast(`🎬 ${show.film.titel}: vilken film! +${e} ⚡ energi${glad}`, 'good');
-      talk.say(`😄 VILKEN FILM! Jag känner mig utvilad och glad.`, meAt, 4);
-    } else if (e > 0 || h > 0) toast(`🎬 Du gick mitt i filmen – +${e} ⚡ energi${glad} ändå.`, '');
+      toast($t`🎬 ${show.film.titel}: vilken film! +${e} ⚡ energi${glad}`, 'good');
+      talk.say($t`😄 VILKEN FILM! Jag känner mig utvilad och glad.`, meAt, 4);
+    } else if (e > 0 || h > 0) toast($t`🎬 Du gick mitt i filmen – +${e} ⚡ energi${glad} ändå.`, '');
   }
   function endShow() {
     show = null;
@@ -578,7 +579,7 @@ export function makeShopBio(A, opts = {}) {
       if (spoken < 3 && Math.random() < 0.3) { say(G, REACT[kind][(Math.random() * REACT[kind].length) | 0], 2.2); spoken++; }
       if ((kind === 'skratt' || kind === 'oj') && G.pop && Math.random() < 0.5) for (let k = 0; k < 3; k++) kernels.push({ x: G.seat.x + 6, y: G.seat.y - 22, vx: (Math.random() - 0.5) * 30, vy: -30 - Math.random() * 25, age: 0 });
     }
-    if (kind === 'skratt' && sitting.length && Math.random() < 0.4) { const G = sitting[(Math.random() * sitting.length) | 0]; setTimeout(() => say(G, 'SCH!', 1.4), 900); }
+    if (kind === 'skratt' && sitting.length && Math.random() < 0.4) { const G = sitting[(Math.random() * sitting.length) | 0]; setTimeout(() => say(G, $t('SCH!'), 1.4), 900); }
   }
   const kernels = [];
   function updateAud(dt) {
@@ -646,9 +647,9 @@ export function makeShopBio(A, opts = {}) {
         me.pop = { left: BIO_EFFEKT.tuggor, total: BIO_EFFEKT.tuggor, settled: !!me.order?.settled };   // redan inräknad (omladdning) = tuggorna ger inget till
         me.order = null;
         if (me.state === 'waitPop') me.state = 'carry';
-        talkGodis.say('Varsågod! Håll i bägaren – ät den sittande!', godisAt);
+        talkGodis.say($t('Varsågod! Håll i bägaren – ät den sittande!'), godisAt);
         play('ok');
-        if (!me.popHint && rum === 'foaje') { me.popHint = true; setTimeout(() => { if (!talk.active() && rum === 'foaje') talk.say('🍿 Popcornen äter jag i salongen – eller på soffan.', meAt); }, 1400); }
+        if (!me.popHint && rum === 'foaje') { me.popHint = true; setTimeout(() => { if (!talk.active() && rum === 'foaje') talk.say($t('🍿 Popcornen äter jag i salongen – eller på soffan.'), meAt); }, 1400); }
       }
       return;
     }
@@ -701,7 +702,7 @@ export function makeShopBio(A, opts = {}) {
         if (P.buyT > 0.2 && !P.said) { P.said = true; P.bubble = { text: FOLK_KASSA[(Math.random() * FOLK_KASSA.length) | 0], until: t + 2 }; }
         if (P.buyT > 1.8) {
           P.buyT = 0; P.said = false; kass.handT = t; queue.splice(queue.indexOf(P), 1);
-          if (Math.random() < 0.5) talkKass.say(['Varsågod!', 'Salong 1, trevlig film!', 'Tack så mycket!'][(Math.random() * 3) | 0], kassAt);
+          if (Math.random() < 0.5) talkKass.say([$t('Varsågod!'), $t('Salong 1, trevlig film!'), $t('Tack så mycket!')][(Math.random() * 3) | 0], kassAt);
           if (P.bar) { P.state = 'tobar'; P.w.walkTo(280 + Math.random() * 70, BAR_SPOT[1]); }
           else if (!toSofa(P)) { P.state = 'tosalong'; P.w.walkTo(...SD_SPOT); }
         }
@@ -742,14 +743,14 @@ export function makeShopBio(A, opts = {}) {
           }
         } else if (me.pop.doneT && t - me.pop.doneT > 1.1) {
           me.pop = null;
-          if (!show) talk.say('😋 MUMS! Popcorn är det bästa som finns.', meAt);
+          if (!show) talk.say($t('😋 MUMS! Popcorn är det bästa som finns.'), meAt);
         }
       } else if (!show && me.seat && me.sitT > 16 && !(me.seat.kind === 'salong' && me.biljett)) standUp();
     }
     // mumlar ursäkta när man tränger sig förbi folk i raden
     if (rum === 'salong' && walker.path.length && t - me.ursaktT > 4) {
       const row = S.ROW_Y.findIndex((y) => Math.abs(walker.py - (y - 10)) < 3);
-      if (row >= 0 && seats.some((s) => s.row === row && s.occ && s.occ !== 'me' && Math.abs(s.x - walker.px) < 10)) { me.ursaktT = t; talk.say(['Ursäkta, ursäkta!', 'Förlåt, får jag komma förbi?', 'Oj, förlåt – foten!'][(Math.random() * 3) | 0], meAt, 1.8); }
+      if (row >= 0 && seats.some((s) => s.row === row && s.occ && s.occ !== 'me' && Math.abs(s.x - walker.px) < 10)) { me.ursaktT = t; talk.say([$t('Ursäkta, ursäkta!'), $t('Förlåt, får jag komma förbi?'), $t('Oj, förlåt – foten!')][(Math.random() * 3) | 0], meAt, 1.8); }
     }
     // säkerhetsnät om gångens callback uteblev
     if (!walker.path.length && !me.seat && me.res && me.res.occ === 'me') {
@@ -814,15 +815,15 @@ export function makeShopBio(A, opts = {}) {
     { id: 'bar', r: [F.BAR.x0, 10, F.BAR.x1, F.CNT.y + 2], go: () => BAR_SPOT, act: () => { walker.dir = 'up'; play('click'); openPopcorn(); } },
     { id: 'salong', r: [F.SD.x0 - 4, 12, F.SD.x1 + 4, F.WALL_Y + 10], go: () => SD_SPOT, act: () => { walker.dir = 'up'; trySalong(); } },
     { id: 'vakt', r: [F.USHER.x - 8, F.USHER.y - 40, F.USHER.x + 8, F.USHER.y + 2], go: () => [F.USHER.x - 12, F.USHER.y + 6], act: () => { walker.dir = 'right'; trySalong(); } },
-    { id: 'kartong', r: [F.STANDEE.x - 18, F.STANDEE.y - 52, F.STANDEE.x + 26, F.STANDEE.y + 2], go: () => [F.STANDEE.x, F.STANDEE.y + 10], act: () => { walker.dir = 'up'; talk.say('😎 PIXELHÄMNAREN i naturlig storlek – han ser nästan levande ut!', meAt); play('click'); } },
-    { id: 'klo', r: [F.KLO.x - 13, F.KLO.y - 46, F.KLO.x + 13, F.KLO.y + 2], go: () => [F.KLO.x, F.KLO.y + 9], act: () => { walker.dir = 'up'; talk.say(['🧸 Gripklon! Jag har aldrig sett någon vinna här …', '🧸 Den gula nallen ligger nästan vid luckan. Nästan.', '🧸 Klon är för slapp – den tappar allt.'][(Math.random() * 3) | 0], meAt); play('click'); } },
+    { id: 'kartong', r: [F.STANDEE.x - 18, F.STANDEE.y - 52, F.STANDEE.x + 26, F.STANDEE.y + 2], go: () => [F.STANDEE.x, F.STANDEE.y + 10], act: () => { walker.dir = 'up'; talk.say($t('😎 PIXELHÄMNAREN i naturlig storlek – han ser nästan levande ut!'), meAt); play('click'); } },
+    { id: 'klo', r: [F.KLO.x - 13, F.KLO.y - 46, F.KLO.x + 13, F.KLO.y + 2], go: () => [F.KLO.x, F.KLO.y + 9], act: () => { walker.dir = 'up'; talk.say([$t('🧸 Gripklon! Jag har aldrig sett någon vinna här …'), $t('🧸 Den gula nallen ligger nästan vid luckan. Nästan.'), $t('🧸 Klon är för slapp – den tappar allt.')][(Math.random() * 3) | 0], meAt); play('click'); } },
     ...F.POSTERS.map((_, i) => posterSpot(i)),
-    ...easels.map((_, i) => { const [x, y] = F.EASELS[i], f = EASEL_FILMS[i]; return { id: 'staffli' + i, r: [x - 18, y - 58, x + 18, y + 2], go: () => [x, y + 12], act: () => { walker.dir = 'up'; talk.say(`🎬 PREMIÄR! ${f.titel} – ${f.genre}, ${f.alder}. ${f.blurb}`, meAt, 6); play('click'); } }; }),
+    ...easels.map((_, i) => { const [x, y] = F.EASELS[i], f = EASEL_FILMS[i]; return { id: 'staffli' + i, r: [x - 18, y - 58, x + 18, y + 2], go: () => [x, y + 12], act: () => { walker.dir = 'up'; talk.say($t`🎬 PREMIÄR! ${f.titel} – ${f.genre}, ${f.alder}. ${f.blurb}`, meAt, 6); play('click'); } }; }),
   ];
   const hotS = [
     { id: 'utgang', r: [S.DOOR.x0 - 4, S.DOOR.top - 16, S.DOOR.x1 + 4, S.WALL_Y + 8], go: () => SDOOR_SPOT, act: () => goFoaje() },
-    { id: 'nodutgang', r: [S.NOD.x0 - 4, S.NOD.top - 16, S.NOD.x1 + 4, S.WALL_Y + 8], go: () => [(S.NOD.x0 + S.NOD.x1) >> 1, S.WALL_Y + 6], act: () => { walker.dir = 'up'; talk.say('🚪 NÖDUTGÅNG – den är bara till för nödfall. Utgången är på andra sidan!', meAt); play('click'); } },
-    { id: 'duk', r: [S.FRAME.x0, S.FRAME.y0, S.FRAME.x1, S.FRAME.y1], go: () => [288, S.WALL_Y + 8], act: () => { walker.dir = 'up'; talk.say(me.biljett ? '🎬 Filmen börjar när jag satt mig på en plats.' : '🎟️ För att se en film behöver jag en biljett från luckan i foajén.', meAt); } },
+    { id: 'nodutgang', r: [S.NOD.x0 - 4, S.NOD.top - 16, S.NOD.x1 + 4, S.WALL_Y + 8], go: () => [(S.NOD.x0 + S.NOD.x1) >> 1, S.WALL_Y + 6], act: () => { walker.dir = 'up'; talk.say($t('🚪 NÖDUTGÅNG – den är bara till för nödfall. Utgången är på andra sidan!'), meAt); play('click'); } },
+    { id: 'duk', r: [S.FRAME.x0, S.FRAME.y0, S.FRAME.x1, S.FRAME.y1], go: () => [288, S.WALL_Y + 8], act: () => { walker.dir = 'up'; talk.say(me.biljett ? $t('🎬 Filmen börjar när jag satt mig på en plats.') : $t('🎟️ För att se en film behöver jag en biljett från luckan i foajén.'), meAt); } },
   ];
   const hot = () => (rum === 'salong' ? hotS : hotF);
   const spotAt = (x, y) => hot().find((h) => x >= h.r[0] && x <= h.r[2] && y >= h.r[1] && y <= h.r[3]);
@@ -899,8 +900,8 @@ export function makeShopBio(A, opts = {}) {
     const inne = folk.some((P) => P.state === 'inside');
     const lampOn = open && inne && Math.sin(t * 2.2) > -0.6;
     const lx = ((F.SD.x0 + F.SD.x1) >> 1) - 20;
-    if (lampOn) for (const [ox, oy] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) ctxText(ctx, SMALL, 'FILM PÅGÅR', lx + 1 + ox, 30 + oy, '#7a1414');   // glöden runt bokstäverna
-    ctxText(ctx, SMALL, 'FILM PÅGÅR', lx + 1, 30, lampOn ? '#ff5a4a' : '#4a1818');
+    if (lampOn) for (const [ox, oy] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) ctxText(ctx, SMALL, $t('FILM PÅGÅR'), lx + 1 + ox, 30 + oy, '#7a1414');   // glöden runt bokstäverna
+    ctxText(ctx, SMALL, $t('FILM PÅGÅR'), lx + 1, 30, lampOn ? '#ff5a4a' : '#4a1818');
     drawClock(ctx);
     for (const x of F.LAMPS) drawChandelier(ctx, x);
     // biljettluckan: kassörskan bakom glaset (eller rullgardinen när det är stängt)
@@ -911,7 +912,7 @@ export function makeShopBio(A, opts = {}) {
       for (let y = W0.y0; y < W0.y1; y++) { ctx.fillStyle = (y - W0.y0) % 3 === 2 ? '#8a6a44' : '#c8a878'; ctx.fillRect(W0.x0, y, W0.x1 - W0.x0, 1); }
     }
     ctx.drawImage(booth.img, booth.ox, booth.oy);
-    if (!open) { const s = 'STÄNGT'; ctx.fillStyle = '#1a0a0e'; ctx.fillRect(F.KASS.x - 14, W0.y0 + 8, 28, 9); ctxText(ctx, SMALL, s, F.KASS.x - (textW(SMALL, s) >> 1), W0.y0 + 10, '#f0d890'); }
+    if (!open) { const s = $t('STÄNGT'); ctx.fillStyle = '#1a0a0e'; ctx.fillRect(F.KASS.x - 14, W0.y0 + 8, 28, 9); ctxText(ctx, SMALL, s, F.KASS.x - (textW(SMALL, s) >> 1), W0.y0 + 10, '#f0d890'); }
     // en biljett glider ut ur springan
     if (t - kass.handT < 1.2) { const k = clamp((t - kass.handT) / 0.5, 0, 1); ctx.fillStyle = '#f4ecd8'; ctx.fillRect(F.KASS.x - 3, W0.y1 + 1 + Math.round(k * 3), 7, 3); ctx.fillStyle = '#c8262e'; ctx.fillRect(F.KASS.x - 3, W0.y1 + 2 + Math.round(k * 3), 7, 1); }
     // popcornmaskinen poppar (och lampan i taket på skåpet)
@@ -928,7 +929,7 @@ export function makeShopBio(A, opts = {}) {
       if (open) drawPerson(c, Math.round(godis.x), F.GODIS_Y, KEVIN, godis.dir, godis.carry ? (godis.walking ? [7, 9, 8, 9][Math.floor(t * 8.5) % 4] : 9) : kf);
       if (open && godis.carry) c.drawImage(bucketImg(7, 7), Math.round(godis.x) - 4, F.GODIS_Y - 23);
       c.drawImage(counter.img, counter.ox, counter.oy);
-      if (!popOpen()) { c.fillStyle = '#1a0a0e'; c.fillRect(300, F.CNT.top - 10, 32, 9); ctxText(c, SMALL, 'STÄNGT', 304, F.CNT.top - 8, '#f0d890'); }
+      if (!popOpen()) { c.fillStyle = '#1a0a0e'; c.fillRect(300, F.CNT.top - 10, 32, 9); ctxText(c, SMALL, $t('STÄNGT'), 304, F.CNT.top - 8, '#f0d890'); }
     });
     // kösnörena: bakre stolparna, repet och de främre
     add(F.ROPE.y0, (c) => { for (const x of [F.ROPE.xl, F.ROPE.xr]) c.drawImage(post.img, x - post.ox, F.ROPE.y0 - post.oy); });
@@ -1025,7 +1026,7 @@ export function makeShopBio(A, opts = {}) {
   function drawCredits(ctx, u) {
     const { x, y } = S.FILM, f = show.film;
     ctx.fillStyle = '#060406'; ctx.fillRect(x, y, FILM_W, FILM_H);
-    const lines = [[f.titel, '#f0cc5a'], ['', ''], ['I ROLLERNA', '#8a7a6a'], ...(ROLLER[f.id] || []).map(([a, b]) => [`${a} ... ${b}`, '#e8e0d0']), ['', ''], ['REGI  ALVA PIXELBERG', '#e8e0d0'], ['MUSIK  BOSSE BLIPP', '#e8e0d0'], ['', ''], ['INSPELAD I PIXELSTADEN', '#8a7a6a'], ['', ''], ['BIO PIXEL', '#f0cc5a']];
+    const lines = [[f.titel, '#f0cc5a'], ['', ''], [$t('I ROLLERNA'), '#8a7a6a'], ...(ROLLER[f.id] || []).map(([a, b]) => [`${a} ... ${b}`, '#e8e0d0']), ['', ''], [$t('REGI  ALVA PIXELBERG'), '#e8e0d0'], [$t('MUSIK  BOSSE BLIPP'), '#e8e0d0'], ['', ''], [$t('INSPELAD I PIXELSTADEN'), '#8a7a6a'], ['', ''], [$t('BIO PIXEL'), '#f0cc5a']];
     const total = lines.length * 9 + FILM_H, off = Math.round(FILM_H - (u / CRED) * total);
     ctx.save(); ctx.beginPath(); ctx.rect(x, y, FILM_W, FILM_H); ctx.clip();
     lines.forEach(([s, col], i) => { if (!s) return; const yy = y + off + i * 9; if (yy < y - 8 || yy > y + FILM_H) return; ctxText(ctx, SMALL, s, x + ((FILM_W - textW(SMALL, s)) >> 1), yy, col); });
@@ -1119,7 +1120,7 @@ export function makeShopBio(A, opts = {}) {
       ctx.restore();
       // det som lyser i mörkret: utgångsskyltarna, steglamporna, rampljuset
       ctx.save(); ctx.globalAlpha = L.dark;
-      for (const [D, label] of [[S.DOOR, 'UTGÅNG'], [S.NOD, 'NÖDUTGÅNG']]) {
+      for (const [D, label] of [[S.DOOR, $t('UTGÅNG')], [S.NOD, $t('NÖDUTGÅNG')]]) {
         const lw = textW(SMALL, label) + 6, lxx = ((D.x0 + D.x1) >> 1) - (lw >> 1), ly = D.top - 14;
         ctx.fillStyle = '#1a8a3a'; ctx.fillRect(lxx + 1, ly + 1, lw - 2, 7); ctxText(ctx, SMALL, label, lxx + 3, ly + 2, '#f4fff4');
       }
@@ -1134,8 +1135,8 @@ export function makeShopBio(A, opts = {}) {
   // ritas nere till vänster, över golvet – skyltarna på väggen syns alltid. Svarar med sin högerkant.
   function drawPanel(ctx) {
     const lines = [];
-    if (me.biljett) lines.push(['bilj', `BILJETT: ${filmById(me.biljett)?.titel || ''}`]);
-    if (me.pop && !(show && showPhase() === 'film')) lines.push(['pop', `POPCORN ${me.pop.left}/${me.pop.total}`]);
+    if (me.biljett) lines.push(['bilj', $t`BILJETT: ${filmById(me.biljett)?.titel || ''}`]);
+    if (me.pop && !(show && showPhase() === 'film')) lines.push(['pop', $t`POPCORN ${me.pop.left}/${me.pop.total}`]);
     if (!lines.length) return 0;
     const w = Math.max(...lines.map(([, s]) => textW(SMALL, s))) + 18, h = lines.length * 11 + 3;
     const sx = (A.view?.safe?.x0 ?? 0) + 4, sy = Math.min(H, A.view?.safe?.y1 ?? H) - h - 5;
@@ -1204,11 +1205,11 @@ export function makeShopBio(A, opts = {}) {
   // bägaren erbjuds "ät upp snabbt och gå" – resten räknas in (ätregeln: uppäten sittande).
   function askLeave() {
     const pop = !!(me.pop && me.pop.left > 0);
-    openModal('🎬 Gå mitt i filmen?', `<p style="font-size:var(--f2);margin-top:0">${esc(show.film.titel)} är inte slut än. Går du nu missar du slutet – och får bara så mycket energi som du hunnit se.${pop ? ' Popcornen får inte följa med ut – den äter du upp innan du går.' : ''}</p>`, [
-      { label: '🍿 Stanna kvar', cls: 'btn-go', onClick: closeModal },
+    openModal($t('🎬 Gå mitt i filmen?'), `<p style="font-size:var(--f2);margin-top:0">${$t`${esc(show.film.titel)} är inte slut än. Går du nu missar du slutet – och får bara så mycket energi som du hunnit se.`}${pop ? ` ${$t('Popcornen får inte följa med ut – den äter du upp innan du går.')}` : ''}</p>`, [
+      { label: $t('🍿 Stanna kvar'), cls: 'btn-go', onClick: closeModal },
       pop
-        ? { label: '😋 Ät upp snabbt och gå', onClick: () => { closeModal(); gobble(); leaveShow(); } }
-        : { label: '🚪 Gå ut', onClick: () => { closeModal(); leaveShow(); } },
+        ? { label: $t('😋 Ät upp snabbt och gå'), onClick: () => { closeModal(); gobble(); leaveShow(); } }
+        : { label: $t('🚪 Gå ut'), onClick: () => { closeModal(); leaveShow(); } },
     ]);
   }
   function gobble() {
@@ -1217,7 +1218,7 @@ export function makeShopBio(A, opts = {}) {
     me.pop = null; me.eating = 0;
     g.save();
     play('ok');
-    talk.say('😋 GLUFS! Uppätet – nu går jag.', meAt, 2.2);
+    talk.say($t('😋 GLUFS! Uppätet – nu går jag.'), meAt, 2.2);
   }
   function leaveShow() {
     if (me.pop) return;                                   // (kan inte hända: gobble() först)
@@ -1233,8 +1234,8 @@ export function makeShopBio(A, opts = {}) {
     enter() {
       play('door');
       doorFT = t + 1;
-      if (isOpen()) setTimeout(() => talkKass.say(isNight() ? 'God kväll och välkommen till Bio Pixel!' : 'Välkommen till Bio Pixel!', kassAt), 500);
-      else talk.say(`🔒 Bion öppnar ${clock(HOURS[0] * 60)}.`, meAt);
+      if (isOpen()) setTimeout(() => talkKass.say(isNight() ? $t('God kväll och välkommen till Bio Pixel!') : $t('Välkommen till Bio Pixel!'), kassAt), 500);
+      else talk.say($t`🔒 Bion öppnar ${clock(HOURS[0] * 60)}.`, meAt);
     },
     _debug: {
       state: dbg,
@@ -1290,7 +1291,7 @@ export function makeShopBio(A, opts = {}) {
     down(sx, sy) {
       const x = sx + cam.x, y = sy - Math.round(cam.y);
       hoverId = null;
-      if (me.state === 'waitPop') { if (t - me.msgT > 2) { talkGodis.say('🍿 Jag fyller din bägare – två sekunder!', godisAt); me.msgT = t; } return; }
+      if (me.state === 'waitPop') { if (t - me.msgT > 2) { talkGodis.say($t('🍿 Jag fyller din bägare – två sekunder!'), godisAt); me.msgT = t; } return; }
       const h = spotAt(x, y);
       const midFilm = me.state === 'sit' && me.seat?.kind === 'salong' && show && !show.given;
       // mitt i filmen: ut bara via utgången, och då frågar vi först (popcornen äts upp innan)
@@ -1303,7 +1304,7 @@ export function makeShopBio(A, opts = {}) {
       }
       // mitt i filmen: tyst i salongen
       if (midFilm) {
-        if (t - me.msgT > 1.5) { talk.say('🤫 SCH! Filmen pågår.', meAt, 1.6); me.msgT = t; }
+        if (t - me.msgT > 1.5) { talk.say($t('🤫 SCH! Filmen pågår.'), meAt, 1.6); me.msgT = t; }
         return;
       }
       // med popcorn i händerna (eller på väg från Kevin) kommer man inte ut på gatan
@@ -1311,9 +1312,9 @@ export function makeShopBio(A, opts = {}) {
       const s = seatAt(x, y);
       if (s && !s.occ) { if (me.state === 'sit') standUp(); goSit(s); play('click'); return; }
       if (s && s.occ && s.occ !== 'me') {
-        if (s.occ.state === 'sit' && t - me.msgT > 1.2) { say(s.occ, ['UPPTAGET!', 'HÄR SITTER JAG.', 'SCH!'][(Math.random() * 3) | 0], 1.6); me.msgT = t; }
-        else if (s.occ.state === 'sofa' && t - me.msgT > 1.2) { s.occ.bubble = { text: ['HEJ!', 'VI VÄNTAR PÅ FILMEN.', 'VILL DU HA POPCORN?'][(Math.random() * 3) | 0], until: t + 2.4 }; me.msgT = t; play('click'); }
-        else if (t - me.msgT > 1.2) { talk.say('😕 Där sitter någon redan!', meAt); me.msgT = t; }
+        if (s.occ.state === 'sit' && t - me.msgT > 1.2) { say(s.occ, [$t('UPPTAGET!'), $t('HÄR SITTER JAG.'), $t('SCH!')][(Math.random() * 3) | 0], 1.6); me.msgT = t; }
+        else if (s.occ.state === 'sofa' && t - me.msgT > 1.2) { s.occ.bubble = { text: [$t('HEJ!'), $t('VI VÄNTAR PÅ FILMEN.'), $t('VILL DU HA POPCORN?')][(Math.random() * 3) | 0], until: t + 2.4 }; me.msgT = t; play('click'); }
+        else if (t - me.msgT > 1.2) { talk.say($t('😕 Där sitter någon redan!'), meAt); me.msgT = t; }
         return;
       }
       if (me.state === 'sit') standUp();
@@ -1354,18 +1355,18 @@ export function makeShopBio(A, opts = {}) {
       const h = hoverId && t - hoverT < 3 ? hoverId : null;
       let label = null;
       if (h) {
-        if (h === 'dorr') label = me.pop || me.order ? 'ÄT UPP POPCORNEN FÖRST - SEN KAN DU GÅ UT' : 'GÅ UT PÅ GATAN';
-        else if (h === 'lucka') label = ticketsOpen() ? `BILJETTLUCKAN - BILJETT ${BIO_PRIS.biljett} KR` : 'BILJETTLUCKAN - STÄNGD';
-        else if (h === 'bar') label = popOpen() ? `POPCORN ${BIO_PRIS.popcorn} KR` : 'GODISBAREN - STÄNGD';
-        else if (h === 'salong' || h === 'vakt') label = me.biljett ? 'SALONG 1 - VISA BILJETTEN' : 'SALONG 1 - BARA MED BILJETT';
-        else if (h === 'kartong') label = 'PIXELHÄMNAREN 3 - PREMIÄR!';
-        else if (h === 'klo') label = 'GRIPKLON';
+        if (h === 'dorr') label = me.pop || me.order ? $t('ÄT UPP POPCORNEN FÖRST - SEN KAN DU GÅ UT') : $t('GÅ UT PÅ GATAN');
+        else if (h === 'lucka') label = ticketsOpen() ? $t`BILJETTLUCKAN - BILJETT ${BIO_PRIS.biljett} KR` : $t('BILJETTLUCKAN - STÄNGD');
+        else if (h === 'bar') label = popOpen() ? $t`POPCORN ${BIO_PRIS.popcorn} KR` : $t('GODISBAREN - STÄNGD');
+        else if (h === 'salong' || h === 'vakt') label = me.biljett ? $t('SALONG 1 - VISA BILJETTEN') : $t('SALONG 1 - BARA MED BILJETT');
+        else if (h === 'kartong') label = $t('PIXELHÄMNAREN 3 - PREMIÄR!');
+        else if (h === 'klo') label = $t('GRIPKLON');
         else if (h.startsWith('affisch')) { const f = FILMER[+h.slice(7)]; label = `${f.titel} - ${f.genre} ${f.alder}`; }
-        else if (h.startsWith('staffli')) { const f = FILMER[F.POSTERS.length + +h.slice(7)]; label = `PREMIÄR! ${f.titel}`; }
-        else if (h === 'utgang') label = 'UTGÅNG - TILL FOAJÉN';
-        else if (h === 'nodutgang') label = 'NÖDUTGÅNG';
-        else if (h === 'duk') label = 'DUKEN';
-        else { const s = seatById(h); if (s) label = s.occ && s.occ !== 'me' ? 'UPPTAGEN' : s.kind === 'salong' ? `RAD ${s.row + 1} PLATS ${SEAT_XS.indexOf(s.x) + 1}` : 'SOFFAN - SITT OCH ÄT'; }
+        else if (h.startsWith('staffli')) { const f = FILMER[F.POSTERS.length + +h.slice(7)]; label = $t`PREMIÄR! ${f.titel}`; }
+        else if (h === 'utgang') label = $t('UTGÅNG - TILL FOAJÉN');
+        else if (h === 'nodutgang') label = $t('NÖDUTGÅNG');
+        else if (h === 'duk') label = $t('DUKEN');
+        else { const s = seatById(h); if (s) label = s.occ && s.occ !== 'me' ? $t('UPPTAGEN') : s.kind === 'salong' ? $t`RAD ${s.row + 1} PLATS ${SEAT_XS.indexOf(s.x) + 1}` : $t('SOFFAN - SITT OCH ÄT'); }
       }
       if (label) {
         const w = textW(SMALL, label) + 10, x1 = Math.min(VW, A.view?.safe?.x1 ?? VW), yb = Math.min(H, A.view?.safe?.y1 ?? H);

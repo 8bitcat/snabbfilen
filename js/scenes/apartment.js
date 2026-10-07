@@ -13,6 +13,7 @@
 import { makeRoom, homeRooms, APT } from './room.js';
 import { toast } from '../core/ui.js';
 import { mix, css } from '../core/floor-pix.js';
+import { $t } from '../core/i18n.js';
 
 const FW = 384, FH = 216, WALL_Y = 86;
 const NIGHT_DIM = 0.22;
@@ -151,7 +152,7 @@ export function makeApartment(A, { visit = false } = {}) {
       const dr = decorRoom();
       if (dr >= 0) {
         if (j === dr) { cores[j].down(lx, sy); return; }
-        if (C(dr).carrying()) { toast('📦 Den står kvar i det här rummet – lägg den i förrådet, så kan du ställa ut den i ett annat rum.'); return; }
+        if (C(dr).carrying()) { toast($t('📦 Den står kvar i det här rummet – lägg den i förrådet, så kan du ställa ut den i ett annat rum.')); return; }
         cores[dr].toggleDecor(false); cores[j].toggleDecor(true);
         cores[j].down(lx, sy);
         return;

@@ -10,6 +10,7 @@
 // mustaschen ska täcka den (valross).
 import { ramp } from './util.js';
 import { pix, pal, tint, GOLD, GOLD_HI } from './face-kit.js';
+import { $t, $n } from '../i18n.js';
 
 const Beard = (label, group, spec) => ({
   label, group,
@@ -32,92 +33,92 @@ const white = () => { const w = ramp(0xf2efe8); return { A: 0xffffff, a: w.base,
 
 export const BEARDS_NEW = {
   // --- helskägg ---
-  short: Beard('Kort skägg', 'Helskägg', {
+  short: Beard($t('Kort skägg'), $n('Helskägg'), {
     p: sparse, dy: 1,
     f: ['.a........o.', '.Aa......ao.', '..Aaaaaaao..', '...aaaaaa...'],
     s: ['...a...', '..aaaa.', '.aaaaaa', '.oaaaaa'],
   }),
-  long: Beard('Långt skägg', 'Helskägg', {
+  long: Beard($t('Långt skägg'), $n('Helskägg'), {
     dy: 1,
     f: ['.a........o.', '.Aa......ao.', '..Aaaaaaao..', '...Aaaaaa...', '..Aaaaaaao..', '...Aaoaao...', '...aoaaoa...', '....aaao....', '.....oo.....'],
     s: ['...a...', '..aaaa.', '.oaaaaa', '.oaaaaa', '.oaaaaa', '..oaaaa', '..oaao.', '...oao.', '....o..'],
   }),
-  bushy: Beard('Buskigt skägg', 'Helskägg', {
+  bushy: Beard($t('Buskigt skägg'), $n('Helskägg'), {
     dy: 1,
     f: ['.a........o.', 'Aaa......aao', 'Aaaaaaaaaaao', '.Aaaaaaaaao.', '..aaaaaaao..', '....oaao....'],
     s: ['...a...', '.aaaaa.', 'aaaaaaa', 'oaaaaaa', '.oaaaaa', '...oao.'],
   }),
-  santa: Beard('Tomteskägg', 'Helskägg', {
+  santa: Beard($t('Tomteskägg'), $n('Helskägg'), {
     p: white, dy: 1,
     f: ['.a........o.', 'Aaa......aao', 'AaaaaaaaaaaO', '.Aaaaaaaaao.', '..aaaaaaao..', '...Aaaaaao..', '....aaao....', '.....oo.....'],
     s: ['...a...', '.aaaaa.', 'aaaaaaa', 'oaaaaaa', '.oaaaaa', '..oaaaa', '...aao.', '....o..'],
   }),
-  viking: Beard('Vikingaskägg', 'Helskägg', {
+  viking: Beard($t('Vikingaskägg'), $n('Helskägg'), {
     p: () => ({ y: GOLD, Y: GOLD_HI }), dy: 1,
     f: ['.a........o.', '.Aa......ao.', '..Aaaaaaao..', '...Aaaaaa...', '...aaaaaao..', '...Ao..oa...', '...oa..ao...', '...Ao..oa...', '...Yy..Yy...'],
     s: ['...a...', '..aaaa.', '.oaaaaa', '.oaaaaa', '..oaaaa', '....oa.', '....ao.', '....oa.', '....Yy.'],
   }),
-  forked: Beard('Tvåuddigt', 'Helskägg', {
+  forked: Beard($t('Tvåuddigt'), $n('Helskägg'), {
     dy: 1,
     f: ['.a........o.', '.Aa......ao.', '..Aaaaaaao..', '...Aaaaaa...', '..Aaaaaaao..', '...aa..ao...', '...a....o...'],
     s: ['...a...', '..aaaa.', '.oaaaaa', '.oaaaaa', '.oaaaaa', '..oa.aa', '..o...a'],
   }),
-  duck: Beard('Ankstjärt', 'Helskägg', {
+  duck: Beard($t('Ankstjärt'), $n('Helskägg'), {
     dy: 1,
     f: ['.a........o.', '.Aa......ao.', '..Aaaaaaao..', '...Aaaaaa...', '...Aaaaao...', '....Aaao....', '.....ao.....'],
     s: ['...a...', '..aaaa.', '.oaaaaa', '.oaaaaa', '..oaaaa', '....oaa', '.....a.'],
   }),
   // helskägg med grå strån insprängda (grått blandat in i hårfärgen, g)
-  saltPepper: Beard('Gråsprängt skägg', 'Helskägg', {
+  saltPepper: Beard($t('Gråsprängt skägg'), $n('Helskägg'), {
     p: (R) => ({ g: R.mix(R.hair.base, 0xd8d4cc, 0.7) }), dy: 1,
     f: ['.a........o.', '.Ag......ao.', '..AagaagaO..', '...gaaaag...', '....aoga....'],
     s: ['...a...', '..agaa.', '.aagaga', '.oagaaa', '..oaga.'],
   }),
-  chinCurtain: Beard('Skepparkrans', 'Helskägg', {
+  chinCurtain: Beard($t('Skepparkrans'), $n('Helskägg'), {
     dy: 1,
     f: ['.a........o.', '.Aa......ao.', '..Aa....ao..', '...Aa..ao...', '...Aaaaaa...', '....oaao....'],
     s: ['...a...', '..aa...', '.aa....', '.oa....', '..oaaa.', '...oa..'],
   }),
   // --- hakskägg & polisonger ---
-  chinStrap: Beard('Hakband', 'Haka & kinder', {
+  chinStrap: Beard($t('Hakband'), $n('Haka & kinder'), {
     dy: 0,
     f: ['.o........o.', '.o........o.', '.o........o.', '..o......o..', '...o....o...', '....oooo....'],
     s: ['...o...', '...o...', '...o...', '..o....', '..o....', '...ooo.'],
   }),
-  goatBeard: Beard('Bockskägg', 'Haka & kinder', {
+  goatBeard: Beard($t('Bockskägg'), $n('Haka & kinder'), {
     dy: 5,
     f: ['....Aaao....', '.....aa.....', '.....ao.....', '......o.....'],
     s: ['....aa.', '....ao.', '....a..', '....o..'],
   }),
-  vanDyke: Beard('Van Dyke', 'Haka & kinder', {
+  vanDyke: Beard($t('Van Dyke'), $n('Haka & kinder'), {
     dy: 2,
     f: ['...o....o...', '....aaaa....', '............', '.....aa.....', '.....ao.....', '......o.....'],
     s: ['....o..', '....aaa', '.......', '....aa.', '....ao.', '....o..'],
   }),
-  soulPatch: Beard('Hakprick', 'Haka & kinder', { dy: 5, f: ['.....ao.....'], s: ['.....a.'] }),
+  soulPatch: Beard($t('Hakprick'), $n('Haka & kinder'), { dy: 5, f: ['.....ao.....'], s: ['.....a.'] }),
   // mustasch och pipskägg som möts i en ring runt munnen
-  circle: Beard('Ringskägg', 'Haka & kinder', {
+  circle: Beard($t('Ringskägg'), $n('Haka & kinder'), {
     dy: 3,
     f: ['...Aaaaao...', '...a....o...', '....aaao....'],
     s: ['....aaa', '....a..', '....ao.'],
   }),
-  sideburns: Beard('Polisonger', 'Haka & kinder', {
+  sideburns: Beard($t('Polisonger'), $n('Haka & kinder'), {
     dy: -2,
     f: ['.a........o.', '.a........o.', '.a........o.', '.a........o.', '.o........o.'],
     s: ['...a...', '...a...', '...a...', '...o...'],
   }),
-  muttonChops: Beard('Fårskinn', 'Haka & kinder', {
+  muttonChops: Beard($t('Fårskinn'), $n('Haka & kinder'), {
     dy: -2,
     f: ['.a........o.', '.a........o.', '.a........o.', '.Aa......ao.', '.Aaa....aao.', '..aa....ao..'],
     s: ['...a...', '...a...', '...a...', '..Aa...', '.Aaao..', '.oao...'],
   }),
-  kaiser: Beard('Kejsarskägg', 'Haka & kinder', {
+  kaiser: Beard($t('Kejsarskägg'), $n('Haka & kinder'), {
     dy: -2,
     f: ['.a........o.', '.a........o.', '.a........o.', '.Aa......ao.', '.Aaa....aao.', '..aaaaaaao..'],
     s: ['...a...', '...a...', '...a...', '..Aa...', '.Aaao..', '.oaoaaa'],
   }),
   shadow: {
-    label: 'Skuggskägg', group: 'Haka & kinder',
+    label: $t('Skuggskägg'), group: $n('Haka & kinder'),
     // skäggväxt som en jämn skugga (inte rutig som stubben)
     front(R) {
       if (R.K) return;
@@ -134,9 +135,9 @@ export const BEARDS_NEW = {
     },
   },
   // --- mustascher ---
-  walrus: Beard('Valross', 'Mustascher', { dy: 3, mouth: false, f: ['...Aaaaao...', '....oaao....'], s: ['....aaa', '.....ao'] }),
-  handlebar: Beard('Styrmustasch', 'Mustascher', { dy: 2, f: ['..o......o..', '...Aaaaao...'], s: ['...o...', '....aaa'] }),
-  pencil: Beard('Blyerts­mustasch', 'Mustascher', { dy: 3, f: ['...oo..oo...'], s: ['.....oo'] }),
-  horseshoe: Beard('Hästsko­mustasch', 'Mustascher', { dy: 3, f: ['....aaaa....', '....a..o....', '....a..o....'], s: ['.....aa', '.....a.', '.....o.'] }),
-  hanging: Beard('Häng­mustasch', 'Mustascher', { dy: 3, f: ['...oaaao....', '...o....o...', '...o....o...', '...o....o...'], s: ['....oaa', '....o..', '....o..', '....o..'] }),
+  walrus: Beard($t('Valross'), $n('Mustascher'), { dy: 3, mouth: false, f: ['...Aaaaao...', '....oaao....'], s: ['....aaa', '.....ao'] }),
+  handlebar: Beard($t('Styrmustasch'), $n('Mustascher'), { dy: 2, f: ['..o......o..', '...Aaaaao...'], s: ['...o...', '....aaa'] }),
+  pencil: Beard($t('Blyerts­mustasch'), $n('Mustascher'), { dy: 3, f: ['...oo..oo...'], s: ['.....oo'] }),
+  horseshoe: Beard($t('Hästsko­mustasch'), $n('Mustascher'), { dy: 3, f: ['....aaaa....', '....a..o....', '....a..o....'], s: ['.....aa', '.....a.', '.....o.'] }),
+  hanging: Beard($t('Häng­mustasch'), $n('Mustascher'), { dy: 3, f: ['...oaaao....', '...o....o...', '...o....o...', '...o....o...'], s: ['....oaa', '....o..', '....o..', '....o..'] }),
 };

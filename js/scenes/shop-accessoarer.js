@@ -47,6 +47,7 @@ import { play } from '../core/sound.js';
 import { saveAvatar } from '../core/avatar.js';
 import { createWalker, selfDrawable, folkDrawables, createSpeech, WALK_SEQ } from './walkable.js';
 import { itemsForSlot, itemById, lookForItem, lookWithoutSlot, isWorn, groupOf } from '../data/wardrobe.js';
+import { $t } from '../core/i18n.js';
 
 // ======================= mått (världskoordinater) =======================
 let VW = 384; // mobilfyllning: vyn följer skärmen, klampad till butiken
@@ -91,7 +92,7 @@ function jit(c, x, y, s = 0, amt = 0.06) {
   return n >= 0 ? mix(c, WHITE, n) : mix(c, 0, -n);
 }
 const mkCanvas = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; };
-const safeTxt = (s) => String(s).replace(/­/g, '').toUpperCase().replace(/[–—]/g, '-').replace(/&/g, '+').replace(/[^A-ZÅÄÖÉ0-9 \-+!.:,?/%'=]/g, '');
+const safeTxt = (s) => String(s).replace(/­/g, '').toUpperCase().replace(/[–—]/g, '-').replace(/&/g, '+').replace(/[^A-ZÅÄÖÉÁÀÂÃÇĆÈÊËÍÌÎÏÑŃÓÒÔÕŚŹŻÚÙÛÜŸÝĄĘŁŒÆ¡¿0-9 \-+!.:,?/%'=]/g, '');   // (accenterna: de andra språken, docs/SPRAK.md)
 const plain = (s) => String(s).replace(/­/g, '');
 
 // ======================= ägande och köp =======================
@@ -110,10 +111,10 @@ function priceOf(g, it) {
 }
 const isRea = (g, it) => priceOf(g, it) < it.price;
 function buyIt(g, it) {
-  if (typeof g.buyItem === 'function') return g.buyItem(it.id) || { ok: false, msg: 'Köpet gick inte igenom.' };
-  if (owns(g, it)) return { ok: false, msg: 'Den har du redan!' };
+  if (typeof g.buyItem === 'function') return g.buyItem(it.id) || { ok: false, msg: $t('Köpet gick inte igenom.') };
+  if (owns(g, it)) return { ok: false, msg: $t('Den har du redan!') };
   const price = priceOf(g, it);
-  if (g.money < price) return { ok: false, msg: 'Du har inte råd – dags att jobba ett pass!' };
+  if (g.money < price) return { ok: false, msg: $t('Du har inte råd – dags att jobba ett pass!') };
   if (it.legacy && typeof g.buyClothes === 'function') {
     const i = it.legacy.indexOf(':'), raw = it.legacy.slice(i + 1);
     const r = g.buyClothes(it.legacy.slice(0, i), raw === 'true' ? true : raw);
@@ -127,13 +128,13 @@ function buyIt(g, it) {
 
 // ======================= avdelningarna =======================
 const SECTIONS = [
-  { id: 'hattar', slot: 'hat', sign: 'HATTAR', title: 'Hattar & mössor', icon: '🎩' },
-  { id: 'glasogon', slot: 'glasses', sign: 'GLASÖGON', title: 'Glasögon', icon: '👓' },
-  { id: 'horlurar', slot: 'phones', sign: 'HÖRLURAR', title: 'Hörlurar', icon: '🎧' },
-  { id: 'vaskor', slot: 'bag', sign: 'VÄSKOR', title: 'Väskor', icon: '👜' },
-  { id: 'hals', slot: 'neck', sign: 'HALS', title: 'Halsdukar, slipsar & halsband', icon: '🧣' },
-  { id: 'smycken', slot: 'jewel', sign: 'SMYCKEN', title: 'Smycken, klockor & handskar', icon: '💍' },
-  { id: 'har', slot: 'hairAcc', sign: 'I HÅRET', title: 'Spännen & byglar i håret', icon: '🎀' },
+  { id: 'hattar', slot: 'hat', sign: $t('HATTAR'), title: $t('Hattar & mössor'), icon: '🎩' },
+  { id: 'glasogon', slot: 'glasses', sign: $t('GLASÖGON'), title: $t('Glasögon'), icon: '👓' },
+  { id: 'horlurar', slot: 'phones', sign: $t('HÖRLURAR'), title: $t('Hörlurar'), icon: '🎧' },
+  { id: 'vaskor', slot: 'bag', sign: $t('VÄSKOR'), title: $t('Väskor'), icon: '👜' },
+  { id: 'hals', slot: 'neck', sign: $t('HALS'), title: $t('Halsdukar, slipsar & halsband'), icon: '🧣' },
+  { id: 'smycken', slot: 'jewel', sign: $t('SMYCKEN'), title: $t('Smycken, klockor & handskar'), icon: '💍' },
+  { id: 'har', slot: 'hairAcc', sign: $t('I HÅRET'), title: $t('Spännen & byglar i håret'), icon: '🎀' },
 ];
 const secOf = (slot) => SECTIONS.find((s) => s.slot === slot) || SECTIONS[0];
 
@@ -428,7 +429,7 @@ function wigLook(it, i) {
 const headLook = (it) => lookForItem(it, { ...FORM, skin: '#e2dad4' }, { colors: true });
 
 // ======================= prislappar =======================
-const tagStr = (g, it, short = false) => (owns(g, it) ? 'DIN' : String(priceOf(g, it)) + (short ? '' : ':-'));
+const tagStr = (g, it, short = false) => (owns(g, it) ? $t('DIN') : short ? String(priceOf(g, it)) : $t`${String(priceOf(g, it))}:-`);
 const tagW = (s) => textW(SMALL, s) + 4;
 
 // ======================= utställningen (var varje vara står) =======================
@@ -588,8 +589,8 @@ function paintRoom(night = false) {
   return P.flush();
 }
 const HANG_SIGNS = [
-  { id: 'hattar', x: 134, label: 'HATTAR' }, { id: 'glasogon', x: 354, label: 'GLASÖGON' },
-  { id: 'vaskor', x: 745, label: 'VÄSKOR' }, { id: 'hals', x: 898, label: 'HALSDUKAR + HALSBAND' },
+  { id: 'hattar', x: 134, label: $t('HATTAR') }, { id: 'glasogon', x: 354, label: $t('GLASÖGON') },
+  { id: 'vaskor', x: 745, label: $t('VÄSKOR') }, { id: 'hals', x: 898, label: $t('HALSDUKAR + HALSBAND') },
 ];
 const signW = (label) => textW(SMALL, label) + 12;
 function hangSign(P, cx, label) {
@@ -709,7 +710,7 @@ function paintCabinetGlass(P, U) {
 function paintEntrance(P, night) {
   const { x0, x1, top } = DOOR, cx = (x0 + x1) >> 1;
   // stor skylt ACCESSOARER
-  const lbl = 'ACCESSOARER', tw = textW(BIG, lbl), sub = 'HATTAR  VÄSKOR  SMYCKEN', subw = textW(SMALL, sub);
+  const lbl = $t('ACCESSOARER'), tw = textW(BIG, lbl), sub = $t('HATTAR  VÄSKOR  SMYCKEN'), subw = textW(SMALL, sub);
   const sw = Math.max(tw, subw) + 20, sx = Math.round(cx - sw / 2), sy = 11;
   P.ell(cx, sy + 11, sw * 0.62, 17, 0xffd890, 0.22, 5);
   P.rect(sx, sy, sw, 24, PLUM.dk); P.box(sx, sy, sw, 24, GOLD.dk); P.box(sx + 1, sy + 1, sw - 2, 22, GOLD.base);
@@ -736,7 +737,7 @@ function paintEntrance(P, night) {
     P.rect(gx + (i ? 1 : 10), top + 26, 3, 12, GOLD.base); P.vl(gx + (i ? 1 : 10), top + 26, 12, GOLD.hi);
   }
   P.rect(cx - 1, top, 2, WALL_Y - top, 0x2a1a24);
-  P.rect(cx - 9, top + 4, 18, 9, 0x1d2b1f); P.box(cx - 9, top + 4, 18, 9, 0x0e160f); text(P, SMALL, 'UT', cx - 3, top + 6, 0x6fe08a);
+  P.rect(cx - 9, top + 4, 18, 9, 0x1d2b1f); P.box(cx - 9, top + 4, 18, 9, 0x0e160f); text(P, SMALL, $t('UT'), cx - 3, top + 6, 0x6fe08a);
   // dörrmatta
   P.rect(x0 - 5, WALL_Y + 1, x1 - x0 + 10, 9, 0x3a2e38); P.box(x0 - 5, WALL_Y + 1, x1 - x0 + 10, 9, 0x5a4a56);
   for (let x = x0 - 3; x < x1 + 3; x += 2) P.vl(x, WALL_Y + 3, 5, 0x2e2430);
@@ -744,15 +745,15 @@ function paintEntrance(P, night) {
   const nx = 424, ny = 54;
   P.ell(nx, ny, 12, 12, 0xffe6a0, 0.25, 4);
   for (let y = -9; y <= 9; y++) for (let x = -9; x <= 9; x++) { const d = Math.hypot(x, y); if (d <= 9) P.px(nx + x, ny + y, d > 8 ? GOLD.dk : d > 7 ? GOLD.hi : GOLD.base); }
-  text(P, SMALL, 'NYTT', nx - 7, ny - 2, PLUM.dk);
+  text(P, SMALL, $t('NYTT'), nx - 7, ny - 2, PLUM.dk);
   for (const [a, b] of [[0, -11], [0, 11], [-11, 0], [11, 0]]) P.px(nx + a, ny + b, GOLD.hi);
 }
 
 // ---- väggen bakom kassan: presentaskar, papper, KASSA-skylt ----
 function paintKassaWall(P) {
   const x0 = 494, x1 = 576;
-  const kw = textW(SMALL, 'KASSA') + 12, kx = Math.round((x0 + x1) / 2 - kw / 2);
-  P.rect(kx, 34, kw, 11, PLUM.dk); P.box(kx, 34, kw, 11, GOLD.base); text(P, SMALL, 'KASSA', kx + 6, 37, GOLD.hi);
+  const kw = textW(SMALL, $t('KASSA')) + 12, kx = Math.round((x0 + x1) / 2 - kw / 2);
+  P.rect(kx, 34, kw, 11, PLUM.dk); P.box(kx, 34, kw, 11, GOLD.base); text(P, SMALL, $t('KASSA'), kx + 6, 37, GOLD.hi);
   for (const sy of [58, 76]) {
     P.rect(x0 + 4, sy, x1 - x0 - 8, 2, WALNUT.hi); P.hl(x0 + 4, sy + 2, x1 - x0 - 8, WALNUT.dk); P.darken(x0 + 4, sy + 3, x1 - x0 - 8, 1, 0.8);
     P.rect(x0 + 6, sy + 3, 2, 3, WALNUT.lo); P.rect(x1 - 8, sy + 3, 2, 3, WALNUT.lo);
@@ -783,7 +784,7 @@ function paintSoundWall(P) {
   P.vl(x0, top, bot - top, 0xff5dc8); P.vl(x1 - 1, top, bot - top, 0xff5dc8);
   P.ell(x0, 60, 8, 50, 0xff5dc8, 0.14, 4); P.ell(x1, 60, 8, 50, 0xff5dc8, 0.14, 4);
   // neonskylten
-  const lbl = 'HÖRLURAR', tw = textW(SMALL, lbl), tx = Math.round((x0 + x1) / 2 - tw / 2);
+  const lbl = $t('HÖRLURAR'), tw = textW(SMALL, lbl), tx = Math.round((x0 + x1) / 2 - tw / 2);
   P.ell((x0 + x1) >> 1, 24, 36, 8, 0x3fe0d0, 0.2, 4);
   for (const [dx, dy] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) text(P, SMALL, lbl, tx + dx, 21 + dy, 0x1f8a80, 0.6);
   text(P, SMALL, lbl, tx, 21, 0xb8fff4);
@@ -848,7 +849,7 @@ function paintCounter(displays) {
     Q.rect(wx + 3, wy + 2, ww - 6, wh - 4, WALNUT.base); Q.hl(wx + 3, wy + 2, ww - 6, WALNUT.hi);
     Q.px(wx + (ww >> 1), wy + (wh >> 1), GOLD.hi); Q.px(wx + (ww >> 1), wy + (wh >> 1) + 1, GOLD.lo);
   }
-  const lbl = 'SMYCKEN + KLOCKOR', lw = textW(SMALL, lbl) + 10, lx = Math.round((x0 + x1) / 2 - lw / 2);
+  const lbl = $t('SMYCKEN + KLOCKOR'), lw = textW(SMALL, lbl) + 10, lx = Math.round((x0 + x1) / 2 - lw / 2);
   Q.rect(lx, face + 3, lw, 9, GOLD.base); Q.box(lx, face + 3, lw, 9, GOLD.dk); Q.hl(lx + 1, face + 4, lw - 2, GOLD.hi);
   text(Q, SMALL, lbl, lx + 5, face + 5, PLUM.dk);
   // bordsspegeln till vänster på disken
@@ -884,7 +885,7 @@ function paintHairTable(displays) {
   step(back - 8, back, front - 8);
   step(front - 8, front, y);
   P.vl(x0, back - 8, y - back + 8, LACQ.dk); P.vl(x1 - 1, back - 8, y - back + 8, LACQ.dk);
-  const lbl = 'I HÅRET', lw = textW(SMALL, lbl) + 10, lx = Math.round((x0 + x1) / 2 - lw / 2);
+  const lbl = $t('I HÅRET'), lw = textW(SMALL, lbl) + 10, lx = Math.round((x0 + x1) / 2 - lw / 2);
   P.rect(lx, front + 7, lw, 9, PLUM.dk); P.box(lx, front + 7, lw, 9, GOLD.base); text(P, SMALL, lbl, lx + 5, front + 9, GOLD.hi);
   const c = P.flush(), x = c.getContext('2d');
   x.imageSmoothingEnabled = false;
@@ -1020,17 +1021,17 @@ function weekLook() {
 // ======================= repliker =======================
 const CLERK_LOOK = { skin: '#8d5a3b', hair: '#1d1714', style: 'bun', top: 'shirt', shirt: '#2e2c38', accent: '#e8c050', bottom: 'pants', pants: '#2e2c38', shoes: '#1c1c1c', glasses: 'catEye', neck: 'pearls', jewel: 'hoops', beard: false, phones: false, bag: null, hat: null, build: 5, cheeks: 'blush' };
 const CLERK_TIPS = [
-  'Hej och välkommen! 👋 Klicka på något du gillar så får du prova det på dig.',
-  'Tips: spegeln bredvid hattarna visar hur du ser ut just nu! 🪞',
-  'Skyltarna i taket visar hela sortimentet för avdelningen.',
-  'Smyckena ligger i glasdisken – örhängen, klockor och handskar.',
-  'Allt du köper hänger i garderoben där hemma sen.',
+  $t('Hej och välkommen! 👋 Klicka på något du gillar så får du prova det på dig.'),
+  $t('Tips: spegeln bredvid hattarna visar hur du ser ut just nu! 🪞'),
+  $t('Skyltarna i taket visar hela sortimentet för avdelningen.'),
+  $t('Smyckena ligger i glasdisken – örhängen, klockor och handskar.'),
+  $t('Allt du köper hänger i garderoben där hemma sen.'),
 ];
-const TRY_LINES = ['Passar den mig? 😄', 'Den här är ju söt!', 'Hmm …', 'Oj, vad fin!', 'Vad tycker du?', 'Snyggt, va?'];
-const BACK_LINES = ['Nja, inte min stil.', 'Lite för dyr …', 'Jag tänker på saken.', 'Kanske nästa gång!'];
-const BUY_LINES = ['Den tar jag!', 'Den måste jag ha! 💖', 'Köper!'];
-const THANKS = ['Tack för köpet! 💖', 'Tack! Den klär dig! ✨', 'Tack så mycket – välkommen åter!'];
-const MINE = ['Den är min! ✨', 'Yes! 🛍️', 'Så fin! 💖'];
+const TRY_LINES = [$t('Passar den mig? 😄'), $t('Den här är ju söt!'), $t('Hmm …'), $t('Oj, vad fin!'), $t('Vad tycker du?'), $t('Snyggt, va?')];
+const BACK_LINES = [$t('Nja, inte min stil.'), $t('Lite för dyr …'), $t('Jag tänker på saken.'), $t('Kanske nästa gång!')];
+const BUY_LINES = [$t('Den tar jag!'), $t('Den måste jag ha! 💖'), $t('Köper!')];
+const THANKS = [$t('Tack för köpet! 💖'), $t('Tack! Den klär dig! ✨'), $t('Tack så mycket – välkommen åter!')];
+const MINE = [$t('Den är min! ✨'), $t('Yes! 🛍️'), $t('Så fin! 💖')];
 
 // ======================= scenen =======================
 export function makeShopAccessoarer(A, opts = {}) {
@@ -1181,23 +1182,23 @@ export function makeShopAccessoarer(A, opts = {}) {
   // ---------- klickbara platser ----------
   const spots = [
     ...displays.map((d) => ({ id: d.it.id, r: d.r, go: d.go, face: d.face, disp: d, act: () => openBuy(A, d.it, { onBought }) })),
-    { id: 'dorr', r: [DOOR.x0 - 3, DOOR.top - 4, DOOR.x1 + 3, WALL_Y + 6], go: DOOR_SPOT, label: 'UT PÅ GATAN', act: () => { play('door'); A.go('city'); } },
-    { id: 'kassa', r: [DESK.x0, DESK.top - 30, DESK.x1, DESK.y], go: PAY, face: 'up', label: 'KASSAN', act: () => { play('click'); talkClerk.say(CLERK_TIPS[tipI++ % CLERK_TIPS.length], clerkAt, 4.5, { voice: CLERK_LOOK }); } },
-    { id: 'spegel', r: [MIR.x0, MIR.top - 6, MIR.x1, MIR.y], go: [278, UNIT_Y + 6], face: 'up', label: 'SPEGELN', act: () => { play('click'); talkMe.say(mirrorLine(), meAt, 3); } },
-    { id: 'docka', r: [MANQ.x - 12, MANQ.y - 46, MANQ.x + 12, MANQ.y + 4], go: [MANQ.x + 20, MANQ.y + 4], face: 'left', label: 'VECKANS LOOK', act: () => openKat(A, { title: '✨ Veckans look', ids: WEEK_LOOK, onBought }) },
-    { id: 'hattstang', r: [STAND.x - 14, STAND.y - 50, STAND.x + 14, STAND.y + 2], go: [STAND.x + 16, STAND.y + 2], face: 'left', label: 'HATTSTÅNGEN - SE ALLA HATTAR', act: () => openKat(A, { sec: 'hattar', onBought }) },
-    { id: 'puff', r: [POUF.x - 17, POUF.y - 16, POUF.x + 17, POUF.y + 2], go: [POUF.x, POUF.y + 10], face: 'up', label: 'PUFFEN', act: () => { play('click'); talkMe.say('Skönt att vila fötterna en stund. 😌', meAt, 3); } },
-    { id: 'ljud', r: [SND.x0 + 4, 16, SND.x1 - 4, 32], go: [(SND.x0 + SND.x1) >> 1, UNIT_Y + 6], face: 'up', label: 'HÖRLURAR - SE ALLA', act: () => { notes(); openKat(A, { sec: 'horlurar', onBought }); } },
-    ...HANG_SIGNS.map((s) => ({ id: 'skylt-' + s.id, r: [s.x - signW(s.label) / 2, 0, s.x + signW(s.label) / 2, 14], go: [s.x, UNIT_Y + 6], face: 'up', label: s.label + ' - SE ALLA', act: () => openKat(A, { sec: s.id, onBought }) })),
-    { id: 'skylt-smycken', r: [(JEW.x0 + JEW.x1) / 2 - 40, JEW.face, (JEW.x0 + JEW.x1) / 2 + 40, JEW.y], go: [(JEW.x0 + JEW.x1) >> 1, JEW.y + 8], face: 'up', label: 'SMYCKEN - SE ALLA', act: () => openKat(A, { sec: 'smycken', onBought }) },
-    { id: 'skylt-har', r: [(HAIRT.x0 + HAIRT.x1) / 2 - 24, HAIRT.front + 4, (HAIRT.x0 + HAIRT.x1) / 2 + 24, HAIRT.y], go: [(HAIRT.x0 + HAIRT.x1) >> 1, HAIRT.y + 8], face: 'up', label: 'I HÅRET - SE ALLA', act: () => openKat(A, { sec: 'har', onBought }) },
+    { id: 'dorr', r: [DOOR.x0 - 3, DOOR.top - 4, DOOR.x1 + 3, WALL_Y + 6], go: DOOR_SPOT, label: $t('UT PÅ GATAN'), act: () => { play('door'); A.go('city'); } },
+    { id: 'kassa', r: [DESK.x0, DESK.top - 30, DESK.x1, DESK.y], go: PAY, face: 'up', label: $t('KASSAN'), act: () => { play('click'); talkClerk.say(CLERK_TIPS[tipI++ % CLERK_TIPS.length], clerkAt, 4.5, { voice: CLERK_LOOK }); } },
+    { id: 'spegel', r: [MIR.x0, MIR.top - 6, MIR.x1, MIR.y], go: [278, UNIT_Y + 6], face: 'up', label: $t('SPEGELN'), act: () => { play('click'); talkMe.say(mirrorLine(), meAt, 3); } },
+    { id: 'docka', r: [MANQ.x - 12, MANQ.y - 46, MANQ.x + 12, MANQ.y + 4], go: [MANQ.x + 20, MANQ.y + 4], face: 'left', label: $t('VECKANS LOOK'), act: () => openKat(A, { title: $t('✨ Veckans look'), ids: WEEK_LOOK, onBought }) },
+    { id: 'hattstang', r: [STAND.x - 14, STAND.y - 50, STAND.x + 14, STAND.y + 2], go: [STAND.x + 16, STAND.y + 2], face: 'left', label: $t('HATTSTÅNGEN - SE ALLA HATTAR'), act: () => openKat(A, { sec: 'hattar', onBought }) },
+    { id: 'puff', r: [POUF.x - 17, POUF.y - 16, POUF.x + 17, POUF.y + 2], go: [POUF.x, POUF.y + 10], face: 'up', label: $t('PUFFEN'), act: () => { play('click'); talkMe.say($t('Skönt att vila fötterna en stund. 😌'), meAt, 3); } },
+    { id: 'ljud', r: [SND.x0 + 4, 16, SND.x1 - 4, 32], go: [(SND.x0 + SND.x1) >> 1, UNIT_Y + 6], face: 'up', label: $t('HÖRLURAR - SE ALLA'), act: () => { notes(); openKat(A, { sec: 'horlurar', onBought }); } },
+    ...HANG_SIGNS.map((s) => ({ id: 'skylt-' + s.id, r: [s.x - signW(s.label) / 2, 0, s.x + signW(s.label) / 2, 14], go: [s.x, UNIT_Y + 6], face: 'up', label: $t`${s.label} - SE ALLA`, act: () => openKat(A, { sec: s.id, onBought }) })),
+    { id: 'skylt-smycken', r: [(JEW.x0 + JEW.x1) / 2 - 40, JEW.face, (JEW.x0 + JEW.x1) / 2 + 40, JEW.y], go: [(JEW.x0 + JEW.x1) >> 1, JEW.y + 8], face: 'up', label: $t('SMYCKEN - SE ALLA'), act: () => openKat(A, { sec: 'smycken', onBought }) },
+    { id: 'skylt-har', r: [(HAIRT.x0 + HAIRT.x1) / 2 - 24, HAIRT.front + 4, (HAIRT.x0 + HAIRT.x1) / 2 + 24, HAIRT.y], go: [(HAIRT.x0 + HAIRT.x1) >> 1, HAIRT.y + 8], face: 'up', label: $t('I HÅRET - SE ALLA'), act: () => openKat(A, { sec: 'har', onBought }) },
   ];
   // klickrutorna för golvmöblernas varor ligger ovanpå möblerna – de vinner över skyltarna
   const spotAt = (x, y) => spots.find((s) => x >= s.r[0] && x <= s.r[2] && y >= s.r[1] && y <= s.r[3]);
   const spotById = (id) => spots.find((s) => s.id === id);
   const mirrorLine = () => {
     const n = ['hat', 'glasses', 'bag', 'neck', 'jewel', 'hairAcc', 'phones'].reduce((a, slot) => a + (itemsForSlot(slot).some((it) => isWorn(it, A.avatar.look)) ? 1 : 0), 0);
-    return n ? `🪞 Snygg! Jag har ${n} accessoar${n === 1 ? '' : 'er'} på mig.` : '🪞 Hmm, lite naket … en hatt kanske?';
+    return n ? (n === 1 ? $t`🪞 Snygg! Jag har ${n} accessoar på mig.` : $t`🪞 Snygg! Jag har ${n} accessoarer på mig.`) : $t('🪞 Hmm, lite naket … en hatt kanske?');
   };
   function goSpot(s) {
     peekCam = null; peekY = null; aim = s;
@@ -1314,7 +1315,7 @@ export function makeShopAccessoarer(A, opts = {}) {
     viewMax: { w: W, h: H },
     get worldX() { return walker.px; },
     get worldY() { return walker.py; },
-    enter() { if (seen(CLERK_AT[0])) talkClerk.say('Välkommen in! ✨', clerkAt, 2.5, { voice: CLERK_LOOK }); },
+    enter() { if (seen(CLERK_AT[0])) talkClerk.say($t('Välkommen in! ✨'), clerkAt, 2.5, { voice: CLERK_LOOK }); },
     exit() { talkMe.clear(); talkClerk.clear(); for (const s of shoppers) s.talk.clear(); },
     update,
     down(sx, sy) {
@@ -1362,8 +1363,8 @@ export function makeShopAccessoarer(A, opts = {}) {
       // pilskyltarna till butikens andra ände ligger i nederkanten (på golvet, inte över
       // hyllorna) och viker undan för namnskylten. Är fler spelare här ligger emoji-knapparna
       // i nedre högra hörnet – då lyfts den högra skylten över dem.
-      if (cx + vx.x0 > 60) edgeSign(ctx, true, 'HATTAR + SMYCKEN', bottom, lab, vx);
-      if (cx + vx.x1 < W - 60) edgeSign(ctx, false, 'VÄSKOR + HALSBAND', bottom - (A.worldFolksHere?.().length ? 26 : 0), lab, vx);
+      if (cx + vx.x0 > 60) edgeSign(ctx, true, $t('HATTAR + SMYCKEN'), bottom, lab, vx);
+      if (cx + vx.x1 < W - 60) edgeSign(ctx, false, $t('VÄSKOR + HALSBAND'), bottom - (A.worldFolksHere?.().length ? 26 : 0), lab, vx);
     },
     _debug: {
       spot: (id) => {
@@ -1474,9 +1475,9 @@ function bigLabel(ctx, spot, g, t, y0) {
   if (d) {
     own = owns(g, d.it);
     name = safeTxt(d.it.name);
-    price = own ? 'DIN!' : `${priceOf(g, d.it)} KR`;
-    hint = own ? 'KLICKA SÅ TAR DU PÅ DIG DEN' : 'KLICKA SÅ PROVAR DU DEN PÅ DIG';
-  } else { name = spot.label || ''; hint = 'KLICKA'; }
+    price = own ? $t('DIN!') : $t`${priceOf(g, d.it)} KR`;
+    hint = own ? $t('KLICKA SÅ TAR DU PÅ DIG DEN') : $t('KLICKA SÅ PROVAR DU DEN PÅ DIG');
+  } else { name = spot.label || ''; hint = $t('KLICKA'); }
   if (!name) return;
   const nw = textW(BIG, name), pw = price ? textW(BIG, price) : 0, hw = textW(SMALL, hint);
   const w = Math.max(nw + (price ? pw + 10 : 0) + 20, hw + 20), h = 22, x0 = Math.round((VW - w) / 2);
@@ -1506,9 +1507,9 @@ function edgeSign(ctx, left, lbl, bottom, lab = null, vx = { x0: 0, x1: VW }) {
 // ======================= dialogerna =======================
 const SWATCHES = ['#f28bb3', '#ff7a6b', '#d9433b', '#e07a2e', '#f0b429', '#9fd356', '#46a35a', '#2aa39a', '#7fb8e8', '#3a7bd5', '#2d3a5c', '#8e5bd1', '#b9a3e8', '#b83d7a', '#6b4a33', '#f4f1ea', '#1d1d22'];
 const DIRS = ['down', 'left', 'up', 'right'];
-const DIR_NAMES = ['Framifrån', 'Från sidan', 'Bakifrån', 'Från sidan'];
+const DIR_NAMES = [$t('Framifrån'), $t('Från sidan'), $t('Bakifrån'), $t('Från sidan')];
 const FIELD_OF = { hat: 'cap', bag: 'bagColor', phones: 'phoneColor', neck: 'neckColor', hairAcc: 'accent' };
-const AGAINST = { hat: 'ditt hår', phones: 'ditt hår', hairAcc: 'ditt hår', bag: 'dina kläder', neck: 'din tröja' };
+const AGAINST = { hat: $t('ditt hår'), phones: $t('ditt hår'), hairAcc: $t('ditt hår'), bag: $t('dina kläder'), neck: $t('din tröja') };
 
 const figPx = (look, dir) => {
   const c = mkCanvas(28, 44), x = c.getContext('2d', { willReadFrequently: true });
@@ -1580,12 +1581,13 @@ function openBuy(A, it, { onBought, back } = {}) {
   let dirI = bestDir(me, patch(me));
   const turned = dirI !== 0;
   const own = owns(g, it), worn = own && isWorn(it, me), price = priceOf(g, it), short = price - g.money, rea = price < it.price;
-  const name = plain(it.name), group = plain(groupOf(it));
+  const name = plain(it.name), group = plain($t(groupOf(it)));
   const note = {
-    glasses: 'Bågarna har sin egen färg – just den här modellen.',
-    jewel: entryOf('jewel', it.look.jewel)?.tile === 'torso' ? 'Sitter på handen eller handleden – vrid figuren så ser du den bäst.' : 'Smycket har sin egen färg.',
+    glasses: $t('Bågarna har sin egen färg – just den här modellen.'),
+    jewel: entryOf('jewel', it.look.jewel)?.tile === 'torso' ? $t('Sitter på handen eller handleden – vrid figuren så ser du den bäst.') : $t('Smycket har sin egen färg.'),
   }[it.slot] || '';
-  const swBtn = (c, on) => `<button class="acb-sw ${on ? 'on' : ''}" data-c="${c}" style="--c:${c}" aria-label="Färg ${c}"></button>`;
+  const mot = AGAINST[it.slot] || $t('dig');
+  const swBtn = (c, on) => `<button class="acb-sw ${on ? 'on' : ''}" data-c="${c}" style="--c:${c}" aria-label="${$t`Färg ${c}`}"></button>`;
   const body = `<style>
     .acb{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start}
     .acb-l{display:flex;flex-direction:column;gap:6px;align-items:center;flex:none}
@@ -1611,27 +1613,27 @@ function openBuy(A, it, { onBought, back } = {}) {
   <div class="acb">
     <div class="acb-l">
       <div class="acb-stage">
-        <div class="acb-fig" data-fig="now"><i></i><small>Du nu</small></div>
+        <div class="acb-fig" data-fig="now"><i></i><small>${$t('Du nu')}</small></div>
         <div class="acb-arrow">➜</div>
-        <div class="acb-fig" data-fig="new"><i></i><small>${worn ? 'Utan' : 'Med'} ${esc(name.toLowerCase())}</small></div>
+        <div class="acb-fig" data-fig="new"><i></i><small>${worn ? $t`Utan ${esc(name.toLowerCase())}` : $t`Med ${esc(name.toLowerCase())}`}</small></div>
       </div>
       <div class="acb-turn">
-        <button class="btn btn-small" data-turn="-1" aria-label="Vrid åt vänster">⟲ Vrid</button>
+        <button class="btn btn-small" data-turn="-1" aria-label="${$t('Vrid åt vänster')}">${$t('⟲ Vrid')}</button>
         <b class="acb-view" data-view>${DIR_NAMES[dirI]}</b>
-        <button class="btn btn-small" data-turn="1" aria-label="Vrid åt höger">Vrid ⟳</button>
+        <button class="btn btn-small" data-turn="1" aria-label="${$t('Vrid åt höger')}">${$t('Vrid ⟳')}</button>
       </div>
     </div>
     <div class="acb-r">
       <p class="acb-dept">${esc(sec.title)}${group ? ' · ' + esc(group) : ''}</p>
-      <p class="acb-price">${own ? '<b class="ok">✓ Den här är din!</b>' : `Pris: <b>${rea ? `<s>${fmt(it.price)}</s> ` : ''}${fmt(price)}</b>${rea ? ' <b class="bad">REA</b>' : ''}`}</p>
-      <p class="acb-money">💰 Du har <b>${fmt(g.money)}</b>${own ? '' : short > 0 ? ` · <b class="bad">du saknar ${fmt(short)}</b>` : ` · kvar efter köpet: <b>${fmt(g.money - price)}</b>`}</p>
-      ${field && !worn ? `<div><b style="font-size:var(--f2)">Prova färg:</b></div>
+      <p class="acb-price">${own ? `<b class="ok">${$t('✓ Den här är din!')}</b>` : `${$t('Pris:')} <b>${rea ? `<s>${fmt(it.price)}</s> ` : ''}${fmt(price)}</b>${rea ? ` <b class="bad">${$t('REA')}</b>` : ''}`}</p>
+      <p class="acb-money">${$t`💰 Du har <b>${fmt(g.money)}</b>`}${own ? '' : short > 0 ? ` · <b class="bad">${$t`du saknar ${fmt(short)}`}</b>` : ` · ${$t`kvar efter köpet: <b>${fmt(g.money - price)}</b>`}`}</p>
+      ${field && !worn ? `<div><b style="font-size:var(--f2)">${$t('Prova färg:')}</b></div>
       <div class="acb-sws" data-sws>${sw.map((c) => swBtn(c, c === color)).join('')}</div>
-      ${sug && color !== sug ? `<p class="acb-hint">👀 Första rutan är skyltdockans färg – vi valde en som syns mot ${AGAINST[it.slot] || 'dig'}.</p>` : ''}
-      <p class="acb-hint">🎨 Färgerna här är bara för att prova – när den är din väljer du fritt i garderoben där hemma.</p>` : ''}
+      ${sug && color !== sug ? `<p class="acb-hint">${$t`👀 Första rutan är skyltdockans färg – vi valde en som syns mot ${mot}.`}</p>` : ''}
+      <p class="acb-hint">${$t('🎨 Färgerna här är bara för att prova – när den är din väljer du fritt i garderoben där hemma.')}</p>` : ''}
       ${note ? `<p class="acb-hint">${note}</p>` : ''}
-      ${turned ? `<p class="acb-hint">🔄 ${esc(name)} syns bäst ${DIR_NAMES[dirI].toLowerCase()} på dig.</p>` : ''}
-      ${own ? '' : '<label class="acb-wear"><input type="checkbox" data-wear checked> Ta på mig den direkt</label>'}
+      ${turned ? `<p class="acb-hint">${$t`🔄 ${esc(name)} syns bäst ${DIR_NAMES[dirI].toLowerCase()} på dig.`}</p>` : ''}
+      ${own ? '' : `<label class="acb-wear"><input type="checkbox" data-wear checked> ${$t('Ta på mig den direkt')}</label>`}
     </div>
   </div>`;
   const icon = it.icon || sec.icon;
@@ -1639,18 +1641,18 @@ function openBuy(A, it, { onBought, back } = {}) {
   const wear = () => { A.avatar = saveAvatar({ ...A.avatar, look: newLook() }); };
   const leave = () => { closeModal(); back?.(); };
   const dlg = openModal(`${icon} ${esc(name)}`, body, [
-    { label: back ? '← Tillbaka' : 'Stäng', onClick: leave },
+    { label: back ? $t('← Tillbaka') : $t('Stäng'), onClick: leave },
     own
       ? worn
-        ? { label: '🧺 Ta av mig den', cls: 'btn-go', onClick: () => { wear(); play('click'); toast(`${icon} Du tog av dig ${name.toLowerCase()}.`, 'good'); leave(); } }
-        : { label: '✨ Ta på mig den', cls: 'btn-go', onClick: () => { wear(); play('ok'); toast(`${icon} Snyggt! Du har ${name.toLowerCase()} på dig.`, 'good'); closeModal(); } }
-      : { label: `🛍️ Köp (${fmt(price)})`, cls: 'btn-go', disabled: short > 0, onClick: () => {
+        ? { label: $t('🧺 Ta av mig den'), cls: 'btn-go', onClick: () => { wear(); play('click'); toast(`${icon} ${$t`Du tog av dig ${name.toLowerCase()}.`}`, 'good'); leave(); } }
+        : { label: $t('✨ Ta på mig den'), cls: 'btn-go', onClick: () => { wear(); play('ok'); toast(`${icon} ${$t`Snyggt! Du har ${name.toLowerCase()} på dig.`}`, 'good'); closeModal(); } }
+      : { label: $t`🛍️ Köp (${fmt(price)})`, cls: 'btn-go', disabled: short > 0, onClick: () => {
         const wearIt = dlg.querySelector('[data-wear]')?.checked;
         const r = buyIt(g, it);
-        if (!r?.ok) { toast(r?.msg || 'Köpet gick inte igenom.', 'bad'); play('fel'); return; }
+        if (!r?.ok) { toast(r?.msg || $t('Köpet gick inte igenom.'), 'bad'); play('fel'); return; }
         play('buy');
         if (wearIt) wear();
-        toast(`${icon} ${name} är din!${wearIt ? ' Du har den på dig.' : ' Den ligger i garderoben där hemma.'}`, 'good');
+        toast(`${icon} ${wearIt ? $t`${name} är din! Du har den på dig.` : $t`${name} är din! Den ligger i garderoben där hemma.`}`, 'good');
         closeModal();
         onBought?.(it);
       } },
@@ -1686,12 +1688,12 @@ function openKat(A, { sec, ids, title, onBought } = {}) {
   if (!list.length) return null;
   const me = A.avatar.look;
   const groups = new Map();
-  for (const it of list) { const k = ids ? '' : plain(groupOf(it)); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(it); }
+  for (const it of list) { const k = ids ? '' : plain($t(groupOf(it))); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(it); }
   const nOwn = list.filter((it) => owns(g, it)).length;
   const tile = (it) => {
     const own = owns(g, it), p = priceOf(g, it);
     return `<button class="ack-t ${own ? 'own' : p > g.money ? 'dyr' : ''}" data-id="${esc(it.id)}" title="${esc(plain(it.name))}">
-      <i data-fig="${esc(it.id)}"></i><b>${esc(plain(it.name))}</b><small>${own ? '✓ Din' : (p < it.price ? '🔥 ' : '') + fmt(p)}</small></button>`;
+      <i data-fig="${esc(it.id)}"></i><b>${esc(plain(it.name))}</b><small>${own ? $t('✓ Din') : (p < it.price ? '🔥 ' : '') + fmt(p)}</small></button>`;
   };
   const body = `<style>
     .ack-top{font-size:var(--f2);margin:0 0 6px}
@@ -1705,9 +1707,9 @@ function openKat(A, { sec, ids, title, onBought } = {}) {
     .ack-t.own{background:#e2f6e6}.ack-t.own small{color:#2f8f46;font-weight:bold}
     .ack-t.dyr small{color:#b83d3d}
   </style>
-  <p class="ack-top">💰 Du har <b>${fmt(g.money)}</b> · du äger <b>${nOwn}</b> av ${list.length}. Klicka så provar du på dig.</p>
+  <p class="ack-top">${$t`💰 Du har <b>${fmt(g.money)}</b> · du äger <b>${nOwn}</b> av ${list.length}. Klicka så provar du på dig.`}</p>
   ${[...groups].map(([k, its]) => `${k ? `<p class="ack-g">${esc(k)}</p>` : ''}<div class="ack-grid">${its.map(tile).join('')}</div>`).join('')}`;
-  const dlg = openModal(title || `${S.icon} ${esc(S.title)}`, body, [{ label: 'Stäng', cls: 'btn-go', onClick: closeModal }]);
+  const dlg = openModal(title || `${S.icon} ${esc(S.title)}`, body, [{ label: $t('Stäng'), cls: 'btn-go', onClick: closeModal }]);
   dlg.querySelectorAll('[data-fig]').forEach((el) => {
     const it = itemById(el.dataset.fig);
     if (!it) return;

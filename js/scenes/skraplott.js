@@ -13,6 +13,7 @@
 // open = { dag, n, prize, fields, skrap } är en köpt lott som inte är färdigskrapad: den finns
 // kvar tills man skrapat klart (eller går ut – då skrapas den klart i farten och betalas ut).
 import { Pix, SMALL, BIG, text, textW, ctxText, mix, mul, hash, bayer } from '../core/floor-pix.js';
+import { $t } from '../core/i18n.js';
 
 export const LOTT_PRIS = 25, LOTT_PER_DAG = 10;
 // vinstplanen: sannolikhet per lott (resten = ingen vinst). Förväntat värde ≈ 18,6 kr av 25.
@@ -88,9 +89,9 @@ export const lottLeft = (g) => Math.max(0, LOTT_PER_DAG - lottOf(g).n);
 // köp en lott: pengarna dras, lotten sparas som öppen (inte skrapad)
 export function buyLott(g) {
   const L = lottOf(g);
-  if (L.open) return { ok: false, msg: 'Skrapa klart lotten du har först!', open: L.open };
-  if (L.n >= LOTT_PER_DAG) return { ok: false, msg: `Rullen är slut för i dag – högst ${LOTT_PER_DAG} lotter per dag.` };
-  if (g.money < LOTT_PRIS) return { ok: false, msg: `En lott kostar ${LOTT_PRIS} kr – du har inte råd.` };
+  if (L.open) return { ok: false, msg: $t('Skrapa klart lotten du har först!'), open: L.open };
+  if (L.n >= LOTT_PER_DAG) return { ok: false, msg: $t`Rullen är slut för i dag – högst ${LOTT_PER_DAG} lotter per dag.` };
+  if (g.money < LOTT_PRIS) return { ok: false, msg: $t`En lott kostar ${LOTT_PRIS} kr – du har inte råd.` };
   const n = L.n, prize = lottPrize(L.salt, g.day, n);
   g.money -= LOTT_PRIS;
   L.n = n + 1; L.kopt += 1;
@@ -160,22 +161,22 @@ function ticketBg() {
   for (const [cx, cy] of [[0, 0], [TW - 1, 0], [0, TH - 1], [TW - 1, TH - 1]]) for (let y = -3; y <= 3; y++) for (let x = -3; x <= 3; x++) if (Math.hypot(x, y) < 3.2) { const X = cx + x, Y = cy + y; if (X >= 0 && Y >= 0 && X < TW && Y < TH) P.d[(Y * TW + X) * 4 + 3] = 0; }
   // rubriken LYCKOSKRAP i guld med skugga, klöver på båda sidor
   // guldbokstäver med mörk kontur runt om och en ljusare överkant
-  const T = 'LYCKOSKRAP', tw = textW(BIG, T), tx = (TW - tw) >> 1, ty = 8;
+  const T = $t('LYCKOSKRAP'), tw = textW(BIG, T), tx = (TW - tw) >> 1, ty = 8;
   for (const [ox, oy] of [[-1, 0], [1, 0], [0, -1], [0, 1], [1, 1], [2, 2], [1, 2]]) text(P, BIG, T, tx + ox, ty + oy, 0x06200f);
   eachGold(P, T, tx, ty);
   // en guldbåge (banderoll) under rubriken
   for (let x = tx - 6; x < tx + tw + 6; x++) { const y = ty + 10 + Math.round(Math.sin((x - tx + 6) / (tw + 12) * Math.PI) * 2); P.px(x, y, GOLD[3]); P.px(x, y + 1, GOLD[1]); }
   clover(P, 13, 12, 3, 0x2a9a4a, 0x7ae08a); clover(P, TW - 15, 12, 3, 0x2a9a4a, 0x7ae08a);
   for (const [sx, sy] of [[30, 7], [TW - 32, 9], [24, 19], [TW - 26, 18]]) { P.px(sx, sy, 0xfff4b0); P.px(sx - 1, sy, GOLD[3]); P.px(sx + 1, sy, GOLD[3]); P.px(sx, sy - 1, GOLD[3]); P.px(sx, sy + 1, GOLD[3]); }
-  const sub = '3 LIKA BELOPP = VINST!', sw = textW(SMALL, sub);
+  const sub = $t('3 LIKA BELOPP = VINST!'), sw = textW(SMALL, sub);
   text(P, SMALL, sub, ((TW - sw) >> 1) + 1, 24, 0x06200f);
   text(P, SMALL, sub, ((TW - sw) >> 1), 23, 0xf4f0e0);
   // rutornas ramar
   for (let i = 0; i < 6; i++) { const x = FX(i), y = FY(i); P.rect(x - 1, y - 1, FW + 2, FH + 2, OUT); P.hl(x - 1, y + FH + 1, FW + 2, GREEN[0]); }
   // det finstilta: vinstplanen och att lotten är avgjord redan när den köps
-  const fine = 'VINSTER 100 - 500 - 1000 KR', fw = textW(SMALL, fine);
+  const fine = $t('VINSTER 100 - 500 - 1000 KR'), fw = textW(SMALL, fine);
   text(P, SMALL, fine, ((TW - fw) >> 1) + 1, 90, 0x06200f); text(P, SMALL, fine, (TW - fw) >> 1, 89, GOLD[3]);
-  const fine2 = 'VINSTEN AVGÖRS NÄR LOTTEN KÖPS', f2 = textW(SMALL, fine2);
+  const fine2 = $t('VINSTEN AVGÖRS NÄR LOTTEN KÖPS'), f2 = textW(SMALL, fine2);
   text(P, SMALL, fine2, (TW - f2) >> 1, 98, GREEN[4]);
   TICKET_BG = P.flush();
   return TICKET_BG;
@@ -191,7 +192,7 @@ function fieldArt(v, i) {
   const tx = ((FW - w) >> 1) + 2, ty = 6;
   text(P, BIG, s, tx + 1, ty + 1, 0xd8c890);
   text(P, BIG, s, tx, ty, col);
-  text(P, SMALL, 'KR', ((FW - textW(SMALL, 'KR')) >> 1) + 2, FH - 7, big ? col : 0x5a5a62);
+  text(P, SMALL, $t('KR'), ((FW - textW(SMALL, $t('KR'))) >> 1) + 2, FH - 7, big ? col : 0x5a5a62);
   if (v >= 500) for (const [sx, sy] of [[FW - 6, 5], [FW - 9, 3]]) { P.px(sx, sy, 0xf4d050); P.px(sx - 1, sy, 0xf4d050); P.px(sx + 1, sy, 0xf4d050); P.px(sx, sy - 1, 0xf4d050); P.px(sx, sy + 1, 0xf4d050); }
   return P.flush();
 }
@@ -205,7 +206,7 @@ function coatingCanvas(i) {
     if (hash(x, y, 900 + i) > 0.93) v += 0.12;
     P.px(x, y, tone(SILVER, v, x, y));
   }
-  text(P, SMALL, 'SKRAPA', ((FW - textW(SMALL, 'SKRAPA')) >> 1), 9, SILVER[1]);
+  text(P, SMALL, $t('SKRAPA'), ((FW - textW(SMALL, $t('SKRAPA'))) >> 1), 9, SILVER[1]);
   c.getContext('2d').drawImage(P.flush(), 0, 0);
   return c;
 }
@@ -292,15 +293,15 @@ export function createTicket(ticket, opts = {}) {
       // foten: lottens nummer och knapparna
       const fy = y0 + TH + 2;
       ctx.fillStyle = '#17151a'; ctx.fillRect(x0 - 3, fy - 1, TW + 6, 15);
-      ctxText(ctx, SMALL, `LOTT ${ticket.n + 1} - DAG ${ticket.dag}`, x0 + 1, fy + 4, '#9a94a8');
+      ctxText(ctx, SMALL, $t`LOTT ${ticket.n + 1} - DAG ${ticket.dag}`, x0 + 1, fy + 4, '#9a94a8');
       if (!result) {
-        button(ctx, x0 + TW - 58, fy + 1, 'SKRAPA ALLT', '#c8ccd4', () => api.revealAll());
+        button(ctx, x0 + TW - 58, fy + 1, $t('SKRAPA ALLT'), '#c8ccd4', () => api.revealAll());
       } else {
-        const okW = textW(SMALL, 'OK') + 10;
-        button(ctx, x0 + TW - okW - 1, fy + 1, 'OK', '#8ae08a', () => opts.onClose?.(), true);
-        if (opts.canMore?.()) { const lbl = `EN TILL ${LOTT_PRIS} KR`; button(ctx, x0 + TW - okW - textW(SMALL, lbl) - 16, fy + 1, lbl, '#f0c848', () => opts.onMore?.()); }
+        const okW = textW(SMALL, $t('OK')) + 10;
+        button(ctx, x0 + TW - okW - 1, fy + 1, $t('OK'), '#8ae08a', () => opts.onClose?.(), true);
+        if (opts.canMore?.()) { const lbl = $t`EN TILL ${LOTT_PRIS} KR`; button(ctx, x0 + TW - okW - textW(SMALL, lbl) - 16, fy + 1, lbl, '#f0c848', () => opts.onMore?.()); }
         // resultatet: en skylt över rubriken (rutorna syns hela tiden)
-        const win = result.prize > 0, msg = win ? `VINST ${result.prize} KR!` : 'INGEN VINST', sub = win ? 'GRATTIS!' : 'BÄTTRE LYCKA NÄSTA GÅNG';
+        const win = result.prize > 0, msg = win ? $t`VINST ${result.prize} KR!` : $t('INGEN VINST'), sub = win ? $t('GRATTIS!') : $t('BÄTTRE LYCKA NÄSTA GÅNG');
         const mw = Math.max(textW(BIG, msg), textW(SMALL, sub)) + 16, mh = 23, mx = x0 + ((TW - mw) >> 1), my = y0 + 5;
         if (t - resultT > 0.5) {
           ctx.fillStyle = '#17151a'; ctx.fillRect(mx - 2, my - 2, mw + 4, mh + 4);

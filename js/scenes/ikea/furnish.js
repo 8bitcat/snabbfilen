@@ -11,6 +11,7 @@ import { restTableImg, chairImg, REST_TABLE_W } from './resto.js';
 import { katOf, tagDims, signText } from './kat.js';
 import { LIFT_W } from './art-transit.js';
 import { FRAMES } from '../../data/frames.js';
+import { $t } from '../../core/i18n.js';
 
 const prop = (img, x, y, o = {}) => ({ img, x, y, fy: y + img.height, ...o });
 const foot = (p, h = 8, dx0 = 1, dx1 = 1) => [p.x + dx0, p.fy - h, p.x + p.img.width - dx1, p.fy];
@@ -34,8 +35,8 @@ export function furnish(F) {
     anchors.smaland = { x0: bx + 16, x1: bx + 70, y: smB.y + 37 };
     // skyltstolpar
     const [eu, en] = F.esc;
-    add(prop(signpostImg([['PLAN 2 UTSTÄLLNING', 'U'], ['RESTAURANG', 'U'], ['HISS', 'L']]), eu.board[0] - 52, A_FLOOR + 66), 'post');
-    add(prop(signpostImg([['MARKNADSHALL', 'R'], ['LAGER OCH KASSOR', 'R'], ['UTGÅNG', 'R']]), en.board[0] - 104, A_FLOOR + 66), 'post');
+    add(prop(signpostImg([[$t('PLAN 2 UTSTÄLLNING'), 'U'], [$t('RESTAURANG'), 'U'], [$t('HISS'), 'L']]), eu.board[0] - 52, A_FLOOR + 66), 'post');
+    add(prop(signpostImg([[$t('MARKNADSHALL'), 'R'], [$t('LAGER OCH KASSOR'), 'R'], [$t('UTGÅNG'), 'R']]), en.board[0] - 104, A_FLOOR + 66), 'post');
     add(prop(offerSignImg(), bx + 404, A_FLOOR + 84));
     bench('sittbank', 0, bx + 310, A_FLOOR + 122); bench('sittbank', 0, bx + 350, A_FLOOR + 122);
     bench('vaxtS', 0, bx + 290, A_FLOOR + 124); bench('vaxtS', 0, bx + 384, A_FLOOR + 124);
@@ -101,8 +102,9 @@ export function furnish(F) {
   if (F.n === 2) {
     const c = F.core, bx = c.x0;
     const [eu, en] = F.esc;
-    add(prop(signpostImg([['VARDAGSRUM', 'R'], ['SOVRUM', 'R'], ['RESTAURANG', 'D']]), eu.board[0] + 20, A_FLOOR + 90), 'post');
-    add(prop(signpostImg([['PLAN 1', 'D'], ['MARKNADSHALL', 'D'], ['KASSOR', 'D']]), en.board[0] + 6, B_FLOOR - 54), 'post');
+    add(prop(signpostImg([[$t('VARDAGSRUM'), 'R'], [$t('SOVRUM'), 'R'], [$t('RESTAURANG'), 'D']]), eu.board[0] + 20, A_FLOOR + 90), 'post');
+    add(prop(signpostImg([[$t('PLAN 1'), 'D'], [$t('MARKNADSHALL'), 'D'], [$t('KASSOR'), 'D']])
+, en.board[0] + 6, B_FLOOR - 54), 'post');
     add(prop(bigPlantImg(4), bx + 8, A_FLOOR + 118));
     add(prop(bigPlantImg(5), bx + 214, A_FLOOR + 30));
     add(prop(bigPlantImg(6), bx + 8, B_FLOOR + 60));

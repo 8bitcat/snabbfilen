@@ -10,17 +10,18 @@
 import { drawPerson } from './people.js';
 import { play } from './sound.js';
 import { BIG, ctxText, textW } from './floor-pix.js';
+import { $t } from './i18n.js';
 
 export const DUR = 2.4;   // sekunder (världens emotes visas 2,6 s)
 export const ACTIONS = [
-  { e: '👻', namn: 'BU!', when: (L) => L.hat === 'ghost', fx: 'bu', snd: 'fel' },
-  { e: '🪄', namn: 'Trollspöet', when: (L) => L.bag === 'fairyWings', fx: 'wand', snd: 'coin' },
-  { e: '✨', namn: 'Trollformeln', when: (L) => L.hat === 'witch' || L.hat === 'wizard' || L.top === 'robe', fx: 'spell', snd: 'box' },
-  { e: '🧛', namn: 'Muahaha!', when: (L) => L.top === 'vampire', fx: 'bats', snd: 'slide' },
-  { e: '💀', namn: 'Skallra', when: (L) => L.topPrint === 'skeleton' || L.bottomPrint === 'skeleton', fx: 'rattle', snd: 'click' },
-  { e: '🎃', namn: 'Lys', when: (L) => L.topPrint === 'pumpkin', fx: 'glow', snd: 'ok' },
-  { e: '🦸', namn: 'Hjältekraft', when: (L) => L.top === 'hero', fx: 'hero', snd: 'fanfare' },
-  { e: '😇', namn: 'Gloria', when: (L) => L.hat === 'halo' || L.bag === 'wings', fx: 'halo', snd: 'morning' },
+  { e: '👻', namn: $t('BU!'), when: (L) => L.hat === 'ghost', fx: 'bu', snd: 'fel' },
+  { e: '🪄', namn: $t('Trollspöet'), when: (L) => L.bag === 'fairyWings', fx: 'wand', snd: 'coin' },
+  { e: '✨', namn: $t('Trollformeln'), when: (L) => L.hat === 'witch' || L.hat === 'wizard' || L.top === 'robe', fx: 'spell', snd: 'box' },
+  { e: '🧛', namn: $t('Muahaha!'), when: (L) => L.top === 'vampire', fx: 'bats', snd: 'slide' },
+  { e: '💀', namn: $t('Skallra'), when: (L) => L.topPrint === 'skeleton' || L.bottomPrint === 'skeleton', fx: 'rattle', snd: 'click' },
+  { e: '🎃', namn: $t('Lys'), when: (L) => L.topPrint === 'pumpkin', fx: 'glow', snd: 'ok' },
+  { e: '🦸', namn: $t('Hjältekraft'), when: (L) => L.top === 'hero', fx: 'hero', snd: 'fanfare' },
+  { e: '😇', namn: $t('Gloria'), when: (L) => L.hat === 'halo' || L.bag === 'wings', fx: 'halo', snd: 'morning' },
 ];
 export const actionFor = (L) => ACTIONS.find((a) => a.when(L || {})) || null;
 export const actionByEmote = (e) => ACTIONS.find((a) => a.e === e) || null;
@@ -91,7 +92,7 @@ function fx(ctx, x, y, a, el, dir, frame) {
   const t = el;
   switch (a.fx) {
     case 'bu': {
-      bubble(ctx, x, y - 44, 'BUUU!', el);
+      bubble(ctx, x, y - 44, $t('BUUU!'), el);
       for (let k = 0; k < 3; k++) { const u = (t * 1.5 + k / 3) % 1; R(ctx, x - 12 - u * 8, y - 30 + k * 6, 3, 1, `rgba(200,210,240,${(0.6 * (1 - u)).toFixed(2)})`); R(ctx, x + 10 + u * 8, y - 30 + k * 6, 3, 1, `rgba(200,210,240,${(0.6 * (1 - u)).toFixed(2)})`); }
       break;
     }
@@ -112,7 +113,7 @@ function fx(ctx, x, y, a, el, dir, frame) {
       break;
     }
     case 'bats': {
-      bubble(ctx, x, y - 46, 'MUAHAHA!', el);
+      bubble(ctx, x, y - 46, $t('MUAHAHA!'), el);
       for (let k = 0; k < 4; k++) {
         const ang = t * 4 + k * Math.PI / 2, bx = x + Math.cos(ang) * 14, by = y - 26 + Math.sin(ang) * 6, up = Math.floor(t * 10 + k) % 2;
         R(ctx, bx, by, 3, 2, '#1c1428'); R(ctx, bx - 2, by + (up ? -1 : 1), 2, 1, '#1c1428'); R(ctx, bx + 3, by + (up ? -1 : 1), 2, 1, '#1c1428');
@@ -121,7 +122,7 @@ function fx(ctx, x, y, a, el, dir, frame) {
     }
     case 'rattle': {
       for (let k = 0; k < 4; k++) { const u = (t * 2 + k / 4) % 1; R(ctx, x + (k % 2 ? 9 : -10) + u * (k % 2 ? 4 : -4), y - 34 + k * 7, 2, 1, `rgba(244,241,234,${(1 - u).toFixed(2)})`); }
-      if (el < 1.4) bubble(ctx, x, y - 44, 'KLAPP!', el);
+      if (el < 1.4) bubble(ctx, x, y - 44, $t('KLAPP!'), el);
       break;
     }
     case 'glow': for (let k = 0; k < 6; k++) { const u = (t * 0.8 + k / 6) % 1; R(ctx, x - 8 + ((k * 5) % 16), y - 20 - u * 24, 1, 1, u < 0.5 ? '#ffd23f' : '#ff9d0e'); } break;

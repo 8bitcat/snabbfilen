@@ -10,6 +10,7 @@ import { play } from '../../core/sound.js';
 import { saveAvatar } from '../../core/avatar.js';
 import { DEPT } from './data.js';
 import { isDressLike, garmentColors, jerseyBack } from './garment.js';
+import { $t } from '../../core/i18n.js';
 
 // ---------- spelets garderob (game.js) ----------
 // g.ownsWardrobe/g.buyWardrobe (eller samma sak under namnen ownsItem/buyItem/itemPrice som
@@ -25,30 +26,30 @@ export const owns = (g, it) => {
 export const priceOf = (g, it) => { const f = fn(g, 'itemPrice'); const p = f ? f.call(g, it) : NaN; return Number.isFinite(p) ? p : g.clothesPrice(it); }; // REA-dagar: −25 %
 export function buyItem(g, it) {
   const f = fn(g, 'buyWardrobe', 'buyItem');
-  if (!f) return { ok: false, msg: 'Kassan är stängd en stund – försök igen snart!' };
-  return f.call(g, it.id) || { ok: false, msg: 'Köpet gick inte.' };
+  if (!f) return { ok: false, msg: $t('Kassan är stängd en stund – försök igen snart!') };
+  return f.call(g, it.id) || { ok: false, msg: $t('Köpet gick inte.') };
 }
 const plain = (s) => String(s).replace(/­/g, '');
 export const nameOf = (it) => plain(it.name);
 
 // ---------- färgfälten ett plagg har ----------
-const ACCENT_PART = { jacket: 'dragkedjan', shirt: 'kragen och knapparna', hawaii: 'mönstret', suit: 'slipsen', football: 'kragen och ärmsluten' };
+const ACCENT_PART = { jacket: $t('dragkedjan'), shirt: $t('kragen och knapparna'), hawaii: $t('mönstret'), suit: $t('slipsen'), football: $t('kragen och ärmsluten') };
 // [huvudfärgens fält, [detaljfält med förklaring]]
 function fieldsOf(it) {
   const L = it.look, c = it.colors || {};
   switch (it.slot) {
     case 'top': {
       const det = [];
-      if (c.accent || ACCENT_PART[L.top]) det.push(['accent', ACCENT_PART[L.top] || 'detaljerna']);
-      if (L.topPrint && L.topPrint !== 'none') det.push(['print2', 'trycket']);
+      if (c.accent || ACCENT_PART[L.top]) det.push(['accent', ACCENT_PART[L.top] || $t('detaljerna')]);
+      if (L.topPrint && L.topPrint !== 'none') det.push(['print2', $t('trycket')]);
       return ['shirt', det];
     }
     case 'bottom': {
       const det = [];
-      if ((L.bottomPrint && L.bottomPrint !== 'none') || c.pants2) det.push(['pants2', L.bottomPrint && L.bottomPrint !== 'none' ? 'mönstret' : 'detaljerna']);
+      if ((L.bottomPrint && L.bottomPrint !== 'none') || c.pants2) det.push(['pants2', L.bottomPrint && L.bottomPrint !== 'none' ? $t('mönstret') : $t('detaljerna')]);
       return [isDressLike(it) ? 'shirt' : 'pants', det];
     }
-    case 'shoes': return ['shoes', c.shoes2 || entryOf('shoeType', L.shoeType)?.uses?.includes('shoes2') ? [['shoes2', 'detaljerna']] : []];
+    case 'shoes': return ['shoes', c.shoes2 || entryOf('shoeType', L.shoeType)?.uses?.includes('shoes2') ? [['shoes2', $t('detaljerna')]] : []];
     case 'hat': return ['cap', []];
     case 'bag': return ['bagColor', []];
     case 'phones': return ['phoneColor', []];
@@ -91,10 +92,12 @@ function pickColor(cands, avoid) {
   }
   return best;
 }
-const AGAINST = { hat: 'ditt hår', phones: 'ditt hår', bag: 'din tröja', top: 'det du har på dig', bottom: 'det du har på dig', shoes: 'dina byxor' };
+const AGAINST = { hat: $t('ditt hår'), phones: $t('ditt hår'), bag: $t('din tröja'), top: $t('det du har på dig'), bottom: $t('det du har på dig'), shoes: $t('dina byxor') };
+const AGAINST_DIG = $t('dig');
+const OCH = ` ${$t('och')} `;
 
 const DIRS = ['down', 'left', 'up', 'right'];
-const DIR_NAMES = ['Framifrån', 'Från sidan', 'Bakifrån', 'Från sidan'];
+const DIR_NAMES = [$t('Framifrån'), $t('Från sidan'), $t('Bakifrån'), $t('Från sidan')];
 function bestDir(now, withIt) {
   const px = (look, dir) => {
     const c = document.createElement('canvas'); c.width = 28; c.height = 44;
@@ -200,7 +203,7 @@ const CSS = `
   }
 `;
 const stageBg = (key) => { const [c1, c2, c3] = (DEPT[key] || DEPT.mid).stage; return `background:linear-gradient(${c1} 0 72%, ${c3} 72% 73%, ${c2} 73% 100%)`; };
-const swBtn = (c, on, attr) => `<button class="klb-sw ${on ? 'on' : ''}" ${attr}="${c}" style="--c:${c}" aria-label="Färg ${c}"></button>`;
+const swBtn = (c, on, attr) => `<button class="klb-sw ${on ? 'on' : ''}" ${attr}="${c}" style="--c:${c}" aria-label="${$t`Färg ${c}`}"></button>`;
 
 // ================= köpa ett plagg =================
 // opts: { dept, colors (förslag – dockans/lagets), title, note, back (tillbaka till bläddringen) }
@@ -224,49 +227,49 @@ export function openBuy(A, it, opts = {}) {
   const price = priceOf(g, it), rea = price !== it.price;
   const short = price - g.money;
   const name = opts.title || nameOf(it);
-  const turnNote = turned ? `🔄 ${esc(name)} syns bäst ${DIR_NAMES[dirI].toLowerCase()} på dig – vrid figuren så ser du den från alla håll.` : '';
+  const turnNote = turned ? $t`🔄 ${esc(name)} syns bäst ${DIR_NAMES[dirI].toLowerCase()} på dig – vrid figuren så ser du den från alla håll.` : '';
   const body = `<style>${CSS}</style>
   <div class="klb">
     <div class="klb-l">
       <div class="klb-stage" style="${stageBg(key)}">
-        <div class="klb-fig" data-fig="now"><i></i><small>Du nu</small></div>
+        <div class="klb-fig" data-fig="now"><i></i><small>${$t('Du nu')}</small></div>
         <div class="klb-arrow">➜</div>
-        <div class="klb-fig" data-fig="new"><i></i><small>Med ${esc(name.toLowerCase())}</small></div>
+        <div class="klb-fig" data-fig="new"><i></i><small>${$t`Med ${esc(name.toLowerCase())}`}</small></div>
       </div>
       <div class="klb-turn">
-        <button class="btn btn-small" data-turn="-1" aria-label="Vrid åt vänster">⟲ Vrid</button>
+        <button class="btn btn-small" data-turn="-1" aria-label="${$t('Vrid åt vänster')}">${$t('⟲ Vrid')}</button>
         <b class="klb-view" data-view>${DIR_NAMES[dirI]}</b>
-        <button class="btn btn-small" data-turn="1" aria-label="Vrid åt höger">Vrid ⟳</button>
+        <button class="btn btn-small" data-turn="1" aria-label="${$t('Vrid åt höger')}">${$t('Vrid ⟳')}</button>
       </div>
     </div>
     <div class="klb-r">
       <p class="klb-dept">${esc(opts.where || th.title)}${opts.title ? ` · ${esc(nameOf(it))}` : ''}</p>
-      <p class="klb-price">${isOwned ? '<b class="ok">✓ Den här är din!</b>' : `Pris: <b>${rea ? `<s>${fmt(it.price)}</s> ` : ''}${fmt(price)}</b>${rea ? ' <b class="bad">REA</b>' : ''}`}</p>
-      <p class="klb-money">💰 Du har <b>${fmt(g.money)}</b>${isOwned ? '' : short > 0 ? ` · <b class="bad">du saknar ${fmt(short)}</b>` : ` · kvar efter köpet: <b>${fmt(g.money - price)}</b>`}</p>
-      ${field ? `<div><b style="font-size:var(--f2)">Prova färg:</b></div>
+      <p class="klb-price">${isOwned ? `<b class="ok">${$t('✓ Den här är din!')}</b>` : `${$t`Pris: <b>${rea ? `<s>${fmt(it.price)}</s> ` : ''}${fmt(price)}</b>`}${rea ? ` <b class="bad">${$t('REA')}</b>` : ''}`}</p>
+      <p class="klb-money">${$t`💰 Du har <b>${fmt(g.money)}</b>`}${isOwned ? '' : short > 0 ? ` · <b class="bad">${$t`du saknar ${fmt(short)}`}</b>` : ` · ${$t`kvar efter köpet: <b>${fmt(g.money - price)}</b>`}`}</p>
+      ${field ? `<div><b style="font-size:var(--f2)">${$t('Prova färg:')}</b></div>
       <div class="klb-sws" data-sws>${sw.map((c) => swBtn(c, c === color, 'data-c')).join('')}</div>
-      ${color !== dollColor ? `<p class="klb-hint">👀 Första rutan är ${opts.fromDoll ? 'dockans' : 'plaggets'} färg – vi valde en som syns mot ${AGAINST[it.slot] || 'dig'}.</p>` : ''}` : ''}
-      ${det.map((d, i) => `<div><b style="font-size:var(--f2)">${i === 0 && d.f !== 'print2' ? 'Detaljfärg' : d.f === 'print2' ? 'Tryckfärg' : 'Detaljfärg'}</b> <span class="klb-hint">(${esc(d.part)}):</span></div>
+      ${color !== dollColor ? `<p class="klb-hint">${opts.fromDoll ? $t`👀 Första rutan är dockans färg – vi valde en som syns mot ${AGAINST[it.slot] || AGAINST_DIG}.` : $t`👀 Första rutan är plaggets färg – vi valde en som syns mot ${AGAINST[it.slot] || AGAINST_DIG}.`}</p>` : ''}` : ''}
+      ${det.map((d, i) => `<div><b style="font-size:var(--f2)">${i === 0 && d.f !== 'print2' ? $t('Detaljfärg') : d.f === 'print2' ? $t('Tryckfärg') : $t('Detaljfärg')}</b> <span class="klb-hint">(${esc(d.part)}):</span></div>
       <div class="klb-sws small" data-det="${i}">${d.list.map((c) => swBtn(c, c === d.v, 'data-a')).join('')}</div>`).join('')}
-      ${field ? '<p class="klb-hint">🎨 Färgerna här är bara för att prova – när plagget är ditt väljer du fritt bland alla färger i garderoben där hemma.</p>' : ''}
+      ${field ? `<p class="klb-hint">${$t('🎨 Färgerna här är bara för att prova – när plagget är ditt väljer du fritt bland alla färger i garderoben där hemma.')}</p>` : ''}
       ${opts.note ? `<p class="klb-hint">${opts.note}</p>` : ''}
       ${turnNote ? `<p class="klb-hint">${turnNote}</p>` : ''}
-      ${isOwned ? '' : '<label class="klb-wear"><input type="checkbox" data-wear checked> Ta på mig den direkt</label>'}
+      ${isOwned ? '' : `<label class="klb-wear"><input type="checkbox" data-wear checked> ${$t('Ta på mig den direkt')}</label>`}
     </div>
   </div>`;
   const wear = () => { A.avatar = saveAvatar({ ...A.avatar, look: withIt() }); };
   const icon = opts.icon || it.icon || '👕';
   const buttons = [
-    opts.back ? { label: '⬅️ Tillbaka', onClick: () => { play('click'); opts.back(); } } : { label: 'Stäng', onClick: closeModal },
+    opts.back ? { label: $t('⬅️ Tillbaka'), onClick: () => { play('click'); opts.back(); } } : { label: $t('Stäng'), onClick: closeModal },
     isOwned
-      ? { label: '👕 Ta på mig den', cls: 'btn-go', onClick: () => { wear(); play('ok'); toast(`${icon} Snyggt! Du har ${name.toLowerCase()} på dig.`, 'good'); closeModal(); } }
-      : { label: `🛍️ Köp (${fmt(price)})`, cls: 'btn-go', disabled: short > 0, onClick: () => {
+      ? { label: $t('👕 Ta på mig den'), cls: 'btn-go', onClick: () => { wear(); play('ok'); toast($t`${icon} Snyggt! Du har ${name.toLowerCase()} på dig.`, 'good'); closeModal(); } }
+      : { label: $t`🛍️ Köp (${fmt(price)})`, cls: 'btn-go', disabled: short > 0, onClick: () => {
         const wearIt = dlg.querySelector('[data-wear]')?.checked;
         const r = buyItem(g, it);
         if (!r.ok) { toast(r.msg, 'bad'); play('fel'); return; }
         play('buy');
         if (wearIt) wear();
-        toast(`${icon} ${name} är din!${wearIt ? ' Du har den på dig.' : ' Den hänger i garderoben där hemma.'}`, 'good');
+        toast($t`${icon} ${name} är din!` + (wearIt ? $t(' Du har den på dig.') : $t(' Den hänger i garderoben där hemma.')), 'good');
         closeModal();
         opts.onBought?.(it);
       } },
@@ -306,13 +309,13 @@ export function openBrowse(A, cat, items, opts = {}) {
   const key = opts.dept || cat.dept || 'mid', th = DEPT[key] || DEPT.mid;
   const nOwn = items.filter((it) => owns(g, it)).length;
   const body = `<style>${CSS}</style>
-    <div class="klg-top"><span class="klb-dept">${esc(opts.where || th.title)} · ${items.length} plagg${nOwn ? ` · ${nOwn} är dina` : ''}</span><span class="klb-money">💰 <b>${fmt(g.money)}</b></span></div>
-    <p class="klb-hint" style="margin:0 0 8px">Så här ser du ut i dem – klicka på ett plagg så provar du det och väljer färg.</p>
+    <div class="klg-top"><span class="klb-dept">${esc(opts.where || th.title)} · ${$t`${items.length} plagg`}${nOwn ? ` · ${$t`${nOwn} är dina`}` : ''}</span><span class="klb-money">💰 <b>${fmt(g.money)}</b></span></div>
+    <p class="klb-hint" style="margin:0 0 8px">${$t('Så här ser du ut i dem – klicka på ett plagg så provar du det och väljer färg.')}</p>
     <div class="klg">${items.map((it, i) => {
     const o = owns(g, it), p = priceOf(g, it);
-    return `<button class="klg-card ${o ? 'own' : ''} ${!o && p !== it.price ? 'rea' : ''}" data-i="${i}" title="${esc(nameOf(it))}"><i></i><span class="klg-name">${esc(it.name)}</span><span class="klg-price">${o ? '✓ DIN' : `${p} kr`}</span></button>`;
+    return `<button class="klg-card ${o ? 'own' : ''} ${!o && p !== it.price ? 'rea' : ''}" data-i="${i}" title="${esc(nameOf(it))}"><i></i><span class="klg-name">${esc(it.name)}</span><span class="klg-price">${o ? $t('✓ DIN') : $t`${p} kr`}</span></button>`;
   }).join('')}</div>`;
-  const dlg = compact(openModal(`${cat.icon || '👕'} ${esc(cat.name)}`, body, [{ label: 'Stäng', onClick: closeModal }]));
+  const dlg = compact(openModal(`${cat.icon || '👕'} ${esc(cat.name)}`, body, [{ label: $t('Stäng'), onClick: closeModal }]));
   // figurerna ritas lite i taget så att dialogen öppnas direkt
   const cards = [...dlg.querySelectorAll('.klg-card')];
   const figS = window.innerWidth >= 900 && window.innerHeight >= 600 ? 3 : 2;
@@ -367,21 +370,21 @@ export function openKit(A, kit) {
   const sum = () => toBuy().reduce((a, p) => a + priceOf(g, p.it), 0);
   const anyOwned = own.some(Boolean), allOwned = own.every(Boolean);
   const icon = kit.icon || '⚽';
-  const wearLabel = kit.wearLabel || (allOwned ? '👕 Ta på mig matchstället' : '👕 Ta på mig det jag har');
-  const back = kit.back ? `<div class="klk-back"><i data-back></i><div><p class="klb-price" style="font-size:var(--f3)">${esc(kit.player || '')}</p><p class="klb-hint">Så ser ryggen ut – nummer och förnamn har bara lagets spelare.</p></div></div>`
+  const wearLabel = kit.wearLabel || (allOwned ? $t('👕 Ta på mig matchstället') : $t('👕 Ta på mig det jag har'));
+  const back = kit.back ? `<div class="klk-back"><i data-back></i><div><p class="klb-price" style="font-size:var(--f3)">${esc(kit.player || '')}</p><p class="klb-hint">${$t('Så ser ryggen ut – nummer och förnamn har bara lagets spelare.')}</p></div></div>`
     : kit.player ? `<p class="klb-price" style="font-size:var(--f3)">${esc(kit.player)}</p>` : '';
   const body = `<style>${CSS}</style>
   <div class="klb">
     <div class="klb-l">
       <div class="klb-stage" style="${stageBg(key)}">
-        <div class="klb-fig" data-fig="now"><i></i><small>Du nu</small></div>
+        <div class="klb-fig" data-fig="now"><i></i><small>${$t('Du nu')}</small></div>
         <div class="klb-arrow">➜</div>
-        <div class="klb-fig" data-fig="new"><i></i><small>${esc(kit.newLabel || 'I matchstället')}</small></div>
+        <div class="klb-fig" data-fig="new"><i></i><small>${esc(kit.newLabel || $t('I matchstället'))}</small></div>
       </div>
       <div class="klb-turn">
-        <button class="btn btn-small" data-turn="-1" aria-label="Vrid åt vänster">⟲ Vrid</button>
-        <b class="klb-view" data-view>Framifrån</b>
-        <button class="btn btn-small" data-turn="1" aria-label="Vrid åt höger">Vrid ⟳</button>
+        <button class="btn btn-small" data-turn="-1" aria-label="${$t('Vrid åt vänster')}">${$t('⟲ Vrid')}</button>
+        <b class="klb-view" data-view>${$t('Framifrån')}</b>
+        <button class="btn btn-small" data-turn="1" aria-label="${$t('Vrid åt höger')}">${$t('Vrid ⟳')}</button>
       </div>
     </div>
     <div class="klb-r">
@@ -389,13 +392,13 @@ export function openKit(A, kit) {
       ${back}
       <div class="klk-parts">${parts.map((p, i) => {
     const pr = priceOf(g, p.it);
-    return `<label class="klk-part"><input type="checkbox" data-part="${i}" ${own[i] ? 'checked disabled' : state[i] ? 'checked' : ''}> ${p.it.icon || ''} ${esc(p.label || nameOf(p.it))} <b>${own[i] ? '<span class="ok">✓ har du</span>' : fmt(pr)}</b></label>`;
+    return `<label class="klk-part"><input type="checkbox" data-part="${i}" ${own[i] ? 'checked disabled' : state[i] ? 'checked' : ''}> ${p.it.icon || ''} ${esc(p.label || nameOf(p.it))} <b>${own[i] ? `<span class="ok">${$t('✓ har du')}</span>` : fmt(pr)}</b></label>`;
   }).join('')}</div>
       ${own[0] && kit.ownedNote ? `<p class="klb-note">${kit.ownedNote}</p>` : ''}
       <p class="klb-money" data-sum></p>
       ${kit.note ? `<p class="klb-hint">${kit.note}</p>` : ''}
-      <p class="klb-hint">🎨 Lagets färger följer med – hemma i garderoben kan du byta färg när du vill.</p>
-      <label class="klb-wear" data-wearrow><input type="checkbox" data-wear checked> Ta på mig det direkt</label>
+      <p class="klb-hint">${$t('🎨 Lagets färger följer med – hemma i garderoben kan du byta färg när du vill.')}</p>
+      <label class="klb-wear" data-wearrow><input type="checkbox" data-wear checked> ${$t('Ta på mig det direkt')}</label>
     </div>
   </div>`;
   const dirs = ['down', 'left', 'up', 'right'];
@@ -404,19 +407,19 @@ export function openKit(A, kit) {
   // En enda huvudknapp: KÖP när något är ikryssat, annars TA PÅ (de delar man redan har,
   // i lagets färger) – så att man alltid kan klä sig i ett lag vars tröja man redan äger.
   const dlg = openModal(`${icon} ${esc(kit.title)}`, body, [
-    { label: 'Stäng', onClick: closeModal },
-    { label: toBuy().length || !anyOwned ? '🛍️ Köp' : wearLabel, cls: 'btn-go', onClick: () => {
+    { label: $t('Stäng'), onClick: closeModal },
+    { label: toBuy().length || !anyOwned ? $t('🛍️ Köp') : wearLabel, cls: 'btn-go', onClick: () => {
       const list = toBuy();
       if (!list.length) {
-        if (!anyOwned) { toast('Kryssa i något att köpa!', 'bad'); play('fel'); return; }
+        if (!anyOwned) { toast($t('Kryssa i något att köpa!'), 'bad'); play('fel'); return; }
         wear(state);
         play('ok');
         const worn = parts.filter((p, i) => own[i]);
-        toast(`${icon} Heja! Du har ${allOwned ? kit.title.toLowerCase() : worn.map((p) => (p.label || nameOf(p.it)).toLowerCase()).join(' och ')} på dig.`, 'good');
+        toast($t`${icon} Heja! Du har ${allOwned ? kit.title.toLowerCase() : worn.map((p) => (p.label || nameOf(p.it)).toLowerCase()).join(OCH)} på dig.`, 'good');
         closeModal();
         return;
       }
-      if (sum() > g.money) { toast('Du har inte råd – dags att jobba ett pass!', 'bad'); play('fel'); return; }
+      if (sum() > g.money) { toast($t('Du har inte råd – dags att jobba ett pass!'), 'bad'); play('fel'); return; }
       for (const p of list) {
         const r = buyItem(g, p.it);
         if (!r.ok) { toast(r.msg, 'bad'); play('fel'); return; }
@@ -424,7 +427,7 @@ export function openKit(A, kit) {
       play('buy');
       const wearIt = dlg.querySelector('[data-wear]')?.checked;
       if (wearIt) wear(state);
-      toast(`${icon} ${list.map((p) => p.label || nameOf(p.it)).join(', ')} – ${list.length > 1 ? 'dina' : 'din'}!${wearIt ? ' Heja!' : ' Det hänger i garderoben där hemma.'}`, 'good');
+      toast((list.length > 1 ? $t`${icon} ${list.map((p) => p.label || nameOf(p.it)).join(', ')} – dina!` : $t`${icon} ${list.map((p) => p.label || nameOf(p.it)).join(', ')} – din!`) + (wearIt ? $t(' Heja!') : $t(' Det hänger i garderoben där hemma.')), 'good');
       closeModal();
     } },
   ]);
@@ -441,12 +444,12 @@ export function openKit(A, kit) {
     dlg.querySelector('[data-fig="new"] i').replaceChildren(figure(look(state), dir, big));
     dlg.querySelector('[data-view]').textContent = DIR_NAMES[dirI];
     const s = sum(), short = s - g.money;
-    dlg.querySelector('[data-sum]').innerHTML = s ? `Att betala: <b>${fmt(s)}</b> · 💰 du har <b>${fmt(g.money)}</b>${short > 0 ? ` · <b class="bad">du saknar ${fmt(short)}</b>` : ''}`
-      : anyOwned ? (allOwned ? (kit.allOwnedText || '✓ Hela matchstället är ditt.') : (kit.someOwnedText || '✓ Det du har tar du på dig i lagets färger – eller kryssa i resten.')) : '💰 Kryssa i det du vill köpa.';
+    dlg.querySelector('[data-sum]').innerHTML = s ? `${$t`Att betala: <b>${fmt(s)}</b> · 💰 du har <b>${fmt(g.money)}</b>`}${short > 0 ? ` · <b class="bad">${$t`du saknar ${fmt(short)}`}</b>` : ''}`
+      : anyOwned ? (allOwned ? (kit.allOwnedText || $t('✓ Hela matchstället är ditt.')) : (kit.someOwnedText || $t('✓ Det du har tar du på dig i lagets färger – eller kryssa i resten.'))) : $t('💰 Kryssa i det du vill köpa.');
     dlg.querySelector('[data-wearrow]').style.display = s ? '' : 'none';
     if (go) {
       go.disabled = s ? short > 0 : !anyOwned;
-      go.firstChild.textContent = s ? `🛍️ Köp (${fmt(s)})` : anyOwned ? wearLabel : '🛍️ Köp';
+      go.firstChild.textContent = s ? $t`🛍️ Köp (${fmt(s)})` : anyOwned ? wearLabel : $t('🛍️ Köp');
     }
   };
   dlg.querySelectorAll('[data-part]').forEach((b) => (b.onchange = () => { state[+b.dataset.part] = b.checked; play('click'); render(); }));
@@ -462,7 +465,8 @@ export function openPhoto(A, src, r, title, players) {
   const body = `<style>${CSS}</style>
     <div class="klp"><i data-photo></i>
     <div class="klp-roster">${players.map(([n, name]) => `<span><b>${n}</b> ${esc(name)}</span>`).join('')}</div></div>`;
-  const dlg = openModal(`📸 ${esc(title)}`, body, [{ label: 'Stäng', cls: 'btn-go', onClick: closeModal }]);
+  const dlg = openModal(`📸 ${esc(title)}`, body, [{ label: $t('Stäng'), cls: 'btn-go', onClick: closeModal }]);
+
   compact(dlg);
   const c = document.createElement('canvas'); c.width = w; c.height = h;
   const cx = c.getContext('2d'); cx.imageSmoothingEnabled = false;

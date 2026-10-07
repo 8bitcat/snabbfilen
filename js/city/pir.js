@@ -27,6 +27,7 @@ import { CITY, PIER, CANAL_WATER, FREESTANDING } from './map.js';
 import { ravaraOf, MAX_RAVA } from '../game.js';
 import { openModal, closeModal, toast, esc } from '../core/ui.js';
 import { play } from '../core/sound.js';
+import { $t, money } from '../core/i18n.js';
 
 const WHITE = 0xffffff;
 const rgba = (c, a) => `rgba(${(c >> 16) & 255},${(c >> 8) & 255},${c & 255},${Math.max(0, Math.min(1, a)).toFixed(3)})`;
@@ -368,12 +369,12 @@ function dolphinArt(ang, dir) {
 // basket = korgens dx; head = var NAPP!-bubblan hamnar
 const FISHERS = [
   { id: 'fiskare1', x: -1006, y: Q0 + 9, sitY: 4, rod: [4, -14, 18, -24], float: [24, Q0 + 30], basket: -9, head: -48,
-    look: { skin: '#e0a97f', hair: '#a8a8a8', style: 'short', hat: 'bucket', cap: '#4a6a3a', shirt: '#4a6a3a', pants: '#3a3a44', beard: true, build: 6 }, name: 'Fiskar-Folke',
-    lines: ['Det nappar bäst på morgonen.', 'Abborren går till i dag!', 'Pst – byt till en röd mask.', 'I går fick jag en gädda så här stor!', 'Har du sett delfinen? Den ger tur, säger de.'] },
+    look: { skin: '#e0a97f', hair: '#a8a8a8', style: 'short', hat: 'bucket', cap: '#4a6a3a', shirt: '#4a6a3a', pants: '#3a3a44', beard: true, build: 6 }, name: $t('Fiskar-Folke'),
+    lines: [$t('Det nappar bäst på morgonen.'), $t('Abborren går till i dag!'), $t('Pst – byt till en röd mask.'), $t('I går fick jag en gädda så här stor!'), $t('Har du sett delfinen? Den ger tur, säger de.')] },
   // Saga sitter längst ut på bryggans västra hörn och metar ut mot det öppna vattnet (inte mot båtarna)
   { id: 'fiskare2', x: PIER ? PIER.deck[0] + 12 : 0, y: PIER ? PIER.deck[3] - 10 : 0, sitY: 3, rod: [-3, -12, -22, -25], float: [-34, PIER ? PIER.deck[3] - 16 : 0], basket: 11, head: -42,
-    look: { skin: '#c68a5c', hair: '#2a1a12', style: 'ponytail', hat: 'cap', cap: '#e8443a', shirt: '#f4d23c', pants: '#3a6ab0', kid: true, build: 4 }, name: 'Saga',
-    lines: ['Jag har fått tre i dag!', 'Krabborna nappar på bacon.', 'Titta, där simmar en!', 'Ser du flötet? Det guppar när det nappar!', 'Pappa säger att delfinen kommer hit ibland.'] },
+    look: { skin: '#c68a5c', hair: '#2a1a12', style: 'ponytail', hat: 'cap', cap: '#e8443a', shirt: '#f4d23c', pants: '#3a6ab0', kid: true, build: 4 }, name: $t('Saga'),
+    lines: [$t('Jag har fått tre i dag!'), $t('Krabborna nappar på bacon.'), $t('Titta, där simmar en!'), $t('Ser du flötet? Det guppar när det nappar!'), $t('Pappa säger att delfinen kommer hit ibland.')] },
 ];
 function basketArt() { return spr(14, 12, 7, 10, (P) => { P.rect(-5, -6, 10, 6, 0xb08a50); for (let x = -5; x < 5; x += 2) P.vl(x, -6, 6, 0x8a6a3a); P.hl(-5, -6, 10, 0xd8b480); P.hl(-6, -7, 12, 0x8a6a3a); P.line(-4, -7, 0, -10, 0x8a6a3a); P.line(4, -7, 0, -10, 0x8a6a3a); }); }
 function bucketArt() { return spr(10, 10, 5, 9, (P) => { P.rect(-3, -6, 7, 6, 0x6a8ab0); P.hl(-3, -6, 7, 0xa8c8e8); P.vl(3, -5, 5, 0x4a6a90); }); }
@@ -412,7 +413,7 @@ export function createPier(env) {
   const CH_D = chairArt('down'), CH_U = chairArt('up'), BENCH = benchArt(), KIKARE = kikareArt(), REP = repArt();
   const DACKS = DACK.map(([, c]) => dackArt(c));
   const GULL = [[gullArt(1, false), gullArt(1, true)], [gullArt(-1, false), gullArt(-1, true)]];
-  const BOARD = spr(14, 20, 7, 19, (P) => { P.line(-5, 0, -3, -17, WOOD[2]); P.line(5, 0, 3, -17, WOOD[2]); P.rect(-4, -17, 9, 12, WOOD[3]); P.rect(-3, -16, 7, 10, 0x2a3430); text(P, SMALL, 'FISK', -3, -15, 0xf4f1ea, 0.9); P.hl(-2, -9, 5, 0xf4d23c, 0.9); P.hl(-2, -7, 4, 0xe8e4dc, 0.7); });
+  const BOARD = spr(14, 20, 7, 19, (P) => { P.line(-5, 0, -3, -17, WOOD[2]); P.line(5, 0, 3, -17, WOOD[2]); P.rect(-4, -17, 9, 12, WOOD[3]); P.rect(-3, -16, 7, 10, 0x2a3430); text(P, SMALL, $t('FISK'), -3, -15, 0xf4f1ea, 0.9); P.hl(-2, -9, 5, 0xf4d23c, 0.9); P.hl(-2, -7, 4, 0xe8e4dc, 0.7); });
   const TRAPS = spr(22, 18, 11, 16, (P) => {
     for (const [ox, oy] of [[-10, 0], [0, 0], [-5, -7]]) {
       P.rect(ox, oy - 7, 10, 7, WOOD[2]); for (let i = ox; i < ox + 10; i += 2) P.vl(i, oy - 6, 5, 0x4a5a3a, 0.8); P.hl(ox, oy - 7, 10, WOOD[4]); P.hl(ox, oy - 4, 10, WOOD[3]);
@@ -495,7 +496,7 @@ export function createPier(env) {
     if (u < JUMP) return { x: base + d.dir * STEP * (u / JUMP), y: d.y0, air: u / JUMP, k };
     return { x: base + d.dir * (STEP + SWIM * ((u - JUMP) / GAP)), y: d.y0, air: null, k };
   }
-  const LUCK_SAY = { kid: '🐬 EN DELFIN!', vuxen: 'Det ger tur! 🍀' };
+  const LUCK_SAY = { kid: $t('🐬 EN DELFIN!'), vuxen: $t('Det ger tur! 🍀') };
   function sawDolphin(p) {
     luck = { x: Math.round(p.x), y: Math.round(p.y) };
     react = 3.8; saidMe = 3.4;
@@ -645,7 +646,7 @@ export function createPier(env) {
           ctx.fillStyle = '#c8e8f8'; ctx.fillRect(Math.round(fx) - 1, Math.round(fy), 1, 1);
           if (u < 0.3) ring(ctx, bx, by + 1, 2 + u * 20, 0.8 - u * 2);
         }
-        if (a >= 0 && a < 2.4 && !cheer) { const s2 = fly ? 'JAA!' : 'NAPP!', w = textW(SMALL, s2) + 6, x = f.x - (w >> 1), y = f.y + f.head; ctx.fillStyle = '#1e1a24'; ctx.fillRect(x - 1, y, w + 2, 12); ctx.fillStyle = '#fff6d8'; ctx.fillRect(x, y + 1, w, 10); ctxText(ctx, SMALL, s2, x + 3, y + 4, '#8a2a1a'); }
+        if (a >= 0 && a < 2.4 && !cheer) { const s2 = fly ? $t('JAA!') : $t('NAPP!'), w = textW(SMALL, s2) + 6, x = f.x - (w >> 1), y = f.y + f.head; ctx.fillStyle = '#1e1a24'; ctx.fillRect(x - 1, y, w + 2, 12); ctx.fillStyle = '#fff6d8'; ctx.fillRect(x, y + 1, w, 10); ctxText(ctx, SMALL, s2, x + 3, y + 4, '#8a2a1a'); }
       } });
     });
     // fiskarna som hoppar (ritas vid vattenlinjen: det som står närmare oss skymmer dem)
@@ -729,7 +730,7 @@ export function createPier(env) {
       const out = [];
       if (react > 0) {
         for (const f of FISHERS) if (inView(f.x, f.y)) out.push({ x: f.x, y: f.y + f.head + 2, text: f.look.kid ? LUCK_SAY.kid : LUCK_SAY.vuxen });
-        if (cp.hug > 0 && cp.st !== 'away') out.push({ x: Math.round(cp.x), y: Math.round(cp.y) - 38, text: '🤗 Det ger tur!' });
+        if (cp.hug > 0 && cp.st !== 'away') out.push({ x: Math.round(cp.x), y: Math.round(cp.y) - 38, text: $t('🤗 Det ger tur!') });
       }
       if (saidMe > 0 && env.player) out.push({ x: Math.round(env.player.x), y: Math.round(env.player.y) - 38, text: '😍🐬' });
       return out;
@@ -780,61 +781,61 @@ export function createPier(env) {
 
 // ---------- Sjöbodens meny ----------
 const KROG = [
-  { id: 'fishchips', icon: '🐟', namn: 'Fish and chips med remouladsås', pris: 69, matt: 30, glad: 2 },
-  { id: 'raksmorgas', icon: '🦐', namn: 'Räksmörgås på rågbröd', pris: 85, matt: 25, glad: 4 },
-  { id: 'fisksoppa', icon: '🍲', namn: 'Fisksoppa med aioli', pris: 79, matt: 32, glad: 3 },
-  { id: 'sill', icon: '🥔', namn: 'Inlagd sill med färskpotatis', pris: 59, matt: 28, glad: 2 },
-  { id: 'hjortron', icon: '🍨', namn: 'Vaniljglass med varma hjortron', pris: 39, matt: 6, glad: 3 },
+  { id: 'fishchips', icon: '🐟', namn: $t('Fish and chips med remouladsås'), pris: 69, matt: 30, glad: 2 },
+  { id: 'raksmorgas', icon: '🦐', namn: $t('Räksmörgås på rågbröd'), pris: 85, matt: 25, glad: 4 },
+  { id: 'fisksoppa', icon: '🍲', namn: $t('Fisksoppa med aioli'), pris: 79, matt: 32, glad: 3 },
+  { id: 'sill', icon: '🥔', namn: $t('Inlagd sill med färskpotatis'), pris: 59, matt: 28, glad: 2 },
+  { id: 'hjortron', icon: '🍨', namn: $t('Vaniljglass med varma hjortron'), pris: 39, matt: 6, glad: 3 },
 ];
 export function openKrog(A) {
   const g = A.game;
   const rows = KROG.map((m) => `<div class="prow shoprow"><span style="font-size:28px;text-align:center">${m.icon}</span>
-      <span class="nm">${esc(m.namn)}<br><small class="sp">+${m.matt} mätthet · 😊 lycka · en halvtimme på bryggan</small></span>
-      <button class="btn btn-small ${g.money >= m.pris ? 'btn-go' : ''}" data-krog="${m.id}" ${g.money >= m.pris ? '' : 'disabled'}>${m.pris} kr</button></div>`).join('');
-  const dlg = openModal('🐟 Sjöboden', `<p style="font-size:var(--f2);margin-top:0">Fisk och skaldjur på bryggan – sätt dig under ett parasoll och titta på båtarna.<br>💰 <b>${g.money} kr</b></p><div class="plist">${rows}</div>`,
-    [{ label: 'Inte nu', onClick: closeModal }]);
+      <span class="nm">${esc(m.namn)}<br><small class="sp">${$t`+${m.matt} mätthet · 😊 lycka · en halvtimme på bryggan`}</small></span>
+      <button class="btn btn-small ${g.money >= m.pris ? 'btn-go' : ''}" data-krog="${m.id}" ${g.money >= m.pris ? '' : 'disabled'}>${money(m.pris)}</button></div>`).join('');
+  const dlg = openModal($t('🐟 Sjöboden'), `<p style="font-size:var(--f2);margin-top:0">${$t`Fisk och skaldjur på bryggan – sätt dig under ett parasoll och titta på båtarna.<br>💰 <b>${g.money} kr</b>`}</p><div class="plist">${rows}</div>`,
+    [{ label: $t('Inte nu'), onClick: closeModal }]);
   dlg.querySelectorAll('[data-krog]').forEach((b) => (b.onclick = () => {
     const m = KROG.find((x) => x.id === b.dataset.krog);
-    if (!m || g.money < m.pris) { play('fel'); toast('💸 Du har inte råd med den.', 'bad'); return; }
+    if (!m || g.money < m.pris) { play('fel'); toast($t('💸 Du har inte råd med den.'), 'bad'); return; }
     g.money -= m.pris;
     g.hunger = Math.min(100, g.hunger + m.matt);
-    g.glad?.(m.glad, 'Sjöboden', 'sjoboden', 8);
+    g.glad?.(m.glad, $t('Sjöboden'), 'sjoboden', 8);
     g.passTime(30); g.save();
     closeModal(); play('coin');
-    toast(`${m.icon} Mums! ${m.namn} ute på bryggan – måsarna skriker och båtarna guppar. 😊`, 'good');
+    toast($t`${m.icon} Mums! ${m.namn} ute på bryggan – måsarna skriker och båtarna guppar. 😊`, 'good');
   }));
 }
 // ---------- fiskarna ----------
 export function talkFisher(A, f) {
   const g = A.game, line = f.lines[Math.floor(Math.random() * f.lines.length)];
-  if (f.look?.kid) { toast(`🎣 ${f.name}: "${line}"`); return; }
+  if (f.look?.kid) { toast($t`🎣 ${f.name}: "${line}"`); return; }
   const fisk = ravaraOf('fisk'), pris = 30, full = (g.skafferi?.fisk | 0) >= MAX_RAVA;
-  openModal(`🎣 ${esc(f.name)}`, `<p style="font-size:var(--f2);margin-top:0">"${esc(line)}"<br>Vill du köpa en nyfångad abborre? Den blir fiskfilé i skafferiet.<br>💰 <b>${g.money} kr</b></p>`, [
-    { label: 'Nej tack', onClick: closeModal },
-    { label: full ? 'Skafferiet är fullt' : `🐟 Köp en (${pris} kr)`, cls: g.money >= pris && !full ? 'btn-go' : '', onClick: () => {
+  openModal(`🎣 ${esc(f.name)}`, `<p style="font-size:var(--f2);margin-top:0">${$t`"${esc(line)}"<br>Vill du köpa en nyfångad abborre? Den blir fiskfilé i skafferiet.<br>💰 <b>${g.money} kr</b>`}</p>`, [
+    { label: $t('Nej tack'), onClick: closeModal },
+    { label: full ? $t('Skafferiet är fullt') : $t`🐟 Köp en (${pris} kr)`, cls: g.money >= pris && !full ? 'btn-go' : '', onClick: () => {
       closeModal();
       if (full) return;
-      if (g.money < pris) { play('fel'); toast('💸 Du har inte råd.', 'bad'); return; }
+      if (g.money < pris) { play('fel'); toast($t('💸 Du har inte råd.'), 'bad'); return; }
       g.money -= pris; g.skafferi.fisk = (g.skafferi.fisk | 0) + 1; g.save();
-      play('coin'); toast(`${fisk?.icon || '🐟'} ${f.name} lindar in abborren i tidningspapper – den ligger i skafferiet.`, 'good');
+      play('coin'); toast($t`${fisk?.icon || '🐟'} ${f.name} lindar in abborren i tidningspapper – den ligger i skafferiet.`, 'good');
     } },
   ]);
 }
 // ---------- myntkikaren ----------
 const KIKARE_MISS = [
-  '🔭 Bara måsar … och en gammal gummistövel som flyter förbi.',
-  '🔭 Du ser ända bort till fyren. Inga delfiner just nu.',
-  '🔭 En segelbåt långt ute. Vattnet glittrar i solen.',
-  '🔭 Fiskarna hoppar – men ingen delfin den här gången.',
+  $t('🔭 Bara måsar … och en gammal gummistövel som flyter förbi.'),
+  $t('🔭 Du ser ända bort till fyren. Inga delfiner just nu.'),
+  $t('🔭 En segelbåt långt ute. Vattnet glittrar i solen.'),
+  $t('🔭 Fiskarna hoppar – men ingen delfin den här gången.'),
 ];
 export function useKikare(A, pier) {
   const g = A.game, pris = 5;
-  if (g.money < pris) { play('fel'); toast('💸 Kikaren vill ha en femkrona.', 'bad'); return; }
+  if (g.money < pris) { play('fel'); toast($t('💸 Kikaren vill ha en femkrona.'), 'bad'); return; }
   g.money -= pris; g.save(); play('coin');
-  if (pier?.spot?.()) toast('🔭 Du spanar ut över vattnet … där! Något stort rör sig under ytan!', 'good');
+  if (pier?.spot?.()) toast($t('🔭 Du spanar ut över vattnet … där! Något stort rör sig under ytan!'), 'good');
   else toast(KIKARE_MISS[Math.floor(Math.random() * KIKARE_MISS.length)]);
 }
 // (för granskning av pixelkonsten: tools/ och skisser)
 export const _art = { dolphinArt, chairArt, dackArt, benchArt, kikareArt, gullArt, D_ANG };
 // pratbubblorna när någon ser delfinen (life.cheer i city.js)
-export const LUCK_LINES = ['🐬 En delfin! Det ger tur!', '😍 Såg du delfinen?!', '🍀 Delfin = tur hela veckan!', '✨ Wow, en delfin!', '🐬 Det betyder lycka!'];
+export const LUCK_LINES = [$t('🐬 En delfin! Det ger tur!'), $t('😍 Såg du delfinen?!'), $t('🍀 Delfin = tur hela veckan!'), $t('✨ Wow, en delfin!'), $t('🐬 Det betyder lycka!')];

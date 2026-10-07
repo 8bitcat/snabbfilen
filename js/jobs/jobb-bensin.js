@@ -20,6 +20,7 @@ import { planOf, drawShiftHud, drawTimeUp, makePops, abortShift } from './shift.
 import { makeShiftCoop } from '../net/coop.js';
 import { play } from '../core/sound.js';
 import { JOBS } from '../game.js';
+import { $t } from '../core/i18n.js';
 
 const FW = 384, FH = 216;
 
@@ -50,8 +51,8 @@ const GRADES = ['95', '98', 'D'];
 const FUEL = {
   95: { name: '95', col: 0x3aa34a, ink: 0xffffff, price: '18.49' },
   98: { name: '98', col: 0x2f6fd0, ink: 0xffffff, price: '19.29' },
-  D: { name: 'DIESEL', lab: 'D', col: 0x2a2a30, ink: 0xffd23f, price: '20.19' },
-  EL: { name: 'EL', col: 0x1f9fb0, ink: 0xffffff, price: '4.95' },
+  D: { name: $t('DIESEL'), lab: 'D', col: 0x2a2a30, ink: 0xffd23f, price: '20.19' },
+  EL: { name: $t('EL'), col: 0x1f9fb0, ink: 0xffffff, price: '4.95' },
 };
 const C_OK = '#8ee03c', C_FEL = '#ff6a6a', C_INFO = '#ffd23f', C_EL = '#7ae8f0', C_GREY = '#d8d2c0';
 
@@ -245,7 +246,7 @@ function paintCharger() {
     P.px(x, y, c);
   }
   P.rect(2, 5, 6, 6, 0x0e2a2a); P.hl(2, 5, 6, 0x163a3a);
-  text(P, SMALL, 'EL', 2, 13, 0xffffff);
+  text(P, SMALL, $t('EL'), 2, 13, 0xffffff);
   P.rect(3, 19, 4, 5, 0x1e2024); P.hl(3, 19, 4, 0x121316);
   P.vl(8, 20, 9, 0x2a4a3e);                                     // LED-listen (tänds när det laddar)
   outlineIn(P, W, H, inside);
@@ -452,7 +453,7 @@ function paintCar(kind, color, look, el, seed) {
   if (s.van) {
     const stripe = color === 0xeceef0 ? 0xd8352e : 0xf4f1ea;
     for (let x = s.cab + 1; x < L - 1; x++) for (const h of [9, 10]) if (get(x, h) === R_BODY) put(x, h, h === 10 ? stripe : mul(stripe, 0.8));
-    text(P, SMALL, 'BYGG', 2 + s.cab + 12, gy - 20, color === 0x2a2c34 ? 0xf4f1ea : mul(color, 0.3));
+    text(P, SMALL, $t('BYGG'), 2 + s.cab + 12, gy - 20, color === 0x2a2c34 ? 0xf4f1ea : mul(color, 0.3));
   }
   // föraren bakom sidorutan
   const pal = { h: hex(look.hair, 0x3b2619), s: hex(look.skin, 0xe0a97f), t: hex(look.shirt, 0x3a7bd5) };
@@ -692,7 +693,7 @@ export function makeJobbBensin(A, { onDone }) {
     }
     pop(x, PARK_Y - 44, txt, col);
   }
-  const hannFore = (x, y) => { play('miss'); pop(x, y, 'HANN FÖRE!', C_FEL); };   // någon annan hann först
+  const hannFore = (x, y) => { play('miss'); pop(x, y, $t('HANN FÖRE!'), C_FEL); };   // någon annan hann först
 
   // ---------- jobba tillsammans (delat pass via js/net/coop.js) ----------
   // Skiftledaren (den som varit längst på macken) kör det gemensamma: bilarna som rullar in till
@@ -827,7 +828,7 @@ export function makeJobbBensin(A, { onDone }) {
         const route = custRoute(spot, st);
         k.gpath = route.slice(Math.max(0, route.length - clamp(a[10] | 0, 0, route.length)));
         // en kund som tröttnade går – det syns och hörs hos alla
-        if (was === 'wait' && st === 'out' && !k.got) { play('miss'); pop(k.x, KY - 62, 'GICK HEM...', C_GREY); }
+        if (was === 'wait' && st === 'out' && !k.got) { play('miss'); pop(k.x, KY - 62, $t('GICK HEM...'), C_GREY); }
         next.push(k);
       }
       custs = next;
@@ -838,14 +839,14 @@ export function makeJobbBensin(A, { onDone }) {
   // elbilen är fulladdad: "KLAR!" EN gång – vare sig laddningen tickade klart här eller kom med snappen
   function sayKlar(c) {
     if (c.klar || c.plug == null || c.charge < 1) return;
-    c.klar = true; play('box'); carPop(c, 'KLAR!', C_EL);
+    c.klar = true; play('box'); carPop(c, $t('KLAR!'), C_EL);
   }
   // (medarbetaren) en bil kör från pumpen: slangen jag håller i vid den bilen följer inte med
   function mateLeave(c) {
     if (busy && busy.car === c) busy = null;
     if (carry && carry.isl === c.isl && (carry.k === 'noz' || carry.k === 'kabel') && Math.hypot(walker.px - c.x, walker.py - CAR_Y) < 50) returnCarry();
     if (c.fuelDone && (!c.need.wash || c.washDone)) play('coin');
-    else { play('miss'); carPop(c, 'KÖR IVÄG!', C_GREY); }
+    else { play('miss'); carPop(c, $t('KÖR IVÄG!'), C_GREY); }
   }
   // Medarbetarens mack mellan ledarens lägen: bilarna rullar vidare längs samma väg (ett "spöke"
   // går från ledarens senaste läge och bilen glider mjukt efter), laddningen, en kollegas tankning
@@ -1186,10 +1187,10 @@ export function makeJobbBensin(A, { onDone }) {
   function doTanka(k, id) {
     const c = carById(id);
     if (!c || c.state !== 'wait' || !k.carry || k.carry.k !== 'noz') return;
-    if (c.fuelDone) { kCar(k, c, 'REDAN FULL', C_GREY); retK(k); return; }
+    if (c.fuelDone) { kCar(k, c, $t('REDAN FULL'), C_GREY); retK(k); return; }
     if (k.carry.fuel !== c.need.fuel) {
       team.fel++; fx(k, k.by, 'f'); kLjud(k, 'fel');
-      kCarAll(k, c, c.need.fuel === 'EL' ? 'ELBIL!' : 'FEL BRÄNSLE!', C_FEL);
+      kCarAll(k, c, c.need.fuel === 'EL' ? $t('ELBIL!') : $t('FEL BRÄNSLE!'), C_FEL);
       retK(k);
       return;
     }
@@ -1217,11 +1218,11 @@ export function makeJobbBensin(A, { onDone }) {
   function judgeFuel(k, c, auto) {
     c.tk = null; c.tkT = 0;
     const f = c.fill;
-    if (!auto && f < ZONE) { kCar(k, c, 'MER!', C_INFO); kLjud(k, 'click'); return; }   // håller kvar munstycket
-    if (f <= 1) { team.ok++; fx(k, k.by, 'o'); kLjud(k, 'coin'); kCarAll(k, c, plus('FULLT!'), C_OK); }
+    if (!auto && f < ZONE) { kCar(k, c, $t('MER!'), C_INFO); kLjud(k, 'click'); return; }   // håller kvar munstycket
+    if (f <= 1) { team.ok++; fx(k, k.by, 'o'); kLjud(k, 'coin'); kCarAll(k, c, plus($t('FULLT!')), C_OK); }
     else {
       team.fel++; fx(k, k.by, 'f', 's'); kLjud(k, 'fel');
-      kCarAll(k, c, 'SPILL!', C_FEL);
+      kCarAll(k, c, $t('SPILL!'), C_FEL);
       // pölen rinner ut bakom bakhjulet (ritas efter bilen, så den syns hel)
       fx(k, '', 'u', Math.round(c.x - c.s.L / 2 + c.s.fuel + 7), PARK_Y + 2, 7 + Math.round((f - 1) * 50));
     }
@@ -1237,13 +1238,13 @@ export function makeJobbBensin(A, { onDone }) {
   function doPlugg(k, id) {
     const c = carById(id);
     if (!c || c.state !== 'wait' || !k.carry || k.carry.k !== 'kabel') return;
-    if (c.need.fuel !== 'EL') { team.fel++; fx(k, k.by, 'f'); kLjud(k, 'fel'); kCarAll(k, c, 'INGEN ELBIL!', C_FEL); retK(k); return; }
-    if (c.fuelDone || c.plug != null) { kCar(k, c, 'REDAN KLAR', C_GREY); retK(k); return; }
+    if (c.need.fuel !== 'EL') { team.fel++; fx(k, k.by, 'f'); kLjud(k, 'fel'); kCarAll(k, c, $t('INGEN ELBIL!'), C_FEL); retK(k); return; }
+    if (c.fuelDone || c.plug != null) { kCar(k, c, $t('REDAN KLAR'), C_GREY); retK(k); return; }
     c.plug = k.carry.isl;
     islands[k.carry.isl].cable = IN_CAR;
     k.carry = null;
     kLjud(k, 'click');
-    kCarAll(k, c, 'LADDAR...', C_EL);
+    kCarAll(k, c, $t('LADDAR...'), C_EL);
   }
   function unplug(c) {
     if (c.plug == null) return;
@@ -1253,11 +1254,11 @@ export function makeJobbBensin(A, { onDone }) {
     const c = carById(id);
     if (!c || c.state !== 'wait') return;
     if (c.plug == null) { fx(k, k.by, 'H', Math.round(c.x), PARK_Y - 44); return; }   // någon annan drog ur den
-    if (c.charge < 1) { kCar(k, c, 'LADDAR...', C_EL); return; }
+    if (c.charge < 1) { kCar(k, c, $t('LADDAR...'), C_EL); return; }
     islands[c.plug].cable = true;
     c.plug = null; c.fuelDone = true;
     team.ok++; fx(k, k.by, 'o'); kLjud(k, 'coin');
-    kCarAll(k, c, plus('LADDAD!'), C_OK);
+    kCarAll(k, c, plus($t('LADDAD!')), C_OK);
     checkDone(c);
   }
   function washAt(c) {
@@ -1269,7 +1270,7 @@ export function makeJobbBensin(A, { onDone }) {
     if (!c || c.state !== 'wait') return;
     if (!c.need.wash || c.washDone) {
       if (c.plug != null && c.charge >= 1) doUr(k, id);
-      else kCar(k, c, 'REDAN REN', C_GREY);
+      else kCar(k, c, $t('REDAN REN'), C_GREY);
       return;
     }
     if (!k.carry || k.carry.k !== 'raka') return;
@@ -1287,7 +1288,7 @@ export function makeJobbBensin(A, { onDone }) {
     c.tv = null; c.tvT = 0;
     c.washDone = true; c.dirty = false;
     team.ok++; fx(k, k.by, 'o'); kLjud(k, 'ok');
-    kCarAll(k, c, plus('BLANKT!'), C_OK);
+    kCarAll(k, c, plus($t('BLANKT!')), C_OK);
     retK(k);
     checkDone(c);
   }
@@ -1339,7 +1340,7 @@ export function makeJobbBensin(A, { onDone }) {
     // samma sak som jag håller i: häng tillbaka den (rakan går alltid hem till sin egen hink)
     if (carry && carry.k === part && (part === 'raka' || (carry.isl === I.i && (part !== 'noz' || carry.j === j)))) { returnCarry(); play('click'); return; }
     if (!isFree(I, part, j)) {
-      if (part === 'kabel' && I.cable === IN_CAR) pop(I.cx + CHG_X + 5, STAND - 44, 'SITTER I BILEN', C_GREY);
+      if (part === 'kabel' && I.cable === IN_CAR) pop(I.cx + CHG_X + 5, STAND - 44, $t('SITTER I BILEN'), C_GREY);
       else if (coop.active) hannFore(partX(I, part, j), STAND - 44);   // (ihop: en kollega håller i den)
       return;
     }
@@ -1349,7 +1350,7 @@ export function makeJobbBensin(A, { onDone }) {
   function doTake(k, isl, part, j) {
     const I = islands[isl];
     if (!isFree(I, part, j)) {
-      if (part === 'kabel' && I.cable === IN_CAR) kSay(k, I.cx + CHG_X + 5, STAND - 44, 'SITTER I BILEN');
+      if (part === 'kabel' && I.cable === IN_CAR) kSay(k, I.cx + CHG_X + 5, STAND - 44, $t('SITTER I BILEN'));
       else fx(k, k.by, 'H', partX(I, part, j), STAND - 44);
       return;
     }
@@ -1391,13 +1392,13 @@ export function makeJobbBensin(A, { onDone }) {
     if (k.carry.k === cu.wish) {
       team.ok++; fx(k, k.by, 'o', 'k');
       kLjud(k, 'buy');
-      kPop(k, cu.x, py, plus('TACK!'), C_OK);
+      kPop(k, cu.x, py, plus($t('TACK!')), C_OK);
       cu.got = k.carry.k; fx(k, '', 'd');
       custLeave(cu);
     } else {
       team.fel++; fx(k, k.by, 'f');
       kLjud(k, 'fel');
-      kPop(k, cu.x, py, 'FEL VARA!', C_FEL);
+      kPop(k, cu.x, py, $t('FEL VARA!'), C_FEL);
     }
     k.carry = null;
   }
@@ -1435,7 +1436,7 @@ export function makeJobbBensin(A, { onDone }) {
       else if (c.state === 'wait') {
         if (c.plug != null && c.charge < 1) {
           c.charge = Math.min(1, c.charge + dt / CHARGE_T);
-          if (c.charge >= 1) { c.klar = true; play('box'); carPop(c, 'KLAR!', C_EL); }
+          if (c.charge >= 1) { c.klar = true; play('box'); carPop(c, $t('KLAR!'), C_EL); }
         }
         const mine = !!busy && busy.car === c;
         if (c.tk != null && !mine) remoteFuel(c, dt);
@@ -1444,7 +1445,7 @@ export function makeJobbBensin(A, { onDone }) {
         if (!serviced) {
           c.patience -= dt;
           if (c.patience < 7 && !c.honked) { c.honked = true; play('honk'); }
-          if (c.patience <= 0) { stats.miss++; team.miss++; play('miss'); carPop(c, 'KÖR IVÄG!', C_GREY); carLeave(c, true); if (coop.active) snapAsap(); }
+          if (c.patience <= 0) { stats.miss++; team.miss++; play('miss'); carPop(c, $t('KÖR IVÄG!'), C_GREY); carLeave(c, true); if (coop.active) snapAsap(); }
         }
       } else if (c.state === 'pay') { c.payT -= dt; if (c.payT <= 0) { play('coin'); carLeave(c); if (coop.active) snapAsap(); } }
     }
@@ -1461,7 +1462,7 @@ export function makeJobbBensin(A, { onDone }) {
         } else if (k.state === 'out') k.gone = true;
       } else if (k.state === 'wait') {
         k.patience -= dt;
-        if (k.patience <= 0) { stats.miss++; team.miss++; play('miss'); pop(k.x, KY - 62, 'GICK HEM...', C_GREY); custLeave(k); if (coop.active) snapAsap(); }
+        if (k.patience <= 0) { stats.miss++; team.miss++; play('miss'); pop(k.x, KY - 62, $t('GICK HEM...'), C_GREY); custLeave(k); if (coop.active) snapAsap(); }
       }
     }
     if (custs.some((k) => k.gone)) custs = custs.filter((k) => !k.gone);
@@ -1539,7 +1540,7 @@ export function makeJobbBensin(A, { onDone }) {
     if (fueling || (!c.fuelDone && c.fill > c.fill0 + 0.005)) {
       const inZone = c.fill >= ZONE && c.fill <= 1;
       const [ix, iy] = bubble(ctx, bx, tip, 38, 18, inZone, true);
-      const lab = c.fill > 1 ? 'SPILL!' : inZone ? 'SLÄPP!' : fueling ? 'TANKAR' : 'MER!';
+      const lab = c.fill > 1 ? $t('SPILL!') : inZone ? $t('SLÄPP!') : fueling ? $t('TANKAR') : $t('MER!');
       const col = c.fill > 1 ? '#d8202a' : inZone ? '#2e8a3e' : '#5a5460';
       if (!inZone || (t * 6 | 0) % 2 === 0) ctxText(ctx, SMALL, lab, ix + 19 - (textW(SMALL, lab) >> 1), iy + 2, col);
       gauge(ctx, ix + 3, iy + 9, 32, c.fill);
@@ -1556,7 +1557,7 @@ export function makeJobbBensin(A, { onDone }) {
       const [ix, iy] = bubble(ctx, bx, tip, 26, 14, hot, true);
       ctx.fillStyle = '#2e8a3e'; ctx.fillRect(ix + 2, iy + 1, 22, 9);
       ctx.fillStyle = '#46b85a'; ctx.fillRect(ix + 2, iy + 1, 22, 1);
-      ctxText(ctx, SMALL, 'KLAR!', ix + 3, iy + 3, '#ffffff');
+      ctxText(ctx, SMALL, $t('KLAR!'), ix + 3, iy + 3, '#ffffff');
       patienceBar(ctx, ix + 2, iy + 11, 22, left);
       return;
     }
@@ -1823,7 +1824,7 @@ export function makeJobbBensin(A, { onDone }) {
       if (coop.active) maxN = Math.max(maxN, coop.peers().length + 1);
       if (coop.active !== wasCoop) {   // en kollega kom in: bilarna och kunderna kommer tätare
         wasCoop = coop.active;
-        if (wasCoop) { play('knock'); pop(FW >> 1, 120, 'NI JOBBAR IHOP!', C_OK); }
+        if (wasCoop) { play('knock'); pop(FW >> 1, 120, $t('NI JOBBAR IHOP!'), C_OK); }
       }
       // Skiftledaren (eller solo) kör gården och kiosken; medarbetare följer ledarens läge
       const iLead = !coop.active || (coop.leader && coop.settled);
@@ -1916,7 +1917,7 @@ export function makeJobbBensin(A, { onDone }) {
         ctx.fillStyle = '#3a8ad8'; ctx.fillRect(ix + 2, iy + 14, Math.max(1, Math.round(14 * p)), 2);
       }
       pops.draw(ctx);
-      drawShiftHud(ctx, { W: FW }, { t, dur: P.seconds, ok: maxN > 1 ? team.ok : stats.ok, fel: maxN > 1 ? team.fel : stats.fel, title: maxN > 1 ? 'BENSINMACKEN IHOP' : 'BENSINMACKEN' });
+      drawShiftHud(ctx, { W: FW }, { t, dur: P.seconds, ok: maxN > 1 ? team.ok : stats.ok, fel: maxN > 1 ? team.fel : stats.fel, title: maxN > 1 ? $t('BENSINMACKEN IHOP') : $t('BENSINMACKEN') });
       if (done) drawTimeUp(ctx, { W: FW, H: FH });
     },
   };
@@ -1962,7 +1963,7 @@ function drawKioskLive(ctx, t, { grillN, rackGone, brewing }) {
     ctx.fillStyle = '#4a4450'; ctx.fillRect(x, y + 6, 8, 1);
   }
   // neonskylten blinkar till ibland
-  if ((t % 6.3) < 0.14 || ((t + 0.3) % 6.3) < 0.07) ctxText(ctx, SMALL, 'ÖPPET', 93, 29, '#5a1a22');
+  if ((t % 6.3) < 0.14 || ((t + 0.3) % 6.3) < 0.07) ctxText(ctx, SMALL, $t('ÖPPET'), 93, 29, '#5a1a22');
 }
 function drawDrawer(ctx, d) {
   const o = d > 0.15 ? 2 : 1;
@@ -1996,9 +1997,9 @@ function drawLopsedel(ctx) {
   ctx.fillStyle = '#ffe24a'; ctx.fillRect(x, y, 23, 23);
   ctx.fillStyle = '#fff6a8'; ctx.fillRect(x, y, 23, 1);
   ctx.fillStyle = '#e0b820'; ctx.fillRect(x, y + 22, 23, 1);
-  ctxText(ctx, SMALL, 'EXTRA!', x + 1, y + 2, '#d8202a');
-  ctxText(ctx, SMALL, 'KORV+', x + 2, y + 9, '#17151a');
-  ctxText(ctx, SMALL, 'KAFFE', x + 2, y + 16, '#17151a');
+  ctxText(ctx, SMALL, $t('EXTRA!'), x + 1, y + 2, '#d8202a');
+  ctxText(ctx, SMALL, $t('KORV+'), x + 2, y + 9, '#17151a');
+  ctxText(ctx, SMALL, $t('KAFFE'), x + 2, y + 16, '#17151a');
 }
 // luft- och vattenstationen
 function drawAirWater(ctx, t) {
@@ -2006,8 +2007,8 @@ function drawAirWater(ctx, t) {
   const R = (xx, yy, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(xx, yy, w, h); };
   R(x + 2, y + 13, 2, 22, '#5a5e66'); R(x + 23, y + 13, 2, 22, '#5a5e66'); R(x + 2, y + 13, 1, 22, '#9aa2ac');
   R(x - 1, y - 1, 29, 15, '#17151a'); R(x, y, 27, 13, '#f4f4f0'); R(x, y, 27, 1, '#ffffff'); R(x, y + 12, 27, 1, '#c8ccd0');
-  ctxText(ctx, SMALL, 'LUFT', x + 6, y + 1, '#d8352e');
-  ctxText(ctx, SMALL, 'VATTEN', x + 2, y + 7, '#2f6fd0');
+  ctxText(ctx, SMALL, $t('LUFT'), x + 6, y + 1, '#d8352e');
+  ctxText(ctx, SMALL, $t('VATTEN'), x + 2, y + 7, '#2f6fd0');
   // luften: röd låda med mätare och slang
   R(x + 2, y + 16, 11, 15, '#17151a'); R(x + 3, y + 17, 9, 13, '#d8352e'); R(x + 3, y + 17, 9, 1, '#ff7a6a'); R(x + 11, y + 18, 1, 12, '#9a2020');
   R(x + 5, y + 19, 5, 5, '#17151a'); R(x + 6, y + 20, 3, 3, '#f4f1ea');
@@ -2039,7 +2040,7 @@ function drawGasol(ctx) {
   for (let xx = x; xx < x + 22; xx += 3) ctx.fillRect(xx, y + 6, 1, 23);
   R(x - 2, y + 4, 26, 2, '#5a5e66'); R(x - 2, y + 4, 26, 1, '#8a8e96');
   R(x + 1, y - 2, 20, 7, '#17151a'); R(x + 2, y - 1, 18, 5, '#f4f4f0');
-  ctxText(ctx, SMALL, 'GASOL', x + 2, y - 1, '#d8352e');
+  ctxText(ctx, SMALL, $t('GASOL'), x + 2, y - 1, '#d8352e');
   R(x - 1, y + 29, 24, 2, 'rgba(16,14,20,0.35)');
 }
 
@@ -2119,7 +2120,7 @@ function paintBackground() {
   // neon ÖPPET
   P.ell(103, 31, 17, 6, 0xff4050, 0.28);
   P.rect(90, 26, 27, 10, 0x2a1a22); P.box(90, 26, 27, 10, 0x17151a);
-  text(P, SMALL, 'ÖPPET', 93, 29, 0xff5a6a);
+  text(P, SMALL, $t('ÖPPET'), 93, 29, 0xff5a6a);
   // kylskåpet med dryck
   P.rect(2, 32, 15, 53, 0x17151a);
   P.rect(3, 33, 13, 5, 0xd8352e); P.hl(3, 33, 13, 0xff7a6a); P.hl(5, 35, 9, 0xf4f1ea);
@@ -2181,7 +2182,7 @@ function paintBackground() {
   P.box(74, 48, 8, 16, 0x6a6458); P.rect(75, 46, 6, 2, 0x8a8478); P.hl(75, 46, 6, 0xb8b2a2);
   // tidningsstället
   P.rect(86, 38, 32, 7, 0x17151a); P.rect(87, 39, 30, 5, 0xa81e22); P.hl(87, 39, 30, 0xd8352e);
-  text(P, SMALL, 'PRESS', 92, 39, 0xffd23f);
+  text(P, SMALL, $t('PRESS'), 92, 39, 0xffd23f);
   const mast = [0xd8352e, 0x2f6fd0, 0xf0b82a, 0x17151a, 0x46a35a, 0xe07a2e];
   for (let tier = 0; tier < 4; tier++) for (let pos = 0; pos < 3; pos++) {
     const x = 89 + pos * 9, y = 47 + tier * 9, q = tier * 3 + pos;
@@ -2243,7 +2244,7 @@ function paintBackground() {
   P.hl(1, 148, 21, 0xe8f4fa); P.hl(1, 154, 21, 0xb8c0c8); P.hl(1, 155, 21, 0x6a727c);
   for (let y = 156; y < 168; y++) for (let x = 1; x < 22; x++) P.px(x, y, x === 21 ? 0xb8c4d0 : mix(0xfafcfe, 0xd8e2ec, (y - 156) / 12));
   P.rect(1, 157, 21, 7, 0x2f6fd0); P.hl(1, 157, 21, 0x6aa8f0);
-  text(P, SMALL, 'GLASS', 2, 158, 0xffffff);
+  text(P, SMALL, $t('GLASS'), 2, 158, 0xffffff);
   P.hl(1, 167, 21, 0x3a3d44); P.px(2, 168, 0x17151a); P.px(20, 168, 0x17151a);
   // papperskorgen vid disken
   P.rect(100, 132, 9, 13, 0x17151a); P.rect(101, 133, 7, 11, 0x46a35a); P.vl(101, 134, 10, 0x7ad88a); P.vl(107, 134, 10, 0x2e7a3a);
@@ -2286,7 +2287,7 @@ function paintBackground() {
     if (x < CX0 + 2 && y < 36) c = mul(c, 0.78);
     P.px(x, y, c);
   }
-  const title = 'SNABBMACKEN', ttw = textW(BIG, title), ttx = Math.round(271 - ttw / 2);
+  const title = $t('SNABBMACKEN'), ttw = textW(BIG, title), ttx = Math.round(271 - ttw / 2);
   text(P, BIG, title, ttx + 1, 24, 0xf0b0a8);
   text(P, BIG, title, ttx, 23, 0xd8352e);
   // droppen (märket) och 24H
@@ -2305,7 +2306,7 @@ function paintBackground() {
   P.rect(PX + 10, 82, 11, 3, 0x5a5e66); P.hl(PX + 10, 82, 11, 0x8a8e96);
   P.rect(PX - 1, PY - 1, 35, 42, 0x17151a);
   P.rect(PX, PY, 33, 8, 0xd8352e); P.hl(PX, PY, 33, 0xff7a6a); P.hl(PX, PY + 7, 33, 0x9a2020);
-  text(P, SMALL, 'PRISER', PX + 5, PY + 2, 0xffffff);
+  text(P, SMALL, $t('PRISER'), PX + 5, PY + 2, 0xffffff);
   P.rect(PX, PY + 8, 33, 31, 0x121418);
   ['95', '98', 'D', 'EL'].forEach((g, i) => {
     const f = FUEL[g], y = PY + 10 + i * 7, lab = f.lab || f.name;
@@ -2359,7 +2360,7 @@ function paintBackground() {
   P.box(0, 0, FW, FH, 0x0e0d12);
   const cv = P.flush(), c2 = cv.getContext('2d');
   // menyn: samma sprites som i pratbubblorna
-  [['korv', '25:-'], ['kaffe', '15:-'], ['tidning', '20:-']].forEach(([id, pr], i) => {
+  [['korv', $t('25:-')], ['kaffe', $t('15:-')], ['tidning', $t('20:-')]].forEach(([id, pr], i) => {
     const s = itemSprite(id), cx = 31 + i * 22;
     c2.drawImage(s, cx - (s.width >> 1), 37 - s.height);
     ctxText(c2, SMALL, pr, cx - (textW(SMALL, pr) >> 1), 38, '#c8302a');

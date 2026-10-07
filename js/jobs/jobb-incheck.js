@@ -37,9 +37,10 @@ import { Pix, SMALL, BIG, ctxText, textW, text, mix, mul, css, hash, bayer } fro
 import { createWalker, selfDrawable, folkDrawables, WALK_SEQ, createSpeech } from '../scenes/walkable.js';
 import { makeShiftCoop } from '../net/coop.js';
 import { planOf, drawShiftHud, drawTimeUp, makePops, abortShift } from './shift.js';
-import { drawPerson, makeLook, FIRST_NAMES, HAIR, SKIN, STYLES } from '../core/people.js';
+import { drawPerson, makeLook, FIRST_NAMES, GIRL_FIRST_NAMES, HAIR, SKIN, STYLES } from '../core/people.js';
 import { play } from '../core/sound.js';
 import { JOBS } from '../game.js';
+import { $t } from '../core/i18n.js';
 
 const FW = 384, FH = 216;
 const WHITE = 0xffffff, INK = 0x17151a;
@@ -77,20 +78,20 @@ const SPOT = { kiosk: [153, 152], bprn: [188, 152], disk: [96, 152], pass: [216,
 const SCALE_BAG = { x: 267, y: 121 };           // väskans mitt på vågen
 
 const DEST = [
-  { code: 'ARN', city: 'STOCKHOLM', say: 'Stockholm', c: 0x2c6fb7 },
-  { code: 'GOT', city: 'GÖTEBORG', say: 'Göteborg', c: 0x2f8f46 },
-  { code: 'CPH', city: 'KÖPENHAMN', say: 'Köpenhamn', c: 0xd9433b },
-  { code: 'LHR', city: 'LONDON', say: 'London', c: 0x8e5bd1 },
-  { code: 'BCN', city: 'BARCELONA', say: 'Barcelona', c: 0xe8b230 },
-  { code: 'NYC', city: 'NEW YORK', say: 'New York', c: 0x2aa39a },
+  { code: 'ARN', city: $t('STOCKHOLM'), say: $t('Stockholm'), c: 0x2c6fb7 },
+  { code: 'GOT', city: $t('GÖTEBORG'), say: $t('Göteborg'), c: 0x2f8f46 },
+  { code: 'CPH', city: $t('KÖPENHAMN'), say: $t('Köpenhamn'), c: 0xd9433b },
+  { code: 'LHR', city: $t('LONDON'), say: $t('London'), c: 0x8e5bd1 },
+  { code: 'BCN', city: $t('BARCELONA'), say: $t('Barcelona'), c: 0xe8b230 },
+  { code: 'NYC', city: $t('NEW YORK'), say: $t('New York'), c: 0x2aa39a },
 ];
 const STEPS = [
-  { id: 'pass', n: 'PASS', hint: 'KOLLA PASSFOTOT PÅ SKÄRMEN' },
-  { id: 'vikt', n: 'VIKT', hint: 'VIKTEN - OK, AVGIFT ELLER PACKA OM' },
-  { id: 'plats', n: 'PLATS', hint: 'VÄLJ PLATS PÅ SKÄRMEN' },
-  { id: 'lapp', n: 'LAPP', hint: 'SKRIV UT LAPPEN VID SKRIVAREN' },
-  { id: 'band', n: 'BAND', hint: 'SKICKA IVÄG VÄSKAN' },
-  { id: 'kort', n: 'KORT', hint: 'GE BOARDINGKORTET' },
+  { id: 'pass', n: $t('PASS'), hint: $t('KOLLA PASSFOTOT PÅ SKÄRMEN') },
+  { id: 'vikt', n: $t('VIKT'), hint: $t('VIKTEN - OK, AVGIFT ELLER PACKA OM') },
+  { id: 'plats', n: $t('PLATS'), hint: $t('VÄLJ PLATS PÅ SKÄRMEN') },
+  { id: 'lapp', n: $t('LAPP'), hint: $t('SKRIV UT LAPPEN VID SKRIVAREN') },
+  { id: 'band', n: $t('BAND'), hint: $t('SKICKA IVÄG VÄSKAN') },
+  { id: 'kort', n: $t('KORT'), hint: $t('GE BOARDINGKORTET') },
 ];
 const STEP_IX = Object.fromEntries(STEPS.map((s, i) => [s.id, i]));
 const CASE_COLORS = [0x6a5030, 0x4a4a52, 0x2aa39a, 0x8e5bd1, 0x9a3a4a, 0x3a5a7c, 0xc8902a, 0x2e2e34, 0xd8d4cc, 0xc84a6a];
@@ -485,7 +486,7 @@ function paintBigPlane(P, night) {
     }
   }
   // namnet
-  const nm = 'SNABBFLYG', nx = X0 + L - 1 - 88;
+  const nm = $t('SNABBFLYG'), nx = X0 + L - 1 - 88;
   text(P, SMALL, nm, nx, Y0 + 11, night ? mul(AIR, 0.9) : AIR);
   // fönster, dörrar, cockpit
   for (let u = 20; u < 90; u += 3) if (u < 82 && !(u > 18 && u < 25)) put(u, 15, night ? 0xffe6a0 : 0x2a3440);
@@ -630,7 +631,7 @@ function paintApronFront(P, mode) {
     if (j === 5) c = mul(c, 0.8);
     return c;
   });
-  text(P, SMALL, 'SNABBFLYG', 96, by0 + 1, night ? 0x3a5a9a : AIR, 0.9);
+  text(P, SMALL, $t('SNABBFLYG'), 96, by0 + 1, night ? 0x3a5a9a : AIR, 0.9);
   // kabinen och bälgen mot dörren
   area(P, bx1 - 12, by0 - 1, 12, by1 - by0 + 2, (X, Y, i, j) => (i === 11 ? 0x2a2c30 : j === 0 ? (night ? 0x9aa0b0 : 0xf4f6f8) : i > 8 ? 0x3a3c42 : night ? 0x6a7080 : 0xd8dce2));
   P.rect(bx1 - 10, by0 + 2, 5, 3, night ? 0xffe6a0 : 0x3a5a7a);
@@ -730,7 +731,7 @@ function paintBack(mode) {
   // kabelkanal längs diskens fot och målad text på golvet
   area(P, DESK.x0, BASE + 1, DESK.x1 - DESK.x0 - 12, 3, (X, Y, i, j) => (j === 0 ? 0x9aa0a8 : j === 1 ? 0x7a8088 : 0x3a3e46));
   for (let x = DESK.x0 + 10; x < DESK.x1 - 12; x += 30) P.px(x, BASE + 2, 0x5a6068);
-  text(P, SMALL, 'ENDAST PERSONAL', 42, 172, 0xd8b028, 0.55);
+  text(P, SMALL, $t('ENDAST PERSONAL'), 42, 172, 0xd8b028, 0.55);
   // säkerhetstejp längs uppsamlingsbandet
   for (let x = 0; x < FW; x++) for (const y of [180, 181]) P.px(x, y, (((x + y) >> 2) & 1) ? 0xe8c030 : 0x23262d, hash(x >> 2, y, 83) > 0.85 ? 0.5 : 0.9);
   // skräp och spår: avriven lapp, gem, penna, gummisnodd, kaffefläck, klackmärken
@@ -801,7 +802,7 @@ function paintBoard(P, night) {
   P.hl(ix, by + 1, iw, AIR);
   const pl = ['..#..', '.###.', '#####', '..#..', '.###.'];
   pl.forEach((r, j) => { for (let i = 0; i < 5; i++) if (r[i] === '#') P.px(ix + 2 + i, by + 2 + j, GOLD); });
-  text(P, SMALL, 'AVGÅNGAR', ix + 9, by + 2, GOLD);
+  text(P, SMALL, $t('AVGÅNGAR'), ix + 9, by + 2, GOLD);
   for (let k = 0; k < 3; k++) P.px(ix + iw - 3 - k * 2, by + 4, k === 0 ? 0x5ad06a : 0x5a7ab0);
   DEST.forEach((d, k) => {
     const ry = by + 8 + k * 6;
@@ -854,7 +855,7 @@ function paintPosts(list, by, gapAfter = null) {
     const sx = list[list.length - 1] - 9, sy = by - 29;
     P.vl(sx + 9, sy + 9, 3, 0x8a9098);
     area(P, sx, sy, 20, 10, (X, Y, i, j) => (i === 0 || j === 0 ? 0x5a8ad0 : i === 19 || j === 9 ? AIR_D : AIR));
-    text(P, SMALL, 'DISK', sx + 2, sy + 3, WHITE);
+    text(P, SMALL, $t('DISK'), sx + 2, sy + 3, WHITE);
     P.rect(sx + 18 - 4, sy + 2, 3, 6, GOLD); text(P, SMALL, '3', sx + 14, sy + 3, AIR_D);
   }
   return P.flush();
@@ -941,7 +942,7 @@ function paintMonitorBezel(P) {
   P.rect(x + w - 9, y - 3, 7, 6, 0xfff07a); P.hl(x + w - 8, y - 1, 5, 0x9a8a3a); P.hl(x + w - 8, y + 1, 3, 0x9a8a3a); P.px(x + w - 3, y + 2, 0xd8c85a);
   P.rect(x + 2, y + h - 4, 5, 3, 0x7ad8ff); P.px(x + 3, y + h - 3, 0x3a7a9a);
   // loggan under skärmen + lampan
-  text(P, SMALL, 'SNABBFLYG', x + 18, y + h - 5, 0x5a6068);
+  text(P, SMALL, $t('SNABBFLYG'), x + 18, y + h - 5, 0x5a6068);
   // foten och halsen
   vcols(P, x + w / 2 - 3, y + h, 3, [0x5a5e66, 0x3a3e46, 0x3a3e46, 0x2a2c30, 0x2a2c30, 0x1a1c20]);
   area(P, x + w / 2 - 12, y + h + 1, 24, 3, (X, Y, i, j) => (j === 0 ? 0x5a5e66 : j === 1 ? 0x3a3e46 : 0x1a1c20));
@@ -1006,7 +1007,7 @@ function paintSpecial(P) {
   for (let k = 0; k < 9; k++) { P.px(sx + 3 + k, sy + 6 - Math.round(k * 0.45), 0xffffff); P.px(sx + 3 + k, sy + 7 - Math.round(k * 0.45), 0xd8e0f0); }
   stamp(P, sx + 14, sy + 2, ['.x..x', '.xxxx', 'xxxxx', '.xxx.', '.x.x.'], { x: GOLD }, 0);
   P.line(sx + 21, sy + 2, sx + 23, sy + 7, 0xffffff); P.line(sx + 23, sy + 2, sx + 25, sy + 7, 0xffffff);
-  text(P, SMALL, 'SPECIAL', sx + 1, sy + 8, WHITE);
+  text(P, SMALL, $t('SPECIAL'), sx + 1, sy + 8, WHITE);
   // lockets gångjärn baktill (själva locket ritas levande)
   P.hl(x0 + 1, top, w - 2, 0x3a3e46);
 }
@@ -1102,9 +1103,9 @@ function paintNeighbor(P, night) {
   vcols(P, 366, FEED.y0, FEED.y1 - FEED.y0, [0xe4e8ec, 0x8a9098]);
   if (night) {
     // STÄNGT-skylt på disken
-    const sw = textW(SMALL, 'STÄNGT') + 5;
+    const sw = textW(SMALL, $t('STÄNGT')) + 5;
     area(P, 298, 104, sw, 12, (X, Y, i, j) => (i === 0 || j === 0 ? 0xffffff : i === sw - 1 || j === 11 ? 0x9aa0a8 : 0xf4f4ec));
-    text(P, SMALL, 'STÄNGT', 300, 108, 0xd8303a);
+    text(P, SMALL, $t('STÄNGT'), 300, 108, 0xd8303a);
     P.hl(300, 106, sw - 4, 0xd8303a, 0.35);
     P.vl(298 + (sw >> 1), 116, 2, 0x6a7078);
   }
@@ -1287,27 +1288,27 @@ function adultLook(R = Math.random) { let L; let n = 0; do { L = makeLook(R); n+
 // falskt pass fast det är äkta. Skägg = ett av pojknamnen, annars vilket som helst.
 const GIRL_NAMES = new Set(['Alva', 'Elsa', 'Maja', 'Ella', 'Wilma', 'Saga', 'Nora', 'Vera', 'Liv', 'Stina', 'Ines', 'Greta', 'Leila', 'Mira', 'Aiko', 'Sofia', 'Olga', 'Birgitta', 'Agneta']);
 function nameFor(look, R = Math.random) {
-  const pool = look.beard ? FIRST_NAMES.filter((n) => !GIRL_NAMES.has(n)) : FIRST_NAMES;
+  const pool = look.beard ? FIRST_NAMES.filter((n) => !(GIRL_FIRST_NAMES || GIRL_NAMES).has(n)) : FIRST_NAMES;
   return pickR(R, pool.length ? pool : FIRST_NAMES).toUpperCase();
 }
 function kidLook(R = Math.random) { const L = makeLook(R); L.kid = true; L.build = 4; L.beard = false; return L; }
 
 // repliker
 const HELLO = [
-  (c) => `Hej! Till ${c}, tack.`, (c) => `Hejsan! Jag ska till ${c}.`, (c) => `Goddag! ${c}, tack.`,
-  (c) => `Hallå! En resa till ${c}.`, (c) => `Hej hej! ${c} blir det.`,
+  (c) => $t`Hej! Till ${c}, tack.`, (c) => $t`Hejsan! Jag ska till ${c}.`, (c) => $t`Goddag! ${c}, tack.`,
+  (c) => $t`Hallå! En resa till ${c}.`, (c) => $t`Hej hej! ${c} blir det.`,
 ];
-const HELLO_NIGHT = [(c) => `God kväll! Nattflyget till ${c}.`, (c) => `Hej... Nattplanet till ${c}, tack.`, (c) => `God natt nästan! ${c}, tack.`];
+const HELLO_NIGHT = [(c) => $t`God kväll! Nattflyget till ${c}.`, (c) => $t`Hej... Nattplanet till ${c}, tack.`, (c) => $t`God natt nästan! ${c}, tack.`];
 const WISH_SAY = {
-  fonster: ['Fönsterplats, tack!', 'Vid fönstret om det går!', 'Jag vill titta ut - fönster!'],
-  gang: ['Vid gången, tack!', 'Gången - jag har långa ben.', 'Gångplats, tack!'],
-  egal: ['Spelar ingen roll var jag sitter.', 'Vilken plats som helst!', 'Var som helst går bra.'],
-  ihop: ['Vi vill sitta tillsammans!', 'Kan vi sitta bredvid varandra?', 'Alla i samma rad, tack!'],
+  fonster: [$t('Fönsterplats, tack!'), $t('Vid fönstret om det går!'), $t('Jag vill titta ut - fönster!')],
+  gang: [$t('Vid gången, tack!'), $t('Gången - jag har långa ben.'), $t('Gångplats, tack!')],
+  egal: [$t('Spelar ingen roll var jag sitter.'), $t('Vilken plats som helst!'), $t('Var som helst går bra.')],
+  ihop: [$t('Vi vill sitta tillsammans!'), $t('Kan vi sitta bredvid varandra?'), $t('Alla i samma rad, tack!')],
 };
-const WISH_WRONG = { fonster: 'Nej, jag ville sitta vid FÖNSTRET!', gang: 'Jag sa ju GÅNGEN!', ihop: 'Då hamnar vi ju isär!', egal: '' };
-const KID_SAY = ['Mamma, titta - ett flygplan!', 'När är vi framme?', 'Jag vill sitta vid fönstret!', 'Får jag trycka på knappen?', 'Pappa, jag är hungrig!'];
-const QUEUE_SAY = ['Det går långsamt i dag...', 'Hoppas vi hinner!', 'Titta, ett plan som landar!', 'Har du passen?', 'Jag glömde tandborsten...'];
-const DOG_NAMES = ['Charlie', 'Bamse', 'Sigge', 'Molly', 'Ludde', 'Tussan'];
+const WISH_WRONG = { fonster: $t('Nej, jag ville sitta vid FÖNSTRET!'), gang: $t('Jag sa ju GÅNGEN!'), ihop: $t('Då hamnar vi ju isär!'), egal: '' };
+const KID_SAY = [$t('Mamma, titta - ett flygplan!'), $t('När är vi framme?'), $t('Jag vill sitta vid fönstret!'), $t('Får jag trycka på knappen?'), $t('Pappa, jag är hungrig!')];
+const QUEUE_SAY = [$t('Det går långsamt i dag...'), $t('Hoppas vi hinner!'), $t('Titta, ett plan som landar!'), $t('Har du passen?'), $t('Jag glömde tandborsten...')];
+const DOG_NAMES = [$t('Charlie'), $t('Bamse'), $t('Sigge'), $t('Molly'), $t('Ludde'), $t('Tussan')];
 const DOG_FUR = [0xa8703a, 0xd8b078, 0x3a2a20, 0xe8e0d0, 0x8a5a3a];
 const SURF_COL = [0x2aa39a, 0xd9433b, 0xe8b230, 0x2c6fb7, 0xd84a8a];
 
@@ -1537,7 +1538,7 @@ export function makeJobbIncheck(A, { onDone } = {}) {
     if (p.type === 'sen' && queue.length) {
       queue.unshift(p);
       const g = queue[1];
-      if (g) { qKid = null; talkQ.say(pick(['Hallå! Här står man i kö!', 'Hörru, det finns en kö!', 'Tränga sig före...']), keepIn(() => ({ x: Math.round(g.x), y: Math.round(g.y) - 36 })), 2.6, { voice: g.look }); }
+      if (g) { qKid = null; talkQ.say(pick([$t('Hallå! Här står man i kö!'), $t('Hörru, det finns en kö!'), $t('Tränga sig före...')]), keepIn(() => ({ x: Math.round(g.x), y: Math.round(g.y) - 36 })), 2.6, { voice: g.look }); }
     } else queue.push(p);
     if (!walkIn) { const s = slotPos(queue.indexOf(p)); p.x = s.x; p.y = s.y; p.state = 'queue'; p.dir = 'down'; p.slot = queue.indexOf(p); }
     relayoutQueue();
@@ -1561,10 +1562,10 @@ export function makeJobbIncheck(A, { onDone } = {}) {
     step = 'pass';
     const c = DEST[p.dest].say;
     let line = night ? pick(HELLO_NIGHT)(c) : pick(HELLO)(c);
-    if (p.type === 'sen') { line = `Ursäkta! Mitt plan till ${c} går snart - snabbt, snälla!`; p.patience = p.pmax = 22; }
-    else if (p.type === 'familj') line = `Hej! Vi ska till ${c} allihop!`;
-    else if (p.type === 'surf') line = `Tjena! Till ${c} - och brädan ska med!`;
-    else if (p.type === 'hund') line = `Hej! Till ${c} med ${p.bag.dog} här.`;
+    if (p.type === 'sen') { line = $t`Ursäkta! Mitt plan till ${c} går snart - snabbt, snälla!`; p.patience = p.pmax = 22; }
+    else if (p.type === 'familj') line = $t`Hej! Vi ska till ${c} allihop!`;
+    else if (p.type === 'surf') line = $t`Tjena! Till ${c} - och brädan ska med!`;
+    else if (p.type === 'hund') line = $t`Hej! Till ${c} med ${p.bag.dog} här.`;
     say(p, line);
     play('click');
   }
@@ -1614,8 +1615,8 @@ export function makeJobbIncheck(A, { onDone } = {}) {
   }
   function hint(txt, where) { pop(txt, '#ffd23f', where); play('click'); }
   function stepHint() {
-    if (!cur) return 'VÄNTA PÅ NÄSTA RESENÄR';
-    if (step === 'fram') return 'RESENÄREN KOMMER';
+    if (!cur) return $t('VÄNTA PÅ NÄSTA RESENÄR');
+    if (step === 'fram') return $t('RESENÄREN KOMMER');
     return STEPS[STEP_IX[step]].hint;
   }
   const special = () => !!cur && cur.bag.kind !== 'case';
@@ -1656,7 +1657,7 @@ export function makeJobbIncheck(A, { onDone } = {}) {
   const int = (v, dflt) => (Number.isInteger(v) ? v : dflt);
   const str = (v, n = 64) => (typeof v === 'string' ? v.slice(0, n) : '');
   const byId = (id) => npcs.find((p) => p.id === id) || null;
-  const hudTitle = () => (maxN > 1 ? 'INCHECKNINGEN IHOP' : 'INCHECKNINGEN');
+  const hudTitle = () => (maxN > 1 ? $t('INCHECKNINGEN IHOP') : $t('INCHECKNINGEN'));
   // har väskan fått sin lapp? (på vågen med lapp – eller på väg till specialskåpet)
   const tagged = () => (!!scaleBag && scaleBag.tag !== null && scaleBag.tag !== undefined) || lyftBy !== null;
   // får väskan iväg nu? (ensam: steget BAND – ihop redan medan platsen väljs, om lappen sitter på)
@@ -1664,8 +1665,8 @@ export function makeJobbIncheck(A, { onDone } = {}) {
   // vinken för den som tar väskorna ihop (stegremsan visar skärmens steg)
   function bagHint() {
     if (!cur || STEP_IX[step] === undefined) return stepHint();
-    if (cur.bagGone) return 'VÄSKAN ÄR IVÄG';
-    if (STEP_IX[step] < STEP_IX.plats) return 'VÄNTA PÅ VIKTEN';
+    if (cur.bagGone) return $t('VÄSKAN ÄR IVÄG');
+    if (STEP_IX[step] < STEP_IX.plats) return $t('VÄNTA PÅ VIKTEN');
     return tagged() ? STEPS[STEP_IX.band].hint : STEPS[STEP_IX.lapp].hint;
   }
   // det man ser vid disken (följer med klicket: har det ändrats när man väl är framme – och går det
@@ -1928,12 +1929,12 @@ export function makeJobbIncheck(A, { onDone } = {}) {
   }
   const kLjud = (k, s) => utfall(k, k.by, 's', s);                                        // hörs hos den det gäller
   const kPop = (k, who, txt, col, where) => utfall(k, who, 'p', txt, col, where || '');   // who '' = syns hos alla
-  const hannFore = () => { play('miss'); pop('HANN FÖRE!', '#ff6a6a'); };                   // någon annan hann först
+  const hannFore = () => { play('miss'); pop($t('HANN FÖRE!'), '#ff6a6a'); };                   // någon annan hann först
   // fel: avdrag hos den som gjorde det (och i lagets räkning). Puffen vid skärmen syns hos alla,
   // en puff ovanför figuren bara hos den det gäller.
   function kFel(k, txt, where) { team.fel++; utfall(k, k.by, 'f'); kPop(k, where ? '' : k.by, txt, '#ff6a6a', where); kLjud(k, 'fel'); }
   // rätt: lönen hos den som gjorde det – "+18 KR" ovanför resenären syns hos alla
-  function kGood(k) { team.ok++; utfall(k, k.by, 'o'); kPop(k, '', `+${wage} KR`, '#8ee03c', 'pax'); kLjud(k, 'coin'); }
+  function kGood(k) { team.ok++; utfall(k, k.by, 'o'); kPop(k, '', $t`+${wage} KR`, '#8ee03c', 'pax'); kLjud(k, 'coin'); }
   // skiftledaren: läget ut direkt efter en handling (FÖRE svaret – då har den som frågade redan det
   // nya läget när svaret kommer) och utfallet till alla
   function publish(k, svar) {
@@ -1987,36 +1988,36 @@ export function makeJobbIncheck(A, { onDone } = {}) {
   // Kollen svarar null (kör!), 'H' (någon annan hann före) eller [vink, var den syns, 1 = vinken
   // står sig även om något hänt vid disken under tiden].
   function chkScreen(by, want) {
-    if (cur && !owns(cur, by)) return want === 'pass' ? 'H' : ['KOLLEGANS RESENÄR', 'mon', 1];
+    if (cur && !owns(cur, by)) return want === 'pass' ? 'H' : [$t('KOLLEGANS RESENÄR'), 'mon', 1];
     if (step !== want) return [stepHint(), 'mon'];
-    if (want === 'vikt' && (weighT < 1 || repackT > 0)) return ['VÄNTA - DEN VÄGS', 'mon', 1];
+    if (want === 'vikt' && (weighT < 1 || repackT > 0)) return [$t('VÄNTA - DEN VÄGS'), 'mon', 1];
     return null;
   }
   function chk(a, k, x) {
     switch (a) {
       case 'pass': case 'vikt': return chkScreen(k.by, a);
-      case 'plats': return chkScreen(k.by, 'plats') || (cur.seats[x[0]][x[1]] ? ['UPPTAGEN', 'mon', 1] : null);
+      case 'plats': return chkScreen(k.by, 'plats') || (cur.seats[x[0]][x[1]] ? [$t('UPPTAGEN'), 'mon', 1] : null);
       case 'lapp':     // lappen i handen på väskan på vågen
         if (!k.carry || k.carry.k !== 'tag') return [null];
-        if (!scaleBag) return [cur ? stepHint() : 'VÅGEN ÄR TOM'];
-        if (ihop() && tagged()) return ['LAPPEN SITTER REDAN'];
+        if (!scaleBag) return [cur ? stepHint() : $t('VÅGEN ÄR TOM')];
+        if (ihop() && tagged()) return [$t('LAPPEN SITTER REDAN')];
         return step === 'lapp' || (ihop() && step === 'plats') ? null : [ihop() ? bagHint() : stepHint()];
       case 'lyft':     // specialväskan av vågen (annars bara en vink)
-        if (!scaleBag) return [cur ? stepHint() : 'VÅGEN ÄR TOM'];
-        if (!bandOk() || !special()) return [bandOk() ? 'TRYCK PÅ SKICKA' : ihop() && cur ? bagHint() : stepHint()];
-        return k.carry ? ['HÄNDERNA ÄR FULLA', null, 1] : null;
+        if (!scaleBag) return [cur ? stepHint() : $t('VÅGEN ÄR TOM')];
+        if (!bandOk() || !special()) return [bandOk() ? $t('TRYCK PÅ SKICKA') : ihop() && cur ? bagHint() : stepHint()];
+        return k.carry ? [$t('HÄNDERNA ÄR FULLA'), null, 1] : null;
       case 'skicka':
         if (!bandOk()) return [ihop() && cur ? bagHint() : stepHint()];
-        return scaleBag ? null : [k.carry ? 'TILL SPECIALSKÅPET!' : 'VÅGEN ÄR TOM'];
+        return scaleBag ? null : [k.carry ? $t('TILL SPECIALSKÅPET!') : $t('VÅGEN ÄR TOM')];
       case 'special': {
         const kd = k.carry && k.carry.k;
-        return kd === 'surf' || kd === 'hund' ? null : [kd ? 'BARA SPECIALBAGAGE HÄR' : 'SURFBRÄDOR OCH DJUR HIT', null, 1];
+        return kd === 'surf' || kd === 'hund' ? null : [kd ? $t('BARA SPECIALBAGAGE HÄR') : $t('SURFBRÄDOR OCH DJUR HIT'), null, 1];
       }
       case 'kort':
         if (step !== 'kort') return [stepHint()];
-        if (cur && !owns(cur, k.by)) return ['KOLLEGANS RESENÄR', null, 1];
-        if (!cardReady) return ['SKRIVER UT...'];
-        return k.carry ? ['HÄNDERNA ÄR FULLA', null, 1] : null;
+        if (cur && !owns(cur, k.by)) return [$t('KOLLEGANS RESENÄR'), null, 1];
+        if (!cardReady) return [$t('SKRIVER UT...')];
+        return k.carry ? [$t('HÄNDERNA ÄR FULLA'), null, 1] : null;
       case 'ge':       // kortet till resenären (gick det inte händer inget)
         return cur && k.carry && k.carry.k === 'kort' ? null : [null];
     }
@@ -2069,8 +2070,8 @@ export function makeJobbIncheck(A, { onDone } = {}) {
     cur.by = k.by;
     if (approve) {
       if (cur.fake) {
-        kFel(k, 'FEL PERSON!', 'mon');
-        say(cur, pick(['Hoppsan... hej då!', 'Ehm... jag glömde en sak!', 'Oj, fel pass - jag springer!']));
+        kFel(k, $t('FEL PERSON!'), 'mon');
+        say(cur, pick([$t('Hoppsan... hej då!'), $t('Ehm... jag glömde en sak!'), $t('Oj, fel pass - jag springer!')]));
         const p = cur; endPassenger(); leaveDesk(p, true);
         return;
       }
@@ -2079,47 +2080,47 @@ export function makeJobbIncheck(A, { onDone } = {}) {
       scaleBag = { ...cur.bag, tag: null };
       cur.bagOn = true;
       weighT = 0;
-      if (scaleBag.kind === 'case' && scaleBag.w > 23 && Math.random() < 0.3) say(cur, 'Den kan vara lite tung...');
-      else if (scaleBag.kind === 'hund') say(cur, `Var snäll mot ${scaleBag.dog}!`);
+      if (scaleBag.kind === 'case' && scaleBag.w > 23 && Math.random() < 0.3) say(cur, $t('Den kan vara lite tung...'));
+      else if (scaleBag.kind === 'hund') say(cur, $t`Var snäll mot ${scaleBag.dog}!`);
     } else {
       if (cur.fake) {
         kGood(k);
-        say(cur, pick(['Äh... det är visst min brors pass.', 'Hmpf. Det var värt ett försök.', 'Oj... fel pass. Förlåt!']));
+        say(cur, pick([$t('Äh... det är visst min brors pass.'), $t('Hmpf. Det var värt ett försök.'), $t('Oj... fel pass. Förlåt!')]));
         const p = cur; endPassenger(); leaveDesk(p);
         return;
       }
-      kFel(k, 'DET VAR RÄTT PERSON!', 'mon');
-      say(cur, pick(['Men det är ju JAG på bilden!', 'Va? Det är jag, titta noga!', 'Jag har bara klippt mig!']));
+      kFel(k, $t('DET VAR RÄTT PERSON!'), 'mon');
+      say(cur, pick([$t('Men det är ju JAG på bilden!'), $t('Va? Det är jag, titta noga!'), $t('Jag har bara klippt mig!')]));
     }
   }
   function doWeight(k, choice) {
     const w = scaleBag.w, kg = fmtKg(w);
     if (choice === 'ok') {
       if (w <= 23) { kLjud(k, 'ok'); step = 'plats'; say(cur, pick(WISH_SAY[cur.wish])); return; }
-      kFel(k, w > 32 ? `${kg} KG - FÖR TUNG!` : `${kg} KG - ÖVERVIKT!`, 'mon');
+      kFel(k, w > 32 ? $t`${kg} KG - FÖR TUNG!` : $t`${kg} KG - ÖVERVIKT!`, 'mon');
       return;
     }
     if (choice === 'avgift') {
-      if (w <= 23) { kFel(k, 'INGEN ÖVERVIKT!', 'mon'); say(cur, `Avgift? Den väger ju bara ${kg} kilo!`); return; }
-      if (w > 32) { kFel(k, 'MAX 32 KG - PACKA OM!', 'mon'); say(cur, 'Får den inte ens följa med? Då packar jag om...'); return; }
+      if (w <= 23) { kFel(k, $t('INGEN ÖVERVIKT!'), 'mon'); say(cur, $t`Avgift? Den väger ju bara ${kg} kilo!`); return; }
+      if (w > 32) { kFel(k, $t('MAX 32 KG - PACKA OM!'), 'mon'); say(cur, $t('Får den inte ens följa med? Då packar jag om...')); return; }
       kLjud(k, 'box'); payT = 1.4;
-      say(cur, pick(['Oj, 400 kronor... okej då.', 'Dyrt! Men visst, jag betalar.', 'Blipp! Där.']));
+      say(cur, pick([$t('Oj, 400 kronor... okej då.'), $t('Dyrt! Men visst, jag betalar.'), $t('Blipp! Där.')]));
       step = 'plats';
       const p = cur;
       after(1.6, () => { if (cur === p && step === 'plats') say(p, pick(WISH_SAY[p.wish])); });
       return;
     }
     if (choice === 'packa') {
-      if (w <= 23) { kFel(k, 'INGEN ÖVERVIKT!', 'mon'); say(cur, 'Packa om? Den är ju inte tung!'); return; }
+      if (w <= 23) { kFel(k, $t('INGEN ÖVERVIKT!'), 'mon'); say(cur, $t('Packa om? Den är ju inte tung!')); return; }
       repackT = T_REPACK; kLjud(k, 'slide');
-      say(cur, pick(['Okej, jag flyttar lite till handbagaget.', 'Suck. Kängorna får åka i handen.', 'Jag tar tröjorna på mig då!']));
+      say(cur, pick([$t('Okej, jag flyttar lite till handbagaget.'), $t('Suck. Kängorna får åka i handen.'), $t('Jag tar tröjorna på mig då!')]));
     }
   }
   function repackDone() {
     repackT = 0;
     if (!scaleBag || !cur) return;
     scaleBag.w = roundW(16 + Math.random() * 6.5); weighT = 0.25;
-    say(cur, 'Så där! Nu borde den klara sig.');
+    say(cur, $t('Så där! Nu borde den klara sig.'));
     step = 'plats';
     const p = cur;
     after(1.7, () => { if (cur === p && step === 'plats') say(p, pick(WISH_SAY[p.wish])); });
@@ -2129,12 +2130,12 @@ export function makeJobbIncheck(A, { onDone } = {}) {
     let sel = null;
     if (cur.wish === 'ihop') { const b = blockAt(occ, r, c, cur.need); if (b) sel = { r, c0: b[0], c1: b[1] }; }
     else if (cur.wish === 'fonster' ? c === 0 || c === 5 : cur.wish === 'gang' ? c === 2 || c === 3 : true) sel = { r, c0: c, c1: c };
-    if (!sel) { kFel(k, 'FEL PLATS!', 'mon'); say(cur, WISH_WRONG[cur.wish]); return; }
+    if (!sel) { kFel(k, $t('FEL PLATS!'), 'mon'); say(cur, WISH_WRONG[cur.wish]); return; }
     cur.sel = sel;
     kLjud(k, 'ok');
     // (ihop kan väskan redan ha fått sin lapp – eller kommit iväg – medan platsen valdes)
     if (cur.bagGone) toCard(); else step = tagged() ? 'band' : 'lapp';
-    if (Math.random() < 0.5) say(cur, pick(['Perfekt, tack!', 'Toppen!', 'Bra, tack.']), 1.6);
+    if (Math.random() < 0.5) say(cur, pick([$t('Perfekt, tack!'), $t('Toppen!'), $t('Bra, tack.')]), 1.6);
   }
   const seatLabel = (p) => (p.sel ? `${SEAT_ROW0 + p.sel.r}${SEAT_COLS[p.sel.c0]}${p.sel.c1 > p.sel.c0 ? '-' + SEAT_COLS[p.sel.c1] : ''}` : '');
   // (proven) en ledig plats som passar önskan hos resenären vid disken – eller en som inte gör det
@@ -2149,11 +2150,11 @@ export function makeJobbIncheck(A, { onDone } = {}) {
   // lappskrivaren: min egen utskrift – lappen hamnar i min hand och kollas först när den sätts på väskan
   function actPrint(di) {
     const lo = ihop() ? STEP_IX.pass : STEP_IX.lapp;   // (ihop får lappen skrivas ut redan medan resenären checkas in)
-    if (!cur || STEP_IX[step] === undefined || STEP_IX[step] < lo) { hint(!cur ? 'INGEN RESENÄR' : ihop() ? bagHint() : stepHint()); return; }
-    if (STEP_IX[step] > STEP_IX.lapp || (ihop() && (tagged() || cur.bagGone))) { hint(ihop() && cur.bagGone ? 'VÄSKAN ÄR IVÄG' : 'LAPPEN SITTER REDAN'); return; }
+    if (!cur || STEP_IX[step] === undefined || STEP_IX[step] < lo) { hint(!cur ? $t('INGEN RESENÄR') : ihop() ? bagHint() : stepHint()); return; }
+    if (STEP_IX[step] > STEP_IX.lapp || (ihop() && (tagged() || cur.bagGone))) { hint(ihop() && cur.bagGone ? $t('VÄSKAN ÄR IVÄG') : $t('LAPPEN SITTER REDAN')); return; }
     if (kioskPrint) return;
-    if (carry && carry.k !== 'tag') { hint('HÄNDERNA ÄR FULLA'); return; }
-    if (carry) { pop('SLÄNGD', '#d8d2c0'); carry = null; }
+    if (carry && carry.k !== 'tag') { hint($t('HÄNDERNA ÄR FULLA')); return; }
+    if (carry) { pop($t('SLÄNGD'), '#d8d2c0'); carry = null; }
     kioskPrint = { di, t: 0 };
     play('slide');
   }
@@ -2163,8 +2164,8 @@ export function makeJobbIncheck(A, { onDone } = {}) {
     const di = k.carry.di;
     k.carry = null;
     if (di !== cur.dest) {
-      kFel(k, 'FEL LAPP!');
-      say(cur, `${DEST[di].code}? Jag ska ju till ${DEST[cur.dest].say}!`);
+      kFel(k, $t('FEL LAPP!'));
+      say(cur, $t`${DEST[di].code}? Jag ska ju till ${DEST[cur.dest].say}!`);
       return;
     }
     scaleBag.tag = di;
@@ -2180,8 +2181,8 @@ export function makeJobbIncheck(A, { onDone } = {}) {
   function doSend(k) {
     if (special()) {
       jamT = 0.9;
-      kFel(k, scaleBag.kind === 'surf' ? 'FASTNADE! SPECIALBAGAGE' : 'INTE PÅ BANDET!');
-      say(cur, scaleBag.kind === 'surf' ? 'Brädan får ju inte plats på bandet!' : `🐶 Voff! ${scaleBag.dog} ska inte åka band!`);
+      kFel(k, scaleBag.kind === 'surf' ? $t('FASTNADE! SPECIALBAGAGE') : $t('INTE PÅ BANDET!'));
+      say(cur, scaleBag.kind === 'surf' ? $t('Brädan får ju inte plats på bandet!') : $t`🐶 Voff! ${scaleBag.dog} ska inte åka band!`);
       return;
     }
     utfall(k, '', 'B', scaleBag.style, scaleBag.body, tagIx(scaleBag.tag));   // (väskan ner på matarbandet – hos alla)
@@ -2196,7 +2197,7 @@ export function makeJobbIncheck(A, { onDone } = {}) {
     if (cur) cur.bagGone = true;
     k.carry = null; lyftBy = null; lyftBag = null;
     kLjud(k, 'door');
-    if (bag.kind === 'hund' && cur) say(cur, `Hej då ${bag.dog}! Vi ses i ${DEST[cur.dest].say}!`);
+    if (bag.kind === 'hund' && cur) say(cur, $t`Hej då ${bag.dog}! Vi ses i ${DEST[cur.dest].say}!`);
     if (step === 'band') toCard();
   }
   function toCard() {
@@ -2214,18 +2215,18 @@ export function makeJobbIncheck(A, { onDone } = {}) {
     kGood(k);
     const p = cur;
     // jag önskar trevlig resa först, resenären tackar när hen vänt sig om
-    utfall(k, k.by, 'M', pick(['Trevlig resa!', 'Välkommen tillbaka!', 'Ha en bra resa!']), 13);
-    const thanks = night ? pick(['Tack! God natt!', 'Tack så mycket, sov gott!']) : pick(['Tack så mycket! Hej då!', 'Tack! Hej hej!', 'Toppen, tack!']);
+    utfall(k, k.by, 'M', pick([$t('Trevlig resa!'), $t('Välkommen tillbaka!'), $t('Ha en bra resa!')]), 13);
+    const thanks = night ? pick([$t('Tack! God natt!'), $t('Tack så mycket, sov gott!')]) : pick([$t('Tack så mycket! Hej då!'), $t('Tack! Hej hej!'), $t('Toppen, tack!')]);
     utfall(k, '', 'T', p.id, thanks);
     endPassenger();
     leaveDesk(p);
   }
   function actPassenger() {
-    if (!cur || cur.state !== 'desk') { hint('INGEN VID DISKEN'); return; }
+    if (!cur || cur.state !== 'desk') { hint($t('INGEN VID DISKEN')); return; }
     if (carry && carry.k === 'kort') { handla('ge'); return; }
     const c = DEST[cur.dest].say;
-    const line = step === 'pass' ? `Till ${c}, tack.` : step === 'vikt' ? 'Här är väskan.' : step === 'plats' ? pick(WISH_SAY[cur.wish])
-      : step === 'lapp' ? `${c}, som sagt!` : step === 'band' ? (special() ? 'Den ska väl som specialbagage?' : 'Iväg med den!') : 'Får jag boardingkortet?';
+    const line = step === 'pass' ? $t`Till ${c}, tack.` : step === 'vikt' ? $t('Här är väskan.') : step === 'plats' ? pick(WISH_SAY[cur.wish])
+      : step === 'lapp' ? $t`${c}, som sagt!` : step === 'band' ? (special() ? $t('Den ska väl som specialbagage?') : $t('Iväg med den!')) : $t('Får jag boardingkortet?');
     say(cur, line, 2.4);
   }
 
@@ -2238,13 +2239,13 @@ export function makeJobbIncheck(A, { onDone } = {}) {
     if (!cur) return [];
     // (v = det man såg vid disken när man klickade – se handla)
     if (step === 'pass') return [
-      { id: 'godkann', label: 'GODKÄNN', r: [X + 2, Y + 27, X + 34, Y + 35], col: 0x2f8f46, act: (v) => handla('pass', 1, v) },
-      { id: 'neka', label: 'NEKA', r: [X + 37, Y + 27, X + 62, Y + 35], col: 0xb8302a, act: (v) => handla('pass', 0, v) },
+      { id: 'godkann', label: $t('GODKÄNN'), r: [X + 2, Y + 27, X + 34, Y + 35], col: 0x2f8f46, act: (v) => handla('pass', 1, v) },
+      { id: 'neka', label: $t('NEKA'), r: [X + 37, Y + 27, X + 62, Y + 35], col: 0xb8302a, act: (v) => handla('pass', 0, v) },
     ];
     if (step === 'vikt') return [
-      { id: 'ok', label: 'OK', r: [X + 37, Y + 9, X + 62, Y + 17], col: 0x2f8f46, act: (v) => handla('vikt', 'ok', v) },
-      { id: 'avgift', label: 'AVGIFT', r: [X + 37, Y + 18, X + 62, Y + 26], col: 0xc8902a, act: (v) => handla('vikt', 'avgift', v) },
-      { id: 'packa', label: 'PACKA', r: [X + 37, Y + 27, X + 62, Y + 35], col: 0x3a5a9a, act: (v) => handla('vikt', 'packa', v) },
+      { id: 'ok', label: $t('OK'), r: [X + 37, Y + 9, X + 62, Y + 17], col: 0x2f8f46, act: (v) => handla('vikt', 'ok', v) },
+      { id: 'avgift', label: $t('AVGIFT'), r: [X + 37, Y + 18, X + 62, Y + 26], col: 0xc8902a, act: (v) => handla('vikt', 'avgift', v) },
+      { id: 'packa', label: $t('PACKA'), r: [X + 37, Y + 27, X + 62, Y + 35], col: 0x3a5a9a, act: (v) => handla('vikt', 'packa', v) },
     ];
     if (step === 'plats') {
       const out = [];
@@ -2255,16 +2256,16 @@ export function makeJobbIncheck(A, { onDone } = {}) {
   }
   function targets() {
     const T = [];
-    for (const b of monButtons()) T.push({ id: b.id, r: b.r, spot: 'disk', name: b.label || (b.seat ? `PLATS ${SEAT_ROW0 + b.seat[0]}${SEAT_COLS[b.seat[1]]}` : ''), act: b.act, btn: b });
+    for (const b of monButtons()) T.push({ id: b.id, r: b.r, spot: 'disk', name: b.label || (b.seat ? $t`PLATS ${`${SEAT_ROW0 + b.seat[0]}${SEAT_COLS[b.seat[1]]}`}` : ''), act: b.act, btn: b });
     for (const k of KEYS) T.push({ id: 'kod-' + DEST[k.di].code, r: k.r, spot: 'kiosk', name: `${DEST[k.di].code} ${DEST[k.di].city}`, act: () => actPrint(k.di), key: k });
-    T.push({ id: 'skicka', r: [SEND.x - 1, SEND.y - 1, SEND.x + 11, SEND.y + 19], spot: 'vag', name: 'SKICKA', act: (v) => handla('skicka', null, v) });
-    T.push({ id: 'vaska', r: [SCALE.x0 - 8, 98, SCALE.x1 + 6, TOP1 + 2], spot: 'vag', name: scaleBag ? 'VÄSKAN' : 'VÅGEN', act: bagKlick });
+    T.push({ id: 'skicka', r: [SEND.x - 1, SEND.y - 1, SEND.x + 11, SEND.y + 19], spot: 'vag', name: $t('SKICKA'), act: (v) => handla('skicka', null, v) });
+    T.push({ id: 'vaska', r: [SCALE.x0 - 8, 98, SCALE.x1 + 6, TOP1 + 2], spot: 'vag', name: scaleBag ? $t('VÄSKAN') : $t('VÅGEN'), act: bagKlick });
     // (kortet ur skrivaren – sedan går man själv fram till resenären med det, se doTakeCard)
-    T.push({ id: 'kort', r: [BPRN.x - 2, BPRN.y - 2, BPRN.x + BPRN.w + 2, TOP1 + 1], spot: 'bprn', name: 'BOARDINGKORT', act: (v) => handla('kort', null, v) });
+    T.push({ id: 'kort', r: [BPRN.x - 2, BPRN.y - 2, BPRN.x + BPRN.w + 2, TOP1 + 1], spot: 'bprn', name: $t('BOARDINGKORT'), act: (v) => handla('kort', null, v) });
     if (cur && cur.state === 'desk') T.push({ id: 'resenar', r: [cur.x - 9, cur.y - 40, cur.x + 9, TOP0], spot: 'pass', name: cur.name, act: actPassenger });
-    T.push({ id: 'special', r: [SPEC.x0, SPEC.top - 4, SPEC.x1 + 2, SPEC.base], spot: 'special', name: 'SPECIALBAGAGE', act: (v) => handla('special', null, v) });
-    T.push({ id: 'skrivare', r: [KIOSK.x0, KIOSK.top - 4, KIOSK.x1, KIOSK.base], spot: 'kiosk', name: 'LAPPSKRIVAREN', act: () => hint('TRYCK PÅ RÄTT KOD') });
-    T.push({ id: 'disk', r: [MON.x, MON.y, MON.x + MON.w, TOP1], spot: 'disk', name: 'SKÄRMEN', act: () => hint(stepHint()) });
+    T.push({ id: 'special', r: [SPEC.x0, SPEC.top - 4, SPEC.x1 + 2, SPEC.base], spot: 'special', name: $t('SPECIALBAGAGE'), act: (v) => handla('special', null, v) });
+    T.push({ id: 'skrivare', r: [KIOSK.x0, KIOSK.top - 4, KIOSK.x1, KIOSK.base], spot: 'kiosk', name: $t('LAPPSKRIVAREN'), act: () => hint($t('TRYCK PÅ RÄTT KOD')) });
+    T.push({ id: 'disk', r: [MON.x, MON.y, MON.x + MON.w, TOP1], spot: 'disk', name: $t('SKÄRMEN'), act: () => hint(stepHint()) });
     return T;
   }
   const targetAt = (x, y) => targets().find((tg) => inR(x, y, tg.r)) || null;
@@ -2421,7 +2422,7 @@ export function makeJobbIncheck(A, { onDone } = {}) {
     if (coop.active) maxN = Math.max(maxN, coop.peers().length + 1);
     if (coop.active !== wasCoop) {   // en kollega kom in: resenärerna kommer tätare
       wasCoop = coop.active;
-      if (wasCoop) { play('knock'); pop('NI JOBBAR IHOP!', '#8ee03c', 'pax'); ihopT = t; }
+      if (wasCoop) { play('knock'); pop($t('NI JOBBAR IHOP!'), '#8ee03c', 'pax'); ihopT = t; }
     }
     // Skiftledaren (eller solo) kör kön och disken; medarbetare följer ledarens läge
     const iLead = !coop.active || (coop.leader && coop.settled);
@@ -2445,7 +2446,7 @@ export function makeJobbIncheck(A, { onDone } = {}) {
     }
     if (dogTalkT <= 0) {
       dogTalkT = 6 + Math.random() * 5;
-      if (scaleBag?.kind === 'hund' && !talkP.active()) talkP.say('🐶 Voff!', keepIn({ x: SCALE_BAG.x, y: SCALE_BAG.y - 10 }), 1.4, { animal: 'hund' });
+      if (scaleBag?.kind === 'hund' && !talkP.active()) talkP.say($t('🐶 Voff!'), keepIn({ x: SCALE_BAG.x, y: SCALE_BAG.y - 10 }), 1.4, { animal: 'hund' });
     }
     // det köade klicket (det kom medan skiftledaren svarade)
     if (!pend && queued && !done) { const q = queued; queued = null; q(); }
@@ -2473,8 +2474,8 @@ export function makeJobbIncheck(A, { onDone } = {}) {
       if (cur.patience <= 0) {
         const k = kOf(cur.by);
         team.miss++; utfall(k, k.by, 'm'); utfall(k, '', 's', 'miss');
-        kPop(k, '', 'HANN INTE!', '#d8d2c0', 'pax');
-        say(cur, 'Jag hinner inte! Jag springer till en annan disk!');
+        kPop(k, '', $t('HANN INTE!'), '#d8d2c0', 'pax');
+        say(cur, $t('Jag hinner inte! Jag springer till en annan disk!'));
         const p = cur; endPassenger(); leaveDesk(p, true);
         publish(k, false);
       }
@@ -2563,11 +2564,11 @@ export function makeJobbIncheck(A, { onDone } = {}) {
     ctx.fillStyle = '#3a7ad8'; ctx.fillRect(X, Y, W, 1);
     if (!cur || step === 'fram') {
       // viloläge: loggan och "NÄSTA RESENÄR"
-      ctxText(ctx, SMALL, 'DISK 3', X + 2, Y + 1, '#ffd23a');
+      ctxText(ctx, SMALL, $t('DISK 3'), X + 2, Y + 1, '#ffd23a');
       ctx.fillStyle = '#ffd23a';
       const cx = X + 32, cy = Y + 16;
       for (const [dx, dy] of [[-1, -3], [0, -3], [1, -3], [-2, -2], [-1, -1], [0, -1], [1, 0], [2, 1], [1, 2], [0, 2], [-1, 2]]) ctx.fillRect(cx + dx, cy + dy, 1, 1);
-      const s = cur ? 'VÄLKOMMEN!' : 'NÄSTA RESENÄR';
+      const s = cur ? $t('VÄLKOMMEN!') : $t('NÄSTA RESENÄR');
       ctxText(ctx, SMALL, s, X + ((W - textW(SMALL, s)) >> 1), Y + 24, Math.floor(t * 2) % 2 && !cur ? '#8aa2c8' : '#d8e0f0');
       return;
     }
@@ -2595,15 +2596,15 @@ export function makeJobbIncheck(A, { onDone } = {}) {
       for (const b of monButtons()) button(b);
     } else if (step === 'vikt') {
       const w = scaleBag ? scaleBag.w : 0;
-      ctxText(ctx, SMALL, 'VIKT', X + 3, Y + 10, '#8aa2c8');
+      ctxText(ctx, SMALL, $t('VIKT'), X + 3, Y + 10, '#8aa2c8');
       let s;
       if (repackT > 0) s = Math.floor(t * 6) % 2 ? '--,-' : ' -,-';
       else if (weighT < 1) s = fmtKg(w * weighT * (0.9 + Math.random() * 0.1));
       else s = fmtKg(w);
       ctxText(ctx, BIG, s, X + 3, Y + 17, '#ffffff');
       ctxText(ctx, SMALL, 'KG', X + 5 + textW(BIG, s), Y + 19, '#d8e0f0');
-      if (payT > 0) ctxText(ctx, SMALL, 'BETALT', X + 3, Y + 28, '#5ad06a');
-      else ctxText(ctx, SMALL, 'MAX 23', X + 3, Y + 28, '#8aa2c8');
+      if (payT > 0) ctxText(ctx, SMALL, $t('BETALT'), X + 3, Y + 28, '#5ad06a');
+      else ctxText(ctx, SMALL, $t('MAX 23'), X + 3, Y + 28, '#8aa2c8');
       for (const b of monButtons()) button(b);
     } else if (step === 'plats') {
       // kabinen: skrov med fönster, sätesrader, gången
@@ -2625,29 +2626,29 @@ export function makeJobbIncheck(A, { onDone } = {}) {
         if (occ) { ctx.fillStyle = '#c89a78'; ctx.fillRect(x0 + 2, y0 + 1, 3, 2); ctx.fillStyle = '#3a2a20'; ctx.fillRect(x0 + 2, y0, 3, 1); }
       }
     } else if (step === 'lapp') {
-      ctxText(ctx, SMALL, 'BAGAGELAPP TILL', X + 3, Y + 10, '#8aa2c8');
+      ctxText(ctx, SMALL, $t('BAGAGELAPP TILL'), X + 3, Y + 10, '#8aa2c8');
       const cw = textW(BIG, d.city);
       ctxText(ctx, BIG, d.city, X + Math.max(2, (W - cw) >> 1), Y + 18, '#ffd23a');
       const c2 = Math.floor(t * 2) % 2 ? '#d8e0f0' : '#8aa2c8';
-      ctxText(ctx, SMALL, 'SKRIVAREN', X + 3, Y + 29, c2);
-      arrow(ctx, X + 5 + textW(SMALL, 'SKRIVAREN'), Y + 29, 1, c2);
+      ctxText(ctx, SMALL, $t('SKRIVAREN'), X + 3, Y + 29, c2);
+      arrow(ctx, X + 5 + textW(SMALL, $t('SKRIVAREN')), Y + 29, 1, c2);
       ctxText(ctx, SMALL, seatLabel(cur), X + W - 3 - textW(SMALL, seatLabel(cur)), Y + 29, '#5ad06a');
     } else if (step === 'band') {
       const sp = special();
-      ctxText(ctx, SMALL, sp ? 'SPECIALBAGAGE' : 'SKICKA VÄSKAN', X + 3, Y + 11, sp ? '#ffb040' : '#d8e0f0');
+      ctxText(ctx, SMALL, sp ? $t('SPECIALBAGAGE') : $t('SKICKA VÄSKAN'), X + 3, Y + 11, sp ? '#ffb040' : '#d8e0f0');
       const c2 = Math.floor(t * 2) % 2 ? '#ffd23a' : '#8aa2c8';
-      if (sp) { arrow(ctx, X + 3, Y + 20, -1, c2); ctxText(ctx, SMALL, 'SPECIALSKÅPET', X + 8, Y + 20, c2); }
-      else { ctxText(ctx, SMALL, 'TRYCK SKICKA', X + 3, Y + 20, c2); arrow(ctx, X + 5 + textW(SMALL, 'TRYCK SKICKA'), Y + 20, 1, c2); }
-      ctxText(ctx, SMALL, 'LAPP ' + d.code, X + 3, Y + 29, '#5ad06a');
+      if (sp) { arrow(ctx, X + 3, Y + 20, -1, c2); ctxText(ctx, SMALL, $t('SPECIALSKÅPET'), X + 8, Y + 20, c2); }
+      else { ctxText(ctx, SMALL, $t('TRYCK SKICKA'), X + 3, Y + 20, c2); arrow(ctx, X + 5 + textW(SMALL, $t('TRYCK SKICKA')), Y + 20, 1, c2); }
+      ctxText(ctx, SMALL, $t`LAPP ${d.code}`, X + 3, Y + 29, '#5ad06a');
     } else if (step === 'kort') {
       // boardingkortets förhandsvisning
       ctx.fillStyle = '#f4f2ea'; ctx.fillRect(X + 3, Y + 9, 58, 25);
       ctx.fillStyle = '#1f4f9a'; ctx.fillRect(X + 3, Y + 9, 58, 5);
-      ctxText(ctx, SMALL, 'BOARDING', X + 5, Y + 9, '#ffffff');
+      ctxText(ctx, SMALL, $t('BOARDING'), X + 5, Y + 9, '#ffffff');
       ctxText(ctx, SMALL, cur.name, X + 5, Y + 16, '#17151a');
       ctxText(ctx, SMALL, d.code, X + 48, Y + 16, '#17151a');
-      ctxText(ctx, SMALL, 'PLATS ' + seatLabel(cur), X + 5, Y + 23, '#3a3e46');
-      const s = cardReady ? 'GE KORTET!' : 'SKRIVER...';
+      ctxText(ctx, SMALL, $t`PLATS ${seatLabel(cur)}`, X + 5, Y + 23, '#3a3e46');
+      const s = cardReady ? $t('GE KORTET!') : $t('SKRIVER...');
       ctxText(ctx, SMALL, s, X + 5, Y + 29, cardReady ? '#2f8f46' : '#8a6a2a');
     }
     // stressad: tidsstapel under rubriken
@@ -2857,7 +2858,7 @@ export function makeJobbIncheck(A, { onDone } = {}) {
   // Stegremsan längst ner i den SYNLIGA rutan (canvaskoordinater): stegen, nästa
   // resenär, kön och UTGÅNG längst till höger. Blir rutan smal (4:3-paddan) faller
   // ordet NÄSTA bort först, sedan visas bara siffran på stegen som inte pågår.
-  const TYPE_LAB = { sen: 'SEN!', familj: 'FAMILJ', surf: 'SURF', hund: 'HUND', normal: '' };
+  const TYPE_LAB = { sen: $t('SEN!'), familj: $t('FAMILJ'), surf: $t('SURF'), hund: $t('HUND'), normal: '' };
   function drawStrip(ctx) {
     const b = band(), sy = b.y1 - STRIP_H, X0 = b.x0, X1 = b.x1;
     ctx.fillStyle = 'rgba(23,21,26,0.9)'; ctx.fillRect(X0, sy, X1 - X0, STRIP_H);
@@ -2868,7 +2869,7 @@ export function makeJobbIncheck(A, { onDone } = {}) {
     const widthFor = (compact, noNext) => {
       let w = 3;
       for (let i = 0; i < STEPS.length; i++) w += textW(SMALL, stepLab(i, compact)) + 8;
-      return w + 6 + (noNext ? 0 : textW(SMALL, 'NÄSTA') + 3) + (nx ? 12 + (nlab ? textW(SMALL, nlab) + 4 : 0) : 8) + 2 + textW(SMALL, `KÖ ${queue.length}`);
+      return w + 6 + (noNext ? 0 : textW(SMALL, $t('NÄSTA')) + 3) + (nx ? 12 + (nlab ? textW(SMALL, nlab) + 4 : 0) : 8) + 2 + textW(SMALL, $t`KÖ ${queue.length}`);
     };
     const avail = X1 - X0 - 46;
     const noNext = widthFor(false, false) > avail, compact = noNext && widthFor(false, true) > avail;
@@ -2883,18 +2884,18 @@ export function makeJobbIncheck(A, { onDone } = {}) {
     });
     // nästa resenär
     x += 6;
-    if (!noNext) { ctxText(ctx, SMALL, 'NÄSTA', x, sy + 3, '#8a8e98'); x += textW(SMALL, 'NÄSTA') + 3; }
+    if (!noNext) { ctxText(ctx, SMALL, $t('NÄSTA'), x, sy + 3, '#8a8e98'); x += textW(SMALL, $t('NÄSTA')) + 3; }
     if (nx) {
       ctx.drawImage(photoOf(nx.look), 1, 2, 10, 9, x, sy + 1, 10, 9);
       x += 12;
       if (nlab) { ctxText(ctx, SMALL, nlab, x, sy + 3, nx.type === 'sen' ? '#ff6a6a' : '#ffd23f'); x += textW(SMALL, nlab) + 4; }
     } else { ctxText(ctx, SMALL, '-', x, sy + 3, '#8a8e98'); x += 8; }
-    ctxText(ctx, SMALL, `KÖ ${queue.length}`, x + 2, sy + 3, '#d8d2c0');
+    ctxText(ctx, SMALL, $t`KÖ ${queue.length}`, x + 2, sy + 3, '#d8d2c0');
     // UTGÅNG
     const ex = X1 - 42;
     ctx.fillStyle = '#0e4a24'; ctx.fillRect(ex, sy + 1, 40, 9);
     ctx.fillStyle = '#1e8a3a'; ctx.fillRect(ex + 1, sy + 2, 38, 7);
-    ctxText(ctx, SMALL, 'UTGÅNG', ex + 8, sy + 3, '#ffffff');
+    ctxText(ctx, SMALL, $t('UTGÅNG'), ex + 8, sy + 3, '#ffffff');
     ctx.fillStyle = '#ffffff'; ctx.fillRect(ex + 3, sy + 4, 2, 3); ctx.fillRect(ex + 2, sy + 5, 1, 1);
     EXIT_R[0] = ex - 2; EXIT_R[1] = sy; EXIT_R[2] = X1; EXIT_R[3] = sy + STRIP_H;
   }
@@ -3161,7 +3162,7 @@ export function makeJobbIncheck(A, { onDone } = {}) {
       // när en kollega kommer: hur man delar på jobbet
       const ihopHelp = ihopT >= 0 && t - ihopT < 8, age = ihopHelp ? t - ihopT : t;
       if ((t < 8 || ihopHelp) && !done) {
-        const s = ihopHelp ? 'IHOP: EN CHECKAR IN VID SKÄRMEN - EN TAR VÄSKORNA!' : 'PASS - VIKT - PLATS - LAPP - BAND - KORT. KLICKA PÅ SKÄRMEN!', w = textW(SMALL, s) + 8;
+        const s = ihopHelp ? $t('IHOP: EN CHECKAR IN VID SKÄRMEN - EN TAR VÄSKORNA!') : $t('PASS - VIKT - PLATS - LAPP - BAND - KORT. KLICKA PÅ SKÄRMEN!'), w = textW(SMALL, s) + 8;
         const hx = clamp(((b.x0 + b.x1) >> 1) - (w >> 1), b.x0 + 1, Math.max(b.x0 + 1, b.x1 - w - 1)), hy = b.fy1 - 12;
         ctx.globalAlpha = age > 7 ? 8 - age : 1;
         ctx.fillStyle = 'rgba(23,21,26,0.85)'; ctx.fillRect(hx, hy, w, 10);

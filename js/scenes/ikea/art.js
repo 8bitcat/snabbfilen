@@ -5,6 +5,7 @@ import { Pix, SMALL, BIG, textW, text, mix, mul, hash, bayer } from '../../core/
 import * as ROOM from '../room.js';
 import { tagName, tagPrice, tagDims } from './kat.js';
 import { WH, FD, PW, OW } from './geo.js';
+import { $t } from '../../core/i18n.js';
 
 export function spriteOf(w, h, paint) { const P = new Pix(w, h); paint(P); return P.flush(); }
 
@@ -71,7 +72,8 @@ export function boxImg() {
     P.rect(0, 2, 24, 16, 0xc49a62); P.rect(0, 0, 24, 3, 0xd8b27a);
     P.box(0, 0, 24, 18, 0x6e5230);
     P.vl(15, 0, 18, 0xe6d6aa); P.vl(16, 0, 18, 0xd2c296);
-    text(P, SMALL, 'NY', 3, 8, 0x1f58a8);
+    text(P, SMALL, $t('NY'), 3, 8, 0x1f58a8);
+
   });
   return BOX;
 }

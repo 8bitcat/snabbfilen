@@ -59,6 +59,7 @@ import { createWalker, selfDrawable, folkDrawables, WALK_SEQ } from '../scenes/w
 import { planOf, drawShiftHud, drawTimeUp, abortShift } from './shift.js';
 import { makeShiftCoop } from '../net/coop.js';
 import { play, audioContext, isMuted } from '../core/sound.js';
+import { $t, $n } from '../core/i18n.js';
 
 const FW = 384, FH = 216;
 // Verkstadens pass är längre än de andra jobbens 60 s (ett däckbyte tar en
@@ -108,8 +109,8 @@ function makeShopPops() {
 }
 
 // ---------- reservdelarna ----------
-const PART_NAMES = ['DÄCK', 'OLJA', 'LAMPOR', 'AVGAS', 'BATTERI'];
-const JOB_TXT = ['DÄCKBYTE', 'OLJEBYTE', 'TRASIG LAMPA', 'ROSTIGT AVGASRÖR', 'TOMT BATTERI'];
+const PART_NAMES = [$t('DÄCK'), $t('OLJA'), $t('LAMPOR'), $t('AVGAS'), $t('BATTERI')];
+const JOB_TXT = [$t('DÄCKBYTE'), $t('OLJEBYTE'), $t('TRASIG LAMPA'), $t('ROSTIGT AVGASRÖR'), $t('TOMT BATTERI')];
 const PART_IDS = ['dack', 'olja', 'lampa', 'avgas', 'batteri'];
 const PARTS = [
   { // däck (sidovy, fälg och nav)
@@ -604,8 +605,8 @@ function paintCar(kind, color, variant, driver) {
   // ---------- spegla och skriv text (text speglas aldrig) ----------
   const Q = mirrored(P), OQ = mirrored(O);
   if (s.taxi) for (const [T0, flip] of [[P, false], [Q, true]]) {
-    const w = textW(SMALL, 'TAXI'), x = flip ? W - 20 - w : 20, y = gy - 29;
-    text(T0, SMALL, 'TAXI', x, y, 0x2a2014);
+    const w = textW(SMALL, $t('TAXI')), x = flip ? W - 20 - w : 20, y = gy - 29;
+    text(T0, SMALL, $t('TAXI'), x, y, 0x2a2014);
   }
   // översta färgade raden (för pratbubblans plats), och per kolumn (höjd över hjulens rad)
   let topRow = 0;
@@ -698,8 +699,8 @@ const flatArt = (r, style) => { const k = 'F' + r + style; return WCACHE[k] || (
 // Sommar- och vinterdäck sitter på vanliga bilar, STORT på pickuper och LITET
 // på halvkombin – samma storlek som hjulen på bilen (radie 5, 6 och 4).
 const TIRE_KINDS = ['sommar', 'vinter', 'stort', 'litet'];
-const TIRE_TXT = { sommar: 'SOMMAR', vinter: 'VINTER', stort: 'STORT', litet: 'LITET' };
-const TIRE_GET = { sommar: 'ETT SOMMARDÄCK', vinter: 'ETT VINTERDÄCK', stort: 'ETT STORT DÄCK', litet: 'ETT LITET DÄCK' };
+const TIRE_TXT = { sommar: $t('SOMMAR'), vinter: $t('VINTER'), stort: $t('STORT'), litet: $t('LITET') };
+const TIRE_GET = { sommar: $t('ETT SOMMARDÄCK'), vinter: $t('ETT VINTERDÄCK'), stort: $t('ETT STORT DÄCK'), litet: $t('ETT LITET DÄCK') };
 const TIRE_COL = { sommar: '#d8641a', vinter: '#2f6db5', stort: '#8a3a2a', litet: '#2e8a48' };
 const TIRE_R = { sommar: 5, vinter: 5, stort: 6, litet: 4 };
 const TB_W = 39;          // däckbubblans innerbredd: däcket, V, minibilen, H
@@ -800,9 +801,9 @@ let SIGNS = null;
 function signRects() {
   if (SIGNS) return SIGNS;
   const r = [], sign = (x, y, w, h) => r.push({ x, y, w, h, k: 'sign' });
-  const sw = textW(BIG, 'BILSERVICE') + 10;
+  const sw = textW(BIG, $t('BILSERVICE')) + 10;
   sign(192 - (sw >> 1), 27, sw, 11);
-  const hw = textW(SMALL, 'DÄCK') + 8;
+  const hw = textW(SMALL, $t('DÄCK')) + 8;
   sign(STATIONS[0] - (hw >> 1), RACK.y0 - 12, hw, 10);
   for (const sl of SLOTS) { const w = textW(SMALL, TIRE_TXT[sl.kind]) + 4; sign(sl.x - (w >> 1), slotSignY(sl), w, 8); }
   for (let i = 1; i < STATIONS.length; i++) sign(STATIONS[i] - 11, 40, 22, 24);   // skylten + namnet under
@@ -830,8 +831,8 @@ const RADIO = { x: 334, y: 40 };
 const GREEN_LO = 0.66, GREEN_HI = 0.84, AIR_RATE = 0.42, PULSE_T = 0.28;
 const SPIN_T = 0.42;                      // en skruv snurrar ut/in på så här många sekunder
 const PATIENCE_TIRE = 46;                 // däckbyten tar längre tid – kunden vet det
-const STEPS = ['HISSA', 'SKRUVDRAGARE', 'SKRUVAR', 'DÄCK AV', 'NYTT DÄCK', 'SKRUVA FAST', 'LUFT', 'SÄNK'];
-const STEPS_PART = ['HISSA', 'HÄMTA DEL', 'LAGA', 'SÄNK'];
+const STEPS = [$n('HISSA'), $n('SKRUVDRAGARE'), $n('SKRUVAR'), $n('DÄCK AV'), $n('NYTT DÄCK'), $n('SKRUVA FAST'), $n('LUFT'), $n('SÄNK')];
+const STEPS_PART = [$n('HISSA'), $n('HÄMTA DEL'), $n('LAGA'), $n('SÄNK')];
 const TIPS_KEY = 'snabbfilen_verkstad_tips';
 function loadTips() { try { const o = JSON.parse(localStorage.getItem(TIPS_KEY) || '{}'); return o && typeof o === 'object' ? o : {}; } catch { return {}; } }
 function saveTips(o) { try { localStorage.setItem(TIPS_KEY, JSON.stringify(o)); } catch { /* privat läge */ } }
@@ -1002,7 +1003,7 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
   const wheelX = (c, i) => sx(c, c.spec.wheels[i]);
   const wheelCY = (c) => carGY(c) - c.spec.r;
   const sideTxt = (c) => (c.face ? 'VÄNSTER' : 'HÖGER');                  // bilen vänd åt höger visar sin högra sida
-  const posTxt = (c) => sideTxt(c) + ' ' + (c.tj && c.tj.wheel ? 'FRAM' : 'BAK');
+  const posTxt = (c) => (c.face ? (c.tj && c.tj.wheel ? $t('VÄNSTER FRAM') : $t('VÄNSTER BAK')) : (c.tj && c.tj.wheel ? $t('HÖGER FRAM') : $t('HÖGER BAK')));
   const learn = (k) => { tips[k] = (tips[k] || 0) + 1; saveTips(tips); };
   const needTip = (k) => (tips[k] || 0) < 2;
 
@@ -1119,7 +1120,7 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
   function hannFore() {
     const back = walker.py < 160;
     play('miss');
-    pops.add(walker.px, back ? walker.py + 5 : walker.py - 58, 'HANN FÖRE!', '#ff6a6a', { tag: 'tips', minY: back ? walker.py - 6 : 0 });
+    pops.add(walker.px, back ? walker.py + 5 : walker.py - 58, $t('HANN FÖRE!'), '#ff6a6a', { tag: 'tips', minY: back ? walker.py - 6 : 0 });
   }
 
   // ---------- jobba tillsammans (delat pass via js/net/coop.js) ----------
@@ -1155,7 +1156,7 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
   const str = (v) => (typeof v === 'string' ? v.slice(0, 40) : '');
   const carById = (id) => cars.find((c) => c.id === id) || null;
   const hoseHolder = () => (hasHose() ? meId() : hoseBy);
-  const hudTitle = () => (maxN > 1 ? 'BILVERKSTADEN IHOP' : 'BILVERKSTADEN');
+  const hudTitle = () => (maxN > 1 ? $t('BILVERKSTADEN IHOP') : $t('BILVERKSTADEN'));
   // det man ser vid en plats när man klickar (har det ändrats när man väl är framme hann någon före)
   const sigCar = (c) => (c ? c.id * 16 + CAR_ST.indexOf(c.state) : -1);
   const sigTire = (c) => (c && c.tj ? c.id * 4 + TIRE_ST.indexOf(c.tj.tire) : -1);
@@ -1250,8 +1251,8 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
     if (hear) {
       if (was === 'drive' && c.state === 'exit') play('door');
       if (was === 'board' && c.state === 'leave') { play('door'); if (c.gaveUp) { c.honk = 1.3; play('honk'); } }
-      if (!wasGave && c.gaveUp) { play('miss'); eventPops(c, null, ['TRÖTTNADE!', '#d8d2c0']); dropMine(c); }
-      if ((a[17] | 0) > (c.nagN | 0)) { if (!wasLate) play('miss'); eventPops(c, null, ['SKYNDA PÅ!', '#ff9a6a']); }
+      if (!wasGave && c.gaveUp) { play('miss'); eventPops(c, null, [$t('TRÖTTNADE!'), '#d8d2c0']); dropMine(c); }
+      if ((a[17] | 0) > (c.nagN | 0)) { if (!wasLate) play('miss'); eventPops(c, null, [$t('SKYNDA PÅ!'), '#ff9a6a']); }
       if (!wasFixed && c.fixed) c.flash = 1;
     }
     c.nagN = a[17] | 0;
@@ -1641,8 +1642,8 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
     // lyften sänks (och säger ÄNTLIGEN!) i stället för att köra iväg mitt i.
     // (nagN räknar tjatet – medarbetarna ser SKYNDA PÅ! när det växer)
     if (j && (j.late || j.tire === 'off' || j.bolts.some((b) => !b) || j.spin || (j.tire === 'new' && !j.aired))) {
-      if (!j.late) { j.late = true; c.nag = t; c.nagN++; c.owner.angry = 2; eventPops(c, null, ['SKYNDA PÅ!', '#ff9a6a']); play('miss'); }
-      else if (t - c.nag > 5) { c.nag = t; c.nagN++; c.owner.angry = 1.6; eventPops(c, null, ['SKYNDA PÅ!', '#ff9a6a']); }
+      if (!j.late) { j.late = true; c.nag = t; c.nagN++; c.owner.angry = 2; eventPops(c, null, [$t('SKYNDA PÅ!'), '#ff9a6a']); play('miss'); }
+      else if (t - c.nag > 5) { c.nag = t; c.nagN++; c.owner.angry = 1.6; eventPops(c, null, [$t('SKYNDA PÅ!'), '#ff9a6a']); }
       c.patience = 0;
       return;
     }
@@ -1650,7 +1651,7 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
     play('miss');
     c.gaveUp = true; c.state = 'lower'; c.bay.moving = c.bay.lift > 0 ? 1 : 0; c.bay.pressUp = false;
     c.owner.angry = 1.6;
-    eventPops(c, null, ['TRÖTTNADE!', '#d8d2c0']);
+    eventPops(c, null, [$t('TRÖTTNADE!'), '#d8d2c0']);
     if (hold.bay === c.bay.i) hold.on = false;
     if (airing === c) airing = null;
     if (pulseCar === c) { pulseCar = null; pulse = 0; }
@@ -1662,7 +1663,7 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
   function wrongPart(c, k = meK()) {
     team.fel++; utfall(k, k.by, 'f');
     kLjud(k, 'fel');
-    kEvent(k, c, ['FEL DEL!', '#ff6a6a'], ['SUR!', '#ff9a6a']);
+    kEvent(k, c, [$t('FEL DEL!'), '#ff6a6a'], [$t('SUR!'), '#ff9a6a']);
     c.owner.angry = 2.2;
     annoy(c, 6);
     utfall(k, k.by, 'h');
@@ -1673,12 +1674,12 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
     j.wrongT = t;
     team.fel++; utfall(k, k.by, 'f'); kLjud(k, 'fel');
     c.owner.angry = 1.8; annoy(c, 4);
-    kEvent(k, c, ['FEL HJUL!', '#ff6a6a'], [posTxt(c) + '!', '#ff9a6a']);
+    kEvent(k, c, [$t('FEL HJUL!'), '#ff6a6a'], [posTxt(c) + '!', '#ff9a6a']);
   }
   function wrongTire(c, k = meK()) {
     team.fel++; utfall(k, k.by, 'f'); kLjud(k, 'fel');
     c.owner.angry = 2; annoy(c, 5);
-    kEvent(k, c, ['FEL DÄCK!', '#ff6a6a'], [TIRE_TXT[c.tj.want] + '!', '#ff9a6a']);
+    kEvent(k, c, [$t('FEL DÄCK!'), '#ff6a6a'], [TIRE_TXT[c.tj.want] + '!', '#ff9a6a']);
   }
   // lagningen är klar – bilen väntar på att lyften sänks (delen är förbrukad)
   function finish(c, k = meK()) {
@@ -1686,7 +1687,7 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
     if (!c.tj) k.carry = null;
     utfall(k, k.by, 'h');
     kLjud(k, 'ok');
-    kEvent(k, c, ['KLART!', '#8ee03c'], ['BRA!', '#ffd23f']);
+    kEvent(k, c, [$t('KLART!'), '#8ee03c'], [$t('BRA!'), '#ffd23f']);
     c.owner.happy = 0.8; c.owner.angry = 0;
     kSparkle(k, Math.round(c.x + c.L / 2), carGY(c) - carArt(c).topH + 8, 12);
   }
@@ -1696,7 +1697,7 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
     team.ok += n; utfall(k, k.by, 'o', n);
     if (c.tj) utfall(k, k.by, 'd');
     kLjud(k, 'coin');
-    kEvent(k, c, ['+' + n, '#8ee03c'], [c.tj && c.tj.late ? 'ÄNTLIGEN!' : 'TACK!', '#ffd23f']);
+    kEvent(k, c, ['+' + n, '#8ee03c'], [c.tj && c.tj.late ? $t('ÄNTLIGEN!') : $t('TACK!'), '#ffd23f']);
     c.owner.happy = 1.6; c.owner.angry = 0;
     kSparkle(k, Math.round(c.x + c.L / 2), carGY(c) - carArt(c).topH + 8);
   }
@@ -1882,7 +1883,7 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
   function startBolt(c, bi, fromQ = false, k = meK()) {
     const j = c.tj, out = j.tire === 'flat';
     const cand = (q) => j.bolts[q] === out;       // ut: skruvar som sitter i · in: tomma hål
-    if (bi >= 0 && !cand(bi)) { kTip(k, out ? 'DEN ÄR REDAN UTE' : 'DEN SITTER REDAN', '#d8d2c0', false); kLjud(k, 'click'); return; }
+    if (bi >= 0 && !cand(bi)) { kTip(k, out ? $t('DEN ÄR REDAN UTE') : $t('DEN SITTER REDAN'), '#d8d2c0', false); kLjud(k, 'click'); return; }
     if (bi < 0) {
       for (let s = 1; s <= j.n; s++) { const q = (j.last + s + j.n) % j.n; if (cand(q)) { bi = q; break; } }
       if (bi < 0) return;
@@ -1925,7 +1926,7 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
     if (!j.slip) {
       j.slip = true; team.fel++; utfall(k, k.by, 'f'); kLjud(k, 'fel');
       c.owner.angry = 1.2;
-      kEvent(k, c, ['FÖR SNABBT!', '#ff6a6a'], ['FÖRSIKTIGT!', '#ff9a6a']);
+      kEvent(k, c, [$t('FÖR SNABBT!'), '#ff6a6a'], [$t('FÖRSIKTIGT!'), '#ff9a6a']);
     }
     j.spin.t = 0;
   }
@@ -1941,15 +1942,15 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
     else j.order.push(bi);
     kLjud(k, 'click');
     const inN = j.bolts.filter(Boolean).length;
-    if (out && inN === 0) { kLearn(k, 'SKRUVAR'); kLjud(k, 'ok'); kEvent(k, c, ['SKRUVARNA UTE!', '#8ee03c'], null); }
+    if (out && inN === 0) { kLearn(k, 'SKRUVAR'); kLjud(k, 'ok'); kEvent(k, c, [$t('SKRUVARNA UTE!'), '#8ee03c'], null); }
     if (!out && inN === j.n) {
       kLearn(k, 'SKRUVA FAST');
       if (isStar(j.order, j.n)) {
         team.ok++; utfall(k, k.by, 'o', 1); utfall(k, k.by, 'k');
         kLjud(k, 'box');
-        kEvent(k, c, ['KRYSSMÖNSTER! +1', '#ffd23f'], ['PROFFSIGT!', '#8ee03c']);
+        kEvent(k, c, [$t('KRYSSMÖNSTER! +1'), '#ffd23f'], [$t('PROFFSIGT!'), '#8ee03c']);
         kSparkle(k, wx, wy - 4, 12);
-      } else { kLjud(k, 'ok'); kEvent(k, c, ['FASTSKRUVAT!', '#8ee03c'], null); }
+      } else { kLjud(k, 'ok'); kEvent(k, c, [$t('FASTSKRUVAT!'), '#8ee03c'], null); }
     }
     const q = j.queued;
     j.queued = null;
@@ -1962,7 +1963,7 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
     j.air = 0;
     utfall(k, k.by, 'Q');
     c.owner.angry = 2.4;
-    kEvent(k, c, ['PANG!', '#ffffff'], ['OJ OJ!', '#ff9a6a']);
+    kEvent(k, c, [$t('PANG!'), '#ffffff'], [$t('OJ OJ!'), '#ff9a6a']);
     utfall(k, '', 'B', c.id);                             // stjärnan och gummibitarna syns hos alla
   }
   // man släppte luften: grönt = klart, för mycket = fel och luft släpps ut, för lite = fyll på mer
@@ -1972,15 +1973,15 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
     if (j.air >= GREEN_LO && j.air <= GREEN_HI) {
       j.aired = true; kLearn(k, 'LUFT');
       finish(c, k);
-      kEvent(k, c, ['LAGOM!', '#8ee03c'], ['PERFEKT!', '#ffd23f']);
+      kEvent(k, c, [$t('LAGOM!'), '#8ee03c'], [$t('PERFEKT!'), '#ffd23f']);
       utfall(k, k.by, 'A');                               // slangen rullas in av sig själv
     } else if (j.air > GREEN_HI) {
       team.fel++; utfall(k, k.by, 'f'); kLjud(k, 'fel');
       c.owner.angry = 1.6;
       j.air = 0.46;
-      kEvent(k, c, ['FÖR MYCKET LUFT!', '#ff6a6a'], null);
+      kEvent(k, c, [$t('FÖR MYCKET LUFT!'), '#ff6a6a'], null);
       utfall(k, '', 'U', c.id);                           // luften pyser ut vid ventilen
-    } else if (j.air > 0.04) kTip(k, 'MER LUFT - HÅLL INNE', '#d8d2c0', false);
+    } else if (j.air > 0.04) kTip(k, $t('MER LUFT - HÅLL INNE'), '#d8d2c0', false);
   }
   // man lämnar ett halvfyllt däck: fel (en gång per däck)
   function lowAir(c, k = meK()) {
@@ -1988,7 +1989,7 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
     if (!j || j.aired || j.lowFel || j.tire !== 'new' || j.air <= 0.04 || j.air >= GREEN_LO) return false;
     j.lowFel = true; team.fel++; utfall(k, k.by, 'f'); kLjud(k, 'fel');
     c.owner.angry = 1.4;
-    kEvent(k, c, ['FÖR LITE LUFT!', '#ff6a6a'], null);
+    kEvent(k, c, [$t('FÖR LITE LUFT!'), '#ff6a6a'], null);
     return true;
   }
   // (skiftledaren) en medarbetare släppte luften vid mätarläget v – samma bedömning som för mig
@@ -2060,7 +2061,7 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
   }
   function doPanel(k, b) {
     const c = carOf(b);
-    if (!c || c.state === 'drive' || c.state === 'exit') { kTip(k, c ? 'VÄNTA PÅ BILEN' : 'INGEN BIL HÄR', '#d8d2c0'); return; }
+    if (!c || c.state === 'drive' || c.state === 'exit') { kTip(k, c ? $t('VÄNTA PÅ BILEN') : $t('INGEN BIL HÄR'), '#d8d2c0'); return; }
     if (c.state === 'park') {
       c.state = 'raise'; b.moving = 1; b.press = 0.35; b.pressUp = true; b.hum = 0;
       kLearn(k, 'HISSA');
@@ -2076,10 +2077,10 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
     }
     if (c.state === 'wait') {
       const j = c.tj;
-      if (j && j.tire === 'off') kTip(k, 'HJULET SITTER INTE PÅ!', '#ff9a6a');
-      else if (j && (j.bolts.some((q) => !q) || j.spin)) kTip(k, 'SKRUVA FAST HJULET FÖRST!', '#ff9a6a');
-      else if (j && !lowAir(c, k)) kTip(k, j.tire === 'flat' ? 'BYT DÄCKET FÖRST' : 'FYLL LUFT I DÄCKET FÖRST', '#ff9a6a');
-      else if (!j) kTip(k, 'LAGA BILEN FÖRST', '#ff9a6a');
+      if (j && j.tire === 'off') kTip(k, $t('HJULET SITTER INTE PÅ!'), '#ff9a6a');
+      else if (j && (j.bolts.some((q) => !q) || j.spin)) kTip(k, $t('SKRUVA FAST HJULET FÖRST!'), '#ff9a6a');
+      else if (j && !lowAir(c, k)) kTip(k, j.tire === 'flat' ? $t('BYT DÄCKET FÖRST') : $t('FYLL LUFT I DÄCKET FÖRST'), '#ff9a6a');
+      else if (!j) kTip(k, $t('LAGA BILEN FÖRST'), '#ff9a6a');
     }
   }
   function actWheel(c, i, how, v = sigTire(c)) {
@@ -2093,26 +2094,26 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
   function doWheel(k, c, i, how) {
     const j = c.tj;
     if (!j || cars.indexOf(c) < 0) return;
-    if (c.state === 'park' || c.state === 'raise') { kTip(k, c.state === 'park' ? 'HISSA UPP BILEN FÖRST!' : 'VÄNTA - LYFTEN GÅR UPP'); return; }
-    if (c.state === 'ready') { kTip(k, 'KLART - SÄNK LYFTEN!'); return; }
+    if (c.state === 'park' || c.state === 'raise') { kTip(k, c.state === 'park' ? $t('HISSA UPP BILEN FÖRST!') : $t('VÄNTA - LYFTEN GÅR UPP')); return; }
+    if (c.state === 'ready') { kTip(k, $t('KLART - SÄNK LYFTEN!')); return; }
     if (c.state !== 'wait') return;
     const right = i === j.wheel, cr = k.carry;
     c.lastWork = t;
     if (cr && cr.wheel) {
-      if (cr.old) { kTip(k, 'LÄGG DET GAMLA I STAPELN'); return; }
-      if (j.tire !== 'off') { kTip(k, right ? 'TA AV DET PUNKTERADE FÖRST' : 'FEL HJUL - ' + posTxt(c)); return; }
-      if (!right) { kTip(k, 'FEL HJUL - ' + posTxt(c)); return; }
+      if (cr.old) { kTip(k, $t('LÄGG DET GAMLA I STAPELN')); return; }
+      if (j.tire !== 'off') { kTip(k, right ? $t('TA AV DET PUNKTERADE FÖRST') : $t`FEL HJUL - ${posTxt(c)}`); return; }
+      if (!right) { kTip(k, $t`FEL HJUL - ${posTxt(c)}`); return; }
       if (cr.wheel !== j.want) { wrongTire(c, k); return; }
       j.tire = 'new'; j.mounted = cr.wheel; j.bolts.fill(false); j.order = []; j.last = -1; j.air = 0; j.lowFel = false;
       k.carry = null;
       kLearn(k, 'NYTT DÄCK');
       kLjud(k, 'knock');
-      kEvent(k, c, ['PÅ PLATS!', '#8ee03c'], null);
+      kEvent(k, c, [$t('PÅ PLATS!'), '#8ee03c'], null);
       return;
     }
     if (cr && cr.hose) {
-      if (!right) { kTip(k, 'FEL HJUL - ' + posTxt(c)); return; }
-      if (j.tire !== 'new' || j.bolts.some((q) => !q)) { kTip(k, j.tire === 'new' ? 'SKRUVA FAST HJULET FÖRST' : 'BYT DÄCKET FÖRST'); return; }
+      if (!right) { kTip(k, $t`FEL HJUL - ${posTxt(c)}`); return; }
+      if (j.tire !== 'new' || j.bolts.some((q) => !q)) { kTip(k, j.tire === 'new' ? $t('SKRUVA FAST HJULET FÖRST') : $t('BYT DÄCKET FÖRST')); return; }
       if (how === 'key' && !k.remote) { pulse = PULSE_T; pulseCar = c; hoseCar = c; }
       return;                                           // med musen fylls det så länge man håller inne (update)
     }
@@ -2120,29 +2121,29 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
     const wrench = !!cr && cr.wrench !== undefined;
     if (j.tire === 'flat') {
       if (j.bolts.some(Boolean)) {
-        if (!wrench) { kTip(k, 'HÄMTA SKRUVDRAGAREN'); return; }
+        if (!wrench) { kTip(k, $t('HÄMTA SKRUVDRAGAREN')); return; }
         if (!right) { wrongWheel(c, k); return; }
         boltClick(c, -1, how, k);
         return;
       }
-      if (!right) { kTip(k, 'FEL HJUL - ' + posTxt(c)); return; }
+      if (!right) { kTip(k, $t`FEL HJUL - ${posTxt(c)}`); return; }
       if (j.spin) return;
       // alla skruvar ute: lyft av hjulet (skruvdragaren läggs på golvet)
       if (wrench) dropWrench(k);
       k.carry = { wheel: j.want, old: true, from: c.id };
       j.tire = 'off';
       kLjud(k, 'door');
-      kEvent(k, c, ['AV!', '#8ee03c'], null);
+      kEvent(k, c, [$t('AV!'), '#8ee03c'], null);
       return;
     }
-    if (j.tire === 'off') { kTip(k, right ? 'HÄMTA ' + TIRE_GET[j.want] : 'FEL HJUL - ' + posTxt(c)); return; }
+    if (j.tire === 'off') { kTip(k, right ? $t`HÄMTA ${TIRE_GET[j.want]}` : $t`FEL HJUL - ${posTxt(c)}`); return; }
     if (j.bolts.some((q) => !q)) {
-      if (!wrench) { kTip(k, 'TA SKRUVDRAGAREN'); return; }
+      if (!wrench) { kTip(k, $t('TA SKRUVDRAGAREN')); return; }
       if (!right) { wrongWheel(c, k); return; }
       boltClick(c, -1, how, k);
       return;
     }
-    if (!j.aired) kTip(k, right ? 'HÄMTA LUFTSLANGEN' : 'FEL HJUL - ' + posTxt(c));
+    if (!j.aired) kTip(k, right ? $t('HÄMTA LUFTSLANGEN') : $t`FEL HJUL - ${posTxt(c)}`);
   }
   // klick på en skruv i navbubblan (utan att gå – man står redan vid hjulet). Ett klick som köades
   // medan skiftledaren svarade (man såg inte att skruven redan snurrade) räknas som mellanslaget:
@@ -2157,9 +2158,9 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
     shared('dack', { i: SLOTS.indexOf(sl) }, (k) => doRack(k, sl));
   }
   function doRack(k, sl) {
-    if (k.carry && k.carry.wheel && k.carry.old) { kTip(k, 'LÄGG DET GAMLA I STAPELN'); return; }
+    if (k.carry && k.carry.wheel && k.carry.old) { kTip(k, $t('LÄGG DET GAMLA I STAPELN')); return; }
     if (k.carry && k.carry.wheel) {
-      if (k.carry.wheel === sl.kind) { k.carry = null; kLjud(k, 'click'); kSay(k, sl.x, PICK_Y + 12, 'TILLBAKA', '#d8d2c0', PICK_Y + 4); return; }
+      if (k.carry.wheel === sl.kind) { k.carry = null; kLjud(k, 'click'); kSay(k, sl.x, PICK_Y + 12, $t('TILLBAKA'), '#d8d2c0', PICK_Y + 4); return; }
       k.carry = { wheel: sl.kind, old: false };          // byt: det andra hjulet ställs tillbaka
       kLjud(k, 'ok');
       return;
@@ -2173,8 +2174,8 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
     shared('del', { i: p }, (k) => doStation(k, p));
   }
   function doStation(k, p) {
-    if (k.carry && k.carry.p === p) { k.carry = null; kLjud(k, 'click'); kSay(k, PART_X[p], PICK_Y + 12, 'TILLBAKA', '#d8d2c0', PICK_Y + 4); return; }
-    if (!freeHands(k)) { kTip(k, k.carry.old ? 'LÄGG DET GAMLA I STAPELN' : 'HÄNDERNA ÄR FULLA'); return; }
+    if (k.carry && k.carry.p === p) { k.carry = null; kLjud(k, 'click'); kSay(k, PART_X[p], PICK_Y + 12, $t('TILLBAKA'), '#d8d2c0', PICK_Y + 4); return; }
+    if (!freeHands(k)) { kTip(k, k.carry.old ? $t('LÄGG DET GAMLA I STAPELN') : $t('HÄNDERNA ÄR FULLA')); return; }
     k.carry = { p };
     kLjud(k, 'ok');
   }
@@ -2187,14 +2188,14 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
       p.n = Math.min(PILE_MAX, p.n + 1); k.carry = null;
       kLearn(k, 'DÄCK AV');
       kLjud(k, 'box');
-      kSay(k, p.x, p.y + 10, 'I STAPELN!', '#8ee03c', p.y + 2);
+      kSay(k, p.x, p.y + 10, $t('I STAPELN!'), '#8ee03c', p.y + 2);
       return;
     }
-    kTip(k, k.carry && k.carry.wheel ? 'NYA HJUL SKA PÅ BILEN' : 'HÄR LÄGGS GAMLA HJUL', '#d8d2c0');
+    kTip(k, k.carry && k.carry.wheel ? $t('NYA HJUL SKA PÅ BILEN') : $t('HÄR LÄGGS GAMLA HJUL'), '#d8d2c0');
   }
   function takeWrench(w, k = meK()) {
-    if (k.carry && k.carry.wrench !== undefined) { kTip(k, 'DU HAR REDAN EN', '#d8d2c0'); return; }
-    if (!freeHands(k)) { kTip(k, k.carry.old ? 'LÄGG DET GAMLA I STAPELN' : 'HÄNDERNA ÄR FULLA'); return; }
+    if (k.carry && k.carry.wrench !== undefined) { kTip(k, $t('DU HAR REDAN EN'), '#d8d2c0'); return; }
+    if (!freeHands(k)) { kTip(k, k.carry.old ? $t('LÄGG DET GAMLA I STAPELN') : $t('HÄNDERNA ÄR FULLA')); return; }
     w.at = 'hand'; w.by = k.by; k.carry = { wrench: w.id };
     kLearn(k, 'SKRUVDRAGARE');
     kLjud(k, 'ok');
@@ -2212,8 +2213,8 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
   function doCart(k, ci) {
     const w = wrenches.find((x) => x.at === 'cart' && x.cart === ci);
     if (k.carry && k.carry.wrench !== undefined) {
-      if (!w) { Object.assign(wrenches[k.carry.wrench], { at: 'cart', cart: ci, by: '' }); k.carry = null; kLjud(k, 'click'); kSay(k, CARTS[ci].x, CARTS[ci].y + 10, 'TILLBAKA'); return; }
-      kTip(k, 'DU HAR REDAN EN', '#d8d2c0');
+      if (!w) { Object.assign(wrenches[k.carry.wrench], { at: 'cart', cart: ci, by: '' }); k.carry = null; kLjud(k, 'click'); kSay(k, CARTS[ci].x, CARTS[ci].y + 10, $t('TILLBAKA')); return; }
+      kTip(k, $t('DU HAR REDAN EN'), '#d8d2c0');
       return;
     }
     if (!w) {
@@ -2221,8 +2222,8 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
       // vagnens egen dragare ligger någon annanstans (på golvet vid ett hjul, som
       // man kanske inte ser i fyll-läget) – gå och hämta den närmaste
       const o = nearestWrench();
-      if (!o) { tipAt('SKRUVDRAGAREN ÄR BORTA', '#d8d2c0'); return; }
-      tipAt(o.at === 'floor' ? 'DEN LIGGER VID HJULET' : 'DEN ANDRA VAGNEN', '#d8d2c0', false);
+      if (!o) { tipAt($t('SKRUVDRAGAREN ÄR BORTA'), '#d8d2c0'); return; }
+      tipAt(o.at === 'floor' ? $t('DEN LIGGER VID HJULET') : $t('DEN ANDRA VAGNEN'), '#d8d2c0', false);
       if (o.at === 'cart') { const ov = o.id; go(cartSpot(o.cart), () => actCart(o.cart, ov)); }
       else go({ x: o.x, y: o.y }, () => grabFloor(o));
       return;
@@ -2237,7 +2238,7 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
     if (k.carry && k.carry.hose) { stowHose(k); return; }
     const hh = hoseHolder();
     if (hh != null && !byK(k, hh)) { utfall(k, k.by, 'H'); return; }   // (ihop: en kollega har slangen)
-    if (!freeHands(k)) { kTip(k, k.carry.old ? 'LÄGG DET GAMLA I STAPELN' : 'HÄNDERNA ÄR FULLA'); return; }
+    if (!freeHands(k)) { kTip(k, k.carry.old ? $t('LÄGG DET GAMLA I STAPELN') : $t('HÄNDERNA ÄR FULLA')); return; }
     k.carry = { hose: true };
     if (k.remote) hoseBy = k.by;
     kLjud(k, 'ok');
@@ -2352,7 +2353,7 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
     if (st === 'KOMMER' || st === 'KLART') { walker.walkTo(x, Math.max(y, b.base + 6)); return; }
     if (st === 'HISSA' || st === 'SÄNK') {
       const s = panelSpot(b);
-      pops.add(b.panelX + 2, backRow(b.base) ? b.base + 8 : b.panelY - 20, st === 'HISSA' ? 'HISSA MED PANELEN' : 'SÄNK MED PANELEN', '#ffd23f', { tag: 'tips' });
+      pops.add(b.panelX + 2, backRow(b.base) ? b.base + 8 : b.panelY - 20, st === 'HISSA' ? $t('HISSA MED PANELEN') : $t('SÄNK MED PANELEN'), '#ffd23f', { tag: 'tips' });
       play('miss');
       if (!c.tj) { walker.walkTo(s.x, s.y); return; }
       return;
@@ -2407,18 +2408,18 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
     const panelT = () => ({ x: b.panelX + 2, y: b.panelY - 4, al: b.face ? 'l' : 'r' });
     const at = (k, p, txt) => (p ? { key: k, ...p, txt } : null);
     switch (st) {
-      case 'HISSA': return c.state === 'park' ? at('HISSA', panelT(), 'HISSA UPP BILEN') : null;
-      case 'SÄNK': return at('SÄNK', panelT(), 'SÄNK LYFTEN');
-      case 'HÄMTA DEL': return at('DEL', { x: PART_X[c.fault], y: 40 }, 'HÄMTA ' + PART_NAMES[c.fault]);
-      case 'LAGA': return at('LAGA', { x: spotOf(b).x, y: spotOf(b).y - 44 }, 'HÅLL INNE VID BILEN');
-      case 'SKRUVDRAGARE': return at('SKRUVDRAGARE', wrenchT(), 'HÄMTA SKRUVDRAGAREN');
-      case 'SKRUVAR': return hasWrench() ? (hubVisible(c) ? null : at('SKRUVAR', wheelT(), 'SKRUVA UR - ' + posTxt(c))) : at('SKRUVDRAGARE', wrenchT(), 'HÄMTA SKRUVDRAGAREN');
-      case 'DÄCK AV': return carry && carry.old ? at('STAPEL', pileT(), 'LÄGG DET I STAPELN') : at('DÄCK AV', wheelT(), 'TA AV HJULET');
+      case 'HISSA': return c.state === 'park' ? at('HISSA', panelT(), $t('HISSA UPP BILEN')) : null;
+      case 'SÄNK': return at('SÄNK', panelT(), $t('SÄNK LYFTEN'));
+      case 'HÄMTA DEL': return at('DEL', { x: PART_X[c.fault], y: 40 }, $t`HÄMTA ${PART_NAMES[c.fault]}`);
+      case 'LAGA': return at('LAGA', { x: spotOf(b).x, y: spotOf(b).y - 44 }, $t('HÅLL INNE VID BILEN'));
+      case 'SKRUVDRAGARE': return at('SKRUVDRAGARE', wrenchT(), $t('HÄMTA SKRUVDRAGAREN'));
+      case 'SKRUVAR': return hasWrench() ? (hubVisible(c) ? null : at('SKRUVAR', wheelT(), $t`SKRUVA UR - ${posTxt(c)}`)) : at('SKRUVDRAGARE', wrenchT(), $t('HÄMTA SKRUVDRAGAREN'));
+      case 'DÄCK AV': return carry && carry.old ? at('STAPEL', pileT(), $t('LÄGG DET I STAPELN')) : at('DÄCK AV', wheelT(), $t('TA AV HJULET'));
       case 'NYTT DÄCK':
-        if (carry && carry.wheel && !carry.old) return carry.wheel === j.want ? at('NYTT DÄCK', wheelT(), 'SÄTT PÅ HJULET') : at('NYTT DÄCK', slotT(carry.wheel), 'FEL SORT - LÄMNA TILLBAKA');
-        return at('NYTT DÄCK', slotT(j.want), 'HÄMTA ' + TIRE_GET[j.want]);
-      case 'SKRUVA FAST': return hasWrench() ? (hubVisible(c) ? null : at('SKRUVA FAST', wheelT(), 'SKRUVA FAST HJULET')) : at('SKRUVA FAST', wrenchT(), 'TA SKRUVDRAGAREN');
-      case 'LUFT': return hasHose() ? (gaugeVisible(c) ? null : at('LUFT', wheelT(), 'FYLL LUFT HÄR')) : at('LUFT', { x: COMP.x + 10, y: COMP.y - 27 }, 'HÄMTA LUFTSLANGEN');
+        if (carry && carry.wheel && !carry.old) return carry.wheel === j.want ? at('NYTT DÄCK', wheelT(), $t('SÄTT PÅ HJULET')) : at('NYTT DÄCK', slotT(carry.wheel), $t('FEL SORT - LÄMNA TILLBAKA'));
+        return at('NYTT DÄCK', slotT(j.want), $t`HÄMTA ${TIRE_GET[j.want]}`);
+      case 'SKRUVA FAST': return hasWrench() ? (hubVisible(c) ? null : at('SKRUVA FAST', wheelT(), $t('SKRUVA FAST HJULET'))) : at('SKRUVA FAST', wrenchT(), $t('TA SKRUVDRAGAREN'));
+      case 'LUFT': return hasHose() ? (gaugeVisible(c) ? null : at('LUFT', wheelT(), $t('FYLL LUFT HÄR'))) : at('LUFT', { x: COMP.x + 10, y: COMP.y - 27 }, $t('HÄMTA LUFTSLANGEN'));
     }
     return null;
   }
@@ -2670,15 +2671,15 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
     const near = Math.hypot(walker.px - s.x, walker.py - s.y) < 6;
     if (!near || !c || c.tj) return;
     if (c.state === 'park' || c.state === 'raise') {
-      if (c.state === 'park') tipAt('HISSA UPP BILEN FÖRST!');
+      if (c.state === 'park') tipAt($t('HISSA UPP BILEN FÖRST!'));
       hold.on = false; keyHold = 0;
     } else if (c.state === 'wait') {
       walker.dir = faceCar(b, s.x);
       if (!carry || carry.p === undefined) {
-        tipAt(carry ? 'FEL SAK I HÄNDERNA' : 'HÄMTA RÄTT DEL!');
+        tipAt(carry ? $t('FEL SAK I HÄNDERNA') : $t('HÄMTA RÄTT DEL!'));
         hold.on = false; keyHold = 0;
       } else if (c.rb != null && !isMe(c.rb) && (mate() || t - c.rbT < 0.7)) {   // (ihop: en kollega lagar redan)
-        tipAt('UPPTAGET', '#d8d2c0');
+        tipAt($t('UPPTAGET'), '#d8d2c0');
         hold.on = false; keyHold = 0;
       } else if (mate()) {
         if (carry.p !== c.fault) { hold.on = false; keyHold = 0; if (!pend) ask({ t: 'do', a: 'laga', b: b.i, id: c.id, ...myState() }); return; }
@@ -2891,7 +2892,7 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
       if (coop.active) maxN = Math.max(maxN, coop.peers().length + 1);
       if (coop.active !== wasCoop) {   // en kollega kom in: bilarna kommer tätare
         wasCoop = coop.active;
-        if (wasCoop) { play('knock'); pops.add(FW >> 1, 120, 'NI JOBBAR IHOP!', '#8ee03c'); }
+        if (wasCoop) { play('knock'); pops.add(FW >> 1, 120, $t('NI JOBBAR IHOP!'), '#8ee03c'); }
       }
       // Skiftledaren (eller solo) kör verkstaden; medarbetare följer ledarens läge
       const iLead = !coop.active || (coop.leader && coop.settled);
@@ -2934,7 +2935,7 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
           // fyll-läget kan övre raden ligga dold under listen: då går man bara
           // fram till stället (kameran visar det) och väljer där.
           if (slotSignY(SLOTS[0]) < viewTop()) {
-            go({ x: STATIONS[0], y: PICK_Y, dir: 'up' }, () => tipAt('VÄLJ DÄCK', '#d8d2c0', false));
+            go({ x: STATIONS[0], y: PICK_Y, dir: 'up' }, () => tipAt($t('VÄLJ DÄCK'), '#d8d2c0', false));
             return;
           }
           const col = x < (RACK.x0 + RACK.x1) / 2 ? 0 : 1, row = y < RACK.mid ? 0 : 1;
@@ -3034,7 +3035,7 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
       if (!working && carry && carry.p !== undefined && !walker.path.length && needTip('LAGA')) {
         const i = nearestWork(), c = i && i.b ? carOf(i.b) : null;
         if (c && !c.tj && c.state === 'wait' && c.fault === carry.p && (t * 3 | 0) % 2 === 0) {
-          const rows = ['HÅLL INNE!', 'ELLER MELLANSLAG'], iw = Math.max(...rows.map((s) => textW(SMALL, s))), w = iw + 6;
+          const rows = [$t('HÅLL INNE!'), $t('ELLER MELLANSLAG')], iw = Math.max(...rows.map((s) => textW(SMALL, s))), w = iw + 6;
           const x = clamp(Math.round(walker.px - w / 2), 1, FW - w - 1), y = Math.round(walker.py) - (c.prog > 0 ? 66 : 58);
           ctx.fillStyle = '#17151a'; ctx.fillRect(x, y, w, 15);
           occupy(x, y, w, 15);
@@ -3576,7 +3577,7 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
     // V eller H bredvid det punkterade hjulet på minibilen (med luft till
     // pyset, minibilen och bubblans kant)
     if (j.tire !== 'new') {
-      const L = c.face ? 'V' : 'H', lx = c.face ? ix + 23 - textW(SMALL, L) : ix + 34, ly = iy + (j.wheel ? 1 : 9);
+      const L = c.face ? $t('V') : $t('H'), lx = c.face ? ix + 23 - textW(SMALL, L) : ix + 34, ly = iy + (j.wheel ? 1 : 9);
       ctxText(ctx, SMALL, L, lx, ly, (t * 4 | 0) % 2 ? '#e02a1a' : '#8a1a14');
     }
     const s = TIRE_TXT[j.want], w = textW(SMALL, s);
@@ -3605,7 +3606,7 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
     ctx.fillStyle = '#fff4c0'; ctx.fillRect(x0 + 5, y0 + 1, 1, 1);
   }
   function readyBubble(ctx, cx, tip, up = false, sx = cx) {
-    const s = 'SÄNK', IW = textW(SMALL, s) + 14, IH = 9;
+    const s = $t('SÄNK'), IW = textW(SMALL, s) + 14, IH = 9;
     const [ix, iy] = bub(ctx, cx, tip, IW, IH, true, up, sx);
     ctx.fillStyle = '#2e8a48';
     for (const [x, y] of [[0, 4], [1, 5], [2, 6], [3, 5], [4, 4], [5, 3], [6, 2]]) ctx.fillRect(ix + 1 + x, iy + y, 1, 1);
@@ -3781,19 +3782,19 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
     ctx.fillStyle = 'rgba(23,21,26,0.82)'; ctx.fillRect(0, y, FW, 9);
     if (!c) {
       const coming = cars.some((k) => k.state === 'drive' || k.state === 'exit');
-      const s = coming ? 'EN BIL KÖR IN...' : 'VÄNTAR PÅ NÄSTA BIL...';
+      const s = coming ? $t('EN BIL KÖR IN...') : $t('VÄNTAR PÅ NÄSTA BIL...');
       ctxText(ctx, SMALL, s, (FW - textW(SMALL, s)) >> 1, y + 2, coming ? '#d8d2c0' : '#8a8494');
       return;
     }
     drawJobCard(ctx, c, sy);
     const list = c.tj ? STEPS : STEPS_PART, st = stageOf(c), idx = st === 'KLART' ? list.length : list.indexOf(st);
-    const ws = list.map((s) => textW(SMALL, s) + 2), gap = 7;
+    const ws = list.map((s) => textW(SMALL, $t(s)) + 2), gap = 7;
     const total = ws.reduce((a, v) => a + v, 0) + gap * (list.length - 1);
     let x = Math.max(2, (FW - total) >> 1);
     list.forEach((s, i) => {
       const now = i === idx;
       if (now) { ctx.fillStyle = (t * 2 | 0) % 2 ? '#ffd23f' : '#f0b429'; ctx.fillRect(x, y + 1, ws[i], 7); }
-      ctxText(ctx, SMALL, s, x + 1, y + 2, now ? '#17151a' : i < idx ? '#6fbf73' : '#8a8494');
+      ctxText(ctx, SMALL, $t(s), x + 1, y + 2, now ? '#17151a' : i < idx ? '#6fbf73' : '#8a8494');
       x += ws[i];
       if (i < list.length - 1) {
         ctx.fillStyle = i < idx ? '#4a7a4c' : '#5a5462';
@@ -3832,7 +3833,7 @@ export function makeJobbVerkstad(A, { onDone } = {}) {
 
 // ---------- små fasta bitar (cachade) ----------
 function honkBubble(ctx, x, y) {
-  const str = 'TUUT!', w = textW(SMALL, str) + 6, h = 9, bx = x - (w >> 1), by = y - h - 2;
+  const str = $t('TUUT!'), w = textW(SMALL, str) + 6, h = 9, bx = x - (w >> 1), by = y - h - 2;
   ctx.fillStyle = '#1c1a22'; ctx.fillRect(bx - 1, by - 1, w + 2, h + 2);
   ctx.fillStyle = '#fff6d8'; ctx.fillRect(bx, by, w, h);
   ctx.fillStyle = '#1c1a22'; ctx.fillRect(x - 1, by + h + 1, 3, 1); ctx.fillRect(x, by + h + 2, 1, 1);
@@ -4376,7 +4377,7 @@ function paintShop() {
   for (let x = 88; x <= 96; x++) for (let y = 47; y <= 49; y++) torch.push([x, y, x >= 94 ? (y === 47 ? 0xeef2f6 : 0xb4bac4) : y === 47 ? 0xff6a5a : y === 49 ? 0x8a1a14 : 0xd8342a]);
   torch.push([96, 48, 0xfff6c0]);
   shadowTool(P, torch);
-  text(P, SMALL, 'VERKTYG', 24, 54, 0x4a3018);
+  text(P, SMALL, $t('VERKTYG'), 24, 54, 0x4a3018);
 
   // ---------- vänstra hörnet: oljefat med tratt ----------
   drum(P, 2, 91, 14, 21, 0xc8322a);
@@ -4392,11 +4393,11 @@ function paintShop() {
   P.hl(73, 76, 10, 0x2a2420, 0.3);
 
   // ---------- skylten BILSERVICE ----------
-  const sw = textW(BIG, 'BILSERVICE') + 10, sx0 = 192 - (sw >> 1);
+  const sw = textW(BIG, $t('BILSERVICE')) + 10, sx0 = 192 - (sw >> 1);
   P.rect(sx0, 27, sw, 11, 0x17151a);
   P.rect(sx0 + 1, 28, sw - 2, 9, 0x24509a); P.hl(sx0 + 1, 28, sw - 2, 0x4a7ad0); P.hl(sx0 + 1, 36, sw - 2, 0x1a3a70);
-  text(P, BIG, 'BILSERVICE', sx0 + 6, 30, 0x0e2448);
-  text(P, BIG, 'BILSERVICE', sx0 + 5, 29, 0xf4f1ea);
+  text(P, BIG, $t('BILSERVICE'), sx0 + 6, 30, 0x0e2448);
+  text(P, BIG, $t('BILSERVICE'), sx0 + 5, 29, 0xf4f1ea);
   P.px(sx0 + 2, 29, 0xc8ccd4); P.px(sx0 + sw - 3, 29, 0xc8ccd4); P.px(sx0 + 2, 35, 0xc8ccd4); P.px(sx0 + sw - 3, 35, 0xc8ccd4);
 
   // ---------- stationerna: skylt + hylla/stapel ----------
@@ -4431,10 +4432,10 @@ function paintShop() {
     P.hl(rx0, top, rx1 - rx0 + 1, 0x4a4e58); P.hl(rx0, top + 1, rx1 - rx0 + 1, 0x8a8e96); // topplisten
     P.hl(rx0 + 2, RACK.y1 + 2, rx1 - rx0 - 3, 0x140c1e, 0.3); // skuggan under stället
     // DÄCK-skylten på topplisten
-    const hw = textW(SMALL, 'DÄCK') + 8, hx = STATIONS[0] - (hw >> 1), hy = top - 9;
+    const hw = textW(SMALL, $t('DÄCK')) + 8, hx = STATIONS[0] - (hw >> 1), hy = top - 9;
     P.vl(hx + 4, hy + 8, 2, 0x2a2b31); P.vl(hx + hw - 5, hy + 8, 2, 0x2a2b31);
     P.rect(hx, hy, hw, 9, 0x17151a); P.rect(hx + 1, hy + 1, hw - 2, 7, 0x2a2b31); P.hl(hx + 1, hy + 1, hw - 2, 0x4a4e58);
-    text(P, SMALL, 'DÄCK', hx + 4, hy + 3, 0xffd23f);
+    text(P, SMALL, $t('DÄCK'), hx + 4, hy + 3, 0xffd23f);
     // en färgad skylt per fack: SOMMAR, VINTER, STORT, LITET
     for (const sl of SLOTS) {
       const s = TIRE_TXT[sl.kind], w = textW(SMALL, s) + 4, x = sl.x - (w >> 1), y = slotSignY(sl), col = hex(TIRE_COL[sl.kind]);
@@ -4501,7 +4502,7 @@ function paintShop() {
     const cp = { r: 0xe8342a, R: 0xb8201a, w: 0x9ad0ff, y: 0xfff4c0, k: 0x17151a, d: 0x5a1010 };
     CAR.forEach((row, j) => { for (let i = 0; i < row.length; i++) if (cp[row[i]] !== undefined) P.px(x0 + 5 + i, y0 + 9 + j, cp[row[i]]); });
     P.px(x0 + 9, y0 + 11, 0xffffff); P.px(x0 + 10, y0 + 11, 0xffffff);
-    text(P, SMALL, 'SEPT', x0 + 3, y0 + 18, 0xc8322a);
+    text(P, SMALL, $t('SEPT'), x0 + 3, y0 + 18, 0xc8322a);
     for (let r = 0; r < 4; r++) for (let d = 0; d < 7; d++) P.rect(x0 + 3 + d * 3, y0 + 25 + r * 2, 2, 1, 0x8a8478);
     P.box(x0 + 11, y0 + 26, 4, 3, 0xd8342a);
     P.rect(x0 + 12, y0 - 1, 2, 2, 0xd8342a); P.px(x0 + 12, y0 - 1, 0xff8a7a);

@@ -10,36 +10,38 @@
 // som husets) och idea (förslag på minispel). NEW_HOMES har samma fält som
 // HOMES i game.js (id, icon, name, deposit, rent, restBonus, desc) plus building.
 
+import { $t } from '../core/i18n.js';
+
 export const WORKPLACES = [
-  { id: 'pizzeria', icon: '🍕', name: 'Pizzerian', verb: 'Baka rätt pizza åt rätt kund', wage: 9, oops: 5,
+  { id: 'pizzeria', icon: '🍕', name: $t('Pizzerian'), verb: $t('Baka rätt pizza åt rätt kund'), wage: 9, oops: 5,
     building: 'pizzeria', district: 'SÖDER', open: [11, 23],
     idea: 'Beställningslappar på väggen; deg → tomatsås → ost → pålägg → in i stenugnen, ut när den är gyllene (burgarbarens kundmotor + en ugnstimer).' },
-  { id: 'posten', icon: '📮', name: 'Posten', verb: 'Sortera paketen till rätt fack', wage: 6, oops: 3, bonus: 15,
+  { id: 'posten', icon: '📮', name: $t('Posten'), verb: $t('Sortera paketen till rätt fack'), wage: 6, oops: 3, bonus: 15,
     building: 'posten', district: 'SÖDER', open: [8, 18],
     idea: 'Paket med färgad postnummerlapp kommer på bandet – bär till facket med samma färg; full postsäck = bonus (fruktfabrikens motor).' },
-  { id: 'vard', icon: '🏥', name: 'Vårdcentralen', verb: 'Ge rätt patient rätt medicin', wage: 11, oops: 6,
+  { id: 'vard', icon: '🏥', name: $t('Vårdcentralen'), verb: $t('Ge rätt patient rätt medicin'), wage: 11, oops: 6,
     building: 'vardcentral', district: 'SÖDER', open: [8, 17],
     idea: 'Patienter i väntrummet visar en symtombubbla; hämta rätt sak (plåster, termometer, medicin) från skåpet och gå till rätt patient.' },
-  { id: 'bensinmack', icon: '⛽', name: 'Pixelmacken', verb: 'Tanka bilarna och sälj korv', wage: 8, oops: 4,
+  { id: 'bensinmack', icon: '⛽', name: $t('Pixelmacken'), verb: $t('Tanka bilarna och sälj korv'), wage: 8, oops: 4,
     building: 'bensinmack', district: 'SÖDER', open: [6, 23],
     idea: 'Bilar rullar in till pumparna med en bubbla (bensin/diesel/el); håll i munstycket tills mätaren är full. Mellan bilarna: korv med bröd i kassan.' },
-  { id: 'bilverkstad', icon: '🔧', name: 'Bilverkstan', verb: 'Byt däck och laga bilarna', wage: 10, oops: 6,
+  { id: 'bilverkstad', icon: '🔧', name: $t('Bilverkstan'), verb: $t('Byt däck och laga bilarna'), wage: 10, oops: 6,
     building: 'bilverkstad', district: 'FÖRORTEN', open: [7, 18],
     idea: 'Bil på lyften med en felbubbla (däck, lampa, avgasrör); hämta rätt reservdel från hyllan och skruva fast.' },
-  { id: 'tvatteri', icon: '🧺', name: 'Tvätteriet', verb: 'Tvätta, torka och lämna rätt påse till rätt kund', wage: 7, oops: 4, bonus: 10,
+  { id: 'tvatteri', icon: '🧺', name: $t('Tvätteriet'), verb: $t('Tvätta, torka och lämna rätt påse till rätt kund'), wage: 7, oops: 4, bonus: 10,
     building: 'tvatteri', district: 'FÖRORTEN', open: [8, 20],
     idea: 'Smutspåsar med färgad lapp → tvättmaskin → torktumlare → vikbordet → kunden med samma lapp (bonus per färdig påse).' },
 ];
 
 export const NEW_HOMES = [
-  { id: 'husvagn', icon: '🚐', name: 'Husvagnen', deposit: 0, rent: 150, restBonus: -10, building: 'husvagn',
-    desc: 'En rostig husvagn på tomten i förorten. Billigast i stan – om du tål kylan.' },
-  { id: 'hoghus', icon: '🏢', name: 'Förortsettan', deposit: 500, rent: 250, restBonus: -5, building: 'hoghus',
-    desc: 'Ett rum och kök på sjunde våningen i Betongvägen 1. Hissen går ibland.' },
-  { id: 'radhus', icon: '🏡', name: 'Radhuset', deposit: 4000, rent: 800, restBonus: 15, building: 'radhus',
-    desc: 'Eget radhus på Söder med en liten trädgård. Grannarna grillar på lördagar.' },
-  { id: 'takvaning', icon: '🏙️', name: 'Takvåningen', deposit: 20000, rent: 2000, restBonus: 25, building: 'tornhuset',
-    desc: 'Högst upp i Tornhuset – terrass med utsikt över hela Pixelstaden.' },
+  { id: 'husvagn', icon: '🚐', name: $t('Husvagnen'), deposit: 0, rent: 150, restBonus: -10, building: 'husvagn',
+    desc: $t('En rostig husvagn på tomten i förorten. Billigast i stan – om du tål kylan.') },
+  { id: 'hoghus', icon: '🏢', name: $t('Förortsettan'), deposit: 500, rent: 250, restBonus: -5, building: 'hoghus',
+    desc: $t('Ett rum och kök på sjunde våningen i Betongvägen 1. Hissen går ibland.') },
+  { id: 'radhus', icon: '🏡', name: $t('Radhuset'), deposit: 4000, rent: 800, restBonus: 15, building: 'radhus',
+    desc: $t('Eget radhus på Söder med en liten trädgård. Grannarna grillar på lördagar.') },
+  { id: 'takvaning', icon: '🏙️', name: $t('Takvåningen'), deposit: 20000, rent: 2000, restBonus: 25, building: 'tornhuset',
+    desc: $t('Högst upp i Tornhuset – terrass med utsikt över hela Pixelstaden.') },
 ];
 
 // Vilket hus varje bostad ligger i (v1-bostäderna ligger alla på Pixelgatan 1).

@@ -8,6 +8,7 @@ import {
   STAIRS3, JUL_DOLLS,
 } from './data.js';
 import { glowText, plank, rug, sign, pillar, spots, wainscot, wallModule, paintPit, arrowDown, disc } from './paint.js';
+import { $t } from '../../core/i18n.js';
 
 const PYNT_X1 = 1040;                                  // julpyntet | trapphallen
 const LIGHT_COLS = ['#d9433b', '#ffd23f', '#3a7bd5', '#46a35a', '#ff8fd0'];
@@ -56,25 +57,26 @@ export function paintFloor3() {
   // fönstren med vinterkvällen (snön faller levande, se drawSnow)
   for (const [x, y, w, h] of JUL_WIN) paintWindow(P, x, y, w, h);
   // ===== skyltarna =====
-  bigSign(P, 'JULKLÄDER', 290, 4, 0x173a24, 0xd9433b, 0xfff0b0);
-  bigSign(P, 'JULTORGET', 680, 4, 0x5e0c0c, 0xe8c25a, 0xffe070);
-  bigSign(P, 'JULPYNT', 960, 4, 0x5e0c0c, 0xe8c25a, 0xffe070);
+  bigSign(P, $t('JULKLÄDER'), 290, 4, 0x173a24, 0xd9433b, 0xfff0b0);
+  bigSign(P, $t('JULTORGET'), 680, 4, 0x5e0c0c, 0xe8c25a, 0xffe070);
+  bigSign(P, $t('JULPYNT'), 960, 4, 0x5e0c0c, 0xe8c25a, 0xffe070);
   // tröjväggen och hyllan för tomteluvorna
-  wallModule(P, JUL_MOD.x, 'jul', 'JULTRÖJOR');
+  wallModule(P, JUL_MOD.x, 'jul', $t('JULTRÖJOR'));
   P.rect(JUL_HATS.x, JUL_HATS.y, JUL_HATS.w, 10, 0x17151a); P.box(JUL_HATS.x, JUL_HATS.y, JUL_HATS.w, 10, 0xd9433b);
-  text(P, SMALL, 'TOMTELUVOR', JUL_HATS.x + Math.round((JUL_HATS.w - textW(SMALL, 'TOMTELUVOR')) / 2), JUL_HATS.y + 3, 0xfff0b0);
+  text(P, SMALL, $t('TOMTELUVOR'), JUL_HATS.x + Math.round((JUL_HATS.w - textW(SMALL, $t('TOMTELUVOR'))) / 2), JUL_HATS.y + 3, 0xfff0b0);
   P.rect(JUL_HATS.x, JUL_HATS.y + 36, JUL_HATS.w, 3, 0xf4f1ea); P.hl(JUL_HATS.x, JUL_HATS.y + 39, JUL_HATS.w, 0xb8b0a0);
   // BRASAN-skylten över spisen
-  const bs = 'BRASAN', bw = textW(SMALL, bs) + 12, bx = JUL_BRASA.x + 16 - bw / 2;
+  const bs = $t('BRASAN'), bw = textW(SMALL, bs) + 12, bx = JUL_BRASA.x + 16 - bw / 2;
   P.rect(bx, 17, bw, 11, 0x2a1a10); P.box(bx, 17, bw, 11, 0xe8c25a); text(P, SMALL, bs, bx + 6, 20, 0xffc76a);
   // KASSA
-  const kx = JUL_DESK.x + JUL_DESK.w / 2, kw = textW(SMALL, 'KASSA') + 10;
-  P.rect(kx - kw / 2, 30, kw, 10, 0x17151a); P.box(kx - kw / 2, 30, kw, 10, 0xd9433b); text(P, SMALL, 'KASSA', kx - kw / 2 + 5, 33, 0xffd23f);
+  const kx = JUL_DESK.x + JUL_DESK.w / 2, kw = textW(SMALL, $t('KASSA')) + 10;
+  P.rect(kx - kw / 2, 30, kw, 10, 0x17151a); P.box(kx - kw / 2, 30, kw, 10, 0xd9433b); text(P, SMALL, $t('KASSA'), kx - kw / 2 + 5, 33, 0xffd23f);
   // trapphallen: PLAN 3 och TRAPPA NER
   const hc = (PYNT_X1 + W) / 2 - 8;
   P.rect(hc - 36, 8, 72, 18, 0x173a24); P.box(hc - 36, 8, 72, 18, 0xd9433b);
-  glowText(P, BIG, 'PLAN 3', hc - textW(BIG, 'PLAN 3') / 2, 14, 0xffe070, 0xd9433b);
-  const [ax0] = sign(P, (STAIRS3.pit[0] + STAIRS3.pit[1]) / 2, 36, 'TRAPPA NER', 0x17151a, 0x2f8f46, 0xffffff);
+  glowText(P, BIG, $t('PLAN 3'), hc - textW(BIG, $t('PLAN 3')) / 2, 14, 0xffe070, 0xd9433b);
+  const [ax0] = sign(P, (STAIRS3.pit[0] + STAIRS3.pit[1]) / 2, 36, $t('TRAPPA NER'), 0x17151a, 0x2f8f46, 0xffffff);
+
   arrowDown(P, ax0 - 5, 40, 0x46a35a);
   // girlangen längs hela taket (ljusen blinkar levande, GARLAND_LIGHTS)
   for (let x = 2; x < W - 2; x++) {

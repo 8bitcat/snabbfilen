@@ -8,8 +8,9 @@
 import { openModal, closeModal, esc } from './ui.js';
 import { DAY_NAMES, HOMES, JOBS, EVENTS, fmt, levelOf, payMult, GLAD_LAG } from '../game.js';
 import { goalsMini, gladNattHtml } from './livsmal.js';
+import { $t } from './i18n.js';
 
-const SHORT = ['MÅN', 'TIS', 'ONS', 'TOR', 'FRE', 'LÖR', 'SÖN'];
+const SHORT = [$t('MÅN'), $t('TIS'), $t('ONS'), $t('TOR'), $t('FRE'), $t('LÖR'), $t('SÖN')];
 const weekday = (day) => (day - 1) % 7;            // 0 = måndag
 const weekNo = (day) => Math.floor((day - 1) / 7) + 1;
 
@@ -193,97 +194,97 @@ export function openWeek(A, { morning = false, rentPaid = 0, eventText = '', odl
   const cells = SHORT.map((d, i) => {
     const past = i < w.wd, today = i === w.wd, isRent = i === 0;
     // måndagens hyra är redan dragen när man vaknat; söndagen påminner om nästa
-    const rentTxt = isRent ? (firstWeek ? '<small class="wk-paid">🔑 inflyttning</small>' : `<small class="wk-paid">💸 HYRA ${fmt(rentPaid || w.rent)} betald</small>`)
-      : i === 6 ? `<small class="wk-rent">💸 HYRA ${fmt(w.rent)} i morgon</small>` : '';
-    const tag = today ? '<i class="wk-now">I DAG</i>' : past ? '<i class="wk-done">✓ KLAR</i>' : '<i class="wk-next"></i>';
+    const rentTxt = isRent ? (firstWeek ? `<small class="wk-paid">${$t('🔑 inflyttning')}</small>` : `<small class="wk-paid">${$t`💸 HYRA ${fmt(rentPaid || w.rent)} betald`}</small>`)
+      : i === 6 ? `<small class="wk-rent">${$t`💸 HYRA ${fmt(w.rent)} i morgon`}</small>` : '';
+    const tag = today ? `<i class="wk-now">${$t('I DAG')}</i>` : past ? `<i class="wk-done">${$t('✓ KLAR')}</i>` : '<i class="wk-next"></i>';
     return `<div class="wk-day ${past ? 'past' : ''} ${today ? 'today' : ''} ${isRent ? 'rentday' : ''}">
-      <b>${d}</b><span class="wk-n">dag ${g.day - w.wd + i}</span>
+      <b>${d}</b><span class="wk-n">${$t`dag ${g.day - w.wd + i}`}</span>
       <canvas class="wk-win" width="${WW}" height="${WH}" data-i="${i}" aria-hidden="true"></canvas>
       ${tag}${rentTxt}</div>`;
   }).join('');
   // nästa hyra
-  const nextRent = w.daysToRent === 1 ? 'i morgon bitti' : `på måndag – om ${w.daysToRent} dagar`;
+  const nextRent = w.daysToRent === 1 ? $t('i morgon bitti') : $t`på måndag – om ${w.daysToRent} dagar`;
   // räcker inte fickan tar autogirot resten av hyran från sparkontot (Game.sleep)
   const enough = g.money + w.saved >= w.rent;
   const fromBank = enough && g.money < w.rent ? w.rent - Math.max(0, g.money) : 0;
   const forecast = !enough
-    ? `<p class="wk-bad">⚠️ Du har <b>${fmt(g.money)}</b>${w.saved ? ` och <b>${fmt(w.saved)}</b> på banken` : ''} men hyran är <b>${fmt(w.rent)}</b> ${nextRent}. Du behöver tjäna <b>${fmt(w.need)}</b> till – ungefär <b>${w.shifts} pass</b> (≈ ${fmt(w.perShift)} per pass).</p>`
+    ? `<p class="wk-bad">${w.saved ? $t`⚠️ Du har <b>${fmt(g.money)}</b> och <b>${fmt(w.saved)}</b> på banken men hyran är <b>${fmt(w.rent)}</b> ${nextRent}.` : $t`⚠️ Du har <b>${fmt(g.money)}</b> men hyran är <b>${fmt(w.rent)}</b> ${nextRent}.`} ${$t`Du behöver tjäna <b>${fmt(w.need)}</b> till – ungefär <b>${w.shifts} pass</b> (≈ ${fmt(w.perShift)} per pass).`}</p>`
     : fromBank
-      ? `<p class="wk-ok">✅ ${g.money > 0 ? `Fickan har <b>${fmt(g.money)}</b> – resten av hyran, <b>${fmt(fromBank)}</b>,` : `Fickan är tom – hela hyran, <b>${fmt(w.rent)}</b>,`} tar banken från sparkontot ${nextRent}.</p>`
-      : `<p class="wk-ok">✅ Du har <b>${fmt(g.money)}</b> – det räcker till hyran (${fmt(w.rent)}) ${nextRent}.</p>`;
+      ? `<p class="wk-ok">${g.money > 0 ? $t`✅ Fickan har <b>${fmt(g.money)}</b> – resten av hyran, <b>${fmt(fromBank)}</b>, tar banken från sparkontot ${nextRent}.` : $t`✅ Fickan är tom – hela hyran, <b>${fmt(w.rent)}</b>, tar banken från sparkontot ${nextRent}.`}</p>`
+      : `<p class="wk-ok">${$t`✅ Du har <b>${fmt(g.money)}</b> – det räcker till hyran (${fmt(w.rent)}) ${nextRent}.`}</p>`;
   // i morse på banken: räntan och autogirot (läses ur kontoutdraget, så det syns hur man än somnade)
   const bankToday = (t) => (g.bankLog || []).filter((e) => e && e.d === g.day && e.t === t).pop();
   const ranta = morning && bankToday('ranta'), autogiro = morning && bankToday('hyra');
   // i natt i trädgården (Game.growGarden): vad som växte, mognade och vissnade
-  const od = morning && odlat && (odlat.vaxte || odlat.vissnade) ? [odlat.mogna ? `<b>${odlat.mogna}</b> ${odlat.mogna === 1 ? 'bädd är mogen' : 'bäddar är mogna'} att skörda` : '', odlat.vaxte - (odlat.mogna | 0) > 0 ? `${odlat.vaxte - (odlat.mogna | 0)} växte en dag till` : '', odlat.vissnade ? `<b>${odlat.vissnade}</b> vissnade (två dagar utan vatten)` : ''].filter(Boolean).join(', ') : '';
+  const od = morning && odlat && (odlat.vaxte || odlat.vissnade) ? [odlat.mogna ? (odlat.mogna === 1 ? $t`<b>${odlat.mogna}</b> bädd är mogen att skörda` : $t`<b>${odlat.mogna}</b> bäddar är mogna att skörda`) : '', odlat.vaxte - (odlat.mogna | 0) > 0 ? $t`${odlat.vaxte - (odlat.mogna | 0)} växte en dag till` : '', odlat.vissnade ? $t`<b>${odlat.vissnade}</b> vissnade (två dagar utan vatten)` : ''].filter(Boolean).join(', ') : '';
   // måndag morgon: chefslönen (karriärstegarna, game.js betalaChefslon)
   const chefNews = morning && chefslon?.length ? chefslon.map((c) => c.kr
-    ? `<p class="wk-ok" style="margin-top:0">💼 Chefslön från ${esc(JOBS[c.job]?.name || c.job)}: <b>+${fmt(c.kr)}</b> (${esc(c.roll.toLowerCase())}).</p>`
-    : `<p class="wk-bad" style="margin-top:0">💼 Ingen chefslön från ${esc(JOBS[c.job]?.name || c.job)} – du jobbade bara ${c.pass} ${c.pass === 1 ? 'pass' : 'pass'} där förra veckan (minst 2).</p>`).join('') : '';
+    ? `<p class="wk-ok" style="margin-top:0">${$t`💼 Chefslön från ${esc(JOBS[c.job]?.name || c.job)}: <b>+${fmt(c.kr)}</b> (${esc(c.roll.toLowerCase())}).`}</p>`
+    : `<p class="wk-bad" style="margin-top:0">${$t`💼 Ingen chefslön från ${esc(JOBS[c.job]?.name || c.job)} – du jobbade bara ${c.pass} pass där förra veckan (minst 2).`}</p>`).join('') : '';
   // foodtrucken (eget företag): personalens dag i går och platshyran på måndagen
   const td = morning && truckDag;
-  const truckNews = (td ? `<p class="${td.vinst >= 0 ? 'wk-ok' : 'wk-bad'}" style="margin-top:0">🚚 Foodtrucken i går: ${td.kunder} kunder${td.regn ? ' (regn 🌧️)' : ''} – försäljning ${fmt(td.intakt)}, råvaror och löner ${fmt(td.varor + td.loner)}: <b>${td.vinst >= 0 ? '+' : ''}${fmt(td.vinst)}</b>.</p>` : '')
-    + (morning && rentPaid && g.truck?.platshyra ? `<p class="wk-bad" style="margin-top:0">🚚 Platshyran för trucken: ${fmt(g.truck.platshyra)}.</p>` : '');
-  const gardenNews = od ? `<p class="${odlat.vissnade && !odlat.mogna ? 'wk-bad' : 'wk-ok'}" style="margin-top:0">🌱 I natt i trädgården: ${od}.</p>` : '';
-  const bankNews = (ranta ? `<p class="wk-ok" style="margin-top:0">📈 Räntan kom in: <b>+${fmt(ranta.n)}</b> på sparkontot.</p>` : '')
-    + (autogiro ? `<p class="wk-bad" style="margin-top:0">🏦 Fickan räckte inte – <b>${fmt(autogiro.n)}</b> av hyran drogs från sparkontot (autogiro).</p>` : '');
+  const truckNews = (td ? `<p class="${td.vinst >= 0 ? 'wk-ok' : 'wk-bad'}" style="margin-top:0">${td.regn ? $t`🚚 Foodtrucken i går: ${td.kunder} kunder (regn 🌧️) – försäljning ${fmt(td.intakt)}, råvaror och löner ${fmt(td.varor + td.loner)}: <b>${td.vinst >= 0 ? '+' : ''}${fmt(td.vinst)}</b>.` : $t`🚚 Foodtrucken i går: ${td.kunder} kunder – försäljning ${fmt(td.intakt)}, råvaror och löner ${fmt(td.varor + td.loner)}: <b>${td.vinst >= 0 ? '+' : ''}${fmt(td.vinst)}</b>.`}</p>` : '')
+    + (morning && rentPaid && g.truck?.platshyra ? `<p class="wk-bad" style="margin-top:0">${$t`🚚 Platshyran för trucken: ${fmt(g.truck.platshyra)}.`}</p>` : '');
+  const gardenNews = od ? `<p class="${odlat.vissnade && !odlat.mogna ? 'wk-bad' : 'wk-ok'}" style="margin-top:0">${$t`🌱 I natt i trädgården: ${od}.`}</p>` : '';
+  const bankNews = (ranta ? `<p class="wk-ok" style="margin-top:0">${$t`📈 Räntan kom in: <b>+${fmt(ranta.n)}</b> på sparkontot.`}</p>` : '')
+    + (autogiro ? `<p class="wk-bad" style="margin-top:0">${$t`🏦 Fickan räckte inte – <b>${fmt(autogiro.n)}</b> av hyran drogs från sparkontot (autogiro).`}</p>` : '');
   // checklista
   const todo = [];
-  if (g.money < 0) todo.push([false, `Betala skulden: ${fmt(-g.money)}`]);
-  todo.push([enough, enough ? 'Hyran är täckt' : `Jobba ihop till hyran (${w.shifts} pass)`]);
-  todo.push([g.hunger >= 50, g.hunger >= 50 ? 'Du är mätt' : 'Ät något – du är hungrig']);
-  todo.push([w.fridge > 0, w.fridge > 0 ? `Mat i kylen (${w.fridge} st)` : 'Handla mat till kylen']);
-  todo.push([g.energy >= 40, g.energy >= 40 ? 'Du är utvilad' : 'Du är trött – sov i tid i kväll']);
+  if (g.money < 0) todo.push([false, $t`Betala skulden: ${fmt(-g.money)}`]);
+  todo.push([enough, enough ? $t('Hyran är täckt') : $t`Jobba ihop till hyran (${w.shifts} pass)`]);
+  todo.push([g.hunger >= 50, g.hunger >= 50 ? $t('Du är mätt') : $t('Ät något – du är hungrig')]);
+  todo.push([w.fridge > 0, w.fridge > 0 ? $t`Mat i kylen (${w.fridge} st)` : $t('Handla mat till kylen')]);
+  todo.push([g.energy >= 40, g.energy >= 40 ? $t('Du är utvilad') : $t('Du är trött – sov i tid i kväll')]);
   // trädgården: torra bäddar att vattna och mogna att skörda
   const gd = g.garden?.();
   if (gd) {
     const torr = gd.beds.filter((b) => g.bedState(b) === 'torr').length, mogna = gd.beds.filter((b) => g.bedState(b) === 'mogen').length;
-    if (gd.beds.some(Boolean)) todo.push([!torr, torr ? `Vattna trädgården (${torr} ${torr === 1 ? 'bädd' : 'bäddar'})` : 'Trädgården är vattnad']);
-    if (mogna) todo.push([false, `Skörda i trädgården – ${mogna} ${mogna === 1 ? 'bädd är mogen' : 'bäddar är mogna'}`]);
+    if (gd.beds.some(Boolean)) todo.push([!torr, torr ? (torr === 1 ? $t`Vattna trädgården (${torr} bädd)` : $t`Vattna trädgården (${torr} bäddar)`) : $t('Trädgården är vattnad')]);
+    if (mogna) todo.push([false, mogna === 1 ? $t`Skörda i trädgården – ${mogna} bädd är mogen` : $t`Skörda i trädgården – ${mogna} bäddar är mogna`]);
   }
   // bondgården: djuren ska ha mat varje dag, äggen samlas och korna mjölkas
   if (g.bondeHar?.()) {
     const B = g.bonde;
-    todo.push([(B.fodrad | 0) === g.day, (B.fodrad | 0) === g.day ? 'Djuren har fått mat' : 'Fodra djuren i ladugården']);
-    if ((B.djur.hona | 0)) todo.push([(B.agg | 0) === g.day, (B.agg | 0) === g.day ? 'Äggen är samlade' : 'Samla äggen i hönsgården']);
-    if ((B.djur.ko | 0)) todo.push([(B.mjolkat | 0) === g.day, (B.mjolkat | 0) === g.day ? 'Korna är mjölkade' : 'Mjölka korna']);
+    todo.push([(B.fodrad | 0) === g.day, (B.fodrad | 0) === g.day ? $t('Djuren har fått mat') : $t('Fodra djuren i ladugården')]);
+    if ((B.djur.hona | 0)) todo.push([(B.agg | 0) === g.day, (B.agg | 0) === g.day ? $t('Äggen är samlade') : $t('Samla äggen i hönsgården')]);
+    if ((B.djur.ko | 0)) todo.push([(B.mjolkat | 0) === g.day, (B.mjolkat | 0) === g.day ? $t('Korna är mjölkade') : $t('Mjölka korna')]);
   }
   // hästen i stallet: mat och borste varje dag
   if (g.hast) {
     const H = g.hast;
-    todo.push([(H.matad | 0) === g.day, (H.matad | 0) === g.day ? `${esc(H.namn)} har ätit` : `Mata ${esc(H.namn)} i stallet`]);
-    todo.push([(H.borstad | 0) === g.day, (H.borstad | 0) === g.day ? `${esc(H.namn)} är borstad` : `Borsta ${esc(H.namn)}`]);
+    todo.push([(H.matad | 0) === g.day, (H.matad | 0) === g.day ? $t`${esc(H.namn)} har ätit` : $t`Mata ${esc(H.namn)} i stallet`]);
+    todo.push([(H.borstad | 0) === g.day, (H.borstad | 0) === g.day ? $t`${esc(H.namn)} är borstad` : $t`Borsta ${esc(H.namn)}`]);
   }
   const glad = Math.round(g.lycka ?? 60);
-  todo.push([glad >= 40, glad >= 40 ? 'Du är på gott humör' : `Gör något roligt – du är nere${glad < GLAD_LAG ? ' och sover sämre' : ''} (bio, djuren, kompisar, en ledig dag)`]);
+  todo.push([glad >= 40, glad >= 40 ? $t('Du är på gott humör') : glad < GLAD_LAG ? $t('Gör något roligt – du är nere och sover sämre (bio, djuren, kompisar, en ledig dag)') : $t('Gör något roligt – du är nere (bio, djuren, kompisar, en ledig dag)')]);
   const ev = g.event?.id ? EVENTS.find((e) => e.id === g.event.id) : null;
-  if (g.event?.id) todo.push([true, 'I dag: ' + esc(eventText || (ev ? `${ev.icon} ${ev.text.replace('{job}', JOBS[g.event.job]?.name || 'jobbet')}` : g.event.id))]);
+  if (g.event?.id) todo.push([true, $t('I dag:') + ' ' + esc(eventText || (ev ? `${ev.icon} ${ev.text.replace('{job}', JOBS[g.event.job]?.name || $t('jobbet'))}` : g.event.id))]);
   const list = todo.map(([ok, t]) => `<li class="${ok ? 'ok' : ''}"><span>${ok ? '✓' : '☐'}</span>${t}</li>`).join('');
   // veckans läge
   const bar = (v, cls) => `<span class="wk-bar ${cls}"><i style="width:${Math.max(0, Math.min(100, Math.round(v)))}%"></i></span>`;
   const stats = `<div class="wk-stats">
-    <div><span>💰 Pengar</span><b>${fmt(g.money)}</b></div>
-    ${w.saved ? `<div><span>🏦 På banken</span><b>${fmt(w.saved)}</b></div>` : ''}
-    <div><span>🏠 Bostad</span><b>${esc(w.home?.icon || '')} ${esc(w.home?.name || '')}</b></div>
-    <div><span>💸 Hyra per vecka</span><b>${fmt(w.rent)}</b></div>
-    <div><span>📅 Nästa hyra</span><b>${w.daysToRent === 1 ? 'i morgon' : `om ${w.daysToRent} dagar`}</b></div>
-    <div><span>🍎 Mat i kylen</span><b>${w.fridge} st</b></div>
-    <div><span>⚡ Energi</span>${bar(g.energy, 'en')}</div>
-    <div><span>🍔 Mättnad</span>${bar(g.hunger, 'hu')}</div>
-    <div><span>😊 Lycka</span>${bar(glad, 'gl')}</div>
+    <div><span>${$t('💰 Pengar')}</span><b>${fmt(g.money)}</b></div>
+    ${w.saved ? `<div><span>${$t('🏦 På banken')}</span><b>${fmt(w.saved)}</b></div>` : ''}
+    <div><span>${$t('🏠 Bostad')}</span><b>${esc(w.home?.icon || '')} ${esc(w.home?.name ? $t(w.home.name) : '')}</b></div>
+    <div><span>${$t('💸 Hyra per vecka')}</span><b>${fmt(w.rent)}</b></div>
+    <div><span>${$t('📅 Nästa hyra')}</span><b>${w.daysToRent === 1 ? $t('i morgon') : $t`om ${w.daysToRent} dagar`}</b></div>
+    <div><span>${$t('🍎 Mat i kylen')}</span><b>${$t`${w.fridge} st`}</b></div>
+    <div><span>${$t('⚡ Energi')}</span>${bar(g.energy, 'en')}</div>
+    <div><span>${$t('🍔 Mättnad')}</span>${bar(g.hunger, 'hu')}</div>
+    <div><span>${$t('😊 Lycka')}</span>${bar(glad, 'gl')}</div>
   </div>`;
-  const head = morning ? `☀️ God morgon! ${esc(DAY_NAMES[w.wd])}, dag ${g.day}` : `📅 Vecka ${weekNo(g.day)} – ${esc(DAY_NAMES[w.wd])}, dag ${g.day}`;
+  const head = morning ? $t`☀️ God morgon! ${esc(DAY_NAMES[w.wd])}, dag ${g.day}` : $t`📅 Vecka ${weekNo(g.day)} – ${esc(DAY_NAMES[w.wd])}, dag ${g.day}`;
   const body = `<div class="wk">
-    ${morning && rentPaid ? `<p class="wk-bad" style="margin-top:0">💸 Hyran för veckan är dragen: ${fmt(rentPaid)}.</p>` : ''}
+    ${morning && rentPaid ? `<p class="wk-bad" style="margin-top:0">${$t`💸 Hyran för veckan är dragen: ${fmt(rentPaid)}.`}</p>` : ''}
     ${bankNews}${chefNews}${truckNews}${gardenNews}
     ${morning ? gladNattHtml(g) : ''}
     <div class="wk-grid">${cells}</div>
     ${forecast}
-    <div class="wk-cols"><div><h3>Att göra i dag</h3><ul class="wk-todo">${list}</ul></div><div><h3>Veckans läge</h3>${stats}</div></div>
+    <div class="wk-cols"><div><h3>${$t('Att göra i dag')}</h3><ul class="wk-todo">${list}</ul></div><div><h3>${$t('Veckans läge')}</h3>${stats}</div></div>
     ${goalsMini(g)}
-    <p class="wk-tip">Tips: hyran dras varje måndag morgon – först från fickan, och räcker den inte tar banken resten från sparkontot. Räcker inte det heller blir du skyldig hyresvärden – jobba ett extra pass innan söndag.</p>
+    <p class="wk-tip">${$t('Tips: hyran dras varje måndag morgon – först från fickan, och räcker den inte tar banken resten från sparkontot. Räcker inte det heller blir du skyldig hyresvärden – jobba ett extra pass innan söndag.')}</p>
   </div>`;
-  const dlg = openModal(head, body, [{ label: morning ? '☀️ Ut i dagen!' : '▶ Till dagen', cls: 'btn-go', onClick: closeModal }]);
+  const dlg = openModal(head, body, [{ label: morning ? $t('☀️ Ut i dagen!') : $t('▶ Till dagen'), cls: 'btn-go', onClick: closeModal }]);
   dlg.classList.add('dlg-week');
   // fönstren: heltalsskala efter kolumnbredden, en lugn animation (moln, buss, plan, regn) så länge rutan är öppen
   const wins = [...dlg.querySelectorAll('.wk-win')];

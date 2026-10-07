@@ -25,6 +25,7 @@
 import { Pix, SMALL, BIG, text, textW, eachTextPixel, mix, mul, hash, bayer } from '../core/floor-pix.js';
 import { CITY, artBox, baseOf, ART_OVER, ART_BELOW } from './map.js';
 import { drawPerson } from '../core/people.js';
+import { $t } from '../core/i18n.js';
 
 const O = ART_OVER, DOOR_H = 34, OUT = 0x2a1a2c, WHITE = 0xffffff;
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
@@ -48,7 +49,7 @@ const C = {
 };
 const RAINBOW = [0xe8464e, 0xf49a38, 0xf8d648, 0x66c258, 0x4898e0, 0x9868d8];
 const NEON = [0xff4f9a, 0xff9a36, 0xffe046, 0x5ce06a, 0x46d8f4, 0x5a86ff, 0xb466ff, 0xff4f9a];
-const WORD = 'LEKSAKER';
+const WORD = $t('LEKSAKER');
 
 // ================= små målarverktyg =================
 function vgrad(P, x, y, w, h, c0, c1, n = 4) {
@@ -641,7 +642,7 @@ function upperWindow(P, x, y, w, h, i, night, snow) {
 // namnbrädan: butikens namn LEKSAKSLÅDAN (samma namn och samma bokstavsfärger som skylten på kassadisken
 // inne i butiken, js/scenes/shop-leksaker.js) på en vit bräda med rosa kant mellan övervåningens fönster.
 // Klämkompisarna på neonskylten sitter precis under den. null om det inte finns plats (lågt eller smalt hus).
-const NAME = 'LEKSAKSLÅDAN', NAME_COLS = [0xe8505a, 0xf49a4a, 0x4aa86a, 0x4a88d0, 0x8a5ad0];
+const NAME = $t('LEKSAKSLÅDAN'), NAME_COLS = [0xe8505a, 0xf49a4a, 0x4aa86a, 0x4a88d0, 0x8a5ad0];
 function namePlateRect(g) {
   const w = textW(SMALL, NAME) + 6, h = 9, x0 = g.mx - (w >> 1), y0 = g.sign.y0 - 17;
   // under ljusslingan (lamporna når ner till yT + 9) och fritt från fönstrens karmar (L + 24 … R − 25)
@@ -954,13 +955,13 @@ function paintPlinth(P, g, b, worn) {
   const ty = G - 7, star = (sx) => { for (const [dx, dy] of [[1, 0], [0, 1], [1, 1], [2, 1], [1, 2], [0, 3], [2, 3]]) P.px(sx + dx, ty + dy + 1, 0xf8d860); };
   const paintText = (s, x) => { text(P, SMALL, s, x + 1, ty + 1, C.lavD); text(P, SMALL, s, x, ty, 0xfff4e6); };
   const left = Math.max(win.x0, boardAt(b)[0] - g.ox + 26), right = win.x1 - 2;
-  const wS = textW(SMALL, 'SQUISHY'), wP = textW(SMALL, 'PLYSCH');
+  const wS = textW(SMALL, $t('SQUISHY')), wP = textW(SMALL, $t('PLYSCH'));
   if (wS + wP + 9 <= right - left) {
     const tx = left + ((right - left - (wS + wP + 9)) >> 1);
-    paintText('SQUISHY', tx); star(tx + wS + 3); paintText('PLYSCH', tx + wS + 9);
+    paintText($t('SQUISHY'), tx); star(tx + wS + 3); paintText($t('PLYSCH'), tx + wS + 9);
   } else if (wS + 12 <= right - left) {
     const tx = left + ((right - left - (wS + 12)) >> 1);
-    star(tx); paintText('SQUISHY', tx + 6); star(tx + wS + 9);
+    star(tx); paintText($t('SQUISHY'), tx + 6); star(tx + wS + 9);
   }
   // slitage om huset hamnar i ett slitet område
   if (worn > 0.3) for (let k = 0; k < 40 * worn; k++) { const x = L + Math.floor(hash(k, 1, 83) * b.w), y = G - 1 - Math.floor(hash(k, 2, 83) * 12); P.px(x, y, 0x3a3030, 0.35); }
@@ -1121,9 +1122,9 @@ const KID_LOOKS = [
 // vinterkläder (samma objekt varje gång – figurmotorn cachar per utseende)
 const KID_WINTER = KID_LOOKS.map((l, i) => ({ ...l, top: 'jacket', hat: 'beanie', cap: ['#d83a4a', '#3a7bd5', '#f0b429', '#46a35a', '#8e5bd1', '#f05a8a'][i], bottom: l.bottom === 'shorts' || l.bottom === 'skirt' ? 'pants' : l.bottom }));
 const LINES = {
-  open: ['Titta, tåget!', 'En nalle!', 'Mamma, kolla!', 'Så gulligt!', 'Jag vill ha en squishy!', 'Tut tut!', 'Vilka ballonger!', 'Kan vi gå in?', 'Dumplingen har ett ansikte!', 'Leksakslådan är bäst!'],
-  closed: ['Tåget sover.', 'Stängt... i morgon!', 'God natt, nalle!', 'Leksakslådan har stängt.'],
-  snow: ['Nallen har tomtemössa!', 'Tomten handlar nog här!'],
+  open: [$t('Titta, tåget!'), $t('En nalle!'), $t('Mamma, kolla!'), $t('Så gulligt!'), $t('Jag vill ha en squishy!'), $t('Tut tut!'), $t('Vilka ballonger!'), $t('Kan vi gå in?'), $t('Dumplingen har ett ansikte!'), $t('Leksakslådan är bäst!')],
+  closed: [$t('Tåget sover.'), $t('Stängt... i morgon!'), $t('God natt, nalle!'), $t('Leksakslådan har stängt.')],
+  snow: [$t('Nallen har tomtemössa!'), $t('Tomten handlar nog här!')],
 };
 // Klämkompisarnas namn hämtas ur butikens katalog (js/data/toys.js), så att barnen säger samma namn som
 // står på hyllorna inne. Laddas i bakgrunden; saknas katalogen säger barnen bara de vanliga replikerna.
@@ -1131,7 +1132,7 @@ let KNAMN = null;
 import('../data/toys.js').then((m) => { KNAMN = Object.fromEntries((m.KOMPISAR || []).map((K) => [K.art, K.namn])); }).catch(() => { KNAMN = null; });
 function kompisLines() {
   if (!KNAMN) return [];
-  return [KNAMN.kanin && `Titta, ${KNAMN.kanin}!`, KNAMN.groda && `${KNAMN.groda} har en blomma!`, KNAMN.pingvin && `Jag vill ha ${KNAMN.pingvin}!`].filter(Boolean);
+  return [KNAMN.kanin && $t`Titta, ${$t(KNAMN.kanin)}!`, KNAMN.groda && $t`${$t(KNAMN.groda)} har en blomma!`, KNAMN.pingvin && $t`Jag vill ha ${$t(KNAMN.pingvin)}!`].filter(Boolean);
 }
 const WALK_SEQ = [1, 3, 2, 3];
 const KIDS = new Map();
@@ -1243,11 +1244,11 @@ function boardSprite(snow) {
   // tavlan
   S.rect(1, 1, 22, 22, wood); S.hl(1, 1, 22, mix(wood, WHITE, 0.35)); S.hl(1, 22, 22, mul(wood, 0.6)); S.vl(22, 2, 20, mul(wood, 0.7));
   for (let y = 3; y < 21; y++) for (let x = 3; x < 21; x++) S.px(x, y, mix(0x2e3c36, 0x3a4a42, hash(x, y, 101) * 0.6));
-  text(S, SMALL, 'NYTT!', 4, 4, 0xff9ac0);
+  text(S, SMALL, $t('NYTT!'), 4, 4, 0xff9ac0);
   // en dumpling i krita
   const dm = art(DUMP_ART, { e: 0xf4f0e8, a: 0xd8d4cc, d: 0xc8c0b8, k: 0x2e3c36, b: 0xff9ac0, o: 0xff9ac0 });
   stamp(S, dm, 8, 10);
-  text(S, SMALL, 'KLÄM', 4, 17, 0xf8e070);
+  text(S, SMALL, $t('KLÄM'), 4, 17, 0xf8e070);
   S.px(19, 11, 0xff9ac0); S.px(18, 12, 0xff9ac0); S.px(20, 12, 0xff9ac0); S.px(19, 13, 0xff9ac0); // hjärta
   if (snow) { S.hl(1, 0, 22, WHITE); S.hl(2, 1, 20, 0xeef4fa); }
   BOARD[k] = canvasOf(S);

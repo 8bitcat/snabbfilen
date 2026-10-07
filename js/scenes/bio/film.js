@@ -14,6 +14,7 @@
 import { Pix, SMALL, BIG, text, textW, ctxText, mix, mul, hash, bayer } from '../../core/floor-pix.js';
 import { drawPerson } from '../../core/people.js';
 import { FILM_KBK1, FILM_KBK2, kbkPoster } from './fotboll.js';
+import { $t, $n } from '../../core/i18n.js';
 
 export const FW = 240, FH = 80;
 const WALK = [1, 3, 2, 3];
@@ -205,7 +206,7 @@ function polisbil(c, x, y, t, lights = true) {
   R(c, x + 8, y + 1, 13, 4, 0xf4f4f8); R(c, x + 9, y + 2, 5, 3, 0x9ad8f8); R(c, x + 15, y + 2, 5, 3, 0x6aa8d8);
   const on = Math.floor(t * 8) & 1;
   if (lights) { R(c, x + 11, y, 3, 1, on ? 0x3a6aff : 0x1a2a6a); R(c, x + 15, y, 3, 1, on ? 0x6a1a1a : 0xff3a3a); }
-  ctxText(c, SMALL, 'POLIS', x + 5, y + 5, '#2a4ab8');
+  ctxText(c, SMALL, $t('POLIS'), x + 5, y + 5, '#2a4ab8');
   R(c, x + 28, y + 6, 1, 1, 0xfff6b0);
   for (const wx of [x + 7, x + 23]) { R(c, wx - 2, y + 8, 5, 4, 0x141418); P1(c, wx, y + 9 + (Math.floor(t * 20) & 1), 0x8a8a90); }
 }
@@ -227,11 +228,11 @@ function buss(c, x, y, t, doors = 0, night = true) {
   }
   R(c, x, y + 24, 111, 2, 0xf4f1ea); R(c, x, y + 26, 111, 1, 0xb8b0a0);                    // vita randen
   R(c, x, y + 34, 111, 6, D); R(c, x, y + 34, 111, 1, mul(B, 0.8));
-  ctxText(c, SMALL, 'LINJE 4', x + 10, y + 28, '#f4f1ea');
+  ctxText(c, SMALL, $t('LINJE 4'), x + 10, y + 28, '#f4f1ea');
   // vindrutan fram (höger) och destinationsskylten 4 CENTRUM
   R(c, x + 98, y + 6, 12, 18, night ? 0x2a3450 : 0x8ac0e0); R(c, x + 99, y + 7, 3, 16, night ? 0x4a5a80 : 0xc8e8f8);
   R(c, x + 60, y + 1, 38, 7, 0x141418);
-  ctxText(c, SMALL, '4 CENTRUM', x + 61, y + 2, '#ffb030');
+  ctxText(c, SMALL, $t('4 CENTRUM'), x + 61, y + 2, '#ffb030');
   // dörrarna (mitt och fram) glider isär
   for (const dx of [x + 44, x + 84]) {
     const o = Math.round(clamp(doors, 0, 1) * 4);
@@ -328,7 +329,7 @@ const bgNattStad = () => bg('nattstad', 480, (P, w) => {
   // neonreklam PIXEL på ett av taken
   area(P, 300, 34, 34, 12, (X, Y, i, j) => (i === 0 || j === 0 || i === 33 || j === 11 ? 0x2a2a34 : 0x140c18));
   P.ell(317, 40, 22, 10, 0xff4a6a, 0.16, 3);
-  text(P, SMALL, 'PIXEL', 308, 38, 0xff6a8a);
+  text(P, SMALL, $t('PIXEL'), 308, 38, 0xff6a8a);
   P.vl(306, 46, 10, 0x2a2a34); P.vl(328, 46, 10, 0x2a2a34);
 });
 const bgGata = (regn) => bg('gata' + (regn ? 'R' : ''), 240, (P, w) => {
@@ -354,7 +355,7 @@ const bgGata = (regn) => bg('gata' + (regn ? 'R' : ''), 240, (P, w) => {
   // kaféet i mittenhuset: randig markis, skylt KAFÉ, dörr och skyltfönster med tårta
   area(P, 80, 36, 80, 6, (X, Y, i, j) => (j === 5 ? ((X >> 1) & 1 ? 0xb82a2a : 0xf4f1ea) : ((X >> 2) & 1 ? (regn ? 0x9a2a2a : 0xd83a3a) : (regn ? 0xc8c0b0 : 0xf8f4ec))));
   P.rect(104, 29, 32, 7, 0x2a1a14); P.box(104, 29, 32, 7, 0xd8b060);
-  text(P, SMALL, 'KAFÉ', 113, 30, 0xf0cc5a);
+  text(P, SMALL, $t('KAFÉ'), 113, 30, 0xf0cc5a);
   area(P, 84, 43, 22, 15, (X, Y, i, j) => (i === 0 || j === 0 || i === 21 ? 0x5a3a24 : regn ? 0x3a4a58 : 0x8ab8d8));
   P.rect(90, 51, 10, 6, 0xf4f1ea); P.rect(91, 49, 8, 2, 0xf08ab0); P.px(95, 48, 0xd83a3a);
   area(P, 112, 42, 12, 16, (X, Y, i, j) => (i === 0 || j === 0 || i === 11 ? 0x5a3a24 : j < 7 ? (regn ? 0x3a4a58 : 0x9ac8e0) : 0x7a4a2a));
@@ -579,10 +580,10 @@ function vinjett(c, u) {
     const th = a / 24 * 6.283 + u * 0.6;
     for (let r = 14; r < 60; r += 2) { const x = 120 + Math.cos(th) * r * 1.6, y = 36 + Math.sin(th) * r * 0.7; if (hash(a, r, 140) > 0.35) P1(c, x, y, a & 1 ? 0x3a1a10 : 0x2a1408); }
   }
-  const s = 'BIO PIXEL', n = Math.min(s.length, Math.floor(u * 7)), x = cx(BIG, s);
+  const s = $t('BIO PIXEL'), n = Math.min(s.length, Math.floor(u * 7)), x = cx(BIG, s);
   const shown = s.slice(0, n);
   if (shown) outlined(c, BIG, shown, x, 30, '#f0cc5a', '#5a3a10');
-  if (u > 1.4) { const p = 'PRESENTERAR'; ctxText(c, SMALL, p, cx(SMALL, p), 44, '#c8a44a'); }
+  if (u > 1.4) { const p = $t('PRESENTERAR'); ctxText(c, SMALL, p, cx(SMALL, p), 44, '#c8a44a'); }
   if (u > 1.2) for (let k = 0; k < 6; k++) { const sx = x + ((u * 60 + k * 23) % 60) - 4, sy = 29 + (k % 3) * 4; if (Math.floor(u * 12 + k) % 3 === 0) { P1(c, sx, sy, 0xffffff); P1(c, sx - 1, sy, 0xfff0b0); P1(c, sx + 1, sy, 0xfff0b0); P1(c, sx, sy - 1, 0xfff0b0); P1(c, sx, sy + 1, 0xfff0b0); } }
 }
 // filmens titelskylt: bakgrund per film + titeln i BIG med kontur
@@ -594,11 +595,11 @@ function titelskylt(c, u, lines, { bgc, bgc2, fill, out }) {
     outlined(c, F, s, x, y, fill, out);
   });
 }
-function slutskylt(c, u, text = 'SLUT', col = '#f4f1ea', bgc = 0x08060a) {
+function slutskylt(c, u, text = $t('SLUT'), col = '#f4f1ea', bgc = 0x08060a) {
   R(c, 0, 0, FW, FH, bgc);
   const k = ease(u / 0.6);
   if (k > 0) outlined(c, BIG, text, cx(BIG, text), 30, col, '#2a2020');
-  if (u > 0.9) { const s = 'BIO PIXEL TACKAR FÖR BESÖKET'; ctxText(c, SMALL, s, cx(SMALL, s), 48, '#8a7a6a'); }
+  if (u > 0.9) { const s = $t('BIO PIXEL TACKAR FÖR BESÖKET'); ctxText(c, SMALL, s, cx(SMALL, s), 48, '#8a7a6a'); }
 }
 
 // ================= FILMERNA =================
@@ -622,11 +623,11 @@ function roofRun(c, u) {
 }
 const FILM_HAMNAREN = [
   { d: 3, light: 0x8a2a1a, draw: (c, u) => {
-    titelskylt(c, u, [['PIXELHÄMNAREN', BIG, 24], ['3', BIG, 40]], { bgc: 0x0a0406, bgc2: 0x5a1a10, fill: '#ffd040', out: '#5a1a08' });
+    titelskylt(c, u, [[$t('PIXELHÄMNAREN'), BIG, 24], ['3', BIG, 40]], { bgc: 0x0a0406, bgc2: 0x5a1a10, fill: '#ffd040', out: '#5a1a08' });
     if (u > 0.4 && u < 0.55) R(c, 0, 0, FW, FH, 0xfff6d0);                               // blixten
     for (let k = 0; k < 20; k++) P1(c, (hash(k, 1, 150) * FW + u * 40) % FW, 70 - ((u * 30 + k * 7) % 60), 0xf07a20);  // gnistor
   } },
-  { d: 6, light: 0x3a4a8a, subs: [[0.8, 3.6, 'HA HA! STADENS PIXELKRISTALL ÄR MIN!'], [3.8, 5.8, 'INGEN KAN STOPPA DOKTOR GLITCH!']], draw: (c, u) => {
+  { d: 6, light: 0x3a4a8a, subs: [[0.8, 3.6, $n('HA HA! STADENS PIXELKRISTALL ÄR MIN!')], [3.8, 5.8, $n('INGEN KAN STOPPA DOKTOR GLITCH!')]], draw: (c, u) => {
     scroll(c, bgNattStad(), 40 + u * 4);
     for (const sx of [40, 200]) { const a = Math.sin(u * 0.9 + sx) * 0.5; for (let r = 0; r < 70; r++) P1(c, sx + Math.sin(a) * r, 78 - Math.cos(a) * r, 0x3a4a70); }  // strålkastare
     R(c, 110, 58, 80, 22, 0x10101a); R(c, 110, 58, 80, 1, 0x2a2a3a);                   // taket han står på
@@ -635,12 +636,12 @@ const FILM_HAMNAREN = [
     crystal(c, 148, 12 + bob, u);
     P1(c, 144, 23, 0xf6d7bf); P1(c, 157, 23, 0xf6d7bf);
   } },
-  { d: 6, light: 0x2a3a6a, subs: [[0.4, 2.4, 'STOPP, DOKTOR GLITCH!']], draw: roofRun },
-  { d: 6, light: 0xa84a1a, cues: [[2.6, 'oj'], [4.4, 'skratt']], subs: [[4.2, 5.9, 'ÄSCH! JAG KOMMER TILLBAKA...']], draw: (c, u) => {
+  { d: 6, light: 0x2a3a6a, subs: [[0.4, 2.4, $n('STOPP, DOKTOR GLITCH!')]], draw: roofRun },
+  { d: 6, light: 0xa84a1a, cues: [[2.6, 'oj'], [4.4, 'skratt']], subs: [[4.2, 5.9, $n('ÄSCH! JAG KOMMER TILLBAKA...')]], draw: (c, u) => {
     scroll(c, bgNattStad(), 300);
     // reklamskylten som skotern flyger in i
     R(c, 162, 22, 40, 16, 0x2a2a34); R(c, 163, 23, 38, 14, u < 2.6 ? 0x1a0a14 : 0x3a1a10);
-    if (u < 2.6) outlined(c, SMALL, 'PIXEL', 172, 28, Math.floor(u * 4) & 1 ? '#ff4a6a' : '#ff8aa0', '#3a0a14', false);
+    if (u < 2.6) outlined(c, SMALL, $t('PIXEL'), 172, 28, Math.floor(u * 4) & 1 ? '#ff4a6a' : '#ff8aa0', '#3a0a14', false);
     R(c, 170, 38, 2, 20, 0x2a2a34); R(c, 192, 38, 2, 20, 0x2a2a34);
     R(c, 0, 62, FW, 18, 0x10101a); R(c, 0, 62, FW, 1, 0x2a2a3a);
     // svävarskotern med Glitch
@@ -660,7 +661,7 @@ const FILM_HAMNAREN = [
     // Glitch seglar ner med ett litet paraply
     if (u > 3.6) { const py = lerp(20, 50, (u - 3.6) / 2.4), px = 210 + Math.sin(u * 3) * 4; parasoll(c, px - 6, py - 48, 0x8e5bd1); person(c, px, py, L.glitch, 'down', 0); }
   } },
-  { d: 6, light: 0xd8601a, cues: [[2.2, 'heja']], subs: [[1.8, 5.8, 'JAG SA JU ATT JAG SKULLE KOMMA TILLBAKA.']], draw: (c, u) => {
+  { d: 6, light: 0xd8601a, cues: [[2.2, 'heja']], subs: [[1.8, 5.8, $n('JAG SA JU ATT JAG SKULLE KOMMA TILLBAKA.')]], draw: (c, u) => {
     for (let y = 0; y < FH; y++) { c.fillStyle = css(mix(0x2a0a08, 0xc84a1a, y / FH)); c.fillRect(0, y, FW, 1); }
     for (let k = 0; k < 40; k++) {                                                      // lågorna bakom
       const x = (k * 6 + 3) % FW, h = 12 + Math.sin(u * 7 + k) * 5 + hash(k, 1, 160) * 16;
@@ -675,7 +676,7 @@ const FILM_HAMNAREN = [
   } },
   { d: 3.5, light: 0x5a1a10, cues: [[1.0, 'skratt']], draw: (c, u) => {
     R(c, 0, 0, FW, FH, 0x08040a);
-    const a = 'PIXELHÄMNAREN 4', b = 'KOMMER SNART!';
+    const a = $t('PIXELHÄMNAREN 4'), b = $t('KOMMER SNART!');
     if (Math.floor(u * 10) % 7 !== 0) outlined(c, BIG, a, cx(BIG, a), 26, '#ffd040', '#5a1a08');
     if (u > 0.8) outlined(c, SMALL, b, cx(SMALL, b), 44, '#f4f1ea', '#3a1a10');
   } },
@@ -685,10 +686,10 @@ const FILM_HAMNAREN = [
 const boken = (c, x, y, n = 3) => { for (let k = 0; k < n; k++) { const col = [0x3a7bd5, 0xc9323a, 0x46a35a][k % 3]; R(c, x - (k & 1), y - k * 2, 8, 2, col); R(c, x - (k & 1), y - k * 2, 8, 1, mix(col, WHITE, 0.35)); } };
 const FILM_KARLEK = [
   { d: 3, light: 0xd86a8a, draw: (c, u) => {
-    titelskylt(c, u, [['KÄRLEK PÅ', BIG, 20], ['PIXELGATAN', BIG, 34]], { bgc: 0xf8c8d8, bgc2: 0xe87a9a, fill: '#fffaf4', out: '#a01830' });
+    titelskylt(c, u, [[$t('KÄRLEK PÅ'), BIG, 20], [$t('PIXELGATAN'), BIG, 34]], { bgc: 0xf8c8d8, bgc2: 0xe87a9a, fill: '#fffaf4', out: '#a01830' });
     for (let k = 0; k < 10; k++) smallHeart(c, (hash(k, 1, 170) * FW) | 0, ((hash(k, 2, 170) * FH + u * 20 * (1 + (k & 1))) % (FH + 6)) - 6, k & 1 ? 0xffffff : 0xe0304a);
   } },
-  { d: 6, light: 0x8ab8d8, cues: [[3.1, 'skratt']], subs: [[3.3, 5.8, 'OJ! FÖRLÅT, FÖRLÅT!']], draw: (c, u) => {
+  { d: 6, light: 0x8ab8d8, cues: [[3.1, 'skratt']], subs: [[3.3, 5.8, $n('OJ! FÖRLÅT, FÖRLÅT!')]], draw: (c, u) => {
     c.drawImage(bgGata(false), 0, 0);
     const meet = 3;
     if (u < meet) {
@@ -705,14 +706,14 @@ const FILM_KARLEK = [
       if (k < 0.4) { for (const [a, b] of [[0, -4], [3, -3], [-3, -3], [4, 0], [-4, 0]]) P1(c, 120 + a, 40 + b, 0xfff6a0); }
     }
   } },
-  { d: 6, light: 0xe8a0b8, cues: [[2.7, 'aww']], subs: [[0.8, 2.4, '...HEJ.'], [3.2, 5.8, 'HEJ. JAG HETER NORA.']], draw: (c, u) => {
+  { d: 6, light: 0xe8a0b8, cues: [[2.7, 'aww']], subs: [[0.8, 2.4, $n('...HEJ.')], [3.2, 5.8, $n('HEJ. JAG HETER NORA.')]], draw: (c, u) => {
     c.drawImage(bgGata(false), 0, 0);
     person(c, 106, 72, L.nora, 'right', 5); person(c, 134, 72, L.leo, 'left', 5);
     R(c, 110, 69, 8, 2, 0x3a7bd5); R(c, 124, 70, 8, 2, 0xc9323a); R(c, 116, 71, 8, 2, 0x46a35a);
     if (u > 2.5) { const k = ease((u - 2.5) / 0.8); heart(c, 120, 30 - k * 6, 2 + k * 4); }
     if (u > 2.5) for (const hx of [104, 136]) { P1(c, hx - 1, 53, 0xf07a8a); P1(c, hx + 1, 53, 0xf07a8a); }   // rodnaden
   } },
-  { d: 6, light: 0x7a8a9a, cues: [[2.5, 'aww']], subs: [[2.2, 4.6, 'SKA VI DELA PARAPLY?']], draw: (c, u) => {
+  { d: 6, light: 0x7a8a9a, cues: [[2.5, 'aww']], subs: [[2.2, 4.6, $n('SKA VI DELA PARAPLY?')]], draw: (c, u) => {
     c.drawImage(bgGata(true), 0, 0);
     const walk = u > 3.2, off = walk ? (u - 3.2) * 16 : 0;
     person(c, 104 + off, 70, L.nora, walk ? 'right' : 'down', walk ? walkF(u) : 9);
@@ -722,7 +723,7 @@ const FILM_KARLEK = [
     rain(c, u, true);
     if (u > 2) for (let k = 0; k < 8; k++) P1(c, 96 + off + k * 5 + (k > 3 ? 2 : 0), 32 + ((u * 40 + k * 5) % 7), 0x9aaac8);    // droppar rinner av paraplyet
   } },
-  { d: 6, light: 0xf0906a, cues: [[3.6, 'grat']], subs: [[4.0, 5.9, 'SLUT? NEJ - BÖRJAN.']], draw: (c, u) => {
+  { d: 6, light: 0xf0906a, cues: [[3.6, 'grat']], subs: [[4.0, 5.9, $n('SLUT? NEJ - BÖRJAN.')]], draw: (c, u) => {
     c.drawImage(bgSolnedgang(), 0, 0);
     const k = ease(u / 3);
     person(c, lerp(70, 113, k), 52, L.nora, 'right', k < 1 ? walkF(u) : 0);
@@ -730,7 +731,7 @@ const FILM_KARLEK = [
     if (u > 3.2) { const hk = ease((u - 3.2) / 1.2); heart(c, 120, 6 + (1 - hk) * 8, 3 + hk * 6, 0xff5a7a, 0xffb0c0, 0xc02040); }
     if (u > 3.5) for (let n = 0; n < 6; n++) smallHeart(c, 100 + n * 8, 20 - ((u - 3.5) * 12 + n * 5) % 20, 0xffc0d0);
   } },
-  { d: 3, light: 0xd86a8a, draw: (c, u) => { slutskylt(c, u, 'SLUT', '#ffb0c8', 0x1a0810); smallHeart(c, 116, 16, 0xe0304a); } },
+  { d: 3, light: 0xd86a8a, draw: (c, u) => { slutskylt(c, u, $t('SLUT'), '#ffb0c8', 0x1a0810); smallHeart(c, 116, 16, 0xe0304a); } },
 ];
 
 // ----- TURBOPOLIS (action) -----
@@ -740,11 +741,11 @@ const FILM_TURBO = [
     area2(c, 96, 40, 48, 22, (X, Y) => (Math.hypot(X - 120, Y - 62) < 22 && (Y < 50 || Y % 3) ? (Y < 50 ? 0xffd040 : 0xff5a9a) : null));  // synthsolen
     for (let x = -12; x <= 12; x++) { for (let y = 60; y < FH; y++) { const tx = 120 + x * (y - 56) * 1.2; if (Math.abs(tx - Math.round(tx)) < 0.5) P1(c, tx, y, 0xff3ad0); } }
     for (let r = 0; r < 6; r++) { const y = 62 + ((r * 4 + u * 12) % 20); R(c, 0, y, FW, 1, 0xa01ac8); }
-    const s = 'TURBOPOLIS', x = cx(BIG, s) + Math.round((1 - ease(u / 0.6)) * -80);
+    const s = $t('TURBOPOLIS'), x = cx(BIG, s) + Math.round((1 - ease(u / 0.6)) * -80);
     for (let i = 0; i < 3; i++) ctxText(c, BIG, s, x + 2 - i, 22 + 2 - i, ['#2a0a3a', '#3ae8ff', '#ff5ad0'][i]);
     outlined(c, BIG, s, x, 20, '#f4f8ff', '#1a0a2a', false);
   } },
-  { d: 6, light: 0x6a3a9a, subs: [[1.0, 3.6, 'HALLÅ DÄR! STANNA BILEN!']], draw: (c, u) => {
+  { d: 6, light: 0x6a3a9a, subs: [[1.0, 3.6, $n('HALLÅ DÄR! STANNA BILEN!')]], draw: (c, u) => {
     scroll(c, bgMotorvag(), u * 260);
     for (let x = -((u * 400) % 40); x < FW; x += 40) R(c, x, 65, 18, 1, 0xe8e0c0);      // mittlinjen rusar förbi
     sportbil(c, 150, 58 + (Math.floor(u * 10) & 1), u, false);
@@ -752,7 +753,7 @@ const FILM_TURBO = [
     const on = Math.floor(u * 8) & 1;
     c.fillStyle = on ? 'rgba(80,120,255,.25)' : 'rgba(255,60,60,.25)'; c.fillRect(30 + Math.sin(u * 1.5) * 10, 70, 50, 3);
   } },
-  { d: 6, light: 0xe06a2a, cues: [[2.2, 'heja']], subs: [[0.4, 1.9, 'DAGS FÖR ... TURBO!']], draw: (c, u) => {
+  { d: 6, light: 0xe06a2a, cues: [[2.2, 'heja']], subs: [[0.4, 1.9, $n('DAGS FÖR ... TURBO!')]], draw: (c, u) => {
     const shake = u > 2 ? Math.round(Math.sin(u * 60) * 1) : 0;
     c.save(); c.translate(shake, 0);
     for (let y = 0; y < 30; y++) { c.fillStyle = css(mix(0x14062a, 0x6a1a6a, y / 30)); c.fillRect(-2, y, FW + 4, 1); }
@@ -773,7 +774,7 @@ const FILM_TURBO = [
     for (let a = 0; a < 9; a++) { const th = Math.PI * (0.9 + a / 8 * 1.2); P1(c, 59 + Math.cos(th) * 9, 66 + Math.sin(th) * 9, a > 6 ? 0xff3a3a : 0xf4f1ea); }
     const pressed = u > 1.9;
     R(c, 150, 58 + (pressed ? 2 : 0), 30, 12, pressed ? 0xa8141c : 0xd8242e); R(c, 150, 58 + (pressed ? 2 : 0), 30, 1, 0xff7a6a); R(c, 148, 70, 34, 3, 0x2a2a34);
-    ctxText(c, SMALL, 'TURBO', 156, 62 + (pressed ? 2 : 0), '#fff0d0');
+    ctxText(c, SMALL, $t('TURBO'), 156, 62 + (pressed ? 2 : 0), '#fff0d0');
     if (pressed && Math.floor(u * 6) & 1) R(c, 146, 56, 38, 1, 0xffd040);
     const hy = pressed ? 50 : lerp(80, 48, u / 1.9);                                    // handsken trycker
     spr(c, 160, hy, ['.kkkk.', 'kKKKKk', 'kKKKKk', 'kKKKKk', '.kKKk.', '.kKKk.', '.kKKk.', '.kKKk.', '.kKKk.', '.kKKk.'], { k: 0x0a0a0a, K: 0x2a2a34 });
@@ -793,7 +794,7 @@ const FILM_TURBO = [
     if (u > 2.3) for (let n = 0; n < 3; n++) P1(c, 22 + n * 2, 38 - n, 0xf4f4f8);              // polisen kliar sig
     if (u > t0 && u < t0 + T) for (let n = 0; n < 5; n++) { const k = clamp((u - t0) / T - n * 0.04, 0, 1); P1(c, lerp(34, 186, k) + 2, 45 - Math.sin(k * Math.PI) * 30, 0xff9a3a); }
   } },
-  { d: 6, light: 0xc8508a, cues: [[3.0, 'skratt']], subs: [[2.2, 5.9, 'SNYGGT KÖRT! MEN HÄR GÄLLER 50, KOMPIS.']], draw: (c, u) => {
+  { d: 6, light: 0xc8508a, cues: [[3.0, 'skratt']], subs: [[2.2, 5.9, $n('SNYGGT KÖRT! MEN HÄR GÄLLER 50, KOMPIS.')]], draw: (c, u) => {
     c.drawImage(bgMal(), 0, 0);
     const x = u < 1.6 ? lerp(-30, 190, u / 1.6) : 190 + Math.min(10, (u - 1.6) * 20);
     sportbil(c, x, 58, u, u < 1.6);
@@ -802,7 +803,7 @@ const FILM_TURBO = [
     polisbil(c, px, 60, u, u < 2);
     if (u > 2.2) person(c, 130, 72, L.polis, 'right', u > 3.4 && u < 4 ? 4 : 0);
   } },
-  { d: 3, light: 0x6a2a8a, draw: (c, u) => slutskylt(c, u, 'SLUT', '#3ae8ff', 0x0a0418) },
+  { d: 3, light: 0x6a2a8a, draw: (c, u) => slutskylt(c, u, $t('SLUT'), '#3ae8ff', 0x0a0418) },
 ];
 
 // ----- SOMMAR I STAN (romantisk komedi / feelgood) -----
@@ -811,9 +812,9 @@ const FILM_SOMMAR = [
     R(c, 0, 0, FW, FH, 0xffe070);
     for (let a = 0; a < 16; a++) { const th = a / 16 * 6.283 + u * 0.4; for (let r = 10; r < 140; r++) if (a & 1) P1(c, 120 + Math.cos(th) * r, 40 + Math.sin(th) * r * 0.6, 0xfff0a0); }
     area2(c, 104, 24, 33, 33, (X, Y) => (Math.hypot(X - 120, Y - 40) < 14 ? 0xffb030 : null));
-    titelskylt2(c, u, [['SOMMAR', BIG, 24], ['I STAN', BIG, 38]], '#fffaf0', '#c8501a');
+    titelskylt2(c, u, [[$t('SOMMAR'), BIG, 24], [$t('I STAN'), BIG, 38]], '#fffaf0', '#c8501a');
   } },
-  { d: 6, light: 0x8ac86a, subs: [[1.0, 3.0, 'TRE KULOR, TACK!'], [3.8, 5.8, 'VARSÅGOD, LILLA VÄN!']], draw: (c, u) => {
+  { d: 6, light: 0x8ac86a, subs: [[1.0, 3.0, $n('TRE KULOR, TACK!')], [3.8, 5.8, $n('VARSÅGOD, LILLA VÄN!')]], draw: (c, u) => {
     c.drawImage(bgPark(), 0, 0);
     person(c, 180, 60, L.glassfarbror, 'down', Math.floor(u * 2) & 1 ? 4 : 0);
     glassvagn(c, 160, 44);
@@ -822,7 +823,7 @@ const FILM_SOMMAR = [
     if (u > 3.4 && u < 3.8) strut(c, lerp(172, 151, (u - 3.4) / 0.4), lerp(40, 48, (u - 3.4) / 0.4));
     if (u >= 3.8) strut(c, 151, 48 - (Math.floor(u * 4) & 1));
   } },
-  { d: 6, light: 0x7ab85a, cues: [[2.8, 'grat']], subs: [[2.8, 4.8, 'NEEEJ! MIN GLASS!']], draw: (c, u) => {
+  { d: 6, light: 0x7ab85a, cues: [[2.8, 'grat']], subs: [[2.8, 4.8, $n('NEEEJ! MIN GLASS!')]], draw: (c, u) => {
     c.drawImage(bgPark(), 0, 0);
     const fall = 2;
     if (u < fall) { const kx = lerp(40, 110, u / fall); person(c, kx, 68, L.unge, 'right', walkF(u)); strut(c, kx + 4, 46 - (Math.floor(u * 8) & 1)); }
@@ -835,7 +836,7 @@ const FILM_SOMMAR = [
     }
     R(c, 104, 69, 4, 2, 0x8a8a90); R(c, 104, 68, 3, 1, 0xb8b8c0);                        // stenen
   } },
-  { d: 6, light: 0x8ac86a, cues: [[1.8, 'skratt'], [3.6, 'skratt']], subs: [[2.4, 4.4, 'VOFF!'], [4.6, 5.9, 'HAHA! DEN GILLAR JORDGUBB!']], draw: (c, u) => {
+  { d: 6, light: 0x8ac86a, cues: [[1.8, 'skratt'], [3.6, 'skratt']], subs: [[2.4, 4.4, $n('VOFF!')], [4.6, 5.9, $n('HAHA! DEN GILLAR JORDGUBB!')]], draw: (c, u) => {
     c.drawImage(bgPark(), 0, 0);
     person(c, 114, 70, L.unge, 'right', u > 3.5 ? (Math.floor(u * 6) & 1 ? 5 : 6) : 5);
     const dx = u < 1.6 ? lerp(250, 142, u / 1.6) : 142;
@@ -844,14 +845,14 @@ const FILM_SOMMAR = [
     hund(c, dx, 60, u, lick);
     if (lick) for (let n = 0; n < 3; n++) { if ((Math.floor(u * 4) + n) % 3 === 0) smallHeart(c, 150 + n * 6, 50 - n * 4, 0xff7a9a); }
   } },
-  { d: 6, light: 0xc86a8a, cues: [[2.0, 'aww']], subs: [[1.4, 4.2, 'BÄSTA SOMMAREN NÅGONSIN!']], draw: (c, u) => {
+  { d: 6, light: 0xc86a8a, cues: [[2.0, 'aww']], subs: [[1.4, 4.2, $n('BÄSTA SOMMAREN NÅGONSIN!')]], draw: (c, u) => {
     c.drawImage(bgKvall(), 0, 0);
     fyrverkeri(c, u);
     person(c, 104, 72, L.unge, 'right', 0); strut(c, 108, 50);
     person(c, 132, 72, L.glassfarbror, 'left', Math.floor(u * 2) & 1 ? 4 : 0);
     hund(c, 150, 62, u);
   } },
-  { d: 3, light: 0xf0b030, draw: (c, u) => slutskylt(c, u, 'SLUT', '#ffd040', 0x1a1004) },
+  { d: 3, light: 0xf0b030, draw: (c, u) => slutskylt(c, u, $t('SLUT'), '#ffd040', 0x1a1004) },
 ];
 
 // ----- SISTA NATTBUSSEN (action) -----
@@ -864,13 +865,13 @@ const FILM_NATTBUSS = [
     R(c, 0, 0, FW, FH, 0x06080e);
     R(c, 30, 22, 180, 28, 0x141418); R(c, 32, 24, 176, 24, 0x0a0a08);
     for (let y = 25; y < 47; y += 2) for (let x = 33; x < 207; x += 2) P1(c, x, y, 0x1a1408);
-    const s = '4  SISTA NATTBUSSEN', w = textW(SMALL, s), off = Math.round(lerp(176, 0, ease(u / 1.4)));
+    const s = $t('4  SISTA NATTBUSSEN'), w = textW(SMALL, s), off = Math.round(lerp(176, 0, ease(u / 1.4)));
     c.save(); c.beginPath(); c.rect(32, 24, 176, 24); c.clip();
     ledText(c, s, 120 - (w >> 1) + off, 33);
     c.restore();
     rain(c, u, true);
   } },
-  { d: 6, light: 0x3a3a5a, cues: [[4.6, 'grat']], subs: [[2.2, 3.6, 'VÄNTA! VÄNTA PÅ MIG!'], [4.6, 5.9, 'NEEEJ!']], draw: (c, u) => {
+  { d: 6, light: 0x3a3a5a, cues: [[4.6, 'grat']], subs: [[2.2, 3.6, $n('VÄNTA! VÄNTA PÅ MIG!')], [4.6, 5.9, $n('NEEEJ!')]], draw: (c, u) => {
     c.drawImage(bgHallplats(), 0, 0);
     let bx; if (u < 1.5) bx = lerp(-120, 118, ease(u / 1.5)); else if (u < 3.6) bx = 118; else bx = 118 + (u - 3.6) * (u - 3.6) * 40;
     const doors = u < 1.5 ? 0 : u < 1.8 ? (u - 1.5) / 0.3 : u < 3.3 ? 1 : Math.max(0, 1 - (u - 3.3) / 0.3);
@@ -881,7 +882,7 @@ const FILM_NATTBUSS = [
     else pizzakartong(c, rx - 4, 70);
     rain(c, u, true);
   } },
-  { d: 6, light: 0x6a5a4a, cues: [[3.0, 'skratt']], subs: [[0.5, 2.2, 'JAG GER INTE UPP!']], draw: (c, u) => {
+  { d: 6, light: 0x6a5a4a, cues: [[3.0, 'skratt']], subs: [[0.5, 2.2, $n('JAG GER INTE UPP!')]], draw: (c, u) => {
     scroll(c, bgGataNatt(), u * 90);
     buss(c, 176 + Math.sin(u) * 4, 26, u, 0);                                            // bussen syns där framme
     const jump = u > 1.6 && u < 2.3 ? Math.sin((u - 1.6) / 0.7 * Math.PI) * 10 : 0;
@@ -894,9 +895,9 @@ const FILM_NATTBUSS = [
     const kx = 260 - ((u * 90) % 480) + 60;
     R(c, kx - 10, 52, 26, 2, 0x5a4a3a); for (let i = 0; i < 26; i += 4) R(c, kx - 10 + i, 54, 2, 12, 0x5a4a3a);
     spr(c, kx, 44, ['k...k.', 'kk.kk.', 'kkkkk.', '.kkkkk', '..kkkk', '..k.k.'], { k: 0x141418 }, true);
-    if (u > 2.6 && u < 3.8) { P1(c, kx + 1, 46, 0xffe040); P1(c, kx + 3, 46, 0xffe040); outlined(c, SMALL, 'FRÄS!', kx - 2, 34, '#ffffff', '#000000', false); }
+    if (u > 2.6 && u < 3.8) { P1(c, kx + 1, 46, 0xffe040); P1(c, kx + 3, 46, 0xffe040); outlined(c, SMALL, $t('FRÄS!'), kx - 2, 34, '#ffffff', '#000000', false); }
   } },
-  { d: 6, light: 0x8a7a4a, cues: [[2.4, 'heja']], subs: [[2.2, 4.6, 'HOPPA IN, DU. JAG VÄNTADE.'], [4.8, 5.9, 'TACK!']], draw: (c, u) => {
+  { d: 6, light: 0x8a7a4a, cues: [[2.4, 'heja']], subs: [[2.2, 4.6, $n('HOPPA IN, DU. JAG VÄNTADE.')], [4.8, 5.9, $n('TACK!')]], draw: (c, u) => {
     c.drawImage(bgHallplats(), 0, 0);
     buss(c, 96, 28, u, 1);
     person(c, 185, 66, L.chauffor, 'left', Math.floor(u * 2) & 1 ? 4 : 0);            // föraren i framdörren
@@ -905,7 +906,7 @@ const FILM_NATTBUSS = [
     pizzakartong(c, rx + 2, 55 - (u > 2 && Math.floor(u * 3) & 1 ? 1 : 0));
     rain(c, u, true);
   } },
-  { d: 6, light: 0xd8b060, cues: [[3.0, 'aww']], subs: [[1.0, 4.0, 'PIZZA? DEN ÄR FORTFARANDE VARM!']], draw: (c, u) => {
+  { d: 6, light: 0xd8b060, cues: [[3.0, 'aww']], subs: [[1.0, 4.0, $n('PIZZA? DEN ÄR FORTFARANDE VARM!')]], draw: (c, u) => {
     c.drawImage(bgBussInne(), 0, 0);
     for (let n = 0; n < 8; n++) { const x = FW - ((u * 120 + n * 37) % (FW + 30)); R(c, x, 12 + (n % 3) * 7, 10 + (n % 4) * 4, 2, [0xf0c068, 0xff9a5a, 0x9ae0ff][n % 3]); }  // stadens ljus
     for (let x = 0; x < FW; x += 40) R(c, x, 8, 3, 28, 0xc8c4b8);
@@ -916,7 +917,7 @@ const FILM_NATTBUSS = [
     if (u > 2) spr(c, 34, 44 - (u > 3 ? 3 : 0), ['yy.', 'yry', '.y.'], { y: 0xf0c040, r: 0xc8262e });   // pizzabiten
     if (u > 3.2) for (let n = 0; n < 3; n++) smallHeart(c, 36 + n * 8, 26 - ((u - 3.2) * 10 + n * 4) % 12, 0xff8a9a);
   } },
-  { d: 3, light: 0x8a6a2a, draw: (c, u) => { R(c, 0, 0, FW, FH, 0x06080e); R(c, 70, 26, 100, 20, 0x0a0a08); ledText(c, 'SLUT', 120 - (textW(SMALL, 'SLUT') >> 1), 33); if (u > 1) { const s = 'BIO PIXEL TACKAR FÖR BESÖKET'; ctxText(c, SMALL, s, cx(SMALL, s), 56, '#8a7a6a'); } } },
+  { d: 3, light: 0x8a6a2a, draw: (c, u) => { R(c, 0, 0, FW, FH, 0x06080e); R(c, 70, 26, 100, 20, 0x0a0a08); ledText(c, $t('SLUT'), 120 - (textW(SMALL, $t('SLUT')) >> 1), 33); if (u > 1) { const s = $t('BIO PIXEL TACKAR FÖR BESÖKET'); ctxText(c, SMALL, s, cx(SMALL, s), 56, '#8a7a6a'); } } },
 ];
 
 // ----- AMORE PÅ SÖDER (romantisk komedi) -----
@@ -940,10 +941,10 @@ const FILM_AMORE = [
   { d: 3, light: 0xc8262e, draw: (c, u) => {
     for (let y = 0; y < FH; y++) for (let x = 0; x < FW; x += 4) R(c, x, y, 4, 1, ((x >> 3) + (y >> 3)) & 1 ? 0xc8262e : 0xf4f1ea);
     R(c, 40, 16, 160, 42, 0x1a0a08); R(c, 41, 17, 158, 40, 0x2a1210);
-    titelskylt2(c, u, [['AMORE', BIG, 24], ['PÅ SÖDER', BIG, 38]], '#ff6a6a', '#1a0404');
+    titelskylt2(c, u, [[$t('AMORE'), BIG, 24], [$t('PÅ SÖDER'), BIG, 38]], '#ff6a6a', '#1a0404');
     for (let n = 0; n < 4; n++) not(c, 60 + n * 36, 50 - ((u * 14 + n * 9) % 30), n & 1 ? '#6ad07a' : '#fff0b0');
   } },
-  { d: 6, light: 0xd8904a, subs: [[2.0, 4.4, 'EN SPAGHETTI FÖR TVÅ, PREGO!']], draw: (c, u) => {
+  { d: 6, light: 0xd8904a, subs: [[2.0, 4.4, $n('EN SPAGHETTI FÖR TVÅ, PREGO!')]], draw: (c, u) => {
     c.drawImage(bgRestaurang(), 0, 0);
     stol(c, 98, 70, true); stol(c, 142, 70, false);
     person(c, 98, 70, L.sofia, 'right', 5); person(c, 142, 70, L.marco, 'left', 5);
@@ -968,7 +969,7 @@ const FILM_AMORE = [
     for (let x = Math.round(ax); x <= Math.round(bx); x++) P1(c, x, ay + Math.round(Math.sin((x - ax) / Math.max(1, bx - ax) * Math.PI) * (6 - k * 6)), 0xf0d060);
     if (u > 4.2) { const hk = ease((u - 4.2) / 0.6); smallHeart(c, 118, 26 - hk * 6, 0xff5a7a); }
   } },
-  { d: 6, light: 0xc85a5a, cues: [[2.0, 'grat']], subs: [[3.0, 5.6, 'TI AMO!']], draw: (c, u) => {
+  { d: 6, light: 0xc85a5a, cues: [[2.0, 'grat']], subs: [[3.0, 5.6, $n('TI AMO!')]], draw: (c, u) => {
     c.drawImage(bgRestaurang(), 0, 0);
     stol(c, 110, 70, true); stol(c, 130, 70, false);
     person(c, 110, 70, L.sofia, 'right', 5); person(c, 130, 70, L.marco, 'left', 5);
@@ -978,21 +979,21 @@ const FILM_AMORE = [
     R(c, 176, 48, 10, 8, 0x8a1a1a); R(c, 177, 49, 8, 6, 0xf4f1ea);
     for (let n = 0; n < 5; n++) not(c, 170 + n * 6, 44 - ((u * 24 + n * 7) % 30), n & 1 ? '#fff0b0' : '#ffd0e0');
   } },
-  { d: 6, light: 0x4a4a8a, cues: [[2.0, 'aww']], subs: [[1.5, 4.6, 'SÖDER ÄR VÅRT ITALIEN.']], draw: (c, u) => {
+  { d: 6, light: 0x4a4a8a, cues: [[2.0, 'aww']], subs: [[1.5, 4.6, $n('SÖDER ÄR VÅRT ITALIEN.')]], draw: (c, u) => {
     c.drawImage(bgSoder(), 0, 0);
     const x = lerp(40, 170, u / 6);
     person(c, x, 72, L.sofia, 'right', walkF(u, 7)); person(c, x + 14, 72, L.marco, 'right', walkF(u + 0.2, 7));
     R(c, x + 5, 55, 5, 1, 0xa06a43);                                                     // hand i hand
     for (let n = 0; n < 6; n++) smallHeart(c, x + 2 + (n % 3) * 5, 28 - ((u * 10 + n * 6) % 30), n & 1 ? 0xff7a9a : 0xffc0d0);
   } },
-  { d: 3, light: 0xc8262e, draw: (c, u) => slutskylt(c, u, 'FINE', '#ff6a6a', 0x14040a) },
+  { d: 3, light: 0xc8262e, draw: (c, u) => slutskylt(c, u, $t('FINE'), '#ff6a6a', 0x14040a) },
 ];
 
 // glasskiosken: vagnen framför glassfarbrorn
 function glassvagn(c, x, y) {
   R(c, x, y, 40, 14, 0xf4f1ea); R(c, x, y, 40, 1, 0xffffff); R(c, x, y + 13, 40, 1, 0xb8b0a0);
   for (let i = 0; i < 40; i += 5) R(c, x + i, y + 4, 3, 6, 0xf08ab0);
-  outlined(c, SMALL, 'GLASS', x + 10, y + 5, '#c8264a', '#ffffff', false);
+  outlined(c, SMALL, $t('GLASS'), x + 10, y + 5, '#c8264a', '#ffffff', false);
   for (const wx of [x + 6, x + 32]) { R(c, wx - 3, y + 13, 7, 7, 0x2a2a2a); R(c, wx - 1, y + 15, 3, 3, 0x8a8a8a); }
 }
 // titelskylt utan egen bakgrund (bakgrunden målas av tagningen)
@@ -1008,14 +1009,14 @@ function area2(c, x, y, w, h, fn) {
 // ================= programmet =================
 // Samma filmer och kvällstider som fasadens ljusskylt; alder = åldersgräns på affischen.
 export const FILMER = [
-  { id: 'hamnaren', titel: 'PIXELHÄMNAREN 3', typ: 'action', genre: 'ACTION', alder: '11 ÅR', tid: '21:30', blurb: 'Doktor Glitch har stulit stadens pixelkristall. Bara en kan stoppa honom.', shots: FILM_HAMNAREN },
-  { id: 'karlek', titel: 'KÄRLEK PÅ PIXELGATAN', typ: 'romkom', genre: 'ROMANTIK', alder: 'BTL', tid: '18:30', blurb: 'Nora och Leo krockar utanför kaféet – och sedan regnar det.', shots: FILM_KARLEK },
-  { id: 'turbo', titel: 'TURBOPOLIS', typ: 'action', genre: 'ACTION', alder: '7 ÅR', tid: '19:00', blurb: 'Snabbaste bilen i stan, en polis i hälarna och en ramp över floden.', shots: FILM_TURBO },
-  { id: 'sommar', titel: 'SOMMAR I STAN', typ: 'romkom', genre: 'FEELGOOD', alder: 'BTL', tid: '20:00', blurb: 'En glass, en sten, en hund – och den bästa sommaren någonsin.', shots: FILM_SOMMAR },
-  { id: 'nattbuss', titel: 'SISTA NATTBUSSEN', typ: 'action', genre: 'SPÄNNING', alder: '11 ÅR', tid: '22:45', blurb: 'En pizza, ett ösregn och linje 4 som går utan dig.', shots: FILM_NATTBUSS },
-  { id: 'amore', titel: 'AMORE PÅ SÖDER', typ: 'romkom', genre: 'ROMANTIK', alder: 'BTL', tid: '20:15', blurb: 'En spaghetti för två på Söders mysigaste trattoria.', shots: FILM_AMORE },
-  { id: 'kbk1', titel: 'KUNGSLADUGÅRD - EN STILLSAM BÖRJAN', typ: 'sport', genre: 'SPORT', alder: 'BTL', tid: '17:00', blurb: 'Julia, Märta, Nina, Ellen, Alice G och Lily i mål tränar hårt inför lilla cupen – Näset, Hovås/Billdal, Sandarna och finalen mot Älvsborg.', shots: FILM_KBK1 },
-  { id: 'kbk2', titel: 'KUNGSLADUGÅRD - UT I VÄRLDEN', typ: 'sport', genre: 'SPORT', alder: 'BTL', tid: '17:45', blurb: 'Champions League: Häcken, Manchester United, Juventus – och finalen mot Barcelona. Klarar Lily straffen?', shots: FILM_KBK2 },
+  { id: 'hamnaren', titel: $t('PIXELHÄMNAREN 3'), typ: 'action', genre: $t('ACTION'), alder: $t('11 ÅR'), tid: '21:30', blurb: $t('Doktor Glitch har stulit stadens pixelkristall. Bara en kan stoppa honom.'), shots: FILM_HAMNAREN },
+  { id: 'karlek', titel: $t('KÄRLEK PÅ PIXELGATAN'), typ: 'romkom', genre: $t('ROMANTIK'), alder: $t('BTL'), tid: '18:30', blurb: $t('Nora och Leo krockar utanför kaféet – och sedan regnar det.'), shots: FILM_KARLEK },
+  { id: 'turbo', titel: $t('TURBOPOLIS'), typ: 'action', genre: $t('ACTION'), alder: $t('7 ÅR'), tid: '19:00', blurb: $t('Snabbaste bilen i stan, en polis i hälarna och en ramp över floden.'), shots: FILM_TURBO },
+  { id: 'sommar', titel: $t('SOMMAR I STAN'), typ: 'romkom', genre: $t('FEELGOOD'), alder: $t('BTL'), tid: '20:00', blurb: $t('En glass, en sten, en hund – och den bästa sommaren någonsin.'), shots: FILM_SOMMAR },
+  { id: 'nattbuss', titel: $t('SISTA NATTBUSSEN'), typ: 'action', genre: $t('SPÄNNING'), alder: $t('11 ÅR'), tid: '22:45', blurb: $t('En pizza, ett ösregn och linje 4 som går utan dig.'), shots: FILM_NATTBUSS },
+  { id: 'amore', titel: $t('AMORE PÅ SÖDER'), typ: 'romkom', genre: $t('ROMANTIK'), alder: $t('BTL'), tid: '20:15', blurb: $t('En spaghetti för två på Söders mysigaste trattoria.'), shots: FILM_AMORE },
+  { id: 'kbk1', titel: $t('KUNGSLADUGÅRD - EN STILLSAM BÖRJAN'), typ: 'sport', genre: $t('SPORT'), alder: $t('BTL'), tid: '17:00', blurb: $t('Julia, Märta, Nina, Ellen, Alice G och Lily i mål tränar hårt inför lilla cupen – Näset, Hovås/Billdal, Sandarna och finalen mot Älvsborg.'), shots: FILM_KBK1 },
+  { id: 'kbk2', titel: $t('KUNGSLADUGÅRD - UT I VÄRLDEN'), typ: 'sport', genre: $t('SPORT'), alder: $t('BTL'), tid: '17:45', blurb: $t('Champions League: Häcken, Manchester United, Juventus – och finalen mot Barcelona. Klarar Lily straffen?'), shots: FILM_KBK2 },
 ];
 for (const f of FILMER) {
   // en film med introlåt (fotbollsfilmerna) har den redan över vinjetten – ingen tyst början
@@ -1055,7 +1056,7 @@ export function drawFilm(ctx, film, t, x, y) {
   ctx.beginPath(); ctx.rect(0, 0, FW, FH); ctx.clip();
   s.draw(ctx, u);
   grain(ctx, t);                                                                    // repor och damm – under textremsan
-  for (const [a, b, text] of s.subs || []) if (u >= a && u < b) sub(ctx, text);
+  for (const [a, b, text] of s.subs || []) if (u >= a && u < b) sub(ctx, $t(text));   // subs = $n (fotboll.js söker SLUTSIGNAL)
   // klippen: dithrad svart in och ut
   if (u < 0.25) fade(ctx, 1 - u / 0.25);
   else if (u > s.d - 0.25) fade(ctx, (u - (s.d - 0.25)) / 0.25);
@@ -1085,7 +1086,7 @@ export function posterCanvas(id) {
     sprP(P, 11, 18, CRYSTAL, { '#': 0x1a8ab0, o: 0xbff8ff });
     for (let j = 12; j <= 30; j++) for (let i = 4; i <= 8; i++) if (j > 14 || i === 6) A(i, j, 0x0c0a10);   // hjältens siluett
     A(5, 13, 0x0c0a10); A(7, 13, 0x0c0a10); A(5, 14, 0x0c0a10); A(6, 14, 0x0c0a10); A(7, 14, 0x0c0a10); A(5, 15, 0x3ae8ff); A(7, 15, 0x3ae8ff);
-    title('PIXEL', 2, 0xffd040, 0x3a0a08);
+    title($t('PIXEL'), 2, 0xffd040, 0x3a0a08);
     text(P, BIG, '3', 19, 27, 0x3a0a08); text(P, BIG, '3', 18, 26, 0xe8302a);
   } else if (id === 'karlek') {
     area(P, 0, 0, w, h, (X, Y) => qmix(0xf8b8c8, 0xf8d8a8, Y / h, X, Y, 3));
@@ -1093,7 +1094,7 @@ export function posterCanvas(id) {
     for (let j = 22; j < h; j++) for (let i = 0; i < w; i++) if (hash(i >> 2, 0, 203) * 6 + 24 < j) A(i, j, 0xd88a70);
     for (let j = 20; j <= 33; j++) { for (let i = 7; i <= 10; i++) A(i, j, j < 24 ? 0xf6d7bf : 0xf8a0b8); for (let i = 15; i <= 18; i++) A(i, j, j < 24 ? 0xc68a5c : 0x3a7bd5); }
     for (let i = 6; i <= 11; i++) A(i, 19, 0xb7392b); A(6, 20, 0xb7392b); A(6, 21, 0xb7392b); for (let i = 14; i <= 19; i++) A(i, 19, 0x3b2619);
-    title('KÄRLEK', 2, 0xfffaf4, 0xa01830);
+    title($t('KÄRLEK'), 2, 0xfffaf4, 0xa01830);
   } else if (id === 'turbo') {
     area(P, 0, 0, w, h, (X, Y) => qmix(0x14062a, 0x5a1a6a, Y / 24, X, Y, 4));
     for (let j = 24; j < h; j++) for (let i = 0; i < w; i++) A(i, j, (j - 24) % 3 === 0 || Math.abs((i - 13) / Math.max(1, j - 22)) % 1 < 0.15 ? 0xff3ad0 : 0x1a0428);
@@ -1101,18 +1102,18 @@ export function posterCanvas(id) {
     for (let i = 4; i <= 22; i++) sp(i, 24, 0xd8242e); for (let i = 3; i <= 23; i++) { sp(i, 25, 0xd8242e); sp(i, 26, 0xa8141c); }
     for (let i = 8; i <= 16; i++) sp(i, 23, 0xd8242e); sp(10, 23, 0x9ad8f8); sp(11, 23, 0x9ad8f8); sp(14, 23, 0x6aa8d8);
     sp(6, 27, 0x141418); sp(7, 27, 0x141418); sp(19, 27, 0x141418); sp(20, 27, 0x141418); sp(23, 25, 0xfff6b0);
-    title('TURBO', 2, 0xffe060, 0x2a0a3a); title('POLIS', 9, 0x3ae8ff, 0x2a0a3a);
+    title($t('TURBO'), 2, 0xffe060, 0x2a0a3a); title($t('POLIS'), 9, 0x3ae8ff, 0x2a0a3a);
   } else if (id === 'sommar') {
     area(P, 0, 0, w, h, (X, Y) => (Y < 22 ? qmix(0x6ab8f0, 0xd0ecff, Y / 22, X, Y, 3) : jit(Y < 26 ? 0x4a9ad8 : 0x5aa84a, X, Y, 204, 0.12)));
     area(P, 14, 12, 11, 11, (X, Y) => (Math.hypot(X - 19, Y - 17) < 5 ? 0xffd040 : null));
     sprP(P, 5, 18, ['.pp.', 'pPpp', '.vv.', 'vVvv', '.cc.', 'cCcc', 'wwww', '.ww.', '.ww.', '..w.', '..w.'], { p: 0xf08ab0, P: 0xffc8dc, v: 0xf4f1ea, V: 0xffffff, c: 0x7a4a2a, C: 0xa86a3a, w: 0xd8a45a });
-    title('SOMMAR', 2, 0xfffaf0, 0xc8501a); title('I STAN', 9, 0xffd040, 0x8a3a0a);
+    title($t('SOMMAR'), 2, 0xfffaf0, 0xc8501a); title($t('I STAN'), 9, 0xffd040, 0x8a3a0a);
   } else if (id === 'nattbuss') {
     area(P, 0, 0, w, h, (X, Y) => qmix(0x06080e, 0x1a2040, Y / h, X, Y, 4));
     for (let k = 0; k < 18; k++) A(Math.floor(hash(k, 1, 205) * w), Math.floor(hash(k, 2, 205) * h), 0x6a7ab0);
     area(P, 3, 22, 20, 10, (X, Y, i, j) => (j === 9 ? 0x141418 : j < 1 ? 0xe85a5a : (i % 4 === 1 && j > 1 && j < 5) ? 0xf8d890 : 0xc8262e));
     A(5, 32, 0x141418); A(6, 32, 0x141418); A(18, 32, 0x141418); A(19, 32, 0x141418);
-    title('SISTA', 2, 0xffb030, 0x2a1404); title('NATT-', 9, 0xffb030, 0x2a1404); title('BUSSEN', 15, 0xffb030, 0x2a1404);
+    title($t('SISTA'), 2, 0xffb030, 0x2a1404); title($t('NATT-'), 9, 0xffb030, 0x2a1404); title($t('BUSSEN'), 15, 0xffb030, 0x2a1404);
   } else if (id === 'kbk1' || id === 'kbk2') {
     kbkPoster(P, id);
   } else {
@@ -1122,7 +1123,7 @@ export function posterCanvas(id) {
     heartPix(P, 13, 11, 4);
     for (let j = 22; j <= 35; j++) { for (let i = 14; i <= 17; i++) A(i, j, j < 26 ? 0xf2cca6 : 0xe85a7a); for (let i = 7; i <= 10; i++) A(i, j, j < 26 ? 0xd8a47c : 0x3a6ab0); }
     for (let j = 21; j <= 28; j++) { A(17, j, 0xa8401a); A(18, j, 0x8a3014); } for (let i = 6; i <= 10; i++) A(i, 21, 0x4a2a1a);
-    title('AMORE', 2, 0xfffaf4, 0xa01830);
+    title($t('AMORE'), 2, 0xfffaf4, 0xa01830);
   }
   // glansen över trycket
   for (let d = 0; d < 10; d++) P.px(4 + d, 22 - d, WHITE, 0.14);

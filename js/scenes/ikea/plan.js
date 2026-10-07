@@ -10,17 +10,18 @@
 //  • Lagret: kartonger med de större möblerna.
 import { KAT, katOf, dims, varOf, tagDims, isWallKind, isFlat } from './kat.js';
 import { ROWY, MIN_IW, MAX_IW } from './geo.js';
+import { $t, $sv } from '../../core/i18n.js';
 
 // ---------- rumstyperna: tapet, golv, namn ----------
 export const TYPES = {
-  vardagsrum: { name: 'VARDAGSRUM', wall: 0x8ea896, trim: 0x6d8876, paper: 'rand', wains: 14, floor: 'ek', curtain: 0xd8c8a0 },
-  kok: { name: 'KÖK', wall: 0xeeebe3, trim: 0x8aa4b4, paper: 'kakel', wains: 0, floor: 'schack' },
-  kontor: { name: 'KONTOR', wall: 0x9aaec2, trim: 0x71859a, paper: 'slat', wains: 12, floor: 'filt' },
-  sovrum: { name: 'SOVRUM', wall: 0xc6a5b4, trim: 0x9a7c8b, paper: 'prick', wains: 14, floor: 'ljus', curtain: 0xe890b0 },
-  barnrum: { name: 'BARNRUM', wall: 0xf2da8e, trim: 0x86b8dc, paper: 'stjarna', wains: 12, floor: 'blamatta', curtain: 0x7fc0e8 },
-  badrum: { name: 'BADRUM', wall: 0xb5ddd8, trim: 0x86b6b2, paper: 'kakel', wains: 0, floor: 'mosaik' },
-  hall: { name: 'HALL', wall: 0xd6bd92, trim: 0x8d6f4a, paper: 'panel', wains: 24, floor: 'sten' },
-  ovrigt: { name: 'MARKNADSHALLEN', wall: 0xe2e0da, trim: 0x1f58a8, paper: 'butik', wains: 0, floor: 'vinyl' },
+  vardagsrum: { name: $t('VARDAGSRUM'), wall: 0x8ea896, trim: 0x6d8876, paper: 'rand', wains: 14, floor: 'ek', curtain: 0xd8c8a0 },
+  kok: { name: $t('KÖK'), wall: 0xeeebe3, trim: 0x8aa4b4, paper: 'kakel', wains: 0, floor: 'schack' },
+  kontor: { name: $t('KONTOR'), wall: 0x9aaec2, trim: 0x71859a, paper: 'slat', wains: 12, floor: 'filt' },
+  sovrum: { name: $t('SOVRUM'), wall: 0xc6a5b4, trim: 0x9a7c8b, paper: 'prick', wains: 14, floor: 'ljus', curtain: 0xe890b0 },
+  barnrum: { name: $t('BARNRUM'), wall: 0xf2da8e, trim: 0x86b8dc, paper: 'stjarna', wains: 12, floor: 'blamatta', curtain: 0x7fc0e8 },
+  badrum: { name: $t('BADRUM'), wall: 0xb5ddd8, trim: 0x86b6b2, paper: 'kakel', wains: 0, floor: 'mosaik' },
+  hall: { name: $t('HALL'), wall: 0xd6bd92, trim: 0x8d6f4a, paper: 'panel', wains: 24, floor: 'sten' },
+  ovrigt: { name: $t('MARKNADSHALLEN'), wall: 0xe2e0da, trim: 0x1f58a8, paper: 'butik', wains: 0, floor: 'vinyl' },
 };
 const EXTRA_STYLES = [
   { wall: 0xa9b8a0, trim: 0x7a8a70, paper: 'rand', wains: 14, floor: 'ljus' },
@@ -31,22 +32,22 @@ export const SHOW_ORDER = ['vardagsrum', 'kok', 'kontor', 'sovrum', 'barnrum', '
 
 // Marknadshallens avdelningar (plan 1)
 export const DEPTS = {
-  textil: { name: 'TEXTILIER', fixW: 150, wall: 0xe6dfe8, trim: 0x1f58a8, paper: 'butik', wains: 0, floor: 'vinyl',
-    props: [['bin', 'kuddar', '49:-', 8, 'mid'], ['bin', 'hajar', '149:-', 52, 'front'], ['table', 'textil', '99:-', 96, 'mid'], ['bin', 'handdukar', '39:-', 104, 'front']] },
-  kok: { name: 'MATLAGNING', fixW: 168, wall: 0xe8eee8, trim: 0x1f58a8, paper: 'butik', wains: 0, floor: 'vinyl',
-    props: [['table', 'kok', '29:-', 10, 'mid'], ['bin', 'ovrigt', '19:-', 66, 'front'], ['table', 'kok', '9:90', 112, 'mid'], ['bin', 'ljus', '9:90', 118, 'front']] },
-  ljus: { name: 'BELYSNING', fixW: 140, wall: 0xdcdcd4, trim: 0x1f58a8, paper: 'butik', wains: 0, floor: 'vinyl',
-    props: [['table', 'ljus', '79:-', 8, 'mid'], ['bin', 'ljus', '5:-', 62, 'front'], ['table', 'ljus', '149:-', 96, 'front'], ['bin', 'ljus', '19:-', 10, 'front']] },
-  vaxt: { name: 'KRUKOR OCH VÄXTER', fixW: 164, wall: 0xe2ecdc, trim: 0x2c7a3c, paper: 'butik', wains: 0, floor: 'vinyl',
-    props: [['stand', 0, '', 6, 'mid'], ['bin', 'blommor', '29:-', 58, 'front'], ['stand', 1, '', 104, 'mid'], ['bin', 'blommor', '19:-', 112, 'front']] },
-  dekor: { name: 'DEKORATION', fixW: 178, wall: 0xece4d8, trim: 0x1f58a8, paper: 'butik', wains: 0, floor: 'vinyl',
-    props: [['bin', 'ljus', '9:-', 8, 'front'], ['table', 'dekor', '39:-', 52, 'mid'], ['bin', 'kuddar', '49:-', 110, 'front'], ['table', 'dekor', '59:-', 122, 'mid']] },
+  textil: { name: $t('TEXTILIER'), fixW: 150, wall: 0xe6dfe8, trim: 0x1f58a8, paper: 'butik', wains: 0, floor: 'vinyl',
+    props: [['bin', 'kuddar', $t`${49}:-`, 8, 'mid'], ['bin', 'hajar', $t`${149}:-`, 52, 'front'], ['table', 'textil', $t`${99}:-`, 96, 'mid'], ['bin', 'handdukar', $t`${39}:-`, 104, 'front']] },
+  kok: { name: $t('MATLAGNING'), fixW: 168, wall: 0xe8eee8, trim: 0x1f58a8, paper: 'butik', wains: 0, floor: 'vinyl',
+    props: [['table', 'kok', $t`${29}:-`, 10, 'mid'], ['bin', 'ovrigt', $t`${19}:-`, 66, 'front'], ['table', 'kok', $t`${9}:${90}`, 112, 'mid'], ['bin', 'ljus', $t`${9}:${90}`, 118, 'front']] },
+  ljus: { name: $t('BELYSNING'), fixW: 140, wall: 0xdcdcd4, trim: 0x1f58a8, paper: 'butik', wains: 0, floor: 'vinyl',
+    props: [['table', 'ljus', $t`${79}:-`, 8, 'mid'], ['bin', 'ljus', $t`${5}:-`, 62, 'front'], ['table', 'ljus', $t`${149}:-`, 96, 'front'], ['bin', 'ljus', $t`${19}:-`, 10, 'front']] },
+  vaxt: { name: $t('KRUKOR OCH VÄXTER'), fixW: 164, wall: 0xe2ecdc, trim: 0x2c7a3c, paper: 'butik', wains: 0, floor: 'vinyl',
+    props: [['stand', 0, '', 6, 'mid'], ['bin', 'blommor', $t`${29}:-`, 58, 'front'], ['stand', 1, '', 104, 'mid'], ['bin', 'blommor', $t`${19}:-`, 112, 'front']] },
+  dekor: { name: $t('DEKORATION'), fixW: 178, wall: 0xece4d8, trim: 0x1f58a8, paper: 'butik', wains: 0, floor: 'vinyl',
+    props: [['bin', 'ljus', $t`${9}:-`, 8, 'front'], ['table', 'dekor', $t`${39}:-`, 52, 'mid'], ['bin', 'kuddar', $t`${49}:-`, 110, 'front'], ['table', 'dekor', $t`${59}:-`, 122, 'mid']] },
 };
 export const DEPT_ORDER = ['textil', 'kok', 'ljus', 'vaxt', 'dekor'];
 // vilken avdelning en sort hör till i marknadshallen
 export function deptOf(kind) {
   const kat = katOf(kind);
-  const s = `${kind} ${kat?.name || ''}`.toLowerCase();
+  const s = `${kind} ${$sv(kat?.name || '')}`.toLowerCase();   // (de svenska orden – namnet är översatt)
   if (kind === 'matta' || /matta|kudde|pläd|plad|gardin|handduk|textil|filt|överkast|lakan/.test(s)) return 'textil';
   if (/lamp|ljus|belys|stake|glob/.test(s)) return 'ljus';
   if (/växt|vaxt|kruka|blom|kaktus|palm|ficus/.test(s)) return 'vaxt';
@@ -75,7 +76,7 @@ function roomTypeOf(raw, fallback) {
 // Inredning som står med men inte säljs här (ingår i bostaden). TV:n i vardagsrummet och
 // gamingriggen i kontoret står kvar som utställning – elektroniken säljs på BLIXT i Downtown
 // (ELEKTRONIK i kat.js, varuhuset hänvisar dit när man klickar på dem).
-export const DECOR = { sang: 'Sängen', garderob: 'Garderoben', kylskap: 'Kylskåpet', tv: 'TV:n' };
+export const DECOR = { sang: $t('Sängen'), garderob: $t('Garderoben'), kylskap: $t('Kylskåpet'), tv: $t('TV:n') };
 
 // ---------- recepten: handplacerade rum ----------
 // it: [sort, variant, x, rad | fotlinje, { c: egen färg }]  (x från rummets innerkant)

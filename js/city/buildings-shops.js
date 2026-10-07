@@ -8,6 +8,7 @@ import { Pix, SMALL, BIG, text, textW, eachTextPixel, mix, mul, hash, bayer } fr
 import { CITY, ART_OVER } from './map.js';
 import { drawPerson } from '../core/people.js';
 import { FRAMES } from '../data/frames.js';
+import { $t } from '../core/i18n.js';
 
 const BASE = CITY.BASE, IMG_H = BASE + 4, O = ART_OVER, DOOR_H = 34;
 const OUT = 0x221a26; // mörk kontur
@@ -412,7 +413,7 @@ function paintHem(b, night) {
   });
   // gatuskylt (blå emalj)
   P.rect(L + 1, 147, 43, 9, 0x1f4f9a); P.box(L + 1, 147, 43, 9, 0xeef2f8); P.box(L, 146, 45, 11, 0x2a2a34);
-  text(P, SMALL, 'PIXELGATAN', L + 3, 149, 0xffffff);
+  text(P, SMALL, $t('PIXELGATAN'), L + 3, 149, 0xffffff);
   // portalen i sten med överljus och slutsten
   const dx0 = b.door.x0 - b.x + O, dx1 = b.door.x1 - b.x + O, dT = BASE - DOOR_H;
   P.rect(dx0 - 4, 143, dx1 - dx0 + 8, BASE - 143, 0xd6cab2);
@@ -644,7 +645,7 @@ function paintBostad(b, night) {
   P.hl(L, 124, b.w, 0xf6eee2); P.hl(L, 125, b.w, 0xc8bca8); P.hl(L, 126, b.w, 0x8a7e6c); P.darken(L, 127, b.w, 1, 0.7);
   for (let y = 128; y < 141; y++) for (let x = L; x < R; x++) P.px(x, y, mix(navy, 0x2c3e62, q((y - 128) / 12, x, y, 3)));
   P.hl(L, 128, b.w, gold); P.hl(L, 129, b.w, 0x8a6a2a); P.hl(L, 139, b.w, 0x8a6a2a); P.hl(L, 140, b.w, gold);
-  const label = 'BOSTADSBYRÅN', tw = textW(BIG, label), kx = L + ((b.w - tw - 12) >> 1), tx = kx + 12;
+  const label = $t('BOSTADSBYRÅN'), tw = textW(BIG, label), kx = L + ((b.w - tw - 12) >> 1), tx = kx + 12;
   signText(P, BIG, label, tx, 131, gold, 1, 0x0e1424, 0xfff0b0);
   // nyckel-loggan
   const ky = 131;
@@ -830,8 +831,8 @@ function paintMat(b, night) {
     if (e < 5.2) P.px(bx + 4 + xx, by + 7 + yy, e < 2.2 && xx < 5 && yy < 5 ? 0xff9a9a : xx > 6 && yy > 5 ? 0xa01a22 : 0xe0303a);
   }
   P.vl(bx + 9, by + 4, 3, 0x5a3a1a); P.rect(bx + 10, by + 4, 3, 2, 0x5ad05a);
-  signText(P, BIG, 'FÄRSKT', bx + 18, by + 4, 0xffffff, 1, dkGreen);
-  text(P, SMALL, 'VARJE DAG', bx + 18, by + 14, 0xf8e040);
+  signText(P, BIG, $t('FÄRSKT\nVARJE DAG').split('\n')[0], bx + 18, by + 4, 0xffffff, 1, dkGreen);
+  text(P, SMALL, $t('FÄRSKT\nVARJE DAG').split('\n')[1] ?? '', bx + 18, by + 14, 0xf8e040);
   for (const lx of [bx + 10, bx + bw - 12]) { P.rect(lx, by - 4, 3, 2, 0x2a2e36); P.vl(lx + 1, by - 2, 2, 0x2a2e36); P.hl(lx, by - 2, 3, night ? 0xfff0c0 : 0x5a5e68); }
   if (night) glows.push([wx(bx + 1), by + 1, bw - 2, bh - 2, 0x9aff9a, 0.22]);
   railing(P, L + 2, b.w - 4, yT - 3, 6, 0xb8bec8);
@@ -844,7 +845,7 @@ function paintMat(b, night) {
   }
   P.hl(L, yT, b.w, 0xffffff); P.hl(L, yT + 1, b.w, green); P.hl(L, yT + 2, b.w, green); P.hl(L, yT + 3, b.w, dkGreen); P.darken(L, yT + 4, b.w, 1, 0.85);
   P.hl(L, 116, b.w, 0x5ad07a); P.rect(L, 117, b.w, 4, green); P.hl(L, 121, b.w, dkGreen);
-  const label = 'STORMARKNAD', tw = textW(BIG, label, 2), logoW = 20, sx0 = L + ((b.w - tw - logoW - 6) >> 1);
+  const label = $t('STORMARKNAD'), tw = textW(BIG, label, 2), logoW = 20, sx0 = L + ((b.w - tw - logoW - 6) >> 1);
   const cx = sx0 + 9, cy = 102;
   for (let yy = -10; yy <= 10; yy++) for (let xx = -10; xx <= 10; xx++) {
     const e = Math.hypot(xx, yy);
@@ -862,7 +863,7 @@ function paintMat(b, night) {
   // skärmtak med öppettider
   P.rect(L - 3, 122, b.w + 6, 2, 0xe8ecf0); P.hl(L - 3, 122, b.w + 6, 0xffffff);
   P.rect(L - 3, 124, b.w + 6, 7, green); P.hl(L - 3, 124, b.w + 6, 0x5ad07a); P.hl(L - 3, 130, b.w + 6, dkGreen);
-  const oh = 'ÖPPET ALLA DAGAR 7-23', ow = textW(SMALL, oh);
+  const oh = $t('ÖPPET ALLA DAGAR 7-23'), ow = textW(SMALL, oh);
   text(P, SMALL, oh, L + ((b.w - ow) >> 1), 125, 0xffffff);
   P.darken(L, 131, b.w, 2, 0.72);
   // ---- glasfronten med butiken innanför ----
@@ -887,7 +888,7 @@ function paintMat(b, night) {
       for (let k = 1; k < 3; k++) P.vl(fx + k * 9, gy + 7, 28, 0x8a94a4);
       P.hl(fx + 1, gy + 8, 24, 0xffffff);
     }
-    const cats = side === 0 ? [['FRUKT', 0xd8323a, 12], ['GRÖNT', 0x3a9a4a, 61]] : [['BRÖD', 0xc8883a, 12], ['MJÖLK', 0x3a7bd5, 60]];
+    const cats = side === 0 ? [[$t('FRUKT'), 0xd8323a, 12], [$t('GRÖNT'), 0x3a9a4a, 61]] : [[$t('BRÖD'), 0xc8883a, 12], [$t('MJÖLK'), 0x3a7bd5, 60]];
     cats.forEach(([s, c, mid]) => {
       const tw2 = textW(SMALL, s), sxp = x0 + mid - ((tw2 + 2) >> 1);
       P.vl(sxp + 2, gy + 3, 2, 0x5a5e68); P.vl(sxp + tw2 - 1, gy + 3, 2, 0x5a5e68);
@@ -913,9 +914,9 @@ function paintMat(b, night) {
     P.clip();
     glows.push([wx(x0), gy, ww, gb - gy, 0xe8f6ff, 0.34]);
   }
-  poster(P, L + 6, 150, 21, 11, 0xd8202a, 0xf8e040, 'REA', BIG);
+  poster(P, L + 6, 150, 21, 11, 0xd8202a, 0xf8e040, $t('REA'), BIG);
   starPrice(P, L + 42, 155, '-50%');
-  poster(P, dx1 + 6, 152, 30, 9, green, 0xffffff, 'FÄRSKT');
+  poster(P, dx1 + 6, 152, 30, 9, green, 0xffffff, $t('FÄRSKT'));
   starPrice(P, R - 42, 158, '19:90');
   // aluminiumprofiler
   const mull = (x) => { P.vl(x, gy - 1, gb - gy + 2, 0x7a808c); P.vl(x + 1, gy - 1, gb - gy + 2, 0xd8dce4); };
@@ -924,7 +925,7 @@ function paintMat(b, night) {
   // dörrparti: överljus, sensor och karm
   P.rect(dx0 - 2, gy - 1, dx1 - dx0 + 4, dT - gy + 1, 0xc8ccd4);
   for (let y = gy; y < dT - 5; y++) for (let x = dx0; x < dx1; x++) P.px(x, y, mix(0xe8eef4, 0xb8c8d8, (y - gy) / 14));
-  const inn = 'INGÅNG', iw = textW(SMALL, inn);
+  const inn = $t('INGÅNG'), iw = textW(SMALL, inn);
   text(P, SMALL, inn, ((dx0 + dx1) >> 1) - (iw >> 1), gy + 3, dkGreen);
   P.rect(dx0 - 2, dT - 5, dx1 - dx0 + 4, 5, 0x5a606c); P.hl(dx0 - 2, dT - 5, dx1 - dx0 + 4, 0xb8bec8);
   const sxc = (dx0 + dx1) >> 1;
@@ -1017,8 +1018,8 @@ function paintKlader(b, night) {
   // ---- svart skyltband med neonskylt ----
   for (let y = 111; y < 131; y++) for (let x = L; x < R; x++) P.px(x, y, mix(black, 0x2a2630, q((y - 111) / 19, x, y, 3)));
   P.hl(L, 111, b.w, gold); P.hl(L, 130, b.w, gold);
-  const tw = textW(BIG, 'KLÄDER', 2), tx = L + ((b.w - tw) >> 1);
-  neonText(P, BIG, 'KLÄDER', tx, 116, neon, 2);
+  const tw = textW(BIG, $t('KLÄDER'), 2), tx = L + ((b.w - tw) >> 1);
+  neonText(P, BIG, $t('KLÄDER'), tx, 116, neon, 2);
   const hanger = (hx) => {
     const c = 0x5ae0f0;
     P.px(hx + 4, 117, c); P.px(hx + 5, 118, c); P.px(hx + 4, 119, c); P.px(hx + 4, 120, c);
@@ -1076,7 +1077,7 @@ function paintKlader(b, night) {
     ctx.fillStyle = '#e8eaee'; ctx.fillRect(sx + 9, sy + 8, 2, 1); // blank högdager
   }
   ctx.drawImage(G.flush(), 0, 0);
-  META[b.id + ':' + !!night] = { glows, doorLight: 0xffe0e8, neon: textGlow(BIG, 'KLÄDER', 2, neon, wx(tx), 116) };
+  META[b.id + ':' + !!night] = { glows, doorLight: 0xffe0e8, neon: textGlow(BIG, $t('KLÄDER'), 2, neon, wx(tx), 116) };
   return cv;
 }
 function kladerKit(b) {
@@ -1122,8 +1123,8 @@ function julSkylt() {
   for (let j = 0; j < 9; j++) { const w = (j >> 1) + 1; for (let i = -w; i <= w; i++) P.px(6 + i, 6 + j, (i + j) % 3 === 0 ? 0x46a35a : 0x2f8f46); }
   P.px(6, 4, 0xffd23f); P.px(5, 5, 0xffd23f); P.px(7, 5, 0xffd23f); P.px(6, 5, 0xfff0b0);
   P.px(4, 10, 0xd9433b); P.px(8, 12, 0xffd23f); P.px(5, 13, 0x3a7bd5); P.rect(5, 15, 3, 2, 0x6a4228);
-  text(P, SMALL, 'JULEN', 12, 4, 0xffe070);
-  text(P, SMALL, 'PLAN 3', 12, 11, 0xffffff);
+  text(P, SMALL, $t('JULEN'), 12, 4, 0xffe070);
+  text(P, SMALL, $t('PLAN 3'), 12, 11, 0xffffff);
   P.hl(1, 20, W - 2, 0x000000, 0.25);
   return (JULSKYLT = P.flush());
 }
@@ -1136,10 +1137,10 @@ const SHOW_W = 78, SHOW_H = 66, SHOW_Y = 110;
 const ROOMS = [
   { wall: 0xeee4d2, stripe: 0xe2d6c0, floor: 0xc8965a, rug: 0x4a7ab8,
     items: [['bokhylla1', 3, 44], ['soffa4', 34, 50], ['lampa0', 64, 50], ['fatolj3', 2, 64], ['bordR0', 36, 62]],
-    tags: [['1495', 38, 24], ['349', 20, 48], ['199', 62, 54]], banner: 'STOR REA' },
+    tags: [['1495', 38, 24], ['349', 20, 48], ['199', 62, 54]], banner: $t('STOR REA') },
   { wall: 0xdde8ee, stripe: 0xcedde6, floor: 0xd8b888, rug: 0xe09aa6,
     items: [['garderob2', 41, 42], ['lampa1', 26, 40], ['sang1', 3, 62], ['vaxtS0', 56, 64]],
-    tags: [['2995', 8, 22], ['995', 44, 50]], banner: 'NYHET' },
+    tags: [['2995', 8, 22], ['995', 44, 50]], banner: $t('NYHET') },
 ];
 function paintShowroom(R, def, night) {
   const fy = 42; // golvlinjen
@@ -1200,7 +1201,7 @@ function paintMobler(b, night) {
   // gult skyltband längs fasaden
   P.hl(L, 100, b.w, 0xfff0a0); P.rect(L, 101, b.w, 4, yellow); P.hl(L, 105, b.w, 0xb8920a); P.darken(L, 106, b.w, 1, 0.75);
   // loggan: gul oval med blå text i en blå ram
-  const label = 'MÖBELJÄTTEN', tw = textW(BIG, label, 2), lw = tw + 24, lh = 26, lx = L + ((b.w - lw) >> 1), ly = 73;
+  const label = $t('MÖBELJÄTTEN'), tw = textW(BIG, label, 2), lw = tw + 24, lh = 26, lx = L + ((b.w - lw) >> 1), ly = 73;
   P.rect(lx - 3, ly - 3, lw + 6, lh + 6, dkBlue); P.box(lx - 3, ly - 3, lw + 6, lh + 6, 0x0a2450);
   for (let y = 0; y < lh; y++) for (let x = 0; x < lw; x++) {
     const ex = (x + 0.5 - lw / 2) / (lw / 2), ey = (y + 0.5 - lh / 2) / (lh / 2);
@@ -1228,7 +1229,7 @@ function paintMobler(b, night) {
   for (let y = 134; y < BASE; y++) for (let x = dx0 - 8; x < dx1 + 8; x++) if (hash(x, y, 102) > 0.9) P.px(x, y, 0xf0c010);
   P.hl(dx0 - 8, 134, dx1 - dx0 + 16, 0xfff0a0); P.vl(dx0 - 8, 134, BASE - 134, 0xffe880); P.vl(dx1 + 7, 134, BASE - 134, 0xb8920a);
   P.box(dx0 - 9, 133, dx1 - dx0 + 18, BASE - 133, 0x0a2450);
-  const inn = 'INGÅNG', iw = textW(BIG, inn);
+  const inn = $t('INGÅNG'), iw = textW(BIG, inn);
   signText(P, BIG, inn, ((dx0 + dx1) >> 1) - (iw >> 1), 139, blue, 1, 0xb8920a);
   // pil ner mot dörren
   for (let k = 0; k < 3; k++) P.hl(dx1 + 1 - k, 142 + k, 1 + k * 2, blue);
@@ -1270,7 +1271,7 @@ function moblerKit(b) {
   const w = b.door.x1 - b.door.x0;
   const kit = makeSlideKit(w, DOOR_H, (I) => {
     paintInterior(I, w, DOOR_H, { wall0: 0xf4f6f8, wall1: 0xd8dee6, floor: 0xc8ccd0 });
-    I.rect(0, 4, w, 5, 0x1f5fb0); text(I, SMALL, 'KASSA', 3, 4, 0xf8cc1a);
+    I.rect(0, 4, w, 5, 0x1f5fb0); text(I, SMALL, $t('KASSA'), 3, 4, 0xf8cc1a);
     for (let k = 0; k < 3; k++) { const x = 6 + k * 12, y = DOOR_H - 7; I.hl(x, y, 3, 0xf8cc1a); I.hl(x + 1, y - 1, 3, 0xf8cc1a); I.hl(x + 1, y + 1, 3, 0xf8cc1a); I.px(x + 4, y, 0xf8cc1a); }
     for (let k = 0; k < 3; k++) { I.rect(w - 12, 14 + k * 3, 9, 3, 0x1f5fb0); I.hl(w - 12, 14 + k * 3, 9, 0x3a7ad0); I.px(w - 10, 13 + k * 3, 0x0a2450); I.px(w - 5, 13 + k * 3, 0x0a2450); }
   }, (P, pw, h, side) => {

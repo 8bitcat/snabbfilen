@@ -32,6 +32,7 @@ import { createWalker, selfDrawable, folkDrawables, WALK_SEQ, createSpeech } fro
 import { worldFolksHere } from '../net/world.js';
 import * as ROOM from './room.js';
 import * as WX from '../city/weather.js';
+import { $t, $sv } from '../core/i18n.js';
 
 // ================= geometri (spelpixlar, världskoordinater) =================
 const W = 640, H = 232;
@@ -51,7 +52,7 @@ const TICKER = { x0: 287, x1: 335, y: 38, h: 7 };   // börstickern på tornet m
 // (Lapparna visar vad Platt-TV:n kan – det finns en modell, de är bara olika stora på väggen.)
 const TVS = [
   { x: 16, y: 38, w: 34, h: 19, tag: '4K' },
-  { x: 60, y: 18, w: 70, h: 39, tag: 'SMART-TV' },
+  { x: 60, y: 18, w: 70, h: 39, tag: $t('SMART-TV') },
   { x: 138, y: 32, w: 44, h: 25, tag: 'HDR' },
   { x: 20, y: 18, w: 26, h: 14 },
   { x: 142, y: 17, w: 36, h: 10 },   // ultrabred biograf-TV
@@ -158,7 +159,7 @@ const put = (ctx, s) => ctx.drawImage(s.img, s.x, s.y);
 const txt = (P, F, s, x, y, c, a = 1) => eachTextPixel(F, s, x, y, 1, (px, py) => P.px(px, py, c, a));
 const txtC = (P, F, s, cx, y, c, a = 1) => txt(P, F, s, Math.round(cx - textW(F, s) / 2), y, c, a);
 // prisets text: 1900 → "1900:-"
-const priceTxt = (n) => (n == null ? 'SNART' : `${Math.round(n)}:-`);
+const priceTxt = (n) => (n == null ? $t('SNART') : $t`${Math.round(n)}:-`);
 // en liten blixt (loggan): 4×7
 const BOLT = ['..##', '.##.', '###.', '.###', '.##.', '##..', '#...'];
 function bolt(P, x, y, c, dark = null) {
@@ -170,21 +171,21 @@ function bolt(P, x, y, c, dark = null) {
 // type: 'furn' = möbel ur GAME.KATALOG (hamnar i förrådet), 'gadget' = pryl (GAME.GADGETS),
 // 'clothes' = hörlurarna i garderoben. models = vilka varianter (atlasens index) som säljs här.
 const PRODUCTS = [
-  { id: 'tv', type: 'furn', k: 'tv', models: [1], name: 'Platt-TV', icon: '📺', desc: 'Skarp bild i vardagsrummet. Hemma zappar du en stund vid TV:n.' },
-  { id: 'rigg', type: 'furn', k: 'tv', models: [0, 2, 3, 4], name: 'Gamingrigg', icon: '🕹️', desc: 'Tre skärmar, tangentbord med regnbågsljus och en mus som glöder.' },
-  { id: 'dator', type: 'furn', k: 'dator', models: [0, 1, 2, 3], name: 'Dator', icon: '🖥️', desc: 'Skärm, tangentbord och mus. Hemma surfar du en stund – var tog timmen vägen?' },
-  { id: 'datortorn', type: 'furn', k: 'datortorn', models: [0, 1, 2, 3], name: 'Datortorn', icon: '💾', desc: 'Lådan som surrar under skrivbordet – med blinkande lampor.' },
-  { id: 'laptop', type: 'furn', k: 'laptop', models: [0, 1], name: 'Bärbar dator', icon: '💻', desc: 'Lite skärmtid i soffan, var du vill.' },
-  { id: 'spelkonsol', type: 'furn', k: 'spelkonsol', models: [0, 1, 2], name: 'Spelkonsol', icon: '🎮', desc: 'En runda till … bara en till.' },
-  { id: 'retrotv', type: 'furn', k: 'retrotv', models: [0], name: 'Retro-TV', icon: '📺', desc: 'Tjock-TV i träskåp. Myrornas krig ingår.' },
-  { id: 'telefon', type: 'furn', k: 'telefon', models: [0, 1, 2], name: 'Fast telefon', icon: '☎️', desc: 'Med nummerskiva – precis som hos mormor. Står fint på en byrå.' },
+  { id: 'tv', type: 'furn', k: 'tv', models: [1], name: $t('Platt-TV'), icon: '📺', desc: $t('Skarp bild i vardagsrummet. Hemma zappar du en stund vid TV:n.') },
+  { id: 'rigg', type: 'furn', k: 'tv', models: [0, 2, 3, 4], name: $t('Gamingrigg'), icon: '🕹️', desc: $t('Tre skärmar, tangentbord med regnbågsljus och en mus som glöder.') },
+  { id: 'dator', type: 'furn', k: 'dator', models: [0, 1, 2, 3], name: $t('Dator'), icon: '🖥️', desc: $t('Skärm, tangentbord och mus. Hemma surfar du en stund – var tog timmen vägen?') },
+  { id: 'datortorn', type: 'furn', k: 'datortorn', models: [0, 1, 2, 3], name: $t('Datortorn'), icon: '💾', desc: $t('Lådan som surrar under skrivbordet – med blinkande lampor.') },
+  { id: 'laptop', type: 'furn', k: 'laptop', models: [0, 1], name: $t('Bärbar dator'), icon: '💻', desc: $t('Lite skärmtid i soffan, var du vill.') },
+  { id: 'spelkonsol', type: 'furn', k: 'spelkonsol', models: [0, 1, 2], name: $t('Spelkonsol'), icon: '🎮', desc: $t('En runda till … bara en till.') },
+  { id: 'retrotv', type: 'furn', k: 'retrotv', models: [0], name: $t('Retro-TV'), icon: '📺', desc: $t('Tjock-TV i träskåp. Myrornas krig ingår.') },
+  { id: 'telefon', type: 'furn', k: 'telefon', models: [0, 1, 2], name: $t('Fast telefon'), icon: '☎️', desc: $t('Med nummerskiva – precis som hos mormor. Står fint på en byrå.') },
   // (bonus här är bara reserv – det riktiga värdet står i GAME.GADGETS)
-  { id: 'fonmini', type: 'gadget', icon: '📱', name: 'Blixtfon Mini', price: 900, bonus: 3, desc: 'Liten, tålig och billig. Väckarklockan piper lite snällt.' },
-  { id: 'fon12', type: 'gadget', icon: '📱', name: 'Blixtfon 12', price: 1900, bonus: 5, desc: 'Stor skärm och ett batteri som räcker hela dagen. Väckarklockan väcker dig mjukt med fågelsång.' },
-  { id: 'paronfon', type: 'gadget', icon: '📱', name: 'Päronfon 16 Pro', price: 4500, bonus: 8, desc: 'Tre kameror och en päronlogga på baksidan. Sömnkoll väcker dig när du sover som lättast. Årets pryl!' },
-  { id: 'platta', type: 'gadget', icon: '📲', name: 'Blixtplatta', price: 1500, bonus: 4, desc: 'Serier, spel och recept – på stor skärm.' },
-  { id: 'paronplatta', type: 'gadget', icon: '📲', name: 'Päronplatta Pro', price: 3900, bonus: 7, desc: 'Tunn som en pepparkaka, skärmen blir varm och gul på kvällen. Pennan ingår.' },
-  { id: 'horlurar', type: 'clothes', kind: 'phones', v: true, icon: '🎧', name: 'Hörlurar', desc: 'Stora, sköna hörlurar – de syns på din figur.' },
+  { id: 'fonmini', type: 'gadget', icon: '📱', name: $t('Blixtfon Mini'), price: 900, bonus: 3, desc: $t('Liten, tålig och billig. Väckarklockan piper lite snällt.') },
+  { id: 'fon12', type: 'gadget', icon: '📱', name: $t('Blixtfon 12'), price: 1900, bonus: 5, desc: $t('Stor skärm och ett batteri som räcker hela dagen. Väckarklockan väcker dig mjukt med fågelsång.') },
+  { id: 'paronfon', type: 'gadget', icon: '📱', name: $t('Päronfon 16 Pro'), price: 4500, bonus: 8, desc: $t('Tre kameror och en päronlogga på baksidan. Sömnkoll väcker dig när du sover som lättast. Årets pryl!') },
+  { id: 'platta', type: 'gadget', icon: '📲', name: $t('Blixtplatta'), price: 1500, bonus: 4, desc: $t('Serier, spel och recept – på stor skärm.') },
+  { id: 'paronplatta', type: 'gadget', icon: '📲', name: $t('Päronplatta Pro'), price: 3900, bonus: 7, desc: $t('Tunn som en pepparkaka, skärmen blir varm och gul på kvällen. Pennan ingår.') },
+  { id: 'horlurar', type: 'clothes', kind: 'phones', v: true, icon: '🎧', name: $t('Hörlurar'), desc: $t('Stora, sköna hörlurar – de syns på din figur.') },
 ];
 const prodOf = (id) => PRODUCTS.find((p) => p.id === id) || null;
 const katOf = (k) => (typeof GAME.katalogOf === 'function' ? GAME.katalogOf(k) : null);
@@ -205,11 +206,11 @@ function bestOwned(g, kind) {
   return best;
 }
 const USE = {
-  mobil: (id) => `⏰ Väckarklockan: du vaknar piggare i din säng – <b>+${bonusOf(id)} energi</b> varje morgon.`,
-  platta: (id) => `🌙 Kvällsserie i sängen: lägger du dig efter kl. 20 somnar du gott – <b>+${bonusOf(id)} energi</b> på morgonen.`,
+  mobil: (id) => $t`⏰ Väckarklockan: du vaknar piggare i din säng – <b>+${bonusOf(id)} energi</b> varje morgon.`,
+  platta: (id) => $t`🌙 Kvällsserie i sängen: lägger du dig efter kl. 20 somnar du gott – <b>+${bonusOf(id)} energi</b> på morgonen.`,
 };
-// säljarens tips om prylarna: alla modellers nytta på en rad
-const useTip = (kind) => `${kind === 'mobil' ? '⏰ Mobilens väckarklocka ger energi på morgonen' : '🌙 Surfplattan ger energi om du lägger dig efter kl. 20'}: ${gadgetList(kind).map((p) => `${nameOf(p)} +${bonusOf(p.id)}`).join(', ')}. Har du flera räknas den bästa.`;
+// säljarens tips om prylarna: alla modellers nytta på en rad (en hel mening per sort)
+const useTip = (kind) => { const list = gadgetList(kind).map((p) => `${nameOf(p)} +${bonusOf(p.id)}`).join(', '); return kind === 'mobil' ? $t`⏰ Mobilens väckarklocka ger energi på morgonen: ${list}. Har du flera räknas den bästa.` : $t`🌙 Surfplattan ger energi om du lägger dig efter kl. 20: ${list}. Har du flera räknas den bästa.`; };
 const sortimentHP = () => (Array.isArray(GAME.SORTIMENT) ? GAME.SORTIMENT.find((s) => s.kind === 'phones') : null);
 function priceOf(g, p) {
   if (!p) return null;
@@ -222,16 +223,16 @@ const nameOf = (p) => (p.type === 'gadget' ? gadgetOf(p.id)?.name || p.name : p.
 // kan varan köpas här just nu? (null = ja, annars varför inte)
 function blockedOf(g, p) {
   if (p.type === 'furn') {
-    if (!katOf(p.k)) return 'Slut i lager.';
-    return Array.isArray(g.storage) && g.storage.length >= (GAME.MAX_STORAGE ?? 80) ? 'Förrådet är fullt – möblera hemma först!' : null;
+    if (!katOf(p.k)) return $t('Slut i lager.');
+    return Array.isArray(g.storage) && g.storage.length >= (GAME.MAX_STORAGE ?? 80) ? $t('Förrådet är fullt – möblera hemma först!') : null;
   }
   if (p.type === 'gadget') {
-    if (!gadgetOf(p.id) || typeof g.buyGadget !== 'function') return 'Kommer snart – leveransen är försenad!';
-    if (Array.isArray(g.gadgets) && g.gadgets.includes(p.id)) return 'Den har du redan!';
+    if (!gadgetOf(p.id) || typeof g.buyGadget !== 'function') return $t('Kommer snart – leveransen är försenad!');
+    if (Array.isArray(g.gadgets) && g.gadgets.includes(p.id)) return $t('Den har du redan!');
     return null;
   }
-  if (!sortimentHP() || typeof g.buyClothes !== 'function') return 'Slut i lager.';
-  return g.clothesLocked?.('phones', true) ? null : 'Du har redan hörlurar – ta på dem i garderoben hemma!';
+  if (!sortimentHP() || typeof g.buyClothes !== 'function') return $t('Slut i lager.');
+  return g.clothesLocked?.('phones', true) ? null : $t('Du har redan hörlurar – ta på dem i garderoben hemma!');
 }
 
 // ================= TV-bilderna (samma bild på alla skärmar) =================
@@ -335,7 +336,7 @@ function renderScreen(S, prog, t, pixel = progPixel) {
   }
   // reklamen: "BLIXT" längst ner när skärmen är stor nog
   if (prog === 'reklam' && w >= 30 && h >= 18) {
-    const s = 'BLIXT', tw = textW(SMALL, s), x0 = Math.round((w - tw) / 2), y0 = h - 7;
+    const s = $t('BLIXT'), tw = textW(SMALL, s), x0 = Math.round((w - tw) / 2), y0 = h - 7;
     eachTextPixel(SMALL, s, x0, y0, 1, (px, py) => { if (px >= 0 && py >= 0 && px < w && py < h) { const k = (py * w + px) * 4; d[k] = 255; d[k + 1] = 255; d[k + 2] = 255; } });
   }
   S.ctx.putImageData(img, 0, 0);
@@ -467,7 +468,7 @@ function paintDevice(P, L, x, y, back, big = false) {
       const px = x + (w >> 1), py = y + (h >> 1);
       for (const [dx, dy] of [[-1, -1], [0, -1], [-2, 0], [-1, 0], [0, 0], [1, 0], [-2, 1], [-1, 1], [0, 1], [1, 1], [-1, 2], [0, 2]]) P.px(px + dx, py + dy, mul(L.back, 0.72));
       P.px(px, py - 3, 0x5a8a3a); P.px(px + 1, py - 3, 0x5a8a3a);
-    } else txtC(P, SMALL, 'BLIXT', x + (w >> 1), y + (h >> 1), mul(L.back, 0.7));
+    } else txtC(P, SMALL, $t('BLIXT'), x + (w >> 1), y + (h >> 1), mul(L.back, 0.7));
   } else {
     P.px(cx, cy, 0x1a1c24); if (L.cam >= 2) P.px(cx, cy + 2, 0x1a1c24); if (L.cam >= 3) P.px(cx + 2, cy, 0x1a1c24);
     if (L.pear) P.px(x + (w >> 1), y + (h >> 1), mul(L.back, 0.7));
@@ -578,8 +579,8 @@ function paintKassaWall(P) {
   P.rect(lx + 1, ly + lh - 3, lw - 2, 1, CYAN);
   bolt(P, lx + 6, ly + 5, YEL, 0x000000);
   bolt(P, lx + 10, ly + 8, YEL);
-  eachTextPixel(BIG, 'BLIXT', lx + 20, ly + 4, 1, (px, py) => { P.px(px, py, 0xffffff); P.px(px + 1, py + 1, 0x0a1230, 0.8); });
-  txt(P, SMALL, 'ELEKTRONIK', lx + 20, ly + 14, CYAN);
+  eachTextPixel(BIG, $t('BLIXT'), lx + 20, ly + 4, 1, (px, py) => { P.px(px, py, 0xffffff); P.px(px + 1, py + 1, 0x0a1230, 0.8); });
+  txt(P, SMALL, $t('ELEKTRONIK'), lx + 20, ly + 14, CYAN);
   // hyllorna bakom disken med varulådor
   for (const sy of [52, 66]) {
     P.rect(x0 + 8, sy, x1 - x0 - 16, 2, OAK[3]); P.hl(x0 + 8, sy + 2, x1 - x0 - 16, OAK[0]);
@@ -609,7 +610,7 @@ function paintPegboard(P) {
   }
   P.vl(x0, CEIL, WALL_Y - CEIL, 0xb89e74);
   // skylten HÖRLURAR
-  const s = 'HÖRLURAR', tw = textW(SMALL, s) + 10, sx = Math.round((x0 + x1) / 2 - tw / 2);
+  const s = $t('HÖRLURAR'), tw = textW(SMALL, s) + 10, sx = Math.round((x0 + x1) / 2 - tw / 2);
   sbox(P, sx, 15, tw, 10, 0xffffff); txt(P, SMALL, s, sx + 5, 18, NAVY); P.hl(sx + 1, 23, tw - 2, CYAN);
   // tre rader hörlurar på krokar
   let i = 0;
@@ -685,7 +686,7 @@ function paintGlass(night) {
     for (let y = CEIL; y < top; y++) for (let x = x0; x < x1; x++) P.px(x, y, mix(0xc8d0da, 0x9aa4b0, (y - CEIL) / (top - CEIL)));
     P.hl(x0, top - 1, x1 - x0, 0x6a7482);
     const ux = DOOR_X - 8;
-    P.rect(ux, CEIL + 1, 17, 7, 0x1d6a3a); P.hl(ux, CEIL + 1, 17, 0x3aa85a); txt(P, SMALL, 'UT', ux + 5, CEIL + 2, 0xeaffea);
+    P.rect(ux, CEIL + 1, 17, 7, 0x1d6a3a); P.hl(ux, CEIL + 1, 17, 0x3aa85a); txt(P, SMALL, $t('UT'), ux + 5, CEIL + 2, 0xeaffea);
     // rutorna: blå ton och reflexer (inte där dörrarna glider – de ritas i live())
     for (let y = top; y < WALL_Y - 2; y++) for (let x = x0; x < x1; x++) {
       if (x >= DOOR.x0 && x < DOOR.x1) continue;
@@ -694,9 +695,9 @@ function paintGlass(night) {
     glare(P, x0, top, DOOR.x0 - x0, WALL_Y - 2 - top, night ? 0.08 : 0.2, 19, 1);
     glare(P, DOOR.x1, top, x1 - DOOR.x1, WALL_Y - 2 - top, night ? 0.08 : 0.2, 19, 3);
     // BLIXT baklänges på rutan till höger om dörren (man läser den inifrån)
-    const s = 'BLIXT', tw = textW(BIG, s), bx = 356, by = 44;
+    const s = $t('BLIXT'), tw = textW(BIG, s), bx = 356, by = 44;
     eachTextPixel(BIG, s, 0, 0, 1, (px, py) => P.px(bx + tw - 1 - px, by + py, 0xffffff, 0.85));
-    const s2 = 'ÖPPET 9-21', tw2 = textW(SMALL, s2), sx2 = 234;
+    const s2 = $t('ÖPPET 9-21'), tw2 = textW(SMALL, s2), sx2 = 234;
     eachTextPixel(SMALL, s2, 0, 0, 1, (px, py) => P.px(sx2 + tw2 - 1 - px, 50 + py, 0xffffff, 0.75));
     // karmarna
     for (const mx of [x0, 250, DOOR.x0 - 2, DOOR.x1, 374, x1 - 2]) { P.rect(mx, top, 2, WALL_Y - top, 0xaab2bc); P.vl(mx, top, WALL_Y - top, 0xd8dee6); }
@@ -725,9 +726,9 @@ function paintBench() {
     for (let y = top + 3; y < base; y++) for (let x = x0; x < x1; x++) P.px(x, y, x === x0 ? WHITE[3] : x === x1 - 1 ? WHITE[0] : mix(WHITE[2], WHITE[1], (y - top - 3) / 9));
     P.hl(x0, base - 1, x1 - x0, WHITE[0]);
     for (let x = x0 + 30; x < x1; x += 46) P.vl(x, top + 4, 7, WHITE[1]); // lådfronter
-    txt(P, SMALL, 'TV OCH BILD', x0 + 4, top + 5, NAVY);
+    txt(P, SMALL, $t('TV OCH BILD'), x0 + 4, top + 5, NAVY);
     // prisskylt: tältkort på bänken
-    const pt = 'PLATT-TV ' + priceTxt(katOf('tv')?.price), pw = textW(SMALL, pt) + 6, px = x0 + 111;
+    const pt = $t`PLATT-TV ${priceTxt(katOf('tv')?.price)}`, pw = textW(SMALL, pt) + 6, px = x0 + 111;
     sbox(P, px, top - 7, pw, 8, 0xffffff); P.hl(px + 1, top - 6, pw - 2, CYAN); txt(P, SMALL, pt, px + 3, top - 5, NAVY);
     // soundbar, en subwoofer och fjärrkontroller
     P.rect(x0 + 58, top - 3, 50, 3, 0x1a1c22); P.hl(x0 + 58, top - 3, 50, 0x3a3e48); for (let x = x0 + 60; x < x0 + 106; x += 2) P.px(x, top - 2, 0x2a2c34);
@@ -743,7 +744,7 @@ function paintCounter() {
     for (let y = top + 6; y < base; y++) for (let x = x0; x < x1; x++) P.px(x, y, x === x0 ? NAVY2 : x === x1 - 1 ? mul(NAVY, 0.7) : mix(NAVY, mul(NAVY, 0.8), (y - top - 6) / (base - top - 6)));
     P.hl(x0, top + 6, x1 - x0, CYAN); P.hl(x0, base - 1, x1 - x0, 0x0e1430);
     bolt(P, x0 + 8, top + 9, YEL);
-    txt(P, BIG, 'KASSA', x0 + 16, top + 9, YEL);
+    txt(P, BIG, $t('KASSA'), x0 + 16, top + 9, YEL);
     // kortterminalen och kunddisplayen (summan skrivs i live())
     sbox(P, 494, top - 5, 7, 6, 0x2a2c34); P.rect(495, top - 4, 5, 2, 0x5ad8ff);
     sbox(P, 446, top - 9, 18, 9, 0x2a2c34); P.rect(447, top - 8, 16, 6, 0x0a2a1a); P.vl(454, top - 1, 1, 0x2a2c34);
@@ -757,7 +758,7 @@ function paintHpTable() {
     for (let x = x0; x < x1; x++) { P.px(x, top, 0xffffff); P.px(x, top + 1, WHITE[3]); P.px(x, top + 2, WHITE[3]); }
     for (let y = top + 3; y < base; y++) for (let x = x0; x < x1; x++) P.px(x, y, x === x0 ? WHITE[3] : x === x1 - 1 ? WHITE[0] : WHITE[2]);
     P.hl(x0, base - 1, x1 - x0, WHITE[0]);
-    txt(P, SMALL, 'LYSSNA', x0 + 4, top + 5, NAVY);
+    txt(P, SMALL, $t('LYSSNA'), x0 + 4, top + 5, NAVY);
     const hs = sortimentHP(), pt = priceTxt(hs?.price), pw = textW(SMALL, pt) + 6;
     sbox(P, x1 - pw - 4, top + 3, pw, 8, 0xffffff); P.hl(x1 - pw - 3, top + 4, pw - 2, CYAN); txt(P, SMALL, pt, x1 - pw - 1, top + 5, NAVY);
     // två hörlurar på ställ
@@ -775,7 +776,7 @@ function paintPodium() {
     P.hl(x0, top + 5, x1 - x0, CYAN); P.hl(x0, base - 1, x1 - x0, 0x0e1430);
     // barnet står framför vänstra halvan – skylten och priset sitter till höger
     const pt = priceTxt(katOf('spelkonsol')?.price), pw = textW(SMALL, pt) + 4;
-    txt(P, SMALL, 'KONSOLER', x1 - pw - 8 - textW(SMALL, 'KONSOLER'), top + 7, 0xffffff);
+    txt(P, SMALL, $t('KONSOLER'), x1 - pw - 8 - textW(SMALL, $t('KONSOLER')), top + 7, 0xffffff);
     P.rect(x1 - pw - 4, top + 6, pw, 7, 0xffffff); txt(P, SMALL, pt, x1 - pw - 2, top + 7, NAVY);
     // TV:n på sin fot (bilden ritas i live())
     const T = GAME_TV;
@@ -795,9 +796,9 @@ function paintRetro() {
     }
     P.hl(x0, base - 1, x1 - x0, TEAK[0]);
     for (let x = x0 + 14; x < x1; x += 28) P.rect(x, top + 12, 2, 2, 0xd8b060); // knoppar
-    txt(P, SMALL, 'RETRO', x0 + 4, top + 6, 0xffb04a);
+    txt(P, SMALL, $t('RETRO'), x0 + 4, top + 6, 0xffb04a);
     const lo = [katOf('telefon')?.price, katOf('retrotv')?.price].filter((x) => x != null);
-    const pt = `FRÅN ${priceTxt(lo.length ? Math.min(...lo) : null)}`, pw = textW(SMALL, pt) + 4;
+    const pt = $t`FRÅN ${priceTxt(lo.length ? Math.min(...lo) : null)}`, pw = textW(SMALL, pt) + 4;
     P.rect(x0 + 30, top + 5, pw, 7, 0xf4ecd8); txt(P, SMALL, pt, x0 + 32, top + 6, TEAK[0]);
     // skivspelaren längst till höger
     sbox(P, x1 - 26, top - 5, 22, 6, TEAK[3]); P.rect(x1 - 23, top - 4, 10, 3, 0x1a1a20); P.px(x1 - 18, top - 3, 0xe83a3a); P.vl(x1 - 9, top - 5, 3, 0xd8dce2);
@@ -856,8 +857,8 @@ function paintCompDesk() {
     for (let y = top; y < top + 5; y++) for (let x = x0; x < x1; x++) P.px(x, y, y === top ? 0xffffff : mix(WHITE[4], WHITE[2], (y - top) / 5));
     for (let y = top + 5; y < base; y++) for (let x = x0; x < x1; x++) P.px(x, y, x === x0 ? WHITE[3] : x === x1 - 1 ? WHITE[0] : mix(WHITE[2], WHITE[1], (y - top - 5) / 15));
     P.hl(x0 + 1, top + 5, x1 - x0 - 2, CYAN); P.hl(x0, base - 1, x1 - x0, WHITE[0]);
-    txt(P, SMALL, 'DATORER', x0 + 4, top + 8, NAVY);
-    const cards = [['DATOR', katOf('dator')?.price, x0 + 40], ['TORN', katOf('datortorn')?.price, x0 + 94]];
+    txt(P, SMALL, $t('DATORER'), x0 + 4, top + 8, NAVY);
+    const cards = [[$t('DATOR'), katOf('dator')?.price, x0 + 40], [$t('TORN'), katOf('datortorn')?.price, x0 + 94]];
     for (const [nm, pr, cx] of cards) {
       const pt = `${nm} ${priceTxt(pr)}`, pw = textW(SMALL, pt) + 6;
       sbox(P, cx, top + 7, pw, 8, 0xffffff); P.hl(cx + 1, top + 8, pw - 2, CYAN); txt(P, SMALL, pt, cx + 3, top + 9, NAVY);
@@ -872,7 +873,7 @@ function paintLaptopTable() {
     for (let y = top + 5; y < base; y++) for (let x = x0; x < x1; x++) P.px(x, y, x === x0 ? WHITE[3] : x === x1 - 1 ? WHITE[0] : mix(WHITE[2], WHITE[1], (y - top - 5) / 15));
     P.hl(x0 + 1, top + 5, x1 - x0 - 2, CYAN); P.hl(x0, base - 1, x1 - x0, WHITE[0]);
     // kategorin till vänster (som DATORER bredvid), priset i en lapp till höger
-    txt(P, SMALL, 'BÄRBARA', x0 + 3, top + 8, NAVY);
+    txt(P, SMALL, $t('BÄRBARA'), x0 + 3, top + 8, NAVY);
     const pt = priceTxt(katOf('laptop')?.price), pw = textW(SMALL, pt) + 4, px = x1 - pw - 2;
     sbox(P, px, top + 7, pw, 8, 0xffffff); P.hl(px + 1, top + 8, pw - 2, CYAN); txt(P, SMALL, pt, px + 2, top + 9, NAVY);
   });
@@ -898,8 +899,8 @@ function paintIsland() {
       P.px(x, y, x === x0 ? WHITE[3] : x === x1 - 1 ? WHITE[0] : mix(WHITE[3], WHITE[1], (y - top - 5) / 15));
     }
     P.hl(x0 + 1, top + 5, x1 - x0 - 2, CYAN); P.hl(x0 + 1, base - 1, x1 - x0 - 2, WHITE[0]);
-    txt(P, SMALL, 'NYHETER', x0 + 4, top + 9, NAVY);
-    const pv = 'PROVA!', pw = textW(SMALL, pv) + 6, px = x1 - pw - 4;
+    txt(P, SMALL, $t('NYHETER'), x0 + 4, top + 9, NAVY);
+    const pv = $t('PROVA!'), pw = textW(SMALL, pv) + 6, px = x1 - pw - 4;
     sbox(P, px, top + 8, pw, 8, 0xff6ab8); txt(P, SMALL, pv, px + 3, top + 10, 0xffffff);
     // smartklockorna: ett litet vitt ställ var, armbandet runt och urtavlan framåt
     for (const Wt of WATCHES) {
@@ -949,8 +950,9 @@ function paintAFrame() {
     for (let j = 0; j < 6; j++) { P.px(x + 3 - (j >> 2), base - 6 + j, TEAK[1]); P.px(x + w - 4 + (j >> 2), base - 6 + j, TEAK[1]); }
     sbox(P, x + 1, top, w - 2, h - 5, TEAK[3]);
     for (let yy = top + 2; yy < base - 7; yy++) for (let xx = x + 3; xx < x + w - 3; xx++) P.px(xx, yy, mix(0x2a3230, 0x1e2624, (bayer(xx, yy) - 0.5) * 0.3 + 0.5));
-    txtC(P, SMALL, 'LADDARE', x + w / 2, top + 3, 0xf4f4ec);
-    txtC(P, SMALL, 'INGÅR!', x + w / 2, top + 10, YEL);
+    const [rad1, rad2 = ''] = $t('LADDARE\nINGÅR!').split('\n');   // LADDARE INGÅR! på två rader (en nyckel)
+    txtC(P, SMALL, rad1, x + w / 2, top + 3, 0xf4f4ec);
+    txtC(P, SMALL, rad2, x + w / 2, top + 10, YEL);
     P.hl(x + 6, top + 17, w - 12, 0xf4f4ec, 0.5);                // ett kritstreck
   });
 }
@@ -959,10 +961,10 @@ function paintStandee() {
   return sprite(x - 2, top - 10, w + 4, h + 11, (P) => {
     // kartongen: vit ram, telefonen i jätteformat, NYHET! överst, en fot bakom
     sbox(P, x, top, w, h - 4, 0xf4f4f0);
-    P.rect(x + 1, top + 1, w - 2, 9, 0xff6ab8); txtC(P, SMALL, 'NYHET!', x + w / 2, top + 3, 0xffffff);
+    P.rect(x + 1, top + 1, w - 2, 9, 0xff6ab8); txtC(P, SMALL, $t('NYHET!'), x + w / 2, top + 3, 0xffffff);
     const px = x + 6, py = top + 12, pw = w - 12, ph = h - 22;
     P.rect(px - 1, py - 1, pw + 2, ph + 2, 0xc8bca8); P.rect(px, py, pw, ph, 0x0c0e14);
-    txtC(P, SMALL, 'PÄRONFON', x + w / 2, top + h - 11, NAVY);
+    txtC(P, SMALL, $t('PÄRONFON'), x + w / 2, top + h - 11, NAVY);
     P.rect(x + 4, base - 4, w - 8, 3, 0xd8d0c0); P.hl(x + 4, base - 1, w - 8, 0xa89a80);
   });
 }
@@ -1006,7 +1008,7 @@ function carSprite(col, dir) {
   return P.flush();
 }
 // tickerns text: grön för upp, röd för ner
-const TICKS = [['PIXELINDEX', '+2.4%'], ['BLIXT', '+5.1%'], ['KORV AB', '-0.8%'], ['MÖBELJÄTTEN', '+1.2%'], ['BANKEN', '+0.3%'], ['PÄRON', '+3.9%'], ['FRUKTFABRIKEN', '-1.6%'], ['BURGARBAREN', '+0.7%']];
+const TICKS = [[$t('PIXELINDEX'), '+2.4%'], [$t('BLIXT'), '+5.1%'], [$t('KORV AB'), '-0.8%'], [$t('MÖBELJÄTTEN'), '+1.2%'], [$t('BANKEN'), '+0.3%'], [$t('PÄRON'), '+3.9%'], [$t('FRUKTFABRIKEN'), '-1.6%'], [$t('BURGARBAREN'), '+0.7%']];
 function tickerStrip() {
   let w = 0;
   for (const [n, v] of TICKS) w += textW(SMALL, n) + textW(SMALL, v) + 16;
@@ -1034,30 +1036,30 @@ const SELLER = { ...STAFF, skin: '#f6d7bf', hair: '#d9a95c', style: 'ponytail', 
 const npcLook = (seed) => { const L = makeLook(rng(seed)); return { ...L, kid: false, build: L.build === 4 ? 5 : L.build, bag: null }; };
 const KID_LOOK = (() => { const L = makeLook(rng(4242)); return { ...L, kid: true, build: 4, bag: null, hat: 'cap', cap: '#e83a3a', shirt: '#46a35a' }; })();
 
-const CLERK_LINES = ['Välkommen till BLIXT!', 'Garanti i två år på allt.', 'Kvittot hamnar i påsen.', 'Allt levereras hem till förrådet.', 'Laddare ingår!', 'Behöver du en påse?'];
-const SELLER_LINES = ['Testa gärna!', 'Säg till om du undrar något!', 'Alla TV-apparater visar samma film.', 'Päronfon har tre kameror!', 'Kolla in gamingriggarna!', 'Hörlurarna kan man lyssna i.'];
+const CLERK_LINES = [$t('Välkommen till BLIXT!'), $t('Garanti i två år på allt.'), $t('Kvittot hamnar i påsen.'), $t('Allt levereras hem till förrådet.'), $t('Laddare ingår!'), $t('Behöver du en påse?')];
+const SELLER_LINES = [$t('Testa gärna!'), $t('Säg till om du undrar något!'), $t('Alla TV-apparater visar samma film.'), $t('Päronfon har tre kameror!'), $t('Kolla in gamingriggarna!'), $t('Hörlurarna kan man lyssna i.')];
 const SELLER_TIPS = [
   () => useTip('mobil'),
   () => useTip('platta'),
-  () => '🖥️ Datorer, TV-apparater och spelkonsoler hamnar i förrådet hemma – ställ ut dem med 🛋️ Möblera.',
-  () => '🎧 Hörlurarna syns på din figur – sätt på dem i garderoben hemma.',
-  () => '🕹️ Gamingriggarna finns i fyra färger – klicka på en så väljer du modell.',
-  () => '📺 Möbeljätten säljer inga TV-apparater längre – allt med sladd finns här hos oss på BLIXT!',
-  () => '⌚ Prova-ön är för nyheterna: smartklockor, högtalare och kameror. De säljs inte än – men prova gärna!',
+  () => $t('🖥️ Datorer, TV-apparater och spelkonsoler hamnar i förrådet hemma – ställ ut dem med 🛋️ Möblera.'),
+  () => $t('🎧 Hörlurarna syns på din figur – sätt på dem i garderoben hemma.'),
+  () => $t('🕹️ Gamingriggarna finns i fyra färger – klicka på en så väljer du modell.'),
+  () => $t('📺 Möbeljätten säljer inga TV-apparater längre – allt med sladd finns här hos oss på BLIXT!'),
+  () => $t('⌚ Prova-ön är för nyheterna: smartklockor, högtalare och kameror. De säljs inte än – men prova gärna!'),
 ];
 const TRY_LINES = {
-  phone: ['WOW, VILKEN KAMERA!', 'SÅ TUNN!', 'KAN MAN SPELA PÅ DEN?', 'MIN GAMLA ÄR SPRUCKEN...', 'VILKEN SKÄRM!'],
-  tab: ['PERFEKT FÖR SERIER!', 'SÅ STOR SKÄRM!', 'MED PENNA OCKSÅ!'],
-  tv: ['SÅ SKARP BILD!', 'STÖRRE ÄN MIN SOFFA!', 'ALLA VISAR SAMMA...'],
-  pc: ['DEN HÄR ÄR SNABB.', 'VILKET TANGENTBORD!', 'RGB PÅ ALLT!', 'TRE SKÄRMAR!'],
-  hp: ['BASEN! 🎧', 'SÅ TYST DET BLEV!'],
-  retro: ['MORMOR HADE EN SÅN!', 'KAN MAN RINGA PÅ DEN?'],
-  game: ['EN RUNDA TILL!', 'SNYGG GRAFIK!'],
-  watch: ['DEN RÄKNAR STEGEN!', 'SÅ LITEN SKÄRM!', 'KLOCKAN PIPER...'],
-  speaker: ['VILKET LJUD!', 'SPELA MIN LÅT!', 'BASEN!'],
-  camera: ['SÄG OMELETT!', 'VILKEN ZOOM!', 'KLICK!'],
+  phone: [$t('WOW, VILKEN KAMERA!'), $t('SÅ TUNN!'), $t('KAN MAN SPELA PÅ DEN?'), $t('MIN GAMLA ÄR SPRUCKEN...'), $t('VILKEN SKÄRM!')],
+  tab: [$t('PERFEKT FÖR SERIER!'), $t('SÅ STOR SKÄRM!'), $t('MED PENNA OCKSÅ!')],
+  tv: [$t('SÅ SKARP BILD!'), $t('STÖRRE ÄN MIN SOFFA!'), $t('ALLA VISAR SAMMA...')],
+  pc: [$t('DEN HÄR ÄR SNABB.'), $t('VILKET TANGENTBORD!'), $t('RGB PÅ ALLT!'), $t('TRE SKÄRMAR!')],
+  hp: [$t('BASEN! 🎧'), $t('SÅ TYST DET BLEV!')],
+  retro: [$t('MORMOR HADE EN SÅN!'), $t('KAN MAN RINGA PÅ DEN?')],
+  game: [$t('EN RUNDA TILL!'), $t('SNYGG GRAFIK!')],
+  watch: [$t('DEN RÄKNAR STEGEN!'), $t('SÅ LITEN SKÄRM!'), $t('KLOCKAN PIPER...')],
+  speaker: [$t('VILKET LJUD!'), $t('SPELA MIN LÅT!'), $t('BASEN!')],
+  camera: [$t('SÄG OMELETT!'), $t('VILKEN ZOOM!'), $t('KLICK!')],
 };
-const KID_LINES = ['JAG VANN! 🎮', 'EN RUNDA TILL!', 'MAMMA, KOLLA!', 'NIVÅ 3!', 'SNABBAST!'];
+const KID_LINES = [$t('JAG VANN! 🎮'), $t('EN RUNDA TILL!'), $t('MAMMA, KOLLA!'), $t('NIVÅ 3!'), $t('SNABBAST!')];
 // där kunderna provar saker: [x, y, riktning, vad]
 const BROWSE = [
   [180, 156, 'up', 'phone'], [216, 156, 'up', 'phone'], [252, 156, 'up', 'phone'], [288, 156, 'up', 'phone'],
@@ -1119,7 +1121,7 @@ function art() {
     bgDay: null, bgNight: null, glassDay: null, glassNight: null, doorDay: null, doorNight: null,
     phones, tabs, screens,
     bench: paintBench(), counter: paintCounter(), hpTable: paintHpTable(), podium: paintPodium(), retro: paintRetro(),
-    phoneTable: paintTable(PT, 'TELEFONER', phones.groups), tabTable: paintTable(TT, 'SURFPLATTOR', tabs.groups),
+    phoneTable: paintTable(PT, $t('TELEFONER'), phones.groups), tabTable: paintTable(TT, $t('SURFPLATTOR'), tabs.groups),
     gdesks: GD.map((D, i) => paintGamingDesk(D, i)), cdesk: paintCompDesk(), ltable: paintLaptopTable(), standee: paintStandee(),
     island: paintIsland(), aframe: paintAFrame(),
     plants: [0, 1, 2].map((k) => paintPlant(k)),
@@ -1226,7 +1228,7 @@ export function makeShopElektronik(A, opts = {}) {
     // hälsa när jag kommer nära
     if (Math.hypot(walker.px - sel.w.px, walker.py - sel.w.py) < 44 && t - sel.greetT > 40) {
       sel.greetT = t; sel.dir = walker.px < sel.w.px ? 'left' : 'right';
-      selSay(['Hej! Säg till om du undrar något!', 'Hej! Testa gärna telefonerna!', 'Hej hej! Kolla gärna runt.'][Math.floor(Math.random() * 3)]);
+      selSay([$t('Hej! Säg till om du undrar något!'), $t('Hej! Testa gärna telefonerna!'), $t('Hej hej! Kolla gärna runt.')][Math.floor(Math.random() * 3)]);
     }
     if (sel.t <= 0) {
       let k = sel.spot;
@@ -1240,7 +1242,7 @@ export function makeShopElektronik(A, opts = {}) {
     sel.state = 'talk'; sel.t = 3.5; sel.w.stop();
     sel.dir = walker.px < sel.w.px ? 'left' : 'right';
     walker.dir = walker.px < sel.w.px ? 'right' : 'left';
-    selSay(['Bra fråga!', 'Absolut!', 'Här kommer ett tips!'][sel.tipI % 3], 2.5);
+    selSay([$t('Bra fråga!'), $t('Absolut!'), $t('Här kommer ett tips!')][sel.tipI % 3], 2.5);
     play('chirp');
     toast(`💬 ${SELLER_TIPS[sel.tipI % SELLER_TIPS.length]()}`);
     sel.tipI++;
@@ -1304,7 +1306,7 @@ export function makeShopElektronik(A, opts = {}) {
       if (G.queue) { n.state = 'queue'; n.t = 0; return; }
       n.state = 'pay'; n.t = 0;
       exp.dir = 'left';
-      expSay('Hej! Hittade du allt?');
+      expSay($t('Hej! Hittade du allt?'));
     } else if (G.kind === 'exit') {
       n.state = 'away'; n.t = 6 + Math.random() * 12;
     }
@@ -1330,7 +1332,7 @@ export function makeShopElektronik(A, opts = {}) {
       n.t += dt;
       if (n.t > 1 && n.t - dt <= 1) beep();
       if (n.t > 1.5 && n.t - dt <= 1.5) beep();
-      if (n.t > 2.4 && !n.bag) { n.bag = true; expSay('Tack så mycket! Ha en bra dag!'); play('coin'); }
+      if (n.t > 2.4 && !n.bag) { n.bag = true; expSay($t('Tack så mycket! Ha en bra dag!')); play('coin'); }
       if (n.t > 3.2) { exp.dir = 'down'; nextGoal(n); }
     }
   }
@@ -1344,28 +1346,28 @@ export function makeShopElektronik(A, opts = {}) {
     let info = '';
     if (p.type === 'furn') {
       const inStore = g.storage.filter((s) => s.k === p.k).length, kn = katOf(p.k)?.name;
-      info = `📦 Hamnar i <b>förrådet</b> hemma – ställ ut den med 🛋️ Möblera. I förrådet nu: ${inStore}.`;
-      if (kn && kn !== p.name) info += `<br><span class="sp">I förrådet heter den <b>${esc(kn)}</b>.</span>`;
+      info = $t`📦 Hamnar i <b>förrådet</b> hemma – ställ ut den med 🛋️ Möblera. I förrådet nu: ${inStore}.`;
+      if (kn && kn !== p.name) info += `<br><span class="sp">${$t`I förrådet heter den <b>${esc(kn)}</b>.`}</span>`;
     } else if (p.type === 'gadget') {
       const k = gadgetKind(p.id), mine = bestOwned(g, k), b = bonusOf(p.id);
       info = USE[k](p.id);
-      if (mine && mine.id !== p.id) info += `<br><span class="sp">${mine.bonus >= b ? `Din ${esc(mine.name)} ger redan +${mine.bonus} – den här ger inget extra.` : `Din ${esc(mine.name)} ger +${mine.bonus} – med den här blir det +${b}.`}</span>`;
-      info += '<br><span class="sp">Prylen bär du med dig i fickan – den ställs inte ut hemma.</span>';
-    } else info = '👕 Låses upp i <b>garderoben</b> – ta på dem hemma när du vill.';
-    const money = `💰 Du har <b>${GAME.fmt ? GAME.fmt(g.money) : g.money + ' kr'}</b> · Pris: <b>${price != null ? (GAME.fmt ? GAME.fmt(price) : price + ' kr') : '–'}</b>`;
+      if (mine && mine.id !== p.id) info += `<br><span class="sp">${mine.bonus >= b ? $t`Din ${esc(mine.name)} ger redan +${mine.bonus} – den här ger inget extra.` : $t`Din ${esc(mine.name)} ger +${mine.bonus} – med den här blir det +${b}.`}</span>`;
+      info += `<br><span class="sp">${$t('Prylen bär du med dig i fickan – den ställs inte ut hemma.')}</span>`;
+    } else info = $t('👕 Låses upp i <b>garderoben</b> – ta på dem hemma när du vill.');
+    const money = $t`💰 Du har <b>${GAME.fmt ? GAME.fmt(g.money) : g.money + ' kr'}</b> · Pris: <b>${price != null ? (GAME.fmt ? GAME.fmt(price) : price + ' kr') : '–'}</b>`;
     const dlg = openModal(`${p.icon} ${esc(name)}`, `
       <div class="fb">
         <div class="fb-top${models.length > 1 ? '' : ' solo'}">
           <div class="fb-stage"><canvas class="fb-big"></canvas></div>
-          ${models.length > 1 ? `<div class="fb-side"><span class="fb-lbl">Modell</span>
-            <div class="fb-models">${models.map((i) => `<button class="fb-model" data-v="${i}" title="Modell ${i + 1}"><canvas></canvas></button>`).join('')}</div></div>` : ''}
+          ${models.length > 1 ? `<div class="fb-side"><span class="fb-lbl">${$t('Modell')}</span>
+            <div class="fb-models">${models.map((i) => `<button class="fb-model" data-v="${i}" title="${$t`Modell ${i + 1}`}"><canvas></canvas></button>`).join('')}</div></div>` : ''}
         </div>
         <p class="fb-info" style="margin-top:10px">${esc(p.desc)}</p>
         <p class="fb-info">${money}<br>${info}</p>
-        ${block ? `<p class="fb-info bad"><b>${esc(block)}</b></p>` : !afford ? `<p class="fb-info bad"><b>⚠️ Pengarna räcker inte</b> – det fattas ${GAME.fmt ? GAME.fmt(price - g.money) : price - g.money + ' kr'}. Dags att jobba ett pass!</p>` : ''}
+        ${block ? `<p class="fb-info bad"><b>${esc(block)}</b></p>` : !afford ? `<p class="fb-info bad">${$t`<b>⚠️ Pengarna räcker inte</b> – det fattas ${GAME.fmt ? GAME.fmt(price - g.money) : price - g.money + ' kr'}. Dags att jobba ett pass!`}</p>` : ''}
       </div>`, [
-      { label: 'Stäng', onClick: closeModal },
-      { label: `🛒 Till kassan (${price != null ? (GAME.fmt ? GAME.fmt(price) : price + ' kr') : '–'})`, cls: 'btn-go', disabled: !!block || !afford, onClick: () => { closeModal(); pickUp(p, st.v); } },
+      { label: $t('Stäng'), onClick: closeModal },
+      { label: $t`🛒 Till kassan (${price != null ? (GAME.fmt ? GAME.fmt(price) : price + ' kr') : '–'})`, cls: 'btn-go', disabled: !!block || !afford, onClick: () => { closeModal(); pickUp(p, st.v); } },
     ]);
     dlg.classList.add('dlg-furn');
     const big = dlg.querySelector('.fb-big');
@@ -1442,13 +1444,13 @@ export function makeShopElektronik(A, opts = {}) {
     cart = { p, v: v | 0, price, name: nameOf(p), icon: p.icon };
     scan = null;
     play('ok');
-    toast(`${p.icon} ${cart.name} – bär lådan till kassan och betala!`, 'good');
+    toast($t`${p.icon} ${cart.name} – bär lådan till kassan och betala!`, 'good');
     goPay();
     return true;
   }
   function putBack() {
     if (!cart) return;
-    toast(`↩ Du ställde tillbaka ${cart.name}.`);
+    toast($t`↩ Du ställde tillbaka ${cart.name}.`);
     cart = null; scan = null;
     play('click');
   }
@@ -1456,11 +1458,11 @@ export function makeShopElektronik(A, opts = {}) {
     walker.walkTo(PAY[0], PAY[1], () => { walker.dir = 'up'; startScan(); });
   }
   function startScan() {
-    if (!cart) { expSay('Välj något i butiken så slår jag in det!'); hint('🛒 Klicka på en vara – sedan betalar du här.'); return; }
+    if (!cart) { expSay($t('Välj något i butiken så slår jag in det!')); hint($t('🛒 Klicka på en vara – sedan betalar du här.')); return; }
     if (scan) return;
     scan = { t: 0, done: false };
     exp.dir = 'right';
-    expSay('Hej! Den ska jag slå in.');
+    expSay($t('Hej! Den ska jag slå in.'));
   }
   function updateScan(dt) {
     if (!scan) return;
@@ -1471,11 +1473,11 @@ export function makeShopElektronik(A, opts = {}) {
   }
   // Betala lådan man bär. { ok, msg }
   function pay() {
-    if (!cart) return { ok: false, msg: 'Du bär ingenting.' };
+    if (!cart) return { ok: false, msg: $t('Du bär ingenting.') };
     const { p, v, price, name } = cart;
     let r;
     if (p.type === 'furn') r = g.buyFurniture(p.k, v);
-    else if (p.type === 'gadget') r = typeof g.buyGadget === 'function' ? g.buyGadget(p.id) : { ok: false, msg: 'Kommer snart!' };
+    else if (p.type === 'gadget') r = typeof g.buyGadget === 'function' ? g.buyGadget(p.id) : { ok: false, msg: $t('Kommer snart!') };
     else r = g.buyClothes('phones', true);
     scan = null;
     exp.dir = 'down';
@@ -1483,23 +1485,24 @@ export function makeShopElektronik(A, opts = {}) {
       // köpet gick inte (fullt förråd, inte råd …) – expediten ställer tillbaka lådan, så man
       // inte står kvar med en låda som aldrig går att betala
       play('fel');
-      const why = r?.msg || 'Det gick inte.';
+      const why = r?.msg || $t('Det gick inte.');
       cart = null;
-      toast(`💳 ${why} ↩ Expediten ställer tillbaka ${name}.`, 'bad');
-      expSay(/råd/.test(why) ? 'Kortet nekades... Tyvärr.' : /förråd/i.test(why) ? 'Oj, förrådet är fullt! Jag ställer tillbaka den.' : 'Oj, det gick inte.');
+      toast($t`💳 ${why} ↩ Expediten ställer tillbaka ${name}.`, 'bad');
+      const svWhy = $sv(why);   // (de svenska orden – meddelandet är översatt; pengarna avgör 'inte råd')
+      expSay(g.money < (price | 0) || /råd/.test(svWhy) ? $t('Kortet nekades... Tyvärr.') : /förråd/i.test(svWhy) ? $t('Oj, förrådet är fullt! Jag ställer tillbaka den.') : $t('Oj, det gick inte.'));
       return { ok: false, msg: why };
     }
     const prevBest = p.type === 'gadget' ? bestOwned(g, gadgetKind(p.id)) : null; // (efter köpet – den nya räknas in)
     cart = null; bag = true; paidT = t;
     lastBuy = { id: p.id, k: p.k || null, v, price };
     play('buy');
-    expSay(['Tack för köpet!', 'Varsågod – kvittot ligger i påsen!', 'Tack! Ha så kul med den!'][Math.floor(Math.random() * 3)], 3);
-    if (p.type === 'furn') { const kn = katOf(p.k)?.name; toast(`${p.icon} ${name} ligger i förrådet${kn && kn !== p.name ? ` (som ”${kn}”)` : ''} – ställ ut den hemma med 🛋️ Möblera!`, 'good'); }
+    expSay([$t('Tack för köpet!'), $t('Varsågod – kvittot ligger i påsen!'), $t('Tack! Ha så kul med den!')][Math.floor(Math.random() * 3)], 3);
+    if (p.type === 'furn') { const kn = katOf(p.k)?.name; toast(kn && kn !== p.name ? $t`${p.icon} ${name} ligger i förrådet (som ”${kn}”) – ställ ut den hemma med 🛋️ Möblera!` : $t`${p.icon} ${name} ligger i förrådet – ställ ut den hemma med 🛋️ Möblera!`, 'good'); }
     else if (p.type === 'gadget') {
       const mob = gadgetKind(p.id) === 'mobil', b = bonusOf(p.id), top = prevBest && prevBest.id !== p.id && prevBest.bonus > b ? prevBest : null;
-      toast(`${p.icon} ${name} är din! ${top ? `(Din ${top.name} ger fortfarande mest: +${top.bonus}.)` : mob ? `⏰ Väckarklockan: +${b} energi när du vaknar i din säng.` : `🌙 Kvällsserie efter kl. 20: +${b} energi på morgonen.`}`, 'good');
+      toast(`${$t`${p.icon} ${name} är din!`} ${top ? $t`(Din ${top.name} ger fortfarande mest: +${top.bonus}.)` : mob ? $t`⏰ Väckarklockan: +${b} energi när du vaknar i din säng.` : $t`🌙 Kvällsserie efter kl. 20: +${b} energi på morgonen.`}`, 'good');
     }
-    else toast('🎧 Hörlurarna är dina – ta på dem i garderoben hemma!', 'good');
+    else toast($t('🎧 Hörlurarna är dina – ta på dem i garderoben hemma!'), 'good');
     g.save?.();
     return { ok: true };
   }
@@ -1507,10 +1510,10 @@ export function makeShopElektronik(A, opts = {}) {
   // ---------- gå ut ----------
   function exit() {
     if (cart) {
-      openModal('📦 Obetald vara', `<p style="font-size:var(--f2);margin-top:0">Du bär på <b>${esc(cart.name)}</b> (${GAME.fmt ? GAME.fmt(cart.price) : cart.price + ' kr'}) som inte är betald.</p>
-        <p style="font-size:var(--f2)">Betala i kassan – eller ställ tillbaka den innan du går. Larmbågarna vid dörren piper annars!</p>`, [
-        { label: '↩ Ställ tillbaka och gå', onClick: () => { closeModal(); cart = null; scan = null; leave(); } },
-        { label: '🧾 Till kassan', cls: 'btn-go', onClick: () => { closeModal(); goPay(); } },
+      openModal($t('📦 Obetald vara'), `<p style="font-size:var(--f2);margin-top:0">${$t`Du bär på <b>${esc(cart.name)}</b> (${GAME.fmt ? GAME.fmt(cart.price) : cart.price + ' kr'}) som inte är betald.`}</p>
+        <p style="font-size:var(--f2)">${$t('Betala i kassan – eller ställ tillbaka den innan du går. Larmbågarna vid dörren piper annars!')}</p>`, [
+        { label: $t('↩ Ställ tillbaka och gå'), onClick: () => { closeModal(); cart = null; scan = null; leave(); } },
+        { label: $t('🧾 Till kassan'), cls: 'btn-go', onClick: () => { closeModal(); goPay(); } },
       ]);
       return;
     }
@@ -1550,16 +1553,16 @@ export function makeShopElektronik(A, opts = {}) {
   // kassan, dörren, skylten, barnet
   addSpot({ id: 'kassa', r: [CNT.x0, CNT.top - 12, CNT.x1, CNT.base], go: PAY, face: 'up', act: () => { walker.dir = 'up'; startScan(); } });
   addSpot({ id: 'dorr', r: [DOOR.x0 - 4, GLASS.top - 8, DOOR.x1 + 4, WALL_Y + 6], go: [DOOR_X, WALL_Y + 5], face: 'up', act: exit });
-  addSpot({ id: 'skylt', r: [STD.x, STD.base - STD.h - 10, STD.x + STD.w, STD.base], go: [STD.x + STD.w / 2, STD.base + 8], face: 'up', act: () => { play('chirp'); toast('📱 NYHET! Päronfon 16 Pro med tre kameror – den står på telefonbordet.'); } });
-  addSpot({ id: 'golvskylt', r: [AF.x, AF.base - 24, AF.x + AF.w, AF.base], go: [AF.x + AF.w / 2, AF.base + 8], face: 'up', act: () => hint('🔌 Laddare ingår till alla telefoner och plattor!') });
+  addSpot({ id: 'skylt', r: [STD.x, STD.base - STD.h - 10, STD.x + STD.w, STD.base], go: [STD.x + STD.w / 2, STD.base + 8], face: 'up', act: () => { play('chirp'); toast($t('📱 NYHET! Päronfon 16 Pro med tre kameror – den står på telefonbordet.')); } });
+  addSpot({ id: 'golvskylt', r: [AF.x, AF.base - 24, AF.x + AF.w, AF.base], go: [AF.x + AF.w / 2, AF.base + 8], face: 'up', act: () => hint($t('🔌 Laddare ingår till alla telefoner och plattor!')) });
   // prova-ön: klockorna, högtalarna och kamerorna går att prova (de säljs inte än)
   const demoSpot = (id, x0, x1, act) => addSpot({ id, demo: true, r: [x0, ISL_TOP - 18, x1, ISL.base - 2], go: [Math.round((x0 + x1) / 2), ISL.base + 8], face: 'up', act });
-  demoSpot('klocka', ISL.x0 + 2, ISL.x0 + 33, () => { play('chirp'); lastHint = -9; hint(`⌚ Smartklockan visar ${GAME.clock ? GAME.clock(g.min) : 'tiden'} och räknar stegen. Säljs snart!`); });
-  demoSpot('hogtalare', ISL.x0 + 34, ISL.x0 + 64, () => { demo.spk = t; jingle(); lastHint = -9; hint('🔊 Högtalaren spelar en glad slinga. Säljs snart!'); });
-  demoSpot('kamera', ISL.x0 + 65, ISL.x1 - 2, () => { demo.cam = t; demo.flash = t; shutter(); lastHint = -9; hint('📸 Klick! Ett foto på dig. Kamerorna säljs snart!'); });
-  addSpot({ id: 'barnet', r: [KID.x - 9, KID.y - 40, KID.x + 9, KID.y + 2], go: [KID.x + 18, KID.y + 2], face: 'left', act: () => { if (kid.here()) { talkKid.say(KID_LINES[Math.floor(Math.random() * KID_LINES.length)], { x: KID.x, y: KID.y - 36 }, 2.5, { voice: KID_LOOK }); } else hint('🎮 Barnet har gått hem – TV:n kör demoläget.'); } });
-  addSpot({ id: 'fonster', r: [GLASS.x0 + 2, GLASS.top, DOOR.x0 - 4, WALL_Y - 2], go: [250, WALL_Y + 8], face: 'up', act: () => hint('🏙️ Skyskraporna i finanskvarteret. Börsen rullar på tornet mitt emot.') });
-  addSpot({ id: 'fonster2', r: [DOOR.x1 + 4, GLASS.top, GLASS.x1 - 2, WALL_Y - 2], go: [372, WALL_Y + 8], face: 'up', act: () => hint('🏙️ Höga hus så långt man ser. Här jobbar alla med slips.') });
+  demoSpot('klocka', ISL.x0 + 2, ISL.x0 + 33, () => { play('chirp'); lastHint = -9; hint($t`⌚ Smartklockan visar ${GAME.clock ? GAME.clock(g.min) : 'tiden'} och räknar stegen. Säljs snart!`); });
+  demoSpot('hogtalare', ISL.x0 + 34, ISL.x0 + 64, () => { demo.spk = t; jingle(); lastHint = -9; hint($t('🔊 Högtalaren spelar en glad slinga. Säljs snart!')); });
+  demoSpot('kamera', ISL.x0 + 65, ISL.x1 - 2, () => { demo.cam = t; demo.flash = t; shutter(); lastHint = -9; hint($t('📸 Klick! Ett foto på dig. Kamerorna säljs snart!')); });
+  addSpot({ id: 'barnet', r: [KID.x - 9, KID.y - 40, KID.x + 9, KID.y + 2], go: [KID.x + 18, KID.y + 2], face: 'left', act: () => { if (kid.here()) { talkKid.say(KID_LINES[Math.floor(Math.random() * KID_LINES.length)], { x: KID.x, y: KID.y - 36 }, 2.5, { voice: KID_LOOK }); } else hint($t('🎮 Barnet har gått hem – TV:n kör demoläget.')); } });
+  addSpot({ id: 'fonster', r: [GLASS.x0 + 2, GLASS.top, DOOR.x0 - 4, WALL_Y - 2], go: [250, WALL_Y + 8], face: 'up', act: () => hint($t('🏙️ Skyskraporna i finanskvarteret. Börsen rullar på tornet mitt emot.')) });
+  addSpot({ id: 'fonster2', r: [DOOR.x1 + 4, GLASS.top, GLASS.x1 - 2, WALL_Y - 2], go: [372, WALL_Y + 8], face: 'up', act: () => hint($t('🏙️ Höga hus så långt man ser. Här jobbar alla med slips.')) });
   const spotAt = (x, y) => {
     // säljaren först (om man träffar figuren)
     if (Math.abs(x - sel.w.px) < 8 && y > sel.w.py - 38 && y < sel.w.py + 2) return { id: 'saljare', seller: true };
@@ -1571,7 +1574,7 @@ export function makeShopElektronik(A, opts = {}) {
     if (!p) return;
     if (cart) {
       if (cart.p.id === id) { putBack(); return; }
-      hint('📦 En sak i taget – först kassan!');
+      hint($t('📦 En sak i taget – först kassan!'));
       return;
     }
     productSheet(p, v);
@@ -1584,7 +1587,7 @@ export function makeShopElektronik(A, opts = {}) {
       walker.walkTo(cand[0], cand[1], () => talkToSeller());
       return;
     }
-    if (cart && s.prod && s.prod !== cart.p.id) { hint('📦 En sak i taget – först kassan!'); return; }
+    if (cart && s.prod && s.prod !== cart.p.id) { hint($t('📦 En sak i taget – först kassan!')); return; }
     walker.walkTo(s.go[0], s.go[1], () => { walker.dir = s.face || 'up'; s.act(); });
   }
   const focusSpot = () => {
@@ -1613,7 +1616,7 @@ export function makeShopElektronik(A, opts = {}) {
     ctx.drawImage(gs.cv, GAME_TV.x, GAME_TV.y);
     const cx = GAME_TV.x + (GAME_TV.w >> 1) - 3 + Math.round(Math.sin(t * 1.3) * 3), cy = GAME_TV.y + GAME_TV.h - 6;
     CAR.forEach((row, j) => { for (let i = 0; i < row.length; i++) { const ch = row[i]; if (ch === '.') continue; ctx.fillStyle = ch === 'r' ? '#e83a3a' : ch === 'w' ? '#9ad0f0' : '#1a1a20'; ctx.fillRect(cx + i, cy + j, 1, 1); } });
-    if (demo && Math.floor(t * 1.5) % 2) ctxText(ctx, SMALL, 'DEMO', GAME_TV.x + 2, GAME_TV.y + 2, '#ffffff');
+    if (demo && Math.floor(t * 1.5) % 2) ctxText(ctx, SMALL, $t('DEMO'), GAME_TV.x + 2, GAME_TV.y + 2, '#ffffff');
   }
   function drawDeviceScreens(ctx, table) {
     for (const s of R.screens) {
@@ -1675,7 +1678,7 @@ export function makeShopElektronik(A, opts = {}) {
     ctx.fillRect(D.x0 + 6, GD_BASE - 1, GD_W - 12, 2);
     // GAMING i regnbågsljus på vänstra bordets front
     if (i === 0) {
-      const s = 'GAMING';
+      const s = $t('GAMING');
       let cx = D.x0 + ((GD_W - textW(SMALL, s)) >> 1);
       for (const ch of s) { ctxText(ctx, SMALL, ch, cx, GD_BASE - 15, `hsl(${(cx * 8 + t * 160) % 360},95%,62%)`); cx += textW(SMALL, ch) + 1; }
     }
@@ -1760,7 +1763,7 @@ export function makeShopElektronik(A, opts = {}) {
     add(CNT.base, [CNT.x0 - 4, CNT.top - 12, CNT.x1 + 4, CNT.base], () => {
       put(ctx, R.counter);
       // kunddisplayen: priset som piper in
-      const sum = scan ? cart?.price ?? 0 : 0, st = scan ? String(sum) : t - paidT < 3 ? 'TACK!' : 'HEJ!';
+      const sum = scan ? cart?.price ?? 0 : 0, st = scan ? String(sum) : t - paidT < 3 ? $t('TACK!') : $t('HEJ!');
       ctxText(ctx, SMALL, st, 462 - textW(SMALL, st), CNT.top - 7, scan && Math.floor(t * 8) % 2 ? '#ffffff' : '#6fe08a');
       // lådan på disken medan den slås in
       if (scan && cart) ctx.drawImage(R.box, 478, CNT.top - 7);
@@ -1854,12 +1857,12 @@ export function makeShopElektronik(A, opts = {}) {
     ctx.fillStyle = hexs(CYAN); ctx.fillRect(x0 - 1, y0 - 1, w + 2, h + 2);
     ctx.fillStyle = '#f6f8fc'; ctx.fillRect(x0, y0, w, h);
     ctx.fillStyle = hexs(NAVY); ctx.fillRect(x0, y0, w, 11);
-    ctxText(ctx, SMALL, 'I HÄNDERNA', x0 + 4, y0 + 3, '#ffffff');
-    const pr = `${cart.price} KR`;
+    ctxText(ctx, SMALL, $t('I HÄNDERNA'), x0 + 4, y0 + 3, '#ffffff');
+    const pr = $t`${cart.price} KR`;
     ctxText(ctx, SMALL, pr, x0 + w - 4 - textW(SMALL, pr), y0 + 3, hexs(YEL));
-    const nm = cart.name.toUpperCase().replace(/[^A-ZÅÄÖÉ0-9 .:!?-]/g, '').slice(0, 26);
+    const nm = cart.name.toUpperCase().replace(/[^A-ZÅÄÖÉÁÀÂÃÇĆÈÊËÍÌÎÏÑŃÓÒÔÕŚŹŻÚÙÛÜŸÝĄĘŁŒÆ¡¿€$0-9 .:!?-]/g, '').slice(0, 26);
     ctxText(ctx, SMALL, nm, x0 + 4, y0 + 14, '#2a2430');
-    const btn = scan ? 'PIP PIP...' : 'TILL KASSAN';
+    const btn = scan ? $t('PIP PIP...') : $t('TILL KASSAN');
     const blink = !scan && Math.floor(t * 2) % 2 === 0;
     ctx.fillStyle = '#17151a'; ctx.fillRect(x0 + 3, y0 + 22, w - 6, 11);
     ctx.fillStyle = scan ? '#8a909a' : blink ? '#ffd23f' : '#f0c020'; ctx.fillRect(x0 + 4, y0 + 23, w - 8, 9);
@@ -1870,11 +1873,11 @@ export function makeShopElektronik(A, opts = {}) {
     let name, price = '', sub, col = hexs(CYAN);
     if (s.prod) {
       const p = prodOf(s.prod), pr = priceOf(g, p), block = blockedOf(g, p);
-      name = nameOf(p).toUpperCase(); price = pr != null ? `${pr} KR` : '';
-      sub = cart ? (cart.p.id === p.id ? 'KLICKA FÖR ATT STÄLLA TILLBAKA' : 'EN SAK I TAGET - FÖRST KASSAN') : block ? block.toUpperCase().replace(/–/g, '-').replace(/[^A-ZÅÄÖÉ0-9 .:!?-]/g, '') : 'KLICKA FÖR ATT TITTA OCH KÖPA';
-    } else if (s.id === 'kassa') { name = 'KASSAN'; price = cart ? `${cart.price} KR` : ''; sub = cart ? 'KLICKA SÅ BETALAR DU' : 'VÄLJ EN VARA FÖRST'; col = hexs(YEL); }
-    else if (s.id === 'dorr') { name = 'UTGÅNG'; sub = cart ? 'BETALA FÖRST!' : 'UT TILL DOWNTOWN'; col = hexs(YEL); }
-    else if (s.demo) { name = { klocka: 'SMARTKLOCKOR', hogtalare: 'HÖGTALARE', kamera: 'KAMEROR' }[s.id] || 'NYHETER'; sub = 'PROVA GÄRNA - SÄLJS SNART'; col = '#ff6ab8'; }
+      name = nameOf(p).toUpperCase(); price = pr != null ? $t`${pr} KR` : '';
+      sub = cart ? (cart.p.id === p.id ? $t('KLICKA FÖR ATT STÄLLA TILLBAKA') : $t('EN SAK I TAGET - FÖRST KASSAN')) : block ? block.toUpperCase().replace(/–/g, '-').replace(/[^A-ZÅÄÖÉ0-9 .:!?-]/g, '') : $t('KLICKA FÖR ATT TITTA OCH KÖPA');
+    } else if (s.id === 'kassa') { name = $t('KASSAN'); price = cart ? $t`${cart.price} KR` : ''; sub = cart ? $t('KLICKA SÅ BETALAR DU') : $t('VÄLJ EN VARA FÖRST'); col = hexs(YEL); }
+    else if (s.id === 'dorr') { name = $t('UTGÅNG'); sub = cart ? $t('BETALA FÖRST!') : $t('UT TILL DOWNTOWN'); col = hexs(YEL); }
+    else if (s.demo) { name = { klocka: $t('SMARTKLOCKOR'), hogtalare: $t('HÖGTALARE'), kamera: $t('KAMEROR') }[s.id] || $t('NYHETER'); sub = $t('PROVA GÄRNA - SÄLJS SNART'); col = '#ff6ab8'; }
     else return;
     const nw = textW(BIG, name), pw = price ? textW(BIG, price) : 0, hw = textW(SMALL, sub);
     const w = Math.max(nw + pw + (price ? 8 : 0), hw) + 12, h = 22;
@@ -1979,7 +1982,7 @@ export function makeShopElektronik(A, opts = {}) {
     update(dt) {
       t += dt;
       walker.update(dt);
-      if (pendingHello > 0) { pendingHello -= dt; if (pendingHello <= 0) expSay(isNight() ? 'Hej! Vi har kvällsöppet!' : 'Hej och välkommen till BLIXT!', 3, true); }
+      if (pendingHello > 0) { pendingHello -= dt; if (pendingHello <= 0) expSay(isNight() ? $t('Hej! Vi har kvällsöppet!') : $t('Hej och välkommen till BLIXT!'), 3, true); }
       // skjutdörrarna öppnas när någon är nära (ding-dong när jag går in eller ut)
       const near = [{ x: walker.px, y: walker.py, me: true }, ...npcs.filter((n) => n.state !== 'away').map((n) => ({ x: n.w.px, y: n.w.py }))].some((p) => Math.abs(p.x - DOOR_X) < 20 && p.y < WALL_Y + 20);
       if (near && !doorWas && Math.abs(walker.px - DOOR_X) < 20 && walker.py < WALL_Y + 20) chime();

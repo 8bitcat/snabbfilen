@@ -100,6 +100,7 @@
 //     okänt än), care { day, mat, lek, leksak, toa, inne, held } (dagens poäng per slag)
 // ==================================================================
 import { PET_ITEMS } from './items.js';
+import { $t, $n } from '../core/i18n.js';
 
 export const PETS_SAVE_KEY = 'snabbfilen_pets1';
 const GAME_SAVE_KEY = 'snabbfilen_save1';   // spelets egen sparnyckel (js/game.js SAVE_KEY) – saknas den är spelet nytt
@@ -141,15 +142,15 @@ export const PET_RULES = {
   hund: { hungerH: 5.0, full: 110, toiletH: 11, lonely: 2.6, walkJoy: 12, eatBelow: 55 },
   kanin: { hungerH: 5.5, full: 160, toiletH: 10, lonely: 1.8, walkJoy: 2, eatBelow: 60 },
 };
-export const ART_NAMN = { katt: 'katt', hund: 'hund', kanin: 'kanin' };
+export const ART_NAMN = { katt: $t('katt'), hund: $t('hund'), kanin: $t('kanin') };
 
 const NAMN = {
-  katt: { hane: ['Findus', 'Måns', 'Pelle', 'Gustav', 'Sixten', 'Morris', 'Tiger', 'Ludde', 'Kasper', 'Sotis', 'Egon', 'Pricken'],
-    hona: ['Misse', 'Molly', 'Nala', 'Smilla', 'Tussan', 'Luna', 'Sessan', 'Kisse', 'Doris', 'Vilma', 'Mirra', 'Sussi'] },
-  hund: { hane: ['Bamse', 'Charlie', 'Rocky', 'Hugo', 'Max', 'Buster', 'Frasse', 'Loke', 'Otto', 'Sigge', 'Tassen', 'Kurre'],
-    hona: ['Bella', 'Ronja', 'Stella', 'Tindra', 'Lady', 'Freja', 'Majken', 'Saga', 'Tassa', 'Elsa', 'Nellie', 'Molly'] },
-  kanin: { hane: ['Stampe', 'Hoppsan', 'Morot', 'Klumpen', 'Pompe', 'Snöboll', 'Fluffe', 'Kalle', 'Nisse', 'Bosse'],
-    hona: ['Nösnäsa', 'Mimmi', 'Lilla My', 'Tofsen', 'Pärla', 'Klöver', 'Bulla', 'Sessan', 'Dunet', 'Majros'] },
+  katt: { hane: [$t('Findus'), $t('Måns'), $t('Pelle'), $t('Gustav'), $t('Sixten'), $t('Morris'), $t('Tiger'), $t('Ludde'), $t('Kasper'), $t('Sotis'), $t('Egon'), $t('Pricken')],
+    hona: [$t('Misse'), $t('Molly'), $t('Nala'), $t('Smilla'), $t('Tussan'), $t('Luna'), $t('Sessan'), $t('Kisse'), $t('Doris'), $t('Vilma'), $t('Mirra'), $t('Sussi')] },
+  hund: { hane: [$t('Bamse'), $t('Charlie'), $t('Rocky'), $t('Hugo'), $t('Max'), $t('Buster'), $t('Frasse'), $t('Loke'), $t('Otto'), $t('Sigge'), $t('Tassen'), $t('Kurre')],
+    hona: [$t('Bella'), $t('Ronja'), $t('Stella'), $t('Tindra'), $t('Lady'), $t('Freja'), $t('Majken'), $t('Saga'), $t('Tassa'), $t('Elsa'), $t('Nellie'), $t('Molly')] },
+  kanin: { hane: [$t('Stampe'), $t('Hoppsan'), $t('Morot'), $t('Klumpen'), $t('Pompe'), $t('Snöboll'), $t('Fluffe'), $t('Kalle'), $t('Nisse'), $t('Bosse')],
+    hona: [$t('Nösnäsa'), $t('Mimmi'), $t('Lilla My'), $t('Tofsen'), $t('Pärla'), $t('Klöver'), $t('Bulla'), $t('Sessan'), $t('Dunet'), $t('Majros')] },
 };
 
 const stageOf = (age) => (age >= STAGE_DAYS.vuxen ? 'vuxen' : age >= STAGE_DAYS.ung ? 'ung' : 'unge');
@@ -250,8 +251,8 @@ export function createPetStore({ storage = null, rng = Math.random, key = PETS_S
     // ------------------------------------------------------------------
     adopt(species, breed, sex, name, home, opts = {}) {
       S.lastError = '';
-      if (!ARTER.includes(species)) { S.lastError = 'Okänd djurart.'; return null; }
-      if (S.pets.length >= MAX_PETS) { S.lastError = `Du kan ha högst ${MAX_PETS} djur.`; return null; }
+      if (!ARTER.includes(species)) { S.lastError = $t('Okänd djurart.'); return null; }
+      if (S.pets.length >= MAX_PETS) { S.lastError = $t`Du kan ha högst ${MAX_PETS} djur.`; return null; }
       sex = sex === 'hona' ? 'hona' : 'hane';
       const day = isNum(opts.day) ? opts.day : S.nowDay();
       const p = S._newPet({
@@ -297,14 +298,14 @@ export function createPetStore({ storage = null, rng = Math.random, key = PETS_S
       if ((RANK[st] ?? 0) > (RANK[p.stage] ?? 0)) S._setStage(p, st, Math.min(day, born + STAGE_DAYS[st]));
     },
     _freeName(species, sex) {
-      const list = NAMN[species]?.[sex] || ['Tuss'];
+      const list = NAMN[species]?.[sex] || [$t('Tuss')];
       const used = new Set(S.pets.map((p) => p.name));
       const free = list.filter((n) => !used.has(n));
       if (free.length) return free[Math.floor(S.rng() * free.length)];
       return list[Math.floor(S.rng() * list.length)] + ' ' + (S.pets.length + 1);
     },
     buyItem(k, n = 1) {
-      if (!PET_ITEMS[k]) { S.lastError = 'Okänd vara.'; return false; }
+      if (!PET_ITEMS[k]) { S.lastError = $t('Okänd vara.'); return false; }
       S.inventory[k] = (S.inventory[k] | 0) + Math.max(1, n | 0);
       S.save();
       return true;
@@ -312,9 +313,9 @@ export function createPetStore({ storage = null, rng = Math.random, key = PETS_S
     placeItem(k, home, room, x, y) {
       S.lastError = '';
       const def = PET_ITEMS[k];
-      if (!def) { S.lastError = 'Okänd sak.'; return null; }
+      if (!def) { S.lastError = $t('Okänd sak.'); return null; }
       const opened = def.typ === 'sack' ? (S.opened[k] | 0) : 0;
-      if (!((S.inventory[k] | 0) > 0) && !(opened > 0)) { S.lastError = `Du har ingen ${def.namn.toLowerCase()} kvar att ställa ut.`; return null; }
+      if (!((S.inventory[k] | 0) > 0) && !(opened > 0)) { S.lastError = $t`Du har ingen ${def.namn.toLowerCase()} kvar att ställa ut.`; return null; }
       let take = 0;
       if (opened > 0) { // påbörjade säckar först
         take = Math.min(opened, def.portioner);
@@ -358,18 +359,18 @@ export function createPetStore({ storage = null, rng = Math.random, key = PETS_S
     fillBowl(itemId, { sackId = null, kind = null } = {}) {
       S.lastError = ''; S.lastReason = '';
       const bowl = S.itemById(itemId);
-      if (!bowl) return fail('ingen-skal', 'Skålen finns inte.');
+      if (!bowl) return fail('ingen-skal', $t('Skålen finns inte.'));
       const def = PET_ITEMS[bowl.k];
       if (def?.typ === 'vatten') {
-        if (bowl.water >= 0.98) return fail('full', 'Vattenskålen är redan full.');
+        if (bowl.water >= 0.98) return fail('full', $t('Vattenskålen är redan full.'));
         bowl.water = 1;
         S.save();
         return { ok: true, kind: 'vatten', sackId: null };
       }
-      if (def?.typ !== 'skal') return fail('inte-skal', 'Det där är ingen matskål.');
-      if (bowl.food >= 0.95) return fail('full', 'Skålen är redan full.');
+      if (def?.typ !== 'skal') return fail('inte-skal', $t('Det där är ingen matskål.'));
+      if (bowl.food >= 0.95) return fail('full', $t('Skålen är redan full.'));
       let sack = sackId ? S.itemById(sackId) : null;
-      if (sackId && (!sack || PET_ITEMS[sack.k]?.typ !== 'sack')) return fail('ingen-sack', 'Säcken finns inte längre.');
+      if (sackId && (!sack || PET_ITEMS[sack.k]?.typ !== 'sack')) return fail('ingen-sack', $t('Säcken finns inte längre.'));
       if (!sack) {
         const want = kind || (bowl.food > 0.05 && bowl.foodKind) || S._wantedFood(bowl.home, bowl.room);
         const order = [want, ...ARTER.filter((a) => a !== want)];
@@ -382,9 +383,9 @@ export function createPetStore({ storage = null, rng = Math.random, key = PETS_S
             if (sack) break;
           }
         }
-        if (!sack) return fail('ingen-sack', 'Du har ingen matsäck – köp en i djuraffären.');
+        if (!sack) return fail('ingen-sack', $t('Du har ingen matsäck – köp en i djuraffären.'));
       }
-      if (!(sack.left > 0)) return fail('tom-sack', 'Säcken är tom.');
+      if (!(sack.left > 0)) return fail('tom-sack', $t('Säcken är tom.'));
       const fk = PET_ITEMS[sack.k].art;
       if (bowl.food > 0.05 && bowl.foodKind && bowl.foodKind !== fk) {
         // blanda inte maten – häll ut resten och fyll med det nya
@@ -422,12 +423,12 @@ export function createPetStore({ storage = null, rng = Math.random, key = PETS_S
     walkStart(petId) {
       S.lastError = ''; S.lastReason = '';
       const p = S.petById(petId);
-      if (!p) return fail('inget-djur', 'Djuret finns inte.');
-      if (p.species === 'hund' && !S.hasLeash()) return fail('inget-koppel', 'Du behöver ett koppel – köp ett i djuraffären.');
-      if (p.stage === 'unge' && p.species !== 'hund') return fail('for-liten', `${p.name} är för liten för att gå ut än.`);
+      if (!p) return fail('inget-djur', $t('Djuret finns inte.'));
+      if (p.species === 'hund' && !S.hasLeash()) return fail('inget-koppel', $t('Du behöver ett koppel – köp ett i djuraffären.'));
+      if (p.stage === 'unge' && p.species !== 'hund') return fail('for-liten', $t`${p.name} är för liten för att gå ut än.`);
       p.out = true; p.outMin = 0; p.outTot = 0; p.didBusiness = false; p.following = false;
       S.save();
-      return { ok: true, msg: p.species === 'hund' ? `Koppel på! ${p.name} viftar på svansen.` : `${p.name} följer med ut.` };
+      return { ok: true, msg: p.species === 'hund' ? $t`Koppel på! ${p.name} viftar på svansen.` : $t`${p.name} följer med ut.` };
     },
     walkEnd(petId = null) {
       const back = [];
@@ -452,8 +453,8 @@ export function createPetStore({ storage = null, rng = Math.random, key = PETS_S
     // Ute för länge (jobbpass, sömn, glömt koppel): djuret går hem självt.
     _comeHome(p, atHome = false) {
       S._endWalk(p);
-      const text = atHome ? `${p.name} tröttnade på att vänta och gick och la sig.`
-        : p.species === 'hund' ? `${p.name} tröttnade på att vänta och gick hem själv.` : `${p.name} smet hem på egen hand.`;
+      const text = atHome ? $t`${p.name} tröttnade på att vänta och gick och la sig.`
+        : p.species === 'hund' ? $t`${p.name} tröttnade på att vänta och gick hem själv.` : $t`${p.name} smet hem på egen hand.`;
       S._emit('hem', text, { petId: p.id, home: p.home });
     },
     outdoorBusiness(petId) {
@@ -468,7 +469,7 @@ export function createPetStore({ storage = null, rng = Math.random, key = PETS_S
       p.toilet = 0;
       p.happy = clamp(p.happy + 8);
       S._gain(p, 'toa', CARE.uteToa); // tillväxt: toaletten sköttes rätt – ute
-      S._emit('ute', `${p.name} fick göra sitt ute. Duktig!`, { petId: p.id, home: p.home });
+      S._emit('ute', $t`${p.name} fick göra sitt ute. Duktig!`, { petId: p.id, home: p.home });
     },
     // Klappa: mycket glädje första gången, mindre om man klappar oavbrutet.
     pet(petId) {
@@ -575,10 +576,10 @@ export function createPetStore({ storage = null, rng = Math.random, key = PETS_S
       p.toilet = 0; p.urge = false; p.urgeMin = 0;
       p.happy = clamp(p.happy - 4);
       S._lose(p, -CARE.inne, true); // tillväxt: bajs/kiss inne drar lite
-      const what = kind === 'kiss' ? 'kissat' : 'bajsat';
-      S._emit(kind, p.species === 'hund' ? `${p.name} har ${what} inne! Gå ut med hunden oftare.`
-        : p.species === 'katt' ? `${p.name} har ${what} på golvet – kattlådan behövs (och ska vara ren).`
-          : `${p.name} har lämnat kaninbajs på golvet – en kaninbur hjälper.`, { petId: p.id, home: p.home, messId: m.id });
+      const kiss = kind === 'kiss';
+      S._emit(kind, p.species === 'hund' ? (kiss ? $t`${p.name} har kissat inne! Gå ut med hunden oftare.` : $t`${p.name} har bajsat inne! Gå ut med hunden oftare.`)
+        : p.species === 'katt' ? (kiss ? $t`${p.name} har kissat på golvet – kattlådan behövs (och ska vara ren).` : $t`${p.name} har bajsat på golvet – kattlådan behövs (och ska vara ren).`)
+          : $t`${p.name} har lämnat kaninbajs på golvet – en kaninbur hjälper.`, { petId: p.id, home: p.home, messId: m.id });
       S.save();
       return m;
     },
@@ -692,7 +693,7 @@ export function createPetStore({ storage = null, rng = Math.random, key = PETS_S
             if (!live && b.room != null) { p.x = b.x + (S.rng() < 0.5 ? -7 : 7); p.y = b.y + 2; }
           } else if (p.hunger < 20 && !p._hungryWarned) {
             p._hungryWarned = true;
-            S._emit('hungrig', `${p.name} är jättehungrig och skålen är tom!`, { petId: p.id, home: p.home });
+            S._emit('hungrig', $t`${p.name} är jättehungrig och skålen är tom!`, { petId: p.id, home: p.home });
           }
         }
         if (p.hunger > 40) p._hungryWarned = false;
@@ -812,9 +813,10 @@ export function createPetStore({ storage = null, rng = Math.random, key = PETS_S
       if (day - since < GROW_MIN_DAYS[p.stage]) return false;
       p.stage = next;
       p.stageDay = day;
-      const hen = p.sex === 'hona' ? 'hon' : 'han';
+      const hona = p.sex === 'hona', vuxen = next === 'vuxen';
       // told = toasten visad, seen = pratbubblan över djuret visad (lagret/promenaden sätter dem)
-      S._emit('vaxte', `${p.name} har vuxit! Nu är ${hen} ${next === 'vuxen' ? 'vuxen' : 'ung'}.`,
+      S._emit('vaxte', hona ? (vuxen ? $t`${p.name} har vuxit! Nu är hon vuxen.` : $t`${p.name} har vuxit! Nu är hon ung.`)
+        : (vuxen ? $t`${p.name} har vuxit! Nu är han vuxen.` : $t`${p.name} har vuxit! Nu är han ung.`),
         { petId: p.id, home: p.home, species: p.species, stage: next, seen: false, told: false });
       S.save();
       return true;
@@ -828,7 +830,7 @@ export function createPetStore({ storage = null, rng = Math.random, key = PETS_S
       const c = p.care && p.care.day === S.day ? p.care : { mat: 0, lek: 0, leksak: 0, toa: 0, inne: 0, held: 0 };
       const dayOk = S._dayOk(c), held = dayOk ? 0 : Math.max(0, c.held || 0);
       const today = { mat: c.mat / CARE_CAP.mat, lek: c.lek / CARE_CAP.lek, leksak: c.leksak / CARE_CAP.leksak, toa: c.toa / CARE_CAP.toa, inne: c.inne | 0, held, ok: dayOk };
-      if (!next) return { stage, next: null, pct: 1, held: 0, pctHeld: 0, grow, need: GROW_AT[stage], daysLeft: 0, ready: false, waiting: false, today, missing: [], text: 'Fullvuxen.' };
+      if (!next) return { stage, next: null, pct: 1, held: 0, pctHeld: 0, grow, need: GROW_AT[stage], daysLeft: 0, ready: false, waiting: false, today, missing: [], text: $t('Fullvuxen.') };
       const lo = GROW_AT[stage], need = GROW_AT[next];
       const pct = Math.max(0, Math.min(1, (grow - lo) / (need - lo)));
       const pctHeld = Math.max(0, Math.min(1 - pct, held / (need - lo)));
@@ -838,26 +840,29 @@ export function createPetStore({ storage = null, rng = Math.random, key = PETS_S
       // vad som saknas (i dag): mat, lek, leksak hemma, toaletten
       const H = S._homeInfo(p.home), missing = [];
       const toy = H.toyFor[p.species];
-      if (p.hunger < 35) missing.push('mat');
-      if (p.happy < 25) missing.push('sällskap');
-      if (c.lek < CARE_CAP.lek * 0.5) missing.push('lek');
-      if (!toy) missing.push('leksak');
-      if (p.species === 'hund') { if (c.toa < CARE_CAP.toa / 2 || c.inne > 0) missing.push('promenad'); }
+      // (missing är koder – $n: översätts först i texten nedan)
+      if (p.hunger < 35) missing.push($n('mat'));
+      if (p.happy < 25) missing.push($n('sällskap'));
+      if (c.lek < CARE_CAP.lek * 0.5) missing.push($n('lek'));
+      if (!toy) missing.push($n('leksak'));
+      if (p.species === 'hund') { if (c.toa < CARE_CAP.toa / 2 || c.inne > 0) missing.push($n('promenad')); }
       else if (p.species === 'katt') {
-        if (!H.litter.length) missing.push('kattlåda');
-        else if (H.litter.every((b) => b.dirt >= DIRTY.kattlada)) missing.push('tömd kattlåda');
-      } else if (!H.bur.length) missing.push('en bur');
-      else if (H.bur.every((b) => b.dirt >= DIRTY.kaninbur)) missing.push('ny halm i buren');
+        if (!H.litter.length) missing.push($n('kattlåda'));
+        else if (H.litter.every((b) => b.dirt >= DIRTY.kattlada)) missing.push($n('tömd kattlåda'));
+      } else if (!H.bur.length) missing.push($n('en bur'));
+      else if (H.bur.every((b) => b.dirt >= DIRTY.kaninbur)) missing.push($n('ny halm i buren'));
       // dagens krav inte uppfyllda: ingen lek än i dag, ingen leksak (eller för ledsen för att leka
       // med den). En leksak som nyss ställts fram hos ett glatt djur räknas inom tio minuter.
       const waiting = !dayOk && ((c.lek || 0) < DAY_NEED.lek || (!((c.leksak || 0) > 0) && !(toy && p.happy >= 25)));
-      const word = next === 'vuxen' ? 'vuxen' : 'ung';
+      const word = next === 'vuxen' ? $t('vuxen') : $t('ung');
+      const dagar = daysLeft === 1 ? $t('1 dag') : $t`${daysLeft} dagar`;
+      const tr = (list) => list.map((x) => $t(x)).join(', ');
       let text;
-      if (ready && daysLeft > 0) text = `Stor nog snart – blir ${word} om ${daysLeft === 1 ? '1 dag' : daysLeft + ' dagar'}.`;
-      else if (ready) text = `Blir ${word} vilken stund som helst!`;
-      else if (waiting) text = `Växer inte än i dag – behöver ${(missing.length ? missing : ['lek']).join(', ')}.`;
-      else if (missing.length) text = `Växer: behöver ${missing.join(', ')}.`;
-      else text = 'Växer så det knakar – allt är bra!';
+      if (ready && daysLeft > 0) text = $t`Stor nog snart – blir ${word} om ${dagar}.`;
+      else if (ready) text = $t`Blir ${word} vilken stund som helst!`;
+      else if (waiting) text = $t`Växer inte än i dag – behöver ${tr(missing.length ? missing : ['lek'])}.`;
+      else if (missing.length) text = $t`Växer: behöver ${tr(missing)}.`;
+      else text = $t('Växer så det knakar – allt är bra!');
       return { stage, next, pct, held, pctHeld, grow, need, daysLeft, ready, waiting, today, missing, text };
     },
     // Tillväxthändelser vars pratbubbla ingen har visat än (spelaren var inte i rummet när det hände)
@@ -890,7 +895,7 @@ export function createPetStore({ storage = null, rng = Math.random, key = PETS_S
           S._boxUsed(p, box);
           box.dirt = clamp(box.dirt + 0.15, 0, 1);
           p.toilet = 0; p.urge = false; p.urgeMin = 0;
-          if (box.dirt >= 0.99) S._emit('lada', `Kattlådan är full – ${p.name} vill ha den tömd!`, { petId: p.id, home: p.home, itemId: box.id });
+          if (box.dirt >= 0.99) S._emit('lada', $t`Kattlådan är full – ${p.name} vill ha den tömd!`, { petId: p.id, home: p.home, itemId: box.id });
           return;
         }
       } else if (p.species === 'kanin') {
@@ -930,8 +935,10 @@ export function createPetStore({ storage = null, rng = Math.random, key = PETS_S
           kids.push(kid);
         }
         if (kids.length) {
-          const word = { katt: ['kattunge', 'kattungar'], hund: ['valp', 'valpar'], kanin: ['kaninunge', 'kaninungar'] }[mom.species];
-          S._emit('ungar', `${mom.name}${dad ? ' och ' + dad.name : ''} har fått ${kids.length === 1 ? 'en ' + word[0] : kids.length + ' ' + word[1]}: ${kids.map((k) => k.name).join(', ')}!`,
+          const k1 = kids.length === 1, kn = kids.length;
+          const what = { katt: k1 ? $t('en kattunge') : $t`${kn} kattungar`, hund: k1 ? $t('en valp') : $t`${kn} valpar`, kanin: k1 ? $t('en kaninunge') : $t`${kn} kaninungar` }[mom.species];
+          const names = kids.map((k) => k.name).join(', ');
+          S._emit('ungar', dad ? $t`${mom.name} och ${dad.name} har fått ${what}: ${names}!` : $t`${mom.name} har fått ${what}: ${names}!`,
             { petId: mom.id, home: mom.home, kids: kids.map((k) => k.id) });
         }
       }
@@ -949,7 +956,7 @@ export function createPetStore({ storage = null, rng = Math.random, key = PETS_S
           b = S.pets.find((q) => q.sex === 'hane' && q.species === a.species && q.home === a.home && ok(q) && (!q.lover || !S.petById(q.lover)));
           if (!b) continue;
           a.lover = b.id; b.lover = a.id;
-          S._emit('kar', `${a.name} och ${b.name} har blivit kära! ❤`, { petId: a.id, home: a.home });
+          S._emit('kar', $t`${a.name} och ${b.name} har blivit kära! ❤`, { petId: a.id, home: a.home });
         } else if (!ok(b)) continue;
         a.pregnantUntil = day + 2;
         S.save();
@@ -982,7 +989,7 @@ export function createPetStore({ storage = null, rng = Math.random, key = PETS_S
         const stage = ['unge', 'ung', 'vuxen'].includes(q.stage) ? q.stage : 'unge';
         return {
           ...q,
-          id: String(q.id), name: cleanName(q.name) || 'Tuss', breed: String(q.breed || ''), sex: q.sex === 'hona' ? 'hona' : 'hane',
+          id: String(q.id), name: cleanName(q.name) || $t('Tuss'), breed: String(q.breed || ''), sex: q.sex === 'hona' ? 'hona' : 'hane',
           bornDay, stage,
           hunger: clamp(num(q.hunger, 70)), happy: clamp(num(q.happy, 70)), toilet: clamp(num(q.toilet, 0)),
           x: isNum(q.x) ? q.x : null, y: isNum(q.y) ? q.y : null, following: !!q.following, out: !!q.out,
@@ -1033,18 +1040,19 @@ export function createPetStore({ storage = null, rng = Math.random, key = PETS_S
       const dirtyLitter = S.items.some((i) => i.k === 'kattlada' && i.dirt >= 0.7);
       const dirtyCage = S.items.some((i) => i.k === 'kaninbur' && i.dirt >= 0.7);
       const emptyBowls = S.items.filter((i) => i.k === 'matskal' && !(i.food > 0.02)).length;
-      if (!count) lines.push('Inga husdjur än – djuraffären finns i staden.');
+      if (!count) lines.push($t('Inga husdjur än – djuraffären finns i staden.'));
       else {
-        const words = { katt: ['katt', 'katter'], hund: ['hund', 'hundar'], kanin: ['kanin', 'kaniner'] };
-        lines.push(Object.entries(by).map(([a, n]) => `${n} ${n === 1 ? words[a][0] : words[a][1]}`).join(', '));
+        const words = { katt: (n) => (n === 1 ? $t`${n} katt` : $t`${n} katter`), hund: (n) => (n === 1 ? $t`${n} hund` : $t`${n} hundar`), kanin: (n) => (n === 1 ? $t`${n} kanin` : $t`${n} kaniner`) };
+        lines.push(Object.entries(by).map(([a, n]) => words[a](n)).join(', '));
       }
-      if (hungry.length) lines.push(`Hungriga: ${hungry.join(', ')}`);
-      if (needWalk.length) lines.push(`Behöver gå ut: ${needWalk.join(', ')}`);
-      if (sad.length) lines.push(`Ledsna: ${sad.join(', ')}`);
-      if (dirtyLitter) lines.push('Kattlådan behöver tömmas.');
-      if (dirtyCage) lines.push('Kaninburen behöver ny halm.');
-      if (S.messes.length) lines.push(`${S.messes.length} ${S.messes.length === 1 ? 'olycka' : 'olyckor'} på golvet att städa.`);
-      if (count && emptyBowls) lines.push(`${emptyBowls} ${emptyBowls === 1 ? 'tom matskål' : 'tomma matskålar'}.`);
+      if (hungry.length) lines.push($t`Hungriga: ${hungry.join(', ')}`);
+      if (needWalk.length) lines.push($t`Behöver gå ut: ${needWalk.join(', ')}`);
+      if (sad.length) lines.push($t`Ledsna: ${sad.join(', ')}`);
+      if (dirtyLitter) lines.push($t('Kattlådan behöver tömmas.'));
+      if (dirtyCage) lines.push($t('Kaninburen behöver ny halm.'));
+      const nm = S.messes.length;
+      if (nm) lines.push(nm === 1 ? $t`${nm} olycka på golvet att städa.` : $t`${nm} olyckor på golvet att städa.`);
+      if (count && emptyBowls) lines.push(emptyBowls === 1 ? $t`${emptyBowls} tom matskål.` : $t`${emptyBowls} tomma matskålar.`);
       return { count, bySpecies: by, lines, hungry, needWalk, sad, messes: S.messes.length, dirtyLitter, dirtyCage, emptyBowls,
         pregnant: S.pets.filter((p) => p.pregnantUntil != null).map((p) => p.name) };
     },

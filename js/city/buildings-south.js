@@ -18,6 +18,7 @@
 import { Pix, mix, mul, hash, bayer, SMALL, BIG, text, textW, ctxText } from '../core/floor-pix.js';
 import { makeArt, jit, qmix, windowAt, WALLS, WHITE, rgba } from './facade-kit.js';
 import { baseOf } from './map.js';
+import { $t, LANG } from '../core/i18n.js';
 
 const rgb = (c) => `rgb(${(c >> 16) & 255},${(c >> 8) & 255},${c & 255})`;
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
@@ -484,7 +485,7 @@ const SPECS = {
         }
       }
       // emaljskylten: krämvit platta, grön vänsterkant, röd högerkant, trikolor underkant
-      const s = 'PIZZERIA NAPOLI', sw = textW(SMALL, s) + 8, sh = 11;
+      const s = $t('PIZZERIA NAPOLI'), sw = textW(SMALL, s) + 8, sh = 11;
       const sx = K.fx0 + 5, sy = K.gtop - 14;
       P.darken(sx + 1, sy + sh, sw, 1, 0.7); P.darken(sx + sw, sy + 1, 1, sh, 0.78);
       area(P, sx, sy, sw, sh, (X, Y, i, j) => {
@@ -558,7 +559,7 @@ const SPECS = {
         const [x, y, w, h] = m.skylt;
         ctx.globalCompositeOperation = 'source-over';
         ctx.fillStyle = rgba(0xfff4e4, (0.8 * k).toFixed(3)); ctx.fillRect(x + 1, y + 1, w - 2, h - 2);
-        drawSkylt(ctx, SMALL, 'PIZZERIA NAPOLI', SPECS.pizzeria._ROD[1], m.skyltText[0], m.skyltText[1], k);
+        drawSkylt(ctx, SMALL, $t('PIZZERIA NAPOLI'), SPECS.pizzeria._ROD[1], m.skyltText[0], m.skyltText[1], k);
         ctx.globalCompositeOperation = 'lighter';
         skyltSken(ctx, m.skylt, 0xff7050, 0.2 * k, 3);
       }
@@ -593,7 +594,7 @@ const SPECS = {
     wall: 0xe8dcc0, wallKind: 'plaster', roof: 'flat', ground: 'shop', noSign: true, frame: 0x1a3a8a, floorH: 24,
     extra(P, K) {
       // emaljskylten: gul platta i tre toner, blå ram med ljus innerkant, präglade blå versaler
-      const ss = 'POSTEN', sw = textW(BIG, ss) + 6, sh = 12, sx = K.X(344), sy = K.gtop - 15;
+      const ss = $t('POSTEN'), sw = textW(BIG, ss) + 6, sh = 12, sx = K.X(344), sy = K.gtop - 15;
       P.darken(sx, sy + sh + 1, sw + 1, 1, 0.72); P.darken(sx + sw + 1, sy, 1, sh + 1, 0.8);        // skuggan på putsen
       P.box(sx - 1, sy - 1, sw + 2, sh + 2, 0x1a3a8a); P.hl(sx - 1, sy - 1, sw + 2, 0x3a5aaa);
       area(P, sx, sy, sw, sh, (X, Y, i, j) => (j === 0 ? 0xfff0a0 : j === sh - 1 ? 0xc8a020 : i === 0 ? 0xffe070 : i === sw - 1 ? 0xd8b028 : j === sh - 2 ? 0xf0c434 : jit(0xffd23f, X, Y, K.seed + 71, 0.03)));
@@ -733,7 +734,7 @@ const SPECS = {
     // vändskylten på dörren: ÖPPET (vit med grön text) / STÄNGT (röd)
     _doorCard(open) {
       return SPECS.djuraffar._img('dorr:' + (open ? 1 : 0), () => {
-        const s = open ? 'ÖPPET' : 'STÄNGT', bg = open ? 0xfbf7ec : 0xc8342a, fg = open ? 0x1f7a44 : 0xffffff, w = textW(SMALL, s) + 4, h = 9, P = new Pix(w + 1, h + 1);
+        const s = open ? $t('ÖPPET') : $t('STÄNGT'), bg = open ? 0xfbf7ec : 0xc8342a, fg = open ? 0x1f7a44 : 0xffffff, w = textW(SMALL, s) + 4, h = 9, P = new Pix(w + 1, h + 1);
         P.rect(1, 1, w, h, 0x000000, 0.3);
         P.rect(0, 0, w, h, bg); P.hl(1, 1, w - 2, mix(bg, WHITE, 0.3)); P.hl(1, h - 2, w - 2, mul(bg, open ? 0.9 : 0.8));
         P.box(0, 0, w, h, open ? 0x1f5c38 : mul(bg, 0.5)); P.erase(0, 0, 1, 1); P.erase(w - 1, 0, 1, 1);
@@ -830,7 +831,7 @@ const SPECS = {
         return c;
       });
       if (snow) for (let x = fz0; x < fz0 + fzw; x++) if (hash(x, 9, 91) > 0.35) P.px(x, fy - 1, hash(x, 10, 91) > 0.5 ? 0xf4f8ff : 0xe8eef8); // snö på brädans överkant
-      const WORDS = ['AKVARIUM', 'FODER', 'TILLBEHÖR', 'SMÅDJUR'], gap = 3;
+      const WORDS = [$t('AKVARIUM'), $t('FODER'), $t('TILLBEHÖR'), $t('SMÅDJUR')], gap = 3;
       const tw = WORDS.reduce((s, w) => s + textW(SMALL, w), 0) + (WORDS.length - 1) * (5 + 2 * gap);
       let tx = fz0 + ((fzw - tw) >> 1);
       WORDS.forEach((w, i) => {
@@ -975,11 +976,15 @@ const SPECS = {
       for (const [rx, ry] of [[sx0 + 3, sy0 + 3], [sx1 - 3, sy0 + 3], [sx0 + 3, sy1 - 4], [sx1 - 3, sy1 - 4]]) { P.px(rx, ry, GULDL); P.px(rx, ry + 1, GULDS); } // mässingsskruvar
       // bokstäverna: BIG ×2, förgyllda med ljus överkant, mörk underkant och
       // slagskugga; Ä-prickarna sätts tätt över A:et så texten får plats
-      const hs = 'DJURAFFAREN', hw = textW(BIG, hs, 2), hx = sx0 + ((sw - hw) >> 1), hy = sy0 + 6;
+      // (andra språk: den översatta skylten, i halv storlek om den inte får plats)
+      const svSkylt = LANG === 'sv', hs = svSkylt ? 'DJURAFFAREN' : $t('DJURAFFÄREN');
+      const hsc = svSkylt || textW(BIG, hs, 2) <= sw - 6 ? 2 : 1, hw = textW(BIG, hs, hsc), hx = sx0 + ((sw - hw) >> 1), hy = sy0 + (hsc === 2 ? 6 : 10);
       const on = new Set(), key = (x, y) => y * 4096 + x;
-      text({ px: (x, y) => on.add(key(x, y)) }, BIG, hs, hx, hy, 0, 1, 2);
-      const ax = hx + textW(BIG, 'DJURAFF', 2) + 2;
-      for (const ddx of [2, 6]) for (let j = 0; j < 2; j++) for (let i = 0; i < 2; i++) on.add(key(ax + ddx + i, hy - 3 + j));
+      text({ px: (x, y) => on.add(key(x, y)) }, BIG, hs, hx, hy, 0, 1, hsc);
+      if (svSkylt) {
+        const ax = hx + textW(BIG, 'DJURAFF', 2) + 2;
+        for (const ddx of [2, 6]) for (let j = 0; j < 2; j++) for (let i = 0; i < 2; i++) on.add(key(ax + ddx + i, hy - 3 + j));
+      }
       const each = (fn) => { for (const kk of on) fn(kk % 4096, (kk / 4096) | 0); };
       each((x, y) => { if (!on.has(key(x + 1, y + 1))) P.px(x + 1, y + 1, MORK, 0.9); });
       each((x, y) => {
@@ -1581,7 +1586,7 @@ const SPECS = {
         P.rect(x - 2, y - 2, w + 4, h + K.baseY - (y + h) + 2, 0x6a7078);
         area(P, x, y, w, K.baseY - y - 2, (X, Y, i, j) => ((j % 4) === 3 ? 0x8a9098 : jit(0xc8ccd2, X, Y, 12, 0.05)));
         P.rect(x, y + 10, w, 3, 0xd8342c); P.hl(x, y + 10, w, 0xff6a5a);
-        label(P, SMALL, 'AMBULANS', x + ((w - textW(SMALL, 'AMBULANS')) >> 1), y + 16, 0xd8342c, undefined, 0x8a9098);
+        label(P, SMALL, $t('AMBULANS'), x + ((w - textW(SMALL, $t('AMBULANS'))) >> 1), y + 16, 0xd8342c, undefined, 0x8a9098);
         P.rect(x + w - 6, y + h - 2, 5, 2, 0x1a1a1a); P.rect(x + w - 5, y + h - 1, 3, 1, 0xd8342c); // stopplyktor på porten
         // blåljuslyktan på portens karm: blå kupol med glans på svart fot och ett litet fäste
         const bl = x + w - 11, bt = y - 8;
@@ -1614,7 +1619,7 @@ const SPECS = {
       vent(P, K.fx0 + 60, K.rtop + 12); vent(P, K.fx0 + 70, K.rtop + 12);
       // huvudskylten: ljuslåda i vit emalj med grön ram och gröna bokstäver (y 590–602 i
       // världen – under fönsterraden, ovanför glastaket och gatlyktans arm)
-      const s = 'VÅRDCENTRALEN', sw = textW(BIG, s) + 12, sh = 13;
+      const s = $t('VÅRDCENTRALEN'), sw = textW(BIG, s) + 12, sh = 13;
       const sx = K.fx0 + (K.b.w >> 1) - (sw >> 1), sy = K.baseY - 50;
       P.darken(sx + 1, sy + sh, sw, 1, 0.78); P.darken(sx + sw, sy + 1, 1, sh, 0.84);        // skuggan på betongen
       area(P, sx, sy, sw, sh, (X, Y, i, j) => {
@@ -1662,7 +1667,7 @@ const SPECS = {
         const [x, y, w, h] = m.skylt;
         ctx.globalCompositeOperation = 'source-over';
         ctx.fillStyle = rgba(0xf6fbff, (0.85 * k).toFixed(3)); ctx.fillRect(x + 1, y + 2, w - 2, h - 3);
-        drawSkylt(ctx, BIG, 'VÅRDCENTRALEN', V._GRON[1], m.skyltText[0], m.skyltText[1], k);
+        drawSkylt(ctx, BIG, $t('VÅRDCENTRALEN'), V._GRON[1], m.skyltText[0], m.skyltText[1], k);
         ctx.globalCompositeOperation = 'lighter';
         skyltSken(ctx, m.skylt, 0xd8ffe4, 0.14 * k, 3);
       }
@@ -1723,7 +1728,7 @@ const SPECS = {
       K.out.beacon = { x: ax + K.box.x, y: K.rtop - 32 + K.box.y };
       // namnskylten: mörk platta med fasad kant, två mässingsskruvar och mässingsbokstäver
       // (y 594–605 i världen: mellan fönsterraden och entrétaket, fri från trädkronan)
-      const s = 'TORNHUSET', sw = textW(BIG, s) + 10, sh = 12;
+      const s = $t('TORNHUSET'), sw = textW(BIG, s) + 10, sh = 12;
       const sx = K.dx + (K.dw >> 1) - (sw >> 1), sy = K.baseY - 46;
       P.darken(sx + 1, sy + sh, sw, 1, 0.6); P.darken(sx + sw, sy + 1, 1, sh, 0.7);        // skuggan på teglet
       area(P, sx, sy, sw, sh, (X, Y, i, j) => {
@@ -1762,7 +1767,7 @@ const SPECS = {
       // namnskylten: bokstäverna lyser skarpt (inga rutor över texten), skenet runt plattan
       if (m.skylt) {
         ctx.globalCompositeOperation = 'source-over';
-        drawSkylt(ctx, BIG, 'TORNHUSET', SPECS.tornhuset._MASS[1], m.skyltText[0], m.skyltText[1], 0.9 * k);
+        drawSkylt(ctx, BIG, $t('TORNHUSET'), SPECS.tornhuset._MASS[1], m.skyltText[0], m.skyltText[1], 0.9 * k);
         ctx.globalCompositeOperation = 'lighter';
         skyltSken(ctx, m.skylt, 0xffc870, 0.16 * k, 3);
       }
@@ -1971,20 +1976,20 @@ function skorstenSno(P, x, top, bot, warm = false) {
 // Programmet på ljusskylten: varje par är en actionfilm och en romantisk
 // komedi. Paren växlar var 9:e sekund och bokstäverna "hängs upp" en i taget.
 const FILMER = {
-  hamnaren: { titel: 'PIXELHÄMNAREN 3', tid: '21:30', typ: 'action' },
-  turbo: { titel: 'TURBOPOLIS', tid: '19:00', typ: 'action' },
-  nattbuss: { titel: 'SISTA NATTBUSSEN', tid: '22:45', typ: 'action' },
-  karlek: { titel: 'KÄRLEK PÅ PIXELGATAN', tid: '18:30', typ: 'romkom' },
-  sommar: { titel: 'SOMMAR I STAN', tid: '20:00', typ: 'romkom' },
-  amore: { titel: 'AMORE PÅ SÖDER', tid: '20:15', typ: 'romkom' },
-  kbk1: { titel: 'KBK STILLSAM BÖRJAN', tid: '17:00', typ: 'sport' },
-  kbk2: { titel: 'KBK UT I VÄRLDEN', tid: '17:45', typ: 'sport' },
+  hamnaren: { titel: $t('PIXELHÄMNAREN 3'), tid: '21:30', typ: 'action' },
+  turbo: { titel: $t('TURBOPOLIS'), tid: '19:00', typ: 'action' },
+  nattbuss: { titel: $t('SISTA NATTBUSSEN'), tid: '22:45', typ: 'action' },
+  karlek: { titel: $t('KÄRLEK PÅ PIXELGATAN'), tid: '18:30', typ: 'romkom' },
+  sommar: { titel: $t('SOMMAR I STAN'), tid: '20:00', typ: 'romkom' },
+  amore: { titel: $t('AMORE PÅ SÖDER'), tid: '20:15', typ: 'romkom' },
+  kbk1: { titel: $t('KBK STILLSAM BÖRJAN'), tid: '17:00', typ: 'sport' },
+  kbk2: { titel: $t('KBK UT I VÄRLDEN'), tid: '17:45', typ: 'sport' },
 };
 // (fotbollsfilmerna om Kungsladugård – KBK – går som ett eget par före kvällens filmer)
 const BIOPAR = [['kbk1', 'kbk2'], ['hamnaren', 'karlek'], ['turbo', 'sommar'], ['nattbuss', 'amore']];
 const BIO_SLOT = 9, BIO_BOKSTAV = 0.035;
 // efter kvällens sista föreställning (och fram till morgonen) tackar tavlan för ikväll
-const BIO_SENT = [{ titel: 'TACK FÖR IKVÄLL!', tid: '' }, { titel: 'IMORGON FRÅN', tid: '17:00' }];
+const BIO_SENT = [{ titel: $t('TACK FÖR IKVÄLL!'), tid: '' }, { titel: $t('IMORGON FRÅN'), tid: '17:00' }];
 const bioTid = (f) => { const [hh, mm] = f.tid.split(':').map(Number); return hh + mm / 60; };
 // paren som fortfarande är aktuella: dagtid hela programmet, på kvällen bara par där
 // någon film inte har börjat (eller började för mindre än en kvart sedan)
@@ -2033,7 +2038,7 @@ function bioMontre(P, K, x, y, kind) {
     for (let j = 24; j <= 28; j++) { A(9 + (j > 26 ? -1 : 0), j, H); A(10, j, H); A(12, j, H); A(13 + (j > 26 ? 1 : 0), j, H); }
     A(10, 15, R); A(9, 18, R); A(8, 21, R); A(9, 24, R); A(13, 16, R); A(14, 18, R); A(14, 24, R);
     // titeln TURBO / POLIS i gult som går mot rött, med svart kontur
-    titel = () => { for (const [s, ty] of [['TURBO', 2], ['POLIS', 8]]) {
+    titel = () => { for (const [s, ty] of [[$t('TURBO\nPOLIS').split('\n')[0], 2], [($t('TURBO\nPOLIS').split('\n')[1] ?? ''), 8]]) {
       const tx = px + ((pw - textW(SMALL, s)) >> 1);
       for (const [ox, oy] of [[-1, 0], [1, 0], [0, -1], [0, 1], [1, 1]]) text(P, SMALL, s, tx + ox, py + ty + oy, 0x000000);
       text(P, SMALL, s, tx, py + ty, 0xffe060);
@@ -2069,7 +2074,7 @@ function bioMontre(P, K, x, y, kind) {
     for (let j = 23; j < ph; j++) for (let i = 4; i <= 9 + (j > 26 ? 1 : 0); i++) A(i, j, i === 4 ? 0x2a4a8a : 0x3a6ab0);
     A(11, 21, WHITE); A(10, 22, 0xfff0b0);                                               // gnistan mellan dem
     // titeln AMORE i vitt med djuprosa skugga
-    titel = () => { const s = 'AMORE', tx = px + ((pw - textW(SMALL, s)) >> 1); text(P, SMALL, s, tx + 1, py + 3, 0xa01830); text(P, SMALL, s, tx, py + 2, 0xfffaf4); };
+    titel = () => { const s = $t('AMORE'), tx = px + ((pw - textW(SMALL, s)) >> 1); text(P, SMALL, s, tx + 1, py + 3, 0xa01830); text(P, SMALL, s, tx, py + 2, 0xfffaf4); };
   }
   // glaset: diagonala reflexer och en mörk smyg innanför ramen
   P.hl(px, py, pw, 0x000000, 0.3); P.vl(px, py + 1, ph - 1, 0x000000, 0.18);
@@ -2186,7 +2191,7 @@ function bioFasad(P, K) {
   });
   P.box(mx0 + 2, my0 + 2, mw - 4, mh - 4, GOLD); P.hl(mx0 + 2, my0 + 2, mw - 4, GOLDL); P.hl(mx0 + 3, my1 - 3, mw - 6, GOLDD);
   P.rect(mx0 + 4, my0 + 4, mw - 8, 10, 0x2a0e18); P.hl(mx0 + 4, my0 + 13, mw - 8, 0x14060a);
-  const hs = 'BIO PIXEL', hx = 96 - (textW(BIG, hs) >> 1);
+  const hs = $t('BIO PIXEL'), hx = 96 - (textW(BIG, hs) >> 1);
   text(P, BIG, hs, hx + 1, my0 + 6, 0x0a0406); text(P, BIG, hs, hx, my0 + 5, night ? 0xfff0a0 : GOLDL);
   for (let x = hx; x < hx + textW(BIG, hs); x++) if (P.get(x, my0 + 5) === (night ? 0xfff0a0 : GOLDL)) P.px(x, my0 + 5, WHITE, 0.5);
   K.out.rubrik = [Wx(hx), Wy(my0 + 5)];                                                  // (släcks i live när bion är stängd)
@@ -2231,7 +2236,7 @@ function bioFasad(P, K) {
     P.rect(px2 - 1, gtop + 5, 6, 2, GOLDL); P.rect(px2 - 1, baseY - 3, 6, 3, mul(GOLD, 0.8));
   }
   area(P, 72, gtop, 49, 9, (X, Y, i, j) => (j === 0 ? mix(DARKR, WHITE, 0.25) : j === 1 ? GOLD : j === 8 ? mul(DARKR, 0.6) : i === 0 || i === 48 ? GOLD : jit(DARKR, X, Y, K.seed + 11, 0.05))); // överstycket med ENTRÉ
-  const es = 'ENTRÉ'; text(P, SMALL, es, 96 - (textW(SMALL, es) >> 1), gtop + 3, night ? 0xffe890 : GOLDL);
+  const es = $t('ENTRÉ'); text(P, SMALL, es, 96 - (textW(SMALL, es) >> 1), gtop + 3, night ? 0xffe890 : GOLDL);
   K.out.entre = [Wx(96 - (textW(SMALL, es) >> 1)), Wy(gtop + 3)];
   // dörrarna: guldram, mittpost och skjuthandtag i mässing
   P.box(dx - 1, dy - 1, dw + 2, K.dh + 1, GOLD); P.hl(dx - 1, dy - 1, dw + 2, GOLDL);
@@ -2246,7 +2251,7 @@ function bioFasad(P, K) {
   // lykthuvud eller ljussken ligger över texten – och väster om körsbärskronan från x ≈ 679.
   // Skylten visar STÄNGT när bion är stängd, se bioKassaSkylt/bioLive)
   const kx = 25, ky = 161, kw = 24, kh = 16, kc = kx + (kw >> 1);
-  bioKassaSkylt(P, kx, gtop, 'KASSA');
+  bioKassaSkylt(P, kx, gtop, $t('KASSA'));
   K.out.kassaSkylt = [Wx(kx), Wy(gtop)];
   area(P, kx, ky - 2, kw, kh + 2, (X, Y, i, j) => {
     if (j === 0 && (i < 3 || i > kw - 4)) return null;                                  // välvd överdel
@@ -2274,7 +2279,7 @@ function bioFasad(P, K) {
   P.rect(pX, pY, pW, pH, 0xc82a20); P.box(pX, pY, pW, pH, 0xfff0c0); P.hl(pX + 1, pY + 1, pW - 2, 0xe84a3a); P.hl(pX + 1, pY + pH - 2, pW - 2, 0x9a1a14);
   P.vl(pX + 1, pY + 2, pH - 4, 0xd83a2e); P.vl(pX + pW - 2, pY + 2, pH - 4, 0xa82018);
   for (let x = pX + 2; x < pX + pW - 1; x += 3) { P.px(x, pY, 0xffe070); P.px(x, pY + pH - 1, 0xffe070); }
-  text(P, SMALL, 'POPCORN', pX + 2, pY + 3, 0x5a0e0a); text(P, SMALL, 'POPCORN', pX + 2, pY + 2, 0xffe070);
+  text(P, SMALL, $t('POPCORN'), pX + 2, pY + 3, 0x5a0e0a); text(P, SMALL, $t('POPCORN'), pX + 2, pY + 2, 0xffe070);
   K.out.pop = [Wx(pX), Wy(pY), pW, pH];
   const wX = 148, wY = 164, wW = 20, wH = 9;
   const sX = wX + wW - 9, sY = wY - 12;                                                  // strutens nederkant vilar på glasskåpet
@@ -2410,10 +2415,10 @@ function bioLive(ctx, b, st, m) {
   // rubriken BIO PIXEL, BIO-neonens rör, affischlamporna och ENTRÉ-skylten
   if (!open && st.night) {
     const { GOLD, GOLDD } = BIOC;
-    if (m.rubrik) ctxText(ctx, BIG, 'BIO PIXEL', m.rubrik[0], m.rubrik[1], rgb(GOLD));
+    if (m.rubrik) ctxText(ctx, BIG, $t('BIO PIXEL'), m.rubrik[0], m.rubrik[1], rgb(GOLD));
     if (m.bok) ['B', 'I', 'O'].forEach((ch, i) => { const r = m.bok[i]; if (r) ctxText(ctx, BIG, ch, r[0], r[1], '#8a7040', 2); });
     ctx.fillStyle = rgb(0x6a5a44); for (const [lx, ly] of m.affischljus || []) ctx.fillRect(lx, ly, 6, 1);
-    if (m.entre) ctxText(ctx, SMALL, 'ENTRÉ', m.entre[0], m.entre[1], rgb(GOLDD));
+    if (m.entre) ctxText(ctx, SMALL, $t('ENTRÉ'), m.entre[0], m.entre[1], rgb(GOLDD));
     if (m.door) { ctx.fillStyle = 'rgba(18,8,14,0.6)'; ctx.fillRect(m.door.x, m.door.y, m.door.w, m.door.h); }   // foajén är mörk
   }
   // glödlamporna: var tredje lampa lyser och mönstret vandrar medsols (släckta när bion är stängd)
@@ -2442,7 +2447,7 @@ function bioLive(ctx, b, st, m) {
       let g = UTE_SPR.get(key);
       if (!g) { const P = new Pix(w, hh); bioGardin(P, w, hh); g = { img: P.flush(), ax: 0, ay: 0 }; UTE_SPR.set(key, g); }
       ctx.drawImage(g.img, x, y);
-      if (m.kassaSkylt) uteDraw(ctx, uteSpr('kassaskylt|STÄNGT', 26, 9, 0, 0, (s, P) => bioKassaSkylt(P, 0, 0, 'STÄNGT')), m.kassaSkylt[0], m.kassaSkylt[1]);
+      if (m.kassaSkylt) uteDraw(ctx, uteSpr('kassaskylt|STÄNGT', 26, 9, 0, 0, (s, P) => bioKassaSkylt(P, 0, 0, $t('STÄNGT'))), m.kassaSkylt[0], m.kassaSkylt[1]);
     }
   }
   // popcornmaskinen står släckt i ett mörkt skåp när bion är stängd
@@ -3634,7 +3639,7 @@ function mkRoofImg(sign, snow, lit) {
 // Varumärket på prisskyltens huvud ur b.sign: "KVÄLLSMACKEN" → KVÄLLS (BIG) över MACKEN (SMALL),
 // annars hela namnet i BIG om det ryms (36 px), annars sista ordet på rad två, annars SMALL.
 function mkMarke(sign) {
-  const s = String(sign || 'PIXELMACKEN').toUpperCase().trim(), MAX = 36;
+  const s = String(sign || $t('PIXELMACKEN')).toUpperCase().trim(), MAX = 36;
   const m = /^(.+?)[\s-]*(MACKEN)$/.exec(s);
   if (m && textW(BIG, m[1]) <= MAX) return [m[1], 'MACKEN'];
   if (textW(BIG, s) <= MAX) return [s, null];
@@ -3680,10 +3685,10 @@ function mkPylonImg(lit, snow, sign) {
   else put(SMALL, small, 7);
   // raderna: etikett (SMALL) och LED-fält (siffrorna i live)
   // BENSIN i mörkt och 95 i grönt; DIESEL i svart med gul/svart bricka på var sida
-  const lb = textW(SMALL, 'BENSIN 95'), lx1 = ix + ((inner - lb) >> 1);
-  text(P, SMALL, 'BENSIN', lx1, 20, 0x1e2a22); text(P, SMALL, '95', lx1 + textW(SMALL, 'BENSIN ') + 1, 20, 0x1e8a34);
-  const ld = textW(SMALL, 'DIESEL'), lx2 = ix + ((inner - ld) >> 1);
-  text(P, SMALL, 'DIESEL', lx2, 40, 0x1a1a1e);
+  const lb = textW(SMALL, $t('BENSIN') + ' 95'), lx1 = ix + ((inner - lb) >> 1);
+  text(P, SMALL, $t('BENSIN'), lx1, 20, 0x1e2a22); text(P, SMALL, '95', lx1 + textW(SMALL, $t('BENSIN') + ' ') + 1, 20, 0x1e8a34);
+  const ld = textW(SMALL, $t('DIESEL')), lx2 = ix + ((inner - ld) >> 1);
+  text(P, SMALL, $t('DIESEL'), lx2, 40, 0x1a1a1e);
   for (const tx2 of [bx + 3, bx + bw - 6]) for (let j = 0; j < 5; j++) for (let i = 0; i < 3; i++) P.px(tx2 + i, 40 + j, ((i + j) & 1) ? 0x1a1a1e : 0xf0c848);
   for (const ly of [27, 47]) {
     P.rect(bx + 3, ly, bw - 6, 11, 0x3a3c42); P.hl(bx + 3, ly, bw - 6, 0x16181c);              // LED-fältet i ram
@@ -3691,7 +3696,7 @@ function mkPylonImg(lit, snow, sign) {
     P.hl(bx + 3, ly + 10, bw - 6, 0x6a6c72);
   }
   // BILTVÄTT på den blå panelen (vitt med mörkblå skugga)
-  const tv = 'BILTVÄTT', tvw = textW(SMALL, tv), tvx = ix + ((inner - tvw) >> 1);
+  const tv = $t('BILTVÄTT'), tvw = textW(SMALL, tv), tvx = ix + ((inner - tvw) >> 1);
   text(P, SMALL, tv, tvx + 1, BL + 3, lit ? 0x10307a : 0x0e2458); text(P, SMALL, tv, tvx, BL + 2, WHITE);
   if (snow && !lit) {                                                                        // snö på lådans ovankant och på sockeln
     for (let x = bx; x < bx + bw; x++) { P.px(x, 0, hash(x, 1, 863) > 0.2 ? WHITE : 0xe8eef6); if (hash(x, 2, 863) > 0.45) P.px(x, 1, 0xf4f8fc); }
@@ -3756,7 +3761,7 @@ function mackFasad(P, K) {
   windowAt(P, wx, wy, ww, wh, { night, lit: night, frame: 0x3a3e46, sill: 0x9aa0aa });
   // KAFFE-affischen upptill och varorna nertill (läskflaskor, chips, tidningar)
   P.rect(wx + 1, wy + 1, ww - 2, 7, 0x5a3a22); P.hl(wx + 1, wy + 1, ww - 2, 0x7a5232);
-  text(P, SMALL, 'KAFFE', wx + 1 + ((ww - 2 - textW(SMALL, 'KAFFE')) >> 1), wy + 2, 0xfff0c0);
+  text(P, SMALL, $t('KAFFE'), wx + 1 + ((ww - 2 - textW(SMALL, $t('KAFFE'))) >> 1), wy + 2, 0xfff0c0);
   P.px(wx + 1, wy + 7, 0x3a2412); P.px(wx + ww - 2, wy + 7, 0x3a2412);                        // affischens hörn
   for (let i = 0; i < ww - 3; i += 2) { const cc = [0xd83a2a, 0x2a8a3a, 0xffd23f, 0x2a5ad0, 0xf05a8a, 0xe07a2e][(i >> 1) % 6]; P.rect(wx + 2 + i, wy + wh - 4, 1, 2, cc); P.px(wx + 2 + i, wy + wh - 5, mix(cc, WHITE, 0.4)); }
   P.hl(wx + 1, wy + wh - 2, ww - 2, 0x6a6e76);
@@ -4272,8 +4277,8 @@ function mackItems(b, st) {
     }
   }
   // taket (framför allt på förgården) och prisskylten vid trottoaren
-  out.push({ y: MK.FRONT, kind: 'macktak', draw: (ctx) => ctx.drawImage(mkRoofImg(b.sign || 'PIXELMACKEN', snow, false), MK.TAK[0], MK.TY) });
-  out.push({ y: MK.PYL[1], x: MK.PYL[0], kind: 'prisskylt', draw: (ctx) => { ctx.drawImage(mkPylonImg(false, snow, b.sign || 'PIXELMACKEN'), MK.PYL[0] - 21, MK.PYL[1] - (MK_PYL_H - 1)); mkPylonDigits(ctx, st, false); } });
+  out.push({ y: MK.FRONT, kind: 'macktak', draw: (ctx) => ctx.drawImage(mkRoofImg(b.sign || $t('PIXELMACKEN'), snow, false), MK.TAK[0], MK.TY) });
+  out.push({ y: MK.PYL[1], x: MK.PYL[0], kind: 'prisskylt', draw: (ctx) => { ctx.drawImage(mkPylonImg(false, snow, b.sign || $t('PIXELMACKEN')), MK.PYL[0] - 21, MK.PYL[1] - (MK_PYL_H - 1)); mkPylonDigits(ctx, st, false); } });
   return out;
 }
 function mackHinder() {
@@ -4286,8 +4291,8 @@ function mackGlow(ctx, b, st, k, m) {
   ctx.globalCompositeOperation = 'source-over';
   // frontlisten och prisskylten är upplysta inifrån: kvällsbilden ovanpå med styrkan k
   ctx.globalAlpha = k;
-  ctx.drawImage(mkRoofImg(b.sign || 'PIXELMACKEN', false, true), MK.TAK[0], MK.TY);
-  ctx.drawImage(mkPylonImg(true, false, b.sign || 'PIXELMACKEN'), MK.PYL[0] - 21, MK.PYL[1] - (MK_PYL_H - 1));
+  ctx.drawImage(mkRoofImg(b.sign || $t('PIXELMACKEN'), false, true), MK.TAK[0], MK.TY);
+  ctx.drawImage(mkPylonImg(true, false, b.sign || $t('PIXELMACKEN')), MK.PYL[0] - 21, MK.PYL[1] - (MK_PYL_H - 1));
   ctx.globalAlpha = 1;
   const pumpar = [[MK.P1, MKS.last1], [MK.P2, MKS.last2]];
   // står någon framför pumpen (söder om den, t.ex. föraren vid pump 1) skymmer hen displayen – då tänds den inte ovanpå
@@ -4428,7 +4433,7 @@ const PAV = {
   FRAM: [17, 40, 63, 86],                      // pelarna längs fram- och bakkanten (mittkolumn)
   SIDA: [9, 94],                               // pelarna på kortsidorna
   SKYLT: [12, 34, 80, 9],                      // frisens skylt: x, y, b, h
-  TEXT: 'MUSIKPAVILJONGEN',
+  TEXT: $t('MUSIKPAVILJONGEN'),
   STOLAR: [[23, 79], [35, 77], [68, 77], [80, 79]],
   NOTER: [[29, 82], [47, 80], [56, 80], [74, 82]],
 };
@@ -4657,14 +4662,14 @@ function pavLage(st) {
 // följer samma konserttider och väder som musikkåren i pavLive, så det aldrig säger emot scenen
 function pavBesked(env = {}, hour = 12) {
   const kl = (h) => `${String(Math.floor(h)).padStart(2, '0')}:${String(Math.round((h % 1) * 60)).padStart(2, '0')}`;
-  if (pavLage({ env, hour, t: 0 }) === 'spelar') return 'Parkens musikkår spelar just nu – stanna en stund och lyssna!';
+  if (pavLage({ env, hour, t: 0 }) === 'spelar') return $t('Parkens musikkår spelar just nu – stanna en stund och lyssna!');
   const stopp = pavStopp(env);
-  if (stopp === 'vinter') return 'Musikkåren har vinteruppehåll – de spelar igen när snön har smält.';
-  if (stopp === 'regn') return 'Ingen konsert i regnet – musikkåren spelar när det är torrt, ofta vid lunch och på eftermiddagen.';
+  if (stopp === 'vinter') return $t('Musikkåren har vinteruppehåll – de spelar igen när snön har smält.');
+  if (stopp === 'regn') return $t('Ingen konsert i regnet – musikkåren spelar när det är torrt, ofta vid lunch och på eftermiddagen.');
   const nasta = pavPass(env).find(([a]) => a > hour);
-  if (nasta && nasta[0] - hour <= 0.5) return `Instrumenten står redan framme – konserten börjar kl ${kl(nasta[0])}.`;
-  if (nasta) return `Ingen konsert just nu – nästa börjar i dag kl ${kl(nasta[0])}.`;
-  return 'Dagens konserter är slut – musikkåren spelar igen i morgon, ofta vid lunch och på eftermiddagen.';
+  if (nasta && nasta[0] - hour <= 0.5) return $t`Instrumenten står redan framme – konserten börjar kl ${kl(nasta[0])}.`;
+  if (nasta) return $t`Ingen konsert just nu – nästa börjar i dag kl ${kl(nasta[0])}.`;
+  return $t('Dagens konserter är slut – musikkåren spelar igen i morgon, ofta vid lunch och på eftermiddagen.');
 }
 // musikkårens uniform: mörkblå jacka med guldblixtlås, mössa och byxor
 const PAV_KAR = { hat: 'cap', cap: '#23305a', top: 'jacket', shirt: '#23305a', accent: '#f0b429', bottom: 'pants', pants: '#23305a', shoes: '#1c1c1c', glasses: false, beard: false, phones: false, kid: false, build: 5, bag: null };
@@ -4902,7 +4907,7 @@ function lekFasad(P, K) {
   // SKYLTEN: vit bräda tvärs över gavelns fot, bokstäverna i lekfärger
   area(P, 4, 28, 40, 10, (X, Y, i, j) => (j === 9 || i === 39 ? W[0] : j === 0 || i === 0 ? W[1] : j === 1 ? 0xffffff : jit(0xfbf6ea, X, Y, 73, 0.02)));
   let lx = 6;
-  [...'LEKFÖRRÅD'].forEach((ch, n) => { text(P, SMALL, ch, lx, 31, LEK.bokst[n % 4]); lx += textW(SMALL, ch) + 1; });
+  [...$t('LEKFÖRRÅD')].forEach((ch, n) => { text(P, SMALL, ch, lx, 31, LEK.bokst[n % 4]); lx += textW(SMALL, ch) + 1; });
   if (o.snow) for (let x = 4; x <= 43; x++) if (hash(x, 27, 91) > 0.2) P.px(x, 27, 0xf4f8fe);
   // väggarna: locklistpanel, hörnbräder och sockel
   area(P, 8, 38, 32, 28, (X, Y, i, j) => {
@@ -5012,7 +5017,7 @@ function wcFasad(P, K) {
     if (i === 16 || j === 10) return 0xc8ccd6;
     return j <= 2 ? WC.bla[2] : j >= 8 ? WC.bla[0] : WC.bla[1];
   });
-  text(P, BIG, 'WC', 20, 32, WC.bla[0]); text(P, BIG, 'WC', 19, 32, 0xffffff);
+  text(P, BIG, $t('WC'), 20, 32, WC.bla[0]); text(P, BIG, $t('WC'), 19, 32, 0xffffff);
   P.px(17, 31, 0xc8d8ff); P.px(18, 31, 0x8aa8f0);
   P.hl(17, 41, 16, 0x000000, 0.3);
   if (o.snow) P.hl(17, 29, 15, 0xf4f8fe);
@@ -5042,10 +5047,10 @@ function wcGlow(ctx, b, st, k, m) {
 // var åttonde sekund; när butiken är stängd står det när den öppnar.
 // ---------------------------------------------------------------------
 const DJUR_ERBJ = [
-  [['VALPAR!', 0xf8a8c8], ['KOM IN', 0xf2eee0], ['OCH KELA', 0xf2eee0]],
-  [['KATTMAT', 0xf8e078], ['2 FÖR 1', 0xf8a8c8], 'tassar'],
-  [['NYHET:', 0x9adcf8], ['AKVARIER', 0xf2eee0], ['FR 199:-', 0xf8e078]],
-  [['FÅGELFRÖ', 0xa8e8a0], ['HALVA', 0xf2eee0], ['PRISET!', 0xf8e078]],
+  [[$t('VALPAR!'), 0xf8a8c8], [$t('KOM IN\nOCH KELA').split('\n')[0], 0xf2eee0], [($t('KOM IN\nOCH KELA').split('\n')[1] ?? ''), 0xf2eee0]],
+  [[$t('KATTMAT'), 0xf8e078], [$t('2 FÖR 1'), 0xf8a8c8], 'tassar'],
+  [[$t('NYHET:'), 0x9adcf8], [$t('AKVARIER'), 0xf2eee0], [$t('FR 199:-'), 0xf8e078]],
+  [[$t('FÅGELFRÖ'), 0xa8e8a0], [$t('HALVA\nPRISET!').split('\n')[0], 0xf2eee0], [($t('HALVA\nPRISET!').split('\n')[1] ?? ''), 0xf8e078]],
 ];
 const djurPratPlats = (b) => ({ x0: b.door.x0 - 32, fy: baseOf(b) + 28 });              // skylten: x0 … x0 + 34 (fri från gatlyktan), foten på fy
 function djurPratImg(key, rader, snow) {
@@ -5081,7 +5086,7 @@ function djurPratare(b, st) {
   const { x0, fy } = djurPratPlats(b), h = st.hour ?? 12, open = !b.open || (h >= b.open[0] && h < b.open[1]);
   const snow = (st.env?.weather?.snowCover || 0) > 0.5, kl = b.open?.[0] ?? 9;
   const i = Math.floor((st.t || 0) / 8) % DJUR_ERBJ.length;
-  const img = open ? djurPratImg('e' + i, DJUR_ERBJ[i], snow) : djurPratImg('stangt' + kl, [['STÄNGT', 0xf8a8c8], ['ÖPPNAR', 0xf2eee0], ['KL ' + kl, 0xf8e078]], snow);
+  const img = open ? djurPratImg('e' + i, DJUR_ERBJ[i], snow) : djurPratImg('stangt' + kl, [[$t('STÄNGT'), 0xf8a8c8], [$t`ÖPPNAR\nKL ${kl}`.split('\n')[0], 0xf2eee0], [$t`ÖPPNAR\nKL ${kl}`.split('\n')[1] ?? '', 0xf8e078]], snow);
   return [{ y: fy, draw: (ctx) => ctx.drawImage(img, x0, fy - 33) }];
 }
 function djurPratareHinder(b) { const { x0, fy } = djurPratPlats(b); return [[x0 + 1, fy - 4, x0 + 34, fy + 1]]; }

@@ -45,13 +45,14 @@ import { makeFolk, textBubble, TIPS } from './ikea/folk.js';
 import { openMenu, openKiosk, menuOf, addBistro, diningZone } from './ikea/resto.js';
 import { trayImg, dishImg, drawMenuStrip, TRAY_W } from './ikea/food.js';
 import { smalandBackImg } from './ikea/art-props.js';
+import { $t } from '../core/i18n.js';
 
 const RIDE_V = 40;          // rulltrappans fart (px/s längs trappan)
 const LIFT_T = { open: 0.5, in: 0.55, close: 0.45, move: 1.5, out: 0.55 };
 // samma två repliker som i Kaféet och Burgarbaren: sitter man och äter reser man
 // sig inte (ÄT UPP FÖRST), mot utgången/rulltrappan/hissen gäller alltid MSG_DORR
-const MSG_ATUPP = 'ÄT UPP FÖRST! 😋';
-const MSG_DORR = 'DU MÅSTE SÄTTA DIG OCH ÄTA UPP!';
+const MSG_ATUPP = $t('ÄT UPP FÖRST! 😋');
+const MSG_DORR = $t('DU MÅSTE SÄTTA DIG OCH ÄTA UPP!');
 const DAY_MIN = 24 * 60;    // midnatt i spelminuter (som DAY i game.js)
 
 // ================= varuhuset (byggs en gång, cachas tills katalogen ändras) =================
@@ -122,18 +123,18 @@ export function makeShopIkea(A, opts = {}) {
   const arrivalInfo = () => {
     play('chirp');
     toast(F.n === 2
-      ? '↗️ Den här rulltrappan kommer bara UPP hit från plan 1. Rulltrappan NER står längre fram i hallen – efter restaurangen.'
-      : '↘️ Den här rulltrappan kommer bara NER hit från plan 2. Rulltrappan UPP står vid entrén, bredvid hissen.');
+      ? $t('↗️ Den här rulltrappan kommer bara UPP hit från plan 1. Rulltrappan NER står längre fram i hallen – efter restaurangen.')
+      : $t('↘️ Den här rulltrappan kommer bara NER hit från plan 2. Rulltrappan UPP står vid entrén, bredvid hissen.'));
   };
   function act(c) {
     if (c.kind === 'buy') {
       play('click');
       if (typeof MOB.openBuy === 'function') MOB.openBuy(A, c.ex.k);
-      else toast('Köpdialogen laddas – försök igen om en stund.');
-    } else if (c.kind === 'decor' && isElektronik(c.ex.k)) { play('chirp'); toast(`📺 ${elektronikName(c.ex.k, c.ex.v)} är bara utställd – TV, datorer och spelkonsoler köper du på BLIXT ELEKTRONIK i Downtown!`); }
-    else if (c.kind === 'decor') toast(`${DECOR[c.ex.k] || 'Den'} är bara utställd – den ingår i bostaden och säljs inte här.`);
+      else toast($t('Köpdialogen laddas – försök igen om en stund.'));
+    } else if (c.kind === 'decor' && isElektronik(c.ex.k)) { play('chirp'); toast($t`📺 ${elektronikName(c.ex.k, c.ex.v)} är bara utställd – TV, datorer och spelkonsoler köper du på BLIXT ELEKTRONIK i Downtown!`); }
+    else if (c.kind === 'decor') toast(DECOR[c.ex.k] ? $t`${DECOR[c.ex.k]} är bara utställd – den ingår i bostaden och säljs inte här.` : $t('Den är bara utställd – den ingår i bostaden och säljs inte här.'));
     else if (c.kind === 'door') { play('door'); A.go('city'); }
-    else if (c.kind === 'exit') { play('door'); toast('🛍️ Tack för besöket på MÖBELJÄTTEN – välkommen åter!', 'good'); A.go('city'); }
+    else if (c.kind === 'exit') { play('door'); toast($t('🛍️ Tack för besöket på MÖBELJÄTTEN – välkommen åter!'), 'good'); A.go('city'); }
     else if (c.kind === 'esc') startEsc(c.esc);
     else if (c.kind === 'escArr') arrivalInfo();
     else if (c.kind === 'lift') startLift();
@@ -141,11 +142,11 @@ export function makeShopIkea(A, opts = {}) {
     else if (c.kind === 'table') sitAtTable(c.table);
     else if (c.kind === 'food') openKiosk(A, { onBuy: buySnack });
     else if (c.kind === 'info') openGuide();
-    else if (c.kind === 'kassa') { play('chirp'); toast('🧾 Möblerna betalar du direkt vid prislappen – här säger vi bara hej då. Kasse? Ta en blå!'); }
-    else if (c.kind === 'play') { play('chirp'); toast('🎈 Småland är för barn upp till 1,20 m – du får titta på bollhavet!'); }
+    else if (c.kind === 'kassa') { play('chirp'); toast($t('🧾 Möblerna betalar du direkt vid prislappen – här säger vi bara hej då. Kasse? Ta en blå!')); }
+    else if (c.kind === 'play') { play('chirp'); toast($t('🎈 Småland är för barn upp till 1,20 m – du får titta på bollhavet!')); }
   }
   function clickWorld(x, y) {
-    if (ride) { nag(ride.kind === 'lift' ? '🛗 Vänta tills hissen är framme!' : '↕️ Vänta tills du klivit av rulltrappan!'); return; }
+    if (ride) { nag(ride.kind === 'lift' ? $t('🛗 Vänta tills hissen är framme!') : $t('↕️ Vänta tills du klivit av rulltrappan!')); return; }
     if (meal && mealClick(x, y)) return;
     // personal först (bara om man träffar figuren)
     const s = F.folk.staffAt(x, y);
@@ -170,11 +171,11 @@ export function makeShopIkea(A, opts = {}) {
       sayMe(leave ? MSG_DORR : MSG_ATUPP);
       return true;
     }
-    if (st === 'line') { sayMe(leave ? MSG_DORR : 'FÖRST KASSAN, SEN ETT BORD!'); return true; }
+    if (st === 'line') { sayMe(leave ? MSG_DORR : $t('FÖRST KASSAN, SEN ETT BORD!')); return true; }
     if (st === 'carry' || st === 'toSeat') {
       if (c?.kind === 'table') { sitAtTable(c.table); return true; }
       if (leave || !inDining(x, y)) { sayMe(MSG_DORR); return true; }
-      if (c && (c.kind === 'rest' || c.kind === 'food' || c.kind === 'buy')) { sayMe('JAG ÄTER UPP DET HÄR FÖRST!'); return true; }
+      if (c && (c.kind === 'rest' || c.kind === 'food' || c.kind === 'buy')) { sayMe($t('JAG ÄTER UPP DET HÄR FÖRST!')); return true; }
       // en bit bort inne i matsalen – med maten i händerna, reservationen släpps
       releaseSeat();
       meal.st = 'carry'; meal.waitSeat = false;
@@ -200,9 +201,9 @@ export function makeShopIkea(A, opts = {}) {
   function talkTo(s) {
     walker().dir = walker().px < s.x ? 'right' : 'left';
     s.dir = walker().px < s.x ? 'left' : 'right';
-    if (s.mode === 'truck') { F.folk.say(s, 'SE UPP, TRUCK!', 3); toast('🚜 "Håll dig bakom de gula strecken när trucken kör – annars är lagret fritt fram!"'); return; }
+    if (s.mode === 'truck') { F.folk.say(s, $t('SE UPP, TRUCK!'), 3); toast($t('🚜 "Håll dig bakom de gula strecken när trucken kör – annars är lagret fritt fram!"')); return; }
     const tip = TIPS[(s.tip ?? 0) % TIPS.length];
-    F.folk.say(s, ['HEJ! VARSÅGOD!', 'KUL ATT DU FRÅGAR!', 'KAN JAG HJÄLPA TILL?'][(s.id + Math.floor(t)) % 3], 3.5);
+    F.folk.say(s, [$t('HEJ! VARSÅGOD!'), $t('KUL ATT DU FRÅGAR!'), $t('KAN JAG HJÄLPA TILL?')][(s.id + Math.floor(t)) % 3], 3.5);
     s.tip = (s.tip ?? 0) + 1;
     play('chirp');
     toast(`💬 ${tip}`);
@@ -225,7 +226,7 @@ export function makeShopIkea(A, opts = {}) {
     ride = { kind: 'esc', e, d: -12, v: RIDE_V, leg: 1 };
     walker().stop();
     play('slide');
-    myBubble = { msg: e.up ? `UPP TILL PLAN ${e.to}!` : `NER TILL PLAN ${e.to}!`, until: 2 };
+    myBubble = { msg: e.up ? $t`UPP TILL PLAN ${e.to}!` : $t`NER TILL PLAN ${e.to}!`, until: 2 };
   }
   function escStep(dt) {
     ride.d += ride.v * dt;
@@ -241,7 +242,7 @@ export function makeShopIkea(A, opts = {}) {
       ride = null;
       walker().px = e.board[0]; walker().py = e.board[1]; walker().snapFree();
       walker().dir = e.sx > 0 ? 'left' : 'right';
-      toast(F.n === 2 ? '🛋️ PLAN 2 – UTSTÄLLNINGEN. Följ den gula gången!' : '🏷️ PLAN 1 – MARKNADSHALLEN, LAGRET OCH KASSORNA.', 'good');
+      toast(F.n === 2 ? $t('🛋️ PLAN 2 – UTSTÄLLNINGEN. Följ den gula gången!') : $t('🏷️ PLAN 1 – MARKNADSHALLEN, LAGRET OCH KASSORNA.'), 'good');
       // kliv av en bit
       const off = F.n === 2 ? [e.board[0] + 8, e.board[1] + 16] : [e.board[0], e.board[1] + 18];
       walker().walkTo(off[0], off[1]);
@@ -282,7 +283,7 @@ export function makeShopIkea(A, opts = {}) {
     else if (r.st === 'out') { r.pos = [cx, L.fy - 1 + 13 * k]; r.inCab = k < 0.5; if (k >= 1) next('close2'); }
     else if (r.st === 'close2') {
       L.open = 1 - k;
-      if (k >= 1) { ride = null; walker().px = cx; walker().py = L.fy + 12; walker().snapFree(); toast(F.n === 2 ? '🛗 PLAN 2 – UTSTÄLLNINGEN' : '🛗 PLAN 1 – ENTRÉN', 'good'); }
+      if (k >= 1) { ride = null; walker().px = cx; walker().py = L.fy + 12; walker().snapFree(); toast(F.n === 2 ? $t('🛗 PLAN 2 – UTSTÄLLNINGEN') : $t('🛗 PLAN 1 – ENTRÉN'), 'good'); }
     }
     function next(st) { r.st = st; r.t = 0; }
   }
@@ -315,17 +316,17 @@ export function makeShopIkea(A, opts = {}) {
           w.speed = SPEED;
           w.dir = 'up';
           if (!meal) return;
-          if (g.money < sum) { toast('Du har inte råd – brickan får stå kvar. Dags att jobba ett pass!', 'bad'); play('fel'); meal = null; return; }
+          if (g.money < sum) { toast($t('Du har inte råd – brickan får stå kvar. Dags att jobba ett pass!'), 'bad'); play('fel'); meal = null; return; }
           g.money -= sum; // betala i restaurangkassan
           play('coin');
           g.save?.();
-          const kass = F.folk.list.find((a) => a.lines?.includes('SMAKLIG MÅLTID!'));
-          if (kass) F.folk.say(kass, 'SMAKLIG MÅLTID!', 3);
-          toast(`🧾 Betalt ${sum} kr i kassan. Sätt dig vid ett ledigt bord och ät!`, 'good');
+          const kass = F.folk.list.find((a) => a.lines?.includes($t('SMAKLIG MÅLTID!')));
+          if (kass) F.folk.say(kass, $t('SMAKLIG MÅLTID!'), 3);
+          toast($t`🧾 Betalt ${sum} kr i kassan. Sätt dig vid ett ledigt bord och ät!`, 'good');
           meal.st = 'carry';
           const s = freeSeatNear(w.px, w.py);
           if (s) goToSeat(s);
-          else { meal.waitSeat = true; sayMe('ALLA BORD ÄR UPPTAGNA – JAG VÄNTAR PÅ ETT LEDIGT!', 3.5); }
+          else { meal.waitSeat = true; sayMe($t('ALLA BORD ÄR UPPTAGNA – JAG VÄNTAR PÅ ETT LEDIGT!'), 3.5); }
         });
       },
     });
@@ -336,23 +337,23 @@ export function makeShopIkea(A, opts = {}) {
     g.save?.();
     play('coin');
     meal = newMeal('kiosk', [k], k.price);
-    const kiosk = F.folk.list.find((a) => a.lines?.includes('MED SENAP?'));
-    if (kiosk) F.folk.say(kiosk, k.id === 'korv' ? 'VARSÅGOD, EN KORV!' : 'VARSÅGOD!', 3);
-    toast(`${k.icon} ${k.name} – sätt dig vid bistroborden och ät!`, 'good');
+    const kiosk = F.folk.list.find((a) => a.lines?.includes($t('MED SENAP?')));
+    if (kiosk) F.folk.say(kiosk, k.id === 'korv' ? $t('VARSÅGOD, EN KORV!') : $t('VARSÅGOD!'), 3);
+    toast($t`${k.icon} ${k.name} – sätt dig vid bistroborden och ät!`, 'good');
     const w = walker();
     const s = freeSeatNear(w.px, w.py);
     if (s) goToSeat(s);
-    else { meal.waitSeat = true; sayMe('ALLA BORD ÄR UPPTAGNA – JAG VÄNTAR PÅ ETT LEDIGT!', 3.5); }
+    else { meal.waitSeat = true; sayMe($t('ALLA BORD ÄR UPPTAGNA – JAG VÄNTAR PÅ ETT LEDIGT!'), 3.5); }
   }
   const freeSeatNear = (x, y) => F.seats.filter((s) => !s.occ).sort((a, b) => Math.hypot(a.x - x, a.y - y) - Math.hypot(b.x - x, b.y - y))[0] || null;
   function sitAtTable(tb) {
     if (!meal) {
-      toast(tb.bistro ? '🌭 Köp en korv eller en glass i kiosken först – sedan sätter du dig här och äter!' : 'Hämta en bricka med mat vid disken först – menyn hittar du vid brickorna!');
+      toast(tb.bistro ? $t('🌭 Köp en korv eller en glass i kiosken först – sedan sätter du dig här och äter!') : $t('Hämta en bricka med mat vid disken först – menyn hittar du vid brickorna!'));
       return;
     }
     if (meal.st !== 'carry' && meal.st !== 'toSeat') return;
     const s = meal.seat?.table === tb ? meal.seat : F.seats.find((x) => x.table === tb && !x.occ) || null;
-    if (!s) { sayMe('DET BORDET ÄR UPPTAGET!'); return; }
+    if (!s) { sayMe($t('DET BORDET ÄR UPPTAGET!')); return; }
     goToSeat(s);
   }
   // släpp en bordsreservation (bara medan man bär maten – inte när man sitter)
@@ -390,7 +391,7 @@ export function makeShopIkea(A, opts = {}) {
     }
     if (meal.st === 'sit' && meal.t > 0.6) {
       meal.st = 'eat'; meal.t = 0; meal.biteT = biteGap() / 2;
-      sayMe(meal.kind === 'kiosk' ? (meal.items[0].id === 'glass' ? 'MUMS! 🍦' : 'MUMS! 🌭') : 'MUMS! 😋', 2);
+      sayMe(meal.kind === 'kiosk' ? (meal.items[0].id === 'glass' ? $t('MUMS! 🍦') : $t('MUMS! 🌭')) : $t('MUMS! 😋'), 2);
     } else if (meal.st === 'eat') {
       meal.biteT -= dt;
       if (meal.biteT <= 0) { meal.biteT = biteGap(); bite(); }
@@ -422,13 +423,13 @@ export function makeShopIkea(A, opts = {}) {
     g.save?.();
     play('ok');
     const first = meal.kind === 'rest' ? menuOf(meal.items[0].id) : null;
-    const what = meal.kind === 'kiosk' ? (meal.items[0].id === 'glass' ? '🍦 Mjukglassen var god' : '🌭 Korv med bröd – det smakade')
-      : !first ? 'Maten'
-      : first.id === 'kottbullar' ? 'Köttbullar med mos och lingonsylt smakar alltid'
-      : `${first.name.replace(/\s*\(.*\)/, '')}${meal.items.length > 1 ? ' med mera' : ''} – det smakade`;
-    toast(`😋 Mums! ${what}. +${fill} mätthet${energy ? `, +${energy} energi` : ''}`, 'good');
+    const what = meal.kind === 'kiosk' ? (meal.items[0].id === 'glass' ? $t('🍦 Mjukglassen var god') : $t('🌭 Korv med bröd – det smakade'))
+      : !first ? $t('Maten')
+      : first.id === 'kottbullar' ? $t('Köttbullar med mos och lingonsylt smakar alltid')
+      : meal.items.length > 1 ? $t`${first.name.replace(/\s*\(.*\)/, '')} med mera – det smakade` : $t`${first.name.replace(/\s*\(.*\)/, '')} – det smakade`;
+    toast($t`😋 Mums! ${what}.` + ' ' + (energy ? $t`+${fill} mätthet, +${energy} energi` : $t`+${fill} mätthet`), 'good');
     meal.st = 'done'; meal.t = 0;
-    sayMe('GOTT! NU ÄR DET UPPÄTET. 😋', 2.2);
+    sayMe($t('GOTT! NU ÄR DET UPPÄTET. 😋'), 2.2);
   }
   function standUp() {
     const s = meal?.seat;
@@ -471,14 +472,14 @@ export function makeShopIkea(A, opts = {}) {
     const li = (arr) => arr.map((x) => `<li>${x}</li>`).join('');
     const rooms2 = [...new Set(f2.rooms.map((r) => r.name.replace(/ \d+$/, '')))];
     const depts = [...new Set(f1.depts.map((r) => r.name.replace(/ \d+$/, '')))];
-    openModal('ℹ️ Varuhusguide – MÖBELJÄTTEN', `
-      <p style="font-size:var(--f2);margin-top:0">Följ den gula gången – den tar dig genom hela varuhuset. Rulltrapporna och hissen går mellan planen.</p>
+    openModal($t('ℹ️ Varuhusguide – MÖBELJÄTTEN'), `
+      <p style="font-size:var(--f2);margin-top:0">${$t('Följ den gula gången – den tar dig genom hela varuhuset. Rulltrapporna och hissen går mellan planen.')}</p>
       <div style="display:flex;gap:18px;flex-wrap:wrap;font-size:var(--f2)">
-        <div><b>🛋️ PLAN 2 · UTSTÄLLNING</b><ul>${li(rooms2)}<li>🍽️ Restaurang</li></ul></div>
-        <div><b>🏷️ PLAN 1 · ENTRÉPLAN</b><ul>${li(depts)}<li>📦 Självbetjäningslager</li><li>🧾 Kassor</li><li>🌭 Bistro</li><li>🎈 Småland</li></ul></div>
+        <div><b>${$t('🛋️ PLAN 2 · UTSTÄLLNING')}</b><ul>${li(rooms2)}<li>${$t('🍽️ Restaurang')}</li></ul></div>
+        <div><b>${$t('🏷️ PLAN 1 · ENTRÉPLAN')}</b><ul>${li(depts)}<li>${$t('📦 Självbetjäningslager')}</li><li>${$t('🧾 Kassor')}</li><li>${$t('🌭 Bistro')}</li><li>${$t('🎈 Småland')}</li></ul></div>
       </div>
-      <p class="sp">Klicka på en prislapp för att köpa – möbeln hamnar i förrådet hemma. ${KAT().length} möbler finns utställda.</p>`,
-    [{ label: 'Tack!', cls: 'btn-go', onClick: closeModal }]);
+      <p class="sp">${$t`Klicka på en prislapp för att köpa – möbeln hamnar i förrådet hemma. ${KAT().length} möbler finns utställda.`}</p>`,
+    [{ label: $t('Tack!'), cls: 'btn-go', onClick: closeModal }]);
     play('chirp');
   }
 
@@ -679,7 +680,7 @@ export function makeShopIkea(A, opts = {}) {
     {
       const [px, py] = playerPos();
       const r = zoneAt(px, py);
-      const pl = `PLAN ${F.n}`, lbl = r ? (r.num ? `${r.num} ${r.name}` : r.name) : F.name;
+      const pl = $t`PLAN ${F.n}`, lbl = r ? (r.num ? `${r.num} ${r.name}` : r.name) : F.name;
       const pw = textW(SMALL, pl) + 7, w = pw + textW(SMALL, lbl) + 9, x = VW - w - 3, y = 1;
       ctx.fillStyle = 'rgba(12,30,70,0.9)'; ctx.fillRect(x, y, w, 11);
       ctx.fillStyle = '#f6cf2a'; ctx.fillRect(x, y, pw, 11); ctx.fillRect(x + pw, y + 10, w - pw, 1);
@@ -688,31 +689,32 @@ export function makeShopIkea(A, opts = {}) {
     }
     const hl = hover || near;
     let msg = null, sub = null;
-    if (ride?.kind === 'esc') { msg = `RULLTRAPPA ${ride.e.up ? 'UPP' : 'NER'}`; sub = `TILL PLAN ${ride.leg === 1 ? ride.e.to : F.n}`; }
-    else if (ride?.kind === 'lift') { msg = 'HISSEN'; sub = `TILL PLAN ${ride.to}`; }
-    else if (meal?.st === 'line') { msg = 'MED BRICKAN'; sub = 'TILL KASSAN...'; }
-    else if (meal?.st === 'carry' || meal?.st === 'toSeat') { msg = 'SÄTT DIG OCH ÄT'; sub = meal.st === 'toSeat' ? 'TILL BORDET...' : 'KLICKA PÅ ETT LEDIGT BORD'; }
+    if (ride?.kind === 'esc') { msg = ride.e.up ? $t('RULLTRAPPA UPP') : $t('RULLTRAPPA NER'); sub = $t`TILL PLAN ${ride.leg === 1 ? ride.e.to : F.n}`; }
+    else if (ride?.kind === 'lift') { msg = $t('HISSEN'); sub = $t`TILL PLAN ${ride.to}`; }
+    else if (meal?.st === 'line') { msg = $t('MED BRICKAN'); sub = $t('TILL KASSAN...'); }
+    else if (meal?.st === 'carry' || meal?.st === 'toSeat') { msg = $t('SÄTT DIG OCH ÄT'); sub = meal.st === 'toSeat' ? $t('TILL BORDET...') : $t('KLICKA PÅ ETT LEDIGT BORD'); }
     else if (meal?.st === 'sit' || meal?.st === 'eat') {
       const n = meal.items.length * 2, done = meal.items.reduce((a, i) => a + i.stage, 0);
-      msg = 'SMAKLIG MÅLTID!'; sub = `DU ÄTER... ${done}/${n}`;
+      msg = $t('SMAKLIG MÅLTID!'); sub = $t`DU ÄTER... ${done}/${n}`;
     }
-    else if (meal?.st === 'done') { msg = 'UPPÄTET!'; sub = 'KLICKA FÖR ATT GÅ VIDARE'; }
-    else if (hl?.ex?.buy) { const kat = katOf(hl.ex.k); msg = `${tagName(hl.ex.k)}  ${kat?.price ?? '?'} KR`; sub = hover ? 'KLICKA FÖR ATT KÖPA' : 'KLICKA PÅ MÖBELN FÖR ATT KÖPA'; }
-    else if (hl?.ex && isElektronik(hl.ex.k)) { msg = `${elektronikName(hl.ex.k, hl.ex.v).toUpperCase()} ÄR BARA UTSTÄLLD`; sub = 'ELEKTRONIK FINNS PÅ BLIXT I DOWNTOWN'; }
-    else if (hl?.ex) { msg = `${(DECOR[hl.ex.k] || '').toUpperCase()} INGÅR I BOSTADEN`; sub = 'SÄLJS INTE HÄR'; }
-    else if (hl?.kind === 'esc') { msg = `RULLTRAPPA ${hl.esc.up ? 'UPP' : 'NER'}`; sub = `KLICKA - TILL PLAN ${hl.esc.to}`; }
-    else if (hl?.kind === 'escArr') { msg = `RULLTRAPPA FRÅN PLAN ${hl.esc.to}`; sub = F.n === 2 ? 'BARA ANKOMST - ÅK NER EFTER RESTAURANGEN' : 'BARA ANKOMST - ÅK UPP VID ENTRÉN'; }
-    else if (hl?.kind === 'lift') { msg = 'HISS'; sub = `KLICKA - TILL PLAN ${F.n === 1 ? 2 : 1}`; }
-    else if (hl?.kind === 'rest') { msg = 'RESTAURANGEN'; sub = 'KLICKA - TA EN BRICKA'; }
-    else if (hl?.kind === 'table') { msg = hl.table?.bistro ? 'BISTROBORD' : 'BORD FÖR TVÅ'; sub = hl.table?.bistro ? 'KÖP EN KORV FÖRST - SEN SÄTTER DU DIG HÄR' : 'HÄMTA MAT FÖRST'; }
-    else if (hl?.kind === 'food') { msg = 'KORV 10 KR'; sub = 'KLICKA FÖR ATT KÖPA'; }
-    else if (hl?.kind === 'info') { msg = 'INFORMATION'; sub = 'KLICKA FÖR VARUHUSGUIDEN'; }
-    else if (hl?.kind === 'kassa') { msg = 'KASSA'; sub = 'ALLT ÄR REDAN BETALT'; }
-    else if (hl?.kind === 'play') { msg = 'SMÅLAND'; sub = 'BOLLHAV FÖR BARN'; }
-    else if (hl?.kind === 'door') { msg = 'UT TILL STADEN'; sub = 'KLICKA PÅ DÖRREN'; }
-    else if (hl?.kind === 'exit') { msg = 'UTGÅNG'; sub = 'KLICKA FÖR ATT GÅ UT'; }
-    else if (hoverStaff) { msg = 'PERSONAL'; sub = 'KLICKA FÖR ETT TIPS'; }
-    else if (t < 7 && F.n === 1) { msg = 'VÄLKOMMEN!'; sub = 'RULLTRAPPAN UPP TILL UTSTÄLLNINGEN - FÖLJ GULA GÅNGEN'; }
+    else if (meal?.st === 'done') { msg = $t('UPPÄTET!'); sub = $t('KLICKA FÖR ATT GÅ VIDARE'); }
+    else if (hl?.ex?.buy) { const kat = katOf(hl.ex.k); msg = $t`${tagName(hl.ex.k)}  ${kat?.price ?? '?'} KR`; sub = hover ? $t('KLICKA FÖR ATT KÖPA') : $t('KLICKA PÅ MÖBELN FÖR ATT KÖPA'); }
+    else if (hl?.ex && isElektronik(hl.ex.k)) { msg = $t`${elektronikName(hl.ex.k, hl.ex.v).toUpperCase()} ÄR BARA UTSTÄLLD`; sub = $t('ELEKTRONIK FINNS PÅ BLIXT I DOWNTOWN'); }
+    else if (hl?.ex) { msg = $t`${(DECOR[hl.ex.k] || '').toUpperCase()} INGÅR I BOSTADEN`; sub = $t('SÄLJS INTE HÄR'); }
+    else if (hl?.kind === 'esc') { msg = hl.esc.up ? $t('RULLTRAPPA UPP') : $t('RULLTRAPPA NER'); sub = $t`KLICKA - TILL PLAN ${hl.esc.to}`; }
+    else if (hl?.kind === 'escArr') { msg = $t`RULLTRAPPA FRÅN PLAN ${hl.esc.to}`; sub = F.n === 2 ? $t('BARA ANKOMST - ÅK NER EFTER RESTAURANGEN') : $t('BARA ANKOMST - ÅK UPP VID ENTRÉN'); }
+    else if (hl?.kind === 'lift') { msg = $t('HISS'); sub = $t`KLICKA - TILL PLAN ${F.n === 1 ? 2 : 1}`; }
+    else if (hl?.kind === 'rest') { msg = $t('RESTAURANGEN'); sub = $t('KLICKA - TA EN BRICKA'); }
+    else if (hl?.kind === 'table') { msg = hl.table?.bistro ? $t('BISTROBORD') : $t('BORD FÖR TVÅ'); sub = hl.table?.bistro ? $t('KÖP EN KORV FÖRST - SEN SÄTTER DU DIG HÄR') : $t('HÄMTA MAT FÖRST'); }
+    else if (hl?.kind === 'food') { msg = $t('KORV 10 KR'); sub = $t('KLICKA FÖR ATT KÖPA'); }
+    else if (hl?.kind === 'info') { msg = $t('INFORMATION'); sub = $t('KLICKA FÖR VARUHUSGUIDEN'); }
+    else if (hl?.kind === 'kassa') { msg = $t('KASSA'); sub = $t('ALLT ÄR REDAN BETALT'); }
+    else if (hl?.kind === 'play') { msg = $t('SMÅLAND'); sub = $t('BOLLHAV FÖR BARN'); }
+    else if (hl?.kind === 'door') { msg = $t('UT TILL STADEN'); sub = $t('KLICKA PÅ DÖRREN'); }
+    else if (hl?.kind === 'exit') { msg = $t('UTGÅNG'); sub = $t('KLICKA FÖR ATT GÅ UT'); }
+    else if (hoverStaff) { msg = $t('PERSONAL'); sub = $t('KLICKA FÖR ETT TIPS'); }
+    else if (t < 7 && F.n === 1) { msg = $t('VÄLKOMMEN!'); sub = $t('RULLTRAPPAN UPP TILL UTSTÄLLNINGEN - FÖLJ GULA GÅNGEN'); }
+
     if (msg) {
       const w = textW(SMALL, msg) + textW(SMALL, sub) + 22;
       const x = Math.round(VW / 2 - w / 2), y = VH - 16;

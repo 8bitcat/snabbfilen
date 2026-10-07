@@ -21,6 +21,7 @@ import { receptOf, ravaraOf, portionOf, KOCK_TITLAR } from '../game.js';
 import { ravaraIcon, choppedBits, ravaraPal } from '../core/ravara-art.js';
 import { dishCanvas, dishFood, DW, DH } from './kok.js';
 import { play } from '../core/sound.js';
+import { $t } from '../core/i18n.js';
 
 const FW = 384, FH = 216;
 
@@ -71,47 +72,47 @@ const UGN = { fisk: 7, kyckling: 8, potatis: 8, mjol: 7, applG: 6, tortilla: 4, 
 const RAW = new Set(['skal', 'mixer', 'tallrik']);   // här lagas inget (blanda, mixa, lägga upp)
 
 // ================= namnen i texterna =================
-const BEST = { pasta: 'PASTAN', ris: 'RISET', potatis: 'POTATISEN', havre: 'HAVREGRYNEN', mjolk: 'MJÖLKEN', morot: 'MOROTEN', lok: 'LÖKEN', rodlok: 'RÖDLÖKEN',
-  smor: 'SMÖRET', bacon: 'BACONET', kyckling: 'KYCKLINGEN', kottfars: 'KÖTTFÄRSEN', champ: 'CHAMPINJONERNA', paprika: 'PAPRIKAN', aubergine: 'AUBERGINEN',
-  agg: 'ÄGGEN', mjol: 'MJÖLET', krossade: 'TOMATERNA', bonor: 'BÖNORNA', tomat: 'TOMATEN', ost: 'OSTEN', fisk: 'FISKEN', bar: 'BÄREN', tortilla: 'TORTILLAN',
-  brod: 'LIMPAN', yoghurt: 'YOGHURTEN', applR: 'ÄPPLET', applG: 'ÄPPLET', apels: 'APELSINEN', banan: 'BANANEN', citron: 'CITRONEN', lime: 'LIMEN',
-  avokado: 'AVOKADON', ananas: 'ANANASEN', melon: 'MELONEN', kiwi: 'KIWIN', granat: 'GRANATÄPPLET' };
+const BEST = { pasta: $t('PASTAN'), ris: $t('RISET'), potatis: $t('POTATISEN'), havre: $t('HAVREGRYNEN'), mjolk: $t('MJÖLKEN'), morot: $t('MOROTEN'), lok: $t('LÖKEN'), rodlok: $t('RÖDLÖKEN'),
+  smor: $t('SMÖRET'), bacon: $t('BACONET'), kyckling: $t('KYCKLINGEN'), kottfars: $t('KÖTTFÄRSEN'), champ: $t('CHAMPINJONERNA'), paprika: $t('PAPRIKAN'), aubergine: $t('AUBERGINEN'),
+  agg: $t('ÄGGEN'), mjol: $t('MJÖLET'), krossade: $t('TOMATERNA'), bonor: $t('BÖNORNA'), tomat: $t('TOMATEN'), ost: $t('OSTEN'), fisk: $t('FISKEN'), bar: $t('BÄREN'), tortilla: $t('TORTILLAN'),
+  brod: $t('LIMPAN'), yoghurt: $t('YOGHURTEN'), applR: $t('ÄPPLET'), applG: $t('ÄPPLET'), apels: $t('APELSINEN'), banan: $t('BANANEN'), citron: $t('CITRONEN'), lime: $t('LIMEN'),
+  avokado: $t('AVOKADON'), ananas: $t('ANANASEN'), melon: $t('MELONEN'), kiwi: $t('KIWIN'), granat: $t('GRANATÄPPLET') };
 const best = (ing) => BEST[ing] || (ravaraOf(ing)?.name || ing).toUpperCase();
 const PLURAL = new Set(['champ', 'bonor', 'agg', 'bar', 'havre', 'krossade']);
-const KARL = { gryta: 'GRYTAN', panna: 'STEKPANNAN', form: 'FORMEN', skal: 'BUNKEN', mixer: 'MIXERN', tallrik: 'TALLRIKEN' };
-const KORT = { gryta: 'grytan', panna: 'pannan', form: 'formen', skal: 'bunken', mixer: 'mixern', tallrik: 'tallriken' };
-const kort = (ing) => (ravaraOf(ing)?.name || ing).replace(/^Krossade tomater$/, 'Tomater');
+const KARL = { gryta: $t('GRYTAN'), panna: $t('STEKPANNAN'), form: $t('FORMEN'), skal: $t('BUNKEN'), mixer: $t('MIXERN'), tallrik: $t('TALLRIKEN') };
+const KORT = { gryta: $t('grytan'), panna: $t('pannan'), form: $t('formen'), skal: $t('bunken'), mixer: $t('mixern'), tallrik: $t('tallriken') };
+const kort = (ing) => (ravaraOf(ing)?.name || ing).replace(/^Krossade tomater$/, $t('Tomater'));
 function stepText(s, k) {
   switch (s.t) {
-    case 'vatten': return `FYLL ${KARL[s.v]} MED VATTEN I DISKHON`;
-    case 'stall': return `STÄLL ${KARL[s.v]} PÅ SPISEN`;
-    case 'varme': return `VRID PÅ PLATTAN UNDER ${KARL[s.v]}`;
-    case 'i': return `LÄGG ${s.hack ? (PLURAL.has(s.ing) ? 'DE HACKADE ' : 'DEN HACKADE ') : ''}${best(s.ing)} I ${KARL[s.v]}`;
-    case 'hacka': return `HACKA ${best(s.ing)} PÅ SKÄRBRÄDAN`;
-    case 'vanta': return `VÄNTA TILLS ${KARL[s.v]} ÄR KLAR`;
-    case 'avrinn': return 'HÄLL AV VATTNET I DISKHON';
-    case 'hall': return `HÄLL ${KARL[s.from]} I ${KARL[s.to]}`;
-    case 'vispa': return `${s.v === 'skal' ? (k?.knad ? 'KNÅDA' : 'VISPA') : 'RÖR OM'} I ${KARL[s.v]} (${Math.min(s.n, k?.stirs || 0)}/${s.n})`;
-    case 'ugn': return 'IN MED FORMEN I UGNEN';
-    case 'mixa': return 'TRYCK PÅ MIXERN';
-    case 'upp': return `LÄGG UPP ${KARL[s.v]} PÅ TALLRIKEN`;
+    case 'vatten': return $t`FYLL ${KARL[s.v]} MED VATTEN I DISKHON`;
+    case 'stall': return $t`STÄLL ${KARL[s.v]} PÅ SPISEN`;
+    case 'varme': return $t`VRID PÅ PLATTAN UNDER ${KARL[s.v]}`;
+    case 'i': return s.hack ? (PLURAL.has(s.ing) ? $t`LÄGG DE HACKADE ${best(s.ing)} I ${KARL[s.v]}` : $t`LÄGG DEN HACKADE ${best(s.ing)} I ${KARL[s.v]}`) : $t`LÄGG ${best(s.ing)} I ${KARL[s.v]}`;
+    case 'hacka': return $t`HACKA ${best(s.ing)} PÅ SKÄRBRÄDAN`;
+    case 'vanta': return $t`VÄNTA TILLS ${KARL[s.v]} ÄR KLAR`;
+    case 'avrinn': return $t('HÄLL AV VATTNET I DISKHON');
+    case 'hall': return $t`HÄLL ${KARL[s.from]} I ${KARL[s.to]}`;
+    case 'vispa': return s.v === 'skal' ? (k?.knad ? $t`KNÅDA I ${KARL[s.v]} (${Math.min(s.n, k?.stirs || 0)}/${s.n})` : $t`VISPA I ${KARL[s.v]} (${Math.min(s.n, k?.stirs || 0)}/${s.n})`) : $t`RÖR OM I ${KARL[s.v]} (${Math.min(s.n, k?.stirs || 0)}/${s.n})`;
+    case 'ugn': return $t('IN MED FORMEN I UGNEN');
+    case 'mixa': return $t('TRYCK PÅ MIXERN');
+    case 'upp': return $t`LÄGG UPP ${KARL[s.v]} PÅ TALLRIKEN`;
   }
   return '';
 }
 function cardText(s) {
   switch (s.t) {
-    case 'vatten': return 'Vatten i grytan';
-    case 'stall': return `${KORT[s.v][0].toUpperCase()}${KORT[s.v].slice(1)} på spisen`;
-    case 'varme': return 'Värme på';
-    case 'i': return `${kort(s.ing)} i ${KORT[s.v]}`;
-    case 'hacka': return `Hacka: ${kort(s.ing).toLowerCase()}`;
-    case 'vanta': return `Vänta på ${KORT[s.v]}`;
-    case 'avrinn': return 'Häll av vattnet';
-    case 'hall': return `${KORT[s.from][0].toUpperCase()}${KORT[s.from].slice(1)} i ${KORT[s.to]}`;
-    case 'vispa': return s.v === 'skal' ? 'Vispa i bunken' : `Rör om i ${KORT[s.v]}`;
-    case 'ugn': return 'Formen i ugnen';
-    case 'mixa': return 'Mixa';
-    case 'upp': return `Lägg upp: ${KORT[s.v]}`;
+    case 'vatten': return $t('Vatten i grytan');
+    case 'stall': return $t`${KORT[s.v][0].toUpperCase() + KORT[s.v].slice(1)} på spisen`;
+    case 'varme': return $t('Värme på');
+    case 'i': return $t`${kort(s.ing)} i ${KORT[s.v]}`;
+    case 'hacka': return $t`Hacka: ${kort(s.ing).toLowerCase()}`;
+    case 'vanta': return $t`Vänta på ${KORT[s.v]}`;
+    case 'avrinn': return $t('Häll av vattnet');
+    case 'hall': return $t`${KORT[s.from][0].toUpperCase() + KORT[s.from].slice(1)} i ${KORT[s.to]}`;
+    case 'vispa': return s.v === 'skal' ? $t('Vispa i bunken') : $t`Rör om i ${KORT[s.v]}`;
+    case 'ugn': return $t('Formen i ugnen');
+    case 'mixa': return $t('Mixa');
+    case 'upp': return $t`Lägg upp: ${KORT[s.v]}`;
   }
   return '';
 }
@@ -252,7 +253,7 @@ function drawVessel(c, v, cx, cy, t, opts = {}) {
   // mätaren över kärlet medan det lagas: grön stapel, ✓ när allt är klart
   if (opts.bar && v.items.length && !RAW.has(kind)) {
     const p = progressOf(v), w = 22, x = cx - 11, y = cy - (kind === 'gryta' ? 10 : 9) - (kind === 'mixer' ? 4 : 0);
-    if (p >= 1) { r1(c, x + 7, y - 1, 9, 7, 0x1a6a2a); ctxText(c, SMALL, 'KLAR', x + 3, y, '#ffffff'); }
+    if (p >= 1) { r1(c, x + 7, y - 1, 9, 7, 0x1a6a2a); ctxText(c, SMALL, $t('KLAR'), x + 3, y, '#ffffff'); }
     else if (v.heat > 0) { r1(c, x - 1, y - 1, w + 2, 5, 0x1a1a20); r1(c, x, y, Math.round(w * p), 3, p > 0.7 ? 0x6fe08a : 0xf0c040); }
   }
 }
@@ -334,7 +335,7 @@ export function makeKoket(A) {
   const needsCook = (role) => remaining().some((x) => (x.t === 'vanta' && x.v === role) || (x.t === 'ugn' && role === 'form'));
   // ska vattnet hällas av innan grytan töms? (bara om receptet har ett avrinn-steg för den – soppa och gröt äter man med vattnet)
   const mustDrain = (id) => remaining().some((x) => x.t === 'avrinn' && fits(x.v, id));
-  const notNow = () => { play('fel'); say(`INTE NU - ${stepText(steps[cur], ves[bind[steps[cur]?.v]] || ves[steps[cur]?.v])}`); };
+  const notNow = () => { play('fel'); say($t`INTE NU - ${stepText(steps[cur], ves[bind[steps[cur]?.v]] || ves[steps[cur]?.v])}`); };
 
   // ---------- är steget klart? (läses av tillståndet; flaggsteg sätts när handlingen görs) ----------
   function checkDone(s) {
@@ -375,7 +376,7 @@ export function makeKoket(A) {
   function boardDown() {
     if (hand?.type === 'ing') {
       if (!findStep((x) => x.t === 'hacka' && x.ing === hand.id)) { notNow(); return; }
-      if (board.ing) { say('SKÄRBRÄDAN ÄR UPPTAGEN'); return; }
+      if (board.ing) { say($t('SKÄRBRÄDAN ÄR UPPTAGEN')); return; }
       board.ing = hand.id; board.chops = 0; hand = null; play('click'); return;
     }
     if (!hand && board.ing) {
@@ -395,15 +396,15 @@ export function makeKoket(A) {
   }
   function returnToRack() {
     const v = ves[hand.id];
-    if (v.items.length || v.water) { say('TÖM DEN FÖRST - ELLER STÄLL DEN PÅ SPISEN'); play('fel'); return; }
+    if (v.items.length || v.water) { say($t('TÖM DEN FÖRST - ELLER STÄLL DEN PÅ SPISEN')); play('fel'); return; }
     v.place = 'rack'; v.heat = 0; hand = null; play('click');
   }
   function burnerDown(i) {
     const B = burners[i];
     if (hand?.type === 'ves') {
       const k = KIND[hand.id];
-      if (k !== 'gryta' && k !== 'panna') { say('DEN SKA INTE PÅ SPISEN'); play('fel'); return; }
-      if (B.v) { say('DEN PLATTAN ÄR UPPTAGEN - TA EN ANNAN'); play('fel'); return; }
+      if (k !== 'gryta' && k !== 'panna') { say($t('DEN SKA INTE PÅ SPISEN')); play('fel'); return; }
+      if (B.v) { say($t('DEN PLATTAN ÄR UPPTAGEN - TA EN ANNAN')); play('fel'); return; }
       const s = findStep((x) => x.t === 'stall' && fits(x.v, hand.id));
       if (s) doBind(s.v, hand.id);
       B.v = hand.id; ves[hand.id].place = 'b' + i; hand = null; play('click');
@@ -419,13 +420,13 @@ export function makeKoket(A) {
   }
   function knob(i) { burners[i].on = !burners[i].on; play('click'); }
   function sinkDown() {
-    if (hand?.type !== 'ves') { if (!hand) say('TA EN GRYTA FRÅN LISTEN - SEN KRANEN'); return; }
+    if (hand?.type !== 'ves') { if (!hand) say($t('TA EN GRYTA FRÅN LISTEN - SEN KRANEN')); return; }
     const v = ves[hand.id];
-    if (KIND[v.id] !== 'gryta') { say('BARA GRYTORNA BEHÖVER VATTEN'); play('fel'); return; }
+    if (KIND[v.id] !== 'gryta') { say($t('BARA GRYTORNA BEHÖVER VATTEN')); play('fel'); return; }
     if (v.water && v.items.length) {
       const s = findStep((x) => x.t === 'avrinn' && fits(x.v, v.id));
       if (!s) { notNow(); return; }
-      if (progressOf(v) < 1) { say(`${best(v.items.find((it) => it.prog < 1)?.ing || '')} ÄR INTE KLAR ÄN - VÄNTA`); play('fel'); return; }
+      if (progressOf(v) < 1) { say($t`${best(v.items.find((it) => it.prog < 1)?.ing || '')} ÄR INTE KLAR ÄN - VÄNTA`); play('fel'); return; }
       v.water = false; s.flag = true; play('slide'); pour(SINK.x0 + 28, SINK.y0 + 20, 0x8ac0f0);
       // nästa steg häller eller lägger upp grytan? då behåller man den i handen – annars tillbaka på sin platta
       const role = roleOf(v.id), next = remaining().find((x) => x !== s);
@@ -439,15 +440,15 @@ export function makeKoket(A) {
       doBind(s.v, v.id);
       v.water = true; play('slide'); pour(SINK.x0 + 28, SINK.y0 + 20, 0x8ac0f0); return;
     }
-    say('DEN HAR REDAN VATTEN');
+    say($t('DEN HAR REDAN VATTEN'));
   }
   function pourInto(toId) {
     const from = ves[hand.id], to = ves[toId];
     if (toId === 'tallrik') { serve(); return; }
     const s = findStep((x) => x.t === 'hall' && fits(x.from, from.id) && (fits(x.to, toId) || x.to === toId));
     if (!s) { notNow(); return; }
-    if (from.water && mustDrain(from.id)) { say('HÄLL AV VATTNET FÖRST'); play('fel'); return; }
-    if (progressOf(from) < 1 && !RAW.has(KIND[from.id]) && from.items.length) { say('DET ÄR INTE KLART ÄN - VÄNTA'); play('fel'); return; }
+    if (from.water && mustDrain(from.id)) { say($t('HÄLL AV VATTNET FÖRST')); play('fel'); return; }
+    if (progressOf(from) < 1 && !RAW.has(KIND[from.id]) && from.items.length) { say($t('DET ÄR INTE KLART ÄN - VÄNTA')); play('fel'); return; }
     doBind(s.to, toId);
     to.items.push(...from.items.map((it) => ({ ...it })));
     from.items = []; from.stirs = 0; to.stirs = 0; s.flag = true;
@@ -468,8 +469,8 @@ export function makeKoket(A) {
     const from = ves[hand.id];
     const s = findStep((x) => x.t === 'upp' && (fits(x.v, from.id) || x.v === from.id));
     if (!s) { notNow(); return; }
-    if (from.water && mustDrain(from.id)) { say('HÄLL AV VATTNET FÖRST'); play('fel'); return; }
-    if (progressOf(from) < 1 && !RAW.has(KIND[from.id])) { say('DET ÄR INTE KLART ÄN - VÄNTA'); play('fel'); return; }
+    if (from.water && mustDrain(from.id)) { say($t('HÄLL AV VATTNET FÖRST')); play('fel'); return; }
+    if (progressOf(from) < 1 && !RAW.has(KIND[from.id])) { say($t('DET ÄR INTE KLART ÄN - VÄNTA')); play('fel'); return; }
     from.water = false;   // (soppan och gröten: vattnet följer med på tallriken)
     ves.tallrik.items.push(...from.items.map((it) => ({ ...it })));
     from.items = []; s.flag = true;
@@ -480,13 +481,13 @@ export function makeKoket(A) {
     const s = findStep((x) => x.t === 'vispa' && (fits(x.v, id) || x.v === id));
     if (!s) { notNow(); return; }
     const v = ves[id];
-    if (!v.items.length) { say('DET FINNS INGET ATT RÖRA I'); return; }
+    if (!v.items.length) { say($t('DET FINNS INGET ATT RÖRA I')); return; }
     v.stirs++; v.stirSpin = (v.stirSpin || 0) + 0.8; play('click');
     puff(vesPos(v), 0xffffff, 2);
   }
   function mixerDown() {
     if (hand?.type === 'ing') { putIng('mixer'); return; }
-    if (ves.mixer.mixT > 0) { say('MIXERN SNURRAR...'); return; }
+    if (ves.mixer.mixT > 0) { say($t('MIXERN SNURRAR...')); return; }
     if (!hand && ves.mixer.items.length && !ves.mixer.mixed) {
       const s = findStep((x) => x.t === 'mixa');
       if (!s) { notNow(); return; }
@@ -510,7 +511,7 @@ export function makeKoket(A) {
       oven.v = 'form'; ves.form.place = 'ugn'; ves.form.wasIn = true; hand = null; play('slide'); return;
     }
     if (!hand && oven.v) { pickVessel(oven.v); return; }
-    if (!hand) say('UGNEN SÄTTS PÅ NÄR FORMEN ÄR INNE');
+    if (!hand) say($t('UGNEN SÄTTS PÅ NÄR FORMEN ÄR INNE'));
   }
 
   // ---------- kärlens plats på skärmen ----------
@@ -606,23 +607,23 @@ export function makeKoket(A) {
   }
   function result() {
     const res = g.cook(R.id, N);
-    if (!res.ok) { toast(res.msg || 'Något gick fel i köket.', 'bad'); A.go('room'); return; }
+    if (!res.ok) { toast(res.msg || $t('Något gick fel i köket.'), 'bad'); A.go('room'); return; }
     const titel = KOCK_TITLAR[res.niva - 1];
-    openModal(`${R.icon} ${R.name} – smaklig måltid!`, `<div class="kok-res">${'<canvas class="kok-dish" data-dish="' + R.id + '" width="' + DW * 3 + '" height="' + DH * 3 + '"></canvas>'}
-      <p style="font-size:var(--f2);margin-top:0">Du åt en portion: <b>+${res.fill} mätthet</b>${res.glad ? `, <b>+${res.glad} 😊</b>` : ''}${res.energi ? `, <b>+${res.energi} ⚡</b>` : ''}.</p>
-      ${res.lador ? `<p style="font-size:var(--f2)">🍱 <b>${res.lador} matlådor</b> står i kylskåpet – värm och ät när du vill!</p>` : ''}
-      ${res.overflow ? `<p style="font-size:var(--f2)" class="bad">Kylen var full – ${res.overflow} portioner fick inte plats.</p>` : ''}
-      <p style="font-size:var(--f2)">👩‍🍳 ${res.betterNow ? `Du blir bättre på ${R.name.toLowerCase()}: ${'★'.repeat(res.stars)}! ` : ''}${res.nyNiva ? `<b>Ny kocknivå: ${titel}!</b>` : `Kocknivå: ${titel}`}</p></div>`,
-    [{ label: '🍽️ Tack för maten!', cls: 'btn-go', onClick: () => { closeModal(); A.go('room'); } }], { closable: false });
+    openModal($t`${R.icon} ${R.name} – smaklig måltid!`, `<div class="kok-res">${'<canvas class="kok-dish" data-dish="' + R.id + '" width="' + DW * 3 + '" height="' + DH * 3 + '"></canvas>'}
+      <p style="font-size:var(--f2);margin-top:0">${$t`Du åt en portion: <b>+${res.fill} mätthet</b>${res.glad ? `, <b>+${res.glad} 😊</b>` : ''}${res.energi ? `, <b>+${res.energi} ⚡</b>` : ''}.`}</p>
+      ${res.lador ? `<p style="font-size:var(--f2)">${$t`🍱 <b>${res.lador} matlådor</b> står i kylskåpet – värm och ät när du vill!`}</p>` : ''}
+      ${res.overflow ? `<p style="font-size:var(--f2)" class="bad">${$t`Kylen var full – ${res.overflow} portioner fick inte plats.`}</p>` : ''}
+      <p style="font-size:var(--f2)">👩‍🍳 ${res.betterNow ? `${$t`Du blir bättre på ${R.name.toLowerCase()}: ${'★'.repeat(res.stars)}!`} ` : ''}${res.nyNiva ? $t`<b>Ny kocknivå: ${titel}!</b>` : $t`Kocknivå: ${titel}`}</p></div>`,
+    [{ label: $t('🍽️ Tack för maten!'), cls: 'btn-go', onClick: () => { closeModal(); A.go('room'); } }], { closable: false });
     const cv = document.querySelector('#modal canvas[data-dish]');
     if (cv) { const x = cv.getContext('2d'); x.imageSmoothingEnabled = false; x.drawImage(dishCanvas(R.id), 0, 0, DW, DH, 0, 0, cv.width, cv.height); }
     if (res.nyNiva) play('fanfare');
   }
   function askAbort() {
     if (finished) return;
-    openModal('🍳 Sluta laga mat?', '<p style="font-size:var(--f2)">Råvarorna ligger kvar i kylskåpet – inget går åt om du slutar nu.</p>', [
-      { label: 'Laga vidare', cls: 'btn-go', onClick: closeModal },
-      { label: 'Sluta', onClick: () => { closeModal(); A.go('room'); } },
+    openModal($t('🍳 Sluta laga mat?'), `<p style="font-size:var(--f2)">${$t('Råvarorna ligger kvar i kylskåpet – inget går åt om du slutar nu.')}</p>`, [
+      { label: $t('Laga vidare'), cls: 'btn-go', onClick: closeModal },
+      { label: $t('Sluta'), onClick: () => { closeModal(); A.go('room'); } },
     ]);
   }
 
@@ -694,7 +695,7 @@ export function makeKoket(A) {
       ctx.globalAlpha = used ? 0.35 : 1;
       ctx.drawImage(ravaraIcon(ing), x, SHELF.y - 12);
       ctx.globalAlpha = 1;
-      ctxText(ctx, SMALL, used ? 'OK' : `X${N}`, x + 1, SHELF.y + 5, used ? '#3a8a4a' : '#5a3a1e');
+      ctxText(ctx, SMALL, used ? $t('OK') : `X${N}`, x + 1, SHELF.y + 5, used ? '#3a8a4a' : '#5a3a1e');
     });
     // partiklar (ånga, fräs, vatten, konfetti)
     for (const p of particles) { ctx.globalAlpha = Math.max(0, Math.min(1, p.life * (p.steam ? 0.7 : 1.5))); r1(ctx, p.x, p.y, p.steam ? 2 : 1, 1, p.col); }
@@ -714,15 +715,15 @@ export function makeKoket(A) {
     // det man håller i
     if (hand) {
       const [hx, hy] = hover ? [hover.x, hover.y] : [350, 28];
-      if (!hover) { r1(ctx, 330, 16, 50, 30, 'rgba(20,18,26,.85)'); ctxText(ctx, SMALL, 'I HANDEN', 334, 18, '#e8b230'); }
+      if (!hover) { r1(ctx, 330, 16, 50, 30, 'rgba(20,18,26,.85)'); ctxText(ctx, SMALL, $t('I HANDEN'), 334, 18, '#e8b230'); }
       if (hand.type === 'ing') { if (hand.hack) ctx.drawImage(choppedBits(hand.id), hx - 6, hy - 10); else ctx.drawImage(ravaraIcon(hand.id), hx - 6, hy - 14); }
       else if (hand.type === 'ves') drawVessel(ctx, ves[hand.id], hx, hy - 8, t);
       else if (hand.type === 'bowl') { ctx.globalAlpha = 0.85; drawVessel(ctx, ves.skal, hx, hy - 6, t); ctx.globalAlpha = 1; }
     }
     // textraden högst upp: nästa steg (eller ett besked)
     const st = steps[cur];
-    let line = finished ? 'SMAKLIG MÅLTID!' : t - msgT < 2.2 ? msg : st ? `${cur + 1}/${steps.length}: ${stepText(st, ves[bind[st.v]] || ves[st.v])}` : '';
-    if (st?.t === 'vanta' && !finished && t - msgT >= 2.2) { const v = ves[bind[st.v]] || ves[st.v]; const wait = v?.items.find((it) => it.prog < 1); line = `${cur + 1}/${steps.length}: VÄNTA - ${wait ? best(wait.ing) + ' ' : ''}${KIND[v?.id] === 'form' ? 'ÄR I UGNEN' : 'LAGAS'}${v?.heat < 1 ? ' (VÄRME PÅ?)' : ''}`; }
+    let line = finished ? $t('SMAKLIG MÅLTID!') : t - msgT < 2.2 ? msg : st ? `${cur + 1}/${steps.length}: ${stepText(st, ves[bind[st.v]] || ves[st.v])}` : '';
+    if (st?.t === 'vanta' && !finished && t - msgT >= 2.2) { const v = ves[bind[st.v]] || ves[st.v]; const wait = v?.items.find((it) => it.prog < 1); line = `${cur + 1}/${steps.length}: ${KIND[v?.id] === 'form' ? (wait ? $t`VÄNTA - ${best(wait.ing)} ÄR I UGNEN` : $t('VÄNTA - ÄR I UGNEN')) : (wait ? $t`VÄNTA - ${best(wait.ing)} LAGAS` : $t('VÄNTA - LAGAS'))}${v?.heat < 1 ? ` (${$t('VÄRME PÅ?')})` : ''}`; }
     const w = Math.min(248, textW(SMALL, line) + 12), x0 = Math.round(116 + (250 - w) / 2);
     r1(ctx, x0, 2, w, 12, 'rgba(20,18,26,.9)'); r1(ctx, x0, 13, w, 1, '#e8b230');
     ctxText(ctx, SMALL, line, x0 + 6, 5, t - msgT < 2.2 && !finished ? '#ff9a7a' : '#ffd23f');
@@ -737,7 +738,7 @@ export function makeKoket(A) {
     r1(ctx, (x0 + x1) / 2 - 2, y0 - 1, 4, 4, 0xd83a3a); r1(ctx, (x0 + x1) / 2 - 1, y0 - 1, 1, 1, 0xff9a9a);
     const name = R.name.toUpperCase();
     ctxText(ctx, SMALL, name.length > 24 ? name.slice(0, 23) + '.' : name, x0 + 4, y0 + 6, '#7a1e2e');
-    ctxText(ctx, SMALL, `${N > 1 ? portionOf(N).name.toUpperCase() + ' X' + N : '1 PORTION'}`, x0 + 4, y0 + 13, '#9a7a5a');
+    ctxText(ctx, SMALL, `${N > 1 ? portionOf(N).name.toUpperCase() + ' X' + N : $t('1 PORTION')}`, x0 + 4, y0 + 13, '#9a7a5a');
     const first = Math.max(0, Math.min(cur - 3, steps.length - 9));
     steps.slice(first, first + 9).forEach((s, k) => {
       const i = first + k, y = y0 + 22 + k * 8, now = i === cur;

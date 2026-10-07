@@ -43,6 +43,7 @@ import { createWalker, selfDrawable, folkDrawables, iconBubble, WALK_SEQ } from 
 import { SPECIES, drawPet, drawPetIcon, petBox, breedOf, ICON_W, ICON_H } from '../pets/sprites.js';
 import { PET_ITEMS, drawPetItem, drawItemIcon } from '../pets/items.js';
 import { petStore, MAX_PETS, TOYS_FOR } from '../pets/sim.js';
+import { $t, $n } from '../core/i18n.js';
 
 let VW = 384;                          // skärmens bredd i spelpixlar – följer skärmen (mobilfyllning, viewMax)
 const W = 768, H = 216, WALL_Y = 70;   // butikens storlek, väggens underkant
@@ -78,7 +79,7 @@ const BOARD = { x: 344, y: 112 };                        // gatupratare vid dör
 const PEN_BREEDS = [['blandras', 'tax', 'jack'], ['labrador', 'golden', 'collie'], ['schafer', 'husky', 'pudel'], ['corgi', 'mops', 'chihuahua']];
 const EMOJI = { katt: '🐱', hund: '🐶', kanin: '🐰' };
 const ACCENT = { katt: '#f28bb3', hund: '#7fd08a', kanin: '#f0d048' };
-const SHORTN = { golden: 'GOLDEN', collie: 'COLLIE', jack: 'JACK RUSS.', schafer: 'SCHÄFER', chihuahua: 'CHIHUAHUA', blandras: 'BLANDRAS', skogkatt: 'SKOGKATT', lejonhuvud: 'LEJONHUVUD', hollandare: 'HOLLÄNDARE', vadur: 'DVÄRGVÄDUR' };
+const SHORTN = { golden: $t('GOLDEN'), collie: $t('COLLIE'), jack: $t('JACK RUSS.'), schafer: $t('SCHÄFER'), chihuahua: $t('CHIHUAHUA'), blandras: $t('BLANDRAS'), skogkatt: $t('SKOGKATT'), lejonhuvud: $t('LEJONHUVUD'), hollandare: $t('HOLLÄNDARE'), vadur: $t('DVÄRGVÄDUR') };
 const shortName = (sp, id) => SHORTN[id] || (SPECIES[sp].breeds.find((b) => b.id === id)?.namn || id).toUpperCase();
 
 // ---------- varorna: var de står ----------
@@ -103,15 +104,15 @@ const CLERK = { id: 'clerk', skin: '#eec3a0', hair: '#b7392b', style: 'ponytail'
 const CASHIER = { id: 'cashier', skin: '#a06a43', hair: '#1d1714', style: 'short', hat: 'cap', cap: '#3f9a52', top: 'tee', shirt: '#f0b429', accent: '#f0b429', bottom: 'pants', pants: '#2b2b30', shoes: '#1c1c1c', glasses: 'round', beard: 'stubble', phones: false, bag: null, blush: false, build: 5, apron: true, kid: false };
 const PUP = { species: 'hund', breed: 'golden', sex: 'hona', stage: 'unge', id: 'pluttan', seed: 7 };
 const TIPS = [
-  '💬 Katter behöver en kattlåda – och den måste tömmas ibland!',
-  '💬 Hundar måste ut på promenad i koppel, annars blir det olyckor inne.',
-  '💬 Maten: klicka på säcken hemma så bär du den, klicka sen på skålen så häller du upp.',
-  '💬 Alla djur här är ungar. De växer av mat, lek, en leksak och rätt toalett – tidigast unga efter 3 dagar och vuxna efter en vecka.',
-  '💬 Kaniner jagar inga bollar – men de älskar att gnaga på en gnagmorot!',
-  '💬 Har du en hane och en hona av samma art kan de bli kära – och få ungar!',
-  '💬 Kaniner trivs bäst i en bur med halm. Byt halm ibland så blir de glada.',
-  '💬 Djuren har en liten mätare ovanför sig: hjärtat är glädje och skålen är hunger.',
-  '💬 Katter gillar att klättra – ett klösträd gör dem gladare.',
+  $t('💬 Katter behöver en kattlåda – och den måste tömmas ibland!'),
+  $t('💬 Hundar måste ut på promenad i koppel, annars blir det olyckor inne.'),
+  $t('💬 Maten: klicka på säcken hemma så bär du den, klicka sen på skålen så häller du upp.'),
+  $t('💬 Alla djur här är ungar. De växer av mat, lek, en leksak och rätt toalett – tidigast unga efter 3 dagar och vuxna efter en vecka.'),
+  $t('💬 Kaniner jagar inga bollar – men de älskar att gnaga på en gnagmorot!'),
+  $t('💬 Har du en hane och en hona av samma art kan de bli kära – och få ungar!'),
+  $t('💬 Kaniner trivs bäst i en bur med halm. Byt halm ibland så blir de glada.'),
+  $t('💬 Djuren har en liten mätare ovanför sig: hjärtat är glädje och skålen är hunger.'),
+  $t('💬 Katter gillar att klättra – ett klösträd gör dem gladare.'),
 ];
 
 // ---------- sålt i dag (djuren kommer tillbaka nästa speldag) ----------
@@ -474,7 +475,7 @@ export function makeShopDjur(A, opts = {}) {
   };
   const petSpots = () => actors.filter((a) => !a.carried).map((a) => {
     const { r, go } = actorSpot(a);
-    return { id: a.sale ? a.pet.species + '-' + a.pet.breed : 'valp', actor: a, r, go, act: () => (a.sale ? openPetBuy(a) : (play('click'), toast(`🐶 Det där är Pluttan, Kajsas egen valp – hon är inte till salu! Men titta i hagarna, där finns ${actors.filter((x) => x.sale && x.pet.species === 'hund').length} valpar.`))) };
+    return { id: a.sale ? a.pet.species + '-' + a.pet.breed : 'valp', actor: a, r, go, act: () => (a.sale ? openPetBuy(a) : (play('click'), toast($t`🐶 Det där är Pluttan, Kajsas egen valp – hon är inte till salu! Men titta i hagarna, där finns ${actors.filter((x) => x.sale && x.pet.species === 'hund').length} valpar.`))) };
   });
   const bayX = (i) => FODER.x0 + i * 48;
   const staticSpots = [
@@ -488,11 +489,11 @@ export function makeShopDjur(A, opts = {}) {
     }),
     { id: 'pall', ware: 'sack-hund', r: [PALLET.x0, PALLET.y0 - 22, PALLET.x1, PALLET.y1], go: [(PALLET.x0 + PALLET.x1) / 2, PALLET.y1 + 9] },
     { id: 'kassa', r: [DESK.x, DESK.y - 30, DESK.x + DESK.w, DESK.y + DESK.h], go: [DESK.x + DESK.w / 2, DESK.y + DESK.h + 10], act: () => { play('click'); toast(TIPS[Math.floor(t * 7) % TIPS.length]); } },
-    { id: 'akvarium', r: [AQUA.x0, 8, AQUA.x1, WALL_Y - 4], go: [(AQUA.x0 + AQUA.x1) / 2, WALL_Y + 12], act: () => { play('click'); toast('🐠 Akvarierna är butikens egna – fiskarna är inte till salu. Titta gärna!'); } },
-    { id: 'fagel', r: [CAGE.x - 13, CAGE.y - 52, CAGE.x + 13, CAGE.y], go: [CAGE.x, CAGE.y + 10], act: () => { play('chirp'); toast('🐦 Undulaterna Pip, Blå och Citron bor här i butiken. Kvitter kvitter!'); } },
-    { id: 'kattrum', r: [WIN.x0, WIN.y0, WIN.x1, WIN.y1], go: [(WIN.x0 + WIN.x1) / 2, WALL_Y + 20], act: () => { play('click'); toast('🐱 Kattrummet! Klicka på en kattunge så får du hälsa på den.'); } },
-    { id: 'skylt', r: [BOARD.x - 15, BOARD.y - 30, BOARD.x + 15, BOARD.y], go: [BOARD.x, BOARD.y + 10], act: () => { play('click'); toast('🐶 Nya valpar har kommit! Gå till hagarna längst till höger och hälsa på dem.'); } },
-    { id: 'valplek', r: [RUG.x0, RUG.y0, RUG.x1, RUG.y1], go: [RUG.x0 + 20, RUG.y0 + 20], act: () => { play('click'); toast('🐾 Valpleken – här får Pluttan springa av sig.'); } },
+    { id: 'akvarium', r: [AQUA.x0, 8, AQUA.x1, WALL_Y - 4], go: [(AQUA.x0 + AQUA.x1) / 2, WALL_Y + 12], act: () => { play('click'); toast($t('🐠 Akvarierna är butikens egna – fiskarna är inte till salu. Titta gärna!')); } },
+    { id: 'fagel', r: [CAGE.x - 13, CAGE.y - 52, CAGE.x + 13, CAGE.y], go: [CAGE.x, CAGE.y + 10], act: () => { play('chirp'); toast($t('🐦 Undulaterna Pip, Blå och Citron bor här i butiken. Kvitter kvitter!')); } },
+    { id: 'kattrum', r: [WIN.x0, WIN.y0, WIN.x1, WIN.y1], go: [(WIN.x0 + WIN.x1) / 2, WALL_Y + 20], act: () => { play('click'); toast($t('🐱 Kattrummet! Klicka på en kattunge så får du hälsa på den.')); } },
+    { id: 'skylt', r: [BOARD.x - 15, BOARD.y - 30, BOARD.x + 15, BOARD.y], go: [BOARD.x, BOARD.y + 10], act: () => { play('click'); toast($t('🐶 Nya valpar har kommit! Gå till hagarna längst till höger och hälsa på dem.')); } },
+    { id: 'valplek', r: [RUG.x0, RUG.y0, RUG.x1, RUG.y1], go: [RUG.x0 + 20, RUG.y0 + 20], act: () => { play('click'); toast($t('🐾 Valpleken – här får Pluttan springa av sig.')); } },
   ];
   for (const s of staticSpots) if (s.ware) s.act = () => openItemBuy(s.ware);
   const clerkSpot = () => ({ id: 'personal', r: [clerk.px - 7, clerk.py - 28, clerk.px + 7, clerk.py + 2], go: [clerk.px + (walker.px < clerk.px ? -14 : 14), clerk.py + 2], act: talkToClerk });
@@ -656,7 +657,7 @@ export function makeShopDjur(A, opts = {}) {
       for (const a of cats) drawActor(ctx, a, t);
       ctx.restore();
       ctx.drawImage(glassImg, WIN.x0, WIN.y0);
-      plate(ctx, (WIN.x0 + WIN.x1) >> 1, WIN.y1 + 2, `KATTUNGAR FRÅN ${Math.min(...SPECIES.katt.breeds.map((b) => b.pris))}:-`, fa?.zone === 'katt' ? '#ffe070' : '#f6efe0');
+      plate(ctx, (WIN.x0 + WIN.x1) >> 1, WIN.y1 + 2, $t`KATTUNGAR FRÅN ${Math.min(...SPECIES.katt.breeds.map((b) => b.pris))}:-`, fa?.zone === 'katt' ? '#ffe070' : '#f6efe0');
       for (const a of cats) if (a === fa) marker(ctx, a, t);
 
       // ===== foderhyllan =====
@@ -694,13 +695,13 @@ export function makeShopDjur(A, opts = {}) {
         D.push({ fy: p.y0 + 11, draw: () => drawPetItem(ctx, i % 2 ? 'leksak-ben' : 'leksak-boll', p.x0 + (i % 2 ? 30 : 34), p.y0 + 20, { rot: i }) });
         D.push({ fy: p.y1 + 0.5, draw: () => {
           ctx.drawImage(penFront, p.x0 - 1, p.y1 - 8);
-          const lbl = `FRÅN ${Math.min(...PEN_BREEDS[i].map((id) => breedOf({ species: 'hund', breed: id }).pris))}:-`;
+          const lbl = $t`FRÅN ${Math.min(...PEN_BREEDS[i].map((id) => breedOf({ species: 'hund', breed: id }).pris))}:-`;
           plate(ctx, (p.x0 + p.x1) >> 1, p.y1 + 3, lbl, on ? '#ffe070' : '#f6efe0');
         } });
       });
       // kaninhagen
       D.push({ fy: HUTCH.y0 + 22, draw: () => drawPetItem(ctx, 'matskal', HUTCH_BOWL.x, HUTCH_BOWL.y, { food: 0.7, foodKind: 'kanin' }) });
-      D.push({ fy: HUTCH.y1 + 0.5, draw: () => { ctx.drawImage(hutchFront, HUTCH.x0 - 2, HUTCH.y1 - 10); plate(ctx, (HUTCH.x0 + HUTCH.x1) >> 1, HUTCH.y1 - 3, `KANINUNGAR FRÅN ${Math.min(...SPECIES.kanin.breeds.map((b) => b.pris))}:-`, fa?.zone === 'kanin' ? '#ffe070' : '#f6efe0'); } });
+      D.push({ fy: HUTCH.y1 + 0.5, draw: () => { ctx.drawImage(hutchFront, HUTCH.x0 - 2, HUTCH.y1 - 10); plate(ctx, (HUTCH.x0 + HUTCH.x1) >> 1, HUTCH.y1 - 3, $t`KANINUNGAR FRÅN ${Math.min(...SPECIES.kanin.breeds.map((b) => b.pris))}:-`, fa?.zone === 'kanin' ? '#ffe070' : '#f6efe0'); } });
       for (const a of actors) {
         if (a.zone === 'katt' || a.carried) continue;
         D.push({ fy: a.y, draw: () => { drawActor(ctx, a, t); if (a === fa) marker(ctx, a, t); } });
@@ -780,8 +781,8 @@ export function makeShopDjur(A, opts = {}) {
 
       // ===== skärmens överlägg =====
       ctx.setTransform(A.pxs, 0, 0, A.pxs, 0, 0);
-      if (cx > 120) edgeSign(ctx, true, 'KATTER + KANINER', '#f28bb3');
-      if (cx < W - VW - 120) edgeSign(ctx, false, 'HUNDAR', '#7fd08a');
+      if (cx > 120) edgeSign(ctx, true, $t('KATTER + KANINER'), '#f28bb3');
+      if (cx < W - VW - 120) edgeSign(ctx, false, $t('HUNDAR'), '#7fd08a');
       if (focus && (focus.actor || focus.ware)) bigLabel(ctx, focus, t, walker.py > H - 44);
     },
   };
@@ -865,18 +866,18 @@ function bigLabel(ctx, spot, t, atTop) {
   if (spot.actor) {
     const p = spot.actor.pet, S = SPECIES[p.species], B = breedOf(p);
     name = pixSafe(BIG, `${B.namn} - ${S.unge}`);
-    sub = p.sex === 'hona' ? 'HONA' : 'HANE';
-    price = `${B.pris} KR`;
-    hint = 'KLICKA SÅ FÅR DU HÄLSA PÅ';
+    sub = p.sex === 'hona' ? $n('HONA') : $n('HANE');
+    price = $t`${B.pris} KR`;
+    hint = $t('KLICKA SÅ FÅR DU HÄLSA PÅ');
     col = ACCENT[p.species];
   } else {
     const d = PET_ITEMS[spot.ware];
     name = pixSafe(BIG, d.namn);
-    price = `${d.pris} KR`;
-    hint = 'KLICKA FÖR ATT KÖPA';
+    price = $t`${d.pris} KR`;
+    hint = $t('KLICKA FÖR ATT KÖPA');
     col = '#f0d048';
   }
-  const nw = textW(BIG, name), pw = textW(BIG, price), hw = textW(SMALL, hint) + (sub ? textW(SMALL, sub) + 8 : 0);
+  const nw = textW(BIG, name), pw = textW(BIG, price), hw = textW(SMALL, hint) + (sub ? textW(SMALL, $t(sub)) + 8 : 0);
   const w = Math.max(nw + pw + 26, hw + 26), h = 24;
   const safe = globalThis.SF?.view?.safe || { x0: 0, y0: 0, x1: VW, y1: H }; // synliga rutan (fyll-läget beskär)
   let x0 = Math.round((VW - w) / 2);
@@ -890,7 +891,7 @@ function bigLabel(ctx, spot, t, atTop) {
   ctxText(ctx, BIG, price, x0 + 22 + nw, y0 + 4, '#f0d048');
   const blink = Math.floor(t * 2) % 2 === 0;
   let hx = x0 + 16;
-  if (sub) { ctxText(ctx, SMALL, sub, hx, y0 + 16, sub === 'HONA' ? '#ff9cc0' : '#8fc8ff'); hx += textW(SMALL, sub) + 8; }
+  if (sub) { ctxText(ctx, SMALL, $t(sub), hx, y0 + 16, sub === 'HONA' ? '#ff9cc0' : '#8fc8ff'); hx += textW(SMALL, $t(sub)) + 8; }
   ctxText(ctx, SMALL, hint, hx, y0 + 16, blink ? col : '#c9c2d2');
 }
 
@@ -976,9 +977,9 @@ function paintStore() {
   const bw = 60, bx = 384 - bw / 2;
   P.ell(384, 14, 44, 16, 0x7fd08a, 0.18, 5);
   P.rect(bx, 4, bw, 21, 0x17221a); P.box(bx, 4, bw, 21, 0x3f9a52); P.box(bx + 1, 5, bw - 2, 19, 0x1f3a26);
-  glowText(P, BIG, 'TASSEN', 384 - textW(BIG, 'TASSEN') / 2 + 4, 8, 0xc8f0a0, 0x3f9a52);
+  glowText(P, BIG, $t('TASSEN'), 384 - textW(BIG, $t('TASSEN')) / 2 + 4, 8, 0xc8f0a0, 0x3f9a52);
   stamp(P, PAW, bx + 5, 9, 0xf0d048);
-  text(P, SMALL, 'DJURAFFÄR', 384 - textW(SMALL, 'DJURAFFÄR') / 2, 18, 0xf0d048);
+  text(P, SMALL, $t('DJURAFFÄR'), 384 - textW(SMALL, $t('DJURAFFÄR')) / 2, 18, 0xf0d048);
   P.vl(bx + 6, 2, 2, 0x8a8e9a); P.vl(bx + bw - 7, 2, 2, 0x8a8e9a);
   P.rect(DOOR.x0 - 2, 28, DOOR.x1 - DOOR.x0 + 4, WALL_Y - 28, 0x2a2430);
   for (let i = 0; i < 2; i++) {
@@ -991,14 +992,14 @@ function paintStore() {
     P.rect(gx + 2, 50, 10, 2, 0xc9c9d4); P.hl(gx + 2, 50, 10, 0xf2f2f6);
   }
   stamp(P, PAW, DOOR.x0 + 5, 40, 0xffffff, 0.7); stamp(P, PAW, DOOR.x1 - 10, 40, 0xffffff, 0.7);
-  P.rect(DOOR.x0 + 7, 30, 18, 7, 0x1d2b1f); text(P, SMALL, 'UT', DOOR.x0 + 12, 31, 0x6fe08a);
+  P.rect(DOOR.x0 + 7, 30, 18, 7, 0x1d2b1f); text(P, SMALL, $t('UT'), DOOR.x0 + 12, 31, 0x6fe08a);
   P.rect(DOOR.x0 - 4, WALL_Y, DOOR.x1 - DOOR.x0 + 8, 10, 0x2f4a36);
   P.box(DOOR.x0 - 4, WALL_Y, DOOR.x1 - DOOR.x0 + 8, 10, 0x4f7a58);
   stamp(P, PAW, 382, WALL_Y + 3, 0x8ac89a);
   // ===== kassaväggen: skylt + godishylla =====
-  const kw = textW(SMALL, 'KASSA') + 10, kx = Math.round(DESK.x + DESK.w / 2 - kw / 2);
+  const kw = textW(SMALL, $t('KASSA')) + 10, kx = Math.round(DESK.x + DESK.w / 2 - kw / 2);
   P.rect(kx, 28, kw, 10, 0x17151a); P.box(kx, 28, kw, 10, 0x3f9a52);
-  text(P, SMALL, 'KASSA', kx + 5, 31, 0xc8f0a0);
+  text(P, SMALL, $t('KASSA'), kx + 5, 31, 0xc8f0a0);
   P.rect(DESK.x + 4, 52, DESK.w - 8, 2, 0xc9a06b); P.hl(DESK.x + 4, 52, DESK.w - 8, 0xe8c890); P.hl(DESK.x + 4, 54, DESK.w - 8, 0x7a5a38);
   const JARS = [0xd9433b, 0xf0b429, 0x46a35a, 0x8e5bd1, 0x3a7bd5, 0xe07a2e];
   JARS.forEach((c, i) => {
@@ -1010,7 +1011,7 @@ function paintStore() {
   // ===== akvarieväggen =====
   paintAquarium(P);
   // ===== hundväggen: skylt + tavelramar =====
-  const hs = 'HUNDAR', hw = textW(BIG, hs, 2) + 30, hx = Math.round(650 - hw / 2);
+  const hs = $t('HUNDAR'), hw = textW(BIG, hs, 2) + 30, hx = Math.round(650 - hw / 2);
   P.ell(650, 12, hw * 0.7, 18, 0x7fd08a, 0.2, 5);
   P.rect(hx, 3, hw, 20, 0x14241a); P.box(hx, 3, hw, 20, 0x2f5a42); P.box(hx + 1, 4, hw - 2, 18, 0x7fd08a);
   glowText(P, BIG, hs, hx + 15, 6, 0xd8ffc8, 0x3f9a52, 2);
@@ -1146,7 +1147,7 @@ function paintGlass() {
   // texten på glaset
   for (const half of [0]) {
     const cx = (R.x0 + m) / 2 + 25; // mellan klätterträdet (katten sover där, zzz driver åt höger) och spröjsen
-    const s = 'KATTRUMMET', sw = textW(SMALL, s);
+    const s = $t('KATTRUMMET'), sw = textW(SMALL, s);
     text(P, SMALL, s, Math.round(cx - sw / 2) + 1, R.y0 + 4, 0x6a4a8a, 0.5);
     text(P, SMALL, s, Math.round(cx - sw / 2), R.y0 + 3, 0xffffff, 0.9);
   }
@@ -1163,7 +1164,7 @@ function paintFoderShelf(P) {
   for (let y = top + 2; y < s2; y += 4) for (let x = x0 + 4; x < x1 - 3; x += 4) P.px(x, y, 0xd4c4a4);
   BAYS.forEach((sp, i) => {
     const bx = x0 + i * 48;
-    const lbl = { katt: 'KATTMAT', kanin: 'KANINMAT', hund: 'HUNDMAT' }[sp];
+    const lbl = { katt: $t('KATTMAT'), kanin: $t('KANINMAT'), hund: $t('HUNDMAT') }[sp];
     const col = { katt: 0xf28bb3, kanin: 0xf0d048, hund: 0x7fd08a }[sp];
     P.rect(bx + 2, top - 9, 44, 8, 0x17151a); P.hl(bx + 2, top - 2, 44, col);
     text(P, SMALL, lbl, Math.round(bx + 24 - textW(SMALL, lbl) / 2), top - 8, col);
@@ -1201,7 +1202,7 @@ function paintAquarium(P) {
     }
     P.box(tk.x0 - 1, tk.y0 - 1, tk.x1 - tk.x0 + 2, tk.y1 - tk.y0 + 2, 0x101014);
   });
-  const lbl = 'TITTA!', lw = textW(SMALL, lbl);
+  const lbl = $t('TITTA!'), lw = textW(SMALL, lbl);
   P.rect(506 - lw / 2 - 3, WALL_Y - 12, lw + 6, 7, 0x17151a);
   text(P, SMALL, lbl, 506 - lw / 2, WALL_Y - 11, 0x7fd0e8);
 }
@@ -1294,7 +1295,7 @@ function paintHutchBack(P) {
   // morötter i halmen
   for (const [mx, my] of [[x0 + 20, y0 + 30], [x0 + 60, y0 + 24], [x0 + 34, y0 + 44]]) { P.hl(mx, my, 4, 0xe07a2e); P.px(mx + 4, my, 0xc05a1e); P.px(mx - 1, my - 1, 0x46a35a); P.px(mx - 2, my, 0x46a35a); }
   // skylt KANINER på bakstaketet
-  const lbl = 'KANINER', lw = textW(SMALL, lbl) + 6, lx = x0 + 60;
+  const lbl = $t('KANINER'), lw = textW(SMALL, lbl) + 6, lx = x0 + 60;
   P.rect(lx, y0 - 12, lw, 8, 0x17151a); P.box(lx, y0 - 12, lw, 8, 0xf0d048); text(P, SMALL, lbl, lx + 3, y0 - 10, 0xf0d048);
 }
 function paintHutchFront() {
@@ -1328,7 +1329,7 @@ function paintGondola() {
   for (let y = 12; y < h - 10; y += 4) for (let x = 5; x < w - 4; x += 4) P.px(x, y, 0xc8d8c0);
   P.box(1, 8, w - 2, h - 15, ink);
   P.rect(0, 0, w, 10, 0x17221a); P.hl(1, 1, w - 2, 0x2f4a36);
-  const lbl = 'TILLBEHÖR';
+  const lbl = $t('TILLBEHÖR');
   text(P, SMALL, lbl, Math.round(w / 2 - textW(SMALL, lbl) / 2), 3, 0xc8f0a0);
   stamp(P, PAW, 4, 3, 0xf0d048); stamp(P, PAW, w - 9, 3, 0xf0d048);
   for (const sy of [GTOP - GOND.y, GBOT - GOND.y]) {
@@ -1381,8 +1382,8 @@ function paintBoard() {
   // ram + tavla
   P.rect(2, 0, 26, 24, 0x8a6446); P.box(2, 0, 26, 24, 0x3a2418); P.hl(3, 1, 24, 0xb08858);
   for (let y = 3; y < 21; y++) for (let x = 5; x < 25; x++) P.px(x, y, mix(0x2f4a3a, 0x28402f, hash(x, y, 91) * 0.8));
-  text(P, SMALL, 'NYA', 15 - Math.round(textW(SMALL, 'NYA') / 2), 4, 0xf4f1ea);
-  text(P, SMALL, 'VALPAR', 15 - Math.round(textW(SMALL, 'VALPAR') / 2), 11, 0xf0d048);
+  text(P, SMALL, $t('NYA'), 15 - Math.round(textW(SMALL, $t('NYA')) / 2), 4, 0xf4f1ea);
+  text(P, SMALL, $t('VALPAR'), 15 - Math.round(textW(SMALL, $t('VALPAR')) / 2), 11, 0xf0d048);
   // liten kritvalp + hjärta
   stamp(P, ['#..#', '####', '.##.'], 7, 17, 0xf4f1ea, 0.85);
   stamp(P, ['#.#', '###', '.#.'], 19, 17, 0xff8fa8);
@@ -1481,7 +1482,7 @@ const DIALOG_CSS = `<style>
 // på en rad hamnar hela "kvar efter köpet: …" på nästa.
 function moneyLine(money, tot) {
   const short = tot - money;
-  return `<span>💰 Du har <b>${fmt(money)}</b></span>${short > 0 ? `<span class="bad">du saknar <b>${fmt(short)}</b></span>` : `<span>kvar efter köpet: <b>${fmt(money - tot)}</b></span>`}`;
+  return `<span>💰 ${$t`Du har <b>${fmt(money)}</b>`}</span>${short > 0 ? `<span class="bad">${$t`du saknar <b>${fmt(short)}</b>`}</span>` : `<span>${$t`kvar efter köpet: <b>${fmt(money - tot)}</b>`}</span>`}`;
 }
 // Namnet utan "(säck)" – i startpaketet och kvittot syns säcken som ikon ändå
 const kitName = (k) => PET_ITEMS[k].namn.replace(/ \(säck\)/, '');
@@ -1521,12 +1522,12 @@ function kitFor(sp, store) {
   return out;
 }
 const CARE = {
-  katt: 'Katten gör sina behov i kattlådan – töm den ibland, annars blir det sura miner (och bajs på golvet).',
-  hund: 'Hunden måste ut och gå i koppel – annars kan den bajsa och kissa inne. Den kan följa med dig i staden!',
-  kanin: 'Kaninen trivs i en bur med halm och vill ha mat i skålen varje dag. Byt halm ibland.',
+  katt: $t('Katten gör sina behov i kattlådan – töm den ibland, annars blir det sura miner (och bajs på golvet).'),
+  hund: $t('Hunden måste ut och gå i koppel – annars kan den bajsa och kissa inne. Den kan följa med dig i staden!'),
+  kanin: $t('Kaninen trivs i en bur med halm och vill ha mat i skålen varje dag. Byt halm ibland.'),
 };
 // Toaletten som räknas för tillväxten (sim.js: hunden ute, katten i ren låda, kaninen i buren)
-const GROW_TOA = { katt: 'kattlådan', hund: 'bajsa ute', kanin: 'buren' };
+const GROW_TOA = { katt: $t('kattlådan'), hund: $t('bajsa ute'), kanin: $t('buren') };
 // Porträttet: drawPetIcon (djuret sittande framifrån) i heltalsskala, beskuret kring
 // djuret och centrerat i en kvadratisk ruta på ca 120×120 CSS-px med mönstrad bakgrund.
 // Skalan väljs så att djuret fyller rutan (2 px luft på sidorna, 3 px ovanför): en
@@ -1572,12 +1573,12 @@ function openPetDialog(A, basePet, { onBuy } = {}) {
   const breed = basePet.breed;
   let sex = basePet.sex;
   let typed = false;
-  const suggest = () => (typeof store._freeName === 'function' ? store._freeName(sp, sex) : (sex === 'hona' ? 'Tussan' : 'Tussen'));
+  const suggest = () => (typeof store._freeName === 'function' ? store._freeName(sp, sex) : (sex === 'hona' ? $t('Tussan') : $t('Tussen')));
   let name = suggest();
   const kit = kitFor(sp, store);
   const checked = new Set(kit.filter((x) => x.on && !x.free).map((x) => x.k));
   const full = store.pets.length >= MAX_PETS;
-  const homeName = g.homeInfo?.name || 'din bostad';
+  const homeName = g.homeInfo?.name ? $t(g.homeInfo.name) : $t('din bostad');
   const bgCol = { katt: '#f6dce8', hund: '#d6ecd6', kanin: '#f8ecc4' }[sp];
   const pet = () => ({ species: sp, breed, sex, stage: 'unge', id: 'dlg-' + breed, seed: basePet.seed || 1 });
   const B = breedOf(pet());
@@ -1586,8 +1587,8 @@ function openPetDialog(A, basePet, { onBuy } = {}) {
   for (const k of [...checked].reverse()) { if (total() <= g.money) break; checked.delete(k); }
   const kitRow = (it) => {
     const d = PET_ITEMS[it.k];
-    if (it.free) return `<label class="free"><span class="dj-gift">🎁</span><i data-kico="${it.k}"></i><span>${esc(kitName(it.k))} <b>ingår!</b></span></label>`;
-    return `<label><input type="checkbox" data-kit="${it.k}" ${checked.has(it.k) ? 'checked' : ''}><i data-kico="${it.k}"></i><span>${esc(kitName(it.k))} <b>${d.pris} kr</b>${it.has ? ' <em>(har)</em>' : ''}</span></label>`;
+    if (it.free) return `<label class="free"><span class="dj-gift">🎁</span><i data-kico="${it.k}"></i><span>${$t`${esc(kitName(it.k))} <b>ingår!</b>`}</span></label>`;
+    return `<label><input type="checkbox" data-kit="${it.k}" ${checked.has(it.k) ? 'checked' : ''}><i data-kico="${it.k}"></i><span>${esc(kitName(it.k))} <b>${$t`${d.pris} kr`}</b>${it.has ? ` <em>${$t('(har)')}</em>` : ''}</span></label>`;
   };
   const body = `${DIALOG_CSS}
   <div class="dj">
@@ -1598,24 +1599,24 @@ function openPetDialog(A, basePet, { onBuy } = {}) {
     </div>
     <div class="dj-r">
       <p class="dj-desc"><b>${esc(B.namn)}</b> · ${esc(S.unge.toLowerCase())}<br><span>${esc(B.beskr || '')}</span></p>
-      <div class="dj-row"><b class="dj-lbl">Kön:</b>
-        <button class="dj-sex ${sex === 'hane' ? 'on' : ''}" data-sex="hane">♂ Hane</button>
-        <button class="dj-sex ${sex === 'hona' ? 'on' : ''}" data-sex="hona">♀ Hona</button>
+      <div class="dj-row"><b class="dj-lbl">${$t('Kön:')}</b>
+        <button class="dj-sex ${sex === 'hane' ? 'on' : ''}" data-sex="hane">${$t('♂ Hane')}</button>
+        <button class="dj-sex ${sex === 'hona' ? 'on' : ''}" data-sex="hona">${$t('♀ Hona')}</button>
       </div>
-      <div class="dj-row"><b class="dj-lbl">Namn:</b>
-        <input class="dj-name" data-name maxlength="16" value="${esc(name)}" aria-label="Djurets namn">
-        <button class="btn btn-small" data-roll title="Slumpa ett namn">Slumpa</button>
+      <div class="dj-row"><b class="dj-lbl">${$t('Namn:')}</b>
+        <input class="dj-name" data-name maxlength="16" value="${esc(name)}" aria-label="${$t('Djurets namn')}">
+        <button class="btn btn-small" data-roll title="${$t('Slumpa ett namn')}">${$t('Slumpa')}</button>
       </div>
-      <b class="dj-lbl">Bra att ha hemma:</b>
+      <b class="dj-lbl">${$t('Bra att ha hemma:')}</b>
       <div class="dj-kit">${kit.map(kitRow).join('')}</div>
-      <p class="dj-hint">🏠 ${CARE[sp]} 🌱 Ungen växer när den får mat, lek, en leksak och rätt toalett (${GROW_TOA[sp]}) – tidigast ung efter 3 dagar och vuxen efter en vecka. Och en hane och en hona kan bli kära och få ungar!</p>
+      <p class="dj-hint">🏠 ${CARE[sp]} 🌱 ${$t`Ungen växer när den får mat, lek, en leksak och rätt toalett (${GROW_TOA[sp]}) – tidigast ung efter 3 dagar och vuxen efter en vecka. Och en hane och en hona kan bli kära och få ungar!`}</p>
       <p class="dj-price" data-price></p>
       <p class="dj-money" data-money></p>
     </div>
   </div>`;
   const dlg = openModal(`${EMOJI[sp]} ${esc(S.unge)} – ${esc(B.namn)}`, body, [
-    { label: 'Stäng', onClick: closeModal },
-    { label: `🐾 Köp <span data-total>${fmt(total())}</span>`, cls: 'btn-go', disabled: full || total() > g.money, onClick: buy },
+    { label: $t('Stäng'), onClick: closeModal },
+    { label: $t`🐾 Köp <span data-total>${fmt(total())}</span>`, cls: 'btn-go', disabled: full || total() > g.money, onClick: buy },
   ]);
   dlg.querySelectorAll('[data-kico]').forEach((el) => el.replaceWith(itemIcon(el.dataset.kico, 1)));
   // levande scen: ungen gör olika saker i en lugn slinga
@@ -1650,12 +1651,12 @@ function openPetDialog(A, basePet, { onBuy } = {}) {
   const adultBtn = dlg.querySelector('[data-adult]');
   const update = () => {
     dlg.querySelector('[data-por]').replaceChildren(petPortrait(pet(), bgCol));
-    dlg.querySelector('[data-cap]').textContent = adult ? 'Som vuxen:' : 'Nu:';
-    adultBtn.textContent = adult ? '🍼 Visa ungen' : '📏 Så stor blir den';
+    dlg.querySelector('[data-cap]').textContent = adult ? $t('Som vuxen:') : $t('Nu:');
+    adultBtn.textContent = adult ? $t('🍼 Visa ungen') : $t('📏 Så stor blir den');
     dlg.querySelectorAll('[data-sex]').forEach((b) => b.classList.toggle('on', b.dataset.sex === sex));
     const tot = total();
-    dlg.querySelector('[data-price]').innerHTML = `Pris: <b>${fmt(B.pris)}</b>${checked.size ? ` <span class="dj-plus">+ prylar = <b>${fmt(tot)}</b></span>` : ''}`;
-    dlg.querySelector('[data-money]').innerHTML = full ? `<b class="bad">Du har redan ${store.pets.length} djur – max ${MAX_PETS}.</b>`
+    dlg.querySelector('[data-price]').innerHTML = `${$t`Pris: <b>${fmt(B.pris)}</b>`}${checked.size ? ` <span class="dj-plus">${$t`+ prylar = <b>${fmt(tot)}</b>`}</span>` : ''}`;
+    dlg.querySelector('[data-money]').innerHTML = full ? `<b class="bad">${$t`Du har redan ${store.pets.length} djur – max ${MAX_PETS}.`}</b>`
       : moneyLine(g.money, tot);
     const go = dlg.querySelector('.dlg-foot .btn-go');
     if (go) { go.disabled = full || tot > g.money; const s2 = go.querySelector('[data-total]'); if (s2) s2.textContent = fmt(tot); }
@@ -1675,11 +1676,11 @@ function openPetDialog(A, basePet, { onBuy } = {}) {
 
   function buy() {
     const tot = total();
-    if (store.pets.length >= MAX_PETS) { toast(`Du kan ha högst ${MAX_PETS} djur.`, 'bad'); play('fel'); return; }
-    if (g.money < tot) { toast('Du har inte råd – dags att jobba ett pass!', 'bad'); play('fel'); return; }
+    if (store.pets.length >= MAX_PETS) { toast($t`Du kan ha högst ${MAX_PETS} djur.`, 'bad'); play('fel'); return; }
+    if (g.money < tot) { toast($t('Du har inte råd – dags att jobba ett pass!'), 'bad'); play('fel'); return; }
     const inv0 = { ...store.inventory };
     const p = store.adopt(sp, breed, sex, (name || '').trim(), g.home, { day: g.day });
-    if (!p) { toast(store.lastError || 'Det gick inte att köpa djuret.', 'bad'); play('fel'); return; }
+    if (!p) { toast(store.lastError || $t('Det gick inte att köpa djuret.'), 'bad'); play('fel'); return; }
     const gifts = ['matskal', 'koppel'].filter((k) => (store.inventory[k] | 0) > (inv0[k] | 0));
     const extras = [...checked];
     for (const k of extras) store.buyItem(k);
@@ -1688,11 +1689,11 @@ function openPetDialog(A, basePet, { onBuy } = {}) {
     g.save();
     play('buy');
     // ett enda kvitto per köp (flera toasts staplas annars över nästa dialog)
-    const han = p.sex === 'hona' ? 'Hon' : 'Han';
+    const han = p.sex === 'hona' ? $t('Hon') : $t('Han');
     const lower = (k) => kitName(k).toLowerCase();
-    const rows = [`${EMOJI[sp]} ${p.name} är din! ${han} väntar hemma i ${homeName}.`];
-    if (gifts.length) rows.push(`🎁 På köpet: ${gifts.map(lower).join(' och ')}.`);
-    if (extras.length) rows.push(`🛍️ I förrådet: ${extras.map(lower).join(', ')}.`);
+    const rows = [$t`${EMOJI[sp]} ${p.name} är din! ${han} väntar hemma i ${homeName}.`];
+    if (gifts.length) rows.push(`${$t('🎁 På köpet:')} ${gifts.map(lower).join(` ${$t('och')} `)}.`);
+    if (extras.length) rows.push($t`🛍️ I förrådet: ${extras.map(lower).join(', ')}.`);
     toast(rows.join(' '), 'good wrap');
     onBuy?.({ pet: p, price: tot, extras });
     closeModal();
@@ -1705,34 +1706,34 @@ function openItemDialog(A, k, { onBuy } = {}) {
   const d = PET_ITEMS[k];
   let n = 1;
   const inv = store.inventory[k] | 0, placed = store.items.filter((i) => i.k === k).length;
-  const forWho = (d.forArt || []).map((a) => `${EMOJI[a]} ${a}`).join(' · ');
-  const extra = d.typ === 'sack' ? `En säck räcker till ${d.portioner} skålar mat. Hemma: klicka på säcken så bär du den, klicka sen på skålen så häller du upp.`
-    : d.typ === 'lada' ? 'Ställ den i ett hörn hemma. Katten går dit själv – töm den när den börjar lukta.'
-      : d.typ === 'koppel' ? 'Med kopplet kan hunden följa med dig ut i staden och göra sina behov ute.'
-        : d.typ === 'skal' ? 'Ställ ut skålen hemma och fyll den från en matsäck.'
-          : 'Ställ ut den hemma med djurprylarna.';
+  const forWho = (d.forArt || []).map((a) => `${EMOJI[a]} ${SPECIES[a]?.namn.toLowerCase() || a}`).join(' · ');
+  const extra = d.typ === 'sack' ? $t`En säck räcker till ${d.portioner} skålar mat. Hemma: klicka på säcken så bär du den, klicka sen på skålen så häller du upp.`
+    : d.typ === 'lada' ? $t('Ställ den i ett hörn hemma. Katten går dit själv – töm den när den börjar lukta.')
+      : d.typ === 'koppel' ? $t('Med kopplet kan hunden följa med dig ut i staden och göra sina behov ute.')
+        : d.typ === 'skal' ? $t('Ställ ut skålen hemma och fyll den från en matsäck.')
+          : $t('Ställ ut den hemma med djurprylarna.');
   const body = `${DIALOG_CSS}
   <div class="dj">
     <div class="dj-l"><div class="dj-ico" data-ico></div></div>
     <div class="dj-r">
       <p class="dj-hint"><b>${esc(d.desc || '')}</b></p>
-      <p class="dj-hint">Passar: ${forWho}</p>
+      <p class="dj-hint">${$t`Passar: ${forWho}`}</p>
       <p class="dj-hint">💡 ${extra}</p>
-      <p class="dj-hint">📦 Hemma har du: <b>${inv}</b> i förrådet${placed ? ` · <b>${placed}</b> utställda` : ''}</p>
-      <div class="dj-qty"><b style="font-size:var(--f2)">Antal:</b><button class="btn btn-small" data-q="-1">−</button><b data-n>1</b><button class="btn btn-small" data-q="1">+</button></div>
+      <p class="dj-hint">📦 ${$t`Hemma har du: <b>${inv}</b> i förrådet`}${placed ? ` · ${$t`<b>${placed}</b> utställda`}` : ''}</p>
+      <div class="dj-qty"><b style="font-size:var(--f2)">${$t('Antal:')}</b><button class="btn btn-small" data-q="-1">−</button><b data-n>1</b><button class="btn btn-small" data-q="1">+</button></div>
       <p class="dj-price" data-price></p>
       <p class="dj-money" data-money></p>
     </div>
   </div>`;
   const dlg = openModal(`${ITEM_EMOJI[k] || '🐾'} ${esc(d.namn)}`, body, [
-    { label: 'Stäng', onClick: closeModal },
-    { label: `🛒 Köp <span data-total>${fmt(d.pris)}</span>`, cls: 'btn-go', disabled: d.pris > g.money, onClick: buy },
+    { label: $t('Stäng'), onClick: closeModal },
+    { label: $t`🛒 Köp <span data-total>${fmt(d.pris)}</span>`, cls: 'btn-go', disabled: d.pris > g.money, onClick: buy },
   ]);
   dlg.querySelector('[data-ico]').append(itemIcon(k, 4));
   const update = () => {
     const tot = d.pris * n;
     dlg.querySelector('[data-n]').textContent = n;
-    dlg.querySelector('[data-price]').innerHTML = `Pris: <b>${fmt(d.pris)}</b>${n > 1 ? ` × ${n} = <b>${fmt(tot)}</b>` : ''}`;
+    dlg.querySelector('[data-price]').innerHTML = `${$t`Pris: <b>${fmt(d.pris)}</b>`}${n > 1 ? ` × ${n} = <b>${fmt(tot)}</b>` : ''}`;
     dlg.querySelector('[data-money]').innerHTML = moneyLine(g.money, tot);
     const go = dlg.querySelector('.dlg-foot .btn-go');
     if (go) { go.disabled = tot > g.money; const s = go.querySelector('[data-total]'); if (s) s.textContent = fmt(tot); }
@@ -1741,12 +1742,12 @@ function openItemDialog(A, k, { onBuy } = {}) {
   update();
   function buy() {
     const tot = d.pris * n;
-    if (g.money < tot) { toast('Du har inte råd!', 'bad'); play('fel'); return; }
-    if (!store.buyItem(k, n)) { toast(store.lastError || 'Det gick inte.', 'bad'); play('fel'); return; }
+    if (g.money < tot) { toast($t('Du har inte råd!'), 'bad'); play('fel'); return; }
+    if (!store.buyItem(k, n)) { toast(store.lastError || $t('Det gick inte.'), 'bad'); play('fel'); return; }
     g.money -= tot;
     g.save();
     play('buy');
-    toast(`${ITEM_EMOJI[k] || '🐾'} ${n > 1 ? n + ' × ' : ''}${d.namn} ligger nu i ditt förråd hemma.`, 'good');
+    toast($t`${ITEM_EMOJI[k] || '🐾'} ${n > 1 ? n + ' × ' : ''}${d.namn} ligger nu i ditt förråd hemma.`, 'good');
     onBuy?.({ n, price: tot });
     closeModal();
   }

@@ -2,6 +2,7 @@
 // pelare, gaffeltruck, flakvagnar, Småland …). Varje sprite målas en gång.
 import { Pix, SMALL, BIG, textW, text, mix, mul, hash } from '../../core/floor-pix.js';
 import { spriteOf, arrowGlyph } from './art.js';
+import { $t } from '../../core/i18n.js';
 
 const memo = new Map();
 const once = (key, make) => { if (!memo.has(key)) memo.set(key, make()); return memo.get(key); };
@@ -38,7 +39,7 @@ export const smalandBackImg = () => once('smaB', () => spriteOf(76, 44, (P) => {
   // skylt på stolpe
   P.vl(4, 0, 22, 0x6a7078); P.vl(5, 0, 22, 0x9aa0a8);
   P.rect(0, 0, 44, 11, 0xd8433b); P.box(0, 0, 44, 11, 0x7a1a1a); P.hl(1, 1, 42, 0xf07a6a);
-  text(P, SMALL, 'SMÅLAND', 5, 4, 0xffffff);
+  text(P, SMALL, $t('SMÅLAND'), 5, 4, 0xffffff);
   // bakre staket
   const y0 = 18;
   P.rect(2, y0, 72, 3, 0xf6cf2a); P.box(2, y0, 72, 3, 0x9a7a10);
@@ -67,7 +68,7 @@ export const infoDeskImg = () => once('info', () => spriteOf(58, 30, (P) => {
   // skylten på ställning bakom
   P.vl(28, 0, 10, 0x6a7078);
   P.rect(14, 0, 30, 9, 0x1d51a0); P.box(14, 0, 30, 9, 0x0c2a5c);
-  text(P, SMALL, 'INFO', 17, 2, 0xf6d02f); P.rect(36, 2, 5, 5, 0xffffff); P.vl(38, 4, 3, 0x1d51a0); P.px(38, 2, 0x1d51a0);
+  text(P, SMALL, $t('INFO'), 17, 2, 0xf6d02f); P.rect(36, 2, 5, 5, 0xffffff); P.vl(38, 4, 3, 0x1d51a0); P.px(38, 2, 0x1d51a0);
   // disken: vit front med blå/gul rand, skiva ovanpå
   P.rect(0, 14, 58, 3, 0xf4f1ea); P.hl(0, 14, 58, 0xffffff); P.hl(0, 16, 58, 0xb8b4ac);
   P.rect(1, 17, 56, 12, 0xe8e6e0); P.box(1, 17, 56, 12, 0x6a6a72);
@@ -81,8 +82,8 @@ export const infoDeskImg = () => once('info', () => spriteOf(58, 30, (P) => {
 export const offerSignImg = () => once('offer', () => spriteOf(40, 34, (P) => {
   P.vl(19, 16, 16, 0x6a7078); P.vl(20, 16, 16, 0x9aa0a8); P.rect(13, 31, 14, 3, 0x3a3e46);
   P.rect(0, 0, 40, 17, 0xd8231e); P.box(0, 0, 40, 17, 0x7a1010); P.hl(1, 1, 38, 0xf05a4a);
-  text(P, SMALL, 'VECKANS', 6, 3, 0xffffff);
-  text(P, SMALL, 'FYND!', 11, 10, 0xf6d02f);
+  text(P, SMALL, $t('VECKANS\nFYND!').split('\n')[0], 6, 3, 0xffffff);
+  text(P, SMALL, $t('VECKANS\nFYND!').split('\n')[1] || '', 11, 10, 0xf6d02f);
 }));
 // stor krukväxt (ficus i vit kruka)
 export const bigPlantImg = (seed = 0) => once('plant' + seed, () => spriteOf(22, 44, (P) => {
@@ -194,7 +195,7 @@ export const flatCartImg = (load = true) => once('flat' + load, () => spriteOf(4
   for (const x of [3, 33]) { P.rect(x, 18, 4, 4, 0x1c1c22); P.px(x + 1, 19, 0x5a5a64); }
   if (load) {
     P.rect(3, 6, 30, 8, 0xc49a62); P.box(3, 6, 30, 8, 0x7a5a30); P.hl(4, 7, 28, 0xdab47c);
-    P.rect(12, 8, 12, 4, 0xf4f1ea); text(P, SMALL, 'BÖJ', 13, 7, 0x1d51a0);
+    P.rect(12, 8, 12, 4, 0xf4f1ea); text(P, SMALL, $t('BÖJ'), 13, 7, 0x1d51a0);
     P.rect(6, 1, 18, 5, 0xb48a52); P.box(6, 1, 18, 5, 0x7a5a30);
   }
 }));
@@ -273,8 +274,9 @@ export const hotdogImg = () => once('hot', () => spriteOf(50, 36, (P) => {
   P.hl(1, 8, 48, 0x0c2a5c);
   P.vl(24, 8, 8, 0x6a7078);
   P.rect(3, 16, 44, 18, 0xe8e6e0); P.box(3, 16, 44, 18, 0x6a6a72);
-  text(P, SMALL, 'KORV 10:-', 7, 19, 0xd8231e);
-  text(P, SMALL, 'GLASS 5:-', 7, 25, 0x1d51a0);
+  text(P, SMALL, $t('KORV 10:-'), 7, 19, 0xd8231e);
+  text(P, SMALL, $t('GLASS 5:-'), 7, 25, 0x1d51a0);
+
   P.rect(4, 30, 42, 2, 0x1d51a0); P.hl(4, 32, 42, 0xf2c230);
   P.rect(2, 14, 46, 3, 0xc8ccd2); P.hl(2, 14, 46, 0xe8ecf0);
   for (const kx of [7, 17]) { P.rect(kx, 11, 9, 3, 0xe0b070); P.hl(kx + 1, 11, 7, 0xb8452a); P.px(kx + 4, 11, 0xf2c230); }

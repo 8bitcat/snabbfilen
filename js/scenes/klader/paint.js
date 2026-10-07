@@ -2,6 +2,7 @@
 // klädställningarna, lagfotot och fotbollsskorna. Allt målas en gång med Pix (floor-pix.js)
 // i spelets pixelkorn; det som ändrar sig (plaggen, lapparna, figurerna) ritas levande.
 import { Pix, SMALL, BIG, textW, text, mix, mul, hash, bayer } from '../../core/floor-pix.js';
+import { $t } from '../../core/i18n.js';
 import {
   H, WALL_Y, W1, W2, MID0, MID1, DOOR, DESK, GOND, HATS, COLS, ROW_Y, MOD_X, MOD_W, RACK_W, STAIR, STAIRS1, STAIRS2, STAIRS2UP, JULHALL_X0,
   KUNGS_X1, LAG_X0, PHOTO, SHOEWALL, PITCH, DEPT, CLEATS, SPORT_MOD_X, KUNGS_POS, TEAM_POS,
@@ -64,7 +65,7 @@ export function sign(P, cx, y, lbl, board, trim, fg, F = SMALL) {
 }
 function deptSign(P, key, cx, y) {
   const th = DEPT[key];
-  const dots = /[ÅÄÖ]/.test(th.name) ? 3 : 0; // prickarna/ringen över versalen behöver luft
+  const dots = /[ÅÄÖÁÀÂÃÉÈÊËÍÌÎÏÑŃÓÒÔÕŚŹŻÚÙÛÜŸÝ]/.test(th.name) ? 3 : 0; // prickarna/ringen över versalen behöver luft
   const tw = textW(BIG, th.name, 2), w = tw + 30, x0 = Math.round(cx - w / 2), h = 22 + dots;
   P.ell(cx, y + h / 2, w * 0.7, h, th.glow, 0.2, 5);
   P.rect(x0, y, w, h, th.board);
@@ -82,7 +83,7 @@ function deptSign(P, key, cx, y) {
   P.vl(x0 + 8, 2, y - 2, 0x8a8e9a); P.vl(x0 + w - 9, 2, y - 2, 0x8a8e9a);
 }
 function fittingRooms(P, x0, cur, curLo, frame) {
-  const lbl = 'PROVHYTT';
+  const lbl = $t('PROVHYTT');
   const lw = textW(SMALL, lbl) + 8;
   P.rect(x0 + 38 - lw / 2, 8, lw, 9, 0x17151a); text(P, SMALL, lbl, x0 + 38 - lw / 2 + 4, 10, 0xffffff);
   for (let k = 0; k < 2; k++) {
@@ -188,10 +189,10 @@ export function paintFloor1() {
 
   // ===== dörren + skylten KLÄDER =====
   const dc = (DOOR.x0 + DOOR.x1) / 2;
-  const lw = textW(BIG, 'KLÄDER', 2) + 16;
+  const lw = textW(BIG, $t('KLÄDER'), 2) + 16;
   P.rect(dc - lw / 2, 5, lw, 20, 0x17151a); P.box(dc - lw / 2, 5, lw, 20, 0xe8b230);
   P.box(dc - lw / 2 + 2, 7, lw - 4, 16, 0x5a4a20);
-  glowText(P, BIG, 'KLÄDER', dc - textW(BIG, 'KLÄDER', 2) / 2, 9, 0xffe070, 0xe8b230, 2);
+  glowText(P, BIG, $t('KLÄDER'), dc - textW(BIG, $t('KLÄDER'), 2) / 2, 9, 0xffe070, 0xe8b230, 2);
   P.rect(DOOR.x0 - 2, 28, DOOR.x1 - DOOR.x0 + 4, WALL_Y - 28, 0x2a2430);
   for (let i = 0; i < 2; i++) {
     const gx = DOOR.x0 + 1 + i * 16;
@@ -202,7 +203,7 @@ export function paintFloor1() {
     }
     P.rect(gx + 2, 50, 10, 2, 0xc9c9d4); P.hl(gx + 2, 50, 10, 0xf2f2f6);
   }
-  P.rect(DOOR.x0 + 5, 32, 22, 9, 0x1d2b1f); text(P, SMALL, 'UT', DOOR.x0 + 12, 34, 0x6fe08a);
+  P.rect(DOOR.x0 + 5, 32, 22, 9, 0x1d2b1f); text(P, SMALL, $t('UT'), DOOR.x0 + 12, 34, 0x6fe08a);
   P.rect(DOOR.x0 - 4, WALL_Y, DOOR.x1 - DOOR.x0 + 8, 10, 0x3a3640);
   P.box(DOOR.x0 - 4, WALL_Y, DOOR.x1 - DOOR.x0 + 8, 10, 0x5a5460);
   for (let x = DOOR.x0 - 2; x < DOOR.x1 + 2; x += 2) P.vl(x, WALL_Y + 2, 6, 0x2e2a34);
@@ -211,9 +212,9 @@ export function paintFloor1() {
   P.rect(MID0 + 12, 31, 48, 33, 0xfbe3ef); P.rect(MID0 + 36, 31, 24, 33, 0xe0ebf8);
   for (let y = 31; y < 64; y++) for (let x = MID0 + 12; x < MID0 + 60; x++) if ((x + y) % 7 === 0) P.px(x, y, 0xffffff, 0.5);
   // KASSA-skylt
-  const kx = DESK.x + DESK.w / 2, kw = textW(SMALL, 'KASSA') + 10;
+  const kx = DESK.x + DESK.w / 2, kw = textW(SMALL, $t('KASSA')) + 10;
   P.rect(kx - kw / 2, 30, kw, 10, 0x17151a); P.box(kx - kw / 2, 30, kw, 10, 0xe8b230);
-  text(P, SMALL, 'KASSA', kx - kw / 2 + 5, 33, 0xf0d048);
+  text(P, SMALL, $t('KASSA'), kx - kw / 2 + 5, 33, 0xf0d048);
 
   // ===== avdelningarna =====
   deptSign(P, 'tjej', 280, 4);
@@ -274,7 +275,7 @@ export function paintSlab(P, x0, x1, yBot, jul = false) {
   // lampor i plan 2:s tak
   for (let x = x0 + 16; x < x1 - 8; x += 36) { P.rect(x - 3, 3, 7, 2, 0x1d1822); P.hl(x - 2, 4, 5, 0xfff6c8); P.ell(x, 10, 12, 10, 0xfff4dc, 0.18, 4); }
   // banderoll SPORT & FOTBOLL – eller GOD JUL med en girlang och ljus
-  const lbl = jul ? 'GOD JUL' : 'SPORT + FOTBOLL';
+  const lbl = jul ? $t('GOD JUL') : $t('SPORT + FOTBOLL');
   const bw = textW(SMALL, lbl) + 22, bx = Math.round((x0 + x1) / 2 - bw / 2);
   P.vl(bx + 3, 3, 5, 0x8a8e9a); P.vl(bx + bw - 4, 3, 5, 0x8a8e9a);
   const [bc, bd, bh] = jul ? [0x2f8f46, 0x173a24, 0x6fd08a] : [0xd9434b, 0x7a1f2e, 0xff7a82];
@@ -295,7 +296,7 @@ export function paintSlab(P, x0, x1, yBot, jul = false) {
     P.px(x, y, c);
   }
   P.vl(x0, yTop, 10, 0x4a4650);
-  const t2 = jul ? 'PLAN 3' : 'PLAN 2';
+  const t2 = jul ? $t('PLAN 3') : $t('PLAN 2');
   text(P, SMALL, t2, x0 + 8, yTop + 3, 0x6d4a10);
   arrowUp(P, x0 + 8 + textW(SMALL, t2) + 5, yTop + 5, 0xd9434b);
   // skugga på väggen under bjälken
@@ -387,7 +388,7 @@ export function stairArt(e) {
   if (e.sy < 0) { const xe = Math.round(e.lx + e.sx * e.run); for (let yy = e.clip; yy < floorLine; yy++) { put(front, xe, yy, 0x9a8e7a); put(front, xe + e.sx, yy, 0x6a5e4e); } }
   // skylt på beklädnaden (plan 1): TRAPPA UPP · PLAN 2 (under trappans höga del, före förrådsdörren)
   if (e.sy < 0) {
-    const lbl1 = 'TRAPPA UPP', lbl2 = e.sign === 'jul' ? 'PLAN 3 - JUL' : e.n === 1 ? 'PLAN 2 + JUL' : `PLAN ${e.to || 2}`;
+    const lbl1 = $t('TRAPPA UPP'), lbl2 = e.sign === 'jul' ? $t('PLAN 3 - JUL') : e.n === 1 ? $t('PLAN 2 + JUL') : $t`PLAN ${e.to || 2}`;
     const w = Math.max(textW(SMALL, lbl1), textW(SMALL, lbl2) + 8) + 10, cx = Math.round(e.lx + e.sx * 68), y0 = e.ly - 19;
     const [bg, dk, hi, fg] = e.sign === 'jul' ? [0x1e5a32, 0x0e2a18, 0xd9433b, 0xffe070] : [0x7a1f2e, 0x3a0d16, 0xd9434b, 0xffd0d8];
     front.rect(cx - w / 2 + 1, y0 + 1, w, 18, 0x000000, 0.2);
@@ -463,20 +464,20 @@ export function paintFloor2() {
 
   // ===== Kungsladugård: lagfotot, skylten, matchtröjan, halsdukar, fotbollsskorna =====
   paintTeamPhoto(P, PHOTO.x, PHOTO.y, PHOTO.w, PHOTO.h);
-  const lp = 'LAGET 2026', lpw = textW(SMALL, lp) + 8, lpx = Math.round(PHOTO.x + PHOTO.w / 2 - lpw / 2);
+  const lp = $t('LAGET 2026'), lpw = textW(SMALL, lp) + 8, lpx = Math.round(PHOTO.x + PHOTO.w / 2 - lpw / 2);
   P.rect(lpx, PHOTO.y + PHOTO.h + 1, lpw, 9, 0xd8b24a); P.box(lpx, PHOTO.y + PHOTO.h + 1, lpw, 9, 0x8a6a1a); P.hl(lpx + 1, PHOTO.y + PHOTO.h + 2, lpw - 2, 0xf0d890);
   text(P, SMALL, lp, lpx + 4, PHOTO.y + PHOTO.h + 3, 0x3a2a08);
   deptSign(P, 'kungs', 286, 4);
   paintFlatJersey(P, 150, 25, 0x7a1f2e, 0xd9434b);
-  paintScarf(P, 206, 38, 164, 'HEJA KUNGSLADUGÅRD');
+  paintScarf(P, 206, 38, 164, $t('HEJA KUNGSLADUGÅRD'));
   paintPennant(P, 392, 30);
   paintShoeWall(P, SHOEWALL.x, SHOEWALL.w);
   // ===== trapphallen =====
   const hc = (KUNGS_X1 + LAG_X0) / 2;
-  const t1 = 'PLAN 2';
+  const t1 = $t('PLAN 2');
   P.rect(hc - 36, 8, 72, 18, 0x2a2a34); P.box(hc - 36, 8, 72, 18, 0xffd23f);
   glowText(P, BIG, t1, hc - textW(BIG, t1) / 2, 14, 0xffd23f, 0xe07a2e);
-  const t2 = 'TRAPPA NER';
+  const t2 = $t('TRAPPA NER');
   const [ax0] = sign(P, (STAIRS2.pit[0] + STAIRS2.pit[1]) / 2, 36, t2, 0x17151a, 0xd9434b, 0xffffff);
   arrowDown(P, ax0 - 5, 40, 0xd9434b);
   // en hylla med pokaler
@@ -703,7 +704,7 @@ export const SHOE_SPOTS = CLEATS.map((c, i) => ({ c, x: SHOEWALL.x + 14 + (i < 3
 function paintShoeWall(P, x, w) {
   P.rect(x, 6, w, WALL_Y - 12 - 6, 0x3a2a30); P.box(x, 6, w, WALL_Y - 12 - 6, 0x1d1418);
   for (let y = 9; y < WALL_Y - 13; y += 4) for (let xx = x + 3; xx < x + w - 2; xx += 4) P.px(xx, y, 0x2a1e22);
-  const lbl = 'FOTBOLLSSKOR';
+  const lbl = $t('FOTBOLLSSKOR');
   P.rect(x + 4, 8, w - 8, 10, 0x17151a); P.hl(x + 4, 17, w - 8, 0xd9434b);
   text(P, SMALL, lbl, x + Math.round((w - textW(SMALL, lbl)) / 2), 10, 0xffd23f);
   for (const yy of [35, 55]) { P.rect(x + 4, yy, w - 8, 2, 0xc9ccd6); P.hl(x + 4, yy, w - 8, 0xf2f2f6); P.hl(x + 4, yy + 2, w - 8, 0x6d717c); }
@@ -777,7 +778,7 @@ export function gondolaImg() {
   for (let y = 12; y < h - 10; y += 4) for (let x = 5; x < w - 4; x += 4) P.px(x, y, 0xd6cab4);
   P.box(1, 8, w - 2, h - 15, ink);
   P.rect(0, 0, w, 10, 0x17151a); P.hl(1, 1, w - 2, 0x3a3440);
-  const lbl = 'ACCESSOARER';
+  const lbl = $t('ACCESSOARER');
   text(P, SMALL, lbl, Math.round(w / 2 - textW(SMALL, lbl) / 2), 3, 0xf0d048);
   P.rect(3, 3, 5, 5, 0xf28bb3); P.rect(w - 8, 3, 5, 5, 0x3fc4ff);
   for (const sy of [GTOP - GOND.y, GBOT - GOND.y]) {
@@ -787,8 +788,8 @@ export function gondolaImg() {
   }
   P.rect(0, h - 7, w, 7, 0x3a3440); P.hl(0, h - 7, w, 0x5a5460); P.hl(0, h - 1, w, 0x17151a);
   P.vl(0, 8, h - 8, ink); P.vl(w - 1, 8, h - 8, ink);
-  const vw = textW(SMALL, 'VÄSKOR') + 4, vx = Math.round(w / 2 - vw / 2) + 1;
-  P.rect(vx, 44, vw, 8, 0x17151a); text(P, SMALL, 'VÄSKOR', vx + 2, 46, 0xf28bb3);
+  const vw = textW(SMALL, $t('VÄSKOR')) + 4, vx = Math.round(w / 2 - vw / 2) + 1;
+  P.rect(vx, 44, vw, 8, 0x17151a); text(P, SMALL, $t('VÄSKOR'), vx + 2, 46, 0xf28bb3);
   return P.flush();
 }
 // Hatthyllan framför trappan: två hyllplan med byster (ritas levande)
@@ -801,7 +802,8 @@ export function hatGondolaImg() {
   for (let y = 12; y < h - 8; y += 5) P.hl(4, y, w - 8, 0x2c3646);
   P.box(1, 8, w - 2, h - 14, ink);
   P.rect(0, 0, w, 10, 0x17151a); P.hl(1, 1, w - 2, 0x3a3440);
-  const lbl = 'HATTAR + MÖSSOR';
+  const lbl = $t('HATTAR + MÖSSOR');
+
   text(P, SMALL, lbl, Math.round(w / 2 - textW(SMALL, lbl) / 2), 3, 0xf0d048);
   for (const sy of [HTOP - HATS.y, HBOT - HATS.y]) {
     P.rect(1, sy, w - 2, 2, 0xf7eef3); P.hl(1, sy, w - 2, 0xffffff); P.rect(1, sy + 2, w - 2, 2, 0xd98fb4);

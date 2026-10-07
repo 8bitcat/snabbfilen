@@ -4,11 +4,14 @@
 // HUD-raden i inställningarna ("Mätare: pixel / rad"); valet sparas per webbläsare.
 import { portrait } from './people.js';
 import { SMALL, ctxText, textW } from './floor-pix.js';
-import { clock } from '../game.js';
+import { clock, fmt } from '../game.js';
+import { $t } from './i18n.js';
 
 const KEY = 'snabbfilen_hud';
 export const STRIP_H = 28;
 const W = 384;
+// dagens händelse i remsan (g.event.id → skylt)
+const EV_TAG = { rea: $t('REA'), dubbel: $t('DUBBEL'), middag: $t('MIDDAG'), tjuga: $t('TJUGA'), regn: $t('REGN') };
 const INK = '#17151a', PAPER = '#f1ebe0', PAPER2 = '#cfc7ba', GOLD = '#e8b230', RED = '#c9323a', GREEN = '#45b964';
 
 let mode = null;
@@ -138,7 +141,7 @@ function drawPhoneStrip(ctx, A, g, Wv) {
   ctxText(ctx, SMALL, name, x, y, GOLD); x += textW(SMALL, name) + 8;
   coin(ctx, x, y);
   const money = Math.round(g.money);
-  const moneyTxt = (money < 0 ? '-' : '') + Math.abs(money).toLocaleString('sv-SE').replace(/\s/g, ' ') + ' KR';
+  const moneyTxt = (money < 0 ? '-' : '') + fmt(Math.abs(money)).replace(/\s/g, ' ').toUpperCase();
   ctxText(ctx, SMALL, moneyTxt, x + 7, y, money < 0 ? '#ff6a6a' : PAPER); x += 7 + textW(SMALL, moneyTxt) + 8;
   // mitt i ett pass: jobbet, poängen och tiden kvar (klockan står still under passet och
   // mat/sömn ändras först när det är slut)
@@ -183,25 +186,25 @@ export function drawPixHud(_ctx, A) {
   ctxText(ctx, SMALL, name, tx, 3, GOLD);
   coin(ctx, tx, 10);
   const money = Math.round(g.money);
-  const moneyTxt = (money < 0 ? '-' : '') + Math.abs(money).toLocaleString('sv-SE').replace(/\s/g, ' ') + ' KR';
+  const moneyTxt = (money < 0 ? '-' : '') + fmt(Math.abs(money)).replace(/\s/g, ' ').toUpperCase();
   ctxText(ctx, SMALL, moneyTxt, tx + 7, 10, money < 0 ? '#ff6a6a' : PAPER);
-  const day = `${String(g.dayName || '').toUpperCase()} DAG ${g.day}  ${clock(g.min)}`;
+  const day = $t`${String(g.dayName || '').toUpperCase()} DAG ${g.day}  ${clock(g.min)}`;
   ctxText(ctx, SMALL, day, tx, 17, PAPER2);
   // mätare: mat, sömn och lycka (smalare när remsan bara är 384 bred – plats för ONLINE till höger)
   const bw = Wv >= 470 ? 64 : 46, step = bw + 9 + (Wv >= 470 ? 15 : 10);
   const mx = Math.max(128, ((Wv / 2) | 0) - ((step * 3) >> 1)); // mätarna i mitten när remsan är bred
   const lycka = g.lycka ?? 60;
-  ctxText(ctx, SMALL, 'MAT', mx, 3, PAPER2);
+  ctxText(ctx, SMALL, $t('MAT'), mx, 3, PAPER2);
   bar(ctx, mx, 12, bw, g.hunger, burger);
-  ctxText(ctx, SMALL, 'SÖMN', mx + step, 3, PAPER2);
+  ctxText(ctx, SMALL, $t('SÖMN'), mx + step, 3, PAPER2);
   bar(ctx, mx + step, 12, bw, g.energy, zz);
-  ctxText(ctx, SMALL, 'LYCKA', mx + step * 2, 3, PAPER2);
+  ctxText(ctx, SMALL, $t('LYCKA'), mx + step * 2, 3, PAPER2);
   bar(ctx, mx + step * 2, 12, bw, lycka, smiley(lycka));
   // höger: online + skuld / dagens händelse
   const online = A.worldInfo?.().online || 1;
-  const onTxt = online > 1 ? `${online} ONLINE` : 'ENSAM I STAN';
+  const onTxt = online > 1 ? $t`${online} ONLINE` : $t('ENSAM I STAN');
   folkIcon(ctx, Wv - 4 - textW(SMALL, onTxt) - 10, 3);
   ctxText(ctx, SMALL, onTxt, Wv - 4 - textW(SMALL, onTxt), 3, PAPER2);
-  if (money < 0) ctxText(ctx, SMALL, 'SKULD!', Wv - 4 - textW(SMALL, 'SKULD!'), 17, RED);
-  else if (g.event?.id) { const t = String(g.event.id).toUpperCase(); ctxText(ctx, SMALL, t, Wv - 4 - textW(SMALL, t), 17, GOLD); }
+  if (money < 0) ctxText(ctx, SMALL, $t('SKULD!'), Wv - 4 - textW(SMALL, $t('SKULD!')), 17, RED);
+  else if (g.event?.id) { const t = EV_TAG[g.event.id] || String(g.event.id).toUpperCase(); ctxText(ctx, SMALL, t, Wv - 4 - textW(SMALL, t), 17, GOLD); }
 }

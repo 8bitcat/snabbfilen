@@ -49,6 +49,7 @@
 //   klick under resan → traffic.skipRide() (tona direkt till målet).
 import { Pix, mix, mul, hash, bayer, SMALL, BIG, text, textW, ctxText } from '../core/floor-pix.js';
 import { CITY, ROADS, CROSSWALKS_ALL, LIGHTS_ALL, LOTS, buildingById, BRIDGES } from './map.js';
+import { $t } from '../core/i18n.js';
 
 export const V2 = true;
 
@@ -679,11 +680,11 @@ function paintVehicle(kind, color, variant, opts = {}) {
       if (sh !== undefined) text(T0, F, str, x + 1, y + 1, sh);
       text(T0, F, str, x, y, col);
     };
-    if (s.taxi) T(SMALL, 'TAXI', 19, 29, 0x2a2014);
-    if (s.brand === 'pixelbud') { T(BIG, 'PIXELBUD', 3, 29, 0x1f4fa8, 0xb8c8e4); T(SMALL, 'LEVERANS', 9, 17, 0xffffff, 0xa85210); }
-    if (s.brand === 'glass') T(BIG, 'GLASS', 13, 42, 0xd83a80);
-    if (s.bus) { T(SMALL, 'PIXELTRAFIK', 36, 42, 0xa8261e, 0xd0d0c8); T(SMALL, '4', 95, 34, 0xffb22a); }
-    if (s.blade) { T(SMALL, 'PIXELPLOG', 6, 27, 0xffffff, 0x2a2e36); T(SMALL, 'SALT', 26, 21, 0xe8e0c8); }
+    if (s.taxi) T(SMALL, $t('TAXI'), 19, 29, 0x2a2014);
+    if (s.brand === 'pixelbud') { T(BIG, $t('PIXELBUD'), 3, 29, 0x1f4fa8, 0xb8c8e4); T(SMALL, $t('LEVERANS'), 9, 17, 0xffffff, 0xa85210); }
+    if (s.brand === 'glass') T(BIG, $t('GLASS'), 13, 42, 0xd83a80);
+    if (s.bus) { T(SMALL, $t('PIXELTRAFIK'), 36, 42, 0xa8261e, 0xd0d0c8); T(SMALL, '4', 95, 34, 0xffb22a); }
+    if (s.blade) { T(SMALL, $t('PIXELPLOG'), 6, 27, 0xffffff, 0x2a2e36); T(SMALL, $t('SALT'), 26, 21, 0xe8e0c8); }
   };
   decal(P, false); decal(Q, true);
   // snötäcke och spegling (härleds ur den färdiga bilden, speglas med)
@@ -1089,9 +1090,9 @@ function paintPlowEnd(rear) {
       const red = (((x - h) % 6) + 6) % 6 < 3;
       put(x, h, h === 13 ? (red ? 0x8a1a1a : 0xa8aab0) : red ? (h === 15 ? 0xe8463a : 0xd42a2a) : (h === 15 ? 0xffffff : 0xeeeef0));
     }
-    const sx = OX + ((w - 5 - textW(SMALL, 'SALT')) >> 1);
-    text(P, SMALL, 'SALT', sx + 1, gy - 31, 0xb0b4bc, 0.5);
-    text(P, SMALL, 'SALT', sx, gy - 32, 0x2a2e36);
+    const sx = OX + ((w - 5 - textW(SMALL, $t('SALT'))) >> 1);
+    text(P, SMALL, $t('SALT'), sx + 1, gy - 31, 0xb0b4bc, 0.5);
+    text(P, SMALL, $t('SALT'), sx, gy - 32, 0x2a2e36);
     // stegen på högra sidan
     for (let h = 13; h <= 33; h++) { put(w - 5, h, 0x3a3c44); put(w - 2, h, 0x3a3c44); if (h % 3 === 0) { put(w - 4, h, 0x9a9ea6); put(w - 3, h, 0x8a8e96); } }
     // varningsljusen på behållarens hörn
@@ -1456,7 +1457,7 @@ export function trafficSheet() {
     if (END[k] || k === 'plog') for (let f = 0; f < 2; f++) { const E = endArt({ kind: k, color: col, variant: v, rust: !!rust }, f === 1); x.drawImage(E.img, 420 + f * 50 - E.ox, y - E.gy); if (f) x.drawImage(E.snow, 420 + f * 50 - E.ox, y - E.gy); }
   });
   const states = [['r', 'r'], ['ry', 'r'], ['g', 'r'], ['y', 'r'], ['r', 'g'], ['r', 'x'], ['yb', 'o', true], ['o', 'o', true]];
-  states.forEach(([cs, ps, br], i) => { const A = poleArt(i ? 's' : 'n', i ? null : 'PARKGATAN', cs, ps, !!br); x.drawImage(A.img, 20 + i * 36 - A.px, cv.height - 6 - A.fy); });
+  states.forEach(([cs, ps, br], i) => { const A = poleArt(i ? 's' : 'n', i ? null : $t('PARKGATAN'), cs, ps, !!br); x.drawImage(A.img, 20 + i * 36 - A.px, cv.height - 6 - A.fy); });
   for (let f = 0; f < NF; f++) ['alloy', 'steel', 'white', 'bus', 'rust'].forEach((st, j) => x.drawImage(wheelArt(st === 'bus' ? 7 : st === 'alloy' ? 5 : 6, st, f), 320 + f * 18, cv.height - 100 + j * 18));
   return cv;
 }
@@ -2312,7 +2313,7 @@ export function createTraffic(env) {
 
   // ---------- ritning ----------
   function bubble(ctx, x, y) {
-    const str = 'TUT!', w = textW(SMALL, str) + 6, h = 9, bx = x - (w >> 1), by = y - h - 2;
+    const str = $t('TUT!'), w = textW(SMALL, str) + 6, h = 9, bx = x - (w >> 1), by = y - h - 2;
     ctx.fillStyle = '#1c1a22'; ctx.fillRect(bx - 1, by - 1, w + 2, h + 2);
     ctx.fillStyle = '#fff6d8'; ctx.fillRect(bx, by, w, h);
     ctx.fillStyle = '#1c1a22'; ctx.fillRect(x - 1, by + h + 1, 3, 1); ctx.fillRect(x, by + h + 2, 1, 1);
@@ -2432,7 +2433,7 @@ export function createTraffic(env) {
   }
   // LED-skylten: nästa hållplats rullar förbi (a = styrka; glow ritar den igen med 'lighter')
   function drawLed(ctx, c, A, f, x0, top, a) {
-    const nx = nextStopOf(c), strip = ledStrip(nx ? nx.name : 'EJ I TRAFIK');
+    const nx = nextStopOf(c), strip = ledStrip(nx ? $t(nx.name) : $t('EJ I TRAFIK'));
     const sx = Math.floor(T * 13) % strip.per, dx = f ? x0 + c.spec.L - 1 - 89 : x0 + 66;
     if (a !== 1) ctx.globalAlpha = a;
     ctx.drawImage(strip.img, sx, 1, 24, 6, dx, top + (A.gy - 35), 24, 6);

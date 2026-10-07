@@ -5,6 +5,7 @@
 // världs-y och canvas-x = världs-x − b.x + 8. Fasaden står på raderna [BASE − b.h, BASE).
 import { Pix, SMALL, BIG, text, textW, mix, mul, hash, bayer } from '../core/floor-pix.js';
 import { CITY, ART_OVER, ART_BELOW } from './map.js';
+import { $t } from '../core/i18n.js';
 
 const BASE = CITY.BASE, TOP = CITY.FOOT_TOP, HGT = BASE + ART_BELOW;
 const DOOR_H = 34, DT = BASE - DOOR_H;
@@ -430,7 +431,7 @@ function kafeWin(P, x, y, w, h, night, reg, side) {
       if (i === bw - 1 || j === bh - 1) return 0x5a3a20;
       return hash(X, Y, 34) > 0.9 ? 0x3a4a40 : jit(0x26342c, X, Y, 35, 0.06);
     });
-    text(P, SMALL, 'MENY', bx + ((bw - 15) >> 1), by + 2, 0xfaf6e8);
+    text(P, SMALL, $t('MENY'), bx + ((bw - 15) >> 1), by + 2, 0xfaf6e8);
     for (let xx = bx + 2; xx < bx + bw - 2; xx += 2) P.px(xx, by + 8, 0xe07aa0);
     P.px(bx + bw - 3, by + 3, 0xffd23f);
     P.px(bx + 2, by + 3, 0xffd23f);
@@ -528,7 +529,7 @@ function paintKafe(P, b, night, reg, opts = {}) {
     blooms(P, wx - 1, T + 22, 16, 4, 16 + wx, [0xe8303a, 0xff5a6a, 0xf07ab0], 0.22);
     P.darken(wx - 2, T + 29, 18, 1, 0.8);
   }
-  const kb = bits(BIG, 'KAFÉ', { x2: true, gap: 1 }), kx = cx - (kb.w >> 1), ky = T + 13;
+  const kb = bits(BIG, $t('KAFÉ'), { x2: true, gap: 1 }), kx = cx - (kb.w >> 1), ky = T + 13;
   sign(P, kb, kx, ky, { shadow: 0x5a4226, sa: 0.5, outline: 0x3a2814, fill: (i, j, X, Y) => qmix(0xf8dc84, 0xc38f2c, j / kb.h, X, Y, 3), hi: 0xfff6cc, lo: 0x8a6220 });
   // svanhalslampor över skylten
   for (const lx of [kx - 3, kx + kb.w + 2]) {
@@ -564,7 +565,7 @@ function paintKafe(P, b, night, reg, opts = {}) {
   // dörrkarm + överljus med guldtext
   for (const fx of [d0 - 2, d1]) { P.vl(fx, DT - 7, BASE - DT + 7, 0x1c3a2c); P.vl(fx + 1, DT - 7, BASE - DT + 7, 0x4f8468); }
   area(P, d0, DT - 7, d1 - d0, 6, (X, Y, i, j) => (night ? qmix(0xffe6a8, 0xf0b060, j / 6, X, Y, 2) : qmix(0x8aa0b0, 0x4a5a68, j / 6, X, Y, 2)));
-  text(P, SMALL, 'FIKA', ((d0 + d1) >> 1) - 7, DT - 6, 0xe8c050);
+  text(P, SMALL, $t('FIKA'), ((d0 + d1) >> 1) - 7, DT - 6, 0xe8c050);
   P.hl(d0, DT - 1, d1 - d0, 0x1c3a2c);
   P.hl(d0 - 2, DT - 8, d1 - d0 + 4, 0x4f8468);
   if (night) reg.win.push([d0, DT - 7, d1 - d0, 6]);
@@ -1741,7 +1742,7 @@ function paintScreen(i, night, price) {
   const dishes = MENU ? MENU.dishes.slice(0, 4) : [];
   const shade = (x, y, w) => P.ell(x - SCR.x, y - SCR.y, w, 1.6, 0x0a120e, 0.5, 3);
   if (i < 0) {
-    if (!dishes.length) { text({ px: S }, SMALL, 'SNART', -9, -22, 0xc8c0a8); return P.flush(); }
+    if (!dishes.length) { text({ px: S }, SMALL, $t('SNART'), -9, -22, 0xc8c0a8); return P.flush(); }
     // kritprickar mellan raderna, som linjen under MENY på jobbets tavla
     for (let x = SCR.x + 2; x < SCR.x + SCR.w - 2; x += 2) S(x, -19, night ? 0xb4c8bc : 0x9aa8a0, 0.6);
     dishes.forEach((d, k) => {
@@ -1754,7 +1755,7 @@ function paintScreen(i, night, price) {
   const d = dishes[i], G = (BIG_DISH[d.id] || (() => mapGrid(d)))(), bot = SCR.y + 24, ox = SCR.x + ((SCR.w - G.w + 1) >> 1);
   shade(ox + G.w / 2, bot + 0.5, G.w / 2 - 1);
   blitDish(S, G, ox, bot - G.h + 1);
-  const B = bits(BIG, `${price}:-`);
+  const B = bits(BIG, $t`${price}:-`);
   sign({ px: S }, B, SCR.x + ((SCR.w - B.w) >> 1), SCR.y + PRICE_ROWS[0], { shadow: 0x0a120e, sa: 0.9, fill: night ? 0xfff0a8 : 0xffe27a, hi: night ? 0xfffbe0 : 0xfff6c8, lo: 0xe8b440 });
   return P.flush();
 }
@@ -1884,7 +1885,7 @@ function paintBurgare(P, b, night, reg, opts = {}) {
     P.px(x + 1, y, 0x2a2618);
     reg.bulbs.push([x, y]);
   }
-  const nb = bits(BIG, b.sign || 'BURGARBAREN', { x2: true, gap: 1 }), nx = cx - (nb.w >> 1), ny = S0 + 3;
+  const nb = bits(BIG, b.sign || $t('BURGARBAREN'), { x2: true, gap: 1 }), nx = cx - (nb.w >> 1), ny = S0 + 3;
   sign(P, nb, nx, ny, { outline: 0x0c0d12, fill: 0x5a2834, hi: 0x74384a, lo: 0x401a24 });
   reg.neon = { B: nb, x: nx, y: ny };
   rows(P, L, S1, W, [0xe8ecf0, 0xaab0b8, 0x6a7078]);
@@ -1916,7 +1917,7 @@ function paintBurgare(P, b, night, reg, opts = {}) {
   // köksfönstrets bleck: en smal kromhylla som vilar på huven
   P.hl(kw.x - 1, kw.y + kw.h + 2, kw.w + 2, 0xc2c8d0);
   // ÖPPET-skylten hänger i listen över vänstra fönstret …
-  const ob = bits(SMALL, 'ÖPPET'), ox0 = wins[0][0] + (wins[0][1] >> 1) - (ob.w >> 1), oy0 = Z0 + 5;
+  const ob = bits(SMALL, $t('ÖPPET')), ox0 = wins[0][0] + (wins[0][1] >> 1) - (ob.w >> 1), oy0 = Z0 + 5;
   P.rect(ox0 - 2, oy0 - 3, ob.w + 4, 9, 0x14161c);
   P.box(ox0 - 2, oy0 - 3, ob.w + 4, 9, 0x3a3f4c);
   for (const [sx, sy] of [[ox0 - 2, oy0 - 3], [ox0 + ob.w + 1, oy0 - 3], [ox0 - 2, oy0 + 5], [ox0 + ob.w + 1, oy0 + 5]]) P.px(sx, sy, 0x8a9098);
@@ -2002,7 +2003,7 @@ DOOR_ART.burgare = {
     area(S, 0, 0, w, h, (X, Y, i, j) => (i < 2 || i >= w - 2 || j < 2 || (j >= 24 && j < 26) ? (i >= w - 2 || j === 25 ? 0xaab0b8 : 0xe8ecf0) : null));
     area(S, 2, 26, w - 4, h - 29, (X, Y, i, j) => (j === 0 ? 0xf06070 : jit(0xc8283a, X, Y, 91, 0.05)));
     rows(S, 0, h - 3, w, [0xe8ecf0, 0xaab0b8, 0x6a7078]);
-    text(S, SMALL, 'DRA', (w >> 1) - 5, 7, 0xffffff, 0.85);
+    text(S, SMALL, $t('DRA'), (w >> 1) - 5, 7, 0xffffff, 0.85);
     S.rect(w - 5, 11, 2, 9, 0xe8ecf0);
     S.vl(w - 4, 11, 9, 0x8a9098);
   },
@@ -2050,7 +2051,7 @@ function wipeLine(ctx, x, y, split, ph, head, board) {
 function standKit(K) {
   if (K.stand && K.stand.pv === PRICE_V) return K.stand;
   const dishes = MENU ? MENU.dishes.slice(0, 4) : [];
-  const T = { pv: PRICE_V, n: dishes.length }, names = ['MENY', ...dishes.map((d) => d.name)];
+  const T = { pv: PRICE_V, n: dishes.length }, names = [$t('MENY'), ...dishes.map((d) => d.name)];
   const hw = SB.x1 - SB.x0 - 3, hh = SB.sep - SB.head;
   T.hw = hw; T.hh = hh;
   T.heads = names.map((s) => {
@@ -2493,7 +2494,7 @@ function paintFrukt(P, b, night, reg, opts = {}) {
     return mix(0xece0bc, P.get(X, Y), 0.14 + (hash(X, Y, 122) > 0.8 ? 0.12 : 0));
   });
   P.box(sx0 + 1, sy0 + 1, sx1 - sx0 - 2, sy1 - sy0 - 2, 0x2e6e3a);
-  const fb = bits(BIG, 'FRUKTFABRIKEN', { x2: true, gap: 1 }), fx = L + ((W - fb.w) >> 1);
+  const fb = bits(BIG, $t('FRUKTFABRIKEN'), { x2: true, gap: 1 }), fx = L + ((W - fb.w) >> 1);
   sign(P, fb, fx, sy0 + 3, {
     shadow: 0xa89a74, fill: (i, j, X, Y) => (hash(X, Y, 123) > 0.95 ? 0xe4d8b4 : qmix(0x3a8a48, 0x245a2e, j / fb.h, X, Y, 3)), hi: 0x62b06a, lo: 0x1a4020,
   });
@@ -2501,7 +2502,7 @@ function paintFrukt(P, b, night, reg, opts = {}) {
   for (const wx of [L + 6, L + 32, R - 58, R - 28]) indWin(P, wx, T + 30, 22, 25, night, reg, wx);
   const lcx = (d0 + d1) >> 1;
   fruitLogo(P, lcx, T + 41, 12);
-  const sb = bits(SMALL, 'SEDAN 1932');
+  const sb = bits(SMALL, $t('SEDAN 1932'));
   sign(P, sb, lcx - (sb.w >> 1), T + 57, { fill: 0xece0bc, shadow: 0x4a2418, sa: 0.6 });
   // ---- bottenvåningen vänster: rör, ventil, elskåp, fruktlådor ----
   const py = T + 66;
@@ -2543,7 +2544,7 @@ function paintFrukt(P, b, night, reg, opts = {}) {
   P.rect(((d0 + d1) >> 1) - 2, DT - 9, 5, 3, 0x2a3034);
   P.hl(((d0 + d1) >> 1) - 1, DT - 7, 3, 0xfff4c0);
   reg.halo.push([(d0 + d1) / 2, DT + 4, 14, 14, 0xfff0c0, 0.3]);
-  const pb = bits(SMALL, 'PERSONAL'), pbx = ((d0 + d1) >> 1) - (pb.w >> 1), pby = DT - 17;
+  const pb = bits(SMALL, $t('PERSONAL')), pbx = ((d0 + d1) >> 1) - (pb.w >> 1), pby = DT - 17;
   P.rect(pbx - 3, pby - 2, pb.w + 6, 9, 0xf4f2ea);
   P.box(pbx - 3, pby - 2, pb.w + 6, 9, 0x3a4448);
   sign(P, pb, pbx, pby, { fill: 0x1e4a26 });
@@ -2559,9 +2560,9 @@ function paintFrukt(P, b, night, reg, opts = {}) {
     return c;
   });
   for (let k = 0; k < 5; k++) { const vx = rx0 + 5 + k * 10; P.rect(vx, RT + 16, 6, 2, 0x2a3440); P.hl(vx, RT + 16, 6, 0x5a7080); }
-  const ptx = rx0 + ((rw - textW(SMALL, 'PORT 2')) >> 1);
-  text(P, SMALL, 'PORT 2', ptx + 1, RT + 26, 0xe8ecf0, 0.7);
-  text(P, SMALL, 'PORT 2', ptx, RT + 25, 0x2a3038, 0.9);
+  const ptx = rx0 + ((rw - textW(SMALL, $t('PORT 2'))) >> 1);
+  text(P, SMALL, $t('PORT 2'), ptx + 1, RT + 26, 0xe8ecf0, 0.7);
+  text(P, SMALL, $t('PORT 2'), ptx, RT + 25, 0x2a3038, 0.9);
   rows(P, rx0, DKY - 2, rw, [0x2a2c30, 0x1a1a1e]);
   P.rect(rx0 + (rw >> 1) - 3, DKY - 6, 6, 2, 0x5a6066);
   P.hl(rx0 + (rw >> 1) - 3, DKY - 6, 6, 0xc8ced4);
@@ -2667,7 +2668,7 @@ const FRUKT = {
 };
 
 // ======================= FLYGPLATSEN =======================
-const DEST = ['LONDON', 'OSLO', 'PARIS', 'BERLIN', 'HELSINKI', 'ROM', 'VISBY', 'MALAGA', 'ATEN', 'NEW YORK', 'LULEÅ', 'MADRID', 'TOKYO', 'KIRUNA', 'PRAG', 'MALMÖ', 'DUBAI', 'NICE', 'GÖTEBORG', 'WIEN', 'ISTANBUL', 'KRETA', 'MALLORCA', 'LISSABON', 'BANGKOK', 'UMEÅ', 'BRYSSEL', 'RIGA', 'TALLINN', 'DUBLIN'];
+const DEST = [$t('LONDON'), $t('OSLO'), $t('PARIS'), $t('BERLIN'), $t('HELSINKI'), $t('ROM'), $t('VISBY'), $t('MALAGA'), $t('ATEN'), $t('NEW YORK'), $t('LULEÅ'), $t('MADRID'), $t('TOKYO'), $t('KIRUNA'), $t('PRAG'), $t('MALMÖ'), $t('DUBAI'), $t('NICE'), $t('GÖTEBORG'), $t('WIEN'), $t('ISTANBUL'), $t('KRETA'), $t('MALLORCA'), $t('LISSABON'), $t('BANGKOK'), $t('UMEÅ'), $t('BRYSSEL'), $t('RIGA'), $t('TALLINN'), $t('DUBLIN')];
 const FLIGHTS = [];
 {
   let m = 5 * 60 + 40, i = 0;
@@ -2884,7 +2885,7 @@ function paintFlyg(P, b, night, reg, opts = {}) {
     return c;
   });
   P.hl(L, T + 23, W, 0x4a5260);
-  const fb = bits(BIG, 'FLYGPLATSEN', { x2: true, gap: 1 }), tw = 13 + 5 + fb.w, tx0 = cx - (tw >> 1);
+  const fb = bits(BIG, $t('FLYGPLATSEN'), { x2: true, gap: 1 }), tw = 13 + 5 + fb.w, tx0 = cx - (tw >> 1);
   PLANE.forEach((row, j) => { for (let i = 0; i < row.length; i++) if (row[i] === '#') P.px(tx0 + 1 + i, T + 9 + j, j < 5 ? 0x2a6ad0 : 0x1a4a9a); });
   sign(P, fb, tx0 + 18, T + 7, { shadow: 0xb8c0ca, fill: (i, j, X, Y) => qmix(0x3a7ad8, 0x1a4a9a, j / fb.h, X, Y, 3), hi: 0x6aa6f0, lo: 0x0e3070 });
   reg.letters = { B: fb, x: tx0 + 18, y: T + 7 };
@@ -2914,7 +2915,7 @@ function paintFlyg(P, b, night, reg, opts = {}) {
   const rideX = Math.round(ex0 + (ex1 - ex0) * 0.62);
   person(P, rideX, Math.round(ey0 + (ey1 - ey0) * 0.62) - 1, night ? 0xe07a30 : mul(0xe07a30, 0.8), 0x2d3a5c, 0xf0c8a0, 0x3b2619);
   // incheckningen till höger (skylten hängs upp efter spröjsen så den går att läsa)
-  const ib = bits(SMALL, 'INCHECKNING'), ibx = R - 44 - (ib.w >> 1);
+  const ib = bits(SMALL, $t('INCHECKNING')), ibx = R - 44 - (ib.w >> 1);
   for (let k = 0; k < 5; k++) {
     const kx = d1 + 16 + k * 15;
     if (kx + 12 > R - 2) break;
@@ -2955,7 +2956,7 @@ function paintFlyg(P, b, night, reg, opts = {}) {
   for (const [bx, by] of [[L + 6, G0 + 6], [L + 84, G0 + 6], [L + 6, G0 + 59], [L + 84, G0 + 59]]) P.px(bx, by, 0xb8bec6);
   const BX = L + 7, BY = G0 + 7, BW = 77, BH = 52;
   P.rect(BX, BY, BW, BH, 0x0c0d10);
-  const hb = bits(BIG, 'AVGÅNGAR');
+  const hb = bits(BIG, $t('AVGÅNGAR'));
   sign(P, hb, BX + 3, BY + 3, { fill: 0xffd23a, lo: 0xd8a818 });
   PLANE.forEach((row, j) => { if (j < 9) for (let i = 0; i < row.length; i++) if (row[i] === '#') P.px(BX + BW - 14 + i, BY + 1 + j, 0xffd23a); });
   P.hl(BX + 1, BY + 12, BW - 2, 0x3a3e46);
@@ -2974,7 +2975,7 @@ function paintFlyg(P, b, night, reg, opts = {}) {
   P.darken(d0 - 10, DT - 10, d1 - d0 + 20, 2, 0.7);
   P.line(d0 - 12, DT - 13, d0 - 4, DT - 26, 0x6a6e76);
   P.line(d1 + 11, DT - 13, d1 + 3, DT - 26, 0x6a6e76);
-  const ab = bits(SMALL, 'AVGÅNG'), abw = ab.w + 12, abx = dcx - (abw >> 1), aby = DT - 24;
+  const ab = bits(SMALL, $t('AVGÅNG')), abw = ab.w + 12, abx = dcx - (abw >> 1), aby = DT - 24;
   P.rect(abx, aby, abw, 10, 0x2a2c30);
   P.box(abx, aby, abw, 10, 0x4a4e56);
   sign(P, ab, abx + 10, aby + 3, { fill: 0xffd23a });
@@ -3054,7 +3055,7 @@ const FLYG = {
     const ab = reg.avgang.B, Q = new Pix(ab.w, ab.h);
     sign(Q, ab, 0, ab.up, { fill: 0xffe070 });
     K.avg = Q.flush();
-    const hb = bits(BIG, 'AVGÅNGAR'), H = new Pix(hb.w, hb.h);
+    const hb = bits(BIG, $t('AVGÅNGAR')), H = new Pix(hb.w, hb.h);
     sign(H, hb, 0, hb.up, { fill: 0xffd23a, lo: 0xd8a818 });
     K.head = H.flush();
     K.headUp = hb.up;

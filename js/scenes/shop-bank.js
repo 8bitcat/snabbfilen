@@ -32,6 +32,7 @@ import { openModal, closeModal, toast, esc, modalOpen } from '../core/ui.js';
 import * as GM from '../game.js';
 import { fmt, clock, DAY_NAMES } from '../game.js';
 import { play, audioContext, isMuted } from '../core/sound.js';
+import { $t } from '../core/i18n.js';
 import { createWalker, selfDrawable, folkDrawables, WALK_SEQ, createSpeech } from './walkable.js';
 import { worldFolksHere } from '../net/world.js';
 import * as MAP from '../city/map.js';
@@ -66,8 +67,8 @@ function bankDo(g, kind, kr, via = 'kassa') {
   if (kind === 'ut' && typeof g.bankWithdraw === 'function') return g.bankWithdraw(kr, { via });
   // reserv om game.js-patchen saknas: samma regler, ingen logg
   kr = Math.floor(+kr || 0);
-  if (kr <= 0) return { ok: false, msg: 'Välj ett belopp.' };
-  if (kind === 'in' ? kr > g.money : kr > saldoOf(g)) return { ok: false, msg: kind === 'in' ? 'Så mycket har du inte på fickan.' : 'Så mycket finns inte på sparkontot.' };
+  if (kr <= 0) return { ok: false, msg: $t('Välj ett belopp.') };
+  if (kind === 'in' ? kr > g.money : kr > saldoOf(g)) return { ok: false, msg: kind === 'in' ? $t('Så mycket har du inte på fickan.') : $t('Så mycket finns inte på sparkontot.') };
   g.bank = saldoOf(g) + (kind === 'in' ? kr : -kr);
   if (kind === 'ut' && g.bankMin != null) g.bankMin = Math.min(g.bankMin, g.bank);
   g.money += kind === 'in' ? -kr : kr;
@@ -148,7 +149,7 @@ const OBST = [
 ];
 
 // skyltarna på väggen som sparkontopanelen i hörnet helst inte ska täcka (världskoordinater)
-const NAME_HW = Math.ceil(textW(BIG, 'PIXELBANKEN', 2) / 2);
+const NAME_HW = Math.ceil(textW(BIG, $t('PIXELBANKEN'), 2) / 2);
 const SIGNS = [
   [CLOCK.x - 16, CLOCK.y - 10, CLOCK.x + 16, CLOCK.y + 10],              // klockan med lagerkvistarna
   [DOOR.x0, DOOR.top - 7, DOOR.x1, DOOR.top],                             // baldakinen PIXELBANKEN över dörren
@@ -555,7 +556,7 @@ function paintDoor(P, night) {
   }
   // baldakinen i mässing med bankens namn
   for (let y = top - 6; y < top; y++) for (let x = x0; x < x1; x++) P.px(x, y, tone(BRASS, [0.95, 0.75, 0.6, 0.5, 0.35, 0.15][y - top + 6], x, y));
-  text(P, SMALL, 'PIXELBANKEN', cxText(SMALL, 'PIXELBANKEN', DOOR_X), top - 5, 0x2a1c08);
+  text(P, SMALL, $t('PIXELBANKEN'), cxText(SMALL, $t('PIXELBANKEN'), DOOR_X), top - 5, 0x2a1c08);
   // trumman: glas runt om (genomskinligt), mörkt tak och kanter
   for (let y = top; y < WALL_Y; y++) for (let x = x0; x < x1; x++) {
     clearPx(P, x, y);
@@ -566,7 +567,7 @@ function paintDoor(P, night) {
   for (const [x, c] of [[x0, BRASS[1]], [x0 + 1, BRASS[3]], [x0 + 8, BRASS[2]], [x1 - 9, BRASS[2]], [x1 - 2, BRASS[3]], [x1 - 1, BRASS[1]]]) P.vl(x, top + 1, WALL_Y - top - 1, c);
   for (let y = top + 3; y < WALL_Y - 1; y++) { P.px(x0 + 3, y, 0xffffff, night ? 0.08 : 0.3); P.px(x0 + 4, y, 0xffffff, night ? 0.05 : 0.15); P.px(x1 - 5, y, 0xffffff, night ? 0.06 : 0.2); }
   // öppettiderna etsade i glaset
-  const op = `ÖPPET ${HOURS[0]}-${HOURS[1]}`, ow = textW(SMALL, op), ox = cxText(SMALL, op, DOOR_X);
+  const op = $t`ÖPPET ${HOURS[0]}-${HOURS[1]}`, ow = textW(SMALL, op), ox = cxText(SMALL, op, DOOR_X);
   P.rect(ox - 3, top + 6, ow + 6, 9, 0x0e2a20, 0.9); P.box(ox - 3, top + 6, ow + 6, 9, BRASS[2]);
   text(P, SMALL, op, ox, top + 8, 0xf0d070);
   // klockan över dörren (visarna ritas levande), med förgyllda lagerkvistar
@@ -682,7 +683,7 @@ function frame(P, x0, y0, x1, y1, fill = NAVY) {
 function paintRateBoard(P) {
   const { x0, x1, y0, y1 } = BOARD_L, cx = (x0 + x1) / 2;
   frame(P, x0, y0, x1, y1);
-  goldText(P, SMALL, 'SPARKONTO', cxText(SMALL, 'SPARKONTO', cx), y0 + 5);
+  goldText(P, SMALL, $t('SPARKONTO'), cxText(SMALL, $t('SPARKONTO'), cx), y0 + 5);
   // räntan i stora guldsiffror och ett eget procenttecken (typsnittets % blir grötigt i dubbel storlek)
   const num = pctTxt(), nw = textW(BIG, num, 2), sx = Math.round(cx - (nw + 14) / 2), sy = y0 + 13, px0 = sx + nw + 4;
   goldText(P, BIG, num, sx, sy, 2);
@@ -693,8 +694,8 @@ function paintRateBoard(P) {
     P.px(x, y, k < 4 ? BRASS[4] : k < 9 ? BRASS[3] : BRASS[2]); P.px(x + 1, y, k < 7 ? BRASS[3] : BRASS[1]);
   }
   ring(px0, sy); ring(px0 + 6, sy + 10);
-  text(P, SMALL, 'RÄNTA VARJE', cxText(SMALL, 'RÄNTA VARJE', cx), y0 + 30, 0xe8e0c8);
-  text(P, SMALL, 'MÅNDAG', cxText(SMALL, 'MÅNDAG', cx), y0 + 36, 0xe8e0c8);
+  text(P, SMALL, $t('RÄNTA VARJE'), cxText(SMALL, $t('RÄNTA VARJE'), cx), y0 + 30, 0xe8e0c8);
+  text(P, SMALL, $t('MÅNDAG'), cxText(SMALL, $t('MÅNDAG'), cx), y0 + 36, 0xe8e0c8);
 }
 // ---------- valutatavlan ----------
 function flag(P, x, y, kind) {
@@ -711,7 +712,7 @@ const FX = [['EUR', '11,48'], ['USD', '10,63'], ['GBP', '13,27'], ['JPY', '0,07'
 function paintFxBoard(P) {
   const { x0, x1, y0, y1 } = BOARD_R, cx = (x0 + x1) / 2;
   frame(P, x0, y0, x1, y1);
-  goldText(P, SMALL, 'VALUTA', cxText(SMALL, 'VALUTA', cx), y0 + 5);
+  goldText(P, SMALL, $t('VALUTA'), cxText(SMALL, $t('VALUTA'), cx), y0 + 5);
   P.hl(x0 + 8, y0 + 12, x1 - x0 - 16, BRASS[1]);
   FX.forEach(([k, v], i) => {
     const y = y0 + 15 + i * 6;
@@ -730,7 +731,7 @@ function paintAtm(P) {
     P.px(x, y, tone(STEEL, v, x, y));
   }
   P.rect(x0 + 1, top + 1, w - 2, 9, 0x146a3a); P.hl(x0 + 1, top + 1, w - 2, 0x5ad88a); P.hl(x0 + 1, top + 9, w - 2, 0x0a3a1e);   // skylten
-  text(P, SMALL, 'BANKOMAT', cxText(SMALL, 'BANKOMAT', cx), top + 3, 0xffffff);
+  text(P, SMALL, $t('BANKOMAT'), cxText(SMALL, $t('BANKOMAT'), cx), top + 3, 0xffffff);
   P.rect(x0 + 3, top + 12, w - 6, 18, 0x22262c); P.box(x0 + 3, top + 12, w - 6, 18, STEEL[0]);   // skärmens ram
   for (let k = 0; k < 3; k++) { P.rect(x0 + 1, top + 15 + k * 5, 2, 3, STEEL[3]); P.rect(x1 - 3, top + 15 + k * 5, 2, 3, STEEL[3]); } // sidoknappar
   for (let r = 0; r < 4; r++) for (let c = 0; c < 3; c++) {              // tangentbordet
@@ -743,7 +744,7 @@ function paintAtm(P) {
   P.rect(x0 + 5, top + 51, w - 10, 4, 0x0c0e12); P.hl(x0 + 5, top + 50, w - 10, STEEL[4]); P.hl(x0 + 5, top + 55, w - 10, STEEL[1]); // sedelluckan
   sbox(P, x0 - 3, top + 57, w + 6, 3, 0x9aa2ac);                                     // hyllan
   // liten grön skylt ovanför: 24 TIM bara om staden släpper in en dygnet runt, annars UTTAG
-  const sign = ATM_24 ? '24 TIM' : 'UTTAG';
+  const sign = ATM_24 ? $t('24 TIM') : $t('UTTAG');
   P.rect(cx - 13, top - 10, 26, 7, 0x146a3a); P.box(cx - 13, top - 10, 26, 7, BRASS[2]);
   text(P, SMALL, sign, cxText(SMALL, sign, cx), top - 9, 0xd8ffe0);
 }
@@ -751,7 +752,7 @@ function paintAtm(P) {
 function paintBorsBoard(P) {
   const { x0, x1, y0, y1 } = BORS, cx = (x0 + x1) / 2;
   frame(P, x0, y0, x1, y1, [0x06080c, 0x0c1016, 0x141a22, 0x1c242e, 0x28323e]);
-  goldText(P, SMALL, 'BÖRSEN', cxText(SMALL, 'BÖRSEN', cx), y0 + 4);
+  goldText(P, SMALL, $t('BÖRSEN'), cxText(SMALL, $t('BÖRSEN'), cx), y0 + 4);
   P.hl(x0 + 4, y0 + 11, x1 - x0 - 8, 0x2a3038);
   const T = TICK;
   for (let y = T.y0; y < T.y1; y++) for (let x = T.x0; x < T.x1; x++) {
@@ -792,7 +793,7 @@ function paintPortrait(P) {
   P.box(cx + 1, hy - 1, 3, 3, BRASS[3]); P.vl(cx + 3, hy + 2, 5, BRASS[2]); // monokeln
   P.px(cx, hy + 2, 0xc88a6a);
   // mässingsskylten under
-  const s = 'GRUNDAREN 1887', tw = textW(SMALL, s);
+  const s = $t('GRUNDAREN 1887'), tw = textW(SMALL, s);
   P.rect(Math.round(cx - tw / 2) - 3, y1 + 1, tw + 6, 7, BRASS[2]); P.hl(Math.round(cx - tw / 2) - 3, y1 + 1, tw + 6, BRASS[4]);
   text(P, SMALL, s, Math.round(cx - tw / 2), y1 + 2, 0x3a2408);
 }
@@ -837,7 +838,7 @@ function paintRoom(night) {
   paintWindow(P, WIN_B, night, 4);
   paintDoor(P, night);
   for (const x of PILS) paintPilaster(P, x);
-  goldText(P, BIG, 'PIXELBANKEN', cxText(BIG, 'PIXELBANKEN', VAULT.cx, 2), NAME_Y, 2);
+  goldText(P, BIG, $t('PIXELBANKEN'), cxText(BIG, $t('PIXELBANKEN'), VAULT.cx, 2), NAME_Y, 2);
   paintVault(P);
   paintRateBoard(P);
   paintFxBoard(P);
@@ -914,7 +915,7 @@ function paintCounter() {
     }
     for (let y = GLASS_TOP; y < GLASS_TOP + 7; y++) for (let x = x0 - 1; x < x1 + 1; x++) P.px(x, y, tone(BRASS, [0.95, 0.8, 0.65, 0.55, 0.45, 0.3, 0.15][y - GLASS_TOP], x, y));
     for (const Wn of WINS) {
-      const s = `KASSA ${Wn.i + 1}`, tw = textW(SMALL, s), px0 = Wn.cx - Math.round((tw + 6) / 2);
+      const s = $t`KASSA ${Wn.i + 1}`, tw = textW(SMALL, s), px0 = Wn.cx - Math.round((tw + 6) / 2);
       P.rect(px0 - 1, GLASS_TOP - 1, tw + 8, 10, BRASS[1]); P.rect(px0, GLASS_TOP, tw + 6, 8, 0x0e2a20); P.hl(px0, GLASS_TOP, tw + 6, 0x1e4a38);
       text(P, SMALL, s, px0 + 3, GLASS_TOP + 2, 0xf0d070);
       disc(P, px0 + tw + 12, GLASS_TOP + 3.5, 2.5, 2.5, BRASS[1]);         // lampans sockel (lampan lyser levande)
@@ -931,7 +932,7 @@ function paintCounter() {
   });
 }
 // kassalampans läge (samma räkning som skylten)
-const lampOf = (Wn) => { const tw = textW(SMALL, `KASSA ${Wn.i + 1}`); return [Wn.cx - Math.round((tw + 6) / 2) + tw + 12, GLASS_TOP + 3]; };
+const lampOf = (Wn) => { const tw = textW(SMALL, $t`KASSA ${Wn.i + 1}`); return [Wn.cx - Math.round((tw + 6) / 2) + tw + 12, GLASS_TOP + 3]; };
 // ---------- kön: mässingsstolpar med röda repband ----------
 function paintRopes(y, sign) {
   const xa = POSTS[0] - 16, xb = POSTS[POSTS.length - 1] + 6;
@@ -950,7 +951,7 @@ function paintRopes(y, sign) {
       P.px(x - 2, y - 12, BRASS[1]); P.px(x + 1, y - 12, BRASS[1]);
     }
     if (sign) { // KÖ HÄR-skylten på första stolpen
-      const x = POSTS[0], s = 'KÖ HÄR', tw = textW(SMALL, s);
+      const x = POSTS[0], s = $t('KÖ HÄR'), tw = textW(SMALL, s);
       P.rect(x - 1, y - 20, 2, 4, BRASS[2]);
       P.rect(x - Math.round(tw / 2) - 3, y - 26, tw + 6, 7, 0x0e2a20); P.box(x - Math.round(tw / 2) - 4, y - 27, tw + 8, 9, BRASS[3]);
       text(P, SMALL, s, x - Math.round(tw / 2), y - 25, 0xf0d070);
@@ -1027,7 +1028,7 @@ function paintPig() {
       P.px(x, y, c);
     }
     disc(P, cx, base - 11, 10.5, 2.2, GREEN[3]);
-    const s = 'SPARA!', tw = textW(SMALL, s); text(P, SMALL, s, cx - Math.round(tw / 2), base - 7, BRASS[4]);
+    const s = $t('SPARA!'), tw = textW(SMALL, s); text(P, SMALL, s, cx - Math.round(tw / 2), base - 7, BRASS[4]);
     const by = base - 20;                                                                    // grisen
     for (const lx of [-6, -2, 3, 7]) P.rect(cx + lx, by + 4, 2, 4, PINK[1]);
     disc(P, cx, by, 10, 6.5, PINK[2]);
@@ -1055,7 +1056,7 @@ function paintBrochures() {
         P.rect(x, y, 6, 8, c); P.hl(x, y, 6, mix(c, 0xffffff, 0.4)); P.hl(x + 1, y + 2, 4, t2); P.hl(x + 1, y + 4, 3, t2); P.px(x + 4, y + 6, t2);
       }
     }
-    P.rect(2, 0, 21, 7, 0xf4f1ea); P.box(2, 0, 21, 7, BRASS[2]); text(P, SMALL, 'TA EN', cxText(SMALL, 'TA EN', 12.5), 1, 0x1f4a3a);
+    P.rect(2, 0, 21, 7, 0xf4f1ea); P.box(2, 0, 21, 7, BRASS[2]); text(P, SMALL, $t('TA EN'), cxText(SMALL, $t('TA EN'), 12.5), 1, 0x1f4a3a);
   });
 }
 // ---------- NÄSTA KUND-skylten (texten ritas levande) ----------
@@ -1081,7 +1082,7 @@ function paintDesk() {
       else if (ly === 0) c = MAHOG[0];
       P.px(x, y, c);
     }
-    const s = 'RÅDGIVARE', tw = textW(SMALL, s), sx = Math.round(x0 + w / 2 - tw / 2);  // mässingsskylten
+    const s = $t('RÅDGIVARE'), tw = textW(SMALL, s), sx = Math.round(x0 + w / 2 - tw / 2);  // mässingsskylten
     P.rect(sx - 3, face + 3, tw + 6, 7, BRASS[2]); P.hl(sx - 3, face + 3, tw + 6, BRASS[4]); P.hl(sx - 3, face + 9, tw + 6, BRASS[0]);
     text(P, SMALL, s, sx, face + 4, 0x2a1a06);
     // bankirlampan: mässingsfot och grön glasskärm
@@ -1205,17 +1206,17 @@ function npcLook(seed) {
   const S = ['#2d3a5c', '#2f3440', '#5a5e68', '#3a2e2a'], C = ['#c9323a', '#3a7bd5', '#e0b850'];
   return { ...base, top: 'suit', shirt: S[Math.floor(r() * S.length)], accent: C[Math.floor(r() * C.length)], bottom: 'pants', pants: '#2b2b30', bag: pref('bag', 'briefcase', 'shoulder'), bagColor: '#5a3a1e', hat: null };
 }
-const CUST_LINES = ['Jag vill sätta in lite.', 'Kan jag ta ut 200?', 'Hur mycket ränta blir det?', 'Lönen kom i dag!', 'Jag sparar till en villa.', 'Växla till euro, tack.', 'Ett kontoutdrag, tack.'];
-const TELLER_IDLE = ['Nästa, tack!', 'Varsågod!', 'Välkommen till kassan.'];
-const TELLER_BYE = ['Tack och välkommen åter!', 'Ha en fin dag!', 'Varsågod, klart!', 'Signera här, tack.'];
-const QUEUE_LINES = ['Lång kö i dag...', 'Vilken fin bank.', 'Titta, valvet är öppet!', 'Snart min tur.', 'Guldtackor! Wow.'];
-const ATM_LINES = ['Var är kortet...', 'Pip pip.', 'Tjugo kronor räcker.', 'Vad var koden nu?'];
-const GUARD_LINES = ['Allt lugnt i dag.', 'Ingen springer i banken.', 'Valvet är bara för personal.', 'Trevlig dag!', 'Kassorna är där borta.'];
+const CUST_LINES = [$t('Jag vill sätta in lite.'), $t('Kan jag ta ut 200?'), $t('Hur mycket ränta blir det?'), $t('Lönen kom i dag!'), $t('Jag sparar till en villa.'), $t('Växla till euro, tack.'), $t('Ett kontoutdrag, tack.')];
+const TELLER_IDLE = [$t('Nästa, tack!'), $t('Varsågod!'), $t('Välkommen till kassan.')];
+const TELLER_BYE = [$t('Tack och välkommen åter!'), $t('Ha en fin dag!'), $t('Varsågod, klart!'), $t('Signera här, tack.')];
+const QUEUE_LINES = [$t('Lång kö i dag...'), $t('Vilken fin bank.'), $t('Titta, valvet är öppet!'), $t('Snart min tur.'), $t('Guldtackor! Wow.')];
+const ATM_LINES = [$t('Var är kortet...'), $t('Pip pip.'), $t('Tjugo kronor räcker.'), $t('Vad var koden nu?')];
+const GUARD_LINES = [$t('Allt lugnt i dag.'), $t('Ingen springer i banken.'), $t('Valvet är bara för personal.'), $t('Trevlig dag!'), $t('Kassorna är där borta.')];
 const BROCH_LINES = [
-  () => `📄 SPARA SMART: ${pctTxt()} % ränta varje måndag på det som legat kvar hela veckan – ränta på räntan!`,
-  () => '📄 BARNSPAR: Lägg undan lite varje vecka, så växer det av sig självt.',
-  () => '📄 DRÖMRESAN: Spara till något stort. Pengar på banken är trygga.',
-  () => '📄 AUTOGIRO: Räcker inte fickan till hyran tar banken resten från sparkontot.',
+  () => $t`📄 SPARA SMART: ${pctTxt()} % ränta varje måndag på det som legat kvar hela veckan – ränta på räntan!`,
+  () => $t('📄 BARNSPAR: Lägg undan lite varje vecka, så växer det av sig självt.'),
+  () => $t('📄 DRÖMRESAN: Spara till något stort. Pengar på banken är trygga.'),
+  () => $t('📄 AUTOGIRO: Räcker inte fickan till hyran tar banken resten från sparkontot.'),
 ];
 
 // ================= ljud (egna små syntar – ljud är aldrig ett krav) =================
@@ -1269,7 +1270,7 @@ export function makeShopBank(A) {
   // personalen är på plats från öppning till en halvtimme efter stängning (de som är kvar betjänas)
   const staffIn = () => { const h = hour(); return h >= HOURS[0] && h < HOURS[1] + STAFF_GRACE; };
   const tellerHere = (i) => staffIn() || !!win[i].occ;   // den som redan står vid luckan blir klar
-  const closedTxt = () => `Kassorna har stängt – de öppnar kl. ${HOURS[0]}${hour() >= HOURS[0] ? ' i morgon' : ''}. ${ATM_24 ? 'Bankomaten fungerar dygnet runt.' : 'Bankomaten här inne tar ut pengar.'}`;
+  const closedTxt = () => `${hour() >= HOURS[0] ? $t`Kassorna har stängt – de öppnar kl. ${HOURS[0]} i morgon.` : $t`Kassorna har stängt – de öppnar kl. ${HOURS[0]}.`} ${ATM_24 ? $t('Bankomaten fungerar dygnet runt.') : $t('Bankomaten här inne tar ut pengar.')}`;
   const cam = { x: 0 };
   const camTarget = () => lockedCam ?? clamp(walker.px - VW / 2, 0, W - VW);
   cam.x = camTarget();
@@ -1333,7 +1334,7 @@ export function makeShopBank(A) {
         : [Math.random() < 0.5 ? { kind: 'browse', x: BROCH.x, y: BROCH.base + 10, dir: 'up' } : { kind: 'browse', x: PULPET.x + 6, y: PULPET.base + 9, dir: 'up' }, { kind: 'queue' }];
     n.plan.push({ kind: 'exit' });
     door.v = Math.max(door.v, 2);
-    if (Math.random() < 0.4) setTimeout(() => guardSay(pick(['Välkommen!', 'God dag!', 'Hej hej!'])), 600);
+    if (Math.random() < 0.4) setTimeout(() => guardSay(pick([$t('Välkommen!'), $t('God dag!'), $t('Hej hej!')])), 600);
     nextGoal(n);
   }
   const walkQ = (n) => { const k = Math.max(0, queue.indexOf(n)); const [x, y] = QSLOTS[Math.min(k, QSLOTS.length - 1)]; n.state = 'toQueue'; n.w.walkTo(x, y); };
@@ -1439,22 +1440,22 @@ export function makeShopBank(A) {
   }
   function goKassa(pref0 = null) {
     releaseMe(); seat = null;
-    if (!staffIn()) { hint(`🔒 ${closedTxt()}`); guardSay('Kassorna har stängt för i dag.'); return; }
+    if (!staffIn()) { hint(`🔒 ${closedTxt()}`); guardSay($t('Kassorna har stängt för i dag.')); return; }
     let i = pref0;
     if (i === null || win[i].occ) {
       const free = freeWins();
-      if (!free.length) { hint('Alla kassor är upptagna – jag väntar en stund.'); return; }
+      if (!free.length) { hint($t('Alla kassor är upptagna – jag väntar en stund.')); return; }
       i = free.sort((a, b) => Math.abs(WINS[a].cx - walker.px) - Math.abs(WINS[b].cx - walker.px))[0];
-      if (pref0 !== null) tellerSay(i, `Kassa ${i + 1} är ledig – varsågod!`, true);
+      if (pref0 !== null) tellerSay(i, $t`Kassa ${i + 1} är ledig – varsågod!`, true);
     }
     win[i].occ = 'me'; meWin = i;
     walker.walkTo(WINS[i].cx, SERVE_Y, () => { walker.dir = 'up'; atKassa(i); });
   }
   function greetLine() {
     const s = saldoOf(g), ranta = (g.bankLog || []).find((e) => e.t === 'ranta' && e.d === g.day);
-    if (ranta) return `Räntan kom i morse: +${groupNum(ranta.n)} kr!`;
-    if (s <= 0) return 'Hej! Vill du börja spara?';
-    return `Hej! Du har ${groupNum(s)} kr hos oss.`;
+    if (ranta) return $t`Räntan kom i morse: +${groupNum(ranta.n)} kr!`;
+    if (s <= 0) return $t('Hej! Vill du börja spara?');
+    return $t`Hej! Du har ${groupNum(s)} kr hos oss.`;
   }
   function atKassa(i) {
     tellers[i].mode = 'serve'; tellers[i].dir = 'down';
@@ -1470,26 +1471,26 @@ export function makeShopBank(A) {
       const ok = kr > 0 && (kind === 'in' ? kr <= m : kr <= s);
       return `<button class="btn btn-small${kind === 'in' ? ' btn-go' : ' btn-gold'}" data-${kind}="${kr}" ${ok ? '' : 'disabled'}>${label}</button>`;
     };
-    const row = (kind) => [50, 100, 500, 1000].map((kr) => btn(kind, kr, groupNum(kr))).join('') + btn(kind, kind === 'in' ? m : s, `Allt (${fmt(Math.max(0, kind === 'in' ? m : s))})`);
+    const row = (kind) => [50, 100, 500, 1000].map((kr) => btn(kind, kr, groupNum(kr))).join('') + btn(kind, kind === 'in' ? m : s, $t`Allt (${fmt(Math.max(0, kind === 'in' ? m : s))})`);
     const body = `${receipt ? `<p style="font-size:var(--f2);margin:0 0 8px;background:#e4f6e8;border:2px dashed #2a8a4a;padding:4px 8px">🧾 ${receipt}</p>` : ''}
-      <div style="display:flex;gap:8px;flex-wrap:wrap">${moneyBox('💰 På fickan', fmt(g.money), g.money < 0 ? '#ffe3e3' : '#fff')}${moneyBox('🏦 Sparkontot', fmt(s), '#eaf6ee')}</div>
-      ${g.money < 0 ? `<p class="bad" style="font-size:var(--f2);margin:6px 0 0">⚠️ Du har en skuld på ${fmt(-g.money)}. Ta ut från sparkontot så är den betald.</p>` : ''}
-      <p style="font-size:var(--f2);margin:8px 0">📈 <b>${pctTxt()} % ränta</b> varje måndag morgon på det som legat kvar hela veckan – för dig blir det <b class="ok">+${fmt(r)}</b> ${dn === 1 ? 'i morgon bitti' : `om ${dn} dagar`}.${fresh > 0 ? ` <small class="sp">(${fmt(fresh)} som du satt in i veckan ger ränta från nästa vecka.)</small>` : ''}${s > CAP() ? ` <small class="sp">(Räntan räknas på högst ${fmt(CAP())}.)</small>` : ''}</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">${moneyBox($t('💰 På fickan'), fmt(g.money), g.money < 0 ? '#ffe3e3' : '#fff')}${moneyBox($t('🏦 Sparkontot'), fmt(s), '#eaf6ee')}</div>
+      ${g.money < 0 ? `<p class="bad" style="font-size:var(--f2);margin:6px 0 0">${$t`⚠️ Du har en skuld på ${fmt(-g.money)}. Ta ut från sparkontot så är den betald.`}</p>` : ''}
+      <p style="font-size:var(--f2);margin:8px 0">${dn === 1 ? $t`📈 <b>${pctTxt()} % ränta</b> varje måndag morgon på det som legat kvar hela veckan – för dig blir det ${`<b class="ok">+${fmt(r)}</b>`} i morgon bitti.` : $t`📈 <b>${pctTxt()} % ränta</b> varje måndag morgon på det som legat kvar hela veckan – för dig blir det ${`<b class="ok">+${fmt(r)}</b>`} om ${dn} dagar.`}${fresh > 0 ? ` <small class="sp">${$t`(${fmt(fresh)} som du satt in i veckan ger ränta från nästa vecka.)`}</small>` : ''}${s > CAP() ? ` <small class="sp">${$t`(Räntan räknas på högst ${fmt(CAP())}.)`}</small>` : ''}</p>
       <div style="display:grid;grid-template-columns:auto 1fr;gap:6px 10px;align-items:center;font-size:var(--f2)">
-        <b>⬆️ Sätt in</b><span style="display:flex;gap:4px;flex-wrap:wrap">${row('in')}</span>
-        <b>⬇️ Ta ut</b><span style="display:flex;gap:4px;flex-wrap:wrap">${row('ut')}</span>
-        <b>✏️ Eget</b><span style="display:flex;gap:4px;flex-wrap:wrap;align-items:center"><input id="bank-kr" type="number" min="1" step="1" inputmode="numeric" placeholder="kr" style="width:96px;font:inherit;font-size:var(--f2);padding:2px 6px;border:2px solid var(--ink)"><button class="btn btn-small btn-go" data-own="in">Sätt in</button><button class="btn btn-small btn-gold" data-own="ut">Ta ut</button></span>
+        <b>${$t('⬆️ Sätt in')}</b><span style="display:flex;gap:4px;flex-wrap:wrap">${row('in')}</span>
+        <b>${$t('⬇️ Ta ut')}</b><span style="display:flex;gap:4px;flex-wrap:wrap">${row('ut')}</span>
+        <b>${$t('✏️ Eget')}</b><span style="display:flex;gap:4px;flex-wrap:wrap;align-items:center"><input id="bank-kr" type="number" min="1" step="1" inputmode="numeric" placeholder="kr" style="width:96px;font:inherit;font-size:var(--f2);padding:2px 6px;border:2px solid var(--ink)"><button class="btn btn-small btn-go" data-own="in">${$t('Sätt in')}</button><button class="btn btn-small btn-gold" data-own="ut">${$t('Ta ut')}</button></span>
       </div>
-      <p class="sp" style="font-size:var(--f1);margin:10px 0 0">🔒 Pengarna på banken är trygga. Hyran dras först från fickan – räcker den inte tar banken resten från sparkontot, så du slipper hamna i skuld.</p>`;
-    const el = openModal(`🏦 Kassa ${i + 1} – Pixelbanken`, body, [
-      { label: '📄 Kontoutdrag', onClick: () => openStatement(() => openKassa(i)) },
-      { label: 'Klar', cls: 'btn-go', onClick: closeModal },
+      <p class="sp" style="font-size:var(--f1);margin:10px 0 0">${$t('🔒 Pengarna på banken är trygga. Hyran dras först från fickan – räcker den inte tar banken resten från sparkontot, så du slipper hamna i skuld.')}</p>`;
+    const el = openModal($t`🏦 Kassa ${i + 1} – Pixelbanken`, body, [
+      { label: $t('📄 Kontoutdrag'), onClick: () => openStatement(() => openKassa(i)) },
+      { label: $t('Klar'), cls: 'btn-go', onClick: closeModal },
     ]);
     el.querySelectorAll('[data-in]').forEach((b) => (b.onclick = () => doTx('in', +b.dataset.in, i)));
     el.querySelectorAll('[data-ut]').forEach((b) => (b.onclick = () => doTx('ut', +b.dataset.ut, i)));
     el.querySelectorAll('[data-own]').forEach((b) => (b.onclick = () => {
       const v = Math.floor(+el.querySelector('#bank-kr')?.value || 0);
-      if (v <= 0) { play('fel'); toast('✏️ Skriv ett belopp först.', 'bad'); return; }
+      if (v <= 0) { play('fel'); toast($t('✏️ Skriv ett belopp först.'), 'bad'); return; }
       doTx(b.dataset.own, v, i);
     }));
     return el;
@@ -1503,38 +1504,38 @@ export function makeShopBank(A) {
     if (r.ok) lastTx = { key, at: now() };
     if (!r.ok) {
       play('fel'); toast(`🏦 ${r.msg}`, 'bad');
-      tellerSay(i, kind === 'in' ? 'Så mycket har du inte på fickan.' : 'Så mycket finns inte på kontot.', true);
+      tellerSay(i, kind === 'in' ? $t('Så mycket har du inte på fickan.') : $t('Så mycket finns inte på kontot.'), true);
       return r;
     }
     play('coin'); brrr();
     const T = tellers[i], wx = WINS[i].cx;
     T.mode = 'count'; T.t = 1.5; T.dir = 'down';
-    if (kind === 'in') { bills(walker.px, walker.py - 24, wx, CNT.top + 2, 3); tellerSay(i, pick([`${groupNum(r.kr)} kronor in på kontot!`, 'Tack! Pengarna är trygga här.', 'Insatt och klart!']), true); }
-    else { bills(wx, CNT.top + 2, walker.px, walker.py - 24, 3, 0.9); tellerSay(i, `Varsågod – ${groupNum(r.kr)} kronor.`, true); }
-    const rc = `${kind === 'in' ? '⬆️ Insatt' : '⬇️ Uttaget'} <b>${fmt(r.kr)}</b> · sparkontot nu <b>${fmt(saldoOf(g))}</b> · på fickan <b>${fmt(g.money)}</b>`;
+    if (kind === 'in') { bills(walker.px, walker.py - 24, wx, CNT.top + 2, 3); tellerSay(i, pick([$t`${groupNum(r.kr)} kronor in på kontot!`, $t('Tack! Pengarna är trygga här.'), $t('Insatt och klart!')]), true); }
+    else { bills(wx, CNT.top + 2, walker.px, walker.py - 24, 3, 0.9); tellerSay(i, $t`Varsågod – ${groupNum(r.kr)} kronor.`, true); }
+    const rc = kind === 'in' ? $t`⬆️ Insatt <b>${fmt(r.kr)}</b> · sparkontot nu <b>${fmt(saldoOf(g))}</b> · på fickan <b>${fmt(g.money)}</b>` : $t`⬇️ Uttaget <b>${fmt(r.kr)}</b> · sparkontot nu <b>${fmt(saldoOf(g))}</b> · på fickan <b>${fmt(g.money)}</b>`;
     if (reopen && modalOpen() && dlg?.kind === 'kassa') openKassa(i, rc);
     return r;
   }
   // ---------- kontoutdraget ----------
-  const LOG_TXT = { in: ['⬆️', 'Insättning', 1], ut: ['⬇️', 'Uttag i kassan', -1], atm: ['🏧', 'Uttag i bankomaten', -1], ranta: ['📈', 'Ränta', 1], hyra: ['🏠', 'Hyran (autogiro)', -1] };
+  const LOG_TXT = { in: ['⬆️', $t('Insättning'), 1], ut: ['⬇️', $t('Uttag i kassan'), -1], atm: ['🏧', $t('Uttag i bankomaten'), -1], ranta: ['📈', $t('Ränta'), 1], hyra: ['🏠', $t('Hyran (autogiro)'), -1] };
   function openStatement(back) {
     const log = (g.bankLog || []).slice().reverse();
     const rows = log.length ? log.map((e) => {
       const [ic, nm, sg] = LOG_TXT[e.t] || ['•', String(e.t), 1];
-      const when = `${DAY_NAMES[(Math.max(1, e.d | 0) - 1) % 7]} · dag ${e.d | 0}${e.m != null ? ' · ' + clock(e.m) : ''}`;
+      const when = `${DAY_NAMES[(Math.max(1, e.d | 0) - 1) % 7]} · ${$t`dag ${e.d | 0}`}${e.m != null ? ' · ' + clock(e.m) : ''}`;
       return `<div class="prow" style="grid-template-columns:40px 1fr auto"><span style="font-size:var(--f3);text-align:center">${ic}</span><span class="nm">${esc(nm)}<br><small class="sp">${esc(when)}</small></span><b class="${sg > 0 ? 'ok' : 'bad'}" style="font-size:var(--f2)">${sg > 0 ? '+' : '−'}${fmt(e.n)}</b></div>`;
-    }).join('') : '<p style="font-size:var(--f2)">Inga händelser än. Sätt in pengar i kassan så börjar kontot växa!</p>';
+    }).join('') : `<p style="font-size:var(--f2)">${$t('Inga händelser än. Sätt in pengar i kassan så börjar kontot växa!')}</p>`;
     const dn = daysToMonday(g);
-    openModal('📄 Kontoutdrag – Sparkonto', `<p style="font-size:var(--f2);margin-top:0">🏦 Saldo: <b>${fmt(saldoOf(g))}</b> · 📈 räntan ${dn === 1 ? 'i morgon' : 'på måndag'}: <b class="ok">+${fmt(nextInterest(g))}</b></p><div class="plist">${rows}</div>`, [
-      ...(back ? [{ label: '↩ Tillbaka', onClick: back }] : []),
-      { label: 'Stäng', cls: 'btn-go', onClick: closeModal },
+    openModal($t('📄 Kontoutdrag – Sparkonto'), `<p style="font-size:var(--f2);margin-top:0">${dn === 1 ? $t`🏦 Saldo: <b>${fmt(saldoOf(g))}</b> · 📈 räntan i morgon: ${`<b class="ok">+${fmt(nextInterest(g))}</b>`}` : $t`🏦 Saldo: <b>${fmt(saldoOf(g))}</b> · 📈 räntan på måndag: ${`<b class="ok">+${fmt(nextInterest(g))}</b>`}`}</p><div class="plist">${rows}</div>`, [
+      ...(back ? [{ label: $t('↩ Tillbaka'), onClick: back }] : []),
+      { label: $t('Stäng'), cls: 'btn-go', onClick: closeModal },
     ]);
   }
   // ---------- bankomaten ----------
   function releaseAtm() { if (atm.occ === 'me') { atm.occ = null; if (atm.mode === 'menu') atm.mode = 'idle'; } }
   function goAtm() {
     releaseMe(); seat = null;
-    if (atm.occ && atm.occ !== 'me') { pendingAtm = true; walker.walkTo(ATM_WAIT[0] - 10, ATM_WAIT[1]); hint('Någon tar ut pengar – jag väntar på min tur.'); return; }
+    if (atm.occ && atm.occ !== 'me') { pendingAtm = true; walker.walkTo(ATM_WAIT[0] - 10, ATM_WAIT[1]); hint($t('Någon tar ut pengar – jag väntar på min tur.')); return; }
     atm.occ = 'me';
     walker.walkTo(ATM_SPOT[0], ATM_SPOT[1], () => { walker.dir = 'up'; atm.mode = 'menu'; atm.t = 0; beep(); openAtm(); });
   }
@@ -1543,14 +1544,14 @@ export function makeShopBank(A) {
     const s = saldoOf(g);
     const ab = (kr, label) => `<button class="btn btn-small" data-atm="${kr}" ${kr > 0 && kr <= s ? '' : 'disabled'} style="background:#1e8a4a;color:#fff;text-shadow:1px 1px 0 #0a3a1e">${label}</button>`;
     const body = `<div style="background:#0d2a22;border:4px solid #4a5058;box-shadow:inset 0 0 0 2px #1e8a4a;color:#bfffd0;padding:10px 12px;font-size:var(--f2);line-height:1.25">
-        <div style="display:flex;justify-content:space-between"><span>SPARKONTO</span><b>${fmt(s)}</b></div>
-        <div style="display:flex;justify-content:space-between;opacity:.75"><span>PÅ FICKAN</span><span>${fmt(g.money)}</span></div>
-        ${s > 0 ? `<div style="margin-top:8px">VÄLJ BELOPP:</div>
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:6px">${[100, 200, 500, 1000, 2000].map((kr) => ab(kr, groupNum(kr) + ' kr')).join('')}${ab(s, 'ALLT')}</div>`
-          : '<div style="margin-top:8px">KONTOT ÄR TOMT.<br>SÄTT IN PENGAR I KASSAN FÖRST.</div>'}
+        <div style="display:flex;justify-content:space-between"><span>${$t('SPARKONTO')}</span><b>${fmt(s)}</b></div>
+        <div style="display:flex;justify-content:space-between;opacity:.75"><span>${$t('PÅ FICKAN')}</span><span>${fmt(g.money)}</span></div>
+        ${s > 0 ? `<div style="margin-top:8px">${$t('VÄLJ BELOPP:')}</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:6px">${[100, 200, 500, 1000, 2000].map((kr) => ab(kr, $t`${groupNum(kr)} kr`)).join('')}${ab(s, $t('ALLT'))}</div>`
+          : `<div style="margin-top:8px">${$t('KONTOT ÄR TOMT.<br>SÄTT IN PENGAR I KASSAN FÖRST.')}</div>`}
       </div>
-      <p class="sp" style="font-size:var(--f1);margin:8px 0 0">🏧 Bankomaten tar bara ut – vill du sätta in går du till kassan. Uttaget dras från sparkontot.</p>`;
-    const el = openModal('🏧 Bankomat – Pixelbanken', body, [{ label: 'Avbryt', onClick: closeModal }]);
+      <p class="sp" style="font-size:var(--f1);margin:8px 0 0">${$t('🏧 Bankomaten tar bara ut – vill du sätta in går du till kassan. Uttaget dras från sparkontot.')}</p>`;
+    const el = openModal($t('🏧 Bankomat – Pixelbanken'), body, [{ label: $t('Avbryt'), onClick: closeModal }]);
     el.querySelectorAll('[data-atm]').forEach((b) => (b.onclick = () => { hush(); closeModal(); atmWithdraw(+b.dataset.atm); }));
     return el;
   }
@@ -1558,7 +1559,7 @@ export function makeShopBank(A) {
     const r = bankDo(g, 'ut', kr, 'atm');
     if (!r.ok) { play('fel'); toast(`🏧 ${r.msg}`, 'bad'); return r; }
     beep(); atm.mode = 'count'; atm.t = 0; atm.kr = r.kr;
-    toast(`🏧 Du tog ut ${fmt(r.kr)} – på sparkontot finns ${fmt(saldoOf(g))} kvar.`, 'good');
+    toast($t`🏧 Du tog ut ${fmt(r.kr)} – på sparkontot finns ${fmt(saldoOf(g))} kvar.`, 'good');
     return r;
   }
   function updateAtm(dt) {
@@ -1566,19 +1567,19 @@ export function makeShopBank(A) {
     if (atm.mode === 'count' && atm.t > 1.0) { atm.mode = 'cash'; atm.t = 0; brrr(); }
     else if (atm.mode === 'cash' && atm.t > 1.4) {
       atm.mode = 'thanks'; atm.t = 0;
-      if (atm.occ === 'me') { bills(ATM_SPOT[0], ATM.top + 52, walker.px, walker.py - 24, 3); play('coin'); talk.say(`💵 ${groupNum(atm.kr)} kr – tack, bankomaten!`, () => ({ x: walker.px, y: walker.py - 44 }), 2.5, { voice: 'self' }); }
+      if (atm.occ === 'me') { bills(ATM_SPOT[0], ATM.top + 52, walker.px, walker.py - 24, 3); play('coin'); talk.say($t`💵 ${groupNum(atm.kr)} kr – tack, bankomaten!`, () => ({ x: walker.px, y: walker.py - 44 }), 2.5, { voice: 'self' }); }
     } else if (atm.mode === 'thanks' && atm.t > 1.6) { atm.mode = atm.occ === 'me' ? 'menu' : 'idle'; atm.t = 0; }
     else if (atm.mode === 'menu' && atm.occ !== 'me') atm.mode = 'idle';
   }
   // ---------- rådgivaren ----------
   function goAdvisor() {
     releaseMe(); releaseAtm();
-    if (!staffIn()) { hint(`💼 Rådgivaren har gått hem för i dag – hon sitter här ${HOURS[0]}–${HOURS[1]}.`); return; }
+    if (!staffIn()) { hint($t`💼 Rådgivaren har gått hem för i dag – hon sitter här ${HOURS[0]}–${HOURS[1]}.`); return; }
     const [x, b] = GUESTS[0];
     walker.walkTo(x, b + 8, () => {
       seat = { x, y: b - 4, dir: 'up', fy: b + 0.5, exit: [x, b + 8] };
       play('click');
-      advSay(saldoOf(g) > 0 ? `Välkommen! Ditt sparkonto växer med ${pctTxt()} % i veckan.` : 'Välkommen! Ska vi prata sparande?');
+      advSay(saldoOf(g) > 0 ? $t`Välkommen! Ditt sparkonto växer med ${pctTxt()} % i veckan.` : $t('Välkommen! Ska vi prata sparande?'));
       openAdvisor();
     });
   }
@@ -1586,21 +1587,21 @@ export function makeShopBank(A) {
     dlg = { kind: 'adv' };
     const s = saldoOf(g), r = nextInterest(g), dn = daysToMonday(g), fresh = s - minOf(g);
     const amounts = [...new Set([s > 0 ? s : null, 500, 1000, 5000].filter(Boolean))].slice(0, 4);
-    const rows = amounts.map((kr) => `<tr style="border-top:2px dashed #c8bca8"><td style="padding:3px 4px"><b>${fmt(kr)}</b>${kr === s ? ' <small class="sp">(ditt)</small>' : ''}</td><td>${fmt(growOf(kr, 1))}</td><td>${fmt(growOf(kr, 4))}</td><td class="ok"><b>${fmt(growOf(kr, 10))}</b></td></tr>`).join('');
-    const name = esc(A.avatar?.name || 'du');
-    const body = `<p style="font-size:var(--f2);margin-top:0">"Hej ${name}! Ett sparkonto hos oss ger <b>${pctTxt()} % ränta varje vecka</b> på det som legat kvar hela veckan, måndag till måndag. Räntan sätts in varje måndag morgon – och veckan därpå får du ränta på räntan!"</p>
+    const rows = amounts.map((kr) => `<tr style="border-top:2px dashed #c8bca8"><td style="padding:3px 4px"><b>${fmt(kr)}</b>${kr === s ? ` <small class="sp">${$t('(ditt)')}</small>` : ''}</td><td>${fmt(growOf(kr, 1))}</td><td>${fmt(growOf(kr, 4))}</td><td class="ok"><b>${fmt(growOf(kr, 10))}</b></td></tr>`).join('');
+    const name = esc(A.avatar?.name || $t('du'));
+    const body = `<p style="font-size:var(--f2);margin-top:0">${$t`"Hej ${name}! Ett sparkonto hos oss ger <b>${pctTxt()} % ränta varje vecka</b> på det som legat kvar hela veckan, måndag till måndag. Räntan sätts in varje måndag morgon – och veckan därpå får du ränta på räntan!"`}</p>
       <div style="background:#fff;border:2px solid var(--ink);padding:6px 10px;font-size:var(--f2)">
-        <div style="display:flex;justify-content:space-between"><span>🏦 Ditt saldo</span><b>${fmt(s)}</b></div>
-        <div style="display:flex;justify-content:space-between"><span>📈 Ränta ${dn === 1 ? 'i morgon' : `om ${dn} dagar`}</span><b class="ok">+${fmt(r)}</b></div>
-        ${fresh > 0 ? `<div style="font-size:var(--f1)" class="sp">${fmt(fresh)} har du satt in i veckan – de ger ränta från nästa vecka.</div>` : ''}
+        <div style="display:flex;justify-content:space-between"><span>${$t('🏦 Ditt saldo')}</span><b>${fmt(s)}</b></div>
+        <div style="display:flex;justify-content:space-between"><span>${dn === 1 ? $t('📈 Ränta i morgon') : $t`📈 Ränta om ${dn} dagar`}</span><b class="ok">+${fmt(r)}</b></div>
+        ${fresh > 0 ? `<div style="font-size:var(--f1)" class="sp">${$t`${fmt(fresh)} har du satt in i veckan – de ger ränta från nästa vecka.`}</div>` : ''}
       </div>
-      <p style="font-size:var(--f2);margin:10px 0 4px"><b>🧮 Räntekalkyl</b> – hela veckor, om pengarna får ligga kvar:</p>
-      <table style="width:100%;font-size:var(--f2);border-collapse:collapse;text-align:left"><tr><th>Insatt</th><th>1 vecka</th><th>4 veckor</th><th>10 veckor</th></tr>${rows}</table>
-      <p class="sp" style="font-size:var(--f1);margin:10px 0 0">🔒 Tryggt: pengarna på banken rörs bara av hyran, och bara när fickan inte räcker (autogiro). Räntan räknas på högst ${fmt(CAP())}. ${ATM_24 ? 'Bankomaten tar ut dygnet runt.' : 'I bankomaten tar du ut utan att köa.'}</p>`;
-    return openModal('💼 Rådgivaren – Sparkonto', body, [
-      { label: '📄 Kontoutdrag', onClick: () => openStatement(() => openAdvisor()) },
-      { label: '🏦 Till kassan', onClick: () => { closeModal(); if (seat) { [walker.px, walker.py] = seat.exit; seat = null; } goKassa(null); } },
-      { label: 'Tack!', cls: 'btn-go', onClick: closeModal },
+      <p style="font-size:var(--f2);margin:10px 0 4px">${$t('<b>🧮 Räntekalkyl</b> – hela veckor, om pengarna får ligga kvar:')}</p>
+      <table style="width:100%;font-size:var(--f2);border-collapse:collapse;text-align:left"><tr><th>${$t('Insatt')}</th><th>${$t('1 vecka')}</th><th>${$t('4 veckor')}</th><th>${$t('10 veckor')}</th></tr>${rows}</table>
+      <p class="sp" style="font-size:var(--f1);margin:10px 0 0">${$t`🔒 Tryggt: pengarna på banken rörs bara av hyran, och bara när fickan inte räcker (autogiro). Räntan räknas på högst ${fmt(CAP())}.`} ${ATM_24 ? $t('Bankomaten tar ut dygnet runt.') : $t('I bankomaten tar du ut utan att köa.')}</p>`;
+    return openModal($t('💼 Rådgivaren – Sparkonto'), body, [
+      { label: $t('📄 Kontoutdrag'), onClick: () => openStatement(() => openAdvisor()) },
+      { label: $t('🏦 Till kassan'), onClick: () => { closeModal(); if (seat) { [walker.px, walker.py] = seat.exit; seat = null; } goKassa(null); } },
+      { label: $t('Tack!'), cls: 'btn-go', onClick: closeModal },
     ]);
   }
   // ---------- bänken och ut ----------
@@ -1613,38 +1614,38 @@ export function makeShopBank(A) {
 
   // ---------- klickbara platser (världskoordinater) ----------
   const spots = [
-    { id: 'dorr', r: [DOOR.x0 - 3, DOOR.top - 10, DOOR.x1 + 3, WALL_Y + 10], go: [DOOR_X, WALL_Y + 6], face: 'up', key: true, label: 'UTGÅNG', hint: 'TILLBAKA UT PÅ GATAN', act: leave },
-    ...WINS.map((Wn) => ({ id: 'kassa' + Wn.i, win: Wn.i, key: true, r: [Wn.x0 + 4, GLASS_TOP - 2, Wn.x1 - 4, CNT.base], label: `KASSA ${Wn.i + 1}`, act: () => goKassa(Wn.i) })),
-    { id: 'bankomat', key: true, r: [ATM.x0 - 3, ATM.top - 11, ATM.x1 + 3, WALL_Y + 4], label: 'BANKOMAT', act: goAtm },
-    { id: 'radgivare', key: true, r: [DESK.x0, WALL_Y - 14, DESK.x1, DESK.base], label: 'RÅDGIVAREN', act: goAdvisor },
-    { id: 'valv', r: [VAULT.cx - 28, VAULT.cy - 28, VAULT.cx + 45, VAULT.cy + 23], label: 'VALVET', hint: 'BARA FÖR PERSONAL',
-      act: () => { hint(`🔒 Valvet! Guldtackor, säckar och bankfack – och någonstans därinne mina ${groupNum(saldoOf(g))} kr.`); tellerSay(1, 'Valvet är bara för personal!', true); } },
-    { id: 'rantetavla', r: [BOARD_L.x0, BOARD_L.y0, BOARD_L.x1, BOARD_L.y1], label: 'SPARRÄNTAN', hint: `${pctTxt()} % VARJE MÅNDAG`,
-      act: () => hint(`📈 ${pctTxt()} % ränta i veckan på det som legat kvar hela veckan. Jag får +${groupNum(nextInterest(g))} kr på måndag.`) },
-    { id: 'valuta', r: [BOARD_R.x0, BOARD_R.y0, BOARD_R.x1, BOARD_R.y1], label: 'VALUTA', hint: 'EURO, DOLLAR, PUND OCH YEN',
-      act: () => hint('💱 En euro kostar elva och femtio. Ett yen kostar nästan ingenting!') },
-    { id: 'borsen', r: [BORS.x0, BORS.y0, BORS.x1, TICK.y1], label: 'BÖRSEN', hint: 'KURSERNA TICKAR',
-      act: () => hint(`📊 ${stocks[0].n} ${stocks[0].d >= 0 ? 'upp' : 'ner'} ${String(Math.abs(stocks[0].d).toFixed(1)).replace('.', ',')} %. Ingen aning vad det betyder, men pilarna blinkar.`) },
-    { id: 'portratt', r: [PORTRAIT.x0, PORTRAIT.y0, PORTRAIT.x1, PORTRAIT.y1 + 8], label: 'GRUNDAREN', hint: 'GUSTAF PIXEL 1887',
-      act: () => hint('🎩 Gustaf Pixel startade banken 1887. Han har monokel och mustasch – och ser lite sträng ut.') },
-    { id: 'klocka', r: [CLOCK.x - 10, CLOCK.y - 10, CLOCK.x + 10, CLOCK.y + 10], label: 'KLOCKAN', hint: `ÖPPET ${HOURS[0]}-${HOURS[1]}`,
-      act: () => hint(`🕒 Klockan är ${clock(g.min)}. Banken har öppet ${HOURS[0]}–${HOURS[1]}${ATM_24 ? ' – bankomaten dygnet runt' : ''}.`) },
-    { id: 'vakt', r: [GUARD.x - 9, GUARD.y - 40, GUARD.x + 9, GUARD.y + 1], go: [GUARD.x, GUARD.y + 12], face: 'up', label: 'VÄKTAREN', hint: 'HÅLLER KOLL PÅ BANKEN',
+    { id: 'dorr', r: [DOOR.x0 - 3, DOOR.top - 10, DOOR.x1 + 3, WALL_Y + 10], go: [DOOR_X, WALL_Y + 6], face: 'up', key: true, label: $t('UTGÅNG'), hint: $t('TILLBAKA UT PÅ GATAN'), act: leave },
+    ...WINS.map((Wn) => ({ id: 'kassa' + Wn.i, win: Wn.i, key: true, r: [Wn.x0 + 4, GLASS_TOP - 2, Wn.x1 - 4, CNT.base], label: $t`KASSA ${Wn.i + 1}`, act: () => goKassa(Wn.i) })),
+    { id: 'bankomat', key: true, r: [ATM.x0 - 3, ATM.top - 11, ATM.x1 + 3, WALL_Y + 4], label: $t('BANKOMAT'), act: goAtm },
+    { id: 'radgivare', key: true, r: [DESK.x0, WALL_Y - 14, DESK.x1, DESK.base], label: $t('RÅDGIVAREN'), act: goAdvisor },
+    { id: 'valv', r: [VAULT.cx - 28, VAULT.cy - 28, VAULT.cx + 45, VAULT.cy + 23], label: $t('VALVET'), hint: $t('BARA FÖR PERSONAL'),
+      act: () => { hint($t`🔒 Valvet! Guldtackor, säckar och bankfack – och någonstans därinne mina ${groupNum(saldoOf(g))} kr.`); tellerSay(1, $t('Valvet är bara för personal!'), true); } },
+    { id: 'rantetavla', r: [BOARD_L.x0, BOARD_L.y0, BOARD_L.x1, BOARD_L.y1], label: $t('SPARRÄNTAN'), hint: $t`${pctTxt()} % VARJE MÅNDAG`,
+      act: () => hint($t`📈 ${pctTxt()} % ränta i veckan på det som legat kvar hela veckan. Jag får +${groupNum(nextInterest(g))} kr på måndag.`) },
+    { id: 'valuta', r: [BOARD_R.x0, BOARD_R.y0, BOARD_R.x1, BOARD_R.y1], label: $t('VALUTA'), hint: $t('EURO, DOLLAR, PUND OCH YEN'),
+      act: () => hint($t('💱 En euro kostar elva och femtio. Ett yen kostar nästan ingenting!')) },
+    { id: 'borsen', r: [BORS.x0, BORS.y0, BORS.x1, TICK.y1], label: $t('BÖRSEN'), hint: $t('KURSERNA TICKAR'),
+      act: () => hint(stocks[0].d >= 0 ? $t`📊 ${stocks[0].n} upp ${String(Math.abs(stocks[0].d).toFixed(1)).replace('.', ',')} %. Ingen aning vad det betyder, men pilarna blinkar.` : $t`📊 ${stocks[0].n} ner ${String(Math.abs(stocks[0].d).toFixed(1)).replace('.', ',')} %. Ingen aning vad det betyder, men pilarna blinkar.`) },
+    { id: 'portratt', r: [PORTRAIT.x0, PORTRAIT.y0, PORTRAIT.x1, PORTRAIT.y1 + 8], label: $t('GRUNDAREN'), hint: $t('GUSTAF PIXEL 1887'),
+      act: () => hint($t('🎩 Gustaf Pixel startade banken 1887. Han har monokel och mustasch – och ser lite sträng ut.')) },
+    { id: 'klocka', r: [CLOCK.x - 10, CLOCK.y - 10, CLOCK.x + 10, CLOCK.y + 10], label: $t('KLOCKAN'), hint: $t`ÖPPET ${HOURS[0]}-${HOURS[1]}`,
+      act: () => hint(ATM_24 ? $t`🕒 Klockan är ${clock(g.min)}. Banken har öppet ${HOURS[0]}–${HOURS[1]} – bankomaten dygnet runt.` : $t`🕒 Klockan är ${clock(g.min)}. Banken har öppet ${HOURS[0]}–${HOURS[1]}.`) },
+    { id: 'vakt', r: [GUARD.x - 9, GUARD.y - 40, GUARD.x + 9, GUARD.y + 1], go: [GUARD.x, GUARD.y + 12], face: 'up', label: $t('VÄKTAREN'), hint: $t('HÅLLER KOLL PÅ BANKEN'),
       act: () => { guard.dir = 'down'; guardSay(pick(GUARD_LINES)); } },
-    { id: 'pulpet', r: [PULPET.x - 27, PULPET.base - 30, PULPET.x + 27, PULPET.base], go: [PULPET.x, PULPET.base + 9], face: 'up', label: 'SKRIVPULPETEN', hint: 'BLANKETTER OCH PENNOR',
-      act: () => hint('🖊️ Blanketter för insättning och uttag. Pennorna sitter fast i kedjor – ingen tar hem en bankpenna.') },
-    { id: 'banken', r: [BENCH.x - 33, BENCH.base - 16, BENCH.x + 33, BENCH.base + 1], label: 'BÄNKEN', hint: 'SITT OCH VILA EN STUND', act: null },
-    { id: 'spargris', r: [PIG.x - 13, PIG.base - 30, PIG.x + 13, PIG.base], go: [PIG.x + 20, PIG.base - 2], face: 'left', label: 'SPARGRISEN', hint: 'BARNSPAR',
-      act: () => { pigT = t; oink(); for (let k = 0; k < 3; k++) bills(walker.px - 6, walker.py - 22, PIG.x, PIG.base - 28, 1, k * 0.18, 'coin'); setTimeout(() => play('coin'), 450); hint('🐷 Oink! Spargrisen säger: lite i taget blir mycket till slut.'); } },
-    { id: 'broschyrer', r: [BROCH.x - 12, BROCH.base - 42, BROCH.x + 12, BROCH.base], go: [BROCH.x, BROCH.base + 10], face: 'up', label: 'BROSCHYRER', hint: 'TA EN!',
+    { id: 'pulpet', r: [PULPET.x - 27, PULPET.base - 30, PULPET.x + 27, PULPET.base], go: [PULPET.x, PULPET.base + 9], face: 'up', label: $t('SKRIVPULPETEN'), hint: $t('BLANKETTER OCH PENNOR'),
+      act: () => hint($t('🖊️ Blanketter för insättning och uttag. Pennorna sitter fast i kedjor – ingen tar hem en bankpenna.')) },
+    { id: 'banken', r: [BENCH.x - 33, BENCH.base - 16, BENCH.x + 33, BENCH.base + 1], label: $t('BÄNKEN'), hint: $t('SITT OCH VILA EN STUND'), act: null },
+    { id: 'spargris', r: [PIG.x - 13, PIG.base - 30, PIG.x + 13, PIG.base], go: [PIG.x + 20, PIG.base - 2], face: 'left', label: $t('SPARGRISEN'), hint: $t('BARNSPAR'),
+      act: () => { pigT = t; oink(); for (let k = 0; k < 3; k++) bills(walker.px - 6, walker.py - 22, PIG.x, PIG.base - 28, 1, k * 0.18, 'coin'); setTimeout(() => play('coin'), 450); hint($t('🐷 Oink! Spargrisen säger: lite i taget blir mycket till slut.')); } },
+    { id: 'broschyrer', r: [BROCH.x - 12, BROCH.base - 42, BROCH.x + 12, BROCH.base], go: [BROCH.x, BROCH.base + 10], face: 'up', label: $t('BROSCHYRER'), hint: $t('TA EN!'),
       act: () => { hint(BROCH_LINES[brochK++ % BROCH_LINES.length]()); } },
-    { id: 'nasta', r: [NEXT.x - 18, NEXT.base - 32, NEXT.x + 18, NEXT.base], label: 'NÄSTA KUND', hint: 'VISAR VILKEN KASSA SOM ÄR LEDIG',
-      act: () => { const f = freeWins(); hint(!staffIn() ? `🔔 ${closedTxt()}` : f.length ? `🔔 Kassa ${f[0] + 1} är ledig – jag behöver inte köa.` : '🔔 Alla kassor är upptagna just nu.'); } },
-    { id: 'kon', r: [POSTS[0] - 4, ROPES[0] - 18, POSTS[5] + 4, ROPES[1] + 2], label: 'KÖN', hint: 'KUNDERNA VÄNTAR HÄR',
-      act: () => hint('🎗️ Kön är för kunderna – jag kan gå direkt till en ledig kassa.') },
-    ...[WIN_A, WIN_B].map((Wn, k) => ({ id: 'fonster' + k, r: [Wn.x0 - 3, Wn.top - 8, Wn.x1 + 3, Wn.bot + 3], label: 'FÖNSTRET', hint: 'FINANSKVARTERET',
-      act: () => hint(k ? '🏙️ Glasskyskrapor ända upp i himlen. Finanskvarteret!' : '🏙️ Höga hus överallt – och där borta ett gammalt stenhus mitt emellan.') })),
-    ...[PALM_L, PALM_R].map((p, k) => ({ id: 'palm' + k, r: [p.x - 14, p.base - 56, p.x + 14, p.base], label: 'PALMEN', hint: 'I EN URNA AV MÄSSING', act: () => hint('🌴 En palm i en mässingsurna. Någon putsar den varje morgon.') })),
+    { id: 'nasta', r: [NEXT.x - 18, NEXT.base - 32, NEXT.x + 18, NEXT.base], label: $t('NÄSTA KUND'), hint: $t('VISAR VILKEN KASSA SOM ÄR LEDIG'),
+      act: () => { const f = freeWins(); hint(!staffIn() ? `🔔 ${closedTxt()}` : f.length ? $t`🔔 Kassa ${f[0] + 1} är ledig – jag behöver inte köa.` : $t('🔔 Alla kassor är upptagna just nu.')); } },
+    { id: 'kon', r: [POSTS[0] - 4, ROPES[0] - 18, POSTS[5] + 4, ROPES[1] + 2], label: $t('KÖN'), hint: $t('KUNDERNA VÄNTAR HÄR'),
+      act: () => hint($t('🎗️ Kön är för kunderna – jag kan gå direkt till en ledig kassa.')) },
+    ...[WIN_A, WIN_B].map((Wn, k) => ({ id: 'fonster' + k, r: [Wn.x0 - 3, Wn.top - 8, Wn.x1 + 3, Wn.bot + 3], label: $t('FÖNSTRET'), hint: $t('FINANSKVARTERET'),
+      act: () => hint(k ? $t('🏙️ Glasskyskrapor ända upp i himlen. Finanskvarteret!') : $t('🏙️ Höga hus överallt – och där borta ett gammalt stenhus mitt emellan.')) })),
+    ...[PALM_L, PALM_R].map((p, k) => ({ id: 'palm' + k, r: [p.x - 14, p.base - 56, p.x + 14, p.base], label: $t('PALMEN'), hint: $t('I EN URNA AV MÄSSING'), act: () => hint($t('🌴 En palm i en mässingsurna. Någon putsar den varje morgon.')) })),
   ];
   let brochK = 0;
   spots.find((s) => s.id === 'banken').act = () => sitBench(walker.px);
@@ -1665,7 +1666,7 @@ export function makeShopBank(A) {
   }
 
   // ---------- det som lever ----------
-  const stocks = [{ n: 'PIXEL', v: 128.4 }, { n: 'SNABB', v: 54.2 }, { n: 'BURGR', v: 77.9 }, { n: 'MÖBEL', v: 212.5 }].map((s) => ({ ...s, d: 0 }));
+  const stocks = [{ n: $t('PIXEL'), v: 128.4 }, { n: $t('SNABB'), v: 54.2 }, { n: $t('BURGR'), v: 77.9 }, { n: $t('MÖBEL'), v: 212.5 }].map((s) => ({ ...s, d: 0 }));
   let stockT = 0;
   function tickStocks() {
     for (const s of stocks) { const d = (Math.random() - 0.46) * 2.4; s.v = Math.max(1, s.v * (1 + d / 100)); s.d = d; }
@@ -1718,11 +1719,11 @@ export function makeShopBank(A) {
     ctx.fillStyle = '#0e3a2a'; ctx.fillRect(x, y, w, h);
     ctx.fillStyle = 'rgba(120,255,170,.08)'; ctx.fillRect(x, y + (Math.floor(t * 20) % h), w, 1);
     const line = (s, yy, c = '#9affc0') => ctxText(ctx, SM, s, Math.round(cx - textW(SM, s) / 2), yy, c);
-    if (atm.mode === 'idle') { line('HEJ!', y + 2); if (Math.floor(t * 1.5) % 2) line('UTTAG', y + 9, '#ffffff'); }
-    else if (atm.mode === 'menu') { line('VÄLJ', y + 2); line('SUMMA', y + 9, '#ffffff'); }
-    else if (atm.mode === 'pin') { line('KOD', y + 2); const n = Math.min(4, Math.floor(atm.t * 3)); for (let k = 0; k < 4; k++) { ctx.fillStyle = k < n ? '#ffffff' : '#2a6a4a'; ctx.fillRect(Math.round(cx) - 7 + k * 4, y + 10, 2, 2); } }
-    else if (atm.mode === 'count') { line('RÄKNAR', y + 2); const k = Math.floor(atm.t * 8) % 4; ctx.fillStyle = '#ffffff'; for (let i = 0; i <= k; i++) ctx.fillRect(Math.round(cx) - 5 + i * 3, y + 10, 2, 2); }
-    else { line('TACK!', y + 5, '#ffffff'); }
+    if (atm.mode === 'idle') { line($t('HEJ!'), y + 2); if (Math.floor(t * 1.5) % 2) line($t('UTTAG'), y + 9, '#ffffff'); }
+    else if (atm.mode === 'menu') { line($t('VÄLJ'), y + 2); line($t('SUMMA'), y + 9, '#ffffff'); }
+    else if (atm.mode === 'pin') { line($t('KOD'), y + 2); const n = Math.min(4, Math.floor(atm.t * 3)); for (let k = 0; k < 4; k++) { ctx.fillStyle = k < n ? '#ffffff' : '#2a6a4a'; ctx.fillRect(Math.round(cx) - 7 + k * 4, y + 10, 2, 2); } }
+    else if (atm.mode === 'count') { line($t('RÄKNAR'), y + 2); const k = Math.floor(atm.t * 8) % 4; ctx.fillStyle = '#ffffff'; for (let i = 0; i <= k; i++) ctx.fillRect(Math.round(cx) - 5 + i * 3, y + 10, 2, 2); }
+    else { line($t('TACK!'), y + 5, '#ffffff'); }
     // kortläsarens lampa och sedlarna som sticker ut ur luckan
     ctx.fillStyle = atm.mode === 'idle' ? (Math.floor(t * 2) % 2 ? '#40e070' : '#1a6a3a') : '#40e070'; ctx.fillRect(ATM.x1 - 5, ATM.top + 38, 2, 1);
     if (atm.mode === 'cash') {
@@ -1742,7 +1743,7 @@ export function makeShopBank(A) {
       else { ctx.fillRect(x1 - 7, y + 1, 5, 1); ctx.fillRect(x1 - 6, y + 2, 3, 1); ctx.fillRect(x1 - 5, y + 3, 1, 1); }
     });
     // löpremsan
-    const T = TICK, msg = `PIXELBANKEN · SPARKONTO ${pctTxt()} % I VECKAN · ` + stocks.map((s) => `${s.n} ${s.d >= 0 ? '+' : '-'}${Math.abs(s.d).toFixed(1).replace('.', ',')} %`).join(' · ') + ' · ';
+    const T = TICK, msg = $t`PIXELBANKEN · SPARKONTO ${pctTxt()} % I VECKAN` + ' · ' + stocks.map((s) => `${s.n} ${s.d >= 0 ? '+' : '-'}${Math.abs(s.d).toFixed(1).replace('.', ',')} %`).join(' · ') + ' · ';
     const mw = textW(SM, msg) + 2, off = Math.floor(t * 16) % mw;
     ctx.save(); ctx.beginPath(); ctx.rect(T.x0 + 2, T.y0 + 2, T.x1 - T.x0 - 4, T.y1 - T.y0 - 4); ctx.clip();
     for (let k = 0; k < 2; k++) ctxText(ctx, SM, msg, T.x0 + 3 - off + k * mw, T.y0 + 2, '#ff9a3a');
@@ -1770,7 +1771,7 @@ export function makeShopBank(A) {
       const [lx, ly] = lampOf(Wn);
       if (!tellerHere(Wn.i)) {                     // stängt: släckt lampa och en STÄNGT-skylt i glaset
         ctx.fillStyle = '#4a1612'; ctx.fillRect(lx - 1, ly, 2, 2);
-        const s = 'STÄNGT', tw = textW(SM, s), x0 = Wn.cx - Math.round((tw + 6) / 2), y0 = GLASS_TOP + 19;
+        const s = $t('STÄNGT'), tw = textW(SM, s), x0 = Wn.cx - Math.round((tw + 6) / 2), y0 = GLASS_TOP + 19;
         ctx.fillStyle = 'rgba(126,90,26,.9)'; ctx.fillRect(x0 + 2, GLASS_TOP + 7, 1, y0 - GLASS_TOP - 7); ctx.fillRect(x0 + tw + 3, GLASS_TOP + 7, 1, y0 - GLASS_TOP - 7); // snörena
         ctx.fillStyle = '#2a0a10'; ctx.fillRect(x0 - 1, y0 - 1, tw + 8, 11);
         ctx.fillStyle = '#9a2032'; ctx.fillRect(x0, y0, tw + 6, 9); ctx.fillStyle = '#c83a4c'; ctx.fillRect(x0, y0, tw + 6, 1);
@@ -1785,7 +1786,7 @@ export function makeShopBank(A) {
   function drawNext(ctx) {
     const x0 = NEXT.x - 18 + 3, y0 = NEXT.base - 31 + 2;
     const fresh = nextWin !== null && t - nextT < 8;
-    const l1 = 'NÄSTA', l2 = fresh ? `KASSA ${nextWin + 1}` : 'KUND';
+    const l1 = $t('NÄSTA'), l2 = fresh ? $t`KASSA ${nextWin + 1}` : $t('KUND');
     const blink = fresh && t - nextT < 3 && Math.floor(t * 4) % 2 === 0;
     ctxText(ctx, SM, l1, x0 + Math.round((30 - textW(SM, l1)) / 2), y0 + 1, '#ff5a3a');
     ctxText(ctx, SM, l2, x0 + Math.round((30 - textW(SM, l2)) / 2), y0 + 7, blink ? '#ffffff' : '#ffb03a');
@@ -1880,7 +1881,7 @@ export function makeShopBank(A) {
   function drawPanel(ctx) {
     const s = saldoOf(g), r = nextInterest(g), dn = daysToMonday(g), sy = safe().y0 | 0;
     const big = { w: PW, h: PH, y0: 3 + sy };
-    const miniTxt = [`${groupNum(s)} KR`, `+${groupNum(r)}`];
+    const miniTxt = [$t`${groupNum(s)} KR`, `+${groupNum(r)}`];
     const mini = { w: 12 + textW(SM, miniTxt[0]) + 5 + textW(SM, miniTxt[1]) + 3, h: 8, y0: 2 + sy };
     const best = (P) => { const xl = 4, xr = VW - 4 - P.w, cl = panelCost(xl, P.y0, P.w, P.h), cr = panelCost(xr, P.y0, P.w, P.h); return { xl, xr, cl, cr, min: Math.min(cl, cr) }; };
     const B = best(big);
@@ -1905,22 +1906,22 @@ export function makeShopBank(A) {
     // en liten valvdörr som ikon
     ctx.fillStyle = '#767e88'; ctx.fillRect(x0 + 3, y0 + 3, 9, 9); ctx.fillStyle = '#dae0e6'; ctx.fillRect(x0 + 3, y0 + 3, 9, 1); ctx.fillRect(x0 + 3, y0 + 3, 1, 9);
     ctx.fillStyle = '#2a2e34'; ctx.fillRect(x0 + 5, y0 + 5, 5, 5); ctx.fillStyle = '#e0b850'; ctx.fillRect(x0 + 7, y0 + 5, 1, 5); ctx.fillRect(x0 + 5, y0 + 7, 5, 1);
-    ctxText(ctx, SM, 'SPARKONTO', x0 + 15, y0 + 2, '#f0d070');
-    let amt = `${groupNum(s)} KR`;
+    ctxText(ctx, SM, $t('SPARKONTO'), x0 + 15, y0 + 2, '#f0d070');
+    let amt = $t`${groupNum(s)} KR`;
     if (textW(BIG, amt) > w - 8) amt = groupNum(s);                    // stora belopp: utan KR
-    if (textW(BIG, amt) > w - 8) ctxText(ctx, SM, `${groupNum(s)} KR`, x0 + w - 4 - textW(SM, `${groupNum(s)} KR`), y0 + 11, '#ffffff');
+    if (textW(BIG, amt) > w - 8) ctxText(ctx, SM, $t`${groupNum(s)} KR`, x0 + w - 4 - textW(SM, $t`${groupNum(s)} KR`), y0 + 11, '#ffffff');
     else ctxText(ctx, BIG, amt, x0 + w - 4 - textW(BIG, amt), y0 + 9, '#ffffff');
-    const lbl = dn === 1 ? `I MORGON +${groupNum(r)}` : `MÅNDAG +${groupNum(r)} KR`;
+    const lbl = dn === 1 ? $t`I MORGON +${groupNum(r)}` : $t`MÅNDAG +${groupNum(r)} KR`;
     ctxText(ctx, SM, lbl, x0 + 4, y0 + 19, '#8ae8a8');
   }
   function bigLabel(ctx, s, atTop) {
     let name = s.label, val = '', valCol = '#f0d070', hintTxt = s.hint || '';
     if (s.win !== undefined) {
       const o = win[s.win].occ;
-      val = o === 'me' ? 'DIN TUR' : o ? 'UPPTAGEN' : 'LEDIG'; valCol = o && o !== 'me' ? '#ff8a80' : '#8ae8a8';
-      hintTxt = o && o !== 'me' ? 'KLICKA SÅ GÅR DU TILL EN LEDIG KASSA' : 'SÄTT IN ELLER TA UT PENGAR';
-    } else if (s.id === 'bankomat') { val = `${groupNum(saldoOf(g))} KR`; hintTxt = 'TA UT PENGAR FRÅN SPARKONTOT'; }
-    else if (s.id === 'radgivare') { val = `${pctTxt()} %`; hintTxt = 'RÄNTAN, RÄNTEKALKYLEN OCH KONTOUTDRAGET'; }
+      val = o === 'me' ? $t('DIN TUR') : o ? $t('UPPTAGEN') : $t('LEDIG'); valCol = o && o !== 'me' ? '#ff8a80' : '#8ae8a8';
+      hintTxt = o && o !== 'me' ? $t('KLICKA SÅ GÅR DU TILL EN LEDIG KASSA') : $t('SÄTT IN ELLER TA UT PENGAR');
+    } else if (s.id === 'bankomat') { val = $t`${groupNum(saldoOf(g))} KR`; hintTxt = $t('TA UT PENGAR FRÅN SPARKONTOT'); }
+    else if (s.id === 'radgivare') { val = `${pctTxt()} %`; hintTxt = $t('RÄNTAN, RÄNTEKALKYLEN OCH KONTOUTDRAGET'); }
     const nw = textW(BIG, name), vw2 = val ? textW(BIG, val) : 0, hw = textW(SMALL, hintTxt);
     const w = Math.max(nw + (val ? vw2 + 10 : 0), hw) + 14, h = hintTxt ? 22 : 13;
     const S = safe(), x0 = Math.round((VW - w) / 2), y0 = atTop ? 3 + (S.y0 | 0) : Math.min(H, S.y1 || H) - h - 3;
@@ -1998,7 +1999,7 @@ export function makeShopBank(A) {
       walker.update(dt);
       if (pendingHello > 0) {
         pendingHello -= dt;
-        if (pendingHello <= 0) guardSay(isOpen() ? 'Välkommen till Pixelbanken!' : staffIn() ? 'Vi har stängt – men kassorna tar de sista kunderna!' : hour() < HOURS[0] ? `God morgon! Kassorna öppnar kl. ${HOURS[0]}.` : 'Kassorna har stängt – bankomaten tar ut pengar.');
+        if (pendingHello <= 0) guardSay(isOpen() ? $t('Välkommen till Pixelbanken!') : staffIn() ? $t('Vi har stängt – men kassorna tar de sista kunderna!') : hour() < HOURS[0] ? $t`God morgon! Kassorna öppnar kl. ${HOURS[0]}.` : $t('Kassorna har stängt – bankomaten tar ut pengar.'));
       }
       // karusselldörren snurrar när någon går igenom
       const nearDoor = [walker, ...npcs.filter((n) => n.state !== 'away').map((n) => n.w)].some((w) => Math.abs(w.px - DOOR_X) < 24 && w.py < WALL_Y + 20 && w.path.length);
@@ -2007,7 +2008,7 @@ export function makeShopBank(A) {
       // väktaren vänder sig ibland, hälsar när man kommer nära
       guard.t -= dt;
       if (guard.t <= 0) { guard.dir = pick(['down', 'down', 'left', 'right']); guard.t = 3 + Math.random() * 4; }
-      if (!greetedGuard && Math.hypot(walker.px - GUARD.x, walker.py - GUARD.y) < 34) { greetedGuard = true; guard.dir = walker.px < GUARD.x ? 'left' : 'down'; guardSay('Kassorna är där borta – bankomaten längst in.'); }
+      if (!greetedGuard && Math.hypot(walker.px - GUARD.x, walker.py - GUARD.y) < 34) { greetedGuard = true; guard.dir = walker.px < GUARD.x ? 'left' : 'down'; guardSay($t('Kassorna är där borta – bankomaten längst in.')); }
       // rådgivaren skriver på datorn när ingen sitter hos henne
       adv.t -= dt;
       if (adv.t <= 0) { adv.mode = Math.random() < 0.6 ? 'type' : 'idle'; adv.dir = adv.mode === 'type' ? 'right' : 'down'; adv.t = 3 + Math.random() * 4; }
@@ -2024,14 +2025,14 @@ export function makeShopBank(A) {
       // dialogen stängd: personalen säger hej då (och klicket efter stängningen går inte ner i hallen)
       if (dlg && !modalOpen()) {
         hush(300);
-        if (dlg.kind === 'kassa') tellerSay(dlg.win, pick(['Tack och välkommen åter!', 'Ha en fin dag!', 'Hej då!']), true);
-        else if (dlg.kind === 'adv') advSay('Spara lite varje vecka, så växer det!');
+        if (dlg.kind === 'kassa') tellerSay(dlg.win, pick([$t('Tack och välkommen åter!'), $t('Ha en fin dag!'), $t('Hej då!')]), true);
+        else if (dlg.kind === 'adv') advSay($t('Spara lite varje vecka, så växer det!'));
         dlg = null;
       }
       // stängningsdags medan man är här inne: väktaren säger till, och en halvtimme senare går personalen hem
       const o = isOpen(), sIn = staffIn();
-      if (wasOpen === true && !o) guardSay('Nu stänger vi för i dag – kassorna tar de sista kunderna!');
-      if (wasStaff === true && !sIn) { guardSay(`Personalen har gått hem. Kassorna öppnar kl. ${HOURS[0]} i morgon.`); for (const T of tellers) T.talk.clear(); }
+      if (wasOpen === true && !o) guardSay($t('Nu stänger vi för i dag – kassorna tar de sista kunderna!'));
+      if (wasStaff === true && !sIn) { guardSay($t`Personalen har gått hem. Kassorna öppnar kl. ${HOURS[0]} i morgon.`); for (const T of tellers) T.talk.clear(); }
       wasOpen = o; wasStaff = sIn;
       const k = lockedCam !== null ? 1 : Math.min(1, dt * 6);
       cam.x += (camTarget() - cam.x) * k;
@@ -2067,8 +2068,8 @@ export function makeShopBank(A) {
       talk.draw(ctx, view);
       ctx.setTransform(A.pxs, 0, 0, A.pxs, 0, 0);
       drawPanel(ctx);
-      if (cx + VW < ATM.x0 + 10) edgeSign(ctx, 'BANKOMAT', false);
-      else if (cx > DOOR.x1 + 20) edgeSign(ctx, 'UT', true);
+      if (cx + VW < ATM.x0 + 10) edgeSign(ctx, $t('BANKOMAT'), false);
+      else if (cx > DOOR.x1 + 20) edgeSign(ctx, $t('UT'), true);
       const f = focusSpot();
       if (f && f.label) bigLabel(ctx, f, walker.py > H - 52);
     },

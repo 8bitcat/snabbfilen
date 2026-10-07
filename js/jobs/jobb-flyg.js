@@ -18,12 +18,13 @@ import { planOf, drawShiftHud, drawTimeUp, makePops, abortShift } from './shift.
 import { drawPerson } from '../core/people.js';
 import { play } from '../core/sound.js';
 import { makeShiftCoop } from '../net/coop.js';
+import { $t } from '../core/i18n.js';
 
 const FW = 384, FH = 216;
 const BELT_Y = 72;
 const TAG = [
-  { ch: 'A', c: '#d9433b', ci: 0xd9433b, dest: 'LONDON' }, { ch: 'B', c: '#2c6fb7', ci: 0x2c6fb7, dest: 'OSLO' },
-  { ch: 'C', c: '#2f8f46', ci: 0x2f8f46, dest: 'PARIS' }, { ch: 'D', c: '#e8b230', ci: 0xe8b230, dest: 'ROM' },
+  { ch: 'A', c: '#d9433b', ci: 0xd9433b, dest: $t('LONDON') }, { ch: 'B', c: '#2c6fb7', ci: 0x2c6fb7, dest: $t('OSLO') },
+  { ch: 'C', c: '#2f8f46', ci: 0x2f8f46, dest: $t('PARIS') }, { ch: 'D', c: '#e8b230', ci: 0xe8b230, dest: $t('ROM') },
 ];
 const CARTS = TAG.map((t, i) => ({ ...t, x: 26 + i * 92, y: 186, w: 60 }));
 const CASE_COLORS = [0x6a5030, 0x4a4a52, 0x2aa39a, 0x8e5bd1, 0x9a3a4a, 0x3a5a7c];
@@ -386,7 +387,7 @@ function paintView(P, mode) {
       P.px(x, y, c);
     }
   }
-  text(P, SMALL, 'HANGAR 2', 58, 28, night ? 0x8a90a8 : 0x3a5a8a, 0.8);
+  text(P, SMALL, $t('HANGAR 2'), 58, 28, night ? 0x8a90a8 : 0x3a5a8a, 0.8);
   // bränsletankar
   for (const [tx, tw] of [[150, 9], [161, 7]]) {
     area(P, tx, 30, tw, 5, (X, Y, i, j) => (j === 0 ? mix(V.hangar, WHITE, 0.4) : i === tw - 1 ? mul(V.hangar, 0.7) : V.hangar));
@@ -555,7 +556,7 @@ function paintHall(mode) {
   });
   P.darken(0, 49, FW, 1, 0.72);
   // skylt: BAGAGE 3
-  const bs = 'BAGAGE 3', bw = textW(SMALL, bs) + 13, bx = 36;
+  const bs = $t('BAGAGE 3'), bw = textW(SMALL, bs) + 13, bx = 36;
   P.rect(bx, 50, bw, 9, 0x23262d); P.box(bx, 50, bw, 9, 0x4a4e56); P.hl(bx + 1, 50, bw - 2, 0x5a5e66);
   area(P, bx + 2, 52, 6, 5, (X, Y, i, j) => (j === 0 ? (i === 2 || i === 3 ? 0xffd23a : null) : 0xffd23a));
   P.px(bx + 3, 54, 0x23262d); P.px(bx + 4, 54, 0x23262d);
@@ -616,7 +617,7 @@ function paintHall(mode) {
     const worn = hash(x >> 1, y, 15) > 0.9;
     P.px(x, y, worn ? mix(0xe8c030, P.get(x, y), 0.6) : y === 96 ? 0xf0cc3a : 0xd8b028);
   }
-  const st = 'STÅ BAKOM LINJEN', stw = textW(SMALL, st);
+  const st = $t('STÅ BAKOM LINJEN'), stw = textW(SMALL, st);
   for (const sx of [60, 250]) text(P, SMALL, st, sx, 100, 0xd8b028, 0.85);
   void stw;
   // en borttappad nalle och avrivna bagagelappar på golvet
@@ -808,7 +809,7 @@ function paintFront() {
     if (i > 20 && i < 34 && j > 10 && j < 15 && j % 2 === 1) c = mul(c, 0.6);   // ventilation
     return jit(c, X, Y, 48, 0.04);
   });
-  text(P, SMALL, 'RÖNTGEN', x0 + 5, top + 5, 0x2a3a5a);
+  text(P, SMALL, $t('RÖNTGEN'), x0 + 5, top + 5, 0x2a3a5a);
   // varningstriangel
   for (let j = 0; j < 7; j++) for (let i = -j; i <= j; i++) P.px(x0 + 12 + i, top + 12 + j - 3 + 0, j === 6 || Math.abs(i) === j ? INK : 0xf0c020);
   P.px(x0 + 12, top + 12, INK); P.px(x0 + 12, top + 14, INK);
@@ -859,7 +860,7 @@ function paintFore() {
   P.darken(sgx + 1, sgy + 9, 11, 1, 0.7);
   for (const sx of POSTS) stanchion(P, sx, POST_Y);
   // UTGÅNG: grön skylt med springande gubbe och pil
-  const s = 'UTGÅNG', tw = textW(SMALL, s), w = tw + 20, x = FW - w - 3, y = 200;
+  const s = $t('UTGÅNG'), tw = textW(SMALL, s), w = tw + 20, x = FW - w - 3, y = 200;
   P.rect(x, y, w, 11, 0x0e4a24);
   P.rect(x + 1, y + 1, w - 2, 9, 0x1e8a3a);
   P.hl(x + 1, y + 1, w - 2, 0x5ac06a);
@@ -885,7 +886,7 @@ function wetArt() {
     if (j === 1 && i > 5 && i < w - 6) c = 0x2a2c30;               // handtaget
     return jit(c, X, Y, 71, 0.05);
   });
-  text(P, SMALL, 'VÅTT', WET.x + 1, WET.y - h + 5, INK);
+  text(P, SMALL, $t('VÅTT'), WET.x + 1, WET.y - h + 5, INK);
   const man = ['..#..', '.###.', '#.#..', '..##.', '.#..#', '#....'];
   man.forEach((r, j) => { for (let i = 0; i < 5; i++) if (r[i] === '#') P.px(WET.x + 5 + i, WET.y - h + 11 + j, INK); });
   P.hl(WET.x + 3, WET.y - h + 17, 11, INK);
@@ -1061,14 +1062,14 @@ export function makeJobbFlyg(A, { onDone }) {
   const snapAsap = () => { snapIn = 0; };
   const int = (v, dflt) => (Number.isInteger(v) ? v : dflt);
   const str = (v) => (typeof v === 'string' ? v.slice(0, 64) : '');
-  const hudTitle = () => (maxN > 1 ? 'FLYGPLATSEN IHOP' : 'FLYGPLATSEN');
+  const hudTitle = () => (maxN > 1 ? $t('FLYGPLATSEN IHOP') : $t('FLYGPLATSEN'));
   const noteFell = (id) => { fell.add(id); if (fell.size > 60) fell.delete(fell.values().next().value); };
   const bagOf = (b) => ({ id: b.id, cat: b.cat, body: b.body });
   // en väska i önskemålen, svaren och snappen: [id, kod] (0 = inget)
   const bagEnc = (b) => (b ? [b.id, bagCode(b)] : 0);
   const bagDec = (a) => (Array.isArray(a) && Number.isInteger(a[0]) ? bagOf(mkBag(a[0], a[1])) : null);
   // en väska rullade förbi slutet av bandet
-  const missed = () => { play('miss'); pops.add(FW - 20, BELT_Y + 10, 'MISS!', '#d8d2c0'); };
+  const missed = () => { play('miss'); pops.add(FW - 20, BELT_Y + 10, $t('MISS!'), '#d8d2c0'); };
 
   function sendSnap() {
     known = true;
@@ -1219,17 +1220,17 @@ export function makeJobbFlyg(A, { onDone }) {
   const kLjud = (k, s) => fx(k, k.by, 's', s);                                                            // hörs hos den det gäller
   const kSay = (k, txt, c = '#d8d2c0') => fx(k, k.by, 'p', Math.round(k.x), Math.round(k.y) - 30, txt, c);   // bara hos den det gäller
   const kPop = (k, x, y, txt, c) => fx(k, '', 'p', x, y, txt, c);                                         // syns hos alla i hallen
-  function hannFore(x, y) { play('miss'); pops.add(x, y, 'HANN FÖRE!', '#ff6a6a'); }
+  function hannFore(x, y) { play('miss'); pops.add(x, y, $t('HANN FÖRE!'), '#ff6a6a'); }
 
   // ---------- det gemensamma (körs av skiftledaren – eller den ensamma – åt bagagearbetaren k) ----------
   // ta väskan id från bandet
   function doPick(k, id) {
     const it = items.find((q) => q.id === id);
     if (!it) {   // borta: rullade förbi – eller någon annan hann före
-      if (fell.has(id)) { kLjud(k, 'miss'); kSay(k, 'MISSADE!'); } else fx(k, k.by, 'H', Math.round(k.x), Math.round(k.y) - 30);
+      if (fell.has(id)) { kLjud(k, 'miss'); kSay(k, $t('MISSADE!')); } else fx(k, k.by, 'H', Math.round(k.x), Math.round(k.y) - 30);
       return;
     }
-    if (k.carry) { kSay(k, 'HÄNDERNA FULLA!'); return; }
+    if (k.carry) { kSay(k, $t('HÄNDERNA FULLA!')); return; }
     items.splice(items.indexOf(it), 1);
     it.taken = true;
     k.carry = bagOf(it);
@@ -1245,7 +1246,7 @@ export function makeJobbFlyg(A, { onDone }) {
     if (dropped.has(c.id)) return;   // (ett önskemål som kom två gånger – den ligger redan i en vagn)
     dropped.add(c.id);
     if (idx === c.cat) { team.ok++; fx(k, k.by, 'o'); kLjud(k, 'ok'); kPop(k, cart.x + 30, cart.y - 34, '+7', '#8ee03c'); }
-    else { team.fel++; fx(k, k.by, 'f'); kLjud(k, 'fel'); kPop(k, cart.x + 30, cart.y - 34, 'FEL VAGN!', '#ff6a6a'); }
+    else { team.fel++; fx(k, k.by, 'f'); kLjud(k, 'fel'); kPop(k, cart.x + 30, cart.y - 34, $t('FEL VAGN!'), '#ff6a6a'); }
     loads[idx].push(bagOf(c));
     if (loads[idx].length > 10) loads[idx].shift();
   }
@@ -1304,7 +1305,7 @@ export function makeJobbFlyg(A, { onDone }) {
   function tryPick(target) {
     if (!items.includes(target) || Math.abs(target.x - walker.px) >= 18) {
       if (target.taken && coop.active) hannFore(walker.px, walker.py - 30);   // (ihop: någon annan tog den)
-      else { play('miss'); pops.add(walker.px, walker.py - 30, 'MISSADE!', '#d8d2c0'); }
+      else { play('miss'); pops.add(walker.px, walker.py - 30, $t('MISSADE!'), '#d8d2c0'); }
       return;
     }
     shared({ a: 'ta', id: target.id }, (k) => doPick(k, target.id));
@@ -1441,7 +1442,7 @@ export function makeJobbFlyg(A, { onDone }) {
       ctx.fillStyle = 'rgba(160,210,255,0.35)';
       ctx.fillRect(355 + Math.floor((t * 30) % 24), 24, 1, 10);
     } else {
-      ctxText(ctx, SMALL, 'KLAR', 357, 26, '#5ad06a');
+      ctxText(ctx, SMALL, $t('KLAR'), 357, 26, '#5ad06a');
       if (Math.floor(t * 2) % 2 === 0) { ctx.fillStyle = '#5ad06a'; ctx.fillRect(373, 30, 3, 1); }
     }
     ctx.restore();
@@ -1622,7 +1623,7 @@ export function makeJobbFlyg(A, { onDone }) {
       if (coop.active) maxN = Math.max(maxN, coop.peers().length + 1);
       if (coop.active !== wasCoop) {   // en kollega kom in: väskorna kommer tätare och bandet går fortare
         wasCoop = coop.active;
-        if (wasCoop) { play('knock'); pops.add(FW / 2, 120, 'NI JOBBAR IHOP!', '#8ee03c'); }
+        if (wasCoop) { play('knock'); pops.add(FW / 2, 120, $t('NI JOBBAR IHOP!'), '#8ee03c'); }
       }
       // Skiftledaren (eller solo) kör bandet och vagnarna; medarbetare följer ledarens läge
       const iLead = !coop.active || (coop.leader && coop.settled);

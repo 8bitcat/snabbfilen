@@ -13,6 +13,7 @@ import { openModal, closeModal } from '../core/ui.js';
 import { play } from '../core/sound.js';
 import { TRUCK_MENY, TRUCK_PRISER, truckRattOf, fmt } from '../game.js';
 import { drawShiftHud, drawTimeUp, makePops } from './shift.js';
+import { $t } from '../core/i18n.js';
 
 const FW = 384, FH = 216;
 export const TRUCK_DUR = 75;
@@ -25,11 +26,11 @@ const FEET = 152;                                // kundernas fötter (dolda bak
 const BENCH_Y = 162;
 // stationerna inne i trucken (rätt-id, x-intervall)
 const STATIONS = [
-  { id: 'korv', x0: 6, x1: 82, namn: 'KORVGRILL' },
-  { id: 'burgare', x0: 86, x1: 164, namn: 'STORA GRILLEN' },
-  { id: 'taco', x0: 168, x1: 236, namn: 'TACOBAR' },
-  { id: 'glass', x0: 240, x1: 306, namn: 'GLASSFRYS' },
-  { id: 'dricka', x0: 310, x1: 378, namn: 'DRYCKESKYL' },
+  { id: 'korv', x0: 6, x1: 82, namn: $t('KORVGRILL') },
+  { id: 'burgare', x0: 86, x1: 164, namn: $t('STORA GRILLEN') },
+  { id: 'taco', x0: 168, x1: 236, namn: $t('TACOBAR') },
+  { id: 'glass', x0: 240, x1: 306, namn: $t('GLASSFRYS') },
+  { id: 'dricka', x0: 310, x1: 378, namn: $t('DRYCKESKYL') },
 ];
 
 // ---------------------------------------------------------------- bilderna på rätterna (12×12)
@@ -203,7 +204,7 @@ export function makeJobbTruck(A, { onDone }) {
   }
   function startCook(si) {
     const S = STATIONS[si];
-    if (!har.has(S.id)) { pops.add((S.x0 + S.x1) / 2, BENCH_Y - 4, 'UPPGRADERA!', '#ffd23f'); play('fel'); return; }
+    if (!har.has(S.id)) { pops.add((S.x0 + S.x1) / 2, BENCH_Y - 4, $t('UPPGRADERA!'), '#ffd23f'); play('fel'); return; }
     if (cooking[si]) return;
     const R = truckRattOf(S.id);
     if (!R.tid) { if (!toShelf(S.id)) return; play('click'); return; }
@@ -212,7 +213,7 @@ export function makeJobbTruck(A, { onDone }) {
   }
   function toShelf(id) {
     const f = free();
-    if (f < 0) { pops.add(FW / 2, SHELF.y0 - 8, 'HYLLAN ÄR FULL', '#ff6a5a'); play('fel'); return false; }
+    if (f < 0) { pops.add(FW / 2, SHELF.y0 - 8, $t('HYLLAN ÄR FULL'), '#ff6a5a'); play('fel'); return false; }
     shelf[f] = id;
     return true;
   }
@@ -221,11 +222,11 @@ export function makeJobbTruck(A, { onDone }) {
     const id = shelf[sel];
     shelf[sel] = null; sel = -1;
     const at = k.order.indexOf(id);
-    if (at < 0) { stats.fel++; k.tal = Math.max(1, k.tal - k.max * 0.3); pops.add(k.x, FEET - 60, 'FEL!', '#ff6a5a'); play('fel'); return; }
+    if (at < 0) { stats.fel++; k.tal = Math.max(1, k.tal - k.max * 0.3); pops.add(k.x, FEET - 60, $t('FEL!'), '#ff6a5a'); play('fel'); return; }
     k.order.splice(at, 1);
     const kr = Math.round(truckRattOf(id).pris * pr.mult);
     stats.sald.push(id); stats.kr += kr;
-    pops.add(k.x, FEET - 60, `+${kr} KR`, '#7ee07e');
+    pops.add(k.x, FEET - 60, $t`+${kr} KR`, '#7ee07e');
     play('ok');
     if (!k.order.length) { k.state = 'gar'; k.dir = k.x < FW / 2 ? 'left' : 'right'; stats.ok++; play('coin'); }
   }
@@ -243,7 +244,7 @@ export function makeJobbTruck(A, { onDone }) {
       // det som steker: klart → till hyllan (är hyllan full väntar det på grillen tills det finns plats)
       cooking.forEach((c, i) => {
         if (!c) return;
-        if (c.t < c.dur) { c.t = Math.min(c.dur, c.t + dt); if (c.t >= c.dur && free() < 0) pops.add((STATIONS[i].x0 + STATIONS[i].x1) / 2, BENCH_Y - 4, 'HYLLAN ÄR FULL', '#ff6a5a'); }
+        if (c.t < c.dur) { c.t = Math.min(c.dur, c.t + dt); if (c.t >= c.dur && free() < 0) pops.add((STATIONS[i].x0 + STATIONS[i].x1) / 2, BENCH_Y - 4, $t('HYLLAN ÄR FULL'), '#ff6a5a'); }
         if (c.t >= c.dur && free() >= 0) { shelf[free()] = c.id; cooking[i] = null; play('ok'); }
       });
       for (const k of kunder) {
@@ -254,7 +255,7 @@ export function makeJobbTruck(A, { onDone }) {
           if (Math.abs(d) <= step) { k.x = tx; if (k.state === 'in') { k.state = 'vantar'; k.dir = 'down'; } } else k.x += Math.sign(d) * step;
         } else if (k.state === 'vantar') {
           k.tal -= dt;
-          if (k.tal <= 0) { k.state = 'gar'; k.arg = true; k.dir = k.x < FW / 2 ? 'left' : 'right'; stats.arga++; pops.add(k.x, FEET - 60, 'SUCK…', '#ff9a5a'); play('fel'); }
+          if (k.tal <= 0) { k.state = 'gar'; k.arg = true; k.dir = k.x < FW / 2 ? 'left' : 'right'; stats.arga++; pops.add(k.x, FEET - 60, $t('SUCK…'), '#ff9a5a'); play('fel'); }
         }
       }
       for (let i = kunder.length - 1; i >= 0; i--) if (kunder[i].state === 'gar' && (kunder[i].x < -24 || kunder[i].x > FW + 24)) kunder.splice(i, 1);
@@ -309,7 +310,7 @@ export function makeJobbTruck(A, { onDone }) {
       STATIONS.forEach((S, i) => {
         const cx = (S.x0 + S.x1) / 2, ok = har.has(S.id), c = cooking[i];
         ctxText(ctx, SMALL, S.namn, Math.round(cx - textW(SMALL, S.namn) / 2), FH - 13, ok ? '#f4f1ea' : '#8a8e96');
-        if (!ok) { ctx.fillStyle = 'rgba(20,20,26,.55)'; ctx.fillRect(S.x0, BENCH_Y + 4, S.x1 - S.x0, 30); ctxText(ctx, SMALL, 'LÅST', Math.round(cx - textW(SMALL, 'LÅST') / 2), BENCH_Y + 14, '#ffd23f'); return; }
+        if (!ok) { ctx.fillStyle = 'rgba(20,20,26,.55)'; ctx.fillRect(S.x0, BENCH_Y + 4, S.x1 - S.x0, 30); ctxText(ctx, SMALL, $t('LÅST'), Math.round(cx - textW(SMALL, $t('LÅST')) / 2), BENCH_Y + 14, '#ffd23f'); return; }
         if (c) {
           ctx.drawImage(truckIcon(c.id), Math.round(cx - 6), BENCH_Y + 8);
           ctx.fillStyle = '#1e1a24'; ctx.fillRect(S.x0 + 6, BENCH_Y + 26, S.x1 - S.x0 - 12, 4);
@@ -319,9 +320,10 @@ export function makeJobbTruck(A, { onDone }) {
       });
       // STÄNG-skylten på högra stolpen
       ctx.fillStyle = '#d9433b'; ctx.fillRect(FW - 13, 46, 12, 30);
-      for (let i = 0; i < 5; i++) ctxText(ctx, SMALL, 'STÄNG'[i], FW - 10, 49 + i * 5.4 | 0, '#f4f1ea');
+      const stang = $t('STÄNG');
+      for (let i = 0; i < stang.length; i++) ctxText(ctx, SMALL, stang[i], FW - 10, 49 + i * 5.4 | 0, '#f4f1ea');
       pops.draw(ctx);
-      drawShiftHud(ctx, { W: FW }, { t, dur: TRUCK_DUR, ok: stats.ok, fel: stats.fel + stats.arga, title: `FOODTRUCKEN ${fmt(stats.kr).toUpperCase()}` });
+      drawShiftHud(ctx, { W: FW }, { t, dur: TRUCK_DUR, ok: stats.ok, fel: stats.fel + stats.arga, title: $t`FOODTRUCKEN ${fmt(stats.kr).toUpperCase()}` });
       if (done) drawTimeUp(ctx, { W: FW, H: FH });
     },
     exit() {},
@@ -342,9 +344,9 @@ export function makeJobbTruck(A, { onDone }) {
     },
   };
   function askClose() {
-    openModal('🚚 Stänga luckan?', `<p style="font-size:var(--f2);margin-top:0">Stänger du nu får du det du sålt hittills (${fmt(stats.kr)}).</p>`, [
-      { label: 'Fortsätt sälja', cls: 'btn-go', onClick: closeModal },
-      { label: 'Stäng luckan', onClick: () => { closeModal(); finish(); } },
+    openModal($t('🚚 Stänga luckan?'), `<p style="font-size:var(--f2);margin-top:0">${$t`Stänger du nu får du det du sålt hittills (${fmt(stats.kr)}).`}</p>`, [
+      { label: $t('Fortsätt sälja'), cls: 'btn-go', onClick: closeModal },
+      { label: $t('Stäng luckan'), onClick: () => { closeModal(); finish(); } },
     ]);
   }
 }

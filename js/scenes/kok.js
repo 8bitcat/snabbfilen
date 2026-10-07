@@ -14,6 +14,7 @@ import { Pix, mix, mul, hash, bayer } from '../core/floor-pix.js';
 import { openModal, closeModal, toast, esc } from '../core/ui.js';
 import { RECEPT, ravaraOf, receptOf, kockStjarnor, KOCK_STEG, RECEPT_LAS_MIN, PORTIONER, portionOf, KOCK_TITLAR, KOCK_NIVA_P } from '../game.js';
 import { play } from '../core/sound.js';
+import { $t } from '../core/i18n.js';
 
 export const DW = 48, DH = 32;
 const OUT = 0x2a1e24;
@@ -238,7 +239,7 @@ const dishTag = (id, s = 3) => `<canvas class="kok-dish" data-dish="${id}" width
 
 export function openKok(A, tab = 'laga') {
   const g = A.game;
-  const tabs = `<div class="kok-tabs"><button class="av-tab ${tab === 'laga' ? 'on' : ''}" data-tab="laga">🍳 Spisen</button><button class="av-tab ${tab === 'bok' ? 'on' : ''}" data-tab="bok">📖 Receptboken</button></div>`;
+  const tabs = `<div class="kok-tabs"><button class="av-tab ${tab === 'laga' ? 'on' : ''}" data-tab="laga">${$t('🍳 Spisen')}</button><button class="av-tab ${tab === 'bok' ? 'on' : ''}" data-tab="bok">${$t('📖 Receptboken')}</button></div>`;
   let body;
   if (tab === 'laga') {
     const N = portionOf(A.kokN || 1).n;
@@ -247,28 +248,28 @@ export function openKok(A, tab = 'laga') {
     const rows = known.map((r) => {
       const miss = g.missingFor(r.id, N), n = g.kockat?.[r.id] | 0;
       return `<div class="kok-row ${miss.length ? '' : 'ready'}">${dishTag(r.id, 2)}
-        <div class="kok-txt"><b>${r.icon} ${esc(r.name)}</b> <span class="kok-stars" title="Kockvana: ${n} portioner">${stars(n)}</span>
+        <div class="kok-txt"><b>${r.icon} ${esc(r.name)}</b> <span class="kok-stars" title="${$t`Kockvana: ${n} portioner`}">${stars(n)}</span>
           <div class="kok-ings">${r.ing.map((x) => ingChip(g, x, N)).join('')}</div>
-          <small>${Math.round(r.min * portionOf(N).tid)} min · +${g.portionFill(r.id)} mätt${r.glad ? ` · +${r.glad} 😊` : ''}${r.energi ? ` · +${r.energi} ⚡` : ''}${N > 1 ? ` · ${N - 1} matlådor` : ''}</small></div>
-        <button class="btn btn-small ${miss.length ? '' : 'btn-go'}" data-laga="${r.id}" ${miss.length ? 'disabled' : ''}>🍳 Laga</button></div>`;
+          <small>${$t`${Math.round(r.min * portionOf(N).tid)} min · +${g.portionFill(r.id)} mätt`}${r.glad ? ` · +${r.glad} 😊` : ''}${r.energi ? ` · +${r.energi} ⚡` : ''}${N > 1 ? ` · ${$t`${N - 1} matlådor`}` : ''}</small></div>
+        <button class="btn btn-small ${miss.length ? '' : 'btn-go'}" data-laga="${r.id}" ${miss.length ? 'disabled' : ''}>${$t('🍳 Laga')}</button></div>`;
     }).join('');
     const unknown = RECEPT.length - known.length;
     const niva = g.kockNiva, nasta = KOCK_NIVA_P[niva];
     const chips = PORTIONER.map((p) => `<button class="lm-chip ${p.n === N ? 'on' : ''}" data-port="${p.n}">${p.icon} ${p.name}${p.n > 1 ? ` ×${p.n}` : ''}</button>`).join('');
-    body = `${tabs}<div class="kok-port">${chips}</div><p class="kok-note">👩‍🍳 <b>${KOCK_TITLAR[niva - 1]}</b> – ${g.kockPortioner | 0} lagade portioner${nasta ? ` (${KOCK_TITLAR[niva]} vid ${nasta})` : ''}. ${N > 1 ? `${portionOf(N).name}: råvarorna ×${N}, en portion äter du direkt och resten blir matlådor i kylen.` : 'Storkok och megakok blir matlådor i kylen.'}${unknown ? ` <b>${unknown}</b> recept till står i receptboken.` : ''}</p><div class="kok-list">${rows || '<p>Läs ett recept i receptboken först!</p>'}</div>`;
+    body = `${tabs}<div class="kok-port">${chips}</div><p class="kok-note">👩‍🍳 ${$t`<b>${KOCK_TITLAR[niva - 1]}</b> – ${g.kockPortioner | 0} lagade portioner`}${nasta ? ` (${$t`${KOCK_TITLAR[niva]} vid ${nasta}`})` : ''}. ${N > 1 ? $t`${portionOf(N).name}: råvarorna ×${N}, en portion äter du direkt och resten blir matlådor i kylen.` : $t('Storkok och megakok blir matlådor i kylen.')}${unknown ? ` ${$t`<b>${unknown}</b> recept till står i receptboken.`}` : ''}</p><div class="kok-list">${rows || `<p>${$t('Läs ett recept i receptboken först!')}</p>`}</div>`;
   } else {
     const rows = RECEPT.map((r, i) => {
       const kan = g.knowsRecipe(r.id), n = g.kockat?.[r.id] | 0;
-      return `<div class="kok-page ${kan ? 'kan' : ''}"><div class="kok-pic">${dishTag(r.id, 3)}<span class="kok-no">s. ${i + 1}</span></div>
+      return `<div class="kok-page ${kan ? 'kan' : ''}"><div class="kok-pic">${dishTag(r.id, 3)}<span class="kok-no">${$t`s. ${i + 1}`}</span></div>
         <div class="kok-txt"><b>${r.icon} ${esc(r.name)}</b>${kan ? ` <span class="kok-stars">${stars(n)}</span>` : ''}
           <p>${esc(r.blurb)}</p>
           <div class="kok-ings">${r.ing.map((x) => ingChip(g, x)).join('')}</div>
-          <small>${r.min} min vid spisen · +${r.fill} mätt${r.glad ? ` · +${r.glad} 😊` : ''}${r.energi ? ` · +${r.energi} ⚡` : ''}</small>
-          ${kan ? `<div class="kok-kan">✓ Du kan den${n ? ` – lagad ${n} ${n === 1 ? 'gång' : 'gånger'}` : ''}</div>` : `<button class="btn btn-small btn-gold" data-las="${r.id}">📖 Läs och lär dig (${RECEPT_LAS_MIN} min)</button>`}</div></div>`;
+          <small>${$t`${r.min} min vid spisen · +${r.fill} mätt`}${r.glad ? ` · +${r.glad} 😊` : ''}${r.energi ? ` · +${r.energi} ⚡` : ''}</small>
+          ${kan ? `<div class="kok-kan">${$t('✓ Du kan den')}${n ? ` – ${n === 1 ? $t`lagad ${n} gång` : $t`lagad ${n} gånger`}` : ''}</div>` : `<button class="btn btn-small btn-gold" data-las="${r.id}">${$t`📖 Läs och lär dig (${RECEPT_LAS_MIN} min)`}</button>`}</div></div>`;
     }).join('');
-    body = `${tabs}<p class="kok-note">📖 <b>Pixelstadens kokbok</b> – läs ett recept så kan du laga det vid spisen. Lagar du samma rätt ${KOCK_STEG[0]} och ${KOCK_STEG[1]} gånger blir den godare (★★, ★★★).</p><div class="kok-book">${rows}</div>`;
+    body = `${tabs}<p class="kok-note">${$t`📖 <b>Pixelstadens kokbok</b> – läs ett recept så kan du laga det vid spisen. Lagar du samma rätt ${KOCK_STEG[0]} och ${KOCK_STEG[1]} gånger blir den godare (★★, ★★★).`}</p><div class="kok-book">${rows}</div>`;
   }
-  const dlg = openModal(tab === 'laga' ? '🍳 Laga mat' : '📖 Receptboken', body, [{ label: 'Stäng', cls: 'btn-go', onClick: closeModal }]);
+  const dlg = openModal(tab === 'laga' ? $t('🍳 Laga mat') : $t('📖 Receptboken'), body, [{ label: $t('Stäng'), cls: 'btn-go', onClick: closeModal }]);
   dlg.classList.add('dlg-kok');
   bindDishes(dlg);
   dlg.querySelectorAll('[data-tab]').forEach((b) => (b.onclick = () => { play('click'); openKok(A, b.dataset.tab); }));
@@ -276,7 +277,7 @@ export function openKok(A, tab = 'laga') {
     const res = g.learnRecipe(b.dataset.las);
     if (!res.ok) { toast(res.msg, 'bad'); return; }
     play('ok');
-    toast(`📖 Nu kan du ${res.recipe.name.toLowerCase()}! Laga den vid spisen.`, 'good');
+    toast($t`📖 Nu kan du ${res.recipe.name.toLowerCase()}! Laga den vid spisen.`, 'good');
     openKok(A, 'bok');
   }));
   dlg.querySelectorAll('[data-port]').forEach((b) => (b.onclick = () => { A.kokN = +b.dataset.port; play('click'); openKok(A, 'laga'); }));

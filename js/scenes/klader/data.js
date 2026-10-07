@@ -2,6 +2,7 @@
 // kategorier ur klädkatalogen (js/data/wardrobe.js), skyltdockorna, Kungsladugårds lag
 // och de kända lagens matchställ. Ingen ritning här – bara siffror och listor.
 import { WARDROBE, itemById, itemsForSlot, legacyKeyToId, groupOf } from '../../data/wardrobe.js';
+import { $t } from '../../core/i18n.js';
 
 export const H = 216, WALL_Y = 70;
 
@@ -51,14 +52,14 @@ export const SPORT_RACK = [1186, 184];                    // fotbollströjorna p
 
 // ================= avdelningarna =================
 export const DEPT = {
-  tjej: { name: 'TJEJER', neon: 0xff8fd0, glow: 0xff4fb0, board: 0x2b1631, trim: 0xf28bb3, lbl: '#ff8fd0', tag: '#f28bb3', stage: ['#fbe3ef', '#f0c4d9', '#d98fb4'], title: 'Tjejavdelningen' },
-  kille: { name: 'KILLAR', neon: 0x7fe0ff, glow: 0x2f9fe0, board: 0x0f1a2e, trim: 0x3fc4ff, lbl: '#7fe0ff', tag: '#3a7bd5', stage: ['#e0ebf8', '#c4d6ee', '#7f9cc4'], title: 'Killavdelningen' },
-  mid: { name: '', neon: 0xf0d048, glow: 0xe8b230, board: 0x17151a, trim: 0xe8b230, lbl: '#f0d048', tag: '#e8b230', stage: ['#f3ecdf', '#e6dcc8', '#b99a70'], title: 'Accessoarerna' },
-  kungs: { name: 'KUNGSLADUGÅRD', neon: 0xffd0d8, glow: 0xd9434b, board: 0x3a0d16, trim: 0xd9434b, lbl: '#ff9aa6', tag: '#d9434b', stage: ['#f6e3e6', '#e8c4ca', '#a3485a'], title: 'Kungsladugård' },
-  lag: { name: 'KÄNDA LAG', neon: 0xb8f07a, glow: 0x46a35a, board: 0x10261a, trim: 0x6fd08a, lbl: '#9fe88a', tag: '#46a35a', stage: ['#e4f2e2', '#c4e0c2', '#5f9a64'], title: 'Kända lag' },
-  halloween: { name: 'HALLOWEEN', neon: 0xffb060, glow: 0xe8762a, board: 0x1e1228, trim: 0xe8762a, lbl: '#ff9a3a', tag: '#e8762a', stage: ['#efe4f4', '#d8c4e4', '#6a3a7a'], title: 'Maskeradbutiken' },
-  jul: { name: 'JUL', neon: 0xfff0b0, glow: 0xd9433b, board: 0x173a24, trim: 0xd9433b, lbl: '#ffd23f', tag: '#c9323a', stage: ['#f3ecdf', '#e6dcc8', '#7a2a2e'], title: 'Julavdelningen' },
-  sport: { name: 'SPORT', neon: 0xffd23f, glow: 0xe07a2e, board: 0x1a1a24, trim: 0xf0b429, lbl: '#ffd23f', tag: '#e07a2e', stage: ['#f3ecdf', '#e6dcc8', '#b99a70'], title: 'Sportavdelningen' },
+  tjej: { name: $t('TJEJER'), neon: 0xff8fd0, glow: 0xff4fb0, board: 0x2b1631, trim: 0xf28bb3, lbl: '#ff8fd0', tag: '#f28bb3', stage: ['#fbe3ef', '#f0c4d9', '#d98fb4'], title: $t('Tjejavdelningen') },
+  kille: { name: $t('KILLAR'), neon: 0x7fe0ff, glow: 0x2f9fe0, board: 0x0f1a2e, trim: 0x3fc4ff, lbl: '#7fe0ff', tag: '#3a7bd5', stage: ['#e0ebf8', '#c4d6ee', '#7f9cc4'], title: $t('Killavdelningen') },
+  mid: { name: '', neon: 0xf0d048, glow: 0xe8b230, board: 0x17151a, trim: 0xe8b230, lbl: '#f0d048', tag: '#e8b230', stage: ['#f3ecdf', '#e6dcc8', '#b99a70'], title: $t('Accessoarerna') },
+  kungs: { name: $t('KUNGSLADUGÅRD'), neon: 0xffd0d8, glow: 0xd9434b, board: 0x3a0d16, trim: 0xd9434b, lbl: '#ff9aa6', tag: '#d9434b', stage: ['#f6e3e6', '#e8c4ca', '#a3485a'], title: $t('Kungsladugård') },
+  lag: { name: $t('KÄNDA LAG'), neon: 0xb8f07a, glow: 0x46a35a, board: 0x10261a, trim: 0x6fd08a, lbl: '#9fe88a', tag: '#46a35a', stage: ['#e4f2e2', '#c4e0c2', '#5f9a64'], title: $t('Kända lag') },
+  halloween: { name: $t('HALLOWEEN'), neon: 0xffb060, glow: 0xe8762a, board: 0x1e1228, trim: 0xe8762a, lbl: '#ff9a3a', tag: '#e8762a', stage: ['#efe4f4', '#d8c4e4', '#6a3a7a'], title: $t('Maskeradbutiken') },
+  jul: { name: $t('JUL'), neon: 0xfff0b0, glow: 0xd9433b, board: 0x173a24, trim: 0xd9433b, lbl: '#ffd23f', tag: '#c9323a', stage: ['#f3ecdf', '#e6dcc8', '#7a2a2e'], title: $t('Julavdelningen') },
+  sport: { name: $t('SPORT'), neon: 0xffd23f, glow: 0xe07a2e, board: 0x1a1a24, trim: 0xf0b429, lbl: '#ffd23f', tag: '#e07a2e', stage: ['#f3ecdf', '#e6dcc8', '#b99a70'], title: $t('Sportavdelningen') },
 };
 
 // ================= klädställningarnas kategorier =================
@@ -68,29 +69,29 @@ const JUL_TOPS = ['top-college-xmas', 'top-santa', 'top-lucia'];   // julvåning
 const C = (id, dept, sign, name, slot, groups, extra = {}) => ({ id, dept, sign, name, slot, groups, ...extra });
 export const CATS = [
   // tjejer: fyra väggmoduler + fyra fristående ställningar
-  C('tjToppar', 'tjej', 'T-SHIRTS + TOPPAR', 'T-shirts & toppar', 'top', ['T-shirts & linnen', 'Toppar'], { icon: '👚' }),
-  C('tjTryck', 'tjej', 'TRYCKTA TRÖJOR', 'Tryckta t-shirts', 'top', ['Tryckta t-shirts'], { icon: '⭐' }),
-  C('tjTrojor', 'tjej', 'BLUSAR + TRÖJOR', 'Blusar, västar & tröjor', 'top', ['Skjortor', 'Västar', 'Tröjor'], { icon: '🧶' }),
-  C('tjJackor', 'tjej', 'JACKOR + KAPPOR', 'Jackor & kappor', 'top', ['Jackor & kavajer', 'Rockar & kappor'], { icon: '🧥' }),
-  C('tjByxor', 'tjej', 'BYXOR + SHORTS', 'Byxor & shorts', 'bottom', ['Långbyxor', 'Shorts'], { icon: '👖' }),
-  C('tjKjolar', 'tjej', 'KJOLAR', 'Kjolar', 'bottom', ['Kjolar'], { icon: '👗' }),
-  C('tjKlanning', 'tjej', 'KLÄNNINGAR', 'Klänningar & overaller', 'bottom', ['Klänningar', 'Overaller & hängsel'], { icon: '👗' }),
-  C('tjFest', 'tjej', 'FEST + MASKERAD', 'Fest, maskerad & uniformer', 'top', ['Fest & maskerad', 'Uniformer & yrken'], { icon: '🎉' }),
+  C('tjToppar', 'tjej', $t('T-SHIRTS + TOPPAR'), $t('T-shirts & toppar'), 'top', ['T-shirts & linnen', 'Toppar'], { icon: '👚' }),
+  C('tjTryck', 'tjej', $t('TRYCKTA TRÖJOR'), $t('Tryckta t-shirts'), 'top', ['Tryckta t-shirts'], { icon: '⭐' }),
+  C('tjTrojor', 'tjej', $t('BLUSAR + TRÖJOR'), $t('Blusar, västar & tröjor'), 'top', ['Skjortor', 'Västar', 'Tröjor'], { icon: '🧶' }),
+  C('tjJackor', 'tjej', $t('JACKOR + KAPPOR'), $t('Jackor & kappor'), 'top', ['Jackor & kavajer', 'Rockar & kappor'], { icon: '🧥' }),
+  C('tjByxor', 'tjej', $t('BYXOR + SHORTS'), $t('Byxor & shorts'), 'bottom', ['Långbyxor', 'Shorts'], { icon: '👖' }),
+  C('tjKjolar', 'tjej', $t('KJOLAR'), $t('Kjolar'), 'bottom', ['Kjolar'], { icon: '👗' }),
+  C('tjKlanning', 'tjej', $t('KLÄNNINGAR'), $t('Klänningar & overaller'), 'bottom', ['Klänningar', 'Overaller & hängsel'], { icon: '👗' }),
+  C('tjFest', 'tjej', $t('FEST + MASKERAD'), $t('Fest, maskerad & uniformer'), 'top', ['Fest & maskerad', 'Uniformer & yrken'], { icon: '🎉' }),
   // killar
-  C('kiTshirt', 'kille', 'T-SHIRTS', 'T-shirts & tryck', 'top', ['T-shirts & linnen', 'Toppar', 'Tryckta t-shirts'], { icon: '👕' }),
-  C('kiSkjortor', 'kille', 'SKJORTOR + VÄSTAR', 'Skjortor & västar', 'top', ['Skjortor', 'Västar'], { icon: '👔' }),
-  C('kiTrojor', 'kille', 'TRÖJOR', 'Tröjor', 'top', ['Tröjor'], { icon: '🧶' }),
-  C('kiJackor', 'kille', 'JACKOR + ROCKAR', 'Jackor & rockar', 'top', ['Jackor & kavajer', 'Rockar & kappor'], { icon: '🧥' }),
-  C('kiByxor', 'kille', 'BYXOR', 'Byxor', 'bottom', ['Långbyxor'], { icon: '👖' }),
-  C('kiShorts', 'kille', 'SHORTS + KILTAR', 'Shorts & kiltar', 'bottom', ['Shorts', 'Kjolar'], { icon: '🩳' }),
-  C('kiOveraller', 'kille', 'OVERALLER', 'Overaller & hängsel', 'bottom', ['Overaller & hängsel', 'Klänningar'], { icon: '🔧' }),
-  C('kiFest', 'kille', 'FEST + MASKERAD', 'Fest, maskerad & uniformer', 'top', ['Fest & maskerad', 'Uniformer & yrken'], { icon: '🦸' }),
+  C('kiTshirt', 'kille', $t('T-SHIRTS'), $t('T-shirts & tryck'), 'top', ['T-shirts & linnen', 'Toppar', 'Tryckta t-shirts'], { icon: '👕' }),
+  C('kiSkjortor', 'kille', $t('SKJORTOR + VÄSTAR'), $t('Skjortor & västar'), 'top', ['Skjortor', 'Västar'], { icon: '👔' }),
+  C('kiTrojor', 'kille', $t('TRÖJOR'), $t('Tröjor'), 'top', ['Tröjor'], { icon: '🧶' }),
+  C('kiJackor', 'kille', $t('JACKOR + ROCKAR'), $t('Jackor & rockar'), 'top', ['Jackor & kavajer', 'Rockar & kappor'], { icon: '🧥' }),
+  C('kiByxor', 'kille', $t('BYXOR'), $t('Byxor'), 'bottom', ['Långbyxor'], { icon: '👖' }),
+  C('kiShorts', 'kille', $t('SHORTS + KILTAR'), $t('Shorts & kiltar'), 'bottom', ['Shorts', 'Kjolar'], { icon: '🩳' }),
+  C('kiOveraller', 'kille', $t('OVERALLER'), $t('Overaller & hängsel'), 'bottom', ['Overaller & hängsel', 'Klänningar'], { icon: '🔧' }),
+  C('kiFest', 'kille', $t('FEST + MASKERAD'), $t('Fest, maskerad & uniformer'), 'top', ['Fest & maskerad', 'Uniformer & yrken'], { icon: '🦸' }),
   // plan 2: sport (alla avdelningar)
-  C('spTrojor', 'sport', 'SPORTTRÖJOR', 'Sporttröjor', 'top', ['Sport'], { icon: '🏅', all: true }),
-  C('spMjukis', 'sport', 'MJUKIS + TRÄNING', 'Mjukis & träning', 'bottom', ['Mjukis & träning'], { icon: '🏃', all: true, ids: ['bottom-sportShorts', 'bottom-bikeShorts'] }),
+  C('spTrojor', 'sport', $t('SPORTTRÖJOR'), $t('Sporttröjor'), 'top', ['Sport'], { icon: '🏅', all: true }),
+  C('spMjukis', 'sport', $t('MJUKIS + TRÄNING'), $t('Mjukis & träning'), 'bottom', ['Mjukis & träning'], { icon: '🏃', all: true, ids: ['bottom-sportShorts', 'bottom-bikeShorts'] }),
   // plan 3: julkläderna (de finns också i fest- och tröjställningarna på plan 1)
-  C('julKlader', 'jul', 'JULKLÄDER', 'Julkläder', 'top', [], { icon: '🎄', all: true, match: (it) => JUL_TOPS.includes(it.id) }),
-  C('spFotboll', 'sport', 'FOTBOLLSTRÖJOR', 'Fotbollströjor', 'top', [], { icon: '⚽', all: true, match: (it) => it.look.top === 'football' }),
+  C('julKlader', 'jul', $t('JULKLÄDER'), $t('Julkläder'), 'top', [], { icon: '🎄', all: true, match: (it) => JUL_TOPS.includes(it.id) }),
+  C('spFotboll', 'sport', $t('FOTBOLLSTRÖJOR'), $t('Fotbollströjor'), 'top', [], { icon: '⚽', all: true, match: (it) => it.look.top === 'football' }),
 ];
 export const catById = (id) => CATS.find((c) => c.id === id) || null;
 // Var kategorierna står: [katId, 'wall'|'rack', index] per avdelning (väggmodul 0–3 räknat
@@ -132,28 +133,28 @@ export const boy = (o) => ({ ...MANNE, build: 5, ...o });
 //  outfit, kortnamn på lappen (högst ~11 tecken)]. Plagget som säljs har en stark färg som skiljer sig
 // från håret/resten av dockan. Huvtröjan står kvar (röktestet går fram till den).
 export const GIRLS = [
-  ['bottom-princess', 0, 0, girl({ style: 'long', hair: '#3b2619', bottom: 'princess', shirt: '#f28bb3', pants2: '#f0b429', hat: 'crown', cap: '#f0b429', shoes: '#f2f2f2' }), 'PRINSESS'],
-  ['top-offShoulder-flowers', 1, 0, girl({ style: 'wavy', hair: '#b7392b', top: 'offShoulder', topPrint: 'flowers', shirt: '#f4f1ea', print2: '#e0607a', bottom: 'skirt', pants: '#3a7bd5' }), 'BLOMTOPP'],
-  ['bottom-sundress-flowers', 2, 0, girl({ style: 'bun', hair: '#1d1714', bottom: 'sundress', bottomPrint: 'flowers', shirt: '#8fc4e8', pants2: '#f4f1ea', shoes: '#f2f2f2' }), 'SOLKLÄNNING'],
-  ['top-bomber-flowers', 3, 0, girl({ style: 'ponytail', hair: '#d9a95c', top: 'bomber', topPrint: 'flowers', shirt: '#2f3440', accent: '#f07aa8', print2: '#f07aa8', bottom: 'jeansHigh', pants: '#6a8fc4' }), 'BOMBER'],
+  ['bottom-princess', 0, 0, girl({ style: 'long', hair: '#3b2619', bottom: 'princess', shirt: '#f28bb3', pants2: '#f0b429', hat: 'crown', cap: '#f0b429', shoes: '#f2f2f2' }), $t('PRINSESS')],
+  ['top-offShoulder-flowers', 1, 0, girl({ style: 'wavy', hair: '#b7392b', top: 'offShoulder', topPrint: 'flowers', shirt: '#f4f1ea', print2: '#e0607a', bottom: 'skirt', pants: '#3a7bd5' }), $t('BLOMTOPP')],
+  ['bottom-sundress-flowers', 2, 0, girl({ style: 'bun', hair: '#1d1714', bottom: 'sundress', bottomPrint: 'flowers', shirt: '#8fc4e8', pants2: '#f4f1ea', shoes: '#f2f2f2' }), $t('SOLKLÄNNING')],
+  ['top-bomber-flowers', 3, 0, girl({ style: 'ponytail', hair: '#d9a95c', top: 'bomber', topPrint: 'flowers', shirt: '#2f3440', accent: '#f07aa8', print2: '#f07aa8', bottom: 'jeansHigh', pants: '#6a8fc4' }), $t('BOMBER')],
   ['top:hoodie', 4, 0, girl({ style: 'long', hair: '#3b2619', top: 'hoodie', shirt: '#f28bb3', bottom: 'jeans', pants: '#3f5f8f', shoes: '#f2f2f2' })],
-  ['top-cardigan', 0, 1, girl({ style: 'bob', hair: '#1d1714', top: 'cardigan', shirt: '#b89ad0', accent: '#f4f1ea', bottom: 'pleated', pants: '#2d3a5c' }), 'KOFTA'],
-  ['bottom-tutu-rainbow', 1, 1, girl({ style: 'pigtails', hair: '#1d1714', top: 'tee', shirt: '#f4f1ea', accent: '#ff5fa8', bottom: 'tutu', bottomPrint: 'rainbow', pants: '#f4f1ea', hat: 'bow', cap: '#ff5fa8', shoes: '#f2f2f2' }), 'TUTU'],
-  ['top-denim', 2, 1, girl({ style: 'long', hair: '#ecd489', top: 'denim', shirt: '#4a6fa5', accent: '#f4f1ea', bottom: 'leggings', pants: '#2b2b30' }), 'JEANSJACKA'],
-  ['bottom-jumpsuit', 3, 1, girl({ style: 'braids', hair: '#6b4226', bottom: 'jumpsuit', shirt: '#e07a2e', shoes: '#f2f2f2' }), 'JUMPSUIT'],
-  ['top-kimono-flowers', 4, 1, girl({ style: 'space', hair: '#c65fa0', top: 'kimono', topPrint: 'flowers', shirt: '#2f3440', accent: '#f07aa8', print2: '#f07aa8', bottom: 'wide', pants: '#e8e3d6' }), 'KIMONO'],
+  ['top-cardigan', 0, 1, girl({ style: 'bob', hair: '#1d1714', top: 'cardigan', shirt: '#b89ad0', accent: '#f4f1ea', bottom: 'pleated', pants: '#2d3a5c' }), $t('KOFTA')],
+  ['bottom-tutu-rainbow', 1, 1, girl({ style: 'pigtails', hair: '#1d1714', top: 'tee', shirt: '#f4f1ea', accent: '#ff5fa8', bottom: 'tutu', bottomPrint: 'rainbow', pants: '#f4f1ea', hat: 'bow', cap: '#ff5fa8', shoes: '#f2f2f2' }), $t('TUTU')],
+  ['top-denim', 2, 1, girl({ style: 'long', hair: '#ecd489', top: 'denim', shirt: '#4a6fa5', accent: '#f4f1ea', bottom: 'leggings', pants: '#2b2b30' }), $t('JEANSJACKA')],
+  ['bottom-jumpsuit', 3, 1, girl({ style: 'braids', hair: '#6b4226', bottom: 'jumpsuit', shirt: '#e07a2e', shoes: '#f2f2f2' }), $t('JUMPSUIT')],
+  ['top-kimono-flowers', 4, 1, girl({ style: 'space', hair: '#c65fa0', top: 'kimono', topPrint: 'flowers', shirt: '#2f3440', accent: '#f07aa8', print2: '#f07aa8', bottom: 'wide', pants: '#e8e3d6' }), $t('KIMONO')],
 ];
 export const BOYS = [
   ['top:hoodie', 0, 0, boy({ style: 'fade', hair: '#1d1714', top: 'hoodie', shirt: '#46a35a', bottom: 'pants', pants: '#2b2b30', shoes: '#f2f2f2' })],
-  ['top-varsity', 1, 0, boy({ style: 'short', hair: '#3b2619', top: 'varsity', shirt: '#7a2e3e', accent: '#f4f1ea', bottom: 'jeans', pants: '#2d3a5c', hat: 'cap', cap: '#f4f1ea', shoes: '#f2f2f2' }), 'COLLEGE'],
+  ['top-varsity', 1, 0, boy({ style: 'short', hair: '#3b2619', top: 'varsity', shirt: '#7a2e3e', accent: '#f4f1ea', bottom: 'jeans', pants: '#2d3a5c', hat: 'cap', cap: '#f4f1ea', shoes: '#f2f2f2' }), $t('COLLEGE')],
   ['top:hawaii', 2, 0, boy({ style: 'curtains', hair: '#d9a95c', top: 'hawaii', shirt: '#2aa39a', accent: '#f0b429', bottom: 'shorts', pants: '#e8e3d6', glasses: 'sun', shoes: '#6b3e1e', build: 6 })],
-  ['top-flannel', 3, 0, boy({ style: 'messy', hair: '#6b4226', top: 'flannel', shirt: '#c9323a', accent: '#26242c', bottom: 'jeansRipped', pants: '#4f79ad', shoes: '#6b3e1e' }), 'FLANELL'],
-  ['top-leather', 4, 0, boy({ style: 'spiky', hair: '#1d1714', top: 'leather', shirt: '#26242c', accent: '#f4f1ea', bottom: 'jeansBaggy', pants: '#35507a', glasses: 'sun' }), 'SKINNJACKA'],
-  ['bottom-cargoShorts-camo', 0, 1, boy({ style: 'buzz', hair: '#3b2619', top: 'tee', shirt: '#f0b429', accent: '#3a7bd5', bottom: 'cargoShorts', bottomPrint: 'camo', pants: '#6b7a4a', pants2: '#3f4a2c', shoes: '#f2f2f2' }), 'KAMOSHORTS'],
-  ['top-tee-skull', 1, 1, boy({ style: 'mohawk', hair: '#1d1714', top: 'tee', topPrint: 'skull', shirt: '#26242c', print2: '#f4f1ea', bottom: 'chinos', pants: '#b8a47a', build: 6 }), 'SKALLE'],
-  ['top-puffer', 2, 1, boy({ style: 'short', hair: '#a5692f', top: 'puffer', shirt: '#c9323a', bottom: 'cargo', pants: '#6b6a4a', hat: 'beanie', cap: '#f0b429' }), 'DUNJACKA'],
+  ['top-flannel', 3, 0, boy({ style: 'messy', hair: '#6b4226', top: 'flannel', shirt: '#c9323a', accent: '#26242c', bottom: 'jeansRipped', pants: '#4f79ad', shoes: '#6b3e1e' }), $t('FLANELL')],
+  ['top-leather', 4, 0, boy({ style: 'spiky', hair: '#1d1714', top: 'leather', shirt: '#26242c', accent: '#f4f1ea', bottom: 'jeansBaggy', pants: '#35507a', glasses: 'sun' }), $t('SKINNJACKA')],
+  ['bottom-cargoShorts-camo', 0, 1, boy({ style: 'buzz', hair: '#3b2619', top: 'tee', shirt: '#f0b429', accent: '#3a7bd5', bottom: 'cargoShorts', bottomPrint: 'camo', pants: '#6b7a4a', pants2: '#3f4a2c', shoes: '#f2f2f2' }), $t('KAMOSHORTS')],
+  ['top-tee-skull', 1, 1, boy({ style: 'mohawk', hair: '#1d1714', top: 'tee', topPrint: 'skull', shirt: '#26242c', print2: '#f4f1ea', bottom: 'chinos', pants: '#b8a47a', build: 6 }), $t('SKALLE')],
+  ['top-puffer', 2, 1, boy({ style: 'short', hair: '#a5692f', top: 'puffer', shirt: '#c9323a', bottom: 'cargo', pants: '#6b6a4a', hat: 'beanie', cap: '#f0b429' }), $t('DUNJACKA')],
   ['top:suit', 3, 1, boy({ style: 'side', hair: '#1d1714', top: 'suit', shirt: '#2d3a5c', accent: '#d9433b', bottom: 'pants', pants: '#2d3a5c', shoes: '#6b3e1e' })],
-  ['top-tuxedo', 4, 1, boy({ style: 'side', hair: '#3b2619', top: 'tuxedo', shirt: '#1f1f26', accent: '#26242c', bottom: 'suitPants', pants: '#1f1f26', hat: 'tophat', cap: '#1d1d22' }), 'SMOKING'],
+  ['top-tuxedo', 4, 1, boy({ style: 'side', hair: '#3b2619', top: 'tuxedo', shirt: '#1f1f26', accent: '#26242c', bottom: 'suitPants', pants: '#1f1f26', hat: 'tophat', cap: '#1d1d22' }), $t('SMOKING')],
 ];
 // nyckel ('kind:v' eller katalog-id) → katalogpost
 export const itemOf = (k) => itemById(k) || itemById(legacyKeyToId(k)) || null;
@@ -181,11 +182,11 @@ export const KUNGS_PLAYERS = [
 export const KUNGS_KIT = { shirt: '#7a1f2e', accent: '#d9434b', pants: '#1d1d22', pants2: '#1d1d22', socks: '#1d1d22', sockStripe: '#f4f1ea' };
 // Fotbollsskorna ur lagfotot
 export const CLEATS = [
-  { id: 'neon', name: 'Neongula', shoes: '#e4f22e', shoes2: '#1d1d22' },
-  { id: 'gulgron', name: 'Gulgröna', shoes: '#b6e03a', shoes2: '#2f7a2e' },
-  { id: 'rosa', name: 'Rosa', shoes: '#ff6fb5', shoes2: '#f4f1ea' },
-  { id: 'svart', name: 'Svarta', shoes: '#26242c', shoes2: '#f4f1ea' },
-  { id: 'vit', name: 'Vita', shoes: '#f4f1ea', shoes2: '#d9434b' },
+  { id: 'neon', name: $t('Neongula'), shoes: '#e4f22e', shoes2: '#1d1d22' },
+  { id: 'gulgron', name: $t('Gulgröna'), shoes: '#b6e03a', shoes2: '#2f7a2e' },
+  { id: 'rosa', name: $t('Rosa'), shoes: '#ff6fb5', shoes2: '#f4f1ea' },
+  { id: 'svart', name: $t('Svarta'), shoes: '#26242c', shoes2: '#f4f1ea' },
+  { id: 'vit', name: $t('Vita'), shoes: '#f4f1ea', shoes2: '#d9434b' },
 ];
 // Frisyrer/hårfärger till lagets skyltdockor (neutrala peruker – inga porträtt)
 const K_HAIR = ['#3b2619', '#d9a95c', '#1d1714', '#6b4226', '#ecd489', '#a5692f', '#b7392b', '#3b2619', '#1d1714', '#d9a95c'];
@@ -204,18 +205,18 @@ export const KUNGS_POS = KUNGS_PLAYERS.map((_, i) => (i < 10 ? { x: 30 + i * 38,
 // item = katalogplagget (tröjan), colors = lagets färger på tröjan, pants/socks = shorts och strumpor
 const T = (city, item, shirt, accent, print2, pants, socks, extra = {}) => ({ city, item, colors: { shirt, accent, ...(print2 ? { print2 } : {}) }, pants, socks, ...extra });
 export const TEAMS = [
-  T('GÖTEBORG', 'top-football-stripes', '#f4f1ea', '#1f4fa0', '#1f4fa0', '#1f4fa0', '#1f4fa0'),
-  T('MALMÖ', 'top-football', '#8ec8ef', '#f4f1ea', null, '#f4f1ea', '#8ec8ef'),
-  T('STOCKHOLM', 'top-football', '#1d1d22', '#f0c93a', null, '#1d1d22', '#1d1d22'),
-  T('GLASGOW', 'top-football-hoops', '#f4f1ea', '#1f8a4c', '#1f8a4c', '#f4f1ea', '#f4f1ea'),
-  T('BARCELONA', 'top-football-stripes', '#1f3f8f', '#f0c93a', '#a3173a', '#1f3f8f', '#1f3f8f'),
-  T('MADRID', 'top-football', '#f4f1ea', '#c9a23a', null, '#f4f1ea', '#f4f1ea'),
-  T('LIVERPOOL', 'top-football', '#c8102e', '#f4f1ea', null, '#c8102e', '#c8102e'),
-  T('NEAPEL', 'top-football', '#3d8fd6', '#f4f1ea', null, '#f4f1ea', '#3d8fd6'),
-  T('MILANO', 'top-football-stripes', '#c8102e', '#1d1d22', '#1d1d22', '#f4f1ea', '#1d1d22'),
-  T('TURIN', 'top-football-stripes', '#f4f1ea', '#1d1d22', '#1d1d22', '#f4f1ea', '#f4f1ea'),
-  T('PARIS', 'top-football', '#1b2a4a', '#d9433b', null, '#1b2a4a', '#1b2a4a'),
-  T('DORTMUND', 'top-football', '#f5d10a', '#1d1d22', null, '#1d1d22', '#f5d10a'),
+  T($t('GÖTEBORG'), 'top-football-stripes', '#f4f1ea', '#1f4fa0', '#1f4fa0', '#1f4fa0', '#1f4fa0'),
+  T($t('MALMÖ'), 'top-football', '#8ec8ef', '#f4f1ea', null, '#f4f1ea', '#8ec8ef'),
+  T($t('STOCKHOLM'), 'top-football', '#1d1d22', '#f0c93a', null, '#1d1d22', '#1d1d22'),
+  T($t('GLASGOW'), 'top-football-hoops', '#f4f1ea', '#1f8a4c', '#1f8a4c', '#f4f1ea', '#f4f1ea'),
+  T($t('BARCELONA'), 'top-football-stripes', '#1f3f8f', '#f0c93a', '#a3173a', '#1f3f8f', '#1f3f8f'),
+  T($t('MADRID'), 'top-football', '#f4f1ea', '#c9a23a', null, '#f4f1ea', '#f4f1ea'),
+  T($t('LIVERPOOL'), 'top-football', '#c8102e', '#f4f1ea', null, '#c8102e', '#c8102e'),
+  T($t('NEAPEL'), 'top-football', '#3d8fd6', '#f4f1ea', null, '#f4f1ea', '#3d8fd6'),
+  T($t('MILANO'), 'top-football-stripes', '#c8102e', '#1d1d22', '#1d1d22', '#f4f1ea', '#1d1d22'),
+  T($t('TURIN'), 'top-football-stripes', '#f4f1ea', '#1d1d22', '#1d1d22', '#f4f1ea', '#f4f1ea'),
+  T($t('PARIS'), 'top-football', '#1b2a4a', '#d9433b', null, '#1b2a4a', '#1b2a4a'),
+  T($t('DORTMUND'), 'top-football', '#f5d10a', '#1d1d22', null, '#1d1d22', '#f5d10a'),
 ];
 const T_HAIR = ['#1d1714', '#3b2619', '#d9a95c', '#6b4226', '#ecd489', '#1d1714'];
 const T_STYLE = ['short', 'fade', 'ponytail', 'buzz', 'bun', 'side'];
@@ -238,12 +239,12 @@ export const JUL_WIN = [[196, 18, 58, 44], [478, 14, 84, 48], [1000, 18, 48, 44]
 // dockorna: [katalog-id, x, y, outfit, kortnamn]
 const julDoll = (o) => ({ ...MANNE, build: 5, ...o });
 export const JUL_DOLLS = [
-  ['top-santa', 44, 104, julDoll({ style: 'short', hair: '#f4f1ea', top: 'santa', shirt: '#c9323a', bottom: 'pants', pants: '#c9323a', shoes: '#1c1c1c', hat: 'santa', cap: '#c9323a', beard: 'santa', build: 6 }), 'TOMTE'],
-  ['bottom-lucia', 104, 104, julDoll({ style: 'long', hair: '#ecd489', top: 'lucia', shirt: '#f6f3ec', accent: '#c9323a', bottom: 'lucia', pants2: '#c9323a', shoes: '#f2f2f2', blush: true, build: 4 }), 'LUCIA'],
-  ['top-college-xmas', 164, 104, julDoll({ style: 'messy', hair: '#6b4226', top: 'college', topPrint: 'xmas', shirt: '#c9323a', print2: '#f4f1ea', bottom: 'jeans', pants: '#2d3a5c' }), 'JULTRÖJA'],
-  ['top-lucia', 74, 166, julDoll({ style: 'bun', hair: '#3b2619', top: 'lucia', shirt: '#f4f1ea', accent: '#2f8f46', bottom: 'skirt', pants: '#f4f1ea', shoes: '#f2f2f2', blush: true, build: 4 }), 'TÄRNA'],
-  ['hat-santa', 134, 166, julDoll({ style: 'pigtails', hair: '#d9a95c', top: 'hoodie', shirt: '#2f8f46', bottom: 'jeans', pants: '#3f5f8f', hat: 'santa', cap: '#c9323a', blush: true, build: 4 }), 'TOMTELUVA'],
-  ['top-college-xmas', 254, 166, julDoll({ style: 'fade', hair: '#1d1714', top: 'college', topPrint: 'xmas', shirt: '#2f8f46', print2: '#f4f1ea', bottom: 'chinos', pants: '#b8a47a', hat: 'santa', cap: '#2f8f46' }), 'GRÖN JULTRÖJA'],
+  ['top-santa', 44, 104, julDoll({ style: 'short', hair: '#f4f1ea', top: 'santa', shirt: '#c9323a', bottom: 'pants', pants: '#c9323a', shoes: '#1c1c1c', hat: 'santa', cap: '#c9323a', beard: 'santa', build: 6 }), $t('TOMTE')],
+  ['bottom-lucia', 104, 104, julDoll({ style: 'long', hair: '#ecd489', top: 'lucia', shirt: '#f6f3ec', accent: '#c9323a', bottom: 'lucia', pants2: '#c9323a', shoes: '#f2f2f2', blush: true, build: 4 }), $t('LUCIA')],
+  ['top-college-xmas', 164, 104, julDoll({ style: 'messy', hair: '#6b4226', top: 'college', topPrint: 'xmas', shirt: '#c9323a', print2: '#f4f1ea', bottom: 'jeans', pants: '#2d3a5c' }), $t('JULTRÖJA')],
+  ['top-lucia', 74, 166, julDoll({ style: 'bun', hair: '#3b2619', top: 'lucia', shirt: '#f4f1ea', accent: '#2f8f46', bottom: 'skirt', pants: '#f4f1ea', shoes: '#f2f2f2', blush: true, build: 4 }), $t('TÄRNA')],
+  ['hat-santa', 134, 166, julDoll({ style: 'pigtails', hair: '#d9a95c', top: 'hoodie', shirt: '#2f8f46', bottom: 'jeans', pants: '#3f5f8f', hat: 'santa', cap: '#c9323a', blush: true, build: 4 }), $t('TOMTELUVA')],
+  ['top-college-xmas', 254, 166, julDoll({ style: 'fade', hair: '#1d1714', top: 'college', topPrint: 'xmas', shirt: '#2f8f46', print2: '#f4f1ea', bottom: 'chinos', pants: '#b8a47a', hat: 'santa', cap: '#2f8f46' }), $t('GRÖN JULTRÖJA')],
 ];
 // jultorget
 export const JUL_BRASA = { x: 402, base: 84 };         // den julpyntade spisen (julspis1) vid väggen

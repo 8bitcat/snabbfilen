@@ -12,6 +12,7 @@
 import { Pix, mix, mul, hash, bayer, SMALL, text } from '../core/floor-pix.js';
 import { CITY, BUILDINGS_S, BUILDINGS_X, LOTS, STREETS_S, STREETS_X, CROSSWALKS_S, CROSSWALKS_I, LIGHTS_S, BUS_STOPS,
   LANES_I, PARK_LAYOUT, SUB_LAYOUT, footprint, gateRect } from './map.js';
+import { $t } from '../core/i18n.js';
 
 const W = CITY.W, H = CITY.H;
 const WHITE = 0xffffff;
@@ -304,7 +305,7 @@ export function createFallback(env, need = { ground: true, props: true, traffic:
       sidewalk(P, CITY.SIDEWALK_SS[0], CITY.SIDEWALK_SS[1], 0.1, true);
       for (const s of BUS_STOPS.filter((s) => s.road === 'sodergatan')) { // BUSS-fickan
         for (let x = s.x - 44; x < s.x + 44; x++) for (let y = CITY.ROAD_S[1] - 12; y < CITY.ROAD_S[1] - 2; y++) P.px(x, y, hash(x, y, 346) > 0.5 ? 0x6a6864 : 0x605e5a, 0.6);
-        text(P, SMALL, 'BUSS', s.x - 10, CITY.ROAD_S[1] - 11, 0xe8e0c8);
+        text(P, SMALL, $t('BUSS'), s.x - 10, CITY.ROAD_S[1] - 11, 0xe8e0c8);
       }
       // kajen med räcke, kanalen
       fill(P, [0, CITY.QUAY[0], W, CITY.QUAY[1]], (x, y) => { const j = ((x % 14) + 14) % 14 === 13; const c = j ? 0x6e6a62 : grain(0x9a968e, x, y, 350, 0.06); return y === CITY.QUAY[0] ? mix(c, WHITE, 0.25) : y === CITY.QUAY[1] - 1 ? mul(c, 0.7) : c; });

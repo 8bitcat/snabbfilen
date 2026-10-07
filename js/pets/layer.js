@@ -96,6 +96,7 @@ import { openModal, closeModal, toast, esc, modalOpen } from '../core/ui.js';
 import { play } from '../core/sound.js';
 import { animalSound } from '../core/voices.js';
 import { SMALL, ctxText, textW } from '../core/floor-pix.js';
+import { $t } from '../core/i18n.js';
 
 // Spritemodulen importeras som namnrymd: kontraktet (drawPet, drawPetIcon, petSize, drawPoop,
 // drawPuddle, SPECIES) krävs, resten (petBox, petNeck, breedOf, ICON_W/H) används om de finns.
@@ -152,6 +153,8 @@ const speciesWord = (p) => {
   return p.stage === 'unge' ? S?.unge || p.species : p.stage === 'ung' ? S?.ung || p.species : S?.vuxen || p.species;
 };
 const sexSign = (p) => (p.sex === 'hona' ? '♀' : '♂');
+// skålens innehåll i djurprylarnas status ("60 % kattmat")
+const MAT = { katt: $t('kattmat'), hund: $t('hundmat'), kanin: $t('kaninmat') };
 
 // Gemensam rörelsemotor för djuren (rummet) och följaren (staden)
 function stepMotion(a, dt, dvx, dvy, free, acc = ACC) {
@@ -523,7 +526,7 @@ export function createPetLayer(A, opts = {}) {
       if (b && goEat(a, b)) return;
       if (p.hunger < 35 && playerHere() && t - (a.begAt ?? -99) > 6) {
         a.begAt = t;
-        if (t - begToastAt > 25 && opts.toasts !== false) { begToastAt = t; toast(`🍽️ ${p.name} tigger mat – fyll skålen!`); }
+        if (t - begToastAt > 25 && opts.toasts !== false) { begToastAt = t; toast($t`🍽️ ${p.name} tigger mat – fyll skålen!`); }
         visitPlayer(a, 'beg'); return;
       }
     }
@@ -831,7 +834,7 @@ export function createPetLayer(A, opts = {}) {
   // skulle bubblorna täcka varandra: layoutBubbles låter den bakre glida en bit i sidled eller
   // en rad upp (den som står närmast betraktaren behåller sin plats).
   const BUB_H = 11, BUB_GAP = 4;
-  const bubbleText = (a) => (a.grewStage === 'vuxen' ? 'NU ÄR JAG STOR!' : 'JAG HAR VUXIT!');
+  const bubbleText = (a) => (a.grewStage === 'vuxen' ? $t('NU ÄR JAG STOR!') : $t('JAG HAR VUXIT!'));
   function bubbleBase(a) {
     const w = textW(SMALL, bubbleText(a)) + 16;
     const hTop = meterBase(a).y0 + MH + 3; // = djurets huvudtopp (samma höjd som mätaren utgår från)
@@ -961,21 +964,21 @@ export function createPetLayer(A, opts = {}) {
     const def = PET_ITEMS[it.k], sp = itemSpot(it.k);
     const c = carrying();
     if (def.typ === 'sack') {
-      if (c && c.itemId === it.id) { setCarry(null); play('click'); toast('Du ställde tillbaka säcken.'); return; }
-      walkThen(it.x, it.y + 5, () => { setCarry(it); play('click'); toast(`🛍️ Du bär ${def.namn.toLowerCase()} – klicka på en matskål för att hälla upp.`); });
+      if (c && c.itemId === it.id) { setCarry(null); play('click'); toast($t('Du ställde tillbaka säcken.')); return; }
+      walkThen(it.x, it.y + 5, () => { setCarry(it); play('click'); toast($t`🛍️ Du bär ${def.namn.toLowerCase()} – klicka på en matskål för att hälla upp.`); });
       return;
     }
     if (def.typ === 'skal') {
       if (!c) {
         const sacks = items().filter((i) => PET_ITEMS[i.k].typ === 'sack');
-        if (sacks.length) { play('fel'); toast('🛍️ Hämta en matsäck först – klicka på säcken, sedan på skålen.'); return; }
+        if (sacks.length) { play('fel'); toast($t('🛍️ Hämta en matsäck först – klicka på säcken, sedan på skålen.')); return; }
         const inv = ['katt', 'hund', 'kanin'].find((s) => (store.inventory['sack-' + s] | 0) > 0 || (store.opened['sack-' + s] | 0) > 0);
-        if (!inv) { play('fel'); toast('🛒 Du har ingen djurmat – köp en säck i djuraffären.'); return; }
+        if (!inv) { play('fel'); toast($t('🛒 Du har ingen djurmat – köp en säck i djuraffären.')); return; }
         const want = store._wantedFood(home, room);
         const k = 'sack-' + ((store.inventory['sack-' + want] | 0) > 0 || (store.opened['sack-' + want] | 0) > 0 ? want : inv);
         const [sx, sy] = nearestFreePt(it.x + 14, it.y);
         const s = store.placeItem(k, home, room, Math.round(sx), Math.round(sy));
-        if (s) { version++; opts.onObstacles?.(obstacles()); play('click'); toast(`📦 Du ställde fram en ${PET_ITEMS[k].namn.toLowerCase()} – klicka på säcken och sedan på skålen.`); }
+        if (s) { version++; opts.onObstacles?.(obstacles()); play('click'); toast($t`📦 Du ställde fram en ${PET_ITEMS[k].namn.toLowerCase()} – klicka på säcken och sedan på skålen.`); }
         return;
       }
       walkThen(it.x, it.y + 7, () => {
@@ -983,7 +986,7 @@ export function createPetLayer(A, opts = {}) {
         if (!r) { play('fel'); toast(store.lastError); if (store.lastReason !== 'full') setCarry(null); return; }
         play('ok'); spark(it.x, it.y - 2, 'pour');
         setCarry(null);
-        toast(r.emptied ? '🥣 Skålen är full – och säcken blev tom.' : '🥣 Skålen är full!', 'good');
+        toast(r.emptied ? $t('🥣 Skålen är full – och säcken blev tom.') : $t('🥣 Skålen är full!'), 'good');
       });
       return;
     }
@@ -991,14 +994,14 @@ export function createPetLayer(A, opts = {}) {
       walkThen(it.x, it.y + 7, () => {
         const r = store.fillBowl(it.id);
         if (!r) { toast(store.lastError); return; }
-        play('ok'); spark(it.x, it.y - 2, 'water'); toast('💧 Friskt vatten!', 'good');
+        play('ok'); spark(it.x, it.y - 2, 'water'); toast($t('💧 Friskt vatten!'), 'good');
       });
       return;
     }
     if (def.typ === 'lada' || (def.typ === 'bur' && it.dirt > 0.05)) {
       walkThen(it.x, it.y + 5, () => {
-        if (store.cleanLitter(it.id)) { play('coin'); spark(it.x, it.y - 4, 'clean'); toast(def.typ === 'bur' ? '🌾 Ny halm i buren!' : '🧻 Kattlådan är tömd!', 'good'); }
-        else { play('click'); toast(def.typ === 'bur' ? 'Buren är redan fräsch.' : 'Lådan är redan ren.'); }
+        if (store.cleanLitter(it.id)) { play('coin'); spark(it.x, it.y - 4, 'clean'); toast(def.typ === 'bur' ? $t('🌾 Ny halm i buren!') : $t('🧻 Kattlådan är tömd!'), 'good'); }
+        else { play('click'); toast(def.typ === 'bur' ? $t('Buren är redan fräsch.') : $t('Lådan är redan ren.')); }
       });
       return;
     }
@@ -1043,18 +1046,18 @@ export function createPetLayer(A, opts = {}) {
     const G = store.growth ? store.growth(p) : null;
     if (!G) return '';
     const S = SPECIES[p.species] || {};
-    const goal = G.next ? (G.next === 'ung' ? S.ung : S.vuxen) || G.next : null;
+    const goal = G.next ? (G.next === 'ung' ? S.ung : S.vuxen) || $t(G.next) : null;
     const pct = Math.round(G.pct * 100);
     const heldPct = G.next ? Math.round((G.pctHeld || 0) * 100) : 0;
     const col = G.next ? (G.ready ? '#8ee06a' : '#4cc0a8') : '#58c46a';
     const tip = G.next
-      ? `Tillväxtpoäng ${Math.round(G.grow)} av ${G.need} – nästa: ${goal}.${G.held > 0.5 ? ` ${Math.round(G.held)} poäng från i dag väntar: lek och en leksak behövs varje dag.` : ''}`
-      : 'Fullvuxen';
+      ? `${$t`Tillväxtpoäng ${Math.round(G.grow)} av ${G.need} – nästa: ${goal}.`}${G.held > 0.5 ? ` ${$t`${Math.round(G.held)} poäng från i dag väntar: lek och en leksak behövs varje dag.`}` : ''}`
+      : $t('Fullvuxen');
     return `<div data-grow style="margin-top:6px">
-      <div style="display:flex;align-items:center;gap:8px;font-size:var(--f2);margin:2px 0" title="${esc(tip)}"><span style="width:124px;white-space:nowrap">🌱 Tillväxt</span>
+      <div style="display:flex;align-items:center;gap:8px;font-size:var(--f2);margin:2px 0" title="${esc(tip)}"><span style="width:124px;white-space:nowrap">${$t('🌱 Tillväxt')}</span>
         <span style="flex:1;height:12px;background:#3a3440;border:2px solid var(--ink);position:relative"><span style="position:absolute;left:0;top:0;bottom:0;width:${pct}%;background:${col}"></span>${heldPct > 0 ? `<span data-grow-held style="position:absolute;left:${pct}%;top:0;bottom:0;width:${heldPct}%;background:repeating-linear-gradient(90deg,${col} 0 3px,transparent 3px 6px);opacity:.75"></span>` : ''}</span>
         <b style="width:34px;text-align:right">${G.next ? pct : '✔'}</b></div>
-      <p data-grow-text style="font-size:var(--f2);margin:2px 0 0">${G.next ? `<span class="sp">Nästa: ${esc(goal.toLowerCase())}.</span> ` : ''}${esc(G.text)}</p></div>`;
+      <p data-grow-text style="font-size:var(--f2);margin:2px 0 0">${G.next ? `<span class="sp">${$t`Nästa: ${esc(goal.toLowerCase())}.`}</span> ` : ''}${esc(G.text)}</p></div>`;
   }
   function openPetMenu(petId) {
     const p = store.petById(petId);
@@ -1066,42 +1069,43 @@ export function createPetLayer(A, opts = {}) {
     const age = Math.max(0, (store.day || 1) - (p.bornDay || 1));
     const lover = p.lover ? store.petById(p.lover) : null;
     const status = [];
-    if (p.out) status.push(p.species === 'hund' ? '🦮 Koppel på – följer med ut.' : '🚶 Följer med ut.');
-    else if (p.following) status.push('🐾 Följer dig i rummet.');
-    if (lover) status.push(`❤️ Kär i ${esc(lover.name)}.`);
-    if (p.pregnantUntil != null) { const d = p.pregnantUntil - (store.day || 1); status.push(`🍼 Väntar ungar ${d <= 0 ? 'i natt' : d === 1 ? 'i morgon' : `om ${d} dagar`}!`); }
-    if (p.hunger < 35) status.push('🍽️ Hungrig – fyll matskålen.');
-    if (p.species === 'hund' && p.toilet >= 70) status.push('🌳 Måste ut och kissa!');
+    if (p.out) status.push(p.species === 'hund' ? $t('🦮 Koppel på – följer med ut.') : $t('🚶 Följer med ut.'));
+    else if (p.following) status.push($t('🐾 Följer dig i rummet.'));
+    if (lover) status.push($t`❤️ Kär i ${esc(lover.name)}.`);
+    if (p.pregnantUntil != null) { const d = p.pregnantUntil - (store.day || 1); status.push(d <= 0 ? $t('🍼 Väntar ungar i natt!') : d === 1 ? $t('🍼 Väntar ungar i morgon!') : $t`🍼 Väntar ungar om ${d} dagar!`); }
+    if (p.hunger < 35) status.push($t('🍽️ Hungrig – fyll matskålen.'));
+    if (p.species === 'hund' && p.toilet >= 70) status.push($t('🌳 Måste ut och kissa!'));
     const kind = speciesWord(p);
+    const kon = p.sex === 'hona' ? $t('hona') : $t('hane');
     const body = `<div style="display:flex;gap:14px;align-items:flex-start">
         <span data-portrait style="flex:none"></span>
         <div style="flex:1;min-width:0">
-          <p style="font-size:var(--f3);margin:0"><b>${esc(p.name)}</b> <span title="${p.sex}">${sexSign(p)}</span></p>
-          <p style="font-size:var(--f2);margin:2px 0 8px" class="sp">${esc(br?.namn || p.breed)}${br2 && br2.id !== br?.id ? ` × ${esc(br2.namn)}` : ''} · ${esc(kind.toLowerCase())} · ${p.sex} · ${age === 0 ? 'född i dag' : age === 1 ? '1 dag gammal' : `${age} dagar gammal`}</p>
-          ${statBar('❤️ Glad', p.happy)}
-          ${statBar('🥣 Mätt', p.hunger)}
-          ${p.species === 'hund' ? statBar('💩 Kissnödig', p.toilet, true) : ''}
+          <p style="font-size:var(--f3);margin:0"><b>${esc(p.name)}</b> <span title="${kon}">${sexSign(p)}</span></p>
+          <p style="font-size:var(--f2);margin:2px 0 8px" class="sp">${esc(br?.namn || p.breed)}${br2 && br2.id !== br?.id ? ` × ${esc(br2.namn)}` : ''} · ${esc(kind.toLowerCase())} · ${kon} · ${age === 0 ? $t('född i dag') : age === 1 ? $t('1 dag gammal') : $t`${age} dagar gammal`}</p>
+          ${statBar($t('❤️ Glad'), p.happy)}
+          ${statBar($t('🥣 Mätt'), p.hunger)}
+          ${p.species === 'hund' ? statBar($t('💩 Kissnödig'), p.toilet, true) : ''}
           ${growRow(p)}
           ${status.length ? `<p style="font-size:var(--f2);margin:8px 0 0">${status.join('<br>')}</p>` : ''}
         </div></div>`;
     const done = (fn) => () => { closeModal(); menuFor = null; if (a) { a.mode = 'idle'; a.modeT = 0.2; } fn?.(); };
     const tooSmall = !p.out && p.stage === 'unge' && p.species !== 'hund'; // walkStart nekar ('for-liten')
     const outBtn = p.species === 'hund'
-      ? { label: p.out ? '🦮 Ta av kopplet' : '🦮 Koppel på', onClick: done(() => {
-        if (p.out) { store.walkEnd(p.id); p.room = room; p.x = a?.x ?? p.x; p.y = a?.y ?? p.y; toast(`${p.name} är fri igen.`); }
+      ? { label: p.out ? $t('🦮 Ta av kopplet') : $t('🦮 Koppel på'), onClick: done(() => {
+        if (p.out) { store.walkEnd(p.id); p.room = room; p.x = a?.x ?? p.x; p.y = a?.y ?? p.y; toast($t`${p.name} är fri igen.`); }
         else { const r = store.walkStart(p.id); toast(r ? '🦮 ' + r.msg : store.lastError, r ? 'good' : 'bad'); play(r ? 'ok' : 'fel'); }
       }) }
-      : tooSmall ? { label: '🚼 För liten att gå ut', disabled: true, onClick: () => {} }
-        : { label: p.out ? '🏠 Stanna hemma' : '🚶 Ta med ut', onClick: done(() => {
+      : tooSmall ? { label: $t('🚼 För liten att gå ut'), disabled: true, onClick: () => {} }
+        : { label: p.out ? $t('🏠 Stanna hemma') : $t('🚶 Ta med ut'), onClick: done(() => {
           if (p.out) { store.walkEnd(p.id); p.room = room; p.x = a?.x ?? p.x; p.y = a?.y ?? p.y; }
           else { const r = store.walkStart(p.id); toast(r ? r.msg : store.lastError, r ? 'good' : 'bad'); }
         }) };
     const dlg = openModal(`🐾 ${esc(p.name)}`, body, [
-      { label: '🤚 Klappa', cls: 'btn-go', onClick: done(() => doPat(p.id)) },
-      { label: '🎾 Leka', onClick: done(() => doPlay(p.id)) },
+      { label: $t('🤚 Klappa'), cls: 'btn-go', onClick: done(() => doPat(p.id)) },
+      { label: $t('🎾 Leka'), onClick: done(() => doPlay(p.id)) },
       outBtn,
-      { label: p.following ? '🛑 Stanna här' : '🐾 Följ mig', hidden: p.out, onClick: done(() => { store.setFollowing(p.id, !p.following); toast(p.following ? `${p.name} följer dig.` : `${p.name} stannar här.`); }) },
-      { label: '✏️ Byt namn', onClick: () => renameDialog(p.id) },
+      { label: p.following ? $t('🛑 Stanna här') : $t('🐾 Följ mig'), hidden: p.out, onClick: done(() => { store.setFollowing(p.id, !p.following); toast(p.following ? $t`${p.name} följer dig.` : $t`${p.name} stannar här.`); }) },
+      { label: $t('✏️ Byt namn'), onClick: () => renameDialog(p.id) },
     ]);
     const slot = dlg.querySelector('[data-portrait]');
     if (slot) slot.replaceWith(portraitCanvas(p, 4));
@@ -1111,12 +1115,12 @@ export function createPetLayer(A, opts = {}) {
   function renameDialog(petId) {
     const p = store.petById(petId);
     if (!p) return;
-    const dlg = openModal('✏️ Byt namn', `<p style="font-size:var(--f2);margin-top:0">Vad ska ${esc(p.name)} heta?</p>
+    const dlg = openModal($t('✏️ Byt namn'), `<p style="font-size:var(--f2);margin-top:0">${$t`Vad ska ${esc(p.name)} heta?`}</p>
       <input id="pet-namn" maxlength="16" value="${esc(p.name)}" style="font:inherit;font-size:var(--f2);width:100%;padding:6px;border:3px solid var(--ink)">`, [
-      { label: 'Avbryt', onClick: () => { closeModal(); menuFor = null; } },
-      { label: '✔ Spara', cls: 'btn-go', onClick: () => {
+      { label: $t('Avbryt'), onClick: () => { closeModal(); menuFor = null; } },
+      { label: $t('✔ Spara'), cls: 'btn-go', onClick: () => {
         const v = dlg.querySelector('#pet-namn')?.value || '';
-        if (store.rename(petId, v)) { play('ok'); toast(`Hej ${store.petById(petId).name}!`, 'good'); }
+        if (store.rename(petId, v)) { play('ok'); toast($t`Hej ${store.petById(petId).name}!`, 'good'); }
         closeModal(); menuFor = null;
       } },
     ]);
@@ -1135,9 +1139,11 @@ export function createPetLayer(A, opts = {}) {
       const f = facing(a.x, a.y, px(), py() - 4);
       setPose(a, p.species === 'katt' ? 'love' : 'happy', 2.2, null, f);
     }
-    const word = { katt: 'spinner', hund: 'viftar på svansen', kanin: 'nosar glatt' }[p.species] || 'blir glad';
     const jag = A.game?.glad ? A.game.glad(2, '', 'djur', 10) : 0;                            // djuren gör en själv glad också (högst +10 om dagen)
-    toast(`🤚 ${p.name} ${word}! (glad ${Math.round(before)} → ${Math.round(p.happy)})${jag ? ` · +${jag} 😊` : ''}`, 'good');
+    const fore = Math.round(before), efter = Math.round(p.happy);
+    const msg = p.species === 'katt' ? $t`🤚 ${p.name} spinner! (glad ${fore} → ${efter})` : p.species === 'hund' ? $t`🤚 ${p.name} viftar på svansen! (glad ${fore} → ${efter})`
+      : p.species === 'kanin' ? $t`🤚 ${p.name} nosar glatt! (glad ${fore} → ${efter})` : $t`🤚 ${p.name} blir glad! (glad ${fore} → ${efter})`;
+    toast(`${msg}${jag ? ` · +${jag} 😊` : ''}`, 'good');
   }
   function doPlay(petId) {
     const p = store.petById(petId), a = actors.get(petId);
@@ -1150,15 +1156,16 @@ export function createPetLayer(A, opts = {}) {
       setPose(a, 'play', 2.4, () => { if (rnd() < 0.7) { const [x, y] = nearestFreePt(a.x + (rnd() - 0.5) * 70, a.y + (rnd() - 0.5) * 24); go(a, x, y, { run: true, then: () => setPose(a, 'happy', 1.2, null, facing(a.x, a.y, px(), py())) }); } }, f);
     }
     const jag = A.game?.glad ? A.game.glad(3, '', 'djur', 10) : 0;
-    toast(`🎾 ${p.name} leker!${jag ? ` · +${jag} 😊` : ''}`, 'good');
+    toast(`${$t`🎾 ${p.name} leker!`}${jag ? ` · +${jag} 😊` : ''}`, 'good');
   }
   function openItemMenu(it) {
     const def = PET_ITEMS[it.k];
-    const extra = def.typ === 'bur' ? `<p style="font-size:var(--f2)">Halmen: ${it.dirt > 0.6 ? 'smutsig' : it.dirt > 0.2 ? 'helt okej' : 'fräsch'}.</p>` : '';
+    const halm = it.dirt > 0.6 ? $t('smutsig') : it.dirt > 0.2 ? $t('helt okej') : $t('fräsch');
+    const extra = def.typ === 'bur' ? `<p style="font-size:var(--f2)">${$t`Halmen: ${halm}.`}</p>` : '';
     const dlg = openModal(`${def.namn}`, `<div style="display:flex;gap:14px;align-items:center"><span data-icon></span><p style="font-size:var(--f2);margin:0">${esc(def.desc || '')}</p></div>${extra}`, [
-      { label: '↔️ Flytta', onClick: () => { closeModal(); startMoving(it.id); } },
-      { label: '📦 Plocka upp', onClick: () => { closeModal(); if (carrying()?.itemId === it.id) setCarry(null); if (store.pickItem(it.id)) { version++; opts.onObstacles?.(obstacles()); play('click'); toast(`${def.namn} ligger i dina djurprylar.`); } } },
-      { label: 'Stäng', cls: 'btn-go', onClick: closeModal },
+      { label: $t('↔️ Flytta'), onClick: () => { closeModal(); startMoving(it.id); } },
+      { label: $t('📦 Plocka upp'), onClick: () => { closeModal(); if (carrying()?.itemId === it.id) setCarry(null); if (store.pickItem(it.id)) { version++; opts.onObstacles?.(obstacles()); play('click'); toast($t`${def.namn} ligger i dina djurprylar.`); } } },
+      { label: $t('Stäng'), cls: 'btn-go', onClick: closeModal },
     ]);
     const slot = dlg.querySelector('[data-icon]');
     if (slot) slot.replaceWith(itemCanvas(it.k, 3, it));
@@ -1170,13 +1177,13 @@ export function createPetLayer(A, opts = {}) {
     // förrådet: namn + beskrivning; rummet: kompakta rader (namn – status) i en lista som
     // rullar själv, så dialogen ryms på skärmen även med tolv prylar framme
     const rowInv = ([k, n]) => `<div class="prow"><span data-ic="${k}"></span><span class="nm">${esc(PET_ITEMS[k].namn)} ×${n}<br><small class="sp">${esc(PET_ITEMS[k].desc || '')}</small></span>
-      <button class="btn btn-small btn-go" data-place="${k}">Ställ ut</button></div>`;
+      <button class="btn btn-small btn-go" data-place="${k}">${$t('Ställ ut')}</button></div>`;
     const rowPlaced = (it) => `<div class="prow" style="padding:2px 6px 2px 3px;gap:6px"><span data-ic="${it.k}"></span><span class="nm" style="font-size:var(--f2)">${esc(PET_ITEMS[it.k].namn)} <small class="sp">– ${esc(itemStatus(it))}</small></span>
-      <span style="display:flex;gap:4px"><button class="btn btn-small" data-move="${it.id}">Flytta</button><button class="btn btn-small" data-pick="${it.id}">Plocka upp</button></span></div>`;
-    const dlg = openModal('🐾 Djurprylar', `
-      ${inv.length || opened.length ? `<p style="font-size:var(--f2);margin:0 0 6px"><b>I förrådet</b></p><div class="plist" style="max-height:32vh;overflow:auto;padding:2px">${[...inv, ...opened.map(([k, n]) => [k, `påbörjad (${n} kvar)`])].map(rowInv).join('')}</div>` : '<p style="font-size:var(--f2);margin-top:0">Förrådet är tomt – köp prylar i djuraffären.</p>'}
-      ${placed.length ? `<p style="font-size:var(--f2);margin:10px 0 6px"><b>Här i rummet</b> <small class="sp">(${placed.length})</small></p><div class="plist" style="max-height:40vh;overflow:auto;padding:2px;gap:4px">${placed.map(rowPlaced).join('')}</div>` : ''}`,
-    [{ label: 'Klar', cls: 'btn-go', onClick: closeModal }]);
+      <span style="display:flex;gap:4px"><button class="btn btn-small" data-move="${it.id}">${$t('Flytta')}</button><button class="btn btn-small" data-pick="${it.id}">${$t('Plocka upp')}</button></span></div>`;
+    const dlg = openModal($t('🐾 Djurprylar'), `
+      ${inv.length || opened.length ? `<p style="font-size:var(--f2);margin:0 0 6px"><b>${$t('I förrådet')}</b></p><div class="plist" style="max-height:32vh;overflow:auto;padding:2px">${[...inv, ...opened.map(([k, n]) => [k, $t`påbörjad (${n} kvar)`])].map(rowInv).join('')}</div>` : `<p style="font-size:var(--f2);margin-top:0">${$t('Förrådet är tomt – köp prylar i djuraffären.')}</p>`}
+      ${placed.length ? `<p style="font-size:var(--f2);margin:10px 0 6px"><b>${$t('Här i rummet')}</b> <small class="sp">(${placed.length})</small></p><div class="plist" style="max-height:40vh;overflow:auto;padding:2px;gap:4px">${placed.map(rowPlaced).join('')}</div>` : ''}`,
+    [{ label: $t('Klar'), cls: 'btn-go', onClick: closeModal }]);
     dlg.querySelectorAll('[data-ic]').forEach((el) => el.replaceWith(itemCanvas(el.dataset.ic, fitScale(el.dataset.ic))));
     dlg.querySelectorAll('[data-place]').forEach((b) => (b.onclick = () => { closeModal(); startPlacing(b.dataset.place); }));
     dlg.querySelectorAll('[data-move]').forEach((b) => (b.onclick = () => { closeModal(); startMoving(b.dataset.move); }));
@@ -1187,16 +1194,17 @@ export function createPetLayer(A, opts = {}) {
   }
   function itemStatus(it) {
     const def = PET_ITEMS[it.k];
-    if (def.typ === 'skal') return it.food > 0.02 ? `${Math.round(it.food * 100)} % ${it.foodKind ? it.foodKind + 'mat' : 'mat'}` : 'tom';
-    if (def.typ === 'vatten') return it.water > 0.02 ? `${Math.round(it.water * 100)} % vatten` : 'tom';
-    if (def.typ === 'lada') return it.dirt > 0.6 ? 'behöver tömmas!' : it.dirt > 0.2 ? 'lite använd' : 'ren';
-    if (def.typ === 'bur') return it.dirt > 0.6 ? 'byt halm!' : 'fräsch halm';
-    if (def.typ === 'sack') return `${it.left} portioner kvar`;
+    if (def.typ === 'skal') return it.food > 0.02 ? `${Math.round(it.food * 100)} % ${MAT[it.foodKind] || (it.foodKind ? it.foodKind + 'mat' : $t('mat'))}` : $t('tom');
+    if (def.typ === 'vatten') return it.water > 0.02 ? $t`${Math.round(it.water * 100)} % vatten` : $t('tom');
+    if (def.typ === 'lada') return it.dirt > 0.6 ? $t('behöver tömmas!') : it.dirt > 0.2 ? $t('lite använd') : $t('ren');
+    if (def.typ === 'bur') return it.dirt > 0.6 ? $t('byt halm!') : $t('fräsch halm');
+    if (def.typ === 'sack') return $t`${it.left} portioner kvar`;
     // korg/klösträd: vem som ligger där just nu; leksaker och koppel: kort och gott
     const who = [...actors.values()].filter((a) => a.inItem === it.id || a.elev === it.id).map((a) => a.pet.name);
-    if (def.typ === 'sang' || def.typ === 'klos') return who.length ? `${who.join(' och ')} ${def.typ === 'klos' ? 'är där uppe' : 'ligger här'}` : 'ledig';
-    if (def.typ === 'leksak') return 'på golvet';
-    return 'på plats';
+    const vilka = who.join(` ${$t('och')} `);
+    if (def.typ === 'sang' || def.typ === 'klos') return who.length ? (def.typ === 'klos' ? $t`${vilka} är där uppe` : $t`${vilka} ligger här`) : $t('ledig');
+    if (def.typ === 'leksak') return $t('på golvet');
+    return $t('på plats');
   }
   // ikonskala som ryms i dialogradens 44 px-kolumn (breda/höga saker ritas i skala 1)
   function fitScale(k, max = 2) {
@@ -1208,13 +1216,13 @@ export function createPetLayer(A, opts = {}) {
   function startPlacing(k) {
     if (!PET_ITEMS[k]) return;
     placing = { k, itemId: null, x: mouse.x, y: mouse.y };
-    toast(`Klicka på golvet där ${PET_ITEMS[k].namn.toLowerCase()} ska stå (Esc avbryter).`);
+    toast($t`Klicka på golvet där ${PET_ITEMS[k].namn.toLowerCase()} ska stå (Esc avbryter).`);
   }
   function startMoving(itemId) {
     const it = store.itemById(itemId);
     if (!it) return;
     placing = { k: it.k, itemId, x: it.x, y: it.y };
-    toast(`Klicka där ${PET_ITEMS[it.k].namn.toLowerCase()} ska stå (Esc avbryter).`);
+    toast($t`Klicka där ${PET_ITEMS[it.k].namn.toLowerCase()} ska stå (Esc avbryter).`);
   }
   // fotavtryck på golvet (det saken står på) och synlig ruta (det man ser av den)
   function footprint(k) {
@@ -1244,7 +1252,7 @@ export function createPetLayer(A, opts = {}) {
     const P = placing, x = Math.round(P.x), y = Math.round(P.y);
     if (!canPlace(P.k, x, y, P.itemId)) { play('fel'); return; }
     if (P.itemId) store.moveItem(P.itemId, x, y);
-    else if (!store.placeItem(P.k, home, room, x, y)) { play('fel'); toast(store.lastError || 'Det gick inte.'); placing = null; return; }
+    else if (!store.placeItem(P.k, home, room, x, y)) { play('fel'); toast(store.lastError || $t('Det gick inte.')); placing = null; return; }
     play('ok');
     const moreLeft = !P.itemId && ((store.inventory[P.k] | 0) > 0);
     placing = moreLeft ? { ...P } : null;
@@ -1321,7 +1329,7 @@ export function createPetLayer(A, opts = {}) {
     }
     if (done.length) {
       version++; opts.onObstacles?.(obstacles());
-      if (opts.toasts !== false) toast(`📦 Framställt: ${done.join(', ')}. Flytta via Djurprylar.`);
+      if (opts.toasts !== false) toast($t`📦 Framställt: ${done.join(', ')}. Flytta via Djurprylar.`);
     }
     return done;
   }
@@ -1464,7 +1472,7 @@ export function createPetLayer(A, opts = {}) {
       if (a) { clickPet(a); return true; }
       const m = tight || messAt(wx, wy);
       if (m) {
-        walkThen(m.x, m.y + 5, () => { if (store.cleanMess(m.id)) { play('coin'); spark(m.x, m.y, 'clean'); toast(m.kind === 'kiss' ? '🧽 Torkat upp!' : '🧻 Städat bort!', 'good'); version++; } });
+        walkThen(m.x, m.y + 5, () => { if (store.cleanMess(m.id)) { play('coin'); spark(m.x, m.y, 'clean'); toast(m.kind === 'kiss' ? $t('🧽 Torkat upp!') : $t('🧻 Städat bort!'), 'good'); version++; } });
         return true;
       }
       const it = itemAt(wx, wy);
@@ -1478,7 +1486,7 @@ export function createPetLayer(A, opts = {}) {
       const a = tight ? null : actorAt(wx, wy);
       if (a) { hover = { kind: 'pet', id: a.id, label: `${a.pet.name} (${speciesWord(a.pet).toLowerCase()})` }; return hover; }
       const m = tight || messAt(wx, wy);
-      if (m) { hover = { kind: 'mess', id: m.id, label: m.kind === 'kiss' ? 'Kisspöl – torka upp' : 'Bajs – städa bort' }; return hover; }
+      if (m) { hover = { kind: 'mess', id: m.id, label: m.kind === 'kiss' ? $t('Kisspöl – torka upp') : $t('Bajs – städa bort') }; return hover; }
       const it = itemAt(wx, wy);
       if (it) { hover = { kind: 'item', id: it.id, label: `${PET_ITEMS[it.k].namn} – ${itemStatus(it)}` }; return hover; }
       hover = null;

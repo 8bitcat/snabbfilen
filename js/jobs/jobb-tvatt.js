@@ -30,6 +30,7 @@ import { makeShiftCoop } from '../net/coop.js';
 import { play } from '../core/sound.js';
 import { FRAMES } from '../data/frames.js';
 import { ATLAS } from '../scenes/room.js';
+import { $t } from '../core/i18n.js';
 
 const FW = 384, FH = 216;
 const FLOOR_Y = 98;                 // första golvraden
@@ -39,9 +40,9 @@ const WHITE = 0xffffff, INK = 0x17151a;
 // Varje påse är en sorts tvätt. Fel program färgar av sig: vitt blir rosa i
 // kulörtvätten och grått i mörkt, kulört bleks i 60 grader, och så vidare.
 const CLS = [
-  { name: 'VITT', temp: '60', board: 0xf4f6f8, ink: 0x2c6fb7, cols: [0xf6f4ee, 0xeef2f8, 0xfaf3e2, 0xf2f2f4] },
-  { name: 'KULÖRT', temp: '40', board: 0xffd86a, ink: 0x7a3a10, cols: [0xe0463c, 0xf2b630, 0x3f9e4c, 0x3a7bd5, 0xe07a2e, 0x8e5bd1, 0xe86aa0] },
-  { name: 'MÖRKT', temp: '30', board: 0x2d3a5c, ink: 0xf4f1ea, cols: [0x2b2b36, 0x2d3a5c, 0x46464e, 0x3a2e28, 0x26402e] },
+  { name: $t('VITT'), temp: '60', board: 0xf4f6f8, ink: 0x2c6fb7, cols: [0xf6f4ee, 0xeef2f8, 0xfaf3e2, 0xf2f2f4] },
+  { name: $t('KULÖRT'), temp: '40', board: 0xffd86a, ink: 0x7a3a10, cols: [0xe0463c, 0xf2b630, 0x3f9e4c, 0x3a7bd5, 0xe07a2e, 0x8e5bd1, 0xe86aa0] },
+  { name: $t('MÖRKT'), temp: '30', board: 0x2d3a5c, ink: 0xf4f1ea, cols: [0x2b2b36, 0x2d3a5c, 0x46464e, 0x3a2e28, 0x26402e] },
 ];
 const STAIN = [
   (c) => mix(c, 0xe6dcc0, 0.62),   // 60 grader: bleks och gulnar
@@ -788,7 +789,7 @@ function paintLaundry() {
 
   // ---------- vänster: NU-tavlan, INLÄMNING-skylten, anslagstavlan ----------
   P.rect(1, 23, 19, 19, 0x4a4450); P.rect(2, 24, 17, 17, 0x1a1418); P.hl(2, 24, 17, 0x2a2428);
-  text(P, SMALL, 'NU', 7, 26, 0xffd23f);
+  text(P, SMALL, $t('NU'), 7, 26, 0xffd23f);
   P.hl(1, 42, 19, 0x2a2430, 0.5);
   // emaljskylten med priset – högt upp, så att diskens bubblor aldrig skymmer texten
   {
@@ -797,7 +798,7 @@ function paintLaundry() {
     P.rect(sx0, sy0, sw, sh, 0x2f5a3a); P.box(sx0, sy0, sw, sh, 0x142618);
     P.hl(sx0 + 1, sy0 + 1, sw - 2, 0x5a9a6a); P.vl(sx0 + 1, sy0 + 2, sh - 4, 0x3f7a4c);
     P.hl(sx0 + 1, sy0 + sh - 2, sw - 2, 0x24462c); P.vl(sx0 + sw - 2, sy0 + 2, sh - 4, 0x24462c);
-    const t1 = 'INLÄMNING', t2 = 'PRIS 70:-';
+    const t1 = $t('INLÄMNING'), t2 = $t('PRIS 70:-');
     text(P, SMALL, t1, sx0 + ((sw - textW(SMALL, t1)) >> 1), sy0 + 3, 0xf8e8a0);
     text(P, SMALL, t2, sx0 + ((sw - textW(SMALL, t2)) >> 1), sy0 + 9, 0xf4f1ea);
     for (const [qx, qy] of [[sx0 + 2, sy0 + 2], [sx0 + sw - 3, sy0 + 2], [sx0 + 2, sy0 + sh - 3], [sx0 + sw - 3, sy0 + sh - 3]]) { P.px(qx, qy, 0xc8d0d8); }
@@ -891,7 +892,7 @@ function paintLaundry() {
   P.rect(tsx, tsy, tsw, tsh, 0xc8502a); P.box(tsx, tsy, tsw, tsh, 0x7a2a14); P.hl(tsx + 1, tsy + 1, tsw - 2, 0xf08a5a); P.hl(tsx + 1, tsy + tsh - 2, tsw - 2, 0xa8401e);
   // torksymbolen: fyrkant med ring och en prick
   P.box(tsx + 3, tsy + 2, 9, 9, 0xfff4e0); P.box(tsx + 5, tsy + 4, 5, 5, 0xfff4e0); P.px(tsx + 5, tsy + 4, 0xc8502a); P.px(tsx + 9, tsy + 4, 0xc8502a); P.px(tsx + 5, tsy + 8, 0xc8502a); P.px(tsx + 9, tsy + 8, 0xc8502a); P.px(tsx + 7, tsy + 6, 0xfff4e0);
-  text(P, SMALL, 'TORKTUMLARE', tsx + 16, tsy + 4, 0xfff4e0);
+  text(P, SMALL, $t('TORKTUMLARE'), tsx + 16, tsy + 4, 0xfff4e0);
 
   // ---------- golvet: ljust klinker med terrazzostänk ----------
   for (let y = FLOOR_Y; y < FH; y++) for (let x = 0; x < FW; x++) {
@@ -912,7 +913,7 @@ function paintLaundry() {
     }
     text(P, SMALL, label, 4, my + 7, lc);
   };
-  mat(IN_Y - 10, 'IN', 0x8ee07c); mat(OUT_Y - 12, 'UT', 0xff8a7a);
+  mat(IN_Y - 10, $t('IN'), 0x8ee07c); mat(OUT_Y - 12, $t('UT'), 0xff8a7a);
   // golvbrunn och en vattenpöl (någon har spillt)
   const dx = 250, dy = 126;
   P.ell(dx + 0.5, dy + 0.5, 6, 3, 0x3a4450, 0.9, 2);
@@ -1058,7 +1059,7 @@ export function makeJobbTvatt(A, { onDone }) {
     for (const s of cslots) { if (s.item?.o === o) s.item = null; if (s.res?.o === o) s.res = null; }
     for (const s of tslots) { if (s.item?.o === o) s.item = null; if (s.fo === o) { s.fb = null; s.fo = null; s.ft = 0; } }
     for (const m of [...washers, ...dryers]) if (m.o === o) { m.o = null; m.state = 'idle'; m.tt = 0; }
-    if (carry?.o === o) { carry = null; pops.add(walker.px, walker.py + 3, 'KUNDEN GICK', C_GREY); }
+    if (carry?.o === o) { carry = null; pops.add(walker.px, walker.py + 3, $t('KUNDEN GICK'), C_GREY); }
     if (folding?.o === o) folding = null;
     for (const [id, h] of [...hands]) if (h.o === o) hands.delete(id);
   }
@@ -1164,7 +1165,7 @@ export function makeJobbTvatt(A, { onDone }) {
         k.gpath = route.slice(Math.max(0, route.length - clamp(a[10] | 0, 0, route.length)));
         // det som händer vid disken och på bänken hörs och syns hos alla
         if (was && !hadDropped && k.dropped) play('slide');
-        if (was === 'sit' && st === 'leave' && !k.bagOut) { play('miss'); pops.add(k.x, k.y - 64, 'GICK HEM!', C_GREY); }
+        if (was === 'sit' && st === 'leave' && !k.bagOut) { play('miss'); pops.add(k.x, k.y - 64, $t('GICK HEM!'), C_GREY); }
         next.push(k);
       }
       customers = next;
@@ -1185,7 +1186,7 @@ export function makeJobbTvatt(A, { onDone }) {
     const gone = (o) => { const c = custById(o.id); return !c || (c.state === 'leave' && !c.bagOut); };
     // min vikning gäller bara så länge platsen är låst åt mig (kunden kan ha tröttnat och gått)
     if (folding && !(folding.s.fb === me && folding.s.fo === folding.o)) {
-      if (gone(folding.o)) pops.add(walker.px, walker.py + 3, 'KUNDEN GICK', C_GREY);
+      if (gone(folding.o)) pops.add(walker.px, walker.py + 3, $t('KUNDEN GICK'), C_GREY);
       folding = null;
     }
     if (Array.isArray(m.ha)) {
@@ -1199,7 +1200,7 @@ export function makeJobbTvatt(A, { onDone }) {
         if (h[0] === me) mine = it; else hands.set(str(h[0]), it);
       }
       carry = mine && prev && prev.o === mine.o && prev.kind === mine.kind ? prev : mine;
-      if (prev && !carry && gone(prev.o)) pops.add(walker.px, walker.py + 3, 'KUNDEN GICK', C_GREY);
+      if (prev && !carry && gone(prev.o)) pops.add(walker.px, walker.py + 3, $t('KUNDEN GICK'), C_GREY);
     }
     if (Array.isArray(m.nu)) {
       nextNum = clamp(m.nu[0] | 0, 10, 99);
@@ -1336,7 +1337,7 @@ export function makeJobbTvatt(A, { onDone }) {
   const kLjud = (k, s) => fx(k, k.by, 's', s);
   const kSay = (k, x, y, txt, col = C_GREY) => fx(k, k.by, 'p', Math.round(x), Math.round(y), txt, col);   // bara hos den det gäller
   const kPop = (k, x, y, txt, col) => fx(k, '', 'p', Math.round(x), Math.round(y), txt, col);            // syns hos alla
-  const hannFore = (x, y) => { play('miss'); pops.add(x, y, 'HANN FÖRE!', C_FEL); };   // någon annan hann först
+  const hannFore = (x, y) => { play('miss'); pops.add(x, y, $t('HANN FÖRE!'), C_FEL); };   // någon annan hann först
   // skiftledaren: läget ut direkt efter en handling (FÖRE svaret – då har den som frågade redan
   // det nya läget när svaret kommer) och utfallet till alla
   function publish(k, svar) {
@@ -1429,7 +1430,7 @@ export function makeJobbTvatt(A, { onDone }) {
     if (s.item) {
       if (!k.carry) { k.carry = s.item; s.item = null; kLjud(k, 'ok'); }
       else if (k.carry.kind === 'bag') { const tmp = s.item; s.item = k.carry; k.carry = tmp; kLjud(k, 'click'); }
-      else kSay(k, s.x, POP_Y, 'HÄNDERNA FULLA');
+      else kSay(k, s.x, POP_Y, $t('HÄNDERNA FULLA'));
     } else if (k.carry?.kind === 'bag' && !s.res) { s.item = k.carry; k.carry = null; kLjud(k, 'click'); }
   }
   function doWasher(k, i) {
@@ -1443,13 +1444,13 @@ export function makeJobbTvatt(A, { onDone }) {
         if (w.cls !== o.cls) {
           o.stained = true; o.dyed = w.cls; o.dye = 0;
           team.fel++; fx(k, k.by, 'f'); kLjud(k, 'fel');
-          kPop(k, w.x + 12, POP_Y, 'FEL MASKIN!', C_FEL);
+          kPop(k, w.x + 12, POP_Y, $t('FEL MASKIN!'), C_FEL);
         } else { kLjud(k, 'door'); say(CLS[w.cls].name + '!', C_OK); }
-      } else if (k.carry) say('INTE HÄR', C_GREY);
-    } else if (w.state === 'run') say('TVÄTTAR...', '#9ad0f4');
+      } else if (k.carry) say($t('INTE HÄR'), C_GREY);
+    } else if (w.state === 'run') say($t('TVÄTTAR...'), '#9ad0f4');
     else if (w.state === 'done') {
       if (!k.carry) { k.carry = { kind: 'wet', o: w.o }; w.o = null; w.state = 'idle'; kLjud(k, 'ok'); }
-      else say('HÄNDERNA FULLA', C_GREY);
+      else say($t('HÄNDERNA FULLA'), C_GREY);
     }
   }
   function doDryer(k, i) {
@@ -1457,19 +1458,19 @@ export function makeJobbTvatt(A, { onDone }) {
     // puffen under tumlarkolumnen, en bit från springan där figuren står
     const say = (txt, col) => kSay(k, d.x + 14, POP_Y, txt, col);
     if (d.state === 'idle') {
-      if (k.carry?.kind === 'wet') { d.o = k.carry.o; k.carry = null; d.state = 'run'; d.tt = 0; kLjud(k, 'door'); say('TORKAR!', '#ffb070'); }
-      else if (k.carry) say(k.carry.kind === 'bag' ? 'TVÄTTA FÖRST' : 'INTE HÄR', C_GREY);
-    } else if (d.state === 'run') say('TORKAR...', '#ffb070');
+      if (k.carry?.kind === 'wet') { d.o = k.carry.o; k.carry = null; d.state = 'run'; d.tt = 0; kLjud(k, 'door'); say($t('TORKAR!'), '#ffb070'); }
+      else if (k.carry) say(k.carry.kind === 'bag' ? $t('TVÄTTA FÖRST') : $t('INTE HÄR'), C_GREY);
+    } else if (d.state === 'run') say($t('TORKAR...'), '#ffb070');
     else if (d.state === 'done') {
       if (!k.carry) { k.carry = { kind: 'dry', o: d.o }; d.o = null; d.state = 'idle'; kLjud(k, 'ok'); }
-      else say('HÄNDERNA FULLA', C_GREY);
+      else say($t('HÄNDERNA FULLA'), C_GREY);
     }
   }
   // vikbordet: torr tvätt på en ledig plats = börja vika (platsen låses åt mig), annars lägga
   // ifrån sig, ta eller byta. Vikningen själv går hos den som viker (doFx 'V').
   function doTable(k, i) {
     const s = tslots[i];
-    if (s.fb != null) { kSay(k, s.x, TABLE.top - 14, 'UPPTAGET'); return; }   // en kollega viker här
+    if (s.fb != null) { kSay(k, s.x, TABLE.top - 14, $t('UPPTAGET')); return; }   // en kollega viker här
     if (!s.item) {
       if (k.carry?.kind === 'dry') { s.fb = k.by; s.fo = k.carry.o; s.ft = 0; k.carry = null; fx(k, k.by, 'V', i, s.fo.id); }
       else if (k.carry) { s.item = k.carry; k.carry = null; kLjud(k, 'click'); }
@@ -1500,7 +1501,7 @@ export function makeJobbTvatt(A, { onDone }) {
   function toCustomer(c) {
     if (!carry || c.state !== 'sit') { if (coop.active && carry && c.bagOut) hannFore(Math.round(c.x), Math.round(c.y) - 64); return; }   // (ihop: en kollega hann före)
     if (mate()) {
-      if (carry.kind !== 'folded') { pops.add(c.x, c.y - 64, 'INTE KLAR ÄN', C_GREY); return; }
+      if (carry.kind !== 'folded') { pops.add(c.x, c.y - 64, $t('INTE KLAR ÄN'), C_GREY); return; }
       if (!pend) ask({ t: 'do', a: 'kund', id: c.id, c: itemEnc(carry) });
       return;
     }
@@ -1516,16 +1517,16 @@ export function makeJobbTvatt(A, { onDone }) {
       return;
     }
     const px = c.x, py = c.y - 64;
-    if (k.carry.kind !== 'folded') { kSay(k, px, py, 'INTE KLAR ÄN'); return; }
+    if (k.carry.kind !== 'folded') { kSay(k, px, py, $t('INTE KLAR ÄN')); return; }
     if (k.carry.o.id !== c.id) {
       team.fel++; fx(k, k.by, 'f'); kLjud(k, 'fel'); fx(k, '', 'k', c.id);
-      kPop(k, px, py, 'FEL PÅSE!', C_FEL);
+      kPop(k, px, py, $t('FEL PÅSE!'), C_FEL);
       return;
     }
     const o = k.carry.o; k.carry = null;
     c.bagOut = o;
-    if (o.stained) { fx(k, k.by, 'm'); kLjud(k, 'miss'); kPop(k, px, py, 'MISSFÄRGAT!', '#ff9ac0'); }
-    else { team.ok++; fx(k, k.by, 'o'); kLjud(k, 'coin'); kPop(k, px, py, 'TACK!', C_OK); }
+    if (o.stained) { fx(k, k.by, 'm'); kLjud(k, 'miss'); kPop(k, px, py, $t('MISSFÄRGAT!'), '#ff9ac0'); }
+    else { team.ok++; fx(k, k.by, 'o'); kLjud(k, 'coin'); kPop(k, px, py, $t('TACK!'), C_OK); }
     leave(c);
   }
   function finishMachine(m, dryer, quiet = false) {
@@ -1602,7 +1603,7 @@ export function makeJobbTvatt(A, { onDone }) {
       if (k.state === 'sit') {
         k.patience -= dt;
         if (k.patience <= 0) {
-          stats.miss++; team.miss++; play('miss'); pops.add(k.x, k.y - 64, 'GICK HEM!', C_GREY);
+          stats.miss++; team.miss++; play('miss'); pops.add(k.x, k.y - 64, $t('GICK HEM!'), C_GREY);
           purge(k.o); leave(k);
           if (coop.active) snapAsap();
         }
@@ -1788,7 +1789,7 @@ export function makeJobbTvatt(A, { onDone }) {
       if (coop.active) maxN = Math.max(maxN, coop.peers().length + 1);
       if (coop.active !== wasCoop) {   // en kollega kom in: kunderna kommer tätare
         wasCoop = coop.active;
-        if (wasCoop) { play('knock'); pops.add(FW >> 1, 120, 'NI JOBBAR IHOP!', C_OK); }
+        if (wasCoop) { play('knock'); pops.add(FW >> 1, 120, $t('NI JOBBAR IHOP!'), C_OK); }
       }
       // Skiftledaren (eller solo) kör tvätteriet; medarbetare följer ledarens läge
       const iLead = !coop.active || (coop.leader && coop.settled);
@@ -1873,7 +1874,7 @@ export function makeJobbTvatt(A, { onDone }) {
         ctx.fillStyle = '#bfe6ff'; ctx.fillRect(bx, by, w, 1);
       }
       pops.draw(ctx);
-      drawShiftHud(ctx, { W: FW }, { t, dur: P.seconds, ok: maxN > 1 ? team.ok : stats.ok, fel: maxN > 1 ? team.fel : stats.fel, title: maxN > 1 ? 'TVÄTTERIET IHOP' : 'TVÄTTERIET' });
+      drawShiftHud(ctx, { W: FW }, { t, dur: P.seconds, ok: maxN > 1 ? team.ok : stats.ok, fel: maxN > 1 ? team.fel : stats.fel, title: maxN > 1 ? $t('TVÄTTERIET IHOP') : $t('TVÄTTERIET') });
       if (done) drawTimeUp(ctx, { W: FW, H: FH });
     },
   };
@@ -1924,7 +1925,7 @@ export function makeJobbTvatt(A, { onDone }) {
       drawDrum(ctx, w.x + jx + 8, w.y + jy + 18, 8, w, t, false);
       const dx = w.x + jx + 12, dy = w.y + jy + 7;
       if (w.state === 'run') ctxText(ctx, SMALL, timeStr(WASH_T - w.tt), dx + 1, dy, '#7cf0a0');
-      else if (w.state === 'done') ctxText(ctx, SMALL, 'KLAR', dx, dy, (t * 3 | 0) % 2 ? '#ffd23f' : '#7a6a20');
+      else if (w.state === 'done') ctxText(ctx, SMALL, $t('KLAR'), dx, dy, (t * 3 | 0) % 2 ? '#ffd23f' : '#7a6a20');
       else ctxText(ctx, SMALL, CLS[w.cls].temp, dx + 4, dy, '#3a6a50');
       ctx.fillStyle = w.state === 'run' ? ((t * 2 | 0) % 2 ? '#ff5a3a' : '#9a2a1a') : w.state === 'done' ? '#7cf05a' : '#3a4048';
       ctx.fillRect(w.x + jx + 29, w.y + jy + 11, 1, 1);
@@ -1938,8 +1939,8 @@ export function makeJobbTvatt(A, { onDone }) {
       ctx.drawImage(dryerBody(), d.x, d.y);
       drawDrum(ctx, d.x + 11, d.y + 12, 7, d, t, true);
       if (d.state === 'run') ctxText(ctx, SMALL, timeStr(DRY_T - d.tt), d.x + 5, d.y + 2, '#ff6a3a');
-      else if (d.state === 'done') ctxText(ctx, SMALL, 'KLAR', d.x + 4, d.y + 2, (t * 3 | 0) % 2 ? '#ffd23f' : '#6a4a10');
-      else ctxText(ctx, SMALL, 'TORK', d.x + 4, d.y + 2, '#5a2418');
+      else if (d.state === 'done') ctxText(ctx, SMALL, $t('KLAR'), d.x + 4, d.y + 2, (t * 3 | 0) % 2 ? '#ffd23f' : '#6a4a10');
+      else ctxText(ctx, SMALL, $t('TORK'), d.x + 4, d.y + 2, '#5a2418');
       if (d.state === 'run') {       // värmedaller ovanför luckan
         const ph = (t * 1.6 + d.x * 0.1) % 1;
         ctx.fillStyle = `rgba(255,200,150,${(0.4 * (1 - ph)).toFixed(2)})`;

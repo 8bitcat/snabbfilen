@@ -55,6 +55,7 @@ import { fmt } from '../game.js';
 import { play, isMuted, audioContext } from '../core/sound.js';
 import { createWalker, selfDrawable, folkDrawables, WALK_SEQ, createSpeech, sayLines } from './walkable.js';
 import { worldFolksHere } from '../net/world.js';
+import { $t, $n } from '../core/i18n.js';
 
 // ======================= sortimentet och klämmotorn (dynamiskt) =======================
 let TOYMOD = null, SQMOD = null;
@@ -81,7 +82,7 @@ const GIR = { x: 539, y: 102 };                              // jättegiraffen
 const TS = { x0: 548, x1: 762, top: 16, base: 97 };          // leksakshyllorna
 const TS_F = [50, 72, 94];
 const BAYS = [{ x0: 551, x1: 619 }, { x0: 621, x1: 689 }, { x0: 691, x1: 759 }];
-const BAY_NAMES = ['BILAR + TÅG', 'SPEL + KLOSSAR', 'DOCKOR + BOLLAR'];
+const BAY_NAMES = [$t('BILAR + TÅG'), $t('SPEL + KLOSSAR'), $t('DOCKOR + BOLLAR')];
 const TABLE = { x0: 144, x1: 284, top: 138, front: 152, y: 165 }; // klämbordet
 const SQ_Y = 148;                                            // squishiesarnas fotlinje på bordet
 const ME_TABLE = [240, 146];                                 // min plats bakom bordet
@@ -211,40 +212,40 @@ function darkness(hour) {
   return 0.5;
 }
 // text i spelets pixeltypsnitt: versaler, ÅÄÖÉ, siffror och några tecken
-const safeTxt = (s) => String(s).toUpperCase().replace(/[–—]/g, '-').replace(/&/g, '+').replace(/[^A-ZÅÄÖÉ0-9 \-+!.:,?/%'=]/g, '');
+const safeTxt = (s) => String(s).toUpperCase().replace(/[–—]/g, '-').replace(/&/g, '+').replace(/[^A-ZÅÄÖÉÁÀÂÃÇĆÈÊËÍÌÎÏÑŃÓÒÔÕŚŹŻÚÙÛÜŸÝĄĘŁŒÆ¡¿€$0-9 \-+!.:,?/%'=]/g, '');
 
 // ======================= reservsortimentet =======================
 // Samma kontrakt som js/data/toys.js – används bara tills (eller om) den inte går att läsa.
 const FB_TOYS = [
-  { id: 'dumpling', namn: 'Dumplingen Degis', pris: 39, kategori: 'squishy', squish: true, beskrivning: 'Nyångad och mjuk som ett moln – kläm, så ler den.' },
-  { id: 'dumpling-rosa', namn: 'Rosa dumplingen', pris: 39, kategori: 'squishy', squish: true, beskrivning: 'Doftar lite jordgubb. Blir alldeles platt och studsar tillbaka.' },
-  { id: 'dumpling-glitter', namn: 'Glitterdumplingen', pris: 59, kategori: 'squishy', squish: true, beskrivning: 'Full av glitter som gnistrar när man klämmer.' },
-  { id: 'bao-panda', namn: 'Pandabaon', pris: 45, kategori: 'squishy', squish: true, beskrivning: 'En ångad bulle med små pandaöron.' },
-  { id: 'mochi', namn: 'Mochin Mjuka', pris: 35, kategori: 'squishy', squish: true, beskrivning: 'Rund och rosa med en jordgubbe på toppen.' },
-  { id: 'munk', namn: 'Strösselmunken', pris: 49, kategori: 'squishy', squish: true, beskrivning: 'Rosa glasyr och strössel i alla färger.' },
-  { id: 'rostbrod', namn: 'Rostbrödet Rulle', pris: 45, kategori: 'squishy', squish: true, beskrivning: 'En skiva rostbröd som alltid är glad.' },
-  { id: 'risboll', namn: 'Risbollen', pris: 39, kategori: 'squishy', squish: true, beskrivning: 'Trekantig risboll med ett sjögräsbälte.' },
-  { id: 'fig-kanin', namn: 'Fluffa', pris: 69, kategori: 'figur', squish: false, beskrivning: 'Kaninen Fluffa – Klämkompisarnas mjukaste.' },
-  { id: 'fig-bjorn', namn: 'Brumme', pris: 69, kategori: 'figur', squish: false, beskrivning: 'Björnen Brumme somnar gärna i en honungsburk.' },
-  { id: 'fig-groda', namn: 'Hoppsan', pris: 69, kategori: 'figur', squish: false, beskrivning: 'Grodan Hoppsan hoppar högst av alla.' },
-  { id: 'fig-pingvin', namn: 'Pingla', pris: 69, kategori: 'figur', squish: false, beskrivning: 'Pingvinen Pingla åker kana på magen.' },
-  { id: 'fig-rav', namn: 'Ruffe', pris: 69, kategori: 'figur', squish: false, beskrivning: 'Räven Ruffe har alltid ett hyss på gång.' },
-  { id: 'fig-uggla', namn: 'Hoho', pris: 69, kategori: 'figur', squish: false, beskrivning: 'Ugglan Hoho kan alla godnattsagor utantill.' },
-  { id: 'fig-anka', namn: 'Snadder', pris: 69, kategori: 'figur', squish: false, beskrivning: 'Ankan Snadder pratar jämt – mest om bad.' },
-  { id: 'fig-katt', namn: 'Mjölle', pris: 69, kategori: 'figur', squish: false, beskrivning: 'Katten Mjölle spinner när man håller henne.' },
-  { id: 'plysch-kanin', namn: 'Fluffa-gosedjur', pris: 149, kategori: 'plysch', squish: false, beskrivning: 'Stor och mjuk Fluffa att krama.' },
-  { id: 'plysch-bjorn', namn: 'Brumme-gosedjur', pris: 149, kategori: 'plysch', squish: false, beskrivning: 'Brumme som gosedjur – bäst att somna med.' },
-  { id: 'plysch-groda', namn: 'Hoppsan-gosedjur', pris: 129, kategori: 'plysch', squish: false, beskrivning: 'En gosig groda med stora ögon.' },
-  { id: 'plysch-pingvin', namn: 'Pingla-gosedjur', pris: 129, kategori: 'plysch', squish: false, beskrivning: 'Pingla med extra mjuk mage.' },
-  { id: 'plysch-katt', namn: 'Mjölle-gosedjur', pris: 139, kategori: 'plysch', squish: false, beskrivning: 'Mjölle som gosedjur – hon spinner inte, men nästan.' },
-  { id: 'bil', namn: 'Racerbilen', pris: 59, kategori: 'leksak', squish: false, beskrivning: 'En röd racerbil med dragåterfjäder.' },
-  { id: 'brandbil', namn: 'Brandbilen', pris: 89, kategori: 'leksak', squish: false, beskrivning: 'Med stege som går att fälla upp.' },
-  { id: 'tag', namn: 'Tåget', pris: 129, kategori: 'leksak', squish: false, beskrivning: 'Ett litet lok i trä – precis som det på lekmattan.' },
-  { id: 'klossar', namn: 'Byggklossarna', pris: 79, kategori: 'leksak', squish: false, beskrivning: 'ABC-klossar i trä att bygga torn av.' },
-  { id: 'spel', namn: 'Knuffspelet', pris: 99, kategori: 'leksak', squish: false, beskrivning: 'Ett brädspel för hela familjen – knuffa hem dina pjäser!' },
-  { id: 'docka', namn: 'Dockan Ella', pris: 119, kategori: 'leksak', squish: false, beskrivning: 'Docka med rosa klänning i en fin kartong.' },
-  { id: 'badanka', namn: 'Badankan', pris: 29, kategori: 'leksak', squish: false, beskrivning: 'Klassisk gul badanka som piper.' },
-  { id: 'boll', namn: 'Randiga bollen', pris: 39, kategori: 'leksak', squish: false, beskrivning: 'Studsar högt och är lagom stor.' },
+  { id: 'dumpling', namn: $n('Dumplingen Degis'), pris: 39, kategori: 'squishy', squish: true, beskrivning: $t('Nyångad och mjuk som ett moln – kläm, så ler den.') },
+  { id: 'dumpling-rosa', namn: $n('Rosa dumplingen'), pris: 39, kategori: 'squishy', squish: true, beskrivning: $t('Doftar lite jordgubb. Blir alldeles platt och studsar tillbaka.') },
+  { id: 'dumpling-glitter', namn: $n('Glitterdumplingen'), pris: 59, kategori: 'squishy', squish: true, beskrivning: $t('Full av glitter som gnistrar när man klämmer.') },
+  { id: 'bao-panda', namn: $n('Pandabaon'), pris: 45, kategori: 'squishy', squish: true, beskrivning: $t('En ångad bulle med små pandaöron.') },
+  { id: 'mochi', namn: $n('Mochin Mjuka'), pris: 35, kategori: 'squishy', squish: true, beskrivning: $t('Rund och rosa med en jordgubbe på toppen.') },
+  { id: 'munk', namn: $n('Strösselmunken'), pris: 49, kategori: 'squishy', squish: true, beskrivning: $t('Rosa glasyr och strössel i alla färger.') },
+  { id: 'rostbrod', namn: $n('Rostbrödet Rulle'), pris: 45, kategori: 'squishy', squish: true, beskrivning: $t('En skiva rostbröd som alltid är glad.') },
+  { id: 'risboll', namn: $n('Risbollen'), pris: 39, kategori: 'squishy', squish: true, beskrivning: $t('Trekantig risboll med ett sjögräsbälte.') },
+  { id: 'fig-kanin', namn: $n('Fluffa'), pris: 69, kategori: 'figur', squish: false, beskrivning: $t('Kaninen Fluffa – Klämkompisarnas mjukaste.') },
+  { id: 'fig-bjorn', namn: $n('Brumme'), pris: 69, kategori: 'figur', squish: false, beskrivning: $t('Björnen Brumme somnar gärna i en honungsburk.') },
+  { id: 'fig-groda', namn: $n('Hoppsan'), pris: 69, kategori: 'figur', squish: false, beskrivning: $t('Grodan Hoppsan hoppar högst av alla.') },
+  { id: 'fig-pingvin', namn: $n('Pingla'), pris: 69, kategori: 'figur', squish: false, beskrivning: $t('Pingvinen Pingla åker kana på magen.') },
+  { id: 'fig-rav', namn: $n('Ruffe'), pris: 69, kategori: 'figur', squish: false, beskrivning: $t('Räven Ruffe har alltid ett hyss på gång.') },
+  { id: 'fig-uggla', namn: $n('Hoho'), pris: 69, kategori: 'figur', squish: false, beskrivning: $t('Ugglan Hoho kan alla godnattsagor utantill.') },
+  { id: 'fig-anka', namn: $n('Snadder'), pris: 69, kategori: 'figur', squish: false, beskrivning: $t('Ankan Snadder pratar jämt – mest om bad.') },
+  { id: 'fig-katt', namn: $n('Mjölle'), pris: 69, kategori: 'figur', squish: false, beskrivning: $t('Katten Mjölle spinner när man håller henne.') },
+  { id: 'plysch-kanin', namn: $n('Fluffa-gosedjur'), pris: 149, kategori: 'plysch', squish: false, beskrivning: $t('Stor och mjuk Fluffa att krama.') },
+  { id: 'plysch-bjorn', namn: $n('Brumme-gosedjur'), pris: 149, kategori: 'plysch', squish: false, beskrivning: $t('Brumme som gosedjur – bäst att somna med.') },
+  { id: 'plysch-groda', namn: $n('Hoppsan-gosedjur'), pris: 129, kategori: 'plysch', squish: false, beskrivning: $t('En gosig groda med stora ögon.') },
+  { id: 'plysch-pingvin', namn: $n('Pingla-gosedjur'), pris: 129, kategori: 'plysch', squish: false, beskrivning: $t('Pingla med extra mjuk mage.') },
+  { id: 'plysch-katt', namn: $n('Mjölle-gosedjur'), pris: 139, kategori: 'plysch', squish: false, beskrivning: $t('Mjölle som gosedjur – hon spinner inte, men nästan.') },
+  { id: 'bil', namn: $n('Racerbilen'), pris: 59, kategori: 'leksak', squish: false, beskrivning: $t('En röd racerbil med dragåterfjäder.') },
+  { id: 'brandbil', namn: $n('Brandbilen'), pris: 89, kategori: 'leksak', squish: false, beskrivning: $t('Med stege som går att fälla upp.') },
+  { id: 'tag', namn: $n('Tåget'), pris: 129, kategori: 'leksak', squish: false, beskrivning: $t('Ett litet lok i trä – precis som det på lekmattan.') },
+  { id: 'klossar', namn: $n('Byggklossarna'), pris: 79, kategori: 'leksak', squish: false, beskrivning: $t('ABC-klossar i trä att bygga torn av.') },
+  { id: 'spel', namn: $n('Knuffspelet'), pris: 99, kategori: 'leksak', squish: false, beskrivning: $t('Ett brädspel för hela familjen – knuffa hem dina pjäser!') },
+  { id: 'docka', namn: $n('Dockan Ella'), pris: 119, kategori: 'leksak', squish: false, beskrivning: $t('Docka med rosa klänning i en fin kartong.') },
+  { id: 'badanka', namn: $n('Badankan'), pris: 29, kategori: 'leksak', squish: false, beskrivning: $t('Klassisk gul badanka som piper.') },
+  { id: 'boll', namn: $n('Randiga bollen'), pris: 39, kategori: 'leksak', squish: false, beskrivning: $t('Studsar högt och är lagom stor.') },
 ];
 function pal3(base) { return { base, hi: mix(base, WHITE, 0.55), lo: mul(base, 0.85), o: mix(mul(base, 0.5), INK, 0.5) }; }
 const FB_SQ = {
@@ -431,7 +432,7 @@ const rattle = () => synth((c, t0) => { for (let i = 0; i < 5; i++) blip(c, t0 +
 
 // ======================= sortimentet (riktigt eller reserv) =======================
 const KATS = ['squishy', 'figur', 'plysch', 'leksak'];
-const KAT_NAME = { squishy: 'Squishy', figur: 'Klämkompisar (figur)', plysch: 'Gosedjur', leksak: 'Leksak' };
+const KAT_NAME = { squishy: $t('Squishy'), figur: $t('Klämkompisar (figur)'), plysch: $t('Gosedjur'), leksak: $t('Leksak') };
 const KAT_ICON = { squishy: '🥟', figur: '⭐', plysch: '🧸', leksak: '🚂' };
 // Klämkompisarna får sitt eget djur i rubriken (Mysan är en katt, inte en kanin)
 const ART_ICON = { kanin: '🐰', bjorn: '🐻', groda: '🐸', pingvin: '🐧', rav: '🦊', uggla: '🦉', katt: '🐱', anka: '🐥' };
@@ -446,8 +447,10 @@ function allToys() {
   return list.filter((t) => t && typeof t.id === 'string' && KATS.includes(t.kategori) && Number.isFinite(+t.pris));
 }
 const toyById = (id) => allToys().find((t) => t.id === id) || null;
+// namnet på spelarens språk (T.namn är svenskt – DUMP_RE/BAY_RE/glitterOf söker i det)
+const toyName = (T) => (TOYMOD?.toyNamn ? TOYMOD.toyNamn(T) : $t(T.namn));
 // namnet som det låter i en pratbubbla: "Pösa (plysch)" → "Pösa i plysch"
-const sayName = (T) => String(T.namn).replace(/\s*\(plysch\)/i, ' i plysch').replace(/\s*\(figur\)/i, '-figuren').replace(/[()]/g, '');
+const sayName = (T) => String(toyName(T)).replace(/\s*\(plysch\)/i, ' i plysch').replace(/\s*\(figur\)/i, '-figuren').replace(/[()]/g, '');
 function drawToyAt(ctx, id, x, y, t) {
   if (TOYMOD) { try { TOYMOD.drawToy(ctx, id, x, y, t); return; } catch { /* reserven */ } }
   fbDrawToy(ctx, id, x, y, t);
@@ -622,7 +625,7 @@ function paintFloor(P, night) {
     disc(P, cx, cy, rx, ry, (X, Y, d) => jit(d > 0.88 ? 0xd8e8f4 : hash(X, Y, 313) > 0.92 ? 0xffffff : 0xf2f8fe, X, Y, 314, 0.05));
   // dörrmattan
   area(P, DOOR.x0 + 1, WALL_Y + 2, DOOR.x1 - DOOR.x0 - 2, 9, (X, Y, i, j) => (i === 0 || j === 0 || i === DOOR.x1 - DOOR.x0 - 3 || j === 8 ? 0x8a3a5a : jit(hash(X, Y, 315) > 0.5 ? 0xe06a90 : 0xd05a82, X, Y, 316, 0.1)));
-  text(P, SMALL, 'LEK!', DOOR.x0 + 7, WALL_Y + 4, 0xffe0ec);
+  text(P, SMALL, $t('LEK!'), DOOR.x0 + 7, WALL_Y + 4, 0xffe0ec);
   // skuggor under allt som står på golvet
   P.ell(PYR.x, PYR.y + 15, 44, 5, 0x2a1420, 0.35, 3);
   P.ell((TABLE.x0 + TABLE.x1) / 2, TABLE.y, 72, 4, 0x2a1420, 0.4, 3);
@@ -678,7 +681,7 @@ function paintDoorSurround(P) {
   // UT-skylten
   const ux = Math.round(cx) - 8;
   P.rect(ux, 22, 17, 8, 0x1a2a1e); P.box(ux, 22, 17, 8, 0x0e1812);
-  text(P, SMALL, 'UT', ux + 5, 24, 0x6fe08a);
+  text(P, SMALL, $t('UT'), ux + 5, 24, 0x6fe08a);
   P.ell(ux + 8.5, 26, 12, 6, 0x6fe08a, 0.1, 2);
   P.hl(d0, WALL_Y - 1, d1 - d0, 0x2a1e18);
 }
@@ -712,7 +715,7 @@ function paintBanner(P, cx, y, s, col) {
 // SQUISHYVÄGGEN: stommen, markisen, fackens bakstycken med prickar och hyllplanen
 function paintSquishyWall(P) {
   const { x0, x1, top, base } = SQW;
-  paintBanner(P, (x0 + x1) / 2, 9, 'SQUISHY', P_PINK);
+  paintBanner(P, (x0 + x1) / 2, 9, $t('SQUISHY'), P_PINK);
   // två små dumplings på bandets sidor
   const dump = ['..ooo..', '.oWWWo.', 'oWwWwWo', 'oWWWWWo', 'oWkWkWo', 'oWWpWWo', '.ooooo.'];
   for (const dx of [-62, 56]) spr(P, (x0 + x1) / 2 + dx, 11, dump, { o: 0xb89a88, W: 0xfff6ea, w: 0xe8d4c0, k: INK, p: 0xf48cab });
@@ -781,7 +784,7 @@ function paintPegboard(P) {
 function paintFigWall(P) {
   const { x0, x1, top, base } = FIG;
   // molnskylten KLÄMKOMPISARNA
-  const M = textMask(BIG, 'KLÄMKOMPISARNA'), cx = (x0 + x1) >> 1;
+  const M = textMask(BIG, $t('KLÄMKOMPISARNA')), cx = (x0 + x1) >> 1;
   for (const [ox, oy, rx, ry] of [[0, 0, 50, 8], [-40, 2, 12, 7], [40, 2, 12, 7], [-22, -3, 14, 7], [20, -3, 15, 7]])
     disc(P, cx + ox, 17 + oy, rx, ry, (X, Y, d) => (d > 0.9 ? 0xc8d4ec : Y < 14 ? 0xffffff : 0xf4f8fe));
   drawText(P, M, cx - (M.w >> 1), 13, { fill: (a, b) => [0xf890b4, 0xf49a4a, 0xe8c040, 0x6ac88a, 0x6aa8e8, 0x9a7ad8][Math.floor(a / 6) % 6], out: 0xffffff, out8: true });
@@ -975,7 +978,7 @@ function paintCounter() {
     return jit(i % 16 === 0 ? P_BUTTER.lo : i % 16 === 1 ? P_BUTTER.hi : P_BUTTER.base, X, Y, 401, 0.04);
   });
   // skylten med butikens namn
-  const M = textMask(SMALL, 'LEKSAKSLÅDAN'), sx = ((x0 + x1) >> 1) - (M.w >> 1) - 4;
+  const M = textMask(SMALL, $t('LEKSAKSLÅDAN')), sx = ((x0 + x1) >> 1) - (M.w >> 1) - 4;
   area(P, sx, CNT.face + 7, M.w + 8, 9, (X, Y, i, j) => (i === 0 || j === 0 || i === M.w + 7 || j === 8 ? P_PINK.dk : 0xffffff));
   drawText(P, M, sx + 4, CNT.face + 9, { fill: (a) => [0xe8505a, 0xf49a4a, 0x4aa86a, 0x4a88d0, 0x8a5ad0][Math.floor(a / 4) % 5] });
   for (const hxp of [x0 + 8, x1 - 14]) spr(P, hxp, CNT.face + 8, ['.pp.pp.', 'pPPpPPp', 'pPPPPPp', '.pPPPp.', '..pPp..', '...p...'], { p: 0xd84a78, P: 0xf890b4 });
@@ -1034,7 +1037,7 @@ function paintTable() {
   }
   // spetsdukarna under squishiesarna
   // ett litet bordskort: KLÄM MJUKT!
-  const M = textMask(SMALL, 'KLÄM MJUKT');
+  const M = textMask(SMALL, $t('KLÄM MJUKT'));
   const cx = x0 + 6;
   outline(P, INK, 0.35);
   return { img: P.flush(), ox, oy, card: M, cardX: cx };
@@ -1214,7 +1217,7 @@ function paintCrate(front) {
       return jit(c, X, Y, 432, 0.05);
     });
     // skylten KRAMA MIG!
-    const M = textMask(SMALL, 'KRAMA MIG!'), sx = ((x0 + x1) >> 1) - (M.w >> 1) - 3;
+    const M = textMask(SMALL, $t('KRAMA MIG!')), sx = ((x0 + x1) >> 1) - (M.w >> 1) - 3;
     area(P, sx, top + 10, M.w + 6, 9, (X, Y, i, j) => (i === 0 || j === 0 || i === M.w + 5 || j === 8 ? P_PINK.dk : j === 1 ? 0xffffff : P_PINK.hi));
     drawText(P, M, sx + 3, top + 12, { fill: 0xc8406a });
     for (const hxp of [x0 + 5, x1 - 12]) spr(P, hxp, top + 12, ['.pp.pp.', 'pPPpPPp', '.pPPPp.', '..pPp..', '...p...'], { p: 0xd84a78, P: 0xf890b4 });
@@ -1308,7 +1311,7 @@ function paintLampBalloon(col) {
 }
 // Molnskylten TESTA MIG! som hänger över klämbordet
 function paintSign() {
-  const M = textMask(BIG, 'TESTA MIG!'), w = M.w + 26;
+  const M = textMask(BIG, $t('TESTA MIG!')), w = M.w + 26;
   const P = new Pix(w, 26, -(w >> 1), -13);
   for (const [ox, oy, rx, ry] of [[0, 0, (w >> 1) - 3, 9], [-(w >> 1) + 8, 2, 8, 7], [(w >> 1) - 8, 2, 8, 7], [-14, -5, 12, 7], [12, -5, 13, 7]])
     disc(P, ox, oy, rx, ry, (X, Y, d) => (Y < -5 ? 0xffffff : d > 0.8 ? 0xeaf2fc : 0xfdfdff));
@@ -1460,7 +1463,7 @@ function crispCanvas(w, h, S) {
 }
 function moneyLine(money, tot) {
   const short = tot - money;
-  return `<span>💰 Du har <b>${fmt(money)}</b></span>${short > 0 ? `<span class="bad">du saknar <b>${fmt(short)}</b></span>` : `<span>kvar efter köpet: <b>${fmt(money - tot)}</b></span>`}`;
+  return `<span>${$t`💰 Du har <b>${fmt(money)}</b>`}</span>${short > 0 ? `<span class="bad">${$t`du saknar <b>${fmt(short)}</b>`}</span>` : `<span>${$t`kvar efter köpet: <b>${fmt(money - tot)}</b>`}</span>`}`;
 }
 const PIC_BG = { squishy: 0xfbe0ea, figur: 0xe2f0fc, plysch: 0xfff0d0, leksak: 0xdcf4e6 };
 // Bildrutan i dialogen: leksaken i heltalsskala på rutig bakgrund. Squishies lever: tryck
@@ -1528,11 +1531,12 @@ const KID_LOOKS = [
   { skin: '#c68a5c', hair: '#3b2619', style: 'buzz', hat: null, top: 'tee', shirt: '#6cb8ec', accent: '#f4f1ea', bottom: 'shorts', pants: '#556b3a', shoes: '#e0b24a', glasses: false, beard: false, phones: false, bag: null, blush: true, build: 4, kid: true },
 ];
 const PARENT = { skin: '#f6d7bf', hair: '#d9a95c', style: 'long', hat: null, top: 'jacket', shirt: '#7a2e3e', accent: '#f4f1ea', bottom: 'jeans', pants: '#2d3a5c', shoes: '#6b3e1e', glasses: false, beard: false, phones: false, bag: 'shoulder', bagColor: '#6b4a33', blush: false, build: 5, kid: false };
-const KID_LINES = ['hihi!', 'den piper!', 'mamma, får jag den här?', 'den är så mjuk!', 'titta, den blir platt!', 'kläm på den rosa!', 'hihihi!', 'boing boing!', 'den luktar jordgubb!', 'jag vill ha alla!'];
-const PARENT_ANSWERS = ['Vi får se, gumman! 😊', 'Kanske på lördag.', 'En liten då – sen går vi.', 'Du har ju tre hemma!'];
-const PARENT_LINES = ['Försiktigt nu!', 'Oj, den där var söt.', 'Fem minuter till, sen går vi!'];
-const TRAIN_LINES = ['TUT TUT!', 'tåget kommer!', 'nu åker den in i tunneln!', 'igen, igen!'];
-const ROAM_LINES = ['wiiii!', 'jag har en nalle!', 'kom och titta på tåget!', 'hihi!'];
+// (barnens repliker är svenska: /mamma/ i updateKids avgör om föräldern svarar – översätts där de sägs)
+const KID_LINES = [$n('hihi!'), $n('den piper!'), $n('mamma, får jag den här?'), $n('den är så mjuk!'), $n('titta, den blir platt!'), $n('kläm på den rosa!'), $n('hihihi!'), $n('boing boing!'), $n('den luktar jordgubb!'), $n('jag vill ha alla!')];
+const PARENT_ANSWERS = [$t('Vi får se, gumman! 😊'), $t('Kanske på lördag.'), $t('En liten då – sen går vi.'), $t('Du har ju tre hemma!')];
+const PARENT_LINES = [$t('Försiktigt nu!'), $t('Oj, den där var söt.'), $t('Fem minuter till, sen går vi!')];
+const TRAIN_LINES = [$t('TUT TUT!'), $t('tåget kommer!'), $t('nu åker den in i tunneln!'), $t('igen, igen!')];
+const ROAM_LINES = [$t('wiiii!'), $t('jag har en nalle!'), $t('kom och titta på tåget!'), $t('hihi!')];
 // Springbarnets lilla nalle (9×9): barnet är bara ~26 px högt, så en hel leksak ur hyllan
 // skulle täcka ansiktet – den här ryms i famnen mellan hakan och knäna.
 const MINI_NALLE = [
@@ -1554,7 +1558,7 @@ function miniNalleImg() {
   ctxSpr(miniNalle.getContext('2d'), 0, 0, MINI_NALLE, MINI_PAL);
   return miniNalle;
 }
-const CASH_TIPS = ['Squishiesarna är mjukast i hela stan! 🥟', 'Dumplingsen i bambukorgarna är nya i dag!', 'Klämkompisarna finns som gosedjur också – titta i lådan!', 'Tåget på lekmattan kör hela dagen.', 'Klämbordet får man klämma på hur mycket man vill!'];
+const CASH_TIPS = [$t('Squishiesarna är mjukast i hela stan! 🥟'), $t('Dumplingsen i bambukorgarna är nya i dag!'), $t('Klämkompisarna finns som gosedjur också – titta i lådan!'), $t('Tåget på lekmattan kör hela dagen.'), $t('Klämbordet får man klämma på hur mycket man vill!')];
 
 // ======================= scenen =======================
 export function makeShopLeksaker(A, opts = {}) {
@@ -1740,7 +1744,7 @@ export function makeShopLeksaker(A, opts = {}) {
       if (!T) { q.tag = null; return; }
       const next = i + 1 < n ? tableSq[i + 1].x : TABLE.x1 + 30;
       const room = Math.min(q.x - last, next - q.x) * 2 - 2;
-      let str = Math.round(T.pris) + ':-';
+      let str = $t`${Math.round(T.pris)}:-`;
       if (textW(SMALL, str) + 4 > room) str = String(Math.round(T.pris));
       const img = tagImg(str), w = img.width;
       const x0 = clamp(Math.round(q.x - w / 2), last, TABLE.x1 - 2 - w);
@@ -1783,7 +1787,7 @@ export function makeShopLeksaker(A, opts = {}) {
   function buildStockLayer() {
     const P = new Pix(W, H);
     const tag = (cx, y, price, room, last) => {
-      let str = String(Math.round(price)) + ':-';
+      let str = $t`${Math.round(price)}:-`;
       if (textW(SMALL, str) + 4 > room) str = String(Math.round(price));
       const M = textMask(SMALL, str), w = M.w + 4;
       let x0 = Math.round(cx - w / 2);
@@ -1802,7 +1806,7 @@ export function makeShopLeksaker(A, opts = {}) {
       tag(G.cx, G.foot + 1, T.pris, G.r[2] - G.r[0], lasts.get(key));
     }
     for (const F of figs) {
-      const s = safeTxt(F.namn).split(' ')[0].slice(0, 7), M = textMask(SMALL, s);
+      const s = safeTxt($t(F.namn)).split(' ')[0].slice(0, 7), M = textMask(SMALL, s);
       drawText(P, M, F.x - (M.w >> 1), F.plateY, { fill: 0x5a3a5a });
     }
     stockLayer = P.flush(); stockGen++;
@@ -1901,8 +1905,8 @@ export function makeShopLeksaker(A, opts = {}) {
   function sayPoor(T) {
     const vis = cashier.x > cam.x + 10 && cashier.x < cam.x + VW - 10;
     const m = Math.max(0, Math.floor(g.money));
-    if (vis) talkCash.say(`Oj! ${sayName(T)} kostar ${Math.round(T.pris)} kr och du har ${m} kr. Jobba ett pass, så väntar den här på dig! 💛`, cashAt, 5);
-    else talkMe.say(`Hmm, ${Math.round(T.pris)} kr … jag har bara ${m} kr. Jag får spara lite först! 💸`, meAt, 4.5);
+    if (vis) talkCash.say($t`Oj! ${sayName(T)} kostar ${Math.round(T.pris)} kr och du har ${m} kr. Jobba ett pass, så väntar den här på dig! 💛`, cashAt, 5);
+    else talkMe.say($t`Hmm, ${Math.round(T.pris)} kr … jag har bara ${m} kr. Jag får spara lite först! 💸`, meAt, 4.5);
     play('miss');
   }
   function openToy(id) {
@@ -1912,17 +1916,17 @@ export function makeShopLeksaker(A, opts = {}) {
     releaseMine();
     const owned = toysOf(g)[id] | 0;
     const body = `${DIALOG_CSS}<div class="lk">
-      <div class="lk-l"><div class="lk-pic" data-pic></div>${T.squish ? '<p class="lk-hint">🤏 Tryck och håll på bilden!</p>' : ''}</div>
+      <div class="lk-l"><div class="lk-pic" data-pic></div>${T.squish ? `<p class="lk-hint">${$t('🤏 Tryck och håll på bilden!')}</p>` : ''}</div>
       <div class="lk-r">
         <p class="lk-kat">${KAT_ICON[T.kategori]} ${KAT_NAME[T.kategori]}</p>
         <p class="lk-desc">${esc(T.beskrivning || '')}</p>
-        <p class="lk-own">🎁 Du har: <b>${owned}</b> st</p>
-        <p class="lk-price">Pris: <b>${fmt(T.pris)}</b></p>
+        <p class="lk-own">${$t`🎁 Du har: <b>${owned}</b> st`}</p>
+        <p class="lk-price">${$t`Pris: <b>${fmt(T.pris)}</b>`}</p>
         <p class="lk-money">${moneyLine(g.money, T.pris)}</p>
       </div></div>`;
-    const dlg = openModal(`${emojiOf(T)} ${esc(T.namn)}`, body, [
-      { label: 'Stäng', onClick: closeModal },
-      { label: `🛍️ Köp ${fmt(T.pris)}`, cls: 'btn-go', onClick: () => { closeModal(); const r = buyToy(id); if (!r.ok && r.poor) sayPoor(T); } },
+    const dlg = openModal(`${emojiOf(T)} ${esc(toyName(T))}`, body, [
+      { label: $t('Stäng'), onClick: closeModal },
+      { label: $t`🛍️ Köp ${fmt(T.pris)}`, cls: 'btn-go', onClick: () => { closeModal(); const r = buyToy(id); if (!r.ok && r.poor) sayPoor(T); } },
     ]);
     mountPic(dlg.querySelector('[data-pic]'), T);
   }
@@ -1934,11 +1938,11 @@ export function makeShopLeksaker(A, opts = {}) {
     const own = toysOf(g);
     const rows = list.map((T, i) => `<div class="prow" data-open="${esc(T.id)}">
         <span class="ico" data-ico="${esc(T.id)}"></span>
-        <span class="nm">${emojiOf(T)} <b>${esc(T.namn)}</b><br><small>${esc(T.beskrivning || '')}${own[T.id] ? ` · du har ${own[T.id]}` : ''}</small></span>
+        <span class="nm">${emojiOf(T)} <b>${esc(toyName(T))}</b><br><small>${esc(T.beskrivning || '')}${own[T.id] ? ` · ${$t`du har ${own[T.id]}`}` : ''}</small></span>
         <button class="btn btn-small btn-go" data-buy="${esc(T.id)}" ${i < 9 ? `data-key="${i + 1}"` : ''}>🛍️ ${fmt(T.pris)}${i < 9 ? ` <kbd>${i + 1}</kbd>` : ''}</button>
       </div>`).join('');
-    const head = title || (kat === 'alla' ? '🧸 Leksakslådan – hela sortimentet' : `${KAT_ICON[kat]} ${KAT_NAME[kat]}`);
-    const dlg = openModal(head, `${DIALOG_CSS}<p style="font-size:var(--f2);margin:0 0 8px">💰 Du har <b>${fmt(g.money)}</b> · klicka på en leksak för att se den närmare.</p><div class="plist lk-list">${rows}</div>`, [{ label: 'Stäng', onClick: closeModal }]);
+    const head = title || (kat === 'alla' ? $t('🧸 Leksakslådan – hela sortimentet') : `${KAT_ICON[kat]} ${KAT_NAME[kat]}`);
+    const dlg = openModal(head, `${DIALOG_CSS}<p style="font-size:var(--f2);margin:0 0 8px">${$t`💰 Du har <b>${fmt(g.money)}</b> · klicka på en leksak för att se den närmare.`}</p><div class="plist lk-list">${rows}</div>`, [{ label: $t('Stäng'), onClick: closeModal }]);
     dlg.querySelectorAll('[data-ico]').forEach((el) => el.replaceChildren(toyIcon(el.dataset.ico, 2)));
     dlg.querySelectorAll('[data-open]').forEach((el) => (el.onclick = (e) => { if (e.target.closest('[data-buy]')) return; openToy(el.dataset.open); }));
     dlg.querySelectorAll('[data-buy]').forEach((b) => (b.onclick = () => { const T = toyById(b.dataset.buy); closeModal(); const r = buyToy(b.dataset.buy); if (!r.ok && r.poor && T) sayPoor(T); }));
@@ -1951,7 +1955,7 @@ export function makeShopLeksaker(A, opts = {}) {
   function kidReact() {
     const k = kids[Math.random() < 0.5 ? 0 : 1];
     if (k.talk.active()) return;
-    if (npcSay(k.talk, kidAt(k), KID_LINES[Math.floor(Math.random() * 3)], 2.2, { voice: k.look })) k.hop = 0.6;
+    if (npcSay(k.talk, kidAt(k), $t(KID_LINES[Math.floor(Math.random() * 3)]), 2.2, { voice: k.look })) k.hop = 0.6;
   }
   // barnet som springer runt med en liten nalle i famnen
   const roam = { look: KID_LOOKS[3], w: createWalker({ W, H, left: 8, right: W - 8, top: WALL_Y + 6, bottom: H - 5, spawn: [520, 186] }), talk: createSpeech(), wait: 2, stop: 0, toy: null };
@@ -2007,7 +2011,7 @@ export function makeShopLeksaker(A, opts = {}) {
       if (k.queue?.length && !k.talk.active()) {
         const [s, secs] = k.queue[0];
         if (!seenX(k.x)) k.queue.length = 0;
-        else if (npcSay(k.talk, kidAt(k), s, secs, { voice: k.look })) { k.queue.shift(); k.hop = 0.7; if (/mamma/.test(s)) { answerT = 1.6; answerWait = 3; } }
+        else if (npcSay(k.talk, kidAt(k), $t(s), secs, { voice: k.look })) { k.queue.shift(); k.hop = 0.7; if (/mamma/.test(s)) { answerT = 1.6; answerWait = 3; } }
       }
       if (k.reach.length === 0) {                                  // tågtittaren
         continue;
@@ -2016,7 +2020,7 @@ export function makeShopLeksaker(A, opts = {}) {
         k.holdT -= dt;
         if (k.holdT <= 0) {
           letGo(k.hold, 'kid' + k.i); k.hold = -1; k.T = 5 + Math.random() * 7;
-          if (Math.random() < 0.55 && !k.talk.active()) { const s = KID_LINES[Math.floor(Math.random() * KID_LINES.length)]; if (npcSay(k.talk, kidAt(k), s, 2.4, { voice: k.look })) { k.hop = 0.7; if (/mamma/.test(s)) { answerT = 1.6; answerWait = 3; } } }
+          if (Math.random() < 0.55 && !k.talk.active()) { const s = KID_LINES[Math.floor(Math.random() * KID_LINES.length)]; if (npcSay(k.talk, kidAt(k), $t(s), 2.4, { voice: k.look })) { k.hop = 0.7; if (/mamma/.test(s)) { answerT = 1.6; answerWait = 3; } } }
         }
         continue;
       }
@@ -2070,7 +2074,7 @@ export function makeShopLeksaker(A, opts = {}) {
       C.wrapT -= dt; C.dir = 'down';
       if (C.wrapT <= 0 && C.pending) {
         const p = C.pending; C.pending = null;
-        talkCash.say(`Varsågod! ${p.namn} – inslagen med rosett! 🎀 Tack för att du handlar hos oss!`, cashAt, 4.5);
+        talkCash.say($t`Varsågod! ${p.namn} – inslagen med rosett! 🎀 Tack för att du handlar hos oss!`, cashAt, 4.5);
         play('coin');
         me.gift = t + 9;
       }
@@ -2155,11 +2159,11 @@ export function makeShopLeksaker(A, opts = {}) {
     const out = [];
     // prislapparna på klämbordets kjol: köp det man just klämt på
     tableSq.forEach((q) => { if (q.tag) out.push({ id: 'lapp-' + q.i, r: q.tag.r, go: [q.x, TABLE.y + 9], act: () => openToy(q.id), toy: q.id, buy: true }); });
-    tableSq.forEach((q) => out.push({ id: 'bord-' + q.i, r: [q.x - 10, q.y - 18, q.x + 10, q.y + 3], go: nearTableGo, act: toTableAct, label: 'TESTA MIG! TRYCK OCH HÅLL' }));
-    kids.forEach((k) => out.push({ id: 'barn-' + k.i, r: [k.x - 6, k.y - 30, k.x + 6, k.y + 1], go: [k.x + (k.x < walker.px ? 16 : -16), k.y + 4], act: () => { forceSay(k.talk, kidAt(k), k.i === 2 ? TRAIN_LINES[Math.floor(Math.random() * 4)] : KID_LINES[Math.floor(Math.random() * KID_LINES.length)], 2.4, { voice: k.look }); k.hop = 0.7; play('click'); } }));
+    tableSq.forEach((q) => out.push({ id: 'bord-' + q.i, r: [q.x - 10, q.y - 18, q.x + 10, q.y + 3], go: nearTableGo, act: toTableAct, label: $t('TESTA MIG! TRYCK OCH HÅLL') }));
+    kids.forEach((k) => out.push({ id: 'barn-' + k.i, r: [k.x - 6, k.y - 30, k.x + 6, k.y + 1], go: [k.x + (k.x < walker.px ? 16 : -16), k.y + 4], act: () => { forceSay(k.talk, kidAt(k), k.i === 2 ? TRAIN_LINES[Math.floor(Math.random() * 4)] : $t(KID_LINES[Math.floor(Math.random() * KID_LINES.length)]), 2.4, { voice: k.look }); k.hop = 0.7; play('click'); } }));
     out.push({ id: 'barn-3', r: [roam.w.px - 6, roam.w.py - 30, roam.w.px + 6, roam.w.py + 1], go: [roam.w.px + 14, roam.w.py + 4], act: () => { forceSay(roam.talk, roamAt, roamLine(), 2, { voice: roam.look }); play('click'); } });
-    out.push({ id: 'foralder', r: [PARENT_SPOT[0] - 7, PARENT_SPOT[1] - 40, PARENT_SPOT[0] + 7, PARENT_SPOT[1] + 1], go: [PARENT_SPOT[0] + 14, PARENT_SPOT[1] + 6], act: () => { forceSay(talkParent, parentAt, 'Hej! Barnen älskar klämbordet – vi kommer hit varje lördag. 😊', 3.5, { voice: PARENT }); play('click'); } });
-    [...baskets].reverse().forEach((b) => out.push({ id: 'korg-' + b.i, r: [b.x - 12, b.y - 22, b.x + 12, b.y], go: [b.x + (b.i % 3 - 1) * 4, PYR.y + 24], act: () => { if (b.lid && lidUp(b) < 0.5 && liftLid(b.i)) return; if (b.id) openToy(b.id); }, label: b.lid ? 'LYFT PÅ LOCKET' : null, toy: b.id }));
+    out.push({ id: 'foralder', r: [PARENT_SPOT[0] - 7, PARENT_SPOT[1] - 40, PARENT_SPOT[0] + 7, PARENT_SPOT[1] + 1], go: [PARENT_SPOT[0] + 14, PARENT_SPOT[1] + 6], act: () => { forceSay(talkParent, parentAt, $t('Hej! Barnen älskar klämbordet – vi kommer hit varje lördag. 😊'), 3.5, { voice: PARENT }); play('click'); } });
+    [...baskets].reverse().forEach((b) => out.push({ id: 'korg-' + b.i, r: [b.x - 12, b.y - 22, b.x + 12, b.y], go: [b.x + (b.i % 3 - 1) * 4, PYR.y + 24], act: () => { if (b.lid && lidUp(b) < 0.5 && liftLid(b.i)) return; if (b.id) openToy(b.id); }, label: b.lid ? $t('LYFT PÅ LOCKET') : null, toy: b.id }));
     wallGroups.forEach((G) => out.push({ id: G.id, r: G.r, go: () => shelfGo(G.cx), act: () => openToy(G.id), toy: G.id }));
     figs.forEach((F) => out.push({ id: F.id, r: F.r, go: () => shelfGo(F.x), act: () => openToy(F.id), toy: F.id }));
     shelfGroups.forEach((G) => out.push({ id: G.id, r: G.r, go: () => shelfGo(G.cx), act: () => openToy(G.id), toy: G.id }));
@@ -2175,20 +2179,20 @@ export function makeShopLeksaker(A, opts = {}) {
     }
     out.push(
       { id: 'kassor', r: [cashier.x - 7, CASH_Y - 40, cashier.x + 7, CNT.top - 1], go: PAY, act: () => { talkCash.say(CASH_TIPS[Math.floor(Math.random() * CASH_TIPS.length)], cashAt, 3.8); play('click'); } },
-      { id: 'disk', r: [CNT.x0, 76, CNT.x1, CNT.y], go: PAY, act: () => { talkCash.say('Här är hela sortimentet! 🧸', cashAt, 2.5); play('click'); openKat('alla'); }, label: 'KASSAN - HELA SORTIMENTET' },
-      { id: 'klambord', r: [TABLE.x0, TABLE.top - 4, TABLE.x1, TABLE.y], go: nearTableGo, act: toTableAct, label: 'KLÄMBORDET - TESTA MIG!' },
-      { id: 'skylt', r: [SIGN.x - 36, SIGN.y - 14, SIGN.x + 36, SIGN.y + 14], go: nearTableGo, act: toTableAct, label: 'KLÄMBORDET - TESTA MIG!' },
-      { id: 'pyramid', r: [PYR.x - 44, PYR.y - 40, PYR.x + 44, PYR.y + 18], go: [PYR.x, PYR.y + 24], act: () => { const d = allToys().filter((x) => x.kategori === 'squishy' && DUMP_RE.test(x.id + ' ' + x.namn)).map((x) => x.id); openKat('squishy', d.length ? d : null, '🥟 Dumplings i bambukorgar'); }, label: 'BAMBUKORGARNA - DUMPLINGS' },
-      { id: 'hylla-squishy', r: [SQW.x0, 6, SQW.x1, SQW.base], go: () => shelfGo(102), act: () => openKat('squishy'), label: 'SQUISHYVÄGGEN' },
-      { id: 'hylla-figur', r: [FIG.x0, 6, FIG.x1, FIG.base], go: () => shelfGo(464), act: () => openKat('figur'), label: 'KLÄMKOMPISARNA' },
-      { id: 'hylla-plysch', r: [CRATE.x0 - 10, 110, CRATE.x1 + 14, CRATE.y + 4], go: [(CRATE.x0 + CRATE.x1) / 2, CRATE.y + 10], act: () => openKat('plysch'), label: 'PLYSCHBERGET - KRAMA MIG!' },
-      { id: 'hylla-leksak', r: [TS.x0, 20, TS.x1, TS.base], go: () => shelfGo(655), act: () => openKat('leksak'), label: 'LEKSAKSHYLLORNA' },
-      { id: 'automat', r: [CAPS.x - 10, CAPS.y - 42, CAPS.x + 10, CAPS.y], go: [CAPS.x, CAPS.y + 8], act: () => { capsShake = t; rattle(); talkMe.say('Kapselautomaten är tom – påfyllning på måndag, står det. 🙃', meAt, 3.2); } },
-      { id: 'hast', r: [HORSE.x - 14, HORSE.y - 26, HORSE.x + 14, HORSE.y + 2], go: [HORSE.x, HORSE.y + 8], act: () => { horseT = t; play('click'); talkMe.say('Gunghästen gungar! 🐴', meAt, 2); } },
-      { id: 'bollar', r: [BALLS.x - 18, BALLS.y - 30, BALLS.x + 18, BALLS.y + 1], go: [BALLS.x + 22, BALLS.y - 2], act: () => { const b = allToys().filter((x) => x.grupp === 'boll').map((x) => x.id); if (b.length) openKat('leksak', b, '⚽ Bollar'); else talkMe.say('En hel korg med bollar! ⚽', meAt, 2); } },
-      { id: 'giraff', r: [GIR.x - 8, GIR.y - 76, GIR.x + 8, GIR.y], go: [GIR.x, GIR.y + 10], act: () => { girT = t; play('chirp'); talkMe.say('Jättegiraffen är inte till salu – hon heter Långa Lisa. 🦒', meAt, 3); } },
-      { id: 'tag', r: [MAT.x0, MAT.y0 - 8, MAT.x1, MAT.y1], go: [clamp(walker.px, MAT.x0 + 10, MAT.x1 - 10), MAT.y1 + 8], act: () => { toot(); train.v = 22; talkMe.say('TUT TUT! 🚂', meAt, 2); }, label: 'LEKMATTAN MED TÅGET' },
-      { id: 'dorr', r: [DOOR.x0 - 3, DOOR.top - 14, DOOR.x1 + 3, WALL_Y + 10], go: DOOR_SPOT, act: () => { play('door'); A.go('city'); }, label: 'GÅ UT' },
+      { id: 'disk', r: [CNT.x0, 76, CNT.x1, CNT.y], go: PAY, act: () => { talkCash.say($t('Här är hela sortimentet! 🧸'), cashAt, 2.5); play('click'); openKat('alla'); }, label: $t('KASSAN - HELA SORTIMENTET') },
+      { id: 'klambord', r: [TABLE.x0, TABLE.top - 4, TABLE.x1, TABLE.y], go: nearTableGo, act: toTableAct, label: $t('KLÄMBORDET - TESTA MIG!') },
+      { id: 'skylt', r: [SIGN.x - 36, SIGN.y - 14, SIGN.x + 36, SIGN.y + 14], go: nearTableGo, act: toTableAct, label: $t('KLÄMBORDET - TESTA MIG!') },
+      { id: 'pyramid', r: [PYR.x - 44, PYR.y - 40, PYR.x + 44, PYR.y + 18], go: [PYR.x, PYR.y + 24], act: () => { const d = allToys().filter((x) => x.kategori === 'squishy' && DUMP_RE.test(x.id + ' ' + x.namn)).map((x) => x.id); openKat('squishy', d.length ? d : null, $t('🥟 Dumplings i bambukorgar')); }, label: $t('BAMBUKORGARNA - DUMPLINGS') },
+      { id: 'hylla-squishy', r: [SQW.x0, 6, SQW.x1, SQW.base], go: () => shelfGo(102), act: () => openKat('squishy'), label: $t('SQUISHYVÄGGEN') },
+      { id: 'hylla-figur', r: [FIG.x0, 6, FIG.x1, FIG.base], go: () => shelfGo(464), act: () => openKat('figur'), label: $t('KLÄMKOMPISARNA') },
+      { id: 'hylla-plysch', r: [CRATE.x0 - 10, 110, CRATE.x1 + 14, CRATE.y + 4], go: [(CRATE.x0 + CRATE.x1) / 2, CRATE.y + 10], act: () => openKat('plysch'), label: $t('PLYSCHBERGET - KRAMA MIG!') },
+      { id: 'hylla-leksak', r: [TS.x0, 20, TS.x1, TS.base], go: () => shelfGo(655), act: () => openKat('leksak'), label: $t('LEKSAKSHYLLORNA') },
+      { id: 'automat', r: [CAPS.x - 10, CAPS.y - 42, CAPS.x + 10, CAPS.y], go: [CAPS.x, CAPS.y + 8], act: () => { capsShake = t; rattle(); talkMe.say($t('Kapselautomaten är tom – påfyllning på måndag, står det. 🙃'), meAt, 3.2); } },
+      { id: 'hast', r: [HORSE.x - 14, HORSE.y - 26, HORSE.x + 14, HORSE.y + 2], go: [HORSE.x, HORSE.y + 8], act: () => { horseT = t; play('click'); talkMe.say($t('Gunghästen gungar! 🐴'), meAt, 2); } },
+      { id: 'bollar', r: [BALLS.x - 18, BALLS.y - 30, BALLS.x + 18, BALLS.y + 1], go: [BALLS.x + 22, BALLS.y - 2], act: () => { const b = allToys().filter((x) => x.grupp === 'boll').map((x) => x.id); if (b.length) openKat('leksak', b, $t('⚽ Bollar')); else talkMe.say($t('En hel korg med bollar! ⚽'), meAt, 2); } },
+      { id: 'giraff', r: [GIR.x - 8, GIR.y - 76, GIR.x + 8, GIR.y], go: [GIR.x, GIR.y + 10], act: () => { girT = t; play('chirp'); talkMe.say($t('Jättegiraffen är inte till salu – hon heter Långa Lisa. 🦒'), meAt, 3); } },
+      { id: 'tag', r: [MAT.x0, MAT.y0 - 8, MAT.x1, MAT.y1], go: [clamp(walker.px, MAT.x0 + 10, MAT.x1 - 10), MAT.y1 + 8], act: () => { toot(); train.v = 22; talkMe.say($t('TUT TUT! 🚂'), meAt, 2); }, label: $t('LEKMATTAN MED TÅGET') },
+      { id: 'dorr', r: [DOOR.x0 - 3, DOOR.top - 14, DOOR.x1 + 3, WALL_Y + 10], go: DOOR_SPOT, act: () => { play('door'); A.go('city'); }, label: $t('GÅ UT') },
     );
     return out;
   }
@@ -2206,7 +2210,7 @@ export function makeShopLeksaker(A, opts = {}) {
   // klämbordets platser (bordet, skylten, squishiesarna): figuren ställer sig bakom bordet
   function toTableAct() {
     me.mode = 'table'; me.toTable = false; walker.dir = 'down';
-    if (!me.hinted) { me.hinted = true; talkMe.say('Tryck och håll på en squishy! 🤏 Prislappen = köp.', meAt, 3.8); }
+    if (!me.hinted) { me.hinted = true; talkMe.say($t('Tryck och håll på en squishy! 🤏 Prislappen = köp.'), meAt, 3.8); }
   }
 
   // ---------- släpp klämmet även om pekaren släpps utanför spelytan ----------
@@ -2235,7 +2239,7 @@ export function makeShopLeksaker(A, opts = {}) {
     // nyångade dumplings: lite ånga ur de öppna korgarna överst
     for (const b of baskets) if (!b.lid && b.i >= 3 && Math.random() < dt * 0.9) parts.push({ kind: 'steam', x: b.x - 5 + Math.random() * 10, y: b.y - 16, vx: 0, vy: -7, age: 0, max: 1.1 });
     enterT += dt;
-    if (!greeted && enterT > 0.7) { greeted = true; talkCash.say('Hej och välkommen till Leksakslådan! 🧸 Klämbordet får man klämma på!', cashAt, 4.2); }
+    if (!greeted && enterT > 0.7) { greeted = true; talkCash.say($t('Hej och välkommen till Leksakslådan! 🧸 Klämbordet får man klämma på!'), cashAt, 4.2); }
     const k = lockedCam !== null || peekCam !== null ? 1 : Math.min(1, dt * 6);
     cam.x += (camTarget() - cam.x) * k;
   }
@@ -2281,7 +2285,7 @@ export function makeShopLeksaker(A, opts = {}) {
     if (d) {
       const T = toyById(d.id);
       if (T) {
-        const s = 'DUMPLINGS ' + Math.round(T.pris) + ':-', w = textW(SMALL, s) + 6, x0 = PYR.x - (w >> 1), y0 = PYR.y + 4;
+        const s = $t`DUMPLINGS ${Math.round(T.pris)}:-`, w = textW(SMALL, s) + 6, x0 = PYR.x - (w >> 1), y0 = PYR.y + 4;
         ctx.fillStyle = '#6a3a2a'; ctx.fillRect(PYR.x - 1, y0 - 2, 2, 3);
         ctx.fillStyle = '#5e1018'; ctx.fillRect(x0 - 1, y0, w + 2, 9);
         ctx.fillStyle = '#fff4e0'; ctx.fillRect(x0, y0 + 1, w, 7);
@@ -2475,7 +2479,7 @@ export function makeShopLeksaker(A, opts = {}) {
     down(sx, sy) {
       const x = sx + cam.x, y = sy;
       hoverId = null; peekCam = null;
-      if (me.mode === 'toPay') { if (t - me.waitT > 2) { talkMe.say('Jag hämtar paketet i kassan först! 🎁', meAt, 2); me.waitT = t; } return; }
+      if (me.mode === 'toPay') { if (t - me.waitT > 2) { talkMe.say($t('Jag hämtar paketet i kassan först! 🎁'), meAt, 2); me.waitT = t; } return; }
       if (atTable()) {
         const ti = tableTagAt(x, y);
         if (ti >= 0) { releaseMine(); play('click'); openToy(tableSq[ti].id); return; }   // prislappen: köp
@@ -2510,10 +2514,10 @@ export function makeShopLeksaker(A, opts = {}) {
       // skylt i nederkanten: vad man pekar på
       ctx.setTransform(A.pxs, 0, 0, A.pxs, 0, 0);
       let label = null;
-      if (me.mode === 'table') { const q = tableSq[hoverSq]; label = myHold >= 0 ? 'SLÄPP SÅ STUDSAR DEN!' : q && toyById(q.id) ? safeTxt(toyById(q.id).namn) + ' - TRYCK OCH HÅLL' : 'TRYCK OCH HÅLL - PRISLAPPEN = KÖP'; }
+      if (me.mode === 'table') { const q = tableSq[hoverSq]; label = myHold >= 0 ? $t('SLÄPP SÅ STUDSAR DEN!') : q && toyById(q.id) ? $t`${safeTxt(toyName(toyById(q.id)))} - TRYCK OCH HÅLL` : $t('TRYCK OCH HÅLL - PRISLAPPEN = KÖP'); }
       const h = hoverId && t - hoverT < 3 ? spotById(hoverId) : null;
       if (h && !(atTable() && h.id.startsWith('bord-'))) {
-        if (h.toy) { const T = toyById(h.toy); if (T) label = (h.buy ? 'KÖP ' : '') + safeTxt(T.namn) + ' - ' + Math.round(T.pris) + ':-'; if (h.label && baskets.some((b) => 'korg-' + b.i === h.id && b.lid && lidUp(b) < 0.5)) label = h.label; }
+        if (h.toy) { const T = toyById(h.toy); if (T) label = h.buy ? $t`KÖP ${safeTxt(toyName(T))} - ${Math.round(T.pris)}:-` : $t`${safeTxt(toyName(T))} - ${Math.round(T.pris)}:-`; if (h.label && baskets.some((b) => 'korg-' + b.i === h.id && b.lid && lidUp(b) < 0.5)) label = h.label; }
         else if (h.label) label = h.label;
       }
       if (label) {
@@ -2524,8 +2528,8 @@ export function makeShopLeksaker(A, opts = {}) {
         ctxText(ctx, SMALL, label, ((VW - w) >> 1) + 5, by + 4, '#fff4f8');
       }
       // pilar mot resten av butiken
-      if (cx > 60) edgeSign(ctx, true, 'SQUISHY', '#f890b4');
-      if (cx < W - VW - 60) edgeSign(ctx, false, 'TÅG + GOSEDJUR', '#8ad8b4');
+      if (cx > 60) edgeSign(ctx, true, $t('SQUISHY'), '#f890b4');
+      if (cx < W - VW - 60) edgeSign(ctx, false, $t('TÅG + GOSEDJUR'), '#8ad8b4');
     },
     _debug: {
       spot: (id) => {

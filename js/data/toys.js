@@ -54,6 +54,7 @@
 //   omladdning skulle ett nytt köp skriva över de gamla (testat: tools/out/leksaker-squish/save-test.mjs).
 // ==================================================================
 import { Pix, SMALL, mix, mul, hash, bayer } from '../core/floor-pix.js';
+import { $t, $n } from '../core/i18n.js';
 
 const WHITE = 0xffffff;
 const INK = 0x2b1622;            // ögon och mun
@@ -217,39 +218,39 @@ function face(c, ey, gap, o = {}) {
 
 // ======================= katalogen =======================
 const PASTELL = [
-  ['rosa', 'Rosa dumpling', 0xffc4d8, 'Mjuk som en nybakad bulle och lika rosa som en jordgubbsmilkshake.'],
-  ['bla', 'Himmelsblå dumpling', 0xbcd8ff, 'Ljusblå och luftig som ett moln. Sjunker ihop när du klämmer och reser sig igen.'],
-  ['mint', 'Mintgrön dumpling', 0xbdefd2, 'Frisk som en mintkaramell. Perfekt att klämma på när bussen är sen.'],
-  ['lila', 'Lavendeldumpling', 0xdcc8ff, 'Lavendellila och alltid lite sömnig. Somnar nästan i handen.'],
-  ['gul', 'Solgul dumpling', 0xfff0a4, 'Solgul och glad – den lyser upp vilken hylla som helst.'],
-  ['vit', 'Vit dumpling', 0xfbf7f0, 'Den klassiska ångade dumplingen. Mjukast av dem alla.'],
+  ['rosa', $n('Rosa dumpling'), 0xffc4d8, $t('Mjuk som en nybakad bulle och lika rosa som en jordgubbsmilkshake.')],
+  ['bla', $n('Himmelsblå dumpling'), 0xbcd8ff, $t('Ljusblå och luftig som ett moln. Sjunker ihop när du klämmer och reser sig igen.')],
+  ['mint', $n('Mintgrön dumpling'), 0xbdefd2, $t('Frisk som en mintkaramell. Perfekt att klämma på när bussen är sen.')],
+  ['lila', $n('Lavendeldumpling'), 0xdcc8ff, $t('Lavendellila och alltid lite sömnig. Somnar nästan i handen.')],
+  ['gul', $n('Solgul dumpling'), 0xfff0a4, $t('Solgul och glad – den lyser upp vilken hylla som helst.')],
+  ['vit', $n('Vit dumpling'), 0xfbf7f0, $t('Den klassiska ångade dumplingen. Mjukast av dem alla.')],
 ];
 const GLITTER = [
-  ['lila', 'Lila glitterdumpling', 0xa864ee, 0xffb4f0, 'Full av lila glitter som gnistrar när du klämmer.'],
-  ['gron', 'Grön glitterdumpling', 0x3cc46c, 0xeaff86, 'Skogsgrön gelé med gula glitterflingor.'],
-  ['rosa', 'Rosa glitterdumpling', 0xff68b6, 0xfff0a6, 'Knallrosa och glittrig som en discokula.'],
-  ['rod', 'Röd glitterdumpling', 0xe63a4c, 0xffd276, 'Röd som ett smultron, med guldglitter i.'],
-  ['turkos', 'Turkos glitterdumpling', 0x22c6cc, 0xd4fff2, 'Turkos som en lagun – det glittrar som solkatter.'],
-  ['guld', 'Guldglittrig dumpling', 0xe8b632, 0xfffbd8, 'Guld rakt igenom. Den finaste i hela korgen.'],
+  ['lila', $n('Lila glitterdumpling'), 0xa864ee, 0xffb4f0, $t('Full av lila glitter som gnistrar när du klämmer.')],
+  ['gron', $n('Grön glitterdumpling'), 0x3cc46c, 0xeaff86, $t('Skogsgrön gelé med gula glitterflingor.')],
+  ['rosa', $n('Rosa glitterdumpling'), 0xff68b6, 0xfff0a6, $t('Knallrosa och glittrig som en discokula.')],
+  ['rod', $n('Röd glitterdumpling'), 0xe63a4c, 0xffd276, $t('Röd som ett smultron, med guldglitter i.')],
+  ['turkos', $n('Turkos glitterdumpling'), 0x22c6cc, 0xd4fff2, $t('Turkos som en lagun – det glittrar som solkatter.')],
+  ['guld', $n('Guldglittrig dumpling'), 0xe8b632, 0xfffbd8, $t('Guld rakt igenom. Den finaste i hela korgen.')],
 ];
 const JUL = [
-  ['renhorn', 'Rendumpling', 0xe8c69e, 'Med renhorn och röd mule. Drar tomtens släde – om den orkar.', 59],
-  ['tomteluva', 'Tomtedumpling', 0xfbf6ee, 'Röd tomteluva med vit tofs. God jul, klämmigt!', 59],
-  ['mossa', 'Mössdumpling', 0xffd2dc, 'Stickad mössa med pompom – redo för snöbollskrig.', 59],
-  ['halsduk', 'Halsduksdumpling', 0xc8f0dc, 'Randig stickad halsduk mot vinterkylan.', 59],
-  ['jarnek', 'Järnekdumpling', 0xfbf6ee, 'En järnekskvist med röda bär på toppen.', 59],
-  ['ljusslinga', 'Ljusslingedumpling', 0xe4f2c8, 'Insnurrad i en ljusslinga som blinkar i alla färger.', 69],
+  ['renhorn', $n('Rendumpling'), 0xe8c69e, $t('Med renhorn och röd mule. Drar tomtens släde – om den orkar.'), 59],
+  ['tomteluva', $n('Tomtedumpling'), 0xfbf6ee, $t('Röd tomteluva med vit tofs. God jul, klämmigt!'), 59],
+  ['mossa', $n('Mössdumpling'), 0xffd2dc, $t('Stickad mössa med pompom – redo för snöbollskrig.'), 59],
+  ['halsduk', $n('Halsduksdumpling'), 0xc8f0dc, $t('Randig stickad halsduk mot vinterkylan.'), 59],
+  ['jarnek', $n('Järnekdumpling'), 0xfbf6ee, $t('En järnekskvist med röda bär på toppen.'), 59],
+  ['ljusslinga', $n('Ljusslingedumpling'), 0xe4f2c8, $t('Insnurrad i en ljusslinga som blinkar i alla färger.'), 69],
 ];
 // Klämkompisarna – spelets EGNA kawaiifigurer
 export const KOMPISAR = [
-  { art: 'kanin', id: 'posa', namn: 'Pösa', col: 0xd6c2f2, text: 'Lavendelkanin med ett vikt öra. Älskar morötter och långa tupplurar.' },
-  { art: 'bjorn', id: 'brumme', namn: 'Brumme', col: 0xe2a462, text: 'Honungsbjörn med en rutig lapp på magen – där gick han sönder av för mycket kramar.' },
-  { art: 'groda', id: 'lilja', namn: 'Lilja', col: 0x98dc9a, text: 'Mintgrön groda med en blomma på huvudet. Bor på ett näckrosblad och hoppar i vattenpölar.' },
-  { art: 'pingvin', id: 'isa', namn: 'Isa', col: 0x8cbcec, text: 'Ljusblå pingvin med stickad halsduk. Fryser aldrig.' },
-  { art: 'rav', id: 'glod', namn: 'Glöd', col: 0xf4944a, text: 'Nyfiken räv med vit svanstipp. Hittar allt du tappat.' },
-  { art: 'uggla', id: 'hoa', namn: 'Hoa', col: 0xb48c68, text: 'Klok uggla som är vaken hela natten och läser serietidningar.' },
-  { art: 'katt', id: 'mysan', namn: 'Mysan', col: 0xfff2e4, text: 'Trefärgad katt som spinner när man klämmer henne.' },
-  { art: 'anka', id: 'pipp', namn: 'Pipp', col: 0xffe064, text: 'Gul ankunge med ett litet skott på huvudet.' },
+  { art: 'kanin', id: 'posa', namn: $n('Pösa'), col: 0xd6c2f2, text: $t('Lavendelkanin med ett vikt öra. Älskar morötter och långa tupplurar.') },
+  { art: 'bjorn', id: 'brumme', namn: $n('Brumme'), col: 0xe2a462, text: $t('Honungsbjörn med en rutig lapp på magen – där gick han sönder av för mycket kramar.') },
+  { art: 'groda', id: 'lilja', namn: $n('Lilja'), col: 0x98dc9a, text: $t('Mintgrön groda med en blomma på huvudet. Bor på ett näckrosblad och hoppar i vattenpölar.') },
+  { art: 'pingvin', id: 'isa', namn: $n('Isa'), col: 0x8cbcec, text: $t('Ljusblå pingvin med stickad halsduk. Fryser aldrig.') },
+  { art: 'rav', id: 'glod', namn: $n('Glöd'), col: 0xf4944a, text: $t('Nyfiken räv med vit svanstipp. Hittar allt du tappat.') },
+  { art: 'uggla', id: 'hoa', namn: $n('Hoa'), col: 0xb48c68, text: $t('Klok uggla som är vaken hela natten och läser serietidningar.') },
+  { art: 'katt', id: 'mysan', namn: $n('Mysan'), col: 0xfff2e4, text: $t('Trefärgad katt som spinner när man klämmer henne.') },
+  { art: 'anka', id: 'pipp', namn: $n('Pipp'), col: 0xffe064, text: $t('Gul ankunge med ett litet skott på huvudet.') },
 ];
 const hexOf = (c) => '#' + (c & 0xffffff).toString(16).padStart(6, '0');
 
@@ -258,44 +259,47 @@ export const TOYS = [
   ...PASTELL.map(([k, namn, col, b]) => ({ id: 'dumpling-' + k, namn, pris: 39, kategori: 'squishy', squish: true, grupp: 'dumpling', form: 'dumpling', bw: 18, bh: 13, o: { col }, beskrivning: b })),
   ...GLITTER.map(([k, namn, col, acc2, b]) => ({ id: 'glitter-' + k, namn, pris: k === 'guld' ? 59 : 49, kategori: 'squishy', squish: true, grupp: 'glitter', form: 'dumpling', bw: 18, bh: 13, o: { col, glitter: true, acc2, seed: namn.length * 7 }, beskrivning: b })),
   ...JUL.map(([k, namn, col, b, pris]) => ({ id: 'jul-' + k, namn, pris, kategori: 'squishy', squish: true, grupp: 'jul', form: 'dumpling', bw: 18, bh: 13, o: { col, acc: k }, beskrivning: b })),
-  { id: 'korg', namn: 'Bambukorg med lock', pris: 45, kategori: 'squishy', squish: false, grupp: 'korg', form: 'korg', bw: 24, bh: 16, o: {}, beskrivning: 'Flätad ångkorg av bambu med lock – ett mysigt hem åt dina dumplings.' },
+  { id: 'korg', namn: $n('Bambukorg med lock'), pris: 45, kategori: 'squishy', squish: false, grupp: 'korg', form: 'korg', bw: 24, bh: 16, o: {}, beskrivning: $t('Flätad ångkorg av bambu med lock – ett mysigt hem åt dina dumplings.') },
   // --- squishy-mat ---
-  { id: 'ostkub', namn: 'Ostkub', pris: 45, kategori: 'squishy', squish: true, grupp: 'mat', form: 'cube', cube: 3, bw: 15, bh: 14, syMin: 0.62, o: { typ: 'ost' }, beskrivning: 'En gul ostbit med hål. Luktar inte ost – det lovar vi.' },
-  { id: 'osttriangel', namn: 'Osttriangel', pris: 45, kategori: 'squishy', squish: true, grupp: 'mat', form: 'wedge', cube: 3, bw: 21, bh: 13, o: {}, beskrivning: 'En ostbit som en tårtbit. Klämmig ända ut i spetsen.' },
-  { id: 'smor', namn: 'Smörpaket', pris: 49, kategori: 'squishy', squish: true, grupp: 'mat', form: 'cube', cube: 3, bw: 27, bh: 15, syMin: 0.72, o: { typ: 'smor' }, beskrivning: 'Mjukt som smör – för det ÄR smör. Nästan.' },
-  { id: 'jordgubbslada', namn: 'Jordgubbslåda', pris: 55, kategori: 'squishy', squish: true, grupp: 'mat', form: 'carton', cube: 3, bw: 21, bh: 27, syMin: 0.74, o: {}, beskrivning: 'Rosa låda med jordgubbsmjölk. Luktar faktiskt jordgubb!' },
-  { id: 'brodlimpa', namn: 'Brödlimpa', pris: 49, kategori: 'squishy', squish: true, grupp: 'mat', form: 'brod', bw: 24, bh: 12, o: {}, beskrivning: 'Nybakad limpa med knaprig skorpa – ändå mjuk som en kudde.' },
-  { id: 'appel', namn: 'Rosa äpple', pris: 49, kategori: 'squishy', squish: true, grupp: 'mat', form: 'appel', bw: 16, bh: 15, o: {}, beskrivning: 'Halvgenomskinligt rosa äpple – solen lyser rakt igenom.' },
-  { id: 'iskub', namn: 'Iskub', pris: 45, kategori: 'squishy', squish: true, grupp: 'mat', form: 'cube', cube: 3, bw: 15, bh: 15, syMin: 0.62, o: { typ: 'is' }, beskrivning: 'Kall och klar som is, med en snöflinga fångad inuti.' },
-  { id: 'havskub', namn: 'Havskub', pris: 55, kategori: 'squishy', squish: true, grupp: 'mat', form: 'cube', cube: 3, bw: 17, bh: 16, syMin: 0.62, o: { typ: 'hav' }, beskrivning: 'En bit av havet: snäcka, sjöstjärna och sand i en kub.' },
-  { id: 'kattass', namn: 'Glitterkattass', pris: 59, kategori: 'squishy', squish: true, grupp: 'mat', form: 'kattass', bw: 20, bh: 15, o: { col: 0x34ccc4, acc2: 0xd8fff8, seed: 41 }, beskrivning: 'En turkos glittrig kattrumpa med pärlor inuti. Kläm – svansen reser sig!' },
+  { id: 'ostkub', namn: $n('Ostkub'), pris: 45, kategori: 'squishy', squish: true, grupp: 'mat', form: 'cube', cube: 3, bw: 15, bh: 14, syMin: 0.62, o: { typ: 'ost' }, beskrivning: $t('En gul ostbit med hål. Luktar inte ost – det lovar vi.') },
+  { id: 'osttriangel', namn: $n('Osttriangel'), pris: 45, kategori: 'squishy', squish: true, grupp: 'mat', form: 'wedge', cube: 3, bw: 21, bh: 13, o: {}, beskrivning: $t('En ostbit som en tårtbit. Klämmig ända ut i spetsen.') },
+  { id: 'smor', namn: $n('Smörpaket'), pris: 49, kategori: 'squishy', squish: true, grupp: 'mat', form: 'cube', cube: 3, bw: 27, bh: 15, syMin: 0.72, o: { typ: 'smor' }, beskrivning: $t('Mjukt som smör – för det ÄR smör. Nästan.') },
+  { id: 'jordgubbslada', namn: $n('Jordgubbslåda'), pris: 55, kategori: 'squishy', squish: true, grupp: 'mat', form: 'carton', cube: 3, bw: 21, bh: 27, syMin: 0.74, o: {}, beskrivning: $t('Rosa låda med jordgubbsmjölk. Luktar faktiskt jordgubb!') },
+  { id: 'brodlimpa', namn: $n('Brödlimpa'), pris: 49, kategori: 'squishy', squish: true, grupp: 'mat', form: 'brod', bw: 24, bh: 12, o: {}, beskrivning: $t('Nybakad limpa med knaprig skorpa – ändå mjuk som en kudde.') },
+  { id: 'appel', namn: $n('Rosa äpple'), pris: 49, kategori: 'squishy', squish: true, grupp: 'mat', form: 'appel', bw: 16, bh: 15, o: {}, beskrivning: $t('Halvgenomskinligt rosa äpple – solen lyser rakt igenom.') },
+  { id: 'iskub', namn: $n('Iskub'), pris: 45, kategori: 'squishy', squish: true, grupp: 'mat', form: 'cube', cube: 3, bw: 15, bh: 15, syMin: 0.62, o: { typ: 'is' }, beskrivning: $t('Kall och klar som is, med en snöflinga fångad inuti.') },
+  { id: 'havskub', namn: $n('Havskub'), pris: 55, kategori: 'squishy', squish: true, grupp: 'mat', form: 'cube', cube: 3, bw: 17, bh: 16, syMin: 0.62, o: { typ: 'hav' }, beskrivning: $t('En bit av havet: snäcka, sjöstjärna och sand i en kub.') },
+  { id: 'kattass', namn: $n('Glitterkattass'), pris: 59, kategori: 'squishy', squish: true, grupp: 'mat', form: 'kattass', bw: 20, bh: 15, o: { col: 0x34ccc4, acc2: 0xd8fff8, seed: 41 }, beskrivning: $t('En turkos glittrig kattrumpa med pärlor inuti. Kläm – svansen reser sig!') },
   // --- Klämkompisarna ---
   ...KOMPISAR.flatMap((K) => [
-    { id: 'figur-' + K.id, namn: K.namn + '-figur', pris: 29, kategori: 'figur', squish: false, grupp: 'klamkompis', form: 'kompis', bw: 14, bh: 14, o: { art: K.art, stil: 'figur' }, kompis: K.namn, beskrivning: 'Klämkompisarna: ' + K.text + ' Liten figur i blank plast.' },
-    { id: 'plysch-' + K.id, namn: K.namn + '-plysch', pris: 99, kategori: 'plysch', squish: true, grupp: 'klamkompis', form: 'kompis', bw: 18, bh: 18, syMin: 0.66, o: { art: K.art, stil: 'plysch' }, kompis: K.namn, beskrivning: 'Klämkompisarna: ' + K.text + ' Mjukt plyschdjur – kläm så blir hen glad.' },
+    { id: 'figur-' + K.id, namn: K.namn + '-figur', pris: 29, kategori: 'figur', squish: false, grupp: 'klamkompis', form: 'kompis', bw: 14, bh: 14, o: { art: K.art, stil: 'figur' }, kompis: K.namn, beskrivning: $t`Klämkompisarna: ${K.text} Liten figur i blank plast.` },
+    { id: 'plysch-' + K.id, namn: K.namn + '-plysch', pris: 99, kategori: 'plysch', squish: true, grupp: 'klamkompis', form: 'kompis', bw: 18, bh: 18, syMin: 0.66, o: { art: K.art, stil: 'plysch' }, kompis: K.namn, beskrivning: $t`Klämkompisarna: ${K.text} Mjukt plyschdjur – kläm så blir hen glad.` },
   ]),
   // --- andra leksaker ---
-  { id: 'nalle-liten', namn: 'Liten nalle', pris: 79, kategori: 'plysch', squish: false, grupp: 'nalle', form: 'nalle', bw: 12, bh: 15, o: { s: 0 }, beskrivning: 'En liten honungsnalle med röd rosett. Får plats i fickan.' },
-  { id: 'nalle-mellan', namn: 'Mellannalle', pris: 149, kategori: 'plysch', squish: false, grupp: 'nalle', form: 'nalle', bw: 16, bh: 20, o: { s: 1 }, beskrivning: 'Brun nalle med blå rosett och trampdynor under fötterna.' },
-  { id: 'nalle-stor', namn: 'Stor nalle', pris: 249, kategori: 'plysch', squish: false, grupp: 'nalle', form: 'nalle', bw: 22, bh: 27, o: { s: 2 }, beskrivning: 'Jättenalle i ljus kola med rutig rosett. Kramas bäst av alla.' },
-  { id: 'bil-racer', namn: 'Racerbil', pris: 49, kategori: 'leksak', squish: false, grupp: 'bil', form: 'bil', bw: 24, bh: 11, o: { typ: 'racer' }, beskrivning: 'Röd racerbil med nummer 7 och spoiler. Brum brum!' },
-  { id: 'bil-polis', namn: 'Polisbil', pris: 59, kategori: 'leksak', squish: false, grupp: 'bil', form: 'bil', bw: 24, bh: 13, o: { typ: 'polis' }, beskrivning: 'Polisbil med blåljus som blinkar på riktigt.' },
-  { id: 'bil-brand', namn: 'Brandbil', pris: 69, kategori: 'leksak', squish: false, grupp: 'bil', form: 'bil', bw: 30, bh: 14, o: { typ: 'brand' }, beskrivning: 'Brandbil med stege på taket. Tuut-tuut!' },
-  { id: 'tagset', namn: 'Tågset', pris: 299, kategori: 'leksak', squish: false, grupp: 'tag', form: 'tag', bw: 44, bh: 16, o: {}, beskrivning: 'Ånglok och godsvagn i trä på en bit räls. Loket puffar rök.' },
-  { id: 'klossar', namn: 'Byggklossar', pris: 89, kategori: 'leksak', squish: false, grupp: 'klossar', form: 'klossar', bw: 20, bh: 20, o: {}, beskrivning: 'Klossar i trä med A, B och C – och ett rött tak ovanpå.' },
-  { id: 'boll-bad', namn: 'Badboll', pris: 35, kategori: 'leksak', squish: false, grupp: 'boll', form: 'boll', bw: 12, bh: 12, o: { typ: 'bad' }, beskrivning: 'Randig badboll för stranden – eller vardagsrummet.' },
-  { id: 'boll-fot', namn: 'Fotboll', pris: 59, kategori: 'leksak', squish: false, grupp: 'boll', form: 'boll', bw: 12, bh: 12, o: { typ: 'fot' }, beskrivning: 'En riktig fotboll. Mål!' },
-  { id: 'boll-studs', namn: 'Studsboll', pris: 15, kategori: 'leksak', squish: false, grupp: 'boll', form: 'boll', bw: 6, bh: 6, o: { typ: 'studs' }, beskrivning: 'Liten glittrig studsboll som studsar ända upp till taket.' },
-  { id: 'jojo', namn: 'Jojo', pris: 29, kategori: 'leksak', squish: false, grupp: 'jojo', form: 'jojo', bw: 10, bh: 15, o: {}, beskrivning: 'Röd jojo med stjärna. Kan du gå med hunden?' },
-  { id: 'pussel', namn: 'Pussel 500 bitar', pris: 79, kategori: 'leksak', squish: false, grupp: 'spel', form: 'pussel', bw: 24, bh: 18, o: {}, beskrivning: 'Femhundra bitar: en stuga vid sjön i solnedgång.' },
-  { id: 'bradspel', namn: 'Fia med knuff', pris: 149, kategori: 'leksak', squish: false, grupp: 'spel', form: 'fia', bw: 24, bh: 19, o: {}, beskrivning: 'Klassiskt brädspel för 2–4. Knuffa hem pjäserna!' },
-  { id: 'badanka', namn: 'Badanka', pris: 25, kategori: 'leksak', squish: false, grupp: 'bad', form: 'anka', bw: 12, bh: 10, o: {}, beskrivning: 'Gul badanka som flyter och piper.' },
-  { id: 'snurra', namn: 'Snurra', pris: 35, kategori: 'leksak', squish: false, grupp: 'snurra', form: 'snurra', bw: 12, bh: 15, o: {}, beskrivning: 'Randig snurra i trä. Snurrar i en hel minut!' },
-  { id: 'docka', namn: 'Docka', pris: 129, kategori: 'leksak', squish: false, grupp: 'docka', form: 'docka', bw: 12, bh: 24, o: { typ: 'flicka' }, beskrivning: 'Docka med garnflätor och prickig klänning.' },
-  { id: 'docka-bebis', namn: 'Bebisdocka', pris: 149, kategori: 'leksak', squish: false, grupp: 'docka', form: 'docka', bw: 14, bh: 17, o: { typ: 'bebis' }, beskrivning: 'Sovande bebis i rosa filt, med napp och spetsmössa.' },
+  { id: 'nalle-liten', namn: $n('Liten nalle'), pris: 79, kategori: 'plysch', squish: false, grupp: 'nalle', form: 'nalle', bw: 12, bh: 15, o: { s: 0 }, beskrivning: $t('En liten honungsnalle med röd rosett. Får plats i fickan.') },
+  { id: 'nalle-mellan', namn: $n('Mellannalle'), pris: 149, kategori: 'plysch', squish: false, grupp: 'nalle', form: 'nalle', bw: 16, bh: 20, o: { s: 1 }, beskrivning: $t('Brun nalle med blå rosett och trampdynor under fötterna.') },
+  { id: 'nalle-stor', namn: $n('Stor nalle'), pris: 249, kategori: 'plysch', squish: false, grupp: 'nalle', form: 'nalle', bw: 22, bh: 27, o: { s: 2 }, beskrivning: $t('Jättenalle i ljus kola med rutig rosett. Kramas bäst av alla.') },
+  { id: 'bil-racer', namn: $n('Racerbil'), pris: 49, kategori: 'leksak', squish: false, grupp: 'bil', form: 'bil', bw: 24, bh: 11, o: { typ: 'racer' }, beskrivning: $t('Röd racerbil med nummer 7 och spoiler. Brum brum!') },
+  { id: 'bil-polis', namn: $n('Polisbil'), pris: 59, kategori: 'leksak', squish: false, grupp: 'bil', form: 'bil', bw: 24, bh: 13, o: { typ: 'polis' }, beskrivning: $t('Polisbil med blåljus som blinkar på riktigt.') },
+  { id: 'bil-brand', namn: $n('Brandbil'), pris: 69, kategori: 'leksak', squish: false, grupp: 'bil', form: 'bil', bw: 30, bh: 14, o: { typ: 'brand' }, beskrivning: $t('Brandbil med stege på taket. Tuut-tuut!') },
+  { id: 'tagset', namn: $n('Tågset'), pris: 299, kategori: 'leksak', squish: false, grupp: 'tag', form: 'tag', bw: 44, bh: 16, o: {}, beskrivning: $t('Ånglok och godsvagn i trä på en bit räls. Loket puffar rök.') },
+  { id: 'klossar', namn: $n('Byggklossar'), pris: 89, kategori: 'leksak', squish: false, grupp: 'klossar', form: 'klossar', bw: 20, bh: 20, o: {}, beskrivning: $t('Klossar i trä med A, B och C – och ett rött tak ovanpå.') },
+  { id: 'boll-bad', namn: $n('Badboll'), pris: 35, kategori: 'leksak', squish: false, grupp: 'boll', form: 'boll', bw: 12, bh: 12, o: { typ: 'bad' }, beskrivning: $t('Randig badboll för stranden – eller vardagsrummet.') },
+  { id: 'boll-fot', namn: $n('Fotboll'), pris: 59, kategori: 'leksak', squish: false, grupp: 'boll', form: 'boll', bw: 12, bh: 12, o: { typ: 'fot' }, beskrivning: $t('En riktig fotboll. Mål!') },
+  { id: 'boll-studs', namn: $n('Studsboll'), pris: 15, kategori: 'leksak', squish: false, grupp: 'boll', form: 'boll', bw: 6, bh: 6, o: { typ: 'studs' }, beskrivning: $t('Liten glittrig studsboll som studsar ända upp till taket.') },
+  { id: 'jojo', namn: $n('Jojo'), pris: 29, kategori: 'leksak', squish: false, grupp: 'jojo', form: 'jojo', bw: 10, bh: 15, o: {}, beskrivning: $t('Röd jojo med stjärna. Kan du gå med hunden?') },
+  { id: 'pussel', namn: $n('Pussel 500 bitar'), pris: 79, kategori: 'leksak', squish: false, grupp: 'spel', form: 'pussel', bw: 24, bh: 18, o: {}, beskrivning: $t('Femhundra bitar: en stuga vid sjön i solnedgång.') },
+  { id: 'bradspel', namn: $n('Fia med knuff'), pris: 149, kategori: 'leksak', squish: false, grupp: 'spel', form: 'fia', bw: 24, bh: 19, o: {}, beskrivning: $t('Klassiskt brädspel för 2–4. Knuffa hem pjäserna!') },
+  { id: 'badanka', namn: $n('Badanka'), pris: 25, kategori: 'leksak', squish: false, grupp: 'bad', form: 'anka', bw: 12, bh: 10, o: {}, beskrivning: $t('Gul badanka som flyter och piper.') },
+  { id: 'snurra', namn: $n('Snurra'), pris: 35, kategori: 'leksak', squish: false, grupp: 'snurra', form: 'snurra', bw: 12, bh: 15, o: {}, beskrivning: $t('Randig snurra i trä. Snurrar i en hel minut!') },
+  { id: 'docka', namn: $n('Docka'), pris: 129, kategori: 'leksak', squish: false, grupp: 'docka', form: 'docka', bw: 12, bh: 24, o: { typ: 'flicka' }, beskrivning: $t('Docka med garnflätor och prickig klänning.') },
+  { id: 'docka-bebis', namn: $n('Bebisdocka'), pris: 149, kategori: 'leksak', squish: false, grupp: 'docka', form: 'docka', bw: 14, bh: 17, o: { typ: 'bebis' }, beskrivning: $t('Sovande bebis i rosa filt, med napp och spetsmössa.') },
 ];
 const BY_ID = new Map(TOYS.map((t) => [t.id, t]));
 export const toyOf = (id) => BY_ID.get(id) || null;
+// Namnet på spelarens språk. namn/kompis är svenska ($n) eftersom leksaksaffären söker i dem
+// (DUMP_RE, glitterOf); Klämkompisarnas varor blir "<kompisens lokala namn>-figur/-plysch".
+export const toyNamn = (T) => (!T ? '' : T.kompis ? (T.kategori === 'figur' ? $t`${$t(T.kompis)}-figur` : $t`${$t(T.kompis)}-plysch`) : $t(T.namn));
 
 // ======================= köpta leksaker i sparfilen =======================
 // Game.load() i js/game.js känner inte till fältet 'toys': efter en omladdning ligger det i
@@ -884,9 +888,9 @@ function paintCube(c) {
     for (let x = g.x0 - g.ex(g.bot); x < g.xr; x++) P.px(x, g.bot, x < g.x0 + 2 ? 0xf0c850 : 0xd8a830);
     const rows = g.fh >= 11 * u ? 5 : g.fh >= 9 * u ? 4 : 3;
     const sp = 1 + (g.qq > 0.55 ? 1 : 0);
-    const tw = sqTextW('SMÖR', sp);
+    const tw = sqTextW($t('SMÖR'), sp);
     const ty = g.yF + (g.fh >= 10 * u ? u + 1 : 1);
-    sqText(P, 'SMÖR', R(g.cx - tw / 2), ty, rows, 0x2a4aa8, sp, 0x2a4aa8);
+    sqText(P, $t('SMÖR'), R(g.cx - tw / 2), ty, rows, 0x2a4aa8, sp, 0x2a4aa8);
     ey = ty + rows + 1 + (c.face === 'klamd' ? 1 : 0);
     face(c, ey, Math.max(u + 2, R(g.fw * 0.18)), { cx: g.cx, maxY: g.bot - 1 });
   } else if (o.typ === 'is') {
@@ -1036,11 +1040,12 @@ function paintCarton(c) {
   // etiketten: vit ruta med JORD / GUBB
   const rowsTxt = fh >= 17 * u ? 5 : fh >= 14 * u ? 4 : 3;
   const sp = 1 + (qq > 0.55 ? 1 : 0);
-  const tw = sqTextW('JORD', sp);
+  const [rad1, rad2 = ''] = $t('JORD\nGUBB').split('\n');   // ett ord på två rader (en nyckel)
+  const tw = sqTextW(rad1, sp);
   const lx0 = R(cx - tw / 2) - u, ly0 = yF + 2 * u, lh = rowsTxt * 2 + 3 * u;
   for (let y = ly0; y < ly0 + lh; y++) for (let x = lx0 - ex(y); x < lx0 + tw + 2 * u + ex(y); x++) P.px(x, y, (y === ly0 + lh - 1) ? 0xf0d0dc : WHITE);
-  sqText(P, 'JORD', R(cx - tw / 2), ly0 + u, rowsTxt, 0xe0306a, sp);
-  sqText(P, 'GUBB', R(cx - tw / 2), ly0 + u + rowsTxt + u, rowsTxt, 0xe0306a, sp);
+  sqText(P, rad1, R(cx - tw / 2), ly0 + u, rowsTxt, 0xe0306a, sp);
+  sqText(P, rad2, R(cx - tw / 2), ly0 + u + rowsTxt + u, rowsTxt, 0xe0306a, sp);
   // småjordgubbar längs botten
   const by = bot - (u >= 2 ? 6 : 3);                  // stora jordgubbar är 6 rader – de får inte sticka ut under lådan
   if (by > ly0 + lh + 4 * u) for (let x = x0 + 2 * u; x < xr - 2 * u; x += 6 * u) berry(x + 1, by, u >= 2 ? 2 : 1);
@@ -1692,7 +1697,7 @@ function paintKartong(c, art) {
       P.px(x, y, col);
     }
     // FIA i rött på vit list
-    sqText(P, 'FIA', R(x0 + fw / 2 - 5.5), yF + 1, 5, 0xc8283a, 1);
+    sqText(P, $t('FIA'), R(x0 + fw / 2 - 5.5), yF + 1, 5, 0xc8283a, 1);
     // pjäser i hörnen
     const pj = (px, py, col) => blit(P, px, py, ['.h.', 'hbh', 'bbb'], { h: mix(col, WHITE, 0.4), b: col });
     pj(x0 + 2, yF + 9, 0xa01c28); pj(x0 + fw - 5, yF + 9, 0x1a4a98); pj(x0 + 2, bot - 3, 0xc89010); pj(x0 + fw - 5, bot - 3, 0x2a7a3a);

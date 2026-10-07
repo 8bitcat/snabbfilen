@@ -11,6 +11,7 @@
 // Söder om vägen: vetefältet (traktorn plöjer), rapsfältet, bäcken under stenbron, STALLET med
 // hästhagen och RIDBANAN med hindren. Busshållplatsen LANDET vid vägen tar en tillbaka till stan.
 import { Pix, SMALL, BIG, text, textW, mix, mul, hash, bayer } from '../core/floor-pix.js';
+import { $t } from '../core/i18n.js';
 
 export const LW = 2400, LH = 520;
 export const L = {
@@ -31,10 +32,10 @@ export const BACK_X = (y) => 982 + Math.round(Math.sin(y / 38) * 16);   // bäck
 export const BACK_Y0 = 306;
 // husen: dörr (x0, x1) och fasaden står på base
 export const HUS = {
-  gard: { id: 'gard', namn: 'GÅRDEN', x: 700, w: 150, base: 186, h: 62, door: { x0: 760, x1: 778 } },
-  lada: { id: 'lada', namn: 'LADUGÅRDEN', x: 880, w: 170, base: 182, h: 74, door: { x0: 940, x1: 990 } },
+  gard: { id: 'gard', namn: $t('GÅRDEN'), x: 700, w: 150, base: 186, h: 62, door: { x0: 760, x1: 778 } },
+  lada: { id: 'lada', namn: $t('LADUGÅRDEN'), x: 880, w: 170, base: 182, h: 74, door: { x0: 940, x1: 990 } },
   silo: { id: 'silo', x: 1070, w: 28, base: 182, h: 86 },
-  stall: { id: 'stall', namn: 'STALLET', x: 1110, w: 250, base: 398, h: 66, door: { x0: 1220, x1: 1250 } },
+  stall: { id: 'stall', namn: $t('STALLET'), x: 1110, w: 250, base: 398, h: 66, door: { x0: 1220, x1: 1250 } },
   domartorn: { id: 'domartorn', x: 2130, w: 30, base: 360, h: 50 },
 };
 export const GRIND = { hage: [1480, 1510], bana: [1660, 1700] };   // grindarna (norrsidan, mot vägen)
@@ -263,7 +264,7 @@ export function husBild(id, night) {
     const dx = H.door.x0 - H.x + ox;
     P.rect(dx, gy - 34, H.door.x1 - H.door.x0, 34, 0x4a2a14); P.box(dx, gy - 34, H.door.x1 - H.door.x0, 34, VIT);
     // skylten
-    const s = 'STALLET', tw = textW(SMALL, s) + 8; P.rect(ox + (H.w >> 1) - (tw >> 1), top + 22, tw, 10, 0xf4f1ea); text(P, SMALL, s, ox + (H.w >> 1) - (tw >> 1) + 4, top + 24, 0x5a3a1e);
+    const s = $t('STALLET'), tw = textW(SMALL, s) + 8; P.rect(ox + (H.w >> 1) - (tw >> 1), top + 22, tw, 10, 0xf4f1ea); text(P, SMALL, s, ox + (H.w >> 1) - (tw >> 1) + 4, top + 24, 0x5a3a1e);
   } else if (id === 'domartorn') {
     const top = gy - H.h;
     for (const lx of [ox + 2, ox + H.w - 4]) P.rect(lx, top + 20, 2, H.h - 20, 0xf4f1ea);

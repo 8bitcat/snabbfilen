@@ -2,6 +2,7 @@
 // Varje post byggs med hs(label, grupp, { front, back, side }) – hs klipper frisyren
 // under täckande huvudbonader (se hair-kit.js). Id:n får aldrig byta namn efter släpp.
 import { hs, capF, backStd, sideTop, shaved, dims, nz, row, col, mask, paint, curls, sleekF, sleekB, sleekS, TIE } from './hair-kit.js';
+import { $t, $n } from '../i18n.js';
 
 export const BEAD = 0xe0b24a, BEAD2 = 0xf4f1ea; // pärlor i dreads (guld + vit)
 
@@ -42,7 +43,7 @@ export const twist = (R, x, yTip, yEnd) => {
 
 export const HAIR_LOCKAR = {
   // ================= Lockar =================
-  longCurly: hs('Långa lockar', 'Lockar', {
+  longCurly: hs($t('Långa lockar'), $n('Lockar'), {
     front(R) { const { h0 } = R, { chin } = dims(R);
       const m = mask().row(h0 - 2, 8, 15).row(h0 - 1, 7, 16).rect(6, h0, 12, 3).rect(4, h0 + 1, 4, chin + 4 - h0).rect(16, h0 + 1, 4, chin + 4 - h0)
         .set(8, h0 + 3).set(9, h0 + 3).set(14, h0 + 3).set(15, h0 + 3).set(12, h0 + 3);
@@ -60,7 +61,7 @@ export const HAIR_LOCKAR = {
       for (let x = 4; x <= 10; x++) if (nz(x, chin + 4, 6) < 45) m.cut(x, chin + 4);
       paint(R, m, { tex: curls(13) }); },
   }),
-  ringlets: hs('Kork­skruvar', 'Lockar', {
+  ringlets: hs($t('Kork­skruvar'), $n('Lockar'), {
     front(R) { const { put, hair: H, h0 } = R, { chin } = dims(R); capF(R, 3);
       for (const x of [8, 10, 13, 15]) put(x, h0 + 3, x > 12 ? H.lo : H.base); put(9, h0 + 1, H.lo); put(12, h0, H.lo); put(14, h0 + 1, H.lo);
       ringlet(R, 5, h0 + 1, chin + 3, false); ringlet(R, 17, h0 + 1, chin + 3, true); ringlet(R, 7, h0 + 3, R.eyeRow + 2, false); ringlet(R, 15, h0 + 3, R.eyeRow + 2, true); },
@@ -69,7 +70,7 @@ export const HAIR_LOCKAR = {
     side(R) { const { put, hair: H, h0 } = R, { chin } = dims(R); sideTop(R); put(15, h0 + 3, H.base); put(16, h0 + 3, H.lo);
       ringlet(R, 5, h0 + 2, chin + 3, true); ringlet(R, 7, h0 + 2, chin + 2, false); ringlet(R, 9, h0 + 3, chin, true); },
   }),
-  curlyTop: hs('Lockig topp', 'Lockar', {
+  curlyTop: hs($t('Lockig topp'), $n('Lockar'), {
     front(R) { const { h0 } = R;
       const m = mask().row(h0 - 3, 9, 14).row(h0 - 2, 8, 15).rect(7, h0 - 1, 10, 3).set(8, h0 + 2).set(9, h0 + 2).set(11, h0 + 2).set(13, h0 + 2).set(15, h0 + 2).set(12, h0 + 3).set(9, h0 + 3);
       paint(R, m, { tex: curls(21, 1.3) }); shavedSidesF(R, h0 + 2, h0 + 5); },
@@ -78,7 +79,7 @@ export const HAIR_LOCKAR = {
       const m = mask().row(h0 - 3, 10, 15).row(h0 - 2, 9, 16).rect(8, h0 - 1, 9, 3).set(16, h0 + 2).set(17, h0 + 1).set(15, h0 + 2).set(16, h0 + 3);
       paint(R, m, { tex: curls(23, 1.3) }); R.rect(8, h0 + 2, 5, 1, s.a); shavedSideS(R, h0 + 3); col(R, 13, h0 + 2, h0 + 4, s.a); },
   }),
-  curlyBob: hs('Lockig page', 'Lockar', {
+  curlyBob: hs($t('Lockig page'), $n('Lockar'), {
     // hakans längd, volymen längst ner (triangelform), lockar i pannan
     front(R) { const { h0, eyeRow } = R, { chin } = dims(R);
       const m = mask().row(h0 - 2, 8, 15).row(h0 - 1, 7, 16).rect(6, h0, 12, 3)
@@ -102,7 +103,7 @@ export const HAIR_LOCKAR = {
   }),
 
   // ================= Afro =================
-  twa: hs('Kort afro', 'Afro', {
+  twa: hs($t('Kort afro'), $n('Afro'), {
     front(R) { const { h0, eyeRow } = R;
       const m = mask().row(h0 - 2, 8, 15).row(h0 - 1, 7, 16).rect(6, h0, 12, 2).row(h0 + 2, 7, 16).rect(6, h0 + 2, 2, eyeRow - h0 - 3).rect(16, h0 + 2, 2, eyeRow - h0 - 3);
       paint(R, m, { tex: curls(31, 1.4) }); },
@@ -113,7 +114,7 @@ export const HAIR_LOCKAR = {
       const m = mask().row(h0 - 2, 9, 14).row(h0 - 1, 8, 16).rect(7, h0, 10, 2).row(h0 + 2, 7, 17).rect(7, h0 + 3, 4, 5).set(16, h0 + 2).set(13, h0 + 3).set(13, h0 + 4);
       m.cut(17, h0 + 2); paint(R, m, { tex: curls(33, 1.4) }); },
   }),
-  bigAfro: hs('Stor afro', 'Afro', {
+  bigAfro: hs($t('Stor afro'), $n('Afro'), {
     // under en hatt trycks afron ihop lite (annars sticker den ut som vingar)
     front(R) { const { h0, headH, K } = R, sq = R.hatted ? 2 : 0;
       const m = mask().oval(11.5, h0 + 3, (K ? 8.5 : 9.5) - sq, (K ? 7.5 : 8.5) - sq / 2).cut(7, h0 + 3, 10, headH).cut(8, h0 + 2, 8, 1);
@@ -125,13 +126,13 @@ export const HAIR_LOCKAR = {
       m.row(h0 + 3, 12, 13).set(16, h0 + 2);
       paint(R, m, { tex: curls(43, 1.2) }); },
   }),
-  afroPuff: hs('Afro­puff', 'Afro', {
+  afroPuff: hs($t('Afro­puff'), $n('Afro'), {
     front(R) { const { rect, h0 } = R; sleekF(R);
       const m = mask().oval(11.5, h0 - 2.5, 4, 2.6); paint(R, m, { tex: curls(51, 1.3) }); rect(10, h0 - 1, 4, 1, R.hatted ? R.hair.lo : TIE); },
     back(R) { const { rect, h0 } = R; sleekB(R, true); const m = mask().oval(11.5, h0 - 2.5, 4, 2.6); paint(R, m, { tex: curls(52, 1.3) }); rect(10, h0 - 1, 4, 1, TIE); },
     side(R) { const { put, h0 } = R; sleekS(R); const m = mask().oval(9, h0 - 2.3, 3.4, 2.6); paint(R, m, { tex: curls(53, 1.3) }); put(10, h0, TIE); put(11, h0, TIE); },
   }),
-  afroPuffs: hs('Dubbla puffar', 'Afro', {
+  afroPuffs: hs($t('Dubbla puffar'), $n('Afro'), {
     front(R) { const { put, skin, h0 } = R; sleekF(R); put(11, h0, skin.base); put(11, h0 + 1, skin.base); put(11, h0 - 1, R.hair.lo);
       paint(R, mask().oval(6, h0 - 1.5, 3, 2.8), { tex: curls(61, 1.3) }); paint(R, mask().oval(17, h0 - 1.5, 3, 2.8), { tex: curls(62, 1.3) });
       put(8, h0 + 1, TIE); put(15, h0 + 1, TIE); },
@@ -140,7 +141,7 @@ export const HAIR_LOCKAR = {
     side(R) { const { put, h0 } = R; sleekS(R);
       paint(R, mask().oval(10.5, h0 - 2.5, 3, 2.6), { tex: curls(65, 1.3) }); put(10, h0, TIE); put(11, h0, TIE); },
   }),
-  highTop: hs('High top', 'Afro', {
+  highTop: hs($t('High top'), $n('Afro'), {
     front(R) { const { put, hair: H, h0 } = R;
       const m = mask().row(h0 - 5, 9, 14).rect(8, h0 - 4, 8, 6); paint(R, m, { tex: curls(71, 1.2) }); row(R, h0 - 5, 9, 13, H.hi); put(8, h0 - 4, H.hi); row(R, h0 + 1, 9, 14, H.lo);
       shavedSidesF(R, h0, h0 + 4); },
@@ -150,7 +151,7 @@ export const HAIR_LOCKAR = {
       const m = mask().row(h0 - 5, 10, 15).rect(9, h0 - 4, 8, 5).row(h0 + 1, 13, 16); paint(R, m, { tex: curls(73, 1.2) }); row(R, h0 - 5, 10, 14, H.hi);
       R.put(8, h0, s.a); R.rect(8, h0 + 1, 5, 1, s.a); shavedSideS(R, h0 + 2); col(R, 13, h0 + 2, h0 + 3, s.a); },
   }),
-  frohawk: hs('Frohawk', 'Afro', {
+  frohawk: hs($t('Frohawk'), $n('Afro'), {
     front(R) { const { h0 } = R, s = shaved(R);
       R.rect(8, h0, 2, 3, s.a); R.rect(14, h0, 2, 3, s.b); shavedSidesF(R, h0 + 1, h0 + 4); R.put(7, h0, s.a); R.put(16, h0, s.b);
       const m = mask().row(h0 - 4, 10, 13).rect(9, h0 - 3, 6, 4).row(h0 + 1, 10, 13); paint(R, m, { tex: curls(81, 1.3) }); },
@@ -160,7 +161,7 @@ export const HAIR_LOCKAR = {
       R.put(8, h0, s.a); R.rect(8, h0 + 1, 8, 1, s.a); R.rect(8, h0 + 2, 5, 1, s.a); shavedSideS(R, h0 + 3);
       const m = mask().row(h0 - 4, 10, 14).row(h0 - 3, 9, 16).rect(8, h0 - 2, 9, 2).row(h0, 9, 16).set(16, h0 + 1); paint(R, m, { tex: curls(83, 1.3) }); },
   }),
-  afroFade: hs('Afro med fade', 'Afro', {
+  afroFade: hs($t('Afro med fade'), $n('Afro'), {
     // rund kort afro på hjässan, sidorna och nacken tonar ut mot huden
     front(R) { const { h0 } = R, s = shaved(R);
       const m = mask().row(h0 - 4, 9, 14).row(h0 - 3, 8, 15).rect(7, h0 - 2, 10, 3).row(h0 + 1, 8, 15).row(h0 + 2, 8, 15);
@@ -177,7 +178,7 @@ export const HAIR_LOCKAR = {
   }),
 
   // ================= Dreads & twists =================
-  dreadsBun: hs('Dreads i knut', 'Dreads & twists', {
+  dreadsBun: hs($t('Dreads i knut'), $n('Dreads & twists'), {
     front(R) { const { put, hair: H, h0 } = R; sleekF(R);
       for (let x = 8; x <= 15; x += 2) for (let y = h0; y <= h0 + 2; y++) if ((x + y) % 2 === 0) put(x, y, H.lo);
       const m = mask().oval(11.5, h0 - 2.5, 3.8, 2.6); paint(R, m);
@@ -189,7 +190,7 @@ export const HAIR_LOCKAR = {
       const m = mask().oval(9, h0 - 2.3, 3.4, 2.6); paint(R, m); for (let y = h0 - 4; y <= h0 - 1; y += 2) row(R, y, 7, 11, H.lo); put(8, h0 - 3, H.dk);
       for (let x = 9; x <= 15; x += 2) put(x, h0 + 1, H.lo); },
   }),
-  dreadsTail: hs('Dreads­svans', 'Dreads & twists', {
+  dreadsTail: hs($t('Dreads­svans'), $n('Dreads & twists'), {
     front(R) { const { put, hair: H, h0 } = R; sleekF(R);
       for (let x = 8; x <= 15; x += 2) for (let y = h0; y <= h0 + 2; y++) if ((x + y) % 2 === 0) put(x, y, H.lo); },
     back(R) { const { put, rect, hair: H, h0, headH } = R, { chest } = dims(R), b = h0 + headH - 3;
@@ -199,7 +200,7 @@ export const HAIR_LOCKAR = {
     side(R) { const { put, hair: H, h0 } = R, { chest } = dims(R); sleekS(R); put(8, h0 + 3, TIE); put(8, h0 + 4, TIE);
       loc(R, 7, h0 + 4, chest - 1, 1, false, false); loc(R, 6, h0 + 5, chest, 1, true, false); loc(R, 5, h0 + 6, chest - 2, 1, false, false); put(7, h0 + 3, H.base); },
   }),
-  twists: hs('Twists', 'Dreads & twists', {
+  twists: hs($t('Twists'), $n('Dreads & twists'), {
     front(R) { const { rect, put, hair: H, h0, eyeRow } = R; rect(7, h0, 10, 2, H.lo); rect(8, h0 - 1, 8, 1, H.lo);
       for (let x = 7; x <= 16; x++) twist(R, x, h0 - 2 - (nz(x, 1, 91) % 2) - (x > 8 && x < 15 ? 1 : 0), h0 + 1);
       for (const x of [8, 10, 13, 15]) twist(R, x, h0 + 1, h0 + 3);
@@ -211,7 +212,7 @@ export const HAIR_LOCKAR = {
       for (let x = 8; x <= 16; x++) twist(R, x, h0 - 2 - (nz(x, 2, 93) % 2) - (x > 9 && x < 15 ? 1 : 0), h0 + 1);
       for (const x of [8, 9, 10]) twist(R, x, h0 + 2, h0 + 6 + (x === 9 ? 1 : 0)); twist(R, 16, h0 + 1, h0 + 3); twist(R, 7, h0, h0 + 5); },
   }),
-  beadDreads: hs('Dreads med pärlor', 'Dreads & twists', {
+  beadDreads: hs($t('Dreads med pärlor'), $n('Dreads & twists'), {
     front(R) { const { put, hair: H, h0 } = R, { chin } = dims(R); capF(R, 3);
       for (let x = 8; x <= 15; x += 2) for (let y = h0; y < h0 + 3; y++) if ((x + y) % 2 === 0) put(x, y, H.lo);
       loc(R, 5, h0 + 2, chin + 3, 1, false, false); loc(R, 6, h0 + 1, chin + 4, 1, false, true); loc(R, 7, h0 + 3, chin + 2, 1, false, false);
@@ -222,7 +223,7 @@ export const HAIR_LOCKAR = {
     side(R) { const { hair: H, h0 } = R, { chin } = dims(R); sideTop(R); R.put(15, h0 + 3, H.base); R.put(16, h0 + 3, H.lo);
       for (let x = 5; x <= 10; x++) loc(R, x, h0 + 2, chin + 2 + (x % 3), 1, x % 2 === 0, x === 6 || x === 9); },
   }),
-  dreadHawk: hs('Dreads med rakade sidor', 'Dreads & twists', {
+  dreadHawk: hs($t('Dreads med rakade sidor'), $n('Dreads & twists'), {
     // en rand dreads mitt på skallen som hänger ner på ryggen, sidorna rakade
     front(R) { const { rect, h0 } = R, s = shaved(R);
       rect(8, h0 - 1, 2, 1, s.a); rect(14, h0 - 1, 2, 1, s.b); rect(7, h0, 3, 3, s.a); rect(14, h0, 3, 3, s.b); col(R, 7, h0 + 3, h0 + 5, s.a); col(R, 16, h0 + 3, h0 + 5, s.b);

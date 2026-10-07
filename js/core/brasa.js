@@ -7,6 +7,7 @@
 // Gyllenbrun ger mest lycka (högst 10 om dagen från marshmallows) och lite mättnad.
 import { openModal, closeModal, toast } from './ui.js';
 import { play } from './sound.js';
+import { $t } from './i18n.js';
 
 // ---------- brasan hemma ----------
 // d = spisen i g.deco (samma objekt som rummet ritar), onChange = rita om / spara
@@ -14,20 +15,20 @@ export function openBrasa(A, d, { onChange } = {}) {
   const g = A.game;
   const set = (lit) => { d.lit = lit || undefined; if (!lit) delete d.lit; g.save(); onChange?.(); };
   if (!d.lit) {
-    openModal('🔥 Brasan', '<p style="font-size:var(--f2);margin-top:0">Ska du tända en brasa? Det blir varmt och mysigt – och vid brasan kan du grilla marshmallows.</p>', [
-      { label: 'Stäng', onClick: closeModal },
-      { label: '🔥 Tänd brasan', cls: 'btn-go', onClick: () => {
+    openModal($t('🔥 Brasan'), `<p style="font-size:var(--f2);margin-top:0">${$t('Ska du tända en brasa? Det blir varmt och mysigt – och vid brasan kan du grilla marshmallows.')}</p>`, [
+      { label: $t('Stäng'), onClick: closeModal },
+      { label: $t('🔥 Tänd brasan'), cls: 'btn-go', onClick: () => {
         closeModal(); set(true); play('ok');
         const d2 = g.glad(2, '', 'brasa', 2);
-        toast(`🔥 Det sprakar i brasan!${d2 ? ' Mysigt: +' + d2 + ' lycka' : ''}`, 'good');
+        toast(`${$t('🔥 Det sprakar i brasan!')}${d2 ? ' ' + $t`Mysigt: +${d2} lycka` : ''}`, 'good');
       } },
     ]);
     return;
   }
-  openModal('🔥 Brasan brinner', '<p style="font-size:var(--f2);margin-top:0">Det sprakar och är varmt. Vill du grilla marshmallows?</p>', [
-    { label: '💨 Släck brasan', onClick: () => { closeModal(); set(false); play('slide'); toast('💨 Brasan är släckt.'); } },
-    { label: 'Stäng', onClick: closeModal },
-    { label: '🍡 Grilla marshmallows', cls: 'btn-go', onClick: () => openMarshmallow(A) },
+  openModal($t('🔥 Brasan brinner'), `<p style="font-size:var(--f2);margin-top:0">${$t('Det sprakar och är varmt. Vill du grilla marshmallows?')}</p>`, [
+    { label: $t('💨 Släck brasan'), onClick: () => { closeModal(); set(false); play('slide'); toast($t('💨 Brasan är släckt.')); } },
+    { label: $t('Stäng'), onClick: closeModal },
+    { label: $t('🍡 Grilla marshmallows'), cls: 'btn-go', onClick: () => openMarshmallow(A) },
   ]);
 }
 
@@ -37,34 +38,34 @@ const FIRE = { x: 64, y: 70 };            // brasans mitt vid veden
 const IN = [62, 40], OUT = [96, 24];      // marshmallowens plats i elden / uttagen
 // rostningen: 0 vit … 0,6–0,85 gyllenbrun (perfekt) … 1 mörk – över 1 fattar den eld
 const STEG = [
-  [0.25, 'Vit och kall', '#f4f1ea', '#d2cfc6'],
-  [0.6, 'Ljust gyllene', '#f8dfa0', '#d8b070'],
-  [0.85, 'GYLLENBRUN!', '#d8963c', '#9a5a1e'],
-  [1.0, 'Mörkbrun', '#8a4a1e', '#5a2a10'],
-  [9, 'Bränd', '#2a1a14', '#140c0a'],
+  [0.25, $t('Vit och kall'), '#f4f1ea', '#d2cfc6'],
+  [0.6, $t('Ljust gyllene'), '#f8dfa0', '#d8b070'],
+  [0.85, $t('GYLLENBRUN!'), '#d8963c', '#9a5a1e'],
+  [1.0, $t('Mörkbrun'), '#8a4a1e', '#5a2a10'],
+  [9, $t('Bränd'), '#2a1a14', '#140c0a'],
 ];
 const stegOf = (lv) => STEG.find((s) => lv < s[0]) || STEG[STEG.length - 1];
 export const BETYG = (lv, brann) => {
-  if (brann || lv >= 1.0) return { txt: 'Bränd … 😬 Den smakade kol – men lite god ändå.', glad: 1, ljud: 'fel' };
-  if (lv >= 0.85) return { txt: 'Mörk och knaprig – gott! 😋', glad: 3, ljud: 'ok' };
-  if (lv >= 0.6) return { txt: 'PERFEKT gyllenbrun! 🤩 Krispig utanpå, kladdig inuti.', glad: 5, ljud: 'fanfare' };
-  if (lv >= 0.25) return { txt: 'Ljust gyllene – mums! 😊', glad: 3, ljud: 'ok' };
-  return { txt: 'Inte varm än … men god ändå! 🙂', glad: 1, ljud: 'click' };
+  if (brann || lv >= 1.0) return { txt: $t('Bränd … 😬 Den smakade kol – men lite god ändå.'), glad: 1, ljud: 'fel' };
+  if (lv >= 0.85) return { txt: $t('Mörk och knaprig – gott! 😋'), glad: 3, ljud: 'ok' };
+  if (lv >= 0.6) return { txt: $t('PERFEKT gyllenbrun! 🤩 Krispig utanpå, kladdig inuti.'), glad: 5, ljud: 'fanfare' };
+  if (lv >= 0.25) return { txt: $t('Ljust gyllene – mums! 😊'), glad: 3, ljud: 'ok' };
+  return { txt: $t('Inte varm än … men god ändå! 🙂'), glad: 1, ljud: 'click' };
 };
 
-export function openMarshmallow(A, { title = '🍡 Grilla marshmallows' } = {}) {
+export function openMarshmallow(A, { title = $t('🍡 Grilla marshmallows') } = {}) {
   const g = A.game;
   const st = { lv: 0, inFire: false, burning: false, burnT: 0, x: OUT[0], y: OUT[1], t: 0, eaten: 0, perfect: 0, gladSum: 0, done: false };
   const dlg = openModal(title, `
     <div class="mm">
       <canvas class="mm-cv" width="${W}" height="${H}" style="width:100%;max-width:512px;aspect-ratio:${W}/${H};image-rendering:pixelated;display:block;margin:0 auto;background:#120c16;border:3px solid #17151a"></canvas>
       <p class="mm-status" style="font-size:var(--f2);margin:8px 0 0;text-align:center"></p>
-      <p class="mm-tips" style="font-size:var(--f1);margin:4px 0 0;text-align:center;opacity:.8">Håll marshmallowen i elden tills den är gyllenbrun – men akta så den inte fattar eld!</p>
+      <p class="mm-tips" style="font-size:var(--f1);margin:4px 0 0;text-align:center;opacity:.8">${$t('Håll marshmallowen i elden tills den är gyllenbrun – men akta så den inte fattar eld!')}</p>
     </div>`, [
-    { label: '🔥 Håll i elden', cls: 'btn-gold mm-hold', onClick: () => toggle() },
-    { label: '💨 Blås!', cls: 'btn-red mm-blow', onClick: () => blow() },
-    { label: '😋 Ät!', cls: 'btn-go mm-eat', onClick: () => eat() },
-    { label: 'Klar', cls: 'mm-klar', onClick: () => stop() },
+    { label: $t('🔥 Håll i elden'), cls: 'btn-gold mm-hold', onClick: () => toggle() },
+    { label: $t('💨 Blås!'), cls: 'btn-red mm-blow', onClick: () => blow() },
+    { label: $t('😋 Ät!'), cls: 'btn-go mm-eat', onClick: () => eat() },
+    { label: $t('Klar'), cls: 'mm-klar', onClick: () => stop() },
   ]);
   const cv = dlg.querySelector('.mm-cv'), ctx = cv.getContext('2d');
   const status = dlg.querySelector('.mm-status');
@@ -78,16 +79,16 @@ export function openMarshmallow(A, { title = '🍡 Grilla marshmallows' } = {}) 
   function blow() {
     if (!st.burning) return;
     st.burning = false; st.inFire = false; play('slide');
-    toast('💨 Pust! Elden är släckt.');
+    toast($t('💨 Pust! Elden är släckt.'));
   }
   function eat() {
-    if (st.burning) { toast('🔥 Den brinner! Blås först!', 'bad'); play('fel'); return; }
+    if (st.burning) { toast($t('🔥 Den brinner! Blås först!'), 'bad'); play('fel'); return; }
     const b = BETYG(st.lv, st.lv >= 1.0);
     const d = g.glad(b.glad, '', 'marshmallow', 10);
     g.hunger = Math.min(100, (g.hunger || 0) + 3);
     st.eaten++; st.gladSum += d; if (st.lv >= 0.6 && st.lv < 0.85) st.perfect++;
     play(b.ljud);
-    toast(`🍡 ${b.txt}${d ? ` +${d} lycka` : ''}`, b.glad >= 3 ? 'good' : '');
+    toast(`🍡 ${b.txt}${d ? ` ${$t`+${d} lycka`}` : ''}`, b.glad >= 3 ? 'good' : '');
     g.save();
     // en ny vit marshmallow på pinnen
     st.lv = 0; st.inFire = false; st.burnT = 0;
@@ -96,7 +97,7 @@ export function openMarshmallow(A, { title = '🍡 Grilla marshmallows' } = {}) 
     st.done = true;
     if (A.marshmallow === api) A.marshmallow = null;
     closeModal();
-    if (st.eaten) toast(`🍡 Du åt ${st.eaten} marshmallow${st.eaten === 1 ? '' : 's'}${st.perfect ? ` – ${st.perfect} perfekt gyllenbrun${st.perfect === 1 ? '' : 'a'}!` : '.'}`, 'good');
+    if (st.eaten) toast(`${st.eaten === 1 ? $t`🍡 Du åt ${st.eaten} marshmallow` : $t`🍡 Du åt ${st.eaten} marshmallows`}${st.perfect ? ` – ${st.perfect === 1 ? $t`${st.perfect} perfekt gyllenbrun!` : $t`${st.perfect} perfekt gyllenbruna!`}` : '.'}`, 'good');
   }
   // testerna (och felsökningen) når spelet via A.marshmallow
   const api = { get lv() { return st.lv; }, set lv(v) { st.lv = v; }, get burning() { return st.burning; }, get inFire() { return st.inFire; }, get eaten() { return st.eaten; }, get perfect() { return st.perfect; }, toggle, blow, eat, stop };
@@ -117,9 +118,9 @@ export function openMarshmallow(A, { title = '🍡 Grilla marshmallows' } = {}) 
     if (st.burning && st.lv >= 1.4) { st.burning = false; st.inFire = false; } // brann ut av sig själv
     draw();
     const s = stegOf(st.lv);
-    status.textContent = st.burning ? '🔥 DEN BRINNER! Blås!' : `${s[1]}${st.inFire ? ' – i elden …' : ''}`;
+    status.textContent = st.burning ? $t('🔥 DEN BRINNER! Blås!') : `${s[1]}${st.inFire ? ` – ${$t('i elden …')}` : ''}`;
     status.style.color = st.burning ? '#d9433b' : st.lv >= 0.6 && st.lv < 0.85 ? '#2f8f46' : '';
-    holdB.innerHTML = st.inFire ? '↩ Ta ut ur elden' : '🔥 Håll i elden';
+    holdB.innerHTML = st.inFire ? $t('↩ Ta ut ur elden') : $t('🔥 Håll i elden');
     blowB.style.display = st.burning ? '' : 'none';
     eatB.disabled = st.burning;
     requestAnimationFrame(frame);

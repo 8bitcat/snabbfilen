@@ -45,7 +45,7 @@ function build(open, markis, namn) {
     rect(-17, -29, 16, 7, 0xd8343c); text(P, SMALL, 'STÄNGT', AX - 16, AY - 28, 0xf4f1ea);
   }
   // takskylten med namnet
-  const s = String(namn || 'FOODTRUCK').toUpperCase().replace(/[^A-ZÅÄÖÉ0-9 !'.-]/g, '').slice(0, 14), tw = textW(SMALL, s) + 6;
+  const s = String(namn || 'FOODTRUCK').toUpperCase().replace(/[^A-ZÅÄÖÉÁÀÂÃÇĆÈÊËÍÌÎÏÑŃÓÒÔÕŚŹŻÚÙÛÜŸÝĄĘŁŒÆ¡¿€$0-9 !'.-]/g, '').slice(0, 14), tw = textW(SMALL, s) + 6;
   const sx = Math.round(-8 - tw / 2);
   rect(sx, -50 + (markis && open ? 0 : 3), tw, 8, STRIPE); rect(sx, -50 + (markis && open ? 0 : 3), tw, 1, 0x5ad0c4);
   text(P, SMALL, s, AX + sx + 3, AY - 48 + (markis && open ? 0 : 3), 0xf4f1ea);

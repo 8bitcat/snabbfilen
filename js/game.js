@@ -3,22 +3,23 @@
 import { toast } from './core/ui.js';
 import { play } from './core/sound.js';
 import { WARDROBE, itemById, legacyKeyToId } from './data/wardrobe.js';
+import { $t, $tf, $n, money } from './core/i18n.js';
 
 export const SAVE_KEY = 'snabbfilen_save1';
 // Fält som gamla versioner sparade men som load() redan har flyttat in på nytt ställe
 // (furniture → förrådet) – de ska inte följa med tillbaka som okänd data.
 const LEGACY_FIELDS = ['furniture'];
-export const DAY_NAMES = ['Måndag', 'Tisdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lördag', 'Söndag'];
-export const fmt = (n) => Math.round(n).toLocaleString('sv-SE') + ' kr';
+export const DAY_NAMES = [$t('Måndag'), $t('Tisdag'), $t('Onsdag'), $t('Torsdag'), $t('Fredag'), $t('Lördag'), $t('Söndag')];
+export const fmt = (n) => money(n);   // "1 500 kr" på svenska, "$1,500" på engelska, "1.500 €" på tyska …
 export const clock = (min) => `${String(Math.floor(min / 60) % 24).padStart(2, '0')}:${String(Math.floor(min % 60)).padStart(2, '0')}`;
 
 // Maten i matbutiken. fill = mätthet. Billig mat mättar lite – som i Jones.
 export const FOOD = [
-  { id: 'nudlar', icon: '🍜', name: 'Snabbnudlar', price: 12, fill: 18 },
-  { id: 'macka', icon: '🥪', name: 'Ostmacka', price: 22, fill: 30 },
-  { id: 'korv', icon: '🌭', name: 'Korv med bröd', price: 35, fill: 42 },
-  { id: 'pizza', icon: '🍕', name: 'Pizza', price: 65, fill: 65 },
-  { id: 'lyx', icon: '🍱', name: 'Lyxlåda', price: 120, fill: 95 },
+  { id: 'nudlar', icon: '🍜', name: $t('Snabbnudlar'), price: 12, fill: 18 },
+  { id: 'macka', icon: '🥪', name: $t('Ostmacka'), price: 22, fill: 30 },
+  { id: 'korv', icon: '🌭', name: $t('Korv med bröd'), price: 35, fill: 42 },
+  { id: 'pizza', icon: '🍕', name: $t('Pizza'), price: 65, fill: 65 },
+  { id: 'lyx', icon: '🍱', name: $t('Lyxlåda'), price: 120, fill: 95 },
 ];
 export const foodOf = (id) => FOOD.find((f) => f.id === id);
 
@@ -28,30 +29,30 @@ export const foodOf = (id) => FOOD.find((f) => f.id === id);
 // som den är (0 = går inte att äta rå). id:n får aldrig byta namn (sparfilen).
 export const RAVAROR = [
   // frukt och grönt (fruktlådorna)
-  { id: 'applR', icon: '🍎', name: 'Rött äpple', price: 6, raw: 8 }, { id: 'applG', icon: '🍏', name: 'Grönt äpple', price: 6, raw: 8 },
-  { id: 'apels', icon: '🍊', name: 'Apelsin', price: 7, raw: 8 }, { id: 'banan', icon: '🍌', name: 'Banan', price: 5, raw: 10 },
-  { id: 'citron', icon: '🍋', name: 'Citron', price: 6, raw: 0 }, { id: 'druva', icon: '🍇', name: 'Vindruvor', price: 15, raw: 10 },
-  { id: 'paron', icon: '🍐', name: 'Päron', price: 7, raw: 8 }, { id: 'kiwi', icon: '🥝', name: 'Kiwi', price: 6, raw: 6 },
-  { id: 'avokado', icon: '🥑', name: 'Avokado', price: 14, raw: 0 }, { id: 'tomat', icon: '🍅', name: 'Tomat', price: 5, raw: 4 },
-  { id: 'paprika', icon: '🫑', name: 'Paprika', price: 10, raw: 4 }, { id: 'lime', icon: '🍋', name: 'Lime', price: 6, raw: 0 },
-  { id: 'melon', icon: '🍈', name: 'Melon', price: 25, raw: 15 }, { id: 'vmelon', icon: '🍉', name: 'Vattenmelon', price: 35, raw: 20 },
-  { id: 'ananas', icon: '🍍', name: 'Ananas', price: 25, raw: 15 }, { id: 'potatis', icon: '🥔', name: 'Potatis', price: 4, raw: 0 },
-  { id: 'lok', icon: '🧅', name: 'Gul lök', price: 4, raw: 0 }, { id: 'morot', icon: '🥕', name: 'Morot', price: 4, raw: 5 },
-  { id: 'plommon', icon: '🍑', name: 'Plommon', price: 6, raw: 6 }, { id: 'persika', icon: '🍑', name: 'Persika', price: 8, raw: 8 },
-  { id: 'granat', icon: '🍎', name: 'Granatäpple', price: 18, raw: 8 }, { id: 'champ', icon: '🍄', name: 'Champinjoner', price: 12, raw: 0 },
-  { id: 'aubergine', icon: '🍆', name: 'Aubergine', price: 12, raw: 0 }, { id: 'rodlok', icon: '🧅', name: 'Rödlök', price: 5, raw: 0 },
+  { id: 'applR', icon: '🍎', name: $t('Rött äpple'), price: 6, raw: 8 }, { id: 'applG', icon: '🍏', name: $t('Grönt äpple'), price: 6, raw: 8 },
+  { id: 'apels', icon: '🍊', name: $t('Apelsin'), price: 7, raw: 8 }, { id: 'banan', icon: '🍌', name: $t('Banan'), price: 5, raw: 10 },
+  { id: 'citron', icon: '🍋', name: $t('Citron'), price: 6, raw: 0 }, { id: 'druva', icon: '🍇', name: $t('Vindruvor'), price: 15, raw: 10 },
+  { id: 'paron', icon: '🍐', name: $t('Päron'), price: 7, raw: 8 }, { id: 'kiwi', icon: '🥝', name: $t('Kiwi'), price: 6, raw: 6 },
+  { id: 'avokado', icon: '🥑', name: $t('Avokado'), price: 14, raw: 0 }, { id: 'tomat', icon: '🍅', name: $t('Tomat'), price: 5, raw: 4 },
+  { id: 'paprika', icon: '🫑', name: $t('Paprika'), price: 10, raw: 4 }, { id: 'lime', icon: '🍋', name: $t('Lime'), price: 6, raw: 0 },
+  { id: 'melon', icon: '🍈', name: $t('Melon'), price: 25, raw: 15 }, { id: 'vmelon', icon: '🍉', name: $t('Vattenmelon'), price: 35, raw: 20 },
+  { id: 'ananas', icon: '🍍', name: $t('Ananas'), price: 25, raw: 15 }, { id: 'potatis', icon: '🥔', name: $t('Potatis'), price: 4, raw: 0 },
+  { id: 'lok', icon: '🧅', name: $t('Gul lök'), price: 4, raw: 0 }, { id: 'morot', icon: '🥕', name: $t('Morot'), price: 4, raw: 5 },
+  { id: 'plommon', icon: '🍑', name: $t('Plommon'), price: 6, raw: 6 }, { id: 'persika', icon: '🍑', name: $t('Persika'), price: 8, raw: 8 },
+  { id: 'granat', icon: '🍎', name: $t('Granatäpple'), price: 18, raw: 8 }, { id: 'champ', icon: '🍄', name: $t('Champinjoner'), price: 12, raw: 0 },
+  { id: 'aubergine', icon: '🍆', name: $t('Aubergine'), price: 12, raw: 0 }, { id: 'rodlok', icon: '🧅', name: $t('Rödlök'), price: 5, raw: 0 },
   // mejeri (kylarna), bageri, hyllorna och frysen
-  { id: 'agg', icon: '🥚', name: 'Ägg', price: 28, raw: 0 }, { id: 'mjolk', icon: '🥛', name: 'Mjölk', price: 14, raw: 6 },
-  { id: 'ost', icon: '🧀', name: 'Ost', price: 35, raw: 8 }, { id: 'smor', icon: '🧈', name: 'Smör', price: 30, raw: 0 },
-  { id: 'yoghurt', icon: '🥣', name: 'Yoghurt', price: 18, raw: 14 },
-  { id: 'brod', icon: '🍞', name: 'Limpa', price: 25, raw: 12 }, { id: 'tortilla', icon: '🫓', name: 'Tortillabröd', price: 22, raw: 6 },
-  { id: 'pasta', icon: '🍝', name: 'Pasta', price: 15, raw: 0 }, { id: 'ris', icon: '🍚', name: 'Ris', price: 18, raw: 0 },
-  { id: 'mjol', icon: '🌾', name: 'Vetemjöl', price: 12, raw: 0 }, { id: 'havre', icon: '🥣', name: 'Havregryn', price: 15, raw: 0 },
-  { id: 'krossade', icon: '🥫', name: 'Krossade tomater', price: 10, raw: 0 }, { id: 'bonor', icon: '🫘', name: 'Bönor', price: 12, raw: 0 },
-  { id: 'fisk', icon: '🐟', name: 'Fiskfilé', price: 45, raw: 0 }, { id: 'bar', icon: '🫐', name: 'Frysta bär', price: 25, raw: 6 },
+  { id: 'agg', icon: '🥚', name: $t('Ägg'), price: 28, raw: 0 }, { id: 'mjolk', icon: '🥛', name: $t('Mjölk'), price: 14, raw: 6 },
+  { id: 'ost', icon: '🧀', name: $t('Ost'), price: 35, raw: 8 }, { id: 'smor', icon: '🧈', name: $t('Smör'), price: 30, raw: 0 },
+  { id: 'yoghurt', icon: '🥣', name: $t('Yoghurt'), price: 18, raw: 14 },
+  { id: 'brod', icon: '🍞', name: $t('Limpa'), price: 25, raw: 12 }, { id: 'tortilla', icon: '🫓', name: $t('Tortillabröd'), price: 22, raw: 6 },
+  { id: 'pasta', icon: '🍝', name: $t('Pasta'), price: 15, raw: 0 }, { id: 'ris', icon: '🍚', name: $t('Ris'), price: 18, raw: 0 },
+  { id: 'mjol', icon: '🌾', name: $t('Vetemjöl'), price: 12, raw: 0 }, { id: 'havre', icon: '🥣', name: $t('Havregryn'), price: 15, raw: 0 },
+  { id: 'krossade', icon: '🥫', name: $t('Krossade tomater'), price: 10, raw: 0 }, { id: 'bonor', icon: '🫘', name: $t('Bönor'), price: 12, raw: 0 },
+  { id: 'fisk', icon: '🐟', name: $t('Fiskfilé'), price: 45, raw: 0 }, { id: 'bar', icon: '🫐', name: $t('Frysta bär'), price: 25, raw: 6 },
   // kött och kyckling (Carl 2026-10-01: "glöm inte kyckling och kött") – i frysen
-  { id: 'kyckling', icon: '🍗', name: 'Kycklingfilé', price: 55, raw: 0 }, { id: 'kottfars', icon: '🥩', name: 'Köttfärs', price: 50, raw: 0 },
-  { id: 'bacon', icon: '🥓', name: 'Bacon', price: 30, raw: 0 },
+  { id: 'kyckling', icon: '🍗', name: $t('Kycklingfilé'), price: 55, raw: 0 }, { id: 'kottfars', icon: '🥩', name: $t('Köttfärs'), price: 50, raw: 0 },
+  { id: 'bacon', icon: '🥓', name: $t('Bacon'), price: 30, raw: 0 },
 ];
 export const ravaraOf = (id) => RAVAROR.find((r) => r.id === id) || null;
 // en vara i mataffären: färdigmat (FOOD) eller råvara (RAVAROR)
@@ -63,30 +64,30 @@ export const varaOf = (id) => foodOf(id) || ravaraOf(id);
 // Kockvanan: lagar man samma rätt flera gånger blir den godare (KOCK_STEG: 3 och 6 gånger → +10 %
 // och +20 % mätthet, och en extra lyckopoäng på varje steg).
 export const RECEPT = [
-  { id: 'fruktsallad', icon: '🥗', name: 'Fruktsallad', ing: ['applR', 'banan', 'apels'], min: 15, fill: 28, glad: 2, energi: 2, blurb: 'Skär frukten i bitar och blanda i en skål. Snabbt och fräscht!' },
-  { id: 'omelett', icon: '🍳', name: 'Omelett', ing: ['agg', 'ost', 'tomat'], min: 15, fill: 38, glad: 1, energi: 0, blurb: 'Vispa äggen, häll i stekpannan och strö över ost och tomat.' },
-  { id: 'ostmacka', icon: '🥪', name: 'Lyxig ostmacka', ing: ['brod', 'smor', 'ost', 'paprika'], min: 10, fill: 32, glad: 1, energi: 0, blurb: 'Tjocka skivor limpa, smör, ost och knaprig paprika.' },
-  { id: 'pannkakor', icon: '🥞', name: 'Pannkakor med bär', ing: ['mjol', 'agg', 'mjolk', 'bar'], min: 30, fill: 50, glad: 3, energi: 0, blurb: 'Vispa smeten, stek tunna pannkakor och toppa med bär.' },
-  { id: 'grot', icon: '🥣', name: 'Havregrynsgröt', ing: ['havre', 'mjolk', 'applR'], min: 10, fill: 35, glad: 1, energi: 5, blurb: 'Koka gryn och mjölk, riv i ett äpple. Bästa frukosten.' },
-  { id: 'smoothie', icon: '🥤', name: 'Bärsmoothie', ing: ['banan', 'bar', 'yoghurt'], min: 5, fill: 22, glad: 2, energi: 6, blurb: 'Allt i mixern – brrrr – och i ett stort glas.' },
-  { id: 'pastapomodoro', icon: '🍝', name: 'Pasta pomodoro', ing: ['pasta', 'krossade', 'lok', 'ost'], min: 30, fill: 60, glad: 2, energi: 0, blurb: 'Fräs löken, häll i tomaterna, koka pastan och riv ost över.' },
-  { id: 'potatissoppa', icon: '🍲', name: 'Potatissoppa', ing: ['potatis', 'lok', 'morot', 'smor'], min: 40, fill: 55, glad: 2, energi: 2, blurb: 'Koka grönsakerna mjuka och mixa till en len soppa.' },
-  { id: 'tacos', icon: '🌮', name: 'Tacos', ing: ['tortilla', 'kottfars', 'tomat', 'ost'], min: 30, fill: 66, glad: 4, energi: 0, blurb: 'Stek köttfärsen med kryddor, fyll tortillan med tomat och ost. Fredagsmys!' },
-  { id: 'kottbullar', icon: '🍖', name: 'Köttbullar med potatis', ing: ['kottfars', 'agg', 'potatis', 'smor'], min: 45, fill: 72, glad: 4, energi: 2, blurb: 'Rulla små bullar, stek dem gyllene och koka potatis. Mormors favorit.' },
-  { id: 'kottfarssas', icon: '🍝', name: 'Spaghetti och köttfärssås', ing: ['pasta', 'kottfars', 'krossade', 'lok'], min: 40, fill: 72, glad: 3, energi: 2, blurb: 'Bryn färsen med löken, låt såsen puttra och koka pastan.' },
-  { id: 'chili', icon: '🌶️', name: 'Chili con carne', ing: ['kottfars', 'bonor', 'krossade', 'lok'], min: 45, fill: 68, glad: 2, energi: 3, blurb: 'Färs, bönor och tomat som puttrar länge. Lite starkt!' },
-  { id: 'kycklingris', icon: '🍗', name: 'Kyckling med ris', ing: ['kyckling', 'ris', 'paprika'], min: 30, fill: 66, glad: 3, energi: 3, blurb: 'Stek kycklingen med paprika och servera med ris.' },
-  { id: 'ugnskyckling', icon: '🍗', name: 'Ugnskyckling med potatis', ing: ['kyckling', 'potatis', 'citron', 'smor'], min: 50, fill: 74, glad: 4, energi: 3, blurb: 'Kyckling och potatisklyftor i ugnen med citron och smör.' },
-  { id: 'kycklingwrap', icon: '🌯', name: 'Kycklingwrap', ing: ['kyckling', 'tortilla', 'tomat', 'ost'], min: 20, fill: 55, glad: 3, energi: 0, blurb: 'Stekt kyckling, tomat och ost i en rullad tortilla.' },
-  { id: 'carbonara', icon: '🍝', name: 'Pasta carbonara', ing: ['pasta', 'bacon', 'agg', 'ost'], min: 25, fill: 68, glad: 4, energi: 0, blurb: 'Knaprig bacon, äggula och ost blandas med den varma pastan.' },
-  { id: 'bonchili', icon: '🫘', name: 'Bönchili', ing: ['bonor', 'krossade', 'paprika', 'lok'], min: 35, fill: 54, glad: 2, energi: 2, blurb: 'Chili utan kött – bönor, paprika och tomat.' },
-  { id: 'hempizza', icon: '🍕', name: 'Hemgjord pizza', ing: ['mjol', 'krossade', 'ost', 'champ'], min: 50, fill: 72, glad: 4, energi: 0, blurb: 'Kavla degen, bred på tomat, ost och svamp – in i ugnen!' },
-  { id: 'fiskpotatis', icon: '🐟', name: 'Ugnsfisk med potatis', ing: ['fisk', 'potatis', 'citron', 'smor'], min: 45, fill: 68, glad: 3, energi: 3, blurb: 'Fisken i ugnen med citron och smör, kokt potatis bredvid.' },
-  { id: 'svamprisotto', icon: '🍚', name: 'Svamprisotto', ing: ['ris', 'champ', 'lok', 'ost'], min: 40, fill: 62, glad: 3, energi: 0, blurb: 'Rör i riset tills det är krämigt, stek svampen gyllene.' },
-  { id: 'wok', icon: '🥘', name: 'Grönsakswok', ing: ['ris', 'paprika', 'morot', 'aubergine'], min: 30, fill: 56, glad: 2, energi: 3, blurb: 'Het panna, snabba tag – grönsakerna ska knastra.' },
-  { id: 'guacamole', icon: '🥑', name: 'Guacamole med chips', ing: ['avokado', 'lime', 'tomat', 'rodlok', 'tortilla'], min: 15, fill: 30, glad: 3, energi: 0, blurb: 'Mosa avokadon med lime, tomat och rödlök. Ugnsrosta tortillan till chips.' },
-  { id: 'appelkaka', icon: '🥧', name: 'Äppelkaka', ing: ['applG', 'mjol', 'smor', 'agg'], min: 50, fill: 34, glad: 6, energi: 0, blurb: 'Smuldeg, äppelklyftor och in i ugnen. Det doftar i hela huset!' },
-  { id: 'tropisk', icon: '🍍', name: 'Tropisk fruktskål', ing: ['ananas', 'melon', 'kiwi', 'granat'], min: 15, fill: 40, glad: 4, energi: 3, blurb: 'Ananas, melon, kiwi och granatäppelkärnor – som semester.' },
+  { id: 'fruktsallad', icon: '🥗', name: $t('Fruktsallad'), ing: ['applR', 'banan', 'apels'], min: 15, fill: 28, glad: 2, energi: 2, blurb: $t('Skär frukten i bitar och blanda i en skål. Snabbt och fräscht!') },
+  { id: 'omelett', icon: '🍳', name: $t('Omelett'), ing: ['agg', 'ost', 'tomat'], min: 15, fill: 38, glad: 1, energi: 0, blurb: $t('Vispa äggen, häll i stekpannan och strö över ost och tomat.') },
+  { id: 'ostmacka', icon: '🥪', name: $t('Lyxig ostmacka'), ing: ['brod', 'smor', 'ost', 'paprika'], min: 10, fill: 32, glad: 1, energi: 0, blurb: $t('Tjocka skivor limpa, smör, ost och knaprig paprika.') },
+  { id: 'pannkakor', icon: '🥞', name: $t('Pannkakor med bär'), ing: ['mjol', 'agg', 'mjolk', 'bar'], min: 30, fill: 50, glad: 3, energi: 0, blurb: $t('Vispa smeten, stek tunna pannkakor och toppa med bär.') },
+  { id: 'grot', icon: '🥣', name: $t('Havregrynsgröt'), ing: ['havre', 'mjolk', 'applR'], min: 10, fill: 35, glad: 1, energi: 5, blurb: $t('Koka gryn och mjölk, riv i ett äpple. Bästa frukosten.') },
+  { id: 'smoothie', icon: '🥤', name: $t('Bärsmoothie'), ing: ['banan', 'bar', 'yoghurt'], min: 5, fill: 22, glad: 2, energi: 6, blurb: $t('Allt i mixern – brrrr – och i ett stort glas.') },
+  { id: 'pastapomodoro', icon: '🍝', name: $t('Pasta pomodoro'), ing: ['pasta', 'krossade', 'lok', 'ost'], min: 30, fill: 60, glad: 2, energi: 0, blurb: $t('Fräs löken, häll i tomaterna, koka pastan och riv ost över.') },
+  { id: 'potatissoppa', icon: '🍲', name: $t('Potatissoppa'), ing: ['potatis', 'lok', 'morot', 'smor'], min: 40, fill: 55, glad: 2, energi: 2, blurb: $t('Koka grönsakerna mjuka och mixa till en len soppa.') },
+  { id: 'tacos', icon: '🌮', name: $t('Tacos'), ing: ['tortilla', 'kottfars', 'tomat', 'ost'], min: 30, fill: 66, glad: 4, energi: 0, blurb: $t('Stek köttfärsen med kryddor, fyll tortillan med tomat och ost. Fredagsmys!') },
+  { id: 'kottbullar', icon: '🍖', name: $t('Köttbullar med potatis'), ing: ['kottfars', 'agg', 'potatis', 'smor'], min: 45, fill: 72, glad: 4, energi: 2, blurb: $t('Rulla små bullar, stek dem gyllene och koka potatis. Mormors favorit.') },
+  { id: 'kottfarssas', icon: '🍝', name: $t('Spaghetti och köttfärssås'), ing: ['pasta', 'kottfars', 'krossade', 'lok'], min: 40, fill: 72, glad: 3, energi: 2, blurb: $t('Bryn färsen med löken, låt såsen puttra och koka pastan.') },
+  { id: 'chili', icon: '🌶️', name: $t('Chili con carne'), ing: ['kottfars', 'bonor', 'krossade', 'lok'], min: 45, fill: 68, glad: 2, energi: 3, blurb: $t('Färs, bönor och tomat som puttrar länge. Lite starkt!') },
+  { id: 'kycklingris', icon: '🍗', name: $t('Kyckling med ris'), ing: ['kyckling', 'ris', 'paprika'], min: 30, fill: 66, glad: 3, energi: 3, blurb: $t('Stek kycklingen med paprika och servera med ris.') },
+  { id: 'ugnskyckling', icon: '🍗', name: $t('Ugnskyckling med potatis'), ing: ['kyckling', 'potatis', 'citron', 'smor'], min: 50, fill: 74, glad: 4, energi: 3, blurb: $t('Kyckling och potatisklyftor i ugnen med citron och smör.') },
+  { id: 'kycklingwrap', icon: '🌯', name: $t('Kycklingwrap'), ing: ['kyckling', 'tortilla', 'tomat', 'ost'], min: 20, fill: 55, glad: 3, energi: 0, blurb: $t('Stekt kyckling, tomat och ost i en rullad tortilla.') },
+  { id: 'carbonara', icon: '🍝', name: $t('Pasta carbonara'), ing: ['pasta', 'bacon', 'agg', 'ost'], min: 25, fill: 68, glad: 4, energi: 0, blurb: $t('Knaprig bacon, äggula och ost blandas med den varma pastan.') },
+  { id: 'bonchili', icon: '🫘', name: $t('Bönchili'), ing: ['bonor', 'krossade', 'paprika', 'lok'], min: 35, fill: 54, glad: 2, energi: 2, blurb: $t('Chili utan kött – bönor, paprika och tomat.') },
+  { id: 'hempizza', icon: '🍕', name: $t('Hemgjord pizza'), ing: ['mjol', 'krossade', 'ost', 'champ'], min: 50, fill: 72, glad: 4, energi: 0, blurb: $t('Kavla degen, bred på tomat, ost och svamp – in i ugnen!') },
+  { id: 'fiskpotatis', icon: '🐟', name: $t('Ugnsfisk med potatis'), ing: ['fisk', 'potatis', 'citron', 'smor'], min: 45, fill: 68, glad: 3, energi: 3, blurb: $t('Fisken i ugnen med citron och smör, kokt potatis bredvid.') },
+  { id: 'svamprisotto', icon: '🍚', name: $t('Svamprisotto'), ing: ['ris', 'champ', 'lok', 'ost'], min: 40, fill: 62, glad: 3, energi: 0, blurb: $t('Rör i riset tills det är krämigt, stek svampen gyllene.') },
+  { id: 'wok', icon: '🥘', name: $t('Grönsakswok'), ing: ['ris', 'paprika', 'morot', 'aubergine'], min: 30, fill: 56, glad: 2, energi: 3, blurb: $t('Het panna, snabba tag – grönsakerna ska knastra.') },
+  { id: 'guacamole', icon: '🥑', name: $t('Guacamole med chips'), ing: ['avokado', 'lime', 'tomat', 'rodlok', 'tortilla'], min: 15, fill: 30, glad: 3, energi: 0, blurb: $t('Mosa avokadon med lime, tomat och rödlök. Ugnsrosta tortillan till chips.') },
+  { id: 'appelkaka', icon: '🥧', name: $t('Äppelkaka'), ing: ['applG', 'mjol', 'smor', 'agg'], min: 50, fill: 34, glad: 6, energi: 0, blurb: $t('Smuldeg, äppelklyftor och in i ugnen. Det doftar i hela huset!') },
+  { id: 'tropisk', icon: '🍍', name: $t('Tropisk fruktskål'), ing: ['ananas', 'melon', 'kiwi', 'granat'], min: 15, fill: 40, glad: 4, energi: 3, blurb: $t('Ananas, melon, kiwi och granatäppelkärnor – som semester.') },
 ];
 export const KLASSIKER = ['fruktsallad', 'omelett', 'ostmacka'];
 export const RECEPT_LAS_MIN = 15;
@@ -96,16 +97,16 @@ export const receptOf = (id) => RECEPT.find((r) => r.id === id) || null;
 export const kockStjarnor = (n) => 1 + KOCK_STEG.filter((s) => (n | 0) >= s).length;   // 1–3 stjärnor
 // Kocknivån (Carl 2026-10-01: "ju mer man lagat mat desto mer mättnad och bättre blir man som
 // kock"): alla lagade portioner tillsammans (g.kockPortioner) → titel och +5 % mätthet per nivå
-export const KOCK_TITLAR = ['Nybörjarkock', 'Hemmakock', 'Kökschef', 'Mästerkock', 'Stjärnkock'];
+export const KOCK_TITLAR = [$t('Nybörjarkock'), $t('Hemmakock'), $t('Kökschef'), $t('Mästerkock'), $t('Stjärnkock')];
 export const KOCK_NIVA_P = [0, 10, 30, 70, 150];
 export const kockNiva = (p) => KOCK_NIVA_P.filter((x) => (p | 0) >= x).length;           // 1–5
 // Portionerna (Carl: "storkok som är 5X portioner på en gång och megakok som är 10X – då ska man
 // också ha råvarorna för det"): råvarorna × n och lite längre tid vid spisen (tid). En portion
 // äter man direkt, resten blir matlådor i kylskåpet (g.matlador, högst MAX_MATLADOR).
 export const PORTIONER = [
-  { id: 'vanlig', n: 1, icon: '🍽️', name: 'Vanlig', tid: 1 },
-  { id: 'storkok', n: 5, icon: '🍲', name: 'Storkok', tid: 1.5 },
-  { id: 'megakok', n: 10, icon: '🏭', name: 'Megakok', tid: 2 },
+  { id: 'vanlig', n: 1, icon: '🍽️', name: $t('Vanlig'), tid: 1 },
+  { id: 'storkok', n: 5, icon: '🍲', name: $t('Storkok'), tid: 1.5 },
+  { id: 'megakok', n: 10, icon: '🏭', name: $t('Megakok'), tid: 2 },
 ];
 export const portionOf = (n) => PORTIONER.find((p) => p.n === (n | 0) || p.id === n) || PORTIONER[0];
 export const MAX_MATLADOR = 30;
@@ -118,19 +119,19 @@ export const MAX_RAVA = 40;               // högst så många av varje råvara 
 // per natt om den vattnades under dagen; två torra dygn i rad och den vissnar. Regniga dagar vattnar
 // allt. Villans äppelträd ger äpplen var TRAD_DAGAR:e dag.
 export const GRODOR = [
-  { id: 'potatis', name: 'Potatis', icon: '🥔', dagar: 4, skord: [4, 6], fro: 15 },
-  { id: 'morot', name: 'Morötter', icon: '🥕', dagar: 3, skord: [4, 6], fro: 10 },
-  { id: 'lok', name: 'Gul lök', icon: '🧅', dagar: 3, skord: [3, 5], fro: 8 },
-  { id: 'rodlok', name: 'Rödlök', icon: '🧅', dagar: 3, skord: [3, 5], fro: 8 },
-  { id: 'tomat', name: 'Tomater', icon: '🍅', dagar: 5, skord: [3, 6], fro: 12 },
-  { id: 'paprika', name: 'Paprika', icon: '🫑', dagar: 5, skord: [2, 4], fro: 14 },
+  { id: 'potatis', name: $t('Potatis'), icon: '🥔', dagar: 4, skord: [4, 6], fro: 15 },
+  { id: 'morot', name: $t('Morötter'), icon: '🥕', dagar: 3, skord: [4, 6], fro: 10 },
+  { id: 'lok', name: $t('Gul lök'), icon: '🧅', dagar: 3, skord: [3, 5], fro: 8 },
+  { id: 'rodlok', name: $t('Rödlök'), icon: '🧅', dagar: 3, skord: [3, 5], fro: 8 },
+  { id: 'tomat', name: $t('Tomater'), icon: '🍅', dagar: 5, skord: [3, 6], fro: 12 },
+  { id: 'paprika', name: $t('Paprika'), icon: '🫑', dagar: 5, skord: [2, 4], fro: 14 },
 ];
 export const grodaOf = (id) => GRODOR.find((x) => x.id === id) || null;
 export const TRADGARD = {
-  husvagn: { beds: 3, namn: 'Tomten', icon: '🚐' },
-  radhus: { beds: 6, namn: 'Trädgården', icon: '🏡' },
-  villa: { beds: 8, namn: 'Trädgården', icon: '🏡', trad: true },
-  takvaning: { beds: 4, namn: 'Terrassen', icon: '🏙️' },
+  husvagn: { beds: 3, namn: $n('Tomten'), icon: '🚐' },
+  radhus: { beds: 6, namn: $n('Trädgården'), icon: '🏡' },
+  villa: { beds: 8, namn: $n('Trädgården'), icon: '🏡', trad: true },
+  takvaning: { beds: 4, namn: $n('Terrassen'), icon: '🏙️' },
 };
 export const tradgardOf = (home) => TRADGARD[home] || null;
 export const TRAD_DAGAR = 3;
@@ -139,40 +140,40 @@ export const TRAD_DAGAR = 3;
 // nattoppet = passen går även efter 20 (flygplatsen stänger aldrig), back = scenen man
 // står kvar i efter passet (annars staden).
 export const JOBS = {
-  flygplats: { id: 'flygplats', icon: '✈️', name: 'Flygplatsen', verb: 'Bär väskorna till rätt vagn', wage: 7, oops: 4, nattoppet: true, back: 'terminal' },
-  incheckning: { id: 'incheckning', icon: '🛄', name: 'Incheckningen', verb: 'Checka in resenärerna vid disk 3', wage: 18, oops: 5, nattoppet: true, back: 'terminal' },
-  frukt: { id: 'frukt', icon: '🍊', name: 'Fruktfabriken', verb: 'Plocka frukt från bandet till lådan', wage: 4, oops: 3, bonus: 20 },
-  burgare: { id: 'burgare', icon: '🍔', name: 'Burgarbaren', verb: 'Servera rätt mat till rätt kund', wage: 10, oops: 5 },
-  pizzeria: { id: 'pizzeria', icon: '🍕', name: 'Pizzerian', verb: 'Baka rätt pizza och servera rätt kund', wage: 20, oops: 8 },
-  posten: { id: 'posten', icon: '📮', name: 'Posten', verb: 'Sortera paketen till rätt rullbur', wage: 10, oops: 5 },
-  bensinmack: { id: 'bensinmack', icon: '⛽', name: 'Pixelmacken', verb: 'Tanka bilarna och sälj korv i kiosken', wage: 10, oops: 5 },
-  bilverkstad: { id: 'bilverkstad', icon: '🔧', name: 'Bilverkstan', verb: 'Byt däck steg för steg och laga bilarna', wage: 12, oops: 5 },
-  tvatteri: { id: 'tvatteri', icon: '🧺', name: 'Tvätteriet', verb: 'Tvätta, torka, vik och lämna rätt påse', wage: 16, oops: 6 },
-  kafe: { id: 'kafe', icon: '☕', name: 'Kaféet', verb: 'Gör rätt dryck och servera rätt gäst', wage: 14, oops: 6 },
+  flygplats: { id: 'flygplats', icon: '✈️', name: $t('Flygplatsen'), verb: $t('Bär väskorna till rätt vagn'), wage: 7, oops: 4, nattoppet: true, back: 'terminal' },
+  incheckning: { id: 'incheckning', icon: '🛄', name: $t('Incheckningen'), verb: $t('Checka in resenärerna vid disk 3'), wage: 18, oops: 5, nattoppet: true, back: 'terminal' },
+  frukt: { id: 'frukt', icon: '🍊', name: $t('Fruktfabriken'), verb: $t('Plocka frukt från bandet till lådan'), wage: 4, oops: 3, bonus: 20 },
+  burgare: { id: 'burgare', icon: '🍔', name: $t('Burgarbaren'), verb: $t('Servera rätt mat till rätt kund'), wage: 10, oops: 5 },
+  pizzeria: { id: 'pizzeria', icon: '🍕', name: $t('Pizzerian'), verb: $t('Baka rätt pizza och servera rätt kund'), wage: 20, oops: 8 },
+  posten: { id: 'posten', icon: '📮', name: $t('Posten'), verb: $t('Sortera paketen till rätt rullbur'), wage: 10, oops: 5 },
+  bensinmack: { id: 'bensinmack', icon: '⛽', name: $t('Pixelmacken'), verb: $t('Tanka bilarna och sälj korv i kiosken'), wage: 10, oops: 5 },
+  bilverkstad: { id: 'bilverkstad', icon: '🔧', name: $t('Bilverkstan'), verb: $t('Byt däck steg för steg och laga bilarna'), wage: 12, oops: 5 },
+  tvatteri: { id: 'tvatteri', icon: '🧺', name: $t('Tvätteriet'), verb: $t('Tvätta, torka, vik och lämna rätt påse'), wage: 16, oops: 6 },
+  kafe: { id: 'kafe', icon: '☕', name: $t('Kaféet'), verb: $t('Gör rätt dryck och servera rätt gäst'), wage: 14, oops: 6 },
   // Vårdcentralen (Söder, öppet 08–17 enligt huset i map.js): receptionen. bonus = kr per
   // akutfall som tas emot FÖRST (stats.boxes); bonusPer/boxLabel är raderna i passdialogerna.
   // En patient som tröttnar och går hem räknas som missad (stats.miss, egen rad) men kostar inget
   // (Carl 2026-09-29: missad = 0 kr) – shift.js kan fortfarande dra missOops om ett jobb vill.
-  vard: { id: 'vard', icon: '🏥', name: 'Vårdcentralen', verb: 'Ta emot patienterna och skicka dem rätt', wage: 13, oops: 5, bonus: 10, bonusPer: 'akutfall först', boxLabel: '🚑 Akutfall först' },
-  kok: { id: 'kok', icon: '🍳', name: 'Burgarköket', verb: 'Bygg rätterna som beställs i köket', wage: 11, oops: 5 },
+  vard: { id: 'vard', icon: '🏥', name: $t('Vårdcentralen'), verb: $t('Ta emot patienterna och skicka dem rätt'), wage: 13, oops: 5, bonus: 10, bonusPer: $t('akutfall först'), boxLabel: $t('🚑 Akutfall först') },
+  kok: { id: 'kok', icon: '🍳', name: $t('Burgarköket'), verb: $t('Bygg rätterna som beställs i köket'), wage: 11, oops: 5 },
   // de utbildade jobben i downtown: kraver = kursen på Pixelhögskolan som måste vara klar
-  datorbygge: { id: 'datorbygge', icon: '🖥️', name: 'Pixel Data', verb: 'Bygg datorerna precis som beställningen säger', wage: 12, oops: 6, bonus: 25, bonusPer: 'färdig dator', boxLabel: '🖥️ Färdiga datorer', kraver: 'datorteknik' },
-  finans: { id: 'finans', icon: '📈', name: 'Finanshuset', verb: 'Köp och sälj aktierna åt kunderna i rätt läge', wage: 26, oops: 12, kraver: 'ekonomi' },
+  datorbygge: { id: 'datorbygge', icon: '🖥️', name: $t('Pixel Data'), verb: $t('Bygg datorerna precis som beställningen säger'), wage: 12, oops: 6, bonus: 25, bonusPer: $t('färdig dator'), boxLabel: $t('🖥️ Färdiga datorer'), kraver: 'datorteknik' },
+  finans: { id: 'finans', icon: '📈', name: $t('Finanshuset'), verb: $t('Köp och sälj aktierna åt kunderna i rätt läge'), wage: 26, oops: 12, kraver: 'ekonomi' },
 };
 // Pixelhögskolan (universitetet i downtown). En kurs = terminsavgift → föreläsningar
 // (2 timmar var, högst en per kurs och dag) → tenta i biblioteket (minst 2 rätt av 3).
 // Examen öppnar det utbildade jobbet (job). Underkänd = omtenta tidigast nästa dag.
 export const COURSES = {
-  datorteknik: { id: 'datorteknik', icon: '💻', name: 'Datorteknik', fee: 600, lectures: 4, job: 'datorbygge',
-    blurb: 'Processorer, minnen, grafikkort och nätaggregat – lär dig bygga datorer som ett proffs.' },
-  ekonomi: { id: 'ekonomi', icon: '📊', name: 'Ekonomi', fee: 900, lectures: 4, job: 'finans',
-    blurb: 'Aktier, kurser och budget – köp billigt, sälj dyrt och håll koll på kunderna.' },
+  datorteknik: { id: 'datorteknik', icon: '💻', name: $t('Datorteknik'), fee: 600, lectures: 4, job: 'datorbygge',
+    blurb: $t('Processorer, minnen, grafikkort och nätaggregat – lär dig bygga datorer som ett proffs.') },
+  ekonomi: { id: 'ekonomi', icon: '📊', name: $t('Ekonomi'), fee: 900, lectures: 4, job: 'finans',
+    blurb: $t('Aktier, kurser och budget – köp billigt, sälj dyrt och håll koll på kunderna.') },
   // (inget eget jobb: examen krävs för att bli biträdande chef och chef – ROLLER nedan)
-  ledarskap: { id: 'ledarskap', icon: '🧭', name: 'Ledarskap', fee: 800, lectures: 3, job: null,
-    blurb: 'Leda ett lag, lägga schema, ta hand om kunderna och hålla budgeten – för dig som vill bli chef.' },
+  ledarskap: { id: 'ledarskap', icon: '🧭', name: $t('Ledarskap'), fee: 800, lectures: 3, job: null,
+    blurb: $t('Leda ett lag, lägga schema, ta hand om kunderna och hålla budgeten – för dig som vill bli chef.') },
 };
 export const courseOf = (id) => COURSES[id] || null;
-export const JOB_TITLES = ['Nybörjare', 'Van', 'Proffs', 'Mästare', 'Legendar'];
+export const JOB_TITLES = [$t('Nybörjare'), $t('Van'), $t('Proffs'), $t('Mästare'), $t('Legendar')];
 export const levelOf = (shifts) => Math.min(5, 1 + Math.floor(shifts / 3));
 export const payMult = (level) => 1 + 0.15 * (level - 1);
 // KARRIÄRSTEGARNA (djupförslaget, Carl 2026-10-02 "fortsätt med allt"): på varje arbetsplats kan man
@@ -183,10 +184,10 @@ export const payMult = (level) => 1 + 0.15 * (level - 1);
 // skiftledare väljer fokus, chefen även priserna) och för de två översta en veckolön på måndagen –
 // om man jobbat minst CHEF_PASS pass där veckan som gick. g.roller[jobb] = rollens index.
 export const ROLLER = [
-  { id: 'medarb', namn: 'Medarbetare', icon: '👕', lon: 1 },
-  { id: 'skift', namn: 'Skiftledare', icon: '📋', lon: 1.2, niva: 3, klader: 'prydlig' },
-  { id: 'bitr', namn: 'Biträdande chef', icon: '🗂️', lon: 1.4, niva: 4, kurs: 'ledarskap', klader: 'skjorta', veckolon: 150 },
-  { id: 'chef', namn: 'Chef', icon: '👔', lon: 1.7, niva: 5, kurs: 'ledarskap', passIRoll: 3, klader: 'kavaj', veckolon: 400 },
+  { id: 'medarb', namn: $t('Medarbetare'), icon: '👕', lon: 1 },
+  { id: 'skift', namn: $t('Skiftledare'), icon: '📋', lon: 1.2, niva: 3, klader: 'prydlig' },
+  { id: 'bitr', namn: $t('Biträdande chef'), icon: '🗂️', lon: 1.4, niva: 4, kurs: 'ledarskap', klader: 'skjorta', veckolon: 150 },
+  { id: 'chef', namn: $t('Chef'), icon: '👔', lon: 1.7, niva: 5, kurs: 'ledarskap', passIRoll: 3, klader: 'kavaj', veckolon: 400 },
 ];
 export const CHEF_PASS = 2;
 // klädkoderna (look.top – plaggen i js/core/people/tops.js, säljs i klädaffären)
@@ -194,9 +195,9 @@ const SLAPPT = ['tank', 'crop', 'tube', 'vest', 'pyjamas', 'bathrobe', 'robe', '
 const SKJORTA = ['shirt', 'oxford', 'blouse', 'polo', 'flannel', 'western', 'bowling', 'workshirt', 'waistcoat', 'slipover', 'vsweater', 'turtleneck', 'cardigan', 'peplum', 'wrap', 'blazer', 'suit', 'tuxedo', 'chef', 'doctor', 'nurse', 'pilot', 'police'];
 const KAVAJ = ['suit', 'blazer', 'waistcoat', 'tuxedo'];
 export const KLADKOD = {
-  prydlig: { namn: 'prydliga kläder', tips: 'inget linne, ingen magtröja, inga pyjamas eller maskeradkläder', ok: (top) => !SLAPPT.includes(top || 'tee') },
-  skjorta: { namn: 'skjorta eller blus', tips: 'skjorta, blus, piké, kofta, stickad väst – eller arbetskläder som kockrock', ok: (top) => SKJORTA.includes(top) },
-  kavaj: { namn: 'kavaj eller kostym', tips: 'kavaj med slips, blazer, kostymväst eller smoking', ok: (top) => KAVAJ.includes(top) },
+  prydlig: { namn: $t('prydliga kläder'), tips: $t('inget linne, ingen magtröja, inga pyjamas eller maskeradkläder'), ok: (top) => !SLAPPT.includes(top || 'tee') },
+  skjorta: { namn: $t('skjorta eller blus'), tips: $t('skjorta, blus, piké, kofta, stickad väst – eller arbetskläder som kockrock'), ok: (top) => SKJORTA.includes(top) },
+  kavaj: { namn: $t('kavaj eller kostym'), tips: $t('kavaj med slips, blazer, kostymväst eller smoking'), ok: (top) => KAVAJ.includes(top) },
 };
 export const rollOf = (g, jobId) => ROLLER[Math.max(0, Math.min(ROLLER.length - 1, g.roller?.[jobId] | 0))];
 // PASSET EFTER VANAN (Carl 2026-09-30: "allteftersom man har jobbat ska fler kunder komma och
@@ -229,29 +230,29 @@ export function shiftPlan(level = 1, len = 'vanligt') {
 // kvar för gamla sparfiler och för kod som fortfarande frågar med 'kind:v' (clothesLocked,
 // buyClothes – t.ex. hörlurarna i elektronikbutiken).
 export const SORTIMENT = [
-  { kind: 'hat', v: 'cap', icon: '🧢', name: 'Keps', price: 90 },
-  { kind: 'top', v: 'vest', icon: '🎽', name: 'Linne', price: 100 },
-  { kind: 'hat', v: 'bucket', icon: '👒', name: 'Fiskehatt', price: 130 },
-  { kind: 'bottom', v: 'shorts', icon: '🩳', name: 'Shorts', price: 120 },
-  { kind: 'hat', v: 'headband', icon: '🎽', name: 'Hårband', price: 120 },
-  { kind: 'glasses', v: 'round', icon: '👓', name: 'Runda glasögon', price: 150 },
-  { kind: 'glasses', v: 'square', icon: '👓', name: 'Fyrkantiga glasögon', price: 150 },
-  { kind: 'hat', v: 'beanie', icon: '🧣', name: 'Mössa', price: 150 },
-  { kind: 'hat', v: 'bow', icon: '🎀', name: 'Rosett', price: 180 },
-  { kind: 'bottom', v: 'skirt', icon: '👗', name: 'Kjol', price: 200 },
-  { kind: 'glasses', v: 'sun', icon: '🕶️', name: 'Solglasögon', price: 220 },
-  { kind: 'top', v: 'hoodie', icon: '🧥', name: 'Huvtröja', price: 250 },
-  { kind: 'top', v: 'hawaii', icon: '🌺', name: 'Hawaiiskjorta', price: 280 },
-  { kind: 'top', v: 'sweater', icon: '🧶', name: 'Stickad tröja', price: 300 },
-  { kind: 'bag', v: 'backpack', icon: '🎒', name: 'Ryggsäck', price: 350 },
-  { kind: 'bottom', v: 'dress', icon: '👗', name: 'Klänning', price: 380 },
-  { kind: 'top', v: 'shirt', icon: '👔', name: 'Skjorta', price: 400 },
-  { kind: 'bag', v: 'shoulder', icon: '👜', name: 'Axelväska', price: 420 },
-  { kind: 'top', v: 'jacket', icon: '🧥', name: 'Jacka', price: 450 },
-  { kind: 'phones', v: true, icon: '🎧', name: 'Hörlurar', price: 500 },
-  { kind: 'top', v: 'suit', icon: '🤵', name: 'Kavaj med slips', price: 1500 },
-  { kind: 'hat', v: 'tophat', icon: '🎩', name: 'Hög hatt', price: 1800 },
-  { kind: 'hat', v: 'crown', icon: '👑', name: 'Krona', price: 2500 },
+  { kind: 'hat', v: 'cap', icon: '🧢', name: $t('Keps'), price: 90 },
+  { kind: 'top', v: 'vest', icon: '🎽', name: $t('Linne'), price: 100 },
+  { kind: 'hat', v: 'bucket', icon: '👒', name: $t('Fiskehatt'), price: 130 },
+  { kind: 'bottom', v: 'shorts', icon: '🩳', name: $t('Shorts'), price: 120 },
+  { kind: 'hat', v: 'headband', icon: '🎽', name: $t('Hårband'), price: 120 },
+  { kind: 'glasses', v: 'round', icon: '👓', name: $t('Runda glasögon'), price: 150 },
+  { kind: 'glasses', v: 'square', icon: '👓', name: $t('Fyrkantiga glasögon'), price: 150 },
+  { kind: 'hat', v: 'beanie', icon: '🧣', name: $t('Mössa'), price: 150 },
+  { kind: 'hat', v: 'bow', icon: '🎀', name: $t('Rosett'), price: 180 },
+  { kind: 'bottom', v: 'skirt', icon: '👗', name: $t('Kjol'), price: 200 },
+  { kind: 'glasses', v: 'sun', icon: '🕶️', name: $t('Solglasögon'), price: 220 },
+  { kind: 'top', v: 'hoodie', icon: '🧥', name: $t('Huvtröja'), price: 250 },
+  { kind: 'top', v: 'hawaii', icon: '🌺', name: $t('Hawaiiskjorta'), price: 280 },
+  { kind: 'top', v: 'sweater', icon: '🧶', name: $t('Stickad tröja'), price: 300 },
+  { kind: 'bag', v: 'backpack', icon: '🎒', name: $t('Ryggsäck'), price: 350 },
+  { kind: 'bottom', v: 'dress', icon: '👗', name: $t('Klänning'), price: 380 },
+  { kind: 'top', v: 'shirt', icon: '👔', name: $t('Skjorta'), price: 400 },
+  { kind: 'bag', v: 'shoulder', icon: '👜', name: $t('Axelväska'), price: 420 },
+  { kind: 'top', v: 'jacket', icon: '🧥', name: $t('Jacka'), price: 450 },
+  { kind: 'phones', v: true, icon: '🎧', name: $t('Hörlurar'), price: 500 },
+  { kind: 'top', v: 'suit', icon: '🤵', name: $t('Kavaj med slips'), price: 1500 },
+  { kind: 'hat', v: 'tophat', icon: '🎩', name: $t('Hög hatt'), price: 1800 },
+  { kind: 'hat', v: 'crown', icon: '👑', name: $t('Krona'), price: 2500 },
 ];
 export const clothesKey = (kind, v) => `${kind}:${v}`;
 const isSortimentKey = (k) => SORTIMENT.some((s) => clothesKey(s.kind, s.v) === k);
@@ -291,199 +292,199 @@ const SOFFA_V = [0, 1, 4, 5, 7, 9, 2, 3, 6, 8], FATOLJ_V = [5, 0, 2, 4, 1, 3];
 const SANG_V = [0, 0, 1, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
 export const KATALOG = [
   // ---- de ursprungliga sorterna (nycklarna får inte byta ordning – sparfiler pekar på dem) ----
-  { kind: 'stol', icon: '🪑', name: 'Gamingstol', price: 150, vars: 4, room: 'KONTOR' }, // stol på hjul ur Chairs.png – hör ihop med gamingriggen (tv0)
-  { kind: 'bordR', icon: '🟤', name: 'Runt bord', price: 250, vars: 4, room: 'VARDAGSRUM' },
-  { kind: 'matta', icon: '🟥', name: 'Matta', price: 250, vars: 2, room: 'VARDAGSRUM' },
-  { kind: 'lampa', icon: '💡', name: 'Lampa', price: 300, vars: 2, room: 'VARDAGSRUM' },
-  { kind: 'spegel', icon: '🪞', name: 'Spegel', price: 350, vars: 3, room: 'HALL' },
-  { kind: 'vaxtS', icon: '🪴', name: 'Krukväxt', price: 350, vars: 1, room: 'VARDAGSRUM' },
-  { kind: 'fatolj', icon: '🛋️', name: 'Fåtölj', price: 450, vars: 6, room: 'VARDAGSRUM', views: [['fatolj'], ['sidofatolj', FATOLJ_V], ['bakfatolj', FATOLJ_V]] },
-  { kind: 'byra', icon: '🗄️', name: 'Byrå', price: 500, vars: 4, room: 'SOVRUM' },
-  { kind: 'bokhylla', icon: '📚', name: 'Bokhylla', price: 600, vars: 3, room: 'VARDAGSRUM' },
-  { kind: 'bordM', icon: '🍽️', name: 'Matbord', price: 600, vars: 4, room: 'KÖK' },
-  { kind: 'soffa', icon: '🛋️', name: 'Soffa', price: 800, vars: 10, room: 'VARDAGSRUM', views: [['soffa'], ['sidosoffa', SOFFA_V], ['baksoffa', SOFFA_V]] },
-  { kind: 'tv', icon: '🖥️', name: 'TV / dator', price: 1200, vars: 5, room: 'VARDAGSRUM', function: 'tv' },
-  { kind: 'spis', icon: '🔥', name: 'Öppen spis', price: 1500, vars: 3, room: 'VARDAGSRUM', function: 'brasa' },
+  { kind: 'stol', icon: '🪑', name: $t('Gamingstol'), price: 150, vars: 4, room: 'KONTOR' }, // stol på hjul ur Chairs.png – hör ihop med gamingriggen (tv0)
+  { kind: 'bordR', icon: '🟤', name: $t('Runt bord'), price: 250, vars: 4, room: 'VARDAGSRUM' },
+  { kind: 'matta', icon: '🟥', name: $t('Matta'), price: 250, vars: 2, room: 'VARDAGSRUM' },
+  { kind: 'lampa', icon: '💡', name: $t('Lampa'), price: 300, vars: 2, room: 'VARDAGSRUM' },
+  { kind: 'spegel', icon: '🪞', name: $t('Spegel'), price: 350, vars: 3, room: 'HALL' },
+  { kind: 'vaxtS', icon: '🪴', name: $t('Krukväxt'), price: 350, vars: 1, room: 'VARDAGSRUM' },
+  { kind: 'fatolj', icon: '🛋️', name: $t('Fåtölj'), price: 450, vars: 6, room: 'VARDAGSRUM', views: [['fatolj'], ['sidofatolj', FATOLJ_V], ['bakfatolj', FATOLJ_V]] },
+  { kind: 'byra', icon: '🗄️', name: $t('Byrå'), price: 500, vars: 4, room: 'SOVRUM' },
+  { kind: 'bokhylla', icon: '📚', name: $t('Bokhylla'), price: 600, vars: 3, room: 'VARDAGSRUM' },
+  { kind: 'bordM', icon: '🍽️', name: $t('Matbord'), price: 600, vars: 4, room: 'KÖK' },
+  { kind: 'soffa', icon: '🛋️', name: $t('Soffa'), price: 800, vars: 10, room: 'VARDAGSRUM', views: [['soffa'], ['sidosoffa', SOFFA_V], ['baksoffa', SOFFA_V]] },
+  { kind: 'tv', icon: '🖥️', name: $t('TV / dator'), price: 1200, vars: 5, room: 'VARDAGSRUM', function: 'tv' },
+  { kind: 'spis', icon: '🔥', name: $t('Öppen spis'), price: 1500, vars: 3, room: 'VARDAGSRUM', function: 'brasa' },
   // startmöblerna (sang/garderob) säljs nu också – i alla färger arken har
-  { kind: 'sang', icon: '🛏️', name: 'Dubbelsäng', price: 1800, vars: 14, room: 'SOVRUM', function: 'sova', views: [['sang'], ['tvardubbel', SANG_V]] },
-  { kind: 'garderob', icon: '👔', name: 'Garderob', price: 1300, vars: 12, room: 'SOVRUM', function: 'garderob' },
+  { kind: 'sang', icon: '🛏️', name: $t('Dubbelsäng'), price: 1800, vars: 14, room: 'SOVRUM', function: 'sova', views: [['sang'], ['tvardubbel', SANG_V]] },
+  { kind: 'garderob', icon: '👔', name: $t('Garderob'), price: 1300, vars: 12, room: 'SOVRUM', function: 'garderob' },
   // ---- VARDAGSRUM ----
-  { kind: 'matstol', icon: '🪑', name: 'Matstol med dyna', price: 180, vars: 6, room: 'KÖK' },
-  { kind: 'sidobord', icon: '🟫', name: 'Sidobord med duk', price: 280, vars: 6, room: 'VARDAGSRUM' },
-  { kind: 'pelarbord', icon: '🍵', name: 'Runt pelarbord', price: 300, vars: 6, room: 'VARDAGSRUM' },
-  { kind: 'laghylla', icon: '📚', name: 'Låg bokhylla', price: 350, vars: 2, room: 'VARDAGSRUM' },
-  { kind: 'skivor', icon: '💿', name: 'Skivsamling', price: 400, vars: 2, room: 'VARDAGSRUM', function: 'musik' },
-  { kind: 'smalhylla', icon: '📚', name: 'Smal bokhylla', price: 400, vars: 2, room: 'VARDAGSRUM' },
-  { kind: 'soffbord', icon: '☕', name: 'Soffbord', price: 400, vars: 4, room: 'VARDAGSRUM' },
-  { kind: 'mellanhylla', icon: '📚', name: 'Bokhylla med två hyllplan', price: 450, vars: 2, room: 'VARDAGSRUM' },
-  { kind: 'glasbord', icon: '🥂', name: 'Glasbord', price: 550, vars: 1, room: 'VARDAGSRUM' },
-  { kind: 'tvbank', icon: '📺', name: 'TV-bänk', price: 600, vars: 7, room: 'VARDAGSRUM' },
-  { kind: 'hoghylla', icon: '📚', name: 'Hög bokhylla', price: 650, vars: 2, room: 'VARDAGSRUM' },
-  { kind: 'kuddsoffa', icon: '🛋️', name: 'Soffa med kuddar', price: 950, vars: 3, room: 'VARDAGSRUM' },
-  { kind: 'blomtavla', icon: '🌷', name: 'Stor blomstertavla', price: 1100, vars: 1, room: 'VARDAGSRUM', wall: true },
-  { kind: 'bredhylla', icon: '📚', name: 'Bred bokhylla', price: 1100, vars: 3, room: 'VARDAGSRUM' },
-  { kind: 'eldstad', icon: '🔥', name: 'Eldstad med sims', price: 1400, vars: 4, room: 'VARDAGSRUM', function: 'brasa' },
-  { kind: 'stormatta', icon: '🟥', name: 'Stor matta', price: 1400, vars: 4, room: 'VARDAGSRUM' },
-  { kind: 'vaggsvard', icon: '⚔️', name: 'Svärd på vägg', price: 1500, vars: 3, room: 'VARDAGSRUM', wall: true },
-  { kind: 'tegelspis', icon: '🧱', name: 'Tegelspis', price: 1600, vars: 4, room: 'VARDAGSRUM', function: 'brasa' },
-  { kind: 'murspis', icon: '🔥', name: 'Murad spis med skorsten', price: 2200, vars: 2, room: 'VARDAGSRUM', function: 'brasa' },
-  { kind: 'moraklocka', icon: '🕰️', name: 'Moraklocka', price: 3500, vars: 1, room: 'VARDAGSRUM' },
-  { kind: 'piano', icon: '🎹', name: 'Piano', price: 3500, vars: 3, room: 'VARDAGSRUM' },
+  { kind: 'matstol', icon: '🪑', name: $t('Matstol med dyna'), price: 180, vars: 6, room: 'KÖK' },
+  { kind: 'sidobord', icon: '🟫', name: $t('Sidobord med duk'), price: 280, vars: 6, room: 'VARDAGSRUM' },
+  { kind: 'pelarbord', icon: '🍵', name: $t('Runt pelarbord'), price: 300, vars: 6, room: 'VARDAGSRUM' },
+  { kind: 'laghylla', icon: '📚', name: $t('Låg bokhylla'), price: 350, vars: 2, room: 'VARDAGSRUM' },
+  { kind: 'skivor', icon: '💿', name: $t('Skivsamling'), price: 400, vars: 2, room: 'VARDAGSRUM', function: 'musik' },
+  { kind: 'smalhylla', icon: '📚', name: $t('Smal bokhylla'), price: 400, vars: 2, room: 'VARDAGSRUM' },
+  { kind: 'soffbord', icon: '☕', name: $t('Soffbord'), price: 400, vars: 4, room: 'VARDAGSRUM' },
+  { kind: 'mellanhylla', icon: '📚', name: $t('Bokhylla med två hyllplan'), price: 450, vars: 2, room: 'VARDAGSRUM' },
+  { kind: 'glasbord', icon: '🥂', name: $t('Glasbord'), price: 550, vars: 1, room: 'VARDAGSRUM' },
+  { kind: 'tvbank', icon: '📺', name: $t('TV-bänk'), price: 600, vars: 7, room: 'VARDAGSRUM' },
+  { kind: 'hoghylla', icon: '📚', name: $t('Hög bokhylla'), price: 650, vars: 2, room: 'VARDAGSRUM' },
+  { kind: 'kuddsoffa', icon: '🛋️', name: $t('Soffa med kuddar'), price: 950, vars: 3, room: 'VARDAGSRUM' },
+  { kind: 'blomtavla', icon: '🌷', name: $t('Stor blomstertavla'), price: 1100, vars: 1, room: 'VARDAGSRUM', wall: true },
+  { kind: 'bredhylla', icon: '📚', name: $t('Bred bokhylla'), price: 1100, vars: 3, room: 'VARDAGSRUM' },
+  { kind: 'eldstad', icon: '🔥', name: $t('Eldstad med sims'), price: 1400, vars: 4, room: 'VARDAGSRUM', function: 'brasa' },
+  { kind: 'stormatta', icon: '🟥', name: $t('Stor matta'), price: 1400, vars: 4, room: 'VARDAGSRUM' },
+  { kind: 'vaggsvard', icon: '⚔️', name: $t('Svärd på vägg'), price: 1500, vars: 3, room: 'VARDAGSRUM', wall: true },
+  { kind: 'tegelspis', icon: '🧱', name: $t('Tegelspis'), price: 1600, vars: 4, room: 'VARDAGSRUM', function: 'brasa' },
+  { kind: 'murspis', icon: '🔥', name: $t('Murad spis med skorsten'), price: 2200, vars: 2, room: 'VARDAGSRUM', function: 'brasa' },
+  { kind: 'moraklocka', icon: '🕰️', name: $t('Moraklocka'), price: 3500, vars: 1, room: 'VARDAGSRUM' },
+  { kind: 'piano', icon: '🎹', name: $t('Piano'), price: 3500, vars: 3, room: 'VARDAGSRUM' },
   // ---- SOVRUM ----
-  { kind: 'nattduksbord', icon: '🗄️', name: 'Nattduksbord', price: 250, vars: 4, room: 'SOVRUM' },
-  { kind: 'kista', icon: '🧰', name: 'Förvaringskista', price: 400, vars: 1, room: 'SOVRUM' },
-  { kind: 'lagbyra', icon: '🗃️', name: 'Låg byrå', price: 450, vars: 7, room: 'SOVRUM' },
-  { kind: 'kladskap', icon: '🚪', name: 'Klädskåp', price: 700, vars: 10, room: 'SOVRUM', function: 'garderob' },
-  { kind: 'linneskap', icon: '🧺', name: 'Linneskåp med hyllor', price: 850, vars: 10, room: 'SOVRUM', function: 'garderob' },
-  { kind: 'enkelsang', icon: '🛏️', name: 'Enkelsäng', price: 900, vars: 10, room: 'SOVRUM', function: 'sova', views: [['enkelsang'], ['tvarsang']] },
+  { kind: 'nattduksbord', icon: '🗄️', name: $t('Nattduksbord'), price: 250, vars: 4, room: 'SOVRUM' },
+  { kind: 'kista', icon: '🧰', name: $t('Förvaringskista'), price: 400, vars: 1, room: 'SOVRUM' },
+  { kind: 'lagbyra', icon: '🗃️', name: $t('Låg byrå'), price: 450, vars: 7, room: 'SOVRUM' },
+  { kind: 'kladskap', icon: '🚪', name: $t('Klädskåp'), price: 700, vars: 10, room: 'SOVRUM', function: 'garderob' },
+  { kind: 'linneskap', icon: '🧺', name: $t('Linneskåp med hyllor'), price: 850, vars: 10, room: 'SOVRUM', function: 'garderob' },
+  { kind: 'enkelsang', icon: '🛏️', name: $t('Enkelsäng'), price: 900, vars: 10, room: 'SOVRUM', function: 'sova', views: [['enkelsang'], ['tvarsang']] },
   // ---- KÖK ----
-  { kind: 'soptunna', icon: '🗑️', name: 'Soptunna', price: 80, vars: 2, room: 'KÖK' },
-  { kind: 'brodrost', icon: '🍞', name: 'Brödrost', price: 150, vars: 1, room: 'KÖK' },
-  { kind: 'fruktskal', icon: '🍎', name: 'Fruktskål', price: 150, vars: 1, room: 'KÖK' },
-  { kind: 'kaffebryggare', icon: '☕', name: 'Kaffebryggare', price: 250, vars: 1, room: 'KÖK' },
-  { kind: 'kryddhylla', icon: '🧂', name: 'Kryddhylla', price: 250, vars: 4, room: 'KÖK', wall: true },
-  { kind: 'tarta', icon: '🎂', name: 'Tårta', price: 250, vars: 4, room: 'KÖK' },
-  { kind: 'flaskhylla', icon: '🍾', name: 'Flaskhylla', price: 300, vars: 2, room: 'KÖK', wall: true },
-  { kind: 'rullbord', icon: '🛒', name: 'Rullbord', price: 300, vars: 1, room: 'KÖK' },
-  { kind: 'mikro', icon: '♨️', name: 'Mikrovågsugn', price: 400, vars: 1, room: 'KÖK', function: 'ata' },
-  { kind: 'koksbord', icon: '🪑', name: 'Köksbord', price: 450, vars: 6, room: 'KÖK' },
-  { kind: 'overskap', icon: '🚪', name: 'Överskåp', price: 450, vars: 4, room: 'KÖK', wall: true },
-  { kind: 'porslinsskap', icon: '🍽️', name: 'Porslinsskåp', price: 500, vars: 4, room: 'KÖK', wall: true },
-  { kind: 'flakt', icon: '💨', name: 'Köksfläkt', price: 600, vars: 2, room: 'KÖK', wall: true },
-  { kind: 'bankskap', icon: '🗄️', name: 'Köksbänk', price: 700, vars: 8, room: 'KÖK' },
-  { kind: 'diskbank', icon: '🚰', name: 'Diskbänk', price: 1400, vars: 4, room: 'KÖK' },
-  { kind: 'koksspis', icon: '🍳', name: 'Köksspis', price: 1600, vars: 2, room: 'KÖK', function: 'laga' },
-  { kind: 'kyl', icon: '🧊', name: 'Kylskåp', price: 1800, vars: 6, room: 'KÖK', function: 'ata' },
-  { kind: 'dryckeskyl', icon: '🥤', name: 'Dryckeskyl', price: 2200, vars: 1, room: 'KÖK' },
-  { kind: 'kokso', icon: '🥘', name: 'Köksö med ugn', price: 2400, vars: 4, room: 'KÖK', function: 'laga' },
+  { kind: 'soptunna', icon: '🗑️', name: $t('Soptunna'), price: 80, vars: 2, room: 'KÖK' },
+  { kind: 'brodrost', icon: '🍞', name: $t('Brödrost'), price: 150, vars: 1, room: 'KÖK' },
+  { kind: 'fruktskal', icon: '🍎', name: $t('Fruktskål'), price: 150, vars: 1, room: 'KÖK' },
+  { kind: 'kaffebryggare', icon: '☕', name: $t('Kaffebryggare'), price: 250, vars: 1, room: 'KÖK' },
+  { kind: 'kryddhylla', icon: '🧂', name: $t('Kryddhylla'), price: 250, vars: 4, room: 'KÖK', wall: true },
+  { kind: 'tarta', icon: '🎂', name: $t('Tårta'), price: 250, vars: 4, room: 'KÖK' },
+  { kind: 'flaskhylla', icon: '🍾', name: $t('Flaskhylla'), price: 300, vars: 2, room: 'KÖK', wall: true },
+  { kind: 'rullbord', icon: '🛒', name: $t('Rullbord'), price: 300, vars: 1, room: 'KÖK' },
+  { kind: 'mikro', icon: '♨️', name: $t('Mikrovågsugn'), price: 400, vars: 1, room: 'KÖK', function: 'ata' },
+  { kind: 'koksbord', icon: '🪑', name: $t('Köksbord'), price: 450, vars: 6, room: 'KÖK' },
+  { kind: 'overskap', icon: '🚪', name: $t('Överskåp'), price: 450, vars: 4, room: 'KÖK', wall: true },
+  { kind: 'porslinsskap', icon: '🍽️', name: $t('Porslinsskåp'), price: 500, vars: 4, room: 'KÖK', wall: true },
+  { kind: 'flakt', icon: '💨', name: $t('Köksfläkt'), price: 600, vars: 2, room: 'KÖK', wall: true },
+  { kind: 'bankskap', icon: '🗄️', name: $t('Köksbänk'), price: 700, vars: 8, room: 'KÖK' },
+  { kind: 'diskbank', icon: '🚰', name: $t('Diskbänk'), price: 1400, vars: 4, room: 'KÖK' },
+  { kind: 'koksspis', icon: '🍳', name: $t('Köksspis'), price: 1600, vars: 2, room: 'KÖK', function: 'laga' },
+  { kind: 'kyl', icon: '🧊', name: $t('Kylskåp'), price: 1800, vars: 6, room: 'KÖK', function: 'ata' },
+  { kind: 'dryckeskyl', icon: '🥤', name: $t('Dryckeskyl'), price: 2200, vars: 1, room: 'KÖK' },
+  { kind: 'kokso', icon: '🥘', name: $t('Köksö med ugn'), price: 2400, vars: 4, room: 'KÖK', function: 'laga' },
   // ---- BADRUM ----
-  { kind: 'strykbrada', icon: '👔', name: 'Strykbräda', price: 200, vars: 3, room: 'BADRUM' },
-  { kind: 'kattlada', icon: '📦', name: 'Kattlåda', price: 250, vars: 4, room: 'BADRUM' },
-  { kind: 'medicinskap', icon: '💊', name: 'Medicinskåp', price: 300, vars: 1, room: 'BADRUM', wall: true },
-  { kind: 'badhylla', icon: '🧴', name: 'Badrumshylla', price: 350, vars: 4, room: 'BADRUM' },
-  { kind: 'tvattstall', icon: '🧼', name: 'Tvättställ', price: 400, vars: 2, room: 'BADRUM', wall: true, function: 'tvatta' },
-  { kind: 'handfat', icon: '🪥', name: 'Handfat', price: 500, vars: 2, room: 'BADRUM', function: 'tvatta' },
-  { kind: 'badbank', icon: '🧽', name: 'Badrumsbänk', price: 600, vars: 2, room: 'BADRUM' },
-  { kind: 'toalett', icon: '🚽', name: 'Toalett', price: 900, vars: 6, room: 'BADRUM', function: 'toalett' },
-  { kind: 'torktumlare', icon: '🌀', name: 'Torktumlare', price: 1600, vars: 1, room: 'BADRUM' },
-  { kind: 'tvattmaskin', icon: '🫧', name: 'Tvättmaskin', price: 2000, vars: 1, room: 'BADRUM', function: 'tvatta' },
-  { kind: 'dusch', icon: '🚿', name: 'Dusch', price: 2200, vars: 8, room: 'BADRUM', function: 'tvatta' },
-  { kind: 'badkar', icon: '🛁', name: 'Badkar', price: 2800, vars: 2, room: 'BADRUM', function: 'tvatta' },
-  { kind: 'tvattpelare', icon: '🧺', name: 'Tvättpelare', price: 3500, vars: 1, room: 'BADRUM', function: 'tvatta' },
+  { kind: 'strykbrada', icon: '👔', name: $t('Strykbräda'), price: 200, vars: 3, room: 'BADRUM' },
+  { kind: 'kattlada', icon: '📦', name: $t('Kattlåda'), price: 250, vars: 4, room: 'BADRUM' },
+  { kind: 'medicinskap', icon: '💊', name: $t('Medicinskåp'), price: 300, vars: 1, room: 'BADRUM', wall: true },
+  { kind: 'badhylla', icon: '🧴', name: $t('Badrumshylla'), price: 350, vars: 4, room: 'BADRUM' },
+  { kind: 'tvattstall', icon: '🧼', name: $t('Tvättställ'), price: 400, vars: 2, room: 'BADRUM', wall: true, function: 'tvatta' },
+  { kind: 'handfat', icon: '🪥', name: $t('Handfat'), price: 500, vars: 2, room: 'BADRUM', function: 'tvatta' },
+  { kind: 'badbank', icon: '🧽', name: $t('Badrumsbänk'), price: 600, vars: 2, room: 'BADRUM' },
+  { kind: 'toalett', icon: '🚽', name: $t('Toalett'), price: 900, vars: 6, room: 'BADRUM', function: 'toalett' },
+  { kind: 'torktumlare', icon: '🌀', name: $t('Torktumlare'), price: 1600, vars: 1, room: 'BADRUM' },
+  { kind: 'tvattmaskin', icon: '🫧', name: $t('Tvättmaskin'), price: 2000, vars: 1, room: 'BADRUM', function: 'tvatta' },
+  { kind: 'dusch', icon: '🚿', name: $t('Dusch'), price: 2200, vars: 8, room: 'BADRUM', function: 'tvatta' },
+  { kind: 'badkar', icon: '🛁', name: $t('Badkar'), price: 2800, vars: 2, room: 'BADRUM', function: 'tvatta' },
+  { kind: 'tvattpelare', icon: '🧺', name: $t('Tvättpelare'), price: 3500, vars: 1, room: 'BADRUM', function: 'tvatta' },
   // ---- BARNRUM ----
-  { kind: 'byggklossar', icon: '🧱', name: 'Byggklossar', price: 120, vars: 2, room: 'BARNRUM' },
-  { kind: 'basketboll', icon: '🏀', name: 'Basketboll', price: 150, vars: 1, room: 'BARNRUM' },
-  { kind: 'palett', icon: '🎨', name: 'Målarpalett', price: 150, vars: 1, room: 'BARNRUM' },
-  { kind: 'barntavla', icon: '🖼️', name: 'Barntavla', price: 160, vars: 3, room: 'BARNRUM', wall: true },
-  { kind: 'abcplansch', icon: '🔤', name: 'ABC-plansch', price: 180, vars: 1, room: 'BARNRUM', wall: true },
-  { kind: 'golvkudde', icon: '🟪', name: 'Golvkudde', price: 180, vars: 6, room: 'BARNRUM' },
-  { kind: 'gosedjur', icon: '🧸', name: 'Gosedjur', price: 200, vars: 3, room: 'BARNRUM' },
-  { kind: 'skolstol', icon: '🪑', name: 'Skolstol', price: 200, vars: 1, room: 'BARNRUM' },
-  { kind: 'gosegroda', icon: '🐸', name: 'Gosegroda', price: 220, vars: 1, room: 'BARNRUM' },
-  { kind: 'molnkudde', icon: '☁️', name: 'Molnkudde', price: 250, vars: 1, room: 'BARNRUM' },
-  { kind: 'nattlampa', icon: '🍄', name: 'Nattlampa', price: 250, vars: 2, room: 'BARNRUM' },
-  { kind: 'ryggsack', icon: '🎒', name: 'Ryggsäck', price: 250, vars: 4, room: 'BARNRUM' },
-  { kind: 'stjarnkudde', icon: '🌟', name: 'Stjärnkudde', price: 250, vars: 1, room: 'BARNRUM' },
-  { kind: 'vaggmane', icon: '🌙', name: 'Vägg-måne', price: 280, vars: 1, room: 'BARNRUM', wall: true },
-  { kind: 'barnstol', icon: '⭐', name: 'Stjärnstol', price: 300, vars: 5, room: 'BARNRUM' },
-  { kind: 'backar', icon: '🧺', name: 'Förvaringsbackar', price: 350, vars: 3, room: 'BARNRUM' },
-  { kind: 'barnbord', icon: '🟫', name: 'Barnbord', price: 350, vars: 1, room: 'BARNRUM' },
-  { kind: 'leksakslada', icon: '📦', name: 'Leksakskista', price: 450, vars: 4, room: 'BARNRUM' },
-  { kind: 'skolbank', icon: '✏️', name: 'Skolbänk', price: 500, vars: 1, room: 'BARNRUM' },
-  { kind: 'jattenalle', icon: '🐻', name: 'Jättenalle', price: 600, vars: 1, room: 'BARNRUM' },
-  { kind: 'platskap', icon: '🔒', name: 'Plåtskåp', price: 650, vars: 1, room: 'BARNRUM' },
-  { kind: 'basketkorg', icon: '🥅', name: 'Basketkorg', price: 800, vars: 1, room: 'BARNRUM', wall: true },
-  { kind: 'retrotv', icon: '📺', name: 'Gammal TV', price: 900, vars: 1, room: 'BARNRUM', function: 'tv' },
-  { kind: 'fiol', icon: '🎻', name: 'Fiol', price: 1200, vars: 1, room: 'BARNRUM' },
-  { kind: 'spelkonsol', icon: '🎮', name: 'Spelkonsol', price: 1600, vars: 3, room: 'BARNRUM', function: 'tv' },
+  { kind: 'byggklossar', icon: '🧱', name: $t('Byggklossar'), price: 120, vars: 2, room: 'BARNRUM' },
+  { kind: 'basketboll', icon: '🏀', name: $t('Basketboll'), price: 150, vars: 1, room: 'BARNRUM' },
+  { kind: 'palett', icon: '🎨', name: $t('Målarpalett'), price: 150, vars: 1, room: 'BARNRUM' },
+  { kind: 'barntavla', icon: '🖼️', name: $t('Barntavla'), price: 160, vars: 3, room: 'BARNRUM', wall: true },
+  { kind: 'abcplansch', icon: '🔤', name: $t('ABC-plansch'), price: 180, vars: 1, room: 'BARNRUM', wall: true },
+  { kind: 'golvkudde', icon: '🟪', name: $t('Golvkudde'), price: 180, vars: 6, room: 'BARNRUM' },
+  { kind: 'gosedjur', icon: '🧸', name: $t('Gosedjur'), price: 200, vars: 3, room: 'BARNRUM' },
+  { kind: 'skolstol', icon: '🪑', name: $t('Skolstol'), price: 200, vars: 1, room: 'BARNRUM' },
+  { kind: 'gosegroda', icon: '🐸', name: $t('Gosegroda'), price: 220, vars: 1, room: 'BARNRUM' },
+  { kind: 'molnkudde', icon: '☁️', name: $t('Molnkudde'), price: 250, vars: 1, room: 'BARNRUM' },
+  { kind: 'nattlampa', icon: '🍄', name: $t('Nattlampa'), price: 250, vars: 2, room: 'BARNRUM' },
+  { kind: 'ryggsack', icon: '🎒', name: $t('Ryggsäck'), price: 250, vars: 4, room: 'BARNRUM' },
+  { kind: 'stjarnkudde', icon: '🌟', name: $t('Stjärnkudde'), price: 250, vars: 1, room: 'BARNRUM' },
+  { kind: 'vaggmane', icon: '🌙', name: $t('Vägg-måne'), price: 280, vars: 1, room: 'BARNRUM', wall: true },
+  { kind: 'barnstol', icon: '⭐', name: $t('Stjärnstol'), price: 300, vars: 5, room: 'BARNRUM' },
+  { kind: 'backar', icon: '🧺', name: $t('Förvaringsbackar'), price: 350, vars: 3, room: 'BARNRUM' },
+  { kind: 'barnbord', icon: '🟫', name: $t('Barnbord'), price: 350, vars: 1, room: 'BARNRUM' },
+  { kind: 'leksakslada', icon: '📦', name: $t('Leksakskista'), price: 450, vars: 4, room: 'BARNRUM' },
+  { kind: 'skolbank', icon: '✏️', name: $t('Skolbänk'), price: 500, vars: 1, room: 'BARNRUM' },
+  { kind: 'jattenalle', icon: '🐻', name: $t('Jättenalle'), price: 600, vars: 1, room: 'BARNRUM' },
+  { kind: 'platskap', icon: '🔒', name: $t('Plåtskåp'), price: 650, vars: 1, room: 'BARNRUM' },
+  { kind: 'basketkorg', icon: '🥅', name: $t('Basketkorg'), price: 800, vars: 1, room: 'BARNRUM', wall: true },
+  { kind: 'retrotv', icon: '📺', name: $t('Gammal TV'), price: 900, vars: 1, room: 'BARNRUM', function: 'tv' },
+  { kind: 'fiol', icon: '🎻', name: $t('Fiol'), price: 1200, vars: 1, room: 'BARNRUM' },
+  { kind: 'spelkonsol', icon: '🎮', name: $t('Spelkonsol'), price: 1600, vars: 3, room: 'BARNRUM', function: 'tv' },
   // ---- KONTOR ----
-  { kind: 'papperskorg', icon: '🗑️', name: 'Papperskorg', price: 80, vars: 1, room: 'KONTOR' },
-  { kind: 'parmar', icon: '📂', name: 'Pärmar', price: 120, vars: 1, room: 'KONTOR' },
-  { kind: 'vaggkalender', icon: '📅', name: 'Väggkalender', price: 120, vars: 1, room: 'KONTOR', wall: true },
-  { kind: 'bokstapel', icon: '📚', name: 'Bokstapel', price: 150, vars: 2, room: 'KONTOR' },
-  { kind: 'skolplansch', icon: '🫀', name: 'Kroppsplansch', price: 220, vars: 1, room: 'KONTOR', wall: true },
-  { kind: 'anslagstavla', icon: '📌', name: 'Anslagstavla', price: 300, vars: 2, room: 'KONTOR', wall: true },
-  { kind: 'telefon', icon: '☎️', name: 'Telefon', price: 350, vars: 3, room: 'KONTOR' },
-  { kind: 'kontorsstol', icon: '💺', name: 'Kontorsstol', price: 450, vars: 3, room: 'KONTOR' },
-  { kind: 'skrivbord', icon: '📝', name: 'Skrivbord', price: 700, vars: 7, room: 'KONTOR' },
-  { kind: 'laspulpet', icon: '📖', name: 'Läspulpet', price: 750, vars: 2, room: 'KONTOR' },
-  { kind: 'arbetsbank', icon: '🗃️', name: 'Arbetsbänk med lådor', price: 900, vars: 1, room: 'KONTOR' },
-  { kind: 'skoltavla', icon: '🟩', name: 'Skoltavla', price: 900, vars: 2, room: 'KONTOR', wall: true },
-  { kind: 'datortorn', icon: '💾', name: 'Datortorn', price: 1000, vars: 4, room: 'KONTOR' },
-  { kind: 'dator', icon: '🖥️', name: 'Dator', price: 1400, vars: 4, room: 'KONTOR', function: 'tv' },
-  { kind: 'laptop', icon: '💻', name: 'Bärbar dator', price: 1800, vars: 2, room: 'KONTOR', function: 'tv' },
+  { kind: 'papperskorg', icon: '🗑️', name: $t('Papperskorg'), price: 80, vars: 1, room: 'KONTOR' },
+  { kind: 'parmar', icon: '📂', name: $t('Pärmar'), price: 120, vars: 1, room: 'KONTOR' },
+  { kind: 'vaggkalender', icon: '📅', name: $t('Väggkalender'), price: 120, vars: 1, room: 'KONTOR', wall: true },
+  { kind: 'bokstapel', icon: '📚', name: $t('Bokstapel'), price: 150, vars: 2, room: 'KONTOR' },
+  { kind: 'skolplansch', icon: '🫀', name: $t('Kroppsplansch'), price: 220, vars: 1, room: 'KONTOR', wall: true },
+  { kind: 'anslagstavla', icon: '📌', name: $t('Anslagstavla'), price: 300, vars: 2, room: 'KONTOR', wall: true },
+  { kind: 'telefon', icon: '☎️', name: $t('Telefon'), price: 350, vars: 3, room: 'KONTOR' },
+  { kind: 'kontorsstol', icon: '💺', name: $t('Kontorsstol'), price: 450, vars: 3, room: 'KONTOR' },
+  { kind: 'skrivbord', icon: '📝', name: $t('Skrivbord'), price: 700, vars: 7, room: 'KONTOR' },
+  { kind: 'laspulpet', icon: '📖', name: $t('Läspulpet'), price: 750, vars: 2, room: 'KONTOR' },
+  { kind: 'arbetsbank', icon: '🗃️', name: $t('Arbetsbänk med lådor'), price: 900, vars: 1, room: 'KONTOR' },
+  { kind: 'skoltavla', icon: '🟩', name: $t('Skoltavla'), price: 900, vars: 2, room: 'KONTOR', wall: true },
+  { kind: 'datortorn', icon: '💾', name: $t('Datortorn'), price: 1000, vars: 4, room: 'KONTOR' },
+  { kind: 'dator', icon: '🖥️', name: $t('Dator'), price: 1400, vars: 4, room: 'KONTOR', function: 'tv' },
+  { kind: 'laptop', icon: '💻', name: $t('Bärbar dator'), price: 1800, vars: 2, room: 'KONTOR', function: 'tv' },
   // ---- HALL ----
-  { kind: 'pall', icon: '🪑', name: 'Pall', price: 90, vars: 1, room: 'HALL' },
-  { kind: 'dorrmatta', icon: '🟧', name: 'Dörrmatta', price: 120, vars: 4, room: 'HALL' },
-  { kind: 'sittbank', icon: '🪵', name: 'Sittbänk', price: 350, vars: 1, room: 'HALL' },
-  { kind: 'transportbur', icon: '🧳', name: 'Transportbur', price: 350, vars: 4, room: 'HALL' },
-  { kind: 'skobank', icon: '👟', name: 'Skobänk', price: 400, vars: 7, room: 'HALL' },
-  { kind: 'rundspegel', icon: '🪞', name: 'Rund spegel', price: 450, vars: 4, room: 'HALL', wall: true },
-  { kind: 'hallbank', icon: '🪵', name: 'Hallbänk med ryggstöd', price: 550, vars: 2, room: 'HALL' },
-  { kind: 'rustning', icon: '🛡️', name: 'Riddarrustning', price: 3000, vars: 2, room: 'HALL' },
+  { kind: 'pall', icon: '🪑', name: $t('Pall'), price: 90, vars: 1, room: 'HALL' },
+  { kind: 'dorrmatta', icon: '🟧', name: $t('Dörrmatta'), price: 120, vars: 4, room: 'HALL' },
+  { kind: 'sittbank', icon: '🪵', name: $t('Sittbänk'), price: 350, vars: 1, room: 'HALL' },
+  { kind: 'transportbur', icon: '🧳', name: $t('Transportbur'), price: 350, vars: 4, room: 'HALL' },
+  { kind: 'skobank', icon: '👟', name: $t('Skobänk'), price: 400, vars: 7, room: 'HALL' },
+  { kind: 'rundspegel', icon: '🪞', name: $t('Rund spegel'), price: 450, vars: 4, room: 'HALL', wall: true },
+  { kind: 'hallbank', icon: '🪵', name: $t('Hallbänk med ryggstöd'), price: 550, vars: 2, room: 'HALL' },
+  { kind: 'rustning', icon: '🛡️', name: $t('Riddarrustning'), price: 3000, vars: 2, room: 'HALL' },
   // ---- ÖVRIGT (dekor för alla rum, växter, husdjursgrejer, jul) ----
-  { kind: 'ljus', icon: '🕯️', name: 'Stearinljus', price: 80, vars: 3, room: 'ÖVRIGT' },
-  { kind: 'matskal', icon: '🥣', name: 'Matskål till husdjur', price: 80, vars: 4, room: 'ÖVRIGT' },
-  { kind: 'julstrumpa', icon: '🧦', name: 'Julstrumpa', price: 90, vars: 8, room: 'ÖVRIGT', wall: true },
-  { kind: 'lillblomma', icon: '🌱', name: 'Liten krukväxt', price: 90, vars: 6, room: 'ÖVRIGT' },
-  { kind: 'julfigur', icon: '🎅', name: 'Julfigur', price: 120, vars: 4, room: 'ÖVRIGT' },
-  { kind: 'polkagris', icon: '🍭', name: 'Jättepolkagris', price: 120, vars: 2, room: 'ÖVRIGT' },
-  { kind: 'julklapp', icon: '🎁', name: 'Julklapp', price: 150, vars: 12, room: 'ÖVRIGT' },
-  { kind: 'julklocka', icon: '🔔', name: 'Julklocka', price: 150, vars: 1, room: 'ÖVRIGT', wall: true },
-  { kind: 'julsack', icon: '🛍️', name: 'Julsäck', price: 150, vars: 3, room: 'ÖVRIGT' },
-  { kind: 'smatavla', icon: '🖼️', name: 'Liten tavla', price: 150, vars: 3, room: 'ÖVRIGT', wall: true },
-  { kind: 'blomkruka', icon: '🌹', name: 'Blomkruka', price: 180, vars: 4, room: 'ÖVRIGT' },
-  { kind: 'ljusgrupp', icon: '🕯️', name: 'Ljusgrupp', price: 180, vars: 3, room: 'ÖVRIGT' },
-  { kind: 'girlang', icon: '🎀', name: 'Julgirlang', price: 200, vars: 2, room: 'ÖVRIGT', wall: true },
-  { kind: 'julljus', icon: '🕯️', name: 'Julljus med järnek', price: 200, vars: 1, room: 'ÖVRIGT' },
-  { kind: 'portratt', icon: '🖼️', name: 'Litet porträtt', price: 200, vars: 3, room: 'ÖVRIGT', wall: true },
-  { kind: 'kragetavla', icon: '🌼', name: 'Prästkragetavla', price: 250, vars: 1, room: 'ÖVRIGT', wall: true },
-  { kind: 'minigran', icon: '🌲', name: 'Liten julgran', price: 250, vars: 3, room: 'ÖVRIGT' },
-  { kind: 'djurbadd', icon: '🐾', name: 'Husdjursbädd', price: 300, vars: 8, room: 'ÖVRIGT' },
-  { kind: 'lillmatta', icon: '🧶', name: 'Liten matta', price: 300, vars: 10, room: 'ÖVRIGT' },
-  { kind: 'ramtavla', icon: '🖼️', name: 'Tavla i ram', price: 300, vars: 2, room: 'ÖVRIGT', wall: true },
-  { kind: 'bordslampa', icon: '💡', name: 'Bordslampa', price: 350, vars: 5, room: 'ÖVRIGT' },
-  { kind: 'bredtavla', icon: '🖼️', name: 'Tavla på bredden', price: 350, vars: 2, room: 'ÖVRIGT', wall: true },
-  { kind: 'klockblomma', icon: '🪻', name: 'Klockranka', price: 400, vars: 3, room: 'ÖVRIGT' },
-  { kind: 'rundmatta', icon: '⭕', name: 'Rund matta', price: 400, vars: 6, room: 'ÖVRIGT' },
-  { kind: 'vaggklocka', icon: '🕰️', name: 'Väggklocka', price: 400, vars: 1, room: 'ÖVRIGT', wall: true },
-  { kind: 'fredslilja', icon: '🪴', name: 'Fredslilja', price: 450, vars: 2, room: 'ÖVRIGT' },
-  { kind: 'kattkoja', icon: '⛺', name: 'Kattkoja', price: 450, vars: 8, room: 'ÖVRIGT' },
-  { kind: 'rutmatta', icon: '🧺', name: 'Rutig matta', price: 450, vars: 4, room: 'ÖVRIGT' },
-  { kind: 'draperi', icon: '🪟', name: 'Fördragna gardiner', price: 500, vars: 10, room: 'ÖVRIGT', wall: true, overWindow: true },
-  { kind: 'gardin', icon: '🪟', name: 'Gardiner', price: 500, vars: 10, room: 'ÖVRIGT', wall: true, overWindow: true },
-  { kind: 'gummitrad', icon: '🌿', name: 'Gummiträd', price: 550, vars: 1, room: 'ÖVRIGT' },
-  { kind: 'golvlampa', icon: '💡', name: 'Golvlampa med skärm', price: 600, vars: 4, room: 'ÖVRIGT' },
-  { kind: 'staffli', icon: '🎨', name: 'Staffli med målning', price: 600, vars: 1, room: 'ÖVRIGT' },
-  { kind: 'lovkoja', icon: '🌿', name: 'Lummig kattkoja', price: 650, vars: 4, room: 'ÖVRIGT' },
-  { kind: 'julgran', icon: '🎄', name: 'Julgran', price: 800, vars: 2, room: 'ÖVRIGT' },
-  { kind: 'katthus', icon: '🐱', name: 'Katthus', price: 800, vars: 4, room: 'ÖVRIGT' },
-  { kind: 'landskap', icon: '🏞️', name: 'Landskapsmålning', price: 900, vars: 1, room: 'ÖVRIGT', wall: true },
-  { kind: 'kattrad', icon: '🐈', name: 'Klösträd', price: 1200, vars: 4, room: 'ÖVRIGT' },
+  { kind: 'ljus', icon: '🕯️', name: $t('Stearinljus'), price: 80, vars: 3, room: 'ÖVRIGT' },
+  { kind: 'matskal', icon: '🥣', name: $t('Matskål till husdjur'), price: 80, vars: 4, room: 'ÖVRIGT' },
+  { kind: 'julstrumpa', icon: '🧦', name: $t('Julstrumpa'), price: 90, vars: 8, room: 'ÖVRIGT', wall: true },
+  { kind: 'lillblomma', icon: '🌱', name: $t('Liten krukväxt'), price: 90, vars: 6, room: 'ÖVRIGT' },
+  { kind: 'julfigur', icon: '🎅', name: $t('Julfigur'), price: 120, vars: 4, room: 'ÖVRIGT' },
+  { kind: 'polkagris', icon: '🍭', name: $t('Jättepolkagris'), price: 120, vars: 2, room: 'ÖVRIGT' },
+  { kind: 'julklapp', icon: '🎁', name: $t('Julklapp'), price: 150, vars: 12, room: 'ÖVRIGT' },
+  { kind: 'julklocka', icon: '🔔', name: $t('Julklocka'), price: 150, vars: 1, room: 'ÖVRIGT', wall: true },
+  { kind: 'julsack', icon: '🛍️', name: $t('Julsäck'), price: 150, vars: 3, room: 'ÖVRIGT' },
+  { kind: 'smatavla', icon: '🖼️', name: $t('Liten tavla'), price: 150, vars: 3, room: 'ÖVRIGT', wall: true },
+  { kind: 'blomkruka', icon: '🌹', name: $t('Blomkruka'), price: 180, vars: 4, room: 'ÖVRIGT' },
+  { kind: 'ljusgrupp', icon: '🕯️', name: $t('Ljusgrupp'), price: 180, vars: 3, room: 'ÖVRIGT' },
+  { kind: 'girlang', icon: '🎀', name: $t('Julgirlang'), price: 200, vars: 2, room: 'ÖVRIGT', wall: true },
+  { kind: 'julljus', icon: '🕯️', name: $t('Julljus med järnek'), price: 200, vars: 1, room: 'ÖVRIGT' },
+  { kind: 'portratt', icon: '🖼️', name: $t('Litet porträtt'), price: 200, vars: 3, room: 'ÖVRIGT', wall: true },
+  { kind: 'kragetavla', icon: '🌼', name: $t('Prästkragetavla'), price: 250, vars: 1, room: 'ÖVRIGT', wall: true },
+  { kind: 'minigran', icon: '🌲', name: $t('Liten julgran'), price: 250, vars: 3, room: 'ÖVRIGT' },
+  { kind: 'djurbadd', icon: '🐾', name: $t('Husdjursbädd'), price: 300, vars: 8, room: 'ÖVRIGT' },
+  { kind: 'lillmatta', icon: '🧶', name: $t('Liten matta'), price: 300, vars: 10, room: 'ÖVRIGT' },
+  { kind: 'ramtavla', icon: '🖼️', name: $t('Tavla i ram'), price: 300, vars: 2, room: 'ÖVRIGT', wall: true },
+  { kind: 'bordslampa', icon: '💡', name: $t('Bordslampa'), price: 350, vars: 5, room: 'ÖVRIGT' },
+  { kind: 'bredtavla', icon: '🖼️', name: $t('Tavla på bredden'), price: 350, vars: 2, room: 'ÖVRIGT', wall: true },
+  { kind: 'klockblomma', icon: '🪻', name: $t('Klockranka'), price: 400, vars: 3, room: 'ÖVRIGT' },
+  { kind: 'rundmatta', icon: '⭕', name: $t('Rund matta'), price: 400, vars: 6, room: 'ÖVRIGT' },
+  { kind: 'vaggklocka', icon: '🕰️', name: $t('Väggklocka'), price: 400, vars: 1, room: 'ÖVRIGT', wall: true },
+  { kind: 'fredslilja', icon: '🪴', name: $t('Fredslilja'), price: 450, vars: 2, room: 'ÖVRIGT' },
+  { kind: 'kattkoja', icon: '⛺', name: $t('Kattkoja'), price: 450, vars: 8, room: 'ÖVRIGT' },
+  { kind: 'rutmatta', icon: '🧺', name: $t('Rutig matta'), price: 450, vars: 4, room: 'ÖVRIGT' },
+  { kind: 'draperi', icon: '🪟', name: $t('Fördragna gardiner'), price: 500, vars: 10, room: 'ÖVRIGT', wall: true, overWindow: true },
+  { kind: 'gardin', icon: '🪟', name: $t('Gardiner'), price: 500, vars: 10, room: 'ÖVRIGT', wall: true, overWindow: true },
+  { kind: 'gummitrad', icon: '🌿', name: $t('Gummiträd'), price: 550, vars: 1, room: 'ÖVRIGT' },
+  { kind: 'golvlampa', icon: '💡', name: $t('Golvlampa med skärm'), price: 600, vars: 4, room: 'ÖVRIGT' },
+  { kind: 'staffli', icon: '🎨', name: $t('Staffli med målning'), price: 600, vars: 1, room: 'ÖVRIGT' },
+  { kind: 'lovkoja', icon: '🌿', name: $t('Lummig kattkoja'), price: 650, vars: 4, room: 'ÖVRIGT' },
+  { kind: 'julgran', icon: '🎄', name: $t('Julgran'), price: 800, vars: 2, room: 'ÖVRIGT' },
+  { kind: 'katthus', icon: '🐱', name: $t('Katthus'), price: 800, vars: 4, room: 'ÖVRIGT' },
+  { kind: 'landskap', icon: '🏞️', name: $t('Landskapsmålning'), price: 900, vars: 1, room: 'ÖVRIGT', wall: true },
+  { kind: 'kattrad', icon: '🐈', name: $t('Klösträd'), price: 1200, vars: 4, room: 'ÖVRIGT' },
   // ---- JULVÅNINGEN (klädaffären plan 3, 2026-10-06) – säljs bara där (shop: 'jul') ----
   // anim = bildrutor per variant som möbeln växlar mellan (blinkar), glow = lyser i kvällsmörkret
-  { kind: 'julkalender', icon: '📅', name: 'Julkalender', price: 60, vars: 1, room: 'ÖVRIGT', wall: true, shop: 'jul' },
-  { kind: 'snogubbe', icon: '⛄', name: 'Liten snögubbe', price: 90, vars: 1, room: 'ÖVRIGT', shop: 'jul' },
-  { kind: 'pepparkakshus', icon: '🏠', name: 'Pepparkakshus', price: 120, vars: 1, room: 'ÖVRIGT', shop: 'jul' },
-  { kind: 'julbock', icon: '🐐', name: 'Julbock', price: 180, vars: 1, room: 'ÖVRIGT', shop: 'jul' },
-  { kind: 'adventsstjarna', icon: '⭐', name: 'Adventsstjärna', price: 220, vars: 3, room: 'ÖVRIGT', wall: true, overWindow: true, glow: true, shop: 'jul' },
-  { kind: 'ljusgirlang', icon: '✨', name: 'Blinkande girlang', price: 250, vars: 1, room: 'ÖVRIGT', wall: true, overWindow: true, anim: 2, glow: true, shop: 'jul' },
-  { kind: 'adventsljus', icon: '🕯️', name: 'Adventsljusstake', price: 280, vars: 2, room: 'ÖVRIGT', wall: true, overWindow: true, glow: true, shop: 'jul' },
-  { kind: 'kulgran', icon: '🎄', name: 'Julgran med kulor', price: 950, vars: 4, room: 'ÖVRIGT', shop: 'jul' },
-  { kind: 'ljusgran', icon: '🎄', name: 'Julgran med blinkande ljus', price: 1200, vars: 1, room: 'ÖVRIGT', anim: 2, glow: true, shop: 'jul' },
-  { kind: 'julspis', icon: '🔥', name: 'Julpyntad spis', price: 2400, vars: 2, room: 'VARDAGSRUM', function: 'brasa', shop: 'jul' },
+  { kind: 'julkalender', icon: '📅', name: $t('Julkalender'), price: 60, vars: 1, room: 'ÖVRIGT', wall: true, shop: 'jul' },
+  { kind: 'snogubbe', icon: '⛄', name: $t('Liten snögubbe'), price: 90, vars: 1, room: 'ÖVRIGT', shop: 'jul' },
+  { kind: 'pepparkakshus', icon: '🏠', name: $t('Pepparkakshus'), price: 120, vars: 1, room: 'ÖVRIGT', shop: 'jul' },
+  { kind: 'julbock', icon: '🐐', name: $t('Julbock'), price: 180, vars: 1, room: 'ÖVRIGT', shop: 'jul' },
+  { kind: 'adventsstjarna', icon: '⭐', name: $t('Adventsstjärna'), price: 220, vars: 3, room: 'ÖVRIGT', wall: true, overWindow: true, glow: true, shop: 'jul' },
+  { kind: 'ljusgirlang', icon: '✨', name: $t('Blinkande girlang'), price: 250, vars: 1, room: 'ÖVRIGT', wall: true, overWindow: true, anim: 2, glow: true, shop: 'jul' },
+  { kind: 'adventsljus', icon: '🕯️', name: $t('Adventsljusstake'), price: 280, vars: 2, room: 'ÖVRIGT', wall: true, overWindow: true, glow: true, shop: 'jul' },
+  { kind: 'kulgran', icon: '🎄', name: $t('Julgran med kulor'), price: 950, vars: 4, room: 'ÖVRIGT', shop: 'jul' },
+  { kind: 'ljusgran', icon: '🎄', name: $t('Julgran med blinkande ljus'), price: 1200, vars: 1, room: 'ÖVRIGT', anim: 2, glow: true, shop: 'jul' },
+  { kind: 'julspis', icon: '🔥', name: $t('Julpyntad spis'), price: 2400, vars: 2, room: 'VARDAGSRUM', function: 'brasa', shop: 'jul' },
   // ---- MASKERADBUTIKEN (Halloween) – säljs bara där (shop: 'halloween') ----
   // pumplyktan: function 'lykta' = tänd/släck ljuset (d.lit, room.js ritar pumplyktaL-rutan och skenet)
-  { kind: 'spindelnat', icon: '🕸️', name: 'Spindelnät', price: 40, vars: 1, room: 'ÖVRIGT', wall: true, overWindow: true, shop: 'halloween' },
-  { kind: 'pumpa', icon: '🎃', name: 'Pumpa', price: 60, vars: 2, room: 'ÖVRIGT', shop: 'halloween' },
-  { kind: 'fladdermoss', icon: '🦇', name: 'Fladdermöss', price: 90, vars: 1, room: 'ÖVRIGT', wall: true, overWindow: true, anim: 2, shop: 'halloween' },
-  { kind: 'pumplykta', icon: '🎃', name: 'Pumplykta', price: 120, vars: 3, room: 'ÖVRIGT', function: 'lykta', shop: 'halloween' },
-  { kind: 'gravsten', icon: '🪦', name: 'Gravsten', price: 150, vars: 5, room: 'ÖVRIGT', shop: 'halloween' },
-  { kind: 'haxkittel', icon: '🧪', name: 'Häxkittel', price: 250, vars: 1, room: 'ÖVRIGT', anim: 3, glow: true, shop: 'halloween' },
-  { kind: 'skelett', icon: '💀', name: 'Skelett', price: 350, vars: 1, room: 'ÖVRIGT', shop: 'halloween' },
-  { kind: 'fagelskramma', icon: '🎃', name: 'Fågelskrämma', price: 450, vars: 8, room: 'ÖVRIGT', shop: 'halloween' },
-  { kind: 'gargoyl', icon: '🗿', name: 'Gargoyl', price: 900, vars: 1, room: 'ÖVRIGT', shop: 'halloween' },
-  { kind: 'spoktrad', icon: '🌳', name: 'Spökträd', price: 1200, vars: 4, room: 'ÖVRIGT', shop: 'halloween' },
+  { kind: 'spindelnat', icon: '🕸️', name: $t('Spindelnät'), price: 40, vars: 1, room: 'ÖVRIGT', wall: true, overWindow: true, shop: 'halloween' },
+  { kind: 'pumpa', icon: '🎃', name: $t('Pumpa'), price: 60, vars: 2, room: 'ÖVRIGT', shop: 'halloween' },
+  { kind: 'fladdermoss', icon: '🦇', name: $t('Fladdermöss'), price: 90, vars: 1, room: 'ÖVRIGT', wall: true, overWindow: true, anim: 2, shop: 'halloween' },
+  { kind: 'pumplykta', icon: '🎃', name: $t('Pumplykta'), price: 120, vars: 3, room: 'ÖVRIGT', function: 'lykta', shop: 'halloween' },
+  { kind: 'gravsten', icon: '🪦', name: $t('Gravsten'), price: 150, vars: 5, room: 'ÖVRIGT', shop: 'halloween' },
+  { kind: 'haxkittel', icon: '🧪', name: $t('Häxkittel'), price: 250, vars: 1, room: 'ÖVRIGT', anim: 3, glow: true, shop: 'halloween' },
+  { kind: 'skelett', icon: '💀', name: $t('Skelett'), price: 350, vars: 1, room: 'ÖVRIGT', shop: 'halloween' },
+  { kind: 'fagelskramma', icon: '🎃', name: $t('Fågelskrämma'), price: 450, vars: 8, room: 'ÖVRIGT', shop: 'halloween' },
+  { kind: 'gargoyl', icon: '🗿', name: $t('Gargoyl'), price: 900, vars: 1, room: 'ÖVRIGT', shop: 'halloween' },
+  { kind: 'spoktrad', icon: '🌳', name: $t('Spökträd'), price: 1200, vars: 4, room: 'ÖVRIGT', shop: 'halloween' },
 ];
 const KAT_BY_KIND = new Map(KATALOG.map((k) => [k.kind, k]));
 export const katalogOf = (kind) => KAT_BY_KIND.get(kind);
@@ -529,11 +530,11 @@ const OLD_FURN = { matta: 'matta', lampa: 'lampa', vaxt: 'vaxtS', bokhylla: 'bok
 // laptop, konsol … – är vanliga möbler i KATALOG som säljs där, se ELEKTRONIK i
 // js/scenes/ikea/kat.js.)
 export const GADGETS = [
-  { id: 'fonmini', kind: 'mobil', icon: '📱', name: 'Blixtfon Mini', price: 900, bonus: 3 },
-  { id: 'fon12', kind: 'mobil', icon: '📱', name: 'Blixtfon 12', price: 1900, bonus: 5 },
-  { id: 'paronfon', kind: 'mobil', icon: '📱', name: 'Päronfon 16 Pro', price: 4500, bonus: 8 },
-  { id: 'platta', kind: 'platta', icon: '📲', name: 'Blixtplatta', price: 1500, bonus: 4 },
-  { id: 'paronplatta', kind: 'platta', icon: '📲', name: 'Päronplatta Pro', price: 3900, bonus: 7 },
+  { id: 'fonmini', kind: 'mobil', icon: '📱', name: $t('Blixtfon Mini'), price: 900, bonus: 3 },
+  { id: 'fon12', kind: 'mobil', icon: '📱', name: $t('Blixtfon 12'), price: 1900, bonus: 5 },
+  { id: 'paronfon', kind: 'mobil', icon: '📱', name: $t('Päronfon 16 Pro'), price: 4500, bonus: 8 },
+  { id: 'platta', kind: 'platta', icon: '📲', name: $t('Blixtplatta'), price: 1500, bonus: 4 },
+  { id: 'paronplatta', kind: 'platta', icon: '📲', name: $t('Päronplatta Pro'), price: 3900, bonus: 7 },
 ];
 export const gadgetOf = (id) => GADGETS.find((x) => x.id === id) || null;
 
@@ -543,11 +544,11 @@ export const gadgetOf = (id) => GADGETS.find((x) => x.id === id) || null;
 // g.fordon = [{ id, c }] (en av varje modell, c = färgen), g.akerMed = id som man åker på | null.
 // Påhittade modeller – inga riktiga märken. Hjälmen till moppen ingår.
 export const FORDON = [
-  { id: 'begcykel', typ: 'cykel', icon: '🚲', name: 'Begagnad herrcykel', den: 'herrcykeln', price: 450, fart: 1.5, colors: ['#7a8a6a', '#5a5a7a', '#8a5a4a'], blurb: 'Lite rost och gnisslar i kurvorna – men den rullar!' },
-  { id: 'stadscykel', typ: 'cykel', icon: '🚲', name: 'Stadscykel med korg', den: 'stadscykeln', price: 1600, fart: 1.7, colors: ['#3a7bd5', '#d9433b', '#46a35a', '#f4f1ea', '#c65fa0'], blurb: 'Korg, pakethållare, lampa och stänkskärmar. Perfekt till mataffären.' },
-  { id: 'elspark', typ: 'spark', icon: '🛴', name: 'Elsparkcykel', den: 'elsparkcykeln', price: 2900, fart: 1.9, colors: ['#2f3440', '#e8e3d6', '#2aa39a'], blurb: 'Stå på och glid tyst genom stan – inga pedaler, bara gasreglaget.' },
-  { id: 'racer', typ: 'racer', icon: '🚴', name: 'Racercykel', den: 'racercykeln', price: 3800, fart: 2.1, colors: ['#d9433b', '#1d1714', '#f0b429', '#2aa39a'], blurb: 'Lätt som en fjäder, med böjt styre. Snabbast utan motor.' },
-  { id: 'moppe', typ: 'moppe', icon: '🛵', name: 'Moppe', den: 'moppen', price: 8900, fart: 2.6, colors: ['#e0a02a', '#d9433b', '#3a7bd5', '#46a35a', '#1d1714'], blurb: 'Klassisk moped med blank tank, krom och backspegel. Hjälmen ingår. Brum brum!' },
+  { id: 'begcykel', typ: 'cykel', icon: '🚲', name: $t('Begagnad herrcykel'), den: $t('herrcykeln'), price: 450, fart: 1.5, colors: ['#7a8a6a', '#5a5a7a', '#8a5a4a'], blurb: $t('Lite rost och gnisslar i kurvorna – men den rullar!') },
+  { id: 'stadscykel', typ: 'cykel', icon: '🚲', name: $t('Stadscykel med korg'), den: $t('stadscykeln'), price: 1600, fart: 1.7, colors: ['#3a7bd5', '#d9433b', '#46a35a', '#f4f1ea', '#c65fa0'], blurb: $t('Korg, pakethållare, lampa och stänkskärmar. Perfekt till mataffären.') },
+  { id: 'elspark', typ: 'spark', icon: '🛴', name: $t('Elsparkcykel'), den: $t('elsparkcykeln'), price: 2900, fart: 1.9, colors: ['#2f3440', '#e8e3d6', '#2aa39a'], blurb: $t('Stå på och glid tyst genom stan – inga pedaler, bara gasreglaget.') },
+  { id: 'racer', typ: 'racer', icon: '🚴', name: $t('Racercykel'), den: $t('racercykeln'), price: 3800, fart: 2.1, colors: ['#d9433b', '#1d1714', '#f0b429', '#2aa39a'], blurb: $t('Lätt som en fjäder, med böjt styre. Snabbast utan motor.') },
+  { id: 'moppe', typ: 'moppe', icon: '🛵', name: $t('Moppe'), den: $t('moppen'), price: 8900, fart: 2.6, colors: ['#e0a02a', '#d9433b', '#3a7bd5', '#46a35a', '#1d1714'], blurb: $t('Klassisk moped med blank tank, krom och backspegel. Hjälmen ingår. Brum brum!') },
 ];
 export const fordonOf = (id) => FORDON.find((x) => x.id === id) || null;
 export const OMLACK = 150;   // måla om ett fordon man redan har
@@ -560,29 +561,29 @@ export const OMLACK = 150;   // måla om ett fordon man redan har
 // sjunker med missnöjda kunder och för höga priser. Platshyran dras på måndagen.
 export const TRUCK_PRIS = 14900;
 export const TRUCK_PLATSER = [
-  { id: 'parken', namn: 'Parken vid fontänen', icon: '⛲', x: 862, y: 378, bas: 10, tol: 1, hyra: 300, blurb: 'Familjer, hundägare och joggare – lagom med folk hela dagen.' },
-  { id: 'downtown', namn: 'Tjurtorget i downtown', icon: '🐂', x: 1948, y: 360, bas: 15, tol: 1.2, hyra: 650, blurb: 'Kontorsfolk med fickorna fulla – högst hyra men flest kunder.' },
-  { id: 'fororten', namn: 'Parkeringen i förorten', icon: '🏚️', x: 3070, y: 376, bas: 7, tol: 0.85, hyra: 150, blurb: 'Billigast hyra – men folk har inte så mycket pengar.' },
+  { id: 'parken', namn: $t('Parken vid fontänen'), icon: '⛲', x: 862, y: 378, bas: 10, tol: 1, hyra: 300, blurb: $t('Familjer, hundägare och joggare – lagom med folk hela dagen.') },
+  { id: 'downtown', namn: $t('Tjurtorget i downtown'), icon: '🐂', x: 1948, y: 360, bas: 15, tol: 1.2, hyra: 650, blurb: $t('Kontorsfolk med fickorna fulla – högst hyra men flest kunder.') },
+  { id: 'fororten', namn: $t('Parkeringen i förorten'), icon: '🏚️', x: 3070, y: 376, bas: 7, tol: 0.85, hyra: 150, blurb: $t('Billigast hyra – men folk har inte så mycket pengar.') },
 ];
 export const truckPlatsOf = (id) => TRUCK_PLATSER.find((x) => x.id === id) || TRUCK_PLATSER[0];
 // menyn: pris = vanligt pris (kr), kost = råvarorna per portion, kraver = uppgraderingen som behövs
 export const TRUCK_MENY = [
-  { id: 'korv', namn: 'Korv med bröd', icon: '🌭', pris: 25, kost: 7, tid: 1.4 },
-  { id: 'dricka', namn: 'Dricka', icon: '🥤', pris: 15, kost: 3, tid: 0 },
-  { id: 'burgare', namn: 'Hamburgare', icon: '🍔', pris: 55, kost: 16, tid: 2.6, kraver: 'grill' },
-  { id: 'taco', namn: 'Taco', icon: '🌮', pris: 40, kost: 11, tid: 1, kraver: 'tacobar' },
-  { id: 'glass', namn: 'Glass', icon: '🍦', pris: 25, kost: 6, tid: 0, kraver: 'frys' },
+  { id: 'korv', namn: $t('Korv med bröd'), icon: '🌭', pris: 25, kost: 7, tid: 1.4 },
+  { id: 'dricka', namn: $t('Dricka'), icon: '🥤', pris: 15, kost: 3, tid: 0 },
+  { id: 'burgare', namn: $t('Hamburgare'), icon: '🍔', pris: 55, kost: 16, tid: 2.6, kraver: 'grill' },
+  { id: 'taco', namn: $t('Taco'), icon: '🌮', pris: 40, kost: 11, tid: 1, kraver: 'tacobar' },
+  { id: 'glass', namn: $t('Glass'), icon: '🍦', pris: 25, kost: 6, tid: 0, kraver: 'frys' },
 ];
 export const truckRattOf = (id) => TRUCK_MENY.find((x) => x.id === id) || null;
 export const TRUCK_UPPG = [
-  { id: 'grill', namn: 'Stor grill', icon: '🔥', pris: 2500, blurb: 'Hamburgare på menyn – dyrast och godast.' },
-  { id: 'tacobar', namn: 'Tacobar', icon: '🌮', pris: 1800, blurb: 'Tacos på menyn – snabba att göra.' },
-  { id: 'frys', namn: 'Glassfrys', icon: '🍦', pris: 1500, blurb: 'Glass på menyn – barnen älskar det.' },
-  { id: 'markis', namn: 'Randig markis och ljusslinga', icon: '🎪', pris: 1200, blurb: 'Syns på långt håll: 10 % fler kunder.' },
+  { id: 'grill', namn: $t('Stor grill'), icon: '🔥', pris: 2500, blurb: $t('Hamburgare på menyn – dyrast och godast.') },
+  { id: 'tacobar', namn: $t('Tacobar'), icon: '🌮', pris: 1800, blurb: $t('Tacos på menyn – snabba att göra.') },
+  { id: 'frys', namn: $t('Glassfrys'), icon: '🍦', pris: 1500, blurb: $t('Glass på menyn – barnen älskar det.') },
+  { id: 'markis', namn: $t('Randig markis och ljusslinga'), icon: '🎪', pris: 1200, blurb: $t('Syns på långt håll: 10 % fler kunder.') },
 ];
-export const TRUCK_PRISER = { lag: { namn: 'Låga', mult: 0.8, kunder: 1.25 }, vanlig: { namn: 'Vanliga', mult: 1, kunder: 1 }, hog: { namn: 'Höga', mult: 1.3, kunder: 0.75 } };
+export const TRUCK_PRISER = { lag: { namn: $t('Låga'), mult: 0.8, kunder: 1.25 }, vanlig: { namn: $t('Vanliga'), mult: 1, kunder: 1 }, hog: { namn: $t('Höga'), mult: 1.3, kunder: 0.75 } };
 export const TRUCK_MAX_PERSONAL = 2;
-const TRUCK_NAMN = ['Sanna', 'Omar', 'Lisa', 'Kalle', 'Fatima', 'Jonte', 'Elin', 'Ali', 'Greta', 'Nils', 'Mira', 'Pelle'];
+const TRUCK_NAMN = [$n('Sanna'), $n('Omar'), $n('Lisa'), $n('Kalle'), $n('Fatima'), $n('Jonte'), $n('Elin'), $n('Ali'), $n('Greta'), $n('Nils'), $n('Mira'), $n('Pelle')];
 // dagens sökande (samma hela dagen): skicklighet 1–3, dagslön efter skicklighet
 export function truckSokande(day) {
   const out = [];
@@ -607,20 +608,20 @@ export const WIN_MONEY = 10000;
 //   utb    utbildningspoäng: 1 per föreläsning på Pixelhögskolan, 2 till per examen (två kurser = 12)
 //   karr   bästa titeln på något jobb (2 = Van, 3 = Proffs, 5 = Legendar – JOB_TITLES)
 export const MAL_NIVAER = [
-  { id: 'latt', icon: '🌱', name: 'Lätt' },
-  { id: 'normal', icon: '⭐', name: 'Normal' },
-  { id: 'svar', icon: '🔥', name: 'Svår' },
+  { id: 'latt', icon: '🌱', name: $t('Lätt') },
+  { id: 'normal', icon: '⭐', name: $t('Normal') },
+  { id: 'svar', icon: '🔥', name: $t('Svår') },
 ];
 export const MAL = {
-  rik: { id: 'rik', icon: '💰', name: 'Rikedom', latt: 3000, normal: 10000, svar: 25000, blurb: 'Pengar på fickan och på banken.' },
-  lycka: { id: 'lycka', icon: '😊', name: 'Lycka', latt: 60, normal: 75, svar: 90, blurb: 'Lyckomätaren – bio, djur, kompisar, ett fint hem och lediga dagar.' },
-  utb: { id: 'utb', icon: '🎓', name: 'Utbildning', latt: 4, normal: 6, svar: 12, blurb: 'Pixelhögskolan: 1 poäng per föreläsning, 2 till för en examen.' },
-  karr: { id: 'karr', icon: '💼', name: 'Karriär', latt: 2, normal: 3, svar: 5, blurb: 'Bästa titeln på något jobb – jobba många pass på samma ställe.' },
+  rik: { id: 'rik', icon: '💰', name: $t('Rikedom'), latt: 3000, normal: 10000, svar: 25000, blurb: $t('Pengar på fickan och på banken.') },
+  lycka: { id: 'lycka', icon: '😊', name: $t('Lycka'), latt: 60, normal: 75, svar: 90, blurb: $t('Lyckomätaren – bio, djur, kompisar, ett fint hem och lediga dagar.') },
+  utb: { id: 'utb', icon: '🎓', name: $t('Utbildning'), latt: 4, normal: 6, svar: 12, blurb: $t('Pixelhögskolan: 1 poäng per föreläsning, 2 till för en examen.') },
+  karr: { id: 'karr', icon: '💼', name: $t('Karriär'), latt: 2, normal: 3, svar: 5, blurb: $t('Bästa titeln på något jobb – jobba många pass på samma ställe.') },
 };
 export const malNiva = (id) => MAL_NIVAER.find((n) => n.id === id) || MAL_NIVAER[1];
 export const malTarget = (key, niva) => MAL[key]?.[malNiva(niva).id] ?? 0;
 // hur målet visas: 3 000 kr · 75 · 6 poäng · Proffs
-export const malText = (key, v) => (key === 'rik' ? fmt(v) : key === 'karr' ? JOB_TITLES[Math.max(0, Math.min(4, v - 1))] : key === 'utb' ? `${v} poäng` : String(v));
+export const malText = (key, v) => (key === 'rik' ? fmt(v) : key === 'karr' ? JOB_TITLES[Math.max(0, Math.min(4, v - 1))] : key === 'utb' ? $t`${v} poäng` : String(v));
 const cleanMal = (m) => (m && typeof m === 'object' ? Object.fromEntries(Object.keys(MAL).map((k) => [k, malNiva(m[k]).id])) : null);
 
 // LYCKAN (g.lycka 0–100, börjar på LYCKA_START): den tredje mätaren bredvid mat och sömn.
@@ -660,11 +661,11 @@ export const bankInterest = (saldo) => Math.round(Math.min(BANK_CAP, Math.max(0,
 // Dagshändelser: slumpas fram på morgonen och gäller hela dagen. Hälften av
 // dagarna händer inget alls – då känns händelserna som något speciellt.
 export const EVENTS = [
-  { id: 'rea', icon: '🏷️', text: 'REA i klädaffären – 25 % på allt i dag!' },
-  { id: 'dubbel', icon: '💰', text: 'Extrapass på {job} – dubbel lön i dag!' },
-  { id: 'middag', icon: '🍲', text: 'Grannen bjöd på middag i går kväll – mätt och glad!' },
-  { id: 'tjuga', icon: '💵', text: 'Du hittade 20 kr på trottoaren!' },
-  { id: 'regn', icon: '🌧️', text: 'Ösregn i Pixelstaden – allt tar längre tid ute i dag.' },
+  { id: 'rea', icon: '🏷️', text: $t('REA i klädaffären – 25 % på allt i dag!') },
+  { id: 'dubbel', icon: '💰', text: $t('Extrapass på {job} – dubbel lön i dag!') },
+  { id: 'middag', icon: '🍲', text: $t('Grannen bjöd på middag i går kväll – mätt och glad!') },
+  { id: 'tjuga', icon: '💵', text: $t('Du hittade 20 kr på trottoaren!') },
+  { id: 'regn', icon: '🌧️', text: $t('Ösregn i Pixelstaden – allt tar längre tid ute i dag.') },
 ];
 
 // Bostäderna: större bostad = insats + högre hyra men bättre sömn (restBonus kan vara
@@ -673,14 +674,14 @@ export const EVENTS = [
 // js/scenes/room.js (PLANS/SEEDS), husen i staden i js/city/places.js.
 // glad = lyckan varje morgon av att bo där (husvagnen är kall och trång, takvåningen en dröm).
 export const HOMES = [
-  { id: 'husvagn', icon: '🚐', name: 'Husvagnen', deposit: 0, rent: 150, restBonus: -10, glad: -4, desc: 'En rostig husvagn på tomten i förorten. Billigast i stan – om du tål kylan.' },
-  { id: 'hoghus', icon: '🏢', name: 'Förortsettan', deposit: 500, rent: 250, restBonus: -5, glad: -2, desc: 'Ett rum och kök på sjunde våningen i Betongvägen 1. Hissen går ibland.' },
-  { id: 'rum', icon: '🛏️', name: 'Lilla rummet', deposit: 0, rent: 350, restBonus: 0, glad: 0, desc: 'En säng, ett kylskåp och en garderob. Men det är ditt.' },
-  { id: 'lagenhet', icon: '🏢', name: 'Lägenheten', deposit: 1500, rent: 600, restBonus: 10, glad: 1, desc: 'Riktigt kök, soffa och utsikt över Pixelstaden.' },
-  { id: 'radhus', icon: '🏡', name: 'Radhuset', deposit: 4000, rent: 800, restBonus: 15, glad: 2, desc: 'Eget radhus på Söder med en liten trädgård. Grannarna grillar på lördagar.' },
-  { id: 'villa', icon: '🏡', name: 'Villan', deposit: 8000, rent: 1000, restBonus: 20, glad: 3, desc: 'Eget hus med trädgård. Hit kan kompisarna komma.' },
-  { id: 'gard', icon: '🚜', name: 'Gården', deposit: 16000, rent: 1400, restBonus: 25, glad: 4, desc: 'Ett falurött hus på landet med ladugård, hönsgård och hagar fulla av djur. Bli bonde!' },
-  { id: 'takvaning', icon: '🏙️', name: 'Takvåningen', deposit: 20000, rent: 2000, restBonus: 25, glad: 4, desc: 'Högst upp i Tornhuset – terrass med utsikt över hela Pixelstaden.' },
+  { id: 'husvagn', icon: '🚐', name: $n('Husvagnen'), deposit: 0, rent: 150, restBonus: -10, glad: -4, desc: $t('En rostig husvagn på tomten i förorten. Billigast i stan – om du tål kylan.') },
+  { id: 'hoghus', icon: '🏢', name: $n('Förortsettan'), deposit: 500, rent: 250, restBonus: -5, glad: -2, desc: $t('Ett rum och kök på sjunde våningen i Betongvägen 1. Hissen går ibland.') },
+  { id: 'rum', icon: '🛏️', name: $n('Lilla rummet'), deposit: 0, rent: 350, restBonus: 0, glad: 0, desc: $t('En säng, ett kylskåp och en garderob. Men det är ditt.') },
+  { id: 'lagenhet', icon: '🏢', name: $n('Lägenheten'), deposit: 1500, rent: 600, restBonus: 10, glad: 1, desc: $t('Riktigt kök, soffa och utsikt över Pixelstaden.') },
+  { id: 'radhus', icon: '🏡', name: $n('Radhuset'), deposit: 4000, rent: 800, restBonus: 15, glad: 2, desc: $t('Eget radhus på Söder med en liten trädgård. Grannarna grillar på lördagar.') },
+  { id: 'villa', icon: '🏡', name: $n('Villan'), deposit: 8000, rent: 1000, restBonus: 20, glad: 3, desc: $t('Eget hus med trädgård. Hit kan kompisarna komma.') },
+  { id: 'gard', icon: '🚜', name: $n('Gården'), deposit: 16000, rent: 1400, restBonus: 25, glad: 4, desc: $t('Ett falurött hus på landet med ladugård, hönsgård och hagar fulla av djur. Bli bonde!') },
+  { id: 'takvaning', icon: '🏙️', name: $n('Takvåningen'), deposit: 20000, rent: 2000, restBonus: 25, glad: 4, desc: $t('Högst upp i Tornhuset – terrass med utsikt över hela Pixelstaden.') },
 ];
 // Okänd bostad (t.ex. i en sparfil från en annan version) → Lilla rummet, aldrig husvagnen.
 // BONDGÅRDEN (Carl 2026-10-02: "köpa en gård och bli bonde … skaffa djur"): bor man på Gården (HOMES
@@ -689,9 +690,9 @@ export const HOMES = [
 // om dagen) och klipp fåren (en gång i veckan). Ägg och mjölk hamnar i skafferiet (laga mat!), ullen
 // i ladugården – sälj allt i GÅRDSBUTIKEN vid vägen. Fler djur köps i ladugården.
 export const GARDSDJUR = {
-  hona: { namn: 'Höna', fler: 'Höns', icon: '🐔', pris: 150, max: 14, foder: 1 },
-  ko: { namn: 'Ko', fler: 'Kor', icon: '🐄', pris: 4500, max: 9, foder: 8 },
-  far: { namn: 'Får', fler: 'Får', icon: '🐑', pris: 900, max: 14, foder: 3 },
+  hona: { namn: $t('Höna'), fler: $t('Höns'), icon: '🐔', pris: 150, max: 14, foder: 1 },
+  ko: { namn: $t('Ko'), fler: $t('Kor'), icon: '🐄', pris: 4500, max: 9, foder: 8 },
+  far: { namn: $t('Får'), fler: $t('Får'), icon: '🐑', pris: 900, max: 14, foder: 3 },
 };
 export const GARD_PRIS = { agg: 12, mjolk: 8, ull: 50 };   // vad gårdsbutiken betalar (ägg/st, mjölk/l, ull/kg)
 
@@ -703,19 +704,19 @@ export const GARD_PRIS = { agg: 12, mjolk: 8, ull: 50 };   // vad gårdsbutiken 
 // En felfri runda öppnar nästa klass.
 export const HAST_PRIS = 12000, HAST_STALL = 250, HAST_MAT = 20;
 export const HASTFARGER = [
-  { id: 'fux', namn: 'Fux', blurb: 'rödbrun med ljus man' },
-  { id: 'brun', namn: 'Brun', blurb: 'mörkbrun med svart man' },
-  { id: 'svart', namn: 'Svart', blurb: 'blank och kolsvart' },
-  { id: 'skimmel', namn: 'Skimmel', blurb: 'vit med grå prickar' },
+  { id: 'fux', namn: $t('Fux'), blurb: $t('rödbrun med ljus man') },
+  { id: 'brun', namn: $t('Brun'), blurb: $t('mörkbrun med svart man') },
+  { id: 'svart', namn: $t('Svart'), blurb: $t('blank och kolsvart') },
+  { id: 'skimmel', namn: $t('Skimmel'), blurb: $t('vit med grå prickar') },
 ];
-export const HASTNAMN = ['Blixten', 'Stjärna', 'Sessan', 'Max', 'Molly', 'Ronja', 'Tor', 'Freja', 'Kanel', 'Luna', 'Pärla', 'Storm'];
+export const HASTNAMN = [$t('Blixten'), $t('Stjärna'), $t('Sessan'), $t('Max'), $t('Molly'), $t('Ronja'), $t('Tor'), $t('Freja'), $t('Kanel'), $t('Luna'), $t('Pärla'), $t('Storm')];
 export const HOPPKLASSER = [
-  { id: 'latt', namn: 'Lätt klass', icon: '🟢', hojd: 9, hinder: 7, pris: [500, 250, 120], tider: [26.5, 28.4, 30.2] },
-  { id: 'medel', namn: 'Medelsvår klass', icon: '🟡', hojd: 13, hinder: 9, pris: [1200, 600, 300], tider: [32.0, 33.8, 36.1] },
-  { id: 'svar', namn: 'Svår klass', icon: '🔴', hojd: 17, hinder: 11, pris: [2500, 1200, 600], tider: [37.4, 39.0, 41.6] },
+  { id: 'latt', namn: $t('Lätt klass'), icon: '🟢', hojd: 9, hinder: 7, pris: [500, 250, 120], tider: [26.5, 28.4, 30.2] },
+  { id: 'medel', namn: $t('Medelsvår klass'), icon: '🟡', hojd: 13, hinder: 9, pris: [1200, 600, 300], tider: [32.0, 33.8, 36.1] },
+  { id: 'svar', namn: $t('Svår klass'), icon: '🔴', hojd: 17, hinder: 11, pris: [2500, 1200, 600], tider: [37.4, 39.0, 41.6] },
 ];
 // ridskolans ryttare (påhittade) som man tävlar mot
-export const HOPPRYTTARE = [{ namn: 'Sanna', hast: 'Stjärnfall' }, { namn: 'Omar', hast: 'Kometen' }, { namn: 'Greta', hast: 'Silverpil' }];
+export const HOPPRYTTARE = [{ namn: $t('Sanna'), hast: $t('Stjärnfall') }, { namn: $t('Omar'), hast: $t('Kometen') }, { namn: $t('Greta'), hast: $t('Silverpil') }];
 export const homeOf = (id) => HOMES.find((h) => h.id === id) || HOMES.find((h) => h.id === 'rum') || HOMES[0];
 
 const DAY = 24 * 60;
@@ -961,10 +962,10 @@ export class Game {
     // lyckan i natt: dagen som gick (ledig eller inte, hungrig, utmattad) och hemmet man vaknar i
     const natt = [];
     const glad = (n, t) => { if (n) natt.push({ t, n }); };
-    glad(-3, 'Vardagen');
-    if (this.sistaPass !== this.day) glad(6, 'Ledig dag');
-    if (quality < 1) glad(-8, 'Somnade utmattad');
-    else if (this.hunger <= 10) glad(-3, 'Hungrig i sängen');
+    glad(-3, $t('Vardagen'));
+    if (this.sistaPass !== this.day) glad(6, $t('Ledig dag'));
+    if (quality < 1) glad(-8, $t('Somnade utmattad'));
+    else if (this.hunger <= 10) glad(-3, $t('Hungrig i sängen'));
     const sleepGlad = gladSleep(this.lycka);                                                // lyckan påverkar sömnen
     this.day += 1;
     this.min = 7 * 60;
@@ -972,11 +973,11 @@ export class Game {
     const rested = (55 + 45 * Math.min(1, this.hunger / 50)) * quality + this.homeInfo.restBonus + sleepGlad;
     this.energy = clamp(Math.max(this.energy, Math.round(rested)) + gadgetBonus);
     this.hunger = clamp(this.hunger - 15);
-    glad(this.homeInfo.glad || 0, this.homeInfo.name);
+    glad(this.homeInfo.glad || 0, $t(this.homeInfo.name));
     const mobler = this.placedFurniture();
-    glad(mobler >= 30 ? 3 : mobler >= 15 ? 2 : mobler >= 5 ? 1 : 0, 'Fint möblerat');
+    glad(mobler >= 30 ? 3 : mobler >= 15 ? 2 : mobler >= 5 ? 1 : 0, $t('Fint möblerat'));
     let pets = 0; try { pets = petCount(this.home) | 0; } catch { pets = 0; }
-    glad(Math.min(4, pets * 2), pets === 1 ? 'Djuret hemma' : 'Djuren hemma');
+    glad(Math.min(4, pets * 2), pets === 1 ? $t('Djuret hemma') : $t('Djuren hemma'));
     let rent = 0, interest = 0, rentFromBank = 0, chefslon = [];
     if ((this.day - 1) % 7 === 0 && this.day > 1) { // måndag morgon: räntan på sparkontot, sedan hyran
       interest = bankInterest(Math.min(this.bank, this.bankMin));  // det som legat kvar hela veckan
@@ -999,13 +1000,13 @@ export class Game {
       }
       this.bankMin = this.bank;           // en ny räntevecka börjar
     }
-    if (this.home === 'gard' && this.bonde && (this.bonde.fodrad | 0) < igar) glad(-3, 'Hungriga djur');   // ofodrade djur tär på lyckan
+    if (this.home === 'gard' && this.bonde && (this.bonde.fodrad | 0) < igar) glad(-3, $t('Hungriga djur'));   // ofodrade djur tär på lyckan
     if (this.hast) {   // hästen: hungrig/oborstad → trivseln sjunker; mätt och borstad → den stiger
       const H = this.hast, mat = (H.matad | 0) >= igar, borst = (H.borstad | 0) >= igar;
       H.trivsel = Math.max(0, Math.min(100, (H.trivsel | 0) + (mat ? 4 : -18) + (borst ? 4 : -6)));
-      if (!mat) glad(-2, `${H.namn} var hungrig`);
+      if (!mat) glad(-2, $t`${H.namn} var hungrig`);
     }
-    if (this.money < 0) glad(-4, 'Skulder');
+    if (this.money < 0) glad(-4, $t('Skulder'));
     this.lycka = clamp(this.lycka + natt.reduce((a, x) => a + x.n, 0));
     this.gladNatt = natt;
     const odlat = this.growGarden(igar);                                                    // trädgården växer (eller torkar)
@@ -1032,8 +1033,8 @@ export class Game {
 
   // ---------- eget företag: foodtrucken ----------
   buyTruck() {
-    if (this.truck) return { ok: false, msg: 'Du har redan en foodtruck!' };
-    if (this.money < TRUCK_PRIS) return { ok: false, msg: `Foodtrucken kostar ${fmt(TRUCK_PRIS)} – du har inte råd än.` };
+    if (this.truck) return { ok: false, msg: $t('Du har redan en foodtruck!') };
+    if (this.money < TRUCK_PRIS) return { ok: false, msg: $t`Foodtrucken kostar ${fmt(TRUCK_PRIS)} – du har inte råd än.` };
     this.money -= TRUCK_PRIS;
     this.truck = { plats: 'parken', priser: 'vanlig', uppg: [], personal: [], rykte: 2, kopt: this.day, sald: 0, logg: [] };
     this.glad(6, '', 'truckkop', 6);
@@ -1050,17 +1051,17 @@ export class Game {
   truckPriser(niva) { if (this.truck && TRUCK_PRISER[niva]) { this.truck.priser = niva; this.save(); } }
   buyTruckUppg(id) {
     const T = this.truck, U = TRUCK_UPPG.find((x) => x.id === id);
-    if (!T || !U) return { ok: false, msg: 'Finns inte.' };
-    if (T.uppg.includes(id)) return { ok: false, msg: 'Den har du redan.' };
-    if (this.money < U.pris) return { ok: false, msg: `${U.namn} kostar ${fmt(U.pris)} – du har inte råd.` };
+    if (!T || !U) return { ok: false, msg: $t('Finns inte.') };
+    if (T.uppg.includes(id)) return { ok: false, msg: $t('Den har du redan.') };
+    if (this.money < U.pris) return { ok: false, msg: $t`${U.namn} kostar ${fmt(U.pris)} – du har inte råd.` };
     this.money -= U.pris; T.uppg.push(id); this.save();
     return { ok: true, uppg: U };
   }
   anstall(sokande) {
     const T = this.truck;
-    if (!T || !sokande) return { ok: false, msg: 'Ingen att anställa.' };
-    if (T.personal.length >= TRUCK_MAX_PERSONAL) return { ok: false, msg: `Det får bara plats ${TRUCK_MAX_PERSONAL} i trucken.` };
-    if (T.personal.some((x) => x.id === sokande.id)) return { ok: false, msg: 'Hen jobbar redan hos dig.' };
+    if (!T || !sokande) return { ok: false, msg: $t('Ingen att anställa.') };
+    if (T.personal.length >= TRUCK_MAX_PERSONAL) return { ok: false, msg: $t`Det får bara plats ${TRUCK_MAX_PERSONAL} i trucken.` };
+    if (T.personal.some((x) => x.id === sokande.id)) return { ok: false, msg: $t('Hen jobbar redan hos dig.') };
     T.personal.push({ id: sokande.id, namn: sokande.namn, skill: sokande.skill | 0, lon: sokande.lon | 0 });
     this.save();
     return { ok: true };
@@ -1128,9 +1129,9 @@ export class Game {
     if (!nasta) return { roll, nasta: null, ok: false, saknas: [], soktIdag: false };
     const saknas = [];
     const niva = levelOf(this.jobs[jobId] | 0);
-    if (niva < nasta.niva) { const kvar = (nasta.niva - 1) * 3 - (this.jobs[jobId] | 0); saknas.push(`titeln ${JOB_TITLES[nasta.niva - 1]} (${kvar} pass till)`); }
-    if (nasta.kurs && !this.edu[nasta.kurs]?.klar) saknas.push(`examen i ${COURSES[nasta.kurs]?.name || nasta.kurs} på Pixelhögskolan`);
-    if (nasta.passIRoll && (this.rollPass[jobId] | 0) < nasta.passIRoll) saknas.push(`${nasta.passIRoll - (this.rollPass[jobId] | 0)} pass till som ${roll.namn.toLowerCase()}`);
+    if (niva < nasta.niva) { const kvar = (nasta.niva - 1) * 3 - (this.jobs[jobId] | 0); saknas.push($t`titeln ${JOB_TITLES[nasta.niva - 1]} (${kvar} pass till)`); }
+    if (nasta.kurs && !this.edu[nasta.kurs]?.klar) saknas.push($t`examen i ${COURSES[nasta.kurs]?.name || nasta.kurs} på Pixelhögskolan`);
+    if (nasta.passIRoll && (this.rollPass[jobId] | 0) < nasta.passIRoll) saknas.push($t`${nasta.passIRoll - (this.rollPass[jobId] | 0)} pass till som ${roll.namn.toLowerCase()}`);
     return { roll, nasta, ok: !saknas.length, saknas, soktIdag: (this.sokt[jobId] | 0) === this.day };
   }
   befordra(jobId) {
@@ -1175,9 +1176,9 @@ export class Game {
   }
   plant(idx, gId) {
     const gd = this.garden(), G = grodaOf(gId);
-    if (!gd || !G) return { ok: false, msg: 'Här går det inte att odla.' };
-    if (gd.beds[idx]) return { ok: false, msg: 'Det växer redan något där.' };
-    if (this.money < G.fro) return { ok: false, msg: `Fröpåsen kostar ${fmt(G.fro)} – du har inte råd.` };
+    if (!gd || !G) return { ok: false, msg: $t('Här går det inte att odla.') };
+    if (gd.beds[idx]) return { ok: false, msg: $t('Det växer redan något där.') };
+    if (this.money < G.fro) return { ok: false, msg: $t`Fröpåsen kostar ${fmt(G.fro)} – du har inte råd.` };
     this.money -= G.fro;
     gd.beds[idx] = { g: gId, dag: this.day, v: 0, vat: this.day, torr: 0, vissen: false };   // (man vattnar när man sår)
     this.passTime(10);
@@ -1196,7 +1197,7 @@ export class Game {
   }
   harvest(idx) {
     const gd = this.garden(), b = gd?.beds[idx];
-    if (!b || this.bedState(b) !== 'mogen') return { ok: false, msg: 'Det är inte moget än.' };
+    if (!b || this.bedState(b) !== 'mogen') return { ok: false, msg: $t('Det är inte moget än.') };
     const G = grodaOf(b.g), n = G.skord[0] + Math.floor(Math.random() * (G.skord[1] - G.skord[0] + 1));
     const fick = Math.max(0, Math.min(n, MAX_RAVA - (this.skafferi[G.id] | 0)));
     if (fick) this.skafferi[G.id] = (this.skafferi[G.id] | 0) + fick;
@@ -1210,7 +1211,7 @@ export class Game {
   // villans äppelträd: moget var TRAD_DAGAR:e dag
   treeReady() { const T = tradgardOf(this.home), gd = this.garden(); return !!(T?.trad && gd && this.day - (gd.trad.skord | 0) >= TRAD_DAGAR); }
   harvestTree() {
-    if (!this.treeReady()) return { ok: false, msg: 'Äpplena är inte mogna än.' };
+    if (!this.treeReady()) return { ok: false, msg: $t('Äpplena är inte mogna än.') };
     const gd = this.garden(), n = Math.min(3 + Math.floor(Math.random() * 3), MAX_RAVA - (this.skafferi.applR | 0));
     if (n > 0) this.skafferi.applR = (this.skafferi.applR | 0) + n;
     gd.trad.skord = this.day;
@@ -1251,7 +1252,7 @@ export class Game {
     const before = this.lycka;
     this.lycka = clamp(this.lycka + n);
     const d = this.lycka - before;
-    if (why && d) toast(`${d > 0 ? '😊' : '😞'} ${why}: ${d > 0 ? '+' : ''}${d} lycka`, d > 0 ? 'good' : 'bad');
+    if (why && d) toast($t`${d > 0 ? '😊' : '😞'} ${why}: ${d > 0 ? '+' : ''}${d} lycka`, d > 0 ? 'good' : 'bad');
     return d;
   }
   // Nära kompisar (världen, main.js): +1 lycka per 15 minuter tillsammans, högst 8 om dagen
@@ -1292,9 +1293,9 @@ export class Game {
   gadgetBonus(kind) { return this.gadgets.reduce((b, id) => { const x = gadgetOf(id); return x?.kind === kind ? Math.max(b, x.bonus | 0) : b; }, 0); }
   buyGadget(id) {
     const x = gadgetOf(id);
-    if (!x) return { ok: false, msg: 'Finns inte i butiken.' };
-    if (this.gadgets.includes(id)) return { ok: false, msg: 'Den har du redan!' };
-    if (this.money < x.price) return { ok: false, msg: 'Du har inte råd!' };
+    if (!x) return { ok: false, msg: $t('Finns inte i butiken.') };
+    if (this.gadgets.includes(id)) return { ok: false, msg: $t('Den har du redan!') };
+    if (this.money < x.price) return { ok: false, msg: $t('Du har inte råd!') };
     this.money -= x.price;
     this.gadgets.push(id);
     this.save();
@@ -1309,9 +1310,9 @@ export class Game {
   get aker() { const F = this.akerMed && fordonOf(this.akerMed); return F && this.hasFordon(F.id) ? { ...F, c: this.fordonFarg(F.id) } : null; }
   buyFordon(id, c) {
     const F = fordonOf(id);
-    if (!F) return { ok: false, msg: 'Finns inte i garaget.' };
-    if (this.hasFordon(id)) return { ok: false, msg: 'Den har du redan!' };
-    if (this.money < F.price) return { ok: false, msg: `Den kostar ${fmt(F.price)} – du har inte råd.` };
+    if (!F) return { ok: false, msg: $t('Finns inte i garaget.') };
+    if (this.hasFordon(id)) return { ok: false, msg: $t('Den har du redan!') };
+    if (this.money < F.price) return { ok: false, msg: $t`Den kostar ${fmt(F.price)} – du har inte råd.` };
     const col = F.colors.includes(c) ? c : F.colors[0];
     this.money -= F.price;
     this.fordon.push({ id, c: col });
@@ -1322,9 +1323,9 @@ export class Game {
   }
   paintFordon(id, c) {
     const F = fordonOf(id), f = this.fordon.find((x) => x.id === id);
-    if (!F || !f) return { ok: false, msg: 'Den har du inte.' };
-    if (!F.colors.includes(c) || f.c === c) return { ok: false, msg: 'Den har redan den färgen.' };
-    if (this.money < OMLACK) return { ok: false, msg: `Att måla om kostar ${fmt(OMLACK)} – du har inte råd.` };
+    if (!F || !f) return { ok: false, msg: $t('Den har du inte.') };
+    if (!F.colors.includes(c) || f.c === c) return { ok: false, msg: $t('Den har redan den färgen.') };
+    if (this.money < OMLACK) return { ok: false, msg: $t`Att måla om kostar ${fmt(OMLACK)} – du har inte råd.` };
     this.money -= OMLACK;
     f.c = c;
     this.save();
@@ -1340,7 +1341,7 @@ export class Game {
   buyFood(id, { eatNow = false } = {}) {
     const f = foodOf(id);
     const price = f.price + (eatNow ? 5 : 0);
-    if (this.money < price) return { ok: false, msg: 'Du har inte råd!' };
+    if (this.money < price) return { ok: false, msg: $t('Du har inte råd!') };
     this.money -= price;
     if (eatNow) this.hunger = clamp(this.hunger + f.fill);
     else this.fridge[id] = (this.fridge[id] || 0) + 1;
@@ -1361,9 +1362,9 @@ export class Game {
   buyVara(id) {
     if (foodOf(id)) return this.buyFood(id);
     const r = ravaraOf(id);
-    if (!r) return { ok: false, msg: 'Den varan finns inte.' };
-    if (this.money < r.price) return { ok: false, msg: 'Du har inte råd!' };
-    if ((this.skafferi[id] | 0) >= MAX_RAVA) return { ok: false, msg: `Skafferiet är fullt av ${r.name.toLowerCase()}.` };
+    if (!r) return { ok: false, msg: $t('Den varan finns inte.') };
+    if (this.money < r.price) return { ok: false, msg: $t('Du har inte råd!') };
+    if ((this.skafferi[id] | 0) >= MAX_RAVA) return { ok: false, msg: $t`Skafferiet är fullt av ${r.name.toLowerCase()}.` };
     this.money -= r.price;
     this.skafferi[id] = (this.skafferi[id] | 0) + 1;
     this.save();
@@ -1384,8 +1385,8 @@ export class Game {
   // läs ett recept i receptboken – en kvart, sen kan man laga rätten
   learnRecipe(id) {
     const r = receptOf(id);
-    if (!r) return { ok: false, msg: 'Det receptet finns inte i boken.' };
-    if (this.knowsRecipe(id)) return { ok: false, msg: `Du kan redan ${r.name.toLowerCase()}.` };
+    if (!r) return { ok: false, msg: $t('Det receptet finns inte i boken.') };
+    if (this.knowsRecipe(id)) return { ok: false, msg: $t`Du kan redan ${r.name.toLowerCase()}.` };
     this.recept.push(id);
     this.passTime(RECEPT_LAS_MIN);
     this.save();
@@ -1395,10 +1396,10 @@ export class Game {
   missingFor(id, n = 1) { return (receptOf(id)?.ing || []).filter((x) => (this.skafferi[x] | 0) < n); }
   canCook(id, n = 1) {
     const r = receptOf(id);
-    if (!r) return { ok: false, msg: 'Det receptet finns inte.' };
-    if (!this.knowsRecipe(id)) return { ok: false, msg: `Läs receptet på ${r.name.toLowerCase()} i receptboken först.` };
+    if (!r) return { ok: false, msg: $t('Det receptet finns inte.') };
+    if (!this.knowsRecipe(id)) return { ok: false, msg: $t`Läs receptet på ${r.name.toLowerCase()} i receptboken först.` };
     const miss = this.missingFor(id, n);
-    if (miss.length) return { ok: false, missing: miss, msg: `Det fattas ${miss.map((x) => ravaraOf(x)?.name.toLowerCase() || x).join(', ')}${n > 1 ? ` (${n} av varje till ${portionOf(n).name.toLowerCase()})` : ''} – handla i mataffären.` };
+    if (miss.length) return { ok: false, missing: miss, msg: n > 1 ? $t`Det fattas ${miss.map((x) => ravaraOf(x)?.name.toLowerCase() || x).join(', ')} (${n} av varje till ${portionOf(n).name.toLowerCase()}) – handla i mataffären.` : $t`Det fattas ${miss.map((x) => ravaraOf(x)?.name.toLowerCase() || x).join(', ')} – handla i mataffären.` };
     return { ok: true };
   }
   get kockNiva() { return kockNiva(this.kockPortioner); }
@@ -1448,21 +1449,21 @@ export class Game {
   // ---------- jobb ----------
   canWork(jobId) {
     const need = JOBS[jobId]?.kraver;
-    if (need && !this.edu?.[need]?.klar) return { ok: false, msg: `Här krävs en examen i ${COURSES[need]?.name || need} från Pixelhögskolan.` };
-    if (this.energy < 20) return { ok: false, msg: 'Du är för trött för att jobba – gå hem och sov.' };
+    if (need && !this.edu?.[need]?.klar) return { ok: false, msg: $t`Här krävs en examen i ${COURSES[need]?.name || need} från Pixelhögskolan.` };
+    if (this.energy < 20) return { ok: false, tired: true, msg: $t('Du är för trött för att jobba – gå hem och sov.') };   // tired: scenerna läser flaggan, inte texten (den är översatt)
     // flygplatsen går dygnet runt – men sista nattpasset börjar 23:00
-    if (JOBS[jobId]?.nattoppet) return this.min > 23 * 60 ? { ok: false, msg: 'Sista nattpasset har redan gått – nästa pass börjar 07:00.' } : { ok: true };
-    if (this.min > 20 * 60) return { ok: false, msg: 'För sent att börja ett pass – jobben öppnar 07:00 igen.' };
-    if (this.min < 7 * 60) return { ok: false, msg: 'Jobbet öppnar 07:00.', waitTo: 7 * 60 };
+    if (JOBS[jobId]?.nattoppet) return this.min > 23 * 60 ? { ok: false, msg: $t('Sista nattpasset har redan gått – nästa pass börjar 07:00.') } : { ok: true };
+    if (this.min > 20 * 60) return { ok: false, msg: $t('För sent att börja ett pass – jobben öppnar 07:00 igen.') };
+    if (this.min < 7 * 60) return { ok: false, msg: $t('Jobbet öppnar 07:00.'), waitTo: 7 * 60 };
     return { ok: true };
   }
   // ---------- Pixelhögskolan ----------
   hasDegree(id) { return !!this.edu[id]?.klar; }
   enroll(id) {
     const c = COURSES[id];
-    if (!c) return { ok: false, msg: 'Den kursen finns inte.' };
-    if (this.edu[id]) return { ok: false, msg: `Du är redan antagen till ${c.name}.` };
-    if (this.money < c.fee) return { ok: false, msg: `Terminsavgiften är ${fmt(c.fee)} – pengarna räcker inte.` };
+    if (!c) return { ok: false, msg: $t('Den kursen finns inte.') };
+    if (this.edu[id]) return { ok: false, msg: $t`Du är redan antagen till ${c.name}.` };
+    if (this.money < c.fee) return { ok: false, msg: $t`Terminsavgiften är ${fmt(c.fee)} – pengarna räcker inte.` };
     this.money -= c.fee;
     this.edu[id] = { lect: 0, day: 0, tenta: 0, tentaDay: 0, klar: false };
     this.save();
@@ -1471,12 +1472,12 @@ export class Game {
   // får jag gå på en föreläsning nu? (salen själv har öppettiderna)
   canLecture(id) {
     const e = this.edu[id], c = COURSES[id];
-    if (!c) return { ok: false, msg: 'Den kursen finns inte.' };
-    if (!e) return { ok: false, msg: `Anmäl dig till ${c.name} i expeditionen först.` };
-    if (e.klar) return { ok: false, msg: `Du har redan examen i ${c.name}!` };
-    if (e.lect >= c.lectures) return { ok: false, msg: 'Alla föreläsningar är klara – skriv tentan i biblioteket!' };
-    if (e.day === this.day) return { ok: false, msg: 'Dagens föreläsning är redan gjord – nästa är i morgon.' };
-    if (this.energy < 15) return { ok: false, msg: 'Du är för trött för att hänga med – sov först.' };
+    if (!c) return { ok: false, msg: $t('Den kursen finns inte.') };
+    if (!e) return { ok: false, msg: $t`Anmäl dig till ${c.name} i expeditionen först.` };
+    if (e.klar) return { ok: false, msg: $t`Du har redan examen i ${c.name}!` };
+    if (e.lect >= c.lectures) return { ok: false, msg: $t('Alla föreläsningar är klara – skriv tentan i biblioteket!') };
+    if (e.day === this.day) return { ok: false, msg: $t('Dagens föreläsning är redan gjord – nästa är i morgon.') };
+    if (this.energy < 15) return { ok: false, msg: $t('Du är för trött för att hänga med – sov först.') };
     return { ok: true };
   }
   // en föreläsning: 2 timmar och lite ork
@@ -1492,10 +1493,10 @@ export class Game {
   }
   canExam(id) {
     const e = this.edu[id], c = COURSES[id];
-    if (!c || !e) return { ok: false, msg: 'Du går inte den kursen.' };
-    if (e.klar) return { ok: false, msg: `Du har redan examen i ${c.name}!` };
-    if (e.lect < c.lectures) return { ok: false, msg: `Tentan kommer efter alla ${c.lectures} föreläsningar (du har gått ${e.lect}).` };
-    if (e.tentaDay === this.day) return { ok: false, msg: 'Du har redan skrivit en tenta i dag – omtentan är i morgon.' };
+    if (!c || !e) return { ok: false, msg: $t('Du går inte den kursen.') };
+    if (e.klar) return { ok: false, msg: $t`Du har redan examen i ${c.name}!` };
+    if (e.lect < c.lectures) return { ok: false, msg: $t`Tentan kommer efter alla ${c.lectures} föreläsningar (du har gått ${e.lect}).` };
+    if (e.tentaDay === this.day) return { ok: false, msg: $t('Du har redan skrivit en tenta i dag – omtentan är i morgon.') };
     return { ok: true };
   }
   // tentan: right av of rätt, minst två tredjedelar = godkänd → examen (en timme)
@@ -1554,7 +1555,7 @@ export class Game {
     b.pay = Math.max(b.pay, finalPay);
     this.save();
     const after = levelOf(this.jobs[jobId]);
-    if (after > before) { play('fanfare'); toast(`⭐ Befordran på ${JOBS[jobId].name}! Du är nu ${JOB_TITLES[after - 1]}.`, 'good'); }
+    if (after > before) { play('fanfare'); toast($t`⭐ Befordran på ${JOBS[jobId].name}! Du är nu ${JOB_TITLES[after - 1]}.`, 'good'); }
     return { finalPay, starving, doubled, newRecord, promoted: after > before, nightEnd, gladMult, gladPass, passIdag: this.passIdag };
   }
 
@@ -1582,10 +1583,10 @@ export class Game {
   // Köp ett plagg ur katalogen: { ok, msg?, item?, price? }
   buyWardrobe(id) {
     const it = itemById(wardrobeIdOf(id));
-    if (!it || it.free) return { ok: false, msg: 'Det plagget säljs inte här.' };
-    if (this.ownsWardrobe(it.id)) return { ok: false, msg: 'Den har du redan!' };
+    if (!it || it.free) return { ok: false, msg: $t('Det plagget säljs inte här.') };
+    if (this.ownsWardrobe(it.id)) return { ok: false, msg: $t('Den har du redan!') };
     const price = this.clothesPrice(it);
-    if (this.money < price) return { ok: false, msg: 'Du har inte råd – dags att jobba ett pass!' };
+    if (this.money < price) return { ok: false, msg: $t('Du har inte råd – dags att jobba ett pass!') };
     this.money -= price;
     for (const k of wardrobeKeys([it.id])) if (!this.wardrobe.includes(k)) this.wardrobe.push(k);
     this.glad(4, '', 'nytt', 10);                                                           // nya kläder gör en glad (högst +10 om dagen)
@@ -1607,11 +1608,11 @@ export class Game {
   }
   buyClothes(kind, v) {
     const s = this.clothesLocked(kind, v);
-    if (!s) return { ok: false, msg: 'Den har du redan!' };
+    if (!s) return { ok: false, msg: $t('Den har du redan!') };
     const id = legacyKeyToId(clothesKey(kind, v));
     if (id) { const r = this.buyWardrobe(id); return r.ok ? { ...r, item: s } : r; }
     const price = this.clothesPrice(s);
-    if (this.money < price) return { ok: false, msg: 'Du har inte råd – dags att jobba ett pass!' };
+    if (this.money < price) return { ok: false, msg: $t('Du har inte råd – dags att jobba ett pass!') };
     this.money -= price;
     this.wardrobe.push(clothesKey(kind, v));
     this.save();
@@ -1623,9 +1624,9 @@ export class Game {
   // placeras hemma med Möblera-läget.
   buyFurniture(kind, v = 0, c = null) {
     const f = katalogOf(kind);
-    if (!f) return { ok: false, msg: 'Finns inte i katalogen.' };
-    if (this.money < f.price) return { ok: false, msg: 'Du har inte råd!' };
-    if (this.storage.length >= MAX_STORAGE) return { ok: false, msg: 'Förrådet är fullt – möblera hemma först!' };
+    if (!f) return { ok: false, msg: $t('Finns inte i katalogen.') };
+    if (this.money < f.price) return { ok: false, msg: $t('Du har inte råd!') };
+    if (this.storage.length >= MAX_STORAGE) return { ok: false, msg: $t('Förrådet är fullt – möblera hemma först!') };
     this.money -= f.price;
     this.storage.push(withColor({ k: kind, v: Math.max(0, Math.min(f.vars - 1, v | 0)) }, c));
     this.save();
@@ -1720,8 +1721,8 @@ export class Game {
   // Hela kronor; allt eller inget. Svaret { ok, kr } eller { ok: false, msg }.
   bankDeposit(kr) {
     kr = Math.floor(+kr || 0);
-    if (kr <= 0) return { ok: false, msg: 'Välj hur mycket du vill sätta in.' };
-    if (kr > this.money) return { ok: false, msg: `Du har bara ${fmt(Math.max(0, this.money))} på fickan.` };
+    if (kr <= 0) return { ok: false, msg: $t('Välj hur mycket du vill sätta in.') };
+    if (kr > this.money) return { ok: false, msg: $t`Du har bara ${fmt(Math.max(0, this.money))} på fickan.` };
     this.money -= kr;
     this.bank += kr;
     this.logBank('in', kr);
@@ -1730,8 +1731,8 @@ export class Game {
   }
   bankWithdraw(kr, { via = 'kassa' } = {}) {
     kr = Math.floor(+kr || 0);
-    if (kr <= 0) return { ok: false, msg: 'Välj hur mycket du vill ta ut.' };
-    if (kr > this.bank) return { ok: false, msg: `Det finns bara ${fmt(this.bank)} på sparkontot.` };
+    if (kr <= 0) return { ok: false, msg: $t('Välj hur mycket du vill ta ut.') };
+    if (kr > this.bank) return { ok: false, msg: $t`Det finns bara ${fmt(this.bank)} på sparkontot.` };
     this.bank -= kr;
     this.bankMin = Math.min(this.bankMin, this.bank);   // uttag sänker veckans lägsta saldo (insättningar räknas från nästa vecka)
     this.money += kr;
@@ -1752,8 +1753,8 @@ export class Game {
   // + räntan är betalt (lösas ut senast dag `sista`). Startmöbler (fx) tas inte emot.
   pawnStorage(idx) {
     const it = this.storage[idx];
-    if (!this.sellable(it)) return { ok: false, msg: 'Den tar pantlånaren inte emot.' };
-    if (this.pant.length >= MAX_PANT) return { ok: false, msg: `Högst ${MAX_PANT} panter åt gången – lös ut något först.` };
+    if (!this.sellable(it)) return { ok: false, msg: $t('Den tar pantlånaren inte emot.') };
+    if (this.pant.length >= MAX_PANT) return { ok: false, msg: $t`Högst ${MAX_PANT} panter åt gången – lös ut något först.` };
     const lan = pantLoanOf(it.k), skuld = pantDebtOf(lan);
     this.storage.splice(idx, 1);
     const p = { ...it, nr: ++this.pantNr, lan, skuld, dag: this.day, sista: this.day + PANT_DAYS };
@@ -1769,10 +1770,10 @@ export class Game {
   redeemPant(nr) {
     const i = this.pant.findIndex((p) => p.nr === nr);
     const p = this.pant[i];
-    if (!p) return { ok: false, msg: 'Den panten finns inte.' };
-    if (this.pantDaysLeft(p) < 0) return { ok: false, msg: 'För sent – lånet har förfallit och möbeln är pantbankens.' };
-    if (this.money < p.skuld) return { ok: false, msg: `Du har inte råd – det kostar ${fmt(p.skuld)} att lösa ut den.` };
-    if (this.storage.length >= MAX_STORAGE) return { ok: false, msg: 'Förrådet är fullt – möblera hemma först!' };
+    if (!p) return { ok: false, msg: $t('Den panten finns inte.') };
+    if (this.pantDaysLeft(p) < 0) return { ok: false, msg: $t('För sent – lånet har förfallit och möbeln är pantbankens.') };
+    if (this.money < p.skuld) return { ok: false, msg: $t`Du har inte råd – det kostar ${fmt(p.skuld)} att lösa ut den.` };
+    if (this.storage.length >= MAX_STORAGE) return { ok: false, msg: $t('Förrådet är fullt – möblera hemma först!') };
     this.pant.splice(i, 1);
     this.money -= p.skuld;
     const { nr: _nr, lan, skuld, dag, sista, ...item } = p;
@@ -1785,10 +1786,10 @@ export class Game {
     const lost = this.pant.filter((p) => this.pantDaysLeft(p) < 0);
     if (lost.length) {
       this.pant = this.pant.filter((p) => this.pantDaysLeft(p) >= 0);
-      toast(`💍 Pantbanken behöll ${lost.map((p) => katalogOf(p.k)?.name || 'möbeln').join(', ')} – lånet förföll.`, 'bad');
+      toast($tf('💍 Pantbanken behöll {0} – lånet förföll.', lost.map((p) => katalogOf(p.k)?.name || $t('möbeln')).join(', ')), 'bad');
     }
     const last = this.pant.filter((p) => this.pantDaysLeft(p) === 0);
-    if (last.length) toast(`💍 Sista dagen i dag att lösa ut ${last.map((p) => katalogOf(p.k)?.name || 'panten').join(', ')} i pantbanken!`);
+    if (last.length) toast($tf('💍 Sista dagen i dag att lösa ut {0} i pantbanken!', last.map((p) => katalogOf(p.k)?.name || $t('panten')).join(', ')));
     return lost;
   }
 
@@ -1855,9 +1856,9 @@ export class Game {
   // ---------- bostad ----------
   moveTo(homeId) {
     const h = homeOf(homeId);
-    if (h.id === this.home) return { ok: false, msg: 'Du bor redan här.' };
-    if (this.sambo) return { ok: false, msg: `Du bor ihop med ${this.sambo.namn || 'en kompis'} – flytta isär först (👥 i menyraden).` };
-    if (this.money < h.deposit) return { ok: false, msg: `Insatsen är ${fmt(h.deposit)} – du har inte råd än.` };
+    if (h.id === this.home) return { ok: false, msg: $t('Du bor redan här.') };
+    if (this.sambo) return { ok: false, msg: $tf('Du bor ihop med {0} – flytta isär först (👥 i menyraden).', this.sambo.namn || $t('en kompis')) };
+    if (this.money < h.deposit) return { ok: false, msg: $t`Insatsen är ${fmt(h.deposit)} – du har inte råd än.` };
     this.money -= h.deposit;
     this.home = h.id;
     if (h.id === 'gard' && !this.bonde) this.bonde = { djur: { hona: 6, ko: 2, far: 4 }, fodrad: this.day, agg: 0, mjolkat: 0, klippt: 0, ull: 0 };   // djuren ingår
@@ -1867,9 +1868,9 @@ export class Game {
 
   // ---------- hästen ----------
   buyHast(farg, namn) {
-    if (this.hast) return { ok: false, msg: `Du har redan ${this.hast.namn}!` };
-    if (!HASTFARGER.some((f) => f.id === farg)) return { ok: false, msg: 'Välj en häst.' };
-    if (this.money < HAST_PRIS) return { ok: false, msg: `En häst kostar ${fmt(HAST_PRIS)} – du har inte råd än.` };
+    if (this.hast) return { ok: false, msg: $t`Du har redan ${this.hast.namn}!` };
+    if (!HASTFARGER.some((f) => f.id === farg)) return { ok: false, msg: $t('Välj en häst.') };
+    if (this.money < HAST_PRIS) return { ok: false, msg: $t`En häst kostar ${fmt(HAST_PRIS)} – du har inte råd än.` };
     namn = String(namn || '').replace(/[^\p{L}\p{N} '-]/gu, '').trim().slice(0, 14) || HASTNAMN[0];
     this.money -= HAST_PRIS;
     this.hast = { namn, farg, kopt: this.day, trivsel: 70, matad: this.day, borstad: 0, klass: 0, rosetter: {}, hopp: 0 };
@@ -1879,9 +1880,9 @@ export class Game {
   }
   mataHast() {
     const H = this.hast;
-    if (!H) return { ok: false, msg: 'Du har ingen häst.' };
-    if ((H.matad | 0) === this.day) return { ok: false, msg: `${H.namn} har redan ätit i dag.` };
-    if (this.money < HAST_MAT) return { ok: false, msg: `Havre och hö kostar ${fmt(HAST_MAT)}.` };
+    if (!H) return { ok: false, msg: $t('Du har ingen häst.') };
+    if ((H.matad | 0) === this.day) return { ok: false, msg: $t`${H.namn} har redan ätit i dag.` };
+    if (this.money < HAST_MAT) return { ok: false, msg: $t`Havre och hö kostar ${fmt(HAST_MAT)}.` };
     this.money -= HAST_MAT; H.matad = this.day; H.trivsel = Math.min(100, (H.trivsel | 0) + 6);
     this.passTime(10);
     const glad = this.glad(2, '', 'hast', 6);
@@ -1890,8 +1891,8 @@ export class Game {
   }
   borstaHast() {
     const H = this.hast;
-    if (!H) return { ok: false, msg: 'Du har ingen häst.' };
-    if ((H.borstad | 0) === this.day) return { ok: false, msg: `${H.namn} är redan blank och fin i dag.` };
+    if (!H) return { ok: false, msg: $t('Du har ingen häst.') };
+    if ((H.borstad | 0) === this.day) return { ok: false, msg: $t`${H.namn} är redan blank och fin i dag.` };
     H.borstad = this.day; H.trivsel = Math.min(100, (H.trivsel | 0) + 8);
     this.passTime(15);
     const glad = this.glad(3, '', 'hast', 6);
@@ -1904,7 +1905,7 @@ export class Game {
     if (!K || !H) return null;
     // ridskolans ryttare: 0 fel (lätt/medel) eller 4 fel ibland i svår klass – tiderna efter klassen
     const andra = HOPPRYTTARE.map((r, i) => ({ ...r, fel: K.id === 'svar' && i === 2 ? 4 : 0, tid: K.tider[i] }));
-    const alla = [...andra, { namn: 'Du', hast: H.namn, fel, tid, du: true }].sort((a, b) => a.fel - b.fel || a.tid - b.tid);
+    const alla = [...andra, { namn: $t('Du'), hast: H.namn, fel, tid, du: true }].sort((a, b) => a.fel - b.fel || a.tid - b.tid);
     const plats = alla.findIndex((x) => x.du) + 1;
     const pris = K.pris[plats - 1] || 0;
     this.money += pris; if (pris) this.earned += pris;
@@ -1928,10 +1929,10 @@ export class Game {
   djurMatta() { return !!this.bonde && (this.bonde.fodrad | 0) >= this.day - 1; }
   fodra() {
     const B = this.bonde;
-    if (!this.bondeHar()) return { ok: false, msg: 'Det här är inte din gård.' };
-    if ((B.fodrad | 0) === this.day) return { ok: false, msg: 'Djuren har redan fått mat i dag.' };
+    if (!this.bondeHar()) return { ok: false, msg: $t('Det här är inte din gård.') };
+    if ((B.fodrad | 0) === this.day) return { ok: false, msg: $t('Djuren har redan fått mat i dag.') };
     const kr = this.fodderKostnad();
-    if (this.money < kr) return { ok: false, msg: `Fodret kostar ${fmt(kr)} – du har inte råd.` };
+    if (this.money < kr) return { ok: false, msg: $t`Fodret kostar ${fmt(kr)} – du har inte råd.` };
     this.money -= kr; B.fodrad = this.day;
     this.passTime(20);
     const glad = this.glad(2, '', 'bonde', 6);
@@ -1940,9 +1941,9 @@ export class Game {
   }
   samlaAgg() {
     const B = this.bonde;
-    if (!this.bondeHar()) return { ok: false, msg: 'Det här är inte din gård.' };
-    if ((B.agg | 0) === this.day) return { ok: false, msg: 'Du har redan samlat äggen i dag – kom tillbaka i morgon.' };
-    if (!this.djurMatta()) return { ok: false, msg: 'Hönsen är hungriga och värper inte – fodra djuren i ladugården!' };
+    if (!this.bondeHar()) return { ok: false, msg: $t('Det här är inte din gård.') };
+    if ((B.agg | 0) === this.day) return { ok: false, msg: $t('Du har redan samlat äggen i dag – kom tillbaka i morgon.') };
+    if (!this.djurMatta()) return { ok: false, msg: $t('Hönsen är hungriga och värper inte – fodra djuren i ladugården!') };
     const n = Math.min(B.djur.hona | 0, MAX_RAVA - (this.skafferi.agg | 0));
     B.agg = this.day;
     if (n > 0) this.skafferi.agg = (this.skafferi.agg | 0) + n;
@@ -1953,10 +1954,10 @@ export class Game {
   }
   mjolka() {
     const B = this.bonde;
-    if (!this.bondeHar()) return { ok: false, msg: 'Det här är inte din gård.' };
-    if (!(B.djur.ko | 0)) return { ok: false, msg: 'Du har inga kor än – köp i ladugården.' };
-    if ((B.mjolkat | 0) === this.day) return { ok: false, msg: 'Korna är redan mjölkade i dag.' };
-    if (!this.djurMatta()) return { ok: false, msg: 'Korna är hungriga och ger ingen mjölk – fodra djuren i ladugården!' };
+    if (!this.bondeHar()) return { ok: false, msg: $t('Det här är inte din gård.') };
+    if (!(B.djur.ko | 0)) return { ok: false, msg: $t('Du har inga kor än – köp i ladugården.') };
+    if ((B.mjolkat | 0) === this.day) return { ok: false, msg: $t('Korna är redan mjölkade i dag.') };
+    if (!this.djurMatta()) return { ok: false, msg: $t('Korna är hungriga och ger ingen mjölk – fodra djuren i ladugården!') };
     const vill = (B.djur.ko | 0) * 3, n = Math.min(vill, MAX_RAVA - (this.skafferi.mjolk | 0));
     B.mjolkat = this.day;
     if (n > 0) this.skafferi.mjolk = (this.skafferi.mjolk | 0) + n;
@@ -1967,11 +1968,11 @@ export class Game {
   }
   klippa() {
     const B = this.bonde;
-    if (!this.bondeHar()) return { ok: false, msg: 'Det här är inte din gård.' };
-    if (!(B.djur.far | 0)) return { ok: false, msg: 'Du har inga får än – köp i ladugården.' };
+    if (!this.bondeHar()) return { ok: false, msg: $t('Det här är inte din gård.') };
+    if (!(B.djur.far | 0)) return { ok: false, msg: $t('Du har inga får än – köp i ladugården.') };
     const kvar = 7 - (this.day - (B.klippt | 0));
-    if (B.klippt && kvar > 0) return { ok: false, msg: `Ullen växer fortfarande – klipp igen om ${kvar} ${kvar === 1 ? 'dag' : 'dagar'}.` };
-    if (!this.djurMatta()) return { ok: false, msg: 'Fåren är hungriga – fodra djuren i ladugården först!' };
+    if (B.klippt && kvar > 0) return { ok: false, msg: kvar === 1 ? $t`Ullen växer fortfarande – klipp igen om ${kvar} dag.` : $t`Ullen växer fortfarande – klipp igen om ${kvar} dagar.` };
+    if (!this.djurMatta()) return { ok: false, msg: $t('Fåren är hungriga – fodra djuren i ladugården först!') };
     const n = (B.djur.far | 0) * 2;
     B.klippt = this.day; B.ull = Math.min(999, (B.ull | 0) + n);
     this.passTime(30);
@@ -1981,9 +1982,9 @@ export class Game {
   }
   kopDjur(sort) {
     const D = GARDSDJUR[sort], B = this.bonde;
-    if (!this.bondeHar() || !D) return { ok: false, msg: 'Det går inte.' };
-    if ((B.djur[sort] | 0) >= D.max) return { ok: false, msg: `Det får inte plats fler ${D.fler.toLowerCase()} i hagen.` };
-    if (this.money < D.pris) return { ok: false, msg: `${D.namn} kostar ${fmt(D.pris)} – du har inte råd.` };
+    if (!this.bondeHar() || !D) return { ok: false, msg: $t('Det går inte.') };
+    if ((B.djur[sort] | 0) >= D.max) return { ok: false, msg: $t`Det får inte plats fler ${D.fler.toLowerCase()} i hagen.` };
+    if (this.money < D.pris) return { ok: false, msg: $t`${D.namn} kostar ${fmt(D.pris)} – du har inte råd.` };
     this.money -= D.pris; B.djur[sort] = (B.djur[sort] | 0) + 1;
     this.glad(2, '', 'djurkop', 4);
     this.save();
@@ -1993,7 +1994,7 @@ export class Game {
   saljGard(vad, n) {
     n = Math.max(0, n | 0);
     const har = vad === 'ull' ? (this.bonde?.ull | 0) : (this.skafferi[vad] | 0), pris = GARD_PRIS[vad];
-    if (!pris || !n || n > har) return { ok: false, msg: 'Du har inte så mycket.' };
+    if (!pris || !n || n > har) return { ok: false, msg: $t('Du har inte så mycket.') };
     if (vad === 'ull') this.bonde.ull -= n; else { this.skafferi[vad] -= n; if (!this.skafferi[vad]) delete this.skafferi[vad]; }
     const kr = n * pris;
     this.money += kr; this.earned += kr;
@@ -2006,7 +2007,7 @@ const clamp = (v) => Math.max(0, Math.min(100, Math.round(+v || 0)));
 // hästen: färg, namn och siffror inom gränserna
 function cleanHast(h) {
   if (!h || typeof h !== 'object' || !HASTFARGER.some((f) => f.id === h.farg)) return null;
-  return { ...h, namn: String(h.namn || 'Hästen').slice(0, 14), trivsel: Math.max(0, Math.min(100, h.trivsel | 0)), matad: h.matad | 0, borstad: h.borstad | 0, kopt: h.kopt | 0, klass: Math.max(0, Math.min(HOPPKLASSER.length - 1, h.klass | 0)), rosetter: h.rosetter && typeof h.rosetter === 'object' ? h.rosetter : {}, hopp: Math.max(0, h.hopp | 0) };
+  return { ...h, namn: String(h.namn || $t('Hästen')).slice(0, 14), trivsel: Math.max(0, Math.min(100, h.trivsel | 0)), matad: h.matad | 0, borstad: h.borstad | 0, kopt: h.kopt | 0, klass: Math.max(0, Math.min(HOPPKLASSER.length - 1, h.klass | 0)), rosetter: h.rosetter && typeof h.rosetter === 'object' ? h.rosetter : {}, hopp: Math.max(0, h.hopp | 0) };
 }
 // bondgården: djuren inom gränserna, dagarna som heltal
 function cleanBonde(b) {

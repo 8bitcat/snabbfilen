@@ -29,6 +29,7 @@ import * as SND from '../core/sound.js';
 import { saveAvatar } from '../core/avatar.js';
 import { createWalker, selfDrawable, folkDrawables, createSpeech, WALK_SEQ } from './walkable.js';
 import * as WORLD from '../net/world.js';
+import { $t, $n } from '../core/i18n.js';
 
 const play = (n) => { try { SND.play(n); } catch { /* ljud är aldrig ett krav */ } };
 
@@ -41,7 +42,7 @@ const SOFA = { x0: 12, x1: 72, y: 86, seats: [26, 42, 58] };
 const TABLE = { x0: 26, x1: 58, y0: 96, y1: 108 };
 const RACK = { x0: 76, x1: 88 };
 const DOOR = { x0: 96, x1: 128, top: 26 }, DOOR_CX = 112;
-const NEON = { x0: 112 - ((textW(BIG, 'FRISÖR') + 12) >> 1), w: textW(BIG, 'FRISÖR') + 12 }; // skylten ovanför dörren
+const NEON = { x0: 112 - ((textW(BIG, $t('FRISÖR')) + 12) >> 1), w: textW(BIG, $t('FRISÖR')) + 12 }; // skylten ovanför dörren
 const POLE = { x: 134, y0: 20, y1: 58 };
 const BOARD = { x0: 146, x1: 220, y0: 8, y1: 66 };
 const DESK = { x0: 148, x1: 216, y0: 78, y1: 106 };
@@ -78,18 +79,18 @@ const POLE_C = [0xd8323a, 0xf4f4f4, 0x2a5ab0, 0xf4f4f4];
 // Nya grupper utan egen rad räknas som vanlig klippning. Gruppen Kul (kattöron, hjärtknutar,
 // animetaggar …) räknas som uppsättning – prislistan på väggen har bara plats för sex rader.
 export const FRISOR_PRIS = {
-  klippning: { label: 'Klippning', board: 'KLIPPNING', price: 150 },
-  rakning: { label: 'Rakning & snagg', board: 'RAKNING', price: 100 },
-  uppsatt: { label: 'Uppsättning', board: 'UPPSÄTTNING', price: 200 },
-  lockar: { label: 'Lockar & afro', board: 'LOCKAR', price: 250 },
-  flator: { label: 'Flätor & dreads', board: 'FLÄTOR', price: 300 },
-  fargning: { label: 'Färgning', board: 'FÄRGNING', price: 250 },
+  klippning: { label: $t('Klippning'), board: $t('KLIPPNING'), price: 150 },
+  rakning: { label: $t('Rakning & snagg'), board: $t('RAKNING'), price: 100 },
+  uppsatt: { label: $t('Uppsättning'), board: $t('UPPSÄTTNING'), price: 200 },
+  lockar: { label: $t('Lockar & afro'), board: $t('LOCKAR'), price: 250 },
+  flator: { label: $t('Flätor & dreads'), board: $t('FLÄTOR'), price: 300 },
+  fargning: { label: $t('Färgning'), board: $t('FÄRGNING'), price: 250 },
 };
 const GROUP_KIND = { 'Rakat': 'rakning', 'Uppsatt': 'uppsatt', 'Kul': 'uppsatt', 'Lockar': 'lockar', 'Afro': 'lockar', 'Dreads & twists': 'flator', 'Flätor': 'flator' };
 const styleReg = () => LOOK_FIELDS.style.reg;
 const fxReg = () => LOOK_FIELDS.hairFx.reg;
 const hasStyle = (id) => typeof id === 'string' && Object.hasOwn(styleReg(), id);
-const groupOf = (id) => styleReg()[id]?.group || 'Övrigt';
+const groupOf = (id) => styleReg()[id]?.group || $n('Övrigt');   // gruppen är ett id (GROUP_KIND, data-g) – visas med $t(gr)
 const labelOf = (id, reg = styleReg()) => String(reg[id]?.label || id).replace(/­/g, '');
 export const cutKind = (style) => GROUP_KIND[groupOf(style)] || 'klippning';
 const HEXRE = /^#[0-9a-f]{6}$/i;
@@ -287,7 +288,7 @@ export function makeShopFrisor(A) {
       const c = newCust();
       c.state = 'toSofa'; c.sofa = freeSofa();
       moveTo(c.m, SOFA.seats[c.sofa], SOFA.y + 8, () => { c.state = 'sofa'; c.m.x = SOFA.seats[c.sofa]; c.m.y = SOFA.y; c.m.dir = 'down'; c.t = 0; });
-      talkCust.say(pickOf(Math.random, ['Hej! Har ni en tid över?', 'Hej hej! 👋', 'Jag vill ha något nytt i dag!', 'Hej! Jag tar en tidning och väntar.']), () => ({ x: c.m.x, y: c.m.y - 44 }), 3);
+      talkCust.say(pickOf(Math.random, [$t('Hej! Har ni en tid över?'), $t('Hej hej! 👋'), $t('Jag vill ha något nytt i dag!'), $t('Hej! Jag tar en tidning och väntar.')]), () => ({ x: c.m.x, y: c.m.y - 44 }), 3);
     }
     for (const c of custs) {
       c.t += dt;
@@ -301,7 +302,7 @@ export function makeShopFrisor(A) {
       if (next && ch) {
         fia.state = 'toWash'; fia.cust = next; fia.chair = -1;
         next.state = 'toWash'; next.wash = 0; const bx = WASH[0];
-        talkFia.say(pickOf(Math.random, ['Nästa, varsågod! 😊', 'Då är det din tur!', 'Varsågod, vi börjar med en hårtvätt!']), () => ({ x: fia.m.x, y: fia.m.y - 44 }), 3, { voice: FIA });
+        talkFia.say(pickOf(Math.random, [$t('Nästa, varsågod! 😊'), $t('Då är det din tur!'), $t('Varsågod, vi börjar med en hårtvätt!')]), () => ({ x: fia.m.x, y: fia.m.y - 44 }), 3, { voice: FIA });
         const s = next.sofa; next.sofa = -1;
         moveTo(next.m, bx, WASH_Y + 12, () => { next.m.x = bx; next.m.y = WASH_Y; next.m.dir = 'down'; next.state = 'wash'; next.t = 0; }, [[SOFA.seats[s], SOFA.y + 8]]);
         moveTo(fia.m, bx + 15, 86, () => { fia.m.dir = 'left'; fia.state = 'washing'; fia.t = 0; sfx('vatten'); });
@@ -336,12 +337,12 @@ export function makeShopFrisor(A) {
         poof(ch, c.look);
       }
       if (T >= 8.5 && T - dt < 8.5 && inView(ch.cx)) sfx('fon');
-      if (T >= 10.5 && T - dt < 10.5) { sparkle(ch, c.look); talkFia.say(pickOf(Math.random, ['Klart! Så fint det blev! ✨', 'Tadaa! Titta i spegeln!', 'Snyggt! Vad tycker du?']), () => ({ x: fia.m.x, y: fia.m.y - 44 }), 3, { voice: FIA }); }
+      if (T >= 10.5 && T - dt < 10.5) { sparkle(ch, c.look); talkFia.say(pickOf(Math.random, [$t('Klart! Så fint det blev! ✨'), $t('Tadaa! Titta i spegeln!'), $t('Snyggt! Vad tycker du?')]), () => ({ x: fia.m.x, y: fia.m.y - 44 }), 3, { voice: FIA }); }
       if (T >= 12) {
         // kunden reser sig, betalar vid disken och går ut – Fia sopar
         ch.occ = null; c.chair = -1; c.state = 'toPay'; c.m.y = SEAT_Y + 14; c.m.x = ch.cx;
         moveTo(c.m, PAY_AT[0], PAY_AT[1], () => { c.m.dir = 'up'; c.state = 'pay'; c.t = 0; });
-        talkCust.say(pickOf(Math.random, ['Tack! Jag älskar den! 😍', 'Wow, tack Fia!', 'Nu känner jag mig som en ny människa!', 'Perfekt! Tack!']), () => ({ x: c.m.x, y: c.m.y - 44 }), 3);
+        talkCust.say(pickOf(Math.random, [$t('Tack! Jag älskar den! 😍'), $t('Wow, tack Fia!'), $t('Nu känner jag mig som en ny människa!'), $t('Perfekt! Tack!')]), () => ({ x: c.m.x, y: c.m.y - 44 }), 3);
         fia.state = 'sweep'; fia.tool = 'kvast'; fia.t = 0; fia.chair = ch.i; fia.cust = null;
         moveTo(fia.m, ch.cx + 8, SEAT_Y + 12, () => { fia.m.dir = 'left'; });
       }
@@ -351,7 +352,7 @@ export function makeShopFrisor(A) {
       if (c.state === 'pay' && c.t > 1.6 && !c.paid) {
         c.paid = true;
         const price = FRISOR_PRIS[cutKind(c.look.style)].price;
-        if (sami.state === 'desk') talkSami.say(`Det blir ${price} kr. Tack och välkommen åter! 💈`, () => ({ x: sami.m.x, y: sami.m.y - 44 }), 3, { voice: SAMI });
+        if (sami.state === 'desk') talkSami.say($t`Det blir ${price} kr. Tack och välkommen åter! 💈`, () => ({ x: sami.m.x, y: sami.m.y - 44 }), 3, { voice: SAMI });
         if (inView(PAY_AT[0])) play('coin');
       }
       if (c.state === 'pay' && c.t > 3) { c.state = 'out'; moveTo(c.m, DOOR_CX, WALL_Y + 6, () => { c.state = 'gone'; if (inView(DOOR_CX)) play('door'); }); }
@@ -417,7 +418,7 @@ export function makeShopFrisor(A) {
   // ================= jag: stolen, soffan, klippningen =================
   function sitChair(i, sel = null) {
     const ch = chairs[i];
-    if (ch.occ && ch.occ !== 'me') { talkMe.say('Den stolen är upptagen – jag tar en ledig! 💺', () => ({ x: walker.px, y: walker.py - 44 }), 3); return; }
+    if (ch.occ && ch.occ !== 'me') { talkMe.say($t('Den stolen är upptagen – jag tar en ledig! 💺'), () => ({ x: walker.px, y: walker.py - 44 }), 3); return; }
     ch.occ = 'me'; me.state = 'chair'; me.chair = i; me.pendingSel = sel;
     walker.stop(); walker.px = ch.cx; walker.py = SEAT_Y + 14; walker.dir = 'up';
     play('click');
@@ -430,7 +431,7 @@ export function makeShopFrisor(A) {
   }
   function samiReady() {
     if (me.state !== 'chair') return;
-    talkSami.say(pickOf(Math.random, ['Hej! Vad ska vi göra med håret i dag? ✂️', 'Välkommen! Något nytt i dag?', 'Hej hej! Klippa, färga – eller både och?']), () => ({ x: sami.m.x, y: sami.m.y - 44 }), 3, { voice: SAMI });
+    talkSami.say(pickOf(Math.random, [$t('Hej! Vad ska vi göra med håret i dag? ✂️'), $t('Välkommen! Något nytt i dag?'), $t('Hej hej! Klippa, färga – eller både och?')]), () => ({ x: sami.m.x, y: sami.m.y - 44 }), 3, { voice: SAMI });
     me.openT = 0.7; // väljaren öppnas strax (så att man hinner se Sami)
   }
   function standUp() {
@@ -450,7 +451,7 @@ export function makeShopFrisor(A) {
     me.state = 'free'; me.chair = -1; me.sofa = -1; me.openT = 0;
   }
   function sitSofa(k) {
-    if (k < 0 || sofaTaken(k)) { talkMe.say('Soffan är full – jag står en stund.', () => ({ x: walker.px, y: walker.py - 44 }), 3); return; }
+    if (k < 0 || sofaTaken(k)) { talkMe.say($t('Soffan är full – jag står en stund.'), () => ({ x: walker.px, y: walker.py - 44 }), 3); return; }
     me.state = 'sofa'; me.sofa = k; me.readT = 0; me.mag = Math.floor(Math.random() * 4);
     walker.stop(); walker.px = SOFA.seats[k]; walker.py = SOFA.y;
     play('click');
@@ -459,10 +460,10 @@ export function makeShopFrisor(A) {
 
   // ---------- klippningen (sekvensen) ----------
   function startCut(sel, { instant = false } = {}) {
-    if (me.state !== 'chair') return { ok: false, msg: 'Sätt dig i en frisörstol först.' };
+    if (me.state !== 'chair') return { ok: false, msg: $t('Sätt dig i en frisörstol först.') };
     const now = A.avatar.look, pris = frisorPris(now, sel);
-    if (!pris.total) return { ok: false, msg: 'Välj en ny frisyr eller färg först.' };
-    if (g.money < pris.total) return { ok: false, msg: `Du har inte råd – det kostar ${fmt(pris.total)}.` };
+    if (!pris.total) return { ok: false, msg: $t('Välj en ny frisyr eller färg först.') };
+    if (g.money < pris.total) return { ok: false, msg: $t`Du har inte råd – det kostar ${fmt(pris.total)}.` };
     g.money -= pris.total;
     g.save();
     play('buy');
@@ -501,8 +502,8 @@ export function makeShopFrisor(A) {
     }
   }
   const SEQ_TALK = {
-    kappa: 'Kappan på – så där! 🧥', sprej: 'Lite vatten först …', farg: 'Nu färgar vi! 🎨', klipp: 'Klipp, klipp! ✂️',
-    kam: 'Lite kam och form …', fon: 'Och så fönar vi! 💨', klar: 'Tadaa! Titta i spegeln! ✨',
+    kappa: $t('Kappan på – så där! 🧥'), sprej: $t('Lite vatten först …'), farg: $t('Nu färgar vi! 🎨'), klipp: $t('Klipp, klipp! ✂️'),
+    kam: $t('Lite kam och form …'), fon: $t('Och så fönar vi! 💨'), klar: $t('Tadaa! Titta i spegeln! ✨'),
   };
   function updateSeq(dt) {
     const s = me.seq;
@@ -538,7 +539,7 @@ export function makeShopFrisor(A) {
     g.save();
     sami.tool = null;
     const name = labelOf(s.to.style);
-    if (!quiet) toast(s.pris.cut ? `✂️ Ny frisyr: ${name}! Snyggt!` : '🎨 Ny hårfärg – snyggt!', 'good');
+    if (!quiet) toast(s.pris.cut ? $t`✂️ Ny frisyr: ${name}! Snyggt!` : $t('🎨 Ny hårfärg – snyggt!'), 'good');
     me.state = 'chair'; me.doneT = 1.4; me.openT = 0;
     sami.state = 'atChair';
     if (quiet && me.state === 'chair') standUp();
@@ -547,23 +548,23 @@ export function makeShopFrisor(A) {
   // ================= klickbara saker =================
   const say = (txt) => talkMe.say(txt, () => ({ x: walker.px, y: walker.py - 44 }), 4);
   const spots = [
-    { id: 'dorr', r: [DOOR.x0 - 2, DOOR.top, DOOR.x1 + 2, WALL_Y + 6], go: [DOOR_CX, WALL_Y + 8], label: 'UTGÅNG', hint: 'KLICKA FÖR ATT GÅ UT PÅ GATAN', act: () => { play('door'); A.go('city'); } },
-    ...chairs.map((ch) => ({ id: 'stol' + ch.i, r: [ch.cx - 13, 78, ch.cx + 13, SEAT_Y + 6], go: [ch.cx, SEAT_Y + 14], chair: ch.i, label: 'FRISÖRSTOL', hint: 'KLICKA OCH SÄTT DIG – VÄLJ NY FRISYR', act: () => sitChair(ch.i) })),
-    ...chairs.map((ch) => ({ id: 'spegel' + ch.i, r: [ch.cx - 17, 6, ch.cx + 17, 62], go: [ch.cx, SEAT_Y + 14], chair: ch.i, label: 'SPEGELN', hint: 'KLICKA OCH SÄTT DIG I STOLEN', act: () => sitChair(ch.i) })),
-    { id: 'bok', r: [BOOK.x - 13, BOOK.y - 30, BOOK.x + 13, BOOK.y + 2], go: [BOOK.x, BOOK.y + 10], label: 'FRISYRBOKEN', hint: 'BLÄDDRA BLAND ALLA FRISYRER', act: () => openBook() },
-    { id: 'affisch', r: [14, 10, 70, 46], go: [42, 94], label: 'NYA FRISYRER', hint: 'KLICKA SÅ BLÄDDRAR DU I FRISYRBOKEN', act: () => openBook() },
-    { id: 'pris', r: [BOARD.x0, BOARD.y0, BOARD.x1, BOARD.y1], go: [182, 114], label: 'PRISLISTAN', hint: 'VAD KOSTAR DET?', act: () => talkSami.say('Klippning 150, rakning 100, uppsättning 200, lockar 250, flätor 300 och färgning 250 kr. 💈', () => ({ x: sami.m.x, y: sami.m.y - 44 }), 6, { voice: SAMI }) },
-    { id: 'kassa', r: [DESK.x0, 62, DESK.x1, DESK.y1], go: [182, 114], label: 'KASSAN', hint: 'PRATA MED FRISÖREN', act: () => talkSami.say(sami.state === 'desk' ? pickOf(Math.random, ['Sätt dig i en ledig stol så kommer jag! 💺', 'Bläddra i frisyrboken om du vill ha tips!', `Vi har ${Object.keys(styleReg()).length} frisyrer – och alla färger!`]) : 'Jag kommer strax!', () => ({ x: sami.m.x, y: sami.m.y - 44 }), 4, { voice: SAMI }) },
-    { id: 'hylla', r: [SHELF.x0, SHELF.y0, SHELF.x1, SHELF.y1], go: [244, 92], label: 'HÅRPRODUKTER', hint: 'SCHAMPO, BALSAM OCH VAX', act: () => say(pickOf(Math.random, ['Schampo med kokosdoft … mmm! 🥥', 'Hårvax, hårspray och glitterspray! ✨', 'Balsam för lockigt hår – och ett för rakt.'])) },
-    { id: 'stolpe', r: [POLE.x - 4, POLE.y0 - 6, POLE.x + 10, POLE.y1 + 6], go: [140, 84], label: 'FRISÖRSTOLPEN', hint: 'RÖD, VIT OCH BLÅ – DEN SNURRAR!', act: () => say('Frisörstolpen snurrar och snurrar … jag blir yr! 💈') },
-    { id: 'soffa', r: [SOFA.x0 - 2, 48, SOFA.x1 + 2, 88], go: () => { const k = freeSofa(); return [k >= 0 ? SOFA.seats[k] : 42, SOFA.y + 8]; }, label: 'VÄNTSOFFAN', hint: 'SLÅ DIG NER OCH LÄS EN TIDNING', act: () => sitSofa(freeSofa()) },
-    { id: 'tidning', r: [RACK.x0, 54, RACK.x1, 88], go: [82, 94], label: 'TIDNINGAR', hint: 'LÄS EN RUBRIK', act: () => say(pickOf(Math.random, HEADLINES)) },
-    ...WASH.map((x, i) => ({ id: 'tvatt' + i, r: [x - 12, 40, x + 12, 100], go: [x, 108], label: 'TVÄTTHOARNA', hint: 'HÄR TVÄTTAR FIA HÅRET', act: () => say(i === 0 && fia.state === 'washing' ? 'Skum och varmt vatten … det ser skönt ut! 🫧' : 'Här tvättar Fia håret på kunderna innan de klipps.') })),
-    ...DRYERS.map((x, i) => ({ id: 'huv' + i, r: [x - 12, 44, x + 12, 100], go: [x, 108], label: 'TORKHUVEN', hint: 'HÄR TORKAR FÄRGEN', act: () => say(i === 0 ? 'Hon under torkhuven hör nog inte ett ord av vad jag säger. 😄' : 'Torkhuven – här sitter man när färgen ska torka.') })),
-    { id: 'bil', r: [KIDCAR.x - 18, KIDCAR.y - 44, KIDCAR.x + 18, KIDCAR.y + 2], go: [KIDCAR.x, KIDCAR.y + 10], label: 'BARNSTOLEN', hint: 'EN BIL! TUT TUT!', act: () => { play('honk'); say('En frisörstol som ser ut som en bil! 🚗 Tut tut!'); } },
-    { id: 'gondol', r: [GONDOLA.x0, GONDOLA.y - 44, GONDOLA.x1, GONDOLA.y + 2], go: [(GONDOLA.x0 + GONDOLA.x1) / 2, GONDOLA.y + 10], label: 'HÅRVÅRD', hint: 'SCHAMPO, BALSAM OCH GLITTERSPRAY', act: () => say(pickOf(Math.random, ['Glitterspray! Då glittrar håret i mörkret. ✨', 'Lockkräm, plattång-skydd och torrschampo …', 'NYTT: schampo som luktar jordgubbe! 🍓'])) },
-    { id: 'nagel', r: [NAILS.x - 24, NAILS.y - 36, NAILS.x + 24, NAILS.y + 2], go: [NAILS.x, NAILS.y + 10], label: 'NAGELBAREN', hint: 'SÅ MÅNGA FÄRGER!', act: () => say('Nagelbaren – tio färger nagellack! 💅 Fia målar naglar på fredagar.') },
-    { id: 'klocka', r: [CLOCK[0] - 8, CLOCK[1] - 8, CLOCK[0] + 8, CLOCK[1] + 8], go: [604, 108], label: 'KLOCKAN', hint: 'SALONGEN HAR ÖPPET 9–18', act: () => say('Salongen har öppet 9 till 18. ⏰') },
+    { id: 'dorr', r: [DOOR.x0 - 2, DOOR.top, DOOR.x1 + 2, WALL_Y + 6], go: [DOOR_CX, WALL_Y + 8], label: $t('UTGÅNG'), hint: $t('KLICKA FÖR ATT GÅ UT PÅ GATAN'), act: () => { play('door'); A.go('city'); } },
+    ...chairs.map((ch) => ({ id: 'stol' + ch.i, r: [ch.cx - 13, 78, ch.cx + 13, SEAT_Y + 6], go: [ch.cx, SEAT_Y + 14], chair: ch.i, label: $t('FRISÖRSTOL'), hint: $t('KLICKA OCH SÄTT DIG – VÄLJ NY FRISYR'), act: () => sitChair(ch.i) })),
+    ...chairs.map((ch) => ({ id: 'spegel' + ch.i, r: [ch.cx - 17, 6, ch.cx + 17, 62], go: [ch.cx, SEAT_Y + 14], chair: ch.i, label: $t('SPEGELN'), hint: $t('KLICKA OCH SÄTT DIG I STOLEN'), act: () => sitChair(ch.i) })),
+    { id: 'bok', r: [BOOK.x - 13, BOOK.y - 30, BOOK.x + 13, BOOK.y + 2], go: [BOOK.x, BOOK.y + 10], label: $t('FRISYRBOKEN'), hint: $t('BLÄDDRA BLAND ALLA FRISYRER'), act: () => openBook() },
+    { id: 'affisch', r: [14, 10, 70, 46], go: [42, 94], label: $t('NYA FRISYRER'), hint: $t('KLICKA SÅ BLÄDDRAR DU I FRISYRBOKEN'), act: () => openBook() },
+    { id: 'pris', r: [BOARD.x0, BOARD.y0, BOARD.x1, BOARD.y1], go: [182, 114], label: $t('PRISLISTAN'), hint: $t('VAD KOSTAR DET?'), act: () => talkSami.say($t('Klippning 150, rakning 100, uppsättning 200, lockar 250, flätor 300 och färgning 250 kr. 💈'), () => ({ x: sami.m.x, y: sami.m.y - 44 }), 6, { voice: SAMI }) },
+    { id: 'kassa', r: [DESK.x0, 62, DESK.x1, DESK.y1], go: [182, 114], label: $t('KASSAN'), hint: $t('PRATA MED FRISÖREN'), act: () => talkSami.say(sami.state === 'desk' ? pickOf(Math.random, [$t('Sätt dig i en ledig stol så kommer jag! 💺'), $t('Bläddra i frisyrboken om du vill ha tips!'), $t`Vi har ${Object.keys(styleReg()).length} frisyrer – och alla färger!`]) : $t('Jag kommer strax!'), () => ({ x: sami.m.x, y: sami.m.y - 44 }), 4, { voice: SAMI }) },
+    { id: 'hylla', r: [SHELF.x0, SHELF.y0, SHELF.x1, SHELF.y1], go: [244, 92], label: $t('HÅRPRODUKTER'), hint: $t('SCHAMPO, BALSAM OCH VAX'), act: () => say(pickOf(Math.random, [$t('Schampo med kokosdoft … mmm! 🥥'), $t('Hårvax, hårspray och glitterspray! ✨'), $t('Balsam för lockigt hår – och ett för rakt.')])) },
+    { id: 'stolpe', r: [POLE.x - 4, POLE.y0 - 6, POLE.x + 10, POLE.y1 + 6], go: [140, 84], label: $t('FRISÖRSTOLPEN'), hint: $t('RÖD, VIT OCH BLÅ – DEN SNURRAR!'), act: () => say($t('Frisörstolpen snurrar och snurrar … jag blir yr! 💈')) },
+    { id: 'soffa', r: [SOFA.x0 - 2, 48, SOFA.x1 + 2, 88], go: () => { const k = freeSofa(); return [k >= 0 ? SOFA.seats[k] : 42, SOFA.y + 8]; }, label: $t('VÄNTSOFFAN'), hint: $t('SLÅ DIG NER OCH LÄS EN TIDNING'), act: () => sitSofa(freeSofa()) },
+    { id: 'tidning', r: [RACK.x0, 54, RACK.x1, 88], go: [82, 94], label: $t('TIDNINGAR'), hint: $t('LÄS EN RUBRIK'), act: () => say(pickOf(Math.random, HEADLINES)) },
+    ...WASH.map((x, i) => ({ id: 'tvatt' + i, r: [x - 12, 40, x + 12, 100], go: [x, 108], label: $t('TVÄTTHOARNA'), hint: $t('HÄR TVÄTTAR FIA HÅRET'), act: () => say(i === 0 && fia.state === 'washing' ? $t('Skum och varmt vatten … det ser skönt ut! 🫧') : $t('Här tvättar Fia håret på kunderna innan de klipps.')) })),
+    ...DRYERS.map((x, i) => ({ id: 'huv' + i, r: [x - 12, 44, x + 12, 100], go: [x, 108], label: $t('TORKHUVEN'), hint: $t('HÄR TORKAR FÄRGEN'), act: () => say(i === 0 ? $t('Hon under torkhuven hör nog inte ett ord av vad jag säger. 😄') : $t('Torkhuven – här sitter man när färgen ska torka.')) })),
+    { id: 'bil', r: [KIDCAR.x - 18, KIDCAR.y - 44, KIDCAR.x + 18, KIDCAR.y + 2], go: [KIDCAR.x, KIDCAR.y + 10], label: $t('BARNSTOLEN'), hint: $t('EN BIL! TUT TUT!'), act: () => { play('honk'); say($t('En frisörstol som ser ut som en bil! 🚗 Tut tut!')); } },
+    { id: 'gondol', r: [GONDOLA.x0, GONDOLA.y - 44, GONDOLA.x1, GONDOLA.y + 2], go: [(GONDOLA.x0 + GONDOLA.x1) / 2, GONDOLA.y + 10], label: $t('HÅRVÅRD'), hint: $t('SCHAMPO, BALSAM OCH GLITTERSPRAY'), act: () => say(pickOf(Math.random, [$t('Glitterspray! Då glittrar håret i mörkret. ✨'), $t('Lockkräm, plattång-skydd och torrschampo …'), $t('NYTT: schampo som luktar jordgubbe! 🍓')])) },
+    { id: 'nagel', r: [NAILS.x - 24, NAILS.y - 36, NAILS.x + 24, NAILS.y + 2], go: [NAILS.x, NAILS.y + 10], label: $t('NAGELBAREN'), hint: $t('SÅ MÅNGA FÄRGER!'), act: () => say($t('Nagelbaren – tio färger nagellack! 💅 Fia målar naglar på fredagar.')) },
+    { id: 'klocka', r: [CLOCK[0] - 8, CLOCK[1] - 8, CLOCK[0] + 8, CLOCK[1] + 8], go: [604, 108], label: $t('KLOCKAN'), hint: $t('SALONGEN HAR ÖPPET 9–18'), act: () => say($t('Salongen har öppet 9 till 18. ⏰')) },
   ];
   const spotAt = (x, y) => spots.find((h) => x >= h.r[0] && x <= h.r[2] && y >= h.r[1] && y <= h.r[3]);
   const goOf = (h) => (typeof h.go === 'function' ? h.go() : h.go);
@@ -589,7 +590,7 @@ export function makeShopFrisor(A) {
       },
       onCancel: (s) => {
         me.pendingSel = s; // valet ligger kvar om man öppnar väljaren igen
-        talkSami.say('Okej! Säg till om du ångrar dig – klicka på spegeln. 🙂', () => ({ x: sami.m.x, y: sami.m.y - 44 }), 3.5, { voice: SAMI });
+        talkSami.say($t('Okej! Säg till om du ångrar dig – klicka på spegeln. 🙂'), () => ({ x: sami.m.x, y: sami.m.y - 44 }), 3.5, { voice: SAMI });
       },
     });
   }
@@ -599,7 +600,7 @@ export function makeShopFrisor(A) {
       mode: 'bok',
       onGoSit: (s) => {
         const ch = freeChair([1, 2, 0]);
-        if (!ch) { toast('Alla stolar är upptagna – vänta en liten stund!', 'bad'); return; }
+        if (!ch) { toast($t('Alla stolar är upptagna – vänta en liten stund!'), 'bad'); return; }
         walker.walkTo(ch.cx, SEAT_Y + 14, () => sitChair(ch.i, s));
       },
     });
@@ -854,7 +855,7 @@ export function makeShopFrisor(A) {
       if (me.seq) finishSeq(true); // betald klippning blir aldrig av med – man går ut med den nya frisyren
       talkMe.clear(); talkSami.clear(); talkFia.clear(); talkCust.clear();
     },
-    leaveBlock() { return me.seq ? 'Frisören är mitt i klippningen – sitt still en liten stund! ✂️' : null; },
+    leaveBlock() { return me.seq ? $t('Frisören är mitt i klippningen – sitt still en liten stund! ✂️') : null; },
     _debug: {
       spot: (id) => { const h = spots.find((s) => s.id === id); return h ? { x: (h.r[0] + h.r[2]) / 2 - cam.x, y: (h.r[1] + h.r[3]) / 2 } : null; },
       state: () => ({
@@ -893,7 +894,7 @@ export function makeShopFrisor(A) {
       t += dt;
       // där en annan spelare sitter är det upptaget (stolarna och soffan)
       try { WORLD.worldSeatsTaken?.(A, chairs); WORLD.worldSeatsTaken?.(A, sofaSeats); } catch { /* världen är aldrig ett krav */ }
-      if (greetT > 0) { greetT -= dt; if (greetT <= 0 && sami.state === 'desk') talkSami.say('Välkommen till frisören! Sätt dig i en ledig stol, så fixar vi håret. 💇', () => ({ x: sami.m.x, y: sami.m.y - 44 }), 4.5, { voice: SAMI }); }
+      if (greetT > 0) { greetT -= dt; if (greetT <= 0 && sami.state === 'desk') talkSami.say($t('Välkommen till frisören! Sätt dig i en ledig stol, så fixar vi håret. 💇'), () => ({ x: sami.m.x, y: sami.m.y - 44 }), 4.5, { voice: SAMI }); }
       if (me.state === 'free') walker.update(dt);
       updateCusts(dt);
       updateStaff(dt);
@@ -906,7 +907,7 @@ export function makeShopFrisor(A) {
       if (me.doneT > 0 && !me.seq) { me.doneT -= dt; if (me.doneT <= 0 && me.state === 'chair') standUp(); }
       // torkhuven plingar ibland
       dryerCust.pling -= dt;
-      if (dryerCust.pling <= 0) { dryerCust.pling = 35 + Math.random() * 30; if (inView(DRYERS[0])) sfx('pling'); talkCust.say(pickOf(Math.random, ['Pling! Fem minuter till …', 'Mmm, varmt och skönt här inne.', 'VA? Jag hör ingenting under huven! 😄']), { x: DRYERS[0], y: DRYER_Y - 48 }, 3); }
+      if (dryerCust.pling <= 0) { dryerCust.pling = 35 + Math.random() * 30; if (inView(DRYERS[0])) sfx('pling'); talkCust.say(pickOf(Math.random, [$t('Pling! Fem minuter till …'), $t('Mmm, varmt och skönt här inne.'), $t('VA? Jag hör ingenting under huven! 😄')]), { x: DRYERS[0], y: DRYER_Y - 48 }, 3); }
       dryerCust.mag = Math.floor(t / 6) % 4;
       const k = lockedCam !== null ? 1 : Math.min(1, dt * 6);
       cam.x += (camTarget() - cam.x) * k;
@@ -914,7 +915,7 @@ export function makeShopFrisor(A) {
     down(sx, sy) {
       const x = sx + cam.x, y = sy;
       hoverId = null;
-      if (me.state === 'cut') { talkSami.say('Sitt still, annars blir det snett! ✂️😄', () => ({ x: sami.m.x, y: sami.m.y - 44 }), 2.5, { voice: SAMI }); return; }
+      if (me.state === 'cut') { talkSami.say($t('Sitt still, annars blir det snett! ✂️😄'), () => ({ x: sami.m.x, y: sami.m.y - 44 }), 2.5, { voice: SAMI }); return; }
       const h = spotAt(x, y);
       if (me.state === 'chair') {
         // klick på den egna stolen/spegeln = väljaren igen; annat = res dig
@@ -936,8 +937,8 @@ export function makeShopFrisor(A) {
       drawWorld(ctx, cx, cx + VW);
       ctx.setTransform(A.pxs, 0, 0, A.pxs, 0, 0);
       const safe = globalThis.SF?.view?.safe || { y0: 0, y1: H };
-      if (me.state === 'chair' && !me.seq && !modalOpen() && sami.state === 'atChair') hintBar(ctx, 'KLICKA PÅ SPEGELN = VÄLJ FRISYR / PÅ GOLVET = RES DIG', safe, t);
-      else if (me.state === 'sofa') hintBar(ctx, 'KLICKA PÅ GOLVET FÖR ATT RESA DIG', safe, t);
+      if (me.state === 'chair' && !me.seq && !modalOpen() && sami.state === 'atChair') hintBar(ctx, $t('KLICKA PÅ SPEGELN = VÄLJ FRISYR / PÅ GOLVET = RES DIG'), safe, t);
+      else if (me.state === 'sofa') hintBar(ctx, $t('KLICKA PÅ GOLVET FÖR ATT RESA DIG'), safe, t);
       else {
         const focus = focusSpot();
         if (focus) bigLabel(ctx, focus, t, walker.py > H - 44, safe);
@@ -949,8 +950,8 @@ export function makeShopFrisor(A) {
 
 // Rubriker i tidningarna i soffan och tidningsstället
 const HEADLINES = [
-  '📰 PIXELSTADEN: BUSSEN KOM I TID – IGEN!', '📰 KATTEN SOM LÄRDE SIG ÅKA SKATEBOARD', '📰 10 FRISYRER FÖR HÖSTEN', '📰 RECEPT: TÅRTA PÅ FEM MINUTER',
-  '📰 KÄNDISEN BYTTE FRISYR – FEM GÅNGER!', '📰 BURGARBAREN: NY MILKSHAKE MED GLITTER', '📰 SÅ FÅR DU LOCKAR SOM HÅLLER HELA DAGEN', '📰 HUNDEN SOM ÄLSKAR ATT BLI FÖNAD',
+  $t('📰 PIXELSTADEN: BUSSEN KOM I TID – IGEN!'), $t('📰 KATTEN SOM LÄRDE SIG ÅKA SKATEBOARD'), $t('📰 10 FRISYRER FÖR HÖSTEN'), $t('📰 RECEPT: TÅRTA PÅ FEM MINUTER'),
+  $t('📰 KÄNDISEN BYTTE FRISYR – FEM GÅNGER!'), $t('📰 BURGARBAREN: NY MILKSHAKE MED GLITTER'), $t('📰 SÅ FÅR DU LOCKAR SOM HÅLLER HELA DAGEN'), $t('📰 HUNDEN SOM ÄLSKAR ATT BLI FÖNAD'),
 ];
 
 // ================= ritning utan scenstate =================
@@ -1113,12 +1114,12 @@ function paintGondola() {
     P.rect(1, sy, w - 2, 2, 0x8a6446); P.hl(1, sy, w - 2, 0xb08a60);
   }
   P.rect(0, 0, w, 9, NAVY); P.hl(0, 0, w, NAVY_HI); P.hl(0, 8, w, GOLD);
-  { const s = 'HÅRVÅRD'; text(P, SMALL, s, Math.round(w / 2 - textW(SMALL, s) / 2), 3, GOLD_HI); }
+  { const s = $t('HÅRVÅRD'); text(P, SMALL, s, Math.round(w / 2 - textW(SMALL, s) / 2), 3, GOLD_HI); }
   P.rect(3, 2, 4, 4, 0xf28bb3); P.rect(w - 7, 2, 4, 4, 0x3fc4ff);
   P.rect(0, 38, w, 6, NAVY); P.hl(0, 38, w, NAVY_HI); P.hl(0, h - 1, w, NAVY_DK);
   P.vl(0, 9, 29, CHROME_LO); P.vl(w - 1, 9, 29, CHROME_LO);
   // NYTT-lapp
-  P.rect(w - 22, 25, 17, 7, 0xd8323a); P.hl(w - 22, 25, 17, 0xf06a70); { const s = 'NYTT'; text(P, SMALL, s, w - 20, 26, WHITE); }
+  P.rect(w - 22, 25, 17, 7, 0xd8323a); P.hl(w - 22, 25, 17, 0xf06a70); { const s = $t('NYTT'); text(P, SMALL, s, w - 20, 26, WHITE); }
   return outlined(P, w, h);
 }
 
@@ -1137,7 +1138,7 @@ function paintNails() {
   P.rect(2, 13, 44, 4, WHITE); P.hl(2, 13, 44, WHITE); P.hl(2, 16, 44, 0xd8d8e0);
   P.rect(18, 13, 12, 3, 0xf7dbe2); P.hl(18, 13, 12, 0xffeef2); // handkudden
   P.rect(3, 17, 42, 8, ROSE); P.hl(3, 17, 42, ROSE_HI); P.hl(3, 24, 42, ROSE_DK);
-  { const s = 'NAGLAR'; text(P, SMALL, s, Math.round(24 - textW(SMALL, s) / 2), 19, WHITE); }
+  { const s = $t('NAGLAR'); text(P, SMALL, s, Math.round(24 - textW(SMALL, s) / 2), 19, WHITE); }
   for (const lx of [4, 42]) { P.rect(lx, 25, 2, 6, CHROME); P.vl(lx, 25, 6, CHROME_HI); }
   // pallen framför
   P.rect(19, 27, 10, 3, 0xf28bb3); P.hl(19, 27, 10, 0xffb8d8); P.hl(19, 29, 10, ROSE_DK);
@@ -1201,7 +1202,7 @@ function paintSalon() {
   P.rect(14, 10, 56, 36, 0x1d1822); P.rect(16, 12, 52, 32, 0xf7dbe2);
   for (let y = 12; y < 36; y++) for (let x = 16; x < 68; x++) if ((x + y) % 6 === 0) P.px(x, y, 0xffffff, 0.6);
   P.rect(16, 36, 52, 8, 0xd8323a); P.hl(16, 36, 52, 0xf06a70);
-  { const s = 'NYA FRISYRER!'; text(P, SMALL, s, Math.round(42 - textW(SMALL, s) / 2), 38, 0xffffff); }
+  { const s = $t('NYA FRISYRER!'); text(P, SMALL, s, Math.round(42 - textW(SMALL, s) / 2), 38, 0xffffff); }
   P.box(14, 10, 56, 36, GOLD_LO);
   // soffan
   const sx0 = SOFA.x0, sx1 = SOFA.x1;
@@ -1255,13 +1256,13 @@ function paintSalon() {
   // ÖPPET-skylten hänger i snören mitt på glaset
   P.vl(DOOR_CX - 8, DOOR.top, 5, 0x8a8e9a); P.vl(DOOR_CX + 8, DOOR.top, 5, 0x8a8e9a);
   P.rect(DOOR_CX - 11, DOOR.top + 5, 23, 9, 0xffffff); P.box(DOOR_CX - 11, DOOR.top + 5, 23, 9, 0xd8323a);
-  { const s = 'ÖPPET'; text(P, SMALL, s, Math.round(DOOR_CX + 0.5 - textW(SMALL, s) / 2), DOOR.top + 8, 0xd8323a); }
+  { const s = $t('ÖPPET'); text(P, SMALL, s, Math.round(DOOR_CX + 0.5 - textW(SMALL, s) / 2), DOOR.top + 8, 0xd8323a); }
   // dörrmatta
   P.rect(DOOR.x0 - 4, WALL_Y, DOOR.x1 - DOOR.x0 + 8, 9, 0x2a2e3a); P.box(DOOR.x0 - 4, WALL_Y, DOOR.x1 - DOOR.x0 + 8, 9, NAVY_HI);
   for (let x = DOOR.x0 - 2; x < DOOR.x1 + 2; x += 2) P.vl(x, WALL_Y + 2, 5, 0x22242e);
-  { const s = 'HEJ!'; text(P, SMALL, s, DOOR_CX - textW(SMALL, s) / 2, WALL_Y + 2, GOLD); }
+  { const s = $t('HEJ!'); text(P, SMALL, s, DOOR_CX - textW(SMALL, s) / 2, WALL_Y + 2, GOLD); }
   // neonskylten FRISÖR ovanför dörren (+ en liten sax)
-  { const s = 'FRISÖR', w = textW(BIG, s);
+  { const s = $t('FRISÖR'), w = textW(BIG, s);
     P.vl(NEON.x0 + 4, 3, 4, 0x8a8e9a); P.vl(NEON.x0 + NEON.w - 5, 3, 4, 0x8a8e9a);
     P.rect(NEON.x0, 7, NEON.w, 13, NAVY_DK); P.box(NEON.x0, 7, NEON.w, 13, GOLD_LO); P.hl(NEON.x0 + 1, 8, NEON.w - 2, NAVY2);
     P.ell(DOOR_CX, 13, NEON.w * 0.7, 9, 0xff7ab8, 0.2, 4);
@@ -1279,11 +1280,11 @@ function paintSalon() {
     P.rect(x0, y0, w, h, GOLD_LO); P.rect(x0 + 1, y0 + 1, w - 2, h - 2, GOLD); P.rect(x0 + 2, y0 + 2, w - 4, h - 4, NAVY_DK);
     P.hl(x0 + 1, y0 + 1, w - 2, GOLD_HI);
     for (let y = y0 + 2; y < y1 - 2; y++) for (let x = x0 + 2; x < x1 - 2; x++) if (hash(x, y, 91) > 0.93) P.px(x, y, 0x1a2640);
-    const title = 'PRISLISTA'; text(P, BIG, title, Math.round(x0 + w / 2 - textW(BIG, title) / 2), y0 + 4, GOLD_HI);
+    const title = $t('PRISLISTA'); text(P, BIG, title, Math.round(x0 + w / 2 - textW(BIG, title) / 2), y0 + 4, GOLD_HI);
     P.hl(x0 + 6, y0 + 13, w - 12, GOLD_LO);
     const rows = ['klippning', 'rakning', 'uppsatt', 'lockar', 'flator', 'fargning'];
     rows.forEach((k, i) => {
-      const y = y0 + 16 + i * 7, lab = FRISOR_PRIS[k].board, pr = `${FRISOR_PRIS[k].price}:-`;
+      const y = y0 + 16 + i * 7, lab = FRISOR_PRIS[k].board, pr = $t`${FRISOR_PRIS[k].price}:-`;
       text(P, SMALL, lab, x0 + 4, y, k === 'fargning' ? 0xffa8d0 : 0xf4f1ea);
       const pw = textW(SMALL, pr), lw = textW(SMALL, lab);
       text(P, SMALL, pr, x1 - 4 - pw, y, GOLD_HI);
@@ -1297,7 +1298,7 @@ function paintSalon() {
     P.rect(x0, y0, w, 68, 0x6b4a33); P.rect(x0 + 2, y0 + 8, w - 4, 58, 0xf0e8dc);
     for (let y = y0 + 8; y < y0 + 66; y++) for (let x = x0 + 2; x < x1 - 2; x++) if ((x + y) % 5 === 0) P.px(x, y, 0xe4d8c8);
     P.rect(x0, y0, w, 8, NAVY); P.hl(x0, y0, w, NAVY_HI); P.hl(x0, y0 + 7, w, GOLD);
-    { const s = 'PRODUKTER'; text(P, SMALL, s, Math.round(x0 + w / 2 - textW(SMALL, s) / 2), y0 + 2, GOLD_HI); }
+    { const s = $t('PRODUKTER'); text(P, SMALL, s, Math.round(x0 + w / 2 - textW(SMALL, s) / 2), y0 + 2, GOLD_HI); }
     for (let r = 0; r < 4; r++) {
       const sy = y0 + 22 + r * 14; // hyllplanets ovansida
       P.rect(x0 + 1, sy, w - 2, 2, 0x8a6446); P.hl(x0 + 1, sy, w - 2, 0xb08a60); P.hl(x0 + 2, sy + 2, w - 4, 0xc8bcac);
@@ -1669,7 +1670,7 @@ function paintDryerRim() {
 
 // ================= väljaren: frisyr och färg med förhandsbild på DIN figur =================
 const DIRS = ['down', 'left', 'up', 'right'];
-const DIR_NAMES = ['Framifrån', 'Från sidan', 'Bakifrån', 'Från sidan'];
+const DIR_NAMES = [$t('Framifrån'), $t('Från sidan'), $t('Bakifrån'), $t('Från sidan')];
 const GROUP_ICON = { 'Kort hår': '✂️', 'Lugg': '💇', 'Rakat': '🪒', 'Mellanlångt': '💁', 'Långt hår': '👸', 'Lockar': '🌀', 'Afro': '✨', 'Dreads & twists': '🧶', 'Uppsatt': '🎀', 'Hästsvansar': '🐴', 'Flätor': '🪢', 'Kul': '🎉' };
 function injectCss() {
   if (typeof document === 'undefined' || document.getElementById('fr-style')) return;
@@ -1721,7 +1722,7 @@ function injectCss() {
 .fr-tile:hover { background: #fffbe8; }
 .fr-tile.on { background: #fff4c7; outline: 3px solid var(--gold); outline-offset: -1px; }
 .fr-tile.on::after { content: "✓"; position: absolute; top: -7px; right: -7px; width: 18px; height: 18px; font: var(--f1)/16px var(--head); text-align: center; background: var(--green2); color: #fff; border: 2px solid var(--ink); }
-.fr-tile.now::before { content: "NU"; position: absolute; top: -7px; left: -7px; font: var(--f1)/14px var(--head); padding: 0 3px; background: #1c2a4a; color: #fff; border: 2px solid var(--ink); }
+.fr-tile.now::before { content: "${$t('NU')}"; position: absolute; top: -7px; left: -7px; font: var(--f1)/14px var(--head); padding: 0 3px; background: #1c2a4a; color: #fff; border: 2px solid var(--ink); }
 .fr-sws { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 4px; }
 .fr-sw { width: 28px; height: 28px; padding: 0; border: 3px solid var(--ink); background: var(--c); cursor: pointer; box-shadow: 2px 2px 0 var(--ink); position: relative; }
 .fr-sw.on { outline: 3px solid #ffd23f; outline-offset: 1px; transform: translate(-1px, -1px); }
@@ -1788,34 +1789,34 @@ export function openFrisyrValjare(A, { mode = 'stol', sel: preset = null, onBuy,
   const body = `<div class="fr">
     <div class="fr-l">
       <div class="fr-stage">
-        <div class="fr-fig" data-fig="now"><i></i><small>Nu</small></div>
+        <div class="fr-fig" data-fig="now"><i></i><small>${$t('Nu')}</small></div>
         <div class="fr-arrow">➜</div>
-        <div class="fr-fig" data-fig="new"><i></i><small>Efter</small></div>
+        <div class="fr-fig" data-fig="new"><i></i><small>${$t('Efter')}</small></div>
       </div>
-      <div class="fr-turn"><button class="btn btn-small" data-turn="-1" aria-label="Vrid åt vänster">⟲</button><b data-view>Framifrån</b><button class="btn btn-small" data-turn="1" aria-label="Vrid åt höger">⟳</button></div>
-      ${A.avatar.look.hat || A.avatar.look.phones || (A.avatar.look.hairAcc && A.avatar.look.hairAcc !== 'none') ? '<p class="fr-cap">🧢 Visas utan huvudbonad – den får du tillbaka efteråt.</p>' : ''}
+      <div class="fr-turn"><button class="btn btn-small" data-turn="-1" aria-label="${$t('Vrid åt vänster')}">⟲</button><b data-view>${$t('Framifrån')}</b><button class="btn btn-small" data-turn="1" aria-label="${$t('Vrid åt höger')}">⟳</button></div>
+      ${A.avatar.look.hat || A.avatar.look.phones || (A.avatar.look.hairAcc && A.avatar.look.hairAcc !== 'none') ? `<p class="fr-cap">${$t('🧢 Visas utan huvudbonad – den får du tillbaka efteråt.')}</p>` : ''}
       <div class="fr-bill" data-bill></div>
     </div>
     <div class="fr-r">
-      <div class="fr-tabs"><button class="fr-tab" data-tab="frisyr">✂️ Frisyr</button><button class="fr-tab" data-tab="farg">🎨 Hårfärg</button></div>
+      <div class="fr-tabs"><button class="fr-tab" data-tab="frisyr">${$t('✂️ Frisyr')}</button><button class="fr-tab" data-tab="farg">${$t('🎨 Hårfärg')}</button></div>
       <div class="fr-panel" data-panel></div>
     </div>
   </div>`;
   const buttons = mode === 'stol' ? [
-    { label: '↺ Som förut', cls: 'fr-reset', onClick: () => { Object.assign(sel, start); group = groupOf(sel.style); play('click'); renderAll(); } },
-    { label: '🎲 Överraska mig', onClick: () => surprise() },
-    { label: 'Avbryt', onClick: () => { closeModal(); onCancel?.({ ...sel }); } },
-    { label: '✂️ Klipp! <span data-sum></span>', cls: 'btn-go fr-go', onClick: () => {
+    { label: $t('↺ Som förut'), cls: 'fr-reset', onClick: () => { Object.assign(sel, start); group = groupOf(sel.style); play('click'); renderAll(); } },
+    { label: $t('🎲 Överraska mig'), onClick: () => surprise() },
+    { label: $t('Avbryt'), onClick: () => { closeModal(); onCancel?.({ ...sel }); } },
+    { label: `${$t('✂️ Klipp!')} <span data-sum></span>`, cls: 'btn-go fr-go', onClick: () => {
       const p = frisorPris(A.avatar.look, sel);
       if (!p.total || g.money < p.total) return;
       if (onBuy?.({ ...sel }) !== false) closeModal();
     } },
   ] : [
-    { label: 'Stäng', onClick: () => { closeModal(); } },
-    { label: '🎲 Överraska mig', onClick: () => surprise() },
-    { label: '💺 Till en stol', cls: 'btn-go fr-go', onClick: () => { closeModal(); onGoSit?.({ ...sel }); } },
+    { label: $t('Stäng'), onClick: () => { closeModal(); } },
+    { label: $t('🎲 Överraska mig'), onClick: () => surprise() },
+    { label: $t('💺 Till en stol'), cls: 'btn-go fr-go', onClick: () => { closeModal(); onGoSit?.({ ...sel }); } },
   ];
-  const dlg = openModal(mode === 'stol' ? '💈 Frisören – vad ska vi göra?' : '📖 Frisyrboken', body, buttons);
+  const dlg = openModal(mode === 'stol' ? $t('💈 Frisören – vad ska vi göra?') : $t('📖 Frisyrboken'), body, buttons);
   dlg.classList.add('dlg-frisor');
   const xb = dlg.querySelector('[data-close]');
   if (xb) xb.onclick = () => { closeModal(); if (mode === 'stol') onCancel?.({ ...sel }); };
@@ -1840,9 +1841,9 @@ export function openFrisyrValjare(A, { mode = 'stol', sel: preset = null, onBuy,
   function renderBill() {
     const p = frisorPris(A.avatar.look, sel), short = p.total - g.money;
     $('[data-bill]').innerHTML = (p.lines.length
-      ? p.lines.map((l) => `<div class="row"><span>${esc(l.label)}</span><b>${fmt(l.price)}</b></div>`).join('') + `<div class="row sum"><span>Summa</span><b>${fmt(p.total)}</b></div>`
-      : `<div class="none">${mode === 'stol' ? 'Välj en ny frisyr eller hårfärg – förhandsbilden visar hur det blir på dig.' : 'Bläddra och prova – förhandsbilden visar hur det blir på dig.'}</div>`)
-      + `<div class="money">💰 Du har <b>${fmt(g.money)}</b>${p.total ? (short > 0 ? ` · <b class="bad">du saknar ${fmt(short)}</b>` : ` · kvar sedan: ${fmt(g.money - p.total)}`) : ''}</div>`;
+      ? p.lines.map((l) => `<div class="row"><span>${esc(l.label)}</span><b>${fmt(l.price)}</b></div>`).join('') + `<div class="row sum"><span>${$t('Summa')}</span><b>${fmt(p.total)}</b></div>`
+      : `<div class="none">${mode === 'stol' ? $t('Välj en ny frisyr eller hårfärg – förhandsbilden visar hur det blir på dig.') : $t('Bläddra och prova – förhandsbilden visar hur det blir på dig.')}</div>`)
+      + `<div class="money">${$t`💰 Du har <b>${fmt(g.money)}</b>`}${p.total ? (short > 0 ? ` · <b class="bad">${$t`du saknar ${fmt(short)}`}</b>` : ` · ${$t`kvar sedan: ${fmt(g.money - p.total)}`}`) : ''}</div>`;
     const go = dlg.querySelector('.fr-go');
     if (go && mode === 'stol') {
       go.disabled = !p.total || short > 0;
@@ -1859,21 +1860,22 @@ export function openFrisyrValjare(A, { mode = 'stol', sel: preset = null, onBuy,
     let html = '';
     if (tab === 'frisyr') {
       const count = (gr) => ids.filter((id) => groupOf(id) === gr).length;
-      html += `<h4>Frisyr <span class="fr-now">${esc(labelOf(sel.style))}</span></h4>`;
-      html += `<div class="fr-chips">${groups.map((gr) => `<button class="fr-chip${gr === group ? ' on' : ''}${gr === groupOf(sel.style) ? ' has' : ''}" data-g="${esc(gr)}">${GROUP_ICON[gr] || '💇'} ${esc(gr)}<b>${count(gr)}</b></button>`).join('')}</div>`;
+      html += `<h4>${$t('Frisyr')} <span class="fr-now">${esc(labelOf(sel.style))}</span></h4>`;
+      html += `<div class="fr-chips">${groups.map((gr) => `<button class="fr-chip${gr === group ? ' on' : ''}${gr === groupOf(sel.style) ? ' has' : ''}" data-g="${esc(gr)}">${GROUP_ICON[gr] || '💇'} ${esc($t(gr))}<b>${count(gr)}</b></button>`).join('')}</div>`;
       const k = FRISOR_PRIS[GROUP_KIND[group] || 'klippning'];
-      html += `<p class="fr-price">${esc(group)}: ${esc(k.label.toLowerCase())} ${fmt(k.price)}${mode === 'stol' ? '' : ' hos frisören'}</p>`;
+      const gn = esc($t(group)), kl = esc(k.label.toLowerCase()), kp = fmt(k.price);   // (gruppen är ett id – visas översatt)
+      html += `<p class="fr-price">${mode === 'stol' ? `${gn}: ${kl} ${kp}` : $t`${gn}: ${kl} ${kp} hos frisören`}</p>`;
       const list = ids.filter((id) => groupOf(id) === group);
       html += `<div class="fr-grid">${list.map((id) => { pending.push(lookWith({ style: id })); return tileBtn(`data-style="${esc(id)}"`, labelOf(id), id === sel.style, id === start.style); }).join('')}</div>`;
     } else {
       const fxIds = Object.keys(fxReg());
-      html += `<h4>Hårfärg</h4><div class="fr-sws">${HAIR_PAL.map((c) => `<button class="fr-sw${c === sel.hair ? ' on' : ''}" data-hair="${c}" style="--c:${c}" aria-label="Hårfärg ${c}"></button>`).join('')}
-        <label class="fr-sw own${!HAIR_PAL.includes(sel.hair) ? ' on' : ''}" style="${!HAIR_PAL.includes(sel.hair) ? `background:${sel.hair}` : ''}" title="Egen färg">+<input type="color" data-own="hair" value="${sel.hair}" aria-label="Egen hårfärg"></label></div>
-        <p class="fr-hint">Färgen gäller även ögonbryn och skägg.</p>`;
-      html += `<h4>Slingor, toppar & tvåfärgat <span class="fr-now">${esc(labelOf(sel.hairFx, fxReg()))}</span></h4><div class="fr-grid">${fxIds.map((id) => { pending.push(lookWith({ hairFx: id, hair2: sel.hair2 || '#ecd489' })); return tileBtn(`data-fx="${esc(id)}"`, labelOf(id, fxReg()), id === sel.hairFx, id === start.hairFx); }).join('')}</div>`;
-      html += `<h4>Andra färgen</h4><div class="fr-sws${sel.hairFx === 'none' ? ' fr-dim' : ''}">${HAIR2_PAL.map((c) => `<button class="fr-sw${c === sel.hair2 ? ' on' : ''}" data-hair2="${c}" style="--c:${c}" aria-label="Andra färgen ${c}"></button>`).join('')}
-        <label class="fr-sw own" title="Egen färg">+<input type="color" data-own="hair2" value="${sel.hair2 || '#ecd489'}" aria-label="Egen andra färg"></label></div>
-        <p class="fr-hint">Slingor, toppar, ombré och tvåfärgat använder den andra färgen.</p>`;
+      html += `<h4>${$t('Hårfärg')}</h4><div class="fr-sws">${HAIR_PAL.map((c) => `<button class="fr-sw${c === sel.hair ? ' on' : ''}" data-hair="${c}" style="--c:${c}" aria-label="${$t`Hårfärg ${c}`}"></button>`).join('')}
+        <label class="fr-sw own${!HAIR_PAL.includes(sel.hair) ? ' on' : ''}" style="${!HAIR_PAL.includes(sel.hair) ? `background:${sel.hair}` : ''}" title="${$t('Egen färg')}">+<input type="color" data-own="hair" value="${sel.hair}" aria-label="${$t('Egen hårfärg')}"></label></div>
+        <p class="fr-hint">${$t('Färgen gäller även ögonbryn och skägg.')}</p>`;
+      html += `<h4>${$t('Slingor, toppar & tvåfärgat')} <span class="fr-now">${esc(labelOf(sel.hairFx, fxReg()))}</span></h4><div class="fr-grid">${fxIds.map((id) => { pending.push(lookWith({ hairFx: id, hair2: sel.hair2 || '#ecd489' })); return tileBtn(`data-fx="${esc(id)}"`, labelOf(id, fxReg()), id === sel.hairFx, id === start.hairFx); }).join('')}</div>`;
+      html += `<h4>${$t('Andra färgen')}</h4><div class="fr-sws${sel.hairFx === 'none' ? ' fr-dim' : ''}">${HAIR2_PAL.map((c) => `<button class="fr-sw${c === sel.hair2 ? ' on' : ''}" data-hair2="${c}" style="--c:${c}" aria-label="${$t`Andra färgen ${c}`}"></button>`).join('')}
+        <label class="fr-sw own" title="${$t('Egen färg')}">+<input type="color" data-own="hair2" value="${sel.hair2 || '#ecd489'}" aria-label="${$t('Egen andra färg')}"></label></div>
+        <p class="fr-hint">${$t('Slingor, toppar, ombré och tvåfärgat använder den andra färgen.')}</p>`;
     }
     const top = panel.scrollTop;
     panel.innerHTML = html;

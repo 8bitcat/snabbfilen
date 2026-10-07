@@ -20,6 +20,7 @@ import { worldMyEmote } from '../net/world.js';
 import { planOf, drawShiftHud, drawTimeUp, makePops, abortShift } from './shift.js';
 import { play } from '../core/sound.js';
 import { makeShiftCoop } from '../net/coop.js';
+import { $t } from '../core/i18n.js';
 
 const FW = 384, FH = 216;
 const WHITE = 0xffffff;
@@ -52,15 +53,15 @@ const RADIO = { x: 91, y: 168 };
 const CRATES = { x: 4, y: 164 }, BUCKET = { x: 356, y: 178 }, RACK = { x: 104, y: 163 };
 
 const DRINKS = [
-  { id: 'esp', name: 'ESPRESSO', price: 25, steps: ['mala', 'brygg'] },
-  { id: 'cap', name: 'CAPPUCCINO', price: 32, steps: ['mala', 'brygg', 'anga'] },
-  { id: 'lat', name: 'LATTE', price: 35, steps: ['mala', 'brygg', 'anga', 'konst'] },
-  { id: 'cho', name: 'VARM CHOKLAD', price: 30, steps: ['kakao', 'anga'] },
+  { id: 'esp', name: $t('ESPRESSO'), price: 25, steps: ['mala', 'brygg'] },
+  { id: 'cap', name: $t('CAPPUCCINO'), price: 32, steps: ['mala', 'brygg', 'anga'] },
+  { id: 'lat', name: $t('LATTE'), price: 35, steps: ['mala', 'brygg', 'anga', 'konst'] },
+  { id: 'cho', name: $t('VARM CHOKLAD'), price: 30, steps: ['kakao', 'anga'] },
 ];
 const PASTRIES = [
-  { id: 'bulle', name: 'KANELBULLE', short: 'BULLE', price: 25 },
-  { id: 'kladd', name: 'KLADDKAKA', short: 'KLADDKAKA', price: 32 },
-  { id: 'prinsess', name: 'PRINSESSTÅRTA', short: 'PRINSESS', price: 42 },
+  { id: 'bulle', name: $t('KANELBULLE'), short: $t('BULLE'), price: 25 },
+  { id: 'kladd', name: $t('KLADDKAKA'), short: $t('KLADDKAKA'), price: 32 },
+  { id: 'prinsess', name: $t('PRINSESSTÅRTA'), short: $t('PRINSESS'), price: 42 },
 ];
 
 // Vad är koppen i handen just nu? −1 = inte färdig.
@@ -420,7 +421,7 @@ export function makeJobbKafe(A, { onDone } = {}) {
       k.patience = (c[7] | 0) / 10; k.pmax = (c[8] | 0) / 10 || 40;
       // det som händer vid disken hörs hos alla: beställningen ropas, den som tröttnade går
       if (st === 'wait' && was !== 'wait' && (was || snaps)) { play('chirp'); sayOrder(k); }
-      if (st === 'leave' && was === 'wait') { play('miss'); sayK(k, 36, 'GICK...'); }
+      if (st === 'leave' && was === 'wait') { play('miss'); sayK(k, 36, $t('GICK...')); }
     }
     customers = customers.filter((k) => seen.has(k.id));
     if (Array.isArray(m.tm)) { team.ok = m.tm[0] | 0; team.fel = m.tm[1] | 0; team.miss = m.tm[2] | 0; }
@@ -451,7 +452,7 @@ export function makeJobbKafe(A, { onDone } = {}) {
     const r = k ? judge(k, d, p) : { dr: 0, pr: 0, happy: 0, gone: 1 };
     coop.send({ t: 'res', a: 'serve', by: byId, cust: custId, dr: r.dr, pr: r.pr, ha: r.happy, go: r.gone });
     const mine = byId === coop.myId;
-    if (r.gone) { if (mine) { play('miss'); if (k) sayK(k, 36, 'HANN FÖRE!', '#ff6a6a'); } }
+    if (r.gone) { if (mine) { play('miss'); if (k) sayK(k, 36, $t('HANN FÖRE!'), '#ff6a6a'); } }
     else { showServe(k, r, mine); if (mine) takeResult(r); }
     snapAsap();
   }
@@ -463,7 +464,7 @@ export function makeJobbKafe(A, { onDone } = {}) {
     if (m.a === 'serve') {
       const k = customers.find((q) => q.id === m.cust);
       const r = { dr: m.dr | 0, pr: m.pr | 0, happy: m.ha ? 1 : 0 };
-      if (m.go) { if (mine) { play('miss'); if (k) sayK(k, 36, 'HANN FÖRE!', '#ff6a6a'); } }
+      if (m.go) { if (mine) { play('miss'); if (k) sayK(k, 36, $t('HANN FÖRE!'), '#ff6a6a'); } }
       else {
         if (k) { // syns direkt – nästa snap bekräftar
           if (r.dr === 1) k.gotDrink = true;
@@ -481,7 +482,7 @@ export function makeJobbKafe(A, { onDone } = {}) {
         if (h >= 0 && h < 3) stock[h] = Math.min(4, stock[h] + 1);
         stock[c] = Math.max(0, stock[c] - 1);
         pastry = c; play('click');
-      } else { say(MON_COLS[c], STN_Y, 'SLUT - VÄNTA'); play('miss'); }
+      } else { say(MON_COLS[c], STN_Y, $t('SLUT - VÄNTA')); play('miss'); }
       answered();
     }
   });
@@ -534,37 +535,37 @@ export function makeJobbKafe(A, { onDone } = {}) {
 
   // ---------- stationerna ----------
   function actMala() {
-    if (dose) { say(GRIND.x, STN_Y, 'REDAN MALET'); play('click'); return; }
+    if (dose) { say(GRIND.x, STN_Y, $t('REDAN MALET')); play('click'); return; }
     play('slide');
     startBusy('mala', 0.8, () => { dose = true; play('ok'); });
   }
   function actBrygg(g) {
-    if (!dose) { say(GROUPS[g].x, STN_Y, 'MALA FÖRST!', '#ffd23f'); play('miss'); return; }
-    if (cup) { say(GROUPS[g].x, STN_Y, 'KOPPEN ÄR FULL'); play('miss'); return; }
+    if (!dose) { say(GROUPS[g].x, STN_Y, $t('MALA FÖRST!'), '#ffd23f'); play('miss'); return; }
+    if (cup) { say(GROUPS[g].x, STN_Y, $t('KOPPEN ÄR FULL')); play('miss'); return; }
     play('knock');
     startBusy('brygg', 1.2, () => { cup = { mug: false, kaffe: true }; dose = false; play('ok'); }, { g });
   }
   function actAnga() {
-    if (!cup) { say(WAND.x, STN_Y, 'INGEN KOPP'); play('miss'); return; }
-    if (cup.skum) { say(WAND.x, STN_Y, 'REDAN SKUMMAD'); play('miss'); return; }
+    if (!cup) { say(WAND.x, STN_Y, $t('INGEN KOPP')); play('miss'); return; }
+    if (cup.skum) { say(WAND.x, STN_Y, $t('REDAN SKUMMAD')); play('miss'); return; }
     play('slide');
     startBusy('anga', 1.0, () => { cup.skum = true; play('ok'); });
   }
   function actKonst() {
-    if (!cup) { say(KONST_X, 150, 'INGEN KOPP'); play('miss'); return; }
-    if (cup.mug) { say(KONST_X, 150, 'BARA PÅ KAFFE'); play('miss'); return; }
-    if (!cup.skum) { say(KONST_X, 150, 'SKUMMA FÖRST!', '#ffd23f'); play('miss'); return; }
-    if (cup.konst) { say(KONST_X, 150, 'REDAN KONST'); play('miss'); return; }
+    if (!cup) { say(KONST_X, 150, $t('INGEN KOPP')); play('miss'); return; }
+    if (cup.mug) { say(KONST_X, 150, $t('BARA PÅ KAFFE')); play('miss'); return; }
+    if (!cup.skum) { say(KONST_X, 150, $t('SKUMMA FÖRST!'), '#ffd23f'); play('miss'); return; }
+    if (cup.konst) { say(KONST_X, 150, $t('REDAN KONST')); play('miss'); return; }
     startBusy('konst', 0.9, () => { cup.konst = true; play('ok'); });
   }
   function actKakao() {
-    if (cup) { say(KAKAO_X, 150, 'HÄNDERNA FULLA'); play('miss'); return; }
+    if (cup) { say(KAKAO_X, 150, $t('HÄNDERNA FULLA')); play('miss'); return; }
     play('click');
     startBusy('kakao', 0.6, () => { cup = { mug: true, choklad: true }; play('click'); });
   }
   function actDisk() {
-    if (!cup) { say(DISK_X, 150, 'INGET ATT DISKA'); play('miss'); return; }
-    startBusy('disk', 0.5, () => { cup = null; play('slide'); say(DISK_X, 150, 'SLASK!'); });
+    if (!cup) { say(DISK_X, 150, $t('INGET ATT DISKA')); play('miss'); return; }
+    startBusy('disk', 0.5, () => { cup = null; play('slide'); say(DISK_X, 150, $t('SLASK!')); });
   }
   // montern är gemensam: en medarbetare frågar skiftledaren, som håller räkningen
   function actMonter(k) {
@@ -573,11 +574,11 @@ export function makeJobbKafe(A, { onDone } = {}) {
       if (mate()) coop.send({ t: 'tillbaka', col: k }); else snapAsap();
       return;
     }
-    if (stock[k] <= 0) { say(MON_COLS[k], STN_Y, 'SLUT - VÄNTA'); play('miss'); return; }
+    if (stock[k] <= 0) { say(MON_COLS[k], STN_Y, $t('SLUT - VÄNTA')); play('miss'); return; }
     startBusy('monter', 0.3, () => {
       if (mate()) { ask({ t: 'tag', col: k, h: pastry ?? -1 }); return; }
       // (en kollega kan ha hunnit ta det sista medan jag sträckte mig efter det)
-      if (stock[k] <= 0) { say(MON_COLS[k], STN_Y, 'SLUT - VÄNTA'); play('miss'); return; }
+      if (stock[k] <= 0) { say(MON_COLS[k], STN_Y, $t('SLUT - VÄNTA')); play('miss'); return; }
       if (pastry !== null) stock[pastry] = Math.min(4, stock[pastry] + 1);
       pastry = k; stock[k]--; play('click'); snapAsap();
     }, { col: k });
@@ -603,13 +604,13 @@ export function makeJobbKafe(A, { onDone } = {}) {
   // utfallet vid disken: puffarna syns hos alla, ljuden hörs hos den som serverade
   function showServe(k, r, mine) {
     const py = 36, s = (y, txt, c) => { if (k) sayK(k, y, txt, c); };
-    if (r.dr === 3) { s(py, 'INTE KLAR!', '#ffd23f'); if (mine) play('miss'); }   // koppen stannar i handen
-    else if (r.dr === 1) s(py, 'MUMS!', '#8ee03c');
-    else if (r.dr === 2) { s(py, 'FEL DRYCK!', '#ff6a6a'); if (mine) play('fel'); }
-    if (r.pr === 1) s(py - 9, 'GOTT!', '#8ee03c');
-    else if (r.pr === 2) { s(py - 9, 'FEL BAKVERK!', '#ff6a6a'); if (mine) play('fel'); }
+    if (r.dr === 3) { s(py, $t('INTE KLAR!'), '#ffd23f'); if (mine) play('miss'); }   // koppen stannar i handen
+    else if (r.dr === 1) s(py, $t('MUMS!'), '#8ee03c');
+    else if (r.dr === 2) { s(py, $t('FEL DRYCK!'), '#ff6a6a'); if (mine) play('fel'); }
+    if (r.pr === 1) s(py - 9, $t('GOTT!'), '#8ee03c');
+    else if (r.pr === 2) { s(py - 9, $t('FEL BAKVERK!'), '#ff6a6a'); if (mine) play('fel'); }
     if (r.dr === 1 || r.pr === 1) {
-      if (r.happy) { s(py + 9, 'TACK!', '#8ee03c'); if (mine) play(k && k.pastry >= 0 ? 'box' : 'coin'); }
+      if (r.happy) { s(py + 9, $t('TACK!'), '#8ee03c'); if (mine) play(k && k.pastry >= 0 ? 'box' : 'coin'); }
       else if (mine) play('coin');
     }
   }
@@ -687,7 +688,7 @@ export function makeJobbKafe(A, { onDone } = {}) {
   function drawCupTag(ctx) {
     if (!cup || busy) return;
     // (pixelfonten har inga '…' – tre punkter i stället)
-    const d = drinkOf(cup), s = d >= 0 ? DRINKS[d].name : cup.mug ? 'KAKAO...' : '...';
+    const d = drinkOf(cup), s = d >= 0 ? DRINKS[d].name : cup.mug ? $t('KAKAO...') : '...';
     // vid disken hamnar lappen under fötterna, så att den inte skymmer gästerna
     const w = textW(SMALL, s) + 6, x = Math.round(walker.px - w / 2);
     const y = walker.py < 140 ? Math.round(walker.py) + 3 : Math.round(walker.py) - 50;
@@ -1009,7 +1010,7 @@ export function makeJobbKafe(A, { onDone } = {}) {
       if (coop.active) maxN = Math.max(maxN, coop.peers().length + 1);
       if (coop.active !== wasCoop) { // en kollega kom in: fullt ös vid disken
         wasCoop = coop.active;
-        if (wasCoop) { play('knock'); say(FW / 2, 140, 'NI JOBBAR IHOP!', '#8ee03c'); }
+        if (wasCoop) { play('knock'); say(FW / 2, 140, $t('NI JOBBAR IHOP!'), '#8ee03c'); }
       }
       // Skiftledaren (eller solo) kör gästerna och montern; medarbetare följer ledarens läge
       const iLead = !coop.active || (coop.leader && coop.settled);
@@ -1047,7 +1048,7 @@ export function makeJobbKafe(A, { onDone } = {}) {
             else { k.x += Math.sign(tx - k.x) * sp; k.dir = tx < k.x ? 'left' : 'right'; }
           } else if (k.state === 'wait') {
             k.patience -= dt;
-            if (k.patience <= 0) { k.state = 'leave'; k.dir = 'left'; k.y = CUST_Y - 3; stats.miss++; team.miss++; play('miss'); sayK(k, 36, 'GICK...'); }
+            if (k.patience <= 0) { k.state = 'leave'; k.dir = 'left'; k.y = CUST_Y - 3; stats.miss++; team.miss++; play('miss'); sayK(k, 36, $t('GICK...')); }
           } else if (k.state === 'happy') {
             k.t -= dt;
             if (k.t <= 0) { k.state = 'exit'; k.dir = 'right'; k.y = CUST_Y - 3; }
@@ -1093,7 +1094,7 @@ export function makeJobbKafe(A, { onDone } = {}) {
       drawTalk(ctx);
       drawCupTag(ctx);
       pops.draw(ctx);
-      drawShiftHud(ctx, { W: FW }, { t, dur: P.seconds, ok: maxN > 1 ? team.ok : stats.ok, fel: maxN > 1 ? team.fel : stats.fel, title: maxN > 1 ? 'KAFÉET IHOP' : 'KAFÉET' });
+      drawShiftHud(ctx, { W: FW }, { t, dur: P.seconds, ok: maxN > 1 ? team.ok : stats.ok, fel: maxN > 1 ? team.fel : stats.fel, title: maxN > 1 ? $t('KAFÉET IHOP') : $t('KAFÉET') });
       if (done) drawTimeUp(ctx, { W: FW, H: FH });
     },
   };
@@ -1293,13 +1294,13 @@ function boardFrame(P, x, y, w, h) {
 }
 function paintFikaBoard(P, x, y, w, h) {
   boardFrame(P, x, y, w, h);
-  const title = 'FIKA';
+  const title = $t('FIKA');
   chalk(P, title, x + (w >> 1) - (textW(SMALL, title) >> 1), y + 2, 0xf6d86a, 1);
   // små hjärtan bredvid rubriken
   glyph(P, ['#.#', '###', '.#.'], x + (w >> 1) - 16, y + 3, 0xf6a0c0, 0.9);
   glyph(P, ['#.#', '###', '.#.'], x + (w >> 1) + 13, y + 3, 0xf6a0c0, 0.9);
   PASTRIES.forEach((p, i) => {
-    const ry = y + 8 + i * 6, price = p.price + ':-';
+    const ry = y + 8 + i * 6, price = $t`${p.price}:-`;
     chalk(P, p.name, x + 3, ry, 0xf2eee4, 10 + i);
     chalk(P, price, x + w - 3 - textW(SMALL, price), ry, 0xf6d86a, 20 + i);
   });
@@ -1307,7 +1308,7 @@ function paintFikaBoard(P, x, y, w, h) {
 function paintCoffeeBoard(P, x, y, w, h) {
   boardFrame(P, x, y, w, h);
   DRINKS.forEach((d, i) => {
-    const ry = y + 2 + i * 6, price = d.price + ':-';
+    const ry = y + 2 + i * 6, price = $t`${d.price}:-`;
     chalk(P, d.name, x + 3, ry, 0xf2eee4, 30 + i);
     // receptet med stationernas tecken
     let sx = x + 57;
@@ -1393,9 +1394,9 @@ function paintCounter() {
   cabinetDoor(P, 320, 94, 30, 15, 'r');
   cabinetDoor(P, 352, 94, 30, 15, 'l');
   // stationernas mässingsbrickor
-  brassPlate(P, 257, 93, 'BRYGG', 'brygg');
-  brassPlate(P, 301, 102, 'ÅNGA', 'anga');
-  brassPlate(P, 335, 102, 'MALA', 'mala');
+  brassPlate(P, 257, 93, $t('BRYGG'), 'brygg');
+  brassPlate(P, 301, 102, $t('ÅNGA'), 'anga');
+  brassPlate(P, 335, 102, $t('MALA'), 'mala');
   // ---- glasmontern (baksidan av den, glaset ritas i eget lager) ----
   paintMonter(P);
   // ---- kassaapparaten i mässing + kortterminal ----
@@ -1491,7 +1492,7 @@ function paintMonter(P) {
   // sockeln med prislappar
   area(P, x0 - 1, 82, w + 2, 8, (X, Y, i, j) => (j === 0 ? 0xf0d27a : j === 1 ? 0x8a6a28 : jit(0x4a2a16, X, Y, 39, 0.08)));
   PASTRIES.forEach((p, i) => {
-    const s = p.price + ':-', tw = textW(SMALL, s), tx = MON_COLS[i] - (tw >> 1);
+    const s = $t`${p.price}:-`, tw = textW(SMALL, s), tx = MON_COLS[i] - (tw >> 1);
     P.rect(tx - 2, 84, tw + 4, 7, 0xfaf6ee); P.hl(tx - 2, 90, tw + 4, 0xb8b0a0);
     text(P, SMALL, s, tx, 85, 0x3a2810);
   });
@@ -1796,9 +1797,9 @@ function paintBench() {
     P.hl(bx, T - 8 + k, 8, 0xa87a48); P.rect(bx + 2, T - 4 + k, 4, 3, 0x2f5b46); P.px(bx + 3, T - 3 + k, 0xf0d27a);
   }
   // ---- stationernas mässingsbrickor ----
-  brassPlate(P, DISK_X, F + 3, 'DISK', 'disk');
-  brassPlate(P, KAKAO_X, F + 3, 'KAKAO', 'kakao');
-  brassPlate(P, KONST_X, F + 3, 'KONST', 'konst');
+  brassPlate(P, DISK_X, F + 3, $t('DISK'), 'disk');
+  brassPlate(P, KAKAO_X, F + 3, $t('KAKAO'), 'kakao');
+  brassPlate(P, KONST_X, F + 3, $t('KONST'), 'konst');
   return P.flush();
 }
 // mjölkbackar med paket (hinder uppe till vänster)
@@ -1850,7 +1851,7 @@ function paintBucket() {
   for (let x = 3; x < 19; x++) P.px(x, 27, (x % 3) ? 0xd8e8f0 : 0x9ab8c8);
   P.rect(8, 24, 6, 3, 0xe8e0d0); P.px(9, 25, 0xc8c0b0);
   P.rect(2, 37, 3, 3, 0x1e1e22); P.rect(17, 37, 3, 3, 0x1e1e22); P.px(3, 38, 0x6a6a74); P.px(18, 38, 0x6a6a74);
-  text(P, SMALL, 'OBS', 6, 30, 0x3a2e08);
+  text(P, SMALL, $t('OBS'), 6, 30, 0x3a2e08);
   return P.flush();
 }
 

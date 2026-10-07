@@ -37,6 +37,7 @@ import { play, audioContext, isMuted } from '../core/sound.js';
 import { JOBS } from '../game.js';
 import { createWalker, selfDrawable, folkDrawables, WALK_SEQ, nameTag, emoteBubble, createSpeech } from './walkable.js';
 import { worldFolksHere, worldMyEmote } from '../net/world.js';
+import { $t, $n, num } from '../core/i18n.js';
 
 const talk = createSpeech(); // repliker från folk (och figuren själv) som pratbubblor
 const pa = createSpeech();   // högtalarutropen – en egen bubbla från högtalaren
@@ -221,7 +222,7 @@ const lightsOn = (mode) => mode !== 'dag';
 const objMode = (mode) => (mode === 'natt' ? 'nattlit' : mode);
 
 // ======================= flygen (tavlan, skärmarna, utropen) =======================
-const DEST = ['LONDON', 'OSLO', 'PARIS', 'BERLIN', 'HELSINKI', 'ROM', 'VISBY', 'MALAGA', 'ATEN', 'NEW YORK', 'LULEÅ', 'MADRID', 'TOKYO', 'KIRUNA', 'PRAG', 'MALMÖ', 'DUBAI', 'NICE', 'GÖTEBORG', 'WIEN', 'ISTANBUL', 'KRETA', 'MALLORCA', 'LISSABON', 'BANGKOK', 'UMEÅ', 'BRYSSEL', 'RIGA', 'TALLINN', 'DUBLIN'];
+const DEST = [$t('LONDON'), $t('OSLO'), $t('PARIS'), $t('BERLIN'), $t('HELSINKI'), $t('ROM'), $t('VISBY'), $t('MALAGA'), $t('ATEN'), $t('NEW YORK'), $t('LULEÅ'), $t('MADRID'), $t('TOKYO'), $t('KIRUNA'), $t('PRAG'), $t('MALMÖ'), $t('DUBAI'), $t('NICE'), $t('GÖTEBORG'), $t('WIEN'), $t('ISTANBUL'), $t('KRETA'), $t('MALLORCA'), $t('LISSABON'), $t('BANGKOK'), $t('UMEÅ'), $t('BRYSSEL'), $t('RIGA'), $t('TALLINN'), $t('DUBLIN')];
 const GATE_IDS = ['A1', 'A2', 'A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'B1', 'B2', 'B3', 'B4'];
 // dygnets avgångar: tätt på dagen, glest på natten (flygplatsen stänger aldrig)
 function flightsOf(day) {
@@ -248,13 +249,13 @@ function flightsOf(day) {
 const hhmm = (m) => { const v = ((Math.floor(m) % 1440) + 1440) % 1440; return String(Math.floor(v / 60)).padStart(2, '0') + ':' + String(v % 60).padStart(2, '0'); };
 // status efter hur långt det är kvar (minuter)
 function statusOf(f, now) {
-  if (f.off) return { s: 'INSTÄLLD', c: 0xff5a4a, blink: false };
+  if (f.off) return { s: $n('INSTÄLLD'), c: 0xff5a4a, blink: false };
   const left = f.m + f.late - now;
-  if (f.late && left > 12) return { s: 'FÖRSENAD', c: 0xffb030, blink: false };
-  if (left <= 4) return { s: 'STÄNGD', c: 0xff5a4a, blink: false };
-  if (left <= 12) return { s: 'STÄNGER', c: 0xffd23a, blink: true };
-  if (left <= 40) return { s: 'BOARDING', c: 0x5aff8a, blink: true };
-  return { s: 'I TID', c: 0xd8e4f0, blink: false };
+  if (f.late && left > 12) return { s: $n('FÖRSENAD'), c: 0xffb030, blink: false };
+  if (left <= 4) return { s: $n('STÄNGD'), c: 0xff5a4a, blink: false };
+  if (left <= 12) return { s: $n('STÄNGER'), c: 0xffd23a, blink: true };
+  if (left <= 40) return { s: $n('BOARDING'), c: 0x5aff8a, blink: true };
+  return { s: $n('I TID'), c: 0xd8e4f0, blink: false };
 }
 
 // ======================= flygplanen =======================
@@ -657,7 +658,7 @@ function paintFar(mode) {
     if (j % 3 === 1 && i % 3 === 1 && i > 1 && i < 20) return lit && hash(X, Y, 55) > 0.45 ? V.win : mul(V.bld, mode === 'dag' ? 0.78 : 0.6);
     return mul(V.bld, 0.9);
   });
-  text(P, SMALL, 'HOTELL', HOTEL_X - 9, 16, lit ? 0xff7a5a : T(0x3a5a8a));
+  text(P, SMALL, $t('HOTELL'), HOTEL_X - 9, 16, lit ? 0xff7a5a : T(0x3a5a8a));
   P.hl(HOTEL_X - 10, 21, 22, mul(V.bld, 0.7));
   if (lit) { for (let x = HOTEL_X - 9; x < HOTEL_X + 11; x++) if (G) G.px(x, 18, 0xff5a3a, 0.4); }
   // Pixelstadens silhuett
@@ -704,7 +705,7 @@ function paintFar(mode) {
   area(P, TOWER_X - 8, 11, 17, 2, (X, Y, i, j) => (j === 0 ? mix(V.bld, WHITE, 0.25) : mul(V.bld, 0.55)));
   P.vl(TOWER_X, 5, 6, mul(V.bld, 0.7)); P.hl(TOWER_X - 2, 8, 5, mul(V.bld, 0.7));
   // hangarerna (en stjärtfena sticker ut ur porten)
-  for (const [hx, hw, lbl] of [[768, 70, 'HANGAR 2'], [846, 56, 'HANGAR 3']]) {
+  for (const [hx, hw, lbl] of [[768, 70, $t('HANGAR 2')], [846, 56, $t('HANGAR 3')]]) {
     for (let x = hx; x < hx + hw; x++) {
       const u = (x - hx - hw / 2) / (hw / 2), ty = 33 + Math.round(u * u * 5);
       for (let y = ty; y < HOR; y++) {
@@ -719,7 +720,7 @@ function paintFar(mode) {
   for (let j = 0; j < 7; j++) for (let i = 0; i <= j; i++) P.px(800 + i, 40 + j, T(LIVERY[2]));
   // fraktterminalen
   area(P, 910, 38, 100, 9, (X, Y, i, j) => (j === 0 ? mix(V.bld, WHITE, 0.2) : i % 12 < 8 && j > 3 ? (lit ? mix(V.bld, 0xffe0a0, 0.4) : mul(V.bld, 0.7)) : mul(V.bld, 0.92)));
-  text(P, SMALL, 'CARGO', 944, 39, lit ? 0xffd070 : T(0xd8303a));
+  text(P, SMALL, $t('CARGO'), 944, 39, lit ? 0xffd070 : T(0xd8303a));
   // bränsledepån
   for (const [tx, tw] of [[1032, 13], [1048, 11], [1062, 13]]) {
     area(P, tx, 40, tw, 7, (X, Y, i, j) => (j === 0 ? mix(V.bld, WHITE, 0.4) : i === 0 ? mix(V.bld, WHITE, 0.2) : i === tw - 1 ? mul(V.bld, 0.72) : V.bld));
@@ -846,7 +847,7 @@ function paintNearRaw(mode) {
     P.hl(ux + 2, uy + 3, 6, T(0x8a9098));
     text(P, SMALL, 'AK', ux + 2, uy + 2, T(0x3a5a8a), 0.6);
   }
-  text(P, SMALL, 'BAGAGE', 118, 56, lit ? 0xffe070 : T(0x3a5a8a));
+  text(P, SMALL, $t('BAGAGE'), 118, 56, lit ? 0xffe070 : T(0x3a5a8a));
   if (lit) for (let x = 30; x < 270; x += 40) glow(x, 64, 10, 3, 0xfff0c0, 0.25);
   // strålkastarmasterna
   for (const mx of MASTS) {
@@ -887,7 +888,7 @@ function paintNearRaw(mode) {
       // cateringbilen med lådan upphissad till dörren på vänstra sidan
       const kx = cx - 42, fy = gy - NOSE.lift;
       area(Q, kx, fy - 8, 24, 13, (X, Y, i, j) => (j === 0 ? T(0xffffff) : i === 0 ? T(0xe8ecf0) : i === 23 ? T(0x9aa0a8) : j === 6 ? T(0x2a6ad0) : T(0xdfe3e8)));
-      text(Q, SMALL, 'MAT', kx + 7, fy - 5, T(0x2a6ad0));
+      text(Q, SMALL, $t('MAT'), kx + 7, fy - 5, T(0x2a6ad0));
       for (let y = fy + 5; y < gy - 5; y++) { Q.px(kx + 4 + ((y >> 1) & 1) * 3, y, T(0x6a7078)); Q.px(kx + 19 - ((y >> 1) & 1) * 3, y, T(0x6a7078)); }
       area(Q, kx - 3, gy - 5, 30, 4, (X, Y, i, j) => (j === 0 ? T(0xe8ecf0) : T(0x9aa0a8)));
       area(Q, kx + 22, gy - 11, 8, 7, (X, Y, i, j) => (j === 0 ? T(0xffffff) : i > 2 && j > 1 && j < 4 ? (lit ? 0x3a4a5a : T(0x6a9ac0)) : T(0xe0e4e8)));
@@ -996,7 +997,7 @@ function paintHall() {
   }
   // entrémattan
   area(P, 348, 97, 64, 13, (X, Y, i, j) => (i === 0 || j === 0 || i === 63 || j === 12 ? 0x2e3036 : (Y % 2 === 0 ? 0x4a4c54 : 0x3e4046)));
-  text(P, SMALL, 'VÄLKOMMEN', 380 - (textW(SMALL, 'VÄLKOMMEN') >> 1), 101, 0xa8aab0);
+  text(P, SMALL, $t('VÄLKOMMEN'), 380 - (textW(SMALL, $t('VÄLKOMMEN')) >> 1), 101, 0xa8aab0);
   // kompassrosen i golvet
   const RX = 380, RY = 156;
   for (let y = -9; y <= 9; y++) for (let x = -24; x <= 24; x++) {
@@ -1013,7 +1014,7 @@ function paintHall() {
   text(P, SMALL, 'N', RX - 1, RY - 15, 0xb88a40);
   // gula linjer framför säkerhetsbågen
   for (let x = 836; x < 860; x += 4) P.hl(x, 170, 2, 0xe8b820);
-  text(P, SMALL, 'VÄNTA HÄR', 848 - (textW(SMALL, 'VÄNTA HÄR') >> 1), 174, 0xc89a20);
+  text(P, SMALL, $t('VÄNTA HÄR'), 848 - (textW(SMALL, $t('VÄNTA HÄR')) >> 1), 174, 0xc89a20);
   // ---- ankomstgången ----
   area(P, 6, 48, 24, 48, (X, Y, i, j) => {
     const vx = 18, vy = 66, k = j / 48;
@@ -1023,13 +1024,13 @@ function paintHall() {
   });
   P.rect(14, 60, 8, 10, 0x1e2026); P.hl(15, 62, 6, 0x5aff8a);
   rows(P, 5, 47, 26, [0x6a6e76, 0x9aa0a8]); P.vl(5, 48, 48, 0x7a8088); P.vl(30, 48, 48, 0x7a8088);
-  signs.push(hangLike(P, 18, 36, 'ANKOMST', null));
+  signs.push(hangLike(P, 18, 36, $t('ANKOMST'), null));
   // ---- entréväggen: tavlan, UTGÅNG, dörren med korridoren, uttaget, kartan ----
   const B = BOARD;
   area(P, B.x, B.y, B.w, B.h, (X, Y, i, j) => (i < 2 || j < 2 || i >= B.w - 2 || j >= B.h - 2 ? (i === 0 || j === 0 ? 0x5a5e66 : 0x2a2c32) : 0x0c0d10));
   for (const [bx2, by2] of [[B.x + 3, B.y + 3], [B.x + B.w - 4, B.y + 3], [B.x + 3, B.y + B.h - 4], [B.x + B.w - 4, B.y + B.h - 4]]) P.px(bx2, by2, 0x6a6e76);
-  text(P, BIG, 'AVGÅNGAR', B.x + 5, B.y + 4, 0xffd23a);
-  icon(P, B.x + 5 + textW(BIG, 'AVGÅNGAR') + 4, B.y + 4, ICON.plane, 0xffd23a);
+  text(P, BIG, $t('AVGÅNGAR'), B.x + 5, B.y + 4, 0xffd23a);
+  icon(P, B.x + 5 + textW(BIG, $t('AVGÅNGAR')) + 4, B.y + 4, ICON.plane, 0xffd23a);
   P.hl(B.x + 3, B.y + 13, B.w - 6, 0x3a3e46);
   for (let r = 0; r < 5; r++) {
     const ry = B.y + 16 + r * 6;
@@ -1040,7 +1041,7 @@ function paintHall() {
   }
   signs.push({ x: B.x, y: B.y, w: B.w, h: B.h, c: 0xffd23a, a: 0.08 });
   // UTGÅNG-skylten
-  const ug = 'UTGÅNG', ugw = textW(SMALL, ug) + 16, ugx = 380 - (ugw >> 1);
+  const ug = $t('UTGÅNG'), ugw = textW(SMALL, ug) + 16, ugx = 380 - (ugw >> 1);
   P.rect(ugx, 59, ugw, 7, 0x1e8a4a); P.hl(ugx, 59, ugw, 0x5ad88a); P.hl(ugx, 65, ugw, 0x0e4a26);
   icon(P, ugx + 3, 60, ICON.run.map((r) => r.slice(0, 5)), 0xffffff);
   text(P, SMALL, ug, ugx + 12, 60, 0xffffff);
@@ -1055,22 +1056,22 @@ function paintHall() {
   });
   P.vl(366, DOOR.top, 3, 0x5a5e66); P.vl(394, DOOR.top, 3, 0x5a5e66);
   area(P, 362, DOOR.top + 3, 37, 8, (X, Y, i, j) => (i === 0 || j === 0 || i === 36 || j === 7 ? 0x2a2c32 : 0x16161a));
-  text(P, SMALL, 'TAXI', 365, DOOR.top + 5, 0xffd23a); P.px(381, DOOR.top + 7, 0xffd23a); text(P, SMALL, 'BUSS', 384, DOOR.top + 5, 0xffd23a);
+  text(P, SMALL, $t('TAXI'), 365, DOOR.top + 5, 0xffd23a); P.px(381, DOOR.top + 7, 0xffd23a); text(P, SMALL, $t('BUSS'), 384, DOOR.top + 5, 0xffd23a);
   for (const fx of [DOOR.x0 - 3, DOOR.x1]) vcols(P, fx, DOOR.top - 2, WALL_Y - DOOR.top + 2, [0xe0e4ea, 0xa8aeb6, 0x5a6068]);
   rows(P, DOOR.x0 - 3, DOOR.top - 3, DOOR.x1 - DOOR.x0 + 6, [0xe0e4ea, 0xa8aeb6, 0x5a6068]);
   P.rect(376, DOOR.top - 1, 8, 2, 0x1a1c22); P.px(382, DOOR.top - 1, 0xff3a2a);
   // uttagsautomaten
   area(P, 298, 64, 22, 28, (X, Y, i, j) => (i === 0 || j === 0 ? 0xd8dce2 : i === 21 || j === 27 ? 0x5a6068 : 0xa8aeb6));
-  P.rect(300, 60, 18, 5, 0xd8303a); text(P, SMALL, 'UTTAG', 300, 60, 0xffffff);
-  P.rect(302, 68, 14, 9, 0x10141c); P.rect(303, 69, 12, 7, 0x2a5aa8); text(P, SMALL, 'KR', 305, 70, 0xd8ecff);
+  P.rect(300, 60, 18, 5, 0xd8303a); text(P, SMALL, $t('UTTAG'), 300, 60, 0xffffff);
+  P.rect(302, 68, 14, 9, 0x10141c); P.rect(303, 69, 12, 7, 0x2a5aa8); text(P, SMALL, $t('KR'), 305, 70, 0xd8ecff);
   for (let k = 0; k < 9; k++) P.rect(303 + (k % 3) * 3, 80 + Math.floor(k / 3) * 3, 2, 2, k === 8 ? 0x5ad88a : 0xe8ecf0);
   P.rect(313, 80, 3, 1, 0x1a1a1e); P.rect(312, 86, 5, 1, 0x1a1a1e);
   signs.push({ x: 302, y: 68, w: 14, h: 9, c: 0x5a9aff, a: 0.25 });
   // kartan HITTA RÄTT
   area(P, 420, 64, 42, 28, (X, Y, i, j) => (i === 0 || j === 0 || i === 41 || j === 27 ? 0x3a3e46 : j < 7 ? 0x16161a : 0xf4f2ec));
-  text(P, SMALL, 'HITTA RÄTT', 422, 65, 0xffd23a);
+  text(P, SMALL, $t('HITTA RÄTT'), 422, 65, 0xffd23a);
   for (const [zx, zw, zc] of [[422, 6, 0x5a8ad0], [429, 6, 0xb8b2a4], [436, 9, 0x2e5a9a], [446, 4, 0xd8303a], [451, 9, 0x5aa05a]]) P.rect(zx, 76, zw, 8, zc);
-  P.rect(430, 79, 2, 2, 0xd8303a); text(P, SMALL, 'DU', 426, 85, 0xd8303a);
+  P.rect(430, 79, 2, 2, 0xd8303a); text(P, SMALL, $t('DU'), 426, 85, 0xd8303a);
   // ---- toalettväggen ----
   area(P, 1394, 56, 36, 40, (X, Y, i, j) => {
     const vx = 1412, vy = 70, dx = Math.abs(X - vx);
@@ -1082,7 +1083,7 @@ function paintHall() {
   for (const dx of [1398, 1422]) { P.rect(dx, 64, 4, 12, 0x6a8aa8); P.px(dx + 3, 70, 0xd8dce2); }
   vcols(P, 1392, 54, 42, [0xe0e4ea, 0x8a9096]); vcols(P, 1429, 54, 42, [0xe0e4ea, 0x8a9096]); rows(P, 1392, 53, 39, [0xe0e4ea, 0x8a9096]);
   area(P, 1394, 36, 34, 14, (X, Y, i, j) => (i === 0 || j === 0 || i === 33 || j === 13 ? 0x2a2c32 : 0x16161a));
-  text(P, BIG, 'WC', 1397, 39, 0xffd23a);
+  text(P, BIG, $t('WC'), 1397, 39, 0xffd23a);
   icon(P, 1411, 40, ICON.man, 0xffd23a); icon(P, 1416, 40, ICON.lady, 0xffd23a); icon(P, 1421, 40, ICON.wheel, 0xffd23a);
   signs.push({ x: 1394, y: 36, w: 34, h: 14, c: 0xffd23a, a: 0.2 });
   // vattenfontänen
@@ -1093,7 +1094,7 @@ function paintHall() {
     for (const vx of [D.x0 + 6, D.x1 - 7]) P.vl(vx, 10, FASCIA - 10, 0x5a5e66);
     area(P, D.x0, FASCIA, D.x1 - D.x0, 17, (X, Y, i, j) => (j === 0 ? 0x4a6aa8 : j === 16 ? 0x0e1a34 : j === 15 ? 0xffd23a : 0x1e3460));
     P.rect(D.x0 + 2, FASCIA + 2, 7, 7, 0xffd23a); text(P, SMALL, String(D.k + 1), D.x0 + 4, FASCIA + 3, 0x16161a);
-    text(P, SMALL, 'SNABBFLYG', D.x0 + 12, FASCIA + 3, 0xffffff);
+    text(P, SMALL, $t('SNABBFLYG'), D.x0 + 12, FASCIA + 3, 0xffffff);
     P.rect(D.x0 + 2, FASCIA + 10, D.x1 - D.x0 - 4, 7, 0x0a0c12);
     signs.push({ x: D.x0, y: FASCIA, w: D.x1 - D.x0, h: 17, c: 0x7aa0ff, a: 0.12 });
   }
@@ -1107,7 +1108,7 @@ function paintHall() {
   area(P, FEED.x0 + 8, 72, 32, 16, (X, Y, i) => (i % 4 === 3 ? 0x0a0a0e : (Y % 5 === 0 ? 0x2a2a30 : 0x1a1a1e)));
   rows(P, FEED.x0 + 6, 70, 36, [0x8a9098, 0x4a4e56]);
   for (let x = FEED.x0 + 6; x < FEED.x1 - 6; x++) P.px(x, 89, ((x >> 1) & 1) ? 0xffd23a : 0x16161a);
-  text(P, SMALL, 'BAND 1', FEED.x0 + 12, 91, 0x3a3e46);
+  text(P, SMALL, $t('BAND 1'), FEED.x0 + 12, 91, 0x3a3e46);
   // ---- pelarna ----
   for (const cx of COLS) {
     const sh = [0xa8aeb6, 0xd8dce2, 0xf4f6f8, 0xffffff, 0xf0f2f4, 0xdce0e4, 0xc0c6cc, 0x9aa0a8, 0x7a8088];
@@ -1126,8 +1127,8 @@ function paintHall() {
       if (kind === 0) return j < 9 ? qmix(0x5ab4f0, 0xbfe6ff, j / 9, X, Y, 3) : j < 13 ? 0x2a8ac8 : 0xf0dca0;
       return j < 11 ? qmix(0x1e2a5a, 0x6a4a8a, j / 11, X, Y, 3) : 0x2a2440;
     });
-    if (kind === 0) { P.ell(x0 + 10, y0 + 3, 2.2, 2.2, 0xffe070, 1, 2); P.vl(x0 + 4, y0 + 8, 8, 0x6a4a2a); for (const [lx, ly] of [[1, 7], [2, 6], [3, 6], [5, 6], [6, 6], [7, 7]]) P.px(x0 + lx, y0 + ly, 0x2e8a3a); text(P, SMALL, 'SOL', x0 + 2, y0 + 14, 0xd8303a); }
-    else { for (let k = 0; k < 5; k++) P.rect(x0 + 1 + k * 3, y0 + 10 - (k % 3) * 2 - 3, 2, 3 + (k % 3) * 2, 0x0e1224); for (let k = 0; k < 8; k++) P.px(x0 + 1 + hash(k, 0, 85) * 12, y0 + 5 + hash(k, 1, 85) * 6, 0xffd070); text(P, SMALL, 'STAN', x0 + 0, y0 + 14, 0xffd23a); }
+    if (kind === 0) { P.ell(x0 + 10, y0 + 3, 2.2, 2.2, 0xffe070, 1, 2); P.vl(x0 + 4, y0 + 8, 8, 0x6a4a2a); for (const [lx, ly] of [[1, 7], [2, 6], [3, 6], [5, 6], [6, 6], [7, 7]]) P.px(x0 + lx, y0 + ly, 0x2e8a3a); text(P, SMALL, $t('SOL'), x0 + 2, y0 + 14, 0xd8303a); }
+    else { for (let k = 0; k < 5; k++) P.rect(x0 + 1 + k * 3, y0 + 10 - (k % 3) * 2 - 3, 2, 3 + (k % 3) * 2, 0x0e1224); for (let k = 0; k < 8; k++) P.px(x0 + 1 + hash(k, 0, 85) * 12, y0 + 5 + hash(k, 1, 85) * 6, 0xffd070); text(P, SMALL, $t('STAN'), x0 + 0, y0 + 14, 0xffd23a); }
     signs.push({ x: x0, y: y0, w: 14, h: 20, c: 0xfff0d0, a: 0.25 });
   }
   // ---- gate-dörrarna i glasväggen (till bryggorna) ----
@@ -1154,7 +1155,7 @@ function paintHall() {
     if ((j - 12) % 13 === 1) c = 0x4a3020;
     return c;
   });
-  const kt = 'PIXEL KAFFE';
+  const kt = $t('PIXEL KAFFE');
   text(P, BIG, kt, KX + (KW >> 1) - (textW(BIG, kt) >> 1) + 5, 42, 0xffe8b0);
   icon(P, KX + (KW >> 1) - (textW(BIG, kt) >> 1) - 6, 42, ICON.cup, 0xffe8b0);
   signs.push({ x: KX, y: 40, w: KW, h: 11, c: 0xffb060, a: 0.3 });
@@ -1172,11 +1173,11 @@ function paintHall() {
   for (const gx of [KX + 76, KX + 86]) { P.rect(gx, 86, 4, 2, 0x2a2c30); P.vl(gx + 1, 88, 2, 0x5a5e66); }
   P.rect(KX + 92, 79, 5, 3, 0x0a0c12); P.px(KX + 93, 80, 0x5aff8a);
   // ---- hängande skyltar och högtalare ----
-  signs.push(hangLike(P, 150, 13, 'BAGAGEBAND 1', ICON.case));
-  signs.push(hangLike(P, 640, 13, 'INCHECKNING', ICON.desk));
-  signs.push(hangLike(P, 846, 13, 'SÄKERHETSKONTROLL', ICON.guard));
-  signs.push(hangLike(P, 1100, 13, 'GATE A1-A2', ICON.plane, true));
-  signs.push(hangLike(P, 1320, 22, 'KAFÉ', ICON.cup));
+  signs.push(hangLike(P, 150, 13, $t('BAGAGEBAND 1'), ICON.case));
+  signs.push(hangLike(P, 640, 13, $t('INCHECKNING'), ICON.desk));
+  signs.push(hangLike(P, 846, 13, $t('SÄKERHETSKONTROLL'), ICON.guard));
+  signs.push(hangLike(P, 1100, 13, $t('GATE A1-A2'), ICON.plane, true));
+  signs.push(hangLike(P, 1320, 22, $t('KAFÉ'), ICON.cup));
   for (const sp of SPEAKERS) {
     if (COLS.includes(sp.x)) continue;
     P.vl(sp.x, 9, sp.y - 9, 0x5a5e66);
@@ -1285,7 +1286,7 @@ function hatchSprite() {
       return jit(0xb8bec6, X, Y, 91, 0.05);
     });
     area(P, 12, 18, 11, 12, (X, Y, i) => (i % 3 === 2 ? 0x0a0a0e : 0x22222a));
-    text(P, SMALL, 'IN', 4, 4, 0x3a3e46);
+    text(P, SMALL, $t('IN'), 4, 4, 0x3a3e46);
     P.rect(4, 12, 5, 3, 0xff7a1e);
   });
 }
@@ -1311,7 +1312,7 @@ function laneSprite() {
     // skylten vid ingången
     P.vl(8, base - 16, 16, 0x9aa0a8); P.vl(9, base - 16, 16, 0x5a6068); P.rect(5, base, 8, 2, 0x6a7078);
     area(P, 0, base - 26, 22, 10, (X, Y, i, j) => (i === 0 || j === 0 || i === 21 || j === 9 ? 0x2a2c32 : 0x16161a));
-    text(P, SMALL, 'KÖ', 3, base - 23, 0xffd23a); icon(P, 14, base - 23, ICON.arrow, 0xffd23a);
+    text(P, SMALL, $t('KÖ'), 3, base - 23, 0xffd23a); icon(P, 14, base - 23, ICON.arrow, 0xffd23a);
   });
 }
 // röntgenmaskinen: ljus låda, tunnel med gummiridå, skärm ovanpå
@@ -1328,7 +1329,7 @@ function xraySprite() {
     });
     area(P, 8, 19, 20, 12, (X, Y, i) => (i % 3 === 2 ? 0x0a0a0e : 0x2a2c34));
     rows(P, 7, 18, 22, [0x8a9098]);
-    text(P, SMALL, 'RÖNTGEN', 5, 15 - 1, 0x2a6ad0);
+    text(P, SMALL, $t('RÖNTGEN'), 5, 15 - 1, 0x2a6ad0);
     for (const [i, j] of [[1, 0], [0, 1], [1, 1], [2, 1], [0, 2], [1, 2], [2, 2]]) P.px(30 + i, 21 + j, 0xffd23a);
     area(P, 20, 0, 13, 8, (X, Y, i, j) => (i === 0 || j === 0 || i === 12 || j === 7 ? 0x2a2c32 : 0x0a0c12));
     P.vl(26, 8, 1, 0x3a3e46);
@@ -1500,7 +1501,7 @@ function kioskSprite() {
     for (let k = 0; k < 9; k++) { const bx = 9 + k * 4, by = 8 - (k % 2) * 3; P.rect(bx, by, 3, 2, [0xd88c46, 0xf0c888, 0x8a4a2a, 0xe8b0c0][k % 4]); P.px(bx, by, 0xf4c47c); }
     // menyskylten
     area(P, 52, 2, 34, 10, (X, Y, i, j) => (i === 0 || j === 0 || i === 33 || j === 9 ? 0x6a4a2a : 0x1a1a1e));
-    text(P, SMALL, 'KAFFE 49', 54, 4, 0xf4f1ea);
+    text(P, SMALL, $t('KAFFE 49'), 54, 4, 0xf4f1ea);
     // kassan
     area(P, 94, 3, 12, 9, (X, Y, i, j) => (j < 4 ? (i === 0 || j === 0 ? 0x2a2c30 : 0x3a8a6a) : j === 4 ? 0x16161a : 0x3a3e46));
     P.rect(108, 8, 4, 4, 0xe8f4fa); P.px(109, 10, 0xe0b030); P.px(110, 9, 0xe0b030);
@@ -1571,7 +1572,7 @@ function liquidSignSprite(x, y) {
   return sprite(x - 9, y - 22, 19, 23, (P) => {
     P.line(2, 22, 5, 12, 0x6a7078); P.line(16, 22, 13, 12, 0x6a7078);
     area(P, 0, 0, 19, 13, (X, Y, i, j) => (i === 0 || j === 0 || i === 18 || j === 12 ? 0x2a2c32 : 0xffd23a));
-    text(P, SMALL, 'MAX', 3, 1, 0x16161a); text(P, SMALL, '1 DL', 2, 7, 0x16161a);
+    text(P, SMALL, $t('MAX'), 3, 1, 0x16161a); text(P, SMALL, $t('1 DL'), 2, 7, 0x16161a);
   });
 }
 function lostTrolleySprite(x, y) {
@@ -1692,7 +1693,7 @@ const GUARD_LOOKS = [
   { skin: '#f6d7bf', hair: '#ecd489', style: 'ponytail', top: 'police', shirt: '#2a2e3a', accent: '#ffd23a', bottom: 'pants', pants: '#1e2028', shoes: '#1c1c1c', build: 5 },
 ];
 const JANITOR_LOOK = { skin: '#a06a43', hair: '#b9b3ab', style: 'short', top: 'workshirt', shirt: '#3a6ab0', accent: '#ffd23a', bottom: 'pants', pants: '#2a3a5a', shoes: '#1c1c1c', hat: 'cap', cap: '#3a6ab0', beard: 'mustache', build: 6 };
-const L_JANITOR = ['Akta, det är vått! 🧹', 'Jag har städat här i trettio år.', 'Nattskiftet är lugnast.', 'Du skulle se hur det ser ut efter ett charterplan ...'];
+const L_JANITOR = [$t('Akta, det är vått! 🧹'), $t('Jag har städat här i trettio år.'), $t('Nattskiftet är lugnast.'), $t('Du skulle se hur det ser ut efter ett charterplan ...')];
 const BARISTA_LOOK = { skin: '#c68a5c', hair: '#2f8f6f', style: 'mohawk', top: 'tee', shirt: '#2f3440', accent: '#c9a44a', bottom: 'pants', pants: '#2b2b30', shoes: '#1c1c1c', apron: true, hat: 'beanie', cap: '#6a3a1a', build: 5 };
 const GATE_LOOKS = [
   { skin: '#f6d7bf', hair: '#1d1714', style: 'bun', top: 'blazer', shirt: '#c9323a', accent: '#f4f1ea', bottom: 'skirt', pants: '#2a2a34', shoes: '#1c1c1c', neck: 'scarf', neckColor: '#f4f1ea', build: 5 },
@@ -1703,17 +1704,17 @@ const CREW_LOOKS = [
   { skin: '#f6d7bf', hair: '#d9a95c', style: 'bun', top: 'blazer', shirt: '#1e3a6e', accent: '#ffd23a', bottom: 'skirt', pants: '#1e2a44', shoes: '#1c1c1c', neck: 'scarf', neckColor: '#ffd23a', build: 5 },
   { skin: '#744a2d', hair: '#1d1714', style: 'bun', top: 'blazer', shirt: '#1e3a6e', accent: '#ffd23a', bottom: 'skirt', pants: '#1e2a44', shoes: '#1c1c1c', neck: 'scarf', neckColor: '#ffd23a', build: 5 },
 ];
-const L_SEAT = ['Mitt flyg är försenat IGEN.', 'Ska till Mallorca! ☀️', 'Jag har suttit här sedan i morse ...', 'Har du sett min boardingkort?', 'Flygplatskaffe kostar skjortan.', 'Kolla, där tankar de planet!', 'Jag åker och hälsar på mormor.', 'Tror du vi hinner handla tax free?', 'Jag hatar att flyga. Men jag älskar att landa.', 'Gate A2, var är den?'];
-const L_NIGHT = ['Nattflyg är billigast.', 'Jag missade sista bussen ...', 'Zzz ... va? Boardar vi?', 'Det är så tyst här på natten.'];
-const L_SLEEP = ['Zzz ... 😴', 'Mmm ... fem minuter till ...', 'Zzz ... inte nu ...'];
-const L_KID = ['Titta, ett flygplan! ✈️', 'Jag vill sitta vid fönstret!', 'Är vi framme snart?', 'Pappa! Planet blinkar!', 'Tagen! Du är den!'];
-const L_WAIT = ['Min väska kommer ALLTID sist.', 'Blå väska, blå väska ...', 'Är det min? Nej ...', 'Hoppas den inte hamnade i Oslo.', 'Nu kommer de! 🧳'];
-const L_WALK = ['Ursäkta, vart går gate A1?', 'Vi kommer att missa planet!', 'Hinner jag köpa en bulle?', 'Hej hej!'];
-const L_AGENT = ['Nästa, tack!', 'Fönster eller gång?', 'Väskan väger 22,9 kilo - precis under gränsen!', 'Har du packat väskan själv?', 'Trevlig resa!'];
-const L_GUARD = ['Vätskor i påsen, tack!', 'Töm fickorna i lådan.', 'Ta av dig bältet, tack.', 'Datorn i en egen låda.'];
-const L_BARISTA = ['Flygplatskaffe - 49 kr. Ja, jag vet.', 'Kanelbullen är från i morse. Tror jag.', 'Vi har öppet dygnet runt! ☕', 'Nattskiftet är mitt favoritskift.'];
-const L_GATE = ['Boarding börjar snart vid gaten!', 'Ha boardingkortet redo, tack.', 'Barnfamiljer får gå ombord först.'];
-const L_WINDOW = ['Jag älskar att titta på planen.', 'Där landar ett till!', 'Kolla signalgubben med stavarna!', 'Tankbilen är här!'];
+const L_SEAT = [$t('Mitt flyg är försenat IGEN.'), $t('Ska till Mallorca! ☀️'), $t('Jag har suttit här sedan i morse ...'), $t('Har du sett min boardingkort?'), $t('Flygplatskaffe kostar skjortan.'), $t('Kolla, där tankar de planet!'), $t('Jag åker och hälsar på mormor.'), $t('Tror du vi hinner handla tax free?'), $t('Jag hatar att flyga. Men jag älskar att landa.'), $t('Gate A2, var är den?')];
+const L_NIGHT = [$t('Nattflyg är billigast.'), $t('Jag missade sista bussen ...'), $t('Zzz ... va? Boardar vi?'), $t('Det är så tyst här på natten.')];
+const L_SLEEP = [$t('Zzz ... 😴'), $t('Mmm ... fem minuter till ...'), $t('Zzz ... inte nu ...')];
+const L_KID = [$t('Titta, ett flygplan! ✈️'), $t('Jag vill sitta vid fönstret!'), $t('Är vi framme snart?'), $t('Pappa! Planet blinkar!'), $t('Tagen! Du är den!')];
+const L_WAIT = [$t('Min väska kommer ALLTID sist.'), $t('Blå väska, blå väska ...'), $t('Är det min? Nej ...'), $t('Hoppas den inte hamnade i Oslo.'), $t('Nu kommer de! 🧳')];
+const L_WALK = [$t('Ursäkta, vart går gate A1?'), $t('Vi kommer att missa planet!'), $t('Hinner jag köpa en bulle?'), $t('Hej hej!')];
+const L_AGENT = [$t('Nästa, tack!'), $t('Fönster eller gång?'), $t('Väskan väger 22,9 kilo - precis under gränsen!'), $t('Har du packat väskan själv?'), $t('Trevlig resa!')];
+const L_GUARD = [$t('Vätskor i påsen, tack!'), $t('Töm fickorna i lådan.'), $t('Ta av dig bältet, tack.'), $t('Datorn i en egen låda.')];
+const L_BARISTA = [$t('Flygplatskaffe - 49 kr. Ja, jag vet.'), $t('Kanelbullen är från i morse. Tror jag.'), $t('Vi har öppet dygnet runt! ☕'), $t('Nattskiftet är mitt favoritskift.')];
+const L_GATE = [$t('Boarding börjar snart vid gaten!'), $t('Ha boardingkortet redo, tack.'), $t('Barnfamiljer får gå ombord först.')];
+const L_WINDOW = [$t('Jag älskar att titta på planen.'), $t('Där landar ett till!'), $t('Kolla signalgubben med stavarna!'), $t('Tankbilen är här!')];
 
 // ======================= scenen =======================
 export function makeShopTerminal(A, opts = {}) {
@@ -1908,7 +1909,7 @@ export function makeShopTerminal(A, opts = {}) {
         const n = queue.shift();
         ds.pax = n; n.state = 'toDesk';
         goNpc(n, ds.D.x0 + 22, DESK_Y + 6, () => { n.state = 'atDesk'; n.dir = 'up'; ds.t = 0; ds.dur = 8 + R() * 5; });
-        ambient(R() < 0.5 ? 'Nästa, tack!' : 'Välkommen fram!', { x: agents[k].x, y: agents[k].y - 40 }, agents[k].x);
+        ambient(R() < 0.5 ? $t('Nästa, tack!') : $t('Välkommen fram!'), { x: agents[k].x, y: agents[k].y - 40 }, agents[k].x);
         reQueue();
       }
       const n = ds.pax;
@@ -1977,7 +1978,7 @@ export function makeShopTerminal(A, opts = {}) {
     if (!best) { n.t = 0.4; return; }
     carBags.splice(carBags.indexOf(best), 1);
     n.bag = { ci: best.ci }; waitTaken.delete(n.spot);
-    if (R() < 0.4) ambient(R() < 0.5 ? 'Där är den! 🧳' : 'Äntligen!', () => ({ x: n.x, y: n.y - 44 }), n.x);
+    if (R() < 0.4) ambient(R() < 0.5 ? $t('Där är den! 🧳') : $t('Äntligen!'), () => ({ x: n.x, y: n.y - 44 }), n.x);
     n.state = 'leave';
     goNpc(n, DOOR_SPOT[0] + (R() - 0.5) * 20, WALL_Y + 6, () => { n.gone = true; });
   }
@@ -1992,9 +1993,9 @@ export function makeShopTerminal(A, opts = {}) {
     if (x < ARCH.p0 + 4 || x > ARCH.p1 || (y0 - SEC.y) * (y1 - SEC.y) > 0 || y0 === y1) return;
     archFlash = t;
     archRed = mine ? R() < 0.15 : R() < 0.06;
-    if (!mine && archRed) ambient('Pip! Har du något i fickorna?', { x: GUARD2.x, y: GUARD2.y - 44 }, GUARD2.x, true);
+    if (!mine && archRed) ambient($t('Pip! Har du något i fickorna?'), { x: GUARD2.x, y: GUARD2.y - 44 }, GUARD2.x, true);
     if (mine) {
-      if (archRed) { beepBad(); say('PIP! Stick ut armarna, tack.', { x: GUARD2.x, y: GUARD2.y - 44 }, 3, { voice: GUARD_LOOKS[1] }); }
+      if (archRed) { beepBad(); say($t('PIP! Stick ut armarna, tack.'), { x: GUARD2.x, y: GUARD2.y - 44 }, 3, { voice: GUARD_LOOKS[1] }); }
       else beepOk();
     }
     if (y1 < y0 && R() < 0.8) trays.push({ y: 162, c: BAG_COLORS[Math.floor(R() * BAG_COLORS.length)], k: Math.floor(R() * 3) });
@@ -2264,12 +2265,12 @@ export function makeShopTerminal(A, opts = {}) {
     const lines = [];
     if (f) {
       const st = statusOf(f, g.min);
-      if (st.s === 'BOARDING') lines.push(`DING DONG! ${f.no} TILL ${f.dest} BOARDAR NU VID GATE ${f.gate}.`);
-      if (st.s === 'STÄNGER') lines.push(`SISTA UTROP FÖR ${f.no} TILL ${f.dest}! GATE ${f.gate} STÄNGER.`);
-      if (st.s === 'FÖRSENAD') lines.push(`${f.no} TILL ${f.dest} ÄR FÖRSENAT. NY TID ${hhmm(f.m + f.late)}.`);
-      lines.push(`DING DONG! ${f.no} TILL ${f.dest} AVGÅR ${hhmm(f.m)} FRÅN GATE ${f.gate}.`);
+      if (st.s === 'BOARDING') lines.push($t`DING DONG! ${f.no} TILL ${f.dest} BOARDAR NU VID GATE ${f.gate}.`);
+      if (st.s === 'STÄNGER') lines.push($t`SISTA UTROP FÖR ${f.no} TILL ${f.dest}! GATE ${f.gate} STÄNGER.`);
+      if (st.s === 'FÖRSENAD') lines.push($t`${f.no} TILL ${f.dest} ÄR FÖRSENAT. NY TID ${hhmm(f.m + f.late)}.`);
+      lines.push($t`DING DONG! ${f.no} TILL ${f.dest} AVGÅR ${hhmm(f.m)} FRÅN GATE ${f.gate}.`);
     }
-    lines.push('LÄMNA INTE BAGAGE UTAN TILLSYN, TACK.', 'BAGAGET FRÅN PARIS KOMMER PÅ BAND 1.', 'RESENÄR SIXTEN PIXELSSON OMBEDES KOMMA TILL GATE A2.', 'VÄLKOMMEN TILL PIXELSTADENS FLYGPLATS - VI HAR ÖPPET DYGNET RUNT.');
+    lines.push($t('LÄMNA INTE BAGAGE UTAN TILLSYN, TACK.'), $t('BAGAGET FRÅN PARIS KOMMER PÅ BAND 1.'), $t('RESENÄR SIXTEN PIXELSSON OMBEDES KOMMA TILL GATE A2.'), $t('VÄLKOMMEN TILL PIXELSTADENS FLYGPLATS - VI HAR ÖPPET DYGNET RUNT.'));
     const text2 = lines[Math.floor(R() * lines.length)];
     // närmaste högtalaren i bild vars bubbla inte hamnar ovanpå en pågående replik. Bubblan
     // sitter alltid PÅ högtalaren (trycks aldrig ner – då skulle den se ut att komma från
@@ -2310,7 +2311,7 @@ export function makeShopTerminal(A, opts = {}) {
   function goSit(s) {
     release();
     me.res = s; s.occ = 'me';
-    walker.walkTo(s.ax, s.ay, () => { if (s.occ && s.occ !== 'me') { me.res = null; say('Oj, upptaget!', meAt, 2); return; } sitDown(s); });
+    walker.walkTo(s.ax, s.ay, () => { if (s.occ && s.occ !== 'me') { me.res = null; say($t('Oj, upptaget!'), meAt, 2); return; } sitDown(s); });
   }
   // Jobbet: den som erbjuder passet säger sin replik i en pratbubbla (med sin egen röst)
   // och vänder sig mot figuren, sedan kommer passdialogen. Går det inte att jobba nu
@@ -2321,13 +2322,13 @@ export function makeShopTerminal(A, opts = {}) {
     if (face) { who.faceDir = face; who.faceUntil = t + 5; }
     play('click');
     const job = JOBS[jobId];
-    if (!job) { say(line, at, 3.5, v); setTimeout(() => { if (A.scene === api) say('... fast passen är inte inlagda i schemat än!', at, 3, v); }, 1600); return; }
+    if (!job) { say(line, at, 3.5, v); setTimeout(() => { if (A.scene === api) say($t('... fast passen är inte inlagda i schemat än!'), at, 3, v); }, 1600); return; }
     let chk = { ok: true };
     try { chk = g.canWork?.(jobId) || chk; } catch { /* kontrollen är aldrig ett krav här */ }
-    const tired = /trött/i.test(chk.msg || '');
+    const tired = !!chk.tired || /trött/i.test(chk.msg || '');   // (flaggan fungerar på alla språk)
     const nightJob = job.nattoppet || job['nattöppet'] || job.night;
     if (!chk.ok && !chk.waitTo && (tired || !nightJob)) {
-      say(tired ? 'Du ser helt slut ut! Gå hem och sov först, så ses vi.' : 'Nattpassen är inte inlagda i schemat än. Kom tillbaka i morgon bitti!', at, 4, v);
+      say(tired ? $t('Du ser helt slut ut! Gå hem och sov först, så ses vi.') : $t('Nattpassen är inte inlagda i schemat än. Kom tillbaka i morgon bitti!'), at, 4, v);
       return;
     }
     say(line, at, 3.5, v);
@@ -2337,34 +2338,34 @@ export function makeShopTerminal(A, opts = {}) {
   // stängd (natt) ropar stationschefen att man kan öppna den.
   function deskOffer(k) {
     walker.dir = 'up';
-    if (deskState[k].open) offerJob('incheckning', agents[k], pick(['Vill du jobba här vid disken? Ta ett pass i incheckningen!', 'Hoppa in bakom disken - vi behöver en till!', 'Kliv in bakom disken! Ett pass i incheckningen?']));
-    else offerJob('incheckning', staff[0], `Disk ${k + 1} är stängd i natt - men du kan öppna den! Ta ett pass?`, 'left');
+    if (deskState[k].open) offerJob('incheckning', agents[k], pick([$t('Vill du jobba här vid disken? Ta ett pass i incheckningen!'), $t('Hoppa in bakom disken - vi behöver en till!'), $t('Kliv in bakom disken! Ett pass i incheckningen?')]));
+    else offerJob('incheckning', staff[0], $t`Disk ${k + 1} är stängd i natt - men du kan öppna den! Ta ett pass?`, 'left');
   }
   const hot = [
     { id: 'dorr', r: [DOOR.x0 - 4, BOARD.y + BOARD.h + 1, DOOR.x1 + 4, WALL_Y + 8], go: () => [DOOR_SPOT[0], WALL_Y + 6], act: () => { play('door'); A.go('city'); } },
     // cheferna: figuren ställer sig snett bredvid och vänder sig mot dem (skymmer dem inte)
-    { id: 'incheckning', r: [MANAGER.x - 9, MANAGER.y - 40, MANAGER.x + 9, MANAGER.y + 2], go: () => [MANAGER.x - 18, MANAGER.y + 4], act: () => { walker.dir = 'right'; offerJob('incheckning', staff[0], 'Hej! Vi behöver folk i incheckningen - vill du ta ett pass?', 'left'); } },
-    { id: 'band', r: [CHIEF.x - 9, CHIEF.y - 40, CHIEF.x + 9, CHIEF.y + 2], go: () => [CHIEF.x + 18, CHIEF.y + 4], act: () => { walker.dir = 'left'; offerJob('flygplats', staff[1], 'Bandet går varmt! Hjälp oss med väskorna i bagagehallen?', 'right'); } },
+    { id: 'incheckning', r: [MANAGER.x - 9, MANAGER.y - 40, MANAGER.x + 9, MANAGER.y + 2], go: () => [MANAGER.x - 18, MANAGER.y + 4], act: () => { walker.dir = 'right'; offerJob('incheckning', staff[0], $t('Hej! Vi behöver folk i incheckningen - vill du ta ett pass?'), 'left'); } },
+    { id: 'band', r: [CHIEF.x - 9, CHIEF.y - 40, CHIEF.x + 9, CHIEF.y + 2], go: () => [CHIEF.x + 18, CHIEF.y + 4], act: () => { walker.dir = 'left'; offerJob('flygplats', staff[1], $t('Bandet går varmt! Hjälp oss med väskorna i bagagehallen?'), 'right'); } },
     // diskarna: man går fram till disken man klickar på (vid dess högra ände)
     ...DESKS.map((D, k) => ({ id: 'disk' + k, r: [D.sx0, AGENT_Y - 34, D.x1, DESK_Y + 2], go: () => [D.x1 - 6, DESK_Y + 7], act: () => deskOffer(k) })),
     { id: 'karusell', r: [58, 118, 242, 168], go: (x) => [clamp(x, 70, 230), 182], act: () => say(pick(L_WAIT), meAt, 3) },
     { id: 'tavla', r: [BOARD.x, BOARD.y, BOARD.x + BOARD.w, BOARD.y + BOARD.h], go: () => [380, 124], act: () => readBoard() },
-    { id: 'uttag', r: [296, BOARD.y + BOARD.h + 1, 322, 94], go: () => [309, 106], act: () => { play('click'); say(`SALDO: ${Math.round(g.money).toLocaleString('sv-SE').replace(/\s/g, ' ')} KR 💳`, { x: 309, y: 60 }, 3, { silent: true }); } },
-    { id: 'info', r: [444, 90, 458, 127], go: () => [451, 134], act: () => { play('click'); say('VÄLKOMMEN! BAGAGE TILL VÄNSTER, INCHECKNING OCH GATER TILL HÖGER.', { x: 451, y: 88 }, 4, { silent: true }); } },
+    { id: 'uttag', r: [296, BOARD.y + BOARD.h + 1, 322, 94], go: () => [309, 106], act: () => { play('click'); say($t`SALDO: ${num(g.money).replace(/\s/g, ' ')} KR 💳`, { x: 309, y: 60 }, 3, { silent: true }); } },
+    { id: 'info', r: [444, 90, 458, 127], go: () => [451, 134], act: () => { play('click'); say($t('VÄLKOMMEN! BAGAGE TILL VÄNSTER, INCHECKNING OCH GATER TILL HÖGER.'), { x: 451, y: 88 }, 4, { silent: true }); } },
     { id: 'kiosk', r: [KIOSK.x0, 40, KIOSK.x1, KIOSK.y + 2], go: () => [1320, KIOSK.y + 10], act: () => { play('click'); say(pick(L_BARISTA), () => ({ x: Math.round(barista.x), y: barista.y - 44 }), 3.5, { voice: barista.look }); } },
-    { id: 'wc', r: [1392, 34, 1432, WALL_Y], go: () => [1412, WALL_Y + 8], act: () => { play('knock'); say('Upptaget! Det är alltid kö här ... 🚽', meAt, 3); } },
+    { id: 'wc', r: [1392, 34, 1432, WALL_Y], go: () => [1412, WALL_Y + 8], act: () => { play('knock'); say($t('Upptaget! Det är alltid kö här ... 🚽'), meAt, 3); } },
     { id: 'gateA1', r: [GATES[0].x - 16, 44, GATES[0].x + 16, WALL_Y], go: () => [GATES[0].x, WALL_Y + 8], act: () => gateTalk(0) },
     { id: 'gateA2', r: [GATES[1].x - 16, 44, GATES[1].x + 16, WALL_Y], go: () => [GATES[1].x, WALL_Y + 8], act: () => gateTalk(1) },
   ];
   function gateTalk(i) {
     const who = staff[4 + i], f = upcoming(1, GATES[i].id)[0];
     play('click');
-    say(f ? `${f.no} till ${f.dest} går ${hhmm(f.m)}. Har du biljett? Nej? Då får du stanna här!` : pick(L_GATE), { x: who.x, y: who.y - 44 }, 4, { voice: who.look });
+    say(f ? $t`${f.no} till ${f.dest} går ${hhmm(f.m)}. Har du biljett? Nej? Då får du stanna här!` : pick(L_GATE), { x: who.x, y: who.y - 44 }, 4, { voice: who.look });
   }
   function readBoard() {
     const f = upcoming(1)[0];
     play('click');
-    if (f) say(`Nästa: ${f.no} till ${f.dest} ${hhmm(f.m)}, gate ${f.gate}. ${statusOf(f, g.min).s}.`, meAt, 4);
+    if (f) say($t`Nästa: ${f.no} till ${f.dest} ${hhmm(f.m)}, gate ${f.gate}. ${$t(statusOf(f, g.min).s)}.`, meAt, 4);
   }
   const spotAt = (x, y) => hot.find((h) => x >= h.r[0] && x <= h.r[2] && y >= h.r[1] && y <= h.r[3]);
   const seatAt = (x, y) => seats.find((s) => Math.abs(x - s.x) < 7 && y > s.y - 32 && y < s.y + 3);
@@ -2385,7 +2386,7 @@ export function makeShopTerminal(A, opts = {}) {
     if (n.role === 'barista') return pick(L_BARISTA);
     if (n.role === 'gate') return pick(L_GATE);
     if (n.role === 'kid') return pick(L_KID);
-    if (n.role === 'crew') return 'Kaptenen här - vi lyfter snart! ✈️';
+    if (n.role === 'crew') return $t('Kaptenen här - vi lyfter snart! ✈️');
     if (n.role === 'janitor') return pick(L_JANITOR);
     if (n.act === 'sleep') return pick(L_SLEEP);
     if (n.role === 'arr' && n.state === 'waitBag') return pick(L_WAIT);
@@ -2417,7 +2418,7 @@ export function makeShopTerminal(A, opts = {}) {
     if (parentT <= 0) {
       parentT = 10 + R() * 12;
       const kid = npcs.find((n) => n.role === 'kid' && Math.abs(n.x - parent.x) < 90);
-      if (kid && R() < 0.6) ambient(R() < 0.5 ? 'SPRING INTE!' : 'Kom hit nu, gubben!', { x: parent.x, y: parent.y - 40 }, parent.x);
+      if (kid && R() < 0.6) ambient(R() < 0.5 ? $t('SPRING INTE!') : $t('Kom hit nu, gubben!'), { x: parent.x, y: parent.y - 40 }, parent.x);
       else if (kid) ambient(L_KID[Math.floor(R() * L_KID.length)], () => ({ x: kid.x, y: kid.y - 36 }), kid.x);
     }
   }
@@ -2486,7 +2487,7 @@ export function makeShopTerminal(A, opts = {}) {
     text(P, SMALL, f.dest, 23, 1, 0xf4f4ec);
     text(P, SMALL, f.no, 66, 1, 0xc8d0e0);
     text(P, SMALL, f.gate, 94, 1, 0xffd23a);
-    if (!st.blink || blinkOn) text(P, SMALL, st.s, 110, 1, st.c);
+    if (!st.blink || blinkOn) text(P, SMALL, $t(st.s), 110, 1, st.c);
     c = P.flush();
     rowImg.set(key, c);
     if (rowImg.size > 200) rowImg.clear();
@@ -2512,10 +2513,10 @@ export function makeShopTerminal(A, opts = {}) {
     const fl = upcoming(8).filter((f) => !f.off && f.m + f.late - g.min > 30);
     deskState.forEach((ds, k) => {
       const D = ds.D, x = D.x0 + 4, y = FASCIA + 11;
-      if (!ds.open) { ctext(ctx, 'STÄNGD', x + 8, y, '#ff5a4a'); return; }
+      if (!ds.open) { ctext(ctx, $t('STÄNGD'), x + 8, y, '#ff5a4a'); return; }
       const f = fl[k % Math.max(1, fl.length)];
       if (!f) return;
-      const ph = Math.floor(t / 2.5 + k) % 3, s = ph === 0 ? f.dest : ph === 1 ? f.no : 'AVG ' + hhmm(f.m);
+      const ph = Math.floor(t / 2.5 + k) % 3, s = ph === 0 ? f.dest : ph === 1 ? f.no : $t`AVG ${hhmm(f.m)}`;
       ctext(ctx, s, x, y, ph === 0 ? '#f4f4ec' : '#ffd23a');
       // vågens display
       if (t - ds.wT < 3) ctext(ctx, String(Math.min(ds.weight, Math.floor((t - ds.wT) * 30))), D.sx0 + 12, WALL_Y + 4, '#ff5a3a');
@@ -2527,10 +2528,10 @@ export function makeShopTerminal(A, opts = {}) {
       const st = statusOf(f, g.min);
       ctext(ctx, gt.id + ' ' + f.no, x, 62, '#ffd23a');
       ctext(ctx, f.dest.slice(0, 8), x, 68, '#f4f4ec');
-      if (!st.blink || Math.floor(t * 2) % 2) ctext(ctx, st.s === 'I TID' ? 'AVG ' + hhmm(f.m) : st.s, x, 74, rgb(st.c));
+      if (!st.blink || Math.floor(t * 2) % 2) ctext(ctx, st.s === 'I TID' ? $t`AVG ${hhmm(f.m)}` : $t(st.s), x, 74, rgb(st.c));
     });
     // LED-skylten över bagagerutschen (rullande text)
-    const msg = '  BAND 1 + SF 311 FRÅN PARIS + BAGAGET KOMMER +', mw = textW(SMALL, msg) + 4, off = Math.floor(t * 12) % mw;
+    const msg = '  ' + $t('BAND 1 + SF 311 FRÅN PARIS + BAGAGET KOMMER +'), mw = textW(SMALL, msg) + 4, off = Math.floor(t * 12) % mw;
     ctx.save(); ctx.beginPath(); ctx.rect(FEED.x0 + 5, FEED.top + 3, 38, 5); ctx.clip();
     ctext(ctx, msg, FEED.x0 + 5 - off, FEED.top + 3, '#ffb030'); ctext(ctx, msg, FEED.x0 + 5 - off + mw, FEED.top + 3, '#ffb030');
     ctx.restore();
@@ -2839,7 +2840,7 @@ export function makeShopTerminal(A, opts = {}) {
         if (ds.open) add(AGENT_Y, () => drawPerson(ctx, agents[k].x, agents[k].y, agents[k].look, ds.pax && ds.pax.state === 'atDesk' ? 'down' : (Math.sin(t * 0.3 + k * 2) > 0.8 ? 'left' : 'down'), Math.sin(t * 1.3 + k) > 0.9 ? 4 : 0));
         add(DESK_Y, () => {
           ctx.drawImage(S.desks[k].img, S.desks[k].x, S.desks[k].y);
-          if (!ds.open) { ctx.fillStyle = '#16161a'; ctx.fillRect(D.x0 + 10, DESK_Y - 21, 30, 7); ctext(ctx, 'STÄNGD', D.x0 + 13, DESK_Y - 20, '#ff5a4a'); }
+          if (!ds.open) { ctx.fillStyle = '#16161a'; ctx.fillRect(D.x0 + 10, DESK_Y - 21, 30, 7); ctext(ctx, $t('STÄNGD'), D.x0 + 13, DESK_Y - 20, '#ff5a4a'); }
         });
       });
       img(S.lane, LANE.bar);
@@ -2955,7 +2956,7 @@ export function makeShopTerminal(A, opts = {}) {
       release();
       if (y < WALL_Y && inGlassX(x)) {
         // fram till fönstret och titta ut
-        walker.walkTo(x, WALL_Y + 6, () => { walker.dir = 'up'; say(farPlane && farPlane.kind === 'land' ? 'Titta, ett plan landar! ✈️' : farPlane ? 'Där lyfter ett plan!' : pick(L_WINDOW), meAt, 3); });
+        walker.walkTo(x, WALL_Y + 6, () => { walker.dir = 'up'; say(farPlane && farPlane.kind === 'land' ? $t('Titta, ett plan landar! ✈️') : farPlane ? $t('Där lyfter ett plan!') : pick(L_WINDOW), meAt, 3); });
         return;
       }
       if (y > WALL_Y) walker.walkTo(x, y);
@@ -3028,7 +3029,7 @@ export function makeShopTerminal(A, opts = {}) {
       // skylt i nederkanten när man pekar på något
       ctx.setTransform(A.pxs, 0, 0, A.pxs, 0, 0);
       const h = hoverId && t - hoverT < 3 ? hoverId : null;
-      const label = { dorr: 'UTGÅNG - TILL STADEN', incheckning: 'STATIONSCHEFEN - JOBBA I INCHECKNINGEN', disk0: 'DISK 1 - JOBBA I INCHECKNINGEN', disk1: 'DISK 2 - JOBBA I INCHECKNINGEN', disk2: 'DISK 3 - JOBBA I INCHECKNINGEN', disk3: 'DISK 4 - JOBBA I INCHECKNINGEN', band: 'BAGAGECHEFEN - JOBBA VID BANDET', karusell: 'BAGAGEBAND 1', tavla: 'AVGÅNGAR', uttag: 'UTTAGSAUTOMAT', info: 'INFORMATION', kiosk: 'PIXEL KAFFE - ÖPPET DYGNET RUNT', wc: 'TOALETTER', gateA1: 'GATE A1', gateA2: 'GATE A2', stol: 'SÄTT DIG' }[h] || null;
+      const label = { dorr: $t('UTGÅNG - TILL STADEN'), incheckning: $t('STATIONSCHEFEN - JOBBA I INCHECKNINGEN'), disk0: $t('DISK 1 - JOBBA I INCHECKNINGEN'), disk1: $t('DISK 2 - JOBBA I INCHECKNINGEN'), disk2: $t('DISK 3 - JOBBA I INCHECKNINGEN'), disk3: $t('DISK 4 - JOBBA I INCHECKNINGEN'), band: $t('BAGAGECHEFEN - JOBBA VID BANDET'), karusell: $t('BAGAGEBAND 1'), tavla: $t('AVGÅNGAR'), uttag: $t('UTTAGSAUTOMAT'), info: $t('INFORMATION'), kiosk: $t('PIXEL KAFFE - ÖPPET DYGNET RUNT'), wc: $t('TOALETTER'), gateA1: $t('GATE A1'), gateA2: $t('GATE A2'), stol: $t('SÄTT DIG') }[h] || null;
       if (label) {
         const safe = globalThis.SF?.view?.safe || { y1: H };
         const by = Math.min(H, safe.y1) - 14, w = textW(SMALL, label) + 10;

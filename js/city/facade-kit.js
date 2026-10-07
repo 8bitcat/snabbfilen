@@ -12,6 +12,7 @@
 // docs/STADEN.md: BUILDING_ART[kind] = { paint(b, night, opts), live(ctx, b, st), glow(ctx, b, st), front?(ctx, b, st) }.
 import { Pix, SMALL, BIG, text, textW, mix, mul, hash, bayer } from '../core/floor-pix.js';
 import { artBox, baseOf } from './map.js';
+import { $t } from '../core/i18n.js';
 
 export const WHITE = 0xffffff;
 export const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
@@ -131,7 +132,7 @@ export function signPlate(P, cx, y, s, bg, fg, { small = false, border = null } 
 }
 
 // ---------- klotter ----------
-const TAGS = ['PIX', 'ZOK', 'KRAM', 'YO', 'BTG', '4EVER', 'SNUT', 'LOL', 'KAOS', 'MIX', 'Å!', 'VILD'];
+const TAGS = ['PIX', 'ZOK', $t('KRAM'), 'YO', 'BTG', '4EVER', $t('SNUT'), 'LOL', $t('KAOS'), 'MIX', $t('Å!'), $t('VILD')];
 const SPRAY = [0xe8443a, 0x3a9bff, 0x6fdc4c, 0xffd23f, 0xff5dc8, 0xf4f1ea, 0x9a5cff, 0x2a2a2a];
 export function graffiti(P, x0, x1, y0, y1, seed, n = 3) {
   for (let k = 0; k < n; k++) {

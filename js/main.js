@@ -62,6 +62,7 @@ import { initVoiceUI } from './net/voice-ui.js';
 import { play, unlockAudio, toggleMute, isMuted } from './core/sound.js';
 import { CITY, buildingById } from './city/map.js';
 import { openCityMap } from './city/citymap.js'; // 🗺️ kartan och 🚕 taxin
+import { $t } from './core/i18n.js';
 
 const $ = (s) => document.querySelector(s);
 const cv = $('#scene'), ctx = cv.getContext('2d');
@@ -167,7 +168,7 @@ for (const [n, file, fn] of DOOR_SCENES) {
     update(dt) {
       this.t += dt;
       if (make) a.go(n, o);
-      else if (DOOR_STATE[n] === 'fel' || this.t > 20) { a.go('city'); toast('🚪 Det gick inte att komma in just nu – försök igen om en stund.', 'bad'); }
+      else if (DOOR_STATE[n] === 'fel' || this.t > 20) { a.go('city'); toast($t('🚪 Det gick inte att komma in just nu – försök igen om en stund.'), 'bad'); }
     },
     draw() { /* bakgrunden (loopen fyller rutan) tills scenen är laddad */ },
   });
@@ -354,9 +355,9 @@ rotateHint();
 const zoomBtn = document.createElement('button');
 zoomBtn.id = 'hud-zoom'; zoomBtn.className = 'btn btn-small';
 const ZOOMS = {
-  nara: { ikon: '🔍', txt: 'Zoom: NÄRA – samma bild som på datorn, fyller skärmen. Tryck för VID (se mer värld).' },
-  vid: { ikon: '⛶', txt: 'Zoom: VID – ser mer av staden och butikerna. Tryck för RAM (hela bilden).' },
-  ram: { ikon: '▣', txt: 'Zoom: RAM – hela bilden med pixelram. Tryck för NÄRA (fyller skärmen).' },
+  nara: { ikon: '🔍', txt: $t('Zoom: NÄRA – samma bild som på datorn, fyller skärmen. Tryck för VID (se mer värld).') },
+  vid: { ikon: '⛶', txt: $t('Zoom: VID – ser mer av staden och butikerna. Tryck för RAM (hela bilden).') },
+  ram: { ikon: '▣', txt: $t('Zoom: RAM – hela bilden med pixelram. Tryck för NÄRA (fyller skärmen).') },
 };
 const zoomLabel = () => { const z = ZOOMS[zoomMode()]; zoomBtn.textContent = z.ikon; zoomBtn.title = z.txt; };
 zoomLabel();
@@ -439,7 +440,7 @@ function renderHud() {
   if (key === hudKey) return;
   hudKey = key;
   $('#hud-friends').textContent = online > 1 ? `👥 ${online}` : '👥';
-  $('#hud-day').textContent = `📅 ${g.dayName} · dag ${g.day}`;
+  $('#hud-day').textContent = $t`📅 ${g.dayName} · dag ${g.day}`;
   $('#hud-clock').textContent = `🕒 ${clock(g.min)}`;
   const money = $('#hud-money');
   money.textContent = `💰 ${fmt(g.money)}`;
@@ -461,8 +462,8 @@ function checkCollapse() {
   if (!g.collapsed) return;
   g.collapsed = false;
   A.go('room');
-  openModal('😵 Utmattad!', `<p style="font-size:var(--f2)">Du somnade där du stod och vaknar hemma – stel, hungrig och inte alls utvilad. Gå och lägg dig i tid nästa gång!</p>`,
-    [{ label: 'Aj då', cls: 'btn-go', onClick: () => { closeModal(); openWeek(A, { morning: true }); } }]);
+  openModal($t('😵 Utmattad!'), `<p style="font-size:var(--f2)">${$t('Du somnade där du stod och vaknar hemma – stel, hungrig och inte alls utvilad. Gå och lägg dig i tid nästa gång!')}</p>`,
+    [{ label: $t('Aj då'), cls: 'btn-go', onClick: () => { closeModal(); openWeek(A, { morning: true }); } }]);
 }
 
 // ---------- sova / äta / hyra (öppnas från rummet) ----------
@@ -472,12 +473,12 @@ A.sleepFlow = () => {
   // sparkontot: räntan i morgon bitti och det autogirot tar om fickan inte räcker till hyran
   const ranta = monday && g.bankNextInterest ? g.bankNextInterest() : 0;
   const autogiro = monday && g.bank > 0 ? Math.min(g.bank + ranta, Math.max(0, g.hyra - Math.max(0, g.money))) : 0;
-  openModal('😴 Sova', `<p style="font-size:var(--f2)">Sova till i morgon 07:00?</p>
-    ${g.hunger < 30 ? '<p style="font-size:var(--f2)" class="bad">Du är hungrig – du sover dåligt på tom mage.</p>' : ''}
-    ${monday ? `<p style="font-size:var(--f2)">💸 I morgon är det måndag: hyran ${fmt(g.hyra)} dras${g.sambo ? ` (din halva – ni bor ihop)` : ''}.${autogiro ? ` Fickan räcker inte – banken tar ${fmt(autogiro)} från sparkontot.` : ''}</p>` : ''}
-    ${ranta ? `<p style="font-size:var(--f2)">📈 Räntan på sparkontot kommer i morgon bitti: +${fmt(ranta)}.</p>` : ''}`, [
-    { label: 'Inte än', onClick: closeModal },
-    { label: '😴 Sov', cls: 'btn-go', onClick: () => {
+  openModal($t('😴 Sova'), `<p style="font-size:var(--f2)">${$t('Sova till i morgon 07:00?')}</p>
+    ${g.hunger < 30 ? `<p style="font-size:var(--f2)" class="bad">${$t('Du är hungrig – du sover dåligt på tom mage.')}</p>` : ''}
+    ${monday ? `<p style="font-size:var(--f2)">${g.sambo ? $t`💸 I morgon är det måndag: hyran ${fmt(g.hyra)} dras (din halva – ni bor ihop).` : $t`💸 I morgon är det måndag: hyran ${fmt(g.hyra)} dras.`}${autogiro ? ` ${$t`Fickan räcker inte – banken tar ${fmt(autogiro)} från sparkontot.`}` : ''}</p>` : ''}
+    ${ranta ? `<p style="font-size:var(--f2)">${$t`📈 Räntan på sparkontot kommer i morgon bitti: +${fmt(ranta)}.`}</p>` : ''}`, [
+    { label: $t('Inte än'), onClick: closeModal },
+    { label: $t('😴 Sov'), cls: 'btn-go', onClick: () => {
       closeModal();
       stopHemMusik(A); // man stänger av musiken när man lägger sig
       // veckosammanfattningen är alltid det första man ser när man vaknat
@@ -494,48 +495,50 @@ A.sleepFlow = () => {
 // 👥 Onlinelistan: alla i världen, var de är just nu, "Gå dit" (i staden) och "Åk dit"
 // (hem till dem). Ingen kod – öppen värld.
 const PLACE_AWAY = {
-  jobbflyg: '✈️ jobbar på flygplatsen', jobbfrukt: '🍊 jobbar på fruktfabriken', jobbburgare: '🍔 jobbar på Burgarbaren',
-  jobbpizzeria: '🍕 jobbar på pizzerian', jobbposten: '📦 jobbar på Posten', jobbbensin: '⛽ jobbar på macken',
-  jobbverkstad: '🔧 jobbar på bilverkstaden', jobbtvatt: '🧺 jobbar på tvätteriet', jobbkafe: '☕ jobbar på kaféet',
-  jobbvard: '🏥 jobbar på vårdcentralen',
-  mat: '🛒 i mataffären', klader: '👕 i klädaffären', mobler: '🛋️ på MÖBELJÄTTEN', moblergammal: '🛋️ på MÖBELJÄTTEN',
-  bostad: '🔑 på bostadsbyrån', kafe: '☕ på kaféet', djur: '🐾 i djuraffären', narbutik: '🏪 i närbutiken', terminal: '✈️ på flygplatsen', jobbincheck: '🛄 jobbar i incheckningen', leksaker: '🧸 i leksaksaffären',
+  jobbflyg: $t('✈️ jobbar på flygplatsen'), jobbfrukt: $t('🍊 jobbar på fruktfabriken'), jobbburgare: $t('🍔 jobbar på Burgarbaren'),
+  jobbpizzeria: $t('🍕 jobbar på pizzerian'), jobbposten: $t('📦 jobbar på Posten'), jobbbensin: $t('⛽ jobbar på macken'),
+  jobbverkstad: $t('🔧 jobbar på bilverkstaden'), jobbtvatt: $t('🧺 jobbar på tvätteriet'), jobbkafe: $t('☕ jobbar på kaféet'),
+  jobbvard: $t('🏥 jobbar på vårdcentralen'),
+  mat: $t('🛒 i mataffären'), klader: $t('👕 i klädaffären'), mobler: $t('🛋️ på MÖBELJÄTTEN'), moblergammal: $t('🛋️ på MÖBELJÄTTEN'),
+  bostad: $t('🔑 på bostadsbyrån'), kafe: $t('☕ på kaféet'), djur: $t('🐾 i djuraffären'), narbutik: $t('🏪 i närbutiken'), terminal: $t('✈️ på flygplatsen'), jobbincheck: $t('🛄 jobbar i incheckningen'), leksaker: $t('🧸 i leksaksaffären'),
 };
 // ställena bakom stadens dörrar (DOOR_SCENES) – bara där ingen text redan finns
-for (const [k, v] of Object.entries({ bank: '🏦 på banken', elektronik: '📱 i elektronikbutiken', frisor: '💈 hos frisören', skor: '👟 i skobutiken',
-  accessoarer: '👜 i accessoarbutiken', bio: '🎬 på bion', kebab: '🥙 på kebaben', pantbank: '💍 på pantbanken', universitet: '🎓 på Pixelhögskolan',
-  jobbdatorbygge: '🖥️ bygger datorer på Pixel Data', jobbfinans: '📈 handlar aktier på Finanshuset', koket: '🍳 lagar mat hemma', tradgard: '🌱 i trädgården', fordon: '🔧 i garaget', maskerad: '🎃 i maskeradbutiken', sjoboden: '🐟 på Sjöboden', jobbtruck: '🚚 står i sin foodtruck', landet: '🌾 ute på landet', hopp: '🏇 hoppar på hinderbanan' })) PLACE_AWAY[k] ??= v;
+for (const [k, v] of Object.entries({ bank: $t('🏦 på banken'), elektronik: $t('📱 i elektronikbutiken'), frisor: $t('💈 hos frisören'), skor: $t('👟 i skobutiken'),
+  accessoarer: $t('👜 i accessoarbutiken'), bio: $t('🎬 på bion'), kebab: $t('🥙 på kebaben'), pantbank: $t('💍 på pantbanken'), universitet: $t('🎓 på Pixelhögskolan'),
+  jobbdatorbygge: $t('🖥️ bygger datorer på Pixel Data'), jobbfinans: $t('📈 handlar aktier på Finanshuset'), koket: $t('🍳 lagar mat hemma'), tradgard: $t('🌱 i trädgården'), fordon: $t('🔧 i garaget'), maskerad: $t('🎃 i maskeradbutiken'), sjoboden: $t('🐟 på Sjöboden'), jobbtruck: $t('🚚 står i sin foodtruck'), landet: $t('🌾 ute på landet'), hopp: $t('🏇 hoppar på hinderbanan') })) PLACE_AWAY[k] ??= v;
 function placeOf(p, info) {
   const s = String(p.scene || 'away');
-  if (s === 'city') return '🏙️ i staden';
+  if (s === 'city') return $t('🏙️ i staden');
   if (s.startsWith('home:')) {
     const owner = s.split(':')[1];
-    if (owner === p.id) return '🏠 hemma';
-    if (owner === info.myId) return '🏠 hemma hos dig!';
+    if (owner === p.id) return $t('🏠 hemma');
+    if (owner === info.myId) return $t('🏠 hemma hos dig!');
     // bor ihop: hushållets id (js/net/sambo.js)
     if (owner.startsWith('sb-')) {
-      if (A.game.sambo?.hu === owner) return p.hu === owner ? '🏠 hemma hos er' : '🏠 hemma hos dig!';
+      if (A.game.sambo?.hu === owner) return p.hu === owner ? $t('🏠 hemma hos er') : $t('🏠 hemma hos dig!');
       const who = playersList().filter((q) => q.hu === owner).map((q) => q.av?.name || '?');
-      return who.length ? `🏠 hemma hos ${esc(who.join(' och '))}` : '🏠 hemma';
+      const och = ` ${$t('och')} `;
+      return who.length ? $t`🏠 hemma hos ${esc(who.join(och))}` : $t('🏠 hemma');
     }
-    return `🏠 hos ${playerName(owner) || 'en kompis'}`;
+    const vem = playerName(owner) || $t('en kompis');
+    return $t`🏠 hos ${vem}`;
   }
-  return PLACE_AWAY[s.slice(5).split('.')[0]] || '💼 upptagen';
+  return PLACE_AWAY[s.slice(5).split('.')[0]] || $t('💼 upptagen');
 }
 // 💼 Jobbinbjudan: en kompis vill jobba ihop – fråga snällt och häng med. Man hamnar i
 // kompisens pass (sid) med kompisens nivå och passlängd.
 onInvite((m, from) => {
   const job = String(m?.job || '');
   if (!m || m.to !== worldInfo().myId || !COOP_JOBS.has(job) || !JOBS[job] || !ENGINES[job] || !m.sid) return;
-  const namn = esc(String(m.namn || 'En kompis').slice(0, 16));
-  if (A.shiftJob) { toast(`💼 ${namn} vill jobba ihop – men du är mitt i ett pass.`, 'bad'); return; }
+  const namn = esc(String(m.namn || $t('En kompis')).slice(0, 16));
+  if (A.shiftJob) { toast($t`💼 ${namn} vill jobba ihop – men du är mitt i ett pass.`, 'bad'); return; }
   if (modalOpen()) return; // stör inte mitt i en dialog – kompisen kan bjuda igen
   play('knock');
   const lang = m.len === 'langt';
-  openModal('💼 Jobba ihop?', `<p style="font-size:var(--f2)">${namn} jobbar på <b>${esc(JOBS[job].name)}</b> och bjuder in dig till ${lang ? 'ett <b>längre pass</b> (6 timmar)' : 'passet'} – häng med och jobba ihop!</p>
-    ${(m.lvl | 0) > 1 ? `<p style="font-size:var(--f2)">⭐ Ni jobbar på ${namn}s nivå (${esc(JOB_TITLES[(m.lvl | 0) - 1] || '')}) – fler kunder!</p>` : ''}`, [
-    { label: '💼 Häng med!', cls: 'btn-go', onClick: () => { if (leaveBlocked()) return; closeModal(); startShiftNow(A, job, ENGINES[job], { sid: m.sid, len: m.len, lvl: m.lvl, from }); } },
-    { label: 'Inte nu', onClick: closeModal },
+  openModal($t('💼 Jobba ihop?'), `<p style="font-size:var(--f2)">${lang ? $t`${namn} jobbar på <b>${esc(JOBS[job].name)}</b> och bjuder in dig till ett <b>längre pass</b> (6 timmar) – häng med och jobba ihop!` : $t`${namn} jobbar på <b>${esc(JOBS[job].name)}</b> och bjuder in dig till passet – häng med och jobba ihop!`}</p>
+    ${(m.lvl | 0) > 1 ? `<p style="font-size:var(--f2)">${$t`⭐ Ni jobbar på ${namn}s nivå (${esc(JOB_TITLES[(m.lvl | 0) - 1] || '')}) – fler kunder!`}</p>` : ''}`, [
+    { label: $t('💼 Häng med!'), cls: 'btn-go', onClick: () => { if (leaveBlocked()) return; closeModal(); startShiftNow(A, job, ENGINES[job], { sid: m.sid, len: m.len, lvl: m.lvl, from }); } },
+    { label: $t('Inte nu'), onClick: closeModal },
   ]);
 });
 
@@ -553,35 +556,36 @@ function openWorldDialog() {
   const list = playersList();
   const inJob = A.sceneName.startsWith('jobb');
   const coopJob = inJob && COOP_JOBS.has(A.shiftJob) ? A.shiftJob : null; // passet man kan bjuda in till
-  const verTag = (v) => (v === info.version ? '' : ` <span class="old">${v ? 'v' + esc(v) : 'gammal version'}</span>`);
+  const verTag = (v) => (v === info.version ? '' : ` <span class="old">${v ? 'v' + esc(v) : $t('gammal version')}</span>`);
   const rows = list.map((p, i) => `<div class="prow">
       <span data-face="${i}"></span>
       <span class="nm">${esc(p.av.name || '?')}${verTag(p.ver)}<br><small class="sp">${placeOf(p, info)}</small></span>
-      <span class="pbtns">${coopJob ? `<button class="btn btn-small btn-gold" data-jobba="${esc(p.id)}">💼 Jobba ihop</button>` : ''}
-      ${p.scene === 'city' && !inJob ? `<button class="btn btn-small" data-goto="${esc(p.id)}">🚶 Gå dit</button>` : ''}
-      ${coopJob ? '' : `<button class="btn btn-small btn-go" data-visit="${esc(p.id)}">🚗 Åk hem till</button>`}
-      ${!A.game.sambo && !inJob && p.key && p.ver === info.version ? `<button class="btn btn-small btn-gold" data-sambo="${i}" title="Flytta ihop – dela hem, möbler och hyra">🏠 Flytta ihop</button>` : ''}
-      ${p.key ? `<button class="btn btn-small" data-block="${i}" title="Blockera – du ser och hör inte hen längre">🚫 Blockera</button><button class="btn btn-small" data-anmal="${i}" title="Anmäl till oss som gör spelet">⚑ Anmäl</button>` : ''}</span>
+      <span class="pbtns">${coopJob ? `<button class="btn btn-small btn-gold" data-jobba="${esc(p.id)}">${$t('💼 Jobba ihop')}</button>` : ''}
+      ${p.scene === 'city' && !inJob ? `<button class="btn btn-small" data-goto="${esc(p.id)}">${$t('🚶 Gå dit')}</button>` : ''}
+      ${coopJob ? '' : `<button class="btn btn-small btn-go" data-visit="${esc(p.id)}">${$t('🚗 Åk hem till')}</button>`}
+      ${!A.game.sambo && !inJob && p.key && p.ver === info.version ? `<button class="btn btn-small btn-gold" data-sambo="${i}" title="${$t('Flytta ihop – dela hem, möbler och hyra')}">${$t('🏠 Flytta ihop')}</button>` : ''}
+      ${p.key ? `<button class="btn btn-small" data-block="${i}" title="${$t('Blockera – du ser och hör inte hen längre')}">${$t('🚫 Blockera')}</button><button class="btn btn-small" data-anmal="${i}" title="${$t('Anmäl till oss som gör spelet')}">${$t('⚑ Anmäl')}</button>` : ''}</span>
     </div>`).join('');
   // 🚫 blockerade spelare (js/net/skydd.js) – syns inte i världen; här går det att ångra
   const blockade = blockedList();
-  const blockRad = blockade.length ? `<div class="plist-block" style="margin-top:8px;border-top:3px dashed var(--ink);padding-top:6px"><p style="font-size:var(--f2);margin:0 0 4px"><b>🚫 Blockerade (${blockade.length})</b> – du ser och hör dem inte.</p>${blockade.map((b) => `<div class="prow" style="font-size:var(--f2)"><span class="nm">${esc(b.namn)}</span><button class="btn btn-small" data-unblock="${esc(b.key)}">Ta bort blockering</button></div>`).join('')}</div>` : '';
+  const blockRad = blockade.length ? `<div class="plist-block" style="margin-top:8px;border-top:3px dashed var(--ink);padding-top:6px"><p style="font-size:var(--f2);margin:0 0 4px">${$t`<b>🚫 Blockerade (${blockade.length})</b> – du ser och hör dem inte.`}</p>${blockade.map((b) => `<div class="prow" style="font-size:var(--f2)"><span class="nm">${esc(b.namn)}</span><button class="btn btn-small" data-unblock="${esc(b.key)}">${$t('Ta bort blockering')}</button></div>`).join('')}</div>` : '';
   // 🏠 bor man ihop syns det överst (flytta isär längst ner)
   const S = A.game.sambo;
-  const samboRad = S ? `<p style="font-size:var(--f2);margin-top:0;background:#eaf6e4;border:2px solid #46a35a;padding:6px 8px">🏠 Du bor ihop med <b>${esc(S.namn || 'en kompis')}</b> i ${esc(A.game.homeInfo.name)} sedan dag ${S.sedan}. Hyran delas: <b>${fmt(A.game.hyra)}</b> var i veckan. ${samboPartnerOnline() ? 'Hen är online – hemmet synkas.' : 'Hen är inte online just nu – det ni ändrar synkas när ni ses.'}</p>` : '';
-  const role = info.role === 'host' ? 'du håller i världen' : info.role === 'client' && info.open ? 'ansluten' : `kopplar upp${info.tries ? ` (försök ${info.tries + 1})` : ''}`;
+  const kompis = $t('en kompis'), dinSambo = $t('din sambo'), DinSambo = $t('Din sambo');
+  const samboRad = S ? `<p style="font-size:var(--f2);margin-top:0;background:#eaf6e4;border:2px solid #46a35a;padding:6px 8px">${$t`🏠 Du bor ihop med <b>${esc(S.namn || kompis)}</b> i ${esc($t(A.game.homeInfo.name))} sedan dag ${S.sedan}.`} ${$t`Hyran delas: <b>${fmt(A.game.hyra)}</b> var i veckan.`} ${samboPartnerOnline() ? $t('Hen är online – hemmet synkas.') : $t('Hen är inte online just nu – det ni ändrar synkas när ni ses.')}</p>` : '';
+  const role = info.role === 'host' ? $t('du håller i världen') : info.role === 'client' && info.open ? $t('ansluten') : info.tries ? $t`kopplar upp (försök ${info.tries + 1})` : $t('kopplar upp');
   // kommer man inte fram till världen gång på gång stoppar nätet troligen direktkontakten (world.js ICE)
   const stuck = !info.open && info.tries >= 2
-    ? `<p style="font-size:var(--f2);background:#fff1d6;border:2px solid #c9a24a;padding:6px 8px">📡 Du kommer inte fram till de andra – nätet du sitter på stoppar troligen spelets direktkontakt. Prova ett annat wifi eller mobilens nät, eller en annan webbläsare.</p>` : '';
-  const dlg = openModal('👥 Pixelstaden online', `
-    ${samboRad}<p style="font-size:var(--f2);margin-top:0">${info.open ? `<b>${info.online}</b> ${info.online === 1 ? 'spelare (bara du) i världen just nu.' : 'spelare i världen just nu.'}` : '📡 Kopplar upp mot världen…'}</p>
-    ${list.length ? `<div class="plist">${rows}</div>` : info.open ? '<p style="font-size:var(--f2)">Du är ensam i stan – tipsa någon om länken så ses ni här!</p>' : ''}${stuck}
+    ? `<p style="font-size:var(--f2);background:#fff1d6;border:2px solid #c9a24a;padding:6px 8px">${$t('📡 Du kommer inte fram till de andra – nätet du sitter på stoppar troligen spelets direktkontakt. Prova ett annat wifi eller mobilens nät, eller en annan webbläsare.')}</p>` : '';
+  const dlg = openModal($t('👥 Pixelstaden online'), `
+    ${samboRad}<p style="font-size:var(--f2);margin-top:0">${info.open ? (info.online === 1 ? $t`<b>${info.online}</b> spelare (bara du) i världen just nu.` : $t`<b>${info.online}</b> spelare i världen just nu.`) : $t('📡 Kopplar upp mot världen…')}</p>
+    ${list.length ? `<div class="plist">${rows}</div>` : info.open ? `<p style="font-size:var(--f2)">${$t('Du är ensam i stan – tipsa någon om länken så ses ni här!')}</p>` : ''}${stuck}
     ${blockRad}
-    <p class="world-diag">Du ser bara dem som är på samma ställe som du. Någon som är dum? Blockera eller anmäl – eller mejla ${SUPPORT}. v${esc(info.version)} · ${role}${info.world !== 'varlden' ? ` · värld: ${esc(info.world)}` : ''}</p>`,
+    <p class="world-diag">${$t`Du ser bara dem som är på samma ställe som du. Någon som är dum? Blockera eller anmäl – eller mejla ${SUPPORT}.`} v${esc(info.version)} · ${role}${info.world !== 'varlden' ? ` · ${$t`värld: ${esc(info.world)}`}` : ''}</p>`,
   [
-    ...(A.sceneName === 'visit' ? [{ label: '🚗 Åk hem', cls: 'btn-red', onClick: () => { closeModal(); A.visitTarget = null; A.game.passTime(20); A.game.save(); A.go('city'); } }] : []),
-    ...(S ? [{ label: '🏠 Flytta isär', onClick: () => openModal('🏠 Flytta isär?', `<p style="font-size:var(--f2);margin-top:0">Vill du och ${esc(S.namn || 'din sambo')} flytta isär? ${S.roll === 'inflyttad' ? `Du flyttar tillbaka till ${esc(homeOf(S.egen?.home).name)} med dina gamla möbler.` : `${esc(S.namn || 'Din sambo')} flyttar ut och du betalar hela hyran igen.`}</p>`, [{ label: '🏠 Ja, flytta isär', cls: 'btn-red', onClick: () => { closeModal(); splitSambo(); } }, { label: 'Nej', onClick: closeModal }]) }] : []),
-    { label: 'Stäng', cls: 'btn-go', onClick: closeModal },
+    ...(A.sceneName === 'visit' ? [{ label: $t('🚗 Åk hem'), cls: 'btn-red', onClick: () => { closeModal(); A.visitTarget = null; A.game.passTime(20); A.game.save(); A.go('city'); } }] : []),
+    ...(S ? [{ label: $t('🏠 Flytta isär'), onClick: () => openModal($t('🏠 Flytta isär?'), `<p style="font-size:var(--f2);margin-top:0">${$t`Vill du och ${esc(S.namn || dinSambo)} flytta isär?`} ${S.roll === 'inflyttad' ? $t`Du flyttar tillbaka till ${esc($t(homeOf(S.egen?.home).name))} med dina gamla möbler.` : $t`${esc(S.namn || DinSambo)} flyttar ut och du betalar hela hyran igen.`}</p>`, [{ label: $t('🏠 Ja, flytta isär'), cls: 'btn-red', onClick: () => { closeModal(); splitSambo(); } }, { label: $t('Nej'), onClick: closeModal }]) }] : []),
+    { label: $t('Stäng'), cls: 'btn-go', onClick: closeModal },
   ]);
   dlg.querySelectorAll('[data-face]').forEach((el) => {
     const p = list[+el.dataset.face];
@@ -592,18 +596,19 @@ function openWorldDialog() {
     const p = list[+b.dataset.block];
     if (!block(p.key, p.av.name)) return;
     if (A.followPlayer === p.id) A.followPlayer = null;
-    toast(`🚫 ${p.av.name || 'Spelaren'} är blockerad – du ser och hör inte hen längre. Ångra i 👥.`, 'wrap');
+    const vem = p.av.name || $t('Spelaren');
+    toast($t`🚫 ${vem} är blockerad – du ser och hör inte hen längre. Ångra i 👥.`, 'wrap');
     openWorldDialog();
   }));
   dlg.querySelectorAll('[data-anmal]').forEach((b) => (b.onclick = () => {
     const p = list[+b.dataset.anmal];
     openAnmal({ key: p.key, namn: p.av.name }, { mig: A.avatar?.name, version: info.version, world: info.world, efter: () => { if (A.followPlayer === p.id) A.followPlayer = null; } });
   }));
-  dlg.querySelectorAll('[data-unblock]').forEach((b) => (b.onclick = () => { unblock(b.dataset.unblock); toast('Blockeringen är borttagen.', 'good'); openWorldDialog(); }));
+  dlg.querySelectorAll('[data-unblock]').forEach((b) => (b.onclick = () => { unblock(b.dataset.unblock); toast($t('Blockeringen är borttagen.'), 'good'); openWorldDialog(); }));
   dlg.querySelectorAll('[data-visit]').forEach((b) => (b.onclick = () => { if (leaveBlocked()) return; closeModal(); visitPlayer(A, b.dataset.visit); }));
   dlg.querySelectorAll('[data-jobba]').forEach((b) => (b.onclick = () => {
     inviteToShift(A, b.dataset.jobba);
-    toast('💼 Inbjudan skickad – häng kvar på passet så länge!', 'good');
+    toast($t('💼 Inbjudan skickad – häng kvar på passet så länge!'), 'good');
     closeModal();
   }));
   dlg.querySelectorAll('[data-goto]').forEach((b) => (b.onclick = () => {
@@ -622,26 +627,26 @@ function openDiary() {
   const jobRows = Object.values(JOBS).map((j) => {
     const n = g.jobs[j.id], b = g.best[j.id];
     const R = rollOf(g, j.id);   // karriärstegarna: befattningen om man har en
-    return line(`${j.icon} ${j.name}`, n ? `${n} pass · ${JOB_TITLES[levelOf(n) - 1]}${R.lon > 1 ? ` · ${R.icon} ${R.namn}` : ''}${b.ok ? ` · 🏅 ${b.ok} rätt / ${fmt(b.pay)}` : ''}` : 'aldrig jobbat');
+    return line(`${j.icon} ${j.name}`, n ? `${$t`${n} pass`} · ${JOB_TITLES[levelOf(n) - 1]}${R.lon > 1 ? ` · ${R.icon} ${R.namn}` : ''}${b.ok ? ` · ${$t`🏅 ${b.ok} rätt / ${fmt(b.pay)}`}` : ''}` : $t('aldrig jobbat'));
   }).join('');
-  openModal('📊 Din resa i Pixelstaden', `
-    ${line('📅 Dag', `${g.day} (${g.dayName})`)}
-    ${line('🏠 Bostad', `${g.homeInfo.icon} ${g.homeInfo.name}`)}
-    ${line('🛋️ Möbler', `${Object.values(g.deco).flat().filter((d) => !d.fx).length} placerade · ${g.storage.length} i förrådet`)}
-    ${line('💰 På fickan', fmt(g.money))}
-    ${g.bank ? line('🏦 På banken', fmt(g.bank)) : ''}
-    ${g.pant?.length ? line('💍 I pantbanken', g.pant.map((p) => `nr ${p.nr}: ${fmt(p.skuld)} senast dag ${p.sista}`).join(' · ')) : ''}
-    ${line('💵 Totalt intjänat', fmt(g.earned))}
+  openModal($t('📊 Din resa i Pixelstaden'), `
+    ${line($t('📅 Dag'), `${g.day} (${g.dayName})`)}
+    ${line($t('🏠 Bostad'), `${g.homeInfo.icon} ${$t(g.homeInfo.name)}`)}
+    ${line($t('🛋️ Möbler'), $t`${Object.values(g.deco).flat().filter((d) => !d.fx).length} placerade · ${g.storage.length} i förrådet`)}
+    ${line($t('💰 På fickan'), fmt(g.money))}
+    ${g.bank ? line($t('🏦 På banken'), fmt(g.bank)) : ''}
+    ${g.pant?.length ? line($t('💍 I pantbanken'), g.pant.map((p) => $t`nr ${p.nr}: ${fmt(p.skuld)} senast dag ${p.sista}`).join(' · ')) : ''}
+    ${line($t('💵 Totalt intjänat'), fmt(g.earned))}
     <div style="border-top:3px dashed var(--ink);margin:8px 0"></div>
     ${jobRows}
     <div style="border-top:3px dashed var(--ink);margin:8px 0"></div>
-    ${line('👕 Köpta plagg', `${plagg.owned} av ${plagg.of}`)}
-    ${line('😊 Lycka', `${Math.round(g.lycka)} av 100`)}
-    ${g.mal ? line('🎯 Livsmålen', g.malKlar ? `ALLA NÅDDA dag ${g.malKlar}! 🏆` : `${g.malStatus().filter((s) => s.done).length} av 4 nådda`) : line('🎯 Livsmålen', 'inte valda än')}
-    ${g.won ? line('🏆 Gamla slutmålet', `Villan + ${fmt(WIN_MONEY)} – KLART!`) : ''}`,
+    ${line($t('👕 Köpta plagg'), $t`${plagg.owned} av ${plagg.of}`)}
+    ${line($t('😊 Lycka'), $t`${Math.round(g.lycka)} av 100`)}
+    ${g.mal ? line($t('🎯 Livsmålen'), g.malKlar ? $t`ALLA NÅDDA dag ${g.malKlar}! 🏆` : $t`${g.malStatus().filter((s) => s.done).length} av 4 nådda`) : line($t('🎯 Livsmålen'), $t('inte valda än'))}
+    ${g.won ? line($t('🏆 Gamla slutmålet'), $t`Villan + ${fmt(WIN_MONEY)} – KLART!`) : ''}`,
   [
-    { label: '🎯 Livsmålen', onClick: () => { closeModal(); openGoals(A); } },
-    { label: 'Snyggt jobbat', cls: 'btn-go', onClick: closeModal },
+    { label: $t('🎯 Livsmålen'), onClick: () => { closeModal(); openGoals(A); } },
+    { label: $t('Snyggt jobbat'), cls: 'btn-go', onClick: closeModal },
   ]);
 }
 
@@ -681,14 +686,14 @@ function boot() {
   // 📅 veckan: samma sammanfattning som vid uppvaknandet
   if (!document.getElementById('hud-week')) {
     const wb = document.createElement('button');
-    wb.id = 'hud-week'; wb.className = 'btn btn-small'; wb.title = 'Veckan: hyra, checklista och sparmål'; wb.textContent = '📅';
+    wb.id = 'hud-week'; wb.className = 'btn btn-small'; wb.title = $t('Veckan: hyra, checklista och sparmål'); wb.textContent = '📅';
     wb.onclick = () => openWeek(A);
     $('#hud-diary').before(wb);
   }
   // 🎯 livsmålen: hur långt man har kommit (och ändra nivåerna)
   if (!document.getElementById('hud-goals')) {
     const gb = document.createElement('button');
-    gb.id = 'hud-goals'; gb.className = 'btn btn-small'; gb.title = 'Livsmålen: rikedom, lycka, utbildning och karriär'; gb.textContent = '🎯';
+    gb.id = 'hud-goals'; gb.className = 'btn btn-small'; gb.title = $t('Livsmålen: rikedom, lycka, utbildning och karriär'); gb.textContent = '🎯';
     gb.onclick = () => openGoals(A);
     $('#hud-week').before(gb);
   }
@@ -699,11 +704,11 @@ function boot() {
     const b = buildingById(id);
     if (!b) return;
     A.guide = { id: b.id };
-    toast(A.sceneName === 'city' ? `🧭 Följ pilen till ${b.icon || ''} ${b.sign || ''}!` : `🧭 När du kommer ut i stan visar en pil vägen till ${b.icon || ''} ${b.sign || ''}.`, 'good');
+    toast(A.sceneName === 'city' ? $t`🧭 Följ pilen till ${b.icon || ''} ${b.sign || ''}!` : $t`🧭 När du kommer ut i stan visar en pil vägen till ${b.icon || ''} ${b.sign || ''}.`, 'good');
   };
   A.taxiTo = (id) => {
     if (!buildingById(id)) return;
-    if (/^jobb/.test(A.sceneName || '')) { toast('🚕 Du är mitt i ett pass – beställ taxin när du har slutat.', 'bad'); return; }
+    if (/^jobb/.test(A.sceneName || '')) { toast($t('🚕 Du är mitt i ett pass – beställ taxin när du har slutat.'), 'bad'); return; }
     if (A.sceneName === 'city' && A.scene?.callTaxi) { A.scene.callTaxi(id); return; }
     // inifrån: ut på trottoaren (hemma: genom ytterdörren), där beställs taxin (city.js)
     A.pendingTaxi = id;
@@ -712,8 +717,8 @@ function boot() {
     A.go('city');
   };
   for (const [id, icon, title, fn] of [
-    ['hud-map', '🗺️', 'Kartan – tryck på ett ställe så visar en pil vägen dit', () => A.openMap('karta')],
-    ['hud-taxi', '🚕', 'Ring efter en taxi', () => (A.sceneName === 'city' && A.scene?.taxiBusy?.() ? A.scene.taxiMenu() : A.openMap('taxi'))],
+    ['hud-map', '🗺️', $t('Kartan – tryck på ett ställe så visar en pil vägen dit'), () => A.openMap('karta')],
+    ['hud-taxi', '🚕', $t('Ring efter en taxi'), () => (A.sceneName === 'city' && A.scene?.taxiBusy?.() ? A.scene.taxiMenu() : A.openMap('taxi'))],
   ]) {
     if (document.getElementById(id)) continue;
     const b = document.createElement('button');
@@ -726,21 +731,21 @@ function boot() {
   samboInit(A);   // 🏠 bo ihop: synka det delade hemmet när sambon är online
   if (!document.getElementById('hud-fest')) {
     const fb = document.createElement('button');
-    fb.id = 'hud-fest'; fb.className = 'btn btn-small hidden'; fb.title = 'Ha fest hemma!'; fb.textContent = '🎉';
+    fb.id = 'hud-fest'; fb.className = 'btn btn-small hidden'; fb.title = $t('Ha fest hemma!'); fb.textContent = '🎉';
     fb.onclick = () => { play('click'); openFest(A); };
     $('#hud-friends').before(fb);
   }
   // 🎭 dräktens rörelse (js/core/drakt.js) – syns när man bär en dräkt som kan något
   if (!document.getElementById('hud-drakt')) {
     const db = document.createElement('button');
-    db.id = 'hud-drakt'; db.className = 'btn btn-small hidden'; db.title = 'Dräktens rörelse';
+    db.id = 'hud-drakt'; db.className = 'btn btn-small hidden'; db.title = $t('Dräktens rörelse');
     db.onclick = () => startAction(A);
     $('#hud-friends').before(db);
   }
   // 🚲 åka eller gå (syns när man har köpt ett fordon i GARAGET – shop-fordon.js rideHud)
   if (!document.getElementById('hud-fordon')) {
     const fb = document.createElement('button');
-    fb.id = 'hud-fordon'; fb.className = 'btn btn-small hidden'; fb.title = 'Åka eller gå';
+    fb.id = 'hud-fordon'; fb.className = 'btn btn-small hidden'; fb.title = $t('Åka eller gå');
     fb.onclick = () => openRide(A);
     $('#hud-friends').before(fb);
   }
@@ -752,10 +757,10 @@ function boot() {
     startWorld(A); // den öppna världen: koppla upp tyst i bakgrunden
     startNotiser(A); // 🔔 appen: lägg om notiserna, fråga en gång efter första dagen
     if (firstRun) {
-      openModal('🌆 Välkommen till Pixelstaden!', `<div class="who">${''}<div>
-        <p style="font-size:var(--f2);margin-top:0">Här börjar ditt nya liv, <b>${A.avatar.name}</b>! Du har <b>${fmt(A.game.money)}</b> på fickan.</p>
-        <p style="font-size:var(--f2)">Alla börjar i en rostig husvagn ute i förorten. Tjäna pengar på stadens jobb, köp mat så du orkar, klä dig snyggt – och spara ihop till en bättre bostad hos bostadsbyrån!</p></div></div>`,
-        [{ label: '🚐 Till husvagnen', cls: 'btn-go', onClick: () => { closeModal(); A.game.home = 'husvagn'; A.game.save(); A.go('room'); goalsFirst(weekFirst); } }],
+      openModal($t('🌆 Välkommen till Pixelstaden!'), `<div class="who">${''}<div>
+        <p style="font-size:var(--f2);margin-top:0">${$t`Här börjar ditt nya liv, <b>${A.avatar.name}</b>! Du har <b>${fmt(A.game.money)}</b> på fickan.`}</p>
+        <p style="font-size:var(--f2)">${$t('Alla börjar i en rostig husvagn ute i förorten. Tjäna pengar på stadens jobb, köp mat så du orkar, klä dig snyggt – och spara ihop till en bättre bostad hos bostadsbyrån!')}</p></div></div>`,
+        [{ label: $t('🚐 Till husvagnen'), cls: 'btn-go', onClick: () => { closeModal(); A.game.home = 'husvagn'; A.game.save(); A.go('room'); goalsFirst(weekFirst); } }],
         { closable: false });
     } else {
       A.go('room');
@@ -782,7 +787,7 @@ function boot() {
     fit();
     if (!A.avatar.name) {
       openAvatarPicker({
-        title: '🧑 Vem är du?', text: 'Skapa din figur – du kan byta kläder hemma i garderoben när du vill.',
+        title: $t('🧑 Vem är du?'), text: $t('Skapa din figur – du kan byta kläder hemma i garderoben när du vill.'),
         onPick: (av) => { A.avatar = av; begin(); },
         // utan namn kommer man aldrig in i spelet: Avbryt leder tillbaka till huvudmenyn
         onCancel: () => { A.avatar = loadAvatar(); if (A.avatar.name) begin(); else backToMenu(); },

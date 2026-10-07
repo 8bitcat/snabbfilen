@@ -35,6 +35,7 @@
 // står på räckena och förankringarna i vattnet.
 import { Pix, mix, mul, hash, bayer, SMALL, BIG, textW, eachTextPixel } from '../core/floor-pix.js';
 import { CITY, RIVER, BRIDGES } from './map.js';
+import { $t } from '../core/i18n.js';
 
 export const PLACEHOLDER = false;
 // figurerna (skridskoåkarna på isen) – laddas för sig så att floden lever även om den modulen inte gör det
@@ -206,7 +207,8 @@ function towerText(P, t, cx) {
       const e2 = x === px0 + 1 || y === py0 + 1 || x === px0 + pw - 2 || y === py0 + ph - 2;
       P.px(x, y, e ? (x === px0 + pw - 1 || y === py0 + ph - 1 ? 0x3a2814 : 0x9a7040) : e2 ? (x === px0 + 1 || y === py0 + 1 ? 0xd8b068 : 0x5a3c1e) : mix(0x6a4824, 0x5a3c1e, hash(x, y, 1820) * 0.6));
     }
-    for (const [s, yy] of [['STORA', py0 + 3], ['BRON', py0 + 9]]) {
+    const [w1, ...wr] = $t('STORA BRON').split(' ');   // två rader på plaketten
+    for (const [s, yy] of [[w1, py0 + 3], [wr.join(' '), py0 + 9]]) {
       const tx = cx - (textW(SMALL, s) >> 1);
       eachTextPixel(SMALL, s, tx + 1, yy + 1, 1, (x, y) => P.px(x, y, 0x3a2814));
       eachTextPixel(SMALL, s, tx, yy, 1, (x, y) => P.px(x, y, 0xecc878));
@@ -957,7 +959,7 @@ function paintIronGirder(P) {
     P.px(x, y, c);
   }
   // gjutjärnsskylten mitt på balken
-  const s = 'JÄRNBRON 1907', tw = textW(SMALL, s), sx = ((x0 + x1) >> 1) - (tw >> 1) - 3;
+  const s = `${$t('JÄRNBRON')} 1907`, tw = textW(SMALL, s), sx = ((x0 + x1) >> 1) - (tw >> 1) - 3;
   for (let y = g0 + 1; y < g1 - 1; y++) for (let x = sx; x < sx + tw + 6; x++) {
     const e = x === sx || y === g0 + 1, f = x === sx + tw + 5 || y === g1 - 2;
     P.px(x, y, e ? 0x5a5e62 : f ? 0x121416 : 0x24282c);

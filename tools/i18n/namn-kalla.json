@@ -1,0 +1,106 @@
+{
+  "om": "Källistan för de lokala namnen (Carl 2026-10-07: 'gör om namnen till lokala både för staden, gatorna och namnen'). Varje post: sv = namnet som det står i spelet, typ, not = vad det är (för översättaren). 'behåll' = ska inte översättas.",
+  "stad": [
+    { "sv": "Pixelstaden", "not": "staden som spelet utspelar sig i (också 'Pixelstadens'); appen heter Pixelcity" },
+    { "sv": "Snabbfilen", "not": "spelets namn på webben (= 'omkörningsfilen', livet i ett högt tempo); står som SNABBFILEN i menyn" },
+    { "sv": "Livet i Pixelstaden", "not": "menyns undertitel" },
+    { "sv": "Pixelfloden", "not": "floden genom staden" },
+    { "sv": "Pixelskär", "not": "liten ö med en fyr, syns från fiskrestaurangen" },
+    { "sv": "Tjurtorget", "not": "torg i finansdistriktet med en tjurstaty (TJUREN)" }
+  ],
+  "stadsdelar": [
+    { "sv": "CENTRUM", "not": "stadskärnan; tagline 'BUTIKER OCH JOBB PÅ PIXELGATAN'" },
+    { "sv": "PARKEN", "not": "stadsparken; 'FONTÄNEN, DAMMEN OCH LEKPLATSEN'" },
+    { "sv": "SÖDER", "not": "gammal stadsdel söder om floden; 'KYRKAN, BION OCH BIBLIOTEKET'" },
+    { "sv": "DOWNTOWN", "not": "skyskrapor och banker; 'HÖGA HUS, BANKER OCH KOSTYMER'" },
+    { "sv": "STORA BRON", "not": "stor hängbro över floden" },
+    { "sv": "JÄRNBRON", "not": "gammal järnbro från 1907" },
+    { "sv": "FÖRORTEN", "not": "betongförort; 'BETONG, GRAFFITI OCH BILLIGA HYROR'" },
+    { "sv": "LINNÉSTADEN", "not": "mysig stadsdel med lindar, torg och små butiker (uppkallad efter Linné och lindarna); 'TORGET, MARKNADEN OCH SMÅ BUTIKER'" },
+    { "sv": "LANDET", "not": "landsbygden öster om staden; 'KOR, FÅR OCH FRISK LUFT'" },
+    { "sv": "TORGET", "not": "torget i Linnéstaden" },
+    { "sv": "FINANSKVARTERET", "not": "bankkvarteret downtown" }
+  ],
+  "gator": [
+    { "sv": "PIXELGATAN", "not": "huvudgatan" }, { "sv": "SÖDERGATAN", "not": "gatan i södra delen" }, { "sv": "INFARTEN", "not": "infartsvägen" },
+    { "sv": "PARKGATAN", "not": "tvärgata vid parken" }, { "sv": "TORGGATAN", "not": "tvärgata" }, { "sv": "FABRIKSGATAN", "not": "tvärgata vid fabriken" },
+    { "sv": "POSTGATAN", "not": "vid posten" }, { "sv": "KYRKOGATAN", "not": "vid kyrkan" }, { "sv": "VÅRDGATAN", "not": "vid vårdcentralen" },
+    { "sv": "MARKNADSGATAN", "not": "vid marknaden i Linnéstaden" }, { "sv": "KAJGATAN", "not": "längs kajen i Linnéstaden (husadresser KAJGATAN 2–30)" },
+    { "sv": "TRÄDGÅRDSGATAN", "not": "tvärgata" }, { "sv": "BANKGATAN", "not": "vid banken downtown" }, { "sv": "BETONGGATAN", "not": "i förorten" },
+    { "sv": "BETONGVÄGEN", "not": "höghusadresser i förorten (BETONGVÄGEN 1/5/7)" }, { "sv": "LINNÉGATAN", "not": "husadresser i Linnéstaden (LINNÉGATAN 3/11/17/23)" }
+  ],
+  "platser": [
+    { "sv": "PIXELTORGET", "not": "busshållplats och torg i centrum" }, { "sv": "FLYGPLATSEN", "not": "flygplatsen (busshållplats och arbetsplats)" },
+    { "sv": "SÖDERKYRKAN", "not": "kyrkan på Söder" }, { "sv": "BETONGTORGET", "not": "torget i förorten" }, { "sv": "FINANSTORGET", "not": "torget downtown" },
+    { "sv": "MARKNADSTORGET", "not": "torget med marknaden i Linnéstaden" }, { "sv": "KYRKOGÅRDEN", "not": "kyrkogården" }, { "sv": "PARKERINGEN", "not": "parkeringen" },
+    { "sv": "LEKPLATSEN", "not": "lekplatsen" }, { "sv": "GRUSPLANEN", "not": "grusplanen" }, { "sv": "TOMTEN", "not": "obebyggd tomt" },
+    { "sv": "ÅTERVINNINGEN", "not": "återvinningsstationen" }, { "sv": "VAGNSPLATSEN", "not": "platsen där husvagnen står" }, { "sv": "Linje 4", "not": "stadsbussens linje" }
+  ],
+  "byggnader": [
+    { "sv": "BOSTADSBYRÅN", "not": "mäklarkontor" }, { "sv": "STORMARKNAD", "not": "stor mataffär" }, { "sv": "KLÄDER", "not": "klädaffär" },
+    { "sv": "MÖBELJÄTTEN", "not": "stort möbelvaruhus (IKEA-lik)" }, { "sv": "KAFÉ", "not": "kafé" }, { "sv": "BURGARBAREN", "not": "50-talsdiner med hamburgare (SEDAN 1955)" },
+    { "sv": "FRUKTFABRIKEN", "not": "fruktfabrik (arbetsplats)" }, { "sv": "RADHUSEN", "not": "radhus" }, { "sv": "PIZZERIA NAPOLI", "not": "pizzeria" },
+    { "sv": "POSTEN", "not": "postkontor (arbetsplats)" }, { "sv": "DJURAFFÄREN", "not": "djuraffär, heter TASSEN inne" }, { "sv": "BIO PIXEL", "not": "biografen" },
+    { "sv": "LEKSAKSLÅDAN", "not": "leksaksaffär" }, { "sv": "VÅRDCENTRALEN", "not": "vårdcentral (arbetsplats)" }, { "sv": "TORNHUSET", "not": "höghus med takvåning" },
+    { "sv": "PIXELMACKEN", "not": "bensinstation (SNABBMACKEN i jobbet)" }, { "sv": "FINANSHUSET", "not": "kontorshus" }, { "sv": "PIXELBANKEN", "not": "banken (grundad 1887 av Gustaf Pixel)" },
+    { "sv": "ELEKTRONIK", "not": "elektronikbutik, heter BLIXT ELEKTRONIK" }, { "sv": "BÖRSHUSET", "not": "börsen" }, { "sv": "PIXELHÖGSKOLAN", "not": "universitetet (PIXEL TOWER)" },
+    { "sv": "SKOBUTIKEN", "not": "skobutik" }, { "sv": "FRISÖR", "not": "frisersalong" }, { "sv": "ACCESSOARER", "not": "accessoarbutik" }, { "sv": "GLASTORNET", "not": "glasskyskrapa" },
+    { "sv": "NÄRBUTIK 24/7", "not": "kvartersbutik i förorten" }, { "sv": "PANTBANKEN", "not": "pantbank" }, { "sv": "KEBAB GRILL", "not": "kebabgrill" },
+    { "sv": "MASKERAD", "not": "maskeradbutik (Halloween), heter Maskeraden" }, { "sv": "BILVERKSTAN", "not": "bilverkstad (BILSERVICE i jobbet)" }, { "sv": "TVÄTTERI", "not": "tvätteri" },
+    { "sv": "GARAGEN", "not": "garage där man köper cykel/moped (GARAGET)" }, { "sv": "LAGER 3", "not": "lagerhall" }, { "sv": "GLASS", "not": "glasskiosk i parken" },
+    { "sv": "LEKFÖRRÅD", "not": "lekförråd i parken" }, { "sv": "MUSIKPAVILJONGEN", "not": "paviljong i parken" }, { "sv": "HUSVAGNEN", "not": "husvagnen man börjar i" },
+    { "sv": "SJÖBODEN", "not": "fiskrestaurang i en röd sjöbod längst ut på piren ('FISK & SKALDJUR')" }, { "sv": "KAFÉ LINDEN", "not": "kafé i Linnéstaden (lind = trädet)" },
+    { "sv": "GÅRDSBUTIKEN", "not": "gårdsbutik med närproducerat" }, { "sv": "PYNT & TING", "not": "inredningsbutik (pynt och saker)" }, { "sv": "BAGERIET", "not": "bageri/konditori (KONDITORI)" },
+    { "sv": "BLOMSTER", "not": "blomsteraffär" }, { "sv": "ANTIKVARIAT", "not": "antikvariat (gamla böcker)" }, { "sv": "GLASSKIOSKEN", "not": "glasskiosk vid kajen" },
+    { "sv": "LOPPISEN", "not": "loppmarknad/second hand" }, { "sv": "CYKELVERKSTAN", "not": "cykelverkstad" }, { "sv": "PIXEL DATA", "not": "datorföretag (jobb: bygga datorer)" },
+    { "sv": "BLIXT", "not": "elektronikkedjans namn (blixt = lightning)" }, { "sv": "TASSEN", "not": "djuraffärens namn (tass = paw)" }, { "sv": "PIXEL KAFFE", "not": "kafé på flygplatsen" },
+    { "sv": "SMÅLAND", "not": "barnens lekrum i möbelvaruhuset (IKEA-skämt)" }, { "sv": "STUDENTEXPEDITIONEN", "not": "på universitetet" }, { "sv": "STALLET", "not": "stall på landet" },
+    { "sv": "LADUGÅRDEN", "not": "ladugård" }, { "sv": "GÅRDEN", "not": "bondgård man kan bo på" }, { "sv": "Ridskolan", "not": "ridskola på landet" }
+  ],
+  "bostader": [
+    { "sv": "Husvagnen", "not": "rostig husvagn, billigast" }, { "sv": "Förortsettan", "not": "en etta i förorten" }, { "sv": "Lilla rummet", "not": "litet hyresrum" },
+    { "sv": "Lägenheten", "not": "lägenhet med utsikt" }, { "sv": "Radhuset", "not": "radhus på Söder" }, { "sv": "Villan", "not": "villa med trädgård" },
+    { "sv": "Gården", "not": "bondgård på landet" }, { "sv": "Takvåningen", "not": "takvåning i Tornhuset" }
+  ],
+  "personer": [
+    { "sv": "Kenta", "not": "bilmekaniker i garaget, säljer foodtrucken (man)" }, { "sv": "Deniz", "not": "kebabkocken (man)" },
+    { "sv": "Maja", "not": "kocken i Sjöboden (kvinna, randig tröja)" }, { "sv": "Majas morfar", "not": "målade tavlan med fyren" },
+    { "sv": "Doris", "not": "kassörska i Burgarbaren och chef för köket (äldre kvinna)" }, { "sv": "Kevin", "not": "popcornkillen på bion (ung man)" },
+    { "sv": "Fia", "not": "frisören (kvinna)" }, { "sv": "Häxan Hilda", "not": "häxan i maskeradbutiken" }, { "sv": "Kajsa", "not": "expedit i djuraffären OCH chef på kaféet (kvinna)" },
+    { "sv": "Docent Lind", "not": "lärare på universitetet" }, { "sv": "Doktor Lind", "not": "chef på vårdcentralen" }, { "sv": "Professor Pixel", "not": "universitetets grundare 1893" },
+    { "sv": "Gustaf Pixel", "not": "bankens grundare 1887" }, { "sv": "Fiskar-Folke", "not": "gammal fiskare på kajen (man)" }, { "sv": "Saga", "not": "liten flicka som metar på piren" },
+    { "sv": "Sixten Pixelsson", "not": "passagerare som ropas upp på flygplatsen" },
+    { "sv": "Bertil", "not": "chef på flygplatsen" }, { "sv": "Aisha", "not": "chef för incheckningen" }, { "sv": "Gunnel", "not": "chef på fruktfabriken" },
+    { "sv": "Luigi", "not": "chef på pizzerian (italienare)" }, { "sv": "Yusuf", "not": "chef på posten" }, { "sv": "Kent", "not": "chef på bensinmacken" },
+    { "sv": "Majken", "not": "chef på bilverkstan (kvinna)" }, { "sv": "Sonja", "not": "chef på tvätteriet" }, { "sv": "Ines", "not": "chef på Pixel Data" },
+    { "sv": "Fredrik", "not": "chef på Finanshuset" }, { "sv": "Fru Lind", "not": "kund i finansjobbet (FRU LIND)" }, { "sv": "Herr Öst", "not": "kund (HERR ÖST)" },
+    { "sv": "Kalle", "not": "kund (KALLE)" }, { "sv": "Familjen Berg", "not": "kund (FAMILJEN BERG)" }, { "sv": "Pensionsfonden", "not": "kund" }, { "sv": "Stiftelsen", "not": "kund" },
+    { "sv": "Sanna", "not": "ryttare i ridskolan" }, { "sv": "Omar", "not": "ryttare" }, { "sv": "Greta", "not": "ryttare" },
+    { "sv": "Stjärnfall", "not": "häst (stjärnfall = shooting star)" }, { "sv": "Kometen", "not": "häst" }, { "sv": "Silverpil", "not": "häst (silver arrow)" }
+  ],
+  "djur_och_figurer": [
+    { "sv": "Harald", "not": "hummern i Sjöbodens akvarium ('inte till salu')" }, { "sv": "Sill", "not": "skeppskatten i Sjöboden – ordvits: heter som sillrätten på menyn; hitta gärna en motsvarande vits" },
+    { "sv": "Kanel", "not": "kaféets katt (kanel = cinnamon)" }, { "sv": "Sixten", "not": "mormors tax på kaféet (TAXEN SIXTEN)" }, { "sv": "Kanelbulle", "not": "mäklarens tax (kanelbulle = cinnamon bun)" },
+    { "sv": "Pluttan", "not": "valp i djuraffären (gullig)" }, { "sv": "Sultan", "not": "katten i närbutiken" }, { "sv": "Långa Lisa", "not": "jättestor gosegiraff i leksaksaffären" },
+    { "sv": "Klämkompisarna", "not": "spelets egna gosedjursfigurer" }, { "sv": "Pösa", "not": "gosedjur (klämkompis)" }, { "sv": "Brumme", "not": "gosedjur (björn)" },
+    { "sv": "Lilja", "not": "gosedjur" }, { "sv": "Isa", "not": "gosedjur" }, { "sv": "Glöd", "not": "gosedjur (glöd = ember)" }, { "sv": "Hoa", "not": "gosedjur (uggla)" },
+    { "sv": "Mysan", "not": "gosedjur (mysig)" }, { "sv": "Pipp", "not": "gosedjur (fågel)" }, { "sv": "Tuss", "not": "standardnamn på husdjur (Tussan/Tussen)" }
+  ],
+  "marken_filmer": [
+    { "sv": "PÄRONFON", "not": "mobil (päron = pear, skämt om Apple); även Päronfon 16 Pro, Päronplatta Pro" }, { "sv": "Blixtfon", "not": "mobil från Blixt (Blixtfon Mini, Blixtfon 12, Blixtplatta)" },
+    { "sv": "PIXELFON", "not": "mobilreklam" }, { "sv": "SNABBFLYG", "not": "flygbolag" }, { "sv": "LYCKOSKRAP", "not": "skraplott" },
+    { "sv": "Betong IF", "not": "fotbollslag från förorten på kebabens tv" }, { "sv": "SNABBMACKEN", "not": "bensinmacken i jobbet" }, { "sv": "BILSERVICE", "not": "bilverkstaden i jobbet" },
+    { "sv": "DRÖMHEM", "not": "tidning" }, { "sv": "PIXELPOSTEN", "not": "tidning" }, { "sv": "BO BÄTTRE", "not": "tidning" }, { "sv": "VECKANS RÖST", "not": "tidning" },
+    { "sv": "PIXELHÄMNAREN 3", "not": "actionfilm (hämnaren = the avenger); PIXELHÄMNAREN 4 i teaser" }, { "sv": "KÄRLEK PÅ PIXELGATAN", "not": "romantisk film" },
+    { "sv": "TURBOPOLIS", "not": "actionfilm (turbo-polisen)" }, { "sv": "SOMMAR I STAN", "not": "familjefilm" }, { "sv": "SISTA NATTBUSSEN", "not": "film" },
+    { "sv": "AMORE PÅ SÖDER", "not": "romantisk komedi ('Söder är vårt Italien')" },
+    { "sv": "DOKTOR GLITCH", "not": "skurk i Pixelhämnaren" }, { "sv": "PIXELHÄMNAREN", "not": "hjälte" },
+    { "sv": "STORA STADAREN", "not": "jätteburgare" }, { "sv": "GRÖNBURGARE", "not": "vegoburgare" }, { "sv": "KEBABPIZZA", "not": "svensk pizzaklassiker" },
+    { "sv": "Fia med knuff", "not": "svenskt brädspel – använd språkets motsvarighet (Ludo, Parchís, Mensch ärgere dich nicht, Petits chevaux, Chińczyk, Non t'arrabbiare, Ludo)" }
+  ],
+  "behall": [
+    { "sv": "Pixelcity", "not": "appens namn i App Store – behåll" },
+    { "sv": "Kungsladugård / KBK", "not": "Carls dotters riktiga fotbollslag – behåll, liksom spelarnas namn och de riktiga klubbarna och låtarna" }
+  ],
+  "listor": "Ge också per språk lokala listor: 40 flicknamn + 40 pojknamn (förnamn för figurer och röster), 12 husdjursnamn, 8 hästnamn, 10 efternamn."
+}

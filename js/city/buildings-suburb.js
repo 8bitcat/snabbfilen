@@ -14,6 +14,7 @@
 import { Pix, SMALL, BIG, text, textW, eachTextPixel, mix, mul, hash, bayer } from '../core/floor-pix.js';
 import { ART_OVER, ART_BELOW, artBox, baseOf } from './map.js';
 import { FRAMES } from '../data/frames.js';
+import { $t } from '../core/i18n.js';
 
 const O = ART_OVER, WHITE = 0xffffff, OUT = 0x1c1a20;
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
@@ -305,7 +306,7 @@ function note(P, x, y, lines, o = {}) {
   return [x, y, w, h];
 }
 const SPRAY = [0xe8443a, 0x3a9bff, 0x6fdc4c, 0xffd23f, 0xff5dc8, 0xf4f1ea, 0x9a5cff, 0xff8a2a, 0x2ad0c8];
-const TAGS = ['ZOK', 'KRAM', 'BTG', 'PIX', 'SNUT', 'LOL', 'KAOS', 'YO', 'VILD', 'MIX', '4EVER', 'ÅKE', 'HEJ', 'NEJ', 'BUS', 'RÖK'];
+const TAGS = ['ZOK', $t('KRAM'), 'BTG', 'PIX', $t('SNUT'), 'LOL', $t('KAOS'), 'YO', $t('VILD'), 'MIX', '4EVER', $t('ÅKE'), $t('HEJ'), $t('NEJ'), $t('BUS'), $t('RÖK')];
 // piece: stora bubbelbokstäver med kontur, tvåtonsfyllning, glans och droppar (ev. "moln" bakom)
 function piece(P, x, y, word, o = {}) {
   const B = bits(BIG, word, { x2: o.x2 ?? true, bold: true, gap: 2 });
@@ -663,15 +664,15 @@ function rollLeaf(S, w, h, col, o = {}) {
   if (o.note) note(S, 3, h - 16, o.note, { seed: 5 });
 }
 const DOOR_ART = {
-  hoghus: { h: 30, interior: (I, w, h) => { interiorBase(I, w, h, { wall0: 0xd8d4c8, wall1: 0xa8a49a, floor: 0x8a8a84 }); for (let r = 0; r < 3; r++) for (let c = 0; c < 3; c++) { I.rect(2 + c * 4, 6 + r * 4, 3, 3, 0x9a9ea8); I.hl(2 + c * 4, 6 + r * 4, 3, 0xc8ccd4); } I.rect(w - 8, 8, 6, 12, 0x3a5a3a); I.hl(w - 8, 8, 6, 0x5a7a5a); }, leaf: (S, w, h, n) => glassLeaf(S, w, h, { night: n, label: 'PORT 1', stickers: 3, crackGlass: true }), edge: 0x8a929c, hinge: 'l' },
-  hoghus2: { h: 30, interior: (I, w, h) => { interiorBase(I, w, h, { wall0: 0xc8c4b8, wall1: 0x8a8678, floor: 0x7a7a74, lampCol: 0xd8e0ff }); for (let r = 0; r < 3; r++) for (let c = 0; c < 4; c++) { I.rect(2 + c * 4, 5 + r * 4, 3, 3, 0x8a8e98); I.hl(2 + c * 4, 5 + r * 4, 3, 0xb8bcc4); } I.rect(w - 6, 10, 3, 4, 0xd8303a); }, leaf: (S, w, h, n) => glassLeaf(S, w, h, { night: n, label: 'PORT 5', stickers: 5 }), edge: 0x8a929c, hinge: 'r' },
-  lamell: { h: 30, interior: (I, w, h) => { interiorBase(I, w, h, { wall0: 0xe8e0c8, wall1: 0xb8b09a, floor: 0x9a8a6a }); for (let s = 0; s < 5; s++) { I.rect(w - 4 - s * 3, h - 10 - s * 3, 8, 3, 0xb8a888); I.hl(w - 4 - s * 3, h - 10 - s * 3, 8, 0xd8c8a8); } I.rect(2, 8, 6, 8, 0x8a9aa8); I.px(4, 10, 0xf0f0f0); }, leaf: (S, w, h, n) => glassLeaf(S, w, h, { night: n, label: 'PORT B', stickers: 2 }), edge: 0x8a929c, hinge: 'l' },
-  narbutik: { h: 30, interior: (I, w, h) => { interiorBase(I, w, h, { wall0: 0xf0ece0, wall1: 0xc8c4b8, floor: 0xb8b0a0, lampCol: 0xe8f0ff }); for (let r = 0; r < 3; r++) { I.hl(1, 7 + r * 5, w - 2, 0x8a8a90); for (let x = 2; x < w - 2; x += 2) I.rect(x, 4 + r * 5, 1, 3, pick(SPRAY, x, r, 1)); } I.rect(w - 6, 12, 5, 10, 0x2a3a5a); I.rect(w - 5, 13, 3, 8, 0x6ab0f0); }, leaf: (S, w, h, n) => { glassLeaf(S, w, h, { night: n, label: 'DRAG', frame: 0x5a5a60 }); stickers(S, 3, 11, w - 12, h - 23, 7, w * 7); }, edge: 0x6a6a70, hinge: 'l' }, // klistermärkena under DRAG, till vänster om handtaget
+  hoghus: { h: 30, interior: (I, w, h) => { interiorBase(I, w, h, { wall0: 0xd8d4c8, wall1: 0xa8a49a, floor: 0x8a8a84 }); for (let r = 0; r < 3; r++) for (let c = 0; c < 3; c++) { I.rect(2 + c * 4, 6 + r * 4, 3, 3, 0x9a9ea8); I.hl(2 + c * 4, 6 + r * 4, 3, 0xc8ccd4); } I.rect(w - 8, 8, 6, 12, 0x3a5a3a); I.hl(w - 8, 8, 6, 0x5a7a5a); }, leaf: (S, w, h, n) => glassLeaf(S, w, h, { night: n, label: $t('PORT 1'), stickers: 3, crackGlass: true }), edge: 0x8a929c, hinge: 'l' },
+  hoghus2: { h: 30, interior: (I, w, h) => { interiorBase(I, w, h, { wall0: 0xc8c4b8, wall1: 0x8a8678, floor: 0x7a7a74, lampCol: 0xd8e0ff }); for (let r = 0; r < 3; r++) for (let c = 0; c < 4; c++) { I.rect(2 + c * 4, 5 + r * 4, 3, 3, 0x8a8e98); I.hl(2 + c * 4, 5 + r * 4, 3, 0xb8bcc4); } I.rect(w - 6, 10, 3, 4, 0xd8303a); }, leaf: (S, w, h, n) => glassLeaf(S, w, h, { night: n, label: $t('PORT 5'), stickers: 5 }), edge: 0x8a929c, hinge: 'r' },
+  lamell: { h: 30, interior: (I, w, h) => { interiorBase(I, w, h, { wall0: 0xe8e0c8, wall1: 0xb8b09a, floor: 0x9a8a6a }); for (let s = 0; s < 5; s++) { I.rect(w - 4 - s * 3, h - 10 - s * 3, 8, 3, 0xb8a888); I.hl(w - 4 - s * 3, h - 10 - s * 3, 8, 0xd8c8a8); } I.rect(2, 8, 6, 8, 0x8a9aa8); I.px(4, 10, 0xf0f0f0); }, leaf: (S, w, h, n) => glassLeaf(S, w, h, { night: n, label: $t('PORT B'), stickers: 2 }), edge: 0x8a929c, hinge: 'l' },
+  narbutik: { h: 30, interior: (I, w, h) => { interiorBase(I, w, h, { wall0: 0xf0ece0, wall1: 0xc8c4b8, floor: 0xb8b0a0, lampCol: 0xe8f0ff }); for (let r = 0; r < 3; r++) { I.hl(1, 7 + r * 5, w - 2, 0x8a8a90); for (let x = 2; x < w - 2; x += 2) I.rect(x, 4 + r * 5, 1, 3, pick(SPRAY, x, r, 1)); } I.rect(w - 6, 12, 5, 10, 0x2a3a5a); I.rect(w - 5, 13, 3, 8, 0x6ab0f0); }, leaf: (S, w, h, n) => { glassLeaf(S, w, h, { night: n, label: $t('DRAG'), frame: 0x5a5a60 }); stickers(S, 3, 11, w - 12, h - 23, 7, w * 7); }, edge: 0x6a6a70, hinge: 'l' }, // klistermärkena under DRAG, till vänster om handtaget
   pantbank: { h: 30, interior: (I, w, h) => { interiorBase(I, w, h, { wall0: 0x6a5a48, wall1: 0x3a3028, floor: 0x5a4a3a, lampCol: 0xffe8b0 }); I.rect(2, 14, w - 4, 4, 0x8a6a40); I.hl(2, 14, w - 4, 0xc8a870); I.rect(3, 6, w - 6, 8, 0x9ab0c0, 0.5); I.px(w >> 1, 10, 0xffd23f); }, leaf: (S, w, h, n) => solidLeaf(S, w, h, 0x2a2a30, { night: n, window: [3, 4, w - 6, 9], grille: true, handle: 0xd8c060, mailslot: true, stickers: 1 }), edge: 0x4a4a50, hinge: 'r' },
-  kebab: { h: 30, interior: (I, w, h) => { interiorBase(I, w, h, { wall0: 0xf0d8b0, wall1: 0xc8a878, floor: 0xa89070, lampCol: 0xffe0a0 }); I.rect(2, 12, w - 4, 6, 0xd8303a); I.hl(2, 12, w - 4, 0xf05a5a); I.rect(w - 7, 3, 5, 9, 0x3a2a1a); I.rect(w - 6, 4, 3, 7, 0x9a5a34); I.px(w - 5, 6, 0xc8804a); }, leaf: (S, w, h, n) => glassLeaf(S, w, h, { night: n, note: ['ÖPPET', 'IGEN!'], noteY: 4, notePaper: 0xf8f0c0, frame: 0x5a3a2a, stickers: 2 }), edge: 0x6a4a3a, hinge: 'l' },
-  maskerad: { h: 30, interior: (I, w, h) => { interiorBase(I, w, h, { wall0: 0x3a2448, wall1: 0x1e1228, floor: 0x2a1e30, lampCol: 0xffb060 }); I.rect(2, 12, w - 4, 3, 0xe8762a); I.rect(3, 4, 5, 8, 0xf4f1ea); I.px(4, 6, 0x1c1820); I.px(6, 6, 0x1c1820); I.rect(w - 9, 9, 6, 5, 0xe0701c); I.px(w - 7, 11, 0xffd23f); }, leaf: (S, w, h, n) => glassLeaf(S, w, h, { night: n, note: ['ÖPPET', 'BU!'], noteY: 4, notePaper: 0xffd8a0, frame: 0x2e1838, stickers: 1 }), edge: 0x4a2a5a, hinge: 'l' },
+  kebab: { h: 30, interior: (I, w, h) => { interiorBase(I, w, h, { wall0: 0xf0d8b0, wall1: 0xc8a878, floor: 0xa89070, lampCol: 0xffe0a0 }); I.rect(2, 12, w - 4, 6, 0xd8303a); I.hl(2, 12, w - 4, 0xf05a5a); I.rect(w - 7, 3, 5, 9, 0x3a2a1a); I.rect(w - 6, 4, 3, 7, 0x9a5a34); I.px(w - 5, 6, 0xc8804a); }, leaf: (S, w, h, n) => glassLeaf(S, w, h, { night: n, note: $t('ÖPPET\nIGEN!').split('\n'), noteY: 4, notePaper: 0xf8f0c0, frame: 0x5a3a2a, stickers: 2 }), edge: 0x6a4a3a, hinge: 'l' },
+  maskerad: { h: 30, interior: (I, w, h) => { interiorBase(I, w, h, { wall0: 0x3a2448, wall1: 0x1e1228, floor: 0x2a1e30, lampCol: 0xffb060 }); I.rect(2, 12, w - 4, 3, 0xe8762a); I.rect(3, 4, 5, 8, 0xf4f1ea); I.px(4, 6, 0x1c1820); I.px(6, 6, 0x1c1820); I.rect(w - 9, 9, 6, 5, 0xe0701c); I.px(w - 7, 11, 0xffd23f); }, leaf: (S, w, h, n) => glassLeaf(S, w, h, { night: n, note: $t('ÖPPET\nBU!').split('\n'), noteY: 4, notePaper: 0xffd8a0, frame: 0x2e1838, stickers: 1 }), edge: 0x4a2a5a, hinge: 'l' },
   bilverkstad: { h: 44, interior: (I, w, h) => { interiorBase(I, w, h, { wall0: 0x4a4e58, wall1: 0x22242c, floor: 0x3a3c44, lampCol: 0xfff0c0 }); I.rect(4, 18, w - 8, 10, 0x1a1c24); I.rect(6, 14, w - 12, 5, 0x2a3a5a); I.hl(7, 14, w - 14, 0x3a5a8a); I.rect(3, 28, 5, 3, 0x1a1a1e); I.rect(w - 8, 28, 5, 3, 0x1a1a1e); I.vl(2, 8, 24, 0x8a8a90); I.vl(w - 3, 8, 24, 0x8a8a90); I.rect((w >> 1) - 2, 4, 5, 2, 0xfff8e0); for (let k = 0; k < 6; k++) I.px(2 + k * 2, 6 + (k % 3), pick([0xd8303a, 0x3a7bd5, 0xffd23f], k, 1, 2)); }, leaf: (S, w, h) => rollLeaf(S, w, h, 0x9aa4ae, { tag: 'YO', dents: 3 }), roll: true },
-  tvatteri: { h: 30, interior: (I, w, h) => { interiorBase(I, w, h, { wall0: 0xe8f0f4, wall1: 0xb8c8d0, floor: 0xa8b0b8, lampCol: 0xe8f4ff }); for (let x = 2; x < w - 6; x += 7) { I.rect(x, 8, 6, 12, 0xf0f0ee); I.box(x + 1, 11, 4, 4, 0x3a5a7a); I.rect(x + 2, 12, 2, 2, 0x1a2a3a); I.hl(x + 1, 9, 4, 0x8a8a90); } }, leaf: (S, w, h, n) => glassLeaf(S, w, h, { night: n, label: 'ÖPPET', stickers: 2, frame: 0x6a8aa0 }), edge: 0x7a8a98, hinge: 'l' },
+  tvatteri: { h: 30, interior: (I, w, h) => { interiorBase(I, w, h, { wall0: 0xe8f0f4, wall1: 0xb8c8d0, floor: 0xa8b0b8, lampCol: 0xe8f4ff }); for (let x = 2; x < w - 6; x += 7) { I.rect(x, 8, 6, 12, 0xf0f0ee); I.box(x + 1, 11, 4, 4, 0x3a5a7a); I.rect(x + 2, 12, 2, 2, 0x1a2a3a); I.hl(x + 1, 9, 4, 0x8a8a90); } }, leaf: (S, w, h, n) => glassLeaf(S, w, h, { night: n, label: $t('ÖPPET'), stickers: 2, frame: 0x6a8aa0 }), edge: 0x7a8a98, hinge: 'l' },
   garage: { h: 34, interior: (I, w, h) => { interiorBase(I, w, h, { wall0: 0x3a3a3e, wall1: 0x1a1a1e, floor: 0x2e2e32, lamp: false }); I.rect(4, 16, w - 8, 12, 0x6a2a2a); I.hl(5, 16, w - 10, 0x8a3a3a); I.rect(6, 12, w - 12, 5, 0x2a3a4a); I.rect(2, 4, 7, 10, 0x4a4a4e); for (let k = 0; k < 4; k++) I.hl(3, 5 + k * 2, 5, pick([0xd8303a, 0x3a7bd5, 0xffd23f, 0x6fdc4c], k, 2, 3)); }, leaf: (S, w, h) => rollLeaf(S, w, h, 0x7a8a98, { tag: 'BTG', dents: 2, tagCol: 0xffd23f }), roll: true },
   lagerhall: { h: 48, interior: (I, w, h) => { interiorBase(I, w, h, { wall0: 0x2a2e30, wall1: 0x141618, floor: 0x26282a, lamp: false }); for (let x = 3; x < w - 8; x += 12) for (let r = 0; r < 3; r++) { I.rect(x, 6 + r * 11, 10, 2, 0x5a4a30); I.rect(x + 1, 8 + r * 11, 8, 6, pick([0x8a6a3a, 0x6a6a70, 0x4a5a6a], x, r, 4), 0.8); } I.rect(w - 9, 24, 7, 8, 0x9a8a2a); I.rect(w - 8, 26, 5, 4, 0x2a2a30); }, leaf: (S, w, h) => rollLeaf(S, w, h, 0x6a7a68, { dents: 3, rust: 5, piece: { word: 'PIXEL', y: 8, c1: 0x6fdc4c, c2: 0x2aa3a0, sub: '4 EVER' } }), roll: true },
   husvagn: { h: 22, interior: (I, w, h) => { interiorBase(I, w, h, { wall0: 0xf0e8d0, wall1: 0xc8b898, floor: 0x8a6a4a }); I.rect(1, 9, 5, 5, 0xd8d4c8); I.px(2, 10, 0x2a2a30); I.rect(w - 5, 8, 4, 6, 0xc86a3a); }, leaf: (S, w, h, n) => solidLeaf(S, w, h, 0xd8d0c0, { night: n, window: [2, 3, w - 4, 7], handle: 0x8a8a90, dents: 2, stickers: 1 }), edge: 0xb8b0a0, hinge: 'l' },
@@ -1230,7 +1231,7 @@ function machineRoom(C, x, w) {
   P.vl(x, 0, 14, mix(0xc8c4b8, WHITE, 0.3)); P.vl(x + w - 1, 0, 14, 0x6a665e); P.hl(x, 14, w, 0x000000, 0.3);
   P.rect(x + 4, 6, 6, 8, 0x4a4e58); P.box(x + 4, 6, 6, 8, 0x2a2e36); P.px(x + 8, 10, 0xc8c8d0); // ståldörr
   for (let k = 0; k < 3; k++) P.hl(x + w - 12, 6 + k * 2, 8, 0x3a3e46); // galler
-  P.rect(x + 13, 6, 14, 5, 0xf0ece0); text(P, SMALL, 'HISS', x + 14, 6, 0x2a2a34);
+  P.rect(x + 13, 6, 14, 5, 0xf0ece0); text(P, SMALL, $t('HISS'), x + 14, 6, 0x2a2a34);
   if (C.snow) snowCap(P, x, 1, w, 5);
 }
 // en av höghusens fasader. cfg: se anropen nedan.
@@ -1317,22 +1318,22 @@ function paintHoghus(b, night, opts) {
       const lx = L + 6, ly = gTop + 10;
       lifeWin(C, lx, ly, 26, 13, { night, lit: 'warm', frame: 0x8a8e96, curtain: null, bars: true, act: 'fold', seed: 3, hours: [7, 22] });
       C.reg.anim[C.reg.anim.length - 1].cx = 8;
-      P.rect(lx + 2, ly - 7, 22, 6, 0xf0ece0); P.box(lx + 1, ly - 8, 24, 8, 0x3a3a44); text(P, SMALL, 'TVÄTT', lx + 3, ly - 6, 0x2a3a6a);
+      P.rect(lx + 2, ly - 7, 22, 6, 0xf0ece0); P.box(lx + 1, ly - 8, 24, 8, 0x3a3a44); text(P, SMALL, $t('TVÄTT'), lx + 3, ly - 6, 0x2a3a6a);
       if (night) C.reg.glows.push([lx + 1, ly + 1, 24, 11, 0xe8f4ff, 0.18]);
       // anslagstavlan med lappar
       const nx = L + 36;
       area(P, nx, gTop + 9, 30, 22, (X, Y, i, j) => (i === 0 || j === 0 || i === 29 || j === 21 ? 0x5a3a24 : jit(0xb8864a, X, Y, 17, 0.14)));
       P.hl(nx, gTop + 31, 30, 0x000000, 0.3);
-      note(P, nx + 2, gTop + 11, ['KATT', 'BORTA'], { seed: 1, paper: 0xfff8d0, ink: 0xc8202a, tape: false, pin: true });
+      note(P, nx + 2, gTop + 11, $t('KATT\nBORTA').split('\n'), { seed: 1, paper: 0xfff8d0, ink: 0xc8202a, tape: false, pin: true });
       stencil(P, nx + 5, gTop + 24, 'katt', 0x3a2a2a, 0.9);
-      note(P, nx + 19, gTop + 20, ['FEST'], { seed: 3, paper: 0xd8f0ff, ink: 0x2a2a6a, tape: false, pin: true });
+      note(P, nx + 19, gTop + 20, [$t('FEST')], { seed: 3, paper: 0xd8f0ff, ink: 0x2a2a6a, tape: false, pin: true });
       // cyklar mot väggen och ett källarfönster
       bike(P, L + 6, BY - 1, s + 1); bike(P, L + 19, BY - 1, s + 2);
       win(P, L + 128, BY - 11, 12, 5, { night, frame: 0x6a6660, bars: true, sill: false, transom: false, dirt: 1, seed: 9 }, C.reg);
       // klotterpjäs och affisch
       piece(P, L + 128, gTop + 17, 'BTG', { c1: 0x6fdc4c, c2: 0x2a9a8a, cloud: 0x3a2a5a, drips: 5, sign: 'ZOK' });
       stencil(P, L + 112, BY - 13, 'hjarta', 0xff5dc8);
-      tag(P, L + 70, gTop + 28, 'KRAM', 0x3a9bff, 5);
+      tag(P, L + 70, gTop + 28, $t('KRAM'), 0x3a9bff, 5);
     },
   });
 }
@@ -1356,16 +1357,16 @@ function paintHoghus2(b, night, opts) {
       // banderoll från en loggia: RÄDDA GRUSPLANEN!
       const bx = L + 2, by = 20 + 4 * 18 + 16;
       area(P, bx, by, 40, 14, (X, Y, i, j) => { const sag = Math.round(Math.sin((i / 39) * Math.PI) * 1.5); return j < sag ? null : jit(j === sag ? 0xffffff : 0xf0ece0, X, Y, 23, 0.05); });
-      scrawl(P, SMALL, 'RÄDDA', bx + 9, by + 3, 0xc8202a, 4); scrawl(P, SMALL, 'GRUSPLAN!', bx + 3, by + 8, 0x2a3a8a, 5);
+      scrawl(P, SMALL, $t('RÄDDA\nGRUSPLAN!').split('\n')[0], bx + 9, by + 3, 0xc8202a, 4); scrawl(P, SMALL, ($t('RÄDDA\nGRUSPLAN!').split('\n')[1] ?? ''), bx + 3, by + 8, 0x2a3a8a, 5);
       P.line(bx, by, bx - 1, by - 3, 0x8a8a90); P.line(bx + 39, by, bx + 40, by - 3, 0x8a8a90); P.hl(bx + 1, by + 14, 38, 0x000000, 0.2);
       // väggmålning (klotterpjäs) och kundvagn
-      piece(P, L + 8, gTop + 17, 'FÖRORT', { x2: false, c1: 0xff8a2a, c2: 0xe8443a, cloud: 0x2a5a9a, drips: 6 });
-      piece(P, L + 144, gTop + 17, 'PIX', { c1: 0xff5dc8, c2: 0x9a5cff, drips: 4, sign: 'KAOS' });
+      piece(P, L + 8, gTop + 17, $t('FÖRORT'), { x2: false, c1: 0xff8a2a, c2: 0xe8443a, cloud: 0x2a5a9a, drips: 6 });
+      piece(P, L + 144, gTop + 17, 'PIX', { c1: 0xff5dc8, c2: 0x9a5cff, drips: 4, sign: $t('KAOS') });
       const cx = L + 62, cy = BY - 1;
       for (let i = 0; i < 12; i++) for (let j = 0; j < 7; j++) if (i % 2 === 0 || j % 2 === 0) P.px(cx + i + (j < 3 ? 0 : 1), cy - 9 + j, 0x9aa0aa);
       P.hl(cx - 1, cy - 10, 14, 0xc8ccd4); P.line(cx + 13, cy - 10, cx + 16, cy - 13, 0x6a6e78); P.px(cx + 1, cy - 1, 0x1a1a1e); P.px(cx + 11, cy - 1, 0x1a1a1e); P.hl(cx, cy - 2, 13, 0x6a6e78);
       for (const [x, c] of [[L + 38, 0x1a1a22], [L + 47, 0x2a2a34]]) { P.ell(x + 4, BY - 4, 5, 4, c, 1, 2); P.px(x + 4, BY - 8, 0x3a3a44); P.px(x + 2, BY - 5, 0x4a4a54); }
-      note(P, C.dx1 + 3, gTop + 13, ['KODLÅS', 'SÖNDER'], { seed: 7, paper: 0xfff8d0 });
+      note(P, C.dx1 + 3, gTop + 13, $t('KODLÅS\nSÖNDER').split('\n'), { seed: 7, paper: 0xfff8d0 });
       cctv(C, C.dx0 - 6, gTop + 5, true);
     },
   });
@@ -1486,14 +1487,14 @@ function boldDots(B, word) {
 function nbGeo(C, gTop) {
   const { L, R } = C, x0 = L + 1, x1 = R - 2, fx0 = x0 + 1, fx1 = x1 - 1, fy0 = gTop + 1, fy1 = gTop + 12;
   const pv = fx1 - 28, dv = pv - 2;                                   // 24/7-panelen (pv..fx1), mittprofilen (dv, dv+1)
-  const B = boldDots(bits(BIG, 'NÄRBUTIK', { bold: true }), 'NÄRBUTIK');
+  const B = boldDots(bits(BIG, $t('NÄRBUTIK'), { bold: true }), $t('NÄRBUTIK'));
   const tx = fx0 + ((dv - fx0 - B.w) >> 1) + 1, ty = fy0 + 3;       // versalhöjdens överkant
   const N = bits(BIG, '24/7'), nx = pv + ((fx1 + 1 - pv - N.w) >> 1);
   const HW = [11, 9, 8, 6, 5, 3, 3, 1];                              // det avslagna hörnet, rad för rad
   const hit = (M, bx) => (x, y) => { const i = x - bx, j = y - (ty - M.up); return i >= 0 && j >= 0 && i < M.w && j < M.h && M.on[j * M.w + i] === 1; };
   return {
     x0, x1, fx0, fx1, fy0, fy1, pv, dv, B, tx, ty, N, nx,
-    seg: [tx + B.cols[4][0] - 1, tx + B.cols[5][1]],                  // det döende röret: U, T och glipan runt dem
+    seg: [tx + (B.cols[Math.min(4, B.cols.length - 2)] || B.cols[0])[0] - 1, tx + (B.cols[Math.min(5, B.cols.length - 1)] || B.cols[0])[1]],   // det döende röret: U, T och glipan runt dem (kortare översättningar: de sista bokstäverna)
     tubes: [fy0 + 3.5, fy0 + 7.5],                                     // lysrörens mittlinjer bakom plasten
     letter: hit(B, tx),
     hole: (x, y) => y >= fy0 && y - fy0 < HW.length && x >= fx0 && x < fx0 + HW[y - fy0],
@@ -1596,7 +1597,7 @@ function nbSign(Q, G, C, mode) {
   sign(Q, B, tx, ty, lit
     ? { fill: (i, j, X, Y) => jit(0xe02a22, X, Y, s + 69, 0.03), hi: 0xff6a54, lo: 0xb41818 }
     : dead ? { fill: 0x6a1e1e, hi: 0x7c2c2a, lo: 0x4c1414 }
-      : { fill: (i, j, X, Y) => jit(i > B.cols[6][0] ? 0xca3a34 : 0xc2302c, X, Y, s + 69, 0.05), hi: 0xd85a4c, lo: 0x8c1c1c });
+      : { fill: (i, j, X, Y) => jit(i > (B.cols[Math.min(6, B.cols.length - 1)] || [0])[0] ? 0xca3a34 : 0xc2302c, X, Y, s + 69, 0.05), hi: 0xd85a4c, lo: 0x8c1c1c });
   // --- 24/7-panelen: röd plast, vita siffror, ett klistermärke ---
   area(Q, pv, fy0, fx1 - pv + 1, FH, (X, Y, i, j) => {
     const base = lit ? 0xea3c2e : dead ? 0x5a1c1a : 0xb02a26;
@@ -1781,8 +1782,8 @@ function nbBoardImg(G, snow, s) {
     return jit(c, X, Y, s + 98, 0.03);
   });
   // rubrikerna: svart och röd, röd med mörkare nederkant
-  text(P, SMALL, 'KATTEN', X0 + 3, top + 2, 0x16161c);
-  eachTextPixel(SMALL, 'HITTAD!', X0 + 2, top + 8, 1, (x, y) => P.px(x, y, y === top + 12 ? 0xa81414 : 0xd01c1c));
+  text(P, SMALL, $t('KATTEN\nHITTAD!').split('\n')[0], X0 + 3, top + 2, 0x16161c);
+  eachTextPixel(SMALL, ($t('KATTEN\nHITTAD!').split('\n')[1] ?? ''), X0 + 2, top + 8, 1, (x, y) => P.px(x, y, y === top + 12 ? 0xa81414 : 0xd01c1c));
   // plastfickans blänk (i marginalen), klämmorna i överkant och ett hundöra nere till höger
   P.px(X0 + 1, top + 1, 0xffffff); P.px(X0 + 2, top + 1, 0xfcfcf8);
   P.px(X1 - 1, top + 3, 0xffffff, 0.7); P.px(X1 - 1, top + 4, 0xffffff, 0.45);
@@ -1821,7 +1822,7 @@ function kaffeSign(Q, x, y, s) {
   for (const [i, j, a] of [[20, 1, 0.5], [20, 2, 0.35], [19, 6, 0.4], [18, 6, 0.25]]) Q.px(x + i, y + j, 0x7a4a22, a); // kaffestänk
   Q.px(x + 1, y + 6, mul(0xc49a64, 0.86)); Q.px(x + 2, y + 6, mul(0xc49a64, 0.9));           // fuktfläck
   let cx = x + 1;
-  for (const ch of 'KAFFE') { text(Q, SMALL, ch, cx, y + 1 + (hash(cx, s, 94) > 0.66 ? 1 : 0), 0x1a1612); cx += textW(SMALL, ch) + 1; }
+  for (const ch of $t('KAFFE')) { text(Q, SMALL, ch, cx, y + 1 + (hash(cx, s, 94) > 0.66 ? 1 : 0), 0x1a1612); cx += textW(SMALL, ch) + 1; }
   Q.hl(x + 1, y + h, w - 1, 0x000000, 0.3); Q.vl(x + w, y + 1, h - 1, 0x000000, 0.22);        // skuggan
   return [x, y - 1, w + 1, h + 2];
 }
@@ -1852,7 +1853,7 @@ function paintNarbutik(b, night, opts) {
       const { P, L } = C;
       hvac(P, L + 58, 48, 26, 10, 7, { fan: false, rust: 3, col: 0xc0c4c8 });
       C.reg.fans.push({ x: L + 58 + 5, y: 50, speed: 9, ph: 0.1 }); C.reg.fans.push({ x: L + 58 + 15, y: 50, speed: 8, ph: 0.6 });
-      text(P, SMALL, 'KYL', L + 62, 59, 0x3a3e46, 0.7);
+      text(P, SMALL, $t('KYL'), L + 62, 59, 0x3a3e46, 0.7);
       ventPipe(P, L + 20, 56, 8); ventPipe(P, L + 30, 60, 6, 0x8a9098);
       dish(P, L + 96, 60, { rust: true, r: 3 });
       birdsOn(C, L + 4, L + 50, C.FT - 1, 2);
@@ -1922,7 +1923,7 @@ function paintNarbutik(b, night, opts) {
           for (let i = gx + 2; i < gx + gw; i += 4) Q.vl(i, gy, gh, 0x2a2a30); Q.hl(gx, gy + 7, gw, 0x2a2a30); Q.hl(gx, gy + 15, gw, 0x2a2a30);
           // GLASS-lappen högst upp (y 159–166), helt ovanför löpsedeln som börjar på y 170; tejpbitarna
           // sitter bara i hörnen utanför textens kolumner (en nål mitt över blev en accent: GLÁSS)
-          const gn = note(Q, gx + 2, gy, ['GLASS'], { seed: 12, paper: 0xd8f0ff, ink: 0xd8202a, pad: 1, tape: false });
+          const gn = note(Q, gx + 2, gy, [$t('GLASS')], { seed: 12, paper: 0xd8f0ff, ink: 0xd8202a, pad: 1, tape: false });
           for (const tx of [gn[0] - 1, gn[0] + gn[2] - 1]) Q.rect(tx, gn[1] - 1, 2, 2, 0xe8e0b8, 0.85);
           glass = [gn[0] - 1, gn[1] - 1, gn[2] + 2, gn[3] + 2];                              // + tejpen och skuggan
           // kortmärkena på glaset (utan text) – till höger om löpsedeln
@@ -1977,7 +1978,7 @@ function paintPantbank(b, night, opts) {
       // skylten: guld på svart
       const sy = gTop + 2;
       P.rect(L + 2, sy, R - L - 4, 11, 0x14121a); P.box(L + 1, sy - 1, R - L - 2, 13, 0xc8a040); P.hl(L + 2, sy + 11, R - L - 4, 0x000000, 0.3);
-      const B = bits(BIG, 'PANTBANKEN');
+      const B = bits(BIG, $t('PANTBANKEN'));
       sign(P, B, L + ((R - L - B.w) >> 1), sy + 2, { fill: (i, j) => (j < 3 ? 0xf8d870 : 0xd8a830), shadow: 0x000000, lo: 0xa87a20 });
       if (night) C.reg.glows.push([L + 3, sy + 1, R - L - 6, 9, 0xffd870, 0.12]);
       // de tre guldkulorna
@@ -1998,7 +1999,7 @@ function paintPantbank(b, night, opts) {
         },
         front: (Q, gx, gy, gw, gh) => {
           for (let i = gx + 1; i < gx + gw; i += 3) Q.vl(i, gy - 1, gh + 2, 0x1a1a1e); Q.hl(gx, gy + 6, gw, 0x1a1a1e); Q.hl(gx, gy + 14, gw, 0x1a1a1e);
-          note(Q, gx + 1, gy + 7, ['KÖPER', 'GULD!'], { seed: 21, paper: 0xf8e060, ink: 0xa81a1a, tape: true });
+          note(Q, gx + 1, gy + 7, $t('KÖPER\nGULD!').split('\n'), { seed: 21, paper: 0xf8e060, ink: 0xa81a1a, tape: true });
         },
       });
       shopWin(C, dx1 + 4, wy, R - dx1 - 7, wh, { frame: 0x2a1a1a, act: 'clerk', hours: [10, 18], cx: 6,
@@ -2050,8 +2051,8 @@ function paintKebab(b, night, opts) {
       area(P, L, gTop + 1, R - L, 16, (X, Y, i, j) => jit(j === 0 ? 0xc84038 : j === 15 ? 0x5a1410 : 0x8a2420, X, Y, 96, 0.06));
       P.hl(L, gTop + 17, R - L, 0x000000, 0.35);
       if (C.snow) snowCap(P, L, gTop + 1, R - L, s);
-      const NB = bits(BIG, 'KEBAB', { x2: true, gap: 2 });
-      neon(C, 'KEBAB', L + ((R - L - NB.w) >> 1), gTop + 2, 0xff4a3a, { x2: true, dead: 4, flick: 2, open: [11, 24], r: 4 });
+      const NB = bits(BIG, $t('KEBAB'), { x2: true, gap: 2 });
+      neon(C, $t('KEBAB'), L + ((R - L - NB.w) >> 1), gTop + 2, 0xff4a3a, { x2: true, dead: 4, flick: 2, open: [11, 24], r: 4 });
       // fasaden under: vit kakel
       tilesWall(P, L, gTop + 18, R - L, BY - 5 - gTop - 18, 0xe8ecec, s);
       const wy = 160, wh = 20;
@@ -2081,12 +2082,12 @@ function paintKebab(b, night, opts) {
         },
         front: (Q, gx, gy, gw, gh) => { stickers(Q, gx + 1, gy + gh - 6, gw - 2, 4, 3, 17); },
       });
-      neon(C, 'GRILL', dx1 + 6, wy + 3, 0x3ae8ff, { small: true, flick: 1, dead: 3, open: [11, 24], r: 3 });
+      neon(C, $t('GRILL'), dx1 + 6, wy + 3, 0x3ae8ff, { small: true, flick: 1, dead: 3, open: [11, 24], r: 3 });
       // gatupratare med kritmeny och en överfull soptunna med pizzakartonger
       const ax = R - 24, ay = BY - 20;
       P.line(ax, BY - 1, ax + 3, ay, 0x6a4a2a); P.line(ax + 20, BY - 1, ax + 17, ay, 0x6a4a2a);
       area(P, ax + 2, ay, 17, 17, (X, Y, i, j) => (i === 0 || j === 0 || i === 16 || j === 16 ? 0x8a6a3a : jit(0x1e2a24, X, Y, 98, 0.08)));
-      scrawl(P, SMALL, 'DAGENS', ax + 3, ay + 2, 0xf0f0e8, 1); scrawl(P, SMALL, 'RULLE', ax + 4, ay + 7, 0xffd23f, 2); scrawl(P, SMALL, '59:-', ax + 5, ay + 12, 0xff9ac8, 3);
+      scrawl(P, SMALL, $t('DAGENS\nRULLE').split('\n')[0], ax + 3, ay + 2, 0xf0f0e8, 1); scrawl(P, SMALL, ($t('DAGENS\nRULLE').split('\n')[1] ?? ''), ax + 4, ay + 7, 0xffd23f, 2); scrawl(P, SMALL, $t('59:-'), ax + 5, ay + 12, 0xff9ac8, 3);
       const tx = L + 1;
       P.rect(tx, BY - 12, 9, 12, 0x3a5a3a); P.hl(tx, BY - 12, 9, 0x5a7a5a); P.vl(tx + 8, BY - 11, 11, 0x2a3a2a);
       for (let k = 0; k < 3; k++) { P.rect(tx - 1 + k, BY - 15 - k * 2, 10, 2, 0xd8a840); P.hl(tx - 1 + k, BY - 15 - k * 2, 10, 0xf0c860); P.px(tx + 3 + k, BY - 14 - k * 2, 0xd8202a); }
@@ -2194,9 +2195,9 @@ function paintMaskerad(b, night, opts) {
   // ---- skylten: neon MASKERAD på en mörk bräda, och UTKLÄDNAD + HALLOWEEN under ----
   const sy0 = BY - 60, sy1 = BY - 42;
   P.rect(L + 4, sy0, W - 8, sy1 - sy0, 0x1e1228); P.box(L + 4, sy0, W - 8, sy1 - sy0, MASK.trim); P.box(L + 5, sy0 + 1, W - 10, sy1 - sy0 - 2, MASK.trimDk);
-  const NB = bits(BIG, 'MASKERAD');
-  neon(C, 'MASKERAD', L + ((W - NB.w) >> 1), sy0 + 5 + NB.up, 0xff8a2a, { flick: 5 });
-  const sub = 'UTKLÄDNAD + HALLOWEEN', sw = textW(SMALL, sub);
+  const NB = bits(BIG, $t('MASKERAD'));
+  neon(C, $t('MASKERAD'), L + ((W - NB.w) >> 1), sy0 + 5 + NB.up, 0xff8a2a, { flick: 5 });
+  const sub = $t('UTKLÄDNAD + HALLOWEEN'), sw = textW(SMALL, sub);
   text(P, SMALL, sub, L + ((W - sw) >> 1), sy1 + 2, 0xc8f070);
   // fladdermöss som hänger under skylten (de flaxar till ibland – live)
   const bats = [[L + 14, sy1 + 9], [R - 18, sy1 + 9]];
@@ -2364,7 +2365,7 @@ function paintBilverkstad(b, night, opts) {
   for (let y = FT; y < BY; y++) { P.px(L, y, mix(P.get(L, y), WHITE, 0.15)); P.px(R - 1, y, mul(P.get(R - 1, y), 0.72)); }
   // skylt över porten med två spotlights
   plate(P, dx0 - 10, FT + 8, 76, 15, 0x2a4a8a, { rust: 2, fade: true });
-  signText(P, BIG, 'BILVERKSTAN', dx0 - 4, FT + 12, 0xf0f4f8, { shadow: 0x101a2e });
+  signText(P, BIG, $t('BILVERKSTAN'), dx0 - 4, FT + 12, 0xf0f4f8, { shadow: 0x101a2e });
   for (const lx of [dx0 - 6, dx0 + 58]) { P.rect(lx - 1, FT + 3, 3, 2, 0x2a2e36); P.rect(lx - 1, FT + 5, 3, 2, N ? 0xffe8a8 : 0xd8d4c8); if (N) C.reg.glows.push([lx - 1, FT + 5, 3, 2, 0xffe8b0, 0.9]); }
   if (N) C.reg.glows.push([dx0 - 10, FT + 8, 76, 15, 0xffd890, 0.12]);
   // porten: spår, varningsränder; själva rullporten ritas av live
@@ -2388,14 +2389,14 @@ function paintBilverkstad(b, night, opts) {
       Q.hl(gx + 4, gy + gh - 6, gw - 8, mul(0x8a6a4a, dim));
     },
     front: (Q, gx, gy) => {
-      note(Q, gx + 1, gy + 2, ['DÄCK', '250:-'], { seed: 32, paper: 0xfff8d0, ink: 0x1a3a8a });
+      note(Q, gx + 1, gy + 2, [$t('DÄCK'), $t('250:-')], { seed: 32, paper: 0xfff8d0, ink: 0x1a3a8a });
     } });
-  note(P, dx1 + 6, dT + 2, ['ÖPPET', '7-18'], { seed: 33, paper: 0xf0f8ff, ink: 0x8a2020 });
+  note(P, dx1 + 6, dT + 2, [$t('ÖPPET'), '7-18'], { seed: 33, paper: 0xf0f8ff, ink: 0x8a2020 });
   // däckstaplar, oljefat, lastpallar och en moped till salu
   tires(P, L + 4, BY - 1, 4, s + 7); tires(P, L + 17, BY - 1, 3, s + 8);
   barrel(P, dx1 + 5, BY - 1, 0x3a6a4a); barrel(P, dx1 + 14, BY - 1, 0x8a3a2a);
   pallets(P, R - 22, BY - 1, 2);
-  bike(P, R - 42, BY - 1, s + 9); note(P, R - 44, BY - 17, ['SÄLJES'], { seed: 34, paper: 0xfff8d0 });
+  bike(P, R - 42, BY - 1, s + 9); note(P, R - 44, BY - 17, [$t('SÄLJES')], { seed: 34, paper: 0xfff8d0 });
   tag(P, L + 26, dT - 16, 'BTG', 0xffd23f, s + 10); stencil(P, dx1 + 26, dT - 14, 'pil', 0xd8d0c0, 0.7);
   cctv(C, R - 8, FT + 10, true);
   drainpipe(C, L + 1, FT + 3, BY, {}); drainpipe(C, R - 4, FT + 3, BY, { gap: [FT + 30, FT + 44] });
@@ -2436,7 +2437,7 @@ function paintTvatteri(b, night, opts) {
       const sy = gTop + 2, sw = R - L - 4;
       area(P, L + 2, sy, sw, 11, (X, Y, i, j) => jit(j === 0 ? 0xffffff : j === 10 ? 0xb0b4b8 : night ? (i > sw * 0.55 ? 0xa8aca8 : 0xf8fbff) : 0xeef2f4, X, Y, 41, 0.03));
       P.box(L + 1, sy - 1, sw + 2, 13, 0x3a444e); P.hl(L + 2, sy + 11, sw, 0x000000, 0.3);
-      const B = bits(BIG, 'TVÄTTERI', { bold: true });
+      const B = bits(BIG, $t('TVÄTTERI'), { bold: true });
       sign(P, B, L + ((sw - B.w) >> 1) + 2, sy + 3, { fill: 0x2a6ac8, hi: 0x5a9ae8, lo: 0x1a4a98, shadow: 0x8a8a8a, sx: 1, sy: 1, sa: 0.4 });
       for (const [bx, ci] of [[L + 7, 0], [L + 12, 1], [R - 12, 0], [R - 17, 1]]) { P.ell(bx, sy + 5 - ci, 2 + ci, 2 + ci, 0x7ac8e8, 0.9, 2); P.px(bx - 1, sy + 4 - ci, 0xffffff, 0.8); }
       if (night) { C.reg.glows.push([L + 2, sy, Math.round(sw * 0.55), 11, 0xeaf6ff, 0.4]); C.reg.flick.push({ x: L + 2 + Math.round(sw * 0.55), y: sy, w: Math.round(sw * 0.45), h: 11, c: 0xeaf6ff, a: 0.35, mode: 'flick' }); }
@@ -2445,7 +2446,7 @@ function paintTvatteri(b, night, opts) {
       const fx = L - 8;
       P.hl(fx, 130, 9, 0x3a444e); P.px(fx + 8, 131, 0x2a343e);
       area(P, fx, 132, 9, 40, (X, Y, i, j) => jit(i === 0 || j === 0 || i === 8 || j === 39 ? 0x2a3a4a : night ? 0xf0f8ff : 0xe8eef2, X, Y, 44, 0.04));
-      [...'TVÄTT'].forEach((ch, k) => text(P, SMALL, ch, fx + 3, 136 + k * 7, 0x2a6ac8));
+      [...$t('TVÄTT')].forEach((ch, k) => text(P, SMALL, ch, fx + 3, 136 + k * 7, 0x2a6ac8));
       if (night) C.reg.glows.push([fx + 1, 133, 7, 38, 0xd8ecff, 0.3]);
       // vänstra fönstret: två maskiner – trummorna snurrar i live()
       const wy = 158, wh = 22;
@@ -2471,13 +2472,13 @@ function paintTvatteri(b, night, opts) {
           Q.rect(gx + 28, gy + 9, 16, 3, mul(0xc8a870, dim)); Q.hl(gx + 28, gy + 9, 16, mul(0xe8d0a0, dim));
         },
         front: (Q, gx, gy, gw, gh) => {
-          note(Q, gx + 2, gy + 6, ['UR', 'FUNKTION'], { seed: 42, paper: 0xfff0d0, ink: 0xa82020 });
+          note(Q, gx + 2, gy + 6, $t('UR FUNKTION').split(' '), { seed: 42, paper: 0xfff0d0, ink: 0xa82020 });
           Q.rect(gx + gw - 12, gy + gh - 4, 9, 4, 0xd85a4a); Q.hl(gx + gw - 12, gy + gh - 4, 9, 0xf07a6a);
           Q.hl(gx + gw - 11, gy + gh - 5, 3, 0xf0ece0); Q.px(gx + gw - 7, gy + gh - 5, 0x3a7bd5);
         } });
       C.reg.drums.push({ x: dx1 + 11, y: wy + 10, broken: true, still: 2 });
       // tvättmedelsback och löpsedelställ blir tvättvagn – på trottoarkanten
-      P.rect(R - 16, BY - 6, 10, 6, 0x3a6ac8); P.hl(R - 16, BY - 6, 10, 0x5a8ae8); text(P, SMALL, 'VIT', R - 14, BY - 5, 0xffffff, 0.9);
+      P.rect(R - 16, BY - 6, 10, 6, 0x3a6ac8); P.hl(R - 16, BY - 6, 10, 0x5a8ae8); text(P, SMALL, $t('VIT'), R - 14, BY - 5, 0xffffff, 0.9);
       cctv(C, R - 6, gTop + 16, true);
     },
   });
@@ -2510,17 +2511,17 @@ function paintGarage(b, night, opts) {
   plinth(P, L, BY - 4, W, 4, 0x625e56, s + 8);
   for (let y = FT; y < BY; y++) { P.px(L, y, mix(P.get(L, y), WHITE, 0.15)); P.px(R - 1, y, mul(P.get(R - 1, y), 0.72)); }
   for (let k = 0; k < 4; k++) crack(P, L + 10 + Math.floor(hash(k, s, 9) * (W - 20)), FT + 2, 6 + Math.floor(hash(k, s, 10) * 8), s + 20 + k, 0x000000, 0.35);
-  scrawl(P, SMALL, 'GARAGEN', L + 4, FT + 2, 0x4a463e, 3, 0.9);
+  scrawl(P, SMALL, $t('GARAGEN'), L + 4, FT + 2, 0x4a463e, 3, 0.9);
   // grannporten 1: rostbrun med en hel pjäs; port 3 står på glänt
-  shutRoll(P, L + 8, dT, 36, BY - dT, 0x9a6a4a, { dents: 3, rust: 4, piece: { word: 'VILD', y: 7, c1: 0x6fdc4c, c2: 0x2ad0c8, sub: 'KRAM' } });
+  shutRoll(P, L + 8, dT, 36, BY - dT, 0x9a6a4a, { dents: 3, rust: 4, piece: { word: $t('VILD'), y: 7, c1: 0x6fdc4c, c2: 0x2ad0c8, sub: $t('KRAM') } });
   P.rect(L + 105, BY - 6, 34, 6, 0x08080a);
-  shutRoll(P, L + 104, dT, 36, BY - dT - 6, 0x5a7a6a, { dents: 2, rust: 3, tag: 'SNUT', tagCol: 0xff5dc8 });
+  shutRoll(P, L + 104, dT, 36, BY - dT - 6, 0x5a7a6a, { dents: 2, rust: 3, tag: $t('SNUT'), tagCol: 0xff5dc8 });
   if (N) C.reg.eyes.push({ x: L + 118, y: BY - 4, per: 5, ph: 1.2 });
   // förrådet med hänglås
   const fdS = new Pix(16, 30); solidLeaf(fdS, 16, 30, 0x6a707a, { dents: 2, stickers: 2, handle: 0x8a8a90 });
   stamp(P, fdS, L + 146, BY - 30);
   P.rect(L + 152, BY - 15, 3, 4, 0xd8b020); P.px(L + 153, BY - 16, 0x8a8a90);
-  text(P, SMALL, 'FÖRRÅD', L + 144, dT - 8, 0x4a463e, 0.85);
+  text(P, SMALL, $t('FÖRRÅD'), L + 144, dT - 8, 0x4a463e, 0.85);
   // spelarens port (ritas av live): spår och nummer
   P.rect(dx0 - 2, dT - 4, dx1 - dx0 + 4, BY - dT + 4, 0x6a665c);
   P.hl(dx0 - 2, dT - 4, dx1 - dx0 + 4, 0x9a968c); P.rect(dx0 - 1, dT - 1, dx1 - dx0 + 2, BY - dT + 1, OUT);
@@ -2563,7 +2564,7 @@ function paintLagerhall(b, night, opts) {
   plinth(P, L, BY - 4, W, 4, 0x4a463e, s + 3);
   for (let y = FT; y < BY; y++) { P.px(L, y, mix(P.get(L, y), WHITE, 0.14)); P.px(R - 1, y, mul(P.get(R - 1, y), 0.72)); }
   // spökskylten: bolagsnamnet som nästan blekts bort
-  const g1 = bits(BIG, 'PIXELSTADENS'), g2 = bits(BIG, 'LAGERBOLAG');
+  const g1 = bits(BIG, $t('PIXELSTADENS\nLAGERBOLAG').split('\n')[0]), g2 = bits(BIG, ($t('PIXELSTADENS\nLAGERBOLAG').split('\n')[1] ?? ''));
   sign(P, g1, L + ((W - g1.w) >> 1), FT + 7, { fill: (i, j, X, Y) => (hash(X, Y, s + 4) > 0.3 ? 0xe8e4d8 : null), a: 0.4 });
   sign(P, g2, L + ((W - g2.w) >> 1), FT + 16, { fill: (i, j, X, Y) => (hash(X, Y, s + 5) > 0.35 ? 0xe8e4d8 : null), a: 0.38 });
   // fönsterbandet: trådglas, trasigt, igenspikat – och ett som lyser om natten…
@@ -2577,7 +2578,7 @@ function paintLagerhall(b, night, opts) {
   }
   // LAGER 3-skylten och det stora målade siffran
   plate(P, dx0 - 2, FT + 25, 52, 12, 0x3a4a5a, { rust: 2 });
-  signText(P, BIG, 'LAGER', dx0 + 2, FT + 28, 0xf0d890, { shadow: 0x1a2430 });
+  signText(P, BIG, $t('LAGER'), dx0 + 2, FT + 28, 0xf0d890, { shadow: 0x1a2430 });
   signText(P, BIG, '3', dx0 + 40, FT + 28, 0xf0d890, { shadow: 0x1a2430 });
   bigNumber(P, dx1 + 8, dT + 12, '3', 0xd8d0c0);
   // traversbalken med krok ovanför porten
@@ -2593,14 +2594,14 @@ function paintLagerhall(b, night, opts) {
   P.hl(dx0 - 3, dT - 4, dx1 - dx0 + 6, 0x8a948a); P.rect(dx0 - 1, dT - 1, dx1 - dx0 + 2, BY - dT + 1, OUT);
   // lastkajen: ramp, gummidockor, trappa och en igenbommad kajport
   const kY = BY - 10;
-  shutRoll(P, L + 16, kY - 30, 40, 30, 0x7a7a64, { dents: 3, rust: 4, tag: 'SNUT', tagCol: 0xff5dc8 });
+  shutRoll(P, L + 16, kY - 30, 40, 30, 0x7a7a64, { dents: 3, rust: 4, tag: $t('SNUT'), tagCol: 0xff5dc8 });
   area(P, L + 2, kY, 76, 10, (X, Y, i, j) => jit(j === 0 ? 0xb0aca0 : qmix(0x8a867a, 0x6a665c, j / 10, X, Y, 3), X, Y, s + 6, 0.07));
   P.hl(L + 2, kY, 76, 0xc8c4b8); P.hl(L + 2, kY + 1, 76, 0x5a564e);
   for (const bx of [L + 8, L + 34, L + 60]) { P.rect(bx, kY + 2, 6, 7, 0x1a1a1e); P.hl(bx, kY + 2, 6, 0x3a3a40); }
   for (let k = 0; k < 4; k++) { P.rect(L + 78 + k, kY + 2 + k * 2, 6 - k, 2, 0x8a867a); P.hl(L + 78 + k, kY + 2 + k * 2, 6 - k, 0xb0aca0); }
   // klotter, fat, pallar, ogräs
-  piece(P, dx1 + 8, BY - 20, 'KAOS', { x2: false, c1: 0xff5dc8, c2: 0x9a5cff, cloud: 0x1a3a3a, drips: 4, sign: 'BTG' });
-  tag(P, L + 20, kY - 38, 'RÖK', 0x2ad0c8, s + 7); stencil(P, dx0 - 14, BY - 12, 'krona', 0xffd23f, 0.85);
+  piece(P, dx1 + 8, BY - 20, $t('KAOS'), { x2: false, c1: 0xff5dc8, c2: 0x9a5cff, cloud: 0x1a3a3a, drips: 4, sign: 'BTG' });
+  tag(P, L + 20, kY - 38, $t('RÖK'), 0x2ad0c8, s + 7); stencil(P, dx0 - 14, BY - 12, 'krona', 0xffd23f, 0.85);
   tag(P, R - 34, BY - 10, '4EVER', 0xff8a2a, s + 8);
   barrel(P, R - 18, BY - 1, 0x5a5a2a); pallets(P, R - 44, BY - 1, 3);
   drainpipe(C, L + 1, FT + 3, kY, {}); drainpipe(C, R - 4, FT + 3, BY, { gap: [FT + 40, FT + 56] });
@@ -2666,13 +2667,13 @@ function paintLamell(b, night, opts) {
   P.rect(dx0 - 1, dT - 1, dx1 - dx0 + 2, BY - dT + 1, OUT);
   canopy(C, dx0 - 8, dT - 8, dx1 - dx0 + 16, {});
   intercom(P, dx1 + 4, dT + 8, true);
-  note(P, dx1 + 12, dT + 6, ['KODEN', 'ÄR 0000'], { seed: 9, paper: 0xfff8d0 });
+  note(P, dx1 + 12, dT + 6, $t('KODEN\nÄR 0000').split('\n'), { seed: 9, paper: 0xfff8d0 });
   P.rect(dx0 - 3, BY, dx1 - dx0 + 6, 2, 0xa8a49a); P.hl(dx0 - 3, BY, dx1 - dx0 + 6, 0xc8c4bc); P.rect(dx0 - 3, BY + 2, dx1 - dx0 + 6, 2, 0x6a6660);
   streetSign(P, dx0 - 66, dT + 5, b.sign);
   win(P, L + 8, BY - 11, 12, 5, { night: N, frame: 0x6a6660, bars: true, sill: false, transom: false, dirt: 1, seed: 7 }, C.reg);
   win(P, R - 26, BY - 11, 12, 5, { night: N, frame: 0x6a6660, bars: true, sill: false, transom: false, dirt: 1, seed: 8 }, C.reg);
   bike(P, R - 46, BY - 1, s + 15);
-  piece(P, L + 36, FT + 70, 'HEJ', { x2: false, c1: 0x2ad0c8, c2: 0x3a9bff, drips: 3 });
+  piece(P, L + 36, FT + 70, $t('HEJ'), { x2: false, c1: 0x2ad0c8, c2: 0x3a9bff, drips: 3 });
   tag(P, L + 140, BY - 10, 'MIX', 0xff8a2a, s + 16); stencil(P, L + 84, BY - 9, 'hjarta', 0xff5dc8, 0.85);
   drainpipe(C, L + 2, FT + 2, BY, {}); drainpipe(C, R - 5, FT + 2, BY, { gap: [FT + 30, FT + 42] });
   weeds(P, L + 5, BY - 1, 3, s + 17); weeds(P, R - 8, BY - 1, 2, s + 18);

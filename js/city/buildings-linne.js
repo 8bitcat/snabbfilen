@@ -13,6 +13,7 @@
 import { Pix, SMALL, BIG, text, textW, eachTextPixel, ctxText, mix, mul, hash, bayer } from '../core/floor-pix.js';
 import { drawPerson } from '../core/people.js';
 import { artBox, baseOf } from './map.js';
+import { $t } from '../core/i18n.js';
 
 const O = 8, OUT = 0x221a26, DOOR_H = 30, WHITE = 0xffffff;
 const META = {};
@@ -416,7 +417,7 @@ function mural(P, x, y, w, h, seed) {
   for (let i = 2; i < w - 2; i += 3) { const fy = y + h - 3 - ((hash(i, 1, seed) * 3) | 0); P.px(x + i, fy, FLAGS[(hash(i, 2, seed) * 6) | 0]); P.px(x + i, fy + 1, 0x3e7a34); }
   // målarramen och konstnärens signatur
   P.box(x - 1, y - 1, w + 2, h + 2, 0xf4efe4); P.box(x - 2, y - 2, w + 4, h + 4, mul(0xf4efe4, 0.7));
-  text(P, SMALL, 'LINNÉ', x + 3, y + h - 8, 0xf4f1ea, 0.85);
+  text(P, SMALL, $t('LINNÉ'), x + 3, y + h - 8, 0xf4f1ea, 0.85);
 }
 
 // ================= skyltfönstrens innehåll =================
@@ -678,7 +679,7 @@ function shopfront(P, K, o) {
       // griffeltavla vid porten
       const gx = R - 14;
       P.rect(gx, oy0 + 4, 10, 13, 0x6a4a2a); P.rect(gx + 1, oy0 + 5, 8, 11, 0x2a3430);
-      text(P, SMALL, 'ÄGG', gx + 1, oy0 + 6, 0xf4f1ea, 0.9); P.hl(gx + 2, oy0 + 13, 5, 0xf4d23c, 0.9);
+      text(P, SMALL, $t('ÄGG'), gx + 1, oy0 + 6, 0xf4f1ea, 0.9); P.hl(gx + 2, oy0 + 13, 5, 0xf4d23c, 0.9);
       // fönster med fyra rutor högt upp till vänster
       win(P, L + 6, top + 18, 10, 10, { frame: K.trim, night: K.night, lit: litOf(K.night, 3, K.seed), seed: K.seed + 2, sill: false, transom: false });
       lantern(P, ox0 - 26, top + 22, K.night, K.glows, K.wx, K.wy);
@@ -710,10 +711,10 @@ function shopfront(P, K, o) {
       P.rect(L, fy, R - L, fh, o.fascia); P.hl(L, fy, R - L, mix(o.fascia, WHITE, 0.2)); P.hl(L, fy + fh - 1, R - L, mul(o.fascia, 0.7));
       P.hl(L - 1, fy + fh, R - L + 2, hi); P.hl(L - 1, fy + fh + 1, R - L + 2, lo);
       signText(P, BIG, sign, L + ((R - L - textW(BIG, sign)) >> 1), fy + 2, 0xf2cc5a, 0x1a1418, 0xfff0b0);
-      text(P, SMALL, 'KONDITORI', L + ((R - L - textW(SMALL, 'KONDITORI')) >> 1), fy + 10, 0xe8d8b0, 0.85);
+      text(P, SMALL, $t('KONDITORI'), L + ((R - L - textW(SMALL, $t('KONDITORI'))) >> 1), fy + 10, 0xe8d8b0, 0.85);
       awning(P, L + 2, fy + fh + 3, R - L - 4, 5, o.awning[0], o.awning[1], { stripe: 5, drop: 3, ext: 2 });
-      shopWin(P, K, L + 5, top + 28, dx0 - 4, GB - 9, { kind: 'bageri', frame: hi, glassText: 'BRÖD', keeper: true });
-      shopWin(P, K, dx1 + 4, top + 28, R - 5, GB - 9, { kind: 'bageri', frame: hi, glassText: 'KAKOR', keeper: false });
+      shopWin(P, K, L + 5, top + 28, dx0 - 4, GB - 9, { kind: 'bageri', frame: hi, glassText: $t('BRÖD'), keeper: true });
+      shopWin(P, K, dx1 + 4, top + 28, R - 5, GB - 9, { kind: 'bageri', frame: hi, glassText: $t('KAKOR'), keeper: false });
       panelRow(P, L + 5, dx0 - 4, GB - 8, col); panelRow(P, dx1 + 4, R - 5, GB - 8, col);
       pilaster(P, L, top + 19, GB, col); pilaster(P, R - 4, top + 19, GB, col);
       doorWay(P, K, col);
@@ -1002,17 +1003,17 @@ function paintLinne(b, night, S, opts = {}) {
       P.box(lx0 - 2, ly0 - 2, lx1 - lx0 + 4, ly1 - ly0 + 4, trim);
       for (let y = ly0; y < ly1; y++) P.hl(lx0, y, lx1 - lx0, (y - ly0) % 3 === 2 ? 0x8a8e96 : mix(0xc8ccd2, 0xa8acb2, (y - ly0) / (ly1 - ly0)));
       P.rect(lx0 - 3, ly1 + 2, lx1 - lx0 + 6, 3, trim); P.hl(lx0 - 3, ly1 + 2, lx1 - lx0 + 6, WHITE);                                     // disken
-      const tw = Math.max(textW(SMALL, 'VI SES'), textW(SMALL, 'I VÅR!')), mx = lx0 + ((lx1 - lx0 - tw - 4) >> 1);   // lappen på jalusin
+      const tw = Math.max(textW(SMALL, $t('VI SES\nI VÅR!').split('\n')[0]), textW(SMALL, ($t('VI SES\nI VÅR!').split('\n')[1] ?? ''))), mx = lx0 + ((lx1 - lx0 - tw - 4) >> 1);   // lappen på jalusin
       if (tw + 4 <= lx1 - lx0) {
         P.rect(mx, ly0 + 4, tw + 4, 16, 0xfaf6ee); P.box(mx, ly0 + 4, tw + 4, 16, 0xd84a6a); P.hl(mx + 1, ly0 + 20, tw + 3, 0x000000, 0.2);
-        text(P, SMALL, 'VI SES', mx + 2 + ((tw - textW(SMALL, 'VI SES')) >> 1), ly0 + 6, 0xd84a6a); text(P, SMALL, 'I VÅR!', mx + 2 + ((tw - textW(SMALL, 'I VÅR!')) >> 1), ly0 + 13, 0xd84a6a);
+        text(P, SMALL, $t('VI SES\nI VÅR!').split('\n')[0], mx + 2 + ((tw - textW(SMALL, $t('VI SES\nI VÅR!').split('\n')[0])) >> 1), ly0 + 6, 0xd84a6a); text(P, SMALL, ($t('VI SES\nI VÅR!').split('\n')[1] ?? ''), mx + 2 + ((tw - textW(SMALL, ($t('VI SES\nI VÅR!').split('\n')[1] ?? ''))) >> 1), ly0 + 13, 0xd84a6a);
         P.px(mx + (tw >> 1) + 2, ly0 + 3, 0x8a8e96);
       }
       P.rect(lx0 + 2, ly1 - 4, 3, 2, 0x5a5e66);                                                                                      // låset
     }
     for (let y = top; y < top + 14; y++) for (let x = L; x < R; x++) P.px(x, y, ((x - L) >> 2) & 1 ? 0xf8f0f4 : 0xe86a9a);   // randig fris
     P.hl(L, top + 14, b.w, 0x9a3a5a); P.darken(L, top + 15, b.w, 1, 0.75);
-    signText(P, BIG, 'GLASS', L + ((b.w - textW(BIG, 'GLASS')) >> 1), top + 4, WHITE, 0x9a3a5a, 0xfff0f6);
+    signText(P, BIG, $t('GLASS'), L + ((b.w - textW(BIG, $t('GLASS'))) >> 1), top + 4, WHITE, 0x9a3a5a, 0xfff0f6);
     P.rect(dx0 - 1, GB - DOOR_H - 1, dx1 - dx0 + 2, DOOR_H + 1, OUT);
     // strut på taket
     const cx = L + (b.w >> 1), cy = top - 2;
@@ -1080,10 +1081,10 @@ function paintKrog(b, night, S, opts = {}) {
   for (let y = -5; y <= 5; y++) for (let x = -5; x <= 5; x++) { const d = Math.hypot(x, y); if (d > 5.5) continue; P.px(cx + x, oy + y, d > 4.4 ? trim : x === 0 || y === 0 ? trim : night ? 0xffd890 : mix(0xb8d4e4, 0x4e6e96, (y + 5) / 10)); }
   if (night) glows.push([wx(cx - 3), wy(oy - 3), 7, 7, 0xffd080, 0.35]);
   // skylten SJÖBODEN och FISK & SKALDJUR
-  const s = 'SJÖBODEN', sw = textW(BIG, s) + 10, sx = cx - (sw >> 1), sy = eave - 13;
+  const s = $t('SJÖBODEN'), sw = textW(BIG, s) + 10, sx = cx - (sw >> 1), sy = eave - 13;
   P.rect(sx, sy, sw, 11, 0xf4ecd8); P.box(sx - 1, sy - 1, sw + 2, 13, 0x2a3a5a); P.hl(sx, sy + 10, sw, 0xc8b898);
   signText(P, BIG, s, sx + 5, sy + 2, 0x2a3a5a, 0xc8b898, 0x4a6a9a);
-  const s2 = 'FISK & SKALDJUR', t2 = textW(SMALL, s2);
+  const s2 = $t('FISK & SKALDJUR'), t2 = textW(SMALL, s2);
   text(P, SMALL, s2, cx - (t2 >> 1) + 1, eave + 3, 0x5a1a10, 0.6); text(P, SMALL, s2, cx - (t2 >> 1), eave + 2, trim);
   // fönstren: småspröjsade, gästerna vid borden med levande ljus
   const dx0 = b.door.x0 - b.x + O, dx1 = b.door.x1 - b.x + O;
@@ -1212,7 +1213,7 @@ function itemArt(kind) {
       shadow(P, 7, 17, 6);
       P.line(2, 17, 4, 1, 0x6a4a2a); P.line(11, 17, 9, 1, 0x6a4a2a);
       P.rect(3, 2, 8, 12, 0x8a6a4a); P.rect(4, 3, 6, 10, 0x2a3430);
-      const words = kind === 'tavla' ? ['FIKA', '25:-'] : ['ÖPPET', ''];
+      const words = kind === 'tavla' ? [$t('FIKA'), '25:-'] : [$t('ÖPPET'), ''];
       text(P, SMALL, words[0].slice(0, 2), 4, 4, 0xf4f1ea, 0.9); text(P, SMALL, words[0].slice(2, 4), 4, 10, 0xf4f1ea, 0.9);
       P.px(5, 9, 0xf09ab8); P.px(8, 9, 0x9ad0e8);
       break;
@@ -1302,7 +1303,7 @@ function itemArt(kind) {
       P.rect(2, 6, 24, 7, 0x6a4a2a); P.hl(2, 6, 24, 0x9a7448); P.box(2, 6, 24, 7, 0x3a2a1a);
       for (let i = 3; i < 25; i += 2) { const c = [0x8a2a24, 0x2a4a6a, 0x3a5a3a, 0x8a6a2a, 0x5a3a5a, 0xc8b490][(i * 7) % 6]; P.rect(i, 2 + (i % 3), 2, 5 - (i % 3), c); P.px(i, 2 + (i % 3), mix(c, WHITE, 0.3)); }
       for (const x of [5, 22]) { P.ell(x, 15, 2, 2, 0x2a2a30, 1, 1); P.px(x, 15, 0x9aa0aa); }
-      P.rect(9, 8, 10, 4, 0xfaf6ea); text(P, SMALL, '10:-', 9, 8, 0xc84a3a, 0.9);
+      P.rect(9, 8, 10, 4, 0xfaf6ea); text(P, SMALL, $t('10:-'), 9, 8, 0xc84a3a, 0.9);
       break;
     }
     case 'stol': {                                                                       // en gammal pinnstol med en bokhög
@@ -1380,32 +1381,32 @@ const SPEC = {
   l_hus1: { type: 'lhus', upper: 'boards', wall: 0xe2b25a, stone: 0xbab2a4, roof: 'tile', dormers: [0.55], chimneys: [0.18], floors: 2, crown: 'gable', flowers: PINK, door: 0x2f5a44, num: '3', fretwork: true,
     items: [['buxbom', 14], ['kruka', 66], ['cykel', 90]] },
   l_kafe: { type: 'shop', upper: 'plaster', wall: 0xb8dcc4, roof: 'metal', roofCol: 0x4a5a56, chimneys: [0.8], floors: 1, crown: 'cornice', flowers: PINK, flowerP: 0, lights: true, hours: [7, 21],
-    shop: { style: 'kafe', kind: 'kafe', col: 0x3a6a54, awning: [0x3a7a5a, 0xf4f0e6], sign: 'KAFÉ LINDEN', lightsY: 18 }, hang: ['kopp', true],
-    look: { skin: '#eec3a0', hair: '#2a1a12', style: 'bun', shirt: '#f4f1ea', pants: '#2d3a5c', apron: true }, greet: 'KAFFET ÄR SNART KLART!',
+    shop: { style: 'kafe', kind: 'kafe', col: 0x3a6a54, awning: [0x3a7a5a, 0xf4f0e6], sign: $t('KAFÉ LINDEN'), lightsY: 18 }, hang: ['kopp', true],
+    look: { skin: '#eec3a0', hair: '#2a1a12', style: 'bun', shirt: '#f4f1ea', pants: '#2d3a5c', apron: true }, greet: $t('KAFFET ÄR SNART KLART!'),
     items: [['cafe', 13], ['cafe', 79], ['tavla', 26, 18]] },
   l_gardsbutik: { type: 'shop', upper: 'boards', wall: 0xa8442e, roof: 'tile', roofCol: 0x8a3a2a, floors: 1, crown: null, hoist: true, door: 0x6a3a22, hours: [8, 18],
-    shop: { style: 'lada', kind: 'gard', fascia: 0xf0e2c0, signFg: 0x8a2a1a, signHi: 0xb04a2a, sign: 'GÅRDSBUTIKEN' }, hang: ['apple', true],
-    look: { skin: '#e0a97f', hair: '#8a5a2a', style: 'short', hat: 'straw', shirt: '#4a7aa8', pants: '#3a4a2a', apron: true }, greet: 'FÄRSKA ÄGG SNART!',
+    shop: { style: 'lada', kind: 'gard', fascia: 0xf0e2c0, signFg: 0x8a2a1a, signHi: 0xb04a2a, sign: $t('GÅRDSBUTIKEN') }, hang: ['apple', true],
+    look: { skin: '#e0a97f', hair: '#8a5a2a', style: 'short', hat: 'straw', shirt: '#4a7aa8', pants: '#3a4a2a', apron: true }, greet: $t('FÄRSKA ÄGG SNART!'),
     items: [['lador', 20], ['pumpor', 92]] },
   l_dekor: { type: 'shop', upper: 'plaster', wall: 0xe8b4b0, roof: 'metal', roofCol: 0x3e4250, dormers: [0.2, 0.8], floors: 1, crown: 'arch', flowers: MIX5, flowerP: 0, lightsTop: true, bunt: 'mid', hours: [10, 18],
-    shop: { style: 'bage', kind: 'pynt', col: 0xf4efe4, fascia: 0x5a4a6a, signFg: 0xf6e6b0, awning: [0x9a6ab0, 0xf4efe4], sign: 'PYNT & TING' }, hang: ['stjarna', false],
-    look: { skin: '#c68a5c', hair: '#1a1a1a', style: 'curly', shirt: '#9a6ab0', pants: '#2a2a34' }, greet: 'TITTA IN SNART!',
+    shop: { style: 'bage', kind: 'pynt', col: 0xf4efe4, fascia: 0x5a4a6a, signFg: 0xf6e6b0, awning: [0x9a6ab0, 0xf4efe4], sign: $t('PYNT & TING') }, hang: ['stjarna', false],
+    look: { skin: '#c68a5c', hair: '#1a1a1a', style: 'curly', shirt: '#9a6ab0', pants: '#2a2a34' }, greet: $t('TITTA IN SNART!'),
     items: [['bank', 20], ['lyktor', 37], ['oliv', 90], ['lyktor', 108]] },
   l_bageri: { type: 'shop', upper: 'plaster', wall: 0xf0e2c4, roof: 'tile', chimneys: [0.25], floors: 1, crown: 'gable', accent: 0xd8a83a, flowers: SUN, flowerP: 0.2, hours: [6, 18],
-    shop: { style: 'konditori', kind: 'bageri', col: 0x7a4a2a, fascia: 0x5a3018, awning: [0xc8443a, 0xf4f0e6], sign: 'BAGERIET' }, hang: ['kringla', false],
-    look: { skin: '#f6d7bf', hair: '#d8c8a0', style: 'short', shirt: '#f4f1ea', pants: '#f4f1ea', apron: true }, greet: 'NYGRÄDDAT I MORGON!',
+    shop: { style: 'konditori', kind: 'bageri', col: 0x7a4a2a, fascia: 0x5a3018, awning: [0xc8443a, 0xf4f0e6], sign: $t('BAGERIET') }, hang: ['kringla', false],
+    look: { skin: '#f6d7bf', hair: '#d8c8a0', style: 'short', shirt: '#f4f1ea', pants: '#f4f1ea', apron: true }, greet: $t('NYGRÄDDAT I MORGON!'),
     items: [['tavla2', 14], ['bank', 72]] },
   l_hus2: { type: 'lhus', upper: 'boards', wall: 0x9cb88a, stone: 0xb0aaa0, roof: 'tile', roofCol: 0xa44a34, dormers: [0.25, 0.75], chimneys: [0.5], floors: 2, crown: 'gable', flowers: MIX5, flowerP: 0, door: 0x8a3a2a, num: '11', fretwork: true,
     items: [['buxbom', 30], ['buxbom', 82], ['cykel2', 100]] },
   l_blommor: { type: 'shop', upper: 'plaster', wall: 0xf2dc94, roof: 'tile', chimneys: [0.7], floors: 1, crown: 'cornice', flowers: MIX5, flowerP: 0, ivy: ['L', 'gron'],
-    shop: { style: 'orangeri', kind: 'blommor', col: 0x2e5a2c, sign: 'BLOMSTER' }, hang: ['blomma', true],
-    look: { skin: '#eabf98', hair: '#c8642a', style: 'ponytail', shirt: '#5aa060', pants: '#2d3a5c', apron: true }, greet: 'TULPANERNA ÄR HÄR!',
+    shop: { style: 'orangeri', kind: 'blommor', col: 0x2e5a2c, sign: $t('BLOMSTER') }, hang: ['blomma', true],
+    look: { skin: '#eabf98', hair: '#c8642a', style: 'ponytail', shirt: '#5aa060', pants: '#2d3a5c', apron: true }, greet: $t('TULPANERNA ÄR HÄR!'),
     items: [['blomtrappa', 14], ['hinkar', 70]] },
   l_hus3: { type: 'lhus', upper: 'plaster', wall: 0x9cc0d8, stone: 0xb8b2a8, roof: 'metal', roofCol: 0x3a3e46, dormers: [0.72], chimneys: [0.12, 0.86], floors: 3, crown: 'cornice', mural: true, flowers: BLUE, door: 0x3a4a7a, num: '17', cols: 3,
     items: [['kruka', 36], ['kruka', 84], ['bank', 104]] },
   l_antik: { type: 'shop', upper: 'brick', wall: 0xa85a42, roof: 'tile', roofCol: 0x6a4a40, chimneys: [0.3], floors: 1, crown: 'cornice', ivy: ['R', 'host'], flowers: [0xe8a03a, 0xd8443a, 0xf4f0e4], flowerP: 0.3, hours: [10, 18],
-    shop: { style: 'bursprak', kind: 'antik', col: 0x2f5a44, fascia: 0x1e3a2c, sign: 'ANTIKVARIAT' }, hang: ['bok', true],
-    look: { skin: '#e0a97f', hair: '#d8d8d8', style: 'short', shirt: '#6a4a3a', pants: '#3a3a44', glasses: true, beard: true }, greet: 'SCH... HÄR LÄSER VI.',
+    shop: { style: 'bursprak', kind: 'antik', col: 0x2f5a44, fascia: 0x1e3a2c, sign: $t('ANTIKVARIAT') }, hang: ['bok', true],
+    look: { skin: '#e0a97f', hair: '#d8d8d8', style: 'short', shirt: '#6a4a3a', pants: '#3a3a44', glasses: true, beard: true }, greet: $t('SCH... HÄR LÄSER VI.'),
     items: [['bokvagn', 16], ['stol', 72], ['lavendel', 88]] },
   l_hus4: { type: 'lhus', upper: 'boards', wall: 0xb04a34, stone: 0xb4ae9e, roof: 'tile', roofCol: 0x7a3a2a, dormers: [0.5], floors: 2, crown: 'gable', flowers: SUN, door: 0x2f6a3a, num: '23', fretwork: true, cols: 2, pipeLeft: true,
     items: [['buxbom', 20], ['lavendel', 64], ['cykel', 76]] },
@@ -1415,14 +1416,14 @@ const SPEC = {
   ls_glass: { type: 'kiosk', wall: 0xfaf0f4, roof: 'tent', roofCol: 0xe86a9a, trim: 0xfaf4f2,
     items: [['glasskylt', 8], ['tavla2', 32]] },
   ls_loppis: { type: 'shop', upper: 'boards', wall: 0xd8a84a, roof: 'tile', roofCol: 0x9a4a34, floors: 1, crown: 'gable', bunt: 'mid', lights: true, hours: [10, 17],
-    shop: { style: 'loppis', kind: 'loppis', sign: 'LOPPISEN' }, hang: ['kanna', false],
-    look: { skin: '#a06a43', hair: '#2a1a12', style: 'afro', shirt: '#e0b040', pants: '#3a6ab0' }, greet: 'ALLT SKA BORT!',
+    shop: { style: 'loppis', kind: 'loppis', sign: $t('LOPPISEN') }, hang: ['kanna', false],
+    look: { skin: '#a06a43', hair: '#2a1a12', style: 'afro', shirt: '#e0b040', pants: '#3a6ab0' }, greet: $t('ALLT SKA BORT!'),
     items: [['loppisbord', 18], ['skivor', 78]] },
   ls_hus2: { type: 'lhus', upper: 'plaster', wall: 0xf0d47a, stone: 0xb8b2a6, roof: 'tile', dormers: [0.3, 0.7], chimneys: [0.5], floors: 2, crown: 'cornice', flowers: MIX5, door: 0x3a5a8a, num: '8', cols: 4,
     items: [['cykelstall', 22], ['buxbom', 82], ['cykel', 104]] },
   ls_cykel: { type: 'shop', upper: 'plaster', wall: 0x8a9ab0, roof: 'metal', roofCol: 0x3a3e46, floors: 1, crown: null,
-    shop: { style: 'verkstad', kind: 'cykel', fascia: 0xd8443a, signFg: 0xf8f4ea, sign: 'CYKELVERKSTAN' }, hang: ['hjul', true],
-    look: { skin: '#eec3a0', hair: '#3b2619', style: 'short', hat: 'cap', cap: '#2a2a30', shirt: '#3a4a6a', pants: '#2a3a5a', apron: true }, greet: 'PUNKA? SNART ÖPPET!',
+    shop: { style: 'verkstad', kind: 'cykel', fascia: 0xd8443a, signFg: 0xf8f4ea, sign: $t('CYKELVERKSTAN') }, hang: ['hjul', true],
+    look: { skin: '#eec3a0', hair: '#3b2619', style: 'short', hat: 'cap', cap: '#2a2a30', shirt: '#3a4a6a', pants: '#2a3a5a', apron: true }, greet: $t('PUNKA? SNART ÖPPET!'),
     items: [['cykel', 12], ['cykel2', 68]] },
   ls_hus3: { type: 'lhus', upper: 'plaster', wall: 0xd4886a, stone: 0xbab2a4, roof: 'tile', roofCol: 0x9a4a34, chimneys: [0.2, 0.8], floors: 2, crown: 'cornice', balconies: true, flowers: MIX5, door: 0x2f5a44, num: '14', cols: 4,
     items: [['oliv', 36], ['citron', 84], ['kruka', 104]] },

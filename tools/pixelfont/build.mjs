@@ -17,7 +17,7 @@ const U = 100, EM = 12 * U, ASC = 9 * U, DESC = 3 * U, OVER = 2; // OVER: överl
 
 // glyfkartan: tecken → { rows, up, down }
 const map = new Map();
-for (const [ch, gl] of Object.entries(BIG)) if (ch.length === 1) map.set(ch, { rows: gl.rows, up: gl.up || [], down: [] });
+for (const [ch, gl] of Object.entries(BIG)) if (ch.length === 1) map.set(ch, { rows: gl.rows, up: gl.up || [], down: gl.down || [] });
 for (const src of [LOWER, UPPER_EXTRA, PUNCT]) for (const [ch, gl] of Object.entries(src)) map.set(ch, { rows: gl.rows, up: gl.up || [], down: gl.down || [] });
 
 // fet stil = varje tänd pixel tänder också pixeln till höger (så gör man fetstil i pixeltypsnitt)

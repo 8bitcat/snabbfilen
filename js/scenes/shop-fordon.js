@@ -22,6 +22,7 @@ import { createWalker, selfDrawable, folkDrawables, createSpeech, WALK_SEQ } fro
 import { drawVehicle, drawRide } from '../core/fordon-art.js';
 import { openTruckKop } from '../core/foretag.js';   // 🚚 eget företag: foodtrucken säljs här
 import { truckIcon } from '../jobs/jobb-truck.js';
+import { $t } from '../core/i18n.js';
 
 const play = (n) => { try { SND.play(n); } catch { /* ljud är aldrig ett krav */ } };
 
@@ -48,13 +49,13 @@ const KENTA = { skin: '#e0a97f', hair: '#6b4226', style: 'short', beard: 'stubbl
 const KENTA_POS = { x: 300, y: 172 };
 const SKYLT = { x: 74, y: 126 };   // griffeltavlan: FOODTRUCK TILL SALU
 const KENTA_SAY = [
-  'Hej! Kolla in fordonen – klicka på det du gillar. 🔧',
-  'Med cykel kommer du fram nästan dubbelt så fort genom stan!',
-  'Moppen är snabbast. Hjälmen ingår, så klart! 🛵',
-  'Tryck på 🚲-knappen uppe till höger när du vill gå i stället.',
-  'Den begagnade gnisslar lite, men den håller i hundra år.',
-  'Elsparkcykeln är tyst som en mus. Perfekt i parken.',
-  'Har du sett tavlan? Jag säljer en foodtruck – starta ett eget företag! 🚚',
+  $t('Hej! Kolla in fordonen – klicka på det du gillar. 🔧'),
+  $t('Med cykel kommer du fram nästan dubbelt så fort genom stan!'),
+  $t('Moppen är snabbast. Hjälmen ingår, så klart! 🛵'),
+  $t('Tryck på 🚲-knappen uppe till höger när du vill gå i stället.'),
+  $t('Den begagnade gnisslar lite, men den håller i hundra år.'),
+  $t('Elsparkcykeln är tyst som en mus. Perfekt i parken.'),
+  $t('Har du sett tavlan? Jag säljer en foodtruck – starta ett eget företag! 🚚'),
 ];
 
 // ================= bakgrunden =================
@@ -104,10 +105,10 @@ function paintBg() {
   P.box(SIGN.x0, SIGN.y0, SIGN.x1 - SIGN.x0, SIGN.y1 - SIGN.y0, 0x2a2a2a);
   for (let x = SIGN.x0 + 1; x < SIGN.x1 - 1; x++) for (let y = SIGN.y0 + 1; y < SIGN.y1 - 1; y++) if (hash(x, y, 9) > 0.93) P.px(x, y, 0xd8b028);
   for (const [x, y] of [[SIGN.x0 + 3, SIGN.y0 + 3], [SIGN.x1 - 4, SIGN.y0 + 3], [SIGN.x0 + 3, SIGN.y1 - 4], [SIGN.x1 - 4, SIGN.y1 - 4]]) P.px(x, y, 0x6a6a6a);
-  const title = 'GARAGET', tw = textW(BIG, title, 2);
+  const title = $t('GARAGET'), tw = textW(BIG, title, 2);
   text(P, BIG, title, Math.round((SIGN.x0 + SIGN.x1 - tw) / 2) + 1, SIGN.y0 + 6, 0x8a6a10, 1, 2);
   text(P, BIG, title, Math.round((SIGN.x0 + SIGN.x1 - tw) / 2), SIGN.y0 + 5, 0x1a1a1a, 1, 2);
-  const sub = 'CYKLAR - SPARKCYKLAR - MOPEDER', sw = textW(SMALL, sub);
+  const sub = $t('CYKLAR - SPARKCYKLAR - MOPEDER'), sw = textW(SMALL, sub);
   text(P, SMALL, sub, Math.round((SIGN.x0 + SIGN.x1 - sw) / 2), SIGN.y1 - 9, 0xb83a2a);
   // ---- verktygstavlan (perforerad masonit med verktygens konturer)
   P.rect(PEG.x0, PEG.y0, PEG.x1 - PEG.x0, PEG.y1 - PEG.y0, 0xb08a5a);
@@ -185,7 +186,7 @@ function drawSkylt(ctx, sald) {
   ctx.fillStyle = '#26342a'; ctx.fillRect(x - 6, y - 22, 6, 3);
   ctx.fillStyle = '#e8e4d8'; ctx.fillRect(x - 6, y - 16, 2, 2); ctx.fillRect(x + 3, y - 16, 2, 2);
   ctx.save(); ctx.globalAlpha = 0.9; ctx.drawImage(truckIcon('korv'), 0, 0, 12, 12, x - 9, y - 14, 7, 7); ctx.drawImage(truckIcon('dricka'), 0, 0, 12, 12, x + 2, y - 14, 7, 7); ctx.restore();
-  if (sald) { ctx.save(); ctx.translate(x, y - 17); ctx.rotate(-0.4); ctx.fillStyle = '#d9433b'; ctx.fillRect(-11, -3, 22, 6); ctx.restore(); ctxText(ctx, SMALL, 'SÅLD', x - 8, y - 20, '#f4f1ea'); return; }
+  if (sald) { ctx.save(); ctx.translate(x, y - 17); ctx.rotate(-0.4); ctx.fillStyle = '#d9433b'; ctx.fillRect(-11, -3, 22, 6); ctx.restore(); ctxText(ctx, SMALL, $t('SÅLD'), x - 8, y - 20, '#f4f1ea'); return; }
   // prislappen som på fordonen
   const lbl = String(TRUCK_PRIS), w = textW(SMALL, lbl) + 6, lx = Math.round(x - w / 2), ly = y + 5;
   ctx.fillStyle = '#f0d048'; ctx.fillRect(lx, ly, w, 9); ctx.fillStyle = '#8a6a2a'; ctx.fillRect(lx, ly + 8, w, 1);
@@ -217,11 +218,11 @@ export function makeShopFordon(A) {
   let sayIdx = 0, sayT = 6;
 
   const spots = () => [
-    { id: 'dorr', r: [DOOR.x0, DOOR.y0, DOOR.x1, WALL_Y + 6], go: [(DOOR.x0 + DOOR.x1) / 2, WALL_Y + 10], label: 'UT', act: () => { play('door'); A.go('city'); } },
+    { id: 'dorr', r: [DOOR.x0, DOOR.y0, DOOR.x1, WALL_Y + 6], go: [(DOOR.x0 + DOOR.x1) / 2, WALL_Y + 10], label: $t('UT'), act: () => { play('door'); A.go('city'); } },
     ...SHOW.map((s) => ({ id: s.id, r: [s.x - 18, s.y - 34, s.x + 18, s.y + 12], go: [s.x, s.y + 12], label: fordonOf(s.id).name.toUpperCase(), act: () => openFordon(A, s.id) })),
-    { id: 'kenta', r: [KENTA_POS.x - 9, KENTA_POS.y - 34, KENTA_POS.x + 9, KENTA_POS.y + 2], go: [KENTA_POS.x - 14, KENTA_POS.y + 6], label: 'KENTA', act: () => { kentaLook = 'left'; kSay(KENTA_SAY[sayIdx++ % KENTA_SAY.length], 4); } },
-    { id: 'foodtruck', r: [SKYLT.x - 13, SKYLT.y - 28, SKYLT.x + 13, SKYLT.y + 2], go: [SKYLT.x, SKYLT.y + 10], label: g.truck ? 'DIN FOODTRUCK' : 'FOODTRUCK TILL SALU', act: () => openTruckKop(A) },
-    { id: 'hjalmar', r: [SHELF.x0, 18, SHELF.x1, 56], go: [(SHELF.x0 + SHELF.x1) / 2, WALL_Y + 10], label: 'HJÄLMAR', act: () => kSay('Hjälmarna? En följer med moppen – säkerheten först! ⛑️', 4) },
+    { id: 'kenta', r: [KENTA_POS.x - 9, KENTA_POS.y - 34, KENTA_POS.x + 9, KENTA_POS.y + 2], go: [KENTA_POS.x - 14, KENTA_POS.y + 6], label: $t('KENTA'), act: () => { kentaLook = 'left'; kSay(KENTA_SAY[sayIdx++ % KENTA_SAY.length], 4); } },
+    { id: 'foodtruck', r: [SKYLT.x - 13, SKYLT.y - 28, SKYLT.x + 13, SKYLT.y + 2], go: [SKYLT.x, SKYLT.y + 10], label: g.truck ? $t('DIN FOODTRUCK') : $t('FOODTRUCK TILL SALU'), act: () => openTruckKop(A) },
+    { id: 'hjalmar', r: [SHELF.x0, 18, SHELF.x1, 56], go: [(SHELF.x0 + SHELF.x1) / 2, WALL_Y + 10], label: $t('HJÄLMAR'), act: () => kSay($t('Hjälmarna? En följer med moppen – säkerheten först! ⛑️'), 4) },
   ];
   const spotAt = (x, y) => spots().find((s) => x >= s.r[0] && x <= s.r[2] && y >= s.r[1] && y <= s.r[3]);
 
@@ -230,7 +231,7 @@ export function makeShopFordon(A) {
     // en gummimatta under, fordonet, prislappen på en liten skylt
     ctx.fillStyle = 'rgba(40,40,46,.35)'; ctx.fillRect(s.x - 18, s.y - 3, 36, 6);
     drawVehicle(ctx, s.id, s.x, s.y, 'right', c, 0);
-    const lbl = own ? 'DIN' : String(F.price), w = textW(SMALL, lbl) + 6, lx = Math.round(s.x - w / 2), ly = s.y + 5;
+    const lbl = own ? $t('DIN') : String(F.price), w = textW(SMALL, lbl) + 6, lx = Math.round(s.x - w / 2), ly = s.y + 5;
     ctx.fillStyle = '#3a3a42'; ctx.fillRect(s.x, ly - 2, 1, 2);
     ctx.fillStyle = own ? '#46a35a' : '#f0d048'; ctx.fillRect(lx, ly, w, 9);
     ctx.fillStyle = own ? '#2a6a3a' : '#8a6a2a'; ctx.fillRect(lx, ly + 8, w, 1);
@@ -257,7 +258,7 @@ export function makeShopFordon(A) {
     update(dt) {
       t += dt; walker.update(dt);
       const near = Math.hypot(walker.px - KENTA_POS.x, walker.py - KENTA_POS.y) < 70;
-      if (!greeted && t > 0.8) { greeted = true; kSay(g.fordon.length ? 'Välkommen tillbaka! Allt rullar som det ska? 🔧' : KENTA_SAY[0], 4); }
+      if (!greeted && t > 0.8) { greeted = true; kSay(g.fordon.length ? $t('Välkommen tillbaka! Allt rullar som det ska? 🔧') : KENTA_SAY[0], 4); }
       if (near && !talkK.active()) { sayT -= dt; if (sayT <= 0) { sayT = 9; kSay(KENTA_SAY[1 + (sayIdx++ % (KENTA_SAY.length - 1))], 4); } }
     },
     draw(ctx) {
@@ -299,22 +300,22 @@ export function openFordon(A, id) {
     const own = g.hasFordon(id), aker = g.akerMed === id;
     const swatches = F.colors.map((c) => `<button class="fd-sw${c === col ? ' on' : ''}" data-c="${c}" style="background:${c}" title="${c}"></button>`).join('');
     const info = `<p style="font-size:var(--f2);margin:0 0 6px">${esc(F.blurb)}</p>
-      <p style="font-size:var(--f1);margin:0">⚡ <b>${F.fart.toLocaleString('sv-SE')} × så fort</b> som att gå · 💰 Du har <b>${fmt(g.money)}</b>${own ? ` · ✅ <b>Din!</b>${aker ? ' Du åker på den.' : ''}` : ` · Pris <b>${fmt(F.price)}</b>`}</p>`;
+      <p style="font-size:var(--f1);margin:0">⚡ ${$t`<b>${F.fart.toLocaleString('sv-SE')} × så fort</b> som att gå`} · 💰 ${$t`Du har <b>${fmt(g.money)}</b>`}${own ? ` · ✅ ${$t('<b>Din!</b>')}${aker ? ` ${$t('Du åker på den.')}` : ''}` : ` · ${$t`Pris <b>${fmt(F.price)}</b>`}`}</p>`;
     const btns = [];
-    if (!own) btns.push({ label: `🛒 Köp · ${fmt(F.price)}`, cls: 'btn-go', onClick: () => {
+    if (!own) btns.push({ label: $t`🛒 Köp · ${fmt(F.price)}`, cls: 'btn-go', onClick: () => {
       const r = g.buyFordon(id, col);
       if (!r.ok) { toast(r.msg, 'bad'); play('fel'); return; }
       play('ok'); rideHud(A, true);
-      toast(`${F.icon} Grattis till ${F.den}! Du åker på den när du går ut – 🚲-knappen uppe till höger växlar mellan att åka och gå.${r.glad ? ` +${r.glad} 😊` : ''}`, 'good');
+      toast($t`${F.icon} Grattis till ${F.den}! Du åker på den när du går ut – 🚲-knappen uppe till höger växlar mellan att åka och gå.${r.glad ? ` +${r.glad} 😊` : ''}`, 'good');
       draw();
     } });
     else {
-      if (col !== g.fordonFarg(id)) btns.push({ label: `🎨 Måla om · ${fmt(OMLACK)}`, cls: 'btn-gold', onClick: () => { const r = g.paintFordon(id, col); if (!r.ok) { toast(r.msg, 'bad'); return; } play('ok'); toast('🎨 Nymålad och fin!', 'good'); draw(); } });
-      if (!aker) btns.push({ label: `${F.icon} Åk på den`, cls: 'btn-go', onClick: () => { g.setAker(id); rideHud(A, true); A.scene?.rideChanged?.(); play('ok'); toast(`${F.icon} Du åker ${F.den} när du går ut.`, 'good'); draw(); } });
+      if (col !== g.fordonFarg(id)) btns.push({ label: $t`🎨 Måla om · ${fmt(OMLACK)}`, cls: 'btn-gold', onClick: () => { const r = g.paintFordon(id, col); if (!r.ok) { toast(r.msg, 'bad'); return; } play('ok'); toast($t('🎨 Nymålad och fin!'), 'good'); draw(); } });
+      if (!aker) btns.push({ label: $t`${F.icon} Åk på den`, cls: 'btn-go', onClick: () => { g.setAker(id); rideHud(A, true); A.scene?.rideChanged?.(); play('ok'); toast($t`${F.icon} Du åker ${F.den} när du går ut.`, 'good'); draw(); } });
     }
-    btns.push({ label: 'Stäng', onClick: closeModal });
+    btns.push({ label: $t('Stäng'), onClick: closeModal });
     const dlg = openModal(`${F.icon} ${F.name}`, `<div class="fd"><canvas class="fd-big" width="96" height="56"></canvas>
-      <div class="fd-side"><span class="fb-lbl">Färg</span><div class="fd-sws">${swatches}</div></div></div>${info}`, btns);
+      <div class="fd-side"><span class="fb-lbl">${$t('Färg')}</span><div class="fd-sws">${swatches}</div></div></div>${info}`, btns);
     const cv = dlg.querySelector('.fd-big'), c = cv.getContext('2d');
     // rutigt golv och du på fordonet
     for (let y = 0; y < 56; y += 8) for (let x = 0; x < 96; x += 8) { c.fillStyle = ((x + y) >> 3) & 1 ? '#e8e4da' : '#f4f1ea'; c.fillRect(x, y, 8, 8); }
@@ -338,22 +339,22 @@ export function rideHud(A, force = false) {
   hudKey = key;
   b.classList.toggle('hidden', !own.length);
   b.textContent = F ? F.icon : '🚶';
-  b.title = F ? `Du åker ${F.den} – tryck för att gå` : 'Du går – tryck för att åka';
+  b.title = F ? $t`Du åker ${F.den} – tryck för att gå` : $t('Du går – tryck för att åka');
 }
 export function openRide(A) {
   const g = A.game, own = g.ownedFordon();
-  if (!own.length) { toast('🚲 Köp en cykel, elsparkcykel eller moppe i GARAGET i förorten!'); return; }
+  if (!own.length) { toast($t('🚲 Köp en cykel, elsparkcykel eller moppe i GARAGET i förorten!')); return; }
   const set = (id) => {
     g.setAker(id);
     rideHud(A, true);
     A.scene?.rideChanged?.();
     play('click');
     const F = g.aker;
-    toast(F ? `${F.icon} Du tar ${F.den} – ${F.fart.toLocaleString('sv-SE')} × så fort genom stan!` : '🚶 Du går. (Fordonet står parkerat tills du vill åka igen.)', 'good');
+    toast(F ? $t`${F.icon} Du tar ${F.den} – ${F.fart.toLocaleString('sv-SE')} × så fort genom stan!` : $t('🚶 Du går. (Fordonet står parkerat tills du vill åka igen.)'), 'good');
   };
   if (own.length === 1) { set(g.akerMed ? null : own[0].id); return; }
-  const rows = own.map((F) => `<button class="btn ${g.akerMed === F.id ? 'btn-gold' : 'btn-go'}" data-f="${F.id}" style="display:block;width:100%;margin:4px 0">${F.icon} ${esc(F.name)} · ${F.fart.toLocaleString('sv-SE')} ×${g.akerMed === F.id ? ' (nu)' : ''}</button>`).join('');
-  const dlg = openModal('🚲 Åka eller gå?', `<p style="font-size:var(--f2);margin-top:0">Vad vill du ta genom stan?</p>${rows}
-    <button class="btn" data-f="" style="display:block;width:100%;margin:4px 0">🚶 Gå${g.akerMed ? '' : ' (nu)'}</button>`, [{ label: 'Stäng', onClick: closeModal }]);
+  const rows = own.map((F) => `<button class="btn ${g.akerMed === F.id ? 'btn-gold' : 'btn-go'}" data-f="${F.id}" style="display:block;width:100%;margin:4px 0">${F.icon} ${esc(F.name)} · ${F.fart.toLocaleString('sv-SE')} ×${g.akerMed === F.id ? ` (${$t('nu')})` : ''}</button>`).join('');
+  const dlg = openModal($t('🚲 Åka eller gå?'), `<p style="font-size:var(--f2);margin-top:0">${$t('Vad vill du ta genom stan?')}</p>${rows}
+    <button class="btn" data-f="" style="display:block;width:100%;margin:4px 0">🚶 ${$t('Gå')}${g.akerMed ? '' : ` (${$t('nu')})`}</button>`, [{ label: $t('Stäng'), onClick: closeModal }]);
   dlg.querySelectorAll('[data-f]').forEach((b) => (b.onclick = () => { closeModal(); set(b.dataset.f || null); }));
 }

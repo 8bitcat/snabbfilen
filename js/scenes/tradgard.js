@@ -13,6 +13,7 @@ import { GRODOR, grodaOf, tradgardOf, fmt } from '../game.js';
 import { createWalker, selfDrawable, folkDrawables } from './walkable.js';
 import { ravaraIcon, ravaraPal } from '../core/ravara-art.js';
 import { play } from '../core/sound.js';
+import { $t } from '../core/i18n.js';
 
 const FW = 384, FH = 216, GROUND = 82;
 // bäddarna per bostad: [x, y] = bäddens nedre vänstra hörn (fotlinjen), w × h
@@ -164,33 +165,33 @@ export function makeTradgard(A) {
   function bedAction(i) {
     const b = gd().beds[i], st = stateOf(i), [x, y] = beds[i];
     if (st === 'tom') return sow(i);
-    if (st === 'torr') { if (g.waterGarden(i)) { water(x + BW / 2, y - BH); toast(`💧 Vattnat! ${grodaOf(b.g).name} växer i natt.`, 'good'); } return; }
-    if (st === 'vattnad') { const G = grodaOf(b.g); toast(`🌱 ${G.name}: dag ${b.v} av ${G.dagar}. Vattnad i dag – mogen om ${G.dagar - b.v} ${G.dagar - b.v === 1 ? 'natt' : 'nätter'}.`); play('click'); return; }
-    if (st === 'mogen') { const r = g.harvest(i); if (r.ok) { play('ok'); toast(`🧺 ${r.n} ${r.groda.name.toLowerCase()} till skafferiet!${r.glad ? ` +${r.glad} 😊` : ''}`, 'good'); } return; }
-    if (st === 'vissen') { g.clearBed(i); play('click'); toast('🥀 Den vissnade – två dagar utan vatten. Bädden är rensad, så något nytt!', 'bad'); }
+    if (st === 'torr') { if (g.waterGarden(i)) { water(x + BW / 2, y - BH); toast($t`💧 Vattnat! ${grodaOf(b.g).name} växer i natt.`, 'good'); } return; }
+    if (st === 'vattnad') { const G = grodaOf(b.g); toast(G.dagar - b.v === 1 ? $t`🌱 ${G.name}: dag ${b.v} av ${G.dagar}. Vattnad i dag – mogen om ${G.dagar - b.v} natt.` : $t`🌱 ${G.name}: dag ${b.v} av ${G.dagar}. Vattnad i dag – mogen om ${G.dagar - b.v} nätter.`); play('click'); return; }
+    if (st === 'mogen') { const r = g.harvest(i); if (r.ok) { play('ok'); toast($t`🧺 ${r.n} ${r.groda.name.toLowerCase()} till skafferiet!${r.glad ? ` +${r.glad} 😊` : ''}`, 'good'); } return; }
+    if (st === 'vissen') { g.clearBed(i); play('click'); toast($t('🥀 Den vissnade – två dagar utan vatten. Bädden är rensad, så något nytt!'), 'bad'); }
   }
   function sow(i) {
     const rows = GRODOR.map((G) => `<div class="prow"><span style="font-size:28px;text-align:center">${G.icon}</span>
-      <span class="nm">${esc(G.name)}<br><small class="sp">mogen efter ${G.dagar} nätter · ${G.skord[0]}–${G.skord[1]} st · vattna varje dag</small></span>
-      <button class="btn btn-small btn-go" data-gr="${G.id}" ${g.money < G.fro ? 'disabled' : ''}>Så · ${fmt(G.fro)}</button></div>`).join('');
-    const dlg = openModal(`🌱 Så i bädden`, `<p style="font-size:var(--f2);margin-top:0">Välj en fröpåse. Vattna bädden varje dag – två dagar utan vatten och plantorna vissnar. Skörden hamnar i skafferiet.</p><div class="plist">${rows}</div>`, [{ label: 'Inte nu', onClick: closeModal }]);
+      <span class="nm">${esc(G.name)}<br><small class="sp">${$t`mogen efter ${G.dagar} nätter · ${G.skord[0]}–${G.skord[1]} st · vattna varje dag`}</small></span>
+      <button class="btn btn-small btn-go" data-gr="${G.id}" ${g.money < G.fro ? 'disabled' : ''}>${$t`Så · ${fmt(G.fro)}`}</button></div>`).join('');
+    const dlg = openModal($t('🌱 Så i bädden'), `<p style="font-size:var(--f2);margin-top:0">${$t('Välj en fröpåse. Vattna bädden varje dag – två dagar utan vatten och plantorna vissnar. Skörden hamnar i skafferiet.')}</p><div class="plist">${rows}</div>`, [{ label: $t('Inte nu'), onClick: closeModal }]);
     dlg.querySelectorAll('[data-gr]').forEach((btn) => (btn.onclick = () => {
       const r = g.plant(i, btn.dataset.gr);
       closeModal();
       if (!r.ok) { toast(r.msg, 'bad'); play('fel'); return; }
       play('ok'); const [x, y] = beds[i]; water(x + BW / 2, y - BH);
-      toast(`🌱 Sådde ${r.groda.name.toLowerCase()} – vattnat och klart. Kom tillbaka i morgon!`, 'good');
+      toast($t`🌱 Sådde ${r.groda.name.toLowerCase()} – vattnat och klart. Kom tillbaka i morgon!`, 'good');
     }));
   }
   function water(x, y) { watering = 1.2; play('slide'); for (let k = 0; k < 18; k++) drops.push({ x: x + (Math.random() - 0.5) * 30, y: y - 20 - Math.random() * 6, vy: 30 + Math.random() * 30, life: 0.6 }); }
   function benchAction() {
     const n = g.waterGarden(-1);
-    if (n) { water((BENCH.x0 + BENCH.x1) / 2 + 60, BENCH.y - 30); toast(`💧 Du vattnade ${n} ${n === 1 ? 'bädd' : 'bäddar'} med kannan.`, 'good'); }
-    else toast('💧 Allt som behöver vatten är redan vattnat i dag.');
+    if (n) { water((BENCH.x0 + BENCH.x1) / 2 + 60, BENCH.y - 30); toast(n === 1 ? $t`💧 Du vattnade ${n} bädd med kannan.` : $t`💧 Du vattnade ${n} bäddar med kannan.`, 'good'); }
+    else toast($t('💧 Allt som behöver vatten är redan vattnat i dag.'));
   }
   function treeAction() {
-    if (g.treeReady()) { const r = g.harvestTree(); play('ok'); toast(`🍎 ${r.n} äpplen till skafferiet!${r.glad ? ` +${r.glad} 😊` : ''}`, 'good'); }
-    else { const kvar = Math.max(1, 3 - (g.day - (gd().trad.skord | 0))); toast(`🍎 Äpplena mognar om ${kvar} ${kvar === 1 ? 'dag' : 'dagar'}.`); }
+    if (g.treeReady()) { const r = g.harvestTree(); play('ok'); toast($t`🍎 ${r.n} äpplen till skafferiet!${r.glad ? ` +${r.glad} 😊` : ''}`, 'good'); }
+    else { const kvar = Math.max(1, 3 - (g.day - (gd().trad.skord | 0))); toast(kvar === 1 ? $t`🍎 Äpplena mognar om ${kvar} dag.` : $t`🍎 Äpplena mognar om ${kvar} dagar.`); }
   }
   function goIn() { play('door'); A.roomSub = 0; A.go('room'); }
   function spots() {
@@ -205,8 +206,8 @@ export function makeTradgard(A) {
     const s = hover && spotAt(hover.x, hover.y);
     if (!s) return;
     let txt = '';
-    if (s.id.startsWith('badd')) { const i = +s.id.slice(4), b = gd().beds[i], st = stateOf(i), G = b && grodaOf(b.g); txt = st === 'tom' ? 'TOM BÄDD - SÅ NÅGOT' : st === 'torr' ? `${G.name.toUpperCase()} - BEHÖVER VATTEN` : st === 'vattnad' ? `${G.name.toUpperCase()} - DAG ${b.v}/${G.dagar}` : st === 'mogen' ? `${G.name.toUpperCase()} - MOGEN! SKÖRDA` : 'VISSNAD - RENSA'; }
-    else txt = { bank: 'VATTENKANNAN - VATTNA ALLT', dorr: 'IN IGEN', trad: g.treeReady() ? 'ÄPPELTRÄDET - PLOCKA ÄPPLEN' : 'ÄPPELTRÄDET' }[s.id];
+    if (s.id.startsWith('badd')) { const i = +s.id.slice(4), b = gd().beds[i], st = stateOf(i), G = b && grodaOf(b.g); txt = st === 'tom' ? $t('TOM BÄDD - SÅ NÅGOT') : st === 'torr' ? $t`${G.name.toUpperCase()} - BEHÖVER VATTEN` : st === 'vattnad' ? $t`${G.name.toUpperCase()} - DAG ${b.v}/${G.dagar}` : st === 'mogen' ? $t`${G.name.toUpperCase()} - MOGEN! SKÖRDA` : $t('VISSNAD - RENSA'); }
+    else txt = { bank: $t('VATTENKANNAN - VATTNA ALLT'), dorr: $t('IN IGEN'), trad: g.treeReady() ? $t('ÄPPELTRÄDET - PLOCKA ÄPPLEN') : $t('ÄPPELTRÄDET') }[s.id];
     const w = textW(SMALL, txt) + 10, x = Math.round(Math.max(2, Math.min(FW - w - 2, hover.x - w / 2))), y = Math.max(2, hover.y - 24);
     r1(ctx, x, y, w, 11, 'rgba(20,18,26,.9)'); ctxText(ctx, SMALL, txt, x + 5, y + 3, '#ffd23f');
   }
@@ -235,7 +236,7 @@ export function makeTradgard(A) {
       for (const d of drops) r1(ctx, d.x, d.y, 1, 2, 0x8ac8ff);
       if (dusk > 0) { ctx.fillStyle = `rgba(20,24,60,${(0.45 * dusk).toFixed(2)})`; ctx.fillRect(0, 0, FW, FH); }
       // namnet på platsen
-      const name = T.namn.toUpperCase(); r1(ctx, 4, 4, textW(SMALL, name) + 10, 11, 'rgba(20,18,26,.85)'); ctxText(ctx, SMALL, name, 9, 7, '#8edc4c');
+      const name = $t(T.namn).toUpperCase(); r1(ctx, 4, 4, textW(SMALL, name) + 10, 11, 'rgba(20,18,26,.85)'); ctxText(ctx, SMALL, name, 9, 7, '#8edc4c');
       label(ctx);
     },
     down(x, y) {

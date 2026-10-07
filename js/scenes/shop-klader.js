@@ -42,6 +42,7 @@ import { furnArt, drawArt, drawFire, halo } from './room.js';
 import { openMarshmallow } from '../core/brasa.js';
 import { katalogOf } from '../game.js';
 import { FRAMES } from '../data/frames.js';
+import { $t } from '../core/i18n.js';
 
 const { H, WALL_Y } = D;
 const STAIR_V = 44;                    // gångfart i trappan (px/s längs trappan)
@@ -50,12 +51,12 @@ let VW = 384;                          // mobilfyllning: vyn följer skärmen, k
 
 // ---------- kortnamn på dockornas lappar (lappen får vara högst ~48 px bred) ----------
 const SHORT = {
-  'top-vest': 'LINNE', 'top-hoodie': 'HUVTRÖJA', 'top-hawaii': 'HAWAII', 'top-sweater': 'STICKAT', 'top-shirt': 'SKJORTA',
-  'top-jacket': 'JACKA', 'top-suit': 'KAVAJ', 'bottom-shorts': 'SHORTS', 'bottom-skirt': 'KJOL', 'bottom-dress': 'KLÄNNING',
-  'hat-cap': 'KEPS', 'hat-bucket': 'FISKEHATT', 'hat-headband': 'HÅRBAND', 'hat-beanie': 'MÖSSA', 'hat-bow': 'ROSETT',
-  'hat-tophat': 'HÖG HATT', 'hat-crown': 'KRONA',
+  'top-vest': $t('LINNE'), 'top-hoodie': $t('HUVTRÖJA'), 'top-hawaii': $t('HAWAII'), 'top-sweater': $t('STICKAT'), 'top-shirt': $t('SKJORTA'),
+  'top-jacket': $t('JACKA'), 'top-suit': $t('KAVAJ'), 'bottom-shorts': $t('SHORTS'), 'bottom-skirt': $t('KJOL'), 'bottom-dress': $t('KLÄNNING'),
+  'hat-cap': $t('KEPS'), 'hat-bucket': $t('FISKEHATT'), 'hat-headband': $t('HÅRBAND'), 'hat-beanie': $t('MÖSSA'), 'hat-bow': $t('ROSETT'),
+  'hat-tophat': $t('HÖG HATT'), 'hat-crown': $t('KRONA'),
 };
-const OK_CH = /[A-ZÅÄÖÉ0-9 \-+!.:,?/%'=]/;
+const OK_CH = /[A-ZÅÄÖÉÁÀÂÃÇĆÈÊËÍÌÎÏÑŃÓÒÔÕŚŹŻÚÙÛÜŸÝĄĘŁŒÆ¡¿€$0-9 \-+!.:,?/%'=]/;
 // text i spelets pixeltypsnitt: versaler, bara tecken som finns
 const pix = (s) => [...String(s).replace(/­/g, '').replace(/&/g, '+').replace(/·/g, '-').toUpperCase()].map((c) => (OK_CH.test(c) ? c : c === 'Ü' ? 'U' : ' ')).join('').replace(/ +/g, ' ').trim();
 // var på dockan (fötterna i 0,0, framifrån) plagget sitter – där hänger den gula lappen
@@ -130,26 +131,26 @@ const KIT_LOOK = D.girl({ style: 'ponytail', hair: '#6b4226', top: 'football', s
 const KSOCKS = { socks: D.KUNGS_KIT.socks, stripe: D.KUNGS_KIT.sockStripe };
 const BENCH = { x: 452, y: 122 };      // provbänken framför fotbollsskorna (y = benens fot)
 const cityName = (c) => c[0] + c.slice(1).toLowerCase();
-const cityGen = (c) => (/s$/i.test(c) ? cityName(c) : cityName(c) + 's');
+const cityGen = (c) => (/s$/i.test(c) ? cityName(c) : $t`${cityName(c)}s`);
 
 // Kungsladugårds matchställ som köps (tröjan = fotbollströjan i lagets färger, utan namn)
 function kungsKit(player = null) {
   const cl = D.CLEATS[player ? player.i % D.CLEATS.length : 0];
   return {
-    title: 'Kungsladugårds matchställ', where: 'Kungsladugård · plan 2', dept: 'kungs', icon: '⚽',
-    player: player ? `Nr ${player.n} · ${player.name}` : null,
+    title: $t('Kungsladugårds matchställ'), where: $t('Kungsladugård · plan 2'), dept: 'kungs', icon: '⚽',
+    player: player ? $t`Nr ${player.n} · ${player.name}` : null,
     // ryggen i stort: nummer och förnamn i spelets pixeltypsnitt (på dockan får namnet inte plats)
     back: player ? { number: player.n, name: player.name, shirt: D.KUNGS_KIT.shirt, accent: D.KUNGS_KIT.accent } : null,
     parts: [
-      { id: 'top-football', label: 'Matchtröja (vinröd)', colors: { shirt: D.KUNGS_KIT.shirt, accent: D.KUNGS_KIT.accent } },
-      { id: 'bottom-sportShorts', label: 'Svarta shorts', colors: { pants: D.KUNGS_KIT.pants, pants2: D.KUNGS_KIT.pants2 } },
-      { id: 'shoes-cleats', label: `Fotbollsskor (${cl.name.toLowerCase()})`, colors: { shoes: cl.shoes, shoes2: cl.shoes2 }, optional: !!player },
+      { id: 'top-football', label: $t('Matchtröja (vinröd)'), colors: { shirt: D.KUNGS_KIT.shirt, accent: D.KUNGS_KIT.accent } },
+      { id: 'bottom-sportShorts', label: $t('Svarta shorts'), colors: { pants: D.KUNGS_KIT.pants, pants2: D.KUNGS_KIT.pants2 } },
+      { id: 'shoes-cleats', label: $t`Fotbollsskor (${cl.name.toLowerCase()})`, colors: { shoes: cl.shoes, shoes2: cl.shoes2 }, optional: !!player },
     ],
-    wearLabel: '👕 Ta på mig matchstället',
-    ownedNote: '✓ Fotbollströjan har du redan – här tar du på dig den i Kungsladugårds vinröda färger.',
+    wearLabel: $t('👕 Ta på mig matchstället'),
+    ownedNote: $t('✓ Fotbollströjan har du redan – här tar du på dig den i Kungsladugårds vinröda färger.'),
     note: player
-      ? `Tröjan är lagets – vinröd med ljusröda ärmslut. Nummer och namn på ryggen har bara ${player.name} och hennes lagkompisar.`
-      : 'Vinröd tröja med ljusare röda ärmslut, svarta shorts och fotbollsskor – precis som laget. Nummer och namn på ryggen har bara lagets spelare.',
+      ? $t`Tröjan är lagets – vinröd med ljusröda ärmslut. Nummer och namn på ryggen har bara ${player.name} och hennes lagkompisar.`
+      : $t('Vinröd tröja med ljusare röda ärmslut, svarta shorts och fotbollsskor – precis som laget. Nummer och namn på ryggen har bara lagets spelare.'),
   };
 }
 // Ett känt lags matchställ. Lagen delar tröjmodeller (vanlig, randig, tvärrandig – katalogen
@@ -157,15 +158,15 @@ function kungsKit(player = null) {
 function teamKit(tm) {
   const it = tm.it, gen = cityGen(tm.city);
   return {
-    title: `${gen} matchställ`, where: 'Kända lag · plan 2', dept: 'lag', icon: '⚽',
+    title: $t`${gen} matchställ`, where: $t('Kända lag · plan 2'), dept: 'lag', icon: '⚽',
     parts: [
-      { id: it.id, label: `Matchtröja ${cityName(tm.city)}`, colors: tm.colors },
-      { id: 'bottom-sportShorts', label: 'Shorts', colors: { pants: tm.pants, pants2: tm.pants } },
-      { id: 'shoes-cleats', label: 'Fotbollsskor (svarta)', colors: { shoes: '#26242c', shoes2: '#f4f1ea' }, optional: true },
+      { id: it.id, label: $t`Matchtröja ${cityName(tm.city)}`, colors: tm.colors },
+      { id: 'bottom-sportShorts', label: $t('Shorts'), colors: { pants: tm.pants, pants2: tm.pants } },
+      { id: 'shoes-cleats', label: $t('Fotbollsskor (svarta)'), colors: { shoes: '#26242c', shoes2: '#f4f1ea' }, optional: true },
     ],
-    wearLabel: `👕 Ta på mig i ${gen} färger`,
-    ownedNote: `✓ Tröjan har du redan! Det är ${it.id === 'top-football' ? 'den vanliga fotbollströjan' : nameOf(it).toLowerCase()} – samma modell för flera lag, bara färgerna skiljer. Här tar du på dig den i ${gen} färger.`,
-    note: `I ${gen} färger – utan klubbmärke och sponsorer. Samma tröja kan du färga i vilket lags färger du vill hemma i garderoben.`,
+    wearLabel: $t`👕 Ta på mig i ${gen} färger`,
+    ownedNote: it.id === 'top-football' ? $t`✓ Tröjan har du redan! Det är den vanliga fotbollströjan – samma modell för flera lag, bara färgerna skiljer. Här tar du på dig den i ${gen} färger.` : $t`✓ Tröjan har du redan! Det är ${nameOf(it).toLowerCase()} – samma modell för flera lag, bara färgerna skiljer. Här tar du på dig den i ${gen} färger.`,
+    note: $t`I ${gen} färger – utan klubbmärke och sponsorer. Samma tröja kan du färga i vilket lags färger du vill hemma i garderoben.`,
   };
 }
 // Bär man just nu tröjan i de här färgerna? (lappen säger då PÅ DIG)
@@ -214,7 +215,7 @@ export function makeShopKlader(A, opts = {}) {
   const [q0, q1, qb, ql] = D.STAIRS3.pit;
   const UP = D.STAIRS2UP;
   const floor1 = {
-    n: 1, W: D.W1, bg: P.bg1, name: 'PLAN 1 - MODE', col: '#e8b230',
+    n: 1, W: D.W1, bg: P.bg1, name: $t('PLAN 1 - MODE'), col: '#e8b230',
     walker: mkWalker(D.W1, [(D.DOOR.x0 + D.DOOR.x1) / 2, WALL_Y + 14], [
       ...DUMMIES.map((d) => [d.x - 12, d.y - 6, d.x + 12, d.y + 22]),
       ...PLACES1.filter((p) => p.kind === 'rack').map((p) => [p.x - 2, p.base - 8, p.x + D.RACK_W + 2, p.base + 3]),
@@ -226,7 +227,7 @@ export function makeShopKlader(A, opts = {}) {
     ]),
   };
   const floor2 = {
-    n: 2, W: D.W2, bg: P.bg2, name: 'PLAN 2 - SPORT + FOTBOLL', col: '#d9434b',
+    n: 2, W: D.W2, bg: P.bg2, name: $t('PLAN 2 - SPORT + FOTBOLL'), col: '#d9434b',
     walker: mkWalker(D.W2, [board2[0] + 8, board2[1] + 14], [
       ...KUNGS.map((k) => [k.x - 12, k.y - 6, k.x + 12, k.y + 20]),
       ...TEAMS.map((k) => [k.x - 12, k.y - 6, k.x + 12, k.y + 20]),
@@ -243,7 +244,7 @@ export function makeShopKlader(A, opts = {}) {
   };
   const B = D.JUL_BRASA, G = D.JUL_GRAN, JD = D.JUL_DESK;
   const floor3 = {
-    n: 3, W: D.W3, bg: P.bg3, name: 'PLAN 3 - JUL', col: '#2f8f46',
+    n: 3, W: D.W3, bg: P.bg3, name: $t('PLAN 3 - JUL'), col: '#2f8f46',
     walker: mkWalker(D.W3, [board3[0], board3[1] + 18], [
       ...JULDOCKOR.map((d) => [d.x - 12, d.y - 6, d.x + 12, d.y + 22]),
       [B.x - 1, WALL_Y, B.x + 33, B.base + 2],
@@ -261,7 +262,7 @@ export function makeShopKlader(A, opts = {}) {
   const floors = { 1: floor1, 2: floor2, 3: floor3 };
   let F = floors[opts.floor] || floor1;
   // 🎄 julvåningen ligger två trappor upp (längst till höger på plan 2) – tala om det en gång per besök i spelet
-  try { if (F === floor1 && !sessionStorage.getItem('sf_jultips')) { sessionStorage.setItem('sf_jultips', '1'); setTimeout(() => toast('🎄 Nyhet: JULVÅNINGEN på plan 3! Ta trappan upp, gå längst till höger på plan 2 och ta trappan upp igen.', 'good'), 900); } } catch { /* ok */ }
+  try { if (F === floor1 && !sessionStorage.getItem('sf_jultips')) { sessionStorage.setItem('sf_jultips', '1'); setTimeout(() => toast($t('🎄 Nyhet: JULVÅNINGEN på plan 3! Ta trappan upp, gå längst till höger på plan 2 och ta trappan upp igen.'), 'good'), 900); } } catch { /* ok */ }
   if (opts.floor === 2) { F.walker.px = board2[0] + 8; F.walker.py = board2[1] + 14; F.walker.snapFree(); }
   const W = () => F.walker;
 
@@ -283,8 +284,8 @@ export function makeShopKlader(A, opts = {}) {
       [s.y === GTOP ? s.x : s.x < D.GOND.x + D.GOND.w / 2 ? s.x - 22 : s.x + 22, D.GOND.y + D.GOND.h + 12], 'mid')),
     ...HATBUSTS.map((b, i) => itemSpot('hatt' + i, b, [b.x - 12, b.y - 26, b.x + 12, b.y + 4], [b.x, D.HATS.y + D.HATS.h + 12], 'mid')),
     ...PLACES1.map(placeSpot),
-    { id: 'kassa', r: [D.DESK.x, D.DESK.y - 30, D.DESK.x + D.DESK.w, D.DESK.y + D.DESK.h], go: [D.DESK.x + D.DESK.w / 2, D.DESK.y + D.DESK.h + 10], act: () => { play('click'); talk.say('Hej! 👋 Allt hänger på galgarna – klicka på en ställning så ser du alla plagg. Sport finns en trappa upp – och JULVÅNINGEN två trappor upp! 🎄', { x: D.DESK.x + D.DESK.w / 2, y: D.DESK.y - 30 }); } },
-    ...[[8, 84], [D.W1 - 84, D.W1 - 8]].map(([a, b], i) => ({ id: 'prov' + i, r: [a, 18, b, WALL_Y], go: [(a + b) / 2, WALL_Y + 12], act: () => say('🪞 Provhytten! Klickar jag på ett plagg ser jag det på mig innan jag köper.') })),
+    { id: 'kassa', r: [D.DESK.x, D.DESK.y - 30, D.DESK.x + D.DESK.w, D.DESK.y + D.DESK.h], go: [D.DESK.x + D.DESK.w / 2, D.DESK.y + D.DESK.h + 10], act: () => { play('click'); talk.say($t('Hej! 👋 Allt hänger på galgarna – klicka på en ställning så ser du alla plagg. Sport finns en trappa upp – och JULVÅNINGEN två trappor upp! 🎄'), { x: D.DESK.x + D.DESK.w / 2, y: D.DESK.y - 30 }); } },
+    ...[[8, 84], [D.W1 - 84, D.W1 - 8]].map(([a, b], i) => ({ id: 'prov' + i, r: [a, 18, b, WALL_Y], go: [(a + b) / 2, WALL_Y + 12], act: () => say($t('🪞 Provhytten! Klickar jag på ett plagg ser jag det på mig innan jag köper.')) })),
   ];
   floor2.spots = [
     { id: 'trappa', stairs: D.STAIRS2, r: [p0, pb - 14, p1 + 24, pl + 4], go: board2, act: () => startClimb(D.STAIRS2) },
@@ -293,18 +294,18 @@ export function makeShopKlader(A, opts = {}) {
     { id: 'matchstall', kit: true, r: [D.KIT_DOLL.x - 12, D.KIT_DOLL.y - 40, D.KIT_DOLL.x + 12, D.KIT_DOLL.y + 18], go: [D.KIT_DOLL.x, D.KIT_DOLL.y + 32], dept: 'kungs', act: () => { hoverId = null; play('click'); openKit(A, kungsKit()); } },
     ...PT.SHOE_SPOTS.map((s) => ({ id: 'skor-' + s.c.id, cleat: s, r: [s.x - 2, s.y - 11, s.x + 18, s.y + 2], go: [s.x + 8, WALL_Y + 12], dept: 'kungs', act: () => {
       hoverId = null; play('click');
-      openBuy(A, itemById('shoes-cleats'), { dept: 'kungs', where: 'Kungsladugård · fotbollsskorna ur lagfotot', title: `${s.c.name} fotbollsskor`, colors: { shoes: s.c.shoes, shoes2: s.c.shoes2 }, note: 'Samma fotbollsskor som laget har på lagfotot – färgen väljer du fritt hemma i garderoben.' });
+      openBuy(A, itemById('shoes-cleats'), { dept: 'kungs', where: $t('Kungsladugård · fotbollsskorna ur lagfotot'), title: $t`${s.c.name} fotbollsskor`, colors: { shoes: s.c.shoes, shoes2: s.c.shoes2 }, note: $t('Samma fotbollsskor som laget har på lagfotot – färgen väljer du fritt hemma i garderoben.') });
     } })),
     // lagfotot: klick = fotot i stort med hela laget (syns också på mobilen, där väggen är beskuren)
     { id: 'lagfoto', photo: true, r: [D.PHOTO.x, D.PHOTO.y, D.PHOTO.x + D.PHOTO.w, D.PHOTO.y + D.PHOTO.h + 10], go: [D.PHOTO.x + D.PHOTO.w / 2, WALL_Y + 12], dept: 'kungs', act: () => {
       hoverId = null; play('click');
-      openPhoto(A, P.bg2, [D.PHOTO.x, D.PHOTO.y, D.PHOTO.w, D.PHOTO.h], 'Kungsladugård – laget 2026', D.KUNGS_PLAYERS);
+      openPhoto(A, P.bg2, [D.PHOTO.x, D.PHOTO.y, D.PHOTO.w, D.PHOTO.h], $t('Kungsladugård – laget 2026'), D.KUNGS_PLAYERS);
     } },
     ...TEAMS.map((tm) => ({ id: 'lag' + tm.i, team: tm, r: [tm.x - 12, tm.y - 40, tm.x + 12, tm.y + 18], go: [tm.x, tm.y + (tm.y < 150 ? 30 : 32)], dept: 'lag', act: () => { hoverId = null; play('click'); openKit(A, teamKit(tm)); } })),
     ...PLACES2.map(placeSpot),
-    { id: 'coach', r: [D.COACH.x - 8, D.COACH.y - 40, D.COACH.x + 8, D.COACH.y + 2], go: [D.COACH.x - 16, D.COACH.y + 10], act: () => { play('click'); talk.say(['Välkommen upp! ⚽ Laget står där borta – klicka på en spelare så provar du matchstället.', 'Skjut ett skott på provplanen – klicka på bollen!', 'Fotbollsskorna på väggen är samma som laget har på lagfotot.'][Math.floor(t / 4) % 3], { x: D.COACH.x, y: D.COACH.y - 44 }); } },
+    { id: 'coach', r: [D.COACH.x - 8, D.COACH.y - 40, D.COACH.x + 8, D.COACH.y + 2], go: [D.COACH.x - 16, D.COACH.y + 10], act: () => { play('click'); talk.say([$t('Välkommen upp! ⚽ Laget står där borta – klicka på en spelare så provar du matchstället.'), $t('Skjut ett skott på provplanen – klicka på bollen!'), $t('Fotbollsskorna på väggen är samma som laget har på lagfotot.')][Math.floor(t / 4) % 3], { x: D.COACH.x, y: D.COACH.y - 44 }); } },
     { id: 'boll', r: [D.PITCH.x0, D.PITCH.y0 + 18, D.PITCH.x1, D.PITCH.y1], go: [D.BALL0[0], D.BALL0[1] + 12], act: () => kick() },
-    { id: 'pokaler', r: [578, 30, 642, 58], go: [610, WALL_Y + 12], act: () => say('🏆 Pokalerna! Kungsladugård har vunnit en hel hylla.') },
+    { id: 'pokaler', r: [578, 30, 642, 58], go: [610, WALL_Y + 12], act: () => say($t('🏆 Pokalerna! Kungsladugård har vunnit en hel hylla.')) },
   ];
   // plan 3: julvåningen
   const pyntSpot = (p) => {
@@ -318,9 +319,9 @@ export function makeShopKlader(A, opts = {}) {
     ...JULDOCKOR.map((d, i) => itemSpot('juldocka' + i, d, [d.x - 12, d.y - 40, d.x + 12, d.y + 22], [d.x + 22, d.y + 3], 'jul')),
     ...JULHATTAR.map((b, i) => ({ id: 'julhatt' + i, item: b, r: [b.x - 12, b.y - 26, b.x + 12, b.y + 4], go: [b.x, WALL_Y + 12], dept: 'jul', act: () => { hoverId = null; openBuy(A, b.it, { dept: 'jul', colors: b.colors, fromDoll: true }); } })),
     ...PLACES3.map(placeSpot),
-    { id: 'brasa', brasa: true, r: [B.x - 6, 26, B.x + 38, B.base + 4], go: [B.x + 16, B.base + 14], act: () => { hoverId = null; openMarshmallow(A, { title: '🍡 Grilla marshmallows vid brasan' }); } },
-    { id: 'storgran', r: [G.x - 30, G.base - JUL.GRAN_H + 4, G.x + 30, G.base - 12], go: [G.x, G.base + 12], act: () => say('🎄 Vilken gran! Granar till dig själv finns på julpyntet – med kulor eller med blinkande ljus.') },
-    { id: 'kassa', r: [JD.x, JD.y - 30, JD.x + JD.w, JD.y + JD.h], go: [JD.x + JD.w / 2, JD.y + JD.h + 10], act: () => { play('click'); talk.say(['God jul! 🎅 Julkläderna hänger till vänster och pyntet till höger.', 'Har du provat att grilla en marshmallow vid brasan? 🍡', 'Granen med blinkande ljus är årets julklapp! 🎄'][Math.floor(t / 4) % 3], { x: JD.x + JD.w / 2, y: JD.y - 30 }); } },
+    { id: 'brasa', brasa: true, r: [B.x - 6, 26, B.x + 38, B.base + 4], go: [B.x + 16, B.base + 14], act: () => { hoverId = null; openMarshmallow(A, { title: $t('🍡 Grilla marshmallows vid brasan') }); } },
+    { id: 'storgran', r: [G.x - 30, G.base - JUL.GRAN_H + 4, G.x + 30, G.base - 12], go: [G.x, G.base + 12], act: () => say($t('🎄 Vilken gran! Granar till dig själv finns på julpyntet – med kulor eller med blinkande ljus.')) },
+    { id: 'kassa', r: [JD.x, JD.y - 30, JD.x + JD.w, JD.y + JD.h], go: [JD.x + JD.w / 2, JD.y + JD.h + 10], act: () => { play('click'); talk.say([$t('God jul! 🎅 Julkläderna hänger till vänster och pyntet till höger.'), $t('Har du provat att grilla en marshmallow vid brasan? 🍡'), $t('Granen med blinkande ljus är årets julklapp! 🎄')][Math.floor(t / 4) % 3], { x: JD.x + JD.w / 2, y: JD.y - 30 }); } },
     ...PYNT.map(pyntSpot),
   ];
   for (const f of [floor1, floor2, floor3]) for (const s of f.spots) s.floor = f.n;
@@ -366,9 +367,9 @@ export function makeShopKlader(A, opts = {}) {
       const w = W(), b = boardOf(e);
       climb = null;
       w.px = b[0]; w.py = b[1]; w.snapFree();
-      if (e.n === 3) { w.walkTo(b[0], b[1] + 18); toast('🎄 PLAN 3 – JULVÅNINGEN! Julpyntet närmast, sedan brasan och granen – och julkläderna längst bort.', 'good'); }
-      else if (e.n === 2) { w.walkTo(b[0] + 6, b[1] + 16); toast('⚽ PLAN 2 – SPORT & FOTBOLL. Kungsladugård till vänster, kända lag till höger – och trappan till julvåningen längst till höger!', 'good'); }
-      else { w.walkTo(b[0] - 6, b[1] + 16); toast('👗 PLAN 1 – MODE. Tjejer till vänster, killar till höger.', 'good'); }
+      if (e.n === 3) { w.walkTo(b[0], b[1] + 18); toast($t('🎄 PLAN 3 – JULVÅNINGEN! Julpyntet närmast, sedan brasan och granen – och julkläderna längst bort.'), 'good'); }
+      else if (e.n === 2) { w.walkTo(b[0] + 6, b[1] + 16); toast($t('⚽ PLAN 2 – SPORT & FOTBOLL. Kungsladugård till vänster, kända lag till höger – och trappan till julvåningen längst till höger!'), 'good'); }
+      else { w.walkTo(b[0] - 6, b[1] + 16); toast($t('👗 PLAN 1 – MODE. Tjejer till vänster, killar till höger.'), 'good'); }
     }
   }
   const climbPos = () => {
@@ -380,7 +381,7 @@ export function makeShopKlader(A, opts = {}) {
 
   // ---------- bollen på provplanen ----------
   function kick() {
-    if (ball.st !== 'rest') { say('Vänta tills bollen har rullat tillbaka!'); return; }
+    if (ball.st !== 'rest') { say($t('Vänta tills bollen har rullat tillbaka!')); return; }
     const w = W();
     w.dir = 'up';
     ball.st = 'fly'; ball.t = 0; ball.fx = ball.x; ball.fy = ball.y;
@@ -397,7 +398,7 @@ export function makeShopKlader(A, opts = {}) {
         ball.st = 'net'; ball.t = 0; ball.z = 0;
         play('ok');
         // bubblan en bit åt sidan så att bollen i nätet syns
-        talk.say(['MÅÅÅL! ⚽', 'MÅL! HEJA KUNGSLADUGÅRD!', 'KRYSSET! 🎯'][Math.floor(Math.random() * 3)], () => ({ x: W().px + 46, y: W().py - 36 }), 2.2, { self: true });
+        talk.say([$t('MÅÅÅL! ⚽'), $t('MÅL! HEJA KUNGSLADUGÅRD!'), $t('KRYSSET! 🎯')][Math.floor(Math.random() * 3)], () => ({ x: W().px + 46, y: W().py - 36 }), 2.2, { self: true });
       }
     } else if (ball.st === 'net' && ball.t > 1.3) { ball.st = 'back'; ball.t = 0; ball.fx = ball.x; ball.fy = ball.y; }
     else if (ball.st === 'back') {
@@ -692,8 +693,8 @@ export function makeShopKlader(A, opts = {}) {
   }
   // Lagets matchställ (säljs): lappen FRÅN 390 KR, TA PÅ DIG när tröjan redan är din, PÅ DIG när man bär den
   function kitState(it, shirt) {
-    if (wearsShirt(A.avatar.look, it, shirt)) return ['PÅ DIG', 'on'];
-    if (owns(g, it)) return ['TA PÅ DIG', 'have'];
+    if (wearsShirt(A.avatar.look, it, shirt)) return [$t('PÅ DIG'), 'on'];
+    if (owns(g, it)) return [$t('TA PÅ DIG'), 'have'];
     return null;
   }
   function drawKitDoll(ctx, on, doll = true) {
@@ -704,7 +705,7 @@ export function makeShopKlader(A, opts = {}) {
       drawTeamDoll(ctx, D.KIT_DOLL.x, D.KIT_DOLL.y, KIT_LOOK, 'down', KSOCKS);
     }
     const st = kitState(it, D.KUNGS_KIT.shirt);
-    plate(ctx, D.KIT_DOLL.x, D.KIT_DOLL.y + 7, 'MATCHSTÄLL', st ? st[0] : `FRÅN ${priceOf(g, it)} KR`, st?.[1], '#d9434b', on);
+    plate(ctx, D.KIT_DOLL.x, D.KIT_DOLL.y + 7, $t('MATCHSTÄLL'), st ? st[0] : $t`FRÅN ${priceOf(g, it)} KR`, st?.[1], '#d9434b', on);
   }
   function drawTeam(ctx, tm, on, doll = true) {
     if (doll) {
@@ -713,7 +714,7 @@ export function makeShopKlader(A, opts = {}) {
       drawTeamDoll(ctx, tm.x, tm.y, tm.look, 'down', { socks: tm.socks, stripe: tm.socks });
     }
     const st = kitState(tm.it, tm.colors.shirt);
-    plate(ctx, tm.x, tm.y + 7, tm.city, st ? st[0] : `${priceOf(g, tm.it)} KR`, st?.[1], tm.colors.shirt === '#f4f1ea' ? tm.colors.accent : tm.colors.shirt, on);
+    plate(ctx, tm.x, tm.y + 7, tm.city, st ? st[0] : $t`${priceOf(g, tm.it)} KR`, st?.[1], tm.colors.shirt === '#f4f1ea' ? tm.colors.accent : tm.colors.shirt, on);
   }
 
   return {
@@ -769,7 +770,7 @@ export function makeShopKlader(A, opts = {}) {
     down(sx, sy) {
       const x = sx + cam.x, y = sy - ty; // skärm → värld (radbandet kan vara förskjutet)
       hoverId = null; // skylten följer figuren igen tills musen rör sig
-      if (climb) { nag((climb.e.sy < 0) === (climb.v > 0) ? '⬆️ Vänta tills du är uppe!' : '⬇️ Vänta tills du är nere!'); return; }
+      if (climb) { nag((climb.e.sy < 0) === (climb.v > 0) ? $t('⬆️ Vänta tills du är uppe!') : $t('⬇️ Vänta tills du är nere!')); return; }
       const h = spotAt(x, y);
       if (h) { W().walkTo(h.go[0], h.go[1], h.act); return; }
       if (y > WALL_Y) W().walkTo(x, y);
@@ -796,14 +797,15 @@ export function makeShopKlader(A, opts = {}) {
       ctx.setTransform(A.pxs, 0, 0, A.pxs, 0, 0);
       if (t - floorT < 4) floorPlate(ctx, F, t - floorT, b.y0);
       if (F.n === 1) {
-        if (cx > 150) edgeSign(ctx, 'TJEJER', DEPT_LBL.tjej, true, b.y1);
-        if (cx < F.W - VW - 150) edgeSign(ctx, 'KILLAR', DEPT_LBL.kille, false, b.y1);
+        if (cx > 150) edgeSign(ctx, $t('TJEJER'), DEPT_LBL.tjej, true, b.y1);
+        if (cx < F.W - VW - 150) edgeSign(ctx, $t('KILLAR'), DEPT_LBL.kille, false, b.y1);
       } else if (F.n === 2) {
-        if (cx > 330) edgeSign(ctx, 'KUNGSLADUGÅRD', DEPT_LBL.kungs, true, b.y1);
-        if (cx < F.W - VW - 20) edgeSign(ctx, cx < 260 ? 'KÄNDA LAG' : 'JULEN - PLAN 3', cx < 260 ? DEPT_LBL.lag : DEPT_LBL.jul, false, b.y1); // julvåningens trappa längst till höger
+        if (cx > 330) edgeSign(ctx, $t('KUNGSLADUGÅRD'), DEPT_LBL.kungs, true, b.y1);
+        if (cx < F.W - VW - 20) edgeSign(ctx, cx < 260 ? $t('KÄNDA LAG') : $t('JULEN - PLAN 3'), cx < 260 ? DEPT_LBL.lag : DEPT_LBL.jul, false, b.y1); // julvåningens trappa längst till höger
       } else {
-        if (cx > 200) edgeSign(ctx, 'JULKLÄDER', DEPT_LBL.jul, true, b.y1);
-        if (cx < D.TORG_X1 - VW) edgeSign(ctx, 'JULPYNT', DEPT_LBL.jul, false, b.y1);
+        if (cx > 200) edgeSign(ctx, $t('JULKLÄDER'), DEPT_LBL.jul, true, b.y1);
+        if (cx < D.TORG_X1 - VW) edgeSign(ctx, $t('JULPYNT'), DEPT_LBL.jul, false, b.y1);
+
       }
       // namnskylten nertill – eller upptill när figuren själv står längst ner i bild
       lastLabel = null;
@@ -818,38 +820,38 @@ export function makeShopKlader(A, opts = {}) {
     if (spot.item) {
       const it = spot.item.it;
       own = owns(g, it);
-      name = pix(nameOf(it)); right = own ? 'DIN!' : `${priceOf(g, it)} KR`;
-      hint = own ? 'KLICKA SÅ TAR DU PÅ DIG DEN' : 'KLICKA SÅ PROVAR DU DEN PÅ DIG';
+      name = pix(nameOf(it)); right = own ? $t('DIN!') : $t`${priceOf(g, it)} KR`;
+      hint = own ? $t('KLICKA SÅ TAR DU PÅ DIG DEN') : $t('KLICKA SÅ PROVAR DU DEN PÅ DIG');
     } else if (spot.place) {
       const p = spot.place, n = p.items.length, mine = p.items.filter((it) => owns(g, it)).length;
-      name = pix(p.cat.name); right = `${n} PLAGG`; hint = mine ? `${mine} ÄR DINA · KLICKA SÅ BLÄDDRAR DU` : 'KLICKA SÅ BLÄDDRAR DU BLAND ALLA';
+      name = pix(p.cat.name); right = $t`${n} PLAGG`; hint = mine ? $t`${mine} ÄR DINA · KLICKA SÅ BLÄDDRAR DU` : $t('KLICKA SÅ BLÄDDRAR DU BLAND ALLA');
     } else if (spot.kungs) {
       const k = spot.kungs;
-      name = pix(`NR ${k.n} ${k.name}`); right = 'KUNGSLADUGÅRD'; hint = 'KLICKA SÅ PROVAR DU MATCHSTÄLLET';
+      name = pix($t`NR ${k.n} ${k.name}`); right = $t('KUNGSLADUGÅRD'); hint = $t('KLICKA SÅ PROVAR DU MATCHSTÄLLET');
     } else if (spot.kit || spot.team) {
       // tröjmodellen delas av flera lag: äger man den tar man bara på sig den i lagets färger
       const it = spot.kit ? itemById('top-football') : spot.team.it;
       const shirt = spot.kit ? D.KUNGS_KIT.shirt : spot.team.colors.shirt;
       const on = wearsShirt(A.avatar.look, it, shirt), have = owns(g, it);
       own = on || have;
-      name = spot.kit ? 'KUNGSLADUGÅRDS MATCHSTÄLL' : pix(spot.team.city);
-      right = on ? 'PÅ DIG!' : have ? 'TRÖJAN HAR DU' : `${spot.kit ? 'FRÅN ' : ''}${priceOf(g, it)} KR`;
-      hint = have && !on ? 'KLICKA SÅ TAR DU PÅ DIG DEN I LAGETS FÄRGER' : spot.kit ? 'TRÖJA, SHORTS OCH FOTBOLLSSKOR' : 'KLICKA SÅ PROVAR DU MATCHSTÄLLET';
+      name = spot.kit ? $t('KUNGSLADUGÅRDS MATCHSTÄLL') : pix(spot.team.city);
+      right = on ? $t('PÅ DIG!') : have ? $t('TRÖJAN HAR DU') : spot.kit ? $t`FRÅN ${priceOf(g, it)} KR` : $t`${priceOf(g, it)} KR`;
+      hint = have && !on ? $t('KLICKA SÅ TAR DU PÅ DIG DEN I LAGETS FÄRGER') : spot.kit ? $t('TRÖJA, SHORTS OCH FOTBOLLSSKOR') : $t('KLICKA SÅ PROVAR DU MATCHSTÄLLET');
     } else if (spot.photo) {
-      name = 'LAGFOTOT'; right = 'KUNGSLADUGÅRD'; hint = 'KLICKA SÅ SER DU HELA LAGET I STORT';
+      name = $t('LAGFOTOT'); right = $t('KUNGSLADUGÅRD'); hint = $t('KLICKA SÅ SER DU HELA LAGET I STORT');
     } else if (spot.cleat) {
       const it = itemById('shoes-cleats'); own = owns(g, it);
-      name = pix(`${spot.cleat.c.name} fotbollsskor`); right = own ? 'DIN!' : `${priceOf(g, it)} KR`; hint = own ? 'KLICKA SÅ TAR DU PÅ DIG DEM' : 'KLICKA SÅ PROVAR DU DEM PÅ DIG';
+      name = pix($t`${spot.cleat.c.name} fotbollsskor`); right = own ? $t('DIN!') : $t`${priceOf(g, it)} KR`; hint = own ? $t('KLICKA SÅ TAR DU PÅ DIG DEM') : $t('KLICKA SÅ PROVAR DU DEM PÅ DIG');
     } else if (spot.stairs) {
       const e = spot.stairs;
-      name = e.sy < 0 ? 'TRAPPA UPP' : 'TRAPPA NER'; right = `PLAN ${e.to}`;
-      hint = { 1: 'MODE · TJEJER OCH KILLAR', 2: F.n === 1 ? 'SPORT + FOTBOLL · JULVÅNINGEN ÄR PLAN 3' : 'SPORT + FOTBOLL · KUNGSLADUGÅRD', 3: 'JULVÅNINGEN · PYNT, KLÄDER OCH BRASAN' }[e.to];
+      name = e.sy < 0 ? $t('TRAPPA UPP') : $t('TRAPPA NER'); right = $t`PLAN ${e.to}`;
+      hint = { 1: $t('MODE · TJEJER OCH KILLAR'), 2: F.n === 1 ? $t('SPORT + FOTBOLL · JULVÅNINGEN ÄR PLAN 3') : $t('SPORT + FOTBOLL · KUNGSLADUGÅRD'), 3: $t('JULVÅNINGEN · PYNT, KLÄDER OCH BRASAN') }[e.to];
       key = { 1: 'mid', 2: 'kungs', 3: 'jul' }[e.to];
     } else if (spot.pynt) {
       const p = spot.pynt;
-      name = pix(p.kat.name); right = `${p.kat.price} KR`; hint = p.kat.vars > 1 ? `${p.kat.vars} MODELLER · KLICKA SÅ VÄLJER DU` : 'KLICKA SÅ KÖPER DU - DEN HAMNAR I FÖRRÅDET'; key = 'jul';
-    } else if (spot.brasa) { name = 'BRASAN'; right = 'GRATIS'; hint = 'KLICKA SÅ GRILLAR DU MARSHMALLOWS'; key = 'jul';
-    } else if (spot.id === 'boll') { name = 'PROVPLANEN'; right = ''; hint = 'KLICKA SÅ SKJUTER DU PÅ MÅL'; key = 'lag'; }
+      name = pix(p.kat.name); right = $t`${p.kat.price} KR`; hint = p.kat.vars > 1 ? $t`${p.kat.vars} MODELLER · KLICKA SÅ VÄLJER DU` : $t('KLICKA SÅ KÖPER DU - DEN HAMNAR I FÖRRÅDET'); key = 'jul';
+    } else if (spot.brasa) { name = $t('BRASAN'); right = $t('GRATIS'); hint = $t('KLICKA SÅ GRILLAR DU MARSHMALLOWS'); key = 'jul';
+    } else if (spot.id === 'boll') { name = $t('PROVPLANEN'); right = ''; hint = $t('KLICKA SÅ SKJUTER DU PÅ MÅL'); key = 'lag'; }
     else return;
     const lblC = DEPT_LBL[key] || '#f0d048';
     name = pix(name); right = pix(right || ''); hint = pix(hint);
@@ -892,7 +894,7 @@ function ownDot(ctx, x, y) {
 function dummyTag(ctx, x, y, it, isOwned, g, dept, hi = false, short = null) {
   const name = short || SHORT[it.id] || pix(nameOf(it));
   const price = priceOf(g, it), rea = price !== it.price;
-  const line2 = isOwned ? 'DIN' : `${price} KR`;
+  const line2 = isOwned ? $t('DIN') : $t`${price} KR`;
   const w = Math.max(textW(SMALL, name), textW(SMALL, line2)) + 6, h = 15;
   const x0 = Math.round(x - w / 2);
   if (hi) { ctx.fillStyle = '#ffe070'; ctx.fillRect(x0 - 2, y - 2, w + 4, h + 4); }
@@ -929,7 +931,7 @@ function numberPlate(ctx, x, y, n, name, hi) {
 // Liten prislapp under en vara på hyllan ("150:-" = 150 kronor)
 function priceTag(ctx, x, y, it, isOwned, g) {
   const price = priceOf(g, it);
-  const lbl = isOwned ? 'DIN' : `${price}:-`;
+  const lbl = isOwned ? $t('DIN') : $t`${price}:-`;
   const w = textW(SMALL, lbl) + 4, x0 = Math.round(x - w / 2);
   ctx.fillStyle = '#17151a'; ctx.fillRect(x0 - 1, y - 1, w + 2, 9);
   ctx.fillStyle = isOwned ? '#45b964' : price !== it.price ? '#ff8a80' : '#f0d048'; ctx.fillRect(x0, y, w, 7);
@@ -937,7 +939,7 @@ function priceTag(ctx, x, y, it, isOwned, g) {
 }
 // Prislapp under julpyntet ("250:-")
 function furnTag(ctx, x, y, price) {
-  const lbl = `${price}:-`, w = textW(SMALL, lbl) + 4, x0 = Math.round(x - w / 2);
+  const lbl = $t`${price}:-`, w = textW(SMALL, lbl) + 4, x0 = Math.round(x - w / 2);
   ctx.fillStyle = '#17151a'; ctx.fillRect(x0 - 1, y - 1, w + 2, 9);
   ctx.fillStyle = '#f0d048'; ctx.fillRect(x0, y, w, 7);
   ctx.fillStyle = '#c9323a'; ctx.fillRect(x0, y, w, 1);
@@ -986,7 +988,7 @@ function drawPoster(ctx) {
   drawPerson(ctx, fx + 12, 70, POSTER[0], 'down', 0);
   drawPerson(ctx, fx + 32, 70, POSTER[1], 'down', 0);
   ctx.restore();
-  const ny = 'NYTT!', nw = textW(SMALL, ny) + 6, x0 = fx + 50 - nw;
+  const ny = $t('NYTT!'), nw = textW(SMALL, ny) + 6, x0 = fx + 50 - nw;
   ctx.fillStyle = '#17151a'; ctx.fillRect(x0 - 1, 57, nw + 2, 10);
   ctx.fillStyle = '#d9433b'; ctx.fillRect(x0, 58, nw, 8);
   ctx.fillStyle = '#ff7a6b'; ctx.fillRect(x0, 58, nw, 1);
@@ -994,7 +996,8 @@ function drawPoster(ctx) {
 }
 function drawRea(ctx, t) {
   const on = Math.floor(t * 2) % 2 === 0;
-  const lbl = 'REA -25%';
+  const lbl = $t('REA -25%');
+
   const w = textW(BIG, lbl) + 10, x0 = (D.DESK.x + D.DESK.w / 2) - w / 2 | 0, y0 = 42;
   ctx.fillStyle = '#17151a'; ctx.fillRect(x0 - 1, y0 - 1, w + 2, 13);
   ctx.fillStyle = on ? '#d9433b' : '#b8323a'; ctx.fillRect(x0, y0, w, 11);

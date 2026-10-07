@@ -16,6 +16,7 @@ import { fmt, homeOf, GARDSDJUR, GARD_PRIS, HAST_PRIS, HAST_STALL, HAST_MAT, HAS
 import { drawHastEnsam, drawHastRyttare } from '../landet/hast-art.js';   // din egen häst (rida, hinderbanan)
 import { LW, LH, L, KOHAGE, FARHAGE, HONSGARD, VETE, HASTHAGE, RIDBANA, HUS, HINDER, HALLPLATS, ORTSSKYLT, SPANG, GRIND, landHinder, paintLand, skyCanvas, hillsCanvas, husBild, husPos } from '../landet/karta.js';
 import { drawKo, drawFar, drawHast, drawHona, drawTraktor, drawTrad } from '../landet/djur.js';
+import { $t } from '../core/i18n.js';
 
 const GANG = 110;
 const BUTIK = { x: 660, y: 206 };   // gårdsbutiken vid vägen (norra renen, väster om gården)
@@ -47,7 +48,7 @@ export function makeLandet(A) {
   const cam = { x: 0, y: 0 };
   const camTarget = () => ({ x: Math.max(0, Math.min(LW - VW, walker.px - VW / 2)), y: Math.max(0, Math.min(LH - VH, walker.py - VH * 0.66)) });
   Object.assign(cam, camTarget());
-  if (!A.attract) { const h = g.glad?.(2, '', 'landet', 2); if (h) setTimeout(() => toast(`🌾 Frisk luft på landet! +${h} 😊`, 'good'), 900); }
+  if (!A.attract) { const h = g.glad?.(2, '', 'landet', 2); if (h) setTimeout(() => toast($t`🌾 Frisk luft på landet! +${h} 😊`, 'good'), 900); }
 
   // ---------- djuren ----------
   const rnd = (a, b) => a + Math.random() * (b - a);
@@ -71,7 +72,7 @@ export function makeLandet(A) {
     }
   }
   const FART = { ko: 9, far: 11, hona: 14, hast: 16 };
-  const LJUD = { ko: ['MUUU!', 'Muu …', 'MUUUU! 🐄'], far: ['BÄÄÄ!', 'Bä bä!', 'BÄÄ 🐑'], hona: ['KLUCK KLUCK!', 'Pip pip!', 'KUCKELIKU!'], hast: ['GNÄGG!', 'Prrrr …', 'GNÄGGG 🐴'] };
+  const LJUD = { ko: [$t('MUUU!'), $t('Muu …'), $t('MUUUU! 🐄')], far: [$t('BÄÄÄ!'), $t('Bä bä!'), $t('BÄÄ 🐑')], hona: [$t('KLUCK KLUCK!'), $t('Pip pip!'), $t('KUCKELIKU!')], hast: [$t('GNÄGG!'), $t('Prrrr …'), $t('GNÄGGG 🐴')] };
   function updDjur(dt) {
     for (const d of djur) {
       d.tm -= dt;
@@ -104,57 +105,57 @@ export function makeLandet(A) {
   // ---------- platserna man kan klicka på ----------
   const busStop = busStopById('betongtorget');
   const spots = () => [
-    { id: 'gard', r: [HUS.gard.door.x0 - 6, HUS.gard.base - 40, HUS.gard.door.x1 + 6, HUS.gard.base], go: gardDorr, label: g.home === 'gard' ? 'HEM' : 'GÅRDEN – TILL SALU', act: gardDorren },
-    { id: 'lada', r: [HUS.lada.door.x0, HUS.lada.base - 42, HUS.lada.door.x1, HUS.lada.base], go: [(HUS.lada.door.x0 + HUS.lada.door.x1) / 2, HUS.lada.base + 8], label: 'LADUGÅRDEN', act: ladan },
-    { id: 'butik', r: [BUTIK.x - 18, BUTIK.y - 30, BUTIK.x + 18, BUTIK.y + 2], go: [BUTIK.x, BUTIK.y + 8], label: 'GÅRDSBUTIKEN', act: butiken },
-    { id: 'stall', r: [HUS.stall.door.x0 - 4, HUS.stall.base - 36, HUS.stall.door.x1 + 4, HUS.stall.base], go: [(HUS.stall.door.x0 + HUS.stall.door.x1) / 2, HUS.stall.base + 8], label: 'STALLET', act: stallet },
-    { id: 'ridbana', r: [RIDBANA[0], RIDBANA[1], RIDBANA[2], RIDBANA[3]], go: [(GRIND.bana[0] + GRIND.bana[1]) / 2, RIDBANA[1] - 8], label: 'RIDBANAN – HINDERBANAN', act: hinderbanan },
-    { id: 'buss', r: [HALLPLATS.x - 12, HALLPLATS.y - 34, HALLPLATS.x + 14, HALLPLATS.y + 2], go: [HALLPLATS.x + 2, HALLPLATS.y + 6], label: 'BUSS TILL STAN', act: bussen },
-    { id: 'skylt', r: [ORTSSKYLT.x - 14, ORTSSKYLT.y - 30, ORTSSKYLT.x + 14, ORTSSKYLT.y + 2], go: [ORTSSKYLT.x, ORTSSKYLT.y + 8], label: 'TILLBAKA TILL STAN', act: tillStan },
+    { id: 'gard', r: [HUS.gard.door.x0 - 6, HUS.gard.base - 40, HUS.gard.door.x1 + 6, HUS.gard.base], go: gardDorr, label: g.home === 'gard' ? $t('HEM') : $t('GÅRDEN – TILL SALU'), act: gardDorren },
+    { id: 'lada', r: [HUS.lada.door.x0, HUS.lada.base - 42, HUS.lada.door.x1, HUS.lada.base], go: [(HUS.lada.door.x0 + HUS.lada.door.x1) / 2, HUS.lada.base + 8], label: $t('LADUGÅRDEN'), act: ladan },
+    { id: 'butik', r: [BUTIK.x - 18, BUTIK.y - 30, BUTIK.x + 18, BUTIK.y + 2], go: [BUTIK.x, BUTIK.y + 8], label: $t('GÅRDSBUTIKEN'), act: butiken },
+    { id: 'stall', r: [HUS.stall.door.x0 - 4, HUS.stall.base - 36, HUS.stall.door.x1 + 4, HUS.stall.base], go: [(HUS.stall.door.x0 + HUS.stall.door.x1) / 2, HUS.stall.base + 8], label: $t('STALLET'), act: stallet },
+    { id: 'ridbana', r: [RIDBANA[0], RIDBANA[1], RIDBANA[2], RIDBANA[3]], go: [(GRIND.bana[0] + GRIND.bana[1]) / 2, RIDBANA[1] - 8], label: $t('RIDBANAN – HINDERBANAN'), act: hinderbanan },
+    { id: 'buss', r: [HALLPLATS.x - 12, HALLPLATS.y - 34, HALLPLATS.x + 14, HALLPLATS.y + 2], go: [HALLPLATS.x + 2, HALLPLATS.y + 6], label: $t('BUSS TILL STAN'), act: bussen },
+    { id: 'skylt', r: [ORTSSKYLT.x - 14, ORTSSKYLT.y - 30, ORTSSKYLT.x + 14, ORTSSKYLT.y + 2], go: [ORTSSKYLT.x, ORTSSKYLT.y + 8], label: $t('TILLBAKA TILL STAN'), act: tillStan },
   ];
   // ---------- gården: köpa, gå hem, ladugården, gårdsbutiken ----------
   function gardDorren() {
     if (g.home === 'gard') { play('door'); A.ridHast = false; A.roomSub = 0; A.go('room'); return; }
     const H = homeOf('gard');
     play('knock');
-    openModal('🏡 Gården till salu', `<p style="font-size:var(--f2);margin-top:0">Den gamle bonden ska flytta till stan och säljer Gården: falurött boningshus med lantkök, ladugård, silo, hönsgård och hagar – <b>djuren ingår</b> (6 höns, 2 kor och 4 får)!</p>
-      <p style="font-size:var(--f2)">🔑 Insats <b>${fmt(H.deposit)}</b> · hyra <b>${fmt(H.rent)}</b> i veckan · 😴 +${H.restBonus} energi när du sover<br>🐔 Fodra djuren varje dag, samla ägg, mjölka korna och klipp fåren – sälj i gårdsbutiken vid vägen.</p>
-      <p style="font-size:var(--f2)">💰 Du har <b>${fmt(g.money)}</b>${g.sambo ? '<br>🏠 Du bor ihop med någon – flytta isär först.' : ''}</p>`, [
-      { label: `🔑 Köp gården · ${fmt(H.deposit)}`, cls: 'btn-go', onClick: () => {
+    openModal($t('🏡 Gården till salu'), `<p style="font-size:var(--f2);margin-top:0">${$t('Den gamle bonden ska flytta till stan och säljer Gården: falurött boningshus med lantkök, ladugård, silo, hönsgård och hagar – <b>djuren ingår</b> (6 höns, 2 kor och 4 får)!')}</p>
+      <p style="font-size:var(--f2)">${$t`🔑 Insats <b>${fmt(H.deposit)}</b> · hyra <b>${fmt(H.rent)}</b> i veckan · 😴 +${H.restBonus} energi när du sover`}<br>${$t('🐔 Fodra djuren varje dag, samla ägg, mjölka korna och klipp fåren – sälj i gårdsbutiken vid vägen.')}</p>
+      <p style="font-size:var(--f2)">${$t`💰 Du har <b>${fmt(g.money)}</b>`}${g.sambo ? `<br>${$t('🏠 Du bor ihop med någon – flytta isär först.')}` : ''}</p>`, [
+      { label: $t`🔑 Köp gården · ${fmt(H.deposit)}`, cls: 'btn-go', onClick: () => {
         const r = g.moveTo('gard');
         if (!r.ok) { toast(r.msg, 'bad'); play('fel'); return; }
         closeModal(); play('fanfare'); synkaDjur();
-        toast('🚜 Grattis – du är bonde! Gå in och titta på ditt nya hem, och glöm inte att fodra djuren i ladugården.', 'good');
+        toast($t('🚜 Grattis – du är bonde! Gå in och titta på ditt nya hem, och glöm inte att fodra djuren i ladugården.'), 'good');
       } },
-      { label: 'Inte nu', onClick: closeModal },
+      { label: $t('Inte nu'), onClick: closeModal },
     ]);
   }
   function ladan() {
-    if (!agd()) { play('door'); toast('🐄 I ladugården luktar det hö. Det är den gamle bondens djur – köp Gården så blir de dina.'); return; }
+    if (!agd()) { play('door'); toast($t('🐄 I ladugården luktar det hö. Det är den gamle bondens djur – köp Gården så blir de dina.')); return; }
     play('door');
     const draw = () => {
       const B = g.bonde, matta = g.djurMatta(), idag = (B.fodrad | 0) === g.day;
-      const rader = Object.entries(GARDSDJUR).map(([k, D]) => `<div class="prow" style="grid-template-columns:auto 1fr auto"><span style="font-size:22px">${D.icon}</span><span class="nm">${D.fler}: <b>${B.djur[k] | 0}</b> av ${D.max}<br><small class="sp">${fmt(D.pris)} st · foder ${fmt(D.foder)}/dag</small></span><button class="btn btn-small btn-go" data-kop="${k}" ${(B.djur[k] | 0) >= D.max || g.money < D.pris ? 'disabled' : ''}>Köp</button></div>`).join('');
-      const dlg = openModal('🐄 Ladugården', `<p style="font-size:var(--f2);margin-top:0">${idag ? '✅ Djuren har fått mat i dag.' : matta ? '🌾 Djuren åt i går – ge dem mat i dag också.' : '<span class="bad">😟 Djuren är hungriga! De ger inga ägg, ingen mjölk och ingen ull förrän de får mat.</span>'}</p>
+      const rader = Object.entries(GARDSDJUR).map(([k, D]) => `<div class="prow" style="grid-template-columns:auto 1fr auto"><span style="font-size:22px">${D.icon}</span><span class="nm">${$t`${D.fler}: <b>${B.djur[k] | 0}</b> av ${D.max}`}<br><small class="sp">${$t`${fmt(D.pris)} st · foder ${fmt(D.foder)}/dag`}</small></span><button class="btn btn-small btn-go" data-kop="${k}" ${(B.djur[k] | 0) >= D.max || g.money < D.pris ? 'disabled' : ''}>${$t('Köp')}</button></div>`).join('');
+      const dlg = openModal($t('🐄 Ladugården'), `<p style="font-size:var(--f2);margin-top:0">${idag ? $t('✅ Djuren har fått mat i dag.') : matta ? $t('🌾 Djuren åt i går – ge dem mat i dag också.') : `<span class="bad">${$t('😟 Djuren är hungriga! De ger inga ägg, ingen mjölk och ingen ull förrän de får mat.')}</span>`}</p>
         <div class="plist">${rader}</div>
-        <p style="font-size:var(--f2)">🧶 Ull i ladugården: <b>${B.ull | 0} kg</b> · 💰 Du har <b>${fmt(g.money)}</b></p>`, [
-        ...(!idag ? [{ label: `🌾 Fodra djuren · ${fmt(g.fodderKostnad())}`, cls: 'btn-go', onClick: () => { const r = g.fodra(); if (!r.ok) { toast(r.msg, 'bad'); return; } play('ok'); toast(`🌾 Alla djur har fått mat (${fmt(r.kr)}).${r.glad ? ` +${r.glad} 😊` : ''}`, 'good'); draw(); } }] : []),
-        { label: 'Klar', onClick: closeModal },
+        <p style="font-size:var(--f2)">${$t`🧶 Ull i ladugården: <b>${B.ull | 0} kg</b> · 💰 Du har <b>${fmt(g.money)}</b>`}</p>`, [
+        ...(!idag ? [{ label: $t`🌾 Fodra djuren · ${fmt(g.fodderKostnad())}`, cls: 'btn-go', onClick: () => { const r = g.fodra(); if (!r.ok) { toast(r.msg, 'bad'); return; } play('ok'); toast($t`🌾 Alla djur har fått mat (${fmt(r.kr)}).` + (r.glad ? ` +${r.glad} 😊` : ''), 'good'); draw(); } }] : []),
+        { label: $t('Klar'), onClick: closeModal },
       ]);
-      dlg.querySelectorAll('[data-kop]').forEach((b) => (b.onclick = () => { const r = g.kopDjur(b.dataset.kop); if (!r.ok) { toast(r.msg, 'bad'); return; } play('ok'); synkaDjur(); toast(`${r.djur.icon} En ny ${r.djur.namn.toLowerCase()} springer ut i hagen!`, 'good'); draw(); }));
+      dlg.querySelectorAll('[data-kop]').forEach((b) => (b.onclick = () => { const r = g.kopDjur(b.dataset.kop); if (!r.ok) { toast(r.msg, 'bad'); return; } play('ok'); synkaDjur(); toast($t`${r.djur.icon} En ny ${r.djur.namn.toLowerCase()} springer ut i hagen!`, 'good'); draw(); }));
     };
     draw();
   }
   function butiken() {
-    if (!agd()) { toast('🥚 Gårdsbutiken: "Ägg och mjölk – lägg pengarna i burken." Burken är tom och hyllorna med.'); return; }
+    if (!agd()) { toast($t('🥚 Gårdsbutiken: "Ägg och mjölk – lägg pengarna i burken." Burken är tom och hyllorna med.')); return; }
     play('click');
     const draw = () => {
       const har = { agg: g.skafferi.agg | 0, mjolk: g.skafferi.mjolk | 0, ull: g.bonde.ull | 0 };
-      const rad = (k, icon, namn, enh) => `<div class="prow" style="grid-template-columns:auto 1fr auto auto"><span style="font-size:22px">${icon}</span><span class="nm">${namn}: <b>${har[k]} ${enh}</b><br><small class="sp">${fmt(GARD_PRIS[k])} per ${enh}</small></span>
-        <button class="btn btn-small" data-salj="${k}" data-n="1" ${har[k] < 1 ? 'disabled' : ''}>Sälj 1</button><button class="btn btn-small btn-go" data-salj="${k}" data-n="${har[k]}" ${har[k] < 1 ? 'disabled' : ''}>Sälj allt · ${fmt(har[k] * GARD_PRIS[k])}</button></div>`;
-      const dlg = openModal('🧺 Gårdsbutiken', `<p style="font-size:var(--f2);margin-top:0">Förbipasserande köper allt du ställer ut. Ägg och mjölk tas ur skafferiet – spara det du vill laga mat av!</p>
-        <div class="plist">${rad('agg', '🥚', 'Ägg', 'st')}${rad('mjolk', '🥛', 'Mjölk', 'l')}${rad('ull', '🧶', 'Ull', 'kg')}</div>`, [{ label: 'Klar', cls: 'btn-go', onClick: closeModal }]);
-      dlg.querySelectorAll('[data-salj]').forEach((b) => (b.onclick = () => { const r = g.saljGard(b.dataset.salj, +b.dataset.n); if (!r.ok) { toast(r.msg, 'bad'); return; } play('coin'); toast(`🧺 Sålt för ${fmt(r.kr)}!`, 'good'); draw(); }));
+      const rad = (k, icon, namn, enh) => `<div class="prow" style="grid-template-columns:auto 1fr auto auto"><span style="font-size:22px">${icon}</span><span class="nm">${namn}: <b>${har[k]} ${enh}</b><br><small class="sp">${$t`${fmt(GARD_PRIS[k])} per ${enh}`}</small></span>
+        <button class="btn btn-small" data-salj="${k}" data-n="1" ${har[k] < 1 ? 'disabled' : ''}>${$t('Sälj 1')}</button><button class="btn btn-small btn-go" data-salj="${k}" data-n="${har[k]}" ${har[k] < 1 ? 'disabled' : ''}>${$t`Sälj allt · ${fmt(har[k] * GARD_PRIS[k])}`}</button></div>`;
+      const dlg = openModal($t('🧺 Gårdsbutiken'), `<p style="font-size:var(--f2);margin-top:0">${$t('Förbipasserande köper allt du ställer ut. Ägg och mjölk tas ur skafferiet – spara det du vill laga mat av!')}</p>
+        <div class="plist">${rad('agg', '🥚', $t('Ägg'), $t('st'))}${rad('mjolk', '🥛', $t('Mjölk'), $t('l'))}${rad('ull', '🧶', $t('Ull'), $t('kg'))}</div>`, [{ label: $t('Klar'), cls: 'btn-go', onClick: closeModal }]);
+      dlg.querySelectorAll('[data-salj]').forEach((b) => (b.onclick = () => { const r = g.saljGard(b.dataset.salj, +b.dataset.n); if (!r.ok) { toast(r.msg, 'bad'); return; } play('coin'); toast($t`🧺 Sålt för ${fmt(r.kr)}!`, 'good'); draw(); }));
     };
     draw();
   }
@@ -164,7 +165,7 @@ export function makeLandet(A) {
     if (!r) return false;
     if (!r.ok) { toast(r.msg, 'bad'); play('fel'); return true; }
     play('ok');
-    const txt = d.sort === 'hona' ? `🥚 ${r.n} ägg till skafferiet!${r.full ? ' (Skafferiet är fullt – sälj i gårdsbutiken.)' : ''}` : d.sort === 'ko' ? `🥛 ${r.n} liter mjölk till skafferiet!${r.full ? ' (Skafferiet är fullt – sälj i gårdsbutiken.)' : ''}` : `🧶 ${r.n} kg ull till ladugården – sälj den i gårdsbutiken!`;
+    const txt = d.sort === 'hona' ? $t`🥚 ${r.n} ägg till skafferiet!` + (r.full ? $t(' (Skafferiet är fullt – sälj i gårdsbutiken.)') : '') : d.sort === 'ko' ? $t`🥛 ${r.n} liter mjölk till skafferiet!` + (r.full ? $t(' (Skafferiet är fullt – sälj i gårdsbutiken.)') : '') : $t`🧶 ${r.n} kg ull till ladugården – sälj den i gårdsbutiken!`;
     toast(txt + (r.glad ? ` +${r.glad} 😊` : ''), 'good');
     return true;
   }
@@ -178,12 +179,12 @@ export function makeLandet(A) {
       const idagMat = (H.matad | 0) === g.day, idagBorst = (H.borstad | 0) === g.day;
       const ros = HOPPKLASSER.map((K) => { const r = H.rosetter?.[K.id] || [0, 0, 0]; return r.some(Boolean) ? `${K.icon} ${r[0] ? '🥇' + r[0] : ''} ${r[1] ? '🥈' + r[1] : ''} ${r[2] ? '🥉' + r[2] : ''}` : ''; }).filter(Boolean).join(' · ');
       const dlg = openModal(`🐴 ${H.namn}`, `<div class="fd"><canvas class="fd-big" width="96" height="56"></canvas>
-        <div class="fd-side" style="font-size:var(--f2)">Trivsel<br><b>${stars(H.trivsel)}</b><br>${idagMat ? '✅ har ätit' : '🥕 hungrig'}<br>${idagBorst ? '✅ borstad' : '🪮 vill bli borstad'}</div></div>
-        <p style="font-size:var(--f2);margin:0">${H.trivsel < 45 ? '😟 En häst som inte trivs kan vägra vid hindren. Mata och borsta den varje dag!' : '😊 ' + H.namn + ' trivs och är redo att rida.'}${ros ? `<br>🎀 Rosetter: ${ros}` : ''}<br><small class="sp">Stallhyra ${g.home === 'gard' ? 'gratis – du har ju en gård' : fmt(HAST_STALL) + ' i veckan (gratis om du äger Gården)'}.</small></p>`, [
-        ...(!idagMat ? [{ label: `🥕 Mata · ${fmt(HAST_MAT)}`, cls: 'btn-go', onClick: () => { const r = g.mataHast(); if (!r.ok) { toast(r.msg, 'bad'); return; } play('ok'); toast(`🥕 ${H.namn} mumsar havre och hö!${r.glad ? ` +${r.glad} 😊` : ''}`, 'good'); draw(); } }] : []),
-        ...(!idagBorst ? [{ label: '🪮 Borsta', cls: 'btn-go', onClick: () => { const r = g.borstaHast(); if (!r.ok) { toast(r.msg, 'bad'); return; } play('ok'); toast(`🪮 ${H.namn} blänker!${r.glad ? ` +${r.glad} 😊` : ''}`, 'good'); draw(); } }] : []),
-        A.ridHast ? { label: '🏠 Ställ in hästen', onClick: () => { closeModal(); A.ridHast = false; applyRide(); toast(`🐴 ${H.namn} går ut i hagen.`); } } : { label: '🏇 Rid ut', cls: 'btn-gold', onClick: () => { closeModal(); A.ridHast = true; applyRide(); play('fanfare'); toast(`🏇 Du sitter upp på ${H.namn}! Rid till ridbanan för att hoppa.`, 'good'); } },
-        { label: 'Stäng', onClick: closeModal },
+        <div class="fd-side" style="font-size:var(--f2)">${$t('Trivsel')}<br><b>${stars(H.trivsel)}</b><br>${idagMat ? $t('✅ har ätit') : $t('🥕 hungrig')}<br>${idagBorst ? $t('✅ borstad') : $t('🪮 vill bli borstad')}</div></div>
+        <p style="font-size:var(--f2);margin:0">${H.trivsel < 45 ? $t('😟 En häst som inte trivs kan vägra vid hindren. Mata och borsta den varje dag!') : $t`😊 ${H.namn} trivs och är redo att rida.`}${ros ? `<br>${$t`🎀 Rosetter: ${ros}`}` : ''}<br><small class="sp">${g.home === 'gard' ? $t('Stallhyra gratis – du har ju en gård.') : $t`Stallhyra ${fmt(HAST_STALL)} i veckan (gratis om du äger Gården).`}</small></p>`, [
+        ...(!idagMat ? [{ label: $t`🥕 Mata · ${fmt(HAST_MAT)}`, cls: 'btn-go', onClick: () => { const r = g.mataHast(); if (!r.ok) { toast(r.msg, 'bad'); return; } play('ok'); toast($t`🥕 ${H.namn} mumsar havre och hö!` + (r.glad ? ` +${r.glad} 😊` : ''), 'good'); draw(); } }] : []),
+        ...(!idagBorst ? [{ label: $t('🪮 Borsta'), cls: 'btn-go', onClick: () => { const r = g.borstaHast(); if (!r.ok) { toast(r.msg, 'bad'); return; } play('ok'); toast($t`🪮 ${H.namn} blänker!` + (r.glad ? ` +${r.glad} 😊` : ''), 'good'); draw(); } }] : []),
+        A.ridHast ? { label: $t('🏠 Ställ in hästen'), onClick: () => { closeModal(); A.ridHast = false; applyRide(); toast($t`🐴 ${H.namn} går ut i hagen.`); } } : { label: $t('🏇 Rid ut'), cls: 'btn-gold', onClick: () => { closeModal(); A.ridHast = true; applyRide(); play('fanfare'); toast($t`🏇 Du sitter upp på ${H.namn}! Rid till ridbanan för att hoppa.`, 'good'); } },
+        { label: $t('Stäng'), onClick: closeModal },
       ]);
       const c = dlg.querySelector('.fd-big').getContext('2d');
       c.fillStyle = '#e8d4aa'; c.fillRect(0, 0, 96, 56); c.fillStyle = '#c8b48a'; c.fillRect(0, 48, 96, 8);
@@ -195,17 +196,17 @@ export function makeLandet(A) {
     let farg = 'fux', namn = HASTNAMN[Math.floor(Math.random() * HASTNAMN.length)];
     const draw = () => {
       const sw = HASTFARGER.map((f) => `<button class="btn btn-small ${f.id === farg ? 'btn-gold' : ''}" data-farg="${f.id}" title="${esc(f.blurb)}">${esc(f.namn)}</button>`).join(' ');
-      const dlg = openModal('🐴 Stallet – hästar till salu', `<div class="fd"><canvas class="fd-big" width="96" height="56"></canvas>
-        <div class="fd-side"><span class="fb-lbl">Färg</span><div>${sw}</div><span class="fb-lbl" style="margin-top:6px">Namn</span><input class="hast-namn" maxlength="14" value="${esc(namn)}" style="font:var(--f2) var(--font);width:120px;padding:2px 4px"></div></div>
-        <p style="font-size:var(--f2);margin:0">Ridskolan säljer en snäll häst som är van vid hinder. Den bor i stallet – mata och borsta den varje dag, rid på landet och hoppa på hinderbanan!<br>💰 Du har <b>${fmt(g.money)}</b> · Pris <b>${fmt(HAST_PRIS)}</b> · stallhyra ${g.home === 'gard' ? 'gratis (du har en gård)' : fmt(HAST_STALL) + '/vecka'}</p>`, [
-        { label: `🐴 Köp · ${fmt(HAST_PRIS)}`, cls: 'btn-go', onClick: () => {
+      const dlg = openModal($t('🐴 Stallet – hästar till salu'), `<div class="fd"><canvas class="fd-big" width="96" height="56"></canvas>
+        <div class="fd-side"><span class="fb-lbl">${$t('Färg')}</span><div>${sw}</div><span class="fb-lbl" style="margin-top:6px">${$t('Namn')}</span><input class="hast-namn" maxlength="14" value="${esc(namn)}" style="font:var(--f2) var(--font);width:120px;padding:2px 4px"></div></div>
+        <p style="font-size:var(--f2);margin:0">${$t('Ridskolan säljer en snäll häst som är van vid hinder. Den bor i stallet – mata och borsta den varje dag, rid på landet och hoppa på hinderbanan!')}<br>${$t`💰 Du har <b>${fmt(g.money)}</b> · Pris <b>${fmt(HAST_PRIS)}</b>`} · ${g.home === 'gard' ? $t('stallhyra gratis (du har en gård)') : $t`stallhyra ${fmt(HAST_STALL)}/vecka`}</p>`, [
+        { label: $t`🐴 Köp · ${fmt(HAST_PRIS)}`, cls: 'btn-go', onClick: () => {
           const r = g.buyHast(farg, dlg.querySelector('.hast-namn')?.value || namn);
           if (!r.ok) { toast(r.msg, 'bad'); play('fel'); return; }
           closeModal(); play('fanfare');
           add('hast', HASTHAGE, 1, { egen: true }); djur[djur.length - 1].farg = farg;
-          toast(`🐴 Grattis till ${r.hast.namn}! Hästen står i hagen – klicka på stallet för att rida ut.`, 'good');
+          toast($t`🐴 Grattis till ${r.hast.namn}! Hästen står i hagen – klicka på stallet för att rida ut.`, 'good');
         } },
-        { label: 'Stäng', onClick: closeModal },
+        { label: $t('Stäng'), onClick: closeModal },
       ]);
       dlg.querySelector('.hast-namn').oninput = (e) => { namn = e.target.value; };
       const c = dlg.querySelector('.fd-big').getContext('2d');
@@ -217,15 +218,15 @@ export function makeLandet(A) {
   }
   function hinderbanan() {
     const H = g.hast;
-    if (!H) { toast('🏇 Hinderbanan – köp en häst i stallet så kan du hoppa här!'); return; }
-    if (!A.ridHast) { toast(`🏇 Hämta ${H.namn} i stallet och rid hit först!`); return; }
-    if (g.energy < 15) { toast('😪 Du är för trött för att hoppa i dag.', 'bad'); return; }
+    if (!H) { toast($t('🏇 Hinderbanan – köp en häst i stallet så kan du hoppa här!')); return; }
+    if (!A.ridHast) { toast($t`🏇 Hämta ${H.namn} i stallet och rid hit först!`); return; }
+    if (g.energy < 15) { toast($t('😪 Du är för trött för att hoppa i dag.'), 'bad'); return; }
     const rader = HOPPKLASSER.map((K, i) => {
       const last = i > (H.klass | 0), r = H.rosetter?.[K.id] || [0, 0, 0];
-      return `<div class="prow" style="grid-template-columns:auto 1fr auto"><span style="font-size:22px">${K.icon}</span><span class="nm">${esc(K.namn)} – ${K.hinder} hinder<br><small class="sp">${last ? `🔒 gör en felfri runda i ${esc(HOPPKLASSER[i - 1].namn.toLowerCase())} först` : `1:a pris ${fmt(K.pris[0])}${r.some(Boolean) ? ` · 🥇${r[0]} 🥈${r[1]} 🥉${r[2]}` : ''}`}</small></span>
-        <button class="btn btn-small btn-go" data-klass="${K.id}" ${last ? 'disabled' : ''}>Hoppa</button></div>`;
+      return `<div class="prow" style="grid-template-columns:auto 1fr auto"><span style="font-size:22px">${K.icon}</span><span class="nm">${$t`${esc(K.namn)} – ${K.hinder} hinder`}<br><small class="sp">${last ? $t`🔒 gör en felfri runda i ${esc(HOPPKLASSER[i - 1].namn.toLowerCase())} först` : `${$t`1:a pris ${fmt(K.pris[0])}`}${r.some(Boolean) ? ` · 🥇${r[0]} 🥈${r[1]} 🥉${r[2]}` : ''}`}</small></span>
+        <button class="btn btn-small btn-go" data-klass="${K.id}" ${last ? 'disabled' : ''}>${$t('Hoppa')}</button></div>`;
     }).join('');
-    const dlg = openModal('🏆 Hinderbanan', `<p style="font-size:var(--f2);margin-top:0">Rid runt banan och hoppa över alla hinder – tryck precis innan hindret! Varje rivning eller vägran ger 4 fel. Du tävlar mot ridskolans ryttare om rosetterna och prispengarna.</p><div class="plist">${rader}</div>`, [{ label: 'Inte nu', onClick: closeModal }]);
+    const dlg = openModal($t('🏆 Hinderbanan'), `<p style="font-size:var(--f2);margin-top:0">${$t('Rid runt banan och hoppa över alla hinder – tryck precis innan hindret! Varje rivning eller vägran ger 4 fel. Du tävlar mot ridskolans ryttare om rosetterna och prispengarna.')}</p><div class="plist">${rader}</div>`, [{ label: $t('Inte nu'), onClick: closeModal }]);
     dlg.querySelectorAll('[data-klass]').forEach((b) => (b.onclick = () => { closeModal(); startHopp(b.dataset.klass); }));
   }
   function startHopp(klass) {
@@ -233,9 +234,9 @@ export function makeLandet(A) {
     fade.phase = 1; fade.cb = () => A.go('hopp', { klass, onDone: (res) => efterHopp(A, res) });
   }
   function bussen() {
-    openModal('🚌 Busshållplats LANDET', `<p style="font-size:var(--f2);margin-top:0">Linje 4 går till <b>Betongtorget</b> i förorten. Biljetten kostar ${fmt(10)}.</p>`, [
-      { label: '🚌 Åk till stan', cls: 'btn-go', onClick: () => { closeModal(); if (g.money < 10) { toast('Du har inte råd med bussen.', 'bad'); return; } g.money -= 10; g.passTime(15); g.save(); play('door'); toTown(busStop ? [busStop.x, busStop.y + 8] : [CITY.W - 40, 296]); } },
-      { label: 'Gå', onClick: closeModal },
+    openModal($t('🚌 Busshållplats LANDET'), `<p style="font-size:var(--f2);margin-top:0">${$t`Linje 4 går till <b>Betongtorget</b> i förorten. Biljetten kostar ${fmt(10)}.`}</p>`, [
+      { label: $t('🚌 Åk till stan'), cls: 'btn-go', onClick: () => { closeModal(); if (g.money < 10) { toast($t('Du har inte råd med bussen.'), 'bad'); return; } g.money -= 10; g.passTime(15); g.save(); play('door'); toTown(busStop ? [busStop.x, busStop.y + 8] : [CITY.W - 40, 296]); } },
+      { label: $t('Gå'), onClick: closeModal },
     ]);
   }
   // tillbaka in i staden vid stadsgränsen – på närmaste trottoar (inte mitt i körbanan)
@@ -246,7 +247,7 @@ export function makeLandet(A) {
   }
   function toTown(pos) {
     if (fade.phase === 1) return;
-    if (A.ridHast) { A.ridHast = false; toast(`🐴 Du ställer in ${g.hast?.namn || 'hästen'} i stallet.`); }
+    if (A.ridHast) { A.ridHast = false; toast(g.hast?.namn ? $t`🐴 Du ställer in ${g.hast.namn} i stallet.` : $t('🐴 Du ställer in hästen i stallet.')); }
     fade.phase = 1; fade.cb = () => { A.cityPos = pos; A.go('city'); };
   }
   const spotAt = (x, y) => spots().find((s) => x >= s.r[0] && x <= s.r[2] && y >= s.r[1] && y <= s.r[3]);
@@ -281,14 +282,14 @@ export function makeLandet(A) {
     const { x, y } = ORTSSKYLT;
     ctx.fillStyle = '#5a5e66'; ctx.fillRect(x - 1, y - 18, 2, 18);
     ctx.fillStyle = '#1e1a24'; ctx.fillRect(x - 15, y - 31, 30, 14); ctx.fillStyle = '#f4f1ea'; ctx.fillRect(x - 14, y - 30, 28, 12);
-    ctxText(ctx, SMALL, 'PIXEL', x - 10, y - 28, '#1e1a24'); ctxText(ctx, SMALL, 'STADEN', x - 12, y - 23, '#1e1a24');
+    ctxText(ctx, SMALL, $t('PIXEL'), x - 10, y - 28, '#1e1a24'); ctxText(ctx, SMALL, $t('STADEN'), x - 12, y - 23, '#1e1a24');
     ctx.fillStyle = '#d8343c'; for (let i = 0; i < 26; i++) ctx.fillRect(x - 13 + i, y - 19 - Math.round(i * 0.42), 2, 1);
   };
   const drawHallplats = (ctx) => {
     const { x, y } = HALLPLATS;
     ctx.fillStyle = '#5a5e66'; ctx.fillRect(x, y - 30, 2, 30);
     ctx.fillStyle = '#f0c030'; ctx.fillRect(x - 6, y - 34, 14, 10); ctx.fillStyle = '#1e1a24'; ctx.fillRect(x - 6, y - 34, 14, 1);
-    ctxText(ctx, SMALL, 'BUSS', x - 5, y - 32, '#1e1a24');
+    ctxText(ctx, SMALL, $t('BUSS'), x - 5, y - 32, '#1e1a24');
     ctx.fillStyle = '#8a5a30'; ctx.fillRect(x + 6, y - 7, 18, 3); ctx.fillRect(x + 7, y - 4, 2, 4); ctx.fillRect(x + 21, y - 4, 2, 4);   // bänken
   };
   // gårdsbutiken: ett litet stånd med tak, lådor med ägg och mjölkflaskor och en skylt
@@ -303,7 +304,7 @@ export function makeLandet(A) {
       ctx.fillStyle = '#c8a870'; ctx.fillRect(x - 13, y - 13, 10, 4); for (let i = 0; i < 4; i++) { ctx.fillStyle = '#f4ead8'; ctx.fillRect(x - 12 + i * 2, y - 14, 2, 2); }
       for (let i = 0; i < 3; i++) { ctx.fillStyle = '#f4f4f0'; ctx.fillRect(x + 2 + i * 4, y - 15, 3, 6); ctx.fillStyle = '#3a7bd5'; ctx.fillRect(x + 2 + i * 4, y - 16, 3, 1); }
     }
-    ctx.fillStyle = '#f4f1ea'; ctx.fillRect(x - 13, y - 21, 26, 7); ctxText(ctx, SMALL, 'ÄGG', x - 10, y - 20, '#5a3a1e');
+    ctx.fillStyle = '#f4f1ea'; ctx.fillRect(x - 13, y - 21, 26, 7); ctxText(ctx, SMALL, $t('ÄGG'), x - 10, y - 20, '#5a3a1e');
   };
   const drawDomartorn = (ctx) => { const p = husPos('domartorn'); ctx.drawImage(husBild('domartorn', false), p.x, p.y); };
   const drawStubb = (ctx) => {
@@ -382,7 +383,7 @@ export function makeLandet(A) {
       }
       ctx.save(); ctx.translate(-cx, -cy); talk.draw(ctx, { x0: cx, x1: cx + VW }); ctx.restore();
       // områdesskylten när man kommer
-      if (banner < 4) { const a = banner < 0.4 ? banner / 0.4 : banner > 3.4 ? (4 - banner) / 0.6 : 1; ctx.globalAlpha = Math.max(0, a); const s = 'LANDET', s2 = 'KOR, FÅR OCH FRISK LUFT', w = Math.max(textW(BIG, s, 2), textW(SMALL, s2)) + 20; ctx.fillStyle = 'rgba(20,18,26,.85)'; ctx.fillRect((VW - w) >> 1, 26, w, 30); ctxText(ctx, BIG, s, (VW - textW(BIG, s, 2)) >> 1, 30, '#8edc4c', 2); ctxText(ctx, SMALL, s2, (VW - textW(SMALL, s2)) >> 1, 48, '#f4f1ea'); ctx.globalAlpha = 1; }
+      if (banner < 4) { const a = banner < 0.4 ? banner / 0.4 : banner > 3.4 ? (4 - banner) / 0.6 : 1; ctx.globalAlpha = Math.max(0, a); const s = $t('LANDET'), s2 = $t('KOR, FÅR OCH FRISK LUFT'), w = Math.max(textW(BIG, s, 2), textW(SMALL, s2)) + 20; ctx.fillStyle = 'rgba(20,18,26,.85)'; ctx.fillRect((VW - w) >> 1, 26, w, 30); ctxText(ctx, BIG, s, (VW - textW(BIG, s, 2)) >> 1, 30, '#8edc4c', 2); ctxText(ctx, SMALL, s2, (VW - textW(SMALL, s2)) >> 1, 48, '#f4f1ea'); ctx.globalAlpha = 1; }
       // namnet på det man pekar på
       const s = hover && spotAt(hover.x + cx, hover.y + cy);
       if (s) { const w = textW(SMALL, s.label) + 10, x = Math.round(Math.max(2, Math.min(VW - w - 2, hover.x - w / 2))), y = Math.max(2, hover.y - 22); ctx.fillStyle = 'rgba(20,18,26,.9)'; ctx.fillRect(x, y, w, 11); ctxText(ctx, SMALL, s.label, x + 5, y + 3, '#ffd23f'); }
@@ -435,13 +436,14 @@ function efterHopp(A, res) {
   A.go('landet');
   if (!r) return;
   const K = HOPPKLASSER.find((k) => k.id === res.klass);
-  const ros = ['🥇 1:a plats – blå rosett!', '🥈 2:a plats – röd rosett!', '🥉 3:e plats – gul rosett!'][r.plats - 1] || `${r.plats}:e plats`;
-  const rows = r.alla.map((x, i) => `<div style="display:flex;justify-content:space-between;font-size:var(--f2)"><span>${i + 1}. ${x.du ? `<b>Du</b> på ${esc(x.hast)}` : `${esc(x.namn)} på ${esc(x.hast)}`}</span><b>${x.fel} fel · ${x.tid.toFixed(1).replace('.', ',')} s</b></div>`).join('');
+  const ros = [$t('🥇 1:a plats – blå rosett!'), $t('🥈 2:a plats – röd rosett!'), $t('🥉 3:e plats – gul rosett!')][r.plats - 1] || $t`${r.plats}:e plats`;
+  const rows = r.alla.map((x, i) => `<div style="display:flex;justify-content:space-between;font-size:var(--f2)"><span>${i + 1}. ${x.du ? $t`<b>Du</b> på ${esc(x.hast)}` : $t`${esc(x.namn)} på ${esc(x.hast)}`}</span><b>${$t`${x.fel} fel · ${x.tid.toFixed(1).replace('.', ',')} s`}</b></div>`).join('');
   play(r.plats === 1 ? 'fanfare' : 'ok');
   setTimeout(() => openModal(`🏆 ${K.namn}: ${ros}`, `${rows}
     <div style="border-top:3px dashed var(--ink);margin:8px 0"></div>
-    <p style="font-size:var(--f2);margin:0">${res.rivna ? `🪵 ${res.rivna} ${res.rivna === 1 ? 'rivning' : 'rivningar'}. ` : ''}${res.vagran ? `🐴 ${res.vagran} ${res.vagran === 1 ? 'vägran' : 'vägringar'} – mata och borsta hästen så trivs den bättre. ` : ''}${r.felfri ? '✨ Felfri runda! ' : ''}${r.pris ? `💰 Prispengar: <b>${fmt(r.pris)}</b>. ` : ''}${r.upplast ? `<br>🔓 <b>${esc(HOPPKLASSER[HOPPKLASSER.indexOf(K) + 1].namn)}</b> är öppen nu!` : ''}${r.glad ? ` +${r.glad} 😊` : ''}</p>`,
-  [{ label: '🎉 Härligt!', cls: 'btn-go', onClick: closeModal }]), 450);
+    <p style="font-size:var(--f2);margin:0">${res.rivna ? (res.rivna === 1 ? $t('🪵 1 rivning. ') : $t`🪵 ${res.rivna} rivningar. `) : ''}${res.vagran ? (res.vagran === 1 ? $t('🐴 1 vägran – mata och borsta hästen så trivs den bättre. ') : $t`🐴 ${res.vagran} vägringar – mata och borsta hästen så trivs den bättre. `) : ''}${r.felfri ? $t('✨ Felfri runda! ') : ''}${r.pris ? $t`💰 Prispengar: <b>${fmt(r.pris)}</b>. ` : ''}${r.upplast ? `<br>${$t`🔓 <b>${esc(HOPPKLASSER[HOPPKLASSER.indexOf(K) + 1].namn)}</b> är öppen nu!`}` : ''}${r.glad ? ` +${r.glad} 😊` : ''}</p>`,
+  [{ label: $t('🎉 Härligt!'), cls: 'btn-go', onClick: closeModal }]), 450);
+
 }
 // marken målas en gång (dag) – nattversionen är samma bild, mörkare och blåare
 let DAY = null, NIGHT = null;

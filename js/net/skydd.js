@@ -7,6 +7,7 @@
 //            och blockerar spelaren direkt
 // world.js filtrerar (worldFolksHere, playersList, jobbkanalen, pratbubblorna), voice.js vägrar röst.
 import { openModal, closeModal, toast, esc } from '../core/ui.js';
+import { $t, $n } from '../core/i18n.js';
 
 export const SUPPORT = 'hello@8bitcat.io';
 const KEY = 'snabbfilen_blockerade';
@@ -52,23 +53,24 @@ export function loggaSay(key, text) {
 const tid = (t) => new Date(t).toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
 
 // ---------- anmäl ----------
+// (texten $n: visas översatt i rutan, men mejlet till oss får den svenska)
 const SKAL = [
-  ['elak', 'Var elak mot mig eller andra'],
-  ['ord', 'Fula ord eller ett olämpligt namn'],
-  ['stor', 'Stör, följer efter eller tjatar'],
-  ['annat', 'Något annat'],
+  ['elak', $n('Var elak mot mig eller andra')],
+  ['ord', $n('Fula ord eller ett olämpligt namn')],
+  ['stor', $n('Stör, följer efter eller tjatar')],
+  ['annat', $n('Något annat')],
 ];
 // p = { key, namn } · info = { mig, version, world }
 export function openAnmal(p, info = {}) {
   const namn = String(p?.namn || '?');
-  const dlg = openModal(`⚑ Anmäl ${esc(namn)}`, `
-    <p style="font-size:var(--f2);margin-top:0">Vad hände? Anmälan går till oss som gör spelet (<b>${SUPPORT}</b>) och <b>${esc(namn)}</b> blir blockerad direkt – du ser och hör inte hen längre.</p>
-    <div class="anmal-skal" style="display:grid;gap:6px;margin:8px 0">${SKAL.map(([id, txt], i) => `<label style="font-size:var(--f2);display:flex;gap:8px;align-items:center"><input type="radio" name="anmal-skal" value="${id}"${i === 0 ? ' checked' : ''}> ${esc(txt)}</label>`).join('')}</div>
-    <textarea class="anmal-text" maxlength="400" rows="3" placeholder="Berätta gärna lite mer (frivilligt)" style="width:100%;font:var(--f2) var(--font);padding:6px;border:3px solid var(--ink)"></textarea>
-    <p style="font-size:var(--f1);color:#6b6474">Öppnas ingen e-post kan du skriva själv till ${SUPPORT}. Be gärna en vuxen om hjälp.</p>`,
+  const dlg = openModal($t`⚑ Anmäl ${esc(namn)}`, `
+    <p style="font-size:var(--f2);margin-top:0">${$t`Vad hände? Anmälan går till oss som gör spelet (<b>${SUPPORT}</b>) och <b>${esc(namn)}</b> blir blockerad direkt – du ser och hör inte hen längre.`}</p>
+    <div class="anmal-skal" style="display:grid;gap:6px;margin:8px 0">${SKAL.map(([id, txt], i) => `<label style="font-size:var(--f2);display:flex;gap:8px;align-items:center"><input type="radio" name="anmal-skal" value="${id}"${i === 0 ? ' checked' : ''}> ${esc($t(txt))}</label>`).join('')}</div>
+    <textarea class="anmal-text" maxlength="400" rows="3" placeholder="${$t('Berätta gärna lite mer (frivilligt)')}" style="width:100%;font:var(--f2) var(--font);padding:6px;border:3px solid var(--ink)"></textarea>
+    <p style="font-size:var(--f1);color:#6b6474">${$t`Öppnas ingen e-post kan du skriva själv till ${SUPPORT}. Be gärna en vuxen om hjälp.`}</p>`,
   [
-    { label: 'Avbryt', onClick: closeModal },
-    { label: '⚑ Anmäl och blockera', cls: 'btn-red', onClick: () => {
+    { label: $t('Avbryt'), onClick: closeModal },
+    { label: $t('⚑ Anmäl och blockera'), cls: 'btn-red', onClick: () => {
       const skal = dlg.querySelector('input[name="anmal-skal"]:checked')?.value || 'annat';
       const extra = String(dlg.querySelector('.anmal-text')?.value || '').slice(0, 400);
       const logg = (LOGG.get(String(p.key)) || []).map((l) => `  ${tid(l.t)}  "${l.text}"`).join('\n') || '  (inget skrivet)';
@@ -79,7 +81,7 @@ export function openAnmal(p, info = {}) {
       ].join('\n');
       block(p.key, namn);
       closeModal();
-      toast(`⚑ Tack! ${namn} är blockerad. Skicka mejlet som öppnas så tittar vi på det.`, 'good wrap');
+      toast($t`⚑ Tack! ${namn} är blockerad. Skicka mejlet som öppnas så tittar vi på det.`, 'good wrap');
       const url = `mailto:${SUPPORT}?subject=${encodeURIComponent(`Anmälan: ${namn}`)}&body=${encodeURIComponent(body)}`;
       try { if (window.__sfMailto) window.__sfMailto(url); else window.location.href = url; } catch { /* adressen står i rutan */ }   // (__sfMailto: tools/skydd-test.mjs)
       info.efter?.();

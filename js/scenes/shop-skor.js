@@ -55,6 +55,7 @@ import { play } from '../core/sound.js';
 import { saveAvatar } from '../core/avatar.js';
 import { itemsForSlot, lookForItem, isWorn, groupOf } from '../data/wardrobe.js';
 import { createWalker, selfDrawable, folkDrawables, createSpeech, nameTag, WALK_SEQ } from './walkable.js';
+import { $t, $n } from '../core/i18n.js';
 
 // ======================= koppling till spelet =======================
 // Nya katalogsystemet (game.js efter integrationen): ownsItem(id) / itemPrice(item) / buyItem(id).
@@ -67,11 +68,11 @@ function shopApi(g) {
     price: (it) => (has('itemPrice') ? g.itemPrice(it) : Math.round(it.price * (rea() ? 0.75 : 1))),
     rea: (it) => api.price(it) < it.price,
     buy(it) {
-      if (!it) return { ok: false, msg: 'Finns inte.' };
-      if (has('buyItem')) return g.buyItem(it.id) || { ok: false, msg: 'Köpet gick inte.' };
-      if (api.owns(it)) return { ok: false, msg: 'Dem har du redan!' };
+      if (!it) return { ok: false, msg: $t('Finns inte.') };
+      if (has('buyItem')) return g.buyItem(it.id) || { ok: false, msg: $t('Köpet gick inte.') };
+      if (api.owns(it)) return { ok: false, msg: $t('Dem har du redan!') };
       const price = api.price(it);
-      if (g.money < price) return { ok: false, msg: 'Du har inte råd – dags att jobba ett pass!' };
+      if (g.money < price) return { ok: false, msg: $t('Du har inte råd – dags att jobba ett pass!') };
       g.money -= price;
       if (!Array.isArray(g.wardrobe)) g.wardrobe = [];
       g.wardrobe.push(it.id);
@@ -87,9 +88,9 @@ let VW = 384; // mobilfyllning: vyn följer skärmen, klampad till butiken
 const W = 640, H = 216, WALL_Y = 92;
 const syncView = (A) => { VW = Math.max(384, Math.min(A.W || 384, W)); };
 const UNITS = {
-  A: { x0: 8, x1: 196, top: 12, rows: [40, 60, 80], name: 'SNEAKERS', where: 'Sneakersväggen' },
-  B: { x0: 392, x1: 514, top: 12, rows: [54, 80], name: 'KÄNGOR + STÖVLAR', where: 'Kängor och stövlar' },
-  C: { x0: 522, x1: 632, top: 12, rows: [40, 60, 80], name: 'FINA SKOR', where: 'Fina skor' },
+  A: { x0: 8, x1: 196, top: 12, rows: [40, 60, 80], name: $t('SNEAKERS'), where: $n('Sneakersväggen') },
+  B: { x0: 392, x1: 514, top: 12, rows: [54, 80], name: $t('KÄNGOR + STÖVLAR'), where: $n('Kängor och stövlar') },
+  C: { x0: 522, x1: 632, top: 12, rows: [40, 60, 80], name: $t('FINA SKOR'), where: $n('Fina skor') },
 };
 const MIRROR = { x0: 203, x1: 229, top: 17, y: 90 };        // helfigursspegeln (ram)
 const GLASS = { x0: 207, x1: 225, y0: 24, y1: 87 };
@@ -154,7 +155,7 @@ const SHOW = [
   ['animalSlippers', 'TABLE', 0, [['#b98a5e', '#f28bb3'], ['#f4f1ea', '#f28bb3']]],
   ['woolSocks', 'TABLE', 0, [['#b9b3ab', '#f4f1ea'], ['#c9323a', '#f4f1ea']]],
 ];
-const WHERE = { A: UNITS.A.where, B: UNITS.B.where, C: UNITS.C.where, PEG: 'Sportstället', TABLE: 'Hemmabordet', NEWS: 'Nyheter' };
+const WHERE = { A: UNITS.A.where, B: UNITS.B.where, C: UNITS.C.where, PEG: $n('Sportstället'), TABLE: $n('Hemmabordet'), NEWS: $n('Nyheter') };
 
 // ======================= skorna på hyllorna =======================
 // Figurens skor är bara 5×2 px, så varje modell (SHOE_REG-id) har en egen sidovy för hyllan
@@ -558,7 +559,7 @@ function outline(P) {
   }
 }
 // text i spelets pixeltypsnitt: versaler, ÅÄÖÉ, siffror och några tecken
-const safeTxt = (s) => String(s).replace(/­/g, '').toUpperCase().replace(/[–—]/g, '-').replace(/&/g, '+').replace(/[^A-ZÅÄÖÉ0-9 \-+!.:,?/%'=]/g, '');
+const safeTxt = (s) => String(s).replace(/­/g, '').toUpperCase().replace(/[–—]/g, '-').replace(/&/g, '+').replace(/[^A-ZÅÄÖÉ0-9 \-+!.:,?/%'=ÁÀÂÃÇĆÈÊËÍÌÎÏÑŃÓÒÔÕŚŹŻÚÙÛÜŸÝĄĘŁŒÆ¡¿€$]/g, '');
 const plain = (s) => String(s).replace(/­/g, '');
 const isNight = (h) => h >= 19.5 || h < 6.5;
 function darkness(hour) {
@@ -574,11 +575,11 @@ const KUND = { skin: '#f6d7bf', hair: '#b7392b', style: 'wavy', top: 'cardigan',
 const SHINER = { skin: '#c68a5c', hair: '#b9b3ab', style: 'short', beard: 'mustache', top: 'waistcoat', shirt: '#3a2a22', accent: '#f4f1ea', hat: 'flatCap', cap: '#5a5048', bottom: 'suitPants', pants: '#2f3440', shoeType: 'dressShoes', shoes: '#1c1c1c', apron: true, build: 5, glasses: false, bag: null, phones: false };
 const KID = { kid: true, build: 4, skin: '#eec3a0', hair: '#d9a95c', style: 'pigtails', top: 'tee', shirt: '#f0b429', accent: '#f4f1ea', bottom: 'dungareeShorts', pants: '#6a8fc4', shoeType: 'lightUp', shoes: '#f28bb3', shoes2: '#f4f1ea', glasses: false, hat: null, bag: null, phones: false, beard: false };
 const KID_ROUTE = [[132, 176, 'up', 2.6], [178, 198, 'down', 1.2], [238, 202, 'left', 1.5], [150, 190, 'up', 1.2]];
-const KUND_SAYS = ['De här klämmer lite vid tån...', 'Har ni dem i storlek 38?', 'Hmm, bruna eller svarta?', 'Jag tar nog stövletterna!', 'Så sköna! 😊'];
-const KID_SAYS = ['Titta, de blinkar! ✨', 'Mamma, titta på mina skor!', 'Jag springer jättefort i dem!', 'Pip pip! 👟'];
-const KUND_TO_KID = ['Jättefina, gumman!', 'Ja, jag ser! 😄', 'Spring inte in i spegeln nu!'];
-const CLERK_SAYS = ['Hej och välkommen! 👋 Sätt dig på provpallen så får du se alla skor.', 'Klicka på en sko så får du prova den på dig.', 'Behöver du hjälp med storleken? Fotmätaren ligger vid pallen!'];
-const SHINE_SAYS = ['Blanka som speglar! ✨ Välkommen åter!', 'Så där – nu glänser de! ✨', 'Klart! Nu kan du spegla dig i tårna. ✨'];
+const KUND_SAYS = [$t('De här klämmer lite vid tån...'), $t('Har ni dem i storlek 38?'), $t('Hmm, bruna eller svarta?'), $t('Jag tar nog stövletterna!'), $t('Så sköna! 😊')];
+const KID_SAYS = [$t('Titta, de blinkar! ✨'), $t('Mamma, titta på mina skor!'), $t('Jag springer jättefort i dem!'), $t('Pip pip! 👟')];
+const KUND_TO_KID = [$t('Jättefina, gumman!'), $t('Ja, jag ser! 😄'), $t('Spring inte in i spegeln nu!')];
+const CLERK_SAYS = [$t('Hej och välkommen! 👋 Sätt dig på provpallen så får du se alla skor.'), $t('Klicka på en sko så får du prova den på dig.'), $t('Behöver du hjälp med storleken? Fotmätaren ligger vid pallen!')];
+const SHINE_SAYS = [$t('Blanka som speglar! ✨ Välkommen åter!'), $t('Så där – nu glänser de! ✨'), $t('Klart! Nu kan du spegla dig i tårna. ✨')];
 
 // ======================= scenen =======================
 export function makeShopSkor(A) {
@@ -736,21 +737,21 @@ export function makeShopSkor(A) {
   };
   const sayMe = (s, secs) => talkMe.say(s, meAt, secs);
   const spots = [
-    { id: 'barn', label: 'BARNET I BLINKSKORNA', dyn: () => [kid.px - 7, kid.py - 30, kid.px + 7, kid.py + 1], go: () => [kid.px + 16, kid.py + 2], act: () => { play('click'); talkKid.say(KID_SAYS[Math.floor(t) % KID_SAYS.length], kidAt, 2.6, { voice: KID }); } },
-    { id: 'kund', label: 'KUNDEN PROVAR STÖVLETTER', r: [SEAT_KUND - 9, BENCH.y - 36, SEAT_KUND + 9, BENCH.y + 1], go: [SEAT_KUND - 20, BENCH.y + 14], act: () => { play('click'); talkKund.say(KUND_SAYS[Math.floor(t * 3) % KUND_SAYS.length], kundAt, 3, { voice: KUND }); } },
+    { id: 'barn', label: $t('BARNET I BLINKSKORNA'), dyn: () => [kid.px - 7, kid.py - 30, kid.px + 7, kid.py + 1], go: () => [kid.px + 16, kid.py + 2], act: () => { play('click'); talkKid.say(KID_SAYS[Math.floor(t) % KID_SAYS.length], kidAt, 2.6, { voice: KID }); } },
+    { id: 'kund', label: $t('KUNDEN PROVAR STÖVLETTER'), r: [SEAT_KUND - 9, BENCH.y - 36, SEAT_KUND + 9, BENCH.y + 1], go: [SEAT_KUND - 20, BENCH.y + 14], act: () => { play('click'); talkKund.say(KUND_SAYS[Math.floor(t * 3) % KUND_SAYS.length], kundAt, 3, { voice: KUND }); } },
     ...groups.map((G) => ({ id: G.id, group: G, r: G.r, go: G.go })),
-    { id: 'dorr', label: 'UT TILL STADEN', r: [DOOR.x0 - 2, DOOR.top - 10, DOOR.x1 + 2, WALL_Y + 6], go: DOOR_SPOT, act: () => { play('door'); A.go('city'); } },
-    { id: 'spegel', label: 'SPEGELN', r: [MIRROR.x0, MIRROR.top, MIRROR.x1, MIRROR.y], go: [216, WALL_Y + 12], act: () => { walker.dir = 'up'; play('click'); sayMe(mirrorLine()); } },
-    { id: 'kassa', label: 'KASSAN', r: [DESK.x0, 64, DESK.x1, DESK.y], go: PAY, act: () => { play('click'); talkClerk.say(CLERK_SAYS[Math.floor(t) % CLERK_SAYS.length], clerkAt, 4, { voice: CLERK }); } },
-    { id: 'lager', label: 'KARTONGVÄGGEN', r: [BOXW.x0, 12, BOXW.x1, 64], go: PAY, act: () => { play('click'); talkClerk.say('Alla storlekar finns i kartongerna – från 20 till 46! 📦', clerkAt, 4, { voice: CLERK }); } },
-    { id: 'provpall', label: 'PROVPALLEN - PROVA ALLA SKOR', r: [BENCH.x0, BENCH.y - 18, BENCH.x1, BENCH.y + 2], go: [SEAT_ME, BENCH.y + 8], act: () => sitBench() },
-    { id: 'golvspegel', label: 'GOLVSPEGELN', r: [FMIRROR.x - 7, FMIRROR.y - 24, FMIRROR.x + 7, FMIRROR.y + 1], go: [FMIRROR.x + 4, FMIRROR.y + 14], act: () => { walker.dir = 'up'; play('click'); sayMe('Snygga fötter! 👀'); } },
-    { id: 'skohorn', label: 'SKOHORNET', r: [HORN.x - 5, HORN.y - 36, HORN.x + 5, HORN.y + 1], go: [HORN.x + 12, HORN.y + 8], act: () => { play('click'); sayMe('Ett skohorn – så glider hälen i utan att trampa ner skon. 🥄'); } },
-    { id: 'fotmatare', label: 'FOTMÄTAREN', r: [MEASURE.x - 10, MEASURE.y - 4, MEASURE.x + 10, MEASURE.y + 3], go: [MEASURE.x, MEASURE.y + 4], act: () => { play('chirp'); sayMe(`📏 Storlek ${footSize(A)}! Alla skor finns i min storlek.`); } },
-    { id: 'jattesko', label: 'JÄTTESKON', r: [GIANT.x - 34, GIANT.y - 34, GIANT.x + 34, GIANT.y + 2], go: [GIANT.x + 42, GIANT.y - 2], act: () => { play('click'); sayMe('Världens största sneaker – storlek 312! 👟'); } },
-    { id: 'kartonger', label: 'KARTONGER', r: [STACK.x - 13, STACK.y - 22, STACK.x + 13, STACK.y + 1], go: [STACK.x, STACK.y + 10], act: () => { play('click'); sayMe('Kartonger så långt ögat når. 📦'); } },
-    { id: 'veckans', label: `VECKANS SKO: ${safeTxt(vecka.item.name)}`, r: [VECKA.x - 18, VECKA.y - 38, VECKA.x + 18, VECKA.y + 1], go: [VECKA.x - 26, VECKA.y - 2], act: () => { walker.dir = 'right'; hoverId = null; openBuy(vecka, 0); } },
-    { id: 'skoputs', label: 'SKOPUTSEN - GRATIS', r: [SHINE.x0, 110, SHINE.x1, SHINE.y + 2], go: SHINE_GO, act: () => startShine() },
+    { id: 'dorr', label: $t('UT TILL STADEN'), r: [DOOR.x0 - 2, DOOR.top - 10, DOOR.x1 + 2, WALL_Y + 6], go: DOOR_SPOT, act: () => { play('door'); A.go('city'); } },
+    { id: 'spegel', label: $t('SPEGELN'), r: [MIRROR.x0, MIRROR.top, MIRROR.x1, MIRROR.y], go: [216, WALL_Y + 12], act: () => { walker.dir = 'up'; play('click'); sayMe(mirrorLine()); } },
+    { id: 'kassa', label: $t('KASSAN'), r: [DESK.x0, 64, DESK.x1, DESK.y], go: PAY, act: () => { play('click'); talkClerk.say(CLERK_SAYS[Math.floor(t) % CLERK_SAYS.length], clerkAt, 4, { voice: CLERK }); } },
+    { id: 'lager', label: $t('KARTONGVÄGGEN'), r: [BOXW.x0, 12, BOXW.x1, 64], go: PAY, act: () => { play('click'); talkClerk.say($t('Alla storlekar finns i kartongerna – från 20 till 46! 📦'), clerkAt, 4, { voice: CLERK }); } },
+    { id: 'provpall', label: $t('PROVPALLEN - PROVA ALLA SKOR'), r: [BENCH.x0, BENCH.y - 18, BENCH.x1, BENCH.y + 2], go: [SEAT_ME, BENCH.y + 8], act: () => sitBench() },
+    { id: 'golvspegel', label: $t('GOLVSPEGELN'), r: [FMIRROR.x - 7, FMIRROR.y - 24, FMIRROR.x + 7, FMIRROR.y + 1], go: [FMIRROR.x + 4, FMIRROR.y + 14], act: () => { walker.dir = 'up'; play('click'); sayMe($t('Snygga fötter! 👀')); } },
+    { id: 'skohorn', label: $t('SKOHORNET'), r: [HORN.x - 5, HORN.y - 36, HORN.x + 5, HORN.y + 1], go: [HORN.x + 12, HORN.y + 8], act: () => { play('click'); sayMe($t('Ett skohorn – så glider hälen i utan att trampa ner skon. 🥄')); } },
+    { id: 'fotmatare', label: $t('FOTMÄTAREN'), r: [MEASURE.x - 10, MEASURE.y - 4, MEASURE.x + 10, MEASURE.y + 3], go: [MEASURE.x, MEASURE.y + 4], act: () => { play('chirp'); sayMe($t`📏 Storlek ${footSize(A)}! Alla skor finns i min storlek.`); } },
+    { id: 'jattesko', label: $t('JÄTTESKON'), r: [GIANT.x - 34, GIANT.y - 34, GIANT.x + 34, GIANT.y + 2], go: [GIANT.x + 42, GIANT.y - 2], act: () => { play('click'); sayMe($t('Världens största sneaker – storlek 312! 👟')); } },
+    { id: 'kartonger', label: $t('KARTONGER'), r: [STACK.x - 13, STACK.y - 22, STACK.x + 13, STACK.y + 1], go: [STACK.x, STACK.y + 10], act: () => { play('click'); sayMe($t('Kartonger så långt ögat når. 📦')); } },
+    { id: 'veckans', label: $t`VECKANS SKO: ${safeTxt(vecka.item.name)}`, r: [VECKA.x - 18, VECKA.y - 38, VECKA.x + 18, VECKA.y + 1], go: [VECKA.x - 26, VECKA.y - 2], act: () => { walker.dir = 'right'; hoverId = null; openBuy(vecka, 0); } },
+    { id: 'skoputs', label: $t('SKOPUTSEN - GRATIS'), r: [SHINE.x0, 110, SHINE.x1, SHINE.y + 2], go: SHINE_GO, act: () => startShine() },
   ];
   const rectOf = (s) => (s.dyn ? s.dyn() : s.r);
   const goOf = (s) => (typeof s.go === 'function' ? s.go() : s.go);
@@ -791,11 +792,11 @@ export function makeShopSkor(A) {
     walker.stop();
     shine.state = 'working'; shine.t0 = t;
     play('click');
-    talkShiner.say('Slå dig ner! Jag borstar dem blanka på nolltid. 🧽', () => ({ x: SHINER_AT[0], y: SHINER_AT[1] - 44 }), 3, { voice: SHINER });
+    talkShiner.say($t('Slå dig ner! Jag borstar dem blanka på nolltid. 🧽'), () => ({ x: SHINER_AT[0], y: SHINER_AT[1] - 44 }), 3, { voice: SHINER });
   }
   const mirrorLine = () => {
     const it = catalog.find((x) => isWorn(x, A.avatar.look));
-    return it ? `Snygga ${plain(it.name).toLowerCase()}! 😎` : 'Hmm... nya skor kanske? 🤔';
+    return it ? $t`Snygga ${plain(it.name).toLowerCase()}! 😎` : $t('Hmm... nya skor kanske? 🤔');
   };
 
   // ---------- köp ----------
@@ -804,10 +805,10 @@ export function makeShopSkor(A) {
     if (r?.ok) {
       play('buy');
       me.boxUntil = t + 6;
-      talkClerk.say(`Tack för köpet! 👟 Här är kartongen.`, clerkAt, 3.5, { voice: CLERK });
+      talkClerk.say($t`Tack för köpet! 👟 Här är kartongen.`, clerkAt, 3.5, { voice: CLERK });
     } else if (r && !api.owns(it)) {
       play('fel');
-      talkClerk.say(`De kostar ${fmt(api.price(it))}. Jobba ett pass och kom tillbaka! 💪`, clerkAt, 4, { voice: CLERK });
+      talkClerk.say($t`De kostar ${fmt(api.price(it))}. Jobba ett pass och kom tillbaka! 💪`, clerkAt, 4, { voice: CLERK });
     }
     return r;
   };
@@ -1026,10 +1027,10 @@ export function makeShopSkor(A) {
     // namnskylten flyttas upp bara när den annars skulle täcka figurens fötter
     if (f?.group) bigLabel(ctx, f.group, api, t, low, me.mode === 'free' && walker.py + dy > low - 32, f.id === hoverId && hoverShoe != null ? hoverShoe : 0, top);
     else if (f?.label) smallLabel(ctx, f.label, low);
-    else if (me.mode === 'bench') smallLabel(ctx, 'PROVHÖRNAN - KLICKA FÖR ATT RESA DIG', low);
-    else if (me.mode === 'shine') smallLabel(ctx, shine.state === 'working' ? 'SKOPUTSAREN BORSTAR...' : 'BLANKA SKOR! KLICKA FÖR ATT GÅ', low);
-    if (cx > 50) edgeSign(ctx, true, 'SNEAKERS + SPORT', '#ff6a6a', low);
-    if (cx < W - VW - 50) edgeSign(ctx, false, 'STÖVLAR + FINA SKOR', '#f0d048', low);
+    else if (me.mode === 'bench') smallLabel(ctx, $t('PROVHÖRNAN - KLICKA FÖR ATT RESA DIG'), low);
+    else if (me.mode === 'shine') smallLabel(ctx, shine.state === 'working' ? $t('SKOPUTSAREN BORSTAR...') : $t('BLANKA SKOR! KLICKA FÖR ATT GÅ'), low);
+    if (cx > 50) edgeSign(ctx, true, $t('SNEAKERS + SPORT'), '#ff6a6a', low);
+    if (cx < W - VW - 50) edgeSign(ctx, false, $t('STÖVLAR + FINA SKOR'), '#f0d048', low);
   }
 
   return {
@@ -1186,7 +1187,7 @@ function priceTag(ctx, cx, y, lbl, kind) {
   ctx.fillStyle = kind === 'own' ? '#8fe0a2' : kind === 'rea' ? '#ffc4bc' : '#fff4a8'; ctx.fillRect(x0, y, w, 1);
   ctxText(ctx, SMALL, lbl, x0 + 2, y + 1, kind === 'own' ? '#ffffff' : '#3a2a10');
 }
-const tagOf = (api, it) => (api.owns(it) ? ['DIN', 'own'] : [`${api.price(it)}:-`, api.rea(it) ? 'rea' : 'price']);
+const tagOf = (api, it) => (api.owns(it) ? [$t('DIN'), 'own'] : [$t`${api.price(it)}:-`, api.rea(it) ? 'rea' : 'price']);
 // väggarnas skor + lappar i ett genomskinligt lager
 function paintStock(groups, api) {
   const c = mkCanvas(W, WALL_Y), x = c.getContext('2d');
@@ -1243,8 +1244,8 @@ function sparkle(ctx, x, y, t) {
 // Namnskylt för skon man står vid / pekar på: skon i liten bild, namn, pris och tips
 function bigLabel(ctx, G, api, t, low, atTop, si = 0, top = 0) {
   const it = G.item, owned = api.owns(it);
-  const name = safeTxt(it.name), price = owned ? 'DIN!' : `${api.price(it)} KR`;
-  const hint = owned ? 'KLICKA SÅ TAR DU PÅ DIG DEM' : 'KLICKA SÅ PROVAR DU DEM PÅ DIG';
+  const name = safeTxt(it.name), price = owned ? $t('DIN!') : $t`${api.price(it)} KR`;
+  const hint = owned ? $t('KLICKA SÅ TAR DU PÅ DIG DEM') : $t('KLICKA SÅ PROVAR DU DEM PÅ DIG');
   const ic = (G.shoes[si] || G.shoes[0])?.ic;
   const nw = textW(BIG, name), pw = textW(BIG, price), hw = textW(SMALL, hint);
   const iw = ic ? ic.w + 4 : 0;
@@ -1360,7 +1361,7 @@ function paintBg() {
     }
     // UT-skylten
     P.rect((x0 + x1) / 2 - 9, top - 13, 18, 9, 0x1d2b1f); P.box((x0 + x1) / 2 - 9, top - 13, 18, 9, 0x2f8f46);
-    text(P, SMALL, 'UT', (x0 + x1) / 2 - 3, top - 11, 0x6fe08a);
+    text(P, SMALL, $t('UT'), (x0 + x1) / 2 - 3, top - 11, 0x6fe08a);
   }
 
   // ---- kartongväggen + SKOBUTIKEN-skylten ----
@@ -1368,7 +1369,7 @@ function paintBg() {
     const { x0, x1 } = BOXW;
     P.rect(x0, 12, x1 - x0, 18, 0x121216);
     P.box(x0, 12, x1 - x0, 18, GOLD);
-    const nm = 'SKOBUTIKEN', tw = textW(BIG, nm);
+    const nm = $t('SKOBUTIKEN'), tw = textW(BIG, nm);
     text(P, BIG, nm, Math.round((x0 + x1) / 2 - tw / 2) + 1, 18, 0x5a4a2a);
     text(P, BIG, nm, Math.round((x0 + x1) / 2 - tw / 2), 17, 0xf0d060);
     // små sneakers i skylten
@@ -1631,8 +1632,8 @@ function paintPeg() {
   const w = PEG.x1 - PEG.x0, h = PEG.y - PEG.top + 1, P = new Pix(w, h);
   // svart skylt med SPORT och en fotboll
   P.rect(0, 0, w, 9, LACK); P.hl(0, 8, w, GOLD);
-  const tw = textW(BIG, 'SPORT');
-  text(P, BIG, 'SPORT', Math.round(w / 2 - tw / 2), 1, 0xf6f1e6);
+  const tw = textW(BIG, $t('SPORT'));
+  text(P, BIG, $t('SPORT'), Math.round(w / 2 - tw / 2), 1, 0xf6f1e6);
   spr(P, 5, 1, ['.kwk.', 'kwkwk', 'wkwkw', 'kwkwk', '.kwk.'].map((r) => r), { k: 0x1c1c20, w: 0xf6f1e6 });
   spr(P, w - 10, 1, ['.kwk.', 'kwkwk', 'wkwkw', 'kwkwk', '.kwk.'], { k: 0x1c1c20, w: 0xf6f1e6 });
   // perforerad skiva
@@ -1652,8 +1653,8 @@ function paintNews() {
   const w = NEWS.x1 - NEWS.x0, h = 14, P = new Pix(w, h);
   P.rect(0, 4, w, 8, LACK); P.hl(0, 4, w, GOLD); P.hl(0, 11, w, GOLD_LO);
   P.rect(2, 0, w - 4, 5, 0xf8f4ee); P.hl(2, 0, w - 4, WHITE);
-  const tw = textW(SMALL, 'NYHETER');
-  text(P, SMALL, 'NYHETER', Math.round(w / 2 - tw / 2), 6, 0xf0d060);
+  const tw = textW(SMALL, $t('NYHETER'));
+  text(P, SMALL, $t('NYHETER'), Math.round(w / 2 - tw / 2), 6, 0xf0d060);
   outline(P);
   return { img: P.flush(), ox: 0, oy: h - 1 };
 }
@@ -1713,9 +1714,9 @@ function paintShineStand() {
     P.hl(sx, sy2 + 1, sw, GOLD_LO);
   }
   // SKOPUTS i guld på podiets front
-  const tw = textW(SMALL, 'SKOPUTS');
-  text(P, SMALL, 'SKOPUTS', 14 + Math.round((w - 14) / 2 - tw / 2), topY + 8, 0xf0d060);
-  text(P, SMALL, 'GRATIS', 14 + Math.round((w - 14) / 2 - textW(SMALL, 'GRATIS') / 2), topY + 14, 0xc8a050);
+  const tw = textW(SMALL, $t('SKOPUTS'));
+  text(P, SMALL, $t('SKOPUTS'), 14 + Math.round((w - 14) / 2 - tw / 2), topY + 8, 0xf0d060);
+  text(P, SMALL, $t('GRATIS'), 14 + Math.round((w - 14) / 2 - textW(SMALL, $t('GRATIS')) / 2), topY + 14, 0xc8a050);
   // stolen: hög rygg i oxblodsläder med mässingsnitar
   const LE = { hi: 0xa84040, base: 0x7a2a2a, lo: 0x5a1c1c, dk: 0x3a1010 };
   const seatY = CHAIR.fy - SHINE.y + base - 9;        // sitsens ovansida
@@ -1771,7 +1772,7 @@ function paintPlinth() {
   P.rect(cx - 9, 3, 18, 4, 0x7a2a3a); P.hl(cx - 9, 3, 18, 0xa8405a); P.hl(cx - 9, 6, 18, 0x4a1422);
   P.px(cx - 10, 4, 0xf0d060); P.px(cx + 9, 4, 0xf0d060);
   // VECKANS / SKO i guld
-  const l1 = 'VECKANS', l2 = 'SKO';
+  const l1 = $t('VECKANS'), l2 = $t('SKO');
   text(P, SMALL, l1, Math.round(cx - textW(SMALL, l1) / 2), 13, 0xf0d060);
   text(P, SMALL, l2, Math.round(cx - textW(SMALL, l2) / 2), 19, 0xf0d060);
   outline(P);
@@ -1786,8 +1787,8 @@ function paintReaSign() {
   // tavlan med ram
   P.rect(0, 0, w, 19, 0x8a5a32); P.hl(0, 0, w, 0xb07a44);
   area(P, 2, 2, w - 4, 15, (x, y) => jit(0x24302a, x, y, 71, 0.08));
-  text(P, BIG, 'REA', 3, 3, 0xffd0c8);
-  text(P, BIG, 'REA', 2, 3, 0xff4a3a);
+  text(P, BIG, $t('REA'), 3, 3, 0xffd0c8);
+  text(P, BIG, $t('REA'), 2, 3, 0xff4a3a);
   text(P, SMALL, '-25%', 4, 12, 0xf6f1e6);
   P.px(w - 5, 4, 0xf0d060); P.px(w - 4, 5, 0xf0d060); P.px(w - 5, 6, 0xf0d060);    // krita-stjärna
   outline(P);
@@ -1830,7 +1831,7 @@ function paintNightLight() {
 const SWATCHES = ['#1c1c20', '#2b2b30', '#f4f1ea', '#6b3e1e', '#8a5a32', '#a86b32', '#c9323a', '#e07a2e', '#f0b429', '#e8f030', '#46a35a', '#2aa39a', '#3a7bd5', '#2d3a5c', '#8e5bd1', '#f28bb3', '#ff5fa8', '#b9b3ab'];
 const DETAILS = ['#f4f1ea', '#1c1c20', '#f0b429', '#c9323a', '#f28bb3', '#3a7bd5', '#46a35a', '#8e5bd1', '#2aa39a', '#e07a2e'];
 const DIRS = ['down', 'left', 'up', 'right'];
-const DIR_NAMES = ['Framifrån', 'Från sidan', 'Bakifrån', 'Från sidan'];
+const DIR_NAMES = [$t('Framifrån'), $t('Från sidan'), $t('Bakifrån'), $t('Från sidan')];
 
 // figuren i heltalsskala (hela enhetspixlar) – aldrig suddig. crop = [x, y, w, h] i spriten
 function figure(look, dir, S, crop = null, frame = 0) {
@@ -1866,7 +1867,7 @@ function openShoeDialog(A, api, item, { colors = [], ci = 0, where = '', onBuy, 
   const owned = api.owns(item), price = api.price(item), short = price - g.money;
   const name = plain(item.name);
   const withIt = () => ({ ...lookForItem(item, A.avatar.look), shoes: main, ...(uses2 ? { shoes2: det } : {}) });
-  const swBtn = (c, on, attr) => `<button class="skb-sw ${on ? 'on' : ''}" ${attr}="${c}" style="--c:${c}" aria-label="Färg ${c}"></button>`;
+  const swBtn = (c, on, attr) => `<button class="skb-sw ${on ? 'on' : ''}" ${attr}="${c}" style="--c:${c}" aria-label="${$t`Färg ${c}`}"></button>`;
   const body = `<style>
     .skb{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start}
     .skb-l{display:flex;flex-direction:column;gap:6px;align-items:center;flex:none}
@@ -1895,45 +1896,45 @@ function openShoeDialog(A, api, item, { colors = [], ci = 0, where = '', onBuy, 
   <div class="skb">
     <div class="skb-l">
       <div class="skb-stage">
-        <div class="skb-fig" data-fig="now"><i></i><small>Du nu</small></div>
+        <div class="skb-fig" data-fig="now"><i></i><small>${$t('Du nu')}</small></div>
         <div class="skb-arrow">➜</div>
-        <div class="skb-fig" data-fig="new"><i></i><small>Med ${esc(name.toLowerCase())}</small></div>
+        <div class="skb-fig" data-fig="new"><i></i><small>${$t`Med ${esc(name.toLowerCase())}`}</small></div>
       </div>
       <div class="skb-turn">
-        <button class="btn btn-small" data-turn="-1" aria-label="Vrid åt vänster">⟲ Vrid</button>
+        <button class="btn btn-small" data-turn="-1" aria-label="${$t('Vrid åt vänster')}">⟲ ${$t('Vrid')}</button>
         <b class="skb-view" data-view>${DIR_NAMES[dirI]}</b>
-        <button class="btn btn-small" data-turn="1" aria-label="Vrid åt höger">Vrid ⟳</button>
+        <button class="btn btn-small" data-turn="1" aria-label="${$t('Vrid åt höger')}">${$t('Vrid')} ⟳</button>
       </div>
       <div class="skb-zooms">
-        <div class="skb-zoom" data-zoom="side"><i></i><small>Närbild</small></div>
-        <div class="skb-zoom" data-zoom="front"><i></i><small>Framifrån</small></div>
-        <div class="skb-zoom skb-shelf" data-zoom="shelf"><i></i><small>På hyllan</small></div>
+        <div class="skb-zoom" data-zoom="side"><i></i><small>${$t('Närbild')}</small></div>
+        <div class="skb-zoom" data-zoom="front"><i></i><small>${$t('Framifrån')}</small></div>
+        <div class="skb-zoom skb-shelf" data-zoom="shelf"><i></i><small>${$t('På hyllan')}</small></div>
       </div>
     </div>
     <div class="skb-r">
-      <p class="skb-dept">${esc(where || 'Skobutiken')}</p>
-      <p class="skb-price">${owned ? '<b class="ok">✓ De här är dina!</b>' : `Pris: <b>${price !== item.price ? `<s>${fmt(item.price)}</s> ` : ''}${fmt(price)}</b>${price !== item.price ? ' <b class="bad">REA</b>' : ''}`}</p>
-      <p class="skb-money">💰 Du har <b>${fmt(g.money)}</b>${owned ? '' : short > 0 ? ` · <b class="bad">du saknar ${fmt(short)}</b>` : ` · kvar efter köpet: <b>${fmt(g.money - price)}</b>`}</p>
-      <div><b style="font-size:var(--f2)">Prova färg:</b></div>
+      <p class="skb-dept">${esc(where ? $t(where) : $t('Skobutiken'))}</p>
+      <p class="skb-price">${owned ? `<b class="ok">${$t('✓ De här är dina!')}</b>` : `${$t`Pris: <b>${price !== item.price ? `<s>${fmt(item.price)}</s> ` : ''}${fmt(price)}</b>`}${price !== item.price ? ` <b class="bad">${$t('REA')}</b>` : ''}`}</p>
+      <p class="skb-money">💰 ${$t`Du har <b>${fmt(g.money)}</b>`}${owned ? '' : short > 0 ? ` · <b class="bad">${$t`du saknar ${fmt(short)}`}</b>` : ` · ${$t`kvar efter köpet: <b>${fmt(g.money - price)}</b>`}`}</p>
+      <div><b style="font-size:var(--f2)">${$t('Prova färg:')}</b></div>
       <div class="skb-sws" data-sws>${mainSw.map((c) => swBtn(c, c === main.toLowerCase(), 'data-c')).join('')}</div>
-      ${uses2 ? `<div><b style="font-size:var(--f2)">Detaljfärg</b> <span class="skb-hint">(sula, snören, ränder):</span></div>
+      ${uses2 ? `<div><b style="font-size:var(--f2)">${$t('Detaljfärg')}</b> <span class="skb-hint">${$t('(sula, snören, ränder):')}</span></div>
       <div class="skb-sws small" data-dts>${detSw.map((c) => swBtn(c, c === det.toLowerCase(), 'data-a')).join('')}</div>` : ''}
-      <p class="skb-hint">🎨 Färgerna är bara för att prova – när skorna är dina väljer du fritt bland alla färger i garderoben där hemma.</p>
-      ${colors.length > 1 ? `<p class="skb-hint">👟 Första färgerna är de som står på hyllan.</p>` : ''}
-      ${owned ? '' : `<label class="skb-wear"><input type="checkbox" data-wear checked> Ta på mig dem direkt</label>`}
+      <p class="skb-hint">${$t('🎨 Färgerna är bara för att prova – när skorna är dina väljer du fritt bland alla färger i garderoben där hemma.')}</p>
+      ${colors.length > 1 ? `<p class="skb-hint">${$t('👟 Första färgerna är de som står på hyllan.')}</p>` : ''}
+      ${owned ? '' : `<label class="skb-wear"><input type="checkbox" data-wear checked> ${$t('Ta på mig dem direkt')}</label>`}
     </div>
   </div>`;
   const wear = () => { A.avatar = saveAvatar({ ...A.avatar, look: withIt() }); };
   const buttons = [
-    back ? { label: '⬅ Alla skor', onClick: () => back() } : { label: 'Stäng', onClick: closeModal },
+    back ? { label: $t('⬅ Alla skor'), onClick: () => back() } : { label: $t('Stäng'), onClick: closeModal },
     owned
-      ? { label: '👟 Ta på mig dem', cls: 'btn-go', onClick: () => { wear(); play('ok'); toast(`👟 Snyggt! Du har ${name.toLowerCase()} på dig.`, 'good'); closeModal(); } }
-      : { label: `🛍️ Köp (${fmt(price)})`, cls: 'btn-go', disabled: short > 0, onClick: () => {
+      ? { label: $t('👟 Ta på mig dem'), cls: 'btn-go', onClick: () => { wear(); play('ok'); toast($t`👟 Snyggt! Du har ${name.toLowerCase()} på dig.`, 'good'); closeModal(); } }
+      : { label: $t`🛍️ Köp (${fmt(price)})`, cls: 'btn-go', disabled: short > 0, onClick: () => {
         const wearIt = dlg.querySelector('[data-wear]')?.checked;
         const r = onBuy ? onBuy(item) : api.buy(item);
-        if (!r?.ok) { toast(r?.msg || 'Köpet gick inte.', 'bad'); return; }
+        if (!r?.ok) { toast(r?.msg || $t('Köpet gick inte.'), 'bad'); return; }
         if (wearIt) wear();
-        toast(`👟 ${name} är dina!${wearIt ? ' Du har dem på dig.' : ' De står i garderoben där hemma.'}`, 'good');
+        toast(wearIt ? $t`👟 ${name} är dina! Du har dem på dig.` : $t`👟 ${name} är dina! De står i garderoben där hemma.`, 'good');
         closeModal();
       } },
   ];
@@ -1970,7 +1971,7 @@ function openCatalogDialog(A, api, groups, onPick) {
   const g = A.game;
   const secs = [];
   for (const G of groups) {
-    const sec = groupOf(G.item) || WHERE[G.where] || 'Skor';
+    const sec = groupOf(G.item) || WHERE[G.where] || $n('Skor');
     let s = secs.find((x) => x.name === sec);
     if (!s) secs.push((s = { name: sec, list: [] }));
     s.list.push(G);
@@ -1980,7 +1981,7 @@ function openCatalogDialog(A, api, groups, onPick) {
   const cell = (G) => {
     const it = G.item, own = api.owns(it), worn = isWorn(it, A.avatar.look);
     return `<button class="skk-it ${own ? 'own' : ''}" data-g="${esc(G.id)}"><i></i><span>${esc(plain(it.name))}</span>
-      <b>${worn ? '👟 På dig' : own ? '✓ Din' : fmt(api.price(it))}</b></button>`;
+      <b>${worn ? $t('👟 På dig') : own ? $t('✓ Din') : fmt(api.price(it))}</b></button>`;
   };
   const body = `<style>
     .skk-sec h3{margin:8px 0 4px;font-size:var(--f2)}
@@ -1992,9 +1993,9 @@ function openCatalogDialog(A, api, groups, onPick) {
     .skk-it b{font-size:var(--f1)}
     .skk-top{margin:0 0 4px;font-size:var(--f2)}
   </style>
-  <p class="skk-top">🪑 Du sitter på provpallen. Välj ett par så får du prova dem! 💰 Du har <b>${fmt(g.money)}</b>.</p>
-  ${secs.map((s) => `<div class="skk-sec"><h3>${esc(s.name)}</h3><div class="skk-grid">${s.list.map(cell).join('')}</div></div>`).join('')}`;
-  const dlg = openModal('🪑 Provhörnan – alla skor', body, [{ label: 'Stäng', onClick: closeModal }]);
+  <p class="skk-top">${$t`🪑 Du sitter på provpallen. Välj ett par så får du prova dem! 💰 Du har <b>${fmt(g.money)}</b>.`}</p>
+  ${secs.map((s) => `<div class="skk-sec"><h3>${esc($t(s.name))}</h3><div class="skk-grid">${s.list.map(cell).join('')}</div></div>`).join('')}`;
+  const dlg = openModal($t('🪑 Provhörnan – alla skor'), body, [{ label: $t('Stäng'), onClick: closeModal }]);
   dlg.querySelectorAll('[data-g]').forEach((b) => {
     const G = groups.find((x) => x.id === b.dataset.g);
     if (!G) return;

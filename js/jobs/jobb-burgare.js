@@ -13,6 +13,7 @@ import { play } from '../core/sound.js';
 import { makeShiftCoop } from '../net/coop.js';
 import { FRAMES } from '../data/frames.js';
 import { ATLAS } from '../scenes/room.js';
+import { $t } from '../core/i18n.js';
 
 const FW = 384, FH = 216;
 const COUNTER = { x0: 20, x1: 200, top: 58, base: 84 };
@@ -25,7 +26,7 @@ const LAMPS = [52, 108, 164];   // pendellampor i glappen mellan bubblorna
 // Varje rätt får automatiskt en mörk kontur (tonad efter grannfärgen) och ritas
 // på en liten vit tallrik med kant och skugga.
 const DISHES = [
-  { id: 'burgare', name: 'BURGARE',
+  { id: 'burgare', name: $t('BURGARE'),
     pal: { a: 0xffe2aa, b: 0xf2aa4c, c: 0xd4822c, d: 0x9c5622, s: 0xfff6dc, G: 0x3f9e34, g: 0x8edc4c, y: 0xffd23f, Y: 0xe09a1a, m: 0x8a4a2c, M: 0x5a2c1a },
     map: [
       '...abbbbb...',
@@ -41,7 +42,7 @@ const DISHES = [
       '..dddddddd..',
     ],
     crumbs: [0xd4822c, 0x8edc4c] },
-  { id: 'pommes', name: 'POMMES',
+  { id: 'pommes', name: $t('POMMES'),
     pal: { Y: 0xffe36a, y: 0xf5c03a, o: 0xcf8f1c, R: 0xe0342c, H: 0xff7060, r: 0xa82320, W: 0xfff4e6, S: 0xffd23f },
     map: [
       '...Y..Y.Y...',
@@ -57,7 +58,7 @@ const DISHES = [
       '...rrrrrr...',
     ],
     crumbs: [0xf5c03a, 0xe0342c] },
-  { id: 'lask', name: 'LÄSK',
+  { id: 'lask', name: $t('LÄSK'),
     pal: { S: 0xe8443a, s: 0xfff4ea, L: 0xf2f5f8, l: 0xb4bfcc, C: 0x3a7bd5, c: 0x25539e, h: 0x8ec0ff, W: 0xf4f1ea, r: 0xe8443a },
     map: [
       '.......sS.',
@@ -74,7 +75,7 @@ const DISHES = [
       '..cccccc..',
     ],
     crumbs: [0x8ec0ff, 0xe8443a] },
-  { id: 'glass', name: 'GLASS',
+  { id: 'glass', name: $t('GLASS'),
     pal: { R: 0xc8202c, r: 0xff6a6a, q: 0xffd0e4, P: 0xff88bb, p: 0xd9548e, n: 0xd4fae6, G: 0x7fdcae, g: 0x3fae7a, K: 0xecb466, k: 0xb8742c },
     map: [
       '....Rr....',
@@ -269,7 +270,7 @@ export function makeJobbBurgare(A, { onDone }) {
     const right = k && k.state === 'sit' && (d | 0) === k.wish ? 1 : 0;
     if (right) { k.state = 'eat'; k.eat = 4; }
     coop.send({ t: 'res', a: 'serve', by: byId, cust: custId, right });
-    if (k) pops.add(k.x, k.y - 62, right ? '+10 TACK!' : 'FEL RÄTT!', right ? '#8ee03c' : '#ff6a6a');
+    if (k) pops.add(k.x, k.y - 62, right ? $t('+10 TACK!') : $t('FEL RÄTT!'), right ? '#8ee03c' : '#ff6a6a');
     if (right) team.ok++; else team.fel++;
     if (byId === coop.myId) { if (right) { stats.ok++; play('coin'); } else { stats.fel++; play('fel'); } carry = null; }
     snapAsap();
@@ -280,16 +281,16 @@ export function makeJobbBurgare(A, { onDone }) {
     const mine = m.by === coop.myId;
     if (m.a === 'serve') {
       const k = customers.find((q) => q.id === m.cust);
-      if (k) { if (m.right) { k.state = 'eat'; k.eat = 4; } pops.add(k.x, k.y - 62, m.right ? '+10 TACK!' : 'FEL RÄTT!', m.right ? '#8ee03c' : '#ff6a6a'); }
+      if (k) { if (m.right) { k.state = 'eat'; k.eat = 4; } pops.add(k.x, k.y - 62, m.right ? $t('+10 TACK!') : $t('FEL RÄTT!'), m.right ? '#8ee03c' : '#ff6a6a'); }
       if (mine) { if (m.right) { stats.ok++; play('coin'); } else { stats.fel++; play('fel'); } carry = null; }
     } else if (mine && m.a === 'take') {
       if (m.ok) { carry = { d: m.d | 0 }; play('ok'); }
-      else { play('miss'); pops.add(SLOTS[m.slot] ?? 100, SLOT_TIP + 10, 'HANN FÖRE!', '#ff6a6a'); }
+      else { play('miss'); pops.add(SLOTS[m.slot] ?? 100, SLOT_TIP + 10, $t('HANN FÖRE!'), '#ff6a6a'); }
     } else if (mine && m.a === 'swap') {
       if (m.ok) { carry = { d: m.d | 0 }; play('click'); }
     } else if (mine && m.a === 'put') {
       if (m.ok) { carry = null; play('click'); }
-      else { play('miss'); pops.add(SLOTS[m.slot] ?? 100, SLOT_TIP + 10, 'FULLT PÅ DISKEN!', '#ff6a6a'); }
+      else { play('miss'); pops.add(SLOTS[m.slot] ?? 100, SLOT_TIP + 10, $t('FULLT PÅ DISKEN!'), '#ff6a6a'); }
     }
   });
   coop.on('take', (m, from) => { // medarbetare plockar en tallrik
@@ -380,7 +381,7 @@ export function makeJobbBurgare(A, { onDone }) {
       if (coop.active !== wasCoop) { // kompis in/ut: extraborden fram eller undan
         wasCoop = coop.active;
         setObs();
-        if (wasCoop) { play('knock'); pops.add(192, 128, 'EXTRABORDEN FRAM!', '#8ee03c'); }
+        if (wasCoop) { play('knock'); pops.add(192, 128, $t('EXTRABORDEN FRAM!'), '#8ee03c'); }
       }
       // Skiftledaren (eller solo) kör simuleringen; medarbetare följer ledarens läge
       const iLead = !coop.active || (coop.leader && coop.settled);
@@ -414,7 +415,7 @@ export function makeJobbBurgare(A, { onDone }) {
           else k.state = 'sit';
         } else if (k.state === 'sit') {
           k.patience -= dt;
-          if (k.patience <= 0) { leave(k); stats.miss++; team.miss++; play('miss'); pops.add(k.x, k.y - 62, 'GICK HEM…', '#d8d2c0'); }
+          if (k.patience <= 0) { leave(k); stats.miss++; team.miss++; play('miss'); pops.add(k.x, k.y - 62, $t('GICK HEM…'), '#d8d2c0'); }
         } else if (k.state === 'eat') {
           k.eat -= dt;
           if (k.eat <= 0) leave(k);
@@ -468,12 +469,12 @@ export function makeJobbBurgare(A, { onDone }) {
               // hann platsen tas under gången? ta närmaste andra lediga i stället
               let s2 = plates.some((p) => p.slot === s) ? -1 : s;
               if (s2 < 0) { let bd = 1e9; SLOTS.forEach((sx2, si) => { const dd2 = Math.abs(sx2 - SLOTS[s]); if (dd2 < bd && !plates.some((p) => p.slot === si)) { s2 = si; bd = dd2; } }); }
-              if (s2 < 0) { play('miss'); pops.add(SLOTS[s], SLOT_TIP + 10, 'FULLT PÅ DISKEN!', '#ff6a6a'); return; }
+              if (s2 < 0) { play('miss'); pops.add(SLOTS[s], SLOT_TIP + 10, $t('FULLT PÅ DISKEN!'), '#ff6a6a'); return; }
               plates.push({ d: carry.d, slot: s2, x: SLOTS[s2] }); carry = null; play('click'); snapAsap();
             });
           } else {
             play('miss');
-            pops.add(x, SLOT_TIP + 10, 'FULLT PÅ DISKEN!', '#ff6a6a');
+            pops.add(x, SLOT_TIP + 10, $t('FULLT PÅ DISKEN!'), '#ff6a6a');
           }
           return;
         }
@@ -558,7 +559,7 @@ export function makeJobbBurgare(A, { onDone }) {
         }
       }
       pops.draw(ctx);
-      drawShiftHud(ctx, { W: FW }, { t, dur: DUR, ok: maxN > 1 ? team.ok : stats.ok, fel: maxN > 1 ? team.fel : stats.fel, title: maxN > 1 ? 'BURGARBAREN IHOP' : 'BURGARBAREN' });
+      drawShiftHud(ctx, { W: FW }, { t, dur: DUR, ok: maxN > 1 ? team.ok : stats.ok, fel: maxN > 1 ? team.fel : stats.fel, title: maxN > 1 ? $t('BURGARBAREN IHOP') : $t('BURGARBAREN') });
       if (done) drawTimeUp(ctx, { W: FW, H: FH });
     },
   };
@@ -567,12 +568,12 @@ export function makeJobbBurgare(A, { onDone }) {
     if (carry.d === k.wish) {
       stats.ok++;
       play('coin');
-      pops.add(k.x, k.y - 62, '+10 TACK!', '#8ee03c');
+      pops.add(k.x, k.y - 62, $t('+10 TACK!'), '#8ee03c');
       k.state = 'eat'; k.eat = 4;
     } else {
       stats.fel++;
       play('fel');
-      pops.add(k.x, k.y - 62, 'FEL RÄTT!', '#ff6a6a');
+      pops.add(k.x, k.y - 62, $t('FEL RÄTT!'), '#ff6a6a');
     }
     carry = null;
   }
@@ -639,7 +640,7 @@ function paintDiner() {
   for (let y = 22; y < 31; y++) { const ins = Math.max(0, 30 - y - 4); P.hl(KX + 2 + ins, y, KW - 4 - ins * 2, y === 22 ? 0xe8eef2 : mix(0xc4ccd4, 0x8e98a4, (y - 22) / 9)); }
   P.hl(KX + 2, 31, KW - 4, 0x5a646e);
   P.rect(KX + KW / 2 - 10, 24, 21, 7, 0x17151a);
-  text(P, SMALL, 'KÖK', KX + KW / 2 - 5, 25, 0xffd23f);
+  text(P, SMALL, $t('KÖK'), KX + KW / 2 - 5, 25, 0xffd23f);
   // orderlist med lappar
   P.hl(KX + 4, 35, KW - 8, 0x98a2ae); P.hl(KX + 4, 34, KW - 8, 0xeef3f6);
   for (const [lx, lh] of [[KX + 8, 7], [KX + 18, 6], [KX + 44, 8], [KX + 60, 6]]) {
@@ -664,7 +665,7 @@ function paintDiner() {
   const MX = 288, MY = 22, MW = 92, MH = 35;
   P.rect(MX, MY, MW, MH, 0x5a3a20); P.box(MX, MY, MW, MH, 0x3a2414); P.hl(MX + 1, MY + 1, MW - 2, 0x8a5a30);
   for (let y = MY + 2; y < MY + MH - 2; y++) for (let x = MX + 2; x < MX + MW - 2; x++) P.px(x, y, mix(0x1e2a24, 0x26342c, hash(x, y, 5) * 0.8));
-  text(P, SMALL, 'MENY', MX + (MW >> 1) - (textW(SMALL, 'MENY') >> 1), MY + 4, 0xffd23f);
+  text(P, SMALL, $t('MENY'), MX + (MW >> 1) - (textW(SMALL, $t('MENY')) >> 1), MY + 4, 0xffd23f);
   for (let x = MX + 8; x < MX + MW - 8; x += 2) P.px(x, MY + 11, 0x5a6a60);
   // ---------- disken ----------
   const { x0, x1, top } = COUNTER;
@@ -699,7 +700,7 @@ function paintDiner() {
   for (let d = 0; d < DISHES.length; d++) {
     const f = foodSprite(d), cx = MX + 13 + d * 22;
     c2.drawImage(f, cx - (f.width >> 1), MY + 26 - f.height);
-    ctxText(c2, SMALL, '10:-', cx - (textW(SMALL, '10:-') >> 1), MY + 28, '#f4f1ea');
+    ctxText(c2, SMALL, $t('10:-'), cx - (textW(SMALL, $t('10:-')) >> 1), MY + 28, '#f4f1ea');
   }
   return cv;
 }
@@ -721,7 +722,7 @@ export function drawTables(ctx) {
 // det där ska det ändras här också.
 export function burgarMeny() {
   return {
-    title: 'MENY',
-    dishes: DISHES.map((d, i) => ({ id: d.id, name: d.name, price: 10, label: '10:-', sprite: foodSprite(i), map: d.map, pal: d.pal })),
+    title: $t('MENY'),
+    dishes: DISHES.map((d, i) => ({ id: d.id, name: d.name, price: 10, label: $t('10:-'), sprite: foodSprite(i), map: d.map, pal: d.pal })),
   };
 }

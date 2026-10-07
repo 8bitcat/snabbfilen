@@ -36,6 +36,7 @@
 import * as MAP from './map.js';
 import { drawPerson, makeLook, isValid } from '../core/people.js';
 import { Pix, mix, mul, hash } from '../core/floor-pix.js';
+import { $t } from '../core/i18n.js';
 
 // ---------- kartan (tåligt: allt som saknas får ett v1-värde) ----------
 const CITY = MAP.CITY;
@@ -3638,25 +3639,25 @@ export function createLife(env, traffic, props) {
   // en och säger något som passar: tid på dygnet, vädret, vem hen är och vad hen bär på. Rösten är
   // personens egen (look → voices.js), bubblan ritas av city.js via talks().
   const SMALLTALK = {
-    morgon: ['God morgon!', 'Tidigt uppe, du med?', 'Jag behöver kaffe …'],
-    dag: ['Hej hej!', 'Hallå där!', 'Trevligt att ses!', 'Känner vi varandra?', 'Fin stad, va?', 'Har du varit på Burgarbaren?', 'Jag ska bara handla lite.', 'Hej! Allt bra?'],
-    kvall: ['God kväll!', 'Snart dags att gå hem.', 'Vilken fin kväll.'],
-    natt: ['Oj, är du också vaken?', 'Sent nu – nattbussen går snart.'],
-    sol: ['Vilket väder!', 'Äntligen sol!', 'Perfekt dag för glass.'],
-    regn: ['Usch, vilket regn!', 'Glömde du paraplyet?', 'Jag blir blöt ända in!'],
-    'snö': ['Snö! Ska vi bygga en snögubbe?', 'Akta så du inte halkar!'],
-    dimma: ['Jag ser knappt var jag går.'],
-    kallt: ['Brr, så kallt!', 'Jag fryser om fingrarna.'],
-    varmt: ['Puh, vad varmt!'],
-    barn: ['Hej! Vill du leka?', 'Jag har lov i dag!', 'Titta, jag kan hoppa!', 'Jag ska bli brandman!', 'Mamma säger att jag inte får prata med främlingar!'],
-    kostym: ['Ursäkta, jag har ett möte.', 'Aktierna går upp i dag!', 'Har du sett kurserna på Finanshuset?', 'Tid är pengar!', 'Jag är lite sen.'],
-    jogg: ['Kan inte stanna!', 'Puh … tre kilometer kvar!', 'Spring med!'],
-    hund: ['Han är snäll, du får klappa!', 'Vi är ute på promenad.', 'Hon älskar parken.'],
-    kaffe: ['Bästa kaffet i stan!', 'Har du provat kaféet?'],
-    resvaska: ['Jag ska ut och flyga!', 'Vet du var bussen till flygplatsen går?'],
-    glass: ['Mmm, glass!'],
-    sitter: ['Skönt att sitta en stund.', 'Sätt dig du med!'],
-    telefon: ['Vänta, jag pratar i telefon!', 'Jag ringer tillbaka sen!'],
+    morgon: [$t('God morgon!'), $t('Tidigt uppe, du med?'), $t('Jag behöver kaffe …')],
+    dag: [$t('Hej hej!'), $t('Hallå där!'), $t('Trevligt att ses!'), $t('Känner vi varandra?'), $t('Fin stad, va?'), $t('Har du varit på Burgarbaren?'), $t('Jag ska bara handla lite.'), $t('Hej! Allt bra?')],
+    kvall: [$t('God kväll!'), $t('Snart dags att gå hem.'), $t('Vilken fin kväll.')],
+    natt: [$t('Oj, är du också vaken?'), $t('Sent nu – nattbussen går snart.')],
+    sol: [$t('Vilket väder!'), $t('Äntligen sol!'), $t('Perfekt dag för glass.')],
+    regn: [$t('Usch, vilket regn!'), $t('Glömde du paraplyet?'), $t('Jag blir blöt ända in!')],
+    'snö': [$t('Snö! Ska vi bygga en snögubbe?'), $t('Akta så du inte halkar!')],
+    dimma: [$t('Jag ser knappt var jag går.')],
+    kallt: [$t('Brr, så kallt!'), $t('Jag fryser om fingrarna.')],
+    varmt: [$t('Puh, vad varmt!')],
+    barn: [$t('Hej! Vill du leka?'), $t('Jag har lov i dag!'), $t('Titta, jag kan hoppa!'), $t('Jag ska bli brandman!'), $t('Mamma säger att jag inte får prata med främlingar!')],
+    kostym: [$t('Ursäkta, jag har ett möte.'), $t('Aktierna går upp i dag!'), $t('Har du sett kurserna på Finanshuset?'), $t('Tid är pengar!'), $t('Jag är lite sen.')],
+    jogg: [$t('Kan inte stanna!'), $t('Puh … tre kilometer kvar!'), $t('Spring med!')],
+    hund: [$t('Han är snäll, du får klappa!'), $t('Vi är ute på promenad.'), $t('Hon älskar parken.')],
+    kaffe: [$t('Bästa kaffet i stan!'), $t('Har du provat kaféet?')],
+    resvaska: [$t('Jag ska ut och flyga!'), $t('Vet du var bussen till flygplatsen går?')],
+    glass: [$t('Mmm, glass!')],
+    sitter: [$t('Skönt att sitta en stund.'), $t('Sätt dig du med!')],
+    telefon: [$t('Vänta, jag pratar i telefon!'), $t('Jag ringer tillbaka sen!')],
   };
   function smalltalk(p) {
     const w = W(), h = env.hour, t = w.temp ?? 15, pools = [];
@@ -3697,12 +3698,12 @@ export function createLife(env, traffic, props) {
   // 🐬 något fint händer en bit bort (delfinen vid piren, v0.93): de som är nära stannar, vänder sig dit
   // och jublar i en bubbla – par (ledare + sällskap) vänder sig mot varandra och kramas (🤗).
   function cheer(cx, cy, r, lines) {
-    const L = lines && lines.length ? lines : ['🐬 Det ger tur!'];
+    const L = lines && lines.length ? lines : [$t('🐬 Det ger tur!')];
     let k = 0, n = 0;
     for (const p of peds) {
       if (p.hidden || p.gone || p.door || Math.hypot(p.x - cx, (p.y - cy) * 1.2) > r) continue;
       const mate = p.leader || p.comp;
-      const text = mate ? (p.leader ? '🤗 Kram! Det ger tur!' : '🤗 Såg du?!') : L[k++ % L.length];
+      const text = mate ? (p.leader ? $t('🤗 Kram! Det ger tur!') : $t('🤗 Såg du?!')) : L[k++ % L.length];
       p.talk = { text, t: 3.6 }; p.lastSaid = text; n++;
       holdFor(p, 4.2, cx, cy);
       if (mate && !p.sit && !mate.sit) p.face = faceTo(mate.x - p.x, (mate.y - p.y) * 0.6 || 0.01);

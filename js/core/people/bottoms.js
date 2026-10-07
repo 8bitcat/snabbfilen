@@ -29,6 +29,7 @@
 // Ändra inte de gamla posterna (jeans, pants, shorts, skirt, dress, none, normal) – de är
 // pixellåsta av tools/people-regress.mjs.
 import { TAG, mix, ramp } from './util.js';
+import { $t, $n } from '../i18n.js';
 
 // ---------- färger som inte kommer ur looken ----------
 const GOLD = 0xc9b27a;      // knappar/spännen (samma som motorns bältesspänne)
@@ -195,14 +196,14 @@ const sparkle = (R, x, y, n = 11) => { const v = (x * 5 + y * 3 + R.frame * 2) %
 // ---------- underdelarna ----------
 export const BOTTOM_REG = {
   jeans: {
-    label: 'Jeans', group: 'Långbyxor',
+    label: $t('Jeans'), group: $n('Långbyxor'),
     legRow(R, row) { if (!row.side && row.j === 4 && !row.bare) R.put(row.x + 1, row.y, R.pants.hi); }, // knäsöm
   },
-  pants: { label: 'Byxor', group: 'Långbyxor' },
-  shorts: { label: 'Shorts', group: 'Shorts', bareFrom: 3, lapSkin: true, shinSkin: true, darkSole: true },
-  skirt: { label: 'Kjol', group: 'Kjolar', skirt: (R) => (R.K ? 3 : 5), bareFrom: 3 },
+  pants: { label: $t('Byxor'), group: $n('Långbyxor') },
+  shorts: { label: $t('Shorts'), group: $n('Shorts'), bareFrom: 3, lapSkin: true, shinSkin: true, darkSole: true },
+  skirt: { label: $t('Kjol'), group: $n('Kjolar'), skirt: (R) => (R.K ? 3 : 5), bareFrom: 3 },
   dress: { // klänning = kjol i tröjans färg (lite längre, utan bälte)
-    label: 'Klän\u00adning', group: 'Klänningar',
+    label: $t('Klän\u00adning'), group: $n('Klänningar'),
     skirt: (R) => (R.K ? 3 : 5) + 1, bareFrom: (R) => (R.K ? 3 : 4), crotch: false, folds: true,
     colorField: 'shirt', // redigeraren: underdelens färg = tröjans
     prep(R) { R.pants = R.shirt; },
@@ -210,7 +211,7 @@ export const BOTTOM_REG = {
 
   // ================= jeans =================
   jeansRipped: legs({ // slitna jeans: hål på knäna och ett på låret, vita fransar
-    label: 'Slitna jeans', group: 'Långbyxor',
+    label: $t('Slitna jeans'), group: $n('Långbyxor'),
     fx(R, row) {
       if (row.bare || R.back || row.sit || row.far) return;
       const knee = R.K ? 2 : 4, { x, y, j } = row;
@@ -232,7 +233,7 @@ export const BOTTOM_REG = {
     back: backPockets,
   }),
   jeansCuffed: legs({ // uppvikta jeans: ljus uppvikning, bar fotled
-    label: 'Uppvikta jeans', group: 'Långbyxor',
+    label: $t('Uppvikta jeans'), group: $n('Långbyxor'),
     fx(R, row) {
       if (row.bare) return;
       const k = kOf(row), p = R.pants;
@@ -243,7 +244,7 @@ export const BOTTOM_REG = {
     back: backPockets,
   }),
   jeansFlare: legs({ // utsvängda: vidare nertill
-    label: 'Utsvängda jeans', group: 'Långbyxor',
+    label: $t('Utsvängda jeans'), group: $n('Långbyxor'),
     fx(R, row) {
       if (row.bare) return;
       const k = kOf(row);
@@ -253,7 +254,7 @@ export const BOTTOM_REG = {
     back: backPockets,
   }),
   jeansBaggy: legs({ // baggy: vida ben hela vägen, lågt gren, veck nertill
-    label: 'Baggy jeans', group: 'Långbyxor',
+    label: $t('Baggy jeans'), group: $n('Långbyxor'),
     fx(R, row) {
       if (row.bare) return;
       const k = kOf(row), p = legRamp(R, row, R.pants);
@@ -265,13 +266,13 @@ export const BOTTOM_REG = {
     back: backPockets,
   }),
   jeansHigh: legs({ // högmidjade: linningen går upp över tröjan
-    label: 'Högmidjade jeans', group: 'Långbyxor', belt: false,
+    label: $t('Högmidjade jeans'), group: $n('Långbyxor'), belt: false,
     fx(R, row) { if (!row.bare && !row.side && !row.sit && row.j === (R.K ? 2 : 4)) R.put(row.x + 1, row.y, R.pants.hi); },
     afterTorso(R) { highWaist(R, R.K ? 1 : 2, { buttons: 2 }); },
     back: backPockets,
   }),
   jeansPatched: legs({ // lappade: tygbitar i mönsterfärgen på knä och lår
-    label: 'Lappade jeans', group: 'Långbyxor', uses: ['pants2'],
+    label: $t('Lappade jeans'), group: $n('Långbyxor'), uses: ['pants2'],
     fx(R, row) {
       if (row.bare || row.sit || R.back || row.far) return;
       const P = R.pants2, knee = R.K ? 2 : 4, { x, y, j } = row;
@@ -287,7 +288,7 @@ export const BOTTOM_REG = {
 
   // ================= långbyxor =================
   cargo: legs({ // cargobyxor: stora benfickor med lock
-    label: 'Cargo\u00adbyxor', group: 'Långbyxor',
+    label: $t('Cargo\u00adbyxor'), group: $n('Långbyxor'),
     fx(R, row) {
       if (row.bare || row.sit) return;
       const pj = R.K ? 1 : 3, d = row.j - pj, p = legRamp(R, row, R.pants), { x, y } = row;
@@ -304,7 +305,7 @@ export const BOTTOM_REG = {
     back: backPockets,
   }),
   chinos: legs({ // chinos: pressveck, snedfickor och liten uppvikning
-    label: 'Chinos', group: 'Långbyxor',
+    label: $t('Chinos'), group: $n('Långbyxor'),
     fx(R, row) {
       if (row.bare) return;
       const k = kOf(row), p = R.pants;
@@ -314,7 +315,7 @@ export const BOTTOM_REG = {
     front(R) { if (R.sit) return; const y = R.hy + R.hipH - 1; R.put(12 - R.tw + 1, y, R.pants.lo); R.put(10 + R.tw, y, R.pants.lo); },
   }),
   suitPants: legs({ // kostymbyxor: skarpt pressveck och fall över skon
-    label: 'Kostym\u00adbyxor', group: 'Långbyxor',
+    label: $t('Kostym\u00adbyxor'), group: $n('Långbyxor'),
     fx(R, row) {
       if (row.bare || row.side) return;
       R.put(row.left ? row.x + 2 : row.x + 1, row.y, R.pants.hi);
@@ -322,14 +323,14 @@ export const BOTTOM_REG = {
     },
   }),
   corduroy: legs({ // manchester: räfflor på längden
-    label: 'Manchester\u00adbyxor', group: 'Långbyxor',
+    label: $t('Manchester\u00adbyxor'), group: $n('Långbyxor'),
     fx() {},
     front(R) { const p = R.pants, m = mix(p.base, p.lo, 0.55); R.pattern(TAG.pants, (x, y, c) => ((x & 1) && c === p.base ? m : c === p.lo && (x & 1) ? p.dk : null)); },
     back(R) { this.front(R); },
     side(R) { const p = R.pants, m = mix(p.base, p.lo, 0.55), f = mix(p.lo, p.dk, 0.5); R.pattern(TAG.pants, (x, y, c) => (!(x & 1) ? null : c === p.base ? m : c === p.lo ? f : null)); },
   }),
   leather: legs({ // skinnbyxor: blanka högdagrar
-    label: 'Skinn\u00adbyxor', group: 'Långbyxor',
+    label: $t('Skinn\u00adbyxor'), group: $n('Långbyxor'),
     fx(R, row) {
       if (row.bare) return;
       const s = mix(R.pants.hi, 0xffffff, row.far ? 0.12 : 0.32), { j } = row;
@@ -339,7 +340,7 @@ export const BOTTOM_REG = {
     },
   }),
   wide: legs({ // vida byxor: hög midja, vida ben som faller ner över skorna
-    label: 'Vida byxor', group: 'Långbyxor', belt: false, crotch: false,
+    label: $t('Vida byxor'), group: $n('Långbyxor'), belt: false, crotch: false,
     fx(R, row) {
       if (row.bare) return;
       const k = kOf(row);
@@ -349,7 +350,7 @@ export const BOTTOM_REG = {
     afterTorso(R) { highWaist(R, R.K ? 1 : 2, { buttons: 0 }); },
   }),
   capri: legs({ // capribyxor: slutar mitt på vaden, uppvikta
-    label: 'Capri\u00adbyxor', group: 'Långbyxor', bareFrom: (R) => (R.K ? 4 : 6), darkSole: true,
+    label: $t('Capri\u00adbyxor'), group: $n('Långbyxor'), bareFrom: (R) => (R.K ? 4 : 6), darkSole: true,
     fx(R, row) {
       const b = R.K ? 4 : 6, p = R.pants, cuff = { hi: mix(p.hi, 0xffffff, 0.2), base: p.hi, lo: p.base, dk: p.lo };
       if (row.sit) { const k = kOf(row); if (k <= (R.K ? 0 : 1)) skinRow(R, row); else if (k === 2) paintRow(R, row, cuff); return; }
@@ -357,7 +358,7 @@ export const BOTTOM_REG = {
     },
   }),
   jodhpurs: legs({ // ridbyxor: vida över låren, tighta under knät, knälapp på insidan
-    label: 'Rid­byxor', group: 'Långbyxor',
+    label: $t('Rid­byxor'), group: $n('Långbyxor'),
     fx(R, row) {
       if (row.bare || row.sit) return;
       const { j } = row, K = R.K, kj = K ? 2 : 4;
@@ -371,7 +372,7 @@ export const BOTTOM_REG = {
     },
   }),
   knickers: legs({ // knickers (golfbyxor): pösiga till under knät, mudd och mönstrade knästrumpor
-    label: 'Knickers', group: 'Långbyxor', uses: ['pants2'],
+    label: $t('Knickers'), group: $n('Långbyxor'), uses: ['pants2'],
     fx(R, row) {
       if (row.bare) return;
       const p = R.pants, pj = R.K ? 2 : 4, cuff = { hi: p.base, base: p.lo, lo: p.dk, dk: p.dk };
@@ -387,7 +388,7 @@ export const BOTTOM_REG = {
     },
   }),
   culottes: legs({ // byxkjol: vida ben som slutar nedanför knät – ser ut som en kjol
-    label: 'Byxkjol', group: 'Långbyxor', bareFrom: (R) => (R.K ? 3 : 5), belt: false, crotch: false, darkSole: true,
+    label: $t('Byxkjol'), group: $n('Långbyxor'), bareFrom: (R) => (R.K ? 3 : 5), belt: false, crotch: false, darkSole: true,
     fx(R, row) {
       const K = R.K, p = R.pants;
       if (row.sit) { if (kOf(row) <= (K ? 0 : 1)) skinRow(R, row); else widen(R, row, 1); return; }
@@ -404,7 +405,7 @@ export const BOTTOM_REG = {
 
   // ================= mjukis & träning =================
   joggers: legs({ // joggers: resår i midjan, mudd vid fotleden
-    label: 'Joggers', group: 'Mjukis & träning', belt: false,
+    label: $t('Joggers'), group: $n('Mjukis & träning'), belt: false,
     fx(R, row) {
       if (row.bare) return;
       const k = kOf(row), p = R.pants;
@@ -416,7 +417,7 @@ export const BOTTOM_REG = {
     side(R) { waistband(R, { string: true }); },
   }),
   sweatpants: legs({ // mjukisbyxor: påsiga, ljus resår, dragsko
-    label: 'Mjukis\u00adbyxor', group: 'Mjukis & träning', belt: false,
+    label: $t('Mjukis\u00adbyxor'), group: $n('Mjukis & träning'), belt: false,
     fx(R, row) {
       if (row.bare) return;
       const k = kOf(row), p = R.pants;
@@ -429,7 +430,7 @@ export const BOTTOM_REG = {
     side(R) { waistband(R, { c: R.pants.hi, string: true }); },
   }),
   trackPants: legs({ // träningsbyxor: rand längs sidan i mönsterfärgen
-    label: 'Tränings\u00adbyxor', group: 'Mjukis & träning', belt: false, uses: ['pants2'],
+    label: $t('Tränings\u00adbyxor'), group: $n('Mjukis & träning'), belt: false, uses: ['pants2'],
     fx(R, row) {
       if (row.bare) return;
       const P = legRamp(R, row, R.pants2);
@@ -443,7 +444,7 @@ export const BOTTOM_REG = {
     side(R) { waistband(R); withTag(R, TAG.extra, () => R.rect(12, R.hy + 1, 1, R.hipH - 1, R.pants2.base)); },
   }),
   leggings: legs({ // leggings: ingen gylf, blank högdager, bar fotled
-    label: 'Leggings', group: 'Mjukis & träning', belt: false, crotch: false,
+    label: $t('Leggings'), group: $n('Mjukis & träning'), belt: false, crotch: false,
     fx(R, row) {
       if (row.bare) return;
       const k = kOf(row);
@@ -455,7 +456,7 @@ export const BOTTOM_REG = {
     side(R) { waistband(R, { c: R.pants.dk }); },
   }),
   pajamas: legs({ // pyjamasbyxor: vida, resår med rosett, kantband nertill
-    label: 'Pyjamas\u00adbyxor', group: 'Mjukis & träning', belt: false, uses: ['pants2'],
+    label: $t('Pyjamas\u00adbyxor'), group: $n('Mjukis & träning'), belt: false, uses: ['pants2'],
     fx(R, row) {
       if (row.bare) return;
       const k = kOf(row);
@@ -467,7 +468,7 @@ export const BOTTOM_REG = {
     side(R) { waistband(R, { c: R.pants.hi }); },
   }),
   harem: legs({ // haremsbyxor: pösiga, låg gren, tajt mudd vid fotleden
-    label: 'Harems­byxor', group: 'Mjukis & träning', belt: false, crotch: false,
+    label: $t('Harems­byxor'), group: $n('Mjukis & träning'), belt: false, crotch: false,
     fx(R, row) {
       if (row.bare) return;
       const k = kOf(row), p = R.pants;
@@ -488,14 +489,14 @@ export const BOTTOM_REG = {
 
   // ================= shorts =================
   bermuda: legs({ // bermudashorts: till knät, vida med uppvikning
-    label: 'Bermuda\u00adshorts', group: 'Shorts', bareFrom: (R) => (R.K ? 3 : 5), shinSkin: true, darkSole: true,
+    label: $t('Bermuda\u00adshorts'), group: $n('Shorts'), bareFrom: (R) => (R.K ? 3 : 5), shinSkin: true, darkSole: true,
     fx(R, row) {
       if (row.bare || row.sit) return;
       if (row.j === (R.K ? 2 : 4)) { const p = R.pants; paintRow(R, row, { hi: mix(p.hi, 0xffffff, 0.2), base: p.hi, lo: p.base, dk: p.lo }); widen(R, row, 1, row.side ? undefined : p.base); }
     },
   }),
   cargoShorts: legs({ // cargoshorts: knälånga med benfickor
-    label: 'Cargo\u00adshorts', group: 'Shorts', bareFrom: (R) => (R.K ? 3 : 5), shinSkin: true, darkSole: true,
+    label: $t('Cargo\u00adshorts'), group: $n('Shorts'), bareFrom: (R) => (R.K ? 3 : 5), shinSkin: true, darkSole: true,
     fx(R, row) {
       if (row.bare || row.sit) return;
       const pj = R.K ? 1 : 2, d = row.j - pj, p = legRamp(R, row, R.pants), { x, y } = row;
@@ -506,7 +507,7 @@ export const BOTTOM_REG = {
     },
   }),
   denimShorts: legs({ // jeansshorts: korta med fransar och fickfoder som sticker ut
-    label: 'Jeans\u00adshorts', group: 'Shorts', bareFrom: (R) => (R.K ? 1 : 2), lapSkin: true, shinSkin: true, darkSole: true,
+    label: $t('Jeans\u00adshorts'), group: $n('Shorts'), bareFrom: (R) => (R.K ? 1 : 2), lapSkin: true, shinSkin: true, darkSole: true,
     fx(R, row) {
       if (row.sit || row.far) return;
       const b = R.K ? 1 : 2;
@@ -516,7 +517,7 @@ export const BOTTOM_REG = {
     back(R) { backPockets(R); },
   }),
   swimTrunks: legs({ // badbyxor: resår, dragsko, slits i sidan
-    label: 'Bad\u00adbyxor', group: 'Shorts', bareFrom: (R) => (R.K ? 2 : 3), lapSkin: true, shinSkin: true, darkSole: true, belt: false,
+    label: $t('Bad\u00adbyxor'), group: $n('Shorts'), bareFrom: (R) => (R.K ? 2 : 3), lapSkin: true, shinSkin: true, darkSole: true, belt: false,
     fx(R, row) {
       if (row.bare || row.sit || row.side) return;
       if (row.j === (R.K ? 1 : 2)) withTag(R, TAG.skin, () => R.put(outerX(row), row.y, R.skin.lo));
@@ -526,14 +527,14 @@ export const BOTTOM_REG = {
     side(R) { waistband(R, { string: true }); },
   }),
   bikeShorts: legs({ // cykelbyxor: tighta, till mitten av låret, kantband
-    label: 'Cykel\u00adbyxor', group: 'Shorts', bareFrom: (R) => (R.K ? 3 : 4), shinSkin: true, darkSole: true, belt: false, crotch: false,
+    label: $t('Cykel\u00adbyxor'), group: $n('Shorts'), bareFrom: (R) => (R.K ? 3 : 4), shinSkin: true, darkSole: true, belt: false, crotch: false,
     fx(R, row) { if (!row.bare && !row.sit && row.j === (R.K ? 2 : 3)) paintRow(R, row, { hi: R.pants.lo, base: R.pants.dk, lo: R.pants.dk, dk: R.pants.dk }); },
     front(R) { waistband(R, { c: R.pants.dk }); },
     back(R) { waistband(R, { c: R.pants.dk }); },
     side(R) { waistband(R, { c: R.pants.dk }); },
   }),
   sportShorts: legs({ // träningsshorts: kantband i mönsterfärgen och slits
-    label: 'Tränings\u00adshorts', group: 'Shorts', bareFrom: (R) => (R.K ? 2 : 3), lapSkin: true, shinSkin: true, darkSole: true, belt: false, uses: ['pants2'],
+    label: $t('Tränings\u00adshorts'), group: $n('Shorts'), bareFrom: (R) => (R.K ? 2 : 3), lapSkin: true, shinSkin: true, darkSole: true, belt: false, uses: ['pants2'],
     fx(R, row) {
       if (row.bare || row.sit) return;
       if (row.j === (R.K ? 1 : 2)) {
@@ -548,13 +549,13 @@ export const BOTTOM_REG = {
 
   // ================= kjolar =================
   miniSkirt: { // minikjol: kort och rak, linning
-    label: 'Minikjol', group: 'Kjolar', skirt: (R) => (R.K ? 2 : 3), bareFrom: 1, crotch: false,
+    label: $t('Minikjol'), group: $n('Kjolar'), skirt: (R) => (R.K ? 2 : 3), bareFrom: 1, crotch: false,
     front(R) { R.rect(12 - R.tw, R.hy, R.tw * 2, 1, R.pants.lo); if (!R.K) R.rect(13 - R.tw, R.hy + 1, R.tw * 2 - 1, 1, R.pants.base); },
     back(R) { this.front(R); },
     side(R) { R.rect(9, R.hy, 7, 1, R.pants.lo); },
   },
   pleated: { // plisserad kjol: veck hela vägen runt
-    label: 'Plisserad kjol', group: 'Kjolar', skirt: (R) => (R.K ? 3 : 5), bareFrom: (R) => (R.K ? 2 : 3), crotch: false,
+    label: $t('Plisserad kjol'), group: $n('Kjolar'), skirt: (R) => (R.K ? 3 : 5), bareFrom: (R) => (R.K ? 2 : 3), crotch: false,
     front(R) {
       const p = R.pants, [y0, y1] = skirtRows(R);
       R.rect(12 - R.tw, y0, R.tw * 2, 1, p.lo);
@@ -564,7 +565,7 @@ export const BOTTOM_REG = {
     side(R) { this.front(R); },
   },
   tutu: { // tyllkjol: puffig, tyllstruktur, satinlinning
-    label: 'Tyllkjol', group: 'Kjolar', skirt: (R) => (R.K ? 3 : 4), bareFrom: (R) => (R.K ? 1 : 2), crotch: false,
+    label: $t('Tyllkjol'), group: $n('Kjolar'), skirt: (R) => (R.K ? 3 : 4), bareFrom: (R) => (R.K ? 1 : 2), crotch: false,
     front(R) {
       const p = R.pants, [y0, y1] = skirtRows(R);
       for (let j = 1; j < R.skirtLen; j++) flare(R, j, j === R.skirtLen - 1 ? 1 : 2, p.base);
@@ -575,7 +576,7 @@ export const BOTTOM_REG = {
     side(R) { this.front(R); },
   },
   denimSkirt: { // jeanskjol: mittsöm, knapp, fickor
-    label: 'Jeanskjol', group: 'Kjolar', skirt: (R) => (R.K ? 3 : 4), bareFrom: (R) => (R.K ? 1 : 2), crotch: false,
+    label: $t('Jeanskjol'), group: $n('Kjolar'), skirt: (R) => (R.K ? 3 : 4), bareFrom: (R) => (R.K ? 1 : 2), crotch: false,
     front(R) {
       const p = R.pants, y0 = R.hy;
       R.rect(12 - R.tw, y0, R.tw * 2, 1, p.lo);
@@ -588,7 +589,7 @@ export const BOTTOM_REG = {
     side(R) { R.rect(9, R.hy, 7, 1, R.pants.lo); R.put(12, R.hy + 1, R.pants.lo); },
   },
   longSkirt: { // lång kjol: ända ner till fotleden, mjuka veck
-    label: 'Lång kjol', group: 'Kjolar', skirt: toFloor, crotch: false,
+    label: $t('Lång kjol'), group: $n('Kjolar'), skirt: toFloor, crotch: false,
     front(R) {
       const p = R.pants, y0 = R.hy, y1 = R.hy + R.skirtLen;
       R.rect(12 - R.tw, y0, R.tw * 2, 1, p.lo);
@@ -599,7 +600,7 @@ export const BOTTOM_REG = {
     side(R) { const p = R.pants; R.rect(9, R.hy, 7, 1, p.lo); for (let y = R.hy + 3; y < R.hy + R.skirtLen - 1; y++) R.put(12, y, p.lo); flare(R, R.skirtLen - 1, 1, p.lo); },
   },
   pencil: { // pennkjol: smal och rak till knät, slits bak
-    label: 'Pennkjol', group: 'Kjolar', bareFrom: (R) => (R.K ? 3 : 5), crotch: false, belt: false, shinSkin: true,
+    label: $t('Pennkjol'), group: $n('Kjolar'), bareFrom: (R) => (R.K ? 3 : 5), crotch: false, belt: false, shinSkin: true,
     legRow(R, row) { // kom ihåg benens tygrader så att kjolen kan täcka mellanrummet
       if (row.bare) return;
       const m = (R._pencil ||= {}), r = m[row.y];
@@ -624,7 +625,7 @@ export const BOTTOM_REG = {
     },
   },
   ruffle: { // volangkjol: två volanger, vid kant nertill
-    label: 'Volangkjol', group: 'Kjolar', skirt: (R) => (R.K ? 3 : 5), bareFrom: (R) => (R.K ? 2 : 3), crotch: false,
+    label: $t('Volangkjol'), group: $n('Kjolar'), skirt: (R) => (R.K ? 3 : 5), bareFrom: (R) => (R.K ? 2 : 3), crotch: false,
     front(R) {
       const p = R.pants, y0 = R.hy, n = R.skirtLen, mid = y0 + (R.K ? 1 : 2);
       R.rect(12 - R.tw, y0, R.tw * 2, 1, p.lo);
@@ -635,7 +636,7 @@ export const BOTTOM_REG = {
     side(R) { this.front(R); },
   },
   kilt: { // kilt: rak, veckad bak, skärp med spänne, fransad kant och sporran framtill
-    label: 'Kilt', group: 'Kjolar', skirt: (R) => (R.K ? 3 : 5), bareFrom: (R) => (R.K ? 2 : 3), crotch: false,
+    label: $t('Kilt'), group: $n('Kjolar'), skirt: (R) => (R.K ? 3 : 5), bareFrom: (R) => (R.K ? 2 : 3), crotch: false,
     front(R) {
       const p = R.pants, y0 = R.hy, y1 = y0 + R.skirtLen;
       withTag(R, TAG.belt, () => { R.rect(12 - R.tw, y0, R.tw * 2, 1, LEATHER.dk); if (R.front) R.put(12, y0, SILVER); });
@@ -659,7 +660,7 @@ export const BOTTOM_REG = {
     },
   },
   wrapSkirt: { // omlottkjol: snett omlott framtill och knytband i sidan
-    label: 'Omlott­kjol', group: 'Kjolar', skirt: (R) => (R.K ? 3 : 5), bareFrom: (R) => (R.K ? 2 : 3), crotch: false, uses: ['pants2'],
+    label: $t('Omlott­kjol'), group: $n('Kjolar'), skirt: (R) => (R.K ? 3 : 5), bareFrom: (R) => (R.K ? 2 : 3), crotch: false, uses: ['pants2'],
     front(R) {
       const p = R.pants, P = R.pants2, y0 = R.hy, n = R.skirtLen;
       R.rect(12 - R.tw, y0, R.tw * 2, 1, p.lo);
@@ -679,7 +680,7 @@ export const BOTTOM_REG = {
     },
   },
   tennisSkirt: { // tenniskjol: kort och veckad med rand nertill
-    label: 'Tennis­kjol', group: 'Kjolar', skirt: (R) => (R.K ? 2 : 3), bareFrom: 1, crotch: false, uses: ['pants2'],
+    label: $t('Tennis­kjol'), group: $n('Kjolar'), skirt: (R) => (R.K ? 2 : 3), bareFrom: 1, crotch: false, uses: ['pants2'],
     front(R) {
       const p = R.pants, P = R.pants2, [y0, y1] = skirtRows(R);
       R.rect(R.side ? 9 : 12 - R.tw, y0, R.side ? 7 : R.tw * 2, 1, p.lo);
@@ -690,7 +691,7 @@ export const BOTTOM_REG = {
     side(R) { this.front(R); },
   },
   folkdrakt: { // folkdräktskjol: lång mörk kjol, randigt förkläde framtill och vita strumpor
-    label: 'Folkdräkts­kjol', group: 'Kjolar', skirt: (R) => R.shoeTop - R.hy - (R.K ? 1 : 2), bareFrom: 3, crotch: false, uses: ['pants2'],
+    label: $t('Folkdräkts­kjol'), group: $n('Kjolar'), skirt: (R) => R.shoeTop - R.hy - (R.K ? 1 : 2), bareFrom: 3, crotch: false, uses: ['pants2'],
     legRow(R, row) { if (row.bare) withTag(R, TAG.extra, () => paintRow(R, row, STOCKING)); },
     stripes(R) { const P = R.pants2; return [P.base, 0xf2cf2e, P.lo, 0x46a35a]; },
     front(R) {
@@ -716,13 +717,13 @@ export const BOTTOM_REG = {
 
   // ================= klänningar (tröjans färg) =================
   sundress: { ...DRESS, // sommarklänning: knytband i midjan, spetskant
-    label: 'Sommar\u00adklänning', group: 'Klänningar', skirt: (R) => (R.K ? 4 : 6), bareFrom: (R) => (R.K ? 3 : 4), folds: true, uses: ['pants2'],
+    label: $t('Sommar\u00adklänning'), group: $n('Klänningar'), skirt: (R) => (R.K ? 4 : 6), bareFrom: (R) => (R.K ? 3 : 4), folds: true, uses: ['pants2'],
     front(R) { sash(R, R.pants2); const y = R.hy + R.skirtLen - 1; R.pattern(TAG.pants, (x, yy) => (yy === y && (x & 1) ? mix(R.pants.hi, 0xffffff, 0.45) : null)); },
     back(R) { this.front(R); },
     side(R) { this.front(R); },
   },
   gown: { ...DRESS, // balklänning: golvlång, mycket vid, släp från sidan, glitter
-    label: 'Bal\u00adklänning', group: 'Klänningar', skirt: toFloor, uses: ['pants2'],
+    label: $t('Bal\u00adklänning'), group: $n('Klänningar'), skirt: toFloor, uses: ['pants2'],
     front(R) {
       const n = R.skirtLen, p = R.pants;
       for (let j = 3; j < n; j++) flare(R, j, j >= n - 3 ? 2 : 1, j === n - 1 ? p.lo : undefined);
@@ -739,7 +740,7 @@ export const BOTTOM_REG = {
     },
   },
   princess: { ...DRESS, // prinsessklänning: klockformad med volanger, puffärmar, glitter
-    label: 'Prinsess\u00adklänning', group: 'Klänningar', skirt: toFloor, uses: ['pants2'],
+    label: $t('Prinsess\u00adklänning'), group: $n('Klänningar'), skirt: toFloor, uses: ['pants2'],
     front(R) {
       const n = R.skirtLen, p = R.pants, t1 = R.hy + (R.K ? 2 : 3), t2 = R.hy + (R.K ? 4 : 6);
       for (let j = 1; j < n; j++) flare(R, j, j >= n - 2 ? 3 : j >= (R.K ? 3 : 4) ? 2 : 1, j === n - 1 ? p.lo : undefined);
@@ -760,7 +761,7 @@ export const BOTTOM_REG = {
     },
   },
   maxiDress: { ...DRESS, // maxiklänning: lång och fladdrig med slits
-    label: 'Maxi\u00adklänning', group: 'Klänningar', skirt: toFloor,
+    label: $t('Maxi\u00adklänning'), group: $n('Klänningar'), skirt: toFloor,
     front(R) {
       const p = R.pants, y1 = R.hy + R.skirtLen;
       R.rect(12 - R.tw, R.hy, R.tw * 2, 1, p.lo);
@@ -771,7 +772,7 @@ export const BOTTOM_REG = {
     side(R) { R.rect(9, R.hy, 7, 1, R.pants.lo); for (let y = R.hy + 2; y < R.hy + R.skirtLen - 1; y++) R.put(11 + ((y >> 1) & 1), y, R.pants.lo); },
   },
   shirtDress: { ...DRESS, // skjortklänning: knappslå hela vägen och skärp
-    label: 'Skjort\u00adklänning', group: 'Klänningar', skirt: (R) => (R.K ? 4 : 5), bareFrom: (R) => (R.K ? 3 : 3),
+    label: $t('Skjort\u00adklänning'), group: $n('Klänningar'), skirt: (R) => (R.K ? 4 : 5), bareFrom: (R) => (R.K ? 3 : 3),
     front(R) {
       const p = R.pants, y1 = R.hy + R.skirtLen;
       withTag(R, TAG.belt, () => { R.rect(12 - R.tw, R.hy, R.tw * 2, 1, mix(p.dk, 0x1c1814, 0.4)); R.rect(11, R.hy, 2, 1, GOLD); });
@@ -783,7 +784,7 @@ export const BOTTOM_REG = {
     side(R) { withTag(R, TAG.belt, () => R.rect(9, R.hy, 7, 1, mix(R.pants.dk, 0x1c1814, 0.4))); },
   },
   partyDress: { ...DRESS, // festklänning: kort, svängig, paljetter som glittrar
-    label: 'Fest\u00adklänning', group: 'Klänningar', skirt: (R) => (R.K ? 3 : 4), bareFrom: (R) => (R.K ? 1 : 2),
+    label: $t('Fest\u00adklänning'), group: $n('Klänningar'), skirt: (R) => (R.K ? 3 : 4), bareFrom: (R) => (R.K ? 1 : 2),
     front(R) {
       flare(R, R.skirtLen - 1, 1, R.pants.lo);
       if (!R.K) flare(R, R.skirtLen - 2, 1);
@@ -794,14 +795,14 @@ export const BOTTOM_REG = {
     afterTorso(R) { R.pattern(TAG.torso, (x, y) => sparkle(R, x, y)); },
   },
   sweaterDress: { ...DRESS, // tröjklänning: stickad, långa ärmar, ribbad kant
-    label: 'Tröj\u00adklänning', group: 'Klänningar', skirt: (R) => (R.K ? 3 : 4), bareFrom: 2,
+    label: $t('Tröj\u00adklänning'), group: $n('Klänningar'), skirt: (R) => (R.K ? 3 : 4), bareFrom: 2,
     prep(R) { R.pants = R.shirt; R.longSleeve = true; R.noSleeve = false; },
     front(R) { const p = R.pants, y = R.hy + R.skirtLen - 1; R.pattern(TAG.pants, (x, yy) => (yy === y ? ((x & 1) ? p.dk : p.lo) : null)); },
     back(R) { this.front(R); },
     side(R) { this.front(R); },
   },
   lucia: { ...DRESS, // luciaklänning: vit, golvlång, långa ärmar och rött band i midjan
-    label: 'Lucia\u00adklänning', group: 'Klänningar', skirt: toFloor, uses: ['pants2'],
+    label: $t('Lucia\u00adklänning'), group: $n('Klänningar'), skirt: toFloor, uses: ['pants2'],
     prep(R) { R.pants = R.shirt; R.longSleeve = true; R.noSleeve = false; },
     front(R) {
       const p = R.pants;
@@ -812,7 +813,7 @@ export const BOTTOM_REG = {
     side(R) { sash(R, R.pants2, { tails: R.K ? 3 : 5 }); },
   },
   weddingDress: { ...DRESS, // brudklänning: vid, spetsmönster och släp
-    label: 'Brud\u00adklänning', group: 'Klänningar', skirt: toFloor,
+    label: $t('Brud\u00adklänning'), group: $n('Klänningar'), skirt: toFloor,
     front(R) {
       const n = R.skirtLen, p = R.pants;
       for (let j = 2; j < n; j++) flare(R, j, j >= n - 4 ? 2 : 1, j === n - 1 ? p.lo : undefined);
@@ -830,47 +831,47 @@ export const BOTTOM_REG = {
 
   // ================= overaller & hängsel =================
   jumpsuit: { ...DRESS, // jumpsuit: byxor och liv i ett, knytband i midjan
-    label: 'Jumpsuit', group: 'Overaller & hängsel', crotch: true, belt: false,
+    label: $t('Jumpsuit'), group: $n('Overaller & hängsel'), crotch: true, belt: false,
     legRow(R, row) { if (!row.bare && kOf(row) === 0) widen(R, row, 1); },
     front(R) { sash(R, { hi: R.pants.base, base: R.pants.lo, lo: R.pants.dk, dk: R.pants.dk }); },
     back(R) { this.front(R); },
     side(R) { this.front(R); },
   },
   playsuit: { ...DRESS, // kort jumpsuit (byxdress)
-    label: 'Byxdress', group: 'Overaller & hängsel', crotch: true, belt: false, bareFrom: (R) => (R.K ? 2 : 3), lapSkin: true, shinSkin: true, darkSole: true,
+    label: $t('Byxdress'), group: $n('Overaller & hängsel'), crotch: true, belt: false, bareFrom: (R) => (R.K ? 2 : 3), lapSkin: true, shinSkin: true, darkSole: true,
     legRow(R, row) { if (!row.bare && row.j === (R.K ? 1 : 2)) widen(R, row, 1); },
     front(R) { sash(R, { hi: R.pants.base, base: R.pants.lo, lo: R.pants.dk, dk: R.pants.dk }); },
     back(R) { this.front(R); },
     side(R) { this.front(R); },
   },
   dungarees: legs({ // snickarbyxor: bröstlapp med hängslen och knappar
-    label: 'Snickar\u00adbyxor', group: 'Overaller & hängsel', belt: false,
+    label: $t('Snickar\u00adbyxor'), group: $n('Overaller & hängsel'), belt: false,
     fx(R, row) { if (!row.bare && !row.sit && kOf(row) === 0) { const p = R.pants; paintRow(R, row, { hi: mix(p.hi, 0xffffff, 0.2), base: p.hi, lo: p.base, dk: p.lo }); } },
     afterTorso(R) { bib(R); },
     front(R) { if (!R.sit) withTag(R, TAG.belt, () => { R.put(12 - R.tw, R.hy, GOLD); R.put(11 + R.tw, R.hy, GOLD); }); },
   }),
   dungareeShorts: legs({ // snickarshorts
-    label: 'Snickar\u00adshorts', group: 'Overaller & hängsel', belt: false, bareFrom: (R) => (R.K ? 2 : 3), lapSkin: true, shinSkin: true, darkSole: true,
+    label: $t('Snickar\u00adshorts'), group: $n('Overaller & hängsel'), belt: false, bareFrom: (R) => (R.K ? 2 : 3), lapSkin: true, shinSkin: true, darkSole: true,
     fx(R, row) { if (!row.bare && !row.sit && row.j === (R.K ? 1 : 2)) { const p = R.pants; paintRow(R, row, { hi: mix(p.hi, 0xffffff, 0.2), base: p.hi, lo: p.base, dk: p.lo }); } },
     afterTorso(R) { bib(R); },
     front(R) { if (!R.sit) withTag(R, TAG.belt, () => { R.put(12 - R.tw, R.hy, GOLD); R.put(11 + R.tw, R.hy, GOLD); }); },
   }),
   pinafore: { // hängselkjol: kjol med bröstlapp
-    label: 'Hängsel\u00adkjol', group: 'Overaller & hängsel', skirt: (R) => (R.K ? 3 : 5), bareFrom: (R) => (R.K ? 2 : 3), crotch: false,
+    label: $t('Hängsel\u00adkjol'), group: $n('Overaller & hängsel'), skirt: (R) => (R.K ? 3 : 5), bareFrom: (R) => (R.K ? 2 : 3), crotch: false,
     afterTorso(R) { bib(R, { pocket: true }); },
     front(R) { const p = R.pants; R.rect(13 - R.tw, R.hy + R.skirtLen - 2, R.tw * 2 - 2, 1, p.hi); },
     back(R) { this.front(R); },
     side(R) { const p = R.pants; R.rect(10, R.hy + R.skirtLen - 2, 5, 1, p.hi); },
   },
   suspenders: { // hängselbyxor: smala hängslen i kontrastfärg
-    label: 'Hängsel\u00adbyxor', group: 'Overaller & hängsel', belt: false, uses: ['pants2'],
+    label: $t('Hängsel\u00adbyxor'), group: $n('Overaller & hängsel'), belt: false, uses: ['pants2'],
     afterTorso(R) { thinStraps(R, R.pants2); },
     front(R) { R.rect(12 - R.tw, R.hy, R.tw * 2, 1, R.pants.lo); },
     back(R) { this.front(R); },
     side(R) { R.rect(9, R.hy, 7, 1, R.pants.lo); },
   },
   rainPants: legs({ // regnbyxor: blanka, hängslen, reflexband och resår nertill
-    label: 'Regn\u00adbyxor', group: 'Overaller & hängsel', belt: false,
+    label: $t('Regn\u00adbyxor'), group: $n('Overaller & hängsel'), belt: false,
     fx(R, row) {
       if (row.bare) return;
       const k = kOf(row), p = legRamp(R, row, R.pants);
@@ -884,7 +885,7 @@ export const BOTTOM_REG = {
     side(R) { waistband(R); },
   }),
   skiPants: legs({ // täckbyxor: vadderade, stickningar, reflex och hög bröstlapp
-    label: 'Täck\u00adbyxor', group: 'Overaller & hängsel', belt: false,
+    label: $t('Täck\u00adbyxor'), group: $n('Overaller & hängsel'), belt: false,
     fx(R, row) {
       if (row.bare) return;
       const k = kOf(row), p = legRamp(R, row, R.pants);
@@ -896,7 +897,7 @@ export const BOTTOM_REG = {
     afterTorso(R) { bib(R, { pocket: false, buttons: false, tall: 1 }); },
   }),
   coverall: legs({ // overall: hel dräkt i underdelens färg, blixtlås, bröstficka, reflex på benen
-    label: 'Overall', group: 'Overaller & hängsel', belt: false, onePiece: true,
+    label: $t('Overall'), group: $n('Overaller & hängsel'), belt: false, onePiece: true,
     prep(R) { R.shirt = R.pants; R.longSleeve = true; R.noSleeve = false; },
     fx(R, row) {
       if (row.bare) return;
@@ -914,7 +915,7 @@ export const BOTTOM_REG = {
     },
   }),
   snowsuit: legs({ // vinteroverall: vadderad hel dräkt, reflexer, mudd
-    label: 'Vinter\u00adoverall', group: 'Overaller & hängsel', belt: false, onePiece: true,
+    label: $t('Vinter\u00adoverall'), group: $n('Overaller & hängsel'), belt: false, onePiece: true,
     prep(R) { R.shirt = R.pants; R.longSleeve = true; R.noSleeve = false; },
     fx(R, row) {
       if (row.bare) return;
@@ -958,54 +959,54 @@ const cell = (x, y, w, h) => { const cy = Math.floor(y / h), lx = (((x + (cy & 1
 const RAINBOW = [0xe23b3b, 0xf08a24, 0xf2cf2e, 0x46a35a, 0x3a7bd5, 0x8e5bd1].map(ramp);
 const TIEDYE = [0xf28bb3, 0xf2cf2e, 0x2aa39a];
 export const BOTTOM_PRINT_REG = {
-  none: { label: 'Inget' },
+  none: { label: $t('Inget') },
   // skelettets benknotor (maskeradbutiken): en vit linje mitt i varje ben och ett knä
-  skeleton: printEntry('Skelettben', 'Utklädnad', (R, x, y) => {
+  skeleton: printEntry($t('Skelettben'), $n('Utklädnad'), (R, x, y) => {
     if (y < R.legTop) return y === R.hy || y === R.hy + 1 ? R.pants2 : null;                 // höftbenet
     if (y === R.legTop + (R.legLen >> 1)) return R.pants2;                                  // knät
     const inside = R.tagAt(x - 1, y) === TAG.pants && R.tagAt(x + 1, y) === TAG.pants;
     return inside ? R.pants2 : null;
   }),
-  checks: printEntry('Rutor', 'Rutor & ränder', (R, x, y) => ((((x >> 1) + (y >> 1)) & 1) ? R.pants2 : null)),
-  tartan: printEntry('Skotskrutig', 'Rutor & ränder', (R, x, y) => {
+  checks: printEntry($t('Rutor'), $n('Rutor & ränder'), (R, x, y) => ((((x >> 1) + (y >> 1)) & 1) ? R.pants2 : null)),
+  tartan: printEntry($t('Skotskrutig'), $n('Rutor & ränder'), (R, x, y) => {
     const a = x % 4 === 1, b = y % 4 === 1;
     return a && b ? R.pants2.dk : a || b ? R.pants2 : (x % 4 === 3 && y % 4 === 3 ? R.pants.dk : null);
   }),
-  pinstripe: printEntry('Kritstreck', 'Rutor & ränder', (R, x) => (x % 3 === 0 ? R.pants2 : null)),
-  stripesH: printEntry('Tvärränder', 'Rutor & ränder', (R, x, y) => ((y & 1) ? R.pants2 : null)),
-  dots: printEntry('Prickar', 'Små motiv', (R, x, y) => { const [lx, ly] = cell(x, y, 4, 3); return lx === 1 && ly === 1 ? R.pants2 : null; }),
-  flowers: printEntry('Blommor', 'Små motiv', (R, x, y) => {
+  pinstripe: printEntry($t('Kritstreck'), $n('Rutor & ränder'), (R, x) => (x % 3 === 0 ? R.pants2 : null)),
+  stripesH: printEntry($t('Tvärränder'), $n('Rutor & ränder'), (R, x, y) => ((y & 1) ? R.pants2 : null)),
+  dots: printEntry($t('Prickar'), $n('Små motiv'), (R, x, y) => { const [lx, ly] = cell(x, y, 4, 3); return lx === 1 && ly === 1 ? R.pants2 : null; }),
+  flowers: printEntry($t('Blommor'), $n('Små motiv'), (R, x, y) => {
     const [lx, ly] = cell(x, y, 6, 5);
     if (lx === 2 && ly === 2) return R.pants2.base === 0xf2cf2e ? 0xf4f1ea : 0xf2cf2e; // mitten
     return (Math.abs(lx - 2) + Math.abs(ly - 2) === 1) ? R.pants2 : null;
   }),
-  hearts: printEntry('Hjärtan', 'Små motiv', (R, x, y) => {
+  hearts: printEntry($t('Hjärtan'), $n('Små motiv'), (R, x, y) => {
     const [lx, ly] = cell(x, y, 6, 5);
     return (ly === 1 && (lx === 1 || lx === 3)) || (ly === 2 && lx >= 1 && lx <= 3) || (ly === 3 && lx === 2) ? R.pants2 : null;
   }),
-  stars: printEntry('Stjärnor', 'Små motiv', (R, x, y) => {
+  stars: printEntry($t('Stjärnor'), $n('Små motiv'), (R, x, y) => {
     const [lx, ly] = cell(x, y, 6, 5);
     if (lx === 2 && ly === 2) return mix(R.pants2.hi, 0xffffff, 0.5);
     return Math.abs(lx - 2) === 1 && Math.abs(ly - 2) === 1 ? R.pants2 : null;
   }),
-  camo: printEntry('Kamouflage', 'Djur & natur', (R, x, y) => {
+  camo: printEntry($t('Kamouflage'), $n('Djur & natur'), (R, x, y) => {
     const h = hash(x >> 1, y >> 1) % 7;
     return h < 2 ? R.pants2 : h === 2 ? { hi: R.pants.lo, base: R.pants.dk, lo: R.pants.dk, dk: R.pants.dk } : null;
   }),
-  leopard: printEntry('Leopard', 'Djur & natur', (R, x, y) => {
+  leopard: printEntry($t('Leopard'), $n('Djur & natur'), (R, x, y) => {
     const [lx, ly] = cell(x, y, 4, 4);
     return (ly === 1 && lx === 1) || (ly === 2 && lx === 0) ? R.pants2 : ly === 2 && lx === 1 ? R.pants.hi : null;
   }),
-  zebra: printEntry('Zebra', 'Djur & natur', (R, x, y) => ((y + ((x >> 1) & 1) + ((x >> 2) & 1)) % 3 === 0 ? R.pants2 : null)), // vågiga tvärränder
-  stonewash: printEntry('Stentvättad', 'Effekter', (R, x, y, c) => (hash(x, y) % 4 === 0 || (hash(x >> 1, y >> 1) % 5 === 0) ? mix(c, 0xffffff, 0.22) : null)),
-  sequins: printEntry('Paljetter', 'Effekter', (R, x, y) => sparkle(R, x, y)),
-  splatter: printEntry('Färgstänk', 'Effekter', (R, x, y) => { const h = hash(x, y) % 13; return h === 0 ? R.pants2 : h === 1 ? 0xf28bb3 : h === 2 ? 0xf2cf2e : null; }),
-  rainbow: printEntry('Regnbåge', 'Effekter', (R, x, y) => { // sex band över hela plagget, uppifrån och ner
+  zebra: printEntry($t('Zebra'), $n('Djur & natur'), (R, x, y) => ((y + ((x >> 1) & 1) + ((x >> 2) & 1)) % 3 === 0 ? R.pants2 : null)), // vågiga tvärränder
+  stonewash: printEntry($t('Stentvättad'), $n('Effekter'), (R, x, y, c) => (hash(x, y) % 4 === 0 || (hash(x >> 1, y >> 1) % 5 === 0) ? mix(c, 0xffffff, 0.22) : null)),
+  sequins: printEntry($t('Paljetter'), $n('Effekter'), (R, x, y) => sparkle(R, x, y)),
+  splatter: printEntry($t('Färgstänk'), $n('Effekter'), (R, x, y) => { const h = hash(x, y) % 13; return h === 0 ? R.pants2 : h === 1 ? 0xf28bb3 : h === 2 ? 0xf2cf2e : null; }),
+  rainbow: printEntry($t('Regnbåge'), $n('Effekter'), (R, x, y) => { // sex band över hela plagget, uppifrån och ner
     const top = onePiece(R) ? R.ty0 : R.hy;
     const end = R.skirted ? R.hy + R.skirtLen : R.bareFrom != null ? R.legTop + R.bareFrom : R.shoeTop;
     return RAINBOW[Math.max(0, Math.min(5, Math.floor((y - top) * 6 / Math.max(1, end - top))))];
   }),
-  tiedye: printEntry('Batik', 'Effekter', (R, x, y) => { const d = ((x - 12) * (x - 12) + (y - 30) * (y - 30)) >> 3; return d % 3 === 1 ? TIEDYE[(d >> 2) % 3] : d % 3 === 2 ? R.pants2 : null; }),
+  tiedye: printEntry($t('Batik'), $n('Effekter'), (R, x, y) => { const d = ((x - 12) * (x - 12) + (y - 30) * (y - 30)) >> 3; return d % 3 === 1 ? TIEDYE[(d >> 2) % 3] : d % 3 === 2 ? R.pants2 : null; }),
 };
 
 // ---------- skor (look.shoeType, färg look.shoes → R.shoe, andra färg look.shoes2 → R.shoe2) ----------
@@ -1057,7 +1058,7 @@ const BLINK = [0xff4d6d, 0x4de1ff, 0x7dff6b, 0xffd23f];
 
 export const SHOE_REG = {
   normal: {
-    label: 'Vanliga',
+    label: $t('Vanliga'),
     front: shoeFB, back: shoeFB,
     side(R, s) {
       const { rect, put, shoe, L } = R, { x, y: sy, far } = s;
@@ -1069,13 +1070,13 @@ export const SHOE_REG = {
 
   // ================= sneakers =================
   sneakers: { // vit sula, snörning och rand i detaljfärgen
-    label: 'Sneakers', group: 'Sneakers', uses: ['shoes2'],
+    label: $t('Sneakers'), group: $n('Sneakers'), uses: ['shoes2'],
     front(R, s) { footFB(R, s, R.shoe, R.shoe2.base); R.put(lace(R, s), s.y, R.shoe2.hi); R.put(s.left ? s.x : s.x + R.lw, s.y + 1, R.shoe2.lo); },
     back(R, s) { footFB(R, s, R.shoe, R.shoe2.base); R.put(s.x + (R.lw >> 1), s.y, R.shoe2.base); },
     side(R, s) { const c = sRamp(R, s, R.shoe2); footSide(R, s, R.shoe, c.base); R.put(s.x, s.y, c.base); R.put(s.x + 1, s.y, c.hi); },
   },
   highTops: { // höga sneakers: skaft över fotleden, vit tåhätta och snörning
-    label: 'Höga sneakers', group: 'Sneakers', uses: ['shoes2'],
+    label: $t('Höga sneakers'), group: $n('Sneakers'), uses: ['shoes2'],
     front(R, s) {
       const rows = shaftFB(R, s, R.K ? 1 : 2, R.shoe);
       footFB(R, s, R.shoe, R.shoe2.base);
@@ -1091,13 +1092,13 @@ export const SHOE_REG = {
     },
   },
   slipOn: { // rutiga tygskor
-    label: 'Rutiga tygskor', group: 'Sneakers', uses: ['shoes2'],
+    label: $t('Rutiga tygskor'), group: $n('Sneakers'), uses: ['shoes2'],
     front(R, s) { footFB(R, s, R.shoe, STRING); for (let i = 0; i <= R.lw; i++) if (((s.x + i) & 1) === 0) R.put(s.x + i, s.y, R.shoe2.base); },
     back(R, s) { this.front(R, s); },
     side(R, s) { const c2 = sRamp(R, s, R.shoe2); footSide(R, s, R.shoe, s.far ? 0xb8b4aa : STRING); for (let i = -1; i <= 3; i++) if (((s.x + i) & 1) === 0) R.put(s.x + i, s.y, c2.base); },
   },
   lightUp: { // blinkskor: sulan lyser i olika färger när man går
-    label: 'Blinkskor', group: 'Sneakers', uses: ['shoes2'],
+    label: $t('Blinkskor'), group: $n('Sneakers'), uses: ['shoes2'],
     front(R, s) {
       footFB(R, s, R.shoe, R.shoe2.base); R.put(lace(R, s), s.y, R.shoe2.hi);
       for (let i = 0; i <= R.lw; i++) if ((i & 1) === 0) R.put(s.x + i, s.y + 1, BLINK[(i + R.frame + (s.left ? 0 : 2)) & 3]);
@@ -1109,7 +1110,7 @@ export const SHOE_REG = {
     },
   },
   velcro: { // kardborreskor: band över foten
-    label: 'Kardborre\u00adskor', group: 'Sneakers', uses: ['shoes2'],
+    label: $t('Kardborre\u00adskor'), group: $n('Sneakers'), uses: ['shoes2'],
     front(R, s) {
       const r = s.rows[s.rows.length - 1];
       if (r) { R.rect(r.x, r.y, r.w, 1, R.shoe.base); R.put(s.left ? r.x : r.x + r.w - 1, r.y, s.left ? R.shoe.hi : R.shoe.lo); }
@@ -1126,7 +1127,7 @@ export const SHOE_REG = {
 
   // ================= kängor & stövlar =================
   boots: { // kängor: skaft, snörning, grov mörk sula
-    label: 'Kängor', group: 'Kängor & stövlar',
+    label: $t('Kängor'), group: $n('Kängor & stövlar'),
     front(R, s) {
       const rows = shaftFB(R, s, R.K ? 1 : 2, R.shoe);
       footFB(R, s, R.shoe, DARK_SOLE);
@@ -1137,7 +1138,7 @@ export const SHOE_REG = {
     side(R, s) { shaftSide(R, s, R.K ? 1 : 2, R.shoe); footSide(R, s, R.shoe, DARK_SOLE); if (!s.far) { R.put(s.x + 2, s.y - 1, R.shoe.hi); R.put(s.x + 1, s.y + 1, 0x3d3530); } },
   },
   rubberBoots: { // gummistövlar: höga, vida i skaftet, blank rand
-    label: 'Gummi\u00adstövlar', group: 'Kängor & stövlar',
+    label: $t('Gummi\u00adstövlar'), group: $n('Kängor & stövlar'),
     front(R, s) {
       const rows = shaftFB(R, s, R.K ? 3 : 5, R.shoe, 1);
       footFB(R, s, R.shoe, DARK_SOLE);
@@ -1154,7 +1155,7 @@ export const SHOE_REG = {
     },
   },
   ridingBoots: { // ridstövlar: smala, knähöga, klack
-    label: 'Rid\u00adstövlar', group: 'Kängor & stövlar',
+    label: $t('Rid\u00adstövlar'), group: $n('Kängor & stövlar'),
     front(R, s) {
       const rows = shaftFB(R, s, R.K ? 3 : 6, R.shoe);
       footFB(R, s, R.shoe, R.shoe.dk);
@@ -1171,7 +1172,7 @@ export const SHOE_REG = {
     },
   },
   cowboyBoots: { // cowboystövlar: sömmar, v-skuren kant, klack och spetsig tå
-    label: 'Cowboy\u00adstövlar', group: 'Kängor & stövlar',
+    label: $t('Cowboy\u00adstövlar'), group: $n('Kängor & stövlar'),
     front(R, s) {
       const rows = shaftFB(R, s, R.K ? 2 : 3, R.shoe);
       footFB(R, s, R.shoe, R.shoe.dk);
@@ -1188,7 +1189,7 @@ export const SHOE_REG = {
     },
   },
   winterBoots: { // vinterkängor: pälskant, grov sula
-    label: 'Vinter\u00adkängor', group: 'Kängor & stövlar',
+    label: $t('Vinter\u00adkängor'), group: $n('Kängor & stövlar'),
     front(R, s) {
       const rows = shaftFB(R, s, R.K ? 1 : 2, R.shoe, 1);
       footFB(R, s, R.shoe, DARK_SOLE);
@@ -1202,7 +1203,7 @@ export const SHOE_REG = {
     },
   },
   ankleBoots: { // stövletter: korta med klack och blixtlås
-    label: 'Stövletter', group: 'Kängor & stövlar',
+    label: $t('Stövletter'), group: $n('Kängor & stövlar'),
     front(R, s) {
       const rows = shaftFB(R, s, R.K ? 1 : 2, R.shoe);
       footFB(R, s, R.shoe, R.shoe.lo);
@@ -1218,13 +1219,13 @@ export const SHOE_REG = {
 
   // ================= fina skor =================
   dressShoes: { // finskor: blankputsade med mörk sula
-    label: 'Finskor', group: 'Fina skor',
+    label: $t('Finskor'), group: $n('Fina skor'),
     front(R, s) { footFB(R, s, R.shoe, R.shoe.dk); R.put(s.left ? s.x + 1 : s.x + R.lw - 1, s.y, mix(R.shoe.hi, 0xffffff, 0.45)); R.put(lace(R, s), s.y, R.shoe.lo); },
     back(R, s) { footFB(R, s, R.shoe, R.shoe.dk); },
     side(R, s) { const c = sRamp(R, s, R.shoe); footSide(R, s, R.shoe, c.dk, 1); R.put(s.x + 3, s.y, s.far ? c.base : mix(R.shoe.hi, 0xffffff, 0.45)); R.put(s.x + 4, s.y, c.base); R.put(s.x + 4, s.y + 1, c.lo); },
   },
   ballerina: { // ballerinaskor: platta, vristen syns, liten rosett
-    label: 'Ballerina\u00adskor', group: 'Fina skor', uses: ['shoes2'],
+    label: $t('Ballerina\u00adskor'), group: $n('Fina skor'), uses: ['shoes2'],
     front(R, s) {
       const { x, y } = s, w = R.lw + 1;
       R.rect(x, y, w, 1, R.shoe.base);
@@ -1240,7 +1241,7 @@ export const SHOE_REG = {
     },
   },
   heels: { // klackskor: spetsig tå, hög klack
-    label: 'Klackskor', group: 'Fina skor',
+    label: $t('Klackskor'), group: $n('Fina skor'),
     front(R, s) {
       const { x, y } = s, w = R.lw + 1;
       R.rect(x, y, w, 1, R.shoe.base);
@@ -1255,7 +1256,7 @@ export const SHOE_REG = {
     },
   },
   clogs: { // träskor: läderovandel med nitar på träsula
-    label: 'Träskor', group: 'Fina skor',
+    label: $t('Träskor'), group: $n('Fina skor'),
     front(R, s) {
       const { x, y } = s, w = R.lw + 1;
       R.rect(x, y, w, 1, R.shoe.base); R.put(s.left ? x + 1 : x + w - 2, y, R.shoe.hi);
@@ -1273,7 +1274,7 @@ export const SHOE_REG = {
 
   // ================= sommar =================
   sandals: { // sandaler: remmar över foten och runt fotleden
-    label: 'Sandaler', group: 'Sommar',
+    label: $t('Sandaler'), group: $n('Sommar'),
     front(R, s) {
       const { x, y } = s, w = R.lw + 1, r = s.rows[s.rows.length - 1];
       if (r) R.rect(r.x, r.y, r.w, 1, R.shoe.base);
@@ -1291,7 +1292,7 @@ export const SHOE_REG = {
     },
   },
   flipflops: { // flipflops: en rem mellan tårna, färgglad sula
-    label: 'Flipflops', group: 'Sommar',
+    label: $t('Flipflops'), group: $n('Sommar'),
     front(R, s) {
       const { x, y } = s, w = R.lw + 1;
       skinFeet(R, () => { R.rect(x, y, w, 1, R.skin.base); R.put(s.left ? x : x + w - 1, y, R.skin.lo); });
@@ -1307,7 +1308,7 @@ export const SHOE_REG = {
     },
   },
   barefoot: { // barfota: tår och allt
-    label: 'Barfota', group: 'Sommar',
+    label: $t('Barfota'), group: $n('Sommar'),
     front(R, s) {
       const { x, y } = s, w = R.lw + 1, S = R.skin;
       skinFeet(R, () => {
@@ -1324,7 +1325,7 @@ export const SHOE_REG = {
 
   // ================= hemma =================
   slippers: { // tofflor: fluffiga, öppen häl
-    label: 'Tofflor', group: 'Hemma',
+    label: $t('Tofflor'), group: $n('Hemma'),
     front(R, s) {
       const { x, y } = s, w = R.lw + 1, c = R.shoe;
       R.rect(x, y, w, 1, c.base); for (let i = 0; i < w; i += 2) R.put(x + i, y, c.hi);
@@ -1339,7 +1340,7 @@ export const SHOE_REG = {
     },
   },
   animalSlippers: { // djurtofflor: öron, ögon och nos
-    label: 'Djurtofflor', group: 'Hemma', uses: ['shoes2'],
+    label: $t('Djurtofflor'), group: $n('Hemma'), uses: ['shoes2'],
     front(R, s) {
       const { x, y } = s, w = R.lw + 1, c = R.shoe;
       R.rect(x, y, w, 1, c.base); R.rect(x, y + 1, w, 1, c.lo);
@@ -1354,7 +1355,7 @@ export const SHOE_REG = {
     },
   },
   woolSocks: { // raggsockor: tjocka, uppvikt kant i detaljfärgen
-    label: 'Ragg\u00adsockor', group: 'Hemma', uses: ['shoes2'],
+    label: $t('Ragg\u00adsockor'), group: $n('Hemma'), uses: ['shoes2'],
     front(R, s) {
       const { x, y } = s, w = R.lw + 1, c = R.shoe, r = s.rows[s.rows.length - 1];
       if (r) { R.rect(r.x - (s.left ? 1 : 0), r.y, r.w + 1, 1, R.shoe2.base); R.put(r.x + 1, r.y, R.shoe2.hi); }
@@ -1372,7 +1373,7 @@ export const SHOE_REG = {
 
   // ================= sport =================
   cleats: { // fotbollsskor: ränder och dobbar
-    label: 'Fotbolls\u00adskor', group: 'Sport', uses: ['shoes2'],
+    label: $t('Fotbolls\u00adskor'), group: $n('Sport'), uses: ['shoes2'],
     front(R, s) {
       footFB(R, s, R.shoe, DARK_SOLE); R.put(lace(R, s), s.y, R.shoe2.base);
       withTag(R, TAG.extra, () => { R.put(s.x + 1, s.y + 2, 0xd6d6cc); R.put(s.x + R.lw - 1, s.y + 2, 0xd6d6cc); });
@@ -1385,7 +1386,7 @@ export const SHOE_REG = {
     },
   },
   rollerSkates: { // rullskridskor: känga, platta och hjul
-    label: 'Rull\u00adskridskor', group: 'Sport', uses: ['shoes2'],
+    label: $t('Rull\u00adskridskor'), group: $n('Sport'), uses: ['shoes2'],
     front(R, s) {
       const rows = shaftFB(R, s, R.K ? 1 : 2, R.shoe);
       footFB(R, s, R.shoe, SILVER);
@@ -1400,7 +1401,7 @@ export const SHOE_REG = {
     },
   },
   iceSkates: { // skridskor: vit känga med blank skena
-    label: 'Skridskor', group: 'Sport',
+    label: $t('Skridskor'), group: $n('Sport'),
     front(R, s) {
       const rows = shaftFB(R, s, R.K ? 1 : 2, R.shoe);
       footFB(R, s, R.shoe, R.shoe.lo);
@@ -1414,7 +1415,7 @@ export const SHOE_REG = {
     },
   },
   flippers: { // simfötter: långa fenor
-    label: 'Simfötter', group: 'Sport',
+    label: $t('Simfötter'), group: $n('Sport'),
     front(R, s) {
       const { x, y } = s, w = R.lw + 1, c = R.shoe;
       R.rect(x, y, w, 1, c.base);
@@ -1430,13 +1431,13 @@ export const SHOE_REG = {
 
   // ================= kul =================
   platforms: { // platåskor: tjock sula i två våningar
-    label: 'Platåskor', group: 'Kul', uses: ['shoes2'],
+    label: $t('Platåskor'), group: $n('Kul'), uses: ['shoes2'],
     front(R, s) { footFB(R, s, R.shoe, R.shoe2.base); R.rect(s.x, s.y + 2, R.lw + 1, 1, R.shoe2.lo); },
     back(R, s) { this.front(R, s); },
     side(R, s) { const c2 = sRamp(R, s, R.shoe2); footSide(R, s, R.shoe, c2.base); R.rect(s.x - 1, s.y + 2, 5, 1, c2.lo); },
   },
   clownShoes: { // clownskor: jättestora och runda
-    label: 'Clownskor', group: 'Kul', uses: ['shoes2'],
+    label: $t('Clownskor'), group: $n('Kul'), uses: ['shoes2'],
     front(R, s) {
       const { x, y } = s, w = R.lw + 1, c = R.shoe;
       R.rect(x - 1, y, w + 2, 1, c.base); R.put(s.left ? x : x + w - 1, y, c.hi);

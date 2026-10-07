@@ -12,6 +12,7 @@ import { CITY, ALL_BUILDINGS, DISTRICTS, RIVER, BRIDGES, PARK_LAYOUT, PATHS, LOT
 import { openModal, closeModal, esc } from '../core/ui.js';
 import { SMALL, ctxText, textW, hash } from '../core/floor-pix.js';
 import { clock } from '../game.js';
+import { $t } from '../core/i18n.js';
 
 export const MAP_K = 5;                                    // världens px per kartpixel
 // (v4) kartan börjar vid världens västra kant CITY.X0 (Linnéstaden): kartpixel X ↔ världs-x (X + MX0) · K
@@ -188,15 +189,15 @@ export function renderCityMap() {
     ctxText(x, SMALL, t, X, y, fg);
   };
   const Y0 = 1;
-  label('CENTRUM', 850 / MAP_K, Y0, '#fff2c0', '#2a2430');
-  if (MX0 < 0) { label('LINNÉSTADEN', -600 / MAP_K, Y0, '#fff2c0', '#2a2430'); label('TORGET', -744 / MAP_K, Math.round(380 / MAP_K), '#fff2c0', '#4a3a2a'); }
-  label('DOWNTOWN', 2080 / MAP_K, Y0, '#fff2c0', '#2a2430');
-  label('FÖRORTEN', 3520 / MAP_K, Y0, '#fff2c0', '#2a2430');
-  label('PARKEN', 600 / MAP_K, Math.round(386 / MAP_K), '#fff2c0', '#2a4a24');
-  label('SÖDER', 850 / MAP_K, MH - 7, '#e8f4ff', '#1f4a70');
-  label('PIXELFLODEN', ((RIVER.wx0 + RIVER.wx1) / 2) / MAP_K, Math.round(470 / MAP_K), '#e8f4ff', '#1f4a70');
-  for (const xs of [MX0 < 0 ? -900 : 320, 320, 2080, 3300].filter((v, i, a) => a.indexOf(v) === i)) label('PIXELGATAN', xs / MAP_K, Math.round((CITY.ROAD[0] + 16) / MAP_K), '#e8e2d0', '#2a2830');
-  for (const xs of [MX0 < 0 ? -900 : 320, 320, 3300].filter((v, i, a) => a.indexOf(v) === i)) label('SÖDERGATAN', xs / MAP_K, Math.round((CITY.ROAD_S[0] + 16) / MAP_K), '#e8e2d0', '#2a2830');
+  label($t('CENTRUM'), 850 / MAP_K, Y0, '#fff2c0', '#2a2430');
+  if (MX0 < 0) { label($t('LINNÉSTADEN'), -600 / MAP_K, Y0, '#fff2c0', '#2a2430'); label($t('TORGET'), -744 / MAP_K, Math.round(380 / MAP_K), '#fff2c0', '#4a3a2a'); }
+  label($t('DOWNTOWN'), 2080 / MAP_K, Y0, '#fff2c0', '#2a2430');
+  label($t('FÖRORTEN'), 3520 / MAP_K, Y0, '#fff2c0', '#2a2430');
+  label($t('PARKEN'), 600 / MAP_K, Math.round(386 / MAP_K), '#fff2c0', '#2a4a24');
+  label($t('SÖDER'), 850 / MAP_K, MH - 7, '#e8f4ff', '#1f4a70');
+  label($t('PIXELFLODEN'), ((RIVER.wx0 + RIVER.wx1) / 2) / MAP_K, Math.round(470 / MAP_K), '#e8f4ff', '#1f4a70');
+  for (const xs of [MX0 < 0 ? -900 : 320, 320, 2080, 3300].filter((v, i, a) => a.indexOf(v) === i)) label($t('PIXELGATAN'), xs / MAP_K, Math.round((CITY.ROAD[0] + 16) / MAP_K), '#e8e2d0', '#2a2830');
+  for (const xs of [MX0 < 0 ? -900 : 320, 320, 3300].filter((v, i, a) => a.indexOf(v) === i)) label($t('SÖDERGATAN'), xs / MAP_K, Math.round((CITY.ROAD_S[0] + 16) / MAP_K), '#e8e2d0', '#2a2830');
   MAP = { canvas: c };
   return MAP;
 }
@@ -230,10 +231,10 @@ export function openCityMap(A, { mode = 'karta', select = null } = {}) {
   const { canvas } = renderCityMap();
   const taxiMode = mode === 'taxi';
   const body = `<style>${CSS}</style>
-    <p class="cm-hint">${taxiMode ? '🚕 Tryck på stället dit taxin ska köra – den hämtar dig vid trottoarkanten.' : '🗺️ Tryck på ett ställe: 🧭 en pil visar vägen dit, eller 🚕 ta en taxi.'}</p>
+    <p class="cm-hint">${taxiMode ? $t('🚕 Tryck på stället dit taxin ska köra – den hämtar dig vid trottoarkanten.') : $t('🗺️ Tryck på ett ställe: 🧭 en pil visar vägen dit, eller 🚕 ta en taxi.')}</p>
     <div class="cm-wrap"><div class="cm-map"></div></div>
     <div class="cm-info" data-info></div>`;
-  const dlg = openModal(taxiMode ? '🚕 Vart ska taxin köra?' : '🗺️ Kartan över Pixelstaden', body, [{ label: 'Stäng', onClick: closeModal }]);
+  const dlg = openModal(taxiMode ? $t('🚕 Vart ska taxin köra?') : $t('🗺️ Kartan över Pixelstaden'), body, [{ label: $t('Stäng'), onClick: closeModal }]);
   dlg.classList.add('cm-dlg');
   const wrap = dlg.querySelector('.cm-wrap'), holder = dlg.querySelector('.cm-map'), info = dlg.querySelector('[data-info]');
   // skala: heltal enhetspixlar per kartpixel, så hög som dialogen tillåter
@@ -260,7 +261,7 @@ export function openCityMap(A, { mode = 'karta', select = null } = {}) {
     btns.set(b.id, el);
   }
   // du är här
-  const meEl = document.createElement('div'); meEl.className = 'cm-me'; meEl.textContent = 'DU ÄR HÄR';
+  const meEl = document.createElement('div'); meEl.className = 'cm-me'; meEl.textContent = $t('DU ÄR HÄR');
   Object.assign(meEl.style, at(me.x, me.y - 30));
   const dot = document.createElement('div'); dot.className = 'cm-dot'; dot.style.background = A.avatar?.color || '#ffd23f';
   Object.assign(dot.style, at(me.x, me.y));
@@ -269,27 +270,27 @@ export function openCityMap(A, { mode = 'karta', select = null } = {}) {
   requestAnimationFrame(() => { wrap.scrollLeft = Math.max(0, (me.x / MAP_K - MX0) * css - wrap.clientWidth / 2); });
 
   function idle() {
-    info.innerHTML = `<span class="grow">${taxiMode ? 'Vart vill du åka?' : 'Välj ett ställe på kartan.'}${me.inside ? ` <small>Du är i ${esc(me.inside.sign || '')}.</small>` : ''}</span>
-      ${home ? `<button class="btn btn-small" data-home>🏠 Hem</button>` : ''}`;
+    info.innerHTML = `<span class="grow">${taxiMode ? $t('Vart vill du åka?') : $t('Välj ett ställe på kartan.')}${me.inside ? ` <small>${$t`Du är i ${esc(me.inside.sign || '')}.`}</small>` : ''}</span>
+      ${home ? `<button class="btn btn-small" data-home>${$t('🏠 Hem')}</button>` : ''}`;
     info.querySelector('[data-home]')?.addEventListener('click', () => pick(home));
   }
   function pick(b) {
     for (const [id, el] of btns) el.classList.toggle('on', id === b.id);
     const q = taxiQuote(me, b), open = openNow(b, g), here = me.inside && me.inside.id === b.id;
-    const times = b.open ? `öppet ${hhmm(b.open[0])}–${hhmm(b.open[1])}${open ? '' : ' · <b style="color:#c9323a">stängt nu</b>'}` : b.enter ? 'öppet dygnet runt' : '';
-    const dist = here ? 'du är här' : `${q.m} m bort`;
+    const times = b.open ? `${$t`öppet ${hhmm(b.open[0])}–${hhmm(b.open[1])}`}${open ? '' : ` · <b style="color:#c9323a">${$t('stängt nu')}</b>`}` : b.enter ? $t('öppet dygnet runt') : '';
+    const dist = here ? $t('du är här') : $t`${q.m} m bort`;
     const canTaxi = !inJob && !here && g.money >= q.kr;
-    const taxiTxt = inJob ? '🚕 (efter passet)' : `🚕 Taxi dit – ${q.kr} kr`;
+    const taxiTxt = inJob ? $t('🚕 (efter passet)') : $t`🚕 Taxi dit – ${q.kr} kr`;
     info.innerHTML = `<span class="cm-big">${b.icon || '📍'}</span>
       <span class="grow"><b>${esc(b.sign || b.id.toUpperCase())}</b><small>${esc(districtName(b))}${times ? ' · ' + times : ''} · ${dist}</small></span>
-      <button class="btn btn-small ${taxiMode ? '' : 'btn-go'}" data-guide ${here ? 'disabled' : ''}>🧭 Visa vägen</button>
-      <button class="btn btn-small ${taxiMode ? 'btn-go' : ''}" data-taxi ${canTaxi ? '' : 'disabled'} title="${g.money < q.kr ? `Du har ${g.money} kr` : `ca ${q.min} minuter`}">${taxiTxt}</button>`;
+      <button class="btn btn-small ${taxiMode ? '' : 'btn-go'}" data-guide ${here ? 'disabled' : ''}>${$t('🧭 Visa vägen')}</button>
+      <button class="btn btn-small ${taxiMode ? 'btn-go' : ''}" data-taxi ${canTaxi ? '' : 'disabled'} title="${g.money < q.kr ? $t`Du har ${g.money} kr` : $t`ca ${q.min} minuter`}">${taxiTxt}</button>`;
     info.querySelector('[data-guide]').onclick = () => { closeModal(); A.guideTo?.(b.id); };
     info.querySelector('[data-taxi]').onclick = () => { closeModal(); A.taxiTo?.(b.id); };
   }
   if (select && buildingById(select)) pick(buildingById(select)); else idle();
   return dlg;
 }
-const districtName = (b) => { const d = DISTRICTS.find((x) => x.name === b.district); return d ? d.name.charAt(0) + d.name.slice(1).toLowerCase() : (b.district || ''); };
+const districtName = (b) => { const d = DISTRICTS.find((x) => x.name === b.district); return d ? $t(d.name).charAt(0) + $t(d.name).slice(1).toLowerCase() : (b.district || ''); };
 // för testerna: kartans storlek och en ytas namn
 export const _mapInfo = () => ({ w: MW, h: MH, k: MAP_K, x0: MX0 * MAP_K, surfaceAt });

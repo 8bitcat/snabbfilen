@@ -191,7 +191,7 @@ export function folkDrawables(A, t) {
 // Pratbubbla med text (chatten och NPC-repliker): radbruten pixeltext, högst fyra rader,
 // svans nedåt. Fonten har versaler A–Ö, siffror och lite skiljetecken; emoji ritas som små
 // 9×9-pixelbilder (systemets emoji nedskalad med hårda kanter, samma pixelkorn som spelet).
-const SAY_W = 76, SAY_OK = /[A-ZÅÄÖÉ0-9 \-+!.:,?/%'=]/;
+const SAY_W = 76, SAY_OK = /[A-ZÅÄÖÉ0-9 \-+!.:,?/%'=ÁÀÂÃÇĆÈÊËÍÌÎÏÑŃÓÒÔÕŚŹŻÚÙÛÜŸÝĄĘŁŒÆ¡¿€$]/;   // + accenterna i de andra språken (floor-pix.js)
 const EMO = new Map();
 const isEmoji = (g) => /\p{Extended_Pictographic}|\p{Regional_Indicator}/u.test(g);
 const graphemes = (str) => (typeof Intl !== 'undefined' && Intl.Segmenter

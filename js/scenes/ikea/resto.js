@@ -12,6 +12,7 @@ import { play } from '../../core/sound.js';
 import * as GAME from '../../game.js';
 import { MENU, menuOf, dishBig, chairImg } from './food.js';
 import { H, FD } from './geo.js';
+import { $t } from '../../core/i18n.js';
 
 export { chairImg };
 export const REST_TABLE_W = 60;
@@ -42,22 +43,22 @@ export function openMenu(A, { onPay, onCancel }) {
   const qty = Object.fromEntries(MENU.map((m) => [m.id, m.id === 'kottbullar' ? 1 : 0]));
   const rows = MENU.map((m) => `<div class="ik-row" data-id="${m.id}" style="display:flex;align-items:center;gap:10px;margin:4px 0">
       <span data-dish="${m.id}" style="width:66px;display:inline-flex;justify-content:center"></span>
-      <span style="flex:1;font-size:var(--f2)"><b>${m.name}</b><br><small class="sp">+${m.fill} mätthet${m.energy ? ` · +${m.energy} energi` : ''}</small></span>
-      <b style="font-size:var(--f2);min-width:52px;text-align:right">${m.price} kr</b>
+      <span style="flex:1;font-size:var(--f2)"><b>${m.name}</b><br><small class="sp">${m.energy ? $t`+${m.fill} mätthet · +${m.energy} energi` : $t`+${m.fill} mätthet`}</small></span>
+      <b style="font-size:var(--f2);min-width:52px;text-align:right">${$t`${m.price} kr`}</b>
       <button class="btn btn-small" data-minus="${m.id}">−</button>
       <b data-q="${m.id}" style="font-size:var(--f2);min-width:18px;text-align:center">0</b>
       <button class="btn btn-small" data-plus="${m.id}">+</button>
     </div>`).join('');
-  const dlg = openModal('🍽️ Restaurangen – MENY', `
-    <p style="font-size:var(--f2);margin-top:0">Ta en bricka och välj – du betalar i kassan och sätter dig sedan vid ett ledigt bord.</p>
+  const dlg = openModal($t('🍽️ Restaurangen – MENY'), `
+    <p style="font-size:var(--f2);margin-top:0">${$t('Ta en bricka och välj – du betalar i kassan och sätter dig sedan vid ett ledigt bord.')}</p>
     ${rows}
     <p style="font-size:var(--f2);margin-bottom:0" data-sum></p>`, [
-    { label: 'Nej tack', onClick: () => { closeModal(); onCancel?.(); } },
-    { label: '🧾 Till kassan', cls: 'btn-go', onClick: () => {
+    { label: $t('Nej tack'), onClick: () => { closeModal(); onCancel?.(); } },
+    { label: $t('🧾 Till kassan'), cls: 'btn-go', onClick: () => {
       const items = MENU.flatMap((m) => Array(qty[m.id]).fill(m.id));
       const sum = items.reduce((a, id) => a + menuOf(id).price, 0);
-      if (!items.length) { toast('Brickan är tom – välj något gott först!'); play('fel'); return; }
-      if (g.money < sum) { toast('Du har inte råd – dags att jobba ett pass!', 'bad'); play('fel'); return; }
+      if (!items.length) { toast($t('Brickan är tom – välj något gott först!')); play('fel'); return; }
+      if (g.money < sum) { toast($t('Du har inte råd – dags att jobba ett pass!'), 'bad'); play('fel'); return; }
       closeModal();
       onPay(items, sum);
     } },
@@ -67,9 +68,9 @@ export function openMenu(A, { onPay, onCancel }) {
   const upd = () => {
     let n = 0, sum = 0;
     for (const m of MENU) { dlg.querySelector(`[data-q="${m.id}"]`).textContent = qty[m.id]; n += qty[m.id]; sum += qty[m.id] * m.price; }
-    dlg.querySelector('[data-sum]').innerHTML = `🧾 Brickan: <b>${n} st</b> · Att betala: <b>${sum} kr</b> · Du har ${fmt(g.money)} · Mätthet ${Math.round(g.hunger)}/100`;
+    dlg.querySelector('[data-sum]').innerHTML = $t`🧾 Brickan: <b>${n} st</b> · Att betala: <b>${sum} kr</b> · Du har ${fmt(g.money)} · Mätthet ${Math.round(g.hunger)}/100`;
   };
-  dlg.querySelectorAll('[data-plus]').forEach((b) => (b.onclick = () => { const id = b.dataset.plus; const tot = Object.values(qty).reduce((a, v) => a + v, 0); if (tot < 4) { qty[id]++; play('click'); } else toast('Brickan är full!'); upd(); }));
+  dlg.querySelectorAll('[data-plus]').forEach((b) => (b.onclick = () => { const id = b.dataset.plus; const tot = Object.values(qty).reduce((a, v) => a + v, 0); if (tot < 4) { qty[id]++; play('click'); } else toast($t('Brickan är full!')); upd(); }));
   dlg.querySelectorAll('[data-minus]').forEach((b) => (b.onclick = () => { const id = b.dataset.minus; if (qty[id] > 0) { qty[id]--; play('click'); } upd(); }));
   upd();
   return dlg;
@@ -78,17 +79,18 @@ export function openMenu(A, { onPay, onCancel }) {
 // Korvkiosken: man får korven/glassen i handen och äter den sittande vid
 // bistroborden bredvid kiosken.
 export const KIOSK = [
-  { id: 'korv', icon: '🌭', name: 'Korv med bröd', price: 10, fill: 15 },
-  { id: 'glass', icon: '🍦', name: 'Mjukglass', price: 5, fill: 5 },
+  { id: 'korv', icon: '🌭', name: $t('Korv med bröd'), price: 10, fill: 15 },
+  { id: 'glass', icon: '🍦', name: $t('Mjukglass'), price: 5, fill: 5 },
 ];
 export function openKiosk(A, { onBuy }) {
   const g = A.game;
-  openModal('🌭 Bistron vid utgången', `<p style="font-size:var(--f2);margin-top:0">Korv med bröd – med senap och ketchup – eller en mjukglass?</p>
-    <p style="font-size:var(--f2)">Du får den i handen och sätter dig vid bistroborden här bredvid – mättheten kommer medan du äter.</p>
-    <p class="sp">Du har ${fmt(g.money)} · Mätthet ${Math.round(g.hunger)}/100</p>`, [
-    { label: 'Nej tack', onClick: closeModal },
-    ...KIOSK.map((k) => ({ label: `${k.icon} ${k.name} (${k.price} kr)`, cls: k.id === 'korv' ? 'btn-go' : '', onClick: () => {
-      if (g.money < k.price) { toast('Du har inte råd – dags att jobba ett pass!', 'bad'); play('fel'); return; }
+  openModal($t('🌭 Bistron vid utgången'), `<p style="font-size:var(--f2);margin-top:0">${$t('Korv med bröd – med senap och ketchup – eller en mjukglass?')}</p>
+    <p style="font-size:var(--f2)">${$t('Du får den i handen och sätter dig vid bistroborden här bredvid – mättheten kommer medan du äter.')}</p>
+    <p class="sp">${$t`Du har ${fmt(g.money)} · Mätthet ${Math.round(g.hunger)}/100`}</p>`, [
+    { label: $t('Nej tack'), onClick: closeModal },
+    ...KIOSK.map((k) => ({ label: $t`${k.icon} ${k.name} (${k.price} kr)`, cls: k.id === 'korv' ? 'btn-go' : '', onClick: () => {
+      if (g.money < k.price) { toast($t('Du har inte råd – dags att jobba ett pass!'), 'bad'); play('fel'); return; }
+
       closeModal();
       onBuy(k);
     } })),

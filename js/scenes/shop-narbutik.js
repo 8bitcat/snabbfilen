@@ -37,6 +37,7 @@ import { play, audioContext, isMuted } from '../core/sound.js';
 import { createWalker, selfDrawable, folkDrawables, WALK_SEQ, createSpeech } from './walkable.js';
 import { worldFolksHere } from '../net/world.js';
 import { LOTT_PRIS, LOTT_PER_DAG, lottOf, lottLeft, buyLott, settleLott, createTicket, lottPrize } from './skraplott.js';
+import { $t } from '../core/i18n.js';
 
 // Närbutikens pris: Stormarknadens + 20 %, uppåt till hel krona (heltalsräkning, inga flyttalsfel)
 export const narPrice = (f) => Math.ceil((f.price * 120) / 100 - 1e-9);
@@ -509,9 +510,9 @@ function drawIcon(ctx, id, x, y) {
   const ic = iconFor(id);
   ic.map.forEach((row, j) => { for (let i = 0; i < row.length; i++) { const ch = row[i]; if (ch === '.' || !(ch in ic.pal)) continue; ctx.fillStyle = hexs(ic.pal[ch]); ctx.fillRect(x + i, y + j, 1, 1); } });
 }
-const SHORT = { nudlar: 'NUDLAR', macka: 'OSTMACKA', korv: 'KORV', pizza: 'PIZZA', lyx: 'LYXLÅDA' };
-const shortName = (f) => SHORT[f.id] || f.name.toUpperCase().replace(/[^A-ZÅÄÖÉ0-9 ]/g, '').slice(0, 10).trim();
-const priceLbl = (n) => `${n}:-`;
+const SHORT = { nudlar: $t('NUDLAR'), macka: $t('OSTMACKA'), korv: $t('KORV'), pizza: $t('PIZZA'), lyx: $t('LYXLÅDA') };
+const shortName = (f) => SHORT[f.id] || f.name.toUpperCase().replace(/[^A-ZÅÄÖÉÁÀÂÃÇĆÈÊËÍÌÎÏÑŃÓÒÔÕŚŹŻÚÙÛÜŸÝĄĘŁŒÆ¡¿€$0-9 ]/g, '').slice(0, 10).trim();
+const priceLbl = (n) => $t`${n}:-`;
 
 // ================= var maten står =================
 // Fasta platser för rätterna i FOOD; nya rätter (utan egen plats) får en reservplats.
@@ -751,10 +752,10 @@ function paintCounterWall(P) {
     const S = skew(P, sx, 20, 1);
     S.rect(sx, sy, sw, sh, 0xe0c898); S.hl(sx, sy, sw, 0xf0dcb0); S.hl(sx, sy + sh - 1, sw, 0xa88a58); S.vl(sx + sw - 1, sy, sh, 0xb89a68);
     for (let y = sy + 1; y < sy + sh - 1; y++) for (let x = sx + 1; x < sx + sw - 1; x++) if (hash(x, y, 91) > 0.93) S.px(x, y, 0xc8ae80);
-    const t1 = 'ALLTID ÖPPET', w1 = textW(BG, t1);
+    const t1 = $t('ALLTID ÖPPET'), w1 = textW(BG, t1);
     text(S, BG, t1, sx + Math.round((sw - w1) / 2) + 1, sy + 3, 0x6a0a0a);
     text(S, BG, t1, sx + Math.round((sw - w1) / 2), sy + 2, 0xd8202a);
-    const t2 = '· LITE DYRARE ·', w2 = textW(SM, t2);
+    const t2 = '· ' + $t('LITE DYRARE') + ' ·', w2 = textW(SM, t2);
     hand(S, SM, t2, sx + Math.round((sw - w2) / 2), sy + 12, 0x1a1a3a, 5);
     S.rect(sx - 1, sy - 1, 6, 3, 0xf8f8f0, 0.55); S.rect(sx + sw - 5, sy - 1, 6, 3, 0xf8f8f0, 0.55); // tejpbitar
   }
@@ -763,7 +764,7 @@ function paintCounterWall(P) {
     const px = 8, py = 38, pw = 46, ph = 26;
     sbox(P, px, py, pw, ph, 0x2a4ab0);
     P.rect(px + 1, py + 1, pw - 2, 7, 0x1a2a80);
-    text(P, SM, 'TELEFONKORT', px + 2, py + 2, 0xffffff);
+    text(P, SM, $t('TELEFONKORT'), px + 2, py + 2, 0xffffff);
     const FLAG = (x, y, k) => {
       const a = LOUD[k % LOUD.length], b = LOUD[(k * 5 + 3) % LOUD.length], c = [0xffffff, 0x1a1a22, 0xf8e040][k % 3];
       if (k % 4 === 0) { P.hl(x, y, 6, a); P.hl(x, y + 1, 6, c); P.hl(x, y + 2, 6, b); P.hl(x, y + 3, 6, a); }
@@ -772,7 +773,7 @@ function paintCounterWall(P) {
       else { P.rect(x, y, 6, 4, b); P.px(x, y, a); P.px(x + 1, y + 1, a); P.px(x, y + 2, a); P.px(x + 4, y + 1, c); }
     };
     for (let r = 0; r < 2; r++) for (let k = 0; k < 6; k++) { FLAG(px + 3 + k * 7, py + 10 + r * 6, r * 6 + k); P.hl(px + 3 + k * 7, py + 14 + r * 6, 6, 0x0a1a50, 0.5); }
-    hand(P, SM, 'RING HEM', px + 3, py + 21, 0xf8e040, 7);
+    hand(P, SM, $t('RING HEM'), px + 3, py + 21, 0xf8e040, 7);
     P.px(px + pw - 5, py + 22, 0xff5a5a); P.px(px + pw - 4, py + 22, 0xff5a5a);
   }
   // hylla med SIM-kort, laddare, batterier och en lyckokatt (tassen ritas levande)
@@ -801,7 +802,7 @@ function paintCounterWall(P) {
     P.rect(cx0 - 2, top - 2, cx1 - cx0 + 4, 2, WOOD[2]); P.hl(cx0 - 2, top - 2, cx1 - cx0 + 4, WOOD[3]);
     P.vl(cx0 - 2, top, WALL_Y - top, WOOD[2]); P.vl(cx0 - 1, top, WALL_Y - top, WOOD[1]);
     P.vl(cx1, top, WALL_Y - top, WOOD[2]); P.vl(cx1 + 1, top, WALL_Y - top, WOOD[1]);
-    hand(P, SM, 'PERSONAL', cx0 - 1, top - 9, 0x3a2a2a, 9);
+    hand(P, SM, $t('PERSONAL'), cx0 - 1, top - 9, 0x3a2a2a, 9);
   }
   // golvet bakom disken: gummimatta och en liten element
   for (let y = 100; y < 116; y++) for (let x = 50; x < 104; x++) P.px(x, y, (x + y) % 3 === 0 ? 0x2a2a2e : 0x1a1a1e);
@@ -898,7 +899,7 @@ function paintSacks(P) {
     }
     // handskriven lapp på en pinne (inte i ärtorna – där står skopan)
     if (k !== 1) {
-      const S = skew(P, x - 1, 6, k ? 1 : -1), ty = top - 9, pr = k ? '29:-' : '19:-';
+      const S = skew(P, x - 1, 6, k ? 1 : -1), ty = top - 9, pr = k ? priceLbl(29) : priceLbl(19);
       P.vl(x + 6, top - 4, 6, 0xc8a878);
       S.rect(x - 1, ty, 15, 6, 0xf8f4e8); S.hl(x - 1, ty + 5, 15, 0xc8c0a8); text(S, SM, pr, x, ty + 1, 0x1a1a3a);
     }
@@ -1023,7 +1024,7 @@ function paintFridge(P, displays) {
     if (x >= x0 + 64 && x < x0 + 66) c = 0xd0d8dc;
     P.px(x, y, mix(c, 0xa0b0c0, (y - top) / 12));
   }
-  const hdr = 'KALLA DRYCKER', hw = textW(SM, hdr);
+  const hdr = $t('KALLA DRYCKER'), hw = textW(SM, hdr);
   text(P, SM, hdr, x0 + 80, top + 1, 0x1a4ab0);
   script(P, x0 + 86 + hw, top + 2, 60, 0xd8202a, 17, 0);
   script(P, x0 + 8, top + 2, 50, 0x6a7a8a, 23, 1);
@@ -1056,7 +1057,7 @@ function paintFridge(P, displays) {
     const hx = d % 2 ? dx + 4 : dx + dw - 5;
     P.vl(hx, gy0 + 12, 12, 0xe6ecf0); P.vl(hx + 1, gy0 + 12, 12, 0x8e98a2); P.px(hx, gy0 + 11, 0x646c76); P.px(hx, gy0 + 24, 0x646c76);
     // lappar på några dörrar
-    if (d === 3) { const S = skew(P, dx + 7, 5, 1); S.rect(dx + 7, gy0 + 2, 19, 13, 0xf8f8f0); S.hl(dx + 7, gy0 + 14, 19, 0xc8c4b8); hand(S, SM, 'DRA', dx + 11, gy0 + 3, 0xd8202a, 33); hand(S, SM, 'HÅRT', dx + 9, gy0 + 9, 0xd8202a, 34); }
+    if (d === 3) { const S = skew(P, dx + 7, 5, 1); S.rect(dx + 7, gy0 + 2, 19, 13, 0xf8f8f0); S.hl(dx + 7, gy0 + 14, 19, 0xc8c4b8); hand(S, SM, $t('DRA'), dx + 11, gy0 + 3, 0xd8202a, 33); hand(S, SM, $t('HÅRT'), dx + 9, gy0 + 9, 0xd8202a, 34); }
     if (d === 4) { P.rect(dx + 8, gy0 + 28, 7, 5, 0xffd23f); P.px(dx + 9, gy0 + 29, 0xd8202a); P.px(dx + 12, gy0 + 30, 0xd8202a); } // en klistermärkesstjärna
     if (d === 7) { P.ell(dx + 22, gy0 + 6, 3, 3, 0xffffff, 0.7, 2); } // frost i hörnet
   }
@@ -1102,7 +1103,7 @@ function paintFront(P, night) {
   for (let y = y0 + 4; y < H; y++) for (let x = DOOR.x0 + 2; x < DOOR.x1 - 2; x++) P.px(x, y, night ? 0x10162a : 0xa8b8c4);
   for (let x = DOOR.x0 + 4; x < DOOR.x1 - 2; x += 5) P.vl(x, y0 + 4, H - y0 - 4, 0x2a2a30);
   P.hl(DOOR.x0 + 2, y0 + 8, DOOR.x1 - DOOR.x0 - 4, 0xc8ccd0); P.hl(DOOR.x0 + 2, y0 + 9, DOOR.x1 - DOOR.x0 - 4, 0x6a6e74);
-  hand(P, SM, 'DRAG', DOOR.x0 + 7, y0 + 11, night ? 0xc8c8c0 : 0x2a2a30, 12);
+  hand(P, SM, $t('DRAG'), DOOR.x0 + 7, y0 + 11, night ? 0xc8c8c0 : 0x2a2a30, 12);
   // sidoväggarna
   P.rect(0, 0, SIDE, H, 0x2a2420); P.vl(SIDE - 1, CEIL, H - CEIL, 0x4a3e34);
   P.rect(W - SIDE, 0, SIDE, H, 0x2a2420); P.vl(W - SIDE, CEIL, H - CEIL, 0x4a3e34);
@@ -1124,12 +1125,12 @@ function paintBackground(displays, night) {
 
 // ---------- gondolerna ----------
 const CATS = {
-  nudlar: { sign: 'NUDLAR & RIS', shelves: [['npack'], ['cup', 'npack'], ['cup'], ['rice']], strips: [0.18, 0.62] },
-  snacks: { sign: 'SNACKS', shelves: [['chips'], ['cbox', 'chips'], ['chips'], ['cbox']], strips: [0.16, 0.5, 0.86] },
-  konserv: { sign: 'KONSERVER', note: 'FRÅGA INTE', shelves: [['weird'], ['tin', 'weird'], ['jar', 'weird'], ['can', 'tin']], strips: [] },
-  kryddor: { sign: 'KRYDDOR', shelves: [['spice'], ['jar', 'spice'], ['bottle'], ['oil']], strips: [0.3, 0.8] },
-  te: { sign: 'TE & KAFFE', shelves: [['tea'], ['coffee', 'tea'], ['dates', 'cbox'], ['coffee', 'rice']], strips: [0.9] },
-  hushall: { sign: 'HUSHÅLL', shelves: [['batt', 'candle'], ['deterg'], ['deterg', 'candle'], ['tp']], strips: [0.12] },
+  nudlar: { sign: $t('NUDLAR & RIS'), shelves: [['npack'], ['cup', 'npack'], ['cup'], ['rice']], strips: [0.18, 0.62] },
+  snacks: { sign: $t('SNACKS'), shelves: [['chips'], ['cbox', 'chips'], ['chips'], ['cbox']], strips: [0.16, 0.5, 0.86] },
+  konserv: { sign: $t('KONSERVER'), note: $t('FRÅGA INTE'), shelves: [['weird'], ['tin', 'weird'], ['jar', 'weird'], ['can', 'tin']], strips: [] },
+  kryddor: { sign: $t('KRYDDOR'), shelves: [['spice'], ['jar', 'spice'], ['bottle'], ['oil']], strips: [0.3, 0.8] },
+  te: { sign: $t('TE & KAFFE'), shelves: [['tea'], ['coffee', 'tea'], ['dates', 'cbox'], ['coffee', 'rice']], strips: [0.9] },
+  hushall: { sign: $t('HUSHÅLL'), shelves: [['batt', 'candle'], ['deterg'], ['deterg', 'candle'], ['tp']], strips: [0.12] },
 };
 const LIPS = [36, 27, 18, 9]; // hyllplanens höjd över golvet (varorna står på dem)
 function paintGondola(G, gi, displays) {
@@ -1250,7 +1251,7 @@ function paintCounter() {
       P.hl(gx, face + 13, 22, 0x9aa0a8);
     }
     // ALLTID ÖPPET-lapp även på disken (liten)
-    { const S = skew(P, 50, 6, -1); S.rect(50, face + 3, 30, 8, 0xf6f24a); hand(S, SM, '24 TIM', 53, face + 4, 0x1a1a3a, 44); }
+    { const S = skew(P, 50, 6, -1); S.rect(50, face + 3, 30, 8, 0xf6f24a); hand(S, SM, $t('24 TIM'), 53, face + 4, 0x1a1a3a, 44); }
     // bänkskivan: sliten vit laminat med kaffe-ringar
     for (let y = top; y < face; y++) for (let x = x0; x < x1; x++) {
       let c = mix(0xe8e2d0, 0xc8c0aa, (y - top) / 8);
@@ -1302,8 +1303,8 @@ function paintCounter() {
       P.hl(px0, pt, px1 - px0, 0xe6ecf0); P.hl(px0, pt + 1, px1 - px0, 0x9aa4ae);
       P.rect(63, bot - 1, 22, 2, 0x8a929c); // myntskålen
       // lappar på glaset (i hörnen – expediten ska synas)
-      { const S = skew(P, px0 + 2, 6, 1); S.rect(px0 + 2, pt + 3, 25, 7, 0xf8f8f0); text(S, SM, 'SWISH', px0 + 4, pt + 4, 0x6a2a8a); }
-      { const S = skew(P, px0 + 2, 5, -1); S.rect(px0 + 2, bot - 11, 17, 7, 0xff86c8); hand(S, SM, 'KORT', px0 + 4, bot - 10, 0x1a1a3a, 52); }
+      { const S = skew(P, px0 + 2, 6, 1); S.rect(px0 + 2, pt + 3, 25, 7, 0xf8f8f0); text(S, SM, $t('SWISH'), px0 + 4, pt + 4, 0x6a2a8a); }
+      { const S = skew(P, px0 + 2, 5, -1); S.rect(px0 + 2, bot - 11, 17, 7, 0xff86c8); hand(S, SM, $t('KORT'), px0 + 4, bot - 10, 0x1a1a3a, 52); }
     }
     // snacks i remsa som hänger från plexiglasets hörn
     clipStrip(P, PLEX.x1 + 1, PLEX.top + 2, 4, 77);
@@ -1372,7 +1373,7 @@ function paintPallet() {
       for (let y = by - 8; y < by; y++) for (let x = x0 + 1; x < x1 - 1; x++) if ((x + y) % 7 === 0) P.px(x, y, 0xffffff, 0.35); // krympplasten
     }
     // en handskriven lapp
-    { const S = skew(P, x0 + 2, 8, 1); S.rect(x0 + 2, base - 14, 32, 7, 0xf8f8f0); text(S, SM, '6 FÖR 49', x0 + 4, base - 13, 0x1a1a3a); }
+    { const S = skew(P, x0 + 2, 8, 1); S.rect(x0 + 2, base - 14, 32, 7, 0xf8f8f0); text(S, SM, $t('6 FÖR 49'), x0 + 4, base - 13, 0x1a1a3a); }
     outline(P, OUT, 0.55);
     groundShadow(P, (x0 + x1) / 2, base + 1, (x1 - x0) / 2, 2.5, 0.35);
   });
@@ -1426,9 +1427,9 @@ function paintAtm() {
   return sprite(ATM.x0 - 2, ATM.base - 30, ATM.x1 - ATM.x0 + 5, 34, (P) => {
     const { x0, x1, base } = ATM, w = x1 - x0;
     sbox(P, x0, base - 26, w, 26, 0x6a707a);
-    P.rect(x0 + 1, base - 26, w - 2, 6, 0x2a8a5a); text(P, SM, 'UTTAG', x0 + 3, base - 25, 0xffffff);
+    P.rect(x0 + 1, base - 26, w - 2, 6, 0x2a8a5a); text(P, SM, $t('UTTAG'), x0 + 3, base - 25, 0xffffff);
     P.rect(x0 + 3, base - 19, w - 6, 8, 0x1a2a6a); P.rect(x0 + 4, base - 18, w - 8, 6, 0x2a4ad8);
-    { const S = skew(P, x0 - 1, 6, 1); S.rect(x0 - 1, base - 18, w + 1, 7, 0xf8f8f0); S.hl(x0 - 1, base - 12, w + 1, 0xc8c4b8); text(S, SM, 'TRASIG', x0, base - 17, 0xd8202a); } // lappen över skärmen
+    { const S = skew(P, x0 - 1, 6, 1); S.rect(x0 - 1, base - 18, w + 1, 7, 0xf8f8f0); S.hl(x0 - 1, base - 12, w + 1, 0xc8c4b8); text(S, SM, $t('TRASIG'), x0, base - 17, 0xd8202a); } // lappen över skärmen
     for (let r = 0; r < 3; r++) for (let k = 0; k < 3; k++) P.rect(x0 + 4 + k * 3, base - 9 + r * 3, 2, 2, 0xd8dce0);
     P.rect(x1 - 7, base - 8, 4, 1, 0x1a1a22); P.px(x1 - 5, base - 6, 0x40e060);
     outline(P, OUT, 0.6);
@@ -1487,8 +1488,8 @@ function paintCrates() {
       script(P, x + 4, y - h + 1, w - 8, 0x3a2410, seed, seed % 4, 0.7);     // stämpel på ribban
       if (tag) { const S = skew(P, x + 3, 5, seed % 2 ? 1 : -1); P.vl(x + 8, y - h - 11, 6, 0xc8a878); S.rect(x + 3, y - h - 14, 18, 6, 0xf8f4e8); hand(S, SM, tag, x + 4, y - h - 13, 0x1a1a3a, seed); }
     };
-    crate(x0, base, 22, 8, 'mango', 2.7, 3, '5:-');
-    crate(x0 + 22, base, 22, 8, 'granat', 2.5, 7, '9:-');
+    crate(x0, base, 22, 8, 'mango', 2.7, 3, priceLbl(5));
+    crate(x0 + 22, base, 22, 8, 'granat', 2.5, 7, priceLbl(9));
     crate(x0 + 12, base - 9, 20, 7, 'lime', 2.1, 11, null);   // en låda lime ovanpå, snett
     outline(P, OUT, 0.55);
     groundShadow(P, (x0 + x1) / 2, base + 1, (x1 - x0) / 2 + 1, 2, 0.35);
@@ -1538,7 +1539,7 @@ function paintBread() {
         P.hl(bx, b - 7, 9, c); P.px(bx + 1, b - 6, 0xffffff); script(P, bx + 1, b - 2, 7, c, k * 5 + j, (k + j) % 4, 0.8);
       }
     }
-    { const S = skew(P, x0 - 1, 6, -1); S.rect(x0 - 1, base - 34, w + 2, 6, 0xe8d4a8); hand(S, SM, 'BRÖD', x0 + 2, base - 33, 0x1a1a3a, 81); }
+    { const S = skew(P, x0 - 1, 6, -1); S.rect(x0 - 1, base - 34, w + 2, 6, 0xe8d4a8); hand(S, SM, $t('BRÖD'), x0 + 2, base - 33, 0x1a1a3a, 81); }
     outline(P, OUT, 0.55);
     groundShadow(P, (x0 + x1) / 2, base + 1, w / 2 + 1, 2, 0.35);
   });
@@ -1591,7 +1592,7 @@ function paintGlass() {
     P.ell(cx, lid + 2, 2.6, 2.4, 0xff8ab0, 1, 1); P.ell(cx + 3, lid + 2, 2.4, 2.2, 0xf8f0d0, 1, 1); P.px(cx - 1, lid + 1, 0xffffff);
     for (let j = 0; j < 4; j++) P.hl(cx - 1 + (j >> 1), lid + 4 + j, 4 - j, 0xe0a050);
     script(P, x0 + 15, lid + 2, w - 18, 0xffffff, 44, 2);
-    text(P, SM, 'GLASS', x0 + 16, lid + 4 - 3 + 3, 0xf8e040);
+    text(P, SM, $t('GLASS'), x0 + 16, lid + 4 - 3 + 3, 0xf8e040);
     outline(P, OUT, 0.6);
     groundShadow(P, (x0 + x1) / 2, base + 1, w / 2 + 1, 2.5, 0.4);
   });
@@ -1646,10 +1647,10 @@ function paintLott() {
     glare(P, x0 + 2, by0 + 1, w - 4, by1 - by0 - 2, 0.35, 11, 3);
     // skylten överst: LOTTER i guld på svart med en klöver, och prislappen
     P.rect(x0, top, w, 8, 0x141016); P.hl(x0, top, w, GOLDS[3]); P.hl(x0, top + 7, w, GOLDS[1]);
-    const lw = textW(SM, 'LOTTER');
-    text(P, SM, 'LOTTER', x0 + ((w - lw) >> 1), top + 2, GOLDS[3]);
+    const lw = textW(SM, $t('LOTTER'));
+    text(P, SM, $t('LOTTER'), x0 + ((w - lw) >> 1), top + 2, GOLDS[3]);
     P.hl(x0 + ((w - lw) >> 1), top + 2, lw, GOLDS[4], 0.5);
-    { const tw = handW(SM, '25:-', 61) + 3, S = skew(P, x1 - tw + 1, 5, 1); S.rect(x1 - tw + 1, by1 - 7, tw, 7, 0xffd23f); S.hl(x1 - tw + 1, by1 - 7, tw, 0xfff08a); hand(S, SM, '25:-', x1 - tw + 2, by1 - 6, 0xc8141a, 61); }
+    { const tw = handW(SM, priceLbl(25), 61) + 3, S = skew(P, x1 - tw + 1, 5, 1); S.rect(x1 - tw + 1, by1 - 7, tw, 7, 0xffd23f); S.hl(x1 - tw + 1, by1 - 7, tw, 0xfff08a); hand(S, SM, priceLbl(25), x1 - tw + 2, by1 - 6, 0xc8141a, 61); }
     outline(P, OUT, 0.55);
     groundShadow(P, (x0 + x1) / 2, base + 1, w / 2 - 2, 1.6, 0.35);
   });
@@ -1748,16 +1749,16 @@ function rng(seed) {
 const CLERK = { skin: '#c68a5c', hair: '#1d1714', style: 'short', hat: 'beanie', cap: '#d8a02a', top: 'jacket', shirt: '#2e6a56', accent: '#e8e0d0', bottom: 'pants', pants: '#2b2b30', shoes: '#1c1c1c', glasses: 'square', beard: 'mustache', phones: false, bag: null, build: 6, blush: false, kid: false };
 const npcLook = (seed) => { const L = makeLook(rng(seed)); return { ...L, kid: false, build: L.build === 4 ? 5 : L.build, bag: null }; };
 
-const CLERK_LINES = ['Lysröret? Ja, jag vet.', 'Kylen surrar. Den har alltid surrat.', 'Nudlarna är de bästa i stan.', 'Myrornas krig igen.', 'Min kusin skickar konserverna.', 'Lite dyrare. Men vi har öppet.', 'Radion tar bara en kanal.', 'Katten ingår inte.'];
-const CLERK_NIGHT = ['Tredje kaffet i natt.', 'Nattpasset är bäst. Tyst.', 'Öppet jämt. Även nu.', 'Sultan vaktar butiken.'];
-const YIELD_LINES = ['Efter dig!', 'Oj, varsågod.', 'Smal gång, va?', 'Jag kliver undan.', 'Du först!'];
-const SQUEEZE_LINES = ['Ursäkta!', 'Oj, förlåt.', 'Jag drar in magen.', 'Trångt, va?'];
+const CLERK_LINES = [$t('Lysröret? Ja, jag vet.'), $t('Kylen surrar. Den har alltid surrat.'), $t('Nudlarna är de bästa i stan.'), $t('Myrornas krig igen.'), $t('Min kusin skickar konserverna.'), $t('Lite dyrare. Men vi har öppet.'), $t('Radion tar bara en kanal.'), $t('Katten ingår inte.')];
+const CLERK_NIGHT = [$t('Tredje kaffet i natt.'), $t('Nattpasset är bäst. Tyst.'), $t('Öppet jämt. Även nu.'), $t('Sultan vaktar butiken.')];
+const YIELD_LINES = [$t('Efter dig!'), $t('Oj, varsågod.'), $t('Smal gång, va?'), $t('Jag kliver undan.'), $t('Du först!')];
+const SQUEEZE_LINES = [$t('Ursäkta!'), $t('Oj, förlåt.'), $t('Jag drar in magen.'), $t('Trångt, va?')];
 const SHOP_LINES = {
-  kyl: ['Var är mangoläsken?', 'Så många färger...', 'Aloe med bitar!'],
-  nudlar: ['Sista nudlarna!', 'Den starka sorten.'],
-  konserv: ['Konstig burk... ett öga?', 'Vad är det här?'],
-  frys: ['Hej katten!', 'Flytta dig lite, katten.'],
-  annat: ['Finns det kardemumma?', 'Var är tandkrämen?', 'Trångt, men allt finns.'],
+  kyl: [$t('Var är mangoläsken?'), $t('Så många färger...'), $t('Aloe med bitar!')],
+  nudlar: [$t('Sista nudlarna!'), $t('Den starka sorten.')],
+  konserv: [$t('Konstig burk... ett öga?'), $t('Vad är det här?')],
+  frys: [$t('Hej katten!'), $t('Flytta dig lite, katten.')],
+  annat: [$t('Finns det kardemumma?'), $t('Var är tandkrämen?'), $t('Trångt, men allt finns.')],
 };
 const linesAt = (x, y) => (y < 90 && x >= FRIDGE.x0 ? SHOP_LINES.kyl : y > 180 && x < 90 ? SHOP_LINES.frys : laneOf(x, y) === 2 && x < 330 ? SHOP_LINES.nudlar : laneOf(x, y) === 2 && x > 480 ? SHOP_LINES.konserv : SHOP_LINES.annat);
 
@@ -1961,9 +1962,9 @@ export function makeShopNarbutik(A) {
     // bubblan på kattens bortre sida – aldrig rakt ovanför min figur (då ser det ut som att jag spinner)
     const side = walker.px >= cat.x ? -1 : 1;
     const at = () => ({ x: cat.x + side * 12, y: cat.y - 10 });
-    if (cat.state === 'sleep') talkCat.say('🐈 Mrrr...', at, 2.5, { animal: 'katt', mood: 'glad' });
-    else talkCat.say('🐈 Mjau!', at, 2, { animal: 'katt' });
-    expSay('Katten ingår inte.');
+    if (cat.state === 'sleep') talkCat.say($t('🐈 Mrrr...'), at, 2.5, { animal: 'katt', mood: 'glad' });
+    else talkCat.say($t('🐈 Mjau!'), at, 2, { animal: 'katt' });
+    expSay($t('Katten ingår inte.'));
   }
   // var jag ställer mig för att klappa katten: bredvid den (frysen, kartongerna) och vänd mot den
   function petSpot() {
@@ -2053,7 +2054,7 @@ export function makeShopNarbutik(A) {
     } else if (G.kind === 'pay') {
       if (G.queue) { n.state = 'queue'; n.t = 0; return; }
       n.state = 'pay'; n.t = 0;
-      expSay(isNight() ? 'Pip. Sent ute?' : 'Pip. Pip.');
+      expSay(isNight() ? $t('Pip. Sent ute?') : $t('Pip. Pip.'));
     } else if (G.kind === 'exit') {
       ring();
       n.state = 'away'; n.t = 8 + Math.random() * 16;
@@ -2062,7 +2063,7 @@ export function makeShopNarbutik(A) {
   // pratbubblor som ligger nära varandra skymmer varandra i de smala gångarna:
   // är någon annans bubbla igång alldeles intill väntar man med sin replik
   // (ungefärlig bubbelbredd ur texten – bubblorna är högst 124 px breda och radbryts sen)
-  const bubW = (s) => Math.min(124, textW(SM, String(s).toUpperCase().replace(/[^\x20-\x7eÅÄÖÉÜ]/g, 'MM')) + 12);
+  const bubW = (s) => Math.min(124, textW(SM, String(s).toUpperCase().replace(/[^\x20-\x7eÅÄÖÉÜÁÀÂÃÇĆÈÊËÍÌÎÏÑŃÓÒÔÕŚŹŻÚÙÛÜŸÝĄĘŁŒÆ¡¿€$]/g, 'MM')) + 12);
   function talkNear(x, y, except, s = '') {
     const w = bubW(s || 'XXXXXXXXXXXXXXXXXXXXXXXXXX');
     const hit = (ox, oy, os) => !!os && Math.abs(ox - x) < (w + bubW(os)) / 2 + 4 && Math.abs(oy - y) < 30;
@@ -2182,7 +2183,7 @@ export function makeShopNarbutik(A) {
   };
   function removeOne(id) { const i = basket.lastIndexOf(id); if (i >= 0) basket.splice(i, 1); }
   function addToBasket(s) {
-    if (basket.length >= MAX_BASKET) { play('fel'); toast('🧺 Korgen är full – gå till disken och betala!', 'bad'); return false; }
+    if (basket.length >= MAX_BASKET) { play('fel'); toast($t('🧺 Korgen är full – gå till disken och betala!'), 'bad'); return false; }
     if (scan) cancelScan();
     const first = !hasBasket;
     hasBasket = true; bag = false;
@@ -2191,15 +2192,15 @@ export function makeShopNarbutik(A) {
     flies.push({ id: s.f.id, x0: s.tag[0], y0: s.tag[1] + 8, t: 0 });
     pops.push({ x: s.tag[0], y: s.tag[1] - 2, s: '+1', t: 0 });
     if (s.d.kind === 'fridge') fridgeHold[s.d.door] = t + 1.2;
-    if (first) toast(`🧺 ${s.f.icon} ${s.f.name} i korgen! Betala vid disken när du handlat klart.`, 'good');
+    if (first) toast($t`🧺 ${s.f.icon} ${s.f.name} i korgen! Betala vid disken när du handlat klart.`, 'good');
     return true;
   }
 
   // ---------- disken ----------
   function startScan() {
-    if (!basket.length) { expSay('Plocka först, betala sen.'); hint('🧺 Korgen är tom – klicka på en vara med neonlapp.'); return; }
+    if (!basket.length) { expSay($t('Plocka först, betala sen.')); hint($t('🧺 Korgen är tom – klicka på en vara med neonlapp.')); return; }
     scan = { items: [...basket], i: 0, t: -0.3, total: 0, shown: [], done: false, doneT: 0, flash: 0 };
-    expSay(isNight() ? 'Pip, pip. Sent ute, va?' : 'Pip, pip.');
+    expSay(isNight() ? $t('Pip, pip. Sent ute, va?') : $t('Pip, pip.'));
     play('click');
   }
   function cancelScan() { scan = null; receiptOpen = false; }
@@ -2208,7 +2209,7 @@ export function makeShopNarbutik(A) {
     if (!basket.length) return { ok: false, paid: 0, n: 0, left: 0, msg: 'Korgen är tom.' };
     if (g.money < sum) {
       play('fel');
-      toast(`💸 Pengarna räcker inte! Du har ${fmt(g.money)} men varorna kostar ${fmt(sum)}.`, 'bad');
+      toast($t`💸 Pengarna räcker inte! Du har ${fmt(g.money)} men varorna kostar ${fmt(sum)}.`, 'bad');
       return { ok: false, paid: 0, n: 0, left: basket.length, msg: 'Du har inte råd!' };
     }
     let paid = 0, n = 0;
@@ -2227,10 +2228,10 @@ export function makeShopNarbutik(A) {
     scan = null; receiptOpen = false;
     if (n) {
       play('buy'); bag = true; hasBasket = !!left.length;
-      expSay(isNight() ? 'Tack. Sov gott sen.' : 'Tack. Kvitto? Nej. Hej då.');
-      toast(`🧾 Betalt ${fmt(paid)} – ${n} ${n === 1 ? 'vara ligger' : 'varor ligger'} nu i kylskåpet där hemma!`, 'good');
+      expSay(isNight() ? $t('Tack. Sov gott sen.') : $t('Tack. Kvitto? Nej. Hej då.'));
+      toast(n === 1 ? $t`🧾 Betalt ${fmt(paid)} – ${n} vara ligger nu i kylskåpet där hemma!` : $t`🧾 Betalt ${fmt(paid)} – ${n} varor ligger nu i kylskåpet där hemma!`, 'good');
     }
-    if (left.length) { play('fel'); toast(`💸 Pengarna räckte inte till allt – ${left.length} kvar i korgen.`, 'bad'); }
+    if (left.length) { play('fel'); toast($t`💸 Pengarna räckte inte till allt – ${left.length} kvar i korgen.`, 'bad'); }
     return { ok: !left.length, paid, n, left: left.length };
   }
   function openReceipt() {
@@ -2239,26 +2240,26 @@ export function makeShopNarbutik(A) {
     receiptOpen = true;
     const rows = gs.map(({ f, n }) => `<div class="prow shoprow">
         <span style="font-size:28px;text-align:center">${f.icon}</span>
-        <span class="nm">${esc(f.name)} × ${n}<br><small class="sp">${fmt(narPrice(f))}/st · Stormarknaden ${fmt(f.price)} · +${f.fill} mätthet</small></span>
+        <span class="nm">${esc(f.name)} × ${n}<br><small class="sp">${$t`${fmt(narPrice(f))}/st · Stormarknaden ${fmt(f.price)} · +${f.fill} mätthet`}</small></span>
         <b style="font-size:var(--f2)">${fmt(narPrice(f) * n)}</b>
-        <button class="btn btn-small" data-back="${esc(f.id)}" title="Lägg tillbaka en">↩ Lägg tillbaka</button>
+        <button class="btn btn-small" data-back="${esc(f.id)}" title="${$t('Lägg tillbaka en')}">${$t('↩ Lägg tillbaka')}</button>
       </div>`).join('');
-    const body = `<p style="font-size:var(--f2);margin-top:0">Expediten har slagit in allt bakom plexiglaset. 💰 Du har <b>${fmt(g.money)}</b>.</p>
-      <p style="font-size:var(--f1);margin:0 0 6px;opacity:.85">🏪 <b>ALLTID ÖPPET · LITE DYRARE</b> – allt kostar 20 % mer än på Stormarknaden (där hade det blivit ${fmt(ord)}).</p>
+    const body = `<p style="font-size:var(--f2);margin-top:0">${$t`Expediten har slagit in allt bakom plexiglaset. 💰 Du har <b>${fmt(g.money)}</b>.`}</p>
+      <p style="font-size:var(--f1);margin:0 0 6px;opacity:.85">${$t`🏪 <b>ALLTID ÖPPET · LITE DYRARE</b> – allt kostar 20 % mer än på Stormarknaden (där hade det blivit ${fmt(ord)}).`}</p>
       <div class="plist">${rows}</div>
-      <p style="font-size:var(--f3);display:flex;justify-content:space-between;border-top:3px dashed var(--ink);padding-top:8px;margin-bottom:6px"><span>SUMMA</span><b>${fmt(sum)}</b></p>
-      ${afford ? `<p style="font-size:var(--f2);margin:0">Maten hamnar i kylskåpet där hemma. Efter köpet har du ${fmt(g.money - sum)} kvar.</p>`
-        : `<p class="bad" style="font-size:var(--f2);margin:0"><b>⚠️ Pengarna räcker inte!</b> Du har ${fmt(g.money)} – det fattas <b>${fmt(sum - g.money)}</b>. Lägg tillbaka något.</p>`}`;
+      <p style="font-size:var(--f3);display:flex;justify-content:space-between;border-top:3px dashed var(--ink);padding-top:8px;margin-bottom:6px"><span>${$t('SUMMA')}</span><b>${fmt(sum)}</b></p>
+      ${afford ? `<p style="font-size:var(--f2);margin:0">${$t`Maten hamnar i kylskåpet där hemma. Efter köpet har du ${fmt(g.money - sum)} kvar.`}</p>`
+        : `<p class="bad" style="font-size:var(--f2);margin:0">${$t`<b>⚠️ Pengarna räcker inte!</b> Du har ${fmt(g.money)} – det fattas <b>${fmt(sum - g.money)}</b>. Lägg tillbaka något.`}</p>`}`;
     if (!afford) play('fel');
-    const dlg = openModal('🧾 Disken – Närbutiken 24/7', body, [
-      { label: 'Avbryt', onClick: () => { closeModal(); cancelScan(); } },
-      { label: `💳 Betala ${fmt(sum)}`, cls: 'btn-go', disabled: !afford, onClick: () => { closeModal(); pay(); } },
+    const dlg = openModal($t('🧾 Disken – Närbutiken 24/7'), body, [
+      { label: $t('Avbryt'), onClick: () => { closeModal(); cancelScan(); } },
+      { label: $t`💳 Betala ${fmt(sum)}`, cls: 'btn-go', disabled: !afford, onClick: () => { closeModal(); pay(); } },
     ]);
     dlg.querySelectorAll('[data-back]').forEach((b) => (b.onclick = () => {
       removeOne(b.dataset.back);
       play('click');
       if (basket.length) { scan = { items: [...basket], i: basket.length, t: 0, total: total(), shown: [], done: true, doneT: 1, flash: 0 }; openReceipt(); }
-      else { closeModal(); cancelScan(); hasBasket = true; toast('🧺 Korgen är tom igen.'); }
+      else { closeModal(); cancelScan(); hasBasket = true; toast($t('🧺 Korgen är tom igen.')); }
     }));
   }
   function goPay() {
@@ -2268,10 +2269,10 @@ export function makeShopNarbutik(A) {
   // ---------- gå ut ----------
   function exit() {
     if (basket.length) {
-      openModal('🧺 Obetalda varor', `<p style="font-size:var(--f2);margin-top:0">Du har <b>${basket.length}</b> ${basket.length === 1 ? 'vara' : 'varor'} i korgen som inte är betalda (${fmt(total())}).</p>
-        <p style="font-size:var(--f2)">Betala vid disken – eller ställ tillbaka allt innan du går. Expediten ser allt i den runda spegeln.</p>`, [
-        { label: '↩ Ställ tillbaka allt och gå', onClick: () => { closeModal(); basket = []; scan = null; leave(); } },
-        { label: '🧾 Till disken', cls: 'btn-go', onClick: () => { closeModal(); goPay(); } },
+      openModal($t('🧺 Obetalda varor'), `<p style="font-size:var(--f2);margin-top:0">${basket.length === 1 ? $t`Du har <b>${basket.length}</b> vara i korgen som inte är betalda (${fmt(total())}).` : $t`Du har <b>${basket.length}</b> varor i korgen som inte är betalda (${fmt(total())}).`}</p>
+        <p style="font-size:var(--f2)">${$t('Betala vid disken – eller ställ tillbaka allt innan du går. Expediten ser allt i den runda spegeln.')}</p>`, [
+        { label: $t('↩ Ställ tillbaka allt och gå'), onClick: () => { closeModal(); basket = []; scan = null; leave(); } },
+        { label: $t('🧾 Till disken'), cls: 'btn-go', onClick: () => { closeModal(); goPay(); } },
       ]);
       return;
     }
@@ -2290,18 +2291,18 @@ export function makeShopNarbutik(A) {
     const L = lottOf(g);
     if (L.open) { showTicket(); return; } // en lott som inte är färdigskrapad
     const left = lottLeft(g);
-    if (!left) { expSay('Rullen är slut. Kom i morgon.'); hint('🍀 Slut på lotter för i dag.'); return; }
-    openModal('🍀 Lyckoskrap', `<p style="font-size:var(--f2);margin-top:0">En skraplott kostar <b>${LOTT_PRIS} kr</b>. Skrapa fram sex belopp – <b>tre lika</b> och du vinner beloppet: 100, 500 eller 1 000 kr!</p>
-      <p style="font-size:var(--f2);margin:0">De flesta lotter är nitlotter – det är liten chans att vinna. 💰 Du har <b>${fmt(g.money)}</b> · ${left} ${left === 1 ? 'lott' : 'lotter'} kvar på rullen i dag (högst ${LOTT_PER_DAG}).</p>`, [
-      { label: 'Nej tack', onClick: closeModal },
-      { label: `🍀 Köp en lott – ${LOTT_PRIS} kr`, cls: 'btn-go', disabled: g.money < LOTT_PRIS, onClick: () => { closeModal(); buyAndShow(); } },
+    if (!left) { expSay($t('Rullen är slut. Kom i morgon.')); hint($t('🍀 Slut på lotter för i dag.')); return; }
+    openModal($t('🍀 Lyckoskrap'), `<p style="font-size:var(--f2);margin-top:0">${$t`En skraplott kostar <b>${LOTT_PRIS} kr</b>. Skrapa fram sex belopp – <b>tre lika</b> och du vinner beloppet: 100, 500 eller 1 000 kr!`}</p>
+      <p style="font-size:var(--f2);margin:0">${$t`De flesta lotter är nitlotter – det är liten chans att vinna. 💰 Du har <b>${fmt(g.money)}</b>`} · ${left === 1 ? $t`${left} lott kvar på rullen i dag (högst ${LOTT_PER_DAG}).` : $t`${left} lotter kvar på rullen i dag (högst ${LOTT_PER_DAG}).`}</p>`, [
+      { label: $t('Nej tack'), onClick: closeModal },
+      { label: $t`🍀 Köp en lott – ${LOTT_PRIS} kr`, cls: 'btn-go', disabled: g.money < LOTT_PRIS, onClick: () => { closeModal(); buyAndShow(); } },
     ]);
   }
   function buyAndShow() {
     const r = buyLott(g);
     if (!r.ok) { play('fel'); toast('🍀 ' + r.msg, 'bad'); if (r.open) showTicket(); return r; }
     play('coin');
-    expSay(pickOne(['Lycka till.', 'Skrapa försiktigt.', 'Min kusin vann en gång. Tror jag.']), undefined, true);
+    expSay(pickOne([$t('Lycka till.'), $t('Skrapa försiktigt.'), $t('Min kusin vann en gång. Tror jag.')]), undefined, true);
     showTicket();
     return r;
   }
@@ -2316,12 +2317,12 @@ export function makeShopNarbutik(A) {
         const r = settleLott(g);
         if (r.prize) {
           play('fanfare');
-          toast(`🍀 VINST! Tre lika – ${fmt(r.prize)} i fickan!`, 'good');
-          expSay(r.prize >= 1000 ? 'TUSEN?! Jag sa ju det. Min kusin...' : 'Grattis! Det händer inte ofta.', undefined, true);
+          toast($t`🍀 VINST! Tre lika – ${fmt(r.prize)} i fickan!`, 'good');
+          expSay(r.prize >= 1000 ? $t('TUSEN?! Jag sa ju det. Min kusin...') : $t('Grattis! Det händer inte ofta.'), undefined, true);
           pops.push({ x: walker.px, y: walker.py - 50, s: `+${r.prize}`, t: 0 });
         } else {
           play('miss');
-          expSay(pickOne(['Nästa gång kanske.', 'Nitlott. Som vanligt.', 'Ingen tur i dag.']), undefined, true);
+          expSay(pickOne([$t('Nästa gång kanske.'), $t('Nitlott. Som vanligt.'), $t('Ingen tur i dag.')]), undefined, true);
         }
         return r;
       },
@@ -2370,38 +2371,38 @@ export function makeShopNarbutik(A) {
     if (t > pendingHint.until) pendingHint = null;
     else if (!talkNear(walker.px, walker.py, 'me', pendingHint.s)) { sayHint(pendingHint.s); pendingHint = null; }
   }
-  const LOOK = 'Bara att titta på – varorna med neonlapp kan jag köpa.';
+  const LOOK = $t('Bara att titta på – varorna med neonlapp kan jag köpa.');
   const GLINES = {
-    nudlar: '🍜 Nudlar i alla färger. Etiketterna går inte att läsa.',
-    snacks: '🥨 Chips som smakar räkor, gurka eller något lila. ',
-    konserv: '🥫 Konstiga konserver. En har ett öga på etiketten.',
-    kryddor: '🌶️ Det luktar kardemumma och lysrörsdamm.',
-    te: '🍵 Te i askar med guldkant och dadlar i plast.',
-    hushall: '🧻 Batterier, värmeljus och toapapper i bal.',
+    nudlar: $t('🍜 Nudlar i alla färger. Etiketterna går inte att läsa.'),
+    snacks: $t('🥨 Chips som smakar räkor, gurka eller något lila. '),
+    konserv: $t('🥫 Konstiga konserver. En har ett öga på etiketten.'),
+    kryddor: $t('🌶️ Det luktar kardemumma och lysrörsdamm.'),
+    te: $t('🍵 Te i askar med guldkant och dadlar i plast.'),
+    hushall: $t('🧻 Batterier, värmeljus och toapapper i bal.'),
   };
   const spots = [
     { id: 'lotter', r: [LOTT.x0 - 2, LOTT.top - 2, LOTT.x1 + 2, LOTT.base], go: [127, 137], act: () => { walker.dir = 'up'; offerLott(); } },
     ...R.displays.map((s) => ({ id: s.f.id, food: s, r: s.r, go: s.go, act: () => addToBasket(s) })),
     { id: 'disk', r: [CNT.x0 + 20, PLEX.top - 4, GRILL.x0 - 2, CNT.base], go: PAY, act: () => { walker.dir = 'up'; startScan(); } },
     { id: 'dorr', r: [DOOR.x0 - 6, FRONT_Y - 12, DOOR.x1 + 6, H], go: [DOOR_X, FRONT_Y - 5], act: exit },
-    { id: 'tv', r: [TV.x0, TV.y0 - 6, TV.x1, TV.y1 + 6], go: [44, 137], act: () => { expSay('Myrornas krig. Bästa programmet.'); } },
-    { id: 'frukt', r: [CRATES.x0, CRATES.base - 30, CRATES.x1, CRATES.base], go: [58, 214], act: () => hint('🥭 Mango och granatäpplen från värmen. Doftar semester.') },
-    { id: 'snurr', r: [SPIN.x0 - 4, SPIN.base - 42, SPIN.x1 + 4, SPIN.base], go: [141, 188], act: () => hint('🕶️ Solglasögon för 49 kr. Snurrstället gnisslar.') },
-    { id: 'brod', r: [BREAD.x0, BREAD.base - 34, BREAD.x1, BREAD.base], go: [34, 146], act: () => hint('🫓 Tunnbröd i påsar med guldtryck.') },
-    { id: 'energikyl', r: [COOLER.x0, COOLER.base - 46, COOLER.x1, COOLER.base], go: [158, 124], act: () => hint('⚡ Energidryck med en blixt på. Surrar mer än lysrören.') },
-    { id: 'glassbox', r: [GLASS.x0, GLASS.top - 4, GLASS.x1, GLASS.base], go: [103, 184], act: () => hint('🍦 Glass med smaker jag aldrig hört talas om. Bara att titta på.') },
-    { id: 'tidningar', r: [NEWS.x0, NEWS.base - 22, NEWS.x1, NEWS.base], go: [138, 214], act: () => hint('📰 Tidningar från hela världen. Jag kan inte läsa en enda.') },
-    { id: 'backar', r: [SODA.x0, SODA.base - 26, SODA.x1, SODA.base], go: [568, 186], act: () => hint('🧃 Läskbackar som väntar på att bli pant.') },
-    { id: 'radio', r: [RADIO.x0, 76, RADIO.x0 + 26, CNT.base], go: [36, 137], act: () => { radioCh = (radioCh + 1) % 3; radioT = t; play('slide'); expSay(radioCh === 0 ? 'Radion tar bara en kanal.' : radioCh === 1 ? 'Den kanalen brusar.' : 'Tillbaka till min kanal.'); } },
-    { id: 'ridan', r: [CURT.x0 - 2, CURT.top - 10, CURT.x1 + 2, WALL_Y], go: [120, 137], act: () => { curtSway = 1; hint('🚪 PERSONAL – pärlridån rasslar. Där bakom bor kartongerna.'); } },
-    { id: 'korgar', r: [BASKETS.x0 - 2, BASKETS.base - 20, BASKETS.x1 + 2, BASKETS.base + 2], go: [193, 224], act: () => { if (!hasBasket) { hasBasket = true; play('ok'); hint('🧺 En grön korg. Nu handlar vi.'); } else hint('🧺 Jag har redan en korg.'); } },
-    { id: 'atm', r: [ATM.x0, ATM.base - 30, ATM.x1, ATM.base], go: [34, 226], act: () => hint('🏧 UTTAG – UR FUNKTION. Lappen har gulnat.') },
-    { id: 'mopp', r: [MOP.x - 12, MOP.base - 44, MOP.x + 12, MOP.base + 2], go: [574, 226], act: () => hint('🪣 Moppvattnet är grått. Golvet har sett bättre dagar.') },
-    { id: 'pall', r: [PALLET.x0, PALLET.base - 26, PALLET.x1, PALLET.base], go: [(PALLET.x0 + PALLET.x1) / 2, PALLET.base + 10], act: () => hint('💧 Vatten i sexpack. Bara att titta på.') },
-    ...BOXES.map((B, i) => ({ id: 'kartong' + i, r: [B.x0, B.base - B.d - 20, B.x1, B.base], go: null, row: B.base, act: () => hint('📦 Kartonger som ingen packat upp. Jag kliver runt.') })),
-    { id: 'sackar', r: [SACKS.x0, 36, SACKS.x1, SACKS.base], go: null, row: SACKS.base - 2, act: () => hint('🍚 Ris i 25-kilossäckar och kryddor att skopa själv.') },
-    { id: 'vagghylla', r: [WSHELF.x0, CEIL, WSHELF.x1, WSHELF.base], go: null, row: WSHELF.base, act: () => hint('🫒 Oljedunkar och tekannor ända upp till taket.') },
-    ...Array.from({ length: FRIDGE.n }, (_, d) => ({ id: 'kyl' + d, r: [FRIDGE.x0 + d * FRIDGE.dw, FRIDGE.top, FRIDGE.x0 + (d + 1) * FRIDGE.dw, WALL_Y + 4], go: [FRIDGE.x0 + d * FRIDGE.dw + FRIDGE.dw / 2, 82], act: () => { fridgeHold[d] = t + 1.4; play('click'); hint('🥤 Läsk i alla färger. ' + LOOK); } })),
+    { id: 'tv', r: [TV.x0, TV.y0 - 6, TV.x1, TV.y1 + 6], go: [44, 137], act: () => { expSay($t('Myrornas krig. Bästa programmet.')); } },
+    { id: 'frukt', r: [CRATES.x0, CRATES.base - 30, CRATES.x1, CRATES.base], go: [58, 214], act: () => hint($t('🥭 Mango och granatäpplen från värmen. Doftar semester.')) },
+    { id: 'snurr', r: [SPIN.x0 - 4, SPIN.base - 42, SPIN.x1 + 4, SPIN.base], go: [141, 188], act: () => hint($t('🕶️ Solglasögon för 49 kr. Snurrstället gnisslar.')) },
+    { id: 'brod', r: [BREAD.x0, BREAD.base - 34, BREAD.x1, BREAD.base], go: [34, 146], act: () => hint($t('🫓 Tunnbröd i påsar med guldtryck.')) },
+    { id: 'energikyl', r: [COOLER.x0, COOLER.base - 46, COOLER.x1, COOLER.base], go: [158, 124], act: () => hint($t('⚡ Energidryck med en blixt på. Surrar mer än lysrören.')) },
+    { id: 'glassbox', r: [GLASS.x0, GLASS.top - 4, GLASS.x1, GLASS.base], go: [103, 184], act: () => hint($t('🍦 Glass med smaker jag aldrig hört talas om. Bara att titta på.')) },
+    { id: 'tidningar', r: [NEWS.x0, NEWS.base - 22, NEWS.x1, NEWS.base], go: [138, 214], act: () => hint($t('📰 Tidningar från hela världen. Jag kan inte läsa en enda.')) },
+    { id: 'backar', r: [SODA.x0, SODA.base - 26, SODA.x1, SODA.base], go: [568, 186], act: () => hint($t('🧃 Läskbackar som väntar på att bli pant.')) },
+    { id: 'radio', r: [RADIO.x0, 76, RADIO.x0 + 26, CNT.base], go: [36, 137], act: () => { radioCh = (radioCh + 1) % 3; radioT = t; play('slide'); expSay(radioCh === 0 ? $t('Radion tar bara en kanal.') : radioCh === 1 ? $t('Den kanalen brusar.') : $t('Tillbaka till min kanal.')); } },
+    { id: 'ridan', r: [CURT.x0 - 2, CURT.top - 10, CURT.x1 + 2, WALL_Y], go: [120, 137], act: () => { curtSway = 1; hint($t('🚪 PERSONAL – pärlridån rasslar. Där bakom bor kartongerna.')); } },
+    { id: 'korgar', r: [BASKETS.x0 - 2, BASKETS.base - 20, BASKETS.x1 + 2, BASKETS.base + 2], go: [193, 224], act: () => { if (!hasBasket) { hasBasket = true; play('ok'); hint($t('🧺 En grön korg. Nu handlar vi.')); } else hint($t('🧺 Jag har redan en korg.')); } },
+    { id: 'atm', r: [ATM.x0, ATM.base - 30, ATM.x1, ATM.base], go: [34, 226], act: () => hint($t('🏧 UTTAG – UR FUNKTION. Lappen har gulnat.')) },
+    { id: 'mopp', r: [MOP.x - 12, MOP.base - 44, MOP.x + 12, MOP.base + 2], go: [574, 226], act: () => hint($t('🪣 Moppvattnet är grått. Golvet har sett bättre dagar.')) },
+    { id: 'pall', r: [PALLET.x0, PALLET.base - 26, PALLET.x1, PALLET.base], go: [(PALLET.x0 + PALLET.x1) / 2, PALLET.base + 10], act: () => hint($t('💧 Vatten i sexpack. Bara att titta på.')) },
+    ...BOXES.map((B, i) => ({ id: 'kartong' + i, r: [B.x0, B.base - B.d - 20, B.x1, B.base], go: null, row: B.base, act: () => hint($t('📦 Kartonger som ingen packat upp. Jag kliver runt.')) })),
+    { id: 'sackar', r: [SACKS.x0, 36, SACKS.x1, SACKS.base], go: null, row: SACKS.base - 2, act: () => hint($t('🍚 Ris i 25-kilossäckar och kryddor att skopa själv.')) },
+    { id: 'vagghylla', r: [WSHELF.x0, CEIL, WSHELF.x1, WSHELF.base], go: null, row: WSHELF.base, act: () => hint($t('🫒 Oljedunkar och tekannor ända upp till taket.')) },
+    ...Array.from({ length: FRIDGE.n }, (_, d) => ({ id: 'kyl' + d, r: [FRIDGE.x0 + d * FRIDGE.dw, FRIDGE.top, FRIDGE.x0 + (d + 1) * FRIDGE.dw, WALL_Y + 4], go: [FRIDGE.x0 + d * FRIDGE.dw + FRIDGE.dw / 2, 82], act: () => { fridgeHold[d] = t + 1.4; play('click'); hint($t('🥤 Läsk i alla färger.') + ' ' + LOOK); } })),
     // hyllans klickyta = dess framsida (hindret). Kartongerna ovanpå sticker upp över gången
     // bakom – klickar man där vill man gå i gången, inte bli skickad runt till hyllans framsida.
     ...GONDOLAS.map((G, i) => ({ id: 'hylla' + i, r: [G.x0, G.base - GH, G.x1, G.base], go: null, row: G.base, act: () => hint(GLINES[G.cat] || LOOK) })),
@@ -2438,8 +2439,8 @@ export function makeShopNarbutik(A) {
     ctx.fillStyle = '#d8323a'; ctx.fillRect(x0, y0, w, 12);
     ctx.fillStyle = '#ff6a6a'; ctx.fillRect(x0, y0, w, 1);
     drawMiniBasket(ctx, x0 + 3, y0 + 2);
-    ctxText(ctx, SM, 'KORGEN', x0 + 19, y0 + 4, '#ffffff');
-    const cnt = `${basket.length} ST`;
+    ctxText(ctx, SM, $t('KORGEN'), x0 + 19, y0 + 4, '#ffffff');
+    const cnt = $t`${basket.length} ST`;
     ctxText(ctx, SM, cnt, x0 + w - 4 - textW(SM, cnt), y0 + 4, '#ffe0e0');
     let y = y0 + 15;
     for (const { f, n } of gs) {
@@ -2459,11 +2460,11 @@ export function makeShopNarbutik(A) {
     ctx.fillStyle = '#c8bca8'; ctx.fillRect(x0 + 3, y, w - 6, 1);
     y += 3;
     const sum = total(), afford = g.money >= sum;
-    ctxText(ctx, SM, 'SUMMA', x0 + 4, y + 2, '#2a2430');
+    ctxText(ctx, SM, $t('SUMMA'), x0 + 4, y + 2, '#2a2430');
     const st = priceLbl(sum);
     ctxText(ctx, BG, st, x0 + w - 4 - textW(BG, st), y, afford ? '#2a2430' : '#c9323a');
     y += 10;
-    const btnTxt = scan ? 'PIP PIP...' : 'TILL DISKEN';
+    const btnTxt = scan ? $t('PIP PIP...') : $t('TILL DISKEN');
     const blink = !scan && Math.floor(t * 2) % 2 === 0;
     ctx.fillStyle = '#17151a'; ctx.fillRect(x0 + 3, y, w - 6, 11);
     ctx.fillStyle = scan ? '#8a909a' : blink ? '#f0c020' : '#e0a818'; ctx.fillRect(x0 + 4, y + 1, w - 8, 9);
@@ -2472,7 +2473,7 @@ export function makeShopNarbutik(A) {
     if (!scan) { ctx.fillStyle = '#2a1a10'; for (let k = 0; k < 3; k++) ctx.fillRect(x0 + w - 16 + k, y + 3 + k, 1, 5 - k * 2); }
     if (!scan) panelHits.push({ r: [x0 + 3, y, x0 + w - 3, y + 11], act: () => goPay() });
     y += 13;
-    ctxText(ctx, SM, `DU HAR ${Math.round(g.money)} KR`, x0 + 4, y, afford ? '#6a6070' : '#c9323a');
+    ctxText(ctx, SM, $t`DU HAR ${Math.round(g.money)} KR`, x0 + 4, y, afford ? '#6a6070' : '#c9323a');
   }
   function drawMiniBasket(ctx, x, y) {
     ctx.fillStyle = '#e6ecf0'; ctx.fillRect(x + 4, y, 6, 1); ctx.fillRect(x + 3, y + 1, 1, 2); ctx.fillRect(x + 10, y + 1, 1, 2);
@@ -2508,11 +2509,11 @@ export function makeShopNarbutik(A) {
     let icon = null, name, price, hintTxt, col = '#ffe040';
     if (s.food) {
       const f = s.food.f;
-      icon = f.id; name = shortName(f); price = `${narPrice(f)} KR`;
-      hintTxt = basket.length >= MAX_BASKET ? 'KORGEN ÄR FULL' : `+${f.fill} MÄTT - KLICKA SÅ HAMNAR DEN I KORGEN`;
-    } else if (s.id === 'disk') { name = 'DISKEN'; price = basket.length ? `${total()} KR` : ''; hintTxt = basket.length ? 'KLICKA SÅ BETALAR DU' : 'PLOCKA VAROR FÖRST'; col = '#ffa43a'; }
-    else if (s.id === 'dorr') { name = 'UTGÅNG'; price = ''; hintTxt = basket.length ? 'BETALA FÖRST!' : 'TILLBAKA UT I FÖRORTEN'; col = '#ffa43a'; }
-    else if (s.id === 'lotter') { name = 'LYCKOSKRAP'; price = `${LOTT_PRIS} KR`; hintTxt = lottLeft(g) ? 'TRE LIKA BELOPP = VINST!' : 'SLUT PÅ LOTTER I DAG'; col = '#6ae08a'; }
+      icon = f.id; name = shortName(f); price = $t`${narPrice(f)} KR`;
+      hintTxt = basket.length >= MAX_BASKET ? $t('KORGEN ÄR FULL') : $t`+${f.fill} MÄTT - KLICKA SÅ HAMNAR DEN I KORGEN`;
+    } else if (s.id === 'disk') { name = $t('DISKEN'); price = basket.length ? $t`${total()} KR` : ''; hintTxt = basket.length ? $t('KLICKA SÅ BETALAR DU') : $t('PLOCKA VAROR FÖRST'); col = '#ffa43a'; }
+    else if (s.id === 'dorr') { name = $t('UTGÅNG'); price = ''; hintTxt = basket.length ? $t('BETALA FÖRST!') : $t('TILLBAKA UT I FÖRORTEN'); col = '#ffa43a'; }
+    else if (s.id === 'lotter') { name = $t('LYCKOSKRAP'); price = $t`${LOTT_PRIS} KR`; hintTxt = lottLeft(g) ? $t('TRE LIKA BELOPP = VINST!') : $t('SLUT PÅ LOTTER I DAG'); col = '#6ae08a'; }
     else return;
     const nw = textW(BG, name), pw = price ? textW(BG, price) : 0, hw = textW(SM, hintTxt);
     const w = Math.max(nw + pw + (price ? 8 : 0) + (icon ? 14 : 0), hw + (icon ? 14 : 0)) + 12, h = 22;
@@ -2868,7 +2869,7 @@ export function makeShopNarbutik(A) {
     get worldY() { return walker.py; },
     enter() {
       ring(); pendingHello = 0.7;
-      if (lottOf(g).open) setTimeout(() => hint('🍀 Jag har en oskrapad lott i fickan! Klicka på lotter-stället.'), 1600);
+      if (lottOf(g).open) setTimeout(() => hint($t('🍀 Jag har en oskrapad lott i fickan! Klicka på lotter-stället.')), 1600);
       // släpper man musen/fingret UTANFÖR spelvyn (i ramen, utanför fönstret) når inte up() scenen –
       // då måste lotten ändå sluta skrapa, annars skrapar vanliga musrörelser vidare
       for (const ev of LOTT_RELEASE) window.addEventListener(ev, releaseLott);
@@ -2877,7 +2878,7 @@ export function makeShopNarbutik(A) {
       for (const ev of LOTT_RELEASE) window.removeEventListener(ev, releaseLott);
       talk.clear(); talkExp.clear(); talkCat.clear(); for (const n of npcs) n.talk.clear();
       // går man ut mitt i skrapandet skrapas lotten klart i farten – vinsten följer med
-      if (lottOf(g).open) { const r = settleLott(g); toast(r.prize ? `🍀 Du skrapade klart lotten på vägen ut – VINST ${fmt(r.prize)}!` : '🍀 Du skrapade klart lotten på vägen ut – nitlott.', r.prize ? 'good' : ''); }
+      if (lottOf(g).open) { const r = settleLott(g); toast(r.prize ? $t`🍀 Du skrapade klart lotten på vägen ut – VINST ${fmt(r.prize)}!` : $t('🍀 Du skrapade klart lotten på vägen ut – nitlott.'), r.prize ? 'good' : ''); }
       ticket = null;
     },
     _debug: {
@@ -2955,7 +2956,7 @@ export function makeShopNarbutik(A) {
     update(dt) {
       t += dt;
       walker.update(dt);
-      if (pendingHello > 0) { pendingHello -= dt; if (pendingHello <= 0) expSay(isNight() ? 'Öppet jämt. Även nu.' : 'Öppet jämt.'); }
+      if (pendingHello > 0) { pendingHello -= dt; if (pendingHello <= 0) expSay(isNight() ? $t('Öppet jämt. Även nu.') : $t('Öppet jämt.')); }
       // dörren öppnas när någon är nära (och klockan plingar när man går in/ut)
       const near = [{ x: walker.px, y: walker.py }, ...npcs.filter((n) => n.state !== 'away').map((n) => ({ x: n.w.px, y: n.w.py }))].some((p) => Math.abs(p.x - DOOR_X) < 16 && p.y > FRONT_Y - 14);
       door += ((near ? 1 : 0) - door) * Math.min(1, dt * 6);

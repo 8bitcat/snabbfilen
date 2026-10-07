@@ -44,23 +44,24 @@ import { fmt } from '../game.js';
 import { play } from '../core/sound.js';
 import { createWalker, selfDrawable, folkDrawables, WALK_SEQ, nameTag, emoteBubble, iconBubble, sayBubble, createSpeech } from './walkable.js';
 import { worldFolksHere, worldMyEmote, worldSeatsTaken } from '../net/world.js';
+import { $t } from '../core/i18n.js';
 
 const talk = createSpeech(); // repliker och beskrivningar som pratbubblor i scenen
 // regelns två repliker (samma i alla matställen)
-const MSG_ATUPP = 'ÄT UPP FÖRST! 😋';
-const MSG_DORR = 'DU MÅSTE SÄTTA DIG OCH ÄTA UPP!';
+const MSG_ATUPP = $t('ÄT UPP FÖRST! 😋');
+const MSG_DORR = $t('DU MÅSTE SÄTTA DIG OCH ÄTA UPP!');
 
 // ======================= menyn =======================
 // fill = mättnad, energy = energi (för första koppen i dag), cake/cup = vad som ritas.
 export const KAFE_MENY = [
-  { id: 'bulle', icon: '🥐', name: 'Kanelbulle & bryggkaffe', board: 'KANELBULLE', price: 30, fill: 14, energy: 12, cake: 'bulle', cup: 'kaffe' },
-  { id: 'mazarin', icon: '🥧', name: 'Mazarin & caffè latte', board: 'MAZARIN', price: 40, fill: 16, energy: 16, cake: 'mazarin', cup: 'latte' },
-  { id: 'kladd', icon: '🍫', name: 'Kladdkaka & cappuccino', board: 'KLADDKAKA', price: 45, fill: 22, energy: 16, cake: 'kladd', cup: 'capp' },
-  { id: 'semla', icon: '🍥', name: 'Semla & varm choklad', board: 'SEMLA', price: 50, fill: 30, energy: 8, cake: 'semla', cup: 'choklad' },
-  { id: 'prinsess', icon: '🎂', name: 'Prinsesstårta & te', board: 'PRINSESSTÅRTA', price: 60, fill: 34, energy: 10, cake: 'prinsess', cup: 'te' },
-  { id: 'espresso', icon: '☕', name: 'Dubbel espresso', board: 'ESPRESSO', price: 25, fill: 2, energy: 24, cake: null, cup: 'espresso' },
+  { id: 'bulle', icon: '🥐', name: $t('Kanelbulle & bryggkaffe'), board: $t('KANELBULLE'), price: 30, fill: 14, energy: 12, cake: 'bulle', cup: 'kaffe' },
+  { id: 'mazarin', icon: '🥧', name: $t('Mazarin & caffè latte'), board: $t('MAZARIN'), price: 40, fill: 16, energy: 16, cake: 'mazarin', cup: 'latte' },
+  { id: 'kladd', icon: '🍫', name: $t('Kladdkaka & cappuccino'), board: $t('KLADDKAKA'), price: 45, fill: 22, energy: 16, cake: 'kladd', cup: 'capp' },
+  { id: 'semla', icon: '🍥', name: $t('Semla & varm choklad'), board: $t('SEMLA'), price: 50, fill: 30, energy: 8, cake: 'semla', cup: 'choklad' },
+  { id: 'prinsess', icon: '🎂', name: $t('Prinsesstårta & te'), board: $t('PRINSESSTÅRTA'), price: 60, fill: 34, energy: 10, cake: 'prinsess', cup: 'te' },
+  { id: 'espresso', icon: '☕', name: $t('Dubbel espresso'), board: $t('ESPRESSO'), price: 25, fill: 2, energy: 24, cake: null, cup: 'espresso' },
   // samma latte som trottoarprataren ute på gatan lovar (LATTE 35:-)
-  { id: 'latte', icon: '🥛', name: 'Caffè latte & pepparkaka', board: 'LATTE', price: 35, fill: 6, energy: 18, cake: null, cup: 'latte' },
+  { id: 'latte', icon: '🥛', name: $t('Caffè latte & pepparkaka'), board: $t('LATTE'), price: 35, fill: 6, energy: 18, cake: null, cup: 'latte' },
 ];
 const KICK = [1, 0.75, 0.5, 0.3, 0.15];           // koffeinets verkan: kopp 1, 2, 3 … samma dag
 const CAF_KEY = 'snabbfilen_kafe';
@@ -455,13 +456,13 @@ function paintZoneA(P) {
   P.hl(d0, DOOR.top - 1, d1 - d0, 0x8a7a5c);
   // överljuset (glas mot markisen) med spegelvänd guldtext FIKA
   area(P, d0, 13, d1 - d0, DOOR.top - 16, (X, Y) => qmix(0x8a3a34, 0x5a2a28, (Y - 13) / 8, X, Y, 2));
-  const fika = textMask(SMALL, 'FIKA', true);
+  const fika = textMask(SMALL, $t('FIKA'), true);
   drawText(P, fika, ((d0 + d1) >> 1) - (fika.w >> 1), 15, { fill: 0xe8c050, out: 0x3a2410, oa: 0.5 });
   // UT-skylten hänger i två kedjor från taket
   const ux = ((d0 + d1) >> 1) - 8;
   P.px(ux + 2, 7, 0x6a6a6a); P.px(ux + 14, 7, 0x6a6a6a);
   P.rect(ux, 3, 17, 8, 0x1a2a1e); P.box(ux, 3, 17, 8, 0x0e1812);
-  text(P, SMALL, 'UT', ux + 5, 5, 0x6fe08a);
+  text(P, SMALL, $t('UT'), ux + 5, 5, 0x6fe08a);
   P.ell(ux + 8.5, 7, 12, 6, 0x6fe08a, 0.12, 2);
   // mörk springa under dörren
   P.hl(d0, WALL_Y - 1, d1 - d0, 0x2a1e18);
@@ -482,7 +483,7 @@ function paintBoard(P, dag) {
   });
   P.darken(x1, y0 + 2, 2, h, 0.8); P.darken(x0 + 2, y1, w, 2, 0.8);
   // rubrik med en liten kaffekopp och hjärta
-  const title = textMask(BIG, 'MENY');
+  const title = textMask(BIG, $t('MENY'));
   const tx = x0 + ((w - title.w) >> 1);
   drawText(P, title, tx, y0 + 3, { fill: 0xfaf6e8, rough: true });
   spr(P, tx - 10, y0 + 4, ['.w.w..', '......', 'wwwww.', 'w...ww', 'w...w.', '.www..'], { w: 0xf2d890 });
@@ -519,7 +520,7 @@ function paintZoneB(P, night, dag) {
   P.vl(tx0 - 1, ty0, ty1 - ty0, 0xa89878);
   paintBoard(P, dag);
   // neonskylten ESPRESSO
-  const neon = textMask(BIG, 'ESPRESSO'), nx = 324, ny = 14;
+  const neon = textMask(BIG, $t('ESPRESSO')), nx = 324, ny = 14;
   for (const [a, b] of neon.pts) P.ell(nx + a + 0.5, ny + b + 0.5, 3.2, 3.2, 0xff8a3a, night ? 0.12 : 0.08, 2);
   drawText(P, neon, nx, ny, { fill: 0xfff0d8, out: 0xff8a4a, oa: 0.55 });
   P.hl(nx - 2, ny + 9, neon.w + 4, 0x6a6a6a, 0.6);
@@ -916,7 +917,7 @@ function paintFloor(P, night, rain) {
   for (const lx of LAMPS) P.ell(lx + 6, CNT.y + 7, 18, 5, 0xffd890, night ? 0.22 : 0.12, 3);
   // dörrmattan
   area(P, DOOR.x0 + 1, WALL_Y + 2, DOOR.x1 - DOOR.x0 - 2, 10, (X, Y, i, j) => (i === 0 || j === 0 || i === DOOR.x1 - DOOR.x0 - 3 || j === 9 ? 0x3a2a1a : jit(hash(X, Y, 83) > 0.5 ? 0x9a7a4a : 0x8a6a3e, X, Y, 84, 0.1)));
-  text(P, SMALL, 'HEJ!', DOOR.x0 + 7, WALL_Y + 5, 0x3a2410);
+  text(P, SMALL, $t('HEJ!'), DOOR.x0 + 7, WALL_Y + 5, 0x3a2410);
   // persisk matta i soffhörnan
   const rx0 = 466, rx1 = 626, ry0 = 136, ry1 = 206;
   area(P, rx0, ry0, rx1 - rx0, ry1 - ry0, (X, Y, i, j) => {
@@ -1009,7 +1010,7 @@ function paintWinOverlay(night) {
       return [0xb8a888, 0xf6eedc, 0xe8dcc4, 0xa89878][e];
     });
     // spegelvänd guldtext på glaset
-    const words = x0 < DOOR.x0 ? [['KAFÉ', BIG, 0]] : [['BAKVERK', SMALL, 0], ['SEDAN 1962', SMALL, 8]];
+    const words = x0 < DOOR.x0 ? [[$t('KAFÉ'), BIG, 0]] : [[$t('BAKVERK'), SMALL, 0], [$t('SEDAN 1962'), SMALL, 8]];
     for (const [s, F, dy] of words) {
       const M = textMask(F, s, true);
       drawText(P, M, mid - (M.w >> 1), tb + 9 + dy, { fill: (a, b) => (b < 2 ? GOLD.hi : GOLD.base), out: 0x5a3a14, oa: 0.7 });
@@ -1048,7 +1049,7 @@ function paintDoorFrames(N = 6) {
   S.vl(w - 6, 24, 12, GOLD.base); S.vl(w - 5, 24, 12, GOLD.lo); S.px(w - 6, 24, GOLD.hi);
   // skylten på glaset – baksidan säger TACK!
   area(S, 4, 14, 19, 8, (X, Y, i, j) => (i === 0 || j === 0 || i === 18 || j === 7 ? 0x8a1a20 : 0xf4ecd8));
-  text(S, SMALL, 'TACK!', 5, 16, 0xb82a30);
+  text(S, SMALL, $t('TACK!'), 5, 16, 0xb82a30);
   S.line(7, 14, 13, 9, 0x6a5a4a); S.line(19, 14, 13, 9, 0x6a5a4a);
   const frames = [];
   for (let k = 0; k < N; k++) {
@@ -1240,7 +1241,7 @@ function paintEasel(dag, price) {
     if (hash(X >> 2, Y >> 1, 133) > 0.8) c = mix(c, 0xd8e0d8, 0.1);
     return c;
   });
-  const idag = textMask(SMALL, 'IDAG');
+  const idag = textMask(SMALL, $t('IDAG'));
   drawText(P, idag, 3 + ((20 - idag.w) >> 1), 4, { fill: 0xffe070, rough: true });
   for (let x = 5; x < 21; x += 2) P.px(x, 10, 0xf08aa8, 0.8);
   // kritteckningen: bakverket (eller en kopp) med kritvita ångslingor
@@ -1367,7 +1368,7 @@ function paintStation() {
   area(P, 0, top, 30, 2, (X, Y, i, j) => (j === 0 ? 0xf4efe6 : 0xd8d0c4));
   area(P, 1, top + 2, 28, 12, (X, Y, i, j) => (j === 0 ? GOLD.base : j === 11 ? GREEN.dk : i === 0 ? GREEN.hi : i === 27 ? GREEN.dk : jit(GREEN.base, X, Y, 136, 0.05)));
   P.bevel(3, top + 3, 24, 9, GREEN.hi, GREEN.dk);
-  const pt = textMask(SMALL, 'PÅTÅR');
+  const pt = textMask(SMALL, $t('PÅTÅR'));
   drawText(P, pt, 3 + ((24 - pt.w) >> 1), top + 5, { fill: (a, b) => (b < 1 ? GOLD.hi : GOLD.base), shadow: 0x0c1a12, sa: 0.9 });
   P.rect(3, top + 14, 2, 2, WOOD.dk); P.rect(25, top + 14, 2, 2, WOOD.dk);
   outline(P);
@@ -1406,7 +1407,7 @@ function paintCounter() {
   P.rect(sign.x0, CNT.face + 3, sign.x1 - sign.x0, 11, 0x17301f);
   P.box(sign.x0, CNT.face + 3, sign.x1 - sign.x0, 11, GOLD.base);
   P.hl(sign.x0 + 1, CNT.face + 4, sign.x1 - sign.x0 - 2, GOLD.lo);
-  const bm = textMask(SMALL, 'BESTÄLL HÄR');
+  const bm = textMask(SMALL, $t('BESTÄLL HÄR'));
   drawText(P, bm, ((sign.x0 + sign.x1) >> 1) - (bm.w >> 1), CNT.face + 6, { fill: (a, b) => (b < 2 ? GOLD.hi : GOLD.base), shadow: 0x06100a, sa: 0.9 });
   // fotstöd i mässing (avbrutet vid skylten, med fästen på var sida)
   for (let x = x0 + 2; x < x1 - 2; x++) {
@@ -1505,7 +1506,7 @@ const ICONS = [
   icon(['...##...', '...#.#..', '...#..#.', '...#....', '.###....', '####....', '.##.....', '........'], { '#': '#3a2a4a' }),
 ];
 const NOTE = [[1, 0], [2, 0], [3, 1], [1, 1], [1, 2], [1, 3], [0, 3], [0, 4], [1, 4]];
-const LINES = ['Mmm, bästa kanelbullen i stan!', 'Har du provat prinsesstårtan?', 'Jag kommer hit varje dag.', 'Kanel sover alltid där.', 'Påtår, tack!', 'Så mysigt det är här.', 'Semlan är gudomlig.', 'Espresson får mig att vakna!'];
+const LINES = [$t('Mmm, bästa kanelbullen i stan!'), $t('Har du provat prinsesstårtan?'), $t('Jag kommer hit varje dag.'), $t('Kanel sover alltid där.'), $t('Påtår, tack!'), $t('Så mysigt det är här.'), $t('Semlan är gudomlig.'), $t('Espresson får mig att vakna!')];
 
 // ======================= scenen =======================
 export function makeShopKafe(A) {
@@ -1688,8 +1689,8 @@ export function makeShopKafe(A) {
         const alt = pickSeat();
         if (!alt) {
           me.res = null;
-          if (item >= 0) { me.state = 'carry'; talk.say('😕 Alla platser är upptagna – jag väntar med brickan tills någon går.', meAt); return; }
-          me.state = 'free'; talk.say('😕 Alla platser är upptagna.', meAt); return;
+          if (item >= 0) { me.state = 'carry'; talk.say($t('😕 Alla platser är upptagna – jag väntar med brickan tills någon går.'), meAt); return; }
+          me.state = 'free'; talk.say($t('😕 Alla platser är upptagna.'), meAt); return;
         }
         goSit(alt, item); return;
       }
@@ -1708,11 +1709,11 @@ export function makeShopKafe(A) {
   // ---------- köpet ----------
   function buy(i) {
     const m = KAFE_MENY[i];
-    if (!m) return { ok: false, msg: 'Det finns inte på menyn.' };
-    if (me.state === 'wait' || me.state === 'toCounter') return { ok: false, msg: 'Baristan fixar redan din beställning!' };
-    if (me.food || me.item >= 0) return { ok: false, msg: 'Ät upp fikat du har först!' };
+    if (!m) return { ok: false, msg: $t('Det finns inte på menyn.') };
+    if (me.state === 'wait' || me.state === 'toCounter') return { ok: false, msg: $t('Baristan fixar redan din beställning!') };
+    if (me.food || me.item >= 0) return { ok: false, msg: $t('Ät upp fikat du har först!') };
     const price = priceOf(g, i);
-    if (g.money < price) return { ok: false, msg: 'Du har inte råd!' };
+    if (g.money < price) return { ok: false, msg: $t('Du har inte råd!') };
     if (me.state === 'sit') standUp();
     release();
     const n = cupsToday(g), en = energyOf(m, n);
@@ -1740,14 +1741,14 @@ export function makeShopKafe(A) {
       const price = priceOf(g, i), en = energyOf(m, n);
       return `<div class="prow" style="grid-template-columns:84px 1fr auto;${i === d ? 'background:#fff8d6' : ''}">
         <canvas data-ic="${i}" width="20" height="11" style="width:80px;height:44px;image-rendering:pixelated;background:#e8dcc4;border:2px solid #17151a"></canvas>
-        <span class="nm">${m.icon} ${m.name}${i === d ? ' <b style="color:#c9323a">★ DAGENS −5 kr</b>' : ''}<br><small class="sp">+${m.fill} mättnad · +${en} energi</small></span>
+        <span class="nm">${m.icon} ${m.name}${i === d ? ` <b style="color:#c9323a">${$t('★ DAGENS −5 kr')}</b>` : ''}<br><small class="sp">${$t`+${m.fill} mättnad · +${en} energi`}</small></span>
         <button class="btn btn-small btn-go" data-buy="${i}" data-key="${i + 1}" ${g.money < price ? 'disabled' : ''}>☕ ${fmt(price)} <kbd>${i + 1}</kbd></button>
       </div>`;
     }).join('');
-    const body = `<p style="font-size:var(--f2);margin:0 0 8px">💰 <b>${fmt(g.money)}</b> · 🍽️ Mättnad <b>${Math.round(g.hunger)}</b>/100 · ⚡ Energi <b>${Math.round(g.energy)}</b>/100</p>
+    const body = `<p style="font-size:var(--f2);margin:0 0 8px">💰 <b>${fmt(g.money)}</b> · 🍽️ ${$t`Mättnad <b>${Math.round(g.hunger)}</b>/100`} · ⚡ ${$t`Energi <b>${Math.round(g.energy)}</b>/100`}</p>
       <div class="plist">${rows}</div>
-      <p style="font-size:var(--f1);margin:10px 0 0;color:#6d6660">Fikat tar en kvart – du bär brickan till ett ledigt bord och sitter kvar tills det är uppätet. Mättnaden och energin kommer medan du fikar. Koffeinet biter sämre för varje kopp samma dag${n ? ` (du har druckit ${n} i dag)` : ''}.</p>`;
-    const dlg = openModal('☕ Kaféet – vad får det lov att vara?', body, [{ label: 'Nej tack', onClick: closeModal }]);
+      <p style="font-size:var(--f1);margin:10px 0 0;color:#6d6660">${n ? $t`Fikat tar en kvart – du bär brickan till ett ledigt bord och sitter kvar tills det är uppätet. Mättnaden och energin kommer medan du fikar. Koffeinet biter sämre för varje kopp samma dag (du har druckit ${n} i dag).` : $t('Fikat tar en kvart – du bär brickan till ett ledigt bord och sitter kvar tills det är uppätet. Mättnaden och energin kommer medan du fikar. Koffeinet biter sämre för varje kopp samma dag.')}</p>`;
+    const dlg = openModal($t('☕ Kaféet – vad får det lov att vara?'), body, [{ label: $t('Nej tack'), onClick: closeModal }]);
     dlg.querySelectorAll('canvas[data-ic]').forEach((cv) => {
       const x = cv.getContext('2d'); x.imageSmoothingEnabled = false;
       x.drawImage(setOf(+cv.dataset.ic, 0), 1, 1);
@@ -1756,7 +1757,7 @@ export function makeShopKafe(A) {
       const i = +b.dataset.buy, r = buy(i);
       if (!r.ok) { toast(r.msg, 'bad'); play('fel'); return; }
       closeModal();
-      toast(`${KAFE_MENY[i].icon} ${KAFE_MENY[i].name}! +${r.fill} mättnad, +${r.energy} energi när du sitter och fikar`, 'good');
+      toast($t`${KAFE_MENY[i].icon} ${KAFE_MENY[i].name}! +${r.fill} mättnad, +${r.energy} energi när du sitter och fikar`, 'good');
     }));
   }
 
@@ -1764,20 +1765,20 @@ export function makeShopKafe(A) {
   // påtår ingår när man har köpt något här (en gång per besök)
   let boughtHere = false, patarTaken = false, dogHappy = -9;
   function patar() {
-    if (patarTaken) { talk.say('☕ Jag har redan tagit min påtår.', () => ({ x: walker.px, y: walker.py - 44 })); play('click'); return; }
-    if (!boughtHere) { talk.say('☕ Påtår ingår när man har köpt en fika.', () => ({ x: walker.px, y: walker.py - 44 })); play('click'); return; }
+    if (patarTaken) { talk.say($t('☕ Jag har redan tagit min påtår.'), () => ({ x: walker.px, y: walker.py - 44 })); play('click'); return; }
+    if (!boughtHere) { talk.say($t('☕ Påtår ingår när man har köpt en fika.'), () => ({ x: walker.px, y: walker.py - 44 })); play('click'); return; }
     patarTaken = true;
     g.energy = c100(g.energy + 3);
     g.passTime(5);
     g.save();
     play('ok');
-    talk.say('☕ Påtår! +3 ⚡', () => ({ x: walker.px, y: walker.py - 44 }));
+    talk.say($t('☕ Påtår! +3 ⚡'), () => ({ x: walker.px, y: walker.py - 44 }));
     for (let i = 0; i < 6; i++) puff(STATION.x - 11, STATION.y - 29);
   }
   const hot = [
     { id: 'dorr', r: [DOOR.x0 - 3, DOOR.top - 12, DOOR.x1 + 3, WALL_Y + 10], go: () => DOOR_SPOT, act: () => { play('door'); A.go('city'); } },
-    { id: 'katt', r: [CAT.x - 1, CAT.y - 9, CAT.x + 15, CAT.y + 1], go: () => [CAT.x + 8, BQ.y + 6], act: () => { play('chirp'); catPurr = t + 3; talk.say('🐈 Mjau! Kanel spinner nöjt och sträcker på sig.', { x: CAT.x + 7, y: CAT.y - 11 }); } },
-    { id: 'hund', r: [DOG.x - 11, DOG.y - 11, DOG.x + 11, DOG.y + 2], go: () => [DOG.x - 18, DOG.y + 5], act: () => { play('chirp'); dogHappy = t + 4; talk.say('🐕 Vift vift! Han gillar dig, säger farmor.', { x: DOG.x, y: DOG.y - 14 }); } },
+    { id: 'katt', r: [CAT.x - 1, CAT.y - 9, CAT.x + 15, CAT.y + 1], go: () => [CAT.x + 8, BQ.y + 6], act: () => { play('chirp'); catPurr = t + 3; talk.say($t('🐈 Mjau! Kanel spinner nöjt och sträcker på sig.'), { x: CAT.x + 7, y: CAT.y - 11 }); } },
+    { id: 'hund', r: [DOG.x - 11, DOG.y - 11, DOG.x + 11, DOG.y + 2], go: () => [DOG.x - 18, DOG.y + 5], act: () => { play('chirp'); dogHappy = t + 4; talk.say($t('🐕 Vift vift! Han gillar dig, säger farmor.'), { x: DOG.x, y: DOG.y - 14 }); } },
     { id: 'patar', r: [STATION.x - 15, STATION.y - 30, STATION.x + 15, STATION.y + 1], go: () => [STATION.x, STATION.y + 7], act: patar },
     { id: 'skylt', r: [EASEL.x - 13, EASEL.y - 31, EASEL.x + 13, EASEL.y + 1], go: () => [EASEL.x + 18, EASEL.y + 3], act: () => { play('click'); openMenu(); } },
     { id: 'tavla', r: [BOARD.x0, BOARD.y0, BOARD.x1, BOARD.y1], go: () => [340, ORDER_Y], act: () => { play('click'); openMenu(); } },
@@ -1874,7 +1875,7 @@ export function makeShopKafe(A) {
         trays.splice(k, 1);
         const s = pickSeat();
         me.state = 'carry';   // brickan i händerna – den ska ätas vid ett bord
-        if (!s) { me.res = null; talk.say('😕 Alla platser är upptagna – jag väntar med brickan tills någon går.', meAt); return; }
+        if (!s) { me.res = null; talk.say($t('😕 Alla platser är upptagna – jag väntar med brickan tills någon går.'), meAt); return; }
         goSit(s, me.item);
       }
     }
@@ -1889,7 +1890,7 @@ export function makeShopKafe(A) {
       if (me.seekT <= 0) {
         me.seekT = 1;
         const s = pickSeat();
-        if (s) { talk.say('😊 Där blev det ledigt!', meAt, 1.6); goSit(s, me.item); }
+        if (s) { talk.say($t('😊 Där blev det ledigt!'), meAt, 1.6); goSit(s, me.item); }
       }
     } else me.seekT = 0.5;
     if (me.state === 'sit') {
@@ -1910,7 +1911,7 @@ export function makeShopKafe(A) {
           me.item = -1; me.food = null; me.fikat = true;
           if (talk.text() === MSG_ATUPP || talk.text() === MSG_DORR) talk.clear();   // påminnelsen gäller inte längre
         }
-      } else if (me.fikat && t - me.doneT > 2.5) { me.fikat = false; standUp(); toast('😋 Mums! Tack för fikat.', 'good'); }
+      } else if (me.fikat && t - me.doneT > 2.5) { me.fikat = false; standUp(); toast($t('😋 Mums! Tack för fikat.'), 'good'); }
     }
   }
 
@@ -2284,7 +2285,7 @@ export function makeShopKafe(A) {
     down(sx, sy) {
       const x = sx + cam.x, y = sy;
       if (me.state === 'wait' || me.state === 'toCounter') {
-        if (t - me.waitMsgT > 2) { toast('☕ Baristan gör i ordning din beställning …'); me.waitMsgT = t; }
+        if (t - me.waitMsgT > 2) { toast($t('☕ Baristan gör i ordning din beställning …')); me.waitMsgT = t; }
         return;
       }
       const h0 = spotAt(x, y);
@@ -2294,7 +2295,7 @@ export function makeShopKafe(A) {
         if (s && (!s.occ || s === me.res)) { goSit(s, me.item); play('click'); return; }
         if (h0 && h0.id === 'dorr') { nag(MSG_DORR); return; }
         if (h0 && h0.id !== 'katt' && h0.id !== 'hund') { nag(MSG_ATUPP); return; }   // disken, menyn, påtåren får vänta
-        if (t - me.waitMsgT > 2) { talk.say('☕ Klicka på ett ledigt bord så sätter jag mig där.', meAt); me.waitMsgT = t; }
+        if (t - me.waitMsgT > 2) { talk.say($t('☕ Klicka på ett ledigt bord så sätter jag mig där.'), meAt); me.waitMsgT = t; }
         return;
       }
       if (me.state === 'sit' && me.item >= 0) {
@@ -2347,8 +2348,8 @@ export function makeShopKafe(A) {
       // skylt i nederkanten när man pekar på disken, dörren eller katten
       ctx.setTransform(A.pxs, 0, 0, A.pxs, 0, 0);
       const h = hoverId && t - hoverT < 3 ? hoverId : null;
-      const label = h === 'disk' || h === 'tavla' ? 'MENYN - KLICKA PÅ DISKEN' : h === 'skylt' ? 'DAGENS FIKA - 5 KR BILLIGARE' : h === 'dorr' ? (me.food ? 'ÄT UPP FIKAT FÖRST - SEN KAN DU GÅ UT' : 'GÅ UT') : h === 'katt' ? 'KAFÉKATTEN KANEL'
-        : h === 'hund' ? 'TAXEN SIXTEN' : h === 'patar' ? 'PÅTÅR - INGÅR NÄR DU FIKAT' : null;
+      const label = h === 'disk' || h === 'tavla' ? $t('MENYN - KLICKA PÅ DISKEN') : h === 'skylt' ? $t('DAGENS FIKA - 5 KR BILLIGARE') : h === 'dorr' ? (me.food ? $t('ÄT UPP FIKAT FÖRST - SEN KAN DU GÅ UT') : $t('GÅ UT')) : h === 'katt' ? $t('KAFÉKATTEN KANEL')
+        : h === 'hund' ? $t('TAXEN SIXTEN') : h === 'patar' ? $t('PÅTÅR - INGÅR NÄR DU FIKAT') : null;
       if (label) {
         const safe = globalThis.SF?.view?.safe || { y1: H }; // fyll-läget kan beskära nederkanten
         const by = Math.min(H, safe.y1) - 14;

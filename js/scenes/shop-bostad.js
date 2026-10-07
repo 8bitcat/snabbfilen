@@ -28,6 +28,7 @@ import { toast } from '../core/ui.js';
 import { HOMES, fmt } from '../game.js';
 import { play } from '../core/sound.js';
 import { createWalker, selfDrawable, folkDrawables, WALK_SEQ, sayBubble, createSpeech } from './walkable.js';
+import { $t } from '../core/i18n.js';
 
 const talk = createSpeech(); // repliker och beskrivningar som pratbubblor i scenen
 
@@ -181,7 +182,7 @@ function ctxLine(ctx, x0, y0, x1, y1) {
 // ================= utsikten: gatan utanför =================
 const FAC = [0xe6c68a, 0xe0a898, 0xb4c6a4, 0xefe9dc, 0xb46a4c, 0xa6bad2, 0xd6b2c6, 0xdccb98];
 const AWN = [[0xc9323a, 0xf4f1ea], [0x2a5a48, 0xefe6d2], [0x3a7bd5, 0xf4f1ea], [0xe8b230, 0x6a4424], [0x8e5bd1, 0xf4f1ea], [0x2aa39a, 0xf4f1ea]];
-const SHOPS = ['BAGERI', 'KAFÉ', 'BLOMMOR', 'FRISÖR', 'KIOSK', 'OPTIK', 'PIZZA', 'BÖCKER'];
+const SHOPS = [$t('BAGERI'), $t('KAFÉ'), $t('BLOMMOR'), $t('FRISÖR'), $t('KIOSK'), $t('OPTIK'), $t('PIZZA'), $t('BÖCKER')];
 const FAR_LANE = 74, NEAR_LANE = 81, PED_Y = 97;
 const LAMPS_OUT = [104, 360, 520 + SH, ...(SH > 150 ? [520 + (SH >> 1)] : [])]; // lyktstolpar på trottoaren utanför
 
@@ -883,16 +884,16 @@ function paintDoor(P, night) {
   }
   P.vl(x0 + lw - 1, top, WALL_Y - top, 0x16181e);
   // öppettider i guldtext på glaset (över båda dörrbladen)
-  for (const [s, yy] of [['ÖPPET', top + 5], ['7-20', top + 12]]) {
+  for (const [s, yy] of [[$t('ÖPPET'), top + 5], ['7-20', top + 12]]) {
     const tx = Math.round(DOOR_CX - textW(SMALL, s) / 2);
     text(P, SMALL, s, tx + 1, yy + 1, 0x000000, 0.45);
     embossText(P, SMALL, s, tx, yy, GOLD_HI, GOLD, GOLD, GOLD_LO);
   }
   P.hl(x0 + 4, top + 19, dw - 8, GOLD, 0.8);
   // grön UT-skylt ovanför
-  const sw = textW(SMALL, 'UT') + 12, sx = Math.round(DOOR_CX - sw / 2);
+  const sw = textW(SMALL, $t('UT')) + 12, sx = Math.round(DOOR_CX - sw / 2);
   P.rect(sx, top - 14, sw, 8, 0x1d6a3a); P.box(sx, top - 14, sw, 8, 0x0e2a18); P.hl(sx + 1, top - 13, sw - 2, 0x3a9a5a);
-  text(P, SMALL, 'UT', sx + 3, top - 12, 0xe8ffe8);
+  text(P, SMALL, $t('UT'), sx + 3, top - 12, 0xe8ffe8);
   P.px(sx + sw - 5, top - 11, 0xe8ffe8); P.px(sx + sw - 4, top - 10, 0xe8ffe8); P.px(sx + sw - 5, top - 9, 0xe8ffe8); P.hl(sx + sw - 7, top - 10, 3, 0xe8ffe8);
 }
 // Planschen som egen bild (annonsdialogen visar samma målning som hänger på väggen)
@@ -914,7 +915,7 @@ function paintPosterStatic(P, p, idx) {
   for (let j = 3; j < h - 3; j++) for (let i = 3; i < w - 3; i++) if (hash(x + i, y + j, 70) > 0.93) P.px(x + i, y + j, 0xf0e8d8);
   // rubrikband
   P.rect(x + 3, y + 3, w - 6, 10, NAVY); P.hl(x + 3, y + 3, w - 6, NAVY_HI); P.hl(x + 3, y + 12, w - 6, GOLD);
-  const name = home.name.toUpperCase(), tw = textW(SMALL, name);
+  const name = $t(home.name).toUpperCase(), tw = textW(SMALL, name);
   if (tw <= w - 8) embossText(P, SMALL, name, x + Math.floor((w - tw) / 2), y + 5, GOLD_HI, GOLD, GOLD, NAVY_LO);
   // bilden
   const px0 = x + 5, py0 = y + 15, pw = w - 10, ph = 32;
@@ -980,7 +981,7 @@ function paintRoom(night) {
   blindsWindow(P, night);
   paintDoor(P, night);
   // ===== annonsväggen: rubrik, tavelbelysning, planscher =====
-  const head = 'VÅRA BOSTÄDER', hw = textW(BIG, head), hx = Math.round((FEAT.x0 + FEAT.x1) / 2 - hw / 2);
+  const head = $t('VÅRA BOSTÄDER'), hw = textW(BIG, head), hx = Math.round((FEAT.x0 + FEAT.x1) / 2 - hw / 2);
   embossText(P, BIG, head, hx, 7, GOLD_HI, GOLD, GOLD_LO, 0x0a0e18);
   for (const kx of [hx - 14, hx + hw + 5]) { // små nyckelloggor
     for (let yy = 0; yy < 5; yy++) for (let xx = 0; xx < 5; xx++) { const e = Math.hypot(xx - 2, yy - 2); if (e <= 2.3 && e >= 1) P.px(kx + xx, 8 + yy, yy < 2 ? GOLD_HI : GOLD); }
@@ -996,13 +997,13 @@ function paintRoom(night) {
   wallClockFace(P, 27, 42);
   // ===== mäklarhörnan: nummertavla, diplom, nyckelskåp =====
   P.rect(394 + SH, 24, 36, 22, 0x2a2430); P.box(393 + SH, 23, 38, 24, OUT); P.hl(394 + SH, 24, 36, 0x4a4450);
-  text(P, SMALL, 'NUMMER', 394 + SH + Math.floor((36 - textW(SMALL, 'NUMMER')) / 2), 26, 0xf0d048);
+  text(P, SMALL, $t('NUMMER'), 394 + SH + Math.floor((36 - textW(SMALL, $t('NUMMER'))) / 2), 26, 0xf0d048);
   P.rect(397 + SH, 32, 30, 12, 0x120a0a); P.hl(397 + SH, 32, 30, 0x2a1818);
   // diplom
   const dx = DIPLOMA_X - 440;
   P.darken(442 + dx, 42, 31, 1, 0.7); P.darken(472 + dx, 22, 1, 20, 0.8);
   P.rect(440 + dx, 20, 32, 22, OUT); P.bevel(441 + dx, 21, 30, 20, GOLD_HI, GOLD_LO); P.rect(443 + dx, 23, 26, 16, PAPER);
-  text(P, SMALL, 'DIPLOM', 443 + dx + Math.floor((26 - textW(SMALL, 'DIPLOM')) / 2), 24, NAVY);
+  text(P, SMALL, $t('DIPLOM'), 443 + dx + Math.floor((26 - textW(SMALL, $t('DIPLOM'))) / 2), 24, NAVY);
   for (const ly of [31, 33]) for (let i = 446; i < 466; i++) if (hash(i, ly, 71) > 0.25) P.px(i + dx, ly, 0xa8a090);
   P.line(446 + dx, 36, 452 + dx, 35, 0x2a3a6a); P.line(452 + dx, 35, 455 + dx, 37, 0x2a3a6a);
   disc(P, 465 + dx, 36, 2.5, 2.5, 0xc9323a); P.px(464 + dx, 35, 0xff7a6b); P.px(464 + dx, 39, 0xa01a20); P.px(466 + dx, 39, 0xa01a20);
@@ -1027,7 +1028,7 @@ function paintRoom(night) {
   for (let j = ky + 3; j < ky + kh - 3; j++) for (let i = kx + 3; i < kx + kw - 3; i++) if ((i + j) % 15 < 2) P.px(i, j, 0xffffff, 0.18);
   P.px(kx + kw - 4, ky + 15, GOLD); P.px(kx + kw - 4, ky + 16, GOLD_LO);
   P.darken(kx + 1, ky + kh, kw, 2, 0.7);
-  const nl = 'NYCKLAR', nw = textW(SMALL, nl) + 4, nx = kx + Math.floor((kw - nw) / 2);
+  const nl = $t('NYCKLAR'), nw = textW(SMALL, nl) + 4, nx = kx + Math.floor((kw - nw) / 2);
   P.rect(nx, ky - 8, nw, 7, GOLD); P.box(nx, ky - 8, nw, 7, GOLD_LO); text(P, SMALL, nl, nx + 2, ky - 7, NAVY);
   // ===== taklampor: opalglobar i mässing =====
   for (const lx of CEIL) {
@@ -1055,7 +1056,7 @@ function paintRoom(night) {
     if (y === WALL_Y + 1 || y === WALL_Y + 11 || x === mx0 || x === mx0 + mw - 1) c = 0x2a2018;
     P.px(x, y, c);
   }
-  text(P, SMALL, 'VÄLKOMMEN', mx0 + Math.floor((mw - textW(SMALL, 'VÄLKOMMEN')) / 2), WALL_Y + 4, 0xd8c8a0);
+  text(P, SMALL, $t('VÄLKOMMEN'), mx0 + Math.floor((mw - textW(SMALL, $t('VÄLKOMMEN'))) / 2), WALL_Y + 4, 0xd8c8a0);
   // solkatter från fönstren (dag) och lampornas ljuspölar (kväll)
   if (!night) {
     sunPatch(P, WIN1.x, WIN1.w, 44, [Math.round(WIN1.w / 3), Math.round(WIN1.w * 2 / 3)]);
@@ -1558,7 +1559,7 @@ function paintDesk() {
     for (let y = -35; y <= -32; y++) for (let x = lx - 6; x <= lx + 5; x++) P.px(x, y, y === -35 ? 0x5aaa7a : y === -32 ? 0x1a4a2e : 0x2a7a4a);
     P.hl(lx - 5, -36, 10, 0x2a7a4a); P.px(lx - 6, -34, GOLD); P.px(lx + 5, -34, GOLD); P.hl(lx - 5, -31, 10, 0xfff4c0);
     // namnskylt på framkanten
-    const nm = 'MÄKLARE', nw = textW(SMALL, nm) + 6, nx = 20;
+    const nm = $t('MÄKLARE'), nw = textW(SMALL, nm) + 6, nx = 20;
     P.rect(nx, -29, nw, 8, NAVY); P.box(nx, -29, nw, 8, GOLD); P.hl(nx + 1, -28, nw - 2, NAVY_HI);
     text(P, SMALL, nm, nx + 3, -27, GOLD_HI);
   });
@@ -1670,7 +1671,7 @@ function paintEasel() {
     for (let j = 2; j < bh - 2; j++) for (let i = 2; i < bw - 2; i++) if (hash(bx + i, by + j, 103) > 0.94) P.px(bx + i, by + j, 0xf0e8d8);
     // rubrik
     P.rect(bx + 2, by + 2, bw - 4, 9, NAVY); P.hl(bx + 2, by + 2, bw - 4, NAVY_HI); P.hl(bx + 2, by + 11, bw - 4, GOLD);
-    const s = 'VISNING', tw = textW(SMALL, s);
+    const s = $t('VISNING'), tw = textW(SMALL, s);
     embossText(P, SMALL, s, bx + Math.floor((bw - tw) / 2), by + 4, GOLD_HI, GOLD, GOLD, NAVY_LO);
     // blåkopian: rum, dörrbågar, fönster, möbler och måttlinjer
     const px0 = bx + 5, py0 = by + 14, pw = bw - 10, ph = 21;
@@ -1693,7 +1694,7 @@ function paintEasel() {
     for (let i = 2; i < pw - 2; i++) P.px(px0 + i, py0 + ph - 2, i === 2 || i === pw - 3 ? L : (i & 1) ? 0xb8d0f0 : BG); // måttlinje
     P.box(px0 - 1, py0 - 1, pw + 2, ph + 2, 0x8a8478);
     // dag och tid
-    const d = 'SÖN 13-15', dw = textW(SMALL, d);
+    const d = $t('SÖN 13-15'), dw = textW(SMALL, d);
     text(P, SMALL, d, bx + Math.floor((bw - dw) / 2), by + 38, 0xc9323a);
     // stafflihyllan med broschyrer och en visitkortshållare
     P.rect(bx - 2, by + bh, bw + 4, 3, WALNUT[3]); P.hl(bx - 2, by + bh, bw + 4, WALNUT[5]); P.hl(bx - 2, by + bh + 2, bw + 4, WALNUT[0]);
@@ -1733,11 +1734,11 @@ function paintBoxes() {
     for (const [lx, ly] of [[1, -39], [9, -38], [5, -41], [-1, -35], [11, -34], [3, -36], [7, -35]]) {
       for (let y = -2; y <= 1; y++) for (let x = -2; x <= 2; x++) if (x * x / 5 + y * y / 3 <= 1) P.px(lx + x, ly + y, tone(LEAF, 0.7 - y * 0.12 - x * 0.04, lx + x, ly + y));
     }
-    box(-17, -13, 18, 13, 'KÖK', false);
+    box(-17, -13, 18, 13, $t('KÖK'), false);
     box(2, -12, 15, 12, '', true);
     // röd "ömtåligt"-symbol (ett vinglas) på den högra lådan
     P.hl(6, -9, 5, 0xc9323a); P.hl(7, -8, 3, 0xc9323a); P.px(8, -7, 0xc9323a); P.px(8, -6, 0xc9323a); P.hl(7, -5, 3, 0xc9323a); P.px(6, -9, 0xf08080);
-    box(-12, -26, 24, 12, 'FLYTT', false);
+    box(-12, -26, 24, 12, $t('FLYTT'), false);
     // rulle med packtejp ovanpå
     disc(P, -12, -29, 2.6, 1.6, 0xd8c8a0); P.px(-12, -29, 0x8a7a5a);
   });
@@ -1896,7 +1897,7 @@ function paintBrochures() {
       for (let k = 0; k < 3; k++) P.px(bx + 3 + k * 6 + r, fy + 7 + (k & 1), 0xffffff, 0.8);
     }
     // skylten ovanpå
-    const s = 'TA EN!', sw = textW(SMALL, s) + 6, sx = -Math.floor(sw / 2), sy = by - 10;
+    const s = $t('TA EN!'), sw = textW(SMALL, s) + 6, sx = -Math.floor(sw / 2), sy = by - 10;
     P.vl(-6, sy + 9, 1, GOLD_LO); P.vl(5, sy + 9, 1, GOLD_LO);
     P.rect(sx, sy, sw, 9, NAVY); P.box(sx, sy, sw, 9, GOLD); P.hl(sx + 1, sy + 1, sw - 2, NAVY_HI);
     embossText(P, SMALL, s, sx + 3, sy + 2, GOLD_HI, GOLD, GOLD, NAVY_LO);
@@ -2006,13 +2007,13 @@ function paintSign() {
     // själva skylten
     const sx = -4, sy = -38, sw = 21, sh = 23;
     P.rect(sx, sy, sw, sh, NAVY); P.box(sx, sy, sw, sh, GOLD); P.hl(sx + 1, sy + 1, sw - 2, NAVY_HI); P.hl(sx + 1, sy + sh - 2, sw - 2, NAVY_LO);
-    for (const [s, yy] of [['TILL', sy + 3], ['SALU', sy + 10]]) embossText(P, SMALL, s, sx + Math.floor((sw - textW(SMALL, s)) / 2), yy, GOLD_HI, GOLD, GOLD, NAVY_LO);
+    for (const [s, yy] of [[$t('TILL'), sy + 3], [$t('SALU'), sy + 10]]) embossText(P, SMALL, s, sx + Math.floor((sw - textW(SMALL, s)) / 2), yy, GOLD_HI, GOLD, GOLD, NAVY_LO);
     // SÅLT!-lappen, lite snett påklistrad
     for (let x = sx - 2; x < sx + sw + 2; x++) {
       const top = sy + 16 + (x < sx + 10 ? 1 : 0);
       for (let y = top; y < top + 7; y++) P.px(x, y, y === top ? 0xf06a60 : y === top + 6 ? 0x8a1a20 : 0xc9323a);
     }
-    const lbl = 'SÅLT!', lx = sx + Math.floor((sw - textW(SMALL, lbl)) / 2);
+    const lbl = $t('SÅLT!'), lx = sx + Math.floor((sw - textW(SMALL, lbl)) / 2);
     text(P, SMALL, lbl, lx, sy + 18, 0xffffff);
   });
 }
@@ -2191,65 +2192,65 @@ export function makeShopBostad(A) {
   const say = (msg, snd = 'click', at = null) => { play(snd); talk.say(msg, at || (() => ({ x: walker.px, y: walker.py - 44 }))); };
   let bossSay = null; // mäklarens pratbubbla { text, until }
   const HEADLINES = [
-    '📰 DRÖMHEM: "Tio sätt att få plats med en soffa i Lilla rummet"',
-    '📰 PIXELPOSTEN: "Större bostad – bättre sömn, säger forskarna"',
-    '📰 BO BÄTTRE: "Villan med flaggstång – så får alla kompisar plats"',
-    '📰 VECKANS RÖST: "Kanelbullen fyller år – mäklarna firar"',
+    $t('📰 DRÖMHEM: "Tio sätt att få plats med en soffa i Lilla rummet"'),
+    $t('📰 PIXELPOSTEN: "Större bostad – bättre sömn, säger forskarna"'),
+    $t('📰 BO BÄTTRE: "Villan med flaggstång – så får alla kompisar plats"'),
+    $t('📰 VECKANS RÖST: "Kanelbullen fyller år – mäklarna firar"'),
   ];
 
   // alla klickbara saker (världskoordinater)
   const spots = [
-    { id: 'dorr', r: [DOOR.x0 - 2, DOOR.top - 16, DOOR.x1 + 2, WALL_Y + 8], go: [DOOR_CX, WALL_Y + 8], label: 'UTGÅNG', hint: 'KLICKA FÖR ATT GÅ UT PÅ GATAN', act: () => { play('door'); A.go('city'); } },
+    { id: 'dorr', r: [DOOR.x0 - 2, DOOR.top - 16, DOOR.x1 + 2, WALL_Y + 8], go: [DOOR_CX, WALL_Y + 8], label: $t('UTGÅNG'), hint: $t('KLICKA FÖR ATT GÅ UT PÅ GATAN'), act: () => { play('door'); A.go('city'); } },
     ...POSTERS.map((p) => ({ id: p.home.id, poster: p, r: [p.x, p.y, p.x + p.w, p.y + p.h], go: [p.x + p.w / 2, WALL_Y + 26], face: 'up', act: () => openHousing(p.home) })),
-    { id: 'maklare', r: [DESK.x, 76, DESK.x + DESK.w, DESK.base], go: [DESK_CX, GUEST_Y + 2], face: 'up', label: 'MÄKLAREN', hint: 'KLICKA SÅ HJÄLPER HON DIG ATT FLYTTA',
+    { id: 'maklare', r: [DESK.x, 76, DESK.x + DESK.w, DESK.base], go: [DESK_CX, GUEST_Y + 2], face: 'up', label: $t('MÄKLAREN'), hint: $t('KLICKA SÅ HJÄLPER HON DIG ATT FLYTTA'),
       act: () => {
         greet();
         const nx = nextHome();
         bossSay = { until: t + 5.5, text: nx
-          ? `${g.money >= nx.deposit ? `Du har råd med ${nx.name.toLowerCase()} nu – ska vi skriva kontrakt?` : `Spara ${fmt(nx.deposit - g.money)} till, så fixar jag ${nx.name.toLowerCase()} åt dig!`}`
-          : `${HOMES[HOMES.length - 1].name} är det finaste vi har – och den är din!` };
+          ? `${g.money >= nx.deposit ? $t`Du har råd med ${$t(nx.name).toLowerCase()} nu – ska vi skriva kontrakt?` : $t`Spara ${fmt(nx.deposit - g.money)} till, så fixar jag ${$t(nx.name).toLowerCase()} åt dig!`}`
+          : $t`${$t(HOMES[HOMES.length - 1].name)} är det finaste vi har – och den är din!` };
         openHousing(null);
       } },
-    { id: 'soffa', r: [SOFA.x, SOFA.base - 34, SOFA.x + SOFA.w, SOFA.base], go: [SEATS[0], SOFA.base + 5], label: 'SOFFAN', hint: 'KLICKA FÖR ATT SLÅ DIG NER',
+    { id: 'soffa', r: [SOFA.x, SOFA.base - 34, SOFA.x + SOFA.w, SOFA.base], go: [SEATS[0], SOFA.base + 5], label: $t('SOFFAN'), hint: $t('KLICKA FÖR ATT SLÅ DIG NER'),
       act: () => { seat = { x: SEATS[0], y: SOFA.base + 1, dir: 'down', exit: [SEATS[0], SOFA.base + 5] }; walker.px = SEATS[0]; play('click'); } },
-    { id: 'banken', r: [BENCH.x - (BENCH.w >> 1), BENCH.base - 18, BENCH.x + (BENCH.w >> 1), BENCH.base], go: [BENCH.x - 8, BENCH.base + 5], label: 'GALLERISOFFAN', hint: 'SITT OCH TITTA PÅ BOSTÄDERNA',
+    { id: 'banken', r: [BENCH.x - (BENCH.w >> 1), BENCH.base - 18, BENCH.x + (BENCH.w >> 1), BENCH.base], go: [BENCH.x - 8, BENCH.base + 5], label: $t('GALLERISOFFAN'), hint: $t('SITT OCH TITTA PÅ BOSTÄDERNA'),
       act: () => { seat = { x: BENCH.x - 8, y: BENCH.base - 5, fy: BENCH.base + 0.5, dir: 'up', exit: [BENCH.x - 8, BENCH.base + 5] }; play('click'); } },
-    { id: 'staffli', r: [EASEL.x - 17, EASEL.base - 62, EASEL.x + 18, EASEL.base], go: [EASEL.x, EASEL.base + 8], label: 'VISNING', hint: 'SÖNDAG KLOCKAN 13-15',
-      act: () => say('📐 Planritning från visningen: tre rum och kök, balkong i söderläge. Visning söndag kl 13–15 – kaffe bjuder vi på!') },
-    { id: 'hund', r: [DOG.x - 17, DOG.base - 18, DOG.x + 17, DOG.base], go: [DOG.x - 22, DOG.base + 10], label: 'KANELBULLE', hint: 'MÄKLARENS TAX',
-      act: () => { wagT = t; say(dogAwake() ? '🐶 Vift vift! Kanelbulle nosar på din hand.' : '🐶 Kanelbulle vaknar, gäspar och viftar på svansen.', 'ok', { x: DOG.x, y: DOG.base - 16 }); } },
-    { id: 'kartonger', r: [BOXES.x - 17, BOXES.base - 40, BOXES.x + 17, BOXES.base], go: [BOXES.x + 22, BOXES.base + 2], label: 'FLYTTKARTONGER', hint: 'GRATIS NÄR DU FLYTTAR',
-      act: () => say('📦 Flyttkartonger – gratis för alla som skriver kontrakt. Någon har redan packat köket!') },
-    { id: 'paraply', r: [UMBR.x - 6, UMBR.base - 30, UMBR.x + 6, UMBR.base], go: [UMBR.x + 6, UMBR.base + 8], label: 'PARAPLYSTÄLLET', hint: 'LÅNA ETT PARAPLY',
-      act: () => say(g.event?.id === 'regn' ? '☂️ Du lånar ett paraply – lämna tillbaka det nästa gång!' : '☂️ Det regnar inte just nu. Paraplyerna får stå kvar.') },
-    { id: 'kaffe', r: [COFFEE.x, 58, COFFEE.x + 38, COFFEE.base], go: [COFFEE.x + 19, COFFEE.base + 8], label: 'KAFFEBAREN', hint: 'GRATIS KAFFE OCH KANELBULLAR',
-      act: () => say('☕ Kundkaffe och en kanelbulle – mäklarna bjuder!', 'ok') },
-    { id: 'vatten', r: [COOLER.x - 8, 58, COOLER.x + 10, COOLER.base], go: [COOLER.x, COOLER.base + 8], label: 'VATTEN', hint: 'KLICKA FÖR EN KOPP',
-      act: () => { bubbleT = t; say('💧 Blubb blubb – iskallt vatten.'); } },
-    { id: 'tidning', r: [TABLE.x - 24, TABLE.base - 32, TABLE.x + 24, TABLE.base], go: [TABLE.x, TABLE.base + 8], label: 'TIDNINGAR', hint: 'KLICKA FÖR ATT BLÄDDRA',
+    { id: 'staffli', r: [EASEL.x - 17, EASEL.base - 62, EASEL.x + 18, EASEL.base], go: [EASEL.x, EASEL.base + 8], label: $t('VISNING'), hint: $t('SÖNDAG KLOCKAN 13-15'),
+      act: () => say($t('📐 Planritning från visningen: tre rum och kök, balkong i söderläge. Visning söndag kl 13–15 – kaffe bjuder vi på!')) },
+    { id: 'hund', r: [DOG.x - 17, DOG.base - 18, DOG.x + 17, DOG.base], go: [DOG.x - 22, DOG.base + 10], label: $t('KANELBULLE'), hint: $t('MÄKLARENS TAX'),
+      act: () => { wagT = t; say(dogAwake() ? $t('🐶 Vift vift! Kanelbulle nosar på din hand.') : $t('🐶 Kanelbulle vaknar, gäspar och viftar på svansen.'), 'ok', { x: DOG.x, y: DOG.base - 16 }); } },
+    { id: 'kartonger', r: [BOXES.x - 17, BOXES.base - 40, BOXES.x + 17, BOXES.base], go: [BOXES.x + 22, BOXES.base + 2], label: $t('FLYTTKARTONGER'), hint: $t('GRATIS NÄR DU FLYTTAR'),
+      act: () => say($t('📦 Flyttkartonger – gratis för alla som skriver kontrakt. Någon har redan packat köket!')) },
+    { id: 'paraply', r: [UMBR.x - 6, UMBR.base - 30, UMBR.x + 6, UMBR.base], go: [UMBR.x + 6, UMBR.base + 8], label: $t('PARAPLYSTÄLLET'), hint: $t('LÅNA ETT PARAPLY'),
+      act: () => say(g.event?.id === 'regn' ? $t('☂️ Du lånar ett paraply – lämna tillbaka det nästa gång!') : $t('☂️ Det regnar inte just nu. Paraplyerna får stå kvar.')) },
+    { id: 'kaffe', r: [COFFEE.x, 58, COFFEE.x + 38, COFFEE.base], go: [COFFEE.x + 19, COFFEE.base + 8], label: $t('KAFFEBAREN'), hint: $t('GRATIS KAFFE OCH KANELBULLAR'),
+      act: () => say($t('☕ Kundkaffe och en kanelbulle – mäklarna bjuder!'), 'ok') },
+    { id: 'vatten', r: [COOLER.x - 8, 58, COOLER.x + 10, COOLER.base], go: [COOLER.x, COOLER.base + 8], label: $t('VATTEN'), hint: $t('KLICKA FÖR EN KOPP'),
+      act: () => { bubbleT = t; say($t('💧 Blubb blubb – iskallt vatten.')); } },
+    { id: 'tidning', r: [TABLE.x - 24, TABLE.base - 32, TABLE.x + 24, TABLE.base], go: [TABLE.x, TABLE.base + 8], label: $t('TIDNINGAR'), hint: $t('KLICKA FÖR ATT BLÄDDRA'),
       act: () => { say(HEADLINES[headline % HEADLINES.length]); headline++; } },
-    { id: 'kolapp', r: [TICKET.x - 5, TICKET.base - 36, TICKET.x + 5, TICKET.base], go: [TICKET.x + 1, TICKET.base + 8], label: 'NUMMERLAPPAR', hint: 'TA EN LAPP',
-      act: () => say(`🎫 Du tog nummerlapp ${(served + 1) % 100}. Mäklaren har tid för dig direkt – gå fram till skrivbordet!`) },
-    { id: 'modell', r: [MODEL.x - 12, MODEL.base - 38, MODEL.x + 12, MODEL.base], go: [MODEL.x, MODEL.base + 10], label: 'MODELLEN', hint: 'VILLAN I SKALA 1:100',
-      act: () => say('🏡 En modell av Villan i skala 1:100 – trädgård, flaggstång och allt!') },
-    { id: 'bokhylla', r: [SHELF.x, 48, SHELF.x + 42, SHELF.base], go: [SHELF.x + 21, SHELF.base + 8], label: 'PÄRMARNA', hint: 'RITNINGAR OCH KONTRAKT',
-      act: () => say('📚 Pärmar med ritningar och kontrakt för varenda bostad i Pixelstaden, från A till Ö.') },
-    { id: 'arkiv', r: [FILES.x, 16, FILES.x + 44, FILES.base], go: [FILES.x + 20, FILES.base + 8], label: 'ARKIVET', hint: 'KONTRAKT OCH NYCKLAR',
-      act: () => say('🗄️ Arkivskåpen är fulla av kontrakt. Nycklarna hänger i skåpet ovanför – en till varje bostad.') },
-    { id: 'klocka', r: [17, 32, 37, 52], go: [COFFEE.x + 19, COFFEE.base + 8], label: 'KLOCKAN', hint: '',
-      act: () => say(`🕒 Klockan är ${String(Math.floor(g.min / 60)).padStart(2, '0')}:${String(Math.floor(g.min % 60)).padStart(2, '0')}. Bostadsbyrån har öppet 07–20.`) },
-    { id: 'dockskap', r: [DOLL.x - 24, DOLL.base - 48, DOLL.x + 28, DOLL.base], go: [DOLL.x + 2, DOLL.base + 6], label: 'BARNHÖRNAN', hint: 'DOCKSKÅP MED FYRA RUM',
-      act: () => say('🏠 Dockskåpet har sovrum, badrum, kök och vardagsrum – precis som Villan, fast i miniatyr.', 'ok') },
-    { id: 'broschyrer', r: [BROCH.x - 17, BROCH.base - 58, BROCH.x + 17, BROCH.base], go: [BROCH.x + 14, BROCH.base + 2], label: 'BROSCHYRER', hint: 'TA EN!',
-      act: () => { const nx = nextHome(); say(nx ? `📄 Du tar en broschyr om ${nx.name}: ${nx.rent} kr i veckan, insats ${nx.deposit} kr. Bilderna är tagna en solig dag.` : `📄 Broschyren om ${HOMES[HOMES.length - 1].name} – din egen bostad på glansigt papper!`); } },
-    { id: 'godis', r: [SIDE.x - 15, SIDE.base - 39, SIDE.x + 15, SIDE.base], go: [SIDE.x, SIDE.base + 8], label: 'GODISSKÅLEN', hint: 'TA EN KARAMELL',
-      act: () => say('🍬 Du tar en polkagris ur skålen. Mäklaren låtsas inte se att du tar två.', 'ok') },
-    { id: 'skrivare', r: [PRINT.x - 20, PRINT.base - 36, PRINT.x + 20, PRINT.base], go: [PRINT.x - 4, DOG.base + 10], label: 'SKRIVAREN', hint: 'KONTRAKTEN SKRIVS UT HÄR',
-      act: () => say('🖨️ Skrivaren surrar och spottar ut ett kontrakt. Fel namn – mäklaren suckar och trycker igen.') },
-    { id: 'papperskorg', r: [BIN.x - 12, BIN.base - 20, BIN.x + 7, BIN.base], go: [BIN.x, BIN.base + 8], label: 'PAPPERSKORGEN', hint: 'FULL AV UTKAST',
-      act: () => say('🗑️ Skrynkliga utkast till annonser. "Charmig etta med utsikt över ... parkeringen."') },
-    { id: 'skylt', r: [SIGN.x - 10, SIGN.base - 48, SIGN.x + 18, SIGN.base], go: [SIGN.x - 14, SIGN.base + 2], label: 'TILL SALU', hint: 'REDAN SÅLD!',
-      act: () => say('🪧 SÅLT! Den här skylten ska ut på nästa visning – om det bara fanns något kvar att sälja.') },
+    { id: 'kolapp', r: [TICKET.x - 5, TICKET.base - 36, TICKET.x + 5, TICKET.base], go: [TICKET.x + 1, TICKET.base + 8], label: $t('NUMMERLAPPAR'), hint: $t('TA EN LAPP'),
+      act: () => say($t`🎫 Du tog nummerlapp ${(served + 1) % 100}. Mäklaren har tid för dig direkt – gå fram till skrivbordet!`) },
+    { id: 'modell', r: [MODEL.x - 12, MODEL.base - 38, MODEL.x + 12, MODEL.base], go: [MODEL.x, MODEL.base + 10], label: $t('MODELLEN'), hint: $t('VILLAN I SKALA 1:100'),
+      act: () => say($t('🏡 En modell av Villan i skala 1:100 – trädgård, flaggstång och allt!')) },
+    { id: 'bokhylla', r: [SHELF.x, 48, SHELF.x + 42, SHELF.base], go: [SHELF.x + 21, SHELF.base + 8], label: $t('PÄRMARNA'), hint: $t('RITNINGAR OCH KONTRAKT'),
+      act: () => say($t('📚 Pärmar med ritningar och kontrakt för varenda bostad i Pixelstaden, från A till Ö.')) },
+    { id: 'arkiv', r: [FILES.x, 16, FILES.x + 44, FILES.base], go: [FILES.x + 20, FILES.base + 8], label: $t('ARKIVET'), hint: $t('KONTRAKT OCH NYCKLAR'),
+      act: () => say($t('🗄️ Arkivskåpen är fulla av kontrakt. Nycklarna hänger i skåpet ovanför – en till varje bostad.')) },
+    { id: 'klocka', r: [17, 32, 37, 52], go: [COFFEE.x + 19, COFFEE.base + 8], label: $t('KLOCKAN'), hint: '',
+      act: () => say($t`🕒 Klockan är ${String(Math.floor(g.min / 60)).padStart(2, '0')}:${String(Math.floor(g.min % 60)).padStart(2, '0')}. Bostadsbyrån har öppet 07–20.`) },
+    { id: 'dockskap', r: [DOLL.x - 24, DOLL.base - 48, DOLL.x + 28, DOLL.base], go: [DOLL.x + 2, DOLL.base + 6], label: $t('BARNHÖRNAN'), hint: $t('DOCKSKÅP MED FYRA RUM'),
+      act: () => say($t('🏠 Dockskåpet har sovrum, badrum, kök och vardagsrum – precis som Villan, fast i miniatyr.'), 'ok') },
+    { id: 'broschyrer', r: [BROCH.x - 17, BROCH.base - 58, BROCH.x + 17, BROCH.base], go: [BROCH.x + 14, BROCH.base + 2], label: $t('BROSCHYRER'), hint: $t('TA EN!'),
+      act: () => { const nx = nextHome(); say(nx ? $t`📄 Du tar en broschyr om ${$t(nx.name)}: ${nx.rent} kr i veckan, insats ${nx.deposit} kr. Bilderna är tagna en solig dag.` : $t`📄 Broschyren om ${$t(HOMES[HOMES.length - 1].name)} – din egen bostad på glansigt papper!`); } },
+    { id: 'godis', r: [SIDE.x - 15, SIDE.base - 39, SIDE.x + 15, SIDE.base], go: [SIDE.x, SIDE.base + 8], label: $t('GODISSKÅLEN'), hint: $t('TA EN KARAMELL'),
+      act: () => say($t('🍬 Du tar en polkagris ur skålen. Mäklaren låtsas inte se att du tar två.'), 'ok') },
+    { id: 'skrivare', r: [PRINT.x - 20, PRINT.base - 36, PRINT.x + 20, PRINT.base], go: [PRINT.x - 4, DOG.base + 10], label: $t('SKRIVAREN'), hint: $t('KONTRAKTEN SKRIVS UT HÄR'),
+      act: () => say($t('🖨️ Skrivaren surrar och spottar ut ett kontrakt. Fel namn – mäklaren suckar och trycker igen.')) },
+    { id: 'papperskorg', r: [BIN.x - 12, BIN.base - 20, BIN.x + 7, BIN.base], go: [BIN.x, BIN.base + 8], label: $t('PAPPERSKORGEN'), hint: $t('FULL AV UTKAST'),
+      act: () => say($t('🗑️ Skrynkliga utkast till annonser. "Charmig etta med utsikt över ... parkeringen."')) },
+    { id: 'skylt', r: [SIGN.x - 10, SIGN.base - 48, SIGN.x + 18, SIGN.base], go: [SIGN.x - 14, SIGN.base + 2], label: $t('TILL SALU'), hint: $t('REDAN SÅLD!'),
+      act: () => say($t('🪧 SÅLT! Den här skylten ska ut på nästa visning – om det bara fanns något kvar att sälja.')) },
   ];
   const spotAt = (x, y) => spots.find((h) => x >= h.r[0] && x <= h.r[2] && y >= h.r[1] && y <= h.r[3]);
   const focusSpot = () => {
@@ -2364,7 +2365,7 @@ export function makeShopBostad(A) {
 
     // mäklarens hälsning
     if (bossSay && bossSay.until > t) sayBubble(ctx, BOSS.x, BOSS.y - 44, bossSay.text);
-    else if (t - greetT < 3) speech(ctx, BOSS.x, BOSS.y - 46, 'HEJ! VÄLKOMMEN!');
+    else if (t - greetT < 3) speech(ctx, BOSS.x, BOSS.y - 46, $t('HEJ! VÄLKOMMEN!'));
   }
 
   return {
@@ -2448,8 +2449,8 @@ export function makeShopBostad(A) {
       talk.draw(ctx, { x0: cx, x1: cx + VW });
       // skyltar i skärmkanten och namnskylten för det man står vid/pekar på
       ctx.setTransform(A.pxs, 0, 0, A.pxs, 0, 0);
-      if (cx < W - VW - 40 && walker.px < DESK.x - 60) edgeSign(ctx, 'MÄKLAREN', false);
-      if (cx > DOOR.x1 + 20) edgeSign(ctx, 'UT', true);
+      if (cx < W - VW - 40 && walker.px < DESK.x - 60) edgeSign(ctx, $t('MÄKLAREN'), false);
+      if (cx > DOOR.x1 + 20) edgeSign(ctx, $t('UT'), true);
       const f = focusSpot();
       if (f && (f.poster || f.label)) bigLabel(ctx, f, g, t, walker.py > H - 48);
     },
@@ -2492,15 +2493,15 @@ function drawPosterLive(ctx, p, g, on, t) {
     ctxText(ctx, SMALL, label, lx, ly, '#8a8478');
     ctxText(ctx, SMALL, val, rx - textW(SMALL, val), ly, col);
   };
-  row(y + 50, 'INSATS', home.deposit ? `${home.deposit}:-` : 'GRATIS', here ? '#1f2d48' : afford ? '#2f8f46' : '#c9323a', home.deposit ? String(home.deposit) : null);
-  row(y + 57, 'HYRA', `${home.rent}:-/V`, '#1f2d48', `${home.rent}/V`);
-  ctxText(ctx, SMALL, 'SÖMN', lx, y + 63, '#8a8478');
+  row(y + 50, $t('INSATS'), home.deposit ? $t`${home.deposit}:-` : $t('GRATIS'), here ? '#1f2d48' : afford ? '#2f8f46' : '#c9323a', home.deposit ? String(home.deposit) : null);
+  row(y + 57, $t('HYRA'), $t`${home.rent}:-/V`, '#1f2d48', $t`${home.rent}/V`);
+  ctxText(ctx, SMALL, $t('SÖMN'), lx, y + 63, '#8a8478');
   // sömnen i stjärnor 0–4: husvagnen (−10) ingen, rummet 1, lägenheten 2, radhuset/villan 3, takvåningen 4
   const stars = Math.max(0, Math.min(4, Math.round(((home.restBonus || 0) + 10) / 10)));
   for (let i = 0; i < 4; i++) star(ctx, rx - 23 + i * 6, y + 63, i < stars ? '#e8b230' : '#d8d0c0');
   // DITT HEM-rosett över bildens nederkant
   if (here) {
-    const lbl = 'DITT HEM', bw = textW(SMALL, lbl) + 14, bx = x + Math.floor((w - bw) / 2), by = y + 40;
+    const lbl = $t('DITT HEM'), bw = textW(SMALL, lbl) + 14, bx = x + Math.floor((w - bw) / 2), by = y + 40;
     ctx.fillStyle = '#1d5a2c'; ctx.fillRect(bx - 3, by + 2, 4, 7); ctx.fillRect(bx + bw - 1, by + 2, 4, 7);
     ctx.fillStyle = '#fbf7ee'; ctx.fillRect(bx - 3, by + 5, 1, 1); ctx.fillRect(bx + bw + 2, by + 5, 1, 1);
     ctx.fillStyle = '#17151a'; ctx.fillRect(bx - 1, by - 1, bw + 2, 11);
@@ -2615,10 +2616,10 @@ function bigLabel(ctx, spot, g, t, atTop) {
   let name, val = '', valCol = '#f0d048', hint;
   if (spot.poster) {
     const h = spot.poster.home, here = g.home === h.id, afford = g.money >= h.deposit;
-    name = h.name.toUpperCase();
-    val = here ? 'DITT HEM' : h.deposit ? `${h.deposit} KR` : 'GRATIS';
+    name = $t(h.name).toUpperCase();
+    val = here ? $t('DITT HEM') : h.deposit ? $t`${h.deposit} KR` : $t('GRATIS');
     valCol = here || afford ? '#6fe08a' : '#ff8a80';
-    hint = here ? 'HÄR BOR DU - KLICKA FÖR ALLA BOSTÄDER' : afford ? 'KLICKA SÅ FÅR DU FLYTTA HIT' : `DU BEHÖVER ${h.deposit - Math.max(0, Math.floor(g.money))} KR TILL`;
+    hint = here ? $t('HÄR BOR DU - KLICKA FÖR ALLA BOSTÄDER') : afford ? $t('KLICKA SÅ FÅR DU FLYTTA HIT') : $t`DU BEHÖVER ${h.deposit - Math.max(0, Math.floor(g.money))} KR TILL`;
   } else { name = spot.label; hint = spot.hint || ''; }
   const nw = textW(BIG, name), vw = val ? textW(BIG, val) : 0, hw = textW(SMALL, hint);
   const w = Math.max(nw + (val ? vw + 10 : 0), hw) + 14, h = hint ? 22 : 13;

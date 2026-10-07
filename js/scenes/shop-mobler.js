@@ -11,6 +11,7 @@ import { FRAMES } from '../data/frames.js';
 import { ATLAS, furnArt, furnBaseColor } from './room.js';
 import { isHex } from '../core/recolor.js';
 import { isElektronik } from './ikea/kat.js';
+import { $t } from '../core/i18n.js';
 
 const FW = 384, FH = 216;
 const WALL_Y = 60;
@@ -86,12 +87,12 @@ export function makeShopMobler(A) {
 // "Egen färg" (fri färgväljare). Samma dialog används hemma i Möblera-läget
 // för att måla om en möbel – det är gratis.
 export const FURN_COLORS = [
-  ['#d8343c', 'Röd'], ['#ee7d2a', 'Orange'], ['#f2c230', 'Gul'], ['#2f9a4c', 'Grön'], ['#1fb5a8', 'Turkos'],
-  ['#4aa8e8', 'Himmelsblå'], ['#2c5fc0', 'Blå'], ['#7e4bc0', 'Lila'], ['#f07aa8', 'Rosa'], ['#8a5230', 'Brun'],
-  ['#8e8c94', 'Grå'], ['#2b2a33', 'Svart'], ['#f2efe8', 'Vit'],
+  ['#d8343c', $t('Röd')], ['#ee7d2a', $t('Orange')], ['#f2c230', $t('Gul')], ['#2f9a4c', $t('Grön')], ['#1fb5a8', $t('Turkos')],
+  ['#4aa8e8', $t('Himmelsblå')], ['#2c5fc0', $t('Blå')], ['#7e4bc0', $t('Lila')], ['#f07aa8', $t('Rosa')], ['#8a5230', $t('Brun')],
+  ['#8e8c94', $t('Grå')], ['#2b2a33', $t('Svart')], ['#f2efe8', $t('Vit')],
 ];
-const FX_NAMES = { sang: '🛏️ Säng', garderob: '🚪 Garderob', kylskap: '🧊 Kylskåp', dass: '🚽 Dasset' }; // startmöbler utanför katalogen
-const colorName = (hex) => FURN_COLORS.find(([h]) => h === hex)?.[1] || `Egen färg ${hex.toUpperCase()}`;
+const FX_NAMES = { sang: $t('🛏️ Säng'), garderob: $t('🚪 Garderob'), kylskap: $t('🧊 Kylskåp'), dass: $t('🚽 Dasset') }; // startmöbler utanför katalogen
+const colorName = (hex) => FURN_COLORS.find(([h]) => h === hex)?.[1] || $t`Egen färg ${hex.toUpperCase()}`;
 
 export function openBuy(A, kind) {
   if (!katalogOf(kind)) return;
@@ -105,38 +106,38 @@ export function openRecolor(A, { kind, v = 0, c = null, onPick }) {
 function furnDialog(A, o) {
   const g = A.game;
   const kind = o.kind, kat = katalogOf(kind), buy = o.mode === 'buy';
-  const title = buy ? `${kat.icon} ${kat.name}` : `🎨 Måla om: ${kat ? `${kat.icon} ${kat.name}` : FX_NAMES[kind] || kind}`;
+  const title = buy ? `${kat.icon} ${kat.name}` : $t`🎨 Måla om: ${kat ? `${kat.icon} ${kat.name}` : FX_NAMES[kind] || kind}`;
   const st = { v: o.v | 0, c: isHex(o.c) ? o.c.toLowerCase() : null };
   const models = buy && kat.vars > 1 ? Array.from({ length: kat.vars }, (_, i) => i) : []; // hemma byter man färg, inte modell
   const info = buy
-    ? `💰 <b>${fmt(g.money)}</b> · Pris: <b>${fmt(kat.price)}</b> · 📦 I förrådet: ${g.storage.filter((s) => s.k === kind).length}<br><span class="sp">Möbeln hamnar i förrådet – möblera hemma med 🛋️-knappen. Färgen kan du ändra gratis hemma.</span>`
-    : '<span class="sp">Att måla om hemma är gratis – välj färg och tryck Måla.</span>';
+    ? `💰 <b>${fmt(g.money)}</b> · ${$t`Pris: <b>${fmt(kat.price)}</b>`} · 📦 ${$t`I förrådet: ${g.storage.filter((s) => s.k === kind).length}`}<br><span class="sp">${$t('Möbeln hamnar i förrådet – möblera hemma med 🛋️-knappen. Färgen kan du ändra gratis hemma.')}</span>`
+    : `<span class="sp">${$t('Att måla om hemma är gratis – välj färg och tryck Måla.')}</span>`;
   const dlg = openModal(title, `
     <div class="fb">
       <div class="fb-top${models.length ? '' : ' solo'}">
         <div class="fb-stage"><canvas class="fb-big"></canvas></div>
-        ${models.length ? `<div class="fb-side"><span class="fb-lbl">Modell</span>
-          <div class="fb-models">${models.map((i) => `<button class="fb-model" data-v="${i}" title="Modell ${i + 1}"><canvas></canvas></button>`).join('')}</div></div>` : ''}
+        ${models.length ? `<div class="fb-side"><span class="fb-lbl">${$t('Modell')}</span>
+          <div class="fb-models">${models.map((i) => `<button class="fb-model" data-v="${i}" title="${$t`Modell ${i + 1}`}"><canvas></canvas></button>`).join('')}</div></div>` : ''}
       </div>
-      <div class="fb-colhead"><span class="fb-lbl">Färg</span><span class="fb-now"><i class="fb-chip"></i><b></b></span></div>
+      <div class="fb-colhead"><span class="fb-lbl">${$t('Färg')}</span><span class="fb-now"><i class="fb-chip"></i><b></b></span></div>
       <div class="av-sws fb-sws">
-        <button class="av-sw fb-orig" data-col="" title="Original – som den ser ut i butiken"><b>↺</b></button>
+        <button class="av-sw fb-orig" data-col="" title="${$t('Original – som den ser ut i butiken')}"><b>↺</b></button>
         ${FURN_COLORS.map(([hex, nm]) => `<button class="av-sw" data-col="${hex}" style="--c:${hex}" title="${nm}"></button>`).join('')}
-        <label class="av-sw av-own" title="Egen färg – välj precis vilken du vill"><input type="color" aria-label="Egen färg"><b>+</b></label>
+        <label class="av-sw av-own" title="${$t('Egen färg – välj precis vilken du vill')}"><input type="color" aria-label="${$t('Egen färg')}"><b>+</b></label>
       </div>
       <p class="fb-info">${info}</p>
     </div>`, buy ? [
-    { label: 'Stäng', onClick: closeModal },
-    { label: `🛒 Köp (${fmt(kat.price)})`, cls: 'btn-go', onClick: () => {
+    { label: $t('Stäng'), onClick: closeModal },
+    { label: $t`🛒 Köp (${fmt(kat.price)})`, cls: 'btn-go', onClick: () => {
       const r = g.buyFurniture(kind, st.v, st.c);
       if (!r.ok) { toast(r.msg, 'bad'); play('fel'); return; }
       play('buy');
-      toast(`${kat.icon} ${kat.name}${st.c ? ` (${colorName(st.c)})` : ''} ligger i förrådet!`, 'good');
+      toast($t`${kat.icon} ${kat.name}${st.c ? ` (${colorName(st.c)})` : ''} ligger i förrådet!`, 'good');
       closeModal();
     } },
   ] : [
-    { label: 'Avbryt', onClick: closeModal },
-    { label: '🎨 Måla (gratis)', cls: 'btn-go', onClick: () => { closeModal(); o.onPick?.(st.c); } },
+    { label: $t('Avbryt'), onClick: closeModal },
+    { label: $t('🎨 Måla (gratis)'), cls: 'btn-go', onClick: () => { closeModal(); o.onPick?.(st.c); } },
   ]);
   dlg.classList.add('dlg-furn');
 
@@ -179,7 +180,7 @@ function furnDialog(A, o) {
     own.style.setProperty('--c', isOwn ? st.c : '#ffffff');
     own.querySelector('b').textContent = isOwn ? '' : '+';
     now.querySelector('.fb-chip').style.setProperty('--c', st.c || base);
-    now.querySelector('b').textContent = st.c ? colorName(st.c) : 'Original';
+    now.querySelector('b').textContent = st.c ? colorName(st.c) : $t('Original');
   }
   for (const b of tiles) b.onclick = () => { st.v = +b.dataset.v; play('click'); render(); };
   for (const b of sws) b.onclick = () => { st.c = b.dataset.col || null; play('click'); render(); };
@@ -198,7 +199,7 @@ function paintStore() {
     if (y > WALL_Y - 8) c = 0x17427a;
     P.px(x, y, c);
   }
-  const title = 'MÖBLER';
+  const title = $t('MÖBLER');
   const tw = textW(BIG, title, 2);
   P.rect(FW / 2 - tw / 2 - 10, 12, tw + 20, 22, 0xf0d048);
   P.box(FW / 2 - tw / 2 - 10, 12, tw + 20, 22, 0x8a6a2a);
@@ -206,8 +207,8 @@ function paintStore() {
   // dörren
   P.rect(DOOR.x0, 26, DOOR.x1 - DOOR.x0, WALL_Y - 26, 0x2e2418);
   P.rect(DOOR.x0 + 1, 27, DOOR.x1 - DOOR.x0 - 2, WALL_Y - 27, 0x5a4632);
-  const uw = textW(SMALL, 'UT') + 8;
-  P.rect(DOOR.x0 + 6, 18, uw, 9, 0x1d2b1f); text(P, SMALL, 'UT', DOOR.x0 + 10, 20, 0x6fe08a);
+  const uw = textW(SMALL, $t('UT')) + 8;
+  P.rect(DOOR.x0 + 6, 18, uw, 9, 0x1d2b1f); text(P, SMALL, $t('UT'), DOOR.x0 + 10, 20, 0x6fe08a);
   // ljust utställningsgolv med gångstråk
   for (let y = WALL_Y; y < FH; y++) for (let x = 0; x < FW; x++) {
     let c = mix(0xe8e2d4, 0xd8d2c2, hash((x / 26) | 0, (y / 18) | 0, 5) * 0.5 + (bayer(x, y) - 0.5) * 0.08);

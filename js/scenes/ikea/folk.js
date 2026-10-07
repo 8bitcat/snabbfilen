@@ -11,22 +11,23 @@ import { cartonImg, pushCartImg, rollCageImg, forkliftImg, flatCartImg, bagImg }
 import { trayImg, dishImg, MENU } from './food.js';
 import { B_WALL, B_FLOOR, A_FLOOR, AISLE1, AISLE2, FD } from './geo.js';
 import { escPos } from './art-transit.js';
+import { $t } from '../../core/i18n.js';
 
 const WALK_SEQ = [1, 3, 2, 3];
 export const TIPS = [
-  'Följ den gula gången – den leder dig genom hela varuhuset.',
-  'Soffor och fåtöljer hittar du i VARDAGSRUMMET på plan 2.',
-  'Köttbullar med mos och lingonsylt finns i restaurangen på plan 2!',
-  'Hissen står bredvid rulltrapporna – klicka på den så åker du.',
-  'Allt du köper hamnar i förrådet hemma. Möblera med 🛋️-knappen!',
-  'Korv med bröd för 10 kr hittar du efter kassorna vid utgången.',
-  'Klicka på en prislapp så ser du möbeln i stort och kan välja färg.',
-  'I lagret på plan 1 står de stora möblerna i platta kartonger.',
-  'Kaffe med påtår ingår – ta en paus i restaurangen.',
-  'Barnen kan leka i Småland medan du handlar.',
-  'TV, datorer och spelkonsoler säljer vi inte längre – de finns på BLIXT ELEKTRONIK i Downtown!',
+  $t('Följ den gula gången – den leder dig genom hela varuhuset.'),
+  $t('Soffor och fåtöljer hittar du i VARDAGSRUMMET på plan 2.'),
+  $t('Köttbullar med mos och lingonsylt finns i restaurangen på plan 2!'),
+  $t('Hissen står bredvid rulltrapporna – klicka på den så åker du.'),
+  $t('Allt du köper hamnar i förrådet hemma. Möblera med 🛋️-knappen!'),
+  $t('Korv med bröd för 10 kr hittar du efter kassorna vid utgången.'),
+  $t('Klicka på en prislapp så ser du möbeln i stort och kan välja färg.'),
+  $t('I lagret på plan 1 står de stora möblerna i platta kartonger.'),
+  $t('Kaffe med påtår ingår – ta en paus i restaurangen.'),
+  $t('Barnen kan leka i Småland medan du handlar.'),
+  $t('TV, datorer och spelkonsoler säljer vi inte längre – de finns på BLIXT ELEKTRONIK i Downtown!'),
 ];
-const HELP_LINES = ['KAN JAG HJÄLPA TILL?', 'SOFFOR FINNS PÅ PLAN 2!', 'FÖLJ PILARNA!', 'HAR DU HITTAT RÄTT?', 'PROVSITT GÄRNA!'];
+const HELP_LINES = [$t('KAN JAG HJÄLPA TILL?'), $t('SOFFOR FINNS PÅ PLAN 2!'), $t('FÖLJ PILARNA!'), $t('HAR DU HITTAT RÄTT?'), $t('PROVSITT GÄRNA!')];
 
 // ---------- utseenden ----------
 export function staffLook(rng, o = {}) {
@@ -74,21 +75,21 @@ export function makeFolk(F, rng) {
   // ---------- personal ----------
   const an = F.anchors;
   if (F.n === 1) {
-    A({ role: 'staff', mode: 'still', look: staffLook(rng, { style: 'bun' }), x: an.info[0], y: an.info[1], lines: ['VÄLKOMMEN!', 'KAN JAG HJÄLPA TILL?', 'SOFFOR FINNS PÅ PLAN 2!', 'KARTAN FINNS HÄR!'], tip: 1 });
-    an.kassor.forEach((k, i) => A({ role: 'staff', mode: 'still', look: staffLook(rng), x: k.cashier[0], y: k.cashier[1], frame: 5, lines: ['HEJ HEJ!', 'VILL DU HA EN KASSE?', 'NÄSTA, TACK!', 'KVITTOT?'], tip: 4 + i }));
-    A({ role: 'staff', mode: 'still', look: staffLook(rng, { hat: 'cap', cap: '#f4f1ea' }), x: an.korv[0], y: an.korv[1], dir: 'left', lines: ['KORV, 10 KRONOR!', 'MED SENAP?', 'GLASS, 5 KRONOR!'], tip: 5 });
+    A({ role: 'staff', mode: 'still', look: staffLook(rng, { style: 'bun' }), x: an.info[0], y: an.info[1], lines: [$t('VÄLKOMMEN!'), $t('KAN JAG HJÄLPA TILL?'), $t('SOFFOR FINNS PÅ PLAN 2!'), $t('KARTAN FINNS HÄR!')], tip: 1 });
+    an.kassor.forEach((k, i) => A({ role: 'staff', mode: 'still', look: staffLook(rng), x: k.cashier[0], y: k.cashier[1], frame: 5, lines: [$t('HEJ HEJ!'), $t('VILL DU HA EN KASSE?'), $t('NÄSTA, TACK!'), $t('KVITTOT?')], tip: 4 + i }));
+    A({ role: 'staff', mode: 'still', look: staffLook(rng, { hat: 'cap', cap: '#f4f1ea' }), x: an.korv[0], y: an.korv[1], dir: 'left', lines: [$t('KORV, 10 KRONOR!'), $t('MED SENAP?'), $t('GLASS, 5 KRONOR!')], tip: 5 });
     // truckföraren i lagret
     const lg = an.lager;
-    A({ role: 'staff', mode: 'truck', look: staffLook(rng, { hat: 'cap', cap: '#f2c230', top: 'hiVis', shirt: '#f2c230' }), x: lg.x0 + 40, y: lg.y, x0: lg.x0 + 10, x1: lg.x1 - 40, speed: 32, dirX: 1, lines: ['SE UPP, TRUCK!', 'PIP PIP!'], tip: 7 });
+    A({ role: 'staff', mode: 'truck', look: staffLook(rng, { hat: 'cap', cap: '#f2c230', top: 'hiVis', shirt: '#f2c230' }), x: lg.x0 + 40, y: lg.y, x0: lg.x0 + 10, x1: lg.x1 - 40, speed: 32, dirX: 1, lines: [$t('SE UPP, TRUCK!'), $t('PIP PIP!')], tip: 7 });
     // påfyllare i lagret och i marknadshallen, vagnkörare
     const shelves = F.bays.slice(1, 7).map((bx) => [bx + 40, F.lager.fy + 50, 'fyll']);
-    if (shelves.length) A({ role: 'staff', mode: 'patrol', look: staffLook(rng), pts: shelves, carry: 'carton', speed: 28, lines: ['FYLLER PÅ!', 'NYA KARTONGER!'], tip: 7 });
+    if (shelves.length) A({ role: 'staff', mode: 'patrol', look: staffLook(rng), pts: shelves, carry: 'carton', speed: 28, lines: [$t('FYLLER PÅ!'), $t('NYA KARTONGER!')], tip: 7 });
     // påfyllaren står på golvet framför vägghyllan (inte inne i den)
     const deptPts = F.depts.slice(0, 6).map((r) => [...F.walker.nearestFree(r.x0 + 40, r.fy + 40), 'fyll']);
-    if (deptPts.length) A({ role: 'staff', mode: 'patrol', look: staffLook(rng, { style: 'ponytail' }), pts: deptPts, carry: 'carton', speed: 30, lines: ['FYLLER PÅ!', 'KAN JAG HJÄLPA TILL?'], tip: 0 });
+    if (deptPts.length) A({ role: 'staff', mode: 'patrol', look: staffLook(rng, { style: 'ponytail' }), pts: deptPts, carry: 'carton', speed: 30, lines: [$t('FYLLER PÅ!'), $t('KAN JAG HJÄLPA TILL?')], tip: 0 });
     const cageLane = [[F.depts[0]?.x0 ?? 700, AISLE1 + 2, 'stå'], [F.turnCx - 20, AISLE1 + 2, 'stå'], [F.turnCx - 20, AISLE2 - 2, 'stå'], [F.kassa.x1 + 20, AISLE2 - 2, 'stå']];
-    A({ role: 'staff', mode: 'patrol', look: staffLook(rng, { style: 'buzz' }), pts: cageLane, push: 'cage', speed: 26, lines: ['SE UPP BAKOM!', 'HEJ!'], tip: 8 });
-    A({ role: 'staff', mode: 'patrol', look: staffLook(rng), pts: [[lg.x0 + 60, lg.cart, 'stå'], [lg.x1 - 110, lg.cart, 'stå']], push: 'flat', speed: 24, lines: ['PLATTA PAKET!', 'TUNGT!'], tip: 7 });
+    A({ role: 'staff', mode: 'patrol', look: staffLook(rng, { style: 'buzz' }), pts: cageLane, push: 'cage', speed: 26, lines: [$t('SE UPP BAKOM!'), $t('HEJ!')], tip: 8 });
+    A({ role: 'staff', mode: 'patrol', look: staffLook(rng), pts: [[lg.x0 + 60, lg.cart, 'stå'], [lg.x1 - 110, lg.cart, 'stå']], push: 'flat', speed: 24, lines: [$t('PLATTA PAKET!'), $t('TUNGT!')], tip: 7 });
     // barnen i Småland
     const sm = an.smaland;
     for (let i = 0; i < 3; i++) A({ role: 'barn', mode: 'kid', look: kidLook(rng), x: sm.x0 + 8 + i * 22, y: sm.y, hx: sm.x0 + 8 + i * 22, ph: rng() * 6 });
@@ -98,8 +99,8 @@ export function makeFolk(F, rng) {
     for (const [hx, hy] of an.hightables) A({ role: 'kund', mode: 'still', look: kundLook(rng), x: hx, y: hy, dir: hx > an.korv[0] + 130 ? 'left' : 'right', frame: 9, holding: 'korv' });
   } else {
     // restaurangen: kocken, kassörskan
-    A({ role: 'staff', mode: 'still', look: staffLook(rng, { hat: 'cap', cap: '#f4f1ea', top: 'chef', shirt: '#f4f1ea', accent: '#f2c230' }), x: an.cook[0], y: an.cook[1], lines: ['KÖTTBULLAR, VARSÅGOD!', 'LINGON?', 'MOS ELLER POTATIS?'], tip: 2 });
-    A({ role: 'staff', mode: 'still', look: staffLook(rng, { style: 'bob' }), x: an.cashierR[0], y: an.cashierR[1], lines: ['NÄSTA, TACK!', 'PÅTÅR INGÅR!', 'SMAKLIG MÅLTID!'], tip: 8 });
+    A({ role: 'staff', mode: 'still', look: staffLook(rng, { hat: 'cap', cap: '#f4f1ea', top: 'chef', shirt: '#f4f1ea', accent: '#f2c230' }), x: an.cook[0], y: an.cook[1], lines: [$t('KÖTTBULLAR, VARSÅGOD!'), $t('LINGON?'), $t('MOS ELLER POTATIS?')], tip: 2 });
+    A({ role: 'staff', mode: 'still', look: staffLook(rng, { style: 'bob' }), x: an.cashierR[0], y: an.cashierR[1], lines: [$t('NÄSTA, TACK!'), $t('PÅTÅR INGÅR!'), $t('SMAKLIG MÅLTID!')], tip: 8 });
     // hjälpsamma säljare i utställningen
     const rooms = F.rooms;
     const stops = (a, b) => rooms.slice(a, b).map((r) => [r.x1 - 14, r.fy + FD - 6, 'hjälp']);
@@ -107,7 +108,7 @@ export function makeFolk(F, rng) {
     A({ role: 'staff', mode: 'patrol', look: staffLook(rng, { style: 'long' }), pts: stops(0, Math.min(nA, 5)), speed: 26, lines: HELP_LINES, tip: 1 });
     if (rooms.length > nA) A({ role: 'staff', mode: 'patrol', look: staffLook(rng, { style: 'short', glasses: 'square' }), pts: stops(nA, Math.min(rooms.length, nA + 5)), speed: 26, lines: HELP_LINES, tip: 6 });
     // påfyllaren står mellan väggraden och mittraden, vänd mot väggen
-    if (rooms.length > 2) A({ role: 'staff', mode: 'patrol', look: staffLook(rng, { style: 'curly' }), pts: rooms.slice(1, 5).map((r) => [...F.walker.nearestFree(r.x0 + 24, r.fy + 36), 'fyll']), carry: 'carton', speed: 28, lines: ['FYLLER PÅ!', 'NYA PRISLAPPAR!'], tip: 0 });
+    if (rooms.length > 2) A({ role: 'staff', mode: 'patrol', look: staffLook(rng, { style: 'curly' }), pts: rooms.slice(1, 5).map((r) => [...F.walker.nearestFree(r.x0 + 24, r.fy + 36), 'fyll']), carry: 'carton', speed: 28, lines: [$t('FYLLER PÅ!'), $t('NYA PRISLAPPAR!')], tip: 0 });
     // gäster som redan sitter och äter
     const free = F.seats.slice();
     for (let i = 0; i < 7 && free.length; i++) {
@@ -207,7 +208,7 @@ export function makeFolk(F, rng) {
       if (!move(a, dt)) {
         if (a.state === 'detour') {
           a.dir = 'up'; a.state = 'look'; a.wait = 2 + rng() * 3;
-          if (a.ex.seat && rng() < 0.65) { a.state = 'sit'; a.x = a.ex.seat[0]; a.y = a.ex.seat[1]; a.sortY = a.ex.base + 0.5; a.dir = 'down'; a.frame = 5; a.wait = 3 + rng() * 4; if (rng() < 0.5) say(a, ['SKÖN!', 'MJUK!', 'DEN HÄR!', 'HMM...'][(rng() * 4) | 0], 2.5); }
+          if (a.ex.seat && rng() < 0.65) { a.state = 'sit'; a.x = a.ex.seat[0]; a.y = a.ex.seat[1]; a.sortY = a.ex.base + 0.5; a.dir = 'down'; a.frame = 5; a.wait = 3 + rng() * 4; if (rng() < 0.5) say(a, [$t('SKÖN!'), $t('MJUK!'), $t('DEN HÄR!'), $t('HMM...')][(rng() * 4) | 0], 2.5); }
         } else a.state = null;
       }
       return;
@@ -238,7 +239,7 @@ export function makeFolk(F, rng) {
       a.wait -= dt;
       const p = a.pts[a.pi ?? 0];
       if (p[2] === 'fyll') { a.dir = 'up'; a.frame = a.wait > 1.5 ? 9 : 0; if (a.wait < 1.5) a.hands = null; }
-      else if (p[2] === 'hjälp') { a.dir = 'down'; a.frame = 0; if (near && !a.bubble && (a.helped ?? 0) <= 0) { say(a, 'KAN JAG HJÄLPA TILL?', 3); a.helped = 12; } }
+      else if (p[2] === 'hjälp') { a.dir = 'down'; a.frame = 0; if (near && !a.bubble && (a.helped ?? 0) <= 0) { say(a, $t('KAN JAG HJÄLPA TILL?'), 3); a.helped = 12; } }
       if (a.wait <= 0) { a.pi = ((a.pi ?? 0) + 1) % a.pts.length; nav(a, a.pts[a.pi][0], a.pts[a.pi][1]); a.hands = a.carry || null; a.frame = 0; }
       return;
     }
@@ -351,7 +352,7 @@ export function makeFolk(F, rng) {
     const a = list.find((x) => x.mode === 'route' && !x.push);
     if (!ex || !a) return false;
     a.ex = ex; a.state = 'sit'; a.x = ex.seat[0]; a.y = ex.seat[1]; a.sortY = ex.base + 0.5; a.dir = 'down'; a.frame = 5; a.wait = 8; a.path = [];
-    say(a, 'SKÖN!', 4);
+    say(a, $t('SKÖN!'), 4);
     return true;
   }
   return { list, update, drawables, bubbles, staffAt, say, forceSit, riders: () => F.esc.flatMap((e) => e.riders) };

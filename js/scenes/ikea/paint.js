@@ -11,6 +11,7 @@ import {
 import { paintDeptWall, paintLampCeiling, paintRacks, hazard } from './art-market.js';
 import { paintSlab, paintPit, paintLiftFrame } from './art-transit.js';
 import { paintMenuBoard } from './food.js';
+import { $t } from '../../core/i18n.js';
 
 const YEL = 0xf6cf2a, BLUE = 0x1d51a0, NAVY = 0x0c2a5c;
 
@@ -18,7 +19,7 @@ const YEL = 0xf6cf2a, BLUE = 0x1d51a0, NAVY = 0x0c2a5c;
 function paintMap(P, x, y, w, h, F) {
   P.rect(x + 2, y + 2, w, h, 0x000000, 0.2);
   P.rect(x, y, w, h, 0xf4f1ea); P.box(x, y, w, h, 0x3a3f4a); P.box(x + 1, y + 1, w - 2, h - 2, 0xc8c2b8);
-  text(P, SMALL, `PLAN ${F.n}`, x + 3, y + 3, BLUE);
+  text(P, SMALL, $t`PLAN ${F.n}`, x + 3, y + 3, BLUE);
   const mx = x + 3, my = y + 10, mw = w - 6, mh = h - 13;
   const sx = mw / F.W, sy = mh / H;
   P.rect(mx, my, mw, mh, 0xdcd8cd);
@@ -48,17 +49,17 @@ function paintCore1(P, F) {
     P.px(x, y, c);
   }
   P.hl(r.wl, 2, r.wr - r.wl, NAVY);
-  bigSign(P, bx + 120, 3, 'MÖBELJÄTTEN');
+  bigSign(P, bx + 120, 3, $t('MÖBELJÄTTEN'));
   paintGlassDoors(P, F.door.x0, F.door.y0, F.door.x1 - F.door.x0, A_FLOOR);
-  exitSign(P, bx + 38, 20, 'IN / UT');
+  exitSign(P, bx + 38, 20, $t('IN / UT'));
   doorMat(P, F.door.x0 - 6, F.door.x1 + 6, A_FLOOR, 16);
-  planBadge(P, bx + 70, 36, 1, 'ENTRÉPLAN');
+  planBadge(P, bx + 70, 36, 1, $t('ENTRÉPLAN'));
   paintMap(P, bx + 140, 34, 54, 32, F);
   paintLiftFrame(P, F.lift.x, A_FLOOR, 1);
   // över rulltrapporna: takbjälke mot plan 2 och en hängande skylt (nedanför
   // takbandet 0–12, där spelets planvisare ligger)
   const [eu, en] = F.esc;
-  for (const [e, lbl] of [[eu, 'UPP'], [en, 'NER']]) {
+  for (const [e, lbl] of [[eu, $t('UPP')], [en, $t('NER')]]) {
     // golvmarkering vid påstigningen
     const [px] = e.board;
     P.rect(px - 9, e.ly - 8, 18, 14, 0x000000, 0.08);
@@ -67,15 +68,15 @@ function paintCore1(P, F) {
     text(P, SMALL, lbl, tx + 3, e.ly + 12, 0xffffff);
     arrowGlyph(P, tx + tw - 5, e.ly + 14, e.up ? 'U' : 'D', YEL);
   }
-  paintSlab(P, F.slab.x0, F.slab.x1, F.slab.y, 'PLAN 2');
-  roomSign(P, Math.round((eu.lx + en.lx) / 2), A_WALL, 0, 'RULLTRAPPOR TILL PLAN 2', { wire: 4, bg: YEL, fg: NAVY });
+  paintSlab(P, F.slab.x0, F.slab.x1, F.slab.y, $t('PLAN 2'));
+  roomSign(P, Math.round((eu.lx + en.lx) / 2), A_WALL, 0, $t('RULLTRAPPOR TILL PLAN 2'), { wire: 4, bg: YEL, fg: NAVY });
 }
 
 // ---------- ankomsthallen (plan 2) ----------
 function paintCore2(P, F) {
   const r = F.core, bx = r.x0;
   paintWall(P, r.wl, r.wr, r.wy, r.fy, r.st);
-  planBadge(P, bx + 12, A_WALL + 16, 2, 'UTSTÄLLNING');
+  planBadge(P, bx + 12, A_WALL + 16, 2, $t('UTSTÄLLNING'));
   paintMap(P, bx + 148, A_WALL + 12, 60, 34, F);
   paintLiftFrame(P, F.lift.x, A_FLOOR, 2);
   trackLights(P, r.x0, r.x1, r.wy);
@@ -89,9 +90,9 @@ function paintCore2(P, F) {
     text(P, SMALL, lbl, tx + 3, ty + 2, 0xffffff);
     arrowGlyph(P, tx + tw - 5, ty + 4, up ? 'U' : 'D', YEL);
   };
-  lab(en, 'RULLTRAPPA NER TILL PLAN 1', false);
-  lab(eu, 'FRÅN PLAN 1', true);
-  roomSign(P, bx + 116, r.wy + 1, 0, 'VÄLKOMMEN UPP!', { wire: 0, bg: YEL, fg: NAVY });
+  lab(en, $t('RULLTRAPPA NER TILL PLAN 1'), false);
+  lab(eu, $t('FRÅN PLAN 1'), true);
+  roomSign(P, bx + 116, r.wy + 1, 0, $t('VÄLKOMMEN UPP!'), { wire: 0, bg: YEL, fg: NAVY });
   void eu;
 }
 
@@ -106,8 +107,8 @@ function paintRest(P, F) {
   for (const wx of [bx + 262, bx + 346]) paintWindow(P, wx, fy - 44, 60, 22, 0xe8d8b0);
   for (const lx of [bx + 290, bx + 366]) pendant(P, lx, r.wy - 2, 22, 0xf2c230);
   for (const lx of [bx + 60, bx + 130, bx + 200]) pendant(P, lx, r.wy - 2, 4, 0xf4f1ea, false);
-  roomSign(P, bx + 330, r.wy + 1, 0, 'RESTAURANG', { wire: 0, bg: 0x6a3a1c, fg: YEL });
-  text(P, SMALL, 'KAFFE PÅTÅR INGÅR', bx + 262, fy - 14, 0xf4e2bc, 0.9);
+  roomSign(P, bx + 330, r.wy + 1, 0, $t('RESTAURANG'), { wire: 0, bg: 0x6a3a1c, fg: YEL });
+  text(P, SMALL, $t('KAFFE PÅTÅR INGÅR'), bx + 262, fy - 14, 0xf4e2bc, 0.9);
   // kakel bakom serveringen
   for (let y = fy - 14; y < fy - 2; y++) for (let x = bx + 4; x < bx + 256; x++) {
     const tx = (x - bx) % 8, ty = (y - fy) % 6;
@@ -119,8 +120,8 @@ function paintRest(P, F) {
 function paintKassa(P, F) {
   const r = F.kassa, bx = r.x0;
   paintWall(P, r.wl, r.wr, r.wy, r.fy, r.st);
-  roomSign(P, bx + r.IW / 2, r.wy + 10, 0, 'KASSOR', { wire: 0 });
-  text(P, SMALL, 'ALLT DU KÖPT ÄR REDAN BETALT', bx + r.IW / 2 - 56, r.wy + 28, BLUE);
+  roomSign(P, bx + r.IW / 2, r.wy + 10, 0, $t('KASSOR'), { wire: 0 });
+  text(P, SMALL, $t('ALLT DU KÖPT ÄR REDAN BETALT'), bx + r.IW / 2 - 56, r.wy + 28, BLUE);
   trackLights(P, r.x0, r.x1, r.wy);
   for (let i = 0; i < 3; i++) { const x = bx + 20 + i * 84; P.rect(x - 2, r.fy + 48, 74, 8, 0x3a3e48); P.box(x - 2, r.fy + 48, 74, 8, 0x2a2a30); }
 }
@@ -128,13 +129,14 @@ function paintExit(P, F) {
   const r = F.exit, bx = r.x0, d = F.exitDoor;
   paintWall(P, r.wl, r.wr, r.wy, r.fy, r.st);
   paintGlassDoors(P, d.x0, r.fy - 44, d.x1 - d.x0, r.fy);
-  exitSign(P, (d.x0 + d.x1) >> 1, r.fy - 57, 'UTGÅNG');
+  exitSign(P, (d.x0 + d.x1) >> 1, r.fy - 57, $t('UTGÅNG'));
   doorMat(P, d.x0 - 4, d.x1 + 4, r.fy, 14);
-  text(P, SMALL, 'TACK FÖR', bx + r.IW - 58, r.wy + 18, BLUE);
-  text(P, SMALL, 'BESÖKET!', bx + r.IW - 58, r.wy + 25, BLUE);
-  text(P, SMALL, 'VÄLKOMMEN', bx + 16, r.wy + 18, BLUE);
-  text(P, SMALL, 'ÅTER!', bx + 16, r.wy + 25, BLUE);
-  roomSign(P, bx + 40, r.wy + 34, 0, 'BISTRO', { wire: 0, bg: 0xd8231e, fg: 0xffffff });
+  text(P, SMALL, $t('TACK FÖR\nBESÖKET!').split('\n')[0], bx + r.IW - 58, r.wy + 18, BLUE);
+  text(P, SMALL, $t('TACK FÖR\nBESÖKET!').split('\n')[1] || '', bx + r.IW - 58, r.wy + 25, BLUE);
+  text(P, SMALL, $t('VÄLKOMMEN\nÅTER!').split('\n')[0], bx + 16, r.wy + 18, BLUE);
+  text(P, SMALL, $t('VÄLKOMMEN\nÅTER!').split('\n')[1] || '', bx + 16, r.wy + 25, BLUE);
+
+  roomSign(P, bx + 40, r.wy + 34, 0, $t('BISTRO'), { wire: 0, bg: 0xd8231e, fg: 0xffffff });
   trackLights(P, r.x0, r.x1, r.wy);
 }
 
@@ -144,13 +146,13 @@ function paintLager(P, F) {
   paintWall(P, r.wl, r.wr, r.wy, r.fy, r.st);
   const rx0 = bx + 8, bw = 40;
   const n = Math.floor((r.IW - 16) / bw);
-  const scx = bx + r.IW / 2, sw = textW(SMALL, 'SJÄLVBETJÄNINGSLAGER') + 10; // lagrets skylt – inga gångskyltar under den
+  const scx = bx + r.IW / 2, sw = textW(SMALL, $t('SJÄLVBETJÄNINGSLAGER')) + 10; // lagrets skylt – inga gångskyltar under den
   paintRacks(P, rx0, rx0 + n * bw, fy, r.wy, 11, bw, [scx - sw / 2 - 3, scx + sw / 2 + 3]);
   // gul/svart kant framför pallställen + körfält för truckarna
   hazard(P, rx0, fy + 45, n * bw, 2);
   for (let x = bx + 6; x < r.x1 - 10; x += 16) P.rect(x, fy + 88, 8, 2, 0xf2c230, 0.85);
-  text(P, SMALL, 'TRUCK', bx + 40, fy + 58, 0xf2c230, 0.7);
-  roomSign(P, bx + r.IW / 2, r.wy - 2, 0, 'SJÄLVBETJÄNINGSLAGER', { wire: 0, bg: YEL, fg: NAVY });
+  text(P, SMALL, $t('TRUCK'), bx + 40, fy + 58, 0xf2c230, 0.7);
+  roomSign(P, bx + r.IW / 2, r.wy - 2, 0, $t('SJÄLVBETJÄNINGSLAGER'), { wire: 0, bg: YEL, fg: NAVY });
   // lampor i taket (lysrör)
   for (let x = bx + 30; x < r.x1 - 20; x += 80) { P.rect(x, r.wy - 1, 24, 2, 0xf4f8ff); P.ell(x + 12, fy + 40, 34, 16, 0xf4f8ff, 0.08, 4); }
 }
@@ -219,7 +221,8 @@ export function paintFloorBg(F) {
     const cx = F.turnCx;
     P.rect(cx - 22, B_WALL + 18, 44, 22, 0x000000, 0.12);
     P.rect(cx - 21, B_WALL + 16, 42, 20, BLUE); P.box(cx - 21, B_WALL + 16, 42, 20, NAVY);
-    text(P, SMALL, 'FORTSÄTT', cx - 17, B_WALL + 19, YEL);
+    text(P, SMALL, $t('FORTSÄTT'), cx - 17, B_WALL + 19, YEL);
+
     arrowGlyph(P, cx, B_WALL + 30, 'D', 0xffffff);
   }
   // 3) gula gången

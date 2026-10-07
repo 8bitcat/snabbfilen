@@ -2,6 +2,7 @@
 import * as GAME from '../../game.js';
 import { FRAMES } from '../../data/frames.js';
 import { SMALL, textW } from '../../core/floor-pix.js';
+import { $t } from '../../core/i18n.js';
 
 // DATORSAKERNA säljs inte längre på MÖBELJÄTTEN utan i elektronikbutiken BLIXT i Downtown
 // (js/scenes/shop-elektronik.js). De ligger kvar i GAME.KATALOG – sparfiler, förrådet,
@@ -11,8 +12,8 @@ export const ELEKTRONIK = new Set(['tv', 'retrotv', 'spelkonsol', 'datortorn', '
 export const isElektronik = (k) => { const kind = typeof k === 'string' ? k : k?.kind; return ELEKTRONIK.has(kind) || (typeof k === 'object' && k?.shop === 'elektronik'); };
 // vad en utställd elektronikpryl heter i varuhusets texter ("Gamingriggen är bara utställd")
 // – TV-sorten är både platt-TV:n (modell 1) och gamingriggarna (övriga modeller)
-const ELEK_NAMN = { retrotv: 'Retro-TV:n', spelkonsol: 'Spelkonsolen', datortorn: 'Datortornet', dator: 'Datorn', laptop: 'Den bärbara datorn', telefon: 'Telefonen' };
-export const elektronikName = (k, v = 0) => (k === 'tv' ? ((v | 0) === 1 ? 'TV:n' : 'Gamingriggen') : ELEK_NAMN[k] || 'Den');
+const ELEK_NAMN = { retrotv: $t('Retro-TV:n'), spelkonsol: $t('Spelkonsolen'), datortorn: $t('Datortornet'), dator: $t('Datorn'), laptop: $t('Den bärbara datorn'), telefon: $t('Telefonen') };
+export const elektronikName = (k, v = 0) => (k === 'tv' ? ((v | 0) === 1 ? $t('TV:n') : $t('Gamingriggen')) : ELEK_NAMN[k] || $t('Den'));
 const ALL = () => (Array.isArray(GAME.KATALOG) ? GAME.KATALOG : []);
 // Möbeljättens sortiment = katalogen utan elektroniken
 export const KAT = () => ALL().filter((k) => k && !isElektronik(k) && !k.shop); // (julpyntet och Halloween-pyntet har egna butiker)
@@ -34,7 +35,7 @@ export const varOf = (k, v) => {
 };
 export const isWallKind = (k) => !!katOf(k)?.wall;
 // typsnittet saknar en del tecken – byt ut dem mot något läsbart
-const clean = (s) => String(s).toUpperCase().replace(/&/g, 'OCH').replace(/[–—]/g, '-').replace(/[^A-ZÅÄÖÉ0-9 .,:!?'/%+=-]/g, '');
+const clean = (s) => String(s).toUpperCase().replace(/&/g, 'OCH').replace(/[–—]/g, '-').replace(/[^A-ZÅÄÖÉÁÀÂÃÇĆÈÊËÍÌÎÏÑŃÓÒÔÕŚŹŻÚÙÛÜŸÝĄĘŁŒÆ¡¿€$0-9 .,:!?'/%+=-]/g, '');
 // långa namn kortas vid ett ordmellanrum (inte mitt i ett ord); en avhuggen
 // bisats ("… MED TVÅ", "… OCH") tas bort helt ("BOKHYLLA MED TVÅ HYLLOR" → "BOKHYLLA")
 const TAG_MAX = 20;
@@ -46,7 +47,8 @@ function shorten(s) {
   return trimmed.length >= 4 ? trimmed : cut;
 }
 export const tagName = (k) => shorten(clean(katOf(k)?.name || k));
-export const tagPrice = (k) => `${katOf(k)?.price ?? '?'}:-`;
+export const tagPrice = (k) => $t`${katOf(k)?.price ?? '?'}:-`;
+
 export const tagDims = (k) => ({ w: Math.max(textW(SMALL, tagName(k)), textW(SMALL, tagPrice(k))) + 6, h: 15 });
 export const signText = clean;
 // En signatur som ändras när katalogen eller atlasens ramar ändras (då byggs varuhuset om).

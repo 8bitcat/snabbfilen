@@ -24,6 +24,7 @@ import { openBuy as openFurnBuy } from './shop-mobler.js';
 import { furnArt, drawArt, halo } from './room.js';
 import { katalogOf } from '../game.js';
 import { FRAMES } from '../data/frames.js';
+import { $t } from '../core/i18n.js';
 
 const W = 640, H = 216, WALL_Y = 72;
 const DOOR = { x0: 18, x1: 50 };
@@ -45,28 +46,28 @@ const PYNT = [
 const MANNE = { skin: '#ece6ee', style: 'bald', hair: '#ecd489', beard: false, glasses: false, phones: false, bag: null, blush: false, hat: null, top: 'tee', shirt: '#f4f1ea', accent: '#f4f1ea', bottom: 'jeans', pants: '#3f5f8f', shoes: '#1c1c1c', cap: '#d9433b', build: 5 };
 const doll = (o) => ({ ...MANNE, ...o });
 const DRAKTER = [
-  { id: 'haxa', namn: 'HÄXA', x: 80, y: 116, parts: [['hat-witch', { cap: '#26242c', accent: '#8e5bd1' }], ['top-robe', { shirt: '#26242c' }]],
+  { id: 'haxa', namn: $t('HÄXA'), x: 80, y: 116, parts: [['hat-witch', { cap: '#26242c', accent: '#8e5bd1' }], ['top-robe', { shirt: '#26242c' }]],
     look: doll({ style: 'long', hair: '#3b2619', hat: 'witch', cap: '#26242c', accent: '#8e5bd1', top: 'robe', shirt: '#26242c', bottom: 'skirt', pants: '#26242c', shoes: '#1c1c1c', build: 4 }) },
-  { id: 'trollkarl', namn: 'TROLLKARL', x: 124, y: 116, parts: [['hat-wizard', { cap: '#3f4fa8' }], ['top-robe-stars', { shirt: '#3f4fa8', print2: '#f8d860' }]],
+  { id: 'trollkarl', namn: $t('TROLLKARL'), x: 124, y: 116, parts: [['hat-wizard', { cap: '#3f4fa8' }], ['top-robe-stars', { shirt: '#3f4fa8', print2: '#f8d860' }]],
     look: doll({ style: 'short', hair: '#f4f1ea', beard: 'long', hat: 'wizard', cap: '#3f4fa8', top: 'robe', topPrint: 'stars', shirt: '#3f4fa8', print2: '#f8d860', bottom: 'pants', pants: '#2d3a5c' }) },
-  { id: 'vampyr', namn: 'VAMPYR', x: 168, y: 116, parts: [['top-vampire', { shirt: '#1d1d22', accent: '#b8262e' }]],
+  { id: 'vampyr', namn: $t('VAMPYR'), x: 168, y: 116, parts: [['top-vampire', { shirt: '#1d1d22', accent: '#b8262e' }]],
     look: doll({ style: 'side', hair: '#1d1714', top: 'vampire', shirt: '#1d1d22', accent: '#b8262e', bottom: 'suitPants', pants: '#1d1d22' }) },
-  { id: 'pirat', namn: 'PIRAT', x: 212, y: 116, parts: [['hat-pirate', { cap: '#1d1d22' }], ['top-pirate', { shirt: '#8a2a2e', accent: '#e8b830' }], ['glasses-eyepatch', {}]],
+  { id: 'pirat', namn: $t('PIRAT'), x: 212, y: 116, parts: [['hat-pirate', { cap: '#1d1d22' }], ['top-pirate', { shirt: '#8a2a2e', accent: '#e8b830' }], ['glasses-eyepatch', {}]],
     look: doll({ style: 'long', hair: '#6b4226', hat: 'pirate', cap: '#1d1d22', top: 'pirate', shirt: '#8a2a2e', accent: '#e8b830', glasses: 'eyepatch', bottom: 'pants', pants: '#3a2a1a' }) },
-  { id: 'hjalte', namn: 'HJÄLTE', x: 76, y: 176, parts: [['top-hero', { shirt: '#3a7bd5', accent: '#d9433b' }], ['glasses-heromask', {}]],
+  { id: 'hjalte', namn: $t('HJÄLTE'), x: 76, y: 176, parts: [['top-hero', { shirt: '#3a7bd5', accent: '#d9433b' }], ['glasses-heromask', {}]],
     look: doll({ style: 'short', hair: '#1d1714', top: 'hero', shirt: '#3a7bd5', accent: '#d9433b', glasses: 'heroMask', bottom: 'leggings', pants: '#3a7bd5' }) },
-  { id: 'djavul', namn: 'DJÄVUL', x: 116, y: 176, parts: [['hat-devil', { cap: '#d83a4a' }], ['top-vampire', { shirt: '#b8262e', accent: '#1d1d22' }]],
+  { id: 'djavul', namn: $t('DJÄVUL'), x: 116, y: 176, parts: [['hat-devil', { cap: '#d83a4a' }], ['top-vampire', { shirt: '#b8262e', accent: '#1d1d22' }]],
     look: doll({ style: 'messy', hair: '#1d1714', hat: 'devil', cap: '#d83a4a', top: 'vampire', shirt: '#b8262e', accent: '#1d1d22', bottom: 'pants', pants: '#7a1a20' }) },
-  { id: 'fe', namn: 'FÉ', x: 156, y: 176, parts: [['bag-fairywings', { bagColor: '#c8f0ff' }], ['bottom-tutu', { shirt: '#f2a0d8', pants2: '#f2a0d8' }], ['hat-tiara', {}, true]],
+  { id: 'fe', namn: $t('FÉ'), x: 156, y: 176, parts: [['bag-fairywings', { bagColor: '#c8f0ff' }], ['bottom-tutu', { shirt: '#f2a0d8', pants2: '#f2a0d8' }], ['hat-tiara', {}, true]],
     look: doll({ style: 'bun', hair: '#ecd489', bag: 'fairyWings', bagColor: '#c8f0ff', bottom: 'tutu', shirt: '#f2a0d8', pants2: '#f2a0d8', pants: '#f2a0d8', hat: 'tiara', blush: true, build: 4 }) },
-  { id: 'angel', namn: 'ÄNGEL', x: 196, y: 176, parts: [['bag-wings', { bagColor: '#f4f1ea' }], ['hat-halo', { cap: '#f8d860' }]],
+  { id: 'angel', namn: $t('ÄNGEL'), x: 196, y: 176, parts: [['bag-wings', { bagColor: '#f4f1ea' }], ['hat-halo', { cap: '#f8d860' }]],
     look: doll({ style: 'wavy', hair: '#d9a95c', bag: 'wings', bagColor: '#f4f1ea', hat: 'halo', cap: '#f8d860', top: 'tee', shirt: '#f4f1ea', bottom: 'skirt', pants: '#f4f1ea', blush: true, build: 4 }) },
   // de nya Halloween-dräkterna (0.88): spöket (lakan), skelettet och pumpan
-  { id: 'spoke', namn: 'SPÖKE', x: 256, y: 116, parts: [['hat-ghost', { cap: '#f4f6fa' }]],
+  { id: 'spoke', namn: $t('SPÖKE'), x: 256, y: 116, parts: [['hat-ghost', { cap: '#f4f6fa' }]],
     look: doll({ style: 'short', hair: '#3b2619', hat: 'ghost', cap: '#f4f6fa' }) },
-  { id: 'skelett', namn: 'SKELETT', x: 236, y: 176, parts: [['top-hoodie-skeleton', { shirt: '#1c1c22', print2: '#f4f1ea' }], ['bottom-leggings-skeleton', { pants: '#1c1c22', pants2: '#f4f1ea' }]],
+  { id: 'skelett', namn: $t('SKELETT'), x: 236, y: 176, parts: [['top-hoodie-skeleton', { shirt: '#1c1c22', print2: '#f4f1ea' }], ['bottom-leggings-skeleton', { pants: '#1c1c22', pants2: '#f4f1ea' }]],
     look: doll({ style: 'buzz', hair: '#1d1714', top: 'hoodie', topPrint: 'skeleton', shirt: '#1c1c22', print2: '#f4f1ea', bottom: 'leggings', bottomPrint: 'skeleton', pants: '#1c1c22', pants2: '#f4f1ea' }) },
-  { id: 'pumpa', namn: 'PUMPA', x: 276, y: 176, parts: [['top-puffer-pumpkin', { shirt: '#e0701c', print2: '#1c1820' }]],
+  { id: 'pumpa', namn: $t('PUMPA'), x: 276, y: 176, parts: [['top-puffer-pumpkin', { shirt: '#e0701c', print2: '#1c1820' }]],
     look: doll({ style: 'messy', hair: '#6b4226', top: 'puffer', topPrint: 'pumpkin', shirt: '#e0701c', print2: '#1c1820', bottom: 'pants', pants: '#2f6a2a', hat: 'beanie', cap: '#2f8f46' }) },
 ];
 // hattväggen: byster på två hyllor
@@ -74,12 +75,12 @@ const HATTAR = [['hat-witch', '#26242c'], ['hat-catears', '#1d1d22'], ['hat-bunn
   ['hat-viking', '#8a5a33'], ['glasses-heromask', null]];
 const HILDA = { skin: '#b8d8a0', hair: '#26242c', style: 'long', hat: 'witch', cap: '#26242c', accent: '#46a35a', top: 'robe', shirt: '#4a2a5a', bottom: 'skirt', pants: '#26242c', shoes: '#1c1c1c', glasses: 'round', beard: false, phones: false, bag: null, blush: false, build: 4 };
 const HILDA_SAY = [
-  'Hihihi! Välkommen till Maskeraden! 🎃 Prova en dräkt – du ser dig själv i den direkt.',
-  'Har du en dräkt på dig? Tryck på 🎭-knappen så gör den sin grej – spöket skrämmer, fén trollar!',
-  'Pumplyktorna tänder du hemma – klicka på pumpan så får den ljus i sig!',
-  'Våga öppna spöklådan där borta … om du törs. 👻',
-  'Häxhatten är min egen design. Den sitter som gjuten!',
-  'Kitteln? Bara lite trolldryck. Smaka inte!',
+  $t('Hihihi! Välkommen till Maskeraden! 🎃 Prova en dräkt – du ser dig själv i den direkt.'),
+  $t('Har du en dräkt på dig? Tryck på 🎭-knappen så gör den sin grej – spöket skrämmer, fén trollar!'),
+  $t('Pumplyktorna tänder du hemma – klicka på pumpan så får den ljus i sig!'),
+  $t('Våga öppna spöklådan där borta … om du törs. 👻'),
+  $t('Häxhatten är min egen design. Den sitter som gjuten!'),
+  $t('Kitteln? Bara lite trolldryck. Smaka inte!'),
 ];
 
 // ================= bakgrunden =================
@@ -106,23 +107,23 @@ function paintBg() {
   P.rect(DOOR.x0 - 3, 20, DOOR.x1 - DOOR.x0 + 6, WALL_Y - 20, 0x1a1020);
   for (let y = 22; y < WALL_Y; y++) for (let x = DOOR.x0; x < DOOR.x1; x++) P.px(x, y, mix(0x6a3a22, 0x4a2a16, ((x - DOOR.x0) % 8 === 0 ? 0.6 : 0) + hash(x >> 2, y, 3) * 0.2));
   P.vl(DOOR.x0 + 16, 22, WALL_Y - 22, 0x2a1a10);
-  P.rect(DOOR.x0 + 6, 26, 20, 9, 0x1d2b1f); text(P, SMALL, 'UT', DOOR.x0 + 12, 28, 0x6fe08a);
+  P.rect(DOOR.x0 + 6, 26, 20, 9, 0x1d2b1f); text(P, SMALL, $t('UT'), DOOR.x0 + 12, 28, 0x6fe08a);
   P.px(DOOR.x0 + 13, 48, 0xe8b830); P.px(DOOR.x0 + 18, 48, 0xe8b830);
   // skyltarna
-  bigSign(P, 'DRÄKTER', 200, 4, 0x1e1228, 0xe8762a, 0xffb060);
-  bigSign(P, 'KASSA', DESK.x + DESK.w / 2, 4, 0x1e1228, 0x8af08a, 0xc8ffc8);
-  bigSign(P, 'PUMPOR + PYNT', 530, 4, 0x1e1228, 0xe8762a, 0xffb060);
+  bigSign(P, $t('DRÄKTER'), 200, 4, 0x1e1228, 0xe8762a, 0xffb060);
+  bigSign(P, $t('KASSA'), DESK.x + DESK.w / 2, 4, 0x1e1228, 0x8af08a, 0xc8ffc8);
+  bigSign(P, $t('PUMPOR + PYNT'), 530, 4, 0x1e1228, 0xe8762a, 0xffb060);
   // hattväggen: två hyllor
   const hw = HATWALL;
   P.rect(hw.x, hw.y + 8, hw.w, 34, 0x24142e); P.box(hw.x, hw.y + 8, hw.w, 34, 0xe8762a);
-  const ml = 'MASKER + HATTAR', mw = textW(SMALL, ml) + 8; P.rect(hw.x + hw.w / 2 - mw / 2, hw.y + 2, mw, 9, 0x17151a); text(P, SMALL, ml, hw.x + hw.w / 2 - mw / 2 + 4, hw.y + 4, 0xffb060);
+  const ml = $t('MASKER + HATTAR'), mw = textW(SMALL, ml) + 8; P.rect(hw.x + hw.w / 2 - mw / 2, hw.y + 2, mw, 9, 0x17151a); text(P, SMALL, ml, hw.x + hw.w / 2 - mw / 2 + 4, hw.y + 4, 0xffb060);
   { const sy = hw.y + 40; P.rect(hw.x + 1, sy, hw.w - 2, 2, 0xc89a60); P.hl(hw.x + 1, sy, hw.w - 2, 0xe8c080); P.hl(hw.x + 1, sy + 2, hw.w - 2, 0x5a3a20); }
   // provhytten
   const f = FITTING;
   P.rect(f.x, 18, f.w, WALL_Y - 18, 0x1a1020); P.rect(f.x + 2, 22, f.w - 4, WALL_Y - 22, 0x2a1a34);
   for (let y = 23; y < WALL_Y - 1; y++) for (let x = f.x + 3; x < f.x + f.w - 3; x++) { const k = (x - f.x) % 4; P.px(x, y, k === 0 ? 0x4a1a5a : k === 1 ? 0x8a3a9a : 0x6a2a7a); }
   P.hl(f.x + 2, 22, f.w - 4, 0xc8ccd6);
-  const pl = 'PROVHYTT', plw = textW(SMALL, pl) + 6; P.rect(f.x + f.w / 2 - plw / 2, 12, plw, 9, 0x17151a); text(P, SMALL, pl, f.x + f.w / 2 - plw / 2 + 3, 14, 0xffb060);
+  const pl = $t('PROVHYTT'), plw = textW(SMALL, pl) + 6; P.rect(f.x + f.w / 2 - plw / 2, 12, plw, 9, 0x17151a); text(P, SMALL, pl, f.x + f.w / 2 - plw / 2 + 3, 14, 0xffb060);
   // golvet: mörka plankor, en orange löpare och dimma längs väggen (dimman rör sig levande)
   for (let y = WALL_Y; y < H; y++) for (let x = 0; x < W; x++) {
     const row = ((y - WALL_Y) / 7) | 0, off = (hash(row, 1, 7) * 40) | 0, pin = (x + off) % 40;
@@ -171,20 +172,20 @@ export function makeShopMaskerad(A) {
 
   const hatX = (i) => HATWALL.x + 14 + i * 26, hatY = () => HATWALL.y + 40;
   const kitOf = (d) => ({
-    title: `${d.namn[0] + d.namn.slice(1).toLowerCase()}dräkt`, where: 'Maskeradbutiken · dräkterna', dept: 'halloween', icon: '🎭',
-    parts: d.parts.map(([id, colors, optional]) => ({ id, colors, optional: !!optional, label: itemById(id)?.name?.replace(/­/g, '') + (optional ? ' (om du vill)' : '') })),
-    newLabel: 'I dräkten', wearLabel: '🎭 Ta på mig dräkten',
-    allOwnedText: '✓ Hela dräkten är din – ta på dig den!', someOwnedText: '✓ Det du har tar du på dig – eller kryssa i resten.',
-    note: 'Dräkten följer med hem i garderoben – färgerna kan du byta där.',
+    title: $t`${d.namn[0] + d.namn.slice(1).toLowerCase()}dräkt`, where: $t('Maskeradbutiken · dräkterna'), dept: 'halloween', icon: '🎭',
+    parts: d.parts.map(([id, colors, optional]) => ({ id, colors, optional: !!optional, label: itemById(id)?.name?.replace(/­/g, '') + (optional ? ` (${$t('om du vill')})` : '') })),
+    newLabel: $t('I dräkten'), wearLabel: $t('🎭 Ta på mig dräkten'),
+    allOwnedText: $t('✓ Hela dräkten är din – ta på dig den!'), someOwnedText: $t('✓ Det du har tar du på dig – eller kryssa i resten.'),
+    note: $t('Dräkten följer med hem i garderoben – färgerna kan du byta där.'),
   });
   const spots = () => [
-    { id: 'dorr', r: [DOOR.x0, 20, DOOR.x1, WALL_Y + 6], go: [(DOOR.x0 + DOOR.x1) / 2, WALL_Y + 10], label: 'UT', act: () => { play('door'); A.go('city'); } },
-    ...DRAKTER.map((d) => ({ id: 'drakt-' + d.id, drakt: d, r: [d.x - 12, d.y - 40, d.x + 12, d.y + 14], go: [d.x + 20, d.y + 2], label: `${d.namn} · DRÄKT`, act: () => { play('click'); openKit(A, kitOf(d)); } })),
+    { id: 'dorr', r: [DOOR.x0, 20, DOOR.x1, WALL_Y + 6], go: [(DOOR.x0 + DOOR.x1) / 2, WALL_Y + 10], label: $t('UT'), act: () => { play('door'); A.go('city'); } },
+    ...DRAKTER.map((d) => ({ id: 'drakt-' + d.id, drakt: d, r: [d.x - 12, d.y - 40, d.x + 12, d.y + 14], go: [d.x + 20, d.y + 2], label: $t`${d.namn} · DRÄKT`, act: () => { play('click'); openKit(A, kitOf(d)); } })),
     ...HATTAR.map(([id, cap], i) => ({ id: 'hatt-' + id, hatt: i, r: [hatX(i) - 12, hatY(i) - 24, hatX(i) + 12, hatY(i) + 2], go: [hatX(i), WALL_Y + 12], label: (itemById(id)?.name || id).replace(/­/g, '').toUpperCase(), act: () => { play('click'); openBuy(A, itemById(id), { dept: 'halloween', colors: cap ? { cap } : {}, fromDoll: true }); } })),
-    { id: 'provhytt', r: [FITTING.x, 18, FITTING.x + FITTING.w, WALL_Y], go: [FITTING.x + FITTING.w / 2, WALL_Y + 12], label: 'PROVHYTTEN', act: () => talk.say('🪞 Klicka på en dräkt så ser du dig själv i den innan du köper!', () => ({ x: walker.px, y: walker.py - 44 }), 3, { self: true }) },
-    { id: 'hilda', r: [DESK.x, DESK.y - 34, DESK.x + DESK.w, DESK.y + DESK.h], go: [DESK.x + DESK.w / 2, DESK.y + DESK.h + 10], label: 'HÄXAN HILDA', act: () => hSay(HILDA_SAY[sayIdx++ % HILDA_SAY.length]) },
-    { id: 'kittel', r: [KITTEL.x - 16, KITTEL.y - 22, KITTEL.x + 16, KITTEL.y + 2], go: [KITTEL.x, KITTEL.y + 12], label: 'TROLLDRYCK', act: () => { play('slide'); hSay('Rör inte min trolldryck! … Nåja, lukta får du. 🧪', 3); } },
-    { id: 'kista', r: [KISTA.x - 12, KISTA.y - 16, KISTA.x + 12, KISTA.y + 1], go: [KISTA.x, KISTA.y + 10], label: 'SPÖKLÅDAN', act: () => { if (kista > 0) return; kista = 2.4; play('fel'); talk.say('BUUU! 👻', () => ({ x: KISTA.x, y: KISTA.y - 40 }), 1.6); setTimeout(() => toast('😱 Spöket skrämde dig! Spökdräkten hänger bland dräkterna – med den kan DU skrämmas (🎭-knappen).', 'good'), 600); } },
+    { id: 'provhytt', r: [FITTING.x, 18, FITTING.x + FITTING.w, WALL_Y], go: [FITTING.x + FITTING.w / 2, WALL_Y + 12], label: $t('PROVHYTTEN'), act: () => talk.say($t('🪞 Klicka på en dräkt så ser du dig själv i den innan du köper!'), () => ({ x: walker.px, y: walker.py - 44 }), 3, { self: true }) },
+    { id: 'hilda', r: [DESK.x, DESK.y - 34, DESK.x + DESK.w, DESK.y + DESK.h], go: [DESK.x + DESK.w / 2, DESK.y + DESK.h + 10], label: $t('HÄXAN HILDA'), act: () => hSay(HILDA_SAY[sayIdx++ % HILDA_SAY.length]) },
+    { id: 'kittel', r: [KITTEL.x - 16, KITTEL.y - 22, KITTEL.x + 16, KITTEL.y + 2], go: [KITTEL.x, KITTEL.y + 12], label: $t('TROLLDRYCK'), act: () => { play('slide'); hSay($t('Rör inte min trolldryck! … Nåja, lukta får du. 🧪'), 3); } },
+    { id: 'kista', r: [KISTA.x - 12, KISTA.y - 16, KISTA.x + 12, KISTA.y + 1], go: [KISTA.x, KISTA.y + 10], label: $t('SPÖKLÅDAN'), act: () => { if (kista > 0) return; kista = 2.4; play('fel'); talk.say($t('BUUU! 👻'), () => ({ x: KISTA.x, y: KISTA.y - 40 }), 1.6); setTimeout(() => toast($t('😱 Spöket skrämde dig! Spökdräkten hänger bland dräkterna – med den kan DU skrämmas (🎭-knappen).'), 'good'), 600); } },
     ...PYNT.map((p) => { const d = dims(p); return { id: `pynt-${p.k}${p.v}`, pynt: p, r: [p.x - 1, p.y - d.h - 1, p.x + d.w + 1, p.y + 1], go: p.wall ? [p.x + d.w / 2, WALL_Y + 12] : [p.x + d.w / 2, p.y + 10], label: (katalogOf(p.k)?.name || p.k).toUpperCase(), act: () => { play('click'); openFurnBuy(A, p.k); } }; }),
   ];
   const spotAt = (x, y) => spots().find((s) => x >= s.r[0] && x <= s.r[2] && y >= s.r[1] && y <= s.r[3]);
@@ -202,7 +203,7 @@ export function makeShopMaskerad(A) {
     ctx.fillStyle = '#1a1020'; ctx.fillRect(d.x - 11, d.y - 2, 22, 6); ctx.fillStyle = '#e8762a'; ctx.fillRect(d.x - 11, d.y - 2, 22, 1); ctx.fillStyle = '#3a2448'; ctx.fillRect(d.x - 11, d.y + 3, 22, 1);
     drawPerson(ctx, d.x, d.y, d.look, 'down', 0);
     const need = d.parts.filter(([, , opt]) => !opt), all = need.every(([id]) => owns(g, itemById(id))), sum = need.reduce((a, [id]) => a + (owns(g, itemById(id)) ? 0 : priceOf(g, itemById(id))), 0);
-    plate(ctx, d.x, d.y + 6, d.namn, all ? 'DIN!' : `${sum} KR`, all, on);
+    plate(ctx, d.x, d.y + 6, d.namn, all ? $t('DIN!') : $t`${sum} KR`, all, on);
   }
   function drawPynt(ctx, p, on) {
     const a = furnArt(p.k === 'pumplykta' ? 'pumplyktaL' : p.k, p.v);
@@ -212,7 +213,7 @@ export function makeShopMaskerad(A) {
     if (p.k === 'pumplykta') halo(ctx, p.x + a.sw / 2, p.y - a.sh / 2, 14, 8, '#ffb040', 0.12 * (0.8 + 0.2 * Math.sin(t * 9 + p.x)));
     if (p.k === 'haxkittel') halo(ctx, p.x + a.sw / 2, p.y - a.sh, 12, 5, '#8af08a', 0.18);
     drawArt(ctx, a, p.x, p.y - a.sh);
-    tag(ctx, p.x + a.sw / 2, p.y + 2, `${katalogOf(p.k).price}:-`);
+    tag(ctx, p.x + a.sw / 2, p.y + 2, $t`${katalogOf(p.k).price}:-`);
   }
   function drawKittel(ctx) {
     // den stora kitteln: svart gryta på tre ben, grön dryck som bubblar och ånga
@@ -296,7 +297,7 @@ export function makeShopMaskerad(A) {
         const it = itemById(id), x = hatX(i), y = hatY(i), on = focus?.hatt === i;
         if (on) { ctx.fillStyle = 'rgba(255,190,90,.4)'; ctx.fillRect(x - 12, y - 24, 24, 24); }
         bust(ctx, x, y, { ...MANNE, style: 'short', hair: '#3b2619', ...it.look, ...(cap ? { cap } : {}) });
-        tag(ctx, x, y + 3, owns(g, it) ? 'DIN' : `${priceOf(g, it)}:-`, owns(g, it));
+        tag(ctx, x, y + 3, owns(g, it) ? $t('DIN') : $t`${priceOf(g, it)}:-`, owns(g, it));
       });
       for (const p of PYNT) if (p.wall) drawPynt(ctx, p, focus?.pynt === p);
       const list = [...folkDrawables(A, t), selfDrawable(A, walker, t)];

@@ -38,6 +38,7 @@ import { makeShiftCoop } from '../net/coop.js';
 import { planOf, drawShiftHud, drawTimeUp, makePops, abortShift } from './shift.js';
 import { drawPerson, makeLook } from '../core/people.js';
 import { play } from '../core/sound.js';
+import { $t, $n } from '../core/i18n.js';
 
 const FW = 384, FH = 216;
 const XL = -32, XR = 416, WW = XR - XL;      // hela lokalen i världskoordinater (kärnan = 0–384)
@@ -74,20 +75,20 @@ const CLOCK = { x: 76, y: 36 };
 // ---------- rummen och besvären ----------
 // to = vart personalen skickar vidare ("GÅ TILL LABBET!")
 const ROOMS = [
-  { id: 'lakare', name: 'LÄKARE', to: 'LÄKAREN', x0: 104, x1: 134, col: 0x2f6fd8 },
-  { id: 'ssk', name: 'SJUKSKÖTERSKA', to: 'SJUKSKÖTERSKAN', x0: 158, x1: 188, col: 0x9050c8 },
-  { id: 'labb', name: 'LABB', to: 'LABBET', x0: 212, x1: 242, col: 0xe08418 },
-  { id: 'akut', name: 'AKUTEN', to: 'AKUTEN', x0: 258, x1: 302, col: 0xd8342c, double: true },
+  { id: 'lakare', name: $n('LÄKARE'), to: $t('LÄKAREN'), x0: 104, x1: 134, col: 0x2f6fd8 },
+  { id: 'ssk', name: $n('SJUKSKÖTERSKA'), to: $t('SJUKSKÖTERSKAN'), x0: 158, x1: 188, col: 0x9050c8 },
+  { id: 'labb', name: $n('LABB'), to: $t('LABBET'), x0: 212, x1: 242, col: 0xe08418 },
+  { id: 'akut', name: $n('AKUTEN'), to: $t('AKUTEN'), x0: 258, x1: 302, col: 0xd8342c, double: true },
 ];
 ROOMS.forEach((r, i) => { r.i = i; r.cx = (r.x0 + r.x1) >> 1; });
 // p = hur vanliga besvären är bland de vanliga patienterna (akut kommer för sig)
 const SYMS = [
-  { id: 'feber', word: 'FEBER', room: 0, p: 0.21 },
-  { id: 'hosta', word: 'HOSTA', room: 0, p: 0.18 },
-  { id: 'vaccin', word: 'VACCIN', room: 1, p: 0.21 },
-  { id: 'blod', word: 'BLODPROV', room: 2, p: 0.22 },
-  { id: 'arm', word: 'BRUTEN ARM', room: 3, p: 0.18 },
-  { id: 'akut', word: 'AKUT!', room: 3, p: 0, akut: true },
+  { id: 'feber', word: $t('FEBER'), room: 0, p: 0.21 },
+  { id: 'hosta', word: $t('HOSTA'), room: 0, p: 0.18 },
+  { id: 'vaccin', word: $t('VACCIN'), room: 1, p: 0.21 },
+  { id: 'blod', word: $t('BLODPROV'), room: 2, p: 0.22 },
+  { id: 'arm', word: $t('BRUTEN ARM'), room: 3, p: 0.18 },
+  { id: 'akut', word: $t('AKUT!'), room: 3, p: 0, akut: true },
 ];
 const AKUT = SYMS.findIndex((s) => s.akut);
 const symIndex = (s) => (typeof s === 'number' ? s : SYMS.findIndex((x) => x.id === s));
@@ -105,7 +106,7 @@ const STAFF = [
   { skin: '#f6d7bf', hair: '#d9a95c', style: 'ponytail', top: 'doctor', shirt: '#f4f1ea', accent: '#e08418', bottom: 'pants', pants: '#6f7c8a', shoes: '#f2f2f2', glasses: 'round', beard: false, build: 4, hat: null, bag: null },
   { skin: '#a06a43', hair: '#1d1714', style: 'buzz', top: 'nurse', shirt: '#2a7a8a', accent: '#d8342c', bottom: 'pants', pants: '#2a7a8a', shoes: '#1c1c1c', glasses: false, beard: 'stubble', build: 6, hat: null, bag: null },
 ];
-const GREET = ['VÄLKOMMEN IN!', 'KOM IN, KOM IN!', 'HEJ! STIG PÅ!', 'HÄR ÄR DET!'];
+const GREET = [$t('VÄLKOMMEN IN!'), $t('KOM IN, KOM IN!'), $t('HEJ! STIG PÅ!'), $t('HÄR ÄR DET!')];
 
 // ======================= små målarverktyg =======================
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
@@ -317,8 +318,8 @@ function paintNuBox(P) {
     if (i === 1 || j === 1 || i === w - 2 || j === h - 2) return 0x2a2e34;
     return ((X + Y) & 1) && (Y & 1) ? 0x1a1210 : 0x100a08;       // LED-rutnätet
   });
-  text(P, SMALL, 'NU', x0 + 4, y0 + 4, 0x5ad070);
-  text(P, SMALL, 'LUCKA', x0 + 4, y0 + 11, 0x8a6a2a);
+  text(P, SMALL, $t('NU'), x0 + 4, y0 + 4, 0x5ad070);
+  text(P, SMALL, $t('LUCKA'), x0 + 4, y0 + 11, 0x8a6a2a);
 }
 
 // ---------- dörrarna: karm, blad i rummets färg, skylt ovanför, bildbricka ----------
@@ -386,7 +387,7 @@ function paintDoor(P, r) {
     iconPlate(P, r.cx, top + 13, SYMS.filter((s) => s.room === r.i).map((s) => SYMS.indexOf(s)).reverse(), mul(col, 0.8), true);
   }
   // skylten ovanför: färgad bricka med rummets namn
-  const tw = textW(SMALL, r.name), bw = Math.max(w + 2, tw + 8), bx = r.cx - (bw >> 1), by = SIGN_Y;
+  const tw = textW(SMALL, $t(r.name)), bw = Math.max(w + 2, tw + 8), bx = r.cx - (bw >> 1), by = SIGN_Y;
   P.darken(bx + 1, by + 9, bw, 1, 0.8);
   area(P, bx, by, bw, 9, (X, Y, i, j) => {
     if ((i === 0 || i === bw - 1) && (j === 0 || j === 8)) return null;
@@ -395,7 +396,7 @@ function paintDoor(P, r) {
     if (i === 0) return mix(col, WHITE, 0.2);
     return jit(col, X, Y, 30 + r.i, 0.04);
   });
-  stext(P, SMALL, r.name, bx + ((bw - tw) >> 1), by + 2, WHITE, mul(col, 0.5));
+  stext(P, SMALL, $t(r.name), bx + ((bw - tw) >> 1), by + 2, WHITE, mul(col, 0.5));
   if (r.double) { // AKUTEN: röd lampa på var sida om skylten
     for (const lx of [bx - 5, bx + bw + 1]) { knob(P, lx + 2, by + 4, 2, 0xe8342c); }
   }
@@ -404,7 +405,7 @@ function paintDoor(P, r) {
 // ---------- väggen: logga, klocka, galler, affischer, vattenautomat (golv), handsprit, broschyrer ----------
 function paintWallDecor(P) {
   // VÅRDCENTRALEN i gröna bokstäver + korset (övre väggen, dekor)
-  const s = 'VÅRDCENTRALEN', tw = textW(BIG, s), lx = 203 - (tw >> 1), ly = 24;
+  const s = $t('VÅRDCENTRALEN'), tw = textW(BIG, s), lx = 203 - (tw >> 1), ly = 24;
   const cx = lx - 12, cy = ly + 3;
   P.rect(cx - 2, cy - 5, 5, 11, GREEN); P.rect(cx - 5, cy - 2, 11, 5, GREEN);
   P.rect(cx - 1, cy - 4, 3, 9, GREEN_L); P.rect(cx - 4, cy - 1, 9, 3, GREEN_L);
@@ -456,13 +457,13 @@ function paintReceptionWall(P) {
   rows(P, x0, 80, XR - x0, [0x6a4e30, 0xf6e6c4]);
   P.vl(x0, CEIL + 2, 80 - CEIL - 2, 0x8a6a42);
   // RECEPTION: vit skylt med gröna bokstäver och kors
-  const s = 'RECEPTION', tw = textW(SMALL, s), sw = tw + 16, sx = 344 - (sw >> 1), sy = 36;
+  const s = $t('RECEPTION'), tw = textW(SMALL, s), sw = tw + 16, sx = 344 - (sw >> 1), sy = 36;
   P.darken(sx + 1, sy + 10, sw, 1, 0.8);
   area(P, sx, sy, sw, 10, (X, Y, i, j) => ((i === 0 || i === sw - 1) && (j === 0 || j === 9) ? null : i === 0 || j === 0 || i === sw - 1 || j === 9 ? GREEN_D : 0xfbfaf6));
   P.rect(sx + 3, sy + 3, 5, 1, GREEN); P.rect(sx + 5, sy + 1, 1, 5, GREEN); P.rect(sx + 4, sy + 2, 3, 3, GREEN);
   text(P, SMALL, s, sx + 11, sy + 3, GREEN_D);
   // öppettider (liten mässingsskylt)
-  const o = 'ÖPPET 8-17', ow = textW(SMALL, o) + 6;
+  const o = $t('ÖPPET 8-17'), ow = textW(SMALL, o) + 6;
   area(P, 312, 22, ow, 9, (X, Y, i, j) => (i === 0 || j === 0 ? 0xfff0b0 : i === ow - 1 || j === 8 ? 0x8a6a1a : 0xd8b04a));
   text(P, SMALL, o, 315, 24, 0x4a3408);
   // personaldörren (bara i bred vy)
@@ -474,7 +475,7 @@ function paintReceptionWall(P) {
     if (j >= 36) c = j === 36 ? 0xeef2f6 : 0xc4cad0;
     return c;
   });
-  const t = 'PRIVAT', ptw = textW(SMALL, t);
+  const t = $t('PRIVAT'), ptw = textW(SMALL, t);
   area(P, dx, top + 6, dw, 7, (X, Y, i, j) => (j === 0 || j === 6 ? 0x3a3e44 : 0x5a6068));
   text(P, SMALL, t, dx + ((dw - ptw) >> 1), top + 7, WHITE);
   P.rect(dx + 3, top + 20, 4, 6, 0x2a2e34); P.px(dx + 4, top + 21, 0x5ad070); P.hl(dx + 4, top + 23, 2, 0x8a929a); P.hl(dx + 4, top + 25, 2, 0x8a929a);
@@ -525,7 +526,7 @@ function paintFloor(P) {
     if (edge) return ((X + Y) >> 1) % 3 === 0 ? 0xf4f0e8 : 0xd8342c;
     return mix(P.get(X, Y), 0xe86a5a, 0.16);
   });
-  text(P, SMALL, 'AKUT', ((Z.x0 + Z.x1) >> 1) - 7, Z.y1 - 8, 0xc8201c);
+  text(P, SMALL, $t('AKUT'), ((Z.x0 + Z.x1) >> 1) - 7, Z.y1 - 8, 0xc8201c);
   // dörrmattorna i rummens färger (visar vilken dörr som är vilken)
   for (const r of ROOMS) area(P, r.x0, FLOOR_Y + 1, r.x1 - r.x0, 5, (X, Y, i, j) => (j === 4 ? mul(r.col, 0.45) : (i % 3 === 0) ? mul(r.col, 0.62) : mul(r.col, 0.8)));
   // barnhörnans bilmatta: gräs, väg i en slinga, damm, hus och träd
@@ -603,7 +604,7 @@ function paintAutomat() {
   // skylten på stången: NR i röda bokstäver
   P.vl(8, 6, 2, 0x9aa2aa);
   area(P, 3, 0, 12, 7, (X, Y, i, j) => (i === 0 || j === 0 || i === 11 || j === 6 ? 0x8a1612 : 0xfbfaf6));
-  text(P, SMALL, 'NR', 5, 1, 0xc8202a);
+  text(P, SMALL, $t('NR'), 5, 1, 0xc8202a);
   outline(P);
   return P.flush();
 }
@@ -755,7 +756,7 @@ function paintDesk() {
   // NÄSTA-knappen: grå låda med stor grön knapp och etikett
   const { x0: nx0, x1: nx1, y0: ny0, y1: ny1 } = NEXT;
   area(P, nx0, ny0 + 3, nx1 - nx0, ny1 - ny0 - 3, (X, Y, i, j) => (j === 0 ? 0xd8dee4 : i === 0 ? 0xc8ced4 : i === nx1 - nx0 - 1 ? 0x6a7078 : j === ny1 - ny0 - 4 ? 0x5a6068 : 0x9aa2aa));
-  text(P, SMALL, 'NÄSTA', nx0 + 2, ny0 + 6, 0x1e2226);
+  text(P, SMALL, $t('NÄSTA'), nx0 + 2, ny0 + 6, 0x1e2226);
   // mellanväggen mot väntrummet (halvhög, björklist överst)
   area(P, x0 - 4, face, 4, FH - face, (X, Y, i, j) => (i === 0 ? 0xf4e4c0 : i === 3 ? 0x9a7a4a : 0xdcc090));
   area(P, x0 - 4, FH - 12, 4, 12, (X, Y, i) => (i === 0 ? WHITE : i === 3 ? 0xa8a498 : 0xe8e6de));
@@ -917,7 +918,7 @@ export function makeJobbVard(A, { onDone } = {}) {
   const int = (v, dflt) => (Number.isInteger(v) ? v : dflt);
   const str = (v) => (typeof v === 'string' ? v.slice(0, 64) : '');
   const patById = (id) => patients.find((p) => p.id === id) || null;
-  const hudTitle = () => (maxN > 1 ? 'VÅRDCENTRALEN IHOP' : 'VÅRDCENTRALEN');
+  const hudTitle = () => (maxN > 1 ? $t('VÅRDCENTRALEN IHOP') : $t('VÅRDCENTRALEN'));
   // står en annan sköterska (inte by) vid luckan wi?
   const staffed = (wi, by) => coop.active && [{ id: meId(), x: walker.px, y: walker.py }, ...coop.peers()]
     .some((f) => f.id !== by && Math.abs(f.x - WIN[wi]) < 14 && f.y >= WORK_Y - 8);
@@ -973,7 +974,7 @@ export function makeJobbVard(A, { onDone } = {}) {
     if (!fresh && snaps > 0) {
       if (!hadNum && p.num !== null) play('click');                                           // nummerlappen
       if (was !== 'leave' && was !== 'out' && p.state === 'leave' && p.angry) {               // gick hem / för sent
-        say(p.x, Math.min(p.y - 50, 96), p.akut ? 'FÖR SENT!' : 'GICK HEM!', '#ff6a6a'); play('miss');
+        say(p.x, Math.min(p.y - 50, 96), p.akut ? $t('FÖR SENT!') : $t('GICK HEM!'), '#ff6a6a'); play('miss');
       }
     }
     return p;
@@ -1132,7 +1133,7 @@ export function makeJobbVard(A, { onDone } = {}) {
   const kLjud = (k, s) => utfall(k, k.by, 's', s);                                                    // hörs hos den det gäller
   const kSay = (k, x, y, txt, col) => utfall(k, k.by, 'p', Math.round(x), Math.round(y), txt, col);   // syns hos den det gäller
   const kPop = (k, x, y, txt, col) => utfall(k, '', 'p', Math.round(x), Math.round(y), txt, col);     // syns hos alla
-  const hannFore = (x, y) => { play('miss'); say(x, y, 'HANN FÖRE!', '#ff6a6a'); };                  // någon annan hann först
+  const hannFore = (x, y) => { play('miss'); say(x, y, $t('HANN FÖRE!'), '#ff6a6a'); };                  // någon annan hann först
   // skiftledaren: läget ut direkt efter en handling (FÖRE svaret – då har den som frågade redan det
   // nya läget när svaret kommer) och utfallet till alla
   function publish(k, svar) {
@@ -1266,14 +1267,14 @@ export function makeJobbVard(A, { onDone } = {}) {
     if (!p || p.state !== 'wait') return false;
     const mine = winAt(k.x), order = [mine, nearAt(k.x), 0, 1].filter((w) => w >= 0);
     const wi = order.find((w) => !wins[w] && !staffed(w, k.by)) ?? order.find((w) => !wins[w]) ?? -1;
-    if (wi < 0) { kSay(k, WIN[0] + 26, 92, 'LUCKORNA ÄR FULLA!', '#ffd23f'); kLjud(k, 'miss'); return false; }
+    if (wi < 0) { kSay(k, WIN[0] + 26, 92, $t('LUCKORNA ÄR FULLA!'), '#ffd23f'); kLjud(k, 'miss'); return false; }
     // akutfall först: alla andra akutpatienter som väntar blev passerade
     for (const q of patients) if (q !== p && q.akut && q.state === 'wait') q.passed++;
     if (!k.remote) calls++;
     wins[wi] = p; p.win = wi; p.by = k.by;
     freeSeat(p);
     if (p.sat) { p.y = p.y + 8; p.sat = 0; }
-    nuNo = p.akut ? 'AKUT' : String(p.num % 1000).padStart(3, '0'); nuWin = wi; nuFlash = 1.6; nuN++;
+    nuNo = p.akut ? $n('AKUT') : String(p.num % 1000).padStart(3, '0'); nuWin = wi; nuFlash = 1.6; nuN++;
     kLjud(k, 'ok');
     go(p, WIN[wi], PAT_Y, 'called', () => atWin(p));
     // man går själv till luckan om man inte redan har någon framför sig
@@ -1293,7 +1294,7 @@ export function makeJobbVard(A, { onDone } = {}) {
   function callNext(k = meK()) {
     const list = waiting().filter((p) => !p.akut && p.num !== null).sort((a, b) => a.num - b.num);
     if (!k.remote) nextGlow = 0.4;
-    if (!list.length) { const ak = waiting().find((p) => p.akut); if (ak) return call(ak, k); kSay(k, NEXT.x0 + 12, 96, 'INGEN I KÖN', '#d8d2c0'); kLjud(k, 'miss'); return false; }
+    if (!list.length) { const ak = waiting().find((p) => p.akut); if (ak) return call(ak, k); kSay(k, NEXT.x0 + 12, 96, $t('INGEN I KÖN'), '#d8d2c0'); kLjud(k, 'miss'); return false; }
     return call(list[0], k);
   }
   // skicka patienten till ett rum: rätt = lön (+ bonus för akutfall först), fel = avdrag – hos k,
@@ -1306,12 +1307,12 @@ export function makeJobbVard(A, { onDone } = {}) {
     p.sentBy = k.by;
     if (ri === right) {
       team.ok++; utfall(k, k.by, 'o');
-      if (p.akut && p.passed === 0) { team.boxes++; utfall(k, k.by, 'b'); kPop(k, WIN[0] + 26, 92, 'AKUT FÖRST! BONUS!', '#ffd23f'); kLjud(k, 'box'); }
-      else { kPop(k, p.x, 94, 'RÄTT RUM!', '#8ee03c'); kLjud(k, 'coin'); }
+      if (p.akut && p.passed === 0) { team.boxes++; utfall(k, k.by, 'b'); kPop(k, WIN[0] + 26, 92, $t('AKUT FÖRST! BONUS!'), '#ffd23f'); kLjud(k, 'box'); }
+      else { kPop(k, p.x, 94, $t('RÄTT RUM!'), '#8ee03c'); kLjud(k, 'coin'); }
     } else {
       team.fel++; utfall(k, k.by, 'f');
       p.wrong = ri;
-      kPop(k, p.x, 94, 'FEL RUM!', '#ff6a6a'); kLjud(k, 'fel');
+      kPop(k, p.x, 94, $t('FEL RUM!'), '#ff6a6a'); kLjud(k, 'fel');
     }
     p.room = ri;
     go(p, r.cx, FLOOR_Y + 6, 'toDoor', () => atDoor(p, 0.7));
@@ -1319,7 +1320,7 @@ export function makeJobbVard(A, { onDone } = {}) {
   function openDoor(ri, p) {
     const d = doors[ri];
     d.hold = Math.max(d.hold, 1.5); d.staff = 1.5;
-    if (p.wrong !== null) doorSay(ri, `FEL RUM! GÅ TILL ${ROOMS[SYMS[p.sym].room].to}!`, 2.4);
+    if (p.wrong !== null) doorSay(ri, $t`FEL RUM! GÅ TILL ${ROOMS[SYMS[p.sym].room].to}!`, 2.4);
     else doorSay(ri, pick(GREET), 1.8);
   }
   // personalens pratbubbla ovanför dörren. Spetsen sitter normalt strax under karmen; i
@@ -1336,7 +1337,7 @@ export function makeJobbVard(A, { onDone } = {}) {
     if (late) {
       // räknas bara som missad (som i de andra jobben): 0 kr, en egen rad på lönebeskedet, inte ett "fel"
       stats.miss++; team.miss++;
-      say(p.x, Math.min(p.y - 50, 96), p.akut ? 'FÖR SENT!' : 'GICK HEM!', '#ff6a6a');
+      say(p.x, Math.min(p.y - 50, 96), p.akut ? $t('FÖR SENT!') : $t('GICK HEM!'), '#ff6a6a');
       play('miss');
       p.angry = true;
       if (coop.active) snapAsap();
@@ -1360,7 +1361,7 @@ export function makeJobbVard(A, { onDone } = {}) {
   }
   function sendFromDesk(ri) {
     const tg = deskTarget();
-    if (!tg) { say(ROOMS[ri].cx, 96, 'KLICKA PÅ EN PATIENT FÖRST!', '#ffd23f'); play('miss'); return false; }
+    if (!tg) { say(ROOMS[ri].cx, 96, $t('KLICKA PÅ EN PATIENT FÖRST!'), '#ffd23f'); play('miss'); return false; }
     const { p, wi, idx } = tg;
     // står patienten vid den andra luckan går man dit – men patienten skickas direkt, så att
     // inget klick kan gå förlorat om man hinner klicka på något annat under tiden
@@ -1375,7 +1376,7 @@ export function makeJobbVard(A, { onDone } = {}) {
   function skicka(p, ri, k) {
     p.by = k.by;
     if (p.state === 'desk') send(p, ri, k);
-    else { p.dest = ri; kSay(k, p.x, 94, ROOMS[ri].name + '!', css(mix(ROOMS[ri].col, WHITE, 0.4))); kLjud(k, 'click'); }
+    else { p.dest = ri; kSay(k, p.x, 94, $t(ROOMS[ri].name) + '!', css(mix(ROOMS[ri].col, WHITE, 0.4))); kLjud(k, 'click'); }
   }
   // klick på en väntande patient: ensam (eller som skiftledare) ropas hen in direkt, som
   // medarbetare blir det ett önskemål till skiftledaren (hann någon före syns det här direkt)
@@ -1517,7 +1518,7 @@ export function makeJobbVard(A, { onDone } = {}) {
     if (p) {
       if (p.state === 'wait') { ropaKlick(p); return; }
       // (ihop: en patient en kollega ropat in är hens)
-      if (!isMe(p.by)) { say(p.x, 94, 'KOLLEGANS PATIENT', '#d8d2c0'); return; }
+      if (!isMe(p.by)) { say(p.x, 94, $t('KOLLEGANS PATIENT'), '#d8d2c0'); return; }
       // patienten vid luckan: gå dit
       walker.walkTo(WIN[p.win], WORK_Y, () => { walker.dir = 'up'; });
       return;
@@ -1533,7 +1534,7 @@ export function makeJobbVard(A, { onDone } = {}) {
       else walker.walkTo(x, y);
       return;
     }
-    if (t < 20) { say(x, Math.max(60, y - 12), 'KLICKA PÅ EN PATIENT!', '#d8d2c0'); }
+    if (t < 20) { say(x, Math.max(60, y - 12), $t('KLICKA PÅ EN PATIENT!'), '#d8d2c0'); }
   }
   const bubbleTip = (p) => (p.state === 'wait' ? (p.sat ? p.y - 38 : p.y - 41) : p.state === 'desk' ? PAT_Y - 41 : null);
   // bubblans mått: väntrummet = bara symbolen, vid luckan även ordet (FEBER, BLODPROV …) på
@@ -1593,7 +1594,7 @@ export function makeJobbVard(A, { onDone } = {}) {
     // NU-tavlan: numret och luckan
     const blink = nuFlash > 0 && Math.floor(nuFlash * 6) % 2 === 0;
     if (nuNo && !blink) {
-      if (nuNo === 'AKUT') ctxText(ctx, SMALL, 'AKUT', NU.x0 + 18, NU.y0 + 5, '#ff4a2a');
+      if (nuNo === 'AKUT') ctxText(ctx, SMALL, $t('AKUT'), NU.x0 + 18, NU.y0 + 5, '#ff4a2a');
       else ctxText(ctx, BIG, nuNo, NU.x0 + 17, NU.y0 + 3, '#ff4a2a');
       ctxText(ctx, SMALL, String(nuWin + 1), NU.x0 + 28, NU.y0 + 11, '#ffb02a');
     } else if (!nuNo) ctxText(ctx, BIG, '---', NU.x0 + 17, NU.y0 + 3, '#5a1a10');
@@ -1624,7 +1625,7 @@ export function makeJobbVard(A, { onDone } = {}) {
     }
     // AKUTEN-lamporna blinkar när en akutpatient väntar
     if (patients.some((p) => p.akut && (p.state === 'wait' || p.state === 'called' || p.state === 'desk')) && Math.floor(clk * 3) % 2 === 0) {
-      const r = ROOMS[3], bw = Math.max(r.x1 - r.x0 + 2, textW(SMALL, r.name) + 8), bx = r.cx - (bw >> 1);
+      const r = ROOMS[3], bw = Math.max(r.x1 - r.x0 + 2, textW(SMALL, $t(r.name)) + 8), bx = r.cx - (bw >> 1);
       for (const lx of [bx - 5, bx + bw + 1]) { ctx.fillStyle = '#ffd0c0'; ctx.fillRect(lx + 1, SIGN_Y + 3, 3, 3); ctx.fillStyle = '#ffffff'; ctx.fillRect(lx + 1, SIGN_Y + 3, 1, 1); }
     }
   }
@@ -1653,7 +1654,7 @@ export function makeJobbVard(A, { onDone } = {}) {
     ctx.fillStyle = '#0e2a3a'; ctx.fillRect(MON.x0 + 2, MON.y0 + 2, MON.x1 - MON.x0 - 4, MON.y1 - MON.y0 - 5);
     for (let i = 0; i < 2; i++) {
       const p = wins[i], y = MON.y0 + 3 + i * 6;
-      const s = `${i + 1} ${p ? (p.akut ? 'AKUT' : String(p.num % 1000).padStart(3, '0')) : '---'}`;
+      const s = `${i + 1} ${p ? (p.akut ? $t('AKUT') : String(p.num % 1000).padStart(3, '0')) : '---'}`;
       ctxText(ctx, SMALL, s, MON.x0 + 3, y, !p ? '#4a6a7a' : p.state === 'desk' ? '#8ef08a' : '#ffd23f');
     }
     if (Math.floor(clk * 2) % 2) { ctx.fillStyle = '#8ef08a'; ctx.fillRect(MON.x1 - 5, MON.y0 + 9, 2, 1); }
@@ -1697,9 +1698,9 @@ export function makeJobbVard(A, { onDone } = {}) {
   function drawHint(ctx, vw, o) {
     let s = null;
     const atDesk = wins.some((p) => p && p.state === 'desk' && isMe(p.by));
-    if (t < 6 && !calls) s = 'KLICKA PÅ EN PATIENT - ELLER NÄSTA';
-    else if (atDesk && sends < 2 && hintT > 2.5) s = 'SKICKA TILL RÄTT DÖRR - TITTA PÅ BILDERNA!';
-    else if (!calls && t > 8) s = 'KLICKA PÅ EN PATIENT I VÄNTRUMMET!';
+    if (t < 6 && !calls) s = $t('KLICKA PÅ EN PATIENT - ELLER NÄSTA');
+    else if (atDesk && sends < 2 && hintT > 2.5) s = $t('SKICKA TILL RÄTT DÖRR - TITTA PÅ BILDERNA!');
+    else if (!calls && t > 8) s = $t('KLICKA PÅ EN PATIENT I VÄNTRUMMET!');
     if (!s) return;
     const sy = Math.min(FH, (A.view?.safe?.y1 | 0) || FH) - 13;
     const w = textW(SMALL, s) + 8, x = clamp(150 + o - (w >> 1), 2, vw - w - 2);
@@ -1828,7 +1829,7 @@ export function makeJobbVard(A, { onDone } = {}) {
       if (coop.active) maxN = Math.max(maxN, coop.peers().length + 1);
       if (coop.active !== wasCoop) {   // en kollega kom in: patienterna kommer tätare
         wasCoop = coop.active;
-        if (wasCoop) { play('knock'); say(FW >> 1, 96, 'NI JOBBAR IHOP!', '#8ee03c'); }
+        if (wasCoop) { play('knock'); say(FW >> 1, 96, $t('NI JOBBAR IHOP!'), '#8ee03c'); }
       }
       // Skiftledaren (eller solo) kör vårdcentralen; medarbetare följer ledarens läge
       const iLead = !coop.active || (coop.leader && coop.settled);

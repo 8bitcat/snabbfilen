@@ -22,22 +22,23 @@
 // drawItemIcon(ctx, id, x, y, scale = 1, state) – ikon för menyer (övre vänstra hörnet i x, y)
 // ==================================================================
 import { mix, mul, hash } from '../core/floor-pix.js';
+import { $t } from '../core/i18n.js';
 
 export const PET_ITEMS = {
-  matskal: { namn: 'Matskål', pris: 39, w: 11, h: 7, forArt: ['katt', 'hund', 'kanin'], typ: 'skal', desc: 'Fyll den med mat ur en säck – djuren äter själva när de blir hungriga.' },
-  vattenskal: { namn: 'Vattenskål', pris: 39, w: 11, h: 7, forArt: ['katt', 'hund', 'kanin'], typ: 'vatten', desc: 'Friskt vatten gör djuren gladare. Fyll på från kranen.' },
-  kattlada: { namn: 'Kattlåda', pris: 149, w: 19, h: 12, forArt: ['katt'], typ: 'lada', solid: true, desc: 'Katten gör sina behov här. Töm den ibland!' },
-  hundkorg: { namn: 'Hundkorg', pris: 299, w: 25, h: 13, forArt: ['hund'], typ: 'sang', solid: true, sangFor: 'hund', desc: 'En flätad korg med mjuk dyna – hunden sover gott här.' },
-  kattkorg: { namn: 'Kattkorg', pris: 199, w: 17, h: 10, forArt: ['katt'], typ: 'sang', solid: true, sangFor: 'katt', desc: 'En plyschig kattsäng att rulla ihop sig i.' },
-  kaninbur: { namn: 'Kaninbur', pris: 399, w: 33, h: 24, forArt: ['kanin'], typ: 'bur', solid: true, sangFor: 'kanin', desc: 'Bur med halm, höhäck och vattenflaska. Byt halm ibland.' },
-  kattklostrad: { namn: 'Klösträd', pris: 349, w: 19, h: 34, forArt: ['katt'], typ: 'klos', solid: true, desc: 'Klättra, klösa och sova högst upp – katter älskar det.' },
-  'leksak-boll': { namn: 'Boll', pris: 29, w: 5, h: 5, forArt: ['hund', 'katt'], typ: 'leksak', desc: 'Klicka på bollen hemma så kastar du den.' },
-  'leksak-ben': { namn: 'Tuggben', pris: 35, w: 11, h: 5, forArt: ['hund'], typ: 'leksak', desc: 'Något att tugga på när du är borta.' },
-  'leksak-morot': { namn: 'Gnagmorot', pris: 25, w: 12, h: 6, forArt: ['kanin'], typ: 'leksak', desc: 'En morot av flätad pil och hö att gnaga på – kaninens egen leksak.' },
-  'sack-katt': { namn: 'Kattmat (säck)', pris: 89, w: 11, h: 15, forArt: ['katt'], typ: 'sack', art: 'katt', portioner: 10, desc: '10 skålar kattmat.' },
-  'sack-hund': { namn: 'Hundmat (säck)', pris: 119, w: 13, h: 16, forArt: ['hund'], typ: 'sack', art: 'hund', portioner: 10, desc: '10 skålar hundmat.' },
-  'sack-kanin': { namn: 'Kaninfoder (säck)', pris: 69, w: 11, h: 14, forArt: ['kanin'], typ: 'sack', art: 'kanin', portioner: 10, desc: '10 skålar kaninfoder med hö och morötter.' },
-  koppel: { namn: 'Koppel', pris: 99, w: 11, h: 7, forArt: ['hund'], typ: 'koppel', desc: 'Behövs för att gå ut med hunden.' },
+  matskal: { namn: $t('Matskål'), pris: 39, w: 11, h: 7, forArt: ['katt', 'hund', 'kanin'], typ: 'skal', desc: $t('Fyll den med mat ur en säck – djuren äter själva när de blir hungriga.') },
+  vattenskal: { namn: $t('Vattenskål'), pris: 39, w: 11, h: 7, forArt: ['katt', 'hund', 'kanin'], typ: 'vatten', desc: $t('Friskt vatten gör djuren gladare. Fyll på från kranen.') },
+  kattlada: { namn: $t('Kattlåda'), pris: 149, w: 19, h: 12, forArt: ['katt'], typ: 'lada', solid: true, desc: $t('Katten gör sina behov här. Töm den ibland!') },
+  hundkorg: { namn: $t('Hundkorg'), pris: 299, w: 25, h: 13, forArt: ['hund'], typ: 'sang', solid: true, sangFor: 'hund', desc: $t('En flätad korg med mjuk dyna – hunden sover gott här.') },
+  kattkorg: { namn: $t('Kattkorg'), pris: 199, w: 17, h: 10, forArt: ['katt'], typ: 'sang', solid: true, sangFor: 'katt', desc: $t('En plyschig kattsäng att rulla ihop sig i.') },
+  kaninbur: { namn: $t('Kaninbur'), pris: 399, w: 33, h: 24, forArt: ['kanin'], typ: 'bur', solid: true, sangFor: 'kanin', desc: $t('Bur med halm, höhäck och vattenflaska. Byt halm ibland.') },
+  kattklostrad: { namn: $t('Klösträd'), pris: 349, w: 19, h: 34, forArt: ['katt'], typ: 'klos', solid: true, desc: $t('Klättra, klösa och sova högst upp – katter älskar det.') },
+  'leksak-boll': { namn: $t('Boll'), pris: 29, w: 5, h: 5, forArt: ['hund', 'katt'], typ: 'leksak', desc: $t('Klicka på bollen hemma så kastar du den.') },
+  'leksak-ben': { namn: $t('Tuggben'), pris: 35, w: 11, h: 5, forArt: ['hund'], typ: 'leksak', desc: $t('Något att tugga på när du är borta.') },
+  'leksak-morot': { namn: $t('Gnagmorot'), pris: 25, w: 12, h: 6, forArt: ['kanin'], typ: 'leksak', desc: $t('En morot av flätad pil och hö att gnaga på – kaninens egen leksak.') },
+  'sack-katt': { namn: $t('Kattmat (säck)'), pris: 89, w: 11, h: 15, forArt: ['katt'], typ: 'sack', art: 'katt', portioner: 10, desc: $t('10 skålar kattmat.') },
+  'sack-hund': { namn: $t('Hundmat (säck)'), pris: 119, w: 13, h: 16, forArt: ['hund'], typ: 'sack', art: 'hund', portioner: 10, desc: $t('10 skålar hundmat.') },
+  'sack-kanin': { namn: $t('Kaninfoder (säck)'), pris: 69, w: 11, h: 14, forArt: ['kanin'], typ: 'sack', art: 'kanin', portioner: 10, desc: $t('10 skålar kaninfoder med hö och morötter.') },
+  koppel: { namn: $t('Koppel'), pris: 99, w: 11, h: 7, forArt: ['hund'], typ: 'koppel', desc: $t('Behövs för att gå ut med hunden.') },
 };
 
 // ---------- geometri för lagret ----------

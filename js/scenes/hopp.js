@@ -10,6 +10,7 @@ import { drawPerson, makeLook } from '../core/people.js';
 import { play } from '../core/sound.js';
 import { HOPPKLASSER } from '../game.js';
 import { drawHastRyttare } from '../landet/hast-art.js';
+import { $t } from '../core/i18n.js';
 
 const FW = 384, FH = 216, GY = 176;      // marken (hästens hovar)
 const HX = 104;                            // hästens plats på skärmen
@@ -80,12 +81,12 @@ export function makeHopp(A, { klass = 'latt', onDone } = {}) {
         const rel = h.x - dist;           // hindrets x relativt hästen
         if (!h.klar && !h.vagrat && rel > 30 && rel < 48 && trivsel < 45) {
           h.vagrat = true;   // (avgörs en gång per hinder)
-          if (hash(h.nr, H?.hopp | 0, 11) < (45 - trivsel) / 70) { h.vagrar = true; vagrar = 1.3; hoppT = -1; hojd = 0; st.fel += 4; st.vagran++; pop('VÄGRAR! +4', '#ff9a5a'); play('fel'); dist -= 14; return; }
+          if (hash(h.nr, H?.hopp | 0, 11) < (45 - trivsel) / 70) { h.vagrar = true; vagrar = 1.3; hoppT = -1; hojd = 0; st.fel += 4; st.vagran++; pop($t('VÄGRAR! +4'), '#ff9a5a'); play('fel'); dist -= 14; return; }
         }
         if (!h.klar && rel <= 0) {
           h.klar = true;
-          if (hojd < h.h - 2) { h.rivit = true; st.fel += 4; st.rivna++; pop('RIV! +4', '#ff6a5a'); play('fel'); }
-          else { const marg = hojd - h.h; pop(marg > 9 ? 'PERFEKT!' : 'BRA!', '#7ee07e'); play('ok'); }
+          if (hojd < h.h - 2) { h.rivit = true; st.fel += 4; st.rivna++; pop($t('RIV! +4'), '#ff6a5a'); play('fel'); }
+          else { const marg = hojd - h.h; pop(marg > 9 ? $t('PERFEKT!') : $t('BRA!'), '#7ee07e'); play('ok'); }
         }
       }
       if (dist >= mal) { slut = true; play('coin'); }
@@ -116,7 +117,7 @@ export function makeHopp(A, { klass = 'latt', onDone } = {}) {
       }
       // mållinjen (två flaggor) och domartornet
       const mx = Math.round(HX + mal - dist);
-      if (mx < FW + 30) { for (const fx of [mx - 2, mx + 2]) { ctx.fillStyle = '#5a5e66'; ctx.fillRect(fx, GY - 30, 1, 30); } ctx.fillStyle = '#d8343c'; ctx.fillRect(mx - 9, GY - 30, 7, 5); ctx.fillStyle = '#f4f1ea'; ctx.fillRect(mx + 3, GY - 30, 7, 5); ctxText(ctx, SMALL, 'MÅL', mx - 6, GY - 40, '#1e1a24'); }
+      if (mx < FW + 30) { for (const fx of [mx - 2, mx + 2]) { ctx.fillStyle = '#5a5e66'; ctx.fillRect(fx, GY - 30, 1, 30); } ctx.fillStyle = '#d8343c'; ctx.fillRect(mx - 9, GY - 30, 7, 5); ctx.fillStyle = '#f4f1ea'; ctx.fillRect(mx + 3, GY - 30, 7, 5); ctxText(ctx, SMALL, $t('MÅL'), mx - 6, GY - 40, '#1e1a24'); }
       // hästen och ryttaren
       const ga = start > 0 ? 'sta' : vagrar > 0 ? 'sta' : hojd > 3 ? 'hopp' : slut ? 'trav' : 'galopp';
       const fr = Math.floor(t * (ga === 'galopp' ? 11 : 6)) % 4;
@@ -128,16 +129,16 @@ export function makeHopp(A, { klass = 'latt', onDone } = {}) {
       // tavlan: klassen, tiden och felen
       ctx.fillStyle = 'rgba(23,21,26,0.85)'; ctx.fillRect(0, 0, FW, 18);
       ctxText(ctx, BIG, `${K.namn.toUpperCase()} - ${H?.namn?.toUpperCase() || ''}`, 4, 5, '#f4f1ea');
-      const s = `TID ${st.tid.toFixed(1).replace('.', ',')}  FEL ${st.fel}`;
+      const s = $t`TID ${st.tid.toFixed(1).replace('.', ',')}  FEL ${st.fel}`;
       ctxText(ctx, BIG, s, FW - textW(BIG, s) - 6, 5, st.fel ? '#ff9a7a' : '#7ee07e');
       // nedräkningen och tipset
       if (start > 0) {
-        const n = Math.ceil(start - 0.6), txt = n > 0 ? String(n) : 'KÖR!', w = textW(BIG, txt, 3);
+        const n = Math.ceil(start - 0.6), txt = n > 0 ? String(n) : $t('KÖR!'), w = textW(BIG, txt, 3);
         ctx.fillStyle = 'rgba(20,18,26,.8)'; ctx.fillRect((FW - w) / 2 - 10 | 0, 60, w + 20, 34); ctxText(ctx, BIG, txt, (FW - w) / 2 | 0, 66, '#ffd23f', 3);
-        const tip = 'TRYCK FÖR ATT HOPPA - PRECIS FÖRE HINDRET!', tw = textW(SMALL, tip) + 10;
+        const tip = $t('TRYCK FÖR ATT HOPPA - PRECIS FÖRE HINDRET!'), tw = textW(SMALL, tip) + 10;
         ctx.fillRect((FW - tw) / 2 | 0, 100, tw, 11); ctxText(ctx, SMALL, tip, (FW - tw) / 2 + 5 | 0, 103, '#f4f1ea');
       }
-      if (slut) { const txt = st.fel ? `${st.fel} FEL` : 'FELFRITT!', w = textW(BIG, txt, 3); ctx.fillStyle = 'rgba(20,18,26,.85)'; ctx.fillRect((FW - w) / 2 - 10 | 0, 60, w + 20, 34); ctxText(ctx, BIG, txt, (FW - w) / 2 | 0, 66, st.fel ? '#ff9a7a' : '#7ee07e', 3); }
+      if (slut) { const txt = st.fel ? $t`${st.fel} FEL` : $t('FELFRITT!'), w = textW(BIG, txt, 3); ctx.fillStyle = 'rgba(20,18,26,.85)'; ctx.fillRect((FW - w) / 2 - 10 | 0, 60, w + 20, 34); ctxText(ctx, BIG, txt, (FW - w) / 2 | 0, 66, st.fel ? '#ff9a7a' : '#7ee07e', 3); }
     },
     exit() {},
     _debug: {

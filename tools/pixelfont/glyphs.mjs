@@ -41,6 +41,26 @@ export const LOWER = {
   'ü': G(['.#.#.', '.....', '#...#', '#...#', '#...#', '#...#', '.####']),
 };
 
+// gemener med accent för de andra språken (2026-10-07): grundbokstaven med märket i de två översta
+// raderna (där x-höjdsbokstäverna är tomma; i och j tappar sin prick), cedilj och ogonek under baslinjen
+import { MARKS } from '../../js/core/floor-pix.js';
+const LOWER_ACC = { acute: 'áéíóúćńśźý', grave: 'àèìòù', circ: 'âêîôû', uml: 'ëïüÿ', tilde: 'ãõñ', dot: 'ż', cedil: 'ç', ogonek: 'ąę' };
+for (const [kind, chars] of Object.entries(LOWER_ACC)) for (const ch of chars) {
+  if (LOWER[ch]) continue;
+  const b = LOWER[ch.normalize('NFD')[0]];
+  if (!b) continue;
+  const w = b.rows[0].length, m = MARKS.big[kind][Math.min(5, Math.max(3, w))].map((r) => r.padEnd(w, '.').slice(0, Math.max(w, r.length)));
+  LOWER[ch] = kind === 'cedil' || kind === 'ogonek' ? G(b.rows, [...b.down, ...m].slice(0, 3)) : G([...m, ...b.rows.slice(2)], b.down);
+}
+Object.assign(LOWER, {
+  'ł': G(['.##..', '..#..', '..#.#', '..##.', '.##..', '..#..', '.###.']),
+  'ß': G(['.##..', '#..#.', '#.#..', '#..#.', '#...#', '#...#', '#.##.']),
+  'æ': G(['.....', '.....', '.##.#', '...#.', '.####', '#..#.', '.##.#']),
+  'œ': G(['.....', '.....', '.#.#.', '#.#.#', '#.###', '#.#..', '.#.##']),
+  '¡': G(['.', '.', '#', '.', '#', '#', '#'], ['#']),
+  '¿': G(['.....', '.....', '..#..', '.....', '..#..', '.#...', '#....'], ['#...#', '.###.']),
+});
+
 // versaler som saknas i spelets BIG
 export const UPPER_EXTRA = {
   'Ü': G(['#...#', '#...#', '#...#', '#...#', '#...#', '#...#', '.###.'], [], ['.#.#.', '.....']),

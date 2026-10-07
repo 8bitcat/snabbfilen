@@ -6,6 +6,7 @@ import { hs, capF, backStd, sideTop, sideStd, shaved, dims, nz, row, col, mask, 
 import { buzzF, buzzS, buzzB } from './hair-kort.js';
 import { WAVE, behind, curtF, longS, backTo, strands } from './hair-mellan.js';
 import { plait } from './hair-kit.js';
+import { $t, $n } from '../i18n.js';
 
 // ---------- delade småbitar ----------
 // målar masken bara där inget redan är ritat (håret hänger bakom kroppen/armarna)
@@ -28,7 +29,7 @@ const waveOf = (R, y) => WAVE[(((y - R.h0) % 6) + 6) % 6];
 
 export const HAIR_KLIPP = {
   // ================= Kort hår =================
-  ivy: hs('Ivy League', 'Kort hår', {
+  ivy: hs($t('Ivy League'), $n('Kort hår'), {
     // kort sidbena på personens högra sida (framifrån bildens vänstra), luggen svept åt andra hållet
     front(R) { const { put, hair: H, h0 } = R, s = shaved(R);
       paint(R, mask().rows([[h0 - 2, 10, 14], [h0 - 1, 8, 16], [h0, 7, 16], [h0 + 1, 7, 16], [h0 + 2, 11, 16]]));
@@ -45,7 +46,7 @@ export const HAIR_KLIPP = {
       put(12, h0, H.lo); put(14, h0 + 1, H.lo); put(10, h0 + 1, H.lo); put(16, h0 + 2, H.lo);
       rect(8, h0 + 2, 5, 1, s.a); napeS(R, h0 + 3); put(13, h0 + 3, s.a); put(13, h0 + 4, s.a); },
   }),
-  edgar: hs('Edgar', 'Kort hår', {
+  edgar: hs($t('Edgar'), $n('Kort hår'), {
     // rak, tjock lugg som ett streck över pannan, rundad topp och tonade sidor
     front(R) { const { put, hair: H, h0, eyeRow, K } = R, s = shaved(R), f = h0 + (K ? 2 : 3);
       paint(R, mask().rows([[h0 - 2, 9, 14], [h0 - 1, 8, 15]]).rect(7, h0, 10, f - h0 + 1));
@@ -62,7 +63,7 @@ export const HAIR_KLIPP = {
       paint(R, m); put(12, h0, H.lo); put(15, h0 + 1, H.lo); row(R, f, 14, 17, H.lo);
       rect(8, h0 + 2, 5, 1, s.a); rect(8, h0 + 3, 3, 4, s.f); put(8, h0 + 3, s.a); put(9, h0 + 3, s.a); put(13, f + 1, s.f); put(13, f + 2, s.f); },
   }),
-  combOver: hs('Över­kamning', 'Kort hår', {
+  combOver: hs($t('Över­kamning'), $n('Kort hår'), {
     // tunt hår kammat över flinten från en låg bena ovanför örat – flinten lyser igenom
     front(R) { const { put, hair: H, skin, h0, eyeRow } = R, s = shaved(R);
       thinTop(R, h0, 8, 15, 0); thinTop(R, h0 + 1, 7, 16, 1); put(10, h0, skin.hi);
@@ -79,7 +80,7 @@ export const HAIR_KLIPP = {
       put(11, eyeRow - 3, H.base); put(12, eyeRow - 3, H.lo); put(7, eyeRow - 2, H.base);
       if (R.flip) { put(17, h0 + 1, H.lo); put(17, h0 + 2, H.dk); } },
   }),
-  receding: hs('Vikande hår­fäste', 'Kort hår', {
+  receding: hs($t('Vikande hår­fäste'), $n('Kort hår'), {
     // kort hår med djupa vikar vid tinningarna och en spets mitt i pannan
     front(R) { const { put, hair: H, skin, h0, eyeRow } = R;
       paint(R, mask().row(h0 - 1, 9, 14).row(h0, 10, 13).row(h0 + 1, 11, 12).set(7, h0 + 1).set(16, h0 + 1).col(7, h0 + 2, eyeRow - 2).col(16, h0 + 2, eyeRow - 2));
@@ -92,7 +93,7 @@ export const HAIR_KLIPP = {
       put(14, h0, skin.hi); put(15, h0 + 1, skin.hi); put(12, h0 + 1, H.lo); put(10, h0, H.lo); put(9, h0 + 4, H.lo);
       put(12, h0 + 3, s.a); put(13, h0 + 3, s.a); put(13, h0 + 4, s.a); },
   }),
-  boyCut: hs('Pojk­lugg', 'Kort hår', {
+  boyCut: hs($t('Pojk­lugg'), $n('Kort hår'), {
     // rundklippt med lugg ner mot ögonbrynen, håret över öronen och fransiga toppar
     front(R) { const { put, hair: H, h0, eyeRow, K } = R, full = h0 + (K ? 2 : 3);
       const m = mask().rows([[h0 - 2, 9, 14], [h0 - 1, 7, 16]]).rect(6, h0, 12, full - h0 + 1);
@@ -113,7 +114,7 @@ export const HAIR_KLIPP = {
   }),
 
   // ================= Rakat =================
-  tonsure: hs('Munk­frisyr', 'Rakat', {
+  tonsure: hs($t('Munk­frisyr'), $n('Rakat'), {
     // rakad hjässa, en krans av hår runt huvudet och en kort lugg
     front(R) { const { put, hair: H, skin, h0, eyeRow } = R;
       paint(R, mask().rect(7, h0 + 1, 10, 2).row(h0 + 3, 8, 15).col(7, h0 + 3, eyeRow - 1).col(16, h0 + 3, eyeRow - 1));
@@ -127,7 +128,7 @@ export const HAIR_KLIPP = {
       paint(R, mask().row(h0 + 1, 13, 16).row(h0 + 2, 8, 16).rect(8, h0 + 3, 3, 4).set(15, h0 + 3).set(16, h0 + 3));
       put(12, h0, skin.hi); put(13, h0, skin.hi); put(11, h0 + 1, skin.hi); put(14, h0 + 2, H.lo); put(10, h0 + 2, H.lo); put(15, h0 + 3, H.lo); },
   }),
-  rattail: hs('Rått­svans', 'Rakat', {
+  rattail: hs($t('Rått­svans'), $n('Rakat'), {
     // snaggat med korta taggar på toppen och en lång tunn flätad svans i nacken (80-tal)
     front(R) { const { put, hair: H, h0 } = R, s = shaved(R);
       paint(R, mask().row(h0 - 1, 8, 15).rect(7, h0, 10, 2).set(9, h0 - 2).set(11, h0 - 2).set(12, h0 - 3).set(14, h0 - 2));
@@ -143,7 +144,7 @@ export const HAIR_KLIPP = {
       rect(8, h0 + 2, 5, 1, s.a); napeS(R, h0 + 3); put(13, h0 + 3, s.a); put(13, h0 + 4, s.a); put(12, h0, H.lo);
       plait(R, (y) => (y < h0 + R.headH ? 7 : 8), h0 + 6, chest - 1, false, false); put(8, chest, H.lo); },
   }),
-  buzzHeart: hs('Snaggat med hjärta', 'Rakat', {
+  buzzHeart: hs($t('Snaggat med hjärta'), $n('Rakat'), {
     // snaggat med ett hjärta rakat på sidan och i nacken
     front(R) { const { put, skin, h0 } = R; buzzF(R); put(7, h0 + 2, skin.hi); put(16, h0 + 2, skin.base); },
     back(R) { const { put, skin, h0 } = R; buzzB(R);
@@ -153,7 +154,7 @@ export const HAIR_KLIPP = {
   }),
 
   // ================= Lugg =================
-  swoop: hs('Svepande lugg', 'Lugg', {
+  swoop: hs($t('Svepande lugg'), $n('Lugg'), {
     // kort bak och på sidorna, lång lugg svept snett över pannan mot högra ögat (bildens högra)
     front(R) { const { put, hair: H, h0, K } = R, s = shaved(R);
       const m = mask().rows([[h0 - 2, 9, 14], [h0 - 1, 8, 16], [h0, 7, 17], [h0 + 1, 7, 17], [h0 + 2, 9, 17], [h0 + 3, 11, 17], [h0 + 4, 13, 17]]);
@@ -173,7 +174,7 @@ export const HAIR_KLIPP = {
       paint(R, m); put(12, h0, H.lo); put(14, h0 + 1, H.lo); put(16, h0 + 2, H.lo);
       rect(8, h0 + 2, 5, 1, s.a); napeS(R, h0 + 3); put(13, h0 + 3, s.a); if (!R.flip) put(13, h0 + 4, s.a); },
   }),
-  micro: hs('Mini­lugg', 'Lugg', {
+  micro: hs($t('Mini­lugg'), $n('Lugg'), {
     // kort, rak lugg högt upp i pannan och långt rakt hår
     front(R) { const { put, hair: H, h0 } = R, { chest } = dims(R);
       capF(R, 2); row(R, h0 + 2, 8, 15, H.base); row(R, h0 + 2, 9, 14, H.lo); put(10, h0 + 1, H.lo); put(13, h0 + 1, H.lo);
@@ -185,7 +186,7 @@ export const HAIR_KLIPP = {
   }),
 
   // ================= Mellanlångt =================
-  mop: hs('Mopp­topp', 'Mellanlångt', {
+  mop: hs($t('Mopp­topp'), $n('Mellanlångt'), {
     // 60-talets hjälmfrisyr: lugg ner till ögonbrynen, öronen täckta, rundad nacke
     front(R) { const { put, hair: H, h0, eyeRow, K } = R, f = h0 + (K ? 3 : 4), sb = eyeRow + 2;
       const m = mask().rows([[h0 - 2, 9, 14], [h0 - 1, 7, 16]]).rect(6, h0, 12, f - h0 + 1).rect(5, h0 + 2, 3, sb - h0 - 1).rect(16, h0 + 2, 3, sb - h0 - 1);
@@ -202,7 +203,7 @@ export const HAIR_KLIPP = {
       m.cut(6, sb).cut(12, sb).cut(6, h0 + 1).cut(17, h0);
       paint(R, m); col(R, 9, h0 + 3, sb - 2, H.lo); put(14, h0 + 1, H.lo); put(16, f, H.dk); put(12, h0 + 1, H.lo); },
   }),
-  aLine: hs('A-linje', 'Mellanlångt', {
+  aLine: hs($t('A-linje'), $n('Mellanlångt'), {
     // page som är kort i nacken och längre fram – snett avklippt
     front(R) { const { rect, put, hair: H, h0 } = R, { chin } = dims(R);
       capF(R, 3); rect(8, h0 + 3, 2, 1, H.base); rect(12, h0 + 3, 4, 1, H.base); put(14, h0 + 4, H.lo); put(15, h0 + 4, H.lo); put(10, h0, H.lo); put(10, h0 + 1, H.lo); put(13, h0 + 3, H.lo);
@@ -218,7 +219,7 @@ export const HAIR_KLIPP = {
       for (let x = 6; x <= 12; x++) m.col(x, x < 11 ? h0 + 1 : h0 + 3, Math.round(nape + (x - 6) * (chin + 2 - nape) / 6));
       paint(R, m); put(14, h0 + 3, H.base); col(R, 9, h0 + 4, nape, H.lo); put(13, h0 + 3, H.base); },
   }),
-  tucked: hs('Bakom örat', 'Mellanlångt', {
+  tucked: hs($t('Bakom örat'), $n('Mellanlångt'), {
     // hakans längd med sidbena; ena sidan (personens högra) instoppad bakom örat
     front(R) { const { rect, put, hair: H, skin, h0, eyeRow } = R, { chin } = dims(R);
       capF(R, 3); put(9, h0, skin.base); put(9, h0 - 1, H.lo); rect(10, h0 + 3, 6, 1, H.base); put(15, h0 + 4, H.lo); put(12, h0 + 3, H.lo); put(8, h0 + 3, H.base); put(11, h0 + 1, H.lo);
@@ -233,7 +234,7 @@ export const HAIR_KLIPP = {
       rect(7, h0 + 1, 6, chin + 1 - h0, H.base); col(R, 7, h0 + 1, chin + 1, H.lo); row(R, chin + 1, 7, 12, H.lo); col(R, 10, h0 + 4, chin - 1, H.lo);
       rect(13, h0 + 3, 3, 1, H.base); put(13, h0 + 4, H.base); put(14, h0 + 4, H.lo); },
   }),
-  feathered: hs('Fjäder­klipp', 'Mellanlångt', {
+  feathered: hs($t('Fjäder­klipp'), $n('Mellanlångt'), {
     // 70-tal: mittbena och håret som fjädrar bakåt och utåt vid sidorna i lager
     front(R) { const { put, hair: H, skin, h0, eyeRow } = R, { chin } = dims(R);
       capF(R, 2); put(11, h0, skin.base); put(11, h0 + 1, skin.base); put(11, h0 - 1, H.lo); put(12, h0, H.lo);
@@ -252,7 +253,7 @@ export const HAIR_KLIPP = {
       for (let y = h0 + 5; y <= chin; y += 3) { put(8, y, H.hi); put(9, y + 1, H.lo); }
       put(6, chin + 1, H.lo); put(6, chin, H.base); },
   }),
-  bixie: hs('Bixie', 'Mellanlångt', {
+  bixie: hs($t('Bixie'), $n('Mellanlångt'), {
     // mellan page och pixie: rufsig topp, sidolugg och fransiga toppar vid öronen
     front(R) { const { put, hair: H, h0, eyeRow, K } = R;
       const m = mask().row(h0 - 2, 9, 10).row(h0 - 2, 12, 14).row(h0 - 1, 7, 16).rect(6, h0, 12, 3).row(h0 + 3, 10, 16).row(h0 + 4, 13, 16)
@@ -272,7 +273,7 @@ export const HAIR_KLIPP = {
   }),
 
   // ================= Långt hår =================
-  mermaid: hs('Sjö­jungfru', 'Långt hår', {
+  mermaid: hs($t('Sjö­jungfru'), $n('Långt hår'), {
     // jättelångt med stora vågor och mittbena; nedanför bröstet hänger håret bakom kroppen
     front(R) { const { rect, hair: H, h0 } = R, { chin, chest } = dims(R), end = hipOf(R);
       capF(R, 3); partMid(R); rect(8, h0 + 3, 3, 1, H.base); rect(13, h0 + 3, 3, 1, H.base);
@@ -296,7 +297,7 @@ export const HAIR_KLIPP = {
       paint(R, m, { tex: (x, y) => (y > h0 + 3 && x === 8 - waveOf(R, y) ? 'lo' : null) });
       rect(13, h0 + 3, 3, 1, H.base); put(15, h0 + 4, H.lo); },
   }),
-  superLong: hs('Sago­långt', 'Långt hår', {
+  superLong: hs($t('Sago­långt'), $n('Långt hår'), {
     // rakt hår ända ner till knäna; nedanför bröstet hänger det bakom kroppen
     front(R) { const { rect, put, hair: H, h0 } = R, { waist } = dims(R), end = kneeOf(R);
       capF(R, 3); partMid(R); rect(8, h0 + 3, 3, 1, H.base); rect(13, h0 + 3, 3, 1, H.base); put(10, h0 + 3, H.lo);
@@ -312,7 +313,7 @@ export const HAIR_KLIPP = {
       const m = mask().rect(6, h0 + 1, 5, R.headH).rect(6, h0 + R.headH + 1, 4, end - h0 - R.headH - 1).cut(9, end).cut(7, end);
       paint(R, m); col(R, 8, h0 + 4, end - 2, H.lo); rect(13, h0 + 3, 3, 1, H.base); put(15, h0 + 4, H.lo); },
   }),
-  rocker: hs('Rock­frilla', 'Långt hår', {
+  rocker: hs($t('Rock­frilla'), $n('Långt hår'), {
     // 80-talets stora rockfrilla: volym på toppen, taggigt och burrigt ner på bröstet
     front(R) { const { put, hair: H, h0 } = R, { chest } = dims(R);
       const m = mask().rows([[h0 - 3, 9, 14], [h0 - 2, 7, 16], [h0 - 1, 6, 17]]).rect(5, h0, 14, 3).set(8, h0 - 4).set(13, h0 - 4).set(5, h0 - 1).set(18, h0 - 1);
@@ -333,7 +334,7 @@ export const HAIR_KLIPP = {
       for (let x = 2; x <= 10; x++) if (nz(x, chest, 59) < 50) m.cut(x, chest);
       paint(R, m, { tex: (x, y, t) => (t === 'base' && nz(x, y, 53) < 24 ? 'lo' : null) }); put(12, h0, H.lo); },
   }),
-  hollywood: hs('Film­stjärne­vågor', 'Långt hår', {
+  hollywood: hs($t('Film­stjärne­vågor'), $n('Långt hår'), {
     // djup sidbena, en stor blank våg över pannan och inrullade toppar på axlarna (40-tal)
     front(R) { const { put, hair: H, skin, h0, eyeRow, K } = R, { chin } = dims(R), end = chin + 1;
       const m = mask().row(h0 - 1, 8, 15).rect(7, h0, 10, 3).row(h0 + 3, 11, 16).row(h0 + 4, 13, 16);
@@ -361,7 +362,7 @@ export const HAIR_KLIPP = {
       for (const [x, y] of [[13, 1], [12, 2], [14, 3], [15, 4]]) put(x, h0 + y, H.hi);
       row(R, end, 6, 10, H.hi); row(R, end + 1, 6, 11, H.lo); put(8, h0 + 5, H.lo); put(9, h0 + 8, H.lo); },
   }),
-  longFront: hs('Fram­för axlarna', 'Långt hår', {
+  longFront: hs($t('Fram­för axlarna'), $n('Långt hår'), {
     // långt rakt hår med mittbena, lagt framför båda axlarna ner på bröstet
     front(R) { const { rect, put, hair: H, h0 } = R, { chin, waist } = dims(R);
       capF(R, 3); partMid(R); rect(8, h0 + 3, 3, 1, H.base); rect(13, h0 + 3, 3, 1, H.base); put(10, h0 + 3, H.lo);

@@ -29,6 +29,7 @@
 // bort när det tystnat. Utan WebAudio blir allt tyst utan fel. _render.* gör samma sak i
 // valfri kontext (OfflineAudioContext i testerna, tools/out/roster/).
 import { audioContext, isMuted } from './sound.js';
+import { $tq, LANG, list } from './i18n.js';
 
 const MAX_VOICES = 3;      // samtidiga röster/djurläten
 const MAX_TAL = 2.5;       // längsta babbel (sekunder)
@@ -106,6 +107,14 @@ const F_NAMES = new Set(('doris bella ingrid karin greta astrid elsa maja lisa s
 const M_NAMES = new Set(('sven olle bosse kalle nisse pelle lasse janne bengt göran erik lars per nils gustav oskar hugo leo axel anton arvid '
   + 'viktor sixten ture knut bertil rolf åke stig kurt sune gösta harry arne ove ville melker loke otto sigge elias noah liam adam ali omar '
   + 'carl kjell bamse rocky buster frasse tassen kurre').split(' '));
+// andra språk: landets förnamn och de lokala namnen på spelets personer (Maja → Molly osv.) får samma kön
+if (LANG !== 'sv') {
+  const first = (s) => String(s || '').toLowerCase().split(/[\s-]/)[0];
+  for (const [set, lst] of [[F_NAMES, 'girls'], [M_NAMES, 'boys']]) {
+    for (const n of [...set]) { const loc = $tq(n[0].toUpperCase() + n.slice(1)); if (loc && loc.toLowerCase() !== n) set.add(first(loc)); }
+    for (const n of list(lst, [])) set.add(first(n));
+  }
+}
 function kindFromName(name, r) {
   const n = String(name).toLowerCase();
   if (/farmor|mormor|gumm|tant|faster|moster|mormo/.test(n)) return { kind: 'gammal', fem: 0.97 };

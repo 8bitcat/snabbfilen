@@ -31,6 +31,7 @@ import * as GM from '../game.js';
 import { play } from '../core/sound.js';
 import { createWalker, selfDrawable, folkDrawables, WALK_SEQ, createSpeech, sayLines } from './walkable.js';
 import { worldFolksHere } from '../net/world.js';
+import { $t } from '../core/i18n.js';
 
 // ======================= mått (världskoordinater) =======================
 let VW = 384;
@@ -68,50 +69,50 @@ const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const rgb = (c) => '#' + (c & 0xffffff).toString(16).padStart(6, '0');
 const jit = (c, x, y, s, a) => mul(c, 1 + (hash(x, y, s) - 0.5) * 2 * a);
 const g0 = () => globalThis.SF?.game;
-const safeTxt = (s) => String(s).toUpperCase().replace(/[^A-ZÅÄÖÉ0-9 .,:!?+\-/%=']/g, '');
+const safeTxt = (s) => String(s).toUpperCase().replace(/[^A-ZÅÄÖÉÁÀÂÃÇĆÈÊËÍÌÎÏÑŃÓÒÔÕŚŹŻÚÙÛÜŸÝĄĘŁŒÆ¡¿€$0-9 .,:!?+\-/%=']/g, '');
 function lookOr(field, v, fb) { try { return isValid(field, v) ? v : fb; } catch { return fb; } }
 
 // ======================= kursernas innehåll (föreläsningar + tenta) =======================
 // Tavlan: vad kritan skriver fram under föreläsningen (i ordning), och lektorns repliker.
 const LECTURES = {
   datorteknik: {
-    lines: ['GOD MORGON! I DAG: DATORNS DELAR.', 'PROCESSORN ÄR HJÄRNAN – DEN RÄKNAR ALLT.', 'MINNET, RAM, SITTER BREDVID OCH HÅLLER DET SOM KÖRS JUST NU.', 'GRAFIKKORTET I PCIE-PLATSEN RITAR BILDEN. GLÖM INTE STRÖMMEN!', 'BRA JOBBAT – VI SES NÄSTA GÅNG!'],
+    lines: [$t('GOD MORGON! I DAG: DATORNS DELAR.'), $t('PROCESSORN ÄR HJÄRNAN – DEN RÄKNAR ALLT.'), $t('MINNET, RAM, SITTER BREDVID OCH HÅLLER DET SOM KÖRS JUST NU.'), $t('GRAFIKKORTET I PCIE-PLATSEN RITAR BILDEN. GLÖM INTE STRÖMMEN!'), $t('BRA JOBBAT – VI SES NÄSTA GÅNG!')],
     board: 'dator',
   },
   ekonomi: {
-    lines: ['VÄLKOMNA! I DAG: BÖRSEN.', 'EN AKTIE ÄR EN LITEN BIT AV ETT FÖRETAG.', 'KURSEN GÅR UPP OCH NER HELA DAGEN – KÖP LÅGT, SÄLJ HÖGT!', 'KUNDEN SÄTTER GRÄNSEN. HÅLL DIG TILL DEN.', 'TACK FÖR I DAG – PLUGGA INFÖR TENTAN!'],
+    lines: [$t('VÄLKOMNA! I DAG: BÖRSEN.'), $t('EN AKTIE ÄR EN LITEN BIT AV ETT FÖRETAG.'), $t('KURSEN GÅR UPP OCH NER HELA DAGEN – KÖP LÅGT, SÄLJ HÖGT!'), $t('KUNDEN SÄTTER GRÄNSEN. HÅLL DIG TILL DEN.'), $t('TACK FÖR I DAG – PLUGGA INFÖR TENTAN!')],
     board: 'borsen',
   },
   ledarskap: {
-    lines: ['HEJ ALLIHOP! I DAG: ATT LEDA ETT LAG.', 'EN BRA CHEF LYSSNAR FÖRST OCH BESTÄMMER SEN.', 'SCHEMAT: TILLRÄCKLIGT MÅNGA PÅ VARJE PASS – OCH ALLA FÅR VILA.', 'BERÖM DET SOM GÅR BRA. LÖS PROBLEMEN LUGNT, ETT I TAGET.', 'TACK! NÄSTA GÅNG: KUNDERNA OCH BUDGETEN.'],
+    lines: [$t('HEJ ALLIHOP! I DAG: ATT LEDA ETT LAG.'), $t('EN BRA CHEF LYSSNAR FÖRST OCH BESTÄMMER SEN.'), $t('SCHEMAT: TILLRÄCKLIGT MÅNGA PÅ VARJE PASS – OCH ALLA FÅR VILA.'), $t('BERÖM DET SOM GÅR BRA. LÖS PROBLEMEN LUGNT, ETT I TAGET.'), $t('TACK! NÄSTA GÅNG: KUNDERNA OCH BUDGETEN.')],
     board: 'ledare',
   },
 };
 // Tentafrågor: [fråga, rätt svar, fel, fel] – tre slumpas per tenta, svaren blandas.
 const QUIZ = {
   datorteknik: [
-    ['Vilken del är datorns hjärna?', 'Processorn (CPU)', 'Nätaggregatet', 'Fläkten'],
-    ['Var sätter man arbetsminnet (RAM)?', 'I minnesplatserna bredvid processorn', 'I nätaggregatet', 'Bakom skärmen'],
-    ['Vad behöver grafikkortet?', 'En PCIe-plats och ström', 'En diskettstation', 'Ett extra tangentbord'],
-    ['Vad gör nätaggregatet?', 'Ger alla delar ström', 'Kyler processorn', 'Sparar filerna'],
-    ['Vad sätter man ovanpå processorn?', 'Kylpasta och en kylare', 'Ett RAM-minne', 'Grafikkortet'],
-    ['Var ligger filerna kvar när datorn är av?', 'På SSD-disken', 'I RAM-minnet', 'I fläkten'],
+    [$t('Vilken del är datorns hjärna?'), $t('Processorn (CPU)'), $t('Nätaggregatet'), $t('Fläkten')],
+    [$t('Var sätter man arbetsminnet (RAM)?'), $t('I minnesplatserna bredvid processorn'), $t('I nätaggregatet'), $t('Bakom skärmen')],
+    [$t('Vad behöver grafikkortet?'), $t('En PCIe-plats och ström'), $t('En diskettstation'), $t('Ett extra tangentbord')],
+    [$t('Vad gör nätaggregatet?'), $t('Ger alla delar ström'), $t('Kyler processorn'), $t('Sparar filerna')],
+    [$t('Vad sätter man ovanpå processorn?'), $t('Kylpasta och en kylare'), $t('Ett RAM-minne'), $t('Grafikkortet')],
+    [$t('Var ligger filerna kvar när datorn är av?'), $t('På SSD-disken'), $t('I RAM-minnet'), $t('I fläkten')],
   ],
   ekonomi: [
-    ['Aktien kostar 40 kr. Kunden vill köpa under 45 kr. Vad gör du?', 'Köper nu', 'Väntar tills den stiger', 'Säljer'],
-    ['Vad betyder en röd pil nedåt på börstavlan?', 'Kursen har gått ner', 'Kursen har gått upp', 'Börsen har stängt'],
-    ['Kunden vill sälja över 60 kr. Kursen är 55 kr. Vad gör du?', 'Väntar tills den stiger över 60', 'Säljer nu', 'Köper fler'],
-    ['Vad är ränta?', 'Det man får för att låna ut pengar', 'En avgift för att gå in på banken', 'En sorts aktie'],
-    ['Vad är en budget?', 'En plan för inkomster och utgifter', 'Ett kontokort', 'En aktie i banken'],
-    ['Du köper 10 aktier för 20 kr styck. Vad kostar det?', '200 kr', '30 kr', '2 kr'],
+    [$t('Aktien kostar 40 kr. Kunden vill köpa under 45 kr. Vad gör du?'), $t('Köper nu'), $t('Väntar tills den stiger'), $t('Säljer')],
+    [$t('Vad betyder en röd pil nedåt på börstavlan?'), $t('Kursen har gått ner'), $t('Kursen har gått upp'), $t('Börsen har stängt')],
+    [$t('Kunden vill sälja över 60 kr. Kursen är 55 kr. Vad gör du?'), $t('Väntar tills den stiger över 60'), $t('Säljer nu'), $t('Köper fler')],
+    [$t('Vad är ränta?'), $t('Det man får för att låna ut pengar'), $t('En avgift för att gå in på banken'), $t('En sorts aktie')],
+    [$t('Vad är en budget?'), $t('En plan för inkomster och utgifter'), $t('Ett kontokort'), $t('En aktie i banken')],
+    [$t('Du köper 10 aktier för 20 kr styck. Vad kostar det?'), $t('200 kr'), $t('30 kr'), $t('2 kr')],
   ],
   ledarskap: [
-    ['Vad gör en bra ledare först?', 'Lyssnar på laget', 'Bestämmer allt själv', 'Går hem tidigt'],
-    ['Hur ska ett bra schema vara?', 'Tillräckligt många på varje pass – och alla får vila', 'Chefen jobbar aldrig', 'Samma person jobbar alla pass'],
-    ['Någon i laget har gjort ett jättebra jobb. Vad gör du?', 'Berömmer hen', 'Säger ingenting', 'Tar åt dig äran'],
-    ['Det blir stressigt och fel. Vad hjälper?', 'Lugn – ett problem i taget', 'Skrika på alla', 'Låtsas att allt är bra'],
-    ['En kund är missnöjd. Vad gör du?', 'Lyssnar, ber om ursäkt och löser det', 'Skyller på kollegan', 'Går därifrån'],
-    ['Vad är en budget för ett ställe?', 'En plan för vad man tjänar och vad det kostar', 'Ett sorts schema för rasterna', 'Chefens lön'],
+    [$t('Vad gör en bra ledare först?'), $t('Lyssnar på laget'), $t('Bestämmer allt själv'), $t('Går hem tidigt')],
+    [$t('Hur ska ett bra schema vara?'), $t('Tillräckligt många på varje pass – och alla får vila'), $t('Chefen jobbar aldrig'), $t('Samma person jobbar alla pass')],
+    [$t('Någon i laget har gjort ett jättebra jobb. Vad gör du?'), $t('Berömmer hen'), $t('Säger ingenting'), $t('Tar åt dig äran')],
+    [$t('Det blir stressigt och fel. Vad hjälper?'), $t('Lugn – ett problem i taget'), $t('Skrika på alla'), $t('Låtsas att allt är bra')],
+    [$t('En kund är missnöjd. Vad gör du?'), $t('Lyssnar, ber om ursäkt och löser det'), $t('Skyller på kollegan'), $t('Går därifrån')],
+    [$t('Vad är en budget för ett ställe?'), $t('En plan för vad man tjänar och vad det kostar'), $t('Ett sorts schema för rasterna'), $t('Chefens lön')],
   ],
 };
 
@@ -238,10 +239,10 @@ function noticeBoard(P) {
   for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) P.px(x, y, jit(hash(x, y, 101) > 0.7 ? 0xb88a58 : 0xc89a64, x, y, 102, 0.06));
   // lapparna (text i pixeltypsnittet, häftstift i färg)
   const notes = [
-    [x0 + 2, y0 + 2, 24, 16, 0xf4f1ea, ['SPEX', 'FRE 19'], 0xc83a3a],
-    [x0 + 28, y0 + 3, 23, 12, 0xf8e070, ['KÅR-', 'FEST'], 0x3a7bd5],
-    [x0 + 3, y0 + 21, 21, 17, 0xa8d8f0, ['RUM', 'SÖKES'], 0x46a35a],
-    [x0 + 27, y0 + 18, 24, 20, 0xf4f1ea, ['PLUGG-', 'KOMPIS?'], 0xf0b429],
+    [x0 + 2, y0 + 2, 24, 16, 0xf4f1ea, $t('SPEX\nFRE 19').split('\n'), 0xc83a3a],
+    [x0 + 28, y0 + 3, 23, 12, 0xf8e070, $t('KÅR-\nFEST').split('\n'), 0x3a7bd5],
+    [x0 + 3, y0 + 21, 21, 17, 0xa8d8f0, $t('RUM\nSÖKES').split('\n'), 0x46a35a],
+    [x0 + 27, y0 + 18, 24, 20, 0xf4f1ea, $t('PLUGG-\nKOMPIS?').split('\n'), 0xf0b429],
   ];
   for (const [nx, ny, nw, nh, bg, lines, pin] of notes) {
     P.rect(nx + 1, ny + 1, nw, nh, 0x000000, 0.25);
@@ -251,7 +252,7 @@ function noticeBoard(P) {
   }
   // avrivningslappar under rumsannonsen
   for (let i = 0; i < 5; i++) if (i !== 2) { P.rect(x0 + 4 + i * 4, y0 + 38, 3, 4, 0xa8d8f0); P.px(x0 + 5 + i * 4, y0 + 39, 0x4a5a6a); }
-  text(P, SMALL, 'ANSLAG', x0 + ((x1 - x0 - textW(SMALL, 'ANSLAG')) >> 1), y0 - 8, 0x3a2414);
+  text(P, SMALL, $t('ANSLAG'), x0 + ((x1 - x0 - textW(SMALL, $t('ANSLAG'))) >> 1), y0 - 8, 0x3a2414);
 }
 function archWindow(P, R, night, seed) {
   const { x0, x1, y0, y1 } = R, w = x1 - x0, cx = (x0 + x1) / 2, r = w / 2;
@@ -308,14 +309,14 @@ function doorway(P, night) {
   P.vl(Math.floor(cx) - 1, top + r, WALL_Y - 4 - top - r, 0x2a1808); P.vl(Math.floor(cx), top + r, WALL_Y - 4 - top - r, 0x2a1808);
   for (const hx of [Math.floor(cx) - 4, Math.floor(cx) + 3]) { P.rect(hx, 58, 2, 6, 0xd8b050); P.px(hx, 58, 0xfff0a0); }
   // UT-skylten över dörren
-  P.rect(cx - 7, top + 12, 14, 8, 0x1f6a3a); P.box(cx - 7, top + 12, 14, 8, 0x0f3a1e); text(P, SMALL, 'UT', cx - 3, top + 14, 0xe8f8e8);
+  P.rect(cx - 7, top + 12, 14, 8, 0x1f6a3a); P.box(cx - 7, top + 12, 14, 8, 0x0f3a1e); text(P, SMALL, $t('UT'), cx - 3, top + 14, 0xe8f8e8);
   P.vl(cx - 5, top + 6, 6, 0x3a3a44); P.vl(cx + 4, top + 6, 6, 0x3a3a44);   // skylten hänger i två kedjor
   // dörrmatta
   for (let y = WALL_Y + 1; y < WALL_Y + 9; y++) for (let x = x0 + 2; x < x1 - 2; x++) P.px(x, y, (x + y) % 3 === 0 ? 0x5a3a2a : 0x7a4a34);
 }
 function crestBanner(P) {
   // PIXELHÖGSKOLAN i guldbokstäver + ANNO 1893
-  const s = 'PIXELHÖGSKOLAN', w = textW(BIG, s);
+  const s = $t('PIXELHÖGSKOLAN'), w = textW(BIG, s);
   const x = 130 - (w >> 1), y = 8;
   for (let i = -3; i < w + 3; i++) { P.px(x + i, y - 1, 0x2a1e16, 0.35); P.px(x + i, y + 8, 0x2a1e16, 0.35); }
   text(P, BIG, s, x + 1, y + 1, 0x6a4a1a);
@@ -341,7 +342,7 @@ function hatch(P, night) {
   // talgaller
   P.ell((x0 + x1) >> 1, y0 + 26, 3, 2, 0x8a7a60, 0.6, 2);
   // skylten
-  const s = 'STUDENTEXPEDITIONEN', sw = textW(SMALL, s) + 8, sx = ((EXP.x0 + EXP.x1) >> 1) - (sw >> 1), sy = 24;
+  const s = $t('STUDENTEXPEDITIONEN'), sw = textW(SMALL, s) + 8, sx = ((EXP.x0 + EXP.x1) >> 1) - (sw >> 1), sy = 24;
   P.rect(sx, sy, sw, 9, 0x1f3a6a); P.box(sx, sy, sw, 9, 0xc89a40); P.hl(sx + 1, sy + 1, sw - 2, 0x2f4a80);
   text(P, SMALL, s, sx + 4, sy + 2, 0xf4ecd8);
   // öppettidsskylt
@@ -366,7 +367,7 @@ function chalkboardFrame(P) {
   P.rect(x0 + 30, 8, x1 - x0 - 60, 3, 0xe8e8e8); P.hl(x0 + 30, 10, x1 - x0 - 60, 0x9a9aa4); P.px(x0 + 29, 9, 0x5a5a64); P.px(x1 - 30, 9, 0x5a5a64);
 }
 function aulaSign(P) {
-  const s = 'AULA 1', sw = textW(SMALL, s) + 8, x = Z_AULA - 4 - (sw >> 1) + 2, y = 12;
+  const s = $t('AULA 1'), sw = textW(SMALL, s) + 8, x = Z_AULA - 4 - (sw >> 1) + 2, y = 12;
   P.rect(x, y, sw, 9, 0x1f3a6a); P.box(x, y, sw, 9, 0xc89a40); text(P, SMALL, s, x + 4, y + 2, 0xf4ecd8);
 }
 function portraits(P) {
@@ -378,7 +379,7 @@ function portraits(P) {
     P.ell(x + 7, y + 7, 4, 5, 0xe8b890, 1, 1); P.rect(x + 3, y + 3, 8, 3, 0xd8d8d0); P.rect(x + 4, y + 12, 7, 6, 0x1a1a24); P.px(x + 7, y + 12, 0xf4f1ea);
     P.px(x + 5, y + 7, 0x2a1a10); P.px(x + 9, y + 7, 0x2a1a10); P.hl(x + 5, y + 10, 5, 0xb8b8b0);
   }
-  text(P, SMALL, 'PROF.', 270, 66, 0x6a4a1a);
+  text(P, SMALL, $t('PROF.'), 270, 66, 0x6a4a1a);
 }
 const BOOK = [0x8a2a2a, 0x2a4a7a, 0x2f6a3a, 0x6a4a2a, 0xc8a050, 0x4a2a5a, 0x1a3a4a, 0xa84a2a, 0x3a3a3a, 0x7a6a2a];
 function shelves(P) {
@@ -407,7 +408,7 @@ function shelves(P) {
     P.rect(bx, y0, 2, y1 - y0, 0x6a4428); P.vl(bx, y0, y1 - y0, 0x9a6a40);
     P.rect(bx1 - 2, y0, 2, y1 - y0, 0x5a3a22);
     // mässingsskylt per sektion
-    const lab = ['A-F', 'G-M', 'N-S', 'T-Ö'][b];
+    const lab = [$t('A-F'), $t('G-M'), $t('N-S'), $t('T-Ö')][b];
     P.rect(bx + ((bx1 - bx) >> 1) - 7, y0 - 1, 14, 6, 0xc89a40); text(P, SMALL, lab, bx + ((bx1 - bx) >> 1) - (textW(SMALL, lab) >> 1), y0, 0x3a2410);
   }
   P.rect(x0 - 2, y0 - 4, x1 - x0 + 4, 3, 0x6a4428); P.hl(x0 - 2, y0 - 4, x1 - x0 + 4, 0xa07048);
@@ -418,14 +419,15 @@ function shelves(P) {
 }
 function libSign(P) {
   // BIBLIOTEKET på pelaren mellan aulan och biblioteket (som AULA 1 på den vänstra)
-  const s = 'BIBLIOTEKET', sw = textW(SMALL, s) + 8, x = Z_BIB - 4 - (sw >> 1), y = 12;
+  const s = $t('BIBLIOTEKET'), sw = textW(SMALL, s) + 8, x = Z_BIB - 4 - (sw >> 1), y = 12;
   P.rect(x, y, sw, 9, 0x2f5a44); P.box(x, y, sw, 9, 0xc89a40); P.hl(x + 1, y + 1, sw - 2, 0x3f7a5a); text(P, SMALL, s, x + 4, y + 2, 0xf4ecd8);
 }
 function libWindow(P, night) {
   // högt fönster längst till höger och TYST, TACK! under det
   archWindow(P, { x0: 712, x1: 740, y0: 16, y1: 58 }, night, 2);
   const tx = 714, ty = 68;
-  P.rect(tx, ty, 24, 13, 0xf4f1ea); P.box(tx, ty, 24, 13, 0xa83a3a); text(P, SMALL, 'TYST', tx + 5, ty + 2, 0xa83a3a); text(P, SMALL, 'TACK', tx + 5, ty + 7, 0xa83a3a);
+  const [tyst, tack = ''] = $t('TYST\nTACK').split('\n');   // TYST, TACK! på två rader (en nyckel)
+  P.rect(tx, ty, 24, 13, 0xf4f1ea); P.box(tx, ty, 24, 13, 0xa83a3a); text(P, SMALL, tyst, tx + 5, ty + 2, 0xa83a3a); text(P, SMALL, tack, tx + 5, ty + 7, 0xa83a3a);
   P.hl(tx + 1, ty + 13, 24, 0x000000, 0.3);
 }
 
@@ -453,7 +455,7 @@ function paintExpDesk() {
   P.rect(5, 4, 16, 2, 0x5a5a64);
   P.rect(56, 2, 5, 2, 0xd8b050); P.px(58, 1, 0xfff0a0); P.hl(55, 4, 7, 0x6a5a30);
   P.rect(30, 1, 12, 4, 0xf4f1ea); P.hl(31, 2, 8, 0x9a9aa4); P.hl(31, 3, 6, 0x9a9aa4); P.px(40, 1, 0x2a4a8a);
-  text(P, SMALL, 'ANMÄLAN', 20, 10, 0xe8c060);
+  text(P, SMALL, $t('ANMÄLAN'), 20, 10, 0xe8c060);
   return { img: P.flush(), x: EXP.x0, y: EXP.top };
 }
 function paintLibDesk() {
@@ -464,7 +466,7 @@ function paintLibDesk() {
   for (let i = 0; i < 4; i++) P.rect(6 + (i & 1), 8 - i * 2, 12, 2, BOOK[i + 2]);
   P.rect(26, 5, 3, 3, 0x6a4a2a); P.rect(25, 8, 5, 1, 0x2a2a30);
   P.rect(46, 1, 12, 3, 0x2f7a4a); P.hl(46, 1, 12, 0x5aba7a); P.vl(51, 4, 5, 0xc8a050); P.rect(49, 9, 6, 1, 0xc8a050);
-  text(P, SMALL, 'LÅN', 28, 18, 0xe8c060);
+  text(P, SMALL, $t('LÅN'), 28, 18, 0xe8c060);
   return { img: P.flush(), x: LIB.x0, y: LIB.top - 8 };
 }
 function paintLectern() {
@@ -522,7 +524,7 @@ function paintExamTable() {
   P.rect(14, 8, 9, 3, 0xf8f8f4); P.hl(15, 9, 6, 0x9aa0b0); P.px(24, 8, 0xf0c040); P.px(25, 9, 0xf0c040);
   P.rect(34, 6, 3, 1, 0xc8a050); P.px(35, 7, 0xe8d8a0); P.px(35, 8, 0xe8d8a0); P.rect(34, 9, 3, 1, 0xc8a050);
   // skylten TENTA på en fot
-  P.rect(0, 0, 21, 7, 0xf4f1ea); P.box(0, 0, 21, 7, 0xa83a3a); text(P, SMALL, 'TENTA', 1, 1, 0xa83a3a);
+  P.rect(0, 0, 21, 7, 0xf4f1ea); P.box(0, 0, 21, 7, 0xa83a3a); text(P, SMALL, $t('TENTA'), 1, 1, 0xa83a3a);
   P.hl(1, 22, w, 0x000000, 0.25);
   return { img: P.flush(), x: TTAB.x0, y: TTAB.top - 7 };
 }
@@ -535,7 +537,7 @@ function paintBust() {
     if (i === 3) c = 0xfaf8f4; if (i === 18) c = 0xa8a49c; if (j === 18 || j === 22) c = 0xfaf8f4; if (j === 41) c = 0x8a8680;
     P.px(i, j, c);
   }
-  P.rect(5, 28, 12, 5, 0xc89a40); text(P, SMALL, 'PROF', 5, 28, 0x3a2410);
+  P.rect(5, 28, 12, 5, 0xc89a40); text(P, SMALL, $t('PROF'), 5, 28, 0x3a2410);
   // bysten i brons
   const br = (i, j) => jit(0x9a6a3a, i, j, 203, 0.08);
   P.ell(11, 10, 5, 6, 0x9a6a3a, 1, 1);
@@ -594,49 +596,49 @@ function chalkBox(ctx, x, y, w, h, k = 1, col) {
 const BOARDS = {
   // DATORNS DELAR: moderkort med CPU, RAM, GPU och nätaggregat + pilar
   dator: [
-    (c, k) => chalkText(c, 'DATORNS DELAR', BOARD.x0 + 6, BOARD.y0 + 4, k),
+    (c, k) => chalkText(c, $t('DATORNS DELAR'), BOARD.x0 + 6, BOARD.y0 + 4, k),
     (c, k) => { chalkBox(c, BOARD.x0 + 8, BOARD.y0 + 12, 72, 28, k); },
     (c, k) => { chalkBox(c, BOARD.x0 + 14, BOARD.y0 + 17, 16, 13, k, '#f8e878'); if (k > 0.6) chalkText(c, 'CPU', BOARD.x0 + 17, BOARD.y0 + 21, 1, '#f8e878'); },
     (c, k) => { for (let i = 0; i < 4; i++) if (k > i / 4) chalkLine(c, BOARD.x0 + 36 + i * 4, BOARD.y0 + 15, BOARD.x0 + 36 + i * 4, BOARD.y0 + 29, 1, '#a8d8f0'); if (k > 0.8) chalkText(c, 'RAM', BOARD.x0 + 36, BOARD.y0 + 32, 1, '#a8d8f0'); },
     (c, k) => { chalkBox(c, BOARD.x0 + 58, BOARD.y0 + 16, 16, 18, k, '#f0a8a8'); if (k > 0.6) chalkText(c, 'GPU', BOARD.x0 + 60, BOARD.y0 + 23, 1, '#f0a8a8'); },
-    (c, k) => { chalkLine(c, BOARD.x0 + 84, BOARD.y0 + 25, BOARD.x0 + 98, BOARD.y0 + 25, k); if (k > 0.5) { chalk(c, BOARD.x0 + 96, BOARD.y0 + 24); chalk(c, BOARD.x0 + 96, BOARD.y0 + 26); } if (k > 0.7) chalkText(c, 'STRÖM', BOARD.x0 + 102, BOARD.y0 + 23, 1); },
-    (c, k) => chalkText(c, 'PSU = NÄTAGGREGAT', BOARD.x0 + 90, BOARD.y0 + 34, k),
-    (c, k) => chalkText(c, 'CPU + KYLPASTA + KYLARE!', BOARD.x0 + 6, BOARD.y0 + 43, k, '#f8e878'),
+    (c, k) => { chalkLine(c, BOARD.x0 + 84, BOARD.y0 + 25, BOARD.x0 + 98, BOARD.y0 + 25, k); if (k > 0.5) { chalk(c, BOARD.x0 + 96, BOARD.y0 + 24); chalk(c, BOARD.x0 + 96, BOARD.y0 + 26); } if (k > 0.7) chalkText(c, $t('STRÖM'), BOARD.x0 + 102, BOARD.y0 + 23, 1); },
+    (c, k) => chalkText(c, $t('PSU = NÄTAGGREGAT'), BOARD.x0 + 90, BOARD.y0 + 34, k),
+    (c, k) => chalkText(c, $t('CPU + KYLPASTA + KYLARE!'), BOARD.x0 + 6, BOARD.y0 + 43, k, '#f8e878'),
   ],
   // BÖRSEN: kursgraf som går upp och ner, KÖP LÅGT / SÄLJ HÖGT
   borsen: [
-    (c, k) => chalkText(c, 'BÖRSEN', BOARD.x0 + 6, BOARD.y0 + 4, k),
+    (c, k) => chalkText(c, $t('BÖRSEN'), BOARD.x0 + 6, BOARD.y0 + 4, k),
     (c, k) => { chalkLine(c, BOARD.x0 + 10, BOARD.y0 + 44, BOARD.x0 + 10, BOARD.y0 + 12, k); chalkLine(c, BOARD.x0 + 10, BOARD.y0 + 44, BOARD.x0 + 96, BOARD.y0 + 44, k); },
     (c, k) => {
       const pts = [[12, 36], [22, 30], [30, 38], [40, 40], [50, 28], [60, 22], [70, 26], [80, 16], [92, 18]];
       const m = (pts.length - 1) * k;
       for (let i = 0; i < Math.floor(m); i++) chalkLine(c, BOARD.x0 + pts[i][0], BOARD.y0 + pts[i][1], BOARD.x0 + pts[i + 1][0], BOARD.y0 + pts[i + 1][1], 1, '#f8e878');
     },
-    (c, k) => { if (k > 0) { chalk(c, BOARD.x0 + 39, BOARD.y0 + 42, 3, 1, '#a8f0a8'); chalkText(c, 'KÖP LÅGT', BOARD.x0 + 26, BOARD.y0 + 47 - 1, k, '#a8f0a8'); } },
-    (c, k) => { if (k > 0) chalkText(c, 'SÄLJ HÖGT', BOARD.x0 + 72, BOARD.y0 + 8, k, '#f0a8a8'); },
-    (c, k) => chalkText(c, 'AKTIE = DEL AV FÖRETAG', BOARD.x0 + 102, BOARD.y0 + 18, k),
-    (c, k) => chalkText(c, '10 X 20 KR = 200 KR', BOARD.x0 + 102, BOARD.y0 + 28, k),
-    (c, k) => chalkText(c, 'RÄNTA 2%', BOARD.x0 + 102, BOARD.y0 + 38, k),
+    (c, k) => { if (k > 0) { chalk(c, BOARD.x0 + 39, BOARD.y0 + 42, 3, 1, '#a8f0a8'); chalkText(c, $t('KÖP LÅGT'), BOARD.x0 + 26, BOARD.y0 + 47 - 1, k, '#a8f0a8'); } },
+    (c, k) => { if (k > 0) chalkText(c, $t('SÄLJ HÖGT'), BOARD.x0 + 72, BOARD.y0 + 8, k, '#f0a8a8'); },
+    (c, k) => chalkText(c, $t('AKTIE = DEL AV FÖRETAG'), BOARD.x0 + 102, BOARD.y0 + 18, k),
+    (c, k) => chalkText(c, $t('10 X 20 KR = 200 KR'), BOARD.x0 + 102, BOARD.y0 + 28, k),
+    (c, k) => chalkText(c, $t('RÄNTA 2%'), BOARD.x0 + 102, BOARD.y0 + 38, k),
   ],
   // LEDARSKAP: laget som en pil uppåt – CHEF, tre i laget, LYSSNA / BERÖM / SCHEMA
   ledare: [
-    (c, k) => chalkText(c, 'ATT LEDA ETT LAG', BOARD.x0 + 6, BOARD.y0 + 4, k),
-    (c, k) => { chalkBox(c, BOARD.x0 + 34, BOARD.y0 + 13, 26, 9, k, '#f8e878'); if (k > 0.6) chalkText(c, 'CHEF', BOARD.x0 + 38, BOARD.y0 + 15, 1, '#f8e878'); },
+    (c, k) => chalkText(c, $t('ATT LEDA ETT LAG'), BOARD.x0 + 6, BOARD.y0 + 4, k),
+    (c, k) => { chalkBox(c, BOARD.x0 + 34, BOARD.y0 + 13, 26, 9, k, '#f8e878'); if (k > 0.6) chalkText(c, $t('CHEF'), BOARD.x0 + 38, BOARD.y0 + 15, 1, '#f8e878'); },
     (c, k) => { for (let i = 0; i < 3; i++) if (k > i / 3) { chalkLine(c, BOARD.x0 + 47, BOARD.y0 + 22, BOARD.x0 + 20 + i * 27, BOARD.y0 + 30, 1); chalkBox(c, BOARD.x0 + 12 + i * 27, BOARD.y0 + 30, 16, 9, 1, '#a8d8f0'); } },
-    (c, k) => { if (k > 0.5) chalkText(c, 'LAGET', BOARD.x0 + 34, BOARD.y0 + 42, 1, '#a8d8f0'); },
-    (c, k) => chalkText(c, '1 LYSSNA', BOARD.x0 + 100, BOARD.y0 + 14, k, '#a8f0a8'),
-    (c, k) => chalkText(c, '2 BERÖM', BOARD.x0 + 100, BOARD.y0 + 24, k, '#f8e878'),
-    (c, k) => chalkText(c, '3 SCHEMA + VILA', BOARD.x0 + 100, BOARD.y0 + 34, k, '#f0a8a8'),
-    (c, k) => chalkText(c, 'ETT PROBLEM I TAGET!', BOARD.x0 + 100, BOARD.y0 + 44, k),
+    (c, k) => { if (k > 0.5) chalkText(c, $t('LAGET'), BOARD.x0 + 34, BOARD.y0 + 42, 1, '#a8d8f0'); },
+    (c, k) => chalkText(c, $t('1 LYSSNA'), BOARD.x0 + 100, BOARD.y0 + 14, k, '#a8f0a8'),
+    (c, k) => chalkText(c, $t('2 BERÖM'), BOARD.x0 + 100, BOARD.y0 + 24, k, '#f8e878'),
+    (c, k) => chalkText(c, $t('3 SCHEMA + VILA'), BOARD.x0 + 100, BOARD.y0 + 34, k, '#f0a8a8'),
+    (c, k) => chalkText(c, $t('ETT PROBLEM I TAGET!'), BOARD.x0 + 100, BOARD.y0 + 44, k),
   ],
   // mellan föreläsningarna: schemat och en gammal formel
   idle: [
-    (c) => chalkText(c, 'VÄLKOMMEN TILL AULA 1', BOARD.x0 + 6, BOARD.y0 + 5),
-    (c) => chalkText(c, 'FÖRELÄSNINGAR 8-17', BOARD.x0 + 6, BOARD.y0 + 15, 1, '#f8e878'),
-    (c) => chalkText(c, 'DATORTEKNIK', BOARD.x0 + 10, BOARD.y0 + 25, 1, '#a8d8f0'),
-    (c) => chalkText(c, 'EKONOMI', BOARD.x0 + 10, BOARD.y0 + 33, 1, '#f0a8a8'),
-    (c) => chalkText(c, 'LEDARSKAP', BOARD.x0 + 70, BOARD.y0 + 33, 1, '#a8f0a8'),
-    (c) => chalkText(c, 'ANMÄLAN I EXPEDITIONEN!', BOARD.x0 + 6, BOARD.y0 + 43),
+    (c) => chalkText(c, $t('VÄLKOMMEN TILL AULA 1'), BOARD.x0 + 6, BOARD.y0 + 5),
+    (c) => chalkText(c, $t('FÖRELÄSNINGAR 8-17'), BOARD.x0 + 6, BOARD.y0 + 15, 1, '#f8e878'),
+    (c) => chalkText(c, $t('DATORTEKNIK'), BOARD.x0 + 10, BOARD.y0 + 25, 1, '#a8d8f0'),
+    (c) => chalkText(c, $t('EKONOMI'), BOARD.x0 + 10, BOARD.y0 + 33, 1, '#f0a8a8'),
+    (c) => chalkText(c, $t('LEDARSKAP'), BOARD.x0 + 70, BOARD.y0 + 33, 1, '#a8f0a8'),
+    (c) => chalkText(c, $t('ANMÄLAN I EXPEDITIONEN!'), BOARD.x0 + 6, BOARD.y0 + 43),
     (c) => { chalkText(c, '1+1=2', BOARD.x0 + 128, BOARD.y0 + 30, 1, '#c8d0c8'); chalk(c, BOARD.x0 + 152, BOARD.y0 + 31); chalk(c, BOARD.x0 + 155, BOARD.y0 + 31); chalkLine(c, BOARD.x0 + 151, BOARD.y0 + 34, BOARD.x0 + 156, BOARD.y0 + 34, 1, '#c8d0c8'); },
   ],
 };
@@ -721,36 +723,36 @@ export function makeShopUniversitet(A /* , opts */) {
   const eduOf = (id) => (g?.edu || {})[id] || null;
   const courseStatus = (id) => {
     const c = COURSES()[id], e = eduOf(id);
-    if (!e) return { key: 'ny', txt: 'Inte antagen' };
-    if (e.klar) return { key: 'klar', txt: '🎓 Examen klar!' };
-    if (e.lect >= c.lectures) return { key: 'tenta', txt: `Tentan väntar i biblioteket` };
-    return { key: 'las', txt: `Föreläsning ${e.lect} av ${c.lectures}` };
+    if (!e) return { key: 'ny', txt: $t('Inte antagen') };
+    if (e.klar) return { key: 'klar', txt: $t('🎓 Examen klar!') };
+    if (e.lect >= c.lectures) return { key: 'tenta', txt: $t`Tentan väntar i biblioteket` };
+    return { key: 'las', txt: $t`Föreläsning ${e.lect} av ${c.lectures}` };
   };
 
   // ---------- expeditionen: kurserna ----------
   function openCourses() {
-    if (!hasEdu()) { guide.talk.say('Kurserna har inte börjat än – kom tillbaka snart!', guideAt(), 4); return; }
+    if (!hasEdu()) { guide.talk.say($t('Kurserna har inte börjat än – kom tillbaka snart!'), guideAt(), 4); return; }
     const rows = Object.values(COURSES()).map((c) => {
       const st = courseStatus(c.id), job = GM.JOBS?.[c.job];
       const btn = st.key === 'ny'
-        ? `<button class="btn btn-go" data-kurs="${c.id}" ${g.money < c.fee ? 'disabled' : ''}>📝 Anmäl mig – ${GM.fmt(c.fee)}</button>`
+        ? `<button class="btn btn-go" data-kurs="${c.id}" ${g.money < c.fee ? 'disabled' : ''}>${$t`📝 Anmäl mig – ${GM.fmt(c.fee)}`}</button>`
         : `<span style="font-size:var(--f2)"><b>${st.txt}</b></span>`;
       return `<div style="border:3px solid var(--ink);padding:8px 10px;margin:8px 0;background:rgba(255,255,255,.35)">
         <div style="font-size:var(--f2)"><b>${c.icon} ${esc(c.name)}</b></div>
         <div style="font-size:var(--f2);margin:4px 0">${esc(c.blurb)}</div>
-        <div style="font-size:var(--f2)">📚 ${c.lectures} föreläsningar i Aula 1 (2 timmar var, en om dagen) · ✏️ tenta i biblioteket</div>
-        ${job ? `<div style="font-size:var(--f2)">💼 Examen ger jobb: <b>${job.icon} ${esc(job.name)}</b> – ${job.wage} kr per rätt</div>` : c.id === 'ledarskap' ? `<div style="font-size:var(--f2)">💼 Examen krävs för att bli <b>biträdande chef</b> och <b>chef</b> på jobben</div>` : ''}
+        <div style="font-size:var(--f2)">${$t`📚 ${c.lectures} föreläsningar i Aula 1 (2 timmar var, en om dagen) · ✏️ tenta i biblioteket`}</div>
+        ${job ? `<div style="font-size:var(--f2)">${$t`💼 Examen ger jobb: <b>${job.icon} ${esc(job.name)}</b> – ${job.wage} kr per rätt`}</div>` : c.id === 'ledarskap' ? `<div style="font-size:var(--f2)">${$t('💼 Examen krävs för att bli <b>biträdande chef</b> och <b>chef</b> på jobben')}</div>` : ''}
         <div style="margin-top:6px">${btn}</div></div>`;
     }).join('');
-    const dlg = openModal('🎓 Studentexpeditionen', `<p style="font-size:var(--f2);margin-top:0">"Välkommen till Pixelhögskolan! Vilken utbildning lockar?"</p>${rows}
-      <p style="font-size:var(--f1);margin-bottom:0">Föreläsningarna går 08–17. Sätt dig i en ledig bänk i Aula 1 när du är antagen.</p>`, [
-      { label: 'Tack, hej!', onClick: closeModal },
+    const dlg = openModal($t('🎓 Studentexpeditionen'), `<p style="font-size:var(--f2);margin-top:0">${$t('"Välkommen till Pixelhögskolan! Vilken utbildning lockar?"')}</p>${rows}
+      <p style="font-size:var(--f1);margin-bottom:0">${$t('Föreläsningarna går 08–17. Sätt dig i en ledig bänk i Aula 1 när du är antagen.')}</p>`, [
+      { label: $t('Tack, hej!'), onClick: closeModal },
     ]);
     dlg.querySelectorAll('[data-kurs]').forEach((b) => (b.onclick = () => {
       const id = b.dataset.kurs, r = g.enroll(id);
-      if (!r?.ok) { toast(r?.msg || 'Det gick inte.', 'bad'); return; }
+      if (!r?.ok) { toast(r?.msg || $t('Det gick inte.'), 'bad'); return; }
       play('coin'); closeModal();
-      guide.talk.say(`Välkommen till ${COURSES()[id].name}! Första föreläsningen är i Aula 1 – sätt dig i en ledig bänk.`, guideAt(), 6);
+      guide.talk.say($t`Välkommen till ${COURSES()[id].name}! Första föreläsningen är i Aula 1 – sätt dig i en ledig bänk.`, guideAt(), 6);
     }));
   }
   const guideAt = () => ({ x: guide.x, y: guide.y - 46 });
@@ -761,19 +763,19 @@ export function makeShopUniversitet(A /* , opts */) {
   function lectureChoices() { return Object.values(COURSES()).filter((c) => g.canLecture?.(c.id)?.ok); }
   function whyNoLecture() {
     const list = Object.values(COURSES());
-    if (!list.some((c) => eduOf(c.id))) return 'Du måste vara antagen först – anmäl dig i studentexpeditionen!';
+    if (!list.some((c) => eduOf(c.id))) return $t('Du måste vara antagen först – anmäl dig i studentexpeditionen!');
     for (const c of list) { const r = g.canLecture?.(c.id); if (r && !r.ok && eduOf(c.id) && !eduOf(c.id).klar) return r.msg; }
-    return 'Du har redan examen – snyggt! Titta förbi biblioteket om du vill plugga mer.';
+    return $t('Du har redan examen – snyggt! Titta förbi biblioteket om du vill plugga mer.');
   }
   function offerLecture() {
     if (!hasEdu()) return;
     const h = hour();
-    if (h < OPEN_LECT[0] || h >= OPEN_LECT[1]) { lecturer.talk.say(h < OPEN_LECT[0] ? 'Första föreläsningen börjar 08:00.' : 'Dagens sista föreläsning har börjat – kom tillbaka i morgon 08:00!', lectAt(), 4); return; }
+    if (h < OPEN_LECT[0] || h >= OPEN_LECT[1]) { lecturer.talk.say(h < OPEN_LECT[0] ? $t('Första föreläsningen börjar 08:00.') : $t('Dagens sista föreläsning har börjat – kom tillbaka i morgon 08:00!'), lectAt(), 4); return; }
     const ch = lectureChoices();
     if (!ch.length) { lecturer.talk.say(whyNoLecture(), lectAt(), 5); return; }
-    const btns = ch.map((c) => ({ label: `${c.icon} ${esc(c.name)} (${eduOf(c.id).lect + 1} av ${c.lectures})`, cls: 'btn-go', onClick: () => { closeModal(); startLecture(c.id); } }));
-    openModal('📚 Föreläsning i Aula 1', `<p style="font-size:var(--f2);margin-top:0">Föreläsningen tar <b>2 timmar</b> och lite ork. Anteckna flitigt – det kommer på tentan!</p>`,
-      [{ label: 'Inte nu', onClick: closeModal }, ...btns]);
+    const btns = ch.map((c) => ({ label: $t`${c.icon} ${esc(c.name)} (${eduOf(c.id).lect + 1} av ${c.lectures})`, cls: 'btn-go', onClick: () => { closeModal(); startLecture(c.id); } }));
+    openModal($t('📚 Föreläsning i Aula 1'), `<p style="font-size:var(--f2);margin-top:0">${$t('Föreläsningen tar <b>2 timmar</b> och lite ork. Anteckna flitigt – det kommer på tentan!')}</p>`,
+      [{ label: $t('Inte nu'), onClick: closeModal }, ...btns]);
   }
   function startLecture(id) {
     const L = LECTURES[id] || LECTURES.datorteknik;
@@ -784,11 +786,11 @@ export function makeShopUniversitet(A /* , opts */) {
   function endLecture() {
     const L = me.lec; me.lec = null;
     const r = g.attendLecture(L.id);
-    if (!r?.ok) { toast(r?.msg || 'Föreläsningen blev inställd.', 'bad'); return; }
+    if (!r?.ok) { toast(r?.msg || $t('Föreläsningen blev inställd.'), 'bad'); return; }
     const c = COURSES()[L.id];
     play('ok');
-    toast(`📚 Föreläsning ${r.lect} av ${r.of} i ${c.name} klar!`, 'good');
-    talkMe.say(r.lect >= r.of ? 'Sista föreläsningen! Nu väntar tentan i biblioteket.' : ['Nu fattar jag!', 'Jag antecknade allt!', 'Spännande!'][r.lect % 3], meAt, 4);
+    toast($t`📚 Föreläsning ${r.lect} av ${r.of} i ${c.name} klar!`, 'good');
+    talkMe.say(r.lect >= r.of ? $t('Sista föreläsningen! Nu väntar tentan i biblioteket.') : [$t('Nu fattar jag!'), $t('Jag antecknade allt!'), $t('Spännande!')][r.lect % 3], meAt, 4);
   }
 
   // ---------- tentan ----------
@@ -798,12 +800,12 @@ export function makeShopUniversitet(A /* , opts */) {
     const ch = examChoices();
     if (!ch.length) {
       const list = Object.values(COURSES());
-      let msg = 'Tentorna skrivs här när alla föreläsningar är gjorda. Anmäl dig i expeditionen!';
+      let msg = $t('Tentorna skrivs här när alla föreläsningar är gjorda. Anmäl dig i expeditionen!');
       for (const c of list) { const r = g.canExam?.(c.id); if (r && !r.ok && eduOf(c.id)) { msg = r.msg; if (!eduOf(c.id).klar) break; } }
       librarian.talk.say(msg, librAt(), 5); return;
     }
     if (ch.length === 1) { startExam(ch[0].id); return; }
-    openModal('✏️ Tentabordet', '<p style="font-size:var(--f2);margin-top:0">Vilken tenta vill du skriva?</p>', [{ label: 'Inte nu', onClick: closeModal }, ...ch.map((c) => ({ label: `${c.icon} ${esc(c.name)}`, cls: 'btn-go', onClick: () => { closeModal(); startExam(c.id); } }))]);
+    openModal($t('✏️ Tentabordet'), `<p style="font-size:var(--f2);margin-top:0">${$t('Vilken tenta vill du skriva?')}</p>`, [{ label: $t('Inte nu'), onClick: closeModal }, ...ch.map((c) => ({ label: `${c.icon} ${esc(c.name)}`, cls: 'btn-go', onClick: () => { closeModal(); startExam(c.id); } }))]);
   }
   function pickQuiz(id) {
     const pool = (QUIZ[id] || []).slice(), out = [];
@@ -820,7 +822,7 @@ export function makeShopUniversitet(A /* , opts */) {
   function showQuestion() {
     const E = me.exam; if (!E) return;
     const c = COURSES()[E.id], Q = E.qs[E.i];
-    const dlg = openModal(`✏️ Tenta i ${esc(c.name)} – fråga ${E.i + 1} av ${E.qs.length}`, `<p style="font-size:var(--f2);margin-top:0"><b>${esc(Q.q)}</b></p>
+    const dlg = openModal($t`✏️ Tenta i ${esc(c.name)} – fråga ${E.i + 1} av ${E.qs.length}`, `<p style="font-size:var(--f2);margin-top:0"><b>${esc(Q.q)}</b></p>
       ${Q.opts.map((o, i) => `<button class="btn" style="display:block;width:100%;margin:6px 0;text-align:left;font-size:var(--f2)" data-svar="${i}">${'ABC'[i]}. ${esc(o.s)}</button>`).join('')}`, [], { closable: false });
     dlg.querySelectorAll('[data-svar]').forEach((b) => (b.onclick = () => answer(+b.dataset.svar)));
   }
@@ -836,19 +838,19 @@ export function makeShopUniversitet(A /* , opts */) {
   function finishExam() {
     const E = me.exam; me.exam = null;
     const c = COURSES()[E.id], r = g.takeExam(E.id, E.right, E.qs.length);
-    if (!r?.ok) { closeModal(); toast(r?.msg || 'Tentan gick inte att lämna in.', 'bad'); return; }
+    if (!r?.ok) { closeModal(); toast(r?.msg || $t('Tentan gick inte att lämna in.'), 'bad'); return; }
     if (r.pass) {
       play('fanfare');
       const job = GM.JOBS?.[c.job];
-      openModal('🎓 GODKÄND – EXAMEN!', `<div style="text-align:center"><img src="${diplomaURL(c)}" alt="Examensbevis" style="width:360px;max-width:100%;image-rendering:pixelated"></div>
-        <p style="font-size:var(--f2)">${r.right} av ${r.of} rätt – du har nu examen i <b>${esc(c.name)}</b>!</p>
-        ${job ? `<p style="font-size:var(--f2)">💼 Nu kan du jobba som <b>${job.icon} ${esc(job.name)}</b> i downtown – ${job.wage} kr per rätt.</p>` : c.id === 'ledarskap' ? `<p style="font-size:var(--f2)">💼 Nu kan du söka befordran till <b>biträdande chef</b> och <b>chef</b> på jobben du är van vid.</p>` : ''}`, [{ label: '🎉 Hurra!', cls: 'btn-go', onClick: closeModal }]);
-      librarian.talk.say('Grattis till examen! 🎓', librAt(), 4);
+      openModal($t('🎓 GODKÄND – EXAMEN!'), `<div style="text-align:center"><img src="${diplomaURL(c)}" alt="${$t('Examensbevis')}" style="width:360px;max-width:100%;image-rendering:pixelated"></div>
+        <p style="font-size:var(--f2)">${$t`${r.right} av ${r.of} rätt – du har nu examen i <b>${esc(c.name)}</b>!`}</p>
+        ${job ? `<p style="font-size:var(--f2)">${$t`💼 Nu kan du jobba som <b>${job.icon} ${esc(job.name)}</b> i downtown – ${job.wage} kr per rätt.`}</p>` : c.id === 'ledarskap' ? `<p style="font-size:var(--f2)">${$t('💼 Nu kan du söka befordran till <b>biträdande chef</b> och <b>chef</b> på jobben du är van vid.')}</p>` : ''}`, [{ label: $t('🎉 Hurra!'), cls: 'btn-go', onClick: closeModal }]);
+      librarian.talk.say($t('Grattis till examen! 🎓'), librAt(), 4);
     } else {
       play('fel');
-      openModal('✏️ Underkänd', `<p style="font-size:var(--f2);margin-top:0">${r.right} av ${r.of} rätt – det krävs ${Math.ceil((r.of * 2) / 3)} för godkänt.</p>
-        <p style="font-size:var(--f2)">Omtentan kan du skriva i morgon. Läs på: tavlan i Aula 1 och bokhyllorna har svaren!</p>`, [{ label: 'Okej…', cls: 'btn-go', onClick: closeModal }]);
-      talkMe.say('Suck. Omtenta i morgon…', meAt, 4);
+      openModal($t('✏️ Underkänd'), `<p style="font-size:var(--f2);margin-top:0">${$t`${r.right} av ${r.of} rätt – det krävs ${Math.ceil((r.of * 2) / 3)} för godkänt.`}</p>
+        <p style="font-size:var(--f2)">${$t('Omtentan kan du skriva i morgon. Läs på: tavlan i Aula 1 och bokhyllorna har svaren!')}</p>`, [{ label: $t('Okej…'), cls: 'btn-go', onClick: closeModal }]);
+      talkMe.say($t('Suck. Omtenta i morgon…'), meAt, 4);
     }
   }
   // examensbeviset: pergament med sigill, namnet och kursen
@@ -861,11 +863,11 @@ export function makeShopUniversitet(A /* , opts */) {
       P.px(x, y, col);
     }
     const ctr = (s, y, F, col) => text(P, F, s, 60 - (textW(F, s) >> 1), y, col);
-    ctr('PIXELHÖGSKOLAN', 9, SMALL, 0x6a4a1a);
-    ctr('EXAMEN', 18, BIG, 0x1f3a6a);
-    ctr(safeTxt(A.avatar?.name || 'STUDENT').slice(0, 18), 32, SMALL, 0x2a2430);
-    ctr('I ' + safeTxt(c.name), 42, SMALL, 0x2a2430);
-    ctr('DAG ' + (g?.day || 1), 52, SMALL, 0x6a5a40);
+    ctr($t('PIXELHÖGSKOLAN'), 9, SMALL, 0x6a4a1a);
+    ctr($t('EXAMEN'), 18, BIG, 0x1f3a6a);
+    ctr(safeTxt(A.avatar?.name || $t('STUDENT')).slice(0, 18), 32, SMALL, 0x2a2430);
+    ctr($t`I ${safeTxt(c.name)}`, 42, SMALL, 0x2a2430);
+    ctr($t`DAG ${g?.day || 1}`, 52, SMALL, 0x6a5a40);
     P.ell(96, 64, 7, 7, 0xb82a20, 1, 1); P.px(96, 64, 0xf0c850); P.px(95, 63, 0xf0c850); P.px(97, 63, 0xf0c850);
     P.rect(93, 69, 2, 6, 0xb82a20); P.rect(98, 69, 2, 6, 0xb82a20);
     P.line(14, 66, 44, 66, 0x2a2430); for (let i = 0; i < 24; i++) P.px(16 + i, 63 + Math.round(Math.sin(i * 0.8) * 2), 0x1f3a6a);
@@ -885,44 +887,44 @@ export function makeShopUniversitet(A /* , opts */) {
     walker.dir = 'down';
   }
   function goSeat(s) {
-    if (s.occ && s.occ !== 'me') { talkMe.say('Där sitter någon redan.', meAt, 2); return; }
+    if (s.occ && s.occ !== 'me') { talkMe.say($t('Där sitter någon redan.'), meAt, 2); return; }
     if (me.seat === s) { onSeated(s); return; }
     standUp();
     walker.walkTo(s.ax, s.ay, () => {
-      if (s.occ && s.occ !== 'me') { talkMe.say('Någon hann före!', meAt, 2); return; }
+      if (s.occ && s.occ !== 'me') { talkMe.say($t('Någon hann före!'), meAt, 2); return; }
       sitAt(s); onSeated(s);
     });
   }
   function onSeated(s) {
     if (s.kind === 'aula') offerLecture();
     else if (s.kind === 'tenta') offerExam();
-    else talkMe.say(['Skönt med lite lugn och ro.', 'Jag läser en stund.', 'Pssst… tyst i biblioteket!'][Math.floor(t) % 3], meAt, 3);
+    else talkMe.say([$t('Skönt med lite lugn och ro.'), $t('Jag läser en stund.'), $t('Pssst… tyst i biblioteket!')][Math.floor(t) % 3], meAt, 3);
   }
 
   // ---------- klickytor ----------
   const hot = [
-    { id: 'dorr', r: [DOOR.x0, DOOR.top, DOOR.x1, WALL_Y + 8], go: DOOR_SPOT, label: 'UT TILL STADEN', act: () => { play('door'); doorOpen = 1; A.go('city'); } },
-    { id: 'expedition', r: [EXP.x0, 22, EXP.x1, EXP.y], go: EXP_SPOT, label: 'STUDENTEXPEDITIONEN - ANMÄLAN', act: openCourses },
-    { id: 'anslag', r: [NOTE.x0 - 2, NOTE.y0 - 8, NOTE.x1 + 2, NOTE.y1 + 2], go: [40, 104], label: 'ANSLAGSTAVLAN', act: () => talkMe.say(['SPEX på fredag kl 19 – det låter kul!', '"Pluggkompis sökes inför ekonomitentan." Hm!', 'Korridorrum sökes… någon har rivit alla lappar utom en.', 'Kårfest! Man måste visa studentkortet.'][Math.floor(t * 0.7) % 4], meAt, 4) },
-    { id: 'byst', r: [BUST.x - 10, BUST.y - 44, BUST.x + 10, BUST.y], go: [BUST.x + 4, BUST.y + 10], label: 'PROFESSOR PIXEL', act: () => { talkMe.say('Professor Pixel, grundare 1893. Man klappar näsan för tur på tentan!', meAt, 5); play('click'); } },
-    { id: 'tavla', r: [BOARD.x0 - 4, BOARD.y0 - 4, BOARD.x1 + 4, BOARD.y1 + 8], go: [376, 108], label: 'SVARTA TAVLAN', act: () => lecturer.talk.say(me.lec ? 'Anteckna – det här kommer på tentan!' : 'Föreläsningarna går 08–17. Sätt dig i en ledig bänk!', lectAt(), 4) },
-    { id: 'lektor', r: () => [lecturer.x - 8, lecturer.y - 44, lecturer.x + 8, lecturer.y], go: () => [lecturer.x, 118], label: 'DOCENT LIND', act: () => lecturer.talk.say(me.lec ? 'Tyst i salen, tack!' : whyNoLectureShort(), lectAt(), 5) },
-    { id: 'katedern', r: [LECT.x0, LECT.top - 4, LECT.x1, LECT.y], go: [478, 122], label: 'KATEDERN', act: () => talkMe.say('Docentens anteckningar… "KOM IHÅG: TENTAN!"', meAt, 3) },
-    { id: 'hylla', r: [SHELF.x0, SHELF.y0 - 4, SHELF.x1, SHELF.y1 + 2], go: () => [clamp(walker.px, SHELF.x0 + 10, SHELF.x1 - 10), 106], label: 'BOKHYLLORNA', act: () => talkMe.say(studyTip(), meAt, 5) },
-    { id: 'bibliotekarie', r: [LIB.x0, LIB.top - 50, LIB.x1, LIB.y], go: [LIBR[0], 130], label: 'BIBLIOTEKARIEN', act: () => { librarian.stampT = 1; play('click'); librarian.talk.say(examChoices().length ? 'Du får skriva tentan vid tentabordet. Lycka till!' : 'Välkommen! Tentorna skrivs vid tentabordet, lånen här.', librAt(), 4); } },
-    { id: 'glob', r: [GLOBE.x - 10, GLOBE.y - 30, GLOBE.x + 10, GLOBE.y], go: [GLOBE.x - 14, GLOBE.y + 6], label: 'JORDGLOBEN', act: () => { globeSpin = 3; play('slide'); } },
+    { id: 'dorr', r: [DOOR.x0, DOOR.top, DOOR.x1, WALL_Y + 8], go: DOOR_SPOT, label: $t('UT TILL STADEN'), act: () => { play('door'); doorOpen = 1; A.go('city'); } },
+    { id: 'expedition', r: [EXP.x0, 22, EXP.x1, EXP.y], go: EXP_SPOT, label: $t('STUDENTEXPEDITIONEN - ANMÄLAN'), act: openCourses },
+    { id: 'anslag', r: [NOTE.x0 - 2, NOTE.y0 - 8, NOTE.x1 + 2, NOTE.y1 + 2], go: [40, 104], label: $t('ANSLAGSTAVLAN'), act: () => talkMe.say([$t('SPEX på fredag kl 19 – det låter kul!'), $t('"Pluggkompis sökes inför ekonomitentan." Hm!'), $t('Korridorrum sökes… någon har rivit alla lappar utom en.'), $t('Kårfest! Man måste visa studentkortet.')][Math.floor(t * 0.7) % 4], meAt, 4) },
+    { id: 'byst', r: [BUST.x - 10, BUST.y - 44, BUST.x + 10, BUST.y], go: [BUST.x + 4, BUST.y + 10], label: $t('PROFESSOR PIXEL'), act: () => { talkMe.say($t('Professor Pixel, grundare 1893. Man klappar näsan för tur på tentan!'), meAt, 5); play('click'); } },
+    { id: 'tavla', r: [BOARD.x0 - 4, BOARD.y0 - 4, BOARD.x1 + 4, BOARD.y1 + 8], go: [376, 108], label: $t('SVARTA TAVLAN'), act: () => lecturer.talk.say(me.lec ? $t('Anteckna – det här kommer på tentan!') : $t('Föreläsningarna går 08–17. Sätt dig i en ledig bänk!'), lectAt(), 4) },
+    { id: 'lektor', r: () => [lecturer.x - 8, lecturer.y - 44, lecturer.x + 8, lecturer.y], go: () => [lecturer.x, 118], label: $t('DOCENT LIND'), act: () => lecturer.talk.say(me.lec ? $t('Tyst i salen, tack!') : whyNoLectureShort(), lectAt(), 5) },
+    { id: 'katedern', r: [LECT.x0, LECT.top - 4, LECT.x1, LECT.y], go: [478, 122], label: $t('KATEDERN'), act: () => talkMe.say($t('Docentens anteckningar… "KOM IHÅG: TENTAN!"'), meAt, 3) },
+    { id: 'hylla', r: [SHELF.x0, SHELF.y0 - 4, SHELF.x1, SHELF.y1 + 2], go: () => [clamp(walker.px, SHELF.x0 + 10, SHELF.x1 - 10), 106], label: $t('BOKHYLLORNA'), act: () => talkMe.say(studyTip(), meAt, 5) },
+    { id: 'bibliotekarie', r: [LIB.x0, LIB.top - 50, LIB.x1, LIB.y], go: [LIBR[0], 130], label: $t('BIBLIOTEKARIEN'), act: () => { librarian.stampT = 1; play('click'); librarian.talk.say(examChoices().length ? $t('Du får skriva tentan vid tentabordet. Lycka till!') : $t('Välkommen! Tentorna skrivs vid tentabordet, lånen här.'), librAt(), 4); } },
+    { id: 'glob', r: [GLOBE.x - 10, GLOBE.y - 30, GLOBE.x + 10, GLOBE.y], go: [GLOBE.x - 14, GLOBE.y + 6], label: $t('JORDGLOBEN'), act: () => { globeSpin = 3; play('slide'); } },
   ];
   function whyNoLectureShort() {
     const h = hour();
-    if (h < OPEN_LECT[0] || h >= OPEN_LECT[1]) return 'Föreläsningarna går 08–17.';
-    return lectureChoices().length ? 'Sätt dig i en ledig bänk så börjar vi!' : whyNoLecture();
+    if (h < OPEN_LECT[0] || h >= OPEN_LECT[1]) return $t('Föreläsningarna går 08–17.');
+    return lectureChoices().length ? $t('Sätt dig i en ledig bänk så börjar vi!') : whyNoLecture();
   }
   function studyTip() {
     const on = Object.values(COURSES()).find((c) => eduOf(c.id) && !eduOf(c.id).klar);
-    if (on?.id === 'datorteknik') return '"Datorns delar": CPU räknar, RAM minns, PSU ger ström. Kylpasta på processorn!';
-    if (on?.id === 'ekonomi') return '"Börsen för nybörjare": köp under kundens gräns, sälj över den. 10 × 20 kr = 200 kr.';
-    if (on?.id === 'ledarskap') return '"Chef på riktigt": lyssna först, beröm det som går bra, schema med vila. En budget = vad man tjänar och vad det kostar.';
-    return ['"Pixelstadens historia", del 1–12. Tjocka!', 'En hel hylla om kokkonst. Hungrig nu.', '"Sagan om den sista nattbussen". Den har jag läst!'][Math.floor(t) % 3];
+    if (on?.id === 'datorteknik') return $t('"Datorns delar": CPU räknar, RAM minns, PSU ger ström. Kylpasta på processorn!');
+    if (on?.id === 'ekonomi') return $t('"Börsen för nybörjare": köp under kundens gräns, sälj över den. 10 × 20 kr = 200 kr.');
+    if (on?.id === 'ledarskap') return $t('"Chef på riktigt": lyssna först, beröm det som går bra, schema med vila. En budget = vad man tjänar och vad det kostar.');
+    return [$t('"Pixelstadens historia", del 1–12. Tjocka!'), $t('En hel hylla om kokkonst. Hungrig nu.'), $t('"Sagan om den sista nattbussen". Den har jag läst!')][Math.floor(t) % 3];
   }
   let globeSpin = 0, globeAng = 0;
   const rOf = (h) => (typeof h.r === 'function' ? h.r() : h.r);
@@ -970,7 +972,7 @@ export function makeShopUniversitet(A /* , opts */) {
     // studentprat då och då (bara i bild)
     if (!talkStud.active() && hash(Math.floor(t / 5), 3, 11) < 0.02 * dt * 60) {
       const S = sitters.filter((s) => seenX(s.seat.x) && s.seat.kind === 'aula')[0];
-      if (S && !me.lec) talkStud.say(['Har du anteckningarna från i går?', 'Kaffe efteråt?', 'Jag hann inte läsa…'][Math.floor(t) % 3], { x: S.seat.x, y: S.seat.y - 40 }, 3);
+      if (S && !me.lec) talkStud.say([$t('Har du anteckningarna från i går?'), $t('Kaffe efteråt?'), $t('Jag hann inte läsa…')][Math.floor(t) % 3], { x: S.seat.x, y: S.seat.y - 40 }, 3);
     }
   }
   const seenX = (x, m = 0) => x >= cam.x - m && x <= cam.x + VW + m;
@@ -1002,7 +1004,7 @@ export function makeShopUniversitet(A /* , opts */) {
     const P = new Pix(28, 36);
     P.line(4, 34, 10, 2, 0x6a4428); P.line(23, 34, 17, 2, 0x6a4428); P.line(14, 30, 14, 4, 0x5a3a22);
     P.rect(2, 3, 24, 24, 0xf4f1ea); P.box(2, 3, 24, 24, 0x8a5c36); P.hl(3, 4, 22, 0xffffff);
-    const L = ['VÄLKOM-', 'MEN', 'NYA', 'STUDEN-', 'TER!'];
+    const L = $t('VÄLKOM-\nMEN\nNYA\nSTUDEN-\nTER!').split('\n');   // VÄLKOMMEN NYA STUDENTER! (en nyckel, en rad per \n)
     L.forEach((l, i) => text(P, SMALL, l, 14 - (textW(SMALL, l) >> 1), 5 + i * 6 - (i > 1 ? 1 : 0), i < 2 ? 0x1f3a6a : 0xa83a3a));
     P.rect(3, 27, 22, 2, 0x8a5c36);
     P.hl(3, 35, 22, 0x000000, 0.25);
@@ -1115,12 +1117,12 @@ export function makeShopUniversitet(A /* , opts */) {
     enter() { cam.x = cams(); },
     exit() { closeModalIfMine(); guide.talk.clear(); lecturer.talk.clear(); librarian.talk.clear(); talkMe.clear(); talkStud.clear(); },
     // mitt i en föreläsning eller tenta går man inte därifrån (👥-menyn frågar här)
-    leaveBlock() { return me.lec ? 'Föreläsningen pågår – lyssna klart först! 📚' : me.exam ? 'Skriv klart tentan först! ✏️' : null; },
+    leaveBlock() { return me.lec ? $t('Föreläsningen pågår – lyssna klart först! 📚') : me.exam ? $t('Skriv klart tentan först! ✏️') : null; },
     update,
     down(sx, sy) {
       const x = sx + cam.x, y = sy;
       peekCam = null;
-      if (me.lec) { if (t - me.waitT > 2) { talkMe.say('Tyst – föreläsningen pågår!', meAt, 2); me.waitT = t; } return; }
+      if (me.lec) { if (t - me.waitT > 2) { talkMe.say($t('Tyst – föreläsningen pågår!'), meAt, 2); me.waitT = t; } return; }
       if (me.exam) return;
       const h = spotAt(x, y);
       if (h?.seat) { goSeat(h.seat); return; }
@@ -1147,7 +1149,7 @@ export function makeShopUniversitet(A /* , opts */) {
       let label = null;
       if (hoverId && t - hoverT < 3) {
         const s = seatById(hoverId);
-        if (s) label = s.kind === 'aula' ? 'SÄTT DIG - FÖRELÄSNING' : s.kind === 'tenta' ? 'TENTABORDET - SKRIV TENTAN' : 'LÄSPLATS';
+        if (s) label = s.kind === 'aula' ? $t('SÄTT DIG - FÖRELÄSNING') : s.kind === 'tenta' ? $t('TENTABORDET - SKRIV TENTAN') : $t('LÄSPLATS');
         else label = hot.find((h) => h.id === hoverId)?.label || null;
       }
       // föreläsningen: docentens repliker som textremsa längst ner (bubblan skulle skymma tavlan)
@@ -1160,8 +1162,8 @@ export function makeShopUniversitet(A /* , opts */) {
         ctxText(ctx, SMALL, label, ((VW - w) >> 1) + 5, by + 4, '#f4ecd8');
       }
       // pilar mot resten av huset
-      if (cx > 40) edgeSign(ctx, true, cx > Z_BIB - 40 ? 'AULA 1' : 'ENTRÉ');
-      if (cx < W - VW - 40) edgeSign(ctx, false, cx + VW < Z_BIB ? 'BIBLIOTEK' : 'MER');
+      if (cx > 40) edgeSign(ctx, true, cx > Z_BIB - 40 ? $t('AULA 1') : $t('ENTRÉ'));
+      if (cx < W - VW - 40) edgeSign(ctx, false, cx + VW < Z_BIB ? $t('BIBLIOTEK') : $t('MER'));
     },
     _debug: {
       spot: (id) => {
@@ -1203,7 +1205,7 @@ export function makeShopUniversitet(A /* , opts */) {
     ctx.fillStyle = '#0f1f3a'; ctx.fillRect(x, y, w, h);
     ctx.fillStyle = '#1f3a6a'; ctx.fillRect(x + 1, y + 1, w - 2, h - 2);
     ctx.fillStyle = '#c89a40'; ctx.fillRect(x + 1, y + 1, w - 2, 1); ctx.fillRect(x + 1, y + h - 2, w - 2, 1);
-    const head = `FÖRELÄSNING ${Math.min((e?.lect || 0) + 1, c?.lectures || 1)} AV ${c?.lectures || 1} - ${safeTxt(c?.name || '')}`;
+    const head = $t`FÖRELÄSNING ${Math.min((e?.lect || 0) + 1, c?.lectures || 1)} AV ${c?.lectures || 1} - ${safeTxt(c?.name || '')}`;
     ctxText(ctx, SMALL, head, x + 6, y + 4, '#f0c850');
     const k = clamp(L.t / L.dur, 0, 1), bx = x + 12 + textW(SMALL, head), bw = w - (bx - x) - 8;
     ctx.fillStyle = '#0f1f3a'; ctx.fillRect(bx, y + 5, bw, 3); ctx.fillStyle = '#f0c850'; ctx.fillRect(bx, y + 5, Math.round(bw * k), 3);

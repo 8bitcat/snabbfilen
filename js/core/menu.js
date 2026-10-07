@@ -13,6 +13,7 @@ import { HOMES, JOBS, fmt, SAVE_KEY } from '../game.js';
 import { VERSION } from '../version.js';
 import { openNews, makeBackup } from './version-ui.js';
 import { notiserFinns, notiserPa, slaPa, slaAv, provNotis } from './notiser.js';
+import { $t, LANG, LANGS, setLang } from './i18n.js';
 
 const SKIP = 'sf_menu_skip';
 const saveKeyOf = (id) => 'snabbfilen_save:' + id;
@@ -37,7 +38,7 @@ function summaryOf(id, isCurrent) {
     const p = JSON.parse(raw);
     const home = HOMES.find((h) => h.id === p.home);
     const shifts = Object.values(p.jobs || {}).reduce((a, b) => a + (b | 0), 0);
-    return { money: Math.round(+p.money || 0), home: home ? `${home.icon} ${home.name}` : '🏠 ' + (p.home || '?'), day: p.day | 0, shifts, won: !!p.won || (p.malKlar | 0) > 0 };   // 🏆 = livsmålen (eller gamla slutmålet)
+    return { money: Math.round(+p.money || 0), home: home ? `${home.icon} ${$t(home.name)}` : '🏠 ' + (p.home || '?'), day: p.day | 0, shifts, won: !!p.won || (p.malKlar | 0) > 0 };   // 🏆 = livsmålen (eller gamla slutmålet)
   } catch { return null; }
 }
 
@@ -75,16 +76,16 @@ function newGame() {
   });
 }
 function restartCurrent(av) {
-  openModal('🔄 Börja om från början?', `<p><b>${esc(av.name)}</b> börjar om i husvagnen med startpengarna. Pengar, kläder, möbler och allt annat försvinner.</p><p>En säkerhetskopia läggs under versionsknappen om du ångrar dig.</p>`, [
-    { label: 'Avbryt', onClick: () => closeModal() },
-    { label: '🔄 Börja om', cls: 'btn-red', onClick: () => { makeBackup(`före omstart av ${av.name}`); ls.del(SAVE_KEY); ls.del(saveKeyOf(av.id)); closeModal(); reloadInto(); } },
+  openModal($t('🔄 Börja om från början?'), $t`<p><b>${esc(av.name)}</b> börjar om i husvagnen med startpengarna. Pengar, kläder, möbler och allt annat försvinner.</p><p>En säkerhetskopia läggs under versionsknappen om du ångrar dig.</p>`, [
+    { label: $t('Avbryt'), onClick: () => closeModal() },
+    { label: $t('🔄 Börja om'), cls: 'btn-red', onClick: () => { makeBackup($t`före omstart av ${av.name}`); ls.del(SAVE_KEY); ls.del(saveKeyOf(av.id)); closeModal(); reloadInto(); } },
   ]);
 }
 function removeAvatar(av, isCurrent) {
-  openModal('🗑 Ta bort figuren?', `<p><b>${esc(av.name)}</b> och hens spel tas bort helt.</p>`, [
-    { label: 'Avbryt', onClick: () => closeModal() },
-    { label: 'Ta bort', cls: 'btn-red', onClick: () => {
-      makeBackup(`före borttagning av ${av.name}`);
+  openModal($t('🗑 Ta bort figuren?'), $t`<p><b>${esc(av.name)}</b> och hens spel tas bort helt.</p>`, [
+    { label: $t('Avbryt'), onClick: () => closeModal() },
+    { label: $t('Ta bort'), cls: 'btn-red', onClick: () => {
+      makeBackup($t`före borttagning av ${av.name}`);
       ls.del(saveKeyOf(av.id));
       if (isCurrent) ls.del(SAVE_KEY);
       deleteAvatar(av.id);
@@ -105,37 +106,38 @@ function render() {
   const sel = list.find((a) => a.id === selected) || null;
   const paused = !!opts.pause;
   const canContinue = !!sel;
-  const contLabel = !sel ? '▶ Fortsätt' : paused && sel.id === curId ? '▶ Fortsätt spela' : `▶ Fortsätt som ${esc(sel.name)}`;
+  const contLabel = !sel ? $t('▶ Fortsätt') : paused && sel.id === curId ? $t('▶ Fortsätt spela') : $t`▶ Fortsätt som ${esc(sel.name)}`;
   const cards = list.map((a) => {
     const isCur = a.id === curId;
     const s = summaryOf(a.id, isCur);
-    const sum = s ? `${fmt(s.money)} · ${s.home} · dag ${s.day}${s.shifts ? ` · ${s.shifts} pass` : ''}${s.won ? ' · 🏆' : ''}` : 'Nytt liv – inte börjat än';
+    const sum = s ? `${fmt(s.money)} · ${s.home} · ${$t`dag ${s.day}`}${s.shifts ? ` · ${$t`${s.shifts} pass`}` : ''}${s.won ? ' · 🏆' : ''}` : $t('Nytt liv – inte börjat än');
     return `<div class="menu-card ${a.id === selected ? 'on' : ''}" data-pick="${esc(a.id)}" style="--pc:${esc(avatarColor(a))}">
       <span class="menu-face" data-face="${esc(a.id)}"></span>
-      <span class="menu-card-txt"><b>${esc(a.name)}${isCur ? ' <i class="nu">spelar nu</i>' : ''}</b><small>${sum}</small></span>
+      <span class="menu-card-txt"><b>${esc(a.name)}${isCur ? ` <i class="nu">${$t('spelar nu')}</i>` : ''}</b><small>${sum}</small></span>
       <span class="menu-card-tools">
-        <button class="btn btn-small" data-edit="${esc(a.id)}" title="Ändra utseende">✏️</button>
-        ${isCur ? `<button class="btn btn-small" data-restart="${esc(a.id)}" title="Börja om från början">🔄</button>` : ''}
-        <button class="btn btn-small" data-del="${esc(a.id)}" title="Ta bort">🗑</button>
+        <button class="btn btn-small" data-edit="${esc(a.id)}" title="${$t('Ändra utseende')}">✏️</button>
+        ${isCur ? `<button class="btn btn-small" data-restart="${esc(a.id)}" title="${$t('Börja om från början')}">🔄</button>` : ''}
+        <button class="btn btn-small" data-del="${esc(a.id)}" title="${$t('Ta bort')}">🗑</button>
       </span>
     </div>`;
   }).join('');
   root.innerHTML = `<div class="menu-panel ${paused ? 'paused' : ''}">
-    <div class="menu-title"><span>SNABBFILEN</span><small>${paused ? 'Paus' : 'Livet i Pixelstaden'}</small></div>
+    <div class="menu-title"><span>${$t('SNABBFILEN')}</span><small>${paused ? $t('Paus') : $t('Livet i Pixelstaden')}</small></div>
     <div class="menu-btns">
-      <button class="btn btn-go menu-main" data-new>🆕 Nytt spel</button>
+      <button class="btn btn-go menu-main" data-new>${$t('🆕 Nytt spel')}</button>
       <button class="btn menu-main ${canContinue ? 'btn-gold' : ''}" data-continue ${canContinue ? '' : 'disabled'}>${contLabel}</button>
-      <button class="btn menu-main" data-settings>⚙ Inställningar${showSettings ? ' ▲' : ''}</button>
+      <button class="btn menu-main" data-settings>${$t('⚙ Inställningar')}${showSettings ? ' ▲' : ''}</button>
     </div>
     <div class="menu-settings ${showSettings ? '' : 'hidden'}">
-      <div class="menu-row"><span>🔊 Ljud</span><button class="btn btn-small ${isMuted() ? '' : 'btn-go'}" data-sound>${isMuted() ? 'AV' : 'PÅ'}</button></div>
-      <div class="menu-row"><span>🎵 Musik</span><button class="btn btn-small ${isMusicOn() ? 'btn-go' : ''}" data-music>${isMusicOn() ? 'PÅ' : 'AV'}</button></div>
-      <div class="menu-row"><span>📊 Mätare</span><button class="btn btn-small" data-hud>${hudMode() === 'pix' ? 'PIXEL uppe till vänster' : 'RAD överst'}</button></div>
-      ${notiserFinns() ? `<div class="menu-row"><span>🔔 Notiser</span><span>${notiserPa() ? '<button class="btn btn-small" data-notisprov>Prova</button> ' : ''}<button class="btn btn-small ${notiserPa() ? 'btn-go' : ''}" data-notiser>${notiserPa() ? 'PÅ' : 'AV'}</button></span></div>` : ''}
+      <div class="menu-row"><span>🌍 ${$t('Språk')}</span><select class="btn btn-small" id="menu-lang" data-lang>${LANGS.map((l) => `<option value="${l.id}" ${l.id === LANG ? 'selected' : ''}>${l.name}</option>`).join('')}</select></div>
+      <div class="menu-row"><span>🔊 ${$t('Ljud')}</span><button class="btn btn-small ${isMuted() ? '' : 'btn-go'}" data-sound>${isMuted() ? $t('AV') : $t('PÅ')}</button></div>
+      <div class="menu-row"><span>🎵 ${$t('Musik')}</span><button class="btn btn-small ${isMusicOn() ? 'btn-go' : ''}" data-music>${isMusicOn() ? $t('PÅ') : $t('AV')}</button></div>
+      <div class="menu-row"><span>📊 ${$t('Mätare')}</span><button class="btn btn-small" data-hud>${hudMode() === 'pix' ? $t('PIXEL uppe till vänster') : $t('RAD överst')}</button></div>
+      ${notiserFinns() ? `<div class="menu-row"><span>🔔 ${$t('Notiser')}</span><span>${notiserPa() ? `<button class="btn btn-small" data-notisprov>${$t('Prova')}</button> ` : ''}<button class="btn btn-small ${notiserPa() ? 'btn-go' : ''}" data-notiser>${notiserPa() ? $t('PÅ') : $t('AV')}</button></span></div>` : ''}
     </div>
-    <div class="menu-sub">${list.length ? 'Vem spelar?' : 'Inga figurer än – tryck på Nytt spel!'}</div>
+    <div class="menu-sub">${list.length ? $t('Vem spelar?') : $t('Inga figurer än – tryck på Nytt spel!')}</div>
     <div class="menu-cards">${cards}</div>
-    <div class="menu-foot"><button class="btn btn-small" data-news>v${esc(VERSION)} · Nyheter</button>${paused ? '<span class="menu-hint">Esc stänger</span>' : ''}</div>
+    <div class="menu-foot"><button class="btn btn-small" data-news>v${esc(VERSION)} · ${$t('Nyheter')}</button>${paused ? `<span class="menu-hint">${$t('Esc stänger')}</span>` : ''}</div>
   </div>`;
   root.querySelectorAll('[data-face]').forEach((el) => { const a = list.find((x) => x.id === el.dataset.face); if (a) el.replaceWith(avatarPortrait(a, 56)); });
   root.querySelectorAll('.menu-card').forEach((c) => (c.onclick = (e) => { if (e.target.closest('button')) return; play('click'); if (selected === c.dataset.pick) startWith(list.find((a) => a.id === selected)); else { selected = c.dataset.pick; render(); } }));
@@ -145,9 +147,10 @@ function render() {
   root.querySelector('[data-news]').onclick = () => openNews();
   root.querySelector('[data-sound]')?.addEventListener('click', () => { const m = toggleMute(); musicTick(); const b = document.getElementById('hud-mute'); if (b) b.textContent = m ? '🔇' : '🔊'; render(); });
   root.querySelector('[data-music]')?.addEventListener('click', () => { setMusic(!isMusicOn()); play('click'); render(); });
+  root.querySelector('[data-lang]')?.addEventListener('change', (e) => { play('click'); setLang(e.target.value); });
   root.querySelector('[data-hud]')?.addEventListener('click', () => { setHudMode(hudMode() === 'pix' ? 'rad' : 'pix'); play('click'); render(); });
   root.querySelector('[data-notiser]')?.addEventListener('click', async () => { play('click'); if (notiserPa()) await slaAv(); else await slaPa(); render(); });
-  root.querySelector('[data-notisprov]')?.addEventListener('click', async () => { play('click'); toast(await provNotis() ? '🔔 Notisen kommer om fem sekunder.' : '🔕 Notisen gick inte att skicka.', 'good'); });
+  root.querySelector('[data-notisprov]')?.addEventListener('click', async () => { play('click'); toast(await provNotis() ? $t('🔔 Notisen kommer om fem sekunder.') : $t('🔕 Notisen gick inte att skicka.'), 'good'); });
   root.querySelectorAll('[data-edit]').forEach((b) => (b.onclick = () => {
     const a = list.find((x) => x.id === b.dataset.edit);
     if (a.id !== curId) { switchTo(a); return; } // bytet laddar om; redigera hemma i garderoben
@@ -190,7 +193,7 @@ export function mountMenuButton(app) {
   const host = document.querySelector('#hud .hud-btns');
   if (!host || document.getElementById('hud-menu')) return;
   const b = document.createElement('button');
-  b.id = 'hud-menu'; b.className = 'btn btn-small'; b.title = 'Meny';
+  b.id = 'hud-menu'; b.className = 'btn btn-small'; b.title = $t('Meny');
   b.textContent = '☰';
   b.onclick = () => { if (open) { close(); return; } openMenu(app, { pause: true, onStart: () => {} }); };
   host.prepend(b);

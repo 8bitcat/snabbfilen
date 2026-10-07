@@ -14,6 +14,7 @@
 import { Pix, SMALL, BIG, text, textW, eachTextPixel, mix, mul, hash, bayer } from '../../core/floor-pix.js';
 import { drawPerson } from '../../core/people.js';
 import { posterCanvas, POSTER_W, POSTER_H, FILMER } from './film.js';
+import { $t } from '../../core/i18n.js';
 
 export const W = 576, H = 216;
 const WHITE = 0xffffff, INK = 0x17151a;
@@ -278,7 +279,7 @@ export function paintBoothFront() {
   const P = new Pix(x1 - x0 + 4, WY - oy + 1, ox, oy);
   // skylten BILJETTER
   area(P, x0 + 2, 11, x1 - x0 - 4, 14, (X, Y, i, j, w = x1 - x0 - 4) => (i === 0 || j === 0 || i === w - 1 || j === 13 ? GOLD.base : jit(VEL.mid, X, Y, 30, 0.06)));
-  goldText(P, BIG, 'BILJETTER', ((x0 + x1) >> 1) - (textW(BIG, 'BILJETTER') >> 1), 14);
+  goldText(P, BIG, $t('BILJETTER'), ((x0 + x1) >> 1) - (textW(BIG, $t('BILJETTER')) >> 1), 14);
   for (let x = x0 + 4; x < x1 - 3; x += 4) { P.px(x, 12, 0xfff0b0); P.px(x, 23, 0xfff0b0); }
   // ramen runt glaset: vinröd med guldlister och ett trappstegskrön
   area(P, x0, 26, x1 - x0, win.y0 - 26, (X, Y, i, j) => (j === 0 ? GOLD.hi : jit(VEL.lo, X, Y, 31, 0.06)));
@@ -304,7 +305,7 @@ export function paintBoothFront() {
     if (d < 16 && d > 14.5) c = GOLD.base;
     return c;
   });
-  const pt = 'BILJETT 90 KR', pw = textW(SMALL, pt) + 6;
+  const pt = $t('BILJETT 90 KR'), pw = textW(SMALL, pt) + 6;
   area(P, gx - (pw >> 1), win.y1 + 6, pw, 9, (X, Y, i, j) => (i === 0 || j === 0 || i === pw - 1 || j === 8 ? GOLD.base : 0x1a0a0e));
   text(P, SMALL, pt, gx - (pw >> 1) + 3, win.y1 + 8, GOLD.hi);
   return { img: P.flush(), ox, oy };
@@ -317,11 +318,11 @@ function paintBarWall(P) {
   // skylten POPCORN med glödlampor runt om
   const sx0 = 290, sx1 = 372;
   area(P, sx0, 12, sx1 - sx0, 14, (X, Y, i, j) => (i === 0 || j === 0 || i === sx1 - sx0 - 1 || j === 13 ? GOLD.base : jit(0x1a0a0e, X, Y, 36, 0.05)));
-  drawText(P, textMask(BIG, 'POPCORN'), ((sx0 + sx1) >> 1) - (textW(BIG, 'POPCORN') >> 1), 15, { fill: (a, b) => (b < 3 ? 0xfff0a0 : 0xffc040), out: 0x6a1a08, oa: 0.9 });
+  drawText(P, textMask(BIG, $t('POPCORN')), ((sx0 + sx1) >> 1) - (textW(BIG, $t('POPCORN')) >> 1), 15, { fill: (a, b) => (b < 3 ? 0xfff0a0 : 0xffc040), out: 0x6a1a08, oa: 0.9 });
   for (let x = sx0 + 3; x < sx1 - 2; x += 4) { P.px(x, 13, 0xfff0b0); P.px(x, 24, 0xfff0b0); }
   // popcornmaskinen: röd huv med text, glasskåp, kittel, röd underdel
   area(P, M.x0 - 1, M.y0, M.x1 - M.x0 + 2, 7, (X, Y, i, j) => (j === 0 ? 0xf0707a : j === 6 ? 0x6a1018 : jit(0xd82a3a, X, Y, 37, 0.06)));
-  text(P, SMALL, 'POPCORN', M.x0 + 2, M.y0 + 1, 0xfff6e0);
+  text(P, SMALL, $t('POPCORN'), M.x0 + 2, M.y0 + 1, 0xfff6e0);
   area(P, M.x0, M.y0 + 7, M.x1 - M.x0, M.y1 - M.y0 - 13, (X, Y, i, j, w = M.x1 - M.x0, h = M.y1 - M.y0 - 13) => {
     if (i === 0 || i === w - 1) return 0xd82a3a;
     if (j > h - 9) return hash(X, Y, 38) > 0.4 ? (hash(X, Y, 39) > 0.5 ? 0xfff6d8 : 0xf8e4a0) : 0xf0c860;   // högen med popcorn
@@ -341,7 +342,7 @@ function paintBarWall(P) {
   area(P, 306, 38, 12, 24, (X, Y, i, j) => (i === 0 ? 0xe8eef2 : i === 11 ? 0x5a646e : j < 8 ? [0xd83a3a, 0x3a7bd5, 0xf0c040][Math.floor(i / 4) % 3] : jit(0xb8c2cc, X, Y, 41, 0.05)));
   for (let k = 0; k < 3; k++) { P.rect(307 + k * 4, 47, 2, 3, 0x2a2a30); P.px(307 + k * 4, 50, 0x1a1a1e); }
   // godisväggen: tre hyllor med genomskinliga lådor lösgodis och skylten GODIS
-  goldText(P, SMALL, 'GODIS', 336, 28);
+  goldText(P, SMALL, $t('GODIS'), 336, 28);
   const CANDY = [[0xff5a7a, 0xffffff], [0x7ad06a, 0xffd040], [0x5ab8ff, 0xffffff], [0x2a1a14, 0xf4f1ea], [0xffa030, 0xff5a5a], [0xc07aff, 0x7ad06a]];
   for (let r = 0; r < 3; r++) {
     const y = 34 + r * 9;
@@ -393,7 +394,7 @@ export function paintCounter() {
     area(P, bx, top - h, 8, h, (X, Y, i, j) => (j < 3 ? (hash(X, Y, 53) > 0.5 ? 0xfff6d8 : 0xf0d070) : i === 0 || i === 7 ? 0xb8202e : ((i >> 1) & 1 ? 0xd82a3a : 0xf4f1ea)));
     P.px(bx + 2, top - h - 1, 0xfff6d8); P.px(bx + 5, top - h - 1, 0xf8e4a0);
   }
-  const t = '35:-', tw = textW(BIG, t) + 6;
+  const t = $t('35:-'), tw = textW(BIG, t) + 6;
   area(P, x0 + 44, top - 12, tw, 11, (X, Y, i, j) => (i === 0 || j === 0 || i === tw - 1 || j === 10 ? GOLD.base : 0x1a0a0e));
   drawText(P, textMask(BIG, t), x0 + 47, top - 10, { fill: 0xfff0a0 });
   outline(P, 0x1a0a06);
@@ -453,7 +454,7 @@ function paintSalonPortal(P) {
   // skylten SALONG 1 i en upplyst låda
   const sx0 = x0 - 2, sx1 = x1 + 2;
   area(P, sx0, 14, sx1 - sx0, 13, (X, Y, i, j) => (i === 0 || j === 0 || i === sx1 - sx0 - 1 || j === 12 ? GOLD.base : jit(0x1a0a0e, X, Y, 61, 0.05)));
-  goldText(P, BIG, 'SALONG 1', ((x0 + x1) >> 1) - (textW(BIG, 'SALONG 1') >> 1), 17);
+  goldText(P, BIG, $t('SALONG 1'), ((x0 + x1) >> 1) - (textW(BIG, $t('SALONG 1')) >> 1), 17);
   for (let x = sx0 + 3; x < sx1 - 2; x += 4) { P.px(x, 15, 0xfff0b0); P.px(x, 25, 0xfff0b0); }
   // lampan under skylten (text och sken ritas live)
   area(P, ((x0 + x1) >> 1) - 22, 28, 44, 9, (X, Y, i, j) => (i === 0 || j === 0 || i === 43 || j === 8 ? 0x3a2a24 : 0x1a0808));
@@ -516,7 +517,7 @@ export function paintSofa() {
 export function paintKlo() {
   const w = 26, h = 46, P = new Pix(w, h);
   area(P, 1, 0, 24, 7, (X, Y, i, j) => (j === 0 ? 0xff8aa0 : j === 6 ? 0x6a1830 : jit(0xd8305a, X, Y, 66, 0.06)));
-  text(P, SMALL, 'VINN!', 4, 1, 0xfff0a0);
+  text(P, SMALL, $t('VINN!'), 4, 1, 0xfff0a0);
   area(P, 1, 7, 24, 22, (X, Y, i, j) => (i === 0 || i === 23 ? 0xc8a44a : j > 13 ? null : mix(0x2a3a5a, 0x3a4a6a, j / 14)));
   // gosedjuren i högen
   const TOY = [0xf0c040, 0x7ad06a, 0xff8aa0, 0x5ab8ff, 0xc07aff, 0xd8a45a];
@@ -561,7 +562,7 @@ export function paintStandee() {
   const sx = 34, sy = 12;
   for (let a = 0; a < 16; a++) { const r = a & 1 ? 5 : 9, th = a / 16 * Math.PI * 2; for (let k = 0; k <= r; k++) P.px(Math.round(sx + Math.cos(th) * k), Math.round(sy + Math.sin(th) * k), 0xffd040); }
   area(P, sx - 6, sy - 6, 13, 13, (X, Y) => (Math.hypot(X - sx, Y - sy) < 6 ? 0xffd040 : null));
-  text(P, SMALL, 'NY', sx - 3, sy - 3, 0xc8262e);
+  text(P, SMALL, $t('NY'), sx - 3, sy - 3, 0xc8262e);
   outline(P, 0x1a0e08);
   return { img: P.flush(), ox: 17, oy: 52 };
 }
@@ -580,7 +581,7 @@ export function paintEasel(id) {
   area(P, 1, fy + fh, w - 2, 2, (X, Y, a, b) => (b === 0 ? wood(X, Y, 68) : mul(0x7a5434, 0.6)));   // hyllan
   // PREMIÄR-skylten
   area(P, 2, 0, 32, 8, (X, Y, a, b) => (b === 0 ? VEL.hi : b === 7 ? VEL.dk : a === 0 || a === 31 ? VEL.lo : VEL.base));
-  const s = 'PREMIÄR', tx = 2 + ((32 - textW(SMALL, s)) >> 1);
+  const s = $t('PREMIÄR'), tx = 2 + ((32 - textW(SMALL, s)) >> 1);
   text(P, SMALL, s, tx + 1, 3, VEL.dk); text(P, SMALL, s, tx, 2, 0xffd23f);
   outline(P, 0x1a0e08);
   for (let x = 4; x < 33; x++) P.px(x, 58, 0x000000, 0.28);                                    // skuggan på mattan
@@ -605,7 +606,7 @@ export function paintPalm() {
 export function paintBin() {
   const P = new Pix(14, 20);
   area(P, 1, 6, 12, 13, (X, Y, i, j) => (j === 0 ? GOLD.hi : i < 3 ? GOLD.hi : i > 9 ? GOLD.lo : GOLD.base));
-  text(P, SMALL, 'TACK', 1, 10, 0x3a1a08);
+  text(P, SMALL, $t('TACK'), 1, 10, 0x3a1a08);
   // en tom popcornbägare sticker upp
   area(P, 4, 0, 6, 6, (X, Y, i) => (i & 1 ? 0xd82a3a : 0xf4f1ea));
   outline(P, 0x1a0e08);
@@ -658,7 +659,7 @@ export function paintFoaje(night) {
   area(P, x0 - 4, top - 6, x1 - x0 + 8, 3, (X, Y, i, j) => [GOLD.hi, GOLD.base, GOLD.lo][j]);
   const ux = ((x0 + x1) >> 1) - 8;
   P.rect(ux, 22, 17, 9, 0x1a2a1e); P.box(ux, 22, 17, 9, 0x0e1812);
-  text(P, SMALL, 'UT', ux + 5, 24, 0x6fe08a); P.ell(ux + 8.5, 26, 12, 6, 0x6fe08a, 0.12, 2);
+  text(P, SMALL, $t('UT'), ux + 5, 24, 0x6fe08a); P.ell(ux + 8.5, 26, 12, 6, 0x6fe08a, 0.12, 2);
   paintPosters(P);
   paintWallBits(P);
   paintBoothInside(P);
@@ -723,7 +724,7 @@ export function paintSalong() {
   area(P, fx0 - 6, fy1, fx1 - fx0 + 12, WY - fy1, (X, Y, i, j) => (j === 0 ? GOLD.base : j === 1 ? 0x6a4424 : jit(0x3a2014, X, Y, 95, 0.06)));
   for (let x = fx0; x < fx1; x += 8) { P.px(x, fy1 + 3, 0xffd890); P.px(x + 1, fy1 + 3, 0xf0b060); }
   // dörrarna: UTGÅNG (till foajén) och NÖDUTGÅNG, med gröna skyltar
-  for (const [D, label] of [[S.DOOR, 'UTGÅNG'], [S.NOD, 'NÖDUTGÅNG']]) {
+  for (const [D, label] of [[S.DOOR, $t('UTGÅNG')], [S.NOD, $t('NÖDUTGÅNG')]]) {
     const h = WY - D.top;
     for (let i = 0; i < 3; i++) { P.vl(D.x0 - 3 + i, D.top - 3, h + 3, [GOLD.dk, GOLD.base, GOLD.lo][i]); P.vl(D.x1 + 2 - i, D.top - 3, h + 3, [GOLD.dk, GOLD.base, GOLD.lo][i]); }
     P.hl(D.x0 - 3, D.top - 3, D.x1 - D.x0 + 6, GOLD.hi); P.hl(D.x0 - 3, D.top - 2, D.x1 - D.x0 + 6, GOLD.lo);
@@ -826,7 +827,7 @@ export function drawCurtain(ctx, open) {
   }
   // BIO PIXEL i guld mitt på den stängda ridån
   if (open < 0.08) {
-    const s = 'BIO PIXEL', tw = textW(BIG, s), tx = x + ((w - tw) >> 1), ty = y + 34;
+    const s = $t('BIO PIXEL'), tw = textW(BIG, s), tx = x + ((w - tw) >> 1), ty = y + 34;
     ctx.fillStyle = '#3a0a10'; eachTextPixel(BIG, s, tx + 1, ty + 1, 1, (px, py) => ctx.fillRect(px, py, 1, 1));
     ctx.fillStyle = '#e8c860'; eachTextPixel(BIG, s, tx, ty, 1, (px, py) => ctx.fillRect(px, py, 1, 1));
   }

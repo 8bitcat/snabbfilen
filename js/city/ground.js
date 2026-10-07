@@ -23,6 +23,7 @@
 // husen kastar skugga snett bakåt (norrut/österut) – in i gränderna och över
 // bakgatan/parkgången. Det är det som ger djup mellan husen.
 import { Pix, mix, mul, hash, bayer, BIG, SMALL, eachTextPixel } from '../core/floor-pix.js';
+import { $t } from '../core/i18n.js';
 import { CITY, BUILDINGS, BUILDINGS_S, BUILDINGS_D, BUILDINGS_X, BUILDINGS_L, FREESTANDING, STREETS_ALL, CROSSWALKS, CROSSWALKS_S, CROSSWALKS_I,
   BUS_STOPS, PARK_LAYOUT, SUB_LAYOUT, DOWNTOWN_LAYOUT, LINNE_LAYOUT, PIER, RIVER, BRIDGES, LOTS, footprint } from './map.js';
 
@@ -700,7 +701,7 @@ function concreteWall(x0, x1, s) {
   // taggar på muren
   for (let k = 0; k < (x1 - x0) / 34; k++) {
     const tx = x0 + 4 + ((hash(k, 1, 114 + s) * (x1 - x0 - 20)) | 0), col = SPRAY[(hash(k, 2, 114 + s) * SPRAY.length) | 0];
-    tag(tx, 1 + ((hash(k, 3, 114 + s) * 2) | 0), ['BTG', 'ZOK', 'NEJ', 'KAOS', 'PXL', 'YO', 'ACAB'.slice(0, 3), 'LOL'][(hash(k, 4, 114 + s) * 8) | 0], col, 115 + k);
+    tag(tx, 1 + ((hash(k, 3, 114 + s) * 2) | 0), ['BTG', 'ZOK', $t('NEJ'), $t('KAOS'), 'PXL', 'YO', 'ACAB'.slice(0, 3), 'LOL'][(hash(k, 4, 114 + s) * 8) | 0], col, 115 + k);
   }
 }
 function chainLink(x0, x1, s) {
@@ -1311,7 +1312,7 @@ function paintRoadX(R) {
       const ph = (x - bx0) % 8, yy = B - 8 + Math.round((ph < 4 ? ph : 8 - ph) * 0.75);
       mark(x, yy, 0xe8c040, 0.1 + br);
     }
-    eachTextPixel(BIG, 'BUSS', s.x - 11, A + 36, 1, (px, py) => mark(px, py, 0xe8e0c8, wearAt(px, py, 0.08) + br));
+    eachTextPixel(BIG, $t('BUSS'), s.x - 11, A + 36, 1, (px, py) => mark(px, py, 0xe8e0c8, wearAt(px, py, 0.08) + br));
   }
   // brunnslock med lagad asfaltruta runt
   const MH = wst ? R.mh || [] : R.dy === 0 ? [[180, 233], [705, 259], [1125, 234], [1480, 260], [1860, 233], [2250, 260], [1900 + SDX, 234], [2350 + SDX, 260], [2620 + SDX, 233]]

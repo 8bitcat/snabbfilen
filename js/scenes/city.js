@@ -20,6 +20,7 @@ import { createPetWalk } from '../pets/outdoors.js'; // husdjuren på promenad (
 import { drawTruck, TRUCK_RECT } from '../core/truck-art.js';               // 🚚 foodtrucken (eget företag)
 import { openTruck, truckOppen, truckNamn } from '../core/foretag.js';
 import { makeLookRich } from '../core/people.js';
+import { $t, money } from '../core/i18n.js';
 
 // Stadsmodulerna. buildings-* ger BUILDING_ART, ground/props/traffic/life livet,
 // weather vädret, walk gångmotorn och fallback-v2 platshållare för allt som
@@ -218,7 +219,7 @@ function drawLandetSkylt(ctx, x, y) {
   ctx.fillStyle = '#1e1a24'; ctx.fillRect(x - 17, y - 38, 36, 14);
   ctx.fillStyle = '#2a7a3a'; ctx.fillRect(x - 16, y - 37, 31, 12); ctx.fillRect(x + 15, y - 35, 2, 8); ctx.fillRect(x + 17, y - 33, 1, 4);
   ctx.fillStyle = '#f4f1ea'; ctx.fillRect(x - 16, y - 37, 31, 1);
-  ctxText(ctx, SMALL, 'LANDET', x - 13, y - 34, '#f4f1ea');
+  ctxText(ctx, SMALL, $t('LANDET'), x - 13, y - 34, '#f4f1ea');
   ctx.fillStyle = '#f4f1ea'; ctx.fillRect(x - 14, y - 28, 6, 2); ctx.fillStyle = '#1e1a1c'; ctx.fillRect(x - 12, y - 28, 2, 1);
 }
 
@@ -257,7 +258,7 @@ export function makeCity(A) {
   if (!A.attract) {
     let seen = false;
     try { seen = localStorage.getItem('snabbfilen_tips_hus') === '1'; localStorage.setItem('snabbfilen_tips_hus', '1'); } catch { /* ok */ }
-    if (!seen) setTimeout(() => toast('👆 Tryck på ett hus – eller på husnamnet överst – så går du dit och in.', 'good'), 1200);
+    if (!seen) setTimeout(() => toast($t('👆 Tryck på ett hus – eller på husnamnet överst – så går du dit och in.'), 'good'), 1200);
   }
   // husdjuren som är ute (js/pets/outdoors.js): följer figuren, promenaden räknas med spelklockan
   let pets = null;
@@ -324,21 +325,21 @@ export function makeCity(A) {
   // ---------- gå in ----------
   // 🍦 Glasståndet i parken (förr kiosken): samma priser som på ståndets meny
   const GLASS_MENY = [
-    { id: 'kula', icon: '🍨', namn: 'Kulglass, en kula', pris: 12, matt: 4, orka: 2 },
-    { id: 'tva', icon: '🍦', namn: 'Två kulor i våffelstrut', pris: 20, matt: 7, orka: 3 },
-    { id: 'mjuk', icon: '🍦', namn: 'Mjukglass med strössel', pris: 10, matt: 3, orka: 2 },
+    { id: 'kula', icon: '🍨', namn: $t('Kulglass, en kula'), pris: 12, matt: 4, orka: 2 },
+    { id: 'tva', icon: '🍦', namn: $t('Två kulor i våffelstrut'), pris: 20, matt: 7, orka: 3 },
+    { id: 'mjuk', icon: '🍦', namn: $t('Mjukglass med strössel'), pris: 10, matt: 3, orka: 2 },
   ];
   function openGlass() {
     const rows = GLASS_MENY.map((m) => `<div class="prow shoprow">
         <span style="font-size:28px;text-align:center">${m.icon}</span>
-        <span class="nm">${esc(m.namn)}<br><small class="sp">+${m.matt} mätthet · +${m.orka} ork</small></span>
-        <button class="btn btn-small ${g.money >= m.pris ? 'btn-go' : ''}" data-glass="${m.id}" ${g.money >= m.pris ? '' : 'disabled'}>${m.pris} kr</button>
+        <span class="nm">${esc(m.namn)}<br><small class="sp">${$t`+${m.matt} mätthet · +${m.orka} ork`}</small></span>
+        <button class="btn btn-small ${g.money >= m.pris ? 'btn-go' : ''}" data-glass="${m.id}" ${g.money >= m.pris ? '' : 'disabled'}>${money(m.pris)}</button>
       </div>`).join('');
-    const dlg = openModal('🍦 Glasståndet', `<p style="font-size:var(--f2);margin-top:0">Vilken smak? Slå dig sedan ner vid borden och njut!<br>💰 <b>${g.money} kr</b></p><div class="plist">${rows}</div>`,
-      [{ label: 'Inte nu', onClick: closeModal }]);
+    const dlg = openModal($t('🍦 Glasståndet'), `<p style="font-size:var(--f2);margin-top:0">${$t`Vilken smak? Slå dig sedan ner vid borden och njut!<br>💰 <b>${g.money} kr</b>`}</p><div class="plist">${rows}</div>`,
+      [{ label: $t('Inte nu'), onClick: closeModal }]);
     dlg.querySelectorAll('[data-glass]').forEach((btn) => (btn.onclick = () => {
       const m = GLASS_MENY.find((x) => x.id === btn.dataset.glass);
-      if (!m || g.money < m.pris) { play('fel'); toast('💸 Du har inte råd med den.', 'bad'); return; }
+      if (!m || g.money < m.pris) { play('fel'); toast($t('💸 Du har inte råd med den.'), 'bad'); return; }
       g.money -= m.pris;
       g.hunger = Math.min(100, g.hunger + m.matt);
       g.energy = Math.min(100, g.energy + m.orka);
@@ -346,14 +347,14 @@ export function makeCity(A) {
       g.save();
       closeModal();
       play('coin');
-      toast(`${m.icon} Mums! ${m.namn} – slå dig ner vid borden.`, 'good');
+      toast($t`${m.icon} Mums! ${m.namn} – slå dig ner vid borden.`, 'good');
     }));
   }
   const homeHere = (b) => (b.homes || []).includes(g.home);
   // finns scenen/jobbet i main.js? (utan A.hasScene/A.jobReady – en äldre main.js – gäller det gamla beteendet)
   const sceneReady = (n) => (typeof A.hasScene === 'function' ? A.hasScene(n) : false);
   const jobReady = (id) => !!JOBS[id] && (typeof A.jobReady === 'function' ? A.jobReady(id) : true);
-  const soonOf = (b) => { let besked = null; try { besked = ART()[b.kind]?.besked?.(env, g.min / 60) || null; } catch { besked = null; } return besked ? `${b.icon || '🚪'} ${besked}` : b.soon ? `${b.icon || '🚪'} ${b.soon}` : `☕ ${b.sign} öppnar snart – håll utkik!`; };
+  const soonOf = (b) => { let besked = null; try { besked = ART()[b.kind]?.besked?.(env, g.min / 60) || null; } catch { besked = null; } return besked ? `${b.icon || '🚪'} ${besked}` : b.soon ? `${b.icon || '🚪'} ${b.soon}` : $t`☕ ${b.sign} öppnar snart – håll utkik!`; };
   function enter(b) {
     // huset kan ha ett eget besked (paviljongen: spelar musikkåren just nu?), annars soon-texten
     if (!b.enter) { toast(soonOf(b)); return; }
@@ -362,11 +363,11 @@ export function makeCity(A) {
     const hour = g.min / 60;
     if (b.open && (hour < b.open[0] || hour >= b.open[1])) {
       if (hour < b.open[0]) {
-        openModal(`🔒 ${esc(b.sign)}`, `<p style="font-size:var(--f2);margin-top:0">Stängt just nu – öppnar ${clock(b.open[0] * 60)}.</p>`, [
-          { label: 'Gå därifrån', onClick: closeModal },
-          { label: '⏩ Vänta tills det öppnar', cls: 'btn-go', onClick: () => { closeModal(); g.waitUntil(b.open[0] * 60); enter(b); } },
+        openModal(`🔒 ${esc(b.sign)}`, `<p style="font-size:var(--f2);margin-top:0">${$t`Stängt just nu – öppnar ${clock(b.open[0] * 60)}.`}</p>`, [
+          { label: $t('Gå därifrån'), onClick: closeModal },
+          { label: $t('⏩ Vänta tills det öppnar'), cls: 'btn-go', onClick: () => { closeModal(); g.waitUntil(b.open[0] * 60); enter(b); } },
         ]);
-      } else toast(`🔒 ${b.sign} har stängt för i dag – öppnar ${clock(b.open[0] * 60)} i morgon.`, 'bad');
+      } else toast($t`🔒 ${b.sign} har stängt för i dag – öppnar ${clock(b.open[0] * 60)} i morgon.`, 'bad');
       return;
     }
     // nya jobb och bostäder som inte är inkopplade i game.js ännu kostar ingen tid
@@ -374,12 +375,12 @@ export function makeCity(A) {
     if (kind === 'jobb' && !jobReady(id)) {
       // jobbet finns inte (eller saknar jobbscen i main.js ENGINES) – "anställer snart", med kravet om det finns ett
       const w = WORKPLACES.find((x) => x.id === id) || JOBS[id], need = JOBS[id]?.kraver, course = need && GAME.COURSES?.[need];
-      toast(`${w?.icon || b.icon || '💼'} ${b.sign} anställer snart!${w ? ` "${w.verb}" – ${w.wage} kr per rätt.` : ''}${need ? ` Kräver examen i ${course?.name || need} från Pixelhögskolan.` : ''}`);
+      toast(`${$t`${w?.icon || b.icon || '💼'} ${b.sign} anställer snart!`}${w ? ` ${$t`"${w.verb}" – ${w.wage} kr per rätt.`}` : ''}${need ? ` ${$t`Kräver examen i ${course?.name || need} från Pixelhögskolan.`}` : ''}`);
       return;
     }
     if (kind === 'bostad' && id && !homeHere(b) && !HOMES.some((h) => h.id === id)) {
       const h = NEW_HOMES.find((x) => x.id === id);
-      toast(`${b.icon || '🔑'} ${b.sign}: ${h ? `${h.name} hyrs snart ut – ${h.rent} kr/vecka. ` : ''}Fråga på Bostadsbyrån!`);
+      toast(`${b.icon || '🔑'} ${b.sign}: ${h ? `${$t`${h.name} hyrs snart ut – ${h.rent} kr/vecka.`} ` : ''}${$t('Fråga på Bostadsbyrån!')}`);
       return;
     }
     // ett bostadshus man inte bor i: skylten (flytta gör man hos mäklaren på Bostadsbyrån)
@@ -404,9 +405,9 @@ export function makeCity(A) {
     else if (b.enter === 'mobler') A.go('mobler');
     else if (b.enter === 'kafe') {
       // kaféet är både fik och arbetsplats
-      openModal('☕ Kaféet', '<p style="font-size:var(--f2);margin-top:0">Vill du fika, eller jobba ett pass bakom disken som barista?</p>', [
-        { label: '☕ Fika', cls: 'btn-go', onClick: () => { closeModal(); A.go('kafe'); } },
-        { label: '💼 Jobba ett pass', onClick: () => { closeModal(); A.startJob('kafe'); } },
+      openModal($t('☕ Kaféet'), `<p style="font-size:var(--f2);margin-top:0">${$t('Vill du fika, eller jobba ett pass bakom disken som barista?')}</p>`, [
+        { label: $t('☕ Fika'), cls: 'btn-go', onClick: () => { closeModal(); A.go('kafe'); } },
+        { label: $t('💼 Jobba ett pass'), onClick: () => { closeModal(); A.startJob('kafe'); } },
       ]);
     } else if (b.enter === 'djur') A.go('djur');
     else if (b.enter === 'burgare') A.go('burgarbar'); // in i dinern – jobba gör man vid disken därinne
@@ -423,7 +424,7 @@ export function makeCity(A) {
   // ---------- bussen ----------
   function rideBus(to, { free = false } = {}) {
     if (!to) return false;
-    if (!free && g.money < BUS_FARE) { toast(`🚌 Bussen kostar ${BUS_FARE} kr – du har inte råd.`, 'bad'); return false; }
+    if (!free && g.money < BUS_FARE) { toast($t`🚌 Bussen kostar ${BUS_FARE} kr – du har inte råd.`, 'bad'); return false; }
     walker.stop();
     fade.phase = 1; fade.cb = () => {
       if (!free) g.money -= BUS_FARE;
@@ -433,7 +434,7 @@ export function makeCity(A) {
       A.cityPos = [walker.px, walker.py];
       Object.assign(cam, camTarget());
       checkDistrict(true);
-      toast(to.broken ? `🚌 ${to.name}: hållplatsen är sönder, men du kom fram. ${BUS_FARE} kr och en kvart senare.` : `🚌 Framme vid ${to.name} – ${BUS_FARE} kr, ${BUS_MINUTES} minuter.`);
+      toast(to.broken ? $t`🚌 ${$t(to.name)}: hållplatsen är sönder, men du kom fram. ${BUS_FARE} kr och en kvart senare.` : $t`🚌 Framme vid ${$t(to.name)} – ${BUS_FARE} kr, ${BUS_MINUTES} minuter.`);
     };
     play('door');
     return true;
@@ -441,13 +442,13 @@ export function makeCity(A) {
   function openBusDialog(from) {
     const others = BUS_STOPS.filter((s) => s.id !== from.id);
     const intro = from.broken
-      ? 'Kuren är krossad, bänken saknas och tidtabellen är översprejad. Men bussen kommer ändå – antagligen.'
-      : `Vart vill du åka? Bussen kostar <b>${BUS_FARE} kr</b> och tar en kvart.`;
+      ? $t('Kuren är krossad, bänken saknas och tidtabellen är översprejad. Men bussen kommer ändå – antagligen.')
+      : $t`Vart vill du åka? Bussen kostar <b>${BUS_FARE} kr</b> och tar en kvart.`;
     const body = `<p style="font-size:var(--f2);margin-top:0">${intro}</p><div class="plist">${others.map((s) => `
       <div class="prow shoprow"><span style="font-size:28px;text-align:center">${s.broken ? '🚏' : '🚌'}</span>
-        <span class="nm">${esc(s.name)}<br><small class="sp">${esc(s.district)}${s.broken ? ' · hållplatsen är trasig' : ''}</small></span>
-        <button class="btn btn-small ${g.money >= BUS_FARE ? 'btn-go' : ''}" data-bus="${s.id}" ${g.money >= BUS_FARE ? '' : 'disabled'}>Åk hit</button></div>`).join('')}</div>`;
-    const dlg = openModal(`🚌 ${esc(from.name)}${from.broken ? ' (trasig hållplats)' : ''}`, body, [{ label: 'Stanna kvar', onClick: closeModal }]);
+        <span class="nm">${esc($t(s.name))}<br><small class="sp">${esc($t(s.district))}${s.broken ? ` · ${$t('hållplatsen är trasig')}` : ''}</small></span>
+        <button class="btn btn-small ${g.money >= BUS_FARE ? 'btn-go' : ''}" data-bus="${s.id}" ${g.money >= BUS_FARE ? '' : 'disabled'}>${$t('Åk hit')}</button></div>`).join('')}</div>`;
+    const dlg = openModal(`🚌 ${esc($t(from.name))}${from.broken ? ` (${$t('trasig hållplats')})` : ''}`, body, [{ label: $t('Stanna kvar'), onClick: closeModal }]);
     dlg.querySelectorAll('[data-bus]').forEach((el) => { el.onclick = () => { closeModal(); rideBus(busStopById(el.dataset.bus)); }; });
   }
 
@@ -460,7 +461,7 @@ export function makeCity(A) {
   // en annan spelare sitter redan på platsen (world.js si) – sätt dig inte i knät på hen
   const remoteSat = (s) => worldFolksHere(A).some((f) => f.sit && !f.walking && Math.abs(f.x - s.x) < 4 && Math.abs(f.y - s.y) < 4);   // spelaren sitter på en bänk: { seat } från props.seats()
   function boardNow(from, toId) {
-    if (g.money < BUS_FARE) { toast(`🚌 Bussen kostar ${BUS_FARE} kr – du har inte råd.`, 'bad'); S.traffic.release?.(from.id); return; }
+    if (g.money < BUS_FARE) { toast($t`🚌 Bussen kostar ${BUS_FARE} kr – du har inte råd.`, 'bad'); S.traffic.release?.(from.id); return; }
     const ok = S.traffic.board?.(from.id, toId, { look: A.avatar.look, dir: 'down' });
     if (!ok) { rideBus(busStopById(toId)); return; } // bussen hann gå – skyltdialogens resa tar en dit (den betalar själv)
     g.money -= BUS_FARE;
@@ -474,11 +475,11 @@ export function makeCity(A) {
     if (!bi) { openBusDialog(from); return; } // bussen hann gå medan man gick fram – vanliga dialogen
     S.traffic.hold?.(from.id);
     const dests = (S.traffic.destinations?.(from.id) || []).filter((s) => s.id !== from.id);
-    const body = `<p style="font-size:var(--f2);margin-top:0">Dörrarna står öppna${from.broken ? ' – kuren är sönder men bussen går' : ''}. Resan kostar <b>${BUS_FARE} kr</b>.</p><div class="plist">${dests.map((s) => `
+    const body = `<p style="font-size:var(--f2);margin-top:0">${from.broken ? $t`Dörrarna står öppna – kuren är sönder men bussen går. Resan kostar <b>${BUS_FARE} kr</b>.` : $t`Dörrarna står öppna. Resan kostar <b>${BUS_FARE} kr</b>.`}</p><div class="plist">${dests.map((s) => `
       <div class="prow shoprow"><span style="font-size:28px;text-align:center">${s.broken ? '🚏' : '🚌'}</span>
-        <span class="nm">${esc(s.name)}<br><small class="sp">${esc(s.district)} · ${s.stops} hållplats${s.stops === 1 ? '' : 'er'} bort</small></span>
-        <button class="btn btn-small ${g.money >= BUS_FARE ? 'btn-go' : ''}" data-bus="${s.id}" ${g.money >= BUS_FARE ? '' : 'disabled'}>Kliv på</button></div>`).join('')}</div>`;
-    const dlg = openModal(`🚌 Linje 4 vid ${esc(from.name)}`, body, [{ label: 'Kliv inte på', onClick: () => { S.traffic.release?.(from.id); closeModal(); } }]);
+        <span class="nm">${esc($t(s.name))}<br><small class="sp">${esc($t(s.district))} · ${s.stops === 1 ? $t`${s.stops} hållplats bort` : $t`${s.stops} hållplatser bort`}</small></span>
+        <button class="btn btn-small ${g.money >= BUS_FARE ? 'btn-go' : ''}" data-bus="${s.id}" ${g.money >= BUS_FARE ? '' : 'disabled'}>${$t('Kliv på')}</button></div>`).join('')}</div>`;
+    const dlg = openModal($t`🚌 Linje 4 vid ${esc($t(from.name))}`, body, [{ label: $t('Kliv inte på'), onClick: () => { S.traffic.release?.(from.id); closeModal(); } }]);
     dlg.querySelectorAll('[data-bus]').forEach((el) => { el.onclick = () => { closeModal(); boardNow(from, el.dataset.bus); }; });
   }
   // Kliv av bussen: ställ figuren vid dörren och väck kameran/området.
@@ -490,7 +491,7 @@ export function makeCity(A) {
     A.cityPos = [walker.px, walker.py];
     Object.assign(cam, camTarget());
     checkDistrict(true);
-    toast(p.stop?.broken ? `🚌 ${p.stop.name}: hållplatsen är sönder, men du kom fram.` : `🚌 Framme vid ${p.stop?.name || 'hållplatsen'}.`);
+    toast(p.stop?.broken ? $t`🚌 ${$t(p.stop.name)}: hållplatsen är sönder, men du kom fram.` : p.stop?.name ? $t`🚌 Framme vid ${$t(p.stop.name)}.` : $t('🚌 Framme vid hållplatsen.'));
   }
   // Res dig från bänken (tillbaka till gångpunkten framför/bakom sitsen).
   function standUp() {
@@ -646,7 +647,7 @@ export function makeCity(A) {
     const { d, t: bt } = banner, dur = 3.4;
     if (bt > dur) { banner = null; return; }
     const k = bt < 0.35 ? bt / 0.35 : bt > dur - 0.6 ? (dur - bt) / 0.6 : 1;
-    const name = d.name, tag = d.tag || '';
+    const name = $t(d.name), tag = d.tag || '';
     const sb = safeBox();
     const w = Math.max(textW(BIG, name, 2), textW(SMALL, tag)) + 24, h = tag ? 44 : 30;
     const x = Math.round((sb.x0 + sb.x1 - w) / 2), y = Math.round(sb.y0 + 22 - (1 - k) * 12);
@@ -679,7 +680,7 @@ export function makeCity(A) {
     const dc = doorCenter(b);
     if (Math.hypot(walker.px - dc.x, walker.py - dc.y) < 30) {
       A.guide = null; guidePath = null;
-      if (!taxi) { toast(`🧭 Framme vid ${b.icon || ''} ${b.sign || ''}!`, 'good'); play('ok'); }
+      if (!taxi) { toast($t`🧭 Framme vid ${b.icon || ''} ${b.sign || ''}!`, 'good'); play('ok'); }
       return;
     }
     if ((guideT -= dt) <= 0 || !guidePath) {
@@ -754,7 +755,7 @@ export function makeCity(A) {
       guideRects.push({ kind: 'go', r: [Math.min(lx, ex - 12), Math.min(ly, ey - 12), Math.max(lx + w, ex + 12), Math.max(ly + 10, ey + 12)] });
     }
     // lappen: TILL … · 240 M  ×
-    const text = `TILL ${name} - ${m} M`, x = sb.x0 + 4, y = sb.y1 - 15;
+    const text = $t`TILL ${name} - ${m} M`, x = sb.x0 + 4, y = sb.y1 - 15;
     const w = chip(x, y, text, '#f4f1ea', '#2a2430');
     const xx = x + w + 3; chip(xx, y, '×', '#ffd23f', '#6a2a30');
     guideRects.push({ kind: 'cancel', r: [xx - 3, y - 4, xx + 14, y + 13] }, { kind: 'go', r: [x - 2, y - 4, x + w + 2, y + 13] });
@@ -778,17 +779,17 @@ export function makeCity(A) {
   function callTaxi(id) {
     const b = buildingById(id);
     if (!b) return false;
-    if (taxi) { toast('🚕 Din taxi är redan på väg – vänta vid trottoarkanten.'); return false; }
+    if (taxi) { toast($t('🚕 Din taxi är redan på väg – vänta vid trottoarkanten.')); return false; }
     const q = taxiQuote({ x: walker.px, y: walker.py }, b);
-    if (g.money < q.kr) { toast(`🚕 Taxin till ${b.sign} kostar ${q.kr} kr – du har inte råd.`, 'bad'); play('fel'); return false; }
-    if (riding) { toast('🚕 Kliv av bussen först.'); return false; }
+    if (g.money < q.kr) { toast($t`🚕 Taxin till ${b.sign} kostar ${q.kr} kr – du har inte råd.`, 'bad'); play('fel'); return false; }
+    if (riding) { toast($t('🚕 Kliv av bussen först.')); return false; }
     const p = pickupFor(walker.px, walker.py);
-    if (!S.traffic.callTaxi?.({ road: p.road, lane: p.lane, x: p.curb.x })) { toast('🚕 Ingen taxi svarar just nu – försök igen om en stund.', 'bad'); return false; }
+    if (!S.traffic.callTaxi?.({ road: p.road, lane: p.lane, x: p.curb.x })) { toast($t('🚕 Ingen taxi svarar just nu – försök igen om en stund.'), 'bad'); return false; }
     taxi = { dest: b, ...q, ...p, wait: 0, boarded: false };
     if (sitting) standUp();
     walker.walkTo(p.curb.x, p.curb.y);
     play('click');
-    toast(`🚕 Taxin är på väg! ${q.kr} kr till ${b.icon || ''} ${b.sign || ''} – vänta vid trottoarkanten.`, 'good');
+    toast($t`🚕 Taxin är på väg! ${q.kr} kr till ${b.icon || ''} ${b.sign || ''} – vänta vid trottoarkanten.`, 'good');
     return true;
   }
   function cancelTaxi(msg) {
@@ -805,7 +806,7 @@ export function makeCity(A) {
     taxi.wait += dt;
     const near = Math.abs(walker.px - tx.x) < 26 && Math.abs(walker.py - tx.curbY) < 14;
     if (near && !walker.path.length && fade.phase === 0 && taxi.wait > 0.5) boardTaxi(tx);
-    else if (taxi.wait > 45) cancelTaxi('🚕 Chauffören tröttnade på att vänta och körde vidare. Beställ igen med 🚕.');
+    else if (taxi.wait > 45) cancelTaxi($t('🚕 Chauffören tröttnade på att vänta och körde vidare. Beställ igen med 🚕.'));
   }
   function boardTaxi(tx) {
     taxi.boarded = true;
@@ -826,15 +827,15 @@ export function makeCity(A) {
       if (Math.hypot(dc.x - walker.px, dc.y - walker.py) > 70) A.guide = { id: b.id };
       walker.walkTo(dc.x, dc.y);
       play('coin');
-      toast(`🚕 Framme vid ${b.icon || ''} ${b.sign || ''} – ${T0.kr} kr, ${T0.min} minuter.`, 'good');
+      toast($t`🚕 Framme vid ${b.icon || ''} ${b.sign || ''} – ${T0.kr} kr, ${T0.min} minuter.`, 'good');
     };
   }
   function taxiMenu() {
     if (!taxi) return;
     const tx = S.traffic.taxi?.();
-    openModal('🚕 Din taxi', `<p style="font-size:var(--f2);margin-top:0">${tx?.state === 'framme' ? 'Taxin står och väntar vid trottoarkanten' : 'Taxin är på väg'} – till <b>${esc(taxi.dest.icon || '')} ${esc(taxi.dest.sign || '')}</b> för <b>${taxi.kr} kr</b>.</p>`, [
-      { label: '❌ Avbeställ', onClick: () => { closeModal(); cancelTaxi(); toast('🚕 Taxin är avbeställd.'); } },
-      { label: '🚶 Gå till taxin', cls: 'btn-go', onClick: () => { closeModal(); const c = tx || { x: taxi.curb.x, curbY: taxi.curb.y }; walker.walkTo(c.x, c.curbY); } },
+    openModal($t('🚕 Din taxi'), `<p style="font-size:var(--f2);margin-top:0">${tx?.state === 'framme' ? $t`Taxin står och väntar vid trottoarkanten – till <b>${esc(taxi.dest.icon || '')} ${esc(taxi.dest.sign || '')}</b> för <b>${taxi.kr} kr</b>.` : $t`Taxin är på väg – till <b>${esc(taxi.dest.icon || '')} ${esc(taxi.dest.sign || '')}</b> för <b>${taxi.kr} kr</b>.`}</p>`, [
+      { label: $t('❌ Avbeställ'), onClick: () => { closeModal(); cancelTaxi(); toast($t('🚕 Taxin är avbeställd.')); } },
+      { label: $t('🚶 Gå till taxin'), cls: 'btn-go', onClick: () => { closeModal(); const c = tx || { x: taxi.curb.x, curbY: taxi.curb.y }; walker.walkTo(c.x, c.curbY); } },
     ]);
   }
 
@@ -898,7 +899,7 @@ export function makeCity(A) {
         const f = worldFolksHere(A).find((p) => p.id === A.followPlayer);
         A.followPlayer = null;
         if (f) walker.walkTo(f.x, f.y + 4);
-        else toast('Hen är inte i staden längre.', 'bad');
+        else toast($t('Hen är inte i staden längre.'), 'bad');
       }
       if (fade.phase === 1) { fade.a = Math.min(1, fade.a + dt * 2.6); if (fade.a >= 1) { fade.phase = 2; const cb = fade.cb; fade.cb = null; cb?.(); } }
       else if (fade.phase === 2) { fade.a = Math.max(0, fade.a - dt * 1.8); if (fade.a <= 0) fade.phase = 0; }
@@ -933,10 +934,10 @@ export function makeCity(A) {
       // 🐬 spelaren såg delfinen vid piren: lyckan går upp och folk runt omkring jublar och kramas
       const lk = S.pier?.takeLuck?.();
       if (lk && !A.attract) {
-        const fick = g.glad?.(5, 'En delfin vid piren', 'delfin', 10) || 0;
+        const fick = g.glad?.(5, $t('En delfin vid piren'), 'delfin', 10) || 0;
         guard('life.cheer', () => S.life.cheer?.(lk.x, lk.y, 260, MODS.pir?.LUCK_LINES));
         play('morning');
-        toast(`🐬 En delfin! Alla runt omkring jublar – det ger tur!${fick ? ` 😊 +${fick}` : ''}`, 'good');
+        toast(`${$t('🐬 En delfin! Alla runt omkring jublar – det ger tur!')}${fick ? ` 😊 +${fick}` : ''}`, 'good');
       }
       // dörrarna öppnas när någon är nära
       for (const b of ALL_BUILDINGS) {
@@ -957,7 +958,7 @@ export function makeCity(A) {
       if (riding) { S.traffic.skipRide?.(); return; }
       // 🧭 vägvisarens lapp och skylt: × tar bort pilen, annars går figuren dit själv
       const gr = guideRects.find((q) => sx >= q.r[0] && sx < q.r[2] && sy >= q.r[1] && sy < q.r[3]);
-      if (gr) { if (gr.kind === 'cancel') { A.guide = null; guidePath = null; play('click'); toast('🧭 Pilen är borta.'); } else walkToGuide(); return; }
+      if (gr) { if (gr.kind === 'cancel') { A.guide = null; guidePath = null; play('click'); toast($t('🧭 Pilen är borta.')); } else walkToGuide(); return; }
       // klick på en kompis-pil i kanten → gå mot den spelaren
       const m = markers.find((mk) => sx >= mk.x && sx < mk.x + mk.w && sy >= mk.y && sy < mk.y + mk.h);
       if (m) { standUp(); walker.walkTo(m.fx, m.fy + 4); return; }
@@ -1016,7 +1017,7 @@ export function makeCity(A) {
       const seat = S.props.seatAt?.(x, y, (s) => !S.life.seatBusy?.(s.id) && !remoteSat(s));
       if (seat) {
         walker.walkTo(seat.walk.x, seat.walk.y, () => {
-          if (S.life.seatBusy?.(seat.id) || remoteSat(seat)) { toast('🪑 Upptaget – någon hann före.'); return; }
+          if (S.life.seatBusy?.(seat.id) || remoteSat(seat)) { toast($t('🪑 Upptaget – någon hann före.')); return; }
           sitting = { seat };
           walker.stop();
           walker.px = seat.x; walker.py = seat.y; walker.dir = seat.dir || 'down'; // fotpunkten på sitsen (env.player håller platsen åt en)

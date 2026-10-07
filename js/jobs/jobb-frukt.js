@@ -19,6 +19,7 @@ import { planOf, drawShiftHud, drawTimeUp, makePops, abortShift } from './shift.
 import { drawPerson } from '../core/people.js';
 import { play } from '../core/sound.js';
 import { makeShiftCoop } from '../net/coop.js';
+import { $t } from '../core/i18n.js';
 
 const FW = 384, FH = 216;
 const BELT_Y = 74;             // bandets mitt
@@ -587,7 +588,7 @@ function boxArt(mode) {
   F.rect(lx + 1, ly + 1, 22, 11, 0x5a3a1c, 0.5);
   area(F, lx, ly, 22, 11, (X, Y, i, j) => (j === 0 ? 0xfffcf0 : jit(0xf2ecdc, X, Y, 366, 0.04)));
   F.hl(lx, ly + 10, 22, 0xc8c0aa);
-  text(F, SMALL, 'LÅDA', lx + 3, ly + 4, INK);
+  text(F, SMALL, $t('LÅDA'), lx + 3, ly + 4, INK);
   F.ell(lx + 19, ly + 6, 1.8, 1.8, 0x2f8f46, 1, 2);
   F.px(lx + 1, ly + 1, 0x9aa0a8); F.px(lx + 20, ly + 1, 0x9aa0a8);
   // ---- pallen under ----
@@ -866,10 +867,10 @@ function paintHall(mode) {
   const yl = 0xe8c030;
   for (let x = 6; x <= 108; x++) for (const y of [146, 199]) if (hash(x >> 1, y, 436) < 0.92) P.px(x, y, yl, 0.9);
   for (let y = 146; y <= 199; y++) for (const x of [6, 108]) if (hash(x, y >> 1, 437) < 0.92) P.px(x, y, yl, 0.9);
-  text(P, SMALL, 'TRUCK', 76, 192, yl, 0.85);
+  text(P, SMALL, $t('TRUCK'), 76, 192, yl, 0.85);
   for (let x = 280; x <= 382; x++) for (const y of [156, 206]) if ((x >> 2) % 2 === 0) P.px(x, y, yl, 0.9);
   for (let y = 156; y <= 206; y++) if ((y >> 2) % 2 === 0) P.px(280, y, yl, 0.9);
-  text(P, SMALL, 'PACKNING', 234, 208, yl, 0.85);
+  text(P, SMALL, $t('PACKNING'), 234, 208, yl, 0.85);
   // pil mot packplatsen
   for (let j = 0; j < 5; j++) { const hw = 2 - Math.abs(j - 2); P.hl(272, 208 + j, hw + 1, yl, 0.85); }
   P.hl(268, 210, 4, yl, 0.85);
@@ -925,7 +926,7 @@ function paintHall(mode) {
   const sx = bx + 104, sy = by + 5;
   P.rect(sx + 1, sy + 1, 22, 23, 0x5a3a1c, 0.4);
   area(P, sx, sy, 22, 23, (X, Y, i, j) => (j < 7 ? 0xe8eef4 : jit(0xf8f8f4, X, Y, 454, 0.03)));
-  text(P, SMALL, 'SKIFT', sx + 2, sy + 1, 0x2a4a8a);
+  text(P, SMALL, $t('SKIFT'), sx + 2, sy + 1, 0x2a4a8a);
   for (let j = 0; j < 4; j++) { P.hl(sx + 1, sy + 9 + j * 4, 20, 0xb8c0c8); }
   P.vl(sx + 8, sy + 8, 14, 0xb8c0c8); P.vl(sx + 15, sy + 8, 14, 0xb8c0c8);
   for (let j = 0; j < 4; j++) for (let i = 0; i < 3; i++) if (hash(i, j, 455) > 0.4) P.hl(sx + 2 + i * 7, sy + 11 + j * 4, 4, [0x2a4a8a, 0xd8303a, 0x2f8f46][(i + j) % 3], 0.8);
@@ -1024,10 +1025,10 @@ function paintBeltFrame(mode) {
     P.px(lx - 1, FLOOR_Y + 7, 0xd0d6da); P.px(lx + 3, FLOOR_Y + 7, 0xd0d6da);
   }
   // märkplåt LINJE 2 (sist, så att undersidan och benen inte skär av texten)
-  const pw = textW(SMALL, 'LINJE 2') + 6, pxx = 160;
+  const pw = textW(SMALL, $t('LINJE 2')) + 6, pxx = 160;
   area(P, pxx, FRAME_Y - 1, pw, 8, (X, Y, i, j) => (i === 0 || j === 0 ? 0xf4f6f8 : i === pw - 1 || j === 7 ? 0x6a7276 : jit(0xc8ced2, X, Y, 483, 0.04)));
   for (const nx of [pxx + 1, pxx + pw - 2]) P.px(nx, FRAME_Y + 2, 0x6a7276);
-  text(P, SMALL, 'LINJE 2', pxx + 3, FRAME_Y + 1, 0x2a3034);
+  text(P, SMALL, $t('LINJE 2'), pxx + 3, FRAME_Y + 1, 0x2a3034);
   P.darken(pxx + 1, FRAME_Y + 7, pw, 1, 0.6);
   // drivmotorn: kedjeskydd, växellåda och kylflänsad motor
   area(P, 324, FRAME_Y + 2, 6, 7, (X, Y, i, j) => (i === 0 ? 0xf0cc3a : i === 5 ? 0x9a7a10 : 0xe0b020));
@@ -1113,7 +1114,7 @@ function paintFront(mode) {
   for (let k = 0; k < 8; k++) { const a = k / 8 * Math.PI * 2; P.px(Math.round(WASHER_PORT.x + Math.cos(a) * 6.1), Math.round(WASHER_PORT.y + Math.sin(a) * 6.1), 0x3a4246); }
   // namnplåten
   area(P, 5, 50, 24, 7, (X, Y, i, j) => (i === 0 || j === 0 ? 0x5a6266 : i === 23 || j === 6 ? 0x14161a : 0x23262d));
-  text(P, SMALL, 'TVÄTT', 8, 51, 0x9fd356);
+  text(P, SMALL, $t('TVÄTT'), 8, 51, 0x9fd356);
   // inloppsröret från huvudledningen
   vcols(P, 30, 21, 9, [0xd0d6da, 0x9aa2a6, 0x5a6266]);
   rows(P, 29, 24, 5, [0xe8ecee]);
@@ -1154,7 +1155,7 @@ function paintFront(mode) {
   area(P, x0 + 5, 35, 30, 13, (X, Y, i, j) => (i === 0 || j === 0 ? 0x1e4a2e : i === 29 || j === 12 ? 0x8ac89a : 0x0a1a12));
   // namnplåten
   area(P, x0 + 1, 49, sw - 2, 7, (X, Y, i, j) => (j === 0 ? 0xf4f6f8 : j === 6 ? 0x6a7276 : 0xd0d6da));
-  text(P, SMALL, 'SORTERING', x0 + 2, 50, 0x1e4a2e);
+  text(P, SMALL, $t('SORTERING'), x0 + 2, 50, 0x1e4a2e);
   for (const nx of [x0 + 3, FW - 3]) { P.px(nx, 36, 0x1e4a2e); P.px(nx, 46, 0x1e4a2e); }
   // tunnelöppningen där bandet går in
   vcols(P, x0, SORT.top, FRONT_Y - SORT.top, [0x7aba8a, 0x4a9a62, 0x3a8a52, 0x2a6a3e, 0x1e4a2e, 0x0e2014]);
@@ -1179,7 +1180,7 @@ const WASHER_PORT = { x: 16, y: 41 }, TOWER_Y = 20;
 // förgrunden: UTGÅNG-skylten nere till vänster
 function paintFore() {
   const P = new Pix(FW, FH);
-  const s = 'UTGÅNG', tw = textW(SMALL, s), w = tw + 20, x = 3, y = 202;
+  const s = $t('UTGÅNG'), tw = textW(SMALL, s), w = tw + 20, x = 3, y = 202;
   P.rect(x, y, w, 11, 0x0e4a24);
   P.rect(x + 1, y + 1, w - 2, 9, 0x1e8a3a);
   P.hl(x + 1, y + 1, w - 2, 0x5ac06a);
@@ -1290,7 +1291,7 @@ export function makeJobbFrukt(A, { onDone }) {
   const snapAsap = () => { snapIn = 0; };
   const int = (v, dflt) => (Number.isInteger(v) ? v : dflt);
   const str = (v) => (typeof v === 'string' ? v.slice(0, 64) : '');
-  const hudTitle = () => (maxN > 1 ? 'FRUKTFABRIKEN IHOP' : 'FRUKTFABRIKEN');
+  const hudTitle = () => (maxN > 1 ? $t('FRUKTFABRIKEN IHOP') : $t('FRUKTFABRIKEN'));
   const noteFell = (id) => { fell.add(id); if (fell.size > 60) fell.delete(fell.values().next().value); };
   const ownId = () => -1 - ((Math.random() * 1e9) | 0);   // en frukt som aldrig legat på bandet (krockar aldrig med ledarens)
   // frukten man bär i önskemålen, svaren och snappen: [id, sort] (0 = inget)
@@ -1454,17 +1455,17 @@ export function makeJobbFrukt(A, { onDone }) {
   const kLjud = (k, s) => fx(k, k.by, 's', s);                                                            // hörs hos den det gäller
   const kSay = (k, txt, c = '#d8d2c0') => fx(k, k.by, 'p', Math.round(k.x), Math.round(k.y) - 30, txt, c);   // bara hos den det gäller
   const kPop = (k, x, y, txt, c) => fx(k, '', 'p', x, y, txt, c);                                         // syns hos alla i hallen
-  function hannFore(x, y) { play('miss'); pops.add(x, y, 'HANN FÖRE!', '#ff6a6a'); }
+  function hannFore(x, y) { play('miss'); pops.add(x, y, $t('HANN FÖRE!'), '#ff6a6a'); }
 
   // ---------- det gemensamma (körs av skiftledaren – eller den ensamma – åt fruktplockaren k) ----------
   // ta frukten id från bandet
   function doPick(k, id) {
     const it = items.find((q) => q.id === id);
     if (!it) {   // borta: åkte in i sorteringen – eller någon annan hann före
-      if (fell.has(id)) { kLjud(k, 'miss'); kSay(k, 'MISSADE!'); } else fx(k, k.by, 'H', Math.round(k.x), Math.round(k.y) - 30);
+      if (fell.has(id)) { kLjud(k, 'miss'); kSay(k, $t('MISSADE!')); } else fx(k, k.by, 'H', Math.round(k.x), Math.round(k.y) - 30);
       return;
     }
-    if (k.carry) { kSay(k, 'HÄNDERNA FULLA!'); return; }
+    if (k.carry) { kSay(k, $t('HÄNDERNA FULLA!')); return; }
     items.splice(items.indexOf(it), 1);
     it.taken = true;
     k.carry = { id: it.id, f: it.f };
@@ -1489,13 +1490,13 @@ export function makeJobbFrukt(A, { onDone }) {
         team.boxes++; fx(k, k.by, 'b');
         fx(k, '', 'K', ...packed);
         packed = [];
-        fx(k, '', 's', 'box'); kPop(k, BOX.x + BOX.w / 2, BOX.y - 24, 'LÅDA KLAR! +20', '#ffd23f');
+        fx(k, '', 's', 'box'); kPop(k, BOX.x + BOX.w / 2, BOX.y - 24, $t('LÅDA KLAR! +20'), '#ffd23f');
         order = newOrder(seq++);
         orderNo++;
       }
     } else {
       team.fel++; fx(k, k.by, 'f');
-      kLjud(k, 'fel'); kPop(k, BOX.x + BOX.w / 2, BOX.y - 16, 'FEL FRUKT!', '#ff6a6a');
+      kLjud(k, 'fel'); kPop(k, BOX.x + BOX.w / 2, BOX.y - 16, $t('FEL FRUKT!'), '#ff6a6a');
       fx(k, '', 'R', c.f);
     }
   }
@@ -1554,7 +1555,7 @@ export function makeJobbFrukt(A, { onDone }) {
   function tryPick(target) {
     if (!items.includes(target) || Math.abs(target.x - walker.px) >= 16) {
       if (target.taken && coop.active) hannFore(walker.px, walker.py - 30);   // (ihop: någon annan tog den)
-      else { play('miss'); pops.add(walker.px, walker.py - 30, 'MISSADE!', '#d8d2c0'); }
+      else { play('miss'); pops.add(walker.px, walker.py - 30, $t('MISSADE!'), '#d8d2c0'); }
       return;
     }
     shared({ a: 'ta', id: target.id }, (k) => doPick(k, target.id));
@@ -1646,8 +1647,8 @@ export function makeJobbFrukt(A, { onDone }) {
     ctx.fillStyle = '#fffcf4'; ctx.fillRect(x, y, w, 1);
     ctx.fillStyle = '#d8d0bc'; ctx.fillRect(x, y + h - 1, w, 1); ctx.fillRect(x + w - 1, y + 1, 1, h - 1);
     ctx.fillStyle = '#e8e0cc'; ctx.fillRect(x + w - 3, y + h - 3, 2, 2);
-    ctxText(ctx, SMALL, 'PACKA:', x + 3, y + 3, '#9e1b22');
-    const nr = 'NR ' + orderNo;
+    ctxText(ctx, SMALL, $t('PACKA:'), x + 3, y + 3, '#9e1b22');
+    const nr = $t`NR ${orderNo}`;
     ctxText(ctx, SMALL, nr, x + w - 3 - textW(SMALL, nr), y + 3, '#7a7262');
     ctx.fillStyle = '#b8b0a0';
     for (let i = x + 2; i < x + w - 2; i += 2) ctx.fillRect(i, y + 10, 1, 1);
@@ -1728,7 +1729,7 @@ export function makeJobbFrukt(A, { onDone }) {
     if (dp > 0.9) { ctx.fillStyle = 'rgba(220,240,255,0.6)'; ctx.fillRect(24, 101, 5, 1); }
     // sorteringsskärmen: antal frukter som gått vidare + löpande stapel
     const sx = SORT.x0 + 6, sy = 36;
-    ctxText(ctx, SMALL, 'SORT', sx + 1, sy + 1, '#5ad06a');
+    ctxText(ctx, SMALL, $t('SORT'), sx + 1, sy + 1, '#5ad06a');
     ctxText(ctx, SMALL, String(sorted).padStart(3, '0'), sx + 1, sy + 6, sortBlink > 0 ? '#ffe070' : '#5ad06a');
     ctx.fillStyle = '#1e5a2a'; ctx.fillRect(sx + 17, sy + 1, 10, 10);
     const bars = [3, 6, 4, 8, 5];
@@ -1767,7 +1768,7 @@ export function makeJobbFrukt(A, { onDone }) {
         ctx.fillRect(BOX.x - 2, BTOP - 9, BOX.w + 4, 1); ctx.fillRect(BOX.x - 2, BOX.y + 25, BOX.w + 4, 1);
         ctx.fillRect(BOX.x - 2, BTOP - 9, 1, BOX.y + 26 - BTOP + 9); ctx.fillRect(BOX.x + BOX.w + 1, BTOP - 9, 1, BOX.y + 26 - BTOP + 9);
         ctx.fillStyle = '#2f8f46'; ctx.fillRect(BOX.x + 18, BTOP + 7, 20, 8);
-        ctxText(ctx, SMALL, 'KLAR', BOX.x + 20, BTOP + 9, '#f4f1ea');
+        ctxText(ctx, SMALL, $t('KLAR'), BOX.x + 20, BTOP + 9, '#f4f1ea');
       }
     },
   });
@@ -1904,7 +1905,7 @@ export function makeJobbFrukt(A, { onDone }) {
       if (coop.active) maxN = Math.max(maxN, coop.peers().length + 1);
       if (coop.active !== wasCoop) {   // en kollega kom in: frukterna kommer tätare och bandet går fortare
         wasCoop = coop.active;
-        if (wasCoop) { play('knock'); pops.add(FW / 2, 120, 'NI JOBBAR IHOP!', '#8ee03c'); }
+        if (wasCoop) { play('knock'); pops.add(FW / 2, 120, $t('NI JOBBAR IHOP!'), '#8ee03c'); }
       }
       // Skiftledaren (eller solo) kör bandet och lådan; medarbetare följer ledarens läge
       const iLead = !coop.active || (coop.leader && coop.settled);

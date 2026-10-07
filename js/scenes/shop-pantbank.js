@@ -33,6 +33,7 @@ import { openModal, closeModal, toast, esc, modalOpen } from '../core/ui.js';
 import * as GM from '../game.js';
 import { fmt, katalogOf, viewOf, DAY_NAMES } from '../game.js';
 import { play, audioContext, isMuted } from '../core/sound.js';
+import { $t } from '../core/i18n.js';
 import { createWalker, selfDrawable, folkDrawables, WALK_SEQ, createSpeech } from './walkable.js';
 import { worldFolksHere } from '../net/world.js';
 import { FRAMES } from '../data/frames.js';
@@ -460,7 +461,7 @@ function paintGuitarWall(P) {
   P.box(x0 - 1, y0 - 1, x1 - x0 + 2, y1 - y0 + 2, 0x2a1e16);
   // handskriven kartongskylt längst upp
   {
-    const t = 'GITARRER - RÖR EJ!', w = handW(SM, t, 3) + 8, sx = ((x0 + x1) >> 1) - (w >> 1), sy = 13;
+    const t = $t('GITARRER - RÖR EJ!'), w = handW(SM, t, 3) + 8, sx = ((x0 + x1) >> 1) - (w >> 1), sy = 13;
     const S = skew(P, sx, 22, 1);
     S.rect(sx, sy, w, 8, 0xe0c898); S.hl(sx, sy, w, 0xf0dcb0); S.hl(sx, sy + 7, w, 0xa88a58);
     hand(S, SM, t, sx + 4, sy + 2, 0xa8141a, 3);
@@ -487,9 +488,9 @@ function paintGoldBoard(P) {
   P.rect(x0, top, x1 - x0, bot - top, 0x141016);
   P.box(x0, top, x1 - x0, bot - top, BRASS[2]); P.box(x0 + 1, top + 1, x1 - x0 - 2, bot - top - 2, BRASS[0]);
   for (let y = top + 2; y < bot - 2; y++) for (let x = x0 + 2; x < x1 - 2; x++) if (hash(x, y, 101) > 0.93) P.px(x, y, 0x241c20);
-  const t1 = 'VI KÖPER', w1 = textW(SM, t1);
+  const t1 = $t('VI KÖPER'), w1 = textW(SM, t1);
   text(P, SM, t1, x0 + ((x1 - x0 - w1) >> 1), top + 4, 0xe8d8a8);
-  const t2 = 'GULD', w2 = textW(BG, t2), gx = x0 + ((x1 - x0 - w2) >> 1);
+  const t2 = $t('GULD'), w2 = textW(BG, t2), gx = x0 + ((x1 - x0 - w2) >> 1);
   eachTextPixel(BG, t2, gx, top + 12, 1, (px, py) => P.px(px, py, tone(BRASS, 0.95 - (py - top - 12) / 8, px, py)));
   // en guldtacka
   const bx = x0 + 11, by = bot - 8;
@@ -599,7 +600,7 @@ function paintTvRack(P) {
   // prislappar
   tag(P, 330, 33, 21, 0xfff08a); tag(P, 380, 34, 22); tag(P, 334, 62, 23);
   // SÅLD-lapp tejpad snett på den stora
-  { const S = skew(P, 360, 4, 1); S.rect(360, 34, 15, 6, 0xffffff); text(S, SM, 'SÅLD', 361, 35, 0xd8202a); }
+  { const S = skew(P, 360, 4, 1); S.rect(360, 34, 15, 6, 0xffffff); text(S, SM, $t('SÅLD'), 361, 35, 0xd8202a); }
 }
 
 // ---------- pantlagret: hylla med kvittonumrerade panter ----------
@@ -617,7 +618,7 @@ function paintPawnShelf(P) {
   for (const sx of [x0, (x0 + x1) >> 1, x1 - 2]) { P.vl(sx, top, b2 - top + 2, MAHOG[3]); P.vl(sx + 1, top, b2 - top + 2, MAHOG[1]); }
   // skylten PANTER överst: svart med guld
   P.rect(x0, top, x1 - x0, 9, 0x141016); P.hl(x0, top, x1 - x0, BRASS[2]); P.hl(x0, top + 8, x1 - x0, BRASS[1]);
-  const t = 'PANTER', tw = textW(SM, t);
+  const t = $t('PANTER'), tw = textW(SM, t);
   eachTextPixel(SM, t, x0 + ((x1 - x0 - tw) >> 1), top + 2, 1, (px, py) => P.px(px, py, py < top + 4 ? BRASS[4] : BRASS[3]));
   for (const x of [x0 + 4, x1 - 7]) { P.px(x, top + 4, BRASS[3]); P.px(x + 1, top + 4, BRASS[3]); }
 }
@@ -643,14 +644,14 @@ function paintFrontBars() {
     bars(SIDE, DOOR.x0 - 3); bars(DOOR.x1 + 3, 270); bars(273, W - SIDE - 1);
     // PANTBANKEN i guld – spegelvänt inifrån, på det högra fönstret
     const N = new Pix(80, 9);
-    text(N, BG, 'PANTBANKEN', 1, 1, 0xffffff);
+    text(N, BG, $t('PANTBANKEN'), 1, 1, 0xffffff);
     const nx = 300, ny = FRONT_Y + 6;
     for (let y = 0; y < 9; y++) for (let x = 0; x < 80; x++) if (N.d[(y * 80 + x) * 4 + 3]) P.px(nx + 79 - x, ny + y, y < 4 ? 0xe8c060 : 0xb88a2a);
     // lappen i dörrens fönster: STÄNGT syns inifrån när det är ÖPPET utåt
-    const sw = textW(SM, 'STÄNGT') + 5, sx = DOOR.x0 + ((DOOR.x1 - DOOR.x0 - sw) >> 1), sy = FRONT_Y + 7;
+    const sw = textW(SM, $t('STÄNGT')) + 5, sx = DOOR.x0 + ((DOOR.x1 - DOOR.x0 - sw) >> 1), sy = FRONT_Y + 7;
     P.line(sx + 3, sy - 3, sx + (sw >> 1), sy - 6, 0x8a8a80); P.line(sx + sw - 4, sy - 3, sx + (sw >> 1), sy - 6, 0x8a8a80);
     P.rect(sx, sy - 2, sw, 9, 0xf4f0e2); P.box(sx, sy - 2, sw, 9, 0x8a2a1a);
-    text(P, SM, 'STÄNGT', sx + 3, sy, 0x8a2a1a);
+    text(P, SM, $t('STÄNGT'), sx + 3, sy, 0x8a2a1a);
   });
 }
 // dörren: mörkt trä med ett litet gallerfönster (ritas i bakgrunden, öppnas levande)
@@ -705,7 +706,7 @@ function paintCounter() {
     P.hl(FLAP.x0, top, FLAP.x1 - FLAP.x0, MAHOG[4]); P.vl(FLAP.x0 + 3, top + 1, 5, MAHOG[1]); // gångjärnsskarven
     P.px(FLAP.x0 + 14, top + 3, BRASS[3]); P.px(FLAP.x0 + 15, top + 3, BRASS[1]);               // ringen man lyfter i
     P.rect(FLAP.x0 + 3, face + 6, 14, 7, 0xe8e0c8); P.box(FLAP.x0 + 3, face + 6, 14, 7, BRASS[1]);
-    text(P, SM, 'EJ IN', FLAP.x0 + 4, face + 7, 0xa8141a);
+    text(P, SM, $t('EJ IN'), FLAP.x0 + 4, face + 7, 0xa8141a);
     // ---- glasmontern ----
     const gx0 = FLAP.x1, gx1 = CNT.x1;
     // insidan sedd uppifrån genom glasskivan: sammetsbrickor med smycken
@@ -795,10 +796,10 @@ function paintCounter() {
       P.rect(sx0, st, sx1 - sx0, sb - st, 0xf4f0e6); P.box(sx0, st, sx1 - sx0, sb - st, 0x1a1a24); P.box(sx0 + 1, st + 1, sx1 - sx0 - 2, sb - st - 2, 0xc8202a);
       for (let y = st + 2; y < sb - 2; y++) for (let x2 = sx0 + 2; x2 < sx1 - 2; x2++) if (hash(x2, y, 141) > 0.97) P.px(x2, y, 0x3a3440, 0.6); // emaljen har slagits av här och där
       const c = (s, F, y, col) => text(P, F, s, sx0 + ((sx1 - sx0 - textW(F, s)) >> 1), y, col);
-      c('PANTLÅN', BG, st + 4, 0xc8202a);
-      c('LÅN 40 %', SM, st + 13, 0x1a1a24);
-      c('RÄNTA 20 %', SM, st + 19, 0x1a1a24);
-      c('7 DAGAR', SM, sb - 7 + 1, 0x1a1a24);
+      c($t('PANTLÅN'), BG, st + 4, 0xc8202a);
+      c($t('LÅN 40 %'), SM, st + 13, 0x1a1a24);
+      c($t('RÄNTA 20 %'), SM, st + 19, 0x1a1a24);
+      c($t('7 DAGAR'), SM, sb - 7 + 1, 0x1a1a24);
       P.px(sx0 + 3, st + 3, 0xd8dce4); P.px(sx1 - 4, st + 3, 0xd8dce4); // skruvarna
     }
     // lappar tejpade på gallret
@@ -809,9 +810,9 @@ function paintCounter() {
       S.rect(x2 + 1, y - 1, 4, 2, 0xf8f8f0, 0.6); S.rect(x2 + w - 5, y - 1, 4, 2, 0xf8f8f0, 0.6);
     };
     // (lapparna sitter på glasmontern – på gallret skulle de skymma pantlånaren)
-    note(184, face + 2, 'INGA RETURER', 0xf8f4e8, 0xc8141a, 3);
-    note(318, face + 3, 'LEG. KRÄVS', 0xfff08a, 0x1a1a3a, 4);
-    note(404, face + 2, 'KONTANT', 0xf8f4e8, 0x1a1a3a, 5);
+    note(184, face + 2, $t('INGA RETURER'), 0xf8f4e8, 0xc8141a, 3);
+    note(318, face + 3, $t('LEG. KRÄVS'), 0xfff08a, 0x1a1a3a, 4);
+    note(404, face + 2, $t('KONTANT'), 0xf8f4e8, 0x1a1a3a, 5);
     };
     // ---- på disken, kundens sida: disklockan, pennan i kedja, kvittospiken ----
     { const bx = BELL.x, by = BELL.y;
@@ -880,9 +881,9 @@ function paintAmp() {
     P.px(x1 - 4, base - 31, 0xd82a2a);
     P.hl(x0 + 8, base - 38, 10, 0x2a2a30); // handtaget
     // lappen: FUNKAR (NÄSTAN)
-    { const nw = Math.max(handW(SM, 'FUNKAR', 12), handW(SM, 'NÄSTAN', 13)) + 4, S = skew(P, x0 + 4, 9, 1);
+    { const nw = Math.max(handW(SM, $t('FUNKAR'), 12), handW(SM, $t('NÄSTAN'), 13)) + 4, S = skew(P, x0 + 4, 9, 1);
       S.rect(x0 + 4, base - 19, nw, 14, 0xfff08a); S.hl(x0 + 4, base - 19, nw, 0xfff8c0); S.hl(x0 + 4, base - 6, nw, 0xc8b050);
-      hand(S, SM, 'FUNKAR', x0 + 6, base - 17, 0x1a1a3a, 12); hand(S, SM, 'NÄSTAN', x0 + 6, base - 11, 0xc8141a, 13); S.rect(x0 + 5 + (nw >> 1), base - 20, 4, 2, 0xf8f8f0, 0.6); }
+      hand(S, SM, $t('FUNKAR'), x0 + 6, base - 17, 0x1a1a3a, 12); hand(S, SM, $t('NÄSTAN'), x0 + 6, base - 11, 0xc8141a, 13); S.rect(x0 + 5 + (nw >> 1), base - 20, 4, 2, 0xf8f8f0, 0.6); }
     P.line(x1 - 3, base - 6, x1 + 2, base, 0x1a1a1e); // sladden
     outline(P, OUT, 0.5);
     groundShadow(P, (x0 + x1) / 2, base + 1, w / 2 + 1, 2, 0.4);
@@ -1034,7 +1035,7 @@ function paintLp() {
     for (let y = base - 13; y < base; y++) for (let x = x0; x < x1; x++) P.px(x, y, tone(OAK, 0.72 - (y - base + 13) / 20 + ((x - x0) % 12 === 0 ? -0.2 : 0), x, y));
     P.hl(x0, base - 13, x1 - x0, OAK[4]); P.rect(x0 + 13, base - 9, 8, 3, OAK[0]); // handtagshålet
     // skylten LP 10:-
-    { const lw = handW(SM, 'LP 10:-', 21) + 4, S = skew(P, x0 + 1, 9, -1); S.rect(x0 + 1, base - 11, lw, 8, 0xf8f4e8); S.hl(x0 + 1, base - 4, lw, 0xc8c0a8); hand(S, SM, 'LP 10:-', x0 + 3, base - 10, 0xc8141a, 21); }
+    { const lw = handW(SM, $t('LP 10:-'), 21) + 4, S = skew(P, x0 + 1, 9, -1); S.rect(x0 + 1, base - 11, lw, 8, 0xf8f4e8); S.hl(x0 + 1, base - 4, lw, 0xc8c0a8); hand(S, SM, $t('LP 10:-'), x0 + 3, base - 10, 0xc8141a, 21); }
     outline(P, OUT, 0.5);
     groundShadow(P, (x0 + x1) / 2, base + 1, (x1 - x0) / 2 + 1, 2, 0.4);
   });
@@ -1099,7 +1100,7 @@ function paintVitrine() {
     for (let y = top + 2; y < base - 5; y++) for (let x = x0 + 2; x < x1 - 2; x++) P.px(x, y, 0xc8e8ff, 0.1);
     glare(P, x0 + 2, top + 2, x1 - x0 - 4, h - 7, 0.26, 15, 2);
     P.vl((x0 + x1) >> 1, top + 2, h - 7, OAK[2]);
-    { const s = 'KAMEROR & SPEL', w = textW(SM, s) + 4, sx = ((x0 + x1) >> 1) - (w >> 1); P.rect(sx, top - 1, w, 7, 0x141016); P.box(sx, top - 1, w, 7, BRASS[2]); text(P, SM, s, sx + 2, top, BRASS[3]); }
+    { const s = $t('KAMEROR & SPEL'), w = textW(SM, s) + 4, sx = ((x0 + x1) >> 1) - (w >> 1); P.rect(sx, top - 1, w, 7, 0x141016); P.box(sx, top - 1, w, 7, BRASS[2]); text(P, SM, s, sx + 2, top, BRASS[3]); }
     outline(P, OUT, 0.5);
     groundShadow(P, (x0 + x1) / 2, base + 1, (x1 - x0) / 2 + 1, 2.2, 0.42);
   });
@@ -1270,20 +1271,20 @@ const PB_BASE = { skin: '#e0a97f', hair: '#b9b3ab', style: 'bald', brows: 'skept
 const PB_LOOK = { c: { ...PB_BASE, eyes: 'narrow' }, l: { ...PB_BASE, eyes: 'glanceL' }, r: { ...PB_BASE, eyes: 'glanceR' }, glad: { ...PB_BASE, eyes: 'narrow', mouth: 'smirk' } };
 const npcLook = (seed) => { const L = makeLook(rng(seed)); return { ...L, kid: false, build: L.build === 4 ? 5 : L.build, bag: null }; };
 
-const PB_HELLO = ['Hm. En kund.', 'Torka fötterna.', 'Vad vill du?', 'Titta, men rör inte.'];
-const PB_IDLE = ['Jag har ögonen på dig.', 'Allt är äkta. Nästan.', 'Inga returer. Aldrig.', 'Kontant eller ingenting.', 'Den höga klockan går rätt. De andra ljuger.', 'Hm.'];
-const PB_WATCH = ['Rör inte gitarrerna.', 'Spela inte på den.', 'Titta, men rör inte.', 'Den där är inte till salu åt dig.'];
-const PB_INSPECT = ['Hmm...', 'Är den stulen?', 'Den har sett bättre dagar.', 'Repor. Här. Och här.', 'Äkta? Vi får se.', 'Luktar lite hund.'];
-const PB_CLOSED = ['Stängt. Kom tillbaka i morgon.', 'Vi har stängt. Ut med dig.'];
-const PB_DESK = ['Vad har du med dig? Visa.', 'Säg vad du vill. Snabbt.', 'Sälja? Låna? Jag har inte hela dagen.', 'Hm. Ja?'];
-const PARROT_LINES = ['🦜 INGA RETURER!', '🦜 KONTANT! KONTANT!', '🦜 Äkta guld!', '🦜 Rör inte!', '🦜 Hej hej!', '🦜 Är den stulen?'];
+const PB_HELLO = [$t('Hm. En kund.'), $t('Torka fötterna.'), $t('Vad vill du?'), $t('Titta, men rör inte.')];
+const PB_IDLE = [$t('Jag har ögonen på dig.'), $t('Allt är äkta. Nästan.'), $t('Inga returer. Aldrig.'), $t('Kontant eller ingenting.'), $t('Den höga klockan går rätt. De andra ljuger.'), $t('Hm.')];
+const PB_WATCH = [$t('Rör inte gitarrerna.'), $t('Spela inte på den.'), $t('Titta, men rör inte.'), $t('Den där är inte till salu åt dig.')];
+const PB_INSPECT = [$t('Hmm...'), $t('Är den stulen?'), $t('Den har sett bättre dagar.'), $t('Repor. Här. Och här.'), $t('Äkta? Vi får se.'), $t('Luktar lite hund.')];
+const PB_CLOSED = [$t('Stängt. Kom tillbaka i morgon.'), $t('Vi har stängt. Ut med dig.')];
+const PB_DESK = [$t('Vad har du med dig? Visa.'), $t('Säg vad du vill. Snabbt.'), $t('Sälja? Låna? Jag har inte hela dagen.'), $t('Hm. Ja?')];
+const PARROT_LINES = [$t('🦜 INGA RETURER!'), $t('🦜 KONTANT! KONTANT!'), $t('🦜 Äkta guld!'), $t('🦜 Rör inte!'), $t('🦜 Hej hej!'), $t('🦜 Är den stulen?')];
 // kunderna som prutar vid luckan: [vem, replik]; sells = pantlånaren tar varan
 const HAGGLE = [
-  { carry: 'gitarr', sells: true, lines: [['n', 'Vad får jag för den här?'], ['p', 'Femtio.'], ['n', 'Femtio?! Den är värd tusen!'], ['p', 'Fyrtio.'], ['n', 'Okej, okej. Femtio!']] },
-  { carry: 'klocka', sells: false, lines: [['n', 'Jag vill pantsätta farfars klocka.'], ['p', 'Äkta guld?'], ['n', 'Självklart!'], ['p', 'Mässing. Tjugo kronor.'], ['n', 'Tjugo?! Jag går.']] },
-  { carry: 'tv', sells: true, lines: [['n', 'En tv. Den funkar!'], ['p', 'Alla säger så.'], ['n', 'Nästan i alla fall.'], ['p', 'Trettio. Ställ den där.']] },
-  { carry: null, sells: false, lines: [['n', 'Har ni kvar min cykel?'], ['p', 'Kvitto?'], ['n', 'Eh... nej.'], ['p', 'Då har vi ingen cykel.']] },
-  { carry: null, sells: false, lines: [['n', 'Vad kostar den röda gitarren?'], ['p', 'Två tusen.'], ['n', 'Två tusen?!'], ['p', 'Tre tusen om du frågar igen.']] },
+  { carry: 'gitarr', sells: true, lines: [['n', $t('Vad får jag för den här?')], ['p', $t('Femtio.')], ['n', $t('Femtio?! Den är värd tusen!')], ['p', $t('Fyrtio.')], ['n', $t('Okej, okej. Femtio!')]] },
+  { carry: 'klocka', sells: false, lines: [['n', $t('Jag vill pantsätta farfars klocka.')], ['p', $t('Äkta guld?')], ['n', $t('Självklart!')], ['p', $t('Mässing. Tjugo kronor.')], ['n', $t('Tjugo?! Jag går.')]] },
+  { carry: 'tv', sells: true, lines: [['n', $t('En tv. Den funkar!')], ['p', $t('Alla säger så.')], ['n', $t('Nästan i alla fall.')], ['p', $t('Trettio. Ställ den där.')]] },
+  { carry: null, sells: false, lines: [['n', $t('Har ni kvar min cykel?')], ['p', $t('Kvitto?')], ['n', $t('Eh... nej.')], ['p', $t('Då har vi ingen cykel.')]] },
+  { carry: null, sells: false, lines: [['n', $t('Vad kostar den röda gitarren?')], ['p', $t('Två tusen.')], ['n', $t('Två tusen?!')], ['p', $t('Tre tusen om du frågar igen.')]] },
 ];
 const BROWSE = [[26, 114, 'up'], [72, 116, 'up'], [118, 112, 'up'], [38, 150, 'left'], [209, 190, 'down'], [340, 190, 'down'], [428, 188, 'down'], [345, 150, 'up'], [236, 150, 'up']];
 const pick = (L) => L[Math.floor(Math.random() * L.length)];
@@ -1427,7 +1428,7 @@ export function makePantbank(A) {
     const G = npc.goal;
     if (!G) return nextGoal();
     if (G.dir) npc.w.dir = G.dir;
-    if (G.kind === 'browse') { npc.state = 'browse'; npc.t = 2.5 + Math.random() * 3; if (G.x < 130 && G.y < 125 && Math.random() < 0.6) { npcSay('Oj, vilka gitarrer.'); pb.watchT = t - 10; } }
+    if (G.kind === 'browse') { npc.state = 'browse'; npc.t = 2.5 + Math.random() * 3; if (G.x < 130 && G.y < 125 && Math.random() < 0.6) { npcSay($t('Oj, vilka gitarrer.')); pb.watchT = t - 10; } }
     else if (G.kind === 'haggle') {
       if (G.queue) { npc.state = 'queue'; npc.t = 0; return; }
       npc.state = 'haggle'; npc.line = 0; npc.t = 0.4;
@@ -1447,7 +1448,7 @@ export function makePantbank(A) {
     else if (npc.state === 'queue') {
       npc.t += dt;
       if (!playerAtHatch()) { npc.goal = { x: SERVE[0], y: SERVE[1], dir: 'up', kind: 'haggle' }; npc.state = 'walk'; npc.w.walkTo(SERVE[0], SERVE[1]); }
-      else if (npc.t > 16) { npcSay('Jag kommer tillbaka.'); nextGoal(); }
+      else if (npc.t > 16) { npcSay($t('Jag kommer tillbaka.')); nextGoal(); }
     } else if (npc.state === 'haggle') {
       npc.t -= dt;
       if (deal) { npc.state = 'queue'; npc.t = 0; npc.w.walkTo(QUEUE[0], QUEUE[1]); return; } // spelaren gick före
@@ -1487,16 +1488,16 @@ export function makePantbank(A) {
   const weekday = (d) => DAY_NAMES[((d - 1) % 7 + 7) % 7].toLowerCase();
   const dayWord = (d) => {
     const rel = d - g.day;
-    return rel <= 0 ? `i dag, ${weekday(d)}` : rel === 1 ? `i morgon, ${weekday(d)}` : rel >= 7 ? `nästa ${weekday(d)}` : weekday(d);
+    return rel <= 0 ? $t`i dag, ${weekday(d)}` : rel === 1 ? $t`i morgon, ${weekday(d)}` : rel >= 7 ? $t`nästa ${weekday(d)}` : weekday(d);
   };
-  const dayLabel = (d) => `${dayWord(d)} (dag ${d})`; // hårt mellanslag: "(dag 10)" bryts aldrig isär
-  const dagar = (n) => `${n} ${n === 1 ? 'dag' : 'dagar'}`;
+  const dayLabel = (d) => $t`${dayWord(d)} (dag ${d})`; // hårt mellanslag: "(dag 10)" bryts aldrig isär
+  const dagar = (n) => (n === 1 ? $t`${n} dag` : $t`${n} dagar`);
   function startDeal(kind, idx) {
     const it = g.storage[idx];
     if (!it || deal) return false;
-    if (!g.sellable(it)) { toast('💍 Startmöbler tar pantlånaren inte emot – du behöver dem.', 'bad'); return false; }
-    if (kind === 'pant' && !canPawn(g)) { toast('💍 Pantlånet har inte öppnat än – men du kan sälja.', 'bad'); return false; }
-    if (kind === 'pant' && pantList(g).length >= MAXP()) { toast(`💍 Högst ${MAXP()} panter åt gången – lös ut något först.`, 'bad'); return false; }
+    if (!g.sellable(it)) { toast($t('💍 Startmöbler tar pantlånaren inte emot – du behöver dem.'), 'bad'); return false; }
+    if (kind === 'pant' && !canPawn(g)) { toast($t('💍 Pantlånet har inte öppnat än – men du kan sälja.'), 'bad'); return false; }
+    if (kind === 'pant' && pantList(g).length >= MAXP()) { toast($t`💍 Högst ${MAXP()} panter åt gången – lös ut något först.`, 'bad'); return false; }
     deal = { kind, ref: it, item: itemOf(it), name: nameOf(it.k), amount: kind === 'salj' ? saleOf(it.k) : loanOf(it.k), phase: 'lagg', t: 0, from: [walker.px, walker.py - 22] };
     deal.skuld = debtOf(deal.amount);
     if (Math.abs(pb.x - HATCH_X) > 1) pbWalk(HATCH_X, () => { pb.dir = 'down'; });
@@ -1507,14 +1508,14 @@ export function makePantbank(A) {
   function openOffer() {
     const d = deal;
     const sell = d.kind === 'salj';
-    const line = sell ? `Jag ger dig ${d.amount} kronor. Inte en krona mer.` : `${d.amount} kronor i lån. ${d.skuld} tillbaka senast ${dayLabel(g.day + DAYS())} – annars är den min.`;
+    const line = sell ? $t`Jag ger dig ${d.amount} kronor. Inte en krona mer.` : $t`${d.amount} kronor i lån. ${d.skuld} tillbaka senast ${dayLabel(g.day + DAYS())} – annars är den min.`;
     const body = `<div style="display:flex;gap:12px;align-items:center"><span data-pbface></span><p style="font-size:var(--f2);margin:0">«${esc(line)}»</p></div>
-      <div class="plist" style="margin-top:8px"><div class="prow shoprow"><span data-dealfurn></span><span class="nm">${esc(d.name)}<br><small class="sp">Katalogpris ${fmt(katalogOf(d.item.k)?.price || 0)}</small></span><b style="font-size:var(--f2)">${fmt(d.amount)}</b><span></span></div></div>
-      ${sell ? `<p style="font-size:var(--f2);margin:8px 0 0">Säljer du får du <b>${fmt(d.amount)}</b> direkt och möbeln är borta för gott – <b>INGA RETURER</b>.</p>`
-        : `<p style="font-size:var(--f2);margin:8px 0 0">Du får <b>${fmt(d.amount)}</b> nu. Betala tillbaka <b>${fmt(d.skuld)}</b> (lånet + ${Math.round(INTEREST() * 100)} % ränta) senast <b>${dayLabel(g.day + DAYS())}</b> så får du tillbaka möbeln. Annars behåller pantbanken den.</p>`}`;
-    const dlg = openModal(sell ? '🔍 Pantlånaren synar – sälja?' : '🔍 Pantlånaren synar – låna?', body, [
-      { label: 'Nej tack', onClick: () => { closeDlg(); declineDeal(); } },
-      { label: sell ? `🤝 Affär – ${fmt(d.amount)}` : `🤝 Låna ${fmt(d.amount)}`, cls: 'btn-go', onClick: () => { closeDlg(); acceptDeal(); } },
+      <div class="plist" style="margin-top:8px"><div class="prow shoprow"><span data-dealfurn></span><span class="nm">${esc(d.name)}<br><small class="sp">${$t`Katalogpris ${fmt(katalogOf(d.item.k)?.price || 0)}`}</small></span><b style="font-size:var(--f2)">${fmt(d.amount)}</b><span></span></div></div>
+      ${sell ? `<p style="font-size:var(--f2);margin:8px 0 0">${$t`Säljer du får du <b>${fmt(d.amount)}</b> direkt och möbeln är borta för gott – <b>INGA RETURER</b>.`}</p>`
+        : `<p style="font-size:var(--f2);margin:8px 0 0">${$t`Du får <b>${fmt(d.amount)}</b> nu. Betala tillbaka <b>${fmt(d.skuld)}</b> (lånet + ${Math.round(INTEREST() * 100)} % ränta) senast <b>${dayLabel(g.day + DAYS())}</b> så får du tillbaka möbeln. Annars behåller pantbanken den.`}</p>`}`;
+    const dlg = openModal(sell ? $t('🔍 Pantlånaren synar – sälja?') : $t('🔍 Pantlånaren synar – låna?'), body, [
+      { label: $t('Nej tack'), onClick: () => { closeDlg(); declineDeal(); } },
+      { label: sell ? $t`🤝 Affär – ${fmt(d.amount)}` : $t`🤝 Låna ${fmt(d.amount)}`, cls: 'btn-go', onClick: () => { closeDlg(); acceptDeal(); } },
     ], { closable: false });
     faceInto(dlg);
     furnInto(dlg.querySelector('[data-dealfurn]'), d.item);
@@ -1524,33 +1525,33 @@ export function makePantbank(A) {
     const idx = g.storage.indexOf(deal.ref);
     if (idx < 0) { declineDeal(true); return { ok: false }; }
     let r;
-    if (deal.kind === 'salj') { const ok = g.sellStorage(idx); r = { ok, msg: 'Den kan inte säljas.' }; }
+    if (deal.kind === 'salj') { const ok = g.sellStorage(idx); r = { ok, msg: $t('Den kan inte säljas.') }; }
     else r = g.pawnStorage(idx);
-    if (!r?.ok) { toast('💍 ' + (r?.msg || 'Det gick inte.'), 'bad'); declineDeal(true); return { ok: false }; }
+    if (!r?.ok) { toast('💍 ' + (r?.msg || $t('Det gick inte.')), 'bad'); declineDeal(true); return { ok: false }; }
     if (deal.kind === 'pant') { deal.nr = r.pant.nr; deal.sista = r.sista; deal.skuld = r.skuld; deal.amount = r.lan; deal.hide = r.pant.nr; }
     deal.phase = 'hamta'; deal.t = 0;
-    pbSay(deal.kind === 'salj' ? 'Affär. Inga returer.' : `Kvitto nummer ${deal.nr}. Glöm den inte.`, true, 2.4);
-    if (deal.kind === 'salj') toast(`💰 Sålt: ${deal.name} för ${fmt(deal.amount)}. Såld är såld!`, 'good');
-    else toast(`🤝 Lånat ${fmt(deal.amount)} mot ${deal.name} (kvitto nr ${deal.nr}). Lös ut den för ${fmt(deal.skuld)} senast ${dayLabel(deal.sista)}.`, 'good');
+    pbSay(deal.kind === 'salj' ? $t('Affär. Inga returer.') : $t`Kvitto nummer ${deal.nr}. Glöm den inte.`, true, 2.4);
+    if (deal.kind === 'salj') toast($t`💰 Sålt: ${deal.name} för ${fmt(deal.amount)}. Såld är såld!`, 'good');
+    else toast($t`🤝 Lånat ${fmt(deal.amount)} mot ${deal.name} (kvitto nr ${deal.nr}). Lös ut den för ${fmt(deal.skuld)} senast ${dayLabel(deal.sista)}.`, 'good');
     pbWalk(SAFE.x0 + 16, () => { pb.dir = 'up'; if (deal) { deal.phase = 'kassa'; deal.t = 0; safeOpen = true; play('click'); } });
     return { ok: true };
   }
   function declineDeal(silent = false) {
     if (!deal) return;
     deal.phase = 'tillbaka'; deal.t = 0;
-    if (!silent) pbSay('Som du vill.', true);
+    if (!silent) pbSay($t('Som du vill.'), true);
   }
   function redeem(nr) {
-    if (deal) { pbSay('Ett ögonblick.', true); return { ok: false }; }
+    if (deal) { pbSay($t('Ett ögonblick.'), true); return { ok: false }; }
     const before = pantList(g).find((p) => p.nr === nr);
     if (!before || typeof g.redeemPant !== 'function') return { ok: false };
     const slot = slotMap().get(nr);
     const r = g.redeemPant(nr);
-    if (!r.ok) { play('fel'); toast('💍 ' + r.msg, 'bad'); pbSay(/råd/.test(r.msg) ? 'Inga pengar, ingen möbel.' : 'Nej.', true); return r; }
+    if (!r.ok) { play('fel'); toast('💍 ' + r.msg, 'bad'); pbSay(g.money < (before.skuld | 0) || /råd/.test(r.msg) ? $t('Inga pengar, ingen möbel.') : $t('Nej.'), true); return r; }   // (pengarna avgör, inte texten – den är översatt)
     play('coin');
     deal = { kind: 'losa', item: itemOf(before), name: nameOf(before.k), amount: before.skuld, nr, phase: 'hamtaPant', t: 0, ghost: slot !== undefined ? { slot, item: itemOf(before), nr } : null };
-    pbSay('Jaha. Du kom tillbaka.', true);
-    toast(`📦 Utlöst: ${deal.name} för ${fmt(before.skuld)} – den hamnar i förrådet.`, 'good');
+    pbSay($t('Jaha. Du kom tillbaka.'), true);
+    toast($t`📦 Utlöst: ${deal.name} för ${fmt(before.skuld)} – den hamnar i förrådet.`, 'good');
     const sx = slot !== undefined ? SLOTS[slot].x + 15 : 420;
     pbWalk(sx, () => {
       pb.dir = 'up';
@@ -1589,7 +1590,7 @@ export function makePantbank(A) {
           d.phase = 'klart'; d.t = 0;
           SND.kaching();
           for (let k = 0; k < bills(); k++) flyers.push({ kind: 'bill', x0: HATCH_X - 6 + (k % 4) * 3, y0: CNT.top + 2, t: -k * 0.05 });
-          pops.push({ x: walker.px, y: walker.py - 52, s: `+${d.amount} KR`, t: 0 });
+          pops.push({ x: walker.px, y: walker.py - 52, s: $t`+${d.amount} KR`, t: 0 });
         }
         break;
       }
@@ -1603,7 +1604,7 @@ export function makePantbank(A) {
         }
         break;
       case 'ge':
-        if (d.t > 0.5 && !d.flew) { d.flew = true; flyers.push({ kind: 'item', item: d.item, x0: ITEM_X, y0: CNT.top + 4, t: 0 }); pbSay('Här. Ta hand om den nu.', true); }
+        if (d.t > 0.5 && !d.flew) { d.flew = true; flyers.push({ kind: 'item', item: d.item, x0: ITEM_X, y0: CNT.top + 4, t: 0 }); pbSay($t('Här. Ta hand om den nu.'), true); }
         if (d.t > 1.1) deal = null;
         break;
     }
@@ -1646,46 +1647,46 @@ export function makePantbank(A) {
     el.replaceWith(c);
   }
   function openDesk(tab = deskTab) {
-    if (!isOpen()) { pbSay(pick(PB_CLOSED), true); hint(`🔒 Stängt – pantbanken har öppet ${HOURS[0]}–${HOURS[1]}.`); return false; }
-    if (deal) { pbSay('Ett ögonblick. Jag räknar.', true); return false; }
-    if (Math.abs(pb.x - HATCH_X) > 2) { pbSay('Jaja. Jag kommer.', true); pbWalk(HATCH_X, () => { pb.dir = 'down'; openDesk(tab); }); return false; }
+    if (!isOpen()) { pbSay(pick(PB_CLOSED), true); hint($t`🔒 Stängt – pantbanken har öppet ${HOURS[0]}–${HOURS[1]}.`); return false; }
+    if (deal) { pbSay($t('Ett ögonblick. Jag räknar.'), true); return false; }
+    if (Math.abs(pb.x - HATCH_X) > 2) { pbSay($t('Jaja. Jag kommer.'), true); pbWalk(HATCH_X, () => { pb.dir = 'down'; openDesk(tab); }); return false; }
     deskTab = tab;
     walker.dir = 'up';
     const st = g.storage, pl = pantList(g), full = pl.length >= MAXP();
-    const tabs = [['salj', '💰 Sälj'], ['pant', '🤝 Låna mot pant'], ['panter', `🧾 Mina panter (${pl.length})`]];
+    const tabs = [['salj', $t('💰 Sälj')], ['pant', $t('🤝 Låna mot pant')], ['panter', $t`🧾 Mina panter (${pl.length})`]];
     let rows = '', intro = '';
     const row = (furn, name, sub, price, btn) => `<div class="prow shoprow">${furn}<span class="nm">${name}<br><small class="sp">${sub}</small></span><b style="font-size:var(--f2)">${price}</b>${btn}</div>`;
     if (tab === 'salj') {
-      intro = `Pantlånaren köper möbler ur ditt förråd för <b>halva katalogpriset</b>. Såld är såld – <b>inga returer</b>.`;
+      intro = $t`Pantlånaren köper möbler ur ditt förråd för <b>halva katalogpriset</b>. Såld är såld – <b>inga returer</b>.`;
       rows = st.map((it, i) => (g.sellable(it)
-        ? row(`<span data-furn="${i}"></span>`, esc(nameOf(it.k)), `Katalogpris ${fmt(katalogOf(it.k).price)} · du får hälften`, fmt(saleOf(it.k)), `<button class="btn btn-small btn-go" data-salj="${i}">💰 Sälj</button>`)
-        : row(`<span data-furn="${i}"></span>`, esc(nameOf(it.k)), 'Startmöbel – den tar pantlånaren inte emot', '–', '<button class="btn btn-small" disabled>Behåll</button>'))).join('');
+        ? row(`<span data-furn="${i}"></span>`, esc(nameOf(it.k)), $t`Katalogpris ${fmt(katalogOf(it.k).price)} · du får hälften`, fmt(saleOf(it.k)), `<button class="btn btn-small btn-go" data-salj="${i}">${$t('💰 Sälj')}</button>`)
+        : row(`<span data-furn="${i}"></span>`, esc(nameOf(it.k)), $t('Startmöbel – den tar pantlånaren inte emot'), '–', `<button class="btn btn-small" disabled>${$t('Behåll')}</button>`))).join('');
     } else if (tab === 'pant') {
       intro = canPawn(g)
-        ? `Lämna en möbel som pant och få <b>${Math.round(RATE() * 100)} % av katalogpriset</b> direkt. Betala tillbaka lånet + <b>${Math.round(INTEREST() * 100)} % ränta</b> inom <b>${DAYS()} dagar</b> så får du tillbaka möbeln – annars behåller pantbanken den.${full ? ` <b class="bad">Du har redan ${MAXP()} panter – lös ut något först.</b>` : ''}`
-        : 'Pantlånet har inte öppnat än – men du kan sälja.';
+        ? `${$t`Lämna en möbel som pant och få <b>${Math.round(RATE() * 100)} % av katalogpriset</b> direkt. Betala tillbaka lånet + <b>${Math.round(INTEREST() * 100)} % ränta</b> inom <b>${DAYS()} dagar</b> så får du tillbaka möbeln – annars behåller pantbanken den.`}${full ? ` <b class="bad">${$t`Du har redan ${MAXP()} panter – lös ut något först.`}</b>` : ''}`
+        : $t('Pantlånet har inte öppnat än – men du kan sälja.');
       rows = st.map((it, i) => {
-        if (!g.sellable(it)) return row(`<span data-furn="${i}"></span>`, esc(nameOf(it.k)), 'Startmöbel – den tar pantlånaren inte emot', '–', '<button class="btn btn-small" disabled>Behåll</button>');
+        if (!g.sellable(it)) return row(`<span data-furn="${i}"></span>`, esc(nameOf(it.k)), $t('Startmöbel – den tar pantlånaren inte emot'), '–', `<button class="btn btn-small" disabled>${$t('Behåll')}</button>`);
         const lan = loanOf(it.k);
-        return row(`<span data-furn="${i}"></span>`, esc(nameOf(it.k)), `Lån ${fmt(lan)} nu · betala ${fmt(debtOf(lan))} senast ${dayLabel(g.day + DAYS())}`, fmt(lan),
-          `<button class="btn btn-small btn-go" data-pant="${i}" ${full || !canPawn(g) ? 'disabled' : ''}>🤝 Pantsätt</button>`);
+        return row(`<span data-furn="${i}"></span>`, esc(nameOf(it.k)), $t`Lån ${fmt(lan)} nu · betala ${fmt(debtOf(lan))} senast ${dayLabel(g.day + DAYS())}`, fmt(lan),
+          `<button class="btn btn-small btn-go" data-pant="${i}" ${full || !canPawn(g) ? 'disabled' : ''}>${$t('🤝 Pantsätt')}</button>`);
       }).join('');
     } else {
-      intro = pl.length ? 'Dina möbler som står i pantbanken. Lös ut dem innan tiden går ut!' : 'Du har inga panter. Pantsätt en möbel under fliken <b>Låna mot pant</b>.';
+      intro = pl.length ? $t('Dina möbler som står i pantbanken. Lös ut dem innan tiden går ut!') : $t('Du har inga panter. Pantsätt en möbel under fliken <b>Låna mot pant</b>.');
       const storageFull = st.length >= MAXS();
       rows = pl.map((p) => {
         const left = g.pantDaysLeft ? g.pantDaysLeft(p) : p.sista - g.day;
-        const when = left <= 0 ? '<b class="bad">SISTA DAGEN I DAG!</b>' : `${dagar(left)} kvar – senast ${dayLabel(p.sista)}`;
+        const when = left <= 0 ? `<b class="bad">${$t('SISTA DAGEN I DAG!')}</b>` : $t`${dagar(left)} kvar – senast ${dayLabel(p.sista)}`;
         const can = g.money >= p.skuld && !storageFull;
-        return row(`<span data-pfurn="${p.nr}"></span>`, `${esc(nameOf(p.k))} <small class="sp">kvitto nr ${p.nr}</small>`, `Lånade ${fmt(p.lan)} dag ${p.dag} · ${when}${storageFull ? ' · förrådet är fullt' : g.money < p.skuld ? ' · du har inte råd än' : ''}`,
-          fmt(p.skuld), `<button class="btn btn-small ${can ? 'btn-go' : ''}" data-losa="${p.nr}" ${can ? '' : 'disabled'}>📦 Lös ut</button>`);
+        return row(`<span data-pfurn="${p.nr}"></span>`, `${esc(nameOf(p.k))} <small class="sp">${$t`kvitto nr ${p.nr}`}</small>`, `${$t`Lånade ${fmt(p.lan)} dag ${p.dag}`} · ${when}${storageFull ? ` · ${$t('förrådet är fullt')}` : g.money < p.skuld ? ` · ${$t('du har inte råd än')}` : ''}`,
+          fmt(p.skuld), `<button class="btn btn-small ${can ? 'btn-go' : ''}" data-losa="${p.nr}" ${can ? '' : 'disabled'}>${$t('📦 Lös ut')}</button>`);
       }).join('');
     }
-    if (!rows && tab !== 'panter') rows = '<p style="font-size:var(--f2)">Förrådet är tomt. Köp möbler på MÖBELJÄTTEN – eller ställ undan något hemma i Möblera-läget så hamnar det i förrådet.</p>';
-    const body = `<div style="display:flex;gap:12px;align-items:center"><span data-pbface></span><p style="font-size:var(--f2);margin:0">«${esc(pick(PB_DESK))}»<br><small class="sp">💰 Du har <b>${fmt(g.money)}</b> · 📦 ${st.length} i förrådet</small></p></div>
+    if (!rows && tab !== 'panter') rows = `<p style="font-size:var(--f2)">${$t('Förrådet är tomt. Köp möbler på MÖBELJÄTTEN – eller ställ undan något hemma i Möblera-läget så hamnar det i förrådet.')}</p>`;
+    const body = `<div style="display:flex;gap:12px;align-items:center"><span data-pbface></span><p style="font-size:var(--f2);margin:0">«${esc(pick(PB_DESK))}»<br><small class="sp">${$t`💰 Du har <b>${fmt(g.money)}</b> · 📦 ${st.length} i förrådet`}</small></p></div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 6px">${tabs.map(([id, label]) => `<button class="btn btn-small ${id === tab ? 'btn-gold' : ''}" data-tab="${id}">${label}</button>`).join('')}</div>
       <p style="font-size:var(--f2);margin:0 0 8px">${intro}</p><div class="plist">${rows}</div>`;
-    const dlg = openModal('💍 Pantbanken', body, [{ label: 'Stäng', onClick: closeDlg }]);
+    const dlg = openModal($t('💍 Pantbanken'), body, [{ label: $t('Stäng'), onClick: closeDlg }]);
     faceInto(dlg);
     dlg.querySelectorAll('[data-furn]').forEach((el) => { const it = st[+el.dataset.furn]; if (it) furnInto(el, itemOf(it)); });
     dlg.querySelectorAll('[data-pfurn]').forEach((el) => { const p = pl.find((q) => q.nr === +el.dataset.pfurn); if (p) furnInto(el, itemOf(p)); });
@@ -1718,40 +1719,40 @@ export function makePantbank(A) {
     SND.strum(C.f, C.dur, C.bright);
     wob[i] = 1;
     if (isOpen() && t - pb.watchT > 5) { pb.watchT = t; pbSay(pick(PB_WATCH), false); }
-    hint(['🎸 En gammal akustisk. Strängarna är rostiga.', '🎸 Röd elgitarr – låter bättre i en förstärkare.', '🎸 En svart bas. Det brummar i magen.', '🎸 Sunburst med guldrattar. Tung!', '🪕 En banjo! Plonk-plonk.'][i]);
+    hint([$t('🎸 En gammal akustisk. Strängarna är rostiga.'), $t('🎸 Röd elgitarr – låter bättre i en förstärkare.'), $t('🎸 En svart bas. Det brummar i magen.'), $t('🎸 Sunburst med guldrattar. Tung!'), $t('🪕 En banjo! Plonk-plonk.')][i]);
   }
   const mySlots = () => { const m = slotMap(); return pantList(g).map((p) => ({ p, s: m.get(p.nr) })); };
   const spots = [
     { id: 'lucka', r: [HATCH.x0 - 4, HATCH.top - 2, HATCH.x1 + 4, CNT.base], go: SERVE, act: () => openDesk() },
-    { id: 'skylt', r: [SIGN.x0, SIGN.top, SIGN.x1, SIGN.bot], go: SERVE, act: () => hint(`📜 PANTLÅN: ${Math.round(RATE() * 100)} % av priset direkt. Tillbaka inom ${DAYS()} dagar + ${Math.round(INTEREST() * 100)} % – annars är möbeln deras.`) },
+    { id: 'skylt', r: [SIGN.x0, SIGN.top, SIGN.x1, SIGN.bot], go: SERVE, act: () => hint($t`📜 PANTLÅN: ${Math.round(RATE() * 100)} % av priset direkt. Tillbaka inom ${DAYS()} dagar + ${Math.round(INTEREST() * 100)} % – annars är möbeln deras.`) },
     { id: 'klocka', r: [BELL.x - 5, BELL.y - 5, BELL.x + 5, BELL.y + 5], go: [BELL.x, 146], act: () => {
       SND.ding();
       if (!isOpen()) { pbSay(pick(PB_CLOSED), true); return; }
-      pbSay(Math.random() < 0.5 ? 'Jag hör. Jag är inte döv.' : 'Ja, ja, JA.', true);
+      pbSay(Math.random() < 0.5 ? $t('Jag hör. Jag är inte döv.') : $t('Ja, ja, JA.'), true);
       walker.walkTo(SERVE[0], SERVE[1], () => { walker.dir = 'up'; setTimeout(() => { if (A.scene === SCENE && !modalOpen()) openDesk(); }, 350); });
     } },
     ...GUITARS.map((G, i) => ({ id: 'gitarr' + i, r: [G.x - 9, 20, G.x + 9, 68], go: [G.x, 112], act: () => strum(i) })),
-    { id: 'forstarkare', r: [AMP.x0, AMP.base - 38, AMP.x1, AMP.base], go: [26, 112], act: () => { SND.amp(); hint('🔊 FUNKAR (NÄSTAN). Den brummar och tjuter.'); } },
-    { id: 'trummor', r: [DRUMS.x0, DRUMS.base - 44, DRUMS.x1, DRUMS.base], go: [72, 114], act: () => { SND.drums(); hint('🥁 Ba-dom-tsch!'); if (isOpen()) setTimeout(() => pbSay('TYST!', true), 900); } },
-    { id: 'mora', r: [MORA.x0, MORA.base - 66, MORA.x1, MORA.base], go: [36, 152], face: 'left', act: () => { SND.tick(); hint('🕰️ En moraklocka för 3 500 kr. Den tickar högt.'); } },
+    { id: 'forstarkare', r: [AMP.x0, AMP.base - 38, AMP.x1, AMP.base], go: [26, 112], act: () => { SND.amp(); hint($t('🔊 FUNKAR (NÄSTAN). Den brummar och tjuter.')); } },
+    { id: 'trummor', r: [DRUMS.x0, DRUMS.base - 44, DRUMS.x1, DRUMS.base], go: [72, 114], act: () => { SND.drums(); hint($t('🥁 Ba-dom-tsch!')); if (isOpen()) setTimeout(() => pbSay($t('TYST!'), true), 900); } },
+    { id: 'mora', r: [MORA.x0, MORA.base - 66, MORA.x1, MORA.base], go: [36, 152], face: 'left', act: () => { SND.tick(); hint($t('🕰️ En moraklocka för 3 500 kr. Den tickar högt.')); } },
     { id: 'papegoja', r: [CAGE.x0, CAGE.top - 8, CAGE.x1, CAGE.bot], go: [146, 100], act: () => birdSay() },
-    { id: 'guld', r: [GOLD.x0, GOLD.top, GOLD.x1, GOLD.bot], go: [196, 146], act: () => hint('💰 VI KÖPER GULD. Jag har inget guld – bara möbler.') },
-    { id: 'kassaskap', r: [SAFE.x0, SAFE.top - 14, SAFE.x1, SAFE.base], go: [196, 146], act: () => { hint('🔒 Ett kassaskåp från 1912 med en monitor ovanpå.'); if (isOpen()) pbSay('Glöm det.', true); } },
-    { id: 'klockor', r: [REG.x0, CEIL, 256, 68], go: [236, 146], act: () => { SND.tick(); hint('🕰️ Tre klockor, tre tider. Bara den höga går rätt.'); } },
-    { id: 'kulor', r: [266, 12, 298, 45], go: SERVE, act: () => hint('🟡 Tre guldkulor – pantbankernas gamla tecken.') },
-    { id: 'tv', r: [TVR.x0, TVR.top, TVR.x1, TVR.b2 + 2], go: [345, 146], act: () => { tvCh = (tvCh + 1) % 4; play('click'); hint(['📺 Akvariet. Fiskarna simmar i en tv från 1978.', '📺 Testbilden. Klockan är mitt i natten i tv-land.', '📺 Myrornas krig.', '📺 Fotboll! Ingen vet vem som leder.'][tvCh]); } },
+    { id: 'guld', r: [GOLD.x0, GOLD.top, GOLD.x1, GOLD.bot], go: [196, 146], act: () => hint($t('💰 VI KÖPER GULD. Jag har inget guld – bara möbler.')) },
+    { id: 'kassaskap', r: [SAFE.x0, SAFE.top - 14, SAFE.x1, SAFE.base], go: [196, 146], act: () => { hint($t('🔒 Ett kassaskåp från 1912 med en monitor ovanpå.')); if (isOpen()) pbSay($t('Glöm det.'), true); } },
+    { id: 'klockor', r: [REG.x0, CEIL, 256, 68], go: [236, 146], act: () => { SND.tick(); hint($t('🕰️ Tre klockor, tre tider. Bara den höga går rätt.')); } },
+    { id: 'kulor', r: [266, 12, 298, 45], go: SERVE, act: () => hint($t('🟡 Tre guldkulor – pantbankernas gamla tecken.')) },
+    { id: 'tv', r: [TVR.x0, TVR.top, TVR.x1, TVR.b2 + 2], go: [345, 146], act: () => { tvCh = (tvCh + 1) % 4; play('click'); hint([$t('📺 Akvariet. Fiskarna simmar i en tv från 1978.'), $t('📺 Testbilden. Klockan är mitt i natten i tv-land.'), $t('📺 Myrornas krig.'), $t('📺 Fotboll! Ingen vet vem som leder.')][tvCh]); } },
     { id: 'panter', r: [PSH.x0, PSH.top, PSH.x1, PSH.b2 + 2], go: [420, 146], act: () => {
       const mine = mySlots();
-      if (!mine.length) { hint('📦 PANTER – andras saker med kvittonummer. Inget av det är mitt.'); return; }
+      if (!mine.length) { hint($t('📦 PANTER – andras saker med kvittonummer. Inget av det är mitt.')); return; }
       const p = mine[0].p, left = g.pantDaysLeft ? g.pantDaysLeft(p) : p.sista - g.day;
-      hint(`📦 Där står ${nameOf(p.k).toLowerCase()} – kvitto nr ${p.nr}. ${left <= 0 ? 'SISTA DAGEN I DAG!' : dagar(left) + ' kvar.'}`);
+      hint(left <= 0 ? $t`📦 Där står ${nameOf(p.k).toLowerCase()} – kvitto nr ${p.nr}. SISTA DAGEN I DAG!` : $t`📦 Där står ${nameOf(p.k).toLowerCase()} – kvitto nr ${p.nr}. ${dagar(left)} kvar.`);
     } },
-    { id: 'monter', r: [FLAP.x1, CNT.face - 2, CNT.x1, CNT.base], go: null, row: CNT.base, act: () => hint('💍 Ringar, fickur, en byst med guldkedja – och en guldtand.') },
-    { id: 'disklock', r: [FLAP.x0, CNT.top - 2, FLAP.x1, CNT.base], go: [166, 146], act: () => { hint('🚪 EJ IN. Disklocket är personalens väg.'); if (isOpen()) pbSay('Stanna på din sida.', true); } },
-    { id: 'lp', r: [LP.x0, LP.base - 30, LP.x1, LP.base], go: [209, 190], face: 'down', act: () => hint('💿 LP-skivor för 10 kr. En har en solnedgång på omslaget.') },
-    { id: 'cykel', r: [BIKE.x0, BIKE.base - 32, BIKE.x1, BIKE.base], go: [340, 190], face: 'down', act: () => hint('🚲 En damcykel med blommor i korgen. Någons cykel?') },
-    { id: 'vitrin', r: [VITR.x0, VITR.base - 60, VITR.x1, VITR.base], go: [428, 188], face: 'down', act: () => hint('📷 Kameror, tv-spel, en trumpet och en pokal. Allt inlåst.') },
-    { id: 'klubbor', r: [CLUBS.x0 - 4, CLUBS.base - 44, CLUBS.x1 + 4, CLUBS.base], go: [139, 190], face: 'down', act: () => hint('🏑 Golfklubbor, hockeyklubbor och ett paraply i en tunna.') },
+    { id: 'monter', r: [FLAP.x1, CNT.face - 2, CNT.x1, CNT.base], go: null, row: CNT.base, act: () => hint($t('💍 Ringar, fickur, en byst med guldkedja – och en guldtand.')) },
+    { id: 'disklock', r: [FLAP.x0, CNT.top - 2, FLAP.x1, CNT.base], go: [166, 146], act: () => { hint($t('🚪 EJ IN. Disklocket är personalens väg.')); if (isOpen()) pbSay($t('Stanna på din sida.'), true); } },
+    { id: 'lp', r: [LP.x0, LP.base - 30, LP.x1, LP.base], go: [209, 190], face: 'down', act: () => hint($t('💿 LP-skivor för 10 kr. En har en solnedgång på omslaget.')) },
+    { id: 'cykel', r: [BIKE.x0, BIKE.base - 32, BIKE.x1, BIKE.base], go: [340, 190], face: 'down', act: () => hint($t('🚲 En damcykel med blommor i korgen. Någons cykel?')) },
+    { id: 'vitrin', r: [VITR.x0, VITR.base - 60, VITR.x1, VITR.base], go: [428, 188], face: 'down', act: () => hint($t('📷 Kameror, tv-spel, en trumpet och en pokal. Allt inlåst.')) },
+    { id: 'klubbor', r: [CLUBS.x0 - 4, CLUBS.base - 44, CLUBS.x1 + 4, CLUBS.base], go: [139, 190], face: 'down', act: () => hint($t('🏑 Golfklubbor, hockeyklubbor och ett paraply i en tunna.')) },
     { id: 'dorr', r: [DOOR.x0 - 6, FRONT_Y - 10, DOOR.x1 + 6, H], go: [DOOR_X, FRONT_Y - 5], act: exit },
   ];
   const spotAt = (x, y) => spots.find((s) => x >= s.r[0] && x <= s.r[2] && y >= s.r[1] && y <= s.r[3]);
@@ -1786,17 +1787,17 @@ export function makePantbank(A) {
     ctx.fillStyle = '#c8a040'; ctx.fillRect(x0 - 1, y0 - 1, w + 2, h + 2);
     ctx.fillStyle = '#f6f1e2'; ctx.fillRect(x0, y0, w, h);
     ctx.fillStyle = '#141016'; ctx.fillRect(x0, y0, w, 11);
-    ctxText(ctx, SM, 'MINA PANTER', x0 + 4, y0 + 3, '#f0c848');
+    ctxText(ctx, SM, $t('MINA PANTER'), x0 + 4, y0 + 3, '#f0c848');
     const cnt = `${pl.length}/${MAXP()}`;
     ctxText(ctx, SM, cnt, x0 + w - 4 - textW(SM, cnt), y0 + 3, '#e8d8a8');
     let y = y0 + 14;
     for (const p of pl) {
       const left = g.pantDaysLeft ? g.pantDaysLeft(p) : p.sista - g.day;
       const col = left <= 0 ? '#c9323a' : left <= 2 ? '#a86a10' : '#2a6a3a';
-      ctxText(ctx, SM, `NR ${p.nr}`, x0 + 4, y, '#6a6070');
-      const nm = nameOf(p.k).toUpperCase().replace(/[^A-ZÅÄÖÉ0-9 ]/g, '').slice(0, 11);
+      ctxText(ctx, SM, $t`NR ${p.nr}`, x0 + 4, y, '#6a6070');
+      const nm = nameOf(p.k).toUpperCase().replace(/[^A-ZÅÄÖÉÁÀÂÃÇĆÈÊËÍÌÎÏÑŃÓÒÔÕŚŹŻÚÙÛÜŸÝĄĘŁŒÆ¡¿€$0-9 ]/g, '').slice(0, 11);
       ctxText(ctx, SM, nm, x0 + 30, y, '#2a2430');
-      const d = left <= 0 ? 'I DAG' : `${left} D`, pr = `${p.skuld}:-`;
+      const d = left <= 0 ? $t('I DAG') : $t`${left} D`, pr = $t`${p.skuld}:-`;
       ctxText(ctx, SM, d, x0 + w - 36 - textW(SM, d), y, col);
       ctxText(ctx, SM, pr, x0 + w - 4 - textW(SM, pr), y, '#8a1a10');
       y += 9;
@@ -1805,10 +1806,10 @@ export function makePantbank(A) {
   function bigLabel(ctx, s, atTop) {
     let name, hintTxt, col = '#f0c848';
     if (s.id === 'lucka') {
-      name = isOpen() ? 'KASSALUCKAN' : 'STÄNGT';
-      hintTxt = !isOpen() ? `ÖPPET ${HOURS[0]}-${HOURS[1]}` : !deal ? 'KLICKA - SÄLJ, LÅNA ELLER LÖS UT'
-        : ['lagg', 'syna', 'bud'].includes(deal.phase) ? 'PANTLÅNAREN SYNAR VARAN' : deal.phase === 'tillbaka' ? 'VARAN LÄGGS TILLBAKA' : 'PANTLÅNAREN RÄKNAR OCH STÄDAR UNDAN';
-    } else if (s.id === 'dorr') { name = 'UTGÅNG'; hintTxt = 'TILLBAKA UT I FÖRORTEN'; col = '#ffa43a'; }
+      name = isOpen() ? $t('KASSALUCKAN') : $t('STÄNGT');
+      hintTxt = !isOpen() ? $t`ÖPPET ${HOURS[0]}-${HOURS[1]}` : !deal ? $t('KLICKA - SÄLJ, LÅNA ELLER LÖS UT')
+        : ['lagg', 'syna', 'bud'].includes(deal.phase) ? $t('PANTLÅNAREN SYNAR VARAN') : deal.phase === 'tillbaka' ? $t('VARAN LÄGGS TILLBAKA') : $t('PANTLÅNAREN RÄKNAR OCH STÄDAR UNDAN');
+    } else if (s.id === 'dorr') { name = $t('UTGÅNG'); hintTxt = $t('TILLBAKA UT I FÖRORTEN'); col = '#ffa43a'; }
     else return;
     const nwd = textW(BG, name), hw = textW(SM, hintTxt);
     const w = Math.max(nwd, hw) + 14, h = 22;
@@ -1957,7 +1958,7 @@ export function makePantbank(A) {
     if (shutter > 0.02) {
       const hh = Math.round((CNT.top - HATCH.top) * shutter);
       for (let y = HATCH.top; y < HATCH.top + hh; y++) { ctx.fillStyle = (y - HATCH.top) % 3 === 0 ? '#3a3e46' : (y - HATCH.top) % 3 === 1 ? '#9aa2ac' : '#6e7680'; ctx.fillRect(HATCH.x0, y, HATCH.x1 - HATCH.x0, 1); }
-      if (shutter > 0.9) { ctx.fillStyle = '#f4f0e6'; ctx.fillRect(HATCH_X - 13, HATCH.top + 8, 27, 9); ctx.fillStyle = '#c8202a'; ctx.fillRect(HATCH_X - 13, HATCH.top + 8, 27, 1); ctxText(ctx, SM, 'STÄNGT', HATCH_X - 11, HATCH.top + 11, '#c8202a'); }
+      if (shutter > 0.9) { ctx.fillStyle = '#f4f0e6'; ctx.fillRect(HATCH_X - 13, HATCH.top + 8, 27, 9); ctx.fillStyle = '#c8202a'; ctx.fillRect(HATCH_X - 13, HATCH.top + 8, 27, 1); ctxText(ctx, SM, $t('STÄNGT'), HATCH_X - 11, HATCH.top + 11, '#c8202a'); }
     }
   }
   // gitarrerna på väggen – gungar på kroken en stund när man rört dem
@@ -2156,7 +2157,7 @@ export function makePantbank(A) {
       // stängningsdags: rullgallret ner (och upp igen när det öppnar)
       const open = isOpen();
       shutter = clamp(shutter + ((open ? 0 : 1) - shutter > 0 ? dt * 1.6 : -dt * 1.6), 0, 1);
-      if (!open && !closedSaid && t > 1.2 && !deal) { closedSaid = true; pbSay('Vi stänger! Kom tillbaka i morgon.', true); play('slide'); }
+      if (!open && !closedSaid && t > 1.2 && !deal) { closedSaid = true; pbSay($t('Vi stänger! Kom tillbaka i morgon.'), true); play('slide'); }
       if (open) closedSaid = false;
       // gökuret gal varje hel timme
       const hr = Math.floor(g.min / 60);

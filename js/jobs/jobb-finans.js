@@ -26,15 +26,16 @@ import { createSpeech } from '../scenes/walkable.js';
 import { planOf, drawShiftHud, drawTimeUp, makePops, abortShift } from './shift.js';
 import { play } from '../core/sound.js';
 import { makeShiftCoop } from '../net/coop.js';
+import { $t, $n } from '../core/i18n.js';
 
 const FW = 384, FH = 216;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const fmtKr = (v) => v.toFixed(1);   // (punkt: pixeltypsnittets komma liknar ett snedstreck i skärmstorlek)
 const STOCKS = [
-  { id: 'PIXEL', mean: 128, vol: 2.6, col: '#4ad8e8' },
-  { id: 'SNABB', mean: 54, vol: 1.3, col: '#f0c850' },
-  { id: 'BURGR', mean: 78, vol: 1.8, col: '#f08a4a' },
-  { id: 'MÖBEL', mean: 215, vol: 3.6, col: '#b88ae8' },
+  { id: $n('PIXEL'), mean: 128, vol: 2.6, col: '#4ad8e8' },
+  { id: $n('SNABB'), mean: 54, vol: 1.3, col: '#f0c850' },
+  { id: $n('BURGR'), mean: 78, vol: 1.8, col: '#f08a4a' },
+  { id: $n('MÖBEL'), mean: 215, vol: 3.6, col: '#b88ae8' },
 ];
 const MON = STOCKS.map((_, i) => ({ x: 8 + i * 94, y: 96, w: 86, h: 56 }));
 const BTN = (i, typ) => { const M = MON[i]; return typ === 'KÖP' ? { x: M.x + 4, y: M.y + M.h - 12, w: 38, h: 9 } : { x: M.x + M.w - 42, y: M.y + M.h - 12, w: 38, h: 9 }; };
@@ -77,7 +78,7 @@ function paintBg() {
   P.rect(150, 186, 84, 8, 0x2a2a30); for (let i = 0; i < 20; i++) P.rect(152 + i * 4, 188, 3, 2, 0x5a5a64);
   P.rect(250, 186, 22, 10, 0x1a1a20); P.rect(252, 184, 18, 3, 0x2a2a30); P.hl(254, 190, 14, 0x3a7bd5);
   P.rect(110, 186, 8, 8, 0xf4f1ea); P.rect(111, 187, 6, 3, 0x6a3a1a); P.vl(118, 188, 3, 0xf4f1ea);
-  const s = 'FINANSHUSET', sw = textW(SMALL, s) + 10;
+  const s = $t('FINANSHUSET'), sw = textW(SMALL, s) + 10;
   P.rect(FW - sw - 6, 4, sw, 10, 0x1a2a4a); P.box(FW - sw - 6, 4, sw, 10, 0xc89a40); text(P, SMALL, s, FW - sw - 1, 7, 0xf0d070);
   BG = P.flush();
   return BG;
@@ -172,7 +173,7 @@ export function makeJobbFinans(A, { onDone } = {}) {
   const snapAsap = () => { snapIn = 0; };
   const int = (v, dflt) => (Number.isInteger(v) ? v : dflt);
   const str = (v) => (typeof v === 'string' ? v.slice(0, 64) : '');
-  const hudTitle = () => (maxN > 1 ? 'FINANSHUSET IHOP' : 'FINANSHUSET');
+  const hudTitle = () => (maxN > 1 ? $t('FINANSHUSET IHOP') : $t('FINANSHUSET'));
   function seatX() {
     if (!coop.active) return SEATS[0];
     const ids = [meId(), ...coop.peers().map((f) => f.id)].sort();
@@ -284,7 +285,7 @@ export function makeJobbFinans(A, { onDone } = {}) {
   function doFx(kind, a) {
     if (kind === 's') { if (LJUD.has(a[0])) play(a[0]); }
     else if (kind === 'p') popAt(a[0], a[1], a[2], a[3] === undefined ? undefined : +a[3]);
-    else if (kind === 'H') { play('miss'); popAt(a[0], 'HANN FÖRE!', '#ff6a6a'); }   // någon annan hann först
+    else if (kind === 'H') { play('miss'); popAt(a[0], $t('HANN FÖRE!'), '#ff6a6a'); }   // någon annan hann först
     else if (kind === 'o') stats.ok++;
     else if (kind === 'f') stats.fel++;
     else if (kind === 'm') stats.miss++;
@@ -302,34 +303,34 @@ export function makeJobbFinans(A, { onDone } = {}) {
     if (!tk) {
       const g = gone[i];
       if (d && ((seen && seen.id >= 0) || (g && g.by !== k.by && t - g.t < 1))) fx(k, k.by, 'H', i);
-      else { kPopMe(k, i, 'INGEN ORDER', '#d8d2c0'); kLjud(k, 'miss'); }
+      else { kPopMe(k, i, $t('INGEN ORDER'), '#d8d2c0'); kLjud(k, 'miss'); }
       return;
     }
     if (d && seen && seen.id >= 0 && seen.id !== tk.id) { fx(k, k.by, 'H', i); return; }   // (lappen jag såg är borta – en ny kund)
     if (d && tk.by && tk.by !== k.by) {
       if (seen && !seen.by) fx(k, k.by, 'H', i);   // (ledig när jag tryckte – kollegan tog den)
-      else { kPopMe(k, i, 'KOLLEGANS ORDER', '#ffd23f'); kLjud(k, 'click'); }
+      else { kPopMe(k, i, $t('KOLLEGANS ORDER'), '#ffd23f'); kLjud(k, 'click'); }
       return;
     }
     // kursen på min skärm gäller, om den inte dragit iväg från skiftledarens
     const p = d && seen && Number.isFinite(seen.p) && Math.abs(seen.p - s.p) <= s.vol * 1.5 ? seen.p : s.p;
     tickets[i] = null; gone[i] = { t, by: k.by };
-    if (tk.typ !== typ) { kFel(k, i, 'FEL KNAPP!'); return; }
-    if (!goodAt(tk, p)) { kFel(k, i, typ === 'KÖP' ? 'FÖR DYRT!' : 'FÖR BILLIGT!'); return; }
-    team.ok++; fx(k, k.by, 'o'); kLjud(k, 'coin'); kPop(k, i, 'AFFÄR KLAR!', '#8ee03c');
+    if (tk.typ !== typ) { kFel(k, i, $t('FEL KNAPP!')); return; }
+    if (!goodAt(tk, p)) { kFel(k, i, typ === 'KÖP' ? $t('FÖR DYRT!') : $t('FÖR BILLIGT!')); return; }
+    team.ok++; fx(k, k.by, 'o'); kLjud(k, 'coin'); kPop(k, i, $t('AFFÄR KLAR!'), '#8ee03c');
     s.vel += (typ === 'KÖP' ? 1 : -1) * s.vol * 0.3;                          // ordern flyttar kursen lite
   }
   // (ihop) ta lappen på skärm i – den blir min; min egen släpps igen
   function doClaim(k, i, seen) {
     const tk = tickets[i];
     if (!tk || (seen && seen.id >= 0 && seen.id !== tk.id)) { fx(k, k.by, 'H', i); return; }   // (den är redan handlad)
-    if (tk.by === k.by) { tk.by = null; kPopMe(k, i, 'LEDIG IGEN', '#d8d2c0'); kLjud(k, 'click'); return; }
+    if (tk.by === k.by) { tk.by = null; kPopMe(k, i, $t('LEDIG IGEN'), '#d8d2c0'); kLjud(k, 'click'); return; }
     if (tk.by) {   // (ledig när jag klickade – eller tagen alldeles nyss: kollegan hann före)
       if ((seen && !seen.by) || (delat(k) && t - (tk.at ?? -9) < 1)) fx(k, k.by, 'H', i);
-      else { kPopMe(k, i, 'KOLLEGANS ORDER', '#ffd23f'); kLjud(k, 'click'); }
+      else { kPopMe(k, i, $t('KOLLEGANS ORDER'), '#ffd23f'); kLjud(k, 'click'); }
       return;
     }
-    tk.by = k.by; tk.at = t; kPopMe(k, i, 'DIN ORDER!', '#8ee03c'); kLjud(k, 'click');
+    tk.by = k.by; tk.at = t; kPopMe(k, i, $t('DIN ORDER!'), '#8ee03c'); kLjud(k, 'click');
   }
   // skiftledaren: läget ut direkt efter en handling (FÖRE svaret – då har den som frågade redan det
   // nya läget när svaret kommer) och utfallet till alla
@@ -356,8 +357,8 @@ export function makeJobbFinans(A, { onDone } = {}) {
     if (done) return;
     const tk = tickets[i], seen = { id: tk ? tk.id : -1, by: tk?.by || '', p: S[i].p };
     if (medarb()) {
-      if (!tk) { play('miss'); popAt(i, 'INGEN ORDER', '#d8d2c0'); return; }
-      if (tk.by && tk.by !== meId()) { play('click'); popAt(i, 'KOLLEGANS ORDER', '#ffd23f'); return; }
+      if (!tk) { play('miss'); popAt(i, $t('INGEN ORDER'), '#d8d2c0'); return; }
+      if (tk.by && tk.by !== meId()) { play('click'); popAt(i, $t('KOLLEGANS ORDER'), '#ffd23f'); return; }
       if (!pend) ask({ t: 'do', a: 'handla', i, typ, id: seen.id, by: seen.by, p: Math.round(seen.p * 100) / 100 });
       return;
     }
@@ -369,7 +370,7 @@ export function makeJobbFinans(A, { onDone } = {}) {
     const tk = tickets[i];
     if (!tk || !coop.active || done) return;   // (ensam finns inget att låsa)
     if (medarb()) {
-      if (tk.by && tk.by !== meId()) { play('click'); popAt(i, 'KOLLEGANS ORDER', '#ffd23f'); return; }
+      if (tk.by && tk.by !== meId()) { play('click'); popAt(i, $t('KOLLEGANS ORDER'), '#ffd23f'); return; }
       if (!pend) ask({ t: 'do', a: 'ta', i, id: tk.id, by: tk.by || '' });
       return;
     }
@@ -417,7 +418,7 @@ export function makeJobbFinans(A, { onDone } = {}) {
       if (tk.t <= 0) {   // kunden lägger på: missad hos den som tagit lappen (ingen tagit den: hos skiftledaren)
         const k = kOf(tk.by);
         tickets[i] = null;
-        team.miss++; fx(k, k.by, 'm'); fx(k, '', 's', 'miss'); kPop(k, i, 'KUNDEN LADE PÅ…', '#d8d2c0', 150);
+        team.miss++; fx(k, k.by, 'm'); fx(k, '', 's', 'miss'); kPop(k, i, $t('KUNDEN LADE PÅ…'), '#d8d2c0', 150);
         publish(k, false);
       }
     }
@@ -446,7 +447,7 @@ export function makeJobbFinans(A, { onDone } = {}) {
     if (coop.active) maxN = Math.max(maxN, coop.peers().length + 1);
     if (coop.active !== wasCoop) {   // en kollega satte sig bredvid: kunderna ringer tätare
       wasCoop = coop.active;
-      if (wasCoop) { play('knock'); pops.add(FW / 2, 60, 'NI JOBBAR IHOP!', '#8ee03c'); }
+      if (wasCoop) { play('knock'); pops.add(FW / 2, 60, $t('NI JOBBAR IHOP!'), '#8ee03c'); }
     }
     // Skiftledaren (eller solo) kör handelssalen; medarbetare följer ledarens läge
     const iLead = !coop.active || (coop.leader && coop.settled);
@@ -456,21 +457,21 @@ export function makeJobbFinans(A, { onDone } = {}) {
     if (iLead) leadTick(dt); else mateTick(dt);
     for (const m of mates) {
       m.nextT -= dt;
-      if (m.nextT <= 0) { m.nextT = 5 + rnd() * 6; m.talk.say(['KÖP! KÖP!', 'SÄLJ ALLT!', 'VILKEN DAG!', 'HALLÅ? JA, JAG HÖR!', 'SNABB RUSAR!', 'KAFFE, NÅGON?'][(rnd() * 6) | 0], { x: m.x, y: m.y - 44 }, 2); }
+      if (m.nextT <= 0) { m.nextT = 5 + rnd() * 6; m.talk.say([$t('KÖP! KÖP!'), $t('SÄLJ ALLT!'), $t('VILKEN DAG!'), $t('HALLÅ? JA, JAG HÖR!'), $t('SNABB RUSAR!'), $t('KAFFE, NÅGON?')][(rnd() * 6) | 0], { x: m.x, y: m.y - 44 }, 2); }
     }
     chairX += (seatX() - chairX) * Math.min(1, dt * 3);   // (ihop rullar stolen till min plats)
   }
 
   // ---------- ritning ----------
   function drawTicker(ctx) {
-    const line = S.map((s) => `${s.id} ${fmtKr(s.p)} ${s.p >= s.hist[Math.max(0, s.hist.length - 25)] ? '+' : '-'}`).join('   ') + '   ';
+    const line = S.map((s) => `${$t(s.id)} ${fmtKr(s.p)} ${s.p >= s.hist[Math.max(0, s.hist.length - 25)] ? '+' : '-'}`).join('   ') + '   ';
     const w = textW(SMALL, line), off = (t * 28) % w;
     ctx.save(); ctx.beginPath(); ctx.rect(0, 20, FW, 14); ctx.clip();
     for (let k = -1; k < Math.ceil(FW / w) + 1; k++) {
       let x = Math.round(k * w - off) + 4;
       for (const s of S) {
         const up = s.p >= s.hist[Math.max(0, s.hist.length - 25)];
-        const part = `${s.id} ${fmtKr(s.p)} `;
+        const part = `${$t(s.id)} ${fmtKr(s.p)} `;
         ctxText(ctx, SMALL, part, x, 24, '#f4d24a'); x += textW(SMALL, part) + 1;
         ctx.fillStyle = up ? '#4ae84a' : '#ff5a4a';
         if (up) { ctx.fillRect(x + 1, 24, 1, 1); ctx.fillRect(x, 25, 3, 1); ctx.fillRect(x - 1, 26, 5, 1); }
@@ -487,8 +488,8 @@ export function makeJobbFinans(A, { onDone } = {}) {
     ctx.fillStyle = '#16161c'; ctx.fillRect(M.x - 2, M.y - 2, M.w + 4, M.h + 4);
     ctx.fillStyle = '#0c1424'; ctx.fillRect(M.x, M.y, M.w, M.h);
     const up = s.p >= s.hist[Math.max(0, s.hist.length - 25)];
-    ctxText(ctx, SMALL, s.id, M.x + 3, M.y + 3, s.col);
-    const ps = fmtKr(s.p) + ' KR';
+    ctxText(ctx, SMALL, $t(s.id), M.x + 3, M.y + 3, s.col);
+    const ps = $t`${fmtKr(s.p)} KR`;
     ctxText(ctx, SMALL, ps, M.x + M.w - 3 - textW(SMALL, ps), M.y + 3, up ? '#6aee6a' : '#ff6a5a');
     // grafen
     const gx = M.x + 3, gy = M.y + 11, gw = M.w - 6, gh = 28;
@@ -512,12 +513,12 @@ export function makeJobbFinans(A, { onDone } = {}) {
       for (let x = x0; x <= x1; x++) { const yy = Math.round(y0 + ((y1 - y0) * (x - x0)) / Math.max(1, x1 - x0)); ctx.fillRect(x, Math.min(yy, y0, y1), 1, Math.max(1, Math.abs(y1 - y0) / Math.max(1, x1 - x0) + 1)); }
     }
     // knapparna (kollegans lapp: knappen lyser inte hos mig)
-    for (const typ of ['KÖP', 'SÄLJ']) {
+    for (const typ of [$n('KÖP'), $n('SÄLJ')]) {
       const B = BTN(i, typ), lit = tk && tk.typ === typ && good(tk) && mineOrFree(tk) && Math.floor(t * 4) % 2 === 0;
       ctx.fillStyle = typ === 'KÖP' ? (lit ? '#6aee6a' : '#2a7a3a') : (lit ? '#ff7a6a' : '#8a2a2a');
       ctx.fillRect(B.x, B.y, B.w, B.h);
       ctx.fillStyle = 'rgba(255,255,255,0.25)'; ctx.fillRect(B.x, B.y, B.w, 1);
-      ctxText(ctx, SMALL, typ, B.x + ((B.w - textW(SMALL, typ)) >> 1), B.y + 2, '#f4f6fa');
+      ctxText(ctx, SMALL, $t(typ), B.x + ((B.w - textW(SMALL, $t(typ))) >> 1), B.y + 2, '#f4f6fa');
     }
   }
   function drawTicket(ctx, i) {
@@ -527,14 +528,14 @@ export function makeJobbFinans(A, { onDone } = {}) {
     ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(R.x + 1, y + 1, R.w, R.h);
     ctx.fillStyle = tk.typ === 'KÖP' ? '#f8f0a0' : '#f8c8b8'; ctx.fillRect(R.x, y, R.w, R.h);
     ctx.fillStyle = tk.typ === 'KÖP' ? '#2a7a3a' : '#8a2a2a'; ctx.fillRect(R.x, y, 3, R.h);
-    ctxText(ctx, SMALL, `${tk.typ} ${tk.n} ${S[i].id}`, R.x + 6, y + 2, '#1a1a24');
-    ctxText(ctx, SMALL, `${tk.typ === 'KÖP' ? 'UNDER' : 'ÖVER'} ${fmtKr(tk.lim)} KR`, R.x + 6, y + 9, good(tk) ? '#1f7a2a' : '#6a2a2a');
+    ctxText(ctx, SMALL, `${$t(tk.typ)} ${tk.n} ${$t(S[i].id)}`, R.x + 6, y + 2, '#1a1a24');
+    ctxText(ctx, SMALL, tk.typ === 'KÖP' ? $t`UNDER ${fmtKr(tk.lim)} KR` : $t`ÖVER ${fmtKr(tk.lim)} KR`, R.x + 6, y + 9, good(tk) ? '#1f7a2a' : '#6a2a2a');
     // (ihop) tagen lapp: ram i mäklarens färg och namnet nere till höger (DIN = min)
     let bw = R.w - 10;
     if (tk.by && coop.active) {
       const mine = tk.by === meId(), f = mine ? null : coop.peers().find((q) => q.id === tk.by);
       const col = mine ? A.avatar?.color || '#3a7bd5' : f?.av?.color || '#8a8e98';
-      const nm = mine ? 'DIN' : String(f?.av?.name || '...').toUpperCase().slice(0, 6), nw = textW(SMALL, nm);
+      const nm = mine ? $t('DIN') : String(f?.av?.name || '...').toUpperCase().slice(0, 6), nw = textW(SMALL, nm);
       ctx.fillStyle = col;
       ctx.fillRect(R.x - 1, y - 1, R.w + 2, 1); ctx.fillRect(R.x - 1, y + R.h, R.w + 2, 1); ctx.fillRect(R.x - 1, y, 1, R.h); ctx.fillRect(R.x + R.w, y, 1, R.h);
       ctxText(ctx, SMALL, nm, R.x + R.w - 3 - nw, y + 15, '#1a1a24');
@@ -582,7 +583,7 @@ export function makeJobbFinans(A, { onDone } = {}) {
       drawSeat(ctx, chairX, meLook);
       for (const m of mates) m.talk.draw(ctx, { x0: 0, x1: FW });
       pops.draw(ctx);
-      drawShiftHud(ctx, A, { t, dur: P.seconds, ok: maxN > 1 ? team.ok : stats.ok, fel: maxN > 1 ? team.fel : stats.fel, title: `${hudTitle()} - ${maxN > 1 ? team.ok : stats.ok} AFFÄRER` });
+      drawShiftHud(ctx, A, { t, dur: P.seconds, ok: maxN > 1 ? team.ok : stats.ok, fel: maxN > 1 ? team.fel : stats.fel, title: $t`${hudTitle()} - ${maxN > 1 ? team.ok : stats.ok} AFFÄRER` });
       if (done) drawTimeUp(ctx, A);
     },
     _debug: {

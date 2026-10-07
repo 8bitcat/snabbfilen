@@ -20,6 +20,7 @@ import { WARDROBE_TOPS } from './wardrobe-tops.js';
 import { WARDROBE_BOTTOMS, WARDROBE_SHOES } from './wardrobe-bottoms.js';
 import { WARDROBE_ACC } from './wardrobe-acc.js';
 import { LOOK_FIELDS, LOOK_COLORS, idOf, isValid, entryOf } from '../core/people.js';
+import { $t } from '../core/i18n.js';
 
 export const SLOTS = ['top', 'bottom', 'shoes', 'hat', 'glasses', 'bag', 'neck', 'jewel', 'hairAcc', 'phones'];
 
@@ -37,8 +38,8 @@ export const SLOT_FIELDS = {
   phones: { phones: false },
 };
 export const SLOT_LABELS = {
-  top: 'Överdel', bottom: 'Underdel', shoes: 'Skor', hat: 'Huvudbonad', glasses: 'Glasögon', bag: 'Väska',
-  neck: 'Hals', jewel: 'Smycken', hairAcc: 'I håret', phones: 'Hörlurar',
+  top: $t('Överdel'), bottom: $t('Underdel'), shoes: $t('Skor'), hat: $t('Huvudbonad'), glasses: $t('Glasögon'), bag: $t('Väska'),
+  neck: $t('Hals'), jewel: $t('Smycken'), hairAcc: $t('I håret'), phones: $t('Hörlurar'),
 };
 // Utsnitten redigerarens rutor kan visa (`tile` på ett plagg eller en registerpost)
 export const TILE_VIEWS = ['head', 'face', 'neck', 'torso', 'legs', 'side', 'full'];

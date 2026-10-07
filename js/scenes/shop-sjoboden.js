@@ -29,21 +29,22 @@ import { fmt, SAVE_KEY } from '../game.js';
 import { play } from '../core/sound.js';
 import { createWalker, selfDrawable, folkDrawables, WALK_SEQ, sayBubble, sayLines, createSpeech } from './walkable.js';
 import { worldFolksHere, worldSeatsTaken } from '../net/world.js';
+import { $t } from '../core/i18n.js';
 
-const MSG_ATUPP = 'ÄT UPP FÖRST! 😋';
-const MSG_DORR = 'DU MÅSTE SÄTTA DIG OCH ÄTA UPP!';
-const MENU_TITLE = '🐟 Sjöboden – vad får det lov att vara?';
+const MSG_ATUPP = $t('ÄT UPP FÖRST! 😋');
+const MSG_DORR = $t('DU MÅSTE SÄTTA DIG OCH ÄTA UPP!');
+const MENU_TITLE = $t('🐟 Sjöboden – vad får det lov att vara?');
 
 // ======================= menyn =======================
 // fill = mättnad, energy = energi, bites = tuggor (delas ut tugga för tugga medan man sitter),
 // glad = lycka när allt är uppätet. main = varmrätt (en per beställning; glass och dricka läggs till).
 export const SJO_MENY = [
-  { id: 'fishchips', icon: '🐟', name: 'Fish and chips med remouladsås', board: 'FISH&CHIPS', price: 69, fill: 52, energy: 8, bites: 4, main: true, glad: 2 },
-  { id: 'raksmorgas', icon: '🦐', name: 'Räksmörgås på rågbröd', board: 'RÄKMACKA', price: 85, fill: 44, energy: 8, bites: 4, main: true, glad: 4 },
-  { id: 'fisksoppa', icon: '🍲', name: 'Fisksoppa med aioli', board: 'FISKSOPPA', price: 79, fill: 48, energy: 12, bites: 4, main: true, glad: 3 },
-  { id: 'sill', icon: '🥔', name: 'Inlagd sill med färskpotatis', board: 'SILL', price: 59, fill: 45, energy: 6, bites: 3, main: true, glad: 2 },
-  { id: 'hjortron', icon: '🍨', name: 'Vaniljglass med varma hjortron', board: 'HJORTRON', price: 39, fill: 9, energy: 6, bites: 3, glad: 3 },
-  { id: 'soda', icon: '🥤', name: 'Hallonsoda', board: 'SODA', price: 15, fill: 4, energy: 10, bites: 2, glad: 0 },
+  { id: 'fishchips', icon: '🐟', name: $t('Fish and chips med remouladsås'), board: $t('FISH&CHIPS'), price: 69, fill: 52, energy: 8, bites: 4, main: true, glad: 2 },
+  { id: 'raksmorgas', icon: '🦐', name: $t('Räksmörgås på rågbröd'), board: $t('RÄKMACKA'), price: 85, fill: 44, energy: 8, bites: 4, main: true, glad: 4 },
+  { id: 'fisksoppa', icon: '🍲', name: $t('Fisksoppa med aioli'), board: $t('FISKSOPPA'), price: 79, fill: 48, energy: 12, bites: 4, main: true, glad: 3 },
+  { id: 'sill', icon: '🥔', name: $t('Inlagd sill med färskpotatis'), board: $t('SILL'), price: 59, fill: 45, energy: 6, bites: 3, main: true, glad: 2 },
+  { id: 'hjortron', icon: '🍨', name: $t('Vaniljglass med varma hjortron'), board: $t('HJORTRON'), price: 39, fill: 9, energy: 6, bites: 3, glad: 3 },
+  { id: 'soda', icon: '🥤', name: $t('Hallonsoda'), board: $t('SODA'), price: 15, fill: 4, energy: 10, bites: 2, glad: 0 },
 ];
 const menyOf = (id) => SJO_MENY.find((m) => m.id === id);
 // en giltig beställning: kända rätter, var och en högst en gång, högst en varmrätt – i menyordning
@@ -61,10 +62,10 @@ function normOrder(ids) {
 const priceOf = (list) => list.reduce((a, m) => a + m.price, 0);
 const fillOf = (list) => list.reduce((a, m) => a + m.fill, 0);
 const energyOf = (list) => list.reduce((a, m) => a + m.energy, 0);
-const SAY = { fishchips: 'fish and chips', raksmorgas: 'en räksmörgås', fisksoppa: 'en fisksoppa', sill: 'sill med färskpotatis', hjortron: 'hjortronglass', soda: 'en hallonsoda' };
+const SAY = { fishchips: $t('fish and chips'), raksmorgas: $t('en räksmörgås'), fisksoppa: $t('en fisksoppa'), sill: $t('sill med färskpotatis'), hjortron: $t('hjortronglass'), soda: $t('en hallonsoda') };
 function orderText(list) {
   const names = list.map((m) => SAY[m.id]);
-  return names.length < 2 ? names[0] || '' : names.slice(0, -1).join(', ') + ' och ' + names[names.length - 1];
+  return names.length < 2 ? names[0] || '' : $t`${names.slice(0, -1).join(', ')} och ${names[names.length - 1]}`;
 }
 
 // ======================= mått (världskoordinater) =======================
@@ -347,7 +348,7 @@ function paintWall(P) {
   P.rect(DOOR.x0 - 6, 12, DOOR.x1 - DOOR.x0 + 12, 2, PLANK.base); P.hl(DOOR.x0 - 6, 12, DOOR.x1 - DOOR.x0 + 12, PLANK.hi);   // åran (skaftet)
   P.rect(DOOR.x1 + 3, 10, 6, 6, PLANK.base); P.hl(DOOR.x1 + 3, 10, 6, PLANK.hi); P.rect(DOOR.x1 + 7, 11, 2, 4, 0xc8302a);    // årbladet med röd spets
   area(P, DOOR.x0 - 2, 16, DOOR.x1 - DOOR.x0 + 4, 8, (X, Y, i, j) => (i === 0 || j === 0 || i === DOOR.x1 - DOOR.x0 + 3 || j === 7 ? NAVY.dk : NAVY.base));
-  const vk = textMask(SMALL, 'OMBORD');
+  const vk = textMask(SMALL, $t('OMBORD'));
   drawText(P, vk, ((DOOR.x0 + DOOR.x1 - vk.w) >> 1), 18, { fill: 0xf4f0e2, shadow: NAVY.dk });
   // skeppsratten (målas – den svänger inte) och tavlan med fyren
   const { x: rx, y: ry } = RATT;
@@ -393,7 +394,7 @@ function paintKitchen(P) {
     if (i < 2 || j < 2 || i >= w - 2 || j >= h - 2) return i === 0 || j === 0 ? PLANK.hi : i === w - 1 || j === h - 1 ? TAR.dk : PLANK.base;
     return jit(0x2a3432, X, Y, 18, 0.06);
   });
-  const head = textMask(SMALL, 'DAGENS FÅNGST');
+  const head = textMask(SMALL, $t('DAGENS FÅNGST'));
   drawText(P, head, ((MENU.x0 + MENU.x1 - head.w) >> 1), MENU.y0 + 4, { fill: 0xf4d23c });
   SJO_MENY.forEach((m, k) => {
     const col = k < 3 ? 0 : 1, row = k % 3, x = MENU.x0 + 5 + col * 56, y = MENU.y0 + 13 + row * 9;
@@ -587,7 +588,7 @@ function paintDoorFrames(N = 6) {
   for (const [px, py] of [[cx, cy - 6], [cx + 6, cy], [cx, cy + 6], [cx - 6, cy]]) S.px(px, py, BRASS.dk);   // nitarna
   S.rect(w - 6, 34, 3, 6, BRASS.base); S.px(w - 6, 34, BRASS.hi);                          // handtaget
   S.rect(5, 26, w - 10, 6, 0xf4f0e2); S.rect(6, 27, w - 12, 4, 0xe8e0c8);                  // ÖPPET-skylten
-  const om = textMask(SMALL, 'ÖPPET');
+  const om = textMask(SMALL, $t('ÖPPET'));
   drawText(S, om, ((w - om.w) >> 1), 28, { fill: 0x2a5a9a });
   const frames = [];
   for (let k = 0; k < N; k++) {
@@ -697,7 +698,7 @@ function paintTinor() {
 
 // ======================= kocken Maja =======================
 const MAJA = { skin: '#f0c8a0', hair: '#c8803a', style: 'bun', beard: false, top: 'stripes', shirt: '#f4f1ea', accent: '#2a4a8a', bottom: 'pants', pants: '#2b3a5a', shoes: '#3a2a1e', glasses: false, phones: false, bag: null, hat: null, apron: true, build: 5, kid: false };
-const COOK_NAME = 'Maja';
+const COOK_NAME = $t('Maja');
 
 // ======================= det levande (utsikten, akvariet, katten, lyktorna) =======================
 // utsikten genom fönstren: himlen efter klockan, havet med glitter, fyren på skäret (blinkar på
@@ -827,9 +828,9 @@ function drawCandles(ctx, t, lit) {
 const IMG = {};
 const img = (k, fn) => (IMG[k] ||= fn());
 const LINES = [
-  'Bästa fisksoppan i stan!', 'Räkorna är färska i dag.', 'Titta, fyren blinkar!', 'Jag såg en delfin från piren en gång!',
-  'Maja steker den bästa fisken.', 'Hjortronglassen ... oj oj.', 'Här luktar det hav.', 'Måsarna snor pommes om man inte ser upp!',
-  'Har du hälsat på Harald i akvariet?', 'Katten Sill sover alltid.', 'Vilken utsikt!', 'Sill och färskpotatis – som midsommar.',
+  $t('Bästa fisksoppan i stan!'), $t('Räkorna är färska i dag.'), $t('Titta, fyren blinkar!'), $t('Jag såg en delfin från piren en gång!'),
+  $t('Maja steker den bästa fisken.'), $t('Hjortronglassen ... oj oj.'), $t('Här luktar det hav.'), $t('Måsarna snor pommes om man inte ser upp!'),
+  $t('Har du hälsat på Harald i akvariet?'), $t('Katten Sill sover alltid.'), $t('Vilken utsikt!'), $t('Sill och färskpotatis – som midsommar.'),
 ];
 // ======================= scenen =======================
 export function makeShopSjoboden(A) {
@@ -959,7 +960,7 @@ export function makeShopSjoboden(A) {
   // lyckan när allt på brickan är uppätet (högst 8 om dagen från Sjöboden)
   function giveGlad(order) {
     const n = order.reduce((a, it) => a + (it.glad | 0), 0);
-    const got = n ? (g.glad?.(n, 'Sjöboden', 'sjoboden', 8) || 0) : 0;
+    const got = n ? (g.glad?.(n, $t('Sjöboden'), 'sjoboden', 8) || 0) : 0;
     me.got.glad += got;
     return got;
   }
@@ -1023,7 +1024,7 @@ export function makeShopSjoboden(A) {
     walker.walkTo(s.ax, s.ay, () => {
       if (s.occ && s.occ !== 'me') {
         const alt = pickSeat();
-        if (!alt) { me.state = me.tray ? 'carry' : 'free'; talkMe.say('😕 Alla platser är upptagna!', meAt); return; }
+        if (!alt) { me.state = me.tray ? 'carry' : 'free'; talkMe.say($t('😕 Alla platser är upptagna!'), meAt); return; }
         goSit(alt); return;
       }
       sitDown(s);
@@ -1033,13 +1034,13 @@ export function makeShopSjoboden(A) {
 
   // ---------- köpet ----------
   function buy(ids) {
-    if (!alive) return { ok: false, msg: 'Sjöboden är stängd.' };
+    if (!alive) return { ok: false, msg: $t('Sjöboden är stängd.') };
     const list = normOrder(ids);
-    if (!list.length) return { ok: false, msg: 'Välj något från menyn först!' };
-    if (me.state === 'wait' || me.state === 'toCounter') return { ok: false, msg: `${COOK_NAME} lagar redan din beställning!` };
-    if (me.order) return { ok: false, msg: 'Ät upp det du har först!' };
+    if (!list.length) return { ok: false, msg: $t('Välj något från menyn först!') };
+    if (me.state === 'wait' || me.state === 'toCounter') return { ok: false, msg: $t`${COOK_NAME} lagar redan din beställning!` };
+    if (me.order) return { ok: false, msg: $t('Ät upp det du har först!') };
     const price = priceOf(list);
-    if (g.money < price) return { ok: false, msg: 'Du har inte råd!' };
+    if (g.money < price) return { ok: false, msg: $t('Du har inte råd!') };
     if (me.state === 'sit') standUp();
     release();
     g.money -= price;
@@ -1053,7 +1054,7 @@ export function makeShopSjoboden(A) {
     if (atCounter) order();
     else { me.state = 'toCounter'; walker.walkTo(PAY_X, ORDER_Y, order); }
     const line = orderText(list);
-    talkCook.say(`🐟 ${line[0].toUpperCase() + line.slice(1)} – ${price} kr, tack! Det blir strax.`, cookAt, 3.6);
+    talkCook.say($t`🐟 ${line[0].toUpperCase() + line.slice(1)} – ${price} kr, tack! Det blir strax.`, cookAt, 3.6);
     return { ok: true, price, fill: fillOf(list), energy: energyOf(list), items: list.map((m) => m.id) };
   }
   // menyn vid disken: en varmrätt (eller ingen), lägg till hjortronglass och hallonsoda
@@ -1067,16 +1068,16 @@ export function makeShopSjoboden(A) {
       const on = (m) => (m.main ? pick.main === m.id : pick[m.id]);
       const rows = SJO_MENY.map((m, i) => `<div class="prow" style="grid-template-columns:52px 1fr auto;${on(m) ? 'background:#fff3c8' : ''}">
           <canvas data-ic="${i}" width="24" height="16" style="width:48px;height:32px;image-rendering:pixelated;background:#e4ecf4;border:2px solid #17151a"></canvas>
-          <span class="nm">${m.icon} ${m.name} <b>${fmt(m.price)}</b><br><small class="sp">+${m.fill} mättnad · +${m.energy} energi${m.glad ? ' · 😊 lycka' : ''} · ${m.bites} tuggor</small></span>
-          <button class="btn btn-small ${on(m) ? 'btn-gold' : ''}" data-pick="${m.id}" data-key="${i + 1}">${on(m) ? '✓ Vald' : m.main ? 'Välj' : '+ Lägg till'} <kbd>${i + 1}</kbd></button>
+          <span class="nm">${m.icon} ${m.name} <b>${fmt(m.price)}</b><br><small class="sp">${$t`+${m.fill} mättnad · +${m.energy} energi`}${m.glad ? ` · ${$t('😊 lycka')}` : ''} · ${$t`${m.bites} tuggor`}</small></span>
+          <button class="btn btn-small ${on(m) ? 'btn-gold' : ''}" data-pick="${m.id}" data-key="${i + 1}">${on(m) ? $t('✓ Vald') : m.main ? $t('Välj') : $t('+ Lägg till')} <kbd>${i + 1}</kbd></button>
         </div>`).join('');
-      const body = `<p style="font-size:var(--f2);margin:0 0 8px">💰 <b>${fmt(g.money)}</b> · 🍽️ Mättnad <b>${Math.round(g.hunger)}</b>/100 · ⚡ Energi <b>${Math.round(g.energy)}</b>/100</p>
+      const body = `<p style="font-size:var(--f2);margin:0 0 8px">${$t`💰 <b>${fmt(g.money)}</b> · 🍽️ Mättnad <b>${Math.round(g.hunger)}</b>/100 · ⚡ Energi <b>${Math.round(g.energy)}</b>/100`}</p>
         <div class="plist">${rows}</div>
-        <p style="font-size:var(--f1);margin:10px 0 0;color:#6d6660">Du får maten på en bricka och sätter dig vid ett bord eller i fönstret med utsikt över havet. Mättnaden och energin kommer medan du äter – och när allt är uppätet blir du gladare!</p>`;
+        <p style="font-size:var(--f1);margin:10px 0 0;color:#6d6660">${$t('Du får maten på en bricka och sätter dig vid ett bord eller i fönstret med utsikt över havet. Mättnaden och energin kommer medan du äter – och när allt är uppätet blir du gladare!')}</p>`;
       const can = list.length > 0 && g.money >= price;
       const dlg = openModal(MENU_TITLE, body, [
-        { label: 'Nej tack', onClick: closeModal },
-        { label: list.length ? `🐟 Beställ – ${fmt(price)}` : '🐟 Beställ', cls: 'btn-go', disabled: !can, onClick: () => {
+        { label: $t('Nej tack'), onClick: closeModal },
+        { label: list.length ? $t`🐟 Beställ – ${fmt(price)}` : $t('🐟 Beställ'), cls: 'btn-go', disabled: !can, onClick: () => {
           const r = buy(ids());
           closeModal();
           if (!r.ok) { talkCook.say('😳 ' + r.msg, cookAt); play('fel'); }
@@ -1104,18 +1105,18 @@ export function makeShopSjoboden(A) {
   const hot = [
     { id: 'dorr', r: [DOOR.x0 - 3, DOOR.top - 4, DOOR.x1 + 3, WALL_Y + 10], go: () => DOOR_SPOT, act: () => { play('door'); A.go('city'); } },
     { id: 'meny', r: [MENU.x0, MENU.y0, MENU.x1, MENU.y1], go: () => [PAY_X, ORDER_Y], act: () => { play('click'); openMenu(); } },
-    { id: 'monter', r: [MONTER.x0, CNT.top - 22, MONTER.x1, CNT.top + 2], go: () => [PAY_X, ORDER_Y], act: () => { walker.dir = 'up'; talkCook.say('🦐 Allt i montern kom in med båten i morse!', cookAt); play('click'); openMenu(); } },
+    { id: 'monter', r: [MONTER.x0, CNT.top - 22, MONTER.x1, CNT.top + 2], go: () => [PAY_X, ORDER_Y], act: () => { walker.dir = 'up'; talkCook.say($t('🦐 Allt i montern kom in med båten i morse!'), cookAt); play('click'); openMenu(); } },
     { id: 'disk', r: [CNT.x0, 70, CNT.x1, CNT.y + 2], go: () => [PAY_X, ORDER_Y], act: () => { play('click'); openMenu(); } },
-    { id: 'gryta', r: [POT.x0 - 4, POT.top - 10, POT.x1 + 4, BACK.top], go: () => [POT_X, ORDER_Y], act: () => { walker.dir = 'up'; talkCook.say('🍲 Fisksoppan har puttrat sen i morse – med saffran och fänkål!', cookAt); } },
-    { id: 'frit', r: [FRY.x0, FRY.top - 4, FRY.x1, BACK.top], go: () => [FRY_X, ORDER_Y], act: () => { walker.dir = 'up'; talkCook.say('🐟 Torsk i ölsmet – krispig utanpå, saftig inuti.', cookAt); } },
+    { id: 'gryta', r: [POT.x0 - 4, POT.top - 10, POT.x1 + 4, BACK.top], go: () => [POT_X, ORDER_Y], act: () => { walker.dir = 'up'; talkCook.say($t('🍲 Fisksoppan har puttrat sen i morse – med saffran och fänkål!'), cookAt); } },
+    { id: 'frit', r: [FRY.x0, FRY.top - 4, FRY.x1, BACK.top], go: () => [FRY_X, ORDER_Y], act: () => { walker.dir = 'up'; talkCook.say($t('🐟 Torsk i ölsmet – krispig utanpå, saftig inuti.'), cookAt); } },
     { id: 'hylla', r: [SHELF.x0, SHELF.y0, SHELF.x1, SHELF.y1], go: () => [SHELF_X, ORDER_Y], act: () => { play('click'); openMenu({ soda: true }); } },
-    { id: 'fonster', r: [WINS[0].x0 - 4, WIN_T - 4, WINS[2].x1 + 4, SILL.y - 3], go: (x) => [clamp(x, 20, 170), WALL_Y + 14], act: () => { walker.dir = 'up'; quip(isNight(g.min / 60) ? '🌊 Fyren på Pixelskär blinkar ute i mörkret.' : sea.jump >= 0 ? '🐟 Såg du? En fisk hoppade!' : '🌊 Havet glittrar. Där borta står fyren på Pixelskär.'); } },
-    { id: 'ratt', r: [RATT.x - 13, RATT.y - 13, RATT.x + 13, RATT.y + 13], go: () => atWall(RATT.x), act: () => { walker.dir = 'up'; quip('⎈ En riktig skeppsratt från en gammal fiskebåt.'); } },
-    { id: 'tavla', r: [TAVLA.x0, TAVLA.y0, TAVLA.x1, TAVLA.y1], go: () => atWall((TAVLA.x0 + TAVLA.x1) / 2), act: () => { walker.dir = 'up'; quip('🖼️ Fyren på Pixelskär – målad av Majas morfar.'); } },
-    { id: 'akvarium', r: [AQUA.x0 - 2, AQUA.top - 2, AQUA.x1 + 2, AQUA.top + 28], go: () => [AQUA.x0 - 6, AQUA.y + 8], act: () => { walker.dir = 'right'; talkCook.say('🦞 Det där är Harald. Han är INTE till salu!', cookAt); } },
-    { id: 'katt', r: [TUNNA.x - 10, TUNNA.y - 32, TUNNA.x + 12, TUNNA.y - 18], go: () => [TUNNA.x + 12, TUNNA.y + 4], act: () => { walker.dir = 'left'; cat.awake = 3.2; cat.tail = 3; play('chirp'); quip('😺 Skeppskatten Sill spinner och blinkar mot dig.'); g.glad?.(1, '', 'sjokatt', 1); } },
-    { id: 'ankare', r: [ANKARE.x - 15, ANKARE.y - 34, ANKARE.x + 15, ANKARE.y + 2], go: () => [ANKARE.x + 20, ANKARE.y - 4], act: () => { walker.dir = 'left'; quip('⚓ Ett gammalt ankare. Det går inte att rubba!'); } },
-    { id: 'tinor', r: [TINOR.x - 15, TINOR.y - 26, TINOR.x + 15, TINOR.y + 2], go: () => [TINOR.x - 20, TINOR.y - 4], act: () => { walker.dir = 'right'; quip('🦞 Hummertinor. Maja lägger ut dem på hösten.'); } },
+    { id: 'fonster', r: [WINS[0].x0 - 4, WIN_T - 4, WINS[2].x1 + 4, SILL.y - 3], go: (x) => [clamp(x, 20, 170), WALL_Y + 14], act: () => { walker.dir = 'up'; quip(isNight(g.min / 60) ? $t('🌊 Fyren på Pixelskär blinkar ute i mörkret.') : sea.jump >= 0 ? $t('🐟 Såg du? En fisk hoppade!') : $t('🌊 Havet glittrar. Där borta står fyren på Pixelskär.')); } },
+    { id: 'ratt', r: [RATT.x - 13, RATT.y - 13, RATT.x + 13, RATT.y + 13], go: () => atWall(RATT.x), act: () => { walker.dir = 'up'; quip($t('⎈ En riktig skeppsratt från en gammal fiskebåt.')); } },
+    { id: 'tavla', r: [TAVLA.x0, TAVLA.y0, TAVLA.x1, TAVLA.y1], go: () => atWall((TAVLA.x0 + TAVLA.x1) / 2), act: () => { walker.dir = 'up'; quip($t('🖼️ Fyren på Pixelskär – målad av Majas morfar.')); } },
+    { id: 'akvarium', r: [AQUA.x0 - 2, AQUA.top - 2, AQUA.x1 + 2, AQUA.top + 28], go: () => [AQUA.x0 - 6, AQUA.y + 8], act: () => { walker.dir = 'right'; talkCook.say($t('🦞 Det där är Harald. Han är INTE till salu!'), cookAt); } },
+    { id: 'katt', r: [TUNNA.x - 10, TUNNA.y - 32, TUNNA.x + 12, TUNNA.y - 18], go: () => [TUNNA.x + 12, TUNNA.y + 4], act: () => { walker.dir = 'left'; cat.awake = 3.2; cat.tail = 3; play('chirp'); quip($t('😺 Skeppskatten Sill spinner och blinkar mot dig.')); g.glad?.(1, '', 'sjokatt', 1); } },
+    { id: 'ankare', r: [ANKARE.x - 15, ANKARE.y - 34, ANKARE.x + 15, ANKARE.y + 2], go: () => [ANKARE.x + 20, ANKARE.y - 4], act: () => { walker.dir = 'left'; quip($t('⚓ Ett gammalt ankare. Det går inte att rubba!')); } },
+    { id: 'tinor', r: [TINOR.x - 15, TINOR.y - 26, TINOR.x + 15, TINOR.y + 2], go: () => [TINOR.x - 20, TINOR.y - 4], act: () => { walker.dir = 'right'; quip($t('🦞 Hummertinor. Maja lägger ut dem på hösten.')); } },
   ];
   const spotAt = (x, y) => hot.find((h) => x >= h.r[0] && x <= h.r[2] && y >= h.r[1] && y <= h.r[3]);
   const seatAt = (x, y) => seats.find((s) => {
@@ -1153,7 +1154,7 @@ export function makeShopSjoboden(A) {
       if (jobs.length) {
         K.job = jobs.shift(); K.steps = buildSteps(K.job); K.si = 0; K.t = 0; K.phase = 'work';
         cookGo(K.steps[0].x, K.steps[0].y);
-        if (K.job.who !== 'me' && Math.random() < 0.45) talkCook.say(['Ska bli!', 'Kommer strax!', 'Ett gott val!'][(Math.random() * 3) | 0], cookAt, 2);
+        if (K.job.who !== 'me' && Math.random() < 0.45) talkCook.say([$t('Ska bli!'), $t('Kommer strax!'), $t('Ett gott val!')][(Math.random() * 3) | 0], cookAt, 2);
         return;
       }
       K.idleT -= dt;
@@ -1176,7 +1177,7 @@ export function makeShopSjoboden(A) {
     K.t = 0; K.si++;
     if (K.si < K.steps.length) { const n = K.steps[K.si]; cookGo(n.x, n.y); return; }
     trays.push({ x: Math.round(clamp(K.job.x, CNT.x0 + 22, CNT.x1 - 18)), who: K.job.who, items: K.job.items, at: t });
-    if (K.job.who === 'me') { play('ok'); talkCook.say('Varsågod! Smaklig måltid! 🐟', cookAt, 2.6); }
+    if (K.job.who === 'me') { play('ok'); talkCook.say($t('Varsågod! Smaklig måltid! 🐟'), cookAt, 2.6); }
     K.job = null; K.act = null; K.phase = 'idle'; K.idleT = 1.5 + Math.random() * 2; K.idleAct = null;
   }
 
@@ -1262,7 +1263,7 @@ export function makeShopSjoboden(A) {
         me.tray = { items: trays[k].items };
         trays.splice(k, 1);
         me.state = 'carry';
-        if (!me.hintGiven) { me.hintGiven = true; talkMe.say('🐟 Klicka på en ledig plats så sätter jag mig där!', meAt); }
+        if (!me.hintGiven) { me.hintGiven = true; talkMe.say($t('🐟 Klicka på en ledig plats så sätter jag mig där!'), meAt); }
       }
     }
     if (me.state === 'carry' && !walker.path.length && !me.seat && me.res && me.res.occ === 'me') {
@@ -1287,7 +1288,7 @@ export function makeShopSjoboden(A) {
           const glad = me.order && !me.order.gladGiven ? (me.order.gladGiven = true, giveGlad(me.order)) : 0;
           me.tray = null; me.order = null; me.doneT = -9;
           g.save();
-          talkMe.say(glad ? `😋 MUMS! Mätt och glad. 😊 +${glad}` : '😋 MUMS! Mätt och belåten.', meAt);
+          talkMe.say(glad ? $t`😋 MUMS! Mätt och glad. 😊 +${glad}` : $t('😋 MUMS! Mätt och belåten.'), meAt);
         }
       } else if (me.sitT > 14 && me.seat?.kind !== 'pall') standUp();
     }
@@ -1525,7 +1526,7 @@ export function makeShopSjoboden(A) {
     for (const G of guests) updateGuest(G, dt);
     updateDoor(dt);
     updateLife(dt);
-    if (pendingHello > 0) { pendingHello -= dt; if (pendingHello <= 0) talkCook.say(isNight(g.min / 60) ? 'God kväll! Soppan är fortfarande varm.' : 'Välkommen ombord! Vad får det lov att vara?', cookAt, 2.6); }
+    if (pendingHello > 0) { pendingHello -= dt; if (pendingHello <= 0) talkCook.say(isNight(g.min / 60) ? $t('God kväll! Soppan är fortfarande varm.') : $t('Välkommen ombord! Vad får det lov att vara?'), cookAt, 2.6); }
     const k = lockedCam !== null ? 1 : Math.min(1, dt * 6);
     cam.x += (cams() - cam.x) * k;
     cam.y += (camYGoal() - cam.y) * Math.min(1, dt * 4);
@@ -1615,19 +1616,19 @@ export function makeShopSjoboden(A) {
     down(sx, sy) {
       const x = sx + cam.x, y = sy - camY();
       if (me.state === 'wait' || me.state === 'toCounter') {
-        if (t - me.waitMsgT > 2) { talkMe.say(`🐟 ${COOK_NAME} lagar min beställning ...`, meAt); me.waitMsgT = t; }
+        if (t - me.waitMsgT > 2) { talkMe.say($t`🐟 ${COOK_NAME} lagar min beställning ...`, meAt); me.waitMsgT = t; }
         return;
       }
       const atDoor = (px, py) => px > DOOR.x0 - 10 && px < DOOR.x1 + 10 && py < WALL_Y + 14;
       if (me.state === 'carry') {
         const s = seatAt(x, y);
         if (s && !s.occ) { goSit(s); play('click'); return; }
-        if (s && s.occ) { if (t - me.waitMsgT > 2) { talkMe.say('😕 Där sitter någon redan!', meAt); me.waitMsgT = t; } return; }
+        if (s && s.occ) { if (t - me.waitMsgT > 2) { talkMe.say($t('😕 Där sitter någon redan!'), meAt); me.waitMsgT = t; } return; }
         const h = spotAt(x, y);
         if ((h && h.id === 'dorr') || atDoor(x, y)) { nag(MSG_DORR); return; }
         if (h && (h.id === 'disk' || h.id === 'meny' || h.id === 'hylla')) { nag(MSG_ATUPP); return; }
         if (y > WALL_Y) { release(); walker.walkTo(x, y); return; }
-        if (t - me.waitMsgT > 2.5) { talkMe.say('🐟 Klicka på en ledig plats så sätter jag mig där.', meAt); me.waitMsgT = t; }
+        if (t - me.waitMsgT > 2.5) { talkMe.say($t('🐟 Klicka på en ledig plats så sätter jag mig där.'), meAt); me.waitMsgT = t; }
         return;
       }
       if (me.state === 'sit' && me.tray) {
@@ -1682,8 +1683,8 @@ export function makeShopSjoboden(A) {
       drawSpeech(ctx, talkMe, meAt, view);
       ctx.setTransform(A.pxs, 0, 0, A.pxs, 0, 0);
       const h = hoverId && t - hoverT < 3 ? hoverId : null;
-      const LABEL = { disk: 'BESTÄLL VID DISKEN', meny: 'BESTÄLL VID DISKEN', hylla: 'HALLONSODA 15 KR', monter: 'DAGENS FÅNGST', gryta: 'FISKSOPPAN', frit: 'FRITÖSEN', fonster: 'UTSIKTEN ÖVER HAVET', ratt: 'SKEPPSRATTEN', tavla: 'TAVLAN', akvarium: 'HUMMERN HARALD', katt: 'SKEPPSKATTEN SILL', ankare: 'ANKARET', tinor: 'HUMMERTINORNA' };
-      const label = h === 'dorr' ? (me.order ? 'ÄT UPP MATEN FÖRST - SEN KAN DU GÅ UT' : 'GÅ UT PÅ BRYGGAN') : LABEL[h] || null;
+      const LABEL = { disk: $t('BESTÄLL VID DISKEN'), meny: $t('BESTÄLL VID DISKEN'), hylla: $t('HALLONSODA 15 KR'), monter: $t('DAGENS FÅNGST'), gryta: $t('FISKSOPPAN'), frit: $t('FRITÖSEN'), fonster: $t('UTSIKTEN ÖVER HAVET'), ratt: $t('SKEPPSRATTEN'), tavla: $t('TAVLAN'), akvarium: $t('HUMMERN HARALD'), katt: $t('SKEPPSKATTEN SILL'), ankare: $t('ANKARET'), tinor: $t('HUMMERTINORNA') };
+      const label = h === 'dorr' ? (me.order ? $t('ÄT UPP MATEN FÖRST - SEN KAN DU GÅ UT') : $t('GÅ UT PÅ BRYGGAN')) : LABEL[h] || null;
       if (label) {
         const w = textW(SMALL, label) + 10, lx = (sb.x0 + sb.x1 - w) >> 1, ly = sb.y1 - 14;
         ctx.fillStyle = '#17151a'; ctx.fillRect(lx, ly, w, 11);

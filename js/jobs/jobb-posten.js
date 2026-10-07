@@ -19,6 +19,7 @@ import { planOf, drawShiftHud, drawTimeUp, makePops, abortShift } from './shift.
 import { drawPerson, makeLook } from '../core/people.js';
 import { play } from '../core/sound.js';
 import { makeShiftCoop } from '../net/coop.js';
+import { $t } from '../core/i18n.js';
 
 const FW = 384, FH = 216;
 const INK = 0x17151a, WHITE = 0xffffff;
@@ -27,11 +28,11 @@ const PB = 0x1f4f9e;   // postblått
 
 // ---------- regionerna = burarna (vänster → höger som på kartan) ----------
 const REG = [
-  { name: 'VÄSTER', dig: '4-5', ci: 0xe8862a, places: [['411 01', 'GÖTEBORG'], ['503 30', 'BORÅS'], ['451 40', 'UDDEVALLA'], ['541 30', 'SKÖVDE']] },
-  { name: 'NORR', dig: '8-9', ci: 0x2f6fd8, places: [['981 31', 'KIRUNA'], ['972 41', 'LULEÅ'], ['903 25', 'UMEÅ'], ['852 30', 'SUNDSVALL'], ['803 20', 'GÄVLE']] },
-  { name: 'SÖDER', dig: '2-3', ci: 0xd8403a, places: [['211 20', 'MALMÖ'], ['222 21', 'LUND'], ['252 21', 'HELSINGBORG'], ['392 31', 'KALMAR'], ['352 30', 'VÄXJÖ']] },
-  { name: 'ÖSTER', dig: '1 6 7', ci: 0x35a04a, places: [['111 20', 'STOCKHOLM'], ['753 20', 'UPPSALA'], ['702 10', 'ÖREBRO'], ['632 20', 'ESKILSTUNA']] },
-  { name: 'UTRIKES', dig: '', ci: 0x8e4fc8, places: [['NORGE', 'OSLO'], ['DANMARK', 'KÖPENHAMN'], ['TYSKLAND', 'BERLIN'], ['FRANKRIKE', 'PARIS'], ['FINLAND', 'HELSINGFORS']] },
+  { name: $t('VÄSTER'), dig: '4-5', ci: 0xe8862a, places: [['411 01', $t('GÖTEBORG')], ['503 30', $t('BORÅS')], ['451 40', $t('UDDEVALLA')], ['541 30', $t('SKÖVDE')]] },
+  { name: $t('NORR'), dig: '8-9', ci: 0x2f6fd8, places: [['981 31', $t('KIRUNA')], ['972 41', $t('LULEÅ')], ['903 25', $t('UMEÅ')], ['852 30', $t('SUNDSVALL')], ['803 20', $t('GÄVLE')]] },
+  { name: $t('SÖDER'), dig: '2-3', ci: 0xd8403a, places: [['211 20', $t('MALMÖ')], ['222 21', $t('LUND')], ['252 21', $t('HELSINGBORG')], ['392 31', $t('KALMAR')], ['352 30', $t('VÄXJÖ')]] },
+  { name: $t('ÖSTER'), dig: '1 6 7', ci: 0x35a04a, places: [['111 20', $t('STOCKHOLM')], ['753 20', $t('UPPSALA')], ['702 10', $t('ÖREBRO')], ['632 20', $t('ESKILSTUNA')]] },
+  { name: $t('UTRIKES'), dig: '', ci: 0x8e4fc8, places: [[$t('NORGE'), $t('OSLO')], [$t('DANMARK'), $t('KÖPENHAMN')], [$t('TYSKLAND'), $t('BERLIN')], [$t('FRANKRIKE'), $t('PARIS')], [$t('FINLAND'), $t('HELSINGFORS')]] },
 ];
 
 // ---------- hallens mått ----------
@@ -493,7 +494,7 @@ function paintDock(P) {
     if (i === vx1 - vx0 - 1) c = mul(c, 0.8);
     return jit(c, X, Y, 64, 0.03);
   });
-  text(P, SMALL, 'POSTEN', vx0 + ((vx1 - vx0 - textW(SMALL, 'POSTEN')) >> 1), 30, PB);
+  text(P, SMALL, $t('POSTEN'), vx0 + ((vx1 - vx0 - textW(SMALL, $t('POSTEN'))) >> 1), 30, PB);
   // lastutrymmet: mörkt, hyllor med paket och säckar
   area(P, vx0 + 3, 36, vx1 - vx0 - 6, WALL_BASE - 36, (X, Y, i, j) => {
     let c = qmix(0x4a4e58, 0x24262c, j / 22, X, Y, 3);
@@ -544,7 +545,7 @@ function paintWallStuff(P) {
     if (i === 0 || j === 0 || i === mw - 1 || j === mh - 1) return 0x3a3e46;
     return jit(j < 7 ? PB : 0xf8f6ee, X, Y, 68, 0.02);
   });
-  text(P, SMALL, 'POSTNR', mx + ((mw - textW(SMALL, 'POSTNR')) >> 1), my + 1, PY);
+  text(P, SMALL, $t('POSTNR'), mx + ((mw - textW(SMALL, $t('POSTNR'))) >> 1), my + 1, PY);
   SWEDEN.forEach((row, y) => {
     for (let x = 0; x < row.length; x++) if (row[x] === '#') {
       const r = regionAt(x, y), c = REG[r].ci;
@@ -566,8 +567,8 @@ function paintWallStuff(P) {
     return jit(qmix(0x2a5cb8, 0x1f4a98, j / sh, X, Y, 3), X, Y, 69, 0.03);
   });
   hornBadge(P, sx + 10, sy + 8);
-  text(P, BIG, 'POSTEN', sx + 20, sy + 6, 0x0e2a5e);
-  text(P, BIG, 'POSTEN', sx + 19, sy + 5, PY);
+  text(P, BIG, $t('POSTEN'), sx + 20, sy + 6, 0x0e2a5e);
+  text(P, BIG, $t('POSTEN'), sx + 19, sy + 5, PY);
   // klocka (visarna ritas levande)
   for (let y = -6; y <= 6; y++) for (let x = -6; x <= 6; x++) {
     const d = Math.hypot(x, y); if (d > 6.3) continue;
@@ -580,8 +581,9 @@ function paintWallStuff(P) {
   area(P, wx + 2, wy + 2, 8, 10, (X, Y, i, j) => (i === 0 || j === 0 ? 0xfff8d8 : i === 7 || j === 9 ? 0xc89818 : 0xfffbe8));   // vit ruta bakom glaset
   drawGlass(P, wx + 3, wy + 3, 0xc8202a);
   P.px(wx + 4, wy + 4, 0xff8a7a);
-  text(P, SMALL, 'GÅ', wx + 12, wy + 2, INK);
-  text(P, SMALL, 'LUGNT!', wx + 12, wy + 8, INK);
+  const gaLugnt = $t('GÅ LUGNT!').split(' ');   // skylten har två rader: första ordet överst, resten under
+  text(P, SMALL, gaLugnt[0], wx + 12, wy + 2, INK);
+  text(P, SMALL, gaLugnt.slice(1).join(' '), wx + 12, wy + 8, INK);
   // skannerns skärm (innehållet ritas levande) + fäste och kamerahus
   area(P, 154, 22, 32, 16, (X, Y, i, j) => (i === 0 || j === 0 ? 0x5a626c : i === 31 || j === 15 ? 0x16171a : 0x2a2c32));
   P.rect(156, 24, 28, 12, 0x0c1418);
@@ -632,9 +634,9 @@ function paintWallStuff(P) {
 function paintShelf(P) {
   const { x0, x1, top, row0, rowH, rows: nr } = SHELF, w = x1 - x0;
   // skylt HÄMTAS på toppen
-  const tw = textW(SMALL, 'HÄMTAS');
+  const tw = textW(SMALL, $t('HÄMTAS'));
   area(P, x0 + 2, top, w - 4, 9, (X, Y, i, j) => (i === 0 || j === 0 || i === w - 5 || j === 8 ? 0x0e2a5e : j === 1 ? 0x4a7ad8 : 0x2a5cb4));
-  text(P, SMALL, 'HÄMTAS', x0 + ((w - tw) >> 1), top + 2, PY);
+  text(P, SMALL, $t('HÄMTAS'), x0 + ((w - tw) >> 1), top + 2, PY);
   // stommen: grå stålhylla med gavlar
   const yb = row0 + nr * rowH;
   area(P, x0, row0 - 2, w, yb - row0 + 2 + 12, (X, Y, i, j) => {
@@ -669,7 +671,7 @@ function paintShop(P) {
   });
   // UTLÄMNING: blå skylt monterad i taket, tätt under HUD:en (rad 0–17) så att
   // kundernas pratbubblor (topp y 28) och puffarna går fria under den
-  const s = 'UTLÄMNING', tw = textW(SMALL, s), w = tw + 10, x = 336 - (w >> 1), y = 18;
+  const s = $t('UTLÄMNING'), tw = textW(SMALL, s), w = tw + 10, x = 336 - (w >> 1), y = 18;
   area(P, x, y, w, 9, (X, Y, i, j) => (i === 0 || j === 0 || i === w - 1 || j === 8 ? 0x0e2a5e : j === 1 ? 0x4a7ad8 : 0x2a5cb4));
   text(P, SMALL, s, x + 5, y + 2, PY);
   P.darken(x + 1, y + 9, w, 1, 0.85);
@@ -678,10 +680,10 @@ function paintShop(P) {
   P.rect(295, 41, 5, 1, 0x5aff8a);
   area(P, 295, 51, 5, 4, (X, Y, i, j) => (j === 3 && i % 2 ? null : 0xfbfaf6));
   P.hl(296, 52, 3, 0x9a968e);
-  text(P, SMALL, 'NR', 293, 31, 0xa82028);
+  text(P, SMALL, $t('NR'), 293, 31, 0xa82028);
   // kö-skärmen "NU" (siffrorna ritas levande)
   area(P, 326, 37, 17, 11, (X, Y, i, j) => (i === 0 || j === 0 ? 0x5a626c : i === 16 || j === 10 ? 0x0e0f12 : 0x16171a));
-  text(P, SMALL, 'NU', 331, 30, PB);
+  text(P, SMALL, $t('NU'), 331, 30, PB);
   P.darken(327, 48, 17, 1, 0.85);
   // frimärksautomaten (gul/blå) längst till höger
   area(P, 366, 28, 17, COUNTER.top - 28, (X, Y, i, j) => {
@@ -746,7 +748,7 @@ function paintFloor(P) {
     else if ((i + j * 2) % 4 === 2) c = mul(c, 0.85);
     return c;
   });
-  text(P, SMALL, 'VÅG', sx + 1, sy + sh + 3, 0x6a7078, 0.8);
+  text(P, SMALL, $t('VÅG'), sx + 1, sy + sh + 3, 0x6a7078, 0.8);
 }
 
 // ---------- rullbandet ----------
@@ -823,8 +825,8 @@ function paintFront() {
     return jit(c, X, Y, 82, 0.03);
   });
   area(P, x0, rim + 2, w, 2, (X, Y, i, j) => (j === 0 ? 0x16306a : 0x2a5cb4));
-  const tw = textW(SMALL, 'RETUR');
-  text(P, SMALL, 'RETUR', x0 + ((w - tw) >> 1), front + 5, WHITE);
+  const tw = textW(SMALL, $t('RETUR'));
+  text(P, SMALL, $t('RETUR'), x0 + ((w - tw) >> 1), front + 5, WHITE);
   return P.flush();
 }
 // disken (ritas över kunderna): laminatskiva, blå front med posthorn, våg, ringklocka
@@ -1023,13 +1025,13 @@ export function makeJobbPosten(A, { onDone }) {
   }
   function custLeave(k, happy) {
     k.state = 'leave'; k.dir = 'right';
-    if (!happy) { stats.miss++; team.miss++; play('miss'); pops.add(k.x, POP_BUBBLE, 'GICK HEM...', '#d8d2c0'); }   // '…' finns inte i typsnittet
+    if (!happy) { stats.miss++; team.miss++; play('miss'); pops.add(k.x, POP_BUBBLE, $t('GICK HEM...'), '#d8d2c0'); }   // '…' finns inte i typsnittet
   }
   // en försändelse rullade av bandet och ner i RETUR (own: min värld – ett glas som krossas räknas)
   function retur(it) {
     falling.push({ it, x: it.x, y: BELT.foot, vy: 10, vx: 14, rot: 0, own: lead });
     play('miss');
-    pops.add(BIN.x0 + 12, 58, it.fragile ? 'KRASCH!' : 'RETUR!', it.fragile ? '#ff6a6a' : '#d8d2c0');
+    pops.add(BIN.x0 + 12, 58, it.fragile ? $t('KRASCH!') : $t('RETUR!'), it.fragile ? '#ff6a6a' : '#d8d2c0');
   }
 
   // ---------- jobba tillsammans (delat pass via js/net/coop.js) ----------
@@ -1132,7 +1134,7 @@ export function makeJobbPosten(A, { onDone }) {
         // det som händer vid disken syns och hörs hos alla: diskvågen visar paketet, den som tröttnade går
         if (was && was !== st) {
           if (st === 'take' && k.parcel) counterShow = { kg: k.parcel.kg, t: 1.6 };
-          else if (st === 'leave' && !k.parcel) { play('miss'); pops.add(k.x, POP_BUBBLE, 'GICK HEM...', '#d8d2c0'); }
+          else if (st === 'leave' && !k.parcel) { play('miss'); pops.add(k.x, POP_BUBBLE, $t('GICK HEM...'), '#d8d2c0'); }
           else if (st === 'wait') play('click');
         }
         next.push(k);
@@ -1216,7 +1218,7 @@ export function makeJobbPosten(A, { onDone }) {
   function doFx(kind, a) {
     if (kind === 's') { if (LJUD.has(a[0])) play(a[0]); }
     else if (kind === 'p') pops.add(+a[0] || 0, +a[1] || 0, String(a[2]).slice(0, 48), String(a[3] || '#f4f1ea'));
-    else if (kind === 'H') { play('miss'); pops.add(+a[0] || 0, +a[1] || 0, 'HANN FÖRE!', '#ff6a6a'); }   // någon annan hann först
+    else if (kind === 'H') { play('miss'); pops.add(+a[0] || 0, +a[1] || 0, $t('HANN FÖRE!'), '#ff6a6a'); }   // någon annan hann först
     else if (kind === 'o') { stats.ok++; if (a[0] === 'k') stats.kunder++; else { stats.sorterat++; if (a[1]) stats.omtaliga++; } }   // rätt bur / rätt paket
     else if (kind === 'f') stats.fel++;
     else if (kind === 'y') {   // en försändelse flyger ner i buren: [id, kod, bur, x0, y0, plats i buren]
@@ -1228,17 +1230,17 @@ export function makeJobbPosten(A, { onDone }) {
   const kLjud = (k, s) => fx(k, k.by, 's', s);
   const kSay = (k, txt, c = '#d8d2c0') => fx(k, k.by, 'p', Math.round(k.x), Math.round(k.y) - 58, txt, c);   // bara hos den det gäller
   const kPop = (k, x, y, txt, c) => fx(k, '', 'p', x, y, txt, c);                                            // syns hos alla i hallen
-  const hannFore = (x, y) => { play('miss'); pops.add(x, y, 'HANN FÖRE!', '#ff6a6a'); };
+  const hannFore = (x, y) => { play('miss'); pops.add(x, y, $t('HANN FÖRE!'), '#ff6a6a'); };
 
   // ---------- det gemensamma (körs av skiftledaren – eller den ensamma – åt sorteraren k) ----------
   // ta försändelsen id från bandet; bär hen redan en från bandet byts de (den läggs där den nya låg)
   function doPick(k, id) {
     const it = items.find((q) => q.id === id);
     if (!it) {
-      if (fell.has(id)) { kLjud(k, 'miss'); kSay(k, 'MISSADE!'); } else fx(k, k.by, 'H', Math.round(k.x), Math.round(k.y) - 58);
+      if (fell.has(id)) { kLjud(k, 'miss'); kSay(k, $t('MISSADE!')); } else fx(k, k.by, 'H', Math.round(k.x), Math.round(k.y) - 58);
       return;
     }
-    if (k.carry && k.carry.src === 'shelf') { kSay(k, 'HÄNDERNA FULLA!'); return; }
+    if (k.carry && k.carry.src === 'shelf') { kSay(k, $t('HÄNDERNA FULLA!')); return; }
     items.splice(items.indexOf(it), 1);
     it.taken = true;
     if (k.carry && k.carry.src === 'belt') {
@@ -1260,8 +1262,8 @@ export function makeJobbPosten(A, { onDone }) {
     if (!k.remote) shake = 0;
     if (sorted.has(it.id)) return;   // (ett önskemål som kom två gånger – den ligger redan i en bur)
     sorted.add(it.id);
-    if (right) { team.ok++; fx(k, k.by, 'o', 's', it.fragile ? 1 : 0); kLjud(k, 'coin'); kPop(k, cg.cx, 144, it.fragile ? 'HELT! BRA!' : 'RÄTT BUR!', '#8ee03c'); }
-    else { team.fel++; fx(k, k.by, 'f'); kLjud(k, 'fel'); kPop(k, cg.cx, 144, 'FEL BUR!', '#ff6a6a'); }
+    if (right) { team.ok++; fx(k, k.by, 'o', 's', it.fragile ? 1 : 0); kLjud(k, 'coin'); kPop(k, cg.cx, 144, it.fragile ? $t('HELT! BRA!') : $t('RÄTT BUR!'), '#8ee03c'); }
+    else { team.fel++; fx(k, k.by, 'f'); kLjud(k, 'fel'); kPop(k, cg.cx, 144, $t('FEL BUR!'), '#ff6a6a'); }
     // kasta i (ömtåligt läggs försiktigt): lasten hör till buren direkt, flygturen syns hos alla
     const L = loads[ci];
     L.push({ id: it.id, it });
@@ -1272,7 +1274,7 @@ export function makeJobbPosten(A, { onDone }) {
   // (−1 = tomt) – står något annat där nu hann någon annan före
   function doShelf(k, i, v) {
     const s = shelf[i], c = k.carry;
-    if (c && c.src === 'belt') { kSay(k, 'HÄNDERNA FULLA!'); return; }
+    if (c && c.src === 'belt') { kSay(k, $t('HÄNDERNA FULLA!')); return; }
     if (!c) {
       if (!s || (v >= 0 && s.num !== v)) { if (v >= 0) fx(k, k.by, 'H', Math.round(k.x), Math.round(k.y) - 58); return; }
       k.carry = { src: 'shelf', ...s, cell: i }; shelf[i] = null; kLjud(k, 'ok');
@@ -1291,14 +1293,14 @@ export function makeJobbPosten(A, { onDone }) {
     if (!cu || cu.state !== 'wait') { if (cu && cu.parcel) fx(k, k.by, 'H', Math.round(cu.x), POP_BUBBLE); return; }   // någon annan hann före
     if (!wrong && c.num === cu.num) {
       team.ok++; fx(k, k.by, 'o', 'k'); kLjud(k, 'coin');
-      kPop(k, cu.x, POP_FREE, 'TACK!', '#8ee03c');
+      kPop(k, cu.x, POP_FREE, $t('TACK!'), '#8ee03c');
       cu.state = 'take'; cu.take = 0.9; cu.parcel = { num: c.num, col: c.col, kg: c.kg };
       counterShow = { kg: c.kg, t: 1.6 };
       usedNums.delete(c.num);
       k.carry = null;
     } else {
       team.fel++; fx(k, k.by, 'f'); kLjud(k, 'fel');
-      kPop(k, cu.x, POP_BUBBLE, 'FEL PAKET!', '#ff6a6a');
+      kPop(k, cu.x, POP_BUBBLE, $t('FEL PAKET!'), '#ff6a6a');
       cu.patience = Math.max(2, cu.patience - 5);
     }
   }
@@ -1351,7 +1353,7 @@ export function makeJobbPosten(A, { onDone }) {
   function tryPick(target) {
     if (!items.includes(target) || Math.abs(target.x - walker.px) >= 18) {
       if (target.taken && coop.active) hannFore(walker.px, walker.py - 58);   // (ihop: någon annan tog den)
-      else { play('miss'); pops.add(walker.px, walker.py - 58, 'MISSADE!', '#d8d2c0'); }
+      else { play('miss'); pops.add(walker.px, walker.py - 58, $t('MISSADE!'), '#d8d2c0'); }
       return;
     }
     shared({ a: 'ta', id: target.id }, (k) => doPick(k, target.id));
@@ -1360,7 +1362,7 @@ export function makeJobbPosten(A, { onDone }) {
   // v0 = numret i facket när jag klickade (−1 = tomt)
   function atShelf(i, v0) {
     const s = shelf[i];
-    if (carry && carry.src === 'belt') { pops.add(walker.px, walker.py - 58, 'HÄNDERNA FULLA!', '#d8d2c0'); return; }
+    if (carry && carry.src === 'belt') { pops.add(walker.px, walker.py - 58, $t('HÄNDERNA FULLA!'), '#d8d2c0'); return; }
     if (!carry && v0 >= 0 && (!s || s.num !== v0)) { if (coop.active) hannFore(walker.px, walker.py - 58); return; }   // (ihop: någon annan tog det)
     if (!carry && !s) return;
     const v = s ? s.num : -1;
@@ -1377,7 +1379,7 @@ export function makeJobbPosten(A, { onDone }) {
     stats.fel++; stats.krasch++;
     if (mate()) coop.send({ t: 'fel' }); else { team.fel++; snapAsap(); }
     play('fel');
-    pops.add(walker.px, walker.py - 58, 'KRASCH!', '#ff6a6a');
+    pops.add(walker.px, walker.py - 58, $t('KRASCH!'), '#ff6a6a');
     for (let k = 0; k < 14; k++) shards.push({ x: walker.px + (Math.random() - 0.5) * 6, y: walker.py - 14, vx: (Math.random() - 0.5) * 60, vy: -30 - Math.random() * 40, fy: walker.py + (Math.random() - 0.3) * 6, life: 3 + Math.random(), c: ['#e8f4ff', '#bfe0f0', '#ffffff', '#c4955a'][k % 4] });
     carry = null; shake = 0; run = false; walker.speed = WALK_SPEED;
   }
@@ -1580,7 +1582,7 @@ export function makeJobbPosten(A, { onDone }) {
       // spring med ömtåligt → det skakar sönder
       if (carry && carry.src === 'belt' && carry.item.fragile && run && moving) {
         shake += dt * 1.4;
-        if (shake > 0.3 && !warned) { warned = true; play('miss'); pops.add(walker.px, walker.py - 58, 'FÖRSIKTIGT!', '#ffd23f'); }
+        if (shake > 0.3 && !warned) { warned = true; play('miss'); pops.add(walker.px, walker.py - 58, $t('FÖRSIKTIGT!'), '#ffd23f'); }
         if (shake >= 1) crash();
       } else shake = Math.max(0, shake - dt * 0.7);
       if (run && moving) {
@@ -1592,7 +1594,7 @@ export function makeJobbPosten(A, { onDone }) {
       if (coop.active) maxN = Math.max(maxN, coop.peers().length + 1);
       if (coop.active !== wasCoop) {   // en kollega kom in: fullt ös på bandet och vid disken
         wasCoop = coop.active;
-        if (wasCoop) { play('knock'); pops.add(144, 120, 'NI JOBBAR IHOP!', '#8ee03c'); }
+        if (wasCoop) { play('knock'); pops.add(144, 120, $t('NI JOBBAR IHOP!'), '#8ee03c'); }
       }
       // Skiftledaren (eller solo) kör bandet, burarna, hyllan och disken; medarbetare följer ledarens läge
       const iLead = !coop.active || (coop.leader && coop.settled);
@@ -1608,13 +1610,13 @@ export function makeJobbPosten(A, { onDone }) {
       const dbl = clk - lastDown.t < 0.38 && Math.hypot(x - lastDown.x, y - lastDown.y) < 16;
       lastDown = { t: clk, x, y };
       setRun(dbl);
-      if (dbl && carry && carry.src === 'belt' && carry.item.fragile) pops.add(walker.px, walker.py - 58, 'SPRING INTE!', '#ffd23f');
+      if (dbl && carry && carry.src === 'belt' && carry.item.fragile) pops.add(walker.px, walker.py - 58, $t('SPRING INTE!'), '#ffd23f');
       // bandet: plocka (eller byt mot det jag bär)
       if (y >= 50 && y < WALK_TOP && x >= BELT.x0 && x <= BELT.x1 + 4) {
         let best = null, bd = 1e9;
         for (const it of items) { const d = Math.abs(it.x - x); if (d < it.spr.w / 2 + 5 && d < bd) { best = it; bd = d; } }
         if (best) {
-          if (carry && carry.src === 'shelf') { pops.add(walker.px, walker.py - 58, 'HÄNDERNA FULLA!', '#d8d2c0'); return; }
+          if (carry && carry.src === 'shelf') { pops.add(walker.px, walker.py - 58, $t('HÄNDERNA FULLA!'), '#d8d2c0'); return; }
           const target = best;
           const eta = Math.hypot(target.x - walker.px, WALK_TOP + 1 - walker.py) / walker.speed;
           const px = clamp(target.x + beltSpeed() * eta * 0.95, BELT.x0 + 6, BELT.x1 - 2);
@@ -1640,8 +1642,8 @@ export function makeJobbPosten(A, { onDone }) {
         if (k) {
           const kk = k;
           walker.walkTo(kk.x, WALK_TOP + 1, () => {
-            if (!carry) pops.add(kk.x, POP_BUBBLE, 'NR ' + kk.num + ' TACK!', '#f4f1ea');
-            else if (carry.src === 'belt') pops.add(walker.px, walker.py - 58, 'SKA SORTERAS!', '#d8d2c0');
+            if (!carry) pops.add(kk.x, POP_BUBBLE, $t`NR ${kk.num} TACK!`, '#f4f1ea');
+            else if (carry.src === 'belt') pops.add(walker.px, walker.py - 58, $t('SKA SORTERAS!'), '#d8d2c0');
             else toCustomer(kk);
           });
           return;
@@ -1652,7 +1654,7 @@ export function makeJobbPosten(A, { onDone }) {
       if (cg) {
         walker.walkTo(cg.cx, WALK_BOT, () => {
           if (!carry) return;
-          if (carry.src === 'shelf') { pops.add(cg.cx, 144, 'SKA TILL KUND!', '#d8d2c0'); return; }
+          if (carry.src === 'shelf') { pops.add(cg.cx, 144, $t('SKA TILL KUND!'), '#d8d2c0'); return; }
           toCage(CAGES.indexOf(cg));
         });
         return;
@@ -1702,7 +1704,7 @@ export function makeJobbPosten(A, { onDone }) {
       for (const s of shards) if (!s.landed) { ctx.fillStyle = s.c; ctx.fillRect(Math.round(s.x), Math.round(s.y), 1, 1); }
       drawBubbles(ctx);
       pops.draw(ctx);
-      drawShiftHud(ctx, { W: FW }, { t, dur: P.seconds, ok: maxN > 1 ? team.ok : stats.ok, fel: maxN > 1 ? team.fel : stats.fel, title: maxN > 1 ? 'POSTEN IHOP' : 'POSTEN' });
+      drawShiftHud(ctx, { W: FW }, { t, dur: P.seconds, ok: maxN > 1 ? team.ok : stats.ok, fel: maxN > 1 ? team.fel : stats.fel, title: maxN > 1 ? $t('POSTEN IHOP') : $t('POSTEN') });
       if (t < 7 && !done) drawHint(ctx);
       if (done) drawTimeUp(ctx, { W: FW, H: FH });
     },
@@ -1854,7 +1856,7 @@ export function makeJobbPosten(A, { onDone }) {
       ctxText(ctx, SMALL, a, 170 - (textW(SMALL, a) >> 1), 25, '#ffffff');
       ctxText(ctx, SMALL, b, 170 - (textW(SMALL, b) >> 1), 31, '#bfe8c8');
     } else {
-      ctxText(ctx, SMALL, 'KLAR', 158, 27, '#5ad06a');
+      ctxText(ctx, SMALL, $t('KLAR'), 158, 27, '#5ad06a');
       if (Math.floor(clk * 2) % 2 === 0) { ctx.fillStyle = '#5ad06a'; ctx.fillRect(175, 31, 3, 1); }
     }
     ctx.restore();
@@ -1951,7 +1953,7 @@ export function makeJobbPosten(A, { onDone }) {
   // hjälpraden de första sekunderna: direkt under HUD:en (som pizzerian), centrerad över
   // sorteringshallen så att varken HÄMTAS-hyllan eller burarna skyms; tonar bort sista sekunden
   function drawHint(ctx) {
-    const s = 'DUBBELKLICKA = SPRING  -  ÖMTÅLIGT: GÅ LUGNT!';
+    const s = $t('DUBBELKLICKA = SPRING  -  ÖMTÅLIGT: GÅ LUGNT!');
     const w = textW(SMALL, s) + 8, x = (SHELF.x0 - w) >> 1, y = 18;
     ctx.globalAlpha = t > 6 ? Math.max(0, 7 - t) : 1;
     ctx.fillStyle = 'rgba(23,21,26,0.85)'; ctx.fillRect(x, y, w, 10);

@@ -45,9 +45,10 @@
 // Ritas alltid bara i view-rektangeln.
 import { hash, bayer, mix, mul, Pix, SMALL, ctxText, textW } from '../core/floor-pix.js';
 import { CITY, ROADS, PATHS, LOTS, STREETS_ALL, PARK_LAYOUT, ALL_BUILDINGS, RIVER, CANAL_WATER, footprint } from './map.js';
+import { $t, $n } from '../core/i18n.js';
 
 export const V2 = true;
-export const SEASONS = ['vår', 'sommar', 'höst', 'vinter'];
+export const SEASONS = [$n('vår'), $n('sommar'), $n('höst'), $n('vinter')];   // id:n i logiken – visas med $t(w.season)
 export const KINDS = ['sol', 'moln', 'regn', 'snö', 'dimma', 'blåst'];
 export const seasonOf = (day) => SEASONS[Math.floor((Math.max(1, day | 0) - 1) / 7) % 4];
 
@@ -147,17 +148,17 @@ export function weatherName(w) {
   if (!w) return '';
   const k = w.intensity ?? 0.6, wind = Math.abs(w.wind || 0);
   switch (w.kind) {
-    case 'sol': return w.cloud > 0.25 ? 'Sol och moln' : w.temp >= 25 ? 'Solhetta' : 'Sol';
-    case 'moln': return k >= 0.7 ? 'Mulet' : 'Molnigt';
-    case 'regn': return w.thunder ? 'Åskväder' : k >= 0.85 ? 'Ösregn' : k < 0.45 ? 'Duggregn' : 'Regn';
-    case 'snö': return k >= 0.75 && wind > 24 ? 'Yrsnö' : k >= 0.8 ? 'Tätt snöfall' : 'Snöfall';
-    case 'dimma': return k >= 0.75 ? 'Tät dimma' : 'Dimma';
-    case 'blåst': return k >= 0.85 ? 'Kuling' : 'Blåsigt';
+    case 'sol': return w.cloud > 0.25 ? $t('Sol och moln') : w.temp >= 25 ? $t('Solhetta') : $t('Sol');
+    case 'moln': return k >= 0.7 ? $t('Mulet') : $t('Molnigt');
+    case 'regn': return w.thunder ? $t('Åskväder') : k >= 0.85 ? $t('Ösregn') : k < 0.45 ? $t('Duggregn') : $t('Regn');
+    case 'snö': return k >= 0.75 && wind > 24 ? $t('Yrsnö') : k >= 0.8 ? $t('Tätt snöfall') : $t('Snöfall');
+    case 'dimma': return k >= 0.75 ? $t('Tät dimma') : $t('Dimma');
+    case 'blåst': return k >= 0.85 ? $t('Kuling') : $t('Blåsigt');
     default: return w.kind;
   }
 }
 export const weatherIcon = (w) => (w ? (w.kind === 'regn' && w.thunder ? '⛈️' : w.kind === 'sol' && w.cloud > 0.25 ? '🌤️' : EMOJI[w.kind] || '🌡️') : '');
-export const weatherText = (w) => (w ? `${weatherName(w)}, ${w.temp}° · ${w.season}` : '');
+export const weatherText = (w) => (w ? `${weatherName(w)}, ${w.temp}° · ${$t(w.season)}` : '');
 export const weatherLabel = (w) => (w ? `${weatherIcon(w)} ${weatherText(w)}` : '');
 
 const ICON = {
@@ -175,14 +176,14 @@ const ICOL = { y: '#ffd23f', Y: '#fff1a0', w: '#e8eef6', W: '#ffffff', g: '#9aa4
 // i överkanten borta från brickan).
 export function weatherBadgeSize(w) {
   if (!w) return { w: 0, h: 0 };
-  const t = `${weatherName(w)} ${w.temp}`.toUpperCase(), s = w.season.toUpperCase();
+  const t = `${weatherName(w)} ${w.temp}`.toUpperCase(), s = $t(w.season).toUpperCase();
   const windy = Math.abs(w.wind || 0) >= 22;
   const tw = textW(SMALL, t) + 4, sw = textW(SMALL, s) + (windy ? 8 : 0);
   return { w: 7 + 3 + Math.max(tw, sw) + 5, h: 17 };
 }
 export function drawWeatherBadge(ctx, x, y, w) {
   if (!w) return;
-  const t = `${weatherName(w)} ${w.temp}`.toUpperCase(), s = w.season.toUpperCase();
+  const t = `${weatherName(w)} ${w.temp}`.toUpperCase(), s = $t(w.season).toUpperCase();
   const windy = Math.abs(w.wind || 0) >= 22;
   const { w: bw, h: bh } = weatherBadgeSize(w);
   x = Math.round(x - bw); y = Math.round(y);

@@ -7,6 +7,7 @@ import { hs, capF, backStd, backShort, sideStd, sleekF, sleekB, sleekS, dims, nz
 import { hang, bun, partF, braidBand, mix2 } from './hair-uppsatt.js';
 import { curtF, longS, backTo, strands, bangsF, bangsS } from './hair-mellan.js';
 import { BEAD } from './hair-lockar.js';
+import { $t, $n } from '../i18n.js';
 
 // ---------- färger som inte är hår ----------
 const BOW = 0xe8606a;                                          // rosettens ljusa öglor (snodden är TIE)
@@ -72,13 +73,13 @@ const catEar = (R, x0, dir) => {
 
 export const HAIR_FEST = {
   // ================= Uppsatt =================
-  ballerina: hs('Ballerina­knut', 'Uppsatt', {
+  ballerina: hs($t('Ballerina­knut'), $n('Uppsatt'), {
     // allt slickat upp i en hög, rund och blank knut
     front(R) { sleekF(R); roundBun(R, 11.5, R.h0 - 3, 2.8, 2.3); },
     back(R) { sleekB(R, true); roundBun(R, 11.5, R.h0 - 2.5, 2.8, 2.3); },
     side(R) { sleekS(R); roundBun(R, 10.5, R.h0 - 3, 2.6, 2.3); },
   }),
-  beehive: hs('Bi­kupa', 'Uppsatt', {
+  beehive: hs($t('Bi­kupa'), $n('Uppsatt'), {
     // 60-talets höga, rundade tupering med utåtvippade toppar
     front(R) { const { put, hair: H, h0, eyeRow } = R;
       const m = mask().rows([[h0 - 5, 9, 14], [h0 - 4, 8, 15], [h0 - 3, 7, 16], [h0 - 2, 7, 16], [h0 - 1, 7, 16]]).rect(7, h0, 10, 3)
@@ -95,7 +96,7 @@ export const HAIR_FEST = {
       const m = mask().rows([[h0 - 5, 9, 13], [h0 - 4, 8, 14], [h0 - 3, 7, 15], [h0 - 2, 7, 16], [h0 - 1, 7, 16]]).rect(8, h0, 9, 3).rect(7, h0 + 1, 5, eyeRow + 1 - h0).set(6, eyeRow + 1).row(h0 + 3, 13, 16);
       paint(R, m); row(R, h0 - 1, 10, 15, H.lo); put(10, h0 - 4, H.hi); put(9, h0 - 3, H.hi); put(8, h0 + 5, H.lo); put(6, eyeRow + 1, H.lo); },
   }),
-  frenchTwist: hs('Fransk rulle', 'Uppsatt', {
+  frenchTwist: hs($t('Fransk rulle'), $n('Uppsatt'), {
     // elegant: sidbena och volym fram, bak en lodrät rulle fäst med en hårnål
     front(R) { const { put, hair: H, skin, h0 } = R;
       paint(R, mask().rows([[h0 - 2, 10, 14], [h0 - 1, 8, 16], [h0, 7, 16], [h0 + 1, 7, 16], [h0 + 2, 7, 16]]).row(h0 + 3, 11, 16).set(16, h0 + 4).set(7, h0 + 3).set(7, h0 + 4));
@@ -110,7 +111,7 @@ export const HAIR_FEST = {
       paint(R, mask().rect(6, h0, 3, 6).set(7, h0 - 1).set(7, h0 + 6).cut(6, h0));
       col(R, 8, h0, h0 + 5, H.dk); put(6, h0 + 2, PIN); put(15, h0 + 3, H.base); put(16, h0 + 2, H.lo); },
   }),
-  clawClip: hs('Klämma', 'Uppsatt', {
+  clawClip: hs($t('Klämma'), $n('Uppsatt'), {
     // håret vridet upp i nacken och fäst med en stor klämma; topparna spretar ovanför
     front(R) { const { put, hair: H, h0, eyeRow } = R; capF(R, 3); partF(R);
       col(R, 7, h0 + 3, eyeRow + 2, H.base); col(R, 16, h0 + 3, eyeRow + 2, H.lo); put(8, h0 + 3, H.base); put(15, h0 + 3, H.lo); put(6, eyeRow + 2, H.lo); put(17, eyeRow + 2, H.dk);
@@ -126,7 +127,7 @@ export const HAIR_FEST = {
       put(6, h0 - 1, CLAW_HI); put(7, h0 - 1, CLAW_HI); put(5, h0, CLAW); put(5, h0 + 1, CLAW); put(6, h0 + 2, CLAW_DK); put(7, h0 + 2, CLAW_DK); put(6, h0, CLAW); put(6, h0 + 1, CLAW_DK);
       put(15, h0 + 3, H.base); },
   }),
-  halfBuns: hs('Halva knutar', 'Uppsatt', {
+  halfBuns: hs($t('Halva knutar'), $n('Uppsatt'), {
     // två små knutar högt upp på huvudet, resten av håret hänger ner
     front(R) { const { rect, hair: H, h0 } = R, { chest } = dims(R); capF(R, 3); partF(R); rect(8, h0 + 3, 3, 1, H.base); rect(13, h0 + 3, 3, 1, H.base);
       curtF(R, chest - 1, 2, h0 + 1);
@@ -135,7 +136,7 @@ export const HAIR_FEST = {
       bun(R, 8.5, h0 - 1.5, 2, 1.6, false); bun(R, 14.5, h0 - 1.5, 2, 1.6, false); R.put(9, h0, TIE); R.put(14, h0, TIE); },
     side(R) { const { h0 } = R, { chest } = dims(R); longS(R, chest - 1); bun(R, 10, h0 - 2, 2, 1.6, false); R.put(10, h0 - 1, TIE); },
   }),
-  bunBangs: hs('Knut med lugg', 'Uppsatt', {
+  bunBangs: hs($t('Knut med lugg'), $n('Uppsatt'), {
     // hög knut på hjässan och en rak lugg
     front(R) { const { hair: H, h0 } = R; capF(R, 3); bangsF(R); col(R, 7, h0 + 3, h0 + 5, H.base); col(R, 16, h0 + 3, h0 + 5, H.lo); bun(R, 11.5, h0 - 2.6, 3, 2.2); },
     back(R) { sleekB(R, true); bun(R, 11.5, R.h0 - 2, 3, 2.2); },
@@ -143,7 +144,7 @@ export const HAIR_FEST = {
   }),
 
   // ================= Hästsvansar =================
-  longPony: hs('Lång häst­svans', 'Hästsvansar', {
+  longPony: hs($t('Lång häst­svans'), $n('Hästsvansar'), {
     // hög, blank hästsvans som räcker ända ner till midjan
     front(R) { const { rect, put, hair: H, h0, eyeRow } = R; sleekF(R);
       if (!R.hatted) { rect(11, h0 - 2, 2, 1, TIE); put(11, h0 - 3, H.hi); put(12, h0 - 3, H.base); put(12, h0 - 4, H.lo); }
@@ -156,7 +157,7 @@ export const HAIR_FEST = {
       const m = mask().row(h0 - 3, 6, 8).row(h0 - 2, 5, 8).rect(4, h0 - 1, 3, eyeRow - h0 + 2).rect(5, eyeRow + 1, 2, waist - eyeRow - 1).set(5, waist);
       paint(R, m); put(8, h0 - 2, TIE); put(9, h0 - 2, TIE); put(8, h0 - 1, TIE); put(5, h0 + 2, H.lo); col(R, 6, eyeRow + 2, waist - 2, H.lo); },
   }),
-  curlyPony: hs('Lockig svans', 'Hästsvansar', {
+  curlyPony: hs($t('Lockig svans'), $n('Hästsvansar'), {
     // hög hästsvans som slår ut i en stor krullig tofs
     front(R) { const { rect, h0 } = R; sleekF(R);
       if (!R.hatted) rect(11, h0 - 2, 2, 1, TIE);
@@ -171,14 +172,14 @@ export const HAIR_FEST = {
       for (let y = h0 - 1; y < h0 + 8; y++) if (nz(2, y, 116) % 2) m.set(2, y);
       paint(R, m, { tex: curls(117, 1.5) }); put(8, h0 - 2, TIE); put(9, h0 - 2, TIE); put(8, h0 - 1, TIE); },
   }),
-  bangsPony: hs('Svans med lugg', 'Hästsvansar', {
+  bangsPony: hs($t('Svans med lugg'), $n('Hästsvansar'), {
     // hästsvans mitt på bakhuvudet och en rak lugg
     front(R) { const { hair: H, h0, eyeRow } = R, { chin } = dims(R); capF(R, 3); bangsF(R); col(R, 7, h0 + 3, h0 + 5, H.base); col(R, 16, h0 + 3, h0 + 5, H.lo);
       const B = behindR(R); for (let y = eyeRow - 1; y <= chin + 1; y++) { B.put(17, y, H.lo); B.put(18, y, H.dk); } },
     back(R) { const { rect, h0 } = R, { chest } = dims(R); sleekB(R, false); rect(11, h0 + 3, 2, 1, TIE); hang(R, 10, h0 + 4, chest, 3); },
     side(R) { const { put, h0 } = R, { chest } = dims(R); sleekS(R); bangsS(R); put(8, h0 + 3, TIE); put(8, h0 + 4, TIE); hang(R, 6, h0 + 4, chest - 1, 2, true); put(7, h0 + 3, R.hair.base); },
   }),
-  scrunchiePony: hs('Scrunchie­svans', 'Hästsvansar', {
+  scrunchiePony: hs($t('Scrunchie­svans'), $n('Hästsvansar'), {
     // 90-tal: hög hästsvans med en stor rosa scrunchie
     front(R) { const { put, hair: H, h0, eyeRow } = R; sleekF(R);
       if (!R.hatted) { row(R, h0 - 3, 10, 13, SCR_HI); row(R, h0 - 2, 9, 14, SCR); row(R, h0 - 1, 10, 13, SCR_LO); put(9, h0 - 2, SCR_HI); put(11, h0 - 2, SCR_HI); put(13, h0 - 2, SCR_LO); put(14, h0 - 2, SCR_LO); put(12, h0 - 3, SCR); }
@@ -193,7 +194,7 @@ export const HAIR_FEST = {
       paint(R, m); col(R, 5, h0 + 2, eyeRow, H.lo);
       row(R, h0 - 3, 6, 8, SCR_HI); row(R, h0 - 2, 5, 9, SCR); row(R, h0 - 1, 5, 8, SCR_LO); put(7, h0 - 2, SCR_HI); put(9, h0 - 2, SCR_LO); put(5, h0 - 2, SCR_HI); },
   }),
-  twinTails: hs('Långa tofsar', 'Hästsvansar', {
+  twinTails: hs($t('Långa tofsar'), $n('Hästsvansar'), {
     // två höga tofsar som hänger ner till bröstet
     front(R) { const { put, hair: H, h0 } = R, { chest } = dims(R); sleekF(R); partF(R);
       bun(R, 6, h0 - 0.5, 1.7, 1.5, false); bun(R, 17, h0 - 0.5, 1.7, 1.5, false);
@@ -205,7 +206,7 @@ export const HAIR_FEST = {
   }),
 
   // ================= Flätor =================
-  fishtail: hs('Fisk­bens­fläta', 'Flätor', {
+  fishtail: hs($t('Fisk­bens­fläta'), $n('Flätor'), {
     // en bred fiskbensfläta över personens högra axel (framifrån bildens vänstra)
     front(R) { const { rect, put, hair: H, skin, h0, eyeRow } = R, { chin, waist } = dims(R); capF(R, 3);
       put(13, h0, skin.base); put(13, h0 - 1, H.lo); rect(8, h0 + 3, 5, 1, H.base); put(8, h0 + 4, H.base); put(10, h0 + 3, H.lo);
@@ -218,7 +219,7 @@ export const HAIR_FEST = {
       if (R.flip) return;
       R.rect(8, h0 + 3, 3, eyeRow - h0 - 2, H.base); fish(R, (y) => (y < chin ? 8 : y < chin + 2 ? 9 : 10), eyeRow + 1, waist, false); },
   }),
-  fulani: hs('Fulani­flätor', 'Flätor', {
+  fulani: hs($t('Fulani­flätor'), $n('Flätor'), {
     // corn rows över hjässan, en fläta mitt på huvudet och tunna flätor med guldpärlor
     front(R) { const { h0, eyeRow } = R, { chest } = dims(R); rowsF(R);
       braidBand(R, mask().rect(11, h0 - 1, 2, 4), true);
@@ -232,7 +233,7 @@ export const HAIR_FEST = {
       for (let y = h0 - 1; y <= h0 + 6; y++) for (let x = 8; x <= 16; x++) { if (y === h0 - 1 && (x < 9 || x > 15)) continue; if (y > h0 + 2 && x > 10) continue; put(x, y, y % 2 === 0 ? gap : (x & 1) ? H.lo : H.base); }
       for (const x of [5, 7, 9]) beadBraid(R, x, h0 + 4 + (x % 2), chest - (x % 3), x === 7); },
   }),
-  braidBun: hs('Flät­knut', 'Flätor', {
+  braidBun: hs($t('Flät­knut'), $n('Flätor'), {
     // en fläta upp längs bakhuvudet som lindas till en knut på hjässan
     front(R) { const { h0 } = R; sleekF(R); partF(R); if (!R.hatted) braidBand(R, mask().oval(11.5, h0 - 2.5, 3.2, 2.3), false); },
     back(R) { const { h0, headH } = R; sleekB(R, true);
@@ -240,7 +241,7 @@ export const HAIR_FEST = {
       braidBand(R, mask().oval(11.5, h0 - 2, 3.2, 2.3), false); },
     side(R) { const { h0 } = R; sleekS(R); braidBand(R, mask().rows([[h0, 8, 9], [h0 + 1, 8, 9], [h0 + 2, 8, 9], [h0 + 3, 8, 9]]), true); braidBand(R, mask().oval(9.5, h0 - 2.2, 2.8, 2.3), false); },
   }),
-  waterfall: hs('Vatten­falls­fläta', 'Flätor', {
+  waterfall: hs($t('Vatten­falls­fläta'), $n('Flätor'), {
     // en fläta runt bakhuvudet från tinning till tinning; resten av håret faller fritt
     front(R) { const { rect, hair: H, h0 } = R, { chest } = dims(R); capF(R, 3); rect(8, h0 + 3, 3, 1, H.base); rect(13, h0 + 3, 3, 1, H.base);
       curtF(R, chest, 2, h0 + 1);
@@ -252,7 +253,7 @@ export const HAIR_FEST = {
       const m = mask(); for (let t = 0; t <= 7; t++) { const x = 14 - t, y = h0 + 2 + Math.round(t * (eyeRow - 4 - h0) / 7); m.set(x, y).set(x, y + 1); }
       braidBand(R, m, false); col(R, 9, eyeRow - 1, chest - 2, H.lo); },
   }),
-  braidsLong: hs('Långa flätor', 'Flätor', {
+  braidsLong: hs($t('Långa flätor'), $n('Flätor'), {
     // två långa flätor ner till midjan med rosetter i ändarna
     front(R) { const { rect, hair: H, h0, eyeRow } = R, { chin, waist } = dims(R); capF(R, 3); partF(R); rect(8, h0 + 3, 3, 1, H.base); rect(13, h0 + 3, 3, 1, H.base);
       col(R, 7, h0 + 3, eyeRow - 2, H.base); col(R, 16, h0 + 3, eyeRow - 2, H.lo); col(R, 6, h0 + 1, eyeRow - 2, H.base); col(R, 17, h0 + 1, eyeRow - 2, H.lo);
@@ -263,7 +264,7 @@ export const HAIR_FEST = {
     side(R) { const { eyeRow } = R, { chin, waist } = dims(R); sideStd(R);
       plait(R, (y) => (y < chin ? 8 : y < chin + 2 ? 9 : 11), eyeRow - 1, waist, false); bow(R, 11, waist + 1); },
   }),
-  boxBun: hs('Box braids i knut', 'Flätor', {
+  boxBun: hs($t('Box braids i knut'), $n('Flätor'), {
     // tunna box braids samlade i en stor knut på hjässan, två flätor ramar in ansiktet
     front(R) { const { put, hair: H, h0 } = R, { chin } = dims(R); capF(R, 3);
       const g = mix2(R); for (const [x, y] of [[9, 0], [12, 1], [14, 0], [10, 2], [13, 2]]) put(x, h0 + y, g);
@@ -278,7 +279,7 @@ export const HAIR_FEST = {
   }),
 
   // ================= Kul =================
-  catEars: hs('Katt­öron', 'Kul', {
+  catEars: hs($t('Katt­öron'), $n('Kul'), {
     // två knutar formade som kattöron och en page med lugg
     front(R) { const { rect, hair: H, h0 } = R, { chin } = dims(R); capF(R, 3); bangsF(R); curtF(R, chin, 2, h0 + 1); rect(7, h0 + 3, 1, 1, H.base);
       catEar(R, 7, -1); catEar(R, 13, 1); },
@@ -288,13 +289,13 @@ export const HAIR_FEST = {
       const m = mask(); for (let j = 0; j < 5; j++) for (let i = 0; i <= Math.min(j, 3); i++) m.set(14 - i, h0 - 5 + j);
       paint(R, m, { split: 99 }); put(13, h0 - 3, H.lo); put(13, h0 - 2, H.dk); put(12, h0 - 2, H.lo); },
   }),
-  hearts: hs('Hjärt­knutar', 'Kul', {
+  hearts: hs($t('Hjärt­knutar'), $n('Kul'), {
     // två knutar formade som hjärtan högt upp på huvudet
     front(R) { const { put, h0 } = R; sleekF(R); partF(R); heart(R, 2, h0 - 4); heart(R, 15, h0 - 4); put(8, h0, TIE); put(15, h0, TIE); },
     back(R) { const { put, hair: H, h0 } = R; sleekB(R, false); col(R, 11, h0 - 1, h0 + R.headH - 5, H.lo); heart(R, 2, h0 - 4); heart(R, 15, h0 - 4); put(8, h0, TIE); put(15, h0, TIE); },
     side(R) { const { put, h0 } = R; sleekS(R); heart(R, 7, h0 - 5); put(10, h0, TIE); },
   }),
-  professor: hs('Galet proffs', 'Kul', {
+  professor: hs($t('Galet proffs'), $n('Kul'), {
     // flint på toppen och vilt, spretigt hår åt alla håll (som en galen uppfinnare)
     front(R) { const { put, hair: H, skin, h0, eyeRow } = R;
       const m = mask().oval(4.8, h0 + 3, 2.6, 4).oval(19.2, h0 + 3, 2.6, 4);
@@ -315,7 +316,7 @@ export const HAIR_FEST = {
       paint(R, m, { tex: (x, y, t) => (t === 'base' && nz(x, y, 123) < 26 ? 'lo' : null) });
       put(13, h0, skin.hi); put(12, h0 + 1, skin.hi); },
   }),
-  anime: hs('Anime­taggar', 'Kul', {
+  anime: hs($t('Anime­taggar'), $n('Kul'), {
     // stora spetsiga taggar åt alla håll – som en tecknad hjälte
     front(R) { const { put, hair: H, h0, K } = R, f = h0 + (K ? 4 : 5);
       const m = mask().row(h0 - 1, 8, 15).rect(7, h0, 10, 3);
@@ -335,7 +336,7 @@ export const HAIR_FEST = {
       tri(m, 14, h0 + 2, 17, h0 + 2, 17, h0 + 5);
       paint(R, m); R.put(12, h0 + 1, H.lo); R.put(9, h0 + 4, H.lo); },
   }),
-  clown: hs('Clown­frilla', 'Kul', {
+  clown: hs($t('Clown­frilla'), $n('Kul'), {
     // flint på toppen och två stora krulliga tofsar vid öronen
     front(R) { const { put, hair: H, skin, h0 } = R;
       paint(R, mask().oval(4.5, h0 + 3.5, 3.3, 3.6).oval(19.5, h0 + 3.5, 3.3, 3.6), { tex: curls(131, 1.6) });
@@ -348,7 +349,7 @@ export const HAIR_FEST = {
       paint(R, mask().oval(6.5, h0 + 4, 3.8, 3.8).cut(11, h0 + 7, 1, 2), { tex: curls(135, 1.6) });
       paint(R, mask().row(h0 - 2, 11, 12).row(h0 - 1, 10, 13), { tex: curls(136, 1.2) }); put(13, h0 + 1, skin.hi); put(14, h0 + 1, skin.hi); },
   }),
-  unicorn: hs('Enhörnings­knut', 'Kul', {
+  unicorn: hs($t('Enhörnings­knut'), $n('Kul'), {
     // en snurrad knut som ett horn mitt på hjässan, resten av håret långt
     front(R) { const { rect, hair: H, h0 } = R, { chest } = dims(R); capF(R, 3); rect(8, h0 + 3, 3, 1, H.base); rect(13, h0 + 3, 3, 1, H.base); curtF(R, chest, 2, h0 + 1);
       horn(R, [[h0 - 5, 11, 12], [h0 - 4, 11, 12], [h0 - 3, 10, 13], [h0 - 2, 10, 13], [h0 - 1, 9, 14]]); },

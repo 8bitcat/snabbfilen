@@ -19,28 +19,29 @@ import { fmt } from '../game.js';
 import { sendJob, onJob, worldMyId, playersList, worldPlayer, visitPlayer } from '../net/world.js';
 import { createSpeech, WALK_SEQ } from '../scenes/walkable.js';
 import { stopHemMusik } from './hemmusik.js';
+import { $t } from './i18n.js';
 
 export const FEST_LANGD = 180;      // minuter spelklocka
 export const FEST_SENAST = 20 * 60;  // sista starttid (slut 23:00)
 export const FEST_MAX = { husvagn: 3, rum: 3, hoghus: 4, lagenhet: 6, radhus: 8, villa: 10, takvaning: 12 };
 export const FEST_MAT = [
-  { id: 'chips', icon: '🥤', namn: 'Chips och dricka', per: 20, mat: 10 },
-  { id: 'pizza', icon: '🍕', namn: 'Pizza och dricka', per: 45, mat: 25 },
-  { id: 'tarta', icon: '🎂', namn: 'Pizza, dricka och tårta', per: 70, mat: 30, glad: 2 },
+  { id: 'chips', icon: '🥤', namn: $t('Chips och dricka'), per: 20, mat: 10 },
+  { id: 'pizza', icon: '🍕', namn: $t('Pizza och dricka'), per: 45, mat: 25 },
+  { id: 'tarta', icon: '🎂', namn: $t('Pizza, dricka och tårta'), per: 70, mat: 30, glad: 2 },
 ];
-const STORLEK = [[3, 'Liten fest'], [5, 'Fest'], [8, 'Storfest'], [12, 'Jättefest']];
-const NAMN = ['Alva', 'Leo', 'Saga', 'Elias', 'Wilma', 'Hugo', 'Maja', 'Noah', 'Ebba', 'Liam', 'Freja', 'Oscar', 'Ella', 'Viggo', 'Astrid', 'Malte', 'Signe', 'Melvin'];
-const PRAT = ['Vilken fest! 🎉', 'Snyggt här!', 'Bästa låten!', 'Mer chips, tack!', 'Kom och dansa!', 'Woho! 🕺', 'Älskar den här låten!', 'Mysigt hem du har!', 'Skål! 🥤', 'Ska vi dansa? 💃', 'Pizzan är grym! 🍕', 'Vi måste göra om det här!'];
+const STORLEK = [[3, $t('Liten fest')], [5, $t('Fest')], [8, $t('Storfest')], [12, $t('Jättefest')]];
+const NAMN = [$t('Alva'), $t('Leo'), $t('Saga'), $t('Elias'), $t('Wilma'), $t('Hugo'), $t('Maja'), $t('Noah'), $t('Ebba'), $t('Liam'), $t('Freja'), $t('Oscar'), $t('Ella'), $t('Viggo'), $t('Astrid'), $t('Malte'), $t('Signe'), $t('Melvin')];
+const PRAT = [$t('Vilken fest! 🎉'), $t('Snyggt här!'), $t('Bästa låten!'), $t('Mer chips, tack!'), $t('Kom och dansa!'), $t('Woho! 🕺'), $t('Älskar den här låten!'), $t('Mysigt hem du har!'), $t('Skål! 🥤'), $t('Ska vi dansa? 💃'), $t('Pizzan är grym! 🍕'), $t('Vi måste göra om det här!')];
 const abs = (g) => g.day * 1440 + g.min;
 
 // ---------------------------------------------------------------- start / slut
 export function canFest(A) {
   const g = A.game;
-  if (A.sceneName !== 'room' || A.visitTarget) return 'Fest har man hemma!';
+  if (A.sceneName !== 'room' || A.visitTarget) return $t('Fest har man hemma!');
   if (A.fest) return null;
-  if ((g.festDag | 0) === g.day) return 'Du har redan haft fest i dag – vila lite!';
-  if (g.min > FEST_SENAST) return 'Det är för sent för fest – grannarna ska sova. Fest kan du ha till kl 20.';
-  if (g.min < 9 * 60) return 'Lite tidigt för fest, eller hur? Vänta till efter frukost.';
+  if ((g.festDag | 0) === g.day) return $t('Du har redan haft fest i dag – vila lite!');
+  if (g.min > FEST_SENAST) return $t('Det är för sent för fest – grannarna ska sova. Fest kan du ha till kl 20.');
+  if (g.min < 9 * 60) return $t('Lite tidigt för fest, eller hur? Vänta till efter frukost.');
   return null;
 }
 export function startFest(A, { n = 3, mat = 'chips', bjud = [] } = {}) {
@@ -49,7 +50,7 @@ export function startFest(A, { n = 3, mat = 'chips', bjud = [] } = {}) {
   if (why) return { ok: false, msg: why };
   n = Math.max(1, Math.min(FEST_MAX[g.home] || 3, n | 0));
   const kost = n * M.per;
-  if (g.money < kost) return { ok: false, msg: `Festen kostar ${fmt(kost)} – du har inte råd.` };
+  if (g.money < kost) return { ok: false, msg: $t`Festen kostar ${fmt(kost)} – du har inte råd.` };
   g.money -= kost;
   g.festDag = g.day;
   g.fester = (g.fester | 0) + 1;
@@ -77,9 +78,9 @@ export function endFest(A, why = 'slut') {
   const key = `${F.home}:${F.sub}`;
   A.festMess[key] = [...(A.festMess[key] || []), ...(F.mess || [])].slice(0, 30);
   const n = F.gaster.filter((q) => q.state !== 'vantar').length;
-  if (why === 'ut') toast(`🎉 Gästerna gick hem när du gick ut. Festen är slut!`);
+  if (why === 'ut') toast($t`🎉 Gästerna gick hem när du gick ut. Festen är slut!`);
   else if (why === 'sova') { /* tyst – man somnar */ }
-  else toast(`🎉 Festen är slut! ${n} ${n === 1 ? 'gäst' : 'gäster'} hade jättekul.${F.mess?.length ? ' Städa upp skräpet på golvet! 🧹' : ''}`, 'good');
+  else toast(`${n === 1 ? $t`🎉 Festen är slut! ${n} gäst hade jättekul.` : $t`🎉 Festen är slut! ${n} gäster hade jättekul.`}${F.mess?.length ? ` ${$t('Städa upp skräpet på golvet! 🧹')}` : ''}`, 'good');
 }
 
 // varje bildruta (main.js): festen tar slut när tiden är ute, när man går hemifrån eller somnar;
@@ -94,12 +95,12 @@ export function festTick(A) {
       const k = Math.floor((abs(g) - F.nastaGlad) / 30) + 1;
       F.nastaGlad += 30 * k;
       const h = g.glad(2 * k, '', 'fest', 12);
-      if (h) toast(`🎉 Festen! +${h} 😊`);
+      if (h) toast($t`🎉 Festen! +${h} 😊`);
     }
   }
   if (A.sceneName === 'visit' && A.visitTarget && worldPlayer(A.visitTarget.id)?.fe) {
     const k = `${g.day}:${A.visitTarget.id}`;
-    if (!besok.has(k)) { besok.add(k); const h = g.glad(4, '', 'festbesok', 8); toast(`🎉 Fest hos ${A.visitTarget.name || 'en kompis'}!${h ? ` +${h} 😊` : ''}`, 'good'); }
+    if (!besok.has(k)) { besok.add(k); const h = g.glad(4, '', 'festbesok', 8); const vem = A.visitTarget.name || $t('en kompis'); toast(`${$t`🎉 Fest hos ${vem}!`}${h ? ` +${h} 😊` : ''}`, 'good'); }
   }
 }
 export const festOn = (A) => !!A.fest;
@@ -113,9 +114,9 @@ export function festHere(A, { visit, home, sub }) {
 export function openFest(A) {
   const g = A.game;
   if (A.fest) {
-    openModal('🎉 Festen pågår', `<p style="font-size:var(--f2);margin-top:0">Festen håller på till ${clockOf(A.fest.slut)}. Vill du avsluta den nu?</p>`, [
-      { label: '🎉 Fortsätt festa', cls: 'btn-go', onClick: closeModal },
-      { label: '👋 Avsluta festen', onClick: () => { closeModal(); A.fest.slut = abs(g); } },
+    openModal($t('🎉 Festen pågår'), `<p style="font-size:var(--f2);margin-top:0">${$t`Festen håller på till ${clockOf(A.fest.slut)}. Vill du avsluta den nu?`}</p>`, [
+      { label: $t('🎉 Fortsätt festa'), cls: 'btn-go', onClick: closeModal },
+      { label: $t('👋 Avsluta festen'), onClick: () => { closeModal(); A.fest.slut = abs(g); } },
     ]);
     return;
   }
@@ -126,21 +127,21 @@ export function openFest(A) {
   const vanner = playersList().filter((p) => p.id !== worldMyId());
   const draw = () => {
     const M = FEST_MAT.find((x) => x.id === st.mat), kost = st.n * M.per;
-    const size = STORLEK.filter(([n]) => n <= max).map(([n, namn]) => `<button class="btn btn-small ${st.n === n ? 'btn-gold' : ''}" data-n="${n}">${namn} · ${n} gäster</button>`).join(' ');
-    const mat = FEST_MAT.map((x) => `<button class="btn btn-small ${st.mat === x.id ? 'btn-gold' : ''}" data-m="${x.id}">${x.icon} ${esc(x.namn)} · ${fmt(x.per)}/gäst</button>`).join(' ');
-    const vl = vanner.length ? vanner.map((p) => `<label style="display:block;font-size:var(--f2)"><input type="checkbox" data-v="${esc(p.id)}" ${st.bjud.has(p.id) ? 'checked' : ''}> 💌 ${esc(p.av?.name || 'Kompis')}</label>`).join('') : '<p class="sp" style="margin:0">Ingen annan är online just nu – grannarna kommer ändå!</p>';
-    const dlg = openModal('🎉 Ha fest hemma!', `<p style="font-size:var(--f2);margin-top:0">Bjud hem grannar och kompisar från Pixelstaden! Festen pågår i tre timmar – musik, dans och mat. ${max < 12 ? `<span class="sp">(Det får plats ${max} gäster i ${esc(g.homeInfo.name.toLowerCase())}.)</span>` : ''}</p>
-      <p class="fb-lbl" style="margin:6px 0 2px">Hur stor fest?</p><div>${size}</div>
-      <p class="fb-lbl" style="margin:8px 0 2px">Vad bjuder du på?</p><div>${mat}</div>
-      <p class="fb-lbl" style="margin:8px 0 2px">Bjud in kompisar online</p>${vl}
-      <p style="font-size:var(--f2);margin:8px 0 0">💰 Du har <b>${fmt(g.money)}</b> · festen kostar <b>${fmt(kost)}</b></p>`, [
-      { label: `🎉 Starta festen · ${fmt(kost)}`, cls: 'btn-go', onClick: () => {
+    const size = STORLEK.filter(([n]) => n <= max).map(([n, namn]) => `<button class="btn btn-small ${st.n === n ? 'btn-gold' : ''}" data-n="${n}">${namn} · ${$t`${n} gäster`}</button>`).join(' ');
+    const mat = FEST_MAT.map((x) => `<button class="btn btn-small ${st.mat === x.id ? 'btn-gold' : ''}" data-m="${x.id}">${x.icon} ${esc(x.namn)} · ${$t`${fmt(x.per)}/gäst`}</button>`).join(' ');
+    const vl = vanner.length ? vanner.map((p) => `<label style="display:block;font-size:var(--f2)"><input type="checkbox" data-v="${esc(p.id)}" ${st.bjud.has(p.id) ? 'checked' : ''}> 💌 ${esc(p.av?.name || $t('Kompis'))}</label>`).join('') : `<p class="sp" style="margin:0">${$t('Ingen annan är online just nu – grannarna kommer ändå!')}</p>`;
+    const dlg = openModal($t('🎉 Ha fest hemma!'), `<p style="font-size:var(--f2);margin-top:0">${$t('Bjud hem grannar och kompisar från Pixelstaden! Festen pågår i tre timmar – musik, dans och mat.')} ${max < 12 ? `<span class="sp">${$t`(Det får plats ${max} gäster i ${esc($t(g.homeInfo.name).toLowerCase())}.)`}</span>` : ''}</p>
+      <p class="fb-lbl" style="margin:6px 0 2px">${$t('Hur stor fest?')}</p><div>${size}</div>
+      <p class="fb-lbl" style="margin:8px 0 2px">${$t('Vad bjuder du på?')}</p><div>${mat}</div>
+      <p class="fb-lbl" style="margin:8px 0 2px">${$t('Bjud in kompisar online')}</p>${vl}
+      <p style="font-size:var(--f2);margin:8px 0 0">${$t`💰 Du har <b>${fmt(g.money)}</b> · festen kostar <b>${fmt(kost)}</b>`}</p>`, [
+      { label: $t`🎉 Starta festen · ${fmt(kost)}`, cls: 'btn-go', onClick: () => {
         const r = startFest(A, { n: st.n, mat: st.mat, bjud: [...st.bjud] });
         if (!r.ok) { toast(r.msg, 'bad'); play('fel'); return; }
         closeModal(); play('fanfare');
-        toast(`🎉 Festen har börjat! ${st.n} gäster är på väg${st.bjud.size ? ` och ${st.bjud.size} ${st.bjud.size === 1 ? 'kompis har' : 'kompisar har'} fått en inbjudan` : ''}.${r.glad ? ` +${r.glad} 😊` : ''}`, 'good');
+        toast(`${!st.bjud.size ? $t`🎉 Festen har börjat! ${st.n} gäster är på väg.` : st.bjud.size === 1 ? $t`🎉 Festen har börjat! ${st.n} gäster är på väg och ${st.bjud.size} kompis har fått en inbjudan.` : $t`🎉 Festen har börjat! ${st.n} gäster är på väg och ${st.bjud.size} kompisar har fått en inbjudan.`}${r.glad ? ` +${r.glad} 😊` : ''}`, 'good');
       } },
-      { label: 'Inte nu', onClick: closeModal },
+      { label: $t('Inte nu'), onClick: closeModal },
     ]);
     dlg.querySelectorAll('[data-n]').forEach((b) => (b.onclick = () => { st.n = +b.dataset.n; play('click'); draw(); }));
     dlg.querySelectorAll('[data-m]').forEach((b) => (b.onclick = () => { st.mat = b.dataset.m; play('click'); draw(); }));
@@ -156,12 +157,12 @@ export function festInvites(A) { festA = A; }
 onJob((ev) => {
   const m = ev?.m, A = festA;
   if (!A || m?.k !== 'fest' || m.to !== worldMyId()) return;
-  const namn = esc(String(m.namn || 'En kompis').slice(0, 16));
-  if (A.sceneName.startsWith('jobb')) { toast(`🎉 ${namn} har fest – men du jobbar. Åk dit efter passet!`); return; }
+  const namn = esc(String(m.namn || $t('En kompis')).slice(0, 16));
+  if (A.sceneName.startsWith('jobb')) { toast($t`🎉 ${namn} har fest – men du jobbar. Åk dit efter passet!`); return; }
   play('knock');
-  openModal('🎉 Fest!', `<p style="font-size:var(--f2);margin-top:0"><b>${namn}</b> har fest hemma och bjuder in dig! Musik, dans och mat – häng med?</p>`, [
-    { label: '🎉 Åk dit!', cls: 'btn-go', onClick: () => { closeModal(); visitPlayer(A, ev.from); } },
-    { label: 'Inte nu', onClick: closeModal },
+  openModal($t('🎉 Fest!'), `<p style="font-size:var(--f2);margin-top:0">${$t`<b>${namn}</b> har fest hemma och bjuder in dig! Musik, dans och mat – häng med?`}</p>`, [
+    { label: $t('🎉 Åk dit!'), cls: 'btn-go', onClick: () => { closeModal(); visitPlayer(A, ev.from); } },
+    { label: $t('Inte nu'), onClick: closeModal },
   ]);
 });
 
@@ -324,11 +325,11 @@ export function createFestRoom(A, geo) {
       const L = A.festMess[key], i = L.indexOf(m);
       if (i < 0) return;
       L.splice(i, 1); A.game.passTime(1); play('click');
-      if (!L.length) { delete A.festMess[key]; const h = A.game.glad(1, '', 'stada', 2); toast(`✨ Rent och fint igen!${h ? ` +${h} 😊` : ''}`, 'good'); }
+      if (!L.length) { delete A.festMess[key]; const h = A.game.glad(1, '', 'stada', 2); toast(`${$t('✨ Rent och fint igen!')}${h ? ` +${h} 😊` : ''}`, 'good'); }
     } };
     const F = mine();
     const q = F?.gaster.find((g2) => (g2.state === 'dans' || g2.state === 'mat') && Math.abs(g2.x - x) <= 8 && y >= g2.y - 34 && y <= g2.y + 2);
-    if (q) return { go: [q.x + (q.x > x ? -14 : 14), q.y + 2], act: () => { talk.say(`Hej! Jag heter ${q.namn}. ${PRAT[Math.floor(Math.random() * PRAT.length)]}`, () => ({ x: q.x, y: q.y - 44 }), 3, { voice: q.look }); const h = A.game.glad(1, '', 'festprat', 3); if (h) toast(`😊 +${h}`); } };
+    if (q) return { go: [q.x + (q.x > x ? -14 : 14), q.y + 2], act: () => { talk.say(`${$t`Hej! Jag heter ${q.namn}.`} ${PRAT[Math.floor(Math.random() * PRAT.length)]}`, () => ({ x: q.x, y: q.y - 44 }), 3, { voice: q.look }); const h = A.game.glad(1, '', 'festprat', 3); if (h) toast(`😊 +${h}`); } };
     return null;
   }
   return {

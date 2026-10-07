@@ -15,6 +15,7 @@
 // högerkanter och undersidor i skugga), skyltar bara med spelets pixeltypsnitt (floor-pix.js).
 import { Pix, SMALL, BIG, text, textW, eachTextPixel, mix, mul, hash, bayer } from '../core/floor-pix.js';
 import { artBox, baseOf } from './map.js';
+import { $t } from '../core/i18n.js';
 
 // Figurerna (portier, folk i lobbyerna) – laddas för sig så att ett fel där aldrig fäller husen.
 let drawPersonFn = null;
@@ -707,7 +708,7 @@ function paintKontor1(b, night, opts) {
   P.hl(L, podTop, b.w, 0x8a8e96); P.hl(L, podTop + 1, b.w, 0x4a4e56); P.hl(L, podTop + 11, b.w, 0x1a1c22);
   P.darken(L, podTop + 12, b.w, 1, 0.7);
   K.ledges.push([L, podTop - 1, b.w, 1]);
-  const name = 'FINANSHUSET', nx = centerX(BIG, name, (L + R) / 2);
+  const name = $t('FINANSHUSET'), nx = centerX(BIG, name, (L + R) / 2);
   signText(P, BIG, name, nx, podTop + 3, 0xd8dee6, { shadow: 0x0a0a10, hi: 0xffffff, lo: 0x9aa4b0 });
   K.texts.push([...textGlow(BIG, name, 1, 0xcfe8ff, K.wx(nx), K.wy(podTop + 3)), 0.55]);
   const lT = podTop + 12, lB = baseY, dx0 = K.dx0, dx1 = K.dx1;
@@ -849,7 +850,7 @@ function paintKontor2(b, night, opts) {
   const nY = tkY + 11;
   P.rect(L, nY, b.w, 12, BRONZE);
   for (let x = L; x < R; x++) { P.px(x, nY, mix(BRONZE, WHITE, 0.3)); P.px(x, nY + 11, mul(BRONZE, 0.5)); if ((x - L) % 4 === 0) P.px(x, nY + 1, GOLD); }
-  const name = 'BÖRSHUSET', nx = centerX(BIG, name, (L + R) / 2);
+  const name = $t('BÖRSHUSET'), nx = centerX(BIG, name, (L + R) / 2);
   signText(P, BIG, name, nx, nY + 3, GOLD, { shadow: 0x2a1a0a, hi: 0xfff0b0, lo: 0xb08a30 });
   K.texts.push([...textGlow(BIG, name, 1, 0xffd070, K.wx(nx), K.wy(nY + 3)), 0.5]);
   // ---- bottenvåningen: portal med solfjäder, skärmar på var sida ----
@@ -881,7 +882,7 @@ function paintKontor2(b, night, opts) {
 }
 
 // ---------- börsen: kurser som ändras varje speldag ----------
-const STOCKS = ['PIXB', 'BURG', 'MÖBL', 'FLYG', 'FRUKT', 'KAFÉ', 'SNAB', 'BETG', 'BROX', 'ELEK'];
+const STOCKS = ['PIXB', 'BURG', $t('MÖBL'), $t('FLYG'), $t('FRUKT'), $t('KAFÉ'), 'SNAB', 'BETG', 'BROX', 'ELEK'];
 function quotesFor(day) {
   return STOCKS.map((s, i) => {
     const base = 40 + Math.floor(hash(i, 1, 5) * 400);
@@ -1160,7 +1161,7 @@ function paintBank(b, night, opts) {
       P.rect(ax - 1, ay - 1, 22, 34, 0x5a5650); P.rect(ax, ay, 20, 32, 0x8a8a90);
       P.hl(ax, ay, 20, 0xc8ccd2); P.vl(ax, ay, 32, 0xb0b4ba); P.vl(ax + 19, ay, 32, 0x4a4a52);
       P.rect(ax + 1, ay + 1, 18, 7, 0x1e7a3a); P.hl(ax + 1, ay + 1, 18, 0x3aa85a);
-      text(P, SMALL, 'UTTAG', ax + 1 + ((18 - textW(SMALL, 'UTTAG')) >> 1), ay + 2, 0xffffff);
+      text(P, SMALL, $t('UTTAG'), ax + 1 + ((18 - textW(SMALL, $t('UTTAG'))) >> 1), ay + 2, 0xffffff);
       P.rect(ax + 3, ay + 10, 14, 9, 0x1a2a3a);
       for (let r = 0; r < 3; r++) for (let c2 = 0; c2 < 3; c2++) P.rect(ax + 4 + c2 * 3, ay + 21 + r * 3, 2, 2, r === 2 && c2 === 2 ? 0x3ac05a : 0xd8dce2);
       P.rect(ax + 14, ay + 21, 3, 2, 0x2a2a30); P.px(ax + 15, ay + 21, 0x40ff60);
@@ -1232,7 +1233,7 @@ function paintBank(b, night, opts) {
   const fT = corn + 6;
   area(P, pL, fT, pR - pL, 14, (X, Y) => jit(STONE, X, Y, 52, 0.05));
   P.hl(pL, fT + 13, pR - pL, mul(STONE, 0.72));
-  const name = 'PIXELBANKEN', nx = centerX(BIG, name, cx), tw = textW(BIG, name);
+  const name = $t('PIXELBANKEN'), nx = centerX(BIG, name, cx), tw = textW(BIG, name);
   // infälld tavla i mörkare sten bakom mässingsbokstäverna (skuggad överkant = försänkt)
   area(P, nx - 5, fT + 1, tw + 10, 11, (X, Y) => jit(mix(STONE, SHADE, 0.5), X, Y, 54, 0.04));
   P.hl(nx - 5, fT + 1, tw + 10, mul(SHADE, 0.72)); P.vl(nx - 5, fT + 1, 11, mul(SHADE, 0.8));
@@ -1307,7 +1308,7 @@ function drawAtm(ctx, a, st) {
   ctx.fillStyle = '#1e5a8a'; ctx.fillRect(x, y, w, h);
   ctx.fillStyle = '#3a8ac8'; ctx.fillRect(x, y, w, 1);
   const ph = Math.floor(t / 2.5) % 3;
-  ctxTxt(ctx, SMALL, ['KORT', 'KOD', 'KR'][ph], x + 1, y + 1, '#ffffff');
+  ctxTxt(ctx, SMALL, [$t('KORT'), $t('KOD'), $t('KR')][ph], x + 1, y + 1, '#ffffff');
   if (Math.floor(t * 2) & 1) { ctx.fillStyle = '#ffffff'; ctx.fillRect(x + w - 3, y + h - 1, 2, 1); }
 }
 function liveBank(ctx, b, st) {
@@ -1423,23 +1424,23 @@ function adFrames(w, h) {
   const list = [
     mk(0x2a1a5a, 0x0a0a2a, (P) => {
       phone(P, 6, 5);
-      text(P, BIG, 'PIXELFON', 24, 6, WHITE); eachTextPixel(BIG, '15', 24, 17, 2, (px, py) => P.px(px, py, 0xffd23f));
-      text(P, SMALL, 'FRÅN', 51, 18, 0x9ae0ff); text(P, BIG, '7990:-', 51, 25, 0x9ae0ff);
+      text(P, BIG, $t('PIXELFON'), 24, 6, WHITE); eachTextPixel(BIG, '15', 24, 17, 2, (px, py) => P.px(px, py, 0xffd23f));
+      text(P, SMALL, $t('FRÅN'), 51, 18, 0x9ae0ff); text(P, BIG, $t('7990:-'), 51, 25, 0x9ae0ff);
     }),
     mk(0xd82a3a, 0x8a1020, (P) => {
-      text(P, BIG, 'TV-REA', 5, 5, WHITE);
+      text(P, BIG, $t('TV-REA'), 5, 5, WHITE);
       eachTextPixel(BIG, '-30%', 5, 17, 2, (px, py) => P.px(px, py, 0xffe040));
       P.rect(w - 30, 7, 26, 17, 0x1a1a22); vgrad(P, w - 29, 8, 24, 14, 0x40c8ff, 0x2a5ad0, 3); P.rect(w - 19, 24, 4, 3, 0x2a2a30); P.hl(w - 23, 27, 12, 0x2a2a30);
     }),
     mk(0x1a8a8a, 0x0a4a5a, (P) => {
       // (plattan smalare och texten fyra pixlar in – SURFPLATTA är 59 px bred och fick inte luft mot ramen)
       P.rect(4, 6, 17, 26, 0xe8ecf0); vgrad(P, 6, 8, 13, 21, 0x5ae08a, 0x1a7a8a, 3); P.px(12, 30, 0x9aa0a8);
-      const tx = Math.max(25, w - 5 - textW(BIG, 'SURFPLATTA'));
-      text(P, BIG, 'SURFPLATTA', tx, 7, WHITE); text(P, SMALL, 'FRÅN', tx, 19, 0x9af0e0); text(P, BIG, '2990:-', tx, 26, 0xffe040);
+      const tx = Math.max(25, w - 5 - textW(BIG, $t('SURFPLATTA')));
+      text(P, BIG, $t('SURFPLATTA'), tx, 7, WHITE); text(P, SMALL, $t('FRÅN'), tx, 19, 0x9af0e0); text(P, BIG, $t('2990:-'), tx, 26, 0xffe040);
     }),
     mk(0x0a0a14, 0x1a0a2a, (P) => {
       P.rect(6, 20, 24, 3, 0x9aa0a8); P.rect(9, 7, 18, 13, 0x2a2a30); vgrad(P, 10, 8, 16, 11, 0xff4ad0, 0x40ff80, 3);
-      text(P, BIG, 'DATORER', 36, 7, 0x40ff80); text(P, SMALL, 'SPELA MER!', 36, 20, 0xff9ae8); text(P, SMALL, 'FRÅN 5990:-', 36, 27, WHITE);
+      text(P, BIG, $t('DATORER'), 36, 7, 0x40ff80); text(P, SMALL, $t('SPELA MER!'), 36, 20, 0xff9ae8); text(P, SMALL, $t('FRÅN 5990:-'), 36, 27, WHITE);
     }),
   ];
   ADS = { w, list };
@@ -1508,7 +1509,7 @@ function paintElektronik(b, night, opts) {
   };
   ribbon(L + 4, 21, 'spel'); ribbon(R - 25, 21, 'lurar');
   // ---- skylten: blixt + ELEKTRONIK i kanalbokstäver (dubbel storlek) ----
-  const sgY = sy + sh + 8, name = 'ELEKTRONIK', tw = textW(BIG, name, 2), nx = Math.round((L + R) / 2 - (tw + 14) / 2) + 14;
+  const sgY = sy + sh + 8, name = $t('ELEKTRONIK'), tw = textW(BIG, name, 2), nx = Math.round((L + R) / 2 - (tw + 14) / 2) + 14;
   P.rect(L + 4, sgY - 3, b.w - 8, 20, 0x14161c); P.hl(L + 4, sgY - 3, b.w - 8, 0x3a3e48); P.hl(L + 4, sgY + 16, b.w - 8, 0x0a0a0e);
   eachTextPixel(BIG, name, nx + 1, sgY + 1, 2, (px, py) => P.px(px, py, 0x0e5a78));   // bokstävernas sidor
   eachTextPixel(BIG, name, nx, sgY, 2, (px, py) => P.px(px, py, (py - sgY) < 3 ? 0xf0fcff : (py - sgY) > 10 ? 0x8ae8ff : 0xc8f4ff));
@@ -1528,8 +1529,8 @@ function paintElektronik(b, night, opts) {
   {
     const [x, y, w, h] = winL;
     vgrad(P, x, y, w, h, night ? 0xfff4e0 : 0xf4f6fa, night ? 0xe0d0b8 : 0xd8dce4, 3);
-    P.rect(x + 3, y + 2, 34, 9, 0x1a2a6a); P.hl(x + 3, y + 2, 34, 0x3a5aaa); text(P, SMALL, 'PIXELFON', x + 4, y + 4, WHITE);
-    P.rect(x + w - 11, y + 2, 9, 9, 0xe83a3a); text(P, SMALL, 'NY', x + w - 10, y + 4, WHITE);
+    P.rect(x + 3, y + 2, 34, 9, 0x1a2a6a); P.hl(x + 3, y + 2, 34, 0x3a5aaa); text(P, SMALL, $t('PIXELFON'), x + 4, y + 4, WHITE);
+    P.rect(x + w - 11, y + 2, 9, 9, 0xe83a3a); text(P, SMALL, $t('NY'), x + w - 10, y + 4, WHITE);
     K.noGlow.push([x + 3, y + 2, 34, 9], [x + w - 11, y + 2, 9, 9]);                  // skyltarna: ingen ljuston över texten
     P.hl(x, y + 22, w, 0xb8bcc4); P.hl(x, y + 23, w, 0x8a8e96);                       // hyllan
     P.rect(x, y + h - 8, w, 8, 0xf8f8fc); P.hl(x, y + h - 8, w, WHITE); P.hl(x, y + h - 1, w, 0xa8acb4);   // disken
@@ -1555,7 +1556,7 @@ function paintElektronik(b, night, opts) {
   // dörrens överljus med ÖPPET-skylt (tänds i live)
   P.rect(dx0 - 2, wY - 2, dx1 - dx0 + 4, baseY - 34 - wY + 2, ALU); P.hl(dx0 - 2, wY - 2, dx1 - dx0 + 4, 0xf0f4f8);
   P.rect(dx0, wY, dx1 - dx0, baseY - 34 - wY - 2, 0x14161c);
-  K.open = [dx0 + ((dx1 - dx0 - textW(SMALL, 'ÖPPET')) >> 1), wY + 3];
+  K.open = [dx0 + ((dx1 - dx0 - textW(SMALL, $t('ÖPPET'))) >> 1), wY + 3];
   // pelarna med lodrät LED-list
   for (const x of [L, dx0 - 5, dx1 + 1, R - 4]) {
     P.rect(x, gT + 4, 4, baseY - gT - 4, 0x1a1c22); P.vl(x + 1, gT + 6, baseY - gT - 10, night ? 0x9af0ff : 0x5a7a88);
@@ -1630,7 +1631,7 @@ function liveElektronik(ctx, b, st) {
   boost(ctx, st, () => drawElekScreens(ctx, b, st, m, false));                    // … och skärmarna i dem
   if (m.sheen) ctx.drawImage(m.sheen, m.sheen.x, m.sheen.y);
   const open = !b.open || (st.hour >= b.open[0] && st.hour < b.open[1]);
-  ctxTxt(ctx, SMALL, 'ÖPPET', m.open[0], m.open[1], open ? '#ff4a3a' : '#3a1a1a');
+  ctxTxt(ctx, SMALL, $t('ÖPPET'), m.open[0], m.open[1], open ? '#ff4a3a' : '#3a1a1a');
   liveCommon(ctx, b, st, m);
 }
 function glowElektronik(ctx, b, st) {
@@ -1640,7 +1641,7 @@ function glowElektronik(ctx, b, st) {
     c.globalAlpha = k;
     drawAd(c, m.ad[0], m.ad[1], m.ad[2], m.ad[3], st.t || 0);                     // den höga reklamskärmen
     const open = !b.open || (st.hour >= b.open[0] && st.hour < b.open[1]);
-    if (open) ctxTxt(c, SMALL, 'ÖPPET', m.open[0], m.open[1], '#ff6a50');
+    if (open) ctxTxt(c, SMALL, $t('ÖPPET'), m.open[0], m.open[1], '#ff6a50');
     c.restore();
     // skärmens sken ut på trottoaren (under fasaden, aldrig över text)
     const [x, , w] = m.ad, base = baseOf(b);
@@ -1712,7 +1713,7 @@ function paintKontor3(b, night, opts) {
   // ---- kronbandet med namnet i LED ----
   P.rect(L, pyrBase, b.w, bandB - pyrBase, 0x14161e); P.hl(L, pyrBase, b.w, 0xe8ecf0); P.hl(L, bandB - 1, b.w, 0x5a606a);
   K.ledges.push([L, pyrBase - 1, b.w, 1]);
-  const led = 'PIXEL TOWER', lx = centerX(SMALL, led, cx);
+  const led = $t('PIXEL TOWER'), lx = centerX(SMALL, led, cx);
   text(P, SMALL, led, lx, pyrBase + 2, night ? 0xc8f4ff : 0x5a8aa0);
   K.texts.push([...textGlow(SMALL, led, 1, 0x8ae8ff, K.wx(lx), K.wy(pyrBase + 2)), 0.95]);
   // ---- skaftet: indragna hörn + glasfasad med vita fenor ----
@@ -1731,7 +1732,7 @@ function paintKontor3(b, night, opts) {
   travertine(P, L, shaftB, b.w, 14);
   P.hl(L, shaftB, b.w, 0xf8f6f0); P.darken(L, shaftB + 14, b.w, 1, 0.7);
   K.ledges.push([L, shaftB - 1, b.w, 1]);
-  const name = String(b.sign || 'PIXEL TOWER').toUpperCase(), nx = centerX(BIG, name, cx); // (husets skylt – PIXELHÖGSKOLAN; LED-kronan säger PIXEL TOWER)
+  const name = String(b.sign || $t('PIXEL TOWER')).toUpperCase(), nx = centerX(BIG, name, cx); // (husets skylt – PIXELHÖGSKOLAN; LED-kronan säger PIXEL TOWER)
   signText(P, BIG, name, nx, shaftB + 4, 0x5a626e, { shadow: 0xb8b2a4, hi: 0x8a929e, lo: 0x3a404a });
   K.texts.push([...textGlow(BIG, name, 1, 0x7ad0ff, K.wx(nx), K.wy(shaftB + 4), false), 0.95]);
   const panes = lobbyFloor(K, shaftB + 14, { stone: 0xe8e2d4, stoneFn: (Q, x, y, w, h) => travertine(Q, x, y, w, h), wall: 0xe0e4ea, planters: true });
@@ -1819,7 +1820,7 @@ function paintKontor4(b, night, opts) {
   P.rect(scX - 3, scY - 3, scW + 6, scH + 6, 0x14161c); P.box(scX - 3, scY - 3, scW + 6, scH + 6, 0xa8b0bc); P.hl(scX - 3, scY - 3, scW + 6, 0xf0f4f8);
   P.rect(scX, scY, scW, scH, 0x06080c);
   P.darken(scX - 2, scY + scH + 3, scW + 4, 2, 0.75);
-  const name = 'GLASTORNET', nY = scY + scH + 6, nx = centerX(BIG, name, cx);
+  const name = $t('GLASTORNET'), nY = scY + scH + 6, nx = centerX(BIG, name, cx);
   signText(P, BIG, name, nx, nY, 0x2a6a74, { shadow: 0xb8c0c0, hi: 0x4a9aa4, lo: 0x1a4a54 });
   K.texts.push([...textGlow(BIG, name, 1, 0x5ae8e0, K.wx(nx), K.wy(nY), false), 0.95]);
   const panes = lobbyFloor(K, shaftB + 44, { stone: 0xeae8e2, stoneFn: (Q, x, y, w, h) => travertine(Q, x, y, w, h, 0xeae8e2, 63), wall: 0xe4eeec, planters: false });
@@ -1840,10 +1841,10 @@ function gtAds(w, h) {
       const hx = 12, hy = 6;
       [[3, 1], [5, 2], [7, 2], [9, 2], [9, 2]].reduce((y, [w2, h2], r) => { for (let j = 0; j < h2; j++) P.hl(hx - (w2 >> 1), y + j, w2, r % 2 ? 0xe8c050 : 0xc8a030); return y + h2; }, hy);
       P.rect(hx - 1, hy + 6, 3, 3, 0x0a2a1a);
-      text(P, BIG, 'PIXELBANKEN', 24, 5, 0xffe8a0); text(P, SMALL, 'SPARA SMART', 24, 15, WHITE);
+      text(P, BIG, $t('PIXELBANKEN'), 24, 5, 0xffe8a0); text(P, SMALL, $t('SPARA SMART'), 24, 15, WHITE);
     }),
     mk(0x3a0a2a, 0x10060e, (P) => {
-      text(P, BIG, 'BIO PIXEL', 6, 5, 0xffd23f); text(P, SMALL, 'KVÄLLENS FILM 19:00', 6, 15, WHITE);
+      text(P, BIG, $t('BIO PIXEL'), 6, 5, 0xffd23f); text(P, SMALL, $t('KVÄLLENS FILM 19:00'), 6, 15, WHITE);
       // filmremsan bara bredvid rubriken – textraden under (74 px) räcker nästan ut till kanten
       for (let k = 0; k < 5; k++) P.rect(w - 20 + k * 3, 3, 2, 10, k % 2 ? 0x1a1a1a : 0xe8e8e8);
     }),
@@ -2110,7 +2111,7 @@ function paintSkor(b, night, opts) {
   // skyltbandet
   const sgY = top + 58;
   P.rect(L, sgY, b.w, 12, BLACK); P.hl(L, sgY, b.w, 0x4a4a52); P.hl(L, sgY + 1, b.w, GOLD); P.hl(L, sgY + 10, b.w, GOLD); P.hl(L, sgY + 11, b.w, 0x0a0a0c);
-  const name = 'SKOBUTIKEN', nx = centerX(BIG, name, (L + R) / 2);
+  const name = $t('SKOBUTIKEN'), nx = centerX(BIG, name, (L + R) / 2);
   signText(P, BIG, name, nx, sgY + 3, 0xf4f1ea, { shadow: 0x5a4a2a, hi: WHITE, lo: 0xd8d0c0 });
   K.texts.push([...textGlow(BIG, name, 1, 0xfff0d0, K.wx(nx), K.wy(sgY + 3)), 0.5]);
   shoe(P, L + 3, sgY + 4, 'sneaker', 0xd83a3a); shoe(P, R - 8, sgY + 4, 'pump', 0xd83a3a, 0x2a2a2a);
@@ -2182,7 +2183,7 @@ function paintFrisor(b, night, opts) {
   // skyltbandet: sax, FRISÖR, kam
   const sgY = top + 47;
   P.rect(L, sgY, b.w, 11, NAVY); P.hl(L, sgY, b.w, 0x3a4a6a); P.hl(L, sgY + 1, b.w, 0xd8b060); P.hl(L, sgY + 9, b.w, 0xd8b060); P.hl(L, sgY + 10, b.w, 0x0a0e18);
-  const name = 'FRISÖR', nx = centerX(BIG, name, (L + R) / 2);
+  const name = $t('FRISÖR'), nx = centerX(BIG, name, (L + R) / 2);
   signText(P, BIG, name, nx, sgY + 3, WHITE, { shadow: 0xd8b060, lo: 0xe0e4f0 });
   K.texts.push([...textGlow(BIG, name, 1, 0xe8f0ff, K.wx(nx), K.wy(sgY + 3)), 0.55]);
   // sax (vänster)
@@ -2313,7 +2314,7 @@ function paintAccessoarer(b, night, opts) {
   // skyltbandet
   const sgY = top + 56;
   P.rect(L, sgY, b.w, 12, PLUM); P.box(L + 1, sgY + 1, b.w - 2, 10, GOLD); P.hl(L, sgY + 11, b.w, 0x1a0a16);
-  const name = 'ACCESSOARER', nx = centerX(BIG, name, (L + R) / 2);
+  const name = $t('ACCESSOARER'), nx = centerX(BIG, name, (L + R) / 2);
   signText(P, BIG, name, nx, sgY + 3, GOLD, { shadow: 0x1a0a16, hi: 0xfff0b8, lo: 0xb08a30 });
   K.texts.push([...textGlow(BIG, name, 1, 0xffd890, K.wx(nx), K.wy(sgY + 3)), 0.55]);
   // butiksfronten i aubergine med guldlister
@@ -2331,7 +2332,7 @@ function paintAccessoarer(b, night, opts) {
     Q.vl(x + w - 4, y + 6, h - 7, 0x8a6a4a); Q.hl(x + w - 6, y + h - 2, 5, 0x6a4a2a);
     Q.hl(x + w - 8, y + 6, 9, 0xe8d08a); Q.rect(x + w - 6, y + 3, 5, 3, 0xe8d08a); Q.hl(x + w - 6, y + 5, 5, 0x2a2a30);
     // NY-lappen en bit in i fönstret (gatlyktan i Bankgatans hörn står framför fönstrets vänstra kant)
-    Q.rect(x + 8, y + 2, 10, 3, 0xf8f6f4); text(Q, SMALL, 'NY', x + 9, y + 1, PLUM);
+    Q.rect(x + 8, y + 2, 10, 3, 0xf8f6f4); text(Q, SMALL, $t('NY'), x + 9, y + 1, PLUM);
     K.noGlow.push([x + 8, y, 11, 7]);
   } });
   showWindow(K, dx1 + 6, winY, R - 5 - (dx1 + 6), winH, { frame: PLUM, pin: GOLD, back: [0x7a4a6a, 0x4e2a46], paint: (Q, x, y, w, h) => {
@@ -2360,11 +2361,11 @@ function paintAccessoarer(b, night, opts) {
 
 // ---------- live/glow för butikerna ----------
 const SHOP_DOORS = {
-  skor: { col: 0x1c1c20, trim: 0xd8b060, sign: 'ÖPPET', inside: (n) => ({ wall0: n ? 0xfff0d0 : 0xf8f0e4, wall1: n ? 0xd8b080 : 0xe0d4c0, floor: 0xa89070 }),
+  skor: { col: 0x1c1c20, trim: 0xd8b060, sign: $t('ÖPPET'), inside: (n) => ({ wall0: n ? 0xfff0d0 : 0xf8f0e4, wall1: n ? 0xd8b080 : 0xe0d4c0, floor: 0xa89070 }),
     insideExtra: (I, w, h) => { for (let r = 0; r < 3; r++) { I.hl(1, 8 + r * 6, w - 2, 0xc8b8a0); for (let x = 2; x < w - 3; x += 5) shoe(I, x, 5 + r * 6, ['sneaker', 'boot', 'pump', 'loafer'][(x + r) % 4], [0xd83a3a, 0x3a6ad8, 0x6a4028, 0x2a2a2e][(x + r * 3) % 4]); } } },
-  frisor: { col: 0x1c2a4a, trim: 0xd8b060, sign: 'ÖPPET', inside: (n) => ({ wall0: n ? 0xfff0d8 : 0xeef4f0, wall1: n ? 0xd8b890 : 0xc8d8d0, floor: 0x3a3a40 }),
+  frisor: { col: 0x1c2a4a, trim: 0xd8b060, sign: $t('ÖPPET'), inside: (n) => ({ wall0: n ? 0xfff0d8 : 0xeef4f0, wall1: n ? 0xd8b890 : 0xc8d8d0, floor: 0x3a3a40 }),
     insideExtra: (I, w, h) => { for (let x = 0; x < w; x++) for (let y = h - 9; y < h; y++) if (((x >> 1) + (y >> 1)) & 1) I.px(x, y, 0xe8e8e8); I.rect(3, 6, w - 6, 8, 0xd8e8f0); I.box(2, 5, w - 4, 10, 0xe8c060); } },
-  accessoarer: { col: 0x4a1e3e, trim: 0xd8b060, handle: 0xf0d070, sign: 'ÖPPET', signCol: 0x4a1e3e, inside: (n) => ({ wall0: n ? 0xfff0e0 : 0xf8eef4, wall1: n ? 0xd8a890 : 0xdcc8d4, floor: 0x6a4a3a }),
+  accessoarer: { col: 0x4a1e3e, trim: 0xd8b060, handle: 0xf0d070, sign: $t('ÖPPET'), signCol: 0x4a1e3e, inside: (n) => ({ wall0: n ? 0xfff0e0 : 0xf8eef4, wall1: n ? 0xd8a890 : 0xdcc8d4, floor: 0x6a4a3a }),
     insideExtra: (I, w, h) => { I.rect(3, h - 15, w - 6, 5, 0xf8f6f4); I.hl(3, h - 15, w - 6, GOLDC); for (let x = 5; x < w - 5; x += 4) I.rect(x, h - 18, 2, 3, [0xd8323a, 0xb8783a, 0x2a2a30][x % 3]); } },
 };
 const GOLDC = 0xd8b060;

@@ -7,6 +7,7 @@
 // som är blandat med hudfärgen lämnas i fred). Fungerar med alla frisyrer, gamla som nya.
 import { TAG, ramp, mix } from './util.js';
 import { nz } from './hair-kit.js';
+import { $t, $n } from '../i18n.js';
 
 // är färgen en av hårets toner?
 const isHair = (R, c) => c === R.hair.base || c === R.hair.lo || c === R.hair.hi || c === R.hair.dk;
@@ -30,9 +31,9 @@ const GRAY = (R) => ramp(mix(R.hair.base, 0xc9c5bd, 0.72));
 const RAINBOW = [0xd9433b, 0xe8872e, 0xf0c93a, 0x46a35a, 0x3a7bd5, 0x8e5bd1].map(ramp);
 
 export const HAIR_FX = {
-  highlights: { label: 'Slingor', group: 'Slingor & toppar',
+  highlights: { label: $t('Slingor'), group: $n('Slingor & toppar'),
     ...all((R) => fx(R, (x, y) => ((x + (y >> 3)) % 3 === 0 ? R.hair2 : null))) },
-  tips: { label: 'Färgade toppar', group: 'Slingor & toppar',
+  tips: { label: $t('Färgade toppar'), group: $n('Slingor & toppar'),
     // bara ändarna på strängar som är minst halva hårets längd – långt hår får färgade
     // ändar utan ett band över pannan, kort hår får färgad lugg/nacke
     ...all((R) => {
@@ -41,56 +42,56 @@ export const HAIR_FX = {
       const thr = Math.max(3, span >> 1);
       fx(R, (x, y) => (b.bot[x] - b.top[x] >= thr && y >= b.bot[x] - (b.bot[x] - b.top[x] >= 8 ? 2 : 1) ? R.hair2 : null));
     }) },
-  frosted: { label: 'Frostade toppar', group: 'Slingor & toppar',
+  frosted: { label: $t('Frostade toppar'), group: $n('Slingor & toppar'),
     ...all((R) => { const b = bounds(R); fx(R, (x, y) => (y <= b.top[x] + (b.top[x] < R.h0 - 1 ? 1 : 0) ? R.hair2 : null)); }) },
-  streak: { label: 'Lugg­slinga', group: 'Slingor & toppar', uses: ['hair2'],
+  streak: { label: $t('Lugg­slinga'), group: $n('Slingor & toppar'), uses: ['hair2'],
     front(R) { fx(R, (x) => (x === 9 || x === 10 ? R.hair2 : null)); },
     back(R) { fx(R, (x, y) => ((x === 9 || x === 10) && y <= R.h0 ? R.hair2 : null)); },
     side(R) { fx(R, (x, y) => (x >= 14 || (x >= 12 && y <= R.h0) ? R.hair2 : null)); } },
-  moneyPiece: { label: 'Fram­slingor', group: 'Slingor & toppar', uses: ['hair2'],
+  moneyPiece: { label: $t('Fram­slingor'), group: $n('Slingor & toppar'), uses: ['hair2'],
     front(R) { const { h0 } = R; fx(R, (x, y) => ((x <= 8 || x >= 15) && y >= h0 + 1) || ((x === 9 || x === 14) && y >= h0 - 1) ? R.hair2 : null); },
     back(R) { const { h0 } = R; fx(R, (x, y) => ((x <= 6 || x >= 17) && y >= h0 + 2 ? R.hair2 : null)); },
     side(R) { const { h0 } = R; fx(R, (x, y) => (x >= 13 && y >= h0 - 1 ? R.hair2 : null)); } },
-  neon: { label: 'Neon­strimmor', group: 'Slingor & toppar', uses: ['hair2'],
+  neon: { label: $t('Neon­strimmor'), group: $n('Slingor & toppar'), uses: ['hair2'],
     front(R) { neonAt(R, (x) => x === 8 || x === 14); },
     back(R) { neonAt(R, (x) => x === 9 || x === 15); },
     side(R) { neonAt(R, (x) => x === 9 || x === 13); } },
 
-  ombre: { label: 'Ombré', group: 'Tvåfärgat',
+  ombre: { label: $t('Ombré'), group: $n('Tvåfärgat'),
     ...all((R) => { const b = bounds(R); fx(R, (x, y) => { const t = (y - b.y0) / b.h; return t > 0.62 || (t > 0.48 && (x + y) % 2 === 0) ? R.hair2 : null; }); }) },
-  roots: { label: 'Utväxt', group: 'Tvåfärgat',
+  roots: { label: $t('Utväxt'), group: $n('Tvåfärgat'),
     ...all((R) => { const b = bounds(R); fx(R, (x, y) => { const t = (y - b.y0) / b.h; return t < 0.22 || (t < 0.34 && (x + y) % 2 === 0) ? R.hair2 : null; }); }) },
-  split: { label: 'Halvt & halvt', group: 'Tvåfärgat', uses: ['hair2'],
+  split: { label: $t('Halvt & halvt'), group: $n('Tvåfärgat'), uses: ['hair2'],
     // personens högra halva i andra färgen: framifrån bildens vänstra, bakifrån den högra
     front(R) { fx(R, (x) => (x <= 11 ? R.hair2 : null)); },
     back(R) { fx(R, (x) => (x >= 12 ? R.hair2 : null)); },
     side(R) { if (!R.flip) fx(R, () => R.hair2); } },
-  peekaboo: { label: 'Peekaboo', group: 'Tvåfärgat', uses: ['hair2'],
+  peekaboo: { label: $t('Peekaboo'), group: $n('Tvåfärgat'), uses: ['hair2'],
     front(R) { const { eyeRow } = R; fx(R, (x, y) => ((x <= 7 || x >= 16) && y >= eyeRow - 1 ? R.hair2 : null)); },
     back(R) { const { eyeRow } = R; fx(R, (x, y) => (y >= eyeRow ? R.hair2 : null)); },
     side(R) { const { eyeRow } = R; fx(R, (x, y) => (x <= 11 && y >= eyeRow - 1 ? R.hair2 : null)); } },
-  sunkissed: { label: 'Solblekt', group: 'Tvåfärgat',
+  sunkissed: { label: $t('Solblekt'), group: $n('Tvåfärgat'),
     ...all((R) => { const b = bounds(R); fx(R, (x, y, c) => (c === R.hair.hi || ((y - b.y0) / b.h < 0.4 && nz(x, y, 17) < 22) ? R.hair2 : null)); }) },
 
-  grayTemples: { label: 'Grå tinningar', group: 'Grått',
+  grayTemples: { label: $t('Grå tinningar'), group: $n('Grått'),
     // bara vid tinningarna och ovanför öronen – långt hår blir inte grått ända ner
     front(R) { const g = GRAY(R), { h0, eyeRow } = R; fx(R, (x, y) => ((x <= 7 || x >= 16) && y >= h0 + 2 && y <= eyeRow + 1 ? g : null)); },
     back(R) { const g = GRAY(R), { h0, eyeRow } = R; fx(R, (x, y) => ((x <= 7 || x >= 16) && y >= h0 + 2 && y <= eyeRow + 1 ? g : null)); },
     side(R) { const g = GRAY(R), { h0, eyeRow } = R; fx(R, (x, y) => (y >= h0 + 2 && y <= eyeRow + 1 && x >= 8 ? g : null)); } },
-  saltPepper: { label: 'Grå­sprängt', group: 'Grått',
+  saltPepper: { label: $t('Grå­sprängt'), group: $n('Grått'),
     // även skägget blir gråsprängt
     ...all((R) => { const g = GRAY(R); fx(R, (x, y) => (nz(x, y, 23) < 32 ? g : null)); R.pattern(TAG.beard, (x, y) => (nz(x, y, 24) < 32 ? g : null)); }, { uses: [] }) },
 
-  rainbow: { label: 'Regn­båge', group: 'Färgglatt',
+  rainbow: { label: $t('Regn­båge'), group: $n('Färgglatt'),
     ...all((R) => { const b = bounds(R); fx(R, (x, y) => RAINBOW[Math.min(5, Math.floor(((y - b.y0) / (b.h + 1)) * 6))]); }, { uses: [] }) },
-  leopard: { label: 'Leopard', group: 'Färgglatt',
+  leopard: { label: $t('Leopard'), group: $n('Färgglatt'),
     ...all((R) => fx(R, (x, y) => {
       const cx = x % 5, cy = (y + 2 * Math.floor(x / 5)) % 5;
       if ((cx === 1 || cx === 2) && (cy === 1 || cy === 2)) return R.hair2;
       if ((cx === 0 || cx === 3) && (cy === 1 || cy === 2)) return R.hair.dk;
       return null;
     })) },
-  glitter: { label: 'Glitter', group: 'Färgglatt',
+  glitter: { label: $t('Glitter'), group: $n('Färgglatt'),
     ...all((R) => fx(R, (x, y) => { const n = nz(x, y, 31); return n < 6 ? 0xffffff : n < 10 ? 0xffe08a : null; }), { uses: [] }) },
 };
 

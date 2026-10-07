@@ -18,6 +18,7 @@ import { sendJob, onJob, worldMyId, worldMyKey, playersList } from './world.js';
 import { openModal, closeModal, toast, esc } from '../core/ui.js';
 import { play } from '../core/sound.js';
 import { homeOf, fmt } from '../game.js';
+import { $t } from '../core/i18n.js';
 
 export function hushOf(k1, k2) {
   const s = [String(k1), String(k2)].sort().join('|');
@@ -36,11 +37,12 @@ export const samboPartnerOnline = () => !!partner();
 // värden bjuder in någon i 👥-listan
 export function inviteSambo(p) {
   const g = A.game;
-  if (g.sambo) { toast(`🏠 Du bor redan ihop med ${g.sambo.namn}.`, 'bad'); return false; }
-  if (!p?.key) { toast('🏠 Den spelaren har en för gammal version – be hen ladda om sidan.', 'bad'); return false; }
+  if (g.sambo) { toast($t`🏠 Du bor redan ihop med ${g.sambo.namn}.`, 'bad'); return false; }
+  if (!p?.key) { toast($t('🏠 Den spelaren har en för gammal version – be hen ladda om sidan.'), 'bad'); return false; }
   pending = { to: p.id, key: p.key, until: Date.now() + 120000 };
   send({ t: 'bjud', to: p.id, namn: String(A.avatar?.name || '').slice(0, 16), hem: g.home, hyra: Math.ceil(g.homeInfo.rent / 2), full: g.homeInfo.rent });
-  toast(`🏠 Du har frågat ${p.av?.name || 'kompisen'} om ni ska flytta ihop. Väntar på svar …`, 'good');
+  const vem = p.av?.name || $t('kompisen');
+  toast($t`🏠 Du har frågat ${vem} om ni ska flytta ihop. Väntar på svar …`, 'good');
   return true;
 }
 // flytta isär (från 👥-rutan)
@@ -52,7 +54,8 @@ export function splitSambo() {
   const was = g.flyttaIsar();
   lastSent = { key: null, ver: -1, id: null };
   play('door');
-  toast(was?.roll === 'inflyttad' ? `🏠 Du flyttade isär från ${was.namn} – välkommen hem till ${homeOf(g.home).name}!` : `🏠 Ni har flyttat isär. ${was?.namn || 'Kompisen'} flyttar ut – ${homeOf(g.home).name} är ditt igen.`, 'good');
+  const hem = $t(homeOf(g.home).name), ut = was?.namn || $t('Kompisen');
+  toast(was?.roll === 'inflyttad' ? $t`🏠 Du flyttade isär från ${was.namn} – välkommen hem till ${hem}!` : $t`🏠 Ni har flyttat isär. ${ut} flyttar ut – ${hem} är ditt igen.`, 'good');
   reloadHome();
 }
 // rummet ritas om när hemmet ändrats (inte mitt i Möblera eller sömnen)
@@ -72,20 +75,21 @@ onJob((ev) => {
   const m = ev?.m;
   if (!A || m?.k !== 'sambo' || m.to !== worldMyId()) return;
   const g = A.game, from = ev.from, S = g.sambo;
-  const namn = esc(String(m.namn || 'En kompis').slice(0, 16));
+  const namn = esc(String(m.namn || $t('En kompis')).slice(0, 16));
+  const kompis = String(m.namn || $t('kompisen'));
   if (m.t === 'bjud') {
     if (S) { send({ t: 'nej', to: from, namn: A.avatar?.name, why: 'upptagen' }); return; }
     const H = homeOf(m.hem);
     play('knock');
-    openModal('🏠 Flytta ihop?', `<p style="font-size:var(--f2);margin-top:0"><b>${namn}</b> vill att du flyttar in i ${esc(H.icon)} <b>${esc(H.name)}</b>!</p>
-      <p style="font-size:var(--f2)">Ni delar hem, möbler och trädgård och kan sova där båda två. Hyran delas: <b>${fmt(m.hyra | 0)}</b> var i veckan (i stället för ${fmt(m.full | 0)}). Ditt eget hem sparas – flyttar ni isär får du tillbaka det.</p>`, [
-      { label: '🏠 Flytta in!', cls: 'btn-go', onClick: () => { closeModal(); accepted = { key: m.key, until: Date.now() + 120000 }; send({ t: 'ja', to: from, namn: String(A.avatar?.name || '').slice(0, 16) }); toast(`🏠 Du flyttar in hos ${String(m.namn || 'kompisen')} …`, 'good'); } },
-      { label: 'Nej tack', onClick: () => { closeModal(); send({ t: 'nej', to: from, namn: A.avatar?.name }); } },
+    openModal($t('🏠 Flytta ihop?'), `<p style="font-size:var(--f2);margin-top:0">${$t`<b>${namn}</b> vill att du flyttar in i ${esc(H.icon)} <b>${esc($t(H.name))}</b>!`}</p>
+      <p style="font-size:var(--f2)">${$t`Ni delar hem, möbler och trädgård och kan sova där båda två. Hyran delas: <b>${fmt(m.hyra | 0)}</b> var i veckan (i stället för ${fmt(m.full | 0)}). Ditt eget hem sparas – flyttar ni isär får du tillbaka det.`}</p>`, [
+      { label: $t('🏠 Flytta in!'), cls: 'btn-go', onClick: () => { closeModal(); accepted = { key: m.key, until: Date.now() + 120000 }; send({ t: 'ja', to: from, namn: String(A.avatar?.name || '').slice(0, 16) }); toast($t`🏠 Du flyttar in hos ${kompis} …`, 'good'); } },
+      { label: $t('Nej tack'), onClick: () => { closeModal(); send({ t: 'nej', to: from, namn: A.avatar?.name }); } },
     ]);
     return;
   }
   if (m.t === 'nej') {
-    if (pending?.to === from) { pending = null; toast(m.why === 'upptagen' ? `🏠 ${namn} bor redan ihop med någon.` : `🏠 ${namn} vill inte flytta ihop just nu.`); }
+    if (pending?.to === from) { pending = null; toast(m.why === 'upptagen' ? $t`🏠 ${namn} bor redan ihop med någon.` : $t`🏠 ${namn} vill inte flytta ihop just nu.`); }
     return;
   }
   if (m.t === 'ja') {
@@ -96,7 +100,7 @@ onJob((ev) => {
     send({ t: 'inflytt', to: from, namn: String(A.avatar?.name || '').slice(0, 16), hem: g.home, hu, snap: g.samboSnap() });
     lastSent = { key: m.key, ver: g.sambo.ver, id: from };
     play('fanfare');
-    toast(`🏠 ${namn} flyttar in hos dig! Ni delar hem och hyra – ${fmt(g.hyra)} var i veckan.`, 'good');
+    toast($t`🏠 ${namn} flyttar in hos dig! Ni delar hem och hyra – ${fmt(g.hyra)} var i veckan.`, 'good');
     return;
   }
   if (m.t === 'inflytt') {
@@ -105,7 +109,7 @@ onJob((ev) => {
     g.flyttaIhop({ key: m.key, namn: m.namn, hem: m.hem, roll: 'inflyttad', hu: m.hu, snap: m.snap });
     lastSent = { key: m.key, ver: g.sambo.ver, id: from };
     play('fanfare');
-    toast(`🏠 Välkommen hem till ${homeOf(g.home).name} – du bor nu ihop med ${String(m.namn || 'kompisen')}! Hyran: ${fmt(g.hyra)} i veckan.`, 'good');
+    toast($t`🏠 Välkommen hem till ${$t(homeOf(g.home).name)} – du bor nu ihop med ${kompis}! Hyran: ${fmt(g.hyra)} i veckan.`, 'good');
     if (A.sceneName === 'room') { A.roomSub = 0; A.go('room'); }
     return;
   }
@@ -124,7 +128,8 @@ onJob((ev) => {
     if (!S || S.key !== m.key) return;
     const was = g.flyttaIsar();
     lastSent = { key: null, ver: -1, id: null };
-    toast(was?.roll === 'inflyttad' ? `🏠 ${namn || 'Din sambo'} och du har flyttat isär – du är tillbaka i ${homeOf(g.home).name}.` : `🏠 ${String(was?.namn || 'Din sambo')} har flyttat ut. ${homeOf(g.home).name} är ditt igen.`);
+    const hem = $t(homeOf(g.home).name), dinSambo = $t('Din sambo');
+    toast(was?.roll === 'inflyttad' ? $t`🏠 ${namn || dinSambo} och du har flyttat isär – du är tillbaka i ${hem}.` : $t`🏠 ${String(was?.namn || dinSambo)} har flyttat ut. ${hem} är ditt igen.`);
     reloadHome();
   }
 });

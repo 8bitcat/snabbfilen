@@ -45,8 +45,8 @@ function assignKeys(dlg) {
   const foot = [...dlg.querySelectorAll('.dlg-foot .btn')].sort((a, b) => b.classList.contains('btn-go') - a.classList.contains('btn-go'));
   for (const el of foot) {
     if (el.dataset.key) continue;
-    const txt = el.textContent.toUpperCase(), ok = (c) => /[A-ZÅÄÖ]/.test(c) && !used.has(c);
-    const ch = txt.split(/[^A-ZÅÄÖ]+/).map((w) => w[0]).find((c) => c && ok(c)) || [...txt].find(ok);
+    const txt = el.textContent.toUpperCase(), ok = (c) => /[A-ZÅÄÖÁÀÂÃÉÈÊËÍÌÎÏÑŃÓÒÔÕŚŹŻÚÙÛÜŸÝĄĘŁ]/.test(c) && !used.has(c);
+    const ch = txt.split(/[^A-ZÅÄÖÁÀÂÃÉÈÊËÍÌÎÏÑŃÓÒÔÕŚŹŻÚÙÛÜŸÝĄĘŁ]+/).map((w) => w[0]).find((c) => c && ok(c)) || [...txt].find(ok);
     if (!ch) continue;
     used.add(ch); el.dataset.key = ch; el.insertAdjacentHTML('beforeend', ` <kbd>${ch}</kbd>`);
   }

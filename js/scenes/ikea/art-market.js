@@ -2,6 +2,7 @@
 // bord med varor, lampor i taket, växtbord, tavelvägg, pallställ och kartonger.
 import { Pix, SMALL, text, textW, mix, mul, hash, bayer } from '../../core/floor-pix.js';
 import { spriteOf, miniTag, pendant, paintPicture, paintClock } from './art.js';
+import { $t } from '../../core/i18n.js';
 
 const memo = new Map();
 const once = (key, make) => { if (!memo.has(key)) memo.set(key, make()); return memo.get(key); };
@@ -168,7 +169,7 @@ export function paintDeptWall(P, kind, x, w, fy, wy, seed = 0) {
         const c = PALS.textil[(i / 14 + seed) % PALS.textil.length];
         for (let yy = fy - 43; yy < fy - 6; yy++) for (let xx = cx + i; xx < cx + i + 12; xx++) P.px(xx, yy, mul(c, (xx - cx - i) % 3 === 0 ? 0.82 : (xx - cx - i) % 3 === 1 ? 1.05 : 0.95));
       }
-      const lbl = 'GARDIN 99:-', lw = textW(SMALL, lbl) + 4; // en lapp för hela stången
+      const lbl = $t('GARDIN 99:-'), lw = textW(SMALL, lbl) + 4; // en lapp för hela stången
       miniTag(P, cx + Math.round((cw - lw) / 2), fy - 5, lbl);
     }
   } else if (kind === 'kok') {
@@ -254,7 +255,8 @@ export function paintRacks(P, x0, x1, fy, wy, aisleStart, bw = 40, avoid = null)
     if (bay % 2 === 0) signs.push([bx + bw, aisle]);
   }
   for (const [cx, aisle] of signs) {
-    const t = `GÅNG ${aisle}`, tw = textW(SMALL, t) + 8, sx = Math.round(cx - tw / 2);
+    const t = $t`GÅNG ${aisle}`, tw =
+ textW(SMALL, t) + 8, sx = Math.round(cx - tw / 2);
     if (avoid && sx + tw > avoid[0] && sx < avoid[1]) continue;
     P.rect(sx, wy + 2, tw, 9, 0xf6cf2a); P.box(sx, wy + 2, tw, 9, 0x141414);
     text(P, SMALL, t, sx + 4, wy + 4, 0x141414);

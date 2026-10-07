@@ -18,14 +18,15 @@ import {
 import { buildPlan, DEPTS, DECOR, rowY } from './plan.js';
 import { katOf, dims, tagDims, isFlat } from './kat.js';
 import { escOff } from './art-transit.js';
+import { $t } from '../../core/i18n.js';
 
 export const SPECIAL = {
-  core1: { name: 'ENTRÉHALLEN', wall: 0x1d51a0, trim: 0x0c2a5c, paper: 'butik', wains: 0, floor: 'entre' },
-  core2: { name: 'RULLTRAPPSHALLEN', wall: 0xe9e5dc, trim: 0x1f58a8, paper: 'butik', wains: 0, floor: 'sten2' },
-  rest: { name: 'RESTAURANG', wall: 0x9a6a46, trim: 0x5e3c26, paper: 'trapanel', wains: 18, floor: 'parkett' },
-  kassa: { name: 'KASSOR', wall: 0xe4e2dc, trim: 0x1f58a8, paper: 'butik', wains: 0, floor: 'butik' },
-  exit: { name: 'UTGÅNG', wall: 0xe4e2dc, trim: 0x1f58a8, paper: 'butik', wains: 0, floor: 'butik' },
-  lager: { name: 'SJÄLVBETJÄNINGSLAGER', wall: 0xb4b8be, trim: 0x1f58a8, paper: 'plat', wains: 0, floor: 'betong' },
+  core1: { name: $t('ENTRÉHALLEN'), wall: 0x1d51a0, trim: 0x0c2a5c, paper: 'butik', wains: 0, floor: 'entre' },
+  core2: { name: $t('RULLTRAPPSHALLEN'), wall: 0xe9e5dc, trim: 0x1f58a8, paper: 'butik', wains: 0, floor: 'sten2' },
+  rest: { name: $t('RESTAURANG'), wall: 0x9a6a46, trim: 0x5e3c26, paper: 'trapanel', wains: 18, floor: 'parkett' },
+  kassa: { name: $t('KASSOR'), wall: 0xe4e2dc, trim: 0x1f58a8, paper: 'butik', wains: 0, floor: 'butik' },
+  exit: { name: $t('UTGÅNG'), wall: 0xe4e2dc, trim: 0x1f58a8, paper: 'butik', wains: 0, floor: 'butik' },
+  lager: { name: $t('SJÄLVBETJÄNINGSLAGER'), wall: 0xb4b8be, trim: 0x1f58a8, paper: 'plat', wains: 0, floor: 'betong' },
 };
 const block = (kind, IW, extra = {}) => ({ kind, name: SPECIAL[kind]?.name || kind, IW, st: SPECIAL[kind], ox: 0, items: [], rugs: [], fix: [], deco: [], ...extra });
 
@@ -126,7 +127,7 @@ function escalator(o) {
 
 // ================= plan 1 =================
 function floor1(plan) {
-  const F = { n: 1, name: 'ENTRÉPLAN', sub: 'MARKNADSHALL · LAGER · KASSOR' };
+  const F = { n: 1, name: $t('ENTRÉPLAN'), sub: $t('MARKNADSHALL · LAGER · KASSOR') };
   const core = block('core1', CORE1_W);
   const exit = block('exit', EXIT_W);
   const kassa = block('kassa', KASSA_W);
@@ -163,7 +164,8 @@ function floor1(plan) {
 
 // ================= plan 2 =================
 function floor2(plan) {
-  const F = { n: 2, name: 'UTSTÄLLNING', sub: 'INREDDA RUM · RESTAURANG' };
+  const F = { n: 2, name: $t('UTSTÄLLNING'), sub: $t('INREDDA RUM · RESTAURANG') };
+
   const core = block('core2', CORE2_W, { open: true });
   const rest = block('rest', REST_W);
   const rooms = plan.rooms.map((r) => Object.assign(r, { kind: 'room', stretch: true }));

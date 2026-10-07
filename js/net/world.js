@@ -20,6 +20,9 @@ import { cleanAvatar } from '../core/avatar.js';
 import { play } from '../core/sound.js';
 import { VERSION } from '../version.js';
 import { isBlockedKey, tvatta, loggaSay } from './skydd.js';
+import { $t } from '../core/i18n.js';
+
+const nagon = (n) => n || $t('Någon');   // spelarens namn i toasterna (inget namn → Någon)
 
 const WORLD_VERSION = 'v2';
 // ?world=xyz ger en egen liten värld (används av testerna, funkar för privata också).
@@ -201,7 +204,7 @@ function markActive() {
   lastActive = Date.now();
   if (!idle) return;
   idle = false;
-  toast('🌆 Tillbaka i Pixelstaden!', 'good');
+  toast($t('🌆 Tillbaka i Pixelstaden!'), 'good');
   if (window.SF && !W) startWorld(window.SF);
 }
 function goIdle() {
@@ -211,7 +214,7 @@ function goIdle() {
   const w = W;
   W = null;
   killPeer(w);
-  toast('💤 Du har varit borta en stund – utloggad ur världen. Rör dig så är du tillbaka!', 'wrap');
+  toast($t('💤 Du har varit borta en stund – utloggad ur världen. Rör dig så är du tillbaka!'), 'wrap');
 }
 if (typeof window !== 'undefined') {
   for (const ev of ['pointerdown', 'keydown', 'touchstart', 'wheel']) window.addEventListener(ev, markActive, { capture: true, passive: true });
@@ -318,7 +321,7 @@ function hostData(A, conn, d) {
     W.players.set(id, p);
     conn.send({ t: 'world', you: id, players: [[W.myId, myState(A)], ...[...W.players].filter(([pid]) => pid !== id)] });
     hostBroadcast({ t: 'join', id, p }, id);
-    if (!isBlockedKey(p.key)) { play('knock'); toast(`👋 ${p.av.name || 'Någon'} är i Pixelstaden!`, 'good'); }
+    if (!isBlockedKey(p.key)) { play('knock'); toast($t`👋 ${nagon(p.av.name)} är i Pixelstaden!`, 'good'); }
   } else if (d.t === 'up') {
     const old = W.players.get(id);
     if (!old) return;
@@ -345,7 +348,7 @@ function hostDrop(A, conn) {
   if (!W || W.role !== 'host') return;
   if (W.conns.get(conn.peer) !== conn) return; // redan ersatt av en nyare anslutning
   const p = W.players.get(conn.peer);
-  if (p && dropPlayer(conn.peer, false) && !isBlockedKey(p.key)) toast(`👋 ${p.av.name || 'Någon'} loggade ut.`);
+  if (p && dropPlayer(conn.peer, false) && !isBlockedKey(p.key)) toast($t`👋 ${nagon(p.av.name)} loggade ut.`);
 }
 // closeMs: stäng anslutningen lite senare (så att ett sista meddelande hinner fram, t.ex. 'replaced')
 function dropPlayer(id, quiet, closeMs = 0) {
@@ -365,7 +368,7 @@ function hostSweep(A, w) {
   for (const [id, p] of [...W.players]) {
     if (rtcDead(W.conns.get(id))) dropPlayer(id, true);
     else if (p.hb && now - (p.seen || 0) > CLIENT_SILENT_MS) dropPlayer(id, true);
-    else if (now - (p.active || p.seen || 0) > HOST_IDLE_MS) { if (dropPlayer(id, false)) toast(`💤 ${p.av.name || 'Någon'} var borta en stund och loggades ut.`); }
+    else if (now - (p.active || p.seen || 0) > HOST_IDLE_MS) { if (dropPlayer(id, false)) toast($t`💤 ${nagon(p.av.name)} var borta en stund och loggades ut.`); }
     else if (!W.conns.get(id)?.open && now - (p.seen || 0) > 15000) dropPlayer(id, true);
   }
 }
@@ -378,10 +381,10 @@ function clientData(A, d, w) {
     w.open = true; failedJoins = 0;
     w._welcomed?.();
     for (const [id, p] of d.players || []) if (id !== w.myId) w.players.set(id, cleanP(p));
-    toast(`🌆 Du är med i Pixelstaden – ${w.players.size + 1} online!`, 'good');
+    toast($t`🌆 Du är med i Pixelstaden – ${w.players.size + 1} online!`, 'good');
   } else if (d.t === 'join') {
     w.players.set(d.id, cleanP(d.p));
-    if (!isBlockedKey(w.players.get(d.id).key)) { play('knock'); toast(`👋 ${w.players.get(d.id).av.name || 'Någon'} är i Pixelstaden!`, 'good'); }
+    if (!isBlockedKey(w.players.get(d.id).key)) { play('knock'); toast($t`👋 ${nagon(w.players.get(d.id).av.name)} är i Pixelstaden!`, 'good'); }
   } else if (d.t === 'up') {
     const old = w.players.get(d.id);
     if (old) w.players.set(d.id, cleanP(d.p, old));
@@ -396,11 +399,11 @@ function clientData(A, d, w) {
     w.replaced = true;
     idle = true;
     clearTimeout(retryTimer);
-    toast('🗂️ Du spelar med samma figur i en annan flik – den här fliken är pausad. Rör den så tar den över igen.', 'wrap');
+    toast($t('🗂️ Du spelar med samma figur i en annan flik – den här fliken är pausad. Rör den så tar den över igen.'), 'wrap');
   } else if (d.t === 'leave') {
     const p = w.players.get(d.id);
     w.players.delete(d.id);
-    if (p && !d.quiet && !isBlockedKey(p.key)) toast(`👋 ${p.av.name || 'Någon'} loggade ut.`);
+    if (p && !d.quiet && !isBlockedKey(p.key)) toast($t`👋 ${nagon(p.av.name)} loggade ut.`);
   } else if (d.t === 'job') {
     if (d.m && typeof d.m === 'object') jobIn({ from: d.id, m: d.m });
   }
@@ -528,14 +531,15 @@ export function playerName(id) {
 }
 export function visitPlayer(A, id) {
   const p = W?.players.get(id);
-  if (!p) { toast('Hen loggade visst ut.', 'bad'); return false; }
+  if (!p) { toast($t('Hen loggade visst ut.'), 'bad'); return false; }
   A.game.passTime(20); // resan dit
   A.game.save();
   if (A.game.collapsed) return false;
   A.visitTarget = { id, name: p.av.name, home: p.home || 'rum', deco: p.deco || {}, hu: p.hu || '' };
   play('door');
   const h = A.game.glad ? A.game.glad(4, '', 'besok', 8) : 0;                              // att hälsa på gör en glad (högst +8 om dagen)
-  toast(`🏠 Du är hemma hos ${p.av.name || 'en kompis'}!${h ? ` +${h} 😊` : ''}`, 'good');
+  const vem = p.av.name || $t('en kompis');
+  toast(`${$t`🏠 Du är hemma hos ${vem}!`}${h ? ` +${h} 😊` : ''}`, 'good');
   A.go('visit');
   return true;
 }

@@ -46,11 +46,12 @@ import { play } from '../core/sound.js';
 import { createWalker, selfDrawable, folkDrawables, WALK_SEQ, sayBubble, iconBubble, createSpeech } from './walkable.js';
 import { worldFolksHere, worldSeatsTaken } from '../net/world.js';
 import { burgarMeny } from '../jobs/jobb-burgare.js';
+import { $t } from '../core/i18n.js';
 
 const talk = createSpeech(); // repliker och beskrivningar som pratbubblor i scenen
 // regelns två repliker (samma i alla matställen)
-const MSG_ATUPP = 'ÄT UPP FÖRST! 😋';
-const MSG_DORR = 'DU MÅSTE SÄTTA DIG OCH ÄTA UPP!';
+const MSG_ATUPP = $t('ÄT UPP FÖRST! 😋');
+const MSG_DORR = $t('DU MÅSTE SÄTTA DIG OCH ÄTA UPP!');
 
 // ======================= menyn =======================
 // Samma fyra rätter som menytavlan i serveringsjobbet och på fasaden (10:- styck,
@@ -59,13 +60,13 @@ const MSG_DORR = 'DU MÅSTE SÄTTA DIG OCH ÄTA UPP!';
 const BM = burgarMeny();
 const DISH_IX = Object.fromEntries(BM.dishes.map((d, i) => [d.id, i]));
 export const BURGAR_MENY = [
-  { id: 'burgare', icon: '🍔', name: 'Burgare', price: 25, fill: 24, energy: 6 },
-  { id: 'pommes', icon: '🍟', name: 'Pommes', price: 15, fill: 12, energy: 4 },
-  { id: 'lask', icon: '🥤', name: 'Läsk', price: 12, fill: 4, energy: 10 },
-  { id: 'glass', icon: '🍦', name: 'Glass', price: 14, fill: 8, energy: 8 },
+  { id: 'burgare', icon: '🍔', name: $t('Burgare'), price: 25, fill: 24, energy: 6 },
+  { id: 'pommes', icon: '🍟', name: $t('Pommes'), price: 15, fill: 12, energy: 4 },
+  { id: 'lask', icon: '🥤', name: $t('Läsk'), price: 12, fill: 4, energy: 10 },
+  { id: 'glass', icon: '🍦', name: $t('Glass'), price: 14, fill: 8, energy: 8 },
   // målet: alla tre klassikerna på en bricka – 5 kr billigare än var för sig
   // läsken först i listan = den står bakom på brickan (spots i trayCanvas)
-  { id: 'mal', icon: '🍔', name: 'Burgarmål (burgare, pommes, läsk)', price: 47, items: ['lask', 'burgare', 'pommes'] },
+  { id: 'mal', icon: '🍔', name: $t('Burgarmål (burgare, pommes, läsk)'), price: 47, items: ['lask', 'burgare', 'pommes'] },
 ];
 const menyOf = (id) => BURGAR_MENY.find((m) => m.id === id);
 const itemsOf = (m) => (m.items || [m.id]).map((id) => menyOf(id));
@@ -375,12 +376,12 @@ function paintWinOverlay(night) {
     P.hl(x0, WIN_T + 10, ww, CHROME.hi); P.hl(x0, WIN_T + 11, ww, CHROME.mid);
     // ÖPPET-neonet hänger i första fönstret, spegelvänd guldtext i det andra
     if (wi === 0) {
-      const M = textMask(BIG, 'ÖPPET', true), nx = midX - (M.w >> 1), ny = WIN_T + 18;
+      const M = textMask(BIG, $t('ÖPPET'), true), nx = midX - (M.w >> 1), ny = WIN_T + 18;
       for (const [a, b] of M.pts) P.ell(nx + a + 0.5, ny + b + 0.5, 3, 3, 0xff4a5a, night ? 0.16 : 0.09, 2);
       drawText(P, M, nx, ny, { fill: night ? 0xffd8dc : 0xffb8c0, out: 0xd8303a, oa: 0.6 });
       P.px(nx - 3, ny - 4, 0x3a3a40); P.px(nx + M.w + 2, ny - 4, 0x3a3a40);
     } else {
-      const M = textMask(SMALL, 'SEDAN 1955', true);
+      const M = textMask(SMALL, $t('SEDAN 1955'), true);
       drawText(P, M, midX - (M.w >> 1), WIN_T + 20, { fill: (a, b) => (b < 2 ? 0xf6e0a0 : 0xd0aa50), out: 0x5a3a14, oa: 0.7 });
     }
     // fönsterbänk med en liten kaktus
@@ -401,13 +402,13 @@ function paintZoneA(P, night) {
   }
   rowsOf(P, d0 - 6, 9, d1 - d0 + 12, [CHROME.hi, CHROME.base, CHROME.mid]);
   area(P, d0, 12, d1 - d0, DOOR.top - 14, (X, Y) => qmix(0x8e1a22, 0x5a1018, (Y - 12) / 8, X, Y, 2));
-  const hej = textMask(SMALL, 'HEJ DÅ!', true);
+  const hej = textMask(SMALL, $t('HEJ DÅ!'), true);
   drawText(P, hej, ((d0 + d1) >> 1) - (hej.w >> 1), 14, { fill: GUL, out: 0x3a1010, oa: 0.5 });
   // UT-skylten i två kedjor
   const ux = ((d0 + d1) >> 1) - 8;
   P.px(ux + 2, 6, 0x6a6a6a); P.px(ux + 14, 6, 0x6a6a6a);
   P.rect(ux, 2, 17, 8, 0x1a2a1e); P.box(ux, 2, 17, 8, 0x0e1812);
-  text(P, SMALL, 'UT', ux + 5, 4, 0x6fe08a);
+  text(P, SMALL, $t('UT'), ux + 5, 4, 0x6fe08a);
   P.ell(ux + 8.5, 6, 12, 6, 0x6fe08a, 0.12, 2);
   P.hl(d0, WALL_Y - 1, d1 - d0, 0x2a1e18);
   // väggen mellan fönstren: vinylskiva; efter fönstren: inramad bil + skivor
@@ -450,7 +451,7 @@ function paintBoard(P) {
     if ((j - 2) % 4 === 3) c = 0x32303a;                       // de räfflade listerna
     return c;
   });
-  const title = textMask(SMALL, 'MENY');
+  const title = textMask(SMALL, $t('MENY'));
   drawText(P, title, x0 + ((w - title.w) >> 1), y0 + 2, { fill: GUL });
   for (let x = x0 + 4; x < x1 - 4; x += 2) P.px(x, y0 + 8, 0xd83a4e, 0.8);
   BM.dishes.forEach((d, i) => {
@@ -459,7 +460,7 @@ function paintBoard(P) {
     drawText(P, pm, c.x + 1, c.y + 16, { fill: GUL });
   });
   // MÅL-raden längst ner
-  const mm = textMask(SMALL, 'MÅL 25:-');
+  const mm = textMask(SMALL, $t('MÅL 25:-'));
   drawText(P, mm, x0 + ((w - mm.w) >> 1), y1 - 8, { fill: 0xff9ac0 });
 }
 
@@ -481,7 +482,7 @@ function paintHatch(P) {
   const mx = (x0 + x1) >> 1;
   P.hl(x0 + 2, y0 + 3, x1 - x0 - 4, 0xeef3f6); P.hl(x0 + 2, y0 + 4, x1 - x0 - 4, 0x98a2ae);
   P.rect(mx - 11, y0, 22, 9, INK); P.box(mx - 11, y0, 22, 9, 0xd0aa50);
-  text(P, SMALL, 'KÖK', mx - 5, y0 + 2, GUL);
+  text(P, SMALL, $t('KÖK'), mx - 5, y0 + 2, GUL);
   for (const [lx, lh] of [[x0 + 6, 7], [x0 + 17, 6], [x0 + 42, 8], [x1 - x0 - 44 + x0, 6], [x1 - x0 - 30 + x0, 8], [x1 - x0 - 16 + x0, 6]]) {
     P.rect(lx, y0 + 5, 7, lh, 0xfffdf4); P.hl(lx, y0 + 5 + lh, 7, 0xc8c2b2);
     for (let r = y0 + 7; r < y0 + 4 + lh; r += 2) P.hl(lx + 1, r, 3 + ((r + lx) % 3), 0x8a8478);
@@ -531,7 +532,7 @@ function paintBackCounter(P) {
   const sx = 274;
   P.rect(sx, 50, 34, 16, 0xb8c2cc); P.hl(sx, 50, 34, 0xe8eef2); P.vl(sx + 33, 51, 15, 0x6a747e);
   P.rect(sx + 3, 51, 28, 7, 0x17301f); P.box(sx + 3, 51, 28, 7, 0xd0aa50);
-  text(P, SMALL, 'SODA', sx + 9, 52, 0x6fe08a);
+  text(P, SMALL, $t('SODA'), sx + 9, 52, 0x6fe08a);
   for (let k = 0; k < 3; k++) {
     const x = sx + 6 + k * 9;
     P.rect(x, 59, 3, 3, [0xc0262e, 0x3a7bd5, 0xe0a030][k]); P.px(x, 59, WHITE);
@@ -582,14 +583,14 @@ function paintCounter() {
   P.rect(rx + 5, CNT.top - 14, 11, 3, 0x2a3a2a);
   P.vl(rx + 22, CNT.top - 8, 5, CHROME.dk); P.px(rx + 23, CNT.top - 8, 0x3a2a1a); P.px(rx + 23, CNT.top - 7, 0xfaf0d0);
   // JOBBA HÄR-skylten (tältskylt på disken)
-  const jm = textMask(SMALL, 'JOBBA HÄR');
+  const jm = textMask(SMALL, $t('JOBBA HÄR'));
   const jx = JOBB_SKYLT.x - (jm.w >> 1);
   P.rect(jx - 3, CNT.top - 10, jm.w + 6, 10, 0x17301f);
   P.box(jx - 3, CNT.top - 10, jm.w + 6, 10, 0xd0aa50);
   P.hl(jx - 2, CNT.top - 9, jm.w + 4, 0xf6e0a0, 0.5);
   drawText(P, jm, jx, CNT.top - 7, { fill: (a, b) => (b < 2 ? 0xf6e0a0 : 0xd0aa50), shadow: 0x06100a, sa: 0.9 });
   // BESTÄLL HÄR på fronten vid kassan
-  const bm = textMask(SMALL, 'BESTÄLL HÄR');
+  const bm = textMask(SMALL, $t('BESTÄLL HÄR'));
   P.rect(REG.x0 - 8, CNT.face + 3, bm.w + 8, 9, INK);
   P.box(REG.x0 - 8, CNT.face + 3, bm.w + 8, 9, CHROME.mid);
   drawText(P, bm, REG.x0 - 4, CNT.face + 5, { fill: CREAM });
@@ -642,7 +643,7 @@ function paintGlassdisk() {
   P.rect(kx - 1, gt - 1, 11, 2, CHROME.base);
   spr(P, x0 + 3, gt - 8, ['.p.', 'nGn', '.g.', '.k.', 'kKk'], { p: 0xff88bb, n: 0xd4fae6, G: 0x7fdcae, g: 0x3fae7a, k: 0xb8742c, K: 0xecb466 });
   // GLASS-skylten
-  const gm = textMask(SMALL, 'GLASS');
+  const gm = textMask(SMALL, $t('GLASS'));
   P.rect(x0 + ((w - gm.w) >> 1) - 3, gt - 16, gm.w + 6, 9, 0x2a1a2e);
   P.box(x0 + ((w - gm.w) >> 1) - 3, gt - 16, gm.w + 6, 9, 0xff88bb);
   drawText(P, gm, x0 + ((w - gm.w) >> 1), gt - 14, { fill: 0xffd0e4 });
@@ -820,7 +821,7 @@ function paintBin() {
   });
   P.rect(0, 2, 16, 3, 0x8e1a22); P.hl(0, 2, 16, 0xd83a4e);
   P.rect(3, 0, 10, 3, 0x6a141c); P.hl(3, 0, 10, 0xa8222c);        // vipplocket
-  const tm = textMask(SMALL, 'TACK');
+  const tm = textMask(SMALL, $t('TACK'));
   drawText(P, tm, 1, 9, { fill: CREAM });
   outline(P);
   return { img: P.flush(), ox: 8, oy: 21 };
@@ -895,7 +896,7 @@ function paintBg(night) {
   paintBackCounter(P);
   paintClockFace(P);
   // neonskylten BURGARE i kursivt gult över glassdisken/jukeboxen
-  const neon = textMask(BIG, 'BURGARE'), nx = 540, ny = 14;
+  const neon = textMask(BIG, $t('BURGARE')), nx = 540, ny = 14;
   for (const [a, b] of neon.pts) P.ell(nx + a + 0.5, ny + b + 0.5, 3.2, 3.2, 0xffb030, night ? 0.14 : 0.08, 2);
   drawText(P, neon, nx, ny, { fill: 0xfff0d8, out: 0xe8912a, oa: 0.55 });
   P.hl(nx - 2, ny + 9, neon.w + 4, 0x6a6a6a, 0.6);
@@ -945,7 +946,7 @@ function paintDoorFrames(N = 6) {
   S.vl(w - 6, 24, 12, CHROME.base); S.vl(w - 5, 24, 12, CHROME.lo); S.px(w - 6, 24, CHROME.hi);
   // skylten på glaset – baksidan säger VÄLKOMMEN ÅTER
   area(S, 4, 14, 21, 8, (X, Y, i, j) => (i === 0 || j === 0 || i === 20 || j === 7 ? 0x8a1a20 : 0xf4ecd8));
-  text(S, SMALL, 'ÅTER!', 6, 16, 0xb82a30);
+  text(S, SMALL, $t('ÅTER!'), 6, 16, 0xb82a30);
   S.line(8, 14, 14, 9, 0x6a5a4a); S.line(20, 14, 14, 9, 0x6a5a4a);
   const frames = [];
   for (let k = 0; k < N; k++) {
@@ -967,7 +968,7 @@ function paintDoorFrames(N = 6) {
 
 // notpixlarna (stiger från jukeboxen) och gästernas repliker
 const NOTE = [[1, 0], [2, 0], [3, 1], [1, 1], [1, 2], [1, 3], [0, 3], [0, 4], [1, 4]];
-const LINES = ['Bästa burgaren i stan!', 'Milkshaken är extra krämig i dag.', 'Jukeboxen spelar vår låt!', 'Pommesen är nyfriterad - akta, het!', 'Jag tar alltid burgarmålet.', 'Extra ketchup, tack!', 'Glassen smälter, skynda dig!', 'Shoo-bi-doo-wah!', 'Femtiotalet är bäst, punkt slut.'];
+const LINES = [$t('Bästa burgaren i stan!'), $t('Milkshaken är extra krämig i dag.'), $t('Jukeboxen spelar vår låt!'), $t('Pommesen är nyfriterad - akta, het!'), $t('Jag tar alltid burgarmålet.'), $t('Extra ketchup, tack!'), $t('Glassen smälter, skynda dig!'), $t('Shoo-bi-doo-wah!'), $t('Femtiotalet är bäst, punkt slut.')];
 
 // ======================= scenen =======================
 export function makeShopBurgarbar(A) {
@@ -1130,7 +1131,7 @@ export function makeShopBurgarbar(A) {
     walker.walkTo(s.ax, s.ay, () => {
       if (s.occ && s.occ !== 'me') {
         const alt = pickSeat();
-        if (!alt) { me.state = me.tray ? 'carry' : 'free'; talk.say('😕 Alla platser är upptagna!', meAt); return; }
+        if (!alt) { me.state = me.tray ? 'carry' : 'free'; talk.say($t('😕 Alla platser är upptagna!'), meAt); return; }
         goSit(alt); return;
       }
       sitDown(s);
@@ -1147,10 +1148,10 @@ export function makeShopBurgarbar(A) {
 
   // ---------- köpet ----------
   function buy(m) {
-    if (!m) return { ok: false, msg: 'Det finns inte på menyn.' };
-    if (me.state === 'wait' || me.state === 'toCounter') return { ok: false, msg: 'Doris fixar redan din beställning!' };
-    if (me.tray) return { ok: false, msg: 'Ät upp det du har på brickan först!' };
-    if (g.money < m.price) return { ok: false, msg: 'Du har inte råd!' };
+    if (!m) return { ok: false, msg: $t('Det finns inte på menyn.') };
+    if (me.state === 'wait' || me.state === 'toCounter') return { ok: false, msg: $t('Doris fixar redan din beställning!') };
+    if (me.tray) return { ok: false, msg: $t('Ät upp det du har på brickan först!') };
+    if (g.money < m.price) return { ok: false, msg: $t('Du har inte råd!') };
     if (me.state === 'sit') standUp();
     release();
     g.money -= m.price;
@@ -1164,7 +1165,7 @@ export function makeShopBurgarbar(A) {
     const atCounter = Math.abs(walker.py - ORDER_Y) < 6 && Math.abs(walker.px - PAY_X) < 30 && !walker.path.length;
     if (atCounter) order();
     else { me.state = 'toCounter'; walker.walkTo(PAY_X, ORDER_Y, order); }
-    talk.say(`🍔 Ska bli! ${fmt(m.price)}, tack!`, () => ({ x: kass.x, y: KASS_Y - 44 }));
+    talk.say($t`🍔 Ska bli! ${fmt(m.price)}, tack!`, () => ({ x: kass.x, y: KASS_Y - 44 }));
     return { ok: true, price: m.price, fill: fillOf(m), energy: energyOf(m) };
   }
 
@@ -1174,14 +1175,14 @@ export function makeShopBurgarbar(A) {
       const its = itemsOf(m);
       return `<div class="prow" style="grid-template-columns:84px 1fr auto;${m.id === 'mal' ? 'background:#fff8d6' : ''}">
         <canvas data-ic="${i}" width="40" height="16" style="width:80px;height:32px;image-rendering:pixelated;background:#e8dcc4;border:2px solid #17151a"></canvas>
-        <span class="nm">${m.icon} ${m.name}${m.id === 'mal' ? ' <b style="color:#c9323a">★ SPARA 5 KR</b>' : ''}<br><small class="sp">+${fillOf(m)} mättnad · +${energyOf(m)} energi ${its.length > 1 ? '· tre saker på brickan' : ''}</small></span>
+        <span class="nm">${m.icon} ${m.name}${m.id === 'mal' ? ` <b style="color:#c9323a">${$t('★ SPARA 5 KR')}</b>` : ''}<br><small class="sp">${$t`+${fillOf(m)} mättnad · +${energyOf(m)} energi`} ${its.length > 1 ? $t('· tre saker på brickan') : ''}</small></span>
         <button class="btn btn-small btn-go" data-buy="${i}" data-key="${i + 1}" ${g.money < m.price ? 'disabled' : ''}>🍔 ${fmt(m.price)} <kbd>${i + 1}</kbd></button>
       </div>`;
     }).join('');
-    const body = `<p style="font-size:var(--f2);margin:0 0 8px">💰 <b>${fmt(g.money)}</b> · 🍽️ Mättnad <b>${Math.round(g.hunger)}</b>/100 · ⚡ Energi <b>${Math.round(g.energy)}</b>/100</p>
+    const body = `<p style="font-size:var(--f2);margin:0 0 8px">💰 <b>${fmt(g.money)}</b> · 🍽️ ${$t`Mättnad <b>${Math.round(g.hunger)}</b>/100`} · ⚡ ${$t`Energi <b>${Math.round(g.energy)}</b>/100`}</p>
       <div class="plist">${rows}</div>
-      <p style="font-size:var(--f1);margin:10px 0 0;color:#6d6660">Du får en bricka och sätter dig vid ett ledigt bord. Mättnaden och energin kommer medan du äter – bara när du sitter!</p>`;
-    const dlg = openModal('🍔 Burgarbaren – vad får det lov att vara?', body, [{ label: 'Nej tack', onClick: closeModal }]);
+      <p style="font-size:var(--f1);margin:10px 0 0;color:#6d6660">${$t('Du får en bricka och sätter dig vid ett ledigt bord. Mättnaden och energin kommer medan du äter – bara när du sitter!')}</p>`;
+    const dlg = openModal($t('🍔 Burgarbaren – vad får det lov att vara?'), body, [{ label: $t('Nej tack'), onClick: closeModal }]);
     dlg.querySelectorAll('canvas[data-ic]').forEach((cv) => {
       const x = cv.getContext('2d'); x.imageSmoothingEnabled = false;
       const m = BURGAR_MENY[+cv.dataset.ic], its = itemsOf(m);
@@ -1198,20 +1199,20 @@ export function makeShopBurgarbar(A) {
   function openJobs() {
     if (me.order) { nag(MSG_ATUPP); return; }   // ingen smiter in på ett pass med maten kvar
     const bj = JOBS.burgare, kj = JOBS.kok;
-    const body = `<p style="font-size:var(--f2);margin-top:0"><b>Vi behöver folk – välj ditt pass!</b></p>
+    const body = `<p style="font-size:var(--f2);margin-top:0"><b>${$t('Vi behöver folk – välj ditt pass!')}</b></p>
       <div class="plist">
-      <div class="prow" style="grid-template-columns:1fr auto"><span class="nm">🍽️ <b>Servera</b><br><small class="sp">${bj.verb}. ${bj.wage} kr per rätt, −${bj.oops} kr per fel.</small></span>
-        <button class="btn btn-small btn-go" data-jobb="burgare">🍽️ Servera</button></div>
-      <div class="prow" style="grid-template-columns:1fr auto"><span class="nm">👨‍🍳 <b>Jobba i köket</b><br><small class="sp">${kj ? `${kj.verb}. ${kj.wage} kr per rätt, −${kj.oops} kr per fel.` : 'Bygg rätterna som beställs – grillen väntar!'}</small></span>
-        <button class="btn btn-small btn-go" data-jobb="kok">👨‍🍳 Köket</button></div>
+      <div class="prow" style="grid-template-columns:1fr auto"><span class="nm">🍽️ <b>${$t('Servera')}</b><br><small class="sp">${$t`${bj.verb}. ${bj.wage} kr per rätt, −${bj.oops} kr per fel.`}</small></span>
+        <button class="btn btn-small btn-go" data-jobb="burgare">🍽️ ${$t('Servera')}</button></div>
+      <div class="prow" style="grid-template-columns:1fr auto"><span class="nm">👨‍🍳 <b>${$t('Jobba i köket')}</b><br><small class="sp">${kj ? $t`${kj.verb}. ${kj.wage} kr per rätt, −${kj.oops} kr per fel.` : $t('Bygg rätterna som beställs – grillen väntar!')}</small></span>
+        <button class="btn btn-small btn-go" data-jobb="kok">👨‍🍳 ${$t('Köket')}</button></div>
       </div>
-      <p style="font-size:var(--f1);margin:10px 0 0;color:#6d6660">Ett pass tar 4 timmar. Chefen betalar direkt efter passet.</p>`;
-    const dlg = openModal('🍔 Jobba på Burgarbaren?', body, [{ label: 'En annan gång', onClick: closeModal }]);
+      <p style="font-size:var(--f1);margin:10px 0 0;color:#6d6660">${$t('Ett pass tar 4 timmar. Chefen betalar direkt efter passet.')}</p>`;
+    const dlg = openModal($t('🍔 Jobba på Burgarbaren?'), body, [{ label: $t('En annan gång'), onClick: closeModal }]);
     dlg.querySelectorAll('[data-jobb]').forEach((b) => (b.onclick = () => {
       const id = b.dataset.jobb;
       closeModal();
       if (me.order) { nag(MSG_ATUPP); return; }
-      if (id === 'kok' && !JOBS.kok) { talk.say('👨‍🍳 Köket öppnar för nyanställda alldeles strax – fråga igen snart!', () => ({ x: kass.x, y: KASS_Y - 44 })); play('click'); return; }
+      if (id === 'kok' && !JOBS.kok) { talk.say($t('👨‍🍳 Köket öppnar för nyanställda alldeles strax – fråga igen snart!'), () => ({ x: kass.x, y: KASS_Y - 44 })); play('click'); return; }
       A.startJob(id);
     }));
   }
@@ -1221,13 +1222,13 @@ export function makeShopBurgarbar(A) {
     play('box');
     musicT = t + 6;
     for (let i = 0; i < 3; i++) note(JUKE.x - 4 + i * 4, JUKE.y - 38);
-    talk.say('🎵 Shoo-bi-doo-wah! Jukeboxen snurrar igång en riktig femtiotalsdänga.', { x: JUKE.x, y: JUKE.y - 48 });
+    talk.say($t('🎵 Shoo-bi-doo-wah! Jukeboxen snurrar igång en riktig femtiotalsdänga.'), { x: JUKE.x, y: JUKE.y - 48 });
   }
   function gumball() {
-    if (g.money < 1) { talk.say('🍬 En krona för en kula … det har jag inte ens.', meAt); return; }
+    if (g.money < 1) { talk.say($t('🍬 En krona för en kula … det har jag inte ens.'), meAt); return; }
     g.money -= 1; g.hunger = c100(g.hunger + 1); g.save();
     play('coin');
-    talk.say(['🍬 En röd tuggummikula!', '🍬 En gul tuggummikula!', '🍬 En grön – min turfärg!'][(Math.random() * 3) | 0], meAt);
+    talk.say([$t('🍬 En röd tuggummikula!'), $t('🍬 En gul tuggummikula!'), $t('🍬 En grön – min turfärg!')][(Math.random() * 3) | 0], meAt);
   }
   const hot = [
     { id: 'dorr', r: [DOOR.x0 - 3, DOOR.top - 12, DOOR.x1 + 3, WALL_Y + 10], go: () => DOOR_SPOT, act: () => { play('door'); A.go('city'); } },
@@ -1380,7 +1381,7 @@ export function makeShopBurgarbar(A) {
         me.tray = { items: trays[k].items };
         trays.splice(k, 1);
         me.state = 'carry';
-        if (!me.hintGiven) { me.hintGiven = true; talk.say('🍔 Klicka på ett ledigt bord eller bås så sätter jag mig där!', meAt); }
+        if (!me.hintGiven) { me.hintGiven = true; talk.say($t('🍔 Klicka på ett ledigt bord eller bås så sätter jag mig där!'), meAt); }
       }
     }
     // säkerhetsnät om gång-callbacken uteblev: sätt dig BARA om figuren faktiskt
@@ -1411,7 +1412,7 @@ export function makeShopBurgarbar(A) {
         // brickan försvinner FÖRST när allt är uppätet
         if (me.doneT > 0 && t - me.doneT > 1.2 && me.tray.items.every((i) => i.stage >= 2)) {
           me.tray = null; me.order = null; me.doneT = -9;
-          talk.say('😋 MUMS! Precis vad jag behövde.', meAt);
+          talk.say($t('😋 MUMS! Precis vad jag behövde.'), meAt);
         }
       } else if (me.sitT > 14) standUp();   // vilar utan mat: res dig efter en stund
     }
@@ -1811,7 +1812,7 @@ export function makeShopBurgarbar(A) {
     down(sx, sy) {
       const x = sx + cam.x, y = sy;
       if (me.state === 'wait' || me.state === 'toCounter') {
-        if (t - me.waitMsgT > 2) { talk.say('🍔 Doris gör i ordning din beställning …', meAt); me.waitMsgT = t; }
+        if (t - me.waitMsgT > 2) { talk.say($t('🍔 Doris gör i ordning din beställning …'), meAt); me.waitMsgT = t; }
         return;
       }
       // dörrens yta – även golvet precis framför den (där dörren slår upp)
@@ -1819,13 +1820,13 @@ export function makeShopBurgarbar(A) {
       if (me.state === 'carry') {
         const s = seatAt(x, y);
         if (s && !s.occ) { goSit(s); play('click'); return; }
-        if (s && s.occ) { if (t - me.waitMsgT > 2) { talk.say('😕 Där sitter någon redan!', meAt); me.waitMsgT = t; } return; }
+        if (s && s.occ) { if (t - me.waitMsgT > 2) { talk.say($t('😕 Där sitter någon redan!'), meAt); me.waitMsgT = t; } return; }
         const h = spotAt(x, y);
         // med brickan i händerna kommer man inte ut – och disken, jobbet och menyn får vänta
         if ((h && h.id === 'dorr') || atDoor(x, y)) { nag(MSG_DORR); return; }
         if (h && (h.id === 'disk' || h.id === 'glassdisk' || h.id === 'jobb')) { nag(MSG_ATUPP); return; }
         if (y > WALL_Y) { release(); walker.walkTo(x, y); return; }  // golvklick = ångra platsvalet
-        if (t - me.waitMsgT > 2.5) { talk.say('🍔 Klicka på ett ledigt bord så sätter jag mig där.', meAt); me.waitMsgT = t; }
+        if (t - me.waitMsgT > 2.5) { talk.say($t('🍔 Klicka på ett ledigt bord så sätter jag mig där.'), meAt); me.waitMsgT = t; }
         return;
       }
       if (me.state === 'sit' && me.tray) {
@@ -1884,9 +1885,9 @@ export function makeShopBurgarbar(A) {
       // skylt i nederkanten när man pekar på något klickbart
       ctx.setTransform(A.pxs, 0, 0, A.pxs, 0, 0);
       const h = hoverId && t - hoverT < 3 ? hoverId : null;
-      const label = h === 'disk' ? 'MENYN - KLICKA PÅ DISKEN' : h === 'glassdisk' ? 'GLASSDISKEN - KLICKA FÖR MENYN'
-        : h === 'dorr' ? (me.order ? 'ÄT UPP MATEN FÖRST - SEN KAN DU GÅ UT' : 'GÅ UT') : h === 'jobb' ? 'JOBBA HÄR - SERVERA ELLER KÖKET'
-          : h === 'jukebox' ? 'JUKEBOXEN - SPELA EN LÅT' : h === 'gumball' ? 'TUGGUMMIKULA - 1 KR' : null;
+      const label = h === 'disk' ? $t('MENYN - KLICKA PÅ DISKEN') : h === 'glassdisk' ? $t('GLASSDISKEN - KLICKA FÖR MENYN')
+        : h === 'dorr' ? (me.order ? $t('ÄT UPP MATEN FÖRST - SEN KAN DU GÅ UT') : $t('GÅ UT')) : h === 'jobb' ? $t('JOBBA HÄR - SERVERA ELLER KÖKET')
+          : h === 'jukebox' ? $t('JUKEBOXEN - SPELA EN LÅT') : h === 'gumball' ? $t('TUGGUMMIKULA - 1 KR') : null;
       if (label) {
         const w = textW(SMALL, label) + 10;
         ctx.fillStyle = '#17151a'; ctx.fillRect((VW - w) >> 1, H - 14, w, 11);

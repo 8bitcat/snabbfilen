@@ -7,6 +7,7 @@
 // att omladdningen sker när det passar (aldrig mitt i ett arbetspass eller en dialog).
 import { VERSION, TITLE } from '../version.js';
 import { openModal, modalOpen, toast, esc } from './ui.js';
+import { $t } from './i18n.js';
 
 const SEEN_KEY = 'snabbfilen_seen_version';
 const BACKUPS_KEY = 'snabbfilen_backups';
@@ -84,8 +85,8 @@ export function makeBackup(label) {
 function restoreBackup(entry) {
   let data;
   try { data = JSON.parse(ls.get(entry.key) || 'null'); } catch { data = null; }
-  if (!data) { toast('Säkerhetskopian gick inte att läsa.', 'bad'); return; }
-  makeBackup(`före återställning (v${VERSION})`);
+  if (!data) { toast($t('Säkerhetskopian gick inte att läsa.'), 'bad'); return; }
+  makeBackup($t`före återställning (v${VERSION})`);
   for (const k of ls.keys()) if (isDataKey(k)) ls.del(k);
   for (const [k, v] of Object.entries(data)) ls.set(k, v);
   ss.set('sf_restored', entry.label);
@@ -96,7 +97,7 @@ function restoreBackup(entry) {
 // kopiera sparningen innan den nya koden läser den.
 const seen = ls.get(SEEN_KEY);
 if (seen !== VERSION) {
-  if (ls.get('snabbfilen_save1')) makeBackup(seen ? `från v${seen}` : 'före versionshanteringen');
+  if (ls.get('snabbfilen_save1')) makeBackup(seen ? $t`från v${seen}` : $t('före versionshanteringen'));
   ls.set(SEEN_KEY, VERSION);
 }
 
@@ -123,16 +124,16 @@ const fmtDate = (iso) => { try { return new Date(iso).toLocaleString('sv-SE', { 
 function newsHtml(list) {
   const rel = list.map((r) => `
     <section class="${r.version === VERSION ? 'nu' : ''}">
-      <h3><span class="ver">v${esc(r.version)}</span> ${inline(r.title)}${r.version === VERSION ? ' <span class="du">← du spelar den här</span>' : ''}</h3>
+      <h3><span class="ver">v${esc(r.version)}</span> ${inline(r.title)}${r.version === VERSION ? ` <span class="du">${$t('← du spelar den här')}</span>` : ''}</h3>
       <div class="datum">${esc(r.date)}</div>
       <ul>${r.items.map((i) => `<li>${inline(i)}</li>`).join('')}</ul>
     </section>`).join('');
   const backups = listBackups().slice().reverse();
   const bk = backups.length ? `
     <section class="backup">
-      <h3>💾 Säkerhetskopior av din sparning</h3>
-      <div class="datum">Tas automatiskt när spelet uppdateras. Återställ bara om något har blivit fel.</div>
-      <ul>${backups.map((b) => `<li>${esc(fmtDate(b.date))} – ${esc(b.label)} <button class="btn btn-small" data-restore="${esc(b.key)}">Återställ</button></li>`).join('')}</ul>
+      <h3>${$t('💾 Säkerhetskopior av din sparning')}</h3>
+      <div class="datum">${$t('Tas automatiskt när spelet uppdateras. Återställ bara om något har blivit fel.')}</div>
+      <ul>${backups.map((b) => `<li>${esc(fmtDate(b.date))} – ${esc(b.label)} <button class="btn btn-small" data-restore="${esc(b.key)}">${$t('Återställ')}</button></li>`).join('')}</ul>
     </section>` : '';
   return `<div class="nyheter">${rel}${bk}</div>`;
 }
@@ -144,14 +145,14 @@ export async function openNews() {
     if (res.ok) list = parseChangelog(await res.text()).slice(0, SHOW_RELEASES);
   } catch { /* offline – visa det vi vet */ }
   if (!list.length) list = [{ version: VERSION, date: '', title: TITLE, items: [] }];
-  const dlg = openModal('Nyheter i Snabbfilen', newsHtml(list));
+  const dlg = openModal($t('Nyheter i Snabbfilen'), newsHtml(list));
   for (const b of dlg.querySelectorAll('[data-restore]')) {
     b.onclick = () => {
       const entry = listBackups().find((x) => x.key === b.dataset.restore);
       if (!entry) return;
-      openModal('Återställa sparningen?', `<p>Spelet går tillbaka till hur det var <b>${esc(fmtDate(entry.date))}</b> (${esc(entry.label)}).</p><p>Det du har nu sparas först som en egen säkerhetskopia, så du kan ångra dig.</p>`, [
-        { label: 'Avbryt', onClick: () => openNews() },
-        { label: 'Återställ', cls: 'btn-go', onClick: () => restoreBackup(entry) },
+      openModal($t('Återställa sparningen?'), `<p>${$t`Spelet går tillbaka till hur det var <b>${esc(fmtDate(entry.date))}</b> (${esc(entry.label)}).`}</p><p>${$t('Det du har nu sparas först som en egen säkerhetskopia, så du kan ångra dig.')}</p>`, [
+        { label: $t('Avbryt'), onClick: () => openNews() },
+        { label: $t('Återställ'), cls: 'btn-go', onClick: () => restoreBackup(entry) },
       ]);
     };
   }
@@ -164,7 +165,7 @@ function mountButton() {
   const b = document.createElement('button');
   b.id = 'hud-version';
   b.className = 'btn btn-small hud-version';
-  b.title = 'Nyheter – vad är nytt i spelet?';
+  b.title = $t('Nyheter – vad är nytt i spelet?');
   b.textContent = 'v' + VERSION;
   b.onclick = () => openNews();
   host.prepend(b);
@@ -182,11 +183,11 @@ const T_START = Date.now();
 const atStart = () => !typing() && (document.body.classList.contains('menu-open') || (!window.SF?.game && Date.now() - T_START < 20000));
 function blocker() {
   const SF = window.SF;
-  if (typing()) return 'du skrivit klart';
+  if (typing()) return $t('Spelet sparas och laddas om när du skrivit klart.');
   if (pending?.critical) return null;
-  if ((SF?.sceneName || '').startsWith('jobb')) return 'passet är slut';
-  if (modalOpen()) return 'du stängt rutan';
-  if (document.querySelector('#decor-panel:not(.hidden)')) return 'du möblerat klart';
+  if ((SF?.sceneName || '').startsWith('jobb')) return $t('Spelet sparas och laddas om när passet är slut.');
+  if (modalOpen()) return $t('Spelet sparas och laddas om när du stängt rutan.');
+  if (document.querySelector('#decor-panel:not(.hidden)')) return $t('Spelet sparas och laddas om när du möblerat klart.');
   return null;
 }
 
@@ -194,17 +195,18 @@ function showBanner() {
   if (!banner) {
     banner = document.createElement('div');
     banner.id = 'sf-update';
-    banner.innerHTML = '<span class="txt"></span><button class="btn btn-small btn-go">Ladda om nu</button>';
+    banner.innerHTML = `<span class="txt"></span><button class="btn btn-small btn-go">${$t('Ladda om nu')}</button>`;
     banner.querySelector('button').onclick = () => reloadNow();
     document.body.append(banner);
   }
   // appen hämtar paketet: läget står kvar i rutan (nedräkningen skrev annars över det varje sekund)
-  if (reloading) { banner.querySelector('.txt').innerHTML = `⬇️ Hämtar v${esc(pending.version)} …`; return; }
+  if (reloading) { banner.querySelector('.txt').innerHTML = $t`⬇️ Hämtar v${esc(pending.version)} …`; return; }
   const why = blocker();
-  const head = `✨ ${APP ? 'Pixelcity' : 'Snabbfilen'} v${esc(pending.version)} har kommit${pending.title ? ': ' + esc(pending.title) : ''}!`;   // (appen heter Pixelcity)
+  const spel = APP ? 'Pixelcity' : $t('Snabbfilen');
+  const head = pending.title ? $t`✨ ${spel} v${esc(pending.version)} har kommit: ${esc(pending.title)}!` : $t`✨ ${spel} v${esc(pending.version)} har kommit!`;   // (appen heter Pixelcity)
   banner.querySelector('.txt').innerHTML = why
-    ? `${head} <span class="sub">Spelet sparas och laddas om när ${why}.</span>`
-    : `${head} <span class="sub">Sparar och laddar om om ${countdown} s – allt du har är kvar.</span>`;
+    ? `${head} <span class="sub">${why}</span>`
+    : `${head} <span class="sub">${$t`Sparar och laddar om om ${countdown} s – allt du har är kvar.`}</span>`;
 }
 
 // Frågar service workern vilken version den har (null = ingen / svarar inte)
@@ -253,7 +255,7 @@ async function reloadNow() {
   if (!pending.atStart) ss.set('sf_quiet_start', '1'); // efter omladdningen: rakt tillbaka in, ingen veckoruta (från startmenyn: menyn igen)
   window.dispatchEvent(new Event('sf:before-reload')); // andra moduler (t.ex. djuren) sparar sig
   try { window.SF?.game?.save(); } catch { /* spelet sparar ändå regelbundet */ }
-  if (banner) banner.querySelector('.txt').innerHTML = `⬇️ Hämtar v${esc(v)} …`;
+  if (banner) banner.querySelector('.txt').innerHTML = $t`⬇️ Hämtar v${esc(v)} …`;
   if (APP) { await bytPaket(v); return; }
   try { await prefetchNew(); } catch { /* ladda om ändå */ }
   location.reload();
@@ -262,10 +264,10 @@ async function reloadNow() {
 // (digest) för varje releasefil; api.github.com svarar med CORS för alla ursprung
 async function paketSumma(v) {
   const r = await fetch(`https://api.github.com/repos/8bitcat/snabbfilen/releases/tags/v${v}`, { cache: 'no-store' });
-  if (!r.ok) throw new Error(`releasen v${v} finns inte än`);
+  if (!r.ok) throw new Error($t`releasen v${v} finns inte än`);
   const a = ((await r.json()).assets || []).find((x) => x.name === `pixelcity-${v}.zip`);
   const m = /^sha256:([0-9a-f]{64})$/.exec(a?.digest || '');
-  if (!m) throw new Error('paketet finns inte på releasen än');
+  if (!m) throw new Error($t('paketet finns inte på releasen än'));
   return m[1];
 }
 // appen: ladda ner paketet och byt till det (set() laddar om i det nya paketet – inget efter körs).
@@ -275,11 +277,11 @@ async function bytPaket(v) {
     const checksum = await paketSumma(v);
     const b = await Promise.race([
       APP.download({ url: PAKET(v), version: v, checksum }),
-      new Promise((_, nej) => setTimeout(() => nej(new Error('nedladdningen tog för lång tid')), 120000)),
+      new Promise((_, nej) => setTimeout(() => nej(new Error($t('nedladdningen tog för lång tid'))), 120000)),
     ]);
     await APP.set({ id: b.id });
   } catch (e) {
-    toast(`Kunde inte hämta v${esc(v)} just nu – försöker igen om en stund. (${esc(String(e?.message || e).slice(0, 90))})`, 'wrap');
+    toast($t`Kunde inte hämta v${esc(v)} just nu – försöker igen om en stund. (${esc(String(e?.message || e).slice(0, 90))})`, 'wrap');
     const fel = +(ss.get('sf_app_fel_' + v) || 0) + 1;
     ss.set('sf_app_fel_' + v, String(fel));
     ss.del('sf_upd_tries_' + v); ss.del('sf_upd_target'); ss.del('sf_quiet_start');
@@ -324,11 +326,11 @@ async function checkForUpdate() {
 function afterReload() {
   const target = ss.get('sf_upd_target');
   const restored = ss.get('sf_restored');
-  if (restored) { ss.del('sf_restored'); setTimeout(() => toast(`Sparningen återställd (${restored}).`, 'good wrap'), 1200); }
+  if (restored) { ss.del('sf_restored'); setTimeout(() => toast($t`Sparningen återställd (${restored}).`, 'good wrap'), 1200); }
   if (!target) return;
   if (target === VERSION) {
     ss.del('sf_upd_target');
-    setTimeout(() => toast(`Uppdaterat till v${VERSION}! Allt du hade är kvar.`, 'good wrap'), 1200);
+    setTimeout(() => toast($t`Uppdaterat till v${VERSION}! Allt du hade är kvar.`, 'good wrap'), 1200);
   }
 }
 
@@ -341,7 +343,7 @@ function registerServiceWorker() {
 mountButton();
 afterReload();
 if (seen && seen !== VERSION && !ss.get('sf_upd_target')) {
-  setTimeout(() => toast(`Nytt i v${VERSION}: ${TITLE}!`, 'good wrap'), 2500);
+  setTimeout(() => toast($t`Nytt i v${VERSION}: ${TITLE}!`, 'good wrap'), 2500);
   document.getElementById('hud-version')?.classList.add('ny');
 }
 registerServiceWorker();

@@ -21,6 +21,7 @@ import { isBlockedKey } from './skydd.js';
 import { onJob, sendJob, onCall, worldPeer, worldMyId, worldFolksHere, worldPlayer, worldMyKey, playersList, setVoiceHooks, worldMarkActive, playerName } from './world.js';
 import { toast } from '../core/ui.js';
 import { setDuck } from '../core/rec.js';
+import { $t } from '../core/i18n.js';
 
 const NEAR_IN = 140, NEAR_OUT = 190, FULL = 40; // spelpixlar: kopplas in / ut, full volym inom
 const TICK_MS = 150;         // nivåerna (vem pratar) – länkarna ses över varannan gång
@@ -44,7 +45,7 @@ const emit = () => { for (const f of S.listeners) { try { f(); } catch (e) { con
 export const onVoiceChange = (f) => { S.listeners.add(f); return () => S.listeners.delete(f); };
 export const onVoiceInvite = (f) => { S.inviteCb = f; };
 export const voiceSupported = () => typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getUserMedia && typeof RTCPeerConnection !== 'undefined';
-const nameOf = (id) => playerName(id) || worldPlayer(id)?.av?.name || 'Någon';
+const nameOf = (id) => playerName(id) || worldPlayer(id)?.av?.name || $t('Någon');
 const keyOf = (id) => worldPlayer(id)?.key || null;
 
 // ---------- ljudet ----------
@@ -78,12 +79,12 @@ function level(m) {
 }
 async function ensureMic() {
   if (S.stream) return true;
-  if (!voiceSupported()) { toast('🎙️ Den här webbläsaren kan inte skicka röst 😕', 'bad'); return false; }
+  if (!voiceSupported()) { toast($t('🎙️ Den här webbläsaren kan inte skicka röst 😕'), 'bad'); return false; }
   audio(); // skapas medan klicket fortfarande gäller (iPhone)
   try {
     S.stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }, video: false });
   } catch (e) {
-    toast(e?.name === 'NotAllowedError' ? '🎙️ Mikrofonen är blockerad – tillåt den för sidan i webbläsaren.' : '🎙️ Hittade ingen mikrofon.', 'bad');
+    toast(e?.name === 'NotAllowedError' ? $t('🎙️ Mikrofonen är blockerad – tillåt den för sidan i webbläsaren.') : $t('🎙️ Hittade ingen mikrofon.'), 'bad');
     return false;
   }
   for (const t of S.stream.getAudioTracks()) t.enabled = !S.micMuted;
@@ -196,7 +197,7 @@ function tick() {
         else if (now - L.idleSince > LINGER_MS) { dropLink(id); changed = true; }
       }
     }
-    for (const [id, s] of [...S.sent]) if (now > s.until) { S.sent.delete(id); toast(`🎙️ ${nameOf(id)} svarade inte på inbjudan.`); changed = true; }
+    for (const [id, s] of [...S.sent]) if (now > s.until) { S.sent.delete(id); toast($t`🎙️ ${nameOf(id)} svarade inte på inbjudan.`); changed = true; }
     // den som pratar i röstchatten står inte still: räkna det som aktivitet (annars loggas man ut)
     if (S.links.size && now - S.keepAt > 20000) { S.keepAt = now; try { worldMarkActive(); } catch { /* ok */ } }
     if (changed) emit();
@@ -238,18 +239,18 @@ onJob((ev) => {
     S.sent.delete(from);
     if (fromKey) S.group.keys.add(fromKey);
     broadcastMembers();
-    toast(`🎙️ ${namn} gick med i röstgruppen!`, 'good');
+    toast($t`🎙️ ${namn} gick med i röstgruppen!`, 'good');
     emit();
   } else if (m.t === 'nej') {
     if (m.to !== me) return;
-    if (S.sent.delete(from)) { toast(`🎙️ ${namn} tackade nej till röstgruppen.`); emit(); }
+    if (S.sent.delete(from)) { toast($t`🎙️ ${namn} tackade nej till röstgruppen.`); emit(); }
   } else if (m.t === 'med') {
     if (!S.group || gid !== S.group.gid || !fromKey || !S.group.keys.has(fromKey)) return; // bara från en medlem
     const mine = worldMyKey();
     for (const k of (Array.isArray(m.keys) ? m.keys : []).slice(0, 24)) if (typeof k === 'string' && k && k !== mine) S.group.keys.add(k.slice(0, 40));
     emit();
   } else if (m.t === 'lamna') {
-    if (S.group && gid === S.group.gid && fromKey && S.group.keys.delete(fromKey)) { toast(`🎙️ ${namn} lämnade röstgruppen.`); emit(); }
+    if (S.group && gid === S.group.gid && fromKey && S.group.keys.delete(fromKey)) { toast($t`🎙️ ${namn} lämnade röstgruppen.`); emit(); }
   }
 });
 async function joinGroup(from, gid) {
@@ -258,7 +259,7 @@ async function joinGroup(from, gid) {
   const k = keyOf(from);
   S.group = { gid, keys: new Set(k ? [k] : []) };
   sendJob({ k: 'voice', t: 'ja', to: from, gid });
-  toast('🎙️ Du är med i röstgruppen – ni hörs överallt i stan!', 'good');
+  toast($t('🎙️ Du är med i röstgruppen – ni hörs överallt i stan!'), 'good');
   emit();
   return true;
 }
@@ -268,11 +269,11 @@ export async function setNara(on) {
   if (on) {
     if (!(await ensureMic())) return false;
     S.nara = true;
-    toast('🎙️ Rösten är på – de som står nära och också har rösten på hör dig.', 'good');
+    toast($t('🎙️ Rösten är på – de som står nära och också har rösten på hör dig.'), 'good');
   } else {
     S.nara = false;
     releaseMicIfUnused();
-    toast('🎙️ Rösten i närheten är av.');
+    toast($t('🎙️ Rösten i närheten är av.'));
   }
   emit();
   return S.nara;
@@ -283,11 +284,11 @@ export async function createGroup() {
   return true;
 }
 export async function inviteToGroup(toId) {
-  if (!worldPeer()) { toast('📡 Du är inte uppkopplad mot världen än – vänta en stund.', 'bad'); return false; }
+  if (!worldPeer()) { toast($t('📡 Du är inte uppkopplad mot världen än – vänta en stund.'), 'bad'); return false; }
   if (!(await createGroup())) return false;
   S.sent.set(toId, { gid: S.group.gid, until: Date.now() + INVITE_MS });
   sendJob({ k: 'voice', t: 'bjud', to: toId, gid: S.group.gid, namn: String(S.A?.avatar?.name || '').slice(0, 16) });
-  toast(`🎙️ Inbjudan skickad till ${nameOf(toId)}.`, 'good');
+  toast($t`🎙️ Inbjudan skickad till ${nameOf(toId)}.`, 'good');
   emit();
   return true;
 }
@@ -297,7 +298,7 @@ export function leaveGroup(quiet = false) {
   S.group = null;
   S.sent.clear();
   releaseMicIfUnused();
-  if (!quiet) toast('🎙️ Du lämnade röstgruppen.');
+  if (!quiet) toast($t('🎙️ Du lämnade röstgruppen.'));
   emit();
 }
 export function toggleMic() {
@@ -319,7 +320,7 @@ export function voiceState() {
   return {
     supported: voiceSupported(), nara: S.nara, mic: !!S.stream, micMuted: S.micMuted,
     talkingSelf: !!S.stream && now < S.talkSelfUntil,
-    group: S.group ? { gid: S.group.gid, members: [...S.group.keys].map((k) => { const p = byKey.get(k); return { key: k, id: p?.id || null, name: p?.av?.name || 'Borta', online: !!p }; }) } : null,
+    group: S.group ? { gid: S.group.gid, members: [...S.group.keys].map((k) => { const p = byKey.get(k); return { key: k, id: p?.id || null, name: p?.av?.name || $t('Borta'), online: !!p }; }) } : null,
     sent: [...S.sent.keys()].map((id) => ({ id, name: nameOf(id) })),
     links: [...S.links.values()].map((L) => ({ id: L.id, name: nameOf(L.id), nara: !!L.why?.nara, grupp: !!L.why?.grupp, got: L.got, vol: +L.target.toFixed(2), talking: L.talkUntil > now, hushed: isHushed(L.id) })),
   };

@@ -111,8 +111,9 @@ export class Pix {
 }
 
 // ---------- Typsnitt ----------
-// Glyfer: rader uppifrån, '#' = tänd. Rader före versalhöjden (prickar/ring) anges med 'up'.
-const g = (rows, up = []) => ({ rows, up, w: rows[0].length });
+// Glyfer: rader uppifrån, '#' = tänd. Rader före versalhöjden (prickar/ring) anges med 'up',
+// rader under baslinjen (cedilj, ogonek) med 'down'.
+const g = (rows, up = [], down = []) => ({ rows, up, down, w: Math.max(rows[0].length, ...up.map((r) => r.length), ...down.map((r) => r.length)) });
 
 export const SMALL = {
   h: 5,
@@ -169,18 +170,69 @@ export const BIG = {
   '&': g(['.##..', '#..#.', '.##..', '.#...', '#.#.#', '#..#.', '.##.#']),
 };
 
+// ---------- accenter för de andra språken (2026-10-07: engelska, spanska, tyska, franska, polska,
+// italienska, portugisiska) ----------
+// Versalerna byggs av grundbokstaven + ett märke ovanför (akut, grav, cirkumflex, trema, tilde, prick)
+// eller under (cedilj, ogonek). Märket ritas för bokstavens bredd (3, 4 eller 5 pixlar).
+export const MARKS = {
+  small: {
+    acute: { 3: ['..#'], 4: ['..#.'], 5: ['...#.'] }, grave: { 3: ['#..'], 4: ['.#..'], 5: ['.#...'] },
+    circ: { 3: ['.#.', '#.#'], 4: ['.##.', '#..#'], 5: ['..#..', '.#.#.'] }, uml: { 3: ['#.#'], 4: ['#..#'], 5: ['.#.#.'] },
+    tilde: { 3: ['.##', '##.'], 4: ['.#.#', '#.#.'], 5: ['.#..#', '#.##.'] }, dot: { 3: ['.#.'], 4: ['.#..'], 5: ['..#..'] },
+    cedil: { 3: ['.#.'], 4: ['.#..'], 5: ['..#..'] }, ogonek: { 3: ['..#'], 4: ['...#'], 5: ['....#'] },
+  },
+  big: {
+    acute: { 3: ['..#', '.#.'], 4: ['..#.', '.#..'], 5: ['...#.', '..#..'] }, grave: { 3: ['#..', '.#.'], 4: ['.#..', '..#.'], 5: ['.#...', '..#..'] },
+    circ: { 3: ['.#.', '#.#'], 4: ['.##.', '#..#'], 5: ['..#..', '.#.#.'] }, uml: { 3: ['#.#', '...'], 4: ['#..#', '....'], 5: ['.#.#.', '.....'] },
+    tilde: { 3: ['.##', '##.'], 4: ['.#.#', '#.#.'], 5: ['.##.#', '#.##.'] }, dot: { 3: ['.#.', '...'], 4: ['.#..', '....'], 5: ['..#..', '.....'] },
+    cedil: { 3: ['.#.', '##.'], 4: ['.#..', '##..'], 5: ['..#..', '.##..'] }, ogonek: { 3: ['.#.', '..#'], 4: ['..#.', '...#'], 5: ['...#.', '....#'] },
+  },
+};
+export const ACCENTED = {
+  acute: 'ÁÉÍÓÚĆŃŚŹÝ', grave: 'ÀÈÌÒÙ', circ: 'ÂÊÎÔÛ', uml: 'ËÏÜŸ', tilde: 'ÃÕÑ', dot: 'Ż', cedil: 'Ç', ogonek: 'ĄĘ',
+};
+const BASE = (ch) => ch.normalize('NFD')[0];
+function addAccents(F, marks) {
+  for (const [kind, chars] of Object.entries(ACCENTED)) for (const ch of chars) {
+    if (F[ch]) continue;                                                    // finns redan (É, Å, Ä, Ö)
+    const b = F[BASE(ch)];
+    if (!b) continue;
+    const m = marks[kind][Math.min(5, Math.max(3, b.rows[0].length))];
+    F[ch] = kind === 'cedil' || kind === 'ogonek' ? g(b.rows, b.up || [], m) : g(b.rows, m, b.down || []);
+  }
+}
+addAccents(SMALL, MARKS.small);
+addAccents(BIG, MARKS.big);
+// bokstäver som inte är grundbokstav + märke, och skiljetecken som behövs i översättningarna
+Object.assign(SMALL, {
+  'Ł': g(['.#..', '.#..', '.##.', '##..', '.###']), 'Œ': g(['.####', '#.#..', '#.##.', '#.#..', '.####']), 'Æ': g(['.####', '#.#..', '####.', '#.#..', '#.###']),
+  '¡': g(['#', '.', '#', '#', '#']), '¿': g(['.#.', '...', '.#.', '#..', '.##']), '"': g(['#.#', '#.#', '...', '...', '...']),
+  '(': g(['.#', '#.', '#.', '#.', '.#']), ')': g(['#.', '.#', '.#', '.#', '#.']), '€': g(['.##', '#..', '##.', '#..', '.##']),
+  '$': g(['.##', '##.', '.#.', '.##', '##.']),
+});
+Object.assign(BIG, {
+  'Ł': g(['.#...', '.#...', '.#.#.', '.##..', '##...', '.#...', '.####']),
+  'Œ': g(['.####', '#.#..', '#.#..', '#.###', '#.#..', '#.#..', '.####']), 'Æ': g(['.####', '#.#..', '#.#..', '#####', '#.#..', '#.#..', '#.###']),
+  '¡': g(['#', '.', '#', '#', '#', '#', '#']), '¿': g(['..#..', '.....', '..#..', '.#...', '#....', '#...#', '.###.']),
+  '"': g(['#.#', '#.#', '...', '...', '...', '...', '...']), '(': g(['..#', '.#.', '#..', '#..', '#..', '.#.', '..#']), ')': g(['#..', '.#.', '..#', '..#', '..#', '.#.', '#..']),
+  '€': g(['..###', '.#...', '####.', '.#...', '####.', '.#...', '..###']), '$': g(['..#..', '.####', '#.#..', '.###.', '..#.#', '####.', '..#..']),
+});
+// typografiska tecken → de som finns i pixeltypsnitten
+const ALIAS = { '’': "'", '‘': "'", '´': "'", '“': '"', '”': '"', '„': '"', '«': '"', '»': '"', '–': '-', '—': '-', ' ': ' ', ' ': ' ' };
+const norm = (s) => String(s).replace(/…/g, '...').toUpperCase().replace(/[’‘´“”„«»–—  ]/g, (c) => ALIAS[c]);
+
 const glyph = (F, ch) => F[ch] || F[ch.toUpperCase()] || F['?'];
 export function textW(F, s, scale = 1) {
   let w = 0;
-  for (const ch of String(s).toUpperCase()) w += glyph(F, ch).w + 1;
+  for (const ch of norm(s)) w += glyph(F, ch).w + 1;
   return Math.max(0, w - 1) * scale;
 }
 // Ritar text med övre vänstra hörnet av versalhöjden i (x, y). fn(x, y) anropas per tänd pixel.
 export function eachTextPixel(F, s, x, y, scale, fn) {
   let cx = Math.round(x);
-  for (const ch of String(s).toUpperCase()) {
+  for (const ch of norm(s)) {
     const G = glyph(F, ch);
-    const rows = [...G.up, ...G.rows], y0 = Math.round(y) - G.up.length * scale;
+    const rows = [...G.up, ...G.rows, ...(G.down || [])], y0 = Math.round(y) - G.up.length * scale;
     rows.forEach((row, j) => {
       for (let i = 0; i < row.length; i++) if (row[i] === '#')
         for (let sy = 0; sy < scale; sy++) for (let sx = 0; sx < scale; sx++) fn(cx + i * scale + sx, y0 + j * scale + sy);

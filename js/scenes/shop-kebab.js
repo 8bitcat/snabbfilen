@@ -52,27 +52,28 @@ import { fmt, SAVE_KEY } from '../game.js';
 import { play } from '../core/sound.js';
 import { createWalker, selfDrawable, folkDrawables, WALK_SEQ, sayBubble, sayLines, createSpeech } from './walkable.js';
 import { worldFolksHere, worldSeatsTaken } from '../net/world.js';
+import { $t } from '../core/i18n.js';
 
 // regelns två repliker (samma i alla matställen)
-const MSG_ATUPP = 'ÄT UPP FÖRST! 😋';
-const MSG_DORR = 'DU MÅSTE SÄTTA DIG OCH ÄTA UPP!';
-const MENU_TITLE = '🥙 Kebab Grill – vad blir det?';
+const MSG_ATUPP = $t('ÄT UPP FÖRST! 😋');
+const MSG_DORR = $t('DU MÅSTE SÄTTA DIG OCH ÄTA UPP!');
+const MENU_TITLE = $t('🥙 Kebab Grill – vad blir det?');
 
 // ======================= menyn =======================
 // fill = mättnad, energy = energi, bites = antal tuggor. Mättnaden och energin delas ut
 // TUGGA FÖR TUGGA medan man sitter och äter (fill/bites per tugga – heltal), aldrig vid
 // köpet. main = huvudrätt (en rulle per beställning; pommes och läsk kan läggas till).
 export const KEBAB_MENY = [
-  { id: 'kebab', icon: '🥙', name: 'Kebabrulle', board: 'KEBAB', price: 45, fill: 56, energy: 8, bites: 4, main: true },
-  { id: 'falafel', icon: '🧆', name: 'Falafelrulle', board: 'FALAFEL', price: 40, fill: 48, energy: 12, bites: 4, main: true },
-  { id: 'pommes', icon: '🍟', name: 'Pommes', board: 'POMMES', price: 25, fill: 21, energy: 3, bites: 3 },
-  { id: 'lask', icon: '🥤', name: 'Läsk', board: 'LÄSK', price: 15, fill: 4, energy: 12, bites: 2 },
+  { id: 'kebab', icon: '🥙', name: $t('Kebabrulle'), board: $t('KEBAB'), price: 45, fill: 56, energy: 8, bites: 4, main: true },
+  { id: 'falafel', icon: '🧆', name: $t('Falafelrulle'), board: $t('FALAFEL'), price: 40, fill: 48, energy: 12, bites: 4, main: true },
+  { id: 'pommes', icon: '🍟', name: $t('Pommes'), board: $t('POMMES'), price: 25, fill: 21, energy: 3, bites: 3 },
+  { id: 'lask', icon: '🥤', name: $t('Läsk'), board: $t('LÄSK'), price: 15, fill: 4, energy: 12, bites: 2 },
 ];
 // den eviga frågan vid disken
 export const KEBAB_SASER = [
-  { id: 'vitlok', icon: '🧄', name: 'Vitlök', say: 'vitlökssås' },
-  { id: 'stark', icon: '🌶️', name: 'Stark', say: 'stark sås' },
-  { id: 'mix', icon: '🥫', name: 'Mix', say: 'mixsås' },
+  { id: 'vitlok', icon: '🧄', name: $t('Vitlök'), say: $t('vitlökssås') },
+  { id: 'stark', icon: '🌶️', name: $t('Stark'), say: $t('stark sås') },
+  { id: 'mix', icon: '🥫', name: $t('Mix'), say: $t('mixsås') },
 ];
 const menyOf = (id) => KEBAB_MENY.find((m) => m.id === id);
 const sasOf = (id) => KEBAB_SASER.find((s) => s.id === id) || KEBAB_SASER[2];
@@ -93,8 +94,8 @@ const fillOf = (list) => list.reduce((a, m) => a + m.fill, 0);
 const energyOf = (list) => list.reduce((a, m) => a + m.energy, 0);
 // "en kebabrulle med vitlökssås, pommes och en läsk"
 function orderText(list, sauce) {
-  const names = list.map((m) => (m.main ? `en ${m.id === 'kebab' ? 'kebabrulle' : 'falafelrulle'} med ${sasOf(sauce).say}` : m.id === 'lask' ? 'en läsk' : 'pommes'));
-  return names.length < 2 ? names[0] || '' : names.slice(0, -1).join(', ') + ' och ' + names[names.length - 1];
+  const names = list.map((m) => (m.main ? (m.id === 'kebab' ? $t`en kebabrulle med ${sasOf(sauce).say}` : $t`en falafelrulle med ${sasOf(sauce).say}`) : m.id === 'lask' ? $t('en läsk') : $t('pommes')));
+  return names.length < 2 ? names[0] || '' : $t`${names.slice(0, -1).join(', ')} och ${names[names.length - 1]}`;
 }
 
 // ======================= mått (världskoordinater) =======================
@@ -486,7 +487,7 @@ function paintOutside(P, night) {
     return night ? mul(c, 0.35) : jit(c, X, Y, 18, 0.06);
   });
   O.rect(160, 20, 22, 7, 0xf4efe2); O.box(160, 20, 22, 7, 0xc8302a);
-  text(O, SMALL, 'LIVS', 164, 21, 0xc8302a);
+  text(O, SMALL, $t('LIVS'), 164, 21, 0xc8302a);
   if (night) O.ell(171, 23, 14, 6, 0xfff4d0, 0.25, 3);
   O.rect(158, 29, 30, 8, night ? 0xe8c878 : 0x3a4a58); if (!night) O.hl(158, 29, 30, 0x7a9ab0);
   // björkarna i gräsremsan
@@ -533,7 +534,7 @@ function paintWinOverlay(night) {
   });
   P.rect(mid - 1, t, 3, wh, ALU.base); P.vl(mid - 1, t, wh, ALU.hi); P.vl(mid + 1, t, wh, ALU.lo);
   // GRILL-neonet baklänges i högra rutan (R:et är dött – som på fasaden)
-  const M = textMask(BIG, 'GRILL', true), nx = ((mid + x1) >> 1) - (M.w >> 1), ny = t + 10;
+  const M = textMask(BIG, $t('GRILL'), true), nx = ((mid + x1) >> 1) - (M.w >> 1), ny = t + 10;
   const dead = (a) => a >= M.w - 11 && a < M.w - 5; // R:et (andra bokstaven) sitter spegelvänt här
   for (const [a, bb] of M.pts) if (!dead(a)) P.ell(nx + a + 0.5, ny + bb + 0.5, 3, 3, CYAN, night ? 0.16 : 0.08, 2);
   drawText(P, M, nx, ny, { fill: (a) => (dead(a) ? 0x5a6a70 : night ? 0xd8fcff : 0x9af4ff), out: 0x1a8aa8, oa: 0.55 });
@@ -554,7 +555,7 @@ function paintWinOverlay(night) {
       P.px(x, sy + sag + j, c);
     }
   }
-  const tm = textMask(SMALL, 'BETONG IF'), tx = ((sx0 + sx1) >> 1) - (tm.w >> 1);
+  const tm = textMask(SMALL, $t('BETONG IF')), tx = ((sx0 + sx1) >> 1) - (tm.w >> 1);
   P.rect(tx - 2, sy + 3, tm.w + 4, 6, 0x2a5ab8);
   drawText(P, tm, tx, sy + 3, { fill: 0xf4efe2 });
   for (const fx of [sx0, sx1]) for (let k = -1; k <= 1; k++) P.vl(fx + k * 2, sy + 5, 4, k & 1 ? 0xf0c020 : 0x2a5ab8);
@@ -694,7 +695,7 @@ function paintFridge(open) {
   const P = new Pix(w + 8, h + 1);
   area(P, 0, 0, w, h, (X, Y, i, j) => (i === 0 ? RODA.hi : i === w - 1 ? RODA.dk : j === h - 1 ? RODA.dk : jit(RODA.base, X, Y, 50, 0.05)));
   P.rect(2, 2, w - 4, 7, 0xf8f4ea); P.box(2, 2, w - 4, 7, RODA.lo);
-  text(P, SMALL, 'LÄSK', ((w - textW(SMALL, 'LÄSK')) >> 1), 3, RODA.base);
+  text(P, SMALL, $t('LÄSK'), ((w - textW(SMALL, $t('LÄSK'))) >> 1), 3, RODA.base);
   // insidan: hyllor med burkar och flaskor
   const gx0 = 3, gx1 = w - 3, gy0 = 11, gy1 = h - 6;
   area(P, gx0, gy0, gx1 - gx0, gy1 - gy0, (X, Y) => (open ? 0xe8f4fa : 0x9ab8c8));
@@ -736,7 +737,7 @@ function paintMenuBox(dim) {
     return 0xfaf6ea;
   });
   area(P, 2, 2, w - 4, 7, (X, Y, i, j) => (j === 6 ? RODA.lo : jit(RODA.base, X, Y, 51, 0.04)));
-  const tm = textMask(SMALL, 'KEBAB GRILL');
+  const tm = textMask(SMALL, $t('KEBAB GRILL'));
   drawText(P, tm, (w - tm.w) >> 1, 3, { fill: 0xfff8e8 });
   const F = P.flush(), c2 = F.getContext('2d');
   KEBAB_MENY.forEach((m, k) => {
@@ -748,7 +749,7 @@ function paintMenuBox(dim) {
       return off ? mix(mul(c, 0.6), 0x6a6a70, 0.35) : c;
     });
     if (k < 3) Q.vl(PW, 0, 33, ALU.mid);                                      // listen mellan rutorna
-    const nm = textMask(SMALL, m.board), pr = textMask(SMALL, m.price + ':-');
+    const nm = textMask(SMALL, m.board), pr = textMask(SMALL, $t`${m.price}:-`);
     drawText(Q, nm, Math.max(0, (PW - nm.w) >> 1), 21, { fill: off ? 0x5a3a36 : 0x8a1a14 });
     drawText(Q, pr, (PW - pr.w) >> 1, 27, { fill: off ? 0x3a3a3a : 0x1a1a1a });
     c2.drawImage(Q.flush(), px, 9);
@@ -782,7 +783,7 @@ function paintCounter() {
   P.vl(x0, CNT.top, CNT.y - CNT.top, STEEL.dk); P.vl(x1 - 1, CNT.top, CNT.y - CNT.top, STEEL.dk);
   // skavanker och klistermärken: KORT OK och ett halvt bortrivet
   P.hl(x0 + 60, CNT.y - 3, 9, 0x8a8e96); P.hl(x0 + 140, CNT.y - 2, 6, 0x8a8e96);
-  const km = textMask(SMALL, 'KORT OK'), kx = REG.x0 + 2;
+  const km = textMask(SMALL, $t('KORT OK')), kx = REG.x0 + 2;
   P.rect(kx - 2, CNT.face + 7, km.w + 4, 7, 0xf8f6ee); P.hl(kx - 2, CNT.face + 7, km.w + 4, 0x3a7bd5);
   drawText(P, km, kx, CNT.face + 8, { fill: 0x1a3a8a });
   P.rect(x0 + 18, CNT.face + 7, 9, 6, 0xf0d040); P.erase(x0 + 23, CNT.face + 10, 4, 3); P.px(x0 + 22, CNT.face + 10, 0xd8b030);
@@ -897,7 +898,7 @@ function paintSlot() {
     return jit(j < 8 ? 0x3a1e52 : 0x2a1a3a, X, Y, 80, 0.05);
   });
   P.rect(3, 2, w - 6, 5, 0xf0c020); P.hl(3, 2, w - 6, 0xfff080);
-  text(P, SMALL, 'SPEL', ((w - textW(SMALL, 'SPEL')) >> 1), 2, 0x8a1a14);
+  text(P, SMALL, $t('SPEL'), ((w - textW(SMALL, $t('SPEL'))) >> 1), 2, 0x8a1a14);
   // rullarna: sju, körsbär, sju
   P.rect(3, 10, w - 6, 12, 0x0e0e14); P.hl(3, 10, w - 6, 0x6a4a8a);
   const SYM = [['rrr', '..r', '.r.', '.r.', '.r.'], ['..g', '.g.', 'g.g', 'r.r', 'rrr'], ['rrr', '..r', '.r.', '.r.', '.r.']];
@@ -909,7 +910,7 @@ function paintSlot() {
   P.hl(3, 16, w - 6, 0xff3a3a, 0.45);                                                   // vinstlinjen
   // lappen: TRASIG, tejpad
   P.rect(1, 23, w - 2, 8, 0xfaf6e0); P.hl(1, 23, w - 2, 0xe8e0c0);
-  text(P, SMALL, 'TRASIG', 2, 24, 0x1a1a8a);
+  text(P, SMALL, $t('TRASIG'), 2, 24, 0x1a1a8a);
   P.rect(0, 22, 3, 2, 0xd8d8c8, 0.9); P.rect(w - 3, 22, 3, 2, 0xd8d8c8, 0.9);
   for (let k = 0; k < 4; k++) P.rect(4 + k * 5, 33, 3, 2, [0xd8302a, 0xf0c020, 0x46a35a, 0x3a7bd5][k]);
   P.rect(w - 6, 28, 2, 4, 0x1a1a1e);                                                    // myntinkastet
@@ -922,7 +923,7 @@ function paintBin() {
   area(P, 1, 4, 16, 16, (X, Y, i, j) => (j === 15 ? 0x3a4038 : jit(i < 3 ? 0x8a9486 : i > 12 ? 0x4e584c : 0x6a7466, X, Y, 81, 0.06)));
   P.rect(0, 2, 18, 3, 0x5a6456); P.hl(0, 2, 18, 0x9aa496);
   P.rect(4, 0, 10, 3, 0x4a5448); P.hl(4, 0, 10, 0x8a9486);
-  text(P, SMALL, 'TACK', 2, 9, 0xe8ecd8);
+  text(P, SMALL, $t('TACK'), 2, 9, 0xe8ecd8);
   P.px(6, 1, 0xf4efe2); P.px(7, 1, 0xd8d2c4); P.px(11, 2, 0xd8302a); P.vl(11, 5, 3, 0xa8281e, 0.7); // en servett och ett såsspår
   outline(P);
   return { img: P.flush(), ox: 9, oy: 20 };
@@ -1145,7 +1146,7 @@ function paintDoorFrames(N = 6) {
   S.rect(3, 30, w - 6, 3, ALU.base); S.hl(3, 30, w - 6, ALU.hi); S.hl(3, 32, w - 6, ALU.lo);  // tryckbommen
   // ÖPPET-skylten i ett snöre (baksidan säger VÄLKOMMEN)
   area(S, 5, 10, w - 10, 8, (X, Y, i, j) => (i === 0 || j === 0 || i === w - 11 || j === 7 ? 0x8a1a20 : 0xf6f2e4));
-  const om = textMask(SMALL, 'ÖPPET', true);
+  const om = textMask(SMALL, $t('ÖPPET'), true);
   drawText(S, om, ((w - om.w) >> 1), 12, { fill: 0xc8302a });
   S.line(8, 10, 14, 5, 0x6a5a4a); S.line(w - 9, 10, 14, 5, 0x6a5a4a);
   S.rect(4, 38, 8, 5, 0xf0c020); S.px(5, 39, 0x1a1a1a); S.px(10, 41, 0x1a1a1a);            // ett gammalt klistermärke
@@ -1173,11 +1174,11 @@ const img = (k, fn) => (IMG[k] ||= fn());
 
 // notpixlar (radion) används inte här – men pratbubblornas repliker gör:
 const LINES = [
-  'Bästa såsen i hela förorten!', 'Mixsås. Alltid mix.', 'Grillen funkar igen, äntligen!', 'Jag käkar här varje fredag.',
-  'Pommesen är krispiga i dag.', 'Såg du matchen? Vilken straff!', 'Extra stark sås, tack!', 'Den här rullen väger ett kilo.',
-  'Vitlökssås ... i morgon luktar jag.', 'Deniz är en legend.', 'Stängt? Här? Aldrig.', 'Läsken är iskall i alla fall.',
+  $t('Bästa såsen i hela förorten!'), $t('Mixsås. Alltid mix.'), $t('Grillen funkar igen, äntligen!'), $t('Jag käkar här varje fredag.'),
+  $t('Pommesen är krispiga i dag.'), $t('Såg du matchen? Vilken straff!'), $t('Extra stark sås, tack!'), $t('Den här rullen väger ett kilo.'),
+  $t('Vitlökssås ... i morgon luktar jag.'), $t('Deniz är en legend.'), $t('Stängt? Här? Aldrig.'), $t('Läsken är iskall i alla fall.'),
 ];
-const CHEER = ['MÅÅÅL!', 'JAAA! MÅL!', 'Vilken smäll!', 'Betong IF!'];
+const CHEER = [$t('MÅÅÅL!'), $t('JAAA! MÅL!'), $t('Vilken smäll!'), $t('Betong IF!')];
 
 // ======================= scenen =======================
 export function makeShopKebab(A) {
@@ -1258,7 +1259,7 @@ export function makeShopKebab(A) {
   const cook = { x: PAY_X - 8, y: COOK_FRONT, tx: PAY_X - 8, ty: COOK_FRONT, dir: 'down', walking: false, phase: 'idle', t: 0, idleT: 2, job: null, steps: [], si: 0, act: null, face: 'down' };
   const jobs = [];   // beställningar som väntar: { who, items, x, sauce, bag }
   const trays = [];  // färdig mat PÅ DISKEN: { x, who, items, bag, at }
-  const COOK_NAME = 'Deniz';
+  const COOK_NAME = $t('Deniz');
   const cookAt = () => ({ x: cook.x, y: cook.y - 44 });
 
   // ---------- partiklar: ånga, köttspån, flugor ----------
@@ -1418,7 +1419,7 @@ export function makeShopKebab(A) {
     walker.walkTo(s.ax, s.ay, () => {
       if (s.occ && s.occ !== 'me') {
         const alt = pickSeat();
-        if (!alt) { me.state = me.tray ? 'carry' : 'free'; talkMe.say('😕 Alla platser är upptagna!', meAt); return; }
+        if (!alt) { me.state = me.tray ? 'carry' : 'free'; talkMe.say($t('😕 Alla platser är upptagna!'), meAt); return; }
         goSit(alt); return;
       }
       sitDown(s);
@@ -1428,13 +1429,13 @@ export function makeShopKebab(A) {
 
   // ---------- köpet ----------
   function buy(ids, sauce = 'mix') {
-    if (!alive) return { ok: false, msg: 'Grillen är stängd.' }; // scenen är redan bytt (menyn låg kvar öppen)
+    if (!alive) return { ok: false, msg: $t('Grillen är stängd.') }; // scenen är redan bytt (menyn låg kvar öppen)
     const list = normOrder(ids);
-    if (!list.length) return { ok: false, msg: 'Välj något från menyn först!' };
-    if (me.state === 'wait' || me.state === 'toCounter') return { ok: false, msg: `${COOK_NAME} fixar redan din beställning!` };
-    if (me.order) return { ok: false, msg: 'Ät upp det du har först!' };
+    if (!list.length) return { ok: false, msg: $t('Välj något från menyn först!') };
+    if (me.state === 'wait' || me.state === 'toCounter') return { ok: false, msg: $t`${COOK_NAME} fixar redan din beställning!` };
+    if (me.order) return { ok: false, msg: $t('Ät upp det du har först!') };
     const price = priceOf(list);
-    if (g.money < price) return { ok: false, msg: 'Du har inte råd!' };
+    if (g.money < price) return { ok: false, msg: $t('Du har inte råd!') };
     if (me.state === 'sit') standUp();
     release();
     g.money -= price;
@@ -1450,7 +1451,7 @@ export function makeShopKebab(A) {
     if (atCounter) order();
     else { me.state = 'toCounter'; walker.walkTo(PAY_X, ORDER_Y, order); }
     const line = orderText(list, me.sauce);
-    talkCook.say(`🥙 ${line[0].toUpperCase() + line.slice(1)} – ${price} kr, tack! Kommer direkt.`, cookAt, 3.6);
+    talkCook.say($t`🥙 ${line[0].toUpperCase() + line.slice(1)} – ${price} kr, tack! Kommer direkt.`, cookAt, 3.6);
     return { ok: true, price, fill: fillOf(list), energy: energyOf(list), items: list.map((m) => m.id) };
   }
 
@@ -1465,19 +1466,19 @@ export function makeShopKebab(A) {
       const on = (m) => (m.main ? pick.main === m.id : pick[m.id]);
       const rows = KEBAB_MENY.map((m, i) => `<div class="prow" style="grid-template-columns:52px 1fr auto;${on(m) ? 'background:#fff3c8' : ''}">
           <canvas data-ic="${i}" width="24" height="16" style="width:48px;height:32px;image-rendering:pixelated;background:#f0e2c4;border:2px solid #17151a"></canvas>
-          <span class="nm">${m.icon} ${m.name} <b>${fmt(m.price)}</b><br><small class="sp">+${m.fill} mättnad · +${m.energy} energi · ${m.bites} tuggor</small></span>
-          <button class="btn btn-small ${on(m) ? 'btn-gold' : ''}" data-pick="${m.id}" data-key="${i + 1}">${on(m) ? '✓ Vald' : m.main ? 'Välj' : '+ Lägg till'} <kbd>${i + 1}</kbd></button>
+          <span class="nm">${m.icon} ${m.name} <b>${fmt(m.price)}</b><br><small class="sp">${$t`+${m.fill} mättnad · +${m.energy} energi · ${m.bites} tuggor`}</small></span>
+          <button class="btn btn-small ${on(m) ? 'btn-gold' : ''}" data-pick="${m.id}" data-key="${i + 1}">${on(m) ? $t('✓ Vald') : m.main ? $t('Välj') : $t('+ Lägg till')} <kbd>${i + 1}</kbd></button>
         </div>`).join('');
       const sas = KEBAB_SASER.map((s) => `<button class="btn btn-small ${pick.sauce === s.id ? 'btn-gold' : ''}" data-sas="${s.id}" data-key="${s.name[0]}" ${hasMain ? '' : 'disabled'}>${s.icon} ${s.name} <kbd>${s.name[0]}</kbd></button>`).join(' ');
-      const body = `<p style="font-size:var(--f2);margin:0 0 8px">💰 <b>${fmt(g.money)}</b> · 🍽️ Mättnad <b>${Math.round(g.hunger)}</b>/100 · ⚡ Energi <b>${Math.round(g.energy)}</b>/100</p>
+      const body = `<p style="font-size:var(--f2);margin:0 0 8px">${$t`💰 <b>${fmt(g.money)}</b> · 🍽️ Mättnad <b>${Math.round(g.hunger)}</b>/100 · ⚡ Energi <b>${Math.round(g.energy)}</b>/100`}</p>
         <div class="plist">${rows}</div>
-        <p style="font-size:var(--f2);margin:10px 0 4px">${COOK_NAME}: <i>"Vitlök eller stark?"</i></p>
+        <p style="font-size:var(--f2);margin:10px 0 4px">${$t`${COOK_NAME}: <i>"Vitlök eller stark?"</i>`}</p>
         <div style="display:flex;gap:6px;flex-wrap:wrap">${sas}</div>
-        <p style="font-size:var(--f1);margin:10px 0 0;color:#6d6660">Du får maten på en bricka och sätter dig vid ett ledigt bord eller vid fönstret. Mättnaden och energin kommer medan du äter – bara när du sitter!</p>`;
+        <p style="font-size:var(--f1);margin:10px 0 0;color:#6d6660">${$t('Du får maten på en bricka och sätter dig vid ett ledigt bord eller vid fönstret. Mättnaden och energin kommer medan du äter – bara när du sitter!')}</p>`;
       const can = list.length > 0 && g.money >= price;
       const dlg = openModal(MENU_TITLE, body, [
-        { label: 'Nej tack', onClick: closeModal },
-        { label: list.length ? `🥙 Beställ – ${fmt(price)}` : '🥙 Beställ', cls: 'btn-go', disabled: !can, onClick: () => {
+        { label: $t('Nej tack'), onClick: closeModal },
+        { label: list.length ? $t`🥙 Beställ – ${fmt(price)}` : $t('🥙 Beställ'), cls: 'btn-go', disabled: !can, onClick: () => {
           const r = buy(ids(), pick.sauce);
           closeModal();
           if (!r.ok) { talkCook.say('😳 ' + r.msg, cookAt); play('fel'); }
@@ -1505,18 +1506,18 @@ export function makeShopKebab(A) {
   let goalT = -99, score = [1, 0];
   const hot = [
     { id: 'dorr', r: [DOOR.x0 - 3, DOOR.top - 6, DOOR.x1 + 3, WALL_Y + 10], go: () => DOOR_SPOT, act: () => { play('door'); A.go('city'); } },
-    { id: 'spett', r: [HOOD.x0, 26, HOOD.x1, 68], go: () => [272, ORDER_Y], act: () => { walker.dir = 'up'; talkCook.say('🔪 Kött eller kyckling – båda har snurrat sen i morse!', cookAt); } },
+    { id: 'spett', r: [HOOD.x0, 26, HOOD.x1, 68], go: () => [272, ORDER_Y], act: () => { walker.dir = 'up'; talkCook.say($t('🔪 Kött eller kyckling – båda har snurrat sen i morse!'), cookAt); } },
     { id: 'kyl', r: [FRIDGE.x0, FRIDGE.top, FRIDGE.x1, BACK.y], go: () => [PAY_X, ORDER_Y], act: () => { play('click'); openMenu({ lask: true }); } },
     { id: 'meny', r: [MENU.x0, MENU.y0, MENU.x1, MENU.y1], go: () => [PAY_X, ORDER_Y], act: () => { play('click'); openMenu(); } },
     { id: 'disk', r: [CNT.x0, 70, CNT.x1, CNT.y + 2], go: () => [PAY_X, ORDER_Y], act: () => { play('click'); openMenu(); } },
-    { id: 'spel', r: [SLOT.x0 - 2, SLOT.top - 2, SLOT.x1 + 2, SLOT.y + 2], go: () => [(SLOT.x0 + SLOT.x1) / 2, SLOT.y + 9], act: () => { walker.dir = 'up'; play('miss'); quip('🎰 Lamporna blinkar ... men den har varit trasig sen i fjol.'); } },
-    { id: 'tv', r: [TV.x0 - 2, TV.y0 - 2, TV.x1 + 2, TV.y1 + 10], go: () => [440, ORDER_Y + 4], act: () => { walker.dir = 'up'; quip(t - goalT < 8 ? '📺 MÅÅÅL! Hela grillen jublar.' : `📺 Fotboll. Betong IF leder ${score[0]}-${score[1]}!`); } },
-    { id: 'zap', r: [ZAP.x0 - 2, ZAP.y0 - 2, ZAP.x1 + 2, ZAP.y1 + 4], go: () => [226, WALL_Y + 14], act: () => { walker.dir = 'up'; quip('⚡ Flugfångaren. ZZT! En fluga mindre.'); } },
-    { id: 'affisch', r: [POSTER.x0, POSTER.y0, POSTER.x1, POSTER.y1], go: () => [226, WALL_Y + 14], act: () => { walker.dir = 'up'; quip('🏖️ En solblekt affisch. Någon längtar bort.'); } },
-    { id: 'skylt', r: [SIGN.x - 7, SIGN.y - 17, SIGN.x + 7, SIGN.y + 2], go: () => [SIGN.x - 12, SIGN.y + 4], act: () => quip('⚠️ HALT GOLV. Den står alltid där.') },
-    { id: 'fikus', r: [PLANT.x - 9, PLANT.y - 32, PLANT.x + 9, PLANT.y + 2], go: () => [PLANT.x + 12, PLANT.y + 6], act: () => { walker.dir = 'left'; quip('🌿 En plastfikus. Dammig.'); } },
-    { id: 'mopp', r: [MOP.x - 10, MOP.y - 38, MOP.x + 12, MOP.y + 2], go: () => [MOP.x + 18, MOP.y - 4], act: () => { walker.dir = 'left'; quip('🧹 Moppen står alltid framme. Golvet är halt ändå.'); } },
-    { id: 'backar', r: [CRATES.x - 11, CRATES.y - 26, CRATES.x + 11, CRATES.y + 2], go: () => [CRATES.x - 18, CRATES.y - 4], act: () => { walker.dir = 'right'; quip('🥤 Läskbackar som ingen orkat bära in på lagret.'); } },
+    { id: 'spel', r: [SLOT.x0 - 2, SLOT.top - 2, SLOT.x1 + 2, SLOT.y + 2], go: () => [(SLOT.x0 + SLOT.x1) / 2, SLOT.y + 9], act: () => { walker.dir = 'up'; play('miss'); quip($t('🎰 Lamporna blinkar ... men den har varit trasig sen i fjol.')); } },
+    { id: 'tv', r: [TV.x0 - 2, TV.y0 - 2, TV.x1 + 2, TV.y1 + 10], go: () => [440, ORDER_Y + 4], act: () => { walker.dir = 'up'; quip(t - goalT < 8 ? $t('📺 MÅÅÅL! Hela grillen jublar.') : $t`📺 Fotboll. Betong IF leder ${score[0]}-${score[1]}!`); } },
+    { id: 'zap', r: [ZAP.x0 - 2, ZAP.y0 - 2, ZAP.x1 + 2, ZAP.y1 + 4], go: () => [226, WALL_Y + 14], act: () => { walker.dir = 'up'; quip($t('⚡ Flugfångaren. ZZT! En fluga mindre.')); } },
+    { id: 'affisch', r: [POSTER.x0, POSTER.y0, POSTER.x1, POSTER.y1], go: () => [226, WALL_Y + 14], act: () => { walker.dir = 'up'; quip($t('🏖️ En solblekt affisch. Någon längtar bort.')); } },
+    { id: 'skylt', r: [SIGN.x - 7, SIGN.y - 17, SIGN.x + 7, SIGN.y + 2], go: () => [SIGN.x - 12, SIGN.y + 4], act: () => quip($t('⚠️ HALT GOLV. Den står alltid där.')) },
+    { id: 'fikus', r: [PLANT.x - 9, PLANT.y - 32, PLANT.x + 9, PLANT.y + 2], go: () => [PLANT.x + 12, PLANT.y + 6], act: () => { walker.dir = 'left'; quip($t('🌿 En plastfikus. Dammig.')); } },
+    { id: 'mopp', r: [MOP.x - 10, MOP.y - 38, MOP.x + 12, MOP.y + 2], go: () => [MOP.x + 18, MOP.y - 4], act: () => { walker.dir = 'left'; quip($t('🧹 Moppen står alltid framme. Golvet är halt ändå.')); } },
+    { id: 'backar', r: [CRATES.x - 11, CRATES.y - 26, CRATES.x + 11, CRATES.y + 2], go: () => [CRATES.x - 18, CRATES.y - 4], act: () => { walker.dir = 'right'; quip($t('🥤 Läskbackar som ingen orkat bära in på lagret.')); } },
   ];
   const spotAt = (x, y) => hot.find((h) => x >= h.r[0] && x <= h.r[2] && y >= h.r[1] && y <= h.r[3]);
   const seatAt = (x, y) => seats.find((s) => {
@@ -1558,7 +1559,7 @@ export function makeShopKebab(A) {
       if (jobs.length) {
         K.job = jobs.shift(); K.steps = buildSteps(K.job); K.si = 0; K.t = 0; K.phase = 'work';
         const s = K.steps[0]; cookGo(s.x, s.y);
-        if (K.job.who !== 'me' && Math.random() < 0.45) talkCook.say(['Vitlök eller stark?', 'Allt på?', 'Ska bli!'][(Math.random() * 3) | 0], cookAt, 2);
+        if (K.job.who !== 'me' && Math.random() < 0.45) talkCook.say([$t('Vitlök eller stark?'), $t('Allt på?'), $t('Ska bli!')][(Math.random() * 3) | 0], cookAt, 2);
         return;
       }
       K.idleT -= dt;
@@ -1584,7 +1585,7 @@ export function makeShopKebab(A) {
     if (K.si < K.steps.length) { const n = K.steps[K.si]; cookGo(n.x, n.y); return; }
     // allt klart: ställ fram brickan (eller påsen) på disken
     trays.push({ x: Math.round(clamp(K.job.x, CNT.x0 + 22, CNT.x1 - 18)), who: K.job.who, items: K.job.items, bag: K.job.bag, at: t });
-    if (K.job.who === 'me') { play('ok'); talkCook.say('Varsågod! Smaklig måltid! 🥙', cookAt, 2.6); }
+    if (K.job.who === 'me') { play('ok'); talkCook.say($t('Varsågod! Smaklig måltid! 🥙'), cookAt, 2.6); }
     K.job = null; K.act = null; K.phase = 'idle'; K.idleT = 1.5 + Math.random() * 2; K.idleAct = null;
   }
 
@@ -1672,7 +1673,7 @@ export function makeShopKebab(A) {
         me.tray = { items: trays[k].items };
         trays.splice(k, 1);
         me.state = 'carry';
-        if (!me.hintGiven) { me.hintGiven = true; talkMe.say('🥙 Klicka på en ledig plats så sätter jag mig där!', meAt); }
+        if (!me.hintGiven) { me.hintGiven = true; talkMe.say($t('🥙 Klicka på en ledig plats så sätter jag mig där!'), meAt); }
       }
     }
     // säkerhetsnät om gång-callbacken uteblev: sätt dig BARA om figuren står vid platsen
@@ -1697,7 +1698,7 @@ export function makeShopKebab(A) {
         }
         if (me.doneT > 0 && t - me.doneT > 1.2 && me.tray.items.every((i) => i.stage >= i.bites)) {
           me.tray = null; me.order = null; me.doneT = -9;
-          talkMe.say('😋 MUMS! Mätt och belåten.', meAt);
+          talkMe.say($t('😋 MUMS! Mätt och belåten.'), meAt);
         }
       } else if (me.sitT > 14) standUp();
     }
@@ -1869,7 +1870,7 @@ export function makeShopKebab(A) {
     ctxText(ctx, SMALL, `${score[0]}-${score[1]}`, x0 + 1, y0 + 1, '#f4f1ea');
     if (t - goalT < 4 && Math.floor(t * 4) % 2 === 0) {
       ctx.fillStyle = '#16161a'; ctx.fillRect(x0 + 3, y0 + 6, w - 6, 8);
-      ctxText(ctx, SMALL, 'MÅL!', x0 + ((w - textW(SMALL, 'MÅL!')) >> 1), y0 + 8, '#ffe040');
+      ctxText(ctx, SMALL, $t('MÅL!'), x0 + ((w - textW(SMALL, $t('MÅL!'))) >> 1), y0 + 8, '#ffe040');
     }
   }
   // köket lever: spetten snurrar, elementen glöder, fritösen bubblar, mikron blinkar 12:00
@@ -2111,7 +2112,7 @@ export function makeShopKebab(A) {
     updateDoor(dt);
     updateFx(dt);
     updateParts(dt);
-    if (pendingHello > 0) { pendingHello -= dt; if (pendingHello <= 0) talkCook.say(isNight(g.min / 60) ? 'Sent ute? Grillen är varm!' : 'Välkommen! Vad blir det?', cookAt, 2.6); }
+    if (pendingHello > 0) { pendingHello -= dt; if (pendingHello <= 0) talkCook.say(isNight(g.min / 60) ? $t('Sent ute? Grillen är varm!') : $t('Välkommen! Vad blir det?'), cookAt, 2.6); }
     const k = lockedCam !== null ? 1 : Math.min(1, dt * 6);
     cam.x += (cams() - cam.x) * k;
     cam.y += (camYGoal() - cam.y) * Math.min(1, dt * 4);
@@ -2214,20 +2215,20 @@ export function makeShopKebab(A) {
     down(sx, sy) {
       const x = sx + cam.x, y = sy - camY();
       if (me.state === 'wait' || me.state === 'toCounter') {
-        if (t - me.waitMsgT > 2) { talkMe.say(`🥙 ${COOK_NAME} gör i ordning min beställning ...`, meAt); me.waitMsgT = t; }
+        if (t - me.waitMsgT > 2) { talkMe.say($t`🥙 ${COOK_NAME} gör i ordning min beställning ...`, meAt); me.waitMsgT = t; }
         return;
       }
       const atDoor = (px, py) => px > DOOR.x0 - 10 && px < DOOR.x1 + 10 && py < WALL_Y + 14;
       if (me.state === 'carry') {
         const s = seatAt(x, y);
         if (s && !s.occ) { goSit(s); play('click'); return; }
-        if (s && s.occ) { if (t - me.waitMsgT > 2) { talkMe.say('😕 Där sitter någon redan!', meAt); me.waitMsgT = t; } return; }
+        if (s && s.occ) { if (t - me.waitMsgT > 2) { talkMe.say($t('😕 Där sitter någon redan!'), meAt); me.waitMsgT = t; } return; }
         const h = spotAt(x, y);
         // med maten i händerna kommer man inte ut – och disken och menyn får vänta
         if ((h && h.id === 'dorr') || atDoor(x, y)) { nag(MSG_DORR); return; }
         if (h && (h.id === 'disk' || h.id === 'meny' || h.id === 'kyl')) { nag(MSG_ATUPP); return; }
         if (y > WALL_Y) { release(); walker.walkTo(x, y); return; }  // golvklick = ångra platsvalet
-        if (t - me.waitMsgT > 2.5) { talkMe.say('🥙 Klicka på en ledig plats så sätter jag mig där.', meAt); me.waitMsgT = t; }
+        if (t - me.waitMsgT > 2.5) { talkMe.say($t('🥙 Klicka på en ledig plats så sätter jag mig där.'), meAt); me.waitMsgT = t; }
         return;
       }
       if (me.state === 'sit' && me.tray) {
@@ -2297,10 +2298,11 @@ export function makeShopKebab(A) {
       // skylt i nederkanten när man pekar på något klickbart (innanför den synliga rutan)
       ctx.setTransform(A.pxs, 0, 0, A.pxs, 0, 0);
       const h = hoverId && t - hoverT < 3 ? hoverId : null;
-      const label = h === 'disk' || h === 'meny' ? 'BESTÄLL VID DISKEN' : h === 'kyl' ? 'LÄSKKYLEN - LÄSK 15 KR'
-        : h === 'dorr' ? (me.order ? 'ÄT UPP MATEN FÖRST - SEN KAN DU GÅ UT' : 'GÅ UT') : h === 'spett' ? 'GRILLSPETTEN - KÖTT OCH KYCKLING'
-          : h === 'spel' ? 'SPELAUTOMATEN' : h === 'tv' ? 'TV:N - FOTBOLL' : h === 'zap' ? 'FLUGFÅNGAREN' : h === 'affisch' ? 'AFFISCHEN'
-            : h === 'skylt' ? 'HALT GOLV' : h === 'fikus' ? 'PLASTFIKUSEN' : h === 'mopp' ? 'MOPPEN' : h === 'backar' ? 'LÄSKBACKARNA' : null;
+      const label = h === 'disk' || h === 'meny' ? $t('BESTÄLL VID DISKEN') : h === 'kyl' ? $t('LÄSKKYLEN - LÄSK 15 KR')
+        : h === 'dorr' ? (me.order ? $t('ÄT UPP MATEN FÖRST - SEN KAN DU GÅ UT') : $t('GÅ UT')) : h === 'spett' ? $t('GRILLSPETTEN - KÖTT OCH KYCKLING')
+          : h === 'spel' ? $t('SPELAUTOMATEN') : h === 'tv' ? $t('TV:N - FOTBOLL') : h === 'zap' ? $t('FLUGFÅNGAREN') : h === 'affisch' ? $t('AFFISCHEN')
+            : h === 'skylt' ? $t('HALT GOLV') : h === 'fikus' ? $t('PLASTFIKUSEN') : h === 'mopp' ? $t('MOPPEN') : h === 'backar' ? $t('LÄSKBACKARNA') : null;
+
       if (label) {
         const w = textW(SMALL, label) + 10, lx = (sb.x0 + sb.x1 - w) >> 1, ly = sb.y1 - 14;
         ctx.fillStyle = '#17151a'; ctx.fillRect(lx, ly, w, 11);

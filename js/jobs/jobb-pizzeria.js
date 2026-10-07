@@ -26,6 +26,7 @@ import { makeShiftCoop } from '../net/coop.js';
 import { FRAMES } from '../data/frames.js';
 import { ATLAS } from '../scenes/room.js';
 import { JOBS } from '../game.js';
+import { $t } from '../core/i18n.js';
 
 const FW = 384, FH = 216;
 const WALL_B = 84;                 // där bakväggen möter golvet
@@ -44,13 +45,13 @@ const WS = { x: 110, y: 115 };     // degens plats på bänken (pizzans mitt)
 const STAND_Y = 121;               // där bagaren står bakom bänken
 // sakerna på bänken, från vänster
 const BINS = [
-  { id: 'deg', x: 37, name: 'DEG' },
-  { id: 'sas', x: 64, name: 'TOMATSÅS' },
-  { id: 'ost', x: 82, name: 'OST' },
-  { id: 'skinka', x: 138, name: 'SKINKA' },
-  { id: 'ananas', x: 156, name: 'ANANAS' },
-  { id: 'champinjoner', x: 174, name: 'CHAMPINJONER' },
-  { id: 'kebab', x: 192, name: 'KEBAB' },
+  { id: 'deg', x: 37, name: $t('DEG') },
+  { id: 'sas', x: 64, name: $t('TOMATSÅS') },
+  { id: 'ost', x: 82, name: $t('OST') },
+  { id: 'skinka', x: 138, name: $t('SKINKA') },
+  { id: 'ananas', x: 156, name: $t('ANANAS') },
+  { id: 'champinjoner', x: 174, name: $t('CHAMPINJONER') },
+  { id: 'kebab', x: 192, name: $t('KEBAB') },
 ];
 // rutiga bord (kunden sitter på stolen bakom bordet, vänd mot oss)
 const TABLES = [{ x: 256, y: 146 }, { x: 326, y: 146 }, { x: 44, y: 208 }, { x: 128, y: 208 }]
@@ -73,11 +74,11 @@ const CHAIR_F = 'matstol3', TABLE_F = 'bordR1', CHAIR_LIFT = 5;
 
 // ---------- pizzorna och påläggen ----------
 const PIZZAS = [
-  { id: 'margherita', name: 'MARGHERITA', tops: [], price: 95, mark: 'M' },
-  { id: 'vesuvio', name: 'VESUVIO', tops: ['skinka'], price: 105, mark: 'V' },
-  { id: 'hawaii', name: 'HAWAII', tops: ['skinka', 'ananas'], price: 110, mark: 'H' },
-  { id: 'capricciosa', name: 'CAPRICCIOSA', tops: ['skinka', 'champinjoner'], price: 115, mark: 'C' },
-  { id: 'kebab', name: 'KEBABPIZZA', tops: ['kebab'], price: 125, mark: 'K' },
+  { id: 'margherita', name: $t('MARGHERITA'), tops: [], price: 95, mark: 'M' },
+  { id: 'vesuvio', name: $t('VESUVIO'), tops: ['skinka'], price: 105, mark: 'V' },
+  { id: 'hawaii', name: $t('HAWAII'), tops: ['skinka', 'ananas'], price: 110, mark: 'H' },
+  { id: 'capricciosa', name: $t('CAPRICCIOSA'), tops: ['skinka', 'champinjoner'], price: 115, mark: 'C' },
+  { id: 'kebab', name: $t('KEBABPIZZA'), tops: ['kebab'], price: 125, mark: 'K' },
 ];
 // bitarnas pixelmönster i tre storlekar (a = ljus, b = bas, c = mörk)
 const TOPS = [
@@ -146,7 +147,7 @@ function pzDec(a) {
   return { sauce: !!(f & 1), cheese: !!(f & 2), tops: TOPS.filter((_, i) => f & (4 << i)).map((tp) => tp.id), bake: clamp(b / 100, 0, 60) };
 }
 // serveringens utfall (0 = rätt) – koden skickas, texten slås upp hos var och en
-const WHY = [null, 'FEL PIZZA!', 'BRÄND!', 'FÖR BLEK!', 'I KARTONG, TACK!', 'PÅ TALLRIK, TACK!'];
+const WHY = [null, $t('FEL PIZZA!'), $t('BRÄND!'), $t('FÖR BLEK!'), $t('I KARTONG, TACK!'), $t('PÅ TALLRIK, TACK!')];
 // resten av en kunds väg från (x, y): närmaste sträckan på vägen (vid lika den senare) och
 // punkterna efter den – så kan vem som helst gå vidare med en kund från där hen står
 function restOf(route, x, y) {
@@ -556,7 +557,7 @@ export function makeJobbPizzeria(A, { onDone } = {}) {
       k.gx = x; k.gy = y; k.gpath = null;
       if (!was) { k.x = x; k.y = y; }
       // en kund som tröttnade går – det hörs hos alla
-      if (st === 'leave' && was === 'sit' && !k.box) { play('miss'); pops.add(k.x, popY(k) + 12, 'GICK HEM!', '#d8d2c0'); }
+      if (st === 'leave' && was === 'sit' && !k.box) { play('miss'); pops.add(k.x, popY(k) + 12, $t('GICK HEM!'), '#d8d2c0'); }
     }
     customers = customers.filter((k) => seen.has(k.id));
     if (Array.isArray(m.tm)) { team.ok = m.tm[0] | 0; team.fel = m.tm[1] | 0; team.miss = m.tm[2] | 0; }
@@ -590,8 +591,8 @@ export function makeJobbPizzeria(A, { onDone } = {}) {
       if (!pz) continue;
       pz.bake += dt;
       const b = stageOf(pz.bake), said = pz.said ?? b;
-      if (b === 3 && said < 3) { play('ok'); pops.add(SLOT_X[s], OVEN_POP_Y, 'KLAR!', '#8ee03c'); }
-      if (b === 4 && said < 4) { play('miss'); if (mineIds.has(pz.id)) stats.brand++; pops.add(SLOT_X[s], OVEN_POP_Y, 'BRÄNNS!', '#ff6a6a'); }
+      if (b === 3 && said < 3) { play('ok'); pops.add(SLOT_X[s], OVEN_POP_Y, $t('KLAR!'), '#8ee03c'); }
+      if (b === 4 && said < 4) { play('miss'); if (mineIds.has(pz.id)) stats.brand++; pops.add(SLOT_X[s], OVEN_POP_Y, $t('BRÄNNS!'), '#ff6a6a'); }
       pz.said = Math.max(said, b);
       if (b === 4 && Math.random() < dt * 10) smoke(SLOT_X[s], archTop(SLOT_X[s]) + 1);
     }
@@ -602,7 +603,7 @@ export function makeJobbPizzeria(A, { onDone } = {}) {
     pend = null;
     if (queued && !done) { const q = queued; queued = null; api.down(q[0], q[1]); }
   }
-  function hannFore(x, y) { play('miss'); pops.add(x, y, 'HANN FÖRE!', '#ff6a6a'); }
+  function hannFore(x, y) { play('miss'); pops.add(x, y, $t('HANN FÖRE!'), '#ff6a6a'); }
   // ledarens dom över en servering – för egna och medarbetares (byId = den som serverade)
   function leaderServe(custId, pz, box, byId) {
     const k = customers.find((q) => q.id === custId), mine = byId === coop.myId;
@@ -639,7 +640,7 @@ export function makeJobbPizzeria(A, { onDone } = {}) {
           mineIds.add(id); play('slide'); work();
         }
         puff(SLOT_X[s], 58, [0xffc040, 0xff7a1c, 0xfff0a0], 6, 6);
-      } else if (mine) hint('UGNEN ÄR FULL', OV.cx, OVEN_POP_Y);
+      } else if (mine) hint($t('UGNEN ÄR FULL'), OV.cx, OVEN_POP_Y);
     } else if (m.a === 'ut') {
       if (m.ok) {
         const pz = pzDec(m.pz);
@@ -716,7 +717,7 @@ export function makeJobbPizzeria(A, { onDone } = {}) {
   const work = () => { workT = 0.3; };
   const binById = (id) => BINS.find((b) => b.id === id);
   function actDough() {
-    if (bench) { hint('BÄNKEN ÄR UPPTAGEN', WS.x, 96); return; }
+    if (bench) { hint($t('BÄNKEN ÄR UPPTAGEN'), WS.x, 96); return; }
     bench = { sauce: false, cheese: false, tops: [], bake: 0, id: seq++ };
     work(); play('click');
     puff(WS.x, WS.y - 1, [0xfffcf4, 0xf4ecdc, 0xffffff], 14, 13);
@@ -724,15 +725,15 @@ export function makeJobbPizzeria(A, { onDone } = {}) {
   function actBin(id) {
     if (id === 'deg') { actDough(); return; }
     const b = binById(id);
-    if (!bench) { hint('LÄGG EN DEG FÖRST', b.x, 98); return; }
+    if (!bench) { hint($t('LÄGG EN DEG FÖRST'), b.x, 98); return; }
     if (id === 'sas') {
-      if (bench.sauce) { hint('SÅSEN FINNS REDAN', WS.x, 98); return; }
+      if (bench.sauce) { hint($t('SÅSEN FINNS REDAN'), WS.x, 98); return; }
       bench.sauce = true; sprinkle(b.x, 110, [0xe04830, 0xf46c4a, 0xb42c20], 14);
     } else if (id === 'ost') {
-      if (bench.cheese) { hint('OSTEN FINNS REDAN', WS.x, 98); return; }
+      if (bench.cheese) { hint($t('OSTEN FINNS REDAN'), WS.x, 98); return; }
       bench.cheese = true; sprinkle(b.x, 110, [0xfffcf4, 0xf0e2c2, 0xf6e8c6], 16);
     } else {
-      if (bench.tops.includes(id)) { hint(b.name + ' FINNS REDAN', WS.x, 98); return; }
+      if (bench.tops.includes(id)) { hint($t`${b.name} FINNS REDAN`, WS.x, 98); return; }
       bench.tops.push(id);
       const pal = TOPS[TOP_IX[id]].pal;
       sprinkle(b.x, 110, [pal.b, pal.a, pal.c], 10);
@@ -744,12 +745,12 @@ export function makeJobbPizzeria(A, { onDone } = {}) {
     if (!carry && bench) { carry = { pz: bench, on: 'spade' }; bench = null; work(); play('click'); return; }
     if (!carry && !bench) { actDough(); return; }
     if (carry && !bench && carry.on === 'spade' && carry.pz.bake === 0) { bench = carry.pz; carry = null; work(); play('click'); return; }
-    hint(carry && !bench && carry.pz.bake > 0 ? 'DEN ÄR REDAN GRÄDDAD' : 'HÄNDERNA ÄR FULLA', WS.x, 96);
+    hint(carry && !bench && carry.pz.bake > 0 ? $t('DEN ÄR REDAN GRÄDDAD') : $t('HÄNDERNA ÄR FULLA'), WS.x, 96);
   }
   function ovenIn(slot) {
     if (!carry || carry.on !== 'spade') return false;
     const s = !oven[slot] ? slot : !oven[1 - slot] ? 1 - slot : -1;
-    if (s < 0) { hint('UGNEN ÄR FULL', OV.cx, OVEN_POP_Y); return true; }
+    if (s < 0) { hint($t('UGNEN ÄR FULL'), OV.cx, OVEN_POP_Y); return true; }
     oven[s] = carry.pz; carry = null; play('slide'); work();
     puff(SLOT_X[s], 58, [0xffc040, 0xff7a1c, 0xfff0a0], 6, 6);
     if (coop.active) {   // (skiftledaren) ugnens pizzor numreras här – och kollegorna ser den åka in
@@ -762,7 +763,7 @@ export function makeJobbPizzeria(A, { onDone } = {}) {
   // puffen när en pizza tas ut: hur blev den?
   function ovenPop(s, pz) {
     const st = stageOf(pz.bake);
-    pops.add(SLOT_X[s], OVEN_POP_Y, st === 3 ? 'GYLLENE!' : st === 4 ? 'BRÄND!' : 'BLEK!', st === 3 ? '#8ee03c' : '#ffd23f');
+    pops.add(SLOT_X[s], OVEN_POP_Y, st === 3 ? $t('GYLLENE!') : st === 4 ? $t('BRÄND!') : $t('BLEK!'), st === 3 ? '#8ee03c' : '#ffd23f');
   }
   function ovenOut(slot) {
     const s = oven[slot] ? slot : oven[1 - slot] ? 1 - slot : -1;
@@ -776,43 +777,43 @@ export function makeJobbPizzeria(A, { onDone } = {}) {
   // ugnen är gemensam: en medarbetare frågar skiftledaren, som håller i båda platserna
   function askIn(slot) {
     const s = !oven[slot] ? slot : !oven[1 - slot] ? 1 - slot : -1;
-    if (s < 0) { hint('UGNEN ÄR FULL', OV.cx, OVEN_POP_Y); return; }
+    if (s < 0) { hint($t('UGNEN ÄR FULL'), OV.cx, OVEN_POP_Y); return; }
     ask({ t: 'in', s, pz: pzEnc(carry.pz) });
   }
   function askOut(slot) {
     const s = oven[slot] ? slot : oven[1 - slot] ? 1 - slot : -1;
-    if (s < 0) { hint('UGNEN ÄR TOM', OV.cx, OVEN_POP_Y); return; }
+    if (s < 0) { hint($t('UGNEN ÄR TOM'), OV.cx, OVEN_POP_Y); return; }
     ask({ t: 'ut', s, id: oven[s].id | 0 });
   }
   function actOven(slot) {
     walker.dir = slot === 0 ? 'right' : 'left';   // står vid sidan, vänd mot munnen
     if (carry) {
-      if (carry.on !== 'spade') { hint('DEN ÄR REDAN PACKAD', OV.cx, OVEN_POP_Y); return; }
+      if (carry.on !== 'spade') { hint($t('DEN ÄR REDAN PACKAD'), OV.cx, OVEN_POP_Y); return; }
       if (mate()) askIn(slot); else ovenIn(slot);
       return;
     }
     if (mate()) askOut(slot);
-    else if (!ovenOut(slot)) hint('UGNEN ÄR TOM', OV.cx, OVEN_POP_Y);
+    else if (!ovenOut(slot)) hint($t('UGNEN ÄR TOM'), OV.cx, OVEN_POP_Y);
   }
   function actVessel(kind) {
     walker.dir = 'up';
     const x = kind === 'tallrik' ? PASS.plates : PASS.boxes;
-    if (!carry) { hint('HÄMTA EN PIZZA FÖRST', x, 50); return; }
-    if (carry.on !== 'spade') { hint('DEN ÄR REDAN PACKAD', x, 50); return; }
-    if (carry.pz.bake <= 0) { hint('GRÄDDA DEN FÖRST!', x, 50); return; }
+    if (!carry) { hint($t('HÄMTA EN PIZZA FÖRST'), x, 50); return; }
+    if (carry.on !== 'spade') { hint($t('DEN ÄR REDAN PACKAD'), x, 50); return; }
+    if (carry.pz.bake <= 0) { hint($t('GRÄDDA DEN FÖRST!'), x, 50); return; }
     carry.on = kind; work(); play(kind === 'kartong' ? 'box' : 'click');
   }
   function actTrash() {
-    if (!carry) { hint('INGET ATT SLÄNGA', 12, 72); return; }
+    if (!carry) { hint($t('INGET ATT SLÄNGA'), 12, 72); return; }
     carry = null; trashT = 0.6; play('miss');
-    pops.add(14, 72, 'SLÄNGD', '#d8d2c0');
+    pops.add(14, 72, $t('SLÄNGD'), '#d8d2c0');
   }
   function stationAt(x, y) {
-    if (y >= 22 && y < 96 && x >= 78 && x < 166) return { k: 'ugn', slot: x < OV.cx ? 0 : 1, name: 'VEDUGNEN' };
-    if (y >= 40 && y < 94 && x >= PASS.x0 && x < PASS.x1) return x < 206 ? { k: 'tallrik', name: 'TALLRIKAR' } : { k: 'kartong', name: 'KARTONGER' };
-    if (y >= 78 && y < 99 && x >= 1 && x < 23) return { k: 'sopor', name: 'SOPTUNNAN' };
+    if (y >= 22 && y < 96 && x >= 78 && x < 166) return { k: 'ugn', slot: x < OV.cx ? 0 : 1, name: $t('VEDUGNEN') };
+    if (y >= 40 && y < 94 && x >= PASS.x0 && x < PASS.x1) return x < 206 ? { k: 'tallrik', name: $t('TALLRIKAR') } : { k: 'kartong', name: $t('KARTONGER') };
+    if (y >= 78 && y < 99 && x >= 1 && x < 23) return { k: 'sopor', name: $t('SOPTUNNAN') };
     if (y >= 100 && y < ISL.base + 1 && x >= ISL.x0 && x < ISL.x1) {
-      if (Math.abs(x - WS.x) <= 16) return { k: 'bank', name: bench ? 'PIZZAN' : 'BÄNKEN' };
+      if (Math.abs(x - WS.x) <= 16) return { k: 'bank', name: bench ? $t('PIZZAN') : $t('BÄNKEN') };
       let best = null, bd = 12;
       for (const b of BINS) { const d = Math.abs(b.x - x); if (d < bd) { best = b; bd = d; } }
       if (best) return { k: 'bin', bin: best, name: best.name };
@@ -841,8 +842,8 @@ export function makeJobbPizzeria(A, { onDone } = {}) {
 
   // ---------- servera ----------
   function tryServe(k) {
-    if (!carry) { hint('HÄMTA PIZZAN FÖRST', k.x, popY(k)); return; }
-    if (carry.on === 'spade') { hint(k.take ? 'I EN KARTONG FÖRST' : 'PÅ EN TALLRIK FÖRST', k.x, popY(k)); return; }
+    if (!carry) { hint($t('HÄMTA PIZZAN FÖRST'), k.x, popY(k)); return; }
+    if (carry.on === 'spade') { hint(k.take ? $t('I EN KARTONG FÖRST') : $t('PÅ EN TALLRIK FÖRST'), k.x, popY(k)); return; }
     serveAct(k);
   }
   // Domen över en servering: 0 = rätt, annars koden i WHY. Rätt pizza → kunden äter (tallrik)
@@ -861,7 +862,7 @@ export function makeJobbPizzeria(A, { onDone } = {}) {
   function showServe(k, w, mine) {
     if (!k) return;
     const py = popY(k);
-    if (!w) { if (mine) play('coin'); pops.add(k.x, py, wage ? `+${wage} GRAZIE!` : 'GRAZIE!', '#8ee03c'); }
+    if (!w) { if (mine) play('coin'); pops.add(k.x, py, wage ? $t`+${wage} GRAZIE!` : $t('GRAZIE!'), '#8ee03c'); }
     else { if (mine) play('fel'); pops.add(k.x, py, WHY[w], '#ff6a6a'); }
   }
   // mitt eget utfall: poängen till mig, och pizzan går ur händerna (även en fel)
@@ -1082,7 +1083,7 @@ export function makeJobbPizzeria(A, { onDone } = {}) {
       if (coop.active) maxN = Math.max(maxN, coop.peers().length + 1);
       if (coop.active !== wasCoop) {   // en kollega kom in: extrabordet fram och fullt ös i matsalen
         wasCoop = coop.active;
-        if (wasCoop) { const more = allTables(); play('knock'); pops.add(FW >> 1, 148, more ? 'NI JOBBAR IHOP - ETT BORD TILL!' : 'NI JOBBAR IHOP!', '#8ee03c'); }
+        if (wasCoop) { const more = allTables(); play('knock'); pops.add(FW >> 1, 148, more ? $t('NI JOBBAR IHOP - ETT BORD TILL!') : $t('NI JOBBAR IHOP!'), '#8ee03c'); }
       }
       // Skiftledaren (eller solo) kör matsalen och ugnen; medarbetare följer ledarens läge
       const iLead = !coop.active || (coop.leader && coop.settled);
@@ -1107,8 +1108,8 @@ export function makeJobbPizzeria(A, { onDone } = {}) {
           const a = stageOf(pz.bake);
           pz.bake += dt;
           const b = stageOf(pz.bake);
-          if (a < 3 && b === 3) { play('ok'); pops.add(SLOT_X[s], OVEN_POP_Y, 'KLAR!', '#8ee03c'); }
-          if (a < 4 && b === 4) { play('miss'); if (!coop.active || mineIds.has(pz.id)) stats.brand++; pops.add(SLOT_X[s], OVEN_POP_Y, 'BRÄNNS!', '#ff6a6a'); }
+          if (a < 3 && b === 3) { play('ok'); pops.add(SLOT_X[s], OVEN_POP_Y, $t('KLAR!'), '#8ee03c'); }
+          if (a < 4 && b === 4) { play('miss'); if (!coop.active || mineIds.has(pz.id)) stats.brand++; pops.add(SLOT_X[s], OVEN_POP_Y, $t('BRÄNNS!'), '#ff6a6a'); }
           if (b === 4 && Math.random() < dt * 10) smoke(SLOT_X[s], archTop(SLOT_X[s]) + 1);
         }
       } else mateOven(dt);
@@ -1130,7 +1131,7 @@ export function makeJobbPizzeria(A, { onDone } = {}) {
           } else k.state = k.state === 'walk' ? 'sit' : 'gone';
         } else if (k.state === 'sit') {
           k.patience -= dt;
-          if (k.patience <= 0) { leave(k); stats.miss++; team.miss++; play('miss'); pops.add(k.x, popY(k) + 12, 'GICK HEM!', '#d8d2c0'); }
+          if (k.patience <= 0) { leave(k); stats.miss++; team.miss++; play('miss'); pops.add(k.x, popY(k) + 12, $t('GICK HEM!'), '#d8d2c0'); }
         } else if (k.state === 'eat') {
           k.eat -= dt;
           if (k.eat <= 0) leave(k);
@@ -1248,13 +1249,13 @@ export function makeJobbPizzeria(A, { onDone } = {}) {
       pops.draw(ctx);
       // en rad hjälp i början
       if (t < 10 && !done) {
-        const s = 'DEG, SÅS, OST, PÅLÄGG - IN I UGNEN - TALLRIK ELLER KARTONG!', w = textW(SMALL, s) + 8;
+        const s = $t('DEG, SÅS, OST, PÅLÄGG - IN I UGNEN - TALLRIK ELLER KARTONG!'), w = textW(SMALL, s) + 8;
         ctx.globalAlpha = t > 9 ? 10 - t : 1;
         ctx.fillStyle = 'rgba(23,21,26,0.85)'; ctx.fillRect((FW - w) >> 1, 18, w, 10);
         ctxText(ctx, SMALL, s, ((FW - w) >> 1) + 4, 21, '#ffd23f');
         ctx.globalAlpha = 1;
       }
-      drawShiftHud(ctx, { W: FW }, { t, dur: P.seconds, ok: maxN > 1 ? team.ok : stats.ok, fel: maxN > 1 ? team.fel : stats.fel, title: maxN > 1 ? 'PIZZERIA NAPOLI IHOP' : 'PIZZERIA NAPOLI' });
+      drawShiftHud(ctx, { W: FW }, { t, dur: P.seconds, ok: maxN > 1 ? team.ok : stats.ok, fel: maxN > 1 ? team.fel : stats.fel, title: maxN > 1 ? $t('PIZZERIA NAPOLI IHOP') : $t('PIZZERIA NAPOLI') });
       if (done) drawTimeUp(ctx, { W: FW, H: FH });
     },
   };
@@ -1500,9 +1501,9 @@ function paintOven(P) {
   for (let x = 114; x < 129; x++) { P.px(x, 29, x === 114 || x === 128 ? 0x5a2a12 : x < 118 ? 0xf0b070 : 0xb8683a); P.px(x, 30, 0x5a2a12); }
   for (const rx2 of [118, 121, 124]) { P.px(rx2, 24, 0xffd0a0); P.px(rx2, 27, 0xffd0a0); }
   // namnet i vit mosaik
-  const nw = textW(SMALL, 'NAPOLI');
-  text(P, SMALL, 'NAPOLI', cx - (nw >> 1), 33, 0x4a1a10);
-  text(P, SMALL, 'NAPOLI', cx - (nw >> 1), 32, 0xfaf2e0);
+  const nw = textW(SMALL, $t('NAPOLI'));
+  text(P, SMALL, $t('NAPOLI'), cx - (nw >> 1), 33, 0x4a1a10);
+  text(P, SMALL, $t('NAPOLI'), cx - (nw >> 1), 32, 0xfaf2e0);
   // valvet: stenar runt öppningen + en guldring
   const inArch = (x, y, g) => x >= OV.mx0 - g && x < OV.mx1 + g && y < by && (y >= OV.mSpring || inEll(x, y, cx, OV.mSpring, 22 + g, 8 + g));
   for (let y = OV.mTop - 5; y < by; y++) for (let x = OV.mx0 - 5; x < OV.mx1 + 5; x++) {
@@ -1667,8 +1668,8 @@ function paintDining(P) {
     P.px(xx, yy, c);
   }
   P.box(x + 2, y + 2, w - 4, h - 4, 0x3a2414);
-  const tw = textW(SMALL, 'MENY');
-  text(P, SMALL, 'MENY', x + (w >> 1) - (tw >> 1), y + 4, 0xffd23f);
+  const tw = textW(SMALL, $t('MENY'));
+  text(P, SMALL, $t('MENY'), x + (w >> 1) - (tw >> 1), y + 4, 0xffd23f);
   for (const fx0 of [x + (w >> 1) - (tw >> 1) - 14, x + (w >> 1) + (tw >> 1) + 6]) {   // små italienska flaggor
     P.rect(fx0, y + 4, 3, 5, 0x2a9a4a); P.rect(fx0 + 3, y + 4, 3, 5, 0xf6f2ea); P.rect(fx0 + 6, y + 4, 3, 5, 0xd8342a);
     P.hl(fx0, y + 4, 9, 0xffffff, 0.25);
@@ -1677,7 +1678,7 @@ function paintDining(P) {
   PIZZAS.forEach((p, i) => {
     const ry = y + 13 + i * 8;
     text(P, SMALL, p.name, x + 18, ry, 0xf4f1ea);
-    const pr = `${p.price}:-`;
+    const pr = $t`${p.price}:-`;
     text(P, SMALL, pr, x + w - 5 - textW(SMALL, pr), ry, 0xffd23f);
   });
   // tavlan med Vesuvius i guldram
@@ -1889,8 +1890,9 @@ function paintDecor() {
   S.line(SIGN.x - 11, SIGN.y - 1, SIGN.x - 9, SIGN.y - 18, 0x5a3a20); S.line(SIGN.x + 11, SIGN.y - 1, SIGN.x + 9, SIGN.y - 18, 0x5a3a20);
   S.rect(SIGN.x - 10, SIGN.y - 18, 21, 15, 0x8a5a30); S.box(SIGN.x - 10, SIGN.y - 18, 21, 15, 0x3a2414); S.hl(SIGN.x - 9, SIGN.y - 17, 19, 0xb07a44);
   for (let y = SIGN.y - 16; y < SIGN.y - 5; y++) for (let x = SIGN.x - 8; x < SIGN.x + 9; x++) S.px(x, y, mix(0x1e2a24, 0x26342c, hash(x, y, 5)));
-  text(S, SMALL, 'TA', SIGN.x - 3, SIGN.y - 15, 0xf4f1ea);
-  text(S, SMALL, 'MED', SIGN.x - 6, SIGN.y - 9, 0xffd23f);
+  const taMed = $t('TA MED').split(' ');   // skylten har två rader: första ordet överst, resten under
+  text(S, SMALL, taMed[0], SIGN.x - 3, SIGN.y - 15, 0xf4f1ea);
+  text(S, SMALL, taMed.slice(1).join(' '), SIGN.x - 6, SIGN.y - 9, 0xffd23f);
   return { tree: T.flush(), treeAt: [TREE.x - 14, TREE.y - 39], barrel: B.flush(), barrelAt: [BARREL.x - 10, BARREL.y - 24], sign: S.flush(), signAt: [SIGN.x - 14, SIGN.y - 20] };
 }
 
