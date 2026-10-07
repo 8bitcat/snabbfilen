@@ -58,7 +58,8 @@ export function keysOf(src) {
 const byFile = {};
 const all = new Set();
 for (const f of files) {
-  const src = fs.readFileSync(f, 'utf8');
+  // CRLF → LF: så gör webbläsaren med mallsträngar, och git checkar ut med CRLF på Windows (verify)
+  const src = fs.readFileSync(f, 'utf8').replace(/\r\n?/g, '\n');
   if (!/(?<![\w$.])(\$tf|\$t|\$n)(`|\()/.test(src)) continue;
   const ks = keysOf(src).filter((k) => k.trim());
   if (!ks.length) continue;
