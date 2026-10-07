@@ -10,6 +10,15 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.89.0] – 2026-10-07 – Linnéstaden
+- Ny stadsdel: LINNÉSTADEN, väster om centrum! Gå åt vänster förbi Pixelgatan 1 – eller ta buss 4 till den nya hållplatsen MARKNADSTORGET.
+- Mysiga landshövdingehus i glada färger med vita knutar, snickarglädje över fönstren och blomlådor överallt – och ett hus med en stor väggmålning.
+- Små butiker längs gatorna: Kafé Linden med uteservering, Gårdsbutiken med röd ladgavel och hölucka, Pynt & Ting, Bageriet med guldkringlan, Blomster, Antikvariatet, Loppisen, Cykelverkstan och Glasskiosken (stängd till våren). Butikerna öppnar en i taget i kommande släpp.
+- Marknadstorget med en gammal torgbrunn, bänkar och lindar – här blir det marknad snart.
+- Stadsodlingen med pallkragar, solrosor, en fågelskrämma och en röd redskapsbod, och Lindparken med musikpaviljongen, rabatter och blommor i gräset.
+- På kajen guppar roddbåtar och snipor i kanalen. På kvällen tänds parklyktor, ljusslingor, skyltfönster och lyktor vid portarna.
+- Kartan, taxin, bussen och stadens folk hittar dit.
+
 ## [0.88.1] – 2026-10-07 – Hitta julvåningen
 - Lättare att hitta julvåningen: en skylt på trottoaren utanför KLÄDER (JULEN · PLAN 3), trappskylten på plan 1 säger PLAN 2 + JUL, och på plan 2 pekar en skylt längst till höger mot trappan till julen. Första gången man går in i klädaffären får man ett tips om vägen.
 

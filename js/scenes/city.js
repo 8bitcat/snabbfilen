@@ -26,7 +26,7 @@ import { makeLookRich } from '../core/people.js';
 // modulerna inte täcker ännu (marken/skjulen/staketen i v2-områdena).
 // v3: buildings-downtown (finanskvarterets hus) och bridge (floden, Stora bron, Järnbron).
 const MODS = {};
-await Promise.all(['buildings-shops', 'buildings-work', 'buildings-south', 'buildings-suburb', 'buildings-leksaker', 'buildings-downtown', 'ground', 'props', 'traffic', 'life', 'weather', 'walk', 'fallback-v2', 'bridge'].map((n) =>
+await Promise.all(['buildings-shops', 'buildings-work', 'buildings-south', 'buildings-suburb', 'buildings-leksaker', 'buildings-downtown', 'buildings-linne', 'ground', 'props', 'traffic', 'life', 'weather', 'walk', 'fallback-v2', 'bridge'].map((n) =>
   import(`../city/${n}.js`).then((m) => { MODS[n] = m; }).catch((e) => console.error(`stadsmodulen ${n} kunde inte laddas:`, e))));
 
 let VW = CITY.VIEW_W, VH = CITY.VIEW_H; // mobilfyllning: vyn följer skärmen, klampad till världen
@@ -105,21 +105,23 @@ function artObstacles() {
 const ART = () => ({
   ...(MODS['buildings-shops']?.BUILDING_ART || {}), ...(MODS['buildings-work']?.BUILDING_ART || {}),
   ...(MODS['buildings-south']?.BUILDING_ART || {}), ...(MODS['buildings-suburb']?.BUILDING_ART || {}), ...(MODS['buildings-leksaker']?.BUILDING_ART || {}),
-  ...(MODS['buildings-downtown']?.BUILDING_ART || {}),
+  ...(MODS['buildings-downtown']?.BUILDING_ART || {}), ...(MODS['buildings-linne']?.BUILDING_ART || {}),
 });
+// (v4) världen börjar i X0 (Linnéstaden väster om centrum): markduken är W − X0 bred, duk-x = världs-x − X0
+const WX0 = CITY.X0 || 0;
 function groundImg(night) {
   const k = 'ground:' + night;
   if (!CACHE[k]) {
     let c;
     try { c = MODS.ground.paintGround(night); } catch (e) {
       console.error('marken kunde inte målas:', e);
-      c = document.createElement('canvas'); c.width = CITY.W; c.height = CITY.H;
-      const x = c.getContext('2d'); x.fillStyle = '#6a6258'; x.fillRect(0, 0, CITY.W, CITY.H);
+      c = document.createElement('canvas'); c.width = CITY.W - WX0; c.height = CITY.H;
+      const x = c.getContext('2d'); x.fillStyle = '#6a6258'; x.fillRect(0, 0, CITY.W - WX0, CITY.H);
     }
     // v2-områdena (Södergatan, kanalen, Infarten, förorten) tills ground.js målar dem själv
     if (!MODS.ground?.V2) { try { SIM?.fallback?.paintGround?.(c, night); } catch (e) { console.error('platshållarmarken kunde inte målas:', e); } }
     // floden och broarnas däck (v3): bridge.js målar flodrummet, läggs ovanpå marken vid RIVER.x0
-    try { const r = MODS.bridge?.paintRiver?.(night); if (r) c.getContext('2d').drawImage(r, RIVER.x0, 0); } catch (e) { console.error('floden kunde inte målas:', e); }
+    try { const r = MODS.bridge?.paintRiver?.(night); if (r) c.getContext('2d').drawImage(r, RIVER.x0 - WX0, 0); } catch (e) { console.error('floden kunde inte målas:', e); }
     CACHE[k] = c;
   }
   return CACHE[k];
@@ -226,7 +228,7 @@ export function makeCity(A) {
   if (homeB && (A.leftHome || !A.cityPos)) { const dc = doorCenter(homeB); A.cityPos = [dc.x, dc.y + 4]; }
   A.leftHome = false;
   const start = A.cityPos || [doorCenter(BUILDINGS[0]).x, doorCenter(BUILDINGS[0]).y];
-  const bounds = { W: CITY.W, H: CITY.H, left: 4, right: CITY.W - 4, top: CITY.BACK[0], bottom: CITY.WALK_BOTTOM ?? CITY.H - 4, spawn: start };
+  const bounds = { X0: WX0, W: CITY.W, H: CITY.H, left: WX0 + 4, right: CITY.W - 4, top: CITY.BACK[0], bottom: CITY.WALK_BOTTOM ?? CITY.H - 4, spawn: start };
   let walker;
   try { walker = MODS.walk.createCityWalker(bounds); } catch (e) { console.error('gångmotorn walk.js startade inte – använder den enkla:', e); walker = createWalker(bounds); }
   walker.speed = 110;
@@ -281,7 +283,7 @@ export function makeCity(A) {
     return Math.max(0, Math.min(CITY.H - VH, y));
   };
   const camTarget = () => lockedCam || (A.attract ? attractCam() : {
-    x: Math.max(0, Math.min(CITY.W - VW, walker.px - VW / 2)),
+    x: Math.max(WX0, Math.min(CITY.W - VW, walker.px - VW / 2)),
     y: camY(),
   });
   Object.assign(cam, camTarget());
@@ -496,7 +498,7 @@ export function makeCity(A) {
   function drawWorld(ctx, cx, cy, vw, vh) {
     const night = env.night, snow = (env.weather?.snowCover || 0) > 0.5 ? 1 : 0;
     const view = { x: cx, y: cy, w: vw, h: vh };
-    ctx.drawImage(groundImg(night), cx, cy, vw, vh, cx, cy, vw, vh);
+    ctx.drawImage(groundImg(night), cx - WX0, cy, vw, vh, cx, cy, vw, vh);
     guard('ground.groundLive', () => MODS.ground?.groundLive?.(ctx, env, view));
     guard('bridge.riverLive', () => MODS.bridge?.riverLive?.(ctx, env, view)); // vattnet i floden (före vädret: isen lägger sig ovanpå)
     guard('weather.drawBack', () => S.weather.drawBack?.(ctx, view));
@@ -758,7 +760,7 @@ export function makeCity(A) {
   let taxi = null; // { dest, kr, min, m, road, lane, curb, wait, boarded }
   // gatan och trottoarkanten närmast punkten: norr/söder om Pixelgatan (parken hör dit) eller Södergatan
   const pickupFor = (x, y) => {
-    const cx = Math.max(70, Math.min(CITY.W - 70, x));
+    const cx = Math.max(WX0 + 70, Math.min(CITY.W - 70, x));
     if (y < (CITY.ROAD[0] + CITY.ROAD[1]) / 2) return { road: 'pixelgatan', lane: 0, curb: { x: cx, y: CITY.ROAD[0] - 5 } };
     if (y < CITY.BACK_S[1]) return { road: 'pixelgatan', lane: 1, curb: { x: cx, y: CITY.ROAD[1] + 5 } };
     if (y < (CITY.ROAD_S[0] + CITY.ROAD_S[1]) / 2) return { road: 'sodergatan', lane: 0, curb: { x: cx, y: CITY.ROAD_S[0] - 5 } };
@@ -841,12 +843,13 @@ export function makeCity(A) {
     _debug: {
       spot: (id) => { const b = ALL_BUILDINGS.find((x) => x.id === id); return b ? spotOf(b) : null; },
       tile: (a, bb) => ({ x: 60 + a * 40 - cam.x, y: CITY.SIDEWALK_N[0] + 8 + bb * 10 - cam.y }),
-      lockCam: (x, y) => { lockedCam = x === null || x === undefined ? null : { x: Math.max(0, Math.min(CITY.W - VW, x)), y: Math.max(0, Math.min(CITY.H - VH, y)) }; if (lockedCam) Object.assign(cam, lockedCam); },
+      lockCam: (x, y) => { lockedCam = x === null || x === undefined ? null : { x: Math.max(WX0, Math.min(CITY.W - VW, x)), y: Math.max(0, Math.min(CITY.H - VH, y)) }; if (lockedCam) Object.assign(cam, lockedCam); },
       teleport: (x, y) => { walker.px = x; walker.py = y; walker.stop(); walker.snapFree(); Object.assign(cam, camTarget()); checkDistrict(false); },
       panorama: () => {
-        const c = document.createElement('canvas'); c.width = CITY.W; c.height = CITY.H;
+        const c = document.createElement('canvas'); c.width = CITY.W - WX0; c.height = CITY.H;
         const x = c.getContext('2d'); x.imageSmoothingEnabled = false;
-        drawWorld(x, 0, 0, CITY.W, CITY.H);
+        x.translate(-WX0, 0);
+        drawWorld(x, WX0, 0, CITY.W - WX0, CITY.H);
         return c.toDataURL('image/png');
       },
       // v2

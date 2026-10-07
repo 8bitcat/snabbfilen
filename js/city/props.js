@@ -15,7 +15,7 @@
 //   bänkar går att sitta på (se "sittplatser" i createProps). export const V2 = true.
 import { Pix, mix, mul, hash, bayer, SMALL, BIG, text, textW, eachTextPixel } from '../core/floor-pix.js';
 import { CITY, BUILDINGS, ALL_BUILDINGS, CROSSWALKS, CROSSWALKS_S, PARK_LAYOUT, BUS_STOP, BUS_STOPS, LOTS, RESERVED, footprint, gateRect, artBox,
-  DOWNTOWN_LAYOUT } from './map.js';
+  DOWNTOWN_LAYOUT, LINNE_LAYOUT } from './map.js';
 
 // Rekvisitan täcker hela v2-världen (Söder, parken, Infarten, förorten) – scenen
 // kopplar bort platshållaren i fallback-v2.js när V2 är satt.
@@ -2784,6 +2784,216 @@ function paintPosterFon(P) {
   P.box(x0 - 1, y0 - 1, 21, y1 - y0 + 3, 0x9aa2aa);
 }
 
+// =====================================================================
+// LINNÉSTADEN (v4) – torgbrunnen, musikpaviljongen, stadsodlingens bod och
+// grödor, båtarna vid kajen och affischen i Marknadstorgets kur
+// =====================================================================
+const VERD = [0x0e2a22, 0x1a4034, 0x2a5a48, 0x3e7a62, 0x62a088];          // grönmålat gjutjärn
+// torgbrunnen: åttkantigt stenkar med vatten och en gjutjärnspump med lykta på toppen (f = vattenstrålens ruta)
+function paintTownPump(P, f) {
+  // karet: framsida i huggen sten, kant och vattenyta
+  for (let x = -17; x <= 17; x++) {
+    const e = Math.abs(x) / 17, top = -6 + Math.round(e * e * 3);
+    for (let y = top; y <= 0; y++) {
+      const blk = (Math.floor((x + 40) / 7) + (y < -3 ? 1 : 0)) & 1;
+      let c = tone(STONE, 0.55 + (blk ? 0.06 : -0.04) - (y + 6) * 0.03 + (hash(x, y, 7) - 0.5) * 0.1, x, y);
+      if ((x + 40) % 7 === 0 || y === -3) c = STONE[1];
+      if (x === -17 || x === 17) c = STONE[0];
+      P.px(x, y, c);
+    }
+  }
+  for (let y = -14; y <= -5; y++) for (let x = -17; x <= 17; x++) {
+    const t = Math.hypot(x / 17, (y + 9.5) / 4.6);
+    if (t >= 1) continue;
+    if (t > 0.78) P.px(x, y, y < -9 ? STONE[4] : STONE[3]);                                 // kantstenen
+    else { const r = vnoiseP(x * 0.4, y * 1.5, 31 + f); P.px(x, y, r > 0.7 ? WATER[5] : r > 0.45 ? WATER[3] : y < -10 ? WATER[2] : WATER[1]); }
+  }
+  // pumpen: sockel, kannelerad stomme, pip, handtag och lyktan
+  P.rect(-4, -14, 9, 3, STONE[2]); P.hl(-4, -14, 9, STONE[4]); P.hl(-4, -12, 9, STONE[1]);
+  for (let y = -36; y <= -15; y++) {
+    const w = y < -32 ? 2 : y > -18 ? 4 : 3;
+    for (let x = -w; x <= w; x++) P.px(x, y, x === -w ? VERD[4] : x === w ? VERD[1] : (x + 10) % 2 ? VERD[3] : VERD[2]);
+  }
+  for (const y of [-18, -27, -32]) { P.hl(-4, y, 9, VERD[4]); P.hl(-4, y + 1, 9, VERD[1]); }
+  P.hl(-8, -25, 5, VERD[3]); P.hl(-9, -24, 5, VERD[2]); P.px(-9, -23, VERD[1]); P.px(-10, -23, VERD[0]);   // pipen
+  P.line(4, -29, 9, -33, VERD[3]); P.line(9, -33, 12, -31, VERD[2]); P.px(12, -30, VERD[1]);                  // handtaget
+  P.px(4, -29, 0xc8a44a);
+  // strålen ur pipen ner i karet
+  for (let y = -22; y <= -11; y++) { const on = (y + f * 2) % 4 !== 0; if (on) P.px(-10, y, y > -13 ? WATER[5] : WATER[4]); if ((y + f) % 3 === 0) P.px(-11, y, WATER[5], 0.6); }
+  P.px(-11, -10, WHITE); P.px(-9, -10, WATER[5]); P.px(-12, -11, WATER[4], 0.8);
+  // lyktan
+  P.rect(-2, -39, 5, 3, VERD[1]); P.hl(-3, -40, 7, VERD[3]);
+  for (let y = -47; y <= -41; y++) for (let x = -2; x <= 2; x++) P.px(x, y, x === -2 || x === 2 ? VERD[1] : y === -47 ? 0xfff6dc : 0xe8e4c8);
+  P.hl(-3, -48, 7, VERD[3]); P.hl(-2, -49, 5, VERD[2]); P.px(0, -50, 0xd8b450); P.px(0, -51, 0xf0d070);
+  groundShadow(P, 3, 0, 19, 3, 0.3);
+}
+function vnoiseP(x, y, s) { const ix = Math.floor(x), iy = Math.floor(y), fx = x - ix, fy = y - iy; const a = hash(ix, iy, s), b = hash(ix + 1, iy, s), c = hash(ix, iy + 1, s), d = hash(ix + 1, iy + 1, s); return a + (b - a) * fx + (c - a) * fy + (a - b - c + d) * fx * fy; }
+const WHITE = 0xffffff;
+// musikpaviljongen: vit åttkantig paviljong med kopparrött tak, räcken, snickarglädje och flaggstång
+function paintPavilion(P) {
+  const ROOF = [0x2e5a4a, 0x3e7a62, 0x5a9a80, 0x84bca2, 0xb0d8c4];          // ärgad koppar
+  const WH = [0x8a8478, 0xc8c2b4, 0xe8e2d4, 0xf8f4ea];
+  // plinten (stensockel) och golvet
+  for (let x = -28; x <= 28; x++) {
+    const e = Math.abs(x) / 28, sag = Math.round(e * e * 3);
+    for (let y = -6 + sag; y <= sag - 1; y++) P.px(x, y, (x + 40) % 8 === 0 ? STONE[1] : tone(STONE, 0.5 - (y + 6) * 0.04 + (hash(x, y, 9) - 0.5) * 0.12, x, y));
+    for (let y = -10 + sag; y < -6 + sag; y++) P.px(x, y, y === -10 + sag ? WOOD[4] : (x & 3) === 0 ? WOOD[2] : WOOD[3]);
+  }
+  // trappan mitt fram
+  for (let s = 0; s < 3; s++) { P.rect(-6 + s, -6 + s * 2, 13 - s * 2, 2, STONE[3 - (s > 1 ? 1 : 0)]); P.hl(-6 + s, -6 + s * 2, 13 - s * 2, STONE[4]); }
+  // det inre i skugga och notställen
+  for (let y = -36; y <= -11; y++) for (let x = -24; x <= 24; x++) P.px(x, y, mix(0x3a3440, 0x5a5262, (y + 36) / 26));
+  for (const x of [-12, 11]) { P.vl(x, -20, 9, IRON[3]); P.hl(x - 2, -21, 5, IRON[4]); }
+  // pelarna
+  for (const x of [-25, -15, -5, 5, 15, 25]) {
+    const e = Math.abs(x) / 28, sag = Math.round(e * e * 3);
+    for (let y = -37; y <= -10 + sag; y++) { P.px(x, y, WH[3]); P.px(x + 1, y, WH[1]); }
+    P.hl(x - 1, -10 + sag, 4, WH[2]);
+  }
+  // räcket (inte i öppningen framför trappan)
+  for (let x = -26; x <= 26; x++) {
+    if (x > -5 && x < 6) continue;
+    const e = Math.abs(x) / 28, sag = Math.round(e * e * 3);
+    P.px(x, -17 + sag, WH[3]); P.px(x, -16 + sag, WH[1]);
+    if ((x + 40) % 3 === 0) for (let y = -15 + sag; y < -10 + sag; y++) P.px(x, y, WH[2]);
+  }
+  // takfoten: vit fris med snickarglädje (spetsar) och en ljusslinga
+  for (let x = -30; x <= 30; x++) {
+    const e = Math.abs(x) / 30, sag = Math.round(e * e * 3);
+    P.px(x, -38 + sag, WH[3]); P.px(x, -37 + sag, WH[2]); P.px(x, -36 + sag, WH[1]);
+    if ((x + 40) % 4 < 2) P.px(x, -35 + sag, WH[2]);
+    if ((x + 40) % 4 === 0) P.px(x, -34 + sag, WH[1]);
+  }
+  // taket: åttkantig kupol med ribbor, lanternin och flaggstång
+  for (let y = -60; y <= -39; y++) {
+    const t = (y + 60) / 21, hw = Math.round(6 + t * 25);
+    for (let x = -hw; x <= hw; x++) {
+      const u = x / hw, rib = Math.abs(((u * 2 + 4) % 1) - 0.5) < 0.06;
+      let c = tone(ROOF, 0.35 + (1 - Math.abs(u + 0.25)) * 0.4 - t * 0.1, x, y);
+      if (rib) c = ROOF[4];
+      if (x === -hw) c = ROOF[4]; else if (x === hw) c = ROOF[0];
+      P.px(x, y, c);
+    }
+  }
+  P.rect(-4, -66, 9, 6, WH[3]); P.vl(4, -66, 6, WH[1]); P.rect(-2, -65, 2, 3, 0x5a6a7a); P.rect(1, -65, 2, 3, 0x5a6a7a);  // lanterninen
+  for (let r = 0; r < 4; r++) P.hl(-5 + r, -67 - r, 11 - r * 2, ROOF[2 + (r & 1)]);
+  P.vl(0, -80, 10, IRON[3]); P.px(0, -81, 0xf0d070);
+  for (let i = 0; i < 6; i++) { P.px(1 + i, -79 + (i >> 2), i % 2 ? 0x2a5ad0 : 0xf0c020); P.px(1 + i, -78 + (i >> 2), i % 2 ? 0x2a5ad0 : 0xf0c020); }  // vimpeln
+  groundShadow(P, 4, 0, 30, 4, 0.3);
+}
+// ljusslingan runt paviljongens takfot (glöd)
+function paintPavilionLit(P) {
+  for (let x = -29; x <= 29; x += 3) { const e = Math.abs(x) / 30, sag = Math.round(e * e * 3); P.px(x, -33 + sag, 0xfff0b0); P.px(x, -32 + sag, 0xffd070, 0.6); }
+}
+function paintPavilionGlow(P) {
+  for (let x = -29; x <= 29; x += 3) { const e = Math.abs(x) / 30, sag = Math.round(e * e * 3); P.ell(x, -33 + sag, 2.6, 2.2, 0xffc060, 0.55, 3); }
+  P.ell(0, -22, 22, 10, 0xffd8a0, 0.25, 4);
+}
+// redskapsboden i stadsodlingen: falurött med vita knutar, sadeltak med papp, dörr med Z-regel, verktyg
+function paintShed(P) {
+  const RED = [0x5a1c12, 0x7a2a1c, 0x9a3a28, 0xb04a34, 0xc8604a];
+  for (let x = -13; x <= 12; x++) for (let y = -20; y <= -1; y++) {
+    const bx = (x + 40) % 4;
+    P.px(x, y, bx === 3 ? RED[0] : bx === 0 ? RED[3] : tone(RED, 0.55 + (hash(x >> 2, 3, 41) - 0.5) * 0.2, x, y));
+  }
+  for (const x of [-13, 11]) { P.vl(x, -20, 20, 0xf4efe4); P.vl(x + 1, -20, 20, 0xc8c0b0); }
+  // gaveln med vindskivor och papptak
+  for (let r = 0; r < 12; r++) {
+    const hw = 14 - r;
+    for (let x = -hw; x <= hw - 1; x++) P.px(x, -21 - r, (x + 40) % 4 === 3 ? RED[0] : RED[2]);
+    P.px(-hw - 1, -21 - r, 0x2a2a30); P.px(-hw, -21 - r, 0xf4efe4); P.px(hw - 1, -21 - r, 0xc8c0b0); P.px(hw, -21 - r, 0x2a2a30);
+  }
+  P.hl(-15, -21, 30, 0x2a2a30); P.hl(-14, -20, 28, 0x000000, 0.3);
+  // dörren
+  P.rect(-4, -15, 8, 14, 0x6a3a22); P.box(-5, -16, 10, 16, 0xf4efe4); P.line(-3, -3, 2, -13, 0x8a5a3a); P.hl(-4, -9, 8, 0x8a5a3a); P.px(2, -8, 0xd8c070);
+  // fönstret med spröjs och en lykta under taket
+  P.rect(5, -15, 5, 5, 0x9ac4dc); P.box(4, -16, 7, 7, 0xf4efe4); P.vl(7, -15, 5, 0xf4efe4); P.hl(5, -13, 5, 0xf4efe4);
+  P.rect(-9, -16, 3, 4, 0x2a2a30); P.px(-8, -15, 0xfff0b0);
+  // krattan, spaden och vattenkannan
+  P.line(-17, 0, -15, -20, 0x8a6a3a); P.hl(-18, -21, 5, 0x6a6e78); for (let i = 0; i < 5; i += 2) P.px(-18 + i, -20, 0x6a6e78);
+  P.line(15, 0, 14, -16, 0x8a6a3a); P.rect(13, -4, 4, 4, 0x8a8e96); P.hl(13, -4, 4, 0xc8ccd2);
+  P.rect(8, -4, 5, 4, 0x3a8a4a); P.hl(8, -4, 5, 0x5aaa6a); P.line(12, -3, 15, -5, 0x3a8a4a);
+  groundShadow(P, 2, 0, 17, 3, 0.3);
+}
+// solrosor (fem stänglar med stora huvuden)
+function paintSunflowers(P) {
+  for (let k = 0; k < 6; k++) {
+    const x = -12 + k * 5, hgt = 18 + ((hash(k, 1, 51) * 12) | 0);
+    P.vl(x, -hgt, hgt, LEAVES[3]); P.vl(x + 1, -hgt + 2, hgt - 2, LEAVES[2]);
+    for (const ly of [-6, -12]) { P.px(x - 1, ly, LEAVES[4]); P.px(x - 2, ly - 1, LEAVES[4]); P.px(x + 2, ly + 2, LEAVES[3]); P.px(x + 3, ly + 1, LEAVES[4]); }
+    const cy = -hgt - 2;
+    for (let j = -3; j <= 3; j++) for (let i = -3; i <= 3; i++) { const t = Math.hypot(i, j); if (t < 3.6) P.px(x + i, cy + j, t < 1.6 ? 0x5a3a1a : t < 2.2 ? 0x8a5a24 : (i + j) % 2 ? 0xf8c820 : 0xf0a818); }
+  }
+  groundShadow(P, 0, 0, 16, 2, 0.25);
+}
+// regntunna i trä med järnband och lock
+function paintRainBarrel(P) {
+  for (let y = -14; y <= -1; y++) for (let x = -5; x <= 5; x++) {
+    const bx = (x + 40) % 3, w = Math.abs(x) === 5;
+    let c = bx === 2 ? WOOD[1] : tone(WOOD, 0.62 - Math.abs(x) * 0.04, x, y);
+    if (w) c = WOOD[0];
+    if (y === -12 || y === -4) c = IRON[3];
+    P.px(x, y, c);
+  }
+  P.ell(0, -15, 5.5, 1.6, WOOD[4], 1, 1); P.hl(-3, -15, 7, WATER[2]);
+  groundShadow(P, 2, 0, 7, 2, 0.3);
+}
+// fågelskrämman
+function paintScarecrow(P) {
+  P.vl(0, -30, 30, WOOD[2]); P.vl(1, -30, 30, WOOD[1]); P.hl(-9, -22, 19, WOOD[2]);
+  for (let y = -24; y <= -12; y++) for (let x = -6; x <= 6; x++) if (Math.abs(x) <= 6 - (y > -16 ? 2 : 0)) P.px(x, y, (x + y) % 4 === 0 ? 0x8a2a24 : (x + 40) % 4 === 0 ? 0x2a4a8a : 0xc84a3a);   // rutig skjorta
+  for (const s of [-1, 1]) { P.px(s * 9, -22, 0xe8c860); P.px(s * 10, -21, 0xe8c860); P.px(s * 9, -20, 0xd8b040); }   // halm ur ärmarna
+  P.ell(0, -29, 3.5, 3.5, 0xe8d0a0, 1, 1); P.px(-1, -30, 0x2a2a30); P.px(1, -30, 0x2a2a30); P.hl(-1, -28, 3, 0x8a4a2a);
+  P.hl(-6, -32, 13, 0x5a3a1a); P.rect(-3, -36, 7, 4, 0x6a4a2a); P.hl(-3, -36, 7, 0x8a6a3a);                        // hatten
+  P.px(-5, -12, 0xe8c860); P.px(5, -12, 0xe8c860); P.px(0, -11, 0xd8b040);
+  groundShadow(P, 2, 0, 5, 2, 0.3);
+}
+// båtar vid kajen: 0 = roddeka i trä, 1 = vit snipa med röd rand och utombordare.
+// Sedda snett ovanifrån från kajen: insidan (durken, tofterna) och skrovets södra sida mot oss.
+function paintBoat(P, kind) {
+  const side = kind ? [0x8a9098, 0xc8ccd4, 0xeef0f4] : [0x3a2214, 0x5e3a20, 0x86562e];
+  const inner = kind ? [0x9aa0a8, 0xc0c4cc, 0xdadde2] : [0x6a4022, 0x8a5a30, 0xa87444];
+  const L = 19, top = (x) => -7 + Math.round(Math.pow(Math.abs(x) / L, 2) * 3), bot = (x) => 2 - Math.round(Math.pow(Math.abs(x) / L, 2.2) * 4);
+  for (let x = -L; x <= L; x++) {
+    const t = top(x), b = bot(x);
+    // insidan (durken) mellan relingarna
+    for (let y = t + 1; y < b - 2; y++) P.px(x, y, kind ? mix(inner[2], inner[0], (y - t) / Math.max(1, b - t)) : ((y + 40) % 2 ? inner[1] : inner[2]));
+    P.px(x, t, kind ? 0xffffff : WOOD[4]); P.px(x, t + 1, kind ? inner[0] : WOOD[1]);                     // bortre relingen
+    // skrovsidan mot oss: bordläggningen i ekan, vit med röd rand på snipan
+    for (let y = b - 2; y <= b; y++) {
+      let c = side[y === b ? 0 : y === b - 1 ? 1 : 2];
+      if (kind && y === b - 1) c = 0xc8302a;
+      if (!kind && (x + 40) % 9 === 0) c = side[0];
+      P.px(x, y, c);
+    }
+    P.px(x, b - 3, kind ? 0xffffff : WOOD[4]);                                                              // främre relingen
+  }
+  P.px(-L - 1, top(-L) + 1, side[0]); P.px(L + 1, top(L) + 1, side[0]);                                    // stäv och akter
+  if (kind) {
+    P.rect(-5, -7, 9, 3, 0x9ac4dc); P.hl(-5, -8, 9, 0xe8f4fa); P.vl(-6, -7, 4, 0x5a6068); P.vl(4, -7, 4, 0x5a6068);   // vindrutan
+    P.rect(-13, -4, 6, 2, 0x2a5ad0); P.hl(-13, -4, 6, 0x4a7af0);                                                    // dynan
+    P.rect(16, -7, 4, 6, 0x2a2a30); P.hl(16, -7, 4, 0x5a5e66); P.vl(20, -3, 4, 0x3a3e46); P.px(17, -6, 0xd8303a);   // motorn
+  } else {
+    for (const x of [-9, 0, 9]) for (let y = top(x) + 1; y < bot(x) - 2; y++) { P.px(x, y, WOOD[4]); P.px(x + 1, y, WOOD[2]); }   // tofterna
+    P.line(-14, -3, 13, -5, WOOD[4]); P.line(-13, -2, 14, -4, WOOD[2]);                                           // årorna
+    P.px(-15, -3, WOOD[3]); P.px(15, -5, WOOD[3]);
+  }
+  for (let x = -L - 1; x <= L + 1; x++) P.px(x, bot(Math.min(L, Math.abs(x))) + 1, WATER[0], 0.55);             // skuggan i vattnet
+}
+// förtöjningslinan från pollaren på kajen ner till båten
+function paintMooring(P) { for (let i = 0; i <= 10; i++) P.px(Math.round(i * 0.4), i, 0xd8c8a0); }
+// affischen i Marknadstorgets kur: markis, TORG, LÖR 10-16
+function paintPosterMarknad(P) {
+  const x0 = 10, x1 = 28, y0 = -33, y1 = -3;
+  for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) P.px(x, y, mix(0xfaf2dc, 0xf0dcb0, (y - y0) / 30 + (bayer(x, y) - 0.5) * 0.12));
+  for (let x = x0; x <= x1; x++) for (let y = y0 + 2; y < y0 + 7; y++) P.px(x, y, ((x - x0) >> 2) & 1 ? 0xf8f4ea : 0xd8303a);
+  for (let x = x0; x <= x1; x += 4) { P.px(x + 1, y0 + 7, 0xd8303a); P.px(x + 2, y0 + 7, 0xd8303a); }
+  for (const [x, c] of [[12, 0xe0802a], [16, 0xd8303a], [20, 0x6ab04a], [24, 0xf0c040]]) { P.rect(x, y0 + 10, 3, 3, c); P.px(x + 1, y0 + 9, 0x4c8a3a); }
+  text(P, SMALL, 'TORG', 12, -18, 0x8a2a1a); text(P, SMALL, 'LÖR', 14, -11, 0x2a2a30);
+  P.rect(x0, -6, 19, 4, 0x2e5a44); text(P, SMALL, '10-16', x0 + 1, -6, 0xffffff, 0.95);
+  P.box(x0 - 1, y0 - 1, 21, y1 - y0 + 3, 0x9aa2aa);
+}
+
 // ---------- placeringen ----------
 const NW = CITY.SIDEWALK_N[0] + 7;   // 193: mot fasaderna
 const NC = CITY.SIDEWALK_N[1] - 5;   // 213: kantstenen (träd, lyktor)
@@ -3597,6 +3807,85 @@ export function createProps(env) {
   lamp(2500 + SDX, QL, -1, 3); brokenBench(2600 + SDX, QS); lamp(2680 + SDX, QL, -1, 1);
   for (let x = 1800 + SDX; x < CITY.W - 10; x += 96) bollard(x, QB, true);
   for (const [x, y] of [[1950 + SDX, 750], [2150 + SDX, 745], [2350 + SDX, 752], [2550 + SDX, 746], [2650 + SDX, 754]]) weeds(x, y);
+
+  // =================== LINNÉSTADEN (v4): den mysiga stadsdelen väster om centrum ===================
+  // Lindar i galler och gamla parklyktor (varmt, mjukt ljus), Marknadstorget med torgbrunnen och
+  // bänkar runt den, stadsodlingen inom ett trästaket (boden, regntunnan, solrosorna, fågelskrämman),
+  // Lindparken med musikpaviljongen, kajen med båtarna. Husens egna trottoarmöbler (caféborden,
+  // grönsakslådorna, blomhinkarna …) står i buildings-linne.js. Mitten av torget hålls fritt åt marknaden.
+  if (LINNE_LAYOUT) {
+    const LL = LINNE_LAYOUT;
+    // --- norra trottoaren (Pixelgatan) ---
+    for (const [k, x] of [['korsbar', -1196], ['lind', -1104], ['lind', -972], ['lind', -672], ['korsbar', -540], ['lind', -440], ['lind', -310], ['korsbar', -206], ['lind', -92]]) tree(k, x, NC);
+    for (const x of [-1124, -1024, -906, -742, -616, -488, -372, -250, -150, -36]) parkLamp(x, NC);
+    hydrant(-1050, NC); bin(-700, NC); bin(-262, NC);
+    // --- södra trottoaren: parklyktor vid kanten, lindar mot odlingen och parken, kuren vid Marknadstorget ---
+    for (const x of [-1150, -1050, -970, -880, -740, -640, -470, -380, -280, -170, -70]) parkLamp(x, SC);
+    for (const [k, x] of [['lind', -1180], ['lind', -1110], ['lind', -1044], ['lind', -446], ['korsbar', -390], ['lind', -250], ['korsbar', -130], ['lind', -30]]) tree(k, x, SB);
+    const ms = BUS_STOPS.find((s) => s.id === 'marknadstorget');
+    if (ms) shelter(ms, paintPosterMarknad);
+    sign('MARKNADSGATAN', CROSSWALKS.find((c) => c.name === 'MARKNADSGATAN')?.x0 - 10 || -862, SB, 1);
+    hydrant(-1006, SC + 1); bin(-500, SB);
+    // --- Marknadstorget: brunnen, bänkarna runt den, lindar och lyktor i hörnen, krukor ---
+    {
+      const wx = LL.well.x, wy = LL.well.y + 8;
+      const PF = [0, 1, 2, 3].map((f) => spr(46, 56, 23, 52, (P) => paintTownPump(P, f)));
+      if (add('torgbrunn', wx, wy, [wx - 18, wy - 14, wx + 18, wy + 1], [[wx - 17, wy - 12, wx + 17, wy]], (ctx) => putW(ctx, snowNow() ? PF[0] : PF[Math.floor(env.t * 8) % 4], wx, wy), true)) {
+        glows.push({ x: wx, y: wy - 44, s: once('pumpGlow', () => spr(30, 30, 15, 15, (P) => { P.ell(0, 0, 12, 10, 0xffd890, 0.45, 5); P.ell(0, 0, 3, 4, 0xfff4d8, 0.9, 2); })), a: 0.9 });
+        lits.push({ x: wx, y: wy - 44, s: once('pumpLit', () => spr(6, 8, 3, 4, (P) => { for (let y = -3; y <= 2; y++) P.hl(-1, y, 3, y < -1 ? 0xffffff : 0xfff0b8); })), a: 1 });
+        // sittkanten på karets södra sida (man sitter med ryggen mot brunnen och tittar mot oss)
+        addSeats('bank', [wx - 9, wx + 8], wy + 1, 'down', wy + 6, [wx - 18, wy - 16, wx + 18, wy + 3]);
+      }
+      bench(wx - 46, wy - 16); bench(wx + 46, wy - 16);                    // norr om brunnen, man tittar mot den
+      bench(wx - 46, wy + 26, true); bench(wx + 46, wy + 26, true);        // söder om den, ryggen mot oss
+      pot(wx - 70, wy - 12, 'pelargon'); pot(wx + 70, wy - 12, 'pelargon'); pot(wx - 70, wy + 22, 'pelargon'); pot(wx + 70, wy + 22, 'pelargon');
+      const [tx0, ty0, tx1, ty1] = LL.torg;
+      for (const [x, y] of [[tx0 + 20, ty0 + 24], [tx1 - 20, ty0 + 24], [tx0 + 20, ty1 - 10], [tx1 - 20, ty1 - 10]]) tree('lind', x, y);
+      for (const [x, y] of [[tx0 + 52, ty0 + 16], [tx1 - 52, ty0 + 16], [tx0 + 52, ty1 - 6], [tx1 - 52, ty1 - 6]]) parkLamp(x, y);
+      bin(tx0 + 74, ty1 - 6); bin(tx1 - 74, ty1 - 6);
+    }
+    // --- stadsodlingen ---
+    lotFence(LL.odling, [{ side: 'n', x0: -1124, x1: -1108 }, { side: 'e', y0: 346, y1: 358 }], 'tra', 0, 'staket');
+    item2('bod', -1170, 448, [-1186, 442, -1155, 449], [[-1184, 443, -1157, 448]], 40, 40, 19, 36, paintShed);
+    item2('regntunna', -1146, 446, [-1152, 441, -1140, 447], [[-1151, 442, -1141, 446]], 16, 20, 8, 17, paintRainBarrel);
+    seasonal('solrosor', -1112, 448, [-1128, 445, -1096, 449], [[-1127, 446, -1097, 448]], (k) => (k === 'vinter' ? null : spr(34, 40, 17, 37, paintSunflowers)));
+    item2('fågelskrämma', -1078, 444, [-1082, 441, -1074, 445], [[-1081, 442, -1075, 444]], 24, 40, 12, 38, paintScarecrow);
+    bench(-1054, 446);
+    // --- Lindparken: musikpaviljongen, träd, bänkar längs promenaden, lyktor och buskar ---
+    {
+      const pv = LL.pavilion, px = pv.x, py = pv.y + 10;
+      if (add('paviljong', px, py, [px - 30, py - 13, px + 30, py + 1], [[px - 28, py - 12, px + 28, py], [px - 24, py - 16, px + 24, py - 12]], (ctx) => putW(ctx, once('pavilion', () => spr(66, 86, 33, 82, paintPavilion)), px, py))) {
+        glows.push({ x: px, y: py, s: once('pavGlow', () => spr(66, 86, 33, 82, paintPavilionGlow)), a: 0.85 });
+        lits.push({ x: px, y: py, s: once('pavLit', () => spr(66, 86, 33, 82, paintPavilionLit)), a: 1 });
+      }
+    }
+    for (const [x, y, k] of [[-436, 412, 'lind'], [-392, 446, 'korsbar'], [-276, 412, 'ek'], [-236, 452, 'lonn'], [-96, 414, 'lind'], [-40, 448, 'korsbar'], [-420, 324, 'lonn'], [-200, 326, 'korsbar'], [-70, 328, 'lind']]) tree(k, x, y, false);
+    for (const x of [-360, -260, -120]) bench(x, 331);
+    bin(-340, 331);
+    for (const x of [-430, -290, -60]) parkLamp(x, 354);
+    for (const [x, y, f] of [[-452, 452, 'pink'], [-300, 452, null], [-130, 452, 'white'], [-232, 378, 'purple']]) bush(x, y, f);
+    // --- södra raden (Kajgatan/Södergatan): lindar och lyktor vid kanten, skyltar ---
+    for (const [k, x] of [['lind', -1176], ['korsbar', -1070], ['lind', -906], ['lind', -790], ['korsbar', -660], ['lind', -560], ['lind', -430], ['korsbar', -270], ['lind', -150], ['lind', -24]]) tree(k, x, CS);
+    for (const x of [-1110, -1030, -840, -720, -610, -500, -380, -220, -90]) parkLamp(x, CS + 1);
+    sign('KAJGATAN', -922, CS - 2, -1); sign('TRÄDGÅRDSGATAN', -296, CS - 2, 1);
+    bin(-700, CS); hydrant(-452, CS);
+    // --- bortre trottoaren och kajen: bänkar mot kanalen, lyktor, pollare, livbojar och båtarna ---
+    for (const x of [-1130, -880, -700, -520, -340, -160]) bench(x, QS);
+    for (const x of [-1180, -1060, -800, -620, -440, -260, -80]) parkLamp(x, QL);
+    bikeRack(-760, QS);
+    for (let x = CITY.X0 + 40; x < -10; x += 96) bollard(x, QB, false);
+    for (const x of [-1012, -592, -248]) lifebuoy(x, QB);
+    const BOATS = [spr(42, 16, 20, 9, (P) => paintBoat(P, 0)), spr(42, 16, 20, 9, (P) => paintBoat(P, 1))];
+    for (const [x, y, k] of [[-1150, 798, 0], [-1062, 806, 1], [-640, 800, 0], [-318, 804, 1], [-98, 799, 0]]) {
+      items.push({ x, y: y + 6, kind: 'båt', draw: (ctx) => {
+        const frozen = env.weather && ((env.weather.season === 'vinter' && (env.weather.temp ?? 15) <= 0) || (env.weather.snowCover || 0) > 0.25);
+        put(ctx, BOATS[k], x, y + (frozen ? 0 : Math.round(Math.sin(env.t * 1.2 + x * 0.1) * 0.8)));
+      } });
+    }
+    // --- bakgatan bakom den norra raden och gränderna: sopkärl, krukor, en cykel ---
+    wheelieBin(-1140, 30, 'gron'); wheelieBin(-1129, 30, 'gra'); wheelieBin(-700, 32, 'brun'); wheelieBin(-689, 32, 'gron'); wheelieBin(-300, 30, 'gra');
+    pot(-1080, 120, 'pelargon'); pot(-568, 150, 'pelargon'); pot(-204, 130, 'pelargon');
+  }
 
   if (skipped.length) console.warn('rekvisita som inte fick plats (RESERVED/hus/annan rekvisita):', skipped.join(', '));
   // sist av allt i bilden (y ≥ 1e5 ritas alltid, inget x = sållas aldrig bort): kroken som samlar

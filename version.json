@@ -1,7 +1,7 @@
 {
-  "version": "0.88.1",
+  "version": "0.89.0",
   "date": "2026-10-07",
-  "title": "Hitta julvåningen",
+  "title": "Linnéstaden",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
@@ -12,6 +12,7 @@
     "js/city/bridge.js",
     "js/city/buildings-downtown.js",
     "js/city/buildings-leksaker.js",
+    "js/city/buildings-linne.js",
     "js/city/buildings-shops.js",
     "js/city/buildings-south.js",
     "js/city/buildings-suburb.js",

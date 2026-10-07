@@ -262,7 +262,7 @@ function cleanP(p, old = {}) {
   if (p && typeof p === 'object') {
     if (p.av) { out.av = cleanAvatar(p.av); out.av.name = tvatta(out.av.name); }   // fula ord i namnet → *** (skydd.js)
     if (p.scene !== undefined) out.scene = cleanScene(p.scene);
-    if (p.x !== undefined) { out.tx = Math.max(0, Math.min(4000, +p.x || 190)); if (out.x === undefined) out.x = out.tx; }
+    if (p.x !== undefined) { const px = +p.x; out.tx = Math.max(-1200, Math.min(4000, Number.isFinite(px) ? px : 190)); if (out.x === undefined) out.x = out.tx; }   // (v4: Linnéstaden ligger i x −1200–0)
     if (p.y !== undefined) { out.ty2 = Math.max(0, Math.min(2000, +p.y || 174)); if (out.y === undefined) out.y = out.ty2; }
     if (p.home !== undefined) out.home = String(p.home).slice(0, 16);
     if (typeof p.key === 'string') out.key = p.key.slice(0, 64);

@@ -57,6 +57,8 @@ const byId = (id) => ALL_B.find((b) => b.id === id) || null;
 
 const WALK_SEQ = [1, 3, 2, 3];
 const CW = CITY.W, CH = CITY.H, BASE = CITY.BASE;
+const LX = CITY.X0 || 0;                                // (v4) världens västra kant (Linnéstaden ligger i x LX–0)
+const LIN = MAP.LINNE_LAYOUT || null;
 const VW = CITY.VIEW_W, VH = CITY.VIEW_H;
 const midOf = (a, d) => (a ? Math.round((a[0] + a[1]) / 2) : d);
 const ROAD_N = CITY.ROAD, ROAD_S = CITY.ROAD_S || [CITY.ROAD[0] + 454, CITY.ROAD[1] + 454];
@@ -1182,7 +1184,7 @@ function dress(L0, o) {
 // =====================================================================
 //  Gångnätet
 // =====================================================================
-const CELL = 2, GW = Math.ceil(CW / CELL), GH = Math.ceil(CH / CELL);
+const CELL = 2, GW = Math.ceil((CW - LX) / CELL), GH = Math.ceil(CH / CELL);   // (v4) rutnätet börjar i LX
 const DIRS8 = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]];
 const cwMid = (c) => Math.round((c.x0 + c.x1) / 2);
 
@@ -1192,27 +1194,27 @@ function rasterNav(obstacles) {
   const G = new Uint8Array(GW * GH);
   const fill = (r, v) => {
     if (!r) return;
-    const gx0 = Math.max(0, Math.ceil((r[0] - 1) / CELL)), gx1 = Math.min(GW - 1, Math.ceil((r[2] - 1) / CELL) - 1);
+    const gx0 = Math.max(0, Math.ceil((r[0] - 1 - LX) / CELL)), gx1 = Math.min(GW - 1, Math.ceil((r[2] - 1 - LX) / CELL) - 1);
     const gy0 = Math.max(0, Math.ceil((r[1] - 1) / CELL)), gy1 = Math.min(GH - 1, Math.ceil((r[3] - 1) / CELL) - 1);
     for (let gy = gy0; gy <= gy1; gy++) G.fill(v, gy * GW + gx0, gy * GW + gx1 + 1);
   };
   const disc = (cx, cy, r, v) => {
-    for (let gy = Math.floor((cy - r) / CELL); gy <= Math.ceil((cy + r) / CELL); gy++) for (let gx = Math.floor((cx - r) / CELL); gx <= Math.ceil((cx + r) / CELL); gx++) {
+    for (let gy = Math.floor((cy - r) / CELL); gy <= Math.ceil((cy + r) / CELL); gy++) for (let gx = Math.floor((cx - r - LX) / CELL); gx <= Math.ceil((cx + r - LX) / CELL); gx++) {
       if (gx < 0 || gy < 0 || gx >= GW || gy >= GH) continue;
-      if (Math.hypot(gx * CELL + 1 - cx, gy * CELL + 1 - cy) < r) G[gy * GW + gx] = v;
+      if (Math.hypot(gx * CELL + 1 + LX - cx, gy * CELL + 1 - cy) < r) G[gy * GW + gx] = v;
     }
   };
   // mellanbandet (parken, förortens gräsytor) går att gå på
-  fill([0, CITY.PARK[0], CW, (CITY.BACK_S || [462])[0]], 1);
+  fill([LX, CITY.PARK[0], CW, (CITY.BACK_S || [462])[0]], 1);
   // bakgata, gränder och tvärgator i båda raderna
-  fill([4, CITY.BACK[0] + 2, CW - 4, CITY.FOOT_TOP], 2);
-  for (const s of STREETS_ALL) if (s.kind !== 'lot' && s.kind !== 'road') fill([Math.max(4, s.x0), s.y0 ?? CITY.BACK[1], Math.min(CW - 4, s.x1), s.y1 ?? BASE], 2);
+  fill([LX + 4, CITY.BACK[0] + 2, CW - 4, CITY.FOOT_TOP], 2);
+  for (const s of STREETS_ALL) if (s.kind !== 'lot' && s.kind !== 'road') fill([Math.max(LX + 4, s.x0), s.y0 ?? CITY.BACK[1], Math.min(CW - 4, s.x1), s.y1 ?? BASE], 2);
   // trottoarerna och kajen
-  fill([4, CITY.SIDEWALK_N[0], CW - 4, CITY.SIDEWALK_N[1]], 2);
-  fill([4, CITY.SIDEWALK_S[0], CW - 4, CITY.SIDEWALK_S[1]], 2);
-  if (CITY.SIDEWALK_SN) fill([4, CITY.SIDEWALK_SN[0], CW - 4, CITY.SIDEWALK_SN[1]], 2);
-  if (CITY.SIDEWALK_SS) fill([4, CITY.SIDEWALK_SS[0], CW - 4, CITY.SIDEWALK_SS[1]], 2);
-  if (CITY.QUAY) fill([4, CITY.QUAY[0], CW - 4, WALK_BOTTOM], 2);
+  fill([LX + 4, CITY.SIDEWALK_N[0], CW - 4, CITY.SIDEWALK_N[1]], 2);
+  fill([LX + 4, CITY.SIDEWALK_S[0], CW - 4, CITY.SIDEWALK_S[1]], 2);
+  if (CITY.SIDEWALK_SN) fill([LX + 4, CITY.SIDEWALK_SN[0], CW - 4, CITY.SIDEWALK_SN[1]], 2);
+  if (CITY.SIDEWALK_SS) fill([LX + 4, CITY.SIDEWALK_SS[0], CW - 4, CITY.SIDEWALK_SS[1]], 2);
+  if (CITY.QUAY) fill([LX + 4, CITY.QUAY[0], CW - 4, WALK_BOTTOM], 2);
   for (const p of PATHS) fill(p.rect, 2);
   // (v3) kajerna längs floden går norr–söder tvärs genom hela världen – men körbanorna vid
   // brofästena är fortfarande gata: där går man inte (bara vid övergångsställena, som överallt)
@@ -1231,7 +1233,7 @@ function rasterNav(obstacles) {
   // hindren
   for (const o of obstacles) {
     if (!o || o.length < 4) continue;
-    const x0 = Math.max(0, Math.floor((o[0] - 4) / CELL)), x1 = Math.min(GW - 1, Math.floor((o[2] + 3) / CELL));
+    const x0 = Math.max(0, Math.floor((o[0] - 4 - LX) / CELL)), x1 = Math.min(GW - 1, Math.floor((o[2] + 3 - LX) / CELL));
     const y0 = Math.max(0, Math.floor((o[1] - 2) / CELL)), y1 = Math.min(GH - 1, Math.floor((o[3] + 1) / CELL));
     for (let gy = y0; gy <= y1; gy++) G.fill(0, gy * GW + x0, gy * GW + x1 + 1);
   }
@@ -1243,7 +1245,7 @@ function rasterNav(obstacles) {
 function buildNav(obstacles) {
   const G = rasterNav(obstacles);
   const cell = (x, y) => {
-    const gx = Math.floor(x / CELL), gy = Math.floor(y / CELL);
+    const gx = Math.floor((x - LX) / CELL), gy = Math.floor(y / CELL);
     return gx < 0 || gy < 0 || gx >= GW || gy >= GH ? 0 : G[gy * GW + gx];
   };
   const walk = (x, y) => cell(x, y) > 0;
@@ -1269,11 +1271,11 @@ function buildNav(obstacles) {
   }
   // bredden-först i en ruta runt sträckan, sedan åtstramad med siktlinjer
   function gridPath(ax, ay, bx, by, test, pad = 36) {
-    const gx0 = Math.max(0, Math.floor((Math.min(ax, bx) - pad) / CELL)), gx1 = Math.min(GW - 1, Math.floor((Math.max(ax, bx) + pad) / CELL));
+    const gx0 = Math.max(0, Math.floor((Math.min(ax, bx) - pad - LX) / CELL)), gx1 = Math.min(GW - 1, Math.floor((Math.max(ax, bx) + pad - LX) / CELL));
     const gy0 = Math.max(0, Math.floor((Math.min(ay, by) - pad) / CELL)), gy1 = Math.min(GH - 1, Math.floor((Math.max(ay, by) + pad) / CELL));
     const w = gx1 - gx0 + 1, h = gy1 - gy0 + 1;
-    const okc = (i, j) => test((gx0 + i) * CELL + 1, (gy0 + j) * CELL + 1);
-    const si = Math.floor(ax / CELL) - gx0, sj = Math.floor(ay / CELL) - gy0, ti = Math.floor(bx / CELL) - gx0, tj = Math.floor(by / CELL) - gy0;
+    const okc = (i, j) => test((gx0 + i) * CELL + 1 + LX, (gy0 + j) * CELL + 1);
+    const si = Math.floor((ax - LX) / CELL) - gx0, sj = Math.floor(ay / CELL) - gy0, ti = Math.floor((bx - LX) / CELL) - gx0, tj = Math.floor(by / CELL) - gy0;
     if (si < 0 || sj < 0 || ti < 0 || tj < 0 || si >= w || ti >= w || sj >= h || tj >= h) return null;
     const start = sj * w + si, goal = tj * w + ti;
     const prev = new Int32Array(w * h).fill(-1), q = new Int32Array(w * h);
@@ -1296,7 +1298,7 @@ function buildNav(obstacles) {
     const cells = [];
     for (let k = goal; k !== start; k = prev[k]) cells.push(k);
     cells.reverse();
-    const P = cells.map((k) => [(gx0 + (k % w)) * CELL + 1, (gy0 + ((k / w) | 0)) * CELL + 1]);
+    const P = cells.map((k) => [(gx0 + (k % w)) * CELL + 1 + LX, (gy0 + ((k / w) | 0)) * CELL + 1]);
     if (!P.length) return [[ax, ay], [bx, by]];
     P[P.length - 1] = [bx, by];
     const out = [[ax, ay]];
@@ -1335,7 +1337,7 @@ function buildNav(obstacles) {
     return true;
   }
   // en rak gånglinje med noder vid alla x (sammanslagna inom 6 px, utfyllda var 110:e px)
-  function line(y, xs, tag, xa = 6, xb = CW - 6) {
+  function line(y, xs, tag, xa = LX + 6, xb = CW - 6) {
     const sorted = [...xs].map(Math.round).filter((x) => x >= xa && x <= xb).sort((a, b) => a - b), out = [];
     for (const x of sorted) {
       if (out.length && x - out[out.length - 1] < 6) continue;
@@ -1358,7 +1360,7 @@ function buildNav(obstacles) {
   };
 
   const gapsOf = (row) => STREETS_ALL.filter((s) => s.row === row && (s.kind === 'alley' || s.kind === 'street' || s.kind === 'edge'))
-    .map((s) => ({ s, x0: Math.max(s.x0, 5), x1: Math.min(s.x1, CW - 5) }))
+    .map((s) => ({ s, x0: Math.max(s.x0, LX + 5), x1: Math.min(s.x1, CW - 5) }))
     .filter((g) => g.x1 - g.x0 >= 10)
     .map((g) => ({ ...g, cx: Math.round((g.x0 + g.x1) / 2) }));
   const gN = gapsOf('n'), gS = gapsOf('s');
@@ -1381,20 +1383,22 @@ function buildNav(obstacles) {
   const QX = RIV ? [Math.round((RIV.quayW[0] + RIV.quayW[2]) / 2) - 2, Math.round((RIV.quayE[0] + RIV.quayE[2]) / 2) + 4] : [];
   const BRX = RIV ? [RIV.wx0 + 6, RIV.wx1 - 6] : [];
   const PLX = DTL ? [DTL.plaza[0] + 22, ...(DTL.fountains || []).map((f) => f.x), DTL.axis, DTL.plaza[2] - 30].map(Math.round) : [];
+  // v4: Linnéstaden – där torget, odlingens grind och Lindparkens gångar knyts till trottoaren och parkgången
+  const LNX = LIN ? [LIN.torg[0] + 30, LIN.well.x, LIN.torg[2] - 30, -1116, ...LIN.walks.map((r) => Math.round((r[0] + r[2]) / 2)), LIN.promenade[0] + 6].map(Math.round) : [];
 
   // ---- gånglinjerna ----
-  const Bk = line(Y_BACK, [6, CW - 6, ...gN.map((g) => g.cx), ...QX], 'b');
-  const N = line(Y_N, [6, CW - 6, ...gN.map((g) => g.cx), ...rowN.map(dX), ...cwP.map(cwMid), ...QX, ...BRX], 'n');
-  const S = line(Y_S, [6, CW - 6, ...cwP.map(cwMid), ...stopsP.flatMap((s) => [s.x - 42, s.x + 30, s.x + 44]), infW, infE, ...subPaths, ...QX, ...BRX, ...PLX,
+  const Bk = line(Y_BACK, [LX + 6, CW - 6, ...gN.map((g) => g.cx), ...QX], 'b');
+  const N = line(Y_N, [LX + 6, CW - 6, ...gN.map((g) => g.cx), ...rowN.map(dX), ...cwP.map(cwMid), ...QX, ...BRX], 'n');
+  const S = line(Y_S, [LX + 6, CW - 6, ...cwP.map(cwMid), ...stopsP.flatMap((s) => [s.x - 42, s.x + 30, s.x + 44]), infW, infE, ...subPaths, ...QX, ...BRX, ...PLX, ...LNX,
     ...(lekX && gate(lekX, 'n') ? [gmid(gate(lekX, 'n'))] : []), ...(grus && gate(grus, 'n') ? [gmid(gate(grus, 'n'))] : []), ...(park?.drive ? [Math.round((park.drive[0] + park.drive[1]) / 2)] : [])], 's');
   const Pm = prom ? line(Y_PROM, [prom[0] + 4, prom[2] - 4, ...cwP.filter((c) => c.x1 <= prom[2]).map(cwMid), pl.cx - 40, pl.cx + 40, ...walks, ...(PARK.dogGate ? [Math.round((PARK.dogGate[0] + PARK.dogGate[1]) / 2)] : [])], 'p', prom[0], prom[2]) : [];
-  const BkS = CITY.BACK_S ? line(Y_BKS, [6, CW - 6, ...walks, ...gS.map((g) => g.cx), ...rowF.filter((b) => Math.abs(baseOf(b) + 9 - Y_BKS) < 26).map(dX), infW, infE, ...subPaths, ...QX, ...PLX,
+  const BkS = CITY.BACK_S ? line(Y_BKS, [LX + 6, CW - 6, ...walks, ...gS.map((g) => g.cx), ...rowF.filter((b) => Math.abs(baseOf(b) + 9 - Y_BKS) < 26).map(dX), infW, infE, ...subPaths, ...QX, ...PLX, ...LNX,
     ...(kyrk && gate(kyrk, 'n') ? [gmid(gate(kyrk, 'n'))] : []), ...(lekX && gate(lekX, 's') ? [gmid(gate(lekX, 's'))] : []), ...(grus && gate(grus, 's') ? [gmid(gate(grus, 's'))] : []),
     ...(aterv ? [Math.round((aterv.rect[0] + aterv.rect[2]) / 2)] : []), ...(vagn ? [Math.round((vagn.rect[0] + vagn.rect[2]) / 2)] : [])], 'k') : [];
-  const SN = CITY.SIDEWALK_SN ? line(Y_SN, [6, CW - 6, ...gS.map((g) => g.cx), ...rowS.map(dX), ...cwS.map(cwMid), infW, infE, ...(kyrk && gate(kyrk, 's') ? [gmid(gate(kyrk, 's'))] : []),
+  const SN = CITY.SIDEWALK_SN ? line(Y_SN, [LX + 6, CW - 6, ...gS.map((g) => g.cx), ...rowS.map(dX), ...cwS.map(cwMid), infW, infE, ...(kyrk && gate(kyrk, 's') ? [gmid(gate(kyrk, 's'))] : []),
     ...rowF.filter((b) => Math.abs(baseOf(b) + 9 - Y_SN) < 30).map(dX), ...(aterv ? [Math.round((aterv.rect[0] + aterv.rect[2]) / 2)] : []), ...(vagn ? [Math.round((vagn.rect[0] + vagn.rect[2]) / 2)] : []), ...QX, ...BRX], 'sn') : [];
-  const SS = CITY.SIDEWALK_SS ? line(Y_SS, [6, CW - 6, ...cwS.map(cwMid), ...stopsS.flatMap((s) => [s.x - 42, s.x + 30, s.x + 44]), ...QX, ...BRX], 'ss') : [];
-  const Q = CITY.QUAY ? line(Y_Q, [6, CW - 6, ...QX], 'q') : [];
+  const SS = CITY.SIDEWALK_SS ? line(Y_SS, [LX + 6, CW - 6, ...cwS.map(cwMid), ...stopsS.flatMap((s) => [s.x - 42, s.x + 30, s.x + 44]), ...QX, ...BRX], 'ss') : [];
+  const Q = CITY.QUAY ? line(Y_Q, [LX + 6, CW - 6, ...QX], 'q') : [];
 
   // ---- tvärförbindelser ----
   // gränder och tvärgator i norra raden: bakgatan ↔ trottoaren
@@ -1450,7 +1454,7 @@ function buildNav(obstacles) {
   // gränderna i södra raden: parkgången ↔ trottoaren
   for (const g of gS) if (BkS.length && SN.length) link(at(BkS, g.cx), at(SN, g.cx));
   // kajen: några trappor ner från bortre trottoaren
-  if (Q.length && SS.length) for (let x = 120; x < CW - 60; x += 240) link(at(SS, x), at(Q, x));
+  if (Q.length && SS.length) for (let x = LX + 120; x < CW - 60; x += 240) link(at(SS, x), at(Q, x));
   // v3: kajpromenaden längs floden – från bakgatan ner till kanalkajen på båda stränderna
   // (gatorna korsas inte här: där bryts länken av sig själv, man går till övergångsstället)
   const quayNodes = [];
@@ -1538,6 +1542,45 @@ function buildNav(obstacles) {
     special.dogIn = inn;
   }
 
+  // v4: Linnéstaden – Marknadstorget (en ring kring brunnen och två stråk tvärs över torget, knutna till
+  // trottoaren och parkgången), Lindparkens promenad (in mot centrums promenad), en ring kring
+  // musikpaviljongen och stadsodlingen (norra grinden → gångarna mellan pallkragarna → östra grinden)
+  const linneAll = [];
+  if (LIN && S.length) {
+    const [tx0, ty0, tx1, ty1] = LIN.torg, W0 = LIN.well;
+    const ringAround = (cx, cy, rx, ry, n, tag) => {
+      const ids = [];
+      for (let k = 0; k < n; k++) { const a = k * 2 * Math.PI / n; const i = node(cx + Math.cos(a) * rx, cy + Math.sin(a) * ry, tag); if (i >= 0 && !ids.includes(i)) ids.push(i); }
+      for (let k = 0; k < ids.length; k++) link(ids[k], ids[(k + 1) % ids.length]);
+      return ids;
+    };
+    const closest = (ids, x, y) => ids.reduce((b, i) => (Math.hypot(nodes[i].x - x, nodes[i].y - y) < Math.hypot(nodes[b].x - x, nodes[b].y - y) ? i : b), ids[0]);
+    const inT = LNX.filter((x) => x > tx0 && x < tx1);
+    const tN = line(ty0 + 12, [tx0 + 10, tx1 - 10, ...inT], 'linneN', tx0 + 6, tx1 - 6);
+    const tS = line(ty1 - 8, [tx0 + 10, tx1 - 10, ...inT], 'linneS', tx0 + 6, tx1 - 6);
+    const wR = ringAround(W0.x, W0.y, 44, 28, 10, 'brunn');
+    for (const x of inT) { if (tN.length) link(at(S, x), at(tN, x)); if (tS.length && BkS.length) link(at(tS, x), at(BkS, x)); }
+    if (wR.length && tN.length && tS.length) { link(closest(wR, W0.x, W0.y - 30), closest(tN, W0.x, ty0)); link(closest(wR, W0.x, W0.y + 30), closest(tS, W0.x, ty1)); link(closest(wR, W0.x - 50, W0.y), closest(tN, W0.x - 60, ty0)); link(closest(wR, W0.x + 50, W0.y), closest(tS, W0.x + 60, ty1)); }
+    // Lindparken
+    const pr = LIN.promenade, py = Math.round((pr[1] + pr[3]) / 2), wx = LIN.walks.map((r) => Math.round((r[0] + r[2]) / 2)).filter((x) => x > pr[0]);
+    const LP = line(py, [pr[0] + 4, pr[2] - 4, LIN.pavilion.x, ...wx], 'lindpark', pr[0] + 2, pr[2] - 2);
+    if (LP.length) {
+      if (tN.length) link(at(LP, pr[0] + 4), closest(tN, tx1 - 10, ty0));
+      if (Pm.length) link(at(LP, pr[2] - 4), at(Pm, prom[0] + 4));
+      for (const x of wx) if (BkS.length) link(at(LP, x), at(BkS, x));
+      const pv = LIN.pavilion, pR = ringAround(pv.x, pv.y + 2, pv.rx + 10, pv.ry + 8, 10, 'paviljong');
+      if (pR.length) { link(closest(pR, pv.x, pv.y - 30), at(LP, pv.x)); if (BkS.length) link(closest(pR, pv.x, pv.y + 30), at(BkS, pv.x)); }
+      linneAll.push(...LP, ...pR);
+    }
+    // stadsodlingen
+    const gN = node(-1116, LIN.odling[1] + 5, 'odling'), gE = node(LIN.odling[2] - 6, 352, 'odling');
+    const inner = [node(-1138, LIN.odling[1] + 5, 'odling'), node(-1138, 418, 'odling'), node(-1090, 418, 'odling'), node(-1090, 352, 'odling')];
+    if (gN >= 0) link(at(S, -1116), gN);
+    link(gN, inner[0]); link(inner[0], inner[1]); link(inner[1], inner[2]); link(inner[2], inner[3]); link(inner[3], gE);
+    if (gE >= 0 && tN.length) link(gE, closest([...tN, ...tS], tx0, 352));
+    special.odling = inner[1];
+    linneAll.push(...tN, ...tS, ...wR, ...inner.filter((i) => i >= 0));
+  }
   // ---- dörrarna ----
   const doorNode = {};
   for (const b of rowN) if (N.length) doorNode[b.id] = at(N, dX(b));
@@ -1645,11 +1688,11 @@ function buildNav(obstacles) {
     stops.push({ s, node: nd, spots, curb, road: s.road || 'pixelgatan', served: false });
   }
 
-  const endsOf = (ids) => (ids.length ? [ids[0], ids[ids.length - 1]].filter((i) => nodes[i].x < 16 || nodes[i].x > CW - 16).map((i) => ({ n: i, dir: nodes[i].x < CW / 2 ? -1 : 1 })) : []);
+  const endsOf = (ids) => (ids.length ? [ids[0], ids[ids.length - 1]].filter((i) => nodes[i].x < LX + 16 || nodes[i].x > CW - 16).map((i) => ({ n: i, dir: nodes[i].x < (LX + CW) / 2 ? -1 : 1 })) : []);
   const exits = [...endsOf(N), ...endsOf(S), ...endsOf(SN), ...endsOf(SS), ...endsOf(Q), ...endsOf(BkS), ...endsOf(Bk).map((e) => ({ ...e, back: true }))];
   const curbSet = new Set(curbs);
-  const spawnNodes = [...N, ...S, ...Pm, ...BkS, ...SN, ...SS, ...Q, ...plazaAll].filter((i) => !curbSet.has(i));
-  const parkNodes = [...Pm, ...ring, ...BkS.filter((i) => nodes[i].x < XI[0]), ...['lekP', 'kyrk', 'lekX', 'grus', 'parkering'].map((k) => special[k]).filter((i) => i >= 0)];
+  const spawnNodes = [...N, ...S, ...Pm, ...BkS, ...SN, ...SS, ...Q, ...plazaAll, ...linneAll].filter((i) => !curbSet.has(i));
+  const parkNodes = [...Pm, ...ring, ...BkS.filter((i) => nodes[i].x < XI[0]), ...linneAll, ...['lekP', 'kyrk', 'lekX', 'grus', 'parkering', 'odling'].map((k) => special[k]).filter((i) => i >= 0)];
   const lines = { Bk, N, S, Pm, BkS, SN, SS, Q };
   // v3: de långa linjerna bryts vid floden – runs() delar en linje i sammanhängande bitar (joggarna)
   const linked = (a, b) => nodes[a].adj.some((e) => e.a === b || e.b === b);
@@ -1684,7 +1727,7 @@ export function createLife(env, traffic, props) {
     const v = env.view;
     if (v && v.w) { cam = { x: v.x, y: v.y }; return; }
     const px = env.player?.x ?? CW / 2, py = env.player?.y ?? 200;
-    cam = { x: clamp(px - VW / 2, 0, CW - VW), y: clamp(py - VH * 0.62, 0, CH - VH) };
+    cam = { x: clamp(px - VW / 2, LX, CW - VW), y: clamp(py - VH * 0.62, 0, CH - VH) };
   };
   const visible = (x, y, m = 16) => x > cam.x - m && x < cam.x + VW + m && y > cam.y - m && y < cam.y + VH + 44;
   const camCX = () => cam.x + VW / 2, camCY = () => cam.y + VH / 2;
@@ -1865,7 +1908,7 @@ export function createLife(env, traffic, props) {
       p.node = arg; p.x = n.x; p.y = n.y;
     } else if (kind === 'edge') {
       const n = nodes[arg.n];
-      p.node = arg.n; p.x = arg.dir < 0 ? -12 : CW + 12; p.y = n.y;
+      p.node = arg.n; p.x = arg.dir < 0 ? LX - 12 : CW + 12; p.y = n.y;
       p.plan.push({ k: 'to', x: n.x, y: n.y });
     } else if (kind === 'door') {
       const b = arg, dc = doorCenter(b), base = baseOf(b);
@@ -2211,7 +2254,7 @@ export function createLife(env, traffic, props) {
         return;
       }
       case 'vanish': if (!visible(p.x, p.y, 40)) p.gone = true; else p.plan.unshift({ k: 'leave' }); return;
-      case 'out': p.leaving = true; p.path = [{ x: s.dir < 0 ? -14 : CW + 14, y: p.y, gate: -1, noOff: true }]; return;
+      case 'out': p.leaving = true; p.path = [{ x: s.dir < 0 ? LX - 14 : CW + 14, y: p.y, gate: -1, noOff: true }]; return;
       case 'board': {
         // klev på bussen – men hann den gå får man vänta på nästa
         const B = s.stop;
@@ -3126,7 +3169,7 @@ export function createLife(env, traffic, props) {
   const ducks = [];
   if (pond) for (let i = 0; i < 4; i++) ducks.push({ v: i === 1 || i === 3 ? 1 : 0, x: pond.cx + rr(-pond.rx * 0.5, pond.rx * 0.5), y: pond.cy + rr(-pond.ry * 0.4, pond.ry * 0.4), tx: pond.cx, ty: pond.cy, dir: pick([-1, 1]), t: rr(1, 5), dab: 0, ph: rnd() * 6 });
   const swans = [];
-  if (CITY.CANAL) for (let i = 0; i < 2; i++) swans.push({ x: rr(200, CW - 200), y: CITY.CANAL[0] + 12 + i * 3, dir: pick([-1, 1]), v: rr(4, 7), ph: rnd() * 6 });
+  if (CITY.CANAL) for (let i = 0; i < 3; i++) swans.push({ x: rr(LX + 200, CW - 200), y: CITY.CANAL[0] + 12 + i * 3, dir: pick([-1, 1]), v: rr(4, 7), ph: rnd() * 6 });
   const frozen = () => { const w = W(); return (w.snowCover || 0) > 0.45 || (w.season === 'vinter' && (w.temp ?? 0) < -1); };
   // (v3) i floden mellan Stora bron och Järnbron: ett svanpar och några gräsänder som driver
   // sakta med strömmen och simmar tillbaka. Samma isregel som vädret (då är floden blankis).
@@ -3202,7 +3245,7 @@ export function createLife(env, traffic, props) {
     }
     for (const s of swans) {
       s.x += s.dir * s.v * dt;
-      if (s.x < 20 || s.x > CW - 20) s.dir = -s.dir;
+      if (s.x < LX + 20 || s.x > CW - 20) s.dir = -s.dir;
       if (rnd() < dt * 0.02) s.dir = -s.dir;
     }
   }

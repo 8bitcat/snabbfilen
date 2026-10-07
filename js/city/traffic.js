@@ -1372,8 +1372,10 @@ const RM = ROADS.map((r) => {
 });
 const rmById = (id) => RM.find((m) => m.id === id) || null;
 // hur många fordon per körfält (bussarna på linje 4 räknas in, plogen kommer utöver)
-// (v3: världen växte från 2720 till CITY.W px – lika tät trafik som förut, alltså fler fordon)
-const DENS = CITY.W / 2720;
+// (v3: världen växte från 2720 till CITY.W px – lika tät trafik som förut, alltså fler fordon;
+//  v4: Linnéstaden väster om x 0 – vägarna börjar i CITY.X0)
+const WX0 = CITY.X0 || 0;
+const DENS = (CITY.W - WX0) / 2720;
 const TARGET = { pixelgatan: [Math.round(8 * DENS), Math.round(8 * DENS)], sodergatan: [Math.round(6 * DENS), Math.round(6 * DENS)], infarten: [0, 0] };
 
 // ---------- busslinje 4 ----------
@@ -1521,7 +1523,7 @@ export function createTraffic(env) {
   // Infartens ändar: söderut → höger in i Södergatans västra fil (0); norrut → höger in i Pixelgatans östra fil (1).
   const EXITS = {
     1: { to: SG, lane: 0, swapAt: 698, s: CITY.W - 1700, free: () => !laneBusy(SG, 0, 1713 - 40, 1713 + 110) },
-    '-1': { to: PG, lane: 1, swapAt: 259, s: 1752, free: () => !laneBusy(PG, 1, 1739 - 110, 1739 + 40) },
+    '-1': { to: PG, lane: 1, swapAt: 259, s: 1752 - PG.a0, free: () => !laneBusy(PG, 1, 1739 - 110, 1739 + 40) },
   };
 
   // ---------- fordon ----------
@@ -2623,7 +2625,7 @@ export function createTraffic(env) {
       for (const c of cars) {
         if (c.road.axis === 'x') {
           const x = lo(c) + c.L / 2;
-          if (x < -120 || x > CITY.W + 120) continue;
+          if (x < WX0 - 120 || x > CITY.W + 120) continue;
           out.push({ x, y: c.cross, draw: (ctx) => drawCar(ctx, c, w) });
         } else out.push({ x: c.cross, y: hi(c), draw: (ctx) => drawEndCar(ctx, c, w) });
       }
@@ -2682,7 +2684,7 @@ export function createTraffic(env) {
           continue;
         }
         const x0 = Math.round(lo(c));
-        if (x0 > CITY.W + 80 || x0 + c.L < -80) continue;
+        if (x0 > CITY.W + 80 || x0 + c.L < WX0 - 80) continue;
         const A = vehicleArt(c), s = c.spec, f = c.dir < 0 ? 1 : 0;
         const top = c.cross - 1 - A.gy;
         const hy = c.cross - 1 - Math.round((s.head.h0 + s.head.h1) / 2);

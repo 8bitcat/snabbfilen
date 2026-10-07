@@ -4,10 +4,11 @@
 // 2720 × 820: hindren rastreras rektangel för rektangel (inte cell × hinder)
 // och vägen hittas med A* på typade arrayer i stället för en bred sökning med
 // Array.shift. Vägen jämnas sedan ut med siktlinjer framåt.
+// X0 = världens västra kant (Linnéstaden ligger väster om centrum, x < 0): rutnätet börjar där.
 const DIRS = [[1, 0, 1], [-1, 0, 1], [0, 1, 1], [0, -1, 1], [1, 1, Math.SQRT2], [1, -1, Math.SQRT2], [-1, 1, Math.SQRT2], [-1, -1, Math.SQRT2]];
 
-export function createCityWalker({ W: WW, H: WH, left = 4, right = WW - 4, top = 8, bottom = WH - 4, spawn, cell = 4 }) {
-  const C = cell, GW = Math.ceil(WW / C), GH = Math.ceil(WH / C), N = GW * GH;
+export function createCityWalker({ X0 = 0, W: WW, H: WH, left = X0 + 4, right = WW - 4, top = 8, bottom = WH - 4, spawn, cell = 4 }) {
+  const C = cell, GW = Math.ceil((WW - X0) / C), GH = Math.ceil(WH / C), N = GW * GH;
   let grid = new Uint8Array(N);
   // A*-arbetsminne (återanvänds mellan sökningarna; stämpeln slipper nollställning)
   const gScore = new Float32Array(N), from = new Int32Array(N), stamp = new Uint32Array(N), closed = new Uint32Array(N);
@@ -19,24 +20,24 @@ export function createCityWalker({ W: WW, H: WH, left = 4, right = WW - 4, top =
     for (let gy = 0; gy < GH; gy++) {
       const y = gy * C + 2;
       if (!(y > top && y < bottom)) continue;
-      for (let gx = 0; gx < GW; gx++) { const x = gx * C + 2; if (x > left && x < right) grid[gy * GW + gx] = 1; }
+      for (let gx = 0; gx < GW; gx++) { const x = X0 + gx * C + 2; if (x > left && x < right) grid[gy * GW + gx] = 1; }
     }
     // hindren: cellmitt (x, y) blockeras om x0−2 < x < x1+2 och y0−2 < y < y1+2
     for (const r of list) {
       if (!r) continue;
       const [x0, y0, x1, y1] = r;
-      const gx0 = Math.max(0, Math.floor((x0 - 4) / C)), gx1 = Math.min(GW - 1, Math.ceil((x1 + 2) / C));
+      const gx0 = Math.max(0, Math.floor((x0 - 4 - X0) / C)), gx1 = Math.min(GW - 1, Math.ceil((x1 + 2 - X0) / C));
       const gy0 = Math.max(0, Math.floor((y0 - 4) / C)), gy1 = Math.min(GH - 1, Math.ceil((y1 + 2) / C));
       for (let gy = gy0; gy <= gy1; gy++) {
         const y = gy * C + 2;
         if (!(y > y0 - 2 && y < y1 + 2)) continue;
         const row = gy * GW;
-        for (let gx = gx0; gx <= gx1; gx++) { const x = gx * C + 2; if (x > x0 - 2 && x < x1 + 2) grid[row + gx] = 0; }
+        for (let gx = gx0; gx <= gx1; gx++) { const x = X0 + gx * C + 2; if (x > x0 - 2 && x < x1 + 2) grid[row + gx] = 0; }
       }
     }
   }
   setObstacles([]);
-  const cx = (x) => Math.max(0, Math.min(GW - 1, (x / C) | 0));
+  const cx = (x) => Math.max(0, Math.min(GW - 1, Math.floor((x - X0) / C)));
   const cy = (y) => Math.max(0, Math.min(GH - 1, (y / C) | 0));
   const walkable = (x, y) => !!grid[cy(y) * GW + cx(x)];
   function nearestFree(x, y) {
@@ -44,7 +45,7 @@ export function createCityWalker({ W: WW, H: WH, left = 4, right = WW - 4, top =
     for (let r = 1; r < 60; r++) for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
       if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
       const nx = x + dx * C, ny = y + dy * C;
-      if (nx > 0 && ny > 0 && nx < WW && ny < WH && walkable(nx, ny)) return [nx, ny];
+      if (nx > X0 && ny > 0 && nx < WW && ny < WH && walkable(nx, ny)) return [nx, ny];
     }
     return [x, y];
   }
@@ -108,7 +109,7 @@ export function createCityWalker({ W: WW, H: WH, left = 4, right = WW - 4, top =
     }
     if (!found) return los(sx, sy, tx, ty) ? [[tx, ty]] : [];
     const cells = [];
-    for (let i = goal; i !== -1; i = from[i]) cells.push([(i % GW) * C + 2, ((i / GW) | 0) * C + 2]);
+    for (let i = goal; i !== -1; i = from[i]) cells.push([X0 + (i % GW) * C + 2, ((i / GW) | 0) * C + 2]);
     cells.reverse();
     cells[cells.length - 1] = [tx, ty];
     // utjämning: gå så långt framåt som siktlinjen håller

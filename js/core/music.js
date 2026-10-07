@@ -378,7 +378,7 @@ export function pickMusic(s = {}) {
       if (night) return { track: 'natt', fx: 'none', lvl: +water.toFixed(2) };
       const d = s.district || 'centrum';
       // downtown = centrum-låten, broarna över floden = Söder-låten (vattnet)
-      const track = TRACKS[d] ? d : ({ bron: 'soder', jarnbron: 'soder' }[d] || 'centrum');
+      const track = TRACKS[d] ? d : ({ bron: 'soder', jarnbron: 'soder', linne: 'parken' }[d] || 'centrum');   // (v4) Linnéstaden: parkens lugna låt
       return { track, fx: 'none', lvl: +((d === 'parken' ? 0.7 : 0.9) * water).toFixed(2) };
     }
     case 'room': case 'visit': return sc === 'room' && s.hem ? s.hem : { track: night ? 'natt' : 'hemma', fx: 'none', lvl: night ? 0.8 : 0.9 };

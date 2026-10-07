@@ -3,13 +3,15 @@
 //   bakgatan, gränderna, tvärgatorna och gågatorna i båda husraderna, trottoarerna,
 //   Pixelgatan, Södergatan och Infarten (asfalt, zebror, stopplinjer, busszoner),
 //   parken (gräs, grusgångar, torget, dammen, hundrastgården, lekplatsens sand, ängen),
-//   kyrkogården, macken, kajen och kanalen – och förorten, där allt är slitet:
+//   kyrkogården, macken, kajen och kanalen, Linnéstaden (v4, x < 0: Marknadstorget,
+//   stadsodlingen, Lindparken) – och förorten, där allt är slitet:
 //   spruckna och saknade plattor, potthål, lappad asfalt, fimpar, glasskärvor,
 //   ogräs i sprickorna, bleka övergångsställen, klotter, parkeringen med linjer,
 //   den slitna lekplatsen, grusplanen, återvinningen och vagnsplatsen.
 //
 // Kontrakt (docs/STADEN.md):
-//   paintGround(night) → canvas CITY.W × CITY.H. Målas EN gång per dag/natt och cachas
+//   paintGround(night) → canvas (CITY.W − CITY.X0) × CITY.H, duk-x = världs-x − X0 (v4: Linnéstaden
+//                        ligger i x X0–0 – scenen ritar duken med X0 som förskjutning). Målas EN gång per dag/natt och cachas
 //                        av scenen (natten = dagens bild tonad, så bara ett tungt pass).
 //   groundLive(ctx, env, view) → det som rör sig på marken varje bildruta: blöt asfalt
 //                        med himmelsreflexer och pölar efter env.weather.wet, regnringar,
@@ -21,12 +23,13 @@
 // husen kastar skugga snett bakåt (norrut/österut) – in i gränderna och över
 // bakgatan/parkgången. Det är det som ger djup mellan husen.
 import { Pix, mix, mul, hash, bayer, BIG, SMALL, eachTextPixel } from '../core/floor-pix.js';
-import { CITY, BUILDINGS, BUILDINGS_S, BUILDINGS_D, BUILDINGS_X, FREESTANDING, STREETS_ALL, CROSSWALKS, CROSSWALKS_S, CROSSWALKS_I,
-  BUS_STOPS, PARK_LAYOUT, SUB_LAYOUT, DOWNTOWN_LAYOUT, RIVER, BRIDGES, LOTS, footprint } from './map.js';
+import { CITY, BUILDINGS, BUILDINGS_S, BUILDINGS_D, BUILDINGS_X, BUILDINGS_L, FREESTANDING, STREETS_ALL, CROSSWALKS, CROSSWALKS_S, CROSSWALKS_I,
+  BUS_STOPS, PARK_LAYOUT, SUB_LAYOUT, DOWNTOWN_LAYOUT, LINNE_LAYOUT, RIVER, BRIDGES, LOTS, footprint } from './map.js';
 
 export const V2 = true;
 
 const W = CITY.W, H = CITY.H;
+const X0 = CITY.X0 || 0, GW = W - X0;              // (v4) världen börjar i X0 (Linnéstaden); bufferten är GW bred
 const W1 = 1700;                                   // v1-stadens bredd (de gamla slumpslingorna behåller sitt utseende)
 const BASE = CITY.BASE, TOP = CITY.FOOT_TOP;       // 186 / 40
 const BASE_S = CITY.BASE_S, TOP_S = CITY.FOOT_TOP_S; // 640 / 494
@@ -48,23 +51,32 @@ const CN0 = CITY.CANAL[0];                         // 776
 const SUN_DX = 0.2;                                // skuggan förskjuts så här mycket österut per pixel norrut
 const IW0 = 1686, IE1 = 1766;                      // Infartens trottoarer: väster 1686–1700, öster 1752–1766
 const ROW_N = STREETS_ALL.filter((s) => s.row === 'n'), ROW_S = STREETS_ALL.filter((s) => s.row === 's');
-const HOUSES_N = [...BUILDINGS, ...(BUILDINGS_D || []).filter((b) => b.row === 'n'), ...BUILDINGS_X.filter((b) => b.row === 'n')];
-const HOUSES_S = [...BUILDINGS_S, ...(BUILDINGS_D || []).filter((b) => b.row === 's'), ...BUILDINGS_X.filter((b) => b.row === 's')];
+const L_N = (BUILDINGS_L || []).filter((b) => b.row === 'n'), L_S = (BUILDINGS_L || []).filter((b) => b.row === 's');
+const HOUSES_N = [...BUILDINGS, ...(BUILDINGS_D || []).filter((b) => b.row === 'n'), ...BUILDINGS_X.filter((b) => b.row === 'n'), ...L_N];
+const HOUSES_S = [...BUILDINGS_S, ...(BUILDINGS_D || []).filter((b) => b.row === 's'), ...BUILDINGS_X.filter((b) => b.row === 's'), ...L_S];
 const lotById = (id) => LOTS.find((l) => l.id === id);
 
 // ---------- pixelbuffert (skrivs direkt i ImageData under målningen) ----------
 let D = null, SH = null;
-const inb = (x, y) => x >= 0 && y >= 0 && x < W && y < H;
+// Klippningen: Linnéstadens pass (west) målar bara x < 0, så att centrum aldrig rörs av dem.
+let CX0 = X0, CX1 = W;
+const inb = (x, y) => x >= CX0 && y >= 0 && x < CX1 && y < H;
+function west(fn) {
+  if (X0 >= 0) return;
+  const a = CX0, b = CX1;
+  CX0 = X0; CX1 = 0;
+  try { fn(); } finally { CX0 = a; CX1 = b; }
+}
 function put(x, y, c) {
   x = Math.floor(x); y = Math.floor(y);
   if (!inb(x, y)) return;
-  const i = (y * W + x) << 2;
+  const i = (y * GW + x - X0) << 2;
   D[i] = (c >> 16) & 255; D[i + 1] = (c >> 8) & 255; D[i + 2] = c & 255; D[i + 3] = 255;
 }
 function get(x, y) {
   x = Math.floor(x); y = Math.floor(y);
-  if (!inb(x, y)) return 0;
-  const i = (y * W + x) << 2;
+  if (x < X0 || y < 0 || x >= W || y >= H) return 0;
+  const i = (y * GW + x - X0) << 2;
   return (D[i] << 16) | (D[i + 1] << 8) | D[i + 2];
 }
 function blend(x, y, c, a) {
@@ -74,14 +86,14 @@ function blend(x, y, c, a) {
 function shade(x, y, f) {
   x = Math.floor(x); y = Math.floor(y);
   if (!inb(x, y)) return;
-  const i = (y * W + x) << 2;
+  const i = (y * GW + x - X0) << 2;
   D[i] *= f; D[i + 1] *= f; D[i + 2] *= f;
 }
 // kastad skugga: mörkare och lite blåare, aldrig dubbelt på samma pixel
 function shadow(x, y, f = 0.66) {
   x = Math.floor(x); y = Math.floor(y);
-  if (!inb(x, y) || SH[y * W + x]) return;
-  SH[y * W + x] = 1;
+  if (!inb(x, y) || SH[y * GW + x - X0]) return;
+  SH[y * GW + x - X0] = 1;
   put(x, y, mix(mul(get(x, y), f), 0x1a2238, 0.1));
 }
 function ellipse(cx, cy, rx, ry, fn) {
@@ -94,6 +106,7 @@ const fillR = (r, fn) => { for (let y = r[1]; y < r[3]; y++) for (let x = r[0]; 
 const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
 const smooth = (a, b, v) => { const t = clamp01((v - a) / (b - a)); return t * t * (3 - 2 * t); };
 const mod = (a, n) => ((a % n) + n) % n;
+const al = (x, n) => Math.floor(x / n) * n;                                       // (v4) närmaste multipel nedåt – förband som möts i x 0
 const inR = (x, y, r) => x >= r[0] && x < r[2] && y >= r[1] && y < r[3];
 
 // ---------- brus ----------
@@ -110,6 +123,7 @@ const fbm = (x, y, s, seed) => vnoise(x, y, s, seed) * 0.58 + vnoise(x, y, s / 2
 // förorten 1 – med en prickig, ojämn övergång vid flodens östra kaj (vägarna blir sämre
 // när man kommit över bron).
 function wornAt(x, y) {
+  if (x < 0) return 0;                                                                      // (v4) Linnéstaden: välskött
   const base = x < I1 && y >= BS1 && y < Q1 ? 0.15 : 0;
   if (x < XS - 36) return base;
   if (x >= XS + 64) return 1;
@@ -442,6 +456,8 @@ const PUDDLES = [
     [2566, 392, 12, 3.2], [2460, 430, 9, 2.6], [2090, 418, 6, 2], [2670, 540, 10, 2.6], [2650, 600, 8, 2.2],
     [2330, 612, 9, 2.4], [2262, 560, 6, 2], [1942, 590, 5, 2], [2070, 540, 5, 1.8], [1760, 420, 4, 1.8],
     [1900, 292, 7, 2], [2240, 746, 9, 2.2], [2620, 750, 8, 2]].map(([x, y, rx, ry]) => [x + SDX, y, rx, ry]),
+  // Linnéstaden (v4): få – i rännstenarna, på parkgången och i en gränd
+  [-1010, 273, 10, 1.8], [-330, 219, 9, 1.6], [-700, 476, 8, 2.2], [-150, 727, 11, 1.8], [-1060, 30, 7, 2.2], [-440, 160, 5, 2],
 ].map(([x, y, rx, ry], i) => ({ x, y, rx, ry, i }));
 
 // torr pöl: silt och damm i en svacka (ljus kant där smutsvattnet torkat in)
@@ -474,16 +490,17 @@ function cobble(x, y) {
 }
 function paintBack() {
   // centrum: kullersten med en mittränna av släta hällar
-  for (let y = 8; y < TOP; y++) for (let x = 0; x < XS; x++) put(x, y, cobble(x, y));
-  for (let x = 0; x < XS; x++) {
+  for (let y = 8; y < TOP; y++) for (let x = X0; x < XS; x++) put(x, y, cobble(x, y));        // (v4: ända ut genom Linnéstaden)
+  for (let x = X0; x < XS; x++) {
     shade(x, 21, 0.78);
     for (let y = 22; y < 25; y++) {
-      const j = (x + 3) % 11 === 0;
+      const j = mod(x + 3, 11) === 0;
       put(x, y, j ? 0x57514a : granite(x, y, y === 22 ? 0xa7a197 : y === 23 ? 0x948e85 : 0x847e76));
     }
     if (vnoise(x, 0, 30, 18) > 0.55) blend(x, 23, 0x4a5664, 0.45);                   // vattenstrimma
   }
   for (let x = 128; x < XS - 10; x += 262) grate(x, 22, 7, 3);
+  for (let x = X0 + 140; x < -10; x += 262) grate(x, 22, 7, 3);
   // förorten: sprucken, lappad asfalt med en betongränna, kullerstenen tar slut i en ojämn skarv
   for (let y = 8; y < TOP; y++) for (let x = XS - 30; x < W; x++) {
     const edge = x - XS + (vnoise(x, y, 5, 730) - 0.5) * 22;
@@ -521,7 +538,7 @@ function paintBack() {
     if (vnoise(x, y, 11, 33) > 0.6 && hash(x, y, 34) > 0.45) c = hash(x, y, 35) > 0.5 ? 0x5e7a3c : 0x4a6632;
     if (y === TOP) c = 0x3e3932;                                                              // husväggens fot
     put(x, y, mul(c, y === TOP + 1 ? 0.6 : 0.72));
-    SH[y * W + x] = 1;
+    SH[y * GW + x - X0] = 1;
   }
   // skräp och löv mellan stenarna (centrum) – mycket mer i förorten
   for (let i = 0; i < 90; i++) {
@@ -534,6 +551,22 @@ function paintBack() {
   scatter([XS, 10, W, 13], 40, 741); scatter([XS, TOP - 5, W, TOP - 1], 36, 745); scatter([XS, 13, W, TOP - 5], 24, 746);
   // marktaggar borttagna (Carl: klotter bara på byggnader och väggar)
   paintBoundary();
+  west(paintBoundaryWest);
+}
+// Linnéstaden: smidesstaket framför trädgårdar, häckar, tegelmurar med murgröna och falurött plank
+function paintBoundaryWest() {
+  const KINDS = ['staket', 'hack', 'mur', 'staket', 'plank', 'hack'];
+  const PAINT = { hack: hedge, plank, mur: brickWall, staket: railing };
+  let x = X0, i = 0, prev = '';
+  while (x < 0) {
+    const len = 90 + ((hash(i, 1, 57) * 110) | 0);
+    let kind = KINDS[(hash(i, 2, 57) * KINDS.length) | 0];
+    if (kind === prev) kind = KINDS[(KINDS.indexOf(kind) + 1) % KINDS.length];
+    const x1 = Math.min(0, x + len);
+    PAINT[kind](x, x1, 40 + i);
+    if (x > X0) post(x - 1, false);
+    prev = kind; x = x1; i++;
+  }
 }
 
 // y 0–8: häck, plank, mur och staket mot kvarteret bakom – i förorten betongmur,
@@ -1023,16 +1056,16 @@ function subWear(ya, yb, seed) {
 // Norra typen: plattor närmast fasaderna, smågatsten, kantsten vars framsida syns (mot vägen).
 // S = { y0, cws, houses, drives, lids, valves, seed }
 function paintSidewalkTop(S) {
-  const y0 = S.y0, sd = S.seed;
-  const at = rows(0, W, y0, y0 + 18, { h: [9, 9], w: [18, 18], seed: sd, bond: true });
-  stones(at, 0, W, y0, y0 + 18, slabCol(sd + 1), { hi: 0.1, lo: 0.9, grain: 0.04, joint: slabJoint });
-  const at2 = rows(0, W, y0 + 18, y0 + 25, { h: [3, 4], w: [3, 5], seed: sd + 2 });
-  stones(at2, 0, W, y0 + 18, y0 + 25, settCol(sd + 3), { round: true, hi: 0.2, lo: 0.8, grain: 0.06, joint: () => 0x6c665d });
-  paintDowntownWalk(y0, y0 + 18, y0 + 18, y0 + 25, sd + 60);                                  // (v3) downtown: granit
+  const y0 = S.y0, sd = S.seed, xa = S.xa ?? 0, xb = S.xb ?? W, wst = xb <= 0;                 // (v4) wst: Linnéstadens bit
+  const at = rows(al(xa, 18), xb, y0, y0 + 18, { h: [9, 9], w: [18, 18], seed: sd, bond: true });
+  stones(at, xa, xb, y0, y0 + 18, slabCol(sd + 1), { hi: 0.1, lo: 0.9, grain: 0.04, joint: slabJoint });
+  const at2 = rows(xa, xb, y0 + 18, y0 + 25, { h: [3, 4], w: [3, 5], seed: sd + 2 });
+  stones(at2, xa, xb, y0 + 18, y0 + 25, settCol(sd + 3), { round: true, hi: 0.2, lo: 0.8, grain: 0.06, joint: () => 0x6c665d });
+  if (!wst) paintDowntownWalk(y0, y0 + 18, y0 + 18, y0 + 25, sd + 60);                        // (v3) downtown: granit
   // kantsten mot vägen (framsidan syns – den vetter mot kameran)
   const k = y0 + 25;                                                                          // 211 / 665
   const low = (x) => S.cws.some((c) => x >= c.x0 && x < c.x1) || S.drives.some(([a, b]) => x >= a && x < b);
-  for (let x = 0; x < W; x++) {
+  for (let x = xa; x < xb; x++) {
     const worn = wornAt(x, k);
     put(x, k, 0x5b564f);
     if (low(x)) {                                                                              // nedsänkt vid övergångsställen och utfarter
@@ -1042,7 +1075,7 @@ function paintSidewalkTop(S) {
       put(x, k + 1, granite(x, k + 1, 0xd8d3c9)); put(x, k + 2, granite(x, k + 2, 0xb6b1a7)); put(x, k + 3, granite(x, k + 3, 0xafaaa0));
       put(x, k + 4, granite(x, k + 4, 0xc6c1b7)); put(x, k + 5, granite(x, k + 5, 0x9a958c)); put(x, k + 6, granite(x, k + 6, 0x76716a));
     }
-    if (x % 24 === 0) for (let y = k + 2; y < k + 7; y++) put(x, y, 0x5c5750);
+    if (mod(x, 24) === 0) for (let y = k + 2; y < k + 7; y++) put(x, y, 0x5c5750);
     if (worn > 0.3) {                                                                          // kantstenen i förorten: kantstött och smutsig
       if (hash(x >> 2, k, sd + 4) > 1 - 0.18 * worn) for (let y = k + 1; y < k + 4; y++) put(x, y, mix(get(x, y), 0x5e5a52, 0.6));
       for (let y = k + 1; y < k + 7; y++) put(x, y, grime(get(x, y), x, y, worn, sd + 5));
@@ -1055,8 +1088,8 @@ function paintSidewalkTop(S) {
     if (Math.abs(x - a - 8) < 3 || Math.abs(b - 8 - x) < 3) c = mul(c, 0.84);
     put(x, y, c);
   }
-  paintSidewalkWear(y0 + 2, y0 + 17, sd + 10);
-  subWear(y0 + 1, y0 + 25, sd + 20);
+  if (wst) paintSidewalkWear(y0 + 2, y0 + 17, sd + 10, xa, xb);
+  else { paintSidewalkWear(y0 + 2, y0 + 17, sd + 10); subWear(y0 + 1, y0 + 25, sd + 20); }
   for (const mx of S.lids) lid(mx - 4, y0 + 11, 8, 5);
   for (const vx of S.valves) valve(vx, y0 + 22);
   // blankslitet framför dörrarna
@@ -1068,25 +1101,25 @@ function paintSidewalkTop(S) {
 // Södra typen: kantstenens ovansida, smågatsten, plattor, låg kant mot parken/kajen.
 // S = { y0, cws, stops, drives, lowAt(x), lids, valves, seed, hop }
 function paintSidewalkBottom(S) {
-  const y0 = S.y0, y1 = y0 + 30, sd = S.seed;
+  const y0 = S.y0, y1 = y0 + 30, sd = S.seed, xa = S.xa ?? 0, xb = S.xb ?? W, wst = xb <= 0;
   const zone = (x) => S.stops.find((s) => x >= s.x - 44 && x < s.x + 44);
-  for (let x = 0; x < W; x++) {
+  for (let x = xa; x < xb; x++) {
     const cw = S.cws.some((c) => x >= c.x0 && x < c.x1) || S.drives.some(([a, b]) => x >= a && x < b), bus = zone(x);
     put(x, y0, granite(x, y0, cw ? 0xc8c3b9 : bus ? 0xe2ddd3 : 0xdad5cb));
     put(x, y0 + 1, granite(x, y0 + 1, cw ? 0xaca79d : bus ? 0xc6c1b7 : 0xb6b1a7));
     put(x, y0 + 2, granite(x, y0 + 2, cw ? 0xa6a197 : 0xa9a49a));
     put(x, y0 + 3, 0x5c5750);
-    if (x % 24 === 12) for (let y = y0; y < y0 + 3; y++) put(x, y, 0x5c5750);
+    if (mod(x, 24) === 12) for (let y = y0; y < y0 + 3; y++) put(x, y, 0x5c5750);
     const worn = wornAt(x, y0);
     if (worn > 0.3) for (let y = y0; y < y0 + 3; y++) put(x, y, grime(get(x, y), x, y, worn, sd));
   }
-  const at = rows(0, W, y0 + 4, y0 + 10, { h: [3, 3], w: [3, 5], seed: sd + 1 });
-  stones(at, 0, W, y0 + 4, y0 + 10, settCol(sd + 2), { round: true, hi: 0.2, lo: 0.8, grain: 0.06, joint: () => 0x6c665d });
-  const at2 = rows(0, W, y0 + 10, y0 + 28, { h: [9, 9], w: [18, 18], seed: sd + 3, bond: true, shift: 5 });
-  stones(at2, 0, W, y0 + 10, y0 + 28, slabCol(sd + 4), { hi: 0.1, lo: 0.9, grain: 0.04, joint: slabJoint });
-  paintDowntownWalk(y0 + 10, y0 + 28, y0 + 4, y0 + 10, sd + 60);                              // (v3) downtown: granit
+  const at = rows(xa, xb, y0 + 4, y0 + 10, { h: [3, 3], w: [3, 5], seed: sd + 1 });
+  stones(at, xa, xb, y0 + 4, y0 + 10, settCol(sd + 2), { round: true, hi: 0.2, lo: 0.8, grain: 0.06, joint: () => 0x6c665d });
+  const at2 = rows(al(xa, 18), xb, y0 + 10, y0 + 28, { h: [9, 9], w: [18, 18], seed: sd + 3, bond: true, shift: 5 });
+  stones(at2, xa, xb, y0 + 10, y0 + 28, slabCol(sd + 4), { hi: 0.1, lo: 0.9, grain: 0.04, joint: slabJoint });
+  if (!wst) paintDowntownWalk(y0 + 10, y0 + 28, y0 + 4, y0 + 10, sd + 60);                    // (v3) downtown: granit
   // låg kant mot parken/kajen (lägre där gångarna börjar)
-  for (let x = 0; x < W; x++) {
+  for (let x = xa; x < xb; x++) {
     const p = S.lowAt(x);
     put(x, y1 - 2, granite(x, y1 - 2, p ? 0xbcb7ad : 0xcfcac0));
     put(x, y1 - 1, granite(x, y1 - 1, p ? 0xb2ada3 : 0x928d85));
@@ -1099,7 +1132,7 @@ function paintSidewalkBottom(S) {
       if (br && vnoise(x, y, 5, sd + 5) > 0.66) continue;
       let c = granite(x, y, br ? 0xb4aea2 : 0xc6c0b4);
       if ((x - bx0) % 12 === 11 || y === y0 + 9) c = 0x8e887e;
-      if ((y === y0 + 5 || y === y0 + 6) && !(br && hash(x >> 2, y, sd + 6) > 0.45)) c = (x % 3 === 2) ? 0xb4b0a6 : 0xf0ece4;
+      if ((y === y0 + 5 || y === y0 + 6) && !(br && hash(x >> 2, y, sd + 6) > 0.45)) c = (mod(x, 3) === 2) ? 0xb4b0a6 : 0xf0ece4;
       put(x, y, br ? grime(c, x, y, 1, sd + 7) : c);
     }
     if (br) {
@@ -1109,8 +1142,8 @@ function paintSidewalkBottom(S) {
   }
   // utfarter: nedsänkt kantsten och asfalt tvärs över trottoaren
   for (const [a, b] of S.drives) for (let y = y0 + 4; y < y1 - 2; y++) for (let x = a; x < b; x++) put(x, y, asphaltW(x, y, 0.03, false, wornAt(x, y) * 0.8));
-  paintSidewalkWear(y0 + 11, y0 + 27, sd + 20);
-  subWear(y0 + 4, y1 - 2, sd + 30);
+  if (wst) paintSidewalkWear(y0 + 11, y0 + 27, sd + 20, xa, xb);
+  else { paintSidewalkWear(y0 + 11, y0 + 27, sd + 20); subWear(y0 + 4, y1 - 2, sd + 30); }
   for (const mx of S.lids) lid(mx - 4, y0 + 17, 8, 5);
   for (const vx of S.valves) valve(vx, y0 + 7);
   if (S.hop) paintHopscotch(S.hop[0], y0 + 12, S.hop[1]);
@@ -1141,19 +1174,21 @@ const PATCH_N = [[118, 224, 46, 14, -0.13], [522, 250, 30, 18, 0.07], [758, 228,
 const TRENCH_N = [[436, R0 + 3, 6, 26, -0.15], [1118, 247, 6, 24, -0.15], [1622, R0 + 3, 7, 50, -0.12]];
 function paintRoadX(R) {
   const A = R.y0, B = R.y1, d = A - R0, sd = R.seed;
+  const xa = R.xa ?? 0, xb = R.xb ?? W, wst = xb <= 0;                                       // (v4) wst: Linnéstadens bit (x < 0)
   const open = (list, x) => list.some(([a, b]) => x >= a && x < b);
   // rännstenar av gatsten (öppna där Infarten mynnar)
-  const gN = rows(0, W, A, A + 3, { h: [3, 3], w: [4, 6], seed: sd + 1 });
-  stones(gN, 0, W, A, A + 3, (s) => mul(0x6f6b65, 0.86 + hash(s.r, s.k, sd + 2) * 0.26), { hi: 0.14, lo: 0.8, joint: (x, y) => mul(0x3a3733, 0.9 + hash(x, y, 1) * 0.2) });
-  const gS = rows(0, W, B - 4, B - 1, { h: [3, 3], w: [4, 6], seed: sd + 3 });
-  stones(gS, 0, W, B - 4, B - 1, (s) => mul(0x6f6b65, 0.86 + hash(s.r, s.k, sd + 4) * 0.26), { hi: 0.14, lo: 0.8, joint: (x, y) => mul(0x3a3733, 0.9 + hash(x, y, 1) * 0.2) });
-  for (let x = 0; x < W; x++) { put(x, B - 1, 0x2a2b30); put(x, A + 2, mul(get(x, A + 2), 0.8)); }
+  const gN = rows(xa, xb, A, A + 3, { h: [3, 3], w: [4, 6], seed: sd + 1 });
+  stones(gN, xa, xb, A, A + 3, (s) => mul(0x6f6b65, 0.86 + hash(s.r, s.k, sd + 2) * 0.26), { hi: 0.14, lo: 0.8, joint: (x, y) => mul(0x3a3733, 0.9 + hash(x, y, 1) * 0.2) });
+  const gS = rows(xa, xb, B - 4, B - 1, { h: [3, 3], w: [4, 6], seed: sd + 3 });
+  stones(gS, xa, xb, B - 4, B - 1, (s) => mul(0x6f6b65, 0.86 + hash(s.r, s.k, sd + 4) * 0.26), { hi: 0.14, lo: 0.8, joint: (x, y) => mul(0x3a3733, 0.9 + hash(x, y, 1) * 0.2) });
+  for (let x = xa; x < xb; x++) { put(x, B - 1, 0x2a2b30); put(x, A + 2, mul(get(x, A + 2), 0.8)); }
   // asfalt
-  for (let y = A + 3; y < B - 4; y++) for (let x = 0; x < W; x++) put(x, y, asphaltW(x, y, 0, true, wornAt(x, y)));
-  for (let x = 0; x < W; x++) {
+  for (let y = A + 3; y < B - 4; y++) for (let x = xa; x < xb; x++) put(x, y, asphaltW(x, y, 0, true, wornAt(x, y)));
+  for (let x = xa; x < xb; x++) {
     if (open(R.openN, x)) for (let y = A; y < A + 3; y++) put(x, y, asphaltW(x, y, 0, false, wornAt(x, y)));
     if (open(R.openS, x)) for (let y = B - 4; y < B; y++) put(x, y, asphaltW(x, y, 0, false, wornAt(x, y)));
   }
+  if (!wst) {
   // grus och ogräs i förortens rännstenar
   for (let x = XS; x < W; x++) for (const y of [A, A + 1, B - 4, B - 3]) {
     if (open(R.openN, x) || open(R.openS, x)) continue;
@@ -1173,10 +1208,18 @@ function paintRoadX(R) {
       if (e && hash(x, y, 406) > 0.85) blend(x + (x === px ? -1 : x === px + pw - 1 ? 1 : 0), y + (y === py ? -1 : y === py + ph - 1 ? 1 : 0), 0x202126, 0.5);
     }
   }
+  } else {
+    // Linnéstaden: välskött gata – några få, prydliga lagningar
+    for (const [px, py, pw, ph, tone] of R.patch || []) for (let y = Math.max(A + 3, py); y < Math.min(B - 4, py + ph); y++) for (let x = px; x < px + pw; x++) {
+      const e = x === px || y === py || x === px + pw - 1 || y === py + ph - 1;
+      const c = asphaltW(x, y, tone, true, 0);
+      put(x, y, e && hash(x, y, 405) > 0.3 ? mul(c, 0.72) : c);
+    }
+  }
   // spöklinjer: gammal, bortfräst mittlinje som fortfarande anas
-  for (let x = 0; x < W; x++) if ((x + 20) % 40 < 18 && vnoise(x, 5 + d, 60, 407) > 0.42) for (const y of [A + 33, A + 34]) if (hash(x, y, 408) > 0.35) put(x, y, mix(get(x, y), 0x6a6c72, 0.35));
+  for (let x = xa; x < xb; x++) if (mod(x + 20, 40) < 18 && vnoise(x, 5 + d, 60, 407) > 0.42) for (const y of [A + 33, A + 34]) if (hash(x, y, 408) > 0.35) put(x, y, mix(get(x, y), 0x6a6c72, 0.35));
   // sand och grus (vintersand) som samlats längs kantstenen, löv i rännstenen
-  for (let x = 0; x < W; x++) {
+  for (let x = xa; x < xb; x++) {
     for (let dd = 0; dd < 5; dd++) for (const y of [A + 3 + dd, B - 5 - dd]) {
       if (hash(x, y, 409) < (0.24 - dd * 0.05) * (0.4 + vnoise(x, y, 20, 411)) * (1 + wornAt(x, y) * 0.8)) put(x, y, mix(mix(0xa09682, 0x7e766a, hash(x, y, 412)), get(x, y), 0.3));
     }
@@ -1186,6 +1229,11 @@ function paintRoadX(R) {
       put(x, y, lc); if (k > 0.3) put(x + 1, y, mul(lc, 0.75));
     }
   }
+  if (wst) {
+    // Linnéstaden: några tätade sprickor och lite oljedropp där bilarna väntar vid rött
+    for (let i = 0; i < 6; i++) crack(xa + hash(i, 1, sd + 70) * (xb - xa), A + 6 + hash(i, 2, sd + 70) * (B - A - 14), 8 + hash(i, 3, sd + 70) * 18, sd + 70 + i * 3, { sealed: true, dx: hash(i, 4, sd + 70) > 0.5 ? 1 : -1, y0: A + 3, y1: B - 4 });
+    for (let i = 0; i < 18; i++) stain(xa + hash(i, 1, sd + 71) * (xb - xa), (i & 1 ? A + 45.5 : A + 19.5) + (hash(i, 2, sd + 71) - 0.5) * 3, 2 + hash(i, 3, sd + 71) * 3, 1 + hash(i, 4, sd + 71), 0.18);
+  } else {
   // sprickor: tätade (blanka svarta) och öppna hårfina
   for (let i = 0; i < 16; i++) crack(hash(i, 1, sd + 10) * W1, A + 6 + hash(i, 2, sd + 10) * (B - A - 14), 8 + hash(i, 3, sd + 10) * 22, sd + 10 + i * 3, { sealed: i < 9, branch: i < 5, dx: hash(i, 4, sd + 10) > 0.5 ? 1 : -1, y0: A + 3, y1: B - 4 });
   for (let i = 0; i < 46; i++) crack(XS + hash(i, 1, sd + 11) * (W - XS), A + 6 + hash(i, 2, sd + 11) * (B - A - 14), 10 + hash(i, 3, sd + 11) * 30, sd + 11 + i * 3, { sealed: i % 3 !== 0, branch: i % 3 === 0, dx: hash(i, 4, sd + 11) > 0.5 ? 1 : -1, y0: A + 3, y1: B - 4 });
@@ -1206,6 +1254,7 @@ function paintRoadX(R) {
   // oljedropp mitt i körfälten – tätare där bilarna står och väntar vid rött
   for (let i = 0; i < 60; i++) stain(hash(i, 1, 440 + d) * W1, (i & 1 ? A + 45.5 : A + 19.5) + (hash(i, 2, 440) - 0.5) * 3, 2 + hash(i, 3, 440) * 3, 1 + hash(i, 4, 440), 0.22);
   for (let i = 0; i < 44; i++) stain(XS + hash(i, 1, 441 + d) * (W - XS), (i & 1 ? A + 45.5 : A + 19.5) + (hash(i, 2, 441) - 0.5) * 4, 2 + hash(i, 3, 441) * 4, 1 + hash(i, 4, 441) * 1.4, 0.3);
+  }
   for (const c of R.cws) for (let i = 0; i < 6; i++) {
     stain(c.x1 + 12 + hash(i, 5, c.x0) * 50, A + 19.5 + (hash(i, 6, c.x0) - 0.5) * 3, 2 + hash(i, 7, c.x0) * 4, 1.2 + hash(i, 8, c.x0), 0.35);
     stain(c.x0 - 12 - hash(i, 9, c.x0) * 50, A + 45.5 + (hash(i, 10, c.x0) - 0.5) * 3, 2 + hash(i, 11, c.x0) * 4, 1.2 + hash(i, 12, c.x0), 0.35);
@@ -1213,13 +1262,13 @@ function paintRoadX(R) {
   // bromsspår före det andra övergångsstället (och ett par sladdar i förorten)
   const tc = R.cws[1] || R.cws[0];
   if (tc) for (let x = tc.x0 - 44; x < tc.x0 - 8; x++) for (const y of [A + 43, A + 50]) { const f = (x - (tc.x0 - 44)) / 36; if (hash(x, y, 450) < 0.35 + f * 0.6) blend(x, y, 0x17181c, 0.55); }
-  for (const [sx, sy] of [[1900 + SDX + d, A + 44], [2480 + SDX - d, A + 18]]) for (let k = 0; k < 40; k++) { const x = sx + k, y = sy + Math.round(Math.sin(k * 0.12) * 3); for (const o of [0, 7]) if (hash(x, y + o, 451) < 0.7) blend(x, y + o, 0x17181c, 0.45); }
+  if (!wst) for (const [sx, sy] of [[1900 + SDX + d, A + 44], [2480 + SDX - d, A + 18]]) for (let k = 0; k < 40; k++) { const x = sx + k, y = sy + Math.round(Math.sin(k * 0.12) * 3); for (const o of [0, 7]) if (hash(x, y + o, 451) < 0.7) blend(x, y + o, 0x17181c, 0.45); }
   // mittlinje (slitna streck) och streckade kantlinjer – uppehåll vid övergångsställena och Infarten
   const nearCW = (x, pad) => R.cws.some((c) => x >= c.x0 - pad && x < c.x1 + pad);
   const busZone = (x) => R.stops.some((s) => x >= s.x - 60 && x < s.x + 60);
-  for (let x = 0; x < W; x++) {
+  for (let x = xa; x < xb; x++) {
     const wx = wornAt(x, A + 28) * 0.42;
-    if (!nearCW(x, 14) && (x + 6) % 34 < 16) {
+    if (!nearCW(x, 14) && mod(x + 6, 34) < 16) {
       mark(x, A + 28, 0xefe9d4, wearAt(x, A + 28, 0.03) + wx);
       mark(x, A + 29, 0xd6d0bc, wearAt(x, A + 29, 0.03) + wx);
       if (hash(x, A + 30, 36) > 0.4) shade(x, A + 30, 0.88);                                    // färgens kant
@@ -1265,7 +1314,7 @@ function paintRoadX(R) {
     eachTextPixel(BIG, 'BUSS', s.x - 11, A + 36, 1, (px, py) => mark(px, py, 0xe8e0c8, wearAt(px, py, 0.08) + br));
   }
   // brunnslock med lagad asfaltruta runt
-  const MH = R.dy === 0 ? [[180, 233], [705, 259], [1125, 234], [1480, 260], [1860, 233], [2250, 260], [1900 + SDX, 234], [2350 + SDX, 260], [2620 + SDX, 233]]
+  const MH = wst ? R.mh || [] : R.dy === 0 ? [[180, 233], [705, 259], [1125, 234], [1480, 260], [1860, 233], [2250, 260], [1900 + SDX, 234], [2350 + SDX, 260], [2620 + SDX, 233]]
     : [[330, A + 41], [880, A + 15], [1380, A + 41], [1640, A + 16], [1960, A + 41], [2300, A + 15], [2010 + SDX, A + 41], [2470 + SDX, A + 15]];
   for (const [mx, my] of MH) {
     const worn = wornAt(mx, my);
@@ -1277,14 +1326,14 @@ function paintRoadX(R) {
     if (worn > 0.5) for (let x = mx - 8; x < mx + 8; x++) if (hash(x, my, 453) > 0.6) shade(x, my + 5, 0.7);   // locket har sjunkit
   }
   // dagvattengaller i rännstenarna
-  for (let i = 0, x = 52 + (R.dy ? 30 : 0); x < W - 10; i++, x += 118) {
+  for (let i = 0, x = wst ? xa + 40 : 52 + (R.dy ? 30 : 0); x < (wst ? xb : W) - 10; i++, x += 118) {
     if (nearCW(x, 12) || nearCW(x + 8, 12) || open(R.openS, x) || open(R.openS, x + 38) || open(R.openN, x)) continue;
     const rust = 0.16 + wornAt(x, A) * 0.34;
     if (i & 1) { grate(x, A, 9, 3, true, rust); ellipse(x + 4.5, A + 4, 7, 2, (px, py, t) => { if (bayer(px, py) < (1 - t)) shade(px, py, 0.85); }); }
     else if (!busZone(x) && !busZone(x + 38)) grate(x + 30, B - 4, 9, 3, true, rust);
   }
   // skräp i förortens rännstenar
-  scatter([XS, A, W, A + 4], 44, sd + 60); scatter([XS, B - 5, W, B - 1], 44, sd + 61);
+  if (!wst) { scatter([XS, A, W, A + 4], 44, sd + 60); scatter([XS, B - 5, W, B - 1], 44, sd + 61); }
 }
 
 // =====================================================================
@@ -1737,6 +1786,202 @@ function paintDowntownBand() {
 }
 
 // =====================================================================
+// LINNÉSTADEN (v4) – mellanbandet väster om centrum (x X0–0, y 306–494):
+// MARKNADSTORGET i bågsatt smågatsten (grå och röd granit), ett kantband av långa hällar och
+// en stenring kring brunnen; STADSODLINGEN (barkflis och pallkragar med grönsaker, bär och
+// lavendel); LINDPARKEN (gräsmatta full av blommor, rabatter, grusgångar och musikpaviljongens
+// gruscirkel) som möter centrums park vid x 0; parkgången bakom den södra raden.
+// Rekvisitan (brunnen, lindarna, bänkarna, paviljongen, boden) står i props.js.
+// =====================================================================
+const COBL = [0xa8a298, 0x9e988e, 0xb2aca2, 0x948e86, 0xaaa092];
+const COBR = [0xb07a66, 0xa06a58, 0xb8846e];
+const BED_PLANT = [
+  [0x4f9a3a, 0x6dbb48, 0x3a7a2c],   // sallad
+  [0x5aa040, 0x8ac858, 0xe0802a],   // morötter
+  [0x3e8a34, 0x5aa846, 0xd8303a],   // jordgubbar
+  [0x6a8a5a, 0x8aa070, 0x9a7ad8],   // lavendel
+];
+const FLOWERS = [[0xd8303a, 0xf2c830], [0xf09ab8, 0xf4f0f4], [0x9a7ad8, 0xc8b0f0], [0xf08a2a, 0xf6d23a], [0xf4f0f4, 0xd8303a]];
+function linneMask() {
+  // 0 gräs, 1 grus, 2 torget, 3 barkflis, 4 pallkrage, 6 rabatt, 7 paviljongens cirkel, 9 kanten mot södra raden
+  const L = LINNE_LAYOUT, w = -X0, M = new Uint8Array(w * (TOP_S - PK0)), pv = L.pavilion;
+  const grus = [L.promenade, ...L.walks, L.back];
+  for (let y = PK0; y < TOP_S; y++) for (let x = X0; x < 0; x++) {
+    let m = 0;
+    if (y >= BS1) m = 9;
+    else if (inR(x, y, L.torg)) m = 2;
+    else if (grus.some((r) => inR(x, y, r))) m = 1;
+    else if (Math.hypot((x + 0.5 - pv.x) / pv.rx, (y + 0.5 - pv.y) / pv.ry) < 1) m = 7;
+    else if (L.beds.some((r) => inR(x, y, r))) m = 4;
+    else if (inR(x, y, L.odling)) m = 3;
+    else if (L.beds2.some((r) => inR(x, y, r))) m = 6;
+    M[(y - PK0) * w + x - X0] = m;
+  }
+  return M;
+}
+function paintLinneBand() {
+  if (X0 >= 0 || !LINNE_LAYOUT) return;
+  const L = LINNE_LAYOUT, M = linneMask(), w = -X0;
+  const mk = (x, y) => (x < X0 || x >= 0 || y < PK0 || y >= TOP_S ? 1 : M[(y - PK0) * w + x - X0]);
+  // gräset: samma fläckiga gräs som parken (möts sömlöst vid x 0)
+  for (let y = PK0; y < BS0; y++) for (let x = X0; x < 0; x++) {
+    if (mk(x, y) !== 0) continue;
+    const emb = vnoise(x, y, 3.4, 105) - vnoise(x + 0.7, y + 1.6, 3.4, 105);
+    const n = fbm(x, y, 30, 101) * 0.6 + vnoise(x, y, 9, 102) * 0.24 + emb * 0.85 + (hash(x, y, 103) - 0.5) * 0.12 + 0.08;
+    const i = n < 0.3 ? 0 : n < 0.41 ? 1 : n < 0.53 ? 2 : n < 0.65 ? 3 : n < 0.77 ? 4 : 5;
+    put(x, y, mul(GR[i], 0.97 + hash(x, y, 104) * 0.05));
+  }
+  for (let y = PK0 + 3; y < BS0; y++) for (let x = X0 + 1; x < -1; x++) {                     // grässtrån
+    if (mk(x, y) || mk(x, y - 1) || mk(x, y - 2) || hash(x, y, 110) < 0.9) continue;
+    const lean = hash(x, y, 111) < 0.3 ? -1 : hash(x, y, 111) > 0.7 ? 1 : 0;
+    put(x, y, GR[1]); put(x, y - 1, GR[3]);
+    if (hash(x, y, 112) > 0.4 && !mk(x + lean, y - 2)) put(x + lean, y - 2, GR[hash(x, y, 113) > 0.6 ? 5 : 4]);
+  }
+  // blommor i gräset – tätare än i parken (Lindparken är stadsdelens stolthet)
+  for (let y = PK0 + 3; y < BS0 - 1; y++) for (let x = X0 + 1; x < -3; x++) {
+    if (mk(x, y) || mk(x + 2, y) || mk(x, y + 1)) continue;
+    const mv = vnoise(x, y, 30, 1630), h = hash(x, y, 131);
+    if (!(h > (mv > 0.55 ? 0.982 : 0.996))) continue;
+    const k = hash(x, y, 132);
+    if (k < 0.4) { put(x, y + 1, 0x3e7a34); put(x - 1, y, 0xf6f4ec); put(x, y, 0xf2c830); put(x + 1, y, 0xf6f4ec); put(x, y - 1, 0xf6f4ec); }   // prästkrage
+    else if (k < 0.6) { put(x, y, 0xf6d23a); put(x, y + 1, 0xc49a22); }                       // maskros
+    else if (k < 0.75) { put(x, y, 0x9a7ae0); put(x, y + 1, 0x6a50b0); }                      // viol
+    else if (k < 0.9) { put(x, y, 0xe07aa2); put(x + 1, y, 0xc85a88); }                       // rödklöver
+    else { put(x, y, 0x6a9ae8); put(x, y + 1, 0x3e6ab0); }                                    // förgätmigej
+  }
+  // grus: promenaden, gångarna, parkgången och paviljongens cirkel
+  const [, py0, , py1] = L.promenade, pv = L.pavilion;
+  for (let y = PK0; y < BS1; y++) for (let x = X0; x < 0; x++) {
+    const m = mk(x, y);
+    if (m !== 1 && m !== 7) continue;
+    const g = (q) => q === 1 || q === 7;
+    const edge = !g(mk(x - 1, y)) || !g(mk(x + 1, y)) || !g(mk(x, y - 1)) || !g(mk(x, y + 1)) || !g(mk(x - 2, y)) || !g(mk(x + 2, y));
+    const center = y >= py0 + 4 && y < py1 - 4;
+    let c = mix(0xc6b28c, 0xd6c6a2, vnoise(x, y, 9, 401) * (center ? 1.2 : 0.8));
+    c = mul(c, 0.94 + hash(x, y, 402) * 0.1);
+    const h = hash(x, y, 403), thr = center ? 0.95 : edge ? 0.86 : 0.92;
+    if (h > thr) c = [0xe8dcc0, 0xd8c8a4, 0xb8906c, 0xa6a098][(hash(x, y, 404) * 4) | 0];
+    else if (hash(x, y - 1, 403) > thr) c = mul(c, 0.78);
+    else if (h < 0.05) c = mul(c, 0.82);
+    if (edge) c = mul(c, 0.9);
+    if (y >= BS0 && y < BS1 && Math.abs(y - (BS0 + 12 + Math.sin(x * 0.02) * 3)) < 4 && bayer(x, y) < 0.2) c = mul(c, 0.93);
+    if (m === 7) {                                                                              // paviljongens cirkel: stenkant och krattade ringar
+      const t = Math.hypot((x + 0.5 - pv.x) / pv.rx, (y + 0.5 - pv.y) / pv.ry);
+      if (t > 0.9) c = granite(x, y, y < pv.y ? 0xd6d1c7 : 0xa29d94);
+      else if (Math.sin(t * 40) > 0.8) c = mul(c, 0.95);
+    }
+    put(x, y, c);
+  }
+  for (let x = X0 + 40; x < -40; x++) {                                                       // cykelspår i parkgången
+    const y2 = Math.round(BS0 + 14 + Math.sin(x * 0.037) * 2.4 + Math.sin(x * 0.011) * 1.6);
+    if (mk(x, y2) === 1 && hash(x, 1, 406) > 0.2) put(x, y2, mul(get(x, y2), 0.87));
+  }
+  // MARKNADSTORGET
+  const [tx0, ty0, tx1, ty1] = L.torg, WL = L.well, BAND = 6, ARC = 32, TAU = Math.PI * 2;
+  const idAt = (x, y) => {
+    if (x < tx0 || x >= tx1 || y < ty0 || y >= ty1) return -1;
+    const e = Math.min(x - tx0, tx1 - 1 - x, y - ty0, ty1 - 1 - y);
+    if (e < BAND) {                                                                           // kantbandet: långa hällar
+      const hor = y - ty0 < BAND || ty1 - 1 - y < BAND;
+      return 1e7 + (hor ? (y < (ty0 + ty1) / 2 ? 0 : 1) * 1000 + Math.floor((x - tx0) / 20) : (x < (tx0 + tx1) / 2 ? 2 : 3) * 1000 + Math.floor((y - ty0) / 20));
+    }
+    const dx = (x + 0.5 - WL.x) / 34, dy = (y + 0.5 - WL.y) / 19, t = Math.hypot(dx, dy);
+    if (t < 1) {                                                                              // stenringen kring brunnen
+      const ring = Math.floor(t * 6);
+      if (ring >= 5) return 2e7 + 90000 + Math.floor((Math.atan2(dy, dx) / TAU + 0.5) * 36);
+      const count = Math.max(6, ring * 11);
+      return 2e7 + ring * 1000 + Math.floor(((Math.atan2(dy, dx) / TAU + 0.5) + ring * 0.37) * count) % count;
+    }
+    const u = mod(x - tx0, ARC) - ARC / 2 + 0.5, col = Math.floor((x - tx0) / ARC);       // bågsättning
+    const yy = y - ty0 + 7 * (1 - (2 * u / ARC) ** 2), r = Math.floor(yy / 4);
+    const k = Math.floor((x - tx0 + (r & 1) * 2.3 + col * 0.7) / 4.6);
+    return (col * 997 + r) * 131 + k;
+  };
+  for (let y = ty0; y < ty1; y++) for (let x = tx0; x < tx1; x++) {
+    const id = idAt(x, y);
+    const joint = idAt(x + 1, y) !== id || idAt(x, y + 1) !== id, top = idAt(x, y - 1) !== id, left = idAt(x - 1, y) !== id;
+    let c;
+    if (id >= 2e7 + 90000) c = joint ? 0x4a4642 : top ? 0xc6c0b6 : 0x7a756e;                  // mörk ring runt brunnens sten
+    else if (id >= 2e7) {
+      const ring = Math.floor((id - 2e7) / 1000);
+      c = ring === 3 ? COBR[(hash(id, 1, 1611) * 3) | 0] : ring <= 1 ? 0xd2ccc2 : COBL[(hash(id, 2, 1611) * COBL.length) | 0];
+    } else if (id >= 1e7) c = mul(0xbdb7ac, 0.92 + hash(id, 3, 1612) * 0.12);
+    else {
+      const hh = hash(id, 4, 1613);
+      c = hh < 0.16 ? COBR[(hash(id, 5, 1613) * 3) | 0] : COBL[(hash(id, 6, 1613) * COBL.length) | 0];
+      c = mul(c, 0.9 + hash(id, 7, 1613) * 0.16);
+    }
+    if (id < 2e7 + 90000) {
+      if (joint) c = mul(0x5a5448, 0.9 + hash(x, y, 1614) * 0.2);
+      else if (top) c = mix(c, 0xffffff, 0.2);
+      else if (left) c = mix(c, 0xffffff, 0.08);
+      else if (idAt(x, y + 2) !== id) c = mul(c, 0.88);
+      c = grainy(c, x, y, 0.05);
+    }
+    put(x, y, granite(x, y, c));
+  }
+  for (let x = tx0; x < tx1; x++) { shade(x, ty0, 0.8); if (bayer(x, ty0 + 1) < 0.5) shade(x, ty0 + 1, 0.9); }   // trottoarkantens skugga
+  for (let y = ty0; y < ty1; y++) for (let x = tx0; x < tx1; x++) if (hash(x, y, 1615) > 0.9992) put(x, y, 0x7c7872);
+  // STADSODLINGEN: barkflis, en smal träkant mot gräset, pallkragarna
+  for (let y = PK0; y < BS0; y++) for (let x = X0; x < 0; x++) {
+    if (mk(x, y) !== 3) continue;
+    let c = mix(0x6a4a2e, 0x82603a, vnoise(x, y, 4, 1601));
+    const h = hash(x, y, 1602);
+    if (h > 0.9) c = 0xa07850; else if (h < 0.1) c = 0x4a3220;
+    if (mk(x, y - 1) === 0 || mk(x - 1, y) === 0 || mk(x + 1, y) === 0) c = 0x9a7448;          // kantbrädan
+    else if (mk(x, y + 1) === 0) c = 0x6a4a2a;
+    put(x, y, c);
+  }
+  L.beds.forEach(([bx0, by0, bx1, by1], bi) => {
+    const P = BED_PLANT[bi % BED_PLANT.length];
+    for (let y = by0; y < by1; y++) for (let x = bx0; x < bx1; x++) {
+      const lx = x - bx0, rx = bx1 - 1 - x, ly = y - by0, ry = by1 - 1 - y;
+      let c;
+      if (ry < 3) c = ry === 0 ? 0x5a3e24 : (ry === 1 ? 0x8a6238 : 0x9e7444);                 // framsidan (bräda)
+      else if (ly < 2 || lx < 2 || rx < 2) c = ly === 0 ? 0xd2a874 : lx === 0 || rx === 0 ? 0x8a6238 : 0xb88c58;   // kanten
+      else {
+        c = mix(0x4a3424, 0x3a281a, hash(x, y, 1603));                                          // mullen
+        const px = (lx - 2) % 6, row = ly < 6 ? 0 : 1;
+        if (px >= 1 && px <= 4 && ((row === 0 && ly >= 3 && ly <= 5) || (row === 1 && ly >= 7 && ly <= 9))) {
+          const q = hash(Math.floor((lx - 2) / 6), row + bi * 7, 1604);
+          c = ly === (row ? 7 : 3) && px >= 2 && px <= 3 ? P[1] : P[0];
+          if (q > 0.55 && px === 2 && ly === (row ? 8 : 4)) c = P[2];                          // frukten/blomman
+          if (bi % BED_PLANT.length === 1 && ly === (row ? 9 : 5) && px === 2) c = P[2];        // morotstoppen
+        }
+      }
+      put(x, y, c);
+    }
+    for (let x = bx0; x < bx1 + 1; x++) { shade(x, by1, 0.72); if (bayer(x, by1 + 1) < 0.5) shade(x, by1 + 1, 0.85); }
+  });
+  // rabatterna: kupad mull, tätt med blommor, granitkant
+  L.beds2.forEach(([bx0, by0, bx1, by1], bi) => {
+    const F = FLOWERS[bi % FLOWERS.length];
+    for (let y = by0 - 1; y <= by1; y++) for (let x = bx0 - 1; x <= bx1; x++) {
+      if (x < bx0 || x >= bx1 || y < by0 || y >= by1) { if (mk(x, y) === 0) put(x, y, granite(x, y, y < by0 ? 0xd6d1c7 : 0xa29d94)); continue; }
+      let c = mix(0x4e3a28, 0x3e2c1e, hash(x, y, 1620));
+      const h = hash(x, y, 1621);
+      if (h > 0.42) c = h > 0.86 ? F[1] : h > 0.62 ? F[0] : (hash(x, y, 1622) > 0.5 ? 0x3e7a34 : 0x5a9a42);
+      put(x, y, c);
+    }
+  });
+  // kantsten mellan gräs och grus, skuggan under trottoarkanten, kanten mot södra raden
+  for (let y = PK0; y < BS1; y++) for (let x = X0; x < 0; x++) {
+    if (mk(x, y) !== 0) continue;
+    const g = (q) => q === 1 || q === 2 || q === 7;
+    const dn = g(mk(x, y + 1)), up = g(mk(x, y - 1)), lr = g(mk(x - 1, y)) || g(mk(x + 1, y));
+    if (dn) put(x, y, granite(x, y, 0xd6d1c7));
+    else if (up) { put(x, y, granite(x, y, 0xa29d94)); if (mk(x, y + 1) === 0) shade(x, y + 1, 0.82); }
+    else if (lr) put(x, y, granite(x, y, 0xbab5ab));
+  }
+  for (let x = X0; x < 0; x++) {
+    put(x, BS1, granite(x, BS1, 0xc8c3b9)); put(x, BS1 + 1, granite(x, BS1 + 1, 0x9a958c));
+    put(x, BS1 + 2, mul(dirt(x, BS1 + 2), 0.7)); put(x, BS1 + 3, mul(dirt(x, BS1 + 3), 0.6));
+    const m = mk(x, PK0);
+    if (m === 0 || m === 3) { shade(x, PK0, 0.74); if (bayer(x, PK0 + 1) < 0.5) shade(x, PK0 + 1, 0.88); }
+  }
+}
+
+// =====================================================================
 // FLODEN (v3) – PLATSHÅLLARE: js/city/bridge.js målar flodrummet på riktigt (paintRiver,
 // läggs ovanpå marken av scenen). Här: kajer av granit, räcken, vattnet med krusningar,
 // broarnas södra sidor (balkar över vattnet) och skuggan under däcken. Gatorna över
@@ -2120,42 +2365,42 @@ function paintJunkLot(g) {
 // =====================================================================
 // KAJEN (760–776) och KANALEN (776–820)
 // =====================================================================
-function paintQuay() {
+function paintQuay(xa = 0, xb = W) {
   // gångytan: stora granithällar i halvförband
-  const at = rows(0, W, Q0, Q0 + 10, { h: [10, 10], w: [22, 30], seed: 370 });
-  stones(at, 0, W, Q0, Q0 + 10, (s, x, y) => grime(mul(mix(0xb4aea2, 0xa6a094, hash(s.k, s.r, 371)), 0.94 + hash(s.r, s.k, 372) * 0.1), x, y, wornAt(x, y) * 0.8), { hi: 0.12, lo: 0.86, grain: 0.05, joint: (x, y) => (wornAt(x, y) > 0.5 && hash(x, y, 373) > 0.6 ? WEED[1] : 0x6a655d) });
+  const at = rows(xa, xb, Q0, Q0 + 10, { h: [10, 10], w: [22, 30], seed: 370 });
+  stones(at, xa, xb, Q0, Q0 + 10, (s, x, y) => grime(mul(mix(0xb4aea2, 0xa6a094, hash(s.k, s.r, 371)), 0.94 + hash(s.r, s.k, 372) * 0.1), x, y, wornAt(x, y) * 0.8), { hi: 0.12, lo: 0.86, grain: 0.05, joint: (x, y) => (wornAt(x, y) > 0.5 && hash(x, y, 373) > 0.6 ? WEED[1] : 0x6a655d) });
   // kajkanten: överkant (ljus), framsida (solbelyst, sydväst) och en mörk droppkant
-  for (let x = 0; x < W; x++) {
+  for (let x = xa; x < xb; x++) {
     const worn = wornAt(x, Q1);
     put(x, Q0 + 10, granite(x, Q0 + 10, 0xd4cfc4)); put(x, Q0 + 11, granite(x, Q0 + 11, 0xc6c1b6));
     for (let y = Q0 + 12; y < Q1; y++) put(x, y, grime(granite(x, y, y === Q1 - 1 ? 0x8a857c : 0xb2ada2), x, y, worn * 0.8));
-    if (x % 26 === 25) for (let y = Q0 + 10; y < Q1; y++) put(x, y, 0x6a655d);
+    if (mod(x, 26) === 25) for (let y = Q0 + 10; y < Q1; y++) put(x, y, 0x6a655d);
   }
   // förtöjningsringar i kajkanten
-  for (let x = 70; x < W; x += 180) { put(x, Q1 - 3, 0x2a2a2c); put(x + 1, Q1 - 4, 0x3a3a3e); put(x + 2, Q1 - 3, 0x2a2a2c); put(x + 1, Q1 - 2, 0x1a1a1c); put(x + 1, Q1 - 3, 0x8a5a36); }
+  for (let x = xa + 70; x < xb; x += 180) { put(x, Q1 - 3, 0x2a2a2c); put(x + 1, Q1 - 4, 0x3a3a3e); put(x + 2, Q1 - 3, 0x2a2a2c); put(x + 1, Q1 - 2, 0x1a1a1c); put(x + 1, Q1 - 3, 0x8a5a36); }
   // räcket: stolpar och två ledstänger (rostigt och bucklat i förorten, en bit saknas)
   const gone = (x) => x > 2230 + SDX && x < 2262 + SDX;
-  for (let x = 0; x < W; x++) {
+  for (let x = xa; x < xb; x++) {
     if (gone(x)) continue;
     const worn = wornAt(x, Q1), sag = worn > 0.5 ? Math.round(Math.sin(x * 0.07) * vnoise(x, 0, 30, 374) * 1.4) : 0;
     const iron = worn > 0.5 && hash(x, 0, 375) > 0.6 ? 0x6a4a32 : 0x2a2c32, hi = worn > 0.5 ? 0x8a6a4a : 0x5a5e68;
-    if (x % 12 === 0) { for (let y = Q0 + 4; y < Q0 + 12; y++) put(x, y, y === Q0 + 4 ? hi : iron); put(x + 1, Q0 + 5, mul(iron, 0.7)); shade(x + 1, Q0 + 3, 0.8); }
+    if (mod(x, 12) === 0) { for (let y = Q0 + 4; y < Q0 + 12; y++) put(x, y, y === Q0 + 4 ? hi : iron); put(x + 1, Q0 + 5, mul(iron, 0.7)); shade(x + 1, Q0 + 3, 0.8); }
     put(x, Q0 + 4 + sag, hi); put(x, Q0 + 5 + sag, iron);                                     // överliggaren
     put(x, Q0 + 8, iron);                                                                     // mittstången
     shade(x + 1, Q0 + 2 + sag, 0.86);                                                         // skuggan faller norrut
   }
 }
-function paintCanal() {
-  const y0 = CN0, wl = CN0 + 7;                                                               // kajmurens framsida, vattenlinjen
+function paintCanal(xa = 0, xb = W) {
+  const y0 = CN0, wl = CN0 + 7, wst = xb <= 0;                                                // kajmurens framsida, vattenlinjen
   // kajmuren: granitblock som blir mörka och våta nertill, alger vid vattenlinjen
-  const at = rows(0, W, y0, wl, { h: [3, 4], w: [10, 18], seed: 380, bond: true });
-  stones(at, 0, W, y0, wl, (s, x, y) => mul(mix(0x7e7a72, 0x6a665e, hash(s.k, s.r, 381)), 1 - (y - y0) * 0.06), { hi: 0.1, lo: 0.8, grain: 0.06, joint: () => 0x3a3834 });
-  for (let x = 0; x < W; x++) {
+  const at = rows(xa, xb, y0, wl, { h: [3, 4], w: [10, 18], seed: 380, bond: true });
+  stones(at, xa, xb, y0, wl, (s, x, y) => mul(mix(0x7e7a72, 0x6a665e, hash(s.k, s.r, 381)), 1 - (y - y0) * 0.06), { hi: 0.1, lo: 0.8, grain: 0.06, joint: () => 0x3a3834 });
+  for (let x = xa; x < xb; x++) {
     put(x, wl - 1, mix(get(x, wl - 1), 0x3e5a3a, 0.7)); if (hash(x, 0, 382) > 0.5) put(x, wl - 2, mix(get(x, wl - 2), 0x4a6a3a, 0.5));
     if (hash(x, 1, 383) > 0.97) for (let y = y0 + 1; y < wl - 1; y++) put(x, y, mix(get(x, y), 0x5a4a34, 0.3)); // rostränder från ringarna
   }
   // vattnet: djupare nedåt, murens spegling överst, avlånga krusningar
-  for (let y = wl; y < H; y++) for (let x = 0; x < W; x++) {
+  for (let y = wl; y < H; y++) for (let x = xa; x < xb; x++) {
     const f = (y - wl) / (H - wl), worn = wornAt(x, 790);
     let c = mix(0x3e7088, 0x1c3c54, f);
     if (worn > 0.3) c = mix(c, 0x3a5a4a, worn * 0.35);                                         // grumligare i förorten
@@ -2165,6 +2410,8 @@ function paintCanal() {
     else if (r < 0.28) c = mul(c, 0.86);
     put(x, y, c);
   }
+  for (let x = xa; x < xb; x++) if (hash(x, 2, 387) > 0.994) { put(x, wl + 2, 0xd8a040); }       // löv som flyter
+  if (wst) return;
   // förorten: skräp i vattnet – en kundvagn som sticker upp, ett däck, en flaska, en påse
   const cart = [2130 + SDX, 806];
   for (let x = cart[0]; x < cart[0] + 12; x++) { put(x, cart[1], 0x9aa0a6); if (x % 3 === 0) for (let y = cart[1]; y < cart[1] + 5; y++) put(x, y, mix(get(x, y), 0x8a9096, 0.6)); }
@@ -2172,7 +2419,6 @@ function paintCanal() {
   ellipse(2460 + SDX, 798, 5, 2, (x, y, t) => { if (t > 0.45) put(x, y, t > 0.8 ? 0x1a1a1c : 0x2e2e30); });
   put(2580 + SDX, 790, 0x5a9a5a); put(2581 + SDX, 790, 0x6aaa6a); put(2582 + SDX, 790, 0xdfe8ee);
   for (const [px, py] of [[1980 + SDX, 812], [2640 + SDX, 802]]) { put(px, py, 0xe6e8ea); put(px + 1, py, 0xd2d6da); put(px, py + 1, 0xc8ccd0); put(px + 1, py + 1, 0xb8bcc2); }
-  for (let x = 0; x < W; x++) if (hash(x, 2, 387) > 0.994) { put(x, wl + 2, 0xd8a040); }        // löv som flyter
 }
 
 // =====================================================================
@@ -2195,6 +2441,7 @@ function daySteps() {
       if (g.kind === 'lot') paintJunkLot(g);
       else if (g.kind === 'street' && g.road === 'infarten') paintPedestrian(g, TOP, BASE, 'granit');
       else if (g.kind === 'street' && g.x0 >= XD && g.x1 <= RX0) paintPedestrian(g, TOP, BASE, 'granit');   // (v3) Bankgatan: gångstråk i granit, inga bilar
+      else if (g.kind === 'street' && g.x1 <= 0) paintPedestrian(g, TOP, BASE, 'tegel');                    // (v4) Marknadsgatan: gågata i tegel
       else if (g.kind === 'street') paintSideStreet(g);
       else paintAlley(g);
     }
@@ -2204,7 +2451,16 @@ function daySteps() {
     y0: SN0, cws: CWS_N, houses: HOUSES_N, drives: [], seed: 300,
     lids: [118, 470, 1116, 1400, 1622, 1830, 2290, 1880 + SDX, 2130 + SDX, 2380 + SDX, 2560 + SDX], valves: [232, 640, 1040, 1508, 1990, 1990 + SDX, 2440 + SDX],
   }));
+  // (v4) Linnéstadens bitar av samma band: samma målare, klippta till x < 0
+  const CWL_N = CWS_N.filter((c) => c.x1 <= 0), CWL_S = CWS_S.filter((c) => c.x1 <= 0), STL = BUS_STOPS.filter((s) => s.x < 0 && s.road === 'pixelgatan');
+  step('Linnéstaden: norra trottoaren', () => west(() => paintSidewalkTop({
+    xa: X0, xb: 0, y0: SN0, cws: CWL_N, houses: L_N, drives: [], seed: 2300, lids: [-1120, -700, -380, -60], valves: [-980, -520, -200],
+  })));
   step('Pixelgatan', () => paintRoadX({ y0: R0, y1: R1, dy: 0, seed: 400, cws: CWS_N, stops: BUS_STOPS.filter((s) => s.road === 'pixelgatan'), openN: [], openS: [[I0, I1]] }));
+  step('Linnéstaden: Pixelgatan', () => west(() => paintRoadX({
+    xa: X0, xb: 0, y0: R0, y1: R1, dy: 0, seed: 2400, cws: CWL_N, stops: STL, openN: [], openS: [],
+    patch: [[-1100, 250, 34, 12, -0.1], [-640, 226, 26, 14, 0.06], [-262, 254, 40, 11, -0.08]], mh: [[-980, 233], [-420, 260], [-150, 233]],
+  })));
   // låg kant där gångarna börjar: parkens gångar, förortens hållplatsstig och hela Finanstorget (torget går ända fram)
   const parkLow = (x) => PARK_LAYOUT.paths.some((p) => x >= p[0] && x < p[2]) || SUB_LAYOUT.paths.some((p) => x >= p[0] && x < p[2])
     || (DOWNTOWN_LAYOUT && x >= DOWNTOWN_LAYOUT.plaza[0] && x < DOWNTOWN_LAYOUT.plaza[2]);
@@ -2212,7 +2468,14 @@ function daySteps() {
     y0: SS0, cws: CWS_N, stops: BUS_STOPS.filter((s) => s.road === 'pixelgatan'), drives: lotById('parkering')?.drive ? [lotById('parkering').drive] : [],
     lowAt: parkLow, seed: 320, lids: [206, 842, 1330, 1566, 1900, 1850 + SDX, 2200 + SDX, 2480 + SDX], valves: [118, 1000, 1470, 2340, 2120 + SDX, 2600 + SDX], hop: [1122, 0],
   }));
+  const LT = LINNE_LAYOUT;
+  step('Linnéstaden: södra trottoaren', () => west(() => paintSidewalkBottom({
+    xa: X0, xb: 0, y0: SS0, cws: CWL_N, stops: STL, drives: [], seed: 2320,
+    lowAt: (x) => (LT && x >= LT.torg[0] && x < LT.torg[2]) || (LT && LT.walks.some((w) => x >= w[0] && x < w[2])),
+    lids: [-1150, -690, -300], valves: [-1010, -420, -90], hop: [-412, 0.1],
+  })));
   step('parken', paintPark);
+  step('Linnéstaden: torget, odlingen och Lindparken', () => west(paintLinneBand));
   step('downtown: Finanstorget och bakgatan', paintDowntownBand);
   step('förortens mellanband', paintSuburbBand);
   step('södra raden', paintSouthRow);
@@ -2221,13 +2484,23 @@ function daySteps() {
     y0: BASE_S, cws: CWS_S, houses: HOUSES_S.filter((b) => b.base === BASE_S), drives: doorDrive, seed: 1300,
     lids: [96, 540, 980, 1180, 1540, 1860, 2310, 1880 + SDX, 2300 + SDX, 2640 + SDX], valves: [300, 760, 1300, 2000, 2060 + SDX, 2520 + SDX],
   }));
+  step('Linnéstaden: trottoaren framför södra raden', () => west(() => paintSidewalkTop({
+    xa: X0, xb: 0, y0: BASE_S, cws: CWL_S, houses: L_S.filter((b) => b.base === BASE_S), drives: [], seed: 3300, lids: [-1100, -560, -200], valves: [-860, -340],
+  })));
   step('Södergatan', () => paintRoadX({ y0: RS0, y1: RS1, dy: DY, seed: 1400, cws: CWS_S, stops: BUS_STOPS.filter((s) => s.road === 'sodergatan'), openN: [[I0, I1]], openS: [] }));
+  step('Linnéstaden: Södergatan', () => west(() => paintRoadX({
+    xa: X0, xb: 0, y0: RS0, y1: RS1, dy: DY, seed: 3400, cws: CWL_S, stops: [], openN: [], openS: [],
+    patch: [[-900, 690, 30, 12, -0.08], [-300, 712, 24, 10, 0.06]], mh: [[-700, RS0 + 41], [-240, RS0 + 15], [-1120, RS0 + 41]],
+  })));
   step('bortre trottoaren', () => paintSidewalkBottom({
     y0: SX0, cws: CWS_S, stops: BUS_STOPS.filter((s) => s.road === 'sodergatan'), drives: [], lowAt: () => false, seed: 1320,
     lids: [150, 690, 1250, 1620, 1950, 2330, 2050 + SDX, 2500 + SDX], valves: [420, 900, 1460, 2200, 2280 + SDX], hop: [1840 + SDX, 0.55],
   }));
-  step('kajen', paintQuay);
-  step('kanalen', paintCanal);
+  step('Linnéstaden: bortre trottoaren', () => west(() => paintSidewalkBottom({
+    xa: X0, xb: 0, y0: SX0, cws: CWL_S, stops: [], drives: [], lowAt: () => false, seed: 3320, lids: [-1000, -480, -120], valves: [-760, -260],
+  })));
+  step('kajen', () => { paintQuay(); west(() => paintQuay(X0, 0)); });
+  step('kanalen', () => { paintCanal(); west(() => paintCanal(X0, 0)); });
   step('Infarten', paintInfarten);
   step('pölarna', paintDryPuddles);
   step('floden (platshållare)', paintRiverPlaceholder);
@@ -2247,7 +2520,7 @@ let WARM = null;   // påbörjad förmålning: { P, sh, steps, i }
 // Scenen anropar den när webbläsaren har tid över; true = klart (paintGround blir då bara en kopia).
 export function prewarmGround(budget = 12) {
   if (DAY) return true;
-  if (!WARM) WARM = { P: new Pix(W, H), sh: new Uint8Array(W * H), steps: daySteps(), i: 0 };
+  if (!WARM) WARM = { P: new Pix(GW, H), sh: new Uint8Array(GW * H), steps: daySteps(), i: 0 };
   const t0 = performance.now();
   D = WARM.P.d; SH = WARM.sh;
   try {
@@ -2263,10 +2536,10 @@ export function prewarmGround(budget = 12) {
   return true;
 }
 export function paintGround(night) {
-  const P = new Pix(W, H);
+  const P = new Pix(GW, H);
   if (!DAY && WARM) prewarmGround(Infinity);      // en påbörjad förmålning görs klar
   if (!DAY) {
-    D = P.d; SH = new Uint8Array(W * H);
+    D = P.d; SH = new Uint8Array(GW * H);
     try { paintDay(); } finally { D = null; SH = null; }
     DAY = new Uint8ClampedArray(P.d);
   } else P.d.set(DAY);
@@ -2310,7 +2583,9 @@ const PARK_WALKS = [...PARK_LAYOUT.walks, ...PARK_LAYOUT.paths, PARK_LAYOUT.prom
 const SUB_HARD = [...LOTS.filter((l) => l.row === 'm' && l.kind !== 'lekplats_x').map((l) => l.rect), ...SUB_LAYOUT.paths];
 const PARKING = lotById('parkering')?.rect || [0, 0, 0, 0];
 const RIVER_WATER = RIVER ? RIVER.water : [];
+const LINNE_HARD = LINNE_LAYOUT ? [LINNE_LAYOUT.torg, LINNE_LAYOUT.promenade, ...LINNE_LAYOUT.walks, LINNE_LAYOUT.odling] : [];
 function surfaceAt(x, y) {
+  if (x < 0 && y >= PK0 && y < BS0) return LINNE_HARD.some((r) => inR(x, y, r)) && !LINNE_LAYOUT.beds.some((r) => inR(x, y, r)) ? 2 : 3;   // (v4)
   if (x >= RX0 && x < RX1 && RIVER_WATER.some((r) => inR(x, y, r))) return 0;     // floden (broarnas däck är väg/gång)
   if (y >= CN0) return 0;
   if ((y >= R0 && y < R1) || (y >= RS0 && y < RS1) || (x >= I0 && x < I1 && y >= R1 && y < RS0)) return 1;
@@ -2330,12 +2605,12 @@ function surfaceAt(x, y) {
 let WET = null;
 function wetTex() {
   if (WET) return WET;
-  const P = new Pix(W, H);
-  const srow = new Uint8Array(W);
+  const P = new Pix(GW, H, X0, 0);                                                            // (v4) duk-x = världs-x − X0
+  const srow = new Uint8Array(GW);
   for (let y = 0; y < H; y++) {
-    for (let x = 0; x < W; x++) srow[x] = surfaceAt(x, y);
-    for (let x = 0; x < W; x++) {
-      const s = srow[x];
+    for (let x = X0; x < W; x++) srow[x - X0] = surfaceAt(x, y);
+    for (let x = X0; x < W; x++) {
+      const s = srow[x - X0];
       if (!s) continue;
       if (s === 3) { P.px(x, y, 0x0a1420, 0.12); continue; }
       P.px(x, y, 0x0c1422, s === 1 ? 0.22 : 0.15);
@@ -2348,12 +2623,17 @@ function wetTex() {
     const y = band[0] + ((hash(i, 2, 970) * (band[1] - band[0])) | 0), len = 3 + ((hash(i, 3, 970) * 10) | 0);
     for (let k = 0; k < len; k++) P.px(x + k, y, 0xa8bcd4, 0.3 * (1 - Math.abs(k - len / 2) / len));
   }
+  for (let i = 0; i < Math.round(-X0 * 0.55); i++) {                                            // (v4) Linnéstadens bit av vägarna
+    const band = TRACKS[i % TRACKS.length], x = X0 + ((hash(i, 1, 973) * -X0) | 0);
+    const y = band[0] + ((hash(i, 2, 973) * (band[1] - band[0])) | 0), len = 3 + ((hash(i, 3, 973) * 10) | 0);
+    for (let k = 0; k < len; k++) P.px(x + k, y, 0xa8bcd4, 0.3 * (1 - Math.abs(k - len / 2) / len));
+  }
   for (let i = 0; i < 160; i++) {
     const band = TRACKS_I[i % 4], x = band[0] + ((hash(i, 4, 970) * (band[1] - band[0])) | 0), y = R1 + ((hash(i, 5, 970) * (RS0 - R1)) | 0), len = 3 + ((hash(i, 6, 970) * 9) | 0);
     for (let k = 0; k < len; k++) P.px(x, y + k, 0xa8bcd4, 0.3 * (1 - Math.abs(k - len / 2) / len));
   }
   // vattenfilm längs rännstenarna
-  for (let x = 0; x < W; x++) for (const y of [R0 + 1, R1 - 3, RS0 + 1, RS1 - 3]) {
+  for (let x = X0; x < W; x++) for (const y of [R0 + 1, R1 - 3, RS0 + 1, RS1 - 3]) {
     const v = vnoise(x, y, 14, 972);
     if (v > 0.45) P.px(x, y, 0xb4c6dc, (v - 0.45) * 0.7);
   }
@@ -2500,9 +2780,9 @@ export function groundLive(ctx, env, view) {
   // blöt mark, pölar och regnringar
   if (wet > 0.05 && snow < 0.6) {
     const a = clamp01(wet * 1.25) * (1 - snow);
-    const wx0 = Math.max(0, vx0), wy0 = Math.max(0, vy0), wx1 = Math.min(W, vx1), wy1 = Math.min(H, vy1);
+    const wx0 = Math.max(X0, vx0), wy0 = Math.max(0, vy0), wx1 = Math.min(W, vx1), wy1 = Math.min(H, vy1);
     ctx.globalAlpha = a;
-    if (wx1 > wx0 && wy1 > wy0) ctx.drawImage(wetTex(), wx0, wy0, wx1 - wx0, wy1 - wy0, wx0, wy0, wx1 - wx0, wy1 - wy0);
+    if (wx1 > wx0 && wy1 > wy0) ctx.drawImage(wetTex(), wx0 - X0, wy0, wx1 - wx0, wy1 - wy0, wx0, wy0, wx1 - wx0, wy1 - wy0);
     const night = !!env.night;
     for (const p of allPuddles()) {
       if (p.x + p.rx * 1.4 < vx0 || p.x - p.rx * 1.4 > vx1 || p.y + p.ry * 1.4 < vy0 || p.y - p.ry * 1.4 > vy1) continue;

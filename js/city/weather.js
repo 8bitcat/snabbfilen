@@ -584,7 +584,7 @@ let Z = null;
 const isRect = (r) => Array.isArray(r) && r.length >= 4 && r.every((v) => Number.isFinite(v)) && r[2] > r[0] && r[3] > r[1];
 function zones() {
   if (Z) return Z;
-  const W = CITY.W, band = (b) => (b ? [0, b[0], W, b[1]] : null);
+  const W = CITY.W, X0 = CITY.X0 || 0, band = (b) => (b ? [X0, b[0], W, b[1]] : null);   // (v4: från Linnéstadens västra kant)
   const walk = [band(CITY.BACK), band(CITY.SIDEWALK_N), band(CITY.SIDEWALK_S), band(CITY.SIDEWALK_SN), band(CITY.SIDEWALK_SS), band(CITY.QUAY),
     ...(PATHS || []).map((p) => p?.rect?.slice()),
     ...(LOTS || []).filter((l) => /parkering|grusplan|atervinning|vagnsplatsen/.test(l?.kind || '')).map((l) => l.rect?.slice()),
@@ -593,7 +593,7 @@ function zones() {
   // vatten: kanalen + (v3) floden. Gångbanden (bakgatan, parkgången, kajen …) tar slut vid floden –
   // där är det vatten (snö och pölar hamnar inte på det; isen lägger sig där när kanalen fryser)
   const river = (RIVER?.water || []).filter(isRect).map((r) => r.slice());
-  const water = [...(CITY.CANAL ? [[0, CITY.CANAL[0], W, CITY.H]] : []), ...river];
+  const water = [...(CITY.CANAL ? [[X0, CITY.CANAL[0], W, CITY.H]] : []), ...river];
   for (const r of river) { const kept = subtract(walk, r); walk.length = 0; walk.push(...kept); }
   // pölarna: på hårda ytor, tätast i rännstenarna
   const puddles = [];

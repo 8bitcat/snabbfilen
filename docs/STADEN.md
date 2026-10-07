@@ -24,7 +24,7 @@ Grundregler (gäller allt i staden):
 
 ## 1. Världen
 
-Världen är **4000 × 820** (v3; v2 var 2720 bred). Tvärsnitt i y (hela bredden):
+Världen är **5200 × 820**: x **−1200**–4000 (v4: `CITY.X0` = −1200 – Linnéstaden ligger väster om centrum, som behöll sina koordinater; v3 var 4000 bred, v2 2720). Tvärsnitt i y (hela bredden):
 
 | y | Vad | CITY-fält |
 |---|---|---|
@@ -47,6 +47,7 @@ Tvärsnitt i x:
 
 | x | Område |
 |---|---|
+| −1200–0 | **LINNÉSTADEN** (v4) – `X0`; landshövdingehus och små butiker i båda raderna, **MARKNADSTORGET**, stadsodlingen och Lindparken i mellanbandet (`LINNE_LAYOUT`), husen i `buildings-linne.js` |
 | 0–1700 | **CENTRUM** (norra raden), **PARKEN**, **SÖDER** (södra raden) – `X_CITY` |
 | 1700–1752 | **INFARTEN** – lodrät väg från bakgatan till Södergatan (`INFARTEN`, `LANES_I`; gågata norr om Pixelgatan, bilväg söder om den) |
 | 1752–2400 | **DOWNTOWN** (v3) – `X_DT`; finanskvarteret: skyskrapor, banken, elektronik, frisör, skor, accessoarer; **FINANSTORGET** i mellanbandet |
@@ -527,4 +528,30 @@ tar med downtowns `BUILDING_ART`; `groundImg` lägger `bridge.paintRiver(night)`
   tabellen ovan. Nya hållplatser och övergångsställen läggs **sist** i sina listor.
 - Förortens fasta platser i ground/props/life skrivs `v2-x + SDX` – flytta aldrig förorten
   igen utan att ändra `SUB_DX` (då följer allt med).
-- `CITY.W` ≤ 4000 så länge `net/world.js` klämmer x till 4000.
+- `CITY.W` ≤ 4000 och `CITY.X0` ≥ −1200 så länge `net/world.js` klämmer x till −1200–4000.
+
+## 9. Linnéstaden (v4, 2026-10-07)
+
+Den mysiga stadsdelen väster om centrum, x **−1200–0** (`CITY.X0` = −1200). Centrum flyttades inte –
+världen växte åt vänster, så alla gamla koordinater, sparfält och tester gäller som förut.
+
+| Del | Var | Fil |
+|---|---|---|
+| norra raden (10 hus) | Pixelgatan: LINNÉGATAN 3/11/17/23, KAFÉ LINDEN, GÅRDSBUTIKEN, PYNT & TING, BAGERIET, BLOMSTER, ANTIKVARIAT; MARKNADSGATAN (gågata, övergångsställe i 12) | `map.js` `BUILDINGS_L`, `buildings-linne.js` |
+| södra raden (9 hus) | Södergatan: KAJGATAN 2–30, GLASSKIOSKEN, LOPPISEN, CYKELVERKSTAN; KAJGATAN (övergångsställe i 13) och TRÄDGÅRDSGATAN | samma |
+| Marknadstorget | `LINNE_LAYOUT.torg` [−1024, 306, −464, 462], brunnen i `well` | marken `ground.js` `paintLinneBand`, brunnen/bänkarna `props.js` |
+| stadsodlingen | `odling` med pallkragar `beds` (hinder), boden, regntunnan, solrosorna, fågelskrämman | samma |
+| Lindparken | `green`, `promenade` (möter centrums promenad), `walks`, `pavilion` (musikpaviljongen), `beds2` (rabatter) | samma |
+| hållplats | MARKNADSTORGET (`BUS_STOPS[5]`, linje 4) | `props.js` `shelter` |
+
+- **Marken**: bufferten är `W − X0` bred (duk-x = världs-x − X0); scenen ritar den förskjuten. Varje band
+  har ett eget Linné-pass (`west(…)` i `ground.js`) som är klippt till x < 0 – centrum blir pixel för
+  pixel som förut (kontroll: block-diff av markbilden, bara gränden vid x 0 får skuggan från hörnhuset).
+- **Gångnät/rutnät**: `walk.js` och `life.js` har rutnätet förskjutet med `X0`; nya gånglinjer över
+  torget, en ring kring brunnen och paviljongen, odlingens grindar.
+- **Trafiken**: vägarna börjar i `X0`; tätheten skalar med `(W − X0) / 2720`.
+- **Kartan** (🗺️): kartpixel X ↔ världs-x (X + MX0)·K. **Nätet**: `net/world.js` klämmer x till −1200–4000.
+- **Musiken**: distriktet `linne` spelar parkens låt.
+- **Test**: `tools/linne-test.mjs`.
+- **Nästa släpp** (planen): marknaden på torget, Gårdsbutiken (köp närproducerat som råvaror),
+  dekorationsbutiken Pynt & Ting.

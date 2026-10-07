@@ -7,14 +7,17 @@
 //   🚕 Taxi dit    – A.taxiTo(id): en taxi hämtar en vid trottoarkanten och kör dit
 // 🚕-knappen öppnar samma karta i taxiläget ("Vart ska taxin köra?").
 // Kartan ritas en gång per session (husen står still) – "Du är här" ritas ovanpå varje gång.
-import { CITY, ALL_BUILDINGS, DISTRICTS, RIVER, BRIDGES, PARK_LAYOUT, PATHS, LOTS, CROSSWALKS_ALL, BUS_STOPS,
+import { CITY, ALL_BUILDINGS, DISTRICTS, RIVER, BRIDGES, PARK_LAYOUT, PATHS, LOTS, CROSSWALKS_ALL, BUS_STOPS, LINNE_LAYOUT,
   footprint, doorCenter, baseOf, buildingById } from './map.js';
 import { openModal, closeModal, esc } from '../core/ui.js';
 import { SMALL, ctxText, textW, hash } from '../core/floor-pix.js';
 import { clock } from '../game.js';
 
 export const MAP_K = 5;                                    // världens px per kartpixel
-const MW = Math.ceil(CITY.W / MAP_K), MH = Math.ceil(CITY.H / MAP_K);
+// (v4) kartan börjar vid världens västra kant CITY.X0 (Linnéstaden): kartpixel X ↔ världs-x (X + MX0) · K
+const MX0 = Math.floor((CITY.X0 || 0) / MAP_K);
+const MW = Math.ceil(CITY.W / MAP_K) - MX0, MH = Math.ceil(CITY.H / MAP_K);
+const kx = (wx) => Math.floor(wx / MAP_K) - MX0;                 // världs-x → kartpixel
 
 // ---------- taxin: pris och tid ----------
 // 25 kr startavgift + 10 kr per 100 m (1 världs-px ≈ 0,25 m, vägen räknas i kvarter: |dx| + |dy|)
@@ -46,7 +49,7 @@ const COL = {
   grus: [0xc9b48a, 0xb8a37a], asfalt: [0x55545c, 0x4c4b52], vag: [0x46454d, 0x3f3e46], trottoar: [0xb9b3a7, 0xaaa498],
   torg: [0xc2b8a4, 0xb0a690], kaj: [0x9c968a, 0x8c867a], gard: [0x8f897d, 0x848074], vatten: [0x3f7fb8, 0x5a9ad0],
   kyrkogard: [0x4f8a3e, 0x9a9a92], parkering: [0x5a5960, 0xd8d4c8], lekplats: [0xd8b87a, 0xe06040], tomten: [0x8a7a5a, 0x6f8a44],
-  bro: [0x6a6258, 0x5c554c], torn: [0x8a8274, 0x6c6558],
+  bro: [0x6a6258, 0x5c554c], torn: [0x8a8274, 0x6c6558], odling: [0x7a5a3a, 0x5f9a45],
 };
 const INK = 0x1c1a20;
 const ROOFS = {
@@ -55,6 +58,7 @@ const ROOFS = {
   PARKEN: [0x8a5a3a, 0x9a4a3a, 0x6f7f8e],
   DOWNTOWN: [0x5a6f86, 0x4a5a70, 0x7f93a8, 0x3f4a5c, 0x6a7a8a],
   'FÖRORTEN': [0x8c8a86, 0x75736e, 0x9a8f7e, 0x6a6660, 0x7a7a70],
+  'LINNÉSTADEN': [0xb4553c, 0xa44a34, 0x6a4a40, 0x3e4250, 0x4a5a56, 0x9a4a34],
 };
 const SPECIAL_ROOF = { flyg: 0xc8ccd2, kyrka: 0x4a4e5a, mat: 0xd6d2c8, mobler: 0x3f6fb0, lagerhall: 0x7a7d80, garage: 0x6a6f74 };
 const lighten = (c, f) => { const r = (c >> 16) & 255, g = (c >> 8) & 255, b = c & 255; const m = (v) => Math.max(0, Math.min(255, Math.round(f > 0 ? v + (255 - v) * f : v * (1 + f)))); return (m(r) << 16) | (m(g) << 8) | m(b); };
@@ -81,6 +85,8 @@ function surfaceAt(x, y) {
   if (((x - pd.cx) / pd.rx) ** 2 + ((y - pd.cy) / pd.ry) ** 2 < 1) return 'vatten';
   const pz = PARK_LAYOUT.plaza;
   if ((x - pz.cx) ** 2 + (y - pz.cy) ** 2 < pz.r * pz.r) return (x - pz.cx) ** 2 + (y - pz.cy) ** 2 < 100 ? 'vatten' : 'torg';
+  if (LINNE_LAYOUT && inR(x, y, LINNE_LAYOUT.odling)) return 'odling';
+  if (LINNE_LAYOUT) { const pv = LINNE_LAYOUT.pavilion; if (((x - pv.x) / pv.rx) ** 2 + ((y - pv.y) / pv.ry) ** 2 < 1) return 'grus'; }
   for (const l of LOTS) if (inR(x, y, l.rect)) return COL[l.kind] ? l.kind : l.kind === 'lekplats_x' ? 'lekplats' : l.kind === 'grusplan' || l.kind === 'vagnsplatsen' ? 'grus' : 'asfalt';
   if (inR(x, y, PARK_LAYOUT.playground)) return 'lekplats';
   if (inR(x, y, PARK_LAYOUT.meadow)) return 'ang';
@@ -93,7 +99,7 @@ function surfaceAt(x, y) {
 let MAP = null; // { canvas } – ritas en gång
 function drawRoof(u, b) {
   const f = footprint(b);
-  const x0 = Math.floor(f[0] / MAP_K), y0 = Math.floor(f[1] / MAP_K), x1 = Math.ceil(f[2] / MAP_K), y1 = Math.ceil((baseOf(b)) / MAP_K);
+  const x0 = kx(f[0]), y0 = Math.floor(f[1] / MAP_K), x1 = Math.ceil(f[2] / MAP_K) - MX0, y1 = Math.ceil((baseOf(b)) / MAP_K);
   const pal = ROOFS[b.district] || ROOFS.CENTRUM;
   const base = SPECIAL_ROOF[b.id] ?? pal[Math.floor(hash(b.x, b.w, 7) * pal.length) % pal.length];
   const tall = b.h >= 150;
@@ -118,7 +124,7 @@ function drawRoof(u, b) {
   // kyrkans torn: ett kors på taket
   if (b.id === 'kyrka') { const cx = Math.round((x0 + x1) / 2), cy = Math.round((y0 + y1) / 2); for (let k = -2; k <= 2; k++) { u.put(cx + k, cy, 0xe8d8a0); u.put(cx, cy + k, 0xe8d8a0); } }
   // dörren: en ljus lucka i fasaden
-  const d0 = Math.floor(b.door.x0 / MAP_K), d1 = Math.max(d0 + 1, Math.ceil(b.door.x1 / MAP_K));
+  const d0 = kx(b.door.x0), d1 = Math.max(d0 + 1, Math.ceil(b.door.x1 / MAP_K) - MX0);
   for (let x = d0; x < d1; x++) u.put(x, y1 - 1, b.door.type === 'boarded' ? 0x6a4a2a : 0xf0d070);
 }
 export function renderCityMap() {
@@ -135,7 +141,7 @@ export function renderCityMap() {
   // marken, pixel för pixel (mitten av kartpixeln avgör ytan) med ett lugnt mönster
   const kinds = new Array(MW * MH);
   for (let Y = 0; Y < MH; Y++) for (let X = 0; X < MW; X++) {
-    const k = surfaceAt(X * MAP_K + MAP_K / 2, Y * MAP_K + MAP_K / 2), [a, b] = COL[k] || COL.gras;
+    const k = surfaceAt((X + MX0) * MAP_K + MAP_K / 2, Y * MAP_K + MAP_K / 2), [a, b] = COL[k] || COL.gras;
     kinds[Y * MW + X] = k;
     const h = hash(X, Y, 1);
     let col = a;
@@ -155,41 +161,42 @@ export function renderCityMap() {
     u.put(X, Y, 0x2f6a2a); u.put(X + 1, Y, 0x2f6a2a); u.put(X, Y + 1, 0x2a5a24); u.put(X + 1, Y + 1, 0x24501f); u.put(X, Y, 0x4f8f3a);
   }
   // gatorna: streckad mittlinje och övergångsställen
-  for (const [yc, x0, x1] of [[(CITY.ROAD[0] + CITY.ROAD[1]) / 2, 0, CITY.W], [(CITY.ROAD_S[0] + CITY.ROAD_S[1]) / 2, 0, CITY.W]]) {
+  for (const yc of [(CITY.ROAD[0] + CITY.ROAD[1]) / 2, (CITY.ROAD_S[0] + CITY.ROAD_S[1]) / 2]) {
     const Y = Math.floor(yc / MAP_K);
-    for (let X = Math.floor(x0 / MAP_K); X < Math.ceil(x1 / MAP_K); X++) if (X % 6 < 3 && kinds[Y * MW + X] === 'vag') u.put(X, Y, 0xd8c890);
+    for (let X = 0; X < MW; X++) if ((X + MX0 + 6000) % 6 < 3 && kinds[Y * MW + X] === 'vag') u.put(X, Y, 0xd8c890);
   }
-  { const X = Math.floor(((CITY.INFARTEN[0] + CITY.INFARTEN[1]) / 2) / MAP_K);
+  { const X = kx((CITY.INFARTEN[0] + CITY.INFARTEN[1]) / 2);
     for (let Y = Math.ceil(CITY.ROAD[1] / MAP_K) + 1; Y < Math.floor(CITY.ROAD_S[0] / MAP_K) - 1; Y++) if (Y % 6 < 3) u.put(X, Y, 0xd8c890); }
   for (const cw of CROSSWALKS_ALL) {
     const r = [cw.x0, cw.y0, cw.x1, cw.y1];
     if (![0, 1, 2, 3].every((i) => Number.isFinite(r[i]))) continue;
     const horiz = r[2] - r[0] > r[3] - r[1];
-    for (let Y = Math.floor(r[1] / MAP_K); Y < Math.ceil(r[3] / MAP_K); Y++) for (let X = Math.floor(r[0] / MAP_K); X < Math.ceil(r[2] / MAP_K); X++) {
+    for (let Y = Math.floor(r[1] / MAP_K); Y < Math.ceil(r[3] / MAP_K); Y++) for (let X = kx(r[0]); X < Math.ceil(r[2] / MAP_K) - MX0; X++) {
       if (kinds[Y * MW + X] !== 'vag') continue;
-      if ((horiz ? Y : X) % 2 === 0) u.put(X, Y, 0xeae6da);
+      if ((horiz ? Y : X + MX0 + 6000) % 2 === 0) u.put(X, Y, 0xeae6da);
     }
   }
   // husen (taken) – de södra raderna först så att de norra ritas ovanpå vid kanten
   for (const b of [...ALL_BUILDINGS].sort((a, b) => baseOf(a) - baseOf(b))) drawRoof(u, b);
   // busshållplatserna: en liten blå skylt
-  for (const s of BUS_STOPS) { const X = Math.round(s.x / MAP_K), Y = Math.round((s.wait?.y ?? s.y) / MAP_K); u.put(X, Y - 1, 0xf4f1ea); u.put(X, Y, 0x2f6db5); u.put(X, Y + 1, 0x2f6db5); }
+  for (const s of BUS_STOPS) { const X = Math.round(s.x / MAP_K) - MX0, Y = Math.round((s.wait?.y ?? s.y) / MAP_K); u.put(X, Y - 1, 0xf4f1ea); u.put(X, Y, 0x2f6db5); u.put(X, Y + 1, 0x2f6db5); }
   x.putImageData(img, 0, 0);
   // namnen: stadsdelarna i gränderna och kanalen, gatorna på vägen
   const label = (t, cx, y, fg, bg) => {
-    const w = textW(SMALL, t), X = Math.round(cx - w / 2);
+    const w = textW(SMALL, t), X = Math.round(cx - MX0 - w / 2);
     for (const [dx, dy] of [[-1, 0], [1, 0], [0, -1], [0, 1], [-1, -1], [1, 1], [-1, 1], [1, -1]]) ctxText(x, SMALL, t, X + dx, y + dy, bg);
     ctxText(x, SMALL, t, X, y, fg);
   };
   const Y0 = 1;
   label('CENTRUM', 850 / MAP_K, Y0, '#fff2c0', '#2a2430');
+  if (MX0 < 0) { label('LINNÉSTADEN', -600 / MAP_K, Y0, '#fff2c0', '#2a2430'); label('TORGET', -744 / MAP_K, Math.round(380 / MAP_K), '#fff2c0', '#4a3a2a'); }
   label('DOWNTOWN', 2080 / MAP_K, Y0, '#fff2c0', '#2a2430');
   label('FÖRORTEN', 3520 / MAP_K, Y0, '#fff2c0', '#2a2430');
   label('PARKEN', 600 / MAP_K, Math.round(386 / MAP_K), '#fff2c0', '#2a4a24');
   label('SÖDER', 850 / MAP_K, MH - 7, '#e8f4ff', '#1f4a70');
   label('PIXELFLODEN', ((RIVER.wx0 + RIVER.wx1) / 2) / MAP_K, Math.round(470 / MAP_K), '#e8f4ff', '#1f4a70');
-  for (const xs of [320, 2080, 3300]) label('PIXELGATAN', xs / MAP_K, Math.round((CITY.ROAD[0] + 16) / MAP_K), '#e8e2d0', '#2a2830');
-  for (const xs of [320, 3300]) label('SÖDERGATAN', xs / MAP_K, Math.round((CITY.ROAD_S[0] + 16) / MAP_K), '#e8e2d0', '#2a2830');
+  for (const xs of [MX0 < 0 ? -900 : 320, 320, 2080, 3300].filter((v, i, a) => a.indexOf(v) === i)) label('PIXELGATAN', xs / MAP_K, Math.round((CITY.ROAD[0] + 16) / MAP_K), '#e8e2d0', '#2a2830');
+  for (const xs of [MX0 < 0 ? -900 : 320, 320, 3300].filter((v, i, a) => a.indexOf(v) === i)) label('SÖDERGATAN', xs / MAP_K, Math.round((CITY.ROAD_S[0] + 16) / MAP_K), '#e8e2d0', '#2a2830');
   MAP = { canvas: c };
   return MAP;
 }
@@ -238,7 +245,7 @@ export function openCityMap(A, { mode = 'karta', select = null } = {}) {
   cv.style.width = (MW * css) + 'px'; cv.style.height = (MH * css) + 'px';
   holder.style.width = (MW * css) + 'px'; holder.style.height = (MH * css) + 'px';
   holder.append(cv);
-  const at = (wx, wy) => ({ left: (wx / MAP_K) * css + 'px', top: (wy / MAP_K) * css + 'px' });
+  const at = (wx, wy) => ({ left: (wx / MAP_K - MX0) * css + 'px', top: (wy / MAP_K) * css + 'px' });
   // ikonerna: en knapp vid varje dörr
   const btns = new Map();
   for (const b of ALL_BUILDINGS) {
@@ -259,7 +266,7 @@ export function openCityMap(A, { mode = 'karta', select = null } = {}) {
   Object.assign(dot.style, at(me.x, me.y));
   holder.append(meEl, dot);
   // börja med den egna platsen i mitten
-  requestAnimationFrame(() => { wrap.scrollLeft = Math.max(0, (me.x / MAP_K) * css - wrap.clientWidth / 2); });
+  requestAnimationFrame(() => { wrap.scrollLeft = Math.max(0, (me.x / MAP_K - MX0) * css - wrap.clientWidth / 2); });
 
   function idle() {
     info.innerHTML = `<span class="grow">${taxiMode ? 'Vart vill du åka?' : 'Välj ett ställe på kartan.'}${me.inside ? ` <small>Du är i ${esc(me.inside.sign || '')}.</small>` : ''}</span>
@@ -285,4 +292,4 @@ export function openCityMap(A, { mode = 'karta', select = null } = {}) {
 }
 const districtName = (b) => { const d = DISTRICTS.find((x) => x.name === b.district); return d ? d.name.charAt(0) + d.name.slice(1).toLowerCase() : (b.district || ''); };
 // för testerna: kartans storlek och en ytas namn
-export const _mapInfo = () => ({ w: MW, h: MH, k: MAP_K, surfaceAt });
+export const _mapInfo = () => ({ w: MW, h: MH, k: MAP_K, x0: MX0 * MAP_K, surfaceAt });
