@@ -617,6 +617,7 @@ export const RESERVED = [
   // --- v2 ---
   [0, CITY.ROAD_S[0], CITY.W, CITY.ROAD_S[1]],                               // Södergatan
   [1100, CITY.SIDEWALK_SN[0], 1212, CITY.SIDEWALK_SN[0] + 24],                // Leksakslådans skyltfönster och dörr
+  [622, CITY.BASE, 660, CITY.BASE + 14],                                     // KLÄDERS trottoarskylt (JULEN · PLAN 3)
   [CITY.INFARTEN[0], CITY.ROAD[0], CITY.INFARTEN[1], CITY.ROAD_S[1]],        // Infarten
   ...[...BUILDINGS_S, ...BUILDINGS_D, ...BUILDINGS_X, ...FREESTANDING].flatMap((b) => [footprint(b), doorFront(b), ...(b.blocks || []), ...(b.yard ? [b.yard.rect] : [])]),
   // --- v3 ---

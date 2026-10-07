@@ -387,7 +387,7 @@ export function stairArt(e) {
   if (e.sy < 0) { const xe = Math.round(e.lx + e.sx * e.run); for (let yy = e.clip; yy < floorLine; yy++) { put(front, xe, yy, 0x9a8e7a); put(front, xe + e.sx, yy, 0x6a5e4e); } }
   // skylt på beklädnaden (plan 1): TRAPPA UPP · PLAN 2 (under trappans höga del, före förrådsdörren)
   if (e.sy < 0) {
-    const lbl1 = 'TRAPPA UPP', lbl2 = e.sign === 'jul' ? 'PLAN 3 - JUL' : `PLAN ${e.to || 2}`;
+    const lbl1 = 'TRAPPA UPP', lbl2 = e.sign === 'jul' ? 'PLAN 3 - JUL' : e.n === 1 ? 'PLAN 2 + JUL' : `PLAN ${e.to || 2}`;
     const w = Math.max(textW(SMALL, lbl1), textW(SMALL, lbl2) + 8) + 10, cx = Math.round(e.lx + e.sx * 68), y0 = e.ly - 19;
     const [bg, dk, hi, fg] = e.sign === 'jul' ? [0x1e5a32, 0x0e2a18, 0xd9433b, 0xffe070] : [0x7a1f2e, 0x3a0d16, 0xd9434b, 0xffd0d8];
     front.rect(cx - w / 2 + 1, y0 + 1, w, 18, 0x000000, 0.2);

@@ -260,6 +260,8 @@ export function makeShopKlader(A, opts = {}) {
   };
   const floors = { 1: floor1, 2: floor2, 3: floor3 };
   let F = floors[opts.floor] || floor1;
+  // 🎄 julvåningen ligger två trappor upp (längst till höger på plan 2) – tala om det en gång per besök i spelet
+  try { if (F === floor1 && !sessionStorage.getItem('sf_jultips')) { sessionStorage.setItem('sf_jultips', '1'); setTimeout(() => toast('🎄 Nyhet: JULVÅNINGEN på plan 3! Ta trappan upp, gå längst till höger på plan 2 och ta trappan upp igen.', 'good'), 900); } } catch { /* ok */ }
   if (opts.floor === 2) { F.walker.px = board2[0] + 8; F.walker.py = board2[1] + 14; F.walker.snapFree(); }
   const W = () => F.walker;
 
@@ -281,7 +283,7 @@ export function makeShopKlader(A, opts = {}) {
       [s.y === GTOP ? s.x : s.x < D.GOND.x + D.GOND.w / 2 ? s.x - 22 : s.x + 22, D.GOND.y + D.GOND.h + 12], 'mid')),
     ...HATBUSTS.map((b, i) => itemSpot('hatt' + i, b, [b.x - 12, b.y - 26, b.x + 12, b.y + 4], [b.x, D.HATS.y + D.HATS.h + 12], 'mid')),
     ...PLACES1.map(placeSpot),
-    { id: 'kassa', r: [D.DESK.x, D.DESK.y - 30, D.DESK.x + D.DESK.w, D.DESK.y + D.DESK.h], go: [D.DESK.x + D.DESK.w / 2, D.DESK.y + D.DESK.h + 10], act: () => { play('click'); talk.say('Hej! 👋 Allt hänger på galgarna – klicka på en ställning så ser du alla plagg. Sport och fotboll finns en trappa upp!', { x: D.DESK.x + D.DESK.w / 2, y: D.DESK.y - 30 }); } },
+    { id: 'kassa', r: [D.DESK.x, D.DESK.y - 30, D.DESK.x + D.DESK.w, D.DESK.y + D.DESK.h], go: [D.DESK.x + D.DESK.w / 2, D.DESK.y + D.DESK.h + 10], act: () => { play('click'); talk.say('Hej! 👋 Allt hänger på galgarna – klicka på en ställning så ser du alla plagg. Sport finns en trappa upp – och JULVÅNINGEN två trappor upp! 🎄', { x: D.DESK.x + D.DESK.w / 2, y: D.DESK.y - 30 }); } },
     ...[[8, 84], [D.W1 - 84, D.W1 - 8]].map(([a, b], i) => ({ id: 'prov' + i, r: [a, 18, b, WALL_Y], go: [(a + b) / 2, WALL_Y + 12], act: () => say('🪞 Provhytten! Klickar jag på ett plagg ser jag det på mig innan jag köper.') })),
   ];
   floor2.spots = [
@@ -798,7 +800,7 @@ export function makeShopKlader(A, opts = {}) {
         if (cx < F.W - VW - 150) edgeSign(ctx, 'KILLAR', DEPT_LBL.kille, false, b.y1);
       } else if (F.n === 2) {
         if (cx > 330) edgeSign(ctx, 'KUNGSLADUGÅRD', DEPT_LBL.kungs, true, b.y1);
-        if (cx < F.W - VW - 330) edgeSign(ctx, cx < 700 ? 'KÄNDA LAG' : 'TRAPPAN TILL JUL', cx < 700 ? DEPT_LBL.lag : DEPT_LBL.jul, false, b.y1);
+        if (cx < F.W - VW - 20) edgeSign(ctx, cx < 260 ? 'KÄNDA LAG' : 'JULEN - PLAN 3', cx < 260 ? DEPT_LBL.lag : DEPT_LBL.jul, false, b.y1); // julvåningens trappa längst till höger
       } else {
         if (cx > 200) edgeSign(ctx, 'JULKLÄDER', DEPT_LBL.jul, true, b.y1);
         if (cx < D.TORG_X1 - VW) edgeSign(ctx, 'JULPYNT', DEPT_LBL.jul, false, b.y1);
@@ -841,7 +843,7 @@ export function makeShopKlader(A, opts = {}) {
     } else if (spot.stairs) {
       const e = spot.stairs;
       name = e.sy < 0 ? 'TRAPPA UPP' : 'TRAPPA NER'; right = `PLAN ${e.to}`;
-      hint = { 1: 'MODE · TJEJER OCH KILLAR', 2: 'SPORT + FOTBOLL · KUNGSLADUGÅRD', 3: 'JULVÅNINGEN · PYNT, KLÄDER OCH BRASAN' }[e.to];
+      hint = { 1: 'MODE · TJEJER OCH KILLAR', 2: F.n === 1 ? 'SPORT + FOTBOLL · JULVÅNINGEN ÄR PLAN 3' : 'SPORT + FOTBOLL · KUNGSLADUGÅRD', 3: 'JULVÅNINGEN · PYNT, KLÄDER OCH BRASAN' }[e.to];
       key = { 1: 'mid', 2: 'kungs', 3: 'jul' }[e.to];
     } else if (spot.pynt) {
       const p = spot.pynt;

@@ -10,6 +10,9 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.88.1] – 2026-10-07 – Hitta julvåningen
+- Lättare att hitta julvåningen: en skylt på trottoaren utanför KLÄDER (JULEN · PLAN 3), trappskylten på plan 1 säger PLAN 2 + JUL, och på plan 2 pekar en skylt längst till höger mot trappan till julen. Första gången man går in i klädaffären får man ett tips om vägen.
+
 ## [0.88.0] – 2026-10-07 – Dräkterna lever
 - Dräkterna lever! Har du en dräkt på dig syns 🎭-knappen uppe till höger – tryck så gör dräkten sin grej, och dina kompisar ser det också:
 - 👻 Spöket lyfter armarna och skrämmer: BUUU!

@@ -1106,6 +1106,30 @@ function glowKlader(ctx, b, st) {
   ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
 }
 
+// 🎄 Trottoarskylten framför KLÄDER (julvåningen 2026-10-07): en grön A-skylt med en liten gran,
+// JULEN och PLAN 3 – julvåningen ligger två trappor upp och var svår att hitta
+const SKYLT_DX = 14, SKYLT_W = 34;
+let JULSKYLT = null;
+function julSkylt() {
+  if (JULSKYLT) return JULSKYLT;
+  const W = SKYLT_W, H = 26, P = new Pix(W, H);
+  // benen (A-ställ i trä)
+  for (let j = 0; j < 8; j++) { P.px(3 - (j >> 2), 18 + j, 0x6a4228); P.px(W - 4 + (j >> 2), 18 + j, 0x4a2a14); }
+  // tavlan: mörkgrön med guldram
+  P.rect(1, 1, W - 2, 18, 0x1e4a2e); P.box(1, 1, W - 2, 18, 0xe8c25a); P.box(0, 0, W, 20, 0x2a1a10);
+  for (let x = 3; x < W - 3; x += 2) P.px(x, 2, 0x2f6b40);
+  // granen med stjärna
+  for (let j = 0; j < 9; j++) { const w = (j >> 1) + 1; for (let i = -w; i <= w; i++) P.px(6 + i, 6 + j, (i + j) % 3 === 0 ? 0x46a35a : 0x2f8f46); }
+  P.px(6, 4, 0xffd23f); P.px(5, 5, 0xffd23f); P.px(7, 5, 0xffd23f); P.px(6, 5, 0xfff0b0);
+  P.px(4, 10, 0xd9433b); P.px(8, 12, 0xffd23f); P.px(5, 13, 0x3a7bd5); P.rect(5, 15, 3, 2, 0x6a4228);
+  text(P, SMALL, 'JULEN', 12, 4, 0xffe070);
+  text(P, SMALL, 'PLAN 3', 12, 11, 0xffffff);
+  P.hl(1, 20, W - 2, 0x000000, 0.25);
+  return (JULSKYLT = P.flush());
+}
+const kladerItems = (b) => { const x = b.door.x1 + SKYLT_DX, y = CITY.BASE + 9, img = julSkylt(); return [{ x: x + (SKYLT_W >> 1), y, draw: (ctx) => ctx.drawImage(img, x, y - img.height + 1) }]; };
+const kladerObstacles = (b) => { const x = b.door.x1 + SKYLT_DX, y = CITY.BASE + 9; return [[x, y - 4, x + SKYLT_W, y + 1]]; };
+
 // ================= MÖBELJÄTTEN – blå låda med inredda rum i fönstren =================
 const SHOW_W = 78, SHOW_H = 66, SHOW_Y = 110;
 // möbler: [atlasnyckel, x, fotens y] i fönstrets koordinater; prislappar: [text, x, y]
@@ -1296,7 +1320,7 @@ const ART = {
   mobler: { paint: paintMobler, live: liveMobler, glow: glowFor },
   hem: { paint: paintHem, live: liveHem, glow: glowFor },
   mat: { paint: paintMat, live: liveMat, glow: glowFor },
-  klader: { paint: paintKlader, live: (ctx, b, st) => drawDoor(ctx, b, st, KITS[b.id] || (KITS[b.id] = kladerKit(b))), glow: glowKlader },
+  klader: { paint: paintKlader, live: (ctx, b, st) => drawDoor(ctx, b, st, KITS[b.id] || (KITS[b.id] = kladerKit(b))), glow: glowKlader, items: kladerItems, obstacles: kladerObstacles },
   bostad: { paint: paintBostad, live: (ctx, b, st) => drawDoor(ctx, b, st, KITS[b.id] || (KITS[b.id] = bostadKit(b))), glow: glowFor },
 };
 export const BUILDING_ART = Object.fromEntries(['hem', 'bostad', 'mat', 'klader', 'mobler'].map((k) => [k, ART[k] || { paint: stubPaint, live: stubLive, glow: () => {} }]));
