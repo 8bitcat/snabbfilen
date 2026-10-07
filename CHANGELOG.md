@@ -10,6 +10,15 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.93.0] – 2026-10-07 – Livet vid piren
+- Bryggan vid Sjöboden är mycket större. Längst ut i väster finns en utsiktsplats med bänkar vid räcket, där man sitter och tittar ut över vattnet. Där står också två randiga däckstolar och en myntkikare.
+- Borden har fått stolar. Sätt dig vid ett parasollbord eller vid Sjöbodens bord med rutig duk och en lykta som fladdrar på kvällen. Fotgängarna sätter sig också.
+- Saga sitter nu längst ut på bryggans hörn och metar ut i öppet vatten. Flötet guppar upp och ner och skickar ut små ringar, och när det nappar dras det under.
+- Fiskar hoppar i vattnet.
+- Ibland kommer en delfin! Ser du den blir du gladare, och alla runt omkring jublar, kramas och säger att det ger tur. Kikaren kostar en femkrona, och ibland lockar den fram delfinen.
+- Ett kärlekspar går hand i hand ut på bryggan, pussas och står sedan länge vid räcket och tittar ut över havet.
+- Fiskmåsar sitter på lyktorna och på Sjöbodens tak. Fler lyktor och ljusslingor gör bryggan mysig på kvällen.
+
 ## [0.92.0] – 2026-10-07 – Piren och Sjöboden
 - En pir går ut i vattnet från kajen i Linnéstaden – gå ner på den! Längs piren står lyktor som tänds på kvällen och speglar sig i vattnet, och båtar ligger förtöjda längs sidan.
 - Längst ut ligger SJÖBODEN, en röd fiskrestaurang på pålar med en fisk som vindflöjel. Ät fish and chips, räksmörgås, fisksoppa, sill med färskpotatis eller glass med varma hjortron ute på bryggan under parasollen.

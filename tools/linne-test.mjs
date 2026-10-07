@@ -127,6 +127,39 @@ ok(pr.life >= 3, `fotgängarna hittar ut på piren (${pr.life} noder)`);
 await sleep(600);
 await p.locator('#scene').screenshot({ path: 'tools/out/linne-piren.png' }).catch(() => {});
 
+// ---------- livet vid piren (v0.93) ----------
+const pl = await D(async () => {
+  const S = SF.scene._debug.sim(), M = await import('/js/city/map.js');
+  const seats = S.props.seats().filter((s) => /^pir-/.test(s.id));
+  const saga = S.pier.fisherAt(M.PIER.deck[0] + 12, M.PIER.deck[3] - 20);
+  const fx = saga ? saga.x + saga.float[0] : 0, fy = saga ? saga.float[1] : 0;
+  const wet = M.CANAL_WATER.some((r) => fx >= r[0] && fx < r[2] && fy >= r[1] && fy < r[3]);
+  return { n: seats.length, kinds: [...new Set(seats.map((s) => s.kind))], chair: seats.find((s) => s.id.startsWith('pir-bord') && s.dir === 'down' && s.x > -560),
+    deck: M.PIER.deck, saga: saga?.id, wet, dry: SF.scene._debug.walkable(fx, fy), far: Math.abs(fx - (M.PIER.walk[2] + 12)) > 200 };
+});
+ok(pl.deck[0] <= -740 && await D(() => SF.scene._debug.walkable(-740, 912)), `bryggan går längre ut (x ${pl.deck[0]}) och utsiktsplatsen är gåbar`);
+ok(pl.n >= 14 && pl.kinds.length >= 3, `${pl.n} sittplatser på bryggan (${pl.kinds.join(', ')})`);
+ok(pl.saga === 'fiskare2' && pl.wet && !pl.dry && pl.far, 'Saga metar ut i öppet vatten (flötet ligger inte vid båtarna)');
+await D((s) => { const d = SF.scene._debug; d.teleport(s.walk.x, s.walk.y); d.sim().life._debug?.seatUse?.delete(s.id); const c = d.cam(); SF.scene.down(s.x - c.x, s.y - 6 - c.y); }, pl.chair);
+ok(await until((id) => SF.scene._debug.sitting() === id, 8000, pl.chair.id), `satte sig på en stol vid Sjöbodens bord (${pl.chair.id})`);
+await sleep(400);
+await p.locator('#scene').screenshot({ path: 'tools/out/linne-piren-stol.png' }).catch(() => {});
+await D(() => SF.scene._debug.standUp());
+// fiskarna hoppar, delfinen ger lycka och folket på piren jublar och kramas
+await D(() => { SF.game.min = 13 * 60; SF.game.lycka = 50; SF.game.money = 500; SF.scene._debug.teleport(-690, 913); SF.scene._debug.sim().pier._debug.coupleNow('view'); });
+ok(await until(() => SF.scene._debug.sim().pier._debug.jumps() > 0, 10000), 'fiskar hoppar i vattnet');
+const g0 = await D(() => SF.game.lycka);
+ok(await D(() => SF.scene._debug.sim().pier._debug.dolphin('n')), 'en delfin dyker upp framför utsikten');
+ok(await until((l) => SF.game.lycka > l, 6000, g0), 'man ser delfinen – lyckan går upp');
+const rx = await D(() => { const P = SF.scene._debug.sim().pier; return { r: P._debug.reactions(), talks: P.talks().map((b) => b.text), couple: P._debug.couple(), cheer: typeof SF.scene._debug.sim().life.cheer === 'function' }; });
+ok(rx.r && rx.talks.some((t) => /tur/i.test(t)) && rx.couple.hug && rx.cheer, `folket på piren jublar och paret kramas (${rx.talks.join(' / ')})`);
+await sleep(150);
+await p.locator('#scene').screenshot({ path: 'tools/out/linne-delfin.png' }).catch(() => {});
+await sleep(4500);
+ok(await D(() => SF.scene._debug.sim().pier._debug.couple().st === 'view'), 'paret står kvar vid räcket och tittar ut över vattnet');
+const kk = await D(async () => { const P = await import('/js/city/pir.js'), m0 = SF.game.money; P.useKikare(SF, SF.scene._debug.sim().pier); return { kr: m0 - SF.game.money, hit: !!SF.scene._debug.sim().pier.kikareAt(-655, 895) }; });
+ok(kk.kr === 5 && kk.hit, 'myntkikaren kostar en femkrona');
+
 // ---------- 3: gå dit från centrum ----------
 await D(() => SF.scene._debug.teleport(120, 296)); await sleep(300);
 const steps = await D(() => SF.scene._debug.walkTo(-700, 300));

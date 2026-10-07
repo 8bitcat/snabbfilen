@@ -89,6 +89,8 @@ function sim() {
   const bridge = safe('bridge', () => MODS.bridge?.createBridge?.(env), NONE);   // floden och broarna (v3)
   const market = safe('marknad', () => MODS.marknad?.createMarket?.(env), NONE);  // marknaden på Marknadstorget (v4, Linnéstaden)
   const pier = safe('pir', () => MODS.pir?.createPier?.(env), NONE);                // piren, båtarna, fiskarna och bryggan vid Sjöboden
+  const allSeats = props.seats?.();                                                  // bryggans stolar och bänkar: samma lista som parkbänkarna
+  if (Array.isArray(allSeats) && pier.seats?.length) allSeats.push(...pier.seats);
   env.obstacles = [...MAP_OBSTACLES, ...artObstacles(), ...(props.obstacles || []), ...(traffic.obstacles || []), ...(fallback.obstacles || []), ...(bridge.obstacles || []), ...(market.obstacles || []), ...(pier.obstacles || [])];
   const life = safe('life', () => MODS.life?.createLife(env, traffic, props), NONE); // props ger livet riktiga sittplatser (props.seats())
   const weather = safe('weather', () => MODS.weather?.createWeather(env), NO_WEATHER);
@@ -927,6 +929,14 @@ export function makeCity(A) {
       if (banner) banner.t += dt;
       if (fade.phase === 0) checkDistrict(false);
       for (const [name, m] of [['fallback', S.fallback], ['bridge', S.bridge], ['props', S.props], ['traffic', S.traffic], ['life', S.life], ['marknad', S.market], ['pir', S.pier]]) guard(name + '.update', () => m.update?.(dt));
+      // 🐬 spelaren såg delfinen vid piren: lyckan går upp och folk runt omkring jublar och kramas
+      const lk = S.pier?.takeLuck?.();
+      if (lk && !A.attract) {
+        const fick = g.glad?.(5, 'En delfin vid piren', 'delfin', 10) || 0;
+        guard('life.cheer', () => S.life.cheer?.(lk.x, lk.y, 260, MODS.pir?.LUCK_LINES));
+        play('morning');
+        toast(`🐬 En delfin! Alla runt omkring jublar – det ger tur!${fick ? ` 😊 +${fick}` : ''}`, 'good');
+      }
       // dörrarna öppnas när någon är nära
       for (const b of ALL_BUILDINGS) {
         const dc = doorCenter(b), base = baseOf(b), half = (b.door.x1 - b.door.x0) / 2 + 14;
@@ -967,6 +977,8 @@ export function makeCity(A) {
       // 🎪 marknaden: ett stånd, karusellen, ballongerna, lyckohjulet → gå fram och handla
       const fs = S.pier?.fisherAt?.(x, y);
       if (fs) { if (sitting) standUp(); walker.walkTo(fs.walk.x, fs.walk.y, () => MODS.pir?.talkFisher?.(A, fs)); return; }
+      const kk = S.pier?.kikareAt?.(x, y);   // 🔭 myntkikaren på bryggan
+      if (kk) { if (sitting) standUp(); walker.walkTo(kk.walk.x, kk.walk.y, () => { walker.dir = 'up'; MODS.pir?.useKikare?.(A, S.pier); }); return; }
       const ms = S.market?.stallAt?.(x, y);
       if (ms) { if (sitting) standUp(); walker.walkTo(ms.walk.x, ms.walk.y, () => { walker.dir = 'up'; MODS.marknad?.openStall?.(A, ms, S.market); }); return; }
       let who = S.life.personAt?.(x, y);
@@ -1028,6 +1040,7 @@ export function makeCity(A) {
       drawWorld(ctx, cx, cy, VW, VH);
       // fotgängarnas repliker (klick på folk) – överst i världen, med personens egen röst
       guard('pratet', () => { for (const b of S.life.talks?.() || []) sayBubble(ctx, b.x, b.y, b.text, { voice: b.voice, x0: cx, x1: cx + VW }); });
+      guard('pir.talks', () => { for (const b of S.pier?.talks?.() || []) sayBubble(ctx, b.x, b.y, b.text, { voice: false, x0: cx, x1: cx + VW }); });
       guard('vägvisaren', () => drawGuide(ctx));
       ctx.setTransform(A.pxs, 0, 0, A.pxs, 0, 0);
       drawFolkMarkers(ctx, cx, cy);

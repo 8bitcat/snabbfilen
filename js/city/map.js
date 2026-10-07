@@ -583,9 +583,10 @@ export const LINNE_LAYOUT = {
 };
 // (v4) PIREN i Linnéstaden: en träpir från kajen rakt ut i vattnet ner till bryggan (uteserveringen)
 // framför SJÖBODEN. gap = öppningen i kajräcket. Bryggan och piren är gåbara; vattnet runt om är hinder.
+// (v0.93: bryggan går längre ut åt väster – en utsiktsplats med bänkar, däckstolar och kikare)
 export const PIER = {
-  walk: [-424, CITY.QUAY[0] + 6, -392, 940],
-  deck: [-556, 898, -392, 940],
+  walk: [-424, CITY.QUAY[0] + 6, -392, 944],
+  deck: [-760, 898, -392, 944],
   gap: [-424, CITY.QUAY[0], -392, CITY.QUAY[0] + 14],
 };
 // Trottoarerna längs Infarten genom mellanbandet (väster: bara till parkgången – där står macken).

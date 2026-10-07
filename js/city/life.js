@@ -1404,8 +1404,8 @@ function buildNav(obstacles) {
   // v4: piren – från kajen ner till bryggan framför Sjöboden
   const pierNodes = [];
   if (MAP.PIER && Q.length) {
-    const P = MAP.PIER, dy = P.deck[1] + 22;
-    const ids = [node(PIERX, Y_Q + 12, 'pir'), node(PIERX, 830, 'pir'), node(PIERX, dy, 'pir'), node(Math.round((P.deck[0] + P.walk[0]) / 2), dy, 'pir'), node(P.deck[0] + 14, dy, 'pir')];
+    const P = MAP.PIER, dy = P.deck[1] + 14;   // gången längs bryggan (borden står söder om den, bänkarna norr)
+    const ids = [node(PIERX, Y_Q + 12, 'pir'), node(PIERX, 830, 'pir'), node(PIERX, dy, 'pir'), node(Math.round((P.deck[0] + P.walk[0]) / 2), dy, 'pir'), node(P.deck[0] + 24, dy, 'pir')];
     link(at(Q, PIERX), ids[0]);
     for (let k = 1; k < ids.length; k++) link(ids[k - 1], ids[k]);
     pierNodes.push(...ids.filter((i) => i >= 0));
@@ -3694,6 +3694,21 @@ export function createLife(env, traffic, props) {
     holdFor(p, p.talk.t + 0.6, fx, fy);
     return text;
   }
+  // 🐬 något fint händer en bit bort (delfinen vid piren, v0.93): de som är nära stannar, vänder sig dit
+  // och jublar i en bubbla – par (ledare + sällskap) vänder sig mot varandra och kramas (🤗).
+  function cheer(cx, cy, r, lines) {
+    const L = lines && lines.length ? lines : ['🐬 Det ger tur!'];
+    let k = 0, n = 0;
+    for (const p of peds) {
+      if (p.hidden || p.gone || p.door || Math.hypot(p.x - cx, (p.y - cy) * 1.2) > r) continue;
+      const mate = p.leader || p.comp;
+      const text = mate ? (p.leader ? '🤗 Kram! Det ger tur!' : '🤗 Såg du?!') : L[k++ % L.length];
+      p.talk = { text, t: 3.6 }; p.lastSaid = text; n++;
+      holdFor(p, 4.2, cx, cy);
+      if (mate && !p.sit && !mate.sit) p.face = faceTo(mate.x - p.x, (mate.y - p.y) * 0.6 || 0.01);
+    }
+    return n;
+  }
 
   // ==================================================================
   return {
@@ -3743,6 +3758,7 @@ export function createLife(env, traffic, props) {
     },
     talkTo,
     holdFor,
+    cheer,
     // pratbubblorna just nu (världskoordinater: fotpunkten x, bubblans spets y) – city.js ritar dem
     talks() {
       const out = [];

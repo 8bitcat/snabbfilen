@@ -561,6 +561,16 @@ världen växte åt vänster, så alla gamla koordinater, sparfält och tester g
   ner till `CITY.H − 4` (vattnet stoppar), livets rutnät öppnar piren och bryggan efter världskanterna. Sjöboden är ett
   fristående hus (enter `fiskkrog` → `pir.openKrog`), fiskarna (`fisherAt` → `talkFisher`) säljer abborre till skafferiet.
   Båtarna (förtöjda med rep vid kajen och längs piren) ritas av pir.js.
+- **Livet vid piren** (v0.93): bryggan går ut till x −760 (`PIER.deck`). Gången längs den ligger på `deck[1] + 14`
+  (livets pir‑noder och borden/bänkarna håller den fri). Utsiktsplatsen i väster har bänkar vid norra räcket (man
+  sitter vänd mot vattnet), däckstolar och en myntkikare (`kikareAt` → `useKikare`, 5 kr, ibland kommer delfinen).
+  Borden har stolar: `pier.seats` har samma form som `props.seats()`, och city.js lägger in dem där, så att
+  spelaren och fotgängarna kan sätta sig. Saga metar från bryggans västra hörn ut i öppet vatten, och flötet guppar
+  med ringar. Fiskar hoppar där vattnet syns. Delfinen kommer var 2–4:e minut på dagen: tre hopp i en zon som
+  syns i bild. När spelaren ser den lämnar `takeLuck()` en markering, och city.js ger då lycka
+  (`glad(5, …, 'delfin', 10)`), visar en toast och anropar `life.cheer` (fotgängarna i närheten jublar, och par kramas med 🤗).
+  Pirens eget folk har egna bubblor via `pier.talks()`. Kärleksparet promenerar från kajen hand i hand
+  ut på bryggan, pussas med hjärtan, tittar ut över vattnet och går tillbaka; det dyker bara upp utom synhåll.
 - **Test**: `tools/linne-test.mjs`.
-- **Nästa släpp** (planen): marknaden på torget, Gårdsbutiken (köp närproducerat som råvaror),
+- **Nästa släpp** (planen): Sjöboden inifrån, Gårdsbutiken (köp närproducerat som råvaror),
   dekorationsbutiken Pynt & Ting.
