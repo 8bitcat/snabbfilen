@@ -10,6 +10,13 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.92.0] – 2026-10-07 – Piren och Sjöboden
+- En pir går ut i vattnet från kajen i Linnéstaden – gå ner på den! Längs piren står lyktor som tänds på kvällen och speglar sig i vattnet, och båtar ligger förtöjda längs sidan.
+- Längst ut ligger SJÖBODEN, en röd fiskrestaurang på pålar med en fisk som vindflöjel. Ät fish and chips, räksmörgås, fisksoppa, sill med färskpotatis eller glass med varma hjortron ute på bryggan under parasollen.
+- Under bryggan hänger fisknät, bojar och en livboj ner mot vattnet.
+- Större båtar vid kajen – roddekor, snipor, en motorbåt med ruff och en liten segelbåt – förtöjda med rep till pollarna. De guppar i vattnet.
+- Fiskar-Folke sitter på kajen och metar, och Saga fiskar på piren. Det nappar då och då, fisken flyger upp och landar i korgen. Prata med Folke så kan du köpa en nyfångad abborre till skafferiet.
+
 ## [0.91.0] – 2026-10-07 – Marknaden
 - MARKNADEN har öppnat på Marknadstorget i Linnéstaden (varje dag 8–20)! Åtta stånd med randiga tak: grönsaker, frukt, ost och ägg, bröd, fisk, blommor, våfflor och godis. Handlarna ropar ut sina varor och kunderna står och handlar.
 - Gå fram till ett stånd och handla: grönsaker, frukt, ost, bröd och fisk hamnar i skafferiet hemma (lite billigare än i affären) – våfflor, kanelbullar, sockervadd, popcorn och blommor ger lycka direkt.

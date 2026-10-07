@@ -100,6 +100,33 @@ await D(() => { const m = document.querySelector('#modal'); m.classList.add('hid
 await sleep(1200);
 await p.locator('#scene').screenshot({ path: 'tools/out/linne-marknad.png' }).catch(() => {});
 
+// ---------- piren och Sjöboden (v0.92) ----------
+await D(() => { SF.game.min = 13 * 60; SF.game.money = 500; SF.scene._debug.teleport(-408, 768); });
+await sleep(400);
+ok((await D(() => SF.scene._debug.walkTo(-470, 922))) > 0, 'en väg från kajen ut på piren och bryggan');
+ok(await until(() => { const q = SF.scene._debug.pos(); return q.y > 900; }, 12000), 'figuren går ut på bryggan framför Sjöboden');
+ok(await D(() => !SF.scene._debug.walkable(-600, 850) && !SF.scene._debug.walkable(-300, 900) && SF.scene._debug.walkable(-408, 840)), 'vattnet är hinder, piren är gåbar');
+const pr = await D(async () => {
+  const S = SF.scene._debug.sim(), P = await import('/js/city/pir.js');
+  const n = S.pier.items().length, f = S.pier.fisherAt(-1000, 760);
+  const g = SF.game, m0 = g.money, h0 = g.hunger;
+  P.openKrog(SF);
+  [...document.querySelectorAll('#modal [data-krog]')].find((b) => b.dataset.krog === 'fishchips')?.click();
+  const ate = { kr: m0 - g.money, h: g.hunger - h0 };
+  const f0 = g.skafferi.fisk | 0;
+  P.talkFisher(SF, f);
+  [...document.querySelectorAll('#modal button')].find((b) => /Köp en/.test(b.textContent))?.click();
+  document.querySelector('#modal').classList.add('hidden');
+  const life = S.life._debug?.nav?.nodes.filter((q) => q.tag === 'pir').length || 0;
+  return { n, f: f?.id, ate, fisk: (g.skafferi.fisk | 0) - f0, life };
+});
+ok(pr.n > 20, `piren ritas (${pr.n} delar: däck, räcken, båtar, fiskare, uteservering)`);
+ok(pr.ate.kr === 69 && pr.ate.h > 0, 'fish and chips på Sjöboden: 69 kr, man blir mätt');
+ok(pr.f === 'fiskare1' && pr.fisk === 1, 'köpte en nyfångad abborre av fiskaren – fiskfilé i skafferiet');
+ok(pr.life >= 3, `fotgängarna hittar ut på piren (${pr.life} noder)`);
+await sleep(600);
+await p.locator('#scene').screenshot({ path: 'tools/out/linne-piren.png' }).catch(() => {});
+
 // ---------- 3: gå dit från centrum ----------
 await D(() => SF.scene._debug.teleport(120, 296)); await sleep(300);
 const steps = await D(() => SF.scene._debug.walkTo(-700, 300));

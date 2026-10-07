@@ -15,7 +15,7 @@
 //   bänkar går att sitta på (se "sittplatser" i createProps). export const V2 = true.
 import { Pix, mix, mul, hash, bayer, SMALL, BIG, text, textW, eachTextPixel } from '../core/floor-pix.js';
 import { CITY, BUILDINGS, ALL_BUILDINGS, CROSSWALKS, CROSSWALKS_S, PARK_LAYOUT, BUS_STOP, BUS_STOPS, LOTS, RESERVED, footprint, gateRect, artBox,
-  DOWNTOWN_LAYOUT, LINNE_LAYOUT } from './map.js';
+  DOWNTOWN_LAYOUT, LINNE_LAYOUT, PIER } from './map.js';
 
 // Rekvisitan täcker hela v2-världen (Söder, parken, Infarten, förorten) – scenen
 // kopplar bort platshållaren i fallback-v2.js när V2 är satt.
@@ -3874,15 +3874,9 @@ export function createProps(env) {
     for (const x of [-1130, -880, -700, -520, -340, -160]) bench(x, QS);
     for (const x of [-1180, -1060, -800, -620, -440, -260, -80]) parkLamp(x, QL);
     bikeRack(-760, QS);
-    for (let x = CITY.X0 + 40; x < -10; x += 96) bollard(x, QB, false);
+    for (let x = CITY.X0 + 40; x < -10; x += 96) if (!PIER || x < PIER.walk[0] - 6 || x > PIER.walk[2] + 6) bollard(x, QB, false);
     for (const x of [-1012, -592, -248]) lifebuoy(x, QB);
-    const BOATS = [spr(42, 16, 20, 9, (P) => paintBoat(P, 0)), spr(42, 16, 20, 9, (P) => paintBoat(P, 1))];
-    for (const [x, y, k] of [[-1150, 798, 0], [-1062, 806, 1], [-640, 800, 0], [-318, 804, 1], [-98, 799, 0]]) {
-      items.push({ x, y: y + 6, kind: 'båt', draw: (ctx) => {
-        const frozen = env.weather && ((env.weather.season === 'vinter' && (env.weather.temp ?? 15) <= 0) || (env.weather.snowCover || 0) > 0.25);
-        put(ctx, BOATS[k], x, y + (frozen ? 0 : Math.round(Math.sin(env.t * 1.2 + x * 0.1) * 0.8)));
-      } });
-    }
+    // (båtarna vid kajen och piren ritas av pir.js – v0.92)
     // --- bakgatan bakom den norra raden och gränderna: sopkärl, krukor, en cykel ---
     wheelieBin(-1140, 30, 'gron'); wheelieBin(-1129, 30, 'gra'); wheelieBin(-700, 32, 'brun'); wheelieBin(-689, 32, 'gron'); wheelieBin(-300, 30, 'gra');
     pot(-1080, 120, 'pelargon'); pot(-568, 150, 'pelargon'); pot(-204, 130, 'pelargon');

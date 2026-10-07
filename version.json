@@ -1,7 +1,7 @@
 {
-  "version": "0.91.0",
+  "version": "0.92.0",
   "date": "2026-10-07",
-  "title": "Marknaden",
+  "title": "Piren och Sjöboden",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
@@ -24,6 +24,7 @@
     "js/city/life.js",
     "js/city/map.js",
     "js/city/marknad.js",
+    "js/city/pir.js",
     "js/city/places.js",
     "js/city/props.js",
     "js/city/traffic.js",

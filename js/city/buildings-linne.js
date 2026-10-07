@@ -867,6 +867,7 @@ function liveWindows(ctx, b, st, S, m) {
 // floors, crown, flowers, door (dörrfärg), shop { kind, col, fascia, signFg, awning [c1, c2] },
 // hang [sorten, vänster?], lights, bunt, ivy, rosesAt, mural, cat, balconies, num
 function paintLinne(b, night, S, opts = {}) {
+  if (S.type === 'krog') return paintKrog(b, night, S, opts);
   const box = artBox(b), P = new Pix(box.w, box.h);
   const L = O, R = O + b.w, GB = baseOf(b) - box.y, yT = GB - b.h;
   const wx = (x) => x + box.x, wy = (y) => y + box.y;
@@ -1030,6 +1031,89 @@ function paintLinne(b, night, S, opts = {}) {
   footShadow(P, L, dx0 - 4 - L, GB); footShadow(P, dx1 + 4, R - dx1 - 4, GB);
   for (const wv of K.wins) { wv.img = wv.F.flush(); delete wv.F; }
   META[b.id + ':' + !!night] = { glows, shop, smoke, wins: K.wins, doorLight: 0xffd890 };
+  return P.flush();
+}
+
+// ================= SJÖBODEN – fiskrestaurangen på pålar vid pirens slut =================
+// En falröd sjöbod med gaveln mot oss (söder): taket med två fall bakåt (norrut), vita vindskivor,
+// en fisk som vindflöjel, skylten SJÖBODEN på gaveln, ett runt fönster med kors, stora småspröjsade
+// fönster där gästerna sitter med levande ljus, nät och en flöte i hörnet, en livboj, lyktor vid
+// dörren, fisklådor och en kamin med rör genom taket.
+function paintKrog(b, night, S, opts = {}) {
+  const box = artBox(b), P = new Pix(box.w, box.h);
+  const L = O, R = O + b.w, GB = baseOf(b) - box.y, cx = (L + R) >> 1;
+  const wx = (x) => x + box.x, wy = (y) => y + box.y, seed = idSeed(b.id), glows = [], smoke = [];
+  const wall = 0xa8442e, trim = 0xf4efe4, eave = GB - 42, apex = GB - 72, depth = 24, snow = !!opts.snow;
+  const roofC = 0x3a3e46;
+  const inPoly = (x, y, pts) => { let c = false; for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) { const [xi, yi] = pts[i], [xj, yj] = pts[j]; if ((yi > y) !== (yj > y) && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) c = !c; } return c; };
+  const lp = [[L - 3, eave + 1], [cx, apex], [cx, apex - depth], [L - 3, eave + 1 - depth]];
+  const rp = [[cx, apex], [R + 2, eave + 1], [R + 2, eave + 1 - depth], [cx, apex - depth]];
+  // taket: två fall bakåt med falsar längs fallet, ljust åt väster och i skugga åt öster
+  for (let y = apex - depth - 1; y <= eave + 1; y++) for (let x = L - 4; x <= R + 3; x++) {
+    const left = inPoly(x + 0.5, y + 0.5, lp), right = !left && inPoly(x + 0.5, y + 0.5, rp);
+    if (!left && !right) continue;
+    const u = left ? (x - (L - 3)) / (cx - L + 3) : (R + 2 - x) / (R + 2 - cx), seam = Math.round(u * 9) !== Math.round((u + 0.02) * 9);
+    let c = left ? mix(roofC, WHITE, 0.16) : mul(roofC, 0.8);
+    if (seam) c = left ? mix(roofC, WHITE, 0.3) : mul(roofC, 0.62);
+    if (snow && hash(x, y, 91) > 0.1) c = left ? 0xf4f8fc : 0xd8e2ee;
+    P.px(x, y, c);
+  }
+  P.line(cx, apex, cx, apex - depth, mul(roofC, 0.5));                                       // nocken
+  // kaminröret med huv (röken i live)
+  P.rect(R - 26, apex + 4 - depth, 3, 14, 0x2a2a30); P.rect(R - 27, apex + 2 - depth, 5, 2, 0x4a4a54);
+  smoke.push([wx(R - 25), wy(apex + 1 - depth)]);
+  // väggen och gaveln: stående falröd panel, vita knutar
+  const gableHW = (y) => Math.round(((y - apex) / (eave - apex)) * (cx - L));
+  for (let y = apex; y < GB; y++) {
+    const hw = y < eave ? gableHW(y) : cx - L;
+    boards(P, cx - hw, y, hw * 2 + 1, 1, wall, seed);
+  }
+  for (const x of [L, R - 3]) { P.rect(x, eave, 3, GB - eave, trim); P.vl(x + 2, eave, GB - eave, mul(trim, 0.72)); }
+  // vindskivorna längs gaveln och en fisk som vindflöjel på toppen
+  for (let y = apex; y <= eave; y++) { const hw = gableHW(y); P.px(cx - hw - 1, y, trim); P.px(cx - hw - 2, y, trim); P.px(cx + hw + 1, y, mul(trim, 0.8)); P.px(cx + hw + 2, y, mul(trim, 0.7)); }
+  P.hl(L - 2, eave, R - L + 4, trim); P.hl(L - 2, eave + 1, R - L + 4, mul(trim, 0.72)); P.darken(L, eave + 2, R - L, 1, 0.75);
+  P.vl(cx, apex - 12, 12, 0x2a2a30);
+  for (const [x, y] of [[-4, -14], [-3, -15], [-2, -15], [-1, -15], [0, -15], [1, -15], [2, -14], [-3, -13], [-2, -13], [-1, -13], [0, -13], [1, -13], [3, -15], [4, -16], [3, -13], [4, -12], [-2, -14], [-1, -14], [0, -14], [1, -14]]) P.px(cx + x, apex + y, 0xd8b040);
+  P.px(cx - 3, apex - 15, 0x2a2a30);
+  // runt fönster i gaveln med kors
+  const oy = apex + 10;
+  for (let y = -5; y <= 5; y++) for (let x = -5; x <= 5; x++) { const d = Math.hypot(x, y); if (d > 5.5) continue; P.px(cx + x, oy + y, d > 4.4 ? trim : x === 0 || y === 0 ? trim : night ? 0xffd890 : mix(0xb8d4e4, 0x4e6e96, (y + 5) / 10)); }
+  if (night) glows.push([wx(cx - 3), wy(oy - 3), 7, 7, 0xffd080, 0.35]);
+  // skylten SJÖBODEN och FISK & SKALDJUR
+  const s = 'SJÖBODEN', sw = textW(BIG, s) + 10, sx = cx - (sw >> 1), sy = eave - 13;
+  P.rect(sx, sy, sw, 11, 0xf4ecd8); P.box(sx - 1, sy - 1, sw + 2, 13, 0x2a3a5a); P.hl(sx, sy + 10, sw, 0xc8b898);
+  signText(P, BIG, s, sx + 5, sy + 2, 0x2a3a5a, 0xc8b898, 0x4a6a9a);
+  const s2 = 'FISK & SKALDJUR', t2 = textW(SMALL, s2);
+  text(P, SMALL, s2, cx - (t2 >> 1) + 1, eave + 3, 0x5a1a10, 0.6); text(P, SMALL, s2, cx - (t2 >> 1), eave + 2, trim);
+  // fönstren: småspröjsade, gästerna vid borden med levande ljus
+  const dx0 = b.door.x0 - b.x + O, dx1 = b.door.x1 - b.x + O;
+  for (const [a, z] of [[L + 6, dx0 - 8], [dx1 + 8, R - 7]]) {
+    const y0 = eave + 10, y1 = GB - 7, w = z - a, h = y1 - y0;
+    P.box(a - 1, y0 - 1, w + 2, h + 2, 0x221a26);
+    vgrad(P, a, y0, w, h, night ? 0xffd890 : 0xf0dcb8, night ? 0xd08a40 : 0x8a6a4a, 3);
+    for (let k = 0; k < 2; k++) {                                                           // gäster vid bord
+      const gx = a + 5 + k * Math.max(8, w - 12), gy = y1 - 6;
+      P.rect(gx - 2, gy - 6, 5, 5, [0x3a6ab0, 0xd8443a, 0x5aa060][(k + seed) % 3]); P.rect(gx - 1, gy - 9, 3, 3, 0xeabf98); P.hl(gx - 1, gy - 10, 3, [0x2a1a12, 0xc8642a, 0xd8c8a0][(k + seed + 1) % 3]);
+      P.hl(gx - 4, gy, 9, 0xf4f0e6); P.px(gx + 3, gy - 2, 0xfff0a0); P.px(gx + 3, gy - 1, 0xf4f0e6);
+    }
+    for (let x = a + 4; x < z; x += 5) P.vl(x, y0, h, trim);
+    P.hl(a, y0 + (h >> 1), w, trim);
+    for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) if ((i + j + seed) % 15 < 2) P.px(a + i, y0 + j, WHITE, night ? 0.05 : 0.22);
+    P.box(a, y0, w, h, trim); P.hl(a - 2, y1 + 1, w + 4, mix(trim, WHITE, 0.3)); P.hl(a - 2, y1 + 2, w + 4, mul(trim, 0.7));
+    if (night) glows.push([wx(a + 1), wy(y0 + 1), w - 2, h - 2, 0xffc870, 0.32]);
+  }
+  // dörren (bladet ritas av live), lyktor på båda sidor
+  P.rect(dx0 - 1, GB - DOOR_H - 3, dx1 - dx0 + 2, DOOR_H + 3, 0x221a26); P.rect(dx0 - 3, GB - DOOR_H - 5, dx1 - dx0 + 6, 2, trim);
+  lantern(P, dx0 - 8, GB - 26, night, glows, wx, wy); lantern(P, dx1 + 3, GB - 26, night, glows, wx, wy);
+  // nätet i hörnet med en flöte, livbojen, fisklådorna
+  for (let y = eave + 4; y < GB - 4; y++) for (let x = L + 1; x < L + 7 + ((y - eave) >> 2); x++) if ((x + y) % 3 === 0 || (x - y + 99) % 3 === 0) P.px(x, y, 0xc8b890, 0.85);
+  P.ell(L + 6, GB - 14, 2.4, 2.8, 0xe8443a, 1, 1); P.px(L + 5, GB - 14, 0xf8a8a0);
+  for (let a = 0; a < 28; a++) { const an = a / 28 * Math.PI * 2; for (const r of [4, 5]) P.px(Math.round(R - 12 + Math.cos(an) * r), Math.round(eave + 8 + Math.sin(an) * r), Math.floor((an / Math.PI) * 2) % 2 ? 0xf4f1ea : 0xe8443a); }
+  for (const [x, y] of [[R - 18, GB - 1], [R - 13, GB - 6]]) { P.rect(x, y - 5, 10, 5, 0x9a7448); P.hl(x, y - 5, 10, 0xc09a68); P.hl(x + 1, y - 3, 8, 0x6a4a2a); for (let k = 1; k < 9; k += 3) P.px(x + k, y - 6, 0xa8b8c8); }
+  // trappsteget och skuggan på bryggan
+  P.rect(dx0 - 3, GB, dx1 - dx0 + 6, 2, 0xb88a58); P.hl(dx0 - 3, GB, dx1 - dx0 + 6, 0xd4a874);
+  footShadow(P, L, dx0 - 4 - L, GB); footShadow(P, dx1 + 4, R - dx1 - 4, GB);
+  META[b.id + ':' + !!night] = { glows, shop: [], smoke, wins: [], doorLight: 0xffd890 };
   return P.flush();
 }
 
@@ -1350,6 +1434,7 @@ const SPEC = {
     items: [['kruka', 38], ['buxbom', 82], ['oliv', 104]] },
 };
 
+SPEC.sjoboden = { type: 'krog', door: 0x2a4a6a, items: [] };   // (v4) fiskrestaurangen på piren
 const itemsOf = (b) => (SPEC[b.kind]?.items || []).map(([k, rx, dy]) => ({ k, x: b.x + rx, y: baseOf(b) + (dy ?? 8) }));
 
 function makeLinneArt(kind) {

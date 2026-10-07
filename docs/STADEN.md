@@ -24,7 +24,7 @@ Grundregler (gäller allt i staden):
 
 ## 1. Världen
 
-Världen är **5200 × 820**: x **−1200**–4000 (v4: `CITY.X0` = −1200 – Linnéstaden ligger väster om centrum, som behöll sina koordinater; v3 var 4000 bred, v2 2720). Tvärsnitt i y (hela bredden):
+Världen är **5200 × 960**: x **−1200**–4000 (v4.2: höjden 820 → 960 – vattnet nedanför kajen är djupare så att piren får plats) (v4: `CITY.X0` = −1200 – Linnéstaden ligger väster om centrum, som behöll sina koordinater; v3 var 4000 bred, v2 2720). Tvärsnitt i y (hela bredden):
 
 | y | Vad | CITY-fält |
 |---|---|---|
@@ -41,7 +41,7 @@ Världen är **5200 × 820**: x **−1200**–4000 (v4: `CITY.X0` = −1200 – 
 | 672–730 | **SÖDERGATAN** – samma körfältsupplägg, `DY_S = 454` px under Pixelgatan | `ROAD_S`, `LANES_S` |
 | 730–760 | bortre trottoaren (busshållplats, bänkar mot kanalen) | `SIDEWALK_SS` |
 | 760–776 | kajen med räcke på y 772 – längre söderut går man inte | `QUAY`, `WALK_BOTTOM` |
-| 776–820 | kanalen (vatten; is på vintern) | `CANAL` |
+| 776–960 | kanalen (vatten; is på vintern) – i Linnéstaden går **PIREN** ut till **SJÖBODEN** | `CANAL`, `PIER`, `CANAL_WATER` |
 
 Tvärsnitt i x:
 
@@ -556,6 +556,11 @@ världen växte åt vänster, så alla gamla koordinater, sparfält och tester g
   skafferiet till marknadspris ‑10 %, godsaker som ger lycka), karusellen, ballongförsäljaren, dragspelaren och lyckohjulet
   söder om brunnen, vimpel‑ och ljusslingor från brunnens lykta. Öppet 8–20 (karusellen 10–20). Stånden är hinder;
   klick → `stallAt` → gå fram → `openStall`. Gångarna kring brunnen och tvärs över torget hålls fria.
+- **Piren och Sjöboden** (v0.92, `js/city/pir.js` = `S.pier`, `PIER` i map.js): världen är 960 hög; vattnet som hinder är
+  `CANAL_WATER` (kanalen minus piren, bryggan och Sjöbodens fotavtryck – fristående hus med `water: true`). Figuren får gå
+  ner till `CITY.H − 4` (vattnet stoppar), livets rutnät öppnar piren och bryggan efter världskanterna. Sjöboden är ett
+  fristående hus (enter `fiskkrog` → `pir.openKrog`), fiskarna (`fisherAt` → `talkFisher`) säljer abborre till skafferiet.
+  Båtarna (förtöjda med rep vid kajen och längs piren) ritas av pir.js.
 - **Test**: `tools/linne-test.mjs`.
 - **Nästa släpp** (planen): marknaden på torget, Gårdsbutiken (köp närproducerat som råvaror),
   dekorationsbutiken Pynt & Ting.

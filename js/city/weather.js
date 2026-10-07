@@ -44,7 +44,7 @@
 // hundra fillRect (≈ 0,1–1 ms i en 384 × 216-vy).
 // Ritas alltid bara i view-rektangeln.
 import { hash, bayer, mix, mul, Pix, SMALL, ctxText, textW } from '../core/floor-pix.js';
-import { CITY, ROADS, PATHS, LOTS, STREETS_ALL, PARK_LAYOUT, ALL_BUILDINGS, RIVER, footprint } from './map.js';
+import { CITY, ROADS, PATHS, LOTS, STREETS_ALL, PARK_LAYOUT, ALL_BUILDINGS, RIVER, CANAL_WATER, footprint } from './map.js';
 
 export const V2 = true;
 export const SEASONS = ['vår', 'sommar', 'höst', 'vinter'];
@@ -593,7 +593,7 @@ function zones() {
   // vatten: kanalen + (v3) floden. Gångbanden (bakgatan, parkgången, kajen …) tar slut vid floden –
   // där är det vatten (snö och pölar hamnar inte på det; isen lägger sig där när kanalen fryser)
   const river = (RIVER?.water || []).filter(isRect).map((r) => r.slice());
-  const water = [...(CITY.CANAL ? [[X0, CITY.CANAL[0], W, CITY.H]] : []), ...river];
+  const water = [...(CANAL_WATER ? CANAL_WATER.filter(isRect).map((r) => r.slice()) : CITY.CANAL ? [[X0, CITY.CANAL[0], W, CITY.H]] : []), ...river];
   for (const r of river) { const kept = subtract(walk, r); walk.length = 0; walk.push(...kept); }
   // pölarna: på hårda ytor, tätast i rännstenarna
   const puddles = [];

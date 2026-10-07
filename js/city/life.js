@@ -1230,6 +1230,9 @@ function rasterNav(obstacles) {
     fill([XI[0], ROAD_N[1], XI[1], ROAD_S[0]], 0);
     for (const c of CROSS_ALL) if (c.road === 'infarten') fill([c.x0, c.y0, c.x1, c.y1], 2);
   }
+  // världens kanter (nedanför kajen bara piren och bryggan – v4)
+  for (let gy = 0; gy < GH; gy++) { const y = gy * CELL + 1; if (y < CITY.BACK[0] + 2 || y > WALK_BOTTOM) G.fill(0, gy * GW, gy * GW + GW); }
+  if (MAP.PIER) { fill(MAP.PIER.walk, 2); fill(MAP.PIER.deck, 2); }
   // hindren
   for (const o of obstacles) {
     if (!o || o.length < 4) continue;
@@ -1237,8 +1240,6 @@ function rasterNav(obstacles) {
     const y0 = Math.max(0, Math.floor((o[1] - 2) / CELL)), y1 = Math.min(GH - 1, Math.floor((o[3] + 1) / CELL));
     for (let gy = y0; gy <= y1; gy++) G.fill(0, gy * GW + x0, gy * GW + x1 + 1);
   }
-  // världens kanter
-  for (let gy = 0; gy < GH; gy++) { const y = gy * CELL + 1; if (y < CITY.BACK[0] + 2 || y > WALK_BOTTOM) G.fill(0, gy * GW, gy * GW + GW); }
   return G;
 }
 
@@ -1398,7 +1399,17 @@ function buildNav(obstacles) {
   const SN = CITY.SIDEWALK_SN ? line(Y_SN, [LX + 6, CW - 6, ...gS.map((g) => g.cx), ...rowS.map(dX), ...cwS.map(cwMid), infW, infE, ...(kyrk && gate(kyrk, 's') ? [gmid(gate(kyrk, 's'))] : []),
     ...rowF.filter((b) => Math.abs(baseOf(b) + 9 - Y_SN) < 30).map(dX), ...(aterv ? [Math.round((aterv.rect[0] + aterv.rect[2]) / 2)] : []), ...(vagn ? [Math.round((vagn.rect[0] + vagn.rect[2]) / 2)] : []), ...QX, ...BRX], 'sn') : [];
   const SS = CITY.SIDEWALK_SS ? line(Y_SS, [LX + 6, CW - 6, ...cwS.map(cwMid), ...stopsS.flatMap((s) => [s.x - 42, s.x + 30, s.x + 44]), ...QX, ...BRX], 'ss') : [];
-  const Q = CITY.QUAY ? line(Y_Q, [LX + 6, CW - 6, ...QX], 'q') : [];
+  const PIERX = MAP.PIER ? Math.round((MAP.PIER.walk[0] + MAP.PIER.walk[2]) / 2) : null;
+  const Q = CITY.QUAY ? line(Y_Q, [LX + 6, CW - 6, ...QX, ...(PIERX !== null ? [PIERX] : [])], 'q') : [];
+  // v4: piren – från kajen ner till bryggan framför Sjöboden
+  const pierNodes = [];
+  if (MAP.PIER && Q.length) {
+    const P = MAP.PIER, dy = P.deck[1] + 22;
+    const ids = [node(PIERX, Y_Q + 12, 'pir'), node(PIERX, 830, 'pir'), node(PIERX, dy, 'pir'), node(Math.round((P.deck[0] + P.walk[0]) / 2), dy, 'pir'), node(P.deck[0] + 14, dy, 'pir')];
+    link(at(Q, PIERX), ids[0]);
+    for (let k = 1; k < ids.length; k++) link(ids[k - 1], ids[k]);
+    pierNodes.push(...ids.filter((i) => i >= 0));
+  }
 
   // ---- tvärförbindelser ----
   // gränder och tvärgator i norra raden: bakgatan ↔ trottoaren
@@ -1691,8 +1702,8 @@ function buildNav(obstacles) {
   const endsOf = (ids) => (ids.length ? [ids[0], ids[ids.length - 1]].filter((i) => nodes[i].x < LX + 16 || nodes[i].x > CW - 16).map((i) => ({ n: i, dir: nodes[i].x < (LX + CW) / 2 ? -1 : 1 })) : []);
   const exits = [...endsOf(N), ...endsOf(S), ...endsOf(SN), ...endsOf(SS), ...endsOf(Q), ...endsOf(BkS), ...endsOf(Bk).map((e) => ({ ...e, back: true }))];
   const curbSet = new Set(curbs);
-  const spawnNodes = [...N, ...S, ...Pm, ...BkS, ...SN, ...SS, ...Q, ...plazaAll, ...linneAll].filter((i) => !curbSet.has(i));
-  const parkNodes = [...Pm, ...ring, ...BkS.filter((i) => nodes[i].x < XI[0]), ...linneAll, ...['lekP', 'kyrk', 'lekX', 'grus', 'parkering', 'odling'].map((k) => special[k]).filter((i) => i >= 0)];
+  const spawnNodes = [...N, ...S, ...Pm, ...BkS, ...SN, ...SS, ...Q, ...plazaAll, ...linneAll, ...pierNodes].filter((i) => !curbSet.has(i));
+  const parkNodes = [...Pm, ...ring, ...BkS.filter((i) => nodes[i].x < XI[0]), ...linneAll, ...pierNodes, ...['lekP', 'kyrk', 'lekX', 'grus', 'parkering', 'odling'].map((k) => special[k]).filter((i) => i >= 0)];
   const lines = { Bk, N, S, Pm, BkS, SN, SS, Q };
   // v3: de långa linjerna bryts vid floden – runs() delar en linje i sammanhängande bitar (joggarna)
   const linked = (a, b) => nodes[a].adj.some((e) => e.a === b || e.b === b);

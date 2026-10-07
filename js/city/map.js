@@ -44,7 +44,8 @@
 
 export const CITY = {
   X0: -1200,                   // (v4) världens västra kant: Linnéstaden ligger i x −1200–0, väster om centrum
-  W: 4000, H: 820,             // OBS: net/world.js klämmer spelarnas x till X0–4000 – bredare kräver ny klämning där
+  W: 4000, H: 960,            // (v4: 820 → 960 – vattnet nedanför kajen är djupare: piren och Sjöboden i Linnéstaden)
+              // OBS: net/world.js klämmer spelarnas x till X0–4000 – bredare kräver ny klämning där
   VIEW_W: 384, VIEW_H: 216,
   // --- norra halvan (v1, oförändrad; PARK växte söderut från [306, 420]) ---
   BACK: [8, 36],
@@ -70,7 +71,7 @@ export const CITY = {
   ROAD_S: [672, 730],          // Södergatan
   SIDEWALK_SS: [730, 760],     // bortre trottoaren
   QUAY: [760, 776],            // kajen (räcket står på y 772–774)
-  CANAL: [776, 820],           // kanalen
+  CANAL: [776, 960],           // kanalen (v4: djupare – piren går ut i den)
   WALK_BOTTOM: 772,            // längst söderut man kan gå
 };
 
@@ -301,6 +302,8 @@ export const FREESTANDING = [
   // förorten (v2-koordinater + SUB_DX)
   F('FÖRORTEN', 'lamell', 2200 + SX, 200, 452, 40, 84, subDoor({ x0: 2288, x1: 2312, type: 'swing' }), { sign: 'BETONGVÄGEN 7', icon: '🏢', soon: 'Porten är låst och kodlåset är sönderslaget. Du bor inte här.' }),
   F('FÖRORTEN', 'husvagn', 2646 + SX, 48, 628, 22, 28, subDoor({ x0: 2656, x1: 2668, type: 'swing' }), { sign: 'HUSVAGNEN', icon: '🚐', enter: 'bostad:husvagn', homes: ['husvagn'], lot: 'vagnsplatsen' }),
+  // (v4) Linnéstaden: SJÖBODEN – fiskrestaurangen på pålar ute i vattnet, vid pirens slut (water: står i kanalen)
+  F('LINNÉSTADEN', 'sjoboden', -548, 108, 898, 44, 58, { x0: -508, x1: -484, type: 'swing' }, { sign: 'SJÖBODEN', icon: '🐟', open: [11, 23], enter: 'fiskkrog', water: true }),
 ];
 
 // LINNÉSTADEN (v4): båda raderna väster om centrum (x −1200–0). Landshövdingehus och små
@@ -578,6 +581,13 @@ export const LINNE_LAYOUT = {
   beds2: [[-440, 356, -380, 366], [-286, 356, -218, 366], [-120, 356, -40, 366], [-440, 432, -360, 444], [-110, 432, -24, 444]], // rabatterna
   back: [CITY.X0, CITY.BACK_S[0], 0, CITY.BACK_S[1]],
 };
+// (v4) PIREN i Linnéstaden: en träpir från kajen rakt ut i vattnet ner till bryggan (uteserveringen)
+// framför SJÖBODEN. gap = öppningen i kajräcket. Bryggan och piren är gåbara; vattnet runt om är hinder.
+export const PIER = {
+  walk: [-424, CITY.QUAY[0] + 6, -392, 940],
+  deck: [-556, 898, -392, 940],
+  gap: [-424, CITY.QUAY[0], -392, CITY.QUAY[0] + 14],
+};
 // Trottoarerna längs Infarten genom mellanbandet (väster: bara till parkgången – där står macken).
 const INFART_WALKS = [[1686, CITY.SIDEWALK_S[1], 1700, CITY.BACK_S[1]], [1752, CITY.SIDEWALK_S[1], 1766, CITY.BASE_S]];
 
@@ -598,6 +608,8 @@ export const PATHS = [
   { rect: LINNE_LAYOUT.promenade, kind: 'grus', district: 'LINNÉSTADEN' },
   ...LINNE_LAYOUT.walks.map((r) => ({ rect: r, kind: 'grus', district: 'LINNÉSTADEN' })),
   { rect: LINNE_LAYOUT.back, kind: 'grus', district: 'LINNÉSTADEN' },
+  { rect: PIER.walk, kind: 'brygga', district: 'LINNÉSTADEN' },
+  { rect: PIER.deck, kind: 'brygga', district: 'LINNÉSTADEN' },
   // kajerna – delade vid Pixelgatan och Södergatan (körbanorna är väg, inte gång; man korsar dem på broarnas trottoarer)
   ...[RIVER.quayW, RIVER.quayE].flatMap((q) => [[q[1], CITY.ROAD[0]], [CITY.ROAD[1], CITY.ROAD_S[0]], [CITY.ROAD_S[1], q[3]]]
     .map(([y0, y1]) => ({ rect: [q[0], y0, q[2], y1], kind: 'kaj', district: 'FLODEN' }))),
@@ -646,12 +658,30 @@ export const doorCenter = (b) => ({ x: (b.door.x0 + b.door.x1) / 2, y: baseOf(b)
 // Statiska hinder som kartan själv vet om: husens fotavtryck + deras blocks,
 // dammen, kanalen och (v3) floden: vattnet, kajräckena, broräckena och tornens ben/mittpelare.
 // Scenen lägger till modulernas hinder (props, trafik, liv, bron).
+// (v4) vattnet som hinder: kanalen utom piren, bryggan och Sjöbodens fotavtryck
+function subtractRects(base, cuts) {
+  let rs = [base];
+  for (const c of cuts) {
+    const out = [];
+    for (const r of rs) {
+      if (!(c[0] < r[2] && c[2] > r[0] && c[1] < r[3] && c[3] > r[1])) { out.push(r); continue; }
+      if (r[1] < c[1]) out.push([r[0], r[1], r[2], c[1]]);
+      if (c[3] < r[3]) out.push([r[0], c[3], r[2], r[3]]);
+      const y0 = Math.max(r[1], c[1]), y1 = Math.min(r[3], c[3]);
+      if (r[0] < c[0]) out.push([r[0], y0, c[0], y1]);
+      if (c[2] < r[2]) out.push([c[2], y0, r[2], y1]);
+    }
+    rs = out;
+  }
+  return rs;
+}
+export const CANAL_WATER = subtractRects(CANAL_RECT, [PIER.walk, PIER.deck, ...ALL_BUILDINGS.filter((b) => b.water).map(footprint)]);
 export const BRIDGE_OBSTACLES = BRIDGES.flatMap((b) => [...b.rails, ...b.towers.flatMap((t) => [...t.legs, ...(t.pier ? [t.pier] : [])])]);
 export const MAP_OBSTACLES = [
   ...ALL_BUILDINGS.map(footprint),
   ...ALL_BUILDINGS.flatMap((b) => b.blocks || []),
   ...WATER,
-  CANAL_RECT,
+  ...CANAL_WATER,
   ...RIVER.water,
   ...RIVER.rails,
   ...BRIDGE_OBSTACLES,
@@ -729,7 +759,7 @@ export const isNightHour = (h) => h >= 19.5 || h < 6.5;
 // Alla enter-värden som scenen (city.js enter()) känner. Scennamnen i andra raden leder in i en egen
 // scen (city.js SCENE_DOORS → main.js): butikerna i downtown, Pixelhögskolan, bion, kebaben, pantbanken och garaget.
 export const ENTER_RE = new RegExp('^(hem|bostad|mat|klader|mobler|kafe|djur|burgare|frukt|flyg|glass|narbutik|leksaker'
-  + '|bank|elektronik|frisor|skor|accessoarer|universitet|bio|kebab|pantbank|fordon|maskerad'
+  + '|bank|elektronik|frisor|skor|accessoarer|universitet|bio|kebab|pantbank|fordon|maskerad|fiskkrog'
   + '|jobb:[a-z]+|bostad:[a-z]+)$');
 
 // Kontroll av kontraktet: returnerar en lista med problem (tom = allt stämmer).
@@ -742,7 +772,7 @@ export function validateMap() {
   const roads = ROADS.map((r) => [r.id, [r.x0, r.y0, r.x1, r.y1]]);
   const pond = [PARK_LAYOUT.pond.cx - PARK_LAYOUT.pond.rx, PARK_LAYOUT.pond.cy - PARK_LAYOUT.pond.ry, PARK_LAYOUT.pond.cx + PARK_LAYOUT.pond.rx, PARK_LAYOUT.pond.cy + PARK_LAYOUT.pond.ry];
   const blocks = ALL_BUILDINGS.flatMap((x) => x.blocks || []);
-  const river = [RX0, 0, RX1, CITY.H], wet = [...RIVER.water, CANAL_RECT];
+  const river = [RX0, 0, RX1, CITY.H], wet = [...RIVER.water, ...CANAL_WATER];
   for (const b of ALL_BUILDINGS) {
     const fp = footprint(b), df = doorFront(b);
     if (b.door.x0 < b.x || b.door.x1 > b.x + b.w) out.push(`${b.id}: dörren ligger utanför fasaden`);
@@ -751,7 +781,7 @@ export function validateMap() {
     if (hit(fp, pond)) out.push(`${b.id} står i dammen`);
     for (const [id, o] of fps) if (id !== b.id && hit(df, o)) out.push(`dörren till ${b.id} blockeras av ${id}`);
     for (const o of blocks) if (hit(df, o)) out.push(`dörren till ${b.id} blockeras av ett block`);
-    if (fp[0] < (CITY.X0 || 0) || fp[2] > CITY.W || fp[1] < CITY.BACK[1] || fp[3] >= CITY.QUAY[0]) out.push(`${b.id} sticker ut ur världen`);
+    if (fp[0] < (CITY.X0 || 0) || fp[2] > CITY.W || fp[1] < CITY.BACK[1] || (fp[3] >= CITY.QUAY[0] && !b.water) || fp[3] >= CITY.H) out.push(`${b.id} sticker ut ur världen`);
     if (!DISTRICTS.some((d) => d.name === b.district)) out.push(`${b.id}: okänd stadsdel ${b.district}`);
     if (b.row === 's' && (b.top !== CITY.FOOT_TOP_S || b.base > CITY.BASE_S || b.base < CITY.FOOT_TOP_S + 60)) out.push(`${b.id}: fel base/top för södra raden`);
     if (b.row === 'n' && (b.top !== CITY.FOOT_TOP || b.base !== CITY.BASE)) out.push(`${b.id}: fel base/top för norra raden`);

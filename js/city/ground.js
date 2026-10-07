@@ -24,7 +24,7 @@
 // bakgatan/parkgången. Det är det som ger djup mellan husen.
 import { Pix, mix, mul, hash, bayer, BIG, SMALL, eachTextPixel } from '../core/floor-pix.js';
 import { CITY, BUILDINGS, BUILDINGS_S, BUILDINGS_D, BUILDINGS_X, BUILDINGS_L, FREESTANDING, STREETS_ALL, CROSSWALKS, CROSSWALKS_S, CROSSWALKS_I,
-  BUS_STOPS, PARK_LAYOUT, SUB_LAYOUT, DOWNTOWN_LAYOUT, LINNE_LAYOUT, RIVER, BRIDGES, LOTS, footprint } from './map.js';
+  BUS_STOPS, PARK_LAYOUT, SUB_LAYOUT, DOWNTOWN_LAYOUT, LINNE_LAYOUT, PIER, RIVER, BRIDGES, LOTS, footprint } from './map.js';
 
 export const V2 = true;
 
@@ -2379,7 +2379,7 @@ function paintQuay(xa = 0, xb = W) {
   // förtöjningsringar i kajkanten
   for (let x = xa + 70; x < xb; x += 180) { put(x, Q1 - 3, 0x2a2a2c); put(x + 1, Q1 - 4, 0x3a3a3e); put(x + 2, Q1 - 3, 0x2a2a2c); put(x + 1, Q1 - 2, 0x1a1a1c); put(x + 1, Q1 - 3, 0x8a5a36); }
   // räcket: stolpar och två ledstänger (rostigt och bucklat i förorten, en bit saknas)
-  const gone = (x) => x > 2230 + SDX && x < 2262 + SDX;
+  const gone = (x) => (x > 2230 + SDX && x < 2262 + SDX) || (PIER && x >= PIER.walk[0] && x < PIER.walk[2]);   // (v4) öppningen till piren
   for (let x = xa; x < xb; x++) {
     if (gone(x)) continue;
     const worn = wornAt(x, Q1), sag = worn > 0.5 ? Math.round(Math.sin(x * 0.07) * vnoise(x, 0, 30, 374) * 1.4) : 0;
