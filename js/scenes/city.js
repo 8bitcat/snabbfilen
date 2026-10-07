@@ -411,7 +411,7 @@ export function makeCity(A) {
     } else if (b.enter === 'djur') A.go('djur');
     else if (b.enter === 'burgare') A.go('burgarbar'); // in i dinern – jobba gör man vid disken därinne
     else if (b.enter === 'glass') openGlass(); // glasståndet i parken
-    else if (b.enter === 'fiskkrog') MODS.pir?.openKrog?.(A); // (v4) Sjöboden på piren i Linnéstaden
+    else if (b.enter === 'fiskkrog') { if (sceneReady('sjoboden')) A.go('sjoboden'); else MODS.pir?.openKrog?.(A); } // (v4) Sjöboden: in i krogen (menyn utanför om scenen inte laddats)
     else if (b.enter === 'leksaker') A.go('leksaker'); // Leksakslådan (js/scenes/shop-leksaker.js)
     else if (b.enter === 'narbutik') A.go('narbutik'); // förortens närbutik 24/7 (js/scenes/shop-narbutik.js)
     else if (SCENE_DOORS[b.enter]) A.go(SCENE_DOORS[b.enter]); // downtowns butiker, Pixelhögskolan, bion, kebaben, pantbanken

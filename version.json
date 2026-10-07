@@ -1,7 +1,7 @@
 {
-  "version": "0.93.1",
+  "version": "0.94.0",
   "date": "2026-10-07",
-  "title": "Bryggans plankor och lyktsken",
+  "title": "Sjöboden inifrån",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
@@ -168,6 +168,7 @@
     "js/scenes/shop-mobler.js",
     "js/scenes/shop-narbutik.js",
     "js/scenes/shop-pantbank.js",
+    "js/scenes/shop-sjoboden.js",
     "js/scenes/shop-skor.js",
     "js/scenes/shop-terminal.js",
     "js/scenes/shop-universitet.js",

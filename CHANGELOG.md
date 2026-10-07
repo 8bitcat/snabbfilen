@@ -10,6 +10,13 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.94.0] – 2026-10-07 – Sjöboden inifrån
+- Nu kan du gå in i SJÖBODEN! Krogen längst ut på piren har tre stora fönster mot havet. Där syns fyren på Pixelskär, som blinkar på kvällen, en segelbåt som glider förbi, måsar och ibland en fisk som hoppar.
+- Beställ vid disken hos Maja: fish and chips, räksmörgås, fisksoppa med aioli, sill med färskpotatis, vaniljglass med varma hjortron och hallonsoda. Maja friterar, tar räkor ur montern och lägger upp maten på tallriken.
+- Ta brickan och sätt dig vid ett bord med blårutig duk, eller i fönstret och titta ut över vattnet. Du blir mätt tugga för tugga, och när allt är uppätet blir du gladare.
+- Glasmontern är full av fisk, räkor, kräftor och en hummer på is. Skeppslyktor och fisknät med glaskulor hänger i taket, och en skeppsratt sitter på väggen.
+- Skeppskatten Sill sover på en tunna vid dörren (klappa henne!) och hummern Harald bor i akvariet. Han är inte till salu.
+
 ## [0.93.1] – 2026-10-07 – Bryggans plankor och lyktsken
 - Plankorna på piren och bryggan försvann när man gick långt ut på bryggan, så att borden och stolarna stod på vattnet. Nu ligger plankorna kvar.
 - Lyktorna på piren lyser med runda, mjuka sken på kvällen i stället för fyrkantiga rutor, och ljuspölarna hamnar på plankorna i stället för ute på vattnet.

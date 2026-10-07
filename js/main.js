@@ -148,6 +148,7 @@ const DOOR_SCENES = [
   ['pantbank', './scenes/shop-pantbank.js', 'makePantbank'],
   ['universitet', './scenes/shop-universitet.js', 'makeShopUniversitet'],
   ['maskerad', './scenes/shop-maskerad.js', 'makeShopMaskerad'],
+  ['sjoboden', './scenes/shop-sjoboden.js', 'makeShopSjoboden'],
   ['jobbdatorbygge', './jobs/jobb-datorbygge.js', 'makeJobbDatorbygge'],
   ['jobbfinans', './jobs/jobb-finans.js', 'makeJobbFinans'],
 ];
@@ -503,7 +504,7 @@ const PLACE_AWAY = {
 // ställena bakom stadens dörrar (DOOR_SCENES) – bara där ingen text redan finns
 for (const [k, v] of Object.entries({ bank: '🏦 på banken', elektronik: '📱 i elektronikbutiken', frisor: '💈 hos frisören', skor: '👟 i skobutiken',
   accessoarer: '👜 i accessoarbutiken', bio: '🎬 på bion', kebab: '🥙 på kebaben', pantbank: '💍 på pantbanken', universitet: '🎓 på Pixelhögskolan',
-  jobbdatorbygge: '🖥️ bygger datorer på Pixel Data', jobbfinans: '📈 handlar aktier på Finanshuset', koket: '🍳 lagar mat hemma', tradgard: '🌱 i trädgården', fordon: '🔧 i garaget', maskerad: '🎃 i maskeradbutiken', jobbtruck: '🚚 står i sin foodtruck', landet: '🌾 ute på landet', hopp: '🏇 hoppar på hinderbanan' })) PLACE_AWAY[k] ??= v;
+  jobbdatorbygge: '🖥️ bygger datorer på Pixel Data', jobbfinans: '📈 handlar aktier på Finanshuset', koket: '🍳 lagar mat hemma', tradgard: '🌱 i trädgården', fordon: '🔧 i garaget', maskerad: '🎃 i maskeradbutiken', sjoboden: '🐟 på Sjöboden', jobbtruck: '🚚 står i sin foodtruck', landet: '🌾 ute på landet', hopp: '🏇 hoppar på hinderbanan' })) PLACE_AWAY[k] ??= v;
 function placeOf(p, info) {
   const s = String(p.scene || 'away');
   if (s === 'city') return '🏙️ i staden';

@@ -571,6 +571,19 @@ världen växte åt vänster, så alla gamla koordinater, sparfält och tester g
   (`glad(5, …, 'delfin', 10)`), visar en toast och anropar `life.cheer` (fotgängarna i närheten jublar, och par kramas med 🤗).
   Pirens eget folk har egna bubblor via `pier.talks()`. Kärleksparet promenerar från kajen hand i hand
   ut på bryggan, pussas med hjärtan, tittar ut över vattnet och går tillbaka; det dyker bara upp utom synhåll.
+- **Sjöboden inne** (v0.94, `js/scenes/shop-sjoboden.js`, scenen `sjoboden` i main.js `DOOR_SCENES`). När
+  spelaren går in genom dörren (`enter: 'fiskkrog'`) hamnar hen i krogen. Om scenen inte har laddats visas i
+  stället `pir.openKrog` som reserv.
+  - Upplägget är samma som på kebaben: beställ vid disken, och kocken Maja friterar, tar ur montern och
+    lägger upp. Spelaren får brickan i händerna, sätter sig och äter tugga för tugga. Ätregeln gäller:
+    man kan inte gå ut mitt i maten.
+  - Lyckan (`glad`) kommer först när allt är uppätet, med nyckeln `sjoboden` och taket 8.
+  - Inredning:
+    - fönster mot havet med fyren på Pixelskär, segelbåten och fiskar som hoppar
+    - skeppslyktor och nät med glaskulor i taket
+    - glasmonter med fisk på is och griffeltavla
+    - katten Sill på tunnan (klappa den: +1 lycka om dagen)
+    - hummern Harald i akvariet
+  - Test: `tools/sjoboden-test.mjs`.
 - **Test**: `tools/linne-test.mjs`.
-- **Nästa släpp** (planen): Sjöboden inifrån, Gårdsbutiken (köp närproducerat som råvaror),
-  dekorationsbutiken Pynt & Ting.
+- **Nästa släpp** (planen): Gårdsbutiken (köp närproducerat som råvaror), dekorationsbutiken Pynt & Ting.
