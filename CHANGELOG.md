@@ -10,6 +10,9 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.94.1] – 2026-10-07 – Nya versionen direkt vid start
+- Spelet letar efter en ny version direkt när det startar, inte efter fem sekunder. Står du kvar på startmenyn byts det till den nya versionen med en gång, utan nedräkning, och du kommer tillbaka till menyn. Mitt i spelet är det som förut: spelet sparas och byter när det passar.
+
 ## [0.94.0] – 2026-10-07 – Sjöboden inifrån
 - Nu kan du gå in i SJÖBODEN! Krogen längst ut på piren har tre stora fönster mot havet. Där syns fyren på Pixelskär, som blinkar på kvällen, en segelbåt som glider förbi, måsar och ibland en fisk som hoppar.
 - Beställ vid disken hos Maja: fish and chips, räksmörgås, fisksoppa med aioli, sill med färskpotatis, vaniljglass med varma hjortron och hallonsoda. Maja friterar, tar räkor ur montern och lägger upp maten på tallriken.

@@ -1,7 +1,7 @@
 {
-  "version": "0.94.0",
+  "version": "0.94.1",
   "date": "2026-10-07",
-  "title": "Sjöboden inifrån",
+  "title": "Nya versionen direkt vid start",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",

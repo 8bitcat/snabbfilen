@@ -176,6 +176,10 @@ let countdown = COUNTDOWN_S;
 let banner = null;
 
 const typing = () => /INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName || '');
+// Startmenyn (eller spelet har inte startat än): ingen är mitt i något, så den nya versionen kan
+// laddas direkt – utan nedräkning (Carl 2026-10-07: "den senaste versionen laddas in direkt").
+const T_START = Date.now();
+const atStart = () => !typing() && (document.body.classList.contains('menu-open') || (!window.SF?.game && Date.now() - T_START < 20000));
 function blocker() {
   const SF = window.SF;
   if (typing()) return 'du skrivit klart';
@@ -246,7 +250,7 @@ async function reloadNow() {
   reloading = true;
   ss.set('sf_upd_tries_' + v, String(tries + 1));
   ss.set('sf_upd_target', v);
-  ss.set('sf_quiet_start', '1'); // efter omladdningen: rakt tillbaka in, ingen veckoruta
+  if (!pending.atStart) ss.set('sf_quiet_start', '1'); // efter omladdningen: rakt tillbaka in, ingen veckoruta (från startmenyn: menyn igen)
   window.dispatchEvent(new Event('sf:before-reload')); // andra moduler (t.ex. djuren) sparar sig
   try { window.SF?.game?.save(); } catch { /* spelet sparar ändå regelbundet */ }
   if (banner) banner.querySelector('.txt').innerHTML = `⬇️ Hämtar v${esc(v)} …`;
@@ -312,6 +316,7 @@ async function checkForUpdate() {
     countdown = COUNTDOWN_S;
     document.getElementById('hud-version')?.classList.add('ny');
     showBanner();
+    if (atStart()) { pending.atStart = true; reloadNow(); }   // på startmenyn: direkt, ingen nedräkning
   } catch { /* offline */ }
 }
 
@@ -345,6 +350,6 @@ setInterval(tick, 1000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) checkForUpdate(); });
 window.addEventListener('focus', () => checkForUpdate());
 window.addEventListener('online', () => checkForUpdate());
-setTimeout(checkForUpdate, 5000);
+setTimeout(checkForUpdate, 300);   // direkt vid start (förr efter 5 s) – en ny version hinner laddas innan man börjar spela
 window.SF_VERSION = VERSION;
 window.SF_UPDATE = { check: checkForUpdate, pending: () => pending, backups: listBackups, makeBackup, reloadNow };

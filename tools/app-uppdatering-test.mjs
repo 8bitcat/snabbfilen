@@ -18,7 +18,7 @@ let fails = 0;
 const ok = (c, m) => { console.log(c ? `ok: ${m}` : `FEL: ${m}`); if (!c) fails++; };
 const browser = await chromium.launch();
 
-async function sida({ app, webbVersion, nedladdningFel = false, utanRelease = false }) {
+async function sida({ app, webbVersion, nedladdningFel = false, utanRelease = false, meny = false }) {
   const ctx = await browser.newContext({ viewport: { width: 1100, height: 700 } });
   const p = await ctx.newPage();
   const errs = [];
@@ -31,7 +31,7 @@ async function sida({ app, webbVersion, nedladdningFel = false, utanRelease = fa
         Plugins: { CapacitorUpdater: {
           notifyAppReady: async () => { window.__app.ready++; window.__app.readyGame = !!window.SF?.game; return {}; },
           download: async (o) => { window.__app.download.push(o); if (!o.checksum) throw new Error('Checksum required'); if (window.__appFel ?? fel) throw new Error('404'); return { id: 'paket-' + o.version, version: o.version }; },
-          set: async (o) => { window.__app.set.push(o); },
+          set: async (o) => { window.__app.set.push({ ...o, at: performance.now(), quiet: sessionStorage.getItem('sf_quiet_start') }); },
         } },
       };
     }, nedladdningFel);
@@ -44,8 +44,11 @@ async function sida({ app, webbVersion, nedladdningFel = false, utanRelease = fa
     if (utanRelease) return r.fulfill({ status: 404, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: '{"message":"Not Found"}' });
     r.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify({ tag_name: 'v' + v, assets: [{ name: `pixelcity-${v}.zip`, digest: 'sha256:' + 'ab'.repeat(32) }] }) });
   });
-  await p.route('https://8bitcat.github.io/snabbfilen/version.json*', (r) => { hamtade.push(r.request().url()); r.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify({ version: webbVersion, title: 'Provversionen', files: [] }) }); });
-  await p.goto(`http://localhost:${PORT}/index.html?nomenu&world=appupd${Date.now().toString(36)}`);
+  // Den nya versionen "kommer ut" först när spelet är igång (fallen 1–5 gäller mitt i spelet – annars
+  // hinner kollen vid start byta direkt). Startmenyfallet (meny) har den nya versionen från början.
+  let aktiv = meny;
+  await p.route('https://8bitcat.github.io/snabbfilen/version.json*', (r) => { hamtade.push(r.request().url()); r.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify({ version: aktiv ? webbVersion : '0.0.1', title: 'Provversionen', files: [] }) }); });
+  await p.goto(`http://localhost:${PORT}/index.html?${meny ? 'menu' : 'nomenu'}&world=appupd${Date.now().toString(36)}`);
   await p.evaluate(() => {
     localStorage.clear();
     localStorage.setItem('snabbfilen_tips_hus', '1');
@@ -56,6 +59,7 @@ async function sida({ app, webbVersion, nedladdningFel = false, utanRelease = fa
   await p.waitForFunction(() => !!window.SF?.game, null, { timeout: 20000 });
   await p.waitForTimeout(500);
   await p.evaluate(() => { const m = document.querySelector('#modal'); if (m && !m.classList.contains('hidden')) { m.classList.add('hidden'); m.innerHTML = ''; } });
+  aktiv = true;
   return { p, ctx, errs, hamtade };
 }
 const until = async (p, fn, ms = 20000) => { const t0 = Date.now(); while (Date.now() - t0 < ms) { if (await p.evaluate(fn)) return true; await p.waitForTimeout(150); } return false; };
@@ -103,6 +107,17 @@ const until = async (p, fn, ms = 20000) => { const t0 = Date.now(); while (Date.
   await p.evaluate(() => window.dispatchEvent(new Event('focus')));
   await p.waitForTimeout(2500);
   ok(!(await p.evaluate(() => !!document.querySelector('#sf-update'))) && (await p.evaluate(() => window.__app.download.length)) === 0, 'äldre version på webben → ingen ruta, ingen nedladdning');
+  await ctx.close();
+}
+// ---------- 6: startmenyn – den nya versionen laddas direkt, utan nedräkning (Carl 2026-10-07) ----------
+{
+  const { p, ctx, errs } = await sida({ app: true, webbVersion: '9.9.9', meny: true });
+  ok(await p.evaluate(() => document.body.classList.contains('menu-open')), 'startmenyn visas');
+  ok(await until(p, () => window.__app.set.length >= 1, 8000), 'på startmenyn byter appen till den nya versionen direkt');
+  const s = (await p.evaluate(() => window.__app.set))[0] || {};
+  ok(s.at < 8000, `utan nedräkning (bytet ${Math.round(s.at)} ms efter start – nedräkningen är 10 s)`);
+  ok(!s.quiet, 'efter bytet kommer startmenyn igen (ingen tyst start rakt in i spelet)');
+  ok(!errs.length, `inga fel (${errs.slice(0, 2).join(' | ')})`);
   await ctx.close();
 }
 // ---------- 4: webben som förut ----------
