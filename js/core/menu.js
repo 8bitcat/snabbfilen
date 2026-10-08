@@ -14,6 +14,7 @@ import { VERSION } from '../version.js';
 import { openNews, makeBackup } from './version-ui.js';
 import { notiserFinns, notiserPa, slaPa, slaAv, provNotis } from './notiser.js';
 import { $t, LANG, LANGS, setLang } from './i18n.js';
+import { guideOn, startGuide, stopGuide } from './startguide.js'; // 🧭 startguiden igen
 
 const SKIP = 'sf_menu_skip';
 const saveKeyOf = (id) => 'snabbfilen_save:' + id;
@@ -133,6 +134,7 @@ function render() {
       <div class="menu-row"><span>🔊 ${$t('Ljud')}</span><button class="btn btn-small ${isMuted() ? '' : 'btn-go'}" data-sound>${isMuted() ? $t('AV') : $t('PÅ')}</button></div>
       <div class="menu-row"><span>🎵 ${$t('Musik')}</span><button class="btn btn-small ${isMusicOn() ? 'btn-go' : ''}" data-music>${isMusicOn() ? $t('PÅ') : $t('AV')}</button></div>
       <div class="menu-row"><span>📊 ${$t('Mätare')}</span><button class="btn btn-small" data-hud>${hudMode() === 'pix' ? $t('PIXEL uppe till vänster') : $t('RAD överst')}</button></div>
+      ${opts.pause ? `<div class="menu-row"><span>🧭 ${$t('Startguiden')}</span><button class="btn btn-small ${guideOn() ? 'btn-go' : ''}" data-guide>${guideOn() ? $t('PÅ') : $t('Börja om')}</button></div>` : ''}
       ${notiserFinns() ? `<div class="menu-row"><span>🔔 ${$t('Notiser')}</span><span>${notiserPa() ? `<button class="btn btn-small" data-notisprov>${$t('Prova')}</button> ` : ''}<button class="btn btn-small ${notiserPa() ? 'btn-go' : ''}" data-notiser>${notiserPa() ? $t('PÅ') : $t('AV')}</button></span></div>` : ''}
     </div>
     <div class="menu-sub">${list.length ? $t('Vem spelar?') : $t('Inga figurer än – tryck på Nytt spel!')}</div>
@@ -149,6 +151,8 @@ function render() {
   root.querySelector('[data-music]')?.addEventListener('click', () => { setMusic(!isMusicOn()); play('click'); render(); });
   root.querySelector('[data-lang]')?.addEventListener('change', (e) => { play('click'); setLang(e.target.value); });
   root.querySelector('[data-hud]')?.addEventListener('click', () => { setHudMode(hudMode() === 'pix' ? 'rad' : 'pix'); play('click'); render(); });
+  // 🧭 startguiden: av – eller börja om första dagen (listan, Doris och handen)
+  root.querySelector('[data-guide]')?.addEventListener('click', () => { play('click'); if (guideOn()) { stopGuide(); render(); } else { startGuide(A, { force: true }); close(); opts.onStart?.(); } });
   root.querySelector('[data-notiser]')?.addEventListener('click', async () => { play('click'); if (notiserPa()) await slaAv(); else await slaPa(); render(); });
   root.querySelector('[data-notisprov]')?.addEventListener('click', async () => { play('click'); toast(await provNotis() ? $t('🔔 Notisen kommer om fem sekunder.') : $t('🔕 Notisen gick inte att skicka.'), 'good'); });
   root.querySelectorAll('[data-edit]').forEach((b) => (b.onclick = () => {

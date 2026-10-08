@@ -54,6 +54,7 @@ import { openWeek } from '../core/week.js';
 import { openBrasa } from '../core/brasa.js'; // 🔥 brasan i spisarna + marshmallows
 import { myAction, folkAction, drawActing, actionByEmote } from '../core/drakt.js'; // 🎭 dräkternas rörelser
 import { $t, $n } from '../core/i18n.js';
+import { guideStep, drawGuideHand } from '../core/startguide.js'; // 🧭 första dagen: handen pekar på UT
 
 // Husdjursprylens fotavtryck på golvet – samma mått som lagret (js/pets/layer.js footprint)
 // ställer ut prylar efter: korgar/lådor/bur/klösträd har ett eget (itemSolid), skålar,
@@ -1514,6 +1515,8 @@ export function makeRoom(A, { visit = false, sub: subOpt = null, core = null } =
           ctx.fillStyle = `rgba(10,12,40,${NIGHT_DIM})`; ctx.fillRect(0, 0, FW, FH);
           for (const q of [...wallItems, ...props]) q.light?.(ctx); // julljusen och brasan lyser
         }
+        // 🧭 startguiden: första steget är att gå ut – handen pekar på dörren
+        if (sub === 0 && !visit && !decor.on && guideStep() === 'ut') drawGuideHand(ctx, DOOR.cx, 52, $t('UT HÄR'));
         return;
       }
       // sömnen: mörkret sänker sig, fönstren lyser svagt (himlen dämpas inte som rummet),

@@ -1,0 +1,167 @@
+[
+ {
+  "i": 7531,
+  "f": "js/core/menu.js",
+  "k": "Startguiden"
+ },
+ {
+  "i": 7532,
+  "f": "js/core/menu.js",
+  "k": "Börja om"
+ },
+ {
+  "i": 7533,
+  "f": "js/core/startguide.js",
+  "k": "Gå ut ur husvagnen"
+ },
+ {
+  "i": 7534,
+  "f": "js/core/startguide.js",
+  "k": "Gå till dörren där det står UT."
+ },
+ {
+  "i": 7535,
+  "f": "js/core/startguide.js",
+  "k": "Gå till Burgarbaren"
+ },
+ {
+  "i": 7536,
+  "f": "js/core/startguide.js",
+  "k": "Följ den gula pilen – eller tryck på lappen nere till vänster, så går du dit själv."
+ },
+ {
+  "i": 7537,
+  "f": "js/core/startguide.js",
+  "k": "Fråga Doris om jobb"
+ },
+ {
+  "i": 7538,
+  "f": "js/core/startguide.js",
+  "k": "Tryck på skylten JOBBA HÄR på disken och välj Servera."
+ },
+ {
+  "i": 7539,
+  "f": "js/core/startguide.js",
+  "k": "Servera din första kund"
+ },
+ {
+  "i": 7540,
+  "f": "js/core/startguide.js",
+  "k": "Ta maten från disken och ge den till kunden som vill ha just den."
+ },
+ {
+  "i": 7541,
+  "f": "js/core/startguide.js",
+  "k": "Jobba klart passet"
+ },
+ {
+  "i": 7542,
+  "f": "js/core/startguide.js",
+  "k": "Lönen kommer direkt när passet är slut."
+ },
+ {
+  "i": 7543,
+  "f": "js/core/startguide.js",
+  "k": "Ät något"
+ },
+ {
+  "i": 7544,
+  "f": "js/core/startguide.js",
+  "k": "Köp mat vid disken och sätt dig vid ett bord – eller handla i närbutiken."
+ },
+ {
+  "i": 7545,
+  "f": "js/core/startguide.js",
+  "k": "Gå hem och sov"
+ },
+ {
+  "i": 7546,
+  "f": "js/core/startguide.js",
+  "k": "Följ pilen hem och lägg dig i sängen."
+ },
+ {
+  "i": 7547,
+  "f": "js/core/startguide.js",
+  "k": "🎉 Bra jobbat!"
+ },
+ {
+  "i": 7548,
+  "f": "js/core/startguide.js",
+  "k": "Nu kan du klara dig själv i Pixelstaden!"
+ },
+ {
+  "i": 7549,
+  "f": "js/core/startguide.js",
+  "k": "Fler jobb hittar du på kartan 🗺️ – och under 🎯 Livsmålen ser du vad du sparar till. Ju mer du jobbar, desto bättre betalt."
+ },
+ {
+  "i": 7550,
+  "f": "js/core/startguide.js",
+  "k": "Tack, Doris!"
+ },
+ {
+  "i": 7551,
+  "f": "js/core/startguide.js",
+  "k": "FÖRSTA DAGEN"
+ },
+ {
+  "i": 7552,
+  "f": "js/core/startguide.js",
+  "k": "Hoppa över guiden"
+ },
+ {
+  "i": 7553,
+  "f": "js/core/startguide.js",
+  "k": "🧭 Hoppa över guiden?"
+ },
+ {
+  "i": 7554,
+  "f": "js/core/startguide.js",
+  "k": "Du kan starta den igen under ⚙ Inställningar."
+ },
+ {
+  "i": 7555,
+  "f": "js/core/startguide.js",
+  "k": "Fortsätt guiden"
+ },
+ {
+  "i": 7556,
+  "f": "js/core/startguide.js",
+  "k": "Hoppa över"
+ },
+ {
+  "i": 7557,
+  "f": "js/jobs/jobb-burgare.js",
+  "k": "GE TILL KUNDEN"
+ },
+ {
+  "i": 7558,
+  "f": "js/jobs/jobb-burgare.js",
+  "k": "TA MATEN"
+ },
+ {
+  "i": 7559,
+  "f": "js/jobs/jobb-burgare.js",
+  "k": "BRA! NU ÄR DET DIN TUR!"
+ },
+ {
+  "i": 7560,
+  "f": "js/scenes/room.js",
+  "k": "UT HÄR"
+ },
+ {
+  "i": 7561,
+  "f": "js/scenes/shop-burgarbar.js",
+  "k": "Hej {0}! Jag är Doris. Vi behöver folk – tryck på JOBBA HÄR-skylten här på disken!"
+ },
+ {
+  "i": 7562,
+  "f": "js/scenes/shop-burgarbar.js",
+  "k": "Hungrig efter passet? Beställ här vid disken och sätt dig vid ett bord!"
+ },
+ {
+  "i": 7563,
+  "f": "js/scenes/shop-burgarbar.js",
+  "k": "TRYCK HÄR"
+ }
+]

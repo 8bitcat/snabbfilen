@@ -10,6 +10,12 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.96.0] – 2026-10-08 – Startguiden: första dagen
+- Nya spelare får en startguide första dagen. En liten lista nere till höger visar nästa steg: gå ut ur husvagnen, gå till Burgarbaren, fråga Doris om jobb, servera din första kund, jobba klart passet, ät något och gå hem och sov.
+- I stan visar en gul pil vägen till Burgarbaren och sedan hem. På Burgarbaren säger Doris till, och en pixelhand pekar på JOBBA HÄR-skylten. I jobbet visar handen hur du tar maten och ger den till rätt kund. Sedan är det din tur.
+- Stegen bockas av när du gör dem, i vilken ordning som helst. Du kan hoppa över guiden med × och köra den igen under ≡ → ⚙ Inställningar → 🧭 Startguiden.
+- Guiden finns på alla åtta språk. På portugisiska stod det OK på utgångsdörrarna, och nu står det SAI.
+
 ## [0.95.1] – 2026-10-08 – Frisörens prislista på polska
 - På polska krockade ordet för hårfärgning med priset på frisörens prislista. Nu står det KOLOR, och allt får plats.
 

@@ -14,6 +14,7 @@ import { makeShiftCoop } from '../net/coop.js';
 import { FRAMES } from '../data/frames.js';
 import { ATLAS } from '../scenes/room.js';
 import { $t } from '../core/i18n.js';
+import { guideStep, drawGuideHand } from '../core/startguide.js'; // 🧭 första dagen: handen visar första kunden
 
 const FW = 384, FH = 216;
 const COUNTER = { x0: 20, x1: 200, top: 58, base: 84 };
@@ -217,7 +218,7 @@ export function makeJobbBurgare(A, { onDone }) {
   ]);
   const pops = makePops();
   let customers = [], plates = [], t = 0, seq = 0, custIn = 1.5, plateIn = 2.5, carry = null;
-  let done = false, doneT = 0, reported = false;
+  let done = false, doneT = 0, reported = false, sgVisar = false; // sgVisar: startguidens hand har visat vägen
   const bgCache = {};
   const bg = () => (bgCache.x ||= paintDiner());
 
@@ -558,6 +559,19 @@ export function makeJobbBurgare(A, { onDone }) {
           ctx.fillStyle = '#d9433b'; ctx.fillRect(ix + 18, iy - 3, 3, 5); ctx.fillRect(ix + 18, iy + 3, 3, 2);
         }
       }
+      // 🧭 startguiden: handen visar första kunden – ta maten som någon vill ha, ge den till kunden –
+      // och när den första är serverad: DIN TUR!
+      if (!done && guideStep() === 'servera' && !stats.ok) {
+        const sitting = customers.filter((k) => k.state === 'sit');
+        sgVisar = true;
+        if (carry) {
+          const k = sitting.find((q) => q.wish === carry.d);
+          if (k) drawGuideHand(ctx, Math.round(k.x), k.table.y - 10, $t('GE TILL KUNDEN'), { below: true });
+        } else {
+          const p = plates.find((pl) => sitting.some((k) => k.wish === pl.d));
+          if (p) drawGuideHand(ctx, p.x, COUNTER.top + 2, $t('TA MATEN'), { below: true });
+        }
+      }
       pops.draw(ctx);
       drawShiftHud(ctx, { W: FW }, { t, dur: DUR, ok: maxN > 1 ? team.ok : stats.ok, fel: maxN > 1 ? team.fel : stats.fel, title: maxN > 1 ? $t('BURGARBAREN IHOP') : $t('BURGARBAREN') });
       if (done) drawTimeUp(ctx, { W: FW, H: FH });
@@ -569,6 +583,7 @@ export function makeJobbBurgare(A, { onDone }) {
       stats.ok++;
       play('coin');
       pops.add(k.x, k.y - 62, $t('+10 TACK!'), '#8ee03c');
+      if (sgVisar && stats.ok === 1) pops.add(FW / 2, 112, $t('BRA! NU ÄR DET DIN TUR!'), '#ffd23f'); // 🧭 startguiden släpper taget
       k.state = 'eat'; k.eat = 4;
     } else {
       stats.fel++;

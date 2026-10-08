@@ -1,7 +1,7 @@
 {
-  "version": "0.95.1",
+  "version": "0.96.0",
   "date": "2026-10-08",
-  "title": "Frisörens prislista på polska",
+  "title": "Startguiden: första dagen",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
@@ -75,6 +75,7 @@
     "js/core/recolor.js",
     "js/core/sound.js",
     "js/core/squish.js",
+    "js/core/startguide.js",
     "js/core/truck-art.js",
     "js/core/ui.js",
     "js/core/version-ui.js",

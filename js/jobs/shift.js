@@ -14,6 +14,7 @@ import { SMALL, BIG, ctxText, textW } from '../core/floor-pix.js';
 import { play } from '../core/sound.js';
 import { shiftInStrip } from '../core/hud-pix.js';
 import { $t } from '../core/i18n.js';
+import { guideStep } from '../core/startguide.js'; // 🧭 första dagen: knappen att trycka på pulserar
 
 export const SHIFT_SECONDS = 60; // (nybörjarens vanliga pass – minispelen läser planOf(A).seconds)
 export const planOf = (A) => A?.shiftPlan || shiftPlan(1);
@@ -100,6 +101,7 @@ export function startJobFlow(A, jobId, sceneName) {
       <button class="btn btn-small ${B0.pris === 'lag' ? 'btn-gold' : ''}" data-pris="lag">${$t('Låga – fler kunder, −15 % per rätt')}</button>
       <button class="btn btn-small ${B0.pris === 'vanlig' ? 'btn-gold' : ''}" data-pris="vanlig">${$t('Vanliga')}</button>
       <button class="btn btn-small ${B0.pris === 'hog' ? 'btn-gold' : ''}" data-pris="hog">${$t('Höga – färre kunder, +30 % per rätt')}</button>` : ''}</div>` : '';
+  const sgGo = guideStep() === 'jobb' ? 'btn-go sg-pulse' : 'btn-go';
   const dlg0 = openModal(`${job.icon} ${job.name}`, `<p style="font-size:var(--f2);margin-top:0"><b>${job.verb}!</b></p>
     <p style="font-size:var(--f2)">${rows.join('<br>')}</p>${beslut}
     ${g.hunger <= 0 ? `<p class="bad" style="font-size:var(--f2)">${$t('🥴 Du är utsvulten – du jobbar yr och får halv lön!')}</p>` : ''}
@@ -107,10 +109,10 @@ export function startJobFlow(A, jobId, sceneName) {
     { label: $t('En annan gång'), onClick: closeModal },
     ...(COOP_JOBS.has(jobId) ? [{ label: $t('💼 Jobba ihop'), onClick: () => coopPicker(A, jobId, sceneName) }] : []),
     ...(canLong ? [
-      { label: $t('🔨 Vanligt pass'), cls: 'btn-go', onClick: () => { closeModal(); beginShift(A, jobId, sceneName, shiftPlan(lvl)); } },
+      { label: $t('🔨 Vanligt pass'), cls: sgGo, onClick: () => { closeModal(); beginShift(A, jobId, sceneName, shiftPlan(lvl)); } },
       ...(longNow ? [{ label: $t('💪 Längre pass'), cls: 'btn-go', onClick: () => { closeModal(); beginShift(A, jobId, sceneName, shiftPlan(lvl, 'langt')); } }] : []),
     ] : [
-      { label: $t('🔨 Jobba ett pass'), cls: 'btn-go', onClick: () => { closeModal(); beginShift(A, jobId, sceneName, shiftPlan(lvl)); } },
+      { label: $t('🔨 Jobba ett pass'), cls: sgGo, onClick: () => { closeModal(); beginShift(A, jobId, sceneName, shiftPlan(lvl)); } },
     ]),
   ]);
   dlg0?.querySelectorAll('[data-fokus],[data-pris]').forEach((b) => (b.onclick = () => {

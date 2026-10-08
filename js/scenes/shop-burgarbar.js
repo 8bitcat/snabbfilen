@@ -47,6 +47,7 @@ import { createWalker, selfDrawable, folkDrawables, WALK_SEQ, sayBubble, iconBub
 import { worldFolksHere, worldSeatsTaken } from '../net/world.js';
 import { burgarMeny } from '../jobs/jobb-burgare.js';
 import { $t } from '../core/i18n.js';
+import { guideStep, drawGuideHand } from '../core/startguide.js'; // 🧭 första dagen: Doris visar jobbet
 
 const talk = createSpeech(); // repliker och beskrivningar som pratbubblor i scenen
 // regelns två repliker (samma i alla matställen)
@@ -1202,7 +1203,7 @@ export function makeShopBurgarbar(A) {
     const body = `<p style="font-size:var(--f2);margin-top:0"><b>${$t('Vi behöver folk – välj ditt pass!')}</b></p>
       <div class="plist">
       <div class="prow" style="grid-template-columns:1fr auto"><span class="nm">🍽️ <b>${$t('Servera')}</b><br><small class="sp">${$t`${bj.verb}. ${bj.wage} kr per rätt, −${bj.oops} kr per fel.`}</small></span>
-        <button class="btn btn-small btn-go" data-jobb="burgare">🍽️ ${$t('Servera')}</button></div>
+        <button class="btn btn-small btn-go${guideStep() === 'jobb' ? ' sg-pulse' : ''}" data-jobb="burgare">🍽️ ${$t('Servera')}</button></div>
       <div class="prow" style="grid-template-columns:1fr auto"><span class="nm">👨‍🍳 <b>${$t('Jobba i köket')}</b><br><small class="sp">${kj ? $t`${kj.verb}. ${kj.wage} kr per rätt, −${kj.oops} kr per fel.` : $t('Bygg rätterna som beställs – grillen väntar!')}</small></span>
         <button class="btn btn-small btn-go" data-jobb="kok">👨‍🍳 ${$t('Köket')}</button></div>
       </div>
@@ -1733,9 +1734,21 @@ export function makeShopBurgarbar(A) {
     }
   }
 
+  // 🧭 startguiden: Doris säger till en gång per besök – om jobbet, och om maten efter passet
+  const sgSaid = {};
+  function guideTalk() {
+    const step = guideStep();
+    if (!step || sgSaid[step] || t < 0.8) return;
+    const line = step === 'jobb' ? $t`Hej ${A.avatar?.name || ''}! Jag är Doris. Vi behöver folk – tryck på JOBBA HÄR-skylten här på disken!`
+      : step === 'mat' ? $t('Hungrig efter passet? Beställ här vid disken och sätt dig vid ett bord!') : null;
+    if (!line) return;
+    sgSaid[step] = true;
+    talk.say(line, () => ({ x: kass.x, y: KASS_Y - 44 }), 7);
+  }
   function update(dt) {
     t += dt;
     walker.update(dt);
+    guideTalk();
     worldSeatsTaken(A, seats); // där en annan spelare sitter är det upptaget
     updateMe(dt);
     updateKass(dt);
@@ -1776,6 +1789,8 @@ export function makeShopBurgarbar(A) {
         return s ? { x: s.x - cam.x, y: s.y - 14 } : null;
       },
       seated: () => (me.seat ? me.seat.id : null),
+      sgSaid: () => ({ ...sgSaid }), // 🧭 vad Doris har sagt åt startguiden
+
       tray: () => (me.tray ? me.tray.items.map((i) => ({ id: i.id, stage: i.stage })) : null),
       forceBuy: (id) => buy(typeof id === 'number' ? BURGAR_MENY[id] : menyOf(id)),
       eatFast: () => {
@@ -1881,6 +1896,8 @@ export function makeShopBurgarbar(A) {
       const cx = Math.round(cam.x);
       ctx.setTransform(A.pxs, 0, 0, A.pxs, -cx * A.pxs, 0);
       drawWorld(ctx, cx, VW);
+      // 🧭 startguiden: handen pekar på JOBBA HÄR-skylten
+      if (guideStep() === 'jobb' && !me.order) drawGuideHand(ctx, JOBB_SKYLT.x, CNT.top - 11, $t('TRYCK HÄR')); // (spetsen precis ovanför tältskylten)
       talk.draw(ctx, { x0: cx, x1: cx + VW });
       // skylt i nederkanten när man pekar på något klickbart
       ctx.setTransform(A.pxs, 0, 0, A.pxs, 0, 0);

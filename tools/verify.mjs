@@ -21,7 +21,8 @@ const argv = process.argv.slice(2);
 const ref = argv.find((a, i) => !a.startsWith('--') && argv[i - 1] !== '--port' && argv[i - 1] !== '--extra') || 'HEAD';
 const port = argv.includes('--port') ? argv[argv.indexOf('--port') + 1] : '8791';
 // sprak-test: varje ny text i koden måste finnas i alla sju ordlistorna (docs/SPRAK.md), annars rött
-const ALWAYS = ['tools/garderob-kop-test.mjs', 'tools/sprak-test.mjs'];
+// startguide-test: nya spelares första dag (listan, pilen, Doris, handen, lönen) – tar ~1,5 min (ett helt pass)
+const ALWAYS = ['tools/garderob-kop-test.mjs', 'tools/sprak-test.mjs', 'tools/startguide-test.mjs'];
 const KLAD = ['tools/klader-test.mjs', 'tools/skor-test.mjs', 'tools/accessoarer-test.mjs', 'tools/frisor-test.mjs'];
 const extras = [...new Set([...ALWAYS, ...(argv.includes('--klad') ? KLAD : []),
   ...argv.flatMap((a, i) => (a === '--extra' ? [argv[i + 1]] : [])).filter(Boolean)])];

@@ -54,6 +54,7 @@ import { startWorld, worldTick, worldInfo, playersList, visitPlayer, sendEmote, 
 import { block, unblock, blockedList, openAnmal, SUPPORT } from './net/skydd.js';
 import { openMenu, mountMenuButton, isMenuOpen, shouldShowMenuAtBoot } from './core/menu.js';
 import { drawPixHud, isPixHud, apply as applyHud, stripHeight, layoutStrip } from './core/hud-pix.js';
+import { guideTick, startGuide, resumeGuide } from './core/startguide.js'; // 🧭 första dagen: listan + Doris + handen
 import { musicTick } from './core/music.js';
 import { recTick } from './core/rec.js';
 import { openWeek } from './core/week.js';
@@ -760,10 +761,11 @@ function boot() {
       openModal($t('🌆 Välkommen till Pixelstaden!'), `<div class="who">${''}<div>
         <p style="font-size:var(--f2);margin-top:0">${$t`Här börjar ditt nya liv, <b>${A.avatar.name}</b>! Du har <b>${fmt(A.game.money)}</b> på fickan.`}</p>
         <p style="font-size:var(--f2)">${$t('Alla börjar i en rostig husvagn ute i förorten. Tjäna pengar på stadens jobb, köp mat så du orkar, klä dig snyggt – och spara ihop till en bättre bostad hos bostadsbyrån!')}</p></div></div>`,
-        [{ label: $t('🚐 Till husvagnen'), cls: 'btn-go', onClick: () => { closeModal(); A.game.home = 'husvagn'; A.game.save(); A.go('room'); goalsFirst(weekFirst); } }],
+        [{ label: $t('🚐 Till husvagnen'), cls: 'btn-go', onClick: () => { closeModal(); A.game.home = 'husvagn'; A.game.save(); A.go('room'); startGuide(A); goalsFirst(weekFirst); } }],
         { closable: false });
     } else {
       A.go('room');
+      resumeGuide(A); // (påbörjad första dag – sidan laddades om)
       goalsFirst(weekFirst);
     }
   };
@@ -860,6 +862,7 @@ function tick(now) {
     recTick(A, dt); // bakgrundsljudet där man är + musiken (tyst före första klicket, vid mute och i dold flik)
     hemMusikTick(A); // filmlåtarna man satt på hemma (de andra låtarna går via musiken ovan)
     festTick(A);     // 🎉 festen: tiden, lyckan, slutet (och besökarnas glädje)
+    guideTick(A, dt); // 🧭 startguiden bockar av stegen när de händer
     rawSetTransform(1, 0, 0, 1, 0, 0);
     ctx.fillStyle = '#14121a';
     ctx.fillRect(0, 0, cv.width, cv.height);
