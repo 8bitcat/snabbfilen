@@ -25,7 +25,7 @@
 import { Pix, mix, mul, hash, bayer, BIG, SMALL, eachTextPixel } from '../core/floor-pix.js';
 import { $t } from '../core/i18n.js';
 import { CITY, BUILDINGS, BUILDINGS_S, BUILDINGS_D, BUILDINGS_X, BUILDINGS_L, FREESTANDING, STREETS_ALL, CROSSWALKS, CROSSWALKS_S, CROSSWALKS_I,
-  BUS_STOPS, PARK_LAYOUT, SUB_LAYOUT, DOWNTOWN_LAYOUT, LINNE_LAYOUT, PIER, RIVER, BRIDGES, LOTS, footprint } from './map.js';
+  BUS_STOPS, PARK_LAYOUT, SUB_LAYOUT, DOWNTOWN_LAYOUT, LINNE_LAYOUT, PIER, RIVER, BRIDGES, LOTS, ODLING, footprint } from './map.js';
 
 export const V2 = true;
 
@@ -2340,13 +2340,50 @@ function paintTrailerLot(L) {
     if (vnoise(x, y, 9, 352) > 0.64) c = mix(c, GRX[3], 0.6);
     put(x, y, c);
   }
-  // hjulspår där husvagnen drogs in
-  for (let y = y0 + 20; y < y1; y++) for (const cx of [2652 + SDX, 2688 + SDX]) { const x = Math.round(cx + Math.sin(y * 0.05) * 2); for (let k = -1; k <= 1; k++) put(x + k, y, mix(get(x + k, y), 0x4a3c2c, k === 0 ? 0.5 : 0.25)); }
+  // hjulspår där husvagnen drogs in (bara framför odlingens staket)
+  for (let y = Math.max(y0 + 20, ODLING ? ODLING.rect[3] + 1 : 0); y < y1; y++) for (const cx of [2652 + SDX, 2688 + SDX]) { const x = Math.round(cx + Math.sin(y * 0.05) * 2); for (let k = -1; k <= 1; k++) put(x + k, y, mix(get(x + k, y), 0x4a3c2c, k === 0 ? 0.5 : 0.25)); }
   // eldstad
   ellipse(2700 + SDX, 588, 5, 2.5, (x, y, t) => put(x, y, t > 0.7 ? mix(0x8a847a, 0x6a665e, hash(x, y, 353)) : mix(0x2a2622, 0x4a443c, hash(x, y, 354))));
   for (let i = 0; i < 30; i++) tuft(x0 + 3 + hash(i, 1, 355) * (x1 - x0 - 6), y0 + 3 + hash(i, 2, 355) * (y1 - y0 - 6), 356 + i, hash(i, 3, 355) > 0.5);
   scatter([x0 + 2, y0 + 2, x1 - 2, y1 - 2], 16, 357);
+  if (ODLING) paintTrailerGarden(ODLING);
   gapShadow({ x0, x1, row: 's' }, y0, y1);
+}
+// 🌱 husvagnens odling (map.js ODLING): innanför staketet mörk, krattad mylla med gräs som växer in
+// från kanterna, en trampad stig från grinden och smörblommor längs staketet. Krukorna står i odling.js.
+function paintTrailerGarden(O) {
+  const [x0, y0, x1, y1] = O.rect, [g0, g1] = O.gate;
+  const MYLLA = [0x2e2016, 0x3e2c1e, 0x4e3826, 0x604630, 0x76583c];
+  const pick = (pal, v, x, y) => pal[Math.max(0, Math.min(pal.length - 1, Math.round(v * (pal.length - 1) + bayer(x, y) * 0.5 - 0.25)))];
+  for (let y = y0 + 1; y < y1 - 1; y++) for (let x = x0 + 1; x < x1 - 1; x++) {
+    const edge = Math.min(x - x0, x1 - 1 - x, y - y0, y1 - 1 - y);
+    let c;
+    if (edge < 4 + vnoise(x, y, 5, 390) * 6) {            // gräset längs staketet (ojämn kant)
+      c = pick(GR, 0.35 + vnoise(x, y, 4, 391) * 0.45 + (hash(x, y, 392) - 0.5) * 0.2, x, y);
+      if (hash(x, y, 393) > 0.97) c = mix(c, 0xd8e870, 0.5);
+    } else {                                               // myllan: krattad i rader – ljusa kammar, mörka fåror
+      const comb = mod(y, 4) === 0 ? 0.68 : mod(y, 4) === 2 ? 0.28 : 0.48;
+      c = pick(MYLLA, comb + (vnoise(x, y, 6, 394) - 0.5) * 0.25 + (hash(x, y, 395) - 0.5) * 0.12, x, y);
+      if (hash(x, y, 396) > 0.985) c = 0x9a8c74;          // en sten i jorden
+    }
+    put(x, y, c);
+  }
+  // stigen från grinden upp mot krukorna: trampad, ljusare jord
+  const sx = (g0 + g1) >> 1;
+  for (let y = y1 - 2; y > y1 - 18; y--) for (let dx = -4; dx <= 4; dx++) {
+    const x = sx + dx + Math.round(Math.sin(y * 0.3) * 0.8);
+    if (Math.abs(dx) === 4 && hash(x, y, 397) > 0.5) continue;
+    put(x, y, grainy(mix(0x8a7458, 0x9c8664, vnoise(x, y, 3, 398)), x, y, 0.08));
+  }
+  // smörblommor och prästkragar i gräset längs bakre staketet och sidorna
+  for (let i = 0; i < 22; i++) {
+    const side = i % 3, t = hash(i, 1, 399);
+    const x = side === 0 ? x0 + 4 + t * (x1 - x0 - 8) : side === 1 ? x0 + 3 : x1 - 4;
+    const y = side === 0 ? y0 + 4 + hash(i, 2, 399) * 2 : y0 + 8 + t * (y1 - y0 - 24);
+    const fx = Math.round(x), fy = Math.round(y), col = hash(i, 3, 399) > 0.5 ? 0xf2d23a : 0xfff4c0;
+    put(fx, fy, WEED[1]); put(fx, fy - 1, col);
+    if (hash(i, 4, 399) > 0.5) { put(fx + 1, fy - 1, mul(col, 0.8)); put(fx, fy - 2, mix(col, 0xffffff, 0.4)); }
+  }
 }
 // norra radens tomt i förorten: skrot, jord, oljefläckar, ogräs
 function paintJunkLot(g) {

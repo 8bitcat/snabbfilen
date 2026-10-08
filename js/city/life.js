@@ -1539,7 +1539,7 @@ function buildNav(obstacles) {
     special.parkering = b;
   }
   if (aterv && BkS.length && SN.length) link(at(BkS, (aterv.rect[0] + aterv.rect[2]) / 2), at(SN, (aterv.rect[0] + aterv.rect[2]) / 2));
-  if (vagn && BkS.length && SN.length) link(at(BkS, (vagn.rect[0] + vagn.rect[2]) / 2), at(SN, (vagn.rect[0] + vagn.rect[2]) / 2));
+  // (ingen genväg över vagnsplatsen längre: odlingen bakom husvagnen är inhängad – map.js ODLING)
   // parkens lekplats och hundrastgården
   if (PARK.playground && BkS.length) {
     const r = PARK.playground, mid = node((r[0] + r[2]) / 2, (r[1] + r[3]) / 2, 'lek');

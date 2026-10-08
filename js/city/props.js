@@ -15,7 +15,7 @@
 //   bänkar går att sitta på (se "sittplatser" i createProps). export const V2 = true.
 import { Pix, mix, mul, hash, bayer, SMALL, BIG, text, textW, eachTextPixel } from '../core/floor-pix.js';
 import { CITY, BUILDINGS, ALL_BUILDINGS, CROSSWALKS, CROSSWALKS_S, PARK_LAYOUT, BUS_STOP, BUS_STOPS, LOTS, RESERVED, footprint, gateRect, artBox,
-  DOWNTOWN_LAYOUT, LINNE_LAYOUT, PIER } from './map.js';
+  DOWNTOWN_LAYOUT, LINNE_LAYOUT, PIER, ODLING } from './map.js';
 import { $t } from '../core/i18n.js';
 
 // Rekvisitan täcker hela v2-världen (Söder, parken, Infarten, förorten) – scenen
@@ -3802,8 +3802,13 @@ export function createProps(env) {
   igloo(2306 + SDX, 560, 0x2a8a3a, $t('GLAS')); igloo(2334 + SDX, 556, 0xe8e4d8, $t('PAPP')); igloo(2362 + SDX, 560, 0x2a5aa8, $t('PLÅT'));
   trashBags(2320 + SDX, 590); overfull(2340 + SDX, 625); graffitiWall(2334 + SDX, 500, 80);
   for (const [x, y] of [[2296 + SDX, 530], [2370 + SDX, 600], [2300 + SDX, 632]]) weeds(x, y);
-  clothesline(2660 + SDX, 560); chair(2700 + SDX, 620); grill(2702 + SDX, 605); gasBottle(2638 + SDX, 620); tires(2640 + SDX, 596); trashBags(2700 + SDX, 640);
-  for (const [x, y] of [[2636 + SDX, 540], [2705 + SDX, 580], [2650 + SDX, 636]]) weeds(x, y);
+  // vagnsplatsen: grill, stol och gasol öster om vagnen; gången väster om vagnen hålls fri upp till
+  // odlingens grind. Odlingen bakom vagnen (map.js ODLING, krukorna i odling.js) är inhängad med ett
+  // trästaket, och tvättlinan hänger längs dess bakre staket.
+  chair(2700 + SDX, 620); grill(2702 + SDX, 605); gasBottle(2704 + SDX, 590); trashBags(2700 + SDX, 640);
+  lotFence(ODLING.rect, [{ side: 's', x0: ODLING.gate[0], x1: ODLING.gate[1] }], 'tra', 1, 'odlingsstaket');
+  clothesline(2670 + SDX, 524);
+  for (const [x, y] of [[2632 + SDX, 600], [2705 + SDX, 580], [2650 + SDX, 636]]) weeds(x, y);
   // bortre trottoaren i förorten
   brokenBench(1800 + SDX, QS); lamp(1860 + SDX, QL, -1, 2); bin(1900 + SDX, QS); lifebuoy(2000 + SDX, QB); brokenBench(2200 + SDX, QS); lamp(2300 + SDX, QL, -1, 1); trashBags(2400 + SDX, QS);
   lamp(2500 + SDX, QL, -1, 3); brokenBench(2600 + SDX, QS); lamp(2680 + SDX, QL, -1, 1);

@@ -2283,7 +2283,7 @@ export function createTraffic(env) {
 
   // ---------- parkerade fordon i förorten ----------
   // (samordnat med props.js: rekvisitan har den övre raden på parkeringen, vraket på tomten,
-  //  tvättlinan på vagnsplatsen och oljefaten vid garagen – trafikens bilar står där det är fritt)
+  //  odlingen och tvättlinan på vagnsplatsen och oljefaten vid garagen – trafikens bilar står där det är fritt)
   const parked = [], obstacles = LIGHTS_ALL.map((l) => [l.x - 3, l.y - 2, l.x + 4, l.y + 1]);
   {
     const lot = LOTS.find((l) => l.id === 'parkering');
@@ -2296,12 +2296,7 @@ export function createTraffic(env) {
       const E = endArt(spec, rear);
       parked.push({ x, y, end: E, obstacle: [x - (E.W >> 1) + 2, y - 26, x + (E.W >> 1) - 2, y + 1] });
     }
-    // vagnsplatsen: rostig pickup bakom husvagnen (ovanför tvättlinan)
-    const vp = LOTS.find((l) => l.id === 'vagnsplatsen');
-    if (vp) {
-      const x0 = vp.rect[0] + 10, y = vp.rect[1] + 32;
-      parked.push({ x: x0 + 31, y, side: { kind: 'pickup', color: 0x8a4a3a, variant: 0, rust: true }, x0, flip: 1, obstacle: [x0, y - 12, x0 + 62, y + 1] });
-    }
+    // (vagnsplatsens rostiga pickup bakom husvagnen fick ge plats åt odlingen – map.js ODLING, odling.js)
     // mopeden vid kantstenen utanför garagen, tom och på stödet (någon skruvar på en till där inne)
     const gar = buildingById('garage');
     if (gar) {

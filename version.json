@@ -1,7 +1,7 @@
 {
-  "version": "0.96.0",
+  "version": "0.97.0",
   "date": "2026-10-08",
-  "title": "Startguiden: första dagen",
+  "title": "Odlingen bakom husvagnen",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
@@ -24,6 +24,7 @@
     "js/city/life.js",
     "js/city/map.js",
     "js/city/marknad.js",
+    "js/city/odling.js",
     "js/city/pir.js",
     "js/city/places.js",
     "js/city/props.js",
@@ -49,6 +50,7 @@
     "js/core/menu.js",
     "js/core/music.js",
     "js/core/notiser.js",
+    "js/core/odla.js",
     "js/core/people.js",
     "js/core/people/acc.js",
     "js/core/people/bottoms.js",

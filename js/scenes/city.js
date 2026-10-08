@@ -27,7 +27,7 @@ import { $t, money } from '../core/i18n.js';
 // modulerna inte täcker ännu (marken/skjulen/staketen i v2-områdena).
 // v3: buildings-downtown (finanskvarterets hus) och bridge (floden, Stora bron, Järnbron).
 const MODS = {};
-await Promise.all(['buildings-shops', 'buildings-work', 'buildings-south', 'buildings-suburb', 'buildings-leksaker', 'buildings-downtown', 'buildings-linne', 'marknad', 'pir', 'ground', 'props', 'traffic', 'life', 'weather', 'walk', 'fallback-v2', 'bridge'].map((n) =>
+await Promise.all(['buildings-shops', 'buildings-work', 'buildings-south', 'buildings-suburb', 'buildings-leksaker', 'buildings-downtown', 'buildings-linne', 'marknad', 'pir', 'odling', 'ground', 'props', 'traffic', 'life', 'weather', 'walk', 'fallback-v2', 'bridge'].map((n) =>
   import(`../city/${n}.js`).then((m) => { MODS[n] = m; }).catch((e) => console.error(`stadsmodulen ${n} kunde inte laddas:`, e))));
 
 let VW = CITY.VIEW_W, VH = CITY.VIEW_H; // mobilfyllning: vyn följer skärmen, klampad till världen
@@ -76,6 +76,7 @@ export const env = {
 
 // ---------- simuleringen lever kvar mellan besöken i staden ----------
 let SIM = null;
+const ODL = { game: null, me: null }; // 🌱 odlingen läser spelet och figuren i den stad som visas just nu
 const NONE = { items: () => [], obstacles: [], update() {}, glow() {}, positions: () => [], pedGreen: () => true };
 const NO_WEATHER = { update() {}, drawBack() {}, drawFront() {}, glow() {} };
 function sim() {
@@ -90,12 +91,14 @@ function sim() {
   const bridge = safe('bridge', () => MODS.bridge?.createBridge?.(env), NONE);   // floden och broarna (v3)
   const market = safe('marknad', () => MODS.marknad?.createMarket?.(env), NONE);  // marknaden på Marknadstorget (v4, Linnéstaden)
   const pier = safe('pir', () => MODS.pir?.createPier?.(env), NONE);                // piren, båtarna, fiskarna och bryggan vid Sjöboden
+  // 🌱 husvagnens odling bakom vagnen (krukorna och kannan; spelet och figuren via ODL – staden byggs om per scen)
+  const odling = safe('odling', () => MODS.odling?.createOdling?.(env, { game: () => ODL.game?.(), me: () => ODL.me?.() }), null);
   const allSeats = props.seats?.();                                                  // bryggans stolar och bänkar: samma lista som parkbänkarna
   if (Array.isArray(allSeats) && pier.seats?.length) allSeats.push(...pier.seats);
-  env.obstacles = [...MAP_OBSTACLES, ...artObstacles(), ...(props.obstacles || []), ...(traffic.obstacles || []), ...(fallback.obstacles || []), ...(bridge.obstacles || []), ...(market.obstacles || []), ...(pier.obstacles || [])];
+  env.obstacles = [...MAP_OBSTACLES, ...artObstacles(), ...(props.obstacles || []), ...(traffic.obstacles || []), ...(fallback.obstacles || []), ...(bridge.obstacles || []), ...(market.obstacles || []), ...(pier.obstacles || []), ...(odling?.obstacles || [])];
   const life = safe('life', () => MODS.life?.createLife(env, traffic, props), NONE); // props ger livet riktiga sittplatser (props.seats())
   const weather = safe('weather', () => MODS.weather?.createWeather(env), NO_WEATHER);
-  SIM = { props, traffic, life, fallback, weather, bridge, market, pier };
+  SIM = { props, traffic, life, fallback, weather, bridge, market, pier, odling };
   return SIM;
 }
 
@@ -238,13 +241,14 @@ export function makeCity(A) {
   let walker;
   try { walker = MODS.walk.createCityWalker(bounds); } catch (e) { console.error('gångmotorn walk.js startade inte – använder den enkla:', e); walker = createWalker(bounds); }
   walker.speed = 110;
+  ODL.game = () => A.game; ODL.me = () => ({ x: walker.px, y: walker.py, dir: walker.dir }); // 🌱 odlingens kanna i handen
   // 🚲 fordonet man åker på (game.js FORDON, 🚲-knappen i HUD:en): fortare genom stan
   const GANG = 110;
   const fordon = () => (A.attract ? null : g.aker);
   const applyRide = () => { const F = fordon(); walker.speed = GANG * (F ? F.fart : 1); };
   applyRide();
   let rullar = false;
-  env.obstacles = [...MAP_OBSTACLES, ...artObstacles(), ...(S.props.obstacles || []), ...(S.traffic.obstacles || []), ...(S.fallback.obstacles || []), ...(S.bridge.obstacles || []), ...(S.life.obstacles || []), ...(S.market?.obstacles || []), ...(S.pier?.obstacles || [])];
+  env.obstacles = [...MAP_OBSTACLES, ...artObstacles(), ...(S.props.obstacles || []), ...(S.traffic.obstacles || []), ...(S.fallback.obstacles || []), ...(S.bridge.obstacles || []), ...(S.life.obstacles || []), ...(S.market?.obstacles || []), ...(S.pier?.obstacles || []), ...(S.odling?.obstacles || [])];
   // 🚚 foodtrucken (eget företag, js/core/foretag.js) står på sin plats och är ett hinder
   const truckPos = () => { const T = !A.attract && g.truck; return T ? GAME.truckPlatsOf(T.plats) : null; };
   const setObst = () => { const TP = truckPos(); walker.setObstacles(TP ? [...env.obstacles, [TP.x + TRUCK_RECT.x0, TP.y + TRUCK_RECT.y0, TP.x + TRUCK_RECT.x1, TP.y + TRUCK_RECT.y1]] : env.obstacles); };
@@ -544,6 +548,7 @@ export function makeCity(A) {
     add('life', () => S.life.items());
     add('marknad', () => S.market.items());
     add('pir', () => S.pier.items());
+    add('odling', () => S.odling?.items() || []);
     for (const d of folkDrawables(A, t)) items.push({ y: d.fy, draw: () => d.draw(ctx) });
     // 🌾 vägskylten LANDET → vid stadsgränsen (södra trottoaren längst österut)
     if (cx + vw > CITY.W - 80) items.push({ y: CITY.SIDEWALK_S[1] - 4, draw: () => drawLandetSkylt(ctx, CITY.W - 22, CITY.SIDEWALK_S[1] - 4) });
@@ -882,6 +887,7 @@ export function makeCity(A) {
       cam: () => ({ ...cam }),
       markers: () => markers.map((m) => ({ ...m })),
       chips: () => signChips.map((c) => ({ label: c.label, x: c.x, y: c.y, w: c.w, h: c.h, id: c.b.id })), // husnamnen i överkanten (tools/mobil-stad-test.mjs)
+      odling: () => S.odling?._debug || null, // 🌱 husvagnens krukor (tools/odling-test.mjs)
       pets: () => (pets ? pets._debug.followers() : []), // husdjuren på promenad (tools/pets-walk-test.mjs)
       // 🧭/🚕 (tools/karta-taxi-test.mjs)
       guide: () => { const b = guideB(); if (!b) return null; const wp = (guidePath || []).find(([x, y]) => Math.hypot(x - walker.px, y - walker.py) > 14); return { id: b.id, path: (guidePath || []).length, next: wp || null, rects: guideRects.map((q) => ({ kind: q.kind, r: [...q.r] })) }; },
@@ -930,7 +936,7 @@ export function makeCity(A) {
       updateEnv(dt);
       if (banner) banner.t += dt;
       if (fade.phase === 0) checkDistrict(false);
-      for (const [name, m] of [['fallback', S.fallback], ['bridge', S.bridge], ['props', S.props], ['traffic', S.traffic], ['life', S.life], ['marknad', S.market], ['pir', S.pier]]) guard(name + '.update', () => m.update?.(dt));
+      for (const [name, m] of [['fallback', S.fallback], ['bridge', S.bridge], ['props', S.props], ['traffic', S.traffic], ['life', S.life], ['marknad', S.market], ['pir', S.pier], ['odling', S.odling]]) guard(name + '.update', () => m?.update?.(dt));
       // 🐬 spelaren såg delfinen vid piren: lyckan går upp och folk runt omkring jublar och kramas
       const lk = S.pier?.takeLuck?.();
       if (lk && !A.attract) {
@@ -977,6 +983,11 @@ export function makeCity(A) {
       // som står framför ska gå att kliva på / sätta sig på (annars fångade en väntande resenär klicket
       // på bussdörren och en förbipasserande klicket på bänken).
       // 🎪 marknaden: ett stånd, karusellen, ballongerna, lyckohjulet → gå fram och handla
+      // 🌱 husvagnens odling: en kruka (så, vattna, skörda) eller vattenkannan (vattna allt)
+      const op = S.odling?.potAt?.(x, y);
+      if (op) { if (sitting) standUp(); walker.walkTo(op.walk.x, op.walk.y, () => { walker.dir = 'up'; MODS.odling?.openPot?.(A, S.odling, op.i); }); return; }
+      const oc = S.odling?.canAt?.(x, y);
+      if (oc) { if (sitting) standUp(); walker.walkTo(oc.walk.x, oc.walk.y, () => { walker.dir = 'left'; MODS.odling?.useCan?.(A, S.odling); }); return; }   // (vänd mot krukorna – strilen åt dem)
       const fs = S.pier?.fisherAt?.(x, y);
       if (fs) { if (sitting) standUp(); walker.walkTo(fs.walk.x, fs.walk.y, () => MODS.pir?.talkFisher?.(A, fs)); return; }
       const kk = S.pier?.kikareAt?.(x, y);   // 🔭 myntkikaren på bryggan

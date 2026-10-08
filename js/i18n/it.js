@@ -6627,6 +6627,7 @@ export default {
   "🌭 Mums, korv med bröd!": "🌭 Gnam, un hot dog!",
   "🌭 Sälj korv och dricka från början – köp grill, tacobar och glassfrys för fler rätter.": "🌭 All'inizio vendi hot dog e bibite – compra la griglia, il banco dei tacos e il freezer dei gelati per avere più piatti.",
   "🌭 Till grillen": "🌭 Alla griglia",
+  "🌱 Det här är husvagnens odling – den sköts av den som bor i husvagnen.": "🌱 Questo è l'orto della roulotte: se ne occupa chi abita nella roulotte.",
   "🌱 I natt i trädgården: {0}.": "🌱 Stanotte nell'orto: {0}.",
   "🌱 Så i bädden": "🌱 Semina nell'aiuola",
   "🌱 Sådde {0} – vattnat och klart. Kom tillbaka i morgon!": "🌱 Seminato: {0} – annaffiato e pronto. Torna domani!",

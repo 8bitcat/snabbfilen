@@ -6627,6 +6627,7 @@ export default {
   "🌭 Mums, korv med bröd!": "🌭 Mjam, Wurst im Brötchen!",
   "🌭 Sälj korv och dricka från början – köp grill, tacobar och glassfrys för fler rätter.": "🌭 Verkauf am Anfang Würstchen und Limo – kauf Grill, Tacobar und Eistruhe für mehr Gerichte.",
   "🌭 Till grillen": "🌭 Zum Grill",
+  "🌱 Det här är husvagnens odling – den sköts av den som bor i husvagnen.": "🌱 Das ist der Garten vom Wohnwagen – darum kümmert sich, wer im Wohnwagen wohnt.",
   "🌱 I natt i trädgården: {0}.": "🌱 Heute Nacht im Garten: {0}.",
   "🌱 Så i bädden": "🌱 Ins Beet säen",
   "🌱 Sådde {0} – vattnat och klart. Kom tillbaka i morgon!": "🌱 {0} gesät – gegossen und fertig. Komm morgen wieder!",

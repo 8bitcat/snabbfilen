@@ -8,12 +8,13 @@
 // mogen = skörda (till skafferiet), vissen = rensa. Redskapsbänken: vattna alla. Dörren: in igen.
 // Odlingen räknas i game.js (GRODOR, TRADGARD, plant/waterGarden/harvest/growGarden).
 import { Pix, SMALL, ctxText, textW, mix, mul, hash, bayer, css } from '../core/floor-pix.js';
-import { openModal, closeModal, toast, esc } from '../core/ui.js';
-import { GRODOR, grodaOf, tradgardOf, fmt } from '../game.js';
+import { toast } from '../core/ui.js';
+import { grodaOf, tradgardOf } from '../game.js';
 import { createWalker, selfDrawable, folkDrawables } from './walkable.js';
 import { ravaraIcon, ravaraPal } from '../core/ravara-art.js';
 import { play } from '../core/sound.js';
 import { $t } from '../core/i18n.js';
+import { bedAction as odlaBed, waterAll } from '../core/odla.js';
 
 const FW = 384, FH = 216, GROUND = 82;
 // bäddarna per bostad: [x, y] = bäddens nedre vänstra hörn (fotlinjen), w × h
@@ -162,33 +163,11 @@ export function makeTradgard(A) {
   const gd = () => g.garden();
   const stateOf = (i) => g.bedState(gd().beds[i]);
 
-  function bedAction(i) {
-    const b = gd().beds[i], st = stateOf(i), [x, y] = beds[i];
-    if (st === 'tom') return sow(i);
-    if (st === 'torr') { if (g.waterGarden(i)) { water(x + BW / 2, y - BH); toast($t`💧 Vattnat! ${grodaOf(b.g).name} växer i natt.`, 'good'); } return; }
-    if (st === 'vattnad') { const G = grodaOf(b.g); toast(G.dagar - b.v === 1 ? $t`🌱 ${G.name}: dag ${b.v} av ${G.dagar}. Vattnad i dag – mogen om ${G.dagar - b.v} natt.` : $t`🌱 ${G.name}: dag ${b.v} av ${G.dagar}. Vattnad i dag – mogen om ${G.dagar - b.v} nätter.`); play('click'); return; }
-    if (st === 'mogen') { const r = g.harvest(i); if (r.ok) { play('ok'); toast($t`🧺 ${r.n} ${r.groda.name.toLowerCase()} till skafferiet!${r.glad ? ` +${r.glad} 😊` : ''}`, 'good'); } return; }
-    if (st === 'vissen') { g.clearBed(i); play('click'); toast($t('🥀 Den vissnade – två dagar utan vatten. Bädden är rensad, så något nytt!'), 'bad'); }
-  }
-  function sow(i) {
-    const rows = GRODOR.map((G) => `<div class="prow"><span style="font-size:28px;text-align:center">${G.icon}</span>
-      <span class="nm">${esc(G.name)}<br><small class="sp">${$t`mogen efter ${G.dagar} nätter · ${G.skord[0]}–${G.skord[1]} st · vattna varje dag`}</small></span>
-      <button class="btn btn-small btn-go" data-gr="${G.id}" ${g.money < G.fro ? 'disabled' : ''}>${$t`Så · ${fmt(G.fro)}`}</button></div>`).join('');
-    const dlg = openModal($t('🌱 Så i bädden'), `<p style="font-size:var(--f2);margin-top:0">${$t('Välj en fröpåse. Vattna bädden varje dag – två dagar utan vatten och plantorna vissnar. Skörden hamnar i skafferiet.')}</p><div class="plist">${rows}</div>`, [{ label: $t('Inte nu'), onClick: closeModal }]);
-    dlg.querySelectorAll('[data-gr]').forEach((btn) => (btn.onclick = () => {
-      const r = g.plant(i, btn.dataset.gr);
-      closeModal();
-      if (!r.ok) { toast(r.msg, 'bad'); play('fel'); return; }
-      play('ok'); const [x, y] = beds[i]; water(x + BW / 2, y - BH);
-      toast($t`🌱 Sådde ${r.groda.name.toLowerCase()} – vattnat och klart. Kom tillbaka i morgon!`, 'good');
-    }));
-  }
+  // bäddarna och kannan: samma odling som husvagnens krukor i staden (js/core/odla.js)
+  const waterAt = (i) => () => { const [x, y] = beds[i]; water(x + BW / 2, y - BH); };
+  const bedAction = (i) => odlaBed(A, i, { water: waterAt(i) });
   function water(x, y) { watering = 1.2; play('slide'); for (let k = 0; k < 18; k++) drops.push({ x: x + (Math.random() - 0.5) * 30, y: y - 20 - Math.random() * 6, vy: 30 + Math.random() * 30, life: 0.6 }); }
-  function benchAction() {
-    const n = g.waterGarden(-1);
-    if (n) { water((BENCH.x0 + BENCH.x1) / 2 + 60, BENCH.y - 30); toast(n === 1 ? $t`💧 Du vattnade ${n} bädd med kannan.` : $t`💧 Du vattnade ${n} bäddar med kannan.`, 'good'); }
-    else toast($t('💧 Allt som behöver vatten är redan vattnat i dag.'));
-  }
+  const benchAction = () => waterAll(A, { water: () => water((BENCH.x0 + BENCH.x1) / 2 + 60, BENCH.y - 30) });
   function treeAction() {
     if (g.treeReady()) { const r = g.harvestTree(); play('ok'); toast($t`🍎 ${r.n} äpplen till skafferiet!${r.glad ? ` +${r.glad} 😊` : ''}`, 'good'); }
     else { const kvar = Math.max(1, 3 - (g.day - (gd().trad.skord | 0))); toast(kvar === 1 ? $t`🍎 Äpplena mognar om ${kvar} dag.` : $t`🍎 Äpplena mognar om ${kvar} dagar.`); }

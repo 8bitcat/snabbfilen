@@ -826,8 +826,9 @@ export function makeRoom(A, { visit = false, sub: subOpt = null, core = null } =
     ? () => { A.visitTarget = null; A.roomSub = 0; g.passTime(20); g.save(); play('door'); toast($t('🚗 Hemma igen.')); A.go('city'); }
     : () => {
       const T = tradgardOf(g.home);
-      // (testrobotar går rakt ut i stan, utom med ?tradgard i adressen)
-      if (!T || (navigator.webdriver && !new URLSearchParams(location.search).has('tradgard'))) { toCity(); return; }
+      // (testrobotar går rakt ut i stan, utom med ?tradgard i adressen). Husvagnens odling står i staden,
+      // inhängad bakom vagnen (js/city/odling.js) – därifrån går man alltid rakt ut.
+      if (!T || g.home === 'husvagn' || (navigator.webdriver && !new URLSearchParams(location.search).has('tradgard'))) { toCity(); return; }
       openModal($t('🚪 Vart vill du gå?'), `<p style="font-size:var(--f2);margin-top:0">${T.namn === 'Terrassen' ? $t('Ut i Pixelstaden – eller ut på terrassen och odla?') : T.namn === 'Tomten' ? $t('Ut i Pixelstaden – eller ut på tomten och odla?') : $t('Ut i Pixelstaden – eller ut i trädgården och odla?')}</p>`, [
         { label: `${T.icon} ${$t(T.namn)}`, cls: 'btn-gold', onClick: () => { closeModal(); play('door'); A.roomSub = 0; A.go('tradgard'); } },
         { label: $t('🏙️ Ut i stan'), cls: 'btn-go', onClick: () => { closeModal(); toCity(); } },

@@ -365,6 +365,17 @@ export const LOTS = [
   ].map(subLot),
 ];
 
+// 🌱 HUSVAGNENS ODLING (Carl 2026-10-08: "inhängad bakom husvagnen", med krukor och en vattenkanna):
+// ett trästaket runt baksidan av vagnsplatsen. Staketet (props.js), jorden (ground.js) och krukorna,
+// plantorna och kannan (odling.js) läser alla härifrån. Vagnen står på 606–628; grinden sitter i södra
+// staketet mot gången väster om vagnen.
+export const ODLING = {
+  rect: [2630 + SX, 504, 2710 + SX, 574],                       // staketet (80 × 70)
+  gate: [2632 + SX, 2646 + SX],                                 // grinden i södra staketet
+  pots: [[2642 + SX, 552], [2664 + SX, 552], [2686 + SX, 552]], // krukornas fotmitt (en per bädd: TRADGARD.husvagn.beds)
+  can: [2702 + SX, 552],                                        // vattenkannan i raden bredvid krukorna (framför staketet skymmer)
+};
+
 // ---------------------------------------------------------------------
 // Luckorna mellan husen. kind: 'edge' (världens kant), 'alley' (gränd),
 // 'street' (tvärgata; pedestrian = gågata utan bilar), 'road' (väg med trafik),

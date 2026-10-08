@@ -10,6 +10,12 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.97.0] – 2026-10-08 – Odlingen bakom husvagnen
+- Husvagnens odling ligger nu ute i stan, inhängad med ett trästaket bakom husvagnen. Där står tre stora terrakottakrukor och en grön vattenkanna, och allt är ritat som resten av förorten.
+- Klicka på en kruka så går du dit. Där kan du så, vattna, se hur långt det har kommit eller skörda. Klicka på kannan så vattnar du alla krukor på en gång. Figuren håller kannan och det droppar ur strilen.
+- Tvättlinan hänger längs det bakre staketet, och den rostiga pickupen bakom vagnen har flyttat. Dörren i husvagnen leder rakt ut, och odlingen ligger runt hörnet.
+- Det du odlade förut finns kvar i krukorna.
+
 ## [0.96.0] – 2026-10-08 – Startguiden: första dagen
 - Nya spelare får en startguide första dagen. En liten lista nere till höger visar nästa steg: gå ut ur husvagnen, gå till Burgarbaren, fråga Doris om jobb, servera din första kund, jobba klart passet, ät något och gå hem och sov.
 - I stan visar en gul pil vägen till Burgarbaren och sedan hem. På Burgarbaren säger Doris till, och en pixelhand pekar på JOBBA HÄR-skylten. I jobbet visar handen hur du tar maten och ger den till rätt kund. Sedan är det din tur.
