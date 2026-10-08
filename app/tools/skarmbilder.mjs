@@ -26,7 +26,10 @@ fs.mkdirSync(OUT, { recursive: true });
 
 const ENHETER = {
   iphone: { vp: [956, 440], dsf: 3 },     // 6,9" 2868×1320
-  iphone65: { vp: [926, 428], dsf: 3 },   // 6,5" 2778×1284 – det App Store Connect frågar efter för iPhone
+  iphone65: { vp: [926, 428], dsf: 3 },   // 6,5" 2778×1284 – det App Store Connect frågade efter för 1.0
+  // 6,3" 2622×1206 – "iPhone with Dynamic Island (medium display)", den enda iPhone-storleken som
+  // App Store Connect kräver sedan oktober 2026 (de andra är frivilliga)
+  iphone63: { vp: [874, 402], dsf: 3 },
   ipad: { vp: [1376, 1032], dsf: 2 },     // 13" 2752×2064
 };
 // rubrik + underrad per bild, i den ordning de visas i App Store (högst tio)
