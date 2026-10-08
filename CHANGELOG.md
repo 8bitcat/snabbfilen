@@ -10,6 +10,9 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.95.1] – 2026-10-08 – Frisörens prislista på polska
+- På polska krockade ordet för hårfärgning med priset på frisörens prislista. Nu står det KOLOR, och allt får plats.
+
 ## [0.95.0] – 2026-10-08 – Spelet på åtta språk
 - Spelet finns nu på åtta språk: svenska, engelska, spanska, tyska, franska, polska, italienska och portugisiska. Spelet väljer enhetens språk av sig själv, och i menyn under ⚙ Inställningar → 🌍 Språk kan du byta när du vill. Ditt sparade spel följer med.
 - Varje språk har sina egna lokala namn. Pixelstaden, stadsdelarna, gatorna, butikerna och alla personer heter som man gör i det landet. På engelska heter spelet THE FAST LANE, på tyska ÜBERHOLSPUR och på polska SZYBKI PAS. Sjöboden heter till exempel RYBACZÓWKA på polska och La Cabane på franska.

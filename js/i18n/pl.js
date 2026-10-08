@@ -1493,7 +1493,7 @@ export default {
   "Fyr­kantiga": "Kwadratowe",
   "FÄRDIG DATOR!": "KOMPUTER GOTOWY!",
   "FÄRDIGMAT": "GOTOWE DANIA",
-  "FÄRGNING": "FARBOWANIE",
+  "FÄRGNING": "KOLOR",
   "FÄRSKA MORÖTTER!": "ŚWIEŻA MARCHEW!",
   "FÄRSKA ÄGG SNART!": "ŚWIEŻE JAJA WKRÓTCE!",
   "FÄRSKT": "ŚWIEŻE",
