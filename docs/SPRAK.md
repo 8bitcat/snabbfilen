@@ -85,7 +85,8 @@ språkets listor med förnamn, efternamn, husdjurs- och hästnamn (`list('girls'
 5. Kör `node tools/i18n-in.mjs en es de fr pl it pt` och sedan `node tools/i18n-bygg.mjs`.
    Texterna som hamnar i `tools/out/i18n-fel-<id>.json` översätts om.
 6. `node tools/i18n-bredd.mjs`: för breda skyltar kortas i `tools/i18n/kort/<id>.json`, som läggs ovanpå allt annat.
-7. `node tools/sprak-test.mjs` ska ge ALLT GRÖNT.
+7. `node tools/sprak-test.mjs` ska ge ALLT GRÖNT. `tools/verify.mjs` kör den vid varje släpp, så en text som
+   saknas i någon ordlista ger ett rött släpp.
 
 ## App Store
 
