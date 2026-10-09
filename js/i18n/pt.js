@@ -1552,6 +1552,7 @@ export default {
   "Följ den gula gången – den tar dig genom hela varuhuset. Rulltrapporna och hissen går mellan planen.": "Segue o caminho amarelo – leva-te pela loja toda. As escadas rolantes e o elevador ligam os pisos.",
   "Följ den gula pilen – eller tryck på lappen nere till vänster, så går du dit själv.": "Segue a seta amarela – ou toca na etiqueta em baixo à esquerda e vais lá sozinho.",
   "Följ pilen hem och lägg dig i sängen.": "Segue a seta até casa e deita-te na cama.",
+  "Följ pilen till Doris vid disken. Tryck på skylten JOBBA HÄR och välj Servera.": "Segue a seta até à Lurdes no balcão. Toca na placa RECRUTAMOS e escolhe Servir.",
   "Fönster eller gång?": "Janela ou corredor?",
   "Fönsterplats, tack!": "Janela, por favor!",
   "För sent att börja ett pass – jobben öppnar 07:00 igen.": "É tarde demais para começar um turno – os empregos voltam a abrir às 07:00.",

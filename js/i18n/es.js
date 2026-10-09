@@ -1552,6 +1552,7 @@ export default {
   "Följ den gula gången – den tar dig genom hela varuhuset. Rulltrapporna och hissen går mellan planen.": "Sigue el camino amarillo – te lleva por toda la tienda. Las escaleras mecánicas y el ascensor van de una planta a otra.",
   "Följ den gula pilen – eller tryck på lappen nere till vänster, så går du dit själv.": "Sigue la flecha amarilla, o toca la etiqueta de abajo a la izquierda y llegarás tú solo.",
   "Följ pilen hem och lägg dig i sängen.": "Sigue la flecha hasta casa y métete en la cama.",
+  "Följ pilen till Doris vid disken. Tryck på skylten JOBBA HÄR och välj Servera.": "Sigue la flecha hasta Loli en el mostrador. Toca el cartel TRABAJA AQUÍ y elige Servir.",
   "Fönster eller gång?": "¿Ventanilla o pasillo?",
   "Fönsterplats, tack!": "¡Ventanilla, por favor!",
   "För sent att börja ett pass – jobben öppnar 07:00 igen.": "Es tarde para empezar un turno – los trabajos abren otra vez a las 07:00.",

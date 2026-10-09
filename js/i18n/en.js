@@ -1552,6 +1552,7 @@ export default {
   "Följ den gula gången – den tar dig genom hela varuhuset. Rulltrapporna och hissen går mellan planen.": "Follow the yellow path – it takes you through the whole store. The escalators and the elevator go between the floors.",
   "Följ den gula pilen – eller tryck på lappen nere till vänster, så går du dit själv.": "Follow the yellow arrow – or tap the tag at the bottom left and you'll walk there by yourself.",
   "Följ pilen hem och lägg dig i sängen.": "Follow the arrow home and get into bed.",
+  "Följ pilen till Doris vid disken. Tryck på skylten JOBBA HÄR och välj Servera.": "Follow the arrow to Doris at the counter. Tap the WORK HERE sign and choose Serve.",
   "Fönster eller gång?": "Window or aisle?",
   "Fönsterplats, tack!": "Window seat, please!",
   "För sent att börja ett pass – jobben öppnar 07:00 igen.": "Too late to start a shift – jobs open again at 07:00.",

@@ -1552,6 +1552,7 @@ export default {
   "Följ den gula gången – den tar dig genom hela varuhuset. Rulltrapporna och hissen går mellan planen.": "Folge dem gelben Weg – er führt dich durch das ganze Möbelhaus. Rolltreppen und Aufzug verbinden die Ebenen.",
   "Följ den gula pilen – eller tryck på lappen nere till vänster, så går du dit själv.": "Folge dem gelben Pfeil – oder tippe auf das Schild unten links, dann gehst du von allein hin.",
   "Följ pilen hem och lägg dig i sängen.": "Folge dem Pfeil nach Hause und leg dich ins Bett.",
+  "Följ pilen till Doris vid disken. Tryck på skylten JOBBA HÄR och välj Servera.": "Folge dem Pfeil zu Doris an der Theke. Tippe auf das Schild JOBS HIER und wähle Servieren.",
   "Fönster eller gång?": "Fenster oder Gang?",
   "Fönsterplats, tack!": "Fensterplatz, bitte!",
   "För sent att börja ett pass – jobben öppnar 07:00 igen.": "Zu spät für eine Schicht – die Jobs öffnen wieder um 07:00.",

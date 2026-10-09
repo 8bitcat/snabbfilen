@@ -1552,6 +1552,7 @@ export default {
   "Följ den gula gången – den tar dig genom hela varuhuset. Rulltrapporna och hissen går mellan planen.": "Suis l'allée jaune – elle te fait traverser tout le magasin. Les escalators et l'ascenseur relient les niveaux.",
   "Följ den gula pilen – eller tryck på lappen nere till vänster, så går du dit själv.": "Suis la flèche jaune – ou touche l'étiquette en bas à gauche, et tu y vas tout seul.",
   "Följ pilen hem och lägg dig i sängen.": "Suis la flèche jusqu'à la maison et va au lit.",
+  "Följ pilen till Doris vid disken. Tryck på skylten JOBBA HÄR och välj Servera.": "Suis la flèche jusqu'à Ginette au comptoir. Touche le panneau ON RECRUTE et choisis Servir.",
   "Fönster eller gång?": "Hublot ou couloir?",
   "Fönsterplats, tack!": "Côté hublot, merci !",
   "För sent att börja ett pass – jobben öppnar 07:00 igen.": "Trop tard pour commencer un service – les boulots rouvrent à 07:00.",

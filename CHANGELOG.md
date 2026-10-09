@@ -10,6 +10,10 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.97.2] – 2026-10-09 – Pilen till Doris
+- Startguiden visar nu vägen inne i Burgarbaren. En gul pil vid figuren pekar mot Doris vid disken, och syns hon inte står DORIS → i bildkanten. Tryck på lappen så går du dit och jobbrutan öppnas.
+- Efter passet pekar pilen och handen mot kassan (BESTÄLL HÄR) när det är dags att äta.
+
 ## [0.97.1] – 2026-10-09 – Ljudet i appen
 - Musiken och de inspelade ljuden saknades i appen Pixelcity, och bara de enkla pipljuden hördes. Nu hämtar appen ljudfilerna från webben när de behövs, så appen låter som webbversionen. Utan internet är appen tyst som förut.
 

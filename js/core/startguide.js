@@ -24,7 +24,7 @@ const KEY = 'snabbfilen_startguide';
 const STEPS = [
   { id: 'ut', text: $t('Gå ut ur husvagnen'), tip: $t('Gå till dörren där det står UT.') },
   { id: 'dit', text: $t('Gå till Burgarbaren'), tip: $t('Följ den gula pilen – eller tryck på lappen nere till vänster, så går du dit själv.') },
-  { id: 'jobb', text: $t('Fråga Doris om jobb'), tip: $t('Tryck på skylten JOBBA HÄR på disken och välj Servera.') },
+  { id: 'jobb', text: $t('Fråga Doris om jobb'), tip: $t('Följ pilen till Doris vid disken. Tryck på skylten JOBBA HÄR och välj Servera.') },
   { id: 'servera', text: $t('Servera din första kund'), tip: $t('Ta maten från disken och ge den till kunden som vill ha just den.') },
   { id: 'lon', text: $t('Jobba klart passet'), tip: $t('Lönen kommer direkt när passet är slut.') },
   { id: 'mat', text: $t('Ät något'), tip: $t('Köp mat vid disken och sätt dig vid ett bord – eller handla i närbutiken.') },
@@ -202,4 +202,50 @@ export function drawGuideHand(ctx, x, y, label = '', { below = false } = {}) {
     ctx.fillStyle = '#ffd23f'; ctx.fillRect(lx, ly, w, 9);
     ctxText(ctx, SMALL, label, lx + 3, ly + 2, '#17151a');
   }
+}
+
+// ---------- pilen: en guldpil vid figurens fötter som pekar mot målet (samma som 🧭-pilen i stan) ----------
+// Carl 2026-10-09: "den visar inte vad man ska göra när man kommer in i Burgarbaren – borde vara en pil
+// till Doris". Polygonen rastreras i 16 riktningar (stadens pixelkorn), guld med mörk kant.
+const ARROWS = new Map();
+function arrowImg(ang) {
+  const q = ((Math.round(ang / (Math.PI / 8)) % 16) + 16) % 16;
+  if (ARROWS.has(q)) return ARROWS.get(q);
+  const a = q * Math.PI / 8, N = 21, H = 10, ca = Math.cos(a), sa = Math.sin(a);
+  const poly = [[-7, -2.3], [1.5, -2.3], [1.5, -6.6], [8.6, 0], [1.5, 6.6], [1.5, 2.3], [-7, 2.3]];
+  const inside = (px, py) => {
+    const lx = px * ca + py * sa, ly = -px * sa + py * ca;
+    let inn = false;
+    for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) { const [xi, yi] = poly[i], [xj, yj] = poly[j]; if ((yi > ly) !== (yj > ly) && lx < (xj - xi) * (ly - yi) / (yj - yi) + xi) inn = !inn; }
+    return inn ? ly : null;
+  };
+  const m = [];
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) m.push(inside(x - H + 0.5, y - H + 0.5));
+  const c = document.createElement('canvas'); c.width = N; c.height = N;
+  const g2 = c.getContext('2d');
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    const v = m[y * N + x];
+    if (v !== null) { g2.fillStyle = v < -0.8 ? '#ffe680' : v < 1.2 ? '#ffd23f' : '#d99a18'; g2.fillRect(x, y, 1, 1); continue; }
+    const nb = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => { const X = x + dx, Y = y + dy; return X >= 0 && Y >= 0 && X < N && Y < N && m[Y * N + X] !== null; });
+    if (nb) { g2.fillStyle = '#17151a'; g2.fillRect(x, y, 1, 1); }
+  }
+  ARROWS.set(q, c);
+  return c;
+}
+// pilen runt figuren (x, y = fötterna) mot (tx, ty); gungar ut och in
+export function drawGuideArrow(ctx, x, y, tx, ty) {
+  const t = performance.now() / 1000, ang = Math.atan2(ty - y, tx - x), r = 17 + Math.round(Math.sin(t * 6) * 2);
+  ctx.drawImage(arrowImg(ang), Math.round(x + Math.cos(ang) * r) - 10, Math.round(y - 4 + Math.sin(ang) * r * 0.7) - 10);
+}
+// målet syns inte: en pil och en lapp i bildkanten (skärmkoordinater). dir 1 = höger kant, −1 = vänster.
+// Svaret är lappens rektangel [x0, y0, x1, y1] – scenen gör den klickbar (gå dit).
+export function drawGuideEdge(ctx, { x0, x1, y, dir, label }) {
+  const t = performance.now() / 1000, bob = Math.round(Math.sin(t * 6) * 2) * dir;
+  const ax = dir > 0 ? x1 - 13 + bob : x0 + 13 + bob;
+  ctx.drawImage(arrowImg(dir > 0 ? 0 : Math.PI), ax - 10, Math.round(y) - 10);
+  const w = textW(SMALL, label) + 8, lx = dir > 0 ? ax - 14 - w : ax + 14, ly = Math.round(y) - 5;
+  ctx.fillStyle = '#17151a'; ctx.fillRect(lx - 1, ly - 1, w + 2, 11);
+  ctx.fillStyle = '#ffd23f'; ctx.fillRect(lx, ly, w, 9);
+  ctxText(ctx, SMALL, label, lx + 4, ly + 2, '#17151a');
+  return [Math.min(lx, ax - 12) - 2, ly - 8, Math.max(lx + w, ax + 12) + 2, ly + 18];
 }

@@ -1552,6 +1552,7 @@ export default {
   "Följ den gula gången – den tar dig genom hela varuhuset. Rulltrapporna och hissen går mellan planen.": "Segui il percorso giallo – ti porta attraverso tutto il negozio. Le scale mobili e l'ascensore collegano i piani.",
   "Följ den gula pilen – eller tryck på lappen nere till vänster, så går du dit själv.": "Segui la freccia gialla, oppure tocca l'etichetta in basso a sinistra e ci vai da solo.",
   "Följ pilen hem och lägg dig i sängen.": "Segui la freccia fino a casa e mettiti a letto.",
+  "Följ pilen till Doris vid disken. Tryck på skylten JOBBA HÄR och välj Servera.": "Segui la freccia fino a Loretta al bancone. Tocca il cartello LAVORA QUI e scegli Servire.",
   "Fönster eller gång?": "Finestrino o corridoio?",
   "Fönsterplats, tack!": "Posto al finestrino, grazie!",
   "För sent att börja ett pass – jobben öppnar 07:00 igen.": "Troppo tardi per iniziare un turno – i lavori riaprono alle 07:00.",

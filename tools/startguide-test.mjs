@@ -66,8 +66,13 @@ ok(await waitFor(() => window.SF.sceneName === 'burgarbar', 5000), 'in genom dö
 ok(await waitFor(async () => (await import('/js/core/startguide.js')).guideStep() === 'jobb', 3000), 'nästa steg: fråga Doris om jobb');
 await sleep(1500);
 ok(await D(() => !!window.SF.scene._debug.sgSaid().jobb), 'Doris säger till om jobbet (pratbubbla)');
-await D(() => window.SF.scene._debug.jobs());
-await sleep(300);
+// pilen och lappen i bildkanten: Doris syns inte från dörren – lappen leder dit och öppnar jobbet
+const sg = await D(() => window.SF.scene._debug.sg());
+ok(sg.target === 'jobb', `pilen pekar mot Doris (mål: ${sg.target})`);
+ok(!!sg.edge, `Doris utanför bild: lapp i bildkanten (${sg.edge ? Math.round(sg.edge.x) + ',' + Math.round(sg.edge.y) : '–'})`);
+if (sg.edge) await D((e) => window.SF.scene.down(e.x, e.y), sg.edge);
+else await D(() => window.SF.scene._debug.jobs());
+ok(await waitFor(() => !!document.querySelector('#modal:not(.hidden) [data-jobb]'), 10000), 'lappen: figuren går till Doris och jobbrutan öppnas');
 ok(await D(() => !!document.querySelector('#modal [data-jobb="burgare"].sg-pulse')), 'Servera-knappen pulserar');
 await D(() => document.querySelector('#modal [data-jobb="burgare"]').click());
 await sleep(400);
@@ -93,6 +98,7 @@ await D(() => { const m = document.querySelector('#modal'); if (!m.classList.con
 // ---- ät på Burgarbaren ----
 await D(() => { if (window.SF.sceneName !== 'burgarbar') window.SF.go('burgarbar'); });
 await sleep(1200);
+ok(await waitFor(() => window.SF.scene._debug.sg?.().target === 'disk', 3000), 'efter passet pekar pilen mot kassan (BESTÄLL HÄR)');
 await D(() => { const d = window.SF.scene._debug; d.forceBuy(0); d.eatFast(); });
 ok(await waitFor(async () => (await import('/js/core/startguide.js')).guideStep() === 'sov', 4000), 'mättnaden steg → nästa steg: gå hem och sov');
 

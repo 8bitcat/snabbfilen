@@ -1552,6 +1552,7 @@ export default {
   "Följ den gula gången – den tar dig genom hela varuhuset. Rulltrapporna och hissen går mellan planen.": "Idź żółtą ścieżką – zaprowadzi cię przez cały sklep. Ruchome schody i winda kursują między poziomami.",
   "Följ den gula pilen – eller tryck på lappen nere till vänster, så går du dit själv.": "Idź za żółtą strzałką – albo dotknij karteczki na dole po lewej, a pójdziesz tam sam.",
   "Följ pilen hem och lägg dig i sängen.": "Idź za strzałką do domu i połóż się do łóżka.",
+  "Följ pilen till Doris vid disken. Tryck på skylten JOBBA HÄR och välj Servera.": "Idź za strzałką do Haliny przy ladzie. Dotknij tabliczki PRACUJ U NAS i wybierz Obsługa sali.",
   "Fönster eller gång?": "Okno czy przejście?",
   "Fönsterplats, tack!": "Miejsce przy oknie, proszę!",
   "För sent att börja ett pass – jobben öppnar 07:00 igen.": "Za późno na zmianę – praca rusza znowu o 07:00.",

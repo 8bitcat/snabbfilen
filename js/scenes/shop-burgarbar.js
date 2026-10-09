@@ -47,7 +47,7 @@ import { createWalker, selfDrawable, folkDrawables, WALK_SEQ, sayBubble, iconBub
 import { worldFolksHere, worldSeatsTaken } from '../net/world.js';
 import { burgarMeny } from '../jobs/jobb-burgare.js';
 import { $t } from '../core/i18n.js';
-import { guideStep, drawGuideHand } from '../core/startguide.js'; // 🧭 första dagen: Doris visar jobbet
+import { guideStep, drawGuideHand, drawGuideArrow, drawGuideEdge } from '../core/startguide.js'; // 🧭 första dagen: Doris visar jobbet
 
 const talk = createSpeech(); // repliker och beskrivningar som pratbubblor i scenen
 // regelns två repliker (samma i alla matställen)
@@ -1736,6 +1736,18 @@ export function makeShopBurgarbar(A) {
 
   // 🧭 startguiden: Doris säger till en gång per besök – om jobbet, och om maten efter passet
   const sgSaid = {};
+  // …och visar vägen (Carl 2026-10-09: "den visar inte vad man ska göra när man kommer in i Burgarbaren –
+  // borde vara en pil till Doris"): målet är JOBBA HÄR hos Doris, efter passet kassan. En guldpil vid
+  // figurens fötter pekar dit, handen knackar på målet, och syns det inte står en lapp i bildkanten
+  // (DORIS → / BESTÄLL HÄR →) som man kan trycka på för att gå dit.
+  let sgEdge = null;
+  const sgTarget = () => {
+    if (me.order || me.state === 'wait' || me.state === 'toCounter') return null;
+    const step = guideStep();
+    if (step === 'jobb') return { id: 'jobb', x: JOBB_SKYLT.x, y: ORDER_Y, hx: JOBB_SKYLT.x, hy: CNT.top - 11, label: $t('Doris').toUpperCase() };
+    if (step === 'mat') return { id: 'disk', x: PAY_X, y: ORDER_Y, hx: REG.x0 + 14, hy: CNT.face + 3, label: $t('BESTÄLL HÄR') };
+    return null;
+  };
   function guideTalk() {
     const step = guideStep();
     if (!step || sgSaid[step] || t < 0.8) return;
@@ -1790,6 +1802,7 @@ export function makeShopBurgarbar(A) {
       },
       seated: () => (me.seat ? me.seat.id : null),
       sgSaid: () => ({ ...sgSaid }), // 🧭 vad Doris har sagt åt startguiden
+      sg: () => ({ target: sgTarget()?.id || null, edge: sgEdge ? { id: sgEdge.id, x: (sgEdge.r[0] + sgEdge.r[2]) / 2, y: (sgEdge.r[1] + sgEdge.r[3]) / 2 } : null }), // 🧭 pilen och kantlappen
 
       tray: () => (me.tray ? me.tray.items.map((i) => ({ id: i.id, stage: i.stage })) : null),
       forceBuy: (id) => buy(typeof id === 'number' ? BURGAR_MENY[id] : menyOf(id)),
@@ -1857,10 +1870,12 @@ export function makeShopBurgarbar(A) {
         nag(MSG_ATUPP);
         return;
       }
+      // 🧭 lappen i bildkanten: gå till Doris (eller kassan) och öppna jobbet/menyn
+      const edge = sgEdge && sx >= sgEdge.r[0] && sx <= sgEdge.r[2] && sy >= sgEdge.r[1] && sy <= sgEdge.r[3] ? hot.find((q) => q.id === sgEdge.id) : null;
       if (me.state === 'sit') standUp();
       release();
-      const h = spotAt(x, y);
-      if (h) { const [gx, gy] = h.go(x); walker.walkTo(gx, gy, h.act); return; }
+      const h = edge || spotAt(x, y);
+      if (h) { const [gx, gy] = h.go(x); walker.walkTo(gx, gy, h.act); if (edge) play('click'); return; }
       const s = seatAt(x, y);
       if (s && !s.occ) { goSit(s); return; }
       if (s && s.occ && s.occ !== 'me' && s.occ.state === 'sit') {
@@ -1896,11 +1911,18 @@ export function makeShopBurgarbar(A) {
       const cx = Math.round(cam.x);
       ctx.setTransform(A.pxs, 0, 0, A.pxs, -cx * A.pxs, 0);
       drawWorld(ctx, cx, VW);
-      // 🧭 startguiden: handen pekar på JOBBA HÄR-skylten
-      if (guideStep() === 'jobb' && !me.order) drawGuideHand(ctx, JOBB_SKYLT.x, CNT.top - 11, $t('TRYCK HÄR')); // (spetsen precis ovanför tältskylten)
+      // 🧭 startguiden: handen på målet (JOBBA HÄR-tältskylten / kassan) och pilen vid fötterna dit
+      const sg = sgTarget();
+      if (sg) {
+        drawGuideHand(ctx, sg.hx, sg.hy, $t('TRYCK HÄR'));
+        if (!me.seat && Math.hypot(sg.x - walker.px, sg.y - walker.py) > 26) drawGuideArrow(ctx, walker.px, walker.py, sg.x, sg.y);
+      }
       talk.draw(ctx, { x0: cx, x1: cx + VW });
       // skylt i nederkanten när man pekar på något klickbart
       ctx.setTransform(A.pxs, 0, 0, A.pxs, 0, 0);
+      // 🧭 målet utanför bild: pil och lapp i kanten (trycker man på den går figuren dit)
+      sgEdge = null;
+      if (sg && (sg.hx - cx > VW - 10 || sg.hx - cx < 10)) sgEdge = { id: sg.id, r: drawGuideEdge(ctx, { x0: 0, x1: VW, y: 86, dir: sg.hx - cx > 0 ? 1 : -1, label: sg.label }) };
       const h = hoverId && t - hoverT < 3 ? hoverId : null;
       const label = h === 'disk' ? $t('MENYN - KLICKA PÅ DISKEN') : h === 'glassdisk' ? $t('GLASSDISKEN - KLICKA FÖR MENYN')
         : h === 'dorr' ? (me.order ? $t('ÄT UPP MATEN FÖRST - SEN KAN DU GÅ UT') : $t('GÅ UT')) : h === 'jobb' ? $t('JOBBA HÄR - SERVERA ELLER KÖKET')
