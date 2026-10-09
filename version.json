@@ -1,7 +1,7 @@
 {
-  "version": "0.97.0",
-  "date": "2026-10-08",
-  "title": "Odlingen bakom husvagnen",
+  "version": "0.97.1",
+  "date": "2026-10-09",
+  "title": "Ljudet i appen",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
@@ -47,6 +47,7 @@
     "js/core/i18n.js",
     "js/core/karriar.js",
     "js/core/livsmal.js",
+    "js/core/ljudfiler.js",
     "js/core/menu.js",
     "js/core/music.js",
     "js/core/notiser.js",

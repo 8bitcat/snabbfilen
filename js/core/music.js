@@ -27,13 +27,14 @@
 // en ny rampning aldrig krockar med en pågående övertoningskurva (setValueCurveAtTime) – annars
 // kastar webbläsaren NotSupportedError och ändringen uteblir.
 import { audioContext, isMuted } from './sound.js';
+import { AUDIO_BASE } from './ljudfiler.js'; // var ljudfilerna ligger (webben eller appen)
 
 const KEY = 'snabbfilen_music';
 let on = true;
 try { on = localStorage.getItem(KEY) !== '0'; } catch { /* ok */ }
 
 // Relativt till den här modulen (js/core/) – fungerar oavsett vilken sida som laddar den.
-const DIR = (() => { try { return new URL('../../assets/audio/music/', import.meta.url).href; } catch { return 'assets/audio/music/'; } })();
+const DIR = AUDIO_BASE + 'music/'; // (i appen från webben – se ljudfiler.js)
 const PAD = 0.5;
 // loop = loopens längd (s). norm = förstärkning till SAMMA K-vägda snittnivå som de spelas (hela loopen
 // genom motorn i 48 kHz, K-vägt, (L² + R²)/2 – tools/out/ambiens/musik-nivaer.mjs; butik.mp3 är ljus

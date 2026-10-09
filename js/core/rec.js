@@ -24,8 +24,9 @@ import { setVoiceSampler, voicesStats } from './voices.js';
 import { pickMusic, musicFrame, setDuck as musicSetDuck, musicDuckVoice } from './music.js';
 import { hemPick } from './hemmusik.js';   // musik man själv satt på hemma
 import { readState, recipe } from './ambience.js';
+import { AUDIO_BASE } from './ljudfiler.js'; // var ljudfilerna ligger (webben eller appen)
 
-const BASE = new URL('../../assets/audio/rec/', import.meta.url).href;
+const BASE = AUDIO_BASE + 'rec/'; // (i appen från webben – se ljudfiler.js)
 const MANIFESTS = ['manifest-baddar.json', 'manifest-effekter.json', 'manifest-djur.json'];
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const clamp01 = (v) => clamp(v, 0, 1);

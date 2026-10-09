@@ -10,6 +10,9 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.97.1] – 2026-10-09 – Ljudet i appen
+- Musiken och de inspelade ljuden saknades i appen Pixelcity, och bara de enkla pipljuden hördes. Nu hämtar appen ljudfilerna från webben när de behövs, så appen låter som webbversionen. Utan internet är appen tyst som förut.
+
 ## [0.97.0] – 2026-10-08 – Odlingen bakom husvagnen
 - Husvagnens odling ligger nu ute i stan, inhängad med ett trästaket bakom husvagnen. Där står tre stora terrakottakrukor och en grön vattenkanna, och allt är ritat som resten av förorten.
 - Klicka på en kruka så går du dit. Där kan du så, vattna, se hur långt det har kommit eller skörda. Klicka på kannan så vattnar du alla krukor på en gång. Figuren håller kannan och det droppar ur strilen.
