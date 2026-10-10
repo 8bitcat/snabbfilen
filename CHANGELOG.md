@@ -10,6 +10,12 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.100.0] – 2026-10-10 – Lagkompisar i KBK
+- Spelar du i KBK? Under ⚙ Inställningar finns nu raden ⚽ KBK. Skriv ditt förnamn och ditt nummer i laget, så stäms det av mot laget.
+- När en lagkompis kommer in i Pixelstaden får du en egen hälsning: "⚽ Julia 34 från KBK är i Pixelstaden!"
+- När du själv kommer in ser du vilka lagkompisar som redan är där.
+- Ligger spelet i bakgrunden kommer hälsningen som en notis, om du har sagt ja till notiser.
+
 ## [0.99.0] – 2026-10-10 – Skapa din figur steg för steg
 - Nya figurer skapas nu steg för steg: namn, hud, frisyr, hårfärg, ögon, mun, storlek, tröja, byxor och skor – en sak i taget med stora bilder.
 - Figuren syns hela tiden till vänster och kan vridas. Stegen står som pixelikoner överst och man kan hoppa mellan dem.

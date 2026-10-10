@@ -15,6 +15,7 @@ import { openNews, makeBackup } from './version-ui.js';
 import { notiserFinns, notiserPa, slaPa, slaAv, provNotis } from './notiser.js';
 import { $t, LANG, LANGS, setLang } from './i18n.js';
 import { guideOn, startGuide, stopGuide } from './startguide.js'; // 🧭 startguiden igen
+import { kbkNr, kbkStammer, kbkSpara, kbkTaBort, kbkEtikett, kbkFragaNotiser } from '../net/kbk.js'; // ⚽ lagkompisar
 
 const SKIP = 'sf_menu_skip';
 const saveKeyOf = (id) => 'snabbfilen_save:' + id;
@@ -97,6 +98,31 @@ function removeAvatar(av, isCurrent) {
   ]);
 }
 
+// ---------- ⚽ KBK: spelar man i Kungsladugård stäms förnamnet och numret av mot laget (js/net/kbk.js) ----------
+function openKbk(av) {
+  const dlg = openModal($t('⚽ Spelar du i KBK?'), `<p style="font-size:var(--f2);margin-top:0">${$t('Skriv ditt förnamn och ditt nummer i laget. Då får du en notis när en lagkompis kommer in i Pixelstaden.')}</p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:end">
+      <label style="display:grid;gap:4px;font-size:var(--f2);flex:1 1 200px">${$t('Förnamn')}<input id="kbk-namn" type="text" maxlength="16" autocomplete="off" spellcheck="false" style="font:var(--f2) var(--font);padding:6px 8px;border:3px solid var(--ink)"></label>
+      <label style="display:grid;gap:4px;font-size:var(--f2);flex:0 1 120px">${$t('Nummer')}<input id="kbk-nr" type="text" inputmode="numeric" maxlength="2" autocomplete="off" style="font:var(--f2) var(--font);padding:6px 8px;border:3px solid var(--ink)"></label>
+    </div>
+    <p class="kbk-fel" aria-live="polite" style="font-size:var(--f2);color:var(--red2);min-height:1em;margin-bottom:0"></p>`, [
+    { label: $t('Avbryt'), onClick: () => closeModal() },
+    { label: $t('⚽ Stäm av'), cls: 'btn-go', onClick: () => klar() },
+  ]);
+  const namn = dlg.querySelector('#kbk-namn'), nr = dlg.querySelector('#kbk-nr'), fel = dlg.querySelector('.kbk-fel');
+  for (const i of [namn, nr]) { i.addEventListener('keydown', (e) => { e.stopPropagation(); if (e.key === 'Enter') { e.preventDefault(); klar(); } }); i.addEventListener('keyup', (e) => e.stopPropagation()); }
+  setTimeout(() => namn.focus(), 30);
+  async function klar() {
+    const p = kbkStammer(namn.value, nr.value);
+    if (!p) { fel.textContent = $t('Det stämmer inte med laget. Kolla stavningen och numret på din tröja.'); return; }
+    kbkSpara(av, p[0]);
+    closeModal();
+    toast($t`⚽ Klart! Du är med som ${p[1]} ${p[0]} – du får en notis när en lagkompis kommer in.`, 'good');
+    render();
+    await kbkFragaNotiser();
+  }
+}
+
 // ---------- rendering ----------
 let selected = null, showSettings = false;
 function render() {
@@ -138,6 +164,7 @@ function render() {
       <div class="menu-row"><span>📊 ${$t('Mätare')}</span><button class="btn btn-small" data-hud>${hudMode() === 'pix' ? $t('PIXEL uppe till vänster') : $t('RAD överst')}</button></div>
       ${opts.pause ? `<div class="menu-row"><span>🧭 ${$t('Startguiden')}</span><button class="btn btn-small ${guideOn() ? 'btn-go' : ''}" data-guide>${guideOn() ? $t('PÅ') : $t('Börja om')}</button></div>` : ''}
       ${notiserFinns() ? `<div class="menu-row"><span>🔔 ${$t('Notiser')}</span><span>${notiserPa() ? `<button class="btn btn-small" data-notisprov>${$t('Prova')}</button> ` : ''}<button class="btn btn-small ${notiserPa() ? 'btn-go' : ''}" data-notiser>${notiserPa() ? $t('PÅ') : $t('AV')}</button></span></div>` : ''}
+      ${cur.name && cur.id ? `<div class="menu-row"><span>⚽ ${$t('KBK')}</span>${kbkNr(cur) ? `<span><b data-kbk-nu>${esc(kbkEtikett(kbkNr(cur)))}</b> <button class="btn btn-small" data-kbk-av>${$t('Ta bort')}</button></span>` : `<button class="btn btn-small" data-kbk>${$t('Jag spelar i KBK')}</button>`}</div>` : ''}
     </div>
     <div class="menu-sub">${list.length ? $t('Vem spelar?') : $t('Inga figurer än – tryck på Nytt spel!')}</div>
     <div class="menu-cards">${cards}</div>
@@ -158,6 +185,8 @@ function render() {
   // 🧭 startguiden: av – eller börja om första dagen (listan, Doris och handen)
   root.querySelector('[data-guide]')?.addEventListener('click', () => { play('click'); if (guideOn()) { stopGuide(); render(); } else { startGuide(A, { force: true }); close(); opts.onStart?.(); } });
   root.querySelector('[data-notiser]')?.addEventListener('click', async () => { play('click'); if (notiserPa()) await slaAv(); else await slaPa(); render(); });
+  root.querySelector('[data-kbk]')?.addEventListener('click', () => { play('click'); openKbk(cur); });
+  root.querySelector('[data-kbk-av]')?.addEventListener('click', () => { play('click'); kbkTaBort(cur); render(); });
   root.querySelector('[data-notisprov]')?.addEventListener('click', async () => { play('click'); toast(await provNotis() ? $t('🔔 Notisen kommer om fem sekunder.') : $t('🔕 Notisen gick inte att skicka.'), 'good'); });
   root.querySelectorAll('[data-edit]').forEach((b) => (b.onclick = () => {
     const a = list.find((x) => x.id === b.dataset.edit);

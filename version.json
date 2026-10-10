@@ -1,7 +1,7 @@
 {
-  "version": "0.99.0",
+  "version": "0.100.0",
   "date": "2026-10-10",
-  "title": "Skapa din figur steg för steg",
+  "title": "Lagkompisar i KBK",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
@@ -88,6 +88,7 @@
     "js/core/voices.js",
     "js/core/week.js",
     "js/data/frames.js",
+    "js/data/kbk.js",
     "js/data/toys.js",
     "js/data/wardrobe-acc.js",
     "js/data/wardrobe-bottoms.js",
@@ -122,6 +123,7 @@
     "js/landet/karta.js",
     "js/main.js",
     "js/net/coop.js",
+    "js/net/kbk.js",
     "js/net/sambo.js",
     "js/net/skydd.js",
     "js/net/voice-ui.js",

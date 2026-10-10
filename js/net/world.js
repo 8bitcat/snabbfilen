@@ -21,6 +21,7 @@ import { play } from '../core/sound.js';
 import { VERSION } from '../version.js';
 import { isBlockedKey, tvatta, loggaSay } from './skydd.js';
 import { $t } from '../core/i18n.js';
+import { kbkNr, kbkKomIn, kbkRedanHar } from './kbk.js';
 
 const nagon = (n) => n || $t('Någon');   // spelarens namn i toasterna (inget namn → Någon)
 
@@ -224,7 +225,7 @@ export const worldMarkActive = markActive;
 
 // ---------- min publicerade state ----------
 function myState(A) {
-  return { av: { name: A.avatar.name, look: A.avatar.look, color: A.avatar.color }, scene: myScene(A), x: A.scene?.worldX ?? 190, y: A.scene?.worldY ?? 174, home: A.game.home, deco: A.game.deco, key: myKey(), ver: VERSION, vo: voiceFlag() ? 1 : 0, si: mySit(A), fd: myRide(A), fe: A.fest ? 1 : 0, hu: myHu(A) };
+  return { av: { name: A.avatar.name, look: A.avatar.look, color: A.avatar.color }, scene: myScene(A), x: A.scene?.worldX ?? 190, y: A.scene?.worldY ?? 174, home: A.game.home, deco: A.game.deco, key: myKey(), ver: VERSION, vo: voiceFlag() ? 1 : 0, si: mySit(A), fd: myRide(A), fe: A.fest ? 1 : 0, hu: myHu(A), kb: kbkNr(A.avatar) };
 }
 // Bor jag ihop med någon (js/net/sambo.js)? Hushållets id – då är vi hemma i SAMMA rum (myScene)
 // och den som hälsar på hamnar hos oss båda.
@@ -274,6 +275,7 @@ function cleanP(p, old = {}) {
     if (p.si !== undefined) out.si = /^[dulr]e?$/.test(String(p.si)) ? String(p.si) : '';
     if (p.hu !== undefined) out.hu = /^sb-[a-z0-9]{1,12}$/.test(String(p.hu)) ? String(p.hu) : '';   // 🏠 hushållet (bor ihop)
     if (p.fe !== undefined) out.fe = p.fe ? 1 : 0;   // 🎉 fest hemma (besökare ser pyntet)
+    if (p.kb !== undefined) out.kb = Number.isInteger(+p.kb) && +p.kb > 0 && +p.kb < 100 ? +p.kb : 0;   // ⚽ lagnumret i KBK (js/net/kbk.js)
     if (p.fd !== undefined) out.fd = /^[a-z]{2,16}:#[0-9a-f]{6}$/i.test(String(p.fd)) ? String(p.fd).toLowerCase() : '';
     if (p.deco !== undefined && p.deco && typeof p.deco === 'object') {
       out.deco = {};
@@ -321,7 +323,7 @@ function hostData(A, conn, d) {
     W.players.set(id, p);
     conn.send({ t: 'world', you: id, players: [[W.myId, myState(A)], ...[...W.players].filter(([pid]) => pid !== id)] });
     hostBroadcast({ t: 'join', id, p }, id);
-    if (!isBlockedKey(p.key)) { play('knock'); toast($t`👋 ${nagon(p.av.name)} är i Pixelstaden!`, 'good'); }
+    if (!isBlockedKey(p.key) && !kbkKomIn(A, p)) { play('knock'); toast($t`👋 ${nagon(p.av.name)} är i Pixelstaden!`, 'good'); }   // (lagkompisar i KBK får en egen hälsning)
   } else if (d.t === 'up') {
     const old = W.players.get(id);
     if (!old) return;
@@ -382,9 +384,10 @@ function clientData(A, d, w) {
     w._welcomed?.();
     for (const [id, p] of d.players || []) if (id !== w.myId) w.players.set(id, cleanP(p));
     toast($t`🌆 Du är med i Pixelstaden – ${w.players.size + 1} online!`, 'good');
+    kbkRedanHar(A, [...w.players.values()].filter((p) => !isBlockedKey(p.key)));
   } else if (d.t === 'join') {
     w.players.set(d.id, cleanP(d.p));
-    if (!isBlockedKey(w.players.get(d.id).key)) { play('knock'); toast($t`👋 ${nagon(w.players.get(d.id).av.name)} är i Pixelstaden!`, 'good'); }
+    if (!isBlockedKey(w.players.get(d.id).key) && !kbkKomIn(A, w.players.get(d.id))) { play('knock'); toast($t`👋 ${nagon(w.players.get(d.id).av.name)} är i Pixelstaden!`, 'good'); }
   } else if (d.t === 'up') {
     const old = w.players.get(d.id);
     if (old) w.players.set(d.id, cleanP(d.p, old));
@@ -416,7 +419,7 @@ export function worldTick(A, myX, dt) {
   if (!W || !W.open) return;
   const now = performance.now();
   const myY = A.scene?.worldY ?? null;
-  const meta = JSON.stringify([A.avatar.look, A.avatar.name, myScene(A), A.game.home, A.game.deco, voiceFlag() ? 1 : 0, mySit(A), myRide(A), A.fest ? 1 : 0, myHu(A)]);
+  const meta = JSON.stringify([A.avatar.look, A.avatar.name, myScene(A), A.game.home, A.game.deco, voiceFlag() ? 1 : 0, mySit(A), myRide(A), A.fest ? 1 : 0, myHu(A), kbkNr(A.avatar)]);
   const metaChanged = meta !== W.lastMeta;
   const posChanged = myX !== null && (Math.abs(myX - W.lastX) > 0.5 || Math.abs((myY ?? 0) - (W.lastY ?? 0)) > 0.5);
   if ((metaChanged || posChanged) && now - W.lastSent > 90) {

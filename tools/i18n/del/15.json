@@ -1,0 +1,52 @@
+[
+ {
+  "i": 7593,
+  "f": "js/core/menu.js",
+  "k": "⚽ Spelar du i KBK?"
+ },
+ {
+  "i": 7594,
+  "f": "js/core/menu.js",
+  "k": "Skriv ditt förnamn och ditt nummer i laget. Då får du en notis när en lagkompis kommer in i Pixelstaden."
+ },
+ {
+  "i": 7595,
+  "f": "js/core/menu.js",
+  "k": "Förnamn"
+ },
+ {
+  "i": 7596,
+  "f": "js/core/menu.js",
+  "k": "Nummer"
+ },
+ {
+  "i": 7597,
+  "f": "js/core/menu.js",
+  "k": "⚽ Stäm av"
+ },
+ {
+  "i": 7598,
+  "f": "js/core/menu.js",
+  "k": "Det stämmer inte med laget. Kolla stavningen och numret på din tröja."
+ },
+ {
+  "i": 7599,
+  "f": "js/core/menu.js",
+  "k": "⚽ Klart! Du är med som {0} {1} – du får en notis när en lagkompis kommer in."
+ },
+ {
+  "i": 7600,
+  "f": "js/core/menu.js",
+  "k": "Jag spelar i KBK"
+ },
+ {
+  "i": 7601,
+  "f": "js/net/kbk.js",
+  "k": "⚽ {0} från KBK är i Pixelstaden!"
+ },
+ {
+  "i": 7602,
+  "f": "js/net/kbk.js",
+  "k": "⚽ Lagkompisar i Pixelstaden: {0}"
+ }
+]

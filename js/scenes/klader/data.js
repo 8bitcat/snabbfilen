@@ -173,11 +173,8 @@ export const HAT_BUSTS = [
 ];
 
 // ================= KUNGSLADUGÅRD (Carls data – bara förnamn i spelet) =================
-export const KUNGS_PLAYERS = [
-  [3, 'Klara'], [5, 'Saga'], [6, 'Valencia'], [7, 'Alice'], [8, 'Nina'], [9, 'Alice'], [10, 'Märta'],
-  [11, 'Isabelle'], [12, 'Elisa'], [13, 'Natalia'], [14, 'Kajsa'], [15, 'Moa'], [16, 'Isabella'],
-  [17, 'Edessa'], [18, 'Julie'], [19, 'Ellen'], [20, 'Lily'], [23, 'Noomi'], [34, 'Julia'],
-];
+import { KUNGS_PLAYERS } from '../../data/kbk.js';   // (laget ligger i en egen fil – lagkompisnotiserna använder det också)
+export { KUNGS_PLAYERS };
 // Matchstället: vinröd tröja med ljusare röda ärmslut, svarta shorts, svarta strumpor med vita ränder
 export const KUNGS_KIT = { shirt: '#7a1f2e', accent: '#d9434b', pants: '#1d1d22', pants2: '#1d1d22', socks: '#1d1d22', sockStripe: '#f4f1ea' };
 // Fotbollsskorna ur lagfotot

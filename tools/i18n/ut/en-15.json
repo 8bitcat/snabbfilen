@@ -1,0 +1,12 @@
+{
+ "⚽ Spelar du i KBK?": "⚽ Do you play for KBK?",
+ "Skriv ditt förnamn och ditt nummer i laget. Då får du en notis när en lagkompis kommer in i Pixelstaden.": "Type your first name and your shirt number on the team. Then you'll get a notification when a teammate comes to Pixel City.",
+ "Förnamn": "First name",
+ "Nummer": "Number",
+ "⚽ Stäm av": "⚽ Check",
+ "Det stämmer inte med laget. Kolla stavningen och numret på din tröja.": "That doesn't match the team. Check the spelling and the number on your shirt.",
+ "⚽ Klart! Du är med som {0} {1} – du får en notis när en lagkompis kommer in.": "⚽ Done! You're in as {0} {1} – you'll get a notification when a teammate comes in.",
+ "Jag spelar i KBK": "I play for KBK",
+ "⚽ {0} från KBK är i Pixelstaden!": "⚽ {0} from KBK is in Pixel City!",
+ "⚽ Lagkompisar i Pixelstaden: {0}": "⚽ Teammates in Pixel City: {0}"
+}
