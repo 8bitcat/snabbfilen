@@ -1,0 +1,52 @@
+[
+ {
+  "i": 7583,
+  "f": "js/core/figursteg.js",
+  "k": "Skapa din figur"
+ },
+ {
+  "i": 7584,
+  "f": "js/core/figursteg.js",
+  "k": "Fler detaljer"
+ },
+ {
+  "i": 7585,
+  "f": "js/core/figursteg.js",
+  "k": "Spela!"
+ },
+ {
+  "i": 7586,
+  "f": "js/core/figursteg.js",
+  "k": "Nästa"
+ },
+ {
+  "i": 7587,
+  "f": "js/core/figursteg.js",
+  "k": "Föregående sida"
+ },
+ {
+  "i": 7588,
+  "f": "js/core/figursteg.js",
+  "k": "Nästa sida"
+ },
+ {
+  "i": 7589,
+  "f": "js/core/figursteg.js",
+  "k": "FLER"
+ },
+ {
+  "i": 7590,
+  "f": "js/core/figursteg.js",
+  "k": "Snyggt, {0}!"
+ },
+ {
+  "i": 7591,
+  "f": "js/core/figursteg.js",
+  "k": "Snyggt!"
+ },
+ {
+  "i": 7592,
+  "f": "js/core/figursteg.js",
+  "k": "Så här ser du ut. Fler kläder köper du i klädaffären och frisyren byter du hos frisören. Hemma i garderoben kan du byta när du vill."
+ }
+]

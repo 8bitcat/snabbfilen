@@ -20,6 +20,7 @@ import {
 } from '../data/wardrobe.js';
 import { openModal, closeModal, toast, esc } from './ui.js';
 import { $t } from './i18n.js';
+import { openFigurSteg } from './figursteg.js';
 
 export const AVATAR_KEY = 'snabbfilen_avatar';
 
@@ -72,7 +73,7 @@ const rnd = (a) => a[Math.floor(Math.random() * a.length)];
 // giltigt registervärde (normaliserat, t.ex. hörlurar 'over' ⇒ true), annars fb
 const reg = (f, v, fb) => (isValid(f, v) ? valueOf(f, idOf(f, v)) : fb);
 
-function cleanName(v) {
+export function cleanName(v) {
   const s = Array.from(String(v ?? '')).filter((ch) => { const c = ch.codePointAt(0); return c >= 32 && c !== 127 && ch !== '<' && ch !== '>'; }).join('').replace(/\s+/g, ' ').trim();
   return Array.from(s).slice(0, NAME_MAX).join('').trim();
 }
@@ -310,6 +311,7 @@ const PAL = {
   phoneColor: uniq([...PHONE_COLORS, '#f0b429', '#46a35a', '#f28bb3', '#8e5bd1']),
   eyeColor: uniq(EYE_COLORS), lipColor: uniq(LIP_COLORS), shadowColor: uniq(SHADOW_COLORS), markColor: uniq(MARK_COLORS),
 };
+export const AVATAR_PAL = PAL; // (figurskaparen steg för steg, js/core/figursteg.js)
 // färgfält som får vara tomma (null = motorns standard) – får en "Std"-ruta
 const OPTIONAL = new Set(Object.keys(LOOK_COLORS).filter((k) => LOOK_COLORS[k] === null));
 const COLOR_TITLE = {
@@ -463,13 +465,17 @@ function drawFloor(ctx, camX, camY) {
 let lastTab = 'skin';
 const clean = (s) => String(s ?? '').replace(/\u00ad/g, '');
 
-export function openAvatarEditor({ onDone, onCancel, fresh = false, salon = null } = {}) {
+// En NY figur skapas steg för steg (js/core/figursteg.js, Carl 2026-10-10). Den här stora redigeraren används för
+// garderoben hemma och ✏️ Ändra – och för en ny figur när man trycker "Fler detaljer" (full: true, init = figuren).
+export function openAvatarEditor({ onDone, onCancel, fresh = false, salon = null, full = false, init = null } = {}) {
+  if (fresh && !full) return openFigurSteg({ onDone, onCancel });
   injectStyle();
   // frisyr/hårfärg som bara byts hos frisören (setAvatarSalon) – aldrig för en ny figur
   const salonOn = !fresh && salon !== false;
   const lockStyle = salonOn && SALON.style, lockColor = salonOn && SALON.color;
   const salonLocked = (k) => (lockStyle && k === 'style') || (lockColor && (k === 'hair' || k === 'hairFx' || k === 'hair2'));
-  const saved = fresh ? { name: '', look: defaultLook(), color: rnd(MARKER_COLORS) } : loadAvatar();
+  const saved = init ? { name: init.name || '', look: cleanLook(init.look), color: col(init.color, null) || rnd(MARKER_COLORS) }
+    : fresh ? { name: '', look: defaultLook(), color: rnd(MARKER_COLORS) } : loadAvatar();
   const avId = fresh ? '' : saved.id; // en ny figur får ett eget id, även om namnet redan finns
   const cur = { name: saved.name || (fresh ? '' : rnd(FIRST_NAMES)), look: saved.look, color: saved.color };
   const start = { ...cur };

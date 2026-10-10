@@ -32,23 +32,23 @@ ok(await p.evaluate(() => document.querySelector('#hud-face')?.offsetParent === 
 
 // 1b. Nytt spel → Avbryt och ✕ → tillbaka i menyn, fortfarande utan figur
 await p.click('[data-new]'); await p.waitForTimeout(400);
-ok(await p.evaluate(() => !!document.querySelector('.dlg-avatar')), 'Nytt spel öppnar redigeraren');
-await p.click('.dlg-avatar .dlg-foot .av-cancel'); await p.waitForTimeout(300);
+ok(await p.evaluate(() => !!document.querySelector('.dlg-steg')), 'Nytt spel öppnar figurskaparen (steg för steg)');
+await p.click('.dlg-steg [data-close]'); await p.waitForTimeout(300);
 ok(await menuOpen(p) && await p.evaluate(() => document.querySelector('[data-continue]')?.disabled === true && window.SF.attract === true), 'Avbryt → tillbaka i menyn, Fortsätt fortfarande nedtonad');
 await p.click('[data-new]'); await p.waitForTimeout(400);
 await p.evaluate(() => document.querySelector('#modal [data-close]')?.click()); await p.waitForTimeout(300);
 ok(await menuOpen(p) && await p.evaluate(() => !window.SF.game.won && window.SF.sceneName === 'city' && window.SF.attract === true), '✕ → tillbaka i menyn');
 await p.click('[data-new]'); await p.waitForTimeout(400);
-await p.click('.dlg-avatar .dlg-foot .av-save'); await p.waitForTimeout(300);
-ok(await p.evaluate(() => !!document.querySelector('.av-nameask')), 'Spara utan namn i Nytt spel → namnrutan');
-await p.keyboard.press('Escape'); await p.waitForTimeout(150);
-await p.click('.dlg-avatar .dlg-foot .av-cancel'); await p.waitForTimeout(300);
+await p.click('.fs-steg[data-steg="klart"]'); await p.waitForTimeout(150);
+await p.click('.fs-spela'); await p.waitForTimeout(300);
+ok(await p.evaluate(() => !!document.querySelector('.fs-steg[data-steg="namn"].nu') && !!document.querySelector('.fs-namnfalt.fel')), 'Spela utan namn i Nytt spel → tillbaka till namnet med ett besked');
+await p.keyboard.press('Escape'); await p.waitForTimeout(300);
 ok(await menuOpen(p) && await p.evaluate(() => !JSON.parse(localStorage.getItem('snabbfilen_avatar') || '{}').name), 'ingen figur utan namn skapades');
 // startflödet utan meny (sessionens hoppa-över-flagga, som efter en omladdning): figurväljaren → Avbryt → menyn, inte spelet
 await p.evaluate(() => { sessionStorage.setItem('sf_menu_skip', '1'); });
 await p.reload(); await p.waitForFunction(() => !!window.SF?.game, null, { timeout: 20000 }); await p.waitForTimeout(800);
-ok(await p.evaluate(() => !!document.querySelector('.dlg-avatar') || !!document.querySelector('.av-pick')), 'utan meny och utan figur öppnas figurskaparen');
-await p.evaluate(() => (document.querySelector('.dlg-avatar .av-cancel') || document.querySelector('#modal [data-close]'))?.click()); await p.waitForTimeout(500);
+ok(await p.evaluate(() => !!document.querySelector('.dlg-steg') || !!document.querySelector('.av-pick')), 'utan meny och utan figur öppnas figurskaparen');
+await p.evaluate(() => document.querySelector('#modal [data-close]')?.click()); await p.waitForTimeout(500);
 ok(await menuOpen(p) && await p.evaluate(() => window.SF.sceneName === 'city' && window.SF.attract === true && !window.SF.avatar.name), 'Avbryt i figurskaparen vid start → huvudmenyn, inte spelet utan namn');
 
 // 2. två figurer med egna sparningar (sparade före id:na: de får namnets slug som id)
@@ -128,8 +128,8 @@ ok(!j.menu, 'ingen meny efter figurbytet – rakt in i spelet');
 // 6b. Nytt spel med ett namn som redan finns → en ny person med eget id, ingen "Börja om?"-ruta
 await p.click('#hud-mobil'); await p.click('#mobilen [data-app="installningar"]'); await p.waitForTimeout(300);
 await p.click('[data-new]'); await p.waitForTimeout(400);
-await p.fill('#av-name', 'Julia');
-await p.click('.dlg-avatar .dlg-foot .av-save'); await p.waitForTimeout(400);
+await p.fill('#fs-namn', 'Julia');
+await p.click('.fs-steg[data-steg="klart"]'); await p.click('.fs-spela'); await p.waitForTimeout(400);
 ok(await p.evaluate(() => !/Börja om/.test(document.querySelector('#modal:not(.hidden) h2, #modal:not(.hidden) .dlg-title')?.textContent || '')), 'ingen "Börja om?"-ruta för ett namn som redan finns');
 await p.waitForFunction(() => window.SF?.avatar?.name === 'Julia' && window.SF.avatar.id !== 'julia', null, { timeout: 20000 });
 await p.waitForTimeout(800);

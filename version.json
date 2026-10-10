@@ -1,7 +1,7 @@
 {
-  "version": "0.98.0",
+  "version": "0.99.0",
   "date": "2026-10-10",
-  "title": "Mobilen",
+  "title": "Skapa din figur steg för steg",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
@@ -37,6 +37,7 @@
     "js/core/chat.js",
     "js/core/drakt.js",
     "js/core/fest.js",
+    "js/core/figursteg.js",
     "js/core/floor-pix.js",
     "js/core/fordon-art.js",
     "js/core/foretag.js",

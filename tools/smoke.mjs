@@ -28,10 +28,11 @@ await page.waitForFunction(() => !!window.SF?.worldInfo, null, { timeout: 20000 
 await page.waitForTimeout(400);
 
 // 1. Avatarredigeraren öppnas direkt
-ok(await page.locator('.dlg-avatar').count() === 1, 'avatarredigeraren öppnas vid första start');
+ok(await page.locator('.dlg-steg').count() === 1, 'figurskaparen (steg för steg) öppnas vid första start');
 await shot('01-avatar-editor');
-await page.fill('#av-name', 'Testina');
-await page.click('.av-save');
+await page.fill('#fs-namn', 'Testina');
+await page.click('.fs-steg[data-steg="klart"]');
+await page.click('.fs-spela');
 await page.waitForTimeout(400);
 
 // 2. Välkomstdialog → alla börjar i husvagnen (Carl 2026-09-28)

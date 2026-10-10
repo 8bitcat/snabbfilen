@@ -10,6 +10,13 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.99.0] – 2026-10-10 – Skapa din figur steg för steg
+- Nya figurer skapas nu steg för steg: namn, hud, frisyr, hårfärg, ögon, mun, storlek, tröja, byxor och skor – en sak i taget med stora bilder.
+- Figuren syns hela tiden till vänster och kan vridas. Stegen står som pixelikoner överst och man kan hoppa mellan dem.
+- Bläddringspilarna är gula på en mörk list med FLER, och pilen hoppar tills man har bläddrat.
+- Alla 151 frisyrer finns kvar, ordnade i grupper som Afro, Flätor och Hästsvansar.
+- Tärningen slumpar steget man står på. "Fler detaljer" på sista steget öppnar den stora redigeraren med bryn, smink, skägg och mer.
+
 ## [0.98.0] – 2026-10-10 – Mobilen
 - Knapparna överst har flyttat in i din mobil. Raden överst visar bara klockan, dagen, pengarna och mätarna, och staden får mer plats.
 - Tryck på mobilen nere till höger. Där finns apparna Karta, Taxi, Kompisar, Chatt, Röst, Livsmål, Veckan, Dagboken, Nyheter och Inställningar, ritade som pixelikoner i stället för emojis. En grön siffra på mobilen visar hur många kompisar som är i Pixelstaden, och en röd prick betyder att något nytt väntar.
