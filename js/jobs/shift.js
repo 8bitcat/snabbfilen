@@ -40,6 +40,9 @@ const withBeslut = (plan, B) => (B ? { ...plan, pace: plan.pace * FOKUS[B.fokus]
 // In i passet med planen (och det gemensamma passet, om man jobbar ihop)
 function beginShift(A, jobId, sceneName, plan, coop = null) {
   A.shiftJob = jobId;
+  // jobb med många moment får längre tid att spela (JOBS[id].tid) – samma 4 timmar på klockan (plan.gameMin)
+  const tid = JOBS[jobId]?.tid || 1;
+  if (tid !== 1 && !plan.tid) plan = { ...plan, seconds: Math.round(plan.seconds * tid), tid };
   // (inbjuden till någon annans pass: deras plan gäller – ens egna beslut bara när man leder själv)
   A.shiftBeslut = coop?.host ? null : beslutOf(A, jobId);
   plan = withBeslut(plan, A.shiftBeslut);
@@ -88,6 +91,7 @@ export function startJobFlow(A, jobId, sceneName) {
     TIP_JOBS.has(jobId) ? $t`🪙 Snabb service ger <b>dricks</b> – den går rakt ner i lönen` : null,
     lvl > 1 ? (plan.extra ? $t`👥 Som ${JOB_TITLES[lvl - 1].toLowerCase()} får du <b>fler kunder</b> och fler platser – passet är lite längre` : $t`👥 Som ${JOB_TITLES[lvl - 1].toLowerCase()} får du <b>fler kunder</b> – passet är lite längre`)
       : $t`👥 Ju fler pass du jobbar, desto fler kunder och platser`,
+    job.tid === 2 ? $t('⏳ Här får du dubbelt så lång tid på dig att hinna med – passet är ändå 4 timmar på klockan.') : null,
     canLong ? (longNow ? $t`⏱️ Ett pass tar 4 timmar – ett <b>längre pass</b> 6 timmar.` : $t`⏱️ Ett pass tar 4 timmar – ett <b>längre pass</b> 6 timmar (börjar senast 18:00).`) : $t`⏱️ Ett pass tar 4 timmar.`,
     COOP_JOBS.has(jobId) ? $t`💼 Jobba ihop: bjud in en kompis till passet` : null,
     karriarRad(g, jobId),

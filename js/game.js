@@ -139,8 +139,11 @@ export const TRAD_DAGAR = 3;
 // Jobben. wage = kr per rätt, oops = avdrag per fel, bonus = kr per färdig låda (packjobb).
 // nattoppet = passen går även efter 20 (flygplatsen stänger aldrig), back = scenen man
 // står kvar i efter passet (annars staden).
+// tid = gånger så lång SPELTID i verkligheten (Carl 2026-10-10: "tvätteriet och flygplatsen borde vara dubbelt
+// så lång tid … fast klockan i spelet ska vara samma"). Jobb med många moment per kund hinner annars bara
+// 2 kunder (tvätteriet) – passet är fortfarande 4 timmar på klockan och kostar lika mycket ork.
 export const JOBS = {
-  flygplats: { id: 'flygplats', icon: '✈️', name: $t('Flygplatsen'), verb: $t('Bär väskorna till rätt vagn'), wage: 7, oops: 4, nattoppet: true, back: 'terminal' },
+  flygplats: { id: 'flygplats', icon: '✈️', name: $t('Flygplatsen'), verb: $t('Bär väskorna till rätt vagn'), wage: 7, oops: 4, nattoppet: true, back: 'terminal', tid: 2 },
   incheckning: { id: 'incheckning', icon: '🛄', name: $t('Incheckningen'), verb: $t('Checka in resenärerna vid disk 3'), wage: 18, oops: 5, nattoppet: true, back: 'terminal' },
   frukt: { id: 'frukt', icon: '🍊', name: $t('Fruktfabriken'), verb: $t('Plocka frukt från bandet till lådan'), wage: 4, oops: 3, bonus: 20 },
   burgare: { id: 'burgare', icon: '🍔', name: $t('Burgarbaren'), verb: $t('Servera rätt mat till rätt kund'), wage: 10, oops: 5 },
@@ -148,7 +151,7 @@ export const JOBS = {
   posten: { id: 'posten', icon: '📮', name: $t('Posten'), verb: $t('Sortera paketen till rätt rullbur'), wage: 10, oops: 5 },
   bensinmack: { id: 'bensinmack', icon: '⛽', name: $t('Pixelmacken'), verb: $t('Tanka bilarna och sälj korv i kiosken'), wage: 10, oops: 5 },
   bilverkstad: { id: 'bilverkstad', icon: '🔧', name: $t('Bilverkstan'), verb: $t('Byt däck steg för steg och laga bilarna'), wage: 12, oops: 5 },
-  tvatteri: { id: 'tvatteri', icon: '🧺', name: $t('Tvätteriet'), verb: $t('Tvätta, torka, vik och lämna rätt påse'), wage: 16, oops: 6 },
+  tvatteri: { id: 'tvatteri', icon: '🧺', name: $t('Tvätteriet'), verb: $t('Tvätta, torka, vik och lämna rätt påse'), wage: 16, oops: 6, tid: 2 },
   kafe: { id: 'kafe', icon: '☕', name: $t('Kaféet'), verb: $t('Gör rätt dryck och servera rätt gäst'), wage: 14, oops: 6 },
   // Vårdcentralen (Söder, öppet 08–17 enligt huset i map.js): receptionen. bonus = kr per
   // akutfall som tas emot FÖRST (stats.boxes); bonusPer/boxLabel är raderna i passdialogerna.

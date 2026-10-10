@@ -10,6 +10,11 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.101.0] – 2026-10-10 – Mer tid i tvätteriet och på flygplatsen
+- Tvätteriet och flygplatsen har nu dubbelt så lång tid att spela – du hinner fler kunder och fler väskor.
+- Passet är fortfarande 4 timmar på klockan i spelet och tar lika mycket ork. Det är bara tiden du själv spelar som är längre.
+- Jobbdialogen säger till när du får dubbelt så lång tid på dig.
+
 ## [0.100.0] – 2026-10-10 – Lagkompisar i KBK
 - Spelar du i KBK? Under ⚙ Inställningar finns nu raden ⚽ KBK. Skriv ditt förnamn och ditt nummer i laget, så stäms det av mot laget.
 - När en lagkompis kommer in i Pixelstaden får du en egen hälsning: "⚽ Julia 34 från KBK är i Pixelstaden!"

@@ -6524,6 +6524,7 @@ export default {
   "⏱️ Ett pass tar 4 timmar – ett <b>längre pass</b> 6 timmar (börjar senast 18:00).": "⏱️ Un service dure 4 heures – un <b>service long</b> 6 heures (début au plus tard à 18h).",
   "⏱️ Ett pass tar 4 timmar – ett <b>längre pass</b> 6 timmar.": "⏱️ Un service dure 4 heures – un <b>service long</b> 6 heures.",
   "⏱️ Ett pass tar 4 timmar.": "⏱️ Un service dure 4 heures.",
+  "⏳ Här får du dubbelt så lång tid på dig att hinna med – passet är ändå 4 timmar på klockan.": "⏳ Ici, tu as deux fois plus de temps pour tout faire – le service dure quand même 4 heures à l'horloge.",
   "⏹ Stäng av": "⏹ Arrêter",
   "▶ Fortsätt": "▶ Continuer",
   "▶ Fortsätt som {0}": "▶ Continuer avec {0}",

@@ -6524,6 +6524,7 @@ export default {
   "⏱️ Ett pass tar 4 timmar – ett <b>längre pass</b> 6 timmar (börjar senast 18:00).": "⏱️ Zmiana trwa 4 godziny – <b>dłuższa zmiana</b> 6 godzin (start najpóźniej o 18:00).",
   "⏱️ Ett pass tar 4 timmar – ett <b>längre pass</b> 6 timmar.": "⏱️ Zmiana trwa 4 godziny – <b>dłuższa zmiana</b> 6 godzin.",
   "⏱️ Ett pass tar 4 timmar.": "⏱️ Zmiana trwa 4 godziny.",
+  "⏳ Här får du dubbelt så lång tid på dig att hinna med – passet är ändå 4 timmar på klockan.": "⏳ Tutaj masz dwa razy więcej czasu, żeby wszystko zdążyć – zmiana i tak trwa 4 godziny na zegarze.",
   "⏹ Stäng av": "⏹ Wyłącz",
   "▶ Fortsätt": "▶ Dalej",
   "▶ Fortsätt som {0}": "▶ Graj dalej jako {0}",

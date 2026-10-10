@@ -6524,6 +6524,7 @@ export default {
   "⏱️ Ett pass tar 4 timmar – ett <b>längre pass</b> 6 timmar (börjar senast 18:00).": "⏱️ Un turno dura 4 horas – un <b>turno largo</b>, 6 horas (empieza como muy tarde a las 18:00).",
   "⏱️ Ett pass tar 4 timmar – ett <b>längre pass</b> 6 timmar.": "⏱️ Un turno dura 4 horas – un <b>turno largo</b>, 6 horas.",
   "⏱️ Ett pass tar 4 timmar.": "⏱️ Un turno dura 4 horas.",
+  "⏳ Här får du dubbelt så lång tid på dig att hinna med – passet är ändå 4 timmar på klockan.": "⏳ Aquí tienes el doble de tiempo para llegar a todo; el turno sigue siendo de 4 horas en el reloj.",
   "⏹ Stäng av": "⏹ Apagar",
   "▶ Fortsätt": "▶ Continuar",
   "▶ Fortsätt som {0}": "▶ Continuar como {0}",

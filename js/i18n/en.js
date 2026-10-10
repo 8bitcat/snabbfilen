@@ -6524,6 +6524,7 @@ export default {
   "⏱️ Ett pass tar 4 timmar – ett <b>längre pass</b> 6 timmar (börjar senast 18:00).": "⏱️ A shift takes 4 hours – a <b>longer shift</b> takes 6 (start by 18:00 at the latest).",
   "⏱️ Ett pass tar 4 timmar – ett <b>längre pass</b> 6 timmar.": "⏱️ A shift takes 4 hours – a <b>longer shift</b> takes 6.",
   "⏱️ Ett pass tar 4 timmar.": "⏱️ A shift takes 4 hours.",
+  "⏳ Här får du dubbelt så lång tid på dig att hinna med – passet är ändå 4 timmar på klockan.": "⏳ Here you get twice as long to keep up – the shift is still 4 hours on the clock.",
   "⏹ Stäng av": "⏹ Turn off",
   "▶ Fortsätt": "▶ Continue",
   "▶ Fortsätt som {0}": "▶ Continue as {0}",

@@ -27,7 +27,8 @@ const port = argv.includes('--port') ? argv[argv.indexOf('--port') + 1] : '8791'
 // mobilen-test: mobilen nere till höger – alla appar, inställningarna, telefonen i liggande läge
 // figursteg-test: nya spelares figurskapare steg för steg (pilarna, alla frisyrer, telefonen liggande)
 // kbk-test: ⚽ lagkompisarna i KBK hälsas när de kommer in (tre spelare i en egen liten värld)
-const ALWAYS = ['tools/garderob-kop-test.mjs', 'tools/sprak-test.mjs', 'tools/startguide-test.mjs', 'tools/odling-test.mjs', 'tools/app-ljud-test.mjs', 'tools/mobilen-test.mjs', 'tools/figursteg-test.mjs', 'tools/kbk-test.mjs'];
+// passtid-test: tvätteriet och flygplatsen har dubbelt så lång speltid men samma 4 timmar på klockan
+const ALWAYS = ['tools/garderob-kop-test.mjs', 'tools/sprak-test.mjs', 'tools/startguide-test.mjs', 'tools/odling-test.mjs', 'tools/app-ljud-test.mjs', 'tools/mobilen-test.mjs', 'tools/figursteg-test.mjs', 'tools/kbk-test.mjs', 'tools/passtid-test.mjs'];
 const KLAD = ['tools/klader-test.mjs', 'tools/skor-test.mjs', 'tools/accessoarer-test.mjs', 'tools/frisor-test.mjs'];
 const extras = [...new Set([...ALWAYS, ...(argv.includes('--klad') ? KLAD : []),
   ...argv.flatMap((a, i) => (a === '--extra' ? [argv[i + 1]] : [])).filter(Boolean)])];
@@ -65,10 +66,13 @@ try {
     p.stderr.on('data', (b) => out.push(b.toString()));
     p.on('close', (c) => resolve(c ?? 1));
   });
+  // skript som slutar med fel utan en enda ✗-rad (t.ex. ett undantag mitt i) skrivs ut med namn – annars syns bara "slutkod 1"
+  const kraschade = [];
   code = await runScript('tools/smoke.mjs');
+  if (code !== 0) kraschade.push(['tools/smoke.mjs', code]);
   for (const x of extras) {
     if (ALWAYS.includes(x) && !fs.existsSync(path.join(dir, x))) continue; // äldre version utan skriptet
-    const c = await runScript(x); if (c !== 0) code = code || c;
+    const c = await runScript(x); if (c !== 0) { code = code || c; kraschade.push([x, c]); }
   }
   const log = out.join('');
   const logFile = path.join(ROOT, 'tools/out', `verify-${ref.replace(/[^\w.-]/g, '_')}.log`);
@@ -81,6 +85,7 @@ try {
   else {
     console.log(`✗ ${sha}: ${failed.length} fel av ${passed + failed.length} (slutkod ${code}). Logg: ${logFile}`);
     for (const l of failed) console.log('   ' + l.trim());
+    for (const [x, c] of kraschade) console.log(`   ✗ ${x} slutade med fel (slutkod ${c}) – se loggen`);
     const tail = lines.slice(-8).join('\n');
     if (!failed.length) console.log(tail);
     if (code === 0) code = 1;

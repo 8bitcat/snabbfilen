@@ -232,19 +232,20 @@ t = await tab('hairColor');
 ok(t.hairColors === 0 && /Frisören/.test(t.salonText), `Hårfärg: fixas hos frisören, inga färgval hemma (${t.hairColors})`);
 await page.click('.av-cancel');
 await page.waitForTimeout(200);
-// en NY figur (Nytt spel) väljer frisyr och hårfärg fritt – spärren gäller bara den man spelar
+// en NY figur (Nytt spel) väljer frisyr och hårfärg fritt i figurskaparen (steg för steg, v0.99) – spärren gäller bara den man spelar
 const fresh = await ev(async () => {
+  const vanta = (ms) => new Promise((r) => setTimeout(r, ms));
   const av = await import('/js/core/avatar.js');
   av.openAvatarEditor({ fresh: true });
-  document.querySelector('.av-tab[data-tab="hair"]').click();
-  document.querySelector('.av-panel .av-chip[data-g="*"]')?.click(); // alla frisyrgrupper
-  const n = document.querySelectorAll('.av-panel [data-k="style"]').length;
-  document.querySelector('.av-tab[data-tab="hairColor"]').click();
-  const c = document.querySelectorAll('.av-panel [data-k="hair"]').length;
-  document.querySelector('.dlg-foot .av-cancel')?.click();
-  return { n, c, salon: av.avatarSalon() };
+  await vanta(300);
+  document.querySelector('.fs-steg[data-steg="style"]').click(); await vanta(200);
+  const n = document.querySelectorAll('.fs-ruta').length, sidor = +((document.querySelector('.fs-sidnr')?.textContent || '0/0').split('/')[1]);
+  document.querySelector('.fs-steg[data-steg="hair"]').click(); await vanta(200);
+  const c = document.querySelectorAll('.fs-ruta').length;
+  document.querySelector('.dlg-steg [data-close]')?.click();
+  return { n, sidor, c, salon: av.avatarSalon() };
 });
-ok(fresh.n > 80 && fresh.c > 0 && fresh.salon.style && fresh.salon.color, `ny figur: alla ${fresh.n} frisyrer och hårfärgerna går att välja (spärren på: ${JSON.stringify(fresh.salon)})`);
+ok(fresh.n > 0 && fresh.sidor > 5 && fresh.c > 0 && fresh.salon.style && fresh.salon.color, `ny figur: frisyrerna (${fresh.sidor} sidor) och ${fresh.c} hårfärger går att välja i figurskaparen (spärren på: ${JSON.stringify(fresh.salon)})`);
 await closeAnyModal();
 
 // dagboken räknar mot hela katalogen
