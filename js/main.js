@@ -54,7 +54,7 @@ import { startWorld, worldTick, worldInfo, playersList, visitPlayer, sendEmote, 
 import { block, unblock, blockedList, openAnmal, SUPPORT } from './net/skydd.js';
 import { openMenu, mountMenuButton, isMenuOpen, shouldShowMenuAtBoot } from './core/menu.js';
 import { drawPixHud, isPixHud, apply as applyHud, stripHeight, layoutStrip } from './core/hud-pix.js';
-import { guideTick, startGuide, resumeGuide } from './core/startguide.js'; // 🧭 första dagen: listan + Doris + handen
+import { guideTick, startGuide, resumeGuide, offerGuide } from './core/startguide.js'; // 🧭 första dagen: listan + Doris + handen
 import { mountMobilen } from './core/mobilen.js'; // 📱 knapparna samlade i figurens mobil
 import { musicTick } from './core/music.js';
 import { recTick } from './core/rec.js';
@@ -768,6 +768,7 @@ function boot() {
     } else {
       A.go('room');
       resumeGuide(A); // (påbörjad första dag – sidan laddades om)
+      offerGuide(A); // 🧭 aldrig haft guiden (började före v0.96): fråga en gång
       goalsFirst(weekFirst);
     }
   };

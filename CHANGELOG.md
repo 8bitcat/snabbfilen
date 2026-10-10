@@ -10,6 +10,10 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.102.0] – 2026-10-10 – Startguiden till alla
+- Har du spelat sedan innan startguiden kom? Nu frågar spelet en gång om du vill prova den – på ditt eget språk.
+- Säger du nej finns den kvar under ⚙ Inställningar.
+
 ## [0.101.0] – 2026-10-10 – Mer tid i tvätteriet och på flygplatsen
 - Tvätteriet och flygplatsen har nu dubbelt så lång tid att spela – du hinner fler kunder och fler väskor.
 - Passet är fortfarande 4 timmar på klockan i spelet och tar lika mycket ork. Det är bara tiden du själv spelar som är längre.

@@ -28,7 +28,8 @@ const port = argv.includes('--port') ? argv[argv.indexOf('--port') + 1] : '8791'
 // figursteg-test: nya spelares figurskapare steg för steg (pilarna, alla frisyrer, telefonen liggande)
 // kbk-test: ⚽ lagkompisarna i KBK hälsas när de kommer in (tre spelare i en egen liten värld)
 // passtid-test: tvätteriet och flygplatsen har dubbelt så lång speltid men samma 4 timmar på klockan
-const ALWAYS = ['tools/garderob-kop-test.mjs', 'tools/sprak-test.mjs', 'tools/startguide-test.mjs', 'tools/odling-test.mjs', 'tools/app-ljud-test.mjs', 'tools/mobilen-test.mjs', 'tools/figursteg-test.mjs', 'tools/kbk-test.mjs', 'tools/passtid-test.mjs'];
+// guide-erbjud-test: spelare som aldrig haft startguiden (började före v0.96) får frågan en gång
+const ALWAYS = ['tools/garderob-kop-test.mjs', 'tools/sprak-test.mjs', 'tools/startguide-test.mjs', 'tools/odling-test.mjs', 'tools/app-ljud-test.mjs', 'tools/mobilen-test.mjs', 'tools/figursteg-test.mjs', 'tools/kbk-test.mjs', 'tools/passtid-test.mjs', 'tools/guide-erbjud-test.mjs'];
 const KLAD = ['tools/klader-test.mjs', 'tools/skor-test.mjs', 'tools/accessoarer-test.mjs', 'tools/frisor-test.mjs'];
 const extras = [...new Set([...ALWAYS, ...(argv.includes('--klad') ? KLAD : []),
   ...argv.flatMap((a, i) => (a === '--extra' ? [argv[i + 1]] : [])).filter(Boolean)])];

@@ -16,7 +16,7 @@
 // igen under ⚙ Inställningar. Testrobotarna (navigator.webdriver) slipper den, utom med ?guide.
 // Scenerna frågar guideStep() och ritar handen själva med drawGuideHand (samma pixelkorn som scenen).
 import { $t } from './i18n.js';
-import { toast, openModal, closeModal, esc } from './ui.js';
+import { toast, openModal, closeModal, esc, modalOpen } from './ui.js';
 import { play } from './sound.js';
 import { SMALL, ctxText, textW } from './floor-pix.js';
 
@@ -61,6 +61,27 @@ export function resumeGuide(A) {
   A0 = A;
   const s = load();
   if (s?.on && !robot()) { S = s; lastH = A.game.hunger; render(); }
+}
+// Spelare som började före startguiden (v0.96) fick den aldrig – Carl 2026-10-10: kompisen som spelar på
+// engelska "har inte fått tutorialen". Den som aldrig har haft guiden får frågan EN gång, när spelet är lugnt
+// (ingen ruta öppen, hemma eller i stan). Nya spelare får guiden ändå vid välkomsten och frågas aldrig.
+const ERBJUDEN = 'snabbfilen_startguide_erbjuden';
+const lsGet = (k) => { try { return localStorage.getItem(k); } catch { return '1'; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch { /* privat läge */ } };
+export function offerGuide(A) {
+  A0 = A;
+  if (robot() || load() || lsGet(ERBJUDEN)) return;
+  const koll = setInterval(() => {
+    if (load() || lsGet(ERBJUDEN)) { clearInterval(koll); return; }   // (guiden har startat – en ny figur)
+    if (modalOpen() || A.attract || !A.game || !/^(room|city)$/.test(A.sceneName || '')) return;
+    clearInterval(koll);
+    lsSet(ERBJUDEN, '1');
+    openModal($t('🧭 Startguiden'), `<p style="font-size:var(--f2);margin-top:0">${$t('Nytt i Pixelstaden: en guide som visar hur du kommer igång – ut genom dörren, ett pass på Burgarbaren, mat och sömn.')}</p>
+      <p style="font-size:var(--f2)">${$t('Vill du prova den nu? Du hittar den också under ⚙ Inställningar.')}</p>`, [
+      { label: $t('Nej tack'), onClick: closeModal },
+      { label: $t('🧭 Ja, visa mig!'), cls: 'btn-go', onClick: () => { closeModal(); startGuide(A, { force: true }); } },
+    ], { closable: false });
+  }, 4000);
 }
 export function stopGuide() {
   if (S) { S.on = false; save(); }
