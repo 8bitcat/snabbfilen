@@ -44,6 +44,7 @@ function summaryOf(id, isCurrent) {
 }
 
 let open = false, root = null, A = null, opts = {};
+const zoomNu = () => { try { return localStorage.getItem('snabbfilen_zoom') || 'nara'; } catch { return 'nara'; } };
 export const isMenuOpen = () => open;
 export function shouldShowMenuAtBoot() {
   const q = new URLSearchParams(location.search);
@@ -133,6 +134,7 @@ function render() {
       <div class="menu-row"><span>🌍 ${$t('Språk')}</span><select class="btn btn-small" id="menu-lang" data-lang>${LANGS.map((l) => `<option value="${l.id}" ${l.id === LANG ? 'selected' : ''}>${l.name}</option>`).join('')}</select></div>
       <div class="menu-row"><span>🔊 ${$t('Ljud')}</span><button class="btn btn-small ${isMuted() ? '' : 'btn-go'}" data-sound>${isMuted() ? $t('AV') : $t('PÅ')}</button></div>
       <div class="menu-row"><span>🎵 ${$t('Musik')}</span><button class="btn btn-small ${isMusicOn() ? 'btn-go' : ''}" data-music>${isMusicOn() ? $t('PÅ') : $t('AV')}</button></div>
+      ${document.getElementById('hud-zoom') ? `<div class="menu-row"><span>🔍 ${$t('Zoom')}</span><button class="btn btn-small" data-zoom>${{ nara: $t('NÄRA'), vid: $t('VID'), ram: $t('RAM') }[A?.zoomMode?.() || zoomNu()] || $t('VID')}</button></div>` : ''}
       <div class="menu-row"><span>📊 ${$t('Mätare')}</span><button class="btn btn-small" data-hud>${hudMode() === 'pix' ? $t('PIXEL uppe till vänster') : $t('RAD överst')}</button></div>
       ${opts.pause ? `<div class="menu-row"><span>🧭 ${$t('Startguiden')}</span><button class="btn btn-small ${guideOn() ? 'btn-go' : ''}" data-guide>${guideOn() ? $t('PÅ') : $t('Börja om')}</button></div>` : ''}
       ${notiserFinns() ? `<div class="menu-row"><span>🔔 ${$t('Notiser')}</span><span>${notiserPa() ? `<button class="btn btn-small" data-notisprov>${$t('Prova')}</button> ` : ''}<button class="btn btn-small ${notiserPa() ? 'btn-go' : ''}" data-notiser>${notiserPa() ? $t('PÅ') : $t('AV')}</button></span></div>` : ''}
@@ -151,6 +153,8 @@ function render() {
   root.querySelector('[data-music]')?.addEventListener('click', () => { setMusic(!isMusicOn()); play('click'); render(); });
   root.querySelector('[data-lang]')?.addEventListener('change', (e) => { play('click'); setLang(e.target.value); });
   root.querySelector('[data-hud]')?.addEventListener('click', () => { setHudMode(hudMode() === 'pix' ? 'rad' : 'pix'); play('click'); render(); });
+  // 🔍 zoomen (förr en knapp i raden överst): samma knapp, som nu bor dold – NÄRA → VID → RAM
+  root.querySelector('[data-zoom]')?.addEventListener('click', () => { play('click'); document.getElementById('hud-zoom')?.click(); render(); });
   // 🧭 startguiden: av – eller börja om första dagen (listan, Doris och handen)
   root.querySelector('[data-guide]')?.addEventListener('click', () => { play('click'); if (guideOn()) { stopGuide(); render(); } else { startGuide(A, { force: true }); close(); opts.onStart?.(); } });
   root.querySelector('[data-notiser]')?.addEventListener('click', async () => { play('click'); if (notiserPa()) await slaAv(); else await slaPa(); render(); });
@@ -181,7 +185,7 @@ export function openMenu(app, o = {}) {
     window.addEventListener('keydown', (e) => { if (open && opts.pause && e.key === 'Escape') { e.stopImmediatePropagation(); close(); opts.onStart?.(); } }, true);
   }
   open = true;
-  showSettings = false;
+  showSettings = !!o.settings;   // (mobilens Inställningar-app öppnar menyn med inställningarna utfällda)
   selected = loadAvatar().id || null;
   document.body.classList.add('menu-open');
   document.body.classList.toggle('menu-boot', !o.pause);

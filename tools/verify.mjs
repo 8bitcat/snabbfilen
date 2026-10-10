@@ -24,7 +24,8 @@ const port = argv.includes('--port') ? argv[argv.indexOf('--port') + 1] : '8791'
 // startguide-test: nya spelares första dag (listan, pilen, Doris, handen, lönen) – tar ~1,5 min (ett helt pass)
 // odling-test: husvagnens odling i staden (grinden, krukorna, kannan) – husvagnen är alla nya spelares första hem
 // app-ljud-test: appen hämtar musiken och de inspelade ljuden från webben (de följer inte med spelpaketen)
-const ALWAYS = ['tools/garderob-kop-test.mjs', 'tools/sprak-test.mjs', 'tools/startguide-test.mjs', 'tools/odling-test.mjs', 'tools/app-ljud-test.mjs'];
+// mobilen-test: mobilen nere till höger – alla appar, inställningarna, telefonen i liggande läge
+const ALWAYS = ['tools/garderob-kop-test.mjs', 'tools/sprak-test.mjs', 'tools/startguide-test.mjs', 'tools/odling-test.mjs', 'tools/app-ljud-test.mjs', 'tools/mobilen-test.mjs'];
 const KLAD = ['tools/klader-test.mjs', 'tools/skor-test.mjs', 'tools/accessoarer-test.mjs', 'tools/frisor-test.mjs'];
 const extras = [...new Set([...ALWAYS, ...(argv.includes('--klad') ? KLAD : []),
   ...argv.flatMap((a, i) => (a === '--extra' ? [argv[i + 1]] : [])).filter(Boolean)])];

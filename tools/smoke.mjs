@@ -324,7 +324,7 @@ await page.waitForTimeout(400);
 await shot('17-rum-med-soffa');
 
 // 10. Dagbok + vinst + delrum
-await page.click('#hud-diary');
+await page.click('#hud-mobil'); await page.click('#mobilen [data-app="dagbok"]');
 await page.waitForTimeout(200);
 ok((await page.locator('.dlg-head h2').textContent())?.includes('Din resa'), 'dagboken öppnas');
 await page.keyboard.press('Escape');

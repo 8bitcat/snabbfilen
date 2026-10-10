@@ -1,0 +1,19 @@
+{
+ "Zoom": "Zoom",
+ "NÄRA": "PRÈS",
+ "VID": "LARGE",
+ "RAM": "CADRE",
+ "Karta": "Carte",
+ "Taxi": "Taxi",
+ "Kompisar": "Amis",
+ "Chatt": "Chat",
+ "Röst": "Voix",
+ "Livsmål": "Objectifs",
+ "Veckan": "Semaine",
+ "Dagboken": "Parcours",
+ "Inställningar": "Réglages",
+ "Mobilen: karta, taxi, kompisar, chatt, livsmål och inställningar": "Le téléphone : carte, taxi, amis, chat, objectifs de vie et réglages",
+ "Mobilen": "Téléphone",
+ "{0} · dag {1}": "{0} · jour {1}",
+ "I mobilen 📱 nere till höger finns kartan, kompisarna och livsmålen. På kartan hittar du fler jobb, och under Livsmål ser du vad du sparar till. Ju mer du jobbar, desto bättre betalt.": "Dans le téléphone 📱 en bas à droite, tu as la carte, tes amis et tes objectifs de vie. Sur la carte, tu trouveras d'autres métiers, et dans Objectifs tu vois pour quoi tu économises. Plus tu travailles, mieux tu es payé."
+}

@@ -55,6 +55,7 @@ import { block, unblock, blockedList, openAnmal, SUPPORT } from './net/skydd.js'
 import { openMenu, mountMenuButton, isMenuOpen, shouldShowMenuAtBoot } from './core/menu.js';
 import { drawPixHud, isPixHud, apply as applyHud, stripHeight, layoutStrip } from './core/hud-pix.js';
 import { guideTick, startGuide, resumeGuide } from './core/startguide.js'; // 🧭 första dagen: listan + Doris + handen
+import { mountMobilen } from './core/mobilen.js'; // 📱 knapparna samlade i figurens mobil
 import { musicTick } from './core/music.js';
 import { recTick } from './core/rec.js';
 import { openWeek } from './core/week.js';
@@ -221,6 +222,7 @@ const zoomMode = () => {
   const liten = Math.min(window.screen.width, window.screen.height) < 700;
   return matchMedia('(pointer: coarse)').matches && liten && !deskMobil() ? 'nara' : 'vid';
 };
+A.zoomMode = zoomMode; // (spelmenyns zoomrad visar läget)
 A.view = { w: DESIGN_W, h: DESIGN_H, boxX: 0, boxY: 0, boxed: false, safe: { x0: 0, y0: 0, x1: DESIGN_W, y1: DESIGN_H } };
 // Telefonen i liggande läge: EN skala i alla scener (Carl 2026-09-30: "utgå från Burgarbaren, gör
 // en lite större än där och ha samma storlek i staden och inomhus"). Skalan (hela skärmpixlar per
@@ -799,6 +801,7 @@ function boot() {
   const backToMenu = () => { A.attract = true; fit(); A.go('city'); openMenu(A, { onStart: start }); };
   mountMenuButton(A);
   mountChat(A);
+  mountMobilen(A); // 📱 mobilen nere till höger – raden överst visar bara mätarna (Carl 2026-10-10)
   applyHud();
   // huvudmenyn: staden lever bakom panelen tills man väljer figur och trycker Fortsätt
   if (shouldShowMenuAtBoot()) { A.attract = true; fit(); A.go('city'); openMenu(A, { onStart: start }); }

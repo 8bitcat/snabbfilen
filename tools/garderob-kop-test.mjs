@@ -248,7 +248,7 @@ ok(fresh.n > 80 && fresh.c > 0 && fresh.salon.style && fresh.salon.color, `ny fi
 await closeAnyModal();
 
 // dagboken räknar mot hela katalogen
-await page.click('#hud-diary');
+await page.click('#hud-mobil'); await page.click('#mobilen [data-app="dagbok"]');
 await page.waitForTimeout(300);
 const diary = await ev(() => document.querySelector('#modal:not(.hidden) .dlg-body')?.textContent || document.querySelector('#modal:not(.hidden)')?.textContent || '');
 const cnt = await ev(() => window.SF.game.wardrobeCount());

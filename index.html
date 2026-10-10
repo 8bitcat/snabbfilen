@@ -46,6 +46,7 @@
       var fonts = function () {
         var d = window.devicePixelRatio || 1, st = document.documentElement.style;
         for (var k = 1; k <= 4; k++) st.setProperty('--f' + k, (12 * Math.max(1, Math.round(k * d)) / d) + 'px');
+        st.setProperty('--f15', (12 * Math.max(1, Math.round(1.5 * d)) / d) + 'px');   // (mobilens etiketter på telefonen: 18 px vid 2×)
       };
       fonts();
       window.addEventListener('resize', fonts);

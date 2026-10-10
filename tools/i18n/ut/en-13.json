@@ -1,0 +1,19 @@
+{
+ "Zoom": "Zoom",
+ "NÄRA": "CLOSE",
+ "VID": "WIDE",
+ "RAM": "FRAME",
+ "Karta": "Map",
+ "Taxi": "Taxi",
+ "Kompisar": "Friends",
+ "Chatt": "Chat",
+ "Röst": "Voice",
+ "Livsmål": "Life goals",
+ "Veckan": "Week",
+ "Dagboken": "Journey",
+ "Inställningar": "Settings",
+ "Mobilen: karta, taxi, kompisar, chatt, livsmål och inställningar": "Your phone: map, taxi, friends, chat, life goals and settings",
+ "Mobilen": "Phone",
+ "{0} · dag {1}": "{0} · day {1}",
+ "I mobilen 📱 nere till höger finns kartan, kompisarna och livsmålen. På kartan hittar du fler jobb, och under Livsmål ser du vad du sparar till. Ju mer du jobbar, desto bättre betalt.": "Your phone 📱 in the bottom right has the map, your friends and your life goals. On the map you'll find more jobs, and under Life goals you can see what you're saving up for. The more you work, the better you get paid."
+}

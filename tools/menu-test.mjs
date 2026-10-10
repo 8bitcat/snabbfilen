@@ -108,14 +108,14 @@ await p.evaluate(() => window.SF.go('city')); await p.waitForTimeout(1200);
 await p.screenshot({ path: 'tools/out/menu-test-2.png' });
 
 // 5. pausmenyn
-await p.click('#hud-menu'); await p.waitForTimeout(300);
+await p.click('#hud-mobil'); await p.click('#mobilen [data-app="installningar"]'); await p.waitForTimeout(300);
 ok(await menuOpen(p), '☰ öppnar pausmenyn');
 ok(/Fortsätt spela/.test(await p.evaluate(() => document.querySelector('[data-continue]').textContent)), 'pausmenyn erbjuder Fortsätt spela');
 await p.keyboard.press('Escape'); await p.waitForTimeout(200);
 ok(!(await menuOpen(p)), 'Esc stänger pausmenyn');
 
 // 6. byt figur → egen sparning, den förra parkeras
-await p.click('#hud-menu'); await p.waitForTimeout(300);
+await p.click('#hud-mobil'); await p.click('#mobilen [data-app="installningar"]'); await p.waitForTimeout(300);
 await p.click('.menu-card[data-pick="julia"]'); await p.waitForTimeout(150);
 await p.click('[data-continue]');
 await p.waitForFunction(() => window.SF?.avatar?.name === 'Julia', null, { timeout: 20000 });
@@ -126,7 +126,7 @@ ok(j.kalle === 2450, 'Kalles sparning parkerades orörd');
 ok(!j.menu, 'ingen meny efter figurbytet – rakt in i spelet');
 
 // 6b. Nytt spel med ett namn som redan finns → en ny person med eget id, ingen "Börja om?"-ruta
-await p.click('#hud-menu'); await p.waitForTimeout(300);
+await p.click('#hud-mobil'); await p.click('#mobilen [data-app="installningar"]'); await p.waitForTimeout(300);
 await p.click('[data-new]'); await p.waitForTimeout(400);
 await p.fill('#av-name', 'Julia');
 await p.click('.dlg-avatar .dlg-foot .av-save'); await p.waitForTimeout(400);
@@ -141,7 +141,7 @@ ok(j2.day === 1 && !j2.won && j2.money !== 11200, `nya Julia börjar ett eget li
 ok(j2.old === 11200, 'gamla Julias sparning ligger kvar orörd');
 ok(await p.evaluate(() => /Välkommen/.test(document.querySelector('#modal')?.innerText || '')), 'nya Julia välkomnas till ett nytt liv');
 await p.evaluate(() => { const m = document.querySelector('#modal'); m.classList.add('hidden'); m.innerHTML = ''; }); // hoppa över bostadsvalet
-await p.click('#hud-menu'); await p.waitForTimeout(300);
+await p.click('#hud-mobil'); await p.click('#mobilen [data-app="installningar"]'); await p.waitForTimeout(300);
 ok(await p.evaluate(() => document.querySelectorAll('.menu-card').length) === 3, 'menyn visar tre figurer');
 await p.click('.menu-card[data-pick="julia"]'); await p.waitForTimeout(150);
 await p.click('[data-continue]');

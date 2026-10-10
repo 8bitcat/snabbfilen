@@ -626,3 +626,50 @@ html.desk-mobil body.hud-pix .hud-btns .btn { padding: 1px 5px; }
 @keyframes sg-blink { 50% { background: #fff; } }
 .btn.sg-pulse { animation: sg-pulse 0.9s steps(2) infinite; }
 @keyframes sg-pulse { 50% { outline: 3px solid var(--gold); outline-offset: 2px; } }
+
+/* ---------- 📱 mobilen (js/core/mobilen.js) – Carl 2026-10-10: knapparna samlas i figurens mobil ---------- */
+/* raden överst visar bara mätarna; de gamla knapparna finns kvar dolda (mobilens appar trycker på dem) */
+#hud .hud-btns { display: none !important; }
+:root { --mob-r: max(12px, env(safe-area-inset-right)); --mob-b: max(12px, env(safe-area-inset-bottom)); --mob-k: 54px; }
+.pix-ik { image-rendering: pixelated; display: block; }
+#hud-mobil { position: fixed; right: var(--mob-r); bottom: var(--mob-b); width: var(--mob-k); height: var(--mob-k); z-index: 42; padding: 0;
+  display: grid; place-items: center; background: var(--paper); border: 3px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); }
+#hud-mobil .pix-ik { width: 32px; height: 32px; }
+#hud-mobil.on { background: var(--gold); }
+.mob-badge { position: absolute; min-width: 18px; height: 18px; padding: 0 4px; border: 2px solid var(--ink); color: #fff;
+  font: var(--f1) var(--font); line-height: 14px; text-align: center; pointer-events: none; }
+#hud-mobil .mob-badge.kompis { top: -9px; left: -9px; background: var(--green2); }
+#hud-mobil .mob-badge.ny { top: -9px; right: -9px; background: #e04848; }
+#hud-snabb { position: fixed; right: var(--mob-r); bottom: calc(var(--mob-b) + var(--mob-k) + 12px); z-index: 41; display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
+#hud-snabb .btn { font-size: var(--f2); min-width: 46px; min-height: 42px; padding: 2px 8px; box-shadow: 3px 3px 0 var(--ink); }
+#mobilen-skugga { position: fixed; inset: 0; z-index: 43; background: rgba(12,10,20,.35); }
+#mobilen { position: fixed; z-index: 44; right: calc(var(--mob-r) + var(--mob-k) + 10px); bottom: var(--mob-b); width: 286px; max-height: calc(100vh - 24px);
+  background: #2a2632; border: 4px solid #000; box-shadow: 5px 5px 0 #000, inset 3px 3px 0 #4a4452; padding: 8px 8px 6px; display: grid; gap: 5px; }
+#mobilen .mob-topp { display: flex; justify-content: space-between; color: #c8c4cf; font: var(--f1) var(--font); padding: 0 2px; }
+#mobilen .mob-skarm { background: linear-gradient(#4a8de0, #a8d4ff 70%, #f1ebe0); border: 3px solid #000; overflow: auto; }
+#mobilen .mob-status { display: flex; justify-content: space-between; gap: 6px; padding: 2px 6px; background: rgba(23,21,26,.78); color: #fff; font: var(--f1) var(--font); white-space: nowrap; }
+#mobilen .mob-appar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px 4px; padding: 8px 4px 10px; }
+#mobilen .mob-app { display: grid; justify-items: center; gap: 3px; background: none; border: 0; padding: 0; cursor: pointer; color: var(--ink); font: var(--f1) var(--font); }
+#mobilen .mob-ruta { position: relative; width: 46px; height: 46px; display: grid; place-items: center; background: var(--paper); border: 3px solid #000; box-shadow: 2px 2px 0 rgba(0,0,0,.45); }
+#mobilen .mob-app:hover .mob-ruta, #mobilen .mob-app:focus-visible .mob-ruta { background: #fff4c7; }
+#mobilen .mob-app:active .mob-ruta { transform: translate(2px, 2px); box-shadow: none; }
+#mobilen .mob-ruta .pix-ik { width: 32px; height: 32px; }
+#mobilen .mob-ruta .mob-badge { top: -8px; right: -10px; background: #e04848; }
+#mobilen .mob-ruta .mob-badge[data-badge="kompisar"], #mobilen .mob-ruta .mob-badge[data-badge="rost"] { background: var(--green2); }
+#mobilen .mob-namn { background: rgba(241,235,224,.88); padding: 0 3px; white-space: nowrap; }
+#mobilen .mob-hem { justify-self: center; width: 44px; height: 7px; background: #4a4452; border: 2px solid #000; }
+body.menu-open #hud-mobil, body.menu-open #hud-snabb, body.menu-open #mobilen, body.menu-open #mobilen-skugga { display: none !important; }
+/* det som förut stod nere till höger flyttar åt vänster om mobilen */
+#emotes { right: calc(var(--mob-r) + var(--mob-k) + 12px) !important; }
+#startguide { right: calc(var(--mob-r) + var(--mob-k) + 12px); }
+/* telefonen i liggande läge (sidan ritas 1218 px bred, 2 skärmpixlar per CSS-pixel): större mobil, så att
+   knappen blir ≥ 44 pt och etiketterna läsbara – 3 kolumner, 18 px-etiketter (skarpa: 3 skärmpixlar/bokstavspixel) */
+html.desk-mobil { --mob-k: 76px; }
+html.desk-mobil #hud-mobil .pix-ik { width: 48px; height: 48px; }
+html.desk-mobil .mob-badge { min-width: 26px; height: 26px; line-height: 22px; font-size: var(--f15); }
+html.desk-mobil #hud-snabb .btn { min-width: 66px; min-height: 60px; }
+html.desk-mobil #mobilen { width: 430px; padding: 10px 10px 8px; }
+html.desk-mobil #mobilen .mob-topp, html.desk-mobil #mobilen .mob-status, html.desk-mobil #mobilen .mob-app { font-size: var(--f15); }
+html.desk-mobil #mobilen .mob-appar { grid-template-columns: repeat(3, 1fr); gap: 12px 6px; padding: 10px 6px 12px; }
+html.desk-mobil #mobilen .mob-ruta { width: 68px; height: 68px; }
+html.desk-mobil #mobilen .mob-ruta .pix-ik { width: 48px; height: 48px; }

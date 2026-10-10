@@ -38,7 +38,7 @@ await page.waitForTimeout(400);
 
 // 1) kartan
 ok(await page.evaluate(() => !!document.getElementById('hud-map') && !!document.getElementById('hud-taxi')), 'HUD:en har 🗺️ och 🚕');
-await page.click('#hud-map');
+await page.click('#hud-mobil'); await page.click('#mobilen [data-app="karta"]');
 ok(await until(() => page.evaluate(() => /Kartan/.test(document.querySelector('#modal:not(.hidden) .dlg-head h2')?.textContent || ''))), '🗺️ öppnar kartan');
 const kart = await page.evaluate(() => ({ icons: document.querySelectorAll('#modal .cm-ic').length, me: !!document.querySelector('#modal .cm-me'), cv: document.querySelector('#modal .cm-map canvas')?.width || 0 }));
 ok(kart.icons >= 30 && kart.me && kart.cv >= 800, `pixelkartan med ${kart.icons} ställen och DU ÄR HÄR (${kart.cv} px bred)`);
@@ -82,7 +82,7 @@ await page.evaluate(() => { window.SF.guide = null; });
 await D((d) => d.district('FÖRORTEN'));
 await page.waitForTimeout(400);
 const money0 = await page.evaluate(() => window.SF.game.money), min0 = await page.evaluate(() => window.SF.game.min);
-await page.click('#hud-taxi');
+await page.click('#hud-mobil'); await page.click('#mobilen [data-app="taxi"]');
 ok(await until(() => page.evaluate(() => /Vart ska taxin/.test(document.querySelector('#modal:not(.hidden) .dlg-head h2')?.textContent || ''))), '🚕 öppnar kartan i taxiläget');
 await page.click('#modal .cm-ic[data-b="kafe"]');
 const kr = await page.evaluate(() => +((document.querySelector('#modal [data-taxi]')?.textContent || '').match(/(\d+) kr/) || [])[1]);
@@ -109,14 +109,14 @@ ok(await until(() => page.evaluate(() => window.SF.sceneName === 'city' && !!win
 const home = await D((d) => d.pos());
 ok(home.x > 3032, `man står utanför husvagnen i förorten (x ${Math.round(home.x)})`);
 // avbeställ via 🚕
-await page.click('#hud-taxi');
+await page.click('#hud-mobil'); await page.click('#mobilen [data-app="taxi"]');
 ok(await until(() => page.evaluate(() => /Din taxi/.test(document.querySelector('#modal:not(.hidden) .dlg-head h2')?.textContent || ''))), '🚕 igen: "Din taxi" – avbeställ eller gå dit');
 await page.evaluate(() => [...document.querySelectorAll('#modal .dlg-foot .btn')].find((b) => /Avbeställ/.test(b.textContent))?.click());
 ok(!(await D((d) => d.taxi())), 'taxin är avbeställd');
 
 // 7) utan pengar
 await page.evaluate(() => { window.SF.game.money = 3; });
-await page.click('#hud-taxi');
+await page.click('#hud-mobil'); await page.click('#mobilen [data-app="taxi"]');
 await page.click('#modal .cm-ic[data-b="kafe"]');
 ok(await page.evaluate(() => document.querySelector('#modal [data-taxi]')?.disabled), 'utan pengar går taxin inte att beställa');
 await page.evaluate(() => document.querySelector('#modal [data-close]')?.click());

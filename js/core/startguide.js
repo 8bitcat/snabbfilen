@@ -81,7 +81,7 @@ function finish() {
   S.on = false; S.fin = true; save();
   play('coin');
   openModal($t('🎉 Bra jobbat!'), `<p style="font-size:var(--f2);margin-top:0">${$t('Nu kan du klara dig själv i Pixelstaden!')}</p>
-    <p style="font-size:var(--f2)">${$t('Fler jobb hittar du på kartan 🗺️ – och under 🎯 Livsmålen ser du vad du sparar till. Ju mer du jobbar, desto bättre betalt.')}</p>`,
+    <p style="font-size:var(--f2)">${$t('I mobilen 📱 nere till höger finns kartan, kompisarna och livsmålen. På kartan hittar du fler jobb, och under Livsmål ser du vad du sparar till. Ju mer du jobbar, desto bättre betalt.')}</p>`,
   [{ label: $t('Tack, Doris!'), cls: 'btn-go', onClick: closeModal }]);
 }
 

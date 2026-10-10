@@ -10,6 +10,12 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.98.0] – 2026-10-10 – Mobilen
+- Knapparna överst har flyttat in i din mobil. Raden överst visar bara klockan, dagen, pengarna och mätarna, och staden får mer plats.
+- Tryck på mobilen nere till höger. Där finns apparna Karta, Taxi, Kompisar, Chatt, Röst, Livsmål, Veckan, Dagboken, Nyheter och Inställningar, ritade som pixelikoner i stället för emojis. En grön siffra på mobilen visar hur många kompisar som är i Pixelstaden, och en röd prick betyder att något nytt väntar.
+- Ljud, musik, zoom och språk finns nu under Inställningar.
+- Cykeln, festen och dräktens rörelse ligger som snabbknappar ovanför mobilen och syns bara när de passar. På telefonen är mobilen extra stor, så att den är lätt att träffa.
+
 ## [0.97.2] – 2026-10-09 – Pilen till Doris
 - Startguiden visar nu vägen inne i Burgarbaren. En gul pil vid figuren pekar mot Doris vid disken, och syns hon inte står DORIS → i bildkanten. Tryck på lappen så går du dit och jobbrutan öppnas.
 - Efter passet pekar pilen och handen mot kassan (BESTÄLL HÄR) när det är dags att äta.

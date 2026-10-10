@@ -1,7 +1,7 @@
 {
-  "version": "0.97.2",
-  "date": "2026-10-09",
-  "title": "Pilen till Doris",
+  "version": "0.98.0",
+  "date": "2026-10-10",
+  "title": "Mobilen",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
@@ -49,6 +49,7 @@
     "js/core/livsmal.js",
     "js/core/ljudfiler.js",
     "js/core/menu.js",
+    "js/core/mobilen.js",
     "js/core/music.js",
     "js/core/notiser.js",
     "js/core/odla.js",
@@ -73,6 +74,7 @@
     "js/core/people/hair.js",
     "js/core/people/tops.js",
     "js/core/people/util.js",
+    "js/core/pixikon.js",
     "js/core/ravara-art.js",
     "js/core/rec.js",
     "js/core/recolor.js",

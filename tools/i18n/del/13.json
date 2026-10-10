@@ -1,0 +1,87 @@
+[
+ {
+  "i": 7566,
+  "f": "js/core/menu.js",
+  "k": "Zoom"
+ },
+ {
+  "i": 7567,
+  "f": "js/core/menu.js",
+  "k": "NÄRA"
+ },
+ {
+  "i": 7568,
+  "f": "js/core/menu.js",
+  "k": "VID"
+ },
+ {
+  "i": 7569,
+  "f": "js/core/menu.js",
+  "k": "RAM"
+ },
+ {
+  "i": 7570,
+  "f": "js/core/mobilen.js",
+  "k": "Karta"
+ },
+ {
+  "i": 7571,
+  "f": "js/core/mobilen.js",
+  "k": "Taxi"
+ },
+ {
+  "i": 7572,
+  "f": "js/core/mobilen.js",
+  "k": "Kompisar"
+ },
+ {
+  "i": 7573,
+  "f": "js/core/mobilen.js",
+  "k": "Chatt"
+ },
+ {
+  "i": 7574,
+  "f": "js/core/mobilen.js",
+  "k": "Röst"
+ },
+ {
+  "i": 7575,
+  "f": "js/core/mobilen.js",
+  "k": "Livsmål"
+ },
+ {
+  "i": 7576,
+  "f": "js/core/mobilen.js",
+  "k": "Veckan"
+ },
+ {
+  "i": 7577,
+  "f": "js/core/mobilen.js",
+  "k": "Dagboken"
+ },
+ {
+  "i": 7578,
+  "f": "js/core/mobilen.js",
+  "k": "Inställningar"
+ },
+ {
+  "i": 7579,
+  "f": "js/core/mobilen.js",
+  "k": "Mobilen: karta, taxi, kompisar, chatt, livsmål och inställningar"
+ },
+ {
+  "i": 7580,
+  "f": "js/core/mobilen.js",
+  "k": "Mobilen"
+ },
+ {
+  "i": 7581,
+  "f": "js/core/mobilen.js",
+  "k": "{0} · dag {1}"
+ },
+ {
+  "i": 7582,
+  "f": "js/core/startguide.js",
+  "k": "I mobilen 📱 nere till höger finns kartan, kompisarna och livsmålen. På kartan hittar du fler jobb, och under Livsmål ser du vad du sparar till. Ju mer du jobbar, desto bättre betalt."
+ }
+]

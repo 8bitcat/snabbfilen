@@ -115,7 +115,7 @@ await sleep(600);
 ok(!(await state(A)).mic, 'A stängde av rösten – mikrofonen släpptes');
 
 // panelen öppnas
-await B.page.click('#hud-voice');
+await B.page.click('#hud-mobil'); await B.page.click('#mobilen [data-app="rost"]');
 await sleep(300);
 ok(/Röst i närheten/.test(await B.page.locator('#modal').textContent()), 'röstpanelen öppnas från 🎙️-knappen');
 await B.page.screenshot({ path: 'tools/out/voice-panel.png' });
