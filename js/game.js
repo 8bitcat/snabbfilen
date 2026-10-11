@@ -746,6 +746,7 @@ export class Game {
     this.jobs = Object.fromEntries(Object.keys(JOBS).map((k) => [k, 0])); // antal jobbade pass per jobb
     this.earned = 0;                      // totalt intjänat
     this.wardrobe = [];                   // köpta plagg: katalog-id (+ gamla 'kind:v' som alias, se wardrobeKeys)
+    this.designs = [];                    // 💎 egna halsband och väskor från BLING BLING-ateljén (shop-bling.js), högst 40
     this.storage = [];                    // möbler i förrådet, { k, v, c?, r?, fx? } (c = egen färg '#rrggbb', r = rotation 0–3)
     this.deco = {};                       // placerade möbler per rum: "hem:sub" -> [{ k, v, c?, x, y, r?, fx? }]
     this.gadgets = [];                    // prylar från elektronikbutiken (GADGETS-id), t.ex. ['fon12']
@@ -886,6 +887,13 @@ export class Game {
         const cleanItem = (it) => it && typeof it === 'object' && knownKind(it.k)
           ? withFlags(withColor({ ...extra(it), k: it.k, v: Math.max(0, Math.min(maxV(it.k), it.v | 0)) }, it.c), it) : null;
         g.storage = (Array.isArray(p.storage) ? p.storage : []).map(cleanItem).filter(Boolean);
+        // 💎 egna designer: { kind: 'neck'|'bag', sel: { del: val }, look: { neck…|bag… }, price } – bara kända fält
+        g.designs = (Array.isArray(p.designs) ? p.designs : []).filter((d) => d && (d.kind === 'neck' || d.kind === 'bag') && d.sel && typeof d.sel === 'object').slice(-40).map((d) => ({
+          kind: d.kind,
+          sel: Object.fromEntries(Object.entries(d.sel).filter(([k, v]) => /^[a-z]{2,10}$/.test(k) && /^[a-z0-9]{1,12}$/.test(String(v))).map(([k, v]) => [k, String(v)])),
+          look: Object.fromEntries(Object.entries(d.look || {}).filter(([k, v]) => ['neck', 'neckColor', 'bag', 'bagColor'].includes(k) && typeof v === 'string' && v.length < 24)),
+          price: Math.max(0, Math.round(+d.price || 0)),
+        }));
         keep.storage = (Array.isArray(p.storage) ? p.storage : []).filter((it) => it && typeof it === 'object' && !knownKind(it.k));
         const knownFurn = (d) => d && typeof d === 'object' && knownKind(d.k);
         if (p.deco && typeof p.deco === 'object') for (const [key, list] of Object.entries(p.deco)) {

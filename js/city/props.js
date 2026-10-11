@@ -3824,7 +3824,7 @@ export function createProps(env) {
     const LL = LINNE_LAYOUT;
     // --- norra trottoaren (Pixelgatan) ---
     // (träden står framför landshövdingehusen – inte framför butikernas skyltar och skyltfönster)
-    for (const [k, x] of [['korsbar', -1172], ['lind', -1112], ['lind', -540], ['korsbar', -468], ['lind', -312], ['korsbar', -232], ['lind', -20]]) tree(k, x, NC);
+    for (const [k, x] of [['korsbar', -1172], ['lind', -1112], ['lind', -312], ['korsbar', -232], ['lind', -20]]) tree(k, x, NC);   // (inga träd framför BLING BLINGs skyltfönster, -560…-448)
     for (const x of [-1080, -976, -872, -672, -570, -440, -340, -204, -92]) parkLamp(x, NC);   // i gränderna – aldrig framför en dörr
     hydrant(-1050, NC); bin(-700, NC); bin(-262, NC);
     // --- södra trottoaren: parklyktor vid kanten, lindar mot odlingen och parken, kuren vid Marknadstorget ---

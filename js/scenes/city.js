@@ -202,6 +202,7 @@ const SCENE_DOORS = {
   universitet: 'universitet',                                                                        // Pixelhögskolan (PIXEL TOWER)
   bio: 'bio', kebab: 'kebab', pantbank: 'pantbank',                                                  // Söder och förorten
   fordon: 'fordon',                                                                                  // GARAGET i förorten (cyklar och mopeder)
+  bling: 'bling',                                                                                    // 💎 BLING BLING i Linnéstaden (smycken, väskor, egen design)
   maskerad: 'maskerad',                                                                              // MASKERADBUTIKEN i förorten (Halloween)
 };
 // Kameran på STORA BRON: på däcket lyfts kameran så att tornens spetsbågar, krönen och kablarnas

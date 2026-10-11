@@ -320,7 +320,7 @@ export const BUILDINGS_L = [
   LN('l_gardsbutik', -964, 112, 108, sw(-908), { sign: $t('GÅRDSBUTIKEN'), icon: '🧺', soon: $t('Gårdsbutiken öppnar snart: ost, honung, bröd och grönsaker direkt från gårdarna.') }),
   LN('l_dekor', -796, 116, 112, sw(-738), { sign: $t('PYNT & TING'), icon: '🕯️', soon: $t('Pynt & Ting öppnar snart – kuddar, ljus, lampor och krimskrams till hemmet.') }),
   LN('l_bageri', -664, 88, 100, sw(-620), { sign: $t('BAGERIET'), icon: '🥖', soon: $t('Bageriet har sålt slut för i dag. Kom tillbaka i morgon bitti!') }),
-  LN('l_hus2', -560, 112, 132, sw(-504), { sign: $t('LINNÉGATAN 11'), icon: '🏡', soon: $t('Ett landshövdingehus med blomlådor i varje fönster. Här bor andra.') }),
+  LN('l_bling', -560, 112, 112, sw(-504), { sign: 'BLING BLING', icon: '💎', enter: 'bling', open: [10, 20] }),   // 💎 smycken och väskor (js/scenes/shop-bling.js)
   LN('l_blommor', -432, 84, 96, sw(-390), { sign: $t('BLOMSTER'), icon: '💐', soon: $t('Blomsteraffären är full av höstblommor – men kassan är stängd just nu.') }),
   LN('l_hus3', -332, 120, 136, sw(-272), { sign: $t('LINNÉGATAN 17'), icon: '🏡', soon: $t('Huset med den stora väggmålningen. Här bor andra.') }),
   LN('l_antik', -196, 96, 104, sw(-148), { sign: $t('ANTIKVARIAT'), icon: '📚', soon: $t('Antikvariatet: gamla böcker från golv till tak. Ägaren läser och vill inte bli störd.') }),
@@ -773,7 +773,7 @@ export const isNightHour = (h) => h >= 19.5 || h < 6.5;
 // Alla enter-värden som scenen (city.js enter()) känner. Scennamnen i andra raden leder in i en egen
 // scen (city.js SCENE_DOORS → main.js): butikerna i downtown, Pixelhögskolan, bion, kebaben, pantbanken och garaget.
 export const ENTER_RE = new RegExp('^(hem|bostad|mat|klader|mobler|kafe|djur|burgare|frukt|flyg|glass|narbutik|leksaker'
-  + '|bank|elektronik|frisor|skor|accessoarer|universitet|bio|kebab|pantbank|fordon|maskerad|fiskkrog'
+  + '|bank|elektronik|frisor|skor|accessoarer|universitet|bio|kebab|pantbank|fordon|maskerad|fiskkrog|bling'
   + '|jobb:[a-z]+|bostad:[a-z]+)$');
 
 // Kontroll av kontraktet: returnerar en lista med problem (tom = allt stämmer).

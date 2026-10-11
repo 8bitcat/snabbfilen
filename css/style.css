@@ -678,3 +678,46 @@ html.desk-mobil #mobilen .mob-ruta .pix-ik { width: 48px; height: 48px; }
 #mobilen .mob-app.sg-pulse .mob-ruta { animation: sg-pulse 0.9s steps(2) infinite; }
 
 #mobilen .mob-app[hidden] { display: none; }   /* (KBK-appen syns bara på svenska eller när man är avstämd) */
+
+/* 💎 BLING BLING (js/scenes/shop-bling.js, från Pixelskolan): korten i montrarna (klick = klädaffärens provdialog),
+   ateljén med provfiguren, närbilden och priset, spegeln */
+.bl-sp { font-size: var(--f2); margin: 0 0 8px; }
+.bl-lbl { font: var(--f2) var(--head); margin: 8px 0 4px; }
+.bl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+.bl-card { display: flex; flex-direction: column; align-items: center; gap: 4px; background: #fff; border: 3px solid var(--ink); box-shadow: 2px 2px 0 var(--ink); padding: 6px 4px; text-align: center; font: inherit; color: inherit; cursor: pointer; }
+.bl-card:hover, .bl-card:focus-visible { transform: translate(-1px, -1px); box-shadow: 3px 3px 0 var(--ink); outline: none; }
+.bl-card.on { background: #fde7f1; border-color: #b83a78; }
+.bl-card b { font-size: var(--f2); line-height: 1; hyphens: manual; overflow-wrap: anywhere; }
+.bl-tag { font-size: var(--f2); line-height: 1; background: #f0d048; border: 2px solid var(--ink); padding: 1px 5px 0; }
+.bl-card.own .bl-tag { background: #45b964; color: #fff; }
+.bl-card.on .bl-tag { background: #f07ab0; color: #fff; }
+.bl-pre canvas { display: block; max-width: 100%; image-rendering: pixelated; background: linear-gradient(#fbe6ef, #f3cfe0); border: 2px solid var(--ink); }
+.dlg.bl-wide { width: min(1000px, 100%); container-type: inline-size; }
+.bl-design { display: grid; grid-template-columns: auto minmax(0, 288px) minmax(0, 1fr); gap: 12px; align-items: start; }
+.bl-try, .bl-show { position: sticky; top: 0; display: flex; flex-direction: column; gap: 6px; }
+.bl-stage { display: flex; align-items: flex-end; justify-content: center; gap: 6px; padding: 10px 12px 0; border: 3px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); background: linear-gradient(#fbe6ef 0 72%, #e8b84a 72% 73%, #f3cfe0 73% 100%); }
+.bl-fig { display: flex; flex-direction: column; align-items: center; }
+.bl-fig canvas { display: block; image-rendering: pixelated; }
+.bl-fig small { font-size: var(--f1); line-height: 1; background: var(--ink); color: #fff; padding: 2px 6px 1px; margin-bottom: 6px; white-space: nowrap; }
+.bl-arrow { font-size: var(--f2); padding-bottom: 40px; }
+.bl-turn { display: flex; gap: 6px; align-items: center; justify-content: center; }
+.bl-view { font-size: var(--f1); min-width: 74px; text-align: center; }
+.bl-canvas canvas { display: block; width: auto; height: auto; max-width: 100%; max-height: 34vh; image-rendering: pixelated; border: 3px solid var(--ink); }
+.bl-sum { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; background: #2a1a2e; color: #ffd23f; padding: 4px 8px; border: 3px solid var(--ink); }
+.bl-sum b { font: var(--f3) var(--head); line-height: 1; }
+.bl-sum .bl-sp { color: #f3cfe0; margin: 0; }
+.bl-list { list-style: none; margin: 0; padding: 0; font-size: var(--f1); }
+.bl-list li { display: flex; justify-content: space-between; gap: 6px; border-bottom: 1px dashed var(--paper2); padding: 1px 0; }
+.bl-pick { min-width: 0; }
+.bl-grp:first-child .bl-lbl { margin-top: 0; }
+.bl-opts, .bl-mine { display: flex; flex-wrap: wrap; gap: 5px; }
+.bl-opts .btn { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 1px; text-align: left; }
+.bl-opts .btn small { font-size: var(--f1); opacity: .75; }
+.bl-opts .btn i { display: block; width: 14px; height: 8px; border: 2px solid var(--ink); }
+.bl-mine { margin-bottom: 4px; }
+.bl-mirror { display: flex; gap: 14px; align-items: flex-start; flex-wrap: wrap; }
+.bl-mir-r { flex: 1 1 220px; min-width: 0; }
+html.desk-mobil .bl-list { display: none; }
+html.desk-mobil .bl-opts .btn small, html.desk-mobil .bl-fig small, html.desk-mobil .bl-view { font-size: var(--f15); }
+@media (max-height: 520px) { .bl-list { display: none; } .bl-sum b { font-size: var(--f2); } .bl-canvas canvas { max-height: 30vh; } .bl-stage { padding-top: 6px; } .bl-arrow { padding-bottom: 24px; } }
+@container (max-width: 760px) { .bl-design { grid-template-columns: auto minmax(0, 1fr); } .bl-show { grid-column: 1; position: static; } .bl-pick { grid-column: 2; grid-row: 1 / span 2; } .bl-canvas canvas { max-height: 24vh; } }

@@ -359,6 +359,10 @@ function hangSign(P, x, y, kind, right = true) {
   } else if (kind === 'strut') {
     for (let j = 1; j <= 5; j++) for (let i = -3; i <= 3; i++) if (Math.hypot(i / 3.4, (j - 3.5) / 2.6) < 1) G(i, j, j < 3 ? 0xf8c8d8 : i < 0 ? 0xf8f0e0 : 0xe8a8c0);
     for (let j = 6; j <= 10; j++) { const hw = Math.round((10 - j) * 0.6); for (let i = -hw; i <= hw; i++) G(i, j, (i + j) % 2 ? 0xd8a04a : 0xb07a2a); }
+  } else if (kind === 'diamant') {                                                     // 💎 BLING BLING: en slipad diamant
+    const D = [[-3, 4], [-2, 4], [-1, 4], [0, 4], [1, 4], [2, 4], [3, 4], [-4, 5], [-3, 5], [-2, 5], [-1, 5], [0, 5], [1, 5], [2, 5], [3, 5], [4, 5], [-3, 6], [-2, 6], [-1, 6], [0, 6], [1, 6], [2, 6], [3, 6], [-2, 7], [-1, 7], [0, 7], [1, 7], [2, 7], [-1, 8], [0, 8], [1, 8], [0, 9]];
+    for (const [a, c] of D) G(a, c, c === 4 ? 0xe8f6ff : c === 5 ? (a < 0 ? 0xbfe6f6 : 0x8ac8e8) : a < 0 ? 0x9ad4ee : 0x5aa8d8);
+    G(-2, 4, 0xffffff); G(-3, 5, 0xffffff); G(1, 6, 0x3a88c0); G(0, 8, 0x3a88c0); G(4, 2, 0xffffff); G(-5, 3, 0xffffff);
   } else if (kind === 'kanna') {
     for (let j = 4; j <= 8; j++) for (let i = -3; i <= 2; i++) G(i, j, i === -3 ? 0x6a9ad0 : j === 4 ? 0xb8d4f0 : 0x3a6ab0);
     G(-1, 3, 0x2a4a80); G(0, 3, 0x2a4a80); G(3, 5, 0x3a6ab0); G(4, 4, 0x3a6ab0); G(-4, 5, 0x3a6ab0); G(-5, 6, 0x3a6ab0);
@@ -425,7 +429,7 @@ function mural(P, x, y, w, h, seed) {
 // displayFront både i fasaden och i en egen överbild per fönster (disken/fönsterbänken, glasets
 // reflexer, spröjsen). live() ritar expediten och de små rörelserna MELLAN lagren – då står
 // expediten bakom disken och glaset. anim = [x, y, sort] (canvas-koordinater) för live().
-const BACKS = { kafe: 0xf0e0c4, gard: 0x6a4a30, pynt: 0xf4e4e4, bageri: 0xf2e2c0, blommor: 0xd4e8cc, antik: 0x6a4630, loppis: 0xece0c8, cykel: 0xc8ccd2, glass: 0xfce8f0 };
+const BACKS = { bling: 0xf7dce8, kafe: 0xf0e0c4, gard: 0x6a4a30, pynt: 0xf4e4e4, bageri: 0xf2e2c0, blommor: 0xd4e8cc, antik: 0x6a4630, loppis: 0xece0c8, cykel: 0xc8ccd2, glass: 0xfce8f0 };
 const BOOKS = [0x8a2a24, 0x2a4a6a, 0x3a5a3a, 0x8a6a2a, 0x5a3a5a, 0xc8b490, 0x6a2a3a, 0x2a5a5a];
 function displayBack(P, x, y, w, h, kind, night, seed, anim, warm) {
   const back = BACKS[kind] ?? 0xe8e0d0;
@@ -483,6 +487,19 @@ function displayBack(P, x, y, w, h, kind, night, seed, anim, warm) {
     for (let i = x + 3; i < x + w - 3; i += 4) { R(i, y + 3 + ((i + seed) % 3), 1, 5, 0x4a4e58); G(i, y + 2 + ((i + seed) % 3), 0xc84a3a); }   // verktygen
     const cx = x + (w >> 1), cy = y + 12;
     for (let a = 0; a < 16; a++) { const an = a / 16 * Math.PI * 2; G(Math.round(cx - 8 + Math.cos(an) * 4), Math.round(cy + Math.sin(an) * 4), 0x2a2a30); }   // ett hjul på väggen
+  } else if (kind === 'bling') {
+    shelf(y + 9, 0xe8b84a);                                                                  // guldhyllan med byster och halsband
+    for (let i = x + 3; i < x + w - 6; i += 8) {
+      R(i + 1, y + 2, 3, 5, 0x23244f); R(i, y + 6, 5, 3, 0x23244f); G(i + 1, y + 2, 0x3a3c78); G(i, y + 6, 0x3a3c78);
+      const c = [0xe8b84a, 0xf6f2ea, 0xe8394f, 0x4f8ff0][(i + seed) % 4];
+      G(i, y + 5, c); G(i + 1, y + 6, c); G(i + 2, y + 7, c); G(i + 3, y + 6, c); G(i + 4, y + 5, c);
+    }
+    for (let i = x + 2; i < x + w - 7; i += 9) {                                             // väskor på krokar
+      const c = [0xf07ab0, 0x3a7bd5, 0xf2c94e, 0x9a62d8, 0x2ab0b0][(i + seed) % 5], d = mul(c, 0.7);
+      G(i + 3, y + 11, 0x8a6a2a); R(i + 1, y + 12, 5, 1, d); G(i + 1, y + 13, d); G(i + 5, y + 13, d);
+      R(i, y + 14, 7, 5, c); R(i, y + 14, 7, 1, mix(c, WHITE, 0.3)); G(i + 3, y + 16, 0xf2c14e);
+    }
+    anim.push([x + 4 + (seed % Math.max(1, w - 8)), y + 4, 'glitter']);
   } else if (kind === 'glass') {
     for (let i = x + 2; i < x + w - 4; i += 5) { R(i, y + h - 6, 4, 3, 0xd8dce0); R(i, y + h - 7, 4, 1, [0xf8c8d8, 0xf8f0d0, 0x8a5a3a, 0xa8e0b0, 0xf0d060][(i + seed) % 5]); }
   }
@@ -532,6 +549,13 @@ function displayFront(T, x, y, w, h, kind, night, seed, anim) {
     for (let i = x + w - 13; i < x + w - 3; i += 3) R(i, by - 6, 2, 6, [0x2a2a30, 0xd84a3a, 0x3a6ab0, 0xf0c040][(i + seed) % 4]);   // skivor
     for (let i = x + 5; i < x + w - 5; i += 9) { G(i, y + 1, 0xd8d0c0); G(i, y + 2, 0xd8d0c0); R(i - 1, y + 3, 3, 2, 0xfaf6ea); G(i, y + 3, 0xc84a3a); }  // prislappar i snören
     if (anim) anim.push([x + (w >> 1), y + 1, 'mobil']);
+  } else if (kind === 'bling') {
+    counter(0xfff7f0, 5); R(x, by - 5, w, 1, 0xe8b84a);                                      // vit glasdisk med guldkant
+    for (let i = x + 2; i < x + w - 4; i += 6) {                                             // ringar och stenar på sammet
+      R(i, by - 7, 4, 2, 0x8e1f3c);
+      G(i + 1, by - 8, [0xe8394f, 0x4f8ff0, 0x3fbf7a, 0xb07ae0, 0xffffff][(i + seed) % 5]); G(i + 2, by - 8, 0xe8b84a);
+    }
+    if (anim) { anim.push([x + 3, by - 9, 'glitter']); anim.push([x + w - 5, y + 3, 'glitter']); }
   } else if (kind === 'cykel') {
     const cx = x + (w >> 1) + 2, cy = by - 6;                                                // en cykel i reparationsstället
     R(cx - 1, by - 3, 3, 4, 0x4a4e58); R(cx - 4, by, 9, 1, 0x3a3e46);
@@ -757,6 +781,21 @@ function shopfront(P, K, o) {
       K.glows.push([K.wx(a), K.wy(wy0), z - a, wy1 - wy0, 0xffc060, 0.2]);
       return { top, fy, fh };
     }
+    case 'bling': {   // 💎 BLING BLING: svartlackerad front med guldlister, guldskylt med rosa skugga, rosa-vit randig markis
+      woodFront(P, L, R, top, GB, col);
+      const fy = top + 1, fh = 14;
+      P.rect(L, fy, R - L, fh, o.fascia); P.hl(L, fy, R - L, 0xe8b84a); P.hl(L, fy + fh - 1, R - L, 0xb9862a);
+      for (let x = L + 3; x < R - 2; x += 4) P.px(x, fy + 2, 0xe8b84a);                       // guldprickar längs skylten
+      signText(P, BIG, sign, L + ((R - L - textW(BIG, sign)) >> 1), fy + 4, 0xf2cc5a, 0xb83a78, 0xfff0b0);
+      awning(P, L + 2, fy + fh + 2, R - L - 4, 5, o.awning[0], o.awning[1], { stripe: 4, drop: 3, ext: 2 });
+      shopWin(P, K, L + 5, top + 26, dx0 - 4, GB - 9, { kind: 'bling', frame: 0xe8b84a, keeper: true });
+      shopWin(P, K, dx1 + 4, top + 26, R - 5, GB - 9, { kind: 'bling', frame: 0xe8b84a, keeper: false });
+      panelRow(P, L + 5, dx0 - 4, GB - 8, col); panelRow(P, dx1 + 4, R - 5, GB - 8, col);
+      pilaster(P, L, top + 17, GB, col); pilaster(P, R - 4, top + 17, GB, col);
+      doorWay(P, K, col);
+      K.glows.push([K.wx(L + 5), K.wy(top + 26), dx0 - L - 9, GB - top - 35, 0xffd0e8, 0.15]);   // rosa sken ur fönstret
+      return { top, fy, fh };
+    }
     case 'loppis': {   // LOPPISEN: ockra bräder ner till marken, handmålad sned skylt med hjärtan, olika fönster
       boards(P, L, top, R - L, GB - top, K.wall, K.seed);
       for (const x of [L, R - 3]) { P.rect(x, top, 3, GB - top, K.trim); P.vl(x + 2, top, GB - top, mul(K.trim, 0.72)); }
@@ -826,6 +865,9 @@ function drawAnim(ctx, [x, y, kind], t, night) {
     ctx.fillStyle = '#d8c070'; ctx.fillRect(x + s, y + 2, 1, 2); ctx.fillRect(x - 1 + s, y + 4, 3, 1);
   } else if (kind === 'ugn') {
     ctx.fillStyle = rgba(0xff9a30, 0.25 + 0.2 * Math.abs(Math.sin(t * 3 + x))); ctx.fillRect(x - 3, y - 1, 6, 3);
+  } else if (kind === 'glitter') {                                                       // 💎 det glittrar i BLING BLINGs fönster
+    const ph = (t * 1.3 + x * 0.37 + y * 0.11) % 3;
+    if (ph < 1) { const r = ph < 0.5 ? 1 : 2; ctx.fillStyle = '#ffffff'; ctx.fillRect(x - r, y, r * 2 + 1, 1); ctx.fillRect(x, y - r, 1, r * 2 + 1); }
   } else if (kind === 'lampa' && night) {
     ctx.fillStyle = rgba(0xffe0a0, 0.25); ctx.fillRect(x - 2, y, 5, 3);
   }
@@ -1396,8 +1438,11 @@ const SPEC = {
     shop: { style: 'konditori', kind: 'bageri', col: 0x7a4a2a, fascia: 0x5a3018, awning: [0xc8443a, 0xf4f0e6], sign: $t('BAGERIET') }, hang: ['kringla', false],
     look: { skin: '#f6d7bf', hair: '#d8c8a0', style: 'short', shirt: '#f4f1ea', pants: '#f4f1ea', apron: true }, greet: $t('NYGRÄDDAT I MORGON!'),
     items: [['tavla2', 14], ['bank', 72]] },
-  l_hus2: { type: 'lhus', upper: 'boards', wall: 0x9cb88a, stone: 0xb0aaa0, roof: 'tile', roofCol: 0xa44a34, dormers: [0.25, 0.75], chimneys: [0.5], floors: 2, crown: 'gable', flowers: MIX5, flowerP: 0, door: 0x8a3a2a, num: '11', fretwork: true,
-    items: [['buxbom', 30], ['buxbom', 82], ['cykel2', 100]] },
+  // 💎 BLING BLING (Carl 2026-10-11: en egen smyckesbutik i staden – inne i js/scenes/shop-bling.js). Förr LINNÉGATAN 11.
+  l_bling: { type: 'shop', upper: 'plaster', wall: 0xf4dce6, roof: 'metal', roofCol: 0x3a2a44, dormers: [0.5], floors: 1, crown: 'cornice', flowers: PINK, flowerP: 0, lightsTop: true, hours: [10, 20],
+    shop: { style: 'bling', kind: 'bling', col: 0x2a1a2e, fascia: 0x2a1a2e, awning: [0xf07ab0, 0xfff7f0], sign: 'BLING BLING' }, hang: ['diamant', true],
+    look: { skin: '#f1c7a3', hair: '#ecd489', style: 'bun', shirt: '#f07ab0', pants: '#2b2a33', bottom: 'skirt', neck: 'pearls', jewel: 'hoops' }, greet: $t('VÄLKOMMEN IN!'),
+    items: [['kruka', 12], ['kruka', 98]] },
   l_blommor: { type: 'shop', upper: 'plaster', wall: 0xf2dc94, roof: 'tile', chimneys: [0.7], floors: 1, crown: 'cornice', flowers: MIX5, flowerP: 0, ivy: ['L', 'gron'],
     shop: { style: 'orangeri', kind: 'blommor', col: 0x2e5a2c, sign: $t('BLOMSTER') }, hang: ['blomma', true],
     look: { skin: '#eabf98', hair: '#c8642a', style: 'ponytail', shirt: '#5aa060', pants: '#2d3a5c', apron: true }, greet: $t('TULPANERNA ÄR HÄR!'),

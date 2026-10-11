@@ -10,6 +10,12 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.106.0] – 2026-10-11 – BLING BLING
+- 💎 BLING BLING har öppnat i Linnéstaden, mellan Bageriet och Blomster: en smyckesbutik med halsband, örhängen, armband, ringar, klockor och väskor. Klicka i glasmontrarna eller på väskväggen så provar du sakerna på dig innan du köper.
+- 📿 Vid ateljéborden längst in designar du ett eget halsband (kedja, hänge, sten och pärlor) eller en egen väska (modell, färg, mönster och berlock). Det du gör blir bara ditt, och figuren har det på sig direkt.
+- 🪞 I spegeln tar du på och av allt du har köpt i butiken och dina egna designer.
+- Öppet 10–20. Butiken finns på alla åtta språken.
+
 ## [0.105.0] – 2026-10-11 – Notiser till KBK-laget (förberett)
 - Förberett för pushnotiser till KBK-laget: när en KBK-spelare hoppar in får lagets telefoner en notis – även när appen är stängd. Det börjar fungera med appen Pixelcity 1.2.
 - I appen frågar telefonen om lov att visa notiser när du har stämt av dig i KBK-appen. "Inte jag – ta bort" stänger av notiserna.

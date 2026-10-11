@@ -153,6 +153,7 @@ const DOOR_SCENES = [
   ['universitet', './scenes/shop-universitet.js', 'makeShopUniversitet'],
   ['maskerad', './scenes/shop-maskerad.js', 'makeShopMaskerad'],
   ['sjoboden', './scenes/shop-sjoboden.js', 'makeShopSjoboden'],
+  ['bling', './scenes/shop-bling.js', 'makeShopBling'],   // 💎 BLING BLING (Carl 2026-10-11, från Pixelskolan)
   ['jobbdatorbygge', './jobs/jobb-datorbygge.js', 'makeJobbDatorbygge'],
   ['jobbfinans', './jobs/jobb-finans.js', 'makeJobbFinans'],
 ];
@@ -509,7 +510,7 @@ const PLACE_AWAY = {
 // ställena bakom stadens dörrar (DOOR_SCENES) – bara där ingen text redan finns
 for (const [k, v] of Object.entries({ bank: $t('🏦 på banken'), elektronik: $t('📱 i elektronikbutiken'), frisor: $t('💈 hos frisören'), skor: $t('👟 i skobutiken'),
   accessoarer: $t('👜 i accessoarbutiken'), bio: $t('🎬 på bion'), kebab: $t('🥙 på kebaben'), pantbank: $t('💍 på pantbanken'), universitet: $t('🎓 på Pixelhögskolan'),
-  jobbdatorbygge: $t('🖥️ bygger datorer på Pixel Data'), jobbfinans: $t('📈 handlar aktier på Finanshuset'), koket: $t('🍳 lagar mat hemma'), tradgard: $t('🌱 i trädgården'), fordon: $t('🔧 i garaget'), maskerad: $t('🎃 i maskeradbutiken'), sjoboden: $t('🐟 på Sjöboden'), jobbtruck: $t('🚚 står i sin foodtruck'), landet: $t('🌾 ute på landet'), hopp: $t('🏇 hoppar på hinderbanan') })) PLACE_AWAY[k] ??= v;
+  jobbdatorbygge: $t('🖥️ bygger datorer på Pixel Data'), jobbfinans: $t('📈 handlar aktier på Finanshuset'), koket: $t('🍳 lagar mat hemma'), tradgard: $t('🌱 i trädgården'), fordon: $t('🔧 i garaget'), maskerad: $t('🎃 i maskeradbutiken'), sjoboden: $t('🐟 på Sjöboden'), bling: $t('💎 på BLING BLING'), jobbtruck: $t('🚚 står i sin foodtruck'), landet: $t('🌾 ute på landet'), hopp: $t('🏇 hoppar på hinderbanan') })) PLACE_AWAY[k] ??= v;
 function placeOf(p, info) {
   const s = String(p.scene || 'away');
   if (s === 'city') return $t('🏙️ i staden');
@@ -831,7 +832,7 @@ function boot() {
 // som läser A.view.safe – där står beskärningen still (annars följer två kameror samtidigt).
 // Flyttas i hela device-pixlar – bilden förblir skarp.
 const OWN_CAM_Y = new Set(['jobbvard', 'jobbincheck', 'jobbverkstad']);
-const followsY = (n) => n === 'room' || n === 'visit' || (n.startsWith('jobb') && !OWN_CAM_Y.has(n));
+const followsY = (n) => n === 'room' || n === 'visit' || n === 'bling' || (n.startsWith('jobb') && !OWN_CAM_Y.has(n));   // (bling: ateljébordet längst ner i BLING BLING)
 function followCrop(dt) {
   const c = A.view.crop; if (!c) return;
   const extra = Math.max(0, c.ch - c.ah);
