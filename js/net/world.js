@@ -524,7 +524,7 @@ export const worldMyKey = () => myKey(); // fast per webbläsare och figur – r
 // ---------- besök ----------
 export function playersList() {
   if (!W || !W.open) return [];
-  return [...W.players].filter(([, p]) => !isBlockedKey(p.key)).map(([id, p]) => ({ id, av: p.av, scene: p.scene, home: p.home, x: p.x, y: p.y, ver: p.ver || null, key: p.key || null, hu: p.hu || '' }));
+  return [...W.players].filter(([, p]) => !isBlockedKey(p.key)).map(([id, p]) => ({ id, av: p.av, scene: p.scene, home: p.home, x: p.x, y: p.y, ver: p.ver || null, key: p.key || null, hu: p.hu || '', kb: p.kb || 0 }));   // (kb: ⚽ lagnumret i KBK, js/core/kbklag.js)
 }
 // Namnet på den som har ett visst spelar-id (för "hemma hos …")
 export function playerName(id) {

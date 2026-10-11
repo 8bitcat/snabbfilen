@@ -10,6 +10,12 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.104.0] – 2026-10-11 – KBK i mobilen
+- ⚽ KBK har fått en egen app i mobilen med en pixlad lagsköld. Skriv ditt förnamn och nummer så vet spelet vem du är i laget.
+- I appen ser du vilka lagkompisar som är inne i Pixelstaden just nu och hela laget – och appen visar en siffra när någon är inne.
+- När en lagkompis hoppar in får du en hälsning: "⚽ Julia 34 från KBK har precis hoppat in i Pixelstaden!"
+- Mobilen har fyra kolumner på telefonen så att alla appar får plats.
+
 ## [0.103.0] – 2026-10-11 – Jobben och vägen hem i mobilen
 - Två nya appar i mobilen: 💼 Jobb visar alla jobb i Pixelstaden, närmast först – var de ligger, när de har öppet, din nivå och lönen. Tryck på 🧭 Visa vägen så pekar en pil dit, eller ta en 🚕 taxi.
 - 🏠 Hem visar vägen hem med pilen.

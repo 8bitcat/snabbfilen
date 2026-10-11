@@ -21,11 +21,13 @@ import { modalOpen } from './ui.js';
 import { clock } from '../game.js';
 import { openJobben, visaHem } from './jobben.js';   // 💼 jobben och 🏠 vägen hem (Carl 2026-10-11)
 import { guidePeka } from './startguide.js';
+import { openKbkApp, kbkAppSyns, lagInne } from './kbklag.js';   // ⚽ KBK-appen (Carl 2026-10-11)
 
 const APPAR = [
   { id: 'karta', src: 'hud-map', ik: 'karta', namn: $t('Karta') },
   { id: 'jobb', fn: (A) => openJobben(A), ik: 'jobb', namn: $t('Jobb') },
   { id: 'hem', fn: (A) => visaHem(A), ik: 'hem', namn: $t('Hem') },
+  { id: 'kbk', fn: (A) => openKbkApp(A), ik: 'kbk', namn: 'KBK', syns: (A) => kbkAppSyns(A?.avatar) },
   { id: 'taxi', src: 'hud-taxi', ik: 'taxi', namn: $t('Taxi') },
   { id: 'kompisar', src: 'hud-friends', ik: 'kompisar', namn: $t('Kompisar') },
   { id: 'chatt', src: 'hud-chat', ik: 'chatt', namn: $t('Chatt') },
@@ -96,8 +98,11 @@ function uppdatera() {
   knapp.classList.toggle('sg-pulse', !!peka && !oppen);
   panel.querySelectorAll('[data-app]').forEach((b) => b.classList.toggle('sg-pulse', !!peka && b.dataset.app === peka.app));
   if (!oppen) return;
+  panel.querySelectorAll('[data-app]').forEach((b) => { const a = APPAR.find((x) => x.id === b.dataset.app); if (a?.syns) b.hidden = !a.syns(A); });
   const badge = (id, txt) => { const el = panel.querySelector(`[data-badge="${id}"]`); if (!el) return; el.classList.toggle('hidden', !txt); if (txt && el.textContent !== txt) el.textContent = txt; };
   badge('kompisar', n ? String(n) : '');
+  const lag = lagInne().length;
+  badge('kbk', lag ? String(lag) : '');
   badge('nyheter', ny ? $t('NY') : '');
   badge('rost', rostPa ? $t('PÅ') : '');
   const g = A?.game;

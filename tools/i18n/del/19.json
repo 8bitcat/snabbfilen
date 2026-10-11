@@ -1,0 +1,52 @@
+[
+ {
+  "i": 7621,
+  "f": "js/core/kbklag.js",
+  "k": "Du är {0}"
+ },
+ {
+  "i": 7622,
+  "f": "js/core/kbklag.js",
+  "k": "Kungsladugård i Pixelstaden"
+ },
+ {
+  "i": 7623,
+  "f": "js/core/kbklag.js",
+  "k": "Inne i Pixelstaden nu"
+ },
+ {
+  "i": 7624,
+  "f": "js/core/kbklag.js",
+  "k": "Ingen lagkompis är inne just nu."
+ },
+ {
+  "i": 7625,
+  "f": "js/core/kbklag.js",
+  "k": "Laget"
+ },
+ {
+  "i": 7626,
+  "f": "js/core/kbklag.js",
+  "k": "🔔 Du får en hälsning när en lagkompis hoppar in i Pixelstaden."
+ },
+ {
+  "i": 7627,
+  "f": "js/core/kbklag.js",
+  "k": "⚽ KBK"
+ },
+ {
+  "i": 7628,
+  "f": "js/core/kbklag.js",
+  "k": "Inte jag – ta bort"
+ },
+ {
+  "i": 7629,
+  "f": "js/core/kbklag.js",
+  "k": "⚽ Borttagen från laget i spelet."
+ },
+ {
+  "i": 7630,
+  "f": "js/net/kbk.js",
+  "k": "⚽ {0} från KBK har precis hoppat in i Pixelstaden!"
+ }
+]

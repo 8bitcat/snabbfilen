@@ -49,7 +49,7 @@ export function kbkKomIn(A, p) {
   const k = p.key || 'nr' + deras, nu = Date.now();
   if (nu - (halsad.get(k) || 0) < OM_IGEN_MS) return true;   // samma lagkompis nyss – ingen ny hälsning
   halsad.set(k, nu);
-  const text = $t`⚽ ${etikett(deras)} från KBK är i Pixelstaden!`;
+  const text = $t`⚽ ${etikett(deras)} från KBK har precis hoppat in i Pixelstaden!`;   // (Carl: "XXX har precis hoppat in i Pixelcity")
   play('knock');
   toast(text, 'good');
   bakgrundsnotis(text);

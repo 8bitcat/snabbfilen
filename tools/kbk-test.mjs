@@ -6,6 +6,8 @@
 //   • en spelare som inte spelar i KBK hälsas som vanligt (👋 … är i Pixelstaden!)
 //   • samma lagkompis igen (omladdning) hälsas inte en gång till
 //   • Ta bort → raden visar "Jag spelar i KBK" igen
+//   • ⚽ KBK-appen i mobilen (lagskölden): "Du är Julia 34", Lily står som inne, märket 1 på appen, laget med Lily grön;
+//     på engelska syns appen inte för den som inte är avstämd
 // Kör: node tools/kbk-test.mjs   (servern på 8788, eller SMOKE_PORT / PORT)
 import { createRequire } from 'module';
 const require = createRequire('D:/Qisy/QISYFrontend/QISYFrontend-1/package.json');
@@ -58,11 +60,19 @@ await J.p.keyboard.press('Escape'); await J.p.waitForTimeout(300);
 // ---- Lily (också KBK) och Kalle (inte KBK) kommer in ----
 await J.p.waitForTimeout(2500);   // (Julia är värd för den lilla testvärlden)
 const L = await spelare('Lilypixel', 'id-lily', 20);
-ok(await vanta(J.p, /⚽ Lily 20 från KBK/), `Julia får en egen hälsning när lagkompisen Lily kommer in (${(await toasts(J.p)).slice(-90)})`);
+ok(await vanta(J.p, /⚽ Lily 20 från KBK har precis hoppat in/), `Julia får en egen hälsning när lagkompisen Lily kommer in (${(await toasts(J.p)).slice(-90)})`);
 ok(await vanta(L.p, /⚽ Lagkompisar i Pixelstaden: Julia 34/), 'Lily ser att lagkompisen Julia redan är där');
 const K = await spelare('Kalle', 'id-kalle');
 ok(await vanta(J.p, /👋 Kalle är i Pixelstaden/), 'en spelare som inte spelar i KBK hälsas som vanligt');
 ok(!/⚽ Lagkompisar/.test(await toasts(K.p)), 'Kalle (inte KBK) får ingen lagkompishälsning');
+// ⚽ KBK-appen i mobilen
+await J.p.click('#hud-mobil'); await J.p.waitForTimeout(500);
+const tile = await J.p.evaluate(() => { const b = document.querySelector('#mobilen [data-app="kbk"]'); return { syns: !!b && !b.hidden, ikon: !!b?.querySelector('img.pix-ik'), badge: b?.querySelector('[data-badge="kbk"]:not(.hidden)')?.textContent || '' }; });
+ok(tile.syns && tile.ikon && tile.badge === '1', `KBK-appen syns i mobilen med lagskölden och märket ${tile.badge} (Lily är inne)`);
+await J.p.click('#mobilen [data-app="kbk"]'); await J.p.waitForTimeout(400);
+const app = await J.p.evaluate(() => ({ du: document.querySelector('.kb-du')?.textContent || '', inne: document.querySelector('.kb-inne')?.innerText || '', lily: document.querySelector('.kb-spel.inne')?.textContent || '', jag: document.querySelector('.kb-spel.jag')?.textContent || '' }));
+ok(/Julia 34/.test(app.du) && /Lily 20/.test(app.inne) && /20s*Lily/.test(app.lily) && /34s*Julia/.test(app.jag), `appen: ${app.du}, inne: ${app.inne.replace(/s+/g, ' ')}, laget med Lily grön och Julia markerad`);
+await J.p.evaluate(() => { const m = document.querySelector('#modal'); m.classList.add('hidden'); m.innerHTML = ''; });
 // Lily laddar om → ingen ny hälsning hos Julia
 const fore = (await toasts(J.p)).split('⚽ Lily 20').length;
 await L.p.reload(); await L.p.waitForFunction(() => !!window.SF?.game, null, { timeout: 30000 }); await L.p.waitForTimeout(6000);
@@ -73,6 +83,17 @@ await J.p.click('#hud-mobil'); await J.p.click('#mobilen [data-app="installninga
 await J.p.click('[data-kbk-av]'); await J.p.waitForTimeout(200);
 ok(await J.p.evaluate(() => !!document.querySelector('[data-kbk]') && !JSON.parse(localStorage.getItem('snabbfilen_kbk'))['id-julia']), 'Ta bort → raden visar Jag spelar i KBK igen');
 for (const s of [J, L, K]) await s.ctx.close();
+// på engelska: ingen KBK-app för den som inte är avstämd
+{
+  const ctx = await browser.newContext({ viewport: { width: 1200, height: 760 } }); const p = await ctx.newPage();
+  await p.goto(`http://localhost:${PORT}/index.html?nomenu&lang=en&world=${WORLD}en`);
+  await p.evaluate(() => { localStorage.clear(); localStorage.setItem('snabbfilen_avatar', JSON.stringify({ id: 'id-en', name: 'Tom', look: { skin: '#e0a97f' }, color: '#ffd23f' })); localStorage.setItem('snabbfilen_save1', JSON.stringify({ v: 1, day: 3, min: 13 * 60, money: 900, hunger: 70, energy: 80, home: 'husvagn', fridge: {}, jobs: {}, earned: 0, mal: { id: 'rik', niva: 'latt' } })); });
+  await p.reload(); await p.waitForFunction(() => !!window.SF?.game, null, { timeout: 30000 }); await p.waitForTimeout(800);
+  await p.evaluate(() => { const m = document.querySelector('#modal'); m.classList.add('hidden'); m.innerHTML = ''; });
+  await p.click('#hud-mobil'); await p.waitForTimeout(500);
+  ok(await p.evaluate(() => document.querySelector('#mobilen [data-app="kbk"]')?.hidden === true), 'på engelska syns KBK-appen inte för den som inte är avstämd');
+  await ctx.close();
+}
 
 ok(!errs.length, `inga fel${errs.length ? ' – ' + [...new Set(errs)].slice(0, 3).join(' | ') : ''}`);
 await browser.close();

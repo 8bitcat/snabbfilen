@@ -1,7 +1,7 @@
 {
-  "version": "0.103.0",
+  "version": "0.104.0",
   "date": "2026-10-11",
-  "title": "Jobben och vägen hem i mobilen",
+  "title": "KBK i mobilen",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
@@ -48,6 +48,7 @@
     "js/core/i18n.js",
     "js/core/jobben.js",
     "js/core/karriar.js",
+    "js/core/kbklag.js",
     "js/core/livsmal.js",
     "js/core/ljudfiler.js",
     "js/core/menu.js",

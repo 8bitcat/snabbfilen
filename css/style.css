@@ -668,11 +668,13 @@ html.desk-mobil { --mob-k: 76px; }
 html.desk-mobil #hud-mobil .pix-ik { width: 48px; height: 48px; }
 html.desk-mobil .mob-badge { min-width: 26px; height: 26px; line-height: 22px; font-size: var(--f15); }
 html.desk-mobil #hud-snabb .btn { min-width: 66px; min-height: 60px; }
-html.desk-mobil #mobilen { width: 430px; padding: 10px 10px 8px; }
+html.desk-mobil #mobilen { width: 560px; padding: 10px 10px 8px; }   /* (fyra kolumner: 13 appar = fyra rader, ryms på iPhone 13 mini liggande) */
 html.desk-mobil #mobilen .mob-topp, html.desk-mobil #mobilen .mob-status, html.desk-mobil #mobilen .mob-app { font-size: var(--f15); }
-html.desk-mobil #mobilen .mob-appar { grid-template-columns: repeat(3, 1fr); gap: 12px 6px; padding: 10px 6px 12px; }
+html.desk-mobil #mobilen .mob-appar { grid-template-columns: repeat(4, 1fr); gap: 12px 6px; padding: 10px 6px 12px; }
 html.desk-mobil #mobilen .mob-ruta { width: 68px; height: 68px; }
 html.desk-mobil #mobilen .mob-ruta .pix-ik { width: 48px; height: 48px; }
 
 /* 🧭 startguiden pekar på en app i mobilen (Jobb/Hem) */
 #mobilen .mob-app.sg-pulse .mob-ruta { animation: sg-pulse 0.9s steps(2) infinite; }
+
+#mobilen .mob-app[hidden] { display: none; }   /* (KBK-appen syns bara på svenska eller när man är avstämd) */
