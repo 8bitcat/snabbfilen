@@ -1,6 +1,8 @@
 // Regressionstest för STARTGUIDEN (js/core/startguide.js) – första dagen för en ny spelare:
 //   • ny spelare (ingen sparfil): välkomstrutan → Till husvagnen → listan FÖRSTA DAGEN 0/7 syns
-//   • ut i stan: steget bockas av och 🧭-pilen pekar på Burgarbaren
+//   • ut i stan: steget bockas av och guiden lär ut MOBILEN – knappen och 💼 Jobb pulserar, Burgarbaren står
+//     överst i jobblistan och pulserar; 🧭 Visa vägen → pilen pekar på Burgarbaren och tipset byts
+//   • på kvällen: 🏠 Hem pulserar → pilen pekar hem till husvagnen
 //   • in på Burgarbaren: Doris säger till, JOBBA HÄR → Servera pulserar → Jobba ett pass pulserar
 //   • i serveringsjobbet: första serverade kunden bockar av steget, passet slut → lönen bockar av
 //   • ät (mättnaden stiger) och sov (ny dag) → "Bra jobbat!" och listan försvinner
@@ -41,11 +43,25 @@ let p = await panel();
 ok(p && /FÖRSTA DAGEN 0\/7/.test(p) && /Gå ut ur husvagnen/.test(p), `listan syns i husvagnen (${p})`);
 ok(await step() === 'ut', 'första steget: gå ut ur husvagnen');
 
-// ---- ut i stan: pilen till Burgarbaren ----
+// ---- ut i stan: guiden lär ut mobilen – 💼 Jobb → Burgarbaren → 🧭 Visa vägen ----
 await D(() => window.SF.go('city'));
-ok(await waitFor(() => window.SF.guide?.id === 'burgare', 4000), '🧭-pilen pekar på Burgarbaren');
-ok(await step() === 'dit', 'nästa steg: gå till Burgarbaren');
-// pilen tas bort med × – och kommer tillbaka först nästa gång man går ut
+ok(await waitFor(async () => (await import('/js/core/startguide.js')).guideStep() === 'dit', 4000), 'nästa steg: gå till Burgarbaren');
+ok(await waitFor(() => document.querySelector('#hud-mobil')?.classList.contains('sg-pulse'), 3000) && await D(() => !window.SF.guide), 'mobilknappen pulserar (ingen pil än – man ska använda mobilen)');
+ok(/mobilen/.test(await panel() || ''), 'tipset: öppna mobilen och tryck på Jobb');
+async function viaMobilen() {
+  await page.click('#hud-mobil'); await sleep(300);
+  const jobbPuls = await D(() => document.querySelector('#mobilen [data-app="jobb"]')?.classList.contains('sg-pulse'));
+  await page.click('#mobilen [data-app="jobb"]'); await sleep(400);
+  const forst = await D(() => { const r = document.querySelector('.jl-rad'); return { id: r?.dataset.jobb, puls: !!r?.querySelector('[data-visa].sg-pulse') }; });
+  await page.click('.jl-rad [data-visa="burgare"]'); await sleep(400);
+  return { jobbPuls, forst };
+}
+const mv = await viaMobilen();
+ok(mv.jobbPuls, 'i mobilen pulserar 💼 Jobb');
+ok(mv.forst.id === 'burgare' && mv.forst.puls, 'Burgarbaren står överst i jobblistan och pulserar');
+ok(await waitFor(() => window.SF.guide?.id === 'burgare', 2000), '🧭 Visa vägen → pilen pekar på Burgarbaren');
+ok(await waitFor(() => !document.querySelector('#hud-mobil').classList.contains('sg-pulse'), 2000) && /pilen/.test(await panel() || ''), 'mobilen slutar pulsera och tipset säger: följ pilen');
+// pilen tas bort med × – guiden sätter den inte tillbaka direkt (mobilen pulserar igen)
 await D(() => { window.SF.guide = null; });
 await sleep(700);
 ok(await D(() => !window.SF.guide), 'borttagen pil kommer inte tillbaka direkt');
@@ -60,7 +76,8 @@ ok(await step() === 'dit', 'efter omladdning: guiden fortsätter på samma steg'
 // ---- in på Burgarbaren genom dörren ----
 await D(() => window.SF.go('city'));
 await sleep(1500);
-ok(await waitFor(() => window.SF.guide?.id === 'burgare', 3000), 'pilen tillbaka när man går ut igen');
+await viaMobilen();
+ok(await waitFor(() => window.SF.guide?.id === 'burgare', 3000), 'pilen tillbaka via mobilen när man går ut igen');
 await D(() => { const d = window.SF.scene._debug; d.teleport(1146, 146); d.enter('burgare'); }); // (nära dörren – hela vägen från husvagnen tar en halv minut)
 ok(await waitFor(() => window.SF.sceneName === 'burgarbar', 5000), 'in genom dörren till Burgarbaren');
 ok(await waitFor(async () => (await import('/js/core/startguide.js')).guideStep() === 'jobb', 3000), 'nästa steg: fråga Doris om jobb');
@@ -104,7 +121,12 @@ ok(await waitFor(async () => (await import('/js/core/startguide.js')).guideStep(
 
 // ---- sov → klart ----
 await D(() => window.SF.go('city'));
-ok(await waitFor(() => window.SF.guide?.id === 'husvagn', 4000), '🧭-pilen pekar hem till husvagnen');
+await sleep(800);
+ok(await waitFor(() => document.querySelector('#hud-mobil')?.classList.contains('sg-pulse'), 3000), 'på kvällen pulserar mobilen igen');
+await page.click('#hud-mobil'); await sleep(300);
+ok(await D(() => document.querySelector('#mobilen [data-app="hem"]')?.classList.contains('sg-pulse')), 'i mobilen pulserar 🏠 Hem');
+await page.click('#mobilen [data-app="hem"]'); await sleep(400);
+ok(await waitFor(() => window.SF.guide?.id === 'husvagn', 3000), '🏠 Hem → pilen pekar hem till husvagnen');
 await D(() => { window.SF.game.sleep(); window.SF.game.save(); });
 ok(await waitFor(() => /Bra jobbat/.test(document.querySelector('#modal:not(.hidden)')?.innerText || ''), 4000), 'ny dag → "Bra jobbat!"');
 ok(await step() === null && !(await panel()), 'guiden är klar och listan borta');

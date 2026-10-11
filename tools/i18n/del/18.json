@@ -1,0 +1,67 @@
+[
+ {
+  "i": 7608,
+  "f": "js/core/jobben.js",
+  "k": "Alla jobb i Pixelstaden – närmast först. 🧭 Visa vägen så pekar en pil dit."
+ },
+ {
+  "i": 7609,
+  "f": "js/core/jobben.js",
+  "k": "{0} per rätt"
+ },
+ {
+  "i": 7610,
+  "f": "js/core/jobben.js",
+  "k": "🎓 kräver examen i {0}"
+ },
+ {
+  "i": 7611,
+  "f": "js/core/jobben.js",
+  "k": "💼 Jobben"
+ },
+ {
+  "i": 7612,
+  "f": "js/core/jobben.js",
+  "k": "🏠 Du är redan hemma."
+ },
+ {
+  "i": 7613,
+  "f": "js/core/jobben.js",
+  "k": "🚜 Gården ligger på landet – gå österut längs Pixelgatan, förbi förorten."
+ },
+ {
+  "i": 7614,
+  "f": "js/core/jobben.js",
+  "k": "🏠 Du har inget hem i staden än – fråga på bostadsbyrån."
+ },
+ {
+  "i": 7615,
+  "f": "js/core/mobilen.js",
+  "k": "Jobb"
+ },
+ {
+  "i": 7616,
+  "f": "js/core/mobilen.js",
+  "k": "Hem"
+ },
+ {
+  "i": 7617,
+  "f": "js/core/mobilen.js",
+  "k": "Mobilen: karta, jobben, vägen hem, kompisar, chatt, livsmål och inställningar"
+ },
+ {
+  "i": 7618,
+  "f": "js/core/startguide.js",
+  "k": "Öppna mobilen 📱 nere till höger och tryck på Jobb. Välj Burgarbaren – då visar en pil vägen."
+ },
+ {
+  "i": 7619,
+  "f": "js/core/startguide.js",
+  "k": "Öppna mobilen 📱 nere till höger och tryck på Hem – då visar en pil vägen hem."
+ },
+ {
+  "i": 7620,
+  "f": "js/core/startguide.js",
+  "k": "I mobilen 📱 nere till höger hittar du alla jobb under Jobb, vägen hem under Hem, och kartan, kompisarna och livsmålen. Ju mer du jobbar, desto bättre betalt."
+ }
+]

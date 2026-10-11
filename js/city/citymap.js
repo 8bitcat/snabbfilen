@@ -40,8 +40,8 @@ export function whereAmI(A) {
   if (b) { const dc = doorCenter(b); return { x: dc.x, y: dc.y, inside: null }; }
   return { x: 640, y: 296, inside: null };
 }
-const openNow = (b, g) => { if (!b.open) return true; const h = (g?.min ?? 720) / 60; return h >= b.open[0] && h < b.open[1]; };
-const hhmm = (h) => clock(Math.round(h * 60) % (24 * 60));
+export const openNow = (b, g) => { if (!b.open) return true; const h = (g?.min ?? 720) / 60; return h >= b.open[0] && h < b.open[1]; };
+export const hhmm = (h) => clock(Math.round(h * 60) % (24 * 60));
 
 // ---------- pixelkartan ----------
 // ytorna (färgpar: bas + ton för mönstret)
@@ -291,6 +291,6 @@ export function openCityMap(A, { mode = 'karta', select = null } = {}) {
   if (select && buildingById(select)) pick(buildingById(select)); else idle();
   return dlg;
 }
-const districtName = (b) => { const d = DISTRICTS.find((x) => x.name === b.district); return d ? $t(d.name).charAt(0) + $t(d.name).slice(1).toLowerCase() : (b.district || ''); };
+export const districtName = (b) => { const d = DISTRICTS.find((x) => x.name === b.district); return d ? $t(d.name).charAt(0) + $t(d.name).slice(1).toLowerCase() : (b.district || ''); };
 // för testerna: kartans storlek och en ytas namn
 export const _mapInfo = () => ({ w: MW, h: MH, k: MAP_K, x0: MX0 * MAP_K, surfaceAt });

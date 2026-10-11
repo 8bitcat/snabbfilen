@@ -1,7 +1,7 @@
 {
-  "version": "0.102.0",
-  "date": "2026-10-10",
-  "title": "Startguiden till alla",
+  "version": "0.103.0",
+  "date": "2026-10-11",
+  "title": "Jobben och vägen hem i mobilen",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
@@ -46,6 +46,7 @@
     "js/core/hud-pix.js",
     "js/core/i18n-html.js",
     "js/core/i18n.js",
+    "js/core/jobben.js",
     "js/core/karriar.js",
     "js/core/livsmal.js",
     "js/core/ljudfiler.js",

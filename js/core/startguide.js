@@ -2,7 +2,9 @@
 // Upplägget Carl valde (av fem förslag): ATT GÖRA-LISTAN + DORIS + HANDEN.
 //
 //   • En liten lista uppe till vänster visar dagens nästa steg (och resten om man fäller ut den).
-//   • I stan pekar den gula 🧭-pilen (A.guide, city.js) vägen till Burgarbaren och sedan hem.
+//   • I stan lär guiden ut MOBILEN (Carl 2026-10-11): mobilknappen och appen pulserar – 💼 Jobb → Burgarbaren →
+//     🧭 Visa vägen, och på kvällen 🏠 Hem (js/core/jobben.js). Då pekar den gula 🧭-pilen (A.guide, city.js)
+//     vägen. Har man inte hittat dit efter en stund i stan sätter guiden pilen själv (PIL_EFTER).
 //   • På Burgarbaren pratar Doris i en pratbubbla och handen pekar på JOBBA HÄR-skylten.
 //   • I serveringsjobbet visar handen först hur man gör (ta maten → ge den till kunden), sedan
 //     "DIN TUR!".
@@ -19,6 +21,7 @@ import { $t } from './i18n.js';
 import { toast, openModal, closeModal, esc, modalOpen } from './ui.js';
 import { play } from './sound.js';
 import { SMALL, ctxText, textW } from './floor-pix.js';
+import { homeBuilding } from '../city/citymap.js';
 
 const KEY = 'snabbfilen_startguide';
 const STEPS = [
@@ -31,7 +34,13 @@ const STEPS = [
   { id: 'sov', text: $t('Gå hem och sov'), tip: $t('Följ pilen hem och lägg dig i sängen.') },
 ];
 // stegen där pilen i stan visar vägen (byggnadens id i js/city/map.js)
-const ARROW = { dit: () => 'burgare', sov: (g) => (g.home === 'husvagn' ? 'husvagn' : null) };
+const ARROW = { dit: () => 'burgare', sov: (g) => homeBuilding(g)?.id || null };
+// stegen där man ska använda mobilen för att få pilen: appen, jobbet i Jobb-appen och tipset tills pilen finns
+const MOBIL = {
+  dit: { app: 'jobb', jobb: 'burgare', tip: () => $t('Öppna mobilen 📱 nere till höger och tryck på Jobb. Välj Burgarbaren – då visar en pil vägen.') },
+  sov: { app: 'hem', tip: () => $t('Öppna mobilen 📱 nere till höger och tryck på Hem – då visar en pil vägen hem.') },
+};
+const PIL_EFTER = 25;   // sekunder i stan utan pil → guiden sätter den själv (ingen ska fastna)
 
 let S = null;          // { on, done: {id: true}, earned, day, open }
 let A0 = null, el = null, pollT = 0, lastScene = '', lastH = null, ate = 0;
@@ -45,6 +54,17 @@ export function guideStep() {
   return STEPS.find((s) => !S.done[s.id])?.id || null;
 }
 export const guideOn = () => !!S?.on;
+// Vad guiden vill att man trycker på i mobilen just nu: { app, jobb } eller null (mobilen.js och jobben.js
+// pulserar knapparna). Bara när pilen inte redan visar vägen och man inte redan är framme.
+export function guidePeka() {
+  const step = guideStep(), m = MOBIL[step], A = A0;
+  if (!m || !A?.game) return null;
+  const sc = A.sceneName || '';
+  if (sc.startsWith('jobb') || sc === 'burgarbar' || (step === 'sov' && sc === 'room')) return null;
+  const mal = ARROW[step]?.(A.game);
+  if (!mal || A.guide?.id === mal) return null;
+  return { app: m.app, jobb: m.jobb || null };
+}
 
 // Starta guiden från början (nya spelare, eller ⚙ Inställningar → Startguiden)
 export function startGuide(A, { force = false } = {}) {
@@ -102,7 +122,7 @@ function finish() {
   S.on = false; S.fin = true; save();
   play('coin');
   openModal($t('🎉 Bra jobbat!'), `<p style="font-size:var(--f2);margin-top:0">${$t('Nu kan du klara dig själv i Pixelstaden!')}</p>
-    <p style="font-size:var(--f2)">${$t('I mobilen 📱 nere till höger finns kartan, kompisarna och livsmålen. På kartan hittar du fler jobb, och under Livsmål ser du vad du sparar till. Ju mer du jobbar, desto bättre betalt.')}</p>`,
+    <p style="font-size:var(--f2)">${$t('I mobilen 📱 nere till höger hittar du alla jobb under Jobb, vägen hem under Hem, och kartan, kompisarna och livsmålen. Ju mer du jobbar, desto bättre betalt.')}</p>`,
   [{ label: $t('Tack, Doris!'), cls: 'btn-go', onClick: closeModal }]);
 }
 
@@ -129,9 +149,10 @@ export function guideTick(A, dt) {
   // pilen i stan: när man kommer ut (eller när steget blir aktuellt därute) – tar man bort den
   // med × kommer den tillbaka först nästa gång man går ut
   const arrowFor = ARROW[step]?.(g);
-  if (sc === 'city' && arrowFor && (lastScene !== 'city' || S.arrowStep !== step)) {
-    S.arrowStep = step;
-    if (A.guide?.id !== arrowFor) A.guide = { id: arrowFor };
+  if (S.arrowStep !== step) { S.arrowStep = step; S.letat = 0; }
+  if (sc === 'city' && arrowFor && A.guide?.id !== arrowFor && !A.attract) {
+    S.letat = (S.letat || 0) + 0.25;
+    if (S.letat >= PIL_EFTER) { A.guide = { id: arrowFor }; S.letat = 0; }
   }
   lastScene = sc;
   render();
@@ -162,13 +183,15 @@ function render() {
   el.style.setProperty('--sg-bottom', `${er?.height ? Math.round(innerHeight - er.top + 6) : 10}px`);
   const n = STEPS.filter((s) => S.done[s.id]).length;
   const cur = STEPS.find((s) => s.id === step);
-  const key = `${step}|${n}|${S.open}`;
+  const peka = guidePeka();
+  const tip = peka ? MOBIL[step].tip() : cur.tip;
+  const key = `${step}|${n}|${S.open}|${peka ? 'm' : ''}`;
   if (el.dataset.key === key) return;
   el.dataset.key = key;
   const row = (s) => `<li class="${S.done[s.id] ? 'ok' : s.id === step ? 'nu' : ''}"><i></i>${esc(s.text)}</li>`;
   el.innerHTML = `<div class="sg-head"><button data-sg="fold" class="sg-fold">${S.open ? '▾' : '▸'} ${esc($t('FÖRSTA DAGEN'))} ${n}/${STEPS.length}</button><button data-sg="skip" class="sg-x" title="${esc($t('Hoppa över guiden'))}">×</button></div>
     ${S.open ? `<ol>${STEPS.map(row).join('')}</ol>` : `<ol>${row(cur)}</ol>`}
-    <p class="sg-tip">${esc(cur.tip)}</p>`;
+    <p class="sg-tip">${esc(tip)}</p>`;
 }
 function skipAsk() {
   play('click');

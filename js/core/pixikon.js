@@ -439,6 +439,24 @@ export const KARTOR = {
     '................',
     '................',
     '................'],
+  // 💼 Jobb-appen i mobilen (js/core/jobben.js) – en portfölj
+  jobb: [
+    '................',
+    '................',
+    '.....kkkkkk.....',
+    '.....kk..kk.....',
+    '.....kk..kk.....',
+    '.kkkkkkkkkkkkkk.',
+    'kjjjjjjjjjjjjjjk',
+    'kjhhhhhhhhhhhhjk',
+    'kjhhhhhhhhhhhhjk',
+    'kHHHHHHkkHHHHHHk',
+    'kkkkkkkyykkkkkkk',
+    'khhhhhhkkhhhhhhk',
+    'khhhhhhhhhhhhhhk',
+    'kHhhhhhhhhhhhhHk',
+    '.kkkkkkkkkkkkkk.',
+    '................'],
   // figurskaparen (js/core/figursteg.js) – ritade för förslaget "Ny start i Pixelstaden"; kropp = storleken
   penna: [
     '................',

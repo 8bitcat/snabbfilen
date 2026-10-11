@@ -5,6 +5,8 @@
 //   • Raden överst visar bara mätarna. De gamla knapparna (#hud .hud-btns) finns kvar men är dolda – de är
 //     mobilens "motor": varje app trycker på sin gamla knapp, så karta, taxi, kompisar, chatt, röst,
 //     livsmål, veckan, dagboken och nyheterna fungerar precis som förut.
+//   • 💼 Jobb (alla jobb, närmast först, 🧭 Visa vägen) och 🏠 Hem (pilen hem) – js/core/jobben.js, Carl 2026-10-11.
+//     Startguiden lär ut dem första dagen: knappen och appen pulserar (guidePeka i js/core/startguide.js).
 //   • Inställningar öppnar spelmenyn med inställningarna utfällda (ljud, musik, zoom, språk, mätare,
 //     notiser, startguiden). Där finns också Nytt spel, figurerna och versionen.
 //   • Knapparna som bara gäller där man är – 🚲 åka/gå, 🎉 fest, 🎭 dräktens rörelse – står som
@@ -17,9 +19,13 @@ import { ikonURL } from './pixikon.js';
 import { openMenu, isMenuOpen } from './menu.js';
 import { modalOpen } from './ui.js';
 import { clock } from '../game.js';
+import { openJobben, visaHem } from './jobben.js';   // 💼 jobben och 🏠 vägen hem (Carl 2026-10-11)
+import { guidePeka } from './startguide.js';
 
 const APPAR = [
   { id: 'karta', src: 'hud-map', ik: 'karta', namn: $t('Karta') },
+  { id: 'jobb', fn: (A) => openJobben(A), ik: 'jobb', namn: $t('Jobb') },
+  { id: 'hem', fn: (A) => visaHem(A), ik: 'hem', namn: $t('Hem') },
   { id: 'taxi', src: 'hud-taxi', ik: 'taxi', namn: $t('Taxi') },
   { id: 'kompisar', src: 'hud-friends', ik: 'kompisar', namn: $t('Kompisar') },
   { id: 'chatt', src: 'hud-chat', ik: 'chatt', namn: $t('Chatt') },
@@ -41,6 +47,7 @@ export function closeMobil() { if (!oppen) return; oppen = false; panel.classLis
 function app(a) {
   closeMobil();
   if (a.id === 'installningar') { openMenu(A, { pause: true, settings: true, onStart: () => {} }); return; }
+  if (a.fn) { a.fn(A); return; }
   document.getElementById(a.src)?.click();
 }
 
@@ -49,7 +56,7 @@ export function mountMobilen(app0) {
   if (knapp || typeof document === 'undefined') return;
   knapp = document.createElement('button');
   knapp.id = 'hud-mobil'; knapp.className = 'btn'; knapp.type = 'button';
-  knapp.title = $t('Mobilen: karta, taxi, kompisar, chatt, livsmål och inställningar');
+  knapp.title = $t('Mobilen: karta, jobben, vägen hem, kompisar, chatt, livsmål och inställningar');
   knapp.innerHTML = `<img class="pix-ik" src="${ikonURL('telefon')}" alt=""><span class="mob-badge kompis hidden"></span><span class="mob-badge ny hidden">!</span>`;
   knapp.onclick = () => (oppen ? closeMobil() : openMobil());
   skugga = document.createElement('div');
@@ -84,6 +91,10 @@ function uppdatera() {
   const sk = knapp.querySelector('.kompis');
   sk.classList.toggle('hidden', !n); if (n && sk.textContent !== String(n)) sk.textContent = String(n);
   knapp.querySelector('.ny').classList.toggle('hidden', !ny);
+  // 🧭 startguiden lär ut mobilen: knappen och appen pulserar (Jobb → Burgarbaren, Hem på kvällen)
+  const peka = A?.attract ? null : guidePeka();
+  knapp.classList.toggle('sg-pulse', !!peka && !oppen);
+  panel.querySelectorAll('[data-app]').forEach((b) => b.classList.toggle('sg-pulse', !!peka && b.dataset.app === peka.app));
   if (!oppen) return;
   const badge = (id, txt) => { const el = panel.querySelector(`[data-badge="${id}"]`); if (!el) return; el.classList.toggle('hidden', !txt); if (txt && el.textContent !== txt) el.textContent = txt; };
   badge('kompisar', n ? String(n) : '');

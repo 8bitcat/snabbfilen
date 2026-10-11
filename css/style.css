@@ -673,3 +673,6 @@ html.desk-mobil #mobilen .mob-topp, html.desk-mobil #mobilen .mob-status, html.d
 html.desk-mobil #mobilen .mob-appar { grid-template-columns: repeat(3, 1fr); gap: 12px 6px; padding: 10px 6px 12px; }
 html.desk-mobil #mobilen .mob-ruta { width: 68px; height: 68px; }
 html.desk-mobil #mobilen .mob-ruta .pix-ik { width: 48px; height: 48px; }
+
+/* 🧭 startguiden pekar på en app i mobilen (Jobb/Hem) */
+#mobilen .mob-app.sg-pulse .mob-ruta { animation: sg-pulse 0.9s steps(2) infinite; }

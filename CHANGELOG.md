@@ -10,6 +10,11 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.103.0] – 2026-10-11 – Jobben och vägen hem i mobilen
+- Två nya appar i mobilen: 💼 Jobb visar alla jobb i Pixelstaden, närmast först – var de ligger, när de har öppet, din nivå och lönen. Tryck på 🧭 Visa vägen så pekar en pil dit, eller ta en 🚕 taxi.
+- 🏠 Hem visar vägen hem med pilen.
+- Startguiden lär ut mobilen: knappen och appen blinkar, så du hittar till Burgarbaren och hem på kvällen själv – på alla språk.
+
 ## [0.102.0] – 2026-10-10 – Startguiden till alla
 - Har du spelat sedan innan startguiden kom? Nu frågar spelet en gång om du vill prova den – på ditt eget språk.
 - Säger du nej finns den kvar under ⚙ Inställningar.
