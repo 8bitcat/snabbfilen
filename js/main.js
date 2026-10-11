@@ -55,6 +55,7 @@ import { block, unblock, blockedList, openAnmal, SUPPORT } from './net/skydd.js'
 import { openMenu, mountMenuButton, isMenuOpen, shouldShowMenuAtBoot } from './core/menu.js';
 import { drawPixHud, isPixHud, apply as applyHud, stripHeight, layoutStrip } from './core/hud-pix.js';
 import { guideTick, startGuide, resumeGuide, offerGuide } from './core/startguide.js'; // 🧭 första dagen: listan + Doris + handen
+import { kbkPushInne, kbkPushRegistrera } from './net/kbkpush.js'; // ⚽ KBK: pushnotis till laget när man hoppar in
 import { mountMobilen } from './core/mobilen.js'; // 📱 knapparna samlade i figurens mobil
 import { musicTick } from './core/music.js';
 import { recTick } from './core/rec.js';
@@ -759,6 +760,7 @@ function boot() {
   const begin = () => {
     startWorld(A); // den öppna världen: koppla upp tyst i bakgrunden
     startNotiser(A); // 🔔 appen: lägg om notiserna, fråga en gång efter första dagen
+    setTimeout(() => { kbkPushInne(A); kbkPushRegistrera(A); }, 4000); // ⚽ avstämd i KBK: laget får en notis, telefonen registreras
     if (firstRun) {
       openModal($t('🌆 Välkommen till Pixelstaden!'), `<div class="who">${''}<div>
         <p style="font-size:var(--f2);margin-top:0">${$t`Här börjar ditt nya liv, <b>${A.avatar.name}</b>! Du har <b>${fmt(A.game.money)}</b> på fickan.`}</p>

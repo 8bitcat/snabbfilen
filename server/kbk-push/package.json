@@ -1,0 +1,12 @@
+{
+  "name": "pixelcity-kbk-push",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "test": "node test.mjs"
+  },
+  "devDependencies": {
+    "wrangler": "4.135.0"
+  }
+}

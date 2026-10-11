@@ -1,0 +1,17 @@
+# ⚽ Pixelcity KBK-push – Cloudflare Worker. Driftsätt: cd server/kbk-push && npx wrangler deploy
+# Hemligheten APNS_KEY (innehållet i Apples .p8-fil) lägger Carl in själv:
+#   Cloudflare → Workers & Pages → pixelcity-kbk → Settings → Variables and Secrets → Add → Secret → APNS_KEY
+name = "pixelcity-kbk"
+main = "src/index.js"
+compatibility_date = "2026-09-01"
+workers_dev = true
+routes = [{ pattern = "kbk.8bitcat.io", custom_domain = true }]
+
+[vars]
+TEAM_ID = "GYTVJ3CTBJ"                 # Apple Developer Team ID (8bitcat)
+TOPIC = "io.eightbitcat.pixelcity"     # appens bundle-id
+APNS_KEY_ID = "Q5J52WFTHX"                     # nyckelns Key ID från developer.apple.com → Keys (inte hemligt)
+
+[[kv_namespaces]]
+binding = "KBK"
+id = "d90bf4b15bd74bed8b33b8c7e44346fb"

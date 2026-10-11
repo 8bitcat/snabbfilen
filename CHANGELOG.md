@@ -10,6 +10,10 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.105.0] – 2026-10-11 – Notiser till KBK-laget (förberett)
+- Förberett för pushnotiser till KBK-laget: när en KBK-spelare hoppar in får lagets telefoner en notis – även när appen är stängd. Det börjar fungera med appen Pixelcity 1.2.
+- I appen frågar telefonen om lov att visa notiser när du har stämt av dig i KBK-appen. "Inte jag – ta bort" stänger av notiserna.
+
 ## [0.104.0] – 2026-10-11 – KBK i mobilen
 - ⚽ KBK har fått en egen app i mobilen med en pixlad lagsköld. Skriv ditt förnamn och nummer så vet spelet vem du är i laget.
 - I appen ser du vilka lagkompisar som är inne i Pixelstaden just nu och hela laget – och appen visar en siffra när någon är inne.

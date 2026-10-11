@@ -8,6 +8,7 @@
 import { KUNGS_PLAYERS } from '../data/kbk.js';
 import { kbkNr, kbkStammer, kbkSpara, kbkTaBort, kbkEtikett, kbkFragaNotiser } from '../net/kbk.js';
 import { playersList } from '../net/world.js';
+import { kbkPushRegistrera, kbkPushAv, kbkPushInne } from '../net/kbkpush.js';   // 🔔 pushnotiser via servern (appen 1.2+)
 import { openModal, closeModal, toast, esc } from './ui.js';
 import { $t, LANG } from './i18n.js';
 import { play } from './sound.js';
@@ -56,7 +57,7 @@ export function openKbkApp(A, { av = A?.avatar, efter = null } = {}) {
     <div class="kb-laget">${KUNGS_PLAYERS.map(([n, namn]) => `<span class="kb-spel${n === nr ? ' jag' : ''}${inneNr.has(n) ? ' inne' : ''}"><b>${n}</b>${esc(namn)}</span>`).join('')}</div>
     <p class="kb-not">${$t('🔔 Du får en hälsning när en lagkompis hoppar in i Pixelstaden.')}</p>`;
   const dlg = openModal($t('⚽ KBK'), body, [
-    { label: $t('Inte jag – ta bort'), onClick: () => { kbkTaBort(av); closeModal(); toast($t('⚽ Borttagen från laget i spelet.')); efter?.(); } },
+    { label: $t('Inte jag – ta bort'), onClick: () => { kbkTaBort(av); kbkPushAv(); closeModal(); toast($t('⚽ Borttagen från laget i spelet.')); efter?.(); } },
     { label: $t('Stäng'), cls: 'btn-go', onClick: () => { closeModal(); efter?.(); } },
   ]);
   dlg.classList.add('dlg-kbk');
@@ -87,6 +88,8 @@ function stamAv(A, av, efter) {
     toast($t`⚽ Klart! Du är med som ${p[1]} ${p[0]} – du får en notis när en lagkompis kommer in.`, 'good');
     efter?.();
     await kbkFragaNotiser();
+    await kbkPushRegistrera(A);   // appen: lov för notiser + telefonen till lagets lista
+    kbkPushInne(A);               // och de andra får veta att man hoppat in
   }
   return dlg;
 }

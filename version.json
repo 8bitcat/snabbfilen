@@ -1,7 +1,7 @@
 {
-  "version": "0.104.0",
+  "version": "0.105.0",
   "date": "2026-10-11",
-  "title": "KBK i mobilen",
+  "title": "Notiser till KBK-laget (förberett)",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
@@ -126,6 +126,7 @@
     "js/main.js",
     "js/net/coop.js",
     "js/net/kbk.js",
+    "js/net/kbkpush.js",
     "js/net/sambo.js",
     "js/net/skydd.js",
     "js/net/voice-ui.js",
