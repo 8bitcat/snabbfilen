@@ -10,7 +10,7 @@ routes = [{ pattern = "kbk.8bitcat.io", custom_domain = true }]
 [vars]
 TEAM_ID = "GYTVJ3CTBJ"                 # Apple Developer Team ID (8bitcat)
 TOPIC = "io.eightbitcat.pixelcity"     # appens bundle-id
-APNS_KEY_ID = "Q5J52WFTHX"                     # nyckelns Key ID från developer.apple.com → Keys (inte hemligt)
+APNS_KEY_ID = "LSUKCX663J"                     # nyckelns Key ID från developer.apple.com → Keys (inte hemligt)
 
 [[kv_namespaces]]
 binding = "KBK"
