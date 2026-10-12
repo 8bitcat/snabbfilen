@@ -1,0 +1,42 @@
+[
+ {
+  "i": 7966,
+  "f": "js/game.js",
+  "k": "Mobilskalshylla"
+ },
+ {
+  "i": 7967,
+  "f": "js/game.js",
+  "k": "Smyckestavla"
+ },
+ {
+  "i": 7968,
+  "f": "js/game.js",
+  "k": "Väskkrokar"
+ },
+ {
+  "i": 7969,
+  "f": "js/game.js",
+  "k": "Pokal"
+ },
+ {
+  "i": 7970,
+  "f": "js/scenes/shop-bling.js",
+  "k": "en mobilskalshylla"
+ },
+ {
+  "i": 7971,
+  "f": "js/scenes/shop-bling.js",
+  "k": "en smyckestavla"
+ },
+ {
+  "i": 7972,
+  "f": "js/scenes/shop-bling.js",
+  "k": "väskkrokar"
+ },
+ {
+  "i": 7973,
+  "f": "js/scenes/shop-bling.js",
+  "k": "🖼️ Du fick {0} på köpet – ställ ut den hemma med 🛋️ Möblera, så visar den dina egna designer!"
+ }
+]

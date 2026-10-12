@@ -75,8 +75,11 @@ function djursak(max) {
 }
 const pengar = (min, max) => ({ slag: 'pengar', n: runda(min + Math.random() * (max - min)) });
 const mat = () => { const f = rnd(FOOD.filter((x) => x.id !== 'nudlar')); return { slag: 'mat', id: f.id, n: f.price >= 60 ? 1 : 2 }; };
+// 🏆 en pokal (Carl: "du kan också ge dem pokaler att ha hemma") – brons oftast, guld sällan
+const pokal = () => ({ slag: 'mobel', k: 'pokal', v: Math.random() < 0.2 ? 0 : Math.random() < 0.5 ? 1 : 2 });
 export function rulla(G, typ) {
-  if (typ === 'stor') return [pengar(300, 600), plagg(G, 900, 150) || pengar(200, 300), mobel(1200, 300) || pengar(200, 300)];
+  if (typ === 'stor') return [pengar(300, 600), plagg(G, 900, 150) || pengar(200, 300), Math.random() < 0.35 ? pokal() : mobel(1200, 300) || pengar(200, 300)];
+  if (Math.random() < 0.05) return [{ slag: 'mobel', k: 'pokal', v: 2 }];
   const slag = rnd(['pengar', 'pengar', 'plagg', 'plagg', 'mat', 'mobel', ...(harDjur() ? ['djur', 'djur'] : [])]);
   const g = slag === 'plagg' ? plagg(G, 250) : slag === 'mobel' ? mobel(400) : slag === 'djur' ? djursak(200) : slag === 'mat' ? mat() : null;
   return [g || pengar(40, 150)];

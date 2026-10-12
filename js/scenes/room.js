@@ -46,6 +46,7 @@ import { createFestRoom, festHere } from '../core/fest.js'; // 🎉 fest hemma
 import { play } from '../core/sound.js';
 import { worldFolksHere, worldMyEmote } from '../net/world.js';
 import { FRAMES } from '../data/frames.js';
+import { visningStart, VISNING } from '../core/visning.js';
 import { tintSprite, spriteBaseColor, isHex } from '../core/recolor.js';
 import { createPetLayer } from '../pets/layer.js';
 import { petStore } from '../pets/sim.js';
@@ -81,6 +82,7 @@ let toiletHinted = false;
 
 export const ATLAS = typeof Image !== 'undefined' ? new Image() : null;
 if (ATLAS) ATLAS.src = 'assets/interior.png';
+visningStart(ATLAS);   // 🖼️ visningsmöblerna ritas i en extra rad under arket (js/core/visning.js)
 
 // Bostädernas delrum: tema + fönster per rum. partition = hur bred lokalen är.
 // shabby = Lilla rummet: sprickor, fuktfläckar, flagnande tapet, spindelväv, naken
@@ -415,7 +417,7 @@ export const nameOf = (k) => katalogOf(k)?.name || FX_NAMES[k] || k;
 // ska få ny kruka (inte nya blad), silverspegeln ny ram (inte nytt glas),
 // golvlampan ny skärm (foten blir en mörkare ton av samma färg).
 const TINT_HINT = { vaxtS0: { hue: 24 }, spegel2: { maxL: 0.5 }, lampa0: { minL: 0.8 }, dass0: { minL: 0.6 } };
-export const canRecolor = (k) => k !== 'vaxt'; // monsteran är ritad för hand, inte ur atlasen
+export const canRecolor = (k) => k !== 'vaxt' && !VISNING.has(k); // monsteran är ritad för hand; visningsmöblerna visar ens egna färger
 // Möbeln k/v i färgen c (null = original): { img, sx, sy, sw, sh } att rita
 // i heltalsskala, eller null om atlasen inte har laddats än.
 export function furnArt(k, v, c = null) {

@@ -10,6 +10,12 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.111.0] – 2026-10-13 – Visa upp det du har gjort
+- 🖼️ Visa upp det du har gjort! Köper du ditt första egna mobilskal i BLING BLING får du en mobilskalshylla på köpet. Ställ ut den hemma med 🛋️ Möblera, så står dina skal på hyllan.
+- 📿 Första egna halsbandet ger en smyckestavla med sammet och guldram, där dina halsband och pärlhalsband hänger.
+- 👜 Första egna väskan ger väskkrokar, där dina väskor hänger.
+- 🏆 Pokaler i guld, silver och brons kan komma i presenterna. Ställ dem hemma och visa dem för dina kompisar.
+
 ## [0.110.0] – 2026-10-12 – Vänskapspresenter och djur som minns dig
 - 🎁 Skicka presenter till dina vänner! I 💛 Vänner har varje vän en 🎁-knapp. Varje dag får du skicka en gratis vänskapspresent med en liten överraskning till varje vän. Du kan också lägga till pengar, en möbel ur förrådet eller mat ur kylskåpet.
 - Presenten kommer fram även om vännen inte är inne just då. Vännen får en notis i appen och öppnar presenten i 🎁 Presenter.

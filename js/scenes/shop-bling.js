@@ -28,6 +28,7 @@ import { itemById, lookForItem, lookWithoutSlot, isWorn } from '../data/wardrobe
 import { fmt } from '../game.js';
 import { play } from '../core/sound.js';
 import { openBuy, figure } from './klader/buy.js';   // klädaffärens provdialog: samma sätt att prova som för kläderna
+import { visningGava, visningUppdatera } from '../core/visning.js';   // 🖼️ hyllan/tavlan/krokarna hemma
 import { PATCHES, PATCH_CATS, PATCH_BY, patchImg, patchColors, garmentArt, BEADS, BEAD_CATS, BEAD_BY, beadColor, drawBead, drawBeadNecklace, LENGTHS, TRAD,
   CHARMS, CHARM_CATS, CHARM_BY, charmImg, charmColor, CASES, STRAPS, drawPhone } from './bling/dream.js';
 // pixeltypsnittet har bara versaler och några accenter (som i accessoarbutiken, docs/SPRAK.md)
@@ -625,7 +626,9 @@ export function makeShopBling(A) {
     if (!G.ownsWardrobe(m.id)) G.wardrobe.push(m.id);   // modellen räknas som din, så att figurskaparen låter den sitta kvar
     G.glad?.(4, '', 'nytt', 10);                         // något nytt gör en glad (som kläderna, högst +10 om dagen)
     const d = { kind, sel: { ...sel }, look: m.look, price: total };
+    const vg = visningGava(G, kind);                     // 🖼️ första designen: visningsmöbeln på köpet
     store.add(d);                                        // (sparar spelet)
+    visningUppdatera(G); visatGava(vg);
     setLook({ ...A.avatar.look, ...m.look, ...(kind === 'neck' ? { beads: null } : {}) });
     cancelAnimationFrame(anim); closeModal(); play('buy');
     toast(kind === 'neck' ? $t`✨ Ditt eget halsband är klart: ${designNamn(d)}!` : $t`✨ Din egen väska är klar: ${designNamn(d)}!`, 'good');
@@ -715,7 +718,9 @@ export function makeShopBling(A) {
     if (!G.ownsWardrobe('neck-pearls')) G.wardrobe.push('neck-pearls');   // pärlhalsbandet räknas som ditt, så att figurskaparen låter det sitta kvar
     G.glad?.(4, '', 'nytt', 10);
     const look = beadLook(), d = { kind: 'beads', sel: beadSel(), look, price: total };
+    const vg = visningGava(G, 'beads');
     store.add(d);                                                         // (sparar spelet)
+    visningUppdatera(G); visatGava(vg);
     setLook({ ...A.avatar.look, ...look });
     cancelAnimationFrame(banim); closeModal(); play('buy');
     toast($t`✨ Ditt halsband är klart: ${designNamn(d)}!`, 'good');
@@ -901,13 +906,21 @@ export function makeShopBling(A) {
     G.money -= total;
     G.glad?.(4, '', 'nytt', 10);
     const look = phoneLook(), d = { kind: 'phone', sel: { case: PH.case, strap: PH.strap, charms: PH.charms.map((e) => ({ id: e.id, u: e.u, v: e.v })) }, look, price: total };
+    const vg = visningGava(G, 'phone');
     store.add(d);                                                         // (sparar spelet)
+    visningUppdatera(G); visatGava(vg);
     setLook({ ...A.avatar.look, ...look });
     cancelAnimationFrame(manim); closeModal(); play('buy');
     toast($t('📱 Ditt mobilskal är klart! Du har mobilen i handen.'), 'good');
     say(pickOf([$t('VILKET SNYGGT MOBILSKAL!'), $t('SÅ GULLIGA BERLOCKER!'), $t('HELT DIN EGEN STIL!')]), keeper.x, keeper.y - 40);
   }
 
+  // 🖼️ fick man en visningsmöbel på köpet säger expediten det (efter köpets egen hälsning)
+  function visatGava(k) {
+    if (!k) return;
+    const namn = { mobilhylla: $t('en mobilskalshylla'), smyckestavla: $t('en smyckestavla'), vaskkrokar: $t('väskkrokar') }[k] || '';
+    setTimeout(() => toast($t`🖼️ Du fick ${namn} på köpet – ställ ut den hemma med 🛋️ Möblera, så visar den dina egna designer!`, 'good'), 2600);
+  }
   const spotAt = (x, y) => Object.entries(SP).find(([, s]) => x >= s.r[0] && x <= s.r[2] && y >= s.r[1] && y <= s.r[3]);
   return {
     viewMax: { w: RW, h: H },   // (main.js: en bred skärm får se upp till hela butiken)

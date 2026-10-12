@@ -1,7 +1,7 @@
 {
-  "version": "0.110.0",
-  "date": "2026-10-12",
-  "title": "Vänskapspresenter och djur som minns dig",
+  "version": "0.111.0",
+  "date": "2026-10-13",
+  "title": "Visa upp det du har gjort",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
@@ -89,6 +89,7 @@
     "js/core/ui.js",
     "js/core/vannerapp.js",
     "js/core/version-ui.js",
+    "js/core/visning.js",
     "js/core/voices.js",
     "js/core/week.js",
     "js/data/frames.js",

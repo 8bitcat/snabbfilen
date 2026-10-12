@@ -488,6 +488,12 @@ export const KATALOG = [
   { kind: 'fagelskramma', icon: '🎃', name: $t('Fågelskrämma'), price: 450, vars: 8, room: 'ÖVRIGT', shop: 'halloween' },
   { kind: 'gargoyl', icon: '🗿', name: $t('Gargoyl'), price: 900, vars: 1, room: 'ÖVRIGT', shop: 'halloween' },
   { kind: 'spoktrad', icon: '🌳', name: $t('Spökträd'), price: 1200, vars: 4, room: 'ÖVRIGT', shop: 'halloween' },
+  // 🖼️ visningsmöblerna (js/core/visning.js, Carl 2026-10-12) – ritas i kod och visar ens EGNA designer från BLING BLING;
+  // man får dem gratis med första designen av varje sort. Pokalerna (guld, silver, brons) kommer i presenterna.
+  { kind: 'mobilhylla', icon: '📱', name: $t('Mobilskalshylla'), price: 400, vars: 1, room: 'ÖVRIGT', wall: true, shop: 'bling' },
+  { kind: 'smyckestavla', icon: '📿', name: $t('Smyckestavla'), price: 450, vars: 1, room: 'ÖVRIGT', wall: true, shop: 'bling' },
+  { kind: 'vaskkrokar', icon: '👜', name: $t('Väskkrokar'), price: 350, vars: 1, room: 'ÖVRIGT', wall: true, shop: 'bling' },
+  { kind: 'pokal', icon: '🏆', name: $t('Pokal'), price: 800, vars: 3, room: 'ÖVRIGT', shop: 'pris' },
 ];
 const KAT_BY_KIND = new Map(KATALOG.map((k) => [k.kind, k]));
 export const katalogOf = (kind) => KAT_BY_KIND.get(kind);
