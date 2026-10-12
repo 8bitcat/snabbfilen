@@ -98,6 +98,10 @@
 //   Nya fält per djur (bakåtkompatibelt – gamla sparfiler får dem vid load()):
 //     grow (poäng), stageDay (dagen stadiet började), homeDay (dagen djuret kom hem, null =
 //     okänt än), care { day, mat, lek, leksak, toa, inne, held } (dagens poäng per slag)
+// ------------------------- DJUREN MINNS DIG (Carl 2026-10-12) -------------------------
+//   p.minne = { sett (ms, riktig tid – när djuret senast såg en), klapp, lek, boll (antal gånger) }
+//   seen(petId, t?) – lagret säger till medan man är i djurets rum. memory(p) → minnet (skapas vid behov).
+//   Kommer man hem efter en stund springer djuren fram och hälsar (layer.js); djurmenyn visar minnena.
 // ==================================================================
 import { PET_ITEMS } from './items.js';
 import { $t, $n } from '../core/i18n.js';
@@ -472,9 +476,13 @@ export function createPetStore({ storage = null, rng = Math.random, key = PETS_S
       S._emit('ute', $t`${p.name} fick göra sitt ute. Duktig!`, { petId: p.id, home: p.home });
     },
     // Klappa: mycket glädje första gången, mindre om man klappar oavbrutet.
+    // 🐾 minnet: när djuret såg en senast och hur mycket man har klappat och lekt (djurmenyn, hälsningen)
+    memory(p) { if (!p) return null; if (!p.minne || typeof p.minne !== 'object') p.minne = { sett: 0, klapp: 0, lek: 0, boll: 0 }; return p.minne; },
+    seen(petId, t = Date.now()) { const p = S.petById(petId); if (p) S.memory(p).sett = t; },
     pet(petId) {
       const p = S.petById(petId);
       if (!p) return 0;
+      S.memory(p).klapp += 1;
       const now = S.clockAbs ?? 0;
       const fresh = p.pattedAt == null || now - p.pattedAt > 20;
       p.happy = clamp(p.happy + (fresh ? 12 : 4));
@@ -486,6 +494,7 @@ export function createPetStore({ storage = null, rng = Math.random, key = PETS_S
     play(petId) {
       const p = S.petById(petId);
       if (!p) return 0;
+      S.memory(p).lek += 1;
       const now = S.clockAbs ?? 0;
       const fresh = p.playedAt == null || now - p.playedAt > 30;
       p.happy = clamp(p.happy + (fresh ? 18 : 6));
@@ -503,6 +512,7 @@ export function createPetStore({ storage = null, rng = Math.random, key = PETS_S
       const now = S.clockAbs ?? 0;
       if (p.toyAt != null && now - p.toyAt < 10 && now >= p.toyAt) return false;
       p.toyAt = now;
+      S.memory(p).boll += 1;
       p.happy = clamp(p.happy + 4);
       S._gain(p, 'lek', CARE.boll);
       S.save();
@@ -1000,6 +1010,7 @@ export function createPetStore({ storage = null, rng = Math.random, key = PETS_S
           grow: Math.max(GROW_AT[stage], isNum(q.grow) ? q.grow : 0),
           stageDay: Math.min(savedDay, isNum(q.stageDay) ? q.stageDay : stage === 'unge' ? bornDay : bornDay + STAGE_DAYS[stage]),
           homeDay: isNum(q.homeDay) ? Math.min(savedDay, q.homeDay) : q.homeDay === null ? null : bornDay,
+          ...(q.minne && typeof q.minne === 'object' ? { minne: { sett: Math.max(0, num(q.minne.sett)), klapp: Math.max(0, num(q.minne.klapp) | 0), lek: Math.max(0, num(q.minne.lek) | 0), boll: Math.max(0, num(q.minne.boll) | 0) } } : {}),   // (bara när det finns – gamla djur får det när de ses)
           care: q.care && typeof q.care === 'object' && isNum(q.care.day)
             ? { day: q.care.day, mat: num(q.care.mat), lek: num(q.care.lek), leksak: num(q.care.leksak), toa: num(q.care.toa), inne: num(q.care.inne) | 0, held: num(q.care.held) }
             : null,

@@ -9,7 +9,9 @@
 // (?kbkpush=<adress> pekar dem mot en låtsasserver).
 import { vanEgen, vanLista, vanOnAndrad } from './vanner.js';
 import { pushPost, pushPlugin } from './kbkpush.js';
-import { LANG } from '../core/i18n.js';
+import { LANG, $t } from '../core/i18n.js';
+import { toast } from '../core/ui.js';
+import { play } from '../core/sound.js';
 
 const SYNK = 'snabbfilen_van_synk';   // { [vid]: vänlistan som servern har (fingeravtryck) }
 const REG = 'snabbfilen_van_push';    // { [vid]: pushkoden som är registrerad för figuren }
@@ -56,13 +58,51 @@ export async function vanPushLage() {
   if (!P) return null;
   try { return (await P.checkPermissions()).receive; } catch { return null; }
 }
-// En gång per start: listan (om ändrad), "inne" om man har vänner, och telefonens registrering (utan att fråga)
-let sagt = false;
+// ---------- 🎁 vänskapspresenter (Carl 2026-10-12: "vänskapspresenter … notiser om man skickar en vänskapspresent") ----------
+// Skicka: servern lägger presenten i vännens brevlåda och skickar en pushnotis. Svar { ok } eller { ok:false, fel } (null = offline).
+export async function vanPresentSkicka(A, till, { fri = false, gavor = [] } = {}) {
+  const a = auth(A);
+  if (!a) return null;
+  await vanPushSynka(A);   // (servern måste veta att vi är vänner)
+  return pushPost('/van/present', { ...a, till, fri, gavor });
+}
+// Hämta: presenterna i brevlådan hamnar i 🎁 Presenter (g.presenter.ko, typ 'van') – sedan töms brevlådan
+let hamtar = false;
+export async function vanPresentHamta(A) {
+  const a = auth(A), G = A?.game;
+  if (!a || !G || hamtar || !vanLista(A.avatar).length) return 0;
+  hamtar = true;
+  try {
+    const r = await pushPost('/van/hamta', a);
+    const lista = Array.isArray(r?.presenter) ? r.presenter.slice(0, 30) : [];
+    if (!lista.length) return 0;
+    if (!G.presenter || typeof G.presenter !== 'object') G.presenter = { dag: '', antal: 0, ko: [] };
+    const ko = G.presenter.ko, nya = [];
+    for (const x of lista) {
+      if (!x || typeof x.id !== 'string' || ko.some((k) => k.id === x.id)) continue;
+      ko.push({ typ: 'van', id: x.id.slice(0, 24), fran: String(x.fran || '?').slice(0, 16), fri: !!x.fri, gavor: Array.isArray(x.gavor) ? x.gavor.slice(0, 3) : [] });
+      nya.push(String(x.fran || '?').slice(0, 16));
+    }
+    while (ko.length > 10) ko.shift();
+    G.save();
+    await pushPost('/van/kvittera', { ...a, ids: lista.map((x) => x?.id).filter(Boolean) });
+    if (nya.length) {
+      play('knock');
+      toast(nya.length === 1 ? $t`🎁 ${nya[0]} har skickat en present till dig! Öppna den i mobilen 📱` : $t`🎁 Du har fått ${nya.length} presenter från dina vänner! Öppna dem i mobilen 📱`, 'good');
+    }
+    return nya.length;
+  } finally { hamtar = false; }
+}
+// En gång per start: listan (om ändrad), "inne" om man har vänner, telefonens registrering (utan att fråga) och
+// brevlådan – sedan tittar spelet i brevlådan var 90:e sekund
+let sagt = false, koll = null;
 export async function vanPushStart(A) {
   A0 = A;
   await vanPushSynka(A);
   if (!sagt && vanLista(A?.avatar).length) { sagt = true; const a = auth(A); if (a) await pushPost('/van/inne', a); }
   await vanPushRegistrera(A, { fraga: false });
+  await vanPresentHamta(A);
+  if (!koll) koll = setInterval(() => { if (A0 && !A0.attract) vanPresentHamta(A0); }, 90000);
 }
 // listan ändrades → till servern direkt (lite fördröjt, så att flera ändringar blir ett anrop)
 let vantar = null;

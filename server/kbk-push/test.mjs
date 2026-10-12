@@ -101,6 +101,24 @@ try {
   await post('/van/vanner', { ...MIRA, vanner: [MOA.vid] });
   await post('/van/avregistrera', { ...LEO, token: LEOS });
   ok((await (await fetch(URL0 + '/')).json()).vantelefoner === 3, 'vänner: /van/avregistrera tar bort Leos telefon');
+
+  // ---------- 🎁 vänskapspresenter (Mira och Moa är vänner åt båda hållen, Leo och Mira inte längre) ----------
+  const f2 = mottaget.length;
+  const pr1 = await post('/van/present', { ...MIRA, till: MOA.vid, fri: true, gavor: [{ slag: 'pengar', n: 100 }], vanta: true });
+  ok(pr1.ok && pr1.skickade === 1, `present: Mira skickar en vänskapspresent med 100 kr till Moa (${pr1.skickade} telefon)`);
+  ok(mottaget.slice(f2).some((m) => m.token === IPAD && m.body?.aps?.alert?.body === '🎁 Mira har skickat en present till dig!' && m.body?.aps?.alert?.title === 'Vänner'), 'present: Moas telefon får notisen "🎁 Mira har skickat en present till dig!"');
+  const h1 = await post('/van/hamta', { ...MOA });
+  ok(h1.presenter?.length === 1 && h1.presenter[0].fran === 'Mira' && h1.presenter[0].fri && h1.presenter[0].gavor?.[0]?.n === 100, 'present: Moas brevlåda har presenten (från Mira, gratis + 100 kr)');
+  ok((await post('/van/present', { ...MIRA, till: MOA.vid, fri: true, gavor: [] })).status === 429, 'present: en gratis vänskapspresent per vän och dag');
+  ok((await post('/van/present', { ...MIRA, till: MOA.vid, gavor: [{ slag: 'pengar', n: 99999 }] })).status === 400, 'present: för mycket pengar räknas inte (tom present → 400)');
+  ok((await post('/van/present', { ...MIRA, till: LEO.vid, fri: true })).status === 403, 'present: bara till vänner åt båda hållen (Leo → 403)');
+  ok((await post('/van/present', { ...MIRA, hemlig: H('0'), till: MOA.vid, fri: true })).status === 403, 'present: fel nyckel → 403');
+  ok((await post('/van/present', { ...MIRA, till: MOA.vid, gavor: [{ slag: 'mobel', k: 'soffa', v: 2 }] })).ok && (await post('/van/present', { ...MIRA, till: MOA.vid, gavor: [{ slag: 'mat', id: 'pizza', n: 2 }] })).ok, 'present: två presenter till med en möbel och mat');
+  ok((await post('/van/present', { ...MIRA, till: MOA.vid, gavor: [{ slag: 'pengar', n: 10 }] })).status === 429, 'present: högst tre presenter om dagen till samma vän');
+  const h2 = await post('/van/hamta', { ...MOA });
+  ok(h2.presenter?.length === 3, `present: tre presenter i Moas brevlåda (${h2.presenter?.length})`);
+  const kv = await post('/van/kvittera', { ...MOA, ids: (h2.presenter || []).map((x) => x.id) });
+  ok(kv.ok && kv.kvar === 0 && (await post('/van/hamta', { ...MOA })).presenter.length === 0, 'present: /van/kvittera tömmer brevlådan');
 } catch (e) {
   ok(false, String(e.message || e));
 } finally {

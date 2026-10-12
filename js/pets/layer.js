@@ -834,7 +834,7 @@ export function createPetLayer(A, opts = {}) {
   // skulle bubblorna täcka varandra: layoutBubbles låter den bakre glida en bit i sidled eller
   // en rad upp (den som står närmast betraktaren behåller sin plats).
   const BUB_H = 11, BUB_GAP = 4;
-  const bubbleText = (a) => (a.grewStage === 'vuxen' ? $t('NU ÄR JAG STOR!') : $t('JAG HAR VUXIT!'));
+  const bubbleText = (a) => a.halsa || (a.grewStage === 'vuxen' ? $t('NU ÄR JAG STOR!') : $t('JAG HAR VUXIT!'));
   function bubbleBase(a) {
     const w = textW(SMALL, bubbleText(a)) + 16;
     const hTop = meterBase(a).y0 + MH + 3; // = djurets huvudtopp (samma höjd som mätaren utgår från)
@@ -889,8 +889,14 @@ export function createPetLayer(A, opts = {}) {
     const sx = clamp(cx, x0 + 3, x0 + w - 4);
     ctx.fillStyle = '#17151a'; ctx.fillRect(sx - 2, y0 + h, 5, 1); ctx.fillRect(sx - 1, y0 + h + 1, 3, 1); ctx.fillRect(sx, y0 + h + 2, 1, 1);
     ctx.fillStyle = '#f4f1ea'; ctx.fillRect(sx - 1, y0 + h, 3, 1); ctx.fillRect(sx, y0 + h + 1, 1, 1);
-    // en liten grodd (växer) som vippar en pixel i takt
+    // en liten grodd (växer) – eller ett hjärta (hälsningen) – som vippar en pixel i takt
     const ax = x0 + 3, ay = y0 + 2 - (Math.floor(life * 4) % 2);
+    if (a.halsa) {
+      ['.#.#.', '#####', '#####', '.###.', '..#..'].forEach((row, j) => { for (let i = 0; i < 5; i++) if (row[i] === '#') { ctx.fillStyle = j === 0 || (j === 1 && i === 1) ? '#ffa0b4' : '#e8405a'; ctx.fillRect(ax + i, ay + j, 1, 1); } });
+      ctxText(ctx, SMALL, txt, x0 + 12, y0 + 3, '#17151a');
+      ctx.globalAlpha = 1;
+      return;
+    }
     SPROUT.forEach((row, j) => { for (let i = 0; i < row.length; i++) {
       const c = row[i] === 'L' ? '#6ccf4a' : row[i] === 'H' ? '#a8f080' : row[i] === 'S' ? '#2f7a3a' : null;
       if (c) { ctx.fillStyle = c; ctx.fillRect(ax + i, ay + j, 1, 1); }
@@ -1059,6 +1065,14 @@ export function createPetLayer(A, opts = {}) {
         <b style="width:34px;text-align:right">${G.next ? pct : '✔'}</b></div>
       <p data-grow-text style="font-size:var(--f2);margin:2px 0 0">${G.next ? `<span class="sp">${$t`Nästa: ${esc(goal.toLowerCase())}.`}</span> ` : ''}${esc(G.text)}</p></div>`;
   }
+  // 🐾 minnena i djurmenyn: hur länge ni varit tillsammans och hur mycket ni har klappat och lekt
+  function minnesRad(p) {
+    const m = store.memory?.(p) || {}, dagar = Math.max(0, (store.day || 1) - (p.homeDay ?? p.bornDay ?? store.day ?? 1));
+    const delar = [dagar <= 0 ? $t('ni träffades i dag') : dagar === 1 ? $t('tillsammans i 1 dag') : $t`tillsammans i ${dagar} dagar`];
+    if (m.klapp) delar.push($t`klappad ${m.klapp} gånger`);
+    if ((m.lek || 0) + (m.boll || 0)) delar.push($t`har lekt ${(m.lek || 0) + (m.boll || 0)} gånger`);
+    return `<p style="font-size:var(--f2);margin:6px 0 0" class="sp">💛 ${esc(delar.join(' · '))}</p>`;
+  }
   function openPetMenu(petId) {
     const p = store.petById(petId);
     if (!p) return;
@@ -1086,6 +1100,7 @@ export function createPetLayer(A, opts = {}) {
           ${statBar($t('🥣 Mätt'), p.hunger)}
           ${p.species === 'hund' ? statBar($t('💩 Kissnödig'), p.toilet, true) : ''}
           ${growRow(p)}
+          ${minnesRad(p)}
           ${status.length ? `<p style="font-size:var(--f2);margin:8px 0 0">${status.join('<br>')}</p>` : ''}
         </div></div>`;
     const done = (fn) => () => { closeModal(); menuFor = null; if (a) { a.mode = 'idle'; a.modeT = 0.2; } fn?.(); };
@@ -1361,6 +1376,27 @@ export function createPetLayer(A, opts = {}) {
   for (const a of actors.values()) if (a.pet.species === 'hund' && !isNight() && playerHere() && rnd() < 0.8 && !a.pet.out) {
     a.mode = 'idle'; a.modeT = 0.3 + rnd() * 0.5; a.onEnd = () => visitPlayer(a, 'sit');
   }
+  // 🐾 DJUREN MINNS DIG (Carl 2026-10-12): har man varit borta en stund (riktig tid) springer djuren fram och hälsar
+  // med en pratbubbla och ett hjärta – "HEJ! DU ÄR HEMMA!", efter ett dygn "JAG HAR SAKNAT DIG!" – och blir gladare.
+  // Djur som sover (natt) hälsar inte; nya djur (som aldrig sett en) börjar bara minnas.
+  let sagT = 0;
+  const MINNS_MIN = 20 * 60000, SAKNAT = 20 * 3600000;
+  if (playerHere() && here() && opts.toasts !== false) {
+    const nu = Date.now(), halsade = [];
+    for (const a of actors.values()) {
+      const m = store.memory?.(a.pet), borta = m?.sett ? nu - m.sett : 0;
+      if (!m || !m.sett || borta < MINNS_MIN || a.pet.out || isNight() || a.pose === 'sleep') continue;
+      a.halsa = borta >= SAKNAT ? $t('JAG HAR SAKNAT DIG!') : $t('HEJ! DU ÄR HEMMA!');
+      a.grewT = GROW_BUBBLE_S; a.grewStage = null;
+      a.pet.happy = Math.min(100, (a.pet.happy || 0) + (borta >= SAKNAT ? 10 : 5));
+      a.mode = 'idle'; a.modeT = 0.2 + rnd() * 0.4; a.onEnd = () => visitPlayer(a, a.pet.species === 'hund' ? 'sit' : 'happy');
+      halsade.push({ a, saknat: borta >= SAKNAT });
+    }
+    if (halsade.length) {
+      const f = halsade[0], emo = SPECIES_EMO[f.a.pet.species] || '🐾';
+      setTimeout(() => toast(halsade.length > 1 ? $t`🐾 Djuren sprang fram och hälsade – de har saknat dig!` : f.saknat ? $t`${emo} ${f.a.pet.name} har saknat dig!` : $t`${emo} ${f.a.pet.name} sprang fram och hälsade!`, 'good'), 600);
+    }
+  }
   // djur som växte medan man var borta: toasten nu (om ingen visat den), pratbubblan över djuren
   // i det här rummet – de andra får sin bubbla när man kommer in till dem (den löpande
   // lägenheten: när man går in i rummet, lagret finns redan)
@@ -1399,7 +1435,9 @@ export function createPetLayer(A, opts = {}) {
         }
       }
       wasWalking = walkingNow;
-      for (const a of actors.values()) { updActor(a, dt); if (a.grewT > 0) a.grewT = Math.max(0, a.grewT - dt); }
+      for (const a of actors.values()) { updActor(a, dt); if (a.grewT > 0) { a.grewT = Math.max(0, a.grewT - dt); if (!a.grewT) a.halsa = null; } }
+      // 🐾 djuren ser en (minnet: när de senast såg en) – var femte sekund medan man är i rummet
+      if (playerHere() && here() && (sagT -= dt) <= 0) { sagT = 5; for (const a of actors.values()) if (!a.pet.out) store.seen?.(a.id); }
       updBalls(dt);
       for (const f of fx) f.t += dt;
       for (let i = fx.length - 1; i >= 0; i--) if (fx[i].t >= fx[i].life) fx.splice(i, 1);
@@ -1531,7 +1569,7 @@ export function createPetLayer(A, opts = {}) {
       // tillväxtbubblan: sekunder kvar och stadiet den visar (0 = ingen bubbla)
       grew: (id) => { const a = actors.get(id); return a ? { t: a.grewT, stage: a.grewStage, walkSp: a.walkSp } : null; },
       // tillväxtbubblornas rutor just nu (logiska px, utan spetsen)
-      bubbles: () => [...actors.values()].filter((a) => a.grewT > 0).map((a) => ({ id: a.id, name: a.pet.name, ...bubbleRect(a), petX: Math.round(a.x) })),
+      bubbles: () => [...actors.values()].filter((a) => a.grewT > 0).map((a) => ({ id: a.id, name: a.pet.name, ...bubbleRect(a), petX: Math.round(a.x), halsa: a.halsa || null })),
       // SKÄRMkoordinater (logiska) för klicktester: djur-id, pryl-id, prylnyckel (k) eller 'bajs'
       spot(id) {
         const a = actors.get(id);

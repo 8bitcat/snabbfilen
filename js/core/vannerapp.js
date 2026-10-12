@@ -14,7 +14,8 @@ import { play } from './sound.js';
 import { avatarPortrait } from './avatar.js';
 import { sendJob, onJob, worldMyId, worldMyKey, playersList } from '../net/world.js';
 import { vanEgen, vanLista, arVan, vanLaggTill, vanTaBortLokalt, vanInne, vanBorttagen, vanGlomBorttagen, vanKrokar, VID_RE, MAX_VANNER } from '../net/vanner.js';
-import { vanPushRegistrera, vanPushLage } from '../net/vanpush.js';
+import { vanPushRegistrera, vanPushLage, vanPresentSkicka } from '../net/vanpush.js';
+import { FOOD, foodOf, katalogOf, fmt } from '../game.js';
 
 let A = null;
 const send = (m) => sendJob({ k: 'van', key: worldMyKey(), vi: vanEgen(A?.avatar)?.vid || '', namn: String(A?.avatar?.name || '').slice(0, 16), ...m });
@@ -85,7 +86,7 @@ export async function openVannerApp(A0) {
     const p = p0(v);
     return `<div class="prow"><span data-vface="${i}"></span>
       <span class="nm">${esc(p?.av?.name || v.namn)}<br><small class="sp">${p ? `🟢 ${esc(A.placeOf ? A.placeOf(p) : $t('i Pixelstaden'))}` : esc(senast(v.sett))}</small></span>
-      <span class="pbtns">${p && p.scene === 'city' ? `<button class="btn btn-small" data-vgoto="${esc(p.id)}">${$t('🚶 Gå dit')}</button>` : ''}${p ? `<button class="btn btn-small btn-go" data-vvisit="${esc(p.id)}">${$t('🚗 Åk hem till')}</button>` : ''}<button class="btn btn-small" data-vbort="${i}" title="${esc($t('Ta bort vännen'))}">💔</button></span>
+      <span class="pbtns">${p && p.scene === 'city' ? `<button class="btn btn-small" data-vgoto="${esc(p.id)}">${$t('🚶 Gå dit')}</button>` : ''}${p ? `<button class="btn btn-small btn-go" data-vvisit="${esc(p.id)}">${$t('🚗 Åk hem till')}</button>` : ''}<button class="btn btn-small btn-gold" data-vpres="${i}" title="${esc($t('Skicka en present'))}">🎁</button><button class="btn btn-small" data-vbort="${i}" title="${esc($t('Ta bort vännen'))}">💔</button></span>
     </div>`;
   };
   const notisRad = lage === null ? `<p class="sp" style="font-size:var(--f2)">${$t('🔔 I appen Pixelcity får du en notis när en vän börjar spela – även när appen är stängd.')}</p>`
@@ -104,6 +105,7 @@ export async function openVannerApp(A0) {
   dlg.querySelectorAll('[data-vgoto]').forEach((b) => (b.onclick = () => A.followTo?.(b.dataset.vgoto)));
   dlg.querySelectorAll('[data-vvisit]').forEach((b) => (b.onclick = () => A.visitTo?.(b.dataset.vvisit)));
   dlg.querySelector('[data-vnotis]')?.addEventListener('click', async () => { await vanPushRegistrera(A, { fraga: true }); openVannerApp(A); });
+  dlg.querySelectorAll('[data-vpres]').forEach((b) => (b.onclick = () => openSkickaPresent(A, lista[+b.dataset.vpres])));
   dlg.querySelectorAll('[data-vbort]').forEach((b) => (b.onclick = () => {
     const v = lista[+b.dataset.vbort];
     openModal($t('💔 Ta bort vännen?'), `<p style="font-size:var(--f2);margin-top:0">${$t`Vill du ta bort <b>${esc(v.namn)}</b> som vän? Ni försvinner från varandras listor och får inga hälsningar när den andra hoppar in.`}</p>`, [
@@ -113,6 +115,52 @@ export async function openVannerApp(A0) {
   }));
 }
 export const vanAppInit = (A0) => { A = A0; };
+
+// ---------- 🎁 skicka en present till en vän ----------
+// En gratis vänskapspresent per vän och dag (en liten överraskning, som dagens present) – och man kan lägga till
+// något eget: pengar, en möbel ur förrådet eller mat ur kylskåpet. Det man lägger till lämnar ens eget förråd.
+const SKICKAT = 'snabbfilen_van_skickat';   // { [vännens vid]: dagen den gratis presenten skickades }
+const skickatGet = () => { try { return JSON.parse(localStorage.getItem(SKICKAT) || '{}') || {}; } catch { return {}; } };
+const idagStr = () => new Date().toISOString().slice(0, 10);
+function openSkickaPresent(A0, v, val = { fri: skickatGet()[v.vid] !== idagStr(), pengar: 0, sak: null }) {
+  A = A0;
+  const G = A.game, friOk = skickatGet()[v.vid] !== idagStr();
+  if (!friOk) val.fri = false;
+  const mobler = G.storage.map((it, i) => ({ i, it, kat: katalogOf(it.k) })).filter((x) => x.kat).slice(0, 12);
+  const mat = Object.entries(G.fridge || {}).filter(([id, n]) => n > 0 && foodOf(id));
+  const chip = (attr, v2, label, on, dis = false) => `<button type="button" class="btn btn-small${on ? ' btn-gold' : ''}" data-${attr}="${v2}"${dis ? ' disabled' : ''}>${label}</button>`;
+  const dlg = openModal($t`🎁 Present till ${v.namn}`, `
+    <p style="font-size:var(--f2);margin-top:0">${chip('pfri', 1, esc($t('💛 Vänskapspresent – en liten överraskning')), val.fri, !friOk)} <small class="sp">${esc(friOk ? $t('gratis, en om dagen') : $t('i dag redan skickad'))}</small></p>
+    <div class="bl-lbl">${esc($t('Lägg till något eget'))} <small>${esc($t('(valfritt)'))}</small></div>
+    <div class="bl-opts">${[0, 50, 100, 200].map((n) => chip('ppeng', n, n ? esc(fmt(n)) : esc($t('Inga pengar')), val.pengar === n, n > G.money)).join('')}</div>
+    ${mobler.length ? `<div class="bl-lbl">${esc($t('🛋️ Ur förrådet'))}</div><div class="bl-opts">${mobler.map((x) => chip('pmob', x.i, esc(`${x.kat.icon || ''} ${x.kat.name}`), val.sak?.slag === 'mobel' && val.sak.i === x.i)).join('')}</div>` : ''}
+    ${mat.length ? `<div class="bl-lbl">${esc($t('🍽️ Ur kylskåpet'))}</div><div class="bl-opts">${mat.map(([id]) => chip('pmat', id, esc(`${foodOf(id).icon} ${foodOf(id).name}`), val.sak?.slag === 'mat' && val.sak.id === id)).join('')}</div>` : ''}`,
+  [{ label: $t('🎁 Skicka present'), cls: 'btn-go', disabled: !val.fri && !val.pengar && !val.sak, onClick: () => skicka() },
+   { label: $t('Avbryt'), onClick: () => openVannerApp(A) }]);
+  dlg.querySelector('[data-pfri]')?.addEventListener('click', () => { val.fri = !val.fri; play('click'); openSkickaPresent(A, v, val); });
+  dlg.querySelectorAll('[data-ppeng]').forEach((b) => (b.onclick = () => { val.pengar = +b.dataset.ppeng; play('click'); openSkickaPresent(A, v, val); }));
+  dlg.querySelectorAll('[data-pmob]').forEach((b) => (b.onclick = () => { const i = +b.dataset.pmob; val.sak = val.sak?.slag === 'mobel' && val.sak.i === i ? null : { slag: 'mobel', i }; play('click'); openSkickaPresent(A, v, val); }));
+  dlg.querySelectorAll('[data-pmat]').forEach((b) => (b.onclick = () => { const id = b.dataset.pmat; val.sak = val.sak?.slag === 'mat' && val.sak.id === id ? null : { slag: 'mat', id }; play('click'); openSkickaPresent(A, v, val); }));
+  async function skicka() {
+    // det man lägger till tas ur ens eget förråd direkt (och kommer tillbaka om presenten inte gick iväg)
+    const gavor = [], tillbaka = [];
+    if (val.pengar && G.money >= val.pengar) { G.money -= val.pengar; gavor.push({ slag: 'pengar', n: val.pengar }); tillbaka.push(() => { G.money += val.pengar; }); }
+    if (val.sak?.slag === 'mobel' && G.storage[val.sak.i]) { const [it] = G.storage.splice(val.sak.i, 1); gavor.push({ slag: 'mobel', k: it.k, v: it.v | 0 }); tillbaka.push(() => G.storage.push(it)); }
+    if (val.sak?.slag === 'mat' && G.fridge[val.sak.id] > 0) { const id = val.sak.id; G.fridge[id] -= 1; if (!G.fridge[id]) delete G.fridge[id]; gavor.push({ slag: 'mat', id, n: 1 }); tillbaka.push(() => { G.fridge[id] = (G.fridge[id] || 0) + 1; }); }
+    G.save();
+    closeModal();
+    const r = await vanPresentSkicka(A, v.vid, { fri: val.fri, gavor });
+    if (!r?.ok) {
+      tillbaka.forEach((f) => f()); G.save();
+      toast(r === null ? $t('🎁 Presenten kom inte iväg – prova igen när du har internet.') : r.fel?.includes('inte vänner') ? $t`🎁 ${v.namn} måste ha dig som vän också – fråga hen igen i 👥 Kompisar.` : $t`🎁 ${v.namn} har fått så många presenter i dag – prova i morgon!`, 'bad');
+      return;
+    }
+    if (val.fri) { const s2 = skickatGet(); s2[v.vid] = idagStr(); try { localStorage.setItem(SKICKAT, JSON.stringify(s2)); } catch { /* ok */ } }
+    play('buy');
+    G.glad?.(3, '', 'vanpresent', 6);
+    toast($t`🎁 Presenten är på väg till ${v.namn}!`, 'good');
+  }
+}
 // en spelare man har tagit bort (när hen inte var inne) dyker upp → hen får veta det, en gång
 vanKrokar.kom = (A0, p, id) => {
   if (!A0?.avatar || !id || !p?.vi || !vanBorttagen(A0.avatar, p.vi)) return;

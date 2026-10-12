@@ -1259,6 +1259,7 @@ export function makeRoom(A, { visit = false, sub: subOpt = null, core = null } =
     bedtime,
     get asleep() { return !!seq; },
     _debug: {
+      petLayer: () => L,   // 🐾 djurlagret (tools/djurminne-test.mjs)
       // sömnsekvensen: läget just nu (null = vaken) och en fryst tidpunkt för skärmbilder
       // (hold(t) låser sekvensen vid t sekunder, hold(null) släpper den)
       sleep: () => {

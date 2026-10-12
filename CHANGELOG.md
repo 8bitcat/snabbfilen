@@ -10,6 +10,12 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.110.0] – 2026-10-12 – Vänskapspresenter och djur som minns dig
+- 🎁 Skicka presenter till dina vänner! I 💛 Vänner har varje vän en 🎁-knapp. Varje dag får du skicka en gratis vänskapspresent med en liten överraskning till varje vän. Du kan också lägga till pengar, en möbel ur förrådet eller mat ur kylskåpet.
+- Presenten kommer fram även om vännen inte är inne just då. Vännen får en notis i appen och öppnar presenten i 🎁 Presenter.
+- 🐾 Djuren minns dig! Har du varit borta en stund springer de fram och hälsar när du kommer hem: "HEJ! DU ÄR HEMMA!". Efter ett dygn säger de "JAG HAR SAKNAT DIG!" och blir extra glada.
+- Djurmenyn visar era minnen: hur länge ni varit tillsammans och hur många gånger du har klappat och lekt med djuret.
+
 ## [0.109.0] – 2026-10-12 – Presenter
 - 🎁 Varje dag ligger en ny present och väntar på dig, från kl. 6 på morgonen! Öppna den i mobilen: paketet skakar, locket flyger, det blir konfetti, och du ser vad du fick.
 - Det kan vara pengar, mat till kylskåpet, kläder du inte har, möbler till hemmet och saker till dina djur. Kläderna kan du ta på direkt.

@@ -18,10 +18,17 @@
 //   POST /van/avregistrera {vid, hemlig, token}
 //   POST /van/vanner       {vid, hemlig, namn, vanner: [vid]} figurens hela vänlista (högst 100)
 //   POST /van/inne         {vid, hemlig, namn}                 figuren har hoppat in → notis till vännernas telefoner
+//   POST /van/present     {vid, hemlig, namn, till, fri, gavor} 🎁 vänskapspresent → vännens brevlåda + pushnotis
+//   POST /van/hamta       {vid, hemlig}                       brevlådan: presenterna som väntar
+//   POST /van/kvittera    {vid, hemlig, ids}                  presenterna är hämtade – töm dem ur brevlådan
+// (presenterna: bara mellan vänner åt båda hållen; en gratis vänskapspresent per vän och dag, högst tre presenter per
+//  vän och dag, högst 500 kr och tre saker i en present, högst 30 presenter i en brevlåda; brevlådan är EN nyckel
+//  vb:<vid> så att hämtningen är en enda läsning – KV:s listningar är dyra)
 // En notis går bara till vänner åt BÅDA hållen (stod jag på någons lista utan att hen står på min får hen inget),
 // aldrig till telefoner där figuren själv är registrerad, och samma figur högst var 30:e minut.
 // KV: vh:<vid> = {h: hemlighetens sha256, n: namnet}, vl:<vid> = vänlistan, vp:<vid>:<pushkod> (metadata {lang}),
-// vi:<vid> = spärren. Namnet är figurens namn i spelet (högst 16 tecken) – det står i notisen.
+// vi:<vid> = spärren, vb:<vid> = brevlådan, vf:<från>:<till>:<dag> = dagens presenter till vännen (räknare).
+// Namnet är figurens namn i spelet (högst 16 tecken) – det står i notisen.
 // Hemligheten APNS_KEY (Apples .p8) ligger bara i Cloudflare. Vanliga variabler: APNS_KEY_ID, TEAM_ID, TOPIC,
 // APNS_HOST (bara för test – annars Apples riktiga adress).
 import { KUNGS_PLAYERS } from '../../../js/data/kbk.js';
@@ -59,6 +66,22 @@ const VTEXT = {
   it: { t: 'Amici', b: (n) => `💛 ${n} è ora in Pixelcity!` },
   pt: { t: 'Amigos', b: (n) => `💛 ${n} acabou de entrar no Pixelcity!` },
 };
+const PTEXT = {
+  sv: (n) => `🎁 ${n} har skickat en present till dig!`, en: (n) => `🎁 ${n} sent you a present!`, es: (n) => `🎁 ¡${n} te ha enviado un regalo!`,
+  de: (n) => `🎁 ${n} hat dir ein Geschenk geschickt!`, fr: (n) => `🎁 ${n} t'a envoyé un cadeau !`, pl: (n) => `🎁 ${n} wysyła ci prezent!`,
+  it: (n) => `🎁 ${n} ti ha mandato un regalo!`, pt: (n) => `🎁 ${n} enviou-te um presente!`,
+};
+const SLAG = new Set(['pengar', 'plagg', 'mobel', 'djur', 'mat']), SAK_RE = /^[A-Za-z0-9_-]{1,32}$/;
+// en gåva som servern godtar (spelet kontrollerar själv att saken finns när presenten öppnas)
+function renGava(g) {
+  if (!g || typeof g !== 'object' || !SLAG.has(g.slag)) return null;
+  if (g.slag === 'pengar') { const n = Math.round(+g.n); return n > 0 && n <= 500 ? { slag: 'pengar', n } : null; }
+  if (g.slag === 'mobel') return SAK_RE.test(String(g.k || '')) ? { slag: 'mobel', k: String(g.k), v: Math.max(0, Math.min(40, Math.round(+g.v || 0))) } : null;
+  if (g.slag === 'mat') { const n = Math.round(+g.n || 1); return SAK_RE.test(String(g.id || '')) && n >= 1 && n <= 5 ? { slag: 'mat', id: String(g.id), n } : null; }
+  if (g.slag === 'plagg') return SAK_RE.test(String(g.id || '')) ? { slag: 'plagg', id: String(g.id) } : null;
+  return SAK_RE.test(String(g.k || '')) ? { slag: 'djur', k: String(g.k) } : null;
+}
+const idag = () => new Date().toISOString().slice(0, 10);
 const namnRen = (v) => String(v ?? '').normalize('NFC').replace(/[\u0000-\u001f\u007f<>]/g, '').trim().slice(0, 16) || '?';
 const sha = async (t) => b64u(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(String(t))));
 // vid + hemlig stämmer? Första gången tar figuren sitt vid (sparar hemlighetens sha256). Namnet uppdateras när det ändrats.
@@ -176,6 +199,37 @@ export default {
         const gammal = (await env.KBK.get(`vl:${vid}`, 'json')) || [];
         if (JSON.stringify(gammal) !== JSON.stringify(ny)) { if (ny.length) await env.KBK.put(`vl:${vid}`, JSON.stringify(ny)); else await env.KBK.delete(`vl:${vid}`); }
         return svar({ ok: true, vanner: ny.length });
+      }
+      if (url.pathname === '/van/present') {
+        const till = String(d.till || '');
+        if (!VID_RE.test(till) || till === vid) return svar({ ok: false, fel: 'okänd vän' }, 400);
+        const mina = (await env.KBK.get(`vl:${vid}`, 'json')) || [], deras = (await env.KBK.get(`vl:${till}`, 'json')) || [];
+        if (!mina.includes(till) || !deras.includes(vid)) return svar({ ok: false, fel: 'inte vänner' }, 403);
+        const gavor = (Array.isArray(d.gavor) ? d.gavor : []).map(renGava).filter(Boolean).slice(0, 3);
+        const fri = !!d.fri;
+        if (!fri && !gavor.length) return svar({ ok: false, fel: 'tom present' }, 400);
+        const rk = `vf:${vid}:${till}:${idag()}`, r = (await env.KBK.get(rk, 'json')) || { n: 0, fri: false };
+        if (r.n >= 3) return svar({ ok: false, fel: 'max tre presenter om dagen till samma vän' }, 429);
+        if (fri && r.fri) return svar({ ok: false, fel: 'dagens vänskapspresent är redan skickad' }, 429);
+        const bk = `vb:${till}`, lada = (await env.KBK.get(bk, 'json')) || [];
+        if (lada.length >= 30) return svar({ ok: false, fel: 'brevlådan är full' }, 429);
+        const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+        lada.push({ id, fran: jag.namn, fvid: vid, fri, gavor, t: Date.now() });
+        await env.KBK.put(bk, JSON.stringify(lada), { expirationTtl: 60 * 60 * 24 * 30 });
+        await env.KBK.put(rk, JSON.stringify({ n: r.n + 1, fri: r.fri || fri }), { expirationTtl: 60 * 60 * 48 });
+        // pushnotis till vännens telefoner
+        const tel = (await lista(env, `vp:${till}:`)).map((k) => ({ token: k.name.split(':')[2], lang: k.metadata?.lang, glom: k.name }));
+        const jobb = Promise.all(tel.map((t) => skicka(env, t.token, (PTEXT[t.lang] || PTEXT.sv)(jag.namn), { title: (VTEXT[t.lang] || VTEXT.sv).t, glom: t.glom }).catch((e) => ({ status: 0, reason: String(e) }))));
+        if (d.vanta) { const res = await jobb; return svar({ ok: true, id, skickade: tel.length, svar: res }); }
+        ctx.waitUntil(jobb);
+        return svar({ ok: true, id, skickade: tel.length });
+      }
+      if (url.pathname === '/van/hamta') return svar({ ok: true, presenter: (await env.KBK.get(`vb:${vid}`, 'json')) || [] });
+      if (url.pathname === '/van/kvittera') {
+        const ids = new Set((Array.isArray(d.ids) ? d.ids : []).map(String));
+        const bk = `vb:${vid}`, lada = (await env.KBK.get(bk, 'json')) || [], kvar = lada.filter((x) => !ids.has(x.id));
+        if (kvar.length !== lada.length) { if (kvar.length) await env.KBK.put(bk, JSON.stringify(kvar), { expirationTtl: 60 * 60 * 24 * 30 }); else await env.KBK.delete(bk); }
+        return svar({ ok: true, kvar: kvar.length });
       }
       if (url.pathname === '/van/inne') {
         if (await env.KBK.get(`vi:${vid}`)) return svar({ ok: true, skickade: 0, sparr: true });

@@ -1,0 +1,52 @@
+[
+ {
+  "i": 7956,
+  "f": "js/pets/layer.js",
+  "k": "ni träffades i dag"
+ },
+ {
+  "i": 7957,
+  "f": "js/pets/layer.js",
+  "k": "tillsammans i 1 dag"
+ },
+ {
+  "i": 7958,
+  "f": "js/pets/layer.js",
+  "k": "tillsammans i {0} dagar"
+ },
+ {
+  "i": 7959,
+  "f": "js/pets/layer.js",
+  "k": "klappad {0} gånger"
+ },
+ {
+  "i": 7960,
+  "f": "js/pets/layer.js",
+  "k": "har lekt {0} gånger"
+ },
+ {
+  "i": 7961,
+  "f": "js/pets/layer.js",
+  "k": "JAG HAR SAKNAT DIG!"
+ },
+ {
+  "i": 7962,
+  "f": "js/pets/layer.js",
+  "k": "HEJ! DU ÄR HEMMA!"
+ },
+ {
+  "i": 7963,
+  "f": "js/pets/layer.js",
+  "k": "🐾 Djuren sprang fram och hälsade – de har saknat dig!"
+ },
+ {
+  "i": 7964,
+  "f": "js/pets/layer.js",
+  "k": "{0} {1} har saknat dig!"
+ },
+ {
+  "i": 7965,
+  "f": "js/pets/layer.js",
+  "k": "{0} {1} sprang fram och hälsade!"
+ }
+]

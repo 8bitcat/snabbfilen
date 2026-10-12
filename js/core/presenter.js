@@ -214,7 +214,9 @@ export function oppna(A, i) {
     if (fas !== 'vila') return;
     fas = 'skak'; t0 = 0; requestAnimationFrame((ts) => { t0 = ts; }); play('click');
     // gåvorna bestäms och ges direkt (så att ingenting går förlorat om man stänger mitt i)
-    gavor = (Array.isArray(x.gavor) ? x.gavor.filter(giltig) : rulla(G, x.typ)).filter(Boolean);
+    // vänskapspresent: en liten dagspresent (om den är gratis) + det vännen själv lade i paketet
+    const egna = Array.isArray(x.gavor) ? x.gavor.filter(giltig) : [];
+    gavor = (x.typ === 'van' ? [...(x.fri || !egna.length ? rulla(G, 'dag') : []), ...egna] : rulla(G, x.typ)).filter(Boolean);
     if (!gavor.length) gavor = [pengar(50, 100)];
     for (const gv of gavor) ge(A, gv);
     p.ko.splice(p.ko.indexOf(x), 1);

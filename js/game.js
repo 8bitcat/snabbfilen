@@ -921,7 +921,7 @@ export class Game {
             dag: /^\d{4}-\d{2}-\d{2}$/.test(String(P.dag || '')) ? String(P.dag) : '',
             antal: Math.max(0, Math.min(100000, Math.round(+P.antal || 0))),
             ko: (Array.isArray(P.ko) ? P.ko : []).filter((x) => x && ['dag', 'stor', 'van'].includes(x.typ)).slice(-10)
-              .map((x) => ({ typ: x.typ, ...(typeof x.fran === 'string' ? { fran: x.fran.slice(0, 16) } : {}), ...(Array.isArray(x.gavor) ? { gavor: x.gavor.slice(0, 3) } : {}), ...(typeof x.id === 'string' ? { id: x.id.slice(0, 24) } : {}) })),
+              .map((x) => ({ typ: x.typ, ...(x.fri ? { fri: true } : {}), ...(typeof x.fran === 'string' ? { fran: x.fran.slice(0, 16) } : {}), ...(Array.isArray(x.gavor) ? { gavor: x.gavor.slice(0, 3) } : {}), ...(typeof x.id === 'string' ? { id: x.id.slice(0, 24) } : {}) })),
           }; }
         g.designs = (Array.isArray(p.designs) ? p.designs : []).filter((d) => d && ['neck', 'bag', 'beads', 'phone'].includes(d.kind) && d.sel && typeof d.sel === 'object').slice(-40).map(cleanDesign).filter(Boolean);
         keep.storage = (Array.isArray(p.storage) ? p.storage : []).filter((it) => it && typeof it === 'object' && !knownKind(it.k));

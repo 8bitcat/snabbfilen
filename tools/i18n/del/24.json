@@ -1,0 +1,87 @@
+[
+ {
+  "i": 7939,
+  "f": "js/core/vannerapp.js",
+  "k": "Skicka en present"
+ },
+ {
+  "i": 7940,
+  "f": "js/core/vannerapp.js",
+  "k": "🎁 Present till {0}"
+ },
+ {
+  "i": 7941,
+  "f": "js/core/vannerapp.js",
+  "k": "💛 Vänskapspresent – en liten överraskning"
+ },
+ {
+  "i": 7942,
+  "f": "js/core/vannerapp.js",
+  "k": "gratis, en om dagen"
+ },
+ {
+  "i": 7943,
+  "f": "js/core/vannerapp.js",
+  "k": "i dag redan skickad"
+ },
+ {
+  "i": 7944,
+  "f": "js/core/vannerapp.js",
+  "k": "Lägg till något eget"
+ },
+ {
+  "i": 7945,
+  "f": "js/core/vannerapp.js",
+  "k": "(valfritt)"
+ },
+ {
+  "i": 7946,
+  "f": "js/core/vannerapp.js",
+  "k": "Inga pengar"
+ },
+ {
+  "i": 7947,
+  "f": "js/core/vannerapp.js",
+  "k": "🛋️ Ur förrådet"
+ },
+ {
+  "i": 7948,
+  "f": "js/core/vannerapp.js",
+  "k": "🍽️ Ur kylskåpet"
+ },
+ {
+  "i": 7949,
+  "f": "js/core/vannerapp.js",
+  "k": "🎁 Skicka present"
+ },
+ {
+  "i": 7950,
+  "f": "js/core/vannerapp.js",
+  "k": "🎁 Presenten kom inte iväg – prova igen när du har internet."
+ },
+ {
+  "i": 7951,
+  "f": "js/core/vannerapp.js",
+  "k": "🎁 {0} måste ha dig som vän också – fråga hen igen i 👥 Kompisar."
+ },
+ {
+  "i": 7952,
+  "f": "js/core/vannerapp.js",
+  "k": "🎁 {0} har fått så många presenter i dag – prova i morgon!"
+ },
+ {
+  "i": 7953,
+  "f": "js/core/vannerapp.js",
+  "k": "🎁 Presenten är på väg till {0}!"
+ },
+ {
+  "i": 7954,
+  "f": "js/net/vanpush.js",
+  "k": "🎁 {0} har skickat en present till dig! Öppna den i mobilen 📱"
+ },
+ {
+  "i": 7955,
+  "f": "js/net/vanpush.js",
+  "k": "🎁 Du har fått {0} presenter från dina vänner! Öppna dem i mobilen 📱"
+ }
+]
