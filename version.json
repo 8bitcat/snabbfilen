@@ -1,7 +1,7 @@
 {
-  "version": "0.112.0",
+  "version": "0.113.0",
   "date": "2026-10-13",
-  "title": "Tassbacken och djurtrimmaren",
+  "title": "Utställningshallen",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
@@ -168,6 +168,7 @@
     "js/scenes/ikea/paint.js",
     "js/scenes/ikea/plan.js",
     "js/scenes/ikea/resto.js",
+    "js/scenes/kaninhopp.js",
     "js/scenes/klader/buy.js",
     "js/scenes/klader/data.js",
     "js/scenes/klader/garment.js",
@@ -205,6 +206,7 @@
     "js/scenes/skraplott.js",
     "js/scenes/tassbacken.js",
     "js/scenes/tradgard.js",
+    "js/scenes/utstallning.js",
     "js/scenes/walkable.js",
     "js/shops/bostad.js",
     "js/shops/matbutik.js",

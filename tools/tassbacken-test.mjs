@@ -26,7 +26,7 @@ await p.evaluate(() => {
   localStorage.setItem('snabbfilen_avatar', JSON.stringify({ id: 'id-tb', name: 'Tassa', look: { skin: '#e0a97f' }, color: '#ffd23f' }));
   localStorage.setItem('snabbfilen_save1', JSON.stringify({ v: 1, day: 3, min: 11 * 60, money: 3000, hunger: 90, energy: 100, home: 'husvagn', fridge: {}, jobs: {}, earned: 0, mal: { id: 'rik', niva: 'latt' }, presenter: { dag: '2999-01-01', antal: 0, ko: [] } }));
 });
-await p.reload();
+await p.reload().catch(() => {});   // (ett avbrutet reload kan hända – sidan laddas ändå, vänta på SF nedan)
 await p.waitForFunction(() => !!window.SF?.game, null, { timeout: 30000 });
 await sleep(1200);
 const stang = () => p.evaluate(() => { const m = document.querySelector('#modal'); m.classList.add('hidden'); m.innerHTML = ''; });
@@ -59,8 +59,8 @@ for (const [x, y, n] of [[1100, 296, 'tassbacken-trim'], [700, 300, 'tassbacken-
 const ej = await p.evaluate(() => [SF.scene._debug.walkable(450, 404), SF.scene._debug.walkable(1450, 384), SF.scene._debug.walkable(1018, 300)]);
 ok(!ej[0] && !ej[1] && ej[2], 'dammen och fontänen går inte att gå i, trottoaren går');
 // stängda hus: en skylt berättar vad som kommer
-await p.evaluate(() => SF.scene._debug.act('hall')); await sleep(300);
-ok(/Utställningshallen – öppnar snart/.test(await p.evaluate(() => window.__toasts.join(' | '))), 'utställningshallen: "öppnar snart" med vad som kommer');
+await p.evaluate(() => SF.scene._debug.act('kafe')); await sleep(300);
+ok(/Kattcafé Kurr – öppnar snart/.test(await p.evaluate(() => window.__toasts.join(' | '))), 'kattcaféet: "öppnar snart" med vad som kommer');
 
 // ---- trimmaren ----
 await p.evaluate(() => SF.scene._debug.teleport(1099, 196)); await sleep(300);
@@ -116,7 +116,7 @@ ok(stan.s === 'city' && stan.x < -1150, `österut: tillbaka i stan vid västra s
 
 // ---- sparfilen: frisyren finns kvar, skräp rensas ----
 await p.evaluate(async () => { const raw = JSON.parse(localStorage.getItem('snabbfilen_pets1')); raw.pets.push({ ...raw.pets[0], id: 'skrap', name: 'Skräp', frisyr: { s: 'hacka<script>', f: 'x' } }); localStorage.setItem('snabbfilen_pets1', JSON.stringify(raw)); });
-await p.reload();
+await p.reload().catch(() => {});   // (ett avbrutet reload kan hända – sidan laddas ändå, vänta på SF nedan)
 await p.waitForFunction(() => !!window.SF?.game, null, { timeout: 30000 });
 await sleep(800);
 const spar = await p.evaluate(async (id) => { const { petStore } = await import('/js/pets/sim.js'); const S = petStore(); return { misse: S.petById(id)?.frisyr, skrap: S.petById('skrap') ? S.petById('skrap').frisyr ?? null : 'saknas' }; }, kattId);

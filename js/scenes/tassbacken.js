@@ -28,7 +28,6 @@ const GANG = 110;
 const SNART = {
   hem: $t('🏡 Tassarnas hem – djurhemmet. Här bor djur som väntar på ett nytt hem. Öppnar snart: kom och hälsa på, rasta hundarna och adoptera!'),
   klinik: $t('🩺 Djurkliniken – öppnar snart. Här ska veterinären Vera undersöka och plåstra om dina djur.'),
-  hall: $t('🏆 Utställningshallen – öppnar snart! Kattutställning, hundutställning och kaninhoppning med rosetter, pokaler och Best in Show. Ge ditt djur en snygg frisyr i trimmaren så länge!'),
   kafe: $t('☕ Kattcafé Kurr – öppnar snart! Fika med katterna som bor här.'),
 };
 const AGIL = $t('🐕 Agilitybanan – snart kan du träna din hund här: hinder, tunnel, slalom och vippbräda!');
@@ -44,20 +43,20 @@ export function makeTassbacken(A) {
   let VW = Math.max(384, Math.min(A.W || 384, TW)), VH = Math.max(160, Math.min(A.H || 216, TH));
   const from = A.tassFran || null; A.tassFran = null;
   const spawnY = from?.y ? Math.max(T.SIDEWALK_N[0] + 4, Math.min(T.SIDEWALK_S[1] - 4, from.y)) : T.SIDEWALK_S[0] + 10;
-  const trimDorr = [(HUS.trim.door.x0 + HUS.trim.door.x1) / 2, T.BASE + 8];
-  const walker = createCityWalker({ W: TW, H: TH, left: 2, right: TW - 2, top: T.TOP, bottom: T.BOTTOM, spawn: from?.trim ? trimDorr : from?.buss ? [HALLPLATS.x - 10, HALLPLATS.y + 6] : [TW - 14, spawnY] });
+  const trimDorr = [(HUS.trim.door.x0 + HUS.trim.door.x1) / 2, T.BASE + 8], hallDorr = [(HUS.hall.door.x0 + HUS.hall.door.x1) / 2, T.BASE + 8];
+  const walker = createCityWalker({ W: TW, H: TH, left: 2, right: TW - 2, top: T.TOP, bottom: T.BOTTOM, spawn: from?.trim ? trimDorr : from?.hall ? hallDorr : from?.buss ? [HALLPLATS.x - 10, HALLPLATS.y + 6] : [TW - 14, spawnY] });
   const fordon = () => g.aker;
   const applyRide = () => { const F = fordon(); walker.speed = GANG * (F ? F.fart : 1); };
   applyRide();
   walker.setObstacles(hinder());
   walker.snapFree();
   const talk = createSpeech();
-  let t = 0, hover = null, banner = from?.trim || from?.buss ? 4 : 0;
+  let t = 0, hover = null, banner = from?.trim || from?.hall || from?.buss ? 4 : 0;
   const fade = { a: 1, phase: 2, cb: null };
   const cam = { x: 0, y: 0 };
   const camTarget = () => ({ x: Math.max(0, Math.min(TW - VW, walker.px - VW / 2)), y: Math.max(0, Math.min(TH - VH, walker.py - VH * 0.84)) });
   Object.assign(cam, camTarget());
-  if (!A.attract && !from?.trim) { const h = g.glad?.(2, '', 'tassbacken', 2); if (h) setTimeout(() => toast($t`🐾 Tassbacken – djurens stadsdel! +${h} 😊`, 'good'), 900); }
+  if (!A.attract && !from?.trim && !from?.hall) { const h = g.glad?.(2, '', 'tassbacken', 2); if (h) setTimeout(() => toast($t`🐾 Tassbacken – djurens stadsdel! +${h} 😊`, 'good'), 900); }
   // ens egna djur på promenad följer med hit
   let pets = null;
   try { pets = createPetWalk(A); } catch (e) { console.error('husdjuren i Tassbacken startade inte:', e); }
@@ -117,7 +116,8 @@ export function makeTassbacken(A) {
   const dorr = (id) => { const h = HUS[id]; return { r: [h.door.x0 - 4, T.BASE - 36, h.door.x1 + 4, T.BASE], go: [(h.door.x0 + h.door.x1) / 2, T.BASE + 8] }; };
   const spots = () => [
     { id: 'trim', ...dorr('trim'), label: $t('DJURTRIMMAREN KLIPP & KLO'), act: () => go(() => { play('door'); A.go('trimmaren'); }) },
-    ...['hem', 'klinik', 'hall', 'kafe'].map((id) => ({ id, ...dorr(id), label: `${HUS[id].namn} – ${$t('ÖPPNAR SNART')}`, act: () => { play('knock'); toast(SNART[id], 'wrap'); } })),
+    { id: 'hall', ...dorr('hall'), label: $t('UTSTÄLLNINGSHALLEN – KATTER, HUNDAR, KANINER'), act: () => go(() => { play('door'); A.go('utstallning'); }) },
+    ...['hem', 'klinik', 'kafe'].map((id) => ({ id, ...dorr(id), label: `${HUS[id].namn} – ${$t('ÖPPNAR SNART')}`, act: () => { play('knock'); toast(SNART[id], 'wrap'); } })),
     ...['bo1', 'bo2'].map((id) => ({ id, ...dorr(id), label: $t('BOSTADSHUS'), act: () => { play('knock'); toast($t('🐾 Här bor någon. Det låter som en hund bakom dörren …')); } })),
     { id: 'agility', r: [PARK[0] + 40, PARK[1] + 30, PARK[2] - 40, PARK[3] - 10], go: [(GRIND[0] + GRIND[1]) / 2, PARK[1] + 14], label: $t('AGILITYBANAN – ÖPPNAR SNART'), act: () => toast(AGIL, 'wrap') },
     { id: 'staty', r: [STATY.x - 26, STATY.y - 34, STATY.x + 26, STATY.y + 10], go: [STATY.x, STATY.y + 18], label: $t('KATTSTATYN – SLÄNG EN KRONA'), act: statyn },

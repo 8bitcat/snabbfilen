@@ -1,0 +1,257 @@
+[
+ {
+  "i": 8065,
+  "f": "js/main.js",
+  "k": "🏆 på utställningen i Tassbacken"
+ },
+ {
+  "i": 8066,
+  "f": "js/main.js",
+  "k": "🐇 tävlar i kaninhoppning"
+ },
+ {
+  "i": 8067,
+  "f": "js/scenes/kaninhopp.js",
+  "k": "KANINHOPPNING"
+ },
+ {
+  "i": 8068,
+  "f": "js/scenes/tassbacken.js",
+  "k": "UTSTÄLLNINGSHALLEN – KATTER, HUNDAR, KANINER"
+ },
+ {
+  "i": 8069,
+  "f": "js/scenes/utstallning.js",
+  "k": "Kattutställning"
+ },
+ {
+  "i": 8070,
+  "f": "js/scenes/utstallning.js",
+  "k": "KATTUTSTÄLLNING"
+ },
+ {
+  "i": 8071,
+  "f": "js/scenes/utstallning.js",
+  "k": "Hundutställning"
+ },
+ {
+  "i": 8072,
+  "f": "js/scenes/utstallning.js",
+  "k": "HUNDUTSTÄLLNING"
+ },
+ {
+  "i": 8073,
+  "f": "js/scenes/utstallning.js",
+  "k": "Kaninhoppning"
+ },
+ {
+  "i": 8074,
+  "f": "js/scenes/utstallning.js",
+  "k": "Välkommen till utställningen! Anmäl ditt djur här vid disken – det kostar 100 kr."
+ },
+ {
+  "i": 8075,
+  "f": "js/scenes/utstallning.js",
+  "k": "Domarna tittar på pälsen, hälsan, hur väl ni samarbetar och posen i ringen."
+ },
+ {
+  "i": 8076,
+  "f": "js/scenes/utstallning.js",
+  "k": "Ett tips: gå till trimmaren först! En nygjord frisyr ger mest poäng för pälsen."
+ },
+ {
+  "i": 8077,
+  "f": "js/scenes/utstallning.js",
+  "k": "Ett djur som blir klappat och lekt med varje dag samarbetar bäst i ringen."
+ },
+ {
+  "i": 8078,
+  "f": "js/scenes/utstallning.js",
+  "k": "Kaninerna tävlar i hoppning – tryck precis innan hindret!"
+ },
+ {
+  "i": 8079,
+  "f": "js/scenes/utstallning.js",
+  "k": "Utställningen i Tassbacken"
+ },
+ {
+  "i": 8080,
+  "f": "js/scenes/utstallning.js",
+  "k": "UTSTÄLLARNA"
+ },
+ {
+  "i": 8081,
+  "f": "js/scenes/utstallning.js",
+  "k": "PRISBORDET"
+ },
+ {
+  "i": 8082,
+  "f": "js/scenes/utstallning.js",
+  "k": "Du har inget djur att ställa ut! Djuraffären i stan har katter, hundar och kaniner."
+ },
+ {
+  "i": 8083,
+  "f": "js/scenes/utstallning.js",
+  "k": "ingen frisyr"
+ },
+ {
+  "i": 8084,
+  "f": "js/scenes/utstallning.js",
+  "k": "Tävlat i dag"
+ },
+ {
+  "i": 8085,
+  "f": "js/scenes/utstallning.js",
+  "k": "Anmäl · {0}"
+ },
+ {
+  "i": 8086,
+  "f": "js/scenes/utstallning.js",
+  "k": "🏆 Anmälan – utställningen"
+ },
+ {
+  "i": 8087,
+  "f": "js/scenes/utstallning.js",
+  "k": "Katter och hundar visas i ringen – gå ett varv och posera när domarna tittar. Kaniner tävlar i hoppning. Varje djur får tävla en gång om dagen."
+ },
+ {
+  "i": 8088,
+  "f": "js/scenes/utstallning.js",
+  "k": "🥇 {0} + guldpokal · 🥈 {1} + silverpokal · 🥉 {2} + bronspokal"
+ },
+ {
+  "i": 8089,
+  "f": "js/scenes/utstallning.js",
+  "k": "Du har inte råd med anmälan."
+ },
+ {
+  "i": 8090,
+  "f": "js/scenes/utstallning.js",
+  "k": "{0} hoppar! Lycka till på banan!"
+ },
+ {
+  "i": 8091,
+  "f": "js/scenes/utstallning.js",
+  "k": "Nästa utställare: {0}! Gå ett varv i ringen."
+ },
+ {
+  "i": 8092,
+  "f": "js/scenes/utstallning.js",
+  "k": "PERFEKT POSE!"
+ },
+ {
+  "i": 8093,
+  "f": "js/scenes/utstallning.js",
+  "k": "MISS"
+ },
+ {
+  "i": 8094,
+  "f": "js/scenes/utstallning.js",
+  "k": "{0} p"
+ },
+ {
+  "i": 8095,
+  "f": "js/scenes/utstallning.js",
+  "k": "ANMÄLAN – STÄLL UT DITT DJUR"
+ },
+ {
+  "i": 8096,
+  "f": "js/scenes/utstallning.js",
+  "k": "GUNILLA"
+ },
+ {
+  "i": 8097,
+  "f": "js/scenes/utstallning.js",
+  "k": "DE ANDRA UTSTÄLLARNA"
+ },
+ {
+  "i": 8098,
+  "f": "js/scenes/utstallning.js",
+  "k": "🏆 {0} tävlar också i dag. Slå {1} om du kan!"
+ },
+ {
+  "i": 8099,
+  "f": "js/scenes/utstallning.js",
+  "k": "DOMARNA"
+ },
+ {
+  "i": 8100,
+  "f": "js/scenes/utstallning.js",
+  "k": "Vi bedömer pälsen, hälsan, samarbetet och posen. Lycka till!"
+ },
+ {
+  "i": 8101,
+  "f": "js/scenes/utstallning.js",
+  "k": "🏆 Ettan får {0} och en guldpokal, tvåan {1} och silver, trean {2} och brons. Pokalerna ställer du ut hemma!"
+ },
+ {
+  "i": 8102,
+  "f": "js/scenes/utstallning.js",
+  "k": "LÄKTAREN"
+ },
+ {
+  "i": 8103,
+  "f": "js/scenes/utstallning.js",
+  "k": "HEJA HEJA! 👏"
+ },
+ {
+  "i": 8104,
+  "f": "js/scenes/utstallning.js",
+  "k": "DOMARE"
+ },
+ {
+  "i": 8105,
+  "f": "js/scenes/utstallning.js",
+  "k": "POSERA! TRYCK NÄR VISAREN ÄR I DET GRÖNA ({0}/3)"
+ },
+ {
+  "i": 8106,
+  "f": "js/scenes/utstallning.js",
+  "k": "Nu posera! Tryck när visaren är i det gröna."
+ },
+ {
+  "i": 8107,
+  "f": "js/scenes/utstallning.js",
+  "k": "🥇 1:a plats – blå rosett och guldpokal!"
+ },
+ {
+  "i": 8108,
+  "f": "js/scenes/utstallning.js",
+  "k": "🥈 2:a plats – röd rosett och silverpokal!"
+ },
+ {
+  "i": 8109,
+  "f": "js/scenes/utstallning.js",
+  "k": "🥉 3:e plats – gul rosett och bronspokal!"
+ },
+ {
+  "i": 8110,
+  "f": "js/scenes/utstallning.js",
+  "k": "✂️ Päls {0} · ❤️ Hälsa {1} · 🤝 Samarbete {2} · ✨ Pose {3}"
+ },
+ {
+  "i": 8111,
+  "f": "js/scenes/utstallning.js",
+  "k": "🏆✨ BEST IN SHOW! ✨🏆"
+ },
+ {
+  "i": 8112,
+  "f": "js/scenes/utstallning.js",
+  "k": "💰 Prispengar: <b>{0}</b>"
+ },
+ {
+  "i": 8113,
+  "f": "js/scenes/utstallning.js",
+  "k": "Ingen pall den här gången – försök igen i morgon!"
+ },
+ {
+  "i": 8114,
+  "f": "js/scenes/utstallning.js",
+  "k": "+ {0} för Best in Show!"
+ },
+ {
+  "i": 8115,
+  "f": "js/scenes/utstallning.js",
+  "k": "🏆 Pokalen ligger i förrådet – ställ ut den hemma med 🛋️ Möblera!"
+ }
+]
