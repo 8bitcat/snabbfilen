@@ -67,8 +67,8 @@ export function kbkRedanHar(A, players) {
   if (namn.length) setTimeout(() => toast($t`⚽ Lagkompisar i Pixelstaden: ${namn.join(', ')}`, 'good'), 1600);
 }
 
-// Spelet ligger i bakgrunden → en notis i datorn (webbens notiser) eller i telefonen (appens notiser)
-async function bakgrundsnotis(text) {
+// Spelet ligger i bakgrunden → en notis i datorn (webbens notiser) eller i telefonen (appens notiser). (Även vännerna, js/net/vanner.js.)
+export async function bakgrundsnotis(text, tag = 'kbk') {
   if (typeof document === 'undefined' || !document.hidden) return;
   try {
     const C = window.Capacitor;
@@ -76,7 +76,7 @@ async function bakgrundsnotis(text) {
       const P = C.Plugins?.LocalNotifications;
       if (P && (await P.checkPermissions()).display === 'granted') await P.schedule({ notifications: [{ id: 7900 + (Date.now() % 90), title: 'Pixelcity', body: text, schedule: { at: new Date(Date.now() + 500) } }] });
     } else if ('Notification' in window && Notification.permission === 'granted') {
-      new Notification('Pixelstaden', { body: text, tag: 'kbk' });
+      new Notification('Pixelstaden', { body: text, tag });
     }
   } catch { /* ingen notis – hälsningen i spelet räcker */ }
 }

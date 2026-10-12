@@ -22,6 +22,7 @@ import { VERSION } from '../version.js';
 import { isBlockedKey, tvatta, loggaSay } from './skydd.js';
 import { $t } from '../core/i18n.js';
 import { kbkNr, kbkKomIn, kbkRedanHar } from './kbk.js';
+import { vanVid, vanKomIn, vanRedanHar } from './vanner.js';   // 💛 vännerna (vi = figurens vän-id)
 
 const nagon = (n) => n || $t('Någon');   // spelarens namn i toasterna (inget namn → Någon)
 
@@ -225,7 +226,7 @@ export const worldMarkActive = markActive;
 
 // ---------- min publicerade state ----------
 function myState(A) {
-  return { av: { name: A.avatar.name, look: A.avatar.look, color: A.avatar.color }, scene: myScene(A), x: A.scene?.worldX ?? 190, y: A.scene?.worldY ?? 174, home: A.game.home, deco: A.game.deco, key: myKey(), ver: VERSION, vo: voiceFlag() ? 1 : 0, si: mySit(A), fd: myRide(A), fe: A.fest ? 1 : 0, hu: myHu(A), kb: kbkNr(A.avatar) };
+  return { av: { name: A.avatar.name, look: A.avatar.look, color: A.avatar.color }, scene: myScene(A), x: A.scene?.worldX ?? 190, y: A.scene?.worldY ?? 174, home: A.game.home, deco: A.game.deco, key: myKey(), ver: VERSION, vo: voiceFlag() ? 1 : 0, si: mySit(A), fd: myRide(A), fe: A.fest ? 1 : 0, hu: myHu(A), kb: kbkNr(A.avatar), vi: vanVid(A.avatar) };
 }
 // Bor jag ihop med någon (js/net/sambo.js)? Hushållets id – då är vi hemma i SAMMA rum (myScene)
 // och den som hälsar på hamnar hos oss båda.
@@ -276,6 +277,7 @@ function cleanP(p, old = {}) {
     if (p.hu !== undefined) out.hu = /^sb-[a-z0-9]{1,12}$/.test(String(p.hu)) ? String(p.hu) : '';   // 🏠 hushållet (bor ihop)
     if (p.fe !== undefined) out.fe = p.fe ? 1 : 0;   // 🎉 fest hemma (besökare ser pyntet)
     if (p.kb !== undefined) out.kb = Number.isInteger(+p.kb) && +p.kb > 0 && +p.kb < 100 ? +p.kb : 0;   // ⚽ lagnumret i KBK (js/net/kbk.js)
+    if (p.vi !== undefined) out.vi = /^[0-9a-f]{16}$/.test(String(p.vi)) ? String(p.vi) : '';            // 💛 vän-id:t (js/net/vanner.js)
     if (p.fd !== undefined) out.fd = /^[a-z]{2,16}:#[0-9a-f]{6}$/i.test(String(p.fd)) ? String(p.fd).toLowerCase() : '';
     if (p.deco !== undefined && p.deco && typeof p.deco === 'object') {
       out.deco = {};
@@ -323,7 +325,7 @@ function hostData(A, conn, d) {
     W.players.set(id, p);
     conn.send({ t: 'world', you: id, players: [[W.myId, myState(A)], ...[...W.players].filter(([pid]) => pid !== id)] });
     hostBroadcast({ t: 'join', id, p }, id);
-    if (!isBlockedKey(p.key) && !kbkKomIn(A, p)) { play('knock'); toast($t`👋 ${nagon(p.av.name)} är i Pixelstaden!`, 'good'); }   // (lagkompisar i KBK får en egen hälsning)
+    if (!isBlockedKey(p.key) && !vanKomIn(A, p, id) && !kbkKomIn(A, p)) { play('knock'); toast($t`👋 ${nagon(p.av.name)} är i Pixelstaden!`, 'good'); }   // (vänner och lagkompisar i KBK får en egen hälsning)
   } else if (d.t === 'up') {
     const old = W.players.get(id);
     if (!old) return;
@@ -385,9 +387,10 @@ function clientData(A, d, w) {
     for (const [id, p] of d.players || []) if (id !== w.myId) w.players.set(id, cleanP(p));
     toast($t`🌆 Du är med i Pixelstaden – ${w.players.size + 1} online!`, 'good');
     kbkRedanHar(A, [...w.players.values()].filter((p) => !isBlockedKey(p.key)));
+    vanRedanHar(A, [...w.players].filter(([, p]) => !isBlockedKey(p.key)).map(([id, p]) => ({ ...p, id })));
   } else if (d.t === 'join') {
     w.players.set(d.id, cleanP(d.p));
-    if (!isBlockedKey(w.players.get(d.id).key) && !kbkKomIn(A, w.players.get(d.id))) { play('knock'); toast($t`👋 ${nagon(w.players.get(d.id).av.name)} är i Pixelstaden!`, 'good'); }
+    if (!isBlockedKey(w.players.get(d.id).key) && !vanKomIn(A, w.players.get(d.id), d.id) && !kbkKomIn(A, w.players.get(d.id))) { play('knock'); toast($t`👋 ${nagon(w.players.get(d.id).av.name)} är i Pixelstaden!`, 'good'); }
   } else if (d.t === 'up') {
     const old = w.players.get(d.id);
     if (old) w.players.set(d.id, cleanP(d.p, old));
@@ -524,7 +527,7 @@ export const worldMyKey = () => myKey(); // fast per webbläsare och figur – r
 // ---------- besök ----------
 export function playersList() {
   if (!W || !W.open) return [];
-  return [...W.players].filter(([, p]) => !isBlockedKey(p.key)).map(([id, p]) => ({ id, av: p.av, scene: p.scene, home: p.home, x: p.x, y: p.y, ver: p.ver || null, key: p.key || null, hu: p.hu || '', kb: p.kb || 0 }));   // (kb: ⚽ lagnumret i KBK, js/core/kbklag.js)
+  return [...W.players].filter(([, p]) => !isBlockedKey(p.key)).map(([id, p]) => ({ id, av: p.av, scene: p.scene, home: p.home, x: p.x, y: p.y, ver: p.ver || null, key: p.key || null, hu: p.hu || '', kb: p.kb || 0, vi: p.vi || '' }));   // (kb: ⚽ lagnumret i KBK, js/core/kbklag.js)
 }
 // Namnet på den som har ett visst spelar-id (för "hemma hos …")
 export function playerName(id) {

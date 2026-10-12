@@ -1,7 +1,7 @@
 {
-  "version": "0.107.0",
+  "version": "0.108.0",
   "date": "2026-10-12",
-  "title": "BLING BLING: pärlor, strykmärken och mobilskal",
+  "title": "Vänner",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
@@ -86,6 +86,7 @@
     "js/core/startguide.js",
     "js/core/truck-art.js",
     "js/core/ui.js",
+    "js/core/vannerapp.js",
     "js/core/version-ui.js",
     "js/core/voices.js",
     "js/core/week.js",
@@ -129,6 +130,8 @@
     "js/net/kbkpush.js",
     "js/net/sambo.js",
     "js/net/skydd.js",
+    "js/net/vanner.js",
+    "js/net/vanpush.js",
     "js/net/voice-ui.js",
     "js/net/voice.js",
     "js/net/world.js",

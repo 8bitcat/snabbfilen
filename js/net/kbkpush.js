@@ -32,6 +32,10 @@ async function post(path, data) {
   } catch { return null; }   // offline – nästa start försöker igen
 }
 
+// (vännernas push, js/net/vanpush.js, använder samma server och samma pushmodul)
+export const pushPost = post;
+export const pushPlugin = PUSH;
+
 let A0 = null, lyssnar = false;
 // Telefonen: lov att visa notiser + pushkoden till servern. fraga = visa telefonens fråga om man inte svarat än.
 export async function kbkPushRegistrera(A, { fraga = true } = {}) {

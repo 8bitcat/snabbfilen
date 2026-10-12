@@ -56,6 +56,9 @@ import { openMenu, mountMenuButton, isMenuOpen, shouldShowMenuAtBoot } from './c
 import { drawPixHud, isPixHud, apply as applyHud, stripHeight, layoutStrip } from './core/hud-pix.js';
 import { guideTick, startGuide, resumeGuide, offerGuide } from './core/startguide.js'; // 🧭 första dagen: listan + Doris + handen
 import { kbkPushInne, kbkPushRegistrera } from './net/kbkpush.js'; // ⚽ KBK: pushnotis till laget när man hoppar in
+import { vanFraga, vanAppInit } from './core/vannerapp.js'; // 💛 vänner: förfrågan och appen i mobilen (Carl 2026-10-12)
+import { arVan } from './net/vanner.js';
+import { vanPushStart } from './net/vanpush.js'; // 💛 pushnotis till vännernas telefoner när man hoppar in
 import { mountMobilen } from './core/mobilen.js'; // 📱 knapparna samlade i figurens mobil
 import { musicTick } from './core/music.js';
 import { recTick } from './core/rec.js';
@@ -94,6 +97,10 @@ const A = {
   worldInfo,
   playersList,
   visitPlayer: (id) => visitPlayer(A, id),
+  // 💛 Vänner-appen (js/core/vannerapp.js): var spelaren är, gå dit och åk hem till – samma som i 👥-rutan
+  placeOf: (p) => placeOf(p, worldInfo()),
+  followTo: (id) => { if (leaveBlocked()) return; closeModal(); A.followPlayer = id; if (A.sceneName !== 'city') { A.visitTarget = null; A.go('city'); } },
+  visitTo: (id) => { if (leaveBlocked()) return; closeModal(); visitPlayer(A, id); },
   sendEmote: (e) => sendEmote(A, e),
   sendSay: (text) => sendSay(A, text),
   worldFolksHere: () => worldFolksHere(A),
@@ -564,10 +571,11 @@ function openWorldDialog() {
   const verTag = (v) => (v === info.version ? '' : ` <span class="old">${v ? 'v' + esc(v) : $t('gammal version')}</span>`);
   const rows = list.map((p, i) => `<div class="prow">
       <span data-face="${i}"></span>
-      <span class="nm">${esc(p.av.name || '?')}${verTag(p.ver)}<br><small class="sp">${placeOf(p, info)}</small></span>
+      <span class="nm">${arVan(A.avatar, p) ? '💛 ' : ''}${esc(p.av.name || '?')}${verTag(p.ver)}<br><small class="sp">${placeOf(p, info)}</small></span>
       <span class="pbtns">${coopJob ? `<button class="btn btn-small btn-gold" data-jobba="${esc(p.id)}">${$t('💼 Jobba ihop')}</button>` : ''}
       ${p.scene === 'city' && !inJob ? `<button class="btn btn-small" data-goto="${esc(p.id)}">${$t('🚶 Gå dit')}</button>` : ''}
       ${coopJob ? '' : `<button class="btn btn-small btn-go" data-visit="${esc(p.id)}">${$t('🚗 Åk hem till')}</button>`}
+      ${p.vi && !arVan(A.avatar, p) ? `<button class="btn btn-small btn-gold" data-van="${i}" title="${$t('Bli vänner – ni ser varandra i 💛 Vänner och får en hälsning när den andra hoppar in')}">${$t('💛 Bli vänner')}</button>` : ''}
       ${!A.game.sambo && !inJob && p.key && p.ver === info.version ? `<button class="btn btn-small btn-gold" data-sambo="${i}" title="${$t('Flytta ihop – dela hem, möbler och hyra')}">${$t('🏠 Flytta ihop')}</button>` : ''}
       ${p.key ? `<button class="btn btn-small" data-block="${i}" title="${$t('Blockera – du ser och hör inte hen längre')}">${$t('🚫 Blockera')}</button><button class="btn btn-small" data-anmal="${i}" title="${$t('Anmäl till oss som gör spelet')}">${$t('⚑ Anmäl')}</button>` : ''}</span>
     </div>`).join('');
@@ -596,6 +604,7 @@ function openWorldDialog() {
     const p = list[+el.dataset.face];
     el.replaceWith(avatarPortrait({ name: p.av.name, look: p.av.look, color: p.av.color }, 40));
   });
+  dlg.querySelectorAll('[data-van]').forEach((b) => (b.onclick = () => { if (vanFraga(A, list[+b.dataset.van])) closeModal(); }));
   dlg.querySelectorAll('[data-sambo]').forEach((b) => (b.onclick = () => { const p = list[+b.dataset.sambo]; if (inviteSambo(p)) closeModal(); }));
   dlg.querySelectorAll('[data-block]').forEach((b) => (b.onclick = () => {
     const p = list[+b.dataset.block];
@@ -761,7 +770,8 @@ function boot() {
   const begin = () => {
     startWorld(A); // den öppna världen: koppla upp tyst i bakgrunden
     startNotiser(A); // 🔔 appen: lägg om notiserna, fråga en gång efter första dagen
-    setTimeout(() => { kbkPushInne(A); kbkPushRegistrera(A); }, 4000); // ⚽ avstämd i KBK: laget får en notis, telefonen registreras
+    vanAppInit(A); // 💛 vänförfrågningar kan komma så fort man är i världen
+    setTimeout(() => { kbkPushInne(A); kbkPushRegistrera(A); vanPushStart(A); }, 4000); // ⚽ KBK-laget och 💛 vännerna får en notis, telefonen registreras
     if (firstRun) {
       openModal($t('🌆 Välkommen till Pixelstaden!'), `<div class="who">${''}<div>
         <p style="font-size:var(--f2);margin-top:0">${$t`Här börjar ditt nya liv, <b>${A.avatar.name}</b>! Du har <b>${fmt(A.game.money)}</b> på fickan.`}</p>

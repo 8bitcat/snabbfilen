@@ -440,6 +440,25 @@ export const KARTOR = {
     '................',
     '................'],
   // ⚽ KBK-appen (js/core/kbklag.js) – lagskölden i Kungsladugårds färger: gul, rött band, KBK i vitt
+  // 💛 Vänner (js/core/vannerapp.js) – ett stort gult hjärta med glans, som 💛 i hälsningarna
+  vanner: [
+    '................',
+    '................',
+    '..kkkk....kkkk..',
+    '.kyyyyk..kyyyyk.',
+    'kyWWyyykkyyyyyYk',
+    'kyWyyyyyyyyyyyYk',
+    'kyyyyyyyyyyyyyYk',
+    'kyyyyyyyyyyyyYYk',
+    '.kyyyyyyyyyyyYk.',
+    '..kyyyyyyyyyYk..',
+    '...kyyyyyyyYk...',
+    '....kyyyyyYk....',
+    '.....kyyyYk.....',
+    '......kYYk......',
+    '.......kk.......',
+    '................',
+  ],
   kbk: [
     '.kkkkkkkkkkkkkk.',
     '.kyyyyyyyyyyyYk.',

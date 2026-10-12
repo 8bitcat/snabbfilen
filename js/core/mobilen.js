@@ -5,6 +5,7 @@
 //   • Raden överst visar bara mätarna. De gamla knapparna (#hud .hud-btns) finns kvar men är dolda – de är
 //     mobilens "motor": varje app trycker på sin gamla knapp, så karta, taxi, kompisar, chatt, röst,
 //     livsmål, veckan, dagboken och nyheterna fungerar precis som förut.
+//   • 💛 Vänner (js/core/vannerapp.js, Carl 2026-10-12): ens vänner, vilka som är i stan nu (siffran på appen).
 //   • 💼 Jobb (alla jobb, närmast först, 🧭 Visa vägen) och 🏠 Hem (pilen hem) – js/core/jobben.js, Carl 2026-10-11.
 //     Startguiden lär ut dem första dagen: knappen och appen pulserar (guidePeka i js/core/startguide.js).
 //   • Inställningar öppnar spelmenyn med inställningarna utfällda (ljud, musik, zoom, språk, mätare,
@@ -22,6 +23,7 @@ import { clock } from '../game.js';
 import { openJobben, visaHem } from './jobben.js';   // 💼 jobben och 🏠 vägen hem (Carl 2026-10-11)
 import { guidePeka } from './startguide.js';
 import { openKbkApp, kbkAppSyns, lagInne } from './kbklag.js';   // ⚽ KBK-appen (Carl 2026-10-11)
+import { openVannerApp, vanInneAntal } from './vannerapp.js';   // 💛 Vänner (Carl 2026-10-12)
 
 const APPAR = [
   { id: 'karta', src: 'hud-map', ik: 'karta', namn: $t('Karta') },
@@ -30,6 +32,7 @@ const APPAR = [
   { id: 'kbk', fn: (A) => openKbkApp(A), ik: 'kbk', namn: 'KBK', syns: (A) => kbkAppSyns(A?.avatar) },
   { id: 'taxi', src: 'hud-taxi', ik: 'taxi', namn: $t('Taxi') },
   { id: 'kompisar', src: 'hud-friends', ik: 'kompisar', namn: $t('Kompisar') },
+  { id: 'vanner', fn: (A) => openVannerApp(A), ik: 'vanner', namn: $t('Vänner') },
   { id: 'chatt', src: 'hud-chat', ik: 'chatt', namn: $t('Chatt') },
   { id: 'rost', src: 'hud-voice', ik: 'rost', namn: $t('Röst') },
   { id: 'mal', src: 'hud-goals', ik: 'mal', namn: $t('Livsmål') },
@@ -103,6 +106,8 @@ function uppdatera() {
   badge('kompisar', n ? String(n) : '');
   const lag = lagInne().length;
   badge('kbk', lag ? String(lag) : '');
+  const van = vanInneAntal(A);   // 💛 vänner i Pixelstaden nu
+  badge('vanner', van ? String(van) : '');
   badge('nyheter', ny ? $t('NY') : '');
   badge('rost', rostPa ? $t('PÅ') : '');
   const g = A?.game;

@@ -10,6 +10,18 @@
 //
 // Lagras i KV (bindningen KBK): tok:<pushkod> med {nr, lang} som metadata, inne:<nr> = spärren (30 min).
 // Inget annat: inga namn utöver lagets förnamn, som redan står i spelet. Laget kommer ur spelets egen fil.
+//
+// 💛 VÄNNER (Carl 2026-10-12: "så man kan bli vänner … och att man får notiser när en vän spelar"). Man blir vänner
+// i spelet (båda är i Pixelstaden och den andra säger ja). Varje figur har ett slumpat vän-id (vid, 16 hex) och en
+// hemlig nyckel (32 hex) som bara finns i telefonen/webbläsaren – servern sparar bara nyckelns SHA-256.
+//   POST /van/registrera   {vid, hemlig, namn, token, lang}  telefonens pushkod för figuren
+//   POST /van/avregistrera {vid, hemlig, token}
+//   POST /van/vanner       {vid, hemlig, namn, vanner: [vid]} figurens hela vänlista (högst 100)
+//   POST /van/inne         {vid, hemlig, namn}                 figuren har hoppat in → notis till vännernas telefoner
+// En notis går bara till vänner åt BÅDA hållen (stod jag på någons lista utan att hen står på min får hen inget),
+// aldrig till telefoner där figuren själv är registrerad, och samma figur högst var 30:e minut.
+// KV: vh:<vid> = {h: hemlighetens sha256, n: namnet}, vl:<vid> = vänlistan, vp:<vid>:<pushkod> (metadata {lang}),
+// vi:<vid> = spärren. Namnet är figurens namn i spelet (högst 16 tecken) – det står i notisen.
 // Hemligheten APNS_KEY (Apples .p8) ligger bara i Cloudflare. Vanliga variabler: APNS_KEY_ID, TEAM_ID, TOPIC,
 // APNS_HOST (bara för test – annars Apples riktiga adress).
 import { KUNGS_PLAYERS } from '../../../js/data/kbk.js';
@@ -35,6 +47,35 @@ export function spelare(nr, namn) {
   return p && enkel(p[1]) === enkel(namn) ? p : null;
 }
 const TOKEN_RE = /^[0-9a-f]{64,200}$/i;
+const VID_RE = /^[0-9a-f]{16}$/, HEM_RE = /^[0-9a-f]{32}$/;
+// (rubriken säger att det är en vän – meningen är könsneutral på alla språk)
+const VTEXT = {
+  sv: { t: 'Vänner', b: (n) => `💛 Din vän ${n} har precis hoppat in i Pixelcity!` },
+  en: { t: 'Friends', b: (n) => `💛 Your friend ${n} just jumped into Pixelcity!` },
+  es: { t: 'Amigos', b: (n) => `💛 ¡${n} acaba de entrar en Pixelcity!` },
+  de: { t: 'Freunde', b: (n) => `💛 ${n} ist gerade in Pixelcity reingesprungen!` },
+  fr: { t: 'Amis', b: (n) => `💛 ${n} vient d'arriver dans Pixelcity !` },
+  pl: { t: 'Przyjaciele', b: (n) => `💛 ${n} jest teraz w Pixelcity!` },
+  it: { t: 'Amici', b: (n) => `💛 ${n} è ora in Pixelcity!` },
+  pt: { t: 'Amigos', b: (n) => `💛 ${n} acabou de entrar no Pixelcity!` },
+};
+const namnRen = (v) => String(v ?? '').normalize('NFC').replace(/[\u0000-\u001f\u007f<>]/g, '').trim().slice(0, 16) || '?';
+const sha = async (t) => b64u(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(String(t))));
+// vid + hemlig stämmer? Första gången tar figuren sitt vid (sparar hemlighetens sha256). Namnet uppdateras när det ändrats.
+async function vanAuth(env, d) {
+  const vid = String(d.vid || ''), hem = String(d.hemlig || '');
+  if (!VID_RE.test(vid) || !HEM_RE.test(hem)) return null;
+  const h = await sha(hem), namn = d.namn !== undefined ? namnRen(d.namn) : null;
+  const rad = await env.KBK.get(`vh:${vid}`, 'json');
+  if (rad && rad.h !== h) return null;
+  if (!rad || (namn && rad.n !== namn)) await env.KBK.put(`vh:${vid}`, JSON.stringify({ h, n: namn || rad?.n || '?' }));
+  return { vid, namn: namn || rad?.n || '?' };
+}
+async function lista(env, prefix) {
+  const ut = []; let cursor;
+  do { const sida = await env.KBK.list({ prefix, cursor }); ut.push(...sida.keys); cursor = sida.list_complete ? null : sida.cursor; } while (cursor);
+  return ut;
+}
 
 // ---------- Apples token (ES256-JWT, giltig i en timme – vi gör en ny var 50:e minut) ----------
 let jwt = null, jwtT = 0;
@@ -51,7 +92,7 @@ async function apnsJwt(env) {
   jwt = `${huvud}.${kropp}.${b64u(sig)}`; jwtT = now;
   return jwt;
 }
-async function skicka(env, token, text) {
+async function skicka(env, token, text, { title = 'KBK', glom = `tok:${token}` } = {}) {
   const host = env.APNS_HOST || 'https://api.push.apple.com';
   const r = await fetch(`${host}/3/device/${token}`, {
     method: 'POST',
@@ -60,12 +101,12 @@ async function skicka(env, token, text) {
       'apns-push-type': 'alert', 'apns-priority': '10', 'apns-expiration': String(Math.floor(Date.now() / 1000) + 3600),
       'content-type': 'application/json',
     },
-    body: JSON.stringify({ aps: { alert: { title: 'KBK', body: text }, sound: 'default' } }),
+    body: JSON.stringify({ aps: { alert: { title, body: text }, sound: 'default' } }),
   });
   if (r.status !== 200) {
     const fel = await r.json().catch(() => ({}));
     // telefonen finns inte längre (appen borttagen, ny telefon) → glöm pushkoden
-    if (r.status === 410 || /BadDeviceToken|DeviceTokenNotForTopic|Unregistered/.test(fel.reason || '')) await env.KBK.delete(`tok:${token}`);
+    if (r.status === 410 || /BadDeviceToken|DeviceTokenNotForTopic|Unregistered/.test(fel.reason || '')) await env.KBK.delete(glom);
     return { status: r.status, reason: fel.reason || '' };
   }
   return { status: 200 };
@@ -84,7 +125,7 @@ export default {
   async fetch(req, env, ctx) {
     if (req.method === 'OPTIONS') return new Response(null, { headers: CORS });
     const url = new URL(req.url);
-    if (req.method === 'GET' && url.pathname === '/') return svar({ ok: true, telefoner: (await allaTelefoner(env)).length });
+    if (req.method === 'GET' && url.pathname === '/') return svar({ ok: true, telefoner: (await allaTelefoner(env)).length, vantelefoner: (await lista(env, 'vp:')).length });
     if (req.method !== 'POST') return svar({ ok: false, fel: 'bara POST' }, 405);
     let d = {};
     try { d = await req.json(); } catch { return svar({ ok: false, fel: 'trasig JSON' }, 400); }
@@ -113,6 +154,44 @@ export default {
       if (d.vanta) { const res = await jobb; return svar({ ok: true, skickade: till.length, svar: res }); }   // (testerna väntar in svaren)
       ctx.waitUntil(jobb);
       return svar({ ok: true, skickade: till.length });
+    }
+    // ---------- 💛 vänner ----------
+    if (url.pathname.startsWith('/van/')) {
+      const jag = await vanAuth(env, d);
+      if (!jag) return svar({ ok: false, fel: 'fel nyckel' }, 403);
+      const { vid } = jag;
+      if (url.pathname === '/van/registrera') {
+        if (!TOKEN_RE.test(String(d.token || ''))) return svar({ ok: false, fel: 'ogiltig pushkod' }, 400);
+        const k = `vp:${vid}:${String(d.token).toLowerCase()}`, lang = VTEXT[d.lang] ? d.lang : 'sv';
+        const fanns = await env.KBK.getWithMetadata(k);
+        if (fanns.value === null || fanns.metadata?.lang !== lang) await env.KBK.put(k, '1', { metadata: { lang } });   // (skriver bara när något ändrats)
+        return svar({ ok: true });
+      }
+      if (url.pathname === '/van/avregistrera') {
+        if (TOKEN_RE.test(String(d.token || ''))) await env.KBK.delete(`vp:${vid}:${String(d.token).toLowerCase()}`);
+        return svar({ ok: true });
+      }
+      if (url.pathname === '/van/vanner') {
+        const ny = [...new Set((Array.isArray(d.vanner) ? d.vanner : []).map(String).filter((v) => VID_RE.test(v) && v !== vid))].slice(0, 100).sort();
+        const gammal = (await env.KBK.get(`vl:${vid}`, 'json')) || [];
+        if (JSON.stringify(gammal) !== JSON.stringify(ny)) { if (ny.length) await env.KBK.put(`vl:${vid}`, JSON.stringify(ny)); else await env.KBK.delete(`vl:${vid}`); }
+        return svar({ ok: true, vanner: ny.length });
+      }
+      if (url.pathname === '/van/inne') {
+        if (await env.KBK.get(`vi:${vid}`)) return svar({ ok: true, skickade: 0, sparr: true });
+        await env.KBK.put(`vi:${vid}`, '1', { expirationTtl: SPARR_S });
+        const mina = new Set((await lista(env, `vp:${vid}:`)).map((k) => k.name.split(':')[2]));   // (telefoner där jag själv finns)
+        const till = [];
+        for (const f of (await env.KBK.get(`vl:${vid}`, 'json')) || []) {
+          const deras = (await env.KBK.get(`vl:${f}`, 'json')) || [];
+          if (!deras.includes(vid)) continue;                                                            // bara vänner åt båda hållen
+          for (const k of await lista(env, `vp:${f}:`)) { const token = k.name.split(':')[2]; if (!mina.has(token) && !till.some((t) => t.token === token)) till.push({ token, lang: k.metadata?.lang, glom: k.name }); }
+        }
+        const jobb = Promise.all(till.map((t) => skicka(env, t.token, (VTEXT[t.lang] || VTEXT.sv).b(jag.namn), { title: (VTEXT[t.lang] || VTEXT.sv).t, glom: t.glom }).catch((e) => ({ status: 0, reason: String(e) }))));
+        if (d.vanta) { const res = await jobb; return svar({ ok: true, skickade: till.length, svar: res }); }
+        ctx.waitUntil(jobb);
+        return svar({ ok: true, skickade: till.length });
+      }
     }
     return svar({ ok: false, fel: 'okänd adress' }, 404);
   },

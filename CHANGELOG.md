@@ -10,6 +10,12 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.108.0] – 2026-10-12 – Vänner
+- 💛 Nu kan man bli vänner! Öppna 👥 Kompisar i mobilen och tryck 💛 Bli vänner vid någon som är i Pixelstaden. Säger hen ja är ni vänner.
+- 💛 Vänner är en ny app i mobilen. Där ser du alla dina vänner, vem som är i stan just nu (med 🚶 Gå dit och 🚗 Åk hem till) och när de var inne senast. Siffran på appen visar hur många vänner som är i stan.
+- När en vän hoppar in får du en hälsning: "💛 Din vän Mira har precis hoppat in i Pixelstaden!". I appen Pixelcity (1.2) får du en notis även när appen är stängd. Samma vän hörs av högst en gång i halvtimmen.
+- 💔 Tar du bort en vän försvinner ni från varandras listor.
+
 ## [0.107.0] – 2026-10-12 – BLING BLING: pärlor, strykmärken och mobilskal
 - 📿 BLING BLING har fått en pärlbar mitt på mattan: trä ett eget halsband pärla för pärla – glaspärlor, pärlemor, kristaller, hjärtan och bokstavspärlor så att du kan skriva ditt namn. Halsbandet syns på figuren.
 - ✨ Vid strykbordet sätter du strykmärken på väskan, tröjan eller byxorna och drar dem dit du vill ha dem. Där byter du också färg på kläderna – det är gratis.

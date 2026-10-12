@@ -44,7 +44,7 @@ const { ctx, p } = await boot();
 ok(await D(p, () => [...document.querySelectorAll('#hud button')].filter((b) => b.offsetParent).length === 0), 'raden överst: inga synliga knappar, bara mätarna');
 ok(await D(p, () => { const r = document.querySelector('#hud-mobil')?.getBoundingClientRect(); return !!r && r.width > 40 && r.right > innerWidth - 40 && r.bottom > innerHeight - 40; }), 'mobilknappen syns nere till höger');
 await p.click('#hud-mobil'); await p.waitForTimeout(250);
-ok(await D(p, () => !document.querySelector('#mobilen').classList.contains('hidden') && document.querySelectorAll('#mobilen [data-app]:not([hidden])').length === 13), 'mobilen öppnas med tretton appar (med Jobb, Hem och KBK)');
+ok(await D(p, () => !document.querySelector('#mobilen').classList.contains('hidden') && document.querySelectorAll('#mobilen [data-app]:not([hidden])').length === 14), 'mobilen öppnas med fjorton appar (med Jobb, Hem, KBK och 💛 Vänner)');
 ok(await D(p, () => /\d\d:\d\d/.test(document.querySelector('[data-mob="klocka"]').textContent) && /dag \d/.test(document.querySelector('[data-mob="dag"]').textContent)), 'mobilen visar klockan och dagen');
 await p.keyboard.press('Escape'); await p.waitForTimeout(150);
 ok(await D(p, () => document.querySelector('#mobilen').classList.contains('hidden')), 'Esc stänger mobilen');
@@ -57,6 +57,9 @@ ok(await D(p, () => !!document.querySelector('#modal:not(.hidden)') && document.
 await stang(p);
 await app(p, 'kompisar');
 ok(!!(await modalText(p)), `Kompisar: kompisrutan öppnas (${(await modalText(p)).slice(0, 40)}…)`);
+await stang(p);
+await app(p, 'vanner');
+ok(/inga vänner här än/.test(await modalText(p)), '💛 Vänner: appen öppnas och berättar hur man blir vänner (js/core/vannerapp.js)');
 await stang(p);
 await app(p, 'mal');
 ok(/Livsmål|livsmål/.test(await modalText(p)), 'Livsmål: livsmålen öppnas');

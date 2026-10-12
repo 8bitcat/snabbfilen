@@ -30,6 +30,7 @@ const apns = http.createServer((req, res) => {
   });
 }).listen(APNS_PORT);
 
+try { fs.rmSync('.wrangler-test', { recursive: true, force: true }); } catch { /* ok */ }   // (en avbruten körning kan ha lämnat spärrar kvar)
 const dev = spawn(process.platform === 'win32' ? 'npx.cmd' : 'npx', ['wrangler', 'dev', '--port', String(DEV_PORT), '--ip', '127.0.0.1', '--persist-to', '.wrangler-test'], { stdio: ['ignore', 'pipe', 'pipe'], shell: process.platform === 'win32' });
 let logg = ''; dev.stdout.on('data', (b) => (logg += b)); dev.stderr.on('data', (b) => (logg += b));
 const URL0 = `http://127.0.0.1:${DEV_PORT}`;
@@ -68,10 +69,44 @@ try {
   ok((await post('/inne', { nr: 34, namn: 'Lily' })).status === 403, 'fel lag (Lily som nummer 34) → 403');
   await post('/avregistrera', { token: SAGA });
   ok((await (await fetch(URL0 + '/')).json()).telefoner === 2, '/avregistrera tar bort Sagas telefon');
+
+  // ---------- 💛 vänner ----------
+  // Mira och Leo är vänner åt båda hållen, Ella har Mira på sin lista men Mira inte Ella; Moa är Miras lillasyster på
+  // samma iPad (samma pushkod) och vän med Mira. Mira hoppar in → notis bara till Leo.
+  const V = (n) => n.repeat(16).slice(0, 16), H = (n) => n.repeat(32).slice(0, 32);
+  const MIRA = { vid: V('1'), hemlig: H('a'), namn: 'Mira' }, LEO = { vid: V('2'), hemlig: H('b'), namn: 'Leo' }, ELLA = { vid: V('3'), hemlig: H('c'), namn: 'Ella' }, MOA = { vid: V('4'), hemlig: H('d'), namn: 'Moa' };
+  const IPAD = 'f6'.repeat(32), LEOS = 'a7'.repeat(32), ELLAS = 'b8'.repeat(32);
+  ok((await post('/van/registrera', { ...MIRA, token: IPAD, lang: 'sv' })).ok, 'vänner: Mira registrerar iPaden (tar sitt vän-id)');
+  ok((await post('/van/registrera', { ...MOA, token: IPAD, lang: 'sv' })).ok, 'vänner: Moa på samma iPad');
+  ok((await post('/van/registrera', { ...LEO, token: LEOS, lang: 'en' })).ok, 'vänner: Leo registrerar sin telefon på engelska');
+  ok((await post('/van/registrera', { ...ELLA, token: ELLAS, lang: 'sv' })).ok, 'vänner: Ella registrerar sin telefon');
+  ok((await post('/van/registrera', { ...MIRA, hemlig: H('9'), token: IPAD })).status === 403, 'vänner: fel hemlig nyckel till Miras vän-id → 403');
+  ok((await post('/van/registrera', { ...LEO, token: 'nej' })).status === 400, 'vänner: trasig pushkod → 400');
+  ok((await post('/van/vanner', { ...MIRA, vanner: [LEO.vid, MOA.vid, MIRA.vid, 'inte-ett-id'] })).vanner === 2, 'vänner: Miras lista (sig själv och trasiga id:n räknas inte)');
+  await post('/van/vanner', { ...LEO, vanner: [MIRA.vid] });
+  await post('/van/vanner', { ...MOA, vanner: [MIRA.vid] });
+  await post('/van/vanner', { ...ELLA, vanner: [MIRA.vid] });
+  ok((await (await fetch(URL0 + '/')).json()).vantelefoner === 4, 'GET / räknar vännernas telefoner (inga namn)');
+  const f0 = mottaget.length;
+  const vin = await post('/van/inne', { ...MIRA, vanta: true });
+  const nya = mottaget.slice(f0), tillV = new Set(nya.map((m) => m.token));
+  ok(vin.ok && vin.skickade === 1 && tillV.has(LEOS) && !tillV.has(ELLAS) && !tillV.has(IPAD), `vänner: Mira hoppar in → notis bara till Leo (inte Ella, som inte är Miras vän, och inte iPaden där Mira själv finns) (${vin.skickade})`);
+  const leoN = nya.find((m) => m.token === LEOS);
+  ok(leoN?.body?.aps?.alert?.title === 'Friends' && leoN?.body?.aps?.alert?.body === '💛 Your friend Mira just jumped into Pixelcity!', `vänner: rubrik och text på Leos språk ("${leoN?.body?.aps?.alert?.title}: ${leoN?.body?.aps?.alert?.body}")`);
+  const f1 = mottaget.length;
+  ok((await post('/van/inne', { ...MIRA, vanta: true })).sparr && mottaget.length === f1, 'vänner: samma figur igen inom 30 min → spärr');
+  ok((await post('/van/inne', { ...LEO, hemlig: H('0') })).status === 403, 'vänner: "inne" med fel nyckel → 403 (ingen kan låtsas vara Leo)');
+  const lin = await post('/van/inne', { ...LEO, vanta: true });
+  ok(lin.skickade === 1 && mottaget.slice(f1).some((m) => m.token === IPAD && m.body?.aps?.alert?.body === '💛 Din vän Leo har precis hoppat in i Pixelcity!'), 'vänner: Leo hoppar in → iPaden (Mira) får "Din vän Leo …"');
+  await post('/van/vanner', { ...MIRA, vanner: [MOA.vid] });
+  await post('/van/avregistrera', { ...LEO, token: LEOS });
+  ok((await (await fetch(URL0 + '/')).json()).vantelefoner === 3, 'vänner: /van/avregistrera tar bort Leos telefon');
 } catch (e) {
   ok(false, String(e.message || e));
 } finally {
-  dev.kill(); apns.close();
+  apns.close();
+  // (Windows: dev.kill() dödar bara skalet – workerd under det blir kvar och svarar nästa gång med gammal kod)
+  if (process.platform === 'win32') { try { (await import('node:child_process')).execSync(`taskkill /PID ${dev.pid} /T /F`, { stdio: 'ignore' }); } catch { /* ok */ } } else dev.kill();
   try { fs.rmSync('.dev.vars'); fs.rmSync('.wrangler-test', { recursive: true, force: true }); } catch { /* ok */ }
 }
 console.log(fails ? `\n${fails} FEL` : '\nALLT GRÖNT');

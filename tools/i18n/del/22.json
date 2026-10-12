@@ -1,0 +1,192 @@
+[
+ {
+  "i": 7874,
+  "f": "js/core/mobilen.js",
+  "k": "Vänner"
+ },
+ {
+  "i": 7875,
+  "f": "js/core/vannerapp.js",
+  "k": "💛 Den spelaren har en för gammal version – be hen ladda om sidan."
+ },
+ {
+  "i": 7876,
+  "f": "js/core/vannerapp.js",
+  "k": "💛 Ni är redan vänner, du och {0}!"
+ },
+ {
+  "i": 7877,
+  "f": "js/core/vannerapp.js",
+  "k": "💛 Du har redan {0} vänner – ta bort någon först."
+ },
+ {
+  "i": 7878,
+  "f": "js/core/vannerapp.js",
+  "k": "💛 Du har frågat {0} om ni ska bli vänner. Väntar på svar …"
+ },
+ {
+  "i": 7879,
+  "f": "js/core/vannerapp.js",
+  "k": "💛 Bli vänner?"
+ },
+ {
+  "i": 7880,
+  "f": "js/core/vannerapp.js",
+  "k": "<b>{0}</b> vill bli din vän!"
+ },
+ {
+  "i": 7881,
+  "f": "js/core/vannerapp.js",
+  "k": "Vänner ser varandra i 💛 Vänner i mobilen och får en hälsning när den andra hoppar in i Pixelstaden – i appen även när den är stängd."
+ },
+ {
+  "i": 7882,
+  "f": "js/core/vannerapp.js",
+  "k": "💛 Ja, vi blir vänner!"
+ },
+ {
+  "i": 7883,
+  "f": "js/core/vannerapp.js",
+  "k": "💛 Du och {0} är vänner nu!"
+ },
+ {
+  "i": 7884,
+  "f": "js/core/vannerapp.js",
+  "k": "💛 {0} sa ja – ni är vänner nu!"
+ },
+ {
+  "i": 7885,
+  "f": "js/core/vannerapp.js",
+  "k": "💛 {0} vill inte bli vänner just nu."
+ },
+ {
+  "i": 7886,
+  "f": "js/core/vannerapp.js",
+  "k": "har inte setts än"
+ },
+ {
+  "i": 7887,
+  "f": "js/core/vannerapp.js",
+  "k": "sågs senast i dag"
+ },
+ {
+  "i": 7888,
+  "f": "js/core/vannerapp.js",
+  "k": "sågs senast i går"
+ },
+ {
+  "i": 7889,
+  "f": "js/core/vannerapp.js",
+  "k": "sågs senast för {0} dagar sedan"
+ },
+ {
+  "i": 7890,
+  "f": "js/core/vannerapp.js",
+  "k": "i Pixelstaden"
+ },
+ {
+  "i": 7891,
+  "f": "js/core/vannerapp.js",
+  "k": "Ta bort vännen"
+ },
+ {
+  "i": 7892,
+  "f": "js/core/vannerapp.js",
+  "k": "🔔 I appen Pixelcity får du en notis när en vän börjar spela – även när appen är stängd."
+ },
+ {
+  "i": 7893,
+  "f": "js/core/vannerapp.js",
+  "k": "🔔 Notiserna är på: du får en notis när en vän börjar spela."
+ },
+ {
+  "i": 7894,
+  "f": "js/core/vannerapp.js",
+  "k": "🔔 Slå på notiser när en vän börjar spela"
+ },
+ {
+  "i": 7895,
+  "f": "js/core/vannerapp.js",
+  "k": "Notiserna är avstängda för Pixelcity – slå på dem i telefonens Inställningar → Notiser."
+ },
+ {
+  "i": 7896,
+  "f": "js/core/vannerapp.js",
+  "k": "💛 Vänner"
+ },
+ {
+  "i": 7897,
+  "f": "js/core/vannerapp.js",
+  "k": "Din vän är i Pixelstaden nu!"
+ },
+ {
+  "i": 7898,
+  "f": "js/core/vannerapp.js",
+  "k": "Du har en vän. Hen är inte i Pixelstaden just nu."
+ },
+ {
+  "i": 7899,
+  "f": "js/core/vannerapp.js",
+  "k": "<b>{0}</b> av dina {1} vänner är i Pixelstaden nu."
+ },
+ {
+  "i": 7900,
+  "f": "js/core/vannerapp.js",
+  "k": "Du har {0} vänner. Ingen av dem är i Pixelstaden just nu."
+ },
+ {
+  "i": 7901,
+  "f": "js/core/vannerapp.js",
+  "k": "Du har inga vänner här än."
+ },
+ {
+  "i": 7902,
+  "f": "js/core/vannerapp.js",
+  "k": "Träffar du någon i Pixelstaden: öppna 👥 Kompisar i mobilen och tryck 💛 Bli vänner. Säger hen ja hamnar ni här – och ni får en hälsning när den andra hoppar in."
+ },
+ {
+  "i": 7903,
+  "f": "js/core/vannerapp.js",
+  "k": "👥 Kompisar"
+ },
+ {
+  "i": 7904,
+  "f": "js/core/vannerapp.js",
+  "k": "💔 Ta bort vännen?"
+ },
+ {
+  "i": 7905,
+  "f": "js/core/vannerapp.js",
+  "k": "Vill du ta bort <b>{0}</b> som vän? Ni försvinner från varandras listor och får inga hälsningar när den andra hoppar in."
+ },
+ {
+  "i": 7906,
+  "f": "js/core/vannerapp.js",
+  "k": "💔 Ja, ta bort"
+ },
+ {
+  "i": 7907,
+  "f": "js/core/vannerapp.js",
+  "k": "💔 {0} är inte din vän längre."
+ },
+ {
+  "i": 7908,
+  "f": "js/main.js",
+  "k": "Bli vänner – ni ser varandra i 💛 Vänner och får en hälsning när den andra hoppar in"
+ },
+ {
+  "i": 7909,
+  "f": "js/main.js",
+  "k": "💛 Bli vänner"
+ },
+ {
+  "i": 7910,
+  "f": "js/net/vanner.js",
+  "k": "💛 Din vän {0} har precis hoppat in i Pixelstaden!"
+ },
+ {
+  "i": 7911,
+  "f": "js/net/vanner.js",
+  "k": "💛 Dina vänner i Pixelstaden: {0}"
+ }
+]
