@@ -39,7 +39,12 @@ workflows:
       - name: Bygg ipa
         script: |
           cd app/ios/App
-          xcode-project build-ipa --project "$XCODE_PROJECT" --scheme "$XCODE_SCHEME"
+          # går arkiveringen fel skrivs Xcodes egna felrader ut här (annars syns bara "Failed to archive")
+          xcode-project build-ipa --project "$XCODE_PROJECT" --scheme "$XCODE_SCHEME" || {
+            echo "--- felen från xcodebuild ---"
+            grep -h -E "error:|Provisioning profile|aps-environment|doesn't (include|support|match)" /tmp/xcodebuild_logs/*.log | sort -u | head -40
+            exit 1
+          }
     artifacts:
       - app/ios/App/build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
