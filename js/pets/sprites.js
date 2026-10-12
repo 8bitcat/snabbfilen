@@ -27,6 +27,7 @@
 // ---------------------------------------------------------------------------
 import { SPECIES } from './sprite-data.js';
 import { paintPet, strHash } from './pet-art.js';
+import { frisyrKey } from './trim.js';
 
 export { SPECIES };
 export const STAGES = ['unge', 'ung', 'vuxen'];
@@ -83,7 +84,7 @@ export function animFrame(pet, anim, t) {
 
 // ---------------------------------------------------------------- cache
 const CACHE = new Map();
-const visKey = (pet) => `${pet?.species}|${pet?.breed}|${pet?.breed2 || ''}|${pet?.stage || 'vuxen'}|${pet?.sex || ''}|${pet?.seed ?? ''}`;
+const visKey = (pet) => `${pet?.species}|${pet?.breed}|${pet?.breed2 || ''}|${pet?.stage || 'vuxen'}|${pet?.sex || ''}|${pet?.seed ?? ''}|${frisyrKey(pet)}`;   // (✂️ frisyren, trim.js)
 function spriteOf(pet, anim, t, dir) {
   if (!ANIM_OK.has(anim)) anim = 'idle';
   if (!DIRS_OK.has(dir)) dir = 'down';

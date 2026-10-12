@@ -3960,3 +3960,29 @@ export function createProps(env) {
     },
   };
 }
+
+// ---------- rekvisitalådan för andra scener ----------
+// 🐾 Tassbacken (js/scenes/tassbacken.js) lånar stadens rekvisita så att stadsdelen får samma detaljnivå:
+// träd (med eller utan galler), gatlyktor med sken, bänkar, papperskorgar, brandposter, blomlådor och
+// kaféets bord med parasoll. Allt ritas med fotpunkten i (x, y) som i staden. Sprites cachas.
+let KIT = null;
+export function propKit() {
+  if (KIT) return KIT;
+  const cache = {}, once = (k, make) => cache[k] || (cache[k] = make());
+  KIT = {
+    // träd: kind = lind | bjork | korsbar | ek | lonn | gran; vind = px svaj i kronan
+    tree(ctx, kind, x, y, { grate = false, vind = 0 } = {}) {
+      const t = once(`tree:${kind}:${x}:${y}:${grate}`, () => makeTree(kind, (x * 7 + y * 13) | 0, grate));
+      put(ctx, t.base, x, y);
+      drawCrown(ctx, t.crown, x, y, vind);
+    },
+    lamp(ctx, x, y, dir = 1) { put(ctx, once(dir > 0 ? 'lampR' : 'lampL', () => spr(30, 72, dir > 0 ? 13 : 16, 68, (P) => paintStreetLamp(P, dir))), x, y); },
+    lampGlow(ctx, x, y, a = 1) { ctx.globalAlpha = a; put(ctx, once('lampGlow', () => spr(64, 84, 32, 74, (P) => paintLampGlow(P, -59, 19, 22, 8))), x, y); ctx.globalAlpha = 1; },
+    bench(ctx, x, y, back = false) { put(ctx, once(back ? 'benchB' : 'bench', () => (back ? spr(36, 24, 17, 20, (P) => paintBench(P, true)) : spr(36, 26, 17, 22, (P) => paintBench(P, false)))), x, y); },
+    bin(ctx, x, y) { put(ctx, once('bin', () => spr(16, 20, 7, 17, paintBin)), x, y); },
+    hydrant(ctx, x, y) { put(ctx, once('hyd', () => spr(18, 20, 9, 16, paintHydrant)), x, y); },
+    flowerBox(ctx, x, y, w, cols, style = 'tra') { put(ctx, once(`fb:${x}:${y}:${w}:${cols}:${style}`, () => spr(w + 10, 26, (w >> 1) + 4, 20, (P) => paintFlowerBox(P, w, (x * 3 + y) | 0, cols, style, false))), x, y); },
+    cafe(ctx, x, y, canopy) { put(ctx, once(`cafe:${canopy}`, () => spr(40, 56, 19, 51, (P) => paintCafeSet(P, canopy))), x, y); },
+  };
+  return KIT;
+}

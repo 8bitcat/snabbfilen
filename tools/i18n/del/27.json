@@ -1,0 +1,457 @@
+[
+ {
+  "i": 7974,
+  "f": "js/main.js",
+  "k": "🐾 i Tassbacken"
+ },
+ {
+  "i": 7975,
+  "f": "js/main.js",
+  "k": "✂️ i djurtrimmaren"
+ },
+ {
+  "i": 7976,
+  "f": "js/pets/trim.js",
+  "k": "Fönad och fluffig"
+ },
+ {
+  "i": 7977,
+  "f": "js/pets/trim.js",
+  "k": "Bad, fön och borste – pälsen blir dubbelt så yvig."
+ },
+ {
+  "i": 7978,
+  "f": "js/pets/trim.js",
+  "k": "Lejonklipp"
+ },
+ {
+  "i": 7979,
+  "f": "js/pets/trim.js",
+  "k": "Kort på kroppen, stor man runt huvudet och en tofs på svansen."
+ },
+ {
+  "i": 7980,
+  "f": "js/pets/trim.js",
+  "k": "Pompomklipp"
+ },
+ {
+  "i": 7981,
+  "f": "js/pets/trim.js",
+  "k": "Pompoms vid tassarna och på svansen – och en topp på huvudet."
+ },
+ {
+  "i": 7982,
+  "f": "js/pets/trim.js",
+  "k": "En kam rakt upp över huvudet. Rock!"
+ },
+ {
+  "i": 7983,
+  "f": "js/pets/trim.js",
+  "k": "En söt rosett mitt på huvudet."
+ },
+ {
+  "i": 7984,
+  "f": "js/pets/trim.js",
+  "k": "Färgslingor"
+ },
+ {
+  "i": 7985,
+  "f": "js/pets/trim.js",
+  "k": "Färgade ränder i svansen, färgade öron och en slinga på hjässan."
+ },
+ {
+  "i": 7986,
+  "f": "js/pets/trim.js",
+  "k": "Naturlig"
+ },
+ {
+  "i": 7987,
+  "f": "js/scenes/city.js",
+  "k": "TASSBACKEN"
+ },
+ {
+  "i": 7988,
+  "f": "js/scenes/shop-trimmare.js",
+  "k": "Välkommen till Klipp & Klo! ✂️ Klicka på trimbordet så fixar vi ditt djur."
+ },
+ {
+  "i": 7989,
+  "f": "js/scenes/shop-trimmare.js",
+  "k": "Lejonklipp är populärt på katter i sommar – kort på kroppen och en stor man!"
+ },
+ {
+  "i": 7990,
+  "f": "js/scenes/shop-trimmare.js",
+  "k": "Pompoms på svansen? Absolut! Det funkar på kaniner också."
+ },
+ {
+  "i": 7991,
+  "f": "js/scenes/shop-trimmare.js",
+  "k": "Färgen är helt ofarlig – den tvättas ur med tiden. Rosa är min favorit!"
+ },
+ {
+  "i": 7992,
+  "f": "js/scenes/shop-trimmare.js",
+  "k": "Snart blir det utställning i hallen. Ett nytrimmat djur får extra poäng av domarna!"
+ },
+ {
+  "i": 7993,
+  "f": "js/scenes/shop-trimmare.js",
+  "k": "🛁 Bad och schampo …"
+ },
+ {
+  "i": 7994,
+  "f": "js/scenes/shop-trimmare.js",
+  "k": "💨 Fönen …"
+ },
+ {
+  "i": 7995,
+  "f": "js/scenes/shop-trimmare.js",
+  "k": "✂️ Klipp klipp …"
+ },
+ {
+  "i": 7996,
+  "f": "js/scenes/shop-trimmare.js",
+  "k": "✨ Tadaa!"
+ },
+ {
+  "i": 7997,
+  "f": "js/scenes/shop-trimmare.js",
+  "k": "FRISYRER"
+ },
+ {
+  "i": 7998,
+  "f": "js/scenes/shop-trimmare.js",
+  "k": "KLIPP & KLO"
+ },
+ {
+  "i": 7999,
+  "f": "js/scenes/shop-trimmare.js",
+  "k": "Du har inget husdjur än! Djuraffären i stan säljer katter, hundar och kaniner – kom tillbaka sen så gör vi dem fina. 🐾"
+ },
+ {
+  "i": 8000,
+  "f": "js/scenes/shop-trimmare.js",
+  "k": "Ett ögonblick – jag är mitt i en klippning!"
+ },
+ {
+  "i": 8001,
+  "f": "js/scenes/shop-trimmare.js",
+  "k": "naturlig"
+ },
+ {
+  "i": 8002,
+  "f": "js/scenes/shop-trimmare.js",
+  "k": "Klipp bort frisyren och färgen – tillbaka som förut."
+ },
+ {
+  "i": 8003,
+  "f": "js/scenes/shop-trimmare.js",
+  "k": "(+{0})"
+ },
+ {
+  "i": 8004,
+  "f": "js/scenes/shop-trimmare.js",
+  "k": "✂️ Klipp & Klo"
+ },
+ {
+  "i": 8005,
+  "f": "js/scenes/shop-trimmare.js",
+  "k": "Nu: {0}"
+ },
+ {
+  "i": 8006,
+  "f": "js/scenes/shop-trimmare.js",
+  "k": "✂️ Trimma · {0}"
+ },
+ {
+  "i": 8007,
+  "f": "js/scenes/shop-trimmare.js",
+  "k": "Du har inte råd med det här just nu."
+ },
+ {
+  "i": 8008,
+  "f": "js/scenes/shop-trimmare.js",
+  "k": "{0}! Upp på bordet med dig. Först ett bad …"
+ },
+ {
+  "i": 8009,
+  "f": "js/scenes/shop-trimmare.js",
+  "k": "Ditt djur blev fint i trimmaren"
+ },
+ {
+  "i": 8010,
+  "f": "js/scenes/shop-trimmare.js",
+  "k": "Tadaa! {0} är jättefin!"
+ },
+ {
+  "i": 8011,
+  "f": "js/scenes/shop-trimmare.js",
+  "k": "Tadaa! {0} är sig själv igen."
+ },
+ {
+  "i": 8012,
+  "f": "js/scenes/shop-trimmare.js",
+  "k": "✨ {0} fick {1} {2}{3}! Frisyren syns hemma, på promenaden och på utställningen."
+ },
+ {
+  "i": 8013,
+  "f": "js/scenes/shop-trimmare.js",
+  "k": "🌿 {0} är naturlig igen."
+ },
+ {
+  "i": 8014,
+  "f": "js/scenes/shop-trimmare.js",
+  "k": "TRIMBORDET – TRIMMA DITT DJUR"
+ },
+ {
+  "i": 8015,
+  "f": "js/scenes/shop-trimmare.js",
+  "k": "TRIMMAREN TOVA"
+ },
+ {
+  "i": 8016,
+  "f": "js/scenes/shop-trimmare.js",
+  "k": "FRISYRVÄGGEN"
+ },
+ {
+  "i": 8017,
+  "f": "js/scenes/shop-trimmare.js",
+  "k": "BADKARET"
+ },
+ {
+  "i": 8018,
+  "f": "js/scenes/shop-trimmare.js",
+  "k": "Badet ingår alltid! Varmt vatten och schampo som luktar äpple. 🍏"
+ },
+ {
+  "i": 8019,
+  "f": "js/scenes/shop-trimmare.js",
+  "k": "SCHAMPO OCH ROSETTER"
+ },
+ {
+  "i": 8020,
+  "f": "js/scenes/shop-trimmare.js",
+  "k": "Rosetterna finns i sex färger – välj Rosett vid trimbordet!"
+ },
+ {
+  "i": 8021,
+  "f": "js/scenes/shop-trimmare.js",
+  "k": "EN KUND SOM VÄNTAR"
+ },
+ {
+  "i": 8022,
+  "f": "js/scenes/shop-trimmare.js",
+  "k": "Välkommen till Klipp & Klo! Har du ett husdjur så gör vi det jättefint här. ✂️"
+ },
+ {
+  "i": 8023,
+  "f": "js/scenes/tassbacken.js",
+  "k": "🏡 Tassarnas hem – djurhemmet. Här bor djur som väntar på ett nytt hem. Öppnar snart: kom och hälsa på, rasta hundarna och adoptera!"
+ },
+ {
+  "i": 8024,
+  "f": "js/scenes/tassbacken.js",
+  "k": "🩺 Djurkliniken – öppnar snart. Här ska veterinären Vera undersöka och plåstra om dina djur."
+ },
+ {
+  "i": 8025,
+  "f": "js/scenes/tassbacken.js",
+  "k": "🏆 Utställningshallen – öppnar snart! Kattutställning, hundutställning och kaninhoppning med rosetter, pokaler och Best in Show. Ge ditt djur en snygg frisyr i trimmaren så länge!"
+ },
+ {
+  "i": 8026,
+  "f": "js/scenes/tassbacken.js",
+  "k": "☕ Kattcafé Kurr – öppnar snart! Fika med katterna som bor här."
+ },
+ {
+  "i": 8027,
+  "f": "js/scenes/tassbacken.js",
+  "k": "🐕 Agilitybanan – snart kan du träna din hund här: hinder, tunnel, slalom och vippbräda!"
+ },
+ {
+  "i": 8028,
+  "f": "js/scenes/tassbacken.js",
+  "k": "Voff voff!"
+ },
+ {
+  "i": 8029,
+  "f": "js/scenes/tassbacken.js",
+  "k": "VOFF! 🐕"
+ },
+ {
+  "i": 8030,
+  "f": "js/scenes/tassbacken.js",
+  "k": "Purrr …"
+ },
+ {
+  "i": 8031,
+  "f": "js/scenes/tassbacken.js",
+  "k": "MJAU! 🐈"
+ },
+ {
+  "i": 8032,
+  "f": "js/scenes/tassbacken.js",
+  "k": "*skutt*"
+ },
+ {
+  "i": 8033,
+  "f": "js/scenes/tassbacken.js",
+  "k": "KVACK!"
+ },
+ {
+  "i": 8034,
+  "f": "js/scenes/tassbacken.js",
+  "k": "Kvack kvack!"
+ },
+ {
+  "i": 8035,
+  "f": "js/scenes/tassbacken.js",
+  "k": "Hon älskar Tassbacken – här får hon nosa på allt!"
+ },
+ {
+  "i": 8036,
+  "f": "js/scenes/tassbacken.js",
+  "k": "Har du varit i trimmaren? Min hund fick pompoms!"
+ },
+ {
+  "i": 8037,
+  "f": "js/scenes/tassbacken.js",
+  "k": "Snart blir det kattutställning i hallen, har jag hört!"
+ },
+ {
+  "i": 8038,
+  "f": "js/scenes/tassbacken.js",
+  "k": "Kattstatyn på torget ger tur om man slänger en krona."
+ },
+ {
+  "i": 8039,
+  "f": "js/scenes/tassbacken.js",
+  "k": "Hundparken är bäst på morgonen."
+ },
+ {
+  "i": 8040,
+  "f": "js/scenes/tassbacken.js",
+  "k": "Han är snäll, du får klappa honom!"
+ },
+ {
+  "i": 8041,
+  "f": "js/scenes/tassbacken.js",
+  "k": "🐾 Tassbacken – djurens stadsdel! +{0} 😊"
+ },
+ {
+  "i": 8042,
+  "f": "js/scenes/tassbacken.js",
+  "k": "DJURTRIMMAREN KLIPP & KLO"
+ },
+ {
+  "i": 8043,
+  "f": "js/scenes/tassbacken.js",
+  "k": "ÖPPNAR SNART"
+ },
+ {
+  "i": 8044,
+  "f": "js/scenes/tassbacken.js",
+  "k": "BOSTADSHUS"
+ },
+ {
+  "i": 8045,
+  "f": "js/scenes/tassbacken.js",
+  "k": "🐾 Här bor någon. Det låter som en hund bakom dörren …"
+ },
+ {
+  "i": 8046,
+  "f": "js/scenes/tassbacken.js",
+  "k": "AGILITYBANAN – ÖPPNAR SNART"
+ },
+ {
+  "i": 8047,
+  "f": "js/scenes/tassbacken.js",
+  "k": "KATTSTATYN – SLÄNG EN KRONA"
+ },
+ {
+  "i": 8048,
+  "f": "js/scenes/tassbacken.js",
+  "k": "BUSS TILL MARKNADSTORGET"
+ },
+ {
+  "i": 8049,
+  "f": "js/scenes/tassbacken.js",
+  "k": "Du har inte ens en krona …"
+ },
+ {
+  "i": 8050,
+  "f": "js/scenes/tassbacken.js",
+  "k": "En krona i kattfontänen"
+ },
+ {
+  "i": 8051,
+  "f": "js/scenes/tassbacken.js",
+  "k": "*plask*"
+ },
+ {
+  "i": 8052,
+  "f": "js/scenes/tassbacken.js",
+  "k": "🪙 Plask! Kattstatyn blinkar åt dig – det ger tur! +{0} 😊"
+ },
+ {
+  "i": 8053,
+  "f": "js/scenes/tassbacken.js",
+  "k": "🪙 Plask! Kronan sjunker till botten bland de andra. (Turen kommer en gång om dagen.)"
+ },
+ {
+  "i": 8054,
+  "f": "js/scenes/tassbacken.js",
+  "k": "🚌 Busshållplats TASSBACKEN"
+ },
+ {
+  "i": 8055,
+  "f": "js/scenes/tassbacken.js",
+  "k": "Bussen går till <b>Marknadstorget</b> i Linnéstaden. Biljetten kostar {0}."
+ },
+ {
+  "i": 8056,
+  "f": "js/scenes/tassbacken.js",
+  "k": "PIXELSTADEN"
+ },
+ {
+  "i": 8057,
+  "f": "js/scenes/tassbacken.js",
+  "k": "DJURENS STADSDEL"
+ },
+ {
+  "i": 8058,
+  "f": "js/tassbacken/karta.js",
+  "k": "DJURHEMMET"
+ },
+ {
+  "i": 8059,
+  "f": "js/tassbacken/karta.js",
+  "k": "DJURKLINIKEN"
+ },
+ {
+  "i": 8060,
+  "f": "js/tassbacken/karta.js",
+  "k": "UTSTÄLLNINGSHALLEN"
+ },
+ {
+  "i": 8061,
+  "f": "js/tassbacken/karta.js",
+  "k": "KATTCAFÉ KURR"
+ },
+ {
+  "i": 8062,
+  "f": "js/tassbacken/karta.js",
+  "k": "DJURTRIMMAREN"
+ },
+ {
+  "i": 8063,
+  "f": "js/tassbacken/karta.js",
+  "k": "TASSARNAS HEM"
+ },
+ {
+  "i": 8064,
+  "f": "js/tassbacken/karta.js",
+  "k": "DJURKLINIK"
+ }
+]

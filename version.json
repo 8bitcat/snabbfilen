@@ -1,7 +1,7 @@
 {
-  "version": "0.111.0",
+  "version": "0.112.0",
   "date": "2026-10-13",
-  "title": "Visa upp det du har gjort",
+  "title": "Tassbacken och djurtrimmaren",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
@@ -145,6 +145,7 @@
     "js/pets/sim.js",
     "js/pets/sprite-data.js",
     "js/pets/sprites.js",
+    "js/pets/trim.js",
     "js/scenes/apartment.js",
     "js/scenes/bio/film.js",
     "js/scenes/bio/filmljud.js",
@@ -199,12 +200,15 @@
     "js/scenes/shop-sjoboden.js",
     "js/scenes/shop-skor.js",
     "js/scenes/shop-terminal.js",
+    "js/scenes/shop-trimmare.js",
     "js/scenes/shop-universitet.js",
     "js/scenes/skraplott.js",
+    "js/scenes/tassbacken.js",
     "js/scenes/tradgard.js",
     "js/scenes/walkable.js",
     "js/shops/bostad.js",
     "js/shops/matbutik.js",
+    "js/tassbacken/karta.js",
     "js/version.js",
     "sw.js",
     "version.json"

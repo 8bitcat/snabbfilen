@@ -14,6 +14,7 @@
 import { SPECIES } from './sprite-data.js';
 import { BW, BH, AX, GY, SP, CP, G, projector, rampOf, newBuf, put, get, grpAt, ell, thick, poly, inkEdge, outline, toCanvas, lum, dropShadow } from './pet-canvas.js';
 import { mix, mul, hash } from '../core/floor-pix.js';
+import { trimma } from './trim.js';
 
 const AGE = { unge: 0, ung: 1, vuxen: 2 };
 const D2R = Math.PI / 180;
@@ -574,7 +575,8 @@ export function paintPet(pet, anim, dir, f) {
   let P, info;
   if (R.sp === 'kanin') { P = rabbitPose(R, anim, f); info = drawRabbit(B, R, P, view, coat); }
   else { P = quadPose(R, anim, f); info = drawQuad(B, R, P, view, coat); }
-  if (R.fluff || R.curly) fringe(B, R);
+  if ((R.fluff || R.curly) && pet?.frisyr?.s !== 'lejon') fringe(B, R);
+  if (pet?.frisyr?.s) trimma(B, R, pet.frisyr, view);   // ✂️ frisyren från djurtrimmaren (trim.js)
   if (globalThis.PET_DEBUG_GROUPS) { const pal = [0, 0xff0000, 0x00ff00, 0x0000ff, 0xffff00, 0xff00ff, 0x00ffff, 0xff8800, 0x8800ff, 0x008888, 0x888800, 0x880088, 0x448844, 0x444488, 0x884444]; for (let k = 0; k < B.col.length; k++) if (B.col[k] >= 0) B.col[k] = pal[B.grp[k]] ?? 0xffffff; }
   outline(B);
   const spr = toCanvas(B, dir === 'left');

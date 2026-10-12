@@ -105,6 +105,7 @@
 // ==================================================================
 import { PET_ITEMS } from './items.js';
 import { $t, $n } from '../core/i18n.js';
+import { rensaFrisyr } from './trim.js';   // ✂️ frisyren från djurtrimmaren
 
 export const PETS_SAVE_KEY = 'snabbfilen_pets1';
 const GAME_SAVE_KEY = 'snabbfilen_save1';   // spelets egen sparnyckel (js/game.js SAVE_KEY) – saknas den är spelet nytt
@@ -479,6 +480,16 @@ export function createPetStore({ storage = null, rng = Math.random, key = PETS_S
     // 🐾 minnet: när djuret såg en senast och hur mycket man har klappat och lekt (djurmenyn, hälsningen)
     memory(p) { if (!p) return null; if (!p.minne || typeof p.minne !== 'object') p.minne = { sett: 0, klapp: 0, lek: 0, boll: 0 }; return p.minne; },
     seen(petId, t = Date.now()) { const p = S.petById(petId); if (p) S.memory(p).sett = t; },
+    // ✂️ djurtrimmaren (Tassbacken): ny frisyr (s = null → naturlig igen). Ett bad gör djuret glatt.
+    trim(petId, s, f, day) {
+      const p = S.petById(petId);
+      if (!p) return false;
+      const fr = s ? rensaFrisyr({ s, f, d: day ?? S.nowDay?.() ?? 0 }) : null;
+      if (fr) p.frisyr = fr; else delete p.frisyr;
+      p.happy = clamp(p.happy + 10);
+      S.save();
+      return true;
+    },
     pet(petId) {
       const p = S.petById(petId);
       if (!p) return 0;
@@ -1011,6 +1022,7 @@ export function createPetStore({ storage = null, rng = Math.random, key = PETS_S
           stageDay: Math.min(savedDay, isNum(q.stageDay) ? q.stageDay : stage === 'unge' ? bornDay : bornDay + STAGE_DAYS[stage]),
           homeDay: isNum(q.homeDay) ? Math.min(savedDay, q.homeDay) : q.homeDay === null ? null : bornDay,
           ...(q.minne && typeof q.minne === 'object' ? { minne: { sett: Math.max(0, num(q.minne.sett)), klapp: Math.max(0, num(q.minne.klapp) | 0), lek: Math.max(0, num(q.minne.lek) | 0), boll: Math.max(0, num(q.minne.boll) | 0) } } : {}),   // (bara när det finns – gamla djur får det när de ses)
+          ...('frisyr' in q ? { frisyr: rensaFrisyr(q.frisyr) || undefined } : {}),   // ✂️ frisyren (trim.js) – bara kända stilar/färger
           care: q.care && typeof q.care === 'object' && isNum(q.care.day)
             ? { day: q.care.day, mat: num(q.care.mat), lek: num(q.care.lek), leksak: num(q.care.leksak), toa: num(q.care.toa), inne: num(q.care.inne) | 0, held: num(q.care.held) }
             : null,

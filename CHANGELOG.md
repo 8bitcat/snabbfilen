@@ -10,6 +10,12 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.112.0] – 2026-10-13 – Tassbacken och djurtrimmaren
+- 🐾 Ny stadsdel: TASSBACKEN! Gå västerut på Pixelgatan, förbi Linnéstaden. Här rastar folk sina hundar, hundarna leker i hundparken, katterna sitter i kattcaféets fönster och änderna simmar i dammen. Ditt eget husdjur får följa med.
+- ✂️ Djurtrimmaren Klipp & Klo: ge ditt husdjur en frisyr – fönad, lejonklipp, pompoms, tuppkam, rosett eller färgslingor – i sju färger. Frisyren syns hemma och på promenaden.
+- 🪙 Släng en krona i kattstatyns fontän på Tasstorget – det ger tur.
+- 🏆 Snart öppnar utställningshallen (kattutställning!), kattcaféet, djurhemmet och djurkliniken.
+
 ## [0.111.0] – 2026-10-13 – Visa upp det du har gjort
 - 🖼️ Visa upp det du har gjort! Köper du ditt första egna mobilskal i BLING BLING får du en mobilskalshylla på köpet. Ställ ut den hemma med 🛋️ Möblera, så står dina skal på hyllan.
 - 📿 Första egna halsbandet ger en smyckestavla med sammet och guldram, där dina halsband och pärlhalsband hänger.

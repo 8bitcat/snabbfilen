@@ -215,6 +215,17 @@ function bridgeLift(x, y) {
   return Math.max(0, Math.min(1, inW, inE));
 }
 
+// vägskylten vid västra stadsgränsen: rosa vägvisare ← TASSBACKEN med en tass
+function drawTassSkylt(ctx, x, y) {
+  const s = $t('TASSBACKEN'), w = textW(SMALL, s) + 16;
+  ctx.fillStyle = 'rgba(20,12,30,.25)'; ctx.fillRect(x - 3, y - 1, 8, 2);
+  ctx.fillStyle = '#5a5e66'; ctx.fillRect(x, y - 26, 2, 26);
+  ctx.fillStyle = '#1e1a24'; ctx.fillRect(x - 3, y - 38, w + 2, 14);
+  ctx.fillStyle = '#d84a8a'; ctx.fillRect(x - 2, y - 37, w, 12); ctx.fillRect(x - 4, y - 35, 2, 8); ctx.fillRect(x - 5, y - 33, 1, 4);
+  ctx.fillStyle = '#f4f1ea'; ctx.fillRect(x - 2, y - 37, w, 1);
+  for (const [dx, dy] of [[0, 1], [1, 1], [0, 2], [1, 2], [-1, 0], [2, 0], [-1, -1], [2, -1]]) ctx.fillRect(x + 2 + dx, y - 31 + dy, 1, 1);
+  ctxText(ctx, SMALL, s, x + 8, y - 34, '#f4f1ea');
+}
 let lastDistrictId = null; // områdesskylten visas bara när man kommer till ett nytt område
 // vägskylten vid stadsgränsen: grön vägvisare LANDET med en pil och en ko
 function drawLandetSkylt(ctx, x, y) {
@@ -553,6 +564,8 @@ export function makeCity(A) {
     for (const d of folkDrawables(A, t)) items.push({ y: d.fy, draw: () => d.draw(ctx) });
     // 🌾 vägskylten LANDET → vid stadsgränsen (södra trottoaren längst österut)
     if (cx + vw > CITY.W - 80) items.push({ y: CITY.SIDEWALK_S[1] - 4, draw: () => drawLandetSkylt(ctx, CITY.W - 22, CITY.SIDEWALK_S[1] - 4) });
+    // vägskylten ← TASSBACKEN vid västra stadsgränsen
+    if (cx < WX0 + 120) items.push({ y: CITY.SIDEWALK_S[1] - 4, draw: () => drawTassSkylt(ctx, WX0 + 14, CITY.SIDEWALK_S[1] - 4) });
     const TP = truckPos();
     if (TP && TP.x > cx - 80 && TP.x < cx + vw + 80) {
       const T = g.truck, open = truckOppen(g);
@@ -925,6 +938,11 @@ export function makeCity(A) {
         walker.stop(); fade.phase = 1; fade.a = 0;
         fade.cb = () => { A.landetFran = { y: walker.py }; A.go('landet'); };
       }
+      // västerut förbi stadsgränsen på Pixelgatan: in i TASSBACKEN (js/scenes/tassbacken.js)
+      if (!A.attract && fade.phase === 0 && !riding && walker.px <= WX0 + 8 && walker.py >= CITY.SIDEWALK_N[0] && walker.py <= CITY.SIDEWALK_S[1]) {
+        walker.stop(); fade.phase = 1; fade.a = 0;
+        fade.cb = () => { A.tassFran = { y: walker.py }; A.go('tassbacken'); };
+      }
       // första turen för dagen på cykeln/moppen gör en glad (vinden i håret)
       const mv = walker.path.length > 0 && !riding;
       if (mv && !rullar && fordon()) g.glad?.(1, '', 'fordon', 2);
@@ -975,6 +993,8 @@ export function makeCity(A) {
       const x = sx + cam.x, y = sy + cam.y;
       // 🌾 skylten LANDET → (eller längst ut på gatan): gå österut ut på landet
       if (x >= CITY.W - 40 && y >= CITY.SIDEWALK_N[0] && y <= CITY.SIDEWALK_S[1] + 4) { if (sitting) standUp(); walker.walkTo(CITY.W - 5, Math.max(CITY.SIDEWALK_N[0] + 4, Math.min(CITY.SIDEWALK_S[1] - 4, y))); return; }
+      // skylten ← TASSBACKEN (eller längst ut på gatan): gå västerut in i Tassbacken
+      if (x <= WX0 + 40 && y >= CITY.SIDEWALK_N[0] && y <= CITY.SIDEWALK_S[1] + 4) { if (sitting) standUp(); walker.walkTo(WX0 + 5, Math.max(CITY.SIDEWALK_N[0] + 4, Math.min(CITY.SIDEWALK_S[1] - 4, y))); return; }
       // 🚚 foodtrucken: gå fram till luckan och öppna truckrutan
       const TP = truckPos();
       if (TP && x >= TP.x - 36 && x <= TP.x + 36 && y >= TP.y - 52 && y <= TP.y + 4) { if (sitting) standUp(); walker.walkTo(TP.x - 8, TP.y + 14, () => openTruck(A)); return; }
