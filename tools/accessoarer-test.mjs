@@ -61,7 +61,7 @@ ok(await page.evaluate(() => window.SF.sceneName) === 'accessoarer', 'scenen acc
 
 // ---- hela katalogen står framme, en gång var, och går att nå ----
 const items = await D('items');
-const want = await page.evaluate(async (slots) => { const m = await import('/js/data/wardrobe.js'); return slots.flatMap((s) => m.itemsForSlot(s).map((it) => it.id)); }, SLOTS);
+const want = await page.evaluate(async (slots) => { const m = await import('/js/data/wardrobe.js'); return slots.flatMap((s) => m.itemsForSlot(s).filter((it) => it.butik !== 'bling').map((it) => it.id)); }, SLOTS);   // (BLING BLINGs mössor står i den butiken)
 const shown = items.map((d) => d.id);
 ok(want.length > 100 && want.every((id) => shown.includes(id)), `alla ${want.length} accessoarer i katalogen står framme (${shown.length} varor)`);
 ok(new Set(shown).size === shown.length, 'ingen vara står två gånger');

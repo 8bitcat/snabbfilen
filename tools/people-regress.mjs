@@ -47,7 +47,7 @@ function fakeCanvas() {
   cv.getContext = () => ctx;
   return cv;
 }
-globalThis.document = globalThis.document || { createElement: () => fakeCanvas() };
+globalThis.document = globalThis.document || { createElement: () => fakeCanvas(), documentElement: {} };   // (i18n.js sätter documentElement.lang)
 
 const P = await import(pathToFileURL(path.join(ROOT, 'js', 'core', 'people.js')).href);
 

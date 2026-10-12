@@ -719,5 +719,24 @@ html.desk-mobil #mobilen .mob-ruta .pix-ik { width: 48px; height: 48px; }
 .bl-mir-r { flex: 1 1 220px; min-width: 0; }
 html.desk-mobil .bl-list { display: none; }
 html.desk-mobil .bl-opts .btn small, html.desk-mobil .bl-fig small, html.desk-mobil .bl-view { font-size: var(--f15); }
-@media (max-height: 520px) { .bl-list { display: none; } .bl-sum b { font-size: var(--f2); } .bl-canvas canvas { max-height: 30vh; } .bl-stage { padding-top: 6px; } .bl-arrow { padding-bottom: 24px; } }
+/* pärlbaren, strykbordet och mobilskalen (shop-bling.js, bilderna i js/scenes/bling/dream.js) */
+.dl-canvas canvas { display: block; width: auto; height: auto; max-width: 100%; max-height: 38vh; image-rendering: pixelated; border: 3px solid var(--ink); touch-action: none; cursor: pointer; }
+.dl-tools, .dl-areas, .dl-cats { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
+.dl-tools .bl-sp { margin: 0; }
+.dl-cats { margin-bottom: 6px; }
+.dl-tip { margin: 0 0 6px; }
+.dl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 6px; }
+.dl-patch, .dl-bead { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 2px; background: #fff; border: 3px solid var(--ink); box-shadow: 2px 2px 0 var(--ink); font: inherit; color: inherit; cursor: pointer; }
+.dl-patch:hover, .dl-bead:hover, .dl-patch:focus-visible, .dl-bead:focus-visible { transform: translate(-1px, -1px); box-shadow: 3px 3px 0 var(--ink); outline: none; background: #fde7f1; }
+.dl-patch canvas, .dl-bead canvas { display: block; image-rendering: pixelated; }
+.dl-patch b { font-size: var(--f1); line-height: 1; text-align: center; hyphens: manual; overflow-wrap: anywhere; }
+.dl-patch small, .dl-bead small { font-size: var(--f1); line-height: 1; background: #f0d048; border: 2px solid var(--ink); padding: 1px 4px 0; }
+.dl-sws { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 6px; }
+.dl-sw { width: 26px; height: 26px; padding: 0; border: 3px solid var(--ink); background: var(--c); box-shadow: 2px 2px 0 var(--ink); cursor: pointer; }
+.dl-sw.on { outline: 3px solid #ffd23f; outline-offset: 1px; transform: translate(-1px, -1px); }
+.bl-pick .bl-lbl small { font-size: var(--f1); opacity: .7; text-transform: none; letter-spacing: 0; }
+.dl-beads { display: grid; grid-template-columns: repeat(auto-fill, minmax(48px, 1fr)); gap: 5px; }
+.bl-show .dl-phone canvas { max-height: 58vh; }
+html.desk-mobil .dl-patch small, html.desk-mobil .dl-bead small { font-size: var(--f15); }   /* (namnen behåller --f1 – större bröt orden mitt itu) */
+@media (max-height: 520px) { .bl-list { display: none; } .bl-sum b { font-size: var(--f2); } .bl-canvas canvas, .dl-canvas canvas { max-height: 30vh; } .dl-tip { display: none; } .bl-stage { padding-top: 6px; } .bl-arrow { padding-bottom: 24px; } .bl-show .dl-phone canvas { max-height: 50vh; } }
 @container (max-width: 760px) { .bl-design { grid-template-columns: auto minmax(0, 1fr); } .bl-show { grid-column: 1; position: static; } .bl-pick { grid-column: 2; grid-row: 1 / span 2; } .bl-canvas canvas { max-height: 24vh; } }

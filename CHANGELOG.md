@@ -10,6 +10,13 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.107.0] – 2026-10-12 – BLING BLING: pärlor, strykmärken och mobilskal
+- 📿 BLING BLING har fått en pärlbar mitt på mattan: trä ett eget halsband pärla för pärla – glaspärlor, pärlemor, kristaller, hjärtan och bokstavspärlor så att du kan skriva ditt namn. Halsbandet syns på figuren.
+- ✨ Vid strykbordet sätter du strykmärken på väskan, tröjan eller byxorna och drar dem dit du vill ha dem. Där byter du också färg på kläderna – det är gratis.
+- 📱 Längst bort i butiken designar du ett eget mobilskal med berlocker och mobilband. När du står still håller figuren mobilen i handen.
+- 🧶 Nio nya mössor på mössväggen: katt, björn, groda, dino, enhörning, två tofsar och fler.
+- Butiken blev större åt höger. På en bred skärm syns hela butiken, annars följer bilden med dig.
+
 ## [0.106.0] – 2026-10-11 – BLING BLING
 - 💎 BLING BLING har öppnat i Linnéstaden, mellan Bageriet och Blomster: en smyckesbutik med halsband, örhängen, armband, ringar, klockor och väskor. Klicka i glasmontrarna eller på väskväggen så provar du sakerna på dig innan du köper.
 - 📿 Vid ateljéborden längst in designar du ett eget halsband (kedja, hänge, sten och pärlor) eller en egen väska (modell, färg, mönster och berlock). Det du gör blir bara ditt, och figuren har det på sig direkt.

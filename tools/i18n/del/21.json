@@ -1,0 +1,847 @@
+[
+ {
+  "i": 7705,
+  "f": "js/core/people/acc.js",
+  "k": "Kattmössa"
+ },
+ {
+  "i": 7706,
+  "f": "js/core/people/acc.js",
+  "k": "Björnmössa"
+ },
+ {
+  "i": 7707,
+  "f": "js/core/people/acc.js",
+  "k": "Grodmössa"
+ },
+ {
+  "i": 7708,
+  "f": "js/core/people/acc.js",
+  "k": "Mössa med två tofsar"
+ },
+ {
+  "i": 7709,
+  "f": "js/core/people/acc.js",
+  "k": "Fiskarmössa"
+ },
+ {
+  "i": 7710,
+  "f": "js/core/people/acc.js",
+  "k": "Öronlappsmössa"
+ },
+ {
+  "i": 7711,
+  "f": "js/core/people/acc.js",
+  "k": "Dinomössa"
+ },
+ {
+  "i": 7712,
+  "f": "js/core/people/acc.js",
+  "k": "Enhörningsmössa"
+ },
+ {
+  "i": 7713,
+  "f": "js/core/people/acc.js",
+  "k": "Flätmössa"
+ },
+ {
+  "i": 7714,
+  "f": "js/data/wardrobe-acc.js",
+  "k": "Katt­mössa"
+ },
+ {
+  "i": 7715,
+  "f": "js/data/wardrobe-acc.js",
+  "k": "Björn­mössa"
+ },
+ {
+  "i": 7716,
+  "f": "js/data/wardrobe-acc.js",
+  "k": "Grod­mössa"
+ },
+ {
+  "i": 7717,
+  "f": "js/data/wardrobe-acc.js",
+  "k": "Fiskar­mössa"
+ },
+ {
+  "i": 7718,
+  "f": "js/data/wardrobe-acc.js",
+  "k": "Öronlapps­mössa"
+ },
+ {
+  "i": 7719,
+  "f": "js/data/wardrobe-acc.js",
+  "k": "Dino­mössa"
+ },
+ {
+  "i": 7720,
+  "f": "js/data/wardrobe-acc.js",
+  "k": "Enhörnings­mössa"
+ },
+ {
+  "i": 7721,
+  "f": "js/data/wardrobe-acc.js",
+  "k": "Flät­mössa"
+ },
+ {
+  "i": 7722,
+  "f": "js/scenes/bling/dream.js",
+  "k": "⭐ Bästsäljare"
+ },
+ {
+  "i": 7723,
+  "f": "js/scenes/bling/dream.js",
+  "k": "💗 Crush"
+ },
+ {
+  "i": 7724,
+  "f": "js/scenes/bling/dream.js",
+  "k": "🐾 Djur"
+ },
+ {
+  "i": 7725,
+  "f": "js/scenes/bling/dream.js",
+  "k": "🍩 Godis"
+ },
+ {
+  "i": 7726,
+  "f": "js/scenes/bling/dream.js",
+  "k": "🌈 Natur & rymd"
+ },
+ {
+  "i": 7727,
+  "f": "js/scenes/bling/dream.js",
+  "k": "✨ Glitter"
+ },
+ {
+  "i": 7728,
+  "f": "js/scenes/bling/dream.js",
+  "k": "💬 Ord"
+ },
+ {
+  "i": 7729,
+  "f": "js/scenes/bling/dream.js",
+  "k": "🔤 ABC"
+ },
+ {
+  "i": 7730,
+  "f": "js/scenes/bling/dream.js",
+  "k": "Prästkrage"
+ },
+ {
+  "i": 7731,
+  "f": "js/scenes/bling/dream.js",
+  "k": "Ros"
+ },
+ {
+  "i": 7732,
+  "f": "js/scenes/bling/dream.js",
+  "k": "Körsbär"
+ },
+ {
+  "i": 7733,
+  "f": "js/scenes/bling/dream.js",
+  "k": "Jordgubbe"
+ },
+ {
+  "i": 7734,
+  "f": "js/scenes/bling/dream.js",
+  "k": "Munk"
+ },
+ {
+  "i": 7735,
+  "f": "js/scenes/bling/dream.js",
+  "k": "Cupcake"
+ },
+ {
+  "i": 7736,
+  "f": "js/scenes/bling/dream.js",
+  "k": "Flamingo"
+ },
+ {
+  "i": 7737,
+  "f": "js/scenes/bling/dream.js",
+  "k": "Planet"
+ },
+ {
+  "i": 7738,
+  "f": "js/scenes/bling/dream.js",
+  "k": "Raket"
+ },
+ {
+  "i": 7739,
+  "f": "js/scenes/bling/dream.js",
+  "k": "Svamp"
+ },
+ {
+  "i": 7740,
+  "f": "js/scenes/bling/dream.js",
+  "k": "Fredsmärke"
+ },
+ {
+  "i": 7741,
+  "f": "js/scenes/bling/dream.js",
+  "k": "Discokula"
+ },
+ {
+  "i": 7742,
+  "f": "js/scenes/bling/dream.js",
+  "k": "Glitterhjärta"
+ },
+ {
+  "i": 7743,
+  "f": "js/scenes/bling/dream.js",
+  "k": "Guldstjärna"
+ },
+ {
+  "i": 7744,
+  "f": "js/scenes/bling/dream.js",
+  "k": "Glittersmiley"
+ },
+ {
+  "i": 7745,
+  "f": "js/scenes/bling/dream.js",
+  "k": "Silverblixt"
+ },
+ {
+  "i": 7746,
+  "f": "js/scenes/bling/dream.js",
+  "k": "Siffran {0}"
+ },
+ {
+  "i": 7747,
+  "f": "js/scenes/bling/dream.js",
+  "k": "Bokstaven {0}"
+ },
+ {
+  "i": 7748,
+  "f": "js/scenes/bling/dream.js",
+  "k": "Glaspärlor"
+ },
+ {
+  "i": 7749,
+  "f": "js/scenes/bling/dream.js",
+  "k": "Pärlemor & metall"
+ },
+ {
+  "i": 7750,
+  "f": "js/scenes/bling/dream.js",
+  "k": "✨ Kristaller"
+ },
+ {
+  "i": 7751,
+  "f": "js/scenes/bling/dream.js",
+  "k": "💗 Former"
+ },
+ {
+  "i": 7752,
+  "f": "js/scenes/bling/dream.js",
+  "k": "🔤 Bokstäver"
+ },
+ {
+  "i": 7753,
+  "f": "js/scenes/bling/dream.js",
+  "k": "Limegrön"
+ },
+ {
+  "i": 7754,
+  "f": "js/scenes/bling/dream.js",
+  "k": "Ljusblå"
+ },
+ {
+  "i": 7755,
+  "f": "js/scenes/bling/dream.js",
+  "k": "Vit pärla"
+ },
+ {
+  "i": 7756,
+  "f": "js/scenes/bling/dream.js",
+  "k": "Rosa pärla"
+ },
+ {
+  "i": 7757,
+  "f": "js/scenes/bling/dream.js",
+  "k": "Guldpärla"
+ },
+ {
+  "i": 7758,
+  "f": "js/scenes/bling/dream.js",
+  "k": "Silverpärla"
+ },
+ {
+  "i": 7759,
+  "f": "js/scenes/bling/dream.js",
+  "k": "Kristall"
+ },
+ {
+  "i": 7760,
+  "f": "js/scenes/bling/dream.js",
+  "k": "Rosa kristall"
+ },
+ {
+  "i": 7761,
+  "f": "js/scenes/bling/dream.js",
+  "k": "Lila kristall"
+ },
+ {
+  "i": 7762,
+  "f": "js/scenes/bling/dream.js",
+  "k": "Blå kristall"
+ },
+ {
+  "i": 7763,
+  "f": "js/scenes/bling/dream.js",
+  "k": "Rött hjärta"
+ },
+ {
+  "i": 7764,
+  "f": "js/scenes/bling/dream.js",
+  "k": "Rosa hjärta"
+ },
+ {
+  "i": 7765,
+  "f": "js/scenes/bling/dream.js",
+  "k": "Blomma"
+ },
+ {
+  "i": 7766,
+  "f": "js/scenes/bling/dream.js",
+  "k": "Vit blomma"
+ },
+ {
+  "i": 7767,
+  "f": "js/scenes/bling/dream.js",
+  "k": "Genomskinlig tråd"
+ },
+ {
+  "i": 7768,
+  "f": "js/scenes/bling/dream.js",
+  "k": "💎 Glitter"
+ },
+ {
+  "i": 7769,
+  "f": "js/scenes/bling/dream.js",
+  "k": "🐾 Figurer"
+ },
+ {
+  "i": 7770,
+  "f": "js/scenes/bling/dream.js",
+  "k": "🔢 Siffror"
+ },
+ {
+  "i": 7771,
+  "f": "js/scenes/bling/dream.js",
+  "k": "Pixeldino"
+ },
+ {
+  "i": 7772,
+  "f": "js/scenes/bling/dream.js",
+  "k": "Rymdvarelse"
+ },
+ {
+  "i": 7773,
+  "f": "js/scenes/bling/dream.js",
+  "k": "Spöke"
+ },
+ {
+  "i": 7774,
+  "f": "js/scenes/bling/dream.js",
+  "k": "Groda"
+ },
+ {
+  "i": 7775,
+  "f": "js/scenes/bling/dream.js",
+  "k": "Rosa diamant"
+ },
+ {
+  "i": 7776,
+  "f": "js/scenes/bling/dream.js",
+  "k": "Regnbågsstjärna"
+ },
+ {
+  "i": 7777,
+  "f": "js/scenes/bling/dream.js",
+  "k": "Regnbågshjärta"
+ },
+ {
+  "i": 7778,
+  "f": "js/scenes/bling/dream.js",
+  "k": "Rosa stjärnsten"
+ },
+ {
+  "i": 7779,
+  "f": "js/scenes/bling/dream.js",
+  "k": "Hallonhjärta"
+ },
+ {
+  "i": 7780,
+  "f": "js/scenes/bling/dream.js",
+  "k": "Lila smaragd"
+ },
+ {
+  "i": 7781,
+  "f": "js/scenes/bling/dream.js",
+  "k": "Grön droppe"
+ },
+ {
+  "i": 7782,
+  "f": "js/scenes/bling/dream.js",
+  "k": "Turkos diamant"
+ },
+ {
+  "i": 7783,
+  "f": "js/scenes/bling/dream.js",
+  "k": "Lila sten"
+ },
+ {
+  "i": 7784,
+  "f": "js/scenes/bling/dream.js",
+  "k": "Kristalldroppe"
+ },
+ {
+  "i": 7785,
+  "f": "js/scenes/bling/dream.js",
+  "k": "Svart smaragd"
+ },
+ {
+  "i": 7786,
+  "f": "js/scenes/bling/dream.js",
+  "k": "Champagnesten"
+ },
+ {
+  "i": 7787,
+  "f": "js/scenes/bling/dream.js",
+  "k": "Klar diamant"
+ },
+ {
+  "i": 7788,
+  "f": "js/scenes/bling/dream.js",
+  "k": "Rosa droppe"
+ },
+ {
+  "i": 7789,
+  "f": "js/scenes/bling/dream.js",
+  "k": "Sockervadd"
+ },
+ {
+  "i": 7790,
+  "f": "js/scenes/bling/dream.js",
+  "k": "Lila dis"
+ },
+ {
+  "i": 7791,
+  "f": "js/scenes/bling/dream.js",
+  "k": "Rymdsvart"
+ },
+ {
+  "i": 7792,
+  "f": "js/scenes/bling/dream.js",
+  "k": "Molnvit"
+ },
+ {
+  "i": 7793,
+  "f": "js/scenes/bling/dream.js",
+  "k": "Mintgrön"
+ },
+ {
+  "i": 7794,
+  "f": "js/scenes/bling/dream.js",
+  "k": "Glitterskal"
+ },
+ {
+  "i": 7795,
+  "f": "js/scenes/bling/dream.js",
+  "k": "Inget band"
+ },
+ {
+  "i": 7796,
+  "f": "js/scenes/bling/dream.js",
+  "k": "Hjärtband"
+ },
+ {
+  "i": 7797,
+  "f": "js/scenes/shop-bling.js",
+  "k": "🧶 Mössor"
+ },
+ {
+  "i": 7798,
+  "f": "js/scenes/shop-bling.js",
+  "k": "MÖSSOR"
+ },
+ {
+  "i": 7799,
+  "f": "js/scenes/shop-bling.js",
+  "k": "MOBILSKAL"
+ },
+ {
+  "i": 7800,
+  "f": "js/scenes/shop-bling.js",
+  "k": "PÄRLA FÖR PÄRLA"
+ },
+ {
+  "i": 7801,
+  "f": "js/scenes/shop-bling.js",
+  "k": "STRYKMÄRKEN"
+ },
+ {
+  "i": 7802,
+  "f": "js/scenes/shop-bling.js",
+  "k": "STRYKMÄRKEN OCH FÄRG"
+ },
+ {
+  "i": 7803,
+  "f": "js/scenes/shop-bling.js",
+  "k": "MÖSSOR OCH MOBILSKAL"
+ },
+ {
+  "i": 7804,
+  "f": "js/scenes/shop-bling.js",
+  "k": "HÄR BORTA: MÖSSOR OCH MOBILSKAL!"
+ },
+ {
+  "i": 7805,
+  "f": "js/scenes/shop-bling.js",
+  "k": "DESIGNA MOBILSKAL"
+ },
+ {
+  "i": 7806,
+  "f": "js/scenes/shop-bling.js",
+  "k": "TRÄ ETT HALSBAND PÄRLA FÖR PÄRLA I PÄRLBAREN!"
+ },
+ {
+  "i": 7807,
+  "f": "js/scenes/shop-bling.js",
+  "k": "STRYK MÄRKEN PÅ VÄSKAN ELLER TRÖJAN VID STRYKBORDET!"
+ },
+ {
+  "i": 7808,
+  "f": "js/scenes/shop-bling.js",
+  "k": "DESIGNA ETT EGET MOBILSKAL LÄNGST BORT!"
+ },
+ {
+  "i": 7809,
+  "f": "js/scenes/shop-bling.js",
+  "k": "NYA MÖSSOR: KATT, GRODA, DINO OCH ENHÖRNING!"
+ },
+ {
+  "i": 7810,
+  "f": "js/scenes/shop-bling.js",
+  "k": "VID STRYKBORDET BYTER DU FÄRG PÅ KLÄDERNA."
+ },
+ {
+  "i": 7811,
+  "f": "js/scenes/shop-bling.js",
+  "k": "Pärlhalsband"
+ },
+ {
+  "i": 7812,
+  "f": "js/scenes/shop-bling.js",
+  "k": "{0} pärlor"
+ },
+ {
+  "i": 7813,
+  "f": "js/scenes/shop-bling.js",
+  "k": "Mobilskal"
+ },
+ {
+  "i": 7814,
+  "f": "js/scenes/shop-bling.js",
+  "k": "✨ Du har {0} strykmärken. Vid strykbordet flyttar du dem eller tar bort dem."
+ },
+ {
+  "i": 7815,
+  "f": "js/scenes/shop-bling.js",
+  "k": "🎨 Byt färg på kläderna"
+ },
+ {
+  "i": 7816,
+  "f": "js/scenes/shop-bling.js",
+  "k": "📱 Lägg mobilen i fickan"
+ },
+ {
+  "i": 7817,
+  "f": "js/scenes/shop-bling.js",
+  "k": "📿 Pärla för pärla"
+ },
+ {
+  "i": 7818,
+  "f": "js/scenes/shop-bling.js",
+  "k": "⌫ Ta bort"
+ },
+ {
+  "i": 7819,
+  "f": "js/scenes/shop-bling.js",
+  "k": "🔁 Upprepa"
+ },
+ {
+  "i": 7820,
+  "f": "js/scenes/shop-bling.js",
+  "k": "🧹 Töm"
+ },
+ {
+  "i": 7821,
+  "f": "js/scenes/shop-bling.js",
+  "k": "{0} av {1} pärlor · du har {2}"
+ },
+ {
+  "i": 7822,
+  "f": "js/scenes/shop-bling.js",
+  "k": "Tryck på en pärla så träs den på där det blinkar. Tryck på en plats i halsbandet för att byta den pärlan."
+ },
+ {
+  "i": 7823,
+  "f": "js/scenes/shop-bling.js",
+  "k": "Längd"
+ },
+ {
+  "i": 7824,
+  "f": "js/scenes/shop-bling.js",
+  "k": "Tråd"
+ },
+ {
+  "i": 7825,
+  "f": "js/scenes/shop-bling.js",
+  "k": "Pärlor"
+ },
+ {
+  "i": 7826,
+  "f": "js/scenes/shop-bling.js",
+  "k": "Dina pärlhalsband"
+ },
+ {
+  "i": 7827,
+  "f": "js/scenes/shop-bling.js",
+  "k": "Ta på – det är redan ditt"
+ },
+ {
+  "i": 7828,
+  "f": "js/scenes/shop-bling.js",
+  "k": "Trä minst 3 pärlor"
+ },
+ {
+  "i": 7829,
+  "f": "js/scenes/shop-bling.js",
+  "k": "Trä några pärlor först – sedan upprepas mönstret runt hela halsbandet."
+ },
+ {
+  "i": 7830,
+  "f": "js/scenes/shop-bling.js",
+  "k": "✨ Ditt halsband är klart: {0}!"
+ },
+ {
+  "i": 7831,
+  "f": "js/scenes/shop-bling.js",
+  "k": "{0}! VILKET FINT NAMNHALSBAND!"
+ },
+ {
+  "i": 7832,
+  "f": "js/scenes/shop-bling.js",
+  "k": "VILKET FINT HALSBAND! DU HAR TRÄTT DET SJÄLV!"
+ },
+ {
+  "i": 7833,
+  "f": "js/scenes/shop-bling.js",
+  "k": "👜 Väskan"
+ },
+ {
+  "i": 7834,
+  "f": "js/scenes/shop-bling.js",
+  "k": "👕 Tröjan"
+ },
+ {
+  "i": 7835,
+  "f": "js/scenes/shop-bling.js",
+  "k": "👖 Byxorna"
+ },
+ {
+  "i": 7836,
+  "f": "js/scenes/shop-bling.js",
+  "k": "väskan"
+ },
+ {
+  "i": 7837,
+  "f": "js/scenes/shop-bling.js",
+  "k": "tröjan"
+ },
+ {
+  "i": 7838,
+  "f": "js/scenes/shop-bling.js",
+  "k": "byxorna"
+ },
+ {
+  "i": 7839,
+  "f": "js/scenes/shop-bling.js",
+  "k": "✨ Strykmärken och färg"
+ },
+ {
+  "i": 7840,
+  "f": "js/scenes/shop-bling.js",
+  "k": "Med märkena"
+ },
+ {
+  "i": 7841,
+  "f": "js/scenes/shop-bling.js",
+  "k": "Ta på dig en väska först"
+ },
+ {
+  "i": 7842,
+  "f": "js/scenes/shop-bling.js",
+  "k": "🗑 Ta bort märket"
+ },
+ {
+  "i": 7843,
+  "f": "js/scenes/shop-bling.js",
+  "k": "↺ Ångra"
+ },
+ {
+  "i": 7844,
+  "f": "js/scenes/shop-bling.js",
+  "k": "{0} av {1} märken på {2}"
+ },
+ {
+  "i": 7845,
+  "f": "js/scenes/shop-bling.js",
+  "k": "Nya märken"
+ },
+ {
+  "i": 7846,
+  "f": "js/scenes/shop-bling.js",
+  "k": "Färg på {0}"
+ },
+ {
+  "i": 7847,
+  "f": "js/scenes/shop-bling.js",
+  "k": "Ta på dig en väska om du vill ha märken på den."
+ },
+ {
+  "i": 7848,
+  "f": "js/scenes/shop-bling.js",
+  "k": "Tryck på ett märke så hamnar det på {0} – dra det sedan dit du vill ha det."
+ },
+ {
+  "i": 7849,
+  "f": "js/scenes/shop-bling.js",
+  "k": "Välj ett märke"
+ },
+ {
+  "i": 7850,
+  "f": "js/scenes/shop-bling.js",
+  "k": "Stryk fast ({0})"
+ },
+ {
+  "i": 7851,
+  "f": "js/scenes/shop-bling.js",
+  "k": "Det får plats {0} märken på {1}. Ta bort ett först."
+ },
+ {
+  "i": 7852,
+  "f": "js/scenes/shop-bling.js",
+  "k": "✨ Märkena sitter fast! De kostade {0}."
+ },
+ {
+  "i": 7853,
+  "f": "js/scenes/shop-bling.js",
+  "k": "✨ Klart – så här ser du ut nu."
+ },
+ {
+  "i": 7854,
+  "f": "js/scenes/shop-bling.js",
+  "k": "SNYGGA MÄRKEN! DE SITTER FAST NU."
+ },
+ {
+  "i": 7855,
+  "f": "js/scenes/shop-bling.js",
+  "k": "VAD FINT! HELT DIN EGEN STIL."
+ },
+ {
+  "i": 7856,
+  "f": "js/scenes/shop-bling.js",
+  "k": "WOW, DE BLEV JÄTTEFINA!"
+ },
+ {
+  "i": 7857,
+  "f": "js/scenes/shop-bling.js",
+  "k": "📱 Designa ditt mobilskal"
+ },
+ {
+  "i": 7858,
+  "f": "js/scenes/shop-bling.js",
+  "k": "Med mobilen"
+ },
+ {
+  "i": 7859,
+  "f": "js/scenes/shop-bling.js",
+  "k": "🗑 Ta bort berlocken"
+ },
+ {
+  "i": 7860,
+  "f": "js/scenes/shop-bling.js",
+  "k": "🧹 Ta bort alla"
+ },
+ {
+  "i": 7861,
+  "f": "js/scenes/shop-bling.js",
+  "k": "{0} av {1} berlocker"
+ },
+ {
+  "i": 7862,
+  "f": "js/scenes/shop-bling.js",
+  "k": "Skal"
+ },
+ {
+  "i": 7863,
+  "f": "js/scenes/shop-bling.js",
+  "k": "Mobilband"
+ },
+ {
+  "i": 7864,
+  "f": "js/scenes/shop-bling.js",
+  "k": "Berlocker"
+ },
+ {
+  "i": 7865,
+  "f": "js/scenes/shop-bling.js",
+  "k": "Tryck på en berlock så hamnar den på skalet – dra den dit du vill ha den."
+ },
+ {
+  "i": 7866,
+  "f": "js/scenes/shop-bling.js",
+  "k": "Dina mobilskal"
+ },
+ {
+  "i": 7867,
+  "f": "js/scenes/shop-bling.js",
+  "k": "Ta fram den – den är din"
+ },
+ {
+  "i": 7868,
+  "f": "js/scenes/shop-bling.js",
+  "k": "📱 Du har {0} i handen."
+ },
+ {
+  "i": 7869,
+  "f": "js/scenes/shop-bling.js",
+  "k": "Det får plats {0} berlocker på skalet. Ta bort en först."
+ },
+ {
+  "i": 7870,
+  "f": "js/scenes/shop-bling.js",
+  "k": "📱 Ditt mobilskal är klart! Du har mobilen i handen."
+ },
+ {
+  "i": 7871,
+  "f": "js/scenes/shop-bling.js",
+  "k": "VILKET SNYGGT MOBILSKAL!"
+ },
+ {
+  "i": 7872,
+  "f": "js/scenes/shop-bling.js",
+  "k": "SÅ GULLIGA BERLOCKER!"
+ },
+ {
+  "i": 7873,
+  "f": "js/scenes/shop-bling.js",
+  "k": "HELT DIN EGEN STIL!"
+ }
+]

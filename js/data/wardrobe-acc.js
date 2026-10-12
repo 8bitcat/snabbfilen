@@ -54,6 +54,17 @@ export const WARDROBE_ACC = [
   { id: 'hat-devil', slot: 'hat', look: { hat: 'devil' }, name: $t('Djävuls\u00adhorn'), price: 150, dept: 'unisex', icon: '😈', colors: { cap: '#d83a4a' } },
   { id: 'hat-unicorn', slot: 'hat', look: { hat: 'unicorn' }, name: $t('Enhörnings\u00adhorn'), price: 220, dept: 'tjej', icon: '🦄', colors: { cap: '#f2a0b8' } },
   { id: 'hat-halo', slot: 'hat', look: { hat: 'halo' }, name: $t('Gloria'), price: 300, dept: 'unisex', icon: '😇' },
+  // ---- mössorna från Pixelskolans butik (people/acc.js) – butik: 'bling' = står framme på BLING BLINGs mössvägg; i
+  //      accessoarbutiken finns de bakom hattstången (hattväggens tre rader är fulla) ----
+  { id: 'hat-catbeanie', slot: 'hat', look: { hat: 'catBeanie' }, name: $t('Katt\u00admössa'), price: 180, dept: 'unisex', butik: 'bling', icon: '🐱', colors: { cap: '#2b2a33' } },
+  { id: 'hat-bearbeanie', slot: 'hat', look: { hat: 'bearBeanie' }, name: $t('Björn\u00admössa'), price: 180, dept: 'unisex', butik: 'bling', icon: '🐻', colors: { cap: '#a8743e' } },
+  { id: 'hat-frogbeanie', slot: 'hat', look: { hat: 'frogBeanie' }, name: $t('Grod\u00admössa'), price: 190, dept: 'unisex', butik: 'bling', icon: '🐸', colors: { cap: '#46a35a' } },
+  { id: 'hat-doublepom', slot: 'hat', look: { hat: 'doublePom' }, name: $t('Mössa med två tofsar'), price: 170, dept: 'unisex', butik: 'bling', icon: '🧶', colors: { cap: '#f07ab0' } },
+  { id: 'hat-docker', slot: 'hat', look: { hat: 'docker' }, name: $t('Fiskar\u00admössa'), price: 140, dept: 'unisex', butik: 'bling', icon: '🧢', colors: { cap: '#d83a4a' } },
+  { id: 'hat-chullo', slot: 'hat', look: { hat: 'chullo' }, name: $t('Öronlapps\u00admössa'), price: 220, dept: 'unisex', butik: 'bling', icon: '🧣', colors: { cap: '#3a7bd5' } },
+  { id: 'hat-dinobeanie', slot: 'hat', look: { hat: 'dinoBeanie' }, name: $t('Dino\u00admössa'), price: 200, dept: 'unisex', butik: 'bling', icon: '🦖', colors: { cap: '#5cc070' } },
+  { id: 'hat-unibeanie', slot: 'hat', look: { hat: 'uniBeanie' }, name: $t('Enhörnings\u00admössa'), price: 220, dept: 'unisex', butik: 'bling', icon: '🦄', colors: { cap: '#f4f1ea' } },
+  { id: 'hat-cablebeanie', slot: 'hat', look: { hat: 'cableBeanie' }, name: $t('Flät\u00admössa'), price: 190, dept: 'unisex', butik: 'bling', icon: '🧶', colors: { cap: '#e8dcc8' } },
 
   // ---- glasögon ----
   { id: 'glasses-round', slot: 'glasses', look: { glasses: 'round' }, name: $t('Runda glasögon'), price: 150, dept: 'unisex', icon: '👓', legacy: 'glasses:round' },

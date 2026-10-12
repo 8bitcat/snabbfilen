@@ -392,6 +392,47 @@ export const HAT_REG = {
     f: [8, ['4.G3.', '3.gy3.', '3.Gg3.', 'o2.gy2.o', 'h6ol']],
     s: [10, ['5.G', '4.g.', '3.Gy.', '3.g2.', 'h4ol']],
   }, capPal),
+  // ---- mössorna från Pixelskolans butik (Carl 2026-10-12: "lägga till mössor olika sorter"), säljs i BLING BLING ----
+  // Bara mössans egen färg (look.cap) + fasta färger – detaljfärgen (accent) hör till tröjan och lämnas orörd.
+  catBeanie: hatT($t('Kattmössa'), $n('Mössor'), 5, {
+    f: [7, ['o8.o', '2o6.2o', 'hpo4.opl', 'h8ol', 'h8ol', 'h8ol', 'ldldldldld', '10l']],
+    b: [7, ['o8.o', '2o6.2o', '3o4.3o', 'h8ol', 'h8ol', 'h8ol', 'ldldldldld', '10l']],
+    s: [8, ['3.o5.', '2.2o5.', '.hpo5.', '.h6ol', 'h7ol', 'h7ol', 'ldldldldl', '9l']],
+  }),
+  bearBeanie: hatT($t('Björnmössa'), $n('Mössor'), 4, {
+    f: [7, ['.2o4.2o.', 'ouo4.ouo', 'h8ol', 'h8ol', 'h8ol', 'ldldldldld', '10l']],
+    s: [8, ['2.2o5.', '.ouo5.', '.h6ol', 'h7ol', 'h7ol', 'ldldldldl', '9l']],
+  }),
+  frogBeanie: hatT($t('Grodmössa'), $n('Mössor'), 4, {
+    f: [7, ['.3w2.3w.', '.wkw2.wkw.', 'h8ol', 'h8ol', 'h8ol', 'ldldldldld', '10l']],
+    b: [7, ['.3w2.3w.', '.3W2.3W.', 'h8ol', 'h8ol', 'h8ol', 'ldldldldld', '10l']],
+    s: [8, ['2.3w4.', '2.wkw4.', '.h6ol', 'h7ol', 'h7ol', 'ldldldldl', '9l']],
+  }),
+  doublePom: hatT($t('Mössa med två tofsar'), $n('Mössor'), 4, {
+    f: [7, ['.2w4.2w.', '.wWw2.wWw.', '.h6ol.', 'h8ol', 'h8ol', 'ldldldldld', '10l']],
+    s: [8, ['2.2w5.', '.wWw5.', '.h6ol', 'h7ol', 'h7ol', 'ldldldldl', '9l']],
+  }),
+  docker: hatT($t('Fiskarmössa'), $n('Mössor'), 2, {
+    f: [7, ['.h6ol.', 'ldldldldld', 'ldldldldld', '10l']],
+    s: [8, ['.h6ol', 'ldldldldl', 'ldldldldl', '9l']],
+  }),
+  chullo: hatT($t('Öronlappsmössa'), $n('Mössor'), 3, {
+    f: [6, ['3.h4ol3.', '2.h6ol2.', '.h8ol.', '.wWwWwWwWwW.', '.10l.', 'ho8.ol', 'ho8.ol', 'll8.ll', '.w8.w.', '.w8.w.', 'wW8.Ww']],
+    s: [7, ['3.h3ol2.', '2.h5ol.', '.h7ol', '.wWwWwWwWw', '.9l', '4.2o4.', '4.2o4.', '4.2l4.', '5.w4.', '5.w4.', '4.wW4.']],
+  }),
+  dinoBeanie: hatT($t('Dinomössa'), $n('Mössor'), 4, {
+    f: [7, ['4.2t4.', '2.t.2t.t2.', '.h6ol.', 'h8ol', 'h8ol', 'ldldldldld', '10l']],
+    s: [8, ['3.t.t.t.', '2.6t.', '.h6ol', 'h7ol', 'h7ol', 'ldldldldl', '9l']],
+  }),
+  uniBeanie: hatT($t('Enhörningsmössa'), $n('Mössor'), 4, {
+    f: [7, ['4.Gg4.', '4.gy4.', 'p.h4ol.p', 'h8ol', 'h8ol', 'ldldldldld', '10l']],
+    b: [7, ['4.Gg4.', '4.gy4.', 'p.h4ol.p', 'h8ol', 'h8ol', 'ldldldldld', '10l']],
+    s: [8, ['4.Gg3.', '4.gy3.', '.h6ol', 'h7ol', 'h7ol', 'ldldldldl', '9l']],
+  }),
+  cableBeanie: hatT($t('Flätmössa'), $n('Mössor'), 5, {
+    f: [7, ['4.2w4.', '3.wWww3.', '2.h4ol2.', '.hodoodol.', 'hodoodoodl', 'hoodoodool', 'ldldldldld', '10l']],
+    s: [8, ['3.2w4.', '2.wWw4.', '2.h3ol2.', '.hodoodol', 'hodoodool', 'hoodoodol', 'ldldldldl', '9l']],
+  }),
 };
 
 // ---------- glasögon (look.glasses; false = inga, gamla true ⇒ 'square') ----------

@@ -1,7 +1,7 @@
 {
-  "version": "0.106.0",
-  "date": "2026-10-11",
-  "title": "BLING BLING",
+  "version": "0.107.0",
+  "date": "2026-10-12",
+  "title": "BLING BLING: pärlor, strykmärken och mobilskal",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
@@ -146,6 +146,7 @@
     "js/scenes/bio/filmmusik.js",
     "js/scenes/bio/fotboll.js",
     "js/scenes/bio/paint.js",
+    "js/scenes/bling/dream.js",
     "js/scenes/city.js",
     "js/scenes/hopp.js",
     "js/scenes/ikea/art-market.js",

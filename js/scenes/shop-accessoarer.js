@@ -440,7 +440,8 @@ function buildDisplays() {
   const add = (it, kind, img, ax, ay, x, y, r, go, tag, face = 'up') => out.push({ it, sec: secOf(it.slot).id, kind, img, ax, ay, x: Math.round(x), y, r, go, tag, face });
 
   // ---- hattväggen: tre rader, bredden efter hatten ----
-  const hats = itemsForSlot('hat').map((it, i) => {
+  // (mössorna med butik: 'bling' står på BLING BLINGs mössvägg – här finns de bakom hattstången, väggens tre rader är fulla)
+  const hats = itemsForSlot('hat').filter((it) => it.butik !== 'bling').map((it, i) => {
     const img = bustImg(bustLook(it, i)), s = spanOf(img);
     return { it, img, sw: s.x1 - s.x0 + 1, cx: (s.x0 + s.x1 + 1) / 2, need: Math.max(s.x1 - s.x0 + 3, tagW(String(it.price)) + 1, 14) };
   });

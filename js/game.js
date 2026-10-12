@@ -888,12 +888,31 @@ export class Game {
           ? withFlags(withColor({ ...extra(it), k: it.k, v: Math.max(0, Math.min(maxV(it.k), it.v | 0)) }, it.c), it) : null;
         g.storage = (Array.isArray(p.storage) ? p.storage : []).map(cleanItem).filter(Boolean);
         // 💎 egna designer: { kind: 'neck'|'bag', sel: { del: val }, look: { neck…|bag… }, price } – bara kända fält
-        g.designs = (Array.isArray(p.designs) ? p.designs : []).filter((d) => d && (d.kind === 'neck' || d.kind === 'bag') && d.sel && typeof d.sel === 'object').slice(-40).map((d) => ({
-          kind: d.kind,
-          sel: Object.fromEntries(Object.entries(d.sel).filter(([k, v]) => /^[a-z]{2,10}$/.test(k) && /^[a-z0-9]{1,12}$/.test(String(v))).map(([k, v]) => [k, String(v)])),
-          look: Object.fromEntries(Object.entries(d.look || {}).filter(([k, v]) => ['neck', 'neckColor', 'bag', 'bagColor'].includes(k) && typeof v === 'string' && v.length < 24)),
-          price: Math.max(0, Math.round(+d.price || 0)),
-        }));
+        // (kind 'beads': pärlbaren – sel { len, trad, beads: [id | null] }, look { neck: 'pearls', beads: [hex] };
+        //  kind 'phone': mobilskalen – sel { case, strap, charms: [{ id, u, v }] }, look { mobil: [hex | null ×4] })
+        const HEXC = /^#[0-9a-f]{6}$/i, ID = /^[a-z0-9-]{1,24}$/, W12 = /^[a-z0-9]{1,12}$/, hexOrNull = (c) => (typeof c === 'string' && HEXC.test(c) ? c.toLowerCase() : null);
+        const num01 = (v) => (Number.isFinite(+v) ? Math.max(0, Math.min(1, Math.round(+v * 1000) / 1000)) : 0.5);
+        const cleanDesign = (d) => {
+          const sel = d.sel, base = { kind: d.kind, price: Math.max(0, Math.round(+d.price || 0)) };
+          if (d.kind === 'beads') {
+            if (!Array.isArray(sel.beads)) return null;
+            const beads = sel.beads.slice(0, 20).map((id) => (typeof id === 'string' && ID.test(id) ? id : null)), cols = (Array.isArray(d.look?.beads) ? d.look.beads : []).map(hexOrNull).filter(Boolean).slice(0, 32);
+            if (!beads.some(Boolean) || !cols.length) return null;
+            return { ...base, sel: { len: W12.test(sel.len) ? sel.len : 'mellan', trad: W12.test(sel.trad) ? sel.trad : 'klar', beads }, look: { neck: 'pearls', beads: cols } };
+          }
+          if (d.kind === 'phone') {
+            const mobil = Array.isArray(d.look?.mobil) ? [0, 1, 2, 3].map((i) => hexOrNull(d.look.mobil[i])) : [];
+            if (!W12.test(sel.case) || !mobil[0]) return null;
+            const charms = (Array.isArray(sel.charms) ? sel.charms : []).slice(0, 10).filter((e) => e && typeof e.id === 'string' && ID.test(e.id)).map((e) => ({ id: e.id, u: num01(e.u), v: num01(e.v) }));
+            return { ...base, sel: { case: sel.case, strap: W12.test(sel.strap) ? sel.strap : 'inget', charms }, look: { mobil } };
+          }
+          return {
+            ...base,
+            sel: Object.fromEntries(Object.entries(sel).filter(([k, v]) => /^[a-z]{2,10}$/.test(k) && W12.test(String(v))).map(([k, v]) => [k, String(v)])),
+            look: Object.fromEntries(Object.entries(d.look || {}).filter(([k, v]) => ['neck', 'neckColor', 'bag', 'bagColor'].includes(k) && typeof v === 'string' && v.length < 24)),
+          };
+        };
+        g.designs = (Array.isArray(p.designs) ? p.designs : []).filter((d) => d && ['neck', 'bag', 'beads', 'phone'].includes(d.kind) && d.sel && typeof d.sel === 'object').slice(-40).map(cleanDesign).filter(Boolean);
         keep.storage = (Array.isArray(p.storage) ? p.storage : []).filter((it) => it && typeof it === 'object' && !knownKind(it.k));
         const knownFurn = (d) => d && typeof d === 'object' && knownKind(d.k);
         if (p.deco && typeof p.deco === 'object') for (const [key, list] of Object.entries(p.deco)) {

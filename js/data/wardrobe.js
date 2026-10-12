@@ -72,7 +72,8 @@ const slotLook = (it) => ({ ...SLOT_FIELDS[it.slot], ...it.look });
 export function lookForItem(item, base = {}, { colors = false } = {}) {
   const it = typeof item === 'string' ? itemById(item) : item;
   if (!it) return { ...base };
-  return { ...base, ...slotLook(it), ...(colors && it.colors ? it.colors : {}) };
+  // (egna pärlor från BLING BLINGs pärlbar hör bara till det egna pärlhalsbandet – ett halsband ur katalogen tar bort dem)
+  return { ...base, ...slotLook(it), ...(colors && it.colors ? it.colors : {}), ...(it.slot === 'neck' && base.beads ? { beads: null } : {}) };
 }
 // Looken med platsen tömd/återställd till bas (t.ex. ingen hatt)
 export const lookWithoutSlot = (slot, base = {}) => ({ ...base, ...SLOT_FIELDS[slot] });

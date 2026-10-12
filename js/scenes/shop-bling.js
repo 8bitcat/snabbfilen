@@ -13,8 +13,14 @@
 // Man ser alltid hur det blir på figuren, som i klädaffären (Carl 2026-10-11): montrarna öppnar klädaffärens egen
 // provdialog (Du nu ➜ Med …, vrid figuren, välj färg) och ateljén och spegeln har samma vridbara figur.
 // Pengarna är spelets (A.game.money). Egna designer sparas i sparfilen (g.designs, högst 40), figuren med saveAvatar.
+// Carl 2026-10-12 (Pixelskolans DREAM LAND, pixelskolan/docs/HANDOVER-PIXELCITY-DREAMLAND.md): pärlbaren på mattan
+// (halsband pärla för pärla), strykbordet (strykmärken man själv drar dit på väskan, tröjan eller byxorna + gratis
+// färgbyte), MÖSSOR-väggen (nio nya mössor i people/acc.js) och MOBILSKAL-hörnan (skal, berlocker och mobilband –
+// mobilen syns i figurens hand, look.mobil). Märkena och pärlorna syns på figuren (people.js decorate). Butiken växte
+// åt höger (RW = 576 px): en bred skärm ser mer av den (viewMax), annars följer kameran figuren. Bilderna och
+// sortimentet: js/scenes/bling/dream.js. Namnet är fortfarande BLING BLING (DREAM LAND är en riktig butik).
 import { Pix, SMALL, BIG, textW, text as pixText, ctxText, mix, mul, hash, bayer } from '../core/floor-pix.js';
-import { drawPerson, makeLookRich } from '../core/people.js';
+import { drawPerson, personSprite, makeLookRich } from '../core/people.js';
 import { openModal, closeModal, esc, toast } from '../core/ui.js';
 import { saveAvatar } from '../core/avatar.js';
 import { $t } from '../core/i18n.js';
@@ -22,10 +28,12 @@ import { itemById, lookForItem, lookWithoutSlot, isWorn } from '../data/wardrobe
 import { fmt } from '../game.js';
 import { play } from '../core/sound.js';
 import { openBuy, figure } from './klader/buy.js';   // klädaffärens provdialog: samma sätt att prova som för kläderna
+import { PATCHES, PATCH_CATS, PATCH_BY, patchImg, patchColors, garmentArt, BEADS, BEAD_CATS, BEAD_BY, beadColor, drawBead, drawBeadNecklace, LENGTHS, TRAD,
+  CHARMS, CHARM_CATS, CHARM_BY, charmImg, charmColor, CASES, STRAPS, drawPhone } from './bling/dream.js';
 // pixeltypsnittet har bara versaler och några accenter (som i accessoarbutiken, docs/SPRAK.md)
 const safeTxt = (s) => String(s).replace(/­/g, '').toUpperCase().replace(/[–—]/g, '-').replace(/&/g, '+').replace(/[^A-ZÅÄÖÉÁÀÂÃÇĆÈÊËÍÌÎÏÑŃÓÒÔÕŚŹŻÚÙÛÜŸÝĄĘŁŒÆ¡¿0-9 -+!.:,?/%'=]/g, '');
 
-const W = 384, H = 216, WALL = 90;
+const W = 384, H = 216, WALL = 90, RW = 576;   // W = bildens minsta bredd, RW = butikens (kameran följer figuren)
 const WALK = [1, 3, 2, 3];
 const pickOf = (a) => a[Math.floor(Math.random() * a.length)];
 
@@ -34,6 +42,7 @@ const CATS = {
   halsband: { title: $t('📿 Halsband'), ids: ['neck-necklace', 'neck-pearls', 'neck-chain', 'neck-choker', 'neck-dogtag', 'neck-lei'] },
   orhangen: { title: $t('✨ Örhängen'), ids: ['jewel-heartear', 'jewel-starear', 'jewel-hoops', 'jewel-pearlear', 'jewel-drops', 'jewel-featherear', 'jewel-studgold', 'jewel-studdiamond'] },
   armband: { title: $t('💍 Armband, ringar och klockor'), ids: ['jewel-friendship', 'jewel-beadbracelet', 'jewel-bracelet', 'jewel-rings', 'jewel-watch', 'jewel-smartwatch', 'jewel-goldwatch', 'jewel-goldset'] },
+  mossor: { title: $t('🧶 Mössor'), ids: ['hat-catbeanie', 'hat-bearbeanie', 'hat-frogbeanie', 'hat-doublepom', 'hat-dinobeanie', 'hat-unibeanie', 'hat-chullo', 'hat-cablebeanie', 'hat-docker', 'hat-beanie', 'hat-pompom', 'hat-ushanka', 'hat-earmuffs', 'hat-catears', 'hat-bunnyears'] },
   vaskor: { title: $t('👜 Väskor'), ids: ['bag-handbag', 'bag-shoulder', 'bag-teddypack', 'bag-backpack', 'bag-schoolbag', 'bag-fannypack', 'bag-sling', 'bag-messenger', 'bag-shoppingbag', 'bag-sportsbag', 'bag-fairywings', 'bag-hikingpack'] },
 };
 
@@ -53,6 +62,9 @@ const BAG = {
   berlock: { label: $t('Berlock'), opts: [['ingen', $t('Ingen'), 0], ['pompom', $t('Pompom'), 50], ['hjarta', $t('Hjärta'), 60], ['stjarna', $t('Stjärna'), 60], ['nalle', $t('Nalle'), 90]] },
 };
 const optOf = (grp, id) => grp.opts.find((o) => o[0] === id);
+const KIND_ICON = { neck: '📿', bag: '👜', beads: '📿', phone: '📱' };
+// första ordet i bokstavspärlor ("MIRA") – pärlhalsbandet får det som namn
+const beadWordOf = (beads) => { let w = '', done = false; for (const id of beads || []) { const b = id && BEAD_BY[id]; if (b && b.kind === 'letter' && !done) w += b.ch; else if (w) done = true; } return w; };
 const priceOf = (GR, sel) => Object.keys(GR).reduce((s, k) => s + (optOf(GR[k], sel[k])?.[2] || 0), 0);
 // den egna designen på figuren: närmaste modell i spelet + färgen
 function neckLook(sel) {
@@ -151,15 +163,16 @@ function drawNecklace(sel, initial) {
   }
   return P.flush();
 }
+const BAG_BODY = { kasse: [32, 26, 32, 34], midje: [26, 34, 44, 22], rygg: [30, 18, 36, 42], axel: [28, 28, 40, 30], nalle: [30, 22, 36, 38], hand: [28, 30, 40, 28] };   // x, y, b, h
 function drawBag(sel) {
   const P = new Pix(96, 72);
   for (let y = 0; y < 72; y++) for (let x = 0; x < 96; x++) P.px(x, y, mix(0xeaf2fb, 0xd6e2f2, y / 72 + (bayer(x, y) - 0.5) * 0.06));
   P.ell(48, 26, 40, 30, 0xffffff, 0.4, 5);
   for (let x = 0; x < 96; x++) { P.px(x, 62, 0xb8c6d8); for (let y = 63; y < 72; y++) P.px(x, y, mix(0xc8d4e4, 0xb0bed2, (y - 63) / 9)); }
-  const base = parseInt(BAGC[sel.farg].slice(1), 16), dark = mul(base, 0.7), lite = mix(base, 0xffffff, 0.35), line = mul(base, 0.45);
+  const base = parseInt((sel.color || BAGC[sel.farg]).slice(1), 16), dark = mul(base, 0.7), lite = mix(base, 0xffffff, 0.35), line = mul(base, 0.45);
   const M = sel.modell;
   // kroppen (x0, y0, w, h) per modell + handtag/remmar
-  const body = { kasse: [32, 26, 32, 34], midje: [26, 34, 44, 22], rygg: [30, 18, 36, 42], axel: [28, 28, 40, 30], nalle: [30, 22, 36, 38], hand: [28, 30, 40, 28] }[M];
+  const body = BAG_BODY[M];
   const [bx, by, bw, bh] = body;
   const inBody = (x, y) => {
     const lx = x - bx, ly = y - by;
@@ -224,8 +237,8 @@ const big = (cv, k) => { const o = document.createElement('canvas'); o.width = c
 const GOLD = 0xe8b84a, GOLDD = 0xb9862a, GOLDL = 0xfff0b0, PINK = 0xf7dce8, PINK2 = 0xf1cfe0;
 const DOOR = { x0: 178, x1: 206 };
 function paintBG() {
-  const P = new Pix(W, H);
-  for (let y = 0; y < WALL; y++) for (let x = 0; x < W; x++) {
+  const P = new Pix(RW, H);
+  for (let y = 0; y < WALL; y++) for (let x = 0; x < RW; x++) {
     let c = Math.floor(x / 12) % 2 ? PINK : PINK2;
     if (y < 7) c = y === 6 ? GOLDD : y === 5 ? GOLD : 0xfff7f0;
     else if (y < 9) c = y === 7 ? GOLDL : GOLD;
@@ -236,7 +249,7 @@ function paintBG() {
     P.px(x, y, c);
   }
   // golvet: marmorplattor i två toner med guldfogar och ådring
-  for (let y = WALL; y < H; y++) for (let x = 0; x < W; x++) {
+  for (let y = WALL; y < H; y++) for (let x = 0; x < RW; x++) {
     const tx = Math.floor(x / 24), ty = Math.floor((y - WALL) / 14), lx = x % 24, ly = (y - WALL) % 14;
     let c = (tx + ty) % 2 ? 0xf6f0f4 : 0xfbe9f1;
     const v = Math.sin(x * 0.13 + y * 0.31 + Math.sin(x * 0.05 + tx) * 2.6);
@@ -245,7 +258,7 @@ function paintBG() {
     if (ly === 1) c = mix(c, 0xffffff, 0.4);
     P.px(x, y, c);
   }
-  for (let x = 0; x < W; x++) { P.px(x, WALL, 0x000000, 0.18); P.px(x, WALL + 1, 0x000000, 0.08); }
+  for (let x = 0; x < RW; x++) { P.px(x, WALL, 0x000000, 0.18); P.px(x, WALL + 1, 0x000000, 0.08); }
   // den runda mattan
   for (let y = 132; y < 196; y++) for (let x = 104; x < 280; x++) {
     const e = ((x - 192) / 86) ** 2 + ((y - 164) / 30) ** 2;
@@ -269,6 +282,21 @@ function paintBG() {
   // vänstra väggen: SMYCKEN och byster med halsband på en hylla
   const plate = (x, s) => { const w = textW(SMALL, s) + 10; P.rect(x, 14, w, 11, GOLD); P.box(x, 14, w, 11, GOLDD); P.hl(x + 1, 15, w - 2, GOLDL); pixText(P, SMALL, s, x + 5, 17, 0x5a3a10); return w; };
   plate(54, safeTxt($t('SMYCKEN'))); { const v = safeTxt($t('VÄSKOR')); plate(Math.min(288, 378 - textW(SMALL, v) - 10), v); }
+  { const m = safeTxt($t('MÖSSOR')), mw = textW(SMALL, m) + 10; plate(Math.round(433 - mw / 2), m); }
+  { const m = safeTxt($t('MOBILSKAL')), mw = textW(SMALL, m) + 10; plate(Math.max(482, Math.min(RW - 4 - mw, Math.round(529 - mw / 2))), m); }
+  // mössväggen: två hyllor (huvudena med mössorna ritas på i makeShopBling, de är spelets figurer)
+  for (const sy of [45, 69]) { P.rect(392, sy, 82, 2, 0xfff7f0); P.hl(392, sy + 2, 82, GOLDD); P.hl(392, sy + 3, 82, 0x000000, 0.12); }
+  // mobilskalsväggen: lila hålplatta med skal på krokar
+  for (let y = 28; y < 72; y++) for (let x = 486; x < 572; x++) P.px(x, y, (x - 486) % 6 === 3 && (y - 28) % 6 === 3 ? 0xc8b0e0 : 0xeadcf6);
+  P.box(485, 27, 88, 46, GOLD);
+  { const CS = [0xf07ab0, 0x9a74d8, 0x34323e, 0x6fb4e8, 0x6fd0aa, 0xf0a0d0], CH = [0xe8394f, 0xf6d02f, 0x3ccfc8, 0xffffff, 0x5cc070, 0xf5a3c7];
+    for (let r = 0; r < 2; r++) for (let k = 0; k < 6; k++) {
+      const x = 490 + k * 14, y = 31 + r * 21, c = CS[(k + r * 3) % 6];
+      P.px(x + 5, y - 2, 0x8a929c); P.px(x + 5, y - 1, 0x8a929c);
+      P.rect(x + 1, y, 9, 18, c); P.rect(x, y + 1, 11, 16, c); P.rect(x + 2, y + 2, 7, 14, mix(c, 0xffffff, 0.55));
+      P.rect(x + 2, y + 2, 3, 4, 0x3a3a46); P.px(x + 3, y + 3, 0x5a7ab8);
+      P.px(x + 6, y + 8, CH[(k * 2 + r) % 6]); P.px(x + 7, y + 8, CH[(k * 2 + r) % 6]); P.px(x + 4, y + 12, CH[(k + r * 2 + 3) % 6]);
+    } }
   P.rect(14, 58, 120, 3, 0xfff7f0); P.hl(14, 61, 120, GOLDD); P.hl(14, 62, 120, 0x000000, 0.12);
   const NECKS = [['parlor', 0xf6f2ea], ['guld', 0xe8b84a], ['sammet', 0x8e1f3c], ['regnbage', 0], ['silver', 0xd8dee6]];
   NECKS.forEach(([k, c], i) => {
@@ -327,9 +355,13 @@ function tableSprite(kind) {   // ateljéns bord: pärlbrickor och spegel / tygr
   const w = 70, h = 32, P = new Pix(w, h);
   P.rect(0, 8, w, 6, 0xfff7f0); P.hl(0, 8, w, 0xffffff); P.hl(0, 13, w, GOLDD); P.rect(0, 14, w, 14, 0x2a1a2e); P.box(0, 14, w, 14, GOLD);
   P.rect(2, 28, 3, 4, GOLDD); P.rect(w - 5, 28, 3, 4, GOLDD);
-  const name = safeTxt(kind === 'neck' ? $t('HALSBAND') : $t('VÄSKA')), des = safeTxt($t('DESIGNA'));
+  const name = safeTxt(kind === 'neck' ? $t('HALSBAND') : kind === 'phone' ? $t('MOBILSKAL') : $t('VÄSKA')), des = safeTxt($t('DESIGNA'));
   pixText(P, SMALL, des, (w - textW(SMALL, des)) >> 1, 16, GOLDL); pixText(P, SMALL, name, (w - textW(SMALL, name)) >> 1, 22, 0xffb8dc);
-  if (kind === 'neck') {
+  if (kind === 'phone') {
+    const C4 = [0xf07ab0, 0x9a74d8, 0x6fb4e8, 0x6fd0aa];
+    C4.forEach((c, k) => { const x = 6 + k * 9; P.rect(x, 1, 6, 10, c); P.rect(x + 1, 2, 4, 8, mix(c, 0xffffff, 0.55)); P.rect(x + 1, 2, 2, 2, 0x3a3a46); });
+    P.rect(44, 8, 20, 4, 0xffffff); P.box(44, 8, 20, 4, 0xc8ccd6); for (let k = 0; k < 6; k++) P.px(46 + k * 3, 9, [0xe8394f, 0xf6d02f, 0x3ccfc8, 0xf07ab0, 0x5cc070, 0x9a62d8][k]);
+  } else if (kind === 'neck') {
     const C = [0xe8394f, 0xf0902e, 0xf2c94e, 0x4fb06a, 0x3a7bd5, 0x9a62d8, 0xffffff, 0xf5a3c7];
     for (let k = 0; k < 8; k++) { const bx = 6 + k * 5; P.rect(bx, 9, 4, 3, mul(C[k], 0.7)); P.px(bx + 1, 9, C[k]); P.px(bx + 2, 10, C[k]); }
     P.rect(52, 0, 12, 10, GOLD); P.rect(53, 1, 10, 7, 0xd8eef8); P.px(54, 2, 0xffffff);
@@ -359,6 +391,43 @@ function bagTableSprite() {
   }
   return P.flush();
 }
+function beadBarSprite() {   // pärlbaren: bricka med fack fulla av pärlor, burkar, ett halvfärdigt halsband; namnet på framsidan
+  const w = 68, h = 30, P = new Pix(w, h);
+  P.rect(0, 8, w, 5, 0xfff7f0); P.hl(0, 8, w, 0xffffff); P.hl(0, 12, w, GOLDD);
+  for (let y = 13; y < 26; y++) for (let x = 0; x < w; x++) P.px(x, y, mix(0xc8a8f0, 0x9a74d8, (y - 13) / 13));
+  P.box(0, 13, w, 13, GOLD);
+  const t = safeTxt($t('PÄRLA FÖR PÄRLA')); pixText(P, SMALL, t, Math.max(1, (w - textW(SMALL, t)) >> 1), 17, 0xffffff);
+  P.rect(3, 26, 3, 4, GOLDD); P.rect(w - 6, 26, 3, 4, GOLDD);
+  const C8 = [0xe8394f, 0xf0902e, 0xf6d02f, 0x3fae5a, 0x2ab0b0, 0x3a6ad5, 0x9a62d8, 0xf07ab0, 0xf6f0e6, 0xe8b84a];
+  P.rect(4, 3, 30, 7, 0xffffff); P.box(4, 3, 30, 7, 0xc8ccd6);
+  for (let k = 0; k < 5; k++) { P.vl(4 + k * 6, 3, 7, 0xc8ccd6); for (let j = 0; j < 4; j++) P.px(6 + k * 6 + (j % 2) * 2, 5 + (j >> 1) * 2, C8[(k * 2 + j) % 10]); }
+  for (let k = 0; k < 3; k++) { const jx = 40 + k * 8; P.rect(jx, 1, 6, 8, 0xe4f2fc); P.box(jx, 1, 6, 8, 0xb8d4e8); P.rect(jx, 0, 6, 2, [0xf07ab0, 0xe8b84a, 0x9a62d8][k]); for (let j = 0; j < 5; j++) P.px(jx + 1 + (j % 3) + (j > 2 ? 1 : 0), 4 + (j > 2 ? 2 : 0), C8[(k * 3 + j) % 10]); }
+  for (let t2 = 0; t2 <= 12; t2++) { const x = 20 + t2 * 2, y = 11 - Math.round(1.5 * (1 - ((t2 - 6) / 6) ** 2)); P.px(x, y, C8[t2 % 10]); }
+  return P.flush();
+}
+function ironSprite() {   // strykbordet: brädan med strykjärnet och några märken, skylten STRYKMÄRKEN
+  const w = 70, h = 34, P = new Pix(w, h);
+  P.line(14, 18, 50, 33, 0x8a929c); P.line(15, 18, 51, 33, 0x6a7280); P.line(56, 18, 20, 33, 0x8a929c); P.line(57, 18, 21, 33, 0x6a7280);   // benen i kryss
+  for (let y = 12; y < 19; y++) for (let x = 2; x < 68; x++) {   // brädan med rundad nos
+    const nose = x > 58 ? ((x - 58) / 10) ** 2 + ((y - 15.5) / 3.5) ** 2 <= 1 : true;
+    if (nose) P.px(x, y, y === 12 ? 0xffffff : y === 18 ? 0xb8a8c8 : (x + y) % 6 < 3 ? 0xf3e8f8 : 0xe8d8f0);
+  }
+  P.hl(2, 19, 60, 0x8a7a9a);
+  P.rect(46, 6, 14, 6, 0xf07ab0); P.hl(46, 6, 14, 0xffb8d8); P.rect(44, 11, 18, 2, 0xc8d0da); P.rect(50, 3, 7, 3, 0x2b2a33); P.rect(51, 4, 2, 1, 0x7ad07a);   // strykjärnet
+  const out = P.flush(), c = out.getContext('2d'); c.imageSmoothingEnabled = false;   // (rita efter flush – putImageData skriver annars över)
+  for (const [id, x] of [['hjarta', 3], ['fjaril', 17]]) { const im = patchImg(id); if (im) c.drawImage(im, x, 16 - im.height); }   // märken som väntar på brädan
+  const t = safeTxt($t('STRYKMÄRKEN')), tw = Math.min(w - 2, textW(SMALL, t) + 6); c.fillStyle = '#9a74d8'; c.fillRect(2, 22, tw, 9); c.fillStyle = '#e8b84a'; c.fillRect(2, 31, tw, 1); ctxText(c, SMALL, t, 5, 24, '#ffffff');
+  return out;
+}
+function arrowSignSprite() {   // skylten som visar vägen till mössorna och mobilskalen
+  const P = new Pix(22, 30);
+  P.vl(10, 12, 18, GOLDD); P.vl(11, 12, 18, GOLD); P.rect(6, 28, 10, 2, GOLDD);
+  for (let y = 0; y < 13; y++) for (let x = 0; x < 22; x++) { const tip = x >= 17 ? Math.abs(y - 6) <= 21 - x : true; if (tip) P.px(x, y, y === 0 || y === 12 ? 0xb83a78 : 0xf07ab0); }
+  P.hl(1, 1, 16, 0xf8a4c8);
+  stamp(P, ['#.#', '###', '###', '.#.'], 3, 4, 0xffffff);                                   // ett litet hjärta och en mobil
+  P.rect(10, 3, 4, 7, 0xffffff); P.rect(11, 4, 2, 2, 0x3a3a46);
+  return P.flush();
+}
 function plantSprite() { const P = new Pix(14, 26); P.rect(3, 18, 8, 8, GOLD); P.hl(2, 18, 10, GOLDL); P.vl(10, 19, 7, GOLDD); for (let y = 0; y < 19; y++) for (let x = 0; x < 14; x++) { const e = ((x - 7) / 6.5) ** 2 + ((y - 9) / 9.5) ** 2 + (hash(x, y, 5) - 0.5) * 0.4; if (e < 1) P.px(x, y, e < 0.3 && x < 7 ? 0x8cc462 : e < 0.6 ? 0x5a9e46 : 0x3a7e38); } return P.flush(); }
 function poufSprite() { const P = new Pix(20, 12); for (let y = 0; y < 12; y++) for (let x = 0; x < 20; x++) { const e = ((x - 10) / 10) ** 2 + ((y - 5) / 6) ** 2; if (e <= 1) P.px(x, y, y < 4 ? 0xb07ae0 : y < 9 ? 0x8a52c0 : 0x6a3a98); } P.hl(3, 2, 14, 0xd0a8f8); for (let x = 2; x < 18; x += 4) P.px(x, 6, GOLD); return P.flush(); }
 
@@ -369,6 +438,14 @@ export function makeShopBling(A) {
   // egna designer i sparfilen (game.js tvättar dem vid laddningen), högst 40
   const store = { list: () => G.designs, add: (d) => { G.designs.push(d); if (G.designs.length > 40) G.designs.shift(); G.save(); } };
   const bg = paintBG();
+  {   // mössorna på hyllorna: spelets figurer (ett skyltdocksansikte) med mössorna på, bara huvudet
+    const c = bg.getContext('2d'); c.imageSmoothingEnabled = false;
+    ['hat-catbeanie', 'hat-frogbeanie', 'hat-doublepom', 'hat-unibeanie', 'hat-bearbeanie', 'hat-dinobeanie', 'hat-chullo', 'hat-cablebeanie'].forEach((id, i) => {
+      const it = itemById(id); if (!it) return;
+      const L = { skin: '#ebe3e8', hair: '#ebe3e8', style: 'bald', top: 'tee', shirt: '#f4eef2', bottom: 'jeans', pants: '#cfc6c0', kid: false, build: 5, ...it.look, ...(it.colors || {}) };
+      c.drawImage(personSprite(L, 'down', 0), 4, 0, 16, 20, 395 + (i % 4) * 19, (i < 4 ? 45 : 69) - 20, 16, 20);
+    });
+  }
   const keeper = { x: 254, y: 98, look: { ...makeLookRich(), hair: '#ecd489', style: 'bun', top: 'tee', shirt: '#f07ab0', kid: false, bottom: 'skirt', pants: '#2b2a33', neck: 'pearls', jewel: 'hoops' } };
   // möblerna: [sprite, x, fotlinje, hinder-rektangel]
   const F = [
@@ -379,8 +456,10 @@ export function makeShopBling(A) {
     { img: bagTableSprite(), x: 306, fy: 160, cat: 'vaskor' },
     { img: tableSprite('neck'), x: 92, fy: 214, design: 'neck' },
     { img: tableSprite('bag'), x: 222, fy: 214, design: 'bag' },
-    { img: plantSprite(), x: 4, fy: 112 }, { img: plantSprite(), x: 364, fy: 204 }, { img: plantSprite(), x: 212, fy: 104 },
-    { img: poufSprite(), x: 182, fy: 170 },
+    { img: plantSprite(), x: 4, fy: 112 }, { img: arrowSignSprite(), x: 360, fy: 132 }, { img: plantSprite(), x: 212, fy: 104 },
+    { img: tableSprite('phone'), x: 470, fy: 214, design: 'phone' }, { img: plantSprite(), x: 558, fy: 120 }, { img: plantSprite(), x: 556, fy: 212 }, { img: poufSprite(), x: 410, fy: 176 },
+    { img: beadBarSprite(), x: 158, fy: 170 }, { img: poufSprite(), x: 132, fy: 176 }, { img: poufSprite(), x: 234, fy: 176 },
+    { img: ironSprite(), x: 304, fy: 212 },
   ];
   for (const f of F) { f.w = f.img.width; f.h = f.img.height; f.rect = [f.x, f.fy - Math.min(12, f.h), f.x + f.w, f.fy]; }
   const SP = {
@@ -392,12 +471,18 @@ export function makeShopBling(A) {
     bord: { r: [306, 126, 362, 162], go: [334, 168], label: $t('VÄSKOR'), act: () => catalog('vaskor') },
     neck: { r: [92, 182, 162, 214], go: [127, 176], face: 'down', label: $t('DESIGNA HALSBAND'), act: () => designer('neck') },
     bag: { r: [222, 182, 292, 214], go: [257, 176], face: 'down', label: $t('DESIGNA VÄSKA'), act: () => designer('bag') },
+    parlor: { r: [156, 138, 228, 172], go: [192, 182], label: $t('PÄRLA FÖR PÄRLA'), act: () => beadDesigner() },
+    stryk: { r: [302, 178, 374, 214], go: [338, 178], face: 'down', label: $t('STRYKMÄRKEN OCH FÄRG'), act: () => patchDesigner(true) },
+    skylt: { r: [358, 100, 384, 134], go: [404, 126], label: $t('MÖSSOR OCH MOBILSKAL'), act: () => say($t('HÄR BORTA: MÖSSOR OCH MOBILSKAL!'), 434, 60) },
+    mossor: { r: [390, 22, 476, 74], go: [434, 100], label: $t('MÖSSOR'), act: () => catalog('mossor') },
+    mobilvagg: { r: [484, 22, 574, 74], go: [528, 100], label: $t('MOBILSKAL'), act: () => phoneDesigner() },
+    mobil: { r: [468, 182, 542, 214], go: [505, 176], face: 'down', label: $t('DESIGNA MOBILSKAL'), act: () => phoneDesigner() },
     spegel: { r: [142, 32, 170, 90], go: [156, 98], label: $t('SPEGELN'), act: () => mirror() },
-    kassa: { r: [222, 88, 286, 114], go: [254, 118], label: $t('KASSAN'), act: () => say(pickOf([$t('VÄLKOMMEN TILL BLING BLING!'), $t('DESIGNA ETT EGET HALSBAND VID BORDET!'), $t('VI HAR FÅTT NYA VÄSKOR PÅ VÄGGEN!'), $t('SPEGELN VISAR ALLT DU ÄGER.')]), keeper.x, keeper.y - 40) },
+    kassa: { r: [222, 88, 286, 114], go: [254, 118], label: $t('KASSAN'), act: () => say(pickOf([$t('VÄLKOMMEN TILL BLING BLING!'), $t('DESIGNA ETT EGET HALSBAND VID BORDET!'), $t('TRÄ ETT HALSBAND PÄRLA FÖR PÄRLA I PÄRLBAREN!'), $t('STRYK MÄRKEN PÅ VÄSKAN ELLER TRÖJAN VID STRYKBORDET!'), $t('DESIGNA ETT EGET MOBILSKAL LÄNGST BORT!'), $t('NYA MÖSSOR: KATT, GRODA, DINO OCH ENHÖRNING!'), $t('VID STRYKBORDET BYTER DU FÄRG PÅ KLÄDERNA.'), $t('VI HAR FÅTT NYA VÄSKOR PÅ VÄGGEN!'), $t('SPEGELN VISAR ALLT DU ÄGER.')]), keeper.x, keeper.y - 40) },
   };
-  const blocked = (x, y) => y < WALL + 6 || y > H - 3 || x < 4 || x > W - 4 || F.some((f) => x >= f.rect[0] - 3 && x <= f.rect[2] + 3 && y >= f.rect[1] - 2 && y <= f.rect[3] + 2);
+  const blocked = (x, y) => y < WALL + 6 || y > H - 3 || x < 4 || x > RW - 4 || F.some((f) => x >= f.rect[0] - 3 && x <= f.rect[2] + 3 && y >= f.rect[1] - 2 && y <= f.rect[3] + 2);
   // A* på 4 px-rutnät (som i gallerian)
-  const C = 4, GW = W / C, GH = H / C;
+  const C = 4, GW = RW / C, GH = H / C;
   const free = new Uint8Array(GW * GH); for (let j = 0; j < GH; j++) for (let i = 0; i < GW; i++) free[j * GW + i] = blocked(i * C + 2, j * C + 2) ? 0 : 1;
   const near = (x, y) => { let b = -1, bd = 1e9; for (let n = 0; n < free.length; n++) if (free[n]) { const d = ((n % GW) * C + 2 - x) ** 2 + (((n / GW) | 0) * C + 2 - y) ** 2; if (d < bd) { bd = d; b = n; } } return b; };
   function path(x0, y0, x1, y1) {
@@ -421,8 +506,12 @@ export function makeShopBling(A) {
   }
   const me = { x: 192, y: 100, dir: 'down', path: [], dist: 0, then: null };
   const folk = [0, 1].map((i) => ({ look: { ...makeLookRich(), kid: Math.random() < 0.5, ...(i ? { bag: 'shoppingBag', bagColor: '#f07ab0' } : { neck: 'necklace', neckColor: '#4f8ff0' }) }, x: i ? 300 : 60, y: i ? 150 : 150, dir: 'up', path: [], dist: 0, t: 1 + i * 2 }));
-  const BROWSE = [[43, 136, 'up'], [113, 136, 'up'], [55, 194, 'up'], [330, 100, 'up'], [334, 168, 'up'], [127, 176, 'down'], [257, 176, 'down']];
-  let bubble = null, hover = null, t = 0;
+  const BROWSE = [[43, 136, 'up'], [113, 136, 'up'], [55, 194, 'up'], [330, 100, 'up'], [334, 168, 'up'], [127, 176, 'down'], [257, 176, 'down'], [192, 182, 'up'], [338, 178, 'down'], [434, 100, 'up'], [528, 100, 'up'], [505, 176, 'down']];
+  let bubble = null, hover = null, t = 0, camX = 0;
+  // kameran: en bred skärm ser mer av butiken (viewMax ger A.W upp till RW), annars följer den figuren i sidled
+  const vw = () => Math.max(W, Math.min(A.W || W, RW));
+  const camTarget = () => Math.max(0, Math.min(RW - vw(), me.x - vw() / 2));
+  const cam = () => Math.round(camX);
   const say = (s, x, y) => { s = safeTxt(s); bubble = { s, x, y, until: t + Math.max(2.6, s.length * 0.08) }; };
   const walkTo = (x, y, then) => { me.path = path(me.x, me.y, x, y); me.then = then || null; if (!me.path.length && then) { me.then = null; then(); } };
   const step = (o, dt, sp) => {
@@ -433,7 +522,7 @@ export function makeShopBling(A) {
     return !o.path.length;
   };
   // gnistor: på montrarna, kronorna, skylten och mattan
-  const SPARK = []; for (let i = 0; i < 34; i++) { const z = pickOf([[12, 100, 62, 10], [82, 100, 62, 10], [24, 156, 62, 10], [128, 13, 128, 16], [100, 14, 24, 10], [260, 14, 24, 10], [233, 37, 142, 46], [14, 36, 120, 20]]); SPARK.push({ x: z[0] + Math.random() * z[2], y: z[1] + Math.random() * z[3], ph: Math.random() * 6, sp: 1.5 + Math.random() * 2 }); }
+  const SPARK = []; for (let i = 0; i < 34; i++) { const z = pickOf([[12, 100, 62, 10], [82, 100, 62, 10], [24, 156, 62, 10], [128, 13, 128, 16], [100, 14, 24, 10], [260, 14, 24, 10], [160, 142, 64, 10], [486, 28, 86, 44], [392, 24, 82, 44], [233, 37, 142, 46], [14, 36, 120, 20]]); SPARK.push({ x: z[0] + Math.random() * z[2], y: z[1] + Math.random() * z[3], ph: Math.random() * 6, sp: 1.5 + Math.random() * 2 }); }
 
   // ---------- provfiguren: "Du nu ➜ Med …" som går att vrida, som i klädaffärens köpdialog (klader/buy.js) ----------
   const wearing = (it) => isWorn(it, A.avatar.look);
@@ -456,7 +545,10 @@ export function makeShopBling(A) {
     };
     dlg.querySelectorAll('[data-turn]').forEach((b) => (b.onclick = () => { dr.i = (dr.i + +b.dataset.turn + 4) % 4; dr.user = true; play('click'); render(); }));
     render();
+    return render;
   }
+  const bigCss = (cv, k) => { const o = big(cv, k); o.style.width = o.width + 'px'; o.style.height = o.height + 'px'; return o; };
+  const clamp01 = (v) => Math.max(0, Math.min(1, v));
 
   // ---------- montrarna och väskväggen: spelets egna smycken och väskor; ett klick provar på figuren ----------
   // korten: smycken med huvudet och överkroppen inzoomade, väskor med hela figuren från sidan
@@ -494,6 +586,8 @@ export function makeShopBling(A) {
   // en design får sitt namn på spelarens språk när den visas (sparfilen har bara delarnas id)
   const designNamn = (d) => {
     const sel = d.sel || {};
+    if (d.kind === 'beads') { const w = beadWordOf(sel.beads), n = (sel.beads || []).filter(Boolean).length; return w.length >= 2 ? `${$t('Pärlhalsband')} ${w}` : `${$t('Pärlhalsband')} · ${$t`${n} pärlor`}`; }
+    if (d.kind === 'phone') { const cs = CASES.find((c) => c[0] === sel.case), n = (sel.charms || []).length; return `${$t('Mobilskal')} · ${cs ? cs[1] : ''}${n ? ` · ✨${n}` : ''}`; }
     if (d.kind === 'neck') { const k = optOf(NECK.kedja, sel.kedja)?.[1] || '', h = sel.hange && sel.hange !== 'inget' ? optOf(NECK.hange, sel.hange)?.[1] : ''; return h ? `${k} · ${h}` : k; }
     return `${optOf(BAG.modell, sel.modell)?.[1] || ''} · ${optOf(BAG.farg, sel.farg)?.[1] || ''}`;
   };
@@ -512,7 +606,7 @@ export function makeShopBling(A) {
       <ul class="bl-list">${Object.entries(GR).map(([k, g]) => { const o = optOf(g, sel[k]); return `<li><span>${esc(g.label)}: ${esc(o[1])}</span><b>${o[2] ? fmt(o[2]) : '–'}</b></li>`; }).join('')}</ul></div>
       <div class="bl-pick">${groups}
       ${mine.length ? `<div class="bl-lbl">${esc(kind === 'neck' ? $t('Dina egna halsband') : $t('Dina egna väskor'))}</div><div class="bl-mine">${mine.map((d, i) => `<button type="button" class="btn btn-small" data-mine="${i}">${kind === 'neck' ? '📿' : '👜'} ${esc(designNamn(d))}</button>`).join('')}</div>` : ''}</div></div>`,
-      [same ? { label: $t('Ta på – den är redan din'), cls: 'btn-go', onClick: () => { setLook({ ...A.avatar.look, ...same.look }); cancelAnimationFrame(anim); closeModal(); play('ok'); toast($t`✨ Du har på dig ${designNamn(same)}.`, 'good'); } }
+      [same ? { label: $t('Ta på – den är redan din'), cls: 'btn-go', onClick: () => { setLook({ ...A.avatar.look, ...same.look, ...(kind === 'neck' ? { beads: null } : {}) }); cancelAnimationFrame(anim); closeModal(); play('ok'); toast($t`✨ Du har på dig ${designNamn(same)}.`, 'good'); } }
         : { label: G.money >= total ? $t`Köp för ${fmt(total)}` : $t`Du behöver ${fmt(total - G.money)} till`, cls: 'btn-go', disabled: G.money < total, onClick: () => buyDesign(kind, total) },
        { label: $t('Stäng'), onClick: () => { cancelAnimationFrame(anim); closeModal(); } }]);
     dlg.classList.add('bl-wide');
@@ -532,7 +626,7 @@ export function makeShopBling(A) {
     G.glad?.(4, '', 'nytt', 10);                         // något nytt gör en glad (som kläderna, högst +10 om dagen)
     const d = { kind, sel: { ...sel }, look: m.look, price: total };
     store.add(d);                                        // (sparar spelet)
-    setLook({ ...A.avatar.look, ...m.look });
+    setLook({ ...A.avatar.look, ...m.look, ...(kind === 'neck' ? { beads: null } : {}) });
     cancelAnimationFrame(anim); closeModal(); play('buy');
     toast(kind === 'neck' ? $t`✨ Ditt eget halsband är klart: ${designNamn(d)}!` : $t`✨ Din egen väska är klar: ${designNamn(d)}!`, 'good');
     say(kind === 'neck' ? $t('VILKET FINT HALSBAND! DET HAR DU GJORT SJÄLV!') : $t('SNYGG VÄSKA! DEN ÄR HELT DIN EGEN!'), keeper.x, keeper.y - 40);
@@ -541,24 +635,289 @@ export function makeShopBling(A) {
   const MIR = { i: 0, user: true };
   function mirror() {
     const owned = Object.values(CATS).flatMap((c) => c.ids).map(itemById).filter((it) => it && G.ownsWardrobe(it.id));
-    const designs = store.list();
+    const designs = store.list(), np = (A.avatar.look.patches || []).length;
     const dlg = openModal($t('🪞 Spegeln'), `<div class="bl-mirror">${stageHtml(String(A.avatar.name || $t('Du')), true)}<div class="bl-mir-r"><p class="bl-sp">${esc($t('Ta på och av det du har köpt här och dina egna designer – figuren visar hur du ser ut.'))}</p>
       ${owned.length ? `<div class="bl-lbl">${esc($t('Köpt i butiken'))}</div><div class="bl-mine">${owned.map((it) => `<button type="button" class="btn btn-small${wearing(it) ? ' btn-gold' : ''}" data-own="${it.id}">${wearing(it) ? '✓ ' : ''}${esc(it.name.replace(/­/g, ''))}</button>`).join('')}</div>` : `<p class="bl-sp">${esc($t('Du har inte köpt något här än. Titta i glasmontrarna och på väskväggen!'))}</p>`}
-      ${designs.length ? `<div class="bl-lbl">${esc($t('Dina egna designer'))}</div><div class="bl-mine">${designs.map((d, i) => `<button type="button" class="btn btn-small" data-des="${i}">${d.kind === 'neck' ? '📿' : '👜'} ${esc(designNamn(d))}</button>`).join('')}</div>` : ''}</div></div>`,
+      ${designs.length ? `<div class="bl-lbl">${esc($t('Dina egna designer'))}</div><div class="bl-mine">${designs.map((d, i) => `<button type="button" class="btn btn-small" data-des="${i}">${KIND_ICON[d.kind] || '📿'} ${esc(designNamn(d))}</button>`).join('')}</div>` : ''}
+      ${np ? `<p class="bl-sp">${esc($t`✨ Du har ${np} strykmärken. Vid strykbordet flyttar du dem eller tar bort dem.`)}</p>` : ''}
+      <div class="bl-mine"><button type="button" class="btn btn-small" data-mx="farg">${esc($t('🎨 Byt färg på kläderna'))}</button>${A.avatar.look.mobil ? `<button type="button" class="btn btn-small" data-mx="ficka">${esc($t('📱 Lägg mobilen i fickan'))}</button>` : ''}</div></div></div>`,
       [{ label: $t('Klar'), cls: 'btn-go', onClick: closeModal }]);
     stage(dlg, () => A.avatar.look, MIR);
     dlg.querySelectorAll('[data-own]').forEach((b) => (b.onclick = () => { const it = itemById(b.dataset.own); play('click'); setLook(wearing(it) ? lookWithoutSlot(it.slot, A.avatar.look) : lookForItem(it, A.avatar.look, { colors: true })); mirror(); }));
-    dlg.querySelectorAll('[data-des]').forEach((b) => (b.onclick = () => { play('click'); setLook({ ...A.avatar.look, ...designs[+b.dataset.des].look }); mirror(); }));
+    dlg.querySelectorAll('[data-mx]').forEach((b) => (b.onclick = () => { play('click'); if (b.dataset.mx === 'farg') patchDesigner(true, 'top'); else { setLook({ ...A.avatar.look, mobil: null }); mirror(); } }));
+    dlg.querySelectorAll('[data-des]').forEach((b) => (b.onclick = () => { const d = designs[+b.dataset.des]; play('click'); setLook({ ...A.avatar.look, ...d.look, ...(d.kind === 'neck' ? { beads: null } : {}) }); mirror(); }));
+  }
+
+  // ---------- pärlbaren: halsbandet pärla för pärla ----------
+  // Tryck på en pärla så träs den på där markeringen står (sedan hoppar markeringen till nästa tomma plats); tryck på en
+  // plats i halsbandet för att byta just den pärlan. Längden ger antalet platser, tråden och varje pärla har sitt pris.
+  const BST = { len: 'mellan', trad: 'klar', beads: Array(16).fill(null), sel: 0, cat: 'glas' };
+  const DIRB = { i: 0, user: false };
+  let banim = 0;
+  const priceTag = (pr) => (pr ? fmt(pr) : $t('gratis'));
+  const beadPrice = () => (TRAD.find((q) => q[0] === BST.trad)?.[2] || 0) + BST.beads.reduce((sum, id) => sum + (id ? BEAD_BY[id]?.price || 0 : 0), 0);
+  const beadLook = () => ({ neck: 'pearls', beads: BST.beads.filter(Boolean).map((id) => beadColor(BEAD_BY[id])) });
+  const beadSel = () => ({ len: BST.len, trad: BST.trad, beads: [...BST.beads] });
+  const beadKey = (sel) => JSON.stringify([sel.len, sel.trad, sel.beads]);
+  const nextEmpty = (from) => { const n = BST.beads.length; for (let k = 0; k < n; k++) { const i = (from + k) % n; if (!BST.beads[i]) return i; } return -1; };
+  function beadDesigner() {
+    const total = beadPrice(), filled = BST.beads.filter(Boolean).length;
+    const mine = store.list().filter((d) => d.kind === 'beads'), key = beadKey(BST), same = mine.find((d) => beadKey(d.sel) === key);
+    const withLook = () => ({ ...A.avatar.look, ...beadLook() });
+    const chip = (attr, v, label, pr, on) => `<button type="button" class="btn btn-small${on ? ' btn-gold' : ''}" data-${attr}="${v}">${esc(label)}${pr != null ? `<small>${esc(priceTag(pr))}</small>` : ''}</button>`;
+    const dlg = openModal($t('📿 Pärla för pärla'), `<div class="bl-design">${stageHtml($t('Med halsbandet'))}
+      <div class="bl-show"><div class="dl-canvas dl-neck"></div>
+        <div class="dl-tools"><button type="button" class="btn btn-small" data-bt="del">${esc($t('⌫ Ta bort'))}</button><button type="button" class="btn btn-small" data-bt="rep">${esc($t('🔁 Upprepa'))}</button><button type="button" class="btn btn-small" data-bt="rnd">${esc($t('🎲 Slumpa'))}</button><button type="button" class="btn btn-small" data-bt="clr">${esc($t('🧹 Töm'))}</button></div>
+        <div class="bl-sum"><span>${esc($t('Kostar'))}</span><b>${fmt(total)}</b><span class="bl-sp">${esc($t`${filled} av ${BST.beads.length} pärlor · du har ${fmt(G.money)}`)}</span></div></div>
+      <div class="bl-pick"><p class="bl-sp dl-tip">${esc($t('Tryck på en pärla så träs den på där det blinkar. Tryck på en plats i halsbandet för att byta den pärlan.'))}</p>
+        <div class="bl-grp"><div class="bl-lbl">${esc($t('Längd'))}</div><div class="bl-opts">${LENGTHS.map(([id, name, n]) => chip('len', id, `${name} · ${$t`${n} pärlor`}`, null, BST.len === id)).join('')}</div></div>
+        <div class="bl-grp"><div class="bl-lbl">${esc($t('Tråd'))}</div><div class="bl-opts">${TRAD.map(([id, name, pr]) => chip('trad', id, name, pr, BST.trad === id)).join('')}</div></div>
+        <div class="bl-grp"><div class="bl-lbl">${esc($t('Pärlor'))}</div><div class="dl-cats">${BEAD_CATS.map((c) => chip('bcat', c.id, c.label, null, BST.cat === c.id)).join('')}</div>
+        <div class="dl-beads">${BEADS.filter((b) => b.cat === BST.cat).map((b) => `<button type="button" class="dl-bead" data-bead="${b.id}" title="${esc(b.name)}" aria-label="${esc(b.name)}"><i></i><small>${fmt(b.price)}</small></button>`).join('')}</div></div>
+        ${mine.length ? `<div class="bl-lbl">${esc($t('Dina pärlhalsband'))}</div><div class="bl-mine">${mine.map((d, i) => `<button type="button" class="btn btn-small" data-mine="${i}">📿 ${esc(designNamn(d))}</button>`).join('')}</div>` : ''}</div></div>`,
+      [same ? { label: $t('Ta på – det är redan ditt'), cls: 'btn-go', onClick: () => { setLook({ ...A.avatar.look, ...same.look }); cancelAnimationFrame(banim); closeModal(); play('ok'); toast($t`✨ Du har på dig ${designNamn(same)}.`, 'good'); } }
+        : { label: filled < 3 ? $t('Trä minst 3 pärlor') : G.money >= total ? $t`Köp för ${fmt(total)}` : $t`Du behöver ${fmt(total - G.money)} till`, cls: 'btn-go', disabled: filled < 3 || G.money < total, onClick: () => buyBeads(total) },
+       { label: $t('Stäng'), onClick: () => { cancelAnimationFrame(banim); closeModal(); } }]);
+    dlg.classList.add('bl-wide');
+    stage(dlg, withLook, DIRB);
+    dlg.querySelectorAll('[data-bead]').forEach((el) => { const P = new Pix(9, 9); drawBead(P, BEAD_BY[el.dataset.bead], 1, 1); el.querySelector('i').append(bigCss(P.flush(), 4)); });
+    const host = dlg.querySelector('.dl-neck'), cv = document.createElement('canvas'); cv.width = 128 * 3; cv.height = 88 * 3; host.append(cv);
+    const g = cv.getContext('2d'); g.imageSmoothingEnabled = false;
+    let art = null, lastBlink = null;
+    const tick = (now) => { const blink = Math.floor(now / 420) % 2 === 0; if (blink !== lastBlink) { lastBlink = blink; art = drawBeadNecklace(BST, BST.sel, blink); g.drawImage(art.canvas, 0, 0, cv.width, cv.height); } if (dlg.isConnected) banim = requestAnimationFrame(tick); };
+    cancelAnimationFrame(banim); tick(performance.now());
+    cv.onclick = (e) => {
+      const r = cv.getBoundingClientRect(), x = ((e.clientX - r.left) * 128) / r.width, y = ((e.clientY - r.top) * 88) / r.height;
+      let best = -1, bd = 70; art.slots.forEach((q, i) => { const d = (q.x - x) ** 2 + (q.y - y) ** 2; if (d < bd) { bd = d; best = i; } });
+      if (best >= 0) { BST.sel = best; play('click'); beadDesigner(); }
+    };
+    dlg.querySelectorAll('[data-bead]').forEach((b) => (b.onclick = () => {
+      const i = BST.sel; BST.beads[i] = b.dataset.bead;
+      const nx = nextEmpty(i + 1); BST.sel = nx >= 0 ? nx : Math.min(i + 1, BST.beads.length - 1);
+      play('click'); beadDesigner();
+    }));
+    dlg.querySelectorAll('[data-len]').forEach((b) => (b.onclick = () => { BST.len = b.dataset.len; const n = LENGTHS.find((l) => l[0] === BST.len)[2]; const nb = BST.beads.slice(0, n); while (nb.length < n) nb.push(null); BST.beads = nb; BST.sel = Math.min(BST.sel, n - 1); play('click'); beadDesigner(); }));
+    dlg.querySelectorAll('[data-trad]').forEach((b) => (b.onclick = () => { BST.trad = b.dataset.trad; play('click'); beadDesigner(); }));
+    dlg.querySelectorAll('[data-bcat]').forEach((b) => (b.onclick = () => { BST.cat = b.dataset.bcat; play('click'); beadDesigner(); }));
+    dlg.querySelectorAll('[data-bt]').forEach((b) => (b.onclick = () => {
+      const tool = b.dataset.bt, n = BST.beads.length;
+      if (tool === 'del') { let i = BST.sel; if (!BST.beads[i]) for (i = n - 1; i >= 0 && !BST.beads[i]; i--); if (i >= 0) { BST.beads[i] = null; BST.sel = i; } }
+      if (tool === 'clr') { BST.beads = Array(n).fill(null); BST.sel = 0; }
+      if (tool === 'rnd') { const pool = BEADS.filter((x) => x.cat === 'glas' || x.cat === 'parlemor' || (x.cat === 'form' && Math.random() < 0.5)); BST.beads = BST.beads.map(() => pickOf(pool).id); BST.sel = 0; }
+      if (tool === 'rep') { const pat = []; for (const id of BST.beads) { if (!id) break; pat.push(id); } if (pat.length) { BST.beads = BST.beads.map((id, i) => id || pat[i % pat.length]); BST.sel = 0; } else toast($t('Trä några pärlor först – sedan upprepas mönstret runt hela halsbandet.'), ''); }
+      play('click'); beadDesigner();
+    }));
+    dlg.querySelectorAll('[data-mine]').forEach((b) => (b.onclick = () => { const d = mine[+b.dataset.mine], n = LENGTHS.find((l) => l[0] === d.sel.len)?.[2] || 16, nb = d.sel.beads.slice(0, n); while (nb.length < n) nb.push(null); Object.assign(BST, { len: d.sel.len, trad: d.sel.trad, beads: nb, sel: 0 }); play('click'); beadDesigner(); }));
+  }
+  function buyBeads(total) {
+    if (G.money < total || BST.beads.filter(Boolean).length < 3) return;
+    G.money -= total;
+    if (!G.ownsWardrobe('neck-pearls')) G.wardrobe.push('neck-pearls');   // pärlhalsbandet räknas som ditt, så att figurskaparen låter det sitta kvar
+    G.glad?.(4, '', 'nytt', 10);
+    const look = beadLook(), d = { kind: 'beads', sel: beadSel(), look, price: total };
+    store.add(d);                                                         // (sparar spelet)
+    setLook({ ...A.avatar.look, ...look });
+    cancelAnimationFrame(banim); closeModal(); play('buy');
+    toast($t`✨ Ditt halsband är klart: ${designNamn(d)}!`, 'good');
+    const w = beadWordOf(BST.beads);
+    say(w.length >= 2 ? $t`${w}! VILKET FINT NAMNHALSBAND!` : $t('VILKET FINT HALSBAND! DU HAR TRÄTT DET SJÄLV!'), keeper.x, keeper.y - 40);
+  }
+
+  // ---------- strykbordet: strykmärken på väskan, tröjan eller byxorna – och färgen på dem ----------
+  // Som Dream Lands designverktyg: välj ett märke i listan till höger, det hamnar på plagget, dra det dit du vill ha det.
+  // Nya märken kostar, märken som redan sitter fast flyttar och tar man bort gratis, färgen byts gratis. Stryk fast =
+  // de sitter på figuren (look.patches, högst 6 per plagg).
+  const BAG_MODEL = { shoppingBag: 'kasse', fannyPack: 'midje', sling: 'midje', backpack: 'rygg', schoolBag: 'rygg', hikingPack: 'rygg', teddyPack: 'nalle', shoulder: 'axel', messenger: 'axel', sportsBag: 'axel', handbag: 'hand', briefcase: 'hand' };
+  const bagModel = (look) => BAG_MODEL[look.bag] || null;   // (gitarren, vingarna och jetpacken får inga märken)
+  const PMAX = 6, AREA_LABEL = { bag: $t('👜 Väskan'), top: $t('👕 Tröjan'), bottom: $t('👖 Byxorna') }, AREA_ON = { bag: $t('väskan'), top: $t('tröjan'), bottom: $t('byxorna') };
+  const DIRP = { i: 0, user: false }, ART = new Map();
+  let PST = null, panim = 0;
+  function areaArt(area, L = A.avatar.look) {
+    const key = area === 'bag' ? `bag|${L.bag}|${L.bagColor}` : area === 'top' ? `top|${L.top}|${L.shirt}|${L.accent}` : `bottom|${L.bottom}|${L.pants}`;
+    if (!ART.has(key)) {
+      if (area === 'bag') { const m = bagModel(L), b = BAG_BODY[m]; ART.set(key, { canvas: drawBag({ modell: m, color: L.bagColor || '#2f3440', farg: 'svart', monster: 'inget', berlock: 'ingen' }), zone: [b[0] + 2, b[1] + 3, b[0] + b[2] - 2, b[1] + b[3] - 3] }); }
+      else ART.set(key, garmentArt(area, L));
+    }
+    return ART.get(key);
+  }
+  const colKey = (area, L = A.avatar.look) => (area === 'bag' ? 'bagColor' : area === 'bottom' && /dress/.test(L.bottom || '') ? 'shirt' : area === 'top' ? 'shirt' : 'pants');
+  const SWATCH = ['#f28bb3', '#ff7a6b', '#d9433b', '#7a1f2e', '#e07a2e', '#f0b429', '#9fd356', '#46a35a', '#2aa39a', '#7fb8e8', '#3a7bd5', '#2d3a5c', '#8e5bd1', '#b9a3e8', '#b83d7a', '#f4f1ea', '#8a8f98', '#1d1d22'];
+  function patchState(keep) {
+    const L = { top: [], bottom: [], bag: [] };
+    for (const q of A.avatar.look.patches || []) if (L[q.a]) L[q.a].push({ p: q.p || null, u: q.u, v: q.v, c: q.c, own: true });
+    const area = keep?.area && (keep.area !== 'bag' || bagModel(A.avatar.look)) ? keep.area : bagModel(A.avatar.look) ? 'bag' : 'top';
+    const look = A.avatar.look, col = { shirt: look.shirt, pants: look.pants, bagColor: look.bagColor };
+    return { area, L, sel: -1, cat: keep?.cat || 'best', col, saved: JSON.stringify([look.patches || [], col]) };
+  }
+  const patchList = () => ['top', 'bottom', 'bag'].flatMap((a) => PST.L[a].map((e) => ({ a, u: e.u, v: e.v, c: e.c, ...(e.p ? { p: e.p } : {}) })));
+  const patchCost = () => ['top', 'bottom', 'bag'].flatMap((a) => PST.L[a]).filter((e) => !e.own).reduce((sum, e) => sum + (PATCH_BY[e.p]?.price || 0), 0);
+  function patchDesigner(fresh, startArea) {
+    if (!PST || fresh) { PST = patchState(); if (startArea && (startArea !== 'bag' || bagModel(A.avatar.look))) PST.area = startArea; }
+    const area = PST.area, list = PST.L[area], cost = patchCost(), hasBag = !!bagModel(A.avatar.look);
+    const withLook = () => ({ ...A.avatar.look, ...PST.col, patches: patchList() });
+    const changed = JSON.stringify([patchList(), PST.col]) !== PST.saved, ck = colKey(area, A.avatar.look), curCol = PST.col[ck];
+    const dlg = openModal($t('✨ Strykmärken och färg'), `<div class="bl-design">${stageHtml($t('Med märkena'))}
+      <div class="bl-show">
+        <div class="dl-areas">${['bag', 'top', 'bottom'].map((a) => `<button type="button" class="btn btn-small${area === a ? ' btn-gold' : ''}" data-area="${a}"${a === 'bag' && !hasBag ? ` disabled title="${esc($t('Ta på dig en väska först'))}"` : ''}>${esc(AREA_LABEL[a])}${PST.L[a].length ? ` · ${PST.L[a].length}` : ''}</button>`).join('')}</div>
+        <div class="dl-canvas dl-cloth"></div>
+        <div class="dl-tools"><button type="button" class="btn btn-small" data-pt="del"${PST.sel < 0 ? ' disabled' : ''}>${esc($t('🗑 Ta bort märket'))}</button><button type="button" class="btn btn-small" data-pt="undo"${changed ? '' : ' disabled'}>${esc($t('↺ Ångra'))}</button><span class="bl-sp">${esc($t`${list.length} av ${PMAX} märken på ${AREA_ON[area]}`)}</span></div>
+        <div class="bl-sum"><span>${esc($t('Nya märken'))}</span><b>${fmt(cost)}</b><span class="bl-sp">${esc($t`Du har ${fmt(G.money)}`)}</span></div>
+      </div>
+      <div class="bl-pick"><div class="bl-lbl">${esc($t`Färg på ${AREA_ON[area]}`)} <small>${esc($t('gratis'))}</small></div><div class="dl-sws">${[...new Set([curCol, ...SWATCH].filter(Boolean))].map((c) => `<button type="button" class="dl-sw${c === curCol ? ' on' : ''}" data-col="${c}" style="--c:${c}" aria-label="${esc($t('Färg'))} ${c}"></button>`).join('')}</div>
+        <p class="bl-sp dl-tip">${hasBag ? '' : esc($t('Ta på dig en väska om du vill ha märken på den.')) + ' '}${esc($t`Tryck på ett märke så hamnar det på ${AREA_ON[area]} – dra det sedan dit du vill ha det.`)}</p>
+        <div class="dl-cats">${PATCH_CATS.map((c) => `<button type="button" class="btn btn-small${PST.cat === c.id ? ' btn-gold' : ''}" data-pcat="${c.id}">${esc(c.label)}</button>`).join('')}</div>
+        <div class="dl-grid">${PATCHES.filter((q) => q.cats.includes(PST.cat)).map((q) => `<button type="button" class="dl-patch" data-patch="${q.id}" title="${esc(q.name)}"><i></i><b>${esc(q.name)}</b><small>${fmt(q.price)}</small></button>`).join('')}</div></div></div>`,
+      [{ label: !changed ? $t('Välj ett märke') : cost ? (G.money >= cost ? $t`Stryk fast (${fmt(cost)})` : $t`Du behöver ${fmt(cost - G.money)} till`) : $t('Spara'), cls: 'btn-go', disabled: !changed || G.money < cost, onClick: () => ironOn(cost) },
+       { label: $t('Stäng'), onClick: () => { cancelAnimationFrame(panim); PST = null; closeModal(); } }]);
+    dlg.classList.add('bl-wide');
+    if (!DIRP.user) DIRP.i = area === 'bag' ? bestDir(lookWithoutSlot('bag', A.avatar.look), A.avatar.look) : 0;
+    stage(dlg, withLook, DIRP);
+    dlg.querySelectorAll('[data-patch]').forEach((el) => el.querySelector('i').append(bigCss(patchImg(el.dataset.patch), 3)));
+    const art = areaArt(area, withLook()), K = 3, host = dlg.querySelector('.dl-cloth'), cv = document.createElement('canvas'); cv.width = 96 * K; cv.height = 72 * K; host.append(cv);
+    const g = cv.getContext('2d'); g.imageSmoothingEnabled = false;
+    const [zx0, zy0, zx1, zy1] = art.zone, zw = zx1 - zx0, zh = zy1 - zy0;
+    const posOf = (e) => { const img = patchImg(e.p); const w = img ? img.width : 4, h = img ? img.height : 4; return { img, w, h, x: zx0 + e.u * zw - w / 2, y: zy0 + e.v * zh - h / 2 }; };
+    const paint = (now) => {
+      g.drawImage(art.canvas, 0, 0, cv.width, cv.height);
+      list.forEach((e, i) => {
+        const q = posOf(e), X = Math.round(q.x) * K, Y = Math.round(q.y) * K;
+        if (q.img) g.drawImage(q.img, X, Y, q.w * K, q.h * K); else { g.fillStyle = e.c?.[0] || '#fff'; g.fillRect(X, Y, q.w * K, q.h * K); }
+        if (PATCH_BY[e.p]?.glitter) { const ph = (now / 500 + i) % 3; if (ph < 0.6) { const sx = X + (hash(i, Math.floor(now / 1500), 5) * q.w * K), sy = Y + (hash(i, Math.floor(now / 1500), 6) * q.h * K), r = Math.sin((ph / 0.6) * Math.PI) * 6; g.fillStyle = '#ffffff'; g.fillRect(sx - r, sy - 1, r * 2, 3); g.fillRect(sx - 1, sy - r, 3, r * 2); } }
+        if (i === PST.sel) { g.strokeStyle = Math.floor(now / 350) % 2 ? '#ffffff' : '#f07ab0'; g.lineWidth = 2; g.setLineDash([6, 4]); g.strokeRect(X - 4, Y - 4, q.w * K + 8, q.h * K + 8); g.setLineDash([]); }
+      });
+    };
+    const loop = (now) => { paint(now); if (dlg.isConnected) panim = requestAnimationFrame(loop); };
+    cancelAnimationFrame(panim); panim = requestAnimationFrame(loop);
+    let drag = null;
+    const artXY = (ev) => { const r = cv.getBoundingClientRect(); return [((ev.clientX - r.left) * 96) / r.width, ((ev.clientY - r.top) * 72) / r.height]; };
+    cv.addEventListener('pointerdown', (ev) => {
+      const [x, y] = artXY(ev); let hit = -1;
+      for (let i = list.length - 1; i >= 0; i--) { const q = posOf(list[i]); if (x >= q.x - 1 && x <= q.x + q.w + 1 && y >= q.y - 1 && y <= q.y + q.h + 1) { hit = i; break; } }
+      if (hit < 0) { if (PST.sel >= 0) { PST.sel = -1; patchDesigner(); } return; }
+      ev.preventDefault(); try { cv.setPointerCapture(ev.pointerId); } catch { /* ok */ }
+      const q = posOf(list[hit]); drag = { i: hit, dx: x - (q.x + q.w / 2), dy: y - (q.y + q.h / 2) }; PST.sel = hit;
+    });
+    cv.addEventListener('pointermove', (ev) => { if (!drag) return; const [x, y] = artXY(ev), e = list[drag.i]; e.u = clamp01((x - drag.dx - zx0) / zw); e.v = clamp01((y - drag.dy - zy0) / zh); });
+    const end = () => { if (!drag) return; drag = null; patchDesigner(); };
+    cv.addEventListener('pointerup', end); cv.addEventListener('pointercancel', end);
+    dlg.querySelectorAll('[data-patch]').forEach((b) => (b.onclick = () => {
+      if (list.length >= PMAX) { toast($t`Det får plats ${PMAX} märken på ${AREA_ON[area]}. Ta bort ett först.`, 'bad'); play('fel'); return; }
+      const id = b.dataset.patch, k = list.length;
+      list.push({ p: id, u: clamp01(0.25 + (k % 3) * 0.25 + (Math.random() - 0.5) * 0.08), v: clamp01(0.3 + Math.floor(k / 3) * 0.4 + (Math.random() - 0.5) * 0.08), c: patchColors(id), own: false });
+      PST.sel = list.length - 1; play('click'); patchDesigner();
+    }));
+    dlg.querySelectorAll('[data-area]').forEach((b) => (b.onclick = () => { PST.area = b.dataset.area; PST.sel = -1; DIRP.user = false; play('click'); patchDesigner(); }));
+    dlg.querySelectorAll('[data-pcat]').forEach((b) => (b.onclick = () => { PST.cat = b.dataset.pcat; play('click'); patchDesigner(); }));
+    dlg.querySelectorAll('[data-col]').forEach((b) => (b.onclick = () => { PST.col[ck] = b.dataset.col; play('click'); patchDesigner(); }));
+    dlg.querySelectorAll('[data-pt]').forEach((b) => (b.onclick = () => {
+      if (b.dataset.pt === 'del' && PST.sel >= 0) { list.splice(PST.sel, 1); PST.sel = -1; }
+      if (b.dataset.pt === 'undo') PST = patchState(PST);
+      play('click'); patchDesigner();
+    }));
+  }
+  function ironOn(cost) {
+    if (G.money < cost) return;
+    G.money -= cost;
+    if (cost) G.glad?.(4, '', 'nytt', 10);
+    G.save();
+    setLook({ ...A.avatar.look, ...PST.col, patches: patchList() });
+    cancelAnimationFrame(panim); PST = null; closeModal(); play(cost ? 'buy' : 'ok');
+    toast(cost ? $t`✨ Märkena sitter fast! De kostade ${fmt(cost)}.` : $t('✨ Klart – så här ser du ut nu.'), 'good');
+    say(pickOf([$t('SNYGGA MÄRKEN! DE SITTER FAST NU.'), $t('VAD FINT! HELT DIN EGEN STIL.'), $t('WOW, DE BLEV JÄTTEFINA!')]), keeper.x, keeper.y - 40);
+  }
+
+  // ---------- mobilskalen: välj skal och mobilband, sätt berlocker som du drar dit (som Dream Lands designverktyg) ----------
+  // Priset = skalet + bandet + varje berlock. Mobilen syns i figurens hand när man står still (look.mobil).
+  const PH = { case: 'lila', strap: 'parlor', charms: [], sel: -1, cat: 'best' };
+  const DIRM = { i: 0, user: false }, PMAXC = 10, PHART = new Map();
+  let manim = 0;
+  const phonePrice = () => (CASES.find((c) => c[0] === PH.case)?.[2] || 0) + (STRAPS.find((q) => q[0] === PH.strap)?.[2] || 0) + PH.charms.reduce((sum, e) => sum + (CHARM_BY[e.id]?.price || 0), 0);
+  const hexC = (c) => (c == null ? null : '#' + c.toString(16).padStart(6, '0'));
+  const phoneLook = () => ({ mobil: [hexC(CASES.find((c) => c[0] === PH.case)[3]), PH.charms[0] ? charmColor(PH.charms[0].id) : null, PH.charms[1] ? charmColor(PH.charms[1].id) : null, hexC(STRAPS.find((q) => q[0] === PH.strap)[3])] });
+  const phoneKey = (sel) => JSON.stringify([sel.case, sel.strap, (sel.charms || []).map((e) => [e.id, Math.round(e.u * 100), Math.round(e.v * 100)])]);   // samma skal = gratis att ta fram igen
+  function phoneArt() { const k = PH.case + '|' + PH.strap; if (!PHART.has(k)) PHART.set(k, drawPhone(PH)); return PHART.get(k); }
+  function phoneDesigner() {
+    const total = phonePrice(), mine = store.list().filter((d) => d.kind === 'phone'), key = phoneKey(PH), same = mine.find((d) => phoneKey(d.sel) === key);
+    const withLook = () => ({ ...A.avatar.look, ...phoneLook() });
+    const chip = (attr, v, label, pr, on, dot) => `<button type="button" class="btn btn-small${on ? ' btn-gold' : ''}" data-${attr}="${v}">${dot ? `<i style="background:${dot}"></i>` : ''}${esc(label)}${pr != null ? `<small>${esc(priceTag(pr))}</small>` : ''}</button>`;
+    const dlg = openModal($t('📱 Designa ditt mobilskal'), `<div class="bl-design">${stageHtml($t('Med mobilen'))}
+      <div class="bl-show"><div class="dl-canvas dl-phone"></div>
+        <div class="dl-tools"><button type="button" class="btn btn-small" data-mt="del"${PH.sel < 0 ? ' disabled' : ''}>${esc($t('🗑 Ta bort berlocken'))}</button><button type="button" class="btn btn-small" data-mt="clr"${PH.charms.length ? '' : ' disabled'}>${esc($t('🧹 Ta bort alla'))}</button><span class="bl-sp">${esc($t`${PH.charms.length} av ${PMAXC} berlocker`)}</span></div>
+        <div class="bl-sum"><span>${esc($t('Kostar'))}</span><b>${fmt(total)}</b><span class="bl-sp">${esc($t`Du har ${fmt(G.money)}`)}</span></div></div>
+      <div class="bl-pick">
+        <div class="bl-grp"><div class="bl-lbl">${esc($t('Skal'))}</div><div class="bl-opts">${CASES.map(([id, name, pr, c]) => chip('case', id, name, pr, PH.case === id, hexC(c))).join('')}</div></div>
+        <div class="bl-grp"><div class="bl-lbl">${esc($t('Mobilband'))}</div><div class="bl-opts">${STRAPS.map(([id, name, pr]) => chip('strap', id, name, pr, PH.strap === id)).join('')}</div></div>
+        <div class="bl-grp"><div class="bl-lbl">${esc($t('Berlocker'))}</div><p class="bl-sp dl-tip">${esc($t('Tryck på en berlock så hamnar den på skalet – dra den dit du vill ha den.'))}</p>
+        <div class="dl-cats">${CHARM_CATS.map((c) => `<button type="button" class="btn btn-small${PH.cat === c.id ? ' btn-gold' : ''}" data-mcat="${c.id}">${esc(c.label)}</button>`).join('')}</div>
+        <div class="dl-grid">${CHARMS.filter((q) => q.cats.includes(PH.cat)).map((q) => `<button type="button" class="dl-patch" data-charm="${q.id}" title="${esc(q.name)}"><i></i><b>${esc(q.name)}</b><small>${fmt(q.price)}</small></button>`).join('')}</div></div>
+        ${mine.length ? `<div class="bl-lbl">${esc($t('Dina mobilskal'))}</div><div class="bl-mine">${mine.map((d, i) => `<button type="button" class="btn btn-small" data-mine="${i}">📱 ${esc(designNamn(d))}</button>`).join('')}</div>` : ''}</div></div>`,
+      [same ? { label: $t('Ta fram den – den är din'), cls: 'btn-go', onClick: () => { setLook({ ...A.avatar.look, ...same.look }); cancelAnimationFrame(manim); closeModal(); play('ok'); toast($t`📱 Du har ${designNamn(same)} i handen.`, 'good'); } }
+        : { label: G.money >= total ? $t`Köp för ${fmt(total)}` : $t`Du behöver ${fmt(total - G.money)} till`, cls: 'btn-go', disabled: G.money < total, onClick: () => buyPhone(total) },
+       { label: $t('Stäng'), onClick: () => { cancelAnimationFrame(manim); closeModal(); } }]);
+    dlg.classList.add('bl-wide');
+    stage(dlg, withLook, DIRM);
+    dlg.querySelectorAll('[data-charm]').forEach((el) => el.querySelector('i').append(bigCss(charmImg(el.dataset.charm), 3)));
+    const art = phoneArt(), K = 3, host = dlg.querySelector('.dl-phone'), cv = document.createElement('canvas'); cv.width = 80 * K; cv.height = 136 * K; host.append(cv);
+    const g = cv.getContext('2d'); g.imageSmoothingEnabled = false;
+    const [zx0, zy0, zx1, zy1] = art.zone, zw = zx1 - zx0, zh = zy1 - zy0;
+    const posOf = (e) => { const img = charmImg(e.id); return { img, w: img.width, h: img.height, x: zx0 + e.u * zw - img.width / 2, y: zy0 + e.v * zh - img.height / 2 }; };
+    const loop = (now) => {
+      g.drawImage(art.canvas, 0, 0, cv.width, cv.height);
+      PH.charms.forEach((e, i) => {
+        const q = posOf(e), X = Math.round(q.x) * K, Y = Math.round(q.y) * K;
+        g.drawImage(q.img, X, Y, q.w * K, q.h * K);
+        if (CHARM_BY[e.id]?.gem) { const ph = (now / 450 + i * 0.7) % 3; if (ph < 0.5) { const r = Math.sin((ph / 0.5) * Math.PI) * 6, sx = X + q.w * K * 0.3, sy = Y + q.h * K * 0.3; g.fillStyle = '#ffffff'; g.fillRect(sx - r, sy - 1, r * 2, 3); g.fillRect(sx - 1, sy - r, 3, r * 2); } }
+        if (i === PH.sel) { g.strokeStyle = Math.floor(now / 350) % 2 ? '#ffffff' : '#f07ab0'; g.lineWidth = 2; g.setLineDash([6, 4]); g.strokeRect(X - 4, Y - 4, q.w * K + 8, q.h * K + 8); g.setLineDash([]); }
+      });
+      if (dlg.isConnected) manim = requestAnimationFrame(loop);
+    };
+    cancelAnimationFrame(manim); manim = requestAnimationFrame(loop);
+    let drag = null;
+    const artXY = (ev) => { const r = cv.getBoundingClientRect(); return [((ev.clientX - r.left) * 80) / r.width, ((ev.clientY - r.top) * 136) / r.height]; };
+    cv.addEventListener('pointerdown', (ev) => {
+      const [x, y] = artXY(ev); let hit = -1;
+      for (let i = PH.charms.length - 1; i >= 0; i--) { const q = posOf(PH.charms[i]); if (x >= q.x - 1 && x <= q.x + q.w + 1 && y >= q.y - 1 && y <= q.y + q.h + 1) { hit = i; break; } }
+      if (hit < 0) { if (PH.sel >= 0) { PH.sel = -1; phoneDesigner(); } return; }
+      ev.preventDefault(); try { cv.setPointerCapture(ev.pointerId); } catch { /* ok */ }
+      const q = posOf(PH.charms[hit]); drag = { i: hit, dx: x - (q.x + q.w / 2), dy: y - (q.y + q.h / 2) }; PH.sel = hit;
+    });
+    cv.addEventListener('pointermove', (ev) => { if (!drag) return; const [x, y] = artXY(ev), e = PH.charms[drag.i]; e.u = clamp01((x - drag.dx - zx0) / zw); e.v = clamp01((y - drag.dy - zy0) / zh); });
+    const end = () => { if (!drag) return; drag = null; phoneDesigner(); };
+    cv.addEventListener('pointerup', end); cv.addEventListener('pointercancel', end);
+    dlg.querySelectorAll('[data-charm]').forEach((b) => (b.onclick = () => {
+      if (PH.charms.length >= PMAXC) { toast($t`Det får plats ${PMAXC} berlocker på skalet. Ta bort en först.`, 'bad'); play('fel'); return; }
+      const k = PH.charms.length;
+      PH.charms.push({ id: b.dataset.charm, u: clamp01(0.3 + (k % 3) * 0.25 + (Math.random() - 0.5) * 0.06), v: clamp01(0.32 + Math.floor(k / 3) * 0.2 + (Math.random() - 0.5) * 0.06) });
+      PH.sel = PH.charms.length - 1; play('click'); phoneDesigner();
+    }));
+    dlg.querySelectorAll('[data-case]').forEach((b) => (b.onclick = () => { PH.case = b.dataset.case; play('click'); phoneDesigner(); }));
+    dlg.querySelectorAll('[data-strap]').forEach((b) => (b.onclick = () => { PH.strap = b.dataset.strap; play('click'); phoneDesigner(); }));
+    dlg.querySelectorAll('[data-mcat]').forEach((b) => (b.onclick = () => { PH.cat = b.dataset.mcat; play('click'); phoneDesigner(); }));
+    dlg.querySelectorAll('[data-mt]').forEach((b) => (b.onclick = () => { if (b.dataset.mt === 'del' && PH.sel >= 0) PH.charms.splice(PH.sel, 1); if (b.dataset.mt === 'clr') PH.charms = []; PH.sel = -1; play('click'); phoneDesigner(); }));
+    dlg.querySelectorAll('[data-mine]').forEach((b) => (b.onclick = () => { const d = mine[+b.dataset.mine]; Object.assign(PH, { case: d.sel.case, strap: d.sel.strap, charms: d.sel.charms.map((e) => ({ ...e })), sel: -1 }); play('click'); phoneDesigner(); }));
+  }
+  function buyPhone(total) {
+    if (G.money < total) return;
+    G.money -= total;
+    G.glad?.(4, '', 'nytt', 10);
+    const look = phoneLook(), d = { kind: 'phone', sel: { case: PH.case, strap: PH.strap, charms: PH.charms.map((e) => ({ id: e.id, u: e.u, v: e.v })) }, look, price: total };
+    store.add(d);                                                         // (sparar spelet)
+    setLook({ ...A.avatar.look, ...look });
+    cancelAnimationFrame(manim); closeModal(); play('buy');
+    toast($t('📱 Ditt mobilskal är klart! Du har mobilen i handen.'), 'good');
+    say(pickOf([$t('VILKET SNYGGT MOBILSKAL!'), $t('SÅ GULLIGA BERLOCKER!'), $t('HELT DIN EGEN STIL!')]), keeper.x, keeper.y - 40);
   }
 
   const spotAt = (x, y) => Object.entries(SP).find(([, s]) => x >= s.r[0] && x <= s.r[2] && y >= s.r[1] && y <= s.r[3]);
   return {
+    viewMax: { w: RW, h: H },   // (main.js: en bred skärm får se upp till hela butiken)
     get worldX() { return me.x; }, get worldY() { return me.y; },   // (telefonen: bilden följer figuren i höjdled – ateljébordet står längst ner)
-    enter() { me.x = 192; me.y = 100; me.dir = 'down'; me.path = []; say($t('VÄLKOMMEN TILL BLING BLING!'), keeper.x, keeper.y - 40); },
-    exit() { cancelAnimationFrame(anim); },
+    enter() { me.x = 192; me.y = 100; me.dir = 'down'; me.path = []; camX = camTarget(); say($t('VÄLKOMMEN TILL BLING BLING!'), keeper.x, keeper.y - 40); },
+    exit() { cancelAnimationFrame(anim); cancelAnimationFrame(banim); cancelAnimationFrame(panim); cancelAnimationFrame(manim); },
     update(dt) {
       t += dt;
       if (step(me, dt, 58) && me.then) { const f = me.then; me.then = null; f(); }
+      const tc = camTarget(); camX += (tc - camX) * Math.min(1, dt * 5); if (Math.abs(tc - camX) < 0.3) camX = tc;
       for (const n of folk) {
         if (n.path.length) { step(n, dt, 30); continue; }
         n.t -= dt;
@@ -567,10 +926,11 @@ export function makeShopBling(A) {
       }
     },
     draw(ctx) {
-      ctx.setTransform(A.pxs, 0, 0, A.pxs, 0, 0); ctx.imageSmoothingEnabled = false;
+      const cx0 = cam(), VW = vw();
+      ctx.setTransform(A.pxs, 0, 0, A.pxs, -cx0 * A.pxs, 0); ctx.imageSmoothingEnabled = false;
       ctx.drawImage(bg, 0, 0);
       // kristallkronorna i taket
-      for (const cx of [112, 272]) {
+      for (const cx of [112, 272, 480]) {
         ctx.fillStyle = '#b9862a'; ctx.fillRect(cx, 7, 1, 8); ctx.fillStyle = '#e8b84a'; ctx.fillRect(cx - 9, 15, 19, 2); ctx.fillRect(cx - 6, 17, 13, 2);
         for (let k = -8; k <= 8; k += 4) { const on = Math.sin(t * 3 + k + cx) > 0.3; ctx.fillStyle = on ? '#ffffff' : '#bfe6f6'; ctx.fillRect(cx + k, 18, 1, 3 + (Math.abs(k) % 8 ? 1 : 2)); ctx.fillStyle = '#fff6c0'; ctx.fillRect(cx + k, 13, 1, 2); }
         ctx.fillStyle = 'rgba(255,246,208,0.12)'; ctx.fillRect(cx - 14, 20, 29, 8);
@@ -583,20 +943,21 @@ export function makeShopBling(A) {
       // gnistrorna
       for (const s of SPARK) { const v = Math.sin(t * s.sp + s.ph); if (v < 0.75) continue; const r = v > 0.93 ? 2 : 1; ctx.fillStyle = 'rgba(255,255,255,0.95)'; ctx.fillRect(Math.round(s.x) - r, Math.round(s.y), r * 2 + 1, 1); ctx.fillRect(Math.round(s.x), Math.round(s.y) - r, 1, r * 2 + 1); }
       // ateljébordens stjärnor blinkar så att man hittar dit
-      for (const k of ['neck', 'bag']) { const sp = SP[k], x = Math.round((sp.r[0] + sp.r[2]) / 2), on = Math.sin(t * 3 + x) > 0.2; ctx.fillStyle = on ? '#fff0b0' : '#e8b84a'; ctx.fillRect(x, 175 - (on ? 2 : 1), 1, on ? 5 : 3); ctx.fillRect(x - (on ? 2 : 1), 175, on ? 5 : 3, 1); }
+      for (const k of ['neck', 'bag', 'mobil']) { const sp = SP[k], x = Math.round((sp.r[0] + sp.r[2]) / 2), on = Math.sin(t * 3 + x) > 0.2; ctx.fillStyle = on ? '#fff0b0' : '#e8b84a'; ctx.fillRect(x, 175 - (on ? 2 : 1), 1, on ? 5 : 3); ctx.fillRect(x - (on ? 2 : 1), 175, on ? 5 : 3, 1); }
       // pratbubblan och hovringsetiketten
-      if (bubble && t < bubble.until) { const w = textW(SMALL, bubble.s) + 8, x = Math.max(2, Math.min(W - w - 2, Math.round(bubble.x - w / 2))), y = Math.max(2, bubble.y); ctx.fillStyle = '#17151a'; ctx.fillRect(x - 1, y - 1, w + 2, 11); ctx.fillStyle = '#ffffff'; ctx.fillRect(x, y, w, 9); ctx.fillRect(Math.round(bubble.x) - 1, y + 9, 3, 2); ctxText(ctx, SMALL, bubble.s, x + 4, y + 2, '#17151a'); }
-      if (hover) { const w = textW(SMALL, hover.label) + 6, x = Math.max(2, Math.min(W - w - 2, Math.round(hover.x - w / 2))), y = Math.max(2, Math.round(hover.y) - 14); ctx.fillStyle = '#17151a'; ctx.fillRect(x, y, w, 9); ctxText(ctx, SMALL, hover.label, x + 3, y + 2, '#ffd23f'); }
+      if (bubble && t < bubble.until) { const w = textW(SMALL, bubble.s) + 8, x = Math.max(cx0 + 2, Math.min(cx0 + VW - w - 2, Math.round(bubble.x - w / 2))), y = Math.max(2, bubble.y); ctx.fillStyle = '#17151a'; ctx.fillRect(x - 1, y - 1, w + 2, 11); ctx.fillStyle = '#ffffff'; ctx.fillRect(x, y, w, 9); ctx.fillRect(Math.round(bubble.x) - 1, y + 9, 3, 2); ctxText(ctx, SMALL, bubble.s, x + 4, y + 2, '#17151a'); }
+      if (hover) { const w = textW(SMALL, hover.label) + 6, x = Math.max(cx0 + 2, Math.min(cx0 + VW - w - 2, Math.round(hover.x - w / 2))), y = Math.max(2, Math.round(hover.y) - 14); ctx.fillStyle = '#17151a'; ctx.fillRect(x, y, w, 9); ctxText(ctx, SMALL, hover.label, x + 3, y + 2, '#ffd23f'); }
     },
-    down(x, y) {
-      const s = spotAt(x, y);
+    down(sx, y) {
+      const x = sx + cam(), s = spotAt(x, y);
       if (s) { const [, sp] = s; walkTo(sp.go[0], sp.go[1], () => { me.dir = sp.face || 'up'; sp.act(); }); return; }
       if (y > WALL + 4) walkTo(x, y);
     },
-    move(x, y) { const s = spotAt(x, y); hover = s ? { label: safeTxt(s[1].label), x, y } : null; },
+    move(sx, y) { const x = sx + cam(), s = spotAt(x, y); hover = s ? { label: safeTxt(s[1].label), x, y } : null; },
     up() {},
     key(k) { if (k === 'Escape') me.path = []; },
-    _debug: { spots: () => Object.fromEntries(Object.entries(SP).map(([k, s]) => [k, s.r])), me: () => ({ x: me.x, y: me.y }) },
+    _debug: { spots: () => Object.fromEntries(Object.entries(SP).map(([k, s]) => [k, s.r])), me: () => ({ x: me.x, y: me.y }), cam: () => cam(),
+      teleport: (x, y) => { me.x = x; me.y = y; me.path = []; me.then = null; camX = camTarget(); } },
   };
 }
 
