@@ -1,7 +1,7 @@
 {
-  "version": "0.108.0",
+  "version": "0.109.0",
   "date": "2026-10-12",
-  "title": "Vänner",
+  "title": "Presenter",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
@@ -78,6 +78,7 @@
     "js/core/people/tops.js",
     "js/core/people/util.js",
     "js/core/pixikon.js",
+    "js/core/presenter.js",
     "js/core/ravara-art.js",
     "js/core/rec.js",
     "js/core/recolor.js",

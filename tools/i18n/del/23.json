@@ -1,0 +1,137 @@
+[
+ {
+  "i": 7912,
+  "f": "js/core/mobilen.js",
+  "k": "Presenter"
+ },
+ {
+  "i": 7913,
+  "f": "js/core/notiser.js",
+  "k": "Pixelcity kan säga till när en present väntar på dig och när det händer något i Pixelstaden – som Halloween och jul."
+ },
+ {
+  "i": 7914,
+  "f": "js/core/notiser.js",
+  "k": "Högst en notis om dagen. Du kan ändra dig under ⚙ Inställningar."
+ },
+ {
+  "i": 7915,
+  "f": "js/core/presenter.js",
+  "k": "🎁 En STOR present väntar på dig! Öppna den i mobilen 📱"
+ },
+ {
+  "i": 7916,
+  "f": "js/core/presenter.js",
+  "k": "🎁 Du har fått en present! Öppna den i mobilen 📱"
+ },
+ {
+  "i": 7917,
+  "f": "js/core/presenter.js",
+  "k": "i plånboken"
+ },
+ {
+  "i": 7918,
+  "f": "js/core/presenter.js",
+  "k": "i garderoben"
+ },
+ {
+  "i": 7919,
+  "f": "js/core/presenter.js",
+  "k": "i förrådet – ställ ut den med 🛋️ Möblera hemma"
+ },
+ {
+  "i": 7920,
+  "f": "js/core/presenter.js",
+  "k": "hos djuren hemma"
+ },
+ {
+  "i": 7921,
+  "f": "js/core/presenter.js",
+  "k": "i kylskåpet"
+ },
+ {
+  "i": 7922,
+  "f": "js/core/presenter.js",
+  "k": "🎁 STOR present"
+ },
+ {
+  "i": 7923,
+  "f": "js/core/presenter.js",
+  "k": "💛 Present från {0}"
+ },
+ {
+  "i": 7924,
+  "f": "js/core/presenter.js",
+  "k": "🎁 Dagens present"
+ },
+ {
+  "i": 7925,
+  "f": "js/core/presenter.js",
+  "k": "Öppna!"
+ },
+ {
+  "i": 7926,
+  "f": "js/core/presenter.js",
+  "k": "🎁 Presenter"
+ },
+ {
+  "i": 7927,
+  "f": "js/core/presenter.js",
+  "k": "Inga presenter just nu. I morgon bitti kommer en ny! 🌅"
+ },
+ {
+  "i": 7928,
+  "f": "js/core/presenter.js",
+  "k": "⭐ Nästa present blir en STOR present!"
+ },
+ {
+  "i": 7929,
+  "f": "js/core/presenter.js",
+  "k": "⭐ Var sjunde present är en STOR present – nästa om {0} presenter."
+ },
+ {
+  "i": 7930,
+  "f": "js/core/presenter.js",
+  "k": "Tryck på paketet!"
+ },
+ {
+  "i": 7931,
+  "f": "js/core/presenter.js",
+  "k": "🎁 Öppna!"
+ },
+ {
+  "i": 7932,
+  "f": "js/core/presenter.js",
+  "k": "✨ En STOR present!"
+ },
+ {
+  "i": 7933,
+  "f": "js/core/presenter.js",
+  "k": "✨ Titta vad du fick!"
+ },
+ {
+  "i": 7934,
+  "f": "js/core/presenter.js",
+  "k": "👕 Ta på"
+ },
+ {
+  "i": 7935,
+  "f": "js/core/presenter.js",
+  "k": "✓ På dig!"
+ },
+ {
+  "i": 7936,
+  "f": "js/core/presenter.js",
+  "k": "🎁 Fler presenter"
+ },
+ {
+  "i": 7937,
+  "f": "js/core/presenter.js",
+  "k": "🎁 I dag väntar en STOR present på dig i Pixelstaden!"
+ },
+ {
+  "i": 7938,
+  "f": "js/core/presenter.js",
+  "k": "🎁 En present väntar på dig i Pixelstaden!"
+ }
+]

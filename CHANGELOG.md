@@ -10,6 +10,13 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.109.0] – 2026-10-12 – Presenter
+- 🎁 Varje dag ligger en ny present och väntar på dig, från kl. 6 på morgonen! Öppna den i mobilen: paketet skakar, locket flyger, det blir konfetti, och du ser vad du fick.
+- Det kan vara pengar, mat till kylskåpet, kläder du inte har, möbler till hemmet och saker till dina djur. Kläderna kan du ta på direkt.
+- ⭐ Var sjunde present är en STOR present med tre saker.
+- 🔔 I appen kommer en notis på morgonen när en present väntar. Det blir högst en notis om dagen.
+- Missar du en dag ligger presenten kvar. Upp till tre presenter kan vänta på dig.
+
 ## [0.108.0] – 2026-10-12 – Vänner
 - 💛 Nu kan man bli vänner! Öppna 👥 Kompisar i mobilen och tryck 💛 Bli vänner vid någon som är i Pixelstaden. Säger hen ja är ni vänner.
 - 💛 Vänner är en ny app i mobilen. Där ser du alla dina vänner, vem som är i stan just nu (med 🚶 Gå dit och 🚗 Åk hem till) och när de var inne senast. Siffran på appen visar hur många vänner som är i stan.

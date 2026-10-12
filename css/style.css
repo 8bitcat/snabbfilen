@@ -740,3 +740,25 @@ html.desk-mobil .bl-opts .btn small, html.desk-mobil .bl-fig small, html.desk-mo
 html.desk-mobil .dl-patch small, html.desk-mobil .dl-bead small { font-size: var(--f15); }   /* (namnen behåller --f1 – större bröt orden mitt itu) */
 @media (max-height: 520px) { .bl-list { display: none; } .bl-sum b { font-size: var(--f2); } .bl-canvas canvas, .dl-canvas canvas { max-height: 30vh; } .dl-tip { display: none; } .bl-stage { padding-top: 6px; } .bl-arrow { padding-bottom: 24px; } .bl-show .dl-phone canvas { max-height: 50vh; } }
 @container (max-width: 760px) { .bl-design { grid-template-columns: auto minmax(0, 1fr); } .bl-show { grid-column: 1; position: static; } .bl-pick { grid-column: 2; grid-row: 1 / span 2; } .bl-canvas canvas { max-height: 24vh; } }
+
+/* 🎁 presenterna (js/core/presenter.js) */
+.pr-lista { display: flex; flex-direction: column; gap: 6px; }
+.pr-rad { display: flex; align-items: center; gap: 10px; padding: 6px 8px; border: 3px solid var(--ink); background: #fff; box-shadow: 2px 2px 0 var(--ink); }
+.pr-rad.pr-stor { background: #fff6d6; border-color: #b9862a; }
+.pr-rad .nm { flex: 1; font-size: var(--f2); }
+.pr-ik canvas { display: block; width: 48px !important; height: 45px !important; image-rendering: pixelated; }
+.pr-dlg { width: min(560px, 100%); }
+.pr-scen { display: flex; flex-direction: column; align-items: center; gap: 4px; background: radial-gradient(#fff8e6, #f3e3c4); border: 3px solid var(--ink); padding: 6px; }
+.pr-cv { width: 256px; max-width: 100%; height: auto; image-rendering: pixelated; cursor: pointer; }
+.pr-tips { margin: 0; font: var(--f3) var(--head); }
+.pr-gavor { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 8px; }
+.pr-gava { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 120px; max-width: 200px; padding: 8px; background: #fff; border: 3px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); text-align: center; }
+.pr-gava b { font-size: var(--f2); }
+.pr-gava small { font-size: var(--f1); opacity: .75; }
+.pr-bild { min-height: 64px; display: flex; align-items: center; justify-content: center; }
+.pr-bild canvas { image-rendering: pixelated; }
+.pr-emoji { font-size: 48px; line-height: 1; }
+html.desk-mobil .pr-gava small { font-size: var(--f15); }
+.pr-scen.pr-klar .pr-cv { width: 128px; }
+.pr-scen.pr-klar .pr-tips { font-size: var(--f2); }
+@media (max-height: 520px) { .pr-cv { width: 180px; } .pr-scen.pr-klar .pr-cv { width: 96px; } }

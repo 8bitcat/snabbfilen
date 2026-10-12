@@ -59,6 +59,7 @@ import { kbkPushInne, kbkPushRegistrera } from './net/kbkpush.js'; // ⚽ KBK: p
 import { vanFraga, vanAppInit } from './core/vannerapp.js'; // 💛 vänner: förfrågan och appen i mobilen (Carl 2026-10-12)
 import { arVan } from './net/vanner.js';
 import { vanPushStart } from './net/vanpush.js'; // 💛 pushnotis till vännernas telefoner när man hoppar in
+import { startPresenter } from './core/presenter.js'; // 🎁 en present om dagen + morgonnotiserna (Carl 2026-10-12)
 import { mountMobilen } from './core/mobilen.js'; // 📱 knapparna samlade i figurens mobil
 import { musicTick } from './core/music.js';
 import { recTick } from './core/rec.js';
@@ -771,6 +772,7 @@ function boot() {
     startWorld(A); // den öppna världen: koppla upp tyst i bakgrunden
     startNotiser(A); // 🔔 appen: lägg om notiserna, fråga en gång efter första dagen
     vanAppInit(A); // 💛 vänförfrågningar kan komma så fort man är i världen
+    startPresenter(A); // 🎁 dagens present (och morgonnotiserna i appen)
     setTimeout(() => { kbkPushInne(A); kbkPushRegistrera(A); vanPushStart(A); }, 4000); // ⚽ KBK-laget och 💛 vännerna får en notis, telefonen registreras
     if (firstRun) {
       openModal($t('🌆 Välkommen till Pixelstaden!'), `<div class="who">${''}<div>

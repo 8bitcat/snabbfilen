@@ -23,6 +23,9 @@ const ls = {
   get() { try { return localStorage.getItem(NYCKEL); } catch { return null; } },
   set(v) { try { localStorage.setItem(NYCKEL, v); } catch { /* ok */ } },
 };
+// fler notiser utöver HANDELSER (presenternas morgonnotiser, js/core/presenter.js): (nu) → [{ id 100–199, title, body, schedule }]
+let extra = () => [];
+export const setExtraNotiser = (fn) => { extra = typeof fn === 'function' ? fn : () => []; };
 const plugin = () => {
   const C = window.Capacitor;
   return C?.isNativePlatform?.() ? C.Plugins?.LocalNotifications || null : null;
@@ -62,6 +65,7 @@ export async function planera(nu = new Date()) {
     const [month, day] = h.datum.split('-').map(Number);
     return { id: BAS + h.id, title: h.titel, body: h.text, schedule: { on: { month, day, hour: h.kl ?? 17, minute: 0 } } };
   });
+  try { for (const n of extra(nu) || []) if (n && +n.id >= 100 && +n.id < 200) lista.push({ ...n, id: BAS + +n.id }); } catch { /* ok */ }
   if (!lista.length) return 0;
   try { await P.schedule({ notifications: lista }); return lista.length; } catch { return 0; }
 }
@@ -101,7 +105,7 @@ export function startNotiser(A) {
     if (ls.get()) { clearInterval(koll); return; }
     if ((A.game?.day | 0) < 2 || modalOpen() || A.attract || !/^(room|city)$/.test(A.sceneName || '')) return;
     clearInterval(koll);
-    openModal($t('🔔 Vill du få notiser?'), `<p style="font-size:var(--f2);margin-top:0">${$t('Pixelcity kan säga till när det händer något i Pixelstaden – som när det blir Halloween eller jul.')}</p><p style="font-size:var(--f2)">${$t('Det blir bara några gånger om året. Du kan ändra dig under ⚙ Inställningar.')}</p>`, [
+    openModal($t('🔔 Vill du få notiser?'), `<p style="font-size:var(--f2);margin-top:0">${$t('Pixelcity kan säga till när en present väntar på dig och när det händer något i Pixelstaden – som Halloween och jul.')}</p><p style="font-size:var(--f2)">${$t('Högst en notis om dagen. Du kan ändra dig under ⚙ Inställningar.')}</p>`, [
       { label: $t('Nej tack'), onClick: () => { ls.set('av'); closeModal(); } },
       { label: $t('🔔 Ja tack'), cls: 'btn-go', onClick: async () => { closeModal(); if (await slaPa()) toast($t('🔔 Notiserna är på!'), 'good'); } },
     ], { closable: false });

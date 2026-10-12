@@ -747,6 +747,9 @@ export class Game {
     this.earned = 0;                      // totalt intjänat
     this.wardrobe = [];                   // köpta plagg: katalog-id (+ gamla 'kind:v' som alias, se wardrobeKeys)
     this.designs = [];                    // 💎 egna halsband och väskor från BLING BLING-ateljén (shop-bling.js), högst 40
+    // 🎁 presenterna (js/core/presenter.js): dag = senaste dagen (YYYY-MM-DD) en dagspresent kom, antal = öppnade
+    // dagspresenter (var sjunde är stor), ko = presenterna som väntar [{ typ: 'dag'|'stor'|'van', fran?, gavor? }]
+    this.presenter = { dag: '', antal: 0, ko: [] };
     this.storage = [];                    // möbler i förrådet, { k, v, c?, r?, fx? } (c = egen färg '#rrggbb', r = rotation 0–3)
     this.deco = {};                       // placerade möbler per rum: "hem:sub" -> [{ k, v, c?, x, y, r?, fx? }]
     this.gadgets = [];                    // prylar från elektronikbutiken (GADGETS-id), t.ex. ['fon12']
@@ -912,6 +915,14 @@ export class Game {
             look: Object.fromEntries(Object.entries(d.look || {}).filter(([k, v]) => ['neck', 'neckColor', 'bag', 'bagColor'].includes(k) && typeof v === 'string' && v.length < 24)),
           };
         };
+        // 🎁 presenterna: bara kända typer, högst 10 i kön (vänskapspresenternas gåvor tvättas av presenter.js när de öppnas)
+        { const P = p.presenter && typeof p.presenter === 'object' ? p.presenter : {};
+          g.presenter = {
+            dag: /^\d{4}-\d{2}-\d{2}$/.test(String(P.dag || '')) ? String(P.dag) : '',
+            antal: Math.max(0, Math.min(100000, Math.round(+P.antal || 0))),
+            ko: (Array.isArray(P.ko) ? P.ko : []).filter((x) => x && ['dag', 'stor', 'van'].includes(x.typ)).slice(-10)
+              .map((x) => ({ typ: x.typ, ...(typeof x.fran === 'string' ? { fran: x.fran.slice(0, 16) } : {}), ...(Array.isArray(x.gavor) ? { gavor: x.gavor.slice(0, 3) } : {}), ...(typeof x.id === 'string' ? { id: x.id.slice(0, 24) } : {}) })),
+          }; }
         g.designs = (Array.isArray(p.designs) ? p.designs : []).filter((d) => d && ['neck', 'bag', 'beads', 'phone'].includes(d.kind) && d.sel && typeof d.sel === 'object').slice(-40).map(cleanDesign).filter(Boolean);
         keep.storage = (Array.isArray(p.storage) ? p.storage : []).filter((it) => it && typeof it === 'object' && !knownKind(it.k));
         const knownFurn = (d) => d && typeof d === 'object' && knownKind(d.k);
