@@ -24,6 +24,7 @@ import { petStore } from '../pets/sim.js';
 import { HANDELSER } from './notiser.js';   // (dagar med en egen händelse får ingen presentnotis)
 import { Pix, mix, mul, hash } from './floor-pix.js';
 import { setExtraNotiser, planera, notiserFinns, notiserPa, slaPa, fragaNotiser } from './notiser.js';
+import { draKort, draPaket, kortById, laggTill, kortBild, SERIE_PRIS } from './pixelkort.js';   // 🃏 pixelkorten
 
 const STOR_VAR = 7, MAX_DAG = 3, NY_DAG_KL = 6;
 const nu = () => (typeof window !== 'undefined' && window.__presentNu) || Date.now();
@@ -86,9 +87,12 @@ const pengar = (min, max) => ({ slag: 'pengar', n: runda(min + Math.random() * (
 const mat = () => { const f = rnd(FOOD.filter((x) => x.id !== 'nudlar')); return { slag: 'mat', id: f.id, n: f.price >= 60 ? 1 : 2 }; };
 // 🏆 en pokal (Carl: "du kan också ge dem pokaler att ha hemma") – brons oftast, guld sällan
 const pokal = () => ({ slag: 'mobel', k: 'pokal', v: Math.random() < 0.2 ? 0 : Math.random() < 0.5 ? 1 : 2 });
+// 🃏 ett kortpaket (tre kort, dragna redan nu så att bilden visar rätt kort) och ett enstaka kort
+const kortpaket = () => ({ slag: 'kortpaket', ids: draPaket(3) });
 export function rulla(G, typ) {
-  if (typ === 'stor') return [pengar(300, 600), plagg(G, 900, 150) || pengar(200, 300), Math.random() < 0.35 ? pokal() : mobel(1200, 300) || pengar(200, 300)];
+  if (typ === 'stor') return [pengar(300, 600), plagg(G, 900, 150) || kortpaket(), Math.random() < 0.35 ? pokal() : mobel(1200, 300) || pengar(200, 300), ...(Math.random() < 0.5 ? [kortpaket()] : [])];
   if (Math.random() < 0.05) return [{ slag: 'mobel', k: 'pokal', v: 2 }];
+  if (Math.random() < 0.15) return [{ slag: 'kort', id: draKort() }];
   const slag = rnd(['pengar', 'pengar', 'plagg', 'plagg', 'mat', 'mobel', ...(harDjur() ? ['djur', 'djur'] : [])]);
   const g = slag === 'plagg' ? plagg(G, 250) : slag === 'mobel' ? mobel(400) : slag === 'djur' ? djursak(200) : slag === 'mat' ? mat() : null;
   return [g || pengar(40, 150)];
@@ -101,6 +105,8 @@ function giltig(g) {
   if (g.slag === 'mobel') return !!katalogOf(g.k);
   if (g.slag === 'djur') return !!PET_ITEMS[g.k];
   if (g.slag === 'mat') return !!FOOD.find((f) => f.id === g.id) && +g.n > 0 && +g.n <= 10;
+  if (g.slag === 'kort') return !!kortById(g.id);
+  if (g.slag === 'kortpaket') return Array.isArray(g.ids) && g.ids.length > 0 && g.ids.length <= 5 && g.ids.every((id) => kortById(id));
   return false;
 }
 function ge(A, g) {
@@ -110,6 +116,10 @@ function ge(A, g) {
   else if (g.slag === 'mobel') G.storage.push({ k: g.k, v: g.v | 0 });
   else if (g.slag === 'djur') { try { petStore().buyItem(g.k); } catch { /* ok */ } }
   else if (g.slag === 'mat') G.fridge[g.id] = (G.fridge[g.id] || 0) + (g.n | 0);
+  else if (g.slag === 'kort' || g.slag === 'kortpaket') {
+    const klara = laggTill(G, g.slag === 'kort' ? [g.id] : g.ids);
+    for (const s of klara) setTimeout(() => toast($t`🃏 Serien ${s.namn} är komplett! Du får ${fmt(SERIE_PRIS)} och en guldpokal.`, 'good'), 1800);
+  }
 }
 function gavaNamn(g) {
   if (g.slag === 'pengar') return fmt(g.n);
@@ -117,9 +127,11 @@ function gavaNamn(g) {
   if (g.slag === 'mobel') return katalogOf(g.k)?.name || '';
   if (g.slag === 'djur') return PET_ITEMS[g.k]?.namn || '';
   if (g.slag === 'mat') return `${g.n > 1 ? g.n + ' × ' : ''}${FOOD.find((f) => f.id === g.id)?.name || ''}`;
+  if (g.slag === 'kort') return $t`Pixelkort: ${kortById(g.id)?.namn || ''}`;
+  if (g.slag === 'kortpaket') return $t`Kortpaket: ${g.ids.map((id) => kortById(id)?.namn || '').join(', ')}`;
   return '';
 }
-const gavaVart = (g) => (g.slag === 'pengar' ? $t('i plånboken') : g.slag === 'plagg' ? $t('i garderoben') : g.slag === 'mobel' ? $t('i förrådet – ställ ut den med 🛋️ Möblera hemma') : g.slag === 'djur' ? $t('hos djuren hemma') : $t('i kylskåpet'));
+const gavaVart = (g) => (g.slag === 'kort' || g.slag === 'kortpaket' ? $t('i albumet – appen 🃏 Pixelkort') : g.slag === 'pengar' ? $t('i plånboken') : g.slag === 'plagg' ? $t('i garderoben') : g.slag === 'mobel' ? $t('i förrådet – ställ ut den med 🛋️ Möblera hemma') : g.slag === 'djur' ? $t('hos djuren hemma') : $t('i kylskåpet'));
 
 // ---------- bilderna ----------
 // paketet (pixel för pixel): stor = guld med rött band och stjärnor, liten = rött med guldband och prickar
@@ -168,6 +180,12 @@ async function gavaBild(A, g) {
       const { furnArt } = await import('../scenes/room.js');
       const a = furnArt(g.k, g.v);
       if (a) { const c = document.createElement('canvas'); c.width = a.sw; c.height = a.sh; const x = c.getContext('2d'); x.imageSmoothingEnabled = false; x.drawImage(a.img, a.sx, a.sy, a.sw, a.sh, 0, 0, a.sw, a.sh); return stor(c, Math.max(1, Math.min(4, Math.floor(72 / Math.max(a.sw, a.sh))))); }
+    }
+    if (g.slag === 'kort' || g.slag === 'kortpaket') {
+      const ids = g.slag === 'kort' ? [g.id] : g.ids, c = document.createElement('canvas'); c.width = ids.length * 34 - 2; c.height = 44;
+      const x = c.getContext('2d'); x.imageSmoothingEnabled = false;
+      for (const [i, id] of ids.entries()) x.drawImage(await kortBild(id), i * 34, 0);
+      return stor(c, ids.length > 1 ? 2 : 3);
     }
     if (g.slag === 'djur') { const { drawItemIcon } = await import('../pets/items.js'); const c = document.createElement('canvas'); c.width = 40; c.height = 40; const x = c.getContext('2d'); x.imageSmoothingEnabled = false; drawItemIcon(x, g.k, 2, 2, 1); return stor(c, 2); }
   } catch { /* faller tillbaka på symbolen */ }

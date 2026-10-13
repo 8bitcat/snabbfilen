@@ -762,3 +762,12 @@ html.desk-mobil .pr-gava small { font-size: var(--f15); }
 .pr-scen.pr-klar .pr-cv { width: 128px; }
 .pr-scen.pr-klar .pr-tips { font-size: var(--f2); }
 @media (max-height: 520px) { .pr-cv { width: 180px; } .pr-scen.pr-klar .pr-cv { width: 96px; } }
+/* 🃏 pixelkortsalbumet (js/core/kortapp.js) */
+.kt-flikar { display: flex; flex-wrap: wrap; gap: 4px; }
+.kt-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(68px, 1fr)); gap: 8px; }
+.kt-ruta { position: relative; display: flex; justify-content: center; cursor: pointer; }
+.kt-ruta.kt-saknas { cursor: default; opacity: .55; }
+.kt-cv { width: 64px; height: 88px; image-rendering: pixelated; }
+.kt-antal { position: absolute; right: 2px; bottom: 2px; background: var(--ink); color: #fff; font-size: var(--f1); padding: 0 4px; }
+.kt-stor { display: flex; justify-content: center; }
+.kt-storcv { width: 160px; height: 220px; image-rendering: pixelated; }

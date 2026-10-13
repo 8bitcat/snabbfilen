@@ -25,13 +25,15 @@ import { openJobben, visaHem } from './jobben.js';   // 💼 jobben och 🏠 vä
 import { guidePeka } from './startguide.js';
 import { openKbkApp, kbkAppSyns, lagInne } from './kbklag.js';   // ⚽ KBK-appen (Carl 2026-10-11)
 import { openVannerApp, vanInneAntal } from './vannerapp.js';   // 💛 Vänner (Carl 2026-10-12)
-import { openPresenter, presenterVantar } from './presenter.js';   // 🎁 presenterna (Carl 2026-10-12)
+import { openPresenter, presenterVantar } from './presenter.js';
+import { openKortApp } from './kortapp.js';   // 🃏 pixelkortsalbumet (Carl 2026-10-12)   // 🎁 presenterna (Carl 2026-10-12)
 
 const APPAR = [
   { id: 'karta', src: 'hud-map', ik: 'karta', namn: $t('Karta') },
   { id: 'jobb', fn: (A) => openJobben(A), ik: 'jobb', namn: $t('Jobb') },
   { id: 'hem', fn: (A) => visaHem(A), ik: 'hem', namn: $t('Hem') },
   { id: 'presenter', fn: (A) => openPresenter(A), ik: 'present', namn: $t('Presenter') },
+  { id: 'kort', fn: (A) => openKortApp(A), ik: 'kort', namn: $t('Pixelkort') },
   { id: 'kbk', fn: (A) => openKbkApp(A), ik: 'kbk', namn: 'KBK', syns: (A) => kbkAppSyns(A?.avatar) },
   { id: 'taxi', src: 'hud-taxi', ik: 'taxi', namn: $t('Taxi') },
   { id: 'kompisar', src: 'hud-friends', ik: 'kompisar', namn: $t('Kompisar') },

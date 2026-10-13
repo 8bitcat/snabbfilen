@@ -1,7 +1,7 @@
 {
-  "version": "0.116.2",
+  "version": "0.117.0",
   "date": "2026-10-13",
-  "title": "Morgon- och kvällspresenten",
+  "title": "Pixelkort",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
@@ -50,6 +50,7 @@
     "js/core/jobben.js",
     "js/core/karriar.js",
     "js/core/kbklag.js",
+    "js/core/kortapp.js",
     "js/core/livsmal.js",
     "js/core/ljudfiler.js",
     "js/core/menu.js",
@@ -78,6 +79,7 @@
     "js/core/people/hair.js",
     "js/core/people/tops.js",
     "js/core/people/util.js",
+    "js/core/pixelkort.js",
     "js/core/pixikon.js",
     "js/core/presenter.js",
     "js/core/ravara-art.js",

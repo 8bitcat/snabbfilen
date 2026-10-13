@@ -50,7 +50,8 @@
 //   ruta och om talaren syns), tags, roam, parent och toTable.
 import { Pix, SMALL, BIG, text, textW, eachTextPixel, ctxText, mix, mul, hash, bayer } from '../core/floor-pix.js';
 import { drawPerson } from '../core/people.js';
-import { openModal, closeModal, esc } from '../core/ui.js';
+import { openModal, closeModal, esc, toast } from '../core/ui.js';
+import { PAKET_PRIS, SERIE_PRIS, draPaket, laggTill, kortBild, kortById, RARITET } from '../core/pixelkort.js';   // 🃏 kortstället vid kassan
 import { fmt } from '../game.js';
 import { play, isMuted, audioContext } from '../core/sound.js';
 import { createWalker, selfDrawable, folkDrawables, WALK_SEQ, createSpeech, sayLines } from './walkable.js';
@@ -2179,6 +2180,7 @@ export function makeShopLeksaker(A, opts = {}) {
     }
     out.push(
       { id: 'kassor', r: [cashier.x - 7, CASH_Y - 40, cashier.x + 7, CNT.top - 1], go: PAY, act: () => { talkCash.say(CASH_TIPS[Math.floor(Math.random() * CASH_TIPS.length)], cashAt, 3.8); play('click'); } },
+      { id: 'kortstall', r: [CNT.x1 - 22, CNT.top - 20, CNT.x1 - 2, CNT.top + 5], go: PAY, act: kortpaket, label: $t`PIXELKORT - 3 KORT ${PAKET_PRIS}:-` },
       { id: 'disk', r: [CNT.x0, 76, CNT.x1, CNT.y], go: PAY, act: () => { talkCash.say($t('Här är hela sortimentet! 🧸'), cashAt, 2.5); play('click'); openKat('alla'); }, label: $t('KASSAN - HELA SORTIMENTET') },
       { id: 'klambord', r: [TABLE.x0, TABLE.top - 4, TABLE.x1, TABLE.y], go: nearTableGo, act: toTableAct, label: $t('KLÄMBORDET - TESTA MIG!') },
       { id: 'skylt', r: [SIGN.x - 36, SIGN.y - 14, SIGN.x + 36, SIGN.y + 14], go: nearTableGo, act: toTableAct, label: $t('KLÄMBORDET - TESTA MIG!') },
@@ -2326,6 +2328,7 @@ export function makeShopLeksaker(A, opts = {}) {
     drawPerson(ctx, Math.round(C.x), CASH_Y, CASHIER, C.wrapT > 0 ? 'down' : C.dir, fr);
     if (C.wrapT > 0) drawGift(ctx, Math.round(C.x) - 5, CASH_Y - 22, t);
     ctx.drawImage(counter.img, counter.ox, counter.oy);
+    drawKortstall(ctx);
     // ballongerna vid diskens vänstra ände
     const bx = CNT.x0 + 3, by = CNT.top - 1;
     [[-8, 44, 0], [3, 38, 1], [10, 50, 2], [-2, 56, 3]].forEach(([dx, y, k]) => {
@@ -2335,6 +2338,43 @@ export function makeShopLeksaker(A, opts = {}) {
       const B = balloons[k];
       ctx.drawImage(B.img, bx + dx + sway - B.ox, top - B.oy + 1);
     });
+  }
+  // 🃏 kortstället: en liten pappdisplay på diskens högra ände med folieglänsande kortpaket
+  function drawKortstall(ctx) {
+    const x = CNT.x1 - 21, y = CNT.top - 18;
+    ctx.fillStyle = '#1e1a24'; ctx.fillRect(x - 1, y - 1, 20, 20);
+    ctx.fillStyle = '#3a7bd5'; ctx.fillRect(x, y, 18, 18); ctx.fillStyle = '#6aa8e8'; ctx.fillRect(x, y, 18, 1);
+    ctx.fillStyle = '#f0c040'; ctx.fillRect(x, y, 18, 5); ctxText(ctx, SMALL, $t('KORT'), x + 2, y, '#1e1a24');
+    const F = ['#e04848', '#46a35a', '#8e5bd1', '#f08a2a', '#e060b0', '#2aa39a'];
+    for (let i = 0; i < 6; i++) { const px = x + 1 + (i % 3) * 6, py = y + 6 + Math.floor(i / 3) * 6; ctx.fillStyle = F[i]; ctx.fillRect(px, py, 5, 5); const gl = (Math.floor(t * 3) + i) % 6 === 0; ctx.fillStyle = gl ? '#ffffff' : 'rgba(255,255,255,.45)'; ctx.fillRect(px + 1, py + 1, 1, gl ? 3 : 1); }
+  }
+  // köp kortpaket: 1 eller 3 paket, korten vänds upp ett i taget
+  function kortpaket() {
+    play('click');
+    talkCash.say($t('Pixelkort! Tre kort i varje paket – det kan vara ett legendariskt! ✨'), cashAt, 3);
+    openModal($t('🃏 Pixelkort'), `<p style="font-size:var(--f2);margin-top:0">${$t`Samla alla 46 korten med Pixelstadens djur, folk och saker! Tre kort i varje paket. Komplett serie = ${fmt(SERIE_PRIS)} och en guldpokal. Albumet finns i mobilen.`}</p><p style="font-size:var(--f2)">${$t`💰 Du har <b>${fmt(A.game.money)}</b>`}</p>`, [
+      { label: $t`🃏 Ett paket · ${fmt(PAKET_PRIS)}`, cls: 'btn-go', disabled: A.game.money < PAKET_PRIS, onClick: () => kopPaket(1) },
+      { label: $t`🃏 Tre paket · ${fmt(PAKET_PRIS * 3)}`, disabled: A.game.money < PAKET_PRIS * 3, onClick: () => kopPaket(3) },
+      { label: $t('Inte nu'), onClick: closeModal },
+    ]);
+  }
+  async function kopPaket(n) {
+    const g = A.game;
+    if (g.money < PAKET_PRIS * n) return;
+    g.money -= PAKET_PRIS * n;
+    const ids = draPaket(3 * n), klara = laggTill(g, ids);
+    g.save(); play('buy');
+    cashier.wrapT = 1.2;
+    const dlg = openModal(n > 1 ? $t('🃏 Tre kortpaket!') : $t('🃏 Ett kortpaket!'), `<div class="kt-grid kt-nya"></div><p class="sp" style="font-size:var(--f2);margin-bottom:0">${$t('Korten ligger i albumet – appen 🃏 Pixelkort i mobilen.')}</p>`, [{ label: $t('Härligt!'), cls: 'btn-go', onClick: closeModal }]);
+    const box = dlg.querySelector('.kt-nya');
+    for (const [i, id] of ids.entries()) {
+      const c = await kortBild(id); c.className = 'kt-cv'; const K = kortById(id);
+      const el = document.createElement('div'); el.className = 'kt-ruta'; el.title = K.namn; el.style.opacity = '0'; el.append(c);
+      const lbl = document.createElement('small'); lbl.textContent = K.namn; lbl.style.cssText = `position:absolute;bottom:-14px;left:0;right:0;text-align:center;font-size:var(--f1);color:${RARITET[K.rar].ram[2]}`; el.append(lbl);
+      box.append(el);
+      setTimeout(() => { el.style.transition = 'opacity .25s'; el.style.opacity = '1'; play(K.rar >= 2 ? 'fanfare' : 'click'); }, 300 + i * 350);
+    }
+    for (const s of klara) setTimeout(() => toast($t`🃏 Serien ${s.namn} är komplett! Du får ${fmt(SERIE_PRIS)} och en guldpokal.`, 'good'), 600 + ids.length * 350);
   }
   function drawGift(ctx, x, y) {
     ctx.fillStyle = '#b45a7e'; ctx.fillRect(x - 1, y - 1, 12, 9);

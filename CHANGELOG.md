@@ -10,6 +10,12 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.117.0] – 2026-10-13 – Pixelkort
+- 🃏 Pixelkort! Samla 46 kort med Pixelstadens katter, hundar, kaniner, folk, fordon och rariteter – vanliga, ovanliga, sällsynta och legendariska med regnbågsglans.
+- 🛒 Kortpaket (3 kort för 25 kr) finns vid kassan i leksaksaffären, och korten kommer också i presenterna.
+- 📒 Albumet finns i mobilen (appen 🃏 Pixelkort). Komplett serie = 500 kr och en guldpokal.
+- 💛 Byteshandel: skicka dina dubbletter till vänner som vänskapspresent.
+
 ## [0.116.2] – 2026-10-13 – Morgon- och kvällspresenten
 - 🌅 Två presenter om dagen! En morgonpresent från kl. 6 och en kvällspresent från kl. 18. Var sjunde är fortfarande en STOR present.
 - 🔔 Notiser kl. 7 ("God morgon! En present väntar på dig") och kl. 19 ("Kvällspresenten är redo") – inte för en present du redan har öppnat. Lördag kväll kommer lördagsfestens notis i stället.

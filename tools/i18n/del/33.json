@@ -1,0 +1,297 @@
+[
+ {
+  "i": 8250,
+  "f": "js/core/kortapp.js",
+  "k": "🃏 Pixelkort"
+ },
+ {
+  "i": 8251,
+  "f": "js/core/kortapp.js",
+  "k": "✅ komplett!"
+ },
+ {
+  "i": 8252,
+  "f": "js/core/kortapp.js",
+  "k": "komplett serie = {0} + guldpokal"
+ },
+ {
+  "i": 8253,
+  "f": "js/core/kortapp.js",
+  "k": "Totalt {0} av {1} kort. Nya kort kommer i presenterna och i kortpaket ({2}) vid kassan i leksaksaffären. Dubbletter kan du skicka till dina vänner."
+ },
+ {
+  "i": 8254,
+  "f": "js/core/kortapp.js",
+  "k": "Dubbletter kan du ge bort: 💛 Vänner → 🎁 vid vännen → välj kortet."
+ },
+ {
+  "i": 8255,
+  "f": "js/core/kortapp.js",
+  "k": "⬅️ Albumet"
+ },
+ {
+  "i": 8256,
+  "f": "js/core/mobilen.js",
+  "k": "Pixelkort"
+ },
+ {
+  "i": 8257,
+  "f": "js/core/pixelkort.js",
+  "k": "Ovanlig"
+ },
+ {
+  "i": 8258,
+  "f": "js/core/pixelkort.js",
+  "k": "Sällsynt"
+ },
+ {
+  "i": 8259,
+  "f": "js/core/pixelkort.js",
+  "k": "Legendarisk"
+ },
+ {
+  "i": 8260,
+  "f": "js/core/pixelkort.js",
+  "k": "Kaniner och frisyrer"
+ },
+ {
+  "i": 8261,
+  "f": "js/core/pixelkort.js",
+  "k": "Pixelborna"
+ },
+ {
+  "i": 8262,
+  "f": "js/core/pixelkort.js",
+  "k": "Fordon och saker"
+ },
+ {
+  "i": 8263,
+  "f": "js/core/pixelkort.js",
+  "k": "Rariteter"
+ },
+ {
+  "i": 8264,
+  "f": "js/core/pixelkort.js",
+  "k": "Tigrerad katt"
+ },
+ {
+  "i": 8265,
+  "f": "js/core/pixelkort.js",
+  "k": "Svart katt"
+ },
+ {
+  "i": 8266,
+  "f": "js/core/pixelkort.js",
+  "k": "Vit katt"
+ },
+ {
+  "i": 8267,
+  "f": "js/core/pixelkort.js",
+  "k": "Sköldpaddskatt"
+ },
+ {
+  "i": 8268,
+  "f": "js/core/pixelkort.js",
+  "k": "Smokingkatt"
+ },
+ {
+  "i": 8269,
+  "f": "js/core/pixelkort.js",
+  "k": "Blågrå katt"
+ },
+ {
+  "i": 8270,
+  "f": "js/core/pixelkort.js",
+  "k": "Vildkanin"
+ },
+ {
+  "i": 8271,
+  "f": "js/core/pixelkort.js",
+  "k": "Prickig kanin"
+ },
+ {
+  "i": 8272,
+  "f": "js/core/pixelkort.js",
+  "k": "Katt med lejonklipp"
+ },
+ {
+  "i": 8273,
+  "f": "js/core/pixelkort.js",
+  "k": "Pudel med pompoms"
+ },
+ {
+  "i": 8274,
+  "f": "js/core/pixelkort.js",
+  "k": "Rockhund med tuppkam"
+ },
+ {
+  "i": 8275,
+  "f": "js/core/pixelkort.js",
+  "k": "Tova, trimmaren"
+ },
+ {
+  "i": 8276,
+  "f": "js/core/pixelkort.js",
+  "k": "Kerstin på kattcaféet"
+ },
+ {
+  "i": 8277,
+  "f": "js/core/pixelkort.js",
+  "k": "Veterinären Vera"
+ },
+ {
+  "i": 8278,
+  "f": "js/core/pixelkort.js",
+  "k": "Ingrid på djurhemmet"
+ },
+ {
+  "i": 8279,
+  "f": "js/core/pixelkort.js",
+  "k": "Frisören Sami"
+ },
+ {
+  "i": 8280,
+  "f": "js/core/pixelkort.js",
+  "k": "Kenta i garaget"
+ },
+ {
+  "i": 8281,
+  "f": "js/core/pixelkort.js",
+  "k": "Gunilla, utställningen"
+ },
+ {
+  "i": 8282,
+  "f": "js/core/pixelkort.js",
+  "k": "DJ:n på lördagsfesten"
+ },
+ {
+  "i": 8283,
+  "f": "js/core/pixelkort.js",
+  "k": "Herrcykeln"
+ },
+ {
+  "i": 8284,
+  "f": "js/core/pixelkort.js",
+  "k": "Stadscykeln"
+ },
+ {
+  "i": 8285,
+  "f": "js/core/pixelkort.js",
+  "k": "Elsparkcykeln"
+ },
+ {
+  "i": 8286,
+  "f": "js/core/pixelkort.js",
+  "k": "Racercykeln"
+ },
+ {
+  "i": 8287,
+  "f": "js/core/pixelkort.js",
+  "k": "Moppen"
+ },
+ {
+  "i": 8288,
+  "f": "js/core/pixelkort.js",
+  "k": "Pumplyktan"
+ },
+ {
+  "i": 8289,
+  "f": "js/core/pixelkort.js",
+  "k": "Bronspokalen"
+ },
+ {
+  "i": 8290,
+  "f": "js/core/pixelkort.js",
+  "k": "Silverpokalen"
+ },
+ {
+  "i": 8291,
+  "f": "js/core/pixelkort.js",
+  "k": "Guldpokalen"
+ },
+ {
+  "i": 8292,
+  "f": "js/core/pixelkort.js",
+  "k": "Best in Show"
+ },
+ {
+  "i": 8293,
+  "f": "js/core/pixelkort.js",
+  "k": "Delfinen vid piren"
+ },
+ {
+  "i": 8294,
+  "f": "js/core/pixelkort.js",
+  "k": "Guldstatyn"
+ },
+ {
+  "i": 8295,
+  "f": "js/core/presenter.js",
+  "k": "🃏 Serien {0} är komplett! Du får {1} och en guldpokal."
+ },
+ {
+  "i": 8296,
+  "f": "js/core/presenter.js",
+  "k": "Pixelkort: {0}"
+ },
+ {
+  "i": 8297,
+  "f": "js/core/presenter.js",
+  "k": "Kortpaket: {0}"
+ },
+ {
+  "i": 8298,
+  "f": "js/core/presenter.js",
+  "k": "i albumet – appen 🃏 Pixelkort"
+ },
+ {
+  "i": 8299,
+  "f": "js/core/vannerapp.js",
+  "k": "🃏 Dubbletter ur albumet"
+ },
+ {
+  "i": 8300,
+  "f": "js/scenes/shop-leksaker.js",
+  "k": "PIXELKORT - 3 KORT {0}:-"
+ },
+ {
+  "i": 8301,
+  "f": "js/scenes/shop-leksaker.js",
+  "k": "Pixelkort! Tre kort i varje paket – det kan vara ett legendariskt! ✨"
+ },
+ {
+  "i": 8302,
+  "f": "js/scenes/shop-leksaker.js",
+  "k": "Samla alla 46 korten med Pixelstadens djur, folk och saker! Tre kort i varje paket. Komplett serie = {0} och en guldpokal. Albumet finns i mobilen."
+ },
+ {
+  "i": 8303,
+  "f": "js/scenes/shop-leksaker.js",
+  "k": "🃏 Ett paket · {0}"
+ },
+ {
+  "i": 8304,
+  "f": "js/scenes/shop-leksaker.js",
+  "k": "🃏 Tre paket · {0}"
+ },
+ {
+  "i": 8305,
+  "f": "js/scenes/shop-leksaker.js",
+  "k": "🃏 Tre kortpaket!"
+ },
+ {
+  "i": 8306,
+  "f": "js/scenes/shop-leksaker.js",
+  "k": "🃏 Ett kortpaket!"
+ },
+ {
+  "i": 8307,
+  "f": "js/scenes/shop-leksaker.js",
+  "k": "Korten ligger i albumet – appen 🃏 Pixelkort i mobilen."
+ },
+ {
+  "i": 8308,
+  "f": "js/scenes/shop-leksaker.js",
+  "k": "Härligt!"
+ }
+]

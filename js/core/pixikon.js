@@ -459,6 +459,25 @@ export const KARTOR = {
     '..kkkkkkkkkkkk..',
     '................',
   ],
+  // 🃏 Pixelkort (js/core/kortapp.js) – två kort i solfjäder: ett blått bakom, ett guldkort med en röd stjärna framför
+  kort: [
+    '................',
+    '.kkkkkkk........',
+    '.kbbbbbk........',
+    '.kbBcBbkkkkkkk..',
+    '.kbcccbkyyyyyyk.',
+    '.kbBcBbkywwwwYk.',
+    '.kbbbbbkywwrwYk.',
+    '.kbBcBbkywrrrYk.',
+    '.kbcccbkywwrwYk.',
+    '.kbBcBbkywwwwYk.',
+    '.kbbbbbkywwwwYk.',
+    '.kkkkkkkyYYYYYk.',
+    '.......kyrryyYk.',
+    '.......kYYYYYYk.',
+    '.......kkkkkkkk.',
+    '................',
+  ],
   // 💛 Vänner (js/core/vannerapp.js) – ett stort gult hjärta med glans, som 💛 i hälsningarna
   vanner: [
     '................',

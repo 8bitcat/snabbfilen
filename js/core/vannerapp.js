@@ -16,6 +16,7 @@ import { sendJob, onJob, worldMyId, worldMyKey, playersList } from '../net/world
 import { vanEgen, vanLista, arVan, vanLaggTill, vanTaBortLokalt, vanInne, vanBorttagen, vanGlomBorttagen, vanKrokar, VID_RE, MAX_VANNER } from '../net/vanner.js';
 import { vanPushRegistrera, vanPushLage, vanPresentSkicka } from '../net/vanpush.js';
 import { FOOD, foodOf, katalogOf, fmt } from '../game.js';
+import { dubbletter } from './pixelkort.js';   // 🃏 dubbletterna kan bli vänskapspresenter
 
 let A = null;
 const send = (m) => sendJob({ k: 'van', key: worldMyKey(), vi: vanEgen(A?.avatar)?.vid || '', namn: String(A?.avatar?.name || '').slice(0, 16), ...m });
@@ -128,24 +129,28 @@ function openSkickaPresent(A0, v, val = { fri: skickatGet()[v.vid] !== idagStr()
   if (!friOk) val.fri = false;
   const mobler = G.storage.map((it, i) => ({ i, it, kat: katalogOf(it.k) })).filter((x) => x.kat).slice(0, 12);
   const mat = Object.entries(G.fridge || {}).filter(([id, n]) => n > 0 && foodOf(id));
+  const kort = dubbletter(G).slice(0, 16);   // 🃏 byteshandel: dubbletterna i albumet
   const chip = (attr, v2, label, on, dis = false) => `<button type="button" class="btn btn-small${on ? ' btn-gold' : ''}" data-${attr}="${v2}"${dis ? ' disabled' : ''}>${label}</button>`;
   const dlg = openModal($t`🎁 Present till ${v.namn}`, `
     <p style="font-size:var(--f2);margin-top:0">${chip('pfri', 1, esc($t('💛 Vänskapspresent – en liten överraskning')), val.fri, !friOk)} <small class="sp">${esc(friOk ? $t('gratis, en om dagen') : $t('i dag redan skickad'))}</small></p>
     <div class="bl-lbl">${esc($t('Lägg till något eget'))} <small>${esc($t('(valfritt)'))}</small></div>
     <div class="bl-opts">${[0, 50, 100, 200].map((n) => chip('ppeng', n, n ? esc(fmt(n)) : esc($t('Inga pengar')), val.pengar === n, n > G.money)).join('')}</div>
     ${mobler.length ? `<div class="bl-lbl">${esc($t('🛋️ Ur förrådet'))}</div><div class="bl-opts">${mobler.map((x) => chip('pmob', x.i, esc(`${x.kat.icon || ''} ${x.kat.name}`), val.sak?.slag === 'mobel' && val.sak.i === x.i)).join('')}</div>` : ''}
+    ${kort.length ? `<div class="bl-lbl">${esc($t('🃏 Dubbletter ur albumet'))}</div><div class="bl-opts">${kort.map((k) => chip('pkort', k.id, esc(`${k.namn} ×${G.kort[k.id]}`), val.sak?.slag === 'kort' && val.sak.id === k.id)).join('')}</div>` : ''}
     ${mat.length ? `<div class="bl-lbl">${esc($t('🍽️ Ur kylskåpet'))}</div><div class="bl-opts">${mat.map(([id]) => chip('pmat', id, esc(`${foodOf(id).icon} ${foodOf(id).name}`), val.sak?.slag === 'mat' && val.sak.id === id)).join('')}</div>` : ''}`,
   [{ label: $t('🎁 Skicka present'), cls: 'btn-go', disabled: !val.fri && !val.pengar && !val.sak, onClick: () => skicka() },
    { label: $t('Avbryt'), onClick: () => openVannerApp(A) }]);
   dlg.querySelector('[data-pfri]')?.addEventListener('click', () => { val.fri = !val.fri; play('click'); openSkickaPresent(A, v, val); });
   dlg.querySelectorAll('[data-ppeng]').forEach((b) => (b.onclick = () => { val.pengar = +b.dataset.ppeng; play('click'); openSkickaPresent(A, v, val); }));
   dlg.querySelectorAll('[data-pmob]').forEach((b) => (b.onclick = () => { const i = +b.dataset.pmob; val.sak = val.sak?.slag === 'mobel' && val.sak.i === i ? null : { slag: 'mobel', i }; play('click'); openSkickaPresent(A, v, val); }));
+  dlg.querySelectorAll('[data-pkort]').forEach((b) => (b.onclick = () => { const id = b.dataset.pkort; val.sak = val.sak?.slag === 'kort' && val.sak.id === id ? null : { slag: 'kort', id }; play('click'); openSkickaPresent(A, v, val); }));
   dlg.querySelectorAll('[data-pmat]').forEach((b) => (b.onclick = () => { const id = b.dataset.pmat; val.sak = val.sak?.slag === 'mat' && val.sak.id === id ? null : { slag: 'mat', id }; play('click'); openSkickaPresent(A, v, val); }));
   async function skicka() {
     // det man lägger till tas ur ens eget förråd direkt (och kommer tillbaka om presenten inte gick iväg)
     const gavor = [], tillbaka = [];
     if (val.pengar && G.money >= val.pengar) { G.money -= val.pengar; gavor.push({ slag: 'pengar', n: val.pengar }); tillbaka.push(() => { G.money += val.pengar; }); }
     if (val.sak?.slag === 'mobel' && G.storage[val.sak.i]) { const [it] = G.storage.splice(val.sak.i, 1); gavor.push({ slag: 'mobel', k: it.k, v: it.v | 0 }); tillbaka.push(() => G.storage.push(it)); }
+    if (val.sak?.slag === 'kort' && (G.kort?.[val.sak.id] | 0) > 1) { const id = val.sak.id; G.kort[id] -= 1; gavor.push({ slag: 'kort', id }); tillbaka.push(() => { G.kort[id] = (G.kort[id] | 0) + 1; }); }
     if (val.sak?.slag === 'mat' && G.fridge[val.sak.id] > 0) { const id = val.sak.id; G.fridge[id] -= 1; if (!G.fridge[id]) delete G.fridge[id]; gavor.push({ slag: 'mat', id, n: 1 }); tillbaka.push(() => { G.fridge[id] = (G.fridge[id] || 0) + 1; }); }
     G.save();
     closeModal();
