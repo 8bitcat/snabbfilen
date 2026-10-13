@@ -51,6 +51,10 @@ git(['worktree', 'add', '--detach', dir, ref]);
 console.log(`Provkör ${ref} (${sha}) i ${dir} på port ${port} …`);
 
 const server = spawn('python', ['-m', 'http.server', port, '--bind', '127.0.0.1'], { cwd: dir, stdio: 'ignore' });
+// …och en tvilling på IPv6 (::1): proven öppnar http://localhost, och Chromium försöker ::1 först. Lyssnar ingen där
+// tar varje nekad anslutning ~2 s på Windows – sidan laddade så långsamt att smoke/sprak-test gav goto-timeout och
+// en bild kunde bli hängande för alltid (2026-10-13, verify av 0.129).
+const server6 = spawn('python', ['-m', 'http.server', port, '--bind', '::1'], { cwd: dir, stdio: 'ignore' });
 let code = 1;
 try {
   let up = false;
@@ -106,7 +110,7 @@ try {
   console.log('✗ ' + e.message);
   code = 1;
 } finally {
-  server.kill();
+  server.kill(); server6.kill();
   await sleep(300);
   removeWorktree();
 }
