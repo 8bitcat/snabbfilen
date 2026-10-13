@@ -1,7 +1,7 @@
 {
-  "version": "0.131.0",
+  "version": "0.132.0",
   "date": "2026-10-13",
-  "title": "Pixelberg i full prakt",
+  "title": "Ministaden på Pixelberg",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
@@ -158,9 +158,11 @@
     "js/pets/sprite-data.js",
     "js/pets/sprites.js",
     "js/pets/trim.js",
+    "js/pixelberg/deko.js",
     "js/pixelberg/karta.js",
     "js/pixelberg/kiosk.js",
     "js/pixelberg/liv.js",
+    "js/pixelberg/marknad.js",
     "js/pixelberg/spokhus.js",
     "js/pixelberg/stand-mat.js",
     "js/pixelberg/stand-spel.js",

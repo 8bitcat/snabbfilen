@@ -1,0 +1,197 @@
+[
+ {
+  "i": 8844,
+  "f": "js/pixelberg/marknad.js",
+  "k": "SMÅGODIS"
+ },
+ {
+  "i": 8845,
+  "f": "js/pixelberg/marknad.js",
+  "k": "CHURROS"
+ },
+ {
+  "i": 8846,
+  "f": "js/pixelberg/marknad.js",
+  "k": "FISKDAMMEN"
+ },
+ {
+  "i": 8847,
+  "f": "js/pixelberg/marknad.js",
+  "k": "GODISGATAN"
+ },
+ {
+  "i": 8848,
+  "f": "js/pixelberg/marknad.js",
+  "k": "BALLONGGATAN"
+ },
+ {
+  "i": 8849,
+  "f": "js/pixelberg/marknad.js",
+  "k": "TEKOPPSTORGET"
+ },
+ {
+  "i": 8850,
+  "f": "js/pixelberg/marknad.js",
+  "k": "FONTÄNTORGET"
+ },
+ {
+  "i": 8851,
+  "f": "js/pixelberg/marknad.js",
+  "k": "SPÖKGRÄND"
+ },
+ {
+  "i": 8852,
+  "f": "js/scenes/pixelberg.js",
+  "k": "🍹 Hallonsaft"
+ },
+ {
+  "i": 8853,
+  "f": "js/scenes/pixelberg.js",
+  "k": "🍋 Lemonad"
+ },
+ {
+  "i": 8854,
+  "f": "js/scenes/pixelberg.js",
+  "k": "🍬 En påse smågodis"
+ },
+ {
+  "i": 8855,
+  "f": "js/scenes/pixelberg.js",
+  "k": "🌈 Sura godisband"
+ },
+ {
+  "i": 8856,
+  "f": "js/scenes/pixelberg.js",
+  "k": "🧇 Våffla med sylt och grädde"
+ },
+ {
+  "i": 8857,
+  "f": "js/scenes/pixelberg.js",
+  "k": "🧇 Våffla med glass"
+ },
+ {
+  "i": 8858,
+  "f": "js/scenes/pixelberg.js",
+  "k": "🥖 Churros med kanelsocker"
+ },
+ {
+  "i": 8859,
+  "f": "js/scenes/pixelberg.js",
+  "k": "🍫 Churros med chokladsås"
+ },
+ {
+  "i": 8860,
+  "f": "js/scenes/pixelberg.js",
+  "k": "🌭 Korv med mos"
+ },
+ {
+  "i": 8861,
+  "f": "js/scenes/pixelberg.js",
+  "k": "🍹 Saftståndet"
+ },
+ {
+  "i": 8862,
+  "f": "js/scenes/pixelberg.js",
+  "k": "🍬 Smågodiset"
+ },
+ {
+  "i": 8863,
+  "f": "js/scenes/pixelberg.js",
+  "k": "🧇 Våffelståndet"
+ },
+ {
+  "i": 8864,
+  "f": "js/scenes/pixelberg.js",
+  "k": "🥖 Churrosståndet"
+ },
+ {
+  "i": 8865,
+  "f": "js/scenes/pixelberg.js",
+  "k": "🌭 Korvståndet"
+ },
+ {
+  "i": 8866,
+  "f": "js/scenes/pixelberg.js",
+  "k": "Tekopparna"
+ },
+ {
+  "i": 8867,
+  "f": "js/scenes/pixelberg.js",
+  "k": "☕ Du sätter dig i en tekopp – snurra runt!"
+ },
+ {
+  "i": 8868,
+  "f": "js/scenes/pixelberg.js",
+  "k": "☕ Snurrigt! +{0} 😊"
+ },
+ {
+  "i": 8869,
+  "f": "js/scenes/pixelberg.js",
+  "k": "☕ Snurrigt!"
+ },
+ {
+  "i": 8870,
+  "f": "js/scenes/pixelberg.js",
+  "k": "Varsågod! 🎈"
+ },
+ {
+  "i": 8871,
+  "f": "js/scenes/pixelberg.js",
+  "k": "*Pixel-Katten ger dig en ballong och spinner!*"
+ },
+ {
+  "i": 8872,
+  "f": "js/scenes/pixelberg.js",
+  "k": "Varsågod, en ballong till dig! 🎈"
+ },
+ {
+  "i": 8873,
+  "f": "js/scenes/pixelberg.js",
+  "k": "🎈 Du fick en ballong! +{0} 😊"
+ },
+ {
+  "i": 8874,
+  "f": "js/scenes/pixelberg.js",
+  "k": "🎈 Du fick en ballong!"
+ },
+ {
+  "i": 8875,
+  "f": "js/scenes/pixelberg.js",
+  "k": "🎈 Ballongståndet"
+ },
+ {
+  "i": 8876,
+  "f": "js/scenes/pixelberg.js",
+  "k": "Välj färg – en ballong kostar {0}. Den följer med dig på tivolit hela dagen!"
+ },
+ {
+  "i": 8877,
+  "f": "js/scenes/pixelberg.js",
+  "k": "🦆 Fiskdammen kostar {0} – du har inte råd."
+ },
+ {
+  "i": 8878,
+  "f": "js/scenes/pixelberg.js",
+  "k": "🦆 Fiskdammen"
+ },
+ {
+  "i": 8879,
+  "f": "js/scenes/pixelberg.js",
+  "k": "Tryck på en anka för att fiska upp den ({0}). Numret under ankan avgör vinsten!"
+ },
+ {
+  "i": 8880,
+  "f": "js/scenes/pixelberg.js",
+  "k": "Nummer {0}: en tivoliklubba! 🍬"
+ },
+ {
+  "i": 8881,
+  "f": "js/scenes/pixelberg.js",
+  "k": "Nummer {0}: {1}! Vinsten ligger i leksakslådan hemma."
+ },
+ {
+  "i": 8882,
+  "f": "js/scenes/pixelberg.js",
+  "k": "TEKOPPARNA – SNURRA RUNT!"
+ }
+]

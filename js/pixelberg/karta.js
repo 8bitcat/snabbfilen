@@ -10,6 +10,7 @@ import { Pix, SMALL, BIG, text, textW, mix, mul, hash, bayer } from '../core/flo
 import { $t } from '../core/i18n.js';
 import { MATSTAND } from './stand-mat.js';     // 🍦🍭🍿🍔 matstånden i full prakt (v0.131)
 import { SPELSTAND } from './stand-spel.js';   // 🎰🥫🎯 spelstånden
+import { STALL, MARKNAD_Y, DEKO } from './marknad.js';   // 🏮 marknadsgatan – tältstånden mitt på torget (v0.132) + dekorationerna
 
 export const TW = 2440, TH = 480;
 export const P = {
@@ -43,7 +44,7 @@ export const RADIO = { x: 1660, y: 300, w: 250, h: 118 };
 // utgången till höger, och tillbaka längs spåret framför huset till perrongen i mitten (js/pixelberg/spokhus.js)
 export const SPOK = { x: 2180, y: 318, w: 200 };
 export const SPOK_SPAR = { x0: SPOK.x + 48, x1: SPOK.x + 152, y0: SPOK.y - 4, y1: SPOK.y + 22, cx: SPOK.x + 100 };
-export const BANKAR = [{ x: 620, y: 452 }, { x: 980, y: 452 }, { x: 1230, y: 420 }, { x: 1990, y: 452 }];
+export const BANKAR = [{ x: 620, y: 458 }, { x: 980, y: 458 }, { x: 1300, y: 458 }, { x: 1990, y: 458 }];
 export const LYKTOR = [110, 330, 516, 768, 952, 1470, 1630, 1940, 2150, 2420].map((x) => ({ x, y: P.TORG[0] + 10 }));
 export const BUSKAR = [[300, 250], [560, 248], [1200, 250], [1520, 440], [260, 462], [700, 466], [1612, 300], [2400, 252], [2160, 462]].map(([x, y]) => ({ x, y }));
 
@@ -70,6 +71,11 @@ export function hinder() {
     if (s.mat) o.push([s.x - 14, s.y - 4, s.x - 4, s.y], [s.x + s.w + 4, s.y - 4, s.x + s.w + 16, s.y]);   // blomkrukan och krittavlan
   }
   for (const u of UTESERVERING) o.push([u.x - 15, u.y - 4, u.x + 16, u.y + 2]);
+  for (const s of STALL) o.push([s.x + 1, s.y - 13, s.x + s.w - 1, s.y]);   // tältstånden (man går i gränden bakom och på promenaden framför)
+  for (const p of DEKO.portaler) o.push([p.x0, p.y - 2, p.x0 + 3, p.y + 1], [p.x1 - 3, p.y - 2, p.x1, p.y + 1]);
+  const { tekopp: K, fontan: F, bubbel: B, konfetti: KF } = DEKO;
+  o.push([K.x - 40, K.y - 8, K.x + 40, K.y + 12], [F.x - 24, F.y - 6, F.x + 24, F.y + 9], [B.x - 6, B.y - 5, B.x + 7, B.y], [KF.x - 3, KF.y - 4, KF.x + 4, KF.y]);
+  for (const l of DEKO.lyktor) o.push([l.x - 2, l.y - 2, l.x + 4, l.y + 1]);
   o.push([BANA.station.x, BANA.station.y - 18, BANA.station.x + BANA.station.w, BANA.station.y - 1]);
   o.push([RADIO.x - 4, P.TOP - 2, RADIO.x + RADIO.w + 4, RADIO.y + RADIO.h + 2]);                // radiobilarnas bana (man åker, går inte)
   o.push([SPOK.x, P.TOP - 2, SPOK.x + SPOK.w, SPOK.y + 1]);                                       // spökhuset
@@ -133,7 +139,19 @@ export function paintGround() {
     if (y > TH - 4) c = mix(c, 0x8a8478, 0.5);
     X.px(x, y, c);
   }
-  for (const [cx, cy, r] of [[300, 400, 26], [680, 410, 30], [1040, 400, 26], [1400, 400, 30], [600, 300, 18], [2080, 400, 28], [2330, 410, 24]]) {
+  // 🧱 ministadens gator (v0.132): tegelpromenaden framför marknadsgatan, gången bakom den och tvärgränderna mellan
+  // grupperna av tältstånd – tegel i förband, en mörkare kantsten mot torgets plattor
+  const tegel = (x, y) => {
+    const r = Math.floor(y / 3), xx = x + (r & 1) * 3, b = Math.floor(xx / 6);
+    if (xx % 6 === 5 || y % 3 === 2) return 0xa89080;
+    return mix(0xb05a40, hash(b, r, 57) > 0.5 ? 0xc4704e : 0x9a4a36, hash(b, r, 58) * 0.6 + (bayer(x, y) - 0.5) * 0.1);
+  };
+  const gata = (x0, y0, x1, y1) => { for (let y = y0; y < y1; y++) for (let x = Math.max(0, x0); x < Math.min(TW, x1); x++) X.px(x, y, y === y0 || y === y1 - 1 || x === x0 || x === x1 - 1 ? 0x6a5a50 : tegel(x, y)); };
+  gata(150, MARKNAD_Y + 6, TW, TH - 6);                   // promenaden framför
+  gata(150, MARKNAD_Y - 46, TW, MARKNAD_Y - 14);          // gången bakom tältstånden
+  const sorterade = [...STALL].sort((a, b) => a.x - b.x);
+  for (let i = 0; i < sorterade.length - 1; i++) { const a = sorterade[i], b = sorterade[i + 1], x0 = a.x + a.w + 3, x1 = b.x - 3; if (x1 - x0 >= 14) gata(x0, MARKNAD_Y - 46, x1, MARKNAD_Y + 7); }
+  for (const [cx, cy, r] of [[600, 300, 18], [420, 446, 22], [884, 446, 24], [1316, 446, 22], [1770, 446, 24], [2170, 446, 20]]) {
     for (let y = -r; y <= r; y++) for (let x = -r; x <= r; x++) {
       const d = Math.hypot(x, y * 1.6); if (d > r) continue;
       const ring = Math.floor(d / 6), c = d > r - 2 ? 0x8a8478 : MOS[(ring + (cx >> 4)) % MOS.length];

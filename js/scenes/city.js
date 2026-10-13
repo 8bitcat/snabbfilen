@@ -10,7 +10,7 @@ import { CITY, BUILDINGS, ALL_BUILDINGS, doorCenter, artPos, artBox, baseOf, isN
 import { taxiQuote, metersBetween } from '../city/citymap.js'; // 🗺️ kartan: taxipriset och avstånden
 import { createWalker, selfDrawable, folkDrawables, nameTag, sayBubble } from './walkable.js';
 import { drawPerson } from '../core/people.js';
-import { openModal, closeModal, toast, esc } from '../core/ui.js';
+import { openModal, closeModal, toast, esc, modalOpen } from '../core/ui.js';
 import { play } from '../core/sound.js';
 import { SMALL, BIG, ctxText, textW } from '../core/floor-pix.js';
 import { worldFolksHere } from '../net/world.js';
@@ -218,16 +218,46 @@ function bridgeLift(x, y) {
   return Math.max(0, Math.min(1, inW, inE));
 }
 
-// vägskylten vid västra stadsgränsen: rosa vägvisare ← TASSBACKEN med en tass
+// vägskylten vid västra stadsgränsen: en stor rosa vägvisare ← TASSBACKEN (stor text) med en tass, på två stolpar
+// (Carl 2026-10-13: "skylten säger inte så mycket" – se även den blinkande pilen i drawRiktningar)
+const TASS_IK = ['.#.#.', '#...#', '.###.', '#####', '.###.'];
 function drawTassSkylt(ctx, x, y) {
-  const s = $t('TASSBACKEN'), w = textW(SMALL, s) + 16;
-  ctx.fillStyle = 'rgba(20,12,30,.25)'; ctx.fillRect(x - 3, y - 1, 8, 2);
-  ctx.fillStyle = '#5a5e66'; ctx.fillRect(x, y - 26, 2, 26);
-  ctx.fillStyle = '#1e1a24'; ctx.fillRect(x - 3, y - 38, w + 2, 14);
-  ctx.fillStyle = '#d84a8a'; ctx.fillRect(x - 2, y - 37, w, 12); ctx.fillRect(x - 4, y - 35, 2, 8); ctx.fillRect(x - 5, y - 33, 1, 4);
-  ctx.fillStyle = '#f4f1ea'; ctx.fillRect(x - 2, y - 37, w, 1);
-  for (const [dx, dy] of [[0, 1], [1, 1], [0, 2], [1, 2], [-1, 0], [2, 0], [-1, -1], [2, -1]]) ctx.fillRect(x + 2 + dx, y - 31 + dy, 1, 1);
-  ctxText(ctx, SMALL, s, x + 8, y - 34, '#f4f1ea');
+  const s = $t('TASSBACKEN'), tw = textW(BIG, s), w = tw + 26, top = y - 52;
+  ctx.fillStyle = 'rgba(20,12,30,.25)'; ctx.fillRect(x - 3, y - 1, w + 6, 2);
+  for (const sx of [x + 4, x + w - 8]) { ctx.fillStyle = '#5a5e66'; ctx.fillRect(sx, top + 18, 2, y - top - 18); ctx.fillStyle = '#8a8e96'; ctx.fillRect(sx, top + 18, 1, y - top - 18); }
+  // pilbrädet: spetsen åt vänster
+  ctx.fillStyle = '#1e1a24'; ctx.fillRect(x - 1, top - 1, w + 2, 22); for (let j = 0; j < 11; j++) ctx.fillRect(x - 11 + j, top + 10 - j, 11 - j, j * 2 + 1);
+  ctx.fillStyle = '#d84a8a'; ctx.fillRect(x, top, w, 20); for (let j = 0; j < 10; j++) ctx.fillRect(x - 10 + j, top + 10 - j, 10 - j, j * 2);
+  ctx.fillStyle = '#f48ab8'; ctx.fillRect(x, top, w, 2); ctx.fillStyle = '#a8306a'; ctx.fillRect(x, top + 18, w, 2);
+  ctx.fillStyle = '#f4f1ea'; ctx.fillRect(x + 1, top + 2, w - 2, 1); ctx.fillRect(x + 1, top + 17, w - 2, 1);
+  ctxText(ctx, BIG, s, x + 5, top + 8, '#6a1840'); ctxText(ctx, BIG, s, x + 4, top + 7, '#fff6fa');
+  ctx.fillStyle = '#fff6fa'; TASS_IK.forEach((r, j) => { for (let i = 0; i < 5; i++) if (r[i] === '#') ctx.fillRect(x + w - 11 + i, top + 7 + j, 1, 1); });
+}
+// 🧭 den stora blinkande pilen (Carl 2026-10-13: "en stor blinkande pil som säger TASSBACKEN om man kommer nära
+// kanten så man förstår"): spetsen i (x, y) åt dir (−1 vänster, 1 höger), tre chevroner som jagar framför, ramen
+// blinkar vitt/gult, och den guppar i pilens riktning. k = 0–1 (tonar in när man närmar sig kanten)
+function drawRiktning(ctx, x, y, label, dir, t, fg, mork, k) {
+  if (k <= 0) return;
+  const tw = textW(BIG, label), L = tw + 30, H = 23, bob = Math.round(Math.sin(t * 5) * 2) * dir, blink = Math.floor(t * 2.6) % 2 === 0;
+  const tx = Math.round(x + bob), x0 = dir < 0 ? tx + 12 : tx - 12 - L, cy = Math.round(y);
+  ctx.save(); ctx.globalAlpha = Math.min(1, k);
+  // chevronerna framför spetsen
+  for (let c = 0; c < 3; c++) {
+    const u = ((t * 2.2 + c / 3) % 1), cx = tx + dir * (6 + c * 9 + Math.round(u * 4)), a = Math.min(1, k) * (1 - u) * 0.95;
+    ctx.globalAlpha = a; ctx.fillStyle = blink ? '#ffd23f' : '#ffffff';
+    for (let j = -5; j <= 5; j++) { const off = (5 - Math.abs(j)) * dir; ctx.fillRect(cx + off, cy + j, 2, 1); }
+  }
+  ctx.globalAlpha = Math.min(1, k);
+  // kroppen: mörk kant, ram (blinkar), fyllning
+  const tri = (inset, col) => { ctx.fillStyle = col; for (let j = 0; j <= 11 - inset; j++) { const w = 12 - j - inset; if (w <= 0) continue; const xa = dir < 0 ? tx + j + inset : tx - j - inset - w + 1; ctx.fillRect(xa, cy - j, w, 1); if (j) ctx.fillRect(xa, cy + j, w, 1); } };
+  ctx.fillStyle = '#1e1a24'; ctx.fillRect(x0 - 1, cy - 12, L + 2, H + 2); tri(-1, '#1e1a24');
+  ctx.fillStyle = blink ? '#ffd23f' : '#f4f1ea'; ctx.fillRect(x0, cy - 11, L, H); tri(0, blink ? '#ffd23f' : '#f4f1ea');
+  ctx.fillStyle = fg; ctx.fillRect(x0 + 2, cy - 9, L - 4, H - 4); tri(2, fg);
+  ctx.fillStyle = 'rgba(255,255,255,.25)'; ctx.fillRect(x0 + 2, cy - 9, L - 4, 2);
+  const lx = dir < 0 ? x0 + 6 : x0 + 14;
+  ctxText(ctx, BIG, label, lx + 1, cy - 3, mork); ctxText(ctx, BIG, label, lx, cy - 4, '#ffffff');
+  ctx.fillStyle = '#ffffff'; TASS_IK.forEach((r, j) => { for (let i = 0; i < 5; i++) if (r[i] === '#') ctx.fillRect((dir < 0 ? x0 + L - 10 : x0 + 6) + i, cy - 2 + j, 1, 1); });
+  ctx.restore();
 }
 let lastDistrictId = null; // områdesskylten visas bara när man kommer till ett nytt område
 // vägskylten vid stadsgränsen: grön vägvisare LANDET med en pil och en ko
@@ -693,8 +723,19 @@ export function makeCity(A) {
     if (tag) ctxText(ctx, SMALL, tag, x + Math.round((w - textW(SMALL, tag)) / 2), y + 30, '#a9b4c8');
     ctx.restore();
   }
+  // 🧭 de blinkande pilarna mot TASSBACKEN (västra stadsgränsen) och LANDET (östra) när man går på Pixelgatan nära kanten
+  function drawRiktningar(ctx) {
+    if (A.attract || foto.pa || riding || modalOpen()) return;
+    const py = walker.py, gata = py >= CITY.SIDEWALK_N[0] - 12 && py <= CITY.SIDEWALK_S[1] + 12, sy = Math.max(30, Math.min(VH - 30, CITY.SIDEWALK_N[0] - 30 - cam.y));
+    if (!gata) return;
+    const dv = walker.px - WX0;
+    if (dv < 420) drawRiktning(ctx, Math.max(8, WX0 - cam.x + 10), sy, $t('TASSBACKEN'), -1, t, '#d84a8a', '#6a1840', (420 - dv) / 140);
+    const dh = CITY.W - walker.px;
+    if (dh < 420) drawRiktning(ctx, Math.min(VW - 8, CITY.W - cam.x - 10), sy, $t('LANDET'), 1, t, '#2a8a3a', '#0e3a14', (420 - dh) / 140);
+  }
   function drawOverlay(ctx) {
     if (!foto.pa) drawBanner(ctx);
+    drawRiktningar(ctx);
     if (!A.attract) { const sb = safeBox(); guard('weather.badge', () => MODS.weather?.drawWeatherBadge?.(ctx, sb.x1 - 3, sb.y0 + 3, env.weather)); }
     const a = Math.max(fade.a, riding ? S.traffic.ride?.()?.fade || 0 : 0); // busstoningen (långa resor) delar rutan med skyltresans toning
     if (a > 0) { ctx.fillStyle = `rgba(4,4,10,${a.toFixed(3)})`; ctx.fillRect(0, 0, VW, VH); }
@@ -1011,7 +1052,7 @@ export function makeCity(A) {
       // 🌾 skylten LANDET → (eller längst ut på gatan): gå österut ut på landet
       if (x >= CITY.W - 40 && y >= CITY.SIDEWALK_N[0] && y <= CITY.SIDEWALK_S[1] + 4) { if (sitting) standUp(); walker.walkTo(CITY.W - 5, Math.max(CITY.SIDEWALK_N[0] + 4, Math.min(CITY.SIDEWALK_S[1] - 4, y))); return; }
       // skylten ← TASSBACKEN (eller längst ut på gatan): gå västerut in i Tassbacken
-      if (x <= WX0 + 40 && y >= CITY.SIDEWALK_N[0] && y <= CITY.SIDEWALK_S[1] + 4) { if (sitting) standUp(); walker.walkTo(WX0 + 5, Math.max(CITY.SIDEWALK_N[0] + 4, Math.min(CITY.SIDEWALK_S[1] - 4, y))); return; }
+      if (x <= WX0 + 96 && y >= CITY.SIDEWALK_N[0] - 50 && y <= CITY.SIDEWALK_S[1] + 4) { if (sitting) standUp(); walker.walkTo(WX0 + 5, Math.max(CITY.SIDEWALK_N[0] + 4, Math.min(CITY.SIDEWALK_S[1] - 4, y))); return; }
       // 🚚 foodtrucken: gå fram till luckan och öppna truckrutan
       const TP = truckPos();
       if (TP && x >= TP.x - 36 && x <= TP.x + 36 && y >= TP.y - 52 && y <= TP.y + 4) { if (sitting) standUp(); walker.walkTo(TP.x - 8, TP.y + 14, () => openTruck(A)); return; }

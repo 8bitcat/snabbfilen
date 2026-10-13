@@ -3,6 +3,7 @@
 //   • biljettluckan: åkband (100 kr) – sedan är åkturerna gratis i dag
 //   • karusellen: två varv på en häst · pariserhjulet: ett varv, högst upp syns staden
 //   • lyckohjulet: ett snurr (10 kr) stannar på ett fält · sockervadd
+//   • ministaden (v0.132): tältstånden, clownen ger en ballong, fiskdammen, tekopparna
 //   • bergbussen ner till stan
 // Kör: node tools/pixelberg-test.mjs   (servern på 8788, eller SMOKE_PORT / PORT) · SHOTS=1 sparar bilder i tools/out/
 import { createRequire } from 'module';
@@ -98,6 +99,29 @@ await D(() => SF.scene._debug.kopBallong()); await sleep(300);
 await D(() => [...document.querySelectorAll('#modal .dlg-foot .btn')].find((b) => /ballong/i.test(b.textContent)).click()); await sleep(300);
 ok(await D(() => !!SF.scene._debug.minBallong()), 'ballongförsäljaren: en ballong som följer med i dag');
 await stang();
+
+// ---- 🏮 ministaden (v0.132): tältstånden, clownerna, fiskdammen och tekopparna ----
+ok((await D(() => SF.scene._debug.stall().length)) >= 15, 'marknadsgatan: tältstånden står längs promenaden');
+await D(() => { SF.game.hunger = 40; SF.scene._debug.act('vafflor-2'); }); await sleep(300);
+ok(await D(() => document.querySelectorAll('#modal [data-mat]').length >= 2), 'våffelståndet: menyn');
+await D(() => document.querySelector('#modal [data-mat]').click()); await sleep(300);
+ok((await D(() => SF.game.hunger)) > 40, 'våffelståndet: en våffla');
+await stang();
+await D(() => { SF.game.tivoli = { ...(SF.game.tivoli || {}), ballong: null }; SF.scene._debug.fanBallong(0); }); await sleep(300);
+ok(await D(() => !!SF.scene._debug.minBallong()) && /Du fick en ballong/.test(await D(() => window.__toasts.join(' | '))), 'clownen ger en ballong');
+ok((await D(() => SF.scene._debug.clowner().filter((c) => c.katt).length)) === 1, 'Pixel-Katten går runt med ballonger');
+await D(() => SF.scene._debug.act('fiskdam-6')); await sleep(300);
+const mf = await D(() => SF.game.money);
+await D(() => globalThis.__fiskdam.fiska(0)); await sleep(300);
+ok((await D(() => SF.game.money)) === mf - 20 && /\d/.test(await D(() => document.querySelector('#modal .pb-spel-text')?.textContent || '')), 'fiskdammen: en anka med nummer (20 kr)');
+if (SHOTS) await p.screenshot({ path: 'tools/out/pixelberg-fiskdam.png' });
+await stang();
+await D(() => SF.scene._debug.teleport(871, 430)); await sleep(500);
+await D(() => SF.scene._debug.akKopp()); await sleep(600);
+ok((await D(() => SF.scene._debug.aka()))?.typ === 'kopp', 'tekopparna: man sitter i en kopp');
+if (SHOTS) await p.screenshot({ path: 'tools/out/pixelberg-tekopp.png' });
+await D(() => SF.scene._debug.snabba(15)); await sleep(1000);
+ok(!(await D(() => SF.scene._debug.aka())) && /Snurrigt/.test(await D(() => window.__toasts.join(' | '))), 'efter en tur: av tekoppen, "☕ Snurrigt!"');
 
 // ---- kvällen ----
 await D(() => { SF.game.min = 21 * 60; SF.scene._debug.teleport(700, 380); }); await sleep(1200);

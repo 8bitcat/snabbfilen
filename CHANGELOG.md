@@ -10,6 +10,15 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.132.0] – 2026-10-13 – Ministaden på Pixelberg
+- 🏮 Pixelberg är en liten stad nu! Mitt på tivolit går en marknadsgata med randiga tältstånd, gränder emellan och en promenad i tegel framför – med portaler över gränderna: GODISGATAN, BALLONGGATAN, TEKOPPSTORGET, FONTÄNTORGET och SPÖKGRÄND.
+- 🍹🍬🧇🥖🌭 Nya stånd: saft och lemonad, smågodis, våfflor, churros och korv med mos – varje stånd har en egen expedit och en egen meny.
+- 🤡 Clowner och tivolits nya maskot Pixel-Katten går runt och delar ut ballonger – klicka på dem så får du en också! Eller välj färg själv i ballongståndet.
+- 🦆 Fiskdammen: fiska upp en anka (20 kr) – numret under ankan avgör vinsten.
+- ☕ Tekopparna: sätt dig i en kopp och snurra runt.
+- ⛲ En fontän, såpbubblor som stiger, en konfettikanon vid entrén, flaggor som vajar och tivolilyktor som lyser på kvällen.
+- 🐾 Lättare att hitta till Tassbacken: när du går västerut på Pixelgatan blinkar en stor pil med TASSBACKEN mot stadsgränsen, och vägskylten är större. Åt andra hållet blinkar en pil mot LANDET.
+
 ## [0.131.0] – 2026-10-13 – Pixelberg i full prakt
 - 🎪 Pixelberg i full prakt! Alla stånd på tivolit är ombyggda från grunden – med spiralrandiga pelare, markiser med bågkant, skyltar i guldram och glödlampor som gnistrar och jagar varandra, dag som kväll.
 - 🍦🍭🍿🍔 Fyra nya matstånd: GLASS (jättestrut på taket, glasdisk med tolv smaker), SOCKERVADD (maskinen spinner vadden medan du tittar), POPCORN (kornen poppar i maskinen) och HAMBURGARE (stekbordet osar och fräser). Varje stånd har en egen expedit och en egen meny.
