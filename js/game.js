@@ -954,7 +954,7 @@ export class Game {
         { const Q = p.fiske && typeof p.fiske === 'object' ? p.fiske : {}, arter = {};
           for (const [k, v] of Object.entries(Q.arter && typeof Q.arter === 'object' ? Q.arter : {})) if (/^[a-z]{2,12}$/.test(k) && v && (v.n | 0) > 0) arter[k] = { n: Math.min(9999, v.n | 0), rekord: Math.max(0, Math.min(99, Number(v.rekord) || 0)) };
           g.fiske = { spo: !!Q.spo, arter }; }
-        g.tivoli = { band: Math.max(0, (p.tivoli && typeof p.tivoli === 'object' ? p.tivoli.band : 0) | 0) };
+        g.tivoli = { band: Math.max(0, (p.tivoli && typeof p.tivoli === 'object' ? p.tivoli.band : 0) | 0), ...(p.tivoli?.ballong && typeof p.tivoli.ballong === 'object' ? { ballong: { dag: p.tivoli.ballong.dag | 0, f: Math.max(0, p.tivoli.ballong.f | 0) } } : {}) };   // (🎈 dagens ballong från Pixelberg)
         g.djurnet = rensaDjurnet(p.djurnet);
         g.meriter = (Array.isArray(p.meriter) ? p.meriter : []).filter((m) => m && typeof m.typ === 'string' && /^[a-z]{2,12}$/.test(m.typ)).slice(-150)
           .map((m) => ({ typ: m.typ, plats: Math.max(1, Math.min(3, m.plats | 0)), klass: String(m.klass || '').slice(0, 12), vem: String(m.vem || '').slice(0, 20), dag: m.dag | 0, t: Number(m.t) || 0 }));

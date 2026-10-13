@@ -1,0 +1,112 @@
+[
+ {
+  "i": 8822,
+  "f": "js/pixelberg/stand-mat.js",
+  "k": "SOCKERVADD"
+ },
+ {
+  "i": 8823,
+  "f": "js/pixelberg/stand-mat.js",
+  "k": "SÖTT!"
+ },
+ {
+  "i": 8824,
+  "f": "js/pixelberg/stand-mat.js",
+  "k": "HAMBURGARE"
+ },
+ {
+  "i": 8825,
+  "f": "js/scenes/pixelberg.js",
+  "k": "🍫 Chokladglass"
+ },
+ {
+  "i": 8826,
+  "f": "js/scenes/pixelberg.js",
+  "k": "🍦 Mjukglass med strössel"
+ },
+ {
+  "i": 8827,
+  "f": "js/scenes/pixelberg.js",
+  "k": "🍨 Två kulor"
+ },
+ {
+  "i": 8828,
+  "f": "js/scenes/pixelberg.js",
+  "k": "🍭 Blå sockervadd"
+ },
+ {
+  "i": 8829,
+  "f": "js/scenes/pixelberg.js",
+  "k": "🍿 Stor popcorn"
+ },
+ {
+  "i": 8830,
+  "f": "js/scenes/pixelberg.js",
+  "k": "🥤 Läsk"
+ },
+ {
+  "i": 8831,
+  "f": "js/scenes/pixelberg.js",
+  "k": "🍔 Hamburgare"
+ },
+ {
+  "i": 8832,
+  "f": "js/scenes/pixelberg.js",
+  "k": "🧀 Ostburgare"
+ },
+ {
+  "i": 8833,
+  "f": "js/scenes/pixelberg.js",
+  "k": "🍟 Pommes frites"
+ },
+ {
+  "i": 8834,
+  "f": "js/scenes/pixelberg.js",
+  "k": "🍭 Sockervadden"
+ },
+ {
+  "i": 8835,
+  "f": "js/scenes/pixelberg.js",
+  "k": "🍿 Popcornståndet"
+ },
+ {
+  "i": 8836,
+  "f": "js/scenes/pixelberg.js",
+  "k": "🍔 Hamburgerståndet"
+ },
+ {
+  "i": 8837,
+  "f": "js/scenes/pixelberg.js",
+  "k": "🎈 Ballongförsäljaren"
+ },
+ {
+  "i": 8838,
+  "f": "js/scenes/pixelberg.js",
+  "k": "En ballong kostar {0}. Den följer med dig på tivolit hela dagen!"
+ },
+ {
+  "i": 8839,
+  "f": "js/scenes/pixelberg.js",
+  "k": "🎈 Köp en ballong · {0}"
+ },
+ {
+  "i": 8840,
+  "f": "js/scenes/pixelberg.js",
+  "k": "🎈 En ballong! +{0} 😊"
+ },
+ {
+  "i": 8841,
+  "f": "js/scenes/pixelberg.js",
+  "k": "🎈 En ballong!"
+ },
+ {
+  "i": 8842,
+  "f": "js/scenes/pixelberg.js",
+  "k": "{0} – KÖP NÅGOT GOTT!"
+ },
+ {
+  "i": 8843,
+  "f": "js/scenes/pixelberg.js",
+  "k": "*Jonglören fångar alla tre käglorna och bugar!*"
+ }
+]

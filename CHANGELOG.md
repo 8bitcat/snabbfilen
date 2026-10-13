@@ -10,6 +10,14 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.131.0] – 2026-10-13 – Pixelberg i full prakt
+- 🎪 Pixelberg i full prakt! Alla stånd på tivolit är ombyggda från grunden – med spiralrandiga pelare, markiser med bågkant, skyltar i guldram och glödlampor som gnistrar och jagar varandra, dag som kväll.
+- 🍦🍭🍿🍔 Fyra nya matstånd: GLASS (jättestrut på taket, glasdisk med tolv smaker), SOCKERVADD (maskinen spinner vadden medan du tittar), POPCORN (kornen poppar i maskinen) och HAMBURGARE (stekbordet osar och fräser). Varje stånd har en egen expedit och en egen meny.
+- 🎰🥫🎯 Lyckohjulet, Burktornet och Skjutbanan har också fått nya stånd – hjulet snurrar och plåtankorna åker på sina skenor.
+- 🍽️ Uteserveringar med randiga parasoller där folk sitter och äter, köer vid stånden och fler besökare på torget.
+- 🎈 Ballongförsäljaren går omkring – köp en ballong (15 kr) som följer med dig på tivolit hela dagen. Ballongknippen vid varje stånd, vimpelband längs torget och en jonglör vid entrén.
+- 🌙 På kvällen lyser stånden genom mörkret.
+
 ## [0.130.0] – 2026-10-13 – djurNET mellan vänner
 - 👥 djurNET mellan vänner: när du lägger ut ett djur ser dina vänner annonsen också, under 🛒 Köp → "Från dina vänner".
 - En vän som köper får djuret hem direkt – med rosetter, frisyr och allt. Du får pengarna och ett besked: "Leo köpte Morris på djurNET!" (i appen även som notis).

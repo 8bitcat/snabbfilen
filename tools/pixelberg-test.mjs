@@ -84,10 +84,19 @@ await sleep(3500);
 const lt = await D(() => document.querySelector('#modal .pb-lycka-text')?.textContent || '');
 ok(/kortpaket|kr!|klubba|sockervadd|Nitlott/i.test(lt) && (await D(() => SF.game.money)) >= ml - 10, `lyckohjulet stannar: "${lt}"`);
 await stang();
-await D(() => SF.scene._debug.act('godis')); await sleep(300);
+await D(() => SF.scene._debug.act('sockervadd')); await sleep(300);
 const hg = await D(() => SF.game.hunger);
-await D(() => document.querySelector('#modal [data-godis="sockervadd"]').click()); await sleep(300);
+await D(() => document.querySelector('#modal [data-mat="sockervadd"]').click()); await sleep(300);
 ok((await D(() => SF.game.hunger)) > hg, 'en sockervadd');
+await stang();
+
+// ---- 🎪 stånden och ballongförsäljaren (v0.131) ----
+await D(() => SF.scene._debug.act('hamburgare')); await sleep(300);
+ok(await D(() => document.querySelectorAll('#modal [data-mat]').length === 4), 'hamburgerståndet: fyra saker på menyn');
+await stang();
+await D(() => SF.scene._debug.kopBallong()); await sleep(300);
+await D(() => [...document.querySelectorAll('#modal .dlg-foot .btn')].find((b) => /ballong/i.test(b.textContent)).click()); await sleep(300);
+ok(await D(() => !!SF.scene._debug.minBallong()), 'ballongförsäljaren: en ballong som följer med i dag');
 await stang();
 
 // ---- kvällen ----

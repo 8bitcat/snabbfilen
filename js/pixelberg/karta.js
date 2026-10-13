@@ -8,6 +8,8 @@
 // utsikten ner över Pixelstaden, floden och kullarna (parallax). Torget är stenlagt med en mosaik av färgade cirklar.
 import { Pix, SMALL, BIG, text, textW, mix, mul, hash, bayer } from '../core/floor-pix.js';
 import { $t } from '../core/i18n.js';
+import { MATSTAND } from './stand-mat.js';     // 🍦🍭🍿🍔 matstånden i full prakt (v0.131)
+import { SPELSTAND } from './stand-spel.js';   // 🎰🥫🎯 spelstånden
 
 export const TW = 2440, TH = 480;
 export const P = {
@@ -21,11 +23,18 @@ export const PORT = { x: 160, y: 390, w: 104, h: 112 };              // entrépo
 export const BILJETT = { x: 244, y: 262, w: 62 };                      // biljettluckan (fasaden står på y)
 export const KARUSELL = { x: 450, y: 344, rx: 66, ry: 22 };            // karusellens mittpunkt (golvet) – en ellips
 export const HJUL = { x: 830, y: 232, r: 74, fot: 330 };               // pariserhjulet: navet, radien, fötterna
+// stånden (v0.131 "Pixelberg i full prakt"): cx = mitten, y = fotlinjen – bilderna och det som rör sig: js/pixelberg/kiosk.js
+// (matstånden: stand-mat.js, spelstånden: stand-spel.js). x/w = ståndets yta (hindren, platserna).
+const KIOSK = Object.fromEntries([...MATSTAND, ...SPELSTAND].map((d) => [d.id, d]));
 export const STAND = [
-  { id: 'godis', x: 996, y: 262, w: 88, namn: $t('SOCKERVADD & POPCORN'), f: [0xf890b4, 0xf4f1ea] },
-  { id: 'lycka', x: 1110, y: 262, w: 88, namn: $t('LYCKOHJULET'), f: [0x3a7bd5, 0xf0c030] },
-  { id: 'kast', x: 1946, y: 300, w: 96, namn: $t('BURKTORNET'), f: [0x46a35a, 0xf4f1ea] },     // 🥫 (js/pixelberg/stand.js)
-  { id: 'skjut', x: 2050, y: 300, w: 96, namn: $t('SKJUTBANAN'), f: [0x3a7bd5, 0xf0c030] },    // 🎯
+  { id: 'glass', cx: 574, y: 262 }, { id: 'sockervadd', cx: 708, y: 262 },
+  { id: 'popcorn', cx: 1036, y: 262 }, { id: 'lycka', cx: 1150, y: 262 }, { id: 'hamburgare', cx: 1266, y: 262 },
+  { id: 'kast', cx: 1994, y: 300 }, { id: 'skjut', cx: 2104, y: 300 },
+].map((s) => { const def = KIOSK[s.id]; return { ...s, def, w: def.W, x: s.cx - (def.W >> 1), namn: def.namn, mat: !!def.meny }; });
+// 🍽️ uteserveringarna framför matstånden: bord med randiga parasoller (propKit().cafe)
+export const UTESERVERING = [
+  { x: 562, y: 318, f: [0xee5e98, 0xfff6e8] }, { x: 640, y: 334, f: [0x70c0a8, 0xfff6e8] }, { x: 720, y: 318, f: [0x96bcea, 0xfff6e8] },
+  { x: 1030, y: 320, f: [0xd4323a, 0xfff6e8] }, { x: 1112, y: 336, f: [0xeebc20, 0xfff6e8] }, { x: 1196, y: 320, f: [0x228c96, 0xfff6e8] }, { x: 1272, y: 336, f: [0xd4323a, 0xfff6e8] },
 ];
 export const BANA = { x0: 1240, x1: 1590, station: { x: 1330, y: 270, w: 120 } };   // berg-och-dalbanan
 // 🚗 radiobilarna: stålgolvet (x, y = bakkanten, w × h), bakväggen med skylten står längs y – bilarna kör inne på golvet
@@ -35,7 +44,7 @@ export const RADIO = { x: 1660, y: 300, w: 250, h: 118 };
 export const SPOK = { x: 2180, y: 318, w: 200 };
 export const SPOK_SPAR = { x0: SPOK.x + 48, x1: SPOK.x + 152, y0: SPOK.y - 4, y1: SPOK.y + 22, cx: SPOK.x + 100 };
 export const BANKAR = [{ x: 620, y: 452 }, { x: 980, y: 452 }, { x: 1230, y: 420 }, { x: 1990, y: 452 }];
-export const LYKTOR = [110, 330, 590, 700, 960, 1210, 1470, 1630, 1940, 2150, 2420].map((x) => ({ x, y: P.TORG[0] + 10 }));
+export const LYKTOR = [110, 330, 516, 768, 952, 1470, 1630, 1940, 2150, 2420].map((x) => ({ x, y: P.TORG[0] + 10 }));
 export const BUSKAR = [[300, 250], [560, 248], [1200, 250], [1520, 440], [260, 462], [700, 466], [1612, 300], [2400, 252], [2160, 462]].map(([x, y]) => ({ x, y }));
 
 // berg-och-dalbanans spår som en sluten kurva (x, y) i världen – tåget följer den (scenen)
@@ -56,7 +65,11 @@ export function hinder() {
     if (w > 2) o.push([KARUSELL.x - w, y, KARUSELL.x + w, y + 3]);
   }
   o.push([HJUL.x - 50, HJUL.fot - 6, HJUL.x + 50, HJUL.fot + 4]);                           // hjulets fot och plattform
-  for (const s of STAND) o.push([s.x, P.TOP - 2, s.x + s.w, s.y - 1]);
+  for (const s of STAND) {
+    o.push([s.x, P.TOP - 2, s.x + s.w, s.y - 1]);
+    if (s.mat) o.push([s.x - 14, s.y - 4, s.x - 4, s.y], [s.x + s.w + 4, s.y - 4, s.x + s.w + 16, s.y]);   // blomkrukan och krittavlan
+  }
+  for (const u of UTESERVERING) o.push([u.x - 15, u.y - 4, u.x + 16, u.y + 2]);
   o.push([BANA.station.x, BANA.station.y - 18, BANA.station.x + BANA.station.w, BANA.station.y - 1]);
   o.push([RADIO.x - 4, P.TOP - 2, RADIO.x + RADIO.w + 4, RADIO.y + RADIO.h + 2]);                // radiobilarnas bana (man åker, går inte)
   o.push([SPOK.x, P.TOP - 2, SPOK.x + SPOK.w, SPOK.y + 1]);                                       // spökhuset
@@ -171,42 +184,6 @@ export function biljettBild(natt) {
     const s = $t('BILJETTER'), sw = textW(SMALL, s);
     X.rect((W - sw >> 1) - 3, Y0 + 2, sw + 6, 9, 0xfff8e0); text(X, SMALL, s, (W - sw) >> 1, Y0 + 4, 0xd8343c);
     X.rect(0, Y0 + H - 4, W, 4, 0x8a2a2e);
-  });
-}
-// ett stånd: randig markis, disken och skylten
-export function standBild(s, natt) {
-  const W = s.w, H = 40;
-  return bild(`stand${s.id}${natt}`, W, H + 26, (X) => {
-    const Y0 = 26, [a, b] = s.f;
-    for (let y = Y0; y < Y0 + H; y++) for (let x = 0; x < W; x++) X.px(x, y, mix(0xc89a68, 0xa87a48, hash(x >> 2, y >> 3, 57)));
-    X.rect(6, Y0 + 6, W - 12, 20, natt ? 0xf0c868 : 0x2a2830);
-    if (s.id === 'godis') {   // sockervadd i påsar och popcornmaskinen
-      for (let k = 0; k < 4; k++) { const cx = 14 + k * 9; for (let y = -4; y <= 4; y++) for (let x = -4; x <= 4; x++) if (x * x + y * y <= 16) X.px(cx + x, Y0 + 14 + y, k % 2 ? 0xf8c8d8 : 0xc8d8f8); X.vl(cx, Y0 + 18, 6, 0xf4f1ea); }
-      X.rect(W - 26, Y0 + 9, 16, 16, 0xe04848); X.rect(W - 24, Y0 + 11, 12, 10, 0xfff8d0); for (let k = 0; k < 10; k++) X.px(W - 23 + (k * 5) % 11, Y0 + 13 + (k * 3) % 7, 0xffffff);
-    } else if (s.id === 'kast') {   // burkpyramiden på hyllan, bollar i en korg och gosedjur som hänger på väggarna
-      X.rect(26, Y0 + 20, W - 52, 2, 0x8a5a2e);
-      const burk = (bx, by, c) => { X.rect(bx, by, 6, 7, 0xc8c8d4); X.rect(bx, by + 2, 6, 3, c); X.vl(bx, by, 7, 0xf4f4fa); X.vl(bx + 5, by, 7, 0x8a8a98); };
-      [[33, 13, 0xe04848], [40, 13, 0x3a7bd5], [47, 13, 0xf0c030], [54, 13, 0x46a35a], [36, 6, 0xd060a0], [43, 6, 0xf08a2a], [50, 6, 0xe04848], [40, -1, 0x3a7bd5], [47, -1, 0xf0c030]].forEach(([bx, by, c]) => burk(bx, Y0 + by, c));
-      for (const [hx, c] of [[9, 0xc8905a], [W - 15, 0xf8c8d8]]) { X.vl(hx + 3, Y0 + 6, 3, 0x5a5a66); X.rect(hx, Y0 + 9, 7, 8, c); X.px(hx, Y0 + 8, c); X.px(hx + 6, Y0 + 8, c); X.px(hx + 2, Y0 + 11, 0x1e1a24); X.px(hx + 4, Y0 + 11, 0x1e1a24); X.px(hx + 3, Y0 + 13, 0x6a3a2a); }
-      for (let k = 0; k < 3; k++) { const bx = W - 30 + k * 4; X.rect(bx, Y0 + 21, 3, 3, 0xf4f1ea); X.px(bx + 1, Y0 + 22, 0xe04848); }
-    } else if (s.id === 'skjut') {  // mörkblå bakvägg med plåtfigurer på skenorna, och korkgeväret på disken
-      X.rect(6, Y0 + 6, W - 12, 20, natt ? 0x24346a : 0x1a2448);
-      for (let k = 0; k < 8; k++) X.px(10 + (k * 37) % (W - 20), Y0 + 8 + (k * 5) % 6, 0xffe060);
-      X.hl(6, Y0 + 15, W - 12, 0x8a5a2e); X.hl(6, Y0 + 24, W - 12, 0x8a5a2e);
-      for (let k = 0; k < 6; k++) { const ax = 9 + k * 13; X.rect(ax, Y0 + 11, 7, 4, 0xf0c030); X.rect(ax + 4, Y0 + 9, 3, 3, 0xf0c030); X.px(ax + 7, Y0 + 10, 0xf08a2a); X.px(ax + 5, Y0 + 10, 0x1e1a24); }
-      for (let k = 0; k < 5; k++) { const sx = 14 + k * 16; X.rect(sx, Y0 + 19, 5, 5, 0xffe060); X.px(sx + 2, Y0 + 18, 0xffe060); X.px(sx - 1, Y0 + 20, 0xffe060); X.px(sx + 5, Y0 + 20, 0xffe060); }
-      X.rect(W - 34, Y0 + 24, 20, 2, 0x5a5a66); X.rect(W - 18, Y0 + 24, 9, 4, 0x8a5a2e); X.px(W - 34, Y0 + 23, 0xc8c8d4);
-    } else {                  // lyckohjulet på bakväggen och gosedjuren på hyllan
-      const cx = W >> 1, cy = Y0 + 4, r = 11;
-      for (let y = -r; y <= r; y++) for (let x = -r; x <= r; x++) { const d = Math.hypot(x, y); if (d > r) continue; const seg = Math.floor(((Math.atan2(y, x) + Math.PI) / (Math.PI * 2)) * 8); X.px(cx + x, cy + y, d > r - 1.5 ? 0xf0c030 : [0xe04848, 0xf4f1ea, 0x3a7bd5, 0xf4f1ea, 0x46a35a, 0xf4f1ea, 0xd060a0, 0xf4f1ea][seg]); }
-      X.rect(cx - 1, cy - 1, 3, 3, 0xf0c030); X.px(cx, cy - r - 2, 0x1e1a24); X.px(cx, cy - r - 1, 0x1e1a24);
-      for (let k = 0; k < 5; k++) { const x = 9 + k * 15; X.rect(x, Y0 + 18, 8, 7, [0xc8905a, 0xf8c8d8, 0xf4f1ea, 0x9ad8f8, 0xf0d070][k]); X.px(x + 1, Y0 + 17, [0xc8905a, 0xf8c8d8, 0xf4f1ea, 0x9ad8f8, 0xf0d070][k]); X.px(x + 6, Y0 + 17, [0xc8905a, 0xf8c8d8, 0xf4f1ea, 0x9ad8f8, 0xf0d070][k]); X.px(x + 2, Y0 + 20, 0x1e1a24); X.px(x + 5, Y0 + 20, 0x1e1a24); }
-    }
-    X.rect(0, Y0 + 26, W, 6, 0xf4ece0); X.hl(0, Y0 + 26, W, 0xffffff); X.rect(0, Y0 + 32, W, H - 32, mul(a, 0.8));
-    for (let k = 0; k < W + 6; k++) { const x = k - 3, r = Math.floor(k / 7) % 2; for (let y = 0; y < 9; y++) X.px(x, Y0 - 4 + y, r ? a : b); if (k % 7 === 3) X.px(x, Y0 + 5, r ? a : b); }   // markisen
-    const t = s.namn, tw = textW(SMALL, t);
-    X.rect((W - tw >> 1) - 3, 6, tw + 6, 10, 0x1e1a24); X.rect((W - tw >> 1) - 2, 7, tw + 4, 8, 0xfff8e0); text(X, SMALL, t, (W - tw) >> 1, 9, 0xd8343c);
-    X.vl(4, 15, 8, 0x5a5e66); X.vl(W - 5, 15, 8, 0x5a5e66);
   });
 }
 // berg-och-dalbanans station med skylten

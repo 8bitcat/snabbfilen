@@ -1,7 +1,7 @@
 {
-  "version": "0.130.0",
+  "version": "0.131.0",
   "date": "2026-10-13",
-  "title": "djurNET mellan vänner",
+  "title": "Pixelberg i full prakt",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
@@ -159,7 +159,11 @@
     "js/pets/sprites.js",
     "js/pets/trim.js",
     "js/pixelberg/karta.js",
+    "js/pixelberg/kiosk.js",
+    "js/pixelberg/liv.js",
     "js/pixelberg/spokhus.js",
+    "js/pixelberg/stand-mat.js",
+    "js/pixelberg/stand-spel.js",
     "js/pixelberg/stand.js",
     "js/scenes/agility.js",
     "js/scenes/apartment.js",

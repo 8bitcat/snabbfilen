@@ -33,9 +33,11 @@ import { skyCanvas } from '../landet/karta.js';
 import { propKit } from '../city/props.js';
 import { BUS_STOPS } from '../city/map.js';
 import { laggTill, draPaket } from '../core/pixelkort.js';
-import { TW, TH, P, HALLPLATS, PORT, BILJETT, KARUSELL, HJUL, STAND, BANA, RADIO, RADIO_H, BANKAR, LYKTOR, BUSKAR, SPAR, hinder, paintGround, utsiktCanvas, biljettBild, standBild, stationBild, banaBild, portBild, radioBild } from '../pixelberg/karta.js';
+import { TW, TH, P, HALLPLATS, PORT, BILJETT, KARUSELL, HJUL, STAND, BANA, RADIO, RADIO_H, BANKAR, LYKTOR, BUSKAR, SPAR, hinder, paintGround, utsiktCanvas, biljettBild, UTESERVERING, stationBild, banaBild, portBild, radioBild } from '../pixelberg/karta.js';
 import { SPOK, SPOK_H, SPOK_SPAR, SPOK_VINDSFONSTER, spokBild } from '../pixelberg/karta.js';
 import { openKast, openSkjut } from '../pixelberg/stand.js';
+import { standBilder, put as putKiosk, ritaLampor, ritaSken } from '../pixelberg/kiosk.js';   // 🎪 stånden i full prakt (v0.131)
+import { knippe, enBallong, vimpelband, glodlampa, jonglerar, BALLONG_FARG } from '../pixelberg/liv.js';   // 🎈 livet: ballonger, vimpelband, slingor, jonglören
 import { SPOK_CYKEL, SPOK_PASTIG, SPOK_LJUD, spokLage, spokVagn, ritaSpokVagn, ritaSpokInne, ritaSpoktitt, ritaFladdermus } from '../pixelberg/spokhus.js';
 import { $t } from '../core/i18n.js';
 
@@ -80,11 +82,26 @@ const PRAT = [
   $t('Vågar du åka berg-och-dalbanan när den öppnar?'), $t('Jag vann ett kortpaket på lyckohjulet!'), $t('På kvällen lyser hela tivolit.'),
   $t('Radiobilarna är roligast – bom bom!'), $t('Spökhuset var inte ALLS läskigt … nästan inte.'), $t('Jag vann en nalle på skjutbanan!'),
 ];
-const GODIS = [
-  { id: 'sockervadd', namn: $t('🍭 Sockervadd'), pris: 20, hunger: 8, glad: 3 },
-  { id: 'popcorn', namn: $t('🍿 Popcorn'), pris: 25, hunger: 12, glad: 2 },
-  { id: 'klubba', namn: $t('🍬 Tivoliklubba'), pris: 15, hunger: 3, glad: 2 },
-];
+// 🍦🍭🍿🍔 matstånden (v0.131): vad de säljer – mättnad och glädje per sak
+const MAT = {
+  glass: [
+    { id: 'glass-jordgubb', namn: $t('🍓 Jordgubbsglass'), pris: 25, hunger: 6, glad: 3 }, { id: 'glass-choklad', namn: $t('🍫 Chokladglass'), pris: 25, hunger: 6, glad: 3 },
+    { id: 'mjukglass', namn: $t('🍦 Mjukglass med strössel'), pris: 30, hunger: 7, glad: 3 }, { id: 'tva-kulor', namn: $t('🍨 Två kulor'), pris: 40, hunger: 10, glad: 4 },
+  ],
+  sockervadd: [
+    { id: 'sockervadd', namn: $t('🍭 Sockervadd'), pris: 20, hunger: 8, glad: 3 }, { id: 'sockervadd-bla', namn: $t('🍭 Blå sockervadd'), pris: 20, hunger: 8, glad: 3 },
+    { id: 'klubba', namn: $t('🍬 Tivoliklubba'), pris: 15, hunger: 3, glad: 2 },
+  ],
+  popcorn: [
+    { id: 'popcorn', namn: $t('🍿 Popcorn'), pris: 25, hunger: 12, glad: 2 }, { id: 'popcorn-stor', namn: $t('🍿 Stor popcorn'), pris: 40, hunger: 20, glad: 3 },
+    { id: 'lask', namn: $t('🥤 Läsk'), pris: 15, hunger: 2, glad: 1 },
+  ],
+  hamburgare: [
+    { id: 'hamburgare', namn: $t('🍔 Hamburgare'), pris: 55, hunger: 35, glad: 2 }, { id: 'ostburgare', namn: $t('🧀 Ostburgare'), pris: 65, hunger: 40, glad: 3 },
+    { id: 'pommes', namn: $t('🍟 Pommes frites'), pris: 30, hunger: 18, glad: 2 }, { id: 'lask', namn: $t('🥤 Läsk'), pris: 15, hunger: 2, glad: 1 },
+  ],
+};
+const MAT_TITEL = { glass: $t('🍦 Glasståndet'), sockervadd: $t('🍭 Sockervadden'), popcorn: $t('🍿 Popcornståndet'), hamburgare: $t('🍔 Hamburgerståndet') };
 // lyckohjulets åtta fält (samma ordning som färgerna på hjulet)
 const LYCKA = [
   { id: 'paket', namn: $t('🃏 Ett kortpaket!') }, { id: 'niete', namn: $t('Nitlott – försök igen!') }, { id: 'p50', namn: $t('💰 50 kr!') }, { id: 'niete', namn: $t('Nitlott – försök igen!') },
@@ -210,19 +227,52 @@ export function makePixelberg(A) {
 
   // ---------- besökarna och maskoten ----------
   const rnd = (a, b) => a + Math.random() * (b - a);
-  const mal = () => ({ x: rnd(260, 1240), y: rnd(P.TORG[0] + 30, P.BOTTOM - 8) });   // (väster om banorna – besökarna går raka vägar)
+  // (besökarna går i den främre halvan av torget – borden, köerna och karusellen ligger bakom – några i östra delen)
+  const mal = (o) => (o?.ost ? { x: rnd(1610, 2420), y: rnd(432, P.BOTTOM - 4) } : { x: rnd(260, 1240), y: rnd(372, P.BOTTOM - 4) });   // (väster om banorna – besökarna går raka vägar)
   const BALLONG = ['#e04848', '#3a7bd5', '#f0c030', '#46a35a', '#d060a0'];
-  const besok = [0, 1, 2, 3, 4, 5, 6].map((i) => { const m = mal(); return { look: i % 3 === 0 ? { ...makeLook(), kid: true } : makeLook(), x: m.x, y: m.y, tx: m.x, ty: m.y, dir: 'right', vila: rnd(0, 3), ballong: i % 2 === 0 ? BALLONG[i % BALLONG.length] : null, rad: PRAT[i % PRAT.length] }; });
+  const besok = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((i) => { const m = mal({ ost: i >= 9 }); return { ost: i >= 9, look: i % 3 === 0 ? { ...makeLook(), kid: true } : makeLook(), x: m.x, y: m.y, tx: m.x, ty: m.y, dir: 'right', vila: rnd(0, 3), ballong: i % 2 === 0 ? BALLONG[i % BALLONG.length] : null, rad: PRAT[i % PRAT.length] }; });
   const nalle = { x: 700, y: 400, tx: 700, ty: 400, dir: 'right', vila: 2, vinkar: 0 };
   function updLiv(dt) {
     for (const o of [...besok, nalle]) {
       if (o.vila > 0) { o.vila -= dt; continue; }
       const dx = o.tx - o.x, dy = o.ty - o.y, d = Math.hypot(dx, dy), step = 22 * dt;
-      if (d <= step) { o.x = o.tx; o.y = o.ty; o.vila = rnd(2, 6); const m = mal(); o.tx = m.x; o.ty = m.y; if (o === nalle) nalle.vinkar = 2; continue; }
+      if (d <= step) { o.x = o.tx; o.y = o.ty; o.vila = rnd(2, 6); const m = mal(o); o.tx = m.x; o.ty = m.y; if (o === nalle) nalle.vinkar = 2; continue; }
       o.x += dx / d * step; o.y += dy / d * step; o.dir = dx < 0 ? 'left' : 'right';
     }
     if (nalle.vinkar > 0) nalle.vinkar -= dt;
   }
+
+  // ---------- 🎈 livet (v0.131): köerna vid matstånden, de som äter vid borden, jonglören och ballongförsäljaren ----------
+  const lcg = (s) => () => ((s = (Math.imul(s, 1664525) + 1013904223) >>> 0) / 4294967296);
+  const LR = lcg(9091);
+  const KOFOLK = STAND.filter((s) => s.mat).flatMap((s) => [0, 1].map((k) => ({ s, k, look: LR() < 0.35 ? { ...makeLook(LR), kid: true } : makeLook(LR) })));
+  const ATARE = UTESERVERING.flatMap((u, i) => [-1, 1].filter((side, j) => (i + j) % 3 !== 2).map((side) => ({ x: u.x + side * 9, y: u.y - 1, dir: side < 0 ? 'right' : 'left', look: LR() < 0.3 ? { ...makeLook(LR), kid: true } : makeLook(LR) })));
+  const JONGLOR = { x: 318, y: 432, look: makeLook(LR) };
+  const BALLONGIS = { x: 620, y: 384, tx: 900, dir: 'right', vila: 0, look: makeLook(LR) };
+  function updBallongis(dt) {
+    const o = BALLONGIS;
+    if (o.vila > 0) { o.vila -= dt; return; }
+    const dx = o.tx - o.x, step = 12 * dt;
+    if (Math.abs(dx) <= step) { o.x = o.tx; o.vila = rnd(4, 9); o.tx = o.x > 900 ? rnd(560, 760) : rnd(1000, 1220); return; }
+    o.x += Math.sign(dx) * step; o.dir = dx < 0 ? 'left' : 'right';
+  }
+  const ballongisAt = (x, y) => Math.abs(BALLONGIS.x - x) < 9 && y < BALLONGIS.y + 2 && y > BALLONGIS.y - 60;
+  const jonglorAt = (x, y) => Math.abs(JONGLOR.x - x) < 9 && y < JONGLOR.y + 2 && y > JONGLOR.y - 34;
+  const minBallong = () => (g.tivoli?.ballong?.dag === g.day ? BALLONG_FARG[(g.tivoli.ballong.f | 0) % BALLONG_FARG.length] : null);
+  function kopBallong() {
+    play('click');
+    openModal($t('🎈 Ballongförsäljaren'), `<p style="font-size:var(--f2);margin-top:0">${$t`En ballong kostar ${fmt(15)}. Den följer med dig på tivolit hela dagen!`}</p>`, [
+      { label: $t`🎈 Köp en ballong · ${fmt(15)}`, cls: 'btn-go', disabled: g.money < 15, onClick: () => {
+        if (g.money < 15) return;
+        g.money -= 15; g.tivoli = { ...(g.tivoli || {}), ballong: { dag: g.day, f: Math.floor(Math.random() * BALLONG_FARG.length) } };
+        const h = g.glad?.(2, '', 'tivoli-ballong', 2) || 0;
+        g.save(); closeModal(); play('buy'); toast(h ? $t`🎈 En ballong! +${h} 😊` : $t('🎈 En ballong!'), 'good');
+      } },
+      { label: $t('Nej tack'), onClick: closeModal },
+    ]);
+  }
+  // vimpelstängerna längs torgets framkant (vimpelbanden hänger mellan dem)
+  const STANGER = [200, 420, 640, 860, 1080, 1300, 1520, 1740, 1960, 2180, 2400];
 
   // ---------- 🚗 radiobilarna ----------
   // Besökarnas bilar kör hela tiden (banan ser levande ut); min bil finns under en runda (aka.typ === 'radio').
@@ -344,10 +394,12 @@ export function makePixelberg(A) {
     { id: 'hjul', r: [HJUL.x - 40, HJUL.fot - 40, HJUL.x + 40, HJUL.fot + 4], go: [HJUL.x, HJUL.fot + 10], label: $t('PARISERHJULET – ETT VARV MED UTSIKT'), act: akHjul },
     { id: 'karusell', r: [KARUSELL.x - KARUSELL.rx, KARUSELL.y - 80, KARUSELL.x + KARUSELL.rx, KARUSELL.y + KARUSELL.ry], go: [KARUSELL.x, KARUSELL.y + KARUSELL.ry + 10], label: $t('KARUSELLEN'), act: akKarusell },
     { id: 'biljett', r: [BILJETT.x, BILJETT.y - 64, BILJETT.x + BILJETT.w, BILJETT.y], go: [BILJETT.x + BILJETT.w / 2, BILJETT.y + 8], label: $t('BILJETTER – ÅKBAND OCH KUPONGER'), act: biljetter },
-    { id: 'godis', r: [STAND[0].x, STAND[0].y - 66, STAND[0].x + STAND[0].w, STAND[0].y], go: [STAND[0].x + STAND[0].w / 2, STAND[0].y + 8], label: STAND[0].namn, act: godisStand },
-    { id: 'lycka', r: [STAND[1].x, STAND[1].y - 66, STAND[1].x + STAND[1].w, STAND[1].y], go: [STAND[1].x + STAND[1].w / 2, STAND[1].y + 8], label: STAND[1].namn, act: lyckohjulet },
+    // 🎪 stånden: matstånden öppnar sin meny, lyckohjulet, burktornet och skjutbanan sina spel
+    ...STAND.map((s) => ({ id: s.id, r: [s.x, s.y - 100, s.x + s.w, s.y], go: [s.cx, s.y + 8],
+      label: s.mat ? $t`${s.namn} – KÖP NÅGOT GOTT!` : s.id === 'kast' ? $t('BURKTORNET – FÄLL ALLA SEX BURKAR!') : s.id === 'skjut' ? $t('SKJUTBANAN – TRÄFFA PLÅTANKORNA!') : s.namn,
+      act: s.mat ? () => matStand(s.id) : s.id === 'lycka' ? lyckohjulet : s.id === 'kast' ? () => openKast(A) : () => openSkjut(A) })),
     { id: 'bana', r: [BANA.station.x, BANA.station.y - 50, BANA.station.x + BANA.station.w, BANA.station.y], go: [BANA.station.x + BANA.station.w / 2, BANA.station.y + 8], label: $t('BERG-OCH-DALBANAN – ÅK MED EN KOMPIS!'), act: akBana },
-    ...STAND.filter((s) => s.id === 'kast' || s.id === 'skjut').map((s) => ({ id: s.id, r: [s.x, s.y - 66, s.x + s.w, s.y], go: [s.x + s.w / 2, s.y + 8], label: s.id === 'kast' ? $t('BURKTORNET – FÄLL ALLA SEX BURKAR!') : $t('SKJUTBANAN – TRÄFFA PLÅTANKORNA!'), act: () => (s.id === 'kast' ? openKast(A) : openSkjut(A)) })),
+
     { id: 'spok', r: [SPOK.x, SPOK.y - SPOK_H, SPOK.x + SPOK.w, SPOK_SPAR.y1 + 14], go: [SPOK_SPAR.cx, SPOK_SPAR.y1 + 12], label: $t('SPÖKHUSET – ÅK MED EN KOMPIS OM DU VÅGAR!'), act: akSpok },
     { id: 'radio', r: [RADIO.x, RADIO.y - RADIO_H + 6, RADIO.x + RADIO.w, RADIO.y + RADIO.h + 2], go: [RADIO.x + RADIO.w / 2, RADIO.y + RADIO.h + 10], label: $t('RADIOBILAR – KROCKA MED KOMPISAR!'), act: akRadio },
     { id: 'buss', r: [HALLPLATS.x - 12, HALLPLATS.y - 34, HALLPLATS.x + 14, HALLPLATS.y + 2], go: [HALLPLATS.x + 8, HALLPLATS.y + 6], label: $t('BERGBUSSEN NER TILL STAN'), act: bussen },
@@ -359,12 +411,13 @@ export function makePixelberg(A) {
       { label: $t('Stäng'), onClick: closeModal },
     ]);
   }
-  function godisStand() {
+  function matStand(id) {
     play('click');
-    const rad = (m) => `<div class="prow" style="grid-template-columns:1fr auto"><span class="nm">${esc(m.namn)}</span><button class="btn btn-small btn-go" data-godis="${m.id}" ${g.money < m.pris ? 'disabled' : ''}>${esc(fmt(m.pris))}</button></div>`;
-    const dlg = openModal($t('🍭 Sockervadd & popcorn'), `<div class="plist">${GODIS.map(rad).join('')}</div>`, [{ label: $t('Inget, tack'), onClick: closeModal }]);
-    dlg.querySelectorAll('[data-godis]').forEach((b) => (b.onclick = () => {
-      const m = GODIS.find((x) => x.id === b.dataset.godis); if (!m || g.money < m.pris) return;
+    const lista = MAT[id] || [];
+    const rad = (m) => `<div class="prow" style="grid-template-columns:1fr auto"><span class="nm">${esc(m.namn)}</span><button class="btn btn-small btn-go" data-mat="${m.id}" ${g.money < m.pris ? 'disabled' : ''}>${esc(fmt(m.pris))}</button></div>`;
+    const dlg = openModal(MAT_TITEL[id] || '🎪', `<div class="plist">${lista.map(rad).join('')}</div>`, [{ label: $t('Inget, tack'), onClick: closeModal }]);
+    dlg.querySelectorAll('[data-mat]').forEach((b) => (b.onclick = () => {
+      const m = lista.find((x) => x.id === b.dataset.mat); if (!m || g.money < m.pris) return;
       g.money -= m.pris; g.hunger = Math.min(100, (g.hunger || 0) + m.hunger);
       const h = g.glad?.(m.glad, '', `tivoli-${m.id}`, m.glad) || 0;
       g.save(); closeModal(); play('buy'); toast(`${m.namn.split(' ')[0]} ${h ? $t`Mums! +${h} 😊` : $t('Mums!')}`, 'good');
@@ -434,6 +487,19 @@ export function makePixelberg(A) {
 
   // ---------- ritning ----------
   const KIT = propKit();
+  // 🎪 stånden: expediten (en egen figur per stånd, i förkläde) står bakom disken mellan bak- och frambilden
+  const rngAv = (s) => () => ((s = (Math.imul(s, 1664525) + 1013904223) >>> 0) / 4294967296);
+  const SALJARE = new Map(STAND.map((s, i) => [s.id, { ...makeLook(rngAv(4100 + i * 977)), apron: true }]));
+  function ritaStand(ctx, s, N) {
+    const b = standBilder(s.def, N);
+    putKiosk(ctx, b.bak, s.cx, s.y);
+    ctx.save(); ctx.beginPath(); ctx.rect(s.x + 6, s.y - 62, s.w - 12, 47); ctx.clip();
+    drawPerson(ctx, s.cx + (s.def.expedit?.dx || 0), s.y - 3, SALJARE.get(s.id), 'down', Math.sin(t * 1.3 + s.cx) > 0.93 ? 4 : 0);
+    ctx.restore();
+    putKiosk(ctx, b.fram, s.cx, s.y);
+    s.def.live?.(ctx, s.cx, s.y, t, N);
+    ritaLampor(ctx, s.cx, s.y, b.lampor, t, N, s.cx & 7);
+  }
   const hex = (n) => '#' + n.toString(16).padStart(6, '0');
   // pariserhjulet: A-ställningen, fälgen med ekrar, gondolerna (färgade, med folk), glödlampor på kvällen
   const GFARG = [0xe04848, 0xf0c030, 0x3a7bd5, 0x46a35a, 0xd060a0, 0xf08a2a, 0x9a6ad8, 0x2ab8c8, 0xe04848, 0xf0c030];
@@ -527,7 +593,8 @@ export function makePixelberg(A) {
     for (let k = 0; k < LYKTOR.length - 1; k++) {
       const a = LYKTOR[k], b = LYKTOR[k + 1], n = Math.round((b.x - a.x) / 6);
       if (b.x > SPOK.x && a.x < SPOK.x + SPOK.w) continue;   // (ingen slinga tvärs över spökhuset)
-      for (let i = 1; i < n; i++) { const u = i / n, x = a.x + (b.x - a.x) * u, y = a.y - 30 + Math.sin(u * Math.PI) * 10; ctx.fillStyle = N ? ['#ff6868', '#ffe068', '#68b8ff', '#78f078'][(i + k) % 4] : '#8a8a98'; ctx.fillRect(Math.round(x), Math.round(y), N ? 2 : 1, N ? 2 : 1); }
+      ctx.fillStyle = '#5a5662'; for (let i = 0; i <= n * 2; i++) { const u = i / (n * 2); ctx.fillRect(Math.round(a.x + (b.x - a.x) * u), Math.round(a.y - 31 + Math.sin(u * Math.PI) * 10), 1, 1); }   // kabeln
+      for (let i = 1; i < n; i++) { const u = i / n, x = a.x + (b.x - a.x) * u, y = a.y - 30 + Math.sin(u * Math.PI) * 10; glodlampa(ctx, Math.round(x), Math.round(y), i + k * 7, t, N); }   // (tända även på dagen – de gnistrar)
     }
   }
 
@@ -628,6 +695,7 @@ export function makePixelberg(A) {
         }
       }
       updLiv(dt);
+      updBallongis(dt);
       updRadio(dt);
       if (pets && !aka) try { pets.update(dt, walker.px, walker.py, (x, y) => walker.walkable(x, y)); } catch (e) { console.error('husdjuren på Pixelberg:', e); pets = null; }
       const c = camTarget(); cam.x += (c.x - cam.x) * Math.min(1, dt * 6); cam.y += (c.y - cam.y) * Math.min(1, dt * 6);
@@ -655,7 +723,21 @@ export function makePixelberg(A) {
       for (let i = 0; i < HASTAR; i++) { const h = hast(i); items.push({ fy: h.y, draw: () => drawHast(ctx, i) }); }
       items.push({ fy: KARUSELL.y + 0.5, draw: () => ritaKarusell(ctx, N, 'tak') });
       items.push({ fy: BILJETT.y, draw: () => ctx.drawImage(biljettBild(N), BILJETT.x, BILJETT.y - 64) });
-      for (const s of STAND) if (syns(s.x)) items.push({ fy: s.y, draw: () => ctx.drawImage(standBild(s, N), s.x, s.y - 66) });
+      for (const s of STAND) if (syns(s.cx, 120)) items.push({ fy: s.y, draw: () => ritaStand(ctx, s, N) });
+      for (const u of UTESERVERING) if (syns(u.x)) items.push({ fy: u.y, draw: () => KIT.cafe(ctx, u.x, u.y, u.f) });
+      // 🎈 de som äter vid borden, köerna vid matstånden, jonglören, ballongförsäljaren och ens egen ballong
+      for (const a of ATARE) if (syns(a.x)) items.push({ fy: a.y + 0.6, draw: () => drawPerson(ctx, a.x, a.y, a.look, a.dir, Math.sin(t * 1.7 + a.x) > 0.3 ? 6 : 5) });
+      for (const q of KOFOLK) {
+        const fas = Math.floor(t / 17 + q.s.cx * 0.013) % 3;
+        if ((q.k === 0 && fas === 0) || (q.k === 1 && fas !== 2) || !syns(q.s.cx)) continue;
+        const qx = q.s.cx - 8 + q.k * 14, qy = q.s.y + 12 + q.k * 3;
+        items.push({ fy: qy, draw: () => drawPerson(ctx, qx, qy, q.look, 'up', Math.sin(t * 2 + qx) > 0.95 ? 4 : 0) });
+      }
+      if (syns(JONGLOR.x)) items.push({ fy: JONGLOR.y, draw: () => { drawPerson(ctx, JONGLOR.x, JONGLOR.y, JONGLOR.look, 'down', Math.floor(t * 2.8) % 2 ? 10 : 0); jonglerar(ctx, JONGLOR.x, JONGLOR.y, t); } });
+      if (syns(BALLONGIS.x)) items.push({ fy: BALLONGIS.y, draw: () => { drawPerson(ctx, BALLONGIS.x, BALLONGIS.y, BALLONGIS.look, BALLONGIS.dir, BALLONGIS.vila > 0 ? 0 : WALK_SEQ[Math.floor(t * 6) % 4]); knippe(ctx, BALLONGIS.x + (BALLONGIS.dir === 'left' ? -5 : 5), BALLONGIS.y - 15, t, 2, 9, 26); } });
+      const mb = minBallong();
+      if (mb && (!aka || iKo())) items.push({ fy: walker.py + 0.3, draw: () => enBallong(ctx, walker.px + (walker.dir === 'left' ? -5 : 5), walker.py - 15, mb, t) });
+      for (const s of STAND) if (syns(s.cx, 120)) items.push({ fy: s.y + 0.2, draw: () => knippe(ctx, s.mat ? s.x + s.w + 10 : s.x - 2, s.mat ? s.y - 15 : s.y - 6, t, s.cx & 7, 3, 16) });
       items.push({ fy: BANA.station.y, draw: () => ctx.drawImage(stationBild(N), BANA.station.x, BANA.station.y - 50) });
       items.push({ fy: PORT.y, draw: () => ctx.drawImage(portBild(N), PORT.x - PORT.w / 2, PORT.y - PORT.h) });
       if (syns(SPOK.x + SPOK.w / 2, 200)) {
@@ -689,19 +771,39 @@ export function makePixelberg(A) {
       if (pets && !aka) for (const d of pets.drawables()) items.push({ fy: d.fy ?? d.y, draw: () => d.draw(ctx) });
       if (!aka || iKo()) items.push(selfDrawable(A, walker, t, { folksHere: worldFolksHere(A).length, ride: null }));
       for (const f of koande()) items.push({ fy: f.y, draw: () => { drawPerson(ctx, f.x, f.y, f.av.look, 'up', 0); nameTag(ctx, f.x, f.y - 50, f.av); } });
+      ritaSlingor(ctx, N || D);   // (slingorna hänger mellan lyktorna längst bak – bakom stånden)
       items.sort((a, b) => a.fy - b.fy).forEach((d) => d.draw(ctx));
       for (const o of bommar) ritaBom(ctx, o);
-      ritaSlingor(ctx, N || D);
+      // vimpelstängerna och vimpelbanden längs torgets framkant (längst fram)
+      for (let k = 0; k < STANGER.length; k++) {
+        const x = STANGER[k];
+        if (x < cx - 240 || x > cx + VW + 240) continue;
+        for (let y = 428; y < 476; y++) { ctx.fillStyle = Math.floor(y / 4) % 2 ? '#e04848' : '#f4f1ea'; ctx.fillRect(x, y, 2, 1); ctx.fillStyle = 'rgba(30,20,40,.35)'; ctx.fillRect(x + 2, y, 1, 1); }
+        ctx.fillStyle = '#f0c030'; ctx.fillRect(x - 1, 425, 4, 3); ctx.fillStyle = '#fff0a0'; ctx.fillRect(x - 1, 425, 1, 1);
+        if (k < STANGER.length - 1) vimpelband(ctx, x + 1, 429, STANGER[k + 1] + 1, 429, t, 11, k * 2);
+      }
       ctx.restore();
       if (N || D) {
         ctx.fillStyle = N ? 'rgba(12,16,48,0.5)' : 'rgba(60,40,90,0.18)'; ctx.fillRect(0, 0, VW, VH);
         ctx.save(); ctx.translate(-cx, -cy); for (const l of LYKTOR) if (l.x > cx - 40 && l.x < cx + VW + 40) KIT.lampGlow(ctx, l.x, l.y, N ? 1 : 0.5); ctx.restore();
+        // 🎪 stånden lyser genom mörkret: skylten och den övre delen av insidan ritas igen ovanpå hinnan (inte där folk
+        // står framför disken), lamporna tänds och skenet läggs på
+        ctx.save(); ctx.translate(-cx, -cy);
+        for (const s of STAND) if (syns(s.cx, 120)) {
+          const sk = s.def.skyltRuta;
+          ctx.save(); ctx.globalAlpha = N ? 0.82 : 0.5; ctx.beginPath(); ctx.rect(s.x + 6, s.y - 61, s.w - 12, 31); if (sk) ctx.rect(s.cx + sk.x0, s.y + sk.y0, sk.bw, sk.bh); ctx.clip();
+          ritaStand(ctx, s, N); ctx.restore();
+          ritaLampor(ctx, s.cx, s.y, standBilder(s.def, N).lampor, t, true, s.cx & 7);
+        }
+        ctx.globalCompositeOperation = 'lighter';
+        for (const s of STAND) if (syns(s.cx, 120)) ritaSken(ctx, s.cx, s.y, s.def, standBilder(s.def, N).lampor, t);
+        ctx.restore();
         if (N) {
           // tivolits sken: hjulet, karusellen och stånden lyser genom mörkret
           ctx.save(); ctx.translate(-cx, -cy); ctx.globalCompositeOperation = 'lighter';
           const sken = (x, y, r, c) => { const gr = ctx.createRadialGradient(x, y, 2, x, y, r); gr.addColorStop(0, c); gr.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = gr; ctx.fillRect(x - r, y - r, r * 2, r * 2); };
           sken(HJUL.x, HJUL.y, HJUL.r + 30, 'rgba(255,170,90,.28)'); sken(KARUSELL.x, KARUSELL.y - 60, 80, 'rgba(255,210,120,.3)');
-          for (const s of STAND) sken(s.x + s.w / 2, s.y - 30, 50, 'rgba(255,200,120,.22)');
+
           sken(PORT.x, PORT.y - PORT.h + 10, 60, 'rgba(255,230,140,.25)');
           sken(RADIO.x + RADIO.w / 2, RADIO.y - 50, 90, 'rgba(255,120,140,.22)');
           for (const [wx, wy] of [[58, 72], [142, 72], [100, 34], [20, 62], [180, 70]]) sken(SPOK.x + wx, SPOK.y - SPOK_H + wy, 26, 'rgba(180,255,120,.22)');
@@ -736,6 +838,8 @@ export function makePixelberg(A) {
       if (fade.phase === 1 || aka) return;
       hover = { x: sx, y: sy };
       const x = sx + cam.x, y = sy + cam.y;
+      if (ballongisAt(x, y)) { walker.walkTo(BALLONGIS.x + (walker.px < BALLONGIS.x ? -14 : 14), BALLONGIS.y + 2, () => { BALLONGIS.vila = 5; kopBallong(); }); return; }
+      if (jonglorAt(x, y)) { walker.walkTo(JONGLOR.x + (walker.px < JONGLOR.x ? -16 : 16), JONGLOR.y + 2, () => { talk.say($t('*Jonglören fångar alla tre käglorna och bugar!*'), () => ({ x: JONGLOR.x, y: JONGLOR.y - 50 }), 3, { silent: true }); const h = g.glad?.(1, '', 'tivoli-jonglor', 1); if (h) toast(`🤹 +${h} 😊`); }); return; }
       if (nalleAt(x, y)) { walker.walkTo(nalle.x + (walker.px < nalle.x ? -14 : 14), nalle.y + 2, () => { nalle.vinkar = 2.5; nalle.vila = 3; talk.say($t('*Pixel-Nalle vinkar och gör en high five!*'), () => ({ x: nalle.x, y: nalle.y - 30 }), 3, { silent: true }); const h = g.glad?.(1, '', 'pixelnalle', 1); if (h) toast(`🐻 +${h} 😊`); }); return; }
       const o = folkAt(x, y);
       if (o) { walker.walkTo(o.x + (walker.px < o.x ? -14 : 14), o.y + 2, () => talk.say(o.rad, () => ({ x: o.x, y: o.y - 34 }), 3.5, { voice: o.look })); return; }
@@ -759,6 +863,7 @@ export function makePixelberg(A) {
       akBana: () => akBana(),
       spok: () => { const L = spokL(), v = spokVagn(L); return { n: L.n, u: L.u, station: L.station, inne: L.inne, i: L.i, vagn: v, aka: aka?.typ === 'spok' ? { n: aka.n, plats: aka.plats } : null, platser: spokAkare(L).map((p) => (p ? (p.jag ? 'jag' : p.npc ? 'npc' : p.namn) : null)) }; },
       akSpok: () => akSpok(),
+      ballongis: () => ({ x: BALLONGIS.x, y: BALLONGIS.y }), kopBallong: () => kopBallong(), minBallong: () => minBallong(),
       radio: () => ({ aka: aka?.typ === 'radio' ? { t: aka.t, c: aka.c, krockar: aka.krockar, x: aka.bil.x, y: aka.bil.y, vx: aka.bil.vx, vy: aka.bil.vy, dir: aka.bil.dir, med: [...aka.med] } : null, kompisar: [...fjarr.values()].map((b) => ({ namn: b.namn, x: b.x, y: b.y })), npc: npcBilar.map((b) => ({ x: b.x, y: b.y })), ruta: { RX0, RX1, RY0, RY1 } }),
       radioSatt: (x, y, vx, vy) => { if (aka?.typ === 'radio') Object.assign(aka.bil, { x, y, vx, vy }); },
       radioPark: (pa) => { npcPark = !!pa; if (pa) npcBilar.forEach((b, i) => Object.assign(b, { x: RX0 + i * 22, y: RY0, vx: 0, vy: 0 })); },
