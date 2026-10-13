@@ -4,6 +4,7 @@ import { toast } from './core/ui.js';
 import { play } from './core/sound.js';
 import { WARDROBE, itemById, legacyKeyToId } from './data/wardrobe.js';
 import { $t, $tf, $n, money } from './core/i18n.js';
+import { visningUppdatera } from './core/visning.js';   // 🏆 troféskåpet ritas om när en merit kommer
 
 export const SAVE_KEY = 'snabbfilen_save1';
 // Fält som gamla versioner sparade men som load() redan har flyttat in på nytt ställe
@@ -494,6 +495,7 @@ export const KATALOG = [
   { kind: 'smyckestavla', icon: '📿', name: $t('Smyckestavla'), price: 450, vars: 1, room: 'ÖVRIGT', wall: true, shop: 'bling' },
   { kind: 'vaskkrokar', icon: '👜', name: $t('Väskkrokar'), price: 350, vars: 1, room: 'ÖVRIGT', wall: true, shop: 'bling' },
   { kind: 'pokal', icon: '🏆', name: $t('Pokal'), price: 800, vars: 3, room: 'ÖVRIGT', shop: 'pris' },
+  { kind: 'trofeskap', icon: '🏆', name: $t('Troféskåp'), price: 1500, vars: 1, room: 'ÖVRIGT', shop: 'pris', function: 'meriter' },   // js/core/meriter.js
 ];
 const KAT_BY_KIND = new Map(KATALOG.map((k) => [k.kind, k]));
 export const katalogOf = (kind) => KAT_BY_KIND.get(kind);
@@ -758,6 +760,7 @@ export class Game {
     this.presenter = { dag: '', antal: 0, ko: [] };
     this.kort = {};          // 🃏 pixelkorten: { id: antal } (js/core/pixelkort.js)
     this.kortSerier = [];    // 🃏 serierna man fått belöningen för (komplett serie = 500 kr + guldpokal)
+    this.meriter = [];       // 🏆 det man har vunnit [{ typ, plats, klass, vem, dag, t }] (js/core/meriter.js, merit())
     this.festVecka = '';   // 🎉 veckan ("2026-W42") då man senast fick lördagsfestens present (js/city/fest.js)
     // 🏡 djurhemmet i Tassbacken (js/scenes/shop-djurhem.js): adopterade = djurens id:n ("dh3:12" = djur 3 vecka 12),
     // hjalp = dagen man senast hjälpte till, gav = dagen man senast skänkte pengar
@@ -940,6 +943,8 @@ export class Game {
         // 🃏 pixelkorten: korta id:n, 1–99 av varje (okända kort från en nyare version följer med orörda)
         g.kort = {}; for (const [k, v] of Object.entries(p.kort && typeof p.kort === 'object' ? p.kort : {})) if (/^[a-z][a-z0-9-]{1,23}$/.test(k) && (v | 0) > 0) g.kort[k] = Math.min(99, v | 0);
         g.kortSerier = (Array.isArray(p.kortSerier) ? p.kortSerier : []).filter((s) => typeof s === 'string' && /^[a-z]{2,12}$/.test(s)).slice(0, 20);
+        g.meriter = (Array.isArray(p.meriter) ? p.meriter : []).filter((m) => m && typeof m.typ === 'string' && /^[a-z]{2,12}$/.test(m.typ)).slice(-150)
+          .map((m) => ({ typ: m.typ, plats: Math.max(1, Math.min(3, m.plats | 0)), klass: String(m.klass || '').slice(0, 12), vem: String(m.vem || '').slice(0, 20), dag: m.dag | 0, t: Number(m.t) || 0 }));
         g.festVecka = /^\d{4}-W\d{2}$/.test(String(p.festVecka || '')) ? String(p.festVecka) : '';
         g.designs = (Array.isArray(p.designs) ? p.designs : []).filter((d) => d && ['neck', 'bag', 'beads', 'phone'].includes(d.kind) && d.sel && typeof d.sel === 'object').slice(-40).map(cleanDesign).filter(Boolean);
         keep.storage = (Array.isArray(p.storage) ? p.storage : []).filter((it) => it && typeof it === 'object' && !knownKind(it.k));
@@ -1958,6 +1963,17 @@ export class Game {
     this.save();
     return { ok: true, glad };
   }
+  // 🏆 en merit (pokal, rosett, medalj) till troféskåpet och "Mina meriter" (js/core/meriter.js). Den första ger
+  // troféskåpet gratis. → true om skåpet gavs nu.
+  merit(typ, plats, { klass = '', vem = '' } = {}) {
+    if (!Array.isArray(this.meriter)) this.meriter = [];
+    this.meriter.push({ typ, plats: Math.max(1, Math.min(3, plats | 0)), klass: String(klass).slice(0, 12), vem: String(vem).slice(0, 20), dag: this.day | 0, t: Date.now() });
+    while (this.meriter.length > 150) this.meriter.shift();
+    const har = (this.storage || []).some((s) => s.k === 'trofeskap') || Object.values(this.deco || {}).some((l) => Array.isArray(l) && l.some((d) => d.k === 'trofeskap'));
+    if (!har) { this.storage.push({ k: 'trofeskap', v: 0 }); setTimeout(() => toast($t('🏆 Din första merit! Du har fått ett troféskåp – ställ ut det hemma med 🛋️ Möblera.'), 'good wrap'), 2500); }
+    visningUppdatera(this);
+    return !har;
+  }
   // en hoppning är klar: fel (rivningar + vägringar × 4), tid i sekunder → placering mot ridskolan
   hoppResultat(klass, fel, tid) {
     const K = HOPPKLASSER.find((k) => k.id === klass), H = this.hast;
@@ -1969,7 +1985,7 @@ export class Game {
     const pris = K.pris[plats - 1] || 0;
     this.money += pris; if (pris) this.earned += pris;
     H.rosetter ||= {}; H.rosetter[K.id] ||= [0, 0, 0];
-    if (plats <= 3) H.rosetter[K.id][plats - 1]++;
+    if (plats <= 3) { H.rosetter[K.id][plats - 1]++; this.merit('hopp', plats, { klass: K.id, vem: H.namn }); }
     const index = HOPPKLASSER.indexOf(K);
     const upplast = fel === 0 && index === (H.klass | 0) && index < HOPPKLASSER.length - 1;
     if (upplast) H.klass = index + 1;

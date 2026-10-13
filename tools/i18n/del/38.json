@@ -1,0 +1,47 @@
+[
+ {
+  "i": 8383,
+  "f": "js/core/meriter.js",
+  "k": "Hinderbanan"
+ },
+ {
+  "i": 8384,
+  "f": "js/core/meriter.js",
+  "k": "Pixelkort – komplett serie"
+ },
+ {
+  "i": 8385,
+  "f": "js/core/meriter.js",
+  "k": "🏆 Mina meriter"
+ },
+ {
+  "i": 8386,
+  "f": "js/core/meriter.js",
+  "k": "{0} meriter i troféskåpet."
+ },
+ {
+  "i": 8387,
+  "f": "js/core/meriter.js",
+  "k": "Troféskåpet är tomt än."
+ },
+ {
+  "i": 8388,
+  "f": "js/core/meriter.js",
+  "k": "Tävla på utställningen och i agility i Tassbacken, i kaninhoppning eller på hinderbanan i landet – eller samla en hel serie pixelkort. Allt du vinner hamnar här."
+ },
+ {
+  "i": 8389,
+  "f": "js/game.js",
+  "k": "Troféskåp"
+ },
+ {
+  "i": 8390,
+  "f": "js/game.js",
+  "k": "🏆 Din första merit! Du har fått ett troféskåp – ställ ut det hemma med 🛋️ Möblera."
+ },
+ {
+  "i": 8391,
+  "f": "js/scenes/room.js",
+  "k": "TROFÉER"
+ }
+]

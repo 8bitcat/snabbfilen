@@ -1,7 +1,7 @@
 {
-  "version": "0.119.0",
+  "version": "0.120.0",
   "date": "2026-10-13",
-  "title": "Kameran och bilderna",
+  "title": "Troféskåpet",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
@@ -56,6 +56,7 @@
     "js/core/livsmal.js",
     "js/core/ljudfiler.js",
     "js/core/menu.js",
+    "js/core/meriter.js",
     "js/core/mobilen.js",
     "js/core/music.js",
     "js/core/notiser.js",

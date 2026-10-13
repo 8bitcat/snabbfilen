@@ -10,6 +10,11 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.120.0] – 2026-10-13 – Troféskåpet
+- 🏆 Troféskåpet! Allt du vinner sparas som meriter: utställningen, kaninhoppningen, agilitycupen, Best in Show, hinderbanan och kompletta pixelkortsserier.
+- Din första merit ger ett troféskåp – ställ ut det hemma. De tolv senaste pokalerna, rosetterna och medaljerna står på hyllorna bakom glaset.
+- Tryck på skåpet hemma för att se 🏆 Mina meriter: vad du vann, vilken plats, med vilket djur och vilken dag.
+
 ## [0.119.0] – 2026-10-13 – Kameran och bilderna
 - 📷 Kamera i mobilen! Knappar och skyltar försvinner och en sökare dyker upp – gå runt och ta bilder i Pixelstaden.
 - 🎨 Sex filter (Sommar, Svartvitt, Gammalt foto, Retro, Drömland …) och 🖼️ fem ramar (Snabbfoto med plats och datum, Vykort med frimärke, Guldram, Filmremsa).

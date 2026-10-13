@@ -35,6 +35,7 @@
 // man går, med slutna ögon, huvudet på kudden), lamporna släcks, zzz stiger, månen lyser
 // genom fönstren, sedan gryr det, figuren kliver upp och först då räknas natten
 // (onWake: g.sleep + veckan). Klockan står still under tiden; ett klick spolar fram.
+import { openMeriter } from '../core/meriter.js';   // 🏆 troféskåpet: Mina meriter
 import { foto } from '../core/fotolage.js';   // 📸 fotoläget (js/core/foto.js)
 import { drawPerson } from '../core/people.js';
 import { openAvatarEditor, avatarTagColors } from '../core/avatar.js';
@@ -405,7 +406,7 @@ function surfaceRow(k, v, r) {
   return row;
 }
 // vad skylten över en funktionsmöbel säger
-const FN_LABEL = { brasa: $t('BRASA'), lykta: $t('PUMPA'), sova: $t('SÄNG'), garderob: $t('GARDEROB'), ata: $t('KYLSKÅP'), laga: $t('SPIS'), recept: $t('RECEPT'), toalett: $t('TOALETT'), tvatta: $t('TVÄTTA'), tv: $t('TV'), musik: $t('MUSIK') };
+const FN_LABEL = { meriter: $t('TROFÉER'), brasa: $t('BRASA'), lykta: $t('PUMPA'), sova: $t('SÄNG'), garderob: $t('GARDEROB'), ata: $t('KYLSKÅP'), laga: $t('SPIS'), recept: $t('RECEPT'), toalett: $t('TOALETT'), tvatta: $t('TVÄTTA'), tv: $t('TV'), musik: $t('MUSIK') };
 const KIND_LABEL = { koksspis: $t('SPIS'), mikro: $t('MIKRO'), dusch: $t('DUSCH'), badkar: $t('BADKAR'), tvattmaskin: $t('TVÄTT'), tvattpelare: $t('TVÄTT'),
   handfat: $t('HANDFAT'), tvattstall: $t('HANDFAT'), dator: $t('DATOR'), laptop: $t('DATOR'), spelkonsol: $t('KONSOL'), dass: $t('DASSET'), kladskap: $t('KLÄDSKÅP'), linneskap: $t('LINNESKÅP') };
 const labelOf = (k) => { const fn = functionOf(k); return fn && fn !== 'lykta' ? KIND_LABEL[k] || FN_LABEL[fn] : null; }; // (pumplyktorna slipper skylt)
@@ -808,6 +809,7 @@ export function makeRoom(A, { visit = false, sub: subOpt = null, core = null } =
       case 'tvatta': return () => wash(A, kind);
       case 'tv': return () => tvMenu(A, kind, p);
       case 'musik': return () => openMusik(A, kind, p ? { k: p.k, decoIdx: p.decoIdx } : {});
+      case 'meriter': return () => { play('click'); openMeriter(A); };   // 🏆 troféskåpet
       case 'brasa': return () => { const d = p ? decoList()[p.decoIdx] : null; if (d) openBrasa(A, d); };
       case 'lykta': return () => {   // 🎃 pumplyktan: tänd eller blås ut ljuset
         const d = p ? decoList()[p.decoIdx] : null;

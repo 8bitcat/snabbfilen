@@ -86,7 +86,7 @@ export function laggTill(G, ids) {
   const nya = [];
   for (const s of SERIER) {
     if (G.kortSerier.includes(s.id)) continue;
-    if (serieKort(s.id).every((k) => (G.kort[k.id] | 0) > 0)) { G.kortSerier.push(s.id); G.money += SERIE_PRIS; G.storage.push({ k: 'pokal', v: 0 }); nya.push(s); }
+    if (serieKort(s.id).every((k) => (G.kort[k.id] | 0) > 0)) { G.kortSerier.push(s.id); G.money += SERIE_PRIS; G.storage.push({ k: 'pokal', v: 0 }); G.merit?.('kort', 1, { klass: s.id }); nya.push(s); }
   }
   return nya;
 }

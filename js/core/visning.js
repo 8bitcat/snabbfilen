@@ -5,6 +5,8 @@
 //   smyckestavla – egna halsband och pärlhalsband på sammet i guldram (upp till fyra)
 //   vaskkrokar   – egna väskor på krokar (upp till fyra)
 //   pokal        – guld, silver och brons (stora presenter, och tävlingarna längre fram)
+//   trofeskap    – glasskåpet med de tolv senaste meriterna (pokaler, rosetter, medaljer, stjärnor – js/core/meriter.js);
+//                  man får det gratis med sin första merit (game.js merit)
 // Man får hyllan/tavlan/krokarna gratis första gången man köper en egen design av den sorten (shop-bling.js).
 // Tekniken: spelets möbler ritas ur möbelarket (assets/interior.png + js/data/frames.js) på många ställen (rummet,
 // Möblera, besök, förhandsvisningar). De nya möblerna ritas därför i en extra rad UNDER arket: ett utökat ark byggs
@@ -13,14 +15,15 @@
 import { FRAMES } from '../data/frames.js';
 import { Pix, mix, mul } from './floor-pix.js';
 
-export const VISNING = new Set(['mobilhylla', 'smyckestavla', 'vaskkrokar', 'pokal']);
-const BAS_H = 443, RAD_H = 28;   // möbelarkets höjd och den extra raden
-const RUTOR = { mobilhylla0: [0, BAS_H, 44, 26], smyckestavla0: [46, BAS_H, 34, 26], vaskkrokar0: [82, BAS_H, 40, 24], pokal0: [124, BAS_H + 8, 12, 18], pokal1: [138, BAS_H + 8, 12, 18], pokal2: [152, BAS_H + 8, 12, 18] };
+export const VISNING = new Set(['mobilhylla', 'smyckestavla', 'vaskkrokar', 'pokal', 'trofeskap']);
+const BAS_H = 443, RAD_H = 40;   // möbelarkets höjd och den extra raden
+const RUTOR = { mobilhylla0: [0, BAS_H, 44, 26], smyckestavla0: [46, BAS_H, 34, 26], vaskkrokar0: [82, BAS_H, 40, 24], pokal0: [124, BAS_H + 8, 12, 18], pokal1: [138, BAS_H + 8, 12, 18], pokal2: [152, BAS_H + 8, 12, 18], trofeskap0: [168, BAS_H, 40, 38] };
 Object.assign(FRAMES, RUTOR);
 
 const hexInt = (h, fb) => (typeof h === 'string' && /^#[0-9a-f]{6}$/i.test(h) ? parseInt(h.slice(1), 16) : fb);
 let G0 = null;   // spelet (main.js och shop-bling.js skickar det med visningUppdatera)
 const designer = () => { try { const d = (G0 || window.SF?.game)?.designs; return Array.isArray(d) ? d : []; } catch { return []; } };
+const meriter = () => { try { const m = (G0 || window.SF?.game)?.meriter; return Array.isArray(m) ? m : []; } catch { return []; } };
 const GEM = { rosa: 0xf5a3c7, lila: 0xb07ae0, bla: 0x4f8ff0, gron: 0x3fbf7a, rod: 0xe8394f, vit: 0xf4fbff };
 const KEDJA = { lader: 0x7a4a2a, silver: 0xd8dee6, sammet: 0x8e1f3c, regnbage: 0xe8394f, guld: 0xe8b84a, parlor: 0xf6f2ea };
 
@@ -93,6 +96,49 @@ function ritaPokal(P, x0, y0, sort) {
   P.px(x0 + 4, y0 + 2, 0xffffff);
 }
 
+// ---------- troféskåpet: mörkt trä, sammet bakom glas, tre hyllplan med fyra meriter på varje ----------
+const MER_FORM = {   // o = mitten (ljus), allt annat i meritens färg
+  pokal: ['#######', '.#####.', '.#####.', '..###..', '...#...', '..###..', '.#####.'],
+  rosett: ['.###.', '#####', '##o##', '#####', '.###.', '.#.#.', '#...#'],
+  medalj: ['#...#', '.#.#.', '..#..', '.###.', '##o##', '#####', '.###.'],
+  stjarna: ['...#...', '..###..', '#######', '.#####.', '..###..', '.##.##.', '.#...#.'],
+};
+const METALL = [[0xf2c14e, 0xfff0a0, 0xb9862a], [0xc8d0da, 0xffffff, 0x8a929c], [0xc8823a, 0xf0b070, 0x8a5420]];
+const ROSETT = [[0x3a6ad8, 0xf2c14e, 0x24448e], [0xd83a3a, 0xf2c14e, 0x8e2424], [0xf0c830, 0xffffff, 0xa8861c]];   // blå, röd, gul
+const FORM_AV = { katt: 'pokal', hund: 'pokal', kanin: 'rosett', agility: 'medalj', bis: 'stjarna', hopp: 'rosett', kort: 'stjarna' };
+function ritaMerit(P, x, y, m) {
+  const form = FORM_AV[m.typ] || 'pokal', rad = MER_FORM[form], p = Math.max(0, Math.min(2, (m.plats | 0) - 1));
+  const [c, ljus, mork] = form === 'rosett' ? ROSETT[p] : form === 'stjarna' ? METALL[0] : METALL[p];
+  const w = rad[0].length, dx = Math.floor((7 - w) / 2);
+  rad.forEach((r, j) => [...r].forEach((ch, i) => {
+    if (ch === '.') return;
+    const band = form === 'medalj' && j < 3;   // medaljens band
+    const col = ch === 'o' ? ljus : band ? (i < 2 ? 0x4a8de0 : 0x2a5aa8) : j === 0 || (j > 0 && rad[j - 1][i] === '.') ? ljus : i === w - 1 || r[i + 1] === '.' ? mork : c;
+    P.px(x + dx + i, y + j, col);
+  }));
+}
+function ritaTrofeskap(P, x0, y0, mer) {
+  const W = 40, tra = 0x6e4426, ljus = 0x9a6a3a, mork = 0x3a2414;
+  // krönet med en liten mässingsskylt
+  P.rect(x0, y0, W, 3, tra); P.hl(x0, y0, W, ljus); P.hl(x0 + 1, y0 + 2, W - 2, mork);
+  P.rect(x0 + 16, y0, 8, 2, 0xe8b84a); P.hl(x0 + 16, y0, 8, 0xfff0a0); P.px(x0 + 19, y0 + 1, 0xb9862a); P.px(x0 + 20, y0 + 1, 0xb9862a);
+  // sidorna
+  P.rect(x0, y0 + 3, 3, 28, tra); P.rect(x0 + W - 3, y0 + 3, 3, 28, tra); P.vl(x0, y0 + 3, 28, ljus); P.vl(x0 + W - 1, y0 + 3, 28, mork); P.vl(x0 + 2, y0 + 3, 28, mork);
+  // insidan: mörkröd sammet med ett svagt mönster och skugga under krönet
+  for (let y = 3; y < 31; y++) for (let x = 3; x < W - 3; x++) P.px(x0 + x, y0 + y, y === 3 ? 0x2e0a1a : (x * 3 + y) % 11 === 0 ? 0x4a1428 : 0x5a1830);
+  // hyllplanen (y 12, 21, 30) och meriterna – fyra platser per hylla, mittposten mellan dörrarna lämnas fri
+  for (const hy of [12, 21, 30]) { P.hl(x0 + 3, y0 + hy, W - 6, 0x8a5a30); P.hl(x0 + 3, y0 + hy - 1, W - 6, 0x46122a); }
+  const SX = [4, 12, 21, 29];
+  mer.slice(0, 12).forEach((m, i) => ritaMerit(P, x0 + SX[i % 4], y0 + 5 + Math.floor(i / 4) * 9, m));
+  // glasdörrarna: mittposten och glansen (snedstreck) över glaset
+  P.vl(x0 + 19, y0 + 3, 28, tra); P.vl(x0 + 20, y0 + 3, 28, mork);
+  for (const [sx, len] of [[6, 9], [9, 5], [25, 8]]) for (let k = 0; k < len; k++) P.px(x0 + sx + k, y0 + 27 - k * 2, 0xffffff, 0.22);
+  // sockeln med två lådor och mässingsknoppar, fötterna
+  P.rect(x0, y0 + 31, W, 5, tra); P.hl(x0, y0 + 31, W, ljus); P.hl(x0, y0 + 35, W, mork); P.vl(x0 + 19, y0 + 32, 3, mork);
+  P.px(x0 + 10, y0 + 33, 0xe8b84a); P.px(x0 + 29, y0 + 33, 0xe8b84a);
+  P.rect(x0 + 1, y0 + 36, 3, 2, mork); P.rect(x0 + W - 4, y0 + 36, 3, 2, mork);
+}
+
 // designernas färger (de senaste först)
 function innehall() {
   const d = designer().slice().reverse();
@@ -101,7 +147,8 @@ function innehall() {
     ? { parlor: x.look.beads }
     : { kedja: hexInt(x.look?.neckColor, KEDJA[x.sel?.kedja] ?? 0xe8b84a), sten: x.sel?.sten && x.sel.sten !== 'ingen' ? GEM[x.sel.sten] ?? null : null }));
   const vaskor = d.filter((x) => x.kind === 'bag').map((x) => ({ farg: x.look?.bagColor, modell: x.sel?.modell }));
-  return { skal, halsband, vaskor };
+  const mer = meriter().slice(-12).reverse().map((m) => ({ typ: m.typ, plats: m.plats }));   // 🏆 de tolv senaste
+  return { skal, halsband, vaskor, mer };
 }
 
 // ---------- det utökade arket ----------
@@ -114,11 +161,12 @@ function bygg() {
   const cv = document.createElement('canvas'); cv.width = KALLA.naturalWidth; cv.height = BAS_H + RAD_H;
   const g = cv.getContext('2d'); g.imageSmoothingEnabled = false;
   g.drawImage(KALLA, 0, 0, KALLA.naturalWidth, BAS_H, 0, 0, KALLA.naturalWidth, BAS_H);
-  const P = new Pix(170, RAD_H);
+  const P = new Pix(208, RAD_H);
   ritaMobilhylla(P, 0, 0, inn.skal);
   ritaSmyckestavla(P, 46, 0, inn.halsband);
   ritaVaskkrokar(P, 82, 0, inn.vaskor);
   for (let i = 0; i < 3; i++) ritaPokal(P, 124 + i * 14, 8, i);
+  ritaTrofeskap(P, 168, 0, inn.mer);
   g.drawImage(P.flush(), 0, BAS_H);
   ATL.src = cv.toDataURL();
 }

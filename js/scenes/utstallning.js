@@ -86,6 +86,8 @@ export function belona(g, S, pet, klass, plats, tot = 0) {
   const pris = PRISPENGAR[plats - 1] || 0, bis = plats === 1 && tot >= 85 && (klass === 'katt' || klass === 'hund');
   g.money += pris + (bis ? BIS_PENGAR : 0); g.earned = (g.earned || 0) + pris + (bis ? BIS_PENGAR : 0);
   if (plats <= 3) g.storage.push({ k: 'pokal', v: plats - 1 });
+  if (plats <= 3) g.merit?.(klass, plats, { vem: pet.name });   // 🏆 till troféskåpet (js/core/meriter.js)
+  if (bis) g.merit?.('bis', 1, { klass, vem: pet.name });
   const u = (pet.utst ||= {});
   u[klass] ||= [0, 0, 0];
   if (plats <= 3) u[klass][plats - 1]++;
