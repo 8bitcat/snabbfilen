@@ -10,6 +10,11 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.115.0] – 2026-10-13 – Agilitycupen och djurkliniken
+- 🐕 Agilitycupen i hundparken: hoppa över hindren och däcket, spring genom tunneln, tryck snabbt i slalom och vänta på vippbrädan. Varje lopp tränar hunden – en vältränad hund springer fortare.
+- 🩺 Djurkliniken har öppnat! Veterinären Vera gör hälsokoll, vaccination, kloklippning och tandborstning. En hälsokoll ger extra poäng för hälsan på utställningen.
+- 🦜 Hälsa på papegojan Kakan i väntrummet – och väg ditt djur på vågen.
+
 ## [0.114.0] – 2026-10-13 – Kattcaféet och djurhemmet
 - ☕ Kattcafé Kurr i Tassbacken har öppnat! Fika vid disken, klappa de sju katterna och sätt dig vid ett bord – då kommer en katt och håller dig sällskap. Köp ett fjäderspö så springer katterna efter det.
 - 🏡 Djurhemmet Tassarnas hem: hundar, katter och kaniner väntar på ett nytt hem. Adoptera ett vuxet djur för 300 kr – nya djur kommer varje vecka.

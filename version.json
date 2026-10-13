@@ -1,7 +1,7 @@
 {
-  "version": "0.114.0",
+  "version": "0.115.0",
   "date": "2026-10-13",
-  "title": "Kattcaféet och djurhemmet",
+  "title": "Agilitycupen och djurkliniken",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
@@ -146,6 +146,7 @@
     "js/pets/sprite-data.js",
     "js/pets/sprites.js",
     "js/pets/trim.js",
+    "js/scenes/agility.js",
     "js/scenes/apartment.js",
     "js/scenes/bio/film.js",
     "js/scenes/bio/filmljud.js",
@@ -186,6 +187,7 @@
     "js/scenes/shop-burgarbar.js",
     "js/scenes/shop-djur.js",
     "js/scenes/shop-djurhem.js",
+    "js/scenes/shop-djurklinik.js",
     "js/scenes/shop-elektronik.js",
     "js/scenes/shop-fordon.js",
     "js/scenes/shop-frisor.js",

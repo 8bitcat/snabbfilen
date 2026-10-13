@@ -20,6 +20,7 @@ import { createWalker, selfDrawable, folkDrawables, createSpeech, WALK_SEQ } fro
 import { drawPet } from '../pets/sprites.js';
 import { petStore } from '../pets/sim.js';
 import { frisyrById } from '../pets/trim.js';
+import { klinikBonus } from './shop-djurklinik.js';   // 🩺 hälsokoll/vaccin senaste veckan = extra hälsopoäng
 import { $t } from '../core/i18n.js';
 
 const W = 640, H = 216, WALL_Y = 70;
@@ -63,7 +64,7 @@ const GUNILLA_SAY = [
 export function showPoang(pet, day, pose = 0, r = 0.5) {
   const fr = pet?.frisyr, nyss = fr && day - (fr.d | 0) <= 3;
   const pals = fr ? (nyss ? 22 : 12) : 6;
-  const halsa = Math.round(((+pet?.hunger || 0) + (+pet?.happy || 0)) / 200 * 22);
+  const halsa = Math.min(22, Math.round(((+pet?.hunger || 0) + (+pet?.happy || 0)) / 200 * 18) + klinikBonus(pet, day));
   const m = pet?.minne || {}, samarbete = Math.min(22, Math.round(((m.klapp | 0) + (m.lek | 0) * 2 + (m.boll | 0)) / 3) + 4);
   const posePo = Math.min(3, pose | 0) * 8;
   const slump = Math.round((r - 0.5) * 8);
@@ -82,7 +83,7 @@ export function hoppPlacering(day, fel, tid) {
 }
 // rosetten, prispengarna och pokalen (gemensamt för ringen och hoppningen)
 export function belona(g, S, pet, klass, plats, tot = 0) {
-  const pris = PRISPENGAR[plats - 1] || 0, bis = plats === 1 && tot >= 85 && klass !== 'kanin';
+  const pris = PRISPENGAR[plats - 1] || 0, bis = plats === 1 && tot >= 85 && (klass === 'katt' || klass === 'hund');
   g.money += pris + (bis ? BIS_PENGAR : 0); g.earned = (g.earned || 0) + pris + (bis ? BIS_PENGAR : 0);
   if (plats <= 3) g.storage.push({ k: 'pokal', v: plats - 1 });
   const u = (pet.utst ||= {});
@@ -400,7 +401,7 @@ export function makeUtstallning(A, opts = {}) {
 }
 
 // resultatet (ringen och hoppningen): placeringslistan, rosetten, pengarna och pokalen
-function visaResultat(namn, K, plats, rader, poang, b, delar = null) {
+export function visaResultat(namn, K, plats, rader, poang, b, delar = null) {
   const ros = [$t('🥇 1:a plats – blå rosett och guldpokal!'), $t('🥈 2:a plats – röd rosett och silverpokal!'), $t('🥉 3:e plats – gul rosett och bronspokal!')][plats - 1] || $t`${plats}:e plats`;
   const lista = rader.map((r, i) => `<div style="display:flex;justify-content:space-between;font-size:var(--f2)"><span>${i + 1}. ${r}</span><b>${poang[i]}</b></div>`).join('');
   const del = delar ? `<p style="font-size:var(--f2);margin:6px 0 0">${$t`✂️ Päls ${delar.pals} · ❤️ Hälsa ${delar.halsa} · 🤝 Samarbete ${delar.samarbete} · ✨ Pose ${delar.pose}`}</p>` : '';

@@ -22,13 +22,14 @@ import { createPetWalk } from '../pets/outdoors.js';
 import { skyCanvas } from '../landet/karta.js';
 import { propKit } from '../city/props.js';   // stadens träd, lyktor, bänkar … (samma detaljnivå som staden)
 import { TW, TH, T, HUS, HUSLISTA, RASTGARD, DAMM, PARK, GRIND, TORG, STATY, HALLPLATS, SKYLT, AGILITY, TRAD, GALLERTRAD, BANKAR, LYKTOR, SMATT, hinder, backeCanvas, paintGround, husBild, husPos } from '../tassbacken/karta.js';
+import { petStore } from '../pets/sim.js';
+import { belona, visaResultat } from './utstallning.js';
+import { agilityPlacering } from './agility.js';
+import { esc } from '../core/ui.js';
 import { $t } from '../core/i18n.js';
 
 const GANG = 110;
-const SNART = {
-  klinik: $t('🩺 Djurkliniken – öppnar snart. Här ska veterinären Vera undersöka och plåstra om dina djur.'),
-};
-const AGIL = $t('🐕 Agilitybanan – snart kan du träna din hund här: hinder, tunnel, slalom och vippbräda!');
+const AGIL = $t('🐕 Agilitybanan – här tävlar hundarna! Skaffa en hund i djuraffären eller på djurhemmet, så kan ni springa banan tillsammans.');
 const LJUD = { hund: [$t('VOFF!'), $t('Voff voff!'), $t('VOFF! 🐕')], katt: [$t('Mjau!'), $t('Purrr …'), $t('MJAU! 🐈')], kanin: [$t('*nos-nos*'), $t('*skutt*')], and: [$t('KVACK!'), $t('Kvack kvack!')] };
 const AGARE = [
   $t('Hon älskar Tassbacken – här får hon nosa på allt!'), $t('Har du varit i trimmaren? Min hund fick pompoms!'),
@@ -43,19 +44,19 @@ export function makeTassbacken(A) {
   const spawnY = from?.y ? Math.max(T.SIDEWALK_N[0] + 4, Math.min(T.SIDEWALK_S[1] - 4, from.y)) : T.SIDEWALK_S[0] + 10;
   const trimDorr = [(HUS.trim.door.x0 + HUS.trim.door.x1) / 2, T.BASE + 8], hallDorr = [(HUS.hall.door.x0 + HUS.hall.door.x1) / 2, T.BASE + 8];
   const dorrVid = (id) => [(HUS[id].door.x0 + HUS[id].door.x1) / 2, T.BASE + 8];
-  const walker = createCityWalker({ W: TW, H: TH, left: 2, right: TW - 2, top: T.TOP, bottom: T.BOTTOM, spawn: from?.trim ? trimDorr : from?.hall ? hallDorr : from?.kafe ? dorrVid('kafe') : from?.hem ? dorrVid('hem') : from?.buss ? [HALLPLATS.x - 10, HALLPLATS.y + 6] : [TW - 14, spawnY] });
+  const walker = createCityWalker({ W: TW, H: TH, left: 2, right: TW - 2, top: T.TOP, bottom: T.BOTTOM, spawn: from?.park ? [(GRIND[0] + GRIND[1]) / 2, PARK[1] + 14] : from?.klinik ? dorrVid('klinik') : from?.trim ? trimDorr : from?.hall ? hallDorr : from?.kafe ? dorrVid('kafe') : from?.hem ? dorrVid('hem') : from?.buss ? [HALLPLATS.x - 10, HALLPLATS.y + 6] : [TW - 14, spawnY] });
   const fordon = () => g.aker;
   const applyRide = () => { const F = fordon(); walker.speed = GANG * (F ? F.fart : 1); };
   applyRide();
   walker.setObstacles(hinder());
   walker.snapFree();
   const talk = createSpeech();
-  let t = 0, hover = null, banner = from?.trim || from?.hall || from?.kafe || from?.hem || from?.buss ? 4 : 0;
+  let t = 0, hover = null, banner = from?.park || from?.klinik || from?.trim || from?.hall || from?.kafe || from?.hem || from?.buss ? 4 : 0;
   const fade = { a: 1, phase: 2, cb: null };
   const cam = { x: 0, y: 0 };
   const camTarget = () => ({ x: Math.max(0, Math.min(TW - VW, walker.px - VW / 2)), y: Math.max(0, Math.min(TH - VH, walker.py - VH * 0.84)) });
   Object.assign(cam, camTarget());
-  if (!A.attract && !from?.trim && !from?.hall && !from?.kafe && !from?.hem) { const h = g.glad?.(2, '', 'tassbacken', 2); if (h) setTimeout(() => toast($t`🐾 Tassbacken – djurens stadsdel! +${h} 😊`, 'good'), 900); }
+  if (!A.attract && !from?.park && !from?.klinik && !from?.trim && !from?.hall && !from?.kafe && !from?.hem) { const h = g.glad?.(2, '', 'tassbacken', 2); if (h) setTimeout(() => toast($t`🐾 Tassbacken – djurens stadsdel! +${h} 😊`, 'good'), 900); }
   // ens egna djur på promenad följer med hit
   let pets = null;
   try { pets = createPetWalk(A); } catch (e) { console.error('husdjuren i Tassbacken startade inte:', e); }
@@ -118,13 +119,26 @@ export function makeTassbacken(A) {
     { id: 'hall', ...dorr('hall'), label: $t('UTSTÄLLNINGSHALLEN – KATTER, HUNDAR, KANINER'), act: () => go(() => { play('door'); A.go('utstallning'); }) },
     { id: 'kafe', ...dorr('kafe'), label: $t('KATTCAFÉ KURR – FIKA MED KATTERNA'), act: () => go(() => { play('door'); A.go('kattcafe'); }) },
     { id: 'hem', ...dorr('hem'), label: $t('TASSARNAS HEM – DJURHEMMET'), act: () => go(() => { play('door'); A.go('djurhem'); }) },
-    ...['klinik'].map((id) => ({ id, ...dorr(id), label: `${HUS[id].namn} – ${$t('ÖPPNAR SNART')}`, act: () => { play('knock'); toast(SNART[id], 'wrap'); } })),
+    { id: 'klinik', ...dorr('klinik'), label: $t('DJURKLINIKEN – VETERINÄREN VERA'), act: () => go(() => { play('door'); A.go('djurklinik'); }) },
     ...['bo1', 'bo2'].map((id) => ({ id, ...dorr(id), label: $t('BOSTADSHUS'), act: () => { play('knock'); toast($t('🐾 Här bor någon. Det låter som en hund bakom dörren …')); } })),
-    { id: 'agility', r: [PARK[0] + 40, PARK[1] + 30, PARK[2] - 40, PARK[3] - 10], go: [(GRIND[0] + GRIND[1]) / 2, PARK[1] + 14], label: $t('AGILITYBANAN – ÖPPNAR SNART'), act: () => toast(AGIL, 'wrap') },
+    { id: 'agility', r: [PARK[0] + 40, PARK[1] + 30, PARK[2] - 40, PARK[3] - 10], go: [(GRIND[0] + GRIND[1]) / 2, PARK[1] + 14], label: $t('AGILITYBANAN – TÄVLA MED DIN HUND'), act: agilityAnmalan },
     { id: 'staty', r: [STATY.x - 26, STATY.y - 34, STATY.x + 26, STATY.y + 10], go: [STATY.x, STATY.y + 18], label: $t('KATTSTATYN – SLÄNG EN KRONA'), act: statyn },
     { id: 'buss', r: [HALLPLATS.x - 12, HALLPLATS.y - 34, HALLPLATS.x + 14, HALLPLATS.y + 2], go: [HALLPLATS.x - 8, HALLPLATS.y + 6], label: $t('BUSS TILL MARKNADSTORGET'), act: bussen },
     { id: 'skylt', r: [SKYLT.x - 16, SKYLT.y - 36, SKYLT.x + 16, SKYLT.y + 2], go: [SKYLT.x, SKYLT.y + 8], label: $t('TILLBAKA TILL STAN'), act: tillStan },
   ];
+  // 🐕 agilitycupen i hundparken: välj hund (en tävling per hund och dag, 50 kr) → js/scenes/agility.js
+  function agilityAnmalan() {
+    const S = petStore(), hundar = (S.pets || []).filter((p) => p.species === 'hund');
+    if (!hundar.length) { toast(AGIL, 'wrap'); return; }
+    play('click');
+    const rader = hundar.map((p) => { const klar = p.utst?.agilityDag === g.day, r = p.utst?.agility || [0, 0, 0]; return `<div class="prow" style="grid-template-columns:auto 1fr auto"><span style="font-size:22px">🐕</span><span class="nm"><b>${esc(p.name)}</b><br><small class="sp">${$t`Träning ${Math.min(20, p.agil | 0)}/20`}${r.some(Boolean) ? ` · 🥇${r[0]} 🥈${r[1]} 🥉${r[2]}` : ''}</small></span><button class="btn btn-small btn-go" data-hund="${esc(p.id)}" ${klar || g.money < 50 ? 'disabled' : ''}>${klar ? $t('Tävlat i dag') : $t`Tävla · ${fmt(50)}`}</button></div>`; }).join('');
+    const dlg = openModal($t('🐕 Agilitycupen'), `<p style="font-size:var(--f2);margin-top:0">${$t('Hoppa över hindren och däcket, spring genom tunneln (hoppa inte!), tryck snabbt i slalom och vänta på vippbrädan. Varje lopp tränar hunden – en vältränad hund springer fortare.')}</p><div class="plist">${rader}</div>`, [{ label: $t('Inte nu'), onClick: closeModal }]);
+    dlg.querySelectorAll('[data-hund]').forEach((b) => (b.onclick = () => {
+      const p = hundar.find((q) => q.id === b.dataset.hund); if (!p || g.money < 50) return;
+      g.money -= 50; g.save(); closeModal(); play('coin');
+      go(() => A.go('agility', { petId: p.id, onDone: (res) => efterAgility(A, p.id, res) }));
+    }));
+  }
   // 🪙 kattstatyn: en krona i fontänen ger tur (😊) en gång om dagen
   function statyn() {
     if (g.money < 1) { toast($t('Du har inte ens en krona …'), 'bad'); return; }
@@ -352,6 +366,17 @@ export function makeTassbacken(A) {
       fade: () => fade.phase,
     },
   };
+}
+// efter agilityloppet (js/scenes/agility.js): placeringen i cupen, rosetten och priset
+function efterAgility(A, petId, res) {
+  const g = A.game, S = petStore(), p = S.petById(petId);
+  A.tassFran = { park: true };
+  A.go('tassbacken');
+  if (!p || !res) return;
+  const { plats, alla } = agilityPlacering(g.day, res.fel, res.tid);
+  const b = belona(g, S, p, 'agility', plats);
+  p.utst.agilityDag = g.day; S.save();
+  visaResultat(p.name, { icon: '🐕', namn: $t('Agilitycupen') }, plats, alla.map((x) => (x.du ? `<b>${esc(p.name)}</b>` : esc(x.namn))), alla.map((x) => $t`${x.fel} fel · ${x.tid.toFixed(1).replace('.', ',')} s`), b);
 }
 // marken målas en gång
 let GROUND = null;

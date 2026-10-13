@@ -1,0 +1,52 @@
+[
+ {
+  "i": 8229,
+  "f": "js/main.js",
+  "k": "🩺 hos veterinären"
+ },
+ {
+  "i": 8230,
+  "f": "js/main.js",
+  "k": "🐕 springer agility"
+ },
+ {
+  "i": 8231,
+  "f": "js/scenes/tassbacken.js",
+  "k": "🐕 Agilitybanan – här tävlar hundarna! Skaffa en hund i djuraffären eller på djurhemmet, så kan ni springa banan tillsammans."
+ },
+ {
+  "i": 8232,
+  "f": "js/scenes/tassbacken.js",
+  "k": "DJURKLINIKEN – VETERINÄREN VERA"
+ },
+ {
+  "i": 8233,
+  "f": "js/scenes/tassbacken.js",
+  "k": "AGILITYBANAN – TÄVLA MED DIN HUND"
+ },
+ {
+  "i": 8234,
+  "f": "js/scenes/tassbacken.js",
+  "k": "Träning {0}/20"
+ },
+ {
+  "i": 8235,
+  "f": "js/scenes/tassbacken.js",
+  "k": "Tävla · {0}"
+ },
+ {
+  "i": 8236,
+  "f": "js/scenes/tassbacken.js",
+  "k": "🐕 Agilitycupen"
+ },
+ {
+  "i": 8237,
+  "f": "js/scenes/tassbacken.js",
+  "k": "Hoppa över hindren och däcket, spring genom tunneln (hoppa inte!), tryck snabbt i slalom och vänta på vippbrädan. Varje lopp tränar hunden – en vältränad hund springer fortare."
+ },
+ {
+  "i": 8238,
+  "f": "js/scenes/tassbacken.js",
+  "k": "Agilitycupen"
+ }
+]

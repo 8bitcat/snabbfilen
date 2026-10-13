@@ -107,7 +107,7 @@ import { PET_ITEMS } from './items.js';
 import { $t, $n } from '../core/i18n.js';
 import { rensaFrisyr } from './trim.js';
 // 🏆 utställningens rosetter per klass [1:or, 2:or, 3:or], Best in Show och dagen man senast tävlade
-const rensaUtst = (u) => { const o = {}; for (const k of ['katt', 'hund', 'kanin']) if (Array.isArray(u[k])) o[k] = [0, 1, 2].map((i) => Math.max(0, Math.min(9999, u[k][i] | 0))); if (u.bis) o.bis = Math.max(0, Math.min(9999, u.bis | 0)); if (Number.isFinite(+u.dag)) o.dag = +u.dag | 0; return o; };   // ✂️ frisyren från djurtrimmaren
+const rensaUtst = (u) => { const o = {}; for (const k of ['katt', 'hund', 'kanin', 'agility']) if (Array.isArray(u[k])) o[k] = [0, 1, 2].map((i) => Math.max(0, Math.min(9999, u[k][i] | 0))); if (u.bis) o.bis = Math.max(0, Math.min(9999, u.bis | 0)); if (Number.isFinite(+u.dag)) o.dag = +u.dag | 0; if (Number.isFinite(+u.agilityDag)) o.agilityDag = +u.agilityDag | 0; return o; };   // ✂️ frisyren från djurtrimmaren
 
 export const PETS_SAVE_KEY = 'snabbfilen_pets1';
 const GAME_SAVE_KEY = 'snabbfilen_save1';   // spelets egen sparnyckel (js/game.js SAVE_KEY) – saknas den är spelet nytt
@@ -1027,7 +1027,10 @@ export function createPetStore({ storage = null, rng = Math.random, key = PETS_S
           homeDay: isNum(q.homeDay) ? Math.min(savedDay, q.homeDay) : q.homeDay === null ? null : bornDay,
           ...(q.minne && typeof q.minne === 'object' ? { minne: { sett: Math.max(0, num(q.minne.sett)), klapp: Math.max(0, num(q.minne.klapp) | 0), lek: Math.max(0, num(q.minne.lek) | 0), boll: Math.max(0, num(q.minne.boll) | 0) } } : {}),   // (bara när det finns – gamla djur får det när de ses)
           ...('frisyr' in q ? { frisyr: rensaFrisyr(q.frisyr) || undefined } : {}),
-          ...(q.utst && typeof q.utst === 'object' ? { utst: rensaUtst(q.utst) } : {}),   // 🏆 rosetterna från utställningen   // ✂️ frisyren (trim.js) – bara kända stilar/färger
+          ...(q.utst && typeof q.utst === 'object' ? { utst: rensaUtst(q.utst) } : {}),
+          ...('agil' in q ? { agil: Math.max(0, Math.min(20, q.agil | 0)) } : {}),                       // 🐕 agilityträningen
+          ...('klinik' in q ? { klinik: Number.isFinite(+q.klinik) ? +q.klinik | 0 : undefined } : {}),   // 🩺 senaste hälsokoll/vaccin
+          ...('vacc' in q ? { vacc: Number.isFinite(+q.vacc) ? +q.vacc | 0 : undefined } : {}),   // 🏆 rosetterna från utställningen   // ✂️ frisyren (trim.js) – bara kända stilar/färger
           care: q.care && typeof q.care === 'object' && isNum(q.care.day)
             ? { day: q.care.day, mat: num(q.care.mat), lek: num(q.care.lek), leksak: num(q.care.leksak), toa: num(q.care.toa), inne: num(q.care.inne) | 0, held: num(q.care.held) }
             : null,
