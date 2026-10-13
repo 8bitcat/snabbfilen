@@ -241,7 +241,8 @@ function myRide(A) {
 // 🎢 Åker jag berg-och-dalbanan på Pixelberg (js/scenes/pixelberg.js worldAka)? 'bana:<avgång>:<plats>' – tåget
 // går på klockan, så de andra ritar mig i rätt vagn på rätt plats i samma tåg (åker vi samma avgång sitter vi ihop).
 // 🚗 Kör jag radiobil: 'radio:<färg>' – x/y är då bilens plats, och de andra ritar mig i en bil i den färgen.
-const AK_RE = /^(bana:\d{1,12}:[0-5]|radio:[0-7])$/;
+// 👻 Åker jag spöktåget: 'spok:<avgång>:<plats>' – som berg-och-dalbanan, två platser i vagnen.
+const AK_RE = /^(bana:\d{1,12}:[0-5]|spok:\d{1,12}:[01]|radio:[0-7])$/;
 function myAk(A) {
   let a = '';
   try { a = A.scene?.worldAka ?? ''; } catch { a = ''; }

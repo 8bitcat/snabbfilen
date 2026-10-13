@@ -110,6 +110,8 @@ export function play(name) {
       case 'chirp': tone(2200, 0, 0.05, 'sine', 0.05, 2800); tone(2600, 0.07, 0.05, 'sine', 0.04, 3000); break;
       case 'bump': tone(150, 0, 0.11, 'square', 0.15, 70); tone(330, 0, 0.05, 'triangle', 0.1, 160); break;   // 🚗 radiobilarna krockar
       case 'pling': tone(1568, 0, 0.35, 'triangle', 0.12); tone(1568, 0.4, 0.5, 'triangle', 0.1); break;   // 🚗 klockan – rundan är slut
+      case 'spok': tone(520, 0, 0.7, 'sine', 0.12, 260); tone(392, 0.3, 0.8, 'sine', 0.1, 196); break;   // 👻 uuuuh i spökhuset
+      case 'bu': tone(110, 0, 0.28, 'sawtooth', 0.16, 70); tone(220, 0, 0.16, 'square', 0.1, 140); break;   // 👻 BU!
     }
   } catch { /* ljud är aldrig värt en krasch */ }
 }

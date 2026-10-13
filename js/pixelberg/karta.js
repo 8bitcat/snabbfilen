@@ -4,7 +4,7 @@
 //
 // Från väster: BERGBUSSENS hållplats → entréporten PIXELBERGS TIVOLI → BILJETTLUCKAN → KARUSELLEN → det stora
 // PARISERHJULET → stånden (SOCKERVADD & POPCORN, LYCKOHJULET) → BERG-OCH-DALBANAN med stationen → RADIOBILARNA
-// (v0.126: tivolit växte österut, TW 1600 → 2440 – kast- och skjutstånden och spökhuset får platsen bortom). Bakom allt:
+// (v0.126: tivolit växte österut, TW 1600 → 2440) → kast- och skjutstånden → SPÖKHUSET med spöktåget. Bakom allt:
 // utsikten ner över Pixelstaden, floden och kullarna (parallax). Torget är stenlagt med en mosaik av färgade cirklar.
 import { Pix, SMALL, BIG, text, textW, mix, mul, hash, bayer } from '../core/floor-pix.js';
 import { $t } from '../core/i18n.js';
@@ -28,8 +28,12 @@ export const STAND = [
 export const BANA = { x0: 1240, x1: 1590, station: { x: 1330, y: 270, w: 120 } };   // berg-och-dalbanan
 // 🚗 radiobilarna: stålgolvet (x, y = bakkanten, w × h), bakväggen med skylten står längs y – bilarna kör inne på golvet
 export const RADIO = { x: 1660, y: 300, w: 250, h: 118 };
+// 👻 spökhuset: fasaden står på y (x … x + w); spöktåget går ut genom ingången till vänster, in i huset och ut genom
+// utgången till höger, och tillbaka längs spåret framför huset till perrongen i mitten (js/pixelberg/spokhus.js)
+export const SPOK = { x: 2180, y: 318, w: 200 };
+export const SPOK_SPAR = { x0: SPOK.x + 48, x1: SPOK.x + 152, y0: SPOK.y - 4, y1: SPOK.y + 22, cx: SPOK.x + 100 };
 export const BANKAR = [{ x: 620, y: 452 }, { x: 980, y: 452 }, { x: 1230, y: 420 }, { x: 1990, y: 452 }];
-export const LYKTOR = [110, 330, 590, 700, 960, 1210, 1470, 1630, 1940, 2190, 2420].map((x) => ({ x, y: P.TORG[0] + 10 }));
+export const LYKTOR = [110, 330, 590, 700, 960, 1210, 1470, 1630, 1940, 2150, 2420].map((x) => ({ x, y: P.TORG[0] + 10 }));
 export const BUSKAR = [[300, 250], [560, 248], [1200, 250], [1520, 440], [260, 462], [700, 466], [1612, 300], [2400, 252], [2160, 462]].map(([x, y]) => ({ x, y }));
 
 // berg-och-dalbanans spår som en sluten kurva (x, y) i världen – tåget följer den (scenen)
@@ -53,6 +57,8 @@ export function hinder() {
   for (const s of STAND) o.push([s.x, s.y - 20, s.x + s.w, s.y - 1]);
   o.push([BANA.station.x, BANA.station.y - 18, BANA.station.x + BANA.station.w, BANA.station.y - 1]);
   o.push([RADIO.x - 4, P.TOP - 2, RADIO.x + RADIO.w + 4, RADIO.y + RADIO.h + 2]);                // radiobilarnas bana (man åker, går inte)
+  o.push([SPOK.x, P.TOP - 2, SPOK.x + SPOK.w, SPOK.y + 1]);                                       // spökhuset
+  o.push([SPOK_SPAR.x0 - 6, SPOK.y, SPOK_SPAR.x1 + 7, SPOK_SPAR.y1 + 5]);                         // spöktågets spår (perrongen framför går man på)
   for (const b of BANKAR) o.push([b.x - 15, b.y - 4, b.x + 16, b.y + 1]);
   for (const l of LYKTOR) o.push([l.x - 2, l.y - 2, l.x + 3, l.y + 1]);
   for (const b of BUSKAR) o.push([b.x - 9, b.y - 4, b.x + 10, b.y + 1]);
@@ -130,6 +136,19 @@ export function paintGround() {
     if ((px === 3 || px === 22) && (py === 3 || py === 14)) c = 0x7a7e88;
     if (Math.abs((lx - ly * 1.6) % 90) < 2) c = mix(c, 0xb8c0d0, 0.25);
     X.px(x, y, c);
+  }
+  // spöktågets spår (en U-sväng framför spökhuset) och perrongen av gamla plankor
+  const { x0, x1, y1, cx } = SPOK_SPAR;
+  const sliper = (x, y, ligg) => { if (ligg) X.rect(x - 4, y, 9, 2, 0x5a4a3a); else X.rect(x, y - 4, 2, 9, 0x5a4a3a); };
+  for (let y = SPOK.y; y <= y1; y += 4) { sliper(x0 - 1, y, true); sliper(x1 - 1, y, true); }
+  for (let x = x0; x <= x1; x += 4) sliper(x, y1 - 1, false);
+  for (const [ax, ay, bx, by] of [[x0, SPOK.y, x0, y1], [x1, SPOK.y, x1, y1], [x0, y1, x1, y1]]) {
+    if (ax === bx) for (let y = ay; y <= by + 3; y++) { X.px(ax - 3, y, 0x8a8a98); X.px(ax + 3, y, 0x8a8a98); X.px(ax - 3, y - 1, 0xb8b8c4, 0.5); }
+    else for (let x = ax - 3; x <= bx + 3; x++) { X.px(x, ay - 3, 0x8a8a98); X.px(x, ay + 3, 0x8a8a98); X.px(x, ay - 4, 0xb8b8c4, 0.6); }
+  }
+  for (let y = y1 + 6; y < y1 + 14; y++) for (let x = cx - 26; x < cx + 26; x++) {
+    const p = (x - cx + 26) % 9;
+    X.px(x, y, y === y1 + 6 ? 0xc89a68 : p === 0 ? 0x6a4a2a : mix(0xa87a48, 0x98683a, hash(Math.floor((x - cx) / 9), y >> 2, 60)));
   }
   return X.flush();
 }
@@ -217,6 +236,62 @@ export function portBild(natt) {
     }
     const s = $t('PIXELBERGS TIVOLI'), sw = textW(SMALL, s);
     text(X, SMALL, s, (W - sw) >> 1, 13, 0xffe080);
+  });
+}
+// 👻 spökhuset framifrån: ett gammalt lila trähus med två torn, brant skiffertak, sned skorsten, välvda fönster
+// (gröngula på kvällen), en sned skylt SPÖKHUSET, spindelväv i hörnen, pumpor vid dörrarna; ingången till vänster
+// är en gapande mun med tänder och ögon ovanför, utgången till höger. Spöket i vindsfönstret och fladdermössen ritas av scenen.
+export const SPOK_H = 136;
+export const SPOK_VINDSFONSTER = { x: 100, y: 34 };   // (i bilden – spöket tittar ut här)
+export function spokBild(natt) {
+  const W = SPOK.w, H = SPOK_H;
+  return bild(`spok${natt}`, W, H, (X) => {
+    const vagg = (x, y) => { const p = Math.floor(x / 6); const c = (x % 6 === 0) ? 0x2a2038 : mix(0x4a3a5e, 0x3e3050, hash(p, y >> 3, 61)); return x % 6 === 1 ? mix(c, 0xffffff, 0.08) : c; };
+    const tak = (x, y, kant) => (kant ? 0x1e1828 : ((y >> 2) % 2 ? mix(0x3a3050, 0x2e2640, hash(x >> 2, y >> 2, 62)) : mix(0x2e2640, 0x262034, hash((x + 2) >> 2, y >> 2, 62))));
+    // tornen: kropp + spetsigt tak
+    for (const [tx, tw, ty, spets] of [[4, 32, 40, 6], [164, 32, 50, 18]]) {
+      for (let y = ty; y < H; y++) for (let x = tx; x < tx + tw; x++) X.px(x, y, vagg(x, y));
+      const mx = tx + (tw >> 1);
+      for (let y = spets; y < ty + 2; y++) { const half = Math.round((y - spets) / (ty + 2 - spets) * (tw / 2 + 4)); for (let x = mx - half; x <= mx + half; x++) X.px(x, y, tak(x, y, x === mx - half || x === mx + half)); }
+      X.vl(mx, spets - 6, 6, 0x5a5a66); X.px(mx + 1, spets - 6, 0x5a5a66); X.px(mx + 2, spets - 5, 0x5a5a66);   // flöjeln
+    }
+    // huvudhuset och gaveltaket
+    for (let y = 54; y < H; y++) for (let x = 30; x < 170; x++) X.px(x, y, vagg(x, y));
+    for (let y = 14; y < 56; y++) { const half = Math.round((y - 14) / 42 * 78); for (let x = 100 - half; x <= 100 + half; x++) { if (x < 22 || x > 178) continue; const kant = Math.abs(x - 100) >= half - 1; if (kant && hash(x, y, 63) > 0.7) continue; X.px(x, y, tak(x, y, kant)); } }
+    for (let y = 52; y < 56; y++) for (let x = 22; x < 179; x++) X.px(x, y, y === 52 ? 0x4a4060 : 0x1e1828);   // takfoten
+    for (let y = 16; y < 40; y++) { const l = Math.floor((40 - y) / 10); for (let x = 128 + l; x < 138 + l; x++) X.px(x, y, (x + y) % 5 === 0 ? 0x3a2a2a : mix(0x5a3a3a, 0x4a2e2e, hash(x, y >> 1, 64))); }   // skorstenen (sned)
+    X.rect(126 + 2, 14, 14, 3, 0x2a1e1e);
+    // fönstren
+    const ljus = natt ? 0xd8f070 : 0x5a4a7a, ljus2 = natt ? 0xa8c850 : 0x4a3a68;
+    const fonster = (fx, fy, fw, fh) => {
+      for (let y = fy - 2; y < fy + fh + 2; y++) for (let x = fx - 2; x < fx + fw + 2; x++) { const top = fy + Math.round(Math.pow((x - fx - fw / 2) / (fw / 2 + 2), 2) * 4); if (y >= top - 2) X.px(x, y, 0x1e1828); }
+      for (let y = fy; y < fy + fh; y++) for (let x = fx; x < fx + fw; x++) { const top = fy + Math.round(Math.pow((x - fx - fw / 2) / (fw / 2), 2) * 4); if (y < top) continue; X.px(x, y, (x - fx === (fw >> 1) || y - fy === (fh >> 1)) ? 0x1e1828 : (y - fy) < 3 ? ljus2 : ljus); }
+    };
+    fonster(50, 62, 16, 20); fonster(134, 62, 16, 20); fonster(14, 54, 12, 16); fonster(174, 62, 12, 16);
+    for (let y = -8; y <= 8; y++) for (let x = -8; x <= 8; x++) { const d = Math.hypot(x, y); if (d <= 8) X.px(100 + x, 34 + y, d > 6.5 ? 0x1e1828 : ljus); }   // vindsfönstret (runt)
+    for (let k = 0; k < 14; k++) X.px(146 + Math.round(k * 0.5), 60 + k, 0x2a1e30), X.px(147 + Math.round(k * 0.5), 60 + k, 0x5a3a5e);   // en lucka som hänger snett
+    // skylten SPÖKHUSET – ett snett bräde
+    const s = $t('SPÖKHUSET'), sw = textW(BIG, s), bw = Math.min(W - 70, Math.max(70, sw + 14)), bx = (W - bw) >> 1;
+    for (let x = bx; x < bx + bw; x++) { const o = Math.round((x - bx) / bw * 3); for (let y = 86 + o; y < 100 + o; y++) X.px(x, y, y === 86 + o ? 0xb88a58 : (x - bx) % 23 === 0 ? 0x5a3a1e : mix(0x8a5a2e, 0x7a4e26, hash(x >> 3, y, 65))); }
+    text(X, BIG, s, (W - sw) >> 1, 91, 0x1e3a1e); text(X, BIG, s, (W - sw) >> 1, 90, natt ? 0xa8ff78 : 0x78d850);
+    for (const dx of [bx + 3, bx + bw - 4]) X.px(dx, 89 + Math.round((dx - bx) / bw * 3), 0xd8d8e0);
+    for (let k = 0; k < 3; k++) { const dx = (W >> 1) - 18 + k * 17; X.vl(dx, 98, 2 + k % 2 * 2, natt ? 0xa8ff78 : 0x78d850); }   // färgen som rinner
+    // dörrarna: ingången (munnen) och utgången
+    for (const [dx, mun] of [[36, true], [140, false]]) {
+      for (let y = H - 34; y < H; y++) for (let x = dx - 3; x < dx + 27; x++) { const top = H - 34 + Math.round(Math.pow((x - dx - 12) / 15, 2) * 8); if (y >= top) X.px(x, y, (x < dx || x >= dx + 24 || y < top + 2) ? 0x6a4a3a : 0x0e0a14); }
+      if (mun) {
+        for (let k = 0; k < 6; k++) { const tx = dx + 1 + k * 4; for (let j = 0; j < 4 - Math.abs(k % 2); j++) for (let i = j; i < 4 - j; i++) X.px(tx + i, H - 30 + j + Math.round(Math.pow((tx + 2 - dx - 12) / 15, 2) * 8), 0xf4f1ea); }
+        for (const ex of [dx + 5, dx + 16]) { X.rect(ex, H - 46, 5, 5, natt ? 0xfff070 : 0xf0c030); X.rect(ex + 2, H - 44, 2, 2, 0x1e1a24); X.px(ex, H - 46, 0x3e3050); X.px(ex + 4, H - 46, 0x3e3050); }
+      } else { X.rect(dx + 6, H - 46, 12, 7, 0x8a5a2e); X.hl(dx + 6, H - 46, 12, 0xb88a58); text(X, SMALL, $t('UT'), dx + 12 - (textW(SMALL, $t('UT')) >> 1), H - 45, 0xf4f1ea); }
+    }
+    // spindelväv i hörnen under takfoten
+    for (const [wx, sx] of [[31, 1], [169, -1]]) for (let k = 0; k < 4; k++) { const v = k * Math.PI / 8; for (let j = 0; j < 14; j++) X.px(wx + Math.round(Math.cos(v) * j) * sx, 56 + Math.round(Math.sin(v) * j), 0xd8d8e8, 0.7); for (const r of [5, 10]) for (let j = 0; j <= 6; j++) { const u = j / 6 * Math.PI / 2; X.px(wx + Math.round(Math.cos(u) * r) * sx, 56 + Math.round(Math.sin(u) * r), 0xd8d8e8, 0.6); } }
+    // pumporna vid dörrarna
+    for (const px of [70, 124]) {
+      for (let y = -5; y <= 5; y++) for (let x = -7; x <= 7; x++) if ((x / 7) ** 2 + (y / 5) ** 2 <= 1) X.px(px + x, H - 6 + y, Math.abs(x) % 4 === 0 ? 0xc85a10 : x < -2 ? 0xf8a040 : 0xe87a20);
+      X.rect(px - 1, H - 13, 2, 3, 0x4a7a2a);
+      const o = natt ? 0xfff070 : 0x3a1e0a; X.px(px - 3, H - 8, o); X.px(px - 2, H - 8, o); X.px(px + 2, H - 8, o); X.px(px + 3, H - 8, o); X.hl(px - 3, H - 4, 7, o); X.px(px - 1, H - 5, o); X.px(px + 1, H - 5, o);
+    }
   });
 }
 // 🚗 radiobilarnas bakvägg: två randiga stolpar med strömnätet emellan, den stora skylten RADIOBILAR med glödlampor,

@@ -10,6 +10,12 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.127.0] – 2026-10-13 – Spökhuset
+- 👻 Spökhuset på Pixelberg har öppnat – längst bort på tivolit, bortom radiobilarna!
+- Spöktåget går var 30:e sekund. Det finns två platser i vagnen, så du kan åka med en kompis – ni ser samma spöken i samma ögonblick.
+- Där inne: fladdermöss, garderoben där spöket hoppar fram (BU!), skelettet som dansar, spindeln som firar sig ner, spegelsalen där du blir bred, lång och vågig – och spökkungen som vinkar hej då.
+- Snällt läskigt. Håll utkik efter spöket i vindsfönstret!
+
 ## [0.126.0] – 2026-10-13 – Radiobilarna
 - 🚗 Radiobilarna på Pixelberg är öppna – tivolit har växt österut, förbi berg-och-dalbanan!
 - Du kör själv: piltangenterna eller WASD på datorn, dra med fingret på mobilen och iPaden. En runda är 45 sekunder.

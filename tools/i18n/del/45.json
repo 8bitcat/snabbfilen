@@ -1,0 +1,62 @@
+[
+ {
+  "i": 8687,
+  "f": "js/pixelberg/karta.js",
+  "k": "SPÖKHUSET"
+ },
+ {
+  "i": 8688,
+  "f": "js/pixelberg/spokhus.js",
+  "k": "HEJ DÅ – KOM SNART IGEN!"
+ },
+ {
+  "i": 8689,
+  "f": "js/scenes/pixelberg.js",
+  "k": "Spökhuset var inte ALLS läskigt … nästan inte."
+ },
+ {
+  "i": 8690,
+  "f": "js/scenes/pixelberg.js",
+  "k": "Spökhuset"
+ },
+ {
+  "i": 8691,
+  "f": "js/scenes/pixelberg.js",
+  "k": "👻 Du sätter dig i spökvagnen – den går om {0} sekunder!"
+ },
+ {
+  "i": 8692,
+  "f": "js/scenes/pixelberg.js",
+  "k": "👻 Vagnen är inne i huset – du ställer dig först i kön. Nästa vagn går om {0} sekunder."
+ },
+ {
+  "i": 8693,
+  "f": "js/scenes/pixelberg.js",
+  "k": "👻 Puh! Du tog dig ut ur spökhuset! +{0} 😊"
+ },
+ {
+  "i": 8694,
+  "f": "js/scenes/pixelberg.js",
+  "k": "👻 Puh! Du tog dig ut ur spökhuset!"
+ },
+ {
+  "i": 8695,
+  "f": "js/scenes/pixelberg.js",
+  "k": "SPÖKHUSET – ÅK MED EN KOMPIS OM DU VÅGAR!"
+ },
+ {
+  "i": 8696,
+  "f": "js/scenes/pixelberg.js",
+  "k": "👻 Du och {0} åker spöktåget tillsammans!"
+ },
+ {
+  "i": 8697,
+  "f": "js/scenes/pixelberg.js",
+  "k": "VAGNEN GÅR OM {0}"
+ },
+ {
+  "i": 8698,
+  "f": "js/scenes/pixelberg.js",
+  "k": "👻 Du lämnade kön."
+ }
+]
