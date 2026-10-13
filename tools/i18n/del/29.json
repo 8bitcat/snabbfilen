@@ -1,0 +1,547 @@
+[
+ {
+  "i": 8116,
+  "f": "js/scenes/agility.js",
+  "k": "HOPPADE AV! +5"
+ },
+ {
+  "i": 8117,
+  "f": "js/scenes/agility.js",
+  "k": "RIV! +5"
+ },
+ {
+  "i": 8118,
+  "f": "js/scenes/agility.js",
+  "k": "MISSADE TUNNELN! +5"
+ },
+ {
+  "i": 8119,
+  "f": "js/scenes/agility.js",
+  "k": "GENOM TUNNELN!"
+ },
+ {
+  "i": 8120,
+  "f": "js/scenes/agility.js",
+  "k": "SNABB SLALOM!"
+ },
+ {
+  "i": 8121,
+  "f": "js/scenes/agility.js",
+  "k": "SNYGGT VÄNTAT!"
+ },
+ {
+  "i": 8122,
+  "f": "js/scenes/agility.js",
+  "k": "TRYCK SNABBT!"
+ },
+ {
+  "i": 8123,
+  "f": "js/scenes/agility.js",
+  "k": "VÄNTA …"
+ },
+ {
+  "i": 8124,
+  "f": "js/scenes/agility.js",
+  "k": "AGILITY"
+ },
+ {
+  "i": 8125,
+  "f": "js/scenes/agility.js",
+  "k": "HOPPA ÖVER HINDREN - INTE ÖVER TUNNELN!"
+ },
+ {
+  "i": 8126,
+  "f": "js/scenes/shop-djurhem.js",
+  "k": "Hej och välkommen till Tassarnas hem! Alla djuren här väntar på någon som vill ta hand om dem."
+ },
+ {
+  "i": 8127,
+  "f": "js/scenes/shop-djurhem.js",
+  "k": "Klicka på ett djur så berättar jag om det. Adoptionen kostar 300 kr – då är djuret vaccinerat och klart."
+ },
+ {
+  "i": 8128,
+  "f": "js/scenes/shop-djurhem.js",
+  "k": "Vill du hjälpa till? Vid matstationen kan du mata djuren en gång om dagen."
+ },
+ {
+  "i": 8129,
+  "f": "js/scenes/shop-djurhem.js",
+  "k": "Nya djur kommer hit varje vecka. Titta in igen!"
+ },
+ {
+  "i": 8130,
+  "f": "js/scenes/shop-djurhem.js",
+  "k": "Katterna på kattcaféet kommer också härifrån."
+ },
+ {
+  "i": 8131,
+  "f": "js/scenes/shop-djurhem.js",
+  "k": "Hittades i parken en regnig natt. Älskar att apportera och sover gärna i soffan."
+ },
+ {
+  "i": 8132,
+  "f": "js/scenes/shop-djurhem.js",
+  "k": "Lugn och snäll. Hennes förra matte flyttade utomlands."
+ },
+ {
+  "i": 8133,
+  "f": "js/scenes/shop-djurhem.js",
+  "k": "En gammal gentleman som gillar korta promenader och långa tupplurar."
+ },
+ {
+  "i": 8134,
+  "f": "js/scenes/shop-djurhem.js",
+  "k": "Full av energi! Behöver någon som orkar leka – mycket."
+ },
+ {
+  "i": 8135,
+  "f": "js/scenes/shop-djurhem.js",
+  "k": "Lite blyg först, men sen världens bästa vän."
+ },
+ {
+  "i": 8136,
+  "f": "js/scenes/shop-djurhem.js",
+  "k": "Pratar och ylar. Drömmer om snö."
+ },
+ {
+  "i": 8137,
+  "f": "js/scenes/shop-djurhem.js",
+  "k": "En riktig gårdskatt som vill bli innekatt på äldre dagar."
+ },
+ {
+  "i": 8138,
+  "f": "js/scenes/shop-djurhem.js",
+  "k": "Smyger och leker. Har gula ögon som lyser i mörkret."
+ },
+ {
+  "i": 8139,
+  "f": "js/scenes/shop-djurhem.js",
+  "k": "Mjuk som en kudde och lika lat."
+ },
+ {
+  "i": 8140,
+  "f": "js/scenes/shop-djurhem.js",
+  "k": "Vet vad hon vill. Spinner högt när hon får sin vilja igenom."
+ },
+ {
+  "i": 8141,
+  "f": "js/scenes/shop-djurhem.js",
+  "k": "Bär alltid smoking. Har ännu inte hittat festen."
+ },
+ {
+  "i": 8142,
+  "f": "js/scenes/shop-djurhem.js",
+  "k": "Hängöron och en liten nos som aldrig står still."
+ },
+ {
+  "i": 8143,
+  "f": "js/scenes/shop-djurhem.js",
+  "k": "Gräver gärna. Älskar morötter mer än något annat."
+ },
+ {
+  "i": 8144,
+  "f": "js/scenes/shop-djurhem.js",
+  "k": "Har en prick på nosen och en i hjärtat för dig."
+ },
+ {
+  "i": 8145,
+  "f": "js/scenes/shop-djurhem.js",
+  "k": "NYA HEM!"
+ },
+ {
+  "i": 8146,
+  "f": "js/scenes/shop-djurhem.js",
+  "k": "HUNDGÅRDARNA"
+ },
+ {
+  "i": 8147,
+  "f": "js/scenes/shop-djurhem.js",
+  "k": "💉 Vaccinerad och chippad · Adoption <b>{0}</b> · 💰 Du har <b>{1}</b>"
+ },
+ {
+  "i": 8148,
+  "f": "js/scenes/shop-djurhem.js",
+  "k": "Du har redan {0} djur – fler får inte plats."
+ },
+ {
+  "i": 8149,
+  "f": "js/scenes/shop-djurhem.js",
+  "k": "🏡 Adoptera {0} · {1}"
+ },
+ {
+  "i": 8150,
+  "f": "js/scenes/shop-djurhem.js",
+  "k": "Du har inte råd med adoptionen."
+ },
+ {
+  "i": 8151,
+  "f": "js/scenes/shop-djurhem.js",
+  "k": "Det gick inte att adoptera."
+ },
+ {
+  "i": 8152,
+  "f": "js/scenes/shop-djurhem.js",
+  "k": "Du adopterade ett djur"
+ },
+ {
+  "i": 8153,
+  "f": "js/scenes/shop-djurhem.js",
+  "k": "🏡 {0} har fått ett nytt hem – hos dig! {1} väntar hemma."
+ },
+ {
+  "i": 8154,
+  "f": "js/scenes/shop-djurhem.js",
+  "k": "Tack! {0} kommer att trivas hos dig. ❤️"
+ },
+ {
+  "i": 8155,
+  "f": "js/scenes/shop-djurhem.js",
+  "k": "Du har redan hjälpt till i dag – tack! Kom tillbaka i morgon."
+ },
+ {
+  "i": 8156,
+  "f": "js/scenes/shop-djurhem.js",
+  "k": "Du hjälpte till på djurhemmet"
+ },
+ {
+  "i": 8157,
+  "f": "js/scenes/shop-djurhem.js",
+  "k": "🥣 Du fyllde matskålarna och vattnet åt alla djuren. De viftar och spinner av tacksamhet!"
+ },
+ {
+  "i": 8158,
+  "f": "js/scenes/shop-djurhem.js",
+  "k": "🪙 Insamlingsbössan"
+ },
+ {
+  "i": 8159,
+  "f": "js/scenes/shop-djurhem.js",
+  "k": "Pengarna går till mat, filtar och veterinärbesök åt djuren som väntar på ett hem."
+ },
+ {
+  "i": 8160,
+  "f": "js/scenes/shop-djurhem.js",
+  "k": "Ge {0}"
+ },
+ {
+  "i": 8161,
+  "f": "js/scenes/shop-djurhem.js",
+  "k": "Du skänkte pengar till djurhemmet"
+ },
+ {
+  "i": 8162,
+  "f": "js/scenes/shop-djurhem.js",
+  "k": "🪙 Tack för {0}! Djuren får det lite bättre i dag."
+ },
+ {
+  "i": 8163,
+  "f": "js/scenes/shop-djurhem.js",
+  "k": "INGRID"
+ },
+ {
+  "i": 8164,
+  "f": "js/scenes/shop-djurhem.js",
+  "k": "INSAMLINGSBÖSSAN"
+ },
+ {
+  "i": 8165,
+  "f": "js/scenes/shop-djurhem.js",
+  "k": "MATSTATIONEN – KLART FÖR I DAG"
+ },
+ {
+  "i": 8166,
+  "f": "js/scenes/shop-djurhem.js",
+  "k": "MATSTATIONEN – HJÄLP TILL"
+ },
+ {
+  "i": 8167,
+  "f": "js/scenes/shop-djurklinik.js",
+  "k": "Hälsokoll"
+ },
+ {
+  "i": 8168,
+  "f": "js/scenes/shop-djurklinik.js",
+  "k": "Vera lyssnar på hjärtat, tittar i öronen och känner på magen."
+ },
+ {
+  "i": 8169,
+  "f": "js/scenes/shop-djurklinik.js",
+  "k": "Vaccination"
+ },
+ {
+  "i": 8170,
+  "f": "js/scenes/shop-djurklinik.js",
+  "k": "Skyddar i 60 dagar. Ett litet stick – sen en godisbit!"
+ },
+ {
+  "i": 8171,
+  "f": "js/scenes/shop-djurklinik.js",
+  "k": "Kloklippning"
+ },
+ {
+  "i": 8172,
+  "f": "js/scenes/shop-djurklinik.js",
+  "k": "Korta, fina klor – inga fler repor i soffan."
+ },
+ {
+  "i": 8173,
+  "f": "js/scenes/shop-djurklinik.js",
+  "k": "Tandborstning"
+ },
+ {
+  "i": 8174,
+  "f": "js/scenes/shop-djurklinik.js",
+  "k": "Blanka tänder och frisk andedräkt."
+ },
+ {
+  "i": 8175,
+  "f": "js/scenes/shop-djurklinik.js",
+  "k": "Hej! Jag är Vera, veterinär. Klicka på undersökningsbordet så tittar vi på ditt djur."
+ },
+ {
+  "i": 8176,
+  "f": "js/scenes/shop-djurklinik.js",
+  "k": "Ett djur som varit på hälsokoll den senaste veckan får extra poäng för hälsan på utställningen!"
+ },
+ {
+  "i": 8177,
+  "f": "js/scenes/shop-djurklinik.js",
+  "k": "Vaccinationen räcker i 60 dagar."
+ },
+ {
+  "i": 8178,
+  "f": "js/scenes/shop-djurklinik.js",
+  "k": "Kakan i buren pratar mer än alla mina patienter tillsammans."
+ },
+ {
+  "i": 8179,
+  "f": "js/scenes/shop-djurklinik.js",
+  "k": "KAKAN VILL HA KAKA!"
+ },
+ {
+  "i": 8180,
+  "f": "js/scenes/shop-djurklinik.js",
+  "k": "VOFF! … nej, MJAU!"
+ },
+ {
+  "i": 8181,
+  "f": "js/scenes/shop-djurklinik.js",
+  "k": "DOKTORN KOMMER!"
+ },
+ {
+  "i": 8182,
+  "f": "js/scenes/shop-djurklinik.js",
+  "k": "VÄNTRUM"
+ },
+ {
+  "i": 8183,
+  "f": "js/scenes/shop-djurklinik.js",
+  "k": "Du har inget djur än – men kom gärna och hälsa på Kakan!"
+ },
+ {
+  "i": 8184,
+  "f": "js/scenes/shop-djurklinik.js",
+  "k": "Ett ögonblick, jag har en patient!"
+ },
+ {
+  "i": 8185,
+  "f": "js/scenes/shop-djurklinik.js",
+  "k": "✓ Vaccinerad – skyddet räcker {0} dagar till"
+ },
+ {
+  "i": 8186,
+  "f": "js/scenes/shop-djurklinik.js",
+  "k": "🩺 Djurkliniken"
+ },
+ {
+  "i": 8187,
+  "f": "js/scenes/shop-djurklinik.js",
+  "k": "<b>{0}</b> · 😊 {1} · 🍖 {2}"
+ },
+ {
+  "i": 8188,
+  "f": "js/scenes/shop-djurklinik.js",
+  "k": "Upp på bordet, {0}! {1}"
+ },
+ {
+  "i": 8189,
+  "f": "js/scenes/shop-djurklinik.js",
+  "k": "Djurkliniken"
+ },
+ {
+  "i": 8190,
+  "f": "js/scenes/shop-djurklinik.js",
+  "k": "🩺 {0} är frisk och glad! Hjärtat slår som det ska. (Extra hälsopoäng på utställningen i en vecka.)"
+ },
+ {
+  "i": 8191,
+  "f": "js/scenes/shop-djurklinik.js",
+  "k": "💉 {0} är vaccinerad i {1} dagar – och fick en godisbit."
+ },
+ {
+  "i": 8192,
+  "f": "js/scenes/shop-djurklinik.js",
+  "k": "✂️ {0} har korta, fina klor nu."
+ },
+ {
+  "i": 8193,
+  "f": "js/scenes/shop-djurklinik.js",
+  "k": "🦷 {0} har skinande rena tänder!"
+ },
+ {
+  "i": 8194,
+  "f": "js/scenes/shop-djurklinik.js",
+  "k": "Klart! Allt ser fint ut."
+ },
+ {
+  "i": 8195,
+  "f": "js/scenes/shop-djurklinik.js",
+  "k": "0,0 KG"
+ },
+ {
+  "i": 8196,
+  "f": "js/scenes/shop-djurklinik.js",
+  "k": "UNDERSÖKNINGSBORDET"
+ },
+ {
+  "i": 8197,
+  "f": "js/scenes/shop-djurklinik.js",
+  "k": "VETERINÄREN VERA"
+ },
+ {
+  "i": 8198,
+  "f": "js/scenes/shop-djurklinik.js",
+  "k": "PAPEGOJAN KAKAN"
+ },
+ {
+  "i": 8199,
+  "f": "js/scenes/shop-kattcafe.js",
+  "k": "Kaffe"
+ },
+ {
+  "i": 8200,
+  "f": "js/scenes/shop-kattcafe.js",
+  "k": "Varm choklad med grädde"
+ },
+ {
+  "i": 8201,
+  "f": "js/scenes/shop-kattcafe.js",
+  "k": "Kattkaka (med öron!)"
+ },
+ {
+  "i": 8202,
+  "f": "js/scenes/shop-kattcafe.js",
+  "k": "Välkommen till Kurr! ☕ Fika vid disken – och klappa gärna katterna, de älskar det."
+ },
+ {
+  "i": 8203,
+  "f": "js/scenes/shop-kattcafe.js",
+  "k": "Alla katterna här kommer från Tassarnas hem. Vill du adoptera? Fråga där!"
+ },
+ {
+  "i": 8204,
+  "f": "js/scenes/shop-kattcafe.js",
+  "k": "Sätt dig vid ett bord med din fika, så kommer det snart en katt och håller dig sällskap."
+ },
+ {
+  "i": 8205,
+  "f": "js/scenes/shop-kattcafe.js",
+  "k": "Ett fjäderspö kostar 20 kr – katterna blir tokiga i det!"
+ },
+ {
+  "i": 8206,
+  "f": "js/scenes/shop-kattcafe.js",
+  "k": "Smulan är äldst. Hon sover nästan jämt i fönstret."
+ },
+ {
+  "i": 8207,
+  "f": "js/scenes/shop-kattcafe.js",
+  "k": "ADOPTERA"
+ },
+ {
+  "i": 8208,
+  "f": "js/scenes/shop-kattcafe.js",
+  "k": "Purrr … ❤️"
+ },
+ {
+  "i": 8209,
+  "f": "js/scenes/shop-kattcafe.js",
+  "k": "Mjau! 😺"
+ },
+ {
+  "i": 8210,
+  "f": "js/scenes/shop-kattcafe.js",
+  "k": "Kattcaféet"
+ },
+ {
+  "i": 8211,
+  "f": "js/scenes/shop-kattcafe.js",
+  "k": "Fjäderspö – lek med katterna"
+ },
+ {
+  "i": 8212,
+  "f": "js/scenes/shop-kattcafe.js",
+  "k": "Du har ett!"
+ },
+ {
+  "i": 8213,
+  "f": "js/scenes/shop-kattcafe.js",
+  "k": "☕ Kattcafé Kurr"
+ },
+ {
+  "i": 8214,
+  "f": "js/scenes/shop-kattcafe.js",
+  "k": "Sätt dig vid ett bord med fikat – då kommer en katt och håller dig sällskap."
+ },
+ {
+  "i": 8215,
+  "f": "js/scenes/shop-kattcafe.js",
+  "k": "Fika på kattcaféet"
+ },
+ {
+  "i": 8216,
+  "f": "js/scenes/shop-kattcafe.js",
+  "k": "{0} {1}! Sätt dig vid ett bord, så kommer en katt."
+ },
+ {
+  "i": 8217,
+  "f": "js/scenes/shop-kattcafe.js",
+  "k": "🪶 Fjäderspöet! Klicka på golvet så springer katterna dit."
+ },
+ {
+  "i": 8218,
+  "f": "js/scenes/shop-kattcafe.js",
+  "k": "DISKEN – FIKA"
+ },
+ {
+  "i": 8219,
+  "f": "js/scenes/shop-kattcafe.js",
+  "k": "RES DIG"
+ },
+ {
+  "i": 8220,
+  "f": "js/scenes/shop-kattcafe.js",
+  "k": "KLÖSTRÄDET"
+ },
+ {
+  "i": 8221,
+  "f": "js/scenes/shop-kattcafe.js",
+  "k": "🐈 Pelle och Kanel har de bästa platserna i klösträdet."
+ },
+ {
+  "i": 8222,
+  "f": "js/scenes/shop-kattcafe.js",
+  "k": "FÖNSTERBÄNKEN"
+ },
+ {
+  "i": 8223,
+  "f": "js/scenes/shop-kattcafe.js",
+  "k": "☀️ Smulan och Doris solar i fönstret. Smulan är äldst och sover nästan jämt."
+ },
+ {
+  "i": 8224,
+  "f": "js/scenes/shop-kattcafe.js",
+  "k": "ADOPTERA EN KATT"
+ }
+]

@@ -59,8 +59,8 @@ for (const [x, y, n] of [[1100, 296, 'tassbacken-trim'], [700, 300, 'tassbacken-
 const ej = await p.evaluate(() => [SF.scene._debug.walkable(450, 404), SF.scene._debug.walkable(1450, 384), SF.scene._debug.walkable(1018, 300)]);
 ok(!ej[0] && !ej[1] && ej[2], 'dammen och fontänen går inte att gå i, trottoaren går');
 // stängda hus: en skylt berättar vad som kommer
-await p.evaluate(() => SF.scene._debug.act('kafe')); await sleep(300);
-ok(/Kattcafé Kurr – öppnar snart/.test(await p.evaluate(() => window.__toasts.join(' | '))), 'kattcaféet: "öppnar snart" med vad som kommer');
+await p.evaluate(() => SF.scene._debug.act('klinik')); await sleep(300);
+ok(/Djurkliniken – öppnar snart/.test(await p.evaluate(() => window.__toasts.join(' | '))), 'djurkliniken: "öppnar snart" med vad som kommer');
 
 // ---- trimmaren ----
 await p.evaluate(() => SF.scene._debug.teleport(1099, 196)); await sleep(300);

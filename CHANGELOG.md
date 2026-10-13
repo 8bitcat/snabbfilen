@@ -10,6 +10,11 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.114.0] – 2026-10-13 – Kattcaféet och djurhemmet
+- ☕ Kattcafé Kurr i Tassbacken har öppnat! Fika vid disken, klappa de sju katterna och sätt dig vid ett bord – då kommer en katt och håller dig sällskap. Köp ett fjäderspö så springer katterna efter det.
+- 🏡 Djurhemmet Tassarnas hem: hundar, katter och kaniner väntar på ett nytt hem. Adoptera ett vuxet djur för 300 kr – nya djur kommer varje vecka.
+- 🥣 Hjälp till och mata djuren på djurhemmet en gång om dagen, eller lägg en slant i insamlingsbössan.
+
 ## [0.113.0] – 2026-10-13 – Utställningshallen
 - 🏆 Utställningshallen i Tassbacken har öppnat! Anmäl ditt djur vid disken: katter och hundar visas i ringen – gå ett varv och posera när domarna tittar.
 - ✂️ Domarna bedömer pälsen (en nygjord frisyr från trimmaren ger mest poäng), hälsan, hur väl ni samarbetar och posen.
