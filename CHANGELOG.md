@@ -10,6 +10,13 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.129.0] – 2026-10-13 – djurNET – köp och sälj djur
+- 🐾 djurNET – en ny app i mobilen där du köper och säljer djur! (Ramonas idé)
+- 🏷️ Sälj: djurNET värderar ditt djur – rasen, åldern, rosetter och Best in Show från utställningen, frisyren från Klipp & Klo, blandkull och hur glad det är. Du väljer priset själv.
+- Familjer hör av sig medan du spelar och lägger bud. Tacka ja, pruta en gång eller säg nej tack. När du säljer kommer familjen och hämtar djuret med en transportbur – och dagen efter kommer en hälsning med ett foto från djurets nya hem. 💌
+- Ungar måste växa till "ung" innan de får flytta, och du kan sälja ett djur om dagen. Fem sålda djur = meriten Uppfödare i troféskåpet.
+- 🛒 Köp: sex nya djur från uppfödare varje dag – katter, hundar och kaniner, ibland med rosetter eller ovanlig päls.
+
 ## [0.128.0] – 2026-10-13 – Burktornet och skjutbanan
 - 🥫 BURKTORNET och 🎯 SKJUTBANAN på Pixelberg – två riktiga tivolistånd mellan radiobilarna och spökhuset!
 - Burktornet (15 kr): tre bollar mot sex burkar. Tryck när siktet ligger rätt – träffar du en burk längst ner ramlar de som står på den med. Alla sex = stora vinsten!

@@ -12,6 +12,24 @@ export const PAL = {
   D: '#a0643c',
 };
 export const KARTOR = {
+  // 🐾 djurNET: en vit tass på en blå rund bricka (js/core/djurnetapp.js)
+  djurnet: [
+    '................',
+    '.....kkkkkk.....',
+    '...kkccbbbbkk...',
+    '..kccwwbbwwbbk..',
+    '..kcbwwbbwwbBk..',
+    '.kcwwggbbggwwBk.',
+    '.kbwwbbbbbbwwBk.',
+    '.kbggbwwwwbggBk.',
+    '.kbbbwwwwwwbbBk.',
+    '.kbbwwwwwwwwbBk.',
+    '.kbbwwwwwwggBBk.',
+    '..kbBggggggBBk..',
+    '..kBBBBBBBBBBk..',
+    '...kkBBBBBBkk...',
+    '.....kkkkkk.....',
+    '................'],
   telefon: [
     '................',
     '....kkkkkkkk....',

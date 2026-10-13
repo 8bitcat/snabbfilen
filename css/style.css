@@ -798,6 +798,27 @@ html.foto-lage #emotes, html.foto-lage #chat, html.foto-lage #startguide, html.f
 /* 🎡 Pixelberg (js/scenes/pixelberg.js): lyckohjulet */
 .pb-lycka { width: min(60vw, 240px); aspect-ratio: 1; image-rendering: pixelated; display: block; margin: 0 auto; }
 .pb-lycka-text { font-size: var(--f2); text-align: center; margin: 8px 0 0; }
+/* 🐾 djurNET (js/core/djurnetapp.js) */
+.dn-logo { font-size: var(--f4); line-height: 1; display: flex; align-items: baseline; gap: 8px; margin: 0 0 6px; color: #2a5aa8; }
+.dn-logo b { color: #e04848; } .dn-logo span { font-size: var(--f1); color: var(--muted); }
+.dn-flikar { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+.dn-ny { display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 4px; background: #e04848; color: #fff; border: 2px solid var(--ink); font-size: var(--f1); }
+.dn-lista { display: grid; gap: 6px; max-height: min(46vh, 340px); overflow-y: auto; padding-right: 2px; }
+.dn-rubrik { font-size: var(--f2); margin: 6px 0 2px; color: var(--muted); }
+.dn-rad { display: grid; grid-template-columns: 60px 1fr auto; gap: 8px; align-items: center; background: #fff; border: 3px solid var(--ink); padding: 4px 6px; }
+.dn-rad img { width: 60px; height: 50px; image-rendering: pixelated; background: #e9e4f0; } .dn-rad .dn-foto { width: 96px; height: 72px; }
+.dn-brev { grid-template-columns: 96px 1fr; }
+.dn-text { font-size: var(--f2); line-height: 1.1; min-width: 0; } .dn-text small { font-size: var(--f1); color: var(--muted); }
+.dn-knappar { display: grid; gap: 4px; justify-items: stretch; }
+.dn-bud { background: #fff8d6; } .dn-budtext { margin-top: 3px; color: #2f7a3e; } .dn-vantar { margin-top: 3px; color: var(--muted); font-size: var(--f1); }
+.dn-av { opacity: .7; } .dn-varfor { margin-top: 3px; font-size: var(--f1); color: #9e2a2e; }
+.dn-tom, .dn-tips { font-size: var(--f1); color: var(--muted); margin: 6px 0 0; } .dn-saljare { color: #2a5aa8 !important; }
+.dn-varde { display: grid; gap: 2px; margin: 8px 0; padding: 6px 8px; background: #fff; border: 3px solid var(--ink); }
+.dn-vrad { display: flex; justify-content: space-between; gap: 10px; font-size: var(--f2); } .dn-summa { border-top: 2px solid var(--ink); margin-top: 3px; padding-top: 3px; font-weight: bold; }
+.dn-pris { display: flex; align-items: center; justify-content: center; gap: 10px; font-size: var(--f3); }
+.dn-scen { width: 100%; max-height: 40vh; object-fit: contain; image-rendering: pixelated; border: 3px solid var(--ink); display: block; }
+.dn-avsked { font-size: var(--f2); text-align: center; margin: 8px 0 0; }
+@media (max-width: 520px) { .dn-rad { grid-template-columns: 48px 1fr; } .dn-rad img { width: 48px; height: 40px; } .dn-knappar { grid-column: 1 / -1; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); } }
 /* 🥫🎯 burktornet och skjutbanan (js/pixelberg/stand.js) */
 .pb-spel { width: 100%; max-height: 52vh; object-fit: contain; image-rendering: pixelated; border: 3px solid var(--ink); display: block; touch-action: none; }
 .pb-spel-text { font-size: var(--f2); text-align: center; margin: 8px 0 0; }

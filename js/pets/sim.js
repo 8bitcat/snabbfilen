@@ -52,6 +52,12 @@
 //       göra sitt räknas det som gjort. Ett djur som varit ute mer än 6 speltimmar går hem
 //       självt (händelse 'hem').
 //   outdoorBusiness(petId) → true om hunden fick göra sitt ute (anropas av följaren)
+//   🐾 djurNET (js/pets/djurnet.js – köpa och sälja djur, Carl 2026-10-13):
+//   removePet(petId) → det borttagna djuret | null (sålt: kärleken till det glöms hos de andra, ungarnas föräldrar kvar)
+//   snapshot(petId) → { name, species, breed, sex, alder, stage, grow, happy, seed, mix?, breed2?, frisyr?, utst?, agil? }
+//       – det som följer med till en ny ägare (inga platser, ingen kärlek, ingen graviditet)
+//   importPet(snap, home, { day }?) → det nya djuret | null (fullt: lastError) – ett köpt djur flyttar in: nytt id,
+//       åldern (snap.alder dagar) räknas om till köparens klocka, stadiet och poängen följer med
 //   pet(petId) · play(petId) → nytt glädjevärde (klappa/leka)
 //   rename(petId, namn) · setFollowing(petId, bool) · feedDirect(petId, bowlId) (lagret: djuret äter)
 //   petToilet(petId, { itemId } | { x, y }) (lagret: djuret gör sitt i lådan/buren/på golvet)
@@ -151,7 +157,7 @@ export const PET_RULES = {
 };
 export const ART_NAMN = { katt: $t('katt'), hund: $t('hund'), kanin: $t('kanin') };
 
-const NAMN = {
+export const NAMN = {   // (djurNET: uppfödarnas djur får namn härifrån)
   katt: { hane: [$t('Findus'), $t('Måns'), $t('Pelle'), $t('Gustav'), $t('Sixten'), $t('Morris'), $t('Tiger'), $t('Ludde'), $t('Kasper'), $t('Sotis'), $t('Egon'), $t('Pricken')],
     hona: [$t('Misse'), $t('Molly'), $t('Nala'), $t('Smilla'), $t('Tussan'), $t('Luna'), $t('Sessan'), $t('Kisse'), $t('Doris'), $t('Vilma'), $t('Mirra'), $t('Sussi')] },
   hund: { hane: [$t('Bamse'), $t('Charlie'), $t('Rocky'), $t('Hugo'), $t('Max'), $t('Buster'), $t('Frasse'), $t('Loke'), $t('Otto'), $t('Sigge'), $t('Tassen'), $t('Kurre')],
@@ -276,6 +282,50 @@ export function createPetStore({ storage = null, rng = Math.random, key = PETS_S
       S.pets.push(p);
       if (!S.gifts.skal) { S.gifts.skal = true; S.inventory.matskal = (S.inventory.matskal | 0) + 1; }
       if (species === 'hund' && !S.gifts.koppel) { S.gifts.koppel = true; S.inventory.koppel = (S.inventory.koppel | 0) + 1; }
+      S.save();
+      return withOk(p);
+    },
+    // ---------- 🐾 djurNET: sälja och köpa ----------
+    removePet(petId) {
+      const i = S.pets.findIndex((p) => p.id === petId);
+      if (i < 0) return null;
+      const [p] = S.pets.splice(i, 1);
+      for (const q of S.pets) if (q.lover === petId) q.lover = null;
+      S.save();
+      return p;
+    },
+    snapshot(petId) {
+      const p = S.petById(petId);
+      if (!p) return null;
+      const day = Math.max(S.day, S.nowDay());
+      return {
+        name: p.name, species: p.species, breed: p.breed, sex: p.sex, alder: Math.max(0, day - (p.bornDay | 0)), stage: p.stage,
+        grow: p.grow | 0, happy: Math.round(p.happy), seed: p.seed | 0,
+        ...(Array.isArray(p.mix) ? { mix: p.mix.map(String).slice(0, 2) } : {}), ...(p.breed2 ? { breed2: String(p.breed2) } : {}),
+        ...(p.frisyr ? { frisyr: p.frisyr } : {}), ...(p.utst ? { utst: p.utst } : {}), ...(p.agil ? { agil: p.agil | 0 } : {}),
+      };
+    },
+    importPet(snap, home, opts = {}) {
+      S.lastError = '';
+      if (!snap || typeof snap !== 'object' || !ARTER.includes(snap.species)) { S.lastError = $t('Okänd djurart.'); return null; }
+      if (S.pets.length >= MAX_PETS) { S.lastError = $t`Du kan ha högst ${MAX_PETS} djur.`; return null; }
+      const today = Math.max(S.day, S.nowDay(), isNum(opts.day) ? opts.day : 0);
+      const stage = ['unge', 'ung', 'vuxen'].includes(snap.stage) ? snap.stage : 'ung';
+      const alder = Math.max(0, Math.min(3650, snap.alder | 0));
+      const p = S._newPet({
+        species: snap.species, breed: String(snap.breed || ''), sex: snap.sex === 'hona' ? 'hona' : 'hane',
+        name: cleanName(snap.name) || S._freeName(snap.species, snap.sex), bornDay: today - alder, home: home ?? null, room: null,
+        hunger: 85, happy: clamp(isNum(snap.happy) ? snap.happy : 80), toilet: 0,
+        mix: Array.isArray(snap.mix) ? snap.mix.map(String).slice(0, 2) : null, breed2: snap.breed2 ? String(snap.breed2) : null, homeDay: today,
+      });
+      p.stage = stage; p.grow = Math.max(GROW_AT[stage], Math.min(GROW_AT.vuxen + 200, snap.grow | 0)); p.stageDay = today;
+      if (isNum(snap.seed)) p.seed = snap.seed | 0;
+      if (snap.frisyr) { const f = rensaFrisyr(snap.frisyr); if (f) p.frisyr = f; }
+      if (snap.utst && typeof snap.utst === 'object') p.utst = rensaUtst(snap.utst);
+      if (snap.agil) p.agil = Math.max(0, Math.min(20, snap.agil | 0));
+      S.pets.push(p);
+      if (!S.gifts.skal) { S.gifts.skal = true; S.inventory.matskal = (S.inventory.matskal | 0) + 1; }
+      if (p.species === 'hund' && !S.gifts.koppel) { S.gifts.koppel = true; S.inventory.koppel = (S.inventory.koppel | 0) + 1; }
       S.save();
       return withOk(p);
     },

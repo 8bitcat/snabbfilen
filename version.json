@@ -1,7 +1,7 @@
 {
-  "version": "0.128.0",
+  "version": "0.129.0",
   "date": "2026-10-13",
-  "title": "Burktornet och skjutbanan",
+  "title": "djurNET – köp och sälj djur",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
@@ -36,6 +36,7 @@
     "js/core/avatar.js",
     "js/core/brasa.js",
     "js/core/chat.js",
+    "js/core/djurnetapp.js",
     "js/core/drakt.js",
     "js/core/fest.js",
     "js/core/figursteg.js",
@@ -146,6 +147,7 @@
     "js/net/voice-ui.js",
     "js/net/voice.js",
     "js/net/world.js",
+    "js/pets/djurnet.js",
     "js/pets/items.js",
     "js/pets/layer.js",
     "js/pets/outdoors.js",

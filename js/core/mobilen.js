@@ -8,6 +8,7 @@
 //   • 🎁 Presenter (js/core/presenter.js, Carl 2026-10-12): en present om dagen, var sjunde stor – röd prick på mobilen.
 //   • 💛 Vänner (js/core/vannerapp.js, Carl 2026-10-12): ens vänner, vilka som är i stan nu (siffran på appen).
 //   • 💬 SMS (js/core/smsapp.js, Carl 2026-10-13): meddelanden till vännerna – siffran = olästa, röd prick på mobilen.
+//   • 🐾 djurNET (js/core/djurnetapp.js, Carl 2026-10-13): köpa och sälja djur – siffran = nya bud och hälsningar.
 //   • 📷 Kamera och 🖼️ Bilder (js/core/foto.js): fotoläget med filter, ramar och poser, och albumet.
 //   • 🔍 Mysteriet (js/core/mysterium.js): anteckningsboken – NY när ett nytt kapitel väntar (ett om dagen).
 //   • 💼 Jobb (alla jobb, närmast först, 🧭 Visa vägen) och 🏠 Hem (pilen hem) – js/core/jobben.js, Carl 2026-10-11.
@@ -32,6 +33,7 @@ import { openPresenter, presenterVantar } from './presenter.js';
 import { openSmsApp, smsOlast } from './smsapp.js';   // 💬 SMS till vännerna (Carl 2026-10-13)
 import { openKamera, openBilder } from './foto.js';   // 📷 fotoläget och 🖼️ albumet
 import { openMysteriet, mysteriumStart, kapitelVantar } from './mysterium.js';   // 🕵️ mysteriet i kapitel
+import { openDjurnet, djurnetBadge, djurnetStart } from './djurnetapp.js';   // 🐾 djurNET – köpa och sälja djur
 import { openKortApp } from './kortapp.js';   // 🃏 pixelkortsalbumet (Carl 2026-10-12)   // 🎁 presenterna (Carl 2026-10-12)
 
 const APPAR = [
@@ -41,6 +43,7 @@ const APPAR = [
   { id: 'presenter', fn: (A) => openPresenter(A), ik: 'present', namn: $t('Presenter') },
   { id: 'mysterium', fn: (A) => openMysteriet(A), ik: 'mysterium', namn: $t('Mysteriet') },
   { id: 'kort', fn: (A) => openKortApp(A), ik: 'kort', namn: $t('Pixelkort') },
+  { id: 'djurnet', fn: (A) => openDjurnet(A), ik: 'djurnet', namn: 'djurNET' },
   { id: 'kamera', fn: (A) => openKamera(A), ik: 'kamera', namn: $t('Kamera') },
   { id: 'bilder', fn: (A) => openBilder(A), ik: 'bilder', namn: $t('Bilder') },
   { id: 'kbk', fn: (A) => openKbkApp(A), ik: 'kbk', namn: 'KBK', syns: (A) => kbkAppSyns(A?.avatar) },
@@ -97,6 +100,7 @@ export function mountMobilen(app0) {
   setInterval(uppdatera, 400);
   uppdatera();
   mysteriumStart(A);
+  djurnetStart(A);
 }
 
 // var fjärde tiondels sekund: snabbknapparna på plats, siffrorna, klockan – och stäng när något annat öppnas
@@ -113,7 +117,8 @@ function uppdatera() {
   sk.classList.toggle('hidden', !n); if (n && sk.textContent !== String(n)) sk.textContent = String(n);
   const pres = presenterVantar(A);   // 🎁 en present väntar → röd prick på mobilen
   const sms = smsOlast(A);   // 💬 olästa SMS → också röd prick
-  knapp.querySelector('.ny').classList.toggle('hidden', !ny && !pres && !sms);
+  const djur = djurnetBadge(A);   // 🐾 nya bud och hälsningar på djurNET
+  knapp.querySelector('.ny').classList.toggle('hidden', !ny && !pres && !sms && !djur);
   // 🧭 startguiden lär ut mobilen: knappen och appen pulserar (Jobb → Burgarbaren, Hem på kvällen)
   const peka = A?.attract ? null : guidePeka();
   knapp.classList.toggle('sg-pulse', !!peka && !oppen);
@@ -128,6 +133,7 @@ function uppdatera() {
   badge('vanner', van ? String(van) : '');
   badge('presenter', pres ? String(pres) : '');
   badge('sms', sms ? String(sms) : '');
+  badge('djurnet', djur ? String(djur) : '');
   badge('mysterium', kapitelVantar(A) ? $t('NY') : '');
   badge('nyheter', ny ? $t('NY') : '');
   badge('rost', rostPa ? $t('PÅ') : '');

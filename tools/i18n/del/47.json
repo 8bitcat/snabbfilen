@@ -1,0 +1,452 @@
+[
+ {
+  "i": 8720,
+  "f": "js/core/djurnetapp.js",
+  "k": "📬 djurNET: {0} vill köpa {1} för {2}! Öppna djurNET i mobilen."
+ },
+ {
+  "i": 8721,
+  "f": "js/core/djurnetapp.js",
+  "k": "💌 djurNET: En hälsning från {0} om {1}!"
+ },
+ {
+  "i": 8722,
+  "f": "js/core/djurnetapp.js",
+  "k": "🏆 {0} rosetter"
+ },
+ {
+  "i": 8723,
+  "f": "js/core/djurnetapp.js",
+  "k": "✨ Best in Show"
+ },
+ {
+  "i": 8724,
+  "f": "js/core/djurnetapp.js",
+  "k": "✂️ frisyr"
+ },
+ {
+  "i": 8725,
+  "f": "js/core/djurnetapp.js",
+  "k": "🌈 blandkull"
+ },
+ {
+  "i": 8726,
+  "f": "js/core/djurnetapp.js",
+  "k": "🏷️ Sälj"
+ },
+ {
+  "i": 8727,
+  "f": "js/core/djurnetapp.js",
+  "k": "🛒 Köp"
+ },
+ {
+  "i": 8728,
+  "f": "js/core/djurnetapp.js",
+  "k": "💌 Brevlådan"
+ },
+ {
+  "i": 8729,
+  "f": "js/core/djurnetapp.js",
+  "k": "Köp och sälj djur"
+ },
+ {
+  "i": 8730,
+  "f": "js/core/djurnetapp.js",
+  "k": "Dina annonser ({0}/{1})"
+ },
+ {
+  "i": 8731,
+  "f": "js/core/djurnetapp.js",
+  "k": "Pris: {0}"
+ },
+ {
+  "i": 8732,
+  "f": "js/core/djurnetapp.js",
+  "k": "💬 {0} vill köpa {1} för {2}!"
+ },
+ {
+  "i": 8733,
+  "f": "js/core/djurnetapp.js",
+  "k": "⏳ Väntar på köpare …"
+ },
+ {
+  "i": 8734,
+  "f": "js/core/djurnetapp.js",
+  "k": "✅ Sälj · {0}"
+ },
+ {
+  "i": 8735,
+  "f": "js/core/djurnetapp.js",
+  "k": "🤝 Pruta · {0}"
+ },
+ {
+  "i": 8736,
+  "f": "js/core/djurnetapp.js",
+  "k": "✖ Nej tack"
+ },
+ {
+  "i": 8737,
+  "f": "js/core/djurnetapp.js",
+  "k": "Ta bort annonsen"
+ },
+ {
+  "i": 8738,
+  "f": "js/core/djurnetapp.js",
+  "k": "Dina djur"
+ },
+ {
+  "i": 8739,
+  "f": "js/core/djurnetapp.js",
+  "k": "Du har inga djur än. Köp ett här i djurNET eller i djuraffären!"
+ },
+ {
+  "i": 8740,
+  "f": "js/core/djurnetapp.js",
+  "k": "Alla dina djur har en annons."
+ },
+ {
+  "i": 8741,
+  "f": "js/core/djurnetapp.js",
+  "k": "Värde: {0}"
+ },
+ {
+  "i": 8742,
+  "f": "js/core/djurnetapp.js",
+  "k": "📢 Lägg ut"
+ },
+ {
+  "i": 8743,
+  "f": "js/core/djurnetapp.js",
+  "k": "Köparna hör av sig medan du spelar – ju lägre pris, desto fortare. Du kan sälja ett djur om dagen."
+ },
+ {
+  "i": 8744,
+  "f": "js/core/djurnetapp.js",
+  "k": "Dagens djur från uppfödarna"
+ },
+ {
+  "i": 8745,
+  "f": "js/core/djurnetapp.js",
+  "k": "Alla dagens djur är sålda – nya kommer i morgon!"
+ },
+ {
+  "i": 8746,
+  "f": "js/core/djurnetapp.js",
+  "k": "Säljs av {0}"
+ },
+ {
+  "i": 8747,
+  "f": "js/core/djurnetapp.js",
+  "k": "Du har {0} djur – det får inte plats fler."
+ },
+ {
+  "i": 8748,
+  "f": "js/core/djurnetapp.js",
+  "k": "Nya djur varje dag. Djuret flyttar hem till dig direkt."
+ },
+ {
+  "i": 8749,
+  "f": "js/core/djurnetapp.js",
+  "k": "Hälsningar från de nya familjerna"
+ },
+ {
+  "i": 8750,
+  "f": "js/core/djurnetapp.js",
+  "k": "Inga hälsningar än. När du har sålt ett djur hör den nya familjen av sig efter en dag."
+ },
+ {
+  "i": 8751,
+  "f": "js/core/djurnetapp.js",
+  "k": "🤝 {0} gick med på {1}!"
+ },
+ {
+  "i": 8752,
+  "f": "js/core/djurnetapp.js",
+  "k": "😕 {0} tyckte att det blev för dyrt och tackade nej. Fler köpare hör av sig."
+ },
+ {
+  "i": 8753,
+  "f": "js/core/djurnetapp.js",
+  "k": "🐾 {0} har flyttat hem till dig!"
+ },
+ {
+  "i": 8754,
+  "f": "js/core/djurnetapp.js",
+  "k": "📢 Sälj {0}"
+ },
+ {
+  "i": 8755,
+  "f": "js/core/djurnetapp.js",
+  "k": "Värde"
+ },
+ {
+  "i": 8756,
+  "f": "js/core/djurnetapp.js",
+  "k": "📢 Lägg ut annonsen"
+ },
+ {
+  "i": 8757,
+  "f": "js/core/djurnetapp.js",
+  "k": "📢 {0} ligger ute på djurNET för {1}. Köparna hör av sig!"
+ },
+ {
+  "i": 8758,
+  "f": "js/core/djurnetapp.js",
+  "k": "Lågt pris – köparna hör av sig snabbt."
+ },
+ {
+  "i": 8759,
+  "f": "js/core/djurnetapp.js",
+  "k": "Rätt pris – en köpare hör av sig inom en stund."
+ },
+ {
+  "i": 8760,
+  "f": "js/core/djurnetapp.js",
+  "k": "Lite dyrt – det kan ta längre tid, och köparen vill nog pruta."
+ },
+ {
+  "i": 8761,
+  "f": "js/core/djurnetapp.js",
+  "k": "Mycket dyrt – det kan dröja länge innan någon hör av sig."
+ },
+ {
+  "i": 8762,
+  "f": "js/core/djurnetapp.js",
+  "k": "🐾 {0} hämtar {1}"
+ },
+ {
+  "i": 8763,
+  "f": "js/core/djurnetapp.js",
+  "k": "Hej då, {0}! 💛 Du fick {1}."
+ },
+ {
+  "i": 8764,
+  "f": "js/core/djurnetapp.js",
+  "k": "🏆 Fem sålda djur – du är Uppfödare! Meriten står i troféskåpet."
+ },
+ {
+  "i": 8765,
+  "f": "js/core/djurnetapp.js",
+  "k": "💛 Hej då!"
+ },
+ {
+  "i": 8766,
+  "f": "js/core/meriter.js",
+  "k": "Uppfödare – fem djur sålda på djurNET"
+ },
+ {
+  "i": 8767,
+  "f": "js/pets/djurnet.js",
+  "k": "Familjen Lind"
+ },
+ {
+  "i": 8768,
+  "f": "js/pets/djurnet.js",
+  "k": "Familjen Holm"
+ },
+ {
+  "i": 8769,
+  "f": "js/pets/djurnet.js",
+  "k": "Familjen Ek"
+ },
+ {
+  "i": 8770,
+  "f": "js/pets/djurnet.js",
+  "k": "Familjen Nyström"
+ },
+ {
+  "i": 8771,
+  "f": "js/pets/djurnet.js",
+  "k": "Familjen Al-Sayed"
+ },
+ {
+  "i": 8772,
+  "f": "js/pets/djurnet.js",
+  "k": "Familjen Kowalski"
+ },
+ {
+  "i": 8773,
+  "f": "js/pets/djurnet.js",
+  "k": "Familjen Rossi"
+ },
+ {
+  "i": 8774,
+  "f": "js/pets/djurnet.js",
+  "k": "Familjen Öberg"
+ },
+ {
+  "i": 8775,
+  "f": "js/pets/djurnet.js",
+  "k": "Familjen Sandberg"
+ },
+ {
+  "i": 8776,
+  "f": "js/pets/djurnet.js",
+  "k": "Familjen Dahl"
+ },
+ {
+  "i": 8777,
+  "f": "js/pets/djurnet.js",
+  "k": "Familjen Novak"
+ },
+ {
+  "i": 8778,
+  "f": "js/pets/djurnet.js",
+  "k": "Kattgården i Tassbacken"
+ },
+ {
+  "i": 8779,
+  "f": "js/pets/djurnet.js",
+  "k": "Gun i Linnéstaden"
+ },
+ {
+  "i": 8780,
+  "f": "js/pets/djurnet.js",
+  "k": "Katthemmet Morrhåret"
+ },
+ {
+  "i": 8781,
+  "f": "js/pets/djurnet.js",
+  "k": "Hundkojan på landet"
+ },
+ {
+  "i": 8782,
+  "f": "js/pets/djurnet.js",
+  "k": "Kennel Pixelberg"
+ },
+ {
+  "i": 8783,
+  "f": "js/pets/djurnet.js",
+  "k": "Uppfödaren på Solön"
+ },
+ {
+  "i": 8784,
+  "f": "js/pets/djurnet.js",
+  "k": "Kaninbacken"
+ },
+ {
+  "i": 8785,
+  "f": "js/pets/djurnet.js",
+  "k": "Lilla kaningården"
+ },
+ {
+  "i": 8786,
+  "f": "js/pets/djurnet.js",
+  "k": "{0} mår jättebra och har redan hittat en egen fönsterplats!"
+ },
+ {
+  "i": 8787,
+  "f": "js/pets/djurnet.js",
+  "k": "{0} sov i vår säng första natten. Tack för allt!"
+ },
+ {
+  "i": 8788,
+  "f": "js/pets/djurnet.js",
+  "k": "Barnen leker med {0} hela dagarna – vi är så glada!"
+ },
+ {
+  "i": 8789,
+  "f": "js/pets/djurnet.js",
+  "k": "{0} har ätit upp hela matskålen och vill ha mer."
+ },
+ {
+  "i": 8790,
+  "f": "js/pets/djurnet.js",
+  "k": "{0} har fått en ny leksak och en mjuk korg. Hälsningar!"
+ },
+ {
+  "i": 8791,
+  "f": "js/pets/djurnet.js",
+  "k": "Vi tog med {0} till parken i dag. Alla ville klappa!"
+ },
+ {
+  "i": 8792,
+  "f": "js/pets/djurnet.js",
+  "k": "Ras: {0}"
+ },
+ {
+  "i": 8793,
+  "f": "js/pets/djurnet.js",
+  "k": "Vuxen (de unga är mest efterfrågade)"
+ },
+ {
+  "i": 8794,
+  "f": "js/pets/djurnet.js",
+  "k": "Ung – den bästa åldern att flytta"
+ },
+ {
+  "i": 8795,
+  "f": "js/pets/djurnet.js",
+  "k": "Rosetter från utställningen ({0} st)"
+ },
+ {
+  "i": 8796,
+  "f": "js/pets/djurnet.js",
+  "k": "Tränad i agility"
+ },
+ {
+  "i": 8797,
+  "f": "js/pets/djurnet.js",
+  "k": "Frisyr från Klipp & Klo"
+ },
+ {
+  "i": 8798,
+  "f": "js/pets/djurnet.js",
+  "k": "Blandkull – ovanlig päls"
+ },
+ {
+  "i": 8799,
+  "f": "js/pets/djurnet.js",
+  "k": "Glad och välmående"
+ },
+ {
+  "i": 8800,
+  "f": "js/pets/djurnet.js",
+  "k": "Ungen är för liten för att flytta – vänta tills den har vuxit till ung."
+ },
+ {
+  "i": 8801,
+  "f": "js/pets/djurnet.js",
+  "k": "Djuret är ledset just nu – ingen vill köpa ett ledset djur. Lek och klappa först!"
+ },
+ {
+  "i": 8802,
+  "f": "js/pets/djurnet.js",
+  "k": "Djuret väntar ungar – vänta tills de är födda."
+ },
+ {
+  "i": 8803,
+  "f": "js/pets/djurnet.js",
+  "k": "Djuret är ute på promenad – gå hem först."
+ },
+ {
+  "i": 8804,
+  "f": "js/pets/djurnet.js",
+  "k": "Djuret har redan en annons."
+ },
+ {
+  "i": 8805,
+  "f": "js/pets/djurnet.js",
+  "k": "Du kan ha högst {0} annonser samtidigt."
+ },
+ {
+  "i": 8806,
+  "f": "js/pets/djurnet.js",
+  "k": "Budet finns inte längre."
+ },
+ {
+  "i": 8807,
+  "f": "js/pets/djurnet.js",
+  "k": "Du har redan sålt ett djur i dag – djurNET tillåter en försäljning om dagen."
+ },
+ {
+  "i": 8808,
+  "f": "js/pets/djurnet.js",
+  "k": "Djuret är redan sålt."
+ },
+ {
+  "i": 8809,
+  "f": "js/pets/djurnet.js",
+  "k": "Du har inte råd."
+ }
+]

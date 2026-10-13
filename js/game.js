@@ -5,6 +5,7 @@ import { play } from './core/sound.js';
 import { WARDROBE, itemById, legacyKeyToId } from './data/wardrobe.js';
 import { $t, $tf, $n, money } from './core/i18n.js';
 import { visningUppdatera } from './core/visning.js';   // 🏆 troféskåpet ritas om när en merit kommer
+import { rensaDjurnet } from './pets/djurnet.js';   // 🐾 djurNET: köpa och sälja djur
 
 export const SAVE_KEY = 'snabbfilen_save1';
 // Fält som gamla versioner sparade men som load() redan har flyttat in på nytt ställe
@@ -763,6 +764,7 @@ export class Game {
     this.meriter = [];       // 🏆 det man har vunnit [{ typ, plats, klass, vem, dag, t }] (js/core/meriter.js, merit())
     this.mysterium = { kap: 0, steg: 0, klar: '', hittat: [] };
     this.fiske = { spo: false, arter: {} };
+    this.djurnet = rensaDjurnet(null);   // 🐾 djurNET (js/pets/djurnet.js): annonserna, buden, hälsningarna, sålda djur
     this.tivoli = { band: 0 };   // 🎡 Pixelberg (js/scenes/pixelberg.js): dagen man har åkband   // 🎣 fisket på Solön (js/solon/fiske.js): metspöet och fångstboken { [art]: { n, rekord } }   // 🕵️ mysteriet (js/core/mysterium.js): kapitel, steg, dagen förra kapitlet blev klart, ledtrådarna
     this.festVecka = '';   // 🎉 veckan ("2026-W42") då man senast fick lördagsfestens present (js/city/fest.js)
     // 🏡 djurhemmet i Tassbacken (js/scenes/shop-djurhem.js): adopterade = djurens id:n ("dh3:12" = djur 3 vecka 12),
@@ -953,6 +955,7 @@ export class Game {
           for (const [k, v] of Object.entries(Q.arter && typeof Q.arter === 'object' ? Q.arter : {})) if (/^[a-z]{2,12}$/.test(k) && v && (v.n | 0) > 0) arter[k] = { n: Math.min(9999, v.n | 0), rekord: Math.max(0, Math.min(99, Number(v.rekord) || 0)) };
           g.fiske = { spo: !!Q.spo, arter }; }
         g.tivoli = { band: Math.max(0, (p.tivoli && typeof p.tivoli === 'object' ? p.tivoli.band : 0) | 0) };
+        g.djurnet = rensaDjurnet(p.djurnet);
         g.meriter = (Array.isArray(p.meriter) ? p.meriter : []).filter((m) => m && typeof m.typ === 'string' && /^[a-z]{2,12}$/.test(m.typ)).slice(-150)
           .map((m) => ({ typ: m.typ, plats: Math.max(1, Math.min(3, m.plats | 0)), klass: String(m.klass || '').slice(0, 12), vem: String(m.vem || '').slice(0, 20), dag: m.dag | 0, t: Number(m.t) || 0 }));
         g.festVecka = /^\d{4}-W\d{2}$/.test(String(p.festVecka || '')) ? String(p.festVecka) : '';

@@ -21,6 +21,7 @@ export const MERIT = {
   kort: { icon: '🃏', namn: $t('Pixelkort – komplett serie'), form: 'stjarna' },
   mysterium: { icon: '🕵️', namn: $t('Mästerdetektiv – Kattstatyns krona'), form: 'medalj' },
   fiske: { icon: '🎣', namn: $t('Fiskemästare – alla arter på Solön'), form: 'pokal' },
+  uppfodare: { icon: '🐾', namn: $t('Uppfödare – fem djur sålda på djurNET'), form: 'stjarna' },
 };
 const MEDALJ = ['🥇', '🥈', '🥉'];
 const klassNamn = (m) => (m.typ === 'hopp' ? HOPPKLASSER.find((k) => k.id === m.klass)?.namn
