@@ -1,0 +1,52 @@
+[
+ {
+  "i": 8665,
+  "f": "js/scenes/pixelberg.js",
+  "k": "Berg-och-dalbanan"
+ },
+ {
+  "i": 8666,
+  "f": "js/scenes/pixelberg.js",
+  "k": "🎢 Du sätter dig i vagn {0} – tåget går om {1} sekunder!"
+ },
+ {
+  "i": 8667,
+  "f": "js/scenes/pixelberg.js",
+  "k": "🎢 Tåget är ute på banan – du ställer dig först i kön. Nästa tåg går om {0} sekunder."
+ },
+ {
+  "i": 8668,
+  "f": "js/scenes/pixelberg.js",
+  "k": "🎢 Wow, vilken fart! +{0} 😊"
+ },
+ {
+  "i": 8669,
+  "f": "js/scenes/pixelberg.js",
+  "k": "🎢 Wow, vilken fart!"
+ },
+ {
+  "i": 8670,
+  "f": "js/scenes/pixelberg.js",
+  "k": "BERG-OCH-DALBANAN – ÅK MED EN KOMPIS!"
+ },
+ {
+  "i": 8671,
+  "f": "js/scenes/pixelberg.js",
+  "k": "TÅGET GÅR OM {0}"
+ },
+ {
+  "i": 8672,
+  "f": "js/scenes/pixelberg.js",
+  "k": "🎢 Du och {0} åker tillsammans!"
+ },
+ {
+  "i": 8673,
+  "f": "js/scenes/pixelberg.js",
+  "k": "AAAAH! 😱"
+ },
+ {
+  "i": 8674,
+  "f": "js/scenes/pixelberg.js",
+  "k": "🎢 Du lämnade kön."
+ }
+]

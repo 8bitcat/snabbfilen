@@ -6,14 +6,19 @@
 //   • 🎠 KARUSELLEN: hästarna snurrar och guppar; man sitter själv på en häst två varv
 //   • 🎡 PARISERHJULET: ett varv i en gondol – kameran följer med upp, och högst upp syns hela Pixelstaden
 //   • 🍭 SOCKERVADD & POPCORN och 🎰 LYCKOHJULET (vinster: kortpaket, pengar, godis – eller en nitlott)
-//   • 🎢 BERG-OCH-DALBANAN: tåget susar runt (åkturen öppnar i nästa steg – liksom radiobilarna och spökhuset)
+//   • 🎢 BERG-OCH-DALBANAN (Carl 2026-10-13: "man ska kunna åka berg-och-dalbanan med en kompis"): tåget går på
+//     KLOCKAN – var 32:a sekund, 10 s vid stationen och 21 s ute på banan – så alla spelare ser samma tåg på samma
+//     ställe. Man kliver på vid stationen (är tåget ute ställer man sig först i kön till nästa); kliver en kompis på
+//     samma tåg sitter ni ihop (världen skickar 'bana:<avgång>:<plats>', js/net/world.js) – ni ser varandra i
+//     vagnarna med namnlapp, armarna åker upp i nedförsbackarna. Tre vagnar × två platser; lediga platser fylls av
+//     besökare. Radiobilarna och spökhuset kommer i nästa steg.
 // Besökare med ballonger, björnmaskoten Pixel-Nalle som vinkar, och på kvällen tänds glödlamporna överallt.
 import { createCityWalker } from '../city/walk.js';
-import { selfDrawable, folkDrawables, createSpeech, WALK_SEQ } from './walkable.js';
+import { selfDrawable, folkDrawables, createSpeech, WALK_SEQ, nameTag } from './walkable.js';
 import { worldFolksHere } from '../net/world.js';
 import { openModal, closeModal, toast, esc } from '../core/ui.js';
 import { play } from '../core/sound.js';
-import { SMALL, BIG, ctxText, textW } from '../core/floor-pix.js';
+import { SMALL, BIG, ctxText, textW, hash } from '../core/floor-pix.js';
 import { fmt } from '../game.js';
 import { drawPerson, makeLook } from '../core/people.js';
 import { createPetWalk } from '../pets/outdoors.js';
@@ -26,6 +31,34 @@ import { $t } from '../core/i18n.js';
 
 const GANG = 100, KUPONG = 20, BAND = 100, HJULVARV = 26, KARUSELLVARV = 9;
 const GONDOLER = 10, HASTAR = 8;
+// 🎢 berg-och-dalbanan går på klockan (samma för alla spelare): CYKEL s per avgång, PASTIG s vid stationen, TUR s ute
+const CYKEL = 32, PASTIG = 10, TUR = 21, PLATSER = 6, START = 15, VAGNAVSTAND = 6;
+const nuS = () => (globalThis.__tivoliNu ?? Date.now()) / 1000;   // (testerna styr klockan)
+// tidtabellen längs spåret: kedjan drar sakta upp för första backen, sedan går det fortare ju lägre tåget är
+const TID = (() => {
+  const n = SPAR.length, t = [0];
+  for (let k = 1; k <= n; k++) {
+    const a = SPAR[(START + k - 1) % n], b = SPAR[(START + k) % n], ds = Math.hypot(b[0] - a[0], b[1] - a[1]);
+    const kedja = b[1] < a[1] - 0.3 && a[0] < 1380;
+    t.push(t[k - 1] + ds / (kedja ? 14 : 30 + Math.max(0, b[1] - 96) * 1.4));
+  }
+  return t.map((x) => x / t[n] * TUR);
+})();
+const indexVid = (tau) => {
+  if (tau <= 0) return 0;
+  if (tau >= TUR) return SPAR.length;
+  let lo = 0, hi = SPAR.length;
+  while (hi - lo > 1) { const m = (lo + hi) >> 1; if (TID[m] <= tau) lo = m; else hi = m; }
+  return lo + (tau - TID[lo]) / Math.max(1e-6, TID[hi] - TID[lo]);
+};
+export function banLage() { const s = nuS(), n = Math.floor(s / CYKEL), u = s - n * CYKEL; return { n, u, station: u < PASTIG, tau: Math.max(0, u - PASTIG), kvar: PASTIG - u }; }
+// vagn c (0 = den främsta): punkten på spåret och om den åker nedför
+function vagn(c, L) {
+  const n = SPAR.length, i = (START + (L.station ? 0 : indexVid(L.tau)) - c * VAGNAVSTAND + n * 4) % n;
+  const i0 = Math.floor(i), u = i - i0, a = SPAR[i0], b = SPAR[(i0 + 1) % n];
+  return { x: a[0] + (b[0] - a[0]) * u, y: a[1] + (b[1] - a[1]) * u, ner: !L.station && b[1] > a[1] + 0.25 };
+}
+const AKTUR = /^bana:(\d+):([0-5])$/;
 const PRAT = [
   $t('Pariserhjulet är bäst – man ser ända bort till bron!'), $t('Jag har åkt karusell fem gånger i dag!'), $t('Sockervadden här är rosa OCH blå!'),
   $t('Vågar du åka berg-och-dalbanan när den öppnar?'), $t('Jag vann ett kortpaket på lyckohjulet!'), $t('På kvällen lyser hela tivolit.'),
@@ -55,9 +88,10 @@ export function makePixelberg(A) {
   let t = 0, hover = null, banner = 0;
   const fade = { a: 1, phase: 2, cb: null };
   const cam = { x: 0, y: 0 };
-  let aka = null;   // pågående åktur: { typ: 'hjul' | 'karusell', t, i (gondolen/hästen) }
-  const jagPos = () => { if (!aka) return { x: walker.px, y: walker.py }; if (aka.typ === 'hjul') { const p = gondol(aka.i); return { x: p.x, y: p.y + 8 }; } const h = hast(aka.i); return { x: h.x, y: h.y }; };
-  const camTarget = () => { const p = jagPos(); return { x: Math.max(0, Math.min(TW - VW, p.x - VW / 2)), y: Math.max(0, Math.min(TH - VH, p.y - VH * (aka?.typ === 'hjul' ? 0.5 : 0.8))) }; };
+  let aka = null;   // pågående åktur: { typ: 'hjul' | 'karusell', t, i (gondolen/hästen) } eller { typ: 'bana', n (avgången), plats }
+  const sitterIBana = () => aka?.typ === 'bana' && banLage().n === aka.n;
+  const jagPos = () => { if (!aka || (aka.typ === 'bana' && !sitterIBana())) return { x: walker.px, y: walker.py }; if (aka.typ === 'bana') { const v = vagn(Math.floor(aka.plats / 2), banLage()); return { x: v.x, y: v.y - 14 }; } if (aka.typ === 'hjul') { const p = gondol(aka.i); return { x: p.x, y: p.y + 8 }; } const h = hast(aka.i); return { x: h.x, y: h.y }; };
+  const camTarget = () => { const p = jagPos(); return { x: Math.max(0, Math.min(TW - VW, p.x - VW / 2)), y: Math.max(0, Math.min(TH - VH, p.y - VH * (aka?.typ === 'hjul' || sitterIBana() ? 0.5 : 0.8))) }; };
   Object.assign(cam, camTarget());
   if (!A.attract && from) { const h = g.glad?.(3, '', 'pixelberg', 3); setTimeout(() => toast(h ? $t`🎡 Välkommen till Pixelbergs tivoli! +${h} 😊` : $t('🎡 Välkommen till Pixelbergs tivoli!'), 'good'), 900); }
   let pets = null;
@@ -95,10 +129,32 @@ export function makePixelberg(A) {
     aka = { typ: 'karusell', t: 0, i: ledig };
     walker.stop(); play('fanfare');
   }
+  // 🎢 vem sitter var i tåget för avgången L.n: jag, kompisarna (world.js ak) och påhittade besökare på några lediga platser
+  const NPC_BANA = [0, 1, 2, 3, 4, 5, 6, 7].map(() => makeLook());
+  function aakare(L) {
+    const p = new Array(PLATSER).fill(null);
+    if (aka?.typ === 'bana' && aka.n === L.n) p[aka.plats] = { jag: true, look: A.avatar.look, namn: A.avatar.name };
+    for (const f of worldFolksHere(A)) { const m = AKTUR.exec(f.ak || ''); if (m && +m[1] === L.n && !p[+m[2]]) p[+m[2]] = { look: f.av.look, namn: f.av.name, av: f.av }; }
+    for (let i = 0; i < PLATSER; i++) if (!p[i] && hash(L.n, i, 61) < 0.4) p[i] = { look: NPC_BANA[(L.n + i) % NPC_BANA.length], npc: true };
+    return p;
+  }
+  // kliv på vid stationen (står tåget inne – är det ute ställer man sig i kön till nästa)
+  function akBana() {
+    if (aka) return;
+    const L = banLage(), n = L.station && L.u < PASTIG - 1.5 ? L.n : L.n + 1;
+    if (!betala($t('Berg-och-dalbanan'))) return;
+    const tagna = new Set(worldFolksHere(A).map((f) => AKTUR.exec(f.ak || '')).filter((m) => m && +m[1] === n).map((m) => +m[2]));
+    let plats = 0; while (plats < PLATSER - 1 && tagna.has(plats)) plats += 1;
+    aka = { typ: 'bana', n, plats, ihop: new Set(), skrek: false };
+    walker.stop(); walker.px = BANA.station.x + 40; walker.py = BANA.station.y + 10; walker.dir = 'up';
+    if (n === L.n) { play('door'); toast($t`🎢 Du sätter dig i vagn ${Math.floor(plats / 2) + 1} – tåget går om ${Math.max(1, Math.ceil(L.kvar))} sekunder!`, 'good'); }
+    else toast($t`🎢 Tåget är ute på banan – du ställer dig först i kön. Nästa tåg går om ${Math.max(1, Math.ceil(CYKEL - L.u))} sekunder.`, 'good');
+  }
   function avAka() {
     const typ = aka.typ;
     aka = null;
     if (typ === 'hjul') { walker.px = HJUL.x; walker.py = HJUL.fot + 12; const h = g.glad?.(4, '', 'pariserhjul', 4) || 0; toast(h ? $t`🎡 Vilken utsikt! +${h} 😊` : $t('🎡 Vilken utsikt!'), 'good'); }
+    else if (typ === 'bana') { walker.px = BANA.station.x + 70; walker.py = BANA.station.y + 12; const h = g.glad?.(5, '', 'bana', 5) || 0; toast(h ? $t`🎢 Wow, vilken fart! +${h} 😊` : $t('🎢 Wow, vilken fart!'), 'good'); }
     else { walker.px = KARUSELL.x; walker.py = KARUSELL.y + KARUSELL.ry + 10; const h = g.glad?.(3, '', 'karusell', 3) || 0; toast(h ? $t`🎠 Wiii! +${h} 😊` : $t('🎠 Wiii!'), 'good'); }
     walker.stop(); walker.snapFree(); walker.dir = 'down';
     g.passTime?.(10); g.save();
@@ -127,7 +183,7 @@ export function makePixelberg(A) {
     { id: 'biljett', r: [BILJETT.x, BILJETT.y - 64, BILJETT.x + BILJETT.w, BILJETT.y], go: [BILJETT.x + BILJETT.w / 2, BILJETT.y + 8], label: $t('BILJETTER – ÅKBAND OCH KUPONGER'), act: biljetter },
     { id: 'godis', r: [STAND[0].x, STAND[0].y - 66, STAND[0].x + STAND[0].w, STAND[0].y], go: [STAND[0].x + STAND[0].w / 2, STAND[0].y + 8], label: STAND[0].namn, act: godisStand },
     { id: 'lycka', r: [STAND[1].x, STAND[1].y - 66, STAND[1].x + STAND[1].w, STAND[1].y], go: [STAND[1].x + STAND[1].w / 2, STAND[1].y + 8], label: STAND[1].namn, act: lyckohjulet },
-    { id: 'bana', r: [BANA.station.x, BANA.station.y - 50, BANA.station.x + BANA.station.w, BANA.station.y], go: [BANA.station.x + BANA.station.w / 2, BANA.station.y + 8], label: $t('BERG-OCH-DALBANAN'), act: () => { play('click'); toast($t('🎢 Berg-och-dalbanan provkörs – snart får du åka! (Radiobilarna och spökhuset kommer också.)'), 'wrap'); } },
+    { id: 'bana', r: [BANA.station.x, BANA.station.y - 50, BANA.station.x + BANA.station.w, BANA.station.y], go: [BANA.station.x + BANA.station.w / 2, BANA.station.y + 8], label: $t('BERG-OCH-DALBANAN – ÅK MED EN KOMPIS!'), act: akBana },
     { id: 'buss', r: [HALLPLATS.x - 12, HALLPLATS.y - 34, HALLPLATS.x + 14, HALLPLATS.y + 2], go: [HALLPLATS.x + 8, HALLPLATS.y + 6], label: $t('BERGBUSSEN NER TILL STAN'), act: bussen },
   ];
   function biljetter() {
@@ -267,15 +323,29 @@ export function makePixelberg(A) {
     const ryttare = aka?.typ === 'karusell' && aka.i === i ? A.avatar.look : hastFolk.get(i);
     if (ryttare) { ctx.save(); ctx.beginPath(); ctx.rect(h.x - 12, y - 60, 24, 49); ctx.clip(); drawPerson(ctx, h.x, y + 1, ryttare, h.dir, 5); ctx.restore(); }
   };
-  // berg-och-dalbanans tåg: tre vagnar längs spåret
+  // berg-och-dalbanans tåg: tre vagnar längs spåret (på klockan) med de åkande – två i varje vagn; i nedförsbackarna
+  // åker armarna upp. Kompisar har sin namnlapp. Vid stationen: hur länge det är kvar tills tåget går.
   function ritaTag(ctx) {
-    const n = SPAR.length, i0 = Math.floor((t * 46) % n);
-    for (let k = 0; k < 3; k++) {
-      const [x, y] = SPAR[(i0 - k * 6 + n) % n];
-      ctx.fillStyle = ['#f0c030', '#e04848', '#3a7bd5'][k]; ctx.fillRect(Math.round(x) - 4, Math.round(y) - 4, 9, 4); ctx.fillStyle = '#1e1a24'; ctx.fillRect(Math.round(x) - 4, Math.round(y), 9, 1);
-      ctx.fillStyle = '#e0a97f'; ctx.fillRect(Math.round(x) - 2, Math.round(y) - 7, 2, 3); ctx.fillRect(Math.round(x) + 1, Math.round(y) - 7, 2, 3);
+    const L = banLage(), sitt = aakare(L);
+    for (let c = 2; c >= 0; c--) {
+      const v = vagn(c, L), x = Math.round(v.x), y = Math.round(v.y);
+      for (let s = 0; s < 2; s++) {
+        const r = sitt[c * 2 + s]; if (!r) continue;
+        const px = x + (s ? 3 : -3);
+        ctx.save(); ctx.beginPath(); ctx.rect(px - 9, y - 44, 18, 41); ctx.clip();
+        drawPerson(ctx, px, y + 14, r.look, 'down', v.ner ? 10 : 5);
+        ctx.restore();
+      }
+      const farg = ['#f0c030', '#e04848', '#3a7bd5'][c];
+      ctx.fillStyle = farg; ctx.fillRect(x - 8, y - 6, 17, 6); ctx.fillStyle = 'rgba(255,255,255,.45)'; ctx.fillRect(x - 8, y - 6, 17, 1); ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.fillRect(x - 8, y - 2, 17, 1);
+      ctx.fillStyle = '#1e1a24'; ctx.fillRect(x - 8, y, 17, 1); ctx.fillRect(x - 6, y + 1, 3, 1); ctx.fillRect(x + 4, y + 1, 3, 1);
+      if (c === 0) { ctx.fillStyle = '#f4f1ea'; ctx.fillRect(x + 8, y - 5, 2, 2); }   // strålkastaren längst fram
     }
+    for (let c = 0; c < 3; c++) { const v = vagn(c, L); for (let s = 0; s < 2; s++) { const r = sitt[c * 2 + s]; if (r?.av) nameTag(ctx, Math.round(v.x) + (s ? 3 : -3), Math.round(v.y) - 36, r.av); } }
+    if (L.station) { const s = $t`TÅGET GÅR OM ${Math.max(1, Math.ceil(L.kvar))}`, w = textW(SMALL, s) + 8, sx = BANA.station.x + (BANA.station.w >> 1); ctx.fillStyle = 'rgba(20,18,26,.85)'; ctx.fillRect(sx - (w >> 1), BANA.station.y - 66, w, 10); ctxText(ctx, SMALL, s, sx - (w >> 1) + 4, BANA.station.y - 64, '#ffd23f'); }
   }
+  // kompisar som står i kön till nästa tåg (deras ak är en senare avgång) – de ritas här, inte av walkable
+  const koande = () => { const L = banLage(); return worldFolksHere(A).filter((f) => { const m = AKTUR.exec(f.ak || ''); return m && +m[1] > L.n; }); };
   // björnmaskoten Pixel-Nalle (brun dräkt, stort huvud, vinkar)
   const NALLE = ['..kk......kk..', '.kbbk....kbbk.', '.kbbbkkkkbbbk.', '..kbbbbbbbbk..', '.kbbwkbbkwbbk.', '.kbbbbbbbbbbk.', '.kbbbbppbbbbk.', '..kbbbkkbbbk..', '...kkkkkkkk...', '..kbbbbbbbbk..', '.kbbbbwwbbbbk.', '.kbbbwwwwbbbk.', 'kbbkbwwwwbkbbk', 'kbk.bbwwbb.kbk', '....bbbbbb....', '....bb..bb....', '...kbb..bbk...', '...kkk..kkk...'];
   function ritaNalle(ctx) {
@@ -301,6 +371,7 @@ export function makePixelberg(A) {
     viewMax: { w: TW, h: TH },
     get worldX() { return walker.px; }, get worldY() { return walker.py; },
     get worldRide() { return null; },
+    get worldAka() { return aka?.typ === 'bana' ? `bana:${aka.n}:${aka.plats}` : ''; },   // (js/net/world.js)
     update(dt) {
       t += dt; banner += dt;
       VW = Math.max(384, Math.min(A.W || 384, TW)); VH = Math.max(160, Math.min(A.H || 216, TH));
@@ -313,7 +384,17 @@ export function makePixelberg(A) {
           const p = gondol(aka.i);
           if (!aka.toppen && p.y < HJUL.y - HJUL.r + 20) { aka.toppen = true; toast($t('🎡 Högst upp! Där nere ligger hela Pixelstaden – floden, bron och alla husen.'), 'good wrap'); }
           if (aka.t >= HJULVARV) avAka();
-        } else if (aka.t >= KARUSELLVARV * 2) avAka();
+        } else if (aka.typ === 'karusell' && aka.t >= KARUSELLVARV * 2) avAka();
+        else if (aka.typ === 'bana') {
+          const L = banLage();
+          if (L.n > aka.n) avAka();   // nästa avgång har börjat – tåget är inne: kliv av
+          else if (L.n === aka.n) {
+            for (const p of aakare(L)) if (p && !p.jag && !p.npc && !aka.ihop.has(p.namn)) { aka.ihop.add(p.namn); play('ok'); toast($t`🎢 Du och ${p.namn} åker tillsammans!`, 'good'); }
+            const v = vagn(Math.floor(aka.plats / 2), L);
+            if (v.ner && !aka.skrek && L.tau > 2) { aka.skrek = true; talk.say($t('AAAAH! 😱'), () => { const q = vagn(Math.floor(aka?.plats / 2) || 0, banLage()); return { x: q.x, y: q.y - 38 }; }, 1.6, { silent: true }); }
+            if (!v.ner) aka.skrek = false;
+          }
+        }
       }
       updLiv(dt);
       if (pets && !aka) try { pets.update(dt, walker.px, walker.py, (x, y) => walker.walkable(x, y)); } catch (e) { console.error('husdjuren på Pixelberg:', e); pets = null; }
@@ -353,7 +434,8 @@ export function makePixelberg(A) {
       items.push({ fy: nalle.y, draw: () => ritaNalle(ctx) });
       items.push(...folkDrawables(A, t));
       if (pets && !aka) for (const d of pets.drawables()) items.push({ fy: d.fy ?? d.y, draw: () => d.draw(ctx) });
-      if (!aka) items.push(selfDrawable(A, walker, t, { folksHere: worldFolksHere(A).length, ride: null }));
+      if (!aka || (aka.typ === 'bana' && !sitterIBana())) items.push(selfDrawable(A, walker, t, { folksHere: worldFolksHere(A).length, ride: null }));
+      for (const f of koande()) items.push({ fy: f.y, draw: () => { drawPerson(ctx, f.x, f.y, f.av.look, 'up', 0); nameTag(ctx, f.x, f.y - 50, f.av); } });
       items.sort((a, b) => a.fy - b.fy).forEach((d) => d.draw(ctx));
       ritaSlingor(ctx, N || D);
       ctx.restore();
@@ -378,6 +460,8 @@ export function makePixelberg(A) {
       if (fade.a > 0) { ctx.fillStyle = `rgba(10,10,16,${fade.a.toFixed(2)})`; ctx.fillRect(0, 0, VW, VH); }
     },
     down(sx, sy) {
+      // i kön till nästa tåg: ett tryck någon annanstans = lämna kön (kupongen tillbaka)
+      if (aka?.typ === 'bana' && !sitterIBana()) { aka = null; if (!harBand()) { g.money += KUPONG; g.save(); } toast($t('🎢 Du lämnade kön.')); return; }
       if (fade.phase === 1 || aka) return;
       hover = { x: sx, y: sy };
       const x = sx + cam.x, y = sy + cam.y;
@@ -398,6 +482,8 @@ export function makePixelberg(A) {
       aka: () => (aka ? { typ: aka.typ, t: aka.t, i: aka.i, toppen: !!aka.toppen } : null),
       snabba: (sek) => { t += sek; if (aka) aka.t += sek; },   // (testerna: spola fram åkturen)
       band: () => harBand(),
+      bana: () => { const L = banLage(); return { n: L.n, station: L.station, tau: L.tau, aka: aka?.typ === 'bana' ? { n: aka.n, plats: aka.plats } : null, platser: aakare(L).map((p) => (p ? (p.jag ? 'jag' : p.npc ? 'npc' : p.namn) : null)) }; },
+      akBana: () => akBana(),
       prat: () => talk.text(),
     },
   };

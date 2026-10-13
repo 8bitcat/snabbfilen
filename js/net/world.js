@@ -226,7 +226,7 @@ export const worldMarkActive = markActive;
 
 // ---------- min publicerade state ----------
 function myState(A) {
-  return { av: { name: A.avatar.name, look: A.avatar.look, color: A.avatar.color }, scene: myScene(A), x: A.scene?.worldX ?? 190, y: A.scene?.worldY ?? 174, home: A.game.home, deco: A.game.deco, key: myKey(), ver: VERSION, vo: voiceFlag() ? 1 : 0, si: mySit(A), fd: myRide(A), fe: A.fest ? 1 : 0, hu: myHu(A), kb: kbkNr(A.avatar), vi: vanVid(A.avatar) };
+  return { av: { name: A.avatar.name, look: A.avatar.look, color: A.avatar.color }, scene: myScene(A), x: A.scene?.worldX ?? 190, y: A.scene?.worldY ?? 174, home: A.game.home, deco: A.game.deco, key: myKey(), ver: VERSION, vo: voiceFlag() ? 1 : 0, si: mySit(A), ak: myAk(A), fd: myRide(A), fe: A.fest ? 1 : 0, hu: myHu(A), kb: kbkNr(A.avatar), vi: vanVid(A.avatar) };
 }
 // Bor jag ihop med någon (js/net/sambo.js)? Hushållets id – då är vi hemma i SAMMA rum (myScene)
 // och den som hälsar på hamnar hos oss båda.
@@ -237,6 +237,13 @@ function myRide(A) {
   let r = null;
   try { r = A.scene?.worldRide ?? null; } catch { r = null; }
   return r && /^[a-z]{2,16}$/.test(String(r.id)) && /^#[0-9a-f]{6}$/i.test(String(r.c)) ? `${r.id}:${String(r.c).toLowerCase()}` : '';
+}
+// 🎢 Åker jag berg-och-dalbanan på Pixelberg (js/scenes/pixelberg.js worldAka)? 'bana:<avgång>:<plats>' – tåget
+// går på klockan, så de andra ritar mig i rätt vagn på rätt plats i samma tåg (åker vi samma avgång sitter vi ihop).
+function myAk(A) {
+  let a = '';
+  try { a = A.scene?.worldAka ?? ''; } catch { a = ''; }
+  return /^bana:\d{1,12}:[0-5]$/.test(String(a)) ? String(a) : '';
 }
 // Sitter jag? Scenen svarar med getter worldSit: null, 'down'/'up'/'left'/'right' eller
 // { dir, eat } (eat = maten står framför mig och jag tuggar). Skickas som 'd', 'u', 'l', 'r'
@@ -274,6 +281,7 @@ function cleanP(p, old = {}) {
     if (typeof p.ver === 'string') out.ver = p.ver.slice(0, 16);
     if (p.vo !== undefined) out.vo = p.vo ? 1 : 0;
     if (p.si !== undefined) out.si = /^[dulr]e?$/.test(String(p.si)) ? String(p.si) : '';
+    if (p.ak !== undefined) out.ak = /^bana:\d{1,12}:[0-5]$/.test(String(p.ak)) ? String(p.ak) : '';   // 🎢 åkturen (pixelberg.js)
     if (p.hu !== undefined) out.hu = /^sb-[a-z0-9]{1,12}$/.test(String(p.hu)) ? String(p.hu) : '';   // 🏠 hushållet (bor ihop)
     if (p.fe !== undefined) out.fe = p.fe ? 1 : 0;   // 🎉 fest hemma (besökare ser pyntet)
     if (p.kb !== undefined) out.kb = Number.isInteger(+p.kb) && +p.kb > 0 && +p.kb < 100 ? +p.kb : 0;   // ⚽ lagnumret i KBK (js/net/kbk.js)
@@ -422,7 +430,7 @@ export function worldTick(A, myX, dt) {
   if (!W || !W.open) return;
   const now = performance.now();
   const myY = A.scene?.worldY ?? null;
-  const meta = JSON.stringify([A.avatar.look, A.avatar.name, myScene(A), A.game.home, A.game.deco, voiceFlag() ? 1 : 0, mySit(A), myRide(A), A.fest ? 1 : 0, myHu(A), kbkNr(A.avatar)]);
+  const meta = JSON.stringify([A.avatar.look, A.avatar.name, myScene(A), A.game.home, A.game.deco, voiceFlag() ? 1 : 0, mySit(A), myAk(A), myRide(A), A.fest ? 1 : 0, myHu(A), kbkNr(A.avatar)]);
   const metaChanged = meta !== W.lastMeta;
   const posChanged = myX !== null && (Math.abs(myX - W.lastX) > 0.5 || Math.abs((myY ?? 0) - (W.lastY ?? 0)) > 0.5);
   if ((metaChanged || posChanged) && now - W.lastSent > 90) {
@@ -455,7 +463,7 @@ export function worldFolksHere(A, sub) {
   const out = [];
   for (const [id, p] of W.players) {
     if (p.scene !== here || isBlockedKey(p.key)) continue;   // blockerade finns inte för en (skydd.js)
-    out.push({ id, av: p.av, x: p.x, y: p.y, tx: p.tx ?? p.x, ty: p.ty2 ?? p.y, vo: p.vo | 0, walking: Math.hypot((p.tx ?? p.x) - p.x, (p.ty2 ?? p.y) - p.y) > 1, sit: p.si ? SIT_DIR[p.si[0]] : null, eat: p.si?.[1] === 'e', ride: p.fd ? { id: p.fd.split(':')[0], c: p.fd.split(':')[1] } : null, emote: (p.emote && p.emote.until > Date.now() ? p.emote.e : null) || (talkSrc(id) ? TALK_EMOTE : null), say: p.say && p.say.until > Date.now() ? p.say.text : null });
+    out.push({ id, av: p.av, x: p.x, y: p.y, tx: p.tx ?? p.x, ty: p.ty2 ?? p.y, vo: p.vo | 0, walking: Math.hypot((p.tx ?? p.x) - p.x, (p.ty2 ?? p.y) - p.y) > 1, sit: p.si ? SIT_DIR[p.si[0]] : null, eat: p.si?.[1] === 'e', ak: p.ak || '', ride: p.fd ? { id: p.fd.split(':')[0], c: p.fd.split(':')[1] } : null, emote: (p.emote && p.emote.until > Date.now() ? p.emote.e : null) || (talkSrc(id) ? TALK_EMOTE : null), say: p.say && p.say.until > Date.now() ? p.say.text : null });
   }
   return out;
 }

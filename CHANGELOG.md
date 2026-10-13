@@ -10,6 +10,12 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.125.0] – 2026-10-13 – Berg-och-dalbanan med en kompis
+- 🎢 Berg-och-dalbanan på Pixelberg är öppen – och du kan åka med en kompis!
+- Tåget går var 32:a sekund. Kliv på vid stationen (skylten visar när tåget går); kliver en kompis på samma tåg sitter ni bredvid varandra och ser varandra i vagnen.
+- Kameran följer vagnen genom backarna – armarna åker upp i nedförsbackarna. AAAAH! 😱
+- Är tåget ute ställer du dig i kön till nästa. Ångrar du dig får du tillbaka kupongen.
+
 ## [0.124.0] – 2026-10-13 – Pixelberg – tivolit på berget
 - 🎡 Pixelberg – tivolit på berget! Ta bergbussen från vilken busshållplats som helst i stan.
 - 🎠 Karusellen med hästar som guppar och 🎡 ett stort pariserhjul: åk ett varv och se hela Pixelstaden, floden och bron långt där nere.
