@@ -24,6 +24,8 @@ export const HJUL = { x: 830, y: 232, r: 74, fot: 330 };               // parise
 export const STAND = [
   { id: 'godis', x: 996, y: 262, w: 88, namn: $t('SOCKERVADD & POPCORN'), f: [0xf890b4, 0xf4f1ea] },
   { id: 'lycka', x: 1110, y: 262, w: 88, namn: $t('LYCKOHJULET'), f: [0x3a7bd5, 0xf0c030] },
+  { id: 'kast', x: 1946, y: 300, w: 96, namn: $t('BURKTORNET'), f: [0x46a35a, 0xf4f1ea] },     // 🥫 (js/pixelberg/stand.js)
+  { id: 'skjut', x: 2050, y: 300, w: 96, namn: $t('SKJUTBANAN'), f: [0x3a7bd5, 0xf0c030] },    // 🎯
 ];
 export const BANA = { x0: 1240, x1: 1590, station: { x: 1330, y: 270, w: 120 } };   // berg-och-dalbanan
 // 🚗 radiobilarna: stålgolvet (x, y = bakkanten, w × h), bakväggen med skylten står längs y – bilarna kör inne på golvet
@@ -54,7 +56,7 @@ export function hinder() {
     if (w > 2) o.push([KARUSELL.x - w, y, KARUSELL.x + w, y + 3]);
   }
   o.push([HJUL.x - 50, HJUL.fot - 6, HJUL.x + 50, HJUL.fot + 4]);                           // hjulets fot och plattform
-  for (const s of STAND) o.push([s.x, s.y - 20, s.x + s.w, s.y - 1]);
+  for (const s of STAND) o.push([s.x, P.TOP - 2, s.x + s.w, s.y - 1]);
   o.push([BANA.station.x, BANA.station.y - 18, BANA.station.x + BANA.station.w, BANA.station.y - 1]);
   o.push([RADIO.x - 4, P.TOP - 2, RADIO.x + RADIO.w + 4, RADIO.y + RADIO.h + 2]);                // radiobilarnas bana (man åker, går inte)
   o.push([SPOK.x, P.TOP - 2, SPOK.x + SPOK.w, SPOK.y + 1]);                                       // spökhuset
@@ -181,6 +183,19 @@ export function standBild(s, natt) {
     if (s.id === 'godis') {   // sockervadd i påsar och popcornmaskinen
       for (let k = 0; k < 4; k++) { const cx = 14 + k * 9; for (let y = -4; y <= 4; y++) for (let x = -4; x <= 4; x++) if (x * x + y * y <= 16) X.px(cx + x, Y0 + 14 + y, k % 2 ? 0xf8c8d8 : 0xc8d8f8); X.vl(cx, Y0 + 18, 6, 0xf4f1ea); }
       X.rect(W - 26, Y0 + 9, 16, 16, 0xe04848); X.rect(W - 24, Y0 + 11, 12, 10, 0xfff8d0); for (let k = 0; k < 10; k++) X.px(W - 23 + (k * 5) % 11, Y0 + 13 + (k * 3) % 7, 0xffffff);
+    } else if (s.id === 'kast') {   // burkpyramiden på hyllan, bollar i en korg och gosedjur som hänger på väggarna
+      X.rect(26, Y0 + 20, W - 52, 2, 0x8a5a2e);
+      const burk = (bx, by, c) => { X.rect(bx, by, 6, 7, 0xc8c8d4); X.rect(bx, by + 2, 6, 3, c); X.vl(bx, by, 7, 0xf4f4fa); X.vl(bx + 5, by, 7, 0x8a8a98); };
+      [[33, 13, 0xe04848], [40, 13, 0x3a7bd5], [47, 13, 0xf0c030], [54, 13, 0x46a35a], [36, 6, 0xd060a0], [43, 6, 0xf08a2a], [50, 6, 0xe04848], [40, -1, 0x3a7bd5], [47, -1, 0xf0c030]].forEach(([bx, by, c]) => burk(bx, Y0 + by, c));
+      for (const [hx, c] of [[9, 0xc8905a], [W - 15, 0xf8c8d8]]) { X.vl(hx + 3, Y0 + 6, 3, 0x5a5a66); X.rect(hx, Y0 + 9, 7, 8, c); X.px(hx, Y0 + 8, c); X.px(hx + 6, Y0 + 8, c); X.px(hx + 2, Y0 + 11, 0x1e1a24); X.px(hx + 4, Y0 + 11, 0x1e1a24); X.px(hx + 3, Y0 + 13, 0x6a3a2a); }
+      for (let k = 0; k < 3; k++) { const bx = W - 30 + k * 4; X.rect(bx, Y0 + 21, 3, 3, 0xf4f1ea); X.px(bx + 1, Y0 + 22, 0xe04848); }
+    } else if (s.id === 'skjut') {  // mörkblå bakvägg med plåtfigurer på skenorna, och korkgeväret på disken
+      X.rect(6, Y0 + 6, W - 12, 20, natt ? 0x24346a : 0x1a2448);
+      for (let k = 0; k < 8; k++) X.px(10 + (k * 37) % (W - 20), Y0 + 8 + (k * 5) % 6, 0xffe060);
+      X.hl(6, Y0 + 15, W - 12, 0x8a5a2e); X.hl(6, Y0 + 24, W - 12, 0x8a5a2e);
+      for (let k = 0; k < 6; k++) { const ax = 9 + k * 13; X.rect(ax, Y0 + 11, 7, 4, 0xf0c030); X.rect(ax + 4, Y0 + 9, 3, 3, 0xf0c030); X.px(ax + 7, Y0 + 10, 0xf08a2a); X.px(ax + 5, Y0 + 10, 0x1e1a24); }
+      for (let k = 0; k < 5; k++) { const sx = 14 + k * 16; X.rect(sx, Y0 + 19, 5, 5, 0xffe060); X.px(sx + 2, Y0 + 18, 0xffe060); X.px(sx - 1, Y0 + 20, 0xffe060); X.px(sx + 5, Y0 + 20, 0xffe060); }
+      X.rect(W - 34, Y0 + 24, 20, 2, 0x5a5a66); X.rect(W - 18, Y0 + 24, 9, 4, 0x8a5a2e); X.px(W - 34, Y0 + 23, 0xc8c8d4);
     } else {                  // lyckohjulet på bakväggen och gosedjuren på hyllan
       const cx = W >> 1, cy = Y0 + 4, r = 11;
       for (let y = -r; y <= r; y++) for (let x = -r; x <= r; x++) { const d = Math.hypot(x, y); if (d > r) continue; const seg = Math.floor(((Math.atan2(y, x) + Math.PI) / (Math.PI * 2)) * 8); X.px(cx + x, cy + y, d > r - 1.5 ? 0xf0c030 : [0xe04848, 0xf4f1ea, 0x3a7bd5, 0xf4f1ea, 0x46a35a, 0xf4f1ea, 0xd060a0, 0xf4f1ea][seg]); }

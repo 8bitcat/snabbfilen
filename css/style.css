@@ -798,6 +798,11 @@ html.foto-lage #emotes, html.foto-lage #chat, html.foto-lage #startguide, html.f
 /* 🎡 Pixelberg (js/scenes/pixelberg.js): lyckohjulet */
 .pb-lycka { width: min(60vw, 240px); aspect-ratio: 1; image-rendering: pixelated; display: block; margin: 0 auto; }
 .pb-lycka-text { font-size: var(--f2); text-align: center; margin: 8px 0 0; }
+/* 🥫🎯 burktornet och skjutbanan (js/pixelberg/stand.js) */
+.pb-spel { width: 100%; max-height: 52vh; object-fit: contain; image-rendering: pixelated; border: 3px solid var(--ink); display: block; touch-action: none; }
+.pb-spel-text { font-size: var(--f2); text-align: center; margin: 8px 0 0; }
+.pb-vinst { display: flex; align-items: center; justify-content: center; gap: 10px; } .pb-vinst img { image-rendering: pixelated; }
+.pb-vinst-text { font-size: var(--f2); margin: 4px 0; } .pb-vinst-text small { font-size: var(--f1); }
 /* 🎣 fisket på Solön (js/solon/fiske.js) */
 .fi-cv { width: 100%; max-height: 52vh; object-fit: contain; image-rendering: pixelated; border: 3px solid var(--ink); display: block; cursor: pointer; touch-action: manipulation; }
 .fi-text { font-size: var(--f3); text-align: center; margin: 8px 0 0; }

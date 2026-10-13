@@ -17,7 +17,8 @@
 //     spelare räknar sina egna studsar; en kompis bil studsar hos kompisen.
 //   • 👻 SPÖKHUSET (v0.127): spöktåget går på klockan som berg-och-dalbanan (js/pixelberg/spokhus.js) – två platser i
 //     vagnen ('spok:<avgång>:<plats>'), så man åker med en kompis och ser samma spöken samtidigt. Inne i huset ritas
-//     korridoren över hela skärmen. Kast- och skjutstånden kommer sedan.
+//     korridoren över hela skärmen.
+//   • 🥫 BURKTORNET och 🎯 SKJUTBANAN (v0.128, js/pixelberg/stand.js): vinsterna är leksaker till leksakslådan hemma.
 // Besökare med ballonger, björnmaskoten Pixel-Nalle som vinkar, och på kvällen tänds glödlamporna överallt.
 import { createCityWalker } from '../city/walk.js';
 import { selfDrawable, folkDrawables, createSpeech, WALK_SEQ, nameTag } from './walkable.js';
@@ -34,6 +35,7 @@ import { BUS_STOPS } from '../city/map.js';
 import { laggTill, draPaket } from '../core/pixelkort.js';
 import { TW, TH, P, HALLPLATS, PORT, BILJETT, KARUSELL, HJUL, STAND, BANA, RADIO, RADIO_H, BANKAR, LYKTOR, BUSKAR, SPAR, hinder, paintGround, utsiktCanvas, biljettBild, standBild, stationBild, banaBild, portBild, radioBild } from '../pixelberg/karta.js';
 import { SPOK, SPOK_H, SPOK_SPAR, SPOK_VINDSFONSTER, spokBild } from '../pixelberg/karta.js';
+import { openKast, openSkjut } from '../pixelberg/stand.js';
 import { SPOK_CYKEL, SPOK_PASTIG, SPOK_LJUD, spokLage, spokVagn, ritaSpokVagn, ritaSpokInne, ritaSpoktitt, ritaFladdermus } from '../pixelberg/spokhus.js';
 import { $t } from '../core/i18n.js';
 
@@ -76,7 +78,7 @@ const RX0 = RADIO.x + 13, RX1 = RADIO.x + RADIO.w - 13, RY0 = RADIO.y + 12, RY1 
 const PRAT = [
   $t('Pariserhjulet är bäst – man ser ända bort till bron!'), $t('Jag har åkt karusell fem gånger i dag!'), $t('Sockervadden här är rosa OCH blå!'),
   $t('Vågar du åka berg-och-dalbanan när den öppnar?'), $t('Jag vann ett kortpaket på lyckohjulet!'), $t('På kvällen lyser hela tivolit.'),
-  $t('Radiobilarna är roligast – bom bom!'), $t('Spökhuset var inte ALLS läskigt … nästan inte.'),
+  $t('Radiobilarna är roligast – bom bom!'), $t('Spökhuset var inte ALLS läskigt … nästan inte.'), $t('Jag vann en nalle på skjutbanan!'),
 ];
 const GODIS = [
   { id: 'sockervadd', namn: $t('🍭 Sockervadd'), pris: 20, hunger: 8, glad: 3 },
@@ -345,6 +347,7 @@ export function makePixelberg(A) {
     { id: 'godis', r: [STAND[0].x, STAND[0].y - 66, STAND[0].x + STAND[0].w, STAND[0].y], go: [STAND[0].x + STAND[0].w / 2, STAND[0].y + 8], label: STAND[0].namn, act: godisStand },
     { id: 'lycka', r: [STAND[1].x, STAND[1].y - 66, STAND[1].x + STAND[1].w, STAND[1].y], go: [STAND[1].x + STAND[1].w / 2, STAND[1].y + 8], label: STAND[1].namn, act: lyckohjulet },
     { id: 'bana', r: [BANA.station.x, BANA.station.y - 50, BANA.station.x + BANA.station.w, BANA.station.y], go: [BANA.station.x + BANA.station.w / 2, BANA.station.y + 8], label: $t('BERG-OCH-DALBANAN – ÅK MED EN KOMPIS!'), act: akBana },
+    ...STAND.filter((s) => s.id === 'kast' || s.id === 'skjut').map((s) => ({ id: s.id, r: [s.x, s.y - 66, s.x + s.w, s.y], go: [s.x + s.w / 2, s.y + 8], label: s.id === 'kast' ? $t('BURKTORNET – FÄLL ALLA SEX BURKAR!') : $t('SKJUTBANAN – TRÄFFA PLÅTANKORNA!'), act: () => (s.id === 'kast' ? openKast(A) : openSkjut(A)) })),
     { id: 'spok', r: [SPOK.x, SPOK.y - SPOK_H, SPOK.x + SPOK.w, SPOK_SPAR.y1 + 14], go: [SPOK_SPAR.cx, SPOK_SPAR.y1 + 12], label: $t('SPÖKHUSET – ÅK MED EN KOMPIS OM DU VÅGAR!'), act: akSpok },
     { id: 'radio', r: [RADIO.x, RADIO.y - RADIO_H + 6, RADIO.x + RADIO.w, RADIO.y + RADIO.h + 2], go: [RADIO.x + RADIO.w / 2, RADIO.y + RADIO.h + 10], label: $t('RADIOBILAR – KROCKA MED KOMPISAR!'), act: akRadio },
     { id: 'buss', r: [HALLPLATS.x - 12, HALLPLATS.y - 34, HALLPLATS.x + 14, HALLPLATS.y + 2], go: [HALLPLATS.x + 8, HALLPLATS.y + 6], label: $t('BERGBUSSEN NER TILL STAN'), act: bussen },

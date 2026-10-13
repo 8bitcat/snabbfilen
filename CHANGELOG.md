@@ -10,6 +10,12 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.128.0] – 2026-10-13 – Burktornet och skjutbanan
+- 🥫 BURKTORNET och 🎯 SKJUTBANAN på Pixelberg – två riktiga tivolistånd mellan radiobilarna och spökhuset!
+- Burktornet (15 kr): tre bollar mot sex burkar. Tryck när siktet ligger rätt – träffar du en burk längst ner ramlar de som står på den med. Alla sex = stora vinsten!
+- Skjutbanan (20 kr): korkgevär och tio korkar mot plåtankor, stjärnor och små snabba spöken. Sikta med musen eller fingret (eller piltangenterna).
+- Vinsterna är riktiga gosedjur och leksaker – stora nallen, Klämkompisar, badankor – och de hamnar i leksakslådan hemma. Ingen vinst? Då får du en tröstklubba. 🍬
+
 ## [0.127.0] – 2026-10-13 – Spökhuset
 - 👻 Spökhuset på Pixelberg har öppnat – längst bort på tivolit, bortom radiobilarna!
 - Spöktåget går var 30:e sekund. Det finns två platser i vagnen, så du kan åka med en kompis – ni ser samma spöken i samma ögonblick.

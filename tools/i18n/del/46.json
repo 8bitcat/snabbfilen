@@ -1,0 +1,107 @@
+[
+ {
+  "i": 8699,
+  "f": "js/pixelberg/karta.js",
+  "k": "BURKTORNET"
+ },
+ {
+  "i": 8700,
+  "f": "js/pixelberg/karta.js",
+  "k": "SKJUTBANAN"
+ },
+ {
+  "i": 8701,
+  "f": "js/pixelberg/stand.js",
+  "k": "🍬 Ingen vinst den här gången – men du får en tröstklubba!"
+ },
+ {
+  "i": 8702,
+  "f": "js/pixelberg/stand.js",
+  "k": "🏆 STORA VINSTEN: {0}!"
+ },
+ {
+  "i": 8703,
+  "f": "js/pixelberg/stand.js",
+  "k": "🧸 Du vann: {0}!"
+ },
+ {
+  "i": 8704,
+  "f": "js/pixelberg/stand.js",
+  "k": "Vinsten ligger i leksakslådan hemma."
+ },
+ {
+  "i": 8705,
+  "f": "js/pixelberg/stand.js",
+  "k": "🥫 En omgång kostar {0} – du har inte råd."
+ },
+ {
+  "i": 8706,
+  "f": "js/pixelberg/stand.js",
+  "k": "🥫 Burktornet"
+ },
+ {
+  "i": 8707,
+  "f": "js/pixelberg/stand.js",
+  "k": "Tryck när siktet ligger rätt – tre bollar. Fäll alla sex burkar!"
+ },
+ {
+  "i": 8708,
+  "f": "js/pixelberg/stand.js",
+  "k": "BURKAR NERE {0}/6"
+ },
+ {
+  "i": 8709,
+  "f": "js/pixelberg/stand.js",
+  "k": "Burkar nere: {0} av 6."
+ },
+ {
+  "i": 8710,
+  "f": "js/pixelberg/stand.js",
+  "k": "🥫 En omgång till · {0}"
+ },
+ {
+  "i": 8711,
+  "f": "js/pixelberg/stand.js",
+  "k": "🎯 En omgång kostar {0} – du har inte råd."
+ },
+ {
+  "i": 8712,
+  "f": "js/pixelberg/stand.js",
+  "k": "🎯 Skjutbanan"
+ },
+ {
+  "i": 8713,
+  "f": "js/pixelberg/stand.js",
+  "k": "Tio korkar, {0} sekunder. Anka 10 p · stjärna 20 p · spöke 30 p."
+ },
+ {
+  "i": 8714,
+  "f": "js/pixelberg/stand.js",
+  "k": "POÄNG {0}   KORKAR {1}   TID {2}"
+ },
+ {
+  "i": 8715,
+  "f": "js/pixelberg/stand.js",
+  "k": "Poäng: {0}."
+ },
+ {
+  "i": 8716,
+  "f": "js/pixelberg/stand.js",
+  "k": "🎯 En omgång till · {0}"
+ },
+ {
+  "i": 8717,
+  "f": "js/scenes/pixelberg.js",
+  "k": "Jag vann en nalle på skjutbanan!"
+ },
+ {
+  "i": 8718,
+  "f": "js/scenes/pixelberg.js",
+  "k": "BURKTORNET – FÄLL ALLA SEX BURKAR!"
+ },
+ {
+  "i": 8719,
+  "f": "js/scenes/pixelberg.js",
+  "k": "SKJUTBANAN – TRÄFFA PLÅTANKORNA!"
+ }
+]
