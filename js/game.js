@@ -930,7 +930,7 @@ export class Game {
         // 🎁 presenterna: bara kända typer, högst 10 i kön (vänskapspresenternas gåvor tvättas av presenter.js när de öppnas)
         { const P = p.presenter && typeof p.presenter === 'object' ? p.presenter : {};
           g.presenter = {
-            dag: /^\d{4}-\d{2}-\d{2}$/.test(String(P.dag || '')) ? String(P.dag) : '',
+            dag: /^\d{4}-\d{2}-\d{2}(-[mk])?$/.test(String(P.dag || '')) ? String(P.dag) : '',   // ("-m"/"-k" = morgon-/kvällspresenten)
             antal: Math.max(0, Math.min(100000, Math.round(+P.antal || 0))),
             ko: (Array.isArray(P.ko) ? P.ko : []).filter((x) => x && ['dag', 'stor', 'van'].includes(x.typ)).slice(-10)
               .map((x) => ({ typ: x.typ, ...(x.fri ? { fri: true } : {}), ...(typeof x.fran === 'string' ? { fran: x.fran.slice(0, 16) } : {}), ...(Array.isArray(x.gavor) ? { gavor: x.gavor.slice(0, 3) } : {}), ...(typeof x.id === 'string' ? { id: x.id.slice(0, 24) } : {}) })),

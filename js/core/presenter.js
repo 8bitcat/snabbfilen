@@ -1,13 +1,16 @@
 // 🎁 PRESENTER – Carl 2026-10-12: "presenter … notiser på morgonen som säger att man fått en present, så alla loggar
 // in och tittar … större presenter".
-//   • En present om dagen – riktiga dagar, ny dag från kl. 6 på morgonen. Var sjunde present är en STOR present
-//     (tre saker, finare saker). Presenterna väntar i mobilens 🎁 Presenter tills man öppnar dem: missar man en dag
-//     ligger presenten kvar, men högst tre dagspresenter väntar (inget att "ta igen" i all oändlighet).
+//   • Två presenter om dagen (Carl 2026-10-13: "få dem att spela morgonen och kvällen"): MORGONPRESENTEN från kl. 6 och
+//     KVÄLLSPRESENTEN från kl. 18 (riktig tid). Var sjunde present är en STOR present (tre saker, finare saker).
+//     Presenterna väntar i mobilens 🎁 Presenter tills man öppnar dem: missar man en ligger den kvar, men högst tre
+//     väntar (inget att "ta igen" i all oändlighet).
 //   • Uppackningen: paketet skakar, locket flyger, konfetti – och det man fick visas som en riktig bild (kläderna på
 //     ens egen figur, möbeln ur möbelarket, djursaken, maten, pengarna). Kläder kan man ta på direkt.
 //   • Innehållet: pengar, mat till kylskåpet, kläder och accessoarer man inte har, möbler till förrådet (Möblera) och –
 //     har man djur – saker till djuren. Den stora presenten har en av varje (pengar + plagg + möbel) och dyrare saker.
-//   • Appen: en notis kl. 7.30 de tre närmaste morgnarna (js/core/notiser.js, setExtraNotiser) – "En present väntar".
+//   • Appen: notiser kl. 7 ("God morgon! En present väntar") och kl. 19 ("Kvällspresenten är redo") de närmaste dagarna
+//     (js/core/notiser.js, setExtraNotiser) – inte för en present man redan har öppnat. Har man inte sagt ja till
+//     notiser frågar spelet efter en öppnad present (högst en gång om dagen), och appen visar en rad "Slå på".
 //   • Vänskapspresenter (v0.110) hamnar i samma kö (typ 'van').
 // Sparas i spelet: g.presenter = { dag, antal, ko } (game.js). Testerna styr klockan med window.__presentNu (ms).
 import { $t } from './i18n.js';
@@ -20,7 +23,7 @@ import { PET_ITEMS } from '../pets/items.js';
 import { petStore } from '../pets/sim.js';
 import { HANDELSER } from './notiser.js';   // (dagar med en egen händelse får ingen presentnotis)
 import { Pix, mix, mul, hash } from './floor-pix.js';
-import { setExtraNotiser, planera } from './notiser.js';
+import { setExtraNotiser, planera, notiserFinns, notiserPa, slaPa, fragaNotiser } from './notiser.js';
 
 const STOR_VAR = 7, MAX_DAG = 3, NY_DAG_KL = 6;
 const nu = () => (typeof window !== 'undefined' && window.__presentNu) || Date.now();
@@ -29,6 +32,9 @@ export function dagNu(t = nu()) {
   const d = new Date(t - NY_DAG_KL * 3600000);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
+// passet: morgon (kl. 6–18) eller kväll (kl. 18–6) → "2026-10-13-m" / "2026-10-13-k" (natten hör till kvällen innan)
+export const KVALL_KL = 18;
+export function passNu(t = nu()) { const h = new Date(t).getHours(); return `${dagNu(t)}-${h >= NY_DAG_KL && h < KVALL_KL ? 'm' : 'k'}`; }
 const P = (G) => { if (!G.presenter || typeof G.presenter !== 'object') G.presenter = { dag: '', antal: 0, ko: [] }; return G.presenter; };
 const dagliga = (G) => P(G).ko.filter((x) => x.typ === 'dag' || x.typ === 'stor').length;
 // blir nästa dagspresent stor? (antal öppnade + de som väntar)
@@ -41,8 +47,10 @@ export const tillStor = (G) => { for (let i = 0; i < STOR_VAR; i++) if (blirStor
 export function presenterKoll(A, { tyst = false } = {}) {
   const G = A?.game;
   if (!G || A.attract) return false;
-  const p = P(G), idag = dagNu();
+  const p = P(G), idag = passNu();
   if (p.dag === idag) return false;
+  // (sparfiler från före 0.116.2 har bara datumet: dagens present = morgonpresenten)
+  if (p.dag === dagNu() && idag.endsWith('-m')) { p.dag = idag; G.save(); return false; }
   p.dag = idag;
   if (dagliga(G) >= MAX_DAG) { G.save(); return false; }
   const typ = blirStor(G) ? 'stor' : 'dag';
@@ -175,10 +183,13 @@ export function openPresenter(A) {
   const G = A.game, p = P(G), n = tillStor(G);
   const rader = p.ko.map((x, i) => `<div class="pr-rad${x.typ === 'stor' ? ' pr-stor' : ''}"><span class="pr-ik" data-pik="${i}"></span><span class="nm">${esc(rubrikFor(x))}</span><button class="btn btn-small btn-go" data-oppna="${i}">${$t('Öppna!')}</button></div>`).join('');
   const dlg = openModal($t('🎁 Presenter'), `${p.ko.length ? `<div class="pr-lista">${rader}</div>` : `<p style="font-size:var(--f2);margin-top:0">${$t('Inga presenter just nu. I morgon bitti kommer en ny! 🌅')}</p>`}
-    <p class="sp" style="font-size:var(--f2)">${n === 1 ? $t('⭐ Nästa present blir en STOR present!') : $t`⭐ Var sjunde present är en STOR present – nästa om ${n} presenter.`}</p>`,
+    <p class="sp" style="font-size:var(--f2)">${n === 1 ? $t('⭐ Nästa present blir en STOR present!') : $t`⭐ Var sjunde present är en STOR present – nästa om ${n} presenter.`}<br>${$t('🌅 En present på morgonen (från kl. 6) och en på kvällen (från kl. 18).')}</p>
+    ${notiserFinns() && !notiserPa() ? `<p class="pr-notis" style="font-size:var(--f2)">${$t('🔔 Notiserna är av. Slå på dem så säger mobilen till kl. 7 och kl. 19 när en present väntar!')} <button class="btn btn-small btn-gold" data-notispa>${$t('🔔 Slå på')}</button></p>` : ''}`,
   [{ label: $t('Stäng'), cls: 'btn-go', onClick: closeModal }]);
   dlg.querySelectorAll('[data-pik]').forEach((el) => el.append(stor(paketBild(p.ko[+el.dataset.pik].typ === 'stor'), 1)));
   dlg.querySelectorAll('[data-oppna]').forEach((b) => (b.onclick = () => oppna(A, +b.dataset.oppna)));
+  const np = dlg.querySelector('[data-notispa]');
+  if (np) np.onclick = async () => { np.disabled = true; if (await slaPa()) { toast($t('🔔 Notiserna är på! Mobilen säger till kl. 7 och kl. 19.'), 'good'); openPresenter(A); } else np.disabled = false; };
 }
 
 // Uppackningen: tryck på paketet (eller Öppna) → skak, locket flyger, konfetti → det man fick
@@ -243,7 +254,7 @@ export function oppna(A, i) {
       play('ok'); b.disabled = true; b.textContent = $t('✓ På dig!');
     }));
     const fot = dlg.querySelector('.dlg-foot');
-    if (fot) { fot.innerHTML = ''; const b = document.createElement('button'); b.className = 'btn btn-go'; b.textContent = P(G).ko.length ? $t('🎁 Fler presenter') : $t('Tack!'); b.onclick = () => { cancelAnimationFrame(raf); if (P(G).ko.length) openPresenter(A); else closeModal(); }; fot.append(b); }
+    if (fot) { fot.innerHTML = ''; const b = document.createElement('button'); b.className = 'btn btn-go'; b.textContent = P(G).ko.length ? $t('🎁 Fler presenter') : $t('Tack!'); b.onclick = () => { cancelAnimationFrame(raf); if (P(G).ko.length) openPresenter(A); else { closeModal(); fragaNotiser(A); } }; fot.append(b); }
   }
 }
 
@@ -252,20 +263,25 @@ let startad = false;
 export function startPresenter(A) {
   if (startad) return;
   startad = true;
-  // presentnotisen kl. 16 (Carl 2026-10-13) i dag och de tre närmaste dagarna (appen): i dag bara om dagens present
-  // inte redan är öppnad. Inte på lördagar (då kommer lördagsfestens notis kl. 17.45 med festpresenten) och inte på
-  // dagar med en egen händelse (HANDELSER: Halloween, jul …) – högst en notis om dagen.
+  // notiserna (appen): kl. 7 för morgonpresenten (id 101–104) och kl. 19 för kvällspresenten (id 121–124), i dag och
+  // de tre närmaste dagarna. Ingen notis för en present man redan har öppnat. Lördag kväll kommer lördagsfestens notis
+  // kl. 17.45 i stället, och dagar med en egen händelse (HANDELSER: Halloween, jul …) har ingen kvällsnotis – högst två
+  // notiser om dagen. "STOR" när den stora presenten kommer.
   setExtraNotiser((d) => {
     if (!A.game) return [];
-    const p = P(A.game), fatt = p.dag === dagNu(+d) ? 1 : 0, ut = [];
-    for (let k = 0; k <= 3; k++) {
-      const m = new Date(d); m.setDate(m.getDate() + k); m.setHours(16, 0, 0, 0);
-      if (m <= d || m.getDay() === 6) continue;
-      if (k === 0 && fatt && !p.ko.length) continue;                                    // dagens present är redan öppnad
-      const md = `${String(m.getMonth() + 1).padStart(2, '0')}-${String(m.getDate()).padStart(2, '0')}`;
-      if (HANDELSER.some((h) => h.datum === md)) continue;
-      const storDag = blirStor(A.game, Math.max(0, k - fatt));
-      ut.push({ id: 101 + k, title: 'Pixelcity', body: storDag ? $t('🎁 En STOR present finns att hämta i Pixelstaden!') : $t('🎁 En present finns att hämta i Pixelstaden!'), schedule: { at: m } });
+    const p = P(A.game), nu0 = passNu(+d), pass = [];
+    for (let k = 0; k <= 3; k++) for (const [h, id] of [[7, 101], [19, 121]]) { const m = new Date(d); m.setDate(m.getDate() + k); m.setHours(h, 0, 0, 0); pass.push({ m, id: id + k, key: passNu(+m), kvall: h === 19 }); }
+    let extra = 0;
+    const ut = [];
+    for (const s of pass) {
+      const fatt = s.key === p.dag;
+      if (s.m <= d && s.key !== nu0) continue;                    // ett pass som redan har varit
+      if (fatt && !p.ko.length) continue;                         // presenten är redan öppnad
+      const stor = fatt ? p.ko.some((x) => x.typ === 'stor') : blirStor(A.game, extra++);
+      if (s.m <= d) continue;                                     // (nuvarande pass: notisen har redan gått – men räknas)
+      const md = `${String(s.m.getMonth() + 1).padStart(2, '0')}-${String(s.m.getDate()).padStart(2, '0')}`;
+      if (s.kvall && (s.m.getDay() === 6 || HANDELSER.some((h) => h.datum === md))) continue;
+      ut.push({ id: s.id, title: 'Pixelcity', body: s.kvall ? (stor ? $t('🎁 Kvällspresenten är redo – och den är STOR!') : $t('🎁 Kvällspresenten är redo i Pixelstaden!')) : (stor ? $t('🎁 God morgon! En STOR present väntar på dig i Pixelstaden!') : $t('🎁 God morgon! En present väntar på dig i Pixelstaden.')), schedule: { at: s.m } });
     }
     return ut;
   });

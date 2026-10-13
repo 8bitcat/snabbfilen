@@ -97,18 +97,28 @@ export async function provNotis() {
   } catch { return false; }
 }
 
-// Vid start: lägg om notiserna, och fråga en gång – när spelaren har öppnat sin första present eller levt en dag i stan.
+// Frågan (Carl 2026-10-13: "har man inte sagt ja till notiser så ska man få frågan efter man har öppnat en present"):
+// efter en öppnad present (presenter.js) och vid start – bara i appen, bara om notiserna inte är på, högst en gång om dagen.
+const FRAGAD = 'snabbfilen_notiser_fragad';   // dagen (YYYY-MM-DD) frågan senast visades
+export function fragaNotiser(A) {
+  if (!notiserFinns() || ls.get() === 'pa' || modalOpen()) return false;
+  const idag = new Date().toISOString().slice(0, 10);
+  try { if (localStorage.getItem(FRAGAD) === idag) return false; localStorage.setItem(FRAGAD, idag); } catch { /* ok */ }
+  openModal($t('🔔 Vill du få notiser?'), `<p style="font-size:var(--f2);margin-top:0">${$t('Pixelcity kan säga till när en ny present väntar på dig – en på morgonen och en på kvällen – och när det händer något i Pixelstaden.')}</p><p style="font-size:var(--f2)">${$t('Högst två notiser om dagen. Du kan ändra dig under ⚙ Inställningar.')}</p>`, [
+    { label: $t('Nej tack'), onClick: () => { ls.set('av'); closeModal(); } },
+    { label: $t('🔔 Ja tack'), cls: 'btn-go', onClick: async () => { closeModal(); if (await slaPa()) toast($t('🔔 Notiserna är på! Mobilen säger till kl. 7 och kl. 19.'), 'good'); } },
+  ], { closable: false });
+  return true;
+}
+// Vid start: lägg om notiserna, och fråga – när spelaren har öppnat sin första present eller levt en dag i stan.
 export function startNotiser(A) {
   if (!notiserFinns()) return;
   planera();
-  if (ls.get()) return;
+  if (ls.get() === 'pa') return;
   const koll = setInterval(() => {
-    if (ls.get()) { clearInterval(koll); return; }
+    if (ls.get() === 'pa') { clearInterval(koll); return; }
     if (((A.game?.day | 0) < 2 && !(A.game?.presenter?.antal > 0)) || modalOpen() || A.attract || !/^(room|city)$/.test(A.sceneName || '')) return;
     clearInterval(koll);
-    openModal($t('🔔 Vill du få notiser?'), `<p style="font-size:var(--f2);margin-top:0">${$t('Pixelcity kan säga till när en present väntar på dig och när det händer något i Pixelstaden – som Halloween och jul.')}</p><p style="font-size:var(--f2)">${$t('Högst en notis om dagen. Du kan ändra dig under ⚙ Inställningar.')}</p>`, [
-      { label: $t('Nej tack'), onClick: () => { ls.set('av'); closeModal(); } },
-      { label: $t('🔔 Ja tack'), cls: 'btn-go', onClick: async () => { closeModal(); if (await slaPa()) toast($t('🔔 Notiserna är på!'), 'good'); } },
-    ], { closable: false });
+    if (!ls.get()) fragaNotiser(A);   // (har man sagt nej frågar spelet igen först efter nästa öppnade present)
   }, 5000);
 }

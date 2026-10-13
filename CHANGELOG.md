@@ -10,6 +10,11 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.116.2] – 2026-10-13 – Morgon- och kvällspresenten
+- 🌅 Två presenter om dagen! En morgonpresent från kl. 6 och en kvällspresent från kl. 18. Var sjunde är fortfarande en STOR present.
+- 🔔 Notiser kl. 7 ("God morgon! En present väntar på dig") och kl. 19 ("Kvällspresenten är redo") – inte för en present du redan har öppnat. Lördag kväll kommer lördagsfestens notis i stället.
+- 🔔 Har du inte slagit på notiserna frågar spelet när du har öppnat en present, och i 🎁 Presenter finns en knapp för att slå på dem.
+
 ## [0.116.1] – 2026-10-13 – Presentnotisen kl. 16
 - 🔔 Presentnotisen kommer nu kl. 16 varje dag: "🎁 En present finns att hämta i Pixelstaden!" (i appen, om du har sagt ja till notiser). Inte om du redan har öppnat dagens present, och inte på lördagar – då kommer lördagsfestens notis i stället.
 - 🔔 Frågan om notiser kommer redan när du har öppnat din första present.

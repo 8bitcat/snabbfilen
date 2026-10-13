@@ -51,7 +51,7 @@ const state = () => p.evaluate(() => JSON.parse(JSON.stringify(window.SF.game.pr
 // ---- dagens present ----
 await p.waitForFunction(() => window.SF.game.presenter.ko.length === 1, null, { timeout: 8000 }).catch(() => {});
 let s = await state();
-ok(s.ko.length === 1 && s.ko[0].typ === 'dag' && s.dag === '2026-10-12', `vid start kommer dagens present (${JSON.stringify(s)})`);
+ok(s.ko.length === 1 && s.ko[0].typ === 'dag' && s.dag === '2026-10-12-m', `vid start (kl. 9) kommer morgonpresenten (${JSON.stringify(s)})`);
 await sleep(2800);
 ok(await p.evaluate(() => window.__toasts.some((t) => /Du har fått en present/.test(t))), 'hälsningen: "🎁 Du har fått en present! Öppna den i mobilen"');
 await p.click('#hud-mobil'); await sleep(400);
@@ -61,7 +61,7 @@ await p.evaluate(() => document.querySelector('#mobilen [data-app="presenter"]')
 ok(await p.evaluate(() => document.querySelector('#modal .dlg-head h2')?.textContent === '🎁 Presenter' && document.querySelectorAll('#modal [data-oppna]').length === 1), 'appen visar presenten med Öppna!');
 
 // ---- uppackningen ----
-const fore = await p.evaluate(() => ({ money: SF.game.money, kladder: SF.game.wardrobe.length, forrad: SF.game.storage.length, kyl: JSON.stringify(SF.game.fridge) }));
+const fore = await p.evaluate(() => ({ money: SF.game.money, kladder: SF.game.wardrobe.length, forrad: SF.game.storage.length, kyl: JSON.stringify(SF.game.fridge), kort: Object.values(SF.game.kort || {}).reduce((a, b) => a + b, 0) }));
 await p.evaluate(() => document.querySelector('#modal [data-oppna]').click()); await sleep(400);
 ok(await p.evaluate(() => /Dagens present/.test(document.querySelector('#modal .dlg-head h2')?.textContent || '') && !!document.querySelector('#modal .pr-cv')), 'uppackningen öppnas med paketet');
 await p.evaluate(() => document.querySelector('#modal .pr-cv').click());
@@ -69,8 +69,8 @@ await p.waitForFunction(() => !document.querySelector('#modal .pr-gavor')?.class
 await p.waitForFunction(() => [...document.querySelectorAll('#modal .pr-gava .pr-bild')].every((b) => b.children.length), null, { timeout: 6000 }).catch(() => {});   // (bilderna ritas in strax efter korten)
 const gava = await p.evaluate(() => ({ n: document.querySelectorAll('#modal .pr-gava').length, txt: document.querySelector('#modal .pr-gavor')?.innerText || '', bild: !!document.querySelector('#modal .pr-gava canvas, #modal .pr-gava .pr-emoji') }));
 ok(gava.n === 1 && gava.bild, `gåvan visas med bild: ${gava.txt.replace(/\s+/g, ' ')}`);
-const efter = await p.evaluate(() => ({ money: SF.game.money, kladder: SF.game.wardrobe.length, forrad: SF.game.storage.length, kyl: JSON.stringify(SF.game.fridge) }));
-const fick = efter.money > fore.money || efter.kladder > fore.kladder || efter.forrad > fore.forrad || efter.kyl !== fore.kyl;
+const efter = await p.evaluate(() => ({ money: SF.game.money, kladder: SF.game.wardrobe.length, forrad: SF.game.storage.length, kyl: JSON.stringify(SF.game.fridge), kort: Object.values(SF.game.kort || {}).reduce((a, b) => a + b, 0) }));
+const fick = efter.money > fore.money || efter.kladder > fore.kladder || efter.forrad > fore.forrad || efter.kyl !== fore.kyl || efter.kort > fore.kort;   // (🃏 ett pixelkort hamnar i albumet)
 ok(fick, `gåvan hamnade där den ska (pengar ${fore.money}→${efter.money}, plagg ${fore.kladder}→${efter.kladder}, förråd ${fore.forrad}→${efter.forrad})`);
 s = await state();
 ok(s.ko.length === 0 && s.antal === 1, 'presenten är öppnad (antal 1, kön tom)');
@@ -79,8 +79,14 @@ await stang();
 // ---- samma dag, före kl. 6, efter kl. 6 ----
 await p.reload(); await p.waitForFunction(() => !!window.SF?.game, null, { timeout: 30000 }); await sleep(3800); await stang();
 ok((await state()).ko.length === 0, 'samma dag igen (omladdning): ingen ny present');
-ok(!(await PR((m, SF, t) => { window.__presentNu = t; return m.presenterKoll(SF, { tyst: true }); }, T0 + 20 * 3600000)), 'nästa morgon kl. 5: ingen present än (ny dag från kl. 6)');
-ok(await PR((m, SF, t) => { window.__presentNu = t; return m.presenterKoll(SF, { tyst: true }); }, T0 + 22 * 3600000), 'nästa morgon kl. 7: en ny present');
+const koll = (t) => PR((m, SF, t) => { window.__presentNu = t; return m.presenterKoll(SF, { tyst: true }); }, t);
+ok(!(await koll(T0 + 8 * 3600000)), 'samma dag kl. 17: ingen ny present än (kvällspresenten kommer kl. 18)');
+ok(await koll(T0 + 9 * 3600000) && (await state()).dag === '2026-10-12-k', 'kl. 18: kvällspresenten kommer');
+ok(!(await koll(T0 + 20 * 3600000)), 'nästa morgon kl. 5: ingen present än (natten hör till kvällen)');
+ok(await koll(T0 + 22 * 3600000) && (await state()).dag === '2026-10-13-m', 'nästa morgon kl. 7: morgonpresenten');
+// en sparfil från före 0.116.2 (bara datumet): dagens morgonpresent räknas som hämtad
+await p.evaluate(() => { SF.game.presenter.dag = '2026-10-13'; });
+ok(!(await koll(T0 + 23 * 3600000)) && (await state()).dag === '2026-10-13-m', 'gammal sparfil (bara datumet): morgonpresenten räknas som hämtad');
 
 // ---- stor present var sjunde ----
 await p.evaluate(() => { SF.game.presenter.ko = []; SF.game.presenter.antal = 6; SF.game.presenter.dag = ''; });
@@ -99,19 +105,38 @@ await stang();
 await p.evaluate(() => { SF.game.presenter.ko = [{ typ: 'dag' }, { typ: 'dag' }, { typ: 'dag' }]; SF.game.presenter.dag = '2000-01-01'; });
 ok(!(await PR((m, SF) => m.presenterKoll(SF, { tyst: true }))) && (await state()).ko.length === 3, 'högst tre dagspresenter väntar');
 
-// ---- presentnotisen kl. 16 ----
-const planera = (t) => p.evaluate(async (t) => { const n = await import('/js/core/notiser.js'); window.__notiser = []; await n.planera(new Date(t)); return window.__notiser.filter((x) => x.id >= 7101 && x.id <= 7104).map((x) => ({ id: x.id, body: x.body, dag: new Date(x.schedule.at).getDay(), datum: new Date(x.schedule.at).getDate(), kl: new Date(x.schedule.at).getHours() + ':' + String(new Date(x.schedule.at).getMinutes()).padStart(2, '0') })); }, t);
-await p.evaluate(() => { SF.game.presenter.ko = []; SF.game.presenter.antal = 4; SF.game.presenter.dag = '2000-01-01'; });   // (dagens present inte hämtad än)
-const notiser = await planera(T0 + 22 * 3600000);   // tisdag 13 oktober kl. 7, dagens present inte hämtad
-ok(notiser.length === 4 && notiser.every((n) => n.kl === '16:00') && notiser[0].datum === 13, `presentnotisen kl. 16 i dag och de tre närmaste dagarna (${notiser.map((n) => n.id + ' ' + n.datum + '/10 ' + n.kl).join(', ')})`);
-ok(notiser.some((n) => /STOR present/.test(n.body)) && notiser.some((n) => /^🎁 En present finns att hämta/.test(n.body)), `texten: "En present finns att hämta" och STOR när den stora kommer: ${notiser.map((n) => n.body.slice(0, 34)).join(' | ')}`);
+// ---- notiserna kl. 7 och kl. 19 (Carl 2026-10-13) ----
+const planera = (t) => p.evaluate(async (t) => { const n = await import('/js/core/notiser.js'); window.__notiser = []; await n.planera(new Date(t)); return window.__notiser.filter((x) => (x.id >= 7101 && x.id <= 7104) || (x.id >= 7121 && x.id <= 7124)).map((x) => ({ id: x.id, body: x.body, ts: +new Date(x.schedule.at), dag: new Date(x.schedule.at).getDay(), datum: new Date(x.schedule.at).getDate(), kl: new Date(x.schedule.at).getHours() + ':' + String(new Date(x.schedule.at).getMinutes()).padStart(2, '0') })).sort((x, y) => x.ts - y.ts); }, t);
+await p.evaluate(() => { SF.game.presenter.ko = []; SF.game.presenter.antal = 4; SF.game.presenter.dag = '2000-01-01'; });   // (inga presenter hämtade)
+const notiser = await planera(new Date(2026, 9, 13, 6, 0).getTime());   // tisdag kl. 6
+ok(notiser.length === 8 && notiser.filter((n) => n.kl === '7:00').length === 4 && notiser.filter((n) => n.kl === '19:00').length === 4 && notiser[0].datum === 13, `kl. 7 och kl. 19 i dag och de tre närmaste dagarna (${notiser.map((n) => n.datum + '/10 ' + n.kl).join(', ')})`);
+ok(notiser.some((n) => /^🎁 God morgon! En present väntar/.test(n.body)) && notiser.some((n) => /^🎁 Kvällspresenten är redo i Pixelstaden/.test(n.body)), `texterna: "God morgon! …" och "Kvällspresenten är redo …"`);
+ok(notiser.filter((n) => /STOR/.test(n.body)).length >= 1 && /STOR/.test(notiser.find((n) => n.datum === 14 && n.kl === '7:00')?.body || ''), `STOR när den sjunde presenten kommer (14/10 kl. 7): ${notiser.filter((n) => /STOR/.test(n.body)).map((n) => n.datum + '/10 ' + n.kl).join(', ')}`);
 const torsdag = await planera(new Date(2026, 9, 15, 9, 0).getTime());
-ok(torsdag.length === 3 && !torsdag.some((n) => n.dag === 6), `ingen presentnotis på lördagen (då kommer festnotisen): ${torsdag.map((n) => n.datum + '/10').join(', ')}`);
-await p.evaluate(async (t) => { const m = await import('/js/core/presenter.js'); SF.game.presenter.dag = m.dagNu(t); SF.game.presenter.ko = []; }, T0 + 22 * 3600000);
-const oppnad = await planera(T0 + 22 * 3600000);
-ok(oppnad.length === 3 && oppnad[0].datum === 14, `dagens present redan öppnad: ingen notis i dag, nästa i morgon kl. 16 (${oppnad.map((n) => n.datum + '/10').join(', ')})`);
-const sent = await planera(T0 + 31 * 3600000 + 30 * 60000);   // tisdag kl. 16.30: dagens notis har redan varit
-ok(!sent.some((n) => n.datum === 13), 'efter kl. 16 läggs ingen notis för i dag');
+ok(!torsdag.some((n) => n.dag === 6 && n.kl === '19:00') && torsdag.some((n) => n.dag === 6 && n.kl === '7:00'), `lördag: morgonnotisen men ingen kvällsnotis (då kommer festnotisen kl. 17.45): ${torsdag.map((n) => n.datum + '/10 ' + n.kl).join(', ')}`);
+await p.evaluate(async () => { const m = await import('/js/core/presenter.js'); SF.game.presenter.dag = m.passNu(new Date(2026, 9, 13, 8, 0).getTime()); SF.game.presenter.ko = []; });
+const oppnad = await planera(new Date(2026, 9, 13, 8, 0).getTime());
+ok(oppnad[0]?.datum === 13 && oppnad[0].kl === '19:00', `morgonpresenten redan öppnad: nästa notis är kvällens kl. 19 (${oppnad.slice(0, 3).map((n) => n.datum + '/10 ' + n.kl).join(', ')})`);
+const sent = await planera(new Date(2026, 9, 13, 20, 0).getTime());
+ok(!sent.some((n) => n.datum === 13) && sent[0]?.kl === '7:00', 'kl. 20: inga notiser för i dag – nästa är i morgon kl. 7');
+
+// ---- frågan om notiser efter en öppnad present + raden i appen (notiserna är av) ----
+await p.evaluate(() => { localStorage.setItem('snabbfilen_notiser', 'av'); localStorage.removeItem('snabbfilen_notiser_fragad'); SF.game.presenter.ko = [{ typ: 'dag' }]; });
+await p.evaluate(async () => { const m = await import('/js/core/presenter.js'); m.openPresenter(SF); });
+await sleep(300);
+ok(await p.evaluate(() => !!document.querySelector('#modal [data-notispa]')), 'appen 🎁 Presenter: "🔔 Notiserna är av … Slå på" när de är av');
+await p.evaluate(async () => { const m = await import('/js/core/presenter.js'); m.oppna(SF, 0); });
+await sleep(300);
+await p.evaluate(() => document.querySelector('#modal .pr-cv').click());
+await p.waitForFunction(() => !document.querySelector('#modal .pr-gavor')?.classList.contains('hidden'), null, { timeout: 6000 }).catch(() => {});
+await sleep(600);
+await p.evaluate(() => document.querySelector('#modal .dlg-foot .btn-go').click());
+await sleep(500);
+ok(/Vill du få notiser/.test(await p.evaluate(() => document.querySelector('#modal:not(.hidden) .dlg-head h2')?.textContent || '')), 'efter en öppnad present: "🔔 Vill du få notiser?"');
+await p.evaluate(() => [...document.querySelectorAll('#modal .dlg-foot .btn')].find((b) => /Ja tack/.test(b.textContent)).click());
+await sleep(600);
+ok((await p.evaluate(() => localStorage.getItem('snabbfilen_notiser'))) === 'pa', 'Ja tack → notiserna är på');
+await stang();
 
 await browser.close();
 ok(!errs.length, `inga fel i sidan${errs.length ? ': ' + errs.slice(0, 3).join(' | ') : ''}`);

@@ -1,0 +1,52 @@
+[
+ {
+  "i": 8311,
+  "f": "js/core/notiser.js",
+  "k": "Pixelcity kan säga till när en ny present väntar på dig – en på morgonen och en på kvällen – och när det händer något i Pixelstaden."
+ },
+ {
+  "i": 8312,
+  "f": "js/core/notiser.js",
+  "k": "Högst två notiser om dagen. Du kan ändra dig under ⚙ Inställningar."
+ },
+ {
+  "i": 8313,
+  "f": "js/core/notiser.js",
+  "k": "🔔 Notiserna är på! Mobilen säger till kl. 7 och kl. 19."
+ },
+ {
+  "i": 8314,
+  "f": "js/core/presenter.js",
+  "k": "🌅 En present på morgonen (från kl. 6) och en på kvällen (från kl. 18)."
+ },
+ {
+  "i": 8315,
+  "f": "js/core/presenter.js",
+  "k": "🔔 Notiserna är av. Slå på dem så säger mobilen till kl. 7 och kl. 19 när en present väntar!"
+ },
+ {
+  "i": 8316,
+  "f": "js/core/presenter.js",
+  "k": "🔔 Slå på"
+ },
+ {
+  "i": 8317,
+  "f": "js/core/presenter.js",
+  "k": "🎁 Kvällspresenten är redo – och den är STOR!"
+ },
+ {
+  "i": 8318,
+  "f": "js/core/presenter.js",
+  "k": "🎁 Kvällspresenten är redo i Pixelstaden!"
+ },
+ {
+  "i": 8319,
+  "f": "js/core/presenter.js",
+  "k": "🎁 God morgon! En STOR present väntar på dig i Pixelstaden!"
+ },
+ {
+  "i": 8320,
+  "f": "js/core/presenter.js",
+  "k": "🎁 God morgon! En present väntar på dig i Pixelstaden."
+ }
+]
