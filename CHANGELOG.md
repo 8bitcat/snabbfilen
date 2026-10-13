@@ -10,6 +10,12 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.126.0] – 2026-10-13 – Radiobilarna
+- 🚗 Radiobilarna på Pixelberg är öppna – tivolit har växt österut, förbi berg-och-dalbanan!
+- Du kör själv: piltangenterna eller WASD på datorn, dra med fingret på mobilen och iPaden. En runda är 45 sekunder.
+- Krocka med besökarnas bilar – och med kompisarnas! Kör en kompis samtidigt syns hens bil med namnlapp, och ni krockar på riktigt hos er båda. BOM! 💥
+- När rundan är slut får du veta hur många krockar det blev. På kvällen gnistrar strömstängerna.
+
 ## [0.125.0] – 2026-10-13 – Berg-och-dalbanan med en kompis
 - 🎢 Berg-och-dalbanan på Pixelberg är öppen – och du kan åka med en kompis!
 - Tåget går var 32:a sekund. Kliv på vid stationen (skylten visar när tåget går); kliver en kompis på samma tåg sitter ni bredvid varandra och ser varandra i vagnen.

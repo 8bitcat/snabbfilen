@@ -108,6 +108,8 @@ export function play(name) {
       case 'foto': tone(2400, 0, 0.015, 'square', 0.14); tone(900, 0.025, 0.03, 'square', 0.12); tone(420, 0.06, 0.05, 'square', 0.08); break;   // 📸 slutaren
       case 'sms': tone(1568, 0, 0.07, 'triangle', 0.12); tone(2093, 0.09, 0.13, 'triangle', 0.1); break;   // 💬 ett nytt SMS
       case 'chirp': tone(2200, 0, 0.05, 'sine', 0.05, 2800); tone(2600, 0.07, 0.05, 'sine', 0.04, 3000); break;
+      case 'bump': tone(150, 0, 0.11, 'square', 0.15, 70); tone(330, 0, 0.05, 'triangle', 0.1, 160); break;   // 🚗 radiobilarna krockar
+      case 'pling': tone(1568, 0, 0.35, 'triangle', 0.12); tone(1568, 0.4, 0.5, 'triangle', 0.1); break;   // 🚗 klockan – rundan är slut
     }
   } catch { /* ljud är aldrig värt en krasch */ }
 }

@@ -1,0 +1,62 @@
+[
+ {
+  "i": 8675,
+  "f": "js/pixelberg/karta.js",
+  "k": "RADIOBILAR"
+ },
+ {
+  "i": 8676,
+  "f": "js/scenes/pixelberg.js",
+  "k": "Radiobilarna är roligast – bom bom!"
+ },
+ {
+  "i": 8677,
+  "f": "js/scenes/pixelberg.js",
+  "k": "🚗 En lugn runda – inga krockar alls!"
+ },
+ {
+  "i": 8678,
+  "f": "js/scenes/pixelberg.js",
+  "k": "🚗 Bom bom! Krockar: {0}. +{1} 😊"
+ },
+ {
+  "i": 8679,
+  "f": "js/scenes/pixelberg.js",
+  "k": "🚗 Bom bom! Krockar: {0}."
+ },
+ {
+  "i": 8680,
+  "f": "js/scenes/pixelberg.js",
+  "k": "💥 Du krockade med {0}!"
+ },
+ {
+  "i": 8681,
+  "f": "js/scenes/pixelberg.js",
+  "k": "Radiobilarna"
+ },
+ {
+  "i": 8682,
+  "f": "js/scenes/pixelberg.js",
+  "k": "🚗 Kör med piltangenterna eller WASD (på mobilen: dra med fingret). Krocka så mycket du vill!"
+ },
+ {
+  "i": 8683,
+  "f": "js/scenes/pixelberg.js",
+  "k": "RADIOBILAR – KROCKA MED KOMPISAR!"
+ },
+ {
+  "i": 8684,
+  "f": "js/scenes/pixelberg.js",
+  "k": "BOM!"
+ },
+ {
+  "i": 8685,
+  "f": "js/scenes/pixelberg.js",
+  "k": "STRÖMMEN BRYTS!"
+ },
+ {
+  "i": 8686,
+  "f": "js/scenes/pixelberg.js",
+  "k": "TID {0}   KROCKAR {1}"
+ }
+]

@@ -161,7 +161,7 @@ export function selfDrawable(A, walker, t, { carry = false, folksHere = 0, ride 
 // Andra spelare på samma plats som drawables
 const folkDir = new Map();   // andra spelares färdriktning på fordon (id → dir)
 export function folkDrawables(A, t) {
-  // (de som åker berg-och-dalbanan – f.ak – ritas av tivolit i vagnarna, js/scenes/pixelberg.js)
+  // (de som åker berg-och-dalbanan eller kör radiobil – f.ak – ritas av tivolit i vagnarna/bilarna, js/scenes/pixelberg.js)
   return worldFolksHere(A).filter((f) => !f.ak).map((f) => ({
     fy: f.y,
     draw(ctx) {

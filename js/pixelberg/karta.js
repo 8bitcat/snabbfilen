@@ -3,12 +3,13 @@
 // (js/scenes/pixelberg.js). Ett pixelkorn, ljuset från sydväst, samma palett som staden.
 //
 // Från väster: BERGBUSSENS hållplats → entréporten PIXELBERGS TIVOLI → BILJETTLUCKAN → KARUSELLEN → det stora
-// PARISERHJULET → stånden (SOCKERVADD & POPCORN, LYCKOHJULET) → BERG-OCH-DALBANAN med stationen. Bakom allt:
+// PARISERHJULET → stånden (SOCKERVADD & POPCORN, LYCKOHJULET) → BERG-OCH-DALBANAN med stationen → RADIOBILARNA
+// (v0.126: tivolit växte österut, TW 1600 → 2440 – kast- och skjutstånden och spökhuset får platsen bortom). Bakom allt:
 // utsikten ner över Pixelstaden, floden och kullarna (parallax). Torget är stenlagt med en mosaik av färgade cirklar.
 import { Pix, SMALL, BIG, text, textW, mix, mul, hash, bayer } from '../core/floor-pix.js';
 import { $t } from '../core/i18n.js';
 
-export const TW = 1600, TH = 480;
+export const TW = 2440, TH = 480;
 export const P = {
   HIMMEL: 200,             // ovanför: himmel och utsikten (genomskinligt i marken) – hjulet och banan reser sig mot himlen
   BAK: [200, 228],         // bakom torget: bergets kant med gräs och häcken (inte gåbart)
@@ -25,9 +26,11 @@ export const STAND = [
   { id: 'lycka', x: 1110, y: 262, w: 88, namn: $t('LYCKOHJULET'), f: [0x3a7bd5, 0xf0c030] },
 ];
 export const BANA = { x0: 1240, x1: 1590, station: { x: 1330, y: 270, w: 120 } };   // berg-och-dalbanan
-export const BANKAR = [{ x: 620, y: 452 }, { x: 980, y: 452 }, { x: 1230, y: 420 }];
-export const LYKTOR = [110, 330, 590, 700, 960, 1210, 1470].map((x) => ({ x, y: P.TORG[0] + 10 }));
-export const BUSKAR = [[300, 250], [560, 248], [1200, 250], [1520, 440], [260, 462], [700, 466]].map(([x, y]) => ({ x, y }));
+// 🚗 radiobilarna: stålgolvet (x, y = bakkanten, w × h), bakväggen med skylten står längs y – bilarna kör inne på golvet
+export const RADIO = { x: 1660, y: 300, w: 250, h: 118 };
+export const BANKAR = [{ x: 620, y: 452 }, { x: 980, y: 452 }, { x: 1230, y: 420 }, { x: 1990, y: 452 }];
+export const LYKTOR = [110, 330, 590, 700, 960, 1210, 1470, 1630, 1940, 2190, 2420].map((x) => ({ x, y: P.TORG[0] + 10 }));
+export const BUSKAR = [[300, 250], [560, 248], [1200, 250], [1520, 440], [260, 462], [700, 466], [1612, 300], [2400, 252], [2160, 462]].map(([x, y]) => ({ x, y }));
 
 // berg-och-dalbanans spår som en sluten kurva (x, y) i världen – tåget följer den (scenen)
 export const SPAR = (() => {
@@ -49,6 +52,7 @@ export function hinder() {
   o.push([HJUL.x - 50, HJUL.fot - 6, HJUL.x + 50, HJUL.fot + 4]);                           // hjulets fot och plattform
   for (const s of STAND) o.push([s.x, s.y - 20, s.x + s.w, s.y - 1]);
   o.push([BANA.station.x, BANA.station.y - 18, BANA.station.x + BANA.station.w, BANA.station.y - 1]);
+  o.push([RADIO.x - 4, P.TOP - 2, RADIO.x + RADIO.w + 4, RADIO.y + RADIO.h + 2]);                // radiobilarnas bana (man åker, går inte)
   for (const b of BANKAR) o.push([b.x - 15, b.y - 4, b.x + 16, b.y + 1]);
   for (const l of LYKTOR) o.push([l.x - 2, l.y - 2, l.x + 3, l.y + 1]);
   for (const b of BUSKAR) o.push([b.x - 9, b.y - 4, b.x + 10, b.y + 1]);
@@ -108,7 +112,7 @@ export function paintGround() {
     if (y > TH - 4) c = mix(c, 0x8a8478, 0.5);
     X.px(x, y, c);
   }
-  for (const [cx, cy, r] of [[300, 400, 26], [680, 410, 30], [1040, 400, 26], [1400, 400, 30], [600, 300, 18]]) {
+  for (const [cx, cy, r] of [[300, 400, 26], [680, 410, 30], [1040, 400, 26], [1400, 400, 30], [600, 300, 18], [2080, 400, 28], [2330, 410, 24]]) {
     for (let y = -r; y <= r; y++) for (let x = -r; x <= r; x++) {
       const d = Math.hypot(x, y * 1.6); if (d > r) continue;
       const ring = Math.floor(d / 6), c = d > r - 2 ? 0x8a8478 : MOS[(ring + (cx >> 4)) % MOS.length];
@@ -118,6 +122,15 @@ export function paintGround() {
   // vägen in från bergbussen (asfalt i väster) och skuggorna under portens båge
   for (let y = 300; y < 380; y++) for (let x = 0; x < 140; x++) X.px(x, y, (x + y) % 23 === 0 ? 0x6a6a72 : mix(0x5a5a64, 0x64646e, hash(x >> 1, y >> 1, 56)));
   for (let x = 0; x < 140; x += 14) X.rect(x, 339, 7, 1, 0xf0e8d0);
+  // radiobilarnas golv: stålplattor med nitar och en blank strimma – bilarna lämnar inga spår
+  for (let y = RADIO.y; y < RADIO.y + RADIO.h; y++) for (let x = RADIO.x; x < RADIO.x + RADIO.w; x++) {
+    const lx = x - RADIO.x, ly = y - RADIO.y, px = lx % 25, py = ly % 17;
+    let c = mix(0x50545e, 0x484c56, hash(Math.floor(lx / 25), Math.floor(ly / 17), 58));
+    if (px === 0 || py === 0) c = 0x363a44; else if (px === 1 || py === 1) c = 0x62666f;
+    if ((px === 3 || px === 22) && (py === 3 || py === 14)) c = 0x7a7e88;
+    if (Math.abs((lx - ly * 1.6) % 90) < 2) c = mix(c, 0xb8c0d0, 0.25);
+    X.px(x, y, c);
+  }
   return X.flush();
 }
 
@@ -204,5 +217,38 @@ export function portBild(natt) {
     }
     const s = $t('PIXELBERGS TIVOLI'), sw = textW(SMALL, s);
     text(X, SMALL, s, (W - sw) >> 1, 13, 0xffe080);
+  });
+}
+// 🚗 radiobilarnas bakvägg: två randiga stolpar med strömnätet emellan, den stora skylten RADIOBILAR med glödlampor,
+// en mörkblå vägg med blixtar och ett rutigt racingband, och den stoppade gummikanten nederst (står på RADIO.y)
+export const RADIO_H = 78;
+export function radioBild(natt) {
+  const W = RADIO.w, H = RADIO_H;
+  return bild(`radio${natt}`, W, H, (X) => {
+    const V0 = 32;
+    for (let y = V0; y < H - 6; y++) for (let x = 6; x < W - 6; x++) {
+      let c = (x - 6) % 30 === 0 ? 0x1a2244 : y === V0 ? 0x3a4888 : mix(0x26325e, 0x202a52, hash(Math.floor(x / 30), y >> 2, 59));
+      if (y >= V0 + 4 && y < V0 + 8) c = ((x >> 2) + ((y - V0 - 4) >> 1)) % 2 ? 0xf4f1ea : 0x1e1a24;   // racingbandet
+      X.px(x, y, c);
+    }
+    for (let k = 0; k < 5; k++) {   // blixtarna
+      const bx = 24 + k * 50, by = V0 + 14;
+      const B = ['..###', '.###.', '####.', '..##.', '.##..', '##...', '#....'];
+      B.forEach((r, j) => { for (let i = 0; i < r.length; i++) if (r[i] === '#') X.px(bx + i, by + j * 2, natt ? 0xfff070 : 0xf0c030), X.px(bx + i, by + j * 2 + 1, natt ? 0xffe050 : 0xd8a820); });
+    }
+    for (const px of [0, W - 6]) {   // stolparna
+      for (let y = 6; y < H - 2; y++) for (let x = 0; x < 6; x++) X.px(px + x, y, x === 0 ? 0xf8a0a0 : x === 5 ? 0x8a2a2e : Math.floor((y - x * 0.5) / 5) % 2 ? 0xd8343c : 0xf4f1ea);
+      X.rect(px - 1, 2, 8, 5, 0xf0c030); X.hl(px - 1, 2, 8, 0xffe080);
+    }
+    X.hl(6, 4, W - 12, 0x8a8a98); X.hl(6, 5, W - 12, 0x5a5a66);   // strömnätet (taket man inte ser)
+    const s = $t('RADIOBILAR'), sw = textW(BIG, s), bw = Math.min(W - 24, Math.max(96, sw + 20)), bx = (W - bw) >> 1;
+    X.rect(bx, 9, bw, 22, 0xf0c030); X.rect(bx + 2, 11, bw - 4, 18, 0xd8343c); X.hl(bx + 2, 11, bw - 4, 0xe85860);
+    text(X, BIG, s, (W - sw) >> 1, 17, 0x8a1a1e); text(X, BIG, s, (W - sw) >> 1, 16, 0xfff6c0);
+    for (let x = bx + 3; x < bx + bw - 2; x += 5) { X.px(x, 10, natt ? 0xfff6c0 : 0xc89a20); X.px(x, 29, natt ? 0xfff6c0 : 0xc89a20); }
+    for (let y = 14; y < 28; y += 5) { X.px(bx + 1, y, natt ? 0xfff6c0 : 0xc89a20); X.px(bx + bw - 2, y, natt ? 0xfff6c0 : 0xc89a20); }
+    for (let x = 0; x < W; x++) {   // gummikanten
+      const r = Math.floor(x / 10) % 2;
+      X.px(x, H - 6, r ? 0xf8a0a0 : 0xffffff); X.px(x, H - 5, r ? 0xd8343c : 0xf4f1ea); X.px(x, H - 4, r ? 0xd8343c : 0xf4f1ea); X.px(x, H - 3, r ? 0xb02a30 : 0xd8d4c8); X.px(x, H - 2, 0x2a2830); X.px(x, H - 1, 0x2a2830);
+    }
   });
 }

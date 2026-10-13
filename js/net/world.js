@@ -240,10 +240,12 @@ function myRide(A) {
 }
 // 🎢 Åker jag berg-och-dalbanan på Pixelberg (js/scenes/pixelberg.js worldAka)? 'bana:<avgång>:<plats>' – tåget
 // går på klockan, så de andra ritar mig i rätt vagn på rätt plats i samma tåg (åker vi samma avgång sitter vi ihop).
+// 🚗 Kör jag radiobil: 'radio:<färg>' – x/y är då bilens plats, och de andra ritar mig i en bil i den färgen.
+const AK_RE = /^(bana:\d{1,12}:[0-5]|radio:[0-7])$/;
 function myAk(A) {
   let a = '';
   try { a = A.scene?.worldAka ?? ''; } catch { a = ''; }
-  return /^bana:\d{1,12}:[0-5]$/.test(String(a)) ? String(a) : '';
+  return AK_RE.test(String(a)) ? String(a) : '';
 }
 // Sitter jag? Scenen svarar med getter worldSit: null, 'down'/'up'/'left'/'right' eller
 // { dir, eat } (eat = maten står framför mig och jag tuggar). Skickas som 'd', 'u', 'l', 'r'
@@ -281,7 +283,7 @@ function cleanP(p, old = {}) {
     if (typeof p.ver === 'string') out.ver = p.ver.slice(0, 16);
     if (p.vo !== undefined) out.vo = p.vo ? 1 : 0;
     if (p.si !== undefined) out.si = /^[dulr]e?$/.test(String(p.si)) ? String(p.si) : '';
-    if (p.ak !== undefined) out.ak = /^bana:\d{1,12}:[0-5]$/.test(String(p.ak)) ? String(p.ak) : '';   // 🎢 åkturen (pixelberg.js)
+    if (p.ak !== undefined) out.ak = AK_RE.test(String(p.ak)) ? String(p.ak) : '';   // 🎢 åkturen / 🚗 radiobilen (pixelberg.js)
     if (p.hu !== undefined) out.hu = /^sb-[a-z0-9]{1,12}$/.test(String(p.hu)) ? String(p.hu) : '';   // 🏠 hushållet (bor ihop)
     if (p.fe !== undefined) out.fe = p.fe ? 1 : 0;   // 🎉 fest hemma (besökare ser pyntet)
     if (p.kb !== undefined) out.kb = Number.isInteger(+p.kb) && +p.kb > 0 && +p.kb < 100 ? +p.kb : 0;   // ⚽ lagnumret i KBK (js/net/kbk.js)
