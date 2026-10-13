@@ -21,7 +21,9 @@ import { drawPet, petNeck, SPECIES } from '../pets/sprites.js';
 import { createPetWalk } from '../pets/outdoors.js';
 import { skyCanvas } from '../landet/karta.js';
 import { propKit } from '../city/props.js';   // stadens träd, lyktor, bänkar … (samma detaljnivå som staden)
-import { TW, TH, T, HUS, HUSLISTA, RASTGARD, DAMM, PARK, GRIND, TORG, STATY, HALLPLATS, SKYLT, AGILITY, TRAD, GALLERTRAD, BANKAR, LYKTOR, SMATT, hinder, backeCanvas, paintGround, husBild, husPos } from '../tassbacken/karta.js';
+import { TW, TH, T, HUS, HUSLISTA, RASTGARD, DAMM, PARK, GRIND, TORG, STATY, HALLPLATS, SKYLT, AGILITY, TRAD, GALLERTRAD, BANKAR, LYKTOR, SMATT, PARKLAMPOR, BUSKAR, PARKPRYL, RABATTER, hinder, backeCanvas, paintGround, husPos } from '../tassbacken/karta.js';
+import { husBild, husLiv, husSken, ritaGatupratare, ritaPudelbuske } from '../tassbacken/hus.js';   // husen i full prakt (v0.133)
+import { ritaKoja, ritaBurBak, ritaBurFram, ritaHallplats, ritaBuske, ritaParklykta, parklyktaSken, ritaParkPryl, ritaGrindskylt, ritaFjarilar } from '../tassbacken/park.js';   // södra sidan (v0.133)
 import { petStore } from '../pets/sim.js';
 import { belona, visaResultat } from './utstallning.js';
 import { agilityPlacering } from './agility.js';
@@ -199,12 +201,6 @@ export function makeTassbacken(A) {
     else if (a.typ === 'vipp') { const tilt = Math.round(Math.sin(t * 0.7 + a.x) * 2); ctx.fillStyle = '#5a5e66'; ctx.fillRect(x - 2, y - 4, 4, 4); for (let i = -14; i <= 14; i++) { ctx.fillStyle = Math.abs(i) > 10 ? '#f0b429' : '#46a35a'; ctx.fillRect(x + i, y - 6 - Math.round(i / 14 * tilt), 1, 2); } }
     else if (a.typ === 'ring') { ctx.fillStyle = '#f4f1ea'; ctx.fillRect(x - 11, y - 22, 2, 22); ctx.fillRect(x + 9, y - 22, 2, 22); ctx.fillRect(x - 11, y - 22, 22, 2); for (let k = 0; k < 20; k++) { const an = k / 20 * Math.PI * 2; ctx.fillStyle = k % 4 < 2 ? '#26242c' : '#d8343c'; ctx.fillRect(Math.round(x + Math.cos(an) * 6), Math.round(y - 12 + Math.sin(an) * 6), 2, 2); } }
   };
-  const drawKoja = (ctx, x, y) => {
-    ctx.fillStyle = 'rgba(20,12,30,.22)'; ctx.fillRect(x - 10, y - 1, 20, 3);
-    ctx.fillStyle = '#a8382a'; ctx.fillRect(x - 9, y - 12, 18, 12); ctx.fillStyle = '#1a1a1e'; ctx.fillRect(x - 3, y - 8, 6, 8);
-    for (let j = 0; j < 7; j++) { ctx.fillStyle = j === 0 ? '#3a3a42' : '#5a5a66'; ctx.fillRect(x - 11 + j, y - 13 - j, 22 - j * 2, 1); }
-  };
-  const drawBur = (ctx) => { const x0 = RASTGARD[0] + 26, y = RASTGARD[3] - 8; ctx.fillStyle = '#c8b890'; ctx.fillRect(x0, y - 22, 52, 22); ctx.fillStyle = '#8a5a30'; ctx.fillRect(x0, y - 24, 52, 3); for (let x = x0; x <= x0 + 52; x += 4) { ctx.fillStyle = '#c8c4b8'; ctx.fillRect(x, y - 21, 1, 21); } };
   // kattstatyn: en sittande katt i ärgad brons på en stensockel mitt i en rund bassäng; vattnet sprutar
   // ur munnen i en båge ner i bassängen (ljuset från vänster: vänstra sidan ljusare)
   const KATT = ['...#.......#...', '...##.....##...', '..###########..', '..#e##...##e#..', '..###########..', '...####n####...', '....#######....', '...#########...', '..###########..', '.#############.', '.##############', '###############', '#############.#', '.############.#', '.############.#', '..###########.#', '..####...####.#', '..####...####..'];
@@ -239,9 +235,8 @@ export function makeTassbacken(A) {
   const KIT = propKit();
   // vattenskålen för hundar utanför kattcaféet
   const drawSkal = (ctx, s) => { ctx.fillStyle = 'rgba(20,12,30,.25)'; ctx.fillRect(s.x - 5, s.y, 10, 2); ctx.fillStyle = '#3a7bd5'; ctx.fillRect(s.x - 5, s.y - 3, 10, 3); ctx.fillStyle = '#6aa8e8'; ctx.fillRect(s.x - 5, s.y - 3, 10, 1); ctx.fillStyle = '#9ad8f8'; ctx.fillRect(s.x - 3, s.y - 3, 6, 1); ctx.fillStyle = '#f4f1ea'; ctx.fillRect(s.x - 1, s.y - 2, 3, 1); };
-  const drawSmatt = (ctx, s) => s.typ === 'brandpost' ? KIT.hydrant(ctx, s.x, s.y) : s.typ === 'korg' ? KIT.bin(ctx, s.x, s.y) : s.typ === 'kafebord' ? KIT.cafe(ctx, s.x, s.y, [0xe0a030, 0xf4ece0]) : s.typ === 'blomlada' ? KIT.flowerBox(ctx, s.x, s.y, s.w, s.cols) : drawSkal(ctx, s);
+  const drawSmatt = (ctx, s) => s.typ === 'brandpost' ? KIT.hydrant(ctx, s.x, s.y) : s.typ === 'korg' ? KIT.bin(ctx, s.x, s.y) : s.typ === 'kafebord' ? KIT.cafe(ctx, s.x, s.y, [0xe0a030, 0xf4ece0]) : s.typ === 'blomlada' ? KIT.flowerBox(ctx, s.x, s.y, s.w, s.cols) : s.typ === 'tavla' ? ritaGatupratare(ctx, s.x, s.y) : s.typ === 'pudel' ? ritaPudelbuske(ctx, s.x, s.y) : drawSkal(ctx, s);
   const vind = (x) => Math.round(Math.sin(t * 0.9 + x * 0.01) * 0.6);
-  const drawHallplats = (ctx) => { const { x, y } = HALLPLATS; ctx.fillStyle = '#5a5e66'; ctx.fillRect(x, y - 30, 2, 30); ctx.fillStyle = '#f0c030'; ctx.fillRect(x - 6, y - 34, 14, 10); ctx.fillStyle = '#1e1a24'; ctx.fillRect(x - 6, y - 34, 14, 1); ctxText(ctx, SMALL, $t('BUSS'), x - 5, y - 32, '#1e1a24'); };
   const drawSkylt = (ctx) => {
     const { x, y } = SKYLT, s = $t('TASSBACKEN'), w = textW(SMALL, s) + 14;
     ctx.fillStyle = '#5a5e66'; ctx.fillRect(x - 1, y - 22, 2, 22);
@@ -254,8 +249,8 @@ export function makeTassbacken(A) {
     ctxText(ctx, SMALL, p, x - (pw >> 1) - 2, y - 46, '#f4f1ea');
     ctx.fillStyle = '#f4f1ea'; ctx.fillRect(x + (pw >> 1) + 2, y - 44, 4, 1); ctx.fillRect(x + (pw >> 1) + 4, y - 45, 1, 3); ctx.fillRect(x + (pw >> 1) + 5, y - 44, 1, 1);
   };
-  const drawFlaggor = (ctx) => { const p = husPos('hall'); for (const [i, c] of [[0, '#d8343c'], [1, '#3a7bd5'], [2, '#f0b429']]) { const fx = p.x + 8 + 90 + i * 66, fy = p.y + 12; ctx.fillStyle = '#5a5e66'; ctx.fillRect(fx, fy - 18, 1, 22); for (let k = 0; k < 9; k++) { ctx.fillStyle = c; ctx.fillRect(fx + 1 + k, fy - 18 + Math.round(Math.sin(t * 5 + k * 0.7 + i) * 1), 1, 5); } } };
 
+  const FJARILAR = [...RABATTER.map((r) => [r.x, r.y]), ...BUSKAR.slice(0, 4).map((b) => [b.x, b.y - 4])];
   function night() { const h = g.min / 60; return h >= 20 || h < 5.5; }
   function dusk() { const h = g.min / 60; return (h >= 18 && h < 20) || (h >= 5.5 && h < 7); }
 
@@ -287,8 +282,7 @@ export function makeTassbacken(A) {
       ctx.drawImage(ground(), -cx, -cy);
       ctx.save(); ctx.translate(-cx, -cy);
       const items = [];
-      for (const id of HUSLISTA) { const p = husPos(id); if (p.x > cx + VW + 20 || p.x + HUS[id].w + 20 < cx) continue; items.push({ fy: T.BASE - 1, draw: () => ctx.drawImage(husBild(id, N), p.x, p.y) }); }
-      items.push({ fy: T.BASE - 0.5, draw: () => drawFlaggor(ctx) });
+      for (const id of HUSLISTA) { const p = husPos(id); if (p.x > cx + VW + 20 || p.x + HUS[id].w + 20 < cx) continue; items.push({ fy: T.BASE - 1, draw: () => ctx.drawImage(husBild(id, N), p.x, p.y) }, { fy: T.BASE - 0.9, draw: () => husLiv(ctx, id, p.x, p.y, t, N) }); }
       for (const k of katter) items.push({ fy: k.y < T.BASE ? T.BASE - 0.2 : k.y, draw: () => drawPet(ctx, k.x, k.y, k.p, k.anim, t, k.dir) });
       const syns = (x, m = 50) => x > cx - m && x < cx + VW + m;
       for (const tr of TRAD) if (syns(tr.x)) items.push({ fy: tr.y, draw: () => KIT.tree(ctx, tr.kind, tr.x, tr.y, { vind: vind(tr.x) }) });
@@ -298,8 +292,14 @@ export function makeTassbacken(A) {
       for (const s of SMATT) if (syns(s.x)) items.push({ fy: s.y, draw: () => drawSmatt(ctx, s) });
       for (const d of [...fenceDrawables(PARK, VIT, GRIND), ...fenceDrawables(RASTGARD, TRA)]) items.push({ fy: d.fy, draw: () => d.draw(ctx) });
       for (const a of AGILITY) items.push({ fy: a.y, draw: () => drawAgility(ctx, a) });
-      for (const [kx, ky] of [[RASTGARD[0] + 150, RASTGARD[1] + 40], [RASTGARD[0] + 190, RASTGARD[1] + 40]]) items.push({ fy: ky, draw: () => drawKoja(ctx, kx, ky) });
-      items.push({ fy: RASTGARD[3] - 8, draw: () => drawBur(ctx) });
+      [[RASTGARD[0] + 150, RASTGARD[1] + 40], [RASTGARD[0] + 190, RASTGARD[1] + 40]].forEach(([kx, ky], i) => items.push({ fy: ky, draw: () => ritaKoja(ctx, kx, ky, i) }));
+      const burX = RASTGARD[0] + 52, burY = RASTGARD[3] - 8;
+      items.push({ fy: burY - 24, draw: () => ritaBurBak(ctx, burX, burY) }, { fy: burY + 0.5, draw: () => ritaBurFram(ctx, burX, burY) });
+      for (const l of PARKLAMPOR) if (syns(l.x)) items.push({ fy: l.y, draw: () => ritaParklykta(ctx, l, N) });
+      for (const b of BUSKAR) if (syns(b.x)) items.push({ fy: b.y, draw: () => ritaBuske(ctx, b) });
+      for (const p of PARKPRYL) if (syns(p.x)) items.push({ fy: p.y, draw: () => ritaParkPryl(ctx, p, t) });
+      if (syns(GRIND[0])) items.push({ fy: PARK[1] + 0.5, draw: () => ritaGrindskylt(ctx, GRIND[0], GRIND[1], PARK[1]) });
+      items.push({ fy: 1e5, draw: () => ritaFjarilar(ctx, t, FJARILAR) });
       items.push({ fy: STATY.y + 10, draw: () => drawStaty(ctx) });
       for (const d of ander) { const p = andPos(d); items.push({ fy: p.y, draw: () => drawAnd(ctx, d) }); }
       for (const d of [...parkhund, ...gardhund]) items.push({ fy: d.y, draw: () => drawPet(ctx, d.x, d.y, d.p, d.state === 'ga' ? (d.spring ? 'run' : 'walk') : d.state === 'lek' ? 'play' : 'idle', t, d.dir) });
@@ -310,7 +310,7 @@ export function makeTassbacken(A) {
         items.push({ fy: o.y, draw: () => { drawPerson(ctx, o.x, o.y, o.look, o.dir, ga ? WALK_SEQ[Math.floor(t * 8.5 + o.x) % 4] : 0); } });
         items.push({ fy: h.y, draw: () => { drawPet(ctx, h.x, h.y, o.hund, anim, t, o.dir); const n = petNeck(o.hund, anim, t, o.dir); ctx.fillStyle = '#d8343c'; const hx = o.x + (o.dir === 'right' ? 3 : -3), hy = o.y - 13, ex = h.x + n.x, ey = h.y + n.y; for (let k = 0; k <= 8; k++) { const u = k / 8; ctx.fillRect(Math.round(hx + (ex - hx) * u), Math.round(hy + (ey - hy) * u + Math.sin(u * Math.PI) * 3), 1, 1); } } });
       }
-      items.push({ fy: HALLPLATS.y, draw: () => drawHallplats(ctx) }, { fy: SKYLT.y, draw: () => drawSkylt(ctx) });
+      items.push({ fy: HALLPLATS.y, draw: () => ritaHallplats(ctx, HALLPLATS.x, HALLPLATS.y) }, { fy: SKYLT.y, draw: () => drawSkylt(ctx) });
       items.push(...folkDrawables(A, t));
       if (pets) for (const d of pets.drawables()) items.push({ fy: d.fy ?? d.y, draw: () => d.draw(ctx) });
       const F = fordon();
@@ -323,6 +323,8 @@ export function makeTassbacken(A) {
         if (D) { ctx.fillStyle = 'rgba(255,140,80,0.10)'; ctx.fillRect(0, 0, VW, VH); }
         ctx.save(); ctx.translate(-cx, -cy);
         for (const l of LYKTOR) if (l.x > cx - 40 && l.x < cx + VW + 40) KIT.lampGlow(ctx, l.x, l.y, N ? 1 : 0.5);
+        if (N) for (const l of PARKLAMPOR) if (l.x > cx - 40 && l.x < cx + VW + 40) parklyktaSken(ctx, l);
+        if (N) for (const id of HUSLISTA) { const p = husPos(id); if (p.x > cx + VW + 20 || p.x + HUS[id].w + 20 < cx) continue; husSken(ctx, id, p.x, p.y, t); }
         ctx.restore();
       }
       ctx.save(); ctx.translate(-cx, -cy); talk.draw(ctx, { x0: cx, x1: cx + VW }); ctx.restore();

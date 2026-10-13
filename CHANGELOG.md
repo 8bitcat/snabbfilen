@@ -10,6 +10,16 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.133.0] – 2026-10-13 – Tassbacken i full prakt
+- 🐾 Tassbacken i full prakt! Alla hus är ombyggda från grunden – med socklar, stuprör, takfötter med tandsnitt, fönster med spröjs, gardiner och blomlådor, dörrar med mässing och skyltfönster där man ser in.
+- ☕ KATTCAFÉ KURR har ett stort kattansikte på taket (KURR lyser i neon på kvällen och ögonen glöder), en kattklocka med svans som pendlar, en tapetserad kafésal med klösträd och taklampor, en bakelsedisk med prinsesstårta – och en barista bakom disken. Ångan stiger ur kopparna.
+- 🏠 TASSARNAS HEM: falurött med frontespis, oxöga med en tass, farstukvist och en anslagstavla med djuren som söker hem. Katter och hundar tittar ut genom fönstren.
+- ⚕️ DJURKLINIKEN: ett grönt kors som lyser, ett EKG-band, väntrummet och receptionen med veterinären.
+- 🏛️ UTSTÄLLNINGSHALLEN: kopparvalv med takryttare, sandstensbågar, vepor med katt, hund och kanin, och en biografmarkis där glödlamporna jagar varandra.
+- ✂️ KLIPP & KLO: bubbelfönstret med en hund i badet, trimbordet med en pudel under hårtorken, en snurrande frisörstolpe och pudelbuskar vid dörren.
+- 🏡 Bostadshusen: balkonger med tvätt som fladdrar, cykeln vid porten, takkupan med en katt, klätterrosen och röken ur skorstenen.
+- 🌳 Hela backen och parken: terrasser med trädgårdar, staket och växthus, trappor med räcken, hundkojor med namn, kaninburen, valvet HUNDPARKEN över grinden, tulpanrabatter runt torget, en brygga och ett andhus i dammen, parklyktor och fjärilar.
+
 ## [0.132.0] – 2026-10-13 – Ministaden på Pixelberg
 - 🏮 Pixelberg är en liten stad nu! Mitt på tivolit går en marknadsgata med randiga tältstånd, gränder emellan och en promenad i tegel framför – med portaler över gränderna: GODISGATAN, BALLONGGATAN, TEKOPPSTORGET, FONTÄNTORGET och SPÖKGRÄND.
 - 🍹🍬🧇🥖🌭 Nya stånd: saft och lemonad, smågodis, våfflor, churros och korv med mos – varje stånd har en egen expedit och en egen meny.

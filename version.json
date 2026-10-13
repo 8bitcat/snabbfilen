@@ -1,7 +1,7 @@
 {
-  "version": "0.132.0",
+  "version": "0.133.0",
   "date": "2026-10-13",
-  "title": "Ministaden på Pixelberg",
+  "title": "Tassbacken i full prakt",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
@@ -239,7 +239,9 @@
     "js/shops/matbutik.js",
     "js/solon/fiske.js",
     "js/solon/karta.js",
+    "js/tassbacken/hus.js",
     "js/tassbacken/karta.js",
+    "js/tassbacken/park.js",
     "js/version.js",
     "sw.js",
     "version.json"
