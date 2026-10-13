@@ -22,6 +22,7 @@
 // Pix-pennan (ett pixelkorn, 3–5 toner, mörk kontur) och cachas; varje bildruta
 // ritar bara färdiga bilder plus det som lever (trafik, ånga, klockan, lappar,
 // taxen). På kvällen läggs ett dunkel med ljuskäglor runt lamporna över allt.
+import { foto } from '../core/fotolage.js';   // 📸 fotoläget (js/core/foto.js)
 import { drawPerson, makeLook } from '../core/people.js';
 import { Pix, SMALL, BIG, ctxText, textW, text, eachTextPixel, mix, mul, hash, bayer } from '../core/floor-pix.js';
 import { toast } from '../core/ui.js';
@@ -2604,6 +2605,7 @@ function speech(ctx, x, y, s) {
   ctxText(ctx, SMALL, s, x0 + 4, y0 + 2, '#1f2d48');
 }
 function edgeSign(ctx, lbl, left) {
+  if (foto.pa) return;   // (📸 fotoläget)
   const w = textW(SMALL, lbl) + 13, x0 = left ? 3 : VW - w - 3, y0 = H - 14;
   ctx.fillStyle = '#d8b45a'; ctx.fillRect(x0 - 1, y0 - 1, w + 2, 11);
   ctx.fillStyle = '#1f2d48'; ctx.fillRect(x0, y0, w, 9);

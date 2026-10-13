@@ -17,6 +17,7 @@
 // Nya spelare får guiden direkt (main.js begin). Den går att hoppa över (× i listan) och att köra
 // igen under ⚙ Inställningar. Testrobotarna (navigator.webdriver) slipper den, utom med ?guide.
 // Scenerna frågar guideStep() och ritar handen själva med drawGuideHand (samma pixelkorn som scenen).
+import { foto } from './fotolage.js';   // 📸 fotoläget (js/core/foto.js)
 import { $t } from './i18n.js';
 import { toast, openModal, closeModal, esc, modalOpen } from './ui.js';
 import { play } from './sound.js';
@@ -223,6 +224,7 @@ const HAND = [
 ];
 const HC = { '#': '#17151a', w: '#fffaf0', s: '#d9cfbe' };
 export function drawGuideHand(ctx, x, y, label = '', { below = false } = {}) {
+  if (foto.pa) return;   // (📸 fotoläget)
   const t = performance.now() / 1000;
   const tap = Math.max(0, Math.sin(t * 5)) * 3 | 0;
   // ringen runt målet
@@ -278,12 +280,14 @@ function arrowImg(ang) {
 }
 // pilen runt figuren (x, y = fötterna) mot (tx, ty); gungar ut och in
 export function drawGuideArrow(ctx, x, y, tx, ty) {
+  if (foto.pa) return;   // (📸 fotoläget)
   const t = performance.now() / 1000, ang = Math.atan2(ty - y, tx - x), r = 17 + Math.round(Math.sin(t * 6) * 2);
   ctx.drawImage(arrowImg(ang), Math.round(x + Math.cos(ang) * r) - 10, Math.round(y - 4 + Math.sin(ang) * r * 0.7) - 10);
 }
 // målet syns inte: en pil och en lapp i bildkanten (skärmkoordinater). dir 1 = höger kant, −1 = vänster.
 // Svaret är lappens rektangel [x0, y0, x1, y1] – scenen gör den klickbar (gå dit).
 export function drawGuideEdge(ctx, { x0, x1, y, dir, label }) {
+  if (foto.pa) return;   // (📸 fotoläget)
   const t = performance.now() / 1000, bob = Math.round(Math.sin(t * 6) * 2) * dir;
   const ax = dir > 0 ? x1 - 13 + bob : x0 + 13 + bob;
   ctx.drawImage(arrowImg(dir > 0 ? 0 : Math.PI), ax - 10, Math.round(y) - 10);

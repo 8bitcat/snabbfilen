@@ -8,6 +8,7 @@
 //   • 🎁 Presenter (js/core/presenter.js, Carl 2026-10-12): en present om dagen, var sjunde stor – röd prick på mobilen.
 //   • 💛 Vänner (js/core/vannerapp.js, Carl 2026-10-12): ens vänner, vilka som är i stan nu (siffran på appen).
 //   • 💬 SMS (js/core/smsapp.js, Carl 2026-10-13): meddelanden till vännerna – siffran = olästa, röd prick på mobilen.
+//   • 📷 Kamera och 🖼️ Bilder (js/core/foto.js): fotoläget med filter, ramar och poser, och albumet.
 //   • 💼 Jobb (alla jobb, närmast först, 🧭 Visa vägen) och 🏠 Hem (pilen hem) – js/core/jobben.js, Carl 2026-10-11.
 //     Startguiden lär ut dem första dagen: knappen och appen pulserar (guidePeka i js/core/startguide.js).
 //   • Inställningar öppnar spelmenyn med inställningarna utfällda (ljud, musik, zoom, språk, mätare,
@@ -28,6 +29,7 @@ import { openKbkApp, kbkAppSyns, lagInne } from './kbklag.js';   // ⚽ KBK-appe
 import { openVannerApp, vanInneAntal } from './vannerapp.js';   // 💛 Vänner (Carl 2026-10-12)
 import { openPresenter, presenterVantar } from './presenter.js';
 import { openSmsApp, smsOlast } from './smsapp.js';   // 💬 SMS till vännerna (Carl 2026-10-13)
+import { openKamera, openBilder } from './foto.js';   // 📷 fotoläget och 🖼️ albumet
 import { openKortApp } from './kortapp.js';   // 🃏 pixelkortsalbumet (Carl 2026-10-12)   // 🎁 presenterna (Carl 2026-10-12)
 
 const APPAR = [
@@ -36,6 +38,8 @@ const APPAR = [
   { id: 'hem', fn: (A) => visaHem(A), ik: 'hem', namn: $t('Hem') },
   { id: 'presenter', fn: (A) => openPresenter(A), ik: 'present', namn: $t('Presenter') },
   { id: 'kort', fn: (A) => openKortApp(A), ik: 'kort', namn: $t('Pixelkort') },
+  { id: 'kamera', fn: (A) => openKamera(A), ik: 'kamera', namn: $t('Kamera') },
+  { id: 'bilder', fn: (A) => openBilder(A), ik: 'bilder', namn: $t('Bilder') },
   { id: 'kbk', fn: (A) => openKbkApp(A), ik: 'kbk', namn: 'KBK', syns: (A) => kbkAppSyns(A?.avatar) },
   { id: 'taxi', src: 'hud-taxi', ik: 'taxi', namn: $t('Taxi') },
   { id: 'kompisar', src: 'hud-friends', ik: 'kompisar', namn: $t('Kompisar') },

@@ -10,6 +10,12 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.119.0] – 2026-10-13 – Kameran och bilderna
+- 📷 Kamera i mobilen! Knappar och skyltar försvinner och en sökare dyker upp – gå runt och ta bilder i Pixelstaden.
+- 🎨 Sex filter (Sommar, Svartvitt, Gammalt foto, Retro, Drömland …) och 🖼️ fem ramar (Snabbfoto med plats och datum, Vykort med frimärke, Guldram, Filmremsa).
+- 🙋 Poser: vinka, jubla eller hjärtan – kompisarna ser posen också. ⏱ Självutlösare på 3 sekunder.
+- 🖼️ Bilder i mobilen: ditt album med upp till 60 bilder. På webben kan du spara bilden som fil, knivskarp.
+
 ## [0.118.0] – 2026-10-13 – SMS till vännerna
 - 💬 SMS i mobilen! Skicka meddelanden till dina vänner – de får dem även när de inte spelar (i appen kommer en notis).
 - Snabbknappar som "Hej! 👋" och "Vill du spela? 🎮" – man behöver inte skriva själv. Högst 120 tecken.

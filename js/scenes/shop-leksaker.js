@@ -48,6 +48,7 @@
 //   kidsSay() (två barn i tur och ordning + förälderns svar), roamTo(x, y, dir, sek)
 //   (ställ springbarnet med nallen). state() har också bubbles (aktiva pratbubblor med
 //   ruta och om talaren syns), tags, roam, parent och toTable.
+import { foto } from '../core/fotolage.js';   // 📸 fotoläget (js/core/foto.js)
 import { Pix, SMALL, BIG, text, textW, eachTextPixel, ctxText, mix, mul, hash, bayer } from '../core/floor-pix.js';
 import { drawPerson } from '../core/people.js';
 import { openModal, closeModal, esc, toast } from '../core/ui.js';
@@ -2631,6 +2632,7 @@ export function makeShopLeksaker(A, opts = {}) {
 
 // Pil i skärmkanten mot resten av butiken
 function edgeSign(ctx, left, lbl, col) {
+  if (foto.pa) return;   // (📸 fotoläget)
   const w = textW(SMALL, lbl) + 14, safe = globalThis.SF?.view?.safe || { y1: H };
   const y = Math.min(H, safe.y1) - 26, x = left ? 3 : VW - 3 - w;
   ctx.fillStyle = '#3a2238'; ctx.fillRect(x, y, w, 10);

@@ -25,6 +25,7 @@
 //
 // MOBILEN (NÄRA-läget beskär upptill och nertill, main.js v.safe): en lodrät kamera följer
 // figuren inom det synliga radbandet, och skyltarna läggs alltid innanför det.
+import { foto } from '../core/fotolage.js';   // 📸 fotoläget (js/core/foto.js)
 import { drawPerson } from '../core/people.js';
 import { SMALL, BIG, ctxText, textW, mix, mul, hex, css } from '../core/floor-pix.js';
 import { toast } from '../core/ui.js';
@@ -973,6 +974,7 @@ function stairGlow(ctx, e) {
 }
 // Skylt i skärmkanten mot det man inte ser just nu
 function edgeSign(ctx, lbl, col, left, bottom = H) {
+  if (foto.pa) return;   // (📸 fotoläget)
   const tw = textW(SMALL, lbl), w = tw + 13, x0 = left ? 3 : VW - w - 3, y0 = bottom - 14;
   ctx.fillStyle = col; ctx.fillRect(x0 - 1, y0 - 1, w + 2, 11);
   ctx.fillStyle = '#17151a'; ctx.fillRect(x0, y0, w, 9);

@@ -1,0 +1,187 @@
+[
+ {
+  "i": 8346,
+  "f": "js/core/drakt.js",
+  "k": "Vinka"
+ },
+ {
+  "i": 8347,
+  "f": "js/core/drakt.js",
+  "k": "Jubla"
+ },
+ {
+  "i": 8348,
+  "f": "js/core/foto.js",
+  "k": "Svartvitt"
+ },
+ {
+  "i": 8349,
+  "f": "js/core/foto.js",
+  "k": "Gammalt foto"
+ },
+ {
+  "i": 8350,
+  "f": "js/core/foto.js",
+  "k": "Retro"
+ },
+ {
+  "i": 8351,
+  "f": "js/core/foto.js",
+  "k": "Drömland"
+ },
+ {
+  "i": 8352,
+  "f": "js/core/foto.js",
+  "k": "Snabbfoto"
+ },
+ {
+  "i": 8353,
+  "f": "js/core/foto.js",
+  "k": "Vykort"
+ },
+ {
+  "i": 8354,
+  "f": "js/core/foto.js",
+  "k": "Guldram"
+ },
+ {
+  "i": 8355,
+  "f": "js/core/foto.js",
+  "k": "Filmremsa"
+ },
+ {
+  "i": 8356,
+  "f": "js/core/foto.js",
+  "k": "HEMMA"
+ },
+ {
+  "i": 8357,
+  "f": "js/core/foto.js",
+  "k": "HÄLSNINGAR HEMIFRÅN"
+ },
+ {
+  "i": 8358,
+  "f": "js/core/foto.js",
+  "k": "HÄLSNINGAR FRÅN TASSBACKEN"
+ },
+ {
+  "i": 8359,
+  "f": "js/core/foto.js",
+  "k": "HÄLSNINGAR FRÅN LANDET"
+ },
+ {
+  "i": 8360,
+  "f": "js/core/foto.js",
+  "k": "HÄLSNINGAR FRÅN PIXELSTADEN"
+ },
+ {
+  "i": 8361,
+  "f": "js/core/foto.js",
+  "k": "📷 Kameran får vila medan du jobbar – ta bilder efter passet!"
+ },
+ {
+  "i": 8362,
+  "f": "js/core/foto.js",
+  "k": "Stäng kameran (Esc)"
+ },
+ {
+  "i": 8363,
+  "f": "js/core/foto.js",
+  "k": "Knäpp! (mellanslag)"
+ },
+ {
+  "i": 8364,
+  "f": "js/core/foto.js",
+  "k": "🖼️ Bilder"
+ },
+ {
+  "i": 8365,
+  "f": "js/core/foto.js",
+  "k": "Ingen pose"
+ },
+ {
+  "i": 8366,
+  "f": "js/core/foto.js",
+  "k": "3 sek"
+ },
+ {
+  "i": 8367,
+  "f": "js/core/foto.js",
+  "k": "Direkt"
+ },
+ {
+  "i": 8368,
+  "f": "js/core/foto.js",
+  "k": "🖼️ Albumet är fullt ({0} bilder) – ta bort några i 🖼️ Bilder först."
+ },
+ {
+  "i": 8369,
+  "f": "js/core/foto.js",
+  "k": "📸 Klick! Bilden ligger i 🖼️ Bilder."
+ },
+ {
+  "i": 8370,
+  "f": "js/core/foto.js",
+  "k": "🖼️ Bilden gick inte att spara här."
+ },
+ {
+  "i": 8371,
+  "f": "js/core/foto.js",
+  "k": "{0} av {1} bilder. Tryck på en bild för att se den stor."
+ },
+ {
+  "i": 8372,
+  "f": "js/core/foto.js",
+  "k": "Inga bilder än!"
+ },
+ {
+  "i": 8373,
+  "f": "js/core/foto.js",
+  "k": "Öppna 📷 Kamera i mobilen, välj filter, ram och pose – och knäpp. Bilderna hamnar här."
+ },
+ {
+  "i": 8374,
+  "f": "js/core/foto.js",
+  "k": "📷 Kamera"
+ },
+ {
+  "i": 8375,
+  "f": "js/core/foto.js",
+  "k": "← Alla bilder"
+ },
+ {
+  "i": 8376,
+  "f": "js/core/foto.js",
+  "k": "🗑️ Ta bort"
+ },
+ {
+  "i": 8377,
+  "f": "js/core/foto.js",
+  "k": "🗑️ Ta bort bilden?"
+ },
+ {
+  "i": 8378,
+  "f": "js/core/foto.js",
+  "k": "Bilden försvinner för alltid."
+ },
+ {
+  "i": 8379,
+  "f": "js/core/foto.js",
+  "k": "🗑️ Ja, ta bort"
+ },
+ {
+  "i": 8380,
+  "f": "js/core/foto.js",
+  "k": "🗑️ Bilden är borttagen."
+ },
+ {
+  "i": 8381,
+  "f": "js/core/foto.js",
+  "k": "💾 Bilden är sparad som fil."
+ },
+ {
+  "i": 8382,
+  "f": "js/core/mobilen.js",
+  "k": "Bilder"
+ }
+]

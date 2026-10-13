@@ -26,6 +26,7 @@
 // STÄNGT-skylt) och bara bankomaten tar ut.
 // Allt målas en gång med Pix-pennan (ett pixelkorn, ramper med 3–5 toner, mörk kontur)
 // och cachas; varje bildruta ritar bara färdiga bilder plus det som lever.
+import { foto } from '../core/fotolage.js';   // 📸 fotoläget (js/core/foto.js)
 import { Pix, SMALL, BIG, ctxText, textW, text, eachTextPixel, mix, mul, hash, bayer } from '../core/floor-pix.js';
 import { drawPerson, makeLook, isValid } from '../core/people.js';
 import { openModal, closeModal, toast, esc, modalOpen } from '../core/ui.js';
@@ -1933,6 +1934,7 @@ export function makeShopBank(A) {
     if (hintTxt) ctxText(ctx, SMALL, hintTxt, x0 + 7, y0 + 14, Math.floor(t * 2) % 2 === 0 ? '#fff0b0' : '#c9d2c2');
   }
   function edgeSign(ctx, lbl, left) {
+    if (foto.pa) return;   // (📸 fotoläget)
     const w = textW(SMALL, lbl) + 13, x0 = left ? 3 : VW - w - 3, y0 = Math.min(H, safe().y1 || H) - 14;
     ctx.fillStyle = '#d8b45a'; ctx.fillRect(x0 - 1, y0 - 1, w + 2, 11);
     ctx.fillStyle = '#123a2c'; ctx.fillRect(x0, y0, w, 9);

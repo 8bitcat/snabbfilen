@@ -47,6 +47,7 @@
 //   dig på provpallen), shine() (skoputsen), teleport(x, y), lockCam(x|null[, wy]), cam(),
 //   camY() (höjdkameran: synlig ruta, översta världsraden, dy), tick(sek), state(),
 //   panorama() (hela butiken som data-URL), spots() (alla klickbara platser).
+import { foto } from '../core/fotolage.js';   // 📸 fotoläget (js/core/foto.js)
 import { drawPerson, entryOf } from '../core/people.js';
 import { Pix, SMALL, BIG, ctxText, textW, text, mix, mul, hash, bayer } from '../core/floor-pix.js';
 import { openModal, closeModal, toast, esc } from '../core/ui.js';
@@ -1267,6 +1268,7 @@ function smallLabel(ctx, lbl, low) {
   ctxText(ctx, SMALL, lbl, ((VW - w) >> 1) + 5, by + 4, '#fbf4e4');
 }
 function edgeSign(ctx, left, lbl, col, low) {
+  if (foto.pa) return;   // (📸 fotoläget)
   const w = textW(SMALL, lbl) + 14, y = low - 28, x = left ? 3 : VW - 3 - w;
   ctx.fillStyle = '#17151a'; ctx.fillRect(x, y, w, 10);
   ctx.fillStyle = col; ctx.fillRect(x + 1, y + 1, w - 2, 8);

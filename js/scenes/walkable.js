@@ -2,6 +2,7 @@
 // miljöer (staden, butikerna, jobben). En scen skapar en walker, matar in
 // hinder-rektanglar och får gång med utslätade vägar. Dessutom gemensam
 // ritning av andra spelare (världen) och namnskyltar/pratbubblor.
+import { foto } from '../core/fotolage.js';   // 📸 fotoläget (js/core/foto.js)
 import { drawPerson } from '../core/people.js';
 import { drawRide, rideLift } from '../core/fordon-art.js';   // cykeln/moppen i staden
 import { avatarTagColors } from '../core/avatar.js';
@@ -293,6 +294,7 @@ export function sayBubble(ctx, x, y, text, { w: maxW = SAY_W, lines: maxLines = 
 }
 
 export function nameTag(ctx, x, y, av) {
+  if (foto.pa) return;   // (📸 fotoläget)
   const c = avatarTagColors(av);
   const w = textW(SMALL, av.name || '?') + 6;
   ctx.fillStyle = c.bg; ctx.fillRect(x - w / 2 | 0, y | 0, w, 9);
@@ -311,6 +313,7 @@ export function emoteBubble(ctx, x, y, e, k = 1) {
 
 // Pratbubbla med en pixelritad ikon (8×8-karta) – för kunder och tallrikar
 export function iconBubble(ctx, x, y, drawIcon, hot = false) {
+  if (foto.pa) return;   // (📸 fotoläget)
   ctx.fillStyle = hot ? '#e8b230' : '#17151a'; ctx.fillRect(x - 8 | 0, y - 16, 20, 18);
   ctx.fillStyle = '#f4f1ea'; ctx.fillRect(x - 7 | 0, y - 15, 18, 16);
   ctx.fillStyle = '#f4f1ea'; ctx.fillRect(x - 1 | 0, y + 1, 3, 3);

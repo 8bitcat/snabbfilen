@@ -1,7 +1,7 @@
 {
-  "version": "0.118.0",
+  "version": "0.119.0",
   "date": "2026-10-13",
-  "title": "SMS till vännerna",
+  "title": "Kameran och bilderna",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
@@ -42,6 +42,8 @@
     "js/core/floor-pix.js",
     "js/core/fordon-art.js",
     "js/core/foretag.js",
+    "js/core/foto.js",
+    "js/core/fotolage.js",
     "js/core/fx.js",
     "js/core/hemmusik.js",
     "js/core/hud-pix.js",

@@ -43,6 +43,7 @@
 // ljungeldar, våt glans) målas en gång och cachas; per bildruta bara drawImage av rutor och några
 // hundra fillRect (≈ 0,1–1 ms i en 384 × 216-vy).
 // Ritas alltid bara i view-rektangeln.
+import { foto } from '../core/fotolage.js';   // 📸 fotoläget (js/core/foto.js)
 import { hash, bayer, mix, mul, Pix, SMALL, ctxText, textW } from '../core/floor-pix.js';
 import { CITY, ROADS, PATHS, LOTS, STREETS_ALL, PARK_LAYOUT, ALL_BUILDINGS, RIVER, CANAL_WATER, footprint } from './map.js';
 import { $t, $n } from '../core/i18n.js';
@@ -182,6 +183,7 @@ export function weatherBadgeSize(w) {
   return { w: 7 + 3 + Math.max(tw, sw) + 5, h: 17 };
 }
 export function drawWeatherBadge(ctx, x, y, w) {
+  if (foto.pa) return;   // (📸 fotoläget)
   if (!w) return;
   const t = `${weatherName(w)} ${w.temp}`.toUpperCase(), s = $t(w.season).toUpperCase();
   const windy = Math.abs(w.wind || 0) >= 22;

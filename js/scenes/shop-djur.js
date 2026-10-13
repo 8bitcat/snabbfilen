@@ -34,6 +34,7 @@
 //   Verktyg: tools/pets-shop-snap.mjs (bilder/sekvenser/dialoger), tools/pets-shop-test.mjs (klicktest),
 //            tools/pets-shop-buy2.mjs (två köp i rad → en kvitto-toast per köp).
 // ==================================================================
+import { foto } from '../core/fotolage.js';   // 📸 fotoläget (js/core/foto.js)
 import { drawPerson } from '../core/people.js';
 import { Pix, SMALL, BIG, ctxText, textW, text, mix, mul, hash, bayer } from '../core/floor-pix.js';
 import { openModal, closeModal, toast, esc } from '../core/ui.js';
@@ -848,6 +849,7 @@ function drawBird(ctx, x, y, [body, head, tail], face, flying, t) {
 }
 // Skylt i skärmkanten mot den del av butiken man inte ser
 function edgeSign(ctx, left, lbl, col) {
+  if (foto.pa) return;   // (📸 fotoläget)
   const tw = textW(SMALL, lbl), w = tw + 13, x0 = left ? 3 : VW - w - 3, y0 = H - 14;
   ctx.fillStyle = col; ctx.fillRect(x0 - 1, y0 - 1, w + 2, 11);
   ctx.fillStyle = '#17151a'; ctx.fillRect(x0, y0, w, 9);

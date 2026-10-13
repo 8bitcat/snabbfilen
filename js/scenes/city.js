@@ -3,6 +3,7 @@
 // händer när man går in; konsten och livet kommer från modulerna i js/city/
 // (kontraktet: js/city/map.js + docs/STADEN.md). Modulerna laddas var för sig –
 // kraschar en, lever resten.
+import { foto } from '../core/fotolage.js';   // 📸 fotoläget (js/core/foto.js)
 import { openHouseSign } from '../shops/bostad.js';
 import { CITY, BUILDINGS, ALL_BUILDINGS, doorCenter, artPos, artBox, baseOf, isNightHour, BUS_STOPS, busStopById,
   DISTRICTS, districtAt, districtByName, MAP_OBSTACLES, RIVER, buildingById } from '../city/map.js';
@@ -683,7 +684,7 @@ export function makeCity(A) {
     ctx.restore();
   }
   function drawOverlay(ctx) {
-    drawBanner(ctx);
+    if (!foto.pa) drawBanner(ctx);
     if (!A.attract) { const sb = safeBox(); guard('weather.badge', () => MODS.weather?.drawWeatherBadge?.(ctx, sb.x1 - 3, sb.y0 + 3, env.weather)); }
     const a = Math.max(fade.a, riding ? S.traffic.ride?.()?.fade || 0 : 0); // busstoningen (långa resor) delar rutan med skyltresans toning
     if (a > 0) { ctx.fillStyle = `rgba(4,4,10,${a.toFixed(3)})`; ctx.fillRect(0, 0, VW, VH); }
@@ -1083,11 +1084,13 @@ export function makeCity(A) {
       // fotgängarnas repliker (klick på folk) – överst i världen, med personens egen röst
       guard('pratet', () => { for (const b of S.life.talks?.() || []) sayBubble(ctx, b.x, b.y, b.text, { voice: b.voice, x0: cx, x1: cx + VW }); });
       guard('pir.talks', () => { for (const b of S.pier?.talks?.() || []) sayBubble(ctx, b.x, b.y, b.text, { voice: false, x0: cx, x1: cx + VW }); });
-      guard('vägvisaren', () => drawGuide(ctx));
+      if (!foto.pa) guard('vägvisaren', () => drawGuide(ctx));
       ctx.setTransform(A.pxs, 0, 0, A.pxs, 0, 0);
-      drawFolkMarkers(ctx, cx, cy);
-      guard('husnamnen', () => drawSignChips(ctx, cx, cy));
-      guard('vägvisarlappen', () => drawGuideHud(ctx, cx, cy));
+      if (!foto.pa) {   // (📸 fotoläget: bara världen)
+        drawFolkMarkers(ctx, cx, cy);
+        guard('husnamnen', () => drawSignChips(ctx, cx, cy));
+        guard('vägvisarlappen', () => drawGuideHud(ctx, cx, cy));
+      }
       drawOverlay(ctx);
     },
   };

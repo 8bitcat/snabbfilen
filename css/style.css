@@ -771,6 +771,38 @@ html.desk-mobil .pr-gava small { font-size: var(--f15); }
 .kt-antal { position: absolute; right: 2px; bottom: 2px; background: var(--ink); color: #fff; font-size: var(--f1); padding: 0 4px; }
 .kt-stor { display: flex; justify-content: center; }
 .kt-storcv { width: 160px; height: 220px; image-rendering: pixelated; }
+/* 📸 fotoläget (js/core/foto.js): knappar och mätare bort, sökaren och fotobaren ovanpå spelet (under dialogerna) */
+html.foto-lage #hud, html.foto-lage #hudpix, html.foto-lage #hud-mobil, html.foto-lage #hud-snabb, html.foto-lage #mobilen, html.foto-lage #mobilen-skugga,
+html.foto-lage #emotes, html.foto-lage #chat, html.foto-lage #startguide, html.foto-lage #decor-btn, html.foto-lage #decor-panel { visibility: hidden !important; }
+#foto { position: fixed; inset: 0; z-index: 46; pointer-events: none; }
+#foto.hidden { display: none; }
+#foto-vy { position: fixed; image-rendering: pixelated; pointer-events: none; }
+.foto-sikte { position: fixed; pointer-events: none; box-shadow: 0 0 0 200vmax rgba(10, 8, 14, .62); }
+.foto-sikte i { position: absolute; width: 22px; height: 22px; border: 3px solid #fffdf6; box-shadow: 0 0 0 1px rgba(0,0,0,.5); }
+.foto-sikte i:nth-child(1) { left: 12px; top: 12px; border-right: 0; border-bottom: 0; }
+.foto-sikte i:nth-child(2) { right: 12px; top: 12px; border-left: 0; border-bottom: 0; }
+.foto-sikte i:nth-child(3) { left: 12px; bottom: 12px; border-right: 0; border-top: 0; }
+.foto-sikte i:nth-child(4) { right: 12px; bottom: 12px; border-left: 0; border-top: 0; }
+.foto-rakna { position: fixed; left: 50%; top: 42%; transform: translate(-50%, -50%); font: 72px var(--font); color: #fffdf6; text-shadow: 4px 4px 0 #17151a; }
+.foto-blixt { position: fixed; inset: 0; background: #fff; opacity: 0; pointer-events: none; transition: opacity .4s; }
+.foto-blixt.pa { opacity: .9; transition: none; }
+.foto-stang { min-width: 42px; }
+.foto-bar { position: fixed; left: 50%; top: max(8px, env(safe-area-inset-top)); transform: translateX(-50%); width: max-content; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px;
+  max-width: calc(100vw - 20px); padding: 6px 8px; background: rgba(23,21,26,.84); border: 3px solid #000; pointer-events: auto; }
+.foto-bar .btn-small { font-size: var(--f2); min-height: 38px; }
+.foto-sida { position: fixed; right: max(10px, env(safe-area-inset-right)); top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; align-items: center; gap: 12px; pointer-events: auto; }
+.foto-knapp { width: 58px; height: 58px; border-radius: 50%; background: #fffdf6; border: 4px solid #c8c4cf; box-shadow: 0 0 0 3px #17151a; font-size: 22px; cursor: pointer; padding: 0; }
+.foto-knapp:active { transform: scale(.94); }
+.foto-tumme { width: 46px; height: 46px; padding: 0; border: 3px solid #fffdf6; background: #2a2630; color: #fff; font-size: 20px; overflow: hidden; cursor: pointer; }
+.foto-tumme img { width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated; display: block; }
+/* 🖼️ albumet */
+.fo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; }
+.fo-ruta { padding: 0; border: 3px solid var(--ink); background: #2a2630; aspect-ratio: 16 / 10; overflow: hidden; cursor: pointer; }
+.fo-ruta img { width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated; display: block; }
+.fo-stor { display: flex; justify-content: center; }
+.fo-stor img { max-width: 100%; max-height: 52vh; image-rendering: pixelated; border: 3px solid var(--ink); }
+.fo-stor.liten img { max-height: 24vh; }
+.fo-bladdra { display: flex; justify-content: space-between; margin-top: 6px; }
 /* 💬 SMS (js/core/smsapp.js): pratbubblor – mina gröna till höger, vännens vita till vänster */
 .sms-rad { cursor: pointer; }
 .sms-olast { min-width: 22px; height: 22px; padding: 0 5px; display: inline-grid; place-items: center; background: #e04848; color: #fff; border: 2px solid var(--ink); font: var(--f1) var(--font); }

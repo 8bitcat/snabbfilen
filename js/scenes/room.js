@@ -35,6 +35,7 @@
 // man går, med slutna ögon, huvudet på kudden), lamporna släcks, zzz stiger, månen lyser
 // genom fönstren, sedan gryr det, figuren kliver upp och först då räknas natten
 // (onWake: g.sleep + veckan). Klockan står still under tiden; ett klick spolar fram.
+import { foto } from '../core/fotolage.js';   // 📸 fotoläget (js/core/foto.js)
 import { drawPerson } from '../core/people.js';
 import { openAvatarEditor, avatarTagColors } from '../core/avatar.js';
 import { Pix, SMALL, ctxText, textW, text, mix, mul, css, hash, bayer } from '../core/floor-pix.js';
@@ -1722,6 +1723,7 @@ function flatProp(d, decoIdx) {
   return { k: d.k, decoIdx, x: d.x, y: d.y - fh, w: fw, h: fh, draw(ctx) { const a = furnView(d.k, d.v, d.c, d.r); if (a) drawArt(ctx, a, d.x, d.y - fh); } };
 }
 function ctxPlate(ctx, cx, y, label) {
+  if (foto.pa) return;   // (📸 fotoläget)
   const w = textW(SMALL, label) + 6;
   ctx.fillStyle = '#8a6a2a'; ctx.fillRect(cx - w / 2 - 1 | 0, y - 1, w + 2, 9);
   ctx.fillStyle = '#d8b85a'; ctx.fillRect(cx - w / 2 | 0, y, w, 7);
@@ -3421,6 +3423,7 @@ function drawSpider(ctx, RIGHT, t) {
 }
 
 function nameTag(ctx, x, y, av) {
+  if (foto.pa) return;   // (📸 fotoläget)
   const c = avatarTagColors(av);
   const w = textW(SMALL, av.name || '?') + 6;
   ctx.fillStyle = c.bg; ctx.fillRect(x - w / 2 | 0, y | 0, w, 9);

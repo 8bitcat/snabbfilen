@@ -24,6 +24,7 @@
 //   direkt), fastLecture() (spola fram föreläsningen), exam(id, svar[]) (svarar med
 //   index i rätt ordning, -1 = fel svar), quiz(id) (frågorna), lockCam(x|null),
 //   teleport(x, y), tick(sek), cam(), panorama() (hela salen som data-URL).
+import { foto } from '../core/fotolage.js';   // 📸 fotoläget (js/core/foto.js)
 import { Pix, SMALL, BIG, text, textW, ctxText, mix, mul, hash, bayer } from '../core/floor-pix.js';
 import { drawPerson, makeLook, isValid } from '../core/people.js';
 import { openModal, closeModal, esc, toast } from '../core/ui.js';
@@ -1215,6 +1216,7 @@ export function makeShopUniversitet(A /* , opts */) {
   }
   function closeModalIfMine() { if (me.exam) { me.exam = null; closeModal(); } }
   function edgeSign(ctx, left, s) {
+    if (foto.pa) return;   // (📸 fotoläget)
     const w = textW(SMALL, s) + 14, x = left ? 3 : VW - w - 3, y = 100;
     ctx.fillStyle = '#1f3a6a'; ctx.fillRect(x, y, w, 11);
     ctx.fillStyle = '#c89a40'; ctx.fillRect(x, y + 10, w, 1);

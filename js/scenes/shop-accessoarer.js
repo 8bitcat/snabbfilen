@@ -39,6 +39,7 @@
 //   sections(), open(id) (köpdialogen), openKat(sektion), buy(id) → resultat, owns(id),
 //   price(id), state(), teleport(x, y), lockCam(x|null), cam(), camY() → { y, ty, band },
 //   hover(id), tick(sek), shoppers() (kundernas läge), panorama() (hela butiken), iconSheet().
+import { foto } from '../core/fotolage.js';   // 📸 fotoläget (js/core/foto.js)
 import { drawPerson, entryOf, makeLookRich } from '../core/people.js';
 import { Pix, SMALL, BIG, text, textW, ctxText, mix, mul, hash, bayer, hex, css } from '../core/floor-pix.js';
 import { openModal, closeModal, toast, esc } from '../core/ui.js';
@@ -1495,6 +1496,7 @@ function bigLabel(ctx, spot, g, t, y0) {
 // lab = namnskyltens ruta [x0, y0, x1, y1] (eller null) – pilskylten ritas inte under den.
 // vx = de synliga kolumnerna { x0, x1 } (fyll-läget kan beskära kanterna).
 function edgeSign(ctx, left, lbl, bottom, lab = null, vx = { x0: 0, x1: VW }) {
+  if (foto.pa) return;   // (📸 fotoläget)
   const w = textW(SMALL, lbl) + 14, y = bottom - 15, x = left ? vx.x0 + 3 : vx.x1 - 3 - w;
   if (lab && x - 1 < lab[2] && x + w + 1 > lab[0] && y - 1 < lab[3] && y + 11 > lab[1]) return;
   ctx.fillStyle = css(GOLD.base); ctx.fillRect(x - 1, y - 1, w + 2, 12);

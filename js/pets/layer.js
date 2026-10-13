@@ -89,6 +89,7 @@
 //      playerRoom, outdoors: <i staden> }) gärna varje bildruta i huvudloopen – lagret gör det
 //      själv hemma, och missade minuter tickas ikapp vid nästa anrop (högst 3 dygn).
 // ==================================================================
+import { foto } from '../core/fotolage.js';   // 📸 fotoläget (js/core/foto.js)
 import { petStore, PET_RULES } from './sim.js';
 import { PET_ITEMS, drawPetItem, itemBox, itemSolid, itemSpot, drawItemIcon, splitItem } from './items.js';
 import * as SP from './sprites.js';
@@ -792,6 +793,7 @@ export function createPetLayer(A, opts = {}) {
     return { x0: b.x0 + Math.round(a.mOffX || 0), y0: b.y0 + Math.round(a.mOffY || 0), w: b.w, h: MH, baseX0: b.x0, baseY0: b.y0 };
   }
   function drawMeter(ctx, a) {
+    if (foto.pa) return;   // (📸 fotoläget)
     const p = a.pet, dog = p.species === 'hund';
     const stats = [['glad', p.happy / 100, false], ['mat', p.hunger / 100, false]];
     if (dog) stats.push(['bajs', p.toilet / 100, true]);
@@ -871,6 +873,7 @@ export function createPetLayer(A, opts = {}) {
     return { x0: b.x0 + Math.round(a.bOffX || 0), y0: b.y0 + Math.round(a.bOffY || 0), w: b.w, h: b.h };
   }
   function drawGrowBubble(ctx, a) {
+    if (foto.pa) return;   // (📸 fotoläget)
     const txt = bubbleText(a);
     const life = GROW_BUBBLE_S - a.grewT;
     const alpha = Math.min(1, life / 0.25, a.grewT / 0.4);
