@@ -40,6 +40,10 @@ import { standBilder, put as putKiosk, ritaLampor, ritaSken } from '../pixelberg
 import { knippe, enBallong, vimpelband, glodlampa, jonglerar, BALLONG_FARG } from '../pixelberg/liv.js';   // 🎈 livet: ballonger, vimpelband, slingor, jonglören
 import { STALL, MARKNAD_Y, DEKO, stallBilder, putS } from '../pixelberg/marknad.js';   // 🏮 marknadsgatan – ministaden (v0.132)
 import { ritaPortal, ritaTekopparGolv, ritaKopp, koppPos, ritaFontan, ritaBubblor, ritaKonfetti, ritaFlagga, ritaTivolilykta } from '../pixelberg/deko.js';   // 🎉 dekorationerna
+import { ENTRE, ritaStaket, ritaStaketstolpe, ritaPort, ritaBusskur, ritaHallplatsskylt, ritaBuss, ritaKarta, ritaCykelstall, ritaPlantering, ritaFontanStor, ritaTopiary } from '../pixelberg/entre.js';   // 🎟️ entrén (v0.135)
+import { FASADER, MAINSTREET_Y, ritaFasad, FASAD_PRAT } from '../pixelberg/mainstreet.js';   // 🏪 Main Street – butiksfasaderna innanför entrén
+import { ritaMonorail } from '../pixelberg/monorail.js';   // 🚝 Pixelberg Express
+import { TEMAN, ritaOnskebrunn, ritaSvampar, ritaKaktus, ritaVagn, ritaDottTrad, ritaGravsten, ritaKrypta, ritaKyrkogardsstaket, ritaDimma } from '../pixelberg/teman.js';   // 🎭 temaländerna
 import { addToy, toyOf, toyNamn } from '../data/toys.js';   // 🦆 fiskdammens vinster
 import { SPOK_CYKEL, SPOK_PASTIG, SPOK_LJUD, spokLage, spokVagn, ritaSpokVagn, ritaSpokInne, ritaSpoktitt, ritaFladdermus } from '../pixelberg/spokhus.js';
 import { $t } from '../core/i18n.js';
@@ -129,7 +133,7 @@ export function makePixelberg(A) {
   const g = A.game;
   let VW = Math.max(384, Math.min(A.W || 384, TW)), VH = Math.max(160, Math.min(A.H || 216, TH));
   const from = A.pixelbergFran || null; A.pixelbergFran = null;
-  const walker = createCityWalker({ W: TW, H: TH, left: 2, right: TW - 2, top: P.TOP, bottom: P.BOTTOM, spawn: [HALLPLATS.x + 14, HALLPLATS.y + 4] });
+  const walker = createCityWalker({ W: TW, H: TH, left: 2, right: TW - 2, top: P.TOP, bottom: P.BOTTOM, spawn: [HALLPLATS.x + 16, ENTRE.STAKET_Y + 26] });
   walker.speed = GANG;
   walker.setObstacles(hinder());
   walker.snapFree();
@@ -255,9 +259,9 @@ export function makePixelberg(A) {
   // (besökarna går i den främre halvan av torget – borden, köerna och karusellen ligger bakom – några i östra delen)
   // (besökarna går i ministadens gator: gången bakom tältstånden eller promenaden framför – samma gata hela tiden,
   // så att ingen går rakt igenom ett stånd; några håller till i östra delen)
-  const mal = (o) => (o?.ost ? { x: rnd(1610, 2420), y: rnd(432, P.BOTTOM - 4) } : o?.bak ? { x: rnd(260, 1620), y: rnd(MARKNAD_Y - 42, MARKNAD_Y - 20) } : { x: rnd(200, 1640), y: rnd(MARKNAD_Y + 12, P.BOTTOM - 4) });   // (väster om banorna – besökarna går raka vägar)
+  const mal = (o) => (o?.plats ? { x: rnd(30, 300), y: rnd(250, 372) } : o?.ost ? { x: rnd(1730, 2540), y: rnd(432, P.BOTTOM - 4) } : o?.bak ? { x: rnd(380, 1740), y: rnd(MARKNAD_Y - 42, MARKNAD_Y - 20) } : { x: rnd(350, 1760), y: rnd(MARKNAD_Y + 12, P.BOTTOM - 4) });   // (väster om banorna – besökarna går raka vägar)
   const BALLONG = ['#e04848', '#3a7bd5', '#f0c030', '#46a35a', '#d060a0'];
-  const besok = Array.from({ length: 20 }, (_, i) => i).map((i) => { const m = mal({ ost: i >= 16, bak: i % 3 === 1 && i < 16 }); return { ost: i >= 16, bak: i % 3 === 1 && i < 16, look: i % 3 === 0 ? { ...makeLook(), kid: true } : makeLook(), x: m.x, y: m.y, tx: m.x, ty: m.y, dir: 'right', vila: rnd(0, 3), ballong: i % 2 === 0 ? BALLONG[i % BALLONG.length] : null, rad: PRAT[i % PRAT.length] }; });
+  const besok = Array.from({ length: 20 }, (_, i) => i).map((i) => { const m = mal({ ost: i >= 16, bak: i % 3 === 1 && i < 16, plats: i === 2 || i === 5 || i === 8 }); return { ost: i >= 16, bak: i % 3 === 1 && i < 16, plats: i === 2 || i === 5 || i === 8, look: i % 3 === 0 ? { ...makeLook(), kid: true } : makeLook(), x: m.x, y: m.y, tx: m.x, ty: m.y, dir: 'right', vila: rnd(0, 3), ballong: i % 2 === 0 ? BALLONG[i % BALLONG.length] : null, rad: PRAT[i % PRAT.length] }; });
   const nalle = { x: 700, y: 400, tx: 700, ty: 400, dir: 'right', vila: 2, vinkar: 0 };
   function updLiv(dt) {
     for (const o of [...besok, nalle]) {
@@ -274,7 +278,7 @@ export function makePixelberg(A) {
   const LR = lcg(9091);
   const KOFOLK = STAND.filter((s) => s.mat).flatMap((s) => [0, 1].map((k) => ({ s, k, look: LR() < 0.35 ? { ...makeLook(LR), kid: true } : makeLook(LR) })));
   const ATARE = UTESERVERING.flatMap((u, i) => [-1, 1].filter((side, j) => (i + j) % 3 !== 2).map((side) => ({ x: u.x + side * 9, y: u.y - 1, dir: side < 0 ? 'right' : 'left', look: LR() < 0.3 ? { ...makeLook(LR), kid: true } : makeLook(LR) })));
-  const JONGLOR = { x: 318, y: 432, look: makeLook(LR) };
+  const JONGLOR = { x: 262, y: 332, look: makeLook(LR) };   // (på entréplatsen, höger om fontänen)
   const BALLONGIS = { x: 620, y: 384, tx: 900, dir: 'right', vila: 0, look: makeLook(LR) };
   function updBallongis(dt) {
     const o = BALLONGIS;
@@ -301,7 +305,7 @@ export function makePixelberg(A) {
   // 🤡 clownerna och 🐱 Pixel-Katten på promenaden: delar ut ballonger (till barnen – och till en själv)
   const CLOWNLOOK = (hair, shirt, pants) => ({ skin: '#f6d7bf', style: 'clown', hair, marks: 'clown', nose: 'clown', hat: 'party', cap: '#3a7bd5', top: 'tee', topPrint: 'dots', shirt, accent: '#f4f1ea', bottom: 'pants', pants, shoeType: 'clownShoes', shoes: '#c9323a', shoes2: '#f0b429' });
   const CLOWNER = [
-    { x: 420, y: 446, tx: 900, dir: 'right', vila: 0, look: CLOWNLOOK('#e04848', '#f0c030', '#3a7bd5'), fro: 1 },
+    { x: 520, y: 446, tx: 1000, dir: 'right', vila: 0, look: CLOWNLOOK('#e04848', '#f0c030', '#3a7bd5'), fro: 1 },
     { x: 1500, y: 440, tx: 1100, dir: 'left', vila: 1, look: CLOWNLOOK('#3a7bd5', '#46a35a', '#d060a0'), fro: 4 },
     { x: 2100, y: 448, tx: 2350, dir: 'right', vila: 2, katt: true, fro: 6 },
   ];
@@ -309,7 +313,7 @@ export function makePixelberg(A) {
     for (const c of CLOWNER) {
       if (c.vila > 0) { c.vila -= dt; continue; }
       const dx = c.tx - c.x, step = 16 * dt;
-      if (Math.abs(dx) <= step) { c.x = c.tx; c.vila = rnd(3, 7); c.tx = c.katt ? rnd(1960, 2420) : rnd(230, 1640); continue; }
+      if (Math.abs(dx) <= step) { c.x = c.tx; c.vila = rnd(3, 7); c.tx = c.katt ? rnd(2080, 2540) : rnd(360, 1760); continue; }
       c.x += Math.sign(dx) * step; c.dir = dx < 0 ? 'left' : 'right';
       // ett barn utan ballong i närheten får en
       for (const o of besok) if (!o.ballong && o.look.kid && Math.abs(o.x - c.x) < 18 && Math.abs(o.y - c.y) < 16) { o.ballong = ['#e04848', '#3a7bd5', '#f0c030', '#46a35a', '#d060a0'][(c.fro + Math.floor(t)) % 5]; c.vila = 1.5; talk.say($t('Varsågod! 🎈'), () => ({ x: c.x, y: c.y - 40 }), 2, { silent: true }); break; }
@@ -498,7 +502,11 @@ export function makePixelberg(A) {
   const spots = () => [
     { id: 'hjul', r: [HJUL.x - 40, HJUL.fot - 40, HJUL.x + 40, HJUL.fot + 4], go: [HJUL.x, HJUL.fot + 10], label: $t('PARISERHJULET – ETT VARV MED UTSIKT'), act: akHjul },
     { id: 'karusell', r: [KARUSELL.x - KARUSELL.rx, KARUSELL.y - 80, KARUSELL.x + KARUSELL.rx, KARUSELL.y + KARUSELL.ry], go: [KARUSELL.x, KARUSELL.y + KARUSELL.ry + 10], label: $t('KARUSELLEN'), act: akKarusell },
-    { id: 'biljett', r: [BILJETT.x, BILJETT.y - 64, BILJETT.x + BILJETT.w, BILJETT.y], go: [BILJETT.x + BILJETT.w / 2, BILJETT.y + 8], label: $t('BILJETTER – ÅKBAND OCH KUPONGER'), act: biljetter },
+    { id: 'biljett', r: [BILJETT.x, BILJETT.y - 64, BILJETT.x + BILJETT.w, BILJETT.y], go: [BILJETT.x + BILJETT.w / 2, BILJETT.y + 4], label: $t('BILJETTER – ÅKBAND OCH KUPONGER'), act: biljetter },
+    { id: 'port', r: [ENTRE.PORT.cx - 50, ENTRE.STAKET_Y - 112, ENTRE.PORT.cx + 50, ENTRE.STAKET_Y - 20], go: [ENTRE.PORT.cx, ENTRE.STAKET_Y + 12], label: $t('PIXELBERGS TIVOLI – ENTRÉN'), act: () => { walker.walkTo(ENTRE.PORT.cx, ENTRE.STAKET_Y - 16); } },
+    ...FASADER.map((Fa) => ({ id: 'fasad-' + Fa.id, r: [Fa.x, MAINSTREET_Y - 96, Fa.x + Fa.w, MAINSTREET_Y], go: [Fa.x + Fa.w - 10, MAINSTREET_Y + 10], label: Fa.namn, act: () => { play('click'); const rad = FASAD_PRAT[Fa.id]; talk.say(rad[Math.floor(t) % rad.length], () => ({ x: Fa.x + Fa.w - 10, y: MAINSTREET_Y - 30 }), 4, { voice: KOPPFOLK[3] }); } })),
+    { id: 'fontan', r: [ENTRE.FONTAN.x - 40, ENTRE.FONTAN.y - 66, ENTRE.FONTAN.x + 40, ENTRE.FONTAN.y + 12], go: [ENTRE.FONTAN.x, ENTRE.FONTAN.y + 20], label: $t('PIXEL-NALLE-FONTÄNEN'), act: () => { play('coin'); toast($t('⛲ Pixel-Nalle i brons! Alla som kommer till tivolit tar en bild här.')); } },
+    { id: 'karta', r: [ENTRE.KARTA.x - 22, ENTRE.KARTA.y - 54, ENTRE.KARTA.x + 22, ENTRE.KARTA.y], go: [ENTRE.KARTA.x, ENTRE.KARTA.y + 6], label: $t('PARKKARTAN'), act: () => toast($t('🗺️ Entréplatsen – Sagolandet med karusellen, tekopparna och pariserhjulet – berg-och-dalbanan – radiobilarna – Spökgränd. Marknadsgatan går längs hela parken.'), 'wrap') },
     { id: 'kopp', r: [DEKO.tekopp.x - 40, DEKO.tekopp.y - 34, DEKO.tekopp.x + 40, DEKO.tekopp.y + 12], go: [DEKO.tekopp.x, DEKO.tekopp.y + 16], label: $t('TEKOPPARNA – SNURRA RUNT!'), act: akKopp },
     // 🏮 tältstånden på marknadsgatan
     ...STALL.map((s) => ({ id: s.id, r: [s.x, s.y - 62, s.x + s.w, s.y], go: [s.cx, s.y + 8], label: s.def.namn, act: s.typ === 'ballong' ? ballongStand : s.typ === 'fiskdam' ? fiskdammen : () => matStand(s.typ) })),
@@ -510,7 +518,8 @@ export function makePixelberg(A) {
 
     { id: 'spok', r: [SPOK.x, SPOK.y - SPOK_H, SPOK.x + SPOK.w, SPOK_SPAR.y1 + 14], go: [SPOK_SPAR.cx, SPOK_SPAR.y1 + 12], label: $t('SPÖKHUSET – ÅK MED EN KOMPIS OM DU VÅGAR!'), act: akSpok },
     { id: 'radio', r: [RADIO.x, RADIO.y - RADIO_H + 6, RADIO.x + RADIO.w, RADIO.y + RADIO.h + 2], go: [RADIO.x + RADIO.w / 2, RADIO.y + RADIO.h + 10], label: $t('RADIOBILAR – KROCKA MED KOMPISAR!'), act: akRadio },
-    { id: 'buss', r: [HALLPLATS.x - 12, HALLPLATS.y - 34, HALLPLATS.x + 14, HALLPLATS.y + 2], go: [HALLPLATS.x + 8, HALLPLATS.y + 6], label: $t('BERGBUSSEN NER TILL STAN'), act: bussen },
+    { id: 'buss', r: [HALLPLATS.x - 12, HALLPLATS.y - 46, HALLPLATS.x + 14, HALLPLATS.y + 2], go: [HALLPLATS.x + 10, HALLPLATS.y - 8], label: $t('BERGBUSSEN NER TILL STAN'), act: bussen },
+    { id: 'bergbuss', r: [ENTRE.BUSS.x - 92, ENTRE.BUSS.y - 40, ENTRE.BUSS.x + 4, ENTRE.BUSS.y], go: [ENTRE.BUSS.x - 60, ENTRE.GATA[0] - 4], label: $t('BERGBUSSEN NER TILL STAN'), act: bussen },
   ];
   function biljetter() {
     play('click');
@@ -835,6 +844,7 @@ export function makePixelberg(A) {
       for (let x = off; x < VW; x += ut.width) ctx.drawImage(ut, x, utY);
       ctx.drawImage(ground(), -cx, -cy);
       ctx.save(); ctx.translate(-cx, -cy);
+      ritaMonorail(ctx, t, cx, VW);
       ctx.drawImage(banaBild(), 0, 0);
       ritaTag(ctx);
       const items = [];
@@ -845,6 +855,36 @@ export function makePixelberg(A) {
       for (let i = 0; i < HASTAR; i++) { const h = hast(i); items.push({ fy: h.y, draw: () => drawHast(ctx, i) }); }
       items.push({ fy: KARUSELL.y + 0.5, draw: () => ritaKarusell(ctx, N, 'tak') });
       items.push({ fy: BILJETT.y, draw: () => ctx.drawImage(biljettBild(N), BILJETT.x, BILJETT.y - 64) });
+      for (const Fa of FASADER) if (syns(Fa.x + Fa.w / 2, 100)) items.push({ fy: MAINSTREET_Y, draw: () => ritaFasad(ctx, Fa, N) });
+      // 🎭 temaländerna: sagolandets brunn och svampar, västerns kaktusar och hövagn, Spökgränds kyrkogård
+      if (syns(TEMAN.BRUNN.x)) items.push({ fy: TEMAN.BRUNN.y, draw: () => ritaOnskebrunn(ctx, TEMAN.BRUNN.x, TEMAN.BRUNN.y, t) });
+      for (const [sx, sy, si] of TEMAN.SVAMPAR) if (syns(sx)) items.push({ fy: sy, draw: () => ritaSvampar(ctx, sx, sy, si) });
+      for (const [kx, ky] of TEMAN.KAKTUSAR) if (syns(kx)) items.push({ fy: ky, draw: () => ritaKaktus(ctx, kx, ky) });
+      if (syns(TEMAN.VAGN.x)) items.push({ fy: TEMAN.VAGN.y, draw: () => ritaVagn(ctx, TEMAN.VAGN.x, TEMAN.VAGN.y) });
+      if (syns(TEMAN.KYRKOGARD.x0, 200)) {
+        const KG = TEMAN.KYRKOGARD;
+        items.push({ fy: KG.y0 - 20, draw: () => ritaKyrkogardsstaket(ctx, KG.x0, KG.x1, KG.y0 - 4) });
+        for (const [gx, gy, gi] of TEMAN.GRAVAR) items.push({ fy: gy, draw: () => ritaGravsten(ctx, gx, gy, gi) });
+        items.push({ fy: TEMAN.KRYPTA.y, draw: () => ritaKrypta(ctx, TEMAN.KRYPTA.x, TEMAN.KRYPTA.y, N) });
+        items.push({ fy: KG.y1, draw: () => ritaKyrkogardsstaket(ctx, KG.x0, KG.x1, KG.y1) });
+      }
+      for (const [dx, dy] of TEMAN.DODA_TRAD) if (syns(dx)) items.push({ fy: dy, draw: () => ritaDottTrad(ctx, dx, dy, t) });
+      // 🎟️ entrén: staketet med porten, bussgatan med kuren och bergbussen, kartan, cykelstället, planteringarna – och
+      // entréplatsen innanför med fontänen, topiaryerna, flaggstängerna, lyktorna och bänkarna
+      if (cx < ENTRE.STAKET_X1 + 120) {
+        const E = ENTRE, pw = E.PORT.w >> 1;
+        items.push({ fy: E.STAKET_Y, draw: () => { ritaStaket(ctx, 0, E.PORT.cx - pw - 14, E.STAKET_Y); ritaStaket(ctx, E.PORT.cx + pw + 14, E.STAKET_X1, E.STAKET_Y); } });
+        for (let y = E.STAKET_Y + 4; y <= TH; y += 4) items.push({ fy: y, draw: () => ritaStaketstolpe(ctx, E.STAKET_X1, y, (y - E.STAKET_Y) % 24 === 4) });
+        items.push({ fy: E.STAKET_Y + 0.5, draw: () => ritaPort(ctx, t, N) });
+        items.push({ fy: E.KUR.y, draw: () => ritaBusskur(ctx, E.KUR.x, E.KUR.y, N) }, { fy: E.HALLPLATS.y, draw: () => ritaHallplatsskylt(ctx, E.HALLPLATS.x, E.HALLPLATS.y) });
+        items.push({ fy: E.BUSS.y, draw: () => ritaBuss(ctx, E.BUSS.x, E.BUSS.y, t) }, { fy: E.KARTA.y, draw: () => ritaKarta(ctx, E.KARTA.x, E.KARTA.y) }, { fy: E.CYKLAR.y, draw: () => ritaCykelstall(ctx, E.CYKLAR.x, E.CYKLAR.y) });
+        for (const [px, py] of E.PLANTERINGAR) items.push({ fy: py, draw: () => ritaPlantering(ctx, px, py) });
+        items.push({ fy: E.FONTAN.y + 12, draw: () => ritaFontanStor(ctx, E.FONTAN.x, E.FONTAN.y, t) });
+        for (const [tx, ty, typ] of E.TOPIARY) items.push({ fy: ty, draw: () => ritaTopiary(ctx, tx, ty, typ) });
+        E.FLAGGOR.forEach((fx, i) => items.push({ fy: E.STAKET_Y - 6, draw: () => ritaFlagga(ctx, fx, E.STAKET_Y - 6, t, [0xe04848, 0x3a7bd5, 0xf0c030, 0x46a35a][i % 4], i) }));
+        for (const [lx, ly] of E.LYKTOR) items.push({ fy: ly, draw: () => KIT.lamp(ctx, lx, ly, 1) });
+        for (const [bx, by] of E.BANKAR) items.push({ fy: by, draw: () => KIT.bench(ctx, bx, by) });
+      }
       for (const s of STAND) if (syns(s.cx, 120)) items.push({ fy: s.y, draw: () => ritaStand(ctx, s, N) });
       for (const u of UTESERVERING) if (syns(u.x)) items.push({ fy: u.y, draw: () => KIT.cafe(ctx, u.x, u.y, u.f) });
       // 🎈 de som äter vid borden, köerna vid matstånden, jonglören, ballongförsäljaren och ens egen ballong
@@ -883,7 +923,7 @@ export function makePixelberg(A) {
       if (mb && (!aka || iKo())) items.push({ fy: walker.py + 0.3, draw: () => enBallong(ctx, walker.px + (walker.dir === 'left' ? -5 : 5), walker.py - 15, mb, t) });
       for (const s of STAND) if (syns(s.cx, 120)) items.push({ fy: s.y + 0.2, draw: () => knippe(ctx, s.mat ? s.x + s.w + 10 : s.x - 2, s.mat ? s.y - 15 : s.y - 6, t, s.cx & 7, 3, 16) });
       items.push({ fy: BANA.station.y, draw: () => ctx.drawImage(stationBild(N), BANA.station.x, BANA.station.y - 50) });
-      items.push({ fy: PORT.y, draw: () => ctx.drawImage(portBild(N), PORT.x - PORT.w / 2, PORT.y - PORT.h) });
+
       if (syns(SPOK.x + SPOK.w / 2, 200)) {
         const SL = spokL(), sv = spokVagn(SL);
         items.push({ fy: SPOK.y, draw: () => {
@@ -905,7 +945,7 @@ export function makePixelberg(A) {
         if (aka?.typ === 'radio') items.push({ fy: aka.bil.y, draw: () => ritaBil(ctx, aka.bil, false) });
         items.push({ fy: RADIO.y + RADIO.h + 1, draw: () => ritaRadioKant(ctx, 'fram') });
       }
-      items.push({ fy: HALLPLATS.y, draw: () => drawHallplats(ctx) });
+
       for (const b of BANKAR) if (syns(b.x)) items.push({ fy: b.y, draw: () => KIT.bench(ctx, b.x, b.y) });
       for (const l of LYKTOR) if (syns(l.x)) items.push({ fy: l.y, draw: () => KIT.lamp(ctx, l.x, l.y, 1) });
       for (const b of BUSKAR) if (syns(b.x)) items.push({ fy: b.y, draw: () => KIT.tree(ctx, 'lind', b.x, b.y, { vind: Math.round(Math.sin(t + b.x) * 0.5) }) });
@@ -929,7 +969,7 @@ export function makePixelberg(A) {
       ctx.restore();
       if (N || D) {
         ctx.fillStyle = N ? 'rgba(12,16,48,0.5)' : 'rgba(60,40,90,0.18)'; ctx.fillRect(0, 0, VW, VH);
-        ctx.save(); ctx.translate(-cx, -cy); for (const l of LYKTOR) if (l.x > cx - 40 && l.x < cx + VW + 40) KIT.lampGlow(ctx, l.x, l.y, N ? 1 : 0.5); ctx.restore();
+        ctx.save(); ctx.translate(-cx, -cy); for (const l of [...LYKTOR, ...ENTRE.LYKTOR.map(([x, y]) => ({ x, y }))]) if (l.x > cx - 40 && l.x < cx + VW + 40) { KIT.lampGlow(ctx, l.x, l.y, N ? 1 : 0.5); KIT.lampLit(ctx, l.x, l.y); } ctx.restore();
         // 🎪 stånden lyser genom mörkret: skylten och den övre delen av insidan ritas igen ovanpå hinnan (inte där folk
         // står framför disken), lamporna tänds och skenet läggs på
         ctx.save(); ctx.translate(-cx, -cy);
@@ -952,14 +992,16 @@ export function makePixelberg(A) {
           const sken = (x, y, r, c) => { const gr = ctx.createRadialGradient(x, y, 2, x, y, r); gr.addColorStop(0, c); gr.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = gr; ctx.fillRect(x - r, y - r, r * 2, r * 2); };
           sken(HJUL.x, HJUL.y, HJUL.r + 30, 'rgba(255,170,90,.28)'); sken(KARUSELL.x, KARUSELL.y - 60, 80, 'rgba(255,210,120,.3)');
 
-          sken(PORT.x, PORT.y - PORT.h + 10, 60, 'rgba(255,230,140,.25)');
+          sken(PORT.x, PORT.y - PORT.h + 10, 60, 'rgba(255,230,140,.25)'); sken(ENTRE.FONTAN.x, ENTRE.FONTAN.y - 30, 50, 'rgba(160,210,255,.2)');
+          for (const Fa of FASADER) { sken(Fa.x - 2, MAINSTREET_Y - 20, 16, 'rgba(255,220,140,.3)'); sken(Fa.x + Fa.w + 1, MAINSTREET_Y - 20, 16, 'rgba(255,220,140,.3)'); }
           sken(RADIO.x + RADIO.w / 2, RADIO.y - 50, 90, 'rgba(255,120,140,.22)');
           for (const [wx, wy] of [[58, 72], [142, 72], [100, 34], [20, 62], [180, 70]]) sken(SPOK.x + wx, SPOK.y - SPOK_H + wy, 26, 'rgba(180,255,120,.22)');
           for (const b of [...npcBilar, ...fjarr.values(), ...(aka?.typ === 'radio' ? [aka.bil] : [])]) sken(b.x, b.y - 30, 10, 'rgba(160,210,255,.35)');
-          for (const l of LYKTOR) sken(l.x, l.y - 30, 34, 'rgba(255,200,140,.18)');
+          for (const l of LYKTOR) sken(l.x + 10, l.y - 56, 30, 'rgba(255,200,140,.18)');
           ctx.restore();
         }
       }
+      if ((N || D) && cx + VW > TEMAN.DIMMA.x0) { ctx.save(); ctx.translate(-cx, -cy); ritaDimma(ctx, TEMAN.DIMMA, t, N ? 0.2 : 0.1); ctx.restore(); }
       ctx.save(); ctx.translate(-cx, -cy); talk.draw(ctx, { x0: cx, x1: cx + VW }); ctx.restore();
       // 👻 inne i spökhuset: korridoren över hela skärmen
       if (sitterISpok()) { const L = spokL(); if (L.inne) ritaSpokInne(ctx, VW, VH, L.i, spokAkare(L), t); }
@@ -1006,6 +1048,7 @@ export function makePixelberg(A) {
       teleport: (x, y) => { walker.px = x; walker.py = y; walker.stop(); walker.snapFree(); Object.assign(cam, camTarget()); },
       walkTo: (x, y) => { walker.walkTo(x, y); return walker.path.length; },
       act: (id) => { const s = spots().find((q) => q.id === id); if (!s) return false; s.act(); return true; },
+      spots: () => spots().map((q) => q.id),
       aka: () => (aka ? { typ: aka.typ, t: aka.t, i: aka.i, toppen: !!aka.toppen } : null),
       snabba: (sek) => { t += sek; if (aka) aka.t += sek; },   // (testerna: spola fram åkturen)
       band: () => harBand(),

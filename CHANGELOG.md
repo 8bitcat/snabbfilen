@@ -10,6 +10,15 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.135.0] – 2026-10-14 – Pixelberg – temaparken
+- 🎟️ Pixelberg har fått en riktig temaparksentré! Bergbussen stannar på bussgatan längst ner i vänstra hörnet – med busskur, hållplatsskylt, biljettluckan, parkkartan, cykelställ och planteringar. Du går in genom den stora PORTEN i staketet (klocka, banderoller, lyktor och glödlampor som jagar varandra) och kommer ut på entréplatsen med Pixel-Nalle-fontänen, blomsterrabatter, topiaryer, flaggstänger och bänkar. Uppe på berget står de stora PIXELBERG-bokstäverna.
+- 🏪 Main Street innanför entrén: tre butiksfasader i viktoriansk tivolistil – SOUVENIRER, FOTO och KARAMELLER – med skyltfönster, markiser, balkonger och hängskyltar. Klicka så berättar expediten något.
+- 🏰 Sagolandet: ett rosa slott med blå spiror står på berget bakom pariserhjulet, en önskebrunn vid karusellen (önskningar stiger ur den) och flugsvampar här och var.
+- 🤠 Vilda västern vid radiobilarna: en saloon och ett vattentorn uppe på berget, kaktusar och en hövagn.
+- 👻 Spökgränd: en kyrkogård med gravstenar, en krypta som lyser grönt på kvällen, döda träd med kråkor – och dimma som driver in när det skymmer.
+- 🚝 Pixelberg Express: en monorail går på en balk högt över hela parken, från entrén till Spökgränd och tillbaka – ett lok och två vagnar med passagerare i fönstren.
+- 🏮 Marknadsgatan börjar nu innanför entrén och parken har växt österut.
+
 ## [0.134.0] – 2026-10-14 – Tassbacken inifrån
 - 🐾 Tassbacken inifrån i full prakt! Kattcafé Kurr är fullt av saker: tavelvägg, hyllor med koppar och burkar, kattklocka, ljusslinga, taklampor, kattgång med hängmatta och tunnel, bokhylla, kakelugn med eld, akvarium (Måns stirrar på fiskarna), katt-tält, tygtunnel, kattungehage med Knut och Kotte, gäster vid borden och Elin som går runt med brickan. Sjutton katter bor här nu.
 - 🏠 Tassarnas hem: koppel på krokar, foderhyllor, affischer, väggklocka, vattenautomat, bänk med en sovande hund, höbal, palm – och Olle som går runt med hinken. Djurkliniken: affischer, bentavla, anslagstavla, filt med en sovande kattunge, sköterskan Nina med brickan och en kund som väntar med sin tax. Klipp & Klo: ljusslinga, sminkspegel med lampor, affischer, matta – och ett barn med sin kanin. Utställningshallen: strålkastare, rosettvägg, resultattavla, vinnarnas foton, en fotograf vid ringen och konfetti på golvet.

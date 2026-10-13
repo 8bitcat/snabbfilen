@@ -46,6 +46,15 @@ await D(() => document.querySelector('#modal [data-berg]').click());
 await p.waitForFunction(() => SF.sceneName === 'pixelberg', null, { timeout: 8000 }).catch(() => {});
 ok(await D(() => SF.sceneName === 'pixelberg'), 'bergbussen → Pixelberg');
 ok((await D(() => SF.game.money)) === m0 - 10, 'bussbiljetten 10 kr');
+// ---- 🎟️ entrén (v0.135): porten, fontänen, parkkartan och Main Street-fasaderna finns; man står utanför staketet ----
+const sp = await D(() => SF.scene._debug.spots());
+ok(['port', 'fontan', 'karta', 'bergbuss', 'fasad-souvenir', 'fasad-foto', 'fasad-karamell'].every((id) => sp.includes(id)), 'entrén: porten, fontänen, parkkartan, bergbussen och Main Street-fasaderna');
+const p0 = await D(() => SF.scene._debug.pos());
+ok(p0.y > 380 && p0.x < 330, `man kliver av bussen utanför staketet (${Math.round(p0.x)}, ${Math.round(p0.y)})`);
+await D(() => SF.scene._debug.act('port')); await sleep(2500);
+const p1 = await D(() => SF.scene._debug.pos());
+ok(p1.y < 380, `genom porten in på entréplatsen (y ${Math.round(p1.y)})`);
+if (SHOTS) await p.screenshot({ path: 'tools/out/pixelberg-entren.png' });
 await sleep(1500);
 if (SHOTS) await p.screenshot({ path: 'tools/out/pixelberg-entre.png' });
 

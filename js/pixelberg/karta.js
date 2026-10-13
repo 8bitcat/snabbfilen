@@ -11,17 +11,23 @@ import { $t } from '../core/i18n.js';
 import { MATSTAND } from './stand-mat.js';     // 🍦🍭🍿🍔 matstånden i full prakt (v0.131)
 import { SPELSTAND } from './stand-spel.js';   // 🎰🥫🎯 spelstånden
 import { STALL, MARKNAD_Y, DEKO } from './marknad.js';   // 🏮 marknadsgatan – tältstånden mitt på torget (v0.132) + dekorationerna
+import { ENTRE, malaBergskylt, malaSlott } from './entre.js';   // 🎟️ entrén nere i vänstra hörnet (v0.135) + slottet på berget
+import { fasadHinder } from './mainstreet.js';   // 🏪 Main Street-fasaderna
+import { temaHinder, malaVastern } from './teman.js';   // 🎭 temaländerna (saloonen och vattentornet på berget)
+import { malaMonorail } from './monorail.js';   // 🚝 Pixelberg Express – balken på berget
 
-export const TW = 2440, TH = 480;
+export const TW = 2560, TH = 480;
 export const P = {
   HIMMEL: 200,             // ovanför: himmel och utsikten (genomskinligt i marken) – hjulet och banan reser sig mot himlen
   BAK: [200, 228],         // bakom torget: bergets kant med gräs och häcken (inte gåbart)
   TORG: [228, 470],        // tivolitorget
   TOP: 236, BOTTOM: 468,
 };
-export const HALLPLATS = { x: 48, y: 340 };
-export const PORT = { x: 160, y: 390, w: 104, h: 112 };              // entréporten (framifrån): två pelare och skylten över vägen
-export const BILJETT = { x: 244, y: 262, w: 62 };                      // biljettluckan (fasaden står på y)
+// 🎟️ entrén (v0.135, js/pixelberg/entre.js): bussgatan längst ner till vänster, staketet längs y 380 med porten,
+// entréplatsen med fontänen innanför. Hållplatsen och biljettluckan står utanför staketet på trottoaren.
+export const HALLPLATS = { x: ENTRE.HALLPLATS.x, y: ENTRE.HALLPLATS.y };
+export const PORT = { x: ENTRE.PORT.cx, y: ENTRE.STAKET_Y, w: ENTRE.PORT.w + 60, h: 112 };
+export const BILJETT = { x: ENTRE.BILJETT.x - 31, y: ENTRE.BILJETT.y, w: 62 };   // biljettluckan (fasaden står på y)
 export const KARUSELL = { x: 450, y: 344, rx: 66, ry: 22 };            // karusellens mittpunkt (golvet) – en ellips
 export const HJUL = { x: 830, y: 232, r: 74, fot: 330 };               // pariserhjulet: navet, radien, fötterna
 // stånden (v0.131 "Pixelberg i full prakt"): cx = mitten, y = fotlinjen – bilderna och det som rör sig: js/pixelberg/kiosk.js
@@ -45,8 +51,8 @@ export const RADIO = { x: 1660, y: 300, w: 250, h: 118 };
 export const SPOK = { x: 2180, y: 318, w: 200 };
 export const SPOK_SPAR = { x0: SPOK.x + 48, x1: SPOK.x + 152, y0: SPOK.y - 4, y1: SPOK.y + 22, cx: SPOK.x + 100 };
 export const BANKAR = [{ x: 620, y: 458 }, { x: 980, y: 458 }, { x: 1300, y: 458 }, { x: 1990, y: 458 }];
-export const LYKTOR = [110, 330, 516, 768, 952, 1470, 1630, 1940, 2150, 2420].map((x) => ({ x, y: P.TORG[0] + 10 }));
-export const BUSKAR = [[300, 250], [560, 248], [1200, 250], [1520, 440], [260, 462], [700, 466], [1612, 300], [2400, 252], [2160, 462]].map(([x, y]) => ({ x, y }));
+export const LYKTOR = [390, 516, 768, 952, 1470, 1630, 1940, 2150, 2420].map((x) => ({ x, y: P.TORG[0] + 10 }));
+export const BUSKAR = [[360, 250], [560, 248], [1200, 250], [1520, 440], [380, 462], [700, 466], [1612, 300], [2400, 252], [2160, 462]].map(([x, y]) => ({ x, y }));
 
 // berg-och-dalbanans spår som en sluten kurva (x, y) i världen – tåget följer den (scenen)
 export const SPAR = (() => {
@@ -59,8 +65,20 @@ export const SPAR = (() => {
 export function hinder() {
   const o = [];
   o.push([0, 0, TW, P.TOP - 2]);                                                           // bakom torget
-  o.push([PORT.x - 52, PORT.y - 4, PORT.x - 38, PORT.y + 1], [PORT.x + 38, PORT.y - 4, PORT.x + 52, PORT.y + 1]);   // portens pelare
-  o.push([BILJETT.x, BILJETT.y - 20, BILJETT.x + BILJETT.w, BILJETT.y - 1]);
+  // 🎟️ entrén: staketet (med öppningen i porten), den lodräta delen ner till bussgatan, bussgatan själv och sakerna utanför
+  const E = ENTRE, pw = E.PORT.w >> 1;
+  o.push([0, E.STAKET_Y - 6, E.PORT.cx - pw, E.STAKET_Y + 1], [E.PORT.cx + pw, E.STAKET_Y - 6, E.STAKET_X1 + 4, E.STAKET_Y + 1]);
+  o.push([E.PORT.cx - pw - 14, E.STAKET_Y - 8, E.PORT.cx - pw + 2, E.STAKET_Y + 1], [E.PORT.cx + pw - 2, E.STAKET_Y - 8, E.PORT.cx + pw + 14, E.STAKET_Y + 1]);   // pelarna
+  o.push([E.STAKET_X1 - 2, E.STAKET_Y, E.STAKET_X1 + 4, TH]);
+  o.push(...fasadHinder(), ...temaHinder());
+  o.push([0, E.GATA[0], E.STAKET_X1, TH]);                                               // bussgatan (man står på trottoaren)
+  o.push([E.KUR.x - 33, E.KUR.y - 6, E.KUR.x + 34, E.KUR.y + 2], [E.KARTA.x - 20, E.KARTA.y - 8, E.KARTA.x + 20, E.KARTA.y + 1], [E.BILJETT.x - 31, E.BILJETT.y - 20, E.BILJETT.x + 31, E.BILJETT.y - 1]);
+  for (const [px, py] of E.PLANTERINGAR) o.push([px - 15, py - 6, px + 15, py + 1]);
+  o.push([E.FONTAN.x - 40, E.FONTAN.y - 12, E.FONTAN.x + 40, E.FONTAN.y + 13]);
+  for (const [tx, ty] of E.TOPIARY) o.push([tx - 9, ty - 4, tx + 9, ty + 1]);
+  for (const [lx, ly] of E.LYKTOR) o.push([lx - 2, ly - 2, lx + 3, ly + 1]);
+  for (const [bx, by] of E.BANKAR) o.push([bx - 15, by - 4, bx + 16, by + 1]);
+  for (const fx of E.FLAGGOR) o.push([fx - 1, E.STAKET_Y - 10, fx + 3, E.STAKET_Y - 6]);
   for (let y = KARUSELL.y - KARUSELL.ry; y < KARUSELL.y + KARUSELL.ry; y += 3) {             // karusellen (ellipsen)
     const w = KARUSELL.rx * Math.sqrt(Math.max(0, 1 - ((y + 1.5 - KARUSELL.y) / KARUSELL.ry) ** 2));
     if (w > 2) o.push([KARUSELL.x - w, y, KARUSELL.x + w, y + 3]);
@@ -147,20 +165,32 @@ export function paintGround() {
     return mix(0xb05a40, hash(b, r, 57) > 0.5 ? 0xc4704e : 0x9a4a36, hash(b, r, 58) * 0.6 + (bayer(x, y) - 0.5) * 0.1);
   };
   const gata = (x0, y0, x1, y1) => { for (let y = y0; y < y1; y++) for (let x = Math.max(0, x0); x < Math.min(TW, x1); x++) X.px(x, y, y === y0 || y === y1 - 1 || x === x0 || x === x1 - 1 ? 0x6a5a50 : tegel(x, y)); };
-  gata(150, MARKNAD_Y + 6, TW, TH - 6);                   // promenaden framför
-  gata(150, MARKNAD_Y - 46, TW, MARKNAD_Y - 14);          // gången bakom tältstånden
+  gata(ENTRE.STAKET_X1 + 6, MARKNAD_Y + 6, TW, TH - 6);                   // promenaden framför (börjar innanför entréstaketet)
+  gata(ENTRE.STAKET_X1 + 6, MARKNAD_Y - 46, TW, MARKNAD_Y - 14);          // gången bakom tältstånden
   const sorterade = [...STALL].sort((a, b) => a.x - b.x);
   for (let i = 0; i < sorterade.length - 1; i++) { const a = sorterade[i], b = sorterade[i + 1], x0 = a.x + a.w + 3, x1 = b.x - 3; if (x1 - x0 >= 14) gata(x0, MARKNAD_Y - 46, x1, MARKNAD_Y + 7); }
-  for (const [cx, cy, r] of [[600, 300, 18], [420, 446, 22], [884, 446, 24], [1316, 446, 22], [1770, 446, 24], [2170, 446, 20]]) {
+  for (const [cx, cy, r] of [[600, 300, 18], [540, 446, 22], [1004, 446, 24], [1436, 446, 22], [1890, 446, 24], [2290, 446, 20]]) {
     for (let y = -r; y <= r; y++) for (let x = -r; x <= r; x++) {
       const d = Math.hypot(x, y * 1.6); if (d > r) continue;
       const ring = Math.floor(d / 6), c = d > r - 2 ? 0x8a8478 : MOS[(ring + (cx >> 4)) % MOS.length];
       X.px(cx + x, cy + Math.round(y / 1.6 * 1.6) / 1.6 | 0, mix(c, 0xffffff, 0.12));
     }
   }
-  // vägen in från bergbussen (asfalt i väster) och skuggorna under portens båge
-  for (let y = 300; y < 380; y++) for (let x = 0; x < 140; x++) X.px(x, y, (x + y) % 23 === 0 ? 0x6a6a72 : mix(0x5a5a64, 0x64646e, hash(x >> 1, y >> 1, 56)));
-  for (let x = 0; x < 140; x += 14) X.rect(x, 339, 7, 1, 0xf0e8d0);
+  // 🎟️ entrén: bussgatan längst ner (asfalt med kantsten och en gul linje), trottoaren av plattor utanför staketet,
+  // entréplatsen innanför med rabatten runt fontänen – och PIXELBERG-bokstäverna + slottet uppe på berget
+  const E = ENTRE;
+  for (let y = E.GATA[0]; y < TH; y++) for (let x = 0; x < E.STAKET_X1 + 2; x++) {
+    let c = mix(0x44444e, 0x56565e, hash(x >> 1, y >> 1, 56)); if (hash(x >> 3, y >> 2, 57) > 0.9) c = mul(c, 0.9);
+    if (y === E.GATA[0]) c = 0xc8c0b0; else if (y === E.GATA[0] + 1) c = 0x8a8478;
+    if (y === E.GATA[0] + 18 && (x % 16) < 8) c = 0xf0d060;
+    X.px(x, y, c);
+  }
+  for (let y = E.STAKET_Y + 2; y < E.GATA[0]; y++) for (let x = 0; x < E.STAKET_X1; x++) { const rx = x % 10, ry = (y + (Math.floor(x / 10) & 1) * 5) % 10; X.px(x, y, rx === 0 || ry === 0 ? 0xa8a090 : mix(0xd8d0c0, 0xc8c0b0, hash(Math.floor(x / 10), Math.floor(y / 10), 58))); }
+  for (let x = 0; x < E.STAKET_X1; x++) X.px(x, E.STAKET_Y + 1, 0x9a948a);
+  const rab = (cx, cy, rx, ry) => { for (let y = -ry - 3; y <= ry + 3; y++) for (let x = -rx - 3; x <= rx + 3; x++) { const d = Math.hypot(x / (rx + 3), y / (ry + 3)); if (d > 1 || Math.hypot(x / rx, y / ry) < 0.72) continue; const bl = hash(x, y, 59); X.px(cx + x, cy + y, d > 0.9 ? 0x8a8478 : bl > 0.72 ? [0xe0383c, 0xf0c030, 0xf06aa0, 0xffffff][(hash(x, y, 60) * 4) | 0] : bl > 0.4 ? 0x4a8a3a : 0x3a7a2a); } };
+  rab(E.FONTAN.x, E.FONTAN.y, 46, 20);
+  for (const [px, py] of [[52, 300], [278, 300]]) rab(px, py, 12, 6);
+  malaBergskylt(X, 166, 196); malaSlott(X, 680, 204); malaVastern(X, 1760, 206); malaMonorail(X, TW);
   // radiobilarnas golv: stålplattor med nitar och en blank strimma – bilarna lämnar inga spår
   for (let y = RADIO.y; y < RADIO.y + RADIO.h; y++) for (let x = RADIO.x; x < RADIO.x + RADIO.w; x++) {
     const lx = x - RADIO.x, ly = y - RADIO.y, px = lx % 25, py = ly % 17;

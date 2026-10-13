@@ -225,9 +225,9 @@ const TYP = { saft: SAFT, smagodis: SMAGODIS, vafflor: VAFFLOR, churros: CHURROS
 // var tältstånden står (mitten, fotlinjen y = MARKNAD_Y) – grupper med tvärgränder emellan
 export const MARKNAD_Y = 414;
 export const STALL = [
-  ['saft', 262], ['smagodis', 330], ['vafflor', 440], ['churros', 508], ['ballong', 610], ['korv', 678], ['fiskdam', 748],
-  ['saft', 992], ['smagodis', 1060], ['vafflor', 1150], ['ballong', 1218], ['korv', 1400], ['fiskdam', 1470], ['churros', 1540],
-  ['saft', 1998], ['ballong', 2072], ['vafflor', 2250], ['korv', 2320],
+  ['saft', 382], ['smagodis', 450], ['vafflor', 560], ['churros', 628], ['ballong', 730], ['korv', 798], ['fiskdam', 868],
+  ['saft', 1112], ['smagodis', 1180], ['vafflor', 1270], ['ballong', 1338], ['korv', 1520], ['fiskdam', 1590], ['churros', 1660],
+  ['saft', 2118], ['ballong', 2192], ['vafflor', 2370], ['korv', 2440],
 ].map(([typ, cx], i) => { const def = TYP[typ]; return { id: `${typ}-${i}`, typ, def, cx, y: MARKNAD_Y, w: def.W, x: cx - (def.W >> 1) }; });
 // gränderna: promenaden framför, gången bakom och tvärgränderna mellan grupperna (stenläggningen i karta.js)
 // 🎉 dekorationerna i ministaden (js/pixelberg/deko.js): portalerna över gränderna, tekopparna, fontänen, såpbubblorna,
@@ -235,12 +235,12 @@ export const STALL = [
 const PORT_Y = MARKNAD_Y + 6;
 export const DEKO = {
   portaler: [
-    { x0: 362, x1: 408, namn: $t('GODISGATAN'), f: 0xd84a8a }, { x0: 540, x1: 578, namn: $t('BALLONGGATAN'), f: 0x3a7bd5 },
-    { x0: 784, x1: 958, namn: $t('TEKOPPSTORGET'), f: 0xe04848 }, { x0: 1252, x1: 1366, namn: $t('FONTÄNTORGET'), f: 0x228c96 },
-    { x0: 2106, x1: 2216, namn: $t('SPÖKGRÄND'), f: 0x8246c0 },
+    { x0: 482, x1: 528, namn: $t('GODISGATAN'), f: 0xd84a8a }, { x0: 660, x1: 698, namn: $t('BALLONGGATAN'), f: 0x3a7bd5 },
+    { x0: 904, x1: 1078, namn: $t('TEKOPPSTORGET'), f: 0xe04848 }, { x0: 1372, x1: 1486, namn: $t('FONTÄNTORGET'), f: 0x228c96 },
+    { x0: 2226, x1: 2336, namn: $t('SPÖKGRÄND'), f: 0x8246c0 },
   ].map((p) => ({ ...p, y: PORT_Y })),
   // (tekopparna och fontänen står i torgen framför gången bakom – besökarna där går bakom dem, inte igenom)
-  tekopp: { x: 871, y: 404 }, fontan: { x: 1309, y: 404 }, bubbel: { x: 1612, y: 406 }, konfetti: { x: 96, y: 412 },
-  flaggor: [140, 226, 330, 640, 760, 940, 1210, 1470, 1610, 1930, 2160, 2430].map((x, i) => ({ x, y: 232, f: [0xe04848, 0x3a7bd5, 0xf0c030, 0x46a35a, 0xd060a0, 0xf08a2a][i % 6] })),
+  tekopp: { x: 991, y: 404 }, fontan: { x: 1429, y: 404 }, bubbel: { x: 1732, y: 406 }, konfetti: { x: 352, y: 412 },
+  flaggor: [450, 760, 880, 1060, 1330, 1590, 1730, 2050, 2280, 2550].map((x, i) => ({ x, y: 232, f: [0xe04848, 0x3a7bd5, 0xf0c030, 0x46a35a, 0xd060a0, 0xf08a2a][i % 6] })),
 };
 DEKO.lyktor = DEKO.portaler.flatMap((p) => [{ x: p.x0 - 8, y: PORT_Y + 8 }, { x: p.x1 + 6, y: PORT_Y + 8 }]);
