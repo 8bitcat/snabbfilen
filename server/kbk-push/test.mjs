@@ -126,6 +126,26 @@ try {
   const kp = await post('/van/present', { ...MOA, till: MIRA.vid, gavor: [{ slag: 'kort', id: 'svart' }, { slag: 'kort', id: '<script>' }] });
   const mh = await post('/van/hamta', { ...MIRA });
   ok(kp.ok && mh.presenter?.[0]?.gavor?.length === 1 && mh.presenter[0].gavor[0].slag === 'kort' && mh.presenter[0].gavor[0].id === 'svart', `kort: Moa skickar ett pixelkort till Mira (trasiga kort-id:n räknas inte) (${JSON.stringify(mh.presenter?.[0]?.gavor)})`);
+  // ---------- 💬 SMS mellan vänner ----------
+  const f3 = mottaget.length;
+  const sms = await post('/van/sms', { ...MIRA, till: MOA.vid, text: 'Hej Moa! Kolla www.exempel.se eller ring 070-123 45 67 🎮', vanta: true });
+  ok(sms.ok && sms.text === 'Hej Moa! Kolla *** eller ring *** 🎮', `sms: länkar och telefonnummer stryks ("${sms.text}")`);
+  const smsN = mottaget.slice(f3).find((m) => m.token === IPAD);
+  ok(smsN?.body?.aps?.alert?.body === '💬 Mira: Hej Moa! Kolla *** eller ring *** 🎮' && smsN.body.aps.alert.title === 'Vänner', `sms: Moas telefon får notisen ("${smsN?.body?.aps?.alert?.body}")`);
+  ok(smsN?.headers?.['apns-collapse-id'] === `sms-${MIRA.vid}` && smsN.body.aps['thread-id'] === `sms-${MIRA.vid}`, 'sms: notiserna från samma vän ersätter varandra (apns-collapse-id)');
+  ok((await post('/van/sms', { ...MIRA, till: LEO.vid, text: 'hej' })).status === 403, 'sms: bara till vänner åt båda hållen (Leo → 403)');
+  ok((await post('/van/sms', { ...MIRA, till: MOA.vid, text: '   ' })).status === 400, 'sms: tomt meddelande → 400');
+  ok((await post('/van/sms', { ...MIRA, hemlig: H('0'), till: MOA.vid, text: 'hej' })).status === 403, 'sms: fel nyckel → 403');
+  const ms = await post('/van/sms/hamta', { ...MOA });
+  ok(ms.sms?.length === 1 && ms.sms[0].fran === 'Mira' && ms.sms[0].fvid === MIRA.vid, `sms: Moas brevlåda har meddelandet från Mira (${ms.sms?.length})`);
+  // gränsen: 40 om dagen till samma vän (räknaren i en nyckel per avsändare och dag)
+  let sist = null;
+  for (let i = 0; i < 40; i++) sist = await post('/van/sms', { ...MIRA, till: MOA.vid, text: `nr ${i}` });
+  ok(sist?.status === 429, `sms: det 41:a meddelandet samma dag → 429 (${sist?.status})`);
+  const ms2 = await post('/van/sms/hamta', { ...MOA });
+  ok(ms2.sms?.length === 40 && ms2.sms.at(-1).text === 'nr 38', `sms: brevlådan sparar de 40 senaste (${ms2.sms?.length}, sist "${ms2.sms?.at(-1)?.text}")`);
+  const mk = await post('/van/sms/kvittera', { ...MOA, ids: ms2.sms.map((x) => x.id) });
+  ok(mk.ok && mk.kvar === 0 && (await post('/van/sms/hamta', { ...MOA })).sms.length === 0, 'sms: /van/sms/kvittera tömmer brevlådan');
 } catch (e) {
   ok(false, String(e.message || e));
 } finally {

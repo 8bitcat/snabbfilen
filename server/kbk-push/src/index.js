@@ -37,6 +37,17 @@
 //   GET  /staty   {forra: {namn, look, n, vecka} | null, nu: {namn, n} | null}  förra veckans vinnare + veckans ledare
 // KV: vs:<vecka>:<vid> = utseendet, metadata {n, namn, t} (t = när räkningen senast ökade: lika många → den som kom
 // först dit vinner); vstaty:<vecka> = förra veckans uträknade vinnare (sparas), vstatynu:<vecka> = ledaren (10 min).
+//
+// 💬 SMS MELLAN VÄNNER (Carl 2026-10-13: "skicka sms till sina kompisar via mobiltelefonen i spelet"): bara mellan vänner
+// åt BÅDA hållen, högst 120 tecken, utan länkar, e-postadresser och telefonnummer (servern stryker dem – spelet
+// filtrerar dessutom fula ord innan det skickas och när det visas). Högst 40 meddelanden om dagen till samma vän och
+// 150 totalt. Meddelandet ligger i vännens brevlåda tills det hämtas (högst 50, raderas efter 14 dagar) + pushnotis.
+//   POST /van/sms         {vid, hemlig, namn, till, text}   → { ok, id }
+//   POST /van/sms/hamta   {vid, hemlig}                     → { ok, sms: [{ id, fran, fvid, text, t }] }
+//   POST /van/sms/kvittera {vid, hemlig, ids}
+// KV: vm:<vid> = brevlådan (en nyckel), vmt:<från>:<dag> = dagens räknare { n, p: { [till]: n } } – två skrivningar per
+// meddelande (brevlådan + räknaren) och en när mottagaren kvitterar, så att gratiskvoten räcker länge.
+// Notiserna från samma vän ersätter varandra på telefonen (apns-collapse-id), så att en pratig vän inte fyller den.
 // Hemligheten APNS_KEY (Apples .p8) ligger bara i Cloudflare. Vanliga variabler: APNS_KEY_ID, TEAM_ID, TOPIC,
 // APNS_HOST (bara för test – annars Apples riktiga adress).
 import { KUNGS_PLAYERS } from '../../../js/data/kbk.js';
@@ -91,6 +102,14 @@ function renGava(g) {
   return SAK_RE.test(String(g.k || '')) ? { slag: 'djur', k: String(g.k) } : null;
 }
 const idag = () => new Date().toISOString().slice(0, 10);
+// 💬 ett SMS: högst 120 tecken, inga styrtecken, inga länkar/e-post/telefonnummer (barn ska inte lämna ut kontaktuppgifter)
+export function renSms(t) {
+  let s = String(t ?? '').normalize('NFC').replace(/[\u0000-\u001f\u007f<>]/g, ' ').replace(/\s+/g, ' ').trim();
+  s = s.replace(/\b(?:https?:\/\/|www\.)\S+/gi, '***').replace(/\b\S+\.(?:com|se|net|org|io|nu|app|gg|tv|me|co)\b\S*/gi, '***');
+  s = s.replace(/\S+@\S+/g, '***').replace(/\+?\d(?:[\s-]?\d){5,}/g, '***');   // (minst sex siffror – mellanslaget efter numret står kvar)
+  return [...s].slice(0, 120).join('');
+}
+const STEXT = { sv: (n, t) => `💬 ${n}: ${t}` };
 // ISO-veckan (UTC) som "2026-W42"; forra = veckan innan
 export function vecka(t = Date.now(), forra = false) {
   const d = new Date(t - (forra ? 7 * 864e5 : 0)), dag = (d.getUTCDay() + 6) % 7;
@@ -170,16 +189,16 @@ async function apnsJwt(env) {
   jwt = `${huvud}.${kropp}.${b64u(sig)}`; jwtT = now;
   return jwt;
 }
-async function skicka(env, token, text, { title = 'KBK', glom = `tok:${token}` } = {}) {
+async function skicka(env, token, text, { title = 'KBK', glom = `tok:${token}`, grupp = '' } = {}) {
   const host = env.APNS_HOST || 'https://api.push.apple.com';
   const r = await fetch(`${host}/3/device/${token}`, {
     method: 'POST',
     headers: {
       authorization: `bearer ${await apnsJwt(env)}`, 'apns-topic': env.TOPIC || 'io.eightbitcat.pixelcity',
       'apns-push-type': 'alert', 'apns-priority': '10', 'apns-expiration': String(Math.floor(Date.now() / 1000) + 3600),
-      'content-type': 'application/json',
+      'content-type': 'application/json', ...(grupp ? { 'apns-collapse-id': grupp } : {}),
     },
-    body: JSON.stringify({ aps: { alert: { title, body: text }, sound: 'default' } }),
+    body: JSON.stringify({ aps: { alert: { title, body: text }, sound: 'default', ...(grupp ? { 'thread-id': grupp } : {}) } }),
   });
   if (r.status !== 200) {
     const fel = await r.json().catch(() => ({}));
@@ -280,6 +299,36 @@ export default {
         if (d.vanta) { const res = await jobb; return svar({ ok: true, id, skickade: tel.length, svar: res }); }
         ctx.waitUntil(jobb);
         return svar({ ok: true, id, skickade: tel.length });
+      }
+      if (url.pathname === '/van/sms') {
+        const till = String(d.till || '');
+        if (!VID_RE.test(till) || till === vid) return svar({ ok: false, fel: 'okänd vän' }, 400);
+        const mina = (await env.KBK.get(`vl:${vid}`, 'json')) || [], deras = (await env.KBK.get(`vl:${till}`, 'json')) || [];
+        if (!mina.includes(till) || !deras.includes(vid)) return svar({ ok: false, fel: 'inte vänner' }, 403);
+        const text = renSms(d.text);
+        if (!text) return svar({ ok: false, fel: 'tomt' }, 400);
+        const tk = `vmt:${vid}:${idag()}`, rk = await env.KBK.get(tk, 'json');
+        const rakn = rk && typeof rk === 'object' && rk.p && typeof rk.p === 'object' ? rk : { n: 0, p: {} };
+        if ((rakn.p[till] | 0) >= 40 || (rakn.n | 0) >= 150) return svar({ ok: false, fel: 'för många meddelanden i dag' }, 429);
+        const bk = `vm:${till}`, lada = (await env.KBK.get(bk, 'json')) || [];
+        const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+        lada.push({ id, fran: jag.namn, fvid: vid, text, t: Date.now() });
+        await env.KBK.put(bk, JSON.stringify(lada.slice(-50)), { expirationTtl: 60 * 60 * 24 * 14 });
+        rakn.n = (rakn.n | 0) + 1; rakn.p[till] = (rakn.p[till] | 0) + 1;
+        await env.KBK.put(tk, JSON.stringify(rakn), { expirationTtl: 60 * 60 * 48 });
+        const tel = (await lista(env, `vp:${till}:`)).map((k) => ({ token: k.name.split(':')[2], lang: k.metadata?.lang, glom: k.name }));
+        const kort = [...text].length > 80 ? [...text].slice(0, 79).join('') + '…' : text;
+        const jobb = Promise.all(tel.map((t) => skicka(env, t.token, (STEXT[t.lang] || STEXT.sv)(jag.namn, kort), { title: (VTEXT[t.lang] || VTEXT.sv).t, glom: t.glom, grupp: `sms-${vid}` }).catch((e) => ({ status: 0, reason: String(e) }))));
+        if (d.vanta) { const res = await jobb; return svar({ ok: true, id, text, skickade: tel.length, svar: res }); }
+        ctx.waitUntil(jobb);
+        return svar({ ok: true, id, text, skickade: tel.length });
+      }
+      if (url.pathname === '/van/sms/hamta') return svar({ ok: true, sms: (await env.KBK.get(`vm:${vid}`, 'json')) || [] });
+      if (url.pathname === '/van/sms/kvittera') {
+        const ids = new Set((Array.isArray(d.ids) ? d.ids : []).map(String));
+        const bk = `vm:${vid}`, lada = (await env.KBK.get(bk, 'json')) || [], kvar = lada.filter((x) => !ids.has(x.id));
+        if (kvar.length !== lada.length) { if (kvar.length) await env.KBK.put(bk, JSON.stringify(kvar), { expirationTtl: 60 * 60 * 24 * 14 }); else await env.KBK.delete(bk); }
+        return svar({ ok: true, kvar: kvar.length });
       }
       if (url.pathname === '/van/hamta') return svar({ ok: true, presenter: (await env.KBK.get(`vb:${vid}`, 'json')) || [] });
       if (url.pathname === '/van/kvittera') {

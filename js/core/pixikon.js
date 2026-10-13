@@ -478,6 +478,25 @@ export const KARTOR = {
     '.......kkkkkkkk.',
     '................',
   ],
+  // 💬 SMS (js/core/smsapp.js) – en grön pratbubbla med tre prickar och svansen nere till höger, som ett skickat SMS
+  sms: [
+    '................',
+    '................',
+    '...kkkkkkkkkk...',
+    '..knnlnnnnnnnk..',
+    '.knlnnnnnnnnnNk.',
+    '.knnnnnnnnnnnNk.',
+    '.knWWnnWWnnWWNk.',
+    '.knWWnnWWnnWWNk.',
+    '.knnnnnnnnnnnNk.',
+    '.knnnnnnnnnnNNk.',
+    '..kNNNNNNNNNNNk.',
+    '...kkkkkkkkkNNk.',
+    '............kNk.',
+    '.............kk.',
+    '................',
+    '................',
+  ],
   // 💛 Vänner (js/core/vannerapp.js) – ett stort gult hjärta med glans, som 💛 i hälsningarna
   vanner: [
     '................',

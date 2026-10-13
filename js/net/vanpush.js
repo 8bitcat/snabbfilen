@@ -5,6 +5,8 @@
 //   • i appen: har figuren vänner och har man sagt ja till notiser registreras telefonens pushkod för figuren
 //     (/van/registrera). Telefonen frågar om lov när man får sin första vän, eller via 🔔 i Vänner-appen.
 //   • ändras listan (ny vän, borttagen vän) går den nya listan till servern direkt.
+//   • 💬 SMS (js/core/smsapp.js): skickas via /van/sms och hämtas var 30:e sekund – och direkt när telefonen får en
+//     notis medan spelet är öppet, eller när man kommer tillbaka till spelet.
 // Samma server och pushmodul som KBK (js/net/kbkpush.js). Testrobotarna pratar aldrig med den riktiga servern
 // (?kbkpush=<adress> pekar dem mot en låtsasserver).
 import { vanEgen, vanLista, vanOnAndrad } from './vanner.js';
@@ -19,7 +21,7 @@ const lsGet = (k) => { try { const v = JSON.parse(localStorage.getItem(k) || '{}
 const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* ok */ } };
 const auth = (A) => { const e = vanEgen(A?.avatar); return e ? { vid: e.vid, hemlig: e.hemlig, namn: String(A.avatar.name || '?').slice(0, 16) } : null; };
 
-let A0 = null, lyssnar = false;
+let A0 = null, lyssnar = false;   // (smsKoll/smsHamtar: längre ner)
 // vänlistan till servern (bara när den har ändrats sedan sist)
 export async function vanPushSynka(A) {
   const a = auth(A);
@@ -41,6 +43,8 @@ export async function vanPushRegistrera(A, { fraga = false } = {}) {
     if (perm.receive !== 'granted') return false;
     if (!lyssnar) {
       lyssnar = true;
+      // en notis medan spelet är öppet (ett SMS eller en present) → hämta direkt
+      await P.addListener('pushNotificationReceived', () => { if (A0) { vanSmsHamta(A0); vanPresentHamta(A0); } });
       await P.addListener('registration', async ({ value } = {}) => {
         const a = auth(A0);
         if (!a || !value || !vanLista(A0.avatar).length || lsGet(REG)[a.vid] === value) return;   // (redan registrerad)
@@ -103,6 +107,38 @@ export async function vanPushStart(A) {
   await vanPushRegistrera(A, { fraga: false });
   await vanPresentHamta(A);
   if (!koll) koll = setInterval(() => { if (A0 && !A0.attract) vanPresentHamta(A0); }, 90000);
+  await vanSmsHamta(A);
+  if (!smsKoll) {
+    smsKoll = setInterval(() => { if (A0 && !A0.attract && !document.hidden) vanSmsHamta(A0); }, 30000);
+    document.addEventListener('visibilitychange', () => { if (A0 && !document.hidden) { vanSmsHamta(A0); vanPresentHamta(A0); } });
+  }
+}
+
+// ---------- 💬 SMS mellan vänner (Carl 2026-10-13: "skicka sms till sina kompisar via mobiltelefonen i spelet") ----------
+// Skicka: { ok, id, text } (text = som servern sparade det – länkar och telefonnummer bortstrukna) eller { ok:false, fel } (null = offline)
+export async function vanSmsSkicka(A, till, text) {
+  const a = auth(A);
+  if (!a) return null;
+  await vanPushSynka(A);   // (servern måste veta att vi är vänner)
+  return pushPost('/van/sms', { ...a, till, text });
+}
+// Hämta: SMS:en går till smsapp.js (vanSmsOnNytt) – först när de är sparade töms brevlådan på servern
+const smsLyssnare = new Set();
+export const vanSmsOnNytt = (f) => smsLyssnare.add(f);
+let smsKoll = null, smsHamtar = false;
+export async function vanSmsHamta(A) {
+  const a = auth(A);
+  if (!a || smsHamtar || !vanLista(A.avatar).length || !smsLyssnare.size) return 0;
+  smsHamtar = true;
+  try {
+    const r = await pushPost('/van/sms/hamta', a);
+    const lista = Array.isArray(r?.sms) ? r.sms.slice(0, 60) : [];
+    if (!lista.length) return 0;
+    let sparat = false;
+    smsLyssnare.forEach((f) => { try { if (f(A, lista)) sparat = true; } catch { /* ok */ } });
+    if (sparat) await pushPost('/van/sms/kvittera', { ...a, ids: lista.map((x) => x?.id).filter(Boolean) });
+    return lista.length;
+  } finally { smsHamtar = false; }
 }
 // listan ändrades → till servern direkt (lite fördröjt, så att flera ändringar blir ett anrop)
 let vantar = null;

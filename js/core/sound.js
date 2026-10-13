@@ -105,6 +105,7 @@ export function play(name) {
       case 'door': tone(300, 0, 0.08, 'triangle', 0.12, 380); break;
       case 'honk': horn(0, 0.16, 0.07); horn(0.24, 0.34, 0.07); break;
       case 'slide': tone(620, 0, 0.22, 'triangle', 0.05, 240); break;
+      case 'sms': tone(1568, 0, 0.07, 'triangle', 0.12); tone(2093, 0.09, 0.13, 'triangle', 0.1); break;   // 💬 ett nytt SMS
       case 'chirp': tone(2200, 0, 0.05, 'sine', 0.05, 2800); tone(2600, 0.07, 0.05, 'sine', 0.04, 3000); break;
     }
   } catch { /* ljud är aldrig värt en krasch */ }

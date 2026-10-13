@@ -1,0 +1,127 @@
+[
+ {
+  "i": 8321,
+  "f": "js/core/mobilen.js",
+  "k": "SMS"
+ },
+ {
+  "i": 8322,
+  "f": "js/core/smsapp.js",
+  "k": "Hej! 👋"
+ },
+ {
+  "i": 8323,
+  "f": "js/core/smsapp.js",
+  "k": "Vill du spela? 🎮"
+ },
+ {
+  "i": 8324,
+  "f": "js/core/smsapp.js",
+  "k": "Var är du?"
+ },
+ {
+  "i": 8325,
+  "f": "js/core/smsapp.js",
+  "k": "Kom till torget!"
+ },
+ {
+  "i": 8326,
+  "f": "js/core/smsapp.js",
+  "k": "Tack för presenten! 🎁"
+ },
+ {
+  "i": 8327,
+  "f": "js/core/smsapp.js",
+  "k": "Ses i morgon! 😊"
+ },
+ {
+  "i": 8328,
+  "f": "js/core/smsapp.js",
+  "k": "💬 Du har fått {0} nya SMS – läs dem i mobilen 📱"
+ },
+ {
+  "i": 8329,
+  "f": "js/core/smsapp.js",
+  "k": "Du: "
+ },
+ {
+  "i": 8330,
+  "f": "js/core/smsapp.js",
+  "k": "Inga SMS än – säg hej!"
+ },
+ {
+  "i": 8331,
+  "f": "js/core/smsapp.js",
+  "k": "💬 Skriv"
+ },
+ {
+  "i": 8332,
+  "f": "js/core/smsapp.js",
+  "k": "💬 SMS"
+ },
+ {
+  "i": 8333,
+  "f": "js/core/smsapp.js",
+  "k": "Skicka SMS till dina vänner – de får dem även när de inte spelar."
+ },
+ {
+  "i": 8334,
+  "f": "js/core/smsapp.js",
+  "k": "Du har inga vänner att skicka SMS till än."
+ },
+ {
+  "i": 8335,
+  "f": "js/core/smsapp.js",
+  "k": "Träffar du någon i Pixelstaden: öppna 👥 Kompisar i mobilen och tryck 💛 Bli vänner. Sedan kan ni skicka SMS till varandra."
+ },
+ {
+  "i": 8336,
+  "f": "js/core/smsapp.js",
+  "k": "💬 {0}"
+ },
+ {
+  "i": 8337,
+  "f": "js/core/smsapp.js",
+  "k": "Inga SMS än. Säg hej till {0}!"
+ },
+ {
+  "i": 8338,
+  "f": "js/core/smsapp.js",
+  "k": "Skriv ett SMS …"
+ },
+ {
+  "i": 8339,
+  "f": "js/core/smsapp.js",
+  "k": "🔒 Bara dina vänner kan skicka SMS till dig. Skriv aldrig ditt efternamn, var du bor eller ditt telefonnummer."
+ },
+ {
+  "i": 8340,
+  "f": "js/core/smsapp.js",
+  "k": "← Alla SMS"
+ },
+ {
+  "i": 8341,
+  "f": "js/core/smsapp.js",
+  "k": "💬 SMS:et kom inte iväg – prova igen när du har internet."
+ },
+ {
+  "i": 8342,
+  "f": "js/core/smsapp.js",
+  "k": "💬 {0} måste ha dig som vän också – fråga hen igen i 👥 Kompisar."
+ },
+ {
+  "i": 8343,
+  "f": "js/core/smsapp.js",
+  "k": "💬 Nu har du skickat väldigt många SMS i dag – vila tummarna till i morgon!"
+ },
+ {
+  "i": 8344,
+  "f": "js/core/smsapp.js",
+  "k": "💬 SMS:et kom inte iväg."
+ },
+ {
+  "i": 8345,
+  "f": "js/core/vannerapp.js",
+  "k": "Skicka ett SMS"
+ }
+]

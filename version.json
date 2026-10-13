@@ -1,7 +1,7 @@
 {
-  "version": "0.117.0",
+  "version": "0.118.0",
   "date": "2026-10-13",
-  "title": "Pixelkort",
+  "title": "SMS till vännerna",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
@@ -85,6 +85,7 @@
     "js/core/ravara-art.js",
     "js/core/rec.js",
     "js/core/recolor.js",
+    "js/core/smsapp.js",
     "js/core/sound.js",
     "js/core/squish.js",
     "js/core/startguide.js",

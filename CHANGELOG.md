@@ -10,6 +10,12 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.118.0] – 2026-10-13 – SMS till vännerna
+- 💬 SMS i mobilen! Skicka meddelanden till dina vänner – de får dem även när de inte spelar (i appen kommer en notis).
+- Snabbknappar som "Hej! 👋" och "Vill du spela? 🎮" – man behöver inte skriva själv. Högst 120 tecken.
+- Tryggt: bara vänner kan skriva till varandra, fula ord blir ***, länkar och telefonnummer kommer inte fram, och ⚑ Anmäl finns i samtalet.
+- 💛 Vänner har en 💬-knapp vid varje vän, och en siffra på mobilen visar olästa SMS.
+
 ## [0.117.0] – 2026-10-13 – Pixelkort
 - 🃏 Pixelkort! Samla 46 kort med Pixelstadens katter, hundar, kaniner, folk, fordon och rariteter – vanliga, ovanliga, sällsynta och legendariska med regnbågsglans.
 - 🛒 Kortpaket (3 kort för 25 kr) finns vid kassan i leksaksaffären, och korten kommer också i presenterna.

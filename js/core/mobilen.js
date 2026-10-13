@@ -7,6 +7,7 @@
 //     livsmål, veckan, dagboken och nyheterna fungerar precis som förut.
 //   • 🎁 Presenter (js/core/presenter.js, Carl 2026-10-12): en present om dagen, var sjunde stor – röd prick på mobilen.
 //   • 💛 Vänner (js/core/vannerapp.js, Carl 2026-10-12): ens vänner, vilka som är i stan nu (siffran på appen).
+//   • 💬 SMS (js/core/smsapp.js, Carl 2026-10-13): meddelanden till vännerna – siffran = olästa, röd prick på mobilen.
 //   • 💼 Jobb (alla jobb, närmast först, 🧭 Visa vägen) och 🏠 Hem (pilen hem) – js/core/jobben.js, Carl 2026-10-11.
 //     Startguiden lär ut dem första dagen: knappen och appen pulserar (guidePeka i js/core/startguide.js).
 //   • Inställningar öppnar spelmenyn med inställningarna utfällda (ljud, musik, zoom, språk, mätare,
@@ -26,6 +27,7 @@ import { guidePeka } from './startguide.js';
 import { openKbkApp, kbkAppSyns, lagInne } from './kbklag.js';   // ⚽ KBK-appen (Carl 2026-10-11)
 import { openVannerApp, vanInneAntal } from './vannerapp.js';   // 💛 Vänner (Carl 2026-10-12)
 import { openPresenter, presenterVantar } from './presenter.js';
+import { openSmsApp, smsOlast } from './smsapp.js';   // 💬 SMS till vännerna (Carl 2026-10-13)
 import { openKortApp } from './kortapp.js';   // 🃏 pixelkortsalbumet (Carl 2026-10-12)   // 🎁 presenterna (Carl 2026-10-12)
 
 const APPAR = [
@@ -38,6 +40,7 @@ const APPAR = [
   { id: 'taxi', src: 'hud-taxi', ik: 'taxi', namn: $t('Taxi') },
   { id: 'kompisar', src: 'hud-friends', ik: 'kompisar', namn: $t('Kompisar') },
   { id: 'vanner', fn: (A) => openVannerApp(A), ik: 'vanner', namn: $t('Vänner') },
+  { id: 'sms', fn: (A) => openSmsApp(A), ik: 'sms', namn: $t('SMS') },
   { id: 'chatt', src: 'hud-chat', ik: 'chatt', namn: $t('Chatt') },
   { id: 'rost', src: 'hud-voice', ik: 'rost', namn: $t('Röst') },
   { id: 'mal', src: 'hud-goals', ik: 'mal', namn: $t('Livsmål') },
@@ -101,7 +104,8 @@ function uppdatera() {
   const sk = knapp.querySelector('.kompis');
   sk.classList.toggle('hidden', !n); if (n && sk.textContent !== String(n)) sk.textContent = String(n);
   const pres = presenterVantar(A);   // 🎁 en present väntar → röd prick på mobilen
-  knapp.querySelector('.ny').classList.toggle('hidden', !ny && !pres);
+  const sms = smsOlast(A);   // 💬 olästa SMS → också röd prick
+  knapp.querySelector('.ny').classList.toggle('hidden', !ny && !pres && !sms);
   // 🧭 startguiden lär ut mobilen: knappen och appen pulserar (Jobb → Burgarbaren, Hem på kvällen)
   const peka = A?.attract ? null : guidePeka();
   knapp.classList.toggle('sg-pulse', !!peka && !oppen);
@@ -115,6 +119,7 @@ function uppdatera() {
   const van = vanInneAntal(A);   // 💛 vänner i Pixelstaden nu
   badge('vanner', van ? String(van) : '');
   badge('presenter', pres ? String(pres) : '');
+  badge('sms', sms ? String(sms) : '');
   badge('nyheter', ny ? $t('NY') : '');
   badge('rost', rostPa ? $t('PÅ') : '');
   const g = A?.game;

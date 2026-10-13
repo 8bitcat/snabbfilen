@@ -16,6 +16,7 @@ import { sendJob, onJob, worldMyId, worldMyKey, playersList } from '../net/world
 import { vanEgen, vanLista, arVan, vanLaggTill, vanTaBortLokalt, vanInne, vanBorttagen, vanGlomBorttagen, vanKrokar, VID_RE, MAX_VANNER } from '../net/vanner.js';
 import { vanPushRegistrera, vanPushLage, vanPresentSkicka } from '../net/vanpush.js';
 import { FOOD, foodOf, katalogOf, fmt } from '../game.js';
+import { openSamtal } from './smsapp.js';   // 💬 SMS till vännen (Carl 2026-10-13)
 import { dubbletter } from './pixelkort.js';   // 🃏 dubbletterna kan bli vänskapspresenter
 
 let A = null;
@@ -87,7 +88,7 @@ export async function openVannerApp(A0) {
     const p = p0(v);
     return `<div class="prow"><span data-vface="${i}"></span>
       <span class="nm">${esc(p?.av?.name || v.namn)}<br><small class="sp">${p ? `🟢 ${esc(A.placeOf ? A.placeOf(p) : $t('i Pixelstaden'))}` : esc(senast(v.sett))}</small></span>
-      <span class="pbtns">${p && p.scene === 'city' ? `<button class="btn btn-small" data-vgoto="${esc(p.id)}">${$t('🚶 Gå dit')}</button>` : ''}${p ? `<button class="btn btn-small btn-go" data-vvisit="${esc(p.id)}">${$t('🚗 Åk hem till')}</button>` : ''}<button class="btn btn-small btn-gold" data-vpres="${i}" title="${esc($t('Skicka en present'))}">🎁</button><button class="btn btn-small" data-vbort="${i}" title="${esc($t('Ta bort vännen'))}">💔</button></span>
+      <span class="pbtns">${p && p.scene === 'city' ? `<button class="btn btn-small" data-vgoto="${esc(p.id)}">${$t('🚶 Gå dit')}</button>` : ''}${p ? `<button class="btn btn-small btn-go" data-vvisit="${esc(p.id)}">${$t('🚗 Åk hem till')}</button>` : ''}<button class="btn btn-small" data-vsms="${i}" title="${esc($t('Skicka ett SMS'))}">💬</button><button class="btn btn-small btn-gold" data-vpres="${i}" title="${esc($t('Skicka en present'))}">🎁</button><button class="btn btn-small" data-vbort="${i}" title="${esc($t('Ta bort vännen'))}">💔</button></span>
     </div>`;
   };
   const notisRad = lage === null ? `<p class="sp" style="font-size:var(--f2)">${$t('🔔 I appen Pixelcity får du en notis när en vän börjar spela – även när appen är stängd.')}</p>`
@@ -107,6 +108,7 @@ export async function openVannerApp(A0) {
   dlg.querySelectorAll('[data-vvisit]').forEach((b) => (b.onclick = () => A.visitTo?.(b.dataset.vvisit)));
   dlg.querySelector('[data-vnotis]')?.addEventListener('click', async () => { await vanPushRegistrera(A, { fraga: true }); openVannerApp(A); });
   dlg.querySelectorAll('[data-vpres]').forEach((b) => (b.onclick = () => openSkickaPresent(A, lista[+b.dataset.vpres])));
+  dlg.querySelectorAll('[data-vsms]').forEach((b) => (b.onclick = () => openSamtal(A, lista[+b.dataset.vsms])));
   dlg.querySelectorAll('[data-vbort]').forEach((b) => (b.onclick = () => {
     const v = lista[+b.dataset.vbort];
     openModal($t('💔 Ta bort vännen?'), `<p style="font-size:var(--f2);margin-top:0">${$t`Vill du ta bort <b>${esc(v.namn)}</b> som vän? Ni försvinner från varandras listor och får inga hälsningar när den andra hoppar in.`}</p>`, [

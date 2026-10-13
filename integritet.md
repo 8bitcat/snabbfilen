@@ -22,6 +22,7 @@ Det här är det enda som sparas hos oss – och bara om du själv använder det
 
 - **Vänner:** när du och en annan spelare blir vänner i spelet sparas ett slumpat vän-id för din figur, figurens namn och dina vänners vän-id:n på vår notisserver. Då kan vännerna få en hälsning när du börjar spela – men bara den som också har dig som vän.
 - **Vänskapspresenter och statyn:** en present du skickar till en vän sparas hos oss tills vännen har öppnat den. Varje vecka räknas hur många vänskapspresenter du har skickat, tillsammans med din figurs namn och utseende. Den som skickat flest får en staty i spelets park i en vecka – den ser alla som spelar. Räkningen raderas efter två veckor.
+- **SMS till vänner:** ett SMS du skickar till en vän i spelet (högst 120 tecken) sparas hos oss tills vännens spel har hämtat det, högst 14 dagar, och raderas sedan. Bara vänner kan skriva till varandra. Länkar, e-postadresser och telefonnummer tas bort och fula ord filtreras. Hur många SMS du har skickat i dag räknas (för att stoppa spam) och raderas efter två dagar. Samtalen sparas sedan bara på er egna enheter.
 - **KBK-laget:** stämmer du av dig som spelare i Kungsladugårds BK sparas ditt förnamn och ditt nummer på samma sätt, så att laget kan få en notis.
 - **Pushnotiser (bara i appen):** säger du ja till notiser sparas telefonens pushkod, som Apple behöver för att leverera notisen. Notiserna skickas via Apples pushtjänst.
 
