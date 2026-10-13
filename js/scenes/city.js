@@ -11,6 +11,7 @@ import { taxiQuote, metersBetween } from '../city/citymap.js'; // 🗺️ kartan
 import { createWalker, selfDrawable, folkDrawables, nameTag, sayBubble } from './walkable.js';
 import { drawPerson } from '../core/people.js';
 import { openModal, closeModal, toast, esc, modalOpen } from '../core/ui.js';
+import { drawRiktning, IKON } from '../core/riktning.js';   // 🧭 de blinkande pilarna vid stadsgränserna
 import { play } from '../core/sound.js';
 import { SMALL, BIG, ctxText, textW } from '../core/floor-pix.js';
 import { worldFolksHere } from '../net/world.js';
@@ -220,7 +221,6 @@ function bridgeLift(x, y) {
 
 // vägskylten vid västra stadsgränsen: en stor rosa vägvisare ← TASSBACKEN (stor text) med en tass, på två stolpar
 // (Carl 2026-10-13: "skylten säger inte så mycket" – se även den blinkande pilen i drawRiktningar)
-const TASS_IK = ['.#.#.', '#...#', '.###.', '#####', '.###.'];
 function drawTassSkylt(ctx, x, y) {
   const s = $t('TASSBACKEN'), tw = textW(BIG, s), w = tw + 26, top = y - 52;
   ctx.fillStyle = 'rgba(20,12,30,.25)'; ctx.fillRect(x - 3, y - 1, w + 6, 2);
@@ -231,33 +231,7 @@ function drawTassSkylt(ctx, x, y) {
   ctx.fillStyle = '#f48ab8'; ctx.fillRect(x, top, w, 2); ctx.fillStyle = '#a8306a'; ctx.fillRect(x, top + 18, w, 2);
   ctx.fillStyle = '#f4f1ea'; ctx.fillRect(x + 1, top + 2, w - 2, 1); ctx.fillRect(x + 1, top + 17, w - 2, 1);
   ctxText(ctx, BIG, s, x + 5, top + 8, '#6a1840'); ctxText(ctx, BIG, s, x + 4, top + 7, '#fff6fa');
-  ctx.fillStyle = '#fff6fa'; TASS_IK.forEach((r, j) => { for (let i = 0; i < 5; i++) if (r[i] === '#') ctx.fillRect(x + w - 11 + i, top + 7 + j, 1, 1); });
-}
-// 🧭 den stora blinkande pilen (Carl 2026-10-13: "en stor blinkande pil som säger TASSBACKEN om man kommer nära
-// kanten så man förstår"): spetsen i (x, y) åt dir (−1 vänster, 1 höger), tre chevroner som jagar framför, ramen
-// blinkar vitt/gult, och den guppar i pilens riktning. k = 0–1 (tonar in när man närmar sig kanten)
-function drawRiktning(ctx, x, y, label, dir, t, fg, mork, k) {
-  if (k <= 0) return;
-  const tw = textW(BIG, label), L = tw + 30, H = 23, bob = Math.round(Math.sin(t * 5) * 2) * dir, blink = Math.floor(t * 2.6) % 2 === 0;
-  const tx = Math.round(x + bob), x0 = dir < 0 ? tx + 12 : tx - 12 - L, cy = Math.round(y);
-  ctx.save(); ctx.globalAlpha = Math.min(1, k);
-  // chevronerna framför spetsen
-  for (let c = 0; c < 3; c++) {
-    const u = ((t * 2.2 + c / 3) % 1), cx = tx + dir * (6 + c * 9 + Math.round(u * 4)), a = Math.min(1, k) * (1 - u) * 0.95;
-    ctx.globalAlpha = a; ctx.fillStyle = blink ? '#ffd23f' : '#ffffff';
-    for (let j = -5; j <= 5; j++) { const off = (5 - Math.abs(j)) * dir; ctx.fillRect(cx + off, cy + j, 2, 1); }
-  }
-  ctx.globalAlpha = Math.min(1, k);
-  // kroppen: mörk kant, ram (blinkar), fyllning
-  const tri = (inset, col) => { ctx.fillStyle = col; for (let j = 0; j <= 11 - inset; j++) { const w = 12 - j - inset; if (w <= 0) continue; const xa = dir < 0 ? tx + j + inset : tx - j - inset - w + 1; ctx.fillRect(xa, cy - j, w, 1); if (j) ctx.fillRect(xa, cy + j, w, 1); } };
-  ctx.fillStyle = '#1e1a24'; ctx.fillRect(x0 - 1, cy - 12, L + 2, H + 2); tri(-1, '#1e1a24');
-  ctx.fillStyle = blink ? '#ffd23f' : '#f4f1ea'; ctx.fillRect(x0, cy - 11, L, H); tri(0, blink ? '#ffd23f' : '#f4f1ea');
-  ctx.fillStyle = fg; ctx.fillRect(x0 + 2, cy - 9, L - 4, H - 4); tri(2, fg);
-  ctx.fillStyle = 'rgba(255,255,255,.25)'; ctx.fillRect(x0 + 2, cy - 9, L - 4, 2);
-  const lx = dir < 0 ? x0 + 6 : x0 + 14;
-  ctxText(ctx, BIG, label, lx + 1, cy - 3, mork); ctxText(ctx, BIG, label, lx, cy - 4, '#ffffff');
-  ctx.fillStyle = '#ffffff'; TASS_IK.forEach((r, j) => { for (let i = 0; i < 5; i++) if (r[i] === '#') ctx.fillRect((dir < 0 ? x0 + L - 10 : x0 + 6) + i, cy - 2 + j, 1, 1); });
-  ctx.restore();
+  ctx.fillStyle = '#fff6fa'; IKON.tass.forEach((r, j) => { for (let i = 0; i < 5; i++) if (r[i] === '#') ctx.fillRect(x + w - 11 + i, top + 7 + j, 1, 1); });
 }
 let lastDistrictId = null; // områdesskylten visas bara när man kommer till ett nytt område
 // vägskylten vid stadsgränsen: grön vägvisare LANDET med en pil och en ko
@@ -729,9 +703,9 @@ export function makeCity(A) {
     const py = walker.py, gata = py >= CITY.SIDEWALK_N[0] - 12 && py <= CITY.SIDEWALK_S[1] + 12, sy = Math.max(30, Math.min(VH - 30, CITY.SIDEWALK_N[0] - 30 - cam.y));
     if (!gata) return;
     const dv = walker.px - WX0;
-    if (dv < 420) drawRiktning(ctx, Math.max(8, WX0 - cam.x + 10), sy, $t('TASSBACKEN'), -1, t, '#d84a8a', '#6a1840', (420 - dv) / 140);
+    if (dv < 420) drawRiktning(ctx, Math.max(8, WX0 - cam.x + 10), sy, $t('TASSBACKEN'), -1, t, '#d84a8a', '#6a1840', (420 - dv) / 140, IKON.tass);
     const dh = CITY.W - walker.px;
-    if (dh < 420) drawRiktning(ctx, Math.min(VW - 8, CITY.W - cam.x - 10), sy, $t('LANDET'), 1, t, '#2a8a3a', '#0e3a14', (420 - dh) / 140);
+    if (dh < 420) drawRiktning(ctx, Math.min(VW - 8, CITY.W - cam.x - 10), sy, $t('LANDET'), 1, t, '#2a8a3a', '#0e3a14', (420 - dh) / 140, IKON.ko);
   }
   function drawOverlay(ctx) {
     if (!foto.pa) drawBanner(ctx);

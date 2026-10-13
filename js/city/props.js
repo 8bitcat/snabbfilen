@@ -3977,7 +3977,10 @@ export function propKit() {
       drawCrown(ctx, t.crown, x, y, vind);
     },
     lamp(ctx, x, y, dir = 1) { put(ctx, once(dir > 0 ? 'lampR' : 'lampL', () => spr(30, 72, dir > 0 ? 13 : 16, 68, (P) => paintStreetLamp(P, dir))), x, y); },
-    lampGlow(ctx, x, y, a = 1) { ctx.globalAlpha = a; put(ctx, once('lampGlow', () => spr(64, 84, 32, 74, (P) => paintLampGlow(P, -59, 19, 22, 8))), x, y); ctx.globalAlpha = 1; },
+    // skenet och det tända lykthuvudet sitter där huvudet är: armen går 10 px åt höger (dir 1) / 8 åt vänster (dir −1)
+    // från stolpen – (Carl 2026-10-13: "ljuset är på fel ställe för lamporna, de är inte under lampan")
+    lampGlow(ctx, x, y, a = 1, dir = 1) { ctx.globalAlpha = a; put(ctx, once('lampGlow', () => spr(64, 84, 32, 74, (P) => paintLampGlow(P, -59, 19, 22, 8))), x + (dir > 0 ? 10 : -8), y); ctx.globalAlpha = 1; },
+    lampLit(ctx, x, y, dir = 1) { put(ctx, once('lampLit', () => spr(12, 6, 6, 3, (P) => { P.hl(-3, 0, 6, 0xfff6d8); P.hl(-2, 0, 4, 0xffffff); P.hl(-4, 1, 8, 0xffe8b0, 0.5); P.hl(-3, -1, 6, 0xffe0a0, 0.35); })), x + (dir > 0 ? 10 : -8), y - 59); },
     bench(ctx, x, y, back = false) { put(ctx, once(back ? 'benchB' : 'bench', () => (back ? spr(36, 24, 17, 20, (P) => paintBench(P, true)) : spr(36, 26, 17, 22, (P) => paintBench(P, false)))), x, y); },
     bin(ctx, x, y) { put(ctx, once('bin', () => spr(16, 20, 7, 17, paintBin)), x, y); },
     hydrant(ctx, x, y) { put(ctx, once('hyd', () => spr(18, 20, 9, 16, paintHydrant)), x, y); },

@@ -1,7 +1,7 @@
 {
-  "version": "0.133.1",
-  "date": "2026-10-13",
-  "title": "Köket tål fel ordning",
+  "version": "0.134.0",
+  "date": "2026-10-14",
+  "title": "Tassbacken inifrån",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
@@ -91,6 +91,7 @@
     "js/core/ravara-art.js",
     "js/core/rec.js",
     "js/core/recolor.js",
+    "js/core/riktning.js",
     "js/core/smsapp.js",
     "js/core/sound.js",
     "js/core/squish.js",
@@ -240,6 +241,8 @@
     "js/solon/fiske.js",
     "js/solon/karta.js",
     "js/tassbacken/hus.js",
+    "js/tassbacken/inne-kit.js",
+    "js/tassbacken/kafe-inne.js",
     "js/tassbacken/karta.js",
     "js/tassbacken/park.js",
     "js/version.js",

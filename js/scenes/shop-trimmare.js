@@ -11,7 +11,7 @@
 // trimmar Tova salongens egen hund.
 //
 // _debug-API för tools/trimmare-test.mjs.
-import { drawPerson } from '../core/people.js';
+import { drawPerson, makeLook } from '../core/people.js';
 import { Pix, SMALL, BIG, ctxText, textW, text, mix, mul, hash, bayer } from '../core/floor-pix.js';
 import { openModal, closeModal, toast, esc } from '../core/ui.js';
 import { play } from '../core/sound.js';
@@ -21,6 +21,7 @@ import { drawPet } from '../pets/sprites.js';
 import { petStore } from '../pets/sim.js';
 import { FRISYRER, FARGER, NATUR_PRIS, frisyrById, fargById, trimPris } from '../pets/trim.js';
 import { $t } from '../core/i18n.js';
+import { tavla, affisch, eluttag, brandslackare, dorrmatta, matta, ljusslinga, taklampa, ritaLjusslinga, ritaLampsken, ritaKrukvaxt, ritaPapperskorg } from '../tassbacken/inne-kit.js';   // 🧰 inredningen (v0.134)
 
 const W = 560, H = 216, WALL_Y = 74;
 const DOOR = { x0: 14, x1: 46 };
@@ -84,6 +85,14 @@ function paintBg() {
   for (const sy of [24, 44]) { P.rect(HYLLA.x0, sy, HYLLA.x1 - HYLLA.x0, 2, 0xb07a48); P.hl(HYLLA.x0, sy, HYLLA.x1 - HYLLA.x0, 0xd8a070); }
   for (let i = 0; i < 7; i++) { const c = [0xf07ab8, 0x62c8a0, 0x6ab4f0, 0xf0c040, 0xa87ae8, 0xf4f1ea, 0xe0484a][i], x = HYLLA.x0 + 3 + i * 8; P.rect(x, 14, 5, 10, c); P.rect(x + 1, 11, 3, 3, mul(c, 0.7)); P.vl(x, 15, 8, mix(c, 0xffffff, 0.4)); }
   for (let i = 0; i < 6; i++) { const c = FARGER[1 + i].c, x = HYLLA.x0 + 4 + i * 9; P.rect(x, 38, 3, 4, c); P.rect(x + 4, 38, 3, 4, c); P.rect(x + 3, 39, 1, 2, mul(c, 0.7)); }
+  // 🧰 mer på väggen (v0.134): ljusslingan, taklamporna, sminkspegeln med lampor, affischen, tavlorna, eluttagen, brandsläckaren
+  ljusslinga(P, W, 6);
+  for (const lx of [100, 296, 430]) taklampa(P, lx, 5, 24, [0x7a2a4a, 0xb8406a, 0xe0608a, 0xf090b0, 0xffc0d8]);
+  P.rect(266, 12, 60, 40, 0xf4f1ea); P.box(266, 12, 60, 40, 0xd8a070); for (let y = 15; y < 49; y++) for (let x = 269; x < 323; x++) P.px(x, y, mix(0xc8e8f4, 0xa0c8e0, Math.floor(((x - 269) / 54 + (y - 15) / 68) * 2 + bayer(x, y)) / 4));
+  for (let x = 271; x < 322; x += 6) { P.px(x, 13, 0xfff0a0); P.px(x, 50, 0xfff0a0); } for (let y = 17; y < 48; y += 6) { P.px(267, y, 0xfff0a0); P.px(324, y, 0xfff0a0); }
+  P.line(272, 18, 290, 36, 0xffffff, 0.5); P.line(300, 18, 318, 36, 0xffffff, 0.3);
+  affisch(P, 346, 24, 20, 30, 'klipp'); tavla(P, 372, 24, 16, 14, 'hund', 0xf8e4a0); tavla(P, 372, 42, 16, 14, 'katt', 0xb8e0d0);
+  eluttag(P, 240, 62); eluttag(P, 478, 62); brandslackare(P, 482, 54);
   // golvet: mintgröna och vita kakelplattor, en tassmatta framför trimbordet
   for (let y = WALL_Y; y < H; y++) for (let x = 0; x < W; x++) {
     const tx = (x / 16) | 0, ty = ((y - WALL_Y) / 10) | 0;
@@ -96,6 +105,8 @@ function paintBg() {
   for (let k = 0; k < 4; k++) { const cx = BORD.x - 30 + k * 20, cy = 162; TS.forEach((r, j) => { for (let i = 0; i < 5; i++) if (r[i] === '#') P.px(cx + i, cy - 2 + j, 0xffffff, 0.8); }); }
   // ljuspölar från taket
   for (const x of [100, 296, 430]) P.ell(x, 150, 46, 14, 0xffffff, 0.1, 4);
+  dorrmatta(P, DOOR.x0 - 4, 78, DOOR.x1 - DOOR.x0 + 8, 10, 0x62c8a0, 0x4ab088);
+  matta(P, 56, 112, 84, 30, 0xb8e0d0, 0xd8f0e4, 0xd84a8a);
   P.box(0, 0, W, H, 0x0e0d12);
   return P.flush();
 }
@@ -121,6 +132,7 @@ export function makeShopTrimmare(A) {
     [FON.x - 6, FON.y - 4, FON.x + 6, FON.y + 2],
     [BAD.x0, BAD.y - 26, BAD.x1, BAD.y + 2],
     [HYLLA.x0, WALL_Y, HYLLA.x1, WALL_Y + 14],
+    [538, 116, 554, 126], [242, 106, 254, 116], [470, 176, 494, 186],   // palmen, papperskorgen, barnet med kaninen
   ]);
   walker.snapFree();
   let t = 0, hover = null, hoverT = 0, lockedCam = null, sayIdx = 0, greeted = false;
@@ -133,6 +145,9 @@ export function makeShopTrimmare(A) {
   syncView();
   const cam = { x: camTarget() };
   const egna = () => (S.pets || []).filter((p) => p && p.species);
+
+  // 🐇 ett barn som väntar med sin kanin i en korg
+  const BARN = { ...makeLook(() => hash(5, 6, 7)), kid: true, hat: null }, BARNKANIN = { id: 'tr-bk', species: 'kanin', breed: 'vadur', sex: 'hona', stage: 'vuxen', seed: 'trbk' };
 
   // ---------- dialogen: välj djur, frisyr och färg ----------
   let val = { id: null, s: 'lejon', f: 'natur' };
@@ -311,6 +326,7 @@ export function makeShopTrimmare(A) {
       ctx.setTransform(A.pxs, 0, 0, A.pxs, -cx * A.pxs, 0);
       ctx.imageSmoothingEnabled = false;
       ctx.drawImage(BG, cx, 0, VW, H, cx, 0, VW, H);
+      ritaLjusslinga(ctx, t, W, 7); ritaLampsken(ctx, [100, 296, 430], 31, '255,200,230');
       const focus = focusSpot();
       drawBok(ctx, focus?.id === 'bok');
       for (const q of tussar) { ctx.fillStyle = q.c; ctx.fillRect(Math.round(q.x), Math.round(q.y), 2, 1); }
@@ -320,6 +336,8 @@ export function makeShopTrimmare(A) {
       list.push({ fy: BORD.y, draw: () => drawBord(ctx) });
       list.push({ fy: FON.y, draw: () => drawFon(ctx) });
       list.push({ fy: BAD.y, draw: () => drawBad(ctx) });
+      list.push({ fy: 126, draw: () => ritaKrukvaxt(ctx, 546, 126, 'palm') }, { fy: 116, draw: () => ritaPapperskorg(ctx, 248, 116, 0xd84a8a) });
+      list.push({ fy: 186, draw: () => { drawPerson(ctx, 482, 186, BARN, 'left', Math.sin(t * 1.5) > 0.9 ? 4 : 0); ctx.fillStyle = '#b8894a'; ctx.fillRect(464, 178, 14, 7); ctx.fillStyle = '#d8a96a'; for (let x = 464; x < 478; x += 3) ctx.fillRect(x, 178, 1, 7); drawPet(ctx, 471, 181, BARNKANIN, 'idle', t, 'left'); } });
       list.sort((a, b) => a.fy - b.fy).forEach((d) => d.draw(ctx));
       talk.draw(ctx, { x0: cx, x1: cx + VW });
       label(ctx, focus, cx);

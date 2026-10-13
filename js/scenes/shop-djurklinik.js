@@ -18,6 +18,7 @@ import { createWalker, selfDrawable, folkDrawables, createSpeech } from './walka
 import { drawPet, petBox } from '../pets/sprites.js';
 import { petStore } from '../pets/sim.js';
 import { $t } from '../core/i18n.js';
+import { tavla, affisch, anslagstavla, vaggklocka, eluttag, brandslackare, dorrmatta, matta, lysror, ritaKrukvaxt, ritaPapperskorg, ritaVattenautomat, ritaLampsken } from '../tassbacken/inne-kit.js';   // 🧰 inredningen (v0.134)
 
 const W = 480, H = 216, WALL_Y = 72;
 const DOOR = { x0: 14, x1: 46 };
@@ -70,10 +71,21 @@ function paintBg() {
   for (const sy of [24, 40]) P.hl(SKAP.x0 + 2, sy, SKAP.x1 - SKAP.x0 - 4, 0xa8b0bc);
   for (let i = 0; i < 9; i++) { const c = [0xd8343c, 0x3a7bd5, 0xf0b429, 0x46a35a, 0xa87ae8][i % 5], x = SKAP.x0 + 5 + (i % 5) * 12, y = i < 5 ? 15 : 31; P.rect(x, y, 5, 9, c); P.rect(x + 1, y - 2, 3, 2, 0xf4f1ea); }
   P.vl((SKAP.x0 + SKAP.x1) >> 1, 10, 50, 0xa8b0bc);
+  // 🧰 mer på väggen (v0.134): lysrören, affischerna, väggklockan, bentavlan, anslagstavlan, brandsläckaren, eluttagen
+  for (const lx of [80, 236, 400]) lysror(P, lx - 20, 4, 40);
+  affisch(P, 54, 8, 18, 26, 'vaccin'); affisch(P, 116, 8, 18, 26, 'mat');
+  vaggklocka(P, 196, 34, 6); tavla(P, 274, 12, 18, 14, 'ben', 0xd8ecf8, [0x8a929c, 0xa8b0bc, 0xc8ccd4, 0xe0e4ec, 0xf4f6f8]);
+  anslagstavla(P, 298, 8, 44, 32, 3);
+  brandslackare(P, 238, 56); eluttag(P, 130, 62); eluttag(P, 462, 62);
+  // sidobordet med tidningar bredvid stolarna
+  P.rect(126, 100, 16, 3, 0xc8ccd4); P.hl(126, 100, 16, 0xf4f6f8); P.vl(127, 103, 5, 0x8a929c); P.vl(140, 103, 5, 0x8a929c);
+  P.rect(128, 97, 7, 3, 0xd8343c); P.rect(133, 96, 7, 3, 0x3a7bd5); P.hl(129, 98, 4, 0xffffff);
   // golvet: ljusa kakelplattor
   for (let y = WALL_Y; y < H; y++) for (let x = 0; x < W; x++) { let c = (((x / 16) | 0) + (((y - WALL_Y) / 12) | 0)) % 2 ? 0xe8eef0 : 0xf4f8f8; if (x % 16 === 15 || (y - WALL_Y) % 12 === 11) c = mul(c, 0.9); P.px(x, y, c); }
   for (let i = 0; i < 5; i++) P.darken(0, WALL_Y + i, W, 1, 0.8 + i * 0.04);
-  P.box(0, 0, W, H, 0x0e0d12);
+  dorrmatta(P, DOOR.x0 - 4, 76, DOOR.x1 - DOOR.x0 + 8, 10, 0x6a8a9a, 0x4a6a7a);
+  matta(P, 56, 116, 76, 30, 0xb8d4e8, 0xd8ecf8, 0x2a6a8a);
+  for (let y = 120; y < 150; y++) for (let x = 426; x < 460; x++) P.px(x, y, x === 426 || x === 459 || y === 120 || y === 149 ? 0x8a929c : mix(0xf4c8d0, 0xe8b8c0, hash(x >> 1, y >> 1, 9) * 0.4));   // filten i hörnet
   return P.flush();
 }
 function sign(P, lbl, cx, y, bg, fg, big = false) {
@@ -89,7 +101,8 @@ export function makeShopDjurklinik(A) {
   const syncView = () => { VW = Math.max(384, Math.min(A.W || 384, W)); };
   const walker = createWalker({ W, H, left: 6, right: W - 6, top: WALL_Y + 6, bottom: H - 4, spawn: [(DOOR.x0 + DOOR.x1) / 2, WALL_Y + 12] });
   walker.speed = 72;
-  walker.setObstacles([[STOLAR.x0, STOLAR.y - 10, STOLAR.x0 + STOLAR.n * 22, STOLAR.y + 2], [BORD.x - 22, BORD.y - 8, BORD.x + 22, BORD.y + 2], [SKAP.x0, WALL_Y, SKAP.x1, WALL_Y + 8]]);
+  walker.setObstacles([[STOLAR.x0, STOLAR.y - 10, STOLAR.x0 + STOLAR.n * 22, STOLAR.y + 2], [BORD.x - 22, BORD.y - 8, BORD.x + 22, BORD.y + 2], [SKAP.x0, WALL_Y, SKAP.x1, WALL_Y + 8],
+    [124, 96, 142, 108], [142, 116, 154, 126], [458, 118, 474, 130], [354, 108, 366, 118], [64, 162, 92, 174]]);   // sidobordet, vattenautomaten, fikusen, papperskorgen, kunden med hunden
   walker.snapFree();
   let t = 0, hover = null, hoverT = 0, sayIdx = 0, greeted = false, kakIdx = 0, vag = null;
   let beh = null;   // { pet, b, t, klar }
@@ -100,6 +113,20 @@ export function makeShopDjurklinik(A) {
   const cam = { x: camTarget() };
   const egna = () => (S.pets || []).filter((p) => p && p.species);
   const kund = { look: makeLook(() => hash(3, 4, 5)), katt: { id: 'kl-k', species: 'katt', breed: 'tigrerad', sex: 'hona', stage: 'vuxen', seed: 'klk' } };
+  // 🩹 Nina, sköterskan, går med brickan mellan skåpet och bordet; en kund står och väntar med sin hund; en kattunge sover på filten
+  const NINA = { skin: '#f0c8a8', hair: '#d8a040', style: 'bun', top: 'tee', shirt: '#7ab8e0', accent: '#7ab8e0', bottom: 'pants', pants: '#7ab8e0', shoes: '#f2f2f2', glasses: false, beard: false, phones: false, bag: null, hat: null, apron: true, build: 4, blush: true, kid: false };
+  const NINAV = [[420, 150], [BORD.x + 40, BORD.y + 14], [200, 150], [BORD.x + 40, BORD.y + 14]];
+  const nina = { x: 420, y: 150, i: 1, vila: 2, dir: 'left' };
+  const rnd2 = (a, b) => a + Math.random() * (b - a);
+  function updNina(dt) {
+    if (nina.vila > 0) { nina.vila -= dt; return; }
+    const [tx, ty] = NINAV[nina.i], dx = tx - nina.x, dy = ty - nina.y, d = Math.hypot(dx, dy), step = 22 * dt;
+    if (Math.abs(dx) > 0.5) nina.dir = dx < 0 ? 'left' : 'right';
+    if (d <= step) { nina.x = tx; nina.y = ty; nina.vila = rnd2(2, 5); nina.i = (nina.i + 1) % NINAV.length; return; }
+    nina.x += dx / d * step; nina.y += dy / d * step;
+  }
+  const KUND2 = { look: makeLook(() => hash(7, 8, 9)), hund: { id: 'kl-h', species: 'hund', breed: 'tax', sex: 'hane', stage: 'vuxen', seed: 'klh' } };
+  const UNGE = { id: 'kl-u', species: 'katt', breed: 'vit', sex: 'hona', stage: 'unge', seed: 'klu' };
 
   let valt = null;
   function oppna() {
@@ -213,6 +240,7 @@ export function makeShopDjurklinik(A) {
       t += dt; syncView(); walker.update(dt);
       if (beh && !beh.klar) { beh.t += dt; if (beh.t > 3.2) klart(); }
       if (vag) vag.t += dt;
+      updNina(dt);
       if (!greeted && t > 0.8) { greeted = true; vSay(VERA_SAY[0], 5); sayIdx = 1; }
       cam.x += (camTarget() - cam.x) * Math.min(1, dt * 6);
     },
@@ -223,8 +251,13 @@ export function makeShopDjurklinik(A) {
       ctx.imageSmoothingEnabled = false;
       ctx.drawImage(BG, cx, 0, VW, H, cx, 0, VW, H);
       const focus = focusSpot();
+      ritaLampsken(ctx, [80, 236, 400], 8, '235,248,255');
       drawBur(ctx);
       const list = [...folkDrawables(A, t), selfDrawable(A, walker, t)];
+      list.push({ fy: 126, draw: () => ritaVattenautomat(ctx, 148, 126) }, { fy: 128, draw: () => ritaKrukvaxt(ctx, 466, 128, 'ficus') }, { fy: 118, draw: () => ritaPapperskorg(ctx, 360, 118, 0x8a929c) });
+      list.push({ fy: 142, draw: () => drawPet(ctx, 443, 142, UNGE, 'sleep', t, 'left') });
+      list.push({ fy: 172, draw: () => { drawPerson(ctx, 72, 172, KUND2.look, 'right', Math.sin(t * 1.3) > 0.9 ? 4 : 0); drawPet(ctx, 88, 174, KUND2.hund, 'sit', t, 'right'); ctx.fillStyle = '#d8343c'; for (let k = 0; k <= 6; k++) ctx.fillRect(Math.round(75 + k * 2), Math.round(160 + Math.sin(k / 6 * Math.PI) * 3 + k), 1, 1); } });
+      list.push({ fy: nina.y, draw: () => { drawPerson(ctx, nina.x, nina.y, NINA, nina.dir, nina.vila > 0 ? 9 : [7, 8, 7, 9][Math.floor(t * 7) % 4]); const hx = Math.round(nina.x) + (nina.dir === 'left' ? -8 : 1), hy = Math.round(nina.y) - 16; ctx.fillStyle = '#c8ccd4'; ctx.fillRect(hx, hy, 8, 2); ctx.fillStyle = '#d8343c'; ctx.fillRect(hx + 1, hy - 2, 2, 2); ctx.fillStyle = '#3a7bd5'; ctx.fillRect(hx + 5, hy - 2, 2, 2); } });
       list.push({ fy: STOLAR.y, draw: () => drawVantrum(ctx) });
       list.push({ fy: BORD.y, draw: () => drawBord(ctx) });
       list.push({ fy: VAG.y - 4, draw: () => drawVag(ctx) });

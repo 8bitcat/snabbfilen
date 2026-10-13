@@ -42,7 +42,7 @@ await p.waitForFunction(() => SF.sceneName === 'kattcafe', null, { timeout: 8000
 ok((await scen()) === 'kattcafe', 'in i Kattcafé Kurr');
 await sleep(1500); await shot('kattcafe');
 const k0 = await p.evaluate(() => SF.scene._debug.katter());
-ok(k0.length === 7 && ['gang', 'fonster', 'trad1', 'golv', 'korg'].every((pl) => k0.some((k) => k.plats === pl)), `sju katter: på kattgången, i fönstret, i klösträdet, på golvet och i korgen (${k0.map((k) => k.namn).join(', ')})`);
+ok(k0.length >= 7 && ['gang', 'fonster', 'trad1', 'golv', 'korg'].every((pl) => k0.some((k) => k.plats === pl)), `minst sju katter: på kattgången, i fönstret, i klösträdet, på golvet och i korgen (${k0.map((k) => k.namn).join(', ')})`);
 // klappa
 await p.evaluate(() => SF.scene._debug.klappa('Pepparkaka')); await sleep(300);
 const k1 = await p.evaluate(() => ({ k: SF.scene._debug.katter().find((q) => q.namn === 'Pepparkaka'), prat: SF.scene._debug.tova() }));

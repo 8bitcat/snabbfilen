@@ -11,7 +11,8 @@
 import { createCityWalker } from '../city/walk.js';
 import { selfDrawable, folkDrawables, createSpeech, WALK_SEQ } from './walkable.js';
 import { worldFolksHere } from '../net/world.js';
-import { openModal, closeModal, toast } from '../core/ui.js';
+import { openModal, closeModal, toast, modalOpen } from '../core/ui.js';
+import { drawRiktning, IKON } from '../core/riktning.js';   // 🧭 pilen tillbaka till PIXELSTADEN (östra kanten)
 import { play } from '../core/sound.js';
 import { SMALL, BIG, ctxText, textW, hash } from '../core/floor-pix.js';
 import { CITY, busStopById } from '../city/map.js';
@@ -251,6 +252,14 @@ export function makeTassbacken(A) {
   };
 
   const FJARILAR = [...RABATTER.map((r) => [r.x, r.y]), ...BUSKAR.slice(0, 4).map((b) => [b.x, b.y - 4])];
+  // 🧭 den blinkande pilen mot PIXELSTADEN när man går på Tassgatan nära östra kanten (Carl 2026-10-13)
+  function drawRiktningar(ctx) {
+    if (A.attract || modalOpen()) return;
+    const py = walker.py;
+    if (py < T.SIDEWALK_N[0] - 12 || py > T.SIDEWALK_S[1] + 12) return;
+    const dh = TW - walker.px, sy = Math.max(30, Math.min(VH - 30, T.SIDEWALK_N[0] - 30 - cam.y));
+    if (dh < 420) drawRiktning(ctx, Math.min(VW - 8, TW - cam.x - 10), sy, $t('PIXELSTADEN'), 1, t, '#3a7bd5', '#122656', (420 - dh) / 140, IKON.stad);
+  }
   function night() { const h = g.min / 60; return h >= 20 || h < 5.5; }
   function dusk() { const h = g.min / 60; return (h >= 18 && h < 20) || (h >= 5.5 && h < 7); }
 
@@ -322,12 +331,13 @@ export function makeTassbacken(A) {
         ctx.fillStyle = N ? 'rgba(12,16,48,0.55)' : 'rgba(60,40,90,0.2)'; ctx.fillRect(0, 0, VW, VH);
         if (D) { ctx.fillStyle = 'rgba(255,140,80,0.10)'; ctx.fillRect(0, 0, VW, VH); }
         ctx.save(); ctx.translate(-cx, -cy);
-        for (const l of LYKTOR) if (l.x > cx - 40 && l.x < cx + VW + 40) KIT.lampGlow(ctx, l.x, l.y, N ? 1 : 0.5);
+        for (const l of LYKTOR) if (l.x > cx - 40 && l.x < cx + VW + 40) { KIT.lampGlow(ctx, l.x, l.y, N ? 1 : 0.5); KIT.lampLit(ctx, l.x, l.y); }
         if (N) for (const l of PARKLAMPOR) if (l.x > cx - 40 && l.x < cx + VW + 40) parklyktaSken(ctx, l);
         if (N) for (const id of HUSLISTA) { const p = husPos(id); if (p.x > cx + VW + 20 || p.x + HUS[id].w + 20 < cx) continue; husSken(ctx, id, p.x, p.y, t); }
         ctx.restore();
       }
       ctx.save(); ctx.translate(-cx, -cy); talk.draw(ctx, { x0: cx, x1: cx + VW }); ctx.restore();
+      drawRiktningar(ctx);
       if (banner < 4) { const a = banner < 0.4 ? banner / 0.4 : banner > 3.4 ? (4 - banner) / 0.6 : 1; ctx.globalAlpha = Math.max(0, a); const s = $t('TASSBACKEN'), s2 = $t('DJURENS STADSDEL'), w = Math.max(textW(BIG, s, 2), textW(SMALL, s2)) + 20; ctx.fillStyle = 'rgba(20,18,26,.85)'; ctx.fillRect((VW - w) >> 1, 26, w, 30); ctxText(ctx, BIG, s, (VW - textW(BIG, s, 2)) >> 1, 30, '#f4a8c8', 2); ctxText(ctx, SMALL, s2, (VW - textW(SMALL, s2)) >> 1, 48, '#f4f1ea'); ctx.globalAlpha = 1; }
       const s = hover && spotAt(hover.x + cx, hover.y + cy);
       if (s) { const w = textW(SMALL, s.label) + 10, x = Math.round(Math.max(2, Math.min(VW - w - 2, hover.x - w / 2))), y = Math.max(2, hover.y - 22); ctx.fillStyle = 'rgba(20,18,26,.9)'; ctx.fillRect(x, y, w, 11); ctxText(ctx, SMALL, s.label, x + 5, y + 3, '#ffd23f'); }

@@ -10,6 +10,13 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.134.0] – 2026-10-14 – Tassbacken inifrån
+- 🐾 Tassbacken inifrån i full prakt! Kattcafé Kurr är fullt av saker: tavelvägg, hyllor med koppar och burkar, kattklocka, ljusslinga, taklampor, kattgång med hängmatta och tunnel, bokhylla, kakelugn med eld, akvarium (Måns stirrar på fiskarna), katt-tält, tygtunnel, kattungehage med Knut och Kotte, gäster vid borden och Elin som går runt med brickan. Sjutton katter bor här nu.
+- 🏠 Tassarnas hem: koppel på krokar, foderhyllor, affischer, väggklocka, vattenautomat, bänk med en sovande hund, höbal, palm – och Olle som går runt med hinken. Djurkliniken: affischer, bentavla, anslagstavla, filt med en sovande kattunge, sköterskan Nina med brickan och en kund som väntar med sin tax. Klipp & Klo: ljusslinga, sminkspegel med lampor, affischer, matta – och ett barn med sin kanin. Utställningshallen: strålkastare, rosettvägg, resultattavla, vinnarnas foton, en fotograf vid ringen och konfetti på golvet.
+- 🐕 Hundkojorna i rastgården har fått trädäck, flaggor, lyktor, namnskyltar, mat- och vattenskålar, blomlådor – och Fia tittar ut ur sin.
+- 💡 Gatlyktornas ljus sitter nu rakt under lamphuvudet (i Tassbacken och på Pixelberg), och lykthuvudet lyser på kvällen.
+- 🧭 En stor blinkande pil visar vägen tillbaka till PIXELSTADEN när du går mot kanten av Tassbacken (österut) och Landet (västerut).
+
 ## [0.133.1] – 2026-10-13 – Köket tål fel ordning
 - 🍳 Köket tål nu att man gör stegen i annan ordning: la du i pastan innan vattnet fyller kranen grytan ändå (och "häll av vattnet" fastnar inte längre), tog du fel gryta först tar den du håller i över, och glömde du en råvara när formen redan står i ugnen går den att lägga i där.
 

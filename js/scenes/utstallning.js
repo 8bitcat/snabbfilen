@@ -22,6 +22,7 @@ import { petStore } from '../pets/sim.js';
 import { frisyrById } from '../pets/trim.js';
 import { klinikBonus } from './shop-djurklinik.js';   // 🩺 hälsokoll/vaccin senaste veckan = extra hälsopoäng
 import { $t } from '../core/i18n.js';
+import { tavla, affisch, anslagstavla, vaggklocka, eluttag, brandslackare, dorrmatta, ritaLampsken, ritaKrukvaxt, ritaVattenautomat } from '../tassbacken/inne-kit.js';   // 🧰 inredningen (v0.134)
 
 const W = 640, H = 216, WALL_Y = 70;
 const DOOR = { x0: 14, x1: 46 };
@@ -126,6 +127,16 @@ function paintBg() {
   sign(P, $t('PRISBORDET'), PRIS.x + PRIS.w / 2, 38, 0x6a2a3a, 0xf8d860);
   // läktaren: tre bänkrader i trä som stiger mot väggen
   for (let r = 0; r < 4; r++) { const y = WALL_Y - 26 + r * 14; P.rect(LAKTARE.x0 + r * 4, y, LAKTARE.x1 - LAKTARE.x0 - r * 4, 4, 0xb07a48); P.hl(LAKTARE.x0 + r * 4, y, LAKTARE.x1 - LAKTARE.x0 - r * 4, 0xd8a070); P.rect(LAKTARE.x0 + r * 4, y + 4, LAKTARE.x1 - LAKTARE.x0 - r * 4, 10, 0x5a3a28); }
+  // 🧰 mer på väggen (v0.134): strålkastarna i takstolarna, anslagstavlan, klockan, rosettväggen, resultattavlan,
+  // affischerna, vinnarnas foton, brandsläckaren och eluttagen
+  for (const sx of [300, 372, 444]) { P.rect(sx - 4, 22, 8, 7, 0x2a2a30); P.hl(sx - 4, 22, 8, 0x5a5a62); P.rect(sx - 2, 29, 4, 2, 0xfff0a0); P.vl(sx, 18, 4, 0x3a3a42); }
+  anslagstavla(P, 60, 8, 64, 26, 5); vaggklocka(P, 134, 18, 6);
+  P.rect(254, 34, 72, 32, 0x1e3a5a); P.box(254, 34, 72, 32, 0xf8d860);
+  [[0xf0c030, 0xfff0a0], [0xc8ccd4, 0xf4f6f8], [0xc06a2a, 0xe8a060], [0xd8343c, 0xf07a7a], [0x3a7bd5, 0x8ab8f0], [0x46a35a, 0x9ad87a]].forEach(([c, l], i) => { const rx = 262 + (i % 3) * 22, ry = 40 + Math.floor(i / 3) * 14; for (let a = 0; a < 12; a++) P.px(Math.round(rx + Math.cos(a / 12 * 6.283) * 4), Math.round(ry + Math.sin(a / 12 * 6.283) * 4), a % 2 ? c : l); P.rect(rx - 1, ry - 1, 3, 3, l); P.px(rx, ry, c); P.rect(rx - 2, ry + 4, 2, 5, c); P.rect(rx + 1, ry + 4, 2, 5, c); });
+  P.rect(340, 42, 64, 24, 0x14283e); P.box(340, 42, 64, 24, 0x8aa0c0); for (let i = 0; i < 3; i++) { P.rect(344, 46 + i * 6, 3, 3, [0xf0c030, 0xc8ccd4, 0xc06a2a][i]); for (let k = 0; k < 6; k++) P.px(350 + k * 3, 47 + i * 6, k < 4 - i ? 0xf8d860 : 0x3a5a7a); P.rect(390, 46 + i * 6, 10, 3, 0x3a5a7a); for (let k = 0; k < 2; k++) P.px(392 + k * 4, 47 + i * 6, 0xf8d860); }
+  affisch(P, 420, 36, 22, 30, 'show'); affisch(P, 448, 36, 22, 30, 'show');
+  for (let i = 0; i < 4; i++) tavla(P, 496 + i * 14, 50, 12, 12, ['katt', 'hund', 'kanin', 'hjarta'][i], [0xf4c8d0, 0xc8d4f4, 0xf8e4a0, 0xf4f1ea][i], [0xc8a040, 0xe0c060, 0xf0d880, 0xf8e8a0, 0xfff4c0]);
+  brandslackare(P, 52, 66); eluttag(P, 250, 62); eluttag(P, 556, 62);
   // golvet: blankt trägolv, och ringens gröna matta med vit kant
   for (let y = WALL_Y; y < H; y++) for (let x = 0; x < W; x++) {
     const row = ((y - WALL_Y) / 6) | 0, off = (hash(row, 1, 7) * 50) | 0;
@@ -142,6 +153,8 @@ function paintBg() {
   }
   // en röd löpare från dörren till ringen
   for (let y = 150; y < 162; y++) for (let x = 50; x < RING.x - RING.rx + 4; x++) P.px(x, y, y === 150 || y === 161 ? 0xf0c040 : mix(0xb8283a, 0xa82030, hash(x >> 1, y >> 1, 12) * 0.5));
+  dorrmatta(P, DOOR.x0 - 4, 74, DOOR.x1 - DOOR.x0 + 8, 10, 0x1e3a5a, 0x14283e);
+  for (let k = 0; k < 24; k++) { const x = 70 + ((hash(k, 1, 31) * 500) | 0), y = 178 + ((hash(k, 2, 31) * 30) | 0); P.px(x, y, [0xd8343c, 0xf0c030, 0x3a7bd5, 0xf4f1ea][k % 4]); }   // konfetti på golvet
   P.box(0, 0, W, H, 0x0e0d12);
   return P.flush();
 }
@@ -165,6 +178,7 @@ export function makeUtstallning(A, opts = {}) {
     [DOMARBORD.x, DOMARBORD.y, DOMARBORD.x + DOMARBORD.w, DOMARBORD.y + 12],
     [PRIS.x, PRIS.y, PRIS.x + PRIS.w, PRIS.y + 12],
     [LAKTARE.x0, WALL_Y, LAKTARE.x1, WALL_Y + 22],
+    [544, 108, 560, 118], [126, 118, 138, 128], [292, 190, 308, 200], [246, 196, 274, 208],   // palmen, vattenautomaten, fotografen, de som står och tittar
   ]);
   walker.snapFree();
   let t = 0, hover = null, hoverT = 0, lockedCam = null, sayIdx = 0, greeted = false;
@@ -175,6 +189,8 @@ export function makeUtstallning(A, opts = {}) {
   const cam = { x: camTarget() };
   const egna = () => (S.pets || []).filter((p) => p && p.species);
   const publik = Array.from({ length: 9 }, (_, i) => ({ look: makeLook(() => hash(i, 3, 41)), x: LAKTARE.x0 + 8 + (i % 3) * 22 + (Math.floor(i / 3)) * 4, y: WALL_Y - 12 + Math.floor(i / 3) * 14 }));
+  // 📸 fotografen vid ringen (blixtar då och då) och två som står och tittar
+  const FOTOGRAF = makeLook(() => hash(9, 3, 41)), STAENDE = [{ look: makeLook(() => hash(10, 3, 41)), x: 252, y: 206 }, { look: { ...makeLook(() => hash(11, 3, 41)), kid: true }, x: 268, y: 208 }];
   const burdjur = (klass) => RIVALER[klass === 'kanin' ? 'katt' : klass].slice(0, 4).map(([namn, ras], i) => ({ id: `rv-${klass}-${i}`, name: namn, species: klass === 'kanin' ? 'katt' : klass, breed: ras, sex: i % 2 ? 'hona' : 'hane', stage: 'vuxen', seed: `rv${i}`, ...(i === 1 ? { frisyr: { s: 'rosett', f: 'rosa' } } : i === 3 ? { frisyr: { s: 'fluff', f: 'natur' } } : {}) }));
   let dagensKlass = KLASSER[g.day % 2].id;    // burarna: katter eller hundar varannan dag
   const iBurar = () => burdjur(dagensKlass);
@@ -357,6 +373,7 @@ export function makeUtstallning(A, opts = {}) {
       ctx.setTransform(A.pxs, 0, 0, A.pxs, -cx * A.pxs, 0);
       ctx.imageSmoothingEnabled = false;
       ctx.drawImage(BG, cx, 0, VW, H, cx, 0, VW, H);
+      ritaLampsken(ctx, [300, 372, 444], 32, '255,240,200');
       const focus = focusSpot();
       // banderollen för dagens klass under takstolarna
       const K = KLASSER.find((k) => k.id === (show?.klass || dagensKlass)), bl = `${K.skylt}`, bw = textW(SMALL, bl) + 12;
@@ -370,6 +387,9 @@ export function makeUtstallning(A, opts = {}) {
       list.push({ fy: BURAR.y, draw: () => drawBurar(ctx) });
       list.push({ fy: DOMARBORD.y + 12, draw: () => drawDomare(ctx) });
       list.push({ fy: PRIS.y + 12, draw: () => drawPris(ctx) });
+      list.push({ fy: 118, draw: () => ritaKrukvaxt(ctx, 552, 118, 'palm') }, { fy: 128, draw: () => ritaVattenautomat(ctx, 132, 128) });
+      list.push({ fy: 200, draw: () => { drawPerson(ctx, 300, 200, FOTOGRAF, 'up', 9); ctx.fillStyle = '#2a2a30'; ctx.fillRect(296, 184, 8, 5); ctx.fillStyle = '#8ad8ff'; ctx.fillRect(299, 185, 2, 2); if (show && Math.floor(t * 3) % 5 === 0) { ctx.fillStyle = 'rgba(255,255,255,.8)'; ctx.fillRect(292, 178, 16, 6); } } });
+      for (const q of STAENDE) list.push({ fy: q.y, draw: () => drawPerson(ctx, q.x, q.y, q.look, 'up', show && show.fas === 'klar' ? (Math.floor(t * 4) % 2 ? 10 : 0) : Math.sin(t * 1.4 + q.x) > 0.9 ? 4 : 0) });
       if (show) { const fy = show.fas === 'varv' ? ringPos(Math.min(1, show.ft / 6) + 0.04).y : RING.y + 2; list.push({ fy, draw: () => drawShow(ctx) }); }
       list.sort((a, b) => a.fy - b.fy).forEach((d) => d.draw(ctx));
       drawRingPosts(ctx, true);

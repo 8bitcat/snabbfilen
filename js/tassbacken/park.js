@@ -30,10 +30,15 @@ const skugga = (ctx, x, y, w) => { ctx.fillStyle = 'rgba(20,12,30,.24)'; ctx.fil
 
 // ---------------------------------------------------------------- 🐕 hundkojan
 // plankor i husets färg, gavel med vindskivor, spåntak, rundbågig öppning, namnskylt och en matskål med ett ben
+// (Carl 2026-10-13: "många fler detaljer på hundhusen" – trädäck framför, blomlåda på gaveln, en lykta, dörrmatta
+// med VOV, matskål + vattenskål, ett ben och en boll, en flagga på nocken, en hund som tittar ut ur kojan 0)
 export function ritaKoja(ctx, x, y, i) {
   const [pal, namn] = [[FALU, 'FIA'], [BLAP, 'BOSSE'], [MINP, 'SIXTEN']][i % 3];
-  skugga(ctx, x, y, 26);
-  put(ctx, bild(`koja${i}`, 34, 32, 16, 28, (P) => {
+  skugga(ctx, x, y, 34);
+  put(ctx, bild(`koja${i}`, 48, 40, 24, 34, (P) => {
+    // trädäcket framför kojan (plankor) och dörrmattan
+    fyll(P, -18, 0, 20, 5, (X, Y) => tone(TRA, (Y === 0 ? 0.85 : 0.55) - ((X + 18) % 6 === 5 ? 0.25 : 0) - Y * 0.04, X, Y));
+    fyll(P, -5, 1, 5, 4, (X, Y) => ((X + Y) & 1 ? 0x8a3a2a : 0xd8343c)); P.px(-3, 2, 0xf4ecd8); P.px(-1, 2, 0xf4ecd8); P.px(1, 2, 0xf4ecd8); P.px(3, 2, 0xf4ecd8);
     fyll(P, -10, -13, 9, -1, (X, Y) => { const k = (X + 10) % 4; return tone(pal, 0.64 - (X + 10) / 20 * 0.28 + (k === 0 ? -0.22 : k === 1 ? 0.14 : 0) - (Y + 13) * 0.004, X, Y); });
     for (let j = 0; j < 9; j++) { const half = Math.round((j + 1) * 10 / 9); for (let X = -half; X < half; X++) P.px(X, -22 + j, tone(pal, 0.6 - (X + half) / (half * 2) * 0.22 + ((X + 20) % 4 === 0 ? -0.2 : 0), X, -22 + j)); }
     // taket: två takfall (spån) som syns bakom gaveln, ljust till vänster
@@ -45,9 +50,19 @@ export function ritaKoja(ctx, x, y, i) {
     fyll(P, -5, -10, 4, -1, (X, Y) => { const d = Y < -6 ? Math.hypot(X + 0.5, Y + 6) : 0; if (d > 5) return null; if (d > 4 || X === -5 || X === 4) return VIT[3]; return Y < -5 ? 0x0a0608 : 0x16100e; });
     // namnskylten ovanför öppningen
     const tw = textW(SMALL, namn); fyll(P, -(tw >> 1) - 2, -18, (tw >> 1) + 1, -12, (X, Y) => (Y === -18 ? MASS[4] : Y === -12 ? MASS[1] : 0xf4ecd8)); text(P, SMALL, namn, -(tw >> 1), -17, 0x5a2a18);
-    // matskålen och benet
-    fyll(P, 6, -3, 12, -1, (X, Y) => (Y === -3 ? RODT[4] : tone(RODT, 0.6 - (X - 6) * 0.05, X, Y))); P.hl(7, -3, 5, 0x8a5a3a);
-    spr(P, -15, -3, ['w..w', '.ww.', 'w..w'], { w: 0xf4ecd8 });
+    // flaggan på nocken, lyktan på gaveln, blomlådan på väggen
+    P.vl(8, -31, 7, JARN[3]); P.px(8, -32, MASS[3]); for (let k = 0; k < 5; k++) P.px(9 + k, -31 + (k > 2 ? 1 : 0), [RODT[2], RODT[3], 0xf4f1ea, RODT[2], RODT[3]][k]);
+    P.rect(-12, -19, 3, 4, JARN[2]); P.px(-11, -20, JARN[3]); P.px(-11, -17, 0xffe8a0); P.px(-11, -16, 0xffd060); P.px(-12, -15, JARN[1]); P.px(-10, -15, JARN[1]);
+    fyll(P, 5, -8, 9, -6, (X, Y) => tone(TRA, Y === -8 ? 0.85 : 0.5, X, Y)); P.px(5, -9, 0xe0384a); P.px(7, -10, 0xf0c030); P.px(9, -9, 0xf06aa0); P.px(6, -9, 0x3e7e2a); P.px(8, -9, 0x3e7e2a);
+    // matskålen och vattenskålen på däcket, ett ben, en boll och en tass målad på däcket
+    fyll(P, 9, -2, 15, 0, (X, Y) => (Y === -2 ? RODT[4] : tone(RODT, 0.6 - (X - 9) * 0.05, X, Y))); P.hl(10, -2, 5, 0x8a5a3a); P.px(12, -2, 0xf0d8a0);
+    fyll(P, 15, -2, 20, 0, (X, Y) => (Y === -2 ? BLA[4] : tone(BLA, 0.6 - (X - 15) * 0.05, X, Y))); P.hl(16, -2, 3, 0x9ad8f8);
+    spr(P, -17, -2, ['w..w', '.ww.', 'w..w'], { w: 0xf4ecd8 });
+    P.rect(-11, -4, 3, 3, 0xf0c030); P.px(-11, -4, 0xfff0a0); P.px(-9, -2, 0xc89a20);
+    for (const [dx, dy] of [[0, 0], [1, 0], [0, 1], [1, 1], [-1, -2], [1, -3], [3, -2], [-2, 0], [3, 0]]) P.px(14 + dx, 2 + dy, 0x5a3a20, 0.6);
+    // en hund som tittar ut ur kojan (bara i den första) – nos, ögon och ett öra
+    if (i === 0) spr(P, -4, -8, ['.aaaaa.', 'aeaaaea', 'aaaaaaa', '.aannaa', '..aaaa.'], { a: 0xc89a5a, e: 0x1a1414, n: 0x2a1a1a });
+    else if (i === 1) { P.rect(-3, -5, 6, 3, 0x6a4a3a); P.hl(-3, -5, 6, 0x8a6a5a); }   // en filt att ligga på
   }), x, y);
 }
 

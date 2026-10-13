@@ -8,7 +8,8 @@
 import { createCityWalker } from '../city/walk.js';
 import { selfDrawable, folkDrawables, createSpeech, nameTag } from './walkable.js';
 import { worldFolksHere } from '../net/world.js';
-import { openModal, closeModal, toast, esc } from '../core/ui.js';
+import { openModal, closeModal, toast, esc, modalOpen } from '../core/ui.js';
+import { drawRiktning, IKON } from '../core/riktning.js';   // 🧭 pilen tillbaka till PIXELSTADEN (västra kanten)
 import { play } from '../core/sound.js';
 import { SMALL, BIG, ctxText, textW } from '../core/floor-pix.js';
 import { CITY, busStopById } from '../city/map.js';
@@ -313,6 +314,14 @@ export function makeLandet(A) {
     const y = RADER[trak.rad]; if (Math.abs(trak.y - y) < 1) { const a = trak.dir === 'right' ? VETE[0] + 2 : trak.x, b = trak.dir === 'right' ? trak.x : VETE[2] - 2; ctx.fillStyle = '#c8b070'; ctx.fillRect(Math.min(a, b), y - 7, Math.abs(b - a), 9); }
   };
 
+  // 🧭 den blinkande pilen mot PIXELSTADEN när man går på vägen nära västra kanten
+  function drawRiktningar(ctx) {
+    if (A.attract || modalOpen()) return;
+    const py = walker.py;
+    if (py < L.VERGE_N[0] - 12 || py > L.VERGE_S[1] + 12) return;
+    const dv = walker.px, sy = Math.max(30, Math.min(VH - 30, L.VERGE_N[0] - 30 - cam.y));
+    if (dv < 420) drawRiktning(ctx, Math.max(8, 10 - cam.x), sy, $t('PIXELSTADEN'), -1, t, '#3a7bd5', '#122656', (420 - dv) / 140, IKON.stad);
+  }
   function night() { const h = g.min / 60; return h >= 20 || h < 5.5; }
   function dusk() { const h = g.min / 60; return (h >= 18 && h < 20) || (h >= 5.5 && h < 7); }
 
@@ -382,6 +391,7 @@ export function makeLandet(A) {
         ctx.fillStyle = 'rgba(255,214,120,0.22)'; ctx.fillRect(sp.x - 5, sp.y - 5, 12, 12); ctx.fillStyle = '#ffe9a0'; ctx.fillRect(sp.x, sp.y, 3, 3);
       }
       ctx.save(); ctx.translate(-cx, -cy); talk.draw(ctx, { x0: cx, x1: cx + VW }); ctx.restore();
+      drawRiktningar(ctx);
       // områdesskylten när man kommer
       if (banner < 4) { const a = banner < 0.4 ? banner / 0.4 : banner > 3.4 ? (4 - banner) / 0.6 : 1; ctx.globalAlpha = Math.max(0, a); const s = $t('LANDET'), s2 = $t('KOR, FÅR OCH FRISK LUFT'), w = Math.max(textW(BIG, s, 2), textW(SMALL, s2)) + 20; ctx.fillStyle = 'rgba(20,18,26,.85)'; ctx.fillRect((VW - w) >> 1, 26, w, 30); ctxText(ctx, BIG, s, (VW - textW(BIG, s, 2)) >> 1, 30, '#8edc4c', 2); ctxText(ctx, SMALL, s2, (VW - textW(SMALL, s2)) >> 1, 48, '#f4f1ea'); ctx.globalAlpha = 1; }
       // namnet på det man pekar på

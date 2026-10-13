@@ -18,6 +18,8 @@ import { createWalker, selfDrawable, folkDrawables, createSpeech } from './walka
 import { drawPet } from '../pets/sprites.js';
 import { petStore, MAX_PETS } from '../pets/sim.js';
 import { $t } from '../core/i18n.js';
+import { tavla, affisch, anslagstavla, vaggklocka, hyllplan, burkrad, eluttag, brandslackare, dorrmatta, leksaker, ritaKrukvaxt, ritaPapperskorg, ritaVattenautomat, lysror, ritaLampsken } from '../tassbacken/inne-kit.js';   // 🧰 inredningen (v0.134)
+import { propKit } from '../city/props.js';
 
 const W = 560, H = 216, WALL_Y = 72;
 const DOOR = { x0: 14, x1: 46 };
@@ -88,6 +90,17 @@ function paintBg() {
   // kattrummets glasvägg och klösträd (katterna ritas live)
   for (let y = 34; y < WALL_Y + 40; y++) for (let x = KATTRUM.x0; x < KATTRUM.x1; x++) { const kant = x === KATTRUM.x0 || x === KATTRUM.x1 - 1 || y === 34; P.px(x, y, kant ? 0xc8ccd4 : mix(0xe8f0e0, 0xd8e8d0, (y - 34) / 80), kant ? 1 : 0.9); }
   for (let x = KATTRUM.x0 + 6; x < KATTRUM.x1 - 6; x += 18) P.line(x, 38, x + 10, 60, 0xffffff, 0.5);
+  // 🧰 mer på väggen (v0.134): lysrör i taket, efterlysningen, kopplen på krokar, hyllan med foder, tavlor över
+  // kattrummet, adoptera-affischen, väggklockan, brandsläckaren och eluttagen
+  for (const lx of [100, 250, 420]) lysror(P, lx - 20, 4, 40);
+  affisch(P, 128, 10, 16, 30, 'hitta');
+  P.rect(150, 36, 96, 2, 0xb07a48); P.hl(150, 36, 96, 0xd8a070);
+  [0xd8343c, 0x3a7bd5, 0xf0c030, 0x46a35a, 0xa87ae8, 0xf07ab8].forEach((c, i) => { const hx = 156 + i * 15; P.px(hx, 38, 0x5a5e66); P.px(hx, 39, 0x8a929c); for (let j = 0; j < 20 + (i % 3) * 3; j++) P.px(hx + Math.round(Math.sin(j / 5 + i) * 1.5), 40 + j, j % 7 === 6 ? mul(c, 0.7) : c); P.rect(hx - 2, 58 + (i % 3) * 3, 5, 2, mul(c, 0.8)); });
+  hyllplan(P, 258, 44, 84); burkrad(P, 262, 43, 5, 2); P.rect(300, 36, 9, 7, 0xc8a870); P.hl(300, 36, 9, 0xa88850); P.px(304, 39, 0xa8382a); P.rect(312, 37, 9, 6, 0xd8b888); P.hl(312, 37, 9, 0xb89868);
+  hyllplan(P, 258, 60, 84); for (let i = 0; i < 4; i++) { const c = [0xd8343c, 0x3a7bd5, 0x46a35a, 0xf0c030][i]; P.rect(262 + i * 20, 56, 12, 4, c); P.hl(263 + i * 20, 56, 10, mix(c, 0xffffff, 0.4)); P.hl(264 + i * 20, 57, 8, 0xf0d8a0); }
+  tavla(P, 400, 8, 14, 12, 'katt', 0xf4c8d0); tavla(P, 418, 6, 12, 10, 'tass', 0xf8e4a0); tavla(P, 458, 8, 14, 12, 'hjarta', 0xf4f1ea, 0xf4f1ea);
+  affisch(P, 484, 10, 26, 36, 'adoptera'); vaggklocka(P, 532, 22, 7); affisch(P, 520, 36, 28, 22, 'vaccin');
+  brandslackare(P, 52, 60); eluttag(P, 250, 62); eluttag(P, 480, 64);
   // golvet: linoleum i rutor (lätt att städa), gröna och vita
   for (let y = WALL_Y; y < H; y++) for (let x = 0; x < W; x++) {
     const tx = (x / 20) | 0, ty = ((y - WALL_Y) / 12) | 0;
@@ -96,6 +109,10 @@ function paintBg() {
     P.px(x, y, c);
   }
   for (let i = 0; i < 5; i++) P.darken(0, WALL_Y + i, W, 1, 0.8 + i * 0.04);
+  dorrmatta(P, DOOR.x0 - 4, 76, DOOR.x1 - DOOR.x0 + 8, 10, 0x6a8a6a, 0x4a6a4a);
+  leksaker(P, [[226, 132, 'ben'], [300, 146, 'boll'], [440, 128, 'mus'], [72, 190, 'boll'], [250, 200, 'ben']]);
+  for (let y = 150; y < 200; y++) for (let x = 60; x < 130; x++) { const e = x === 60 || x === 129 || y === 150 || y === 199; P.px(x, y, e ? 0x3a6a4a : (((y - 150) >> 2) & 1) ? mix(0xa8c8a8, 0x98b898, hash(x >> 2, y, 6) * 0.4) : mix(0xe0ecd8, 0xd0dcc8, hash(x >> 2, y, 7) * 0.4)); }   // mattan i hörnet
+  for (let y = KANINHAGE.y0 - 2; y < KANINHAGE.y1; y++) for (let x = 464; x < 486; x++) P.px(x, y, mix(0xe8c870, 0xd8b860, hash(x, y, 8)));   // höet utanför hagen
   // kaninhagens halm
   for (let y = KANINHAGE.y0; y < KANINHAGE.y1; y++) for (let x = KANINHAGE.x0; x < KANINHAGE.x1; x++) P.px(x, y, mix(0xe8c870, 0xd8b860, hash(x, y, 8)));
   P.box(0, 0, W, H, 0x0e0d12);
@@ -122,6 +139,7 @@ export function makeShopDjurhem(A) {
     [MAT.x - 14, MAT.y - 8, MAT.x + 14, MAT.y + 2],
     [KATTRUM.x0, WALL_Y, KATTRUM.x1, KATTRUM.y + 2],
     [KANINHAGE.x0, KANINHAGE.y0 - 4, KANINHAGE.x1, KANINHAGE.y1 + 2],
+    [540, 108, 556, 122], [130, 118, 144, 126], [60, 116, 72, 124], [84, 160, 116, 168], [464, 186, 486, 200],   // palmen, papperskorgen, vattenautomaten, bänken, höbalen
   ]);
   walker.snapFree();
   let t = 0, hover = null, hoverT = 0, sayIdx = 0, greeted = false;
@@ -207,6 +225,25 @@ export function makeShopDjurhem(A) {
     toast($t`🪙 Tack för ${fmt(n)}! Djuren får det lite bättre i dag.` + (h ? ` +${h} 😊` : ''), 'good');
   }
 
+  // 🧹 Olle, volontären: går runt med hinken mellan hundgårdarna och matstationen
+  const OLLE = { skin: '#c68a5c', hair: '#8a5a3a', style: 'short', top: 'tee', shirt: '#3a6a4a', accent: '#f4f1ea', bottom: 'jeans', pants: '#3f5f8f', shoes: '#6b3e1e', glasses: false, beard: 'short', phones: false, bag: null, hat: 'cap', cap: '#a8382a', build: 5, blush: false, kid: false };
+  const OLLEV = [[160, 128], [330, 128], [MAT.x - 20, MAT.y + 10], [330, 128]];
+  const olle = { x: 160, y: 128, i: 1, vila: 3, dir: 'right' };
+  function updOlle(dt) {
+    if (olle.vila > 0) { olle.vila -= dt; return; }
+    const [tx, ty] = OLLEV[olle.i], dx = tx - olle.x, dy = ty - olle.y, d = Math.hypot(dx, dy), step = 22 * dt;
+    if (Math.abs(dx) > 0.5) olle.dir = dx < 0 ? 'left' : 'right';
+    if (d <= step) { olle.x = tx; olle.y = ty; olle.vila = rnd(2, 5); olle.i = (olle.i + 1) % OLLEV.length; return; }
+    olle.x += dx / d * step; olle.y += dy / d * step;
+  }
+  function drawOlle(ctx) {
+    drawPerson(ctx, olle.x, olle.y, OLLE, olle.dir, olle.vila > 0 ? 9 : [7, 8, 7, 9][Math.floor(t * 7) % 4]);
+    const hx = Math.round(olle.x) + (olle.dir === 'left' ? -7 : 2), hy = Math.round(olle.y) - 14;   // hinken i handen
+    ctx.fillStyle = '#3a7bd5'; ctx.fillRect(hx, hy, 6, 6); ctx.fillStyle = '#6aa8e8'; ctx.fillRect(hx, hy, 6, 1); ctx.fillStyle = '#8a929c'; ctx.fillRect(hx + 1, hy - 2, 1, 2); ctx.fillRect(hx + 4, hy - 2, 1, 2); ctx.fillRect(hx + 2, hy - 3, 2, 1);
+  }
+  const KIT = propKit();
+  const SOVHUND = { id: 'dh-sov', name: 'Bruno', species: 'hund', breed: 'husky', sex: 'hane', stage: 'vuxen', seed: 'dhsov' };
+
   // ---------- platserna ----------
   const spots = () => [
     { id: 'dorr', r: [DOOR.x0, 18, DOOR.x1, WALL_Y + 6], go: [(DOOR.x0 + DOOR.x1) / 2, WALL_Y + 10], label: $t('UT'), act: () => { play('door'); A.tassFran = { hem: true }; A.go('tassbacken'); } },
@@ -254,6 +291,9 @@ export function makeShopDjurhem(A) {
     // klösträdet i rummet
     const tx = KATTRUM.x0 + 46;
     ctx.fillStyle = '#d8c49a'; ctx.fillRect(tx - 2, KATTRUM.y - 30, 4, 30); ctx.fillStyle = '#8a5a8a'; ctx.fillRect(tx - 10, KATTRUM.y - 30, 20, 3); ctx.fillRect(tx - 12, KATTRUM.y - 2, 24, 3);
+    ctx.fillStyle = '#f06aa0'; ctx.fillRect(KATTRUM.x0 + 8, KATTRUM.y - 8, 14, 5); ctx.fillStyle = '#ffb0d0'; ctx.fillRect(KATTRUM.x0 + 8, KATTRUM.y - 8, 14, 1);   // kudden
+    ctx.fillStyle = '#3a7bd5'; ctx.fillRect(KATTRUM.x1 - 22, KATTRUM.y - 6, 10, 4); ctx.fillStyle = '#8ad8ff'; ctx.fillRect(KATTRUM.x1 - 22, KATTRUM.y - 6, 10, 1);   // skålen
+    ctx.fillStyle = '#9a9aa4'; ctx.fillRect(KATTRUM.x0 + 30, KATTRUM.y - 4, 5, 3); ctx.fillStyle = '#f0a0b0'; ctx.fillRect(KATTRUM.x0 + 35, KATTRUM.y - 3, 1, 1);   // leksaksmusen
     for (const d of katter) { const L = lage.get(d.id); drawPet(ctx, L.x, L.y, petOf(d), mattider > 0 ? 'eat' : Math.sin(t * 0.5 + L.x) > 0 ? 'sit' : 'sleep', t, L.dir); }
     ctx.fillStyle = 'rgba(220,236,248,.25)'; ctx.fillRect(KATTRUM.x0, WALL_Y, KATTRUM.x1 - KATTRUM.x0, KATTRUM.y - WALL_Y);
     ctx.fillStyle = '#c8ccd4'; ctx.fillRect(KATTRUM.x0, KATTRUM.y, KATTRUM.x1 - KATTRUM.x0, 2); ctx.fillRect(KATTRUM.x0, WALL_Y, 2, KATTRUM.y - WALL_Y); ctx.fillRect(KATTRUM.x1 - 2, WALL_Y, 2, KATTRUM.y - WALL_Y);
@@ -286,6 +326,7 @@ export function makeShopDjurhem(A) {
       dt = Math.min(0.1, Math.max(0, dt));
       t += dt; syncView(); walker.update(dt);
       if (mattider > 0) mattider -= dt;
+      updOlle(dt);
       // kaninerna skuttar runt i hagen
       for (const d of har()) { const L = lage.get(d.id); if (!L?.hage) continue; L.tm = (L.tm ?? rnd(1, 4)) - dt; if (L.tm <= 0) { L.tm = rnd(2, 5); L.x = Math.max(KANINHAGE.x0 + 8, Math.min(KANINHAGE.x1 - 8, L.x + rnd(-14, 14))); L.dir = Math.random() < 0.5 ? 'left' : 'right'; } }
       if (!greeted && t > 0.8) { greeted = true; iSay(INGRID_SAY[0], 5); sayIdx = 1; }
@@ -297,11 +338,16 @@ export function makeShopDjurhem(A) {
       ctx.setTransform(A.pxs, 0, 0, A.pxs, -cx * A.pxs, 0);
       ctx.imageSmoothingEnabled = false;
       ctx.drawImage(BG, cx, 0, VW, H, cx, 0, VW, H);
+      ritaLampsken(ctx, [100, 250, 420], 8, '240,250,255');
       const focus = focusSpot();
       drawBoxar(ctx); drawKattrum(ctx);
       const list = [...folkDrawables(A, t), selfDrawable(A, walker, t)];
       list.push({ fy: DISK.y + DISK.h, draw: () => drawDisk(ctx) });
       list.push({ fy: MAT.y, draw: () => drawMat(ctx) });
+      list.push({ fy: 122, draw: () => ritaKrukvaxt(ctx, 548, 122, 'palm') }, { fy: 126, draw: () => ritaPapperskorg(ctx, 137, 126, 0x3a6a4a) }, { fy: 124, draw: () => ritaVattenautomat(ctx, 66, 124) });
+      list.push({ fy: 168, draw: () => KIT.bench(ctx, 100, 168) }, { fy: 200, draw: () => { ctx.fillStyle = '#d8b860'; ctx.fillRect(464, 186, 22, 14); ctx.fillStyle = '#e8c870'; ctx.fillRect(464, 186, 22, 2); ctx.fillStyle = '#b89848'; ctx.fillRect(464, 192, 22, 1); ctx.fillRect(464, 197, 22, 1); } });
+      list.push({ fy: 198, draw: () => drawPet(ctx, 96, 198, SOVHUND, 'sleep', t, 'right') });
+      list.push({ fy: olle.y, draw: () => drawOlle(ctx) });
       list.push({ fy: KANINHAGE.y0, draw: () => drawHage(ctx, false) }, { fy: KANINHAGE.y1, draw: () => drawHage(ctx, true) });
       list.sort((a, b) => a.fy - b.fy).forEach((d) => d.draw(ctx));
       talk.draw(ctx, { x0: cx, x1: cx + VW });
