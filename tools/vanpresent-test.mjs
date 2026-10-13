@@ -37,8 +37,10 @@ const server = http.createServer((req, res) => {
   });
 }).listen(MOCK);
 const browser = await chromium.launch();
-// dagens present är redan öppnad (samma nyckel som js/core/presenter.js dagNu: datumet kl. nu − 6 h)
-const IDAG = (() => { const d = new Date(Date.now() - 6 * 3600000); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; })();
+// dagens present är redan öppnad – samma nyckel som js/core/presenter.js passNu: datumet kl. nu − 6 h + '-m' (kl. 6–18)
+// eller '-k' (kvällen). (Bara datumet räckte före 0.116.2; sedan dess kom kvällspresenten efter kl. 18 och provet föll
+// varje kväll – 2026-10-13.)
+const IDAG = (() => { const n = Date.now(), d = new Date(n - 6 * 3600000), h = new Date(n).getHours(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}-${h >= 6 && h < 18 ? 'm' : 'k'}`; })();
 const errs = [];
 const MIRA = { vid: '1a'.repeat(8), hemlig: 'a1'.repeat(16) }, LEO = { vid: '2b'.repeat(8), hemlig: 'b2'.repeat(16) }, ELLA = { vid: '3c'.repeat(8) };
 async function spel(namn, jag, vanner, save) {
