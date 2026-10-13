@@ -58,6 +58,15 @@ try {
     try { up = (await fetch(`http://127.0.0.1:${port}/index.html`)).ok; } catch { await sleep(250); }
   }
   if (!up) throw new Error('servern startade inte');
+  // Uppvärmning: läs alla spelets filer en gång via servern innan första provet. Provmappen är ny varje gång, och
+  // första läsningen av varje fil (virusskyddet granskar den) gjorde att smoke.mjs första sidladdning ibland tog
+  // mer än 30 s (2026-10-13, 0.124 och 0.125) – nu är filerna redan lästa när webbläsaren kommer.
+  const varm = [];
+  const gaIgenom = (rel) => { for (const e of fs.readdirSync(path.join(dir, rel), { withFileTypes: true })) { const r = rel ? `${rel}/${e.name}` : e.name; if (e.isDirectory()) gaIgenom(r); else if (/\.(js|css|png|json|woff2?|ttf|mp3|ogg|wav|webp)$/i.test(e.name)) varm.push(r); } };
+  for (const d of ['js', 'css', 'assets', 'fonts']) if (fs.existsSync(path.join(dir, d))) gaIgenom(d);
+  const t0 = Date.now();
+  for (let i = 0; i < varm.length; i += 16) await Promise.all(varm.slice(i, i + 16).map((r) => fetch(`http://127.0.0.1:${port}/${r}`).then((x) => x.arrayBuffer()).catch(() => null)));
+  console.log(`(värmde upp ${varm.length} filer på ${((Date.now() - t0) / 1000).toFixed(1)} s)`);
 
   const out = [];
   const runScript = (script) => new Promise((resolve) => {
