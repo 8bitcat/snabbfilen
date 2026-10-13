@@ -10,6 +10,9 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.133.1] – 2026-10-13 – Köket tål fel ordning
+- 🍳 Köket tål nu att man gör stegen i annan ordning: la du i pastan innan vattnet fyller kranen grytan ändå (och "häll av vattnet" fastnar inte längre), tog du fel gryta först tar den du håller i över, och glömde du en råvara när formen redan står i ugnen går den att lägga i där.
+
 ## [0.133.0] – 2026-10-13 – Tassbacken i full prakt
 - 🐾 Tassbacken i full prakt! Alla hus är ombyggda från grunden – med socklar, stuprör, takfötter med tandsnitt, fönster med spröjs, gardiner och blomlådor, dörrar med mässing och skyltfönster där man ser in.
 - ☕ KATTCAFÉ KURR har ett stort kattansikte på taket (KURR lyser i neon på kvällen och ögonen glöder), en kattklocka med svans som pendlar, en tapetserad kafésal med klösträd och taklampor, en bakelsedisk med prinsesstårta – och en barista bakom disken. Ångan stiger ur kopparna.

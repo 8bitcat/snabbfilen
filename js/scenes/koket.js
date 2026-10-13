@@ -324,8 +324,19 @@ export function makeKoket(A) {
   const particles = [];
   const roleOf = (id) => (Object.entries(bind).find(([, v]) => v === id)?.[0]) || null;
   // passar kärlet id rollen? (obunden roll binds av samma sorts kärl som inte redan har en annan roll)
-  const fits = (role, id) => (bind[role] ? bind[role] === id : KIND[id] === role && !roleOf(id));
-  const doBind = (role, id) => { if (!bind[role] && (role === 'gryta' || role === 'panna')) bind[role] = id; };
+  // (ordningen är fri – Carl 2026-10-13: "man kan göra saker i en ordning som gör att det blir fel". En roll som är
+  // bunden till ett kärl som fortfarande är TOMT får bytas till det kärl man håller i: tog man fel gryta först är det
+  // inte kört. Steg som redan bockats av för den gamla grytan (på spisen, värmen, vattnet) öppnas igen.)
+  const vesEmpty = (v) => !v.water && !v.items.length;
+  const fits = (role, id) => { const b = bind[role]; if (b && b !== id && KIND[id] === role && !roleOf(id) && vesEmpty(ves[b])) return true; return b ? b === id : KIND[id] === role && !roleOf(id); };
+  const doBind = (role, id) => {
+    if (role !== 'gryta' && role !== 'panna') return;
+    if (bind[role] === id) return;
+    if (bind[role] && !vesEmpty(ves[bind[role]])) return;
+    bind[role] = id;
+    const end = cur;
+    for (let i = 0; i < end; i++) { const s = steps[i]; if (s.v === role && (s.t === 'stall' || s.t === 'varme' || s.t === 'vatten') && s.done && !checkDone(s)) { s.done = false; cur = Math.min(cur, i); } }
+  };
   const remaining = () => steps.slice(cur).filter((s) => !s.done);
   const findStep = (pred) => steps.slice(cur).find((s) => !s.done && pred(s));
   const burnerOf = (id) => burners.findIndex((b) => b.v === id);
@@ -341,7 +352,7 @@ export function makeKoket(A) {
   function checkDone(s) {
     const v = s.v ? (bind[s.v] ? ves[bind[s.v]] : ['skal', 'mixer', 'tallrik', 'form'].includes(s.v) ? ves[s.v] : null) : null;
     switch (s.t) {
-      case 'vatten': return !!v && (v.water || v.items.length > 0);
+      case 'vatten': return !!v && v.water;   // (strikt: pasta i en torr gryta är inte vatten – pilen pekar på grytan och sedan på kranen)
       case 'stall': return !!v && burnerOf(v.id) >= 0;
       case 'varme': return !!v && burnerOf(v.id) >= 0 && burners[burnerOf(v.id)].on;
       case 'i': return !!v && v.items.some((it) => it.ing === s.ing);
@@ -423,24 +434,28 @@ export function makeKoket(A) {
     if (hand?.type !== 'ves') { if (!hand) say($t('TA EN GRYTA FRÅN LISTEN - SEN KRANEN')); return; }
     const v = ves[hand.id];
     if (KIND[v.id] !== 'gryta') { say($t('BARA GRYTORNA BEHÖVER VATTEN')); play('fel'); return; }
-    if (v.water && v.items.length) {
-      const s = findStep((x) => x.t === 'avrinn' && fits(x.v, v.id));
-      if (!s) { notNow(); return; }
+    if (bind.gryta && bind.gryta !== v.id && !vesEmpty(ves[bind.gryta])) { say($t('DET ÄR DEN ANDRA GRYTAN DU LAGAR I - TA DEN')); play('fel'); return; }
+    const vattenSteg = findStep((x) => x.t === 'vatten' && fits(x.v, v.id)), avSteg = findStep((x) => x.t === 'avrinn' && fits(x.v, v.id));
+    // vatten i grytan – även om råvaran redan ligger i den (la man i pastan före vattnet går det lika bra)
+    if (!v.water && vattenSteg) {
+      doBind(vattenSteg.v, v.id);
+      v.water = true; play('slide'); pour(SINK.x0 + 28, SINK.y0 + 20, 0x8ac0f0); return;
+    }
+    // häll av vattnet (grytan kokades torr? då finns inget att hälla av – steget är ändå klart)
+    if (v.items.length && avSteg) {
       if (progressOf(v) < 1) { say($t`${best(v.items.find((it) => it.prog < 1)?.ing || '')} ÄR INTE KLAR ÄN - VÄNTA`); play('fel'); return; }
-      v.water = false; s.flag = true; play('slide'); pour(SINK.x0 + 28, SINK.y0 + 20, 0x8ac0f0);
+      if (v.water) { v.water = false; play('slide'); pour(SINK.x0 + 28, SINK.y0 + 20, 0x8ac0f0); }
+      else { play('ok'); say($t('INGET VATTEN ATT HÄLLA AV - KLART')); }
+      avSteg.flag = true;
       // nästa steg häller eller lägger upp grytan? då behåller man den i handen – annars tillbaka på sin platta
-      const role = roleOf(v.id), next = remaining().find((x) => x !== s);
+      const role = roleOf(v.id), next = remaining().find((x) => x !== avSteg);
       const keep = next && ((next.t === 'hall' && next.from === role) || (next.t === 'upp' && next.v === role));
       if (!keep && v.fromBurner >= 0 && !burners[v.fromBurner].v) { burners[v.fromBurner].v = v.id; v.place = 'b' + v.fromBurner; hand = null; }
       return;
     }
-    if (!v.water && !v.items.length) {
-      const s = findStep((x) => x.t === 'vatten' && fits(x.v, v.id));
-      if (!s) { notNow(); return; }
-      doBind(s.v, v.id);
-      v.water = true; play('slide'); pour(SINK.x0 + 28, SINK.y0 + 20, 0x8ac0f0); return;
-    }
-    say($t('DEN HAR REDAN VATTEN'));
+    if (v.items.length) { if (v.water) notNow(); else { say($t('GRYTAN ÄR INTE TOM - LÄGG UPP MATEN ELLER HÄLL DEN I ETT ANNAT KÄRL')); play('fel'); } return; }
+    if (v.water) { say($t('DEN HAR REDAN VATTEN')); return; }
+    notNow();
   }
   function pourInto(toId) {
     const from = ves[hand.id], to = ves[toId];
@@ -510,6 +525,10 @@ export function makeKoket(A) {
       if (!findStep((x) => x.t === 'ugn') && !ves.form.items.length) { notNow(); return; }
       oven.v = 'form'; ves.form.place = 'ugn'; ves.form.wasIn = true; hand = null; play('slide'); return;
     }
+    // formen står i ugnen och man har något i handen: i med det (man glömde en råvara – eller satte in formen tom)
+    if (oven.v === 'form' && hand?.type === 'ing') { putIng('form'); return; }
+    if (oven.v === 'form' && hand?.type === 'bowl') { pourFromBowl('form'); return; }
+    if (oven.v === 'form' && hand?.type === 'ves') { pourInto('form'); return; }
     if (!hand && oven.v) { pickVessel(oven.v); return; }
     if (!hand) say($t('UGNEN SÄTTS PÅ NÄR FORMEN ÄR INNE'));
   }
@@ -571,7 +590,7 @@ export function makeKoket(A) {
     const anyFree = (kind) => ['gryta1', 'gryta2', 'panna1', 'panna2'].find((id) => KIND[id] === kind && !roleOf(id) && ves[id].place === 'rack');
     const posOf = (id) => { const v = ves[id]; if (v.place?.startsWith('b')) return 'platta' + v.place.slice(1); if (v.place === 'rack') return 'rack:' + id; if (v.place === 'ugn') return 'ugn'; return { skal: 'bunken', mixer: 'mixer', tallrik: 'tallrik' }[id] || null; };
     switch (s.t) {
-      case 'vatten': return hand?.type === 'ves' ? 'diskho' : 'rack:' + (vid || anyFree('gryta'));
+      case 'vatten': { if (hand?.type === 'ves') return 'diskho'; if (vid) return posOf(vid); const f = anyFree('gryta'); return f ? 'rack:' + f : null; }
       case 'stall': return hand?.type === 'ves' ? 'platta' + Math.max(0, burners.findIndex((b) => !b.v)) : 'rack:' + (vid || anyFree(s.v));
       case 'varme': { const b = vid ? burnerOf(vid) : -1; return b >= 0 ? 'vred' + b : null; }
       case 'i': if (hand?.type === 'ing') return vid ? posOf(vid) : null; return s.hack ? (board.ing === s.ing ? 'bradan' : 'ing:' + s.ing) : 'ing:' + s.ing;
@@ -588,7 +607,9 @@ export function makeKoket(A) {
   }
   // håller man något som inte är klart (och ska lagas vidare)? ställ tillbaka det på spisen
   function guideTargetSafe() {
-    if (hand?.type === 'ves' && !RAW.has(KIND[hand.id]) && ves[hand.id].items.length && progressOf(ves[hand.id]) < 1) {
+    // (håller man grytan för att fylla vatten eller hälla av är det kranen som gäller – inte "tillbaka på spisen")
+    const s0 = steps[cur], kranNu = s0 && (s0.t === 'vatten' || s0.t === 'avrinn') && hand?.type === 'ves' && fits(s0.v, hand.id);
+    if (!kranNu && hand?.type === 'ves' && !RAW.has(KIND[hand.id]) && ves[hand.id].items.length && progressOf(ves[hand.id]) < 1) {
       if (hand.id === 'form') return 'ugn';
       const free = burners.findIndex((b) => !b.v);
       return free >= 0 ? 'platta' + free : null;
