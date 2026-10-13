@@ -1,7 +1,8 @@
 // 🏆 MERITERNA och TROFÉSKÅPET ("bygg allting" 2026-10-12: troféhylla) – spelet minns vad man har vunnit:
 //   • en merit = pokal/rosett/medalj från utställningen (katt, hund), kaninhoppningen, agilitycupen och Best in Show
-//     (js/scenes/utstallning.js belona), hinderbanan i landet (game.js hoppResultat) och en komplett pixelkortsserie
-//     (js/core/pixelkort.js). Sparas i g.meriter [{ typ, plats, klass, vem, dag, t }] (game.js merit, högst 150).
+//     (js/scenes/utstallning.js belona), hinderbanan i landet (game.js hoppResultat), en komplett pixelkortsserie
+//     (js/core/pixelkort.js) och det lösta mysteriet (js/core/mysterium.js). Sparas i g.meriter
+//     [{ typ, plats, klass, vem, dag, t }] (game.js merit, högst 150).
 //   • den första meriten ger ett troféskåp gratis (möbeln 'trofeskap'). Skåpet visar de tolv senaste bakom glas –
 //     pokaler, rosetter och medaljer i guld, silver och brons (js/core/visning.js ritar det i möbelarkets extra rad).
 //   • ett tryck på skåpet hemma (room.js, funktionen 'meriter') öppnar "Mina meriter": allt man har vunnit.
@@ -18,6 +19,7 @@ export const MERIT = {
   bis: { icon: '✨', namn: $t('Best in Show'), form: 'stjarna' },
   hopp: { icon: '🏇', namn: $t('Hinderbanan'), form: 'rosett' },
   kort: { icon: '🃏', namn: $t('Pixelkort – komplett serie'), form: 'stjarna' },
+  mysterium: { icon: '🕵️', namn: $t('Mästerdetektiv – Kattstatyns krona'), form: 'medalj' },
 };
 const MEDALJ = ['🥇', '🥈', '🥉'];
 const klassNamn = (m) => (m.typ === 'hopp' ? HOPPKLASSER.find((k) => k.id === m.klass)?.namn

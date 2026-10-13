@@ -105,7 +105,7 @@ const MER_FORM = {   // o = mitten (ljus), allt annat i meritens färg
 };
 const METALL = [[0xf2c14e, 0xfff0a0, 0xb9862a], [0xc8d0da, 0xffffff, 0x8a929c], [0xc8823a, 0xf0b070, 0x8a5420]];
 const ROSETT = [[0x3a6ad8, 0xf2c14e, 0x24448e], [0xd83a3a, 0xf2c14e, 0x8e2424], [0xf0c830, 0xffffff, 0xa8861c]];   // blå, röd, gul
-const FORM_AV = { katt: 'pokal', hund: 'pokal', kanin: 'rosett', agility: 'medalj', bis: 'stjarna', hopp: 'rosett', kort: 'stjarna' };
+const FORM_AV = { katt: 'pokal', hund: 'pokal', kanin: 'rosett', agility: 'medalj', bis: 'stjarna', hopp: 'rosett', kort: 'stjarna', mysterium: 'medalj' };
 function ritaMerit(P, x, y, m) {
   const form = FORM_AV[m.typ] || 'pokal', rad = MER_FORM[form], p = Math.max(0, Math.min(2, (m.plats | 0) - 1));
   const [c, ljus, mork] = form === 'rosett' ? ROSETT[p] : form === 'stjarna' ? METALL[0] : METALL[p];

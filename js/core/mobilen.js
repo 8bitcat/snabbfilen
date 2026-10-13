@@ -9,6 +9,7 @@
 //   • 💛 Vänner (js/core/vannerapp.js, Carl 2026-10-12): ens vänner, vilka som är i stan nu (siffran på appen).
 //   • 💬 SMS (js/core/smsapp.js, Carl 2026-10-13): meddelanden till vännerna – siffran = olästa, röd prick på mobilen.
 //   • 📷 Kamera och 🖼️ Bilder (js/core/foto.js): fotoläget med filter, ramar och poser, och albumet.
+//   • 🔍 Mysteriet (js/core/mysterium.js): anteckningsboken – NY när ett nytt kapitel väntar (ett om dagen).
 //   • 💼 Jobb (alla jobb, närmast först, 🧭 Visa vägen) och 🏠 Hem (pilen hem) – js/core/jobben.js, Carl 2026-10-11.
 //     Startguiden lär ut dem första dagen: knappen och appen pulserar (guidePeka i js/core/startguide.js).
 //   • Inställningar öppnar spelmenyn med inställningarna utfällda (ljud, musik, zoom, språk, mätare,
@@ -30,6 +31,7 @@ import { openVannerApp, vanInneAntal } from './vannerapp.js';   // 💛 Vänner 
 import { openPresenter, presenterVantar } from './presenter.js';
 import { openSmsApp, smsOlast } from './smsapp.js';   // 💬 SMS till vännerna (Carl 2026-10-13)
 import { openKamera, openBilder } from './foto.js';   // 📷 fotoläget och 🖼️ albumet
+import { openMysteriet, mysteriumStart, kapitelVantar } from './mysterium.js';   // 🕵️ mysteriet i kapitel
 import { openKortApp } from './kortapp.js';   // 🃏 pixelkortsalbumet (Carl 2026-10-12)   // 🎁 presenterna (Carl 2026-10-12)
 
 const APPAR = [
@@ -37,6 +39,7 @@ const APPAR = [
   { id: 'jobb', fn: (A) => openJobben(A), ik: 'jobb', namn: $t('Jobb') },
   { id: 'hem', fn: (A) => visaHem(A), ik: 'hem', namn: $t('Hem') },
   { id: 'presenter', fn: (A) => openPresenter(A), ik: 'present', namn: $t('Presenter') },
+  { id: 'mysterium', fn: (A) => openMysteriet(A), ik: 'mysterium', namn: $t('Mysteriet') },
   { id: 'kort', fn: (A) => openKortApp(A), ik: 'kort', namn: $t('Pixelkort') },
   { id: 'kamera', fn: (A) => openKamera(A), ik: 'kamera', namn: $t('Kamera') },
   { id: 'bilder', fn: (A) => openBilder(A), ik: 'bilder', namn: $t('Bilder') },
@@ -93,6 +96,7 @@ export function mountMobilen(app0) {
   window.addEventListener('keydown', (e) => { if (oppen && e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); closeMobil(); } }, true);
   setInterval(uppdatera, 400);
   uppdatera();
+  mysteriumStart(A);
 }
 
 // var fjärde tiondels sekund: snabbknapparna på plats, siffrorna, klockan – och stäng när något annat öppnas
@@ -124,6 +128,7 @@ function uppdatera() {
   badge('vanner', van ? String(van) : '');
   badge('presenter', pres ? String(pres) : '');
   badge('sms', sms ? String(sms) : '');
+  badge('mysterium', kapitelVantar(A) ? $t('NY') : '');
   badge('nyheter', ny ? $t('NY') : '');
   badge('rost', rostPa ? $t('PÅ') : '');
   const g = A?.game;

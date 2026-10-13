@@ -1076,6 +1076,8 @@ export function makeCity(A) {
       walker.walkTo(x, y);
     },
 
+    // stadsdelen där figuren står ('parken', 'linne' … – js/city/map.js DISTRICTS; 🕵️ mysteriet)
+    distrikt: () => districtAt(walker.px, walker.py).id,
     draw(ctx) {
       syncView(A); // skärmen kan ha ändrat storlek – vyn följer med
       const cx = Math.round(cam.x), cy = Math.round(cam.y);

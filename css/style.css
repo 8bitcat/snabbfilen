@@ -795,6 +795,19 @@ html.foto-lage #emotes, html.foto-lage #chat, html.foto-lage #startguide, html.f
 .foto-knapp:active { transform: scale(.94); }
 .foto-tumme { width: 46px; height: 46px; padding: 0; border: 3px solid #fffdf6; background: #2a2630; color: #fff; font-size: 20px; overflow: hidden; cursor: pointer; }
 .foto-tumme img { width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated; display: block; }
+/* 🕵️ mysteriet (js/core/mysterium.js) */
+.my-vittne { display: grid; grid-template-columns: 56px 1fr; gap: 10px; align-items: start; }
+.my-repl { font-size: var(--f2); margin: 4px 0 0; padding: 8px 10px; background: #fff; border: 3px solid var(--ink); }
+.my-leta { width: 100%; max-height: 56vh; object-fit: contain; image-rendering: pixelated; border: 3px solid var(--ink); cursor: crosshair; display: block; }
+.my-sak { display: flex; justify-content: center; } .my-sak img { image-rendering: pixelated; }
+.my-boet { width: min(100%, 432px); aspect-ratio: 72 / 44; image-rendering: pixelated; border: 3px solid var(--ink); display: block; margin: 0 auto; }
+.my-kapitel { display: grid; gap: 3px; margin: 6px 0; }
+.my-kap { font-size: var(--f2); color: var(--muted); } .my-kap.klar { color: var(--ink); } .my-kap.nu { color: var(--ink); background: #fff8d6; padding: 2px 4px; }
+.my-nu { font-size: var(--f2); padding: 6px 8px; border: 3px solid var(--ink); background: #fff; }
+.my-ledtradar { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0; }
+.my-ledtradar span { display: grid; justify-items: center; gap: 2px; max-width: 86px; text-align: center; } .my-ledtradar small { font-size: var(--f1); line-height: 1.05; }
+.my-ledtradar img { image-rendering: pixelated; }
+.my-svar { display: grid; gap: 6px; margin-top: 8px; } .my-svar .btn { text-align: left; }
 /* 🏆 Mina meriter (js/core/meriter.js) */
 .mer-medalj { font-size: 26px; text-align: center; line-height: 1; }
 /* 🖼️ albumet */

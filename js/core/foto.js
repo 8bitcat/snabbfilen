@@ -22,6 +22,8 @@ import { isMenuOpen } from './menu.js';
 import { SMALL, BIG, ctxText, textW, bayer } from './floor-pix.js';
 
 export const MAX_BILDER = 60;
+const fotoKrokar = new Set();
+export const efterFoto = (f) => fotoKrokar.add(f);   // (anropas med (A, bilden) när en bild har sparats)
 const FILTER = [['normal', $t('Normal')], ['sommar', $t('Sommar')], ['svartvit', $t('Svartvitt')], ['gammal', $t('Gammalt foto')], ['retro', $t('Retro')], ['drom', $t('Drömland')]];
 const RAMAR = [['ingen', $t('Ingen')], ['snabbfoto', $t('Snabbfoto')], ['vykort', $t('Vykort')], ['guld', $t('Guldram')], ['film', $t('Filmremsa')]];
 const VAL = 'snabbfilen_foto_val';
@@ -37,7 +39,7 @@ const TASS = /^(tassbacken|trimmaren|utstallning|kattcafe|djurhem|djurklinik|agi
 function platsNamn() {
   const s = String(A?.sceneName || 'city');
   if (s === 'room' || s === 'koket' || s === 'tradgard') return $t('HEMMA');
-  if (TASS.test(s)) return 'TASSBACKEN';
+  if (TASS.test(s)) return $t('TASSBACKEN');   // (heter olika på olika språk – som skylten)
   if (s === 'landet' || s === 'hopp') return $t('LANDET');
   return $t('PIXELSTADEN');
 }
@@ -166,6 +168,29 @@ function rita() {
   return true;
 }
 
+// En ren ögonblicksbild av det som syns (spelpixlar, utan skyltar och knappar) – 🕵️ mysteriets letaspel.
+// Väntar två bildrutor med fotolägets flagga på, så att spelet hinner rita bara världen. → canvas eller null
+export async function ogonblicksbild(A0) {
+  const cv = document.getElementById('scene'), app = document.getElementById('app');
+  if (!cv || !app || !cv.width) return null;
+  const var0 = foto.pa;
+  foto.pa = true;
+  await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+  try {
+    const s = Math.max(1, A0.pxs | 0), gw = Math.round(cv.width / s), gh = Math.round(cv.height / s);
+    const r = cv.getBoundingClientRect(), b = app.getBoundingClientRect();
+    const ix0 = Math.max(r.left, b.left, 0), iy0 = Math.max(r.top, b.top, 0), ix1 = Math.min(r.right, b.right, window.innerWidth), iy1 = Math.min(r.bottom, b.bottom, window.innerHeight);
+    const kx = gw / r.width, ky = gh / r.height;
+    const x0 = Math.max(0, Math.floor((ix0 - r.left) * kx)), y0 = Math.max(0, Math.floor((iy0 - r.top) * ky));
+    const w = Math.min(gw - x0, Math.ceil((ix1 - r.left) * kx) - x0), h = Math.min(gh - y0, Math.ceil((iy1 - r.top) * ky) - y0);
+    if (w < 32 || h < 32) return null;
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    const x = c.getContext('2d'); x.imageSmoothingEnabled = false;
+    x.drawImage(cv, x0 * s, y0 * s, w * s, h * s, 0, 0, w, h);
+    return c;
+  } finally { foto.pa = var0; }
+}
+
 // ---------- filtren (i spelpixlar – Retro och det gamla fotot rastreras som pixelgrafik) ----------
 const GB = [[15, 56, 15], [48, 98, 48], [139, 172, 15], [155, 188, 15]];
 function filtrera(ctx, w, h, f) {
@@ -266,6 +291,7 @@ async function ta() {
     senaste = post.id;
     uppdateraTumme(png);
     A.game?.glad?.(2, '', 'foto', 4);
+    for (const f of fotoKrokar) { try { f(A, post); } catch { /* ok */ } }   // 🕵️ mysteriet: ett foto i Parken
     toast($t('📸 Klick! Bilden ligger i 🖼️ Bilder.'), 'good');
   } catch { toast($t('🖼️ Bilden gick inte att spara här.'), 'bad'); }
 }

@@ -478,6 +478,25 @@ export const KARTOR = {
     '.......kkkkkkkk.',
     '................',
   ],
+  // 🔍 Mysteriet (js/core/mysterium.js) – ett förstoringsglas med mässingsring och trähandtag
+  mysterium: [
+    '................',
+    '....kkkkk.......',
+    '...kYYYYYk......',
+    '..kYcWWccYk.....',
+    '..kYcWcccYk.....',
+    '..kYccccbYk.....',
+    '..kYcccbbYk.....',
+    '...kYYYYYkj.....',
+    '....kkkkkkhj....',
+    '.........khhj...',
+    '..........khhj..',
+    '...........khhk.',
+    '............kk..',
+    '................',
+    '................',
+    '................',
+  ],
   // 📷 Kamera (js/core/foto.js) – en grå kamera med sökarknöl, röd avtryckare, gul blixt och ett stort blått objektiv
   kamera: [
     '................',

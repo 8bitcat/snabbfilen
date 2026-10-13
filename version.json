@@ -1,7 +1,7 @@
 {
-  "version": "0.120.0",
+  "version": "0.121.0",
   "date": "2026-10-13",
-  "title": "Troféskåpet",
+  "title": "Mysteriet: Kattstatyns krona",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
@@ -59,6 +59,8 @@
     "js/core/meriter.js",
     "js/core/mobilen.js",
     "js/core/music.js",
+    "js/core/mysterium-art.js",
+    "js/core/mysterium.js",
     "js/core/notiser.js",
     "js/core/odla.js",
     "js/core/people.js",

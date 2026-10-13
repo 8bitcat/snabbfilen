@@ -1,0 +1,677 @@
+[
+ {
+  "i": 8392,
+  "f": "js/core/meriter.js",
+  "k": "Mästerdetektiv – Kattstatyns krona"
+ },
+ {
+  "i": 8393,
+  "f": "js/core/mobilen.js",
+  "k": "Mysteriet"
+ },
+ {
+  "i": 8394,
+  "f": "js/core/mysterium.js",
+  "k": "parkvakten i Tassbacken"
+ },
+ {
+  "i": 8395,
+  "f": "js/core/mysterium.js",
+  "k": "på kattcaféet"
+ },
+ {
+  "i": 8396,
+  "f": "js/core/mysterium.js",
+  "k": "i BLING BLING-ateljén"
+ },
+ {
+  "i": 8397,
+  "f": "js/core/mysterium.js",
+  "k": "fiskar vid Sjöboden"
+ },
+ {
+  "i": 8398,
+  "f": "js/core/mysterium.js",
+  "k": "på pantbanken"
+ },
+ {
+  "i": 8399,
+  "f": "js/core/mysterium.js",
+  "k": "Tassbacken"
+ },
+ {
+  "i": 8400,
+  "f": "js/core/mysterium.js",
+  "k": "kattcaféet i Tassbacken"
+ },
+ {
+  "i": 8401,
+  "f": "js/core/mysterium.js",
+  "k": "BLING BLING i Linnéstaden"
+ },
+ {
+  "i": 8402,
+  "f": "js/core/mysterium.js",
+  "k": "Sjöboden vid piren"
+ },
+ {
+  "i": 8403,
+  "f": "js/core/mysterium.js",
+  "k": "pantbanken"
+ },
+ {
+  "i": 8404,
+  "f": "js/core/mysterium.js",
+  "k": "Parken (fontänen och de höga träden)"
+ },
+ {
+  "i": 8405,
+  "f": "js/core/mysterium.js",
+  "k": "En svartvit fjäder"
+ },
+ {
+  "i": 8406,
+  "f": "js/core/mysterium.js",
+  "k": "Glitter på fönsterbrädan"
+ },
+ {
+  "i": 8407,
+  "f": "js/core/mysterium.js",
+  "k": "En tappad pärla"
+ },
+ {
+  "i": 8408,
+  "f": "js/core/mysterium.js",
+  "k": "Fågelspår i sanden"
+ },
+ {
+  "i": 8409,
+  "f": "js/core/mysterium.js",
+  "k": "Glitterknappen"
+ },
+ {
+  "i": 8410,
+  "f": "js/core/mysterium.js",
+  "k": "Kattstatyns krona"
+ },
+ {
+  "i": 8411,
+  "f": "js/core/mysterium.js",
+  "k": "🍂 Bara ett löv."
+ },
+ {
+  "i": 8412,
+  "f": "js/core/mysterium.js",
+  "k": "🪨 Bara en sten."
+ },
+ {
+  "i": 8413,
+  "f": "js/core/mysterium.js",
+  "k": "📄 Bara ett skrynkligt papper."
+ },
+ {
+  "i": 8414,
+  "f": "js/core/mysterium.js",
+  "k": "Kronan är borta!"
+ },
+ {
+  "i": 8415,
+  "f": "js/core/mysterium.js",
+  "k": "Gå till Tassbacken och prata med parkvakten Gunnel vid kattstatyn."
+ },
+ {
+  "i": 8416,
+  "f": "js/core/mysterium.js",
+  "k": "Åh, tur att du kom! Kronan på kattstatyn är BORTA!"
+ },
+ {
+  "i": 8417,
+  "f": "js/core/mysterium.js",
+  "k": "I går kväll satt den där som vanligt. I morse var den bara … borta. Ingen har sett något."
+ },
+ {
+  "i": 8418,
+  "f": "js/core/mysterium.js",
+  "k": "Kan du hjälpa mig? Titta dig omkring – det kanske finns ledtrådar."
+ },
+ {
+  "i": 8419,
+  "f": "js/core/mysterium.js",
+  "k": "Leta efter ledtrådar i Tassbacken."
+ },
+ {
+  "i": 8420,
+  "f": "js/core/mysterium.js",
+  "k": "Fundera på fjädern."
+ },
+ {
+  "i": 8421,
+  "f": "js/core/mysterium.js",
+  "k": "En svartvit fjäder med blågrön glans … Var kommer den ifrån, tror du?"
+ },
+ {
+  "i": 8422,
+  "f": "js/core/mysterium.js",
+  "k": "Från en fågel"
+ },
+ {
+  "i": 8423,
+  "f": "js/core/mysterium.js",
+  "k": "Från en kudde"
+ },
+ {
+  "i": 8424,
+  "f": "js/core/mysterium.js",
+  "k": "Från en hatt"
+ },
+ {
+  "i": 8425,
+  "f": "js/core/mysterium.js",
+  "k": "En fågel! Men vilken? Och vad skulle en fågel med en krona till? Det här måste vi ta reda på."
+ },
+ {
+  "i": 8426,
+  "f": "js/core/mysterium.js",
+  "k": "Vittnet på kattcaféet"
+ },
+ {
+  "i": 8427,
+  "f": "js/core/mysterium.js",
+  "k": "Gå till kattcaféet i Tassbacken och fråga Fia om hon har sett något."
+ },
+ {
+  "i": 8428,
+  "f": "js/core/mysterium.js",
+  "k": "Kronan? Oj då! Vänta … i morse, precis när solen gick upp, blev katterna HELT galna."
+ },
+ {
+  "i": 8429,
+  "f": "js/core/mysterium.js",
+  "k": "De jamade och hoppade mot fönstret. Något flög förbi där ute – något som blänkte i solen!"
+ },
+ {
+  "i": 8430,
+  "f": "js/core/mysterium.js",
+  "k": "Titta vid fönstret om du vill."
+ },
+ {
+  "i": 8431,
+  "f": "js/core/mysterium.js",
+  "k": "Leta efter ledtrådar på kattcaféet."
+ },
+ {
+  "i": 8432,
+  "f": "js/core/mysterium.js",
+  "k": "Fundera på det Fia såg."
+ },
+ {
+  "i": 8433,
+  "f": "js/core/mysterium.js",
+  "k": "Katterna såg något flyga förbi i gryningen. Vad var det som blänkte?"
+ },
+ {
+  "i": 8434,
+  "f": "js/core/mysterium.js",
+  "k": "Något glittrigt som någon bar på"
+ },
+ {
+  "i": 8435,
+  "f": "js/core/mysterium.js",
+  "k": "Ett flygplan"
+ },
+ {
+  "i": 8436,
+  "f": "js/core/mysterium.js",
+  "k": "En regnbåge"
+ },
+ {
+  "i": 8437,
+  "f": "js/core/mysterium.js",
+  "k": "Något glittrigt flög förbi – precis som kronan. Någon flyger omkring med blanka saker!"
+ },
+ {
+  "i": 8438,
+  "f": "js/core/mysterium.js",
+  "k": "Fler saker försvinner"
+ },
+ {
+  "i": 8439,
+  "f": "js/core/mysterium.js",
+  "k": "Gå till BLING BLING i Linnéstaden och prata med Nova."
+ },
+ {
+  "i": 8440,
+  "f": "js/core/mysterium.js",
+  "k": "Har det försvunnit en krona? Hos MIG har det försvunnit tre pärlor!"
+ },
+ {
+  "i": 8441,
+  "f": "js/core/mysterium.js",
+  "k": "De låg på fönsterbänken medan jag gjorde ett halsband. Fönstret stod på glänt …"
+ },
+ {
+  "i": 8442,
+  "f": "js/core/mysterium.js",
+  "k": "När jag vände mig om var de borta. Bara ett litet ljud – flaxande?"
+ },
+ {
+  "i": 8443,
+  "f": "js/core/mysterium.js",
+  "k": "Leta efter ledtrådar i BLING BLING."
+ },
+ {
+  "i": 8444,
+  "f": "js/core/mysterium.js",
+  "k": "Jämför ledtrådarna."
+ },
+ {
+  "i": 8445,
+  "f": "js/core/mysterium.js",
+  "k": "Kronan, glittret och pärlorna. Vad har de gemensamt?"
+ },
+ {
+  "i": 8446,
+  "f": "js/core/mysterium.js",
+  "k": "De glittrar och blänker"
+ },
+ {
+  "i": 8447,
+  "f": "js/core/mysterium.js",
+  "k": "De är gjorda av choklad"
+ },
+ {
+  "i": 8448,
+  "f": "js/core/mysterium.js",
+  "k": "De är gröna"
+ },
+ {
+  "i": 8449,
+  "f": "js/core/mysterium.js",
+  "k": "Alla blänker! Tjuven gillar bara saker som glittrar. Och den kan flyga …"
+ },
+ {
+  "i": 8450,
+  "f": "js/core/mysterium.js",
+  "k": "Fiskarens blanka drag"
+ },
+ {
+  "i": 8451,
+  "f": "js/core/mysterium.js",
+  "k": "Gå till Sjöboden vid piren och prata med Saga."
+ },
+ {
+  "i": 8452,
+  "f": "js/core/mysterium.js",
+  "k": "Mitt fiskedrag är borta! Det blanka, det bästa jag har."
+ },
+ {
+  "i": 8453,
+  "f": "js/core/mysterium.js",
+  "k": "Jag la det på bryggan en sekund. Då kom en fågel med lång stjärt, svartvit, och bara – SNAPP!"
+ },
+ {
+  "i": 8454,
+  "f": "js/core/mysterium.js",
+  "k": "Den lämnade spår efter sig i sanden."
+ },
+ {
+  "i": 8455,
+  "f": "js/core/mysterium.js",
+  "k": "Leta efter spåren vid Sjöboden."
+ },
+ {
+  "i": 8456,
+  "f": "js/core/mysterium.js",
+  "k": "Vilken fågel är det?"
+ },
+ {
+  "i": 8457,
+  "f": "js/core/mysterium.js",
+  "k": "Svartvita fjädrar, en lång blågrön stjärt – och den älskar blanka saker. Vilken fågel är det?"
+ },
+ {
+  "i": 8458,
+  "f": "js/core/mysterium.js",
+  "k": "En skata"
+ },
+ {
+  "i": 8459,
+  "f": "js/core/mysterium.js",
+  "k": "En mås"
+ },
+ {
+  "i": 8460,
+  "f": "js/core/mysterium.js",
+  "k": "En duva"
+ },
+ {
+  "i": 8461,
+  "f": "js/core/mysterium.js",
+  "k": "En skata! Skator samlar på blanka saker och gömmer dem i sitt bo. Men var bor den?"
+ },
+ {
+  "i": 8462,
+  "f": "js/core/mysterium.js",
+  "k": "Kartan på pantbanken"
+ },
+ {
+  "i": 8463,
+  "f": "js/core/mysterium.js",
+  "k": "Gå till pantbanken och fråga Pelle – han vet allt om blanka saker."
+ },
+ {
+  "i": 8464,
+  "f": "js/core/mysterium.js",
+  "k": "En skata, säger du? Ha! Den har varit här också – den försökte ta en ring från disken."
+ },
+ {
+  "i": 8465,
+  "f": "js/core/mysterium.js",
+  "k": "Folk kommer hit hela tiden och frågar efter blanka saker de tappat. Jag har prickat in dem på min karta."
+ },
+ {
+  "i": 8466,
+  "f": "js/core/mysterium.js",
+  "k": "Tassbacken, kattcaféet, BLING BLING, Sjöboden … titta, de ligger i en ring runt samma ställe!"
+ },
+ {
+  "i": 8467,
+  "f": "js/core/mysterium.js",
+  "k": "Titta på Pelles karta."
+ },
+ {
+  "i": 8468,
+  "f": "js/core/mysterium.js",
+  "k": "Platserna ligger i en ring. Vad ligger i mitten av ringen – där en skata kan ha sitt bo i ett högt träd?"
+ },
+ {
+  "i": 8469,
+  "f": "js/core/mysterium.js",
+  "k": "Parken med de höga träden"
+ },
+ {
+  "i": 8470,
+  "f": "js/core/mysterium.js",
+  "k": "Bensinmacken"
+ },
+ {
+  "i": 8471,
+  "f": "js/core/mysterium.js",
+  "k": "Parken! De högsta träden i stan står där. Om boet finns där borde man kunna se det …"
+ },
+ {
+  "i": 8472,
+  "f": "js/core/mysterium.js",
+  "k": "Boet i trädtoppen"
+ },
+ {
+  "i": 8473,
+  "f": "js/core/mysterium.js",
+  "k": "Gå till Parken i stan, öppna 📷 Kamera i mobilen och ta en bild av de höga träden."
+ },
+ {
+  "i": 8474,
+  "f": "js/core/mysterium.js",
+  "k": "Hur får vi tillbaka kronan?"
+ },
+ {
+  "i": 8475,
+  "f": "js/core/mysterium.js",
+  "k": "Där är boet – fullt av glitter, och kronan mitt i! Hur får vi tillbaka den utan att skrämma skatan?"
+ },
+ {
+  "i": 8476,
+  "f": "js/core/mysterium.js",
+  "k": "Byta till oss den mot något annat blankt"
+ },
+ {
+  "i": 8477,
+  "f": "js/core/mysterium.js",
+  "k": "Klättra upp och ta den"
+ },
+ {
+  "i": 8478,
+  "f": "js/core/mysterium.js",
+  "k": "Skrika åt skatan"
+ },
+ {
+  "i": 8479,
+  "f": "js/core/mysterium.js",
+  "k": "Ett byte! Skator vill ha något blankt i stället. Nova på BLING BLING har säkert något glittrigt …"
+ },
+ {
+  "i": 8480,
+  "f": "js/core/mysterium.js",
+  "k": "Bytet"
+ },
+ {
+  "i": 8481,
+  "f": "js/core/mysterium.js",
+  "k": "Gå till BLING BLING och fråga Nova om något blankt att byta med."
+ },
+ {
+  "i": 8482,
+  "f": "js/core/mysterium.js",
+  "k": "Ett bo fullt av glitter? Och mina pärlor där? Haha, vilken skata!"
+ },
+ {
+  "i": 8483,
+  "f": "js/core/mysterium.js",
+  "k": "Här – ta den här glitterknappen. Den blänker mer än allt annat i hela ateljén."
+ },
+ {
+  "i": 8484,
+  "f": "js/core/mysterium.js",
+  "k": "Skator kan inte låta bli sådant. Lycka till!"
+ },
+ {
+  "i": 8485,
+  "f": "js/core/mysterium.js",
+  "k": "Gå till Parken och lägg fram glitterknappen till skatan."
+ },
+ {
+  "i": 8486,
+  "f": "js/core/mysterium.js",
+  "k": "Gå tillbaka till Tassbacken och ge kronan till Gunnel."
+ },
+ {
+  "i": 8487,
+  "f": "js/core/mysterium.js",
+  "k": "Är det … KRONAN?! Du hittade den!"
+ },
+ {
+  "i": 8488,
+  "f": "js/core/mysterium.js",
+  "k": "En skata?! Och den bytte bort den mot en knapp? Vilken historia!"
+ },
+ {
+  "i": 8489,
+  "f": "js/core/mysterium.js",
+  "k": "Tack, du är en riktig mästerdetektiv. Nu sitter kronan där den ska – och kattstatyn ger tur igen!"
+ },
+ {
+  "i": 8490,
+  "f": "js/core/mysterium.js",
+  "k": "👑 Ge kronan till Gunnel"
+ },
+ {
+  "i": 8491,
+  "f": "js/core/mysterium.js",
+  "k": "🔍 Leta efter ledtrådar"
+ },
+ {
+  "i": 8492,
+  "f": "js/core/mysterium.js",
+  "k": "Vidare ▶"
+ },
+ {
+  "i": 8493,
+  "f": "js/core/mysterium.js",
+  "k": "🔍 Du fick: {0}"
+ },
+ {
+  "i": 8494,
+  "f": "js/core/mysterium.js",
+  "k": "Något här ser konstigt ut … Tryck på det du tror är en ledtråd!"
+ },
+ {
+  "i": 8495,
+  "f": "js/core/mysterium.js",
+  "k": "Senare"
+ },
+ {
+  "i": 8496,
+  "f": "js/core/mysterium.js",
+  "k": "🔍 En ledtråd!"
+ },
+ {
+  "i": 8497,
+  "f": "js/core/mysterium.js",
+  "k": "Den hamnar bland ledtrådarna i 🔍 Mysteriet."
+ },
+ {
+  "i": 8498,
+  "f": "js/core/mysterium.js",
+  "k": "🕵️ Vad tror du?"
+ },
+ {
+  "i": 8499,
+  "f": "js/core/mysterium.js",
+  "k": "🤔 Hmm, inte riktigt. Titta på ledtrådarna och prova igen!"
+ },
+ {
+  "i": 8500,
+  "f": "js/core/mysterium.js",
+  "k": "🕵️ Rätt!"
+ },
+ {
+  "i": 8501,
+  "f": "js/core/mysterium.js",
+  "k": "📸 Vad är det där uppe?!"
+ },
+ {
+  "i": 8502,
+  "f": "js/core/mysterium.js",
+  "k": "Du zoomar in på trädtoppen i bilden … Ett BO! Fullt av glitter – pärlor, ett fiskedrag och mitt i alltihop: kattstatyns krona. Och där sitter skatan och vaktar."
+ },
+ {
+  "i": 8503,
+  "f": "js/core/mysterium.js",
+  "k": "🐦 Skatan i Parken"
+ },
+ {
+  "i": 8504,
+  "f": "js/core/mysterium.js",
+  "k": "Skatan sitter på grenen och tittar på dig med sina blanka ögon. Den har sett glitterknappen i din hand …"
+ },
+ {
+  "i": 8505,
+  "f": "js/core/mysterium.js",
+  "k": "✨ Lägg fram glitterknappen på bänken"
+ },
+ {
+  "i": 8506,
+  "f": "js/core/mysterium.js",
+  "k": "FLAX! Skatan dyker ner, nappar åt sig knappen – och tappar kronan rakt ner i gräset framför dig. Bytet är klart!"
+ },
+ {
+  "i": 8507,
+  "f": "js/core/mysterium.js",
+  "k": "👑 Ta upp kronan"
+ },
+ {
+  "i": 8508,
+  "f": "js/core/mysterium.js",
+  "k": "🕵️ Mysteriet är löst!"
+ },
+ {
+  "i": 8509,
+  "f": "js/core/mysterium.js",
+  "k": "📗 Kapitel {0} klart!"
+ },
+ {
+  "i": 8510,
+  "f": "js/core/mysterium.js",
+  "k": "Kronan sitter på kattstatyn igen, och hela Tassbacken pratar om dig. Belöning: <b>{0}</b> – och meriten 🕵️ Mästerdetektiv i ditt troféskåp!"
+ },
+ {
+  "i": 8511,
+  "f": "js/core/mysterium.js",
+  "k": "Bra jobbat, detektiv! Belöning: <b>{0}</b>."
+ },
+ {
+  "i": 8512,
+  "f": "js/core/mysterium.js",
+  "k": "📅 Kapitel {0}, «{1}», kommer i morgon från kl. 6."
+ },
+ {
+  "i": 8513,
+  "f": "js/core/mysterium.js",
+  "k": "Kapitel {0}"
+ },
+ {
+  "i": 8514,
+  "f": "js/core/mysterium.js",
+  "k": "🕵️ Mysteriet är löst – kronan sitter på kattstatyn igen. Du är en mästerdetektiv!"
+ },
+ {
+  "i": 8515,
+  "f": "js/core/mysterium.js",
+  "k": "📅 Nästa kapitel, «{0}», kommer i morgon från kl. 6."
+ },
+ {
+  "i": 8516,
+  "f": "js/core/mysterium.js",
+  "k": "🔍 Mysteriet: Kattstatyns krona"
+ },
+ {
+  "i": 8517,
+  "f": "js/core/mysterium.js",
+  "k": "Kronan på kattstatyn i Tassbacken har försvunnit. Ett nytt kapitel varje dag – kan du lösa mysteriet?"
+ },
+ {
+  "i": 8518,
+  "f": "js/core/mysterium.js",
+  "k": "🔍 Ledtrådar"
+ },
+ {
+  "i": 8519,
+  "f": "js/core/mysterium.js",
+  "k": "🕵️ Svara"
+ },
+ {
+  "i": 8520,
+  "f": "js/core/mysterium.js",
+  "k": "🔍 Leta här"
+ },
+ {
+  "i": 8521,
+  "f": "js/core/mysterium.js",
+  "k": "✨ Byt med skatan"
+ },
+ {
+  "i": 8522,
+  "f": "js/core/mysterium.js",
+  "k": "💬 Prata"
+ },
+ {
+  "i": 8523,
+  "f": "js/core/mysterium.js",
+  "k": "🕵️ Något har hänt i Tassbacken! Öppna 🔍 Mysteriet i mobilen."
+ },
+ {
+  "i": 8524,
+  "f": "js/core/mysterium.js",
+  "k": "🕵️ Ett nytt kapitel i mysteriet väntar – öppna 🔍 Mysteriet i mobilen!"
+ },
+ {
+  "i": 8525,
+  "f": "js/core/mysterium.js",
+  "k": "🔍 Här finns ledtrådar – öppna 🔍 Mysteriet i mobilen och leta!"
+ },
+ {
+  "i": 8526,
+  "f": "js/core/mysterium.js",
+  "k": "📸 Här står de höga träden! Öppna 📷 Kamera i mobilen och ta en bild av dem."
+ }
+]

@@ -10,6 +10,13 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.121.0] – 2026-10-13 – Mysteriet: Kattstatyns krona
+- 🕵️ Mysteriet i Pixelstaden: Kattstatyns krona! Kronan på kattstatyn i Tassbacken är borta – kan du hitta den?
+- Sju kapitel, ett nytt varje dag från kl. 6. Prata med vittnen, leta ledtrådar i bilden av platsen och dra dina egna slutsatser.
+- 🔍 Mysteriet i mobilen är din anteckningsbok: kapitlen, vad du ska göra nu och alla ledtrådar du hittat.
+- Löser du mysteriet får du 1 000 kr och meriten 🕵️ Mästerdetektiv i troféskåpet. (Tips: kameran kommer till nytta …)
+- Rättat: Tassbacken heter som på skyltarna i alla språk på snabbfotot, vykortet och i Mina meriter.
+
 ## [0.120.0] – 2026-10-13 – Troféskåpet
 - 🏆 Troféskåpet! Allt du vinner sparas som meriter: utställningen, kaninhoppningen, agilitycupen, Best in Show, hinderbanan och kompletta pixelkortsserier.
 - Din första merit ger ett troféskåp – ställ ut det hemma. De tolv senaste pokalerna, rosetterna och medaljerna står på hyllorna bakom glaset.

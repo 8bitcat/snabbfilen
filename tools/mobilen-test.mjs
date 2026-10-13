@@ -44,7 +44,7 @@ const { ctx, p } = await boot();
 ok(await D(p, () => [...document.querySelectorAll('#hud button')].filter((b) => b.offsetParent).length === 0), 'raden överst: inga synliga knappar, bara mätarna');
 ok(await D(p, () => { const r = document.querySelector('#hud-mobil')?.getBoundingClientRect(); return !!r && r.width > 40 && r.right > innerWidth - 40 && r.bottom > innerHeight - 40; }), 'mobilknappen syns nere till höger');
 await p.click('#hud-mobil'); await p.waitForTimeout(250);
-ok(await D(p, () => !document.querySelector('#mobilen').classList.contains('hidden') && document.querySelectorAll('#mobilen [data-app]:not([hidden])').length === 19), 'mobilen öppnas med nitton appar (med Jobb, Hem, 🎁 Presenter, 🃏 Pixelkort, 📷 Kamera, 🖼️ Bilder, KBK, 💛 Vänner och 💬 SMS)');
+ok(await D(p, () => !document.querySelector('#mobilen').classList.contains('hidden') && document.querySelectorAll('#mobilen [data-app]:not([hidden])').length === 20), 'mobilen öppnas med tjugo appar (med Jobb, Hem, 🎁 Presenter, 🔍 Mysteriet, 🃏 Pixelkort, 📷 Kamera, 🖼️ Bilder, KBK, 💛 Vänner och 💬 SMS)');
 ok(await D(p, () => /\d\d:\d\d/.test(document.querySelector('[data-mob="klocka"]').textContent) && /dag \d/.test(document.querySelector('[data-mob="dag"]').textContent)), 'mobilen visar klockan och dagen');
 await p.keyboard.press('Escape'); await p.waitForTimeout(150);
 ok(await D(p, () => document.querySelector('#mobilen').classList.contains('hidden')), 'Esc stänger mobilen');
