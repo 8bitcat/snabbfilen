@@ -64,9 +64,12 @@ ok(await D(() => window.SF.scene._debug.buildings.some((b) => b.id === 'husvagn'
 // från trottoaren framför vagnen till den mogna krukan: in genom grinden
 await D(() => window.SF.scene._debug.teleport(3942, 648));
 await sleep(400);
-const path = [];
+// (vägen loggas i sidan varje bildruta – med en mätning var tionde sekund hann figuren passera grinden mellan två
+// mätningar när datorn var hårt belastad i verify)
+await D(() => { window.__vag = []; window.__logga = true; const rec = () => { if (!window.__logga) return; window.__vag.push(window.SF.scene._debug.pos()); requestAnimationFrame(rec); }; requestAnimationFrame(rec); });
 await clickWorld(O.pots[0][0], O.pots[0][1] - 10);
-for (let i = 0; i < 80; i++) { path.push(await D(() => window.SF.scene._debug.pos())); await sleep(100); if ((await beds())[0].st !== 'mogen') break; }
+for (let i = 0; i < 80; i++) { await sleep(100); if ((await beds())[0].st !== 'mogen') break; }
+const path = await D(() => { window.__logga = false; return window.__vag; });
 B = await beds();
 ok(B[0].st === 'tom', 'mogen kruka → skördat, krukan tom');
 ok(await D(() => (window.SF.game.skafferi?.tomat | 0) > 0), `tomaterna i skafferiet (${await D(() => window.SF.game.skafferi?.tomat | 0)} st)`);
@@ -91,7 +94,10 @@ ok(B[2].st === 'vattnad' && B[2].b?.g === 'tomat', 'sådde tomater – vattnat o
 await sleep(1500);
 await clickWorld(O.can[0], O.can[1] - 6);
 ok(await waitFor(() => [...document.querySelectorAll('#toasts .toast')].some((t) => /redan vattnat/.test(t.textContent)), 8000), 'kannan: allt är redan vattnat i dag');
-await D(() => { window.SF.game.sleep(); window.SF.game.min = 11 * 60; window.SF.game.save(); });
+// (vänta tills figuren stått still en stund – annars kan ett sent kannklick vattna på den nya dagen)
+await waitFor(() => window.SF.scene._debug.arrived(), 5000); await sleep(600);
+// (natten utan slumphändelse: blir det 🌧️ regn vattnar regnet krukorna, och då är tomaterna inte torra – så föll provet ibland)
+await D(() => { const r = Math.random; Math.random = () => 0.99; try { window.SF.game.sleep(); } finally { Math.random = r; } window.SF.game.min = 11 * 60; window.SF.game.save(); });
 await closeModal();
 B = await beds();
 ok(B[2].st === 'torr' && B[1].st === 'mogen', `ny dag: de nysådda tomaterna torra, morötterna mogna (${B.map((b) => b.st).join(', ')})`);
