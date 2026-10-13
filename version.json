@@ -1,7 +1,7 @@
 {
-  "version": "0.123.0",
+  "version": "0.124.0",
   "date": "2026-10-13",
-  "title": "Fiske på Solön",
+  "title": "Pixelberg – tivolit på berget",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
@@ -155,6 +155,7 @@
     "js/pets/sprite-data.js",
     "js/pets/sprites.js",
     "js/pets/trim.js",
+    "js/pixelberg/karta.js",
     "js/scenes/agility.js",
     "js/scenes/apartment.js",
     "js/scenes/bio/film.js",
@@ -187,6 +188,7 @@
     "js/scenes/kok.js",
     "js/scenes/koket.js",
     "js/scenes/landet.js",
+    "js/scenes/pixelberg.js",
     "js/scenes/room.js",
     "js/scenes/shop-accessoarer.js",
     "js/scenes/shop-bank.js",

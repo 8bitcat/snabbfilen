@@ -458,6 +458,14 @@ export function makeCity(A) {
     play('door');
     return true;
   }
+  // 🎡 BERGBUSSEN upp till PIXELBERG (js/scenes/pixelberg.js) – en rad i varje hållplatsdialog, samma biljett
+  const bergRad = () => `<div class="prow shoprow"><span style="font-size:28px;text-align:center">🎡</span><span class="nm">${esc($t('PIXELBERG'))}<br><small class="sp">${esc($t('Bergbussen upp till tivolit'))}</small></span><button class="btn btn-small ${g.money >= BUS_FARE ? 'btn-go' : ''}" data-berg ${g.money >= BUS_FARE ? '' : 'disabled'}>${$t('Åk hit')}</button></div>`;
+  function bergbussen(from) {
+    if (g.money < BUS_FARE) { toast($t`🚌 Bussen kostar ${BUS_FARE} kr – du har inte råd.`, 'bad'); return; }
+    g.money -= BUS_FARE; g.passTime(BUS_MINUTES); g.save(); play('door');
+    walker.stop(); fade.phase = 1; fade.a = 0;
+    fade.cb = () => { A.pixelbergFran = { buss: from?.id || '' }; A.go('pixelberg'); };
+  }
   function openBusDialog(from) {
     const others = BUS_STOPS.filter((s) => s.id !== from.id);
     const intro = from.broken
@@ -466,9 +474,10 @@ export function makeCity(A) {
     const body = `<p style="font-size:var(--f2);margin-top:0">${intro}</p><div class="plist">${others.map((s) => `
       <div class="prow shoprow"><span style="font-size:28px;text-align:center">${s.broken ? '🚏' : '🚌'}</span>
         <span class="nm">${esc($t(s.name))}<br><small class="sp">${esc($t(s.district))}${s.broken ? ` · ${$t('hållplatsen är trasig')}` : ''}</small></span>
-        <button class="btn btn-small ${g.money >= BUS_FARE ? 'btn-go' : ''}" data-bus="${s.id}" ${g.money >= BUS_FARE ? '' : 'disabled'}>${$t('Åk hit')}</button></div>`).join('')}</div>`;
+        <button class="btn btn-small ${g.money >= BUS_FARE ? 'btn-go' : ''}" data-bus="${s.id}" ${g.money >= BUS_FARE ? '' : 'disabled'}>${$t('Åk hit')}</button></div>`).join('')}${bergRad()}</div>`;
     const dlg = openModal(`🚌 ${esc($t(from.name))}${from.broken ? ` (${$t('trasig hållplats')})` : ''}`, body, [{ label: $t('Stanna kvar'), onClick: closeModal }]);
     dlg.querySelectorAll('[data-bus]').forEach((el) => { el.onclick = () => { closeModal(); rideBus(busStopById(el.dataset.bus)); }; });
+    dlg.querySelector('[data-berg]')?.addEventListener('click', () => { closeModal(); bergbussen(from); });
   }
 
   // ---------- bussen på riktigt (receptet i traffic.js filhuvud) ----------
@@ -497,9 +506,10 @@ export function makeCity(A) {
     const body = `<p style="font-size:var(--f2);margin-top:0">${from.broken ? $t`Dörrarna står öppna – kuren är sönder men bussen går. Resan kostar <b>${BUS_FARE} kr</b>.` : $t`Dörrarna står öppna. Resan kostar <b>${BUS_FARE} kr</b>.`}</p><div class="plist">${dests.map((s) => `
       <div class="prow shoprow"><span style="font-size:28px;text-align:center">${s.broken ? '🚏' : '🚌'}</span>
         <span class="nm">${esc($t(s.name))}<br><small class="sp">${esc($t(s.district))} · ${s.stops === 1 ? $t`${s.stops} hållplats bort` : $t`${s.stops} hållplatser bort`}</small></span>
-        <button class="btn btn-small ${g.money >= BUS_FARE ? 'btn-go' : ''}" data-bus="${s.id}" ${g.money >= BUS_FARE ? '' : 'disabled'}>${$t('Kliv på')}</button></div>`).join('')}</div>`;
+        <button class="btn btn-small ${g.money >= BUS_FARE ? 'btn-go' : ''}" data-bus="${s.id}" ${g.money >= BUS_FARE ? '' : 'disabled'}>${$t('Kliv på')}</button></div>`).join('')}${bergRad()}</div>`;
     const dlg = openModal($t`🚌 Linje 4 vid ${esc($t(from.name))}`, body, [{ label: $t('Kliv inte på'), onClick: () => { S.traffic.release?.(from.id); closeModal(); } }]);
     dlg.querySelectorAll('[data-bus]').forEach((el) => { el.onclick = () => { closeModal(); boardNow(from, el.dataset.bus); }; });
+    dlg.querySelector('[data-berg]')?.addEventListener('click', () => { S.traffic.release?.(from.id); closeModal(); bergbussen(from); });
   }
   // Kliv av bussen: ställ figuren vid dörren och väck kameran/området.
   function finishRide() {

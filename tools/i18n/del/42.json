@@ -1,0 +1,242 @@
+[
+ {
+  "i": 8617,
+  "f": "js/main.js",
+  "k": "🎡 på tivolit på Pixelberg"
+ },
+ {
+  "i": 8618,
+  "f": "js/pixelberg/karta.js",
+  "k": "SOCKERVADD & POPCORN"
+ },
+ {
+  "i": 8619,
+  "f": "js/pixelberg/karta.js",
+  "k": "BERG-OCH-DALBANAN"
+ },
+ {
+  "i": 8620,
+  "f": "js/pixelberg/karta.js",
+  "k": "PIXELBERGS TIVOLI"
+ },
+ {
+  "i": 8621,
+  "f": "js/scenes/city.js",
+  "k": "PIXELBERG"
+ },
+ {
+  "i": 8622,
+  "f": "js/scenes/city.js",
+  "k": "Bergbussen upp till tivolit"
+ },
+ {
+  "i": 8623,
+  "f": "js/scenes/pixelberg.js",
+  "k": "Pariserhjulet är bäst – man ser ända bort till bron!"
+ },
+ {
+  "i": 8624,
+  "f": "js/scenes/pixelberg.js",
+  "k": "Jag har åkt karusell fem gånger i dag!"
+ },
+ {
+  "i": 8625,
+  "f": "js/scenes/pixelberg.js",
+  "k": "Sockervadden här är rosa OCH blå!"
+ },
+ {
+  "i": 8626,
+  "f": "js/scenes/pixelberg.js",
+  "k": "Vågar du åka berg-och-dalbanan när den öppnar?"
+ },
+ {
+  "i": 8627,
+  "f": "js/scenes/pixelberg.js",
+  "k": "Jag vann ett kortpaket på lyckohjulet!"
+ },
+ {
+  "i": 8628,
+  "f": "js/scenes/pixelberg.js",
+  "k": "På kvällen lyser hela tivolit."
+ },
+ {
+  "i": 8629,
+  "f": "js/scenes/pixelberg.js",
+  "k": "🍭 Sockervadd"
+ },
+ {
+  "i": 8630,
+  "f": "js/scenes/pixelberg.js",
+  "k": "🍿 Popcorn"
+ },
+ {
+  "i": 8631,
+  "f": "js/scenes/pixelberg.js",
+  "k": "🍬 Tivoliklubba"
+ },
+ {
+  "i": 8632,
+  "f": "js/scenes/pixelberg.js",
+  "k": "Nitlott – försök igen!"
+ },
+ {
+  "i": 8633,
+  "f": "js/scenes/pixelberg.js",
+  "k": "💰 50 kr!"
+ },
+ {
+  "i": 8634,
+  "f": "js/scenes/pixelberg.js",
+  "k": "🍬 En tivoliklubba!"
+ },
+ {
+  "i": 8635,
+  "f": "js/scenes/pixelberg.js",
+  "k": "💰 20 kr!"
+ },
+ {
+  "i": 8636,
+  "f": "js/scenes/pixelberg.js",
+  "k": "🍭 En sockervadd!"
+ },
+ {
+  "i": 8637,
+  "f": "js/scenes/pixelberg.js",
+  "k": "🎡 Välkommen till Pixelbergs tivoli! +{0} 😊"
+ },
+ {
+  "i": 8638,
+  "f": "js/scenes/pixelberg.js",
+  "k": "🎡 Välkommen till Pixelbergs tivoli!"
+ },
+ {
+  "i": 8639,
+  "f": "js/scenes/pixelberg.js",
+  "k": "🎟️ En åkkupong kostar {0} – du har inte råd. (Eller köp ett åkband i biljettluckan.)"
+ },
+ {
+  "i": 8640,
+  "f": "js/scenes/pixelberg.js",
+  "k": "🎟️ {0}: en kupong, {1}."
+ },
+ {
+  "i": 8641,
+  "f": "js/scenes/pixelberg.js",
+  "k": "Pariserhjulet"
+ },
+ {
+  "i": 8642,
+  "f": "js/scenes/pixelberg.js",
+  "k": "🎡 Du kliver in i gondolen – håll i dig!"
+ },
+ {
+  "i": 8643,
+  "f": "js/scenes/pixelberg.js",
+  "k": "🎡 Vilken utsikt! +{0} 😊"
+ },
+ {
+  "i": 8644,
+  "f": "js/scenes/pixelberg.js",
+  "k": "🎡 Vilken utsikt!"
+ },
+ {
+  "i": 8645,
+  "f": "js/scenes/pixelberg.js",
+  "k": "🎠 Wiii! +{0} 😊"
+ },
+ {
+  "i": 8646,
+  "f": "js/scenes/pixelberg.js",
+  "k": "🎠 Wiii!"
+ },
+ {
+  "i": 8647,
+  "f": "js/scenes/pixelberg.js",
+  "k": "PARISERHJULET – ETT VARV MED UTSIKT"
+ },
+ {
+  "i": 8648,
+  "f": "js/scenes/pixelberg.js",
+  "k": "BILJETTER – ÅKBAND OCH KUPONGER"
+ },
+ {
+  "i": 8649,
+  "f": "js/scenes/pixelberg.js",
+  "k": "🎢 Berg-och-dalbanan provkörs – snart får du åka! (Radiobilarna och spökhuset kommer också.)"
+ },
+ {
+  "i": 8650,
+  "f": "js/scenes/pixelberg.js",
+  "k": "BERGBUSSEN NER TILL STAN"
+ },
+ {
+  "i": 8651,
+  "f": "js/scenes/pixelberg.js",
+  "k": "🎟️ Biljetter"
+ },
+ {
+  "i": 8652,
+  "f": "js/scenes/pixelberg.js",
+  "k": "Du har åkband i dag – åk hur mycket du vill! 🎉"
+ },
+ {
+  "i": 8653,
+  "f": "js/scenes/pixelberg.js",
+  "k": "Varje åktur kostar en kupong ({0}). Med ett åkband åker du hur mycket du vill hela dagen."
+ },
+ {
+  "i": 8654,
+  "f": "js/scenes/pixelberg.js",
+  "k": "🎟️ Åkband · {0}"
+ },
+ {
+  "i": 8655,
+  "f": "js/scenes/pixelberg.js",
+  "k": "🎟️ Åkbandet sitter på handleden – åk hur mycket du vill i dag!"
+ },
+ {
+  "i": 8656,
+  "f": "js/scenes/pixelberg.js",
+  "k": "🍭 Sockervadd & popcorn"
+ },
+ {
+  "i": 8657,
+  "f": "js/scenes/pixelberg.js",
+  "k": "🎰 Lyckohjulet"
+ },
+ {
+  "i": 8658,
+  "f": "js/scenes/pixelberg.js",
+  "k": "Ett snurr kostar {0}. Vinster: kortpaket, pengar och godis!"
+ },
+ {
+  "i": 8659,
+  "f": "js/scenes/pixelberg.js",
+  "k": "🎰 Snurra · {0}"
+ },
+ {
+  "i": 8660,
+  "f": "js/scenes/pixelberg.js",
+  "k": "🚌 Bergbussen"
+ },
+ {
+  "i": 8661,
+  "f": "js/scenes/pixelberg.js",
+  "k": "Bergbussen går ner till stan. Biljetten kostar {0}."
+ },
+ {
+  "i": 8662,
+  "f": "js/scenes/pixelberg.js",
+  "k": "🎡 Högst upp! Där nere ligger hela Pixelstaden – floden, bron och alla husen."
+ },
+ {
+  "i": 8663,
+  "f": "js/scenes/pixelberg.js",
+  "k": "TIVOLIT PÅ BERGET"
+ },
+ {
+  "i": 8664,
+  "f": "js/scenes/pixelberg.js",
+  "k": "*Pixel-Nalle vinkar och gör en high five!*"
+ }
+]

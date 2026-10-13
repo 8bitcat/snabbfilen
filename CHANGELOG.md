@@ -10,6 +10,13 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.124.0] – 2026-10-13 – Pixelberg – tivolit på berget
+- 🎡 Pixelberg – tivolit på berget! Ta bergbussen från vilken busshållplats som helst i stan.
+- 🎠 Karusellen med hästar som guppar och 🎡 ett stort pariserhjul: åk ett varv och se hela Pixelstaden, floden och bron långt där nere.
+- 🎟️ Åkband för hela dagen (100 kr) eller en kupong per tur. 🍭 Sockervadd, popcorn och tivoliklubbor.
+- 🎰 Lyckohjulet: vinn kortpaket, pengar eller godis. Björnmaskoten Pixel-Nalle vinkar och gör high five.
+- 🎢 Berg-och-dalbanan provkörs i bakgrunden – åkturen, radiobilarna och spökhuset kommer snart. På kvällen lyser glödlamporna över hela tivolit.
+
 ## [0.123.0] – 2026-10-13 – Fiske på Solön
 - 🎣 Fiske på Solön! Köp ett metspö i Solö-kiosken och fiska längst ut på färjebryggan eller vid klipporna nära fyren.
 - Kasta, vänta (inte för tidigt!), tryck när flötet dyker och dra in fisken – tryck när nålen är i det gröna.
