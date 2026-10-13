@@ -18,6 +18,7 @@ import { WARDROBE, itemById, lookForItem } from '../data/wardrobe.js';
 import { FOOD, KATALOG, katalogOf, fmt } from '../game.js';
 import { PET_ITEMS } from '../pets/items.js';
 import { petStore } from '../pets/sim.js';
+import { HANDELSER } from './notiser.js';   // (dagar med en egen händelse får ingen presentnotis)
 import { Pix, mix, mul, hash } from './floor-pix.js';
 import { setExtraNotiser, planera } from './notiser.js';
 
@@ -251,14 +252,20 @@ let startad = false;
 export function startPresenter(A) {
   if (startad) return;
   startad = true;
-  // morgonnotiserna kl. 7.30 de tre närmaste morgnarna (appen)
+  // presentnotisen kl. 16 (Carl 2026-10-13) i dag och de tre närmaste dagarna (appen): i dag bara om dagens present
+  // inte redan är öppnad. Inte på lördagar (då kommer lördagsfestens notis kl. 17.45 med festpresenten) och inte på
+  // dagar med en egen händelse (HANDELSER: Halloween, jul …) – högst en notis om dagen.
   setExtraNotiser((d) => {
     if (!A.game) return [];
-    const ut = [];
-    for (let k = 1; k <= 3; k++) {
-      const m = new Date(d); m.setDate(m.getDate() + k); m.setHours(7, 30, 0, 0);
-      const storDag = blirStor(A.game, k - 1);
-      ut.push({ id: 100 + k, title: 'Pixelcity', body: storDag ? $t('🎁 I dag väntar en STOR present på dig i Pixelstaden!') : $t('🎁 En present väntar på dig i Pixelstaden!'), schedule: { at: m } });
+    const p = P(A.game), fatt = p.dag === dagNu(+d) ? 1 : 0, ut = [];
+    for (let k = 0; k <= 3; k++) {
+      const m = new Date(d); m.setDate(m.getDate() + k); m.setHours(16, 0, 0, 0);
+      if (m <= d || m.getDay() === 6) continue;
+      if (k === 0 && fatt && !p.ko.length) continue;                                    // dagens present är redan öppnad
+      const md = `${String(m.getMonth() + 1).padStart(2, '0')}-${String(m.getDate()).padStart(2, '0')}`;
+      if (HANDELSER.some((h) => h.datum === md)) continue;
+      const storDag = blirStor(A.game, Math.max(0, k - fatt));
+      ut.push({ id: 101 + k, title: 'Pixelcity', body: storDag ? $t('🎁 En STOR present finns att hämta i Pixelstaden!') : $t('🎁 En present finns att hämta i Pixelstaden!'), schedule: { at: m } });
     }
     return ut;
   });

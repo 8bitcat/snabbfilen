@@ -10,6 +10,10 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.116.1] – 2026-10-13 – Presentnotisen kl. 16
+- 🔔 Presentnotisen kommer nu kl. 16 varje dag: "🎁 En present finns att hämta i Pixelstaden!" (i appen, om du har sagt ja till notiser). Inte om du redan har öppnat dagens present, och inte på lördagar – då kommer lördagsfestens notis i stället.
+- 🔔 Frågan om notiser kommer redan när du har öppnat din första present.
+
 ## [0.116.0] – 2026-10-13 – Lördagsfesten och statyn i parken
 - 🎉 Lördagsfest! Varje lördag kl. 18–20 är det fest i stadsparken: DJ, discoljus, vimplar, konfetti och folk som dansar. Den som kommer får en festpresent (en gång i veckan). I appen kommer en påminnelse kl. 17.45.
 - 🗽 Statyn i parken: den som skickar flest vänskapspresenter under en vecka får en egen guldstaty bredvid fontänen hela nästa vecka. Klicka på statyn så ser du vem som leder just nu.

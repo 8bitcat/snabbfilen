@@ -97,14 +97,14 @@ export async function provNotis() {
   } catch { return false; }
 }
 
-// Vid start: lägg om notiserna, och fråga en gång när spelaren har levt minst en dag i stan.
+// Vid start: lägg om notiserna, och fråga en gång – när spelaren har öppnat sin första present eller levt en dag i stan.
 export function startNotiser(A) {
   if (!notiserFinns()) return;
   planera();
   if (ls.get()) return;
   const koll = setInterval(() => {
     if (ls.get()) { clearInterval(koll); return; }
-    if ((A.game?.day | 0) < 2 || modalOpen() || A.attract || !/^(room|city)$/.test(A.sceneName || '')) return;
+    if (((A.game?.day | 0) < 2 && !(A.game?.presenter?.antal > 0)) || modalOpen() || A.attract || !/^(room|city)$/.test(A.sceneName || '')) return;
     clearInterval(koll);
     openModal($t('🔔 Vill du få notiser?'), `<p style="font-size:var(--f2);margin-top:0">${$t('Pixelcity kan säga till när en present väntar på dig och när det händer något i Pixelstaden – som Halloween och jul.')}</p><p style="font-size:var(--f2)">${$t('Högst en notis om dagen. Du kan ändra dig under ⚙ Inställningar.')}</p>`, [
       { label: $t('Nej tack'), onClick: () => { ls.set('av'); closeModal(); } },
