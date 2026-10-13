@@ -21,6 +21,8 @@
 //   toast och life.cheer). talks() = bubblorna ovanför pirens eget folk (city.js ritar dem överst).
 //   openKrog(A) – Sjöbodens meny (city.js enter: 'fiskkrog'); talkFisher(A, f) – prata med fiskaren;
 //   useKikare(A, pier) – en femma i kikaren (ibland lockar den fram delfinen).
+//   ⛴️ FÄRJELÄGET längst ut i väster på bryggan: SOLÖ-FÄRJAN ligger förtöjd väster om bryggan och skylten SOLÖN står
+//   vid räcket – farjaAt(x, y) och openFarja(A) (biljett tur och retur, sedan js/scenes/solon.js).
 import { Pix, SMALL, text, textW, ctxText, mix, mul, hash } from '../core/floor-pix.js';
 import { drawPerson } from '../core/people.js';
 import { CITY, PIER, CANAL_WATER, FREESTANDING } from './map.js';
@@ -28,6 +30,7 @@ import { ravaraOf, MAX_RAVA } from '../game.js';
 import { openModal, closeModal, toast, esc } from '../core/ui.js';
 import { play } from '../core/sound.js';
 import { $t, money } from '../core/i18n.js';
+import { farjaBild, FARJA } from '../solon/karta.js';   // ⛴️ samma färja som ligger vid Solön
 
 const WHITE = 0xffffff;
 const rgba = (c, a) => `rgba(${(c >> 16) & 255},${(c >> 8) & 255},${c & 255},${Math.max(0, Math.min(1, a)).toFixed(3)})`;
@@ -47,6 +50,9 @@ const DUKAR = [SJO_X[0] + 20, SJO_X[1] - 20];  // Sjöbodens egna bord med rutig
 const BANKAR = [-736, -678];                   // vid norra räcket: man sitter med ryggen mot oss och tittar ut
 const DACK = [[-718, 0x2a6ab0], [-692, 0xe8a030]];   // däckstolarna (man halvligger och tittar mot oss/havet)
 const KIK = { x: -655, y: (PIER ? PIER.deck[1] : 0) + 7 };   // myntkikaren vid norra räcket
+const FJ = { x: (PIER ? PIER.deck[0] : 0) + 8, y: (PIER ? PIER.deck[1] : 0) + 22 };   // ⛴️ skylten SOLÖN vid västra räcket
+const FJB = { x: (PIER ? PIER.deck[0] : 0) - FARJA.w - 3, y: PIER ? PIER.deck[1] + 1 : 0 };   // färjan väster om bryggan
+export const FARJA_PRIS = 20;
 const SPOT = -707;                             // där kärleksparet står vid räcket
 const NLAMPS = [-760, -606];                   // lyktstolpar på norra räcket
 const SLAMPS = [-704, -608, -512, -440];       // och på det södra
@@ -614,6 +620,14 @@ export function createPier(env) {
     for (const bx of BANKAR) out.push({ x: bx, y: dy0 + 10, draw: (ctx) => put(ctx, BENCH, bx, dy0 + 10) });
     DACK.forEach(([x], i) => out.push({ x, y: dy1 - 7.5, draw: (ctx) => put(ctx, DACKS[i], x, dy1 - 7) }));
     out.push({ x: KIK.x, y: KIK.y, draw: (ctx) => put(ctx, KIKARE, KIK.x, KIK.y) });
+    // ⛴️ färjan (guppar) och skylten SOLÖN
+    out.push({ x: FJB.x + FARJA.w / 2, y: FJB.y + FARJA.h, draw: (ctx) => ctx.drawImage(farjaBild(), FJB.x, FJB.y + Math.round(Math.sin(t * 1.2) * 1)) });
+    out.push({ x: FJ.x, y: FJ.y, draw: (ctx) => {
+      const s = $t('FÄRJAN TILL SOLÖN'), w = textW(SMALL, s) + 8;
+      ctx.fillStyle = '#5a3c24'; ctx.fillRect(FJ.x - 1, FJ.y - 20, 3, 20);
+      ctx.fillStyle = '#1e1a24'; ctx.fillRect(FJ.x - (w >> 1) - 1, FJ.y - 33, w + 2, 13); ctx.fillStyle = '#f4f1ea'; ctx.fillRect(FJ.x - (w >> 1), FJ.y - 32, w, 11);
+      ctxText(ctx, SMALL, s, FJ.x - (w >> 1) + 4, FJ.y - 29, '#2a5aa8');
+    } });
     out.push({ x: dx0 + 101, y: dy1 - 4, draw: (ctx) => put(ctx, REP, dx0 + 101, dy1 - 4) });
     out.push({ x: dx1 - 20, y: dy1 - 3, draw: (ctx) => put(ctx, TRAPS, dx1 - 20, dy1 - 3) });
     out.push({ x: dx1 - 24, y: TY + 7, draw: (ctx) => put(ctx, BOARD, dx1 - 24, TY + 7) });
@@ -718,13 +732,19 @@ export function createPier(env) {
     return null;
   }
   function kikareAt(x, y) { return x >= KIK.x - 6 && x < KIK.x + 7 && y >= KIK.y - 27 && y < KIK.y + 3 ? { walk: { x: KIK.x, y: LANE + 1 } } : null; }
+  // ⛴️ skylten eller färjan → gå fram till västra räcket
+  function farjaAt(x, y) {
+    const skylt = x >= FJ.x - 18 && x < FJ.x + 18 && y >= FJ.y - 34 && y < FJ.y + 3, farja = x >= FJB.x && x < FJB.x + FARJA.w && y >= FJB.y - 6 && y < FJB.y + FARJA.h;
+    return skylt || farja ? { walk: { x: FJ.x + 10, y: LANE + 1 } } : null;
+  }
   // piren och bryggans plankor ligger som mark: ritas direkt efter vattnet, före allt som står på dem
   function under(ctx, view) {
     if (view && (view.x > wx1 + 8 || view.x + view.w < dx0 - 8 || view.y > dy1 + 20 || view.y + view.h < Q0)) return;
     put(ctx, DECK, 0, 0);
   }
+  obstacles.push([FJ.x - 2, FJ.y - 2, FJ.x + 3, FJ.y + 1]);   // ⛴️ skyltens stolpe
   return {
-    items, under, obstacles, seats, glow, fisherAt, kikareAt,
+    items, under, obstacles, seats, glow, fisherAt, kikareAt, farjaAt,
     // bubblorna ovanför pirens eget folk (city.js ritar dem överst, som fotgängarnas)
     talks() {
       const out = [];
@@ -839,3 +859,16 @@ export function useKikare(A, pier) {
 export const _art = { dolphinArt, chairArt, dackArt, benchArt, kikareArt, gullArt, D_ANG };
 // pratbubblorna när någon ser delfinen (life.cheer i city.js)
 export const LUCK_LINES = [$t('🐬 En delfin! Det ger tur!'), $t('😍 Såg du delfinen?!'), $t('🍀 Delfin = tur hela veckan!'), $t('✨ Wow, en delfin!'), $t('🐬 Det betyder lycka!')];
+// ⛴️ färjan till Solön (city.js: klick på skylten eller färjan längst ut på bryggan) – biljett tur och retur
+export function openFarja(A) {
+  const g = A.game;
+  openModal($t('⛴️ Solö-färjan'), `<p style="font-size:var(--f2);margin-top:0">${$t('Färjan går ut till <b>Solön</b>: sandstrand, bad, glass och en gammal fyr.')}</p><p style="font-size:var(--f2)">${$t`Biljetten kostar ${money(FARJA_PRIS)} tur och retur. Resan tar 20 minuter.`}</p>`, [
+    { label: $t`⛴️ Åk till Solön · ${money(FARJA_PRIS)}`, cls: 'btn-go', disabled: g.money < FARJA_PRIS, onClick: () => {
+      closeModal();
+      if (g.money < FARJA_PRIS) { toast($t('Du har inte råd med färjan.'), 'bad'); return; }
+      g.money -= FARJA_PRIS; g.passTime(20); g.save(); play('honk');
+      A.solonFran = { farja: true }; A.go('solon');
+    } },
+    { label: $t('Inte nu'), onClick: closeModal },
+  ]);
+}

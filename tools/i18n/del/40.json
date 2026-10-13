@@ -1,0 +1,247 @@
+[
+ {
+  "i": 8527,
+  "f": "js/city/pir.js",
+  "k": "FÄRJAN TILL SOLÖN"
+ },
+ {
+  "i": 8528,
+  "f": "js/city/pir.js",
+  "k": "⛴️ Solö-färjan"
+ },
+ {
+  "i": 8529,
+  "f": "js/city/pir.js",
+  "k": "Färjan går ut till <b>Solön</b>: sandstrand, bad, glass och en gammal fyr."
+ },
+ {
+  "i": 8530,
+  "f": "js/city/pir.js",
+  "k": "Biljetten kostar {0} tur och retur. Resan tar 20 minuter."
+ },
+ {
+  "i": 8531,
+  "f": "js/city/pir.js",
+  "k": "⛴️ Åk till Solön · {0}"
+ },
+ {
+  "i": 8532,
+  "f": "js/city/pir.js",
+  "k": "Du har inte råd med färjan."
+ },
+ {
+  "i": 8533,
+  "f": "js/main.js",
+  "k": "⛴️ på Solön"
+ },
+ {
+  "i": 8534,
+  "f": "js/scenes/solon.js",
+  "k": "Vattnet är jättevarmt i dag!"
+ },
+ {
+  "i": 8535,
+  "f": "js/scenes/solon.js",
+  "k": "Har du sett fyren? Den lyser hela natten."
+ },
+ {
+  "i": 8536,
+  "f": "js/scenes/solon.js",
+  "k": "Glassen i kiosken är den bästa i hela Pixelstaden."
+ },
+ {
+  "i": 8537,
+  "f": "js/scenes/solon.js",
+  "k": "Snart kan man hyra båt här, har jag hört!"
+ },
+ {
+  "i": 8538,
+  "f": "js/scenes/solon.js",
+  "k": "Akta dig för fiskmåsarna – de snor glassen!"
+ },
+ {
+  "i": 8539,
+  "f": "js/scenes/solon.js",
+  "k": "Jag kommer hit varje sommar."
+ },
+ {
+  "i": 8540,
+  "f": "js/scenes/solon.js",
+  "k": "🍦 Glasstrut"
+ },
+ {
+  "i": 8541,
+  "f": "js/scenes/solon.js",
+  "k": "🍓 Jordgubbsglass"
+ },
+ {
+  "i": 8542,
+  "f": "js/scenes/solon.js",
+  "k": "🥤 Kall saft"
+ },
+ {
+  "i": 8543,
+  "f": "js/scenes/solon.js",
+  "k": "🌭 Korv med bröd"
+ },
+ {
+  "i": 8544,
+  "f": "js/scenes/solon.js",
+  "k": "⛴️ Välkommen till Solön! Sol, bad och glass. +{0} 😊"
+ },
+ {
+  "i": 8545,
+  "f": "js/scenes/solon.js",
+  "k": "⛴️ Välkommen till Solön! Sol, bad och glass."
+ },
+ {
+  "i": 8546,
+  "f": "js/scenes/solon.js",
+  "k": "🏡 En sommarstuga med utsikt över dynerna. Snart kan man hyra – eller köpa – en stuga här!"
+ },
+ {
+  "i": 8547,
+  "f": "js/scenes/solon.js",
+  "k": "SOLÖ-KIOSKEN – GLASS, SAFT OCH KORV"
+ },
+ {
+  "i": 8548,
+  "f": "js/scenes/solon.js",
+  "k": "FÄRJAN TILL PIXELSTADEN"
+ },
+ {
+  "i": 8549,
+  "f": "js/scenes/solon.js",
+  "k": "SOLÖNS FYR"
+ },
+ {
+  "i": 8550,
+  "f": "js/scenes/solon.js",
+  "k": "🗼 Solöns fyr har lyst varje natt i över hundra år. Fyrvaktaren sägs ha en båt att hyra ut …"
+ },
+ {
+  "i": 8551,
+  "f": "js/scenes/solon.js",
+  "k": "LIVRÄDDARTORNET"
+ },
+ {
+  "i": 8552,
+  "f": "js/scenes/solon.js",
+  "k": "Bada gärna – men håll dig där det är grunt!"
+ },
+ {
+  "i": 8553,
+  "f": "js/scenes/solon.js",
+  "k": "SANDSLOTTET"
+ },
+ {
+  "i": 8554,
+  "f": "js/scenes/solon.js",
+  "k": "BEACHVOLLEY"
+ },
+ {
+  "i": 8555,
+  "f": "js/scenes/solon.js",
+  "k": "Vi spelar till 15! Snart får du vara med."
+ },
+ {
+  "i": 8556,
+  "f": "js/scenes/solon.js",
+  "k": "FISKAREN PÅ KLIPPORNA"
+ },
+ {
+  "i": 8557,
+  "f": "js/scenes/solon.js",
+  "k": "Napp! En makrill!"
+ },
+ {
+  "i": 8558,
+  "f": "js/scenes/solon.js",
+  "k": "Här nappar det bra. Snart kan du fiska här också!"
+ },
+ {
+  "i": 8559,
+  "f": "js/scenes/solon.js",
+  "k": "SOLÖN"
+ },
+ {
+  "i": 8560,
+  "f": "js/scenes/solon.js",
+  "k": "⛴️ SOLÖN – sandstrand, fyr och sommarstugor. Färjan till Pixelstaden går från bryggan."
+ },
+ {
+  "i": 8561,
+  "f": "js/scenes/solon.js",
+  "k": "🍦 Solö-kiosken"
+ },
+ {
+  "i": 8562,
+  "f": "js/scenes/solon.js",
+  "k": "\"Hej hej! Vad får det lov att vara? Glassen är hemgjord!\""
+ },
+ {
+  "i": 8563,
+  "f": "js/scenes/solon.js",
+  "k": "Inget, tack"
+ },
+ {
+  "i": 8564,
+  "f": "js/scenes/solon.js",
+  "k": "Mums! +{0} 😊"
+ },
+ {
+  "i": 8565,
+  "f": "js/scenes/solon.js",
+  "k": "Mums!"
+ },
+ {
+  "i": 8566,
+  "f": "js/scenes/solon.js",
+  "k": "Titta, vi har byggt ett slott med vallgrav!"
+ },
+ {
+  "i": 8567,
+  "f": "js/scenes/solon.js",
+  "k": "Färjan går tillbaka till bryggan vid Sjöboden i Linnéstaden. Din biljett gäller tur och retur – resan tar 20 minuter."
+ },
+ {
+  "i": 8568,
+  "f": "js/scenes/solon.js",
+  "k": "⛴️ Åk tillbaka till stan"
+ },
+ {
+  "i": 8569,
+  "f": "js/scenes/solon.js",
+  "k": "🌊 Plask! Vattnet är härligt. +{0} 😊"
+ },
+ {
+  "i": 8570,
+  "f": "js/scenes/solon.js",
+  "k": "🌊 Plask! Vattnet är härligt."
+ },
+ {
+  "i": 8571,
+  "f": "js/scenes/solon.js",
+  "k": "SOL, BAD OCH GLASS"
+ },
+ {
+  "i": 8572,
+  "f": "js/solon/karta.js",
+  "k": "RÖDA STUGAN"
+ },
+ {
+  "i": 8573,
+  "f": "js/solon/karta.js",
+  "k": "GULA STUGAN"
+ },
+ {
+  "i": 8574,
+  "f": "js/solon/karta.js",
+  "k": "BLÅA STUGAN"
+ },
+ {
+  "i": 8575,
+  "f": "js/solon/karta.js",
+  "k": "SOLÖ-FÄRJAN"
+ }
+]

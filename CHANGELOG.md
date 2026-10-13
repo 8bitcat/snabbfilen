@@ -10,6 +10,12 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.122.0] – 2026-10-13 – Solön
+- ⛴️ Solön! Ta färjan från bryggan vid Sjöboden i Linnéstaden (20 kr tur och retur) ut till en badö med sandstrand, dyner och en gammal fyr.
+- 🌊 Bada i det grunda vattnet – första doppet om dagen ger lycka. Långt bort vid horisonten syns Pixelstaden.
+- 🍦 Solö-kiosken säljer glass, saft och korv. På stranden solar folk under parasoller, barn bygger sandslott, livräddaren vakar och några spelar beachvolley.
+- 🗼 Fyren lyser på natten och fiskaren på klipporna får napp ibland. Sommarstugorna, fisket och båtarna öppnar snart.
+
 ## [0.121.0] – 2026-10-13 – Mysteriet: Kattstatyns krona
 - 🕵️ Mysteriet i Pixelstaden: Kattstatyns krona! Kronan på kattstatyn i Tassbacken är borta – kan du hitta den?
 - Sju kapitel, ett nytt varje dag från kl. 6. Prata med vittnen, leta ledtrådar i bilden av platsen och dra dina egna slutsatser.

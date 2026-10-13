@@ -1022,6 +1022,8 @@ export function makeCity(A) {
       if (fs) { if (sitting) standUp(); walker.walkTo(fs.walk.x, fs.walk.y, () => MODS.pir?.talkFisher?.(A, fs)); return; }
       const kk = S.pier?.kikareAt?.(x, y);   // 🔭 myntkikaren på bryggan
       if (kk) { if (sitting) standUp(); walker.walkTo(kk.walk.x, kk.walk.y, () => { walker.dir = 'up'; MODS.pir?.useKikare?.(A, S.pier); }); return; }
+      const fj = S.pier?.farjaAt?.(x, y);   // ⛴️ färjan till Solön längst ut på bryggan
+      if (fj) { if (sitting) standUp(); walker.walkTo(fj.walk.x, fj.walk.y, () => { walker.dir = 'left'; MODS.pir?.openFarja?.(A); }); return; }
       const ms = S.market?.stallAt?.(x, y);
       if (ms) { if (sitting) standUp(); walker.walkTo(ms.walk.x, ms.walk.y, () => { walker.dir = 'up'; MODS.marknad?.openStall?.(A, ms, S.market); }); return; }
       let who = S.life.personAt?.(x, y);
