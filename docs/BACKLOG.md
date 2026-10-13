@@ -1,42 +1,41 @@
 # Snabbfilen – kvar att bygga
 
-Carls förslag som inte är byggda än (uppdaterad 2026-09-29 kväll). Varje punkt blir ett
+Carls förslag och beställningar som inte är byggda än (uppdaterad 2026-10-13). Varje punkt blir ett
 eget släpp med versionsnummer när den är klar (se `CHANGELOG.md`).
 
 ## Kvar
-- **Fotbollsfilmerna på bion** (Carl 2026-10-01): två filmer om Kungsladugård i bions
-  filmmotor (`js/scenes/bio/film.js`).
-  1. *Kungsladugård – en stillsam början*: lilla cupen mot Näset, Hovås/Billdal, Sandarna
-     (väldigt stor seger) och final mot Älvsborg. Vi vinner allt, både stort och med
-     uddamålet, och lyfter pokalen.
-  2. Uppföljaren *… ut i världen*: Häcken, Manchester United, Juventus och final mot
-     Barcelona. Motståndarnas mål görs av riktiga spelare från lagen (namn i texten).
-  Julia, Märta, Nina, Ellen och Alice G gör och passar målen, resten av laget spelar med.
-  Ett hårt träningsmontage med många animationer. Bara förnamn; inga klubbmärken eller
-  sponsorer. Carl önskade "Eye of the Tiger" – den är upphovsrättsskyddad och spelet har
-  bara CC0-ljud, så montaget får en egen 80-talslåt i samma anda.
+- **⛵ Solön: båtuthyrning hos fyrvaktaren** (Carl 2026-10-13: lagd i backloggen). Fyrvaktaren vid
+  fyren på klipporna hyr ut en roddbåt (och kanske en liten motorbåt) per timme. Man ror runt ön på
+  havet: kobbar med sälar, fiske från båten (samma fiskespel som på bryggan, `js/solon/fiske.js`, men
+  med större fiskar längre ut), flaskposter som flyter förbi och en liten fyrö att lägga till vid.
+  Fyren och fiskaren på Solön tipsar redan om båten (`js/scenes/solon.js`).
+- **🏡 Solön: sommarstuga att hyra eller köpa** (Carl 2026-10-13: lagd i backloggen). De tre stugorna
+  bakom dynerna (röda, gula, blå – `STUGOR` i `js/solon/karta.js`) går att hyra per natt/vecka eller
+  köpa som ett andra hem: inredning med Möblera, sova där (vakna med havsutsikt), grilla på
+  verandan. Stugorna säger redan "snart kan man hyra – eller köpa – en stuga här".
+- **💌 Vykort till vänner** – väntar på Carls beslut: riktiga foton ur 📷 Kamera (bilder från
+  spelare kan inte filtreras som text – App Store 1.2) eller färdiga vykortsmotiv.
 - **Mobilen steg 2**: fasta scener (rummet, jobben) görs "breda" så att de visar mer av
-  scenen i stället för att zoomas. Väntar på Carls besked – sedan 0.25.3 är NÄRA standard
-  på mobilen (där gäller den klassiska vyn överallt), så det här märks bara i VID-läget
-  på dator och padda. Se `docs/PLAN.md`.
+  scenen i stället för att zoomas. Väntar på Carls besked. Se `docs/PLAN.md`.
 
 ## Frågor till Carl
-- Fotbollsfilmen: vilket nummer har Alice G (7 eller 9)? Okej med en egen träningslåt i
-  stället för "Eye of the Tiger"?
-- Husvagnen och Lilla rummet ligger långt från centrum sedan bron kom – räcker bussen?
-- Ska hårfärgen gå att byta hemma (i garderoben), eller bara hos frisören?
-- Lagtröjorna delar tröjmodell – räcker det att färgerna byts?
-- Lagfotot: 19 eller 20 spelare (listan kan ha varit avkapad)?
-- Vårdcentralen: ska en missad patient dra pengar, eller bara ge noll?
-- Barn med långt hår skymmer ryggnumret på matchtröjan (som på plan) – okej?
+- Vykorten: riktiga foton eller färdiga motiv?
+- Cloudflare Workers Paid (5 USD/mån) om SMS:en blir fler än ~300 om dagen?
+- App Privacy i App Store Connect: namn, användar-id och meddelanden behöver stå med.
+- Spara foton i telefonens Bilder kräver en rad i Info.plist i nästa app-bygge – med i 1.3?
+- Lagfotot: den tjugonde spelarens nummer och förnamn saknas.
 
-## Byggt och släppt (2026-09-28 – 09-29)
-Veckosammanfattningen, banken, downtown med Pixelhögskolan och de utbildade jobben
-(Pixel Data, Finanshuset), Burgarbaren inne med brickan och kökjobbet, fotbollsbutiken med
-Kungsladugård (numret på ryggen), chatten och pratbubblorna, sovanimationen, badrum i
-varje bostad, Burgarbarens luckor, närbutiken 24/7, flygterminalen med incheckningsjobbet,
-djuren i koppel, husdjuren som växer, bion, kebaben, pantbanken, skraplotterna,
-vårdcentralen, frisören, elektronikbutiken, skobutiken, accessoarbutiken, klädaffärens
-andra våning, bron och staden på längden, riktiga ljud, prata med folk i staden och
-småsaker på bord. Väggsaker hänger aldrig över fönstren (utom gardinerna) och
-förrådspanelen täcker inte rummet.
+## Byggt och släppt
+- **2026-10-12 – 10-13 ("bygg allting"):** presenter (två om dagen, notiser 7 och 19), vänskapspresenter,
+  djur som minns dig, visningshyllor och pokaler, Tassbacken (trimmaren, utställningen, kattcaféet,
+  djurhemmet, agility, kliniken), lördagsfesten och statyn, pixelkort, SMS till vänner, 📷 Kamera
+  och 🖼️ Bilder, troféskåpet, mysteriet "Kattstatyns krona", Solön (färja, strand, bad, kiosk, fyr)
+  och fisket på Solön.
+- **2026-10-01:** fotbollsfilmerna på bion (Kungsladugård).
+- **2026-09-28 – 09-29:** veckosammanfattningen, banken, downtown med Pixelhögskolan och de utbildade
+  jobben (Pixel Data, Finanshuset), Burgarbaren inne med brickan och kökjobbet, fotbollsbutiken med
+  Kungsladugård (numret på ryggen), chatten och pratbubblorna, sovanimationen, badrum i varje bostad,
+  Burgarbarens luckor, närbutiken 24/7, flygterminalen med incheckningsjobbet, djuren i koppel,
+  husdjuren som växer, bion, kebaben, pantbanken, skraplotterna, vårdcentralen, frisören,
+  elektronikbutiken, skobutiken, accessoarbutiken, klädaffärens andra våning, bron och staden på
+  längden, riktiga ljud, prata med folk i staden och småsaker på bord.
