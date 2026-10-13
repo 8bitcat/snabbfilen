@@ -10,6 +10,12 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.123.0] – 2026-10-13 – Fiske på Solön
+- 🎣 Fiske på Solön! Köp ett metspö i Solö-kiosken och fiska längst ut på färjebryggan eller vid klipporna nära fyren.
+- Kasta, vänta (inte för tidigt!), tryck när flötet dyker och dra in fisken – tryck när nålen är i det gröna.
+- Sex arter: strömming, makrill, torsk, rödspätta, havsöring och hummer – och ibland en gammal stövel, tång eller en flaskpost. Matfisken blir fiskfilé i skafferiet.
+- 📒 Fångstboken sparar arterna och rekordvikterna. Fånga alla sex och få meriten 🎣 Fiskemästare i troféskåpet.
+
 ## [0.122.0] – 2026-10-13 – Solön
 - ⛴️ Solön! Ta färjan från bryggan vid Sjöboden i Linnéstaden (20 kr tur och retur) ut till en badö med sandstrand, dyner och en gammal fyr.
 - 🌊 Bada i det grunda vattnet – första doppet om dagen ger lycka. Långt bort vid horisonten syns Pixelstaden.

@@ -7,7 +7,8 @@
 //   • SOLÖ-KIOSKEN: glass, saft och korv (mättar och ger lycka)
 //   • BADA: gå ut i det grunda vattnet – figuren simmar (bara huvud och axlar syns), första doppet om dagen ger lycka
 //   • färjan tillbaka till stan står vid bryggan
-// Sommarstugorna, fisket från klipporna och båtuthyrningen öppnar i nästa steg (skyltar och folk berättar).
+//   • 🎣 FISKE (js/solon/fiske.js): metspö i kiosken, fiska längst ut på färjebryggan eller vid klipporna nära fyren
+// Sommarstugorna och båtuthyrningen öppnar i nästa steg (skyltar och folk berättar).
 import { createCityWalker } from '../city/walk.js';
 import { selfDrawable, folkDrawables, createSpeech, WALK_SEQ } from './walkable.js';
 import { worldFolksHere } from '../net/world.js';
@@ -22,6 +23,7 @@ import { propKit } from '../city/props.js';
 import { PIER } from '../city/map.js';
 import { TW, TH, S, BRYGGA, FARJA, KLIPPOR, FYR, FISKARE, KIOSK, TORN, NAT, SLOTT, STUGOR, SPANG, PARASOLLER, HANDDUKAR, SKYLT, BANKAR, klippKant, hinder, paintGround, stugaBild, kioskBild, fyrBild, farjaBild } from '../solon/karta.js';
 import { $t } from '../core/i18n.js';
+import { openFiske, kopSpo, fiskeOf, SPO_PRIS, fiskURL } from '../solon/fiske.js';   // 🎣 fisket
 
 const GANG = 100;
 const STRANDPRAT = [
@@ -84,19 +86,23 @@ export function makeSolon(A) {
   const stugSpot = (st) => ({ id: `stuga-${st.id}`, r: [st.x, S.BASE - st.h - 26, st.x + st.w, S.BASE], go: [st.x + (st.w >> 1), S.BASE + 8], label: st.namn, act: () => { play('knock'); toast($t('🏡 En sommarstuga med utsikt över dynerna. Snart kan man hyra – eller köpa – en stuga här!'), 'wrap'); } });
   const spots = () => [
     { id: 'kiosk', r: [KIOSK.x, KIOSK.y - 66, KIOSK.x + KIOSK.w, KIOSK.y], go: [KIOSK.x + (KIOSK.w >> 1), KIOSK.y + 8], label: $t('SOLÖ-KIOSKEN – GLASS, SAFT OCH KORV'), act: kiosken },
-    { id: 'farja', r: [BRYGGA.x0 - 4, BRYGGA.y0 - 4, FARJA.x + FARJA.w, FARJA.y + FARJA.h], go: [(BRYGGA.x0 + BRYGGA.x1) / 2, BRYGGA.y0 + 12], label: $t('FÄRJAN TILL PIXELSTADEN'), act: farjan },
+    { id: 'fiska-brygga', r: [BRYGGA.x0 - 6, BRYGGA.y0 - 6, BRYGGA.x1 + 2, BRYGGA.y0 + 10], go: [(BRYGGA.x0 + BRYGGA.x1) / 2, BRYGGA.y0 + 6], label: $t('FISKA HÄR'), act: () => { walker.dir = 'up'; openFiske(A, { plats: 'brygga' }); } },
+    { id: 'fiska-klippa', r: [klippKant(150) - 18, 132, klippKant(150) + 6, 160], go: [klippKant(150) - 10, 150], label: $t('FISKA HÄR'), act: () => { walker.dir = 'right'; openFiske(A, { plats: 'klippa' }); } },
+    { id: 'farja', r: [FARJA.x, FARJA.y - 6, FARJA.x + FARJA.w, FARJA.y + FARJA.h], go: [(BRYGGA.x0 + BRYGGA.x1) / 2, BRYGGA.y0 + 12], label: $t('FÄRJAN TILL PIXELSTADEN'), act: farjan },
     { id: 'fyr', r: [FYR.x - 14, FYR.y - 120, FYR.x + 14, FYR.y], go: [klippKant(FYR.y + 40) - 8, FYR.y + 40], label: $t('SOLÖNS FYR'), act: () => { play('click'); toast($t('🗼 Solöns fyr har lyst varje natt i över hundra år. Fyrvaktaren sägs ha en båt att hyra ut …'), 'wrap'); } },
     { id: 'torn', r: [TORN.x - 12, TORN.y - 44, TORN.x + 12, TORN.y], go: [TORN.x, TORN.y + 10], label: $t('LIVRÄDDARTORNET'), act: () => talk.say($t('Bada gärna – men håll dig där det är grunt!'), () => ({ x: livraddare.x, y: livraddare.y - 40 }), 3, { voice: livraddare.look }) },
     { id: 'slott', r: [SLOTT.x - 12, SLOTT.y - 16, SLOTT.x + 12, SLOTT.y + 2], go: [SLOTT.x, SLOTT.y + 12], label: $t('SANDSLOTTET'), act: sandslott },
     { id: 'nat', r: [NAT.x0, NAT.y - 26, NAT.x1, NAT.y + 2], go: [(NAT.x0 + NAT.x1) / 2, NAT.y + 14], label: $t('BEACHVOLLEY'), act: () => { play('click'); talk.say($t('Vi spelar till 15! Snart får du vara med.'), () => ({ x: volley[0].x, y: volley[0].y - 40 }), 3, { voice: volley[0].look }); } },
-    { id: 'fiskare', r: [FISKARE.x - 8, FISKARE.y - 34, FISKARE.x + 8, FISKARE.y + 2], go: [klippKant(FISKARE.y + 20) - 8, FISKARE.y + 20], label: $t('FISKAREN PÅ KLIPPORNA'), act: () => talk.say(fiskaren.napp > 0 ? $t('Napp! En makrill!') : $t('Här nappar det bra. Snart kan du fiska här också!'), () => ({ x: fiskaren.x, y: fiskaren.y - 40 }), 3, { voice: fiskaren.look }) },
+    { id: 'fiskare', r: [FISKARE.x - 8, FISKARE.y - 34, FISKARE.x + 8, FISKARE.y + 2], go: [klippKant(FISKARE.y + 20) - 8, FISKARE.y + 20], label: $t('FISKAREN PÅ KLIPPORNA'), act: () => talk.say(fiskaren.napp > 0 ? $t('Napp! En makrill!') : fiskeOf(g).spo ? $t('Prova vid klippkanten här – eller längst ut på färjebryggan!') : $t('Köp ett metspö i kiosken, så kan du fiska här du också!'), () => ({ x: fiskaren.x, y: fiskaren.y - 40 }), 3, { voice: fiskaren.look }) },
     { id: 'skylt', r: [SKYLT.x - 18, SKYLT.y - 38, SKYLT.x + 18, SKYLT.y + 2], go: [SKYLT.x + 10, SKYLT.y + 8], label: $t('SOLÖN'), act: () => { play('click'); toast($t('⛴️ SOLÖN – sandstrand, fyr och sommarstugor. Färjan till Pixelstaden går från bryggan.'), 'wrap'); } },
     ...STUGOR.map(stugSpot),
   ];
   function kiosken() {
     play('click');
     const rad = (m) => `<div class="prow" style="grid-template-columns:1fr auto"><span class="nm">${esc(m.namn)}</span><button class="btn btn-small btn-go" data-kiosk="${m.id}" ${g.money < m.pris ? 'disabled' : ''}>${esc(fmt(m.pris))}</button></div>`;
-    const dlg = openModal($t('🍦 Solö-kiosken'), `<p style="font-size:var(--f2);margin-top:0">${$t('"Hej hej! Vad får det lov att vara? Glassen är hemgjord!"')}</p><div class="plist">${MENY.map(rad).join('')}</div>`, [{ label: $t('Inget, tack'), onClick: closeModal }]);
+    const spo = !fiskeOf(g).spo ? `<div class="prow" style="grid-template-columns:1fr auto"><span class="nm">${esc($t('🎣 Metspö'))}<br><small class="sp">${esc($t('Fiska från bryggan och klipporna'))}</small></span><button class="btn btn-small btn-gold" data-spo ${g.money < SPO_PRIS ? 'disabled' : ''}>${esc(fmt(SPO_PRIS))}</button></div>` : '';
+    const dlg = openModal($t('🍦 Solö-kiosken'), `<p style="font-size:var(--f2);margin-top:0">${$t('"Hej hej! Vad får det lov att vara? Glassen är hemgjord!"')}</p><div class="plist">${MENY.map(rad).join('')}${spo}</div>`, [{ label: $t('Inget, tack'), onClick: closeModal }]);
+    dlg.querySelector('[data-spo]')?.addEventListener('click', () => { if (kopSpo(A)) closeModal(); });
     dlg.querySelectorAll('[data-kiosk]').forEach((b) => (b.onclick = () => {
       const m = MENY.find((x) => x.id === b.dataset.kiosk);
       if (!m || g.money < m.pris) return;

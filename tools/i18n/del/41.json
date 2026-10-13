@@ -1,0 +1,207 @@
+[
+ {
+  "i": 8576,
+  "f": "js/core/meriter.js",
+  "k": "Fiskemästare – alla arter på Solön"
+ },
+ {
+  "i": 8577,
+  "f": "js/scenes/solon.js",
+  "k": "FISKA HÄR"
+ },
+ {
+  "i": 8578,
+  "f": "js/scenes/solon.js",
+  "k": "Prova vid klippkanten här – eller längst ut på färjebryggan!"
+ },
+ {
+  "i": 8579,
+  "f": "js/scenes/solon.js",
+  "k": "Köp ett metspö i kiosken, så kan du fiska här du också!"
+ },
+ {
+  "i": 8580,
+  "f": "js/scenes/solon.js",
+  "k": "🎣 Metspö"
+ },
+ {
+  "i": 8581,
+  "f": "js/scenes/solon.js",
+  "k": "Fiska från bryggan och klipporna"
+ },
+ {
+  "i": 8582,
+  "f": "js/solon/fiske.js",
+  "k": "Strömming"
+ },
+ {
+  "i": 8583,
+  "f": "js/solon/fiske.js",
+  "k": "Makrill"
+ },
+ {
+  "i": 8584,
+  "f": "js/solon/fiske.js",
+  "k": "Torsk"
+ },
+ {
+  "i": 8585,
+  "f": "js/solon/fiske.js",
+  "k": "Rödspätta"
+ },
+ {
+  "i": 8586,
+  "f": "js/solon/fiske.js",
+  "k": "Havsöring"
+ },
+ {
+  "i": 8587,
+  "f": "js/solon/fiske.js",
+  "k": "Hummer"
+ },
+ {
+  "i": 8588,
+  "f": "js/solon/fiske.js",
+  "k": "En gammal stövel"
+ },
+ {
+  "i": 8589,
+  "f": "js/solon/fiske.js",
+  "k": "En klump tång"
+ },
+ {
+  "i": 8590,
+  "f": "js/solon/fiske.js",
+  "k": "En flaskpost!"
+ },
+ {
+  "i": 8591,
+  "f": "js/solon/fiske.js",
+  "k": "🎣 Du behöver ett metspö – Solö-kiosken säljer dem för {0}."
+ },
+ {
+  "i": 8592,
+  "f": "js/solon/fiske.js",
+  "k": "🎣 Fiska"
+ },
+ {
+  "i": 8593,
+  "f": "js/solon/fiske.js",
+  "k": "Tryck för att kasta!"
+ },
+ {
+  "i": 8594,
+  "f": "js/solon/fiske.js",
+  "k": "📒 Fångstboken"
+ },
+ {
+  "i": 8595,
+  "f": "js/solon/fiske.js",
+  "k": "Sluta fiska"
+ },
+ {
+  "i": 8596,
+  "f": "js/solon/fiske.js",
+  "k": "För tidigt! Fisken simmade iväg."
+ },
+ {
+  "i": 8597,
+  "f": "js/solon/fiske.js",
+  "k": "Dra in! Tryck när nålen är i det gröna!"
+ },
+ {
+  "i": 8598,
+  "f": "js/solon/fiske.js",
+  "k": "Plopp! Linan slackade och fisken kom loss."
+ },
+ {
+  "i": 8599,
+  "f": "js/solon/fiske.js",
+  "k": "🐟 {0} fiskfilé till skafferiet"
+ },
+ {
+  "i": 8600,
+  "f": "js/solon/fiske.js",
+  "k": "Fiskaren köper den för {0}!"
+ },
+ {
+  "i": 8601,
+  "f": "js/solon/fiske.js",
+  "k": "I flaskan ligger ett brev: \"Hälsningar från en seglare på andra sidan havet! Den som hittar detta får min lyckoslant.\" Det ligger 50 kr i flaskan!"
+ },
+ {
+  "i": 8602,
+  "f": "js/solon/fiske.js",
+  "k": "🎣 Hoppsan!"
+ },
+ {
+  "i": 8603,
+  "f": "js/solon/fiske.js",
+  "k": "🎣 Fångad!"
+ },
+ {
+  "i": 8604,
+  "f": "js/solon/fiske.js",
+  "k": "✨ Ny art i fångstboken!"
+ },
+ {
+  "i": 8605,
+  "f": "js/solon/fiske.js",
+  "k": "🏆 Nytt rekord!"
+ },
+ {
+  "i": 8606,
+  "f": "js/solon/fiske.js",
+  "k": "👑 Alla sex arterna! Meriten 🎣 Fiskemästare ligger i ditt troféskåp."
+ },
+ {
+  "i": 8607,
+  "f": "js/solon/fiske.js",
+  "k": "🎣 Kasta igen"
+ },
+ {
+  "i": 8608,
+  "f": "js/solon/fiske.js",
+  "k": "Vänta … vänta …"
+ },
+ {
+  "i": 8609,
+  "f": "js/solon/fiske.js",
+  "k": "NAPP! Tryck nu!"
+ },
+ {
+  "i": 8610,
+  "f": "js/solon/fiske.js",
+  "k": "Fisken slank iväg. Var snabbare nästa gång!"
+ },
+ {
+  "i": 8611,
+  "f": "js/solon/fiske.js",
+  "k": "{0} st · rekord {1} kg"
+ },
+ {
+  "i": 8612,
+  "f": "js/solon/fiske.js",
+  "k": "inte fångad än"
+ },
+ {
+  "i": 8613,
+  "f": "js/solon/fiske.js",
+  "k": "{0} av {1} arter. Fånga alla och bli 🎣 Fiskemästare!"
+ },
+ {
+  "i": 8614,
+  "f": "js/solon/fiske.js",
+  "k": "Annat ur havet"
+ },
+ {
+  "i": 8615,
+  "f": "js/solon/fiske.js",
+  "k": "Du har inte råd med ett metspö."
+ },
+ {
+  "i": 8616,
+  "f": "js/solon/fiske.js",
+  "k": "🎣 Ett metspö! Fiska längst ut på färjebryggan eller vid klipporna nära fyren."
+ }
+]

@@ -1,7 +1,7 @@
 {
-  "version": "0.122.0",
+  "version": "0.123.0",
   "date": "2026-10-13",
-  "title": "Solön",
+  "title": "Fiske på Solön",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
@@ -224,6 +224,7 @@
     "js/scenes/walkable.js",
     "js/shops/bostad.js",
     "js/shops/matbutik.js",
+    "js/solon/fiske.js",
     "js/solon/karta.js",
     "js/tassbacken/karta.js",
     "js/version.js",

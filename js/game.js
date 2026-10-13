@@ -761,7 +761,8 @@ export class Game {
     this.kort = {};          // 🃏 pixelkorten: { id: antal } (js/core/pixelkort.js)
     this.kortSerier = [];    // 🃏 serierna man fått belöningen för (komplett serie = 500 kr + guldpokal)
     this.meriter = [];       // 🏆 det man har vunnit [{ typ, plats, klass, vem, dag, t }] (js/core/meriter.js, merit())
-    this.mysterium = { kap: 0, steg: 0, klar: '', hittat: [] };   // 🕵️ mysteriet (js/core/mysterium.js): kapitel, steg, dagen förra kapitlet blev klart, ledtrådarna
+    this.mysterium = { kap: 0, steg: 0, klar: '', hittat: [] };
+    this.fiske = { spo: false, arter: {} };   // 🎣 fisket på Solön (js/solon/fiske.js): metspöet och fångstboken { [art]: { n, rekord } }   // 🕵️ mysteriet (js/core/mysterium.js): kapitel, steg, dagen förra kapitlet blev klart, ledtrådarna
     this.festVecka = '';   // 🎉 veckan ("2026-W42") då man senast fick lördagsfestens present (js/city/fest.js)
     // 🏡 djurhemmet i Tassbacken (js/scenes/shop-djurhem.js): adopterade = djurens id:n ("dh3:12" = djur 3 vecka 12),
     // hjalp = dagen man senast hjälpte till, gav = dagen man senast skänkte pengar
@@ -947,6 +948,9 @@ export class Game {
         { const Q = p.mysterium && typeof p.mysterium === 'object' ? p.mysterium : {};
           g.mysterium = { kap: Math.max(0, Math.min(7, Q.kap | 0)), steg: Math.max(0, Math.min(5, Q.steg | 0)), klar: /^\d{4}-\d{2}-\d{2}$/.test(String(Q.klar || '')) ? String(Q.klar) : '',
             hittat: (Array.isArray(Q.hittat) ? Q.hittat : []).filter((s) => typeof s === 'string' && /^[a-z]{2,10}$/.test(s)).slice(0, 12) }; }
+        { const Q = p.fiske && typeof p.fiske === 'object' ? p.fiske : {}, arter = {};
+          for (const [k, v] of Object.entries(Q.arter && typeof Q.arter === 'object' ? Q.arter : {})) if (/^[a-z]{2,12}$/.test(k) && v && (v.n | 0) > 0) arter[k] = { n: Math.min(9999, v.n | 0), rekord: Math.max(0, Math.min(99, Number(v.rekord) || 0)) };
+          g.fiske = { spo: !!Q.spo, arter }; }
         g.meriter = (Array.isArray(p.meriter) ? p.meriter : []).filter((m) => m && typeof m.typ === 'string' && /^[a-z]{2,12}$/.test(m.typ)).slice(-150)
           .map((m) => ({ typ: m.typ, plats: Math.max(1, Math.min(3, m.plats | 0)), klass: String(m.klass || '').slice(0, 12), vem: String(m.vem || '').slice(0, 20), dag: m.dag | 0, t: Number(m.t) || 0 }));
         g.festVecka = /^\d{4}-W\d{2}$/.test(String(p.festVecka || '')) ? String(p.festVecka) : '';
