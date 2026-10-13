@@ -185,10 +185,11 @@ export function rensaDjurnet(o) {
   const num = (v) => (Number.isFinite(+v) ? +v : 0), kr = (v) => Math.max(10, Math.min(100000, num(v) | 0));
   D.salda = Math.max(0, num(o.salda) | 0); D.dagSalt = Math.max(0, num(o.dagSalt) | 0);
   if (Array.isArray(o.annonser)) D.annonser = o.annonser.filter((a) => a && typeof a.pet === 'string').slice(0, MAX_ANNONSER).map((a) => ({
-    id: String(a.id).slice(0, 24), pet: String(a.pet).slice(0, 24), pris: kr(a.pris), sedan: num(a.sedan), nasta: num(a.nasta),
+    id: String(a.id).slice(0, 24), pet: String(a.pet).slice(0, 24), pris: kr(a.pris), sedan: num(a.sedan), nasta: num(a.nasta), van: !!a.van,
     bud: a.bud && typeof a.bud === 'object' ? { familj: String(a.bud.familj || '').slice(0, 40), belopp: kr(a.bud.belopp), prutat: !!a.bud.prutat, t: num(a.bud.t), fro: num(a.bud.fro) | 0, ny: !!a.bud.ny } : null }));
   if (Array.isArray(o.halsningar)) D.halsningar = o.halsningar.filter((h) => h && h.snap && typeof h.snap === 'object').slice(-20).map((h) => ({
     id: String(h.id).slice(0, 24), namn: String(h.namn || '').slice(0, 16), familj: String(h.familj || '').slice(0, 40), dag: num(h.dag) | 0, snap: h.snap, text: num(h.text) | 0, kom: !!h.kom, ny: !!h.ny }));
+  if (Array.isArray(o.vanKlara)) D.vanKlara = o.vanKlara.map(String).slice(-30);   // (👥 vännernas köp som redan är bokförda)
   if (o.kopt && typeof o.kopt === 'object') D.kopt = { dag: num(o.kopt.dag) | 0, ids: Array.isArray(o.kopt.ids) ? o.kopt.ids.map(String).slice(0, 12) : [] };
   return D;
 }

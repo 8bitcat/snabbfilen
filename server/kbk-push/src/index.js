@@ -48,6 +48,19 @@
 // KV: vm:<vid> = brevlådan (en nyckel), vmt:<från>:<dag> = dagens räknare { n, p: { [till]: n } } – två skrivningar per
 // meddelande (brevlådan + räknaren) och en när mottagaren kvitterar, så att gratiskvoten räcker länge.
 // Notiserna från samma vän ersätter varandra på telefonen (apns-collapse-id), så att en pratig vän inte fyller den.
+// 🐾 djurNET MELLAN VÄNNER (Carl 2026-10-13: "man ska kunna köpa och sälja djur, appen ska heta djurNET"): man lägger ut
+// ett eget djur (högst tre annonser) och vänner åt BÅDA hållen ser annonsen i djurNET och kan köpa djuret. Djuret
+// skickas som en liten beskrivning (art, ras, namn, ålder, stadium, rosetter … – inga platser, inget annat) och flyttar
+// in hos köparen; säljaren får pengarna när spelet hämtar beskedet (och en pushnotis). Pengarna går från köparen till
+// säljaren – inget skapas.
+//   POST /djur/annons  {vid, hemlig, namn, id, pris, snap}   lägg ut (eller ersätt) en annons → da:<vid> (7 dagar)
+//   POST /djur/tabort  {vid, hemlig, id}                     → { ok, fanns } (fanns = false: redan såld eller borta)
+//   POST /djur/lista   {vid, hemlig}                         → { ok, vanner: [{ vid, namn, annonser: [{id, pris, snap}] }] }
+//   POST /djur/kop     {vid, hemlig, namn, saljare, id, pris} → { ok, snap } – annonsen tas bort, beskedet läggs i
+//                                                            säljarens låda ds:<säljare> + pushnotis (409 = såld/nytt pris)
+//   POST /djur/salda   {vid, hemlig}                         → { ok, salda: [{ id, kopare, kvid, pris, namn, t }] }
+//   POST /djur/kvittera {vid, hemlig, ids}
+// Djurets namn tvättas här (inga styrtecken, högst 16 tecken) och spelet filtrerar fula ord när det visas.
 // Hemligheten APNS_KEY (Apples .p8) ligger bara i Cloudflare. Vanliga variabler: APNS_KEY_ID, TEAM_ID, TOPIC,
 // APNS_HOST (bara för test – annars Apples riktiga adress).
 import { KUNGS_PLAYERS } from '../../../js/data/kbk.js';
@@ -89,6 +102,31 @@ const PTEXT = {
   sv: (n) => `🎁 ${n} har skickat en present till dig!`, en: (n) => `🎁 ${n} sent you a present!`, es: (n) => `🎁 ¡${n} te ha enviado un regalo!`,
   de: (n) => `🎁 ${n} hat dir ein Geschenk geschickt!`, fr: (n) => `🎁 ${n} t'a envoyé un cadeau !`, pl: (n) => `🎁 ${n} wysyła ci prezent!`,
   it: (n) => `🎁 ${n} ti ha mandato un regalo!`, pt: (n) => `🎁 ${n} enviou-te um presente!`,
+};
+// 🐾 djurNET: djuret som flyttar – bara rimliga fält och värden följer med
+const ARTER = new Set(['katt', 'hund', 'kanin']), RAS_RE = /^[a-z]{2,16}$/, ANNONS_RE = /^[a-z0-9]{2,24}$/;
+export function renSnap(s) {
+  if (!s || typeof s !== 'object' || !ARTER.has(s.species) || !RAS_RE.test(String(s.breed || ''))) return null;
+  const tal = (v, a, b) => Math.max(a, Math.min(b, Math.round(+v || 0)));
+  const ut = { name: namnRen(s.name), species: s.species, breed: String(s.breed), sex: s.sex === 'hona' ? 'hona' : 'hane', alder: tal(s.alder, 0, 3650),
+    stage: ['unge', 'ung', 'vuxen'].includes(s.stage) ? s.stage : 'ung', grow: tal(s.grow, 0, 600), happy: tal(s.happy, 0, 100), seed: tal(s.seed, 0, 1e7) };
+  if (Array.isArray(s.mix) && s.mix.length === 2 && s.mix.every((r) => RAS_RE.test(String(r)))) ut.mix = s.mix.map(String);
+  if (RAS_RE.test(String(s.breed2 || ''))) ut.breed2 = String(s.breed2);
+  if (s.utst && typeof s.utst === 'object') {
+    const u = {};
+    for (const k of ['katt', 'hund', 'kanin', 'agility']) if (Array.isArray(s.utst[k])) u[k] = s.utst[k].slice(0, 3).map((n) => tal(n, 0, 9999));
+    if (s.utst.bis) u.bis = tal(s.utst.bis, 0, 9999);
+    if (Object.keys(u).length) ut.utst = u;
+  }
+  if (s.agil) ut.agil = tal(s.agil, 0, 20);
+  if (s.frisyr && typeof s.frisyr === 'object') { const j = JSON.stringify(s.frisyr); if (j.length <= 200 && !/[<>]/.test(j)) ut.frisyr = JSON.parse(j); }
+  return ut;
+}
+const DTEXT = {
+  sv: (k, n, p) => `🐾 ${k} köpte ${n} för ${p} kr på djurNET!`, en: (k, n, p) => `🐾 ${k} bought ${n} for ${p} kr on djurNET!`,
+  es: (k, n, p) => `🐾 ¡${k} ha comprado a ${n} por ${p} kr en djurNET!`, de: (k, n, p) => `🐾 ${k} hat ${n} für ${p} kr auf djurNET gekauft!`,
+  fr: (k, n, p) => `🐾 ${k} a acheté ${n} pour ${p} kr sur djurNET !`, pl: (k, n, p) => `🐾 ${k} kupuje ${n} za ${p} kr na djurNET!`,
+  it: (k, n, p) => `🐾 ${k} ha comprato ${n} per ${p} kr su djurNET!`, pt: (k, n, p) => `🐾 ${k} comprou ${n} por ${p} kr no djurNET!`,
 };
 const SLAG = new Set(['pengar', 'plagg', 'mobel', 'djur', 'mat', 'kort']), SAK_RE = /^[A-Za-z0-9_-]{1,32}$/;
 // en gåva som servern godtar (spelet kontrollerar själv att saken finns när presenten öppnas)
@@ -351,6 +389,64 @@ export default {
         if (d.vanta) { const res = await jobb; return svar({ ok: true, skickade: till.length, svar: res }); }
         ctx.waitUntil(jobb);
         return svar({ ok: true, skickade: till.length });
+      }
+    }
+    // ---------- 🐾 djurNET: köpa och sälja djur mellan vänner ----------
+    if (url.pathname.startsWith('/djur/')) {
+      const jag = await vanAuth(env, d);
+      if (!jag) return svar({ ok: false, fel: 'fel nyckel' }, 403);
+      const { vid } = jag, ak = `da:${vid}`, TTL = 60 * 60 * 24 * 7;
+      const vannerAtBada = async (f) => ((await env.KBK.get(`vl:${vid}`, 'json')) || []).includes(f) && ((await env.KBK.get(`vl:${f}`, 'json')) || []).includes(vid);
+      if (url.pathname === '/djur/annons') {
+        const id = String(d.id || ''), pris = Math.round(+d.pris), snap = renSnap(d.snap);
+        if (!ANNONS_RE.test(id) || !(pris >= 1 && pris <= 100000) || !snap) return svar({ ok: false, fel: 'trasig annons' }, 400);
+        const ann = ((await env.KBK.get(ak, 'json')) || []).filter((a) => a.id !== id);
+        if (ann.length >= 3) return svar({ ok: false, fel: 'högst tre annonser' }, 429);
+        ann.push({ id, pris, snap, t: Date.now() });
+        await env.KBK.put(ak, JSON.stringify(ann), { expirationTtl: TTL });
+        return svar({ ok: true });
+      }
+      if (url.pathname === '/djur/tabort') {
+        const id = String(d.id || ''), ann = (await env.KBK.get(ak, 'json')) || [], kvar = ann.filter((a) => a.id !== id);
+        if (kvar.length === ann.length) return svar({ ok: true, fanns: false });
+        if (kvar.length) await env.KBK.put(ak, JSON.stringify(kvar), { expirationTtl: TTL }); else await env.KBK.delete(ak);
+        return svar({ ok: true, fanns: true });
+      }
+      if (url.pathname === '/djur/lista') {
+        const ut = [];
+        for (const f of ((await env.KBK.get(`vl:${vid}`, 'json')) || []).slice(0, 50)) {
+          if (!((await env.KBK.get(`vl:${f}`, 'json')) || []).includes(vid)) continue;   // bara vänner åt båda hållen
+          const a = (await env.KBK.get(`da:${f}`, 'json')) || [];
+          if (!a.length) continue;
+          const vh = await env.KBK.get(`vh:${f}`, 'json');
+          ut.push({ vid: f, namn: vh?.n || '?', annonser: a.map(({ id, pris, snap }) => ({ id, pris, snap })) });
+        }
+        return svar({ ok: true, vanner: ut });
+      }
+      if (url.pathname === '/djur/kop') {
+        const saljare = String(d.saljare || ''), id = String(d.id || ''), pris = Math.round(+d.pris);
+        if (!VID_RE.test(saljare) || saljare === vid) return svar({ ok: false, fel: 'okänd säljare' }, 400);
+        if (!(await vannerAtBada(saljare))) return svar({ ok: false, fel: 'inte vänner' }, 403);
+        const sk = `da:${saljare}`, ann = (await env.KBK.get(sk, 'json')) || [], a = ann.find((x) => x.id === id);
+        if (!a) return svar({ ok: false, fel: 'redan såld', sald: true }, 409);
+        if (a.pris !== pris) return svar({ ok: false, fel: 'nytt pris', pris: a.pris }, 409);
+        const kvar = ann.filter((x) => x.id !== id);
+        if (kvar.length) await env.KBK.put(sk, JSON.stringify(kvar), { expirationTtl: TTL }); else await env.KBK.delete(sk);
+        const bk = `ds:${saljare}`, lada = (await env.KBK.get(bk, 'json')) || [];
+        lada.push({ id, kopare: jag.namn, kvid: vid, pris, namn: a.snap.name, t: Date.now() });
+        await env.KBK.put(bk, JSON.stringify(lada.slice(-30)), { expirationTtl: 60 * 60 * 24 * 30 });
+        const tel = (await lista(env, `vp:${saljare}:`)).map((k) => ({ token: k.name.split(':')[2], lang: k.metadata?.lang, glom: k.name }));
+        const jobb = Promise.all(tel.map((t) => skicka(env, t.token, (DTEXT[t.lang] || DTEXT.sv)(jag.namn, a.snap.name, pris), { title: 'djurNET', glom: t.glom }).catch((e) => ({ status: 0, reason: String(e) }))));
+        if (d.vanta) { const res = await jobb; return svar({ ok: true, snap: a.snap, pris, skickade: tel.length, svar: res }); }
+        ctx.waitUntil(jobb);
+        return svar({ ok: true, snap: a.snap, pris, skickade: tel.length });
+      }
+      if (url.pathname === '/djur/salda') return svar({ ok: true, salda: (await env.KBK.get(`ds:${vid}`, 'json')) || [] });
+      if (url.pathname === '/djur/kvittera') {
+        const ids = new Set((Array.isArray(d.ids) ? d.ids : []).map(String));
+        const bk = `ds:${vid}`, lada = (await env.KBK.get(bk, 'json')) || [], kvar = lada.filter((x) => !ids.has(x.id));
+        if (kvar.length !== lada.length) { if (kvar.length) await env.KBK.put(bk, JSON.stringify(kvar), { expirationTtl: 60 * 60 * 24 * 30 }); else await env.KBK.delete(bk); }
+        return svar({ ok: true, kvar: kvar.length });
       }
     }
     return svar({ ok: false, fel: 'okänd adress' }, 404);

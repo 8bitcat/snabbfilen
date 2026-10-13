@@ -6,6 +6,10 @@
 //   • 💌 BREVLÅDAN: hälsningarna från familjerna som köpt ens djur, med ett litet foto av djuret i sitt nya hem.
 // När man säljer kommer familjen och hämtar djuret: en liten scen vid dörren (transportburen, vinkningar, hjärtan).
 // Köparna hör av sig medan man spelar (djurnetStart: var annan sekund) – en toast och en siffra på appen.
+// 👥 MELLAN VÄNNER (v0.130, js/net/djurvan.js): har man vänner läggs annonsen också ut på servern – vänner åt båda hållen
+// ser den under 🛒 Köp ("Från dina vänner") och köper djuret direkt. Säljarens spel frågar servern var 30:e sekund om
+// något har sålts (djurnetVanKoll): djuret flyttar, pengarna kommer. En annons som ligger hos vännerna tas bort på
+// servern först (Ta bort, eller när man säljer till en familj) – hann en vän före gäller vännens köp.
 import { $t } from './i18n.js';
 import { openModal, closeModal, toast, esc } from './ui.js';
 import { play } from './sound.js';
@@ -15,6 +19,8 @@ import { drawPetIcon, drawPet, breedOf, ICON_W, ICON_H } from '../pets/sprites.j
 import { SPECIES } from '../pets/sprite-data.js';
 import { drawPerson, makeLook } from './people.js';
 import { seededRng } from '../pets/sim.js';
+import { djurVanKan, djurVanAnnonsera, djurVanTaBort, djurVanLista, djurVanKop, djurVanSalda, djurVanKvittera } from '../net/djurvan.js';
+import { tvatta } from '../net/skydd.js';
 import { dn, varde, annonsera, taBortAnnons, djurnetTick, pruta, tackaNej, saljTill, halsningText, utbud, kopFranUppfodare, djurnetNytt, MAX_ANNONSER, MIN_PRIS, MAX_PRIS } from '../pets/djurnet.js';
 
 let A = null, flik = 'salj';
@@ -25,9 +31,11 @@ let startad = false;
 export function djurnetStart(A0) {
   A = A0;
   if (startad) return; startad = true;
+  let n = 0;
   setInterval(() => {
     const g = A?.game;
     if (!g || A.attract) return;
+    if (++n % 15 === 0 && dn(g).annonser.some((a) => a.van)) djurnetVanKoll(A);   // 👥 såldes något till en vän?
     let ev = [];
     try { ev = djurnetTick(g); } catch (e) { console.error('djurNET:', e); return; }
     if (!ev.length) return;
@@ -38,6 +46,43 @@ export function djurnetStart(A0) {
       else toast($t`💌 djurNET: En hälsning från ${e.h.familj} om ${e.h.namn}!`, 'good wrap');
     }
   }, 2000);
+}
+
+// 👥 har en vän köpt något? Djuret flyttar, pengarna kommer (varje besked bara en gång – vanKlara minns de senaste).
+let kollar = false;
+export async function djurnetVanKoll(A0) {
+  const g = A0?.game;
+  if (!g || kollar) return 0;
+  kollar = true;
+  try {
+    const salda = await djurVanSalda(A0);
+    if (!salda?.length) return 0;
+    const D = dn(g), store = petStore(), klara = new Set(D.vanKlara || []);
+    let n = 0;
+    for (const s of salda) {
+      if (klara.has(s.id)) continue;
+      const a = D.annonser.find((x) => x.id === s.id);
+      if (a) { if (store.petById(a.pet)) store.removePet(a.pet); D.annonser = D.annonser.filter((x) => x.id !== s.id); }
+      const pris = Math.max(0, Math.min(100000, s.pris | 0));
+      g.money += pris; D.salda += 1; n += 1;
+      if (D.salda === 5 && g.merit) g.merit('uppfodare', 1, { vem: String(s.namn || '').slice(0, 16) });
+      klara.add(s.id);
+      play('coin');
+      toast($t`🐾 ${tvatta(String(s.kopare || '?').slice(0, 16))} köpte ${tvatta(String(s.namn || '?').slice(0, 16))} på djurNET – du fick ${fmt(pris)}!`, 'good wrap');
+    }
+    D.vanKlara = [...klara].slice(-30);
+    g.save();
+    await djurVanKvittera(A0, salda.map((s) => s.id));
+    return n;
+  } finally { kollar = false; }
+}
+// en annons som ligger hos vännerna: ta bort den på servern först → true = klart att fortsätta
+async function vanBort(A0, a) {
+  if (!a?.van) return true;
+  const r = await djurVanTaBort(A0, a.id);
+  if (!r?.ok) { toast($t('📡 djurNET når inte servern just nu – försök igen när du är uppkopplad.'), 'bad'); return false; }
+  if (r.fanns === false) { toast($t('🐾 En vän hann före och köpte djuret!'), 'good'); await djurnetVanKoll(A0); return false; }
+  return true;
 }
 
 // ---------- bilder ----------
@@ -88,6 +133,7 @@ export function openDjurnet(A0, f) {
       for (const { a, p } of annonser) {
         const b = a.bud, mot = b && !b.prutat && b.belopp < a.pris ? Math.max(10, Math.round((b.belopp + a.pris) / 20) * 10) : 0;
         html += `<div class="dn-rad${b ? ' dn-bud' : ''}"><img src="${portratt(p)}" alt=""><div class="dn-text"><b>${esc(p.name)}</b> <small>${beskr(p)}</small><br>${$t`Pris: ${fmt(a.pris)}`}
+          ${a.van ? `<div class="dn-vansyns">${$t('👥 Syns för dina vänner också')}</div>` : ''}
           ${b ? `<div class="dn-budtext">${esc($t`💬 ${b.familj} vill köpa ${p.name} för ${fmt(b.belopp)}!`)}</div>` : `<div class="dn-vantar">${$t('⏳ Väntar på köpare …')}</div>`}</div>
           <div class="dn-knappar">${b ? `<button class="btn btn-small btn-go" data-salj="${a.id}">${$t`✅ Sälj · ${fmt(b.belopp)}`}</button>${mot ? `<button class="btn btn-small" data-pruta="${a.id}">${$t`🤝 Pruta · ${fmt(mot)}`}</button>` : ''}<button class="btn btn-small" data-nej="${a.id}">${$t('✖ Nej tack')}</button>` : `<button class="btn btn-small" data-tabort="${a.id}">${$t('Ta bort annonsen')}</button>`}</div></div>`;
         if (b) b.ny = false;
@@ -106,6 +152,7 @@ export function openDjurnet(A0, f) {
     g.save();
   } else if (flik === 'kop') {
     const u = utbud(g), fullt = store.pets.length >= MAX_PETS;
+    if (djurVanKan(A)) html += `<p class="dn-rubrik">${$t('👥 Från dina vänner')}</p><div class="dn-lista dn-van" data-vanlista><p class="dn-tom">${$t('Hämtar vännernas annonser …')}</p></div>`;
     html += `<p class="dn-rubrik">${$t('Dagens djur från uppfödarna')}</p><div class="dn-lista">`;
     if (!u.length) html += `<p class="dn-tom">${$t('Alla dagens djur är sålda – nya kommer i morgon!')}</p>`;
     for (const x of u) {
@@ -125,7 +172,11 @@ export function openDjurnet(A0, f) {
   const dlg = openModal('🐾 djurNET', html, [{ label: $t('Stäng'), onClick: closeModal }]);
   dlg.querySelectorAll('[data-flik]').forEach((b) => (b.onclick = () => openDjurnet(A, b.dataset.flik)));
   dlg.querySelectorAll('[data-lagg]').forEach((b) => (b.onclick = () => prisDialog(b.dataset.lagg)));
-  dlg.querySelectorAll('[data-tabort]').forEach((b) => (b.onclick = () => { taBortAnnons(g, b.dataset.tabort); g.save(); openDjurnet(A); }));
+  dlg.querySelectorAll('[data-tabort]').forEach((b) => (b.onclick = async () => {
+    b.disabled = true;
+    if (!(await vanBort(A, D.annonser.find((x) => x.id === b.dataset.tabort)))) { openDjurnet(A); return; }
+    taBortAnnons(g, b.dataset.tabort); g.save(); openDjurnet(A);
+  }));
   dlg.querySelectorAll('[data-nej]').forEach((b) => (b.onclick = () => { tackaNej(g, b.dataset.nej); g.save(); openDjurnet(A); }));
   dlg.querySelectorAll('[data-pruta]').forEach((b) => (b.onclick = () => {
     const a = D.annonser.find((x) => x.id === b.dataset.pruta), fam = a?.bud?.familj, r = pruta(g, b.dataset.pruta);
@@ -134,11 +185,39 @@ export function openDjurnet(A0, f) {
     else if (r.ok) { play('miss'); toast($t`😕 ${r.familj} tyckte att det blev för dyrt och tackade nej. Fler köpare hör av sig.`); }
     openDjurnet(A);
   }));
-  dlg.querySelectorAll('[data-salj]').forEach((b) => (b.onclick = () => {
+  dlg.querySelectorAll('[data-salj]').forEach((b) => (b.onclick = async () => {
+    b.disabled = true;
+    const a = D.annonser.find((x) => x.id === b.dataset.salj);
+    if (!(await vanBort(A, a))) { openDjurnet(A); return; }
     const r = saljTill(g, b.dataset.salj);
     if (!r.ok) { toast(r.fel, 'bad'); return; }
     g.save(); closeModal(); avsked(r);
   }));
+  // 👥 vännernas annonser fylls i när servern har svarat
+  const vl = dlg.querySelector('[data-vanlista]');
+  if (vl) djurVanLista(A).then((vanner) => {
+    if (!document.body.contains(vl)) return;
+    const rader = (vanner || []).flatMap((v) => v.annonser.map((x) => ({ ...x, vid: v.vid, saljare: tvatta(String(v.namn || '?').slice(0, 16)) })));
+    if (!vanner) { vl.innerHTML = `<p class="dn-tom">${$t('📡 Kunde inte hämta vännernas annonser just nu.')}</p>`; return; }
+    if (!rader.length) { vl.innerHTML = `<p class="dn-tom">${$t('Dina vänner har inga djur till salu just nu.')}</p>`; return; }
+    const fullt = store.pets.length >= MAX_PETS;
+    vl.innerHTML = rader.map((x) => { const p = { ...x.snap, name: tvatta(String(x.snap?.name || '?')) }; return `<div class="dn-rad dn-vanrad"><img src="${portratt(p)}" alt=""><div class="dn-text"><b>${esc(p.name)}</b> <small>${beskr(p)}</small>${extra(p) ? `<br><small>${extra(p)}</small>` : ''}<br><small class="dn-saljare">${esc($t`Säljs av din vän ${x.saljare}`)}</small></div>
+      <div class="dn-knappar"><button class="btn btn-small btn-go" data-vankop="${esc(x.vid)}|${esc(x.id)}|${x.pris | 0}" ${g.money < x.pris || fullt ? 'disabled' : ''}>${$t`🛒 Köp · ${fmt(x.pris)}`}</button></div></div>`; }).join('');
+    vl.querySelectorAll('[data-vankop]').forEach((b) => (b.onclick = async () => {
+      const [vid, id, pris] = b.dataset.vankop.split('|'), kr = +pris;
+      if (g.money < kr) { toast($t('Du har inte råd.'), 'bad'); return; }
+      if (store.pets.length >= MAX_PETS) { toast($t`Du kan ha högst ${MAX_PETS} djur.`, 'bad'); return; }
+      b.disabled = true;
+      const r = await djurVanKop(A, vid, id, kr);
+      if (!r) { toast($t('📡 djurNET når inte servern just nu – försök igen när du är uppkopplad.'), 'bad'); b.disabled = false; return; }
+      if (!r.ok) { toast(r.sald ? $t('🐾 Någon hann före – djuret är redan sålt.') : r.pris ? $t('🐾 Priset har ändrats – titta igen.') : $t('🐾 Köpet gick inte igenom.'), 'bad'); openDjurnet(A, 'kop'); return; }
+      const ny = store.importPet({ ...r.snap, name: tvatta(String(r.snap?.name || '')) }, g.home, { day: g.day });
+      if (!ny) { toast(store.lastError || $t('Det gick inte.'), 'bad'); return; }
+      g.money -= kr; g.save(); play('buy');
+      toast($t`🐾 ${ny.name} har flyttat hem till dig!`, 'good');
+      openDjurnet(A, 'kop');
+    }));
+  });
   dlg.querySelectorAll('[data-kop]').forEach((b) => (b.onclick = () => {
     const r = kopFranUppfodare(g, b.dataset.kop);
     if (!r.ok) { toast(r.fel, 'bad'); return; }
@@ -159,7 +238,14 @@ function prisDialog(petId) {
     <div class="dn-varde">${rader}<div class="dn-vrad dn-summa"><span>${$t('Värde')}</span><span>${fmt(V.pris)}</span></div></div>
     <div class="dn-pris"><button class="btn btn-small" data-ned>−</button><span data-pris></span><button class="btn btn-small" data-upp>+</button></div>
     <p class="dn-tips" data-tips></p>`, [
-    { label: $t('📢 Lägg ut annonsen'), cls: 'btn-go', onClick: () => { const r = annonsera(g, petId, pris()); if (!r.ok) { toast(r.fel, 'bad'); return; } g.save(); play('ok'); toast($t`📢 ${p.name} ligger ute på djurNET för ${fmt(r.annons.pris)}. Köparna hör av sig!`, 'good'); openDjurnet(A, 'salj'); } },
+    { label: $t('📢 Lägg ut annonsen'), cls: 'btn-go', onClick: async () => {
+      const r = annonsera(g, petId, pris());
+      if (!r.ok) { toast(r.fel, 'bad'); return; }
+      g.save(); play('ok');
+      toast($t`📢 ${p.name} ligger ute på djurNET för ${fmt(r.annons.pris)}. Köparna hör av sig!`, 'good');
+      openDjurnet(A, 'salj');
+      if (djurVanKan(A)) { const s = await djurVanAnnonsera(A, r.annons.id, r.annons.pris, petStore().snapshot(petId)); if (s?.ok) { r.annons.van = true; g.save(); if (flik === 'salj' && document.querySelector('#modal .dn-logo')) openDjurnet(A, 'salj'); } }
+    } },
     { label: $t('Avbryt'), onClick: () => openDjurnet(A, 'salj') },
   ]);
   const visa = () => {

@@ -1,0 +1,14 @@
+{
+ "🐾 {0} köpte {1} på djurNET – du fick {2}!": "🐾 {0} ha comprato {1} su djurNET: ricevi {2}!",
+ "📡 djurNET når inte servern just nu – försök igen när du är uppkopplad.": "📡 djurNET non riesce a raggiungere il server: riprova quando c'è connessione.",
+ "🐾 En vän hann före och köpte djuret!": "🐾 Qualcuno dei tuoi amici ha comprato l'animale prima di te!",
+ "👥 Syns för dina vänner också": "👥 Lo vedono anche i tuoi amici",
+ "👥 Från dina vänner": "👥 Dai tuoi amici",
+ "Hämtar vännernas annonser …": "Carico gli annunci dei tuoi amici…",
+ "📡 Kunde inte hämta vännernas annonser just nu.": "📡 Ora non riesco a caricare gli annunci dei tuoi amici.",
+ "Dina vänner har inga djur till salu just nu.": "I tuoi amici non hanno animali in vendita adesso.",
+ "Säljs av din vän {0}": "In vendita da {0}, dei tuoi amici",
+ "🐾 Någon hann före – djuret är redan sålt.": "🐾 Qualcuno ti ha preceduto: l'animale è già venduto.",
+ "🐾 Priset har ändrats – titta igen.": "🐾 Il prezzo è cambiato: dai un'altra occhiata.",
+ "🐾 Köpet gick inte igenom.": "🐾 L'acquisto non è andato a buon fine."
+}

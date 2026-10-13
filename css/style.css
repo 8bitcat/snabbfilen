@@ -818,6 +818,7 @@ html.foto-lage #emotes, html.foto-lage #chat, html.foto-lage #startguide, html.f
 .dn-pris { display: flex; align-items: center; justify-content: center; gap: 10px; font-size: var(--f3); }
 .dn-scen { width: 100%; max-height: 40vh; object-fit: contain; image-rendering: pixelated; border: 3px solid var(--ink); display: block; }
 .dn-avsked { font-size: var(--f2); text-align: center; margin: 8px 0 0; }
+.dn-vansyns { font-size: var(--f1); color: #2a5aa8; margin-top: 2px; } .dn-vanrad { background: #eef6ff; }
 @media (max-width: 520px) { .dn-rad { grid-template-columns: 48px 1fr; } .dn-rad img { width: 48px; height: 40px; } .dn-knappar { grid-column: 1 / -1; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); } }
 /* 🥫🎯 burktornet och skjutbanan (js/pixelberg/stand.js) */
 .pb-spel { width: 100%; max-height: 52vh; object-fit: contain; image-rendering: pixelated; border: 3px solid var(--ink); display: block; touch-action: none; }

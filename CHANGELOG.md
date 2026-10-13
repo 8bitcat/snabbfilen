@@ -10,6 +10,11 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.130.0] – 2026-10-13 – djurNET mellan vänner
+- 👥 djurNET mellan vänner: när du lägger ut ett djur ser dina vänner annonsen också, under 🛒 Köp → "Från dina vänner".
+- En vän som köper får djuret hem direkt – med rosetter, frisyr och allt. Du får pengarna och ett besked: "Leo köpte Morris på djurNET!" (i appen även som notis).
+- Hinner en vän före en familj gäller vännens köp.
+
 ## [0.129.0] – 2026-10-13 – djurNET – köp och sälj djur
 - 🐾 djurNET – en ny app i mobilen där du köper och säljer djur! (Ramonas idé)
 - 🏷️ Sälj: djurNET värderar ditt djur – rasen, åldern, rosetter och Best in Show från utställningen, frisyren från Klipp & Klo, blandkull och hur glad det är. Du väljer priset själv.

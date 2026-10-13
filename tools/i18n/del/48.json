@@ -1,0 +1,62 @@
+[
+ {
+  "i": 8810,
+  "f": "js/core/djurnetapp.js",
+  "k": "🐾 {0} köpte {1} på djurNET – du fick {2}!"
+ },
+ {
+  "i": 8811,
+  "f": "js/core/djurnetapp.js",
+  "k": "📡 djurNET når inte servern just nu – försök igen när du är uppkopplad."
+ },
+ {
+  "i": 8812,
+  "f": "js/core/djurnetapp.js",
+  "k": "🐾 En vän hann före och köpte djuret!"
+ },
+ {
+  "i": 8813,
+  "f": "js/core/djurnetapp.js",
+  "k": "👥 Syns för dina vänner också"
+ },
+ {
+  "i": 8814,
+  "f": "js/core/djurnetapp.js",
+  "k": "👥 Från dina vänner"
+ },
+ {
+  "i": 8815,
+  "f": "js/core/djurnetapp.js",
+  "k": "Hämtar vännernas annonser …"
+ },
+ {
+  "i": 8816,
+  "f": "js/core/djurnetapp.js",
+  "k": "📡 Kunde inte hämta vännernas annonser just nu."
+ },
+ {
+  "i": 8817,
+  "f": "js/core/djurnetapp.js",
+  "k": "Dina vänner har inga djur till salu just nu."
+ },
+ {
+  "i": 8818,
+  "f": "js/core/djurnetapp.js",
+  "k": "Säljs av din vän {0}"
+ },
+ {
+  "i": 8819,
+  "f": "js/core/djurnetapp.js",
+  "k": "🐾 Någon hann före – djuret är redan sålt."
+ },
+ {
+  "i": 8820,
+  "f": "js/core/djurnetapp.js",
+  "k": "🐾 Priset har ändrats – titta igen."
+ },
+ {
+  "i": 8821,
+  "f": "js/core/djurnetapp.js",
+  "k": "🐾 Köpet gick inte igenom."
+ }
+]
