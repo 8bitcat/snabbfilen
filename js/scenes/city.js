@@ -27,7 +27,7 @@ import { $t, money } from '../core/i18n.js';
 // modulerna inte täcker ännu (marken/skjulen/staketen i v2-områdena).
 // v3: buildings-downtown (finanskvarterets hus) och bridge (floden, Stora bron, Järnbron).
 const MODS = {};
-await Promise.all(['buildings-shops', 'buildings-work', 'buildings-south', 'buildings-suburb', 'buildings-leksaker', 'buildings-downtown', 'buildings-linne', 'marknad', 'pir', 'odling', 'ground', 'props', 'traffic', 'life', 'weather', 'walk', 'fallback-v2', 'bridge'].map((n) =>
+await Promise.all(['buildings-shops', 'buildings-work', 'buildings-south', 'buildings-suburb', 'buildings-leksaker', 'buildings-downtown', 'buildings-linne', 'marknad', 'pir', 'odling', 'fest', 'ground', 'props', 'traffic', 'life', 'weather', 'walk', 'fallback-v2', 'bridge'].map((n) =>
   import(`../city/${n}.js`).then((m) => { MODS[n] = m; }).catch((e) => console.error(`stadsmodulen ${n} kunde inte laddas:`, e))));
 
 let VW = CITY.VIEW_W, VH = CITY.VIEW_H; // mobilfyllning: vyn följer skärmen, klampad till världen
@@ -93,12 +93,14 @@ function sim() {
   const pier = safe('pir', () => MODS.pir?.createPier?.(env), NONE);                // piren, båtarna, fiskarna och bryggan vid Sjöboden
   // 🌱 husvagnens odling bakom vagnen (krukorna och kannan; spelet och figuren via ODL – staden byggs om per scen)
   const odling = safe('odling', () => MODS.odling?.createOdling?.(env, { game: () => ODL.game?.(), me: () => ODL.me?.() }), null);
+  // 🎉 lördagsfesten och 🗽 statyn i stadsparken (samma spel/figur-koppling som odlingen)
+  const fest = safe('fest', () => MODS.fest?.createFest?.(env, { game: () => ODL.game?.(), me: () => ODL.me?.() }), null);
   const allSeats = props.seats?.();                                                  // bryggans stolar och bänkar: samma lista som parkbänkarna
   if (Array.isArray(allSeats) && pier.seats?.length) allSeats.push(...pier.seats);
-  env.obstacles = [...MAP_OBSTACLES, ...artObstacles(), ...(props.obstacles || []), ...(traffic.obstacles || []), ...(fallback.obstacles || []), ...(bridge.obstacles || []), ...(market.obstacles || []), ...(pier.obstacles || []), ...(odling?.obstacles || [])];
+  env.obstacles = [...MAP_OBSTACLES, ...artObstacles(), ...(props.obstacles || []), ...(traffic.obstacles || []), ...(fallback.obstacles || []), ...(bridge.obstacles || []), ...(market.obstacles || []), ...(pier.obstacles || []), ...(odling?.obstacles || []), ...(fest?.obstacles || [])];
   const life = safe('life', () => MODS.life?.createLife(env, traffic, props), NONE); // props ger livet riktiga sittplatser (props.seats())
   const weather = safe('weather', () => MODS.weather?.createWeather(env), NO_WEATHER);
-  SIM = { props, traffic, life, fallback, weather, bridge, market, pier, odling };
+  SIM = { props, traffic, life, fallback, weather, bridge, market, pier, odling, fest };
   return SIM;
 }
 
@@ -561,6 +563,7 @@ export function makeCity(A) {
     add('marknad', () => S.market.items());
     add('pir', () => S.pier.items());
     add('odling', () => S.odling?.items() || []);
+    add('fest', () => S.fest?.items() || []);
     for (const d of folkDrawables(A, t)) items.push({ y: d.fy, draw: () => d.draw(ctx) });
     // 🌾 vägskylten LANDET → vid stadsgränsen (södra trottoaren längst österut)
     if (cx + vw > CITY.W - 80) items.push({ y: CITY.SIDEWALK_S[1] - 4, draw: () => drawLandetSkylt(ctx, CITY.W - 22, CITY.SIDEWALK_S[1] - 4) });
@@ -603,7 +606,7 @@ export function makeCity(A) {
         if (Math.max(base, b.frontY ?? base) + 4 < cy || artBox(b).y > cy + vh) continue;
         guard(`${b.kind}.glow`, () => { ctx.save(); art[b.kind]?.glow?.(ctx, b, stOf(b)); ctx.restore(); });
       }
-      for (const [name, m] of [['fallback', S.fallback], ['bridge', S.bridge], ['props', S.props], ['traffic', S.traffic], ['life', S.life], ['marknad', S.market], ['pir', S.pier]]) guard(name + '.glow', () => { ctx.save(); m.glow?.(ctx, view); ctx.restore(); });
+      for (const [name, m] of [['fallback', S.fallback], ['bridge', S.bridge], ['props', S.props], ['traffic', S.traffic], ['life', S.life], ['marknad', S.market], ['pir', S.pier], ['fest', S.fest]]) guard(name + '.glow', () => { ctx.save(); m.glow?.(ctx, view); ctx.restore(); });
       guard('weather.glow', () => { ctx.save(); S.weather.glow?.(ctx, view); ctx.restore(); });
     }
   }
@@ -902,6 +905,7 @@ export function makeCity(A) {
       markers: () => markers.map((m) => ({ ...m })),
       chips: () => signChips.map((c) => ({ label: c.label, x: c.x, y: c.y, w: c.w, h: c.h, id: c.b.id })), // husnamnen i överkanten (tools/mobil-stad-test.mjs)
       odling: () => S.odling?._debug || null, // 🌱 husvagnens krukor (tools/odling-test.mjs)
+      lordag: () => S.fest?._debug || null, // 🎉 lördagsfesten och 🗽 statyn (tools/lordag-test.mjs)
       pets: () => (pets ? pets._debug.followers() : []), // husdjuren på promenad (tools/pets-walk-test.mjs)
       // 🧭/🚕 (tools/karta-taxi-test.mjs)
       guide: () => { const b = guideB(); if (!b) return null; const wp = (guidePath || []).find(([x, y]) => Math.hypot(x - walker.px, y - walker.py) > 14); return { id: b.id, path: (guidePath || []).length, next: wp || null, rects: guideRects.map((q) => ({ kind: q.kind, r: [...q.r] })) }; },
@@ -955,7 +959,9 @@ export function makeCity(A) {
       updateEnv(dt);
       if (banner) banner.t += dt;
       if (fade.phase === 0) checkDistrict(false);
-      for (const [name, m] of [['fallback', S.fallback], ['bridge', S.bridge], ['props', S.props], ['traffic', S.traffic], ['life', S.life], ['marknad', S.market], ['pir', S.pier], ['odling', S.odling]]) guard(name + '.update', () => m?.update?.(dt));
+      for (const [name, m] of [['fallback', S.fallback], ['bridge', S.bridge], ['props', S.props], ['traffic', S.traffic], ['life', S.life], ['marknad', S.market], ['pir', S.pier], ['odling', S.odling], ['fest', S.fest]]) guard(name + '.update', () => m?.update?.(dt));
+      // 🎉 festpresenten (js/city/fest.js): fanfar och besked när man varit en stund på festen
+      if (env.festPresent && !A.attract) { const fp = env.festPresent; env.festPresent = null; play('fanfare'); toast($t('🎉 Lördagsfest! Du fick en festpresent – öppna den i 🎁 Presenter i mobilen!') + (fp.glad ? ` +${fp.glad} 😊` : ''), 'good'); }
       // 🐬 spelaren såg delfinen vid piren: lyckan går upp och folk runt omkring jublar och kramas
       const lk = S.pier?.takeLuck?.();
       if (lk && !A.attract) {
@@ -1007,6 +1013,8 @@ export function makeCity(A) {
       // 🌱 husvagnens odling: en kruka (så, vattna, skörda) eller vattenkannan (vattna allt)
       const op = S.odling?.potAt?.(x, y);
       if (op) { if (sitting) standUp(); walker.walkTo(op.walk.x, op.walk.y, () => { walker.dir = 'up'; MODS.odling?.openPot?.(A, S.odling, op.i); }); return; }
+      // 🗽 statyn i parken: gå fram och läs skylten
+      if (S.fest?.statyAt?.(x, y)) { if (sitting) standUp(); walker.walkTo(MODS.fest.STATY.x + 4, MODS.fest.STATY.y + 10, () => { walker.dir = 'up'; toast(S.fest.statyText(), 'wrap'); }); return; }
       const oc = S.odling?.canAt?.(x, y);
       if (oc) { if (sitting) standUp(); walker.walkTo(oc.walk.x, oc.walk.y, () => { walker.dir = 'left'; MODS.odling?.useCan?.(A, S.odling); }); return; }   // (vänd mot krukorna – strilen åt dem)
       const fs = S.pier?.fisherAt?.(x, y);

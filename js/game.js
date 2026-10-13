@@ -756,6 +756,9 @@ export class Game {
     // 🎁 presenterna (js/core/presenter.js): dag = senaste dagen (YYYY-MM-DD) en dagspresent kom, antal = öppnade
     // dagspresenter (var sjunde är stor), ko = presenterna som väntar [{ typ: 'dag'|'stor'|'van', fran?, gavor? }]
     this.presenter = { dag: '', antal: 0, ko: [] };
+    this.kort = {};          // 🃏 pixelkorten: { id: antal } (js/core/pixelkort.js)
+    this.kortSerier = [];    // 🃏 serierna man fått belöningen för (komplett serie = 500 kr + guldpokal)
+    this.festVecka = '';   // 🎉 veckan ("2026-W42") då man senast fick lördagsfestens present (js/city/fest.js)
     // 🏡 djurhemmet i Tassbacken (js/scenes/shop-djurhem.js): adopterade = djurens id:n ("dh3:12" = djur 3 vecka 12),
     // hjalp = dagen man senast hjälpte till, gav = dagen man senast skänkte pengar
     this.djurhem = { adopterade: [], hjalp: -1, gav: -1 };
@@ -934,6 +937,10 @@ export class Game {
           }; }
         { const D = p.djurhem && typeof p.djurhem === 'object' ? p.djurhem : {};
           g.djurhem = { adopterade: (Array.isArray(D.adopterade) ? D.adopterade : []).filter((s) => typeof s === 'string' && /^dh\d{1,3}(:\d{1,6})?$/.test(s)).slice(-200), hjalp: Number.isFinite(+D.hjalp) ? +D.hjalp | 0 : -1, gav: Number.isFinite(+D.gav) ? +D.gav | 0 : -1 }; }
+        // 🃏 pixelkorten: korta id:n, 1–99 av varje (okända kort från en nyare version följer med orörda)
+        g.kort = {}; for (const [k, v] of Object.entries(p.kort && typeof p.kort === 'object' ? p.kort : {})) if (/^[a-z][a-z0-9-]{1,23}$/.test(k) && (v | 0) > 0) g.kort[k] = Math.min(99, v | 0);
+        g.kortSerier = (Array.isArray(p.kortSerier) ? p.kortSerier : []).filter((s) => typeof s === 'string' && /^[a-z]{2,12}$/.test(s)).slice(0, 20);
+        g.festVecka = /^\d{4}-W\d{2}$/.test(String(p.festVecka || '')) ? String(p.festVecka) : '';
         g.designs = (Array.isArray(p.designs) ? p.designs : []).filter((d) => d && ['neck', 'bag', 'beads', 'phone'].includes(d.kind) && d.sel && typeof d.sel === 'object').slice(-40).map(cleanDesign).filter(Boolean);
         keep.storage = (Array.isArray(p.storage) ? p.storage : []).filter((it) => it && typeof it === 'object' && !knownKind(it.k));
         const knownFurn = (d) => d && typeof d === 'object' && knownKind(d.k);

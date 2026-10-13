@@ -29,6 +29,14 @@
 // KV: vh:<vid> = {h: hemlighetens sha256, n: namnet}, vl:<vid> = vänlistan, vp:<vid>:<pushkod> (metadata {lang}),
 // vi:<vid> = spärren, vb:<vid> = brevlådan, vf:<från>:<till>:<dag> = dagens presenter till vännen (räknare).
 // Namnet är figurens namn i spelet (högst 16 tecken) – det står i notisen.
+//
+// 🗽 STATYN I PARKEN (Carl 2026-10-12: "statyn i parken – veckans vinnare"): veckans SNÄLLASTE får en staty mitt i
+// stadsparken i en vecka. Varje vänskapspresent som går fram (POST /van/present) räknas för den som skickar den
+// under veckan (vecka = ISO-vecka i UTC). Med presenten skickas figurens utseende (look) – det sparas bara för
+// statyn och bara i två veckor.
+//   GET  /staty   {forra: {namn, look, n, vecka} | null, nu: {namn, n} | null}  förra veckans vinnare + veckans ledare
+// KV: vs:<vecka>:<vid> = utseendet, metadata {n, namn, t} (t = när räkningen senast ökade: lika många → den som kom
+// först dit vinner); vstaty:<vecka> = förra veckans uträknade vinnare (sparas), vstatynu:<vecka> = ledaren (10 min).
 // Hemligheten APNS_KEY (Apples .p8) ligger bara i Cloudflare. Vanliga variabler: APNS_KEY_ID, TEAM_ID, TOPIC,
 // APNS_HOST (bara för test – annars Apples riktiga adress).
 import { KUNGS_PLAYERS } from '../../../js/data/kbk.js';
@@ -71,7 +79,7 @@ const PTEXT = {
   de: (n) => `🎁 ${n} hat dir ein Geschenk geschickt!`, fr: (n) => `🎁 ${n} t'a envoyé un cadeau !`, pl: (n) => `🎁 ${n} wysyła ci prezent!`,
   it: (n) => `🎁 ${n} ti ha mandato un regalo!`, pt: (n) => `🎁 ${n} enviou-te um presente!`,
 };
-const SLAG = new Set(['pengar', 'plagg', 'mobel', 'djur', 'mat']), SAK_RE = /^[A-Za-z0-9_-]{1,32}$/;
+const SLAG = new Set(['pengar', 'plagg', 'mobel', 'djur', 'mat', 'kort']), SAK_RE = /^[A-Za-z0-9_-]{1,32}$/;
 // en gåva som servern godtar (spelet kontrollerar själv att saken finns när presenten öppnas)
 function renGava(g) {
   if (!g || typeof g !== 'object' || !SLAG.has(g.slag)) return null;
@@ -79,9 +87,56 @@ function renGava(g) {
   if (g.slag === 'mobel') return SAK_RE.test(String(g.k || '')) ? { slag: 'mobel', k: String(g.k), v: Math.max(0, Math.min(40, Math.round(+g.v || 0))) } : null;
   if (g.slag === 'mat') { const n = Math.round(+g.n || 1); return SAK_RE.test(String(g.id || '')) && n >= 1 && n <= 5 ? { slag: 'mat', id: String(g.id), n } : null; }
   if (g.slag === 'plagg') return SAK_RE.test(String(g.id || '')) ? { slag: 'plagg', id: String(g.id) } : null;
+  if (g.slag === 'kort') return SAK_RE.test(String(g.id || '')) ? { slag: 'kort', id: String(g.id) } : null;   // 🃏 ett pixelkort (byteshandel)
   return SAK_RE.test(String(g.k || '')) ? { slag: 'djur', k: String(g.k) } : null;
 }
 const idag = () => new Date().toISOString().slice(0, 10);
+// ISO-veckan (UTC) som "2026-W42"; forra = veckan innan
+export function vecka(t = Date.now(), forra = false) {
+  const d = new Date(t - (forra ? 7 * 864e5 : 0)), dag = (d.getUTCDay() + 6) % 7;
+  const tor = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() - dag + 3));
+  const ar = tor.getUTCFullYear(), forsta = new Date(Date.UTC(ar, 0, 4));
+  const v = 1 + Math.round(((tor - forsta) / 864e5 - 3 + ((forsta.getUTCDay() + 6) % 7)) / 7);
+  return `${ar}-W${String(v).padStart(2, '0')}`;
+}
+// figurens utseende för statyn: bara korta strängar, tal och sant/falskt under enkla nycklar
+export function renLook(l) {
+  if (!l || typeof l !== 'object' || Array.isArray(l)) return null;
+  const ut = {};
+  for (const [k, v] of Object.entries(l).slice(0, 80)) {
+    if (!/^[A-Za-z0-9]{1,16}$/.test(k)) continue;
+    if (typeof v === 'string' && v.length <= 24 && !/[<>\u0000-\u001f]/.test(v)) ut[k] = v;
+    else if (typeof v === 'number' && Number.isFinite(v)) ut[k] = v;
+    else if (typeof v === 'boolean' || v === null) ut[k] = v;
+  }
+  return JSON.stringify(ut).length <= 2000 ? ut : null;
+}
+export async function raknaPresent(env, vid, namn, look, t = Date.now()) {
+  const k = `vs:${vecka(t)}:${vid}`, gammal = await env.KBK.getWithMetadata(k, 'json');
+  const n = (gammal.metadata?.n | 0) + 1;
+  await env.KBK.put(k, JSON.stringify(renLook(look) || gammal.value || {}), { metadata: { n, namn, t }, expirationTtl: 60 * 60 * 24 * 15 });
+}
+// veckans topplista ur räkningen: flest presenter, och vid lika den som kom dit först
+async function etta(env, v) {
+  let bast = null;
+  for (const k of await lista(env, `vs:${v}:`)) {
+    const m = k.metadata || {};
+    if (!bast || (m.n | 0) > bast.n || ((m.n | 0) === bast.n && (m.t || 0) < bast.t)) bast = { key: k.name, n: m.n | 0, namn: m.namn || '?', t: m.t || 0 };
+  }
+  return bast && bast.n > 0 ? bast : null;
+}
+export async function staty(env, t = Date.now()) {
+  const fv = vecka(t, true), nv = vecka(t);
+  let forra = await env.KBK.get(`vstaty:${fv}`, 'json');
+  if (!forra) {
+    const b = await etta(env, fv);
+    forra = b ? { namn: b.namn, n: b.n, vecka: fv, look: (await env.KBK.get(b.key, 'json')) || {} } : { tom: true, vecka: fv };
+    await env.KBK.put(`vstaty:${fv}`, JSON.stringify(forra), { expirationTtl: 60 * 60 * 24 * 40 });
+  }
+  let nu = await env.KBK.get(`vstatynu:${nv}`, 'json');
+  if (!nu) { const b = await etta(env, nv); nu = b ? { namn: b.namn, n: b.n } : { tom: true }; await env.KBK.put(`vstatynu:${nv}`, JSON.stringify(nu), { expirationTtl: 600 }); }
+  return { forra: forra.tom ? null : forra, nu: nu.tom ? null : nu };
+}
 const namnRen = (v) => String(v ?? '').normalize('NFC').replace(/[\u0000-\u001f\u007f<>]/g, '').trim().slice(0, 16) || '?';
 const sha = async (t) => b64u(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(String(t))));
 // vid + hemlig stämmer? Första gången tar figuren sitt vid (sparar hemlighetens sha256). Namnet uppdateras när det ändrats.
@@ -148,6 +203,7 @@ export default {
   async fetch(req, env, ctx) {
     if (req.method === 'OPTIONS') return new Response(null, { headers: CORS });
     const url = new URL(req.url);
+    if (req.method === 'GET' && url.pathname === '/staty') return svar({ ok: true, ...(await staty(env)) });
     if (req.method === 'GET' && url.pathname === '/') return svar({ ok: true, telefoner: (await allaTelefoner(env)).length, vantelefoner: (await lista(env, 'vp:')).length });
     if (req.method !== 'POST') return svar({ ok: false, fel: 'bara POST' }, 405);
     let d = {};
@@ -217,6 +273,7 @@ export default {
         lada.push({ id, fran: jag.namn, fvid: vid, fri, gavor, t: Date.now() });
         await env.KBK.put(bk, JSON.stringify(lada), { expirationTtl: 60 * 60 * 24 * 30 });
         await env.KBK.put(rk, JSON.stringify({ n: r.n + 1, fri: r.fri || fri }), { expirationTtl: 60 * 60 * 48 });
+        await raknaPresent(env, vid, jag.namn, d.look);   // 🗽 veckans snällaste (statyn i parken)
         // pushnotis till vännens telefoner
         const tel = (await lista(env, `vp:${till}:`)).map((k) => ({ token: k.name.split(':')[2], lang: k.metadata?.lang, glom: k.name }));
         const jobb = Promise.all(tel.map((t) => skicka(env, t.token, (PTEXT[t.lang] || PTEXT.sv)(jag.namn), { title: (VTEXT[t.lang] || VTEXT.sv).t, glom: t.glom }).catch((e) => ({ status: 0, reason: String(e) }))));

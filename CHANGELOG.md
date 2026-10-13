@@ -10,6 +10,10 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.116.0] – 2026-10-13 – Lördagsfesten och statyn i parken
+- 🎉 Lördagsfest! Varje lördag kl. 18–20 är det fest i stadsparken: DJ, discoljus, vimplar, konfetti och folk som dansar. Den som kommer får en festpresent (en gång i veckan). I appen kommer en påminnelse kl. 17.45.
+- 🗽 Statyn i parken: den som skickar flest vänskapspresenter under en vecka får en egen guldstaty bredvid fontänen hela nästa vecka. Klicka på statyn så ser du vem som leder just nu.
+
 ## [0.115.0] – 2026-10-13 – Agilitycupen och djurkliniken
 - 🐕 Agilitycupen i hundparken: hoppa över hindren och däcket, spring genom tunneln, tryck snabbt i slalom och vänta på vippbrädan. Varje lopp tränar hunden – en vältränad hund springer fortare.
 - 🩺 Djurkliniken har öppnat! Veterinären Vera gör hälsokoll, vaccination, kloklippning och tandborstning. En hälsokoll ger extra poäng för hälsan på utställningen.

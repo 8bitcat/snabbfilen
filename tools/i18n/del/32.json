@@ -1,0 +1,57 @@
+[
+ {
+  "i": 8239,
+  "f": "js/city/fest.js",
+  "k": "🎉 Lördagsfest!"
+ },
+ {
+  "i": 8240,
+  "f": "js/city/fest.js",
+  "k": "Kl. 18 är det fest i stadsparken i Pixelstaden – kom och dansa! Alla som kommer får en festpresent."
+ },
+ {
+  "i": 8241,
+  "f": "js/city/fest.js",
+  "k": "PIXELSTADENS GRUNDARE"
+ },
+ {
+  "i": 8242,
+  "f": "js/city/fest.js",
+  "k": "VECKANS SNÄLLASTE"
+ },
+ {
+  "i": 8243,
+  "f": "js/city/fest.js",
+  "k": "LÖRDAGSFEST!"
+ },
+ {
+  "i": 8244,
+  "f": "js/city/fest.js",
+  "k": "Lördagsfesten"
+ },
+ {
+  "i": 8245,
+  "f": "js/city/fest.js",
+  "k": "🗽 Statyn föreställer {0} – förra veckans snällaste, som skickade {1} vänskapspresenter!"
+ },
+ {
+  "i": 8246,
+  "f": "js/city/fest.js",
+  "k": "🗽 Pixelstadens grundare. Varje vecka får den som skickar flest vänskapspresenter en egen guldstaty här."
+ },
+ {
+  "i": 8247,
+  "f": "js/city/fest.js",
+  "k": " Den här veckan leder {0} med {1} presenter."
+ },
+ {
+  "i": 8248,
+  "f": "js/city/fest.js",
+  "k": " Skicka presenter till dina vänner – nästa vecka kan det vara du!"
+ },
+ {
+  "i": 8249,
+  "f": "js/scenes/city.js",
+  "k": "🎉 Lördagsfest! Du fick en festpresent – öppna den i 🎁 Presenter i mobilen!"
+ }
+]

@@ -1,6 +1,6 @@
 # Integritet – Pixelcity och Snabbfilen
 
-*Pixelcity (iPhone/iPad) och Snabbfilen (webben) · gäller från 12 oktober 2026*
+*Pixelcity (iPhone/iPad) och Snabbfilen (webben) · gäller från 13 oktober 2026*
 
 Pixelcity och Snabbfilen är samma spel: ett livsspel i pixelgrafik som görs av Carl Palsson (8bitcat) som ett familjeprojekt. Kort sagt: **spelet har inga konton, ingen reklam, ingen spårning och ingen statistik.** Det enda som sparas hos oss är det som behövs för notiserna till vänner och KBK-laget – och bara om du själv använder dem (se nedan).
 
@@ -21,6 +21,7 @@ Fula ord i namn och chatt byts automatiskt mot \*\*\*. Du kan blockera en spelar
 Det här är det enda som sparas hos oss – och bara om du själv använder det:
 
 - **Vänner:** när du och en annan spelare blir vänner i spelet sparas ett slumpat vän-id för din figur, figurens namn och dina vänners vän-id:n på vår notisserver. Då kan vännerna få en hälsning när du börjar spela – men bara den som också har dig som vän.
+- **Vänskapspresenter och statyn:** en present du skickar till en vän sparas hos oss tills vännen har öppnat den. Varje vecka räknas hur många vänskapspresenter du har skickat, tillsammans med din figurs namn och utseende. Den som skickat flest får en staty i spelets park i en vecka – den ser alla som spelar. Räkningen raderas efter två veckor.
 - **KBK-laget:** stämmer du av dig som spelare i Kungsladugårds BK sparas ditt förnamn och ditt nummer på samma sätt, så att laget kan få en notis.
 - **Pushnotiser (bara i appen):** säger du ja till notiser sparas telefonens pushkod, som Apple behöver för att leverera notisen. Notiserna skickas via Apples pushtjänst.
 

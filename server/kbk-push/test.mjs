@@ -119,6 +119,13 @@ try {
   ok(h2.presenter?.length === 3, `present: tre presenter i Moas brevlåda (${h2.presenter?.length})`);
   const kv = await post('/van/kvittera', { ...MOA, ids: (h2.presenter || []).map((x) => x.id) });
   ok(kv.ok && kv.kvar === 0 && (await post('/van/hamta', { ...MOA })).presenter.length === 0, 'present: /van/kvittera tömmer brevlådan');
+  // ---------- 🗽 statyn: veckans snällaste (Mira har skickat tre presenter i veckan) ----------
+  const st = await (await fetch(URL0 + '/staty')).json();
+  ok(st.ok && st.nu?.namn === 'Mira' && st.nu.n === 3 && st.forra === null, `staty: veckans ledare är Mira med 3 presenter, ingen vinnare förra veckan (${JSON.stringify(st)})`);
+  // ---------- 🃏 byteshandel: ett pixelkort som vänskapsgåva ----------
+  const kp = await post('/van/present', { ...MOA, till: MIRA.vid, gavor: [{ slag: 'kort', id: 'svart' }, { slag: 'kort', id: '<script>' }] });
+  const mh = await post('/van/hamta', { ...MIRA });
+  ok(kp.ok && mh.presenter?.[0]?.gavor?.length === 1 && mh.presenter[0].gavor[0].slag === 'kort' && mh.presenter[0].gavor[0].id === 'svart', `kort: Moa skickar ett pixelkort till Mira (trasiga kort-id:n räknas inte) (${JSON.stringify(mh.presenter?.[0]?.gavor)})`);
 } catch (e) {
   ok(false, String(e.message || e));
 } finally {

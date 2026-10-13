@@ -1,7 +1,7 @@
 {
-  "version": "0.115.0",
+  "version": "0.116.0",
   "date": "2026-10-13",
-  "title": "Agilitycupen och djurkliniken",
+  "title": "Lördagsfesten och statyn i parken",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
@@ -20,6 +20,7 @@
     "js/city/citymap.js",
     "js/city/facade-kit.js",
     "js/city/fallback-v2.js",
+    "js/city/fest.js",
     "js/city/ground.js",
     "js/city/life.js",
     "js/city/map.js",

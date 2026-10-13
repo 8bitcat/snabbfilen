@@ -64,7 +64,7 @@ export async function vanPresentSkicka(A, till, { fri = false, gavor = [] } = {}
   const a = auth(A);
   if (!a) return null;
   await vanPushSynka(A);   // (servern måste veta att vi är vänner)
-  return pushPost('/van/present', { ...a, till, fri, gavor });
+  return pushPost('/van/present', { ...a, till, fri, gavor, look: A.avatar?.look || null });   // (utseendet: 🗽 statyn för veckans snällaste)
 }
 // Hämta: presenterna i brevlådan hamnar i 🎁 Presenter (g.presenter.ko, typ 'van') – sedan töms brevlådan
 let hamtar = false;

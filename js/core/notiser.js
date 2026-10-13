@@ -23,9 +23,10 @@ const ls = {
   get() { try { return localStorage.getItem(NYCKEL); } catch { return null; } },
   set(v) { try { localStorage.setItem(NYCKEL, v); } catch { /* ok */ } },
 };
-// fler notiser utöver HANDELSER (presenternas morgonnotiser, js/core/presenter.js): (nu) → [{ id 100–199, title, body, schedule }]
-let extra = () => [];
-export const setExtraNotiser = (fn) => { extra = typeof fn === 'function' ? fn : () => []; };
+// fler notiser utöver HANDELSER: (nu) → [{ id 100–199, title, body, schedule }] – en källa per nyckel
+// ('presenter' = morgonnotiserna i js/core/presenter.js, 'fest' = lördagsfesten i js/city/fest.js)
+const extras = new Map();
+export const setExtraNotiser = (fn, nyckel = 'presenter') => { if (typeof fn === 'function') extras.set(nyckel, fn); else extras.delete(nyckel); };
 const plugin = () => {
   const C = window.Capacitor;
   return C?.isNativePlatform?.() ? C.Plugins?.LocalNotifications || null : null;
@@ -65,7 +66,7 @@ export async function planera(nu = new Date()) {
     const [month, day] = h.datum.split('-').map(Number);
     return { id: BAS + h.id, title: h.titel, body: h.text, schedule: { on: { month, day, hour: h.kl ?? 17, minute: 0 } } };
   });
-  try { for (const n of extra(nu) || []) if (n && +n.id >= 100 && +n.id < 200) lista.push({ ...n, id: BAS + +n.id }); } catch { /* ok */ }
+  for (const fn of extras.values()) { try { for (const n of fn(nu) || []) if (n && +n.id >= 100 && +n.id < 200) lista.push({ ...n, id: BAS + +n.id }); } catch { /* ok */ } }
   if (!lista.length) return 0;
   try { await P.schedule({ notifications: lista }); return lista.length; } catch { return 0; }
 }

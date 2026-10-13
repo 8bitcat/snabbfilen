@@ -34,6 +34,12 @@ async function post(path, data) {
 
 // (vännernas push, js/net/vanpush.js, använder samma server och samma pushmodul)
 export const pushPost = post;
+// GET (🗽 statyn i parken, js/city/fest.js) – null offline / för robotar utan låtsasserver
+export async function pushGet(path) {
+  const s = SERVER();
+  if (!s) return null;
+  try { const r = await fetch(s + path); return await r.json().catch(() => null); } catch { return null; }
+}
 export const pushPlugin = PUSH;
 
 let A0 = null, lyssnar = false;
