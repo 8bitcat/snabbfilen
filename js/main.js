@@ -66,7 +66,9 @@ import { openMenu, mountMenuButton, isMenuOpen, shouldShowMenuAtBoot } from './c
 import { drawPixHud, isPixHud, apply as applyHud, stripHeight, layoutStrip } from './core/hud-pix.js';
 import { guideTick, startGuide, resumeGuide, offerGuide } from './core/startguide.js'; // 🧭 första dagen: listan + Doris + handen
 import { kbkPushInne, kbkPushRegistrera } from './net/kbkpush.js'; // ⚽ KBK: pushnotis till laget när man hoppar in
-import { vanFraga, vanAppInit } from './core/vannerapp.js'; // 💛 vänner: förfrågan och appen i mobilen (Carl 2026-10-12)
+import { vanFraga, vanAppInit, openSpelarkort, openNaraLista } from './core/vannerapp.js'; // 💛 vänner: förfrågan, appen i mobilen, spelarkortet (Carl 2026-10-12/14)
+import { selfPos } from './scenes/walkable.js';   // 👥 var den egna figuren står – kompisknappen vid emote-raden
+import { ikonURL } from './core/pixikon.js';
 import { arVan } from './net/vanner.js';
 import { vanPushStart } from './net/vanpush.js'; // 💛 pushnotis till vännernas telefoner när man hoppar in
 import { startPresenter } from './core/presenter.js'; // 🎁 en present om dagen + morgonnotiserna (Carl 2026-10-12)
@@ -458,12 +460,23 @@ window.addEventListener('keydown', (e) => {
 });
 
 // ---------- HUD (DOM) ----------
+// 👥 spelare nära en: inom NARA px i samma scen (vet vi inte var vi står – t.ex. inne i en butik – räknas alla som är där)
+const NARA = 150;
+function naraSpelare() {
+  const s = selfPos(), alla = worldFolksHere(A).filter((f) => !f.ak);
+  if (!s || s.scene !== A.sceneName) return alla;
+  return alla.filter((f) => Math.hypot(f.x - s.x, f.y - s.y) < NARA);
+}
 let hudKey = '';
 function renderHud() {
   const g = A.game;
   const online = worldInfo().online;
   const nearby = worldFolksHere(A).length;
   $('#emotes').classList.toggle('hidden', nearby === 0);
+  // 👥 kompisknappen vid emote-raden: lyser gult med en siffra när någon står nära en (Carl 2026-10-14: "en spelare som
+  // står nära en annan kan trycka bredvid emote-ikonerna … så ska det lysa där nere och hur många som är nära")
+  const kb = $('#emote-kompis');
+  if (kb) { const n = nearby ? naraSpelare().length : 0, bd = kb.querySelector('.mob-badge'); kb.classList.toggle('nara', n > 0); bd.classList.toggle('hidden', !n); if (n && bd.textContent !== String(n)) bd.textContent = String(n); }
   $('#decor-btn').classList.toggle('hidden', A.sceneName !== 'room');
   rideHud(A); // 🚲 syns när man har ett fordon
   const db = document.getElementById('hud-drakt');  // 🎭 bär man en dräkt med en rörelse
@@ -786,7 +799,13 @@ function boot() {
     $('#hud-friends').before(fb);
   }
   $('#decor-btn').onclick = () => A.scene?.toggleDecor?.();
-  document.querySelectorAll('#emotes button').forEach((b) => (b.onclick = () => sendEmote(A, b.dataset.e)));
+  document.querySelectorAll('#emotes button[data-e]').forEach((b) => (b.onclick = () => sendEmote(A, b.dataset.e)));
+  // 👥 kompisknappen: en spelare nära → spelarkortet, flera → listan, ingen → ett tips
+  const kb = $('#emote-kompis');
+  if (kb) {
+    kb.querySelector('img').src = ikonURL('kompisar'); kb.title = $t('Spelare i närheten – tryck för att bli vänner');
+    kb.onclick = () => { const n = naraSpelare(); if (!n.length) { toast($t('Ingen spelare står nära dig just nu – gå fram till någon med namn över huvudet.'), 'wrap'); return; } if (n.length === 1) openSpelarkort(A, n[0]); else openNaraLista(A, n); };
+  }
   fit();
 
   const begin = () => {

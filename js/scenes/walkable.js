@@ -20,6 +20,7 @@ export { heardBubble } from '../core/voices.js';
 export const WALK_SEQ = [1, 3, 2, 3];
 const FW = 384, FH = 216;
 let selfAt = null; // var den egna figuren stod senast (selfDrawable) – för rösten i createSpeech
+export const selfPos = () => selfAt;   // (main.js: kompisknappen räknar spelare nära en)
 
 // W/H = världens storlek (standard = en skärm; staden är större och rullar).
 export function createWalker({ W: WW = FW, H: WH = FH, left = 8, right = WW - 8, top = 90, bottom = WH - 4, spawn }) {

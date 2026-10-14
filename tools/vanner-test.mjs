@@ -105,6 +105,12 @@ try {
   ok(kort, 'ett tryck på Mira i stan: spelarkortet med 💛 Bli vänner');
   await bild(L, '0-spelarkort');
   await stang(L);
+  // 👥 kompisknappen vid emote-raden (Carl 2026-10-14): lyser med "1" när Mira står nära, och öppnar kortet
+  ok(await until(() => E(L, () => document.querySelector('#emote-kompis')?.classList.contains('nara') && document.querySelector('#emote-kompis .mob-badge')?.textContent === '1')), 'kompisknappen vid emote-raden lyser: 1 spelare nära');
+  await E(L, () => document.querySelector('#emote-kompis').click());
+  ok(await until(() => E(L, () => /Bli vänner/.test([...document.querySelectorAll('#modal:not(.hidden) .btn')].map((b) => b.textContent).join(' ')) && /Mira/.test(document.querySelector('#modal:not(.hidden) .dlg-head h2')?.textContent || ''))), 'kompisknappen öppnar spelarkortet för Mira');
+  await bild(L, '0-kompisknapp');
+  await stang(L);
   await E(M, () => document.getElementById('hud-friends').click());
   ok(await until(() => E(M, () => !!document.querySelector('#modal [data-van]'))), '👥-rutan: 💛 Bli vänner vid Leo');
   await bild(M, '1-kompisar');

@@ -724,6 +724,11 @@ export function createWeather(env) {
   const W = () => env.weather;
   let forcedSince = null; // för att låta tvingad snö lägga sig gradvis i förhandsvisningen
   let lastFlash = false;
+  // drivlägena (px) för dimbankarna, regnsjoken, molnskuggorna och vindstrimmorna: räknas ihop steg för steg i update()
+  // med den vind som råder just nu – inte t × fart, för då hoppar allt varje gång byn (windNow) byter styrka
+  // (Carl 2026-10-14: "när det är dimma hoppar dimman till, den glider åt sidan, sen hoppar den till")
+  const drift = { fog: [0, 0, 0], kanal: 0, sjok: 0, moln: 0, moln2: 300, vind: 0, vind2: 0, sno: 0 };
+  let driftT = null;
 
   // blixtar: fönster om 11 s, ~70 % av dem har en dubbelblixt
   const FLASH_P = 11;
@@ -788,7 +793,7 @@ export function createWeather(env) {
       const m = cnt(6 + 10 * k, view);
       ctx.fillStyle = rgba(246, 249, 255, 0.4 * alpha);
       for (let i = 0; i < m; i++) {
-        const sx = vx + mod(i * 97.3 + t * wind * 2.2, vw + 40) - 20, sy = vy + mod(i * 53.7 + Math.sin(t * 1.7 + i) * 3, vh);
+        const sx = vx + mod(i * 97.3 + drift.sno, vw + 40) - 20, sy = vy + mod(i * 53.7 + Math.sin(t * 1.7 + i) * 3, vh);
         ctx.fillRect(sx | 0, sy | 0, 6 + (i % 4) * 3, 1);
       }
     }
@@ -807,7 +812,7 @@ export function createWeather(env) {
     // ösregn: byiga regnsjok som drar förbi med vinden
     if (k >= 0.72) {
       ctx.globalAlpha = alpha * (0.05 + 0.1 * clamp01((k - 0.72) / 0.28));
-      blit(ctx, fogTex(2), r, Math.floor(mod(t * (30 + wind * 1.4), FW)), Math.floor(mod(t * 80, FH)));
+      blit(ctx, fogTex(2), r, Math.floor(mod(drift.sjok, FW)), Math.floor(mod(t * 80, FH)));
     }
     ctx.globalAlpha = 1;
   }
@@ -826,15 +831,15 @@ export function createWeather(env) {
   // dimma: f = hur mycket av dimman som ritas i detta pass (dagdelen före mörkret, nattdelen efter)
   function drawFog(ctx, view, w, night, f) {
     if (f <= 0.01) return;
-    const t = env.t, k = w.intensity, wind = w.windNow || 0, vx = view.x, vy = view.y, vw = view.w, vh = view.h, r = rectOf(view);
+    const t = env.t, k = w.intensity, vx = view.x, vy = view.y, vw = view.w, vh = view.h, r = rectOf(view);
     const col = night ? [124, 136, 160] : [222, 227, 234], cc = night ? 0x7c88a0 : 0xdee3ea;
     // 1. en jämn slöja
     ctx.fillStyle = rgba(col[0], col[1], col[2], f * (night ? 0.12 + 0.12 * k : 0.08 + 0.16 * k)); ctx.fillRect(vx, vy, vw, vh);
     // 2. tre dimbankar i olika takt: den stora driver med vinden, mellanlagret sakta mot, slöjorna fort
-    const L = [[0, 0.34 + 0.24 * k, 4 + wind * 0.18, 0.6], [1, 0.24 + 0.16 * k, -3 + wind * 0.06, -0.4], [2, 0.14 + 0.12 * k, 9 + wind * 0.3, 1.1]];
-    for (const [i, a, sx, sy] of L) {
+    const L = [[0, 0.34 + 0.24 * k, 0.6], [1, 0.24 + 0.16 * k, -0.4], [2, 0.14 + 0.12 * k, 1.1]];
+    for (const [i, a, sy] of L) {
       ctx.globalAlpha = f * a * (night ? 0.6 : 1);
-      blit(ctx, fogTex(i), r, Math.floor(mod(t * sx + i * 130, FW)), Math.floor(mod(t * sy + i * 70, FH)));
+      blit(ctx, fogTex(i), r, Math.floor(mod(drift.fog[i] + i * 130, FW)), Math.floor(mod(t * sy + i * 70, FH)));   // (sidled: drift, jämnt)
     }
     // 3. tätare på avstånd: bildens överkant i fyra steg med dithrade skarvar
     const sh = 18, chk = checkerTex(cc);
@@ -850,7 +855,7 @@ export function createWeather(env) {
       const y0 = Math.max(vy, c0 - 4), y1 = Math.min(vy + vh, CITY.H);
       if (y1 > y0) { ctx.globalAlpha = f * (0.22 + 0.2 * k); ctx.fillRect(vx, y0, vw, y1 - y0); }
       ctx.globalAlpha = f * (0.12 + 0.1 * k); blit(ctx, chk, [vx, Math.max(vy, c0 - 12), vx + vw, Math.min(vy + vh, c0 - 4)]);
-      ctx.globalAlpha = f * 0.4; blit(ctx, fogTex(2), [vx, Math.max(vy, c0 - 8), vx + vw, y1], Math.floor(mod(t * (6 + wind * 0.2), FW)), 40);
+      ctx.globalAlpha = f * 0.4; blit(ctx, fogTex(2), [vx, Math.max(vy, c0 - 8), vx + vw, y1], Math.floor(mod(drift.kanal, FW)), 40);
     }
     const p = PARK_LAYOUT?.pond;
     if (p && p.cx + p.rx + 12 > vx && p.cx - p.rx - 12 < vx + vw && p.cy + p.ry + 8 > vy && p.cy - p.ry - 8 < vy + vh) {
@@ -866,7 +871,7 @@ export function createWeather(env) {
     const n = cnt(8 + 18 * k, view);
     ctx.fillStyle = rgba(236, 238, 232, 0.3 * alpha);
     for (let i = 0; i < n; i++) {
-      const sx = vx + mod(i * 131.7 + t * wind * 2.4, vw + 60) - 30;
+      const sx = vx + mod(i * 131.7 + drift.vind, vw + 60) - 30;
       const sy = vy + mod(i * 71.3 + Math.sin(t * 2 + i) * 4, vh);
       ctx.fillRect(sx | 0, sy | 0, 5 + (i % 5) * 3, 1);
     }
@@ -877,7 +882,7 @@ export function createWeather(env) {
       if (!overlap(rect, [vx, vy, vx + vw, vy + vh])) continue;
       const m = cnt(5 + 9 * k, view);
       for (let i = 0; i < m; i++) {
-        const dx = vx + mod(i * 89.1 + t * wind * 1.7 + Math.sin(t * 3 + i) * 2, vw + 30) - 15;
+        const dx = vx + mod(i * 89.1 + drift.vind2 + Math.sin(t * 3 + i) * 2, vw + 30) - 15;
         const dy = rect[1] + 2 + Math.floor(hash(i, 3, 3230) * (rect[3] - rect[1] - 4)) + Math.round(Math.sin(t * 5 + i * 1.3));
         if (dy < vy || dy >= vy + vh || onFacade(fs, dx, dy)) continue;
         ctx.fillRect(dx | 0, dy, 3, 1); ctx.fillRect((dx | 0) + dir * 2, dy - 1, 1, 1);
@@ -929,13 +934,13 @@ export function createWeather(env) {
   // ---------- markens lager ----------
   // molnskuggor: de stora molnen driver med vinden, ett lager småmoln jagar förbi fortare
   function drawCloudShadows(ctx, view, w, strength) {
-    const t = env.t, wind = w.windNow || 0, dir = (w.wind || 1) > 0 ? 1 : -1, sp = 5 + Math.abs(wind) * 0.35, r = rectOf(view);
+    const t = env.t, r = rectOf(view);
     const a = strength * clamp01(1 - env.dark / 0.4);
     if (a <= 0.01) return;
     ctx.globalAlpha = a;
-    blit(ctx, cloudTex(), r, Math.floor(mod(t * sp * dir, CW)), Math.floor(mod(t * 1.1, CH)));
+    blit(ctx, cloudTex(), r, Math.floor(mod(drift.moln, CW)), Math.floor(mod(t * 1.1, CH)));
     ctx.globalAlpha = a * 0.55;
-    blit(ctx, cloudTex2(), r, Math.floor(mod(t * sp * 1.9 * dir + 300, CW2)), Math.floor(mod(-t * 0.7 + 50, CH2)));
+    blit(ctx, cloudTex2(), r, Math.floor(mod(drift.moln2, CW2)), Math.floor(mod(-t * 0.7 + 50, CH2)));
     ctx.globalAlpha = 1;
   }
   function drawSnowCover(ctx, view, w, q) {
@@ -1231,6 +1236,12 @@ export function createWeather(env) {
       const t = env.t;
       w.gust = +(1 + 0.25 * Math.sin(t * 0.63) + 0.15 * Math.sin(t * 1.7 + 1.3) + (w.kind === 'blåst' ? 0.2 * Math.sin(t * 3.1 + 0.4) : 0)).toFixed(3);
       w.windNow = Math.round(w.wind * w.gust);
+      const ddt = driftT === null ? 0 : Math.max(0, Math.min(0.1, t - driftT)), wn = w.windNow || 0, wdir = (w.wind || 1) > 0 ? 1 : -1;
+      driftT = t;
+      drift.fog[0] += (4 + wn * 0.18) * ddt; drift.fog[1] += (-3 + wn * 0.06) * ddt; drift.fog[2] += (9 + wn * 0.3) * ddt;
+      drift.kanal += (6 + wn * 0.2) * ddt; drift.sjok += (30 + wn * 1.4) * ddt;
+      const msp = (5 + Math.abs(wn) * 0.35) * wdir; drift.moln += msp * ddt; drift.moln2 += msp * 1.9 * ddt;
+      drift.vind += (wn || w.wind || 40) * 2.4 * ddt; drift.vind2 += (wn || w.wind || 40) * 1.7 * ddt; drift.sno += wn * 2.2 * ddt;
       w.flash = f?.flash !== undefined ? +f.flash : w.kind === 'regn' && w.thunder ? +(flashAt(t) * (0.6 + 0.4 * w.intensity)).toFixed(3) : 0;
       w.flashId = f?.flash !== undefined ? (f.flashId | 0) : Math.floor(t / FLASH_P); // vilken ljungeld (plats + form)
       // mullret: ett anrop per blixt (ljudet 'aska' finns inte i sound.js ännu – okänt namn är tyst)

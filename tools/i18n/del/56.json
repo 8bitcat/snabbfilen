@@ -1,0 +1,17 @@
+[
+ {
+  "i": 8915,
+  "f": "js/core/vannerapp.js",
+  "k": "👥 Spelare nära dig"
+ },
+ {
+  "i": 8916,
+  "f": "js/main.js",
+  "k": "Spelare i närheten – tryck för att bli vänner"
+ },
+ {
+  "i": 8917,
+  "f": "js/main.js",
+  "k": "Ingen spelare står nära dig just nu – gå fram till någon med namn över huvudet."
+ }
+]

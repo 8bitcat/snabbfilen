@@ -123,6 +123,20 @@ export const vanAppInit = (A0) => { A = A0; };
 // knappen "Bli vänner" (eller "Skicka SMS" om ni redan är vänner). Carl 2026-10-14: "jag stod bredvid någon men jag
 // vet inte hur man blir vän" – förut fanns knappen bara i 👥 Kompisar i mobilen.
 // f = figuren ur worldFolksHere (id, av) – spelaren slås upp i playersList() för vid/nyckel/version.
+// 👥 LISTAN ÖVER SPELARE NÄRA DIG (kompisknappen vid emote-raden, main.js naraSpelare, när de är flera): en rad per
+// spelare med porträtt, namn och 💛 Bli vänner / 💬 Skicka SMS. folks = figurer ur worldFolksHere.
+export function openNaraLista(A0, folks) {
+  A = A0;
+  const lista = playersList();
+  const rader = folks.map((f) => { const p = lista.find((q) => q.id === f.id) || { id: f.id, av: f.av }; return { f, p, van: arVan(A.avatar, p) }; });
+  const rad = (r, i) => `<div class="prow shoprow"><span data-nara-face="${i}"></span><span class="nm">${esc(r.p.av?.name || $t('En kompis'))}${r.van ? ' <small class="sp">💛</small>' : ''}</span>
+    ${r.van ? `<button class="btn btn-small btn-go" data-nara-sms="${i}">${$t('💬 Skicka SMS')}</button>` : r.p.vi ? `<button class="btn btn-small btn-gold" data-nara-van="${i}">${$t('💛 Bli vänner')}</button>` : ''}</div>`;
+  play('click');
+  const dlg = openModal($t('👥 Spelare nära dig'), `<div class="plist">${rader.map(rad).join('')}</div>`, [{ label: $t('Stäng'), onClick: closeModal }]);
+  dlg?.querySelectorAll?.('[data-nara-face]').forEach((el) => { const r = rader[+el.dataset.naraFace]; if (r?.p.av) el.replaceWith(avatarPortrait({ name: r.p.av.name, look: r.p.av.look, color: r.p.av.color }, 40)); });
+  dlg?.querySelectorAll?.('[data-nara-van]').forEach((b) => (b.onclick = () => { if (vanFraga(A, rader[+b.dataset.naraVan].p)) closeModal(); }));
+  dlg?.querySelectorAll?.('[data-nara-sms]').forEach((b) => (b.onclick = () => { const r = rader[+b.dataset.naraSms], v = vanLista(A.avatar).find((x) => x.vid === r.p.vi); closeModal(); if (v) openSamtal(A, v); }));
+}
 export function openSpelarkort(A0, f) {
   A = A0;
   const p = playersList().find((q) => q.id === f.id) || { id: f.id, av: f.av };

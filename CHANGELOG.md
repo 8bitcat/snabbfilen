@@ -10,6 +10,10 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.137.0] – 2026-10-14 – Kompisknappen och dimman som glider
+- 👥 Kompisknappen bredvid emote-knapparna: när en annan spelare står nära dig tänds den gult med en siffra för hur många som är nära. Tryck – är det en spelare öppnas spelarkortet med 💛 Bli vänner (eller 💬 Skicka SMS om ni redan är vänner), är det flera får du en lista över dem i närheten. Står ingen nära får du ett tips.
+- 🌫️ Dimman glider mjukt: dimbankarna, regnsjoken, molnskuggorna, yrsnön och vindstrimmorna flyttas steg för steg med vinden i stället för att hoppa till varje gång vindbyn ändrar styrka.
+
 ## [0.136.0] – 2026-10-14 – Mat i handen, hoppa av karusellen och lådraden
 - 🧇 Mat i handen: det man köper på Pixelberg – våfflor, churros, korv, glass, sockervadd, popcorn, hamburgare, saft … – hålls i handen och äts upp i tre tuggor medan man går vidare (våfflan tuggas uppifrån, korven och hamburgaren från sidan, muggen töms).
 - 🎠 Hoppa av karusellen (och tekopparna) när du vill: ett tryck var som helst så kliver du av – ingen tvingas åka flera varv.
