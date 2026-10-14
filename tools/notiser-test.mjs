@@ -7,6 +7,8 @@
 //      spelets gamla notiser tas bort först (andra id:n lämnas i fred); "fran" väntar till sitt datum
 //   4. ⚙ Inställningar: 🔔 PÅ/AV och Prova (en notis om fem sekunder)
 //   5. dag 1: ingen fråga än
+//   6. påminnelsen vid start (v0.137.1, Carl 2026-10-14): har man sagt nej (eller telefonen nekat) kommer "Notiserna är av"
+//      nästa dag med Slå på; "Påminn mig inte" tystar den; nekar telefonen hänvisas man till Inställningar → Notiser
 //   node tools/notiser-test.mjs      (servern på 8788; annan port: SMOKE_PORT=8791 eller PORT=…)
 import { createRequire } from 'module';
 const require = createRequire('D:/Qisy/QISYFrontend/QISYFrontend-1/package.json');
@@ -58,6 +60,13 @@ async function sida({ app, tillat = 'granted', dag = 2 }) {
 }
 const until = async (p, fn, ms = 15000) => { const t0 = Date.now(); while (Date.now() - t0 < ms) { if (await p.evaluate(fn)) return true; await p.waitForTimeout(150); } return false; };
 const fragan = (p) => until(p, () => /Vill du få notiser/.test(document.querySelector('#modal:not(.hidden)')?.textContent || ''), 12000);
+const paminnelsen = (p) => until(p, () => /Notiserna är av/.test(document.querySelector('#modal:not(.hidden)')?.textContent || ''), 12000);
+// omstart "nästa dag": dagslåset nollas, sidan laddas om och startens andra rutor stängs (inte notisrutorna)
+const nyDag = async (p) => {
+  await p.evaluate(() => localStorage.removeItem('snabbfilen_notiser_fragad'));
+  await p.reload(); await p.waitForFunction(() => !!window.SF?.game, null, { timeout: 20000 }); await p.waitForTimeout(500);
+  await p.evaluate(() => { const m = document.querySelector('#modal'); if (m && !m.classList.contains('hidden') && !/notiser/i.test(m.textContent)) { m.classList.add('hidden'); m.innerHTML = ''; } });
+};
 const klicka = (p, text) => p.evaluate((t) => [...document.querySelectorAll('#modal button')].find((b) => b.textContent.includes(t))?.click(), text);
 const installningar = async (p) => {
   await p.evaluate(async () => { (await import('/js/core/menu.js')).openMenu(window.SF, { pause: true, onStart: () => {} }); });
@@ -91,8 +100,9 @@ const installningar = async (p) => {
     const antal = await N.planera(new Date('2026-10-06T12:00:00'));
     return { antal, s: window.__n.schemalagda, a: window.__n.avbokade, pending: window.__n.pending.map((x) => x.id) };
   });
-  ok(r.antal === 1 && r.s.length === 1, `en händelse lades (den andra väntar på sitt datum): ${r.antal}`);
-  const h = r.s[0] || {};
+  const hand = r.s.filter((x) => +x.id < 7100);   // (7100–7199 = presenternas och festens notiser, presenter.js/fest.js – räknas inte här)
+  ok(r.antal >= 1 && hand.length === 1, `en händelse lades (den andra väntar på sitt datum): ${hand.length} av ${r.antal} notiser`);
+  const h = hand[0] || {};
   ok(h.id === 7003 && h.title === 'Halloween!' && h.body === 'Klä ut dig', 'notisen: id 7003, rubrik och text');
   ok(h.schedule?.on?.month === 10 && h.schedule.on.day === 31 && h.schedule.on.hour === 16 && h.schedule.on.minute === 0 && !h.schedule.at, 'varje år 31/10 kl 16:00 (on: månad/dag/timme)');
   ok(r.a.includes(7003) && r.a.includes(7010) && !r.a.includes(42), 'spelets gamla notiser togs bort först (även en borttagen händelse), andra id:n lämnades');
@@ -123,7 +133,21 @@ const installningar = async (p) => {
   await p.reload();
   await p.waitForFunction(() => !!window.SF?.game, null, { timeout: 20000 });
   await p.waitForTimeout(7000);
-  ok(!/Vill du få notiser/.test(await p.evaluate(() => document.querySelector('#modal:not(.hidden)')?.textContent || '')), 'efter omstart frågar spelet inte igen');
+  ok(!/Vill du få notiser|Notiserna är av/.test(await p.evaluate(() => document.querySelector('#modal:not(.hidden)')?.textContent || '')), 'efter omstart samma dag: varken frågan eller påminnelsen igen');
+  // 6. nästa dag: påminnelsen "Notiserna är av" med Slå på
+  await nyDag(p);
+  ok(await paminnelsen(p), 'nästa dag vid start: påminnelsen "Notiserna är av"');
+  await klicka(p, 'Slå på');
+  ok(await until(p, () => localStorage.getItem('snabbfilen_notiser') === 'pa' && window.__n.fragor === 1), 'Slå på → telefonens fråga → notiserna är på');
+  // "Påminn mig inte": ingen påminnelse mer
+  await p.evaluate(() => localStorage.setItem('snabbfilen_notiser', 'av'));
+  await nyDag(p);
+  ok(await paminnelsen(p), 'av igen → påminnelsen kommer dagen därpå');
+  await klicka(p, 'Påminn mig inte');
+  ok(await until(p, () => localStorage.getItem('snabbfilen_notiser_tyst') === '1'), '"Påminn mig inte" sparas');
+  await nyDag(p);
+  await p.waitForTimeout(7000);
+  ok(!/Notiserna är av/.test(await p.evaluate(() => document.querySelector('#modal:not(.hidden)')?.textContent || '')), 'sedan: ingen påminnelse mer (⚙ Inställningar finns kvar)');
   await ctx.close();
 }
 
@@ -134,6 +158,13 @@ const installningar = async (p) => {
   await klicka(p, 'Ja tack');
   ok(await until(p, () => localStorage.getItem('snabbfilen_notiser') === 'av'), 'telefonen säger nej → av');
   ok(await until(p, () => /Inställningar → Notiser/.test(document.querySelector('.toast')?.textContent || ''), 4000), 'beskedet säger var man slår på dem');
+  // 6. nästa dag: påminnelsen hänvisar till telefonens inställningar; slår man på dem där → "Jag har slagit på dem" → på
+  await nyDag(p);
+  await p.evaluate(() => { window.__n.status = 'denied'; });
+  ok(await until(p, () => /Inställningar → Notiser → Pixelcity/.test(document.querySelector('#modal:not(.hidden)')?.textContent || '') && /Jag har slagit på dem/.test(document.querySelector('#modal:not(.hidden)')?.textContent || ''), 12000), 'telefonen nekar: påminnelsen hänvisar till Inställningar → Notiser → Pixelcity');
+  await p.evaluate(() => { window.__n.status = 'granted'; });
+  await klicka(p, 'Jag har slagit på dem');
+  ok(await until(p, () => localStorage.getItem('snabbfilen_notiser') === 'pa'), '"Jag har slagit på dem" → på');
   await ctx.close();
 }
 

@@ -110,15 +110,43 @@ export function fragaNotiser(A) {
   ], { closable: false });
   return true;
 }
-// Vid start: lägg om notiserna, och fråga – när spelaren har öppnat sin första present eller levt en dag i stan.
+// 🔔 Påminnelsen vid start (Carl 2026-10-14: "en påminnelse om att slå på notiser när man loggar in om det inte är
+// påslaget – nu måste man ändra i inställningarna inne i appen"). Bara i appen, högst en gång om dagen (samma dagslås
+// som frågan), och inte alls om spelaren har tryckt "Påminn mig inte". Tre lägen:
+//   • sagt nej förut (eller telefonen nekade då) → "Notiserna är av" med knappen Slå på (telefonen frågar om lov)
+//   • på i spelet men telefonen släpper inte igenom (avstängt i iOS-inställningarna) → hänvisning dit
+//   • på och tillåtet → ingenting
+const TYST = 'snabbfilen_notiser_tyst';   // '1' = påminn inte mer (⚙ Inställningar finns kvar)
+const PA_TEXT = () => $t('🔔 Notiserna är på! Mobilen säger till kl. 7 och kl. 19.');
+export async function paminnNotiser() {
+  if (!notiserFinns() || modalOpen()) return false;
+  try { if (localStorage.getItem(TYST)) return false; } catch { /* ok */ }
+  const t = await tillatelse(false);
+  if (ls.get() === 'pa' && t === 'granted') return false;
+  const idag = new Date().toISOString().slice(0, 10);
+  try { if (localStorage.getItem(FRAGAD) === idag) return false; localStorage.setItem(FRAGAD, idag); } catch { /* ok */ }
+  if (modalOpen()) return false;
+  const nekad = t === 'denied';
+  const text = nekad
+    ? $t('Telefonen släpper inte igenom några notiser från Pixelcity just nu. Slå på dem i telefonens Inställningar → Notiser → Pixelcity, så säger mobilen till när en present väntar och när en vän hoppar in.')
+    : $t('Notiserna är av. Slå på dem så säger mobilen till när en present väntar på dig (kl. 7 och kl. 19), när något händer i Pixelstaden och när en vän hoppar in.');
+  const slaPaNu = async () => { closeModal(); if (await slaPa()) toast(PA_TEXT(), 'good'); };
+  openModal($t('🔔 Notiserna är av'), `<p style="font-size:var(--f2);margin-top:0">${text}</p>`, [
+    { label: $t('Inte nu'), onClick: closeModal },
+    { label: $t('Påminn mig inte'), onClick: () => { try { localStorage.setItem(TYST, '1'); } catch { /* ok */ } closeModal(); } },
+    nekad ? { label: $t('Jag har slagit på dem'), cls: 'btn-go', onClick: slaPaNu } : { label: $t('🔔 Slå på'), cls: 'btn-go', onClick: slaPaNu },
+  ]);
+  return true;
+}
+// Vid start: lägg om notiserna, och när spelaren är inne i stan eller hemma (och har öppnat sin första present eller
+// levt en dag): aldrig frågat → frågan; annars → påminnelsen om notiserna inte är på och tillåtna.
 export function startNotiser(A) {
   if (!notiserFinns()) return;
   planera();
-  if (ls.get() === 'pa') return;
   const koll = setInterval(() => {
-    if (ls.get() === 'pa') { clearInterval(koll); return; }
     if (((A.game?.day | 0) < 2 && !(A.game?.presenter?.antal > 0)) || modalOpen() || A.attract || !/^(room|city)$/.test(A.sceneName || '')) return;
     clearInterval(koll);
-    if (!ls.get()) fragaNotiser(A);   // (har man sagt nej frågar spelet igen först efter nästa öppnade present)
+    if (!ls.get()) fragaNotiser(A);   // (har man sagt nej frågar spelet igen först efter nästa öppnade present – och påminner vid start)
+    else paminnNotiser().catch(() => {});
   }, 5000);
 }

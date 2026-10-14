@@ -1,0 +1,27 @@
+[
+ {
+  "i": 8918,
+  "f": "js/core/notiser.js",
+  "k": "Telefonen släpper inte igenom några notiser från Pixelcity just nu. Slå på dem i telefonens Inställningar → Notiser → Pixelcity, så säger mobilen till när en present väntar och när en vän hoppar in."
+ },
+ {
+  "i": 8919,
+  "f": "js/core/notiser.js",
+  "k": "Notiserna är av. Slå på dem så säger mobilen till när en present väntar på dig (kl. 7 och kl. 19), när något händer i Pixelstaden och när en vän hoppar in."
+ },
+ {
+  "i": 8920,
+  "f": "js/core/notiser.js",
+  "k": "🔔 Notiserna är av"
+ },
+ {
+  "i": 8921,
+  "f": "js/core/notiser.js",
+  "k": "Påminn mig inte"
+ },
+ {
+  "i": 8922,
+  "f": "js/core/notiser.js",
+  "k": "Jag har slagit på dem"
+ }
+]

@@ -10,6 +10,9 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.137.1] – 2026-10-14 – Påminnelse om notiserna
+- 🔔 Påminnelse om notiserna i appen: är de av när du loggar in får du en ruta med knappen Slå på (högst en gång om dagen) – förut fick man leta i ⚙ Inställningar. Släpper telefonen inte igenom notiserna hänvisar rutan till Inställningar → Notiser → Pixelcity, och "Påminn mig inte" tystar påminnelsen för gott.
+
 ## [0.137.0] – 2026-10-14 – Kompisknappen och dimman som glider
 - 👥 Kompisknappen bredvid emote-knapparna: när en annan spelare står nära dig tänds den gult med en siffra för hur många som är nära. Tryck – är det en spelare öppnas spelarkortet med 💛 Bli vänner (eller 💬 Skicka SMS om ni redan är vänner), är det flera får du en lista över dem i närheten. Står ingen nära får du ett tips.
 - 🌫️ Dimman glider mjukt: dimbankarna, regnsjoken, molnskuggorna, yrsnön och vindstrimmorna flyttas steg för steg med vinden i stället för att hoppa till varje gång vindbyn ändrar styrka.

@@ -1,7 +1,7 @@
 {
-  "version": "0.137.0",
+  "version": "0.137.1",
   "date": "2026-10-14",
-  "title": "Kompisknappen och dimman som glider",
+  "title": "Påminnelse om notiserna",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
