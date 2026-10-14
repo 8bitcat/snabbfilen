@@ -92,6 +92,19 @@ try {
   ok(await until(async () => (await E(M, () => SF.playersList()[0]?.scene)) === 'city'), 'båda står i staden');
   const vi = await E(M, () => SF.playersList()[0].vi);
   ok(/^[0-9a-f]{16}$/.test(vi || ''), `spelarlistan har Leos vän-id (vi ${vi})`);
+  // 💛 spelarkortet (v0.136, Carl 2026-10-14: "jag stod bredvid någon men jag vet inte hur man blir vän"):
+  // Leo ställer sig bredvid Mira, låser kameran så att Mira står på (100, 80) i rutan och trycker på henne
+  const mp = await E(M, () => SF.scene._debug.pos());
+  await E(L, ([x, y]) => SF.scene._debug.teleport(x + 20, y), [mp.x, mp.y]);
+  const kort = await until(async () => {
+    // (Leo trycker där han själv ser Mira: hennes plats i hans spelarlista minus kameran)
+    await E(L, () => { const p = SF.playersList().find((q) => q.av?.name === 'Mira'), c = SF.scene._debug.cam(); if (p) SF.scene.down(Math.round(p.x - c.x), Math.round(p.y - 2 - c.y)); });
+    return E(L, () => /Bli vänner/.test([...document.querySelectorAll('#modal:not(.hidden) .btn')].map((b) => b.textContent).join(' ')) && /Mira/.test(document.querySelector('#modal:not(.hidden) .dlg-head h2')?.textContent || ''));
+  });
+  if (!kort) console.log('   (Leo ser:', await E(L, () => JSON.stringify({ cam: SF.scene._debug.cam(), jag: SF.scene._debug.pos(), spelare: SF.playersList().map((p) => [p.av?.name, p.scene, p.x, p.y, p.vi]), modal: document.querySelector('#modal')?.className, text: document.querySelector('#modal')?.innerText?.slice(0, 120) })), 'Mira står på', JSON.stringify(mp) + ')');
+  ok(kort, 'ett tryck på Mira i stan: spelarkortet med 💛 Bli vänner');
+  await bild(L, '0-spelarkort');
+  await stang(L);
   await E(M, () => document.getElementById('hud-friends').click());
   ok(await until(() => E(M, () => !!document.querySelector('#modal [data-van]'))), '👥-rutan: 💛 Bli vänner vid Leo');
   await bild(M, '1-kompisar');

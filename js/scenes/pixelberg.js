@@ -21,7 +21,7 @@
 //   • 🥫 BURKTORNET och 🎯 SKJUTBANAN (v0.128, js/pixelberg/stand.js): vinsterna är leksaker till leksakslådan hemma.
 // Besökare med ballonger, björnmaskoten Pixel-Nalle som vinkar, och på kvällen tänds glödlamporna överallt.
 import { createCityWalker } from '../city/walk.js';
-import { selfDrawable, folkDrawables, createSpeech, WALK_SEQ, nameTag } from './walkable.js';
+import { selfDrawable, folkDrawables, folkTapAt, createSpeech, WALK_SEQ, nameTag } from './walkable.js';
 import { worldFolksHere } from '../net/world.js';
 import { openModal, closeModal, toast, esc, modalOpen } from '../core/ui.js';
 import { play } from '../core/sound.js';
@@ -43,6 +43,9 @@ import { ritaPortal, ritaTekopparGolv, ritaKopp, koppPos, ritaFontan, ritaBubblo
 import { ENTRE, ritaStaket, ritaStaketstolpe, ritaPort, ritaBusskur, ritaHallplatsskylt, ritaBuss, ritaKarta, ritaCykelstall, ritaPlantering, ritaFontanStor, ritaTopiary } from '../pixelberg/entre.js';   // 🎟️ entrén (v0.135)
 import { FASADER, MAINSTREET_Y, ritaFasad, FASAD_PRAT } from '../pixelberg/mainstreet.js';   // 🏪 Main Street – butiksfasaderna innanför entrén
 import { ritaMonorail } from '../pixelberg/monorail.js';   // 🚝 Pixelberg Express
+import { LADOR, LADOR_Y, ritaLada, pumpaSken } from '../pixelberg/lador.js';   // 🪴 blomlådorna längs promenaden (v0.136)
+import { ritaIHand, TUGGOR, TUGGTID } from '../pixelberg/ihand.js';   // 🧇 maten i handen (v0.136)
+import { openSpelarkort } from '../core/vannerapp.js';   // 💛 spelarkortet: bli vänner med den man står bredvid (v0.136)
 import { TEMAN, ritaOnskebrunn, ritaSvampar, ritaKaktus, ritaVagn, ritaDottTrad, ritaGravsten, ritaKrypta, ritaKyrkogardsstaket, ritaDimma } from '../pixelberg/teman.js';   // 🎭 temaländerna
 import { addToy, toyOf, toyNamn } from '../data/toys.js';   // 🦆 fiskdammens vinster
 import { SPOK_CYKEL, SPOK_PASTIG, SPOK_LJUD, spokLage, spokVagn, ritaSpokVagn, ritaSpokInne, ritaSpoktitt, ritaFladdermus } from '../pixelberg/spokhus.js';
@@ -143,6 +146,7 @@ export function makePixelberg(A) {
   const fade = { a: 1, phase: 2, cb: null };
   const cam = { x: 0, y: 0 };
   let aka = null;   // pågående åktur: { typ: 'hjul' | 'karusell', t, i (gondolen/hästen) } eller { typ: 'bana', n (avgången), plats }
+  let hand = null;   // 🧇 maten i handen: { id, t, bit } – äts upp i TUGGOR tuggor medan man går (ihand.js)
   const sitterIBana = () => aka?.typ === 'bana' && banLage().n === aka.n;
   const spokL = () => spokLage(nuS());
   const sitterISpok = () => aka?.typ === 'spok' && spokL().n === aka.n;
@@ -194,6 +198,7 @@ export function makePixelberg(A) {
     let ledig = 0; for (let i = 0; i < HASTAR; i++) if (!hastFolk.has(i)) { ledig = i; break; }
     aka = { typ: 'karusell', t: 0, i: ledig };
     walker.stop(); play('fanfare');
+    toast($t('🎠 Håll i dig! Tryck var som helst när du vill hoppa av.'), 'good');
   }
   // 🎢 vem sitter var i tåget för avgången L.n: jag, kompisarna (world.js ak) och påhittade besökare på några lediga platser
   const NPC_BANA = [0, 1, 2, 3, 4, 5, 6, 7].map(() => makeLook());
@@ -259,7 +264,7 @@ export function makePixelberg(A) {
   // (besökarna går i den främre halvan av torget – borden, köerna och karusellen ligger bakom – några i östra delen)
   // (besökarna går i ministadens gator: gången bakom tältstånden eller promenaden framför – samma gata hela tiden,
   // så att ingen går rakt igenom ett stånd; några håller till i östra delen)
-  const mal = (o) => (o?.plats ? { x: rnd(30, 300), y: rnd(250, 372) } : o?.ost ? { x: rnd(1730, 2540), y: rnd(432, P.BOTTOM - 4) } : o?.bak ? { x: rnd(380, 1740), y: rnd(MARKNAD_Y - 42, MARKNAD_Y - 20) } : { x: rnd(350, 1760), y: rnd(MARKNAD_Y + 12, P.BOTTOM - 4) });   // (väster om banorna – besökarna går raka vägar)
+  const mal = (o) => (o?.plats ? { x: rnd(30, 300), y: rnd(250, 372) } : o?.ost ? { x: rnd(1730, 2540), y: rnd(432, LADOR_Y - 16) } : o?.bak ? { x: rnd(380, 1740), y: rnd(MARKNAD_Y - 42, MARKNAD_Y - 20) } : { x: rnd(350, 1760), y: rnd(MARKNAD_Y + 12, LADOR_Y - 16) });   // (ovanför lådraden längs framkanten)   // (väster om banorna – besökarna går raka vägar)
   const BALLONG = ['#e04848', '#3a7bd5', '#f0c030', '#46a35a', '#d060a0'];
   const besok = Array.from({ length: 20 }, (_, i) => i).map((i) => { const m = mal({ ost: i >= 16, bak: i % 3 === 1 && i < 16, plats: i === 2 || i === 5 || i === 8 }); return { ost: i >= 16, bak: i % 3 === 1 && i < 16, plats: i === 2 || i === 5 || i === 8, look: i % 3 === 0 ? { ...makeLook(), kid: true } : makeLook(), x: m.x, y: m.y, tx: m.x, ty: m.y, dir: 'right', vila: rnd(0, 3), ballong: i % 2 === 0 ? BALLONG[i % BALLONG.length] : null, rad: PRAT[i % PRAT.length] }; });
   const nalle = { x: 700, y: 400, tx: 700, ty: 400, dir: 'right', vila: 2, vinkar: 0 };
@@ -538,6 +543,7 @@ export function makePixelberg(A) {
       g.money -= m.pris; g.hunger = Math.min(100, (g.hunger || 0) + m.hunger);
       const h = g.glad?.(m.glad, '', `tivoli-${m.id}`, m.glad) || 0;
       g.save(); closeModal(); play('buy'); toast(`${m.namn.split(' ')[0]} ${h ? $t`Mums! +${h} 😊` : $t('Mums!')}`, 'good');
+      hand = { id: m.id, t: 0, bit: 0 };   // 🧇 och så går man runt med det i handen tills det är uppätet
     }));
   }
   // 🎰 lyckohjulet: 10 kr, hjulet snurrar och stannar på ett fält
@@ -796,6 +802,7 @@ export function makePixelberg(A) {
       if (fade.phase === 1) { fade.a = Math.min(1, fade.a + dt * 2.6); if (fade.a >= 1) { fade.phase = 0; const cb = fade.cb; fade.cb = null; cb?.(); return; } }
       else if (fade.phase === 2) { fade.a = Math.max(0, fade.a - dt * 1.8); if (fade.a <= 0) fade.phase = 0; if (!aka) walker.update(dt); }
       else if (!aka) walker.update(dt);
+      if (hand) { hand.t += dt; const b = Math.floor(hand.t / TUGGTID); if (b >= TUGGOR) hand = null; else hand.bit = b; }   // 🧇 en tugga i taget
       if (aka) {
         aka.t += dt;
         if (aka.typ === 'hjul') {
@@ -949,11 +956,14 @@ export function makePixelberg(A) {
       for (const b of BANKAR) if (syns(b.x)) items.push({ fy: b.y, draw: () => KIT.bench(ctx, b.x, b.y) });
       for (const l of LYKTOR) if (syns(l.x)) items.push({ fy: l.y, draw: () => KIT.lamp(ctx, l.x, l.y, 1) });
       for (const b of BUSKAR) if (syns(b.x)) items.push({ fy: b.y, draw: () => KIT.tree(ctx, 'lind', b.x, b.y, { vind: Math.round(Math.sin(t + b.x) * 0.5) }) });
+      for (const l of LADOR) if (syns(l.x)) items.push({ fy: l.y, draw: () => ritaLada(ctx, l.x, l.y, l.typ) });   // 🪴 lådraden längs promenaden
       for (const o of besok) if (syns(o.x)) items.push({ fy: o.y, draw: () => { drawPerson(ctx, o.x, o.y, o.look, o.dir, o.vila <= 0 ? WALK_SEQ[Math.floor(t * 8 + o.x) % 4] : 0); if (o.ballong) drawBallong(ctx, o); } });
       items.push({ fy: nalle.y, draw: () => ritaNalle(ctx) });
       items.push(...folkDrawables(A, t));
       if (pets && !aka) for (const d of pets.drawables()) items.push({ fy: d.fy ?? d.y, draw: () => d.draw(ctx) });
       if (!aka || iKo()) items.push(selfDrawable(A, walker, t, { folksHere: worldFolksHere(A).length, ride: null }));
+      // 🧇 maten i handen: framför figuren åt det håll man går, bakom när man går uppåt
+      if (hand && (!aka || iKo())) { const bak = walker.dir === 'up', hx = walker.px + (walker.dir === 'down' ? 5 : bak ? -5 : walker.dir === 'left' ? -6 : 6); items.push({ fy: walker.py + (bak ? -0.3 : 0.3), draw: () => ritaIHand(ctx, hx, walker.py - 13, hand.id, hand.bit, walker.dir) }); }
       for (const f of koande()) items.push({ fy: f.y, draw: () => { drawPerson(ctx, f.x, f.y, f.av.look, 'up', 0); nameTag(ctx, f.x, f.y - 50, f.av); } });
       ritaSlingor(ctx, N || D);   // (slingorna hänger mellan lyktorna längst bak – bakom stånden)
       items.sort((a, b) => a.fy - b.fy).forEach((d) => d.draw(ctx));
@@ -991,6 +1001,7 @@ export function makePixelberg(A) {
           ctx.save(); ctx.translate(-cx, -cy); ctx.globalCompositeOperation = 'lighter';
           const sken = (x, y, r, c) => { const gr = ctx.createRadialGradient(x, y, 2, x, y, r); gr.addColorStop(0, c); gr.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = gr; ctx.fillRect(x - r, y - r, r * 2, r * 2); };
           sken(HJUL.x, HJUL.y, HJUL.r + 30, 'rgba(255,170,90,.28)'); sken(KARUSELL.x, KARUSELL.y - 60, 80, 'rgba(255,210,120,.3)');
+          for (const l of LADOR) { const p = pumpaSken(l); if (p && syns(l.x)) sken(p.x, p.y, 12, 'rgba(255,150,40,.35)'); }   // 🎃 pumporna i Spökgränd
 
           sken(PORT.x, PORT.y - PORT.h + 10, 60, 'rgba(255,230,140,.25)'); sken(ENTRE.FONTAN.x, ENTRE.FONTAN.y - 30, 50, 'rgba(160,210,255,.2)');
           for (const Fa of FASADER) { sken(Fa.x - 2, MAINSTREET_Y - 20, 16, 'rgba(255,220,140,.3)'); sken(Fa.x + Fa.w + 1, MAINSTREET_Y - 20, 16, 'rgba(255,220,140,.3)'); }
@@ -1025,9 +1036,14 @@ export function makePixelberg(A) {
       // i kön till nästa tåg: ett tryck någon annanstans = lämna kön (kupongen tillbaka)
       if (aka?.typ === 'bana' && !sitterIBana()) { aka = null; if (!harBand()) { g.money += KUPONG; g.save(); } toast($t('🎢 Du lämnade kön.')); return; }
       if (aka?.typ === 'spok' && !sitterISpok()) { aka = null; if (!harBand()) { g.money += KUPONG; g.save(); } toast($t('👻 Du lämnade kön.')); return; }
+      // 🎠 karusellen och tekopparna: ett tryck var som helst = hoppa av (Carl 2026-10-14: "man måste kunna hoppa av
+      // karusellen som går runt runt och inte tvingas åka flera varv")
+      if ((aka?.typ === 'karusell' || aka?.typ === 'kopp') && aka.t > 1) { avAka(); return; }
       if (fade.phase === 1 || aka) return;
       hover = { x: sx, y: sy };
       const x = sx + cam.x, y = sy + cam.y;
+      const fk = folkTapAt(A, x, y);   // 💛 en annan spelare: spelarkortet (bli vänner, SMS)
+      if (fk) { openSpelarkort(A, fk); return; }
       const cl = clownAt(x, y);
       if (cl) { cl.vila = Math.max(cl.vila, 4); walker.walkTo(cl.x + (walker.px < cl.x ? -16 : 16), cl.y + 2, () => fanBallong(cl)); return; }
       if (ballongisAt(x, y)) { walker.walkTo(BALLONGIS.x + (walker.px < BALLONGIS.x ? -14 : 14), BALLONGIS.y + 2, () => { BALLONGIS.vila = 5; kopBallong(); }); return; }
@@ -1041,7 +1057,7 @@ export function makePixelberg(A) {
     },
     move(sx, sy) { hover = { x: sx, y: sy }; if (spak) { spak.x = sx; spak.y = sy; } },
     up() { spak = null; },
-    key(k) { if (k === 'Escape' && aka?.typ === 'radio') avAka(); },
+    key(k) { if (k === 'Escape' && aka?.typ === 'radio') avAka(); else if ((k === 'Escape' || k === ' ') && (aka?.typ === 'karusell' || aka?.typ === 'kopp') && aka.t > 1) avAka(); },
     exit() { talk.clear(); window.removeEventListener('keydown', tNer, true); window.removeEventListener('keyup', tUpp, true); window.removeEventListener('blur', tBort); },
     _debug: {
       pos: () => ({ x: walker.px, y: walker.py }),
@@ -1050,7 +1066,9 @@ export function makePixelberg(A) {
       act: (id) => { const s = spots().find((q) => q.id === id); if (!s) return false; s.act(); return true; },
       spots: () => spots().map((q) => q.id),
       aka: () => (aka ? { typ: aka.typ, t: aka.t, i: aka.i, toppen: !!aka.toppen } : null),
-      snabba: (sek) => { t += sek; if (aka) aka.t += sek; },   // (testerna: spola fram åkturen)
+      snabba: (sek) => { t += sek; if (aka) aka.t += sek; if (hand) hand.t += sek; },   // (testerna: spola fram åkturen och tuggorna)
+      hand: () => (hand ? { id: hand.id, bit: hand.bit } : null),
+      lador: () => LADOR.map((l) => [l.x, l.y, l.typ]),
       band: () => harBand(),
       bana: () => { const L = banLage(); return { n: L.n, station: L.station, tau: L.tau, aka: aka?.typ === 'bana' ? { n: aka.n, plats: aka.plats } : null, platser: aakare(L).map((p) => (p ? (p.jag ? 'jag' : p.npc ? 'npc' : p.namn) : null)) }; },
       akBana: () => akBana(),

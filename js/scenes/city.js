@@ -8,7 +8,8 @@ import { openHouseSign } from '../shops/bostad.js';
 import { CITY, BUILDINGS, ALL_BUILDINGS, doorCenter, artPos, artBox, baseOf, isNightHour, BUS_STOPS, busStopById,
   DISTRICTS, districtAt, districtByName, MAP_OBSTACLES, RIVER, buildingById } from '../city/map.js';
 import { taxiQuote, metersBetween } from '../city/citymap.js'; // 🗺️ kartan: taxipriset och avstånden
-import { createWalker, selfDrawable, folkDrawables, nameTag, sayBubble } from './walkable.js';
+import { createWalker, selfDrawable, folkDrawables, folkTapAt, nameTag, sayBubble } from './walkable.js';
+import { openSpelarkort } from '../core/vannerapp.js';   // 💛 spelarkortet: tryck på en spelare → bli vänner (v0.136)
 import { drawPerson } from '../core/people.js';
 import { openModal, closeModal, toast, esc, modalOpen } from '../core/ui.js';
 import { drawRiktning, IKON } from '../core/riktning.js';   // 🧭 de blinkande pilarna vid stadsgränserna
@@ -243,6 +244,20 @@ function drawLandetSkylt(ctx, x, y) {
   ctx.fillStyle = '#f4f1ea'; ctx.fillRect(x - 16, y - 37, 31, 1);
   ctxText(ctx, SMALL, $t('LANDET'), x - 13, y - 34, '#f4f1ea');
   ctx.fillStyle = '#f4f1ea'; ctx.fillRect(x - 14, y - 28, 6, 2); ctx.fillStyle = '#1e1a1c'; ctx.fillRect(x - 12, y - 28, 2, 1);
+}
+
+// ritar en skylt (rita(c) i världskoordinater) en gång till i nattens ton OVANPÅ ljussättningen: skylten målas på en
+// egen duk, tonas med source-atop (bara skyltens egna pixlar) och läggs över – så lyser inte lyktskenet och
+// billyktorna tvärs igenom den (Carl 2026-10-14: "lyser igenom"). x, y, w, h = skyltens ruta i världen.
+let NATTDUK = null;
+function skyltINatten(ctx, rita, x, y, w, h, dark) {
+  if (!NATTDUK) NATTDUK = document.createElement('canvas');
+  if (NATTDUK.width !== w || NATTDUK.height !== h) { NATTDUK.width = w; NATTDUK.height = h; }
+  const c = NATTDUK.getContext('2d');
+  c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, w, h); c.imageSmoothingEnabled = false; c.translate(-x, -y);
+  rita(c);
+  c.setTransform(1, 0, 0, 1, 0, 0); c.globalCompositeOperation = 'source-atop'; c.fillStyle = `rgba(14,16,44,${dark.toFixed(3)})`; c.fillRect(0, 0, w, h); c.globalCompositeOperation = 'source-over';
+  ctx.drawImage(NATTDUK, x, y);
 }
 
 export function makeCity(A) {
@@ -623,6 +638,9 @@ export function makeCity(A) {
       }
       for (const [name, m] of [['fallback', S.fallback], ['bridge', S.bridge], ['props', S.props], ['traffic', S.traffic], ['life', S.life], ['marknad', S.market], ['pir', S.pier], ['fest', S.fest]]) guard(name + '.glow', () => { ctx.save(); m.glow?.(ctx, view); ctx.restore(); });
       guard('weather.glow', () => { ctx.save(); S.weather.glow?.(ctx, view); ctx.restore(); });
+      // vägskyltarna vid stadsgränserna en gång till ovanpå ljuset, i nattens ton (skyltINatten)
+      if (cx < WX0 + 120) skyltINatten(ctx, (c) => drawTassSkylt(c, WX0 + 14, CITY.SIDEWALK_S[1] - 4), WX0 - 2, CITY.SIDEWALK_S[1] - 62, textW(BIG, $t('TASSBACKEN')) + 48, 62, env.dark);
+      if (cx + vw > CITY.W - 80) skyltINatten(ctx, (c) => drawLandetSkylt(c, CITY.W - 22, CITY.SIDEWALK_S[1] - 4), CITY.W - 44, CITY.SIDEWALK_S[1] - 48, 46, 50, env.dark);
     }
   }
 
@@ -1023,6 +1041,9 @@ export function makeCity(A) {
       const chip = signChips.find((c) => sx >= c.x - 2 && sx < c.x + c.w + 2 && sy >= c.y - 2 && sy < c.y + c.h + 4);
       if (chip) { if (sitting) standUp(); const dc = doorCenter(chip.b); walker.walkTo(dc.x, dc.y, () => enter(chip.b)); return; }
       const x = sx + cam.x, y = sy + cam.y;
+      // 💛 en annan spelare: spelarkortet (bli vänner, SMS) – Carl 2026-10-14: "jag stod bredvid någon men jag vet inte hur man blir vän"
+      const fk = folkTapAt(A, x, y);
+      if (fk) { openSpelarkort(A, fk); return; }
       // 🌾 skylten LANDET → (eller längst ut på gatan): gå österut ut på landet
       if (x >= CITY.W - 40 && y >= CITY.SIDEWALK_N[0] && y <= CITY.SIDEWALK_S[1] + 4) { if (sitting) standUp(); walker.walkTo(CITY.W - 5, Math.max(CITY.SIDEWALK_N[0] + 4, Math.min(CITY.SIDEWALK_S[1] - 4, y))); return; }
       // skylten ← TASSBACKEN (eller längst ut på gatan): gå västerut in i Tassbacken

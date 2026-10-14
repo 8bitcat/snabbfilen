@@ -13,6 +13,7 @@ import { SPELSTAND } from './stand-spel.js';   // 🎰🥫🎯 spelstånden
 import { STALL, MARKNAD_Y, DEKO } from './marknad.js';   // 🏮 marknadsgatan – tältstånden mitt på torget (v0.132) + dekorationerna
 import { ENTRE, malaBergskylt, malaSlott } from './entre.js';   // 🎟️ entrén nere i vänstra hörnet (v0.135) + slottet på berget
 import { fasadHinder } from './mainstreet.js';   // 🏪 Main Street-fasaderna
+import { ladHinder } from './lador.js';   // 🪴 blomlådorna längs promenaden (v0.136)
 import { temaHinder, malaVastern } from './teman.js';   // 🎭 temaländerna (saloonen och vattentornet på berget)
 import { malaMonorail } from './monorail.js';   // 🚝 Pixelberg Express – balken på berget
 
@@ -52,7 +53,10 @@ export const SPOK = { x: 2180, y: 318, w: 200 };
 export const SPOK_SPAR = { x0: SPOK.x + 48, x1: SPOK.x + 152, y0: SPOK.y - 4, y1: SPOK.y + 22, cx: SPOK.x + 100 };
 export const BANKAR = [{ x: 620, y: 458 }, { x: 980, y: 458 }, { x: 1300, y: 458 }, { x: 1990, y: 458 }];
 export const LYKTOR = [390, 516, 768, 952, 1470, 1630, 1940, 2150, 2420].map((x) => ({ x, y: P.TORG[0] + 10 }));
-export const BUSKAR = [[360, 250], [560, 248], [1200, 250], [1520, 440], [380, 462], [700, 466], [1612, 300], [2400, 252], [2160, 462]].map(([x, y]) => ({ x, y }));
+// lindarna: en rad längs häcken i luckan mellan berg-och-dalbanan och radiobilarna. (v0.136: de som stod mitt på
+// promenaden framför stånden, och de som gömde sig bakom fasaderna, är borta – grönskan längs promenaden står i
+// lådraden, lador.js. Carl 2026-10-14: "träden måste stå lite mer organiserat")
+export const BUSKAR = [[1480, 252], [1560, 252]].map(([x, y]) => ({ x, y }));
 
 // berg-och-dalbanans spår som en sluten kurva (x, y) i världen – tåget följer den (scenen)
 export const SPAR = (() => {
@@ -70,7 +74,7 @@ export function hinder() {
   o.push([0, E.STAKET_Y - 6, E.PORT.cx - pw, E.STAKET_Y + 1], [E.PORT.cx + pw, E.STAKET_Y - 6, E.STAKET_X1 + 4, E.STAKET_Y + 1]);
   o.push([E.PORT.cx - pw - 14, E.STAKET_Y - 8, E.PORT.cx - pw + 2, E.STAKET_Y + 1], [E.PORT.cx + pw - 2, E.STAKET_Y - 8, E.PORT.cx + pw + 14, E.STAKET_Y + 1]);   // pelarna
   o.push([E.STAKET_X1 - 2, E.STAKET_Y, E.STAKET_X1 + 4, TH]);
-  o.push(...fasadHinder(), ...temaHinder());
+  o.push(...fasadHinder(), ...temaHinder(), ...ladHinder());
   o.push([0, E.GATA[0], E.STAKET_X1, TH]);                                               // bussgatan (man står på trottoaren)
   o.push([E.KUR.x - 33, E.KUR.y - 6, E.KUR.x + 34, E.KUR.y + 2], [E.KARTA.x - 20, E.KARTA.y - 8, E.KARTA.x + 20, E.KARTA.y + 1], [E.BILJETT.x - 31, E.BILJETT.y - 20, E.BILJETT.x + 31, E.BILJETT.y - 1]);
   for (const [px, py] of E.PLANTERINGAR) o.push([px - 15, py - 6, px + 15, py + 1]);

@@ -160,6 +160,11 @@ export function selfDrawable(A, walker, t, { carry = false, folksHere = 0, ride 
 }
 // Andra spelare på samma plats som drawables
 const folkDir = new Map();   // andra spelares färdriktning på fordon (id → dir)
+// 💛 en annan spelare under fingret? (x, y i världen) – scenen öppnar då spelarkortet (core/vannerapp.js
+// openSpelarkort) med "Bli vänner" / "Skicka SMS". Åkande (f.ak) räknas inte.
+export function folkTapAt(A, x, y) {
+  return worldFolksHere(A).find((f) => !f.ak && Math.abs(f.x - x) < 10 && y > f.y - 42 && y < f.y + 5) || null;
+}
 export function folkDrawables(A, t) {
   // (de som åker berg-och-dalbanan eller kör radiobil – f.ak – ritas av tivolit i vagnarna/bilarna, js/scenes/pixelberg.js)
   return worldFolksHere(A).filter((f) => !f.ak).map((f) => ({

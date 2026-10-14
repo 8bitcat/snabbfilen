@@ -10,7 +10,8 @@
 //   • 🎣 FISKE (js/solon/fiske.js): metspö i kiosken, fiska längst ut på färjebryggan eller vid klipporna nära fyren
 // Sommarstugorna och båtuthyrningen öppnar i nästa steg (skyltar och folk berättar).
 import { createCityWalker } from '../city/walk.js';
-import { selfDrawable, folkDrawables, createSpeech, WALK_SEQ } from './walkable.js';
+import { selfDrawable, folkDrawables, folkTapAt, createSpeech, WALK_SEQ } from './walkable.js';
+import { openSpelarkort } from '../core/vannerapp.js';   // 💛 spelarkortet: tryck på en spelare → bli vänner (v0.136)
 import { worldFolksHere } from '../net/world.js';
 import { openModal, closeModal, toast, esc } from '../core/ui.js';
 import { play } from '../core/sound.js';
@@ -280,6 +281,8 @@ export function makeSolon(A) {
       if (fade.phase === 1) return;
       hover = { x: sx, y: sy };
       const x = sx + cam.x, y = sy + cam.y;
+      const fk = folkTapAt(A, x, y);   // 💛 en annan spelare: spelarkortet (bli vänner, SMS)
+      if (fk) { openSpelarkort(A, fk); return; }
       const o = folkAt(x, y);
       if (o?.rad) { walker.walkTo(o.x + (walker.px < o.x ? -14 : 14), o.y + 2, () => talk.say(o.rad, () => ({ x: o.x, y: o.y - 34 }), 3.5, { voice: o.look })); return; }
       const s = spotAt(x, y);

@@ -14,7 +14,7 @@ const GRAV = [0x3a3e42, 0x565a60, 0x74787e, 0x92969c, 0xb0b4ba];
 export const TEMAN = {
   BRUNN: { x: 362, y: 334 },
   SVAMPAR: [[532, 322, 0], [624, 346, 1], [1048, 330, 2], [340, 262, 1], [1110, 300, 0]],
-  KAKTUSAR: [[1602, 332], [1936, 334], [1626, 452], [1898, 456]],
+  KAKTUSAR: [[1636, 338], [1934, 338]],   // (i kruka, en på var sida om radiobilarnas bana – resten står i tunnor i lådraden, lador.js)
   VAGN: { x: 1612, y: 296 },
   KYRKOGARD: { x0: 2392, x1: 2552, y0: 240, y1: 302 },
   GRAVAR: [[2408, 288, 0], [2432, 272, 1], [2458, 290, 2], [2486, 270, 0], [2514, 292, 1], [2540, 276, 2]],

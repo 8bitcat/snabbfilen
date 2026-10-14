@@ -9,7 +9,8 @@
 // utställningshallen, djurhemmet, kliniken och agilitybanan öppnar i nästa steg (skyltar berättar).
 // Busshållplatsen TASSBACKEN tar en till Marknadstorget i Linnéstaden.
 import { createCityWalker } from '../city/walk.js';
-import { selfDrawable, folkDrawables, createSpeech, WALK_SEQ } from './walkable.js';
+import { selfDrawable, folkDrawables, folkTapAt, createSpeech, WALK_SEQ } from './walkable.js';
+import { openSpelarkort } from '../core/vannerapp.js';   // 💛 spelarkortet: tryck på en spelare → bli vänner (v0.136)
 import { worldFolksHere } from '../net/world.js';
 import { openModal, closeModal, toast, modalOpen } from '../core/ui.js';
 import { drawRiktning, IKON } from '../core/riktning.js';   // 🧭 pilen tillbaka till PIXELSTADEN (östra kanten)
@@ -347,6 +348,8 @@ export function makeTassbacken(A) {
       if (fade.phase === 1) return;
       hover = { x: sx, y: sy };
       const x = sx + cam.x, y = sy + cam.y;
+      const fk = folkTapAt(A, x, y);   // 💛 en annan spelare: spelarkortet (bli vänner, SMS)
+      if (fk) { openSpelarkort(A, fk); return; }
       const d = djurAt(x, y);
       if (d) {
         const inne = (pen) => pen && x > pen[0] && x < pen[2] && y > pen[1] && y < pen[3];

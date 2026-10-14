@@ -15,22 +15,25 @@ export const FASADER = [
   { id: 'karamell', x: 464, w: 68, namn: $t('KARAMELLER'), pal: PERSIKA, tak: GRON, markis: [ROSA, VIT] },
 ];
 export const MAINSTREET_Y = 262;
-const H = 96;
+// väggens höjd. Uppifrån: krönet · övervåningens fönster med blomlådor · den ljusa listen · namnskylten · markisen ·
+// skyltfönstret. (v0.136: högre vägg så att skylten får plats mellan listen och markisen – förut låg markisens räcke
+// tvärs över bokstäverna, Carl 2026-10-14: "skyltarna är täckta")
+const H = 108;
 
 function fasadBild(Fa, natt) {
   const w = Fa.w;
-  return bild(`fasad|${Fa.id}|${natt ? 1 : 0}`, w + 16, H + 30, 8, H, (P) => {
+  return bild(`fasad|${Fa.id}|${natt ? 1 : 0}`, w + 16, H + 36, 8, H + 6, (P) => {
     const x0 = 0, x1 = w - 1, gy = 0, top = -H + 22, pal = Fa.pal;
     // väggen: puts i pastell med en ljus list mellan våningarna och hörnkedjor
     fyll(P, x0, top, x1, gy - 1, (X, Y) => tone(pal, 0.66 + (hash(X >> 1, Y >> 1, 3) - 0.5) * 0.08 - X / w * 0.1 + ((X < 3 || X > w - 4) && (Y - top) % 6 < 3 ? 0.18 : 0), X, Y));
-    P.hl(x0, -40, w, VIT[4]); P.hl(x0, -39, w, VIT[2]); P.hl(x0, -38, w, 0x000000, 0.15);
+    P.hl(x0, -52, w, VIT[4]); P.hl(x0, -51, w, VIT[2]); P.hl(x0, -50, w, 0x000000, 0.15);
     // takkrönet: parapet med balustrad, ett mittparti med spira och en liten flagga
     fyll(P, x0 - 2, top - 8, x1 + 2, top, (X, Y) => tone(VIT, (Y === top - 8 ? 0.98 : Y === top ? 0.45 : 0.8) - (X - x0) / w * 0.1, X, Y));
     for (let X = x0 + 2; X < x1 - 1; X += 4) { P.rect(X, top - 6, 2, 5, VIT[3]); P.px(X, top - 6, VIT[4]); P.px(X + 1, top - 2, VIT[1]); }
     P.hl(x0 - 2, top - 8, w + 4, VIT[4]);
     const mx = x0 + (w >> 1);
     for (let j = 0; j < 8; j++) { const hw = Math.round((8 - j) * 1.4); fyll(P, mx - hw, top - 9 - j, mx + hw, top - 9 - j, (X) => tone(Fa.tak, 0.68 - (X - mx + hw) / (hw * 2 + 1) * 0.35 + (j % 3 === 0 ? -0.1 : 0), X, j)); }
-    P.vl(mx, top - 24, 7, JARN[2]); for (let k = 0; k < 4; k++) P.px(mx + 1 + k, top - 24 + (k > 1 ? 1 : 0), k < 2 ? GUL[3] : ROD[2]);
+    P.vl(mx, top - 24, 8, JARN[2]); for (let k = 0; k < 4; k++) P.px(mx + 1 + k, top - 24 + (k > 1 ? 1 : 0), k < 2 ? GUL[3] : ROD[2]);
     P.px(mx, top - 25, MASS[3]);
     // övervåningen: två fönster med vita omfattningar, en liten balkong med smidesräcke och blomlådor
     for (const fx of [x0 + 8, x1 - 19]) {
@@ -43,20 +46,15 @@ function fasadBild(Fa, natt) {
       for (let X = fx; X < fx + 12; X++) { P.px(X, top + 28, tone(BLAD, 0.4 + hash(X, 1, 5) * 0.5, X, 0)); if (hash(X, 2, 5) > 0.5) P.px(X, top + 27, [0xe0383c, 0xf0c030, 0xf06aa0, 0xffffff][(hash(X, 3, 5) * 4) | 0]); }
     }
     // hängskylten på en smidesarm vid hörnet
-    P.hl(x1 - 2, -46, 10, JARN[2]); P.px(x1 + 7, -45, JARN[3]); P.px(x1, -47, JARN[3]);
-    fyll(P, x1 + 1, -44, x1 + 9, -36, (X, Y) => (X === x1 + 1 || X === x1 + 9 || Y === -44 || Y === -36) ? MASS[2] : tone(Fa.tak, 0.65, X, Y));
-    if (Fa.id === 'souvenir') spr(P, x1 + 3, -42, ['k.k', 'kkk', 'kwk', 'kkk'], { k: 0xa8703e, w: 0xe8c8a0 });
-    else if (Fa.id === 'foto') spr(P, x1 + 3, -42, ['.k.', 'kkk', 'kwk', 'kkk'], { k: 0x2a2a30, w: 0x8ad8ff });
-    else spr(P, x1 + 3, -42, ['.rr', '.rr', 'rr.', '.w.'], { r: 0xe04848, w: 0xf4ecd8 });
+    P.hl(x1 - 3, -48, 10, JARN[2]); P.px(x1 + 6, -47, JARN[3]); P.px(x1 - 1, -49, JARN[3]);
+    fyll(P, x1 - 1, -46, x1 + 6, -38, (X, Y) => (X === x1 - 1 || X === x1 + 6 || Y === -46 || Y === -38) ? MASS[2] : tone(Fa.tak, 0.65, X, Y));
+    if (Fa.id === 'souvenir') spr(P, x1 + 1, -44, ['k.k', 'kkk', 'kwk', 'kkk'], { k: 0xa8703e, w: 0xe8c8a0 });
+    else if (Fa.id === 'foto') spr(P, x1 + 1, -44, ['.k.', 'kkk', 'kwk', 'kkk'], { k: 0x2a2a30, w: 0x8ad8ff });
+    else spr(P, x1 + 1, -44, ['.rr', '.rr', 'rr.', '.w.'], { r: 0xe04848, w: 0xf4ecd8 });
     // skylten med namnet i guldram över markisen
-    const s = Fa.namn, F2 = textW(BIG, s) <= w - 14 ? BIG : SMALL, tw = textW(F2, s), sw = Math.min(w - 4, tw + 12), sx = mx - (sw >> 1), sy = -36;
+    const s = Fa.namn, F2 = textW(BIG, s) <= w - 14 ? BIG : SMALL, tw = textW(F2, s), sw = Math.min(w - 4, tw + 12), sx = mx - (sw >> 1), sy = -33 - (F2.h + 7);   // (nederkanten på -33, strax ovanför markisens räcke)
     fyll(P, sx, sy, sx + sw - 1, sy + F2.h + 7, (X, Y) => (X < sx + 2 || X >= sx + sw - 2 || Y < sy + 2 || Y >= sy + F2.h + 6) ? tone(MASS, 0.9 - (X - sx) / sw * 0.4 - (Y - sy) * 0.03, X, Y) : tone(Fa.tak, 0.62 - (Y - sy) * 0.03, X, Y));
     skylttext(P, F2, s, mx - (tw >> 1), sy + 4, 0xfff0a0, mul(Fa.tak[0], 0.8), 0xffffff);
-    // markisen: randig med bågkant
-    const [A, B] = Fa.markis, my = -26;
-    for (let X = x0 - 2; X <= x1 + 2; X++) { const i = X - x0 + 2, p = Math.floor(i / 5) % 2 ? B : A, drop = [2, 3, 3, 2, 1][i % 5]; for (let Y = my; Y <= my + 5 + drop; Y++) P.px(X, Y, Y >= my + 5 ? (Y === my + 5 + drop ? tone(p, 0.25, X, Y) : tone(p, 0.6, X, Y)) : tone(p, 0.9 - (Y - my) * 0.06, X, Y)); }
-    P.hl(x0 - 3, my - 2, w + 6, JARN[1]); P.hl(x0 - 3, my - 1, w + 6, JARN[3]);
-    for (let i = 0; i < 4; i++) P.darken(x0, my + 7 + i, w, 1, 0.65 + i * 0.08);
     // bottenvåningen: skyltfönstret, dörren med glas och ett överljus, lyktorna
     const fx0 = x0 + 4, fx1 = x1 - 22, dx = x1 - 17, dw = 14;
     fyll(P, fx0 - 2, -24, fx1 + 2, -1, (X, Y) => (X < fx0 || X > fx1 || Y < -22 || Y > -3) ? tone(VIT, X < fx0 || Y < -22 ? 0.85 : 0.4, X, Y) : null);
@@ -80,6 +78,11 @@ function fasadBild(Fa, natt) {
     fyll(P, dx, -24, dx + dw - 1, -1, (X, Y) => (Y < -18 ? (natt ? tone(GLN, 0.8, X, Y) : tone(GLD, 0.75, X, Y)) : tone(Fa.tak, 0.62 - (X - dx) * 0.02 + (X === dx ? 0.15 : 0), X, Y)));
     P.hl(dx, -18, dw, VIT[3]); P.rect(dx + 2, -14, dw - 4, 8, mul(Fa.tak[1], 0.9)); P.box(dx + 2, -14, dw - 4, 8, Fa.tak[3]); P.px(dx + dw - 4, -10, MASS[3]);
     for (const lx of [fx0 - 6, dx + dw + 3]) { P.rect(lx, -20, 3, 4, JARN[1]); P.rect(lx, -21, 3, 1, JARN[3]); P.px(lx + 1, -22, JARN[3]); fyll(P, lx, -19, lx + 2, -17, () => (natt ? 0xffe8a0 : 0xd8e8f0)); P.px(lx + 1, -16, JARN[2]); }
+    // markisen: randig med bågkant, hänger ut över skyltfönstrets överkant (ritas efter fönstret) och skuggar glaset
+    const [A, B] = Fa.markis, my = -29;
+    for (let X = x0 - 2; X <= x1 + 2; X++) { const i = X - x0 + 2, p = Math.floor(i / 5) % 2 ? B : A, drop = [2, 3, 3, 2, 1][i % 5]; for (let Y = my; Y <= my + 5 + drop; Y++) P.px(X, Y, Y >= my + 5 ? (Y === my + 5 + drop ? tone(p, 0.25, X, Y) : tone(p, 0.6, X, Y)) : tone(p, 0.9 - (Y - my) * 0.06, X, Y)); }
+    P.hl(x0 - 3, my - 2, w + 6, JARN[1]); P.hl(x0 - 3, my - 1, w + 6, JARN[3]);
+    for (let i = 0; i < 4; i++) { P.darken(fx0, my + 9 + i, fx1 - fx0 + 1, 1, 0.55 + i * 0.08); P.darken(dx, my + 9 + i, dw, 1, 0.55 + i * 0.08); }
     P.hl(x0 - 2, 0, w + 4, VIT[2]); P.hl(x0 - 2, 1, w + 4, 0x000000, 0.2);
   });
 }

@@ -6,7 +6,8 @@
 // (nästa steg: bli bonde och rida). Busshållplatsen LANDET tar en tillbaka till Betongtorget.
 // Fordonen (cykel/moppe) går att åka här också.
 import { createCityWalker } from '../city/walk.js';
-import { selfDrawable, folkDrawables, createSpeech, nameTag } from './walkable.js';
+import { selfDrawable, folkDrawables, folkTapAt, createSpeech, nameTag } from './walkable.js';
+import { openSpelarkort } from '../core/vannerapp.js';   // 💛 spelarkortet: tryck på en spelare → bli vänner (v0.136)
 import { worldFolksHere } from '../net/world.js';
 import { openModal, closeModal, toast, esc, modalOpen } from '../core/ui.js';
 import { drawRiktning, IKON } from '../core/riktning.js';   // 🧭 pilen tillbaka till PIXELSTADEN (västra kanten)
@@ -403,6 +404,8 @@ export function makeLandet(A) {
       if (fade.phase === 1) return;
       hover = { x: sx, y: sy };
       const x = sx + cam.x, y = sy + cam.y;
+      const fk = folkTapAt(A, x, y);   // 💛 en annan spelare: spelarkortet (bli vänner, SMS)
+      if (fk) { openSpelarkort(A, fk); return; }
       const s = spotAt(x, y);
       if (s && s.id !== 'ridbana') { walker.walkTo(s.go[0], s.go[1], s.act); return; }
       const d = djurAt(x, y);

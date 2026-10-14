@@ -1,7 +1,7 @@
 {
-  "version": "0.135.0",
+  "version": "0.136.0",
   "date": "2026-10-14",
-  "title": "Pixelberg – temaparken",
+  "title": "Mat i handen, hoppa av karusellen och lådraden",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
@@ -162,8 +162,10 @@
     "js/pets/trim.js",
     "js/pixelberg/deko.js",
     "js/pixelberg/entre.js",
+    "js/pixelberg/ihand.js",
     "js/pixelberg/karta.js",
     "js/pixelberg/kiosk.js",
+    "js/pixelberg/lador.js",
     "js/pixelberg/liv.js",
     "js/pixelberg/mainstreet.js",
     "js/pixelberg/marknad.js",

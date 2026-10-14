@@ -10,6 +10,14 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.136.0] – 2026-10-14 – Mat i handen, hoppa av karusellen och lådraden
+- 🧇 Mat i handen: det man köper på Pixelberg – våfflor, churros, korv, glass, sockervadd, popcorn, hamburgare, saft … – hålls i handen och äts upp i tre tuggor medan man går vidare (våfflan tuggas uppifrån, korven och hamburgaren från sidan, muggen töms).
+- 🎠 Hoppa av karusellen (och tekopparna) när du vill: ett tryck var som helst så kliver du av – ingen tvingas åka flera varv.
+- 🪴 Lådraden: en jämn rad vita blomlådor längs Marknadsgatans framkant – klippta kulträd och blommor, kaktusar i tunnor framför radiobilarna och svarta lådor med döda buskar och pumpor (som lyser på kvällen) i Spökgränd. Träden som stod mitt framför tältstånden och ihop med kaktusarna är borta; de två kaktusarna i kruka står nu en på var sida om radiobilarnas bana.
+- 🏪 Main Street: skyltarna SOUVENIRER, FOTO och KARAMELLER syns hela – fasaderna är högre och markisen hänger under skylten i stället för över den.
+- 💛 Tryck på en annan spelare du står bredvid (i stan, på Pixelberg, i Tassbacken, på Landet och Solön) så öppnas spelarkortet med knappen Bli vänner – eller Skicka SMS om ni redan är vänner. Förut fanns det bara i 👥 Kompisar i mobilen.
+- 🌙 Vägskyltarna TASSBACKEN och LANDET vid stadsgränsen: lyktskenet och billyktorna lyser inte längre tvärs igenom dem på kvällen.
+
 ## [0.135.0] – 2026-10-14 – Pixelberg – temaparken
 - 🎟️ Pixelberg har fått en riktig temaparksentré! Bergbussen stannar på bussgatan längst ner i vänstra hörnet – med busskur, hållplatsskylt, biljettluckan, parkkartan, cykelställ och planteringar. Du går in genom den stora PORTEN i staketet (klocka, banderoller, lyktor och glödlampor som jagar varandra) och kommer ut på entréplatsen med Pixel-Nalle-fontänen, blomsterrabatter, topiaryer, flaggstänger och bänkar. Uppe på berget står de stora PIXELBERG-bokstäverna.
 - 🏪 Main Street innanför entrén: tre butiksfasader i viktoriansk tivolistil – SOUVENIRER, FOTO och KARAMELLER – med skyltfönster, markiser, balkonger och hängskyltar. Klicka så berättar expediten något.

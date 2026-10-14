@@ -71,6 +71,12 @@ ok((await D(() => SF.scene._debug.aka()))?.typ === 'karusell' && (await D(() => 
 if (SHOTS) await p.screenshot({ path: 'tools/out/pixelberg-karusell.png' });
 await D(() => SF.scene._debug.snabba(17)); await sleep(1200);
 ok(!(await D(() => SF.scene._debug.aka())) && /Wiii/.test(await D(() => window.__toasts.join(' | '))), 'efter två varv: av karusellen, "🎠 Wiii!"');
+// 🎠 hoppa av med ett tryck (v0.136, Carl 2026-10-14: "man måste kunna hoppa av karusellen – inte tvingas åka flera varv")
+await D(() => SF.scene._debug.act('karusell')); await sleep(1200);
+await D(() => SF.scene._debug.snabba(2));
+ok((await D(() => SF.scene._debug.aka()))?.typ === 'karusell', 'på karusellen igen');
+await D(() => SF.scene.down(20, 20)); await sleep(400);
+ok(!(await D(() => SF.scene._debug.aka())), 'ett tryck var som helst: man hoppar av karusellen direkt');
 
 // ---- pariserhjulet ----
 await D(() => SF.scene._debug.teleport(830, 350)); await sleep(500);
@@ -116,6 +122,13 @@ ok(await D(() => document.querySelectorAll('#modal [data-mat]').length >= 2), 'v
 await D(() => document.querySelector('#modal [data-mat]').click()); await sleep(300);
 ok((await D(() => SF.game.hunger)) > 40, 'våffelståndet: en våffla');
 await stang();
+// 🧇 maten i handen (v0.136, Carl 2026-10-14): våfflan hålls i handen och äts upp i tre tuggor
+ok((await D(() => SF.scene._debug.hand()))?.id === 'vaffla', 'våfflan hålls i handen');
+await D(() => SF.scene._debug.snabba(8)); await sleep(300);
+ok((await D(() => SF.scene._debug.hand()))?.bit === 1, 'efter sju sekunder: en tugga tagen');
+await D(() => SF.scene._debug.snabba(15)); await sleep(300);
+ok(!(await D(() => SF.scene._debug.hand())), 'efter tre tuggor är våfflan uppäten');
+ok((await D(() => SF.scene._debug.lador().length)) >= 18, 'lådraden: blomlådor, kulträd, kaktusar och pumpor längs promenaden');
 await D(() => { SF.game.tivoli = { ...(SF.game.tivoli || {}), ballong: null }; SF.scene._debug.fanBallong(0); }); await sleep(300);
 ok(await D(() => !!SF.scene._debug.minBallong()) && /Du fick en ballong/.test(await D(() => window.__toasts.join(' | '))), 'clownen ger en ballong');
 ok((await D(() => SF.scene._debug.clowner().filter((c) => c.katt).length)) === 1, 'Pixel-Katten går runt med ballonger');

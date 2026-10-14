@@ -119,6 +119,28 @@ export async function openVannerApp(A0) {
 }
 export const vanAppInit = (A0) => { A = A0; };
 
+// 💛 SPELARKORTET: tryck på en annan spelare ute i världen (walkable.js folkTapAt → scenerna) – porträtt, namn och
+// knappen "Bli vänner" (eller "Skicka SMS" om ni redan är vänner). Carl 2026-10-14: "jag stod bredvid någon men jag
+// vet inte hur man blir vän" – förut fanns knappen bara i 👥 Kompisar i mobilen.
+// f = figuren ur worldFolksHere (id, av) – spelaren slås upp i playersList() för vid/nyckel/version.
+export function openSpelarkort(A0, f) {
+  A = A0;
+  const p = playersList().find((q) => q.id === f.id) || { id: f.id, av: f.av };
+  const namn = p.av?.name || $t('En kompis'), van = arVan(A.avatar, p);
+  const v = van ? vanLista(A.avatar).find((x) => x.vid === p.vi) : null;
+  const rad = van ? $t('Ni är vänner! 💛 Skicka ett SMS här, eller en vänskapspresent i 💛 Vänner i mobilen.')
+    : p.vi ? $t('Tryck 💛 Bli vänner så får hen en fråga – säger hen ja ses ni i 💛 Vänner i mobilen och kan skicka SMS till varandra.')
+    : $t('💛 Den spelaren har en för gammal version – be hen ladda om sidan.');
+  const knappar = [];
+  if (van && v) knappar.push({ label: $t('💬 Skicka SMS'), cls: 'btn-go', onClick: () => { closeModal(); openSamtal(A, v); } });
+  else if (!van && p.vi) knappar.push({ label: $t('💛 Bli vänner'), cls: 'btn-gold', onClick: () => { if (vanFraga(A, p)) closeModal(); } });
+  knappar.push({ label: $t('Stäng'), onClick: closeModal });
+  play('click');
+  const dlg = openModal(esc(namn), `<div style="display:flex;gap:10px;align-items:center"><span data-kort-face></span><p style="font-size:var(--f2);margin:0">${rad}</p></div>`, knappar);
+  const el = dlg?.querySelector?.('[data-kort-face]');
+  if (el && p.av) el.replaceWith(avatarPortrait({ name: p.av.name, look: p.av.look, color: p.av.color }, 48));
+}
+
 // ---------- 🎁 skicka en present till en vän ----------
 // En gratis vänskapspresent per vän och dag (en liten överraskning, som dagens present) – och man kan lägga till
 // något eget: pengar, en möbel ur förrådet eller mat ur kylskåpet. Det man lägger till lämnar ens eget förråd.
