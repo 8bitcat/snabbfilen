@@ -1,7 +1,7 @@
 {
-  "version": "0.137.1",
-  "date": "2026-10-14",
-  "title": "Påminnelse om notiserna",
+  "version": "0.137.2",
+  "date": "2026-10-16",
+  "title": "Telefonen: kameran räknar med det som syns",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",

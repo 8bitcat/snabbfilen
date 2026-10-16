@@ -21,6 +21,17 @@ export const WALK_SEQ = [1, 3, 2, 3];
 const FW = 384, FH = 216;
 let selfAt = null; // var den egna figuren stod senast (selfDrawable) – för rösten i createSpeech
 export const selfPos = () => selfAt;   // (main.js: kompisknappen räknar spelare nära en)
+// 📱 den synliga delen av rutan i höjdled: i fyll-läget på telefonen är canvasen högre än skärmen och beskärs upptill
+// och nedtill (main.js followCrop → SF.view.safe). Kamerorna lägger figuren i förhållande till DET SOM SYNS, inte
+// hela VH – annars hamnar figuren vid skärmens nederkant med marken dold under kanten, och det går inte att trycka
+// nedanför för att gå neråt (Carl 2026-10-16: "svårt att gå nedåt på Pixelberg på iPhone"). Skyltar och räknare som
+// ritas i rutans kant lägger sig också innanför den.
+export function synligRuta(VH) {
+  const s = globalThis.SF?.view?.safe;
+  if (!s) return { y0: 0, y1: VH, h: VH };
+  const y0 = Math.max(0, Math.min(VH - 48, s.y0 | 0)), y1 = Math.max(y0 + 48, Math.min(VH, (s.y1 | 0) || VH));
+  return { y0, y1, h: y1 - y0 };
+}
 
 // W/H = världens storlek (standard = en skärm; staden är större och rullar).
 export function createWalker({ W: WW = FW, H: WH = FH, left = 8, right = WW - 8, top = 90, bottom = WH - 4, spawn }) {

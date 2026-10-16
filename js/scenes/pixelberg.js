@@ -21,7 +21,7 @@
 //   • 🥫 BURKTORNET och 🎯 SKJUTBANAN (v0.128, js/pixelberg/stand.js): vinsterna är leksaker till leksakslådan hemma.
 // Besökare med ballonger, björnmaskoten Pixel-Nalle som vinkar, och på kvällen tänds glödlamporna överallt.
 import { createCityWalker } from '../city/walk.js';
-import { selfDrawable, folkDrawables, folkTapAt, createSpeech, WALK_SEQ, nameTag } from './walkable.js';
+import { selfDrawable, folkDrawables, folkTapAt, createSpeech, WALK_SEQ, nameTag, synligRuta } from './walkable.js';
 import { worldFolksHere } from '../net/world.js';
 import { openModal, closeModal, toast, esc, modalOpen } from '../core/ui.js';
 import { play } from '../core/sound.js';
@@ -153,7 +153,14 @@ export function makePixelberg(A) {
   const iKo = () => (aka?.typ === 'bana' && !sitterIBana()) || (aka?.typ === 'spok' && !sitterISpok());
   const jagPos = () => { if (!aka || (aka.typ === 'bana' && !sitterIBana())) return { x: walker.px, y: walker.py }; if (aka.typ === 'radio') return { x: aka.bil.x, y: aka.bil.y }; if (aka.typ === 'kopp') { const p = koppPos(aka.i, t, DEKO.tekopp.x, DEKO.tekopp.y); return { x: p.x, y: p.y }; } if (aka.typ === 'spok') { const v = spokVagn(spokL()); return { x: v.x, y: v.y - 14 }; } if (aka.typ === 'bana') { const v = vagn(Math.floor(aka.plats / 2), banLage()); return { x: v.x, y: v.y - 14 }; } if (aka.typ === 'hjul') { const p = gondol(aka.i); return { x: p.x, y: p.y + 8 }; } const h = hast(aka.i); return { x: h.x, y: h.y }; };
   // (i radiobilen står kameran still över banan – hela golvet och framkanten syns, bakväggen så långt det räcker)
-  const camTarget = () => { if (aka?.typ === 'radio') return { x: Math.max(0, Math.min(TW - VW, RADIO.x + RADIO.w / 2 - VW / 2)), y: Math.max(0, Math.min(TH - VH, RADIO.y + RADIO.h + 14 - VH)) }; const p = jagPos(); return { x: Math.max(0, Math.min(TW - VW, p.x - VW / 2)), y: Math.max(0, Math.min(TH - VH, p.y - VH * (aka?.typ === 'hjul' || sitterIBana() ? 0.5 : aka?.typ === 'radio' ? 0.62 : sitterISpok() ? 0.72 : 0.8))) }; };
+  // kameran räknar med den synliga rutan (synligRuta: telefonen beskär canvasen upptill/nedtill): figuren läggs en bit
+  // ner i det som syns, och längst ner i världen får kameran gå så långt att den synliga nederkanten når marken
+  const camTarget = () => {
+    const S = synligRuta(VH), yMax = Math.max(0, TH - S.y1);
+    if (aka?.typ === 'radio') return { x: Math.max(0, Math.min(TW - VW, RADIO.x + RADIO.w / 2 - VW / 2)), y: Math.max(0, Math.min(yMax, RADIO.y + RADIO.h + 14 - S.y1)) };
+    const p = jagPos(), k = aka?.typ === 'hjul' || sitterIBana() ? 0.5 : sitterISpok() ? 0.72 : S.h < VH - 8 ? 0.7 : 0.8;   // (beskuren telefonruta: mer plats under figuren)
+    return { x: Math.max(0, Math.min(TW - VW, p.x - VW / 2)), y: Math.max(0, Math.min(yMax, p.y - S.y0 - S.h * k)) };
+  };
   Object.assign(cam, camTarget());
   if (!A.attract && from) { const h = g.glad?.(3, '', 'pixelberg', 3); setTimeout(() => toast(h ? $t`🎡 Välkommen till Pixelbergs tivoli! +${h} 😊` : $t('🎡 Välkommen till Pixelbergs tivoli!'), 'good'), 900); }
   let pets = null;
@@ -1020,7 +1027,8 @@ export function makePixelberg(A) {
       if (aka?.typ === 'radio') {
         // 🚗 tiden och krockarna överst; de sista sekunderna bryts strömmen
         const kvar = Math.max(0, Math.ceil(RUNDA - aka.t)), s1 = aka.slut ? $t('STRÖMMEN BRYTS!') : $t`TID ${kvar}   KROCKAR ${aka.krockar}`, w = textW(SMALL, s1) + 10;
-        ctx.fillStyle = 'rgba(20,18,26,.85)'; ctx.fillRect((VW - w) >> 1, VH - 15, w, 11); ctxText(ctx, SMALL, s1, ((VW - w) >> 1) + 5, VH - 12, aka.slut ? '#ff8a8a' : '#ffd23f');
+        const ry = synligRuta(VH).y0 + 16;   // (överst i det som syns, under toastarna – nederkanten är dold på telefonen)
+        ctx.fillStyle = 'rgba(20,18,26,.85)'; ctx.fillRect((VW - w) >> 1, ry, w, 11); ctxText(ctx, SMALL, s1, ((VW - w) >> 1) + 5, ry + 3, aka.slut ? '#ff8a8a' : '#ffd23f');
         if (spak) {   // dra-styrspaken
           ctx.fillStyle = 'rgba(255,255,255,.18)'; for (let k = 0; k < 48; k++) { const v = k / 48 * Math.PI * 2; ctx.fillRect(Math.round(spak.x0 + Math.cos(v) * 18), Math.round(spak.y0 + Math.sin(v) * 18), 1, 1); }
           const dx = spak.x - spak.x0, dy = spak.y - spak.y0, d = Math.hypot(dx, dy), k = d > 14 ? 14 / d : 1, kx = Math.round(spak.x0 + dx * k), ky = Math.round(spak.y0 + dy * k);
@@ -1068,6 +1076,7 @@ export function makePixelberg(A) {
       aka: () => (aka ? { typ: aka.typ, t: aka.t, i: aka.i, toppen: !!aka.toppen } : null),
       snabba: (sek) => { t += sek; if (aka) aka.t += sek; if (hand) hand.t += sek; },   // (testerna: spola fram åkturen och tuggorna)
       hand: () => (hand ? { id: hand.id, bit: hand.bit } : null),
+      cam: () => ({ ...cam, VW, VH, synlig: synligRuta(VH) }),
       lador: () => LADOR.map((l) => [l.x, l.y, l.typ]),
       band: () => harBand(),
       bana: () => { const L = banLage(); return { n: L.n, station: L.station, tau: L.tau, aka: aka?.typ === 'bana' ? { n: aka.n, plats: aka.plats } : null, platser: aakare(L).map((p) => (p ? (p.jag ? 'jag' : p.npc ? 'npc' : p.namn) : null)) }; },

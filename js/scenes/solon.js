@@ -10,7 +10,7 @@
 //   • 🎣 FISKE (js/solon/fiske.js): metspö i kiosken, fiska längst ut på färjebryggan eller vid klipporna nära fyren
 // Sommarstugorna och båtuthyrningen öppnar i nästa steg (skyltar och folk berättar).
 import { createCityWalker } from '../city/walk.js';
-import { selfDrawable, folkDrawables, folkTapAt, createSpeech, WALK_SEQ } from './walkable.js';
+import { selfDrawable, folkDrawables, folkTapAt, createSpeech, WALK_SEQ, synligRuta } from './walkable.js';
 import { openSpelarkort } from '../core/vannerapp.js';   // 💛 spelarkortet: tryck på en spelare → bli vänner (v0.136)
 import { worldFolksHere } from '../net/world.js';
 import { openModal, closeModal, toast, esc } from '../core/ui.js';
@@ -51,7 +51,8 @@ export function makeSolon(A) {
   let t = 0, hover = null, banner = 0, badat = false;
   const fade = { a: 1, phase: 2, cb: null };
   const cam = { x: 0, y: 0 };
-  const camTarget = () => ({ x: Math.max(0, Math.min(TW - VW, walker.px - VW / 2)), y: Math.max(0, Math.min(TH - VH, walker.py - VH * 0.62)) });
+  // (kameran räknar med den synliga rutan – telefonen beskär canvasen upptill/nedtill, se walkable.js synligRuta)
+  const camTarget = () => { const S = synligRuta(VH); return { x: Math.max(0, Math.min(TW - VW, walker.px - VW / 2)), y: Math.max(0, Math.min(Math.max(0, TH - S.y1), walker.py - S.y0 - S.h * (S.h < VH - 8 ? 0.58 : 0.62))) }; };
   Object.assign(cam, camTarget());
   if (!A.attract && from?.farja) { const h = g.glad?.(3, '', 'solon', 3); setTimeout(() => toast(h ? $t`⛴️ Välkommen till Solön! Sol, bad och glass. +${h} 😊` : $t('⛴️ Välkommen till Solön! Sol, bad och glass.'), 'good'), 900); }
   let pets = null;

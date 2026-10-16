@@ -9,7 +9,7 @@
 // utställningshallen, djurhemmet, kliniken och agilitybanan öppnar i nästa steg (skyltar berättar).
 // Busshållplatsen TASSBACKEN tar en till Marknadstorget i Linnéstaden.
 import { createCityWalker } from '../city/walk.js';
-import { selfDrawable, folkDrawables, folkTapAt, createSpeech, WALK_SEQ } from './walkable.js';
+import { selfDrawable, folkDrawables, folkTapAt, createSpeech, WALK_SEQ, synligRuta } from './walkable.js';
 import { openSpelarkort } from '../core/vannerapp.js';   // 💛 spelarkortet: tryck på en spelare → bli vänner (v0.136)
 import { worldFolksHere } from '../net/world.js';
 import { openModal, closeModal, toast, modalOpen } from '../core/ui.js';
@@ -58,7 +58,8 @@ export function makeTassbacken(A) {
   let t = 0, hover = null, banner = from?.park || from?.klinik || from?.trim || from?.hall || from?.kafe || from?.hem || from?.buss ? 4 : 0;
   const fade = { a: 1, phase: 2, cb: null };
   const cam = { x: 0, y: 0 };
-  const camTarget = () => ({ x: Math.max(0, Math.min(TW - VW, walker.px - VW / 2)), y: Math.max(0, Math.min(TH - VH, walker.py - VH * 0.84)) });
+  // (kameran räknar med den synliga rutan – telefonen beskär canvasen upptill/nedtill, se walkable.js synligRuta)
+  const camTarget = () => { const S = synligRuta(VH); return { x: Math.max(0, Math.min(TW - VW, walker.px - VW / 2)), y: Math.max(0, Math.min(Math.max(0, TH - S.y1), walker.py - S.y0 - S.h * (S.h < VH - 8 ? 0.72 : 0.84))) }; };
   Object.assign(cam, camTarget());
   if (!A.attract && !from?.park && !from?.klinik && !from?.trim && !from?.hall && !from?.kafe && !from?.hem) { const h = g.glad?.(2, '', 'tassbacken', 2); if (h) setTimeout(() => toast($t`🐾 Tassbacken – djurens stadsdel! +${h} 😊`, 'good'), 900); }
   // ens egna djur på promenad följer med hit

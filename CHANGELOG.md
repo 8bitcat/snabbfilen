@@ -10,6 +10,10 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.137.2] – 2026-10-16 – Telefonen: kameran räknar med det som syns
+- 📱 På telefonen (fyll-läget) räknar kamerorna på Pixelberg, i Tassbacken, på Landet och Solön med det som faktiskt syns på skärmen: figuren hamnar längre upp i bild så att det går att trycka nedanför den och gå neråt, och längst ner i världen når marken skärmens nederkant. Förut stod figuren vid skärmkanten med den nedersta biten av världen dold under kanten.
+- 🚗 Radiobilarna: räknaren TID/KROCKAR ritas överst i det som syns – på telefonen låg den under skärmens nederkant.
+
 ## [0.137.1] – 2026-10-14 – Påminnelse om notiserna
 - 🔔 Påminnelse om notiserna i appen: är de av när du loggar in får du en ruta med knappen Slå på (högst en gång om dagen) – förut fick man leta i ⚙ Inställningar. Släpper telefonen inte igenom notiserna hänvisar rutan till Inställningar → Notiser → Pixelcity, och "Påminn mig inte" tystar påminnelsen för gott.
 

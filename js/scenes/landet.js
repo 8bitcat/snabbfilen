@@ -6,7 +6,7 @@
 // (nästa steg: bli bonde och rida). Busshållplatsen LANDET tar en tillbaka till Betongtorget.
 // Fordonen (cykel/moppe) går att åka här också.
 import { createCityWalker } from '../city/walk.js';
-import { selfDrawable, folkDrawables, folkTapAt, createSpeech, nameTag } from './walkable.js';
+import { selfDrawable, folkDrawables, folkTapAt, createSpeech, nameTag, synligRuta } from './walkable.js';
 import { openSpelarkort } from '../core/vannerapp.js';   // 💛 spelarkortet: tryck på en spelare → bli vänner (v0.136)
 import { worldFolksHere } from '../net/world.js';
 import { openModal, closeModal, toast, esc, modalOpen } from '../core/ui.js';
@@ -48,7 +48,8 @@ export function makeLandet(A) {
   let t = 0, hover = null, banner = 0, ridDir = 'right';
   const fade = { a: 1, phase: 2, cb: null };    // tona in när man kommer
   const cam = { x: 0, y: 0 };
-  const camTarget = () => ({ x: Math.max(0, Math.min(LW - VW, walker.px - VW / 2)), y: Math.max(0, Math.min(LH - VH, walker.py - VH * 0.66)) });
+  // (kameran räknar med den synliga rutan – telefonen beskär canvasen upptill/nedtill, se walkable.js synligRuta)
+  const camTarget = () => { const S = synligRuta(VH); return { x: Math.max(0, Math.min(LW - VW, walker.px - VW / 2)), y: Math.max(0, Math.min(Math.max(0, LH - S.y1), walker.py - S.y0 - S.h * (S.h < VH - 8 ? 0.6 : 0.66))) }; };
   Object.assign(cam, camTarget());
   if (!A.attract) { const h = g.glad?.(2, '', 'landet', 2); if (h) setTimeout(() => toast($t`🌾 Frisk luft på landet! +${h} 😊`, 'good'), 900); }
 
