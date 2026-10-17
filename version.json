@@ -1,7 +1,7 @@
 {
-  "version": "0.137.2",
-  "date": "2026-10-16",
-  "title": "Telefonen: kameran räknar med det som syns",
+  "version": "0.138.0",
+  "date": "2026-10-17",
+  "title": "PIXEL GYM – träna för jobbet",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
@@ -221,6 +221,7 @@
     "js/scenes/shop-elektronik.js",
     "js/scenes/shop-fordon.js",
     "js/scenes/shop-frisor.js",
+    "js/scenes/shop-gym.js",
     "js/scenes/shop-ikea.js",
     "js/scenes/shop-kafe.js",
     "js/scenes/shop-kattcafe.js",

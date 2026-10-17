@@ -10,6 +10,12 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.138.0] – 2026-10-17 – PIXEL GYM – träna för jobbet
+- 💪 PIXEL GYM: den övergivna lagerhallen LAGER 3 i förorten (granne med tvätteriet) har blivit ett riktigt gym – neonskylt, löpband, hantelställ, boxsäck, dansgolv med spegelvägg och discokula, och gruppass på mattorna. Coachen Benke säljer dagskort (30 kr) i receptionen, ett pass tar 10 energi.
+- 🏋️ Fyra minispel: HANTLARNA (lyft i takt när markören är i det gröna fältet), BOXSÄCKEN (träffa handsken innan den bleknar – kombo ger extra), DANSGOLVET (tryck på pilarna när de når linjen) och GRUPPASSET (gör samma rörelse som Mia, fortare och fortare). Poängen blir STYRKA, KONDITION och RYTM med fem nivåer – de två första passen per gren och dag räknas fullt.
+- 🏃 Träningen ger på jobbet: varje nivå i kondition gör fötterna 8 % snabbare i alla jobb, och från styrka nivå 2 bär du två brickor i taget i Burgarbaren (tre från nivå 4) – rätt tallrik går ur bunten själv när du serverar.
+- 🧺 Tvätteriet: kunderna har mer tålamod (60 sekunder i stället för 48 – "det går inte att hinna med").
+
 ## [0.137.2] – 2026-10-16 – Telefonen: kameran räknar med det som syns
 - 📱 På telefonen (fyll-läget) räknar kamerorna på Pixelberg, i Tassbacken, på Landet och Solön med det som faktiskt syns på skärmen: figuren hamnar längre upp i bild så att det går att trycka nedanför den och gå neråt, och längst ner i världen når marken skärmens nederkant. Förut stod figuren vid skärmkanten med den nedersta biten av världen dold under kanten.
 - 🚗 Radiobilarna: räknaren TID/KROCKAR ritas överst i det som syns – på telefonen låg den under skärmens nederkant.

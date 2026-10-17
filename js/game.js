@@ -178,6 +178,10 @@ export const COURSES = {
     blurb: $t('Leda ett lag, lägga schema, ta hand om kunderna och hålla budgeten – för dig som vill bli chef.') },
 };
 export const courseOf = (id) => COURSES[id] || null;
+// 💪 PIXEL GYM (js/scenes/shop-gym.js): träningspoängen per gren och nivåerna 0–5 (poängen som krävs). Nivån i
+// KONDITION ger snabbare fötter på jobbet (gymFart, walkable.js), nivån i STYRKA fler brickor/påsar i taget (gymBar).
+export const GYM_NIVAER = [0, 40, 100, 180, 280, 400];
+export const GYM_GRENAR = ['styrka', 'kondition', 'rytm'];
 export const JOB_TITLES = [$t('Nybörjare'), $t('Van'), $t('Proffs'), $t('Mästare'), $t('Legendar')];
 export const levelOf = (shifts) => Math.min(5, 1 + Math.floor(shifts / 3));
 export const payMult = (level) => 1 + 0.15 * (level - 1);
@@ -766,6 +770,9 @@ export class Game {
     this.fiske = { spo: false, arter: {} };
     this.djurnet = rensaDjurnet(null);   // 🐾 djurNET (js/pets/djurnet.js): annonserna, buden, hälsningarna, sålda djur
     this.tivoli = { band: 0 };   // 🎡 Pixelberg (js/scenes/pixelberg.js): dagen man har åkband   // 🎣 fisket på Solön (js/solon/fiske.js): metspöet och fångstboken { [art]: { n, rekord } }   // 🕵️ mysteriet (js/core/mysterium.js): kapitel, steg, dagen förra kapitlet blev klart, ledtrådarna
+    // 💪 PIXEL GYM (js/scenes/shop-gym.js): träningspoäng per gren, dagen man köpte dagskortet (kort) och passen per
+    // gren i dag (dag + pass – de två första passen per gren ger fulla poäng)
+    this.gym = { styrka: 0, kondition: 0, rytm: 0, kort: -1, dag: -1, pass: {} };
     this.festVecka = '';   // 🎉 veckan ("2026-W42") då man senast fick lördagsfestens present (js/city/fest.js)
     // 🏡 djurhemmet i Tassbacken (js/scenes/shop-djurhem.js): adopterade = djurens id:n ("dh3:12" = djur 3 vecka 12),
     // hjalp = dagen man senast hjälpte till, gav = dagen man senast skänkte pengar
@@ -958,6 +965,9 @@ export class Game {
         g.djurnet = rensaDjurnet(p.djurnet);
         g.meriter = (Array.isArray(p.meriter) ? p.meriter : []).filter((m) => m && typeof m.typ === 'string' && /^[a-z]{2,12}$/.test(m.typ)).slice(-150)
           .map((m) => ({ typ: m.typ, plats: Math.max(1, Math.min(3, m.plats | 0)), klass: String(m.klass || '').slice(0, 12), vem: String(m.vem || '').slice(0, 20), dag: m.dag | 0, t: Number(m.t) || 0 }));
+        { const Q = p.gym && typeof p.gym === 'object' ? p.gym : {}, pass = {};
+          for (const [k, v] of Object.entries(Q.pass && typeof Q.pass === 'object' ? Q.pass : {})) if (/^[a-z]{2,12}$/.test(k)) pass[k] = Math.max(0, Math.min(99, v | 0));
+          g.gym = { styrka: Math.max(0, Math.min(9999, Q.styrka | 0)), kondition: Math.max(0, Math.min(9999, Q.kondition | 0)), rytm: Math.max(0, Math.min(9999, Q.rytm | 0)), kort: (Q.kort | 0) || -1, dag: (Q.dag | 0) || -1, pass }; }
         g.festVecka = /^\d{4}-W\d{2}$/.test(String(p.festVecka || '')) ? String(p.festVecka) : '';
         g.designs = (Array.isArray(p.designs) ? p.designs : []).filter((d) => d && ['neck', 'bag', 'beads', 'phone'].includes(d.kind) && d.sel && typeof d.sel === 'object').slice(-40).map(cleanDesign).filter(Boolean);
         keep.storage = (Array.isArray(p.storage) ? p.storage : []).filter((it) => it && typeof it === 'object' && !knownKind(it.k));
@@ -1316,6 +1326,11 @@ export class Game {
   // Ändra lyckan med n. key + cap = högst cap per dag från den källan (bion, djuren, kompisar …),
   // så att man inte kan klappa katten till 100. why = en toast med skälet (tomt = tyst – t.ex. när
   // stället redan visar en egen toast). Svaret är hur mycket lyckan faktiskt ändrades.
+  // 💪 PIXEL GYM: nivån (0–5) i en gren, och vad formen ger på jobbet – fötterna (kondition: +8 % fart per nivå,
+  // walkable.js) och hur många brickor/påsar man bär i taget (styrka: 2 från nivå 2, 3 från nivå 4 – jobben läser gymBar)
+  gymNiva(gren) { const p = this.gym?.[gren] | 0; let n = 0; for (const t of GYM_NIVAER) if (p >= t) n++; return Math.max(0, n - 1); }
+  gymFart() { return 1 + 0.08 * this.gymNiva('kondition'); }
+  gymBar() { const n = this.gymNiva('styrka'); return 1 + (n >= 2 ? 1 : 0) + (n >= 4 ? 1 : 0); }
   glad(n, why = '', key = null, cap = Infinity) {
     n = Math.round(+n || 0);
     if (!n) return 0;

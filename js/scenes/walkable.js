@@ -33,6 +33,8 @@ export function synligRuta(VH) {
   return { y0, y1, h: y1 - y0 };
 }
 
+// 💪 gymmet (v0.138): konditionen ger snabbare fötter på jobbet – game.js gymFart, bara i jobbscenerna
+const jobbFart = () => { const S = globalThis.SF; return S?.sceneName?.startsWith('jobb') && typeof S.game?.gymFart === 'function' ? S.game.gymFart() : 1; };
 // W/H = världens storlek (standard = en skärm; staden är större och rullar).
 export function createWalker({ W: WW = FW, H: WH = FH, left = 8, right = WW - 8, top = 90, bottom = WH - 4, spawn }) {
   const CELL = 4, GW = Math.ceil(WW / CELL), GH = Math.ceil(WH / CELL);
@@ -115,7 +117,7 @@ export function createWalker({ W: WW = FW, H: WH = FH, left = 8, right = WW - 8,
     update(dt) {
       if (!W.path.length) return false;
       const [gx, gy] = W.path[0];
-      const dx = gx - W.px, dy = gy - W.py, dist = Math.hypot(dx, dy), step = W.speed * dt;
+      const dx = gx - W.px, dy = gy - W.py, dist = Math.hypot(dx, dy), step = W.speed * jobbFart() * dt;
       W.dir = Math.abs(dx) > Math.abs(dy) * 1.2 ? (dx < 0 ? 'left' : 'right') : dy < 0 ? 'up' : 'down';
       if (dist <= step) {
         W.px = gx; W.py = gy;

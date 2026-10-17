@@ -1046,7 +1046,7 @@ export function makeJobbTvatt(A, { onDone }) {
   }
   function sitDown(k) {
     k.state = 'sit'; k.dir = 'down'; k.dropped = true;
-    k.pmax = testPat || 48 - 10 * Math.min(1, t / P.seconds); k.patience = k.pmax;
+    k.pmax = testPat || 60 - 12 * Math.min(1, t / P.seconds); k.patience = k.pmax;   // (v0.138: 60→48 s i stället för 48→38 – "tiden i tvätteriet är för kort, det går inte att hinna med")
   }
   function leave(k) {
     k.state = 'leave';

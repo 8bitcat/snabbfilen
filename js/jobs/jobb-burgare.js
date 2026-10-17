@@ -218,6 +218,12 @@ export function makeJobbBurgare(A, { onDone }) {
   ]);
   const pops = makePops();
   let customers = [], plates = [], t = 0, seq = 0, custIn = 1.5, plateIn = 2.5, carry = null;
+  // 💪 gymmet (v0.138): styrkan ger fler brickor i taget (game.js gymBar) – de extra ligger i `extra` ovanpå den i
+  // händerna (carry). Serverar man en kund går rätt tallrik ur bunten automatiskt. Bara när man jobbar själv – i det
+  // delade passet (coop) bär alla en i taget, så att ledarens bokföring stämmer.
+  let extra = [];
+  const kap = () => (coop.active ? 1 : Math.max(1, A.game?.gymBar?.() || 1));
+  const burna = () => [carry, ...extra].filter(Boolean);
   let done = false, doneT = 0, reported = false, sgVisar = false; // sgVisar: startguidens hand har visat vägen
   const bgCache = {};
   const bg = () => (bgCache.x ||= paintDiner());
@@ -346,6 +352,8 @@ export function makeJobbBurgare(A, { onDone }) {
       counterSpot(i = 0) { return { x: SLOTS[i], y: COUNTER.base + 4 }; },
       plates: () => plates.map((p) => ({ d: p.d, slot: p.slot })),
       carrying: () => (carry ? carry.d : null),
+      carried: () => burna().map((p) => p.d),   // 💪 hela bunten
+      kap: () => kap(),
       serve(right = true) {
         if (!carry) return null;
         const k = customers.find((c) => c.state === 'sit' && (right ? c.wish === carry.d : c.wish !== carry.d)) || customers.find((c) => c.state === 'sit');
@@ -451,7 +459,10 @@ export function makeJobbBurgare(A, { onDone }) {
             if (coop.active && !coop.leader) { coop.send({ t: carry ? 'swap' : 'take', slot: best.slot, d: carry ? carry.d : 0 }); return; }
             const i = plates.indexOf(best);
             if (i < 0) return;
-            if (carry) { plates[i] = { ...best, d: carry.d }; carry = { d: best.d }; play('click'); }
+            if (carry) {
+              if (extra.length < kap() - 1) { extra.push(carry); carry = { d: best.d }; plates.splice(i, 1); play('ok'); pops.add(walker.px, walker.py - 52, $t`${extra.length + 1} BRICKOR!`, '#9af0ff'); }   // 💪 en bricka till
+              else { plates[i] = { ...best, d: carry.d }; carry = { d: best.d }; play('click'); }
+            }
             else { plates.splice(i, 1); carry = { d: best.d }; play('ok'); }
             snapAsap();
           });
@@ -471,7 +482,7 @@ export function makeJobbBurgare(A, { onDone }) {
               let s2 = plates.some((p) => p.slot === s) ? -1 : s;
               if (s2 < 0) { let bd = 1e9; SLOTS.forEach((sx2, si) => { const dd2 = Math.abs(sx2 - SLOTS[s]); if (dd2 < bd && !plates.some((p) => p.slot === si)) { s2 = si; bd = dd2; } }); }
               if (s2 < 0) { play('miss'); pops.add(SLOTS[s], SLOT_TIP + 10, $t('FULLT PÅ DISKEN!'), '#ff6a6a'); return; }
-              plates.push({ d: carry.d, slot: s2, x: SLOTS[s2] }); carry = null; play('click'); snapAsap();
+              plates.push({ d: carry.d, slot: s2, x: SLOTS[s2] }); carry = extra.shift() || null; play('click'); snapAsap();
             });
           } else {
             play('miss');
@@ -504,10 +515,13 @@ export function makeJobbBurgare(A, { onDone }) {
       const drawables = [...folkDrawables(A, t), selfDrawable(A, walker, t, { carry: !!carry })];
       // det jag bär: tallriken i händerna (bakom kroppen när jag går uppåt)
       if (carry) {
-        const s = platedSprite(carry.d), dir = walker.dir;
-        const ox = dir === 'left' ? -7 : dir === 'right' ? 7 : 0;
-        const x = Math.round(walker.px) + ox - (PW >> 1), y = Math.round(walker.py) - 12 - (s.height - 1);
-        drawables.push({ fy: walker.py + (dir === 'up' ? -0.01 : 0.01), draw: () => ctx.drawImage(s, 0, 0, s.width, s.height - 1, x, y, s.width, s.height - 1) });
+        const dir = walker.dir, ox = dir === 'left' ? -7 : dir === 'right' ? 7 : 0;
+        // bunten: den i händerna underst, de extra staplade ovanpå (💪 gymmet)
+        burna().forEach((p, j) => {
+          const s = platedSprite(p.d);
+          const x = Math.round(walker.px) + ox - (PW >> 1), y = Math.round(walker.py) - 12 - (s.height - 1) - j * 5;
+          drawables.push({ fy: walker.py + (dir === 'up' ? -0.01 : 0.01) + j * 0.001, draw: () => ctx.drawImage(s, 0, 0, s.width, s.height - 1, x, y, s.width, s.height - 1) });
+        });
       }
       for (const tb of bordAktiva()) {
         const k = customers.find((c) => c.table === tb);
@@ -545,7 +559,7 @@ export function makeJobbBurgare(A, { onDone }) {
       }
       for (const k of customers) {
         if (k.state !== 'sit') continue;
-        const hot = !!carry && carry.d === k.wish;
+        const hot = burna().some((p) => p.d === k.wish);
         const cx = Math.round(k.x), tip = Math.round(k.y) - 36 - (hot && (t * 4 | 0) % 2 ? 1 : 0);
         const [ix, iy] = bubble(ctx, cx, tip, 18, 19, hot);
         bubbleFood(ctx, k.wish, ix, iy, 18, 16);
@@ -579,18 +593,22 @@ export function makeJobbBurgare(A, { onDone }) {
   };
 
   function serveTo(k) {
-    if (carry.d === k.wish) {
+    // rätt tallrik ur bunten om den finns där (💪 flera brickor), annars den i händerna – och fel rätt går bort
+    const alla = burna(), i = alla.findIndex((p) => p.d === k.wish);
+    if (i >= 0) {
       stats.ok++;
       play('coin');
       pops.add(k.x, k.y - 62, $t('+10 TACK!'), '#8ee03c');
       if (sgVisar && stats.ok === 1) pops.add(FW / 2, 112, $t('BRA! NU ÄR DET DIN TUR!'), '#ffd23f'); // 🧭 startguiden släpper taget
       k.state = 'eat'; k.eat = 4;
+      alla.splice(i, 1);
     } else {
       stats.fel++;
       play('fel');
       pops.add(k.x, k.y - 62, $t('FEL RÄTT!'), '#ff6a6a');
+      alla.shift();
     }
-    carry = null;
+    carry = alla[0] || null; extra = alla.slice(1);
   }
 }
 

@@ -38,6 +38,7 @@ import { makeShopKlader } from './scenes/shop-klader.js';
 import { makeShopSkor } from './scenes/shop-skor.js';
 import { makeShopAccessoarer } from './scenes/shop-accessoarer.js';
 import { makeShopFrisor } from './scenes/shop-frisor.js';
+import { makeShopGym } from './scenes/shop-gym.js';   // 💪 PIXEL GYM i förorten (v0.138)
 import { makeJobbFlyg } from './jobs/jobb-flyg.js';
 import { makeJobbFrukt } from './jobs/jobb-frukt.js';
 import { makeJobbBurgare } from './jobs/jobb-burgare.js';
@@ -149,6 +150,7 @@ const SCENES = {
   skor: (a, o) => makeShopSkor(a, o), // 👟 SKOBUTIKEN i downtown
   accessoarer: (a, o) => makeShopAccessoarer(a, o), // 👜 ACCESSOARER i downtown
   frisor: (a, o) => makeShopFrisor(a, o), // 💈 FRISÖR i downtown
+  gym: (a) => makeShopGym(a), // 💪 PIXEL GYM i förorten: hantlar, boxsäck, dansgolv och gruppass
   jobbflyg: (a, o) => makeJobbFlyg(a, o),
   jobbfrukt: (a, o) => makeJobbFrukt(a, o),
   jobbburgare: (a, o) => makeJobbBurgare(a, o),

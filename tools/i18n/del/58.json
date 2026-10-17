@@ -1,0 +1,482 @@
+[
+ {
+  "i": 8923,
+  "f": "js/city/buildings-suburb.js",
+  "k": "ÖPPET\n6–23"
+ },
+ {
+  "i": 8924,
+  "f": "js/city/buildings-suburb.js",
+  "k": "PIXEL GYM"
+ },
+ {
+  "i": 8925,
+  "f": "js/city/buildings-suburb.js",
+  "k": "STYRKA + KONDITION + DANS"
+ },
+ {
+  "i": 8926,
+  "f": "js/city/map.js",
+  "k": "Gymmet öppnar snart – värm upp så länge!"
+ },
+ {
+  "i": 8927,
+  "f": "js/scenes/shop-gym.js",
+  "k": "Välkommen till Pixel Gym! Hantlarna och boxsäcken ger STYRKA, gruppasset KONDITION och dansgolvet RYTM."
+ },
+ {
+  "i": 8928,
+  "f": "js/scenes/shop-gym.js",
+  "k": "Kondition ger snabbare fötter på jobbet – varje nivå är åtta procent fortare. Styrka nivå två: två brickor i taget!"
+ },
+ {
+  "i": 8929,
+  "f": "js/scenes/shop-gym.js",
+  "k": "De två första passen per gren och dag ger fulla poäng. Sedan är det vila som gäller – kroppen växer när den vilar."
+ },
+ {
+  "i": 8930,
+  "f": "js/scenes/shop-gym.js",
+  "k": "Ett pass tar tio energi. Trött? Ät något eller sov först, annars blir lyften sluddriga."
+ },
+ {
+  "i": 8931,
+  "f": "js/scenes/shop-gym.js",
+  "k": "Lo har sprungit på löpbandet sedan i morse. Jag tror inte hon vet hur man stänger av det."
+ },
+ {
+  "i": 8932,
+  "f": "js/scenes/shop-gym.js",
+  "k": "ARMAR UPP"
+ },
+ {
+  "i": 8933,
+  "f": "js/scenes/shop-gym.js",
+  "k": "KNÄBÖJ"
+ },
+ {
+  "i": 8934,
+  "f": "js/scenes/shop-gym.js",
+  "k": "KLAPPA"
+ },
+ {
+  "i": 8935,
+  "f": "js/scenes/shop-gym.js",
+  "k": "SPRING"
+ },
+ {
+  "i": 8936,
+  "f": "js/scenes/shop-gym.js",
+  "k": "🏋️ Hantlarna"
+ },
+ {
+  "i": 8937,
+  "f": "js/scenes/shop-gym.js",
+  "k": "🥊 Boxsäcken"
+ },
+ {
+  "i": 8938,
+  "f": "js/scenes/shop-gym.js",
+  "k": "💃 Dansgolvet"
+ },
+ {
+  "i": 8939,
+  "f": "js/scenes/shop-gym.js",
+  "k": "🧘 Gruppasset"
+ },
+ {
+  "i": 8940,
+  "f": "js/scenes/shop-gym.js",
+  "k": "Styrka"
+ },
+ {
+  "i": 8941,
+  "f": "js/scenes/shop-gym.js",
+  "k": "Kondition"
+ },
+ {
+  "i": 8942,
+  "f": "js/scenes/shop-gym.js",
+  "k": "Rytm"
+ },
+ {
+  "i": 8943,
+  "f": "js/scenes/shop-gym.js",
+  "k": "SVETT"
+ },
+ {
+  "i": 8944,
+  "f": "js/scenes/shop-gym.js",
+  "k": "= GLITTER"
+ },
+ {
+  "i": 8945,
+  "f": "js/scenes/shop-gym.js",
+  "k": "TRÄNA"
+ },
+ {
+  "i": 8946,
+  "f": "js/scenes/shop-gym.js",
+  "k": "IHOP!"
+ },
+ {
+  "i": 8947,
+  "f": "js/scenes/shop-gym.js",
+  "k": "KÖR"
+ },
+ {
+  "i": 8948,
+  "f": "js/scenes/shop-gym.js",
+  "k": "HÅRT!"
+ },
+ {
+  "i": 8949,
+  "f": "js/scenes/shop-gym.js",
+  "k": "DAGENS PASS"
+ },
+ {
+  "i": 8950,
+  "f": "js/scenes/shop-gym.js",
+  "k": "1. UPPVÄRMNING"
+ },
+ {
+  "i": 8951,
+  "f": "js/scenes/shop-gym.js",
+  "k": "2. STYRKA"
+ },
+ {
+  "i": 8952,
+  "f": "js/scenes/shop-gym.js",
+  "k": "3. STRETCH"
+ },
+ {
+  "i": 8953,
+  "f": "js/scenes/shop-gym.js",
+  "k": "nivå {0}"
+ },
+ {
+  "i": 8954,
+  "f": "js/scenes/shop-gym.js",
+  "k": "högsta nivån!"
+ },
+ {
+  "i": 8955,
+  "f": "js/scenes/shop-gym.js",
+  "k": "{0} / {1} poäng till nästa nivå"
+ },
+ {
+  "i": 8956,
+  "f": "js/scenes/shop-gym.js",
+  "k": "💪 Pixel Gym – receptionen"
+ },
+ {
+  "i": 8957,
+  "f": "js/scenes/shop-gym.js",
+  "k": "Du har dagskort – kör på! Ett pass tar 10 energi."
+ },
+ {
+  "i": 8958,
+  "f": "js/scenes/shop-gym.js",
+  "k": "Ett dagskort kostar {0} och gäller hela dagen. Ett pass tar 10 energi."
+ },
+ {
+  "i": 8959,
+  "f": "js/scenes/shop-gym.js",
+  "k": "På jobbet: fötterna {0} % snabbare · {1} {2} i taget."
+ },
+ {
+  "i": 8960,
+  "f": "js/scenes/shop-gym.js",
+  "k": "bricka"
+ },
+ {
+  "i": 8961,
+  "f": "js/scenes/shop-gym.js",
+  "k": "brickor"
+ },
+ {
+  "i": 8962,
+  "f": "js/scenes/shop-gym.js",
+  "k": "🎫 Köp dagskort · {0}"
+ },
+ {
+  "i": 8963,
+  "f": "js/scenes/shop-gym.js",
+  "k": "Välkommen in! Värm upp lite först så går lyften lättare."
+ },
+ {
+  "i": 8964,
+  "f": "js/scenes/shop-gym.js",
+  "k": "Dagskortet kostar {0} – du har inte råd just nu."
+ },
+ {
+  "i": 8965,
+  "f": "js/scenes/shop-gym.js",
+  "k": "🎫 Dagskort köpt ({0}) – träna så mycket du orkar i dag!"
+ },
+ {
+  "i": 8966,
+  "f": "js/scenes/shop-gym.js",
+  "k": "😪 Du är för trött för att träna – ät något eller sov först."
+ },
+ {
+  "i": 8967,
+  "f": "js/scenes/shop-gym.js",
+  "k": "🏋️ Tryck när markören är i det gröna fältet – tio lyft!"
+ },
+ {
+  "i": 8968,
+  "f": "js/scenes/shop-gym.js",
+  "k": "🥊 Träffa handsken innan den bleknar – kombo ger extra!"
+ },
+ {
+  "i": 8969,
+  "f": "js/scenes/shop-gym.js",
+  "k": "💃 Tryck på pilen när den når linjen – i takt!"
+ },
+ {
+  "i": 8970,
+  "f": "js/scenes/shop-gym.js",
+  "k": "🧘 Gör samma rörelse som Mia – snabbt!"
+ },
+ {
+  "i": 8971,
+  "f": "js/scenes/shop-gym.js",
+  "k": "SISTA!"
+ },
+ {
+  "i": 8972,
+  "f": "js/scenes/shop-gym.js",
+  "k": "{0}!"
+ },
+ {
+  "i": 8973,
+  "f": "js/scenes/shop-gym.js",
+  "k": "FÖR TIDIGT!"
+ },
+ {
+  "i": 8974,
+  "f": "js/scenes/shop-gym.js",
+  "k": "KOMBO ×{0}!"
+ },
+ {
+  "i": 8975,
+  "f": "js/scenes/shop-gym.js",
+  "k": "POW!"
+ },
+ {
+  "i": 8976,
+  "f": "js/scenes/shop-gym.js",
+  "k": "OOPS"
+ },
+ {
+  "i": 8977,
+  "f": "js/scenes/shop-gym.js",
+  "k": "PERFEKT ×{0}"
+ },
+ {
+  "i": 8978,
+  "f": "js/scenes/shop-gym.js",
+  "k": "BRA"
+ },
+ {
+  "i": 8979,
+  "f": "js/scenes/shop-gym.js",
+  "k": "{0} I RAD!"
+ },
+ {
+  "i": 8980,
+  "f": "js/scenes/shop-gym.js",
+  "k": "RÄTT!"
+ },
+ {
+  "i": 8981,
+  "f": "js/scenes/shop-gym.js",
+  "k": "FEL RÖRELSE"
+ },
+ {
+  "i": 8982,
+  "f": "js/scenes/shop-gym.js",
+  "k": "Du tränade på Pixel Gym"
+ },
+ {
+  "i": 8983,
+  "f": "js/scenes/shop-gym.js",
+  "k": "{0} av {1} lyft i takt"
+ },
+ {
+  "i": 8984,
+  "f": "js/scenes/shop-gym.js",
+  "k": "{0} träffar · bästa kombo {1}"
+ },
+ {
+  "i": 8985,
+  "f": "js/scenes/shop-gym.js",
+  "k": "{0} av {1} poäng · bästa kombo {2}"
+ },
+ {
+  "i": 8986,
+  "f": "js/scenes/shop-gym.js",
+  "k": "{0} av {1} rörelser rätt"
+ },
+ {
+  "i": 8987,
+  "f": "js/scenes/shop-gym.js",
+  "k": "(tredje passet i dag – en fjärdedel)"
+ },
+ {
+  "i": 8988,
+  "f": "js/scenes/shop-gym.js",
+  "k": "⬆️ {0} nivå {1}!"
+ },
+ {
+  "i": 8989,
+  "f": "js/scenes/shop-gym.js",
+  "k": "Fötterna är nu {0} % snabbare på jobbet."
+ },
+ {
+  "i": 8990,
+  "f": "js/scenes/shop-gym.js",
+  "k": "Du bär nu {0} brickor i taget på jobbet!"
+ },
+ {
+  "i": 8991,
+  "f": "js/scenes/shop-gym.js",
+  "k": "Snart orkar du bära två brickor i taget."
+ },
+ {
+  "i": 8992,
+  "f": "js/scenes/shop-gym.js",
+  "k": "Dansgolvet är ditt!"
+ },
+ {
+  "i": 8993,
+  "f": "js/scenes/shop-gym.js",
+  "k": "SUVERÄNT!"
+ },
+ {
+  "i": 8994,
+  "f": "js/scenes/shop-gym.js",
+  "k": "BRA JOBBAT!"
+ },
+ {
+  "i": 8995,
+  "f": "js/scenes/shop-gym.js",
+  "k": "BRA FÖRSÖK!"
+ },
+ {
+  "i": 8996,
+  "f": "js/scenes/shop-gym.js",
+  "k": "Träna igen"
+ },
+ {
+  "i": 8997,
+  "f": "js/scenes/shop-gym.js",
+  "k": "Klart"
+ },
+ {
+  "i": 8998,
+  "f": "js/scenes/shop-gym.js",
+  "k": "Passet avbrutet."
+ },
+ {
+  "i": 8999,
+  "f": "js/scenes/shop-gym.js",
+  "k": "RECEPTIONEN – DAGSKORT OCH DIN FORM"
+ },
+ {
+  "i": 9000,
+  "f": "js/scenes/shop-gym.js",
+  "k": "SKÅPEN"
+ },
+ {
+  "i": 9001,
+  "f": "js/scenes/shop-gym.js",
+  "k": "🔒 Dina grejer ligger i skåp 4. Nyckeln sitter i."
+ },
+ {
+  "i": 9002,
+  "f": "js/scenes/shop-gym.js",
+  "k": "VATTENAUTOMATEN"
+ },
+ {
+  "i": 9003,
+  "f": "js/scenes/shop-gym.js",
+  "k": "💧 Ett glas kallt vatten. Ahh!"
+ },
+ {
+  "i": 9004,
+  "f": "js/scenes/shop-gym.js",
+  "k": "LÖPBANDEN – LO SPRINGER"
+ },
+ {
+  "i": 9005,
+  "f": "js/scenes/shop-gym.js",
+  "k": "Kom igen … bara … tre … kilometer till!"
+ },
+ {
+  "i": 9006,
+  "f": "js/scenes/shop-gym.js",
+  "k": "HANTLARNA – LYFT I TAKT (STYRKA)"
+ },
+ {
+  "i": 9007,
+  "f": "js/scenes/shop-gym.js",
+  "k": "BOXSÄCKEN – SLÅ (STYRKA)"
+ },
+ {
+  "i": 9008,
+  "f": "js/scenes/shop-gym.js",
+  "k": "DANSGOLVET – DANSA I TAKT (RYTM)"
+ },
+ {
+  "i": 9009,
+  "f": "js/scenes/shop-gym.js",
+  "k": "GRUPPASSET MED MIA (KONDITION)"
+ },
+ {
+  "i": 9010,
+  "f": "js/scenes/shop-gym.js",
+  "k": "LYFT {0}/{1}"
+ },
+ {
+  "i": 9011,
+  "f": "js/scenes/shop-gym.js",
+  "k": "TID {0}  TRÄFFAR {1}  KOMBO {2}"
+ },
+ {
+  "i": 9012,
+  "f": "js/scenes/shop-gym.js",
+  "k": "POÄNG {0}  KOMBO {1}"
+ },
+ {
+  "i": 9013,
+  "f": "js/scenes/shop-gym.js",
+  "k": "RÖRELSE {0}/{1}  RÄTT {2}"
+ },
+ {
+  "i": 9014,
+  "f": "js/scenes/shop-gym.js",
+  "k": "LYFT!"
+ },
+ {
+  "i": 9015,
+  "f": "js/scenes/shop-gym.js",
+  "k": "TRYCK PÅ HANDSKEN"
+ },
+ {
+  "i": 9016,
+  "f": "js/scenes/shop-gym.js",
+  "k": "SLUTA"
+ },
+ {
+  "i": 9017,
+  "f": "js/scenes/shop-gym.js",
+  "k": "FÖR SENT"
+ },
+ {
+  "i": 9018,
+  "f": "js/scenes/shop-gym.js",
+  "k": "FÖR LÅNGSAMT"
+ }
+]

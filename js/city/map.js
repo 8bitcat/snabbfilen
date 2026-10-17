@@ -285,7 +285,9 @@ export const BUILDINGS_X = [
   XS('bilverkstad', 1768, 160, 88, { x0: 1792, x1: 1840, type: 'roll' }, { sign: $t('BILVERKSTAN'), icon: '🔧', enter: 'jobb:bilverkstad', open: [7, 18] }),
   XS('tvatteri', 1956, 100, 100, { x0: 1992, x1: 2016, type: 'swing' }, { sign: $t('TVÄTTERI'), icon: '🧺', enter: 'jobb:tvatteri', open: [8, 20] }),
   XS('garage', 2084, 152, 52, { x0: 2140, x1: 2176, type: 'roll' }, { sign: $t('GARAGEN'), icon: '🛵', open: [9, 19], enter: 'fordon', soon: $t('Garaget: cyklar, elsparkcyklar och mopeder – Kenta skruvar på en moppe där inne.') }), // js/scenes/shop-fordon.js
-  XS('lagerhall', 2408, 192, 92, { x0: 2488, x1: 2536, type: 'roll' }, { sign: $t('LAGER 3'), icon: '🏭', soon: $t('Övergiven lagerhall. Någon har sprejat "PIXEL 4 EVER" på porten.') }),
+  // 💪 PIXEL GYM (v0.138): den övergivna lagerhallen LAGER 3 har blivit gym – träna för att bli snabbare och starkare på
+  // jobbet (granne med tvätteriet). Samma tomt som hallen hade, så ingenting annat flyttar.
+  XS('gym', 2408, 192, 112, { x0: 2490, x1: 2518, type: 'swing' }, { sign: $t('PIXEL GYM'), icon: '💪', open: [6, 23], enter: 'gym', soon: $t('Gymmet öppnar snart – värm upp så länge!') }),
 ];
 
 // ---------------------------------------------------------------------
@@ -773,7 +775,7 @@ export const isNightHour = (h) => h >= 19.5 || h < 6.5;
 // Alla enter-värden som scenen (city.js enter()) känner. Scennamnen i andra raden leder in i en egen
 // scen (city.js SCENE_DOORS → main.js): butikerna i downtown, Pixelhögskolan, bion, kebaben, pantbanken och garaget.
 export const ENTER_RE = new RegExp('^(hem|bostad|mat|klader|mobler|kafe|djur|burgare|frukt|flyg|glass|narbutik|leksaker'
-  + '|bank|elektronik|frisor|skor|accessoarer|universitet|bio|kebab|pantbank|fordon|maskerad|fiskkrog|bling'
+  + '|bank|elektronik|frisor|skor|accessoarer|universitet|bio|kebab|pantbank|fordon|maskerad|fiskkrog|bling|gym'
   + '|jobb:[a-z]+|bostad:[a-z]+)$');
 
 // Kontroll av kontraktet: returnerar en lista med problem (tom = allt stämmer).

@@ -664,6 +664,8 @@ function rollLeaf(S, w, h, col, o = {}) {
   if (o.note) note(S, 3, h - 16, o.note, { seed: 5 });
 }
 const DOOR_ART = {
+  // 💪 PIXEL GYM (v0.138): glasdörr med turkos ram, därinne skåp, en viktskiva och LED-listen vid golvet
+  gym: { h: 30, interior: (I, w, h) => { interiorBase(I, w, h, { wall0: 0x2a3a44, wall1: 0x16222a, floor: 0x3a4650, lampCol: 0xa0f0ff }); I.rect(3, 9, 4, 11, 0x8a929c); I.vl(5, 9, 11, 0x5a626c); I.rect(w - 9, 12, 6, 8, 0x2a2a30); I.hl(w - 10, 11, 8, 0xe04848); I.px(w - 6, 15, 0x6a6a74); I.hl(2, h - 11, w - 4, 0x18c8e0); }, leaf: (S, w, h, n) => glassLeaf(S, w, h, { night: n, frame: 0x18c8e0, note: $t('ÖPPET\n6–23').split('\n') }) },
   hoghus: { h: 30, interior: (I, w, h) => { interiorBase(I, w, h, { wall0: 0xd8d4c8, wall1: 0xa8a49a, floor: 0x8a8a84 }); for (let r = 0; r < 3; r++) for (let c = 0; c < 3; c++) { I.rect(2 + c * 4, 6 + r * 4, 3, 3, 0x9a9ea8); I.hl(2 + c * 4, 6 + r * 4, 3, 0xc8ccd4); } I.rect(w - 8, 8, 6, 12, 0x3a5a3a); I.hl(w - 8, 8, 6, 0x5a7a5a); }, leaf: (S, w, h, n) => glassLeaf(S, w, h, { night: n, label: $t('PORT 1'), stickers: 3, crackGlass: true }), edge: 0x8a929c, hinge: 'l' },
   hoghus2: { h: 30, interior: (I, w, h) => { interiorBase(I, w, h, { wall0: 0xc8c4b8, wall1: 0x8a8678, floor: 0x7a7a74, lampCol: 0xd8e0ff }); for (let r = 0; r < 3; r++) for (let c = 0; c < 4; c++) { I.rect(2 + c * 4, 5 + r * 4, 3, 3, 0x8a8e98); I.hl(2 + c * 4, 5 + r * 4, 3, 0xb8bcc4); } I.rect(w - 6, 10, 3, 4, 0xd8303a); }, leaf: (S, w, h, n) => glassLeaf(S, w, h, { night: n, label: $t('PORT 5'), stickers: 5 }), edge: 0x8a929c, hinge: 'r' },
   lamell: { h: 30, interior: (I, w, h) => { interiorBase(I, w, h, { wall0: 0xe8e0c8, wall1: 0xb8b09a, floor: 0x9a8a6a }); for (let s = 0; s < 5; s++) { I.rect(w - 4 - s * 3, h - 10 - s * 3, 8, 3, 0xb8a888); I.hl(w - 4 - s * 3, h - 10 - s * 3, 8, 0xd8c8a8); } I.rect(2, 8, 6, 8, 0x8a9aa8); I.px(4, 10, 0xf0f0f0); }, leaf: (S, w, h, n) => glassLeaf(S, w, h, { night: n, label: $t('PORT B'), stickers: 2 }), edge: 0x8a929c, hinge: 'l' },
@@ -2748,12 +2750,94 @@ function paintHusvagn(b, night, opts) {
   return finish(C);
 }
 
+// ======================= 💪 PIXEL GYM (v0.138) =======================
+// Carl 2026-10-17: "skapa ett gym … gör det till ett riktigt coolt gym". Mörk betongfasad med turkos list, ett långt
+// fönsterband på övervåningen (persienner, ljus på kvällen), neonskylten PIXEL GYM med en rosa neonarm som spänner
+// musklerna, STYRKA · KONDITION · DANS under, två skyltfönster – löpbandet med en som springer (live) och hantelstället
+// med viktskivorna – turkos markis över glasdörren, fläktaggregat på taket.
+const GYM = { wall: 0x3a4048, trim: 0x18c8e0, trimDk: 0x0a7a8c, frame: 0x14181c, neon: 0x2ae8ff, rosa: 0xff4ab0 };
+function paintGym(b, night, opts) {
+  const C = begin(b, night, opts), { P, L, R, BY, FT, s } = C, W = b.w, N = C.night;
+  // ---- taket: grustak med fläktaggregat, ventilationsrör och duvor ----
+  const ry = FT - 14;
+  gravelRoof(P, L, ry, W, 14, s, { night: N, puddles: 1, col: 0x4a4e56 });
+  P.hl(L, ry, W, 0x6a6e76); P.hl(L, ry + 1, W, 0x3a3e46);
+  if (C.snow) snowRoof(P, L + 1, ry + 2, W - 2, 10, s);
+  hvac(P, R - 42, ry - 12, 28, 6, 8, { fan: true });
+  ventPipe(P, L + 10, ry - 8, 8);
+  birdsOn(C, L + 6, R - 50, ry, 2);
+  // ---- fasaden: mörk betong, turkos list upptill, mörkare sockel ----
+  plaster(P, L, FT, W, BY - FT, GYM.wall, s + 7, { patches: 2 });
+  rows(P, L, FT, W, [mix(GYM.trim, WHITE, 0.4), GYM.trim, GYM.trimDk, mul(GYM.wall, 0.6)]);
+  for (let y = FT; y < BY; y++) { P.px(L, y, mix(P.get(L, y), WHITE, 0.12)); P.px(R - 1, y, mul(P.get(R - 1, y), 0.7)); }
+  plinth(P, L, BY - 4, W, 4, 0x1e2226, s + 12);
+  // ---- övervåningen: ett långt fönsterband med persienner – ljuset lyser på kvällen ----
+  const uy = FT + 10, uh = 18, ux0 = L + 8, ux1 = R - 8;
+  area(P, ux0, uy, ux1 - ux0, uh, (X, Y, i, j) => (N ? qmix(0x1e4450, 0x0c1c22, j / uh, X, Y, 3) : qmix(0x9ad0e0, 0x3e6e86, j / uh, X, Y, 3)));
+  for (let j = 1; j < 7; j += 2) P.hl(ux0, uy + j, ux1 - ux0, GYM.trimDk, 0.4);   // persiennerna
+  for (let x = ux0 + 24; x < ux1; x += 24) P.vl(x, uy, uh, GYM.frame);
+  P.box(ux0 - 1, uy - 1, ux1 - ux0 + 2, uh + 2, GYM.frame);
+  C.reg.ledges.push([ux0 - 2, uy + uh + 1, ux1 - ux0 + 4]);
+  if (N) C.reg.glows.push([ux0, uy, ux1 - ux0, uh, 0x80e0ff, 0.14]);
+  // ---- skylten: neon PIXEL GYM på en svart bräda, den rosa neonarmen, STYRKA · KONDITION · DANS under ----
+  const sy0 = BY - 62, sy1 = BY - 44;
+  P.rect(L + 4, sy0, W - 8, sy1 - sy0, 0x0e1216); P.box(L + 4, sy0, W - 8, sy1 - sy0, GYM.trim); P.box(L + 5, sy0 + 1, W - 10, sy1 - sy0 - 2, GYM.trimDk);
+  const NB = bits(BIG, $t('PIXEL GYM'));
+  neon(C, $t('PIXEL GYM'), L + ((W - NB.w) >> 1) - 7, sy0 + 5 + NB.up, GYM.neon, { flick: 3 });
+  const ax = R - 15, ay = sy0 + 10;
+  for (const [dx, dy] of [[-6, 6], [-5, 5], [-4, 4], [-3, 3], [-2, 2], [-1, 1], [0, 0], [1, -1], [2, -2], [3, -3], [3, -4], [2, -5], [1, -6], [0, -6], [-1, -5]]) P.px(ax + dx, ay + dy, GYM.rosa);
+  for (const [dx, dy] of [[0, -3], [1, -4], [2, -3], [1, -2]]) P.px(ax + dx, ay + dy, mix(GYM.rosa, WHITE, 0.55));   // bicepsen
+  if (N) C.reg.glows.push([ax - 8, ay - 8, 14, 16, GYM.rosa, 0.35]);
+  const sub = $t('STYRKA + KONDITION + DANS'), sw = textW(SMALL, sub);
+  text(P, SMALL, sub, L + ((W - sw) >> 1), sy1 + 2, 0x9af0ff);
+  // ---- skyltfönstren: vänster löpbandet (löparen rör sig live), höger hantelstället med viktskivorna ----
+  const { dx0, dx1 } = C, wy = BY - 33, wh = 27;
+  const W1 = { x: L + 4, w: dx0 - 4 - (L + 4) }, W2 = { x: dx1 + 4, w: R - 4 - (dx1 + 4) };
+  for (const w of [W1, W2]) {
+    P.rect(w.x - 2, wy - 2, w.w + 4, wh + 4, GYM.frame); P.box(w.x - 1, wy - 1, w.w + 2, wh + 2, GYM.trimDk);
+    area(P, w.x, wy, w.w, wh, (X, Y, i, j) => (N ? qmix(0x1e3038, 0x0e181c, j / wh, X, Y, 3) : qmix(0xd8ecf2, 0x8ab0bc, j / wh, X, Y, 3)));
+    P.rect(w.x, wy + wh - 4, w.w, 4, 0x2a3036); P.hl(w.x, wy + wh - 4, w.w, 0x4a5058);
+    for (let k = 0; k < 6; k++) P.px(w.x + 2 + k, wy + 2 + k, 0xffffff, 0.18);
+    C.reg.ledges.push([w.x - 2, wy + wh + 2, w.w + 4]);
+    if (N) C.reg.glows.push([w.x, wy, w.w, wh - 4, 0xa0f0ff, 0.18]);
+  }
+  { // hantelstället: tre hyllor med hantlar, viktskivor lutade mot väggen
+    const x = W2.x + 3, y = wy + wh - 5, n = Math.max(1, Math.floor((W2.w - 8) / 7));
+    for (let r = 0; r < 3; r++) { P.hl(x, y - 4 - r * 6, W2.w - 6, 0x6a7078); for (let k = 0; k < n; k++) { const hx = x + 1 + k * 7; P.rect(hx, y - 7 - r * 6, 2, 3, 0x2a2a30); P.rect(hx + 4, y - 7 - r * 6, 2, 3, 0x2a2a30); P.hl(hx + 2, y - 6 - r * 6, 2, 0x8a929c); } }
+    for (let k = 0; k < 3; k++) { const px = W2.x + W2.w - 5 - k * 3; for (let j = -6; j <= 0; j++) P.px(px - (j < -3 ? 1 : 0), y + j, k === 1 ? 0xe04848 : 0x2a2a30); P.px(px, y - 3, 0x8a929c); }
+  }
+  // ---- dörren (ritas av live), tröskeln och markisen ----
+  const dT = BY - DOOR_ART[b.kind].h;
+  P.rect(dx0 - 2, dT - 2, dx1 - dx0 + 4, BY - dT + 2, GYM.frame); P.rect(dx0 - 1, dT - 1, dx1 - dx0 + 2, BY - dT + 1, OUT);
+  P.rect(dx0 - 3, BY, dx1 - dx0 + 6, 2, 0x2a3036); P.hl(dx0 - 3, BY, dx1 - dx0 + 6, 0x4a5058);
+  for (let x = dx0 - 3; x < dx1 + 3; x++) for (let y = 0; y < 5; y++) P.px(x, BY - 37 + y, y === 4 ? ((x & 1) ? GYM.trim : GYM.trimDk) : ((x >> 2) & 1 ? GYM.trim : 0xf4f1ea));
+  P.hl(dx0 - 3, BY - 37, dx1 - dx0 + 6, 0x8ae0f0);
+  drainpipe(C, L + 2, FT + 3, BY, { col: 0x2a3036 });
+  footShadow(P, L, W, BY);
+  weeds(P, L + 5, BY - 1, 2, s + 19); weeds(P, R - 6, BY - 1, 2, s + 21);
+  // ---- det som rör sig: löparen på löpbandet i vänstra fönstret ----
+  C.reg.extra.push((ctx, t) => {
+    ctx.save(); ctx.beginPath(); ctx.rect(W1.x, wy, W1.w, wh - 4); ctx.clip();
+    const bx = W1.x + (W1.w >> 1) - 10, by = wy + wh - 5;
+    ctx.fillStyle = '#2a2a30'; ctx.fillRect(bx - 4, by - 2, 26, 2); ctx.fillStyle = '#4a5058'; ctx.fillRect(bx - 4, by - 3, 26, 1);
+    ctx.fillStyle = '#5a626c'; for (let k = 0; k < 6; k++) ctx.fillRect(bx - 3 + ((k * 4 + Math.floor(t * 16)) % 24), by - 3, 1, 1);   // bandet rullar
+    ctx.fillStyle = '#4a5058'; ctx.fillRect(bx + 19, by - 15, 2, 13); ctx.fillStyle = '#18c8e0'; ctx.fillRect(bx + 16, by - 17, 7, 3); ctx.fillStyle = '#9af0ff'; ctx.fillRect(bx + 17, by - 16, 2, 1);   // konsolen
+    const f = Math.floor(t * 9) % 4, leg = [0, 2, 0, -2][f];
+    ctx.fillStyle = '#2d3a5c'; ctx.fillRect(bx + 5, by - 8, 2, 5 + Math.max(0, leg)); ctx.fillRect(bx + 9, by - 8, 2, 5 + Math.max(0, -leg));   // benen
+    ctx.fillStyle = '#ff4ab0'; ctx.fillRect(bx + 5, by - 14, 6, 6);                                                               // linnet
+    ctx.fillStyle = '#e0a97f'; ctx.fillRect(bx + 6, by - 19, 4, 5); ctx.fillRect(bx + 3, by - 13 + (f % 2), 2, 2); ctx.fillRect(bx + 11, by - 13 + ((f + 1) % 2), 2, 2);   // huvud, armar
+    ctx.fillStyle = '#6b4226'; ctx.fillRect(bx + 6, by - 20, 4, 2); ctx.fillRect(bx + 9, by - 18, 2, 3);                           // håret
+    ctx.restore();
+  });
+  return finish(C);
+}
+
 // ======================= exporten =======================
 const art = (paint) => ({ paint, live: liveX, glow: glowX });
 export const BUILDING_ART = {
   hoghus: art(paintHoghus), hoghus2: art(paintHoghus2),
   narbutik: { ...art(paintNarbutik), items: nbItems }, pantbank: art(paintPantbank), kebab: art(paintKebab),
   maskerad: { ...art(paintMaskerad), items: maskItems, obstacles: maskObstacles }, bilverkstad: art(paintBilverkstad), tvatteri: art(paintTvatteri),
-  garage: art(paintGarage), lagerhall: art(paintLagerhall),
+  garage: art(paintGarage), lagerhall: art(paintLagerhall), gym: art(paintGym),
   lamell: art(paintLamell), husvagn: art(paintHusvagn),
 };

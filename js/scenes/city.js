@@ -203,6 +203,7 @@ const busStopHit = (x, y) => BUS_STOPS.find((s) => x >= s.x - 30 && x < s.x + 30
 // main.js laddar de här scenerna tåligt (A.hasScene) – saknas en visar dörren husets soon-text
 // i stället för att krascha. Nytt ställe: lägg namnet här, i map.js ENTER_RE och i main.js DOOR_SCENES.
 const SCENE_DOORS = {
+  gym: 'gym',                                                                                        // 💪 PIXEL GYM i förorten (v0.138)
   bank: 'bank', elektronik: 'elektronik', frisor: 'frisor', skor: 'skor', accessoarer: 'accessoarer', // downtown
   universitet: 'universitet',                                                                        // Pixelhögskolan (PIXEL TOWER)
   bio: 'bio', kebab: 'kebab', pantbank: 'pantbank',                                                  // Söder och förorten

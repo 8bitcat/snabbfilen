@@ -1,0 +1,27 @@
+[
+ {
+  "i": 9019,
+  "f": "js/jobs/jobb-burgare.js",
+  "k": "{0} BRICKOR!"
+ },
+ {
+  "i": 9020,
+  "f": "js/scenes/shop-gym.js",
+  "k": "HANTLARNA"
+ },
+ {
+  "i": 9021,
+  "f": "js/scenes/shop-gym.js",
+  "k": "BOXSÄCKEN"
+ },
+ {
+  "i": 9022,
+  "f": "js/scenes/shop-gym.js",
+  "k": "DANSGOLVET"
+ },
+ {
+  "i": 9023,
+  "f": "js/scenes/shop-gym.js",
+  "k": "GRUPPASSET"
+ }
+]

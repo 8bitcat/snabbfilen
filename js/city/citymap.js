@@ -61,7 +61,7 @@ const ROOFS = {
   'FÖRORTEN': [0x8c8a86, 0x75736e, 0x9a8f7e, 0x6a6660, 0x7a7a70],
   'LINNÉSTADEN': [0xb4553c, 0xa44a34, 0x6a4a40, 0x3e4250, 0x4a5a56, 0x9a4a34],
 };
-const SPECIAL_ROOF = { flyg: 0xc8ccd2, kyrka: 0x4a4e5a, mat: 0xd6d2c8, mobler: 0x3f6fb0, lagerhall: 0x7a7d80, garage: 0x6a6f74 };
+const SPECIAL_ROOF = { flyg: 0xc8ccd2, kyrka: 0x4a4e5a, mat: 0xd6d2c8, mobler: 0x3f6fb0, lagerhall: 0x7a7d80, gym: 0x18c8e0, garage: 0x6a6f74 };
 const lighten = (c, f) => { const r = (c >> 16) & 255, g = (c >> 8) & 255, b = c & 255; const m = (v) => Math.max(0, Math.min(255, Math.round(f > 0 ? v + (255 - v) * f : v * (1 + f)))); return (m(r) << 16) | (m(g) << 8) | m(b); };
 
 const inR = (x, y, r) => x >= r[0] && x < r[2] && y >= r[1] && y < r[3];
