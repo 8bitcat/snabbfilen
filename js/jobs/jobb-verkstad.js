@@ -72,7 +72,7 @@ const LIFT_H = 12;             // hur högt lyften går
 const POST_H = 38;             // lyftpelarnas höjd
 const RAMP = 4;                // hur högt bilen står på banan (nedsänkt)
 const REPAIR_T = 1.6;          // sekunder man håller inne för att laga
-const PATIENCE = 32;           // kundens tålamod (s) när bilen står uppe
+const PATIENCE = 40;           // kundens tålamod (s) när bilen står uppe (v0.138.1: 32 → 40 – "gör samma med bilmekanikerna" som tvätteriets 48 → 60)
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
 // Poängpuffar med samma utseende som makePops i shift.js (mörk ruta, liten
@@ -830,7 +830,7 @@ const RADIO = { x: 334, y: 40 };
 // luften: mätaren går 0 → 1 (3,2 bar); grönt mellan GREEN_LO och GREEN_HI, vid 1 smäller det
 const GREEN_LO = 0.66, GREEN_HI = 0.84, AIR_RATE = 0.42, PULSE_T = 0.28;
 const SPIN_T = 0.42;                      // en skruv snurrar ut/in på så här många sekunder
-const PATIENCE_TIRE = 46;                 // däckbyten tar längre tid – kunden vet det
+const PATIENCE_TIRE = 58;                 // däckbyten tar längre tid – kunden vet det (v0.138.1: 46 → 58)
 const STEPS = [$n('HISSA'), $n('SKRUVDRAGARE'), $n('SKRUVAR'), $n('DÄCK AV'), $n('NYTT DÄCK'), $n('SKRUVA FAST'), $n('LUFT'), $n('SÄNK')];
 const STEPS_PART = [$n('HISSA'), $n('HÄMTA DEL'), $n('LAGA'), $n('SÄNK')];
 const TIPS_KEY = 'snabbfilen_verkstad_tips';

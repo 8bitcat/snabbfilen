@@ -10,6 +10,9 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.138.1] – 2026-10-20 – Bilverkstan: mer tålamod
+- 🔧 Bilverkstan: kunderna har mer tålamod när bilen står på lyften – 40 sekunder i stället för 32 (däckbyten 58 i stället för 46), precis som tvätteriet fick i 0.138.
+
 ## [0.138.0] – 2026-10-17 – PIXEL GYM – träna för jobbet
 - 💪 PIXEL GYM: den övergivna lagerhallen LAGER 3 i förorten (granne med tvätteriet) har blivit ett riktigt gym – neonskylt, löpband, hantelställ, boxsäck, dansgolv med spegelvägg och discokula, och gruppass på mattorna. Coachen Benke säljer dagskort (30 kr) i receptionen, ett pass tar 10 energi.
 - 🏋️ Fyra minispel: HANTLARNA (lyft i takt när markören är i det gröna fältet), BOXSÄCKEN (träffa handsken innan den bleknar – kombo ger extra), DANSGOLVET (tryck på pilarna när de når linjen) och GRUPPASSET (gör samma rörelse som Mia, fortare och fortare). Poängen blir STYRKA, KONDITION och RYTM med fem nivåer – de två första passen per gren och dag räknas fullt.
