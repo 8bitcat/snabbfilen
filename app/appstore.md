@@ -142,7 +142,11 @@ Test Accounts; på telefonen Inställningar → App Store → Sandbox-konto). Sa
 | Takvåningen utan hyra | `io.eightbitcat.pixelcity.bostad.takvaning` | Non-Consumable | 99 kr |
 
 Produkt-ID:n måste stämma exakt – spelet frågar Apple efter just dessa. **Availability:** alla länder.
-**Review Screenshot** (samma bild till alla fem): `app/store/iap/butik-sv.png` (engelska: `butik-en.png`).
+**Review Screenshot** (samma bild till alla fem): `app/store/iap/butik-sv-2208x1242.jpg` – Apple kräver ett riktigt
+skärmformat (5,5 tum liggande 2208×1242 fungerar; 2400×1520 gav IMAGE_INCORRECT_DIMENSIONS) och JPEG utan alfakanal.
+**Allt ovan är UPPLAGT via App Store Connect API 2026-11-18** (skriptet asc-iap.mjs med nyckeln Codemagic, App Manager):
+produkter, åtta språk, pris med Sverige som basland, 175 länder, granskningsbild och Review Notes. Pengapåse 1 000 kr
+har Carls eget pris 9 kr (inte 12). Kvar för hand: koppla produkterna till versionen 1.3 och Add for Review.
 **Review Notes** (samma till alla fem):
 ```
 Open the phone button (bottom right) → "Butik" (Shop). The shop lists the five products with StoreKit prices. Money bags are consumables (added to the in-game wallet); rent-free homes are non-consumables (no deposit, no weekly rent in the game) with a "Restore Purchases" button in the same dialog. Purchased money does not count towards the in-game "Wealth" life goal. The shop only exists in the iOS app, never on the web version.
