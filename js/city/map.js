@@ -46,8 +46,10 @@ import { $t, $n } from '../core/i18n.js';
 
 export const CITY = {
   X0: -1200,                   // (v4) världens västra kant: Linnéstaden ligger i x −1200–0, väster om centrum
-  W: 4000, H: 960,            // (v4: 820 → 960 – vattnet nedanför kajen är djupare: piren och Sjöboden i Linnéstaden)
-              // OBS: net/world.js klämmer spelarnas x till X0–4000 – bredare kräver ny klämning där
+  W: 5280, H: 960,            // (v4: 820 → 960 – vattnet nedanför kajen är djupare: piren och Sjöboden i Linnéstaden)
+              // (v5) 4000 → 5280: VILLAOMRÅDET ligger i x 4000–5280, öster om förorten, på vägen ut mot landet
+              // OBS: net/world.js klämmer spelarnas x till X0–W – bredare kräver ny klämning där
+  X_VILLA: 4000,               // (v5) villaområdet börjar här (förorten slutar)
   VIEW_W: 384, VIEW_H: 216,
   // --- norra halvan (v1, oförändrad; PARK växte söderut från [306, 420]) ---
   BACK: [8, 36],
@@ -195,7 +197,7 @@ const mk = (row, district, id, x, w, h, door, extra) => ({
 const B = (id, x, w, h, door, extra) => mk('n', 'CENTRUM', id, x, w, h, door, extra);
 // Den norra raden i centrum (v1 – samma koordinater, samma enter).
 export const BUILDINGS = [
-  B('hem', 16, 120, 132, { x0: 64, x1: 88, type: 'swing' }, { sign: $t('PIXELGATAN 1'), icon: '🏠', enter: 'hem', homes: ['lagenhet', 'villa'] }),
+  B('hem', 16, 120, 132, { x0: 64, x1: 88, type: 'swing' }, { sign: $t('PIXELGATAN 1'), icon: '🏠', enter: 'hem', homes: ['lagenhet'] }),   // (v5: Villan flyttade till villaområdet)
   B('bostad', 164, 96, 100, { x0: 200, x1: 224, type: 'swing' }, { sign: $t('BOSTADSBYRÅN'), icon: '🔑', enter: 'bostad', open: [7, 20] }),
   B('mat', 312, 196, 104, { x0: 388, x1: 432, type: 'slide' }, { sign: $t('STORMARKNAD'), icon: '🛒', enter: 'mat', open: [7, 23] }),
   B('klader', 536, 124, 112, { x0: 586, x1: 610, type: 'swing' }, { sign: $t('KLÄDER'), icon: '👕', enter: 'klader', open: [7, 21] }),
@@ -337,7 +339,28 @@ export const BUILDINGS_L = [
   LS('ls_hus5', -292, 116, 120, sw(-234), { sign: $t('KAJGATAN 24'), icon: '🏡', soon: $t('Ett rött trähus med en katt i fönstret. Här bor andra.') }),
   LS('ls_hus6', -160, 120, 112, sw(-100), { sign: $t('KAJGATAN 30'), icon: '🏡', soon: $t('Ett hus med en liten trädgård bakom. Här bor andra.') }),
 ];
-export const ALL_BUILDINGS = [...BUILDINGS, ...BUILDINGS_S, ...BUILDINGS_D, ...BUILDINGS_X, ...FREESTANDING, ...BUILDINGS_L];
+// VILLAOMRÅDET (v5, Carl 2026-11-18: "villa området? gräsmattor, picket fence osv"): x 4000–5280, öster om förorten.
+// Varje villa är ett fristående hus (F) inne på en inhägnad tomt (LOTS nedan, vita spjälstaket med grind mot
+// trottoaren) – man går runt huset på gräsmattan. Norra raden längs Pixelgatan, södra längs Södergatan,
+// mitt emellan Villaparken (lekplatsen, rosariet, äppelträden). Spelarens VILLAN ligger på den största tomten
+// i norra raden (v_villan: enter bostad:villa). Husen ritas av js/city/buildings-villa.js.
+const VD = 'VILLAOMRÅDET';
+const V = (id, lot, x, w, base, d, h, dc, extra) => F(VD, id, x, w, base, d, h, { x0: dc - 12, x1: dc + 12, type: 'swing' }, { lot, icon: '🏡', ...extra });
+export const BUILDINGS_V = [
+  // norra raden (tomterna 40–186, husen står på base 160 med gräsmatta bakom – vyn från norra trottoaren börjar vid y ≈ 92)
+  V('v_hus1', 'v_tomt1', 4096, 120, 160, 36, 66, 4160, { sign: $t('SYRENVÄGEN 2'), soon: $t('Familjen Berg bor här. Det doftar nybakat genom köksfönstret.') }),
+  V('v_hus2', 'v_tomt2', 4300, 112, 160, 34, 66, 4356, { sign: $t('SYRENVÄGEN 4'), soon: $t('Ett blått hus med vita knutar. Katten Misse sover på verandan.') }),
+  V('v_villan', 'villatomten', 4516, 136, 160, 38, 66, 4584, { sign: $t('VILLAN'), icon: '🏡', enter: 'bostad:villa', homes: ['villa'] }),
+  V('v_hus3', 'v_tomt3', 4740, 116, 160, 34, 66, 4798, { sign: $t('SYRENVÄGEN 8'), soon: $t('Här bor Nova med sin hund Doris. Hon skäller på brevbäraren varje dag.') }),
+  V('v_hus4', 'v_tomt4', 4936, 124, 160, 36, 66, 4998, { sign: $t('SYRENVÄGEN 10'), soon: $t('Ett gult hus med studsmatta i trädgården. Här bor andra.') }),
+  // södra raden (tomterna 494–640, husen står på base 604)
+  V('v_hus5', 'v_tomt5', 4092, 124, 604, 36, 66, 4154, { sign: $t('ÄPPELVÄGEN 1'), soon: $t('Ett rött hus med äppelträd. Här bor andra.') }),
+  V('v_hus6', 'v_tomt6', 4296, 116, 604, 34, 66, 4354, { sign: $t('ÄPPELVÄGEN 3'), soon: $t('Här bor Pelle och Gunnel. De vinkar från altanen.') }),
+  V('v_hus7', 'v_tomt7', 4520, 130, 604, 38, 66, 4586, { sign: $t('ÄPPELVÄGEN 5'), soon: $t('Ett vitt hus med garage. Bilen är alltid nytvättad.') }),
+  V('v_hus8', 'v_tomt8', 4738, 118, 604, 34, 66, 4796, { sign: $t('ÄPPELVÄGEN 7'), soon: $t('Ett grönt hus med blå dörr. Här bor andra.') }),
+  V('v_hus9', 'v_tomt9', 4938, 120, 604, 36, 66, 4998, { sign: $t('ÄPPELVÄGEN 9'), soon: $t('Ett rosa hus med hängmatta. Här bor andra.') }),
+];
+export const ALL_BUILDINGS = [...BUILDINGS, ...BUILDINGS_S, ...BUILDINGS_D, ...BUILDINGS_X, ...FREESTANDING, ...BUILDINGS_L, ...BUILDINGS_V];
 export const buildingById = (id) => ALL_BUILDINGS.find((b) => b.id === id) || null;
 
 // ---------------------------------------------------------------------
@@ -365,6 +388,21 @@ export const LOTS = [
     { id: 'atervinning', kind: 'atervinning', name: $n('ÅTERVINNINGEN'), district: 'FÖRORTEN', row: 's', rect: [2288, CITY.FOOT_TOP_S, 2380, CITY.BASE_S], fence: false },
     { id: 'vagnsplatsen', kind: 'vagnsplatsen', name: $n('VAGNSPLATSEN'), district: 'FÖRORTEN', row: 's', rect: [2628, CITY.FOOT_TOP_S, 2712, CITY.BASE_S], fence: false },
   ].map(subLot),
+  // (v5) villaområdets tomter: gräsmatta runt huset, vitt spjälstaket (style spjal) med grind mot trottoaren
+  // mitt för ytterdörren. Tomterna ligger kant i kant – staketen möts mellan grannarna.
+  ...[
+    ['v_tomt1', 4056, 4256, 'n', 4148, 4172], ['v_tomt2', 4256, 4456, 'n', 4344, 4368], ['villatomten', 4456, 4696, 'n', 4572, 4596],
+    ['v_tomt3', 4696, 4896, 'n', 4786, 4810], ['v_tomt4', 4896, 5096, 'n', 4986, 5010],
+    ['v_tomt5', 4056, 4256, 's', 4142, 4166], ['v_tomt6', 4256, 4456, 's', 4342, 4366], ['v_tomt7', 4456, 4696, 's', 4574, 4598],
+    ['v_tomt8', 4696, 4896, 's', 4784, 4808], ['v_tomt9', 4896, 5096, 's', 4986, 5010],
+  ].map(([id, x0, x1, row, g0, g1]) => ({ id, kind: 'villatomt', name: id === 'villatomten' ? $n('VILLAN') : $n('TRÄDGÅRDEN'), district: 'VILLAOMRÅDET', row,
+    rect: [x0, row === 'n' ? CITY.FOOT_TOP : CITY.FOOT_TOP_S, x1, row === 'n' ? CITY.BASE : CITY.BASE_S], fence: true, style: 'spjal',
+    gates: [{ side: 's', x0: g0, x1: g1 }] })),   // (båda raderna har trottoaren söder om tomten – grinden mitt för dörren)
+  { id: 'v_lekplats', kind: 'lekplats_v', name: $n('LEKPLATSEN'), district: 'VILLAOMRÅDET', row: 'n', rect: [5152, CITY.FOOT_TOP, 5280, CITY.BASE], fence: true, style: 'spjal',
+    gates: [{ side: 's', x0: 5204, x1: 5228 }] },
+  { id: 'v_ang', kind: 'ang', name: $n('ÄNGEN'), district: 'VILLAOMRÅDET', row: 's', rect: [5152, CITY.FOOT_TOP_S, 5280, CITY.BASE_S], fence: false },
+  { id: 'v_lek', kind: 'lekplats_v', name: $n('VILLAPARKEN'), district: 'VILLAOMRÅDET', row: 'm', rect: [4300, 330, 4480, 452], fence: true, style: 'spjal',
+    gates: [{ side: 'n', x0: 4380, x1: 4400 }, { side: 's', x0: 4380, x1: 4400 }] },
 ];
 
 // 🌱 HUSVAGNENS ODLING (Carl 2026-10-08: "inhängad bakom husvagnen", med krukor och en vattenkanna):
@@ -434,11 +472,18 @@ export const STREETS_D = [
 // Förorten: båda raderna öster om floden, plus Infarten själv i båda raderna.
 export const STREETS_X = [
   { x0: CITY.INFARTEN[0], x1: CITY.INFARTEN[1], y0: CITY.BACK[1], y1: CITY.BASE, kind: 'street', name: $n('INFARTEN'), row: 'n', road: 'infarten' },
-  ...gapsOf('n', CITY.X_SUB, CITY.W, [...BUILDINGS_X.filter((b) => b.row === 'n'), ...LOTS.filter((l) => l.row === 'n')], { [2236 + SX]: $n('BETONGGATAN') }, false, true),
+  ...gapsOf('n', CITY.X_SUB, CITY.X_VILLA, [...BUILDINGS_X.filter((b) => b.row === 'n'), ...LOTS.filter((l) => l.row === 'n' && l.district === 'FÖRORTEN')], { [2236 + SX]: $n('BETONGGATAN') }, false, true),
   { x0: CITY.INFARTEN[0], x1: CITY.INFARTEN[1], y0: CITY.BACK_S[1], y1: CITY.BASE_S, kind: 'road', name: $n('INFARTEN'), row: 's', road: 'infarten' },
-  ...gapsOf('s', CITY.X_SUB, CITY.W, [...BUILDINGS_X.filter((b) => b.row === 's'), ...LOTS.filter((l) => l.row === 's' && l.district === 'FÖRORTEN')], { [2236 + SX]: $n('BETONGGATAN') }, false, true),
+  ...gapsOf('s', CITY.X_SUB, CITY.X_VILLA, [...BUILDINGS_X.filter((b) => b.row === 's'), ...LOTS.filter((l) => l.row === 's' && l.district === 'FÖRORTEN')], { [2236 + SX]: $n('BETONGGATAN') }, false, true),
 ];
-export const STREETS_ALL = [...STREETS, ...STREETS_S, ...STREETS_D, ...STREETS_X, ...STREETS_L];
+// (v5) Villaområdet: tomterna kant i kant, VILLAVÄGEN vid förortens gräns och ÄPPELVÄGEN framför lekplatsen/ängen –
+// båda tvärgator utan bilar i den södra raden (pedestrian) och med övergångsställen (14, 15).
+const VLOTS = LOTS.filter((l) => l.district === 'VILLAOMRÅDET');
+export const STREETS_V = [
+  ...gapsOf('n', CITY.X_VILLA, CITY.W, VLOTS.filter((l) => l.row === 'n'), { [CITY.X_VILLA]: $n('VILLAVÄGEN'), 5096: $n('ÄPPELVÄGEN') }, false, true),
+  ...gapsOf('s', CITY.X_VILLA, CITY.W, VLOTS.filter((l) => l.row === 's'), { [CITY.X_VILLA]: $n('VILLAVÄGEN'), 5096: $n('ÄPPELVÄGEN') }, false, true),
+];
+export const STREETS_ALL = [...STREETS, ...STREETS_S, ...STREETS_D, ...STREETS_X, ...STREETS_L, ...STREETS_V];
 
 // ---------------------------------------------------------------------
 // Övergångsställen. i är unikt över ALLA: CROSSWALKS_ALL[i].i === i.
@@ -456,6 +501,7 @@ export const CROSSWALKS = [
   cwX(4, 2236 + SX, 2288 + SX, $n('BETONGGATAN'), 'pixelgatan', CITY.ROAD[0], CITY.ROAD[1], { broken: true }),
   cwX(10, 2080, 2128, $n('BANKGATAN'), 'pixelgatan', CITY.ROAD[0], CITY.ROAD[1]),
   cwX(12, -852, -796, $n('MARKNADSGATAN'), 'pixelgatan', CITY.ROAD[0], CITY.ROAD[1]),   // (v4) Linnéstaden: över till torget
+  cwX(14, CITY.X_VILLA, CITY.X_VILLA + 56, $n('VILLAVÄGEN'), 'pixelgatan', CITY.ROAD[0], CITY.ROAD[1]),   // (v5) villaområdet
 ];
 // Södergatan.
 export const CROSSWALKS_S = [
@@ -464,6 +510,7 @@ export const CROSSWALKS_S = [
   cwX(7, CITY.INFARTEN[0], CITY.INFARTEN[1], $n('INFARTEN'), 'sodergatan', CITY.ROAD_S[0], CITY.ROAD_S[1]),
   cwX(11, 2080, 2128, $n('BANKGATAN'), 'sodergatan', CITY.ROAD_S[0], CITY.ROAD_S[1]),
   cwX(13, -984, -930, $n('KAJGATAN'), 'sodergatan', CITY.ROAD_S[0], CITY.ROAD_S[1]),    // (v4) Linnéstaden: ner till kajen
+  cwX(15, CITY.X_VILLA, CITY.X_VILLA + 56, $n('VILLAVÄGEN'), 'sodergatan', CITY.ROAD_S[0], CITY.ROAD_S[1]),   // (v5) villaområdet
 ];
 // Infarten: zebror där trottoarerna korsar vägen (inga ljus – bilarna väjer).
 export const CROSSWALKS_I = [
@@ -544,8 +591,18 @@ export const PARK_LAYOUT = {
 };
 // Förortens gångar (asfalt): gångvägen bakom den södra raden och stigen från hållplatsen.
 export const SUB_LAYOUT = {
-  back: [CITY.X_SUB, CITY.BACK_S[0], CITY.W, CITY.BACK_S[1]],
+  back: [CITY.X_SUB, CITY.BACK_S[0], CITY.X_VILLA, CITY.BACK_S[1]],
   paths: [[2004 + SX, CITY.SIDEWALK_S[1], 2026 + SX, CITY.BACK_S[0]]],
+};
+// (v5) Villaområdets mellanband: VILLAPARKEN – gräsmatta hela vägen, lekplatsen (tomten v_lek med staket),
+// rosariet med rabatter och bänkar, grusgångar från Pixelgatans trottoar ner till gången bakom södra raden.
+export const VILLA_LAYOUT = {
+  green: [CITY.X_VILLA, CITY.PARK[0], CITY.W, CITY.BACK_S[0]],
+  lek: [4300, 330, 4480, 452],
+  rosarium: [4700, 334, 4900, 452],
+  beds: [[4716, 348, 4762, 358], [4838, 348, 4884, 358], [4716, 428, 4762, 438], [4838, 428, 4884, 438]],
+  walks: [[4276, CITY.SIDEWALK_S[1], 4292, CITY.BACK_S[0]], [4596, CITY.SIDEWALK_S[1], 4612, CITY.BACK_S[0]], [4904, CITY.SIDEWALK_S[1], 4920, CITY.BACK_S[0]]],
+  back: [CITY.X_VILLA, CITY.BACK_S[0], CITY.W, CITY.BACK_S[1]],
 };
 // Downtowns mellanband (v3): FINANSTORGET – ett stenlagt torg från Infartens trottoar
 // till kajen, gåbart överallt. Rekvisitan (props.js) ställer statyn, fontänerna,
@@ -626,6 +683,8 @@ export const PATHS = [
   { rect: LINNE_LAYOUT.back, kind: 'grus', district: 'LINNÉSTADEN' },
   { rect: PIER.walk, kind: 'brygga', district: 'LINNÉSTADEN' },
   { rect: PIER.deck, kind: 'brygga', district: 'LINNÉSTADEN' },
+  ...VILLA_LAYOUT.walks.map((r) => ({ rect: r, kind: 'grus', district: 'VILLAOMRÅDET' })),   // (v5)
+  { rect: VILLA_LAYOUT.back, kind: 'grus', district: 'VILLAOMRÅDET' },
   // kajerna – delade vid Pixelgatan och Södergatan (körbanorna är väg, inte gång; man korsar dem på broarnas trottoarer)
   ...[RIVER.quayW, RIVER.quayE].flatMap((q) => [[q[1], CITY.ROAD[0]], [CITY.ROAD[1], CITY.ROAD_S[0]], [CITY.ROAD_S[1], q[3]]]
     .map(([y0, y1]) => ({ rect: [q[0], y0, q[2], y1], kind: 'kaj', district: 'FLODEN' }))),
@@ -657,8 +716,9 @@ export const DISTRICTS = [
   { id: 'downtown', name: $n('DOWNTOWN'), tag: $t('HÖGA HUS, BANKER OCH KOSTYMER'), rects: [[XM, 0, RX0, CITY.H]], worn: 0, spawn: { x: 2104, y: 296 } },
   { id: 'bron', name: $n('STORA BRON'), tag: $t('HÄNGBRON ÖVER PIXELFLODEN'), rects: [[RX0, 0, RX1, YB]], worn: 0, spawn: { x: 2716, y: 291 } },
   { id: 'jarnbron', name: $n('JÄRNBRON'), tag: $t('SÖDERGATAN ÖVER PIXELFLODEN'), rects: [[RX0, YB, RX1, CITY.H]], worn: 0, spawn: { x: 2716, y: 745 } },
-  { id: 'fororten', name: $n('FÖRORTEN'), tag: $t('BETONG, GRAFFITI OCH BILLIGA HYROR'), rects: [[RX1, 0, CITY.W, CITY.H]], worn: 1, spawn: { x: 2040 + SX, y: 296 } },
+  { id: 'fororten', name: $n('FÖRORTEN'), tag: $t('BETONG, GRAFFITI OCH BILLIGA HYROR'), rects: [[RX1, 0, CITY.X_VILLA, CITY.H]], worn: 1, spawn: { x: 2040 + SX, y: 296 } },
   { id: 'linne', name: $n('LINNÉSTADEN'), tag: $t('TORGET, MARKNADEN OCH SMÅ BUTIKER'), rects: [[CITY.X0, 0, 0, CITY.H]], worn: 0, spawn: { x: -560, y: 296 } },
+  { id: 'villa', name: $n('VILLAOMRÅDET'), tag: $t('GRÄSMATTOR, STAKET OCH GRANNAR'), rects: [[CITY.X_VILLA, 0, CITY.W, CITY.H]], worn: 0, spawn: { x: 4584, y: 296 } },   // (v5)
 ];
 export const districtAt = (x, y) => DISTRICTS.find((d) => d.rects.some((r) => x >= r[0] && x < r[2] && y >= r[1] && y < r[3])) || DISTRICTS[0];
 export const districtByName = (name) => DISTRICTS.find((d) => d.name === name || d.id === name) || null;
@@ -746,6 +806,9 @@ export const RESERVED = [
   ...LINNE_LAYOUT.beds.map((r) => [r[0] - 3, r[1] - 3, r[2] + 3, r[3] + 3]),
   [LINNE_LAYOUT.well.x - 20, LINNE_LAYOUT.well.y - 12, LINNE_LAYOUT.well.x + 20, LINNE_LAYOUT.well.y + 8],
   ...LINNE_LAYOUT.walks, LINNE_LAYOUT.promenade,
+  // --- v5: villaområdet (husen, dörrarna, gången från grinden till dörren, rabatterna i rosariet) ---
+  ...BUILDINGS_V.flatMap((b) => [footprint(b), doorFront(b), [b.door.x0 - 6, baseOf(b), b.door.x1 + 6, (b.base > 400 ? CITY.BASE_S : CITY.BASE) + 2]]),
+  ...VILLA_LAYOUT.beds.map((r) => [r[0] - 3, r[1] - 3, r[2] + 3, r[3] + 3]),
 ];
 
 // ---------------------------------------------------------------------
@@ -844,7 +907,7 @@ export function validateMap() {
     for (const b of ALL_BUILDINGS) if (hit(r, doorFront(b))) out.push(`dörren till ${b.id} ligger bakom ett torn`);
     for (const p of PATHS) if (p.kind !== 'torg' && p.kind !== 'asfalt' && hit(r, p.rect)) out.push(`gången ${p.rect.join(',')} ligger bakom ett torn`);
   }
-  if (CITY.W > 4000 || (CITY.X0 || 0) < -1200) out.push(`världen är ${CITY.X0}–${CITY.W} – net/world.js klämmer spelarnas x till −1200–4000`);
+  if (CITY.W > 5280 || (CITY.X0 || 0) < -1200) out.push(`världen är ${CITY.X0}–${CITY.W} – net/world.js klämmer spelarnas x till −1200–5280`);
   if (CITY.X_SUB !== RX1) out.push('X_SUB ska vara flodens östra kant (CITY.RIVER[1])');
   for (let y = 0; y < CITY.H; y += 20) for (let x = CITY.X0 || 0; x < CITY.W; x += 20) if (!DISTRICTS.some((d) => d.rects.some((r) => inRect(x, y, r)))) { out.push(`(${x},${y}) hör inte till någon stadsdel`); break; }
   return out;

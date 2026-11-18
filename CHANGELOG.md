@@ -10,6 +10,12 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.140.0] – 2026-11-19 – Villaområdet
+- 🏡 VILLAOMRÅDET – en ny stadsdel öster om förorten, på vägen ut mot landet: tio villor i olika färger på inhägnade tomter med vita spjälstaket, grindar, klippta gräsmattor, stenplattor fram till dörren, brevlådor, rabatter, syrenhäckar, trädgårdstomtar, vattenspridare som snurrar, fågelbad, en studsmatta och en hängmatta.
+- Din egen VILLA ligger nu där (Syrenvägen 6) med en riktig trädgård att gå runt i – hemknappen och Bostadsbyrån hittar dit.
+- VILLAPARKEN mitt emellan gatorna: lekplatsen med gungor, rutschkana, sandlåda, gungbräda och gunghäst, rosariet med rosenbuskar och bänkar, grusgångar och parklyktor – och längst österut lekplatsen vid Villavägen och ängen med vildblommor.
+- Om natten lyser villornas fönster och lyktorna vid dörrarna. Grannarna småpratar om rosorna, gräsklippningen och grillkvällen. Kartan i mobilen visar stadsdelen.
+
 ## [0.139.0] – 2026-11-18 – Butiken i appen
 - 🛍️ Butiken i mobilen (bara i appen Pixelcity): pengapåsar och bostäder utan hyra, betalas via Apple med priset i din egen valuta – ingen fråga före köpet, Apples egen köpruta räcker.
 - Köpta pengar räknas inte mot livsmålet Rikedom. En köpt bostad har ingen insats och ingen hyra, och följer med Apple-kontot till en ny telefon (Återställ köp, eller tyst vid start).

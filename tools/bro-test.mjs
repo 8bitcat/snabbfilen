@@ -1,7 +1,7 @@
 // Staden på längden (v3, Carl 2026-09-29): centrum → DOWNTOWN → FLODEN med STORA BRON och
 // JÄRNBRON → FÖRORTEN. Playwright mot servern, med riktiga klick där det går:
 //   node tools/bro-test.mjs        (servern på 8788; annan port: SMOKE_PORT=8791 eller PORT=…)
-//  1. kartan: validateMap() utan problem, världen ≤ 4000 bred, förorten öster om floden
+//  1. kartan: validateMap() utan problem, världen ≤ 5280 bred (v5: villaområdet), förorten öster om floden
 //  2. floden går inte att gå i: vattnet är hinder överallt (stickprov), en figur som hamnar
 //     i vattnet flyttas upp på land/bro, och ett gångmål mitt i floden slutar aldrig i vattnet
 //  3. bron går att gå över: downtown → förorten över STORA BRON och tillbaka över JÄRNBRON;
@@ -80,7 +80,7 @@ const map = await ev(async () => {
     sub: M.BUILDINGS_X.concat(M.FREESTANDING.filter((f) => f.district === 'FÖRORTEN')).map((b) => ({ id: b.id, x: b.x })) };
 });
 ok(map.problems.length === 0, `validateMap: ${map.problems.length ? map.problems.slice(0, 4).join('; ') : 'inga problem'}`);
-ok(map.W <= 4000 && map.W >= map.river[1] + 900, `världen är ${map.W} bred (floden ${map.river.join('–')}, förorten från ${map.xSub})`);
+ok(map.W <= 5280 && map.W >= map.river[1] + 900, `världen är ${map.W} bred (floden ${map.river.join('–')}, förorten från ${map.xSub})`);   // (v5: villaområdet 4000–5280)
 ok(map.sub.every((b) => b.x >= map.river[1]), `alla förortens hus står öster om floden (${map.sub.length} st)`);
 const inWater = (p) => map.water.some((r) => p.x >= r[0] && p.x < r[2] && p.y >= r[1] && p.y < r[3]);
 

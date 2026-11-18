@@ -65,6 +65,7 @@ const midOf = (a, d) => (a ? Math.round((a[0] + a[1]) / 2) : d);
 const ROAD_N = CITY.ROAD, ROAD_S = CITY.ROAD_S || [CITY.ROAD[0] + 454, CITY.ROAD[1] + 454];
 const XI = CITY.INFARTEN || [1700, 1752];
 const X_SUB = CITY.X_SUB || XI[1];
+const X_VILLA = CITY.X_VILLA || Infinity;   // (v5) villaområdet: grannarna småpratar om trädgården
 const SDX = CITY.SUB_DX || 0;                          // v3: förortens fasta platser nedan står i v2-x + SDX
 // v3: downtown (finanskvarteret) och floden med broarna
 const RIV = MAP.RIVER || null;
@@ -139,7 +140,8 @@ const PLACES = {
   kontor4: { w: 0.5, stay: [60, 200], carry: [], office: true },
 };
 // bostadshusen: folk kommer ut ur dem och går hem igen
-const HOMES = ['hem', 'radhus', 'tornhuset', 'hoghus', 'hoghus2', 'lamell', 'husvagn'];
+const HOMES = ['hem', 'radhus', 'tornhuset', 'hoghus', 'hoghus2', 'lamell', 'husvagn',
+  'v_hus1', 'v_hus2', 'v_hus3', 'v_hus4', 'v_hus5', 'v_hus6', 'v_hus7', 'v_hus8', 'v_hus9'];   // (v5) villaområdets grannar
 // kontorstornen i downtown: kostymfolket går in på morgonen och kommer ut på eftermiddagen
 const OFFICES = ['kontor1', 'kontor2', 'kontor3', 'kontor4'];
 const isOpen = (b, h) => !b.open || (h >= b.open[0] && h < b.open[1]) || (b.open[1] > 24 && h < b.open[1] - 24);
@@ -3658,6 +3660,7 @@ export function createLife(env, traffic, props) {
     glass: [$t('Mmm, glass!')],
     sitter: [$t('Skönt att sitta en stund.'), $t('Sätt dig du med!')],
     telefon: [$t('Vänta, jag pratar i telefon!'), $t('Jag ringer tillbaka sen!')],
+    villa: [$t('Har du sett våra rosor?'), $t('Gräset behöver klippas igen …'), $t('Grannens katt sover på vår veranda.'), $t('Vi grillar i kväll, kom förbi!'), $t('Posten har inte kommit än.'), $t('Jag ska vattna rabatterna.'), $t('Studsmattan är ledig!'), $t('Vilken fin trädgård, va?')],   // (v5)
   };
   function smalltalk(p) {
     const w = W(), h = env.hour, t = w.temp ?? 15, pools = [];
@@ -3671,6 +3674,7 @@ export function createLife(env, traffic, props) {
     if (p.carry === 'resvaska') add('resvaska', 2);
     if (p.carry === 'glass') add('glass');
     if (p.sit) add('sitter');
+    if (p.x >= X_VILLA - 10) add('villa', 3);   // (v5) grannarna i villaområdet
     if (w.kind === 'sol' ? h >= 8 && h < 19 : SMALLTALK[w.kind] && w.kind !== 'moln') add(w.kind, 2);
     if (t < 3) add('kallt'); else if (t > 22 && h >= 9 && h < 20) add('varmt');
     add(h < 5 || h >= 22 ? 'natt' : h < 10 ? 'morgon' : h >= 18 ? 'kvall' : 'dag', 2);

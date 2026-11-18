@@ -1,7 +1,7 @@
 {
-  "version": "0.139.0",
-  "date": "2026-11-18",
-  "title": "Butiken i appen",
+  "version": "0.140.0",
+  "date": "2026-11-19",
+  "title": "Villaområdet",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
@@ -16,6 +16,7 @@
     "js/city/buildings-shops.js",
     "js/city/buildings-south.js",
     "js/city/buildings-suburb.js",
+    "js/city/buildings-villa.js",
     "js/city/buildings-work.js",
     "js/city/citymap.js",
     "js/city/facade-kit.js",

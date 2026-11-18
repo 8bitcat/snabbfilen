@@ -30,7 +30,7 @@ import { $t, money } from '../core/i18n.js';
 // modulerna inte täcker ännu (marken/skjulen/staketen i v2-områdena).
 // v3: buildings-downtown (finanskvarterets hus) och bridge (floden, Stora bron, Järnbron).
 const MODS = {};
-await Promise.all(['buildings-shops', 'buildings-work', 'buildings-south', 'buildings-suburb', 'buildings-leksaker', 'buildings-downtown', 'buildings-linne', 'marknad', 'pir', 'odling', 'fest', 'ground', 'props', 'traffic', 'life', 'weather', 'walk', 'fallback-v2', 'bridge'].map((n) =>
+await Promise.all(['buildings-shops', 'buildings-work', 'buildings-south', 'buildings-suburb', 'buildings-leksaker', 'buildings-downtown', 'buildings-linne', 'buildings-villa', 'marknad', 'pir', 'odling', 'fest', 'ground', 'props', 'traffic', 'life', 'weather', 'walk', 'fallback-v2', 'bridge'].map((n) =>
   import(`../city/${n}.js`).then((m) => { MODS[n] = m; }).catch((e) => console.error(`stadsmodulen ${n} kunde inte laddas:`, e))));
 
 let VW = CITY.VIEW_W, VH = CITY.VIEW_H; // mobilfyllning: vyn följer skärmen, klampad till världen
@@ -119,6 +119,7 @@ const ART = () => ({
   ...(MODS['buildings-shops']?.BUILDING_ART || {}), ...(MODS['buildings-work']?.BUILDING_ART || {}),
   ...(MODS['buildings-south']?.BUILDING_ART || {}), ...(MODS['buildings-suburb']?.BUILDING_ART || {}), ...(MODS['buildings-leksaker']?.BUILDING_ART || {}),
   ...(MODS['buildings-downtown']?.BUILDING_ART || {}), ...(MODS['buildings-linne']?.BUILDING_ART || {}),
+  ...(MODS['buildings-villa']?.BUILDING_ART || {}),   // (v5) villaområdet
 });
 // (v4) världen börjar i X0 (Linnéstaden väster om centrum): markduken är W − X0 bred, duk-x = världs-x − X0
 const WX0 = CITY.X0 || 0;

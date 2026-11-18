@@ -14,7 +14,7 @@
 //   seats(), seatAt(x, y, isFree?), seatNear(x, y, r?, isFree?) }  – alla bänkar och busskurernas
 //   bänkar går att sitta på (se "sittplatser" i createProps). export const V2 = true.
 import { Pix, mix, mul, hash, bayer, SMALL, BIG, text, textW, eachTextPixel } from '../core/floor-pix.js';
-import { CITY, BUILDINGS, ALL_BUILDINGS, CROSSWALKS, CROSSWALKS_S, PARK_LAYOUT, BUS_STOP, BUS_STOPS, LOTS, RESERVED, footprint, gateRect, artBox,
+import { CITY, BUILDINGS, ALL_BUILDINGS, CROSSWALKS, CROSSWALKS_S, PARK_LAYOUT, BUS_STOP, BUS_STOPS, LOTS, RESERVED, footprint, gateRect, artBox, BUILDINGS_V, VILLA_LAYOUT,
   DOWNTOWN_LAYOUT, LINNE_LAYOUT, PIER, ODLING } from './map.js';
 import { $t } from '../core/i18n.js';
 
@@ -410,6 +410,68 @@ function paintMailbox(P) {
   P.hl(-1, -19, 3, B2); P.px(-2, -18, B); P.px(2, -18, B); P.hl(-1, -17, 3, B); P.px(3, -19, B); P.px(4, -20, B2); P.px(0, -18, 0xffe890);
   P.hl(-5, -15, 12, Y[0]);
   groundShadow(P, 2, 1, 5, 2);
+}
+// ---------- (v5) villaområdets rekvisita ----------
+// villabrevlådan: plåtlåda på en träpåle vid grinden, lock med fals, brevinkast, tidningsrulle i hållaren under –
+// och flaggan uppe när det kommit post
+function paintPostbox(P, col, s) {
+  const T = [mul(col, 0.5), mul(col, 0.75), col, mix(col, 0xffffff, 0.3), mix(col, 0xffffff, 0.6)];
+  for (let y = -17; y <= 0; y++) { P.px(-1, y, WOOD[2]); P.px(0, y, WOOD[1]); }
+  P.hl(-2, 0, 4, WOOD[0]);
+  for (let y = -27; y <= -17; y++) for (let x = -6; x <= 6; x++) {
+    if (y === -27 && (x === -6 || x === 6)) continue;
+    P.px(x, y, tone(T, 0.9 - ((x + 6) / 12) * 0.5 - (y === -17 ? 0.3 : 0) + (y === -27 ? 0.1 : 0), x, y));
+  }
+  P.hl(-6, -24, 13, T[4]); P.hl(-6, -23, 13, T[0]);
+  P.hl(-3, -21, 5, 0x1c1a20);
+  P.rect(-4, -15, 9, 3, 0xe8e0c8); P.hl(-4, -14, 9, 0x9a9280); P.px(-4, -13, 0xb8b0a0);
+  if (hash(s, 1, 3) > 0.5) { P.vl(7, -28, 7, 0xd02828); P.hl(7, -28, 3, 0xd02828); P.px(9, -27, 0xd02828); }
+  groundShadow(P, 0, 1, 5, 2);
+}
+// trädgårdstomten: röd strutmössa, vitt skägg, blå rock med bälte och spänne, bruna stövlar
+function paintGnome(P, s) {
+  const K = 0x1c1a20, blue = hash(s, 2, 3) > 0.5 ? 0x2a4a8a : 0x2f7a3e, dark = mul(blue, 0.7);
+  for (let y = -19; y <= -12; y++) { const hw = Math.round((y + 19) * 0.5); for (let x = -hw; x <= hw; x++) P.px(x, y, x === -hw ? 0xff6a5a : x === hw ? 0x9a1e1e : 0xd83030); }
+  P.px(0, -20, 0xffb0a0); P.hl(-5, -11, 11, 0x9a1e1e);
+  for (let y = -10; y <= -8; y++) for (let x = -3; x <= 3; x++) P.px(x, y, 0xf1c7a3);
+  P.px(-2, -10, K); P.px(1, -10, K); P.px(0, -9, 0xe08a70); P.hl(-2, -8, 2, 0xe0a090);
+  for (let y = -7; y <= -2; y++) { const hw = 4 - Math.floor((y + 7) / 2); for (let x = -hw; x <= hw; x++) P.px(x, y, x < 0 ? 0xffffff : 0xdcdcd4); }
+  for (let y = -7; y <= -1; y++) for (const x of [-5, -4, 4, 5]) P.px(x, y, x < 0 ? blue : dark);
+  for (let y = -2; y <= -1; y++) for (let x = -3; x <= 3; x++) P.px(x, y, x < 0 ? blue : dark);
+  P.hl(-5, -3, 11, K); P.px(0, -3, 0xf0d050);
+  P.hl(-5, 0, 4, 0x4a2a14); P.hl(1, 0, 5, 0x3a2010);
+  for (let y = -19; y <= 0; y++) { P.px(-6, y, K, 0.001); }
+  groundShadow(P, 0, 1, 4, 2);
+}
+const oval = (P, cx, cy, rx, ry, fn) => { for (let y = -ry; y <= ry; y++) { const hw = Math.floor(rx * Math.sqrt(Math.max(0, 1 - (y / ry) ** 2))); for (let x = -hw; x <= hw; x++) P.px(cx + x, cy + y, fn(x, y, hw)); } };
+// studsmattan: svart matta med blå skyddskant på fyra ben
+function paintTrampoline(P) {
+  for (const lx of [-12, -4, 3, 11]) for (let y = -12; y <= 0; y++) { P.px(lx, y, 0x8a8f96); P.px(lx + 1, y, 0x4a5058); }
+  oval(P, 0, -13, 15, 5, (x, y) => (y > 0 ? 0x163a80 : 0x2a6ad0));
+  oval(P, 0, -13, 12, 3, (x, y) => (y === -3 ? 0x3a3a44 : 0x1c1c22));
+  for (let x = -10; x <= 10; x += 4) P.px(x, -15, 0x34343e);
+  groundShadow(P, 0, 1, 14, 3);
+}
+// hängmattan: randigt tyg som hänger mellan två stolpar
+function paintHammock(P) {
+  for (const px of [-20, 19]) { for (let y = -22; y <= 0; y++) { P.px(px, y, WOOD[2]); P.px(px + 1, y, WOOD[1]); } P.hl(px - 1, -23, 4, WOOD[3]); }
+  for (let x = -18; x <= 18; x++) {
+    const t = x / 18, y0 = -21 + Math.round(7 * (1 - t * t));
+    if (Math.abs(x) > 14) { P.px(x, y0, 0xd8c8a0); continue; }
+    for (let k = 0; k < 4; k++) P.px(x, y0 + k, ((x + 18) >> 2) & 1 ? 0xe8e0c0 : 0xd84a4a);
+    P.px(x, y0 + 4, 0x7a3a2a);
+  }
+  groundShadow(P, 0, 1, 16, 2, 0.2);
+}
+// fågelbadet: stenpiedestal med en skål vatten – och en liten fågel på kanten
+function paintBirdbath(P) {
+  for (let y = -11; y <= 0; y++) { P.px(-1, y, STONE[3]); P.px(0, y, STONE[2]); P.px(1, y, STONE[1]); }
+  P.hl(-3, 0, 7, STONE[1]); P.hl(-3, -1, 7, STONE[2]);
+  for (let y = -16; y <= -11; y++) { const hw = y === -16 ? 7 : y === -11 ? 4 : 6; for (let x = -hw; x <= hw; x++) P.px(x, y, y === -16 ? STONE[4] : x < 0 ? STONE[3] : STONE[2]); }
+  for (let x = -5; x <= 5; x++) P.px(x, -16, 0x6ab0e0);
+  P.hl(-3, -17, 7, 0x8ad0f0); P.px(2, -17, 0xffffff);
+  P.px(4, -19, 0x6a4a2a); P.px(5, -19, 0x8a6a3a); P.px(3, -18, 0x6a4a2a); P.px(6, -19, 0xf0a030);
+  groundShadow(P, 0, 1, 5, 2);
 }
 function paintNewsStand(P) {
   const x0 = -13, w = 26, top = -22;
@@ -1833,7 +1895,8 @@ function paintDeadTree(P, seed) {
 }
 
 // ---------- staket, murar och plank ----------
-const FENCE_H = { mur: 10, tra: 12, chain: 18 };
+const FENCE_H = { mur: 10, tra: 12, chain: 18, spjal: 11 };   // spjal (v5) = villaområdets vita spjälstaket
+const PICKET = [0x8c8c84, 0xc6c6be, 0xf2f2ec, 0xffffff];
 // vågrät sträcka: x 0..w, fotlinje y = 0. isOpen(x) = grindöppning
 function paintFenceRun(P, w, style, seed, isOpen, worn = 0) {
   const H = FENCE_H[style];
@@ -1850,6 +1913,11 @@ function paintFenceRun(P, w, style, seed, isOpen, worn = 0) {
       }
       if (hash(x, 0, seed + 2) > 0.85) P.px(x, -H + 2 + Math.floor(hash(x, 1, seed) * 6), 0x5a7a34);
       if (opened) { for (let y = -H - 4; y <= 0; y++) for (let i = 0; i < 3; i++) P.px(x + (isOpen(x + 1) ? -i : i), y, tone(GRANITE, 0.85 - i * 0.28, x + i, y)); }
+    } else if (style === 'spjal') {   // (v5) vita spjälor med spetsig topp var fjärde pixel, två tvärslåar, stolpar med knopp
+      const k = ((x % 4) + 4) % 4;
+      if (k < 2) { for (let y = -H + 1; y <= 0; y++) P.px(x, y, k === 0 ? PICKET[2] : PICKET[1]); if (k === 0) P.px(x, -H, PICKET[3]); P.px(x, 0, PICKET[0]); }
+      else { P.px(x, -H + 4, PICKET[k === 2 ? 1 : 0]); P.px(x, -3, PICKET[k === 2 ? 1 : 0]); }
+      if (x % 24 === 0 || opened) for (let y = -H - 2; y <= 0; y++) { P.px(x, y, PICKET[2]); P.px(x + 1, y, PICKET[0]); if (y === -H - 2) { P.px(x - 1, y, PICKET[3]); P.px(x + 2, y, PICKET[1]); } }
     } else if (style === 'tra') {
       if (x % 3 === 0) { for (let y = -H; y <= 0; y++) P.px(x, y, tone(WOOD, 0.72 - ((y + H) / H) * 0.2 + (hash(x, y >> 1, seed) - 0.5) * 0.2, x, y)); P.px(x, -H, WOOD[4]); }
       else { P.px(x, -H + 3, WOOD[x % 3 === 1 ? 1 : 2]); P.px(x, -4, WOOD[x % 3 === 1 ? 1 : 2]); }
@@ -1879,6 +1947,7 @@ function paintFenceSide(P, h, style, seed, isOpen, worn = 0) {
     if (isOpen(y)) continue;
     if (style === 'mur') { for (let i = 0; i < 4; i++) P.px(i, y, tone(STONE, 0.88 - i * 0.22 + (hash(i, y, seed) - 0.5) * 0.15, i, y)); if (y === 0) for (let k = 1; k <= H; k++) for (let i = 0; i < 4; i++) P.px(i, -k, tone(STONE, 0.8 - i * 0.2, i, -k)); }
     else if (style === 'tra') { P.px(0, y, WOOD[3]); P.px(1, y, WOOD[1]); if (y % 24 === 0) post(y, WOOD[3], WOOD[1]); }
+    else if (style === 'spjal') { P.px(0, y, PICKET[2]); P.px(1, y, PICKET[0]); if (y % 24 === 0) post(y, PICKET[2], PICKET[0]); }
     else { P.px(0, y, CHAIN[3], (y % 2) ? 0.55 : 0.9); P.px(1, y, CHAIN[1], 0.5); if (y % 24 === 0) post(y, worn && hash(0, y, seed) > 0.6 ? RUST[2] : CHAIN[3], CHAIN[1]); }
   }
 }
@@ -3363,7 +3432,7 @@ export function createProps(env) {
     run(x0, x1, false, y0, 'n'); run(x0, x1, false, y1 - 1, 's'); run(y0, y1, true, x0, 'w'); run(y0, y1, true, x1 - 1, 'e');
     for (const s of segs) { obstacles.push(s); bases.push(s); }
   }
-  for (const l of LOTS) if (l.fence) lotFence(l.rect, l.gates || [], l.kind === 'kyrkogard' ? 'mur' : 'chain', l.district === 'FÖRORTEN' ? 1 : 0, l.kind === 'kyrkogard' ? 'mur' : 'stängsel');
+  for (const l of LOTS) if (l.fence) lotFence(l.rect, l.gates || [], l.style || (l.kind === 'kyrkogard' ? 'mur' : 'chain'), l.district === 'FÖRORTEN' ? 1 : 0, l.style === 'spjal' ? 'staket' : l.kind === 'kyrkogard' ? 'mur' : 'stängsel');
   // hundrastgården: parkgången [134–150] går längs östra kanten – staketet slutar där gången börjar
   const DOG = [...PARK_LAYOUT.dogPark];
   for (const w of PARK_LAYOUT.walks) if (w[0] < DOG[2] && w[2] > DOG[0] && w[1] < DOG[3] && w[3] > DOG[1]) DOG[2] = Math.min(DOG[2], w[0]);
@@ -3812,8 +3881,89 @@ export function createProps(env) {
   // bortre trottoaren i förorten
   brokenBench(1800 + SDX, QS); lamp(1860 + SDX, QL, -1, 2); bin(1900 + SDX, QS); lifebuoy(2000 + SDX, QB); brokenBench(2200 + SDX, QS); lamp(2300 + SDX, QL, -1, 1); trashBags(2400 + SDX, QS);
   lamp(2500 + SDX, QL, -1, 3); brokenBench(2600 + SDX, QS); lamp(2680 + SDX, QL, -1, 1);
-  for (let x = 1800 + SDX; x < CITY.W - 10; x += 96) bollard(x, QB, true);
+  for (let x = 1800 + SDX; x < (CITY.X_VILLA || CITY.W) - 10; x += 96) bollard(x, QB, true);
   for (const [x, y] of [[1950 + SDX, 750], [2150 + SDX, 745], [2350 + SDX, 752], [2550 + SDX, 746], [2650 + SDX, 754]]) weeds(x, y);
+
+  // =================== VILLAOMRÅDET (v5): villor på inhägnade tomter, Villaparken ===================
+  // Gatlyktor och träd längs trottoarerna, brevlådor vid grindarna; i trädgårdarna körsbärsträd, syrenhäckar
+  // längs bakre staketet, rabatter vid grinden, trädgårdstomtar, vattenspridare som snurrar, studsmattan på
+  // Syrenvägen 10 och hängmattan på Äppelvägen 9. Villaparken: lekplatsen (hel, inte sliten), rosariet med
+  // rosenbuskar och bänkar, parklyktor vid grusgångarna, träd på gräset och ängen längst österut.
+  if (VILLA_LAYOUT && BUILDINGS_V) {
+    const XV = CITY.X_VILLA;
+    const FLOWERSETS = [['red', 'white'], ['pink', 'purple', 'white'], ['yellow', 'orange'], ['blue', 'white'], ['red', 'yellow', 'white'], ['pink', 'white']];
+    const vpick = (arr, s, k) => arr[Math.floor(hash(s, k, 77) * arr.length) % arr.length];
+    const POSTCOL = [0x2f7a3e, 0xb53a2e, 0x2a5aa8, 0xf0d050, 0x3a3a44];
+    const postbox = (x, y, s) => item2('villabrevlåda', x, y, [x - 4, y - 2, x + 5, y + 1], [[x - 3, y - 2, x + 4, y]], 18, 32, 9, 29, (P) => paintPostbox(P, vpick(POSTCOL, s, 1), s));
+    const gnome = (x, y, s) => item2('trädgårdstomte', x, y, [x - 4, y - 2, x + 4, y + 1], [[x - 3, y - 2, x + 3, y]], 14, 24, 7, 21, (P) => paintGnome(P, s));
+    const trampoline = (x, y) => item2('studsmatta', x, y, [x - 15, y - 6, x + 16, y + 1], [[x - 14, y - 5, x + 15, y]], 36, 24, 18, 20, paintTrampoline);
+    const hammock = (x, y) => item2('hängmatta', x, y, [x - 21, y - 3, x + 22, y + 1], [[x - 20, y - 2, x - 17, y], [x + 17, y - 2, x + 20, y]], 46, 30, 23, 26, paintHammock);
+    const birdbath = (x, y) => item2('fågelbad', x, y, [x - 5, y - 2, x + 6, y + 1], [[x - 4, y - 2, x + 5, y]], 18, 26, 9, 23, paintBirdbath);
+    const ros = (x, y, f) => sprItem('rosenbuske', spr(30, 24, 13, 19, (P) => paintBush(P, seedAt(x, y), f)), x, y, [x - 6, y - 3, x + 6, y + 1], [[x - 5, y - 2, x + 5, y]], true);   // (står i rabatten – reserverad mark, därför force)
+    // vattenspridaren: mässingshuvud i gräset, två strålar som snurrar (ritas levande med env.t; står still i snö)
+    function sprinkler(x, y) {
+      add('spridare', x, y, [x - 3, y - 2, x + 4, y + 1], [[x - 2, y - 2, x + 3, y]], (ctx) => {
+        const a = (env.t || 0) * 2.4;
+        ctx.fillStyle = '#6a5a1a'; ctx.fillRect(x - 3, y - 1, 7, 2);
+        ctx.fillStyle = '#d8aa30'; ctx.fillRect(x - 1, y - 6, 3, 5); ctx.fillStyle = '#fff0a0'; ctx.fillRect(x - 1, y - 6, 1, 1);
+        if (snowNow()) return;
+        for (let k = 0; k < 2; k++) {
+          const ang = a + k * Math.PI, cx = Math.cos(ang), sy = Math.sin(ang) * 0.45;
+          for (let i = 3; i <= 15; i += 2) {
+            const h = i < 9 ? i * 0.6 : (15 - i) * 0.9 + 3.6;   // bågen: upp, sedan ner
+            ctx.fillStyle = i > 11 ? 'rgba(170,215,255,0.55)' : 'rgba(190,225,255,0.85)';
+            ctx.fillRect(Math.round(x + cx * i), Math.round(y - 5 - sy * i - h), 1, 1);
+          }
+        }
+      });
+    }
+    // trottoarerna: raka lyktor (inte förortens lutande) och träd i galler
+    for (const x of [4070, 4230, 4430, 4660, 4870, 5070, 5230]) lamp(x, NC + 1, 1, 0);
+    for (const x of [4130, 4330, 4560, 4760, 4960, 5130]) tree('lind', x, NC);
+    for (const x of [4080, 4280, 4500, 4720, 4920, 5120]) lamp(x, SC, -1, 0);
+    for (const x of [4180, 4400, 4640, 4840, 5040, 5200]) tree('lonn', x, SB);
+    for (const x of [4070, 4230, 4430, 4660, 4870, 5070, 5230]) lamp(x, CS + 1, 1, 0);
+    for (const x of [4130, 4330, 4560, 4760, 4960, 5130]) tree('korsbar', x, CS);
+    for (const x of [4100, 4350, 4600, 4850, 5100]) bench(x, QS);
+    for (const x of [4220, 4470, 4720, 4970, 5200]) lamp(x, QL, -1, 0);
+    for (const x of [4300, 4800]) bin(x, QS);
+    for (let x = XV + 40; x < CITY.W - 10; x += 96) bollard(x, QB, false);
+    // tomterna
+    for (const b of BUILDINGS_V) {
+      const L = LOTS.find((l) => l.id === b.lot);
+      if (!L) continue;
+      const [x0, y0, x1, y1] = L.rect, s = seedAt(x0, y0), gx = (b.door.x0 + b.door.x1) >> 1;
+      postbox(gx + 22, y1 + 8, s);                                               // brevlådan på trottoaren intill grinden
+      const lx = x0 + ((b.x - x0) >> 1), rx = b.x + b.w + ((x1 - b.x - b.w) >> 1);
+      tree(hash(s, 1, 1) > 0.5 ? 'korsbar' : 'bjork', lx, b.base - 4, false);
+      if (b.id !== 'v_hus4') { if (hash(s, 2, 1) > 0.45) tree('lonn', rx, b.base - 8, false); else bush(rx, b.base - 2, vpick(['pink', 'white', 'purple'], s, 3)); }
+      hedge((x0 + x1) >> 1, b.base - 70, x1 - x0 - 20);                          // syrenhäcken bakom huset (syns vid sidorna om taket)
+      bed(gx + 38, y1 - 7, 28, vpick(FLOWERSETS, s, 4)); bed(gx - 38, y1 - 7, 28, vpick(FLOWERSETS, s, 5));
+      if (hash(s, 6, 1) > 0.45) gnome(gx - 26, y1 - 18, s);
+      if (hash(s, 7, 1) > 0.5) sprinkler(rx + 12, y1 - 30); else birdbath(lx - 10, y1 - 30);
+      if (b.id === 'v_hus4') trampoline(x1 - 20, y1 - 40);
+      if (b.id === 'v_hus9') hammock(b.x + (b.w >> 1), b.base - 60);   // bakom huset, syns ovanför taket
+      if (b.id === 'v_villan') { bush(x0 + 12, y1 - 14, 'pink'); bush(x1 - 12, y1 - 14, 'white'); }
+    }
+    // Villaparken: lekplatsen (grindar i norr och söder vid 4380–4400 – mitten hålls fri)
+    const LK = LOTS.find((l) => l.id === 'v_lek');
+    if (LK) {
+      const [a, b2, c, d] = LK.rect, cx = (a + c) >> 1;
+      swing(cx - 46, b2 + 64, false); slide(cx + 44, b2 + 60, false); sandbox(cx - 30, d - 20, 36, false); springRider(cx + 52, d - 30, false); seesaw(cx - 70, d - 36);
+      bench(a + 18, b2 + 24, true); bench(c - 18, b2 + 24, true);
+    }
+    // rosariet: rosenbuskar i rabatterna, bänkar emellan, parklyktor vid kanterna
+    for (const r of VILLA_LAYOUT.beds) { ros((r[0] + r[2]) >> 1, r[3] - 1, 'red'); ros(r[0] + 8, r[3] - 2, 'pink'); ros(r[2] - 8, r[3] - 2, 'white'); }
+    bench(4800, 352); bench(4800, 448, true); parkLamp(4690, 396); parkLamp(4890, 396);
+    // gräset: träd, bänkar vid gången bakom södra raden, parklyktor vid grusgångarna
+    tree('lonn', 4120, 380, false); tree('bjork', 4200, 440, false); tree('korsbar', 4540, 372, false); tree('lonn', 4660, 438, false);
+    tree('bjork', 5000, 372, false); tree('korsbar', 5120, 430, false); tree('lonn', 5220, 380, false);
+    bench(4160, 456); bench(5050, 456); bin(4500, 456);
+    parkLamp(4268, 420); parkLamp(4620, 420); parkLamp(4928, 420);
+    // lekplatsen i norra raden (5152–5280) och ängen i södra
+    swing(5190, 140, false); slide(5246, 136, false); sandbox(5216, 166, 36, false); springRider(5180, 164, false);
+    wildflowers(5180, 530); wildflowers(5250, 560); wildflowers(5200, 600); tree('bjork', 5230, 520, false); bench(5200, 628);
+  }
 
   // =================== LINNÉSTADEN (v4): den mysiga stadsdelen väster om centrum ===================
   // Lindar i galler och gamla parklyktor (varmt, mjukt ljus), Marknadstorget med torgbrunnen och

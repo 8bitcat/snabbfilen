@@ -51,6 +51,7 @@ const COL = {
   torg: [0xc2b8a4, 0xb0a690], kaj: [0x9c968a, 0x8c867a], gard: [0x8f897d, 0x848074], vatten: [0x3f7fb8, 0x5a9ad0],
   kyrkogard: [0x4f8a3e, 0x9a9a92], parkering: [0x5a5960, 0xd8d4c8], lekplats: [0xd8b87a, 0xe06040], tomten: [0x8a7a5a, 0x6f8a44],
   bro: [0x6a6258, 0x5c554c], torn: [0x8a8274, 0x6c6558], odling: [0x7a5a3a, 0x5f9a45],
+  villatomt: [0x6fae50, 0x86c45e], lekplats_v: [0xd8b87a, 0xe06040],   // (v5) villaområdets gräsmattor och lekplatser
 };
 const INK = 0x1c1a20;
 const ROOFS = {
@@ -60,6 +61,7 @@ const ROOFS = {
   DOWNTOWN: [0x5a6f86, 0x4a5a70, 0x7f93a8, 0x3f4a5c, 0x6a7a8a],
   'FÖRORTEN': [0x8c8a86, 0x75736e, 0x9a8f7e, 0x6a6660, 0x7a7a70],
   'LINNÉSTADEN': [0xb4553c, 0xa44a34, 0x6a4a40, 0x3e4250, 0x4a5a56, 0x9a4a34],
+  'VILLAOMRÅDET': [0xb4553c, 0x3e4250, 0x8a4a34, 0x6a7a86, 0x4a5a56, 0xc47a3a],   // (v5) tegel- och plåttak på villorna
 };
 const SPECIAL_ROOF = { flyg: 0xc8ccd2, kyrka: 0x4a4e5a, mat: 0xd6d2c8, mobler: 0x3f6fb0, lagerhall: 0x7a7d80, gym: 0x18c8e0, garage: 0x6a6f74 };
 const lighten = (c, f) => { const r = (c >> 16) & 255, g = (c >> 8) & 255, b = c & 255; const m = (v) => Math.max(0, Math.min(255, Math.round(f > 0 ? v + (255 - v) * f : v * (1 + f)))); return (m(r) << 16) | (m(g) << 8) | m(b); };
@@ -193,6 +195,7 @@ export function renderCityMap() {
   if (MX0 < 0) { label($t('LINNÉSTADEN'), -600 / MAP_K, Y0, '#fff2c0', '#2a2430'); label($t('TORGET'), -744 / MAP_K, Math.round(380 / MAP_K), '#fff2c0', '#4a3a2a'); }
   label($t('DOWNTOWN'), 2080 / MAP_K, Y0, '#fff2c0', '#2a2430');
   label($t('FÖRORTEN'), 3520 / MAP_K, Y0, '#fff2c0', '#2a2430');
+  if (CITY.W > 5000) label($t('VILLAOMRÅDET'), 4640 / MAP_K, Y0, '#fff2c0', '#2a2430');   // (v5)
   label($t('PARKEN'), 600 / MAP_K, Math.round(386 / MAP_K), '#fff2c0', '#2a4a24');
   label($t('SÖDER'), 850 / MAP_K, MH - 7, '#e8f4ff', '#1f4a70');
   label($t('PIXELFLODEN'), ((RIVER.wx0 + RIVER.wx1) / 2) / MAP_K, Math.round(470 / MAP_K), '#e8f4ff', '#1f4a70');
