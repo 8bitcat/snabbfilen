@@ -572,6 +572,25 @@ export const KARTOR = {
     '................',
     '................',
   ],
+  // 🛍️ Butiken (js/core/kop.js) – en rosa papperskasse med handtag och gul prislapp
+  butik: [
+    '................',
+    '.....kkkkkk.....',
+    '....kk....kk....',
+    '....k......k....',
+    '....k......k....',
+    '..kkkkkkkkkkkk..',
+    '..kppppppppppPk.',
+    '..kpWpppppppPPk.',
+    '..kpWpppppppPPk.',
+    '..kppppppppppPk.',
+    '..kppyyyyyyppPk.',
+    '..kppyyYYyyppPk.',
+    '..kppppppppppPk.',
+    '..kpPPPPPPPPPPk.',
+    '..kkkkkkkkkkkkk.',
+    '................',
+  ],
   // 💛 Vänner (js/core/vannerapp.js) – ett stort gult hjärta med glans, som 💛 i hälsningarna
   vanner: [
     '................',

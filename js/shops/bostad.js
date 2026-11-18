@@ -6,8 +6,10 @@ import { play } from '../core/sound.js';
 import { posterImage } from '../scenes/shop-bostad.js';
 import { renderHomePreview } from '../scenes/room.js';
 import { $t } from '../core/i18n.js';
+import { agerBostad } from '../core/kop.js';   // 🛍️ bostad köpt i Butiken (appen): ingen insats, ingen hyra
 
-const insats = (h) => (h.deposit ? fmt(h.deposit) : $t('gratis'));   // "Insats <b>…</b>" (nyckeln ska inte ha $t inuti mallen)
+const insats = (g, h) => (g.insats(h) ? fmt(g.insats(h)) : $t('gratis'));   // "Insats <b>…</b>" (nyckeln ska inte ha $t inuti mallen)
+const kostnad = (g, h) => (agerBostad(h.id) ? `<b>${$t('Din bostad')}</b> · ${$t('ingen insats, ingen hyra')}` : $t`Insats <b>${insats(g, h)}</b> · hyra ${fmt(h.rent)}/vecka`);
 
 export function openHousing(A, { firstTime = false, onDone } = {}) {
   const g = A.game;
@@ -15,13 +17,13 @@ export function openHousing(A, { firstTime = false, onDone } = {}) {
     ? $t('Var vill du bo? Lilla rummet är gratis att flytta in i – resten får du spara till.')
     : `💰 <b>${fmt(g.money)}</b> · ${$t('Hyran dras varje måndag morgon.')}`}</p>
     <div class="plist">${HOMES.map((h) => {
-      const here = g.home === h.id, afford = g.money >= h.deposit;
+      const here = g.home === h.id, afford = g.money >= g.insats(h);
       return `<div class="prow shoprow homerow ${here ? 'here' : ''}">
         <span class="homepic-wrap"><span data-pic="${h.id}" style="font-size:28px;text-align:center">${h.icon}</span>
           <button class="btn btn-small homelook" data-look="${h.id}" title="${$t('Se hur det ser ut inne')}">${$t('👁 Titta in')}</button></span>
         <span class="nm">${$t(h.name)}${here ? ` <small class="ok">${$t('← du bor här')}</small>` : ''}<br>
           <small class="sp">${h.desc}</small><br>
-          <small class="sp">${$t`Insats <b>${insats(h)}</b> · hyra ${fmt(h.rent)}/vecka`}${h.restBonus > 0 ? ` · 😴 ${$t`+${h.restBonus} energi`}` : ''}${h.restBonus < 0 ? ` · <span class="bad">🥶 ${$t`−${Math.abs(h.restBonus)} energi`}</span>` : ''}</small></span>
+          <small class="sp">${kostnad(g, h)}${h.restBonus > 0 ? ` · 😴 ${$t`+${h.restBonus} energi`}` : ''}${h.restBonus < 0 ? ` · <span class="bad">🥶 ${$t`−${Math.abs(h.restBonus)} energi`}</span>` : ''}</small></span>
         <button class="btn btn-small ${afford && !here ? 'btn-go' : ''}" data-move="${h.id}" ${here || !afford ? 'disabled' : ''}>${here ? $t('Hemma') : $t('Flytta hit')}</button>
       </div>`;
     }).join('')}</div>`;
@@ -62,7 +64,7 @@ export function openHouseSign(A, b, { toAgent } = {}) {
       <span class="homepic-wrap"><span data-pic="${h.id}" style="font-size:28px;text-align:center">${h.icon}</span>
         <button class="btn btn-small homelook" data-look="${h.id}" title="${$t('Se hur det ser ut inne')}">${$t('👁 Titta in')}</button></span>
       <span class="nm">${$t(h.name)}<br><small class="sp">${h.desc}</small><br>
-        <small class="sp">${$t`Insats <b>${insats(h)}</b> · hyra ${fmt(h.rent)}/vecka`}${h.restBonus > 0 ? ` · 😴 ${$t`+${h.restBonus} energi`}` : ''}${h.restBonus < 0 ? ` · <span class="bad">🥶 ${$t`−${Math.abs(h.restBonus)} energi`}</span>` : ''}</small></span>
+        <small class="sp">${kostnad(g, h)}${h.restBonus > 0 ? ` · 😴 ${$t`+${h.restBonus} energi`}` : ''}${h.restBonus < 0 ? ` · <span class="bad">🥶 ${$t`−${Math.abs(h.restBonus)} energi`}</span>` : ''}</small></span>
     </div>`).join('');
   const dlg = openModal(`${b?.icon || '🏠'} ${b?.sign || $t('Bostadshuset')}`, `
     <p style="font-size:var(--f2);margin-top:0">${homes.length ? $t('Här bor du inte – men här finns:') : $t('Här bor du inte.')}</p>
@@ -102,14 +104,14 @@ function lookInside(A, id, opts) {
   if (!h) return;
   play('click');
   let sub = 0, night = false;
-  const here = g.home === id, afford = g.money >= h.deposit;
+  const here = g.home === id, afford = g.money >= g.insats(h);
   const dlg = openModal(`👁 ${h.icon} ${$t(h.name)}`, `
     <p style="font-size:var(--f2);margin-top:0">${$t('Så här ser det ut när du flyttar in.')}</p>
     <div class="look-tabs" data-tabs></div>
     <div class="homelook-pic" data-view></div>
-    <p class="sp" style="font-size:var(--f2);margin:6px 0 0">${$t`Insats <b>${insats(h)}</b> · hyra ${fmt(h.rent)}/vecka`}</p>`, [
+    <p class="sp" style="font-size:var(--f2);margin:6px 0 0">${kostnad(g, h)}</p>`, [
     { label: opts.back ? $t('← Tillbaka') : $t('← Alla bostäder'), onClick: () => { closeModal(); if (opts.back) opts.back(); else openHousing(A, opts); } },
-    ...(here || opts.noMove ? [] : [{ label: afford ? $t('🔑 Flytta hit') : $t`Insats ${fmt(h.deposit)}`, cls: afford ? 'btn-go' : '', onClick: () => { if (!afford) { toast($t`Du behöver ${fmt(h.deposit)} i insats.`, 'bad'); return; } moveHome(A, id, opts.onDone); } }]),
+    ...(here || opts.noMove ? [] : [{ label: afford ? $t('🔑 Flytta hit') : $t`Insats ${fmt(g.insats(h))}`, cls: afford ? 'btn-go' : '', onClick: () => { if (!afford) { toast($t`Du behöver ${fmt(g.insats(h))} i insats.`, 'bad'); return; } moveHome(A, id, opts.onDone); } }]),
   ]);
   const view = dlg.querySelector('[data-view]'), tabs = dlg.querySelector('[data-tabs]');
   function draw() {

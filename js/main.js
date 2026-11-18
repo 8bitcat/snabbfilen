@@ -60,6 +60,7 @@ import { startJobFlow, startShiftNow, inviteToShift, COOP_JOBS } from './jobs/sh
 import { openFoodShop } from './shops/matbutik.js';
 import { openHousing } from './shops/bostad.js';
 import { startNotiser, setExtraNotiser, planera } from './core/notiser.js';
+import { startKop } from './core/kop.js';   // 🛍️ Butiken i appen: köp som godkänns senare + bostäderna från Apple-kontot
 import { startAction, actionFor } from './core/drakt.js'; // 🎭 dräkternas rörelser
 import { startWorld, worldTick, worldInfo, playersList, visitPlayer, sendEmote, sendSay, worldFolksHere, playerName } from './net/world.js';
 import { block, unblock, blockedList, openAnmal, SUPPORT } from './net/skydd.js';
@@ -813,6 +814,7 @@ function boot() {
   const begin = () => {
     startWorld(A); // den öppna världen: koppla upp tyst i bakgrunden
     startNotiser(A); // 🔔 appen: lägg om notiserna, fråga en gång efter första dagen
+    startKop(A); // 🛍️ appen: "Be om att få köpa" som godkänns senare, och bostäder köpta på en annan telefon
     vanAppInit(A); // 💛 vänförfrågningar kan komma så fort man är i världen
     startPresenter(A); // 🎁 dagens present (och morgonnotiserna i appen)
     import('./city/fest.js').then((m) => { setExtraNotiser(m.festNotiser, 'fest'); planera().catch(() => {}); }).catch(() => {});   // 🎉 lördagsfestens notis kl. 17.45

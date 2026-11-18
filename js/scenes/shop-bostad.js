@@ -2476,7 +2476,7 @@ function drawServing(ctx, n) {
 }
 function drawPosterLive(ctx, p, g, on, t) {
   const { x, y, w, h, home } = p;
-  const here = g.home === home.id, afford = g.money >= home.deposit;
+  const here = g.home === home.id, afford = g.money >= g.insats(home);
   if (on) { // blinkande ram när man pekar på planschen
     ctx.fillStyle = Math.floor(t * 3) % 2 ? '#fff0b0' : '#e8b230';
     ctx.fillRect(x - 2, y - 2, w + 4, 1); ctx.fillRect(x - 2, y + h + 1, w + 4, 1); ctx.fillRect(x - 2, y - 1, 1, h + 2); ctx.fillRect(x + w + 1, y - 1, 1, h + 2);
@@ -2494,8 +2494,9 @@ function drawPosterLive(ctx, p, g, on, t) {
     ctxText(ctx, SMALL, label, lx, ly, '#8a8478');
     ctxText(ctx, SMALL, val, rx - textW(SMALL, val), ly, col);
   };
-  row(y + 50, $t('INSATS'), home.deposit ? $t`${home.deposit}:-` : $t('GRATIS'), here ? '#1f2d48' : afford ? '#2f8f46' : '#c9323a', home.deposit ? String(home.deposit) : null);
-  row(y + 57, $t('HYRA'), $t`${home.rent}:-/V`, '#1f2d48', $t`${home.rent}/V`);
+  const ins = g.insats(home), hy = g.hyraFor(home);   // 0 kr när bostaden är köpt i 🛍️ Butiken (core/kop.js)
+  row(y + 50, $t('INSATS'), ins ? $t`${ins}:-` : $t('GRATIS'), here ? '#1f2d48' : afford ? '#2f8f46' : '#c9323a', ins ? String(ins) : null);
+  row(y + 57, $t('HYRA'), hy ? $t`${hy}:-/V` : $t('GRATIS'), '#1f2d48', hy ? $t`${hy}/V` : null);
   ctxText(ctx, SMALL, $t('SÖMN'), lx, y + 63, '#8a8478');
   // sömnen i stjärnor 0–4: husvagnen (−10) ingen, rummet 1, lägenheten 2, radhuset/villan 3, takvåningen 4
   const stars = Math.max(0, Math.min(4, Math.round(((home.restBonus || 0) + 10) / 10)));
@@ -2617,11 +2618,11 @@ function edgeSign(ctx, lbl, left) {
 function bigLabel(ctx, spot, g, t, atTop) {
   let name, val = '', valCol = '#f0d048', hint;
   if (spot.poster) {
-    const h = spot.poster.home, here = g.home === h.id, afford = g.money >= h.deposit;
+    const h = spot.poster.home, ins = g.insats(h), here = g.home === h.id, afford = g.money >= ins;
     name = $t(h.name).toUpperCase();
-    val = here ? $t('DITT HEM') : h.deposit ? $t`${h.deposit} KR` : $t('GRATIS');
+    val = here ? $t('DITT HEM') : ins ? $t`${ins} KR` : $t('GRATIS');
     valCol = here || afford ? '#6fe08a' : '#ff8a80';
-    hint = here ? $t('HÄR BOR DU - KLICKA FÖR ALLA BOSTÄDER') : afford ? $t('KLICKA SÅ FÅR DU FLYTTA HIT') : $t`DU BEHÖVER ${h.deposit - Math.max(0, Math.floor(g.money))} KR TILL`;
+    hint = here ? $t('HÄR BOR DU - KLICKA FÖR ALLA BOSTÄDER') : afford ? $t('KLICKA SÅ FÅR DU FLYTTA HIT') : $t`DU BEHÖVER ${ins - Math.max(0, Math.floor(g.money))} KR TILL`;
   } else { name = spot.label; hint = spot.hint || ''; }
   const nw = textW(BIG, name), vw = val ? textW(BIG, val) : 0, hw = textW(SMALL, hint);
   const w = Math.max(nw + (val ? vw + 10 : 0), hw) + 14, h = hint ? 22 : 13;

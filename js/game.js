@@ -6,6 +6,7 @@ import { WARDROBE, itemById, legacyKeyToId } from './data/wardrobe.js';
 import { $t, $tf, $n, money } from './core/i18n.js';
 import { visningUppdatera } from './core/visning.js';   // 🏆 troféskåpet ritas om när en merit kommer
 import { rensaDjurnet } from './pets/djurnet.js';   // 🐾 djurNET: köpa och sälja djur
+import { agerBostad, kopPengar } from './core/kop.js';   // 🛍️ Butiken i appen: bostad utan hyra, köpta pengar utanför livsmålet
 
 export const SAVE_KEY = 'snabbfilen_save1';
 // Fält som gamla versioner sparade men som load() redan har flyttat in på nytt ställe
@@ -818,8 +819,11 @@ export class Game {
 
   get dayName() { return DAY_NAMES[(this.day - 1) % 7]; }
   get homeInfo() { return homeOf(this.home); }
+  // insatsen och veckohyran för en bostad – 0 kr när den är köpt i 🛍️ Butiken (core/kop.js, bara i appen)
+  insats(h) { const H = typeof h === 'string' ? homeOf(h) : h; return agerBostad(H.id) ? 0 : H.deposit; }
+  hyraFor(h) { const H = typeof h === 'string' ? homeOf(h) : h; return agerBostad(H.id) ? 0 : H.rent; }
   // veckohyran man själv betalar: bor man ihop delas den på två (avrundat uppåt)
-  get hyra() { const r = this.homeInfo.rent; return this.sambo && this.sambo.hem === this.home ? Math.ceil(r / 2) : r; }
+  get hyra() { const r = this.hyraFor(this.home); return this.sambo && this.sambo.hem === this.home ? Math.ceil(r / 2) : r; }
 
   // ---------- spara/ladda ----------
   // Sparfilen får aldrig tappa data mellan versioner: det som den här versionen inte
@@ -1370,7 +1374,7 @@ export class Game {
   // Var står man i livsmålen? [{ key, icon, name, have, need, done, k (0–1) }] – tom lista utan mål
   malStatus() {
     if (!this.mal) return [];
-    const have = { rik: Math.round(this.money + (this.bank || 0)), lycka: Math.round(this.lycka), utb: this.utbPoang(), karr: this.bestLevel() };
+    const have = { rik: Math.max(0, Math.round(this.money + (this.bank || 0) - kopPengar())), lycka: Math.round(this.lycka), utb: this.utbPoang(), karr: this.bestLevel() };
     return Object.values(MAL).map((M) => {
       const need = malTarget(M.id, this.mal[M.id]), h = have[M.id];
       const k = M.id === 'karr' ? Math.max(0, Math.min(1, (h - 1) / Math.max(1, need - 1))) : Math.max(0, Math.min(1, h / Math.max(1, need)));
@@ -1950,8 +1954,9 @@ export class Game {
     const h = homeOf(homeId);
     if (h.id === this.home) return { ok: false, msg: $t('Du bor redan här.') };
     if (this.sambo) return { ok: false, msg: $tf('Du bor ihop med {0} – flytta isär först (👥 i menyraden).', this.sambo.namn || $t('en kompis')) };
-    if (this.money < h.deposit) return { ok: false, msg: $t`Insatsen är ${fmt(h.deposit)} – du har inte råd än.` };
-    this.money -= h.deposit;
+    const insats = this.insats(h);   // (0 kr för en bostad köpt i Butiken)
+    if (this.money < insats) return { ok: false, msg: $t`Insatsen är ${fmt(insats)} – du har inte råd än.` };
+    this.money -= insats;
     this.home = h.id;
     if (h.id === 'gard' && !this.bonde) this.bonde = { djur: { hona: 6, ko: 2, far: 4 }, fodrad: this.day, agg: 0, mjolkat: 0, klippt: 0, ull: 0 };   // djuren ingår
     this.save();

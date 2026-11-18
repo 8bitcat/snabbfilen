@@ -10,6 +10,11 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.139.0] – 2026-11-18 – Butiken i appen
+- 🛍️ Butiken i mobilen (bara i appen Pixelcity): pengapåsar och bostäder utan hyra, betalas via Apple med priset i din egen valuta – ingen fråga före köpet, Apples egen köpruta räcker.
+- Köpta pengar räknas inte mot livsmålet Rikedom. En köpt bostad har ingen insats och ingen hyra, och följer med Apple-kontot till en ny telefon (Återställ köp, eller tyst vid start).
+- Bostadsbyrån och mäklarens planscher visar "Din bostad · ingen insats, ingen hyra" för en köpt bostad.
+
 ## [0.138.1] – 2026-10-20 – Bilverkstan: mer tålamod
 - 🔧 Bilverkstan: kunderna har mer tålamod när bilen står på lyften – 40 sekunder i stället för 32 (däckbyten 58 i stället för 46), precis som tvätteriet fick i 0.138.
 

@@ -35,6 +35,7 @@ import { openKamera, openBilder } from './foto.js';   // 📷 fotoläget och �
 import { openMysteriet, mysteriumStart, kapitelVantar } from './mysterium.js';   // 🕵️ mysteriet i kapitel
 import { openDjurnet, djurnetBadge, djurnetStart } from './djurnetapp.js';   // 🐾 djurNET – köpa och sälja djur
 import { openKortApp } from './kortapp.js';   // 🃏 pixelkortsalbumet (Carl 2026-10-12)   // 🎁 presenterna (Carl 2026-10-12)
+import { openButik, butikFinns } from './kop.js';   // 🛍️ Butiken – köp i appen (bara i iOS-appen, 2026-11-18)
 
 const APPAR = [
   { id: 'karta', src: 'hud-map', ik: 'karta', namn: $t('Karta') },
@@ -57,6 +58,7 @@ const APPAR = [
   { id: 'vecka', src: 'hud-week', ik: 'vecka', namn: $t('Veckan') },
   { id: 'dagbok', src: 'hud-diary', ik: 'dagbok', namn: $t('Dagboken') },
   { id: 'nyheter', src: 'hud-version', ik: 'nyheter', namn: $t('Nyheter') },
+  { id: 'butik', fn: (A) => openButik(A), ik: 'butik', namn: $t('Butik'), syns: () => butikFinns() },   // bara i appen
   { id: 'installningar', ik: 'kugge', namn: $t('Inställningar') },
 ];
 const SNABB = ['hud-fordon', 'hud-fest', 'hud-drakt'];   // knapparna som byts efter platsen
