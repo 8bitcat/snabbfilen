@@ -3699,6 +3699,126 @@ export function createLife(env, traffic, props) {
     holdFor(p, p.talk.t + 0.6, fx, fy);
     return text;
   }
+
+  // ---------- figurerna pratar med varandra (v5, Carl 2026-11-18: "bottar som går runt i spelet och pratar på det
+  // språk som är valt och att de pratar med varandra") ----------
+  // Två som möts på trottoaren (nära varandra, båda på väg, ingen mitt på övergångsstället, i telefon, på bänk
+  // eller i en dörr) stannar, vänder sig mot varandra och växlar fyra repliker i bubblor – replikerna väljs efter vilka
+  // de är (barn, kostymfolk), vädret och stadsdelen (villaområdet), och alla går genom $t, så de pratar spelarens språk.
+  // Sedan går de vidare och vilar från småprat en stund. Dessutom säger någon då och då något för sig själv (mumla).
+  const DIALOGER = {
+    allm: [
+      [$t('Hej! Hur är det?'), $t('Bara bra! Och du?'), $t('Jo tack, det rullar på.'), $t('Vi ses! Hej då!')],
+      [$t('Hallå där!'), $t('Hej! Vart är du på väg?'), $t('Ska bara handla lite.'), $t('Ha det bra!')],
+      [$t('Har du varit på Burgarbaren?'), $t('Ja, i går! Pommesen var jättegoda.'), $t('Då går jag dit i kväll.'), $t('Gör det! Hej då!')],
+      [$t('Vilken dag, va?'), $t('Ja, perfekt för en promenad.'), $t('Jag ska till parken.'), $t('Trevligt! Vi ses!')],
+      [$t('Hej! Länge sedan!'), $t('Ja verkligen! Hur mår familjen?'), $t('Alla mår fint, tack.'), $t('Hälsa dem! Hej då!')],
+      [$t('Har du sett den nya butiken?'), $t('Nej, var ligger den?'), $t('Borta vid torget.'), $t('Jag ska titta förbi!')],
+      [$t('Jag ska på bio i kväll.'), $t('Vad ska du se?'), $t('Fotbollsfilmen!'), $t('Den är bra. Ha det!')],
+      [$t('Hej hej!'), $t('Hej! Fin tröja!'), $t('Tack, köpte den på Kläders.'), $t('Snyggt! Hej då!')],
+      [$t('Tog du bussen hit?'), $t('Nej, jag gick. Det är så fint väder.'), $t('Jag borde också gå mer.'), $t('Häng med nästa gång!')],
+      [$t('Har du fikat?'), $t('Inte än. Kaféet har kanelbullar i dag.'), $t('Då går vi dit!'), $t('Ja, kom!')],
+    ],
+    barn: [
+      [$t('Hej! Vill du leka?'), $t('Ja! Kurragömma?'), $t('Du räknar först!'), $t('Ett, två, tre …')],
+      [$t('Har du ett husdjur?'), $t('Ja, en kanin som heter Bus.'), $t('Vad söt! Jag har en katt.'), $t('Vi kan leka ihop sen!')],
+      [$t('Jag har lov i dag!'), $t('Jag också! Ska vi till lekplatsen?'), $t('Ja! Jag tävlar dig dit!'), $t('Jag vinner!')],
+    ],
+    kostym: [
+      [$t('Såg du kurserna i dag?'), $t('Upp tre procent!'), $t('Vi måste köpa mer.'), $t('Ring mig sen!')],
+      [$t('Hinner du ett möte klockan tre?'), $t('Bara om det blir kort.'), $t('Tjugo minuter, max.'), $t('Okej, vi ses då.')],
+    ],
+    regn: [
+      [$t('Usch, vilket regn!'), $t('Jag glömde paraplyet.'), $t('Spring hem då!'), $t('Hej då!')],
+      [$t('Det ska klarna i eftermiddag.'), $t('Säger vem?'), $t('Väderskylten på torget!'), $t('Då litar jag på den.')],
+    ],
+    sno: [
+      [$t('Snö! Äntligen!'), $t('Ska vi bygga en snögubbe?'), $t('Ja! I parken!'), $t('Kom!')],
+      [$t('Akta, det är halt!'), $t('Tack, jag halkade nyss.'), $t('Ta det lugnt.'), $t('Det ska jag.')],
+    ],
+    villa: [
+      [$t('Har du sett våra rosor?'), $t('Jättefina! Vad vattnar du med?'), $t('Regnvatten från tunnan.'), $t('Smart! Hej då!')],
+      [$t('Vi grillar i kväll, kommer du?'), $t('Gärna! Vad ska jag ta med?'), $t('Bara dig själv!'), $t('Perfekt, vi ses!')],
+      [$t('Gräset behöver klippas igen …'), $t('Ja, det växer så det knakar.'), $t('Jag lånar din klippare i helgen?'), $t('Klart du får!')],
+    ],
+  };
+  let samtalAktiva = [], samtalKoll = 0;
+  const kanPrata = (p) => !!p && !p.hidden && !p.gone && !p.leader && !p.sit && !p.door && !(p.onCross >= 0) && !p.jogger && !(p.call > 0)
+    && !p.samtal && !(p.hold > 0) && !p.waitGate && !p.look4bus && !p.leaving && !p.fromBus && (p.samtalT || 0) <= 0;
+  function valjDialog(a, b, k = -1) {
+    const w = W(), pools = [];
+    if (k >= 0) return DIALOGER.allm[k % DIALOGER.allm.length];
+    if (a.look.kid && b.look.kid) pools.push(DIALOGER.barn, DIALOGER.barn);
+    if (a.suit && b.suit) pools.push(DIALOGER.kostym, DIALOGER.kostym);
+    if (w.kind === 'regn') pools.push(DIALOGER.regn);
+    if (w.kind === 'snö') pools.push(DIALOGER.sno);
+    if (a.x >= X_VILLA - 10) pools.push(DIALOGER.villa, DIALOGER.villa);
+    pools.push(DIALOGER.allm);
+    return pick(pick(pools));
+  }
+  function startSamtal(a, b, lines) {
+    const S = { a, b, lines, i: -1, t: 0.25 };
+    a.samtal = S; b.samtal = S; samtalAktiva.push(S);
+    for (const [p, q] of [[a, b], [b, a]]) { p.face = faceTo(q.x - p.x, (q.y - p.y) * 0.6); p.hold = 999; p.moving = false; p.path = []; }
+    return S;
+  }
+  function slutSamtal(S) {
+    S.slut = true;
+    for (const p of [S.a, S.b]) if (p.samtal === S) { p.samtal = null; p.hold = 0; p.samtalT = rr(40, 90); }
+  }
+  function updSamtal(dt) {
+    for (const S of samtalAktiva) {
+      S.t -= dt;
+      if (S.t > 0) continue;
+      S.i++;
+      if (S.i >= S.lines.length || S.a.gone || S.b.gone || S.a.hidden || S.b.hidden) { slutSamtal(S); continue; }
+      const p = S.i & 1 ? S.b : S.a, text = S.lines[S.i];
+      p.lastSaid = text;
+      p.talk = { text, t: 1.6 + text.length * 0.05 };
+      S.t = p.talk.t + 0.35;
+    }
+    if (samtalAktiva.some((S) => S.slut)) samtalAktiva = samtalAktiva.filter((S) => !S.slut);
+    for (const p of peds) if (p.samtalT > 0) p.samtalT -= dt;
+    samtalKoll -= dt;
+    if (samtalKoll > 0 || samtalAktiva.length >= 3) return;
+    samtalKoll = 0.5;
+    const kand = peds.filter(kanPrata);
+    for (let i = 0; i < kand.length; i++) for (let j = i + 1; j < kand.length; j++) {
+      const a = kand[i], b = kand[j];
+      if (a.samtal || b.samtal || Math.abs(a.x - b.x) > 24 || Math.abs(a.y - b.y) > 14 || rnd() > 0.4) continue;
+      startSamtal(a, b, valjDialog(a, b));
+      if (samtalAktiva.length >= 3) return;
+    }
+  }
+  // någon säger något för sig själv då och då (bara den som syns, aldrig mitt i ett samtal)
+  function updMumla(dt) {
+    for (const p of peds) {
+      if (p.hidden || p.gone || p.leader) continue;
+      p.mumlaT = (p.mumlaT ?? rr(10, 60)) - dt;
+      if (p.mumlaT > 0) continue;
+      p.mumlaT = rr(35, 90);
+      if (p.talk || p.samtal || p.door || !visible(p.x, p.y, 40) || rnd() < 0.5) continue;
+      const text = smalltalk(p);
+      p.lastSaid = text;
+      p.talk = { text, t: 1.6 + text.length * 0.05 };
+    }
+  }
+  // (för testerna) starta ett samtal nu mellan två som kan prata – den andra ställs bredvid den första
+  function samtalNu(k = -1) {
+    const syns = (p) => (visible(p.x, p.y, 0) ? 1 : 0);
+    const kand = peds.filter(kanPrata).sort((p, q) => syns(q) - syns(p));
+    if (kand.length < 2) return null;
+    const a = kand[0], b = kand[1];
+    if (!syns(a)) { a.x = cam.x + VW / 2; a.y = cam.y + VH / 2 + 30; a.path = []; }   // (syns inte: ställ dem mitt i bild)
+    b.x = a.x + 14; b.y = a.y; b.path = [];
+    const S = startSamtal(a, b, valjDialog(a, b, k));
+    return { a: a.id, b: b.id, lines: [...S.lines] };
+  }
+  function mumlaNu() {
+    const p = peds.find((q) => !q.hidden && !q.gone && !q.leader && !q.talk && !q.samtal);
+    if (!p) return null;
+    const text = smalltalk(p); p.talk = { text, t: 3 }; return text;
+  }
   // 🐬 något fint händer en bit bort (delfinen vid piren, v0.93): de som är nära stannar, vänder sig dit
   // och jublar i en bubbla – par (ledare + sällskap) vänder sig mot varandra och kramas (🤗).
   function cheer(cx, cy, r, lines) {
@@ -3732,6 +3852,7 @@ export function createLife(env, traffic, props) {
       for (const p of peds) if (!p.leader) { movePed(p, dt); sampleTrail(p, dt); }
       for (const p of peds) if (p.leader) updComp(p, dt);
       for (const p of peds) { updShow(p, dt); if (p.phoneT > 0) p.phoneT -= dt; if (p.photo > 0) p.photo -= dt; if (p.caller) updCall(p, dt); if (p.talk && (p.talk.t -= dt) <= 0) p.talk = null; }
+      updSamtal(dt); updMumla(dt);   // (v5) figurerna pratar med varandra och för sig själva
       for (const p of peds) if (p.dog) updDog(p, dt);
       dogSocial();
       updBirdsG(dt);
@@ -3764,6 +3885,10 @@ export function createLife(env, traffic, props) {
     talkTo,
     holdFor,
     cheer,
+    // (v5) samtalen mellan figurerna (tools/samtal-test.mjs)
+    samtal: () => samtalAktiva.map((S) => ({ a: S.a.id, b: S.b.id, i: S.i, n: S.lines.length, lines: [...S.lines], klar: !!S.slut })),
+    samtalNu, mumlaNu,
+    person: (id) => { const p = peds.find((q) => q.id === id); return p ? { x: p.x, y: p.y, hold: p.hold, face: p.face, moving: !!p.moving, talk: p.talk?.text || null, samtalT: p.samtalT || 0 } : null; },
     // pratbubblorna just nu (världskoordinater: fotpunkten x, bubblans spets y) – city.js ritar dem
     talks() {
       const out = [];

@@ -10,6 +10,11 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.141.0] – 2026-11-19 – Figurerna pratar med varandra
+- 💬 Figurerna i stan pratar med varandra: två som möts på trottoaren stannar, vänder sig mot varandra och växlar några repliker i pratbubblor – om vädret, bion, kaféet, rosorna i villaområdet, aktierna i downtown, och barnen om kurragömma och husdjur. Sedan går de vidare.
+- Allt sägs på det språk du valt i spelet – svenska, engelska, spanska, tyska, franska, polska, italienska eller portugisiska.
+- Då och då säger någon något för sig själv när du går förbi, och du kan fortfarande klicka på vem som helst för att prata.
+
 ## [0.140.0] – 2026-11-19 – Villaområdet
 - 🏡 VILLAOMRÅDET – en ny stadsdel öster om förorten, på vägen ut mot landet: tio villor i olika färger på inhägnade tomter med vita spjälstaket, grindar, klippta gräsmattor, stenplattor fram till dörren, brevlådor, rabatter, syrenhäckar, trädgårdstomtar, vattenspridare som snurrar, fågelbad, en studsmatta och en hängmatta.
 - Din egen VILLA ligger nu där (Syrenvägen 6) med en riktig trädgård att gå runt i – hemknappen och Bostadsbyrån hittar dit.
