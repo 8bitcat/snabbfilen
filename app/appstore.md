@@ -123,6 +123,110 @@ Notiser! Pixelcity kan nu säga till när det händer något i Pixelstaden, som 
 Version 1.1 adds optional local notifications for in-game events (e.g. Halloween, Christmas). The game asks once after the first in-game day; it can be turned on/off under Inställningar (Settings) in the main menu, where "Prova" (Try) sends a test notification after 5 seconds. Notifications are scheduled on the device only – no server, no push tokens, no data leaves the device.
 ```
 
+## Version 1.3 (köp i appen – 🛍️ Butiken, 2026-11-18)
+
+Spelet: v0.139.0 (js/core/kop.js, Butik i mobilen – syns bara i appen). Appen: `@capgo/native-purchases` (StoreKit 2)
+i app/package.json + app/ios/App/CapApp-SPM/Package.swift, appVersion "1.3". Köp kräver ingen ny
+provisioneringsprofil (In-App Purchase är påslaget på alla App ID:n). **Bygg i Codemagic** (Start new build →
+ios-testflight) och testa i TestFlight med ett **Sandbox-konto** (App Store Connect → Users and Access → Sandbox →
+Test Accounts; på telefonen Inställningar → App Store → Sandbox-konto). Sandlådan tar inga riktiga pengar.
+
+### Monetization → In-App Purchases (fem produkter)
+
+| Reference Name | Product ID | Type | Pris (välj närmaste Apple-pris) |
+|---|---|---|---|
+| Pengapåse 1 000 kr | `io.eightbitcat.pixelcity.pengar.1000` | Consumable | 12 kr |
+| Pengapåse 10 000 kr | `io.eightbitcat.pixelcity.pengar.10000` | Consumable | 49 kr |
+| Lägenheten utan hyra | `io.eightbitcat.pixelcity.bostad.lagenhet` | Non-Consumable | 29 kr |
+| Villan utan hyra | `io.eightbitcat.pixelcity.bostad.villa` | Non-Consumable | 59 kr |
+| Takvåningen utan hyra | `io.eightbitcat.pixelcity.bostad.takvaning` | Non-Consumable | 99 kr |
+
+Produkt-ID:n måste stämma exakt – spelet frågar Apple efter just dessa. **Availability:** alla länder.
+**Review Screenshot** (samma bild till alla fem): `app/store/iap/butik-sv.png` (engelska: `butik-en.png`).
+**Review Notes** (samma till alla fem):
+```
+Open the phone button (bottom right) → "Butik" (Shop). The shop lists the five products with StoreKit prices. Money bags are consumables (added to the in-game wallet); rent-free homes are non-consumables (no deposit, no weekly rent in the game) with a "Restore Purchases" button in the same dialog. Purchased money does not count towards the in-game "Wealth" life goal. The shop only exists in the iOS app, never on the web version.
+```
+
+### App Store Localization per produkt (Display Name högst 30 tecken · Description högst 45)
+
+**Pengapåse 1 000 kr**
+| Språk | Display Name | Description |
+|---|---|---|
+| Svenska | Pengapåse 1 000 kr | 1 000 kr rakt i handkassan i Pixelstaden. |
+| English (U.S.) | Money Bag $1,000 | $1,000 straight into your pocket. |
+| Español | Bolsa de dinero 1.000 € | 1.000 € directos a tu bolsillo. |
+| Deutsch | Geldbeutel 1.000 € | 1.000 € direkt in die Tasche. |
+| Français | Sac d'argent 1 000 € | 1 000 € directement dans ta poche. |
+| Polski | Sakiewka 1 000 zł | 1 000 zł prosto do kieszeni. |
+| Italiano | Sacco di soldi 1.000 € | 1.000 € dritti in tasca. |
+| Português | Saco de dinheiro 1.000 € | 1.000 € diretamente para o teu bolso. |
+
+**Pengapåse 10 000 kr** – samma texter med 10 000 / $10,000 / 10.000 € / 10 000 € / 10 000 zł.
+
+**Lägenheten utan hyra**
+| Språk | Display Name | Description |
+|---|---|---|
+| Svenska | Lägenheten utan hyra | Flytta in utan insats, bo utan hyra. |
+| English (U.S.) | The Apartment, rent-free | Move in with no deposit, live rent-free. |
+| Español | El piso sin alquiler | Múdate sin entrada y vive sin alquiler. |
+| Deutsch | Stadtwohnung ohne Miete | Ohne Kaution einziehen, ohne Miete wohnen. |
+| Français | L'appartement sans loyer | Emménage sans caution, vis sans loyer. |
+| Polski | Mieszkanie bez czynszu | Bez kaucji i bez czynszu, na zawsze. |
+| Italiano | L'appartamento senza affitto | Senza caparra e senza affitto, per sempre. |
+| Português | O Apartamento sem renda | Sem entrada e sem renda, para sempre. |
+
+**Villan utan hyra**
+| Språk | Display Name | Description |
+|---|---|---|
+| Svenska | Villan utan hyra | Eget hus med trädgård, ingen hyra. |
+| English (U.S.) | The Villa, rent-free | Your own house with a garden, no rent. |
+| Español | El chalet sin alquiler | Casa con jardín, sin entrada ni alquiler. |
+| Deutsch | Villa ohne Miete | Eigenes Haus mit Garten, keine Miete. |
+| Français | La villa sans loyer | Ta maison avec jardin, sans loyer. |
+| Polski | Willa bez czynszu | Własny dom z ogrodem, bez czynszu. |
+| Italiano | La villa senza affitto | Casa con giardino, senza affitto. |
+| Português | A Vivenda sem renda | Casa com jardim, sem renda. |
+
+**Takvåningen utan hyra**
+| Språk | Display Name | Description |
+|---|---|---|
+| Svenska | Takvåningen utan hyra | Högst upp i Tornhuset, ingen hyra. |
+| English (U.S.) | The Penthouse, rent-free | Top of Tower House, no deposit, no rent. |
+| Español | El ático sin alquiler | Lo más alto de la torre, sin alquiler. |
+| Deutsch | Penthouse ohne Miete | Ganz oben im Turmhaus, keine Miete. |
+| Français | Le penthouse sans loyer | Tout en haut de la tour, sans loyer. |
+| Polski | Penthouse bez czynszu | Na szczycie wieżowca, bez czynszu. |
+| Italiano | L'attico senza affitto | In cima alla Torre, senza affitto. |
+| Português | A Penthouse sem renda | No topo da Torre, sem renda. |
+
+### Distribution → iOS 1.3
+
+Skapa versionen, välj Codemagic-bygget, och lägg till de fem produkterna under **In-App Purchases and Subscriptions**
+på versionssidan (första gången granskas produkterna tillsammans med appen – tryck inte Add for Review på
+produkterna innan bygget finns).
+
+**What's New in This Version** (svenska)
+```
+Butiken! I mobilen finns nu en butik där du kan köpa pengapåsar och bostäder utan hyra. Köpen går via Apple, och Återställ köp hämtar dina bostäder på en ny telefon.
+```
+**What's New** (English)
+```
+The Shop! The phone now has a shop where you can buy money bags and rent-free homes. Purchases go through Apple, and Restore Purchases brings your homes to a new phone.
+```
+**Tillägg i Notes (App Review):**
+```
+Version 1.3 adds in-app purchases (StoreKit 2): two consumable money bags and three non-consumable rent-free homes. The shop is reached from the in-game phone (bottom right) → "Butik". Prices are shown from StoreKit before buying, "Restore Purchases" is in the same dialog, and purchases made with Ask to Buy are granted when approved. Nothing is sent to our servers; entitlements are read from StoreKit on device. The web version has no shop.
+```
+
+### Övrigt som ändras med köp
+- **Business → Digital Services Act:** näringsidkarstatus måste vara *I'm a trader* när appen säljer något (namn,
+  adress, e-post och telefon visas i EU-butiken).
+- **Age Rating:** inget att ändra (köp är inte en fråga där). **App Privacy:** fortfarande *No* – köpen går via Apple,
+  inget sparas hos oss.
+- Texterna "Inga … köp i appen" ovan (1.0-beskrivningen och granskningsfilmen) gäller inte längre: byt till
+  "Köp i appen: pengapåsar och bostäder utan hyra, inget krävs för att spela."
+
 ## App Information
 
 - **Name:** Pixelcity  ·  **Subtitle** (högst 30 tecken):
