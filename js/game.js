@@ -785,6 +785,7 @@ export class Game {
     // utlästa böcker i dag (LAS_PER_DAG) och vilka böcker man läst (ger ingen ny poäng andra gången)
     this.las = { poang: 0, dag: -1, n: 0, lasta: [] };
     this.bat = null;   // ⚓ Fiskehamnen (js/scenes/hamnen.js): den egna båten, 'rodd' | 'motor' | null (ligger vid båtrampen)
+    this.stuga = null; // 🏡 Röda stugan på Solön (js/scenes/stuga.js): { dag } när man hyrt den för natten (gäller till 12 dagen efter)
     this.festVecka = '';   // 🎉 veckan ("2026-W42") då man senast fick lördagsfestens present (js/city/fest.js)
     // 🏡 djurhemmet i Tassbacken (js/scenes/shop-djurhem.js): adopterade = djurens id:n ("dh3:12" = djur 3 vecka 12),
     // hjalp = dagen man senast hjälpte till, gav = dagen man senast skänkte pengar
@@ -986,6 +987,7 @@ export class Game {
         { const Q = p.las && typeof p.las === 'object' ? p.las : {};
           g.las = { poang: Math.max(0, Math.min(99, Q.poang | 0)), dag: (Q.dag | 0) || -1, n: Math.max(0, Math.min(9, Q.n | 0)), lasta: (Array.isArray(Q.lasta) ? Q.lasta : []).filter((s) => typeof s === 'string' && /^[a-z0-9]{2,16}$/.test(s)).slice(-60) }; }
         g.bat = p.bat === 'rodd' || p.bat === 'motor' ? p.bat : null;
+        g.stuga = p.stuga && typeof p.stuga === 'object' && Number.isFinite(+p.stuga.dag) ? { dag: p.stuga.dag | 0 } : null;
         g.festVecka = /^\d{4}-W\d{2}$/.test(String(p.festVecka || '')) ? String(p.festVecka) : '';
         g.designs = (Array.isArray(p.designs) ? p.designs : []).filter((d) => d && ['neck', 'bag', 'beads', 'phone'].includes(d.kind) && d.sel && typeof d.sel === 'object').slice(-40).map(cleanDesign).filter(Boolean);
         keep.storage = (Array.isArray(p.storage) ? p.storage : []).filter((it) => it && typeof it === 'object' && !knownKind(it.k));
@@ -1383,6 +1385,14 @@ export class Game {
     let p = this.las?.poang | 0;   // 📚 böckerna på Biblioteket
     for (const [id, e] of Object.entries(this.edu || {})) if (COURSES[id] && e) p += Math.min(COURSES[id].lectures, e.lect | 0) + (e.klar ? 2 : 0);
     return p;
+  }
+  // 🏡 Röda stugan på Solön: hyrd i dag, eller i går och det är före lunch (natten + morgonen därpå)
+  stugaHyrd() { return !!this.stuga && (this.stuga.dag === this.day || (this.stuga.dag === this.day - 1 && this.min < 12 * 60)); }
+  hyrStuga(pris) {
+    if (this.stugaHyrd()) return { ok: true, redan: true };
+    if (this.money < pris) return { ok: false, msg: $t('Du har inte råd med hyran.') };
+    this.money -= pris; this.stuga = { dag: this.day }; this.save();
+    return { ok: true, redan: false };
   }
   // 📚 Biblioteket (js/scenes/bibliotek.js): hur många böcker man kan läsa ut till i dag
   lasKvar() { return this.las.dag === this.day ? Math.max(0, LAS_PER_DAG - (this.las.n | 0)) : LAS_PER_DAG; }

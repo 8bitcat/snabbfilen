@@ -1,7 +1,7 @@
 {
-  "version": "0.147.0",
+  "version": "0.148.0",
   "date": "2026-11-19",
-  "title": "Fiskehamnen – fiskmarknad, båtar och färjan till Solön",
+  "title": "Röda stugan på Solön – hyr sommarstugan för natten",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
@@ -256,6 +256,7 @@
     "js/scenes/shop-universitet.js",
     "js/scenes/skraplott.js",
     "js/scenes/solon.js",
+    "js/scenes/stuga.js",
     "js/scenes/tassbacken.js",
     "js/scenes/tradgard.js",
     "js/scenes/utstallning.js",
@@ -264,6 +265,7 @@
     "js/shops/matbutik.js",
     "js/solon/fiske.js",
     "js/solon/karta.js",
+    "js/solon/stuga-inne.js",
     "js/tassbacken/hus.js",
     "js/tassbacken/inne-kit.js",
     "js/tassbacken/kafe-inne.js",

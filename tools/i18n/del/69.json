@@ -1,0 +1,222 @@
+[
+ {
+  "i": 9538,
+  "f": "js/scenes/stuga.js",
+  "k": "Du har inte råd med hyran."
+ },
+ {
+  "i": 9539,
+  "f": "js/scenes/stuga.js",
+  "k": "🏡 i Röda stugan på Solön"
+ },
+ {
+  "i": 9540,
+  "f": "js/scenes/stuga.js",
+  "k": "🏡 Röda stugan"
+ },
+ {
+  "i": 9541,
+  "f": "js/scenes/stuga.js",
+  "k": "Hyr sommarstugan för natten: <b>{0}</b>. Kamin, säng med lapptäcke, kaffe på morgonen och havet utanför fönstret. Nyckeln gäller till lunch dagen efter."
+ },
+ {
+  "i": 9542,
+  "f": "js/scenes/stuga.js",
+  "k": "🔑 Hyr för natten · {0}"
+ },
+ {
+  "i": 9543,
+  "f": "js/scenes/stuga.js",
+  "k": "🔑 Nyckeln är din! Gå in och gör dig hemmastadd."
+ },
+ {
+  "i": 9544,
+  "f": "js/scenes/stuga.js",
+  "k": "RÖDA STUGAN – GÅ IN"
+ },
+ {
+  "i": 9545,
+  "f": "js/scenes/stuga.js",
+  "k": "RÖDA STUGAN – HYR FÖR NATTEN · {0}"
+ },
+ {
+  "i": 9546,
+  "f": "js/scenes/stuga.js",
+  "k": "🏡 Uthyrd hela sommaren – en familj från stan bor här. Röda stugan går att hyra!"
+ },
+ {
+  "i": 9547,
+  "f": "js/scenes/stuga.js",
+  "k": "\"Bästa veckan i mitt liv. Delfinen kom varje kväll.\" – Familjen Berg"
+ },
+ {
+  "i": 9548,
+  "f": "js/scenes/stuga.js",
+  "k": "\"Vi fiskade fjorton abborrar och åt dem alla.\" – Sixten, 7 år"
+ },
+ {
+  "i": 9549,
+  "f": "js/scenes/stuga.js",
+  "k": "\"Kaminen är varm, havet är kallt. Perfekt.\" – Hulda"
+ },
+ {
+  "i": 9550,
+  "f": "js/scenes/stuga.js",
+  "k": "\"Måsen tog min bulle på verandan. Kommer tillbaka ändå!\" – Majken"
+ },
+ {
+  "i": 9551,
+  "f": "js/scenes/stuga.js",
+  "k": "\"Sov som en stock. Vågorna är bättre än vaggvisor.\" – Pricken"
+ },
+ {
+  "i": 9552,
+  "f": "js/scenes/stuga.js",
+  "k": "Ur Huldas dagbok, 1902: \"I natt förliste skonaren Hoppet. Jag rodde ut tre gånger. Alla kom i land.\""
+ },
+ {
+  "i": 9553,
+  "f": "js/scenes/stuga.js",
+  "k": "Ur Huldas dagbok, 1911: \"Katterna är nu fjorton. Den fjortonde heter Måns och sover på fyrens trappa.\""
+ },
+ {
+  "i": 9554,
+  "f": "js/scenes/stuga.js",
+  "k": "Ur Huldas dagbok, 1920: \"Stugan är klar. Röd, som jag ville. Härifrån ser jag både fyren och färjan.\""
+ },
+ {
+  "i": 9555,
+  "f": "js/scenes/stuga.js",
+  "k": "En natt i sommarstugan"
+ },
+ {
+  "i": 9556,
+  "f": "js/scenes/stuga.js",
+  "k": "🌅 God morgon! Havet glittrar utanför fönstret. +{0} 😊"
+ },
+ {
+  "i": 9557,
+  "f": "js/scenes/stuga.js",
+  "k": "SÄNGEN – SOV TILL I MORGON"
+ },
+ {
+  "i": 9558,
+  "f": "js/scenes/stuga.js",
+  "k": "KAMINEN – LÄGG I VED"
+ },
+ {
+  "i": 9559,
+  "f": "js/scenes/stuga.js",
+  "k": "Värmen från kaminen"
+ },
+ {
+  "i": 9560,
+  "f": "js/scenes/stuga.js",
+  "k": "🔥 Du lägger i ett vedträ. Kaminen sprakar och värmen sprider sig i stugan. +6 ⚡"
+ },
+ {
+  "i": 9561,
+  "f": "js/scenes/stuga.js",
+  "k": "🔥 Kaminen brinner fint. Kaffepannan puttrar på plattan."
+ },
+ {
+  "i": 9562,
+  "f": "js/scenes/stuga.js",
+  "k": "BORDET – KAFFE OCH BULLE"
+ },
+ {
+  "i": 9563,
+  "f": "js/scenes/stuga.js",
+  "k": "Kaffe i stugan"
+ },
+ {
+  "i": 9564,
+  "f": "js/scenes/stuga.js",
+  "k": "☕ Kaffe ur pannan och en bulle från korgen – det ingår i hyran. +12 🍔"
+ },
+ {
+  "i": 9565,
+  "f": "js/scenes/stuga.js",
+  "k": "☕ Pannan är tom tills i morgon. Men utsikten kostar inget."
+ },
+ {
+  "i": 9566,
+  "f": "js/scenes/stuga.js",
+  "k": "GÄSTBOKEN"
+ },
+ {
+  "i": 9567,
+  "f": "js/scenes/stuga.js",
+  "k": "VERANDAN – SITT OCH TITTA PÅ HAVET"
+ },
+ {
+  "i": 9568,
+  "f": "js/scenes/stuga.js",
+  "k": "Kvällen på verandan"
+ },
+ {
+  "i": 9569,
+  "f": "js/scenes/stuga.js",
+  "k": "🌙 Du sitter på verandan. Fyren blinkar, vågorna skvalpar och stjärnorna är fler än i stan."
+ },
+ {
+  "i": 9570,
+  "f": "js/scenes/stuga.js",
+  "k": "🌊 Du sitter på verandan med fötterna på räcket. Färjan tutar långt borta."
+ },
+ {
+  "i": 9571,
+  "f": "js/scenes/stuga.js",
+  "k": "FÖNSTRET MOT HAVET"
+ },
+ {
+  "i": 9572,
+  "f": "js/scenes/stuga.js",
+  "k": "En delfin utanför fönstret"
+ },
+ {
+  "i": 9573,
+  "f": "js/scenes/stuga.js",
+  "k": "🐬 En delfin! Den hoppar två gånger utanför fönstret och försvinner."
+ },
+ {
+  "i": 9574,
+  "f": "js/scenes/stuga.js",
+  "k": "🪟 Fyren blinkar var tredje sekund. Hulda räknade dem varje natt."
+ },
+ {
+  "i": 9575,
+  "f": "js/scenes/stuga.js",
+  "k": "🪟 En segelbåt glider förbi. Måsarna följer färjan in mot stan."
+ },
+ {
+  "i": 9576,
+  "f": "js/scenes/stuga.js",
+  "k": "BOKHYLLAN – HULDAS DAGBOK"
+ },
+ {
+  "i": 9577,
+  "f": "js/scenes/stuga.js",
+  "k": "GUNGSTOLEN"
+ },
+ {
+  "i": 9578,
+  "f": "js/scenes/stuga.js",
+  "k": "🪑 Gungstolen knarrar. Här satt Hulda och stickade sockor åt alla fjorton katterna."
+ },
+ {
+  "i": 9579,
+  "f": "js/scenes/stuga.js",
+  "k": "HYLLAN"
+ },
+ {
+  "i": 9580,
+  "f": "js/scenes/stuga.js",
+  "k": "🫙 Hallonsylt, snäckor från stranden och ett skepp i en flaska. Fotot är Hulda – fyrvaktaren som byggde stugan."
+ },
+ {
+  "i": 9581,
+  "f": "js/scenes/stuga.js",
+  "k": "Natten på Solön …"
+ }
+]

@@ -10,6 +10,10 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.148.0] – 2026-11-19 – Röda stugan på Solön – hyr sommarstugan för natten
+- 🏡 RÖDA STUGAN på Solön går att hyra för natten (150 kr vid dörren – nyckeln gäller till lunch dagen efter). Inne: furupanel, det stora fönstret mot havet där vågorna rullar, segelbåten glider förbi och fyren blinkar om natten, sängen med lapptäcket, kaminen med kaffepannan, bordet med gästboken, bänken under fönstret, bokhyllan med fyrvaktaren Huldas dagbok, gungstolen och verandadörren.
+- Sov i sängen så spelas natten i stugan och du vaknar där klockan sju med havet utanför – en natt i sommarstugan ger extra lycka. Lägg i ved i kaminen (piggar upp), ta kaffe och bulle som ingår i hyran, läs gästboken, sitt på verandan och titta efter delfinen genom fönstret. UT leder tillbaka till Solön framför stugan.
+
 ## [0.147.0] – 2026-11-19 – Fiskehamnen – fiskmarknad, båtar och färjan till Solön
 - ⚓ FISKEHAMNEN har öppnat! Ta hamnbussen från vilken hållplats som helst (raden FISKEHAMNEN). Längs kajen: HAMNKONTORET, MAGASINET med kranen, FISKMARKNADEN (färsk fisk till skafferiet för 30 kr, rökt makrill och räkmackor), FISK & CHIPS-vagnen, BÅTAFFÄREN, SKEPPSHANDELN med metspön, RÖKERIET och FÄRJETERMINALEN – härifrån går SOLÖ-FÄRJAN ut till Solön.
 - Köp en egen båt i båtaffären (roddbåt 1 200 kr, motorbåt 5 500 kr) och lägg ut vid båtrampen – styr runt i hamnbassängen bland bojarna och lägg till igen. Ingen båt? Hyr en roddbåt för 60 kr. Piren leder ut till fyren där man kan fiska. Fiskebåtarna guppar vid kajen, måsarna lyfter när du kommer, sälen Sigge tittar upp vid piren och om natten sveper fyrens ljus över vattnet.
