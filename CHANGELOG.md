@@ -10,6 +10,10 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.144.0] – 2026-11-19 – Biblioteket i Gamla stan – läs dig till utbildningspoäng
+- 📚 BIBLIOTEKET i Gamla stan har öppnat! Gå in genom dörren: den stora bokväggen med fem ämnen (HISTORIA, NATUR, TEKNIK, KONST, SAGOR), läsbord med gröna banklampor, valvfönstret med glasmålningen, golvuret som går efter spelets klocka, sagohyllan där katten Dewey sover och den öppna spisen med läsfåtöljer.
+- Välj en bok från hyllan – figuren sätter sig vid ett bord och läser. En utläst bok tar en timme och ger en utbildningspoäng första gången (räknas i livsmålet Utbildning), högst två böcker om dagen. När boken är slut visas vad du lärt dig. Bibliotekarie Greta, dagens PIXELBLADET, jordgloben, kortkatalogen och barnhörnan väntar också.
+
 ## [0.143.0] – 2026-11-19 – Teatern – skådespelarjobbet
 - 🎭 TEATERN i Gamla stan har öppnat – med skådespelarjobbet! Du står mitt på scenen i strålkastarljuset, Regissör Rut ropar från kulissen – BUGA, VINKA, JUBLA eller SNURRA – och du gör posen innan hennes tålamod tar slut (knapparna eller 1–4).
 - Rätt pose ger applåder och lön, fel eller för sent ger BUUU och en tomat från salongen. Tio rätt i rad = stående ovationer med bonus. Takten ökar ju vanare du blir, och efter passet står du utanför teatern igen.

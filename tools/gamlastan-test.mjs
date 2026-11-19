@@ -59,8 +59,8 @@ const spots = await D(() => SF.scene._debug.spots());
 ok(['bibliotek', 'museum', 'teater', 'antik', 'kafe', 'guldsmed', 'lyktmakare', 'brunn', 'musikant', 'guide', 'brod', 'blommor', 'buss', 'port', 'valv'].every((s) => spots.includes(s)), `platserna finns (${spots.length} st)`);
 
 // 3. dörren, brunnen, musikanten
-await D(() => SF.scene._debug.act('bibliotek')); await sleep(400);
-ok(/Biblioteket öppnar snart/.test(await D(() => SF.scene._debug.prat()) || ''), 'bibliotekets dörr berättar vad som kommer');
+await D(() => SF.scene._debug.act('antik')); await sleep(400);
+ok(/Antikaffären öppnar snart/.test(await D(() => SF.scene._debug.prat()) || ''), 'antikaffärens dörr berättar vad som kommer (biblioteket har eget prov)');
 const m1 = await D(() => SF.game.money);
 await D(() => SF.scene._debug.act('brunn')); await sleep(400);
 ok((await D(() => SF.game.money)) === m1 - 1 && (await toasts()).some((t) => /Plums/.test(t)), 'brunnen tar en krona och man önskar sig något');

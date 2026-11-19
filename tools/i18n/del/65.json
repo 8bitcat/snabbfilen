@@ -1,0 +1,417 @@
+[
+ {
+  "i": 9255,
+  "f": "js/scenes/bibliotek.js",
+  "k": "Pixelhögskolan: 1 poäng per föreläsning, 2 till för en examen. Biblioteket i Gamla stan: 1 poäng per utläst bok."
+ },
+ {
+  "i": 9256,
+  "f": "js/scenes/bibliotek.js",
+  "k": "HISTORIA"
+ },
+ {
+  "i": 9257,
+  "f": "js/scenes/bibliotek.js",
+  "k": "NATUR"
+ },
+ {
+  "i": 9258,
+  "f": "js/scenes/bibliotek.js",
+  "k": "TEKNIK"
+ },
+ {
+  "i": 9259,
+  "f": "js/scenes/bibliotek.js",
+  "k": "SAGOR"
+ },
+ {
+  "i": 9260,
+  "f": "js/scenes/bibliotek.js",
+  "k": "Pixelstaden – från fiskeläge till storstad"
+ },
+ {
+  "i": 9261,
+  "f": "js/scenes/bibliotek.js",
+  "k": "Visste du att Pixelstaden började som tre fiskestugor vid Sjöboden?"
+ },
+ {
+  "i": 9262,
+  "f": "js/scenes/bibliotek.js",
+  "k": "Stadsporten 1699"
+ },
+ {
+  "i": 9263,
+  "f": "js/scenes/bibliotek.js",
+  "k": "Klockan i Stadsporten har aldrig stått still. Nyckeln förvaras här på Biblioteket."
+ },
+ {
+  "i": 9264,
+  "f": "js/scenes/bibliotek.js",
+  "k": "Gamla stans gränder"
+ },
+ {
+  "i": 9265,
+  "f": "js/scenes/bibliotek.js",
+  "k": "Den smalaste gränden är bara 90 centimeter bred. Två katter får knappt plats i bredd."
+ },
+ {
+  "i": 9266,
+  "f": "js/scenes/bibliotek.js",
+  "k": "Fåglarna på Pixelberg"
+ },
+ {
+  "i": 9267,
+  "f": "js/scenes/bibliotek.js",
+  "k": "Korpen på Pixelberg kan härma berg-och-dalbanans tjut. Den gör det varje morgon."
+ },
+ {
+  "i": 9268,
+  "f": "js/scenes/bibliotek.js",
+  "k": "Skärgårdens fiskar"
+ },
+ {
+  "i": 9269,
+  "f": "js/scenes/bibliotek.js",
+  "k": "Abborren vid Solön känner igen den som matar den. Fiskarna kallar honom Bosse."
+ },
+ {
+  "i": 9270,
+  "f": "js/scenes/bibliotek.js",
+  "k": "Den stora trädgårdsboken"
+ },
+ {
+  "i": 9271,
+  "f": "js/scenes/bibliotek.js",
+  "k": "Tomater vill ha sol och vatten – men inte för mycket av något. Precis som vi."
+ },
+ {
+  "i": 9272,
+  "f": "js/scenes/bibliotek.js",
+  "k": "Så funkar en dator"
+ },
+ {
+  "i": 9273,
+  "f": "js/scenes/bibliotek.js",
+  "k": "En dator kan bara räkna till ett. Men den gör det väldigt, väldigt snabbt."
+ },
+ {
+  "i": 9274,
+  "f": "js/scenes/bibliotek.js",
+  "k": "Rymdraketer för nybörjare"
+ },
+ {
+  "i": 9275,
+  "f": "js/scenes/bibliotek.js",
+  "k": "En raket flyger inte för att den trycker mot luften – utan för att den kastar bränsle bakåt."
+ },
+ {
+  "i": 9276,
+  "f": "js/scenes/bibliotek.js",
+  "k": "Bygg din egen radio"
+ },
+ {
+  "i": 9277,
+  "f": "js/scenes/bibliotek.js",
+  "k": "Radiovågor går rakt genom väggar. Därför hörs Pixelradion även inne i husvagnen."
+ },
+ {
+  "i": 9278,
+  "f": "js/scenes/bibliotek.js",
+  "k": "Konstens historia i bilder"
+ },
+ {
+  "i": 9279,
+  "f": "js/scenes/bibliotek.js",
+  "k": "Den äldsta målningen i staden är en katt på Stadsportens vägg – från 1699."
+ },
+ {
+  "i": 9280,
+  "f": "js/scenes/bibliotek.js",
+  "k": "Måla med pixlar"
+ },
+ {
+  "i": 9281,
+  "f": "js/scenes/bibliotek.js",
+  "k": "Allt i Pixelstaden är gjort av små rutor. Titta riktigt nära – då ser du dem."
+ },
+ {
+  "i": 9282,
+  "f": "js/scenes/bibliotek.js",
+  "k": "Teaterns mästare"
+ },
+ {
+  "i": 9283,
+  "f": "js/scenes/bibliotek.js",
+  "k": "Teatern har en lönnlucka i scengolvet. Bara Regissör Rut vet var den är."
+ },
+ {
+  "i": 9284,
+  "f": "js/scenes/bibliotek.js",
+  "k": "Tummelisa"
+ },
+ {
+  "i": 9285,
+  "f": "js/scenes/bibliotek.js",
+  "k": "Tummelisa var inte större än en tumme – men hon vågade mer än de flesta."
+ },
+ {
+  "i": 9286,
+  "f": "js/scenes/bibliotek.js",
+  "k": "Husvagnen som ville bli villa"
+ },
+ {
+  "i": 9287,
+  "f": "js/scenes/bibliotek.js",
+  "k": "Husvagnen fick aldrig något staket. Men den fick hjul, och det var bättre."
+ },
+ {
+  "i": 9288,
+  "f": "js/scenes/bibliotek.js",
+  "k": "Spöket på Pixelberg"
+ },
+ {
+  "i": 9289,
+  "f": "js/scenes/bibliotek.js",
+  "k": "Spöket var rädd för mörkret – tills någon gav det en lykta från Lyktmakaren."
+ },
+ {
+  "i": 9290,
+  "f": "js/scenes/bibliotek.js",
+  "k": "TYST"
+ },
+ {
+  "i": 9291,
+  "f": "js/scenes/bibliotek.js",
+  "k": "📚 på Biblioteket"
+ },
+ {
+  "i": 9292,
+  "f": "js/scenes/bibliotek.js",
+  "k": "Välkommen till Biblioteket! Ta en bok från hyllan och sätt dig vid ett bord. Varje utläst bok ger en utbildningspoäng."
+ },
+ {
+  "i": 9293,
+  "f": "js/scenes/bibliotek.js",
+  "k": "Tyst här inne, tack. 🤫 Böckerna hör allt."
+ },
+ {
+  "i": 9294,
+  "f": "js/scenes/bibliotek.js",
+  "k": "Två böcker om dagen – sedan behöver ögonen vila."
+ },
+ {
+  "i": 9295,
+  "f": "js/scenes/bibliotek.js",
+  "k": "Sagohyllan är barnens. Dewey sover högst upp – väck honom inte."
+ },
+ {
+  "i": 9296,
+  "f": "js/scenes/bibliotek.js",
+  "k": "Golvuret har gått sedan 1699. Det går en minut fel – per århundrade."
+ },
+ {
+  "i": 9297,
+  "f": "js/scenes/bibliotek.js",
+  "k": "Du har läst två böcker i dag – ögonen behöver vila. Välkommen tillbaka i morgon!"
+ },
+ {
+  "i": 9298,
+  "f": "js/scenes/bibliotek.js",
+  "k": "PIXELBLADET: Kvällsmarknaden i Gamla stan lockar rekordmånga."
+ },
+ {
+  "i": 9299,
+  "f": "js/scenes/bibliotek.js",
+  "k": "PIXELBLADET: Nytt rekord på Pixelberg – 112 varv på berg-och-dalbanan."
+ },
+ {
+  "i": 9300,
+  "f": "js/scenes/bibliotek.js",
+  "k": "PIXELBLADET: KBK vann igen! Fansen jublade på Pixeltorget."
+ },
+ {
+  "i": 9301,
+  "f": "js/scenes/bibliotek.js",
+  "k": "PIXELBLADET: Villaområdets gräsmattor utsedda till stans finaste."
+ },
+ {
+  "i": 9302,
+  "f": "js/scenes/bibliotek.js",
+  "k": "PIXELBLADET: Teatern sätter upp Tummelisa – alla biljetter slut."
+ },
+ {
+  "i": 9303,
+  "f": "js/scenes/bibliotek.js",
+  "k": "Läst – ger ingen ny poäng"
+ },
+ {
+  "i": 9304,
+  "f": "js/scenes/bibliotek.js",
+  "k": "Oläst · +1 🎓"
+ },
+ {
+  "i": 9305,
+  "f": "js/scenes/bibliotek.js",
+  "k": "Läs"
+ },
+ {
+  "i": 9306,
+  "f": "js/scenes/bibliotek.js",
+  "k": "Välj en bok. Att läsa ut den tar en timme och ger en utbildningspoäng första gången."
+ },
+ {
+  "i": 9307,
+  "f": "js/scenes/bibliotek.js",
+  "k": "I dag kan du läsa {0} till."
+ },
+ {
+  "i": 9308,
+  "f": "js/scenes/bibliotek.js",
+  "k": "📖 Du tar «{0}». Sätt dig vid ett bord och läs."
+ },
+ {
+  "i": 9309,
+  "f": "js/scenes/bibliotek.js",
+  "k": "📚 «{0}» utläst! +1 🎓 utbildningspoäng"
+ },
+ {
+  "i": 9310,
+  "f": "js/scenes/bibliotek.js",
+  "k": "📚 «{0}» – du hade läst den förut, men den var lika bra."
+ },
+ {
+  "i": 9311,
+  "f": "js/scenes/bibliotek.js",
+  "k": "En bok på Biblioteket"
+ },
+ {
+  "i": 9312,
+  "f": "js/scenes/bibliotek.js",
+  "k": "Purrr … 📚"
+ },
+ {
+  "i": 9313,
+  "f": "js/scenes/bibliotek.js",
+  "k": "Dewey på Biblioteket"
+ },
+ {
+  "i": 9314,
+  "f": "js/scenes/bibliotek.js",
+  "k": "BIBLIOTEKARIE GRETA"
+ },
+ {
+  "i": 9315,
+  "f": "js/scenes/bibliotek.js",
+  "k": "Lästa böcker: {0} · poäng: {1} · kvar i dag: {2}"
+ },
+ {
+  "i": 9316,
+  "f": "js/scenes/bibliotek.js",
+  "k": "LÄS HÄR"
+ },
+ {
+  "i": 9317,
+  "f": "js/scenes/bibliotek.js",
+  "k": "GOLVURET"
+ },
+ {
+  "i": 9318,
+  "f": "js/scenes/bibliotek.js",
+  "k": "🕰️ Golvuret visar {0}. Det har tickat sedan 1699."
+ },
+ {
+  "i": 9319,
+  "f": "js/scenes/bibliotek.js",
+  "k": "VALVFÖNSTRET"
+ },
+ {
+  "i": 9320,
+  "f": "js/scenes/bibliotek.js",
+  "k": "🪟 Glasmålningen visar stadens fyra årstider. Solen är alltid gul – även på vintern."
+ },
+ {
+  "i": 9321,
+  "f": "js/scenes/bibliotek.js",
+  "k": "DEWEY"
+ },
+ {
+  "i": 9322,
+  "f": "js/scenes/bibliotek.js",
+  "k": "SAGOHYLLAN"
+ },
+ {
+  "i": 9323,
+  "f": "js/scenes/bibliotek.js",
+  "k": "ÖPPNA SPISEN"
+ },
+ {
+  "i": 9324,
+  "f": "js/scenes/bibliotek.js",
+  "k": "🔥 Elden sprakar. Det är den varmaste platsen i hela Gamla stan."
+ },
+ {
+  "i": 9325,
+  "f": "js/scenes/bibliotek.js",
+  "k": "LÄSFÅTÖLJEN"
+ },
+ {
+  "i": 9326,
+  "f": "js/scenes/bibliotek.js",
+  "k": "🛋️ Fåtöljen är upptagen – av en bok någon glömt. Läsborden är lediga."
+ },
+ {
+  "i": 9327,
+  "f": "js/scenes/bibliotek.js",
+  "k": "🌍 Du snurrar på jordgloben. Pixelstaden ligger … precis där du står."
+ },
+ {
+  "i": 9328,
+  "f": "js/scenes/bibliotek.js",
+  "k": "DAGENS TIDNING"
+ },
+ {
+  "i": 9329,
+  "f": "js/scenes/bibliotek.js",
+  "k": "BOKVAGNEN"
+ },
+ {
+  "i": 9330,
+  "f": "js/scenes/bibliotek.js",
+  "k": "📚 Återlämnade böcker. Greta ställer tillbaka dem när det blir kväll."
+ },
+ {
+  "i": 9331,
+  "f": "js/scenes/bibliotek.js",
+  "k": "🧸 Barnhörnan: bilderböcker, små stolar och en nalle som har läst allt."
+ },
+ {
+  "i": 9332,
+  "f": "js/scenes/bibliotek.js",
+  "k": "STEGEN"
+ },
+ {
+  "i": 9333,
+  "f": "js/scenes/bibliotek.js",
+  "k": "🪜 Stegen rullar längs hyllan. Högst upp står de äldsta böckerna – de luktar damm och äventyr."
+ },
+ {
+  "i": 9334,
+  "f": "js/scenes/bibliotek.js",
+  "k": "KORTKATALOGEN"
+ },
+ {
+  "i": 9335,
+  "f": "js/scenes/bibliotek.js",
+  "k": "🗂️ Kortkatalogen: en lapp för varje bok i huset, sorterade för hand. Porträttet är grundaren, Hedvig Bok."
+ },
+ {
+  "i": 9336,
+  "f": "js/scenes/bibliotek.js",
+  "k": "📖 Du lägger ifrån dig boken – den är inte utläst."
+ },
+ {
+  "i": 9337,
+  "f": "js/scenes/bibliotek.js",
+  "k": "BIBLIOTEKET – LÄS OCH LÄR"
+ }
+]

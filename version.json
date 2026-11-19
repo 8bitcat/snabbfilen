@@ -1,7 +1,7 @@
 {
-  "version": "0.143.0",
+  "version": "0.144.0",
   "date": "2026-11-19",
-  "title": "Teatern – skådespelarjobbet",
+  "title": "Biblioteket i Gamla stan – läs dig till utbildningspoäng",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
@@ -114,6 +114,7 @@
     "js/data/wardrobe-tops.js",
     "js/data/wardrobe.js",
     "js/game.js",
+    "js/gamlastan/bibliotek-inne.js",
     "js/gamlastan/hus.js",
     "js/gamlastan/karta.js",
     "js/i18n/de.js",
@@ -182,6 +183,7 @@
     "js/pixelberg/teman.js",
     "js/scenes/agility.js",
     "js/scenes/apartment.js",
+    "js/scenes/bibliotek.js",
     "js/scenes/bio/film.js",
     "js/scenes/bio/filmljud.js",
     "js/scenes/bio/filmmusik.js",

@@ -13,6 +13,7 @@ import { makeJobbTruck } from './jobs/jobb-truck.js'; // 🚚 eget företag: pas
 import { makeLandet } from './scenes/landet.js'; // 🌾 LANDET öster om förorten
 import { makeTassbacken } from './scenes/tassbacken.js'; // 🐾 TASSBACKEN väster om Linnéstaden
 import { makeGamlastan } from './scenes/gamlastan.js'; // 🏛️ GAMLA STAN – stadens äldsta kvarter (gamla bussen)
+import { makeBibliotek } from './scenes/bibliotek.js'; // 📚 Biblioteket i Gamla stan – läs dig till utbildningspoäng
 import { makeSolon } from './scenes/solon.js'; // ⛴️ SOLÖN – badön (färjan från bryggan vid Sjöboden)
 import { makePixelberg } from './scenes/pixelberg.js'; // 🎡 PIXELBERG – tivolit på berget (bergbussen)
 import { makeUtstallning } from './scenes/utstallning.js'; // 🏆 utställningshallen i Tassbacken
@@ -136,6 +137,7 @@ const SCENES = {
   solon: (a) => makeSolon(a), // ⛴️ Solön: strand, bad, glass och fyren
   pixelberg: (a) => makePixelberg(a), // 🎡 Pixelberg: tivolit
   gamlastan: (a) => makeGamlastan(a), // 🏛️ Gamla stan: kullersten, brunnen, kvällsmarknaden
+  bibliotek: (a) => makeBibliotek(a), // 📚 Biblioteket i Gamla stan: böcker som ger utbildningspoäng
   utstallning: (a, o) => makeUtstallning(a, o || {}), // 🏆 katt-/hundutställning och kaninhoppning
   kaninhopp: (a, o) => makeKaninhopp(a, o || {}), // 🐇 hinderloppet (petId + onDone från utstallning.js)
   kattcafe: (a) => makeShopKattcafe(a), // ☕ fika bland katterna
@@ -558,7 +560,7 @@ const PLACE_AWAY = {
 // ställena bakom stadens dörrar (DOOR_SCENES) – bara där ingen text redan finns
 for (const [k, v] of Object.entries({ bank: $t('🏦 på banken'), elektronik: $t('📱 i elektronikbutiken'), frisor: $t('💈 hos frisören'), skor: $t('👟 i skobutiken'),
   accessoarer: $t('👜 i accessoarbutiken'), bio: $t('🎬 på bion'), kebab: $t('🥙 på kebaben'), pantbank: $t('💍 på pantbanken'), universitet: $t('🎓 på Pixelhögskolan'),
-  jobbdatorbygge: $t('🖥️ bygger datorer på Pixel Data'), jobbfinans: $t('📈 handlar aktier på Finanshuset'), jobbteater: $t('🎭 står på scenen på Teatern'), koket: $t('🍳 lagar mat hemma'), tradgard: $t('🌱 i trädgården'), fordon: $t('🔧 i garaget'), maskerad: $t('🎃 i maskeradbutiken'), sjoboden: $t('🐟 på Sjöboden'), bling: $t('💎 på BLING BLING'), jobbtruck: $t('🚚 står i sin foodtruck'), landet: $t('🌾 ute på landet'), hopp: $t('🏇 hoppar på hinderbanan'), tassbacken: $t('🐾 i Tassbacken'), solon: $t('⛴️ på Solön'), pixelberg: $t('🎡 på tivolit på Pixelberg'), gamlastan: $t('🏛️ i Gamla stan'), trimmaren: $t('✂️ i djurtrimmaren'), utstallning: $t('🏆 på utställningen i Tassbacken'), kaninhopp: $t('🐇 tävlar i kaninhoppning'), kattcafe: $t('☕ fikar på kattcaféet'), djurhem: $t('🏡 på djurhemmet'), djurklinik: $t('🩺 hos veterinären'), agility: $t('🐕 springer agility') })) PLACE_AWAY[k] ??= v;
+  jobbdatorbygge: $t('🖥️ bygger datorer på Pixel Data'), jobbfinans: $t('📈 handlar aktier på Finanshuset'), jobbteater: $t('🎭 står på scenen på Teatern'), bibliotek: $t('📚 på Biblioteket'), koket: $t('🍳 lagar mat hemma'), tradgard: $t('🌱 i trädgården'), fordon: $t('🔧 i garaget'), maskerad: $t('🎃 i maskeradbutiken'), sjoboden: $t('🐟 på Sjöboden'), bling: $t('💎 på BLING BLING'), jobbtruck: $t('🚚 står i sin foodtruck'), landet: $t('🌾 ute på landet'), hopp: $t('🏇 hoppar på hinderbanan'), tassbacken: $t('🐾 i Tassbacken'), solon: $t('⛴️ på Solön'), pixelberg: $t('🎡 på tivolit på Pixelberg'), gamlastan: $t('🏛️ i Gamla stan'), trimmaren: $t('✂️ i djurtrimmaren'), utstallning: $t('🏆 på utställningen i Tassbacken'), kaninhopp: $t('🐇 tävlar i kaninhoppning'), kattcafe: $t('☕ fikar på kattcaféet'), djurhem: $t('🏡 på djurhemmet'), djurklinik: $t('🩺 hos veterinären'), agility: $t('🐕 springer agility') })) PLACE_AWAY[k] ??= v;
 function placeOf(p, info) {
   const s = String(p.scene || 'away');
   if (s === 'city') return $t('🏙️ i staden');

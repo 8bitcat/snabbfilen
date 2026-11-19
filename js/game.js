@@ -181,6 +181,9 @@ export const COURSES = {
     blurb: $t('Leda ett lag, lägga schema, ta hand om kunderna och hålla budgeten – för dig som vill bli chef.') },
 };
 export const courseOf = (id) => COURSES[id] || null;
+// 📚 BIBLIOTEKET i Gamla stan (js/scenes/bibliotek.js): så många böcker man kan läsa ut om dagen – varje oläst bok ger
+// en utbildningspoäng (g.las.poang räknas in i utbPoang)
+export const LAS_PER_DAG = 2;
 // 💪 PIXEL GYM (js/scenes/shop-gym.js): träningspoängen per gren och nivåerna 0–5 (poängen som krävs). Nivån i
 // KONDITION ger snabbare fötter på jobbet (gymFart, walkable.js), nivån i STYRKA fler brickor/påsar i taget (gymBar).
 export const GYM_NIVAER = [0, 40, 100, 180, 280, 400];
@@ -634,7 +637,7 @@ export const MAL_NIVAER = [
 export const MAL = {
   rik: { id: 'rik', icon: '💰', name: $t('Rikedom'), latt: 3000, normal: 10000, svar: 25000, blurb: $t('Pengar på fickan och på banken.') },
   lycka: { id: 'lycka', icon: '😊', name: $t('Lycka'), latt: 60, normal: 75, svar: 90, blurb: $t('Lyckomätaren – bio, djur, kompisar, ett fint hem och lediga dagar.') },
-  utb: { id: 'utb', icon: '🎓', name: $t('Utbildning'), latt: 4, normal: 6, svar: 12, blurb: $t('Pixelhögskolan: 1 poäng per föreläsning, 2 till för en examen.') },
+  utb: { id: 'utb', icon: '🎓', name: $t('Utbildning'), latt: 4, normal: 6, svar: 12, blurb: $t('Pixelhögskolan: 1 poäng per föreläsning, 2 till för en examen. Biblioteket i Gamla stan: 1 poäng per utläst bok.') },
   karr: { id: 'karr', icon: '💼', name: $t('Karriär'), latt: 2, normal: 3, svar: 5, blurb: $t('Bästa titeln på något jobb – jobba många pass på samma ställe.') },
 };
 export const malNiva = (id) => MAL_NIVAER.find((n) => n.id === id) || MAL_NIVAER[1];
@@ -776,6 +779,9 @@ export class Game {
     // 💪 PIXEL GYM (js/scenes/shop-gym.js): träningspoäng per gren, dagen man köpte dagskortet (kort) och passen per
     // gren i dag (dag + pass – de två första passen per gren ger fulla poäng)
     this.gym = { styrka: 0, kondition: 0, rytm: 0, kort: -1, dag: -1, pass: {} };
+    // 📚 Biblioteket i Gamla stan (js/scenes/bibliotek.js): poängen från lästa böcker (utbPoang), dagen och antalet
+    // utlästa böcker i dag (LAS_PER_DAG) och vilka böcker man läst (ger ingen ny poäng andra gången)
+    this.las = { poang: 0, dag: -1, n: 0, lasta: [] };
     this.festVecka = '';   // 🎉 veckan ("2026-W42") då man senast fick lördagsfestens present (js/city/fest.js)
     // 🏡 djurhemmet i Tassbacken (js/scenes/shop-djurhem.js): adopterade = djurens id:n ("dh3:12" = djur 3 vecka 12),
     // hjalp = dagen man senast hjälpte till, gav = dagen man senast skänkte pengar
@@ -974,6 +980,8 @@ export class Game {
         { const Q = p.gym && typeof p.gym === 'object' ? p.gym : {}, pass = {};
           for (const [k, v] of Object.entries(Q.pass && typeof Q.pass === 'object' ? Q.pass : {})) if (/^[a-z]{2,12}$/.test(k)) pass[k] = Math.max(0, Math.min(99, v | 0));
           g.gym = { styrka: Math.max(0, Math.min(9999, Q.styrka | 0)), kondition: Math.max(0, Math.min(9999, Q.kondition | 0)), rytm: Math.max(0, Math.min(9999, Q.rytm | 0)), kort: (Q.kort | 0) || -1, dag: (Q.dag | 0) || -1, pass }; }
+        { const Q = p.las && typeof p.las === 'object' ? p.las : {};
+          g.las = { poang: Math.max(0, Math.min(99, Q.poang | 0)), dag: (Q.dag | 0) || -1, n: Math.max(0, Math.min(9, Q.n | 0)), lasta: (Array.isArray(Q.lasta) ? Q.lasta : []).filter((s) => typeof s === 'string' && /^[a-z0-9]{2,16}$/.test(s)).slice(-60) }; }
         g.festVecka = /^\d{4}-W\d{2}$/.test(String(p.festVecka || '')) ? String(p.festVecka) : '';
         g.designs = (Array.isArray(p.designs) ? p.designs : []).filter((d) => d && ['neck', 'bag', 'beads', 'phone'].includes(d.kind) && d.sel && typeof d.sel === 'object').slice(-40).map(cleanDesign).filter(Boolean);
         keep.storage = (Array.isArray(p.storage) ? p.storage : []).filter((it) => it && typeof it === 'object' && !knownKind(it.k));
@@ -1368,9 +1376,23 @@ export class Game {
     return n;
   }
   utbPoang() {
-    let p = 0;
+    let p = this.las?.poang | 0;   // 📚 böckerna på Biblioteket
     for (const [id, e] of Object.entries(this.edu || {})) if (COURSES[id] && e) p += Math.min(COURSES[id].lectures, e.lect | 0) + (e.klar ? 2 : 0);
     return p;
+  }
+  // 📚 Biblioteket (js/scenes/bibliotek.js): hur många böcker man kan läsa ut till i dag
+  lasKvar() { return this.las.dag === this.day ? Math.max(0, LAS_PER_DAG - (this.las.n | 0)) : LAS_PER_DAG; }
+  // en utläst bok: tar en timme på klockan, ger 1 utbildningspoäng första gången boken läses.
+  // → { ok, poang (1 | 0), kvar } – ok: false när dagens böcker är slut (LAS_PER_DAG)
+  lasBok(id) {
+    if (this.las.dag !== this.day) { this.las.dag = this.day; this.las.n = 0; }
+    if (this.las.n >= LAS_PER_DAG) return { ok: false, poang: 0, kvar: 0 };
+    this.las.n++;
+    const ny = !this.las.lasta.includes(id);
+    if (ny) { this.las.lasta = [...this.las.lasta, String(id)].slice(-60); this.las.poang = Math.min(99, (this.las.poang | 0) + 1); }
+    this.passTime(60);
+    this.save();
+    return { ok: true, poang: ny ? 1 : 0, kvar: LAS_PER_DAG - this.las.n };
   }
   bestLevel() { return Math.max(1, ...Object.values(this.jobs).map((n) => levelOf(n | 0))); }
   // Var står man i livsmålen? [{ key, icon, name, have, need, done, k (0–1) }] – tom lista utan mål
