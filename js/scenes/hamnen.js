@@ -47,7 +47,7 @@ export function makeHamnen(A) {
   const g = A.game;
   let VW = Math.max(384, Math.min(A.W || 384, TW)), VH = Math.max(160, Math.min(A.H || 216, TH));
   const from = A.hamnFran || null; A.hamnFran = null;
-  const walker = createCityWalker({ W: TW, H: TH, left: 2, right: TW - 2, top: H.TOP, bottom: H.BOTTOM, spawn: [HALLPLATS.x + 16, HALLPLATS.y - 8] });
+  const walker = createCityWalker({ W: TW, H: TH, left: 2, right: TW - 2, top: H.TOP, bottom: H.BOTTOM, spawn: from?.marknad ? [(HUS.marknad.door.x0 + HUS.marknad.door.x1) / 2, H.BASE + 30] : [HALLPLATS.x + 16, HALLPLATS.y - 8] });
   let tur = null;   // båtturen: { typ, hyrd, t } när man är ute på vattnet
   const fordon = () => g.aker;
   const applyRide = () => { if (tur) return; const F = fordon(); walker.speed = GANG * (F ? F.fart : 1); };
@@ -94,6 +94,14 @@ export function makeHamnen(A) {
   }
 
   // ---------- marknaden, vagnen, affärerna ----------
+  // 🐟 marknadshallens dörr: bakom disken jobbar man som fiskhandlare (js/jobs/jobb-fisk.js, JOBS.fiskhandel)
+  function marknadshallen() {
+    play('knock');
+    openModal($t('🐟 Marknadshallen'), `<p style="font-size:var(--f2);margin-top:0">${$t('Stånden utanför säljer dagens fångst. Bakom disken står Britta med islådorna och vågen – hon behöver någon som väger upp åt kunderna.')}</p>`, [
+      { label: $t('💼 Jobba ett pass'), cls: 'btn-go', onClick: () => { closeModal(); if (!A.jobReady?.('fiskhandel')) { toast($t('🐟 Fiskmarknaden anställer snart!')); return; } A.hamnFran = { marknad: true, buss: from?.buss || '' }; play('door'); A.startJob('fiskhandel'); } },
+      { label: $t('Bara titta'), onClick: closeModal },
+    ]);
+  }
   function marknad(id) {
     play('click');
     if (id === 'fisk') {
@@ -172,6 +180,7 @@ export function makeHamnen(A) {
     { id: 'buss', r: [HALLPLATS.x - 12, HALLPLATS.y - 36, HALLPLATS.x + 14, HALLPLATS.y + 2], go: [HALLPLATS.x + 10, HALLPLATS.y - 8], label: $t('HAMNBUSSEN TILL STAN'), act: bussen },
     { id: 'kontor', ...dorr('kontor'), label: HUS.kontor.namn, act: () => { play('knock'); talk.say($t('Hamnkaptenen: "Välkommen till Fiskehamnen! Färjan går från piren, fisken säljs i hallen – och håll i mössan, det blåser."'), () => ({ x: HUS.kontor.x + 104, y: H.BASE - 50 }), 5, { silent: true }); } },
     { id: 'magasin', ...dorr('magasin'), label: HUS.magasin.namn, act: () => toast($t('📦 Magasin 3: lådor med torkad fisk, rep och tunnor ända upp i taket. Kranen lyfter containrar hela dagen.')) },
+    { id: 'marknad', ...dorr('marknad'), label: $t('MARKNADSHALLEN – JOBBA SOM FISKHANDLARE'), act: marknadshallen },
     ...STAND.map((s) => ({ id: 'stand-' + s.id, r: [s.x - 22, s.y - 44, s.x + 22, s.y + 2], go: [s.x, s.y + 12], label: s.id === 'fisk' ? $t`FÄRSK FISK · ${fmt(FISKPRIS)}` : s.id === 'rokt' ? $t`RÖKT MAKRILL · ${fmt(MARKNAD.rokt.pris)}` : $t`RÄKMACKA · ${fmt(MARKNAD.rakor.pris)}`, act: () => marknad(s.id) })),
     { id: 'fiskbil', r: [FISKBIL.x - 30, FISKBIL.y - 46, FISKBIL.x + 30, FISKBIL.y + 2], go: [FISKBIL.x, FISKBIL.y + 12], label: $t('FISK & CHIPS'), act: fiskbilen },
     { id: 'bataffar', ...dorr('bataffar'), label: $t('BÅTAFFÄREN – KÖP EN BÅT'), act: bataffaren },

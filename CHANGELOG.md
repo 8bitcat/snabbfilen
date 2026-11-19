@@ -10,6 +10,10 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.154.0] – 2026-11-19 – Fiskmarknaden – fiskhandlarjobbet hos Britta i Fiskehamnen
+- 🐟 FISKHANDLARE PÅ FISKMARKNADEN: gå in genom marknadshallens dörr i Fiskehamnen och jobba ett pass bakom disken hos Britta. Sex islådor – torsk, lax, sill, räkor, makrill och krabba – och kunder som kommer fram och visar vad de vill ha och hur många hekto. Välj rätt låda (klick eller 1–6) och klicka på kunden, så står fisken på VÅGEN: visaren sveper, och du stoppar den (klick eller mellanslag) så nära rätt vikt du kan.
+- I det gröna = PÅ GRAMMET och raden växer, lite utanför tar kunden det ändå, långt utanför blir avdrag – och fel fisk likaså. Den som väntar för länge går till fiskbilen i stället. Sex på grammet i rad ger BRITTAS GULDVÅG med bonus. Hallen med kakel, fönster mot hamnen och krittavlan DAGENS FÅNGST; lönen följer vanan som alla andra jobb.
+
 ## [0.153.0] – 2026-11-19 – Gräsklippning i Villaområdet – sommarjobbet hos Vivi
 - 🌿 SOMMARJOBB I VILLAOMRÅDET: Vivi på Äppelvägen 5 söker någon som klipper gräset (dörren på det vita huset med garage, 9–19). Gräsmattan ses uppifrån – klicka dit du vill klippa, eller styr med pilarna, så kör klipparen dit och lämnar ljusa ränder efter sig. Trädgårdstomtar, rabatter, träd och stenar står i vägen: kör du på dem välter tomten och det blir avdrag.
 - Var fjärdedel av mattan ger lön, hela mattan klippt ger nästa trädgård med nytt hus och nya hinder, och tre trädgårdar utan en skråma gör dig till TRÄDGÅRDSMÄSTARE med bonus. Vivi hejar från verandan och lovar lemonad. Passet följer vanan som alla andra jobb – och man står på Äppelvägen igen när det är slut.

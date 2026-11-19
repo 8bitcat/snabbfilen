@@ -1,7 +1,7 @@
 {
-  "version": "0.153.0",
+  "version": "0.154.0",
   "date": "2026-11-19",
-  "title": "Gräsklippning i Villaområdet – sommarjobbet hos Vivi",
+  "title": "Fiskmarknaden – fiskhandlarjobbet hos Britta i Fiskehamnen",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
@@ -137,6 +137,7 @@
     "js/jobs/jobb-datorbygge.js",
     "js/jobs/jobb-djur.js",
     "js/jobs/jobb-finans.js",
+    "js/jobs/jobb-fisk.js",
     "js/jobs/jobb-flyg.js",
     "js/jobs/jobb-frukt.js",
     "js/jobs/jobb-gras.js",
