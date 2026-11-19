@@ -41,16 +41,18 @@ await stang(); await D(() => SF.go('city')); await sleep(1500); await stang();
 // 1. bussen dit
 await D(async () => { const { busStopById } = await import('/js/city/map.js'); const s = busStopById('pixeltorget'); SF.scene._debug.teleport(s.x + 20, s.y + 6); }); await sleep(400);
 const bs = await D(() => SF.scene._debug.busStop('pixeltorget'));
-await D((b) => SF.scene.down(b.x, b.y), bs);
-await p.waitForFunction(() => !!document.querySelector('#modal:not(.hidden) [data-gamla]'), null, { timeout: 12000 }).catch(() => {});
-const dlg = await D(() => !!document.querySelector('#modal [data-gamla]'));
+let dlg = false;
+for (let k = 0; k < 2 && !dlg; k++) {   // (andra försöket om figuren inte hann fram till kuren – hände i verify under last)
+  await stang(); await D((b) => SF.scene.down(b.x, b.y), bs);
+  dlg = await p.waitForFunction(() => !!document.querySelector('#modal:not(.hidden) [data-gamla]'), null, { timeout: 12000 }).then(() => true).catch(() => false);
+}
 ok(dlg, 'hållplatsdialogen i stan har raden GAMLA STAN');
-if (!dlg) { await stang(); await D(() => { SF.gamlaFran = { buss: 'pixeltorget' }; SF.game.money -= 10; SF.go('gamlastan'); }); }
 const m0 = await D(() => SF.game.money);
-await D(() => document.querySelector('#modal [data-gamla]')?.click());
+if (dlg) await D(() => document.querySelector('#modal [data-gamla]')?.click());
+else { await stang(); await D(() => { SF.gamlaFran = { buss: 'pixeltorget' }; SF.go('gamlastan'); }); }
 const kom = await p.waitForFunction(() => window.SF.sceneName === 'gamlastan' || !!window.SF.scene?._debug?.duvor, null, { timeout: 15000 }).then(() => true).catch(() => false);
 await sleep(1500);
-ok(kom && (await D(() => SF.game.money)) === m0 - 10, 'gamla bussen tar en till Gamla stan för 10 kr');
+ok(kom && (await D(() => SF.game.money)) === m0 - (dlg ? 10 : 0), 'gamla bussen tar en till Gamla stan för 10 kr');
 const pos = await D(() => SF.scene._debug.pos());
 ok(pos.x > 1600 && pos.y > 250 && pos.y < 300, `man kliver av vid hållplatsen i östra änden (${pos.x}, ${pos.y})`);
 
@@ -92,9 +94,9 @@ ok(/Slut för i dag|Det var en gång|Långt borta/.test(await D(() => SF.scene._
 await D(() => { SF.game.min = 13 * 60; SF.scene._debug.teleport(700, 300); }); await sleep(800);
 const d0 = await D(() => SF.scene._debug.duvor());
 ok(d0.some((d) => !d.flyg && !d.borta), 'duvorna pickar på torget');
-await D(() => SF.scene._debug.teleport(880, 380)); await sleep(700);
-const d1 = await D(() => SF.scene._debug.duvor());
-ok(d1.some((d) => d.flyg || d.borta), 'duvorna lyfter när man kommer nära');
+await D(() => SF.scene._debug.teleport(880, 376));
+const lyft = await p.waitForFunction(() => window.SF.scene._debug.duvor().some((d) => d.flyg || d.borta), null, { timeout: 6000 }).then(() => true).catch(() => false);   // (väntar på en bildruta – under last kan det dröja)
+ok(lyft, 'duvorna lyfter när man kommer nära');
 
 // 7. bussen hem
 await stang();

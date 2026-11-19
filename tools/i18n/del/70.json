@@ -1,0 +1,337 @@
+[
+ {
+  "i": 9582,
+  "f": "js/scenes/arenan.js",
+  "k": "SPORTAFFÄREN"
+ },
+ {
+  "i": 9583,
+  "f": "js/scenes/arenan.js",
+  "k": "MATCHDAG"
+ },
+ {
+  "i": 9584,
+  "f": "js/scenes/arenan.js",
+  "k": "PIXEL ARENA"
+ },
+ {
+  "i": 9585,
+  "f": "js/scenes/arenan.js",
+  "k": "SIMHALLEN"
+ },
+ {
+  "i": 9586,
+  "f": "js/scenes/arenan.js",
+  "k": "FIKAT"
+ },
+ {
+  "i": 9587,
+  "f": "js/scenes/arenan.js",
+  "k": "ARENATORGET"
+ },
+ {
+  "i": 9588,
+  "f": "js/scenes/arenan.js",
+  "k": "🏟️ på Arenan"
+ },
+ {
+  "i": 9589,
+  "f": "js/scenes/arenan.js",
+  "k": "KBK vann med 2–1 i söndags. Hela torget sjöng!"
+ },
+ {
+  "i": 9590,
+  "f": "js/scenes/arenan.js",
+  "k": "Statyn är Gunvor – hon gjorde 200 mål för KBK."
+ },
+ {
+  "i": 9591,
+  "f": "js/scenes/arenan.js",
+  "k": "Simhallen har en rutschkana med tre kurvor."
+ },
+ {
+  "i": 9592,
+  "f": "js/scenes/arenan.js",
+  "k": "Isen är nyspolad. Perfekt för piruetter."
+ },
+ {
+  "i": 9593,
+  "f": "js/scenes/arenan.js",
+  "k": "Varmkorven här är bäst efter matchen."
+ },
+ {
+  "i": 9594,
+  "f": "js/scenes/arenan.js",
+  "k": "Jag har stått på läktaren i trettio år."
+ },
+ {
+  "i": 9595,
+  "f": "js/scenes/arenan.js",
+  "k": "🏟️ Arenan! Här spelar KBK. +{0} 😊"
+ },
+ {
+  "i": 9596,
+  "f": "js/scenes/arenan.js",
+  "k": "⛸️ Dina egna skridskor! Klicka på isen så glider du dit – ut genom grinden när du är klar."
+ },
+ {
+  "i": 9597,
+  "f": "js/scenes/arenan.js",
+  "k": "⛸️ Hyrskridskorna sitter. Klicka på isen så glider du dit – ut genom grinden när du är klar."
+ },
+ {
+  "i": 9598,
+  "f": "js/scenes/arenan.js",
+  "k": "Skridskor på Arenan"
+ },
+ {
+  "i": 9599,
+  "f": "js/scenes/arenan.js",
+  "k": "⛸️ Du kliver av isen med röda kinder."
+ },
+ {
+  "i": 9600,
+  "f": "js/scenes/arenan.js",
+  "k": "⛸️ Skridskobanan"
+ },
+ {
+  "i": 9601,
+  "f": "js/scenes/arenan.js",
+  "k": "Hyr skridskor för <b>{0}</b> och åk så länge du vill. (Sportaffären säljer egna – då är isen gratis.)"
+ },
+ {
+  "i": 9602,
+  "f": "js/scenes/arenan.js",
+  "k": "⛸️ Hyr skridskor · {0}"
+ },
+ {
+  "i": 9603,
+  "f": "js/scenes/arenan.js",
+  "k": "Du har inte råd att hyra skridskor."
+ },
+ {
+  "i": 9604,
+  "f": "js/scenes/arenan.js",
+  "k": "⚽ KBK-planen! Gå till straffpunkten och skjut fem straffar."
+ },
+ {
+  "i": 9605,
+  "f": "js/scenes/arenan.js",
+  "k": "Fem av fem på straffar"
+ },
+ {
+  "i": 9606,
+  "f": "js/scenes/arenan.js",
+  "k": "Straffar på KBK-planen"
+ },
+ {
+  "i": 9607,
+  "f": "js/scenes/arenan.js",
+  "k": "⚽ FEM AV FEM! Gunvor hade varit stolt."
+ },
+ {
+  "i": 9608,
+  "f": "js/scenes/arenan.js",
+  "k": "⚽ {0} av 5 mål – bra skjutet!"
+ },
+ {
+  "i": 9609,
+  "f": "js/scenes/arenan.js",
+  "k": "⚽ {0} av 5 mål. Målvakten var vass i dag – försök igen!"
+ },
+ {
+  "i": 9610,
+  "f": "js/scenes/arenan.js",
+  "k": "Dina – isen är gratis"
+ },
+ {
+  "i": 9611,
+  "f": "js/scenes/arenan.js",
+  "k": "KBK-halsduk"
+ },
+ {
+  "i": 9612,
+  "f": "js/scenes/arenan.js",
+  "k": "🏒 Sportaffären"
+ },
+ {
+  "i": 9613,
+  "f": "js/scenes/arenan.js",
+  "k": "Bollar, klubbor, tröjor och skridskor i alla storlekar. Med egna skridskor är banan gratis."
+ },
+ {
+  "i": 9614,
+  "f": "js/scenes/arenan.js",
+  "k": "⛸️ Egna skridskor! Banan är gratis för dig från och med nu."
+ },
+ {
+  "i": 9615,
+  "f": "js/scenes/arenan.js",
+  "k": "🧣 Vinrött och svart runt halsen. Heja KBK!"
+ },
+ {
+  "i": 9616,
+  "f": "js/scenes/arenan.js",
+  "k": "☕ Fikat"
+ },
+ {
+  "i": 9617,
+  "f": "js/scenes/arenan.js",
+  "k": "Kaffe, bullar och läsk – och matchresultaten på en krittavla."
+ },
+ {
+  "i": 9618,
+  "f": "js/scenes/arenan.js",
+  "k": "Fika på Arenan"
+ },
+ {
+  "i": 9619,
+  "f": "js/scenes/arenan.js",
+  "k": "Du har inte råd med en korv."
+ },
+ {
+  "i": 9620,
+  "f": "js/scenes/arenan.js",
+  "k": "Varmkorv på Arenan"
+ },
+ {
+  "i": 9621,
+  "f": "js/scenes/arenan.js",
+  "k": "🌭 En varmkorv med senap och ketchup – matchdagsmat!"
+ },
+ {
+  "i": 9622,
+  "f": "js/scenes/arenan.js",
+  "k": "Du har inte råd med chokladen."
+ },
+ {
+  "i": 9623,
+  "f": "js/scenes/arenan.js",
+  "k": "Varm choklad vid isen"
+ },
+ {
+  "i": 9624,
+  "f": "js/scenes/arenan.js",
+  "k": "🍫 Varm choklad med grädde – händerna tinar. +8 ⚡"
+ },
+ {
+  "i": 9625,
+  "f": "js/scenes/arenan.js",
+  "k": "🚌 Arenabussen"
+ },
+ {
+  "i": 9626,
+  "f": "js/scenes/arenan.js",
+  "k": "UT GENOM GRINDEN"
+ },
+ {
+  "i": 9627,
+  "f": "js/scenes/arenan.js",
+  "k": "STRAFFPUNKTEN – SKJUT FEM STRAFFAR"
+ },
+ {
+  "i": 9628,
+  "f": "js/scenes/arenan.js",
+  "k": "ARENABUSSEN TILL STAN"
+ },
+ {
+  "i": 9629,
+  "f": "js/scenes/arenan.js",
+  "k": "SPORTAFFÄREN – SKRIDSKOR OCH HALSDUKAR"
+ },
+ {
+  "i": 9630,
+  "f": "js/scenes/arenan.js",
+  "k": "🏟️ Matchdagen öppnar i nästa steg – då får du stå på läktaren och heja fram KBK."
+ },
+ {
+  "i": 9631,
+  "f": "js/scenes/arenan.js",
+  "k": "BILJETTLUCKAN"
+ },
+ {
+  "i": 9632,
+  "f": "js/scenes/arenan.js",
+  "k": "🎟️ Biljetterna till matchdagen släpps i nästa steg. Kön börjar redan här."
+ },
+ {
+  "i": 9633,
+  "f": "js/scenes/arenan.js",
+  "k": "🏊 Simhallen öppnar snart – bassäng, rutschkana och bubbelpool."
+ },
+ {
+  "i": 9634,
+  "f": "js/scenes/arenan.js",
+  "k": "STATYN"
+ },
+ {
+  "i": 9635,
+  "f": "js/scenes/arenan.js",
+  "k": "🏆 Gunvor Pixelsson – 200 mål för KBK och ett bicycletamål i finalen 1987. Barnen gnuggar bollen för tur."
+ },
+ {
+  "i": 9636,
+  "f": "js/scenes/arenan.js",
+  "k": "VARMKORV · {0}"
+ },
+ {
+  "i": 9637,
+  "f": "js/scenes/arenan.js",
+  "k": "VARM CHOKLAD · {0}"
+ },
+ {
+  "i": 9638,
+  "f": "js/scenes/arenan.js",
+  "k": "SKRIDSKOBANAN – ÅK PÅ ISEN"
+ },
+ {
+  "i": 9639,
+  "f": "js/scenes/arenan.js",
+  "k": "SKRIDSKOBANAN – HYR SKRIDSKOR · {0}"
+ },
+ {
+  "i": 9640,
+  "f": "js/scenes/arenan.js",
+  "k": "KBK-PLANEN – SKJUT STRAFFAR"
+ },
+ {
+  "i": 9641,
+  "f": "js/scenes/arenan.js",
+  "k": "KBK-FLAGGAN"
+ },
+ {
+  "i": 9642,
+  "f": "js/scenes/arenan.js",
+  "k": "🚩 Vinrött och svart – KBK:s färger sedan 1921."
+ },
+ {
+  "i": 9643,
+  "f": "js/scenes/arenan.js",
+  "k": "🏟️ ARENATORGET – Pixel Arena, sportaffären, simhallen, skridskobanan och KBK-planen. Bussen hem står här."
+ },
+ {
+  "i": 9644,
+  "f": "js/scenes/arenan.js",
+  "k": "SKOTT {0} AV 5 · MÅL {1}"
+ },
+ {
+  "i": 9645,
+  "f": "js/scenes/arenan.js",
+  "k": "KLICKA NÄR MARKÖREN ÄR I EN GRÖN DEL"
+ },
+ {
+  "i": 9646,
+  "f": "js/scenes/arenan.js",
+  "k": "ARENAN"
+ },
+ {
+  "i": 9647,
+  "f": "js/scenes/arenan.js",
+  "k": "KBK, SKRIDSKOR OCH STRAFFAR PÅ KBK-PLANEN"
+ },
+ {
+  "i": 9648,
+  "f": "js/scenes/arenan.js",
+  "k": "Arenabussen till Pixel Arena, skridskobanan och KBK-planen"
+ }
+]

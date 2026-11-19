@@ -10,6 +10,10 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.149.0] – 2026-11-19 – Arenan – Arenatorget, skridskobanan och straffar på KBK-planen
+- 🏟️ ARENAN har öppnat! Ta arenabussen från vilken hållplats som helst (raden ARENAN). På Arenatorget står PIXEL ARENA med storbildsskärmen, tornen och KBK-flaggorna (matchdagen öppnar i nästa steg), SPORTAFFÄREN (egna skridskor för 300 kr och KBK-halsduk), SIMHALLENS glasfasad (öppnar snart), FIKAT, varmkorvsgubben och statyn av KBK-legendaren Gunvor.
+- Söder om torget: SKRIDSKOBANAN – hyr skridskor för 25 kr (gratis med egna) och glid runt på isen, spåren syns, första åket om dagen ger lycka – och KBK-PLANEN där barnen passar bollen och du skjuter STRAFFAR: fem skott, en markör sveper över målet och målvakten täcker en tredjedel – klicka när markören är i en grön del. Tre mål ger lycka, fem av fem ännu mer. Varm choklad vid isen tinar händerna.
+
 ## [0.148.0] – 2026-11-19 – Röda stugan på Solön – hyr sommarstugan för natten
 - 🏡 RÖDA STUGAN på Solön går att hyra för natten (150 kr vid dörren – nyckeln gäller till lunch dagen efter). Inne: furupanel, det stora fönstret mot havet där vågorna rullar, segelbåten glider förbi och fyren blinkar om natten, sängen med lapptäcket, kaminen med kaffepannan, bordet med gästboken, bänken under fönstret, bokhyllan med fyrvaktaren Huldas dagbok, gungstolen och verandadörren.
 - Sov i sängen så spelas natten i stugan och du vaknar där klockan sju med havet utanför – en natt i sommarstugan ger extra lycka. Lägg i ved i kaminen (piggar upp), ta kaffe och bulle som ingår i hyran, läs gästboken, sitt på verandan och titta efter delfinen genom fönstret. UT leder tillbaka till Solön framför stugan.
