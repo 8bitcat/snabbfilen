@@ -10,6 +10,10 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.153.0] – 2026-11-19 – Gräsklippning i Villaområdet – sommarjobbet hos Vivi
+- 🌿 SOMMARJOBB I VILLAOMRÅDET: Vivi på Äppelvägen 5 söker någon som klipper gräset (dörren på det vita huset med garage, 9–19). Gräsmattan ses uppifrån – klicka dit du vill klippa, eller styr med pilarna, så kör klipparen dit och lämnar ljusa ränder efter sig. Trädgårdstomtar, rabatter, träd och stenar står i vägen: kör du på dem välter tomten och det blir avdrag.
+- Var fjärdedel av mattan ger lön, hela mattan klippt ger nästa trädgård med nytt hus och nya hinder, och tre trädgårdar utan en skråma gör dig till TRÄDGÅRDSMÄSTARE med bonus. Vivi hejar från verandan och lovar lemonad. Passet följer vanan som alla andra jobb – och man står på Äppelvägen igen när det är slut.
+
 ## [0.152.0] – 2026-11-19 – Matchdagen på Pixel Arena – heja fram KBK från klacken
 - ⚽ MATCHDAG PÅ PIXEL ARENA! Köp biljett i biljettluckan på Arenatorget (30 kr, matcher 12–20, ny motståndare varje dag: Pixelbergs IF, Solö BK, Hamnens FF, Linné United, Tassbackens BK) och ställ dig på klacken bland supportrarna. Klackledaren Kjell ropar KLAPPA, HEJA, VÅGEN eller SJUNG – tryck på rätt knapp (eller 1–4) innan hans tålamod tar slut, så stiger STÄMNINGEN och vågen går runt hela läktaren.
 - Matchen spelas i två halvlekar med halvtid (korv 25 kr!). Lagen anfaller om vartannat – ju bättre stämning, desto fler mål gör KBK, och målskyttarna är lagets riktiga spelare. Slutsignalen ger lycka efter resultatet, mest när KBK vinner. Storbildsskärm med ställning och klocka, strålkastare, bortre läktaren full av folk och kvällsmatcher i skymning.

@@ -1,7 +1,7 @@
 {
-  "version": "0.152.0",
+  "version": "0.153.0",
   "date": "2026-11-19",
-  "title": "Matchdagen på Pixel Arena – heja fram KBK från klacken",
+  "title": "Gräsklippning i Villaområdet – sommarjobbet hos Vivi",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
@@ -139,6 +139,7 @@
     "js/jobs/jobb-finans.js",
     "js/jobs/jobb-flyg.js",
     "js/jobs/jobb-frukt.js",
+    "js/jobs/jobb-gras.js",
     "js/jobs/jobb-incheck.js",
     "js/jobs/jobb-kafe.js",
     "js/jobs/jobb-kok.js",
