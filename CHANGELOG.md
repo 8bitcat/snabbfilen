@@ -10,6 +10,10 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.145.0] – 2026-11-19 – Djurparken – lejon, elefanter och ponnyn Pricken
+- 🦁 DJURPARKEN har öppnat! Ta djurbussen från vilken hållplats som helst (raden DJURPARKEN). Entrén kostar 20 kr, öppet 9–18. Längs huvudgången: KLAPPZOO med getter och kaniner (gå in och klappa, köp getfoder för 5 kr så kommer de), APORNA i klätterställningen, LEJONEN på savannen, ELEFANTERNA vid lerpölen, GIRAFFERNA under akaciorna och BJÖRNEN med sin unge vid grottan.
+- Söder om gången: PINGVINERNA på isen, FLAMINGORNA i den rosa dammen, PONNYRIDNINGEN (15 kr för ett varv på Pricken – du sitter i sadeln), picknickängen med glasskiosken, souvenirkiosken (ballongen följer med dig) och ankdammen med bron. Skyltarna berättar om djuren – och djuren svarar: lejonet ryter, elefanten sprutar, påfågeln slår ut stjärten när du kommer nära. Om natten sover de. Djurskötarjobbet öppnar i nästa steg.
+
 ## [0.144.0] – 2026-11-19 – Biblioteket i Gamla stan – läs dig till utbildningspoäng
 - 📚 BIBLIOTEKET i Gamla stan har öppnat! Gå in genom dörren: den stora bokväggen med fem ämnen (HISTORIA, NATUR, TEKNIK, KONST, SAGOR), läsbord med gröna banklampor, valvfönstret med glasmålningen, golvuret som går efter spelets klocka, sagohyllan där katten Dewey sover och den öppna spisen med läsfåtöljer.
 - Välj en bok från hyllan – figuren sätter sig vid ett bord och läser. En utläst bok tar en timme och ger en utbildningspoäng första gången (räknas i livsmålet Utbildning), högst två böcker om dagen. När boken är slut visas vad du lärt dig. Bibliotekarie Greta, dagens PIXELBLADET, jordgloben, kortkatalogen och barnhörnan väntar också.

@@ -1,0 +1,462 @@
+[
+ {
+  "i": 9338,
+  "f": "js/scenes/djurparken.js",
+  "k": "DJURPARKEN"
+ },
+ {
+  "i": 9339,
+  "f": "js/scenes/djurparken.js",
+  "k": "GÅ IN OCH KLAPPA"
+ },
+ {
+  "i": 9340,
+  "f": "js/scenes/djurparken.js",
+  "k": "KLAPPZOO"
+ },
+ {
+  "i": 9341,
+  "f": "js/scenes/djurparken.js",
+  "k": "Getterna Majsan, Bosse och Lilla My älskar att bli kliade bakom hornen. Kaninerna är blygare – gå lugnt."
+ },
+ {
+  "i": 9342,
+  "f": "js/scenes/djurparken.js",
+  "k": "APORNA"
+ },
+ {
+  "i": 9343,
+  "f": "js/scenes/djurparken.js",
+  "k": "Kapucinaporna sover i en hög varje natt. Den äldsta heter Farbror Bo och är 31 år."
+ },
+ {
+  "i": 9344,
+  "f": "js/scenes/djurparken.js",
+  "k": "LEJONEN"
+ },
+ {
+  "i": 9345,
+  "f": "js/scenes/djurparken.js",
+  "k": "Lejonen Simba och Nala sover 20 timmar om dygnet. Rytet hörs ända till Gamla stan."
+ },
+ {
+  "i": 9346,
+  "f": "js/scenes/djurparken.js",
+  "k": "ELEFANTERNA"
+ },
+ {
+  "i": 9347,
+  "f": "js/scenes/djurparken.js",
+  "k": "Elefanterna Dumbo och Elsa dricker 150 liter vatten om dagen – och sprutar hälften på varandra."
+ },
+ {
+  "i": 9348,
+  "f": "js/scenes/djurparken.js",
+  "k": "GIRAFFERNA"
+ },
+ {
+  "i": 9349,
+  "f": "js/scenes/djurparken.js",
+  "k": "Girafferna Greta och Gösta är nästan fem meter höga och har blå tunga. På riktigt!"
+ },
+ {
+  "i": 9350,
+  "f": "js/scenes/djurparken.js",
+  "k": "BJÖRNEN"
+ },
+ {
+  "i": 9351,
+  "f": "js/scenes/djurparken.js",
+  "k": "Brunbjörnen Bamse och ungen Nalle sover hela vintern i grottan. På våren äter de blåbär – många."
+ },
+ {
+  "i": 9352,
+  "f": "js/scenes/djurparken.js",
+  "k": "PINGVINERNA"
+ },
+ {
+  "i": 9353,
+  "f": "js/scenes/djurparken.js",
+  "k": "Pingvinerna kan inte flyga – men de simmar snabbare än du kan springa."
+ },
+ {
+  "i": 9354,
+  "f": "js/scenes/djurparken.js",
+  "k": "FLAMINGORNA"
+ },
+ {
+  "i": 9355,
+  "f": "js/scenes/djurparken.js",
+  "k": "Flamingorna är rosa av maten de äter. Står de på ett ben vilar de – precis som du på bussen."
+ },
+ {
+  "i": 9356,
+  "f": "js/scenes/djurparken.js",
+  "k": "PONNYRIDNINGEN"
+ },
+ {
+  "i": 9357,
+  "f": "js/scenes/djurparken.js",
+  "k": "Ponnyn Pricken går runt, runt och har gjort det i nio år. Han får morötter efter varje varv."
+ },
+ {
+  "i": 9358,
+  "f": "js/scenes/djurparken.js",
+  "k": "ANKDAMMEN"
+ },
+ {
+  "i": 9359,
+  "f": "js/scenes/djurparken.js",
+  "k": "Gräsänderna på dammen är vilda och kommer och går som de vill. Mata dem inte med bröd – de mår bäst av ärtor."
+ },
+ {
+  "i": 9360,
+  "f": "js/scenes/djurparken.js",
+  "k": "Öppet {0}–{1}, entré {2} kr"
+ },
+ {
+  "i": 9361,
+  "f": "js/scenes/djurparken.js",
+  "k": "🦁 i Djurparken"
+ },
+ {
+  "i": 9362,
+  "f": "js/scenes/djurparken.js",
+  "k": "Djurbussen till lejonen, elefanterna och ponnyn Pricken"
+ },
+ {
+  "i": 9363,
+  "f": "js/scenes/djurparken.js",
+  "k": "Lejonet röt så att jag tappade glassen!"
+ },
+ {
+  "i": 9364,
+  "f": "js/scenes/djurparken.js",
+  "k": "Elefanten sprutade vatten på pappa. Han blev jätteblöt."
+ },
+ {
+  "i": 9365,
+  "f": "js/scenes/djurparken.js",
+  "k": "Getterna åt upp min karta. Hela."
+ },
+ {
+  "i": 9366,
+  "f": "js/scenes/djurparken.js",
+  "k": "Påfågeln slog ut stjärten – den är större än jag!"
+ },
+ {
+  "i": 9367,
+  "f": "js/scenes/djurparken.js",
+  "k": "Vi har ridit på Pricken tre gånger i dag."
+ },
+ {
+  "i": 9368,
+  "f": "js/scenes/djurparken.js",
+  "k": "Pingvinerna ser ut som små farbröder i frack."
+ },
+ {
+  "i": 9369,
+  "f": "js/scenes/djurparken.js",
+  "k": "Giraffen har blå tunga. Blå!"
+ },
+ {
+  "i": 9370,
+  "f": "js/scenes/djurparken.js",
+  "k": "Björnungen heter Nalle. Så klart."
+ },
+ {
+  "i": 9371,
+  "f": "js/scenes/djurparken.js",
+  "k": "Mjukglass i strut"
+ },
+ {
+  "i": 9372,
+  "f": "js/scenes/djurparken.js",
+  "k": "Popcorn"
+ },
+ {
+  "i": 9373,
+  "f": "js/scenes/djurparken.js",
+  "k": "Jordgubbssaft"
+ },
+ {
+  "i": 9374,
+  "f": "js/scenes/djurparken.js",
+  "k": "Ballong med lejon på"
+ },
+ {
+  "i": 9375,
+  "f": "js/scenes/djurparken.js",
+  "k": "Ballongen svävar ovanför dig resten av besöket."
+ },
+ {
+  "i": 9376,
+  "f": "js/scenes/djurparken.js",
+  "k": "Djurparkskeps"
+ },
+ {
+  "i": 9377,
+  "f": "js/scenes/djurparken.js",
+  "k": "Kepsen sitter som gjuten. Nu ser du ut som en djurskötare."
+ },
+ {
+  "i": 9378,
+  "f": "js/scenes/djurparken.js",
+  "k": "Lejonnalle"
+ },
+ {
+  "i": 9379,
+  "f": "js/scenes/djurparken.js",
+  "k": "Lejonnallen följer med hem i väskan. Den heter Rut."
+ },
+ {
+  "i": 9380,
+  "f": "js/scenes/djurparken.js",
+  "k": "RRRAAAWR!"
+ },
+ {
+  "i": 9381,
+  "f": "js/scenes/djurparken.js",
+  "k": "🦁 Djurparken är stängd. {0}."
+ },
+ {
+  "i": 9382,
+  "f": "js/scenes/djurparken.js",
+  "k": "🎟️ Du har redan betalat – grinden är öppen!"
+ },
+ {
+  "i": 9383,
+  "f": "js/scenes/djurparken.js",
+  "k": "🎟️ Djurparken – entré"
+ },
+ {
+  "i": 9384,
+  "f": "js/scenes/djurparken.js",
+  "k": "Välkommen! Entrén kostar <b>{0}</b> och gäller hela dagen. Lejonen, elefanterna, girafferna, pingvinerna, klappzoo och ponnyridningen väntar där inne."
+ },
+ {
+  "i": 9385,
+  "f": "js/scenes/djurparken.js",
+  "k": "Betala · {0}"
+ },
+ {
+  "i": 9386,
+  "f": "js/scenes/djurparken.js",
+  "k": "Du har inte råd med entrén."
+ },
+ {
+  "i": 9387,
+  "f": "js/scenes/djurparken.js",
+  "k": "🎟️ Varsågod! Grinden är öppen – följ gången."
+ },
+ {
+  "i": 9388,
+  "f": "js/scenes/djurparken.js",
+  "k": "🦁 Djurparken! +{0} 😊"
+ },
+ {
+  "i": 9389,
+  "f": "js/scenes/djurparken.js",
+  "k": "Har en"
+ },
+ {
+  "i": 9390,
+  "f": "js/scenes/djurparken.js",
+  "k": "🍦 Glasskiosken"
+ },
+ {
+  "i": 9391,
+  "f": "js/scenes/djurparken.js",
+  "k": "🎈 Souvenirkiosken"
+ },
+ {
+  "i": 9392,
+  "f": "js/scenes/djurparken.js",
+  "k": "Mjukglass, popcorn och saft – det bästa med en dag i djurparken."
+ },
+ {
+  "i": 9393,
+  "f": "js/scenes/djurparken.js",
+  "k": "Ballonger, kepsar och lejonnallar. Något att minnas dagen med."
+ },
+ {
+  "i": 9394,
+  "f": "js/scenes/djurparken.js",
+  "k": "Glass i djurparken"
+ },
+ {
+  "i": 9395,
+  "f": "js/scenes/djurparken.js",
+  "k": "{0} {1}! Mums."
+ },
+ {
+  "i": 9396,
+  "f": "js/scenes/djurparken.js",
+  "k": "Souvenir från djurparken"
+ },
+ {
+  "i": 9397,
+  "f": "js/scenes/djurparken.js",
+  "k": "🐴 Pricken har gått och lagt sig. Ponnyridningen är öppen när parken är det."
+ },
+ {
+  "i": 9398,
+  "f": "js/scenes/djurparken.js",
+  "k": "🐴 Ponnyridningen"
+ },
+ {
+  "i": 9399,
+  "f": "js/scenes/djurparken.js",
+  "k": "Ett varv på ponnyn Pricken kostar <b>{0}</b>. Han går lugnt – håll i sadeln!"
+ },
+ {
+  "i": 9400,
+  "f": "js/scenes/djurparken.js",
+  "k": "Rid ett varv · {0}"
+ },
+ {
+  "i": 9401,
+  "f": "js/scenes/djurparken.js",
+  "k": "Du har inte råd just nu."
+ },
+ {
+  "i": 9402,
+  "f": "js/scenes/djurparken.js",
+  "k": "🐴 Upp i sadeln! Pricken går ett varv."
+ },
+ {
+  "i": 9403,
+  "f": "js/scenes/djurparken.js",
+  "k": "Ett varv på Pricken"
+ },
+ {
+  "i": 9404,
+  "f": "js/scenes/djurparken.js",
+  "k": "🐴 Pricken stannar vid grinden och får en morot. Tack för turen!"
+ },
+ {
+  "i": 9405,
+  "f": "js/scenes/djurparken.js",
+  "k": "Du har inte fem kronor till fodret."
+ },
+ {
+  "i": 9406,
+  "f": "js/scenes/djurparken.js",
+  "k": "🌾 En näve getfoder! Stå still, så kommer getterna."
+ },
+ {
+  "i": 9407,
+  "f": "js/scenes/djurparken.js",
+  "k": "Bääää! ❤️"
+ },
+ {
+  "i": 9408,
+  "f": "js/scenes/djurparken.js",
+  "k": "Mäh! 😊"
+ },
+ {
+  "i": 9409,
+  "f": "js/scenes/djurparken.js",
+  "k": "Bä bä … 🌾"
+ },
+ {
+  "i": 9410,
+  "f": "js/scenes/djurparken.js",
+  "k": "Klappzoo"
+ },
+ {
+  "i": 9411,
+  "f": "js/scenes/djurparken.js",
+  "k": "🚌 Djurbussen"
+ },
+ {
+  "i": 9412,
+  "f": "js/scenes/djurparken.js",
+  "k": "DJURBUSSEN TILL STAN"
+ },
+ {
+  "i": 9413,
+  "f": "js/scenes/djurparken.js",
+  "k": "BILJETTKASSAN"
+ },
+ {
+  "i": 9414,
+  "f": "js/scenes/djurparken.js",
+  "k": "ENTRÉ · {0}"
+ },
+ {
+  "i": 9415,
+  "f": "js/scenes/djurparken.js",
+  "k": "IN I PARKEN"
+ },
+ {
+  "i": 9416,
+  "f": "js/scenes/djurparken.js",
+  "k": "GRINDEN – BETALA I KASSAN"
+ },
+ {
+  "i": 9417,
+  "f": "js/scenes/djurparken.js",
+  "k": "ÖPPETTIDER"
+ },
+ {
+  "i": 9418,
+  "f": "js/scenes/djurparken.js",
+  "k": "KLAPPZOO – GÅ IN"
+ },
+ {
+  "i": 9419,
+  "f": "js/scenes/djurparken.js",
+  "k": "🐐 Klicka på en get för att klappa den. Getfodret står till vänster."
+ },
+ {
+  "i": 9420,
+  "f": "js/scenes/djurparken.js",
+  "k": "GETFODER · {0}"
+ },
+ {
+  "i": 9421,
+  "f": "js/scenes/djurparken.js",
+  "k": "RID PÅ PRICKEN · {0}"
+ },
+ {
+  "i": 9422,
+  "f": "js/scenes/djurparken.js",
+  "k": "SOUVENIRKIOSKEN"
+ },
+ {
+  "i": 9423,
+  "f": "js/scenes/djurparken.js",
+  "k": "PERSONALHUSET"
+ },
+ {
+  "i": 9424,
+  "f": "js/scenes/djurparken.js",
+  "k": "🧹 Djurskötarjobbet öppnar snart – då får du mata djuren varje morgon."
+ },
+ {
+  "i": 9425,
+  "f": "js/scenes/djurparken.js",
+  "k": "BRON ÖVER DAMMEN"
+ },
+ {
+  "i": 9426,
+  "f": "js/scenes/djurparken.js",
+  "k": "🦆 Änderna samlas under bron och väntar på ärtor. Du har inga – de simmar vidare."
+ },
+ {
+  "i": 9427,
+  "f": "js/scenes/djurparken.js",
+  "k": "PÅFÅGELN"
+ },
+ {
+  "i": 9428,
+  "f": "js/scenes/djurparken.js",
+  "k": "🦚 Påfågeln slår ut stjärten – hundra ögon tittar på dig."
+ },
+ {
+  "i": 9429,
+  "f": "js/scenes/djurparken.js",
+  "k": "LEJON, ELEFANTER OCH EN PONNY SOM HETER PRICKEN"
+ }
+]

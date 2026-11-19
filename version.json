@@ -1,7 +1,7 @@
 {
-  "version": "0.144.0",
+  "version": "0.145.0",
   "date": "2026-11-19",
-  "title": "Biblioteket i Gamla stan – läs dig till utbildningspoäng",
+  "title": "Djurparken – lejon, elefanter och ponnyn Pricken",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
@@ -113,6 +113,9 @@
     "js/data/wardrobe-bottoms.js",
     "js/data/wardrobe-tops.js",
     "js/data/wardrobe.js",
+    "js/djurparken/deko.js",
+    "js/djurparken/djur.js",
+    "js/djurparken/karta.js",
     "js/game.js",
     "js/gamlastan/bibliotek-inne.js",
     "js/gamlastan/hus.js",
@@ -191,6 +194,7 @@
     "js/scenes/bio/paint.js",
     "js/scenes/bling/dream.js",
     "js/scenes/city.js",
+    "js/scenes/djurparken.js",
     "js/scenes/gamlastan.js",
     "js/scenes/hopp.js",
     "js/scenes/ikea/art-market.js",
