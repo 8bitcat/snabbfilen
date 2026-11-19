@@ -59,10 +59,11 @@ ok(pos.x < 140 && pos.y > 240 && pos.y < 320, `man kliver av på Arenatorget (${
 // 2. platserna
 const spots = await D(() => SF.scene._debug.spots());
 ok(['buss', 'sport', 'arena', 'biljett', 'simhall', 'staty', 'fikat', 'korv', 'choklad', 'bana', 'plan', 'flagga0', 'skylt'].every((s) => spots.includes(s)), `platserna finns (${spots.length} st)`);
-await D(() => SF.scene._debug.act('arena')); await sleep(300);
-ok((await toasts()).some((t) => /Matchdagen öppnar/.test(t)), 'arenan berättar att matchdagen kommer');
-await D(() => SF.scene._debug.act('simhall')); await sleep(300);
-ok((await toasts()).some((t) => /Simhallen öppnar/.test(t)), 'simhallen öppnar snart');
+// (0.152: arenadörren öppnar biljettluckan till matchdagen; 0.157: simhallens dörr leder in i simhallen – stängd på natten)
+await D(() => SF.scene._debug.act('arena')); await sleep(400);
+ok(/Biljettluckan/.test(await modal()), 'arenan öppnar biljettluckan till matchdagen'); await stang();
+await D(() => { SF.game.min = 22 * 60; }); await D(() => SF.scene._debug.act('simhall')); await sleep(300);
+ok((await toasts()).some((t) => /Simhallen har öppet/.test(t)), 'simhallens dörr: stängd på natten (på dagen leder den in)'); await D(() => { SF.game.min = 13 * 60; });
 await D(() => SF.scene._debug.act('staty')); await sleep(300);
 ok((await toasts()).some((t) => /Gunvor/.test(t)), 'statyn berättar om Gunvor');
 const m1 = await D(() => SF.game.money), h0 = await D(() => SF.game.hunger);

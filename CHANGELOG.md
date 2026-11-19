@@ -10,6 +10,10 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.159.0] – 2026-11-19 – Garageloppisen på Äppelvägen 9 – pruta eller sälj hos familjen Rosén
+- 🧸 GARAGELOPPISEN på Äppelvägen 9 i Villaområdet (10–18): familjen Rosén har burit ut allt ur garaget – golvlampan med fransar, den gamla radion, skridskorna, deckarna, nallen med ett öga, farmors blå vas, barncykeln och tavlan med älgen – och grannarna kommer med bud. Prislappen visar riktvärdet, kunden säger sitt bud: SÅLT tar det, PRUTA ber om mer. Varje prut höjer budet men också risken att kunden tröttnar och går.
+- Sålt till minst 80 % av riktvärdet är en bra affär och ger lön, under 50 % är bortslumpat med avdrag, och den som går utan att köpa räknas som missad. Fem bra affärer i rad gör dig till LOPPISKUNGEN med bonus. Kassan räknas upp på bordet, vimplarna fladdrar och det rosa huset står med garageporten uppvikt. Villaområdets tre sommarjobb är därmed klara: gräsklippning, lemonad och loppis.
+
 ## [0.158.0] – 2026-11-19 – Lemonadståndet på Äppelvägen 1 – sommarjobbet hos barnen Berg
 - 🍋 LEMONADSTÅNDET på Äppelvägen 1 i Villaområdet: barnen Berg har ställt upp ett bord vid grinden med kanna, glas, citroner, socker och is – och grannarna kommer i en strid ström (10–18). Varje kund visar sitt recept i en bubbla: hur många skedar socker och hur många isbitar. Bygg glaset med knapparna (eller tangenterna 1, 2 och 0 för att tömma) och servera med ett klick på kunden eller mellanslag.
 - Rätt recept ger lön och MUMS, fel recept ger avdrag och en sur min, och den som väntar för länge går till grannens stånd. Fem rätt i rad = SOMMARENS LEMONAD med bonus. Röda huset, äppelträden och spjälstaketet bakom, Berg-barnet som hejar vid bordet – och lönen följer vanan som alla andra jobb.
