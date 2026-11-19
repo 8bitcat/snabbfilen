@@ -50,14 +50,14 @@ export function makeDjurparken(A) {
   let VW = Math.max(384, Math.min(A.W || 384, TW)), VH = Math.max(160, Math.min(A.H || 216, TH));
   const from = A.djurparkFran || null; A.djurparkFran = null;
   let betalt = !!from?.betalt;
-  const walker = createCityWalker({ W: TW, H: TH, left: 2, right: TW - 2, top: G.TOP, bottom: G.BOTTOM, spawn: from?.inne ? [ENTRE.X + 30, 286] : [HALLPLATS.x + 16, HALLPLATS.y - 10] });
+  const walker = createCityWalker({ W: TW, H: TH, left: 2, right: TW - 2, top: G.TOP, bottom: G.BOTTOM, spawn: from?.personal ? [PERSONALHUS.x, PERSONALHUS.y + 10] : from?.inne ? [ENTRE.X + 30, 286] : [HALLPLATS.x + 16, HALLPLATS.y - 10] });
   const fordon = () => g.aker;
   const applyRide = () => { const F = fordon(); walker.speed = GANG * (F ? F.fart : 1); };
   applyRide();
   walker.setObstacles(hinder(betalt));
   walker.snapFree();
   const talk = createSpeech();
-  let t = 0, hover = null, banner = 0, ballong = null, mat = 0, rider = null, snurr = 0;
+  let t = 0, hover = null, banner = from?.personal ? 9 : 0, ballong = null, mat = 0, rider = null, snurr = 0;
   const fade = { a: 1, phase: 2, cb: null };
   const cam = { x: 0, y: 0 };
   // kameran: på gången och norrut står figuren nära nederkanten så att hela inhägnaden (y 70–222) syns; söder om
@@ -221,6 +221,11 @@ export function makeDjurparken(A) {
     ]);
   }
   function go(cb) { if (fade.phase === 1) return; fade.phase = 1; fade.cb = cb; }
+  // 🦁 djurskötarjobbet (js/jobs/jobb-djur.js): efter passet står man vid personalhuset igen, entrén är betald
+  function jobbet() {
+    if (!A.jobReady?.('djurskotare')) { toast($t('🧹 Djurskötarjobbet öppnar snart – då får du mata djuren varje morgon.')); return; }
+    A.djurparkFran = { betalt: true, personal: true, buss: from?.buss || '' }; play('door'); A.startJob('djurskotare');
+  }
 
   // ---------- platserna ----------
   const spots = () => [
@@ -234,7 +239,7 @@ export function makeDjurparken(A) {
     { id: 'ponnygrind', r: [HAGN.ponny.grind[0] - 8, HAGN.ponny.r[1] - 14, HAGN.ponny.grind[1] + 8, HAGN.ponny.r[1] + 6], go: [(HAGN.ponny.grind[0] + HAGN.ponny.grind[1]) / 2, HAGN.ponny.r[1] - 8], label: $t`RID PÅ PRICKEN · ${fmt(PONNY_PRIS)}`, act: rida },
     { id: 'glass', r: [GLASSKIOSK.x - 24, GLASSKIOSK.y - 62, GLASSKIOSK.x + 24, GLASSKIOSK.y], go: [GLASSKIOSK.x, GLASSKIOSK.y + 10], label: $t('GLASSKIOSKEN'), act: () => kiosk('glass') },
     { id: 'souvenir', r: [SOUVENIR.x - 24, SOUVENIR.y - 62, SOUVENIR.x + 24, SOUVENIR.y], go: [SOUVENIR.x, SOUVENIR.y + 10], label: $t('SOUVENIRKIOSKEN'), act: () => kiosk('souvenir') },
-    { id: 'personal', r: [PERSONALHUS.x - 24, PERSONALHUS.y - 48, PERSONALHUS.x + 24, PERSONALHUS.y], go: [PERSONALHUS.x, PERSONALHUS.y + 8], label: $t('PERSONALHUSET'), act: () => toast($t('🧹 Djurskötarjobbet öppnar snart – då får du mata djuren varje morgon.')) },
+    { id: 'personal', r: [PERSONALHUS.x - 24, PERSONALHUS.y - 48, PERSONALHUS.x + 24, PERSONALHUS.y], go: [PERSONALHUS.x, PERSONALHUS.y + 8], label: $t('PERSONALHUSET – DJURSKÖTARJOBBET'), act: jobbet },
     { id: 'bro', r: [BRO.x - 12, HAGN.damm.r[1], BRO.x + 12, HAGN.damm.r[3]], go: [BRO.x, HAGN.damm.r[1] - 8], label: $t('BRON ÖVER DAMMEN'), act: () => { toast($t('🦆 Änderna samlas under bron och väntar på ärtor. Du har inga – de simmar vidare.')); reagera('damm'); } },
     { id: 'pafagel', r: [pafagel.x - 14, pafagel.y - 30, pafagel.x + 14, pafagel.y + 2], go: [pafagel.x + (walker.px < pafagel.x ? -20 : 20), pafagel.y + 4], label: $t('PÅFÅGELN'), act: () => { pafagel.spec = 4; toast($t('🦚 Påfågeln slår ut stjärten – hundra ögon tittar på dig.')); const h = g.glad?.(1, '', 'pafagel', 1); if (h) toast(`😊 +${h}`); } },
   ];

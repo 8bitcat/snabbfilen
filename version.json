@@ -1,7 +1,7 @@
 {
-  "version": "0.145.0",
+  "version": "0.146.0",
   "date": "2026-11-19",
-  "title": "Djurparken – lejon, elefanter och ponnyn Pricken",
+  "title": "Djurskötarjobbet – Foderköket i Djurparken",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
@@ -130,6 +130,7 @@
     "js/jobs/jobb-bensin.js",
     "js/jobs/jobb-burgare.js",
     "js/jobs/jobb-datorbygge.js",
+    "js/jobs/jobb-djur.js",
     "js/jobs/jobb-finans.js",
     "js/jobs/jobb-flyg.js",
     "js/jobs/jobb-frukt.js",

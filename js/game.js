@@ -165,6 +165,8 @@ export const JOBS = {
   // de utbildade jobben i downtown: kraver = kursen på Pixelhögskolan som måste vara klar
   datorbygge: { id: 'datorbygge', icon: '🖥️', name: $t('Pixel Data'), verb: $t('Bygg datorerna precis som beställningen säger'), wage: 12, oops: 6, bonus: 25, bonusPer: $t('färdig dator'), boxLabel: $t('🖥️ Färdiga datorer'), kraver: 'datorteknik' },
   // 🎭 Teatern i Gamla stan (v5): poserna regissören ropar – tillbaka till Gamla stan efter passet (js/jobs/jobb-teater.js)
+  // 🦁 FODERKÖKET i Djurparken (js/jobs/jobb-djur.js): rätt mat till rätt djur i luckorna, åtta i rad = matrunda utan miss
+  djurskotare: { id: 'djurskotare', icon: '🦁', name: $t('Djurparken'), verb: $t('Ge varje djur rätt mat innan det tröttnar – lejonet vill ha kött, inte bananer'), wage: 11, oops: 5, missOops: 4, missPer: $t('hungrigt djur'), bonus: 28, bonusPer: $t('matrunda utan miss'), boxLabel: $t('🍽️ Matrundor utan miss'), back: 'djurparken' },
   teater: { id: 'teater', icon: '🎭', name: $t('Teatern'), verb: $t('Gör poserna som regissören ropar – innan publiken tröttnar'), wage: 12, oops: 6, missOops: 4, missPer: $t('missad replik'), bonus: 30, bonusPer: $t('stående ovation'), boxLabel: $t('👏 Stående ovationer'), back: 'gamlastan' },
   finans: { id: 'finans', icon: '📈', name: $t('Finanshuset'), verb: $t('Köp och sälj aktierna åt kunderna i rätt läge'), wage: 26, oops: 12, kraver: 'ekonomi' },
 };

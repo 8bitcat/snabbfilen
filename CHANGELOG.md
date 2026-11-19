@@ -10,6 +10,10 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.146.0] – 2026-11-19 – Djurskötarjobbet – Foderköket i Djurparken
+- 🦁 DJURSKÖTARJOBBET i Djurparken har öppnat – gå in i personalhuset längst österut. Du står i FODERKÖKET: djuren kommer till de fem luckorna i väggen och visar vad de vill ha. Välj rätt mat i lådorna på disken (klicka eller 1–6) och klicka på luckan: lejonet vill ha kött, elefanten hö, giraffen löv, apan bananer, pingvinen fisk och björnen blåbär.
+- Rätt mat ger lön och ett MUMS, fel mat ett NEJ! och avdrag, och väntar djuret för länge går det hungrigt därifrån. Åtta rätt i rad = MATRUNDA UTAN MISS med bonus. Takten ökar med vanan. Efter passet står du vid personalhuset igen, med entrén betald.
+
 ## [0.145.0] – 2026-11-19 – Djurparken – lejon, elefanter och ponnyn Pricken
 - 🦁 DJURPARKEN har öppnat! Ta djurbussen från vilken hållplats som helst (raden DJURPARKEN). Entrén kostar 20 kr, öppet 9–18. Längs huvudgången: KLAPPZOO med getter och kaniner (gå in och klappa, köp getfoder för 5 kr så kommer de), APORNA i klätterställningen, LEJONEN på savannen, ELEFANTERNA vid lerpölen, GIRAFFERNA under akaciorna och BJÖRNEN med sin unge vid grottan.
 - Söder om gången: PINGVINERNA på isen, FLAMINGORNA i den rosa dammen, PONNYRIDNINGEN (15 kr för ett varv på Pricken – du sitter i sadeln), picknickängen med glasskiosken, souvenirkiosken (ballongen följer med dig) och ankdammen med bron. Skyltarna berättar om djuren – och djuren svarar: lejonet ryter, elefanten sprutar, påfågeln slår ut stjärten när du kommer nära. Om natten sover de. Djurskötarjobbet öppnar i nästa steg.
