@@ -10,6 +10,10 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.150.0] – 2026-11-19 – Skidbacken – liften, slalom, pulka och värmestugan
+- ⛷️ SKIDBACKEN har öppnat! Ta skidbussen från vilken hållplats som helst (raden SKIDBACKEN). Nere i dalen: VÄRMESTUGAN med varm choklad, våfflor med hjortronsylt och grillad korv, SKIDUTHYRNINGEN (skidor 40 kr, pulka 20 kr – gäller hela besöket), snögubben Gösta, elden som värmer händerna och LIFTEN som är gratis. Stolarna gungar upp över backen till TOPPEN, där skidpatrullen bor i toppstugan och utsikten når ända till Pixelberg.
+- Från toppen går två åk: SLALOM – nio portar nerför backen, klicka dit du vill svänga (eller piltangenterna) och passera mellan flaggorna; tiden tas, en träffad flagga fäller dig, alla nio ger mest lycka – och PULKABACKEN med fyra gupp som pulkan hoppar över (WIIIE!) ner i en snödriva i dalen. Skidåkare och pulkabarn far i backen, snökanonerna sprutar, och på kvällen tänds stugorna och liftstationerna.
+
 ## [0.149.0] – 2026-11-19 – Arenan – Arenatorget, skridskobanan och straffar på KBK-planen
 - 🏟️ ARENAN har öppnat! Ta arenabussen från vilken hållplats som helst (raden ARENAN). På Arenatorget står PIXEL ARENA med storbildsskärmen, tornen och KBK-flaggorna (matchdagen öppnar i nästa steg), SPORTAFFÄREN (egna skridskor för 300 kr och KBK-halsduk), SIMHALLENS glasfasad (öppnar snart), FIKAT, varmkorvsgubben och statyn av KBK-legendaren Gunvor.
 - Söder om torget: SKRIDSKOBANAN – hyr skridskor för 25 kr (gratis med egna) och glid runt på isen, spåren syns, första åket om dagen ger lycka – och KBK-PLANEN där barnen passar bollen och du skjuter STRAFFAR: fem skott, en markör sveper över målet och målvakten täcker en tredjedel – klicka när markören är i en grön del. Tre mål ger lycka, fem av fem ännu mer. Varm choklad vid isen tinar händerna.

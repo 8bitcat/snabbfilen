@@ -1,0 +1,362 @@
+[
+ {
+  "i": 9649,
+  "f": "js/scenes/skidbacken.js",
+  "k": "⛷️ i Skidbacken"
+ },
+ {
+  "i": 9650,
+  "f": "js/scenes/skidbacken.js",
+  "k": "SKIDBACKEN"
+ },
+ {
+  "i": 9651,
+  "f": "js/scenes/skidbacken.js",
+  "k": "Skidbussen till liften, slalombacken och pulkabacken"
+ },
+ {
+  "i": 9652,
+  "f": "js/scenes/skidbacken.js",
+  "k": "Liften är gratis i dag – tack vare KBK:s supporterklubb!"
+ },
+ {
+  "i": 9653,
+  "f": "js/scenes/skidbacken.js",
+  "k": "Min pulka är snabbast i hela backen."
+ },
+ {
+  "i": 9654,
+  "f": "js/scenes/skidbacken.js",
+  "k": "Våfflorna i värmestugan har hjortronsylt."
+ },
+ {
+  "i": 9655,
+  "f": "js/scenes/skidbacken.js",
+  "k": "Nio portar tog jag förra gången. Nästan."
+ },
+ {
+  "i": 9656,
+  "f": "js/scenes/skidbacken.js",
+  "k": "Snökanonerna går hela natten när det är kallt."
+ },
+ {
+  "i": 9657,
+  "f": "js/scenes/skidbacken.js",
+  "k": "Skidpatrullen uppe på toppen har varm saft."
+ },
+ {
+  "i": 9658,
+  "f": "js/scenes/skidbacken.js",
+  "k": "Våffla med hjortronsylt"
+ },
+ {
+  "i": 9659,
+  "f": "js/scenes/skidbacken.js",
+  "k": "Grillad korv vid elden"
+ },
+ {
+  "i": 9660,
+  "f": "js/scenes/skidbacken.js",
+  "k": "⛷️ Skidbacken – snö, lift och varm choklad! +{0} 😊"
+ },
+ {
+  "i": 9661,
+  "f": "js/scenes/skidbacken.js",
+  "k": "🚡 Stolen svänger ut över backen. Håll i bygeln!"
+ },
+ {
+  "i": 9662,
+  "f": "js/scenes/skidbacken.js",
+  "k": "Utsikten från toppen"
+ },
+ {
+  "i": 9663,
+  "f": "js/scenes/skidbacken.js",
+  "k": "🏔️ Toppen! Hela Pixelstaden ligger där nere."
+ },
+ {
+  "i": 9664,
+  "f": "js/scenes/skidbacken.js",
+  "k": "⛷️ Du behöver skidor – hyr i skiduthyrningen nere i dalen."
+ },
+ {
+  "i": 9665,
+  "f": "js/scenes/skidbacken.js",
+  "k": "⛷️ Kör! Klicka dit du vill svänga (eller piltangenterna, A/D) – mellan flaggorna!"
+ },
+ {
+  "i": 9666,
+  "f": "js/scenes/skidbacken.js",
+  "k": "PORT!"
+ },
+ {
+  "i": 9667,
+  "f": "js/scenes/skidbacken.js",
+  "k": "AJ!"
+ },
+ {
+  "i": 9668,
+  "f": "js/scenes/skidbacken.js",
+  "k": "MISSAD"
+ },
+ {
+  "i": 9669,
+  "f": "js/scenes/skidbacken.js",
+  "k": "Alla nio portarna"
+ },
+ {
+  "i": 9670,
+  "f": "js/scenes/skidbacken.js",
+  "k": "Slalom i Skidbacken"
+ },
+ {
+  "i": 9671,
+  "f": "js/scenes/skidbacken.js",
+  "k": "⛷️ ALLA NIO PORTARNA på {0} s! Skidpatrullen applåderar."
+ },
+ {
+  "i": 9672,
+  "f": "js/scenes/skidbacken.js",
+  "k": "⛷️ {0} av 9 portar på {1} s."
+ },
+ {
+  "i": 9673,
+  "f": "js/scenes/skidbacken.js",
+  "k": "🛷 Du behöver en pulka – hyr i skiduthyrningen nere i dalen."
+ },
+ {
+  "i": 9674,
+  "f": "js/scenes/skidbacken.js",
+  "k": "🛷 Håll i dig – pulkan går!"
+ },
+ {
+  "i": 9675,
+  "f": "js/scenes/skidbacken.js",
+  "k": "WIIIE!"
+ },
+ {
+  "i": 9676,
+  "f": "js/scenes/skidbacken.js",
+  "k": "HOPP!"
+ },
+ {
+  "i": 9677,
+  "f": "js/scenes/skidbacken.js",
+  "k": "Pulkaåk"
+ },
+ {
+  "i": 9678,
+  "f": "js/scenes/skidbacken.js",
+  "k": "🛷 Pulkan stannar i en snödriva. Snö i kragen – och du skrattar!"
+ },
+ {
+  "i": 9679,
+  "f": "js/scenes/skidbacken.js",
+  "k": "Hyrda – gäller hela besöket"
+ },
+ {
+  "i": 9680,
+  "f": "js/scenes/skidbacken.js",
+  "k": "Hyr"
+ },
+ {
+  "i": 9681,
+  "f": "js/scenes/skidbacken.js",
+  "k": "🎿 Skiduthyrningen"
+ },
+ {
+  "i": 9682,
+  "f": "js/scenes/skidbacken.js",
+  "k": "Skidor till slalombacken och pulkor till pulkabacken. Liften är gratis. Hyran gäller tills du åker hem."
+ },
+ {
+  "i": 9683,
+  "f": "js/scenes/skidbacken.js",
+  "k": "Skidor och stavar"
+ },
+ {
+  "i": 9684,
+  "f": "js/scenes/skidbacken.js",
+  "k": "Pulka"
+ },
+ {
+  "i": 9685,
+  "f": "js/scenes/skidbacken.js",
+  "k": "🎿 Skidorna sitter! Ta liften upp och åk slalom."
+ },
+ {
+  "i": 9686,
+  "f": "js/scenes/skidbacken.js",
+  "k": "🛷 Pulkan är din för dagen! Ta liften upp till pulkabacken."
+ },
+ {
+  "i": 9687,
+  "f": "js/scenes/skidbacken.js",
+  "k": "🔥 Värmestugan"
+ },
+ {
+  "i": 9688,
+  "f": "js/scenes/skidbacken.js",
+  "k": "Brasan sprakar, vantarna torkar på elementet. Varm choklad, våfflor och grillad korv."
+ },
+ {
+  "i": 9689,
+  "f": "js/scenes/skidbacken.js",
+  "k": "Fika i värmestugan"
+ },
+ {
+  "i": 9690,
+  "f": "js/scenes/skidbacken.js",
+  "k": "{0} {1}! Värmen sprider sig."
+ },
+ {
+  "i": 9691,
+  "f": "js/scenes/skidbacken.js",
+  "k": "🚌 Skidbussen"
+ },
+ {
+  "i": 9692,
+  "f": "js/scenes/skidbacken.js",
+  "k": "SKIDBUSSEN TILL STAN"
+ },
+ {
+  "i": 9693,
+  "f": "js/scenes/skidbacken.js",
+  "k": "VÄRMESTUGAN – CHOKLAD OCH VÅFFLOR"
+ },
+ {
+  "i": 9694,
+  "f": "js/scenes/skidbacken.js",
+  "k": "SKIDUTHYRNINGEN"
+ },
+ {
+  "i": 9695,
+  "f": "js/scenes/skidbacken.js",
+  "k": "LIFTEN UPP TILL TOPPEN"
+ },
+ {
+  "i": 9696,
+  "f": "js/scenes/skidbacken.js",
+  "k": "SNÖGUBBEN"
+ },
+ {
+  "i": 9697,
+  "f": "js/scenes/skidbacken.js",
+  "k": "⛄ Snögubben Gösta har stått här sedan oktober. Moroten byts varje måndag."
+ },
+ {
+  "i": 9698,
+  "f": "js/scenes/skidbacken.js",
+  "k": "ELDEN – VÄRM HÄNDERNA"
+ },
+ {
+  "i": 9699,
+  "f": "js/scenes/skidbacken.js",
+  "k": "Värme vid elden"
+ },
+ {
+  "i": 9700,
+  "f": "js/scenes/skidbacken.js",
+  "k": "🔥 Du håller händerna över elden. Vantarna ångar. +4 ⚡"
+ },
+ {
+  "i": 9701,
+  "f": "js/scenes/skidbacken.js",
+  "k": "⛷️ SKIDBACKEN – hyr skidor eller pulka, ta liften upp och åk ner. Värmestugan har choklad. Bussen hem står här."
+ },
+ {
+  "i": 9702,
+  "f": "js/scenes/skidbacken.js",
+  "k": "SLALOMSTARTEN – KÖR!"
+ },
+ {
+  "i": 9703,
+  "f": "js/scenes/skidbacken.js",
+  "k": "SLALOMSTARTEN (SKIDOR KRÄVS)"
+ },
+ {
+  "i": 9704,
+  "f": "js/scenes/skidbacken.js",
+  "k": "PULKABACKEN – ÅK!"
+ },
+ {
+  "i": 9705,
+  "f": "js/scenes/skidbacken.js",
+  "k": "PULKABACKEN (PULKA KRÄVS)"
+ },
+ {
+  "i": 9706,
+  "f": "js/scenes/skidbacken.js",
+  "k": "LIFTEN NER IGEN"
+ },
+ {
+  "i": 9707,
+  "f": "js/scenes/skidbacken.js",
+  "k": "TOPPSTUGAN – SKIDPATRULLEN"
+ },
+ {
+  "i": 9708,
+  "f": "js/scenes/skidbacken.js",
+  "k": "Skidpatrullen: \"Portarna står rakt, snön är fin. Böj på knäna och titta framåt – inte på skidorna!\""
+ },
+ {
+  "i": 9709,
+  "f": "js/scenes/skidbacken.js",
+  "k": "UTSIKTEN"
+ },
+ {
+  "i": 9710,
+  "f": "js/scenes/skidbacken.js",
+  "k": "🏔️ Härifrån ser du Pixelstaden, havet och fyren på Solön. På riktigt klara dagar – Pixelberg."
+ },
+ {
+  "i": 9711,
+  "f": "js/scenes/skidbacken.js",
+  "k": "PORTAR {0} AV 9 · {1} s"
+ },
+ {
+  "i": 9712,
+  "f": "js/scenes/skidbacken.js",
+  "k": "PÅ VÄG UPP …"
+ },
+ {
+  "i": 9713,
+  "f": "js/scenes/skidbacken.js",
+  "k": "PÅ VÄG NER …"
+ },
+ {
+  "i": 9714,
+  "f": "js/scenes/skidbacken.js",
+  "k": "LIFT, SLALOM, PULKA OCH VARM CHOKLAD"
+ },
+ {
+  "i": 9715,
+  "f": "js/scenes/skidbacken.js",
+  "k": "VÄRMESTUGAN"
+ },
+ {
+  "i": 9716,
+  "f": "js/scenes/skidbacken.js",
+  "k": "SKIDUTHYRNING"
+ },
+ {
+  "i": 9717,
+  "f": "js/scenes/skidbacken.js",
+  "k": "SKIDPATRULLEN"
+ },
+ {
+  "i": 9718,
+  "f": "js/scenes/skidbacken.js",
+  "k": "TOPPEN"
+ },
+ {
+  "i": 9719,
+  "f": "js/scenes/skidbacken.js",
+  "k": "DALSTATIONEN"
+ },
+ {
+  "i": 9720,
+  "f": "js/scenes/skidbacken.js",
+  "k": "Skidor {0} kr, pulka {1} kr – liften är gratis"
+ }
+]

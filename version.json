@@ -1,7 +1,7 @@
 {
-  "version": "0.149.0",
+  "version": "0.150.0",
   "date": "2026-11-19",
-  "title": "Arenan – Arenatorget, skridskobanan och straffar på KBK-planen",
+  "title": "Skidbacken – liften, slalom, pulka och värmestugan",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
@@ -257,6 +257,7 @@
     "js/scenes/shop-terminal.js",
     "js/scenes/shop-trimmare.js",
     "js/scenes/shop-universitet.js",
+    "js/scenes/skidbacken.js",
     "js/scenes/skraplott.js",
     "js/scenes/solon.js",
     "js/scenes/stuga.js",
@@ -266,6 +267,8 @@
     "js/scenes/walkable.js",
     "js/shops/bostad.js",
     "js/shops/matbutik.js",
+    "js/skidbacken/deko.js",
+    "js/skidbacken/karta.js",
     "js/solon/fiske.js",
     "js/solon/karta.js",
     "js/solon/stuga-inne.js",

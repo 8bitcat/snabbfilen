@@ -18,6 +18,7 @@ import { makeDjurparken } from './scenes/djurparken.js'; // 🦁 DJURPARKEN – 
 import { makeHamnen } from './scenes/hamnen.js'; // ⚓ FISKEHAMNEN – stadsdel 4 (hamnbussen)
 import { makeStuga } from './scenes/stuga.js'; // 🏡 Röda stugan på Solön – sommarstugan man hyr för natten
 import { makeArenan } from './scenes/arenan.js'; // 🏟️ ARENAN – stadsdel 5 (arenabussen)
+import { makeSkidbacken } from './scenes/skidbacken.js'; // ⛷️ SKIDBACKEN – stadsdel 6 (skidbussen)
 import { makeSolon } from './scenes/solon.js'; // ⛴️ SOLÖN – badön (färjan från bryggan vid Sjöboden)
 import { makePixelberg } from './scenes/pixelberg.js'; // 🎡 PIXELBERG – tivolit på berget (bergbussen)
 import { makeUtstallning } from './scenes/utstallning.js'; // 🏆 utställningshallen i Tassbacken
@@ -146,6 +147,7 @@ const SCENES = {
   hamnen: (a) => makeHamnen(a), // ⚓ Fiskehamnen: fiskmarknaden, båtaffären, piren, färjan till Solön
   stuga: (a) => makeStuga(a), // 🏡 Röda stugan på Solön: sov över, kaminen, kaffet, verandan
   arenan: (a) => makeArenan(a), // 🏟️ Arenan: Arenatorget, skridskobanan, KBK-planen med straffar
+  skidbacken: (a) => makeSkidbacken(a), // ⛷️ Skidbacken: liften, slalom, pulka, värmestugan
   utstallning: (a, o) => makeUtstallning(a, o || {}), // 🏆 katt-/hundutställning och kaninhoppning
   kaninhopp: (a, o) => makeKaninhopp(a, o || {}), // 🐇 hinderloppet (petId + onDone från utstallning.js)
   kattcafe: (a) => makeShopKattcafe(a), // ☕ fika bland katterna
@@ -569,7 +571,7 @@ const PLACE_AWAY = {
 // ställena bakom stadens dörrar (DOOR_SCENES) – bara där ingen text redan finns
 for (const [k, v] of Object.entries({ bank: $t('🏦 på banken'), elektronik: $t('📱 i elektronikbutiken'), frisor: $t('💈 hos frisören'), skor: $t('👟 i skobutiken'),
   accessoarer: $t('👜 i accessoarbutiken'), bio: $t('🎬 på bion'), kebab: $t('🥙 på kebaben'), pantbank: $t('💍 på pantbanken'), universitet: $t('🎓 på Pixelhögskolan'),
-  jobbdatorbygge: $t('🖥️ bygger datorer på Pixel Data'), jobbfinans: $t('📈 handlar aktier på Finanshuset'), jobbteater: $t('🎭 står på scenen på Teatern'), bibliotek: $t('📚 på Biblioteket'), djurparken: $t('🦁 i Djurparken'), jobbdjur: $t('🦁 matar djuren i Djurparken'), hamnen: $t('⚓ i Fiskehamnen'), stuga: $t('🏡 i Röda stugan på Solön'), arenan: $t('🏟️ på Arenan'), koket: $t('🍳 lagar mat hemma'), tradgard: $t('🌱 i trädgården'), fordon: $t('🔧 i garaget'), maskerad: $t('🎃 i maskeradbutiken'), sjoboden: $t('🐟 på Sjöboden'), bling: $t('💎 på BLING BLING'), jobbtruck: $t('🚚 står i sin foodtruck'), landet: $t('🌾 ute på landet'), hopp: $t('🏇 hoppar på hinderbanan'), tassbacken: $t('🐾 i Tassbacken'), solon: $t('⛴️ på Solön'), pixelberg: $t('🎡 på tivolit på Pixelberg'), gamlastan: $t('🏛️ i Gamla stan'), trimmaren: $t('✂️ i djurtrimmaren'), utstallning: $t('🏆 på utställningen i Tassbacken'), kaninhopp: $t('🐇 tävlar i kaninhoppning'), kattcafe: $t('☕ fikar på kattcaféet'), djurhem: $t('🏡 på djurhemmet'), djurklinik: $t('🩺 hos veterinären'), agility: $t('🐕 springer agility') })) PLACE_AWAY[k] ??= v;
+  jobbdatorbygge: $t('🖥️ bygger datorer på Pixel Data'), jobbfinans: $t('📈 handlar aktier på Finanshuset'), jobbteater: $t('🎭 står på scenen på Teatern'), bibliotek: $t('📚 på Biblioteket'), djurparken: $t('🦁 i Djurparken'), jobbdjur: $t('🦁 matar djuren i Djurparken'), hamnen: $t('⚓ i Fiskehamnen'), stuga: $t('🏡 i Röda stugan på Solön'), arenan: $t('🏟️ på Arenan'), skidbacken: $t('⛷️ i Skidbacken'), koket: $t('🍳 lagar mat hemma'), tradgard: $t('🌱 i trädgården'), fordon: $t('🔧 i garaget'), maskerad: $t('🎃 i maskeradbutiken'), sjoboden: $t('🐟 på Sjöboden'), bling: $t('💎 på BLING BLING'), jobbtruck: $t('🚚 står i sin foodtruck'), landet: $t('🌾 ute på landet'), hopp: $t('🏇 hoppar på hinderbanan'), tassbacken: $t('🐾 i Tassbacken'), solon: $t('⛴️ på Solön'), pixelberg: $t('🎡 på tivolit på Pixelberg'), gamlastan: $t('🏛️ i Gamla stan'), trimmaren: $t('✂️ i djurtrimmaren'), utstallning: $t('🏆 på utställningen i Tassbacken'), kaninhopp: $t('🐇 tävlar i kaninhoppning'), kattcafe: $t('☕ fikar på kattcaféet'), djurhem: $t('🏡 på djurhemmet'), djurklinik: $t('🩺 hos veterinären'), agility: $t('🐕 springer agility') })) PLACE_AWAY[k] ??= v;
 function placeOf(p, info) {
   const s = String(p.scene || 'away');
   if (s === 'city') return $t('🏙️ i staden');

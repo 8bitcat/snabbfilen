@@ -488,12 +488,14 @@ export function makeCity(A) {
     // ⚓ HAMNBUSSEN till FISKEHAMNEN (js/scenes/hamnen.js) – samma biljett
     + `<div class="prow shoprow"><span style="font-size:28px;text-align:center">⚓</span><span class="nm">${esc($t('FISKEHAMNEN'))}<br><small class="sp">${esc($t('Hamnbussen till fiskmarknaden, båtarna och färjan'))}</small></span><button class="btn btn-small ${g.money >= BUS_FARE ? 'btn-go' : ''}" data-hamn ${g.money >= BUS_FARE ? '' : 'disabled'}>${$t('Åk hit')}</button></div>`
     // 🏟️ ARENABUSSEN till ARENAN (js/scenes/arenan.js) – samma biljett
-    + `<div class="prow shoprow"><span style="font-size:28px;text-align:center">🏟️</span><span class="nm">${esc($t('ARENAN'))}<br><small class="sp">${esc($t('Arenabussen till Pixel Arena, skridskobanan och KBK-planen'))}</small></span><button class="btn btn-small ${g.money >= BUS_FARE ? 'btn-go' : ''}" data-arena ${g.money >= BUS_FARE ? '' : 'disabled'}>${$t('Åk hit')}</button></div>`;
+    + `<div class="prow shoprow"><span style="font-size:28px;text-align:center">🏟️</span><span class="nm">${esc($t('ARENAN'))}<br><small class="sp">${esc($t('Arenabussen till Pixel Arena, skridskobanan och KBK-planen'))}</small></span><button class="btn btn-small ${g.money >= BUS_FARE ? 'btn-go' : ''}" data-arena ${g.money >= BUS_FARE ? '' : 'disabled'}>${$t('Åk hit')}</button></div>`
+    // ⛷️ SKIDBUSSEN till SKIDBACKEN (js/scenes/skidbacken.js) – samma biljett
+    + `<div class="prow shoprow"><span style="font-size:28px;text-align:center">⛷️</span><span class="nm">${esc($t('SKIDBACKEN'))}<br><small class="sp">${esc($t('Skidbussen till liften, slalombacken och pulkabacken'))}</small></span><button class="btn btn-small ${g.money >= BUS_FARE ? 'btn-go' : ''}" data-skid ${g.money >= BUS_FARE ? '' : 'disabled'}>${$t('Åk hit')}</button></div>`;
   function bergbussen(from, dit = 'pixelberg') {
     if (g.money < BUS_FARE) { toast($t`🚌 Bussen kostar ${BUS_FARE} kr – du har inte råd.`, 'bad'); return; }
     g.money -= BUS_FARE; g.passTime(BUS_MINUTES); g.save(); play('door');
     walker.stop(); fade.phase = 1; fade.a = 0;
-    fade.cb = () => { if (dit === 'gamlastan') A.gamlaFran = { buss: from?.id || '' }; else if (dit === 'djurparken') A.djurparkFran = { buss: from?.id || '' }; else if (dit === 'hamnen') A.hamnFran = { buss: from?.id || '' }; else if (dit === 'arenan') A.arenaFran = { buss: from?.id || '' }; else A.pixelbergFran = { buss: from?.id || '' }; A.go(dit); };
+    fade.cb = () => { if (dit === 'gamlastan') A.gamlaFran = { buss: from?.id || '' }; else if (dit === 'djurparken') A.djurparkFran = { buss: from?.id || '' }; else if (dit === 'hamnen') A.hamnFran = { buss: from?.id || '' }; else if (dit === 'arenan') A.arenaFran = { buss: from?.id || '' }; else if (dit === 'skidbacken') A.skidFran = { buss: from?.id || '' }; else A.pixelbergFran = { buss: from?.id || '' }; A.go(dit); };
   }
   function openBusDialog(from) {
     const others = BUS_STOPS.filter((s) => s.id !== from.id);
@@ -511,6 +513,7 @@ export function makeCity(A) {
     dlg.querySelector('[data-djur]')?.addEventListener('click', () => { closeModal(); bergbussen(from, 'djurparken'); });
     dlg.querySelector('[data-hamn]')?.addEventListener('click', () => { closeModal(); bergbussen(from, 'hamnen'); });
     dlg.querySelector('[data-arena]')?.addEventListener('click', () => { closeModal(); bergbussen(from, 'arenan'); });
+    dlg.querySelector('[data-skid]')?.addEventListener('click', () => { closeModal(); bergbussen(from, 'skidbacken'); });
   }
 
   // ---------- bussen på riktigt (receptet i traffic.js filhuvud) ----------
@@ -547,6 +550,7 @@ export function makeCity(A) {
     dlg.querySelector('[data-djur]')?.addEventListener('click', () => { S.traffic.release?.(from.id); closeModal(); bergbussen(from, 'djurparken'); });
     dlg.querySelector('[data-hamn]')?.addEventListener('click', () => { S.traffic.release?.(from.id); closeModal(); bergbussen(from, 'hamnen'); });
     dlg.querySelector('[data-arena]')?.addEventListener('click', () => { S.traffic.release?.(from.id); closeModal(); bergbussen(from, 'arenan'); });
+    dlg.querySelector('[data-skid]')?.addEventListener('click', () => { S.traffic.release?.(from.id); closeModal(); bergbussen(from, 'skidbacken'); });
   }
   // Kliv av bussen: ställ figuren vid dörren och väck kameran/området.
   function finishRide() {
