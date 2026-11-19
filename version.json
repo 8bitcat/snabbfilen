@@ -1,7 +1,7 @@
 {
-  "version": "0.150.0",
+  "version": "0.151.0",
   "date": "2026-11-19",
-  "title": "Skidbacken – liften, slalom, pulka och värmestugan",
+  "title": "Vattenlandet – kanorna, vågpoolen och soldäcket",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
@@ -264,6 +264,7 @@
     "js/scenes/tassbacken.js",
     "js/scenes/tradgard.js",
     "js/scenes/utstallning.js",
+    "js/scenes/vattenlandet.js",
     "js/scenes/walkable.js",
     "js/shops/bostad.js",
     "js/shops/matbutik.js",
@@ -277,6 +278,8 @@
     "js/tassbacken/kafe-inne.js",
     "js/tassbacken/karta.js",
     "js/tassbacken/park.js",
+    "js/vattenlandet/deko.js",
+    "js/vattenlandet/karta.js",
     "js/version.js",
     "sw.js",
     "version.json"

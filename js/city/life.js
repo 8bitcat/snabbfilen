@@ -3815,7 +3815,9 @@ export function createLife(env, traffic, props) {
     return { a: a.id, b: b.id, lines: [...S.lines] };
   }
   function mumlaNu() {
-    const p = peds.find((q) => !q.hidden && !q.gone && !q.leader && !q.talk && !q.samtal);
+    // helst någon som syns i bild – talks() listar bara synliga bubblor (samtal-test föll när den första lediga stod utanför bilden, 2026-11-19)
+    const ledig = (q) => !q.hidden && !q.gone && !q.leader && !q.talk && !q.samtal;
+    const p = peds.find((q) => ledig(q) && visible(q.x, q.y, 40)) || peds.find(ledig);
     if (!p) return null;
     const text = smalltalk(p); p.talk = { text, t: 3 }; return text;
   }

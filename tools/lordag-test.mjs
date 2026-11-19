@@ -12,7 +12,8 @@ import http from 'node:http';
 const require = createRequire('D:/Qisy/QISYFrontend/QISYFrontend-1/package.json');
 const { chromium } = require('playwright');
 
-const PORT = process.env.SMOKE_PORT || process.env.PORT || 8788, MOCK = 8792;
+// låtsasserverns port följer spelserverns (+1000): verify på port 8792 krockade med den fasta 8792 (0.147, 2026-11-19)
+const PORT = process.env.SMOKE_PORT || process.env.PORT || 8788, MOCK = +PORT + 1000;
 let fails = 0;
 const ok = (c, m) => { console.log((c ? 'ok: ' : 'FEL: ') + m); if (!c) fails++; };
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));

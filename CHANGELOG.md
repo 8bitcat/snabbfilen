@@ -10,6 +10,10 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.151.0] – 2026-11-19 – Vattenlandet – kanorna, vågpoolen och soldäcket
+- 🌊 VATTENLANDET har öppnat! Ta vattenbussen från vilken hållplats som helst (raden VATTENLANDET). Betala entrén i kassan (40 kr, öppet 10–19) så snurrar vändkorset. Byt om i OMKLÄDNINGSRUMMET – i badkläder får man gå i vattnet. VÅGPOOLEN: trappan ner, simma dit du klickar, och när sirenen tjuter kommer VÅGORNA. RUTSCHTORNET har tre kanor – Gula kanan, Blå virveln och Röda tornadon med två varv – klättra upp, sus ner och plaska i landningspoolen.
+- Barnpoolen med svampfontänen att plaska i, soldäcket med solstolar och parasoller (vila en stund → energi), duscharna, KIOSKEN med mjukglass, pommes och vattenmelon, och badvakten Bosse i tornet som visslar på den som hoppar i utan att gå via trappan. Badgäster, simmare med badringar, barn som hoppar och någon som åker kana hela tiden; på kvällen lyser poolerna underifrån.
+
 ## [0.150.0] – 2026-11-19 – Skidbacken – liften, slalom, pulka och värmestugan
 - ⛷️ SKIDBACKEN har öppnat! Ta skidbussen från vilken hållplats som helst (raden SKIDBACKEN). Nere i dalen: VÄRMESTUGAN med varm choklad, våfflor med hjortronsylt och grillad korv, SKIDUTHYRNINGEN (skidor 40 kr, pulka 20 kr – gäller hela besöket), snögubben Gösta, elden som värmer händerna och LIFTEN som är gratis. Stolarna gungar upp över backen till TOPPEN, där skidpatrullen bor i toppstugan och utsikten når ända till Pixelberg.
 - Från toppen går två åk: SLALOM – nio portar nerför backen, klicka dit du vill svänga (eller piltangenterna) och passera mellan flaggorna; tiden tas, en träffad flagga fäller dig, alla nio ger mest lycka – och PULKABACKEN med fyra gupp som pulkan hoppar över (WIIIE!) ner i en snödriva i dalen. Skidåkare och pulkabarn far i backen, snökanonerna sprutar, och på kvällen tänds stugorna och liftstationerna.

@@ -1,0 +1,407 @@
+[
+ {
+  "i": 9721,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "🌊 i Vattenlandet"
+ },
+ {
+  "i": 9722,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "VATTENLANDET"
+ },
+ {
+  "i": 9723,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "Vattenbussen till rutschkanorna, vågpoolen och soldäcket"
+ },
+ {
+  "i": 9724,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "Röda tornadon snurrar två varv – jag skrek hela vägen!"
+ },
+ {
+  "i": 9725,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "Vågorna kommer snart. Hör du sirenen?"
+ },
+ {
+  "i": 9726,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "Pommesen här är krispigast i stan."
+ },
+ {
+  "i": 9727,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "Badvakten Bosse visslade på mig för att jag sprang."
+ },
+ {
+  "i": 9728,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "Barnpoolen är ljummen som ett badkar."
+ },
+ {
+  "i": 9729,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "Jag har solat i två timmar. Glömde solkrämen."
+ },
+ {
+  "i": 9730,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "Badvakten Bosse: \"Gå lugnt på kanten – det är halt!\""
+ },
+ {
+  "i": 9731,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "Badvakten Bosse: \"Vågorna kommer var minut. Håll i badringen!\""
+ },
+ {
+  "i": 9732,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "Badvakten Bosse: \"Röda tornadon är för den som vågar.\""
+ },
+ {
+  "i": 9733,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "Pommes med ketchup"
+ },
+ {
+  "i": 9734,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "Vattenmelon i skivor"
+ },
+ {
+  "i": 9735,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "🌊 Vattenlandet – kanor, vågor och sol! +{0} 😊"
+ },
+ {
+  "i": 9736,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "🌊 VÅGORNA KOMMER! Håll i dig!"
+ },
+ {
+  "i": 9737,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "🎟️ Du har redan betalat – vändkorset är öppet!"
+ },
+ {
+  "i": 9738,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "🌊 Vattenlandet har öppet {0}–{1}. Kassan är stängd."
+ },
+ {
+  "i": 9739,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "🎟️ Kassan"
+ },
+ {
+  "i": 9740,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "Entré till Vattenlandet hela dagen: <b>{0}</b>. Kanorna, vågpoolen och solstolarna ingår. Du har {1}."
+ },
+ {
+  "i": 9741,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "🎟️ Betala {0}"
+ },
+ {
+  "i": 9742,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "🎟️ Välkommen! Vändkorset snurrar – byt om i omklädningsrummet först."
+ },
+ {
+  "i": 9743,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "🩱 Ombytt! Nu får du gå i vattnet – handduken ligger i skåpet."
+ },
+ {
+  "i": 9744,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "👕 Ombytt till vanliga kläder igen."
+ },
+ {
+  "i": 9745,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "🩱 Byt om i omklädningsrummet först!"
+ },
+ {
+  "i": 9746,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "🏊 Svalt och skönt! Klicka i poolen så simmar du dit – upp via trappan."
+ },
+ {
+  "i": 9747,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "Dopp i vågpoolen"
+ },
+ {
+  "i": 9748,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "😊 Dopp i vågpoolen +{0}"
+ },
+ {
+  "i": 9749,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "🏊 Upp ur vattnet – det droppar om dig."
+ },
+ {
+  "i": 9750,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "Kort och snäll"
+ },
+ {
+  "i": 9751,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "En virvel på vägen"
+ },
+ {
+  "i": 9752,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "Lång, brant och två varv"
+ },
+ {
+  "i": 9753,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "Åk"
+ },
+ {
+  "i": 9754,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "🛝 Rutschtornet"
+ },
+ {
+  "i": 9755,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "Välj kana. Trapporna upp är branta – håll i räcket."
+ },
+ {
+  "i": 9756,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "🛝 {0}! Upp för trapporna …"
+ },
+ {
+  "i": 9757,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "🌪️ TVÅ VARV OCH PLASK! Hjärtat bultar."
+ },
+ {
+  "i": 9758,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "🌀 Virveln snurrade dig runt – plask!"
+ },
+ {
+  "i": 9759,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "🛝 Plask! Det kittlade i magen."
+ },
+ {
+  "i": 9760,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "🌞 Du sträcker ut dig i solstolen. Ögonen går ihop …"
+ },
+ {
+  "i": 9761,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "Sol på soldäcket"
+ },
+ {
+  "i": 9762,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "🌞 Utvilad och varm om axlarna. +8 ⚡"
+ },
+ {
+  "i": 9763,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "Plask i barnpoolen"
+ },
+ {
+  "i": 9764,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "💦 Du plaskar med fötterna i barnpoolen – ljummet som ett bad."
+ },
+ {
+  "i": 9765,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "🚿 Svalkande! Sanden rinner av. +2 ⚡"
+ },
+ {
+  "i": 9766,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "🍦 Kiosken är stängd för dagen."
+ },
+ {
+  "i": 9767,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "🍦 Kiosken"
+ },
+ {
+  "i": 9768,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "Glass som droppar, pommes i strut och vattenmelon på fat."
+ },
+ {
+  "i": 9769,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "Kiosken i Vattenlandet"
+ },
+ {
+  "i": 9770,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "{0} {1}!"
+ },
+ {
+  "i": 9771,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "Badvakten Bosse: \"SPRING INTE – och i via trappan, tack!\""
+ },
+ {
+  "i": 9772,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "🚌 Vattenbussen"
+ },
+ {
+  "i": 9773,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "TRAPPAN UPP"
+ },
+ {
+  "i": 9774,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "VATTENBUSSEN TILL STAN"
+ },
+ {
+  "i": 9775,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "IN GENOM VÄNDKORSET"
+ },
+ {
+  "i": 9776,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "VÄNDKORSET – BETALA I KASSAN"
+ },
+ {
+  "i": 9777,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "🌊 VATTENLANDET – betala i kassan, byt om, och sedan: kanorna, vågpoolen, barnpoolen, soldäcket och kiosken. Bussen hem står här."
+ },
+ {
+  "i": 9778,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "OMKLÄDNINGSRUMMET – BYT TILLBAKA"
+ },
+ {
+  "i": 9779,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "OMKLÄDNINGSRUMMET – BYT OM"
+ },
+ {
+  "i": 9780,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "VÅGPOOLEN – TRAPPAN NER"
+ },
+ {
+  "i": 9781,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "RUTSCHTORNET – TRE KANOR"
+ },
+ {
+  "i": 9782,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "BARNPOOLEN – PLASKA"
+ },
+ {
+  "i": 9783,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "SOLSTOLEN – VILA EN STUND"
+ },
+ {
+  "i": 9784,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "DUSCHEN"
+ },
+ {
+  "i": 9785,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "KIOSKEN – GLASS OCH POMMES"
+ },
+ {
+  "i": 9786,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "BADVAKTEN BOSSE"
+ },
+ {
+  "i": 9787,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "VÅGORNA KOMMER!"
+ },
+ {
+  "i": 9788,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "KLÄTTRAR …"
+ },
+ {
+  "i": 9789,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "{0} · {1} s"
+ },
+ {
+  "i": 9790,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "ZZZ … SOLAR"
+ },
+ {
+  "i": 9791,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "KANOR, VÅGPOOL, SOLDÄCK OCH GLASS"
+ },
+ {
+  "i": 9792,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "OMKLÄDNING"
+ },
+ {
+  "i": 9793,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "KIOSKEN"
+ },
+ {
+  "i": 9794,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "MELON"
+ },
+ {
+  "i": 9795,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "RUTSCHTORNET"
+ },
+ {
+  "i": 9796,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "BADVAKT"
+ },
+ {
+  "i": 9797,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "RUTSCHKANOR · VÅGPOOL · SOLDÄCK"
+ },
+ {
+  "i": 9798,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "Gula kanan"
+ },
+ {
+  "i": 9799,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "Blå virveln"
+ },
+ {
+  "i": 9800,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "Röda tornadon"
+ },
+ {
+  "i": 9801,
+  "f": "js/scenes/vattenlandet.js",
+  "k": "Öppet {0}–{1} · entré {2} kr"
+ }
+]
