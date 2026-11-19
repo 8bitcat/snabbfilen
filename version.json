@@ -1,7 +1,7 @@
 {
-  "version": "0.151.0",
+  "version": "0.152.0",
   "date": "2026-11-19",
-  "title": "Vattenlandet – kanorna, vågpoolen och soldäcket",
+  "title": "Matchdagen på Pixel Arena – heja fram KBK från klacken",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
@@ -11,6 +11,7 @@
     "index.html",
     "js/arenan/deko.js",
     "js/arenan/karta.js",
+    "js/arenan/match.js",
     "js/city/bridge.js",
     "js/city/buildings-downtown.js",
     "js/city/buildings-leksaker.js",
@@ -226,6 +227,7 @@
     "js/scenes/kok.js",
     "js/scenes/koket.js",
     "js/scenes/landet.js",
+    "js/scenes/matchdag.js",
     "js/scenes/pixelberg.js",
     "js/scenes/room.js",
     "js/scenes/shop-accessoarer.js",

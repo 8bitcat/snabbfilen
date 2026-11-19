@@ -10,6 +10,10 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.152.0] – 2026-11-19 – Matchdagen på Pixel Arena – heja fram KBK från klacken
+- ⚽ MATCHDAG PÅ PIXEL ARENA! Köp biljett i biljettluckan på Arenatorget (30 kr, matcher 12–20, ny motståndare varje dag: Pixelbergs IF, Solö BK, Hamnens FF, Linné United, Tassbackens BK) och ställ dig på klacken bland supportrarna. Klackledaren Kjell ropar KLAPPA, HEJA, VÅGEN eller SJUNG – tryck på rätt knapp (eller 1–4) innan hans tålamod tar slut, så stiger STÄMNINGEN och vågen går runt hela läktaren.
+- Matchen spelas i två halvlekar med halvtid (korv 25 kr!). Lagen anfaller om vartannat – ju bättre stämning, desto fler mål gör KBK, och målskyttarna är lagets riktiga spelare. Slutsignalen ger lycka efter resultatet, mest när KBK vinner. Storbildsskärm med ställning och klocka, strålkastare, bortre läktaren full av folk och kvällsmatcher i skymning.
+
 ## [0.151.0] – 2026-11-19 – Vattenlandet – kanorna, vågpoolen och soldäcket
 - 🌊 VATTENLANDET har öppnat! Ta vattenbussen från vilken hållplats som helst (raden VATTENLANDET). Betala entrén i kassan (40 kr, öppet 10–19) så snurrar vändkorset. Byt om i OMKLÄDNINGSRUMMET – i badkläder får man gå i vattnet. VÅGPOOLEN: trappan ner, simma dit du klickar, och när sirenen tjuter kommer VÅGORNA. RUTSCHTORNET har tre kanor – Gula kanan, Blå virveln och Röda tornadon med två varv – klättra upp, sus ner och plaska i landningspoolen.
 - Barnpoolen med svampfontänen att plaska i, soldäcket med solstolar och parasoller (vila en stund → energi), duscharna, KIOSKEN med mjukglass, pommes och vattenmelon, och badvakten Bosse i tornet som visslar på den som hoppar i utan att gå via trappan. Badgäster, simmare med badringar, barn som hoppar och någon som åker kana hela tiden; på kvällen lyser poolerna underifrån.

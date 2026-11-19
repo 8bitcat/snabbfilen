@@ -1,0 +1,302 @@
+[
+ {
+  "i": 9802,
+  "f": "js/scenes/matchdag.js",
+  "k": "HEJA"
+ },
+ {
+  "i": 9803,
+  "f": "js/scenes/matchdag.js",
+  "k": "STÄMNING"
+ },
+ {
+  "i": 9804,
+  "f": "js/scenes/matchdag.js",
+  "k": "⚽ på läktaren på Pixel Arena"
+ },
+ {
+  "i": 9805,
+  "f": "js/scenes/matchdag.js",
+  "k": "🎟️ Matcherna spelas {0}–{1}. Biljettluckan är stängd."
+ },
+ {
+  "i": 9806,
+  "f": "js/scenes/matchdag.js",
+  "k": "🎟️ Biljettluckan"
+ },
+ {
+  "i": 9807,
+  "f": "js/scenes/matchdag.js",
+  "k": "I dag: <b>KBK – {0}</b> på Pixel Arena. Ståplats på klacken bland supportrarna, avspark så fort du satt dig. Biljetten kostar <b>{1}</b>."
+ },
+ {
+  "i": 9808,
+  "f": "js/scenes/matchdag.js",
+  "k": "Kjell i klacken ropar vad ni ska göra – klappa, heja, vågen och sjunga. Ju bättre stämning, desto fler mål gör KBK."
+ },
+ {
+  "i": 9809,
+  "f": "js/scenes/matchdag.js",
+  "k": "🎟️ Köp biljett · {0}"
+ },
+ {
+  "i": 9810,
+  "f": "js/scenes/matchdag.js",
+  "k": "Du har inte råd med biljetten."
+ },
+ {
+  "i": 9811,
+  "f": "js/scenes/matchdag.js",
+  "k": "PIXEL ARENA – MATCHDAG"
+ },
+ {
+  "i": 9812,
+  "f": "js/scenes/matchdag.js",
+  "k": "BILJETTLUCKAN · MATCH {0}"
+ },
+ {
+  "i": 9813,
+  "f": "js/scenes/matchdag.js",
+  "k": "Pixelbergs IF"
+ },
+ {
+  "i": 9814,
+  "f": "js/scenes/matchdag.js",
+  "k": "Solö BK"
+ },
+ {
+  "i": 9815,
+  "f": "js/scenes/matchdag.js",
+  "k": "Hamnens FF"
+ },
+ {
+  "i": 9816,
+  "f": "js/scenes/matchdag.js",
+  "k": "Linné United"
+ },
+ {
+  "i": 9817,
+  "f": "js/scenes/matchdag.js",
+  "k": "Tassbackens BK"
+ },
+ {
+  "i": 9818,
+  "f": "js/scenes/matchdag.js",
+  "k": "Klappa händerna!"
+ },
+ {
+  "i": 9819,
+  "f": "js/scenes/matchdag.js",
+  "k": "Klapp-klapp-klapp!"
+ },
+ {
+  "i": 9820,
+  "f": "js/scenes/matchdag.js",
+  "k": "HEJA KBK!"
+ },
+ {
+  "i": 9821,
+  "f": "js/scenes/matchdag.js",
+  "k": "Armarna upp – HEJA!"
+ },
+ {
+  "i": 9822,
+  "f": "js/scenes/matchdag.js",
+  "k": "Nu kör vi VÅGEN!"
+ },
+ {
+  "i": 9823,
+  "f": "js/scenes/matchdag.js",
+  "k": "Vågen – upp och ner!"
+ },
+ {
+  "i": 9824,
+  "f": "js/scenes/matchdag.js",
+  "k": "SJUNG"
+ },
+ {
+  "i": 9825,
+  "f": "js/scenes/matchdag.js",
+  "k": "Sjung med! KBK, KBK!"
+ },
+ {
+  "i": 9826,
+  "f": "js/scenes/matchdag.js",
+  "k": "Allsång för laget!"
+ },
+ {
+  "i": 9827,
+  "f": "js/scenes/matchdag.js",
+  "k": "Nr {0} {1} driver framåt …"
+ },
+ {
+  "i": 9828,
+  "f": "js/scenes/matchdag.js",
+  "k": "{0} anfaller …"
+ },
+ {
+  "i": 9829,
+  "f": "js/scenes/matchdag.js",
+  "k": "⚽ MÅÅÅL! Nr {0} {1}!"
+ },
+ {
+  "i": 9830,
+  "f": "js/scenes/matchdag.js",
+  "k": "{0} gör mål … {1}–{2}."
+ },
+ {
+  "i": 9831,
+  "f": "js/scenes/matchdag.js",
+  "k": "Räddning av deras målvakt!"
+ },
+ {
+  "i": 9832,
+  "f": "js/scenes/matchdag.js",
+  "k": "I stolpen! Nära!"
+ },
+ {
+  "i": 9833,
+  "f": "js/scenes/matchdag.js",
+  "k": "Över ribban …"
+ },
+ {
+  "i": 9834,
+  "f": "js/scenes/matchdag.js",
+  "k": "Räddning! Vilken målvakt!"
+ },
+ {
+  "i": 9835,
+  "f": "js/scenes/matchdag.js",
+  "k": "Utanför. Puh."
+ },
+ {
+  "i": 9836,
+  "f": "js/scenes/matchdag.js",
+  "k": "Blockerat av försvaret!"
+ },
+ {
+  "i": 9837,
+  "f": "js/scenes/matchdag.js",
+  "k": "SÅ JA!"
+ },
+ {
+  "i": 9838,
+  "f": "js/scenes/matchdag.js",
+  "k": "HÖRS HELA VÄGEN!"
+ },
+ {
+  "i": 9839,
+  "f": "js/scenes/matchdag.js",
+  "k": "HELA LÄKTAREN SJUNGER!"
+ },
+ {
+  "i": 9840,
+  "f": "js/scenes/matchdag.js",
+  "k": "FEL ROP!"
+ },
+ {
+  "i": 9841,
+  "f": "js/scenes/matchdag.js",
+  "k": "KBK vann!"
+ },
+ {
+  "i": 9842,
+  "f": "js/scenes/matchdag.js",
+  "k": "Matchdag på Arenan"
+ },
+ {
+  "i": 9843,
+  "f": "js/scenes/matchdag.js",
+  "k": "🏆 KBK VANN med {0}–{1}! Läktaren kokar."
+ },
+ {
+  "i": 9844,
+  "f": "js/scenes/matchdag.js",
+  "k": "⚽ Oavgjort, {0}–{1}. Bra kämpat!"
+ },
+ {
+  "i": 9845,
+  "f": "js/scenes/matchdag.js",
+  "k": "⚽ Förlust, {0}–{1}. Nästa gång!"
+ },
+ {
+  "i": 9846,
+  "f": "js/scenes/matchdag.js",
+  "k": "Andra halvlek är igång!"
+ },
+ {
+  "i": 9847,
+  "f": "js/scenes/matchdag.js",
+  "k": "HALVTID"
+ },
+ {
+  "i": 9848,
+  "f": "js/scenes/matchdag.js",
+  "k": "MATCHDAG · {0} · {1}'"
+ },
+ {
+  "i": 9849,
+  "f": "js/scenes/matchdag.js",
+  "k": "1:A HALVLEK"
+ },
+ {
+  "i": 9850,
+  "f": "js/scenes/matchdag.js",
+  "k": "2:A HALVLEK"
+ },
+ {
+  "i": 9851,
+  "f": "js/scenes/matchdag.js",
+  "k": "LÄMNA"
+ },
+ {
+  "i": 9852,
+  "f": "js/scenes/matchdag.js",
+  "k": "{0} – {1}"
+ },
+ {
+  "i": 9853,
+  "f": "js/scenes/matchdag.js",
+  "k": "KORVEN ÄR UPPÄTEN"
+ },
+ {
+  "i": 9854,
+  "f": "js/scenes/matchdag.js",
+  "k": "KÖP EN KORV · {0} KR"
+ },
+ {
+  "i": 9855,
+  "f": "js/scenes/matchdag.js",
+  "k": "Andra halvlek om {0} s"
+ },
+ {
+  "i": 9856,
+  "f": "js/scenes/matchdag.js",
+  "k": "SLUTSIGNAL"
+ },
+ {
+  "i": 9857,
+  "f": "js/scenes/matchdag.js",
+  "k": "Målskyttar: "
+ },
+ {
+  "i": 9858,
+  "f": "js/scenes/matchdag.js",
+  "k": "⚽ Lämna matchen?"
+ },
+ {
+  "i": 9859,
+  "f": "js/scenes/matchdag.js",
+  "k": "Matchen fortsätter utan dig. Biljetten gäller inte igen i dag."
+ },
+ {
+  "i": 9860,
+  "f": "js/scenes/matchdag.js",
+  "k": "Lämna"
+ },
+ {
+  "i": 9861,
+  "f": "js/scenes/matchdag.js",
+  "k": "Stanna"
+ }
+]

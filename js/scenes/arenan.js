@@ -23,9 +23,10 @@ import { propKit } from '../city/props.js';
 import { KUNGS_PLAYERS } from '../data/kbk.js';
 import { TW, TH, G, HALLPLATS, KBK, HUS, HUSLISTA, BILJETT, STATY, FIKAT, KORV, FLAGGOR, RINK, RINK_LJUS, CHOKLAD, PLAN, STRAFF, BANKAR, LYKTOR, PAPPERSKORGAR, TRAD, SKYLT, SKRIDSKO_PRIS, HYRA_PRIS, HALSDUK_PRIS, hinder, takCanvas, paintGround } from '../arenan/karta.js';
 import { ritaHus, ritaBiljett, ritaStaty, ritaFikat, ritaChoklad, ritaKorvgubbe, ritaFlagga, ritaSarg, ritaStralkastare, ritaBur, ritaMal, ritaBoll, ritaSkridskor, ritaIsspar, ritaSkylt, ritaHallplats } from '../arenan/deko.js';
+import { dagensMotstandare, BILJETT_PRIS } from './matchdag.js';
 import { $t } from '../core/i18n.js';
 
-const BUSS = 10, GANG = 62, IS_FART = 118;
+const BUSS = 10, GANG = 62, IS_FART = 118, MATCH_TID = [12, 20];
 const TORGPRAT = [
   $t('KBK vann med 2–1 i söndags. Hela torget sjöng!'), $t('Statyn är Gunvor – hon gjorde 200 mål för KBK.'), $t('Simhallen har en rutschkana med tre kurvor.'),
   $t('Isen är nyspolad. Perfekt för piruetter.'), $t('Varmkorven här är bäst efter matchen.'), $t('Jag har stått på läktaren i trettio år.'),
@@ -42,7 +43,7 @@ export function makeArenan(A) {
   let VW = Math.max(384, Math.min(A.W || 384, TW)), VH = Math.max(160, Math.min(A.H || 216, TH));
   const from = A.arenaFran || null; A.arenaFran = null;
   let lage = 'torg';   // torg | is | plan
-  const walker = createCityWalker({ W: TW, H: TH, left: 2, right: TW - 2, top: G.TOP, bottom: G.BOTTOM, spawn: [HALLPLATS.x + 16, HALLPLATS.y - 8] });
+  const walker = createCityWalker({ W: TW, H: TH, left: 2, right: TW - 2, top: G.TOP, bottom: G.BOTTOM, spawn: from?.arena ? [(HUS.arena.door.x0 + HUS.arena.door.x1) / 2, G.BASE + 10] : [HALLPLATS.x + 16, HALLPLATS.y - 8] });
   const fordon = () => g.aker;
   const applyRide = () => { if (lage === 'is') return; const F = fordon(); walker.speed = GANG * (F ? F.fart : 1); };
   applyRide();
@@ -161,6 +162,17 @@ export function makeArenan(A) {
     ]);
   }
   function go(cb) { if (fade.phase === 1) return; fade.phase = 1; fade.cb = cb; }
+  // ⚽ matchdagen (js/scenes/matchdag.js): biljetten i luckan, matcher 12–20, dagens motståndare
+  function matchBiljett() {
+    const h = hour();
+    if (h < MATCH_TID[0] || h >= MATCH_TID[1]) { toast($t`🎟️ Matcherna spelas ${MATCH_TID[0]}–${MATCH_TID[1]}. Biljettluckan är stängd.`, 'bad'); return; }
+    const m = dagensMotstandare(g.day);
+    play('click');
+    openModal($t('🎟️ Biljettluckan'), `<p style="font-size:var(--f2);margin-top:0">${$t`I dag: <b>KBK – ${m.namn}</b> på Pixel Arena. Ståplats på klacken bland supportrarna, avspark så fort du satt dig. Biljetten kostar <b>${fmt(BILJETT_PRIS)}</b>.`}</p><p style="font-size:var(--f2)">${$t('Kjell i klacken ropar vad ni ska göra – klappa, heja, vågen och sjunga. Ju bättre stämning, desto fler mål gör KBK.')}</p>`, [
+      { label: $t`🎟️ Köp biljett · ${fmt(BILJETT_PRIS)}`, cls: 'btn-go', onClick: () => { closeModal(); if (g.money < BILJETT_PRIS) { toast($t('Du har inte råd med biljetten.'), 'bad'); return; } g.money -= BILJETT_PRIS; g.save(); play('coin'); A.matchFran = { buss: from?.buss || '' }; go(() => A.go('matchdag')); } },
+      { label: $t('Inte nu'), onClick: closeModal },
+    ]);
+  }
 
   // ---------- platserna ----------
   const dorr = (id) => { const h = HUS[id]; return { r: [h.door.x0 - 4, G.BASE - 40, h.door.x1 + 4, G.BASE], go: [(h.door.x0 + h.door.x1) / 2, G.BASE + 8] }; };
@@ -172,8 +184,8 @@ export function makeArenan(A) {
   ] : [
     { id: 'buss', r: [HALLPLATS.x - 12, HALLPLATS.y - 36, HALLPLATS.x + 14, HALLPLATS.y + 2], go: [HALLPLATS.x + 10, HALLPLATS.y - 8], label: $t('ARENABUSSEN TILL STAN'), act: bussen },
     { id: 'sport', ...dorr('sport'), label: $t('SPORTAFFÄREN – SKRIDSKOR OCH HALSDUKAR'), act: sportaffaren },
-    { id: 'arena', ...dorr('arena'), label: HUS.arena.namn, act: () => { play('knock'); toast($t('🏟️ Matchdagen öppnar i nästa steg – då får du stå på läktaren och heja fram KBK.')); } },
-    { id: 'biljett', r: [BILJETT.x - 18, BILJETT.y - 52, BILJETT.x + 18, BILJETT.y + 2], go: [BILJETT.x, BILJETT.y + 10], label: $t('BILJETTLUCKAN'), act: () => toast($t('🎟️ Biljetterna till matchdagen släpps i nästa steg. Kön börjar redan här.')) },
+    { id: 'arena', ...dorr('arena'), label: $t('PIXEL ARENA – MATCHDAG'), act: matchBiljett },
+    { id: 'biljett', r: [BILJETT.x - 18, BILJETT.y - 52, BILJETT.x + 18, BILJETT.y + 2], go: [BILJETT.x, BILJETT.y + 10], label: $t`BILJETTLUCKAN · MATCH ${fmt(BILJETT_PRIS)}`, act: matchBiljett },
     { id: 'simhall', ...dorr('simhall'), label: HUS.simhall.namn, act: () => { play('knock'); toast($t('🏊 Simhallen öppnar snart – bassäng, rutschkana och bubbelpool.')); } },
     { id: 'staty', r: [STATY.x - 16, STATY.y - 68, STATY.x + 16, STATY.y + 2], go: [STATY.x + 22, STATY.y + 6], label: $t('STATYN'), act: () => toast($t('🏆 Gunvor Pixelsson – 200 mål för KBK och ett bicycletamål i finalen 1987. Barnen gnuggar bollen för tur.')) },
     { id: 'fikat', r: [FIKAT.x - 24, FIKAT.y - 54, FIKAT.x + 24, FIKAT.y + 2], go: [FIKAT.x, FIKAT.y + 10], label: $t('FIKAT'), act: fikat },
