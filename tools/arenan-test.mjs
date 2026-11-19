@@ -80,6 +80,16 @@ ok((await D(() => SF.game.skridskor)) === true && (await D(() => SF.game.money))
 await D(() => SF.scene._debug.act('sport')); await sleep(300);
 await D(() => document.querySelector('#modal [data-vara="halsduk"]')?.click()); await sleep(400);
 ok((await D(() => SF.game.money)) === 540 && (await toasts()).some((t) => /Heja KBK/.test(t)), 'halsduken kostar 60 kr');
+// 🎿 (0.161) egna skidor och pulka – uthyrningen i Skidbacken blir gratis
+await D(() => { SF.game.money = 900; }); await D(() => SF.scene._debug.act('sport')); await sleep(300);
+ok(/Egna skidor/.test(await modal()) && /400 kr/.test(await modal()) && /Egen pulka/.test(await modal()), 'sportaffären säljer skidor (400 kr) och pulka');
+await D(() => document.querySelector('#modal [data-vara="skidor"]')?.click()); await sleep(400);
+ok((await D(() => SF.game.egnaSkidor)) === true && (await D(() => SF.game.money)) === 500, 'skidorna köpta → g.egnaSkidor, 400 kr dragna');
+await D(() => SF.scene._debug.act('sport')); await sleep(300);
+await D(() => document.querySelector('#modal [data-vara="pulka"]')?.click()); await sleep(400);
+ok((await D(() => SF.game.egenPulka)) === true && (await D(() => SF.game.money)) === 350, 'pulkan köpt → g.egenPulka, 150 kr dragna');
+await D(() => SF.scene._debug.act('sport')); await sleep(300);
+ok(await D(() => document.querySelector('#modal [data-vara="skidor"]')?.disabled === true), 'köpta skidor visas som "Har"'); await stang();
 
 // 4. skridskobanan
 await D(() => SF.scene._debug.teleport(560, 336)); await sleep(300);

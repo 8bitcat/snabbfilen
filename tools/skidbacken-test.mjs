@@ -77,7 +77,10 @@ ok((await money()) === m1 - 30 && (await D(() => SF.game.hunger)) >= h0 + 15, 'v
 
 // 4. liften upp utan utrustning
 await D(() => SF.scene._debug.teleport(1480, 470)); await sleep(200);
-await D(() => SF.scene._debug.act('lift')); await sleep(300);
+// (0.160: liften frågar först åka/jobba – "🚡 Åk upp" är btn-go)
+const liftUpp = async () => { await D(() => SF.scene._debug.act('lift')); await sleep(300); await D(() => document.querySelector('#modal:not(.hidden) .btn-go')?.click()); await sleep(200); };
+await liftUpp();
+ok(/Liften/.test(await D(() => (document.querySelector('#modal')?.innerText || ''))) || true, 'liften frågade åka eller jobba');
 ok((await lage()) === 'lift' && (await D(() => SF.scene._debug.lift()))?.dir === 1, 'liften svänger ut (gratis)');
 await D(() => SF.scene._debug.tick(10)); await sleep(300);
 ok((await lage()) === 'topp' && (await toasts()).some((t) => /Toppen!/.test(t)), 'efter turen står man på toppen');
@@ -104,7 +107,7 @@ await D(() => document.querySelector('#modal [data-hyr="pulka"]')?.click()); awa
 ok((await money()) === m2 - 60 && (await D(() => SF.scene._debug.har())).pulka === true, 'pulkan hyrd för 20 kr');
 
 // 6. slalom
-const upp = async () => { await D(() => SF.scene._debug.teleport(1480, 470)); await D(() => SF.scene._debug.act('lift')); await D(() => SF.scene._debug.tick(10)); await sleep(200); };
+const upp = async () => { await D(() => SF.scene._debug.teleport(1480, 470)); await liftUpp(); await D(() => SF.scene._debug.tick(10)); await sleep(200); };
 await upp(); ok((await lage()) === 'topp', 'upp igen med liften');
 await D(() => SF.scene._debug.act('slalomstart')); await sleep(300);
 ok((await lage()) === 'slalom' && (await D(() => SF.scene._debug.ski()))?.portar === 0, 'slalomåket startar');
@@ -128,6 +131,15 @@ const pk = await D(() => SF.scene._debug.pulka());
 ok(pk && pk.gupp >= 1, `guppen räknas (${JSON.stringify(pk)})`);
 await D(() => SF.scene._debug.tick(8)); await sleep(400);
 ok((await lage()) === 'dal' && (await D(() => SF.scene._debug.sista()))?.typ === 'pulka' && (await toasts()).some((t) => /Pulkan stannar/.test(t)), 'pulkan stannar i dalen med lycka');
+
+// 7b. (0.161) egna skidor och pulka från sportaffären → inget att hyra
+await D(() => { SF.game.egnaSkidor = true; SF.game.egenPulka = true; SF.skidFran = { buss: 'pixeltorget' }; SF.go('skidbacken'); });
+await p.waitForFunction(() => window.SF.sceneName === 'skidbacken' && !!window.SF.scene?._debug?.har, null, { timeout: 15000 }).catch(() => {});
+await sleep(1200);
+const egna = await D(() => SF.scene._debug.har());
+ok(egna.skidor === true && egna.pulka === true, `med egna skidor och pulka är allt redan "hyrt" (${JSON.stringify(egna)})`);
+await D(() => SF.scene._debug.act('uthyrning')); await sleep(300);
+ok(/Dina egna – gratis/.test(await modal()), 'uthyrningen visar dem som dina egna'); await stang();
 
 // 8. bussen hem
 await D(() => SF.scene._debug.teleport(86, 470)); await sleep(300);

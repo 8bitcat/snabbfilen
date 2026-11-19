@@ -793,6 +793,8 @@ export class Game {
     this.bat = null;   // ⚓ Fiskehamnen (js/scenes/hamnen.js): den egna båten, 'rodd' | 'motor' | null (ligger vid båtrampen)
     this.stuga = null; // 🏡 Röda stugan på Solön (js/scenes/stuga.js): { dag } när man hyrt den för natten (gäller till 12 dagen efter)
     this.skridskor = false;   // ⛸️ Arenan (js/scenes/arenan.js): egna skridskor från sportaffären – isen är gratis
+    this.egnaSkidor = false;  // 🎿 egna skidor från sportaffären – uthyrningen i Skidbacken är gratis (js/scenes/skidbacken.js)
+    this.egenPulka = false;   // 🛷 egen pulka från sportaffären
     this.festVecka = '';   // 🎉 veckan ("2026-W42") då man senast fick lördagsfestens present (js/city/fest.js)
     // 🏡 djurhemmet i Tassbacken (js/scenes/shop-djurhem.js): adopterade = djurens id:n ("dh3:12" = djur 3 vecka 12),
     // hjalp = dagen man senast hjälpte till, gav = dagen man senast skänkte pengar
@@ -996,6 +998,7 @@ export class Game {
         g.bat = p.bat === 'rodd' || p.bat === 'motor' ? p.bat : null;
         g.stuga = p.stuga && typeof p.stuga === 'object' && Number.isFinite(+p.stuga.dag) ? { dag: p.stuga.dag | 0 } : null;
         g.skridskor = p.skridskor === true;
+        g.egnaSkidor = p.egnaSkidor === true; g.egenPulka = p.egenPulka === true;
         g.festVecka = /^\d{4}-W\d{2}$/.test(String(p.festVecka || '')) ? String(p.festVecka) : '';
         g.designs = (Array.isArray(p.designs) ? p.designs : []).filter((d) => d && ['neck', 'bag', 'beads', 'phone'].includes(d.kind) && d.sel && typeof d.sel === 'object').slice(-40).map(cleanDesign).filter(Boolean);
         keep.storage = (Array.isArray(p.storage) ? p.storage : []).filter((it) => it && typeof it === 'object' && !knownKind(it.k));

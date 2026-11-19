@@ -10,6 +10,9 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.161.0] – 2026-11-19 – Egna skidor och pulka i sportaffären – gratis i Skidbackens uthyrning
+- 🎿 EGNA SKIDOR OCH PULKA: sportaffären på Arenatorget säljer nu skidor med stavar (400 kr) och en egen pulka (150 kr). Den som har egna behöver aldrig mer hyra i Skidbacken – uthyrningen visar dem som dina, och liften är gratis som förut. Skidorna och pulkan sparas i sparfilen precis som skridskorna.
+
 ## [0.160.0] – 2026-11-19 – Liftvärden – jobbet i Skidbackens dalstation
 - 🚡 LIFTVÄRD I SKIDBACKEN: liften i dalen frågar nu om du vill åka upp eller jobba ett pass i luckan vid vändkorset. Gästerna kommer i kö med skidorna på och håller upp sina liftkort – namn, foto, dagkort/veckokort/säsongskort och vilken dag det gäller. Stämmer dagen och fotot släpper du in, annars STOPP: gamla kort, kort som inte gäller än och lånade kort med fel ansikte på fotot.
 - Rätt beslut ger lön, fel ger avdrag och den som får vänta för länge smiter förbi. Vart och vartannat barn behöver hjälp upp i stolen – klicka HJÄLP UPP när stolen är i det gröna fältet, annars plums eller missad stol. Åtta rätt i rad ger GULDVANTEN med bonus. Stolarna går upp mot toppen bakom dig hela passet, och lönen följer vanan som alla andra jobb.

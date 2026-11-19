@@ -48,7 +48,7 @@ export function makeSkidbacken(A) {
   walker.snapFree();
   const talk = createSpeech();
   let t = 0, hover = null, banner = 0, lift = null, ski = null, pulka = null, styr = 0, styrT = 0, sista = null;
-  const har = { skidor: false, pulka: false };
+  const har = { skidor: !!g.egnaSkidor, pulka: !!g.egenPulka };   // egna från sportaffären på Arenatorget räknas som hyrda för alltid
   const fade = { a: 1, phase: 2, cb: null };
   const cam = { x: 0, y: 0 };
   const pos = () => (lage === 'lift' ? liftPos() : lage === 'slalom' ? { x: ski.x, y: ski.y } : lage === 'pulka' ? { x: pulka.x, y: pulka.y } : { x: walker.px, y: walker.py });
@@ -157,7 +157,8 @@ export function makeSkidbacken(A) {
   // ---------- stugorna ----------
   function uthyrningen() {
     play('click');
-    const rad = (id, ik, namn, pris, ok) => `<div class="prow" style="grid-template-columns:auto 1fr auto"><span style="font-size:22px">${ik}</span><span class="nm">${esc(namn)}<br><small class="sp">${ok ? $t('Hyrda – gäller hela besöket') : fmt(pris)}</small></span><button class="btn btn-small ${ok ? '' : 'btn-go'}" data-hyr="${id}" ${ok || g.money < pris ? 'disabled' : ''}>${ok ? $t('Har') : $t('Hyr')}</button></div>`;
+    const egna = (id) => (id === 'skidor' ? !!g.egnaSkidor : !!g.egenPulka);
+    const rad = (id, ik, namn, pris, ok) => `<div class="prow" style="grid-template-columns:auto 1fr auto"><span style="font-size:22px">${ik}</span><span class="nm">${esc(namn)}<br><small class="sp">${egna(id) ? $t('Dina egna – gratis') : ok ? $t('Hyrda – gäller hela besöket') : fmt(pris)}</small></span><button class="btn btn-small ${ok ? '' : 'btn-go'}" data-hyr="${id}" ${ok || g.money < pris ? 'disabled' : ''}>${egna(id) ? $t('Egna') : ok ? $t('Har') : $t('Hyr')}</button></div>`;
     const dlg = openModal($t('🎿 Skiduthyrningen'), `<p style="font-size:var(--f2);margin-top:0">${$t('Skidor till slalombacken och pulkor till pulkabacken. Liften är gratis. Hyran gäller tills du åker hem.')}</p><div class="plist">${rad('skidor', '🎿', $t('Skidor och stavar'), SKID_HYRA, har.skidor)}${rad('pulka', '🛷', $t('Pulka'), PULKA_HYRA, har.pulka)}</div><p style="font-size:var(--f2)">💰 <b>${fmt(g.money)}</b></p>`, [{ label: $t('Stäng'), onClick: closeModal }]);
     dlg.querySelectorAll('[data-hyr]').forEach((b) => (b.onclick = () => { const id = b.dataset.hyr, pris = id === 'skidor' ? SKID_HYRA : PULKA_HYRA; if (har[id] || g.money < pris) return; g.money -= pris; har[id] = true; g.save(); closeModal(); play('coin'); toast(id === 'skidor' ? $t('🎿 Skidorna sitter! Ta liften upp och åk slalom.') : $t('🛷 Pulkan är din för dagen! Ta liften upp till pulkabacken.'), 'good'); }));
   }

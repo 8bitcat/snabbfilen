@@ -27,7 +27,7 @@ import { dagensMotstandare, BILJETT_PRIS } from './matchdag.js';
 import { SIM } from '../arenan/simhall-inne.js';
 import { $t } from '../core/i18n.js';
 
-const BUSS = 10, GANG = 62, IS_FART = 118, MATCH_TID = [12, 20];
+const BUSS = 10, GANG = 62, IS_FART = 118, MATCH_TID = [12, 20], SKIDOR_PRIS = 400, EGENPULKA_PRIS = 150;
 const TORGPRAT = [
   $t('KBK vann med 2–1 i söndags. Hela torget sjöng!'), $t('Statyn är Gunvor – hon gjorde 200 mål för KBK.'), $t('Simhallen har en rutschkana med tre kurvor.'),
   $t('Isen är nyspolad. Perfekt för piruetter.'), $t('Varmkorven här är bäst efter matchen.'), $t('Jag har stått på läktaren i trettio år.'),
@@ -139,11 +139,16 @@ export function makeArenan(A) {
     play('click');
     const rader = [
       `<div class="prow" style="grid-template-columns:auto 1fr auto"><span style="font-size:22px">⛸️</span><span class="nm">${esc($t('Skridskor'))}<br><small class="sp">${g.skridskor ? $t('Dina – isen är gratis') : fmt(SKRIDSKO_PRIS)}</small></span><button class="btn btn-small ${g.skridskor ? '' : 'btn-go'}" data-vara="skridskor" ${g.skridskor || g.money < SKRIDSKO_PRIS ? 'disabled' : ''}>${g.skridskor ? $t('Har') : $t('Köp')}</button></div>`,
+      // 🎿 Skidbacken steg 3: egna skidor och pulka – uthyrningen i Skidbacken blir gratis (skidbacken.js läser g.egnaSkidor/g.egenPulka)
+      `<div class="prow" style="grid-template-columns:auto 1fr auto"><span style="font-size:22px">🎿</span><span class="nm">${esc($t('Egna skidor och stavar'))}<br><small class="sp">${g.egnaSkidor ? $t('Dina – uthyrningen i Skidbacken är gratis') : fmt(SKIDOR_PRIS)}</small></span><button class="btn btn-small ${g.egnaSkidor ? '' : 'btn-go'}" data-vara="skidor" ${g.egnaSkidor || g.money < SKIDOR_PRIS ? 'disabled' : ''}>${g.egnaSkidor ? $t('Har') : $t('Köp')}</button></div>`,
+      `<div class="prow" style="grid-template-columns:auto 1fr auto"><span style="font-size:22px">🛷</span><span class="nm">${esc($t('Egen pulka'))}<br><small class="sp">${g.egenPulka ? $t('Din – pulkabacken är gratis') : fmt(EGENPULKA_PRIS)}</small></span><button class="btn btn-small ${g.egenPulka ? '' : 'btn-go'}" data-vara="pulka" ${g.egenPulka || g.money < EGENPULKA_PRIS ? 'disabled' : ''}>${g.egenPulka ? $t('Har') : $t('Köp')}</button></div>`,
       `<div class="prow" style="grid-template-columns:auto 1fr auto"><span style="font-size:22px">🧣</span><span class="nm">${esc($t('KBK-halsduk'))}<br><small class="sp">${fmt(HALSDUK_PRIS)}</small></span><button class="btn btn-small btn-go" data-vara="halsduk" ${g.money < HALSDUK_PRIS ? 'disabled' : ''}>${$t('Köp')}</button></div>`,
     ].join('');
     const dlg = openModal($t('🏒 Sportaffären'), `<p style="font-size:var(--f2);margin-top:0">${$t('Bollar, klubbor, tröjor och skridskor i alla storlekar. Med egna skridskor är banan gratis.')}</p><div class="plist">${rader}</div><p style="font-size:var(--f2)">💰 <b>${fmt(g.money)}</b></p>`, [{ label: $t('Stäng'), onClick: closeModal }]);
     dlg.querySelectorAll('[data-vara]').forEach((b) => (b.onclick = () => {
       if (b.dataset.vara === 'skridskor') { if (g.skridskor || g.money < SKRIDSKO_PRIS) return; g.money -= SKRIDSKO_PRIS; g.skridskor = true; g.save(); closeModal(); play('fanfare'); toast($t('⛸️ Egna skridskor! Banan är gratis för dig från och med nu.'), 'good'); }
+      else if (b.dataset.vara === 'skidor') { if (g.egnaSkidor || g.money < SKIDOR_PRIS) return; g.money -= SKIDOR_PRIS; g.egnaSkidor = true; g.save(); closeModal(); play('fanfare'); toast($t('🎿 Egna skidor! Uthyrningen i Skidbacken är gratis för dig från och med nu.'), 'good'); }
+      else if (b.dataset.vara === 'pulka') { if (g.egenPulka || g.money < EGENPULKA_PRIS) return; g.money -= EGENPULKA_PRIS; g.egenPulka = true; g.save(); closeModal(); play('fanfare'); toast($t('🛷 Egen pulka! Pulkabacken väntar – ta skidbussen.'), 'good'); }
       else { if (g.money < HALSDUK_PRIS) return; g.money -= HALSDUK_PRIS; g.save(); closeModal(); play('coin'); const h = g.glad?.(2, $t('KBK-halsduk'), 'halsduk', 2) || 0; toast($t('🧣 Vinrött och svart runt halsen. Heja KBK!') + (h ? ` +${h} 😊` : ''), 'good'); }
     }));
   }
