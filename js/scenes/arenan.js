@@ -24,6 +24,7 @@ import { KUNGS_PLAYERS } from '../data/kbk.js';
 import { TW, TH, G, HALLPLATS, KBK, HUS, HUSLISTA, BILJETT, STATY, FIKAT, KORV, FLAGGOR, RINK, RINK_LJUS, CHOKLAD, PLAN, STRAFF, BANKAR, LYKTOR, PAPPERSKORGAR, TRAD, SKYLT, SKRIDSKO_PRIS, HYRA_PRIS, HALSDUK_PRIS, hinder, takCanvas, paintGround } from '../arenan/karta.js';
 import { ritaHus, ritaBiljett, ritaStaty, ritaFikat, ritaChoklad, ritaKorvgubbe, ritaFlagga, ritaSarg, ritaStralkastare, ritaBur, ritaMal, ritaBoll, ritaSkridskor, ritaIsspar, ritaSkylt, ritaHallplats } from '../arenan/deko.js';
 import { dagensMotstandare, BILJETT_PRIS } from './matchdag.js';
+import { SIM } from '../arenan/simhall-inne.js';
 import { $t } from '../core/i18n.js';
 
 const BUSS = 10, GANG = 62, IS_FART = 118, MATCH_TID = [12, 20];
@@ -43,7 +44,7 @@ export function makeArenan(A) {
   let VW = Math.max(384, Math.min(A.W || 384, TW)), VH = Math.max(160, Math.min(A.H || 216, TH));
   const from = A.arenaFran || null; A.arenaFran = null;
   let lage = 'torg';   // torg | is | plan
-  const walker = createCityWalker({ W: TW, H: TH, left: 2, right: TW - 2, top: G.TOP, bottom: G.BOTTOM, spawn: from?.arena ? [(HUS.arena.door.x0 + HUS.arena.door.x1) / 2, G.BASE + 10] : [HALLPLATS.x + 16, HALLPLATS.y - 8] });
+  const walker = createCityWalker({ W: TW, H: TH, left: 2, right: TW - 2, top: G.TOP, bottom: G.BOTTOM, spawn: from?.arena ? [(HUS.arena.door.x0 + HUS.arena.door.x1) / 2, G.BASE + 10] : from?.simhall ? [(HUS.simhall.door.x0 + HUS.simhall.door.x1) / 2, G.BASE + 10] : [HALLPLATS.x + 16, HALLPLATS.y - 8] });
   const fordon = () => g.aker;
   const applyRide = () => { if (lage === 'is') return; const F = fordon(); walker.speed = GANG * (F ? F.fart : 1); };
   applyRide();
@@ -162,6 +163,15 @@ export function makeArenan(A) {
     ]);
   }
   function go(cb) { if (fade.phase === 1) return; fade.phase = 1; fade.cb = cb; }
+  // 🏊 simhallen (js/scenes/simhall.js): entré SIM.PRIS, öppet SIM.OPPET – när man går ut står man vid simhallens dörr
+  function simhallen() {
+    const h = hour();
+    if (h < SIM.OPPET[0] || h >= SIM.OPPET[1]) { play('knock'); toast($t`🏊 Simhallen har öppet ${SIM.OPPET[0]}–${SIM.OPPET[1]}.`, 'bad'); return; }
+    if (g.money < SIM.PRIS) { toast($t`🏊 Entrén kostar ${fmt(SIM.PRIS)} – du har inte råd just nu.`, 'bad'); return; }
+    g.money -= SIM.PRIS; g.save(); play('coin');
+    A.arenaFran = { simhall: true, buss: from?.buss || '' };
+    go(() => A.go('simhall'));
+  }
   // ⚽ matchdagen (js/scenes/matchdag.js): biljetten i luckan, matcher 12–20, dagens motståndare
   function matchBiljett() {
     const h = hour();
@@ -186,7 +196,7 @@ export function makeArenan(A) {
     { id: 'sport', ...dorr('sport'), label: $t('SPORTAFFÄREN – SKRIDSKOR OCH HALSDUKAR'), act: sportaffaren },
     { id: 'arena', ...dorr('arena'), label: $t('PIXEL ARENA – MATCHDAG'), act: matchBiljett },
     { id: 'biljett', r: [BILJETT.x - 18, BILJETT.y - 52, BILJETT.x + 18, BILJETT.y + 2], go: [BILJETT.x, BILJETT.y + 10], label: $t`BILJETTLUCKAN · MATCH ${fmt(BILJETT_PRIS)}`, act: matchBiljett },
-    { id: 'simhall', ...dorr('simhall'), label: HUS.simhall.namn, act: () => { play('knock'); toast($t('🏊 Simhallen öppnar snart – bassäng, rutschkana och bubbelpool.')); } },
+    { id: 'simhall', ...dorr('simhall'), label: $t`SIMHALLEN · ENTRÉ ${fmt(SIM.PRIS)}`, act: simhallen },
     { id: 'staty', r: [STATY.x - 16, STATY.y - 68, STATY.x + 16, STATY.y + 2], go: [STATY.x + 22, STATY.y + 6], label: $t('STATYN'), act: () => toast($t('🏆 Gunvor Pixelsson – 200 mål för KBK och ett bicycletamål i finalen 1987. Barnen gnuggar bollen för tur.')) },
     { id: 'fikat', r: [FIKAT.x - 24, FIKAT.y - 54, FIKAT.x + 24, FIKAT.y + 2], go: [FIKAT.x, FIKAT.y + 10], label: $t('FIKAT'), act: fikat },
     { id: 'korv', r: [KORV.x - 16, KORV.y - 40, KORV.x + 16, KORV.y + 2], go: [KORV.x + 20, KORV.y + 4], label: $t`VARMKORV · ${fmt(25)}`, act: korven },

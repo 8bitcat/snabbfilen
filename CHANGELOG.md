@@ -10,6 +10,10 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.157.0] – 2026-11-19 – Simhallen på Arenatorget – bassängen, rutschkanan, bubbelpoolen och bastun
+- 🏊 SIMHALLEN på Arenatorget har öppnat (7–21, entré 40 kr): byt om i omklädningsrummet och ner för stegen i 25-metersbassängen – klicka eller tryck mellanslag i takt så simmar du längder, vänd vid kanten. Varannan längd ger lycka och tio längder på ett besök ger SIMMÄRKET av badvakten Ulla. Rutschkanan med tre kurvor slutar med ett plask i bassängens hörn, och barnen åker hela tiden.
+- Bubbelpoolen ger energi efter en stund och bastun på 80 grader ännu mer. Fönster mot himlen, klockan som går efter spelets tid, Ulla i den höga stolen med sina förmaningar och receptionen vid dörren. Badvakten Ulla pratar gärna – men ingen dykning vid grunda delen!
+
 ## [0.156.0] – 2026-11-19 – Badvakten – jobbet i Vattenlandets torn
 - 🛟 BADVAKT I VATTENLANDET: Bosse i tornet behöver rast – ta ett pass! Du sitter i badvaktstornet med vågpoolen framför dig och badgästerna som guppar. När någon får kramp och viftar (HJÄLP!) klickar du på den så kastar du livbojen. Klickar du på någon som bara simmar blir det falskt alarm, och väntar du för länge får Bosse hoppa i själv. Barn som springer längs kanten visslar du åt (klick på dem eller mellanslag).
 - När vågorna kommer guppar alla mer och ropen hörs sämre. Sex räddningar i rad ger GULDVISSLAN med bonus. Lönen följer vanan som alla andra jobb, och när passet är slut står du vid tornet i Vattenlandet igen. Biljetten till parken är betald när du jobbar.

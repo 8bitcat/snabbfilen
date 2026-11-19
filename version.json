@@ -1,7 +1,7 @@
 {
-  "version": "0.156.0",
+  "version": "0.157.0",
   "date": "2026-11-19",
-  "title": "Badvakten – jobbet i Vattenlandets torn",
+  "title": "Simhallen på Arenatorget – bassängen, rutschkanan, bubbelpoolen och bastun",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
@@ -12,6 +12,7 @@
     "js/arenan/deko.js",
     "js/arenan/karta.js",
     "js/arenan/match.js",
+    "js/arenan/simhall-inne.js",
     "js/city/bridge.js",
     "js/city/buildings-downtown.js",
     "js/city/buildings-leksaker.js",
@@ -264,6 +265,7 @@
     "js/scenes/shop-terminal.js",
     "js/scenes/shop-trimmare.js",
     "js/scenes/shop-universitet.js",
+    "js/scenes/simhall.js",
     "js/scenes/skidbacken.js",
     "js/scenes/skraplott.js",
     "js/scenes/solon.js",
