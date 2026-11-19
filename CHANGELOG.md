@@ -10,6 +10,10 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.156.0] – 2026-11-19 – Badvakten – jobbet i Vattenlandets torn
+- 🛟 BADVAKT I VATTENLANDET: Bosse i tornet behöver rast – ta ett pass! Du sitter i badvaktstornet med vågpoolen framför dig och badgästerna som guppar. När någon får kramp och viftar (HJÄLP!) klickar du på den så kastar du livbojen. Klickar du på någon som bara simmar blir det falskt alarm, och väntar du för länge får Bosse hoppa i själv. Barn som springer längs kanten visslar du åt (klick på dem eller mellanslag).
+- När vågorna kommer guppar alla mer och ropen hörs sämre. Sex räddningar i rad ger GULDVISSLAN med bonus. Lönen följer vanan som alla andra jobb, och när passet är slut står du vid tornet i Vattenlandet igen. Biljetten till parken är betald när du jobbar.
+
 ## [0.155.0] – 2026-11-19 – Museet och Gamla kaféet i Gamla stan – Pixelstadens historia och museiquizet
 - 🏛️ MUSEET i Gamla stan har öppnat (10–18): Pixelstadens historia i en sal med tavelgalleriet ("Pixelstaden 1699", "Hamnen i storm", Huldas självporträtt), Kattstatyns krona under glas, den första bussen Linje 1 från 1931, Gunvors fotbollssko från finalen 1987, Solöns gamla fyrlampa, Pirat-Petters kista – och mitt i salen skelettet PIXELOSAURUS bakom sammetsrep. Klicka på föremålen så läses skyltarna upp; vakten Vera säger ifrån om man pillar på skelettet.
 - När du sett tre föremål bjuder intendent Malte på MUSEIQUIZET vid disken: tre frågor om det du sett. Alla rätt ger MUSEIDIPLOM och en utbildningspoäng till livsmålet Utbildning (en gång om dagen) plus lycka. ☕ GAMLA KAFÉET bredvid serverar kaffe med påtår, kanelbullar stora som tefat, prinsesstårta och varm choklad med vispgrädde – servitrisen Agda har jobbat där sedan 1962.

@@ -1,7 +1,7 @@
 {
-  "version": "0.155.0",
+  "version": "0.156.0",
   "date": "2026-11-19",
-  "title": "Museet och Gamla kaféet i Gamla stan – Pixelstadens historia och museiquizet",
+  "title": "Badvakten – jobbet i Vattenlandets torn",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
@@ -133,6 +133,7 @@
     "js/i18n/it.js",
     "js/i18n/pl.js",
     "js/i18n/pt.js",
+    "js/jobs/jobb-badvakt.js",
     "js/jobs/jobb-bensin.js",
     "js/jobs/jobb-burgare.js",
     "js/jobs/jobb-datorbygge.js",

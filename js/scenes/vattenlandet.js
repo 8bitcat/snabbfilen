@@ -45,7 +45,7 @@ export function makeVattenlandet(A) {
   const from = A.vattenFran || null; A.vattenFran = null;
   let betalt = !!from?.betalt, lage = 'torr';   // torr | vag | kana | sol
   let bad = false;                                // i badkläder
-  const walker = createCityWalker({ W: TW, H: TH, left: 2, right: TW - 2, top: G.TOP, bottom: G.BOTTOM, spawn: [HALLPLATS.x + 16, HALLPLATS.y - 10] });
+  const walker = createCityWalker({ W: TW, H: TH, left: 2, right: TW - 2, top: G.TOP, bottom: G.BOTTOM, spawn: from?.badvakt ? [BADVAKT.x + 18, BADVAKT.y + 8] : [HALLPLATS.x + 16, HALLPLATS.y - 10] });
   walker.speed = GANG;
   walker.setObstacles(hinder('torr', betalt));
   walker.snapFree();
@@ -154,7 +154,16 @@ export function makeVattenlandet(A) {
     const dlg = openModal($t('🍦 Kiosken'), `<p style="font-size:var(--f2);margin-top:0">${$t('Glass som droppar, pommes i strut och vattenmelon på fat.')}</p><div class="plist">${rader}</div>`, [{ label: $t('Stäng'), onClick: closeModal }]);
     dlg.querySelectorAll('[data-vara]').forEach((b) => (b.onclick = () => { const v = MENY.find((q) => q.id === b.dataset.vara); if (!v || g.money < v.pris) return; g.money -= v.pris; g.hunger = Math.min(100, (g.hunger || 0) + v.hunger); if (v.energi) g.energy = Math.min(100, (g.energy || 0) + v.energi); const h = g.glad?.(v.glad, $t('Kiosken i Vattenlandet'), 'vattenkiosk', 3) || 0; g.save(); closeModal(); play('coin'); toast($t`${v.icon} ${v.namn}!` + (h ? ` +${h} 😊` : ''), 'good'); }));
   }
-  function badvakten() { play('knock'); const s = BADVAKT_SAY[Math.floor(Math.random() * BADVAKT_SAY.length)]; talk.say(s, () => ({ x: bosse.x, y: bosse.y - 34 }), 5, { voice: bosse.look }); }
+  function badvakten() {
+    play('knock');
+    const prata = () => { const s = BADVAKT_SAY[Math.floor(Math.random() * BADVAKT_SAY.length)]; talk.say(s, () => ({ x: bosse.x, y: bosse.y - 34 }), 5, { voice: bosse.look }); };
+    if (!A.jobReady?.('badvakt')) { prata(); return; }
+    // 🛟 badvaktsjobbet (js/jobs/jobb-badvakt.js): Bosse tar rast och man sitter i tornet ett pass
+    openModal($t('🛟 Badvaktstornet'), `<p style="font-size:var(--f2);margin-top:0">${$t('Bosse har suttit i tornet sedan morgonen och behöver en rast. Vill du ta ett pass? Livbojen till den som viftar, visslan åt den som springer.')}</p>`, [
+      { label: $t('💼 Jobba ett pass'), cls: 'btn-go', onClick: () => { closeModal(); A.vattenFran = { betalt: true, badvakt: true, buss: from?.buss || '' }; play('door'); A.startJob('badvakt'); } },
+      { label: $t('Bara prata'), onClick: () => { closeModal(); prata(); } },
+    ]);
+  }
   function vissla() { play('miss'); talk.say($t('Badvakten Bosse: "SPRING INTE – och i via trappan, tack!"'), () => ({ x: bosse.x, y: bosse.y - 34 }), 3, { voice: bosse.look }); }
   function bussen() {
     const hem = busStopById(from?.buss) || BUS_STOPS[0];
