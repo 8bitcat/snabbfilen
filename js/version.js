@@ -1,4 +1,4 @@
 // Skrivs av tools/release.mjs vid varje släpp – ändra inte för hand.
-export const VERSION = '0.141.0';
+export const VERSION = '0.142.0';
 export const DATE = '2026-11-19';
-export const TITLE = 'Figurerna pratar med varandra';
+export const TITLE = 'Gamla stan';

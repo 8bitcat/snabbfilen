@@ -1,7 +1,7 @@
 {
-  "version": "0.141.0",
+  "version": "0.142.0",
   "date": "2026-11-19",
-  "title": "Figurerna pratar med varandra",
+  "title": "Gamla stan",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
@@ -114,6 +114,8 @@
     "js/data/wardrobe-tops.js",
     "js/data/wardrobe.js",
     "js/game.js",
+    "js/gamlastan/hus.js",
+    "js/gamlastan/karta.js",
     "js/i18n/de.js",
     "js/i18n/en.js",
     "js/i18n/es.js",
@@ -186,6 +188,7 @@
     "js/scenes/bio/paint.js",
     "js/scenes/bling/dream.js",
     "js/scenes/city.js",
+    "js/scenes/gamlastan.js",
     "js/scenes/hopp.js",
     "js/scenes/ikea/art-market.js",
     "js/scenes/ikea/art-props.js",

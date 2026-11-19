@@ -10,6 +10,11 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.142.0] – 2026-11-19 – Gamla stan
+- 🏛️ GAMLA STAN – stadens äldsta kvarter, en ny plats dit gamla bussen går från vilken hållplats som helst. Kullersten hela vägen, gamla hus vägg i vägg i ockra, rosa och kalkvitt med korsvirke, trappgavlar, luckor och blomlådor: Stadsporten med klockan, Biblioteket, Antikaffären, Gamla Kaféet, Valvet, Museet, Guldsmeden, Teatern, Lyktmakaren och bostadshusen. Dörrarna berättar vad som öppnar härnäst.
+- Stortorget med brunnen – släng en krona och önska dig något – gatumusikanten med dragspelet, stadsguiden, duvorna som lyfter när du kommer nära, och på kvällen sagostunden på bänken.
+- Kvällsmarknaden 16–22: kanelbullar, rosor, honung, keramik och doftljus i stånd med lyktor. Om natten lyser fönstren och gatlyktorna. Allt på åtta språk.
+
 ## [0.141.0] – 2026-11-19 – Figurerna pratar med varandra
 - 💬 Figurerna i stan pratar med varandra: två som möts på trottoaren stannar, vänder sig mot varandra och växlar några repliker i pratbubblor – om vädret, bion, kaféet, rosorna i villaområdet, aktierna i downtown, och barnen om kurragömma och husdjur. Sedan går de vidare.
 - Allt sägs på det språk du valt i spelet – svenska, engelska, spanska, tyska, franska, polska, italienska eller portugisiska.

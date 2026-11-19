@@ -1,0 +1,367 @@
+[
+ {
+  "i": 9159,
+  "f": "js/scenes/gamlastan.js",
+  "k": "STADSPORTEN"
+ },
+ {
+  "i": 9160,
+  "f": "js/scenes/gamlastan.js",
+  "k": "ANTIKAFFÄREN"
+ },
+ {
+  "i": 9161,
+  "f": "js/scenes/gamlastan.js",
+  "k": "GAMLA KAFÉET"
+ },
+ {
+  "i": 9162,
+  "f": "js/scenes/gamlastan.js",
+  "k": "MUSEET"
+ },
+ {
+  "i": 9163,
+  "f": "js/scenes/gamlastan.js",
+  "k": "GULDSMEDEN"
+ },
+ {
+  "i": 9164,
+  "f": "js/scenes/gamlastan.js",
+  "k": "TEATERN"
+ },
+ {
+  "i": 9165,
+  "f": "js/scenes/gamlastan.js",
+  "k": "LYKTMAKAREN"
+ },
+ {
+  "i": 9166,
+  "f": "js/scenes/gamlastan.js",
+  "k": "🏛️ i Gamla stan"
+ },
+ {
+  "i": 9167,
+  "f": "js/scenes/gamlastan.js",
+  "k": "GAMLA STAN"
+ },
+ {
+  "i": 9168,
+  "f": "js/scenes/gamlastan.js",
+  "k": "Gamla bussen till Stortorget och kvällsmarknaden"
+ },
+ {
+  "i": 9169,
+  "f": "js/scenes/gamlastan.js",
+  "k": "Visste du att Biblioteket är stans äldsta hus?"
+ },
+ {
+  "i": 9170,
+  "f": "js/scenes/gamlastan.js",
+  "k": "Kullerstenen är från 1600-talet, säger guiden."
+ },
+ {
+  "i": 9171,
+  "f": "js/scenes/gamlastan.js",
+  "k": "Kvällsmarknaden öppnar klockan fyra!"
+ },
+ {
+  "i": 9172,
+  "f": "js/scenes/gamlastan.js",
+  "k": "Teatern spelar Tummelisa i helgen."
+ },
+ {
+  "i": 9173,
+  "f": "js/scenes/gamlastan.js",
+  "k": "Jag köpte honung på torget – bästa i stan."
+ },
+ {
+  "i": 9174,
+  "f": "js/scenes/gamlastan.js",
+  "k": "Hör du dragspelet? Han står där varje dag."
+ },
+ {
+  "i": 9175,
+  "f": "js/scenes/gamlastan.js",
+  "k": "Titta upp – husen lutar lite, men de har stått i trehundra år."
+ },
+ {
+  "i": 9176,
+  "f": "js/scenes/gamlastan.js",
+  "k": "På kvällen tänds alla lyktor. Då är det som finast här."
+ },
+ {
+  "i": 9177,
+  "f": "js/scenes/gamlastan.js",
+  "k": "Välkommen till Gamla stan! Huset bakom mig är från 1699 – titta på årtalet i gaveln."
+ },
+ {
+  "i": 9178,
+  "f": "js/scenes/gamlastan.js",
+  "k": "Stadsporten var stadens enda ingång förr. Klockan har gått rätt sedan dess."
+ },
+ {
+  "i": 9179,
+  "f": "js/scenes/gamlastan.js",
+  "k": "Brunnen på torget gav vatten åt hela staden. Släng i en krona och önska något!"
+ },
+ {
+  "i": 9180,
+  "f": "js/scenes/gamlastan.js",
+  "k": "… och så hittade katten kronan högst upp i Tornhuset. Slut för i dag!"
+ },
+ {
+  "i": 9181,
+  "f": "js/scenes/gamlastan.js",
+  "k": "Det var en gång en liten husvagn som ville bli en villa …"
+ },
+ {
+  "i": 9182,
+  "f": "js/scenes/gamlastan.js",
+  "k": "Långt borta på Pixelberg bodde ett spöke som var rädd för mörkret …"
+ },
+ {
+  "i": 9183,
+  "f": "js/scenes/gamlastan.js",
+  "k": "Biblioteket öppnar snart – här ska du kunna läsa dig klokare, med poäng till livsmålet Utbildning."
+ },
+ {
+  "i": 9184,
+  "f": "js/scenes/gamlastan.js",
+  "k": "Museet öppnar snart: Pixelstadens historia, från fiskeläge till storstad."
+ },
+ {
+  "i": 9185,
+  "f": "js/scenes/gamlastan.js",
+  "k": "Antikaffären öppnar snart – gamla möbler, tavlor och klockor till hemmet."
+ },
+ {
+  "i": 9186,
+  "f": "js/scenes/gamlastan.js",
+  "k": "Gamla Kaféet öppnar snart. Det doftar kanel genom brevinkastet."
+ },
+ {
+  "i": 9187,
+  "f": "js/scenes/gamlastan.js",
+  "k": "Teatern öppnar snart – då får du stå på scenen själv!"
+ },
+ {
+  "i": 9188,
+  "f": "js/scenes/gamlastan.js",
+  "k": "Guldsmeden öppnar snart – ringar och halsband i äkta guld."
+ },
+ {
+  "i": 9189,
+  "f": "js/scenes/gamlastan.js",
+  "k": "Lyktmakaren öppnar snart – lyktor till trädgården och hemmet."
+ },
+ {
+  "i": 9190,
+  "f": "js/scenes/gamlastan.js",
+  "k": "Gränden leder upp till domkyrkan. Avspärrad i dag – de lagar trappan."
+ },
+ {
+  "i": 9191,
+  "f": "js/scenes/gamlastan.js",
+  "k": "STADSPORTEN – här började staden. Klockan har gått rätt sedan 1699."
+ },
+ {
+  "i": 9192,
+  "f": "js/scenes/gamlastan.js",
+  "k": "Här bor någon. Det luktar nybakat bröd."
+ },
+ {
+  "i": 9193,
+  "f": "js/scenes/gamlastan.js",
+  "k": "Dörren är låst. En katt tittar ner på dig från fönstret."
+ },
+ {
+  "i": 9194,
+  "f": "js/scenes/gamlastan.js",
+  "k": "Någon spelar piano där inne."
+ },
+ {
+  "i": 9195,
+  "f": "js/scenes/gamlastan.js",
+  "k": "\"Varsågod och knacka\", står det på en lapp. Men ingen öppnar."
+ },
+ {
+  "i": 9196,
+  "f": "js/scenes/gamlastan.js",
+  "k": "Nybakade kanelbullar, åtta kronor! Varma ur ugnen."
+ },
+ {
+  "i": 9197,
+  "f": "js/scenes/gamlastan.js",
+  "k": "Mums! Varm och kladdig."
+ },
+ {
+  "i": 9198,
+  "f": "js/scenes/gamlastan.js",
+  "k": "En ros"
+ },
+ {
+  "i": 9199,
+  "f": "js/scenes/gamlastan.js",
+  "k": "En ros till någon du tycker om? Tio kronor."
+ },
+ {
+  "i": 9200,
+  "f": "js/scenes/gamlastan.js",
+  "k": "Du håller rosen under näsan. Den doftar sommar."
+ },
+ {
+  "i": 9201,
+  "f": "js/scenes/gamlastan.js",
+  "k": "En ros från torget"
+ },
+ {
+  "i": 9202,
+  "f": "js/scenes/gamlastan.js",
+  "k": "Burk honung"
+ },
+ {
+  "i": 9203,
+  "f": "js/scenes/gamlastan.js",
+  "k": "Honung från bikuporna på landet. Smaka!"
+ },
+ {
+  "i": 9204,
+  "f": "js/scenes/gamlastan.js",
+  "k": "Sött och klibbigt. Du slickar skeden ren."
+ },
+ {
+  "i": 9205,
+  "f": "js/scenes/gamlastan.js",
+  "k": "Liten skål"
+ },
+ {
+  "i": 9206,
+  "f": "js/scenes/gamlastan.js",
+  "k": "Muggar och skålar, drejade här i kvarteret."
+ },
+ {
+  "i": 9207,
+  "f": "js/scenes/gamlastan.js",
+  "k": "En blå skål med vita prickar. Den får stå på köksbordet."
+ },
+ {
+  "i": 9208,
+  "f": "js/scenes/gamlastan.js",
+  "k": "En skål från marknaden"
+ },
+ {
+  "i": 9209,
+  "f": "js/scenes/gamlastan.js",
+  "k": "Doftljus"
+ },
+ {
+  "i": 9210,
+  "f": "js/scenes/gamlastan.js",
+  "k": "Handstöpta ljus – de doftar lavendel."
+ },
+ {
+  "i": 9211,
+  "f": "js/scenes/gamlastan.js",
+  "k": "Lavendel! Nu doftar hela väskan."
+ },
+ {
+  "i": 9212,
+  "f": "js/scenes/gamlastan.js",
+  "k": "🏛️ Gamla stan – kullersten och lyktor! +{0} 😊"
+ },
+ {
+  "i": 9213,
+  "f": "js/scenes/gamlastan.js",
+  "k": "BRUNNEN – SLÄNG EN KRONA"
+ },
+ {
+  "i": 9214,
+  "f": "js/scenes/gamlastan.js",
+  "k": "GATUMUSIKANTEN – GE EN SLANT"
+ },
+ {
+  "i": 9215,
+  "f": "js/scenes/gamlastan.js",
+  "k": "STADSGUIDEN"
+ },
+ {
+  "i": 9216,
+  "f": "js/scenes/gamlastan.js",
+  "k": "SAGOSTUNDEN"
+ },
+ {
+  "i": 9217,
+  "f": "js/scenes/gamlastan.js",
+  "k": "Sagostund på torget"
+ },
+ {
+  "i": 9218,
+  "f": "js/scenes/gamlastan.js",
+  "k": "KVÄLLSMARKNADEN ÖPPNAR 16"
+ },
+ {
+  "i": 9219,
+  "f": "js/scenes/gamlastan.js",
+  "k": "GAMLA BUSSEN TILL STAN"
+ },
+ {
+  "i": 9220,
+  "f": "js/scenes/gamlastan.js",
+  "k": "En önskan i brunnen"
+ },
+ {
+  "i": 9221,
+  "f": "js/scenes/gamlastan.js",
+  "k": "*plums*"
+ },
+ {
+  "i": 9222,
+  "f": "js/scenes/gamlastan.js",
+  "k": "🪙 Plums! Du blundar och önskar dig något – det ger tur! +{0} 😊"
+ },
+ {
+  "i": 9223,
+  "f": "js/scenes/gamlastan.js",
+  "k": "🪙 Plums! Kronan sjunker ner till de andra. (Turen kommer en gång om dagen.)"
+ },
+ {
+  "i": 9224,
+  "f": "js/scenes/gamlastan.js",
+  "k": "Du har inga slantar att ge."
+ },
+ {
+  "i": 9225,
+  "f": "js/scenes/gamlastan.js",
+  "k": "Tack! Den här är för dig."
+ },
+ {
+  "i": 9226,
+  "f": "js/scenes/gamlastan.js",
+  "k": "Dragspel på torget"
+ },
+ {
+  "i": 9227,
+  "f": "js/scenes/gamlastan.js",
+  "k": "Stängt. Kvällsmarknaden öppnar klockan {0}."
+ },
+ {
+  "i": 9228,
+  "f": "js/scenes/gamlastan.js",
+  "k": "Köp · {0}"
+ },
+ {
+  "i": 9229,
+  "f": "js/scenes/gamlastan.js",
+  "k": "🚌 Gamla bussen"
+ },
+ {
+  "i": 9230,
+  "f": "js/scenes/gamlastan.js",
+  "k": "Bussen går tillbaka till <b>{0}</b>. Biljetten kostar {1}."
+ },
+ {
+  "i": 9231,
+  "f": "js/scenes/gamlastan.js",
+  "k": "KULLERSTEN, LYKTOR OCH TREHUNDRA ÅR"
+ }
+]

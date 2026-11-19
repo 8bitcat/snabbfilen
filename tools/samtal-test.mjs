@@ -59,7 +59,8 @@ const life = (p, fn, a) => p.evaluate(([f, a]) => { const L = SF.scene._debug.si
   ok(sedd.size === 4, `alla fyra replikerna sades i tur och ordning (${sedd.size} av 4)`);
   await sleep(500);
   const s2 = await life(p, (L, a) => ({ aktiva: L.samtal(), pa: L.person(a.a), pb: L.person(a.b) }), S);
-  ok(s2.aktiva.length === 0 && (s2.pa === null || s2.pa.hold < 100) && (s2.pb === null || s2.pb.hold < 100), 'när samtalet är slut släpps båda (ingen står kvar låst)');
+  // (andra samtal kan pågå i stan – det är VÅRT som ska vara slut, och våra två som ska vara släppta)
+  ok(!s2.aktiva.some((x) => x.a === S.a && x.b === S.b) && (s2.pa === null || s2.pa.hold < 100) && (s2.pb === null || s2.pb.hold < 100), 'när samtalet är slut släpps båda (ingen står kvar låst)');
   ok((s2.pa === null || s2.pa.samtalT > 30) && (s2.pb === null || s2.pb.samtalT > 30), `… och vilar från småprat en stund (${Math.round(s2.pa?.samtalT || 0)} s)`);
   // 4. mumla
   const m = await life(p, (L) => L.mumlaNu());
