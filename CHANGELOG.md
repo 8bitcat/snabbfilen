@@ -10,6 +10,9 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.161.1] – 2026-11-19 – Vattenlandets prov följer badvaktstornets fråga
+- Vattenlandets prov följer badvaktstornets fråga (prata eller jobba) – ingen ändring i spelet.
+
 ## [0.161.0] – 2026-11-19 – Egna skidor och pulka i sportaffären – gratis i Skidbackens uthyrning
 - 🎿 EGNA SKIDOR OCH PULKA: sportaffären på Arenatorget säljer nu skidor med stavar (400 kr) och en egen pulka (150 kr). Den som har egna behöver aldrig mer hyra i Skidbacken – uthyrningen visar dem som dina, och liften är gratis som förut. Skidorna och pulkan sparas i sparfilen precis som skridskorna.
 

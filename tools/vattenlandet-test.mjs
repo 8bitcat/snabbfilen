@@ -117,7 +117,10 @@ await D(() => document.querySelector('#modal [data-vara="glass"]')?.click()); aw
 ok((await money()) === m2 - 15 && (await toasts()).some((t) => /Mjukglass/.test(t)), 'glassen kostar 15 kr');
 
 // 6. badvakten
-await D(() => SF.scene._debug.act('badvakt')); await sleep(600);
+// (0.156: tornet frågar först "Jobba ett pass"/"Bara prata" – vi väljer prata)
+await D(() => SF.scene._debug.act('badvakt')); await sleep(400);
+ok(/Badvaktstornet/.test(await modal()), 'badvaktstornet frågar prata eller jobba');
+await D(() => { const b = [...document.querySelectorAll('#modal:not(.hidden) button')].find((x) => /prata/i.test(x.textContent)); b?.click(); }); await sleep(600);
 ok(/Bosse/.test((await D(() => SF.scene._debug.prat())) || ''), 'badvakten Bosse pratar');
 await D(() => SF.scene._debug.teleport(860, 400)); await sleep(200);
 await D(() => { const c = SF.scene._debug.cam(); SF.scene.down(860 - c.x, 280 - c.y); }); await sleep(500);
