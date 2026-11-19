@@ -1,7 +1,7 @@
 {
-  "version": "0.154.0",
+  "version": "0.155.0",
   "date": "2026-11-19",
-  "title": "Fiskmarknaden – fiskhandlarjobbet hos Britta i Fiskehamnen",
+  "title": "Museet och Gamla kaféet i Gamla stan – Pixelstadens historia och museiquizet",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
@@ -123,6 +123,7 @@
     "js/gamlastan/bibliotek-inne.js",
     "js/gamlastan/hus.js",
     "js/gamlastan/karta.js",
+    "js/gamlastan/museum-inne.js",
     "js/hamnen/deko.js",
     "js/hamnen/karta.js",
     "js/i18n/de.js",
@@ -230,6 +231,7 @@
     "js/scenes/koket.js",
     "js/scenes/landet.js",
     "js/scenes/matchdag.js",
+    "js/scenes/museum.js",
     "js/scenes/pixelberg.js",
     "js/scenes/room.js",
     "js/scenes/shop-accessoarer.js",

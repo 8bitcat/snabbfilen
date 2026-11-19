@@ -10,6 +10,10 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.155.0] – 2026-11-19 – Museet och Gamla kaféet i Gamla stan – Pixelstadens historia och museiquizet
+- 🏛️ MUSEET i Gamla stan har öppnat (10–18): Pixelstadens historia i en sal med tavelgalleriet ("Pixelstaden 1699", "Hamnen i storm", Huldas självporträtt), Kattstatyns krona under glas, den första bussen Linje 1 från 1931, Gunvors fotbollssko från finalen 1987, Solöns gamla fyrlampa, Pirat-Petters kista – och mitt i salen skelettet PIXELOSAURUS bakom sammetsrep. Klicka på föremålen så läses skyltarna upp; vakten Vera säger ifrån om man pillar på skelettet.
+- När du sett tre föremål bjuder intendent Malte på MUSEIQUIZET vid disken: tre frågor om det du sett. Alla rätt ger MUSEIDIPLOM och en utbildningspoäng till livsmålet Utbildning (en gång om dagen) plus lycka. ☕ GAMLA KAFÉET bredvid serverar kaffe med påtår, kanelbullar stora som tefat, prinsesstårta och varm choklad med vispgrädde – servitrisen Agda har jobbat där sedan 1962.
+
 ## [0.154.0] – 2026-11-19 – Fiskmarknaden – fiskhandlarjobbet hos Britta i Fiskehamnen
 - 🐟 FISKHANDLARE PÅ FISKMARKNADEN: gå in genom marknadshallens dörr i Fiskehamnen och jobba ett pass bakom disken hos Britta. Sex islådor – torsk, lax, sill, räkor, makrill och krabba – och kunder som kommer fram och visar vad de vill ha och hur många hekto. Välj rätt låda (klick eller 1–6) och klicka på kunden, så står fisken på VÅGEN: visaren sveper, och du stoppar den (klick eller mellanslag) så nära rätt vikt du kan.
 - I det gröna = PÅ GRAMMET och raden växer, lite utanför tar kunden det ändå, långt utanför blir avdrag – och fel fisk likaså. Den som väntar för länge går till fiskbilen i stället. Sex på grammet i rad ger BRITTAS GULDVÅG med bonus. Hallen med kakel, fönster mot hamnen och krittavlan DAGENS FÅNGST; lönen följer vanan som alla andra jobb.

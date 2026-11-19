@@ -12,7 +12,7 @@ import { createCityWalker } from '../city/walk.js';
 import { selfDrawable, folkDrawables, folkTapAt, createSpeech, WALK_SEQ, synligRuta } from './walkable.js';
 import { openSpelarkort } from '../core/vannerapp.js';
 import { worldFolksHere } from '../net/world.js';
-import { openModal, closeModal, toast, modalOpen } from '../core/ui.js';
+import { openModal, closeModal, toast, modalOpen, esc } from '../core/ui.js';
 import { play } from '../core/sound.js';
 import { SMALL, BIG, ctxText, textW, hash } from '../core/floor-pix.js';
 import { busStopById, BUS_STOPS } from '../city/map.js';
@@ -33,6 +33,13 @@ const FOLKRAD = [
 ];
 const GUIDE_RAD = [$t('Välkommen till Gamla stan! Huset bakom mig är från 1699 – titta på årtalet i gaveln.'), $t('Stadsporten var stadens enda ingång förr. Klockan har gått rätt sedan dess.'), $t('Brunnen på torget gav vatten åt hela staden. Släng i en krona och önska något!')];
 const SAGOR = [$t('… och så hittade katten kronan högst upp i Tornhuset. Slut för i dag!'), $t('Det var en gång en liten husvagn som ville bli en villa …'), $t('Långt borta på Pixelberg bodde ett spöke som var rädd för mörkret …')];
+const MUSEUM_TID = [10, 18];
+const KAFE_MENY = [
+  { id: 'kaffe', icon: '☕', namn: $t('Kaffe med påtår'), pris: 20, hunger: 3, energi: 10, glad: 1 },
+  { id: 'bulle', icon: '🥐', namn: $t('Kanelbulle stor som ett tefat'), pris: 25, hunger: 16, glad: 1 },
+  { id: 'tarta', icon: '🍰', namn: $t('Prinsesstårta'), pris: 40, hunger: 22, glad: 2 },
+  { id: 'choklad', icon: '🍫', namn: $t('Varm choklad med vispgrädde'), pris: 25, hunger: 8, energi: 8, glad: 1 },
+];
 const DORR_RAD = {
   museum: $t('Museet öppnar snart: Pixelstadens historia, från fiskeläge till storstad.'),
   antik: $t('Antikaffären öppnar snart – gamla möbler, tavlor och klockor till hemmet.'),
@@ -57,7 +64,7 @@ export function makeGamlastan(A) {
   let VW = Math.max(384, Math.min(A.W || 384, TW)), VH = Math.max(160, Math.min(A.H || 216, TH));
   const from = A.gamlaFran || null; A.gamlaFran = null;
   const dorrVid = (id) => [(HUS[id].door.x0 + HUS[id].door.x1) / 2, G.BASE + 10];
-  const inne = from?.teater ? 'teater' : from?.bibliotek ? 'bibliotek' : null;   // kom man ut genom en dörr står man vid den
+  const inne = from?.teater ? 'teater' : from?.bibliotek ? 'bibliotek' : from?.museum ? 'museum' : null;   // kom man ut genom en dörr står man vid den
   const walker = createCityWalker({ W: TW, H: TH, left: 2, right: TW - 2, top: G.TOP, bottom: G.BOTTOM, spawn: inne ? dorrVid(inne) : [HALLPLATS.x - 26, HALLPLATS.y - 14] });
   const fordon = () => g.aker;
   const applyRide = () => { const F = fordon(); walker.speed = GANG * (F ? F.fart : 1); };
@@ -119,8 +126,17 @@ export function makeGamlastan(A) {
   const teatern = () => { if (!A.jobReady?.('teater')) { knacka('teater')(); return; } A.gamlaFran = { teater: true, buss: from?.buss || '' }; play('door'); A.startJob('teater'); };
   // 📚 Biblioteket (js/scenes/bibliotek.js) – när man går ut står man vid bibliotekets dörr igen
   const biblioteket = () => { A.gamlaFran = { bibliotek: true, buss: from?.buss || '' }; play('door'); A.go('bibliotek'); };
-  const DORR_ACT = { teater: teatern, bibliotek: biblioteket };
-  const DORR_LABEL = { teater: $t('TEATERN – SKÅDESPELARJOBBET'), bibliotek: $t('BIBLIOTEKET – LÄS OCH LÄR') };
+  // 🏛️ Museet (js/scenes/museum.js), öppet 10–18 – när man går ut står man vid museets dörr igen
+  const museet = () => { const h = g.min / 60; if (h < MUSEUM_TID[0] || h >= MUSEUM_TID[1]) { play('knock'); toast($t`🏛️ Museet har öppet ${MUSEUM_TID[0]}–${MUSEUM_TID[1]}. Malte låser punktligt.`, 'bad'); return; } A.gamlaFran = { museum: true, buss: from?.buss || '' }; play('door'); A.go('museum'); };
+  // ☕ Gamla kaféet: fika vid disken (kanelbullar, prinsesstårta, varm choklad)
+  const kafeet = () => {
+    play('click');
+    const rader = KAFE_MENY.map((v) => `<div class="prow" style="grid-template-columns:auto 1fr auto"><span style="font-size:22px">${v.icon}</span><span class="nm">${esc(v.namn)}<br><small class="sp">${fmt(v.pris)}</small></span><button class="btn btn-small btn-go" data-vara="${v.id}" ${g.money < v.pris ? 'disabled' : ''}>${$t('Köp')}</button></div>`).join('');
+    const dlg = openModal($t('☕ Gamla kaféet'), `<p style="font-size:var(--f2);margin-top:0">${$t('Kakelugn, spetsgardiner och kanelbullar stora som tefat. Servitrisen Agda har jobbat här sedan 1962.')}</p><div class="plist">${rader}</div>`, [{ label: $t('Stäng'), onClick: closeModal }]);
+    dlg.querySelectorAll('[data-vara]').forEach((b) => (b.onclick = () => { const v = KAFE_MENY.find((q) => q.id === b.dataset.vara); if (!v || g.money < v.pris) return; g.money -= v.pris; g.hunger = Math.min(100, (g.hunger || 0) + v.hunger); if (v.energi) g.energy = Math.min(100, (g.energy || 0) + v.energi); const h = g.glad?.(v.glad, $t('Fika på Gamla kaféet'), 'gamlakafe', 3) || 0; g.passTime(20); g.save(); closeModal(); play('coin'); toast($t`${v.icon} ${v.namn}! Agda nickar gillande.` + (h ? ` +${h} 😊` : ''), 'good'); }));
+  };
+  const DORR_ACT = { teater: teatern, bibliotek: biblioteket, museum: museet, kafe: kafeet };
+  const DORR_LABEL = { teater: $t('TEATERN – SKÅDESPELARJOBBET'), bibliotek: $t('BIBLIOTEKET – LÄS OCH LÄR'), museum: $t('MUSEET – PIXELSTADENS HISTORIA'), kafe: $t('GAMLA KAFÉET – FIKA') };
   const spots = () => [
     ...HUSLISTA.map((id) => ({ id, ...dorr(id), label: DORR_LABEL[id] || HUS[id].namn || $t('BOSTADSHUS'), act: DORR_ACT[id] || knacka(id) })),
     { id: 'brunn', r: [BRUNN.x - 20, BRUNN.y - 44, BRUNN.x + 20, BRUNN.y + 8], go: [BRUNN.x, BRUNN.y + 16], label: $t('BRUNNEN – SLÄNG EN KRONA'), act: brunnen },

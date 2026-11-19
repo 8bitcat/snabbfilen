@@ -785,7 +785,7 @@ export class Game {
     this.gym = { styrka: 0, kondition: 0, rytm: 0, kort: -1, dag: -1, pass: {} };
     // 📚 Biblioteket i Gamla stan (js/scenes/bibliotek.js): poängen från lästa böcker (utbPoang), dagen och antalet
     // utlästa böcker i dag (LAS_PER_DAG) och vilka böcker man läst (ger ingen ny poäng andra gången)
-    this.las = { poang: 0, dag: -1, n: 0, lasta: [] };
+    this.las = { poang: 0, dag: -1, n: 0, lasta: [], museumDag: -1 };   // museumDag = dagen man senast tog museidiplomet (js/scenes/museum.js)
     this.bat = null;   // ⚓ Fiskehamnen (js/scenes/hamnen.js): den egna båten, 'rodd' | 'motor' | null (ligger vid båtrampen)
     this.stuga = null; // 🏡 Röda stugan på Solön (js/scenes/stuga.js): { dag } när man hyrt den för natten (gäller till 12 dagen efter)
     this.skridskor = false;   // ⛸️ Arenan (js/scenes/arenan.js): egna skridskor från sportaffären – isen är gratis
@@ -988,7 +988,7 @@ export class Game {
           for (const [k, v] of Object.entries(Q.pass && typeof Q.pass === 'object' ? Q.pass : {})) if (/^[a-z]{2,12}$/.test(k)) pass[k] = Math.max(0, Math.min(99, v | 0));
           g.gym = { styrka: Math.max(0, Math.min(9999, Q.styrka | 0)), kondition: Math.max(0, Math.min(9999, Q.kondition | 0)), rytm: Math.max(0, Math.min(9999, Q.rytm | 0)), kort: (Q.kort | 0) || -1, dag: (Q.dag | 0) || -1, pass }; }
         { const Q = p.las && typeof p.las === 'object' ? p.las : {};
-          g.las = { poang: Math.max(0, Math.min(99, Q.poang | 0)), dag: (Q.dag | 0) || -1, n: Math.max(0, Math.min(9, Q.n | 0)), lasta: (Array.isArray(Q.lasta) ? Q.lasta : []).filter((s) => typeof s === 'string' && /^[a-z0-9]{2,16}$/.test(s)).slice(-60) }; }
+          g.las = { poang: Math.max(0, Math.min(99, Q.poang | 0)), dag: (Q.dag | 0) || -1, n: Math.max(0, Math.min(9, Q.n | 0)), lasta: (Array.isArray(Q.lasta) ? Q.lasta : []).filter((s) => typeof s === 'string' && /^[a-z0-9]{2,16}$/.test(s)).slice(-60), museumDag: (Q.museumDag | 0) || -1 }; }
         g.bat = p.bat === 'rodd' || p.bat === 'motor' ? p.bat : null;
         g.stuga = p.stuga && typeof p.stuga === 'object' && Number.isFinite(+p.stuga.dag) ? { dag: p.stuga.dag | 0 } : null;
         g.skridskor = p.skridskor === true;
@@ -1400,6 +1400,12 @@ export class Game {
   }
   // 📚 Biblioteket (js/scenes/bibliotek.js): hur många böcker man kan läsa ut till i dag
   lasKvar() { return this.las.dag === this.day ? Math.max(0, LAS_PER_DAG - (this.las.n | 0)) : LAS_PER_DAG; }
+  // 🏛️ museiquizet med alla rätt (js/scenes/museum.js): en utbildningspoäng, en gång om dagen → { ok, poang }
+  museiDiplom() {
+    if (this.las.museumDag === this.day) return { ok: false, poang: 0 };
+    this.las.museumDag = this.day; this.las.poang = Math.min(99, (this.las.poang | 0) + 1); this.save();
+    return { ok: true, poang: 1 };
+  }
   // en utläst bok: tar en timme på klockan, ger 1 utbildningspoäng första gången boken läses.
   // → { ok, poang (1 | 0), kvar } – ok: false när dagens böcker är slut (LAS_PER_DAG)
   lasBok(id) {
