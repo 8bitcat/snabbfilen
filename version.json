@@ -1,7 +1,7 @@
 {
-  "version": "0.157.0",
+  "version": "0.158.0",
   "date": "2026-11-19",
-  "title": "Simhallen på Arenatorget – bassängen, rutschkanan, bubbelpoolen och bastun",
+  "title": "Lemonadståndet på Äppelvägen 1 – sommarjobbet hos barnen Berg",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
@@ -147,6 +147,7 @@
     "js/jobs/jobb-incheck.js",
     "js/jobs/jobb-kafe.js",
     "js/jobs/jobb-kok.js",
+    "js/jobs/jobb-lemonad.js",
     "js/jobs/jobb-pizzeria.js",
     "js/jobs/jobb-posten.js",
     "js/jobs/jobb-teater.js",

@@ -10,7 +10,7 @@ import { $t } from './i18n.js';
 
 // chefen på varje ställe (påhittade namn)
 const CHEFER = { flygplats: $t('Bertil'), incheckning: $t('Aisha'), frukt: $t('Gunnel'), burgare: $t('Doris'), pizzeria: $t('Luigi'), posten: $t('Yusuf'), bensinmack: $t('Kent'),
-  bilverkstad: $t('Majken'), tvatteri: $t('Sonja'), kafe: $t('Kajsa'), vard: $t('Doktor Lind'), kok: $t('Doris'), datorbygge: $t('Ines'), djurskotare: $t('Djurskötare Gunnar'), finans: $t('Fredrik'), teater: $t('Regissör Rut'), gras: $t('Vivi på Äppelvägen'), fiskhandel: $t('Fiskhandlare Britta'), badvakt: $t('Badvakten Bosse') };
+  bilverkstad: $t('Majken'), tvatteri: $t('Sonja'), kafe: $t('Kajsa'), vard: $t('Doktor Lind'), kok: $t('Doris'), datorbygge: $t('Ines'), djurskotare: $t('Djurskötare Gunnar'), finans: $t('Fredrik'), teater: $t('Regissör Rut'), gras: $t('Vivi på Äppelvägen'), fiskhandel: $t('Fiskhandlare Britta'), badvakt: $t('Badvakten Bosse'), lemonad: $t('Barnen Berg') };
 export const chefOf = (jobId) => CHEFER[jobId] || $t('Chefen');
 // [fråga, rätt svar, fel, fel] – tre slumpas per intervju, svaren blandas
 export const FRAGOR = [

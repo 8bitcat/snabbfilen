@@ -10,6 +10,10 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.158.0] – 2026-11-19 – Lemonadståndet på Äppelvägen 1 – sommarjobbet hos barnen Berg
+- 🍋 LEMONADSTÅNDET på Äppelvägen 1 i Villaområdet: barnen Berg har ställt upp ett bord vid grinden med kanna, glas, citroner, socker och is – och grannarna kommer i en strid ström (10–18). Varje kund visar sitt recept i en bubbla: hur många skedar socker och hur många isbitar. Bygg glaset med knapparna (eller tangenterna 1, 2 och 0 för att tömma) och servera med ett klick på kunden eller mellanslag.
+- Rätt recept ger lön och MUMS, fel recept ger avdrag och en sur min, och den som väntar för länge går till grannens stånd. Fem rätt i rad = SOMMARENS LEMONAD med bonus. Röda huset, äppelträden och spjälstaketet bakom, Berg-barnet som hejar vid bordet – och lönen följer vanan som alla andra jobb.
+
 ## [0.157.0] – 2026-11-19 – Simhallen på Arenatorget – bassängen, rutschkanan, bubbelpoolen och bastun
 - 🏊 SIMHALLEN på Arenatorget har öppnat (7–21, entré 40 kr): byt om i omklädningsrummet och ner för stegen i 25-metersbassängen – klicka eller tryck mellanslag i takt så simmar du längder, vänd vid kanten. Varannan längd ger lycka och tio längder på ett besök ger SIMMÄRKET av badvakten Ulla. Rutschkanan med tre kurvor slutar med ett plask i bassängens hörn, och barnen åker hela tiden.
 - Bubbelpoolen ger energi efter en stund och bastun på 80 grader ännu mer. Fönster mot himlen, klockan som går efter spelets tid, Ulla i den höga stolen med sina förmaningar och receptionen vid dörren. Badvakten Ulla pratar gärna – men ingen dykning vid grunda delen!

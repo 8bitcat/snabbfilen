@@ -354,7 +354,7 @@ export const BUILDINGS_V = [
   V('v_hus3', 'v_tomt3', 4740, 116, 160, 34, 66, 4798, { sign: $t('SYRENVÄGEN 8'), soon: $t('Här bor Nova med sin hund Doris. Hon skäller på brevbäraren varje dag.') }),
   V('v_hus4', 'v_tomt4', 4936, 124, 160, 36, 66, 4998, { sign: $t('SYRENVÄGEN 10'), soon: $t('Ett gult hus med studsmatta i trädgården. Här bor andra.') }),
   // södra raden (tomterna 494–640, husen står på base 604)
-  V('v_hus5', 'v_tomt5', 4092, 124, 604, 36, 66, 4154, { sign: $t('ÄPPELVÄGEN 1'), soon: $t('Ett rött hus med äppelträd. Här bor andra.') }),
+  V('v_hus5', 'v_tomt5', 4092, 124, 604, 36, 66, 4154, { sign: $t('ÄPPELVÄGEN 1'), icon: '🍋', enter: 'jobb:lemonad', open: [10, 18], soon: $t('Ett rött hus med äppelträd. Barnen Berg säljer lemonad vid grinden.') }),   // 🍋 sommarjobbet (js/jobs/jobb-lemonad.js)
   V('v_hus6', 'v_tomt6', 4296, 116, 604, 34, 66, 4354, { sign: $t('ÄPPELVÄGEN 3'), soon: $t('Här bor Pelle och Gunnel. De vinkar från altanen.') }),
   V('v_hus7', 'v_tomt7', 4520, 130, 604, 38, 66, 4586, { sign: $t('ÄPPELVÄGEN 5'), icon: '🌿', enter: 'jobb:gras', open: [9, 19], soon: $t('Ett vitt hus med garage. Vivi söker någon som klipper gräset.') }),   // 🌿 sommarjobbet (js/jobs/jobb-gras.js)
   V('v_hus8', 'v_tomt8', 4738, 118, 604, 34, 66, 4796, { sign: $t('ÄPPELVÄGEN 7'), soon: $t('Ett grönt hus med blå dörr. Här bor andra.') }),
