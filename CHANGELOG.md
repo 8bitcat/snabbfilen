@@ -10,6 +10,10 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.147.0] – 2026-11-19 – Fiskehamnen – fiskmarknad, båtar och färjan till Solön
+- ⚓ FISKEHAMNEN har öppnat! Ta hamnbussen från vilken hållplats som helst (raden FISKEHAMNEN). Längs kajen: HAMNKONTORET, MAGASINET med kranen, FISKMARKNADEN (färsk fisk till skafferiet för 30 kr, rökt makrill och räkmackor), FISK & CHIPS-vagnen, BÅTAFFÄREN, SKEPPSHANDELN med metspön, RÖKERIET och FÄRJETERMINALEN – härifrån går SOLÖ-FÄRJAN ut till Solön.
+- Köp en egen båt i båtaffären (roddbåt 1 200 kr, motorbåt 5 500 kr) och lägg ut vid båtrampen – styr runt i hamnbassängen bland bojarna och lägg till igen. Ingen båt? Hyr en roddbåt för 60 kr. Piren leder ut till fyren där man kan fiska. Fiskebåtarna guppar vid kajen, måsarna lyfter när du kommer, sälen Sigge tittar upp vid piren och om natten sveper fyrens ljus över vattnet.
+
 ## [0.146.0] – 2026-11-19 – Djurskötarjobbet – Foderköket i Djurparken
 - 🦁 DJURSKÖTARJOBBET i Djurparken har öppnat – gå in i personalhuset längst österut. Du står i FODERKÖKET: djuren kommer till de fem luckorna i väggen och visar vad de vill ha. Välj rätt mat i lådorna på disken (klicka eller 1–6) och klicka på luckan: lejonet vill ha kött, elefanten hö, giraffen löv, apan bananer, pingvinen fisk och björnen blåbär.
 - Rätt mat ger lön och ett MUMS, fel mat ett NEJ! och avdrag, och väntar djuret för länge går det hungrigt därifrån. Åtta rätt i rad = MATRUNDA UTAN MISS med bonus. Takten ökar med vanan. Efter passet står du vid personalhuset igen, med entrén betald.

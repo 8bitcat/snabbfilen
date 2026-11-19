@@ -484,12 +484,14 @@ export function makeCity(A) {
     // 🏛️ GAMLA BUSSEN till GAMLA STAN (js/scenes/gamlastan.js, v5) – samma biljett, en rad till i varje hållplatsdialog
     + `<div class="prow shoprow"><span style="font-size:28px;text-align:center">🏛️</span><span class="nm">${esc($t('GAMLA STAN'))}<br><small class="sp">${esc($t('Gamla bussen till Stortorget och kvällsmarknaden'))}</small></span><button class="btn btn-small ${g.money >= BUS_FARE ? 'btn-go' : ''}" data-gamla ${g.money >= BUS_FARE ? '' : 'disabled'}>${$t('Åk hit')}</button></div>`
     // 🦁 DJURBUSSEN till DJURPARKEN (js/scenes/djurparken.js) – samma biljett
-    + `<div class="prow shoprow"><span style="font-size:28px;text-align:center">🦁</span><span class="nm">${esc($t('DJURPARKEN'))}<br><small class="sp">${esc($t('Djurbussen till lejonen, elefanterna och ponnyn Pricken'))}</small></span><button class="btn btn-small ${g.money >= BUS_FARE ? 'btn-go' : ''}" data-djur ${g.money >= BUS_FARE ? '' : 'disabled'}>${$t('Åk hit')}</button></div>`;
+    + `<div class="prow shoprow"><span style="font-size:28px;text-align:center">🦁</span><span class="nm">${esc($t('DJURPARKEN'))}<br><small class="sp">${esc($t('Djurbussen till lejonen, elefanterna och ponnyn Pricken'))}</small></span><button class="btn btn-small ${g.money >= BUS_FARE ? 'btn-go' : ''}" data-djur ${g.money >= BUS_FARE ? '' : 'disabled'}>${$t('Åk hit')}</button></div>`
+    // ⚓ HAMNBUSSEN till FISKEHAMNEN (js/scenes/hamnen.js) – samma biljett
+    + `<div class="prow shoprow"><span style="font-size:28px;text-align:center">⚓</span><span class="nm">${esc($t('FISKEHAMNEN'))}<br><small class="sp">${esc($t('Hamnbussen till fiskmarknaden, båtarna och färjan'))}</small></span><button class="btn btn-small ${g.money >= BUS_FARE ? 'btn-go' : ''}" data-hamn ${g.money >= BUS_FARE ? '' : 'disabled'}>${$t('Åk hit')}</button></div>`;
   function bergbussen(from, dit = 'pixelberg') {
     if (g.money < BUS_FARE) { toast($t`🚌 Bussen kostar ${BUS_FARE} kr – du har inte råd.`, 'bad'); return; }
     g.money -= BUS_FARE; g.passTime(BUS_MINUTES); g.save(); play('door');
     walker.stop(); fade.phase = 1; fade.a = 0;
-    fade.cb = () => { if (dit === 'gamlastan') A.gamlaFran = { buss: from?.id || '' }; else if (dit === 'djurparken') A.djurparkFran = { buss: from?.id || '' }; else A.pixelbergFran = { buss: from?.id || '' }; A.go(dit); };
+    fade.cb = () => { if (dit === 'gamlastan') A.gamlaFran = { buss: from?.id || '' }; else if (dit === 'djurparken') A.djurparkFran = { buss: from?.id || '' }; else if (dit === 'hamnen') A.hamnFran = { buss: from?.id || '' }; else A.pixelbergFran = { buss: from?.id || '' }; A.go(dit); };
   }
   function openBusDialog(from) {
     const others = BUS_STOPS.filter((s) => s.id !== from.id);
@@ -505,6 +507,7 @@ export function makeCity(A) {
     dlg.querySelector('[data-berg]')?.addEventListener('click', () => { closeModal(); bergbussen(from); });
     dlg.querySelector('[data-gamla]')?.addEventListener('click', () => { closeModal(); bergbussen(from, 'gamlastan'); });
     dlg.querySelector('[data-djur]')?.addEventListener('click', () => { closeModal(); bergbussen(from, 'djurparken'); });
+    dlg.querySelector('[data-hamn]')?.addEventListener('click', () => { closeModal(); bergbussen(from, 'hamnen'); });
   }
 
   // ---------- bussen på riktigt (receptet i traffic.js filhuvud) ----------
@@ -539,6 +542,7 @@ export function makeCity(A) {
     dlg.querySelector('[data-berg]')?.addEventListener('click', () => { S.traffic.release?.(from.id); closeModal(); bergbussen(from); });
     dlg.querySelector('[data-gamla]')?.addEventListener('click', () => { S.traffic.release?.(from.id); closeModal(); bergbussen(from, 'gamlastan'); });
     dlg.querySelector('[data-djur]')?.addEventListener('click', () => { S.traffic.release?.(from.id); closeModal(); bergbussen(from, 'djurparken'); });
+    dlg.querySelector('[data-hamn]')?.addEventListener('click', () => { S.traffic.release?.(from.id); closeModal(); bergbussen(from, 'hamnen'); });
   }
   // Kliv av bussen: ställ figuren vid dörren och väck kameran/området.
   function finishRide() {

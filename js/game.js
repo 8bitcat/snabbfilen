@@ -784,6 +784,7 @@ export class Game {
     // 📚 Biblioteket i Gamla stan (js/scenes/bibliotek.js): poängen från lästa böcker (utbPoang), dagen och antalet
     // utlästa böcker i dag (LAS_PER_DAG) och vilka böcker man läst (ger ingen ny poäng andra gången)
     this.las = { poang: 0, dag: -1, n: 0, lasta: [] };
+    this.bat = null;   // ⚓ Fiskehamnen (js/scenes/hamnen.js): den egna båten, 'rodd' | 'motor' | null (ligger vid båtrampen)
     this.festVecka = '';   // 🎉 veckan ("2026-W42") då man senast fick lördagsfestens present (js/city/fest.js)
     // 🏡 djurhemmet i Tassbacken (js/scenes/shop-djurhem.js): adopterade = djurens id:n ("dh3:12" = djur 3 vecka 12),
     // hjalp = dagen man senast hjälpte till, gav = dagen man senast skänkte pengar
@@ -984,6 +985,7 @@ export class Game {
           g.gym = { styrka: Math.max(0, Math.min(9999, Q.styrka | 0)), kondition: Math.max(0, Math.min(9999, Q.kondition | 0)), rytm: Math.max(0, Math.min(9999, Q.rytm | 0)), kort: (Q.kort | 0) || -1, dag: (Q.dag | 0) || -1, pass }; }
         { const Q = p.las && typeof p.las === 'object' ? p.las : {};
           g.las = { poang: Math.max(0, Math.min(99, Q.poang | 0)), dag: (Q.dag | 0) || -1, n: Math.max(0, Math.min(9, Q.n | 0)), lasta: (Array.isArray(Q.lasta) ? Q.lasta : []).filter((s) => typeof s === 'string' && /^[a-z0-9]{2,16}$/.test(s)).slice(-60) }; }
+        g.bat = p.bat === 'rodd' || p.bat === 'motor' ? p.bat : null;
         g.festVecka = /^\d{4}-W\d{2}$/.test(String(p.festVecka || '')) ? String(p.festVecka) : '';
         g.designs = (Array.isArray(p.designs) ? p.designs : []).filter((d) => d && ['neck', 'bag', 'beads', 'phone'].includes(d.kind) && d.sel && typeof d.sel === 'object').slice(-40).map(cleanDesign).filter(Boolean);
         keep.storage = (Array.isArray(p.storage) ? p.storage : []).filter((it) => it && typeof it === 'object' && !knownKind(it.k));

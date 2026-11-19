@@ -1,7 +1,7 @@
 {
-  "version": "0.146.0",
+  "version": "0.147.0",
   "date": "2026-11-19",
-  "title": "Djurskötarjobbet – Foderköket i Djurparken",
+  "title": "Fiskehamnen – fiskmarknad, båtar och färjan till Solön",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
@@ -120,6 +120,8 @@
     "js/gamlastan/bibliotek-inne.js",
     "js/gamlastan/hus.js",
     "js/gamlastan/karta.js",
+    "js/hamnen/deko.js",
+    "js/hamnen/karta.js",
     "js/i18n/de.js",
     "js/i18n/en.js",
     "js/i18n/es.js",
@@ -197,6 +199,7 @@
     "js/scenes/city.js",
     "js/scenes/djurparken.js",
     "js/scenes/gamlastan.js",
+    "js/scenes/hamnen.js",
     "js/scenes/hopp.js",
     "js/scenes/ikea/art-market.js",
     "js/scenes/ikea/art-props.js",

@@ -1,0 +1,437 @@
+[
+ {
+  "i": 9451,
+  "f": "js/scenes/hamnen.js",
+  "k": "HAMNKONTORET"
+ },
+ {
+  "i": 9452,
+  "f": "js/scenes/hamnen.js",
+  "k": "MAGASIN 3"
+ },
+ {
+  "i": 9453,
+  "f": "js/scenes/hamnen.js",
+  "k": "FISKMARKNADEN"
+ },
+ {
+  "i": 9454,
+  "f": "js/scenes/hamnen.js",
+  "k": "BÅTAFFÄREN"
+ },
+ {
+  "i": 9455,
+  "f": "js/scenes/hamnen.js",
+  "k": "SKEPPSHANDEL"
+ },
+ {
+  "i": 9456,
+  "f": "js/scenes/hamnen.js",
+  "k": "RÖKERI"
+ },
+ {
+  "i": 9457,
+  "f": "js/scenes/hamnen.js",
+  "k": "FÄRJA SOLÖN"
+ },
+ {
+  "i": 9458,
+  "f": "js/scenes/hamnen.js",
+  "k": "FÄRSK FISK"
+ },
+ {
+  "i": 9459,
+  "f": "js/scenes/hamnen.js",
+  "k": "RÖKT"
+ },
+ {
+  "i": 9460,
+  "f": "js/scenes/hamnen.js",
+  "k": "RÄKOR"
+ },
+ {
+  "i": 9461,
+  "f": "js/scenes/hamnen.js",
+  "k": "FISK & CHIPS"
+ },
+ {
+  "i": 9462,
+  "f": "js/scenes/hamnen.js",
+  "k": "FISKEHAMNEN"
+ },
+ {
+  "i": 9463,
+  "f": "js/scenes/hamnen.js",
+  "k": "MAGASINET"
+ },
+ {
+  "i": 9464,
+  "f": "js/scenes/hamnen.js",
+  "k": "SKEPPSHANDELN"
+ },
+ {
+  "i": 9465,
+  "f": "js/scenes/hamnen.js",
+  "k": "RÖKERIET"
+ },
+ {
+  "i": 9466,
+  "f": "js/scenes/hamnen.js",
+  "k": "FÄRJETERMINALEN"
+ },
+ {
+  "i": 9467,
+  "f": "js/scenes/hamnen.js",
+  "k": "Roddbåt"
+ },
+ {
+  "i": 9468,
+  "f": "js/scenes/hamnen.js",
+  "k": "Motorbåt"
+ },
+ {
+  "i": 9469,
+  "f": "js/scenes/hamnen.js",
+  "k": "⚓ i Fiskehamnen"
+ },
+ {
+  "i": 9470,
+  "f": "js/scenes/hamnen.js",
+  "k": "Hamnbussen till fiskmarknaden, båtarna och färjan"
+ },
+ {
+  "i": 9471,
+  "f": "js/scenes/hamnen.js",
+  "k": "ELSA kom in med full last i morse – torsk och sill."
+ },
+ {
+  "i": 9472,
+  "f": "js/scenes/hamnen.js",
+  "k": "Färjan går var tjugonde minut. Nästan."
+ },
+ {
+  "i": 9473,
+  "f": "js/scenes/hamnen.js",
+  "k": "Sälen heter Sigge. Han tigger fisk vid piren."
+ },
+ {
+  "i": 9474,
+  "f": "js/scenes/hamnen.js",
+  "k": "Fisk & chips-vagnen har stans bästa pommes."
+ },
+ {
+  "i": 9475,
+  "f": "js/scenes/hamnen.js",
+  "k": "Jag har sparat till en motorbåt i tre år."
+ },
+ {
+  "i": 9476,
+  "f": "js/scenes/hamnen.js",
+  "k": "Måsarna snor allt. Håll i smörgåsen!"
+ },
+ {
+  "i": 9477,
+  "f": "js/scenes/hamnen.js",
+  "k": "Fyren har lyst varje natt sedan 1890."
+ },
+ {
+  "i": 9478,
+  "f": "js/scenes/hamnen.js",
+  "k": "Rökeriet röker makrill på fredagar – det doftar över hela hamnen."
+ },
+ {
+  "i": 9479,
+  "f": "js/scenes/hamnen.js",
+  "k": "Fisk & chips"
+ },
+ {
+  "i": 9480,
+  "f": "js/scenes/hamnen.js",
+  "k": "Skagenröra på bröd"
+ },
+ {
+  "i": 9481,
+  "f": "js/scenes/hamnen.js",
+  "k": "Fläderblomssaft"
+ },
+ {
+  "i": 9482,
+  "f": "js/scenes/hamnen.js",
+  "k": "Rökt makrill"
+ },
+ {
+  "i": 9483,
+  "f": "js/scenes/hamnen.js",
+  "k": "Varm ur rökeriet. Händerna doftar hela dagen."
+ },
+ {
+  "i": 9484,
+  "f": "js/scenes/hamnen.js",
+  "k": "Räkmacka"
+ },
+ {
+  "i": 9485,
+  "f": "js/scenes/hamnen.js",
+  "k": "Ett berg av räkor på en skiva bröd. Måsarna tittar avundsjukt."
+ },
+ {
+  "i": 9486,
+  "f": "js/scenes/hamnen.js",
+  "k": "⚓ Fiskehamnen – salt, måsar och tjära! +{0} 😊"
+ },
+ {
+  "i": 9487,
+  "f": "js/scenes/hamnen.js",
+  "k": "🐟 Färsk fisk"
+ },
+ {
+  "i": 9488,
+  "f": "js/scenes/hamnen.js",
+  "k": "Dagens fångst, rensad och klar: <b>{0}</b> för {1} styck – till skafferiet hemma (laga fisksoppa eller fish and chips i köket)."
+ },
+ {
+  "i": 9489,
+  "f": "js/scenes/hamnen.js",
+  "k": "I skafferiet: {0} av {1}"
+ },
+ {
+  "i": 9490,
+  "f": "js/scenes/hamnen.js",
+  "k": "Köp en · {0}"
+ },
+ {
+  "i": 9491,
+  "f": "js/scenes/hamnen.js",
+  "k": "🐟 {0} i väskan – {1} i skafferiet."
+ },
+ {
+  "i": 9492,
+  "f": "js/scenes/hamnen.js",
+  "k": "Fika i hamnen"
+ },
+ {
+  "i": 9493,
+  "f": "js/scenes/hamnen.js",
+  "k": "🍟 Fisk & chips"
+ },
+ {
+  "i": 9494,
+  "f": "js/scenes/hamnen.js",
+  "k": "Nyfriterad torsk, pommes och remoulad. Ät på kajkanten – men akta måsarna."
+ },
+ {
+  "i": 9495,
+  "f": "js/scenes/hamnen.js",
+  "k": "Fisk & chips i hamnen"
+ },
+ {
+  "i": 9496,
+  "f": "js/scenes/hamnen.js",
+  "k": "Din båt – ligger vid rampen"
+ },
+ {
+  "i": 9497,
+  "f": "js/scenes/hamnen.js",
+  "k": "Har"
+ },
+ {
+  "i": 9498,
+  "f": "js/scenes/hamnen.js",
+  "k": "⛵ Båtaffären"
+ },
+ {
+  "i": 9499,
+  "f": "js/scenes/hamnen.js",
+  "k": "En egen båt! Den ligger vid båtrampen – lägg ut och styr runt i hamnen när du vill, utan att hyra. Motorbåten är dubbelt så snabb."
+ },
+ {
+  "i": 9500,
+  "f": "js/scenes/hamnen.js",
+  "k": "⛵ Grattis – {0}en är din! Den ligger vid båtrampen."
+ },
+ {
+  "i": 9501,
+  "f": "js/scenes/hamnen.js",
+  "k": "En egen båt"
+ },
+ {
+  "i": 9502,
+  "f": "js/scenes/hamnen.js",
+  "k": "⚓ Skeppshandeln"
+ },
+ {
+  "i": 9503,
+  "f": "js/scenes/hamnen.js",
+  "k": "Rep, lyktor, sjökort och metspön. Det doftar tjära och kaffe."
+ },
+ {
+  "i": 9504,
+  "f": "js/scenes/hamnen.js",
+  "k": "🎣 Du har redan ett metspö – fiska längst ut på piren!"
+ },
+ {
+  "i": 9505,
+  "f": "js/scenes/hamnen.js",
+  "k": "🎣 Ett metspö kostar {0} – sedan kan du fiska från piren här och på Solön."
+ },
+ {
+  "i": 9506,
+  "f": "js/scenes/hamnen.js",
+  "k": "🎣 Köp metspö · {0}"
+ },
+ {
+  "i": 9507,
+  "f": "js/scenes/hamnen.js",
+  "k": "Färjan går härifrån ut till <b>Solön</b>: sandstrand, bad, glass och fyren. Tillbaka går den till Sjöboden i stan."
+ },
+ {
+  "i": 9508,
+  "f": "js/scenes/hamnen.js",
+  "k": "🚣 Du lägger ut med hyrbåten. Klicka i vattnet – lägg till vid rampen när du är klar."
+ },
+ {
+  "i": 9509,
+  "f": "js/scenes/hamnen.js",
+  "k": "{0} Du lägger ut med din {1}. Klicka i vattnet – lägg till vid rampen när du är klar."
+ },
+ {
+  "i": 9510,
+  "f": "js/scenes/hamnen.js",
+  "k": "🚣 Båtrampen"
+ },
+ {
+  "i": 9511,
+  "f": "js/scenes/hamnen.js",
+  "k": "Ingen egen båt än? Hyr en roddbåt för <b>{0}</b> och ro en tur i hamnen. (Båtaffären säljer egna båtar – då är turerna gratis.)"
+ },
+ {
+  "i": 9512,
+  "f": "js/scenes/hamnen.js",
+  "k": "🚣 Hyr roddbåt · {0}"
+ },
+ {
+  "i": 9513,
+  "f": "js/scenes/hamnen.js",
+  "k": "Du har inte råd att hyra båten."
+ },
+ {
+  "i": 9514,
+  "f": "js/scenes/hamnen.js",
+  "k": "En båttur i hamnen"
+ },
+ {
+  "i": 9515,
+  "f": "js/scenes/hamnen.js",
+  "k": "⚓ Du lägger till vid rampen efter {0} sekunder på vattnet."
+ },
+ {
+  "i": 9516,
+  "f": "js/scenes/hamnen.js",
+  "k": "🚌 Hamnbussen"
+ },
+ {
+  "i": 9517,
+  "f": "js/scenes/hamnen.js",
+  "k": "LÄGG TILL VID RAMPEN"
+ },
+ {
+  "i": 9518,
+  "f": "js/scenes/hamnen.js",
+  "k": "HAMNBUSSEN TILL STAN"
+ },
+ {
+  "i": 9519,
+  "f": "js/scenes/hamnen.js",
+  "k": "Hamnkaptenen: \"Välkommen till Fiskehamnen! Färjan går från piren, fisken säljs i hallen – och håll i mössan, det blåser.\""
+ },
+ {
+  "i": 9520,
+  "f": "js/scenes/hamnen.js",
+  "k": "📦 Magasin 3: lådor med torkad fisk, rep och tunnor ända upp i taket. Kranen lyfter containrar hela dagen."
+ },
+ {
+  "i": 9521,
+  "f": "js/scenes/hamnen.js",
+  "k": "FÄRSK FISK · {0}"
+ },
+ {
+  "i": 9522,
+  "f": "js/scenes/hamnen.js",
+  "k": "RÖKT MAKRILL · {0}"
+ },
+ {
+  "i": 9523,
+  "f": "js/scenes/hamnen.js",
+  "k": "RÄKMACKA · {0}"
+ },
+ {
+  "i": 9524,
+  "f": "js/scenes/hamnen.js",
+  "k": "BÅTAFFÄREN – KÖP EN BÅT"
+ },
+ {
+  "i": 9525,
+  "f": "js/scenes/hamnen.js",
+  "k": "🔥 Rökeriet: makrillen hänger över alspånen. Den rökta fisken säljs i marknadshallen."
+ },
+ {
+  "i": 9526,
+  "f": "js/scenes/hamnen.js",
+  "k": "FYREN"
+ },
+ {
+  "i": 9527,
+  "f": "js/scenes/hamnen.js",
+  "k": "🗼 Fyren har lyst varje natt sedan 1890. Fyrvaktaren hette Hulda och bodde här med fjorton katter."
+ },
+ {
+  "i": 9528,
+  "f": "js/scenes/hamnen.js",
+  "k": "FISKA FRÅN PIREN"
+ },
+ {
+  "i": 9529,
+  "f": "js/scenes/hamnen.js",
+  "k": "BÅTRAMPEN – LÄGG UT MED DIN BÅT"
+ },
+ {
+  "i": 9530,
+  "f": "js/scenes/hamnen.js",
+  "k": "BÅTRAMPEN – HYR BÅT · {0}"
+ },
+ {
+  "i": 9531,
+  "f": "js/scenes/hamnen.js",
+  "k": "HAMNKRANEN"
+ },
+ {
+  "i": 9532,
+  "f": "js/scenes/hamnen.js",
+  "k": "🏗️ Hamnkranen lyfter 20 ton. Kranföraren Berit har lyft 11 000 containrar och tappat noll."
+ },
+ {
+  "i": 9533,
+  "f": "js/scenes/hamnen.js",
+  "k": "⚓ Ankaret kommer från skonaren Hoppet som förliste 1902. Alla ombord räddades – av Hulda i fyren."
+ },
+ {
+  "i": 9534,
+  "f": "js/scenes/hamnen.js",
+  "k": "🐟 ELSA lossar nattens fångst – lådor med torsk och sill bärs i land."
+ },
+ {
+  "i": 9535,
+  "f": "js/scenes/hamnen.js",
+  "k": "⛵ {0} ligger och väntar på bättre väder. Skepparen sover."
+ },
+ {
+  "i": 9536,
+  "f": "js/scenes/hamnen.js",
+  "k": "⚓ FISKEHAMNEN – fiskmarknad, båtaffär, färja till Solön och pir med fyr. Bussen hem står på hamnplanen."
+ },
+ {
+  "i": 9537,
+  "f": "js/scenes/hamnen.js",
+  "k": "BÅTAR, FISK OCH EN FÄRJA TILL SOLÖN"
+ }
+]
