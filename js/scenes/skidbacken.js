@@ -42,7 +42,7 @@ export function makeSkidbacken(A) {
   let VW = Math.max(384, Math.min(A.W || 384, TW)), VH = Math.max(160, Math.min(A.H || 216, TH));
   const from = A.skidFran || null; A.skidFran = null;
   let lage = 'dal';   // dal | lift | topp | slalom | pulka
-  const walker = createCityWalker({ W: TW, H: TH, left: 2, right: TW - 2, top: S.TOP, bottom: S.BOTTOM, spawn: [HALLPLATS.x + 16, HALLPLATS.y - 10] });
+  const walker = createCityWalker({ W: TW, H: TH, left: 2, right: TW - 2, top: S.TOP, bottom: S.BOTTOM, spawn: from?.lift ? [LIFTKO.x, LIFTKO.y] : [HALLPLATS.x + 16, HALLPLATS.y - 10] });
   walker.speed = GANG;
   walker.setObstacles(hinder('dal'));
   walker.snapFree();
@@ -80,6 +80,16 @@ export function makeSkidbacken(A) {
 
   // ---------- liften ----------
   function liftUpp() { if (lift) return; lift = { t: 0, dir: 1 }; lage = 'lift'; walker.stop(); play('slide'); toast($t('🚡 Stolen svänger ut över backen. Håll i bygeln!')); }
+  // 🚡 liftvärdsjobbet (js/jobs/jobb-lift.js): Lasse i luckan behöver rast – jobba ett pass eller åk upp
+  function liften() {
+    if (lift) return;
+    if (!A.jobReady?.('liftvard')) { liftUpp(); return; }
+    play('click');
+    openModal($t('🚡 Liften'), `<p style="font-size:var(--f2);margin-top:0">${$t('Liftvärd Lasse behöver en rast i luckan. Vill du jobba ett pass – kolla liftkorten och hjälpa barnen upp i stolen – eller åka upp till toppen?')}</p>`, [
+      { label: $t('🚡 Åk upp'), cls: 'btn-go', onClick: () => { closeModal(); liftUpp(); } },
+      { label: $t('💼 Jobba ett pass'), onClick: () => { closeModal(); A.skidFran = { buss: from?.buss || '', lift: true }; play('door'); A.startJob('liftvard'); } },
+    ]);
+  }
   function liftNer() { if (lift) return; lift = { t: 0, dir: -1 }; lage = 'lift'; walker.stop(); play('slide'); }
   function liftKlar() {
     const dir = lift.dir; lift = null;
@@ -172,7 +182,7 @@ export function makeSkidbacken(A) {
     { id: 'buss', r: [HALLPLATS.x - 12, HALLPLATS.y - 38, HALLPLATS.x + 14, HALLPLATS.y + 2], go: [HALLPLATS.x + 10, HALLPLATS.y - 8], label: $t('SKIDBUSSEN TILL STAN'), act: bussen },
     { id: 'varmestuga', ...dorr(VARMESTUGA), label: $t('VÄRMESTUGAN – CHOKLAD OCH VÅFFLOR'), act: varmestugan },
     { id: 'uthyrning', ...dorr(UTHYRNING), label: $t('SKIDUTHYRNINGEN'), act: uthyrningen },
-    { id: 'lift', r: [LIFT.x0 - 30, LIFT.y0 - 70, LIFT.x0 + 30, LIFT.y0 + 4], go: [LIFTKO.x, LIFTKO.y], label: $t('LIFTEN UPP TILL TOPPEN'), act: liftUpp },
+    { id: 'lift', r: [LIFT.x0 - 30, LIFT.y0 - 70, LIFT.x0 + 30, LIFT.y0 + 4], go: [LIFTKO.x, LIFTKO.y], label: $t('LIFTEN UPP TILL TOPPEN'), act: liften },
     { id: 'snogubbe', r: [SNOGUBBE.x - 14, SNOGUBBE.y - 50, SNOGUBBE.x + 14, SNOGUBBE.y + 2], go: [SNOGUBBE.x + 18, SNOGUBBE.y + 4], label: $t('SNÖGUBBEN'), act: () => toast($t('⛄ Snögubben Gösta har stått här sedan oktober. Moroten byts varje måndag.')) },
     { id: 'eld', r: [ELD.x - 14, ELD.y - 24, ELD.x + 14, ELD.y + 6], go: [ELD.x, ELD.y + 14], label: $t('ELDEN – VÄRM HÄNDERNA'), act: () => { const h = g.glad?.(1, $t('Värme vid elden'), 'skideld', 1) || 0; g.energy = Math.min(100, (g.energy || 0) + 4); toast($t('🔥 Du håller händerna över elden. Vantarna ångar. +4 ⚡') + (h ? ` +${h} 😊` : ''), 'good'); } },
     { id: 'skylt', r: [SKYLT.x - 30, SKYLT.y - 48, SKYLT.x + 30, SKYLT.y], go: [SKYLT.x + 14, SKYLT.y + 6], label: $t('SKIDBACKEN'), act: () => toast($t('⛷️ SKIDBACKEN – hyr skidor eller pulka, ta liften upp och åk ner. Värmestugan har choklad. Bussen hem står här.')) },

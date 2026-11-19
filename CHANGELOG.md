@@ -10,6 +10,10 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.160.0] – 2026-11-19 – Liftvärden – jobbet i Skidbackens dalstation
+- 🚡 LIFTVÄRD I SKIDBACKEN: liften i dalen frågar nu om du vill åka upp eller jobba ett pass i luckan vid vändkorset. Gästerna kommer i kö med skidorna på och håller upp sina liftkort – namn, foto, dagkort/veckokort/säsongskort och vilken dag det gäller. Stämmer dagen och fotot släpper du in, annars STOPP: gamla kort, kort som inte gäller än och lånade kort med fel ansikte på fotot.
+- Rätt beslut ger lön, fel ger avdrag och den som får vänta för länge smiter förbi. Vart och vartannat barn behöver hjälp upp i stolen – klicka HJÄLP UPP när stolen är i det gröna fältet, annars plums eller missad stol. Åtta rätt i rad ger GULDVANTEN med bonus. Stolarna går upp mot toppen bakom dig hela passet, och lönen följer vanan som alla andra jobb.
+
 ## [0.159.0] – 2026-11-19 – Garageloppisen på Äppelvägen 9 – pruta eller sälj hos familjen Rosén
 - 🧸 GARAGELOPPISEN på Äppelvägen 9 i Villaområdet (10–18): familjen Rosén har burit ut allt ur garaget – golvlampan med fransar, den gamla radion, skridskorna, deckarna, nallen med ett öga, farmors blå vas, barncykeln och tavlan med älgen – och grannarna kommer med bud. Prislappen visar riktvärdet, kunden säger sitt bud: SÅLT tar det, PRUTA ber om mer. Varje prut höjer budet men också risken att kunden tröttnar och går.
 - Sålt till minst 80 % av riktvärdet är en bra affär och ger lön, under 50 % är bortslumpat med avdrag, och den som går utan att köpa räknas som missad. Fem bra affärer i rad gör dig till LOPPISKUNGEN med bonus. Kassan räknas upp på bordet, vimplarna fladdrar och det rosa huset står med garageporten uppvikt. Villaområdets tre sommarjobb är därmed klara: gräsklippning, lemonad och loppis.

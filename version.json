@@ -1,7 +1,7 @@
 {
-  "version": "0.159.0",
+  "version": "0.160.0",
   "date": "2026-11-19",
-  "title": "Garageloppisen på Äppelvägen 9 – pruta eller sälj hos familjen Rosén",
+  "title": "Liftvärden – jobbet i Skidbackens dalstation",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
@@ -148,6 +148,7 @@
     "js/jobs/jobb-kafe.js",
     "js/jobs/jobb-kok.js",
     "js/jobs/jobb-lemonad.js",
+    "js/jobs/jobb-lift.js",
     "js/jobs/jobb-loppis.js",
     "js/jobs/jobb-pizzeria.js",
     "js/jobs/jobb-posten.js",
