@@ -1,7 +1,7 @@
 {
-  "version": "0.142.0",
+  "version": "0.143.0",
   "date": "2026-11-19",
-  "title": "Gamla stan",
+  "title": "Teatern – skådespelarjobbet",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
@@ -134,6 +134,7 @@
     "js/jobs/jobb-kok.js",
     "js/jobs/jobb-pizzeria.js",
     "js/jobs/jobb-posten.js",
+    "js/jobs/jobb-teater.js",
     "js/jobs/jobb-truck.js",
     "js/jobs/jobb-tvatt.js",
     "js/jobs/jobb-vard.js",

@@ -164,6 +164,8 @@ export const JOBS = {
   kok: { id: 'kok', icon: '🍳', name: $t('Burgarköket'), verb: $t('Bygg rätterna som beställs i köket'), wage: 11, oops: 5 },
   // de utbildade jobben i downtown: kraver = kursen på Pixelhögskolan som måste vara klar
   datorbygge: { id: 'datorbygge', icon: '🖥️', name: $t('Pixel Data'), verb: $t('Bygg datorerna precis som beställningen säger'), wage: 12, oops: 6, bonus: 25, bonusPer: $t('färdig dator'), boxLabel: $t('🖥️ Färdiga datorer'), kraver: 'datorteknik' },
+  // 🎭 Teatern i Gamla stan (v5): poserna regissören ropar – tillbaka till Gamla stan efter passet (js/jobs/jobb-teater.js)
+  teater: { id: 'teater', icon: '🎭', name: $t('Teatern'), verb: $t('Gör poserna som regissören ropar – innan publiken tröttnar'), wage: 12, oops: 6, missOops: 4, missPer: $t('missad replik'), bonus: 30, bonusPer: $t('stående ovation'), boxLabel: $t('👏 Stående ovationer'), back: 'gamlastan' },
   finans: { id: 'finans', icon: '📈', name: $t('Finanshuset'), verb: $t('Köp och sälj aktierna åt kunderna i rätt läge'), wage: 26, oops: 12, kraver: 'ekonomi' },
 };
 // Pixelhögskolan (universitetet i downtown). En kurs = terminsavgift → föreläsningar

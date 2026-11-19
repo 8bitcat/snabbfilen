@@ -10,6 +10,10 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.143.0] – 2026-11-19 – Teatern – skådespelarjobbet
+- 🎭 TEATERN i Gamla stan har öppnat – med skådespelarjobbet! Du står mitt på scenen i strålkastarljuset, Regissör Rut ropar från kulissen – BUGA, VINKA, JUBLA eller SNURRA – och du gör posen innan hennes tålamod tar slut (knapparna eller 1–4).
+- Rätt pose ger applåder och lön, fel eller för sent ger BUUU och en tomat från salongen. Tio rätt i rad = stående ovationer med bonus. Takten ökar ju vanare du blir, och efter passet står du utanför teatern igen.
+
 ## [0.142.0] – 2026-11-19 – Gamla stan
 - 🏛️ GAMLA STAN – stadens äldsta kvarter, en ny plats dit gamla bussen går från vilken hållplats som helst. Kullersten hela vägen, gamla hus vägg i vägg i ockra, rosa och kalkvitt med korsvirke, trappgavlar, luckor och blomlådor: Stadsporten med klockan, Biblioteket, Antikaffären, Gamla Kaféet, Valvet, Museet, Guldsmeden, Teatern, Lyktmakaren och bostadshusen. Dörrarna berättar vad som öppnar härnäst.
 - Stortorget med brunnen – släng en krona och önska dig något – gatumusikanten med dragspelet, stadsguiden, duvorna som lyfter när du kommer nära, och på kvällen sagostunden på bänken.

@@ -56,7 +56,8 @@ export function makeGamlastan(A) {
   const g = A.game;
   let VW = Math.max(384, Math.min(A.W || 384, TW)), VH = Math.max(160, Math.min(A.H || 216, TH));
   const from = A.gamlaFran || null; A.gamlaFran = null;
-  const walker = createCityWalker({ W: TW, H: TH, left: 2, right: TW - 2, top: G.TOP, bottom: G.BOTTOM, spawn: [HALLPLATS.x - 26, HALLPLATS.y - 14] });
+  const dorrVid = (id) => [(HUS[id].door.x0 + HUS[id].door.x1) / 2, G.BASE + 10];
+  const walker = createCityWalker({ W: TW, H: TH, left: 2, right: TW - 2, top: G.TOP, bottom: G.BOTTOM, spawn: from?.teater ? dorrVid('teater') : [HALLPLATS.x - 26, HALLPLATS.y - 14] });
   const fordon = () => g.aker;
   const applyRide = () => { const F = fordon(); walker.speed = GANG * (F ? F.fart : 1); };
   applyRide();
@@ -68,7 +69,7 @@ export function makeGamlastan(A) {
   const cam = { x: 0, y: 0 };
   const camTarget = () => { const S = synligRuta(VH); return { x: Math.max(0, Math.min(TW - VW, walker.px - VW / 2)), y: Math.max(0, Math.min(Math.max(0, TH - S.y1), walker.py - S.y0 - S.h * (S.h < VH - 8 ? 0.72 : 0.8))) }; };
   Object.assign(cam, camTarget());
-  if (!A.attract) { const h = g.glad?.(2, '', 'gamlastan', 2); if (h) setTimeout(() => toast($t`🏛️ Gamla stan – kullersten och lyktor! +${h} 😊`, 'good'), 900); }
+  if (!A.attract && !from?.teater) { const h = g.glad?.(2, '', 'gamlastan', 2); if (h) setTimeout(() => toast($t`🏛️ Gamla stan – kullersten och lyktor! +${h} 😊`, 'good'), 900); }
   let pets = null;
   try { pets = createPetWalk(A); } catch (e) { console.error('husdjuren i Gamla stan startade inte:', e); }
   const hour = () => g.min / 60;
@@ -113,8 +114,10 @@ export function makeGamlastan(A) {
   // ---------- platserna man kan klicka på ----------
   const dorr = (id) => { const h = HUS[id]; return { r: [h.door.x0 - 4, G.BASE - 40, h.door.x1 + 4, G.BASE], go: [(h.door.x0 + h.door.x1) / 2, G.BASE + 8] }; };
   const knacka = (id) => () => { const h = HUS[id]; play('knock'); const rad = DORR_RAD[h.typ === 'bostad' ? 'bostad' : id] || DORR_RAD.bostad; talk.say(Array.isArray(rad) ? rad[(h.x / 7 | 0) % rad.length] : rad, () => ({ x: (h.door.x0 + h.door.x1) / 2, y: G.BASE - 52 }), 4.5, { silent: true }); };
+  // 🎭 Teatern: skådespelarjobbet (js/jobs/jobb-teater.js) – efter passet kommer man tillbaka hit, till teaterdörren
+  const teatern = () => { if (!A.jobReady?.('teater')) { knacka('teater')(); return; } A.gamlaFran = { teater: true, buss: from?.buss || '' }; play('door'); A.startJob('teater'); };
   const spots = () => [
-    ...HUSLISTA.map((id) => ({ id, ...dorr(id), label: HUS[id].namn || $t('BOSTADSHUS'), act: knacka(id) })),
+    ...HUSLISTA.map((id) => ({ id, ...dorr(id), label: id === 'teater' ? $t('TEATERN – SKÅDESPELARJOBBET') : HUS[id].namn || $t('BOSTADSHUS'), act: id === 'teater' ? teatern : knacka(id) })),
     { id: 'brunn', r: [BRUNN.x - 20, BRUNN.y - 44, BRUNN.x + 20, BRUNN.y + 8], go: [BRUNN.x, BRUNN.y + 16], label: $t('BRUNNEN – SLÄNG EN KRONA'), act: brunnen },
     { id: 'musikant', r: [MUSIKANT.x - 10, MUSIKANT.y - 34, MUSIKANT.x + 10, MUSIKANT.y + 2], go: [MUSIKANT.x - 16, MUSIKANT.y + 4], label: $t('GATUMUSIKANTEN – GE EN SLANT'), act: musiken },
     { id: 'guide', r: [guide.x - 8, guide.y - 34, guide.x + 8, guide.y + 2], go: [guide.x + 14, guide.y + 2], label: $t('STADSGUIDEN'), act: () => talk.say(GUIDE_RAD[guide.k++ % GUIDE_RAD.length], () => ({ x: guide.x, y: guide.y - 36 }), 4.5, { voice: guide.look }) },
