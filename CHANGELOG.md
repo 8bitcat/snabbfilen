@@ -10,6 +10,12 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.162.0] – 2026-11-21 – 🧸 Dockskåpet – lekläget med hela möbelkatalogen
+- 🧸 **Dockskåpet** – ett nytt lekläge på första sidan: ett eget hus med fem rum (vardagsrum, kök, barnrum, sovrum, badrum) som du möblerar fritt. Hela möbelkatalogen ligger i lådan, gratis.
+- Allt dras med fingret: från lådan in i rummet, mellan rummen och upp på borden. Ett kort tryck på en möbel vrider, byter modell, målar om, tänder brasan eller tar bort.
+- 🌙 Natt tänder lamporna och mörklägger rummen. Huset sparas för sig – spelet står still medan du leker.
+- Kommande: figurerna, husdjuren och deras prylar, lösa saker som mat och leksaker.
+
 ## [0.161.1] – 2026-11-19 – Vattenlandets prov följer badvaktstornets fråga
 - Vattenlandets prov följer badvaktstornets fråga (prata eller jobba) – ingen ändring i spelet.
 

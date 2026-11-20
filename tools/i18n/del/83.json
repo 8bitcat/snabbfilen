@@ -1,0 +1,127 @@
+[
+ {
+  "i": 10161,
+  "f": "js/core/menu.js",
+  "k": "Möblera ett eget hus och lek fritt – hela katalogen, gratis"
+ },
+ {
+  "i": 10162,
+  "f": "js/core/menu.js",
+  "k": "🧸 Dockskåpet"
+ },
+ {
+  "i": 10163,
+  "f": "js/main.js",
+  "k": "🧸 leker i Dockskåpet"
+ },
+ {
+  "i": 10164,
+  "f": "js/scenes/dockskap.js",
+  "k": "Vardagsrum"
+ },
+ {
+  "i": 10165,
+  "f": "js/scenes/dockskap.js",
+  "k": "Kök"
+ },
+ {
+  "i": 10166,
+  "f": "js/scenes/dockskap.js",
+  "k": "Sovrum"
+ },
+ {
+  "i": 10167,
+  "f": "js/scenes/dockskap.js",
+  "k": "Barnrum"
+ },
+ {
+  "i": 10168,
+  "f": "js/scenes/dockskap.js",
+  "k": "Badrum"
+ },
+ {
+  "i": 10169,
+  "f": "js/scenes/dockskap.js",
+  "k": "Kontor"
+ },
+ {
+  "i": 10170,
+  "f": "js/scenes/dockskap.js",
+  "k": "Hall"
+ },
+ {
+  "i": 10171,
+  "f": "js/scenes/dockskap.js",
+  "k": "Väggen"
+ },
+ {
+  "i": 10172,
+  "f": "js/scenes/dockskap.js",
+  "k": "Jul"
+ },
+ {
+  "i": 10173,
+  "f": "js/scenes/dockskap.js",
+  "k": "Spök"
+ },
+ {
+  "i": 10174,
+  "f": "js/scenes/dockskap.js",
+  "k": "Rummet är fullt – ta bort något först."
+ },
+ {
+  "i": 10175,
+  "f": "js/scenes/dockskap.js",
+  "k": "Dra möbeln dit du vill ha den – även in i ett annat rum. Här vrider, målar och byter du den."
+ },
+ {
+  "i": 10176,
+  "f": "js/scenes/dockskap.js",
+  "k": "🔄 Vrid"
+ },
+ {
+  "i": 10177,
+  "f": "js/scenes/dockskap.js",
+  "k": "🔁 Byt modell"
+ },
+ {
+  "i": 10178,
+  "f": "js/scenes/dockskap.js",
+  "k": "🔥 Släck"
+ },
+ {
+  "i": 10179,
+  "f": "js/scenes/dockskap.js",
+  "k": "🔥 Tänd"
+ },
+ {
+  "i": 10180,
+  "f": "js/scenes/dockskap.js",
+  "k": "🗑 Ta bort"
+ },
+ {
+  "i": 10181,
+  "f": "js/scenes/dockskap.js",
+  "k": "Dockskåpet"
+ },
+ {
+  "i": 10182,
+  "f": "js/scenes/dockskap.js",
+  "k": "🌙 Natt"
+ },
+ {
+  "i": 10183,
+  "f": "js/scenes/dockskap.js",
+  "k": "Tillbaka till menyn"
+ },
+ {
+  "i": 10184,
+  "f": "js/scenes/dockskap.js",
+  "k": "⬅ Tillbaka"
+ },
+ {
+  "i": 10185,
+  "f": "js/scenes/dockskap.js",
+  "k": "Tryck i rummet där den ska stå – eller dra den dit."
+ }
+]

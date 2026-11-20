@@ -220,6 +220,7 @@ const DOOR_SCENES = [
   ['jobblemonad', './jobs/jobb-lemonad.js', 'makeJobbLemonad'],   // 🍋 Lemonadståndet i Villaområdet
   ['jobbloppis', './jobs/jobb-loppis.js', 'makeJobbLoppis'],   // 🧸 Garageloppisen i Villaområdet
   ['jobblift', './jobs/jobb-lift.js', 'makeJobbLift'],   // 🚡 Liftvärden i Skidbacken
+  ['dockskap', './scenes/dockskap.js', 'makeDockskap'],   // 🧸 Dockskåpet: lekläget från huvudmenyn (A.openDockskap)
 ];
 const DOOR_STATE = {};   // namn → 'laddar' | 'klar' | 'fel'
 for (const [n, file, fn] of DOOR_SCENES) {
@@ -233,6 +234,7 @@ for (const [n, file, fn] of DOOR_SCENES) {
   // modulen klar → scenen; annars en tom väntescen som byter till den riktiga när den laddats
   SCENES[n] = (a, o) => (make ? make(a, o) : {
     t: 0,
+    dockskap: n === 'dockskap',   // (spelklockan står still redan medan Dockskåpet laddas)
     update(dt) {
       this.t += dt;
       if (make) a.go(n, o);
@@ -585,7 +587,7 @@ const PLACE_AWAY = {
 // ställena bakom stadens dörrar (DOOR_SCENES) – bara där ingen text redan finns
 for (const [k, v] of Object.entries({ bank: $t('🏦 på banken'), elektronik: $t('📱 i elektronikbutiken'), frisor: $t('💈 hos frisören'), skor: $t('👟 i skobutiken'),
   accessoarer: $t('👜 i accessoarbutiken'), bio: $t('🎬 på bion'), kebab: $t('🥙 på kebaben'), pantbank: $t('💍 på pantbanken'), universitet: $t('🎓 på Pixelhögskolan'),
-  jobbdatorbygge: $t('🖥️ bygger datorer på Pixel Data'), jobbfinans: $t('📈 handlar aktier på Finanshuset'), jobbteater: $t('🎭 står på scenen på Teatern'), bibliotek: $t('📚 på Biblioteket'), djurparken: $t('🦁 i Djurparken'), jobbdjur: $t('🦁 matar djuren i Djurparken'), hamnen: $t('⚓ i Fiskehamnen'), stuga: $t('🏡 i Röda stugan på Solön'), arenan: $t('🏟️ på Arenan'), skidbacken: $t('⛷️ i Skidbacken'), vattenlandet: $t('🌊 i Vattenlandet'), matchdag: $t('⚽ på läktaren på Pixel Arena'), jobbgras: $t('🌿 klipper gräs i Villaområdet'), jobbfisk: $t('🐟 säljer fisk på Fiskmarknaden'), museum: $t('🏛️ på Museet'), simhall: $t('🏊 i Simhallen'), jobblemonad: $t('🍋 säljer lemonad i Villaområdet'), jobbloppis: $t('🧸 säljer på garageloppisen i Villaområdet'), jobblift: $t('🚡 jobbar i liften i Skidbacken'), jobbbadvakt: $t('🛟 sitter i badvaktstornet i Vattenlandet'), koket: $t('🍳 lagar mat hemma'), tradgard: $t('🌱 i trädgården'), fordon: $t('🔧 i garaget'), maskerad: $t('🎃 i maskeradbutiken'), sjoboden: $t('🐟 på Sjöboden'), bling: $t('💎 på BLING BLING'), jobbtruck: $t('🚚 står i sin foodtruck'), landet: $t('🌾 ute på landet'), hopp: $t('🏇 hoppar på hinderbanan'), tassbacken: $t('🐾 i Tassbacken'), solon: $t('⛴️ på Solön'), pixelberg: $t('🎡 på tivolit på Pixelberg'), gamlastan: $t('🏛️ i Gamla stan'), trimmaren: $t('✂️ i djurtrimmaren'), utstallning: $t('🏆 på utställningen i Tassbacken'), kaninhopp: $t('🐇 tävlar i kaninhoppning'), kattcafe: $t('☕ fikar på kattcaféet'), djurhem: $t('🏡 på djurhemmet'), djurklinik: $t('🩺 hos veterinären'), agility: $t('🐕 springer agility') })) PLACE_AWAY[k] ??= v;
+  jobbdatorbygge: $t('🖥️ bygger datorer på Pixel Data'), jobbfinans: $t('📈 handlar aktier på Finanshuset'), jobbteater: $t('🎭 står på scenen på Teatern'), bibliotek: $t('📚 på Biblioteket'), djurparken: $t('🦁 i Djurparken'), jobbdjur: $t('🦁 matar djuren i Djurparken'), hamnen: $t('⚓ i Fiskehamnen'), stuga: $t('🏡 i Röda stugan på Solön'), arenan: $t('🏟️ på Arenan'), skidbacken: $t('⛷️ i Skidbacken'), vattenlandet: $t('🌊 i Vattenlandet'), matchdag: $t('⚽ på läktaren på Pixel Arena'), jobbgras: $t('🌿 klipper gräs i Villaområdet'), jobbfisk: $t('🐟 säljer fisk på Fiskmarknaden'), museum: $t('🏛️ på Museet'), simhall: $t('🏊 i Simhallen'), jobblemonad: $t('🍋 säljer lemonad i Villaområdet'), jobbloppis: $t('🧸 säljer på garageloppisen i Villaområdet'), jobblift: $t('🚡 jobbar i liften i Skidbacken'), jobbbadvakt: $t('🛟 sitter i badvaktstornet i Vattenlandet'), dockskap: $t('🧸 leker i Dockskåpet'), koket: $t('🍳 lagar mat hemma'), tradgard: $t('🌱 i trädgården'), fordon: $t('🔧 i garaget'), maskerad: $t('🎃 i maskeradbutiken'), sjoboden: $t('🐟 på Sjöboden'), bling: $t('💎 på BLING BLING'), jobbtruck: $t('🚚 står i sin foodtruck'), landet: $t('🌾 ute på landet'), hopp: $t('🏇 hoppar på hinderbanan'), tassbacken: $t('🐾 i Tassbacken'), solon: $t('⛴️ på Solön'), pixelberg: $t('🎡 på tivolit på Pixelberg'), gamlastan: $t('🏛️ i Gamla stan'), trimmaren: $t('✂️ i djurtrimmaren'), utstallning: $t('🏆 på utställningen i Tassbacken'), kaninhopp: $t('🐇 tävlar i kaninhoppning'), kattcafe: $t('☕ fikar på kattcaféet'), djurhem: $t('🏡 på djurhemmet'), djurklinik: $t('🩺 hos veterinären'), agility: $t('🐕 springer agility') })) PLACE_AWAY[k] ??= v;
 function placeOf(p, info) {
   const s = String(p.scene || 'away');
   if (s === 'city') return $t('🏙️ i staden');
@@ -891,6 +893,14 @@ function boot() {
     } else begin();
   };
   const backToMenu = () => { A.attract = true; fit(); A.go('city'); openMenu(A, { onStart: start }); };
+  // 🧸 Dockskåpet (js/scenes/dockskap.js): från huvudmenyn (innan spelet börjat) eller pausmenyn,
+  // och tillbaka dit man kom ifrån – menyn, eller rummet/staden man stod i
+  A.openDockskap = () => { A.dockBack = { attract: !!A.attract, scene: A.sceneName }; A.attract = false; fit(); A.go('dockskap'); };
+  A.leaveDockskap = () => {
+    const b = A.dockBack || { attract: true }; A.dockBack = null;
+    if (b.attract || !A.game) { backToMenu(); return; }
+    A.go(b.scene && b.scene !== 'dockskap' && SCENES[b.scene] ? b.scene : 'room');
+  };
   mountMenuButton(A);
   mountChat(A);
   mountMobilen(A); // 📱 mobilen nere till höger – raden överst visar bara mätarna (Carl 2026-10-10)
@@ -947,7 +957,7 @@ function tick(now) {
   const dt = Math.min(0.05, (now - last) / 1000);
   last = now;
   if (A.scene) {
-    if (!modalOpen() && !isMenuOpen() && !A.sceneName.startsWith('jobb') && A.sceneName !== 'koket') {   // (i köket räknar Game.cook tiden)
+    if (!modalOpen() && !isMenuOpen() && !A.sceneName.startsWith('jobb') && A.sceneName !== 'koket' && !A.scene.dockskap) {   // (i köket räknar Game.cook tiden; i Dockskåpet står spelet still)
       A.game.tickReal(dt);
       if (worldFolksHere(A).length) A.game.kompisTid(dt * REALTIME_RATE);              // kompisar i närheten gör en glad
     }
@@ -973,7 +983,7 @@ function tick(now) {
     } else {
       A.scene.draw(ctx);
     }
-    if (isPixHud() && !A.attract) drawPixHud(ctx, A);
+    if (isPixHud() && !A.attract && !A.scene.dockskap) drawPixHud(ctx, A);
   }
   renderHud();
   checkCollapse();

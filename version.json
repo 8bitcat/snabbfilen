@@ -1,7 +1,7 @@
 {
-  "version": "0.161.1",
-  "date": "2026-11-19",
-  "title": "Vattenlandets prov följer badvaktstornets fråga",
+  "version": "0.162.0",
+  "date": "2026-11-21",
+  "title": "🧸 Dockskåpet – lekläget med hela möbelkatalogen",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
@@ -210,6 +210,7 @@
     "js/scenes/bling/dream.js",
     "js/scenes/city.js",
     "js/scenes/djurparken.js",
+    "js/scenes/dockskap.js",
     "js/scenes/gamlastan.js",
     "js/scenes/hamnen.js",
     "js/scenes/hopp.js",

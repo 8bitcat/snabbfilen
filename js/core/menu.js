@@ -130,6 +130,7 @@ function render() {
     <div class="menu-btns">
       <button class="btn btn-go menu-main" data-new>${$t('🆕 Nytt spel')}</button>
       <button class="btn menu-main ${canContinue ? 'btn-gold' : ''}" data-continue ${canContinue ? '' : 'disabled'}>${contLabel}</button>
+      <button class="btn menu-main" data-dockskap title="${$t('Möblera ett eget hus och lek fritt – hela katalogen, gratis')}">${$t('🧸 Dockskåpet')}</button>
       <button class="btn menu-main" data-settings>${$t('⚙ Inställningar')}${showSettings ? ' ▲' : ''}</button>
     </div>
     <div class="menu-settings ${showSettings ? '' : 'hidden'}">
@@ -151,6 +152,8 @@ function render() {
   root.querySelector('[data-new]').onclick = () => { play('click'); newGame(); };
   root.querySelector('[data-continue]').onclick = () => { if (sel) { play('click'); startWith(sel); } };
   root.querySelector('[data-settings]').onclick = () => { play('click'); showSettings = !showSettings; render(); };
+  // 🧸 Dockskåpet (js/scenes/dockskap.js): lekläget, utan att starta spelet
+  root.querySelector('[data-dockskap]').onclick = () => { play('click'); close(); A?.openDockskap?.(); };
   root.querySelector('[data-news]').onclick = () => openNews();
   root.querySelector('[data-sound]')?.addEventListener('click', () => { const m = toggleMute(); musicTick(); const b = document.getElementById('hud-mute'); if (b) b.textContent = m ? '🔇' : '🔊'; render(); });
   root.querySelector('[data-music]')?.addEventListener('click', () => { setMusic(!isMusicOn()); play('click'); render(); });

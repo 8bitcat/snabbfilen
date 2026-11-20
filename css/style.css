@@ -113,6 +113,40 @@ canvas { image-rendering: pixelated; display: block; }
 /* Möblera-läget: förrådspanelen (168 px + 14 px kant + skugga) ligger fixed till höger –
    #app lämnar plats så att canvasen (fit() i main.js) aldrig hamnar under den */
 @media (min-width: 700px) { body.decor-on #app { padding-right: 192px; } }
+/* 🧸 Dockskåpet (js/scenes/dockskap.js): lådan med hela katalogen – till höger som Möblera-panelen,
+   på en smal skärm en remsa längst ner. Spelets mätare, mobilen och knapparna göms medan man leker. */
+#dock-panel { position: fixed; right: 14px; top: 60px; bottom: 60px; width: 168px; z-index: 45;
+  background: var(--paper); border: 3px solid var(--ink); box-shadow: 5px 5px 0 var(--ink);
+  display: flex; flex-direction: column; }
+#dock-panel .dp-head { display: flex; justify-content: space-between; align-items: center; gap: 4px; background: var(--red); color: #fff; font: var(--f2) var(--head); padding: 4px 6px; border-bottom: 3px solid var(--ink); }
+#dock-panel .dock-rum { display: flex; gap: 2px; }
+#dock-panel .dock-rum .btn { padding: 1px 3px; font-size: var(--f1); }
+#dock-panel .dock-flikar { display: flex; flex-wrap: wrap; gap: 3px; padding: 5px 6px; border-bottom: 3px solid var(--ink); background: var(--paper2); }
+#dock-panel .dock-flikar .btn { padding: 2px 5px; }
+#dock-items { flex: 1; overflow-y: auto; padding: 6px; display: grid; grid-template-columns: 1fr 1fr; gap: 4px; align-content: start; }
+.dock-item { display: grid; justify-items: center; align-content: center; gap: 2px; font: var(--f1) var(--font); line-height: 1; background: #fff;
+  border: 2px solid var(--ink); padding: 3px 2px; cursor: grab; touch-action: pan-y; min-height: 62px; min-width: 0; }
+.dock-item canvas { image-rendering: pixelated; max-width: 100%; }
+.dock-item small { font-size: 9px; line-height: 1; text-align: center; max-width: 100%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.dock-item:hover { background: #fffbe8; }
+.dock-item.on { background: #fff4c7; outline: 3px solid var(--gold); outline-offset: -1px; }
+#dock-panel .dp-foot { display: flex; gap: 6px; padding: 6px; border-top: 3px solid var(--ink); background: var(--paper2); }
+#dock-panel .dp-foot .btn { flex: 1; }
+.dock-meny { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: center; }
+.dock-meny canvas { image-rendering: pixelated; }
+body.dock-on #hud > :not(.hud-btns), body.dock-on #hudpix, body.dock-on #mobilen, body.dock-on #mobilen-skugga, body.dock-on #hud-mobil, body.dock-on #hud-snabb,
+body.dock-on #emotes, body.dock-on #decor-btn, body.dock-on #decor-panel, body.dock-on #chat { display: none !important; }
+body.menu-open #dock-panel { display: none !important; }
+@media (min-width: 700px) { body.dock-on #app { padding-right: 192px; } }
+@media (max-width: 699px) {
+  #dock-panel { right: 0; left: 0; top: auto; bottom: 0; width: auto; height: 164px; border-width: 3px 0 0; box-shadow: none; }
+  #dock-panel .dp-head { padding: 2px 6px; font-size: var(--f1); }
+  #dock-panel .dock-flikar { flex-wrap: nowrap; overflow-x: auto; padding: 3px 6px; }
+  #dock-items { grid-auto-flow: column; grid-template-rows: 1fr; grid-template-columns: none; grid-auto-columns: 58px; overflow-x: auto; overflow-y: hidden; padding: 4px 6px; }
+  .dock-item { touch-action: pan-x; min-height: 0; }
+  #dock-panel .dp-foot { padding: 4px 6px; }
+  body.dock-on #app { padding-bottom: 164px; }
+}
 #scene { touch-action: none; box-shadow: 0 0 0 3px #000; }
 
 /* ---------- Knappar ---------- */

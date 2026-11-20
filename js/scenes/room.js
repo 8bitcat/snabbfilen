@@ -71,11 +71,12 @@ function petFoot(k) {
 
 const WALK_SEQ = [1, 3, 2, 3];
 const CARRY_SEQ = [7, 9, 8, 9];     // bär-bildrutorna (matsäcken till skålen)
-const FW = 384, FH = 216;
-const WALL_Y = 86;
-const WALL_TOP = 8;                 // väggsaker får inte hänga högre än så (ovanför är taklisten)
-const DOOR = { x0: 28, x1: 62, cx: 45 };
-const RUG = { w: 90, h: 48 };
+// (måtten, möbelbilderna och ritfunktionerna nedan exporteras också till 🧸 Dockskåpet, js/scenes/dockskap.js)
+export const FW = 384, FH = 216;
+export const WALL_Y = 86;
+export const WALL_TOP = 8;                 // väggsaker får inte hänga högre än så (ovanför är taklisten)
+export const DOOR = { x0: 28, x1: 62, cx: 45 };
+export const RUG = { w: 90, h: 48 };
 const WIN_Y = [17, 49];             // fönstrens glas (över-/underkant); takvåningen har högre fönster
 // sant mellan två delrum i samma bostad (dörren i bakväggen) – då är man inte "hemkommen"
 let hopping = false;
@@ -373,22 +374,22 @@ const solidH = (k, fh) => (SOLID_LOW.has(k) ? Math.round(fh * 0.5) : Math.min(13
 const FRAME_AS = { receptbok: 'laspulpet' };
 const frameOf = (k, v) => { const kk = FRAME_AS[k] || k; return FRAMES[kk + (v | 0)] || FRAMES[kk + '0']; };
 const frameName = (k, v) => { const kk = FRAME_AS[k] || k; return FRAMES[kk + (v | 0)] ? kk + (v | 0) : kk + '0'; };
-const isWall = (k) => !!katalogOf(k)?.wall;
+export const isWall = (k) => !!katalogOf(k)?.wall;
 // mattor ur arken: ligger platt på golvet, går att gå på, ritas under allt
-const isFlat = (k) => k !== 'matta' && /matta$/.test(k);
+export const isFlat = (k) => k !== 'matta' && /matta$/.test(k);
 // Småsaker som får stå PÅ bord, bänkar, byråer och låga hyllor: ställs de över en skiva hamnar
 // de uppe på den. Posten får då up = hur många pixlar ovanför sin sorteringslinje (skivans
 // fotlinje + 1) saken står – den ritas direkt efter bordet, har inget fotavtryck på golvet och
 // följer med när bordet flyttas. Försvinner bordet (förrådet, sålt) hamnar saken på golvet där.
-const ON_TABLE = new Set(['bordslampa', 'brodrost', 'fruktskal', 'kaffebryggare', 'tarta', 'mikro', 'telefon', 'dator', 'laptop', 'ljus',
+export const ON_TABLE = new Set(['bordslampa', 'brodrost', 'fruktskal', 'kaffebryggare', 'tarta', 'mikro', 'telefon', 'dator', 'laptop', 'ljus',
   'ljusgrupp', 'lillblomma', 'blomkruka', 'julljus', 'julfigur', 'spelkonsol', 'retrotv', 'minigran', 'bokstapel', 'parmar', 'nattlampa',
   'gosedjur', 'gosegroda', 'byggklossar', 'palett', 'fredslilja', 'skivor', 'julklapp', 'datortorn', 'basketboll']);
-const SURFACES = new Set(['bordR', 'byra', 'bordM', 'sidobord', 'pelarbord', 'laghylla', 'soffbord', 'glasbord', 'tvbank', 'nattduksbord',
+export const SURFACES = new Set(['bordR', 'byra', 'bordM', 'sidobord', 'pelarbord', 'laghylla', 'soffbord', 'glasbord', 'tvbank', 'nattduksbord',
   'kista', 'lagbyra', 'rullbord', 'koksbord', 'bankskap', 'diskbank', 'kokso', 'badbank', 'barnbord', 'skolbank', 'skrivbord', 'arbetsbank',
   'skobank', 'piano', 'bredhylla', 'leksakslada', 'backar']);
 const TOP_IN = 4; // sakerna ställs så här många rader in på skivan (räknat från dess överkant i bilden)
 const TOP_ROW = new Map(); // vyns rutnamn → raden i bilden där sakernas fötter står (null = atlasen inte laddad)
-function surfaceRow(k, v, r) {
+export function surfaceRow(k, v, r) {
   const vw = viewOf(k, v, r), name = frameName(vw.k, vw.v);
   if (TOP_ROW.has(name)) return TOP_ROW.get(name);
   const f = frameOf(vw.k, vw.v);
@@ -485,7 +486,7 @@ export function furnBaseColor(k, v) {
   return f && ATLAS?.complete ? spriteBaseColor(ATLAS, f, TINT_HINT[frameName(k, v)]) : null;
 }
 // möbelns mått i rotationsläge r
-function dimsOf(k, v, r) {
+export function dimsOf(k, v, r) {
   if (k === 'matta') return { w: RUG.w, h: RUG.h };
   if (k === 'vaxt') return { w: 20, h: 52 };
   const vw = viewOf(k, v, r);
@@ -494,7 +495,7 @@ function dimsOf(k, v, r) {
 }
 // Fotavtrycket för en möbel med vänsterkant x och fotlinje y (mattan: överkant y):
 // { t: 'wall' | 'flat' | 'solid', r: [x0, y0, x1, y1], w, h }
-function footOf(k, v, r, x, y) {
+export function footOf(k, v, r, x, y) {
   const { w, h } = dimsOf(k, v, r);
   if (isWall(k)) return { t: 'wall', r: [x, y - h, x + w, y], w, h };
   if (k === 'matta') return { t: 'flat', r: [x, y, x + w, y + h], w, h };
@@ -1594,7 +1595,7 @@ export function renderHomePreview(A, homeId, sub = 0, { night = false } = {}) {
 
 // ---------- sprite-props ----------
 // En golvmöbel ur atlasen i sin rotationsvy: x = vänsterkant, y = fotlinje.
-function spriteProp(d, decoIdx, sign) {
+export function spriteProp(d, decoIdx, sign) {
   const vw = viewOf(d.k, d.v, d.r);
   const f = frameOf(vw.k, vw.v);
   if (!f) return null;
@@ -1695,7 +1696,7 @@ function spreadPlates(props, avoid = [], right = FW) {
   }
 }
 // väggsak: hänger på bakväggen med underkant y, inget hinder
-function wallProp(d, decoIdx) {
+export function wallProp(d, decoIdx) {
   const vw = viewOf(d.k, d.v, d.r);
   const f = frameOf(vw.k, vw.v);
   if (!f) return null;
@@ -1717,7 +1718,7 @@ function wallProp(d, decoIdx) {
   };
 }
 // matta ur arken: platt, gåbar, ritas under allt
-function flatProp(d, decoIdx) {
+export function flatProp(d, decoIdx) {
   const vw = viewOf(d.k, d.v, d.r);
   const f = frameOf(vw.k, vw.v);
   if (!f) return null;
@@ -1734,7 +1735,7 @@ function ctxPlate(ctx, cx, y, label) {
 // miniatyr till förrådspanelen (DOM) – i färgen c. Pixelkonst i heltalsskala:
 // små möbler dubbelt så stora, stora i 1:1 (mattan beskärs till ett hörn).
 const THUMB = { w: 52, h: 44 };
-function thumbCanvas(k, v, c) {
+export function thumbCanvas(k, v, c) {
   const cv = document.createElement('canvas');
   cv.width = THUMB.w; cv.height = THUMB.h;
   const x = cv.getContext('2d');
@@ -2188,7 +2189,7 @@ function drawNotes(ctx, p, t) {
 
 // mattor: två mönster (museum/rand), valfri bottenfärg c – cachade
 const rugCache = new Map();
-function rugImg(v, c) {
+export function rugImg(v, c) {
   const key = `${v | 0}|${isHex(c) ? c.toLowerCase() : ''}`;
   if (rugCache.has(key)) return rugCache.get(key);
   const P = new Pix(RUG.w, RUG.h);
@@ -2216,7 +2217,7 @@ function paintRug(P, x0, y0, x1, y1, base, trim, kind) {
 }
 
 // Monsteran (Pix)
-function makePlantProp(cx, base) {
+export function makePlantProp(cx, base) {
   const P = new Pix(40, 54, cx - 20, base - 52);
   P.rect(cx - 7, base - 12, 14, 12, 0xe8e4da); P.hl(cx - 8, base - 13, 16, 0xffffff); P.hl(cx - 8, base - 12, 16, 0xcfc8b8);
   P.vl(cx + 5, base - 11, 11, 0xbdb5a5); P.vl(cx + 6, base - 11, 11, 0xa9a192); P.hl(cx - 6, base - 1, 12, 0x9a9282);
@@ -2244,7 +2245,7 @@ function makePlantProp(cx, base) {
 // med gummilist) och 'steel' (takvåningens smala svarta stålramar).
 const winStyle = (plan, view) => (view === 'stad' ? 'steel' : plan.worn === 'husvagn' ? 'caravan' : 'classic');
 
-function buildBg(roomDef, RIGHT, subDoors, hasExit, plan, visit) {
+export function buildBg(roomDef, RIGHT, subDoors, hasExit, plan, visit) {
   const lyx = !!plan.lyx, shabby = !!plan.shabby, worn = plan.worn || null;
   const bath = roomDef.bath ? BATH[roomDef.tiles] || null : null; // kakelstilen (husvagnens toa har plastväggar)
   const outside = outsideOf(plan, roomDef);
