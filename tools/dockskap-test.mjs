@@ -26,7 +26,7 @@ ok(rooms.length === 5 && rooms[4].id === 'badrum', `fem rum, badrummet sist (${r
 const seed0 = await dbg('d.deco(0).length');
 ok(seed0 >= 5, `startmöbleringen i vardagsrummet: ${seed0} möbler`);
 ok(await p.$$eval('#dock-panel .dock-item', (els) => els.length) >= 20, 'lådan: vardagsrumsfliken har minst 20 möbler');
-ok(await p.$$eval('#dock-panel [data-flik]', (els) => els.length) === 13, 'lådan: tretton flikar (figurer, djur + elva möbelflikar)');
+ok(await p.$$eval('#dock-panel [data-flik]', (els) => els.length) === 14, 'lådan: fjorton flikar (figurer, djur, saker + elva möbelflikar)');
 await p.click('#dock-panel [data-flik="vagg"]'); await p.waitForTimeout(100);
 ok(await p.$$eval('#dock-panel .dock-item', (els) => els.length) >= 25, 'väggfliken: minst 25 väggsaker');
 ok(await p.evaluate(() => getComputedStyle(document.getElementById('hud-money')).display === 'none'), 'spelets mätare (pengar) är dolda');
@@ -187,6 +187,57 @@ ok(await p.evaluate(() => !document.getElementById('modal').classList.contains('
 await p.click('#modal .dlg-foot .btn:has-text("Klappa")'); await p.waitForTimeout(100);
 ok(await p.evaluate(() => JSON.parse(localStorage.getItem('snabbfilen_dockskap_pets') || 'null')?.pets?.length === 1), 'djuren sparas i snabbfilen_dockskap_pets');
 ok((await dbg(`d.removePet('${katt}')`)) && (await dbg('d.pets()')).length === 0, 'Till lådan: katten är borta');
+
+// ---------- 5d. lösa saker (v0.164) ----------
+await p.click('#dock-panel [data-flik="saker"]'); await p.waitForTimeout(300);
+ok(await p.$$eval('#dock-panel [data-sak][data-slag="leksak"]', (els) => els.length) >= 45, 'sakfliken: alla leksaker ur leksaksaffären');
+ok(await p.$$eval('#dock-panel [data-sak][data-slag="mat"]', (els) => els.length) >= 40, 'sakfliken: alla råvaror ur mataffären');
+const saker0 = await dbg('d.saker()');
+ok(saker0.length >= 3 && saker0.some((s) => s.room === 2 && s.slag === 'leksak'), `startsakerna: ${saker0.length} (leksaker i barnrummet)`);
+await dbg('d.goRoom(0)');
+const nalle = await dbg("d.placeSak('leksak', 'nalle-liten', 0, 60, 205)");
+ok(!!nalle, `placeSak: en liten nalle på vardagsrumsgolvet (${nalle})`);
+const bord0 = await dbg("d.deco(0).find((x) => x.k === 'soffbord')");
+ok(await dbg(`d.moveSak('${nalle}', 0, ${bord0.x + 12}, ${bord0.y - 5})`), 'moveSak: nallen upp på soffbordet');
+const nalle2 = (await dbg('d.saker()')).find((s) => s.id === nalle);
+ok(nalle2 && nalle2.up > 0 && nalle2.y === bord0.y + 1, `nallen står på skivan (up ${nalle2?.up}, y ${nalle2?.y})`);
+// dra nallen till en figur: hon håller den
+const spN = await dbg(`d.spotSak('${nalle}')`);
+await p.evaluate(([x, y]) => window.SF.scene.down(x, y), [spN.x, spN.y]);
+ok((await dbg('d.drag()'))?.typ === 'sak', 'tryck på nallen lyfter den');
+const spB0 = await dbg("d.spotDoll('bot0')");
+for (let k = 1; k <= 8; k++) await p.evaluate(([x, y]) => window.SF.scene.move(x, y), [spN.x + (spB0.x - spN.x) * k / 8, spN.y + (spB0.y - spN.y) * k / 8]);
+ok((await dbg('d.drag()'))?.mal?.id === 'bot0', 'spöket över figuren: hon får den när man släpper');
+await p.evaluate(([x, y]) => window.SF.scene.up(x, y), [spB0.x, spB0.y]);
+await p.waitForTimeout(100);
+ok((await dbg("d.heldBy('bot0')")) === nalle, 'släppt på figuren: bot0 håller nallen');
+const spB0b = await dbg("d.spotDoll('bot0')");
+await p.evaluate(([x, y]) => { window.SF.scene.down(x, y); window.SF.scene.up(x, y); }, [spB0b.x, spB0b.y]);
+await p.waitForTimeout(150);
+ok(await p.evaluate(() => /Lägg ner/.test(document.querySelector('#modal .dlg-foot')?.textContent || '')), 'figurens meny har 🧸 Lägg ner');
+await p.click('#modal .dlg-foot .btn:has-text("Lägg ner")'); await p.waitForTimeout(100);
+const nalle3 = (await dbg('d.saker()')).find((s) => s.id === nalle);
+ok(!(await dbg("d.heldBy('bot0')")) && nalle3 && !nalle3.hos && nalle3.room === 0, 'Lägg ner: nallen ligger på golvet igen');
+// mat till en figur äts upp
+const banan = await dbg("d.placeSak('mat', 'banan', 0, 300, 205)");
+ok((await dbg(`d.giveSak('${banan}', 'docka', 'bot1')`)) && (await dbg("d.heldBy('bot1')")) === banan && (await dbg(`d.eating('${banan}')`)) > 0, 'giveSak: bot1 äter bananen');
+await p.waitForTimeout(5200);
+ok(!(await dbg('d.saker()')).some((s) => s.id === banan) && (await dbg('d.talking()')), 'efter fem sekunder: bananen uppäten – "Mums!"');
+// till ett djur: leksaken vid tassarna, maten uppäten, djuret glatt
+const katt2 = await dbg("d.placePet('katt', 'svart', 0, 150, 200)");
+await p.waitForTimeout(200);
+const boll = await dbg("d.placeSak('leksak', 'boll-fot', 0, 60, 205)");
+ok(await dbg(`d.giveSak('${boll}', 'djur', '${katt2}')`), 'giveSak: bollen till katten');
+const kattA = (await dbg('d.layer(0).pets()')).find((a) => a.id === katt2);
+const boll2 = (await dbg('d.saker()')).find((s) => s.id === boll);
+ok(kattA && kattA.pose === 'happy' && boll2 && Math.abs(boll2.x - (kattA.x + 12)) <= 6, `katten blev glad (${kattA?.pose}) och bollen ligger vid tassarna (x ${boll2?.x}, katten ${kattA?.x | 0})`);
+const morot = await dbg("d.placeSak('mat', 'morot', 0, 60, 205)");
+await dbg(`d.giveSak('${morot}', 'djur', '${katt2}')`);
+ok(!(await dbg('d.saker()')).some((s) => s.id === morot), 'moroten till katten: uppäten');
+ok((await dbg(`d.removeSak('${boll}')`)) && !(await dbg('d.saker()')).some((s) => s.id === boll), 'removeSak: bollen borta');
+await p.waitForTimeout(400);
+ok(await p.evaluate(() => (JSON.parse(localStorage.getItem('snabbfilen_dockskap')).saker || []).some((s) => s.k === 'nalle-liten')), 'sakerna sparas i huset');
+await dbg(`d.removePet('${katt2}')`);
 
 // ---------- 6. från pausmenyn mitt i spelet: tillbaka till rummet ----------
 await p.goto(`http://localhost:${PORT}/index.html?world=dock${Date.now().toString(36)}`);

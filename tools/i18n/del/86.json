@@ -1,0 +1,42 @@
+[
+ {
+  "i": 10220,
+  "f": "js/scenes/dockskap.js",
+  "k": "Nam nam!"
+ },
+ {
+  "i": 10221,
+  "f": "js/scenes/dockskap.js",
+  "k": "Gott!"
+ },
+ {
+  "i": 10222,
+  "f": "js/scenes/dockskap.js",
+  "k": "Tack för maten!"
+ },
+ {
+  "i": 10223,
+  "f": "js/scenes/dockskap.js",
+  "k": "Håller i: {0}."
+ },
+ {
+  "i": 10224,
+  "f": "js/scenes/dockskap.js",
+  "k": "🧸 Lägg ner"
+ },
+ {
+  "i": 10225,
+  "f": "js/scenes/dockskap.js",
+  "k": "Dra saken dit du vill ha den – upp på ett bord, till en figur som håller den, eller till ett djur som leker med den."
+ },
+ {
+  "i": 10226,
+  "f": "js/scenes/dockskap.js",
+  "k": "Leksaker"
+ },
+ {
+  "i": 10227,
+  "f": "js/scenes/dockskap.js",
+  "k": "Tryck i rummet där saken ska ligga – eller dra den dit."
+ }
+]

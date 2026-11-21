@@ -10,6 +10,11 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.164.0] – 2026-11-21 – 🎁 Lösa saker i Dockskåpet – leksaker och mat
+- 🎁 **Lösa saker i Dockskåpet** – fliken 🎁 i lådan har alla leksaker ur leksaksaffären (dumplings, Klämkompisarna, nallar, bilar, tågset, dockor …) och all mat ur mataffären. Allt gratis, hur mycket du vill.
+- Lägg dem på golvet eller uppe på borden, dra dem mellan rummen. Släpp en sak på en figur så håller hon den i händerna – mat äts upp på några sekunder («Mums!»). Släpp den på ett djur så blir det glatt: leksaken hamnar vid tassarna, maten försvinner i magen.
+- Tryck på en figur som håller något: 🧸 Lägg ner. Tryck på en sak: 🗑 Ta bort. Barnrummet har tre leksaker och köksbordet ett äpple från början.
+
 ## [0.163.0] – 2026-11-21 – 🧑🐾 Figurerna och husdjuren i Dockskåpet
 - 🧑 **Figurerna i Dockskåpet** – fliken 🧑 i lådan har alla dina figurer och sex kompisar. Dra in dem i rummen, dra dem mellan rummen, och släpp dem på en soffa, stol eller säng så sätter de sig. Tryck på en figur: 💬 Prata (en pratbubbla på ditt språk, med röst), ↔ Vänd eller 🧸 Till lådan. Då och då säger någon något av sig själv – på natten sömnigt.
 - 🐾 **Husdjuren i Dockskåpet** – fliken 🐾 har alla raser av katt, hund och kanin, och alla prylar: skålar, korgar, bur, klösträd, leksaker och matsäckar. Allt gratis. Dra in ett djur så får det ett namn och börjar bo där; dra det dit du vill, också till ett annat rum. Djuren blir aldrig hungriga i Dockskåpet.
