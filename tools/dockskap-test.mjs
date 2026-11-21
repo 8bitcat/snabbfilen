@@ -26,7 +26,7 @@ ok(rooms.length === 5 && rooms[4].id === 'badrum', `fem rum, badrummet sist (${r
 const seed0 = await dbg('d.deco(0).length');
 ok(seed0 >= 5, `startmöbleringen i vardagsrummet: ${seed0} möbler`);
 ok(await p.$$eval('#dock-panel .dock-item', (els) => els.length) >= 20, 'lådan: vardagsrumsfliken har minst 20 möbler');
-ok(await p.$$eval('#dock-panel [data-flik]', (els) => els.length) === 14, 'lådan: fjorton flikar (figurer, djur, saker + elva möbelflikar)');
+ok(await p.$$eval('#dock-panel [data-flik]', (els) => els.length) === 15, 'lådan: femton flikar (figurer, djur, saker, teman + elva möbelflikar)');
 await p.click('#dock-panel [data-flik="vagg"]'); await p.waitForTimeout(100);
 ok(await p.$$eval('#dock-panel .dock-item', (els) => els.length) >= 25, 'väggfliken: minst 25 väggsaker');
 ok(await p.evaluate(() => getComputedStyle(document.getElementById('hud-money')).display === 'none'), 'spelets mätare (pengar) är dolda');
@@ -238,6 +238,38 @@ ok((await dbg(`d.removeSak('${boll}')`)) && !(await dbg('d.saker()')).some((s) =
 await p.waitForTimeout(400);
 ok(await p.evaluate(() => (JSON.parse(localStorage.getItem('snabbfilen_dockskap')).saker || []).some((s) => s.k === 'nalle-liten')), 'sakerna sparas i huset');
 await dbg(`d.removePet('${katt2}')`);
+
+// ---------- 5e. teman (v0.165) ----------
+await dbg('d.goRoom(0)');
+await p.click('#dock-panel [data-flik="teman"]'); await p.waitForTimeout(300);
+const nT = async (sel) => p.$$eval(`#dock-panel ${sel}`, (els) => els.length);
+ok((await nT('[data-tapet]')) >= 12 && (await nT('[data-golv]')) >= 12 && (await nT('[data-utsikt]')) >= 7 && (await nT('[data-tema]')) >= 8, `temafliken: ${await nT('[data-tapet]')} tapeter, ${await nT('[data-golv]')} golv, ${await nT('[data-utsikt]')} utsikter, ${await nT('[data-tema]')} färdiga teman`);
+ok(await p.evaluate(() => /vardagsrum/i.test(document.querySelector('#dock-items .dock-rubrik')?.textContent || '')), 'fliken gäller rummet i bild (vardagsrummet)');
+const vagg0 = await dbg('d.pixel(0, 192, 40)'), golv0 = await dbg('d.pixel(0, 192, 190)');
+await p.click('#dock-panel [data-tapet="marin"]'); await p.waitForTimeout(300);
+const vagg1 = await dbg('d.pixel(0, 192, 40)');
+ok((await dbg('d.tema(0)')).tapet === 'marin' && vagg1 !== vagg0, `tapeten Marinblå: väggen bytte färg (${vagg0} → ${vagg1})`);
+await p.click('#dock-panel [data-golv="schack"]'); await p.waitForTimeout(300);
+const golv1 = await dbg('d.pixel(0, 192, 190)');
+ok((await dbg('d.tema(0)')).golv === 'schack' && golv1 !== golv0, `golvet Schackrutigt: golvet bytte färg (${golv0} → ${golv1})`);
+await p.click('#dock-panel [data-utsikt="stad"]'); await p.waitForTimeout(300);
+ok((await dbg('d.tema(0)')).utsikt === 'stad', 'utsikten Staden vald');
+await p.click('#dock-panel [data-tema="skogen"]'); await p.waitForTimeout(300);
+const tema0 = await dbg('d.tema(0)');
+ok(tema0.tapet === 'skog' && tema0.golv === 'gras' && tema0.utsikt === 'landet', `färdiga temat Skogen: ${JSON.stringify(tema0)}`);
+ok((await nT('[data-tema="skogen"].on')) === 1, 'Skogen är markerat i lådan');
+await p.click('#dock-panel [data-tapet=""]'); await p.waitForTimeout(300);
+ok(!(await dbg('d.tema(0)')).tapet && (await dbg('d.pixel(0, 192, 40)')) === vagg0, 'Rummets egen: väggen är som från början igen');
+// badrummet: kakel i stället för tapet och golv – fliken ritas om när kameran står i ett annat rum
+await dbg('d.goRoom(4)'); await p.waitForTimeout(500);
+ok((await dbg('d.roomInView()')) === 4 && (await nT('[data-kakel]')) === 6 && (await nT('[data-tapet]')) === 0 && await p.evaluate(() => /badrum/i.test(document.querySelector('#dock-items .dock-rubrik')?.textContent || '')), 'badrummet i bild: sex kakelstilar, inga tapeter');
+const kak0 = await dbg('d.pixel(4, 192, 40)');
+await p.click('#dock-panel [data-kakel="skiffer"]'); await p.waitForTimeout(300);
+const kak1 = await dbg('d.pixel(4, 192, 40)');
+ok((await dbg('d.tema(4)')).kakel === 'skiffer' && kak1 !== kak0, `kaklet Skiffer: badrumsväggen bytte färg (${kak0} → ${kak1})`);
+await p.waitForTimeout(400);
+ok(await p.evaluate(() => { const h = JSON.parse(localStorage.getItem('snabbfilen_dockskap')); return h.rooms[0].tema?.golv === 'gras' && h.rooms[4].tema?.kakel === 'skiffer'; }), 'temana sparas i huset');
+await p.click('#dock-panel [data-flik="vardagsrum"]'); await p.waitForTimeout(100);
 
 // ---------- 6. från pausmenyn mitt i spelet: tillbaka till rummet ----------
 await p.goto(`http://localhost:${PORT}/index.html?world=dock${Date.now().toString(36)}`);

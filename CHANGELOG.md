@@ -10,6 +10,11 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.165.0] – 2026-11-21 – 🎨 Teman i Dockskåpet – tapet, golv, kakel och utsikt
+- 🎨 **Teman i Dockskåpet** – fliken 🎨 i lådan gäller rummet i bild: välj tapet (tolv färger), golv (tolv: ek, furu, sten, vit marmor med guldådror, schackrutigt, gräsmatta …) och utsikt genom fönstren (trädgården, himlen, staden, landet, tomten, gården, frostat glas).
+- Åtta färdiga teman byter allt i ett tryck: Prinsessan, Rymden, Skogen, Sommarstugan, Lyxvåningen, Solsken, Havet och Godislandet. «Rummets egen» går tillbaka till det ursprungliga.
+- Badrummet byter kakel i stället: blått, vitt, marmor, skiffer, 70-tal eller slitet. Varje rum minns sitt tema.
+
 ## [0.164.0] – 2026-11-21 – 🎁 Lösa saker i Dockskåpet – leksaker och mat
 - 🎁 **Lösa saker i Dockskåpet** – fliken 🎁 i lådan har alla leksaker ur leksaksaffären (dumplings, Klämkompisarna, nallar, bilar, tågset, dockor …) och all mat ur mataffären. Allt gratis, hur mycket du vill.
 - Lägg dem på golvet eller uppe på borden, dra dem mellan rummen. Släpp en sak på en figur så håller hon den i händerna – mat äts upp på några sekunder («Mums!»). Släpp den på ett djur så blir det glatt: leksaken hamnar vid tassarna, maten försvinner i magen.

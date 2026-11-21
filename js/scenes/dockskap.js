@@ -29,7 +29,9 @@
 //     händerna (bär-bildrutan) – mat äts upp på några sekunder ("Mums!"). Släpps de på ett djur blir
 //     det glatt: leksaken hamnar vid tassarna, maten äts upp. Kort tryck på en figur som håller något:
 //     🧸 Lägg ner. Sakerna sparas i huset (H.saker).
-// Kommande: tapet- och golvbyten.
+//   • Teman (v0.165): fliken 🎨 gäller rummet i bild: tapet (12), golv (12, Vit marmor med guldådror = plan.lyx),
+//     utsikt genom fönstren (7) och åtta färdiga teman (tapet + golv + utsikt i ett tryck); badrummet byter
+//     kakel (room.js BATH-stilarna) i stället. Sparas per rum (H.rooms[i].tema) och bakgrunden byggs om (buildBg).
 // Test: tools/dockskap-test.mjs.
 import { buildBg, spriteProp, wallProp, flatProp, rugImg, makePlantProp, dimsOf, isWall, isFlat, ON_TABLE, SURFACES, surfaceRow,
   thumbCanvas, furnView, drawArt, nameOf, canRecolor, FW, FH, WALL_Y, WALL_TOP, DOOR, RUG, APT } from './room.js';
@@ -120,6 +122,53 @@ export const RUM = [
 ];
 const PLAN = { partition: 0, rooms: RUM };
 
+// ---------- teman: tapet, golv, utsikt och kakel per rum ----------
+const TAPETER = [
+  { id: 'sand', namn: $t('Sand'), wall: 0xf2d6a0, wallDk: 0xc49c62 }, { id: 'mint', namn: $t('Mint'), wall: 0xcfe6c4, wallDk: 0x86ae82 },
+  { id: 'rosa', namn: $t('Rosa'), wall: 0xf6cfe0, wallDk: 0xc088a8 }, { id: 'himmel', namn: $t('Himmelsblå'), wall: 0xc4d6f0, wallDk: 0x8099c2 },
+  { id: 'lavendel', namn: $t('Lavendel'), wall: 0xdcd0f0, wallDk: 0xa08cc4 }, { id: 'solgul', namn: $t('Solgul'), wall: 0xf8e690, wallDk: 0xc8ac48 },
+  { id: 'persika', namn: $t('Persika'), wall: 0xf8d4b8, wallDk: 0xc89a70 }, { id: 'skog', namn: $t('Skogsgrön'), wall: 0x9ec49a, wallDk: 0x5e8a5c },
+  { id: 'marin', namn: $t('Marinblå'), wall: 0x6a84b8, wallDk: 0x3a4e7a }, { id: 'korsbar', namn: $t('Körsbär'), wall: 0xd87a88, wallDk: 0x9a4a58 },
+  { id: 'kram', namn: $t('Krämvit'), wall: 0xf6f0e2, wallDk: 0xc8bea8 }, { id: 'grafit', namn: $t('Grafit'), wall: 0x5a5e68, wallDk: 0x3a3d46 },
+];
+const GOLV = [
+  { id: 'ek', namn: $t('Ljus ek'), floorA: 0xe4cfa8, floorB: 0xcab088 }, { id: 'morkek', namn: $t('Mörk ek'), floorA: 0xa8744a, floorB: 0x8a5c38 },
+  { id: 'furu', namn: $t('Furu'), floorA: 0xf0d8a8, floorB: 0xdcc088 }, { id: 'gra', namn: $t('Grå sten'), floorA: 0xc8c8c4, floorB: 0xa8a8a4 },
+  { id: 'marmor', namn: $t('Vit marmor'), floorA: 0xf2eee6, floorB: 0xe0dad0, lyx: true }, { id: 'rosa', namn: $t('Rosa'), floorA: 0xf6d8e4, floorB: 0xe4bccc },
+  { id: 'mint', namn: $t('Mintgrön'), floorA: 0xd4ecd4, floorB: 0xb4d4b4 }, { id: 'himmel', namn: $t('Himmelsblå'), floorA: 0xd0e0f4, floorB: 0xb0c4e0 },
+  { id: 'terrakotta', namn: $t('Terrakotta'), floorA: 0xd08a5a, floorB: 0xb07040 }, { id: 'schack', namn: $t('Schackrutigt'), floorA: 0xf4f4f0, floorB: 0x2a2a30 },
+  { id: 'gras', namn: $t('Gräsmatta'), floorA: 0x8ac860, floorB: 0x6aa848 }, { id: 'natt', namn: $t('Nattsvart'), floorA: 0x3a3a44, floorB: 0x2a2a32 },
+];
+const UTSIKTER = [
+  { id: 'tradgard', namn: $t('Trädgården'), ik: '🌳' }, { id: 'sky', namn: $t('Himlen'), ik: '☁️' }, { id: 'stad', namn: $t('Staden'), ik: '🏙️' },
+  { id: 'landet', namn: $t('Landet'), ik: '🌾' }, { id: 'tomt', namn: $t('Tomten'), ik: '🏡' }, { id: 'betong', namn: $t('Gården'), ik: '🏢' }, { id: 'frost', namn: $t('Frostat glas'), ik: '🪟' },
+];
+// badrummets kakelstilar (room.js BATH) med rummets färger som de bostäderna har dem
+const KAKEL = [
+  { id: 'bla', namn: $t('Blått'), wall: 0xa6cfe0, wallDk: 0x7aa4b8, floorA: 0xf0eee8, floorB: 0x6a9ec0 }, { id: 'vit', namn: $t('Vitt'), wall: 0xf0f0ea, wallDk: 0xc4c4bc, floorA: 0xb4b8bc, floorB: 0xa4a8ac },
+  { id: 'marmor', namn: $t('Marmor'), wall: 0xf2eee8, wallDk: 0xb8ae9c, floorA: 0xece6da, floorB: 0xdcd4c6 }, { id: 'skiffer', namn: $t('Skiffer'), wall: 0x3e4248, wallDk: 0x2a2d32, floorA: 0x34373c, floorB: 0x2c2f34 },
+  { id: '70tal', namn: $t('70-tal'), wall: 0xc88a3a, wallDk: 0x6a4020, floorA: 0x7a5236, floorB: 0x6a4630 }, { id: 'sliten', namn: $t('Slitet'), wall: 0xe2ddd0, wallDk: 0xa39a86, floorA: 0x9c968a, floorB: 0x8c8678 },
+];
+const TEMAN = [   // färdiga: tapet + golv + utsikt i ett tryck (badrummet får kaklet)
+  { id: 'prinsessa', namn: $t('Prinsessan'), ik: '👑', tapet: 'rosa', golv: 'rosa', utsikt: 'tradgard', kakel: 'vit' },
+  { id: 'rymden', namn: $t('Rymden'), ik: '🚀', tapet: 'marin', golv: 'natt', utsikt: 'sky', kakel: 'skiffer' },
+  { id: 'skogen', namn: $t('Skogen'), ik: '🌲', tapet: 'skog', golv: 'gras', utsikt: 'landet', kakel: '70tal' },
+  { id: 'sommarstugan', namn: $t('Sommarstugan'), ik: '🏡', tapet: 'kram', golv: 'furu', utsikt: 'tomt', kakel: 'sliten' },
+  { id: 'lyx', namn: $t('Lyxvåningen'), ik: '💎', tapet: 'grafit', golv: 'marmor', utsikt: 'stad', kakel: 'marmor' },
+  { id: 'solsken', namn: $t('Solsken'), ik: '🌞', tapet: 'solgul', golv: 'ek', utsikt: 'tradgard', kakel: 'bla' },
+  { id: 'havet', namn: $t('Havet'), ik: '🌊', tapet: 'himmel', golv: 'himmel', utsikt: 'sky', kakel: 'bla' },
+  { id: 'godis', namn: $t('Godislandet'), ik: '🍭', tapet: 'lavendel', golv: 'schack', utsikt: 'tradgard', kakel: 'vit' },
+];
+const tvattaTema = (t) => {
+  const o = {};
+  if (!t || typeof t !== 'object') return o;
+  if (TAPETER.some((x) => x.id === t.tapet)) o.tapet = t.tapet;
+  if (GOLV.some((x) => x.id === t.golv)) o.golv = t.golv;
+  if (UTSIKTER.some((x) => x.id === t.utsikt)) o.utsikt = t.utsikt;
+  if (KAKEL.some((x) => x.id === t.kakel)) o.kakel = t.kakel;
+  return o;
+};
+
 // Startmöbleringen (x = vänsterkant, y = fotlinje; mattan överkant; väggsaker underkant) – det
 // som inte finns i arket hoppas över, och allt kläms innanför rummet (klamma).
 const SEED = [
@@ -143,6 +192,7 @@ export const FLIKAR = [
   { id: 'figurer', ik: '🧑', namn: $t('Figurer'), figurer: true },
   { id: 'djur', ik: '🐾', namn: $t('Djur'), djur: true },
   { id: 'saker', ik: '🎁', namn: $t('Saker'), saker: true },
+  { id: 'teman', ik: '🎨', namn: $t('Teman'), teman: true },
   { id: 'vardagsrum', ik: '🛋️', namn: $t('Vardagsrum'), valj: av('VARDAGSRUM') },
   { id: 'kok', ik: '🍳', namn: $t('Kök'), valj: av('KÖK') },
   { id: 'sovrum', ik: '🛏️', namn: $t('Sovrum'), valj: av('SOVRUM') },
@@ -176,13 +226,13 @@ function lasHus() {
   const dockor = (Array.isArray(p.dockor) ? p.dockor : []).filter((d) => d && d.id).map(tvattaDocka).filter((d) => d.room >= 0 && d.room < RUM.length);
   const saker = (Array.isArray(p.saker) ? p.saker : []).filter((s) => s && s.id && sakFinns(s.slag, s.k)).map(tvattaSak).filter((s) => s.room >= 0 && s.room < RUM.length);
   for (const s of saker) if (s.hos && !dockor.some((d) => d.id === s.hos.id)) delete s.hos;   // (figuren är borta: saken ligger kvar där den stod)
-  return { v: 1, natt: !!p.natt, rooms: RUM.map((_, i) => ({ deco: (p.rooms[i]?.deco || []).filter((d) => d && knownKind(d.k)).map(tvattaDeco) })),
+  return { v: 1, natt: !!p.natt, rooms: RUM.map((_, i) => ({ deco: (p.rooms[i]?.deco || []).filter((d) => d && knownKind(d.k)).map(tvattaDeco), tema: tvattaTema(p.rooms[i]?.tema) })),
     dockor, bottar, saker, sakN: Math.max(p.sakN | 0, saker.length) };
 }
 // (två av bottarna står i vardagsrummet från början, så att huset lever – och några leksaker i barnrummet)
 const SEED_SAKER = [{ id: 's1', slag: 'leksak', k: 'nalle-liten', room: 2, x: 262, y: 202 }, { id: 's2', slag: 'leksak', k: 'bil-racer', room: 2, x: 110, y: 208 },
   { id: 's3', slag: 'leksak', k: 'boll-fot', room: 2, x: 330, y: 196 }, { id: 's4', slag: 'mat', k: 'applR', room: 1, x: 236, y: 167, up: 0 }];
-const nyttHus = () => ({ v: 1, natt: false, rooms: SEED.map((list) => ({ deco: list.filter((d) => knownKind(d.k)).map(tvattaDeco) })),
+const nyttHus = () => ({ v: 1, natt: false, rooms: SEED.map((list) => ({ deco: list.filter((d) => knownKind(d.k)).map(tvattaDeco), tema: {} })),
   dockor: [{ id: 'bot0', room: 0, x: 236, y: 186, dir: 'down' }, { id: 'bot1', room: 0, x: 112, y: 150, dir: 'down' }], bottar: nyaBottar(),
   saker: SEED_SAKER.filter((s) => sakFinns(s.slag, s.k)).map(tvattaSak), sakN: SEED_SAKER.length });
 
@@ -201,13 +251,41 @@ export function makeDockskap(A) {
   const ox = (i) => i * (FW + WALLW);
   const W = n * FW + (n - 1) * WALLW;
   const roomAt = (wx) => clamp(Math.floor(wx / (FW + WALLW)), 0, n - 1);
-  const bgs = RUM.map((r, i) => buildBg(r, FW, [], i === 0, PLAN, false));
+  // rummets utseende = RUM-definitionen med rummets tema ovanpå (tapet/golv/utsikt, badrummet kakel)
+  function rumDef(i) {
+    const R = RUM[i], t = H.rooms[i].tema || {}, d = { ...R };
+    if (R.bath) { const k = KAKEL.find((x) => x.id === t.kakel); if (k) Object.assign(d, { tiles: k.id, wall: k.wall, wallDk: k.wallDk, floorA: k.floorA, floorB: k.floorB }); }
+    else {
+      const ta = TAPETER.find((x) => x.id === t.tapet); if (ta) { d.wall = ta.wall; d.wallDk = ta.wallDk; }
+      const g = GOLV.find((x) => x.id === t.golv); if (g) { d.floorA = g.floorA; d.floorB = g.floorB; d.lyx = !!g.lyx; }
+    }
+    const u = UTSIKTER.find((x) => x.id === t.utsikt); if (u) d.view = u.id;
+    return d;
+  }
+  const defs = RUM.map((_, i) => rumDef(i));
+  const byggBg = (i) => buildBg(defs[i], FW, [], i === 0, defs[i].lyx ? { ...PLAN, lyx: true } : PLAN, false);
+  const bgs = defs.map((_, i) => byggBg(i));
+  function sattTema(i, key, id) {
+    const t = H.rooms[i].tema || (H.rooms[i].tema = {});
+    if (id == null || id === '') delete t[key]; else t[key] = id;
+    defs[i] = rumDef(i); bgs[i] = byggBg(i);
+    play('ok'); spara(); fyllLada();
+  }
+  function sattTemaPaket(i, T) {
+    if (!T) return;
+    const t = H.rooms[i].tema || (H.rooms[i].tema = {});
+    if (RUM[i].bath) t.kakel = T.kakel; else { t.tapet = T.tapet; t.golv = T.golv; }
+    if (T.utsikt) t.utsikt = T.utsikt; else delete t.utsikt;
+    defs[i] = rumDef(i); bgs[i] = byggBg(i);
+    play('pling'); spara(); fyllLada();
+  }
 
   // ---------- kameran ----------
   const seen = () => { const sf = A.view?.safe; const x0 = sf ? sf.x0 : 0, x1 = sf ? sf.x1 : (A.W || FW); return x1 > x0 ? [x0, x1] : [0, A.W || FW]; };
   const clampCam = (c) => { const [x0, x1] = seen(), vis = x1 - x0; if (W <= vis) return -(x0 + (vis - W) / 2); return Math.max(-x0, Math.min(W - x1, c)); };
   const camRoom = (i) => { const [x0, x1] = seen(), vis = x1 - x0; return clampCam(ox(i) - x0 - (vis - FW) / 2); };
   let camX = camRoom(0), camTo = null;
+  const rumIVy = () => { const [x0, x1] = seen(); return roomAt(camX + (x0 + x1) / 2); };   // rummet mitt i bild
 
   // ---------- sparningen ----------
   let tmr = 0;
@@ -717,7 +795,7 @@ export function makeDockskap(A) {
   }
 
   // ---------- lådan (DOM) ----------
-  let panel = null, flik = 'vardagsrum';
+  let panel = null, flik = 'vardagsrum', temaRum = -1;
   function byggPanel() {
     panel = document.getElementById('dock-panel');
     if (!panel) { panel = document.createElement('div'); panel.id = 'dock-panel'; document.body.append(panel); }
@@ -750,6 +828,27 @@ export function makeDockskap(A) {
       box.querySelectorAll('[data-ras]').forEach((b) => { b.onpointerdown = (e) => tagDjur(e, RASER[+b.dataset.ras]); });
       box.querySelectorAll('[data-pryl]').forEach((b) => { b.onpointerdown = (e) => tagPryl(e, b.dataset.pryl); });
       box.querySelectorAll('[data-djur]').forEach((b) => { b.onclick = (e) => { if (e.target.closest('[data-bort]')) { taBortDjur(b.dataset.djur); return; } const p = store.petById(b.dataset.djur); if (p) { play('click'); camTo = camRoom(p.room | 0); } }; });
+      return;
+    }
+    if (f.teman) {   // 🎨 tapet, golv och utsikt för rummet i bild (badrummet: kakel) + färdiga teman
+      const i = rumIVy(), R = RUM[i], t = H.rooms[i].tema || {};
+      temaRum = i;
+      const chip = (a, b) => `<i class="dock-chip" style="background:${b != null ? `linear-gradient(135deg, ${css(a)} 50%, ${css(b)} 50%)` : css(a)}"></i>`;
+      const knapp = (attr, id, on, inner, namn) => `<button class="dock-item dock-tema ${on ? 'on' : ''}" data-${attr}="${id}" title="${esc(namn)}">${inner}<small>${esc(namn)}</small></button>`;
+      let html = `<div class="dock-rubrik">${R.ik} ${$t(R.name)}</div>`;
+      if (!R.bath) {
+        html += `<div class="dock-rubrik">${$t('Färdiga teman')}</div>` + TEMAN.map((T) => { const ta = TAPETER.find((x) => x.id === T.tapet), g = GOLV.find((x) => x.id === T.golv); return knapp('tema', T.id, t.tapet === T.tapet && t.golv === T.golv, `<span class="dock-tema-ik">${T.ik}</span>${chip(ta.wall, g.floorA)}`, T.namn); }).join('');
+        html += `<div class="dock-rubrik">${$t('Tapet')}</div>` + knapp('tapet', '', !t.tapet, chip(R.wall, R.wallDk), $t('Rummets egen'))
+          + TAPETER.map((x) => knapp('tapet', x.id, t.tapet === x.id, chip(x.wall, x.wallDk), x.namn)).join('');
+        html += `<div class="dock-rubrik">${$t('Golv')}</div>` + knapp('golv', '', !t.golv, chip(R.floorA, R.floorB), $t('Rummets egen'))
+          + GOLV.map((x) => knapp('golv', x.id, t.golv === x.id, chip(x.floorA, x.floorB), x.namn)).join('');
+      } else {
+        html += `<div class="dock-rubrik">${$t('Kakel')}</div>` + KAKEL.map((x) => knapp('kakel', x.id, (t.kakel || R.tiles) === x.id, chip(x.wall, x.floorB), x.namn)).join('');
+      }
+      html += `<div class="dock-rubrik">${$t('Utsikt')}</div>` + UTSIKTER.map((x) => knapp('utsikt', x.id, (t.utsikt || R.view) === x.id, `<span class="dock-tema-ik">${x.ik}</span>`, x.namn)).join('');
+      box.innerHTML = html;
+      box.querySelectorAll('[data-tema]').forEach((b) => { b.onclick = () => sattTemaPaket(i, TEMAN.find((T) => T.id === b.dataset.tema)); });
+      for (const key of ['tapet', 'golv', 'kakel', 'utsikt']) box.querySelectorAll(`[data-${key}]`).forEach((b) => { b.onclick = () => sattTema(i, key, b.dataset[key] || null); });
       return;
     }
     if (f.saker) {   // 🎁 leksakerna och maten – gratis, hur många som helst
@@ -978,7 +1077,7 @@ export function makeDockskap(A) {
       ctx.restore();
     }
     ctx.setTransform(A.pxs, 0, 0, A.pxs, 0, 0);
-    for (let i = 0; i < n - 1; i++) drawWall(ctx, RUM[i], RUM[i + 1], ox(i + 1));
+    for (let i = 0; i < n - 1; i++) drawWall(ctx, defs[i], defs[i + 1], ox(i + 1));
     if (night) { ctx.fillStyle = `rgba(10,12,40,${NIGHT_DIM})`; for (let i = 0; i < n - 1; i++) ctx.fillRect(Math.round(ox(i + 1) - WALLW - camX), 0, WALLW, FH); }
     const [sx0, sx1] = seen();
     // pratbubblan (i skärmens koordinater, innanför det synliga) – createSpeech klämmer in den i bilden,
@@ -1011,6 +1110,7 @@ export function makeDockskap(A) {
       camX += (camTo - camX) * Math.min(1, dt * 8);
       if (Math.abs(camTo - camX) < 0.3) { camX = camTo; camTo = null; }
     }
+    if (flik === 'teman' && camTo == null && !pan && temaRum !== rumIVy()) fyllLada();   // (fliken följer rummet i bild)
     if (drag?.moved) {   // dra mot kanten → bilden rullar med
       const [x0, x1] = seen();
       if (drag.px < x0 + 24) camX = clampCam(camX - 170 * dt);
@@ -1069,6 +1169,11 @@ export function makeDockskap(A) {
     removeSak: (id) => taBortSak(id),
     spotSak: (id) => { const s = sakMed(id); if (!s || s.hos) return null; const b = sakBox(s), fy = sakFot(s); return { x: s.x + ox(s.room) - camX, y: fy + (b.y0 + b.y1) / 2 }; },
     armSak: (slag, k) => { armed = { typ: 'sak', slag, k }; fyllLada(); },
+    // teman
+    tema: (i) => ({ ...(H.rooms[i].tema || {}) }),
+    setTema: (i, key, id) => { sattTema(i, key, id); return { ...(H.rooms[i].tema || {}) }; },
+    roomInView: () => rumIVy(),
+    pixel: (i, x, y) => { const d = bgs[i](H.natt).getContext('2d').getImageData(x, y, 1, 1).data; return '#' + [d[0], d[1], d[2]].map((v) => v.toString(16).padStart(2, '0')).join(''); },
     petsKey: DOCK_PETS_KEY,
     key: DOCK_KEY,
   };

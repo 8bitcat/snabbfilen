@@ -135,6 +135,9 @@ canvas { image-rendering: pixelated; display: block; }
 .dock-rubrik { grid-column: 1 / -1; font: var(--f1) var(--head); color: var(--muted); padding: 4px 2px 0; }
 .dock-item.dock-hemma { position: relative; }
 .dock-item .dock-x { position: absolute; top: -2px; right: -2px; width: 16px; height: 16px; line-height: 14px; text-align: center; background: var(--red); color: #fff; border: 2px solid var(--ink); font-size: 10px; cursor: pointer; }
+.dock-item.dock-tema { cursor: pointer; }                                              /* (teman: ett tryck byter, inget drag) */
+.dock-chip { display: block; width: 40px; height: 22px; border: 2px solid var(--ink); }
+.dock-tema-ik { font-size: 16px; line-height: 1; }
 @media (max-width: 699px) { .dock-rubrik { grid-column: auto; grid-row: 1; writing-mode: vertical-rl; padding: 2px 0; } }
 #dock-panel .dp-foot { display: flex; gap: 6px; padding: 6px; border-top: 3px solid var(--ink); background: var(--paper2); }
 #dock-panel .dp-foot .btn { flex: 1; }
