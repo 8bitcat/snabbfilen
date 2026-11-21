@@ -1,0 +1,42 @@
+[
+ {
+  "i": 10212,
+  "f": "js/scenes/dockskap.js",
+  "k": "Du kan ha högst {0} djur i huset."
+ },
+ {
+  "i": 10213,
+  "f": "js/scenes/dockskap.js",
+  "k": "Det gick inte att ställa ut den."
+ },
+ {
+  "i": 10214,
+  "f": "js/scenes/dockskap.js",
+  "k": "Dra djuret dit du vill ha det – också in i ett annat rum. Klappa det, lek med det eller lägg det i lådan."
+ },
+ {
+  "i": 10215,
+  "f": "js/scenes/dockskap.js",
+  "k": "Nytt djur"
+ },
+ {
+  "i": 10216,
+  "f": "js/scenes/dockskap.js",
+  "k": "Prylar"
+ },
+ {
+  "i": 10217,
+  "f": "js/scenes/dockskap.js",
+  "k": "I huset"
+ },
+ {
+  "i": 10218,
+  "f": "js/scenes/dockskap.js",
+  "k": "Tryck i rummet där djuret ska vara – eller dra det dit."
+ },
+ {
+  "i": 10219,
+  "f": "js/scenes/dockskap.js",
+  "k": "Tryck i rummet där prylen ska stå – eller dra den dit."
+ }
+]

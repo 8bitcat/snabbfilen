@@ -10,6 +10,12 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.163.0] – 2026-11-21 – 🧑🐾 Figurerna och husdjuren i Dockskåpet
+- 🧑 **Figurerna i Dockskåpet** – fliken 🧑 i lådan har alla dina figurer och sex kompisar. Dra in dem i rummen, dra dem mellan rummen, och släpp dem på en soffa, stol eller säng så sätter de sig. Tryck på en figur: 💬 Prata (en pratbubbla på ditt språk, med röst), ↔ Vänd eller 🧸 Till lådan. Då och då säger någon något av sig själv – på natten sömnigt.
+- 🐾 **Husdjuren i Dockskåpet** – fliken 🐾 har alla raser av katt, hund och kanin, och alla prylar: skålar, korgar, bur, klösträd, leksaker och matsäckar. Allt gratis. Dra in ett djur så får det ett namn och börjar bo där; dra det dit du vill, också till ett annat rum. Djuren blir aldrig hungriga i Dockskåpet.
+- Tryck på ett djur: 🤚 Klappa, 🎾 Leka eller 🧸 Till lådan. Tryck på en pryl så gör du som hemma: bär säcken till skålen, kasta bollen, töm lådan.
+- Två kompisar står i vardagsrummet från början, så huset lever direkt.
+
 ## [0.162.0] – 2026-11-21 – 🧸 Dockskåpet – lekläget med hela möbelkatalogen
 - 🧸 **Dockskåpet** – ett nytt lekläge på första sidan: ett eget hus med fem rum (vardagsrum, kök, barnrum, sovrum, badrum) som du möblerar fritt. Hela möbelkatalogen ligger i lådan, gratis.
 - Allt dras med fingret: från lådan in i rummet, mellan rummen och upp på borden. Ett kort tryck på en möbel vrider, byter modell, målar om, tänder brasan eller tar bort.

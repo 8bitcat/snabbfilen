@@ -130,6 +130,12 @@ canvas { image-rendering: pixelated; display: block; }
 .dock-item small { font-size: 9px; line-height: 1; text-align: center; max-width: 100%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .dock-item:hover { background: #fffbe8; }
 .dock-item.on { background: #fff4c7; outline: 3px solid var(--gold); outline-offset: -1px; }
+.dock-item.dock-fig.on { background: #e4f4e0; outline-color: #46a35a; }   /* (figurer som står i huset) */
+.dock-item.dock-fig.vald { background: #fff4c7; outline: 3px solid var(--gold); }
+.dock-rubrik { grid-column: 1 / -1; font: var(--f1) var(--head); color: var(--muted); padding: 4px 2px 0; }
+.dock-item.dock-hemma { position: relative; }
+.dock-item .dock-x { position: absolute; top: -2px; right: -2px; width: 16px; height: 16px; line-height: 14px; text-align: center; background: var(--red); color: #fff; border: 2px solid var(--ink); font-size: 10px; cursor: pointer; }
+@media (max-width: 699px) { .dock-rubrik { grid-column: auto; grid-row: 1; writing-mode: vertical-rl; padding: 2px 0; } }
 #dock-panel .dp-foot { display: flex; gap: 6px; padding: 6px; border-top: 3px solid var(--ink); background: var(--paper2); }
 #dock-panel .dp-foot .btn { flex: 1; }
 .dock-meny { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: center; }
