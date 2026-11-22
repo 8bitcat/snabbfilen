@@ -2451,6 +2451,7 @@ export function createLife(env, traffic, props) {
       p.x = wp.x; p.y = wp.y; p.path.shift(); p.stillSpot = !!wp.noOff;
       if (p.onCross >= 0 && (!p.path.length || p.y >= CURB_S - 1 && p.y <= CURB_S + 3 || p.y <= CURB_N + 1 && p.y >= CURB_N - 3 || p.y >= CURB_SS - 1 && p.y < CURB_SS + 3 || p.y <= CURB_SN + 1 && p.y > CURB_SN - 3)) p.onCross = -1;
     } else { p.x += dx / d * step; p.y += dy / d * step; }
+    if (env.snowStep) { p.stegD = (p.stegD || 0) + step; if (p.stegD >= 7) { p.stegD = 0; env.snowStep(p.x, p.y, dx / d, dy / d); } }   // ❄️ fotspår i snön
     p.moving = true;
     p.anim += dt * sp / (p.jogger ? 4.5 : 5);
     laneOffset(p, dt, wp);

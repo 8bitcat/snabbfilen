@@ -10,6 +10,10 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.169.0] – 2026-11-23 – ❄️ Fotspår i snön i Pixelstaden
+- ❄️ **Fotspår i snön** – när snön ligger i Pixelstaden (vintern, var fjärde vecka) lämnar du spår efter dig där du går: vänster och höger fot växelvis, vridna efter gångriktningen, på gräs, torg och trottoarer. Stadens folk och kompisarna i världen trampar också sina spår.
+- Nysnö täcker spåren lite i taget medan det snöar, och när snön smälter bort är de borta. På vägarna syns bilarnas hjulspår och plogen som förut.
+
 ## [0.168.0] – 2026-11-23 – 👫 Leka ihop i Dockskåpet – bjud in en kompis
 - 👫 **Leka ihop i Dockskåpet** – knappen 👫 uppe till vänster bjuder in en kompis som är i Pixelstaden just nu (vännerna står först). Kompisen får en fråga, trycker Kom! och hamnar i samma hus: båda kan trycka på allt, dra figurer, djur och saker, möblera, byta teman och slå på natten – och allt som den ena gör ser den andra direkt, med animationer och ljud.
 - Kompisens hand syns i huset där hen pekar, med namnet ovanför. Gästen sparar aldrig ditt hus hos sig – när hen går hem (🏠 Gå hem, eller ⬅) är det egna huset tillbaka precis som det var.

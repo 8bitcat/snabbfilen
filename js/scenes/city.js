@@ -524,6 +524,7 @@ export function makeCity(A) {
   // Under resan sitter figuren i bussfönstret (trafiken ritar den), kameran följer bussen
   // och vid målet kliver man av med alight(). Klick under resan hoppar fram (skipRide).
   let riding = false;   // spelaren sitter i bussen (traffic.ride() ≠ null)
+  const steg = { x: 0, y: 0 }, fjarrSteg = new Map();   // ❄️ fotspår i snön: var spelaren (och kompisarna) satte senaste spåret
   let sitting = null;
   // en annan spelare sitter redan på platsen (world.js si) – sätt dig inte i knät på hen
   const remoteSat = (s) => worldFolksHere(A).some((f) => f.sit && !f.walking && Math.abs(f.x - s.x) < 4 && Math.abs(f.y - s.y) < 4);   // spelaren sitter på en bänk: { seat } från props.seats()
@@ -998,6 +999,18 @@ export function makeCity(A) {
       if (fade.phase === 1) { fade.a = Math.min(1, fade.a + dt * 2.6); if (fade.a >= 1) { fade.phase = 2; const cb = fade.cb; fade.cb = null; cb?.(); } }
       else if (fade.phase === 2) { fade.a = Math.max(0, fade.a - dt * 1.8); if (fade.a <= 0) fade.phase = 0; }
       else walker.update(dt);
+      // ❄️ fotspår i snön (v0.169): vart sjunde steg trampas ett spår i snötäcket (weather.js env.snowStep) –
+      // inte när man åker buss, cyklar eller sitter; kompisarna i världen lämnar också spår där de går
+      if (env.snowStep) {
+        const dx = walker.px - steg.x, dy = walker.py - steg.y, d = Math.hypot(dx, dy);
+        if (d >= 7) { if (d < 40 && !riding && !sitting && !fordon()) env.snowStep(walker.px, walker.py, dx / d, dy / d); steg.x = walker.px; steg.y = walker.py; }
+        for (const f of worldFolksHere(A)) {
+          const l = fjarrSteg.get(f.id);
+          if (!l) { fjarrSteg.set(f.id, { x: f.x, y: f.y }); continue; }
+          const fx = f.x - l.x, fy = f.y - l.y, fd = Math.hypot(fx, fy);
+          if (fd >= 7) { if (fd < 40 && f.walking && !f.ride && !f.sit) env.snowStep(f.x, f.y, fx / fd, fy / fd); l.x = f.x; l.y = f.y; }
+        }
+      }
       // bussresan på riktigt: figuren sitter i bussen, kameran (walker-punkten) följer den
       const r = S.traffic.ride?.();
       if (r) {

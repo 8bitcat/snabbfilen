@@ -38,6 +38,11 @@
 //   plogade körfält, plogvallar) och drawBack ritar det i stället för den fasta slasken.
 //   weatherLabel(w) → '☀️ Sol, 18° · sommar'   weatherText(w) → 'Sol, 18° · sommar'
 //   weatherIcon(w) → '☀️'   drawWeatherBadge(ctx, x, y, w) – liten pixelskylt (ikon, temperatur, vind).
+//   ❄️ Fotspår (v0.169, Carl 2026-11-22: "att det blir fotspår när man går"): env.snowStep(x, y, hx, hy) trampar ett
+//   spår i snötäcket (vänster/höger fot växelvis, vridet efter gångriktningen) – spelaren (city.js), stadens folk
+//   (life.js) och kompisarna i världen. Spåren ligger i rutor om 256 px (bara där någon gått), ritas efter snön på
+//   öppen mark och trottoarer, aldrig på vägar (trafikens eget spårlager) eller vatten; nysnö täcker dem steg för
+//   steg (destination-out när täcket växer) och när täcket är under 0,25 är de borta. env.snowStepsCount/At – tester.
 //
 // Allt statiskt (snörutor, is, dimbankar, regnrutor, molnskuggor, pölar, solstrålar, regnbågen,
 // ljungeldar, våt glans) målas en gång och cachas; per bildruta bara drawImage av rutor och några
@@ -774,6 +779,75 @@ export function createWeather(env) {
   // ---------- partikelritare (delas av drawFront och glow) ----------
   const cnt = (n, view) => Math.round((n * (view.w * view.h)) / (384 * 216));
   const rectOf = (view) => [view.x, view.y, view.x + view.w, view.y + view.h];
+
+  // ---------- ❄️ fotspår i snön (v0.169) ----------
+  const TILE = 256, steps = new Map();   // 'tx,ty' → { x0, y0, canvas, ctx }
+  let stepsCover = 0, stepFoot = 0;
+  const inRect = (x, y, r) => x >= r[0] && x < r[2] && y >= r[1] && y < r[3];
+  function onRoadOrWater(x, y) {
+    const z = zones();
+    for (const { rect } of z.road) if (inRect(x, y, rect)) return true;
+    for (const r of z.water) if (inRect(x, y, r)) return true;
+    return false;
+  }
+  function stepTile(x, y, make = true) {
+    const tx = Math.floor(x / TILE), ty = Math.floor(y / TILE), key = tx + ',' + ty;
+    let t = steps.get(key);
+    if (!t && make) {
+      if (steps.size >= 80 || typeof document === 'undefined') return null;
+      const c = document.createElement('canvas'); c.width = TILE; c.height = TILE;
+      t = { x0: tx * TILE, y0: ty * TILE, canvas: c, ctx: c.getContext('2d') };
+      steps.set(key, t);
+    }
+    return t || null;
+  }
+  // ett fotsteg vid (x, y) i gångriktningen (hx, hy); vem = 1 → ett litet djur (mindre tass)
+  env.snowStep = (x, y, hx = 0, hy = 1, vem = 0) => {
+    const w = env.weather;
+    if (!w || clamp01(w.snowCover) < 0.25 || !Number.isFinite(x) || !Number.isFinite(y)) return false;
+    if (onRoadOrWater(x, y)) return false;
+    const t = stepTile(x, y);
+    if (!t) return false;
+    stepFoot ^= 1;
+    const side = stepFoot ? 1 : -1, horiz = Math.abs(hx) > Math.abs(hy);
+    const px = Math.round(x - t.x0 - hy * side * 2), py = Math.round(y - t.y0 + hx * side * 1.5), c = t.ctx;
+    if (vem) { c.fillStyle = 'rgba(84,102,140,0.6)'; c.fillRect(px - 1, py - 1, 2, 2); return true; }
+    c.fillStyle = 'rgba(84,102,140,0.62)';
+    if (horiz) c.fillRect(px - 2, py - 1, 5, 3); else c.fillRect(px - 1, py - 2, 3, 5);
+    c.fillStyle = 'rgba(56,70,104,0.6)';
+    if (horiz) c.fillRect(px - 1, py, 3, 1); else c.fillRect(px, py - 1, 1, 3);
+    c.fillStyle = 'rgba(255,255,255,0.4)';   // kanten som trycks upp
+    if (horiz) c.fillRect(px - 2, py - 2, 5, 1); else c.fillRect(px - 2, py - 2, 1, 5);
+    return true;
+  };
+  env.snowStepsCount = () => steps.size;
+  env.snowStepsAt = (x, y, r = 6) => {   // (tester) antal målade pixlar inom r från (x, y) i rutan där punkten ligger
+    const t = stepTile(x, y, false);
+    if (!t) return 0;
+    const x0 = Math.max(0, Math.round(x - t.x0) - r), y0 = Math.max(0, Math.round(y - t.y0) - r), wdt = Math.min(TILE - x0, 2 * r + 1), hgt = Math.min(TILE - y0, 2 * r + 1);
+    const d = t.ctx.getImageData(x0, y0, wdt, hgt).data;
+    let n = 0;
+    for (let i = 3; i < d.length; i += 4) if (d[i] > 0) n++;
+    return n;
+  };
+  // nysnö täcker spåren steg för steg; smälter täcket bort är spåren borta
+  function stepsTick(w) {
+    const cover = clamp01(w.snowCover);
+    if (cover < 0.25) { if (steps.size) steps.clear(); stepsCover = cover; return; }
+    if (cover - stepsCover >= 0.08) {
+      for (const t of steps.values()) { t.ctx.save(); t.ctx.globalCompositeOperation = 'destination-out'; t.ctx.fillStyle = 'rgba(0,0,0,0.35)'; t.ctx.fillRect(0, 0, TILE, TILE); t.ctx.restore(); }
+      stepsCover = cover;
+    } else if (cover < stepsCover) stepsCover = cover;
+  }
+  function drawSteps(ctx, view) {
+    if (!steps.size) return;
+    const vr = rectOf(view);
+    for (const t of steps.values()) {
+      if (t.x0 >= vr[2] || t.x0 + TILE <= vr[0] || t.y0 >= vr[3] || t.y0 + TILE <= vr[1]) continue;
+      ctx.drawImage(t.canvas, t.x0, t.y0);
+    }
+  }
+
   function drawSnowfall(ctx, view, w, alpha) {
     const t = env.t, k = w.intensity, vx = view.x, vy = view.y, vw = view.w, vh = view.h;
     const n = Math.min(FLAKES.length, cnt(40 + 250 * k, view)), gust = w.gust || 1, wind = w.windNow || 0;
@@ -958,6 +1032,8 @@ export function createWeather(env) {
     const tw = snowWalk(q);
     const done = [];
     for (const c of walk) { let parts = [c]; for (const d of done) parts = subtract(parts, d); for (const p of parts) blit(ctx, tw, p); done.push(c); }
+    // 2b. ❄️ fotspåren (bara där någon gått) ovanpå mark och trottoarer
+    ctx.globalAlpha = 1; drawSteps(ctx, view); ctx.globalAlpha = 0.96;
     // 3. vägarna: trafikens levande spårlager om det finns (snöig vägbana där bilarna
     // mörkar hjulspår där de faktiskt kör och plogen röjer + lägger vall) – annars
     // den gamla fasta bilden: slask, hjulspårslinjer och plogvallar
@@ -1252,6 +1328,7 @@ export function createWeather(env) {
       w.label = weatherLabel(w);
       env.weather = w;
       env.rain = w.kind === 'regn';
+      stepsTick(w);
       warm(w);
     },
 
