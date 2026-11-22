@@ -156,6 +156,8 @@ body.menu-open #dock-panel, body.menu-open #dock-lage { display: none !important
 #dock-lage .dl-btn[data-lage="leka"].on { background: #8ee08a; }
 #dock-lage .dl-sma { display: none; gap: 6px; margin-top: 4px; }
 body.dock-leka #dock-lage .dl-sma { display: flex; }
+#dock-lage .dl-van { margin-top: 4px; }                                             /* 👫 leka ihop (v0.168) */
+.dock-vanlista { display: flex; flex-wrap: wrap; gap: 6px; }
 @media (min-width: 700px) { body.dock-bygga #app { padding-right: 192px; } }
 @media (max-width: 699px) {
   #dock-panel { right: 0; left: 0; top: auto; bottom: 0; width: auto; height: 164px; border-width: 3px 0 0; box-shadow: none; }

@@ -1,0 +1,97 @@
+[
+ {
+  "i": 10290,
+  "f": "js/net/dockdela.js",
+  "k": "👫 Leka ihop?"
+ },
+ {
+  "i": 10291,
+  "f": "js/net/dockdela.js",
+  "k": "{0} bjuder in dig till sitt hus – kom och lek ihop! Ni ser samma hus, och allt som den ena gör ser den andra."
+ },
+ {
+  "i": 10292,
+  "f": "js/net/dockdela.js",
+  "k": "🧸 Kom!"
+ },
+ {
+  "i": 10293,
+  "f": "js/scenes/dockskap.js",
+  "k": "👋 {0} är här och leker med dig!"
+ },
+ {
+  "i": 10294,
+  "f": "js/scenes/dockskap.js",
+  "k": "🧸 Du är hemma hos {0} – tryck på allt och lek ihop!"
+ },
+ {
+  "i": 10295,
+  "f": "js/scenes/dockskap.js",
+  "k": "🏠 {0} stängde huset – du är hemma igen."
+ },
+ {
+  "i": 10296,
+  "f": "js/scenes/dockskap.js",
+  "k": "👋 {0} gick hem."
+ },
+ {
+  "i": 10297,
+  "f": "js/scenes/dockskap.js",
+  "k": "Du är inte uppkopplad mot Pixelstaden."
+ },
+ {
+  "i": 10298,
+  "f": "js/scenes/dockskap.js",
+  "k": "🧸 På väg hem till {0} …"
+ },
+ {
+  "i": 10299,
+  "f": "js/scenes/dockskap.js",
+  "k": "📨 Inbjudan skickad till {0} – när hen kommer ser ni samma hus."
+ },
+ {
+  "i": 10300,
+  "f": "js/scenes/dockskap.js",
+  "k": "Du leker hemma hos {0}. Allt ni gör ser ni båda."
+ },
+ {
+  "i": 10301,
+  "f": "js/scenes/dockskap.js",
+  "k": "Du är inte uppkopplad mot Pixelstaden. Starta spelet och öppna huset från pausmenyn, så kan du bjuda in kompisar som är online."
+ },
+ {
+  "i": 10302,
+  "f": "js/scenes/dockskap.js",
+  "k": "Bjud in en kompis som är i Pixelstaden just nu – ni leker i samma hus och ser allt den andra gör."
+ },
+ {
+  "i": 10303,
+  "f": "js/scenes/dockskap.js",
+  "k": "I huset: {0}"
+ },
+ {
+  "i": 10304,
+  "f": "js/scenes/dockskap.js",
+  "k": "👫 Leka ihop"
+ },
+ {
+  "i": 10305,
+  "f": "js/scenes/dockskap.js",
+  "k": "🏠 Gå hem"
+ },
+ {
+  "i": 10306,
+  "f": "js/scenes/dockskap.js",
+  "k": "🏠 Du är hemma igen."
+ },
+ {
+  "i": 10307,
+  "f": "js/scenes/dockskap.js",
+  "k": "👋 {0} försvann."
+ },
+ {
+  "i": 10308,
+  "f": "js/scenes/dockskap.js",
+  "k": "🏠 {0} försvann – du är hemma igen."
+ }
+]

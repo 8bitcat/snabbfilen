@@ -3,6 +3,7 @@
 import { loadAvatar, openAvatarPicker, avatarPortrait, setAvatarWardrobe, setAvatarSalon } from './core/avatar.js';
 import { openModal, closeModal, toast, modalOpen, esc } from './core/ui.js';
 import { onInvite } from './net/coop.js';
+import { dockDelaInit } from './net/dockdela.js';   // 👫 leka ihop i Dockskåpet: inbjudan kommer hit även när scenen inte är laddad
 import { Game, SAVE_KEY, WIN_MONEY, JOBS, JOB_TITLES, levelOf, fmt, clock, REALTIME_RATE, setPetCounter, homeOf, rollOf } from './game.js';
 import { openGoals, celebrateGoals } from './core/livsmal.js'; // 🎯 livsmålen
 import { petStore } from './pets/sim.js';
@@ -896,6 +897,7 @@ function boot() {
   // 🧸 Dockskåpet (js/scenes/dockskap.js): från huvudmenyn (innan spelet börjat) eller pausmenyn,
   // och tillbaka dit man kom ifrån – menyn, eller rummet/staden man stod i
   A.openDockskap = () => { A.dockBack = { attract: !!A.attract, scene: A.sceneName }; A.attract = false; fit(); A.go('dockskap'); };
+  dockDelaInit(A);
   A.leaveDockskap = () => {
     const b = A.dockBack || { attract: true }; A.dockBack = null;
     if (b.attract || !A.game) { backToMenu(); return; }

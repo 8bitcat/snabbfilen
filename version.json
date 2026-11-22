@@ -1,7 +1,7 @@
 {
-  "version": "0.167.0",
-  "date": "2026-11-22",
-  "title": "💡 Belysningen i Dockskåpet – lampfärger, discokula och jultema",
+  "version": "0.168.0",
+  "date": "2026-11-23",
+  "title": "👫 Leka ihop i Dockskåpet – bjud in en kompis",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
@@ -164,6 +164,7 @@
     "js/main.js",
     "js/net/coop.js",
     "js/net/djurvan.js",
+    "js/net/dockdela.js",
     "js/net/kbk.js",
     "js/net/kbkpush.js",
     "js/net/sambo.js",

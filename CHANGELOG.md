@@ -10,6 +10,11 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.168.0] – 2026-11-23 – 👫 Leka ihop i Dockskåpet – bjud in en kompis
+- 👫 **Leka ihop i Dockskåpet** – knappen 👫 uppe till vänster bjuder in en kompis som är i Pixelstaden just nu (vännerna står först). Kompisen får en fråga, trycker Kom! och hamnar i samma hus: båda kan trycka på allt, dra figurer, djur och saker, möblera, byta teman och slå på natten – och allt som den ena gör ser den andra direkt, med animationer och ljud.
+- Kompisens hand syns i huset där hen pekar, med namnet ovanför. Gästen sparar aldrig ditt hus hos sig – när hen går hem (🏠 Gå hem, eller ⬅) är det egna huset tillbaka precis som det var.
+- Huset öppnas från pausmenyn för att kunna bjuda in – från huvudmenyn är man inte uppkopplad mot Pixelstaden än.
+
 ## [0.167.0] – 2026-11-22 – 💡 Belysningen i Dockskåpet – lampfärger, discokula och jultema
 - 💡 **Belysningen i Dockskåpet** – varje lampa tänds och släcks för sig och får en egen ljusfärg i Bygga-menyn (varmt, vitt, rosa, blått, grönt, lila eller rött), så man kan göra det riktigt mysigt. Natten är mörkare, så lamporna syns ordentligt, och de levande ljusen fladdrar.
 - 🪩 **Discokulan** i fliken Övrigt hänger i taket: tryck på den i Leka så snurrar den, färgade ljusfläckar sveper över rummet och figurerna i rummet dansar.
