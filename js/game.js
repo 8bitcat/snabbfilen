@@ -776,7 +776,7 @@ export class Game {
     this.designs = [];                    // 💎 egna halsband och väskor från BLING BLING-ateljén (shop-bling.js), högst 40
     // 🎁 presenterna (js/core/presenter.js): dag = senaste dagen (YYYY-MM-DD) en dagspresent kom, antal = öppnade
     // dagspresenter (var sjunde är stor), ko = presenterna som väntar [{ typ: 'dag'|'stor'|'van', fran?, gavor? }]
-    this.presenter = { dag: '', antal: 0, ko: [] };
+    this.presenter = { dag: '', antal: 0, ko: [], rad: { dagar: 0, senast: '' } };   // rad = 🔥 dagar i rad (v0.170)
     this.kort = {};          // 🃏 pixelkorten: { id: antal } (js/core/pixelkort.js)
     this.kortSerier = [];    // 🃏 serierna man fått belöningen för (komplett serie = 500 kr + guldpokal)
     this.meriter = [];       // 🏆 det man har vunnit [{ typ, plats, klass, vem, dag, t }] (js/core/meriter.js, merit())
@@ -972,8 +972,10 @@ export class Game {
           g.presenter = {
             dag: /^\d{4}-\d{2}-\d{2}(-[mk])?$/.test(String(P.dag || '')) ? String(P.dag) : '',   // ("-m"/"-k" = morgon-/kvällspresenten)
             antal: Math.max(0, Math.min(100000, Math.round(+P.antal || 0))),
-            ko: (Array.isArray(P.ko) ? P.ko : []).filter((x) => x && ['dag', 'stor', 'van'].includes(x.typ)).slice(-10)
-              .map((x) => ({ typ: x.typ, ...(x.fri ? { fri: true } : {}), ...(typeof x.fran === 'string' ? { fran: x.fran.slice(0, 16) } : {}), ...(Array.isArray(x.gavor) ? { gavor: x.gavor.slice(0, 3) } : {}), ...(typeof x.id === 'string' ? { id: x.id.slice(0, 24) } : {}) })),
+            ko: (Array.isArray(P.ko) ? P.ko : []).filter((x) => x && ['dag', 'stor', 'van', 'rad3', 'rad7'].includes(x.typ)).slice(-10)
+              .map((x) => ({ typ: x.typ, ...(x.fri ? { fri: true } : {}), ...(typeof x.fran === 'string' ? { fran: x.fran.slice(0, 16) } : {}), ...(Array.isArray(x.gavor) ? { gavor: x.gavor.slice(0, 3) } : {}), ...(typeof x.id === 'string' ? { id: x.id.slice(0, 24) } : {}), ...(+x.dagar > 0 ? { dagar: Math.min(100000, +x.dagar | 0) } : {}) })),
+            // 🔥 dagar i rad (v0.170): dagar = hur många dagar i följd man varit inne, senast = den senaste räknade dagen
+            rad: { dagar: Math.max(0, Math.min(100000, +P.rad?.dagar | 0)), senast: /^\d{4}-\d{2}-\d{2}$/.test(String(P.rad?.senast || '')) ? String(P.rad.senast) : '' },
           }; }
         { const D = p.djurhem && typeof p.djurhem === 'object' ? p.djurhem : {};
           g.djurhem = { adopterade: (Array.isArray(D.adopterade) ? D.adopterade : []).filter((s) => typeof s === 'string' && /^dh\d{1,3}(:\d{1,6})?$/.test(s)).slice(-200), hjalp: Number.isFinite(+D.hjalp) ? +D.hjalp | 0 : -1, gav: Number.isFinite(+D.gav) ? +D.gav | 0 : -1 }; }

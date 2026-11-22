@@ -1,0 +1,57 @@
+[
+ {
+  "i": 10309,
+  "f": "js/core/presenter.js",
+  "k": "🔥 {0} dagar i rad – en STOR LÅDA väntar i mobilen 📱"
+ },
+ {
+  "i": 10310,
+  "f": "js/core/presenter.js",
+  "k": "🔥 {0} dagar i rad – en mellanlåda väntar i mobilen 📱"
+ },
+ {
+  "i": 10311,
+  "f": "js/core/presenter.js",
+  "k": "🎁 STORA lådan – {0} dagar i rad!"
+ },
+ {
+  "i": 10312,
+  "f": "js/core/presenter.js",
+  "k": "🎁 Mellanlådan – {0} dagar i rad!"
+ },
+ {
+  "i": 10313,
+  "f": "js/core/presenter.js",
+  "k": "🔥 Du har spelat 1 dag i rad."
+ },
+ {
+  "i": 10314,
+  "f": "js/core/presenter.js",
+  "k": "🔥 Du har spelat {0} dagar i rad."
+ },
+ {
+  "i": 10315,
+  "f": "js/core/presenter.js",
+  "k": "I morgon: den STORA lådan!"
+ },
+ {
+  "i": 10316,
+  "f": "js/core/presenter.js",
+  "k": "I morgon: en mellanlåda!"
+ },
+ {
+  "i": 10317,
+  "f": "js/core/presenter.js",
+  "k": "Om {0} dagar: den STORA lådan!"
+ },
+ {
+  "i": 10318,
+  "f": "js/core/presenter.js",
+  "k": "Om {0} dagar: en mellanlåda!"
+ },
+ {
+  "i": 10319,
+  "f": "js/core/presenter.js",
+  "k": "✨ Mellanlådan – bra jobbat!"
+ }
+]

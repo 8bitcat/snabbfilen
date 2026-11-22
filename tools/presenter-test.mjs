@@ -105,6 +105,33 @@ await stang();
 await p.evaluate(() => { SF.game.presenter.ko = [{ typ: 'dag' }, { typ: 'dag' }, { typ: 'dag' }]; SF.game.presenter.dag = '2000-01-01'; });
 ok(!(await PR((m, SF) => m.presenterKoll(SF, { tyst: true }))) && (await state()).ko.length === 3, 'högst tre dagspresenter väntar');
 
+// ---- 🔥 dagar i rad (v0.170, Carl 2026-11-22): dag 3 mellanlådan, dag 7 stora lådan, en missad dag börjar om ----
+await p.evaluate(() => { SF.game.presenter.ko = []; SF.game.presenter.antal = 0; SF.game.presenter.dag = ''; SF.game.presenter.rad = { dagar: 0, senast: '' }; });
+const D = (k) => new Date(2026, 10, 1 + k, 9, 0).getTime();   // 1 november kl. 9 + k dagar
+await koll(D(0)); let r = await state();
+ok(r.rad.dagar === 1 && r.rad.senast === '2026-11-01', `dag 1: en dag i rad (${JSON.stringify(r.rad)})`);
+await koll(D(1)); await koll(D(2)); r = await state();
+ok(r.rad.dagar === 3 && r.ko.some((x) => x.typ === 'rad3' && x.dagar === 3), 'tre dagar i rad: mellanlådan kommer');
+for (let k = 3; k < 7; k++) await koll(D(k));
+r = await state();
+ok(r.rad.dagar === 7 && r.ko.some((x) => x.typ === 'rad7' && x.dagar === 7), 'sju dagar i rad: stora lådan');
+await koll(D(9)); r = await state();
+ok(r.rad.dagar === 1 && r.rad.senast === '2026-11-10', 'en missad dag: räkningen börjar om på 1');
+ok(await PR((m) => JSON.stringify([m.radLada(10), m.radLada(14), m.radLada(17), m.radLada(8), m.tillRad(3), m.tillRad(7)])) === JSON.stringify(['rad3', 'rad7', 'rad3', null, { om: 4, typ: 'rad7' }, { om: 3, typ: 'rad3' }]), 'mönstret: 10 och 17 mellan, 14 stor; efter dag 3 är nästa stora om 4, efter dag 7 nästa mellan om 3');
+await p.evaluate(() => { SF.game.presenter.ko = [{ typ: 'rad3', dagar: 3 }]; SF.game.presenter.rad = { dagar: 3, senast: '2026-11-10' }; });
+await p.evaluate(async () => { const m = await import('/js/core/presenter.js'); m.openPresenter(SF); }); await sleep(300);
+ok(await p.evaluate(() => /Mellanlådan – 3 dagar i rad/.test(document.querySelector('#modal .pr-rad .nm')?.textContent || '') && /spelat 3 dagar i rad/.test(document.querySelector('#modal .pr-rad-info')?.textContent || '') && /Om 4 dagar: den STORA lådan/.test(document.querySelector('#modal .pr-rad-info')?.textContent || '')), 'appen: "Mellanlådan – 3 dagar i rad" och räknaren med nästa låda');
+await p.evaluate(() => document.querySelector('#modal [data-oppna]').click()); await sleep(300);
+await p.evaluate(() => document.querySelector('#modal .pr-cv').click());
+await p.waitForFunction(() => !document.querySelector('#modal .pr-gavor')?.classList.contains('hidden'), null, { timeout: 6000 }).catch(() => {});
+ok((await p.evaluate(() => document.querySelectorAll('#modal .pr-gava').length)) === 2 && (await state()).antal === 0 && await p.evaluate(() => /Mellanlådan/.test(document.querySelector('#modal .pr-tips')?.textContent || '')), 'mellanlådan: två saker, räknas inte som en dagspresent');
+await stang();
+await p.reload(); await p.waitForFunction(() => !!window.SF?.game, null, { timeout: 30000 });
+await p.waitForFunction(() => window.SF.game.presenter.dag === '2026-10-12-m', null, { timeout: 15000 }).catch(() => {}); await sleep(300); await stang();   // (startkollen efter 3 s har gått – annars trillar en dagspresent in mitt i nästa avsnitt)
+r = await state();
+ok(r.rad && r.rad.senast === '2026-10-12' && r.rad.dagar === 1, `räknaren sparas och laddas – och börjar om när dagen inte är dagen efter (${JSON.stringify(r.rad)})`);
+await p.evaluate((t) => { window.__presentNu = t; }, T0 + 23 * 3600000);   // (klockan tillbaka där avsnitten nedan väntar sig den: 13/10 kl. 8)
+
 // ---- notiserna kl. 7 och kl. 19 (Carl 2026-10-13) ----
 const planera = (t) => p.evaluate(async (t) => { const n = await import('/js/core/notiser.js'); window.__notiser = []; await n.planera(new Date(t)); return window.__notiser.filter((x) => (x.id >= 7101 && x.id <= 7104) || (x.id >= 7121 && x.id <= 7124)).map((x) => ({ id: x.id, body: x.body, ts: +new Date(x.schedule.at), dag: new Date(x.schedule.at).getDay(), datum: new Date(x.schedule.at).getDate(), kl: new Date(x.schedule.at).getHours() + ':' + String(new Date(x.schedule.at).getMinutes()).padStart(2, '0') })).sort((x, y) => x.ts - y.ts); }, t);
 await p.evaluate(() => { SF.game.presenter.ko = []; SF.game.presenter.antal = 4; SF.game.presenter.dag = '2000-01-01'; });   // (inga presenter hämtade)
@@ -130,9 +157,10 @@ await sleep(300);
 await p.evaluate(() => document.querySelector('#modal .pr-cv').click());
 await p.waitForFunction(() => !document.querySelector('#modal .pr-gavor')?.classList.contains('hidden'), null, { timeout: 6000 }).catch(() => {});
 await sleep(600);
+const fotKnapp = await p.evaluate(() => ({ knapp: document.querySelector('#modal .dlg-foot .btn-go')?.textContent, ko: SF.game.presenter.ko.map((x) => x.typ), h2: document.querySelector('#modal .dlg-head h2')?.textContent }));
 await p.evaluate(() => document.querySelector('#modal .dlg-foot .btn-go').click());
 await sleep(500);
-ok(/Vill du få notiser/.test(await p.evaluate(() => document.querySelector('#modal:not(.hidden) .dlg-head h2')?.textContent || '')), 'efter en öppnad present: "🔔 Vill du få notiser?"');
+ok(/Vill du få notiser/.test(await p.evaluate(() => document.querySelector('#modal:not(.hidden) .dlg-head h2')?.textContent || '')), `efter en öppnad present: "🔔 Vill du få notiser?" (knappen "${fotKnapp.knapp}", kön ${JSON.stringify(fotKnapp.ko)}, rutan "${fotKnapp.h2}")`);
 await p.evaluate(() => [...document.querySelectorAll('#modal .dlg-foot .btn')].find((b) => /Ja tack/.test(b.textContent)).click());
 await sleep(600);
 ok((await p.evaluate(() => localStorage.getItem('snabbfilen_notiser'))) === 'pa', 'Ja tack → notiserna är på');

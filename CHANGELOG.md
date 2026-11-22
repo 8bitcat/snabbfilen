@@ -10,6 +10,10 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.170.0] – 2026-11-23 – 🔥 Dagar i rad – mellanlådan och stora lådan
+- 🔥 **Dagar i rad** – varje dag du är inne i Pixelstaden räknas. Tre dagar i rad ger **Mellanlådan** (en blå låda med pengar och ett plagg), sju dagar i rad **Stora lådan** (som den stora presenten, plus ett kortpaket) – och sedan fortsätter det: dag 10, 14, 17, 21 … Missar du en dag börjar räkningen om.
+- Lådorna kommer utöver morgon- och kvällspresenten, och 🎁 Presenter i mobilen visar hur många dagar i rad du har och när nästa låda kommer.
+
 ## [0.169.0] – 2026-11-23 – ❄️ Fotspår i snön i Pixelstaden
 - ❄️ **Fotspår i snön** – när snön ligger i Pixelstaden (vintern, var fjärde vecka) lämnar du spår efter dig där du går: vänster och höger fot växelvis, vridna efter gångriktningen, på gräs, torg och trottoarer. Stadens folk och kompisarna i världen trampar också sina spår.
 - Nysnö täcker spåren lite i taget medan det snöar, och när snön smälter bort är de borta. På vägarna syns bilarnas hjulspår och plogen som förut.

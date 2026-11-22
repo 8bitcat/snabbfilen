@@ -12,7 +12,13 @@
 //     (js/core/notiser.js, setExtraNotiser) – inte för en present man redan har öppnat. Har man inte sagt ja till
 //     notiser frågar spelet efter en öppnad present (högst en gång om dagen), och appen visar en rad "Slå på".
 //   • Vänskapspresenter (v0.110) hamnar i samma kö (typ 'van').
-// Sparas i spelet: g.presenter = { dag, antal, ko } (game.js). Testerna styr klockan med window.__presentNu (ms).
+//   • 🔥 Dagar i rad (v0.170, Carl 2026-11-22: "när man loggat in tre dagar i rad så får man en större presentlåda, och
+//     efter 7 dagar en stor låda"): varje dag (från kl. 6) man är inne räknas; en missad dag börjar om på 1. Dag 3 i rad
+//     ger MELLANLÅDAN (typ 'rad3': pengar + ett plagg, blå låda), dag 7 STORA LÅDAN ('rad7': som den stora presenten
+//     + ett kortpaket), och sedan samma mönster (10, 14, 17, 21 …). Lådorna läggs till utöver dagspresenterna, räknas
+//     inte som dagspresenter (antal) och begränsas inte av MAX_DAG. Appen visar räknaren och när nästa låda kommer.
+// Sparas i spelet: g.presenter = { dag, antal, ko, rad: { dagar, senast } } (game.js). Testerna styr klockan med
+// window.__presentNu (ms).
 import { $t } from './i18n.js';
 import { openModal, closeModal, toast, esc, modalOpen } from './ui.js';
 import { play } from './sound.js';
@@ -36,8 +42,26 @@ export function dagNu(t = nu()) {
 // passet: morgon (kl. 6–18) eller kväll (kl. 18–6) → "2026-10-13-m" / "2026-10-13-k" (natten hör till kvällen innan)
 export const KVALL_KL = 18;
 export function passNu(t = nu()) { const h = new Date(t).getHours(); return `${dagNu(t)}-${h >= NY_DAG_KL && h < KVALL_KL ? 'm' : 'k'}`; }
-const P = (G) => { if (!G.presenter || typeof G.presenter !== 'object') G.presenter = { dag: '', antal: 0, ko: [] }; return G.presenter; };
+const P = (G) => {
+  if (!G.presenter || typeof G.presenter !== 'object') G.presenter = { dag: '', antal: 0, ko: [] };
+  if (!G.presenter.rad || typeof G.presenter.rad !== 'object') G.presenter.rad = { dagar: 0, senast: '' };
+  return G.presenter;
+};
 const dagliga = (G) => P(G).ko.filter((x) => x.typ === 'dag' || x.typ === 'stor').length;
+// 🔥 dagar i rad: dag 3 → mellanlådan, dag 7 → stora lådan, sedan var tredje/sjunde i samma mönster (10, 14, 17, 21 …)
+const RAD_MELLAN = 3, RAD_STOR = 7;
+export const radLada = (d) => (d >= RAD_STOR && d % RAD_STOR === 0 ? 'rad7' : d >= RAD_MELLAN && d % RAD_STOR === RAD_MELLAN ? 'rad3' : null);
+// nästa låda efter d dagar: { om: antal dagar till, typ }
+export function tillRad(d) { for (let k = 1; k <= RAD_STOR; k++) { const typ = radLada(d + k); if (typ) return { om: k, typ }; } return { om: RAD_STOR, typ: 'rad7' }; }
+const pad2 = (v) => String(v).padStart(2, '0');
+// var senast dagen före dag? (nycklar 'YYYY-MM-DD', lokal tid)
+export function igar(senast, dag) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(dag || ''));
+  if (!m || !senast) return false;
+  const g = new Date(+m[1], +m[2] - 1, +m[3] - 1);
+  return senast === `${g.getFullYear()}-${pad2(g.getMonth() + 1)}-${pad2(g.getDate())}`;
+}
+export const dagarIRad = (G) => P(G).rad.dagar | 0;
 // blir nästa dagspresent stor? (antal öppnade + de som väntar)
 const blirStor = (G, extra = 0) => (P(G).antal + dagliga(G) + extra) % STOR_VAR === STOR_VAR - 1;
 export const presenterVantar = (A) => (A?.game ? P(A.game).ko.length : 0);
@@ -53,11 +77,21 @@ export function presenterKoll(A, { tyst = false } = {}) {
   // (sparfiler från före 0.116.2 har bara datumet: dagens present = morgonpresenten)
   if (p.dag === dagNu() && idag.endsWith('-m')) { p.dag = idag; G.save(); return false; }
   p.dag = idag;
-  if (dagliga(G) >= MAX_DAG) { G.save(); return false; }
+  // 🔥 dagar i rad: en ny dag räknas första gången man är inne den dagen; dag 3 och 7 (och sedan 10, 14 …) ger en låda
+  const dag = dagNu(), r = p.rad;
+  let lada = null;
+  if (r.senast !== dag) {
+    r.dagar = igar(r.senast, dag) ? (r.dagar | 0) + 1 : 1; r.senast = dag;
+    lada = radLada(r.dagar);
+    if (lada) p.ko.push({ typ: lada, dagar: r.dagar });
+  }
+  const sagLada = () => { if (lada && !tyst) setTimeout(() => { play('box'); toast(lada === 'rad7' ? $t`🔥 ${r.dagar} dagar i rad – en STOR LÅDA väntar i mobilen 📱` : $t`🔥 ${r.dagar} dagar i rad – en mellanlåda väntar i mobilen 📱`, 'good'); }, lada && dagliga(G) ? 6000 : 2500); };
+  if (dagliga(G) >= MAX_DAG) { G.save(); sagLada(); return !!lada; }
   const typ = blirStor(G) ? 'stor' : 'dag';
   p.ko.push({ typ });
   G.save();
   if (!tyst) setTimeout(() => { play('ok'); toast(typ === 'stor' ? $t('🎁 En STOR present väntar på dig! Öppna den i mobilen 📱') : $t('🎁 Du har fått en present! Öppna den i mobilen 📱'), 'good'); }, 2500);
+  sagLada();
   planera();   // (morgondagens notistext kan ha ändrats)
   return true;
 }
@@ -90,6 +124,8 @@ const pokal = () => ({ slag: 'mobel', k: 'pokal', v: Math.random() < 0.2 ? 0 : M
 // 🃏 ett kortpaket (tre kort, dragna redan nu så att bilden visar rätt kort) och ett enstaka kort
 const kortpaket = () => ({ slag: 'kortpaket', ids: draPaket(3) });
 export function rulla(G, typ) {
+  if (typ === 'rad7') return [...rulla(G, 'stor').filter((g) => g.slag !== 'kortpaket'), kortpaket()];   // 🔥 stora lådan: som den stora presenten + ett kortpaket
+  if (typ === 'rad3') return [pengar(200, 400), plagg(G, 600, 100) || kortpaket()];                       // 🔥 mellanlådan: pengar + ett plagg
   if (typ === 'stor') return [pengar(300, 600), plagg(G, 900, 150) || kortpaket(), Math.random() < 0.35 ? pokal() : mobel(1200, 300) || pengar(200, 300), ...(Math.random() < 0.5 ? [kortpaket()] : [])];
   if (Math.random() < 0.05) return [{ slag: 'mobel', k: 'pokal', v: 2 }];
   if (Math.random() < 0.15) return [{ slag: 'kort', id: draKort() }];
@@ -134,10 +170,13 @@ function gavaNamn(g) {
 const gavaVart = (g) => (g.slag === 'kort' || g.slag === 'kortpaket' ? $t('i albumet – appen 🃏 Pixelkort') : g.slag === 'pengar' ? $t('i plånboken') : g.slag === 'plagg' ? $t('i garderoben') : g.slag === 'mobel' ? $t('i förrådet – ställ ut den med 🛋️ Möblera hemma') : g.slag === 'djur' ? $t('hos djuren hemma') : $t('i kylskåpet'));
 
 // ---------- bilderna ----------
-// paketet (pixel för pixel): stor = guld med rött band och stjärnor, liten = rött med guldband och prickar
-function paketBild(stor, lock = 0, skak = 0) {
-  const W = 64, H = 60, P2 = new Pix(W, H);
-  const bas = stor ? 0xe8b84a : 0xe04848, band = stor ? 0xd8394a : 0xffd23f, bw = stor ? 46 : 38, bh = stor ? 30 : 24;
+// paketet (pixel för pixel): stor = guld med rött band och stjärnor, mellan = blått med silverband och
+// stjärnor (🔥 mellanlådan), liten = rött med guldband och prickar
+const stilFor = (x) => (x.typ === 'stor' || x.typ === 'rad7' ? 'stor' : x.typ === 'rad3' ? 'mellan' : 'liten');
+function paketBild(stil, lock = 0, skak = 0) {
+  if (stil === true) stil = 'stor'; else if (!stil) stil = 'liten';
+  const W = 64, H = 60, P2 = new Pix(W, H), stor = stil !== 'liten', mellan = stil === 'mellan';
+  const bas = mellan ? 0x3f8fe0 : stor ? 0xe8b84a : 0xe04848, band = mellan ? 0xeef3f8 : stor ? 0xd8394a : 0xffd23f, bw = mellan ? 42 : stor ? 46 : 38, bh = mellan ? 27 : stor ? 30 : 24;
   const x0 = Math.round((W - bw) / 2 + skak), y0 = H - bh - 2;
   for (let y = 0; y < bh; y++) for (let x = 0; x < bw; x++) {   // lådan
     let c = x < 3 ? mix(bas, 0xffffff, 0.25) : x > bw - 4 ? mul(bas, 0.72) : bas;
@@ -195,16 +234,18 @@ async function gavaBild(A, g) {
 }
 
 // ---------- 🎁 Presenter i mobilen ----------
-const rubrikFor = (x) => (x.typ === 'stor' ? $t('🎁 STOR present') : x.typ === 'van' ? $t`💛 Present från ${x.fran || '?'}` : $t('🎁 Dagens present'));
+const rubrikFor = (x) => (x.typ === 'stor' ? $t('🎁 STOR present') : x.typ === 'rad7' ? $t`🎁 STORA lådan – ${x.dagar || RAD_STOR} dagar i rad!` : x.typ === 'rad3' ? $t`🎁 Mellanlådan – ${x.dagar || RAD_MELLAN} dagar i rad!` : x.typ === 'van' ? $t`💛 Present från ${x.fran || '?'}` : $t('🎁 Dagens present'));
 export function openPresenter(A) {
   presenterKoll(A, { tyst: true });
-  const G = A.game, p = P(G), n = tillStor(G);
-  const rader = p.ko.map((x, i) => `<div class="pr-rad${x.typ === 'stor' ? ' pr-stor' : ''}"><span class="pr-ik" data-pik="${i}"></span><span class="nm">${esc(rubrikFor(x))}</span><button class="btn btn-small btn-go" data-oppna="${i}">${$t('Öppna!')}</button></div>`).join('');
+  const G = A.game, p = P(G), n = tillStor(G), rad = p.rad.dagar | 0, nr = tillRad(rad);
+  const rader = p.ko.map((x, i) => `<div class="pr-rad${stilFor(x) !== 'liten' ? ' pr-stor' : ''}"><span class="pr-ik" data-pik="${i}"></span><span class="nm">${esc(rubrikFor(x))}</span><button class="btn btn-small btn-go" data-oppna="${i}">${$t('Öppna!')}</button></div>`).join('');
+  const radText = `${rad === 1 ? $t('🔥 Du har spelat 1 dag i rad.') : $t`🔥 Du har spelat ${rad} dagar i rad.`} ${nr.om === 1 ? (nr.typ === 'rad7' ? $t('I morgon: den STORA lådan!') : $t('I morgon: en mellanlåda!')) : (nr.typ === 'rad7' ? $t`Om ${nr.om} dagar: den STORA lådan!` : $t`Om ${nr.om} dagar: en mellanlåda!`)}`;
   const dlg = openModal($t('🎁 Presenter'), `${p.ko.length ? `<div class="pr-lista">${rader}</div>` : `<p style="font-size:var(--f2);margin-top:0">${$t('Inga presenter just nu. I morgon bitti kommer en ny! 🌅')}</p>`}
+    <p class="sp pr-rad-info" style="font-size:var(--f2)">${radText}</p>
     <p class="sp" style="font-size:var(--f2)">${n === 1 ? $t('⭐ Nästa present blir en STOR present!') : $t`⭐ Var sjunde present är en STOR present – nästa om ${n} presenter.`}<br>${$t('🌅 En present på morgonen (från kl. 6) och en på kvällen (från kl. 18).')}</p>
     ${notiserFinns() && !notiserPa() ? `<p class="pr-notis" style="font-size:var(--f2)">${$t('🔔 Notiserna är av. Slå på dem så säger mobilen till kl. 7 och kl. 19 när en present väntar!')} <button class="btn btn-small btn-gold" data-notispa>${$t('🔔 Slå på')}</button></p>` : ''}`,
   [{ label: $t('Stäng'), cls: 'btn-go', onClick: closeModal }]);
-  dlg.querySelectorAll('[data-pik]').forEach((el) => el.append(stor(paketBild(p.ko[+el.dataset.pik].typ === 'stor'), 1)));
+  dlg.querySelectorAll('[data-pik]').forEach((el) => el.append(stor(paketBild(stilFor(p.ko[+el.dataset.pik])), 1)));
   dlg.querySelectorAll('[data-oppna]').forEach((b) => (b.onclick = () => oppna(A, +b.dataset.oppna)));
   const np = dlg.querySelector('[data-notispa]');
   if (np) np.onclick = async () => { np.disabled = true; if (await slaPa()) { toast($t('🔔 Notiserna är på! Mobilen säger till kl. 7 och kl. 19.'), 'good'); openPresenter(A); } else np.disabled = false; };
@@ -214,7 +255,7 @@ export function openPresenter(A) {
 export function oppna(A, i) {
   const G = A.game, p = P(G), x = p.ko[i];
   if (!x) return;
-  const storP = x.typ === 'stor';
+  const stil = stilFor(x), storP = stil !== 'liten';
   const dlg = openModal(rubrikFor(x), `<div class="pr-scen"><canvas class="pr-cv" width="256" height="240"></canvas><p class="pr-tips">${$t('Tryck på paketet!')}</p></div><div class="pr-gavor hidden"></div>`,
     [{ label: $t('🎁 Öppna!'), cls: 'btn-go', onClick: () => start() }]);
   dlg.classList.add('pr-dlg');
@@ -234,7 +275,7 @@ export function oppna(A, i) {
       for (let k = 0; k < 9; k++) { const a = -Math.PI / 2 + (k - 4) * 0.22; g.beginPath(); g.moveTo(128, 150); g.lineTo(128 + Math.cos(a - 0.06) * 200, 150 + Math.sin(a - 0.06) * 200); g.lineTo(128 + Math.cos(a + 0.06) * 200, 150 + Math.sin(a + 0.06) * 200); g.fill(); }
       g.globalAlpha = 1;
     }
-    g.drawImage(paketBild(storP, lock, Math.round(skak)), 0, 0, 64, 60, 0, 0, 256, 240);
+    g.drawImage(paketBild(stil, lock, Math.round(skak)), 0, 0, 64, 60, 0, 0, 256, 240);
     if (fas === 'upp') {
       for (const b of bitar) { b.x += b.vx; b.y += b.vy; b.vy += 0.18; g.fillStyle = b.c; g.fillRect(Math.round(b.x), Math.round(b.y), b.s, b.s); }
       if (t > 0.9 && dlg.querySelector('.pr-gavor').classList.contains('hidden')) visa();
@@ -253,7 +294,7 @@ export function oppna(A, i) {
     if (!gavor.length) gavor = [pengar(50, 100)];
     for (const gv of gavor) ge(A, gv);
     p.ko.splice(p.ko.indexOf(x), 1);
-    if (x.typ !== 'van') p.antal += 1;
+    if (x.typ === 'dag' || x.typ === 'stor') p.antal += 1;   // (🔥 lådorna och vänskapspresenterna räknas inte mot "var sjunde")
     G.glad?.(4, '', 'present', 10);
     G.save();
     planera();
@@ -263,7 +304,7 @@ export function oppna(A, i) {
   async function visa() {
     const box = dlg.querySelector('.pr-gavor'); box.classList.remove('hidden');
     dlg.querySelector('.pr-scen').classList.add('pr-klar');   // (paketet krymper – gåvorna får plats)
-    dlg.querySelector('.pr-tips').textContent = storP ? $t('✨ En STOR present!') : $t('✨ Titta vad du fick!');
+    dlg.querySelector('.pr-tips').textContent = stil === 'mellan' ? $t('✨ Mellanlådan – bra jobbat!') : storP ? $t('✨ En STOR present!') : $t('✨ Titta vad du fick!');
     box.innerHTML = gavor.map((gv, k) => `<div class="pr-gava" data-g="${k}"><span class="pr-bild"></span><b>${esc(gavaNamn(gv))}</b><small>${esc(gavaVart(gv))}</small>${gv.slag === 'plagg' ? `<button class="btn btn-small btn-gold" data-tapa="${k}">${$t('👕 Ta på')}</button>` : ''}</div>`).join('');
     for (const [k, gv] of gavor.entries()) box.querySelector(`[data-g="${k}"] .pr-bild`).append(await gavaBild(A, gv));
     box.querySelectorAll('[data-tapa]').forEach((b) => (b.onclick = () => {
