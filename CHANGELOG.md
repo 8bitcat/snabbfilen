@@ -10,6 +10,11 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.167.0] – 2026-11-22 – 💡 Belysningen i Dockskåpet – lampfärger, discokula och jultema
+- 💡 **Belysningen i Dockskåpet** – varje lampa tänds och släcks för sig och får en egen ljusfärg i Bygga-menyn (varmt, vitt, rosa, blått, grönt, lila eller rött), så man kan göra det riktigt mysigt. Natten är mörkare, så lamporna syns ordentligt, och de levande ljusen fladdrar.
+- 🪩 **Discokulan** i fliken Övrigt hänger i taket: tryck på den i Leka så snurrar den, färgade ljusfläckar sveper över rummet och figurerna i rummet dansar.
+- 🎄 **Temat Jul** bland de färdiga temana: röd tapet, mörkt golv och frostade fönster – och gran, blinkande girlang och julstrumpa ställs fram i rummet. Julbelysningen (girlangen, adventsljusen, julgranen med ljus) kan släckas och tändas med ett tryck.
+
 ## [0.166.0] – 2026-11-22 – 🧸🔨 Leka och Bygga i Dockskåpet – tryck på allt
 - 🧸🔨 **Leka och Bygga i Dockskåpet** – två stora knappar uppe till vänster. Huset öppnas i Leka: lådan är borta, möblerna står fast och allt man trycker på svarar. Vill man ändra trycker man på Bygga, så är lådan framme och allt dras, vrids och målas som förut. Läget sparas.
 - I Leka händer det något på allt: pianot, fiolen och skivsamlingen spelar en melodi med noter som stiger, lamporna tänds och släcks var för sig (med sken på natten), brasan tänds, brödrosten poppar upp två skivor, spisen och ugnen fräser och ångar, kylen ryker kallt, kranarna och toaletten bubblar, skärmarna blinkar, soffan och sängen studsar så att den som sitter där hoppar, klockan pinglar, spegeln glittrar, växterna fäller löv, julgranen gnistrar, mattan dammar och tavlorna svajar.

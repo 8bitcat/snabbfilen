@@ -344,6 +344,43 @@ ok(await p.evaluate(() => !document.getElementById('modal').classList.contains('
 await p.click('#modal .dlg-foot .btn:has-text("Stäng")'); await p.waitForTimeout(100);
 await dbg(`d.removePet('${katt3}')`);
 
+// ---------- 5g. belysningen (v0.167): ljusfärg, discokula, jultema, släckbar julbelysning ----------
+await dbg('d.goRoom(0)');
+const spL2 = await dbg(`d.spot(0, ${iLampa})`);
+await tryck(spL2.x, spL2.y); await p.waitForTimeout(150);
+const knL = await p.$$eval('#modal .dlg-foot .btn', (els) => els.map((e) => e.textContent));
+ok(knL.some((t) => /💡 (Tänd|Släck)/.test(t)) && knL.some((t) => /Ljus: Varmt/.test(t)), `lampans meny i Bygga: ${knL.filter((t) => /Tänd|Släck|Ljus/.test(t)).join(' · ')}`);
+await p.click('#modal .dlg-foot .btn:has-text("Ljus:")'); await p.waitForTimeout(150);
+ok((await dbg(`d.deco(0)[${iLampa}]`)).ljus === 'vit' && (await dbg(`d.lit(0, ${iLampa})`)) === true && await p.evaluate(() => /Ljus: Vitt/.test(document.querySelector('#modal')?.textContent || '')), 'Ljus: nästa färg är Vitt och lampan tänds');
+await p.click('#modal .dlg-foot .btn:has-text("Stäng")'); await p.waitForTimeout(100);
+ok((await dbg(`d.setLjus(0, ${iLampa}, 'rosa')`)) === 'rosa' && (await dbg('d.ljusfarger')).length === 7, 'setLjus: rosa – sju ljusfärger');
+ok(await dbg("d.place('discokula', 0, 180, 60)"), 'place: discokulan hänger i taket');
+const iDisko = await dbg("d.findDeco(0, 'discokula')");
+ok(iDisko >= 0 && (await dbg(`d.deco(0)[${iDisko}]`)).y <= 83 && (await dbg(`d.deco(0)[${iDisko}]`)).y >= 34, `discokulan finns på väggen (idx ${iDisko}, y ${(await dbg(`d.deco(0)[${iDisko}]`)).y})`);
+await p.click('#dock-lage [data-lage="leka"]'); await p.waitForTimeout(300);
+const spDk = await dbg(`d.spot(0, ${iDisko})`);
+await tryck(spDk.x, spDk.y);
+ok((await dbg(`d.lit(0, ${iDisko})`)) === true && (await dbg('d.disco(0)')) === true && (await dbg('d.senaste()')).ljud === 'disco', 'tryck i Leka: discokulan igång (disco-ljud, figurerna dansar)');
+await tryck(spDk.x, spDk.y);
+ok((await dbg(`d.lit(0, ${iDisko})`)) === false && (await dbg('d.disco(0)')) === false, 'tryck igen: stopp');
+await p.click('#dock-lage [data-lage="bygga"]'); await p.waitForTimeout(300);
+await p.click('#dock-panel [data-flik="teman"]'); await p.waitForTimeout(300);
+ok((await p.$$eval('#dock-panel [data-tema]', (els) => els.length)) === 9 && (await p.$$eval('#dock-panel [data-tema="jul"]', (els) => els.length)) === 1, 'temafliken: nio färdiga teman, 🎄 Jul finns');
+await p.click('#dock-panel [data-tema="jul"]'); await p.waitForTimeout(300);
+const temaJul = await dbg('d.tema(0)');
+ok(temaJul.tapet === 'korsbar' && temaJul.golv === 'morkek' && (await dbg("d.deco(0).some((d) => d.k === 'kulgran')")) && (await dbg("d.deco(0).some((d) => d.k === 'ljusgirlang')")), 'temat Jul: röd tapet, mörkt golv, gran och girlang framställda');
+const iGirl = await dbg("d.findDeco(0, 'ljusgirlang')");
+await p.click('#dock-lage [data-lage="leka"]'); await p.waitForTimeout(300);
+const spG = await dbg(`d.spot(0, ${iGirl})`);
+await tryck(spG.x, spG.y);
+ok((await dbg(`d.deco(0)[${iGirl}]`)).slackt === true && (await dbg('d.senaste()')).k === 'ljusgirlang:slack', 'girlangen släcks med ett tryck');
+await tryck(spG.x, spG.y);
+ok(!(await dbg(`d.deco(0)[${iGirl}]`)).slackt, 'och tänds igen');
+await p.waitForTimeout(400);
+ok(await p.evaluate(() => { const h = JSON.parse(localStorage.getItem('snabbfilen_dockskap')); return h.rooms[0].deco.some((d) => d.k === 'lampa' && d.ljus === 'rosa' && d.lit) && h.rooms[0].deco.some((d) => d.k === 'discokula'); }), 'ljusfärgen och discokulan sparas i huset');
+await p.click('#dock-lage [data-lage="bygga"]'); await p.waitForTimeout(200);
+await p.click('#dock-panel [data-flik="vardagsrum"]'); await p.waitForTimeout(100);
+
 // ---------- 6. från pausmenyn mitt i spelet: tillbaka till rummet ----------
 await p.goto(`http://localhost:${PORT}/index.html?world=dock${Date.now().toString(36)}`);
 await p.evaluate(() => { localStorage.setItem('snabbfilen_avatar', JSON.stringify({ name: 'Docka', look: {}, color: '#e04848' })); localStorage.setItem('snabbfilen_save1', JSON.stringify({ v: 1, day: 3, min: 600, money: 500, hunger: 80, energy: 80, home: 'rum', fridge: {}, jobs: {}, earned: 0, wardrobe: [], storage: [], deco: {}, won: false })); });

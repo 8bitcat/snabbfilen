@@ -1,0 +1,52 @@
+[
+ {
+  "i": 10280,
+  "f": "js/scenes/dockskap.js",
+  "k": "Varmt"
+ },
+ {
+  "i": 10281,
+  "f": "js/scenes/dockskap.js",
+  "k": "Grönt"
+ },
+ {
+  "i": 10282,
+  "f": "js/scenes/dockskap.js",
+  "k": "Rött"
+ },
+ {
+  "i": 10283,
+  "f": "js/scenes/dockskap.js",
+  "k": "💡 Släck"
+ },
+ {
+  "i": 10284,
+  "f": "js/scenes/dockskap.js",
+  "k": "💡 Tänd"
+ },
+ {
+  "i": 10285,
+  "f": "js/scenes/dockskap.js",
+  "k": "🎨 Ljus: {0}"
+ },
+ {
+  "i": 10286,
+  "f": "js/scenes/dockskap.js",
+  "k": "✨ Tänd"
+ },
+ {
+  "i": 10287,
+  "f": "js/scenes/dockskap.js",
+  "k": "✨ Släck"
+ },
+ {
+  "i": 10288,
+  "f": "js/scenes/dockskap.js",
+  "k": "🪩 Stoppa"
+ },
+ {
+  "i": 10289,
+  "f": "js/scenes/dockskap.js",
+  "k": "🪩 Starta"
+ }
+]

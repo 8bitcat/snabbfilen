@@ -122,6 +122,7 @@ export function play(name) {
       case 'shake': [1800, 2200, 1600].forEach((f, i) => tone(f, i * 0.04, 0.03, 'triangle', 0.05)); break;   // det prasslar
       case 'sizzle': tone(3000, 0, 0.25, 'sawtooth', 0.025, 2400); tone(2500, 0.1, 0.25, 'sawtooth', 0.02, 3200); break;   // det fräser på spisen
       case 'toast': tone(600, 0, 0.05, 'square', 0.1); tone(1320, 0.06, 0.2, 'triangle', 0.1); break;   // brödrosten poppar
+      case 'disco': [[196, 0], [262, 0.12], [330, 0.24], [392, 0.36], [330, 0.6], [392, 0.72]].forEach(([f, at], i) => tone(f, at, i === 5 ? 0.3 : 0.1, 'square', 0.07)); [0, 0.24, 0.48, 0.72].forEach((at) => tone(3200, at, 0.02, 'triangle', 0.04)); break;   // 🪩 discokulan
     }
   } catch { /* ljud är aldrig värt en krasch */ }
 }
