@@ -10,6 +10,11 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.166.0] – 2026-11-22 – 🧸🔨 Leka och Bygga i Dockskåpet – tryck på allt
+- 🧸🔨 **Leka och Bygga i Dockskåpet** – två stora knappar uppe till vänster. Huset öppnas i Leka: lådan är borta, möblerna står fast och allt man trycker på svarar. Vill man ändra trycker man på Bygga, så är lådan framme och allt dras, vrids och målas som förut. Läget sparas.
+- I Leka händer det något på allt: pianot, fiolen och skivsamlingen spelar en melodi med noter som stiger, lamporna tänds och släcks var för sig (med sken på natten), brasan tänds, brödrosten poppar upp två skivor, spisen och ugnen fräser och ångar, kylen ryker kallt, kranarna och toaletten bubblar, skärmarna blinkar, soffan och sängen studsar så att den som sitter där hoppar, klockan pinglar, spegeln glittrar, växterna fäller löv, julgranen gnistrar, mattan dammar och tavlorna svajar.
+- Figurerna hoppar och skrattar när man trycker på dem, djuren blir kärleksfulla eller lekfulla, bollen studsar, bilen tutar och kör, klämkompisarna kläms och gosedjuren piper. Figurer, djur och lösa saker går fortfarande att dra i Leka.
+
 ## [0.165.0] – 2026-11-21 – 🎨 Teman i Dockskåpet – tapet, golv, kakel och utsikt
 - 🎨 **Teman i Dockskåpet** – fliken 🎨 i lådan gäller rummet i bild: välj tapet (tolv färger), golv (tolv: ek, furu, sten, vit marmor med guldådror, schackrutigt, gräsmatta …) och utsikt genom fönstren (trädgården, himlen, staden, landet, tomten, gården, frostat glas).
 - Åtta färdiga teman byter allt i ett tryck: Prinsessan, Rymden, Skogen, Sommarstugan, Lyxvåningen, Solsken, Havet och Godislandet. «Rummets egen» går tillbaka till det ursprungliga.

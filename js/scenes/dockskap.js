@@ -32,12 +32,20 @@
 //   • Teman (v0.165): fliken 🎨 gäller rummet i bild: tapet (12), golv (12, Vit marmor med guldådror = plan.lyx),
 //     utsikt genom fönstren (7) och åtta färdiga teman (tapet + golv + utsikt i ett tryck); badrummet byter
 //     kakel (room.js BATH-stilarna) i stället. Sparas per rum (H.rooms[i].tema) och bakgrunden byggs om (buildBg).
+//   • Leka och Bygga (v0.166, Carl 2026-11-22: "två stora knappar i hörnet, leka och bygga … när man är i playmode
+//     ska man kunna trycka på dumplings och pianot ska spela melodi och allt sånt"): två stora knappar uppe till
+//     vänster. LEKA (huset öppnas så): lådan är borta, möblerna står fast och allt man trycker på svarar – pianot
+//     och fiolen spelar en melodi, lamporna tänds och släcks var för sig, brasan tänds, brödrosten poppar, spisen
+//     fräser, kranarna bubblar, skärmarna blinkar, soffan och sängen studsar (och den som sitter där hoppar),
+//     klockan pinglar, växterna fäller löv, figurerna hoppar och skrattar, djuren blir kärleksfulla, bollen
+//     studsar, bilen tutar, klämkompisarna kläms. Figurer, djur och lösa saker går fortfarande att dra. BYGGA:
+//     lådan framme och allt som förut. Läget sparas i huset (H.lage).
 // Test: tools/dockskap-test.mjs.
 import { buildBg, spriteProp, wallProp, flatProp, rugImg, makePlantProp, dimsOf, isWall, isFlat, ON_TABLE, SURFACES, surfaceRow,
-  thumbCanvas, furnView, drawArt, nameOf, canRecolor, FW, FH, WALL_Y, WALL_TOP, DOOR, RUG, APT } from './room.js';
+  thumbCanvas, furnView, drawArt, nameOf, canRecolor, halo, FW, FH, WALL_Y, WALL_TOP, DOOR, RUG, APT } from './room.js';
 import { createSpeech } from './walkable.js';
 import { KATALOG, katalogOf, knownKind, rotStates, functionOf, RAVAROR, ravaraOf } from '../game.js';
-import { TOYS, toyOf, toyFrame, toyHit, toyNamn, drawToy } from '../data/toys.js';
+import { TOYS, toyOf, toyFrame, toyHit, toyNamn, drawToy, toyFx, SQUISH_STEPS } from '../data/toys.js';
 import { ravaraIcon, IW as RAVARA_W } from '../core/ravara-art.js';
 import { VISNING } from '../core/visning.js';
 import { drawPerson, portrait, makeLookRich } from '../core/people.js';
@@ -47,7 +55,7 @@ import { createPetLayer } from '../pets/layer.js';
 import { SPECIES, drawPet, drawPetIcon, petBox, ICON_W, ICON_H } from '../pets/sprites.js';
 import { PET_ITEMS, drawPetItem, drawItemIcon } from '../pets/items.js';
 import { openModal, closeModal, toast, esc } from '../core/ui.js';
-import { play } from '../core/sound.js';
+import { play, toner } from '../core/sound.js';
 import { mix, css } from '../core/floor-pix.js';
 import { $t, $n } from '../core/i18n.js';
 
@@ -69,6 +77,27 @@ const DOCK_PRAT = [$t('Vilket fint hus!'), $t('Ska vi leka?'), $t('Jag vill sitt
   $t('Hoppa i sängen!'), $t('Jag är hungrig.'), $t('Får jag bjuda på te?'), $t('Flytta soffan hit!'), $t('Var ska jag sova?'), $t('Hej! Vad heter du?')];
 const DOCK_PRAT_NATT = [$t('Godnatt!'), $t('Jag är så trött …'), $t('Släck lampan!'), $t('Zzz …'), $t('Får jag sova här?')];
 const nyaBottar = () => Array.from({ length: BOTTAR }, (_, i) => ({ id: 'bot' + i, namn: DOCK_NAMN[i % DOCK_NAMN.length], look: makeLookRich(seededRng(7100 + i * 37)) }));
+
+// ---------- leka och bygga ----------
+// Två lägen: i LEKA trycker man på allt och det svarar (möblerna står fast, men figurer, djur och lösa saker
+// dras som vanligt); i BYGGA är lådan framme och möblerna dras, vrids, målas. Huset öppnas i Leka.
+const LAGEN = ['leka', 'bygga'];
+const LAMPOR = new Set(['lampa', 'bordslampa', 'golvlampa', 'nattlampa', 'ljus', 'ljusgrupp', 'julljus']);   // tänds och släcks var för sig (d.lit)
+const INSTRUMENT = { piano: 'triangle', fiol: 'sawtooth', skivor: 'square' };   // vågformen melodin spelas med
+const MJUKT = new Set(['jattenalle', 'leksakslada', 'byggklossar', 'golvkudde', 'molnkudde', 'stjarnkudde']);
+const BOLL = /^boll-/, BIL = /^bil-/;
+const DOCK_LEK = [$t('Hihi!'), $t('Det kittlas!'), $t('Hoppsan!'), $t('Igen, igen!'), $t('Wiii!'), $t('Fånga mig!')];
+const NOTFARGER = ['#ff5a8a', '#ffd23f', '#5ac8ff', '#8ee08a', '#ff9d3a'];
+// melodierna (början på Blinka lilla stjärna, Björnen sover, Imse vimse spindel) – bokstav = ton, mellanslag = paus
+const TON = { C: 523, D: 587, E: 659, F: 698, G: 784, A: 880, B: 988, c: 1047, d: 1175 };
+const MELODIER = ['CCGGAAG FFEEDDC', 'GABG GABG BcdB cd', 'GCCCDEEE EDCDEC'];
+function melodi(type) {
+  const m = pick(MELODIER), seq = [];
+  let t = 0;
+  for (const ch of m) { if (TON[ch]) seq.push([TON[ch], t, 0.16]); t += ch === ' ' ? 0.1 : 0.17; }
+  toner(seq, { type, vol: type === 'sawtooth' ? 0.06 : type === 'square' ? 0.07 : 0.11 });
+  return seq.length;
+}
 const tvattaDocka = (d) => ({ id: String(d.id), room: d.room | 0, x: d.x | 0, y: d.y | 0, dir: ['down', 'up', 'left', 'right'].includes(d.dir) ? d.dir : 'down' });
 
 // ---------- husdjuren ----------
@@ -226,13 +255,13 @@ function lasHus() {
   const dockor = (Array.isArray(p.dockor) ? p.dockor : []).filter((d) => d && d.id).map(tvattaDocka).filter((d) => d.room >= 0 && d.room < RUM.length);
   const saker = (Array.isArray(p.saker) ? p.saker : []).filter((s) => s && s.id && sakFinns(s.slag, s.k)).map(tvattaSak).filter((s) => s.room >= 0 && s.room < RUM.length);
   for (const s of saker) if (s.hos && !dockor.some((d) => d.id === s.hos.id)) delete s.hos;   // (figuren är borta: saken ligger kvar där den stod)
-  return { v: 1, natt: !!p.natt, rooms: RUM.map((_, i) => ({ deco: (p.rooms[i]?.deco || []).filter((d) => d && knownKind(d.k)).map(tvattaDeco), tema: tvattaTema(p.rooms[i]?.tema) })),
+  return { v: 1, natt: !!p.natt, lage: LAGEN.includes(p.lage) ? p.lage : 'leka', rooms: RUM.map((_, i) => ({ deco: (p.rooms[i]?.deco || []).filter((d) => d && knownKind(d.k)).map(tvattaDeco), tema: tvattaTema(p.rooms[i]?.tema) })),
     dockor, bottar, saker, sakN: Math.max(p.sakN | 0, saker.length) };
 }
 // (två av bottarna står i vardagsrummet från början, så att huset lever – och några leksaker i barnrummet)
 const SEED_SAKER = [{ id: 's1', slag: 'leksak', k: 'nalle-liten', room: 2, x: 262, y: 202 }, { id: 's2', slag: 'leksak', k: 'bil-racer', room: 2, x: 110, y: 208 },
   { id: 's3', slag: 'leksak', k: 'boll-fot', room: 2, x: 330, y: 196 }, { id: 's4', slag: 'mat', k: 'applR', room: 1, x: 236, y: 167, up: 0 }];
-const nyttHus = () => ({ v: 1, natt: false, rooms: SEED.map((list) => ({ deco: list.filter((d) => knownKind(d.k)).map(tvattaDeco), tema: {} })),
+const nyttHus = () => ({ v: 1, natt: false, lage: 'leka', rooms: SEED.map((list) => ({ deco: list.filter((d) => knownKind(d.k)).map(tvattaDeco), tema: {} })),
   dockor: [{ id: 'bot0', room: 0, x: 236, y: 186, dir: 'down' }, { id: 'bot1', room: 0, x: 112, y: 150, dir: 'down' }], bottar: nyaBottar(),
   saker: SEED_SAKER.filter((s) => sakFinns(s.slag, s.k)).map(tvattaSak), sakN: SEED_SAKER.length });
 
@@ -251,6 +280,8 @@ export function makeDockskap(A) {
   const ox = (i) => i * (FW + WALLW);
   const W = n * FW + (n - 1) * WALLW;
   const roomAt = (wx) => clamp(Math.floor(wx / (FW + WALLW)), 0, n - 1);
+  let lage = LAGEN.includes(H.lage) ? H.lage : 'leka';
+  const leker = () => lage === 'leka';
   // rummets utseende = RUM-definitionen med rummets tema ovanpå (tapet/golv/utsikt, badrummet kakel)
   function rumDef(i) {
     const R = RUM[i], t = H.rooms[i].tema || {}, d = { ...R };
@@ -409,6 +440,63 @@ export function makeDockskap(A) {
   }
 
   const inRect = (x, y, r) => x >= r[0] && x <= r[2] && y >= r[1] && y <= r[3];
+
+  // ---------- leka: små animationer och partiklar ----------
+  // anims: nyckel ('deco:rum:idx', 'docka:id', 'sak:id') → { typ, t, dur, h }. typ: wiggle (klämmer ihop och ut),
+  // boing (studsar på bredden/höjden), hopp (lyfter h rader), studs (två hopp), sway (svajar i sidled, väggsaker),
+  // kor (bilen kör fram och tillbaka), klam (klämkompisen kläms, egen bildruta). fx: partiklarna i rummens pixlar.
+  const anims = new Map();
+  const fx = [];
+  let reaktioner = 0, senaste = null;
+  const anim = (key, typ, dur = 0.6, h = 10) => anims.set(key, { typ, t: 0, dur, h });
+  // n partiklar av ett slag från (x, y) i rummet: upp = fart uppåt (negativ = faller), fart = spridning i sidled,
+  // g = tyngd (negativ = stiger fortare), glapp = sekunder mellan varje, col = färger att välja bland
+  function spruta(room, x, y, slag, n, o = {}) {
+    for (let k = 0; k < n; k++) {
+      fx.push({ room, x: x + (Math.random() - 0.5) * (o.bredd ?? 10), y: y + (Math.random() - 0.5) * (o.hojd ?? 0), vx: (Math.random() - 0.5) * (o.fart ?? 18),
+        vy: -(o.upp ?? 22) * (0.6 + Math.random() * 0.8), g: o.g ?? -8, t: -k * (o.glapp ?? 0.08), dur: o.dur ?? 1.2, slag, col: o.col ? pick(o.col) : null });
+    }
+  }
+  // ritar fn med animationen för key: skalning kring (cx, cy) = möbelns fotpunkt, eller en förflyttning
+  function medAnim(ctx, key, cx, cy, fn) {
+    const a = anims.get(key);
+    if (!a) { fn(); return; }
+    const u = a.t / a.dur, k = 1 - u;
+    ctx.save();
+    if (a.typ === 'hopp') ctx.translate(0, -Math.round(a.h * Math.sin(Math.PI * u)));
+    else if (a.typ === 'studs') ctx.translate(0, -Math.round(a.h * Math.abs(Math.sin(2 * Math.PI * u)) * k));
+    else if (a.typ === 'sway') ctx.translate(Math.round(2.5 * Math.sin(a.t * 22) * k), 0);
+    else if (a.typ === 'kor') ctx.translate(Math.round(a.h * Math.sin(Math.PI * u)), 0);
+    else { const s = (a.typ === 'boing' ? 0.16 : 0.07) * Math.sin(a.t * (a.typ === 'boing' ? 24 : 32)) * k; ctx.translate(cx, cy); ctx.scale(1 - s, 1 + s); ctx.translate(-cx, -cy); }
+    fn();
+    ctx.restore();
+  }
+  function ritaFx(ctx, i) {
+    for (const q of fx) {
+      if (q.room !== i || q.t < 0) continue;
+      const u = q.t / q.dur, x = Math.round(q.x), y = Math.round(q.y);
+      ctx.globalAlpha = Math.max(0, 1 - u * u);
+      switch (q.slag) {
+        case 'not': ctx.fillStyle = q.col || '#ff5a8a'; ctx.fillRect(x, y, 3, 2); ctx.fillRect(x + 3, y - 5, 1, 7); ctx.fillRect(x + 4, y - 5, 2, 1); ctx.fillRect(x + 5, y - 4, 1, 2); break;
+        case 'hjarta': ctx.fillStyle = q.col || '#ff5a7a'; ctx.fillRect(x, y, 2, 1); ctx.fillRect(x + 3, y, 2, 1); ctx.fillRect(x - 1, y + 1, 7, 2); ctx.fillRect(x, y + 3, 5, 1); ctx.fillRect(x + 1, y + 4, 3, 1); ctx.fillRect(x + 2, y + 5, 1, 1); break;
+        case 'gnista': { ctx.fillStyle = q.col || '#fff6c8'; ctx.fillRect(x, y, 1, 1); if (Math.floor(q.t * 14) % 2 === 0) { ctx.fillRect(x - 1, y, 3, 1); ctx.fillRect(x, y - 1, 1, 3); } break; }
+        case 'bubbla': ctx.fillStyle = '#e8f8ff'; ctx.fillRect(x - 1, y, 3, 1); ctx.fillRect(x - 1, y + 2, 3, 1); ctx.fillRect(x - 2, y + 1, 1, 1); ctx.fillRect(x + 2, y + 1, 1, 1); ctx.fillStyle = '#ffffff'; ctx.fillRect(x, y + 1, 1, 1); break;
+        case 'lov': ctx.fillStyle = q.col || '#5aa84a'; ctx.fillRect(x, y, 2, 1); ctx.fillRect(x + 1, y + 1, 2, 1); break;
+        case 'rok': { const r = 1 + Math.floor(u * 2); ctx.fillStyle = q.col || '#f0f0f4'; ctx.fillRect(x - r + 1, y - r + 1, 2 * r - 1, 2 * r - 1); break; }
+        case 'rost': ctx.fillStyle = '#b8742e'; ctx.fillRect(x - 3, y - 7, 7, 7); ctx.fillStyle = '#f0c882'; ctx.fillRect(x - 2, y - 6, 5, 5); ctx.fillStyle = '#d99a4a'; ctx.fillRect(x - 1, y - 4, 1, 1); ctx.fillRect(x + 1, y - 3, 1, 1); break;
+      }
+    }
+    ctx.globalAlpha = 1;
+  }
+  // en tänd lampa (d.lit): varmt sken och lampan ljus igen ovanpå nattmörkret – på dagen bara en glimt vid skärmen
+  function lampSken(ctx, p, d, night) {
+    const cx = p.solid ? (p.solid[0] + p.solid[2]) / 2 : (p.hit[0] + p.hit[2]) / 2, fh = p.sort - p.top, cy = p.top + Math.max(3, fh * 0.3);
+    if (!night) { halo(ctx, cx, cy, 10, 6, '#fff6d0', 0.3); return; }
+    const fl = 0.9 + 0.1 * Math.sin(tid * 9 + cx);
+    halo(ctx, cx, cy, 46, 28, '#ffe2a0', 0.08 * fl); halo(ctx, cx, cy, 24, 14, '#fff0c8', 0.12); halo(ctx, cx, p.sort + 5, 38, 8, '#ffe2a0', 0.07);
+    const a = furnView(d.k, d.v, d.c, d.r);
+    if (a) { ctx.globalAlpha = 0.85; drawArt(ctx, a, d.x, p.top); ctx.globalAlpha = 1; }
+  }
 
   // ---------- figurerna ----------
   // gänget = alla sparade figurer (deras utseende följer med om de ändras hemma) + husets bottar
@@ -608,6 +696,105 @@ export function makeDockskap(A) {
   }
   for (let i = 0; i < n; i++) settleSaker(i);   // (höjden på borden räknas fram ur möblerna)
 
+  // ---------- leka: det man trycker på svarar ----------
+  function reagera(h, i, lx, ly) {
+    if (!h) return;
+    reaktioner++;
+    if (h.typ === 'docka') { reageraDocka(h.d); return; }
+    if (h.typ === 'djur') { reageraDjur(h.id, i); return; }
+    if (h.typ === 'sak') { reageraSak(h.s); return; }
+    if (h.typ === 'pryl') { layers[i].down(lx, ly); senaste = { typ: 'pryl', k: h.k }; return; }   // lagrets eget: kasta bollen, fylla skålen …
+    if (h.typ === 'deco') reageraDeco(i, h.idx);
+  }
+  function reageraDeco(i, idx) {
+    const d = H.rooms[i].deco[idx];
+    if (!d) return;
+    const b = built[i], p = b.props.find((q) => q.idx === idx), w = b.walls.find((q) => q.idx === idx), r = b.rugs.find((q) => q.idx === idx);
+    const key = `deco:${i}:${idx}`, k = d.k, fn = functionOf(k);
+    const cx = p ? (p.solid ? (p.solid[0] + p.solid[2]) / 2 : (p.hit[0] + p.hit[2]) / 2) : w ? w.x + w.w / 2 : r ? r.x + r.w / 2 : d.x;
+    const top = p ? p.top : w ? w.top : r ? r.y : d.y - 10, bot = p ? p.sort : w ? w.top + w.h : r ? r.y + r.h : d.y;
+    let ljud = 'pop', info = k;
+    if (INSTRUMENT[k]) {   // 🎹 pianot, fiolen och skivsamlingen spelar en melodi, noterna stiger
+      const antal = melodi(INSTRUMENT[k]);
+      spruta(i, cx, top, 'not', Math.min(7, antal), { col: NOTFARGER, upp: 14, fart: 8, g: 0, glapp: 0.17, dur: 1.6 });
+      anim(key, 'wiggle', 0.9); ljud = 'melodi'; info = k + ':' + antal;
+    } else if (LAMPOR.has(k)) {   // 💡 tänds och släcks
+      if (d.lit) delete d.lit; else d.lit = true;
+      spara(); ljud = d.lit ? 'ok' : 'click'; info = k + (d.lit ? ':tand' : ':slack');
+      if (d.lit) spruta(i, cx, top + 4, 'gnista', 5, { col: ['#fff6c8', '#ffe28a'], upp: 6, fart: 14, g: 0, dur: 0.6 });
+    } else if (fn === 'brasa' || fn === 'lykta') {   // 🔥 brasan och pumplyktan tänds och släcks
+      if (d.lit) delete d.lit; else d.lit = true;
+      spara(); ljud = d.lit ? 'ok' : 'slide'; info = k + (d.lit ? ':tand' : ':slack');
+      spruta(i, cx, top + 6, 'rok', d.lit ? 4 : 3, { col: ['#d8d0c8', '#efe9e0'], upp: 14, fart: 6, g: -4, dur: 1.4 });
+    } else if (k === 'brodrost') {   // 🍞 brödet poppar upp och faller ner igen
+      anim(key, 'boing', 0.5); ljud = 'toast';
+      for (const dx of [-2, 3]) fx.push({ room: i, x: cx + dx, y: top + 2, vx: 0, vy: -72, g: 190, t: dx > 0 ? -0.05 : 0, dur: 0.75, slag: 'rost' });
+    } else if (fn === 'laga') {   // 🍳 spisen och ugnen fräser och ångar
+      anim(key, 'wiggle', 0.6); ljud = 'sizzle';
+      spruta(i, cx, top + 2, 'rok', 6, { col: ['#f4f4f8', '#e8e8f0'], upp: 18, fart: 8, g: -6, glapp: 0.12, dur: 1.4, bredd: Math.max(10, (p?.solid ? p.solid[2] - p.solid[0] : 20) - 8) });
+    } else if (k === 'mikro') { anim(key, 'wiggle', 0.5); ljud = 'ding'; spruta(i, cx, top + 2, 'gnista', 3, { col: ['#fff6c8', '#ffe28a'], upp: 8, fart: 10, g: 0, dur: 0.6 }); }
+    else if (fn === 'ata') { anim(key, 'wiggle', 0.5); ljud = 'door'; spruta(i, cx, top + 8, 'gnista', 6, { col: ['#bfe8ff', '#ffffff'], upp: 8, fart: 16, g: 0, dur: 0.8, hojd: 10 }); }   // 🧊 kylan ryker ut
+    else if (fn === 'tvatta' || fn === 'toalett') { anim(key, 'wiggle', 0.5); ljud = 'splash'; spruta(i, cx, top + 4, 'bubbla', 7, { upp: 20, fart: 10, g: -3, glapp: 0.1, dur: 1.4 }); }   // 🫧 vatten
+    else if (fn === 'tv') { anim(key, 'wiggle', 0.5); ljud = 'tv'; spruta(i, cx, top + 4, 'gnista', 6, { col: ['#8ad0ff', '#ffffff', '#ff8ad0'], upp: 10, fart: 20, g: 0, dur: 0.7 }); }   // 📺 skärmen blinkar
+    else if (fn === 'sova' || SEATS.has(k)) {   // 🛋️ studsar – och den som sitter där hoppar
+      anim(key, 'boing', 0.6); ljud = 'boing';
+      for (const dd of H.dockor) if (dd.room === i && seatUnder(i, dd.x, dd.y)?.idx === idx) anim('docka:' + dd.id, 'hopp', 0.45, 8);
+    } else if (k === 'vaggklocka') { anim(key, 'sway', 1.2); ljud = 'ding'; }
+    else if (k === 'spegel') { anim(key, 'sway', 0.6); ljud = 'pling'; spruta(i, cx, top + 6, 'gnista', 5, { col: ['#ffffff', '#fff6c8'], upp: 6, fart: 12, g: 0, dur: 0.7, hojd: 12 }); }
+    else if (fn === 'garderob') { anim(key, 'wiggle', 0.5); ljud = 'knock'; }
+    else if (k === 'vaxt' || /^vaxt|blom|trad$/.test(k)) { anim(key, 'wiggle', 0.7); ljud = 'shake'; spruta(i, cx, top + 6, 'lov', 4, { col: ['#5aa84a', '#8ad060', '#3a8a3a'], upp: -8, fart: 14, g: 12, glapp: 0.1, dur: 1.1 }); }   // 🌿 löv faller
+    else if (JUL.test(k) || /gran$/.test(k)) { anim(key, 'wiggle', 0.7); ljud = 'pling'; spruta(i, cx, top + 8, 'gnista', 6, { col: ['#ffd23f', '#ff5a5a', '#8ee08a', '#ffffff'], upp: 6, fart: 16, g: 0, dur: 0.8, hojd: 14 }); }
+    else if (MJUKT.has(k)) { anim(key, 'boing', 0.6); ljud = 'squeak'; }
+    else if (w) { anim(key, 'sway', 0.8); ljud = 'knock'; }   // tavlor och hyllor svajar
+    else if (r) { ljud = 'shake'; spruta(i, cx, bot - 2, 'rok', 3, { col: ['#d8d0c8'], upp: 6, fart: 10, g: -2, dur: 0.8, bredd: 20 }); }   // mattan dammar
+    else { anim(key, 'wiggle', 0.6); ljud = 'pop'; }
+    if (ljud !== 'melodi') play(ljud);
+    senaste = { typ: 'deco', k: info, ljud, room: i, idx };
+  }
+  function reageraDocka(d) {
+    const q = dockaPos(d);
+    anim('docka:' + d.id, 'hopp', 0.5, q.sitter ? 7 : 10);
+    play('boing');
+    sag(d, pick(DOCK_LEK), 2.5);
+    if (Math.random() < 0.5) spruta(d.room, q.x, q.y - 40, 'hjarta', 2, { upp: 10, fart: 6, g: 0, dur: 1 });
+    senaste = { typ: 'docka', id: d.id };
+  }
+  function reageraDjur(id, i) {
+    const L = layers[i], love = (reaktioner & 1) === 0;
+    if (love) { store.pet(id); L._debug.setMode(id, 'love'); } else { store.play(id); L._debug.setMode(id, 'happy'); }
+    play(love ? 'pling' : 'chirp');
+    const a = L._debug.actors.get(id);
+    if (a) spruta(i, a.x, a.y - 14, 'hjarta', love ? 3 : 1, { upp: 10, fart: 8, g: 0, dur: 1 });
+    senaste = { typ: 'djur', id, mode: love ? 'love' : 'happy' };
+  }
+  function reageraSak(s) {
+    const key = 'sak:' + s.id, def = s.slag === 'leksak' ? toyOf(s.k) : null;
+    let ljud = 'pop';
+    if (s.slag === 'mat') anim(key, 'hopp', 0.35, 5);
+    else if (BOLL.test(s.k)) { anim(key, 'studs', 0.7, 18); ljud = 'boing'; }
+    else if (BIL.test(s.k)) { anim(key, 'kor', 0.9, s.x < FW / 2 ? 16 : -16); ljud = 'honk'; }
+    else if (def?.squish) { anim(key, 'klam', 0.6); ljud = 'squeak'; }
+    else { anim(key, 'hopp', 0.4, 6); ljud = def?.grupp === 'nalle' || def?.kompis ? 'squeak' : 'pop'; }
+    play(ljud);
+    senaste = { typ: 'sak', id: s.id, k: s.k, ljud };
+  }
+  // en lös sak med sin animation: klämkompisen kläms (egen bildruta), annars lyfts eller körs den
+  function drawSakAnim(ctx, s, x, y, t, skugga) {
+    const a = anims.get('sak:' + s.id);
+    if (!a) { drawSak(ctx, s, x, y, t, skugga); return; }
+    const u = a.t / a.dur;
+    if (a.typ === 'klam' && s.slag === 'leksak') {
+      const f = toyFrame(s.k, Math.round(SQUISH_STEPS * Math.sin(Math.PI * u)), u < 0.55 ? 'klamd' : 'glad', 1);
+      if (!f) { drawSak(ctx, s, x, y, t, skugga); return; }
+      const X = Math.round(x), Y = Math.round(y);
+      if (skugga) ctx.drawImage(f.c, X + f.x0, Y + f.y0);
+      else { const hh = Math.min(f.h, -f.y0); if (hh > 0) ctx.drawImage(f.c, 0, 0, f.w, hh, X + f.x0, Y + f.y0, f.w, hh); }
+      toyFx(ctx, f, X, Y, t, s.k, 2);
+      return;
+    }
+    medAnim(ctx, 'sak:' + s.id, x, y, () => drawSak(ctx, s, x, y, t, skugga));
+  }
+
   // det som ligger under pekaren i rummet i: djuren och prylarna, de lösa sakerna, figurerna, sedan
   // golvmöblerna (den längst fram vinner), väggsakerna, sist mattorna → { typ, … } | null
   function hitAt(i, lx, ly) {
@@ -726,6 +913,9 @@ export function makeDockskap(A) {
       return;
     }
     const h = hitAt(i, lx, y);
+    // LEKA: möblerna och djurens prylar står fast – ett tryck på dem svarar (i up), ett drag panorerar;
+    // figurer, djur och lösa saker dras som i Bygga, men ett kort tryck blir en reaktion i stället för menyn
+    if (leker() && (!h || h.typ === 'deco' || h.typ === 'pryl')) { pan = { sx: x, cam0: camX, moved: false, tapp: h ? { h, i, lx, ly: y } : null }; return; }
     if (h?.typ === 'djur') {
       const a = djurI(i).find((q) => q.id === h.id);
       drag = { typ: 'djur', id: h.id, room: i, offx: a.x - lx, offy: a.y - y, moved: false, px: x, py: y, sx: x, sy: y, groom: i, gx: a.x, gy: a.y };
@@ -769,6 +959,7 @@ export function makeDockskap(A) {
     if (drag) {
       const c = drag; drag = null;
       if (c.moved) commit(c);
+      else if (leker()) reagera(c.typ === 'docka' ? { typ: 'docka', d: c.docka } : c.typ === 'sak' ? (sakMed(c.id) ? { typ: 'sak', s: c.s } : null) : c.typ === 'djur' ? { typ: 'djur', id: c.id } : null, c.room, c.lx, c.ly);
       else if (c.typ === 'docka') menyDocka(c.docka);
       else if (c.typ === 'sak') { if (sakMed(c.id)) menySak(c.s); }
       else if (c.typ === 'djur') menyDjur(c.id);
@@ -779,6 +970,7 @@ export function makeDockskap(A) {
     if (pan) {
       const p = pan; pan = null;
       if (p.moved) return;
+      if (p.tapp) { reagera(p.tapp.h, p.tapp.i, p.tapp.lx, p.tapp.ly); return; }   // (Leka: trycket på en möbel)
       const wx = x + camX, i = roomAt(wx), lx = wx - ox(i);
       if (i === 0 && inRect(lx, y, [DOOR.x0, 30, DOOR.x1, WALL_Y + 9])) { play('door'); A.leaveDockskap?.(); }
     }
@@ -805,10 +997,39 @@ export function makeDockskap(A) {
       <div class="dp-foot"><button class="btn btn-small" data-natt>${H.natt ? $t('☀️ Dag') : $t('🌙 Natt')}</button><button class="btn btn-small" data-ut title="${$t('Tillbaka till menyn')}">${$t('⬅ Tillbaka')}</button></div>`;
     panel.querySelectorAll('[data-rum]').forEach((b) => (b.onclick = () => { play('click'); camTo = camRoom(+b.dataset.rum); }));
     panel.querySelectorAll('[data-flik]').forEach((b) => (b.onclick = () => { play('click'); flik = b.dataset.flik; byggPanel(); }));
-    panel.querySelector('[data-natt]').onclick = () => { H.natt = !H.natt; spara(true); play('click'); byggPanel(); };
+    panel.querySelector('[data-natt]').onclick = nattToggle;
     panel.querySelector('[data-ut]').onclick = () => { play('door'); A.leaveDockskap?.(); };
     fyllLada();
-    panel.classList.remove('hidden');
+    panel.classList.toggle('hidden', lage !== 'bygga');   // (lådan är bara framme i Bygga)
+  }
+  function nattToggle() { H.natt = !H.natt; spara(true); play('click'); byggPanel(); byggLage(); }
+  // ---------- de två stora knapparna: 🧸 Leka och 🔨 Bygga (DOM, uppe till vänster) ----------
+  // I Leka ligger också 🌙 och ⬅ här, eftersom lådan med sin fot är borta.
+  let lageEl = null;
+  function byggLage() {
+    lageEl = document.getElementById('dock-lage');
+    if (!lageEl) { lageEl = document.createElement('div'); lageEl.id = 'dock-lage'; document.body.append(lageEl); }
+    lageEl.innerHTML = `<button class="dl-btn ${lage === 'leka' ? 'on' : ''}" data-lage="leka">🧸<span>${$t('Leka')}</span></button><button class="dl-btn ${lage === 'bygga' ? 'on' : ''}" data-lage="bygga">🔨<span>${$t('Bygga')}</span></button>`
+      + `<span class="dl-sma"><button class="btn btn-small" data-natt2 title="${H.natt ? $t('☀️ Dag') : $t('🌙 Natt')}">${H.natt ? '☀️' : '🌙'}</button><button class="btn btn-small" data-ut2 title="${$t('Tillbaka till menyn')}">⬅</button></span>`;
+    lageEl.querySelectorAll('[data-lage]').forEach((b) => (b.onclick = () => sattLage(b.dataset.lage)));
+    lageEl.querySelector('[data-natt2]').onclick = nattToggle;
+    lageEl.querySelector('[data-ut2]').onclick = () => { play('door'); A.leaveDockskap?.(); };
+    lageEl.classList.remove('hidden');
+  }
+  function sattLage(l, tyst = false) {
+    if (!LAGEN.includes(l)) return;
+    const bytte = l !== lage;
+    lage = l; H.lage = l;
+    if (drag) { const c = drag; drag = null; if (c.typ === 'deco' && !c.fromTray) rebuild(c.room); }
+    armed = null; pan = null;
+    document.body.classList.toggle('dock-leka', l === 'leka'); document.body.classList.toggle('dock-bygga', l === 'bygga');
+    panel?.classList.toggle('hidden', l !== 'bygga');
+    lageEl?.querySelectorAll('[data-lage]').forEach((b) => b.classList.toggle('on', b.dataset.lage === l));
+    if (bytte) {
+      spara(true); play(l === 'leka' ? 'pling' : 'click'); fyllLada();
+      if (!tyst) toast(l === 'leka' ? $t('🧸 Leka: tryck på allt i huset! Figurerna, djuren och sakerna går att dra.') : $t('🔨 Bygga: dra möbler från lådan, flytta, vrid och måla dem.'));
+    }
+    window.dispatchEvent(new Event('resize'));   // (rummet blir bredare utan lådan)
   }
   function fyllLada() {
     const box = panel?.querySelector('#dock-items');
@@ -1045,20 +1266,21 @@ export function makeDockskap(A) {
       ctx.drawImage(bgs[i](night), 0, 0);
       const b = built[i];
       for (const r of b.rugs) r.draw(ctx);
-      for (const w of b.walls) w.draw(ctx);
-      const items = b.props.map((p) => ({ fy: p.sort, draw: () => p.draw(ctx) }));
-      for (const d of H.dockor) {   // figurerna: stående (blinkar till ibland) eller sittande på sitt säte
+      for (const w of b.walls) medAnim(ctx, `deco:${i}:${w.idx}`, w.x + w.w / 2, w.top, () => w.draw(ctx));
+      const items = b.props.map((p) => ({ fy: p.sort, draw: () => medAnim(ctx, `deco:${i}:${p.idx}`, p.solid ? (p.solid[0] + p.solid[2]) / 2 : (p.hit[0] + p.hit[2]) / 2, p.sort, () => p.draw(ctx)) }));
+      for (const d of H.dockor) {   // figurerna: stående (blinkar till ibland) eller sittande på sitt säte – och hoppar när man trycker
         if (d.room !== i || (drag?.typ === 'docka' && drag.id === d.id)) continue;
         const fig = figOf(d.id);
         if (!fig) continue;
-        const q = dockaPos(d), held = sakHos(d.id);
-        const frame = q.sitter ? (held && ater.has(held.id) ? 6 : 5) : held ? 9 : (Math.sin(tid * 2 + d.x) > 0.9 ? 4 : 0);
-        items.push({ fy: q.fy, draw: () => { drawPerson(ctx, q.x, q.y, fig.look, d.dir, frame); if (held) drawHeld(ctx, held, q.x, q.y, q.sitter, tid); } });
+        const q = dockaPos(d), held = sakHos(d.id), key = 'docka:' + d.id;
+        const hoppar = anims.get(key)?.typ === 'hopp';
+        const frame = q.sitter ? (held && ater.has(held.id) ? 6 : 5) : held ? 9 : hoppar ? 10 : (Math.sin(tid * 2 + d.x) > 0.9 ? 4 : 0);
+        items.push({ fy: q.fy, draw: () => medAnim(ctx, key, q.x, q.y, () => { drawPerson(ctx, q.x, q.y, fig.look, d.dir, frame); if (held) drawHeld(ctx, held, q.x, q.y, q.sitter, tid); }) });
       }
       for (const s of sakerI(i)) {   // de lösa sakerna på golvet och borden (den man drar i ritas som spöke)
         if (drag?.typ === 'sak' && drag.id === s.id && drag.moved) continue;
         const fy = sakFot(s);
-        items.push({ fy: s.y + 0.15, draw: () => drawSak(ctx, s, s.x, fy, tid, !(s.up > 0)) });
+        items.push({ fy: s.y + 0.15, draw: () => drawSakAnim(ctx, s, s.x, fy, tid, !(s.up > 0)) });
       }
       // husdjuren och deras prylar (lagret): det djur eller den pryl man håller i ritas inte där det stod
       const hall = drag?.moved && drag.room === i && !drag.fromTray ? (drag.typ === 'djur' ? layers[i]._debug.actors.get(drag.id) : drag.typ === 'pryl' ? store.itemById(drag.id) : null) : null;
@@ -1069,11 +1291,13 @@ export function makeDockskap(A) {
         items.push({ fy: gfy, draw: () => drawGhost(ctx) });
       }
       items.sort((a, c) => a.fy - c.fy).forEach((it) => it.draw());
+      const deco = H.rooms[i].deco;
       if (night) {
         ctx.fillStyle = `rgba(10,12,40,${NIGHT_DIM})`; ctx.fillRect(0, 0, FW, FH);
         for (const w of b.walls) w.light?.(ctx);
-        for (const p of b.props) p.light?.(ctx);
-      }
+        for (const p of b.props) { if (LAMPOR.has(p.k)) { if (deco[p.idx]?.lit) lampSken(ctx, p, deco[p.idx], true); } else p.light?.(ctx); }   // (lamporna: egna sken, tända var för sig)
+      } else for (const p of b.props) if (LAMPOR.has(p.k) && deco[p.idx]?.lit) lampSken(ctx, p, deco[p.idx], false);
+      if (fx.length) ritaFx(ctx, i);
       ctx.restore();
     }
     ctx.setTransform(A.pxs, 0, 0, A.pxs, 0, 0);
@@ -1088,6 +1312,17 @@ export function makeDockskap(A) {
   function update(dt) {
     tid += dt;
     for (const L of layers) L.update(dt);
+    // animationerna och partiklarna (Leka)
+    for (const [key, a] of anims) { a.t += dt; if (a.t >= a.dur) anims.delete(key); }
+    for (let k = fx.length - 1; k >= 0; k--) {
+      const q = fx[k];
+      q.t += dt;
+      if (q.t < 0) continue;
+      if (q.t >= q.dur) { fx.splice(k, 1); continue; }
+      q.x += q.vx * dt; q.y += q.vy * dt; q.vy += q.g * dt;
+      if (q.slag === 'not' || q.slag === 'bubbla') q.x += Math.sin(q.t * 6 + q.y) * 8 * dt;
+      if (q.slag === 'lov') q.x += Math.sin(q.t * 5 + q.y) * 12 * dt;
+    }
     // maten i en figurs händer äts upp på några sekunder – och smakar
     if (ater.size) for (const [id, t] of [...ater]) {
       const s = sakMed(id);
@@ -1123,8 +1358,13 @@ export function makeDockskap(A) {
     dockskap: true,   // (main.js: spelklockan står still, ingen pixel-HUD)
     get viewMax() { return { w: W, h: FH }; },
     update, draw, down, move, up, key,
-    enter() { gangList = null; document.body.classList.add('dock-on'); byggPanel(); window.dispatchEvent(new Event('resize')); },
-    exit() { spara(true); talk.clear(); drag = null; armed = null; pan = null; for (const L of layers) L.exit(); document.body.classList.remove('dock-on'); panel?.classList.add('hidden'); window.dispatchEvent(new Event('resize')); },
+    enter() { gangList = null; document.body.classList.add('dock-on'); byggPanel(); byggLage(); sattLage(lage, true); },
+    exit() {
+      spara(true); talk.clear(); drag = null; armed = null; pan = null; anims.clear(); fx.length = 0;
+      for (const L of layers) L.exit();
+      document.body.classList.remove('dock-on', 'dock-leka', 'dock-bygga'); panel?.classList.add('hidden'); lageEl?.classList.add('hidden');
+      window.dispatchEvent(new Event('resize'));
+    },
   };
   // testerna (tools/dockskap-test.mjs)
   scene._debug = {
@@ -1174,6 +1414,15 @@ export function makeDockskap(A) {
     setTema: (i, key, id) => { sattTema(i, key, id); return { ...(H.rooms[i].tema || {}) }; },
     roomInView: () => rumIVy(),
     pixel: (i, x, y) => { const d = bgs[i](H.natt).getContext('2d').getImageData(x, y, 1, 1).data; return '#' + [d[0], d[1], d[2]].map((v) => v.toString(16).padStart(2, '0')).join(''); },
+    // leka och bygga
+    lage: () => lage,
+    setLage: (l) => { sattLage(l, true); return lage; },
+    reaktioner: () => reaktioner,
+    senaste: () => (senaste ? { ...senaste } : null),
+    anims: () => [...anims.keys()],
+    fx: (room, slag) => fx.filter((q) => (room == null || q.room === room) && (!slag || q.slag === slag)).length,
+    lit: (i, idx) => !!H.rooms[i].deco[idx]?.lit,
+    findDeco: (i, k) => H.rooms[i].deco.findIndex((d) => d.k === k),
     petsKey: DOCK_PETS_KEY,
     key: DOCK_KEY,
   };

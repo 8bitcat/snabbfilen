@@ -145,8 +145,18 @@ canvas { image-rendering: pixelated; display: block; }
 .dock-meny canvas { image-rendering: pixelated; }
 body.dock-on #hud > :not(.hud-btns), body.dock-on #hudpix, body.dock-on #mobilen, body.dock-on #mobilen-skugga, body.dock-on #hud-mobil, body.dock-on #hud-snabb,
 body.dock-on #emotes, body.dock-on #decor-btn, body.dock-on #decor-panel, body.dock-on #chat { display: none !important; }
-body.menu-open #dock-panel { display: none !important; }
-@media (min-width: 700px) { body.dock-on #app { padding-right: 192px; } }
+body.menu-open #dock-panel, body.menu-open #dock-lage { display: none !important; }
+/* 🧸 Leka och 🔨 Bygga (v0.166): två stora knappar uppe till vänster. I Leka är lådan borta (rummet blir bredare)
+   och 🌙/⬅ ligger som små knappar bredvid. */
+#dock-lage { position: fixed; left: 14px; top: 60px; z-index: 46; display: flex; gap: 8px; align-items: flex-start; }
+#dock-lage .dl-btn { display: grid; justify-items: center; gap: 3px; min-width: 84px; padding: 7px 10px 6px; font-size: 24px; line-height: 1;
+  background: var(--paper); color: var(--ink); border: 3px solid var(--ink); box-shadow: 4px 4px 0 var(--ink); cursor: pointer; }
+#dock-lage .dl-btn span { font: var(--f2) var(--head); }
+#dock-lage .dl-btn.on { background: var(--gold); transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--ink); }
+#dock-lage .dl-btn[data-lage="leka"].on { background: #8ee08a; }
+#dock-lage .dl-sma { display: none; gap: 6px; margin-top: 4px; }
+body.dock-leka #dock-lage .dl-sma { display: flex; }
+@media (min-width: 700px) { body.dock-bygga #app { padding-right: 192px; } }
 @media (max-width: 699px) {
   #dock-panel { right: 0; left: 0; top: auto; bottom: 0; width: auto; height: 164px; border-width: 3px 0 0; box-shadow: none; }
   #dock-panel .dp-head { padding: 2px 6px; font-size: var(--f1); }
@@ -154,7 +164,9 @@ body.menu-open #dock-panel { display: none !important; }
   #dock-items { grid-auto-flow: column; grid-template-rows: 1fr; grid-template-columns: none; grid-auto-columns: 58px; overflow-x: auto; overflow-y: hidden; padding: 4px 6px; }
   .dock-item { touch-action: pan-x; min-height: 0; }
   #dock-panel .dp-foot { padding: 4px 6px; }
-  body.dock-on #app { padding-bottom: 164px; }
+  body.dock-bygga #app { padding-bottom: 164px; }
+  #dock-lage { left: 8px; top: 52px; gap: 6px; }
+  #dock-lage .dl-btn { min-width: 64px; padding: 5px 8px 4px; font-size: 20px; }
 }
 #scene { touch-action: none; box-shadow: 0 0 0 3px #000; }
 

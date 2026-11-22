@@ -20,7 +20,12 @@ await p.click('#menu [data-dockskap]');
 await p.waitForFunction(() => window.SF?.sceneName === 'dockskap' && !!window.SF.scene?._debug?.rooms, null, { timeout: 15000 });
 await p.waitForTimeout(600);
 ok(await p.evaluate(() => window.SF.scene.dockskap === true), 'scenen är dockskap (spelklockan står still)');
-ok(await p.evaluate(() => document.body.classList.contains('dock-on') && !document.getElementById('dock-panel').classList.contains('hidden')), 'lådan syns, body.dock-on');
+// huset öppnas i Leka (v0.166): lådan är borta, de två stora knapparna syns; Bygga tar fram lådan
+ok((await dbg('d.lage()')) === 'leka' && await p.evaluate(() => document.body.classList.contains('dock-on') && document.body.classList.contains('dock-leka') && document.getElementById('dock-panel').classList.contains('hidden')), 'huset öppnas i Leka: lådan är undan, body.dock-leka');
+ok(await p.$$eval('#dock-lage [data-lage]', (els) => els.length === 2 && els[0].classList.contains('on') && /Leka/.test(els[0].textContent) && /Bygga/.test(els[1].textContent)), 'två stora knappar: 🧸 Leka (vald) och 🔨 Bygga');
+ok(await p.$$eval('#dock-lage .dl-sma .btn', (els) => els.length === 2 && getComputedStyle(els[0].parentElement).display === 'flex'), 'i Leka ligger 🌙 och ⬅ bredvid knapparna');
+await p.click('#dock-lage [data-lage="bygga"]'); await p.waitForTimeout(300);
+ok((await dbg('d.lage()')) === 'bygga' && await p.evaluate(() => document.body.classList.contains('dock-bygga') && !document.getElementById('dock-panel').classList.contains('hidden')), 'Bygga: lådan syns, body.dock-bygga');
 const rooms = await dbg('d.rooms()');
 ok(rooms.length === 5 && rooms[4].id === 'badrum', `fem rum, badrummet sist (${rooms.map((r) => r.id).join(', ')})`);
 const seed0 = await dbg('d.deco(0).length');
@@ -270,6 +275,74 @@ ok((await dbg('d.tema(4)')).kakel === 'skiffer' && kak1 !== kak0, `kaklet Skiffe
 await p.waitForTimeout(400);
 ok(await p.evaluate(() => { const h = JSON.parse(localStorage.getItem('snabbfilen_dockskap')); return h.rooms[0].tema?.golv === 'gras' && h.rooms[4].tema?.kakel === 'skiffer'; }), 'temana sparas i huset');
 await p.click('#dock-panel [data-flik="vardagsrum"]'); await p.waitForTimeout(100);
+
+// ---------- 5f. leka och bygga (v0.166): i Leka svarar allt man trycker på, möblerna står fast ----------
+await dbg('d.goRoom(0)'); await p.waitForTimeout(200);
+// möblerna att trycka på: ett piano, en brödrost och lampan ur startmöbleringen; soffan med bot2 på
+ok(await dbg("d.place('piano', 0, 300, 200)") && await dbg("d.place('brodrost', 0, 20, 205)"), 'Leka-förberedelse: ett piano och en brödrost i vardagsrummet');
+const iPiano = await dbg("d.findDeco(0, 'piano')"), iRost = await dbg("d.findDeco(0, 'brodrost')"), iLampa = await dbg("d.findDeco(0, 'lampa')"), iSoffa = await dbg("d.findDeco(0, 'soffa')");
+ok(iPiano >= 0 && iRost >= 0 && iLampa >= 0 && iSoffa >= 0, `möblerna finns (piano ${iPiano}, brödrost ${iRost}, lampa ${iLampa}, soffa ${iSoffa})`);
+await p.click('#dock-lage [data-lage="leka"]'); await p.waitForTimeout(300);
+ok((await dbg('d.lage()')) === 'leka' && await p.evaluate(() => document.getElementById('dock-panel').classList.contains('hidden') && JSON.parse(localStorage.getItem('snabbfilen_dockskap')).lage === 'leka'), 'Leka igen: lådan undan, läget sparat i huset');
+const tryck = async (sx, sy) => { await p.evaluate(([x, y]) => { window.SF.scene.down(x, y); window.SF.scene.up(x, y); }, [sx, sy]); await p.waitForTimeout(80); };
+// pianot spelar en melodi: noter stiger, ingen meny
+const spP = await dbg(`d.spot(0, ${iPiano})`);
+await tryck(spP.x, spP.y);
+const sen1 = await dbg('d.senaste()');
+ok(sen1?.typ === 'deco' && /^piano:\d+/.test(sen1.k) && sen1.ljud === 'melodi' && (await dbg('d.fx(0, "not")')) >= 5 && (await dbg('d.anims()')).includes(`deco:0:${iPiano}`), `pianot: melodi (${sen1?.k}), ${await dbg('d.fx(0, "not")')} noter, animation`);
+ok(await p.evaluate(() => document.getElementById('modal').classList.contains('hidden')), 'ingen meny öppnas i Leka');
+// brödrosten poppar två skivor
+const spR = await dbg(`d.spot(0, ${iRost})`);
+await tryck(spR.x, spR.y);
+ok((await dbg('d.senaste()'))?.ljud === 'toast' && (await dbg('d.fx(0, "rost")')) === 2, 'brödrosten: två brödskivor poppar upp');
+// lampan tänds och släcks
+const spL = await dbg(`d.spot(0, ${iLampa})`);
+await tryck(spL.x, spL.y);
+ok((await dbg(`d.lit(0, ${iLampa})`)) === true && (await dbg('d.senaste()')).k === 'lampa:tand', 'lampan tänds med ett tryck');
+await tryck(spL.x, spL.y);
+ok((await dbg(`d.lit(0, ${iLampa})`)) === false, 'och släcks med nästa');
+// soffan studsar – och figuren som sitter i den hoppar
+const soffaD = await dbg(`d.deco(0)[${iSoffa}]`);
+await dbg(`d.placeDoll('bot2', 0, ${soffaD.x + 10}, ${soffaD.y - 2})`);
+ok((await dbg('d.dolls()')).find((d) => d.id === 'bot2')?.sitter === true, 'bot2 sitter i soffan (vänstra delen)');
+const spSof0 = await dbg(`d.spot(0, ${iSoffa})`), spSof = { x: spSof0.x + 14, y: spSof0.y };   // (högra delen av soffan – inte på figuren)
+await tryck(spSof.x, spSof.y);
+const an = await dbg('d.anims()');
+ok((await dbg('d.senaste()')).ljud === 'boing' && an.includes(`deco:0:${iSoffa}`) && an.includes('docka:bot2'), `soffan studsar och bot2 som sitter där hoppar (${an.join(', ')})`);
+// ett drag på en möbel flyttar den inte i Leka – det panorerar
+const sofX = (await dbg(`d.deco(0)[${iSoffa}]`)).x, kam0 = await dbg('d.cam()');
+await p.evaluate(([x, y]) => window.SF.scene.down(x, y), [spSof.x, spSof.y]);
+for (let k = 1; k <= 8; k++) await p.evaluate(([x, y]) => window.SF.scene.move(x, y), [spSof.x - 10 * k, spSof.y]);
+await p.evaluate(([x, y]) => window.SF.scene.up(x, y), [spSof.x - 80, spSof.y]);
+await p.waitForTimeout(100);
+ok((await dbg(`d.deco(0)[${iSoffa}]`)).x === sofX && (await dbg('d.cam()')) !== kam0 && !(await dbg('d.drag()')), `i Leka står soffan fast (x ${sofX}) och draget panorerade (kamera ${kam0 | 0} → ${(await dbg('d.cam()')) | 0})`);
+await dbg('d.goRoom(0)');
+// figuren hoppar och säger något
+const spB = await dbg("d.spotDoll('bot0')");
+await tryck(spB.x, spB.y);
+ok((await dbg('d.anims()')).includes('docka:bot0') && await dbg('d.talking()') && (await dbg('d.senaste()')).typ === 'docka', 'figuren bot0: hoppar och säger något');
+// djuret blir kärleksfullt
+const katt3 = await dbg("d.placePet('katt', 'svart', 0, 60, 200)");
+await p.waitForTimeout(200);
+const spKatt3 = await dbg(`d.spotPet('${katt3}')`);
+await tryck(spKatt3.x, spKatt3.y);
+const kattPos = (await dbg('d.layer(0).pets()')).find((q) => q.id === katt3)?.pose;
+ok((await dbg('d.senaste()')).typ === 'djur' && (kattPos === 'love' || kattPos === 'happy') && (await dbg('d.fx(0, "hjarta")')) >= 1, `katten: ${kattPos} med hjärtan`);
+// bollen studsar, bilen tutar (barnrummet)
+await dbg('d.goRoom(2)'); await p.waitForTimeout(400);
+const spBoll = await dbg("d.spotSak('s3')"), spBil = await dbg("d.spotSak('s2')");
+await tryck(spBoll.x, spBoll.y);
+ok((await dbg('d.senaste()')).ljud === 'boing' && (await dbg('d.anims()')).includes('sak:s3'), 'bollen studsar');
+await tryck(spBil.x, spBil.y);
+ok((await dbg('d.senaste()')).ljud === 'honk' && (await dbg('d.anims()')).includes('sak:s2'), 'bilen tutar och kör');
+ok((await dbg('d.reaktioner()')) >= 9, `${await dbg('d.reaktioner()')} reaktioner räknade`);
+await p.click('#dock-lage [data-lage="bygga"]'); await p.waitForTimeout(300);
+await dbg('d.goRoom(0)');
+const spS2 = await dbg(`d.spot(0, ${iSoffa})`);
+await tryck(spS2.x, spS2.y); await p.waitForTimeout(150);
+ok(await p.evaluate(() => !document.getElementById('modal').classList.contains('hidden')), 'i Bygga öppnar trycket menyn igen');
+await p.click('#modal .dlg-foot .btn:has-text("Stäng")'); await p.waitForTimeout(100);
+await dbg(`d.removePet('${katt3}')`);
 
 // ---------- 6. från pausmenyn mitt i spelet: tillbaka till rummet ----------
 await p.goto(`http://localhost:${PORT}/index.html?world=dock${Date.now().toString(36)}`);

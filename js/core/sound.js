@@ -112,6 +112,21 @@ export function play(name) {
       case 'pling': tone(1568, 0, 0.35, 'triangle', 0.12); tone(1568, 0.4, 0.5, 'triangle', 0.1); break;   // 🚗 klockan – rundan är slut
       case 'spok': tone(520, 0, 0.7, 'sine', 0.12, 260); tone(392, 0.3, 0.8, 'sine', 0.1, 196); break;   // 👻 uuuuh i spökhuset
       case 'bu': tone(110, 0, 0.28, 'sawtooth', 0.16, 70); tone(220, 0, 0.16, 'square', 0.1, 140); break;   // 👻 BU!
+      // 🧸 Dockskåpets lekläge (v0.166): det man trycker på svarar
+      case 'boing': tone(220, 0, 0.18, 'triangle', 0.14, 660); tone(440, 0.05, 0.12, 'sine', 0.08, 880); break;   // soffan, sängen, bollen
+      case 'squeak': tone(1500, 0, 0.08, 'sine', 0.08, 2600); tone(2400, 0.09, 0.07, 'sine', 0.06, 1800); break;   // gosedjur och klämkompisar
+      case 'ding': tone(1760, 0, 0.5, 'triangle', 0.1); tone(3520, 0, 0.25, 'sine', 0.04); break;   // klockan, mikron
+      case 'splash': tone(900, 0, 0.12, 'sawtooth', 0.06, 180); tone(420, 0.06, 0.18, 'sine', 0.08, 120); tone(1400, 0.14, 0.06, 'sine', 0.04, 2400); break;   // vatten
+      case 'pop': tone(880, 0, 0.035, 'square', 0.1, 440); break;
+      case 'tv': tone(1200, 0, 0.05, 'square', 0.07); tone(1600, 0.07, 0.05, 'square', 0.07); tone(2000, 0.14, 0.09, 'square', 0.06); break;   // skärmen tänds
+      case 'shake': [1800, 2200, 1600].forEach((f, i) => tone(f, i * 0.04, 0.03, 'triangle', 0.05)); break;   // det prasslar
+      case 'sizzle': tone(3000, 0, 0.25, 'sawtooth', 0.025, 2400); tone(2500, 0.1, 0.25, 'sawtooth', 0.02, 3200); break;   // det fräser på spisen
+      case 'toast': tone(600, 0, 0.05, 'square', 0.1); tone(1320, 0.06, 0.2, 'triangle', 0.1); break;   // brödrosten poppar
     }
   } catch { /* ljud är aldrig värt en krasch */ }
+}
+// En följd toner [[Hz, start s, längd s], …] i en vågform – pianot och fiolen i Dockskåpet spelar melodier.
+export function toner(seq, { type = 'triangle', vol = 0.12 } = {}) {
+  if (muted || !unlocked()) return;
+  try { for (const [f, at, dur] of seq) tone(f, at, dur, type, vol); } catch { /* ljud är aldrig värt en krasch */ }
 }
