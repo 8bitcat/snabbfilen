@@ -365,11 +365,11 @@ const MOVED_SEEDS = {
 
 // Möbler som är "djupa" (sängar, soffor, bord): hindret är halva höjden. Övriga
 // (skåp, hyllor, lampor) står upp – bara foten är hinder.
-const SOLID_LOW = new Set(['soffa', 'fatolj', 'stol', 'bordR', 'bordM', 'byra', 'sang', 'enkelsang', 'kuddsoffa', 'matstol', 'pelarbord',
+export const SOLID_LOW = new Set(['soffa', 'fatolj', 'stol', 'bordR', 'bordM', 'byra', 'sang', 'enkelsang', 'kuddsoffa', 'matstol', 'pelarbord',
   'sidobord', 'koksbord', 'soffbord', 'glasbord', 'skrivbord', 'arbetsbank', 'barnbord', 'skolbank', 'hallbank', 'sittbank', 'skobank',
   'kokso', 'diskbank', 'bankskap', 'badkar', 'dusch', 'djurbadd', 'golvkudde', 'molnkudde', 'stjarnkudde', 'badbank', 'strykbrada',
   'lagbyra', 'tvbank', 'nattduksbord', 'kista', 'leksakslada', 'backar', 'kontorsstol', 'skolstol', 'barnstol', 'pall', 'dass']);
-const solidH = (k, fh) => (SOLID_LOW.has(k) ? Math.round(fh * 0.5) : Math.min(13, Math.round(fh * 0.4)));
+export const solidH = (k, fh) => (SOLID_LOW.has(k) ? Math.round(fh * 0.5) : Math.min(13, Math.round(fh * 0.4)));
 // startmöbler som lånar en bild ur atlasen (receptboken = läspulpeten med den uppslagna boken)
 const FRAME_AS = { receptbok: 'laspulpet' };
 const frameOf = (k, v) => { const kk = FRAME_AS[k] || k; return FRAMES[kk + (v | 0)] || FRAMES[kk + '0']; };
@@ -405,6 +405,26 @@ export function surfaceRow(k, v, r) {
   } catch { row = null; }
   TOP_ROW.set(name, row);
   return row;
+}
+// Möbelbildens överkant kolumn för kolumn (Dockskåpet v0.175: saker på saker – nallen på sängen, stolen på
+// bordet): Int16Array med översta ogenomskinliga raden per kolumn i vyn för rotationsläge r, speglad som
+// bilden ritas (-1 = tom kolumn), eller null innan atlasen laddats.
+const TOP_COLS = new Map();
+export function topProfile(k, v, r) {
+  const vw = viewOf(k, v, r), name = frameName(vw.k, vw.v) + (vw.flip ? '|f' : '');
+  if (TOP_COLS.has(name)) return TOP_COLS.get(name);
+  const f = frameOf(vw.k, vw.v);
+  if (!f || typeof document === 'undefined' || !ATLAS?.complete || !ATLAS.naturalWidth) return null;
+  let prof = null;
+  try {
+    const c = document.createElement('canvas'); c.width = f[2]; c.height = f[3];
+    const x = c.getContext('2d'); x.drawImage(ATLAS, f[0], f[1], f[2], f[3], 0, 0, f[2], f[3]);
+    const px = x.getImageData(0, 0, f[2], f[3]).data;
+    prof = new Int16Array(f[2]).fill(-1);
+    for (let col = 0; col < f[2]; col++) for (let y = 0; y < f[3]; y++) if (px[(y * f[2] + col) * 4 + 3] > 128) { prof[vw.flip ? f[2] - 1 - col : col] = y; break; }
+  } catch { prof = null; }
+  if (prof) TOP_COLS.set(name, prof);
+  return prof;
 }
 // vad skylten över en funktionsmöbel säger
 const FN_LABEL = { meriter: $t('TROFÉER'), brasa: $t('BRASA'), lykta: $t('PUMPA'), sova: $t('SÄNG'), garderob: $t('GARDEROB'), ata: $t('KYLSKÅP'), laga: $t('SPIS'), recept: $t('RECEPT'), toalett: $t('TOALETT'), tvatta: $t('TVÄTTA'), tv: $t('TV'), musik: $t('MUSIK') };

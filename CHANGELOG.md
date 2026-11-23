@@ -10,6 +10,10 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.175.0] – 2026-11-23 – 🧸 Saker på saker i Dockskåpet
+- 🧸 **Saker på saker i Dockskåpet** – nu bär allt som står på golvet: lägg nallen på sängen, ställ stolen på sängen och bollen på stolen, lampan uppe på klädskåpet, gosedjuret i fåtöljen, julklappen och tomten på nattduksbordet. Borden och vitrinskåpet fungerar som förut, resten tar höjden från sin egen form där du släpper saken (på sängens madrass, soffans dyna, stolens sits). Det får plats om det är smalare än det det ska stå på.
+- Det som står på något följer med när du flyttar basen – också det som står på det igen – och ställs ner på golvet när basen tas bort. Lösa saker (nallar, mat) ligger kvar och läggs på golvet.
+
 ## [0.174.0] – 2026-11-23 – ⚽🏆 KBK-hörnan i Dockskåpet – pokaler, medaljer, vitrinskåp, tröjan med namn och nummer
 - ⚽🏆 **KBK-hörnan i Dockskåpet** – två nya flikar i lådan. **🏆 Priser:** pokaler i silver, guld och brons, bollpokalen, stjärnpokalen, Årets spelare, plaketten, diplomet, medaljer i guld (regnbågsband som på cupen), silver och brons, medaljhängaren – och **vitrinskåpet** med tre hyllor där du ställer pokaler, lagbilden, ditt porträtt och bollen (dra saken till den hylla du vill, eller ställ den på ett bord). **⚽ KBK:** matchtröjan på galge med ditt namn och nummer på ryggen, skyltdockan i matchställ (vrid den: ryggen med nummer eller framsidan), lagplanschen, Min plansch med din egen figur i matchställ och numret stort, lagbilden, ditt porträtt, halsduken, vimpeln, klubbmärket och matchbollen.
 - **Namn och nummer:** den som stämt av sig i ⚽ KBK-appen får sitt eget på tröjan, skyltdockan och planschen, andra sin figurs förnamn och 10 – byt med 👕 Namn och nummer i Bygga-menyn (någon i laget, eller ett eget namn och nummer).

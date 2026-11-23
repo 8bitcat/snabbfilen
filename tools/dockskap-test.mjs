@@ -489,6 +489,44 @@ await dbg(`d.remove(4, ${iSkap})`); await p.waitForTimeout(500);
 ok(!(await dbg("d.deco(4)[d.findDeco(4, 'pokal-silver')]")).up && !(await dbg("d.deco(4)[d.findDeco(4, 'kbk-boll')]")).up, 'utan skåpet står pokalen och bollen på golvet');
 const sparatK = await p.evaluate(() => JSON.parse(localStorage.getItem('snabbfilen_dockskap')));
 ok(sparatK.rooms[4].deco.some((d) => d.k === 'kbk-troja' && d.sp && d.sp.n === 34 && d.sp.namn === 'Julia'), 'huset sparas med tröjans namn och nummer');
+
+// ---------- 5k. saker på saker (v0.175): nallen på sängen, stolen på sängen, bollen på stolen; basen flyttas och tas bort ----------
+while ((await dbg('d.deco(4).length')) > 0) await dbg('d.remove(4, 0)');   // (badrummet töms så inget annat fångar sakerna)
+ok(await dbg("d.place('sang', 4, 60, 200)"), 'badrummet tomt, en säng ställs på golvet');
+const iSangK = await dbg("d.findDeco(4, 'sang')"), sangK = await dbg(`d.deco(4)[${iSangK}]`);
+const nalleIdK = await dbg(`d.placeSak('leksak', 'nalle-mellan', 4, ${sangK.x + 16}, ${sangK.y - 15})`);
+const nalleK = await dbg(`d.saker().find((s) => s.id === '${nalleIdK}')`);
+ok(nalleK && nalleK.up > 0 && nalleK.up < 34 && nalleK.y === sangK.y + 1, `nallen ligger uppe på sängen (up ${nalleK?.up})`);
+ok(await dbg(`d.placeAt('stol', 4, ${sangK.x + 16}, ${sangK.y - 15})`), 'stolen ställs på sängen');
+const iStolK = await dbg("d.findDeco(4, 'stol')"), stolK = await dbg(`d.deco(4)[${iStolK}]`);
+ok(stolK.up > 0 && stolK.y === sangK.y + 1 && stolK.x >= sangK.x && stolK.x + 13 <= sangK.x + 33, `stolen står på sängen (up ${stolK.up})`);
+ok(await dbg(`d.placeAt('basketboll', 4, ${stolK.x + 6}, ${stolK.y - stolK.up - 10})`), 'bollen ställs på stolen');
+const iBollK = await dbg("d.findDeco(4, 'basketboll')"), bollK = await dbg(`d.deco(4)[${iBollK}]`);
+ok(bollK.up > stolK.up && bollK.y === stolK.y + 1 && bollK.x >= stolK.x && bollK.x + 8 <= stolK.x + 13, `bollen står på stolen på sängen (up ${bollK.up})`);
+// sängen bär från madrassen upp till karmen: gosedjuret släppt högre upp ligger högre upp
+ok(await dbg(`d.placeAt('gosedjur', 4, ${sangK.x + 6}, ${sangK.y - 28})`), 'gosedjuret läggs högre upp på sängen');
+const gosK = await dbg("d.deco(4)[d.findDeco(4, 'gosedjur')]");
+ok(gosK.y === sangK.y + 1 && gosK.up > stolK.up && gosK.up <= 32, `gosedjuret ligger där det släpptes (up ${gosK.up}, stolen ${stolK.up})`);
+// sängen dras åt höger: stolen och bollen följer med (samma höjder), nallen (lös sak) läggs på golvet
+const spSK = await dbg(`d.spot(4, ${iSangK})`);
+await p.evaluate(([x, y]) => window.SF.scene.down(x, y), [spSK.x, spSK.y]);
+ok((await dbg('d.drag()'))?.idx === iSangK, 'trycket mitt på sängen lyfter sängen, inte stolen');
+for (let k = 1; k <= 6; k++) await p.evaluate(([x, y]) => window.SF.scene.move(x, y), [spSK.x + 10 * k, spSK.y]);
+await p.evaluate(([x, y]) => window.SF.scene.up(x, y), [spSK.x + 60, spSK.y]); await p.waitForTimeout(100);
+const sangK2 = await dbg(`d.deco(4)[${iSangK}]`), stolK2 = await dbg(`d.deco(4)[${iStolK}]`), bollK2 = await dbg(`d.deco(4)[${iBollK}]`);
+ok(sangK2.x > sangK.x + 30 && !sangK2.up, `sängen flyttad till x ${sangK2.x}`);
+ok(stolK2.x === sangK2.x + (stolK.x - sangK.x) && stolK2.y === sangK2.y + 1 && stolK2.up === stolK.up && bollK2.x === sangK2.x + (bollK.x - sangK.x) && bollK2.y === sangK2.y + 2 && bollK2.up === bollK.up, 'stolen och bollen följde med sängen, på samma höjder');
+const nalleK2 = await dbg(`d.saker().find((s) => s.id === '${nalleIdK}')`);
+ok(nalleK2 && !nalleK2.up && nalleK2.room === 4, 'nallen följer inte med – den ligger på golvet');
+// sängen tas bort: stolen står på golvet, bollen står kvar på stolen (lägre nu)
+await dbg(`d.remove(4, ${iSangK})`); await p.waitForTimeout(200);
+const stolK3 = await dbg("d.deco(4)[d.findDeco(4, 'stol')]"), bollK3 = await dbg("d.deco(4)[d.findDeco(4, 'basketboll')]");
+ok(!stolK3.up && bollK3.up === bollK.up - stolK.up && bollK3.y === stolK3.y + 1, `utan sängen står stolen på golvet och bollen kvar på stolen (up ${bollK3.up})`);
+// för brett får inte plats: enkelsängen (18) går inte på stolen (13) – den hamnar på golvet
+ok(await dbg(`d.placeAt('enkelsang', 4, ${stolK3.x + 6}, ${stolK3.y - 10})`) && !(await dbg("d.deco(4)[d.findDeco(4, 'enkelsang')]")).up, 'enkelsängen är bredare än stolen – står på golvet');
+await p.waitForTimeout(400);   // (sparningen är fördröjd 300 ms)
+const sparatS = await p.evaluate(() => JSON.parse(localStorage.getItem('snabbfilen_dockskap')));
+ok(sparatS.rooms[4].deco.some((d) => d.k === 'basketboll' && d.up > 0), 'huset sparas med bollen uppe på stolen');
 await dbg('d.goRoom(0)'); await p.click('#dock-panel [data-flik="vardagsrum"]'); await p.waitForTimeout(100);
 
 // ---------- 6. från pausmenyn mitt i spelet: tillbaka till rummet ----------

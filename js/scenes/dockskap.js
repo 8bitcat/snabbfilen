@@ -67,8 +67,14 @@
 //     galge, skyltdockan, lagplanschen, min plansch, lagbilden, mitt porträtt, halsduken, vimpeln, klubbmärket, bollen;
 //     bara på svenska eller för den som stämt av sig i KBK-appen). Tröjan, skyltdockan och planschen bär d.sp = { n, namn }
 //     (ens eget ur KBK-appen, annars figurens förnamn och 10 – byts med 👕 Namn och nummer). js/scenes/dockskap-kbk.js.
+//   • Saker på saker (v0.175, Carl 2026-11-23: "Julia försökte lägga nallen ovanpå sängen men det gick inte – vi måste kunna
+//     lägga alla saker på varandra"): allt som står på golvet bär saker – sängen, soffan, stolarna, skåpen, pokalerna – och det
+//     som står på något bär i sin tur (bollen på stolen på sängen). Höjden tas ur möbelbildens silhuett i kolumnen under sakens
+//     mitt (room.js topProfile, profilAv för husets egna), borden har sin skiva (surfaceRow) och vitrinskåpet sina hyllor (upOn).
+//     Det får plats om det är smalare än ytan. Det som bärs följer med när basen flyttas (ridersOf, nivå för nivå) och ställs
+//     ner på golvet när basen tas bort (settle); lösa saker (nallen) följer inte med utan läggs på golvet (settleSaker).
 // Test: tools/dockskap-test.mjs, tools/dockskap-natet-test.mjs (två spelare).
-import { buildBg, spriteProp, wallProp, flatProp, rugImg, makePlantProp, dimsOf, isWall, isFlat, ON_TABLE, SURFACES, surfaceRow,
+import { buildBg, spriteProp, wallProp, flatProp, rugImg, makePlantProp, dimsOf, isWall, isFlat, SURFACES, surfaceRow, topProfile, SOLID_LOW, solidH,
   thumbCanvas, furnView, drawArt, nameOf, canRecolor, halo, FW, FH, WALL_Y, WALL_TOP, DOOR, RUG, APT } from './room.js';
 import { createSpeech } from './walkable.js';
 import { KATALOG, katalogOf, knownKind, rotStates, functionOf, RAVAROR, ravaraOf } from '../game.js';
@@ -241,6 +247,25 @@ const EXTRA_AV = (k) => EXTRA.find((e) => e.saker[k]) || null;               // 
 export const DOCK_KOP = EXTRA.map((e) => ({ id: e.rum.kop, ik: e.rum.ik, namn: e.namn, pris: e.pris, text: e.text }));
 // bilden för en egen sak: de köpbara rummens (per rum) eller KBK-hörnans och prisernas (bild(k, f, d) – d ger namn, nummer, vridning)
 const BILD_AV = (k) => EXTRA_AV(k)?.bild || kbkBild;
+// bildens överkant kolumn för kolumn (saker på saker, v0.175): möblerna ur atlasen (room.js topProfile), husets egna ur sin
+// egen bild (första bildrutan, i rotationsläge r) – Int16Array, -1 = tom kolumn, null = inte ritad än
+const PROFIL = new Map();
+function profilAv(s) {
+  if (!EGNA[s.k]) return topProfile(s.k, s.v, s.r | 0);
+  const key = s.k + '|' + (s.r | 0);
+  if (PROFIL.has(key)) return PROFIL.get(key);
+  let prof = null;
+  try {
+    const c = BILD_AV(s.k)(s.k, 0, s);
+    if (c?.width && c.getContext) {
+      const px = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+      prof = new Int16Array(c.width).fill(-1);
+      for (let col = 0; col < c.width; col++) for (let y = 0; y < c.height; y++) if (px[(y * c.width + col) * 4 + 3] > 128) { prof[col] = y; break; }
+    }
+  } catch { prof = null; }
+  if (prof) PROFIL.set(key, prof);
+  return prof;
+}
 // lådans avdelning för en egen sak (KAT.room)
 const FLIK_AV = (k) => (EXTRA_AV(k) ? 'EXTRA:' + EXTRA_AV(k).rum.id : PRISER[k] ? 'PRISER' : 'KBK');
 
@@ -446,25 +471,56 @@ export function makeDockskap(A) {
   const skriv = () => { try { localStorage.setItem(DOCK_KEY, JSON.stringify(H)); } catch { /* fullt */ } };
   function spara(nu = false) { if (gast()) return; clearTimeout(tmr); if (nu) skriv(); else tmr = setTimeout(skriv, 300); }   // (gästen sparar aldrig värdens hus)
 
-  // ---------- småsaker på bord (som i room.js) – och på vitrinskåpets hyllor (EGNA hyllor) ----------
+  // ---------- saker på saker (v0.175): allt med en ovansida bär saker – borden sin skiva (room.js), vitrinskåpet sina hyllor, resten sin silhuett ----------
   const isRider = (d) => !!d && d.up > 0;
-  const arYta = (k) => SURFACES.has(k) || !!EGNA[k]?.hyllor;      // något att ställa saker på
-  const arPa = (k) => ON_TABLE.has(k) || !!EGNA[k]?.pa;           // något som ställs på bord och hyllor
-  // hur högt över fotlinjen saker står på s: bordets skiva, eller den av skåpets hyllor som ligger närmast vill
-  const upOn = (s, vill = null) => {
-    const hy = EGNA[s.k]?.hyllor;
-    if (hy) return vill == null ? hy.rader[0] : hy.rader.reduce((b, r) => (Math.abs(r - vill) < Math.abs(b - vill) ? r : b), hy.rader[0]);
-    const row = surfaceRow(s.k, s.v, s.r | 0); return row == null ? null : dimsOf(s.k, s.v, s.r | 0).h - row + 1;
-  };
-  const ytaX = (s) => { const hy = EGNA[s.k]?.hyllor; return hy ? [s.x + hy.x0, s.x + hy.x1] : [s.x, s.x + dimsAv(s.k, s.v, s.r | 0).w]; };   // skivans x-spann
-  function surfaceOf(d, list, skip = -1) {
-    const { w } = dimsAv(d.k, d.v, d.r | 0);
-    return list.find((s, j) => { if (j === skip || s === d || !s || !arYta(s.k) || isRider(s) || d.y !== s.y + 1) return false; const [x0, x1] = ytaX(s); return d.x >= x0 && d.x + w <= x1; }) || null;
+  // något att ställa saker på: allt som står på golvet (inte väggsaker, mattor, monsteran eller discokulan i taket) – också det som självt står på något
+  const arYta = (k) => !!k && k !== 'matta' && k !== 'vaxt' && k !== 'discokula' && !arVagg(k) && !isFlat(k);
+  const arPa = arYta;   // och allt sådant kan ställas på något annat – får det plats på bredden
+  const basAv = (s) => (s.up > 0 ? s.up : 0);   // står ytan själv på något: så högt över sin fotlinje
+  const TOPP_IN = 3;   // så många rader in från silhuettens överkant står saken (bordens skiva: room.js TOP_IN)
+  // hur högt över sin fotlinje (s.y + 1) något står på s, när man vill ha det vill över s fotlinje (pekarens höjd, eller
+  // sakens nuvarande): bordets skiva (surfaceRow), vitrinskåpets hylla närmast vill, annars möbelbildens egen form i kolumnen
+  // under sakens mitt (cx, rummets x): överkanten är taket, och de djupa möblerna (sängen, soffan, stolen – room.js SOLID_LOW)
+  // bär från madrassen/sitsen (solidH) upp till karmen, så nallen ligger där man lägger den. En tom kolumn (mellan stolsbenen)
+  // tar närmaste med något i. null = bilden är inte laddad än.
+  function upOn(s, vill = null, cx = null) {
+    const bas = basAv(s), hy = EGNA[s.k]?.hyllor, rel = vill == null ? null : vill - bas;
+    if (hy) return bas + (rel == null ? hy.rader[0] : hy.rader.reduce((b, r) => (Math.abs(r - rel) < Math.abs(b - rel) ? r : b), hy.rader[0]));
+    const { w, h } = dimsAv(s.k, s.v, s.r | 0);
+    if (SURFACES.has(s.k)) { const row = surfaceRow(s.k, s.v, s.r | 0); return row == null ? null : bas + h - row + 1; }
+    const prof = profilAv(s);
+    if (!prof?.length) return null;
+    let col = cx == null ? Math.min(w >> 1, prof.length - 1) : clamp(Math.round(cx - s.x), 0, prof.length - 1);
+    if (prof[col] < 0) { let b = -1; for (let k = 1; k < prof.length && b < 0; k++) { if (col - k >= 0 && prof[col - k] >= 0) b = col - k; else if (col + k < prof.length && prof[col + k] >= 0) b = col + k; } if (b < 0) return null; col = b; }
+    const tak = h - Math.min(h - 2, prof[col] + TOPP_IN) + 1;
+    const golv = !EGNA[s.k] && SOLID_LOW.has(s.k) ? Math.min(tak, solidH(s.k, h)) : tak;
+    return bas + (rel == null ? tak : clamp(Math.round(rel), golv, tak));
   }
-  const ridersOf = (list, idx) => list.filter((d) => isRider(d) && surfaceOf(d, list) === list[idx]).map((d) => ({ d, dx: d.x - list[idx].x }));
-  // det som stod på ett bord som försvann står nu på golvet
+  const ytaX = (s) => { const hy = EGNA[s.k]?.hyllor; return hy ? [s.x + hy.x0, s.x + hy.x1] : [s.x, s.x + dimsAv(s.k, s.v, s.r | 0).w]; };   // skivans x-spann
+  const inomYta = (x, w, s) => { const [x0, x1] = ytaX(s); return x >= x0 && x + w <= x1; };
+  // det d står på (d.y = s.y + 1 och innanför på bredden) – också något som självt står på något
+  function surfaceOf(d, list, skip = null) {
+    const { w } = dimsAv(d.k, d.v, d.r | 0);
+    return list.find((s) => s && s !== d && !skip?.has(s) && arYta(s.k) && d.y === s.y + 1 && inomYta(d.x, w, s)) || null;
+  }
+  // allt som står på list[idx], och det som står på det igen – med läget relativt basen
+  function ridersOf(list, idx) {
+    const bas = list[idx], pa = new Set([bas]), ut = [];
+    for (let fler = true; fler;) { fler = false; for (const d of list) { if (!isRider(d) || pa.has(d)) continue; const s = surfaceOf(d, list); if (s && pa.has(s)) { pa.add(d); ut.push({ d, dx: d.x - bas.x, dy: d.y - bas.y }); fler = true; } } }
+    return ut;
+  }
+  // det som stod på något som försvann står nu på golvet; det som står rätt får sin höjd igen – basen först, sedan det som står
+  // på den, som sänks lika mycket som basen sjönk (skift). SKIFT[i] ligger kvar för settleSaker, som alltid körs efter.
+  const SKIFT = [];
   function settle(i) {
-    for (const d of H.rooms[i].deco) if (isRider(d) && !surfaceOf(d, H.rooms[i].deco)) { delete d.up; klamma(d); }
+    const list = H.rooms[i].deco, skift = new Map();
+    for (const d of list.filter(isRider).sort((a, b) => a.y - b.y)) {
+      const s = surfaceOf(d, list), fore = d.up;
+      const u = s ? upOn(s, fore + (skift.get(s) || 0), d.x + dimsAv(d.k, d.v, d.r | 0).w / 2) : null;
+      if (u != null) d.up = u; else { delete d.up; klamma(d); }
+      skift.set(d, (d.up || 0) - fore);
+    }
+    SKIFT[i] = skift;
   }
 
   // ---------- det ritade, per rum ----------
@@ -750,17 +806,20 @@ export function makeDockskap(A) {
     }
     return null;
   }
-  // bordsskivan under pekaren (mx, my) i rummet j, för något w brett: { s, sd, u } eller null
-  function ytaUnder(j, mx, my, w, skip = -1) {
+  // ytan under pekaren (mx, my) i rummet j, för något w brett: { s, sd, u, x0, x1 } eller null. Den främsta (störst y) vinner,
+  // och det som står på något går före det det står på; skip = det man själv bär (och det som står på det)
+  function ytaUnder(j, mx, my, w, skip = null) {
     let best = null;
-    H.rooms[j].deco.forEach((s, k2) => {
-      if (k2 === skip || !s || !arYta(s.k) || isRider(s)) return;
-      const sd = dimsAv(s.k, s.v, s.r | 0), [x0, x1] = ytaX(s);
-      const u = EGNA[s.k]?.hyllor ? upOn(s, s.y - my) : upOn(s);   // (vitrinskåpet: hyllan närmast pekaren)
-      if (u == null || w > x1 - x0 - 2 || mx < x0 || mx > x1 || my < s.y - sd.h - 4 || my > s.y + 2) return;
-      if (!best || s.y > best.s.y) best = { s, sd, u, x0, x1 };
-    });
-    return best;
+    for (const s of H.rooms[j].deco) {
+      if (!s || skip?.has(s) || !arYta(s.k)) continue;
+      const sd = dimsAv(s.k, s.v, s.r | 0), [x0, x1] = ytaX(s), bas = basAv(s);
+      if (w > x1 - x0 - 2 || mx < x0 || mx > x1 || my < s.y - bas - sd.h - 4 || my > s.y - bas + 2) continue;
+      if (!best || s.y > best.s.y || (s.y === best.s.y && bas > basAv(best.s))) best = { s, sd, x0, x1 };
+    }
+    if (!best) return null;
+    const cx = clamp(mx, best.x0 + 1 + w / 2, best.x1 - 1 - w / 2);   // (sakens mitt när den klämts in på ytan)
+    const u = upOn(best.s, best.s.y - my, cx);   // (vitrinskåpet: hyllan närmast pekaren; sängen: där man släpper)
+    return u == null ? null : { ...best, u };
   }
   // var en sak hamnar i rummet j med pekaren på (mx, my): uppe på en skiva, annars på golvet
   function sakPlats(s, j, mx, my) {
@@ -779,10 +838,12 @@ export function makeDockskap(A) {
   }
   // det som låg på en skiva som försvann (eller flyttades) ligger nu på golvet; det som ligger rätt får sin höjd
   function settleSaker(i) {
+    const list = H.rooms[i].deco, skift = SKIFT[i] || new Map(); SKIFT[i] = null;
     for (const s of sakerI(i)) {
+      if (!(s.up > 0)) continue;   // (det som ligger på golvet ligger kvar där)
       const b = sakBox(s);
-      const y = H.rooms[i].deco.find((d) => { if (!d || !arYta(d.k) || isRider(d) || s.y !== d.y + 1) return false; const [x0, x1] = ytaX(d); return s.x + b.x0 >= x0 && s.x + b.x1 <= x1; });
-      const u = y ? upOn(y, s.up) : null;
+      const y = list.find((d) => d && arYta(d.k) && s.y === d.y + 1 && inomYta(s.x + b.x0, b.x1 - b.x0, d));
+      const u = y ? upOn(y, s.up + (skift.get(y) || 0), s.x + (b.x0 + b.x1) / 2) : null;
       if (u != null) s.up = u; else { delete s.up; klammaSak(s); }
     }
   }
@@ -1009,7 +1070,8 @@ export function makeDockskap(A) {
   function placeFor(c, j, mx, my) {
     const { w } = dimsAv(c.k, c.v, c.r);
     if (arPa(c.k)) {
-      const best = ytaUnder(j, mx, my, w, !c.fromTray && c.room === j ? c.idx : -1);
+      const skip = !c.fromTray && c.room === j && c.d ? new Set([c.d, ...(c.riders || []).map((q) => q.d)]) : null;   // (inte på sig själv eller det man bär)
+      const best = ytaUnder(j, mx, my, w, skip);
       if (best) { const { s, u, x0, x1 } = best; return { x: Math.max(x0 + 1, Math.min(x1 - 1 - w, Math.round(mx - w / 2))), y: s.y + 1, up: u }; }
     }
     const d = klamma({ k: c.k, v: c.v, r: c.r, x: Math.round(mx + c.offx), y: Math.round(my + c.offy) });
@@ -1068,9 +1130,10 @@ export function makeDockskap(A) {
       const to = H.rooms[c.groom].deco;
       to.push(d); for (const q of c.riders) to.push(q.d);
     }
+    const dBas = (c.gup > 0 ? c.gup : 0) - basAv(d);   // (basen kan ha hamnat på något, eller kommit ner: det som står på den lyfts lika mycket)
     d.x = c.gx; d.y = c.gy;
     if (c.gup > 0) d.up = c.gup; else delete d.up;
-    for (const q of c.riders) { q.d.x = d.x + q.dx; q.d.y = d.y + 1; }
+    for (const q of c.riders) { q.d.x = d.x + q.dx; q.d.y = d.y + q.dy; q.d.up = basAv(q.d) + dBas; }   // (settle klämmer in höjderna igen)
     settle(c.groom); settleSaker(c.groom); if (c.groom !== c.room) { settle(c.room); settleSaker(c.room); }
     play('click'); spara(); rebuild(c.room); rebuild(c.groom);
     synka('deco', c.groom); if (c.groom !== c.room) synka('deco', c.room); synka('saker');
@@ -1764,7 +1827,7 @@ export function makeDockskap(A) {
       if (a) drawArt(ctx, a, x, y - (upp || 0) - a.sh);
     };
     rita(c.k, c.v, c.c, c.r, c.gx, c.gy, c.gup, c.d);
-    if (c.riders?.length) for (const q of c.riders) rita(q.d.k, q.d.v, q.d.c, q.d.r | 0, c.gx + q.dx, c.gy + 1, q.d.up, q.d);
+    if (c.riders?.length) for (const q of c.riders) rita(q.d.k, q.d.v, q.d.c, q.d.r | 0, c.gx + q.dx, c.gy + q.dy, q.d.up + c.gup - basAv(c.d), q.d);
     ctx.globalAlpha = 1;
   }
   function draw(ctx) {
