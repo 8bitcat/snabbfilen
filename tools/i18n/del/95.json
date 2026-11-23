@@ -1,0 +1,87 @@
+[
+ {
+  "i": 10354,
+  "f": "js/core/kop.js",
+  "k": "Slottsvåningen i Dockskåpet"
+ },
+ {
+  "i": 10355,
+  "f": "js/core/kop.js",
+  "k": "Ett sjunde rum i Dockskåpet: tronsalen med tron, kristallkrona, rustning, fontän, himmelssäng, facklor och en drake – för alltid."
+ },
+ {
+  "i": 10356,
+  "f": "js/scenes/dockskap-slott.js",
+  "k": "SLOTTSVÅNINGEN"
+ },
+ {
+  "i": 10357,
+  "f": "js/scenes/dockskap-slott.js",
+  "k": "Tronen"
+ },
+ {
+  "i": 10358,
+  "f": "js/scenes/dockskap-slott.js",
+  "k": "Kristallkronan"
+ },
+ {
+  "i": 10359,
+  "f": "js/scenes/dockskap-slott.js",
+  "k": "Rustningen"
+ },
+ {
+  "i": 10360,
+  "f": "js/scenes/dockskap-slott.js",
+  "k": "Banderollen"
+ },
+ {
+  "i": 10361,
+  "f": "js/scenes/dockskap-slott.js",
+  "k": "Kronan"
+ },
+ {
+  "i": 10362,
+  "f": "js/scenes/dockskap-slott.js",
+  "k": "Fontänen"
+ },
+ {
+  "i": 10363,
+  "f": "js/scenes/dockskap-slott.js",
+  "k": "Himmelssängen"
+ },
+ {
+  "i": 10364,
+  "f": "js/scenes/dockskap-slott.js",
+  "k": "Facklan"
+ },
+ {
+  "i": 10365,
+  "f": "js/scenes/dockskap-slott.js",
+  "k": "Draken"
+ },
+ {
+  "i": 10366,
+  "f": "js/scenes/dockskap-slott.js",
+  "k": "Riddarskölden"
+ },
+ {
+  "i": 10367,
+  "f": "js/scenes/dockskap.js",
+  "k": "Slottsvåningen"
+ },
+ {
+  "i": 10368,
+  "f": "js/scenes/dockskap.js",
+  "k": "Slott"
+ },
+ {
+  "i": 10369,
+  "f": "js/scenes/dockskap.js",
+  "k": "Tronsalen med stenvalv, bågfönster och röd matta: tronen, kristallkronan, rustningen, banderollerna, kronan, fontänen, himmelssängen, facklorna, draken och riddarskölden – och allt ur lådan som passar ett slott."
+ },
+ {
+  "i": 10370,
+  "f": "js/scenes/dockskap.js",
+  "k": "Det här rummet har sitt eget utseende – byt saker i stället."
+ }
+]

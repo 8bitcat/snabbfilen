@@ -27,7 +27,7 @@ ok(await p.$$eval('#dock-lage .dl-sma .btn', (els) => els.length === 2 && getCom
 await p.click('#dock-lage [data-lage="bygga"]'); await p.waitForTimeout(300);
 ok((await dbg('d.lage()')) === 'bygga' && await p.evaluate(() => document.body.classList.contains('dock-bygga') && !document.getElementById('dock-panel').classList.contains('hidden')), 'Bygga: lådan syns, body.dock-bygga');
 const rooms = await dbg('d.rooms()');
-ok(rooms.length === 6 && rooms[4].id === 'badrum' && rooms[5].id === 'tradgard', `sex rum: badrummet, sedan 🌳 trädgården sist (${rooms.map((r) => r.id).join(', ')})`);
+ok(rooms.length === 7 && rooms[4].id === 'badrum' && rooms[5].id === 'tradgard' && rooms[6].id === 'slott', `sju rum: badrummet, sedan 🌳 trädgården och 🏰 slottsvåningen (${rooms.map((r) => r.id).join(', ')})`);
 const seed0 = await dbg('d.deco(0).length');
 ok(seed0 >= 5, `startmöbleringen i vardagsrummet: ${seed0} möbler`);
 ok(await p.$$eval('#dock-panel .dock-item', (els) => els.length) >= 20, 'lådan: vardagsrumsfliken har minst 20 möbler');
@@ -104,7 +104,7 @@ ok(tarta2 && !(tarta2.up > 0), 'bordet borta: tårtan står på golvet');
 await p.click('#dock-panel [data-natt]'); await p.waitForTimeout(500);
 ok(await dbg('d.natt()') === true, '🌙 Natt är på');
 const saved = await p.evaluate(() => JSON.parse(localStorage.getItem('snabbfilen_dockskap') || 'null'));
-ok(saved && saved.natt === true && saved.rooms?.length === 6 && saved.rooms[1].deco.some((d) => d.k === 'soffa'), 'sparat i snabbfilen_dockskap (natt + soffan i köket, sex rum)');
+ok(saved && saved.natt === true && saved.rooms?.length === 7 && saved.rooms[1].deco.some((d) => d.k === 'soffa'), 'sparat i snabbfilen_dockskap (natt + soffan i köket, sju rum)');
 await p.click('#dock-panel [data-ut]');
 await p.waitForTimeout(600);
 ok(await p.evaluate(() => document.body.classList.contains('menu-open') && !document.body.classList.contains('dock-on')), '⬅ Tillbaka: huvudmenyn igen, lådan borta');
@@ -421,6 +421,33 @@ const gras1 = await dbg('d.pixel(5, 192, 180)');
 const lum = (h) => parseInt(h.slice(1, 3), 16) + parseInt(h.slice(3, 5), 16) + parseInt(h.slice(5, 7), 16);
 ok((await dbg('d.tema(5)')).arstid === 'vinter' && gras1 !== gras0 && lum(gras1) > lum(gras0) + 60, `vinter: gräsmattan blev snövit, ljusare (${gras0} → ${gras1}${await dbg('d.natt()') ? ', natt' : ''})`);
 await p.click('#dock-panel [data-arstid="sommar"]'); await p.waitForTimeout(200);
+await dbg("d.removeDoll('bot4')"); await dbg('d.goRoom(0)');
+await p.click('#dock-panel [data-flik="vardagsrum"]'); await p.waitForTimeout(100);
+
+// ---------- 5i. 🏰 slottsvåningen (v0.173): andra köpbara rummet – tron, fontän, drake, facklor, kristallkronan lyser ----------
+ok((await dbg('d.locked(6)')) === true && (await dbg('d.deco(6).length')) >= 8 && (await p.$$eval('#dock-panel [data-flik]', (els) => els.length)) === 16, `slottsvåningen är låst och möblerad (${await dbg('d.deco(6).length')} saker), ingen slottsflik än`);
+await dbg("d.unlock('slott')"); await p.waitForTimeout(200);
+ok((await dbg('d.locked(6)')) === false && (await p.$$eval('#dock-panel [data-flik]', (els) => els.length)) === 17 && await p.$eval('#dock-panel [data-rum="6"]', (el) => /🏰/.test(el.textContent)), 'upplåst: 🏰 på rumsknappen och slottsfliken i lådan');
+await p.click('#dock-panel [data-flik="slott"]'); await p.waitForTimeout(200);
+ok((await p.$$eval('#dock-panel .dock-item', (els) => els.length)) >= 10 && await p.$eval('#dock-panel .dock-item[data-k="drake"] canvas', (c) => c.width > 10), 'slottsfliken: minst tio saker med miniatyrer (draken)');
+await dbg('d.goRoom(6)'); await p.waitForTimeout(400);
+ok(await dbg("d.place('himmelssang', 6, 100, 206)") && await dbg("d.place('riddarskold', 6, 300, 60)"), 'himmelssängen och riddarskölden ställs ut');   // (sängen till vänster – inte framför fontänen)
+const iTron = await dbg("d.findDeco(6, 'tron')"), iFont = await dbg("d.findDeco(6, 'fontan')"), iDrake = await dbg("d.findDeco(6, 'drake')"), iFack = await dbg("d.findDeco(6, 'fackla')"), iKrona = await dbg("d.findDeco(6, 'kristallkrona')");
+const tronD = await dbg(`d.deco(6)[${iTron}]`);
+ok(await dbg(`d.placeDoll('bot4', 6, ${tronD.x + 15}, ${tronD.y - 2})`) && (await dbg('d.dolls()')).find((d) => d.id === 'bot4')?.sitter === true, 'bot4 sitter på tronen');
+await p.click('#dock-lage [data-lage="leka"]'); await p.waitForTimeout(300);
+const tryckS = async (idx, dx = 0) => { const s = await dbg(`d.spot(6, ${idx})`); await p.evaluate(([x, y]) => { window.SF.scene.down(x, y); window.SF.scene.up(x, y); }, [s.x + dx, s.y]); await p.waitForTimeout(80); };
+await tryckS(iFont);
+ok((await dbg('d.senaste()'))?.k === 'fontan' && (await dbg('d.senaste()')).ljud === 'splash' && (await dbg('d.fx(6, "bubbla")')) >= 8, 'fontänen plaskar');
+await tryckS(iDrake);
+ok((await dbg('d.senaste()')).ljud === 'bu' && (await dbg('d.fx(6, "rok")')) >= 6, 'draken ryker ur näsborrarna');
+await tryckS(iFack);
+ok((await dbg(`d.deco(6)[${iFack}]`)).lit === true && (await dbg('d.senaste()')).k === 'fackla:tand', 'facklan tänds');
+await tryckS(iKrona);
+ok((await dbg('d.senaste()')).ljud === 'pling' && (await dbg('d.fx(6, "gnista")')) >= 8, 'kristallkronan glittrar');
+await p.click('#dock-lage [data-lage="bygga"]'); await p.waitForTimeout(300);
+await p.click('#dock-panel [data-flik="teman"]'); await p.waitForTimeout(300);
+ok((await p.$$eval('#dock-panel [data-arstid]', (els) => els.length)) === 0 && (await p.$$eval('#dock-panel [data-tapet]', (els) => els.length)) === 0 && await p.evaluate(() => /eget utseende/.test(document.querySelector('#dock-items')?.textContent || '')), 'temafliken i slottet: inget att byta, bara en förklaring');
 await dbg("d.removeDoll('bot4')"); await dbg('d.goRoom(0)');
 await p.click('#dock-panel [data-flik="vardagsrum"]'); await p.waitForTimeout(100);
 

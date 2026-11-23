@@ -79,6 +79,11 @@ const PRODUKTER = [
     es: ['El jardín de la casita', 'Otra sala: césped, piscina, columpio.'], de: ['Puppenhaus-Garten', 'Ein Raum mehr: Rasen, Pool, Schaukel, Grill.'],
     fr: ['Le jardin de la maison', 'Une pièce de plus : pelouse, piscine, grill.'], pl: ['Ogród domku dla lalek', 'Dodatkowy pokój: trawnik, basen, grill.'],
     it: ['Il giardino della casetta', 'Una stanza in più: prato, piscina, altalena.'], pt: ['O jardim da casinha', 'Mais uma divisão: relvado, piscina, baloiço.'] } },
+  { namn: 'Slottsvåningen i Dockskåpet', sku: SKU + 'dock.slott', typ: 'NON_CONSUMABLE', pris: 39, loc: {
+    sv: ['Slottsvåningen i Dockskåpet', 'En tronsal: tron, kristallkrona, drake.'], en: ['Dollhouse Castle Floor', 'A throne room: throne, chandelier, dragon.'],
+    es: ['El castillo de la casita', 'Sala del trono: trono, lámpara, dragón.'], de: ['Puppenhaus-Schlosssaal', 'Thronsaal: Thron, Kronleuchter, Drache.'],
+    fr: ['Le château de la maison', 'Salle du trône : trône, lustre, dragon.'], pl: ['Zamek domku dla lalek', 'Sala tronowa: tron, żyrandol, smok.'],
+    it: ['Il castello della casetta', 'Sala del trono: trono, lampadario, drago.'], pt: ['O castelo da casinha', 'Sala do trono: trono, lustre, dragão.'] } },
 ];
 for (const p of PRODUKTER) for (const [l, [n, d]] of Object.entries(p.loc)) { if (n.length > 30 || d.length > 45) throw new Error(`för lång text (${p.sku} ${l}): "${n}" ${n.length}/30, "${d}" ${d.length}/45`); }
 

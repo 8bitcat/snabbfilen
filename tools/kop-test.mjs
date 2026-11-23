@@ -21,7 +21,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const browser = await chromium.launch();
 const errs = [];
 const SKU = 'io.eightbitcat.pixelcity.';
-const PRIS = { 'pengar.1000': 12, 'pengar.10000': 49, 'bostad.lagenhet': 29, 'bostad.villa': 59, 'bostad.takvaning': 99, 'present.liten': 9, 'present.mellan': 29, 'present.stor': 59, 'dock.tradgard': 29 };
+const PRIS = { 'pengar.1000': 12, 'pengar.10000': 49, 'bostad.lagenhet': 29, 'bostad.villa': 59, 'bostad.takvaning': 99, 'present.liten': 9, 'present.mellan': 29, 'present.stor': 59, 'dock.tradgard': 29, 'dock.slott': 39 };
 
 async function boot({ app = false, purchases = [], kop = null } = {}) {
   const ctx = await browser.newContext({ viewport: { width: 1200, height: 760 } });
@@ -93,7 +93,7 @@ async function oppnaButik(p) {
   ok(await D(p, () => { const b = document.querySelector('#mobilen [data-app="butik"]'); return !!b && !b.hidden && b.offsetParent !== null && /Butik/.test(b.textContent); }), 'appen: 🛍️ Butik syns i mobilen');
   await oppnaButik(p);
   const t2 = await modalText(p);
-  ok(/Butiken/.test(t2) && (await D(p, () => document.querySelectorAll('#modal [data-kop]').length)) === 9, 'Butiken öppnas med nio varor (pengapåsar, bostäder, presentlådor, trädgården)');
+  ok(/Butiken/.test(t2) && (await D(p, () => document.querySelectorAll('#modal [data-kop]').length)) === 10, 'Butiken öppnas med tio varor (pengapåsar, bostäder, presentlådor, trädgården, slottsvåningen)');
   ok(await D(p, () => [...document.querySelectorAll('#modal [data-kop]')].every((b) => !b.disabled && /\d+,00 kr/.test(b.textContent))), 'varje vara har Apples pris i kronor (och knappen är aktiv när priset kommit)');
   ok(/Pengapåse 1 000 kr/.test(t2) && /Villan utan hyra/.test(t2) && /Takvåningen utan hyra/.test(t2), 'varorna heter Pengapåse 1 000 kr, Villan utan hyra, Takvåningen utan hyra …');
   ok(/Återställ köp/.test(t2) && /räknas inte mot livsmålet/.test(t2), 'rutan har Återställ köp och förklarar att köpta pengar inte räknas mot livsmålet');
@@ -161,7 +161,7 @@ async function oppnaButik(p) {
   await stang(p);
   await D(p, async () => { const m = await import('/js/core/presenter.js'); m.openPresenter(SF); }); await sleep(300);
   ok(/Mellanlådan \(köpt\)/.test(await modalText(p)), 'appen 🎁 Presenter: "Mellanlådan (köpt)"');
-  await D(p, () => document.querySelector('#modal [data-oppna]').click()); await sleep(300);
+  await D(p, () => document.querySelector(`#modal [data-oppna="${SF.game.presenter.ko.findIndex((x) => x.typ === 'kop')}"]`).click()); await sleep(300);   // (dagens present kan ligga först i kön)
   await D(p, () => document.querySelector('#modal .pr-cv').click());
   await p.waitForFunction(() => !document.querySelector('#modal .pr-gavor')?.classList.contains('hidden'), null, { timeout: 6000 }).catch(() => {});
   const g7 = await D(p, () => [...document.querySelectorAll('#modal .pr-gava b')].map((b) => b.textContent));

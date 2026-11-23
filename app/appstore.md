@@ -231,6 +231,7 @@ dockskåpet … du kan sätta priserna"). Engångsköp (Non-Consumable) som föl
 | Reference Name | Product ID | Type | Pris |
 |---|---|---|---|
 | Trädgården i Dockskåpet | `io.eightbitcat.pixelcity.dock.tradgard` | Non-Consumable | 29 kr |
+| Slottsvåningen i Dockskåpet (v0.173.0) | `io.eightbitcat.pixelcity.dock.slott` | Non-Consumable | 39 kr |
 
 Texterna på åtta språk i `app/tools/asc-iap.mjs` (PRODUKTER); `node app/tools/asc-iap.mjs allt` lägger upp
 produkten, sedan **Add for Review** i App Store Connect. Allt som fanns i Dockskåpet före (fem rum, hela

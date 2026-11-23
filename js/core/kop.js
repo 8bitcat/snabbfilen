@@ -32,6 +32,7 @@ export const PRODUKTER = [
   { id: 'present-stor', sku: SKU + 'present.stor', typ: 'present', storlek: 'stor', icon: '🎁', namn: $t('Stora lådan'), text: $t('Alltid: 1 500 kr, ett plagg, en möbel, ett kortpaket och en guldpokal. Slumpas bland det du inte har – alla lika troliga.') },
   // 🌳 rum i Dockskåpet (v0.172): engångsköp som låser upp ett rum (dockskap.js läser snabbfilen_kop.dock)
   { id: 'dock-tradgard', sku: SKU + 'dock.tradgard', typ: 'dock', rum: 'tradgard', icon: '🌳', namn: $t('Trädgården i Dockskåpet'), text: $t('Ett sjätte rum i Dockskåpet: husets baksida med gräsmatta, pool, gunga, studsmatta, grill, äppelträd och mer – för alltid.') },
+  { id: 'dock-slott', sku: SKU + 'dock.slott', typ: 'dock', rum: 'slott', icon: '🏰', namn: $t('Slottsvåningen i Dockskåpet'), text: $t('Ett sjunde rum i Dockskåpet: tronsalen med tron, kristallkrona, rustning, fontän, himmelssäng, facklor och en drake – för alltid.') },
 ];
 const STORLEKAR = ['liten', 'mellan', 'stor'];
 const arRum = (r) => PRODUKTER.some((p) => p.typ === 'dock' && p.rum === r);

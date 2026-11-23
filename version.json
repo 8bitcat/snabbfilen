@@ -1,7 +1,7 @@
 {
-  "version": "0.172.0",
+  "version": "0.173.0",
   "date": "2026-11-23",
-  "title": "🌳 Trädgården i Dockskåpet – första köpbara rummet",
+  "title": "🏰 Slottsvåningen i Dockskåpet – andra köpbara rummet",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
@@ -211,6 +211,7 @@
     "js/scenes/bling/dream.js",
     "js/scenes/city.js",
     "js/scenes/djurparken.js",
+    "js/scenes/dockskap-slott.js",
     "js/scenes/dockskap-ute.js",
     "js/scenes/dockskap.js",
     "js/scenes/gamlastan.js",

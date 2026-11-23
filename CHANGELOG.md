@@ -10,6 +10,10 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.173.0] – 2026-11-23 – 🏰 Slottsvåningen i Dockskåpet – andra köpbara rummet
+- 🏰 **Slottsvåningen i Dockskåpet** – ett sjunde rum längst till höger: en tronsal med stenvalv, höga bågfönster, röd matta och guldlist. Egna saker i fliken 🏰: tronen (sätt en figur på den – fanfar!), kristallkronan som lyser på natten, rustningen, banderollerna, kronan på sin kudde, fontänen som porlar, himmelssängen, facklorna som tänds och släcks, draken som ryker ur näsborrarna och riddarskölden.
+- Slottsvåningen är det andra köpbara rummet: **39 kr i 🛍️ Butiken i appen**. Tills den är köpt syns den bakom ett lås med tronen och allt på plats.
+
 ## [0.172.0] – 2026-11-23 – 🌳 Trädgården i Dockskåpet – första köpbara rummet
 - 🌳 **Trädgården i Dockskåpet** – ett sjätte rum till höger om badrummet: husets baksida med fönster och altandörr, gräsmattan, och utesaker som bara finns här: poolen, gungan, studsmattan, grillen, äppelträdet, sandlådan, parasollet, staketet, rabatten och hundkojan (fliken 🌳 i lådan). I Leka plaskar poolen, gungan gungar den som sitter på den, studsmattan får figuren att hoppa högt, grillen tänds och ryker, trädet fäller äpplen och löv. Temafliken byter årstid: sommar, höst eller vinter med snö.
 - Trädgården är husets första köpbara rum: **29 kr i 🛍️ Butiken i appen**. Tills den är köpt syns den bakom ett lås med startmöbleringen, och ett tryck visar vad som ingår. En kompis som leker hos dig ser din trädgård.

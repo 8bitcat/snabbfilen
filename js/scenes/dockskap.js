@@ -80,9 +80,11 @@ import { mix, css, Pix, ctxText, textW, SMALL } from '../core/floor-pix.js';
 import { $t, $n } from '../core/i18n.js';
 import { onDock, dockSend, dockMyId, dockBjudIn, dockKandidater, dockSenasteInbjudan } from '../net/dockdela.js';
 import { TRADGARD_RUM, ARSTIDER, tradgardBg, UTE, TRADGARD_SEED, uteBild } from './dockskap-ute.js';
+import { SLOTT_RUM, slottBg, SLOTT, SLOTT_SEED, slottBild } from './dockskap-slott.js';
 import { butikFinns, openButik, agerDock } from '../core/kop.js';
 
 export const DOCK_KEY = 'snabbfilen_dockskap';
+const SAKER_ALLA = Object.assign({}, UTE, SLOTT);   // alla egna saker i de köpbara rummen (dockskap-ute/-slott): k → def (före EGNA nedan)
 const WALLW = APT.WALLW;
 const NIGHT_DIM = 0.42;   // (mörkare än hemma sedan v0.167 – lamporna ska betyda något)
 const MAX_I_RUM = 60;
@@ -136,8 +138,8 @@ const DISKOFARGER = ['#ff6a9a', '#ffd23f', '#5ac8ff', '#8ee08a', '#d0a8ff', '#ff
 // Husets egna saker (finns inte i möbelarket, ritas i kod): discokulan hänger i taket mot bakväggen, utesakerna
 // (dockskap-ute.js) står på gräsmattan – gungan och studsmattan är säten (SEATS fylls på nedan).
 const EGNA = { discokula: { icon: '🪩', name: $t('Discokula'), w: 14, h: 26, wall: true },
-  ...Object.fromEntries(Object.entries(UTE).map(([k, u]) => [k, { icon: u.icon, name: u.name, w: u.w, h: u.h, wall: false, ute: true }])) };
-for (const [k, u] of Object.entries(UTE)) if (u.seat) SEATS.add(k);
+  ...Object.fromEntries(Object.entries(SAKER_ALLA).map(([k, u]) => [k, { icon: u.icon, name: u.name, w: u.w, h: u.h, wall: !!u.wall, ute: true }])) };
+for (const [k, u] of Object.entries(SAKER_ALLA)) if (u.seat) SEATS.add(k);
 const kand = (k) => knownKind(k) || !!EGNA[k];
 const arVagg = (k) => isWall(k) || !!EGNA[k]?.wall;
 const dimsAv = (k, v, r) => (EGNA[k] ? { w: EGNA[k].w, h: EGNA[k].h } : dimsOf(k, v, r));
@@ -211,11 +213,20 @@ export const RUM = [
   { id: 'sovrum', ik: '🛏️', name: $n('SOVRUM'), wall: 0xc4d6f0, wallDk: 0x8099c2, floorA: 0xe8ded0, floorB: 0xd2c4b2, windows: [[120, 170], [300, 350]], view: 'sky' },
   { id: 'badrum', ik: '🛁', name: $n('BADRUM'), bath: true, tiles: 'bla', wall: 0xa6cfe0, wallDk: 0x7aa4b8, floorA: 0xf0eee8, floorB: 0x6a9ec0, windows: [[150, 186], [250, 286]], winY: [16, 38], view: 'frost', towels: [128, 312], lamp: 'plafond' },
   TRADGARD_RUM,   // 🌳 (v0.172) köpbart: låst tills 'tradgard' finns i H.dock
+  SLOTT_RUM,      // 🏰 (v0.173) köpbart: 'slott'
 ];
 const PLAN = { partition: 0, rooms: RUM };
-// de köpbara rummen (kop.js dock.<id>): vad som ingår, för rutan när rummet är låst
-export const DOCK_KOP = [{ id: 'tradgard', ik: '🌳', namn: $t('Trädgården'), pris: 29, text: $t('Husets baksida med gräsmatta: poolen, gungan, studsmattan, grillen, äppelträdet, sandlådan, parasollet, staketet, rabatten och hundkojan – och alla växter och bänkar ur lådan. Sommar, höst och vinter.') }];
-// (köpt? → kop.js agerDock läser snabbfilen_kop.dock)
+// De köpbara rummen (dockskap-ute.js, dockskap-slott.js): bakgrund, egna saker (ritade i kod), startmöblering,
+// temaval och vad som ingår (rutan när rummet är låst). kop.js säljer dock.<kop>; agerDock läser snabbfilen_kop.dock.
+const EXTRA = [
+  { rum: TRADGARD_RUM, namn: $t('Trädgården'), bg: tradgardBg, saker: UTE, seed: TRADGARD_SEED, bild: uteBild, tema: 'arstid', pris: 29, flik: $t('Trädgård'),
+    text: $t('Husets baksida med gräsmatta: poolen, gungan, studsmattan, grillen, äppelträdet, sandlådan, parasollet, staketet, rabatten och hundkojan – och alla växter och bänkar ur lådan. Sommar, höst och vinter.') },
+  { rum: SLOTT_RUM, namn: $t('Slottsvåningen'), bg: slottBg, saker: SLOTT, seed: SLOTT_SEED, bild: slottBild, tema: null, pris: 39, flik: $t('Slott'),
+    text: $t('Tronsalen med stenvalv, bågfönster och röd matta: tronen, kristallkronan, rustningen, banderollerna, kronan, fontänen, himmelssängen, facklorna, draken och riddarskölden – och allt ur lådan som passar ett slott.') },
+];
+const EXTRA_RUM = (i) => EXTRA.find((e) => e.rum === RUM[i]) || null;
+const EXTRA_AV = (k) => EXTRA.find((e) => e.saker[k]) || null;               // vilket rum saken k hör till (SAKER_ALLA högst upp)
+export const DOCK_KOP = EXTRA.map((e) => ({ id: e.rum.kop, ik: e.rum.ik, namn: e.namn, pris: e.pris, text: e.text }));
 
 // ---------- teman: tapet, golv, utsikt och kakel per rum ----------
 const TAPETER = [
@@ -280,7 +291,7 @@ const SEED = [
     { k: 'ramtavla', v: 0, x: 200, y: 62 }, { k: 'lagbyra', v: 0, x: 180, y: 150 }],
   [{ k: 'badkar', v: 0, x: 40, y: 152 }, { k: 'toalett', v: 0, x: 280, y: 142 }, { k: 'handfat', v: 0, x: 200, y: 130 }, { k: 'medicinskap', v: 0, x: 200, y: 62 },
     { k: 'badhylla', v: 0, x: 120, y: 128 }],
-  TRADGARD_SEED.map((s) => ({ k: s.k, v: 0, x: s.x, y: s.y })),   // 🌳 (syns även låst)
+  ...EXTRA.map((e) => e.seed.map((s) => ({ k: s.k, v: 0, x: s.x, y: s.y }))),   // 🌳🏰 (syns även låsta)
 ];
 
 // Lådans flikar: katalogens avdelningar, väggsakerna för sig, jul och spök för sig.
@@ -303,11 +314,11 @@ export const FLIKAR = [
   { id: 'ovrigt', ik: '🪴', namn: $t('Övrigt'), valj: av('ÖVRIGT') },
   { id: 'jul', ik: '🎄', namn: $t('Jul'), valj: (k) => JUL.test(k.kind) },
   { id: 'spok', ik: '🎃', namn: $t('Spök'), valj: (k) => SPOK.test(k.kind) },
-  { id: 'tradgard', ik: '🌳', namn: $t('Trädgård'), kop: 'tradgard', valj: (k) => k.room === 'TRÄDGÅRD' },   // (bara när Trädgården är köpt)
+  ...EXTRA.map((e) => ({ id: e.rum.id, ik: e.rum.ik, namn: e.flik, kop: e.rum.kop, valj: (k) => k.room === 'EXTRA:' + e.rum.id })),   // (bara när rummet är köpt)
 ];
-// allt i katalogen utom visningsmöblerna (de visar ens egna designer), plus monsteran, discokulan och utesakerna
+// allt i katalogen utom visningsmöblerna (de visar ens egna designer), plus monsteran, discokulan och de köpbara rummens saker
 const KAT = [...KATALOG.filter((k) => !VISNING.has(k.kind)), { kind: 'vaxt', icon: '🪴', name: nameOf('vaxt'), vars: 1, room: 'ÖVRIGT' },
-  ...Object.entries(EGNA).map(([kind, e]) => ({ kind, icon: e.icon, name: e.name, vars: 1, room: e.ute ? 'TRÄDGÅRD' : 'ÖVRIGT' }))];
+  ...Object.entries(EGNA).map(([kind, e]) => ({ kind, icon: e.icon, name: e.name, vars: 1, room: e.ute ? 'EXTRA:' + EXTRA_AV(kind).rum.id : 'ÖVRIGT' }))];
 
 // ---------- huset i localStorage ----------
 function klamma(d) {
@@ -371,9 +382,9 @@ export function makeDockskap(A) {
     return d;
   }
   const defs = RUM.map((_, i) => rumDef(i));
-  // 🌳 trädgården har en egen bakgrund per årstid (dockskap-ute.js) – cachad per (årstid, natt)
+  // 🌳🏰 de köpbara rummen har egna bakgrunder (per årstid där det finns) – cachade per (rum, tema, natt)
   const uteBgs = new Map();
-  const uteBg = (i) => (night) => { const a = H.rooms[i].tema?.arstid || 'sommar', key = a + (night ? ':n' : ':d'); let c = uteBgs.get(key); if (!c) { c = tradgardBg(a, night); uteBgs.set(key, c); } return c; };
+  const uteBg = (i) => (night) => { const e = EXTRA_RUM(i), a = e.tema === 'arstid' ? H.rooms[i].tema?.arstid || 'sommar' : '', key = e.rum.id + ':' + a + (night ? ':n' : ':d'); let c = uteBgs.get(key); if (!c) { c = e.bg(a, night); uteBgs.set(key, c); } return c; };
   const byggBg = (i) => (RUM[i].ute ? uteBg(i) : buildBg(defs[i], FW, [], i === 0, defs[i].lyx ? { ...PLAN, lyx: true } : PLAN, false));
   const bgs = defs.map((_, i) => byggBg(i));
   // 🔒 ett köpbart rum som inte är köpt (gästen ser värdens lås via H.dock)
@@ -387,7 +398,7 @@ export function makeDockskap(A) {
   function sattTemaPaket(i, T) {
     if (!T) return;
     const t = H.rooms[i].tema || (H.rooms[i].tema = {});
-    if (RUM[i].ute) { t.arstid = T.arstid || 'sommar'; defs[i] = rumDef(i); bgs[i] = byggBg(i); play('pling'); spara(); fyllLada(); synka('tema', i); return; }   // 🌳 bara årstiden
+    if (RUM[i].ute) { if (EXTRA_RUM(i)?.tema === 'arstid') { t.arstid = T.arstid || 'sommar'; defs[i] = rumDef(i); bgs[i] = byggBg(i); spara(); synka('tema', i); } play('pling'); fyllLada(); return; }   // 🌳 bara årstiden (🏰 inget)
     if (RUM[i].bath) t.kakel = T.kakel; else { t.tapet = T.tapet; t.golv = T.golv; }
     if (T.utsikt) t.utsikt = T.utsikt; else delete t.utsikt;
     defs[i] = rumDef(i); bgs[i] = byggBg(i);
@@ -433,14 +444,18 @@ export function makeDockskap(A) {
       if (drag?.riders?.some((q) => q.d === d)) return;                             // står på bordet man bär
       if (d.k === 'matta') { b.rugs.push({ idx, x: d.x, y: d.y, w: RUG.w, h: RUG.h, draw: (ctx) => ctx.drawImage(rugImg(d.v, d.c), d.x, d.y) }); return; }
       if (d.k === 'vaxt') { const p = makePlantProp(d.x + 10, d.y); b.props.push({ ...p, k: 'vaxt', idx, rect: [d.x - 2, p.top, d.x + 22, d.y + 1] }); return; }
-      if (EGNA[d.k]) {   // husets egna: discokulan hänger mot bakväggen (ritas i kod, snurrar när den är igång); utesakerna står på gräset
+      if (EGNA[d.k]) {   // husets egna: discokulan hänger mot bakväggen (ritas i kod, snurrar när den är igång); de köpbara rummens saker
         const { w, h } = dimsAv(d.k), top = d.y - h;
-        if (EGNA[d.k].wall) { b.walls.push({ k: d.k, idx, x: d.x, top, w, h, egen: true, draw: (ctx) => ctx.drawImage(diskoBilder()[d.lit ? Math.floor(tid * 6) % 3 : 0], d.x, top), light: null }); return; }
-        const u = UTE[d.k], sh = u.solidH || 6, key = `deco:${i}:${idx}`;
-        const fr = () => (d.k === 'grill' ? (d.lit ? 1 : 0) : d.k === 'pool' ? Math.floor(tid * 3) % 3 : d.k === 'gunga' ? (anims.get(key)?.typ === 'sway' ? 1 + (Math.floor(tid * 6) & 1) : 0) : d.k === 'studsmatta' ? (anims.get(key)?.typ === 'boing' ? 1 : 0) : 0);
+        if (d.k === 'discokula') { b.walls.push({ k: d.k, idx, x: d.x, top, w, h, egen: true, draw: (ctx) => ctx.drawImage(diskoBilder()[d.lit ? Math.floor(tid * 6) % 3 : 0], d.x, top), light: null }); return; }
+        const u = SAKER_ALLA[d.k], e = EXTRA_AV(d.k), sh = u.solidH || 6, key = `deco:${i}:${idx}`, n = u.bilder().length;
+        // bildrutan: tänt/släckt (grillen, facklan), gungan och studsmattan när de rör sig, annars ett lugnt tempo (poolen, fontänen, kronan)
+        const fr = () => (u.re?.toggle ? (d[u.re.toggle] ? Math.min(1, n - 1) : 0) : d.k === 'gunga' ? (anims.get(key)?.typ === 'sway' ? 1 + (Math.floor(tid * 6) & 1) : 0) : d.k === 'studsmatta' ? (anims.get(key)?.typ === 'boing' ? 1 : 0) : n > 1 ? Math.floor(tid * 3) % n : 0);
+        const lyser = () => u.glow || (u.re?.toggle === 'lit' && d.lit);
+        const sken = (ctx) => { if (!lyser()) return; const cx = d.x + w / 2, varm = u.re?.toggle === 'lit', fl = varm ? 0.75 + 0.25 * Math.abs(Math.sin(tid * 11 + cx)) : 1; halo(ctx, cx, top + h * 0.35, Math.max(16, w), Math.max(10, h * 0.5), varm ? '#ff9d3a' : '#ffe2a0', 0.12 * fl); halo(ctx, cx, top + h * 0.3, Math.max(8, w * 0.5), Math.max(5, h * 0.25), varm ? '#ffc76a' : '#fff4d0', 0.14 * fl); ctx.drawImage(e.bild(d.k, fr()), d.x, top); };
+        if (u.wall) { b.walls.push({ k: d.k, idx, x: d.x, top, w, h, egen: true, draw: (ctx) => ctx.drawImage(e.bild(d.k, fr()), d.x, top), light: lyser() || u.glow || u.re?.toggle ? sken : null }); return; }
         b.props.push({ k: d.k, idx, egen: true, sort: d.y, top, solid: [d.x - 1, d.y - sh, d.x + w + 1, d.y + 1], rect: [d.x, top, d.x + w, d.y + 1], seatUp: u.seat?.up || 0,
-          draw: (ctx) => { ctx.fillStyle = 'rgba(20,12,28,0.22)'; ctx.fillRect(d.x + 1, d.y - 1, w - 2, 2); ctx.drawImage(uteBild(d.k, fr()), d.x, top); },
-          light: d.k === 'grill' ? (ctx) => { if (!d.lit) return; halo(ctx, d.x + 13, top + 9, 26, 14, '#ff9d3a', 0.12); halo(ctx, d.x + 13, top + 8, 12, 7, '#ffc76a', 0.14); ctx.drawImage(uteBild('grill', 1), d.x, top); } : null });
+          draw: (ctx) => { ctx.fillStyle = 'rgba(20,12,28,0.22)'; ctx.fillRect(d.x + 1, d.y - 1, w - 2, 2); ctx.drawImage(e.bild(d.k, fr()), d.x, top); },
+          light: u.glow || u.re?.toggle ? sken : null });
         return;
       }
       if (arVagg(d.k)) { const w = wallProp(d, idx); if (w) b.walls.push({ ...w, idx }); return; }
@@ -835,10 +850,10 @@ export function makeDockskap(A) {
       const antal = melodi(INSTRUMENT[k]);
       spruta(i, cx, top, 'not', Math.min(7, antal), { col: NOTFARGER, upp: 14, fart: 8, g: 0, glapp: 0.17, dur: 1.6 });
       anim(key, 'wiggle', 0.9); ljud = 'melodi'; info = k + ':' + antal;
-    } else if (UTE[k]) {   // 🌳 utesakerna (dockskap-ute.js re): grillen tänds, trädet fäller äpplen, gungan gungar den som sitter …
-      const u = UTE[k].re;
+    } else if (SAKER_ALLA[k]) {   // 🌳🏰 de köpbara rummens saker (re): grillen tänds, trädet fäller äpplen, gungan gungar den som sitter, draken ryker …
+      const u = SAKER_ALLA[k].re;
       if (u.toggle) { if (d[u.toggle]) delete d[u.toggle]; else d[u.toggle] = true; spara(); info = k + (d[u.toggle] ? ':tand' : ':slack'); }
-      if (u.anim) anim(key, u.anim, u.dur || 0.6);
+      if (u.anim && u.anim !== 'none') anim(key, u.anim, u.dur || 0.6);
       ljud = u.ljud || 'pop';
       if (u.fx) spruta(i, cx, top + (u.fx.o?.dy ?? 4), u.fx.slag, u.fx.n, u.fx.o);
       if (u.fx2) spruta(i, cx, top + (u.fx2.o?.dy ?? 4), u.fx2.slag, u.fx2.n, u.fx2.o);
@@ -1034,7 +1049,7 @@ export function makeDockskap(A) {
         closeModal();
         import('./shop-mobler.js').then((m) => m.openRecolor(A, { kind: d.k, v: d.v, c: d.c, onPick: (hex) => { if (hex) d.c = hex; else delete d.c; spara(); rebuild(i); synka('deco', i); play('ok'); } })).catch(() => {});
       } }] : []),
-      ...(fn === 'brasa' || fn === 'lykta' || d.k === 'grill' ? [{ label: d.lit ? $t('🔥 Släck') : $t('🔥 Tänd'), onClick: () => { if (d.lit) delete d.lit; else d.lit = true; igen(); } }] : []),
+      ...(fn === 'brasa' || fn === 'lykta' || SAKER_ALLA[d.k]?.re?.toggle === 'lit' ? [{ label: d.lit ? $t('🔥 Släck') : $t('🔥 Tänd'), onClick: () => { if (d.lit) delete d.lit; else d.lit = true; igen(); } }] : []),
       { label: $t('🗑 Ta bort'), cls: 'btn-red', onClick: () => { closeModal(); taBort(i, idx); } },
       { label: $t('Stäng'), onClick: closeModal },
     ]);
@@ -1047,7 +1062,7 @@ export function makeDockskap(A) {
     const c = document.createElement('canvas'), x = c.getContext('2d');
     x.imageSmoothingEnabled = false;
     if (EGNA[k].ute) {
-      const img = uteBild(k), s = Math.max(1, Math.min(2, Math.floor(56 / img.width), Math.floor(44 / img.height)));
+      const img = EXTRA_AV(k).bild(k), s = Math.max(1, Math.min(2, Math.floor(56 / img.width), Math.floor(44 / img.height)));
       const w = Math.min(img.width, 56), h = Math.min(img.height, 44);
       c.width = w * s; c.height = h * s; x.imageSmoothingEnabled = false;
       x.drawImage(img, 0, 0, w, h, 0, 0, w * s, h * s);
@@ -1469,6 +1484,8 @@ export function makeDockskap(A) {
       const i = rumIVy(), R = RUM[i], t = H.rooms[i].tema || {};
       temaRum = i;
       if (R.ute) {
+        const e = EXTRA_RUM(i);
+        if (e?.tema !== 'arstid') { box.innerHTML = `<div class="dock-rubrik">${R.ik} ${$t(R.name)}</div><p class="sp" style="grid-column:1/-1;font-size:var(--f1);margin:0">${$t('Det här rummet har sitt eget utseende – byt saker i stället.')}</p>`; return; }
         box.innerHTML = `<div class="dock-rubrik">${R.ik} ${$t(R.name)}</div><div class="dock-rubrik">${$t('Årstid')}</div>`
           + ARSTIDER.map((a) => `<button class="dock-item dock-tema ${(t.arstid || 'sommar') === a.id ? 'on' : ''}" data-arstid="${a.id}" title="${esc(a.namn)}"><span class="dock-tema-ik">${a.ik}</span><small>${esc(a.namn)}</small></button>`).join('');
         box.querySelectorAll('[data-arstid]').forEach((b) => { b.onclick = () => sattTema(i, 'arstid', b.dataset.arstid); });
@@ -1666,7 +1683,7 @@ export function makeDockskap(A) {
     const rita = (k, v, col, r, x, y, upp) => {
       if (k === 'matta') { ctx.drawImage(rugImg(v, col), x, y); return; }
       if (k === 'vaxt') { makePlantProp(x + 10, y).draw(ctx); return; }
-      if (EGNA[k]) { ctx.drawImage(EGNA[k].ute ? uteBild(k) : diskoBilder()[0], x, y - dimsAv(k).h); return; }
+      if (EGNA[k]) { ctx.drawImage(EGNA[k].ute ? EXTRA_AV(k).bild(k) : diskoBilder()[0], x, y - dimsAv(k).h); return; }
       const a = furnView(k, v, col, r);
       if (a) drawArt(ctx, a, x, y - (upp || 0) - a.sh);
     };
@@ -1876,7 +1893,7 @@ export function makeDockskap(A) {
     locked: (i) => last(i),
     unlock: (id) => { if (!(H.dock || []).includes(id)) (H.dock = H.dock || []).push(id); byggPanel(); byggLage(); return [...H.dock]; },
     dock: () => [...(H.dock || [])],
-    ute: Object.keys(UTE),
+    ute: Object.keys(SAKER_ALLA),
     petsKey: DOCK_PETS_KEY,
     key: DOCK_KEY,
   };
