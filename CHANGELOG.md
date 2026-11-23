@@ -10,6 +10,11 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.174.0] – 2026-11-23 – ⚽🏆 KBK-hörnan i Dockskåpet – pokaler, medaljer, vitrinskåp, tröjan med namn och nummer
+- ⚽🏆 **KBK-hörnan i Dockskåpet** – två nya flikar i lådan. **🏆 Priser:** pokaler i silver, guld och brons, bollpokalen, stjärnpokalen, Årets spelare, plaketten, diplomet, medaljer i guld (regnbågsband som på cupen), silver och brons, medaljhängaren – och **vitrinskåpet** med tre hyllor där du ställer pokaler, lagbilden, ditt porträtt och bollen (dra saken till den hylla du vill, eller ställ den på ett bord). **⚽ KBK:** matchtröjan på galge med ditt namn och nummer på ryggen, skyltdockan i matchställ (vrid den: ryggen med nummer eller framsidan), lagplanschen, Min plansch med din egen figur i matchställ och numret stort, lagbilden, ditt porträtt, halsduken, vimpeln, klubbmärket och matchbollen.
+- **Namn och nummer:** den som stämt av sig i ⚽ KBK-appen får sitt eget på tröjan, skyltdockan och planschen, andra sin figurs förnamn och 10 – byt med 👕 Namn och nummer i Bygga-menyn (någon i laget, eller ett eget namn och nummer).
+- I Leka svarar allt: pokalerna glittrar, medaljerna pinglar, tröjan svajar, lagplanschen och halsduken spelar en fanfar, bollen studsar.
+
 ## [0.173.0] – 2026-11-23 – 🏰 Slottsvåningen i Dockskåpet – andra köpbara rummet
 - 🏰 **Slottsvåningen i Dockskåpet** – ett sjunde rum längst till höger: en tronsal med stenvalv, höga bågfönster, röd matta och guldlist. Egna saker i fliken 🏰: tronen (sätt en figur på den – fanfar!), kristallkronan som lyser på natten, rustningen, banderollerna, kronan på sin kudde, fontänen som porlar, himmelssängen, facklorna som tänds och släcks, draken som ryker ur näsborrarna och riddarskölden.
 - Slottsvåningen är det andra köpbara rummet: **39 kr i 🛍️ Butiken i appen**. Tills den är köpt syns den bakom ett lås med tronen och allt på plats.

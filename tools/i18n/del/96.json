@@ -1,0 +1,127 @@
+[
+ {
+  "i": 10371,
+  "f": "js/scenes/dockskap-kbk.js",
+  "k": "Bollpokalen"
+ },
+ {
+  "i": 10372,
+  "f": "js/scenes/dockskap-kbk.js",
+  "k": "Stjärnpokalen"
+ },
+ {
+  "i": 10373,
+  "f": "js/scenes/dockskap-kbk.js",
+  "k": "Årets spelare"
+ },
+ {
+  "i": 10374,
+  "f": "js/scenes/dockskap-kbk.js",
+  "k": "Plaketten"
+ },
+ {
+  "i": 10375,
+  "f": "js/scenes/dockskap-kbk.js",
+  "k": "Diplomet"
+ },
+ {
+  "i": 10376,
+  "f": "js/scenes/dockskap-kbk.js",
+  "k": "Guldmedaljen"
+ },
+ {
+  "i": 10377,
+  "f": "js/scenes/dockskap-kbk.js",
+  "k": "Silvermedaljen"
+ },
+ {
+  "i": 10378,
+  "f": "js/scenes/dockskap-kbk.js",
+  "k": "Bronsmedaljen"
+ },
+ {
+  "i": 10379,
+  "f": "js/scenes/dockskap-kbk.js",
+  "k": "Medaljhängaren"
+ },
+ {
+  "i": 10380,
+  "f": "js/scenes/dockskap-kbk.js",
+  "k": "Vitrinskåpet"
+ },
+ {
+  "i": 10381,
+  "f": "js/scenes/dockskap-kbk.js",
+  "k": "Matchtröjan"
+ },
+ {
+  "i": 10382,
+  "f": "js/scenes/dockskap-kbk.js",
+  "k": "Skyltdockan"
+ },
+ {
+  "i": 10383,
+  "f": "js/scenes/dockskap-kbk.js",
+  "k": "Lagplanschen"
+ },
+ {
+  "i": 10384,
+  "f": "js/scenes/dockskap-kbk.js",
+  "k": "Min plansch"
+ },
+ {
+  "i": 10385,
+  "f": "js/scenes/dockskap-kbk.js",
+  "k": "Lagbilden"
+ },
+ {
+  "i": 10386,
+  "f": "js/scenes/dockskap-kbk.js",
+  "k": "Mitt porträtt"
+ },
+ {
+  "i": 10387,
+  "f": "js/scenes/dockskap-kbk.js",
+  "k": "Halsduken"
+ },
+ {
+  "i": 10388,
+  "f": "js/scenes/dockskap-kbk.js",
+  "k": "Vimpeln"
+ },
+ {
+  "i": 10389,
+  "f": "js/scenes/dockskap-kbk.js",
+  "k": "Klubbmärket"
+ },
+ {
+  "i": 10390,
+  "f": "js/scenes/dockskap-kbk.js",
+  "k": "Matchbollen"
+ },
+ {
+  "i": 10391,
+  "f": "js/scenes/dockskap.js",
+  "k": "Priser"
+ },
+ {
+  "i": 10392,
+  "f": "js/scenes/dockskap.js",
+  "k": "👕 Namn och nummer"
+ },
+ {
+  "i": 10393,
+  "f": "js/scenes/dockskap.js",
+  "k": "Namn och nummer"
+ },
+ {
+  "i": 10394,
+  "f": "js/scenes/dockskap.js",
+  "k": "Välj någon i laget – eller skriv ett eget förnamn och nummer."
+ },
+ {
+  "i": 10395,
+  "f": "js/scenes/dockskap.js",
+  "k": "✓ Klart"
+ }
+]

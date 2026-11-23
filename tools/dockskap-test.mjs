@@ -31,7 +31,7 @@ ok(rooms.length === 7 && rooms[4].id === 'badrum' && rooms[5].id === 'tradgard' 
 const seed0 = await dbg('d.deco(0).length');
 ok(seed0 >= 5, `startmöbleringen i vardagsrummet: ${seed0} möbler`);
 ok(await p.$$eval('#dock-panel .dock-item', (els) => els.length) >= 20, 'lådan: vardagsrumsfliken har minst 20 möbler');
-ok(await p.$$eval('#dock-panel [data-flik]', (els) => els.length) === 15, 'lådan: femton flikar (figurer, djur, saker, teman + elva möbelflikar)');
+ok(await p.$$eval('#dock-panel [data-flik]', (els) => els.length) === 17, 'lådan: sjutton flikar (figurer, djur, saker, teman + elva möbelflikar + 🏆 Priser + ⚽ KBK)');
 await p.click('#dock-panel [data-flik="vagg"]'); await p.waitForTimeout(100);
 ok(await p.$$eval('#dock-panel .dock-item', (els) => els.length) >= 25, 'väggfliken: minst 25 väggsaker');
 ok(await p.evaluate(() => getComputedStyle(document.getElementById('hud-money')).display === 'none'), 'spelets mätare (pengar) är dolda');
@@ -383,7 +383,7 @@ await p.click('#dock-panel [data-flik="vardagsrum"]'); await p.waitForTimeout(10
 
 // ---------- 5h. 🌳 trädgården (v0.172): låst tills den är köpt, sedan utesakerna, säten, årstider ----------
 ok((await dbg('d.locked(5)')) === true && (await dbg('d.deco(5).length')) >= 5 && await p.$eval('#dock-panel [data-rum="5"]', (el) => /🔒/.test(el.textContent)), `trädgården är låst från början men möblerad (${await dbg('d.deco(5).length')} saker), rumsknappen visar 🔒`);
-ok((await p.$$eval('#dock-panel [data-flik]', (els) => els.length)) === 15 && !(await p.$('#dock-panel [data-flik="tradgard"]')), 'ingen trädgårdsflik i lådan när rummet inte är köpt');
+ok((await p.$$eval('#dock-panel [data-flik]', (els) => els.length)) === 17 && !(await p.$('#dock-panel [data-flik="tradgard"]')), 'ingen trädgårdsflik i lådan när rummet inte är köpt');
 ok(!(await dbg("d.place('parasoll', 5, 100, 200)")) && await p.evaluate(() => !document.getElementById('modal').classList.contains('hidden') && /Trädgården/.test(document.querySelector('#modal h2')?.textContent || '')), 'ställa något i det låsta rummet: nej – rutan "🌳 Trädgården" öppnas i stället');
 ok(await p.evaluate(() => /Finns att köpa i appen/.test(document.querySelector('#modal')?.textContent || '')), 'på webben: "Finns att köpa i appen Pixelcity"');
 await p.click('#modal .dlg-foot .btn:has-text("Stäng")'); await p.waitForTimeout(100);
@@ -393,7 +393,7 @@ ok(await p.evaluate(() => !document.getElementById('modal').classList.contains('
 await p.click('#modal .dlg-foot .btn:has-text("Stäng")'); await p.waitForTimeout(100);
 // köpt (testet låser upp direkt; i appen skriver kop.js snabbfilen_kop.dock)
 await dbg("d.unlock('tradgard')"); await p.waitForTimeout(200);
-ok((await dbg('d.locked(5)')) === false && (await p.$$eval('#dock-panel [data-flik]', (els) => els.length)) === 16 && await p.$eval('#dock-panel [data-rum="5"]', (el) => /🌳/.test(el.textContent)), 'upplåst: 🌳 på rumsknappen och trädgårdsfliken i lådan');
+ok((await dbg('d.locked(5)')) === false && (await p.$$eval('#dock-panel [data-flik]', (els) => els.length)) === 18 && await p.$eval('#dock-panel [data-rum="5"]', (el) => /🌳/.test(el.textContent)), 'upplåst: 🌳 på rumsknappen och trädgårdsfliken i lådan');
 await p.click('#dock-panel [data-flik="tradgard"]'); await p.waitForTimeout(200);
 ok((await p.$$eval('#dock-panel .dock-item', (els) => els.length)) >= 10 && await p.$eval('#dock-panel .dock-item[data-k="pool"] canvas', (c) => c.width > 10), 'trädgårdsfliken: minst tio utesaker med miniatyrer (poolen)');
 ok(await dbg("d.place('parasoll', 5, 100, 200)") && await dbg("d.place('studsmatta', 5, 200, 200)"), 'parasollet och studsmattan ställs ut');
@@ -425,9 +425,9 @@ await dbg("d.removeDoll('bot4')"); await dbg('d.goRoom(0)');
 await p.click('#dock-panel [data-flik="vardagsrum"]'); await p.waitForTimeout(100);
 
 // ---------- 5i. 🏰 slottsvåningen (v0.173): andra köpbara rummet – tron, fontän, drake, facklor, kristallkronan lyser ----------
-ok((await dbg('d.locked(6)')) === true && (await dbg('d.deco(6).length')) >= 8 && (await p.$$eval('#dock-panel [data-flik]', (els) => els.length)) === 16, `slottsvåningen är låst och möblerad (${await dbg('d.deco(6).length')} saker), ingen slottsflik än`);
+ok((await dbg('d.locked(6)')) === true && (await dbg('d.deco(6).length')) >= 8 && (await p.$$eval('#dock-panel [data-flik]', (els) => els.length)) === 18, `slottsvåningen är låst och möblerad (${await dbg('d.deco(6).length')} saker), ingen slottsflik än`);
 await dbg("d.unlock('slott')"); await p.waitForTimeout(200);
-ok((await dbg('d.locked(6)')) === false && (await p.$$eval('#dock-panel [data-flik]', (els) => els.length)) === 17 && await p.$eval('#dock-panel [data-rum="6"]', (el) => /🏰/.test(el.textContent)), 'upplåst: 🏰 på rumsknappen och slottsfliken i lådan');
+ok((await dbg('d.locked(6)')) === false && (await p.$$eval('#dock-panel [data-flik]', (els) => els.length)) === 19 && await p.$eval('#dock-panel [data-rum="6"]', (el) => /🏰/.test(el.textContent)), 'upplåst: 🏰 på rumsknappen och slottsfliken i lådan');
 await p.click('#dock-panel [data-flik="slott"]'); await p.waitForTimeout(200);
 ok((await p.$$eval('#dock-panel .dock-item', (els) => els.length)) >= 10 && await p.$eval('#dock-panel .dock-item[data-k="drake"] canvas', (c) => c.width > 10), 'slottsfliken: minst tio saker med miniatyrer (draken)');
 await dbg('d.goRoom(6)'); await p.waitForTimeout(400);
@@ -450,6 +450,46 @@ await p.click('#dock-panel [data-flik="teman"]'); await p.waitForTimeout(300);
 ok((await p.$$eval('#dock-panel [data-arstid]', (els) => els.length)) === 0 && (await p.$$eval('#dock-panel [data-tapet]', (els) => els.length)) === 0 && await p.evaluate(() => /eget utseende/.test(document.querySelector('#dock-items')?.textContent || '')), 'temafliken i slottet: inget att byta, bara en förklaring');
 await dbg("d.removeDoll('bot4')"); await dbg('d.goRoom(0)');
 await p.click('#dock-panel [data-flik="vardagsrum"]'); await p.waitForTimeout(100);
+
+// ---------- 5j. ⚽🏆 KBK-hörnan och priserna (v0.174): flikarna, vitrinskåpets hyllor, namn och nummer, skyltdockan vrids, Leka ----------
+ok((await p.$$eval('#dock-panel [data-flik="priser"], #dock-panel [data-flik="kbk"]', (els) => els.length)) === 2 && (await dbg('d.kbkSyns()')) === true, 'lådan har flikarna 🏆 Priser och ⚽ KBK (på svenska)');
+await p.click('#dock-panel [data-flik="priser"]'); await p.waitForTimeout(200);
+ok((await p.$$eval('#dock-panel .dock-item', (els) => els.length)) >= 13 && await p.$eval('#dock-panel .dock-item[data-k="vitrinskap"] canvas', (c) => c.width > 10), 'prisfliken: minst tretton saker med miniatyrer (vitrinskåpet)');
+await p.click('#dock-panel [data-flik="kbk"]'); await p.waitForTimeout(200);
+ok((await p.$$eval('#dock-panel .dock-item', (els) => els.length)) >= 10 && await p.$eval('#dock-panel .dock-item[data-k="kbk-troja"] canvas', (c) => c.width > 10), 'KBK-fliken: minst tio saker (matchtröjan)');
+// vitrinskåpet i badrummet (inga andra bord där): pokalen på översta hyllan, lagbilden i mitten, bollen längst ner – hyllan närmast pekaren
+await dbg('d.goRoom(4)'); await p.waitForTimeout(300);
+ok(await dbg("d.placeAt('vitrinskap', 4, 300, 205)"), 'vitrinskåpet ställs i badrummet');
+const iSkap = await dbg("d.findDeco(4, 'vitrinskap')"), skap = await dbg(`d.deco(4)[${iSkap}]`);
+ok(await dbg(`d.placeAt('pokal-silver', 4, ${skap.x + 12}, ${skap.y - 50})`) && await dbg(`d.placeAt('kbk-lagbild', 4, ${skap.x + 39}, ${skap.y - 25})`) && await dbg(`d.placeAt('kbk-boll', 4, ${skap.x + 27}, ${skap.y - 3})`), 'silverpokalen, lagbilden och bollen ställs i skåpet');
+const iPok = await dbg("d.findDeco(4, 'pokal-silver')"), pok = await dbg(`d.deco(4)[${iPok}]`), lb = await dbg("d.deco(4)[d.findDeco(4, 'kbk-lagbild')]"), bl = await dbg("d.deco(4)[d.findDeco(4, 'kbk-boll')]");
+ok(pok.up === 53 && lb.up === 29 && bl.up === 5 && pok.y === skap.y + 1 && pok.x >= skap.x + 5 && pok.x + 16 <= skap.x + 49, `hyllorna: pokalen överst (up ${pok.up}), lagbilden i mitten (${lb.up}), bollen nederst (${bl.up}), innanför glaset`);
+// tröjan och skyltdockan får namn och nummer (ingen avstämning: figurens förnamn och 10), byts, och skyltdockan vrids
+ok(await dbg("d.place('kbk-troja', 4, 20, 80)") && await dbg("d.place('kbk-mannekang', 4, 160, 205)"), 'matchtröjan på väggen och skyltdockan på golvet');
+const iTr = await dbg("d.findDeco(4, 'kbk-troja')"), iMan = await dbg("d.findDeco(4, 'kbk-mannekang')"), tr = await dbg(`d.deco(4)[${iTr}]`);
+ok(tr.sp && tr.sp.n === 10 && typeof tr.sp.namn === 'string' && tr.sp.namn.length > 0, `tröjan bär namn och nummer (${tr.sp?.namn} ${tr.sp?.n})`);
+const nySp = await dbg(`d.setSp(4, ${iTr}, 34, 'Julia')`);
+ok(nySp && nySp.n === 34 && nySp.namn === 'Julia' && (await dbg(`d.deco(4)[${iTr}]`)).sp.n === 34, 'namn och nummer byts: Julia 34');
+ok((await dbg(`d.setSp(4, ${iTr}, 0, '')`)) === null, 'tomt namn eller nummer 0 avvisas');
+ok(await dbg(`d.rotate(4, ${iMan})`) && (await dbg(`d.deco(4)[${iMan}]`)).r === 1 && await dbg(`d.rotate(4, ${iMan})`) && !(await dbg(`d.deco(4)[${iMan}]`)).r, 'skyltdockan vrids: framsidan, sedan ryggen igen');
+// Leka: pokalen i skåpet, tröjan och medaljen svarar
+await dbg("d.place('medalj-guld', 4, 100, 60)");
+const iMed = await dbg("d.findDeco(4, 'medalj-guld')");
+await p.click('#dock-lage [data-lage="leka"]'); await p.waitForTimeout(300);
+const tryckK = async (idx) => { const s = await dbg(`d.spot(4, ${idx})`); await p.evaluate(([x, y]) => { window.SF.scene.down(x, y); window.SF.scene.up(x, y); }, [s.x, s.y]); await p.waitForTimeout(80); };
+await tryckK(iPok);
+ok((await dbg('d.senaste()'))?.k === 'pokal-silver' && (await dbg('d.senaste()')).ljud === 'pling' && (await dbg('d.fx(4, "gnista")')) >= 5, 'pokalen i skåpet glittrar när man trycker på den');
+await tryckK(iTr);
+ok((await dbg('d.senaste()'))?.k === 'kbk-troja' && (await dbg('d.senaste()')).ljud === 'shake', 'tröjan svajar');
+await tryckK(iMed);
+ok((await dbg('d.senaste()'))?.k === 'medalj-guld' && (await dbg('d.senaste()')).ljud === 'ding', 'medaljen pinglar');
+await p.click('#dock-lage [data-lage="bygga"]'); await p.waitForTimeout(300);
+// skåpet tas bort → det som stod i det står på golvet; namn och nummer följer med i sparningen
+await dbg(`d.remove(4, ${iSkap})`); await p.waitForTimeout(500);
+ok(!(await dbg("d.deco(4)[d.findDeco(4, 'pokal-silver')]")).up && !(await dbg("d.deco(4)[d.findDeco(4, 'kbk-boll')]")).up, 'utan skåpet står pokalen och bollen på golvet');
+const sparatK = await p.evaluate(() => JSON.parse(localStorage.getItem('snabbfilen_dockskap')));
+ok(sparatK.rooms[4].deco.some((d) => d.k === 'kbk-troja' && d.sp && d.sp.n === 34 && d.sp.namn === 'Julia'), 'huset sparas med tröjans namn och nummer');
+await dbg('d.goRoom(0)'); await p.click('#dock-panel [data-flik="vardagsrum"]'); await p.waitForTimeout(100);
 
 // ---------- 6. från pausmenyn mitt i spelet: tillbaka till rummet ----------
 await p.goto(`http://localhost:${PORT}/index.html?world=dock${Date.now().toString(36)}`);

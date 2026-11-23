@@ -60,6 +60,13 @@
 //     Trädgården är köpt i Butiken (kop.js 'dock.tradgard', 29 kr, H.dock); i låst läge går inget att ställa, dra
 //     eller trycka där – ett tryck öppnar rutan med vad som ingår och vägen till Butiken. Gästen ser värdens lås.
 //     Temafliken visar Årstid (sommar, höst, vinter) för rummet.
+//   • ⚽🏆 KBK-hörnan och priserna (v0.174, Carl 2026-11-23: "hänga upp en KBK-tröja med sitt namn på väggen eller ställa
+//     ut den på en mannekäng … fler medaljer och pokaler … ett vitrinskåp … planscher med laget och ens egna namn och
+//     nummer"): fliken 🏆 Priser (pokaler, medaljer, plakett, diplom, medaljhängaren och vitrinskåpet med tre hyllor som
+//     småsakerna ställs på – pa/hyllor i EGNA, ytaUnder väljer hyllan närmast pekaren) och fliken ⚽ KBK (matchtröjan på
+//     galge, skyltdockan, lagplanschen, min plansch, lagbilden, mitt porträtt, halsduken, vimpeln, klubbmärket, bollen;
+//     bara på svenska eller för den som stämt av sig i KBK-appen). Tröjan, skyltdockan och planschen bär d.sp = { n, namn }
+//     (ens eget ur KBK-appen, annars figurens förnamn och 10 – byts med 👕 Namn och nummer). js/scenes/dockskap-kbk.js.
 // Test: tools/dockskap-test.mjs, tools/dockskap-natet-test.mjs (två spelare).
 import { buildBg, spriteProp, wallProp, flatProp, rugImg, makePlantProp, dimsOf, isWall, isFlat, ON_TABLE, SURFACES, surfaceRow,
   thumbCanvas, furnView, drawArt, nameOf, canRecolor, halo, FW, FH, WALL_Y, WALL_TOP, DOOR, RUG, APT } from './room.js';
@@ -77,14 +84,17 @@ import { PET_ITEMS, drawPetItem, drawItemIcon } from '../pets/items.js';
 import { openModal, closeModal, toast, esc } from '../core/ui.js';
 import { play, toner } from '../core/sound.js';
 import { mix, css, Pix, ctxText, textW, SMALL } from '../core/floor-pix.js';
-import { $t, $n } from '../core/i18n.js';
+import { $t, $n, LANG } from '../core/i18n.js';
 import { onDock, dockSend, dockMyId, dockBjudIn, dockKandidater, dockSenasteInbjudan } from '../net/dockdela.js';
 import { TRADGARD_RUM, ARSTIDER, tradgardBg, UTE, TRADGARD_SEED, uteBild } from './dockskap-ute.js';
 import { SLOTT_RUM, slottBg, SLOTT, SLOTT_SEED, slottBild } from './dockskap-slott.js';
+import { PRISER, KBK, kbkBild, kbkKontext, tvattaSp } from './dockskap-kbk.js';
+import { kbkNr, spelare } from '../net/kbk.js';
+import { KUNGS_PLAYERS } from '../data/kbk.js';
 import { butikFinns, openButik, agerDock } from '../core/kop.js';
 
 export const DOCK_KEY = 'snabbfilen_dockskap';
-const SAKER_ALLA = Object.assign({}, UTE, SLOTT);   // alla egna saker i de köpbara rummen (dockskap-ute/-slott): k → def (före EGNA nedan)
+const SAKER_ALLA = Object.assign({}, UTE, SLOTT, PRISER, KBK);   // alla egna saker ritade i kod (dockskap-ute/-slott/-kbk): k → def (före EGNA nedan)
 const WALLW = APT.WALLW;
 const NIGHT_DIM = 0.42;   // (mörkare än hemma sedan v0.167 – lamporna ska betyda något)
 const MAX_I_RUM = 60;
@@ -136,9 +146,11 @@ const LEVANDE = new Set(['ljus', 'ljusgrupp', 'julljus']);                      
 const GLODER = new Set(['ljusgirlang', 'adventsljus', 'ljusgran', 'adventsstjarna']);      // lyser av sig själva – kan släckas (d.slackt)
 const DISKOFARGER = ['#ff6a9a', '#ffd23f', '#5ac8ff', '#8ee08a', '#d0a8ff', '#ff9d3a'];
 // Husets egna saker (finns inte i möbelarket, ritas i kod): discokulan hänger i taket mot bakväggen, utesakerna
-// (dockskap-ute.js) står på gräsmattan – gungan och studsmattan är säten (SEATS fylls på nedan).
+// (dockskap-ute.js) står på gräsmattan – gungan och studsmattan är säten (SEATS fylls på nedan), slottets och KBK-hörnans
+// saker (dockskap-slott.js, dockskap-kbk.js). pa = småsak som ställs på bord och hyllor, hyllor = egna hyllplan
+// (vitrinskåpet), rot = antal vridlägen, sp = bär namn och nummer (d.sp).
 const EGNA = { discokula: { icon: '🪩', name: $t('Discokula'), w: 14, h: 26, wall: true },
-  ...Object.fromEntries(Object.entries(SAKER_ALLA).map(([k, u]) => [k, { icon: u.icon, name: u.name, w: u.w, h: u.h, wall: !!u.wall, ute: true }])) };
+  ...Object.fromEntries(Object.entries(SAKER_ALLA).map(([k, u]) => [k, { icon: u.icon, name: u.name, w: u.w, h: u.h, wall: !!u.wall, ute: true, pa: !!u.pa, hyllor: u.hyllor || null, rot: u.rot | 0, sp: !!u.sp }])) };
 for (const [k, u] of Object.entries(SAKER_ALLA)) if (u.seat) SEATS.add(k);
 const kand = (k) => knownKind(k) || !!EGNA[k];
 const arVagg = (k) => isWall(k) || !!EGNA[k]?.wall;
@@ -227,6 +239,10 @@ const EXTRA = [
 const EXTRA_RUM = (i) => EXTRA.find((e) => e.rum === RUM[i]) || null;
 const EXTRA_AV = (k) => EXTRA.find((e) => e.saker[k]) || null;               // vilket rum saken k hör till (SAKER_ALLA högst upp)
 export const DOCK_KOP = EXTRA.map((e) => ({ id: e.rum.kop, ik: e.rum.ik, namn: e.namn, pris: e.pris, text: e.text }));
+// bilden för en egen sak: de köpbara rummens (per rum) eller KBK-hörnans och prisernas (bild(k, f, d) – d ger namn, nummer, vridning)
+const BILD_AV = (k) => EXTRA_AV(k)?.bild || kbkBild;
+// lådans avdelning för en egen sak (KAT.room)
+const FLIK_AV = (k) => (EXTRA_AV(k) ? 'EXTRA:' + EXTRA_AV(k).rum.id : PRISER[k] ? 'PRISER' : 'KBK');
 
 // ---------- teman: tapet, golv, utsikt och kakel per rum ----------
 const TAPETER = [
@@ -312,13 +328,15 @@ export const FLIKAR = [
   { id: 'hall', ik: '🚪', namn: $t('Hall'), valj: av('HALL') },
   { id: 'vagg', ik: '🖼️', namn: $t('Väggen'), valj: (k) => !!k.wall && !JUL.test(k.kind) && !SPOK.test(k.kind) },
   { id: 'ovrigt', ik: '🪴', namn: $t('Övrigt'), valj: av('ÖVRIGT') },
+  { id: 'priser', ik: '🏆', namn: $t('Priser'), valj: (k) => k.room === 'PRISER' },                 // 🏆 (v0.174) pokaler, medaljer, vitrinskåpet
+  { id: 'kbk', ik: '⚽', namn: $t('KBK'), kbk: true, valj: (k) => k.room === 'KBK' },                // ⚽ (bara på svenska eller avstämd i KBK-appen)
   { id: 'jul', ik: '🎄', namn: $t('Jul'), valj: (k) => JUL.test(k.kind) },
   { id: 'spok', ik: '🎃', namn: $t('Spök'), valj: (k) => SPOK.test(k.kind) },
   ...EXTRA.map((e) => ({ id: e.rum.id, ik: e.rum.ik, namn: e.flik, kop: e.rum.kop, valj: (k) => k.room === 'EXTRA:' + e.rum.id })),   // (bara när rummet är köpt)
 ];
 // allt i katalogen utom visningsmöblerna (de visar ens egna designer), plus monsteran, discokulan och de köpbara rummens saker
 const KAT = [...KATALOG.filter((k) => !VISNING.has(k.kind)), { kind: 'vaxt', icon: '🪴', name: nameOf('vaxt'), vars: 1, room: 'ÖVRIGT' },
-  ...Object.entries(EGNA).map(([kind, e]) => ({ kind, icon: e.icon, name: e.name, vars: 1, room: e.ute ? 'EXTRA:' + EXTRA_AV(kind).rum.id : 'ÖVRIGT' }))];
+  ...Object.entries(EGNA).map(([kind, e]) => ({ kind, icon: e.icon, name: e.name, vars: 1, room: e.ute ? FLIK_AV(kind) : 'ÖVRIGT' }))];
 
 // ---------- huset i localStorage ----------
 function klamma(d) {
@@ -330,7 +348,7 @@ function klamma(d) {
   return d;
 }
 const tvattaDeco = (d) => ({ k: d.k, v: d.v | 0, ...(d.c ? { c: d.c } : {}), ...(d.r ? { r: d.r | 0 } : {}), x: d.x | 0, y: d.y | 0, ...(d.up > 0 ? { up: +d.up } : {}), ...(d.lit ? { lit: true } : {}),
-  ...(LJUSFARGER.some((f) => f.id === d.ljus) ? { ljus: d.ljus } : {}), ...(d.slackt ? { slackt: true } : {}) });
+  ...(LJUSFARGER.some((f) => f.id === d.ljus) ? { ljus: d.ljus } : {}), ...(d.slackt ? { slackt: true } : {}), ...(tvattaSp(d.sp) ? { sp: tvattaSp(d.sp) } : {}) });
 function lasHus() {
   let p = null;
   try { p = JSON.parse(localStorage.getItem(DOCK_KEY) || 'null'); } catch { p = null; }
@@ -370,6 +388,16 @@ export function makeDockskap(A) {
   // 👫 leka ihop: null (ensam) | { roll: 'vard', gaster: Map } | { roll: 'gast', host, namn, hus, t } – se blocket längre ner
   let natv = null;
   const gast = () => natv?.roll === 'gast';
+  // ⚽ KBK-hörnan: porträttet och min plansch ritar ens egen figur; fliken syns på svenska eller för den som stämt av sig;
+  // tröjan, skyltdockan och planschen får ens eget namn och nummer (KBK-appen), annars figurens förnamn och 10
+  kbkKontext({ look: A.avatar?.look || {} });
+  const kbkSyns = () => LANG === 'sv' || !!kbkNr(A.avatar);
+  const mittSp = () => {
+    const nr = kbkNr(A.avatar);
+    if (nr) return { n: nr, namn: spelare(nr)[1] };
+    const namn = String(A.avatar?.name || '').trim().split(/\s+/)[0].slice(0, 12);
+    return { n: 10, namn: namn || 'KBK' };
+  };
   // rummets utseende = RUM-definitionen med rummets tema ovanpå (tapet/golv/utsikt, badrummet kakel)
   function rumDef(i) {
     const R = RUM[i], t = H.rooms[i].tema || {}, d = { ...R };
@@ -418,12 +446,20 @@ export function makeDockskap(A) {
   const skriv = () => { try { localStorage.setItem(DOCK_KEY, JSON.stringify(H)); } catch { /* fullt */ } };
   function spara(nu = false) { if (gast()) return; clearTimeout(tmr); if (nu) skriv(); else tmr = setTimeout(skriv, 300); }   // (gästen sparar aldrig värdens hus)
 
-  // ---------- småsaker på bord (som i room.js) ----------
+  // ---------- småsaker på bord (som i room.js) – och på vitrinskåpets hyllor (EGNA hyllor) ----------
   const isRider = (d) => !!d && d.up > 0;
-  const upOn = (s) => { const row = surfaceRow(s.k, s.v, s.r | 0); return row == null ? null : dimsOf(s.k, s.v, s.r | 0).h - row + 1; };
+  const arYta = (k) => SURFACES.has(k) || !!EGNA[k]?.hyllor;      // något att ställa saker på
+  const arPa = (k) => ON_TABLE.has(k) || !!EGNA[k]?.pa;           // något som ställs på bord och hyllor
+  // hur högt över fotlinjen saker står på s: bordets skiva, eller den av skåpets hyllor som ligger närmast vill
+  const upOn = (s, vill = null) => {
+    const hy = EGNA[s.k]?.hyllor;
+    if (hy) return vill == null ? hy.rader[0] : hy.rader.reduce((b, r) => (Math.abs(r - vill) < Math.abs(b - vill) ? r : b), hy.rader[0]);
+    const row = surfaceRow(s.k, s.v, s.r | 0); return row == null ? null : dimsOf(s.k, s.v, s.r | 0).h - row + 1;
+  };
+  const ytaX = (s) => { const hy = EGNA[s.k]?.hyllor; return hy ? [s.x + hy.x0, s.x + hy.x1] : [s.x, s.x + dimsAv(s.k, s.v, s.r | 0).w]; };   // skivans x-spann
   function surfaceOf(d, list, skip = -1) {
-    const { w } = dimsOf(d.k, d.v, d.r | 0);
-    return list.find((s, j) => j !== skip && s !== d && s && SURFACES.has(s.k) && !isRider(s) && d.y === s.y + 1 && d.x >= s.x && d.x + w <= s.x + dimsOf(s.k, s.v, s.r | 0).w) || null;
+    const { w } = dimsAv(d.k, d.v, d.r | 0);
+    return list.find((s, j) => { if (j === skip || s === d || !s || !arYta(s.k) || isRider(s) || d.y !== s.y + 1) return false; const [x0, x1] = ytaX(s); return d.x >= x0 && d.x + w <= x1; }) || null;
   }
   const ridersOf = (list, idx) => list.filter((d) => isRider(d) && surfaceOf(d, list) === list[idx]).map((d) => ({ d, dx: d.x - list[idx].x }));
   // det som stod på ett bord som försvann står nu på golvet
@@ -447,14 +483,21 @@ export function makeDockskap(A) {
       if (EGNA[d.k]) {   // husets egna: discokulan hänger mot bakväggen (ritas i kod, snurrar när den är igång); de köpbara rummens saker
         const { w, h } = dimsAv(d.k), top = d.y - h;
         if (d.k === 'discokula') { b.walls.push({ k: d.k, idx, x: d.x, top, w, h, egen: true, draw: (ctx) => ctx.drawImage(diskoBilder()[d.lit ? Math.floor(tid * 6) % 3 : 0], d.x, top), light: null }); return; }
-        const u = SAKER_ALLA[d.k], e = EXTRA_AV(d.k), sh = u.solidH || 6, key = `deco:${i}:${idx}`, n = u.bilder().length;
+        const u = SAKER_ALLA[d.k], bildAv = BILD_AV(d.k), sh = u.solidH || 6, key = `deco:${i}:${idx}`, n = u.bilder(d).length;
+        const bild = () => bildAv(d.k, fr(), d);
         // bildrutan: tänt/släckt (grillen, facklan), gungan och studsmattan när de rör sig, annars ett lugnt tempo (poolen, fontänen, kronan)
         const fr = () => (u.re?.toggle ? (d[u.re.toggle] ? Math.min(1, n - 1) : 0) : d.k === 'gunga' ? (anims.get(key)?.typ === 'sway' ? 1 + (Math.floor(tid * 6) & 1) : 0) : d.k === 'studsmatta' ? (anims.get(key)?.typ === 'boing' ? 1 : 0) : n > 1 ? Math.floor(tid * 3) % n : 0);
         const lyser = () => u.glow || (u.re?.toggle === 'lit' && d.lit);
-        const sken = (ctx) => { if (!lyser()) return; const cx = d.x + w / 2, varm = u.re?.toggle === 'lit', fl = varm ? 0.75 + 0.25 * Math.abs(Math.sin(tid * 11 + cx)) : 1; halo(ctx, cx, top + h * 0.35, Math.max(16, w), Math.max(10, h * 0.5), varm ? '#ff9d3a' : '#ffe2a0', 0.12 * fl); halo(ctx, cx, top + h * 0.3, Math.max(8, w * 0.5), Math.max(5, h * 0.25), varm ? '#ffc76a' : '#fff4d0', 0.14 * fl); ctx.drawImage(e.bild(d.k, fr()), d.x, top); };
-        if (u.wall) { b.walls.push({ k: d.k, idx, x: d.x, top, w, h, egen: true, draw: (ctx) => ctx.drawImage(e.bild(d.k, fr()), d.x, top), light: lyser() || u.glow || u.re?.toggle ? sken : null }); return; }
+        const sken = (ctx) => { if (!lyser()) return; const cx = d.x + w / 2, varm = u.re?.toggle === 'lit', fl = varm ? 0.75 + 0.25 * Math.abs(Math.sin(tid * 11 + cx)) : 1; halo(ctx, cx, top + h * 0.35, Math.max(16, w), Math.max(10, h * 0.5), varm ? '#ff9d3a' : '#ffe2a0', 0.12 * fl); halo(ctx, cx, top + h * 0.3, Math.max(8, w * 0.5), Math.max(5, h * 0.25), varm ? '#ffc76a' : '#fff4d0', 0.14 * fl); ctx.drawImage(bild(), d.x, top); };
+        if (u.wall) { b.walls.push({ k: d.k, idx, x: d.x, top, w, h, egen: true, draw: (ctx) => ctx.drawImage(bild(), d.x, top), light: lyser() || u.glow || u.re?.toggle ? sken : null }); return; }
+        if (d.up > 0) {   // 🏆 en småsak uppe på ett bord eller en hylla i vitrinskåpet: ritas direkt efter skåpet, utan fotavtryck
+          const foot = d.y - d.up, top2 = foot - h, hit = [d.x, top2, d.x + w, foot + 1];
+          b.props.push({ k: d.k, idx, egen: true, sort: d.y, top: top2, solid: null, hit, rect: hit, seatUp: 0, light: null,
+            draw: (ctx) => { ctx.fillStyle = 'rgba(20,12,28,0.22)'; ctx.fillRect(d.x + 1, foot - 1, w - 2, 1); ctx.drawImage(bild(), d.x, top2); } });
+          return;
+        }
         b.props.push({ k: d.k, idx, egen: true, sort: d.y, top, solid: [d.x - 1, d.y - sh, d.x + w + 1, d.y + 1], rect: [d.x, top, d.x + w, d.y + 1], seatUp: u.seat?.up || 0,
-          draw: (ctx) => { ctx.fillStyle = 'rgba(20,12,28,0.22)'; ctx.fillRect(d.x + 1, d.y - 1, w - 2, 2); ctx.drawImage(e.bild(d.k, fr()), d.x, top); },
+          draw: (ctx) => { ctx.fillStyle = 'rgba(20,12,28,0.22)'; ctx.fillRect(d.x + 1, d.y - 1, w - 2, 2); ctx.drawImage(bild(), d.x, top); },
           light: u.glow || u.re?.toggle ? sken : null });
         return;
       }
@@ -711,10 +754,11 @@ export function makeDockskap(A) {
   function ytaUnder(j, mx, my, w, skip = -1) {
     let best = null;
     H.rooms[j].deco.forEach((s, k2) => {
-      if (k2 === skip || !s || !SURFACES.has(s.k) || isRider(s)) return;
-      const sd = dimsOf(s.k, s.v, s.r | 0), u = upOn(s);
-      if (u == null || w > sd.w - 2 || mx < s.x || mx > s.x + sd.w || my < s.y - sd.h - 4 || my > s.y + 2) return;
-      if (!best || s.y > best.s.y) best = { s, sd, u };
+      if (k2 === skip || !s || !arYta(s.k) || isRider(s)) return;
+      const sd = dimsAv(s.k, s.v, s.r | 0), [x0, x1] = ytaX(s);
+      const u = EGNA[s.k]?.hyllor ? upOn(s, s.y - my) : upOn(s);   // (vitrinskåpet: hyllan närmast pekaren)
+      if (u == null || w > x1 - x0 - 2 || mx < x0 || mx > x1 || my < s.y - sd.h - 4 || my > s.y + 2) return;
+      if (!best || s.y > best.s.y) best = { s, sd, u, x0, x1 };
     });
     return best;
   }
@@ -722,7 +766,7 @@ export function makeDockskap(A) {
   function sakPlats(s, j, mx, my) {
     const b = sakBox(s), w = b.x1 - b.x0;
     const y = ytaUnder(j, mx, my, w);
-    if (y) return { x: Math.round(clamp(mx, y.s.x + 1 - b.x0, y.s.x + y.sd.w - 1 - b.x1)), y: y.s.y + 1, up: y.u };
+    if (y) return { x: Math.round(clamp(mx, y.x0 + 1 - b.x0, y.x1 - 1 - b.x1)), y: y.s.y + 1, up: y.u };
     const q = klammaSak({ x: Math.round(mx), y: Math.round(my) });
     return { x: q.x, y: q.y, up: 0 };
   }
@@ -737,8 +781,8 @@ export function makeDockskap(A) {
   function settleSaker(i) {
     for (const s of sakerI(i)) {
       const b = sakBox(s);
-      const y = H.rooms[i].deco.find((d) => d && SURFACES.has(d.k) && !isRider(d) && s.y === d.y + 1 && s.x + b.x0 >= d.x && s.x + b.x1 <= d.x + dimsOf(d.k, d.v, d.r | 0).w);
-      const u = y ? upOn(y) : null;
+      const y = H.rooms[i].deco.find((d) => { if (!d || !arYta(d.k) || isRider(d) || s.y !== d.y + 1) return false; const [x0, x1] = ytaX(d); return s.x + b.x0 >= x0 && s.x + b.x1 <= x1; });
+      const u = y ? upOn(y, s.up) : null;
       if (u != null) s.up = u; else { delete s.up; klammaSak(s); }
     }
   }
@@ -964,9 +1008,9 @@ export function makeDockskap(A) {
   // över en bordsskiva ställs uppe på skivan, annars kläms den innanför golvet/väggen
   function placeFor(c, j, mx, my) {
     const { w } = dimsAv(c.k, c.v, c.r);
-    if (ON_TABLE.has(c.k)) {
+    if (arPa(c.k)) {
       const best = ytaUnder(j, mx, my, w, !c.fromTray && c.room === j ? c.idx : -1);
-      if (best) { const { s, sd, u } = best; return { x: Math.max(s.x + 1, Math.min(s.x + sd.w - 1 - w, Math.round(mx - w / 2))), y: s.y + 1, up: u }; }
+      if (best) { const { s, u, x0, x1 } = best; return { x: Math.max(x0 + 1, Math.min(x1 - 1 - w, Math.round(mx - w / 2))), y: s.y + 1, up: u }; }
     }
     const d = klamma({ k: c.k, v: c.v, r: c.r, x: Math.round(mx + c.offx), y: Math.round(my + c.offy) });
     return { x: d.x, y: d.y, up: 0 };
@@ -990,6 +1034,7 @@ export function makeDockskap(A) {
     const list = H.rooms[i].deco;
     if (last(i)) { play('fel'); menyLas(i); return false; }   // 🔒
     if (list.length >= MAX_I_RUM) { play('fel'); toast($t('Rummet är fullt – ta bort något först.'), 'bad'); return false; }
+    if (EGNA[d.k]?.sp && !tvattaSp(d.sp)) d.sp = mittSp();   // 👕 tröjan, skyltdockan och planschen får ens eget namn och nummer
     const it = tvattaDeco(d);
     if (!(it.up > 0)) klamma(it);
     list.push(it);
@@ -1039,6 +1084,9 @@ export function makeDockskap(A) {
     const igen = () => { spara(); rebuild(i); synka('deco', i); play('click'); menyFor(i, idx); };
     openModal(`${EGNA[d.k]?.icon || kat?.icon || '🪴'} ${namnAv(d.k)}`, `<div class="dock-meny"><span data-thumb></span><p style="font-size:var(--f2);margin:0">${$t('Dra möbeln dit du vill ha den – även in i ett annat rum. Här vrider, målar och byter du den.')}</p></div>`, [
       ...(d.k !== 'vaxt' && !EGNA[d.k] ? [{ label: $t('🔄 Vrid'), onClick: () => { d.r = ((d.r | 0) + 1) % rotStates(d.k); if (!d.r) delete d.r; if (!(d.up > 0)) klamma(d); igen(); } }] : []),
+      // ⚽ KBK-hörnan (v0.174): skyltdockan vrids (ryggen med nummer / framsidan), tröjan, skyltdockan och planschen byter namn och nummer
+      ...(EGNA[d.k]?.rot > 1 ? [{ label: $t('🔄 Vrid'), onClick: () => { d.r = ((d.r | 0) + 1) % EGNA[d.k].rot; if (!d.r) delete d.r; igen(); } }] : []),
+      ...(EGNA[d.k]?.sp ? [{ label: $t('👕 Namn och nummer'), cls: 'btn-gold', onClick: () => { closeModal(); menySp(i, idx); } }] : []),
       // belysningen (v0.167): lamporna tänds, släcks och får en ljusfärg; julbelysningen släcks; discokulan startas
       ...(LAMPOR.has(d.k) ? [{ label: d.lit ? $t('💡 Släck') : $t('💡 Tänd'), cls: 'btn-gold', onClick: () => { if (d.lit) delete d.lit; else d.lit = true; igen(); } },
         { label: $t`🎨 Ljus: ${ljusFarg(d).namn}`, onClick: () => { const n = LJUSFARGER.findIndex((f) => f.id === ljusFarg(d).id); d.ljus = LJUSFARGER[(n + 1) % LJUSFARGER.length].id; if (d.ljus === LJUSFARGER[0].id) delete d.ljus; d.lit = true; igen(); } }] : []),
@@ -1056,16 +1104,44 @@ export function makeDockskap(A) {
     const el = document.querySelector('#modal [data-thumb]');
     if (el) el.replaceWith(egenThumb(d.k) || thumbCanvas(d.k, d.v, d.c));
   }
-  // miniatyren i lådan och menyn för husets egna saker (×2 när den får plats)
+  // 👕 vems namn och nummer tröjan, skyltdockan och planschen bär: någon i laget, eller ett eget förnamn och nummer
+  function menySp(i, idx) {
+    const d = H.rooms[i].deco[idx];
+    if (!d) return;
+    const sp = tvattaSp(d.sp) || mittSp();
+    const falt = 'style="font:var(--f2) var(--font);padding:6px 8px;border:3px solid var(--ink);min-width:0;width:100%"';
+    const dlg = openModal(`👕 ${$t('Namn och nummer')}`, `<p style="font-size:var(--f2);margin:0 0 6px">${$t('Välj någon i laget – eller skriv ett eget förnamn och nummer.')}</p>
+      <div class="dock-lag">${KUNGS_PLAYERS.map(([n, namn]) => `<button class="btn btn-small ${sp.n === n && sp.namn === namn ? 'btn-go' : ''}" data-sp="${n}">${n} ${esc(namn)}</button>`).join('')}</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:end;margin-top:8px">
+        <label style="display:grid;gap:4px;font-size:var(--f2);flex:1 1 140px">${$t('Förnamn')}<input data-namn type="text" maxlength="12" autocomplete="off" spellcheck="false" value="${esc(sp.namn)}" ${falt}></label>
+        <label style="display:grid;gap:4px;font-size:var(--f2);flex:0 1 90px">${$t('Nummer')}<input data-nr type="text" inputmode="numeric" maxlength="2" autocomplete="off" value="${sp.n}" ${falt}></label>
+      </div>`, [
+      { label: $t('Avbryt'), onClick: () => { closeModal(); menyFor(i, idx); } },
+      { label: $t('✓ Klart'), cls: 'btn-go', onClick: () => klar(dlg.querySelector('[data-namn]').value, dlg.querySelector('[data-nr]').value) },
+    ]);
+    const klar = (namn, nr) => { const s = tvattaSp({ n: nr, namn }); if (!s) { play('fel'); return; } closeModal(); sattSp(i, idx, s); };
+    dlg.querySelectorAll('[data-sp]').forEach((b) => (b.onclick = () => { const p = spelare(+b.dataset.sp); if (p) klar(p[1], p[0]); }));
+    for (const el of dlg.querySelectorAll('input')) {
+      el.addEventListener('keydown', (e) => { e.stopPropagation(); if (e.key === 'Enter') { e.preventDefault(); klar(dlg.querySelector('[data-namn]').value, dlg.querySelector('[data-nr]').value); } });
+      el.addEventListener('keyup', (e) => e.stopPropagation());
+    }
+  }
+  function sattSp(i, idx, sp) {
+    const d = H.rooms[i].deco[idx], s = tvattaSp(sp);
+    if (!d || !EGNA[d.k]?.sp || !s) return false;
+    d.sp = s; spara(); rebuild(i); synka('deco', i); play('ok');
+    return true;
+  }
+  // miniatyren i lådan och menyn för husets egna saker (×2 när den får plats, ½ när den är för stor – tröjan, skåpet, planscherna)
   function egenThumb(k) {
     if (!EGNA[k]) return null;
     const c = document.createElement('canvas'), x = c.getContext('2d');
     x.imageSmoothingEnabled = false;
     if (EGNA[k].ute) {
-      const img = EXTRA_AV(k).bild(k), s = Math.max(1, Math.min(2, Math.floor(56 / img.width), Math.floor(44 / img.height)));
-      const w = Math.min(img.width, 56), h = Math.min(img.height, 44);
-      c.width = w * s; c.height = h * s; x.imageSmoothingEnabled = false;
-      x.drawImage(img, 0, 0, w, h, 0, 0, w * s, h * s);
+      const img = BILD_AV(k)(k, 0, { sp: mittSp(), r: 0 });
+      const s = img.width > 56 || img.height > 44 ? 0.5 : Math.max(1, Math.min(2, Math.floor(56 / img.width), Math.floor(44 / img.height)));
+      c.width = Math.round(img.width * s); c.height = Math.round(img.height * s); x.imageSmoothingEnabled = false;
+      x.drawImage(img, 0, 0, img.width, img.height, 0, 0, c.width, c.height);
       return c;
     }
     const img = diskoBilder()[0], y0 = 9;   // (utan tråden – annars får namnet inte plats)
@@ -1363,7 +1439,7 @@ export function makeDockskap(A) {
     if (h?.typ === 'deco') {
       const idx = h.idx, d = H.rooms[i].deco[idx];
       drag = { typ: 'deco', room: i, idx, d, k: d.k, v: d.v, c: d.c, r: d.r | 0, offx: d.x - lx, offy: d.y - y, moved: false, px: x, py: y, sx: x, sy: y,
-        riders: SURFACES.has(d.k) ? ridersOf(H.rooms[i].deco, idx) : [], groom: i, gx: d.x, gy: d.y, gup: d.up || 0 };
+        riders: arYta(d.k) ? ridersOf(H.rooms[i].deco, idx) : [], groom: i, gx: d.x, gy: d.y, gup: d.up || 0 };
       rebuild(i);
       return;
     }
@@ -1416,7 +1492,7 @@ export function makeDockskap(A) {
   function byggPanel() {
     panel = document.getElementById('dock-panel');
     if (!panel) { panel = document.createElement('div'); panel.id = 'dock-panel'; document.body.append(panel); }
-    const flikar = FLIKAR.filter((f) => !f.kop || (H.dock || []).includes(f.kop));   // (trädgårdsfliken bara när rummet är köpt)
+    const flikar = FLIKAR.filter((f) => (!f.kop || (H.dock || []).includes(f.kop)) && (!f.kbk || kbkSyns()));   // (trädgårdsfliken bara när rummet är köpt, ⚽ på svenska/avstämd)
     if (!flikar.some((f) => f.id === flik)) flik = flikar[0].id;
     panel.innerHTML = `<div class="dp-head"><span>🧸 ${$t('Dockskåpet')}</span><span class="dock-rum">${RUM.map((r, i) => `<button class="btn btn-small" data-rum="${i}" title="${$t(r.name)}">${last(i) ? '🔒' : r.ik}</button>`).join('')}</span></div>
       <div class="dock-flikar">${flikar.map((f) => `<button class="btn btn-small ${f.id === flik ? 'btn-go' : ''}" data-flik="${f.id}" title="${f.namn}">${f.ik}</button>`).join('')}</div>
@@ -1680,15 +1756,15 @@ export function makeDockskap(A) {
       ctx.globalAlpha = 1;
       return;
     }
-    const rita = (k, v, col, r, x, y, upp) => {
+    const rita = (k, v, col, r, x, y, upp, d) => {
       if (k === 'matta') { ctx.drawImage(rugImg(v, col), x, y); return; }
       if (k === 'vaxt') { makePlantProp(x + 10, y).draw(ctx); return; }
-      if (EGNA[k]) { ctx.drawImage(EGNA[k].ute ? EXTRA_AV(k).bild(k) : diskoBilder()[0], x, y - dimsAv(k).h); return; }
+      if (EGNA[k]) { ctx.drawImage(EGNA[k].ute ? BILD_AV(k)(k, 0, d || { sp: mittSp(), r }) : diskoBilder()[0], x, y - (upp || 0) - dimsAv(k).h); return; }
       const a = furnView(k, v, col, r);
       if (a) drawArt(ctx, a, x, y - (upp || 0) - a.sh);
     };
-    rita(c.k, c.v, c.c, c.r, c.gx, c.gy, c.gup);
-    if (c.riders?.length) for (const q of c.riders) rita(q.d.k, q.d.v, q.d.c, q.d.r | 0, c.gx + q.dx, c.gy + 1, q.d.up);
+    rita(c.k, c.v, c.c, c.r, c.gx, c.gy, c.gup, c.d);
+    if (c.riders?.length) for (const q of c.riders) rita(q.d.k, q.d.v, q.d.c, q.d.r | 0, c.gx + q.dx, c.gy + 1, q.d.up, q.d);
     ctx.globalAlpha = 1;
   }
   function draw(ctx) {
@@ -1827,10 +1903,16 @@ export function makeDockskap(A) {
     cam: () => camX, goRoom: (i) => { camX = camRoom(i); camTo = null; return camX; },
     natt: () => H.natt,
     // skärmläge för möbeln idx i rummet i (mitt på, strax ovanför fotlinjen)
-    spot: (i, idx) => { const d = H.rooms[i].deco[idx]; if (!d) return null; const { w, h } = dimsAv(d.k, d.v, d.r | 0); const y = d.k === 'matta' ? d.y + h / 2 : arVagg(d.k) ? d.y - h / 2 : d.y - Math.min(6, h / 2); return { x: d.x + w / 2 + ox(i) - camX, y }; },
+    spot: (i, idx) => { const d = H.rooms[i].deco[idx]; if (!d) return null; const { w, h } = dimsAv(d.k, d.v, d.r | 0); const y = d.k === 'matta' ? d.y + h / 2 : arVagg(d.k) ? d.y - h / 2 : d.y - (d.up || 0) - Math.min(6, h / 2); return { x: d.x + w / 2 + ox(i) - camX, y }; },
     place: (k, i, x, y) => laggTill(i, { k, v: 0, x, y }),
+    // ställ k där pekaren är (mx, my) – som när den dras ur lådan: uppe på en skiva eller en hylla om det finns en där
+    placeAt: (k, i, mx, my) => { const { w } = dimsAv(k, 0, 0); const pos = placeFor({ k, v: 0, r: 0, fromTray: true, offx: -w / 2, offy: 0 }, i, mx, my); return laggTill(i, { k, v: 0, x: pos.x, y: pos.y, up: pos.up }); },
     remove: (i, idx) => taBort(i, idx),
-    rotate: (i, idx) => { const d = H.rooms[i].deco[idx]; if (!d) return false; d.r = ((d.r | 0) + 1) % rotStates(d.k); klamma(d); spara(); rebuild(i); return true; },
+    rotate: (i, idx) => { const d = H.rooms[i].deco[idx]; if (!d) return false; d.r = ((d.r | 0) + 1) % (EGNA[d.k]?.rot || rotStates(d.k)); if (!(d.up > 0)) klamma(d); spara(); rebuild(i); return true; },
+    // ⚽ KBK-hörnan
+    setSp: (i, idx, n, namn) => (sattSp(i, idx, { n, namn }) ? { ...H.rooms[i].deco[idx].sp } : null),
+    mittSp: () => mittSp(),
+    kbkSyns: () => kbkSyns(),
     arm: (k) => { armed = { k, v: 0, r: 0 }; fyllLada(); },
     drag: () => (drag ? { typ: drag.typ || 'deco', id: drag.id, room: drag.room, idx: drag.idx, moved: drag.moved, groom: drag.groom, gx: drag.gx, gy: drag.gy, gup: drag.gup, fromTray: !!drag.fromTray, mal: drag.mal || null } : null),
     flik: (id) => { flik = id; byggPanel(); },

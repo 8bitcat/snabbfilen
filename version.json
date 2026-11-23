@@ -1,7 +1,7 @@
 {
-  "version": "0.173.0",
+  "version": "0.174.0",
   "date": "2026-11-23",
-  "title": "🏰 Slottsvåningen i Dockskåpet – andra köpbara rummet",
+  "title": "⚽🏆 KBK-hörnan i Dockskåpet – pokaler, medaljer, vitrinskåp, tröjan med namn och nummer",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
@@ -211,6 +211,7 @@
     "js/scenes/bling/dream.js",
     "js/scenes/city.js",
     "js/scenes/djurparken.js",
+    "js/scenes/dockskap-kbk.js",
     "js/scenes/dockskap-slott.js",
     "js/scenes/dockskap-ute.js",
     "js/scenes/dockskap.js",

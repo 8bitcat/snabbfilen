@@ -124,6 +124,7 @@ canvas { image-rendering: pixelated; display: block; }
 #dock-panel .dock-flikar { display: flex; flex-wrap: wrap; gap: 3px; padding: 5px 6px; border-bottom: 3px solid var(--ink); background: var(--paper2); }
 #dock-panel .dock-flikar .btn { padding: 2px 5px; }
 #dock-items { flex: 1; overflow-y: auto; padding: 6px; display: grid; grid-template-columns: 1fr 1fr; gap: 4px; align-content: start; }
+.dock-lag { display: flex; flex-wrap: wrap; gap: 4px; }   /* 👕 laget i rutan Namn och nummer (Dockskåpet) */
 .dock-item { display: grid; justify-items: center; align-content: center; gap: 2px; font: var(--f1) var(--font); line-height: 1; background: #fff;
   border: 2px solid var(--ink); padding: 3px 2px; cursor: grab; touch-action: pan-y; min-height: 62px; min-width: 0; }
 .dock-item canvas { image-rendering: pixelated; max-width: 100%; }
