@@ -10,6 +10,9 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.171.0] – 2026-11-23 – 🎁 Presenter att köpa i Butiken
+- 🎁 **Presenter att köpa i Butiken** (appen) – Liten present, Mellanlådan och Stora lådan läggs i 🎁 Presenter i mobilen och packas upp som de andra. Vad som finns i varje låda står i butiken: den lilla ger en sak värd minst 150 kr, mellanlådan alltid 500 kr, ett plagg och ett kortpaket, stora lådan alltid 1 500 kr, ett plagg, en möbel, ett kortpaket och en guldpokal. Bara vilket plagg eller vilken möbel det blir slumpas, bland det du inte redan har.
+
 ## [0.170.0] – 2026-11-23 – 🔥 Dagar i rad – mellanlådan och stora lådan
 - 🔥 **Dagar i rad** – varje dag du är inne i Pixelstaden räknas. Tre dagar i rad ger **Mellanlådan** (en blå låda med pengar och ett plagg), sju dagar i rad **Stora lådan** (som den stora presenten, plus ett kortpaket) – och sedan fortsätter det: dag 10, 14, 17, 21 … Missar du en dag börjar räkningen om.
 - Lådorna kommer utöver morgon- och kvällspresenten, och 🎁 Presenter i mobilen visar hur många dagar i rad du har och när nästa låda kommer.

@@ -24,7 +24,14 @@ export const PRODUKTER = [
   { id: 'lagenhet', sku: SKU + 'bostad.lagenhet', typ: 'bostad', hem: 'lagenhet', icon: '🏢', namn: $t('Lägenheten utan hyra'), text: $t('Flytta in utan insats och bo utan hyra – för alltid.') },
   { id: 'villa', sku: SKU + 'bostad.villa', typ: 'bostad', hem: 'villa', icon: '🏡', namn: $t('Villan utan hyra'), text: $t('Eget hus med trädgård, ingen insats och ingen hyra – för alltid.') },
   { id: 'takvaning', sku: SKU + 'bostad.takvaning', typ: 'bostad', hem: 'takvaning', icon: '🏙️', namn: $t('Takvåningen utan hyra'), text: $t('Högst upp i Tornhuset, ingen insats och ingen hyra – för alltid.') },
+  // 🎁 presentlådor (v0.171, Carl 2026-11-22: "att man kan köpa presenter"): förbrukningsvaror som lägger en present i
+  // mobilens 🎁 Presenter. Innehållstypen är fast och står här (Apple 3.1.1: slumpat innehåll ska redovisas före köp) –
+  // bara VILKET plagg/vilken möbel slumpas, lika troligt bland det man inte har (presenter.js rulla 'kop').
+  { id: 'present-liten', sku: SKU + 'present.liten', typ: 'present', storlek: 'liten', icon: '🎁', namn: $t('Liten present'), text: $t('En sak värd minst 150 kr: ett plagg, en möbel eller ett kortpaket. Slumpas bland det du inte har – alla lika troliga.') },
+  { id: 'present-mellan', sku: SKU + 'present.mellan', typ: 'present', storlek: 'mellan', icon: '🎁', namn: $t('Mellanlådan'), text: $t('Alltid: 500 kr, ett plagg och ett kortpaket. Plagget slumpas bland dem du inte har – alla lika troliga.') },
+  { id: 'present-stor', sku: SKU + 'present.stor', typ: 'present', storlek: 'stor', icon: '🎁', namn: $t('Stora lådan'), text: $t('Alltid: 1 500 kr, ett plagg, en möbel, ett kortpaket och en guldpokal. Slumpas bland det du inte har – alla lika troliga.') },
 ];
+const STORLEKAR = ['liten', 'mellan', 'stor'];
 const TITEL = $t('🛍️ Butiken');
 
 // ---------- läget (utanför sparfilen) ----------
@@ -37,6 +44,7 @@ const tvatta = (p) => ({
   bostader: Array.isArray(p?.bostader) ? [...new Set(p.bostader.filter(arBostad))] : [],
   tx: Array.isArray(p?.tx) ? p.tx.filter((t) => typeof t === 'string' && t).slice(-300) : [],
   logg: Array.isArray(p?.logg) ? p.logg.slice(-100) : [],
+  pres: Array.isArray(p?.pres) ? p.pres.filter((s) => STORLEKAR.includes(s)).slice(0, 20) : [],   // köpta presenter som inte hunnit in i spelet än
 });
 function las() {
   if (S) return S;
@@ -64,7 +72,21 @@ async function hamtaPriser() {
   return priser;
 }
 const arOppen = () => document.querySelector('#modal .dlg')?.dataset.title === TITEL;
-const tack = (v) => (v.typ === 'pengar' ? $t`💰 ${fmt(v.kr)} ligger i handkassan – tack!` : $t`🔑 ${v.namn} är din – ingen insats och ingen hyra. Flytta in hos Bostadsbyrån!`);
+const tack = (v) => (v.typ === 'pengar' ? $t`💰 ${fmt(v.kr)} ligger i handkassan – tack!` : v.typ === 'present' ? $t('🎁 Presenten ligger i mobilen – öppna den i 🎁 Presenter!') : $t`🔑 ${v.namn} är din – ingen insats och ingen hyra. Flytta in hos Bostadsbyrån!`);
+// 🎁 en köpt present läggs i spelets presentkö (presenter.js öppnar den); utan spel (osannolikt) väntar den i pres
+function gePresent(A, storlek, id) {
+  const g = A?.game, st = las();
+  if (g?.presenter && Array.isArray(g.presenter.ko)) { g.presenter.ko.push({ typ: 'kop', storlek, ...(id ? { id: id.slice(0, 24) } : {}) }); g.save?.(); return true; }
+  st.pres.push(storlek); spara();
+  return false;
+}
+// (vid start: presenter som köptes utan ett spel igång levereras nu)
+function levereraPres(A) {
+  const st = las();
+  if (!st.pres.length || !A?.game?.presenter) return;
+  for (const s of st.pres.splice(0)) A.game.presenter.ko.push({ typ: 'kop', storlek: s });
+  A.game.save?.(); spara();
+}
 
 // Bokför en transaktion från Apple – en gång per transactionId. Returnerar varan, eller null om inget hände.
 export function bokfor(A, tx) {
@@ -80,6 +102,7 @@ export function bokfor(A, tx) {
   const g = A?.game;
   if (prod.typ === 'pengar') { st.pengar += prod.kr; if (g) { g.money += prod.kr; g.save?.(); } }
   else if (prod.typ === 'bostad') { if (!st.bostader.includes(prod.hem)) st.bostader.push(prod.hem); }
+  else if (prod.typ === 'present') gePresent(A, prod.storlek, id);
   st.logg.push({ t: new Date().toISOString().slice(0, 16), id: prod.id });
   if (st.logg.length > 100) st.logg.shift();
   spara();
@@ -94,7 +117,7 @@ async function kopa(A, prod) {
   upptagen = true;
   if (arOppen()) rita(A, prod.id);
   try {
-    const tx = await P.purchaseProduct({ productIdentifier: prod.sku, productType: 'inapp', quantity: 1, isConsumable: prod.typ === 'pengar' });
+    const tx = await P.purchaseProduct({ productIdentifier: prod.sku, productType: 'inapp', quantity: 1, isConsumable: prod.typ === 'pengar' || prod.typ === 'present' });
     const v = bokfor(A, tx);
     if (v) { play('ok'); toast(tack(v), 'good'); }
     // ingen vara: transactionUpdated hann bokföra först – det är redan klart
@@ -141,7 +164,7 @@ export function startKop(A) {
       if (v) { play('ok'); toast(tack(v), 'good'); if (arOppen()) rita(A); }
     });
   } catch { /* äldre app utan händelser */ }
-  setTimeout(() => { aterstall(A, { tyst: true }).catch(() => {}); }, 4000);
+  setTimeout(() => { aterstall(A, { tyst: true }).catch(() => {}); levereraPres(A); }, 4000);
 }
 
 // ---------- rutan ----------
@@ -163,7 +186,7 @@ function rita(A, laddar = null, fel = false) {
   const dlg = openModal(TITEL, `<p style="font-size:var(--f2);margin-top:0">${$t('Köpen betalas med riktiga pengar via Apple och landar direkt i spelet.')} 💰 <b>${fmt(g.money)}</b></p>
     <div class="plist">${rows}</div>
     ${fel ? `<p class="bad" style="font-size:var(--f2);margin-bottom:0">${$t('Priserna gick inte att hämta just nu. Kolla att du har internet och öppna butiken igen.')}</p>` : ''}
-    <p class="sp" style="font-size:var(--f2);margin-bottom:0">${$t('Köpta pengar räknas inte mot livsmålet Rikedom. En bostad du köpt följer med ditt Apple-konto – tryck Återställ köp på en ny telefon.')}</p>`, [
+    <p class="sp" style="font-size:var(--f2);margin-bottom:0">${$t('Köpta pengar räknas inte mot livsmålet Rikedom. En bostad du köpt följer med ditt Apple-konto – tryck Återställ köp på en ny telefon.')} ${$t('En köpt present hamnar i 🎁 Presenter i mobilen.')}</p>`, [
     { label: $t('Återställ köp'), onClick: () => aterstall(A) },
     { label: $t('Stäng'), onClick: closeModal },
   ]);

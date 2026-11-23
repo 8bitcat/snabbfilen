@@ -123,7 +123,13 @@ const mat = () => { const f = rnd(FOOD.filter((x) => x.id !== 'nudlar')); return
 const pokal = () => ({ slag: 'mobel', k: 'pokal', v: Math.random() < 0.2 ? 0 : Math.random() < 0.5 ? 1 : 2 });
 // 🃏 ett kortpaket (tre kort, dragna redan nu så att bilden visar rätt kort) och ett enstaka kort
 const kortpaket = () => ({ slag: 'kortpaket', ids: draPaket(3) });
-export function rulla(G, typ) {
+export function rulla(G, typ, x = null) {
+  if (typ === 'kop') {   // 🛍️ köpt present (kop.js): innehållstypen är fast och står i butiken, bara vilket plagg/vilken möbel slumpas
+    const s = x?.storlek;
+    if (s === 'stor') return [pengar(1500, 1500), plagg(G, 1200, 200) || kortpaket(), mobel(1500, 300) || pengar(300, 300), kortpaket(), { slag: 'mobel', k: 'pokal', v: 2 }];
+    if (s === 'mellan') return [pengar(500, 500), plagg(G, 900, 100) || kortpaket(), kortpaket()];
+    return [plagg(G, 900, 150) || mobel(900, 150) || kortpaket()];
+  }
   if (typ === 'rad7') return [...rulla(G, 'stor').filter((g) => g.slag !== 'kortpaket'), kortpaket()];   // 🔥 stora lådan: som den stora presenten + ett kortpaket
   if (typ === 'rad3') return [pengar(200, 400), plagg(G, 600, 100) || kortpaket()];                       // 🔥 mellanlådan: pengar + ett plagg
   if (typ === 'stor') return [pengar(300, 600), plagg(G, 900, 150) || kortpaket(), Math.random() < 0.35 ? pokal() : mobel(1200, 300) || pengar(200, 300), ...(Math.random() < 0.5 ? [kortpaket()] : [])];
@@ -172,7 +178,7 @@ const gavaVart = (g) => (g.slag === 'kort' || g.slag === 'kortpaket' ? $t('i alb
 // ---------- bilderna ----------
 // paketet (pixel för pixel): stor = guld med rött band och stjärnor, mellan = blått med silverband och
 // stjärnor (🔥 mellanlådan), liten = rött med guldband och prickar
-const stilFor = (x) => (x.typ === 'stor' || x.typ === 'rad7' ? 'stor' : x.typ === 'rad3' ? 'mellan' : 'liten');
+const stilFor = (x) => (x.typ === 'stor' || x.typ === 'rad7' || (x.typ === 'kop' && x.storlek === 'stor') ? 'stor' : x.typ === 'rad3' || (x.typ === 'kop' && x.storlek === 'mellan') ? 'mellan' : 'liten');
 function paketBild(stil, lock = 0, skak = 0) {
   if (stil === true) stil = 'stor'; else if (!stil) stil = 'liten';
   const W = 64, H = 60, P2 = new Pix(W, H), stor = stil !== 'liten', mellan = stil === 'mellan';
@@ -234,7 +240,7 @@ async function gavaBild(A, g) {
 }
 
 // ---------- 🎁 Presenter i mobilen ----------
-const rubrikFor = (x) => (x.typ === 'stor' ? $t('🎁 STOR present') : x.typ === 'rad7' ? $t`🎁 STORA lådan – ${x.dagar || RAD_STOR} dagar i rad!` : x.typ === 'rad3' ? $t`🎁 Mellanlådan – ${x.dagar || RAD_MELLAN} dagar i rad!` : x.typ === 'van' ? $t`💛 Present från ${x.fran || '?'}` : $t('🎁 Dagens present'));
+const rubrikFor = (x) => (x.typ === 'kop' ? (x.storlek === 'stor' ? $t('🎁 Stora lådan (köpt)') : x.storlek === 'mellan' ? $t('🎁 Mellanlådan (köpt)') : $t('🎁 Liten present (köpt)')) : x.typ === 'stor' ? $t('🎁 STOR present') : x.typ === 'rad7' ? $t`🎁 STORA lådan – ${x.dagar || RAD_STOR} dagar i rad!` : x.typ === 'rad3' ? $t`🎁 Mellanlådan – ${x.dagar || RAD_MELLAN} dagar i rad!` : x.typ === 'van' ? $t`💛 Present från ${x.fran || '?'}` : $t('🎁 Dagens present'));
 export function openPresenter(A) {
   presenterKoll(A, { tyst: true });
   const G = A.game, p = P(G), n = tillStor(G), rad = p.rad.dagar | 0, nr = tillRad(rad);
@@ -290,7 +296,7 @@ export function oppna(A, i) {
     // gåvorna bestäms och ges direkt (så att ingenting går förlorat om man stänger mitt i)
     // vänskapspresent: en liten dagspresent (om den är gratis) + det vännen själv lade i paketet
     const egna = Array.isArray(x.gavor) ? x.gavor.filter(giltig) : [];
-    gavor = (x.typ === 'van' ? [...(x.fri || !egna.length ? rulla(G, 'dag') : []), ...egna] : rulla(G, x.typ)).filter(Boolean);
+    gavor = (x.typ === 'van' ? [...(x.fri || !egna.length ? rulla(G, 'dag') : []), ...egna] : rulla(G, x.typ, x)).filter(Boolean);
     if (!gavor.length) gavor = [pengar(50, 100)];
     for (const gv of gavor) ge(A, gv);
     p.ko.splice(p.ko.indexOf(x), 1);

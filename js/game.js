@@ -972,8 +972,9 @@ export class Game {
           g.presenter = {
             dag: /^\d{4}-\d{2}-\d{2}(-[mk])?$/.test(String(P.dag || '')) ? String(P.dag) : '',   // ("-m"/"-k" = morgon-/kvällspresenten)
             antal: Math.max(0, Math.min(100000, Math.round(+P.antal || 0))),
-            ko: (Array.isArray(P.ko) ? P.ko : []).filter((x) => x && ['dag', 'stor', 'van', 'rad3', 'rad7'].includes(x.typ)).slice(-10)
-              .map((x) => ({ typ: x.typ, ...(x.fri ? { fri: true } : {}), ...(typeof x.fran === 'string' ? { fran: x.fran.slice(0, 16) } : {}), ...(Array.isArray(x.gavor) ? { gavor: x.gavor.slice(0, 3) } : {}), ...(typeof x.id === 'string' ? { id: x.id.slice(0, 24) } : {}), ...(+x.dagar > 0 ? { dagar: Math.min(100000, +x.dagar | 0) } : {}) })),
+            ko: (Array.isArray(P.ko) ? P.ko : []).filter((x) => x && ['dag', 'stor', 'van', 'rad3', 'rad7', 'kop'].includes(x.typ)).slice(-10)
+              .map((x) => ({ typ: x.typ, ...(x.fri ? { fri: true } : {}), ...(typeof x.fran === 'string' ? { fran: x.fran.slice(0, 16) } : {}), ...(Array.isArray(x.gavor) ? { gavor: x.gavor.slice(0, 3) } : {}), ...(typeof x.id === 'string' ? { id: x.id.slice(0, 24) } : {}), ...(+x.dagar > 0 ? { dagar: Math.min(100000, +x.dagar | 0) } : {}),
+                ...(['liten', 'mellan', 'stor'].includes(x.storlek) ? { storlek: x.storlek } : {}) })),   // (kop = köpt presentlåda, kop.js)
             // 🔥 dagar i rad (v0.170): dagar = hur många dagar i följd man varit inne, senast = den senaste räknade dagen
             rad: { dagar: Math.max(0, Math.min(100000, +P.rad?.dagar | 0)), senast: /^\d{4}-\d{2}-\d{2}$/.test(String(P.rad?.senast || '')) ? String(P.rad.senast) : '' },
           }; }

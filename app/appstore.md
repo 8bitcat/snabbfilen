@@ -204,6 +204,24 @@ Open the phone button (bottom right) → "Butik" (Shop). The shop lists the five
 | Italiano | L'attico senza affitto | In cima alla Torre, senza affitto. |
 | Português | A Penthouse sem renda | No topo da Torre, sem renda. |
 
+### Presentlådor (tre nya produkter, 2026-11-23 – spelet v0.171.0, ingen ny appversion behövs)
+
+Carl 2026-11-22: "att man kan köpa presenter … du kan sätta priserna". Förbrukningsvaror som lägger en present i
+mobilens 🎁 Presenter (samma uppackning som dagspresenterna). Innehållstypen är fast och står i butiken före köpet
+(Apple 3.1.1 om slumpat innehåll): bara VILKET plagg/vilken möbel slumpas, lika troligt bland det man inte har.
+
+| Reference Name | Product ID | Type | Pris |
+|---|---|---|---|
+| Liten present | `io.eightbitcat.pixelcity.present.liten` | Consumable | 9 kr |
+| Mellanlådan | `io.eightbitcat.pixelcity.present.mellan` | Consumable | 29 kr |
+| Stora lådan | `io.eightbitcat.pixelcity.present.stor` | Consumable | 59 kr |
+
+Innehåll: Liten = en sak värd minst 150 kr (plagg, möbel eller kortpaket). Mellan = 500 kr + ett plagg + ett kortpaket.
+Stor = 1 500 kr + plagg + möbel + kortpaket + guldpokal. Texterna på åtta språk ligger i `app/tools/asc-iap.mjs`
+(PRODUKTER) och läggs upp med `node app/tools/asc-iap.mjs allt` (samma granskningsbild och uppdaterade Review Notes).
+Efter 1.3 kan produkter av samma typ skickas till granskning utan ny appversion: **Add for Review** på var och en i
+App Store Connect när `lista` visar READY_TO_SUBMIT.
+
 ### Distribution → iOS 1.3
 
 Skapa versionen, välj Codemagic-bygget, och lägg till de fem produkterna under **In-App Purchases and Subscriptions**

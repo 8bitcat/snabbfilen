@@ -1,0 +1,57 @@
+[
+ {
+  "i": 10320,
+  "f": "js/core/kop.js",
+  "k": "Liten present"
+ },
+ {
+  "i": 10321,
+  "f": "js/core/kop.js",
+  "k": "En sak värd minst 150 kr: ett plagg, en möbel eller ett kortpaket. Slumpas bland det du inte har – alla lika troliga."
+ },
+ {
+  "i": 10322,
+  "f": "js/core/kop.js",
+  "k": "Mellanlådan"
+ },
+ {
+  "i": 10323,
+  "f": "js/core/kop.js",
+  "k": "Alltid: 500 kr, ett plagg och ett kortpaket. Plagget slumpas bland dem du inte har – alla lika troliga."
+ },
+ {
+  "i": 10324,
+  "f": "js/core/kop.js",
+  "k": "Stora lådan"
+ },
+ {
+  "i": 10325,
+  "f": "js/core/kop.js",
+  "k": "Alltid: 1 500 kr, ett plagg, en möbel, ett kortpaket och en guldpokal. Slumpas bland det du inte har – alla lika troliga."
+ },
+ {
+  "i": 10326,
+  "f": "js/core/kop.js",
+  "k": "🎁 Presenten ligger i mobilen – öppna den i 🎁 Presenter!"
+ },
+ {
+  "i": 10327,
+  "f": "js/core/kop.js",
+  "k": "En köpt present hamnar i 🎁 Presenter i mobilen."
+ },
+ {
+  "i": 10328,
+  "f": "js/core/presenter.js",
+  "k": "🎁 Stora lådan (köpt)"
+ },
+ {
+  "i": 10329,
+  "f": "js/core/presenter.js",
+  "k": "🎁 Mellanlådan (köpt)"
+ },
+ {
+  "i": 10330,
+  "f": "js/core/presenter.js",
+  "k": "🎁 Liten present (köpt)"
+ }
+]

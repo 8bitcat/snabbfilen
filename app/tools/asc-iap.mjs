@@ -28,7 +28,7 @@ async function call(method, path, body) {
 async function alla(path) { const out = []; let next = path; while (next) { const j = await call('GET', next); out.push(...(j.data || [])); next = j.links?.next || null; } return out; }
 const tyst404 = (p) => p.catch((e) => { if (e.status === 404) return null; throw e; });
 
-const REVIEW = 'Open the phone button (bottom right) → "Butik" (Shop). The shop lists the five products with StoreKit prices. Money bags are consumables (added to the in-game wallet); rent-free homes are non-consumables (no deposit, no weekly rent in the game) with a "Restore Purchases" button in the same dialog. Purchased money does not count towards the in-game "Wealth" life goal. The shop only exists in the iOS app, never on the web version.';
+const REVIEW = 'Open the phone button (bottom right) → "Butik" (Shop). The shop lists the products with StoreKit prices. Money bags are consumables (added to the in-game wallet); rent-free homes are non-consumables (no deposit, no weekly rent in the game) with a "Restore Purchases" button in the same dialog. Gift boxes are consumables that place a present in the in-game phone\'s "Presenter" (Presents) app: each box\'s contents are fixed by type and listed in the shop before purchase (e.g. always 500 kr, one outfit and one card pack); only which specific outfit or furniture piece is drawn is random, uniformly among the items the player does not yet own. Purchased money does not count towards the in-game "Wealth" life goal. The shop only exists in the iOS app, never on the web version.';
 const SKU = 'io.eightbitcat.pixelcity.';
 const LOC = { sv: 'sv', en: 'en-US', es: 'es-ES', de: 'de-DE', fr: 'fr-FR', pl: 'pl', it: 'it', pt: 'pt-PT' };
 const PRODUKTER = [
@@ -57,6 +57,22 @@ const PRODUKTER = [
     es: ['El ático sin alquiler', 'Lo más alto de la torre, sin alquiler.'], de: ['Penthouse ohne Miete', 'Ganz oben im Turmhaus, keine Miete.'],
     fr: ['Le penthouse sans loyer', 'Tout en haut de la tour, sans loyer.'], pl: ['Penthouse bez czynszu', 'Na szczycie wieżowca, bez czynszu.'],
     it: ["L'attico senza affitto", 'In cima alla Torre, senza affitto.'], pt: ['A Penthouse sem renda', 'No topo da Torre, sem renda.'] } },
+  // 🎁 presentlådor (v0.171, 2026-11-23 – Carl: "du kan sätta priserna"): förbrukningsvaror, hamnar i mobilens 🎁 Presenter
+  { namn: 'Liten present', sku: SKU + 'present.liten', typ: 'CONSUMABLE', pris: 9, loc: {
+    sv: ['Liten present', 'En sak värd minst 150 kr – alltid ny.'], en: ['Small Gift', 'One new item worth $150 or more.'],
+    es: ['Regalo pequeño', 'Un objeto nuevo de 150 € o más.'], de: ['Kleines Geschenk', 'Ein neues Teil im Wert von 150 € oder mehr.'],
+    fr: ['Petit cadeau', 'Un objet neuf de 150 € ou plus.'], pl: ['Mały prezent', 'Jedna nowa rzecz warta co najmniej 150 zł.'],
+    it: ['Regalo piccolo', 'Un oggetto nuovo da 150 € o più.'], pt: ['Presente pequeno', 'Um item novo de 150 € ou mais.'] } },
+  { namn: 'Mellanlådan', sku: SKU + 'present.mellan', typ: 'CONSUMABLE', pris: 29, loc: {
+    sv: ['Mellanlådan', 'Alltid 500 kr, ett plagg och ett kortpaket.'], en: ['The Medium Box', 'Always $500, an outfit and a card pack.'],
+    es: ['La caja mediana', 'Siempre 500 €, una prenda y un sobre.'], de: ['Die mittlere Kiste', 'Immer 500 €, ein Outfit und ein Kartenpack.'],
+    fr: ['La boîte moyenne', 'Toujours 500 €, une tenue et un paquet.'], pl: ['Średnia skrzynka', 'Zawsze 500 zł, strój i paczka kart.'],
+    it: ['La scatola media', 'Sempre 500 €, un capo e un pacchetto.'], pt: ['A caixa média', 'Sempre 500 €, uma peça e um pacote.'] } },
+  { namn: 'Stora lådan', sku: SKU + 'present.stor', typ: 'CONSUMABLE', pris: 59, loc: {
+    sv: ['Stora lådan', 'Alltid 1 500 kr, plagg, möbel, kort, pokal.'], en: ['The Big Box', 'Always $1,500, outfit, furniture, cards, cup.'],
+    es: ['La caja grande', 'Siempre 1.500 €, prenda, mueble, sobre, copa.'], de: ['Die große Kiste', 'Immer 1.500 €, Outfit, Möbel, Karten, Pokal.'],
+    fr: ['La grande boîte', 'Toujours 1 500 €, tenue, meuble, cartes.'], pl: ['Duża skrzynka', 'Zawsze 1 500 zł, strój, mebel, karty, puchar.'],
+    it: ['La scatola grande', 'Sempre 1.500 €, capo, mobile, carte, coppa.'], pt: ['A caixa grande', 'Sempre 1.500 €, peça, móvel, cartas, taça.'] } },
 ];
 for (const p of PRODUKTER) for (const [l, [n, d]] of Object.entries(p.loc)) { if (n.length > 30 || d.length > 45) throw new Error(`för lång text (${p.sku} ${l}): "${n}" ${n.length}/30, "${d}" ${d.length}/45`); }
 

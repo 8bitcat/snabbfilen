@@ -21,7 +21,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const browser = await chromium.launch();
 const errs = [];
 const SKU = 'io.eightbitcat.pixelcity.';
-const PRIS = { 'pengar.1000': 12, 'pengar.10000': 49, 'bostad.lagenhet': 29, 'bostad.villa': 59, 'bostad.takvaning': 99 };
+const PRIS = { 'pengar.1000': 12, 'pengar.10000': 49, 'bostad.lagenhet': 29, 'bostad.villa': 59, 'bostad.takvaning': 99, 'present.liten': 9, 'present.mellan': 29, 'present.stor': 59 };
 
 async function boot({ app = false, purchases = [], kop = null } = {}) {
   const ctx = await browser.newContext({ viewport: { width: 1200, height: 760 } });
@@ -38,7 +38,7 @@ async function boot({ app = false, purchases = [], kop = null } = {}) {
           if (I.mode === 'cancel') throw new Error('User cancelled');
           if (I.mode === 'pending') throw new Error('Transaction pending');
           const tx = { transactionId: 'tx' + (++I.n), productIdentifier: o.productIdentifier, purchaseDate: new Date().toISOString(), environment: 'Sandbox' };
-          if (!/pengar/.test(o.productIdentifier)) I.purchases.push(tx);
+          if (!/pengar|present/.test(o.productIdentifier)) I.purchases.push(tx);   // (förbrukningsvarorna är inga rättigheter att hämta igen)
           I.sist = tx;
           return tx;
         },
@@ -93,7 +93,7 @@ async function oppnaButik(p) {
   ok(await D(p, () => { const b = document.querySelector('#mobilen [data-app="butik"]'); return !!b && !b.hidden && b.offsetParent !== null && /Butik/.test(b.textContent); }), 'appen: 🛍️ Butik syns i mobilen');
   await oppnaButik(p);
   const t2 = await modalText(p);
-  ok(/Butiken/.test(t2) && (await D(p, () => document.querySelectorAll('#modal [data-kop]').length)) === 5, 'Butiken öppnas med fem varor');
+  ok(/Butiken/.test(t2) && (await D(p, () => document.querySelectorAll('#modal [data-kop]').length)) === 8, 'Butiken öppnas med åtta varor (pengapåsar, bostäder, presentlådor)');
   ok(await D(p, () => [...document.querySelectorAll('#modal [data-kop]')].every((b) => !b.disabled && /\d+,00 kr/.test(b.textContent))), 'varje vara har Apples pris i kronor (och knappen är aktiv när priset kommit)');
   ok(/Pengapåse 1 000 kr/.test(t2) && /Villan utan hyra/.test(t2) && /Takvåningen utan hyra/.test(t2), 'varorna heter Pengapåse 1 000 kr, Villan utan hyra, Takvåningen utan hyra …');
   ok(/Återställ köp/.test(t2) && /räknas inte mot livsmålet/.test(t2), 'rutan har Återställ köp och förklarar att köpta pengar inte räknas mot livsmålet');
@@ -143,6 +143,39 @@ async function oppnaButik(p) {
   await p.click('#modal [data-kop="pengar1000"]'); await sleep(500);
   ok((await D(p, () => SF.game.money)) === 10500 && !(await toasts(p)).some((t) => /^bad:/.test(t)), 'avbrutet köp: inga pengar och inget felbesked');
   ok(await D(p, () => [...document.querySelectorAll('#modal [data-kop]')].every((b) => !b.disabled)), 'knapparna är aktiva igen efter ett avbrutet köp');
+  await ctx.close();
+}
+
+// ---- 7b. 🎁 presentlådorna (v0.171): köpet lägger en present i mobilen, innehållet är det som står i butiken ----
+{
+  const { ctx, p } = await boot({ app: true });
+  await oppnaButik(p);
+  const t7 = await modalText(p);
+  ok(/Liten present/.test(t7) && /Mellanlådan/.test(t7) && /Stora lådan/.test(t7) && /Alltid: 500 kr, ett plagg och ett kortpaket/.test(t7) && /alla lika troliga/.test(t7), 'butiken visar de tre lådorna med innehållet (och att slumpen är lika för allt man inte har)');
+  const m7 = await D(p, () => SF.game.money);
+  await p.click('#modal [data-kop="present-mellan"]'); await sleep(600);
+  ok(await D(p, () => window.__iap.calls.at(-1)?.productIdentifier === 'io.eightbitcat.pixelcity.present.mellan' && window.__iap.calls.at(-1)?.isConsumable === true), 'Apple fick rätt produkt-ID och att lådan är en förbrukningsvara');
+  const ko7 = await D(p, () => SF.game.presenter.ko.map((x) => x.typ + ':' + (x.storlek || '')));
+  ok(ko7.includes('kop:mellan') && (await D(p, () => SF.game.money)) === m7 && (await toasts(p)).some((t) => /Presenten ligger i mobilen/.test(t)), `köpet lade Mellanlådan i 🎁 Presenter (${ko7.join(', ')}) och sa till – inga pengar direkt`);
+  ok((await kopLage(p)).logg?.at(-1)?.id === 'present-mellan' && (await kopLage(p)).tx?.length === 1, 'köpet är bokfört i snabbfilen_kop');
+  await stang(p);
+  await D(p, async () => { const m = await import('/js/core/presenter.js'); m.openPresenter(SF); }); await sleep(300);
+  ok(/Mellanlådan \(köpt\)/.test(await modalText(p)), 'appen 🎁 Presenter: "Mellanlådan (köpt)"');
+  await D(p, () => document.querySelector('#modal [data-oppna]').click()); await sleep(300);
+  await D(p, () => document.querySelector('#modal .pr-cv').click());
+  await p.waitForFunction(() => !document.querySelector('#modal .pr-gavor')?.classList.contains('hidden'), null, { timeout: 6000 }).catch(() => {});
+  const g7 = await D(p, () => [...document.querySelectorAll('#modal .pr-gava b')].map((b) => b.textContent));
+  ok(g7.length === 3 && g7[0].replace(/\s/g, '') === '500kr' && g7.some((t) => /Kortpaket/.test(t)) && (await D(p, () => SF.game.money)) === m7 + 500 && (await D(p, () => SF.game.presenter.antal)) === 0, `mellanlådan: 500 kr, ett plagg och ett kortpaket (${g7.join(' · ')}) – räknas inte som dagspresent`);
+  await stang(p);
+  // stora lådan via transactionUpdated (köpet godkändes senare): fem saker, guldpokalen sist
+  await D(p, () => window.__iap.emit({ transactionId: 'tx-stor', productIdentifier: 'io.eightbitcat.pixelcity.present.stor', purchaseDate: new Date().toISOString() })); await sleep(300);
+  ok((await D(p, () => SF.game.presenter.ko.some((x) => x.typ === 'kop' && x.storlek === 'stor'))), 'Stora lådan via transactionUpdated hamnar i 🎁 Presenter');
+  await D(p, async () => { const m = await import('/js/core/presenter.js'); m.oppna(SF, SF.game.presenter.ko.findIndex((x) => x.storlek === 'stor')); }); await sleep(300);
+  await D(p, () => document.querySelector('#modal .pr-cv').click());
+  await p.waitForFunction(() => !document.querySelector('#modal .pr-gavor')?.classList.contains('hidden'), null, { timeout: 6000 }).catch(() => {});
+  const g8 = await D(p, () => [...document.querySelectorAll('#modal .pr-gava b')].map((b) => b.textContent));
+  ok(g8.length === 5 && g8[0].replace(/\s/g, '') === '1500kr' && /Pokal/i.test(g8.at(-1)), `stora lådan: 1 500 kr + plagg + möbel + kortpaket + guldpokal (${g8.join(' · ')})`);
+  await stang(p);
   await ctx.close();
 }
 
