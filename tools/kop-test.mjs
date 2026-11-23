@@ -21,7 +21,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const browser = await chromium.launch();
 const errs = [];
 const SKU = 'io.eightbitcat.pixelcity.';
-const PRIS = { 'pengar.1000': 12, 'pengar.10000': 49, 'bostad.lagenhet': 29, 'bostad.villa': 59, 'bostad.takvaning': 99, 'present.liten': 9, 'present.mellan': 29, 'present.stor': 59 };
+const PRIS = { 'pengar.1000': 12, 'pengar.10000': 49, 'bostad.lagenhet': 29, 'bostad.villa': 59, 'bostad.takvaning': 99, 'present.liten': 9, 'present.mellan': 29, 'present.stor': 59, 'dock.tradgard': 29 };
 
 async function boot({ app = false, purchases = [], kop = null } = {}) {
   const ctx = await browser.newContext({ viewport: { width: 1200, height: 760 } });
@@ -93,7 +93,7 @@ async function oppnaButik(p) {
   ok(await D(p, () => { const b = document.querySelector('#mobilen [data-app="butik"]'); return !!b && !b.hidden && b.offsetParent !== null && /Butik/.test(b.textContent); }), 'appen: 🛍️ Butik syns i mobilen');
   await oppnaButik(p);
   const t2 = await modalText(p);
-  ok(/Butiken/.test(t2) && (await D(p, () => document.querySelectorAll('#modal [data-kop]').length)) === 8, 'Butiken öppnas med åtta varor (pengapåsar, bostäder, presentlådor)');
+  ok(/Butiken/.test(t2) && (await D(p, () => document.querySelectorAll('#modal [data-kop]').length)) === 9, 'Butiken öppnas med nio varor (pengapåsar, bostäder, presentlådor, trädgården)');
   ok(await D(p, () => [...document.querySelectorAll('#modal [data-kop]')].every((b) => !b.disabled && /\d+,00 kr/.test(b.textContent))), 'varje vara har Apples pris i kronor (och knappen är aktiv när priset kommit)');
   ok(/Pengapåse 1 000 kr/.test(t2) && /Villan utan hyra/.test(t2) && /Takvåningen utan hyra/.test(t2), 'varorna heter Pengapåse 1 000 kr, Villan utan hyra, Takvåningen utan hyra …');
   ok(/Återställ köp/.test(t2) && /räknas inte mot livsmålet/.test(t2), 'rutan har Återställ köp och förklarar att köpta pengar inte räknas mot livsmålet');
@@ -177,6 +177,29 @@ async function oppnaButik(p) {
   ok(g8.length === 5 && g8[0].replace(/\s/g, '') === '1500kr' && /Pokal/i.test(g8.at(-1)), `stora lådan: 1 500 kr + plagg + möbel + kortpaket + guldpokal (${g8.join(' · ')})`);
   await stang(p);
   await ctx.close();
+}
+
+// ---- 7c. 🌳 Trädgården i Dockskåpet (v0.172): engångsköp som låser upp rummet, följer med Apple-kontot ----
+{
+  const { ctx, p } = await boot({ app: true });
+  await oppnaButik(p);
+  ok(/Trädgården i Dockskåpet/.test(await modalText(p)) && !(await kopLage(p))?.dock?.length, 'butiken visar Trädgården i Dockskåpet – inte köpt än');
+  await p.click('#modal [data-kop="dock-tradgard"]'); await sleep(600);
+  ok(await D(p, () => window.__iap.calls.at(-1)?.productIdentifier === 'io.eightbitcat.pixelcity.dock.tradgard' && window.__iap.calls.at(-1)?.isConsumable === false), 'Apple fick rätt produkt-ID och att rummet är ett engångsköp');
+  ok((await kopLage(p))?.dock?.includes('tradgard') && /✓ Din/.test(await modalText(p)) && (await toasts(p)).some((t) => /upplåst/.test(t)), 'köpet: dock ["tradgard"] i snabbfilen_kop, ✓ Din i butiken, rutan säger att rummet är upplåst');
+  await stang(p);
+  await D(p, () => window.SF.openDockskap());
+  await p.waitForFunction(() => window.SF?.sceneName === 'dockskap' && !!window.SF.scene?._debug?.rooms, null, { timeout: 15000 });
+  await sleep(300);
+  ok((await D(p, () => window.SF.scene._debug.locked(5))) === false && (await D(p, () => window.SF.scene._debug.dock())).includes('tradgard'), 'Dockskåpet: trädgården är upplåst');
+  await D(p, () => window.SF.leaveDockskap()); await sleep(300);
+  await ctx.close();
+  // ny telefon: rummet hämtas tyst från Apple-kontot
+  const tx = { transactionId: 'tx-dock', productIdentifier: 'io.eightbitcat.pixelcity.dock.tradgard', purchaseDate: new Date().toISOString() };
+  const { ctx: ctx2, p: p2 } = await boot({ app: true, purchases: [tx] });
+  await p2.waitForFunction(() => (JSON.parse(localStorage.getItem('snabbfilen_kop') || '{}').dock || []).includes('tradgard'), null, { timeout: 8000 }).catch(() => {});
+  ok((await kopLage(p2))?.dock?.includes('tradgard'), 'ny telefon: trädgården hämtas tyst från Apple-kontot vid start');
+  await ctx2.close();
 }
 
 // ---- 8. ny telefon ----

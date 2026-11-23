@@ -27,7 +27,7 @@ ok(await p.$$eval('#dock-lage .dl-sma .btn', (els) => els.length === 2 && getCom
 await p.click('#dock-lage [data-lage="bygga"]'); await p.waitForTimeout(300);
 ok((await dbg('d.lage()')) === 'bygga' && await p.evaluate(() => document.body.classList.contains('dock-bygga') && !document.getElementById('dock-panel').classList.contains('hidden')), 'Bygga: lådan syns, body.dock-bygga');
 const rooms = await dbg('d.rooms()');
-ok(rooms.length === 5 && rooms[4].id === 'badrum', `fem rum, badrummet sist (${rooms.map((r) => r.id).join(', ')})`);
+ok(rooms.length === 6 && rooms[4].id === 'badrum' && rooms[5].id === 'tradgard', `sex rum: badrummet, sedan 🌳 trädgården sist (${rooms.map((r) => r.id).join(', ')})`);
 const seed0 = await dbg('d.deco(0).length');
 ok(seed0 >= 5, `startmöbleringen i vardagsrummet: ${seed0} möbler`);
 ok(await p.$$eval('#dock-panel .dock-item', (els) => els.length) >= 20, 'lådan: vardagsrumsfliken har minst 20 möbler');
@@ -104,7 +104,7 @@ ok(tarta2 && !(tarta2.up > 0), 'bordet borta: tårtan står på golvet');
 await p.click('#dock-panel [data-natt]'); await p.waitForTimeout(500);
 ok(await dbg('d.natt()') === true, '🌙 Natt är på');
 const saved = await p.evaluate(() => JSON.parse(localStorage.getItem('snabbfilen_dockskap') || 'null'));
-ok(saved && saved.natt === true && saved.rooms?.length === 5 && saved.rooms[1].deco.some((d) => d.k === 'soffa'), 'sparat i snabbfilen_dockskap (natt + soffan i köket)');
+ok(saved && saved.natt === true && saved.rooms?.length === 6 && saved.rooms[1].deco.some((d) => d.k === 'soffa'), 'sparat i snabbfilen_dockskap (natt + soffan i köket, sex rum)');
 await p.click('#dock-panel [data-ut]');
 await p.waitForTimeout(600);
 ok(await p.evaluate(() => document.body.classList.contains('menu-open') && !document.body.classList.contains('dock-on')), '⬅ Tillbaka: huvudmenyn igen, lådan borta');
@@ -379,6 +379,49 @@ ok(!(await dbg(`d.deco(0)[${iGirl}]`)).slackt, 'och tänds igen');
 await p.waitForTimeout(400);
 ok(await p.evaluate(() => { const h = JSON.parse(localStorage.getItem('snabbfilen_dockskap')); return h.rooms[0].deco.some((d) => d.k === 'lampa' && d.ljus === 'rosa' && d.lit) && h.rooms[0].deco.some((d) => d.k === 'discokula'); }), 'ljusfärgen och discokulan sparas i huset');
 await p.click('#dock-lage [data-lage="bygga"]'); await p.waitForTimeout(200);
+await p.click('#dock-panel [data-flik="vardagsrum"]'); await p.waitForTimeout(100);
+
+// ---------- 5h. 🌳 trädgården (v0.172): låst tills den är köpt, sedan utesakerna, säten, årstider ----------
+ok((await dbg('d.locked(5)')) === true && (await dbg('d.deco(5).length')) >= 5 && await p.$eval('#dock-panel [data-rum="5"]', (el) => /🔒/.test(el.textContent)), `trädgården är låst från början men möblerad (${await dbg('d.deco(5).length')} saker), rumsknappen visar 🔒`);
+ok((await p.$$eval('#dock-panel [data-flik]', (els) => els.length)) === 15 && !(await p.$('#dock-panel [data-flik="tradgard"]')), 'ingen trädgårdsflik i lådan när rummet inte är köpt');
+ok(!(await dbg("d.place('parasoll', 5, 100, 200)")) && await p.evaluate(() => !document.getElementById('modal').classList.contains('hidden') && /Trädgården/.test(document.querySelector('#modal h2')?.textContent || '')), 'ställa något i det låsta rummet: nej – rutan "🌳 Trädgården" öppnas i stället');
+ok(await p.evaluate(() => /Finns att köpa i appen/.test(document.querySelector('#modal')?.textContent || '')), 'på webben: "Finns att köpa i appen Pixelcity"');
+await p.click('#modal .dlg-foot .btn:has-text("Stäng")'); await p.waitForTimeout(100);
+await dbg('d.goRoom(5)'); await p.waitForTimeout(500);
+await p.evaluate(([x, y]) => { window.SF.scene.down(x, y); window.SF.scene.up(x, y); }, [200, 150]); await p.waitForTimeout(150);
+ok(await p.evaluate(() => !document.getElementById('modal').classList.contains('hidden') && /Trädgården/.test(document.querySelector('#modal h2')?.textContent || '')), 'ett tryck i det låsta rummet öppnar samma ruta');
+await p.click('#modal .dlg-foot .btn:has-text("Stäng")'); await p.waitForTimeout(100);
+// köpt (testet låser upp direkt; i appen skriver kop.js snabbfilen_kop.dock)
+await dbg("d.unlock('tradgard')"); await p.waitForTimeout(200);
+ok((await dbg('d.locked(5)')) === false && (await p.$$eval('#dock-panel [data-flik]', (els) => els.length)) === 16 && await p.$eval('#dock-panel [data-rum="5"]', (el) => /🌳/.test(el.textContent)), 'upplåst: 🌳 på rumsknappen och trädgårdsfliken i lådan');
+await p.click('#dock-panel [data-flik="tradgard"]'); await p.waitForTimeout(200);
+ok((await p.$$eval('#dock-panel .dock-item', (els) => els.length)) >= 10 && await p.$eval('#dock-panel .dock-item[data-k="pool"] canvas', (c) => c.width > 10), 'trädgårdsfliken: minst tio utesaker med miniatyrer (poolen)');
+ok(await dbg("d.place('parasoll', 5, 100, 200)") && await dbg("d.place('studsmatta', 5, 200, 200)"), 'parasollet och studsmattan ställs ut');
+const iGunga = await dbg("d.findDeco(5, 'gunga')"), iTrad = await dbg("d.findDeco(5, 'appeltrad')"), iGrill = await dbg("d.findDeco(5, 'grill')"), iMatta = await dbg("d.findDeco(5, 'studsmatta')");
+const gungaD = await dbg(`d.deco(5)[${iGunga}]`);
+ok(await dbg(`d.placeDoll('bot4', 5, ${gungaD.x + 24}, ${gungaD.y - 2})`) && (await dbg('d.dolls()')).find((d) => d.id === 'bot4')?.sitter === true && (await dbg('d.dolls()')).find((d) => d.id === 'bot4').ry < gungaD.y - 10, 'bot4 sitter på gungans säte (högre upp än marken)');
+await p.click('#dock-lage [data-lage="leka"]'); await p.waitForTimeout(300);
+const tryckU = async (i, idx, dx = 0) => { const s = await dbg(`d.spot(5, ${idx})`); await p.evaluate(([x, y]) => { window.SF.scene.down(x, y); window.SF.scene.up(x, y); }, [s.x + dx, s.y]); await p.waitForTimeout(80); };
+await tryckU(5, iTrad);
+ok((await dbg('d.senaste()'))?.k === 'appeltrad' && (await dbg('d.fx(5, "apple")')) >= 3 && (await dbg('d.fx(5, "lov")')) >= 4, 'äppelträdet: äpplen och löv faller');
+await tryckU(5, iGrill);
+ok((await dbg(`d.deco(5)[${iGrill}]`)).lit === true && (await dbg('d.senaste()')).ljud === 'sizzle' && (await dbg('d.fx(5, "rok")')) >= 6, 'grillen tänds och ryker');
+await tryckU(5, iGunga, -14);
+ok((await dbg('d.anims()')).includes(`deco:5:${iGunga}`) && (await dbg('d.anims()')).includes('docka:bot4'), 'gungan gungar och bot4 på sätet hoppar till');
+const iPool = await dbg("d.findDeco(5, 'pool')");
+await tryckU(5, iPool);
+ok((await dbg('d.senaste()')).ljud === 'splash' && (await dbg('d.fx(5, "bubbla")')) >= 8, 'poolen plaskar');
+// årstiden i temafliken: vinter = vit gräsmatta
+await p.click('#dock-lage [data-lage="bygga"]'); await p.waitForTimeout(300);
+await p.click('#dock-panel [data-flik="teman"]'); await p.waitForTimeout(300);
+ok((await p.$$eval('#dock-panel [data-arstid]', (els) => els.length)) === 3 && (await p.$$eval('#dock-panel [data-tapet]', (els) => els.length)) === 0, 'temafliken i trädgården: tre årstider, inga tapeter');
+const gras0 = await dbg('d.pixel(5, 192, 180)');
+await p.click('#dock-panel [data-arstid="vinter"]'); await p.waitForTimeout(300);
+const gras1 = await dbg('d.pixel(5, 192, 180)');
+const lum = (h) => parseInt(h.slice(1, 3), 16) + parseInt(h.slice(3, 5), 16) + parseInt(h.slice(5, 7), 16);
+ok((await dbg('d.tema(5)')).arstid === 'vinter' && gras1 !== gras0 && lum(gras1) > lum(gras0) + 60, `vinter: gräsmattan blev snövit, ljusare (${gras0} → ${gras1}${await dbg('d.natt()') ? ', natt' : ''})`);
+await p.click('#dock-panel [data-arstid="sommar"]'); await p.waitForTimeout(200);
+await dbg("d.removeDoll('bot4')"); await dbg('d.goRoom(0)');
 await p.click('#dock-panel [data-flik="vardagsrum"]'); await p.waitForTimeout(100);
 
 // ---------- 6. från pausmenyn mitt i spelet: tillbaka till rummet ----------

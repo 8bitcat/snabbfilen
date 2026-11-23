@@ -10,6 +10,10 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.172.0] – 2026-11-23 – 🌳 Trädgården i Dockskåpet – första köpbara rummet
+- 🌳 **Trädgården i Dockskåpet** – ett sjätte rum till höger om badrummet: husets baksida med fönster och altandörr, gräsmattan, och utesaker som bara finns här: poolen, gungan, studsmattan, grillen, äppelträdet, sandlådan, parasollet, staketet, rabatten och hundkojan (fliken 🌳 i lådan). I Leka plaskar poolen, gungan gungar den som sitter på den, studsmattan får figuren att hoppa högt, grillen tänds och ryker, trädet fäller äpplen och löv. Temafliken byter årstid: sommar, höst eller vinter med snö.
+- Trädgården är husets första köpbara rum: **29 kr i 🛍️ Butiken i appen**. Tills den är köpt syns den bakom ett lås med startmöbleringen, och ett tryck visar vad som ingår. En kompis som leker hos dig ser din trädgård.
+
 ## [0.171.0] – 2026-11-23 – 🎁 Presenter att köpa i Butiken
 - 🎁 **Presenter att köpa i Butiken** (appen) – Liten present, Mellanlådan och Stora lådan läggs i 🎁 Presenter i mobilen och packas upp som de andra. Vad som finns i varje låda står i butiken: den lilla ger en sak värd minst 150 kr, mellanlådan alltid 500 kr, ett plagg och ett kortpaket, stora lådan alltid 1 500 kr, ett plagg, en möbel, ett kortpaket och en guldpokal. Bara vilket plagg eller vilken möbel det blir slumpas, bland det du inte redan har.
 

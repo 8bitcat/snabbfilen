@@ -222,6 +222,20 @@ Stor = 1 500 kr + plagg + möbel + kortpaket + guldpokal. Texterna på åtta spr
 Efter 1.3 kan produkter av samma typ skickas till granskning utan ny appversion: **Add for Review** på var och en i
 App Store Connect när `lista` visar READY_TO_SUBMIT.
 
+### Rum i Dockskåpet (2026-11-23 – spelet v0.172.0, ingen ny appversion behövs)
+
+Första köpbara rummet i lekläget 🧸 Dockskåpet (Carl 2026-11-22: "det ska även finnas ingame purchables för
+dockskåpet … du kan sätta priserna"). Engångsköp (Non-Consumable) som följer Apple-kontot (Återställ köp), sparas i
+`snabbfilen_kop.dock`. Rummet syns låst (🔒) med sin startmöblering tills det är köpt.
+
+| Reference Name | Product ID | Type | Pris |
+|---|---|---|---|
+| Trädgården i Dockskåpet | `io.eightbitcat.pixelcity.dock.tradgard` | Non-Consumable | 29 kr |
+
+Texterna på åtta språk i `app/tools/asc-iap.mjs` (PRODUKTER); `node app/tools/asc-iap.mjs allt` lägger upp
+produkten, sedan **Add for Review** i App Store Connect. Allt som fanns i Dockskåpet före (fem rum, hela
+möbelkatalogen, figurer, djur, saker, teman, Leka ihop) är och förblir gratis.
+
 ### Distribution → iOS 1.3
 
 Skapa versionen, välj Codemagic-bygget, och lägg till de fem produkterna under **In-App Purchases and Subscriptions**

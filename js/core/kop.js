@@ -30,8 +30,11 @@ export const PRODUKTER = [
   { id: 'present-liten', sku: SKU + 'present.liten', typ: 'present', storlek: 'liten', icon: '🎁', namn: $t('Liten present'), text: $t('En sak värd minst 150 kr: ett plagg, en möbel eller ett kortpaket. Slumpas bland det du inte har – alla lika troliga.') },
   { id: 'present-mellan', sku: SKU + 'present.mellan', typ: 'present', storlek: 'mellan', icon: '🎁', namn: $t('Mellanlådan'), text: $t('Alltid: 500 kr, ett plagg och ett kortpaket. Plagget slumpas bland dem du inte har – alla lika troliga.') },
   { id: 'present-stor', sku: SKU + 'present.stor', typ: 'present', storlek: 'stor', icon: '🎁', namn: $t('Stora lådan'), text: $t('Alltid: 1 500 kr, ett plagg, en möbel, ett kortpaket och en guldpokal. Slumpas bland det du inte har – alla lika troliga.') },
+  // 🌳 rum i Dockskåpet (v0.172): engångsköp som låser upp ett rum (dockskap.js läser snabbfilen_kop.dock)
+  { id: 'dock-tradgard', sku: SKU + 'dock.tradgard', typ: 'dock', rum: 'tradgard', icon: '🌳', namn: $t('Trädgården i Dockskåpet'), text: $t('Ett sjätte rum i Dockskåpet: husets baksida med gräsmatta, pool, gunga, studsmatta, grill, äppelträd och mer – för alltid.') },
 ];
 const STORLEKAR = ['liten', 'mellan', 'stor'];
+const arRum = (r) => PRODUKTER.some((p) => p.typ === 'dock' && p.rum === r);
 const TITEL = $t('🛍️ Butiken');
 
 // ---------- läget (utanför sparfilen) ----------
@@ -45,6 +48,7 @@ const tvatta = (p) => ({
   tx: Array.isArray(p?.tx) ? p.tx.filter((t) => typeof t === 'string' && t).slice(-300) : [],
   logg: Array.isArray(p?.logg) ? p.logg.slice(-100) : [],
   pres: Array.isArray(p?.pres) ? p.pres.filter((s) => STORLEKAR.includes(s)).slice(0, 20) : [],   // köpta presenter som inte hunnit in i spelet än
+  dock: Array.isArray(p?.dock) ? [...new Set(p.dock.filter(arRum))] : [],                        // 🌳 köpta rum i Dockskåpet
 });
 function las() {
   if (S) return S;
@@ -55,6 +59,7 @@ function las() {
 }
 function spara() { try { localStorage.setItem(KEY, JSON.stringify(las())); } catch { /* fullt */ } }
 export const agerBostad = (hem) => las().bostader.includes(hem);   // bostad utan hyra?
+export const agerDock = (rum) => las().dock.includes(rum);         // 🌳 rum i Dockskåpet köpt?
 export const kopPengar = () => las().pengar;                         // köpta pengar totalt (dras från livsmålet Rikedom)
 export const kopLage = () => JSON.parse(JSON.stringify(las()));      // (tester)
 
@@ -72,7 +77,7 @@ async function hamtaPriser() {
   return priser;
 }
 const arOppen = () => document.querySelector('#modal .dlg')?.dataset.title === TITEL;
-const tack = (v) => (v.typ === 'pengar' ? $t`💰 ${fmt(v.kr)} ligger i handkassan – tack!` : v.typ === 'present' ? $t('🎁 Presenten ligger i mobilen – öppna den i 🎁 Presenter!') : $t`🔑 ${v.namn} är din – ingen insats och ingen hyra. Flytta in hos Bostadsbyrån!`);
+const tack = (v) => (v.typ === 'pengar' ? $t`💰 ${fmt(v.kr)} ligger i handkassan – tack!` : v.typ === 'present' ? $t('🎁 Presenten ligger i mobilen – öppna den i 🎁 Presenter!') : v.typ === 'dock' ? $t`🌳 ${v.namn} är upplåst – öppna Dockskåpet och lek!` : $t`🔑 ${v.namn} är din – ingen insats och ingen hyra. Flytta in hos Bostadsbyrån!`);
 // 🎁 en köpt present läggs i spelets presentkö (presenter.js öppnar den); utan spel (osannolikt) väntar den i pres
 function gePresent(A, storlek, id) {
   const g = A?.game, st = las();
@@ -93,8 +98,9 @@ export function bokfor(A, tx) {
   const prod = PRODUKTER.find((p) => p.sku === tx?.productIdentifier);
   if (!prod) return null;
   const st = las(), id = String(tx.transactionId || '');
-  if (tx.revocationDate) {   // Apple tog tillbaka köpet (återbetalning): bostaden försvinner, pengar som redan är spenderade rörs inte
+  if (tx.revocationDate) {   // Apple tog tillbaka köpet (återbetalning): bostaden/rummet försvinner, pengar som redan är spenderade rörs inte
     if (prod.typ === 'bostad' && st.bostader.includes(prod.hem)) { st.bostader = st.bostader.filter((h) => h !== prod.hem); spara(); }
+    if (prod.typ === 'dock' && st.dock.includes(prod.rum)) { st.dock = st.dock.filter((r) => r !== prod.rum); spara(); }
     return null;
   }
   if (id && st.tx.includes(id)) return null;   // redan bokförd (köpet + transactionUpdated, eller Återställ köp)
@@ -103,6 +109,7 @@ export function bokfor(A, tx) {
   if (prod.typ === 'pengar') { st.pengar += prod.kr; if (g) { g.money += prod.kr; g.save?.(); } }
   else if (prod.typ === 'bostad') { if (!st.bostader.includes(prod.hem)) st.bostader.push(prod.hem); }
   else if (prod.typ === 'present') gePresent(A, prod.storlek, id);
+  else if (prod.typ === 'dock') { if (!st.dock.includes(prod.rum)) st.dock.push(prod.rum); }
   st.logg.push({ t: new Date().toISOString().slice(0, 16), id: prod.id });
   if (st.logg.length > 100) st.logg.shift();
   spara();
@@ -113,7 +120,7 @@ let upptagen = false;
 async function kopa(A, prod) {
   const P = plugin();
   if (!P || !prod || upptagen) return;
-  if (prod.typ === 'bostad' && agerBostad(prod.hem)) { toast($t('Den är redan din.')); return; }
+  if ((prod.typ === 'bostad' && agerBostad(prod.hem)) || (prod.typ === 'dock' && agerDock(prod.rum))) { toast($t('Den är redan din.')); return; }
   upptagen = true;
   if (arOppen()) rita(A, prod.id);
   try {
@@ -143,6 +150,7 @@ export async function aterstall(A, { tyst = false } = {}) {
     for (const tx of r?.purchases || []) {
       const p = PRODUKTER.find((x) => x.sku === tx?.productIdentifier);
       if (p?.typ === 'bostad' && !tx.revocationDate && !st.bostader.includes(p.hem)) { st.bostader.push(p.hem); n++; }
+      if (p?.typ === 'dock' && !tx.revocationDate && !st.dock.includes(p.rum)) { st.dock.push(p.rum); n++; }   // 🌳 rummen följer med Apple-kontot
     }
     if (n) spara();
     if (!tyst) { toast(n ? $t`${n} köp återställda.` : $t('Allt du köpt finns redan här.'), n ? 'good' : ''); if (arOppen()) rita(A); }
@@ -177,7 +185,7 @@ export function openButik(A) {
 function rita(A, laddar = null, fel = false) {
   const g = A.game, st = las();
   const rows = PRODUKTER.map((p) => {
-    const din = p.typ === 'bostad' && st.bostader.includes(p.hem);
+    const din = (p.typ === 'bostad' && st.bostader.includes(p.hem)) || (p.typ === 'dock' && st.dock.includes(p.rum));
     const pris = priser?.[p.sku]?.pris || '';
     const knapp = din ? `<span class="ok">${$t('✓ Din')}</span>`
       : `<button class="btn btn-small ${pris && !laddar ? 'btn-go' : ''}" data-kop="${p.id}" ${!pris || laddar ? 'disabled' : ''}>${laddar === p.id ? $t('Köper …') : pris || (fel ? '–' : '…')}</button>`;

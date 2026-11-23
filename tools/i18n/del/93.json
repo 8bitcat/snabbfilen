@@ -1,0 +1,102 @@
+[
+ {
+  "i": 10331,
+  "f": "js/scenes/dockskap-ute.js",
+  "k": "Höst"
+ },
+ {
+  "i": 10332,
+  "f": "js/scenes/dockskap-ute.js",
+  "k": "Vinter"
+ },
+ {
+  "i": 10333,
+  "f": "js/scenes/dockskap-ute.js",
+  "k": "Poolen"
+ },
+ {
+  "i": 10334,
+  "f": "js/scenes/dockskap-ute.js",
+  "k": "Gungan"
+ },
+ {
+  "i": 10335,
+  "f": "js/scenes/dockskap-ute.js",
+  "k": "Studsmattan"
+ },
+ {
+  "i": 10336,
+  "f": "js/scenes/dockskap-ute.js",
+  "k": "Grillen"
+ },
+ {
+  "i": 10337,
+  "f": "js/scenes/dockskap-ute.js",
+  "k": "Äppelträdet"
+ },
+ {
+  "i": 10338,
+  "f": "js/scenes/dockskap-ute.js",
+  "k": "Sandlådan"
+ },
+ {
+  "i": 10339,
+  "f": "js/scenes/dockskap-ute.js",
+  "k": "Parasollet"
+ },
+ {
+  "i": 10340,
+  "f": "js/scenes/dockskap-ute.js",
+  "k": "Staketet"
+ },
+ {
+  "i": 10341,
+  "f": "js/scenes/dockskap-ute.js",
+  "k": "Rabatten"
+ },
+ {
+  "i": 10342,
+  "f": "js/scenes/dockskap-ute.js",
+  "k": "Hundkojan"
+ },
+ {
+  "i": 10343,
+  "f": "js/scenes/dockskap.js",
+  "k": "Husets baksida med gräsmatta: poolen, gungan, studsmattan, grillen, äppelträdet, sandlådan, parasollet, staketet, rabatten och hundkojan – och alla växter och bänkar ur lådan. Sommar, höst och vinter."
+ },
+ {
+  "i": 10344,
+  "f": "js/scenes/dockskap.js",
+  "k": "Trädgård"
+ },
+ {
+  "i": 10345,
+  "f": "js/scenes/dockskap.js",
+  "k": "🔒 Köps i 🛍️ Butiken för {0} kr – sedan är rummet ditt för alltid."
+ },
+ {
+  "i": 10346,
+  "f": "js/scenes/dockskap.js",
+  "k": "🔒 Finns att köpa i appen Pixelcity (🛍️ Butiken i mobilen)."
+ },
+ {
+  "i": 10347,
+  "f": "js/scenes/dockskap.js",
+  "k": "🛍️ Till Butiken"
+ },
+ {
+  "i": 10348,
+  "f": "js/scenes/dockskap.js",
+  "k": "{0} KR I BUTIKEN"
+ },
+ {
+  "i": 10349,
+  "f": "js/scenes/dockskap.js",
+  "k": "FINNS I APPEN"
+ },
+ {
+  "i": 10350,
+  "f": "js/scenes/dockskap.js",
+  "k": "Årstid"
+ }
+]

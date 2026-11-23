@@ -73,6 +73,12 @@ const PRODUKTER = [
     es: ['La caja grande', 'Siempre 1.500 €, prenda, mueble, sobre, copa.'], de: ['Die große Kiste', 'Immer 1.500 €, Outfit, Möbel, Karten, Pokal.'],
     fr: ['La grande boîte', 'Toujours 1 500 €, tenue, meuble, cartes.'], pl: ['Duża skrzynka', 'Zawsze 1 500 zł, strój, mebel, karty, puchar.'],
     it: ['La scatola grande', 'Sempre 1.500 €, capo, mobile, carte, coppa.'], pt: ['A caixa grande', 'Sempre 1.500 €, peça, móvel, cartas, taça.'] } },
+  // 🌳 rum i Dockskåpet (v0.172, 2026-11-23): engångsköp som låser upp ett rum i lekläget
+  { namn: 'Trädgården i Dockskåpet', sku: SKU + 'dock.tradgard', typ: 'NON_CONSUMABLE', pris: 29, loc: {
+    sv: ['Trädgården i Dockskåpet', 'Ett rum till: gräsmatta, pool, gunga, grill.'], en: ['Dollhouse Garden', 'An extra room: lawn, pool, swing, barbecue.'],
+    es: ['El jardín de la casita', 'Otra sala: césped, piscina, columpio, barbacoa.'], de: ['Puppenhaus-Garten', 'Ein Raum mehr: Rasen, Pool, Schaukel, Grill.'],
+    fr: ['Le jardin de la maison', 'Une pièce de plus : pelouse, piscine, balançoire.'], pl: ['Ogród domku dla lalek', 'Dodatkowy pokój: trawnik, basen, huśtawka, grill.'],
+    it: ['Il giardino della casetta', 'Una stanza in più: prato, piscina, altalena.'], pt: ['O jardim da casinha', 'Mais uma divisão: relvado, piscina, baloiço.'] } },
 ];
 for (const p of PRODUKTER) for (const [l, [n, d]] of Object.entries(p.loc)) { if (n.length > 30 || d.length > 45) throw new Error(`för lång text (${p.sku} ${l}): "${n}" ${n.length}/30, "${d}" ${d.length}/45`); }
 
