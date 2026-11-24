@@ -44,14 +44,39 @@ export const LOWER = {
 // gemener med accent för de andra språken (2026-10-07): grundbokstaven med märket i de två översta
 // raderna (där x-höjdsbokstäverna är tomma; i och j tappar sin prick), cedilj och ogonek under baslinjen
 import { MARKS } from '../../js/core/floor-pix.js';
-const LOWER_ACC = { acute: 'áéíóúćńśźý', grave: 'àèìòù', circ: 'âêîôû', uml: 'ëïüÿ', tilde: 'ãõñ', dot: 'ż', cedil: 'ç', ogonek: 'ąę' };
-for (const [kind, chars] of Object.entries(LOWER_ACC)) for (const ch of chars) {
-  if (LOWER[ch]) continue;
-  const b = LOWER[ch.normalize('NFD')[0]];
-  if (!b) continue;
-  const w = b.rows[0].length, m = MARKS.big[kind][Math.min(5, Math.max(3, w))].map((r) => r.padEnd(w, '.').slice(0, Math.max(w, r.length)));
-  LOWER[ch] = kind === 'cedil' || kind === 'ogonek' ? G(b.rows, [...b.down, ...m].slice(0, 3)) : G([...m, ...b.rows.slice(2)], b.down);
+// v0.177: också turkiskans ş ğ och vietnamesiskans ă â ê ô ơ ư + tonmärken, staplade (ấ = â + akut): det första
+// märket ovanför tar de två tomma översta raderna, nästa hamnar i 'up'. ơ ư đ ı ritas för hand nedan.
+const KIND = { '́': 'acute', '̀': 'grave', '̂': 'circ', '̈': 'uml', '̃': 'tilde', '̇': 'dot', '̧': 'cedil', '̨': 'ogonek', '̆': 'breve', '̉': 'hook', '̣': 'dotbelow' };
+const BELOW = new Set(['cedil', 'ogonek', 'dotbelow']);
+const VIET = 'aăâeêioôơuưy'.split('').flatMap((v) => ['', '́', '̀', '̉', '̃', '̣'].map((t) => (v + t).normalize('NFC')));
+const LOWER_ACC = [...'áéíóúćńśźýàèìòùâêîôûëïüÿãõñżçąęşğ', ...VIET];
+function composeLower() {
+  for (const ch of LOWER_ACC) {
+    if (LOWER[ch]) continue;
+    const nfd = ch.normalize('NFD');
+    let b = null, rest = '';
+    for (let k = nfd.length - 1; k >= 1 && !b; k--) { const pre = nfd.slice(0, k).normalize('NFC'); if (pre.length === 1 && LOWER[pre]) { b = LOWER[pre]; rest = nfd.slice(k); } }
+    if (!b) continue;
+    const w = b.rows[0].length, tom = '.'.repeat(w);
+    let rows = [...b.rows], up = [...(b.up || [])], down = [...(b.down || [])], ok = true;
+    for (const c of rest) {
+      const kind = KIND[c], m0 = kind && MARKS.big[kind]?.[Math.min(5, Math.max(3, w))];
+      if (!m0) { ok = false; break; }
+      const m = m0.map((r) => r.padEnd(w, '.').slice(0, Math.max(w, r.length)));
+      if (BELOW.has(kind)) down = [...down, ...m].slice(0, 3);
+      else if (rows[0] === tom && rows[1] === tom) { rows = [...m.slice(-2), ...rows.slice(2)]; up = [...m.slice(0, -2), ...up]; }
+      else up = [...m, ...up];
+    }
+    if (ok) LOWER[ch] = G(rows, down, up);
+  }
 }
+Object.assign(LOWER, {
+  'ı': G(['...', '...', '##.', '.#.', '.#.', '.#.', '###']),
+  'đ': G(['....#', '..###', '.####', '#...#', '#...#', '#...#', '.####']),
+  'ơ': G(['......', '.....#', '.###.#', '#...#.', '#...#.', '#...#.', '.###..']),
+  'ư': G(['......', '.....#', '#...##', '#...#.', '#...#.', '#...#.', '.####.']),
+});
+composeLower();
 Object.assign(LOWER, {
   'ł': G(['.##..', '..#..', '..#.#', '..##.', '.##..', '..#..', '.###.']),
   'ß': G(['.##..', '#..#.', '#.#..', '#..#.', '#...#', '#...#', '#.##.']),

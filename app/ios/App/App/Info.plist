@@ -19,6 +19,9 @@
 		<string>nl</string>
 		<string>nb</string>
 		<string>da</string>
+		<string>id</string>
+		<string>tr</string>
+		<string>vi</string>
 	</array>
 	<key>CFBundleDisplayName</key>
         <string>Pixelcity</string>

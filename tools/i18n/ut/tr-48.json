@@ -1,0 +1,14 @@
+{
+ "🐾 {0} köpte {1} på djurNET – du fick {2}!": "🐾 {1} PetNET'te satıldı – alıcı {0}. {2} kazandın!",
+ "📡 djurNET når inte servern just nu – försök igen när du är uppkopplad.": "📡 PetNET şu an sunucuya ulaşamıyor – internete bağlanınca tekrar dene.",
+ "🐾 En vän hann före och köpte djuret!": "🐾 Bir arkadaşın senden önce davranıp hayvanı aldı!",
+ "👥 Syns för dina vänner också": "👥 Arkadaşların da görür",
+ "👥 Från dina vänner": "👥 Arkadaşlarından",
+ "Hämtar vännernas annonser …": "Arkadaşların ilanları yükleniyor …",
+ "📡 Kunde inte hämta vännernas annonser just nu.": "📡 Arkadaşların ilanları şu an yüklenemedi.",
+ "Dina vänner har inga djur till salu just nu.": "Arkadaşlarının şu an satılık hayvanı yok.",
+ "Säljs av din vän {0}": "Satıcı: arkadaşın {0}",
+ "🐾 Någon hann före – djuret är redan sålt.": "🐾 Biri senden önce davrandı – hayvan satılmış.",
+ "🐾 Priset har ändrats – titta igen.": "🐾 Fiyat değişti – tekrar bak.",
+ "🐾 Köpet gick inte igenom.": "🐾 Satın alma gerçekleşmedi."
+}

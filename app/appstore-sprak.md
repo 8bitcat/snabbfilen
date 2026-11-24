@@ -45,7 +45,7 @@ Invite friends to a party, go to the movies, ride a bike or a moped through town
 PLAY TOGETHER
 Everyone playing at the same time ends up in the same city. Visit each other's homes, work the same shift and talk in voice chat if you like. Bad words are filtered out, and anyone who is mean can be blocked and reported.
 
-Play in 8 languages: English, Spanish, German, French, Polish, Italian, Portuguese and Swedish.
+Play in 14 languages: English, Spanish, German, French, Polish, Italian, Portuguese, Swedish, Dutch, Norwegian, Danish, Indonesian, Turkish and Vietnamese.
 
 No accounts, no ads and no in-app purchases. The game saves on your phone and keeps getting new things.
 ```
@@ -85,7 +85,7 @@ Invita a tus amigos a una fiesta, ve al cine, recorre la ciudad en bici o en mot
 JUGAD JUNTOS
 Todos los que juegan a la vez están en la misma ciudad. Visitaos en casa, trabajad en el mismo turno y hablad por chat de voz si queréis. Las palabrotas se filtran, y a quien se porte mal se le puede bloquear y denunciar.
 
-Juega en 8 idiomas: español, inglés, alemán, francés, polaco, italiano, portugués y sueco.
+Juega en 14 idiomas: español, inglés, alemán, francés, polaco, italiano, portugués, sueco, neerlandés, noruego, danés, indonesio, turco y vietnamita.
 
 Sin cuentas, sin anuncios y sin compras dentro de la app. El juego se guarda en tu teléfono y no para de recibir novedades.
 ```
@@ -125,7 +125,7 @@ Lade Freunde zur Party ein, geh ins Kino, fahr mit Fahrrad oder Moped durch die 
 ZUSAMMEN SPIELEN
 Alle, die gleichzeitig spielen, landen in derselben Stadt. Besucht euch zu Hause, arbeitet in derselben Schicht und redet im Sprachchat, wenn ihr wollt. Schimpfwörter werden herausgefiltert, und wer gemein ist, kann blockiert und gemeldet werden.
 
-Spielbar in 8 Sprachen: Deutsch, Englisch, Spanisch, Französisch, Polnisch, Italienisch, Portugiesisch und Schwedisch.
+Spielbar in 14 Sprachen: Deutsch, Englisch, Spanisch, Französisch, Polnisch, Italienisch, Portugiesisch, Schwedisch, Niederländisch, Norwegisch, Dänisch, Indonesisch, Türkisch und Vietnamesisch.
 
 Keine Konten, keine Werbung und keine In-App-Käufe. Das Spiel speichert auf deinem Handy und bekommt ständig Neues.
 ```
@@ -165,7 +165,7 @@ Invite tes amis à une fête, va au cinéma, traverse la ville à vélo ou en sc
 JOUEZ ENSEMBLE
 Tous ceux qui jouent en même temps se retrouvent dans la même ville. Rendez-vous visite, travaillez pendant le même service et parlez en chat vocal si vous voulez. Les gros mots sont filtrés, et on peut bloquer et signaler ceux qui sont méchants.
 
-Disponible en 8 langues : français, anglais, espagnol, allemand, polonais, italien, portugais et suédois.
+Disponible en 14 langues : français, anglais, espagnol, allemand, polonais, italien, portugais, suédois, néerlandais, norvégien, danois, indonésien, turc et vietnamien.
 
 Pas de compte, pas de pub et pas d'achats intégrés. Le jeu s'enregistre sur ton téléphone et reçoit sans cesse des nouveautés.
 ```
@@ -205,7 +205,7 @@ Zaproś znajomych na imprezę, idź do kina, jeźdź po mieście rowerem albo sk
 GRAJCIE RAZEM
 Wszyscy, którzy grają w tym samym czasie, trafiają do tego samego miasta. Odwiedzajcie się w domach, pracujcie na tej samej zmianie i rozmawiajcie na czacie głosowym. Brzydkie słowa są filtrowane, a niemiłych graczy można zablokować i zgłosić.
 
-Gra w 8 językach: polskim, angielskim, hiszpańskim, niemieckim, francuskim, włoskim, portugalskim i szwedzkim.
+Gra w 14 językach: polskim, angielskim, hiszpańskim, niemieckim, francuskim, włoskim, portugalskim, szwedzkim, niderlandzkim, norweskim, duńskim, indonezyjskim, tureckim i wietnamskim.
 
 Bez kont, bez reklam i bez zakupów w aplikacji. Gra zapisuje się na telefonie i ciągle dostaje nowości.
 ```
@@ -245,7 +245,7 @@ Invita gli amici a una festa, vai al cinema, gira la città in bici o in motorin
 GIOCATE INSIEME
 Chi gioca nello stesso momento si ritrova nella stessa città. Andate a trovarvi a casa, lavorate nello stesso turno e parlate in chat vocale se volete. Le parolacce vengono filtrate, e chi si comporta male può essere bloccato e segnalato.
 
-Gioca in 8 lingue: italiano, inglese, spagnolo, tedesco, francese, polacco, portoghese e svedese.
+Gioca in 14 lingue: italiano, inglese, spagnolo, tedesco, francese, polacco, portoghese, svedese, olandese, norvegese, danese, indonesiano, turco e vietnamita.
 
 Niente account, niente pubblicità e niente acquisti in-app. Il gioco si salva sul telefono e riceve sempre novità.
 ```
@@ -285,7 +285,7 @@ Convida os amigos para uma festa, vai ao cinema, anda pela cidade de bicicleta o
 JOGUEM JUNTOS
 Quem joga ao mesmo tempo vai parar à mesma cidade. Visitem-se em casa, trabalhem no mesmo turno e falem no chat de voz se quiserem. Os palavrões são filtrados, e quem se portar mal pode ser bloqueado e denunciado.
 
-Joga em 8 línguas: português, inglês, espanhol, alemão, francês, polaco, italiano e sueco.
+Joga em 14 línguas: português, inglês, espanhol, alemão, francês, polaco, italiano, sueco, neerlandês, norueguês, dinamarquês, indonésio, turco e vietnamita.
 
 Sem contas, sem anúncios e sem compras na app. O jogo fica guardado no teu telemóvel e recebe sempre novidades.
 ```
@@ -325,7 +325,7 @@ Nodig vrienden uit voor een feestje, ga naar de bios, rij op de fiets of de scoo
 SAMEN SPELEN
 Iedereen die tegelijk speelt, komt in dezelfde stad terecht. Ga bij elkaar op bezoek, werk dezelfde dienst en praat via de voicechat als je wilt. Scheldwoorden worden eruit gefilterd, en wie gemeen doet, kan worden geblokkeerd en gemeld.
 
-Speel in 11 talen: Nederlands, Engels, Spaans, Duits, Frans, Pools, Italiaans, Portugees, Zweeds, Noors en Deens.
+Speel in 14 talen: Nederlands, Engels, Spaans, Duits, Frans, Pools, Italiaans, Portugees, Zweeds, Noors, Deens, Indonesisch, Turks en Vietnamees.
 
 Geen accounts en geen reclame. Het spel wordt op je telefoon opgeslagen en krijgt steeds nieuwe dingen.
 ```
@@ -365,7 +365,7 @@ Inviter venner på fest, gå på kino, sykle eller kjør moped gjennom byen, bli
 SPILL SAMMEN
 Alle som spiller samtidig, havner i samme by. Besøk hverandre hjemme, jobb samme skift og snakk i talechatten om dere vil. Stygge ord filtreres bort, og den som er slem, kan blokkeres og rapporteres.
 
-Spill på 11 språk: norsk, engelsk, spansk, tysk, fransk, polsk, italiensk, portugisisk, svensk, nederlandsk og dansk.
+Spill på 14 språk: norsk, engelsk, spansk, tysk, fransk, polsk, italiensk, portugisisk, svensk, nederlandsk, dansk, indonesisk, tyrkisk og vietnamesisk.
 
 Ingen kontoer og ingen reklame. Spillet lagres på telefonen din og får stadig nye ting.
 ```
@@ -405,7 +405,127 @@ Inviter venner til fest, gå i biografen, kør på cykel eller knallert gennem b
 SPIL SAMMEN
 Alle, der spiller samtidig, ender i den samme by. Besøg hinanden hjemme, arbejd på samme vagt og snak i stemmechatten, hvis I har lyst. Grimme ord bliver filtreret væk, og den, der er led, kan blokeres og anmeldes.
 
-Spil på 11 sprog: dansk, engelsk, spansk, tysk, fransk, polsk, italiensk, portugisisk, svensk, nederlandsk og norsk.
+Spil på 14 sprog: dansk, engelsk, spansk, tysk, fransk, polsk, italiensk, portugisisk, svensk, nederlandsk, norsk, indonesisk, tyrkisk og vietnamesisk.
 
 Ingen konti og ingen reklamer. Spillet gemmes på din telefon og får hele tiden nye ting.
+```
+
+---
+
+## Bahasa Indonesia – Indonesien
+
+**Subtitle:** `Simulator hidup ala pixel art`
+
+**Promotional Text**
+```
+Satu kehidupan utuh dalam pixel art: kerja, cari rumah, dekorasi, adopsi hewan, bikin pesta, dan jelajahi Kota Pixel – sendiri atau bareng keluarga di kota yang sama.
+```
+
+**Keywords**
+```
+simulasi,kota,keluarga,anak,hewan,kucing,anjing,dekorasi,kerja,salon,baju,bertani,pesta,mainan
+```
+
+**Description**
+```
+Selamat datang di Kota Pixel! Kamu pindah ke sini dengan Rp 250 di kantong dan sebuah karavan tua yang berkarat – sisanya terserah kamu.
+
+KERJA DAN NAIK PANGKAT
+14 pekerjaan berbeda, dari pizzeria dan warung burger sampai bandara, puskesmas, dan bengkel mobil. Naik jabatan jadi kepala shift lalu bos – atau buka food truck sendiri.
+
+TEMUKAN RUMAHMU
+Kumpulkan rupiah demi rupiah untuk apartemen, rumah deret, vila, atau rumah tani di desa. Tata ruangan satu per satu dengan lebih dari seratus jenis mebel, masak di dapur, dan tanam sayur di kebun.
+
+BELANJA DAN BERGAYA
+Toko busana, toko mainan, toko mebel raksasa, dan salon dengan segudang model rambut dan warna – juga toko hewan, tempat anak kucing, anak anjing, dan anak kelinci menunggu rumah baru.
+
+BANYAK YANG BISA DILAKUKAN
+Undang teman-teman ke pesta, nonton di bioskop, keliling kota naik sepeda atau motor, jadi petani, dan jelajahi Kidul, taman, Pinggiran, Kampung Jati, dan Sudirman – siang dan malam, saat cerah maupun hujan. Makan ikan goreng di Saung Ikan di ujung dermaga dan intip kalau-kalau lumba-lumbanya muncul!
+
+MAIN BERSAMA
+Semua yang main di waktu yang sama akan berkumpul di kota yang sama. Saling berkunjung ke rumah, kerja di shift yang sama, dan bicara lewat obrolan suara kalau mau. Kata-kata kasar disaring, dan siapa pun yang bersikap jahat bisa diblokir dan dilaporkan.
+
+Mainkan dalam 14 bahasa: Indonesia, Inggris, Spanyol, Jerman, Prancis, Polandia, Italia, Portugis, Swedia, Belanda, Norwegia, Denmark, Turki, dan Vietnam.
+
+Tanpa akun dan tanpa iklan. Game ini tersimpan di ponselmu dan selalu ada hal baru yang ditambahkan.
+```
+
+---
+
+## Türkçe – Turkiet, också för Cypern
+
+**Subtitle:** `Pikselli yaşam simülasyonu`
+
+**Promotional Text**
+```
+Piksel sanatıyla koca bir hayat: çalış, ev bul, dekore et, evcil hayvan sahiplen, parti ver ve Pixelkent'i keşfet – tek başına ya da ailenle aynı şehirde.
+```
+
+**Keywords**
+```
+şehir,aile,çocuk,evcil hayvan,kedi,köpek,dekorasyon,iş,kuaför,kıyafet,çiftlik,parti,oyuncak,hayat
+```
+
+**Description**
+```
+Pixelkent'e hoş geldin! Cebinde 250 TL ve paslı, eski bir karavanla şehre taşınıyorsun – gerisi sana kalmış.
+
+ÇALIŞ, YÜKSEL
+Pizzacıdan ve burgerciden havalimanına, sağlık ocağına ve oto tamirhanesine kadar 14 farklı iş. Vardiya şefliğine, sonra patronluğa terfi et – ya da kendi yemek kamyonunu aç.
+
+KENDİNE BİR YUVA BUL
+Bir daire, bir sıra ev, bir villa ya da köyde bir çiftlik için lira lira biriktir. Yüzden fazla mobilya çeşidiyle odaları tek tek döşe, mutfakta yemek pişir ve bahçede sebze yetiştir.
+
+ALIŞVERİŞ YAP, SÜSLEN
+Giyim mağazası, oyuncakçı, mobilya devi ve bir sürü saç modeli ve rengiyle kuaför – bir de yavru kedilerin, köpeklerin ve tavşanların yuva beklediği pet shop.
+
+YAPACAK ÇOK ŞEY VAR
+Arkadaşlarını partiye çağır, sinemaya git, bisikletle ya da mobiletle şehri dolaş, çiftçi ol ve Güney'i, parkı, Banliyö'yü, Çınarlı'yı ve Plazalar'ı keşfet – gündüz ve gece, güneşte ve yağmurda. İskelenin ucundaki Balıkçı'da balık ekmek ye ve yunusu kaçırma!
+
+BİRLİKTE OYNA
+Aynı anda oynayan herkes aynı şehirde buluşur. Arkadaşlarına misafir git ya da onları evinde ağırla, aynı vardiyada çalış ve istersen sesli sohbette konuş. Kötü sözler filtrelenir; kaba davranan kişileri engelleyebilir ve şikâyet edebilirsin.
+
+14 dilde oyna: Türkçe, İngilizce, İspanyolca, Almanca, Fransızca, Lehçe, İtalyanca, Portekizce, İsveççe, Hollandaca, Norveççe, Danca, Endonezce ve Vietnamca.
+
+Hesap yok, reklam yok. Oyun telefonuna kaydedilir ve sürekli yeni şeyler eklenir.
+```
+
+---
+
+## Tiếng Việt – Vietnam
+
+**Subtitle:** `Mô phỏng cuộc sống pixel`
+
+**Promotional Text**
+```
+Cả một cuộc đời bằng pixel: đi làm, tìm nhà, trang trí, nuôi thú cưng, mở tiệc và khám phá Thành phố Pixel – một mình hoặc cùng cả nhà trong cùng một thành phố.
+```
+
+**Keywords**
+```
+thành phố,gia đình,trẻ em,thú cưng,mèo,chó,trang trí,việc làm,cắt tóc,quần áo,nông trại,đồ chơi
+```
+
+**Description**
+```
+Chào mừng bạn đến Thành phố Pixel! Bạn chuyển đến với 250 đ trong túi và một chiếc xe cắm trại cũ gỉ sét – mọi thứ còn lại là do bạn quyết định.
+
+ĐI LÀM VÀ THĂNG TIẾN
+14 công việc khác nhau, từ tiệm pizza và quán burger đến sân bay, trạm y tế và gara ô tô. Được thăng chức lên trưởng ca rồi làm sếp – hoặc mở xe bán đồ ăn của riêng bạn.
+
+TÌM MỘT MÁI ẤM
+Dành dụm từng đồng để mua căn hộ, nhà phố, biệt thự hay một nông trại ở làng quê. Bày biện từng phòng với hơn một trăm loại đồ nội thất, nấu ăn trong bếp và trồng rau ngoài vườn.
+
+MUA SẮM VÀ LÀM ĐẸP
+Cửa hàng quần áo, tiệm đồ chơi, siêu thị nội thất khổng lồ và tiệm cắt tóc với vô số kiểu tóc và màu tóc – cùng cửa hàng thú cưng, nơi những chú mèo con, cún con và thỏ con đang chờ một mái nhà.
+
+THẬT NHIỀU TRÒ VUI
+Mời bạn bè đến dự tiệc, đi xem phim, đạp xe hoặc chạy xe máy quanh thành phố, làm nông dân và khám phá Phố Cổ, công viên, Ngoại Ô, Xóm Hoa Đào và Quận 1 – cả ngày lẫn đêm, dù nắng hay mưa. Ăn cá chiên giòn ở Quán Cá ngoài cầu tàu và nhớ để ý tìm chú cá heo nhé!
+
+CÙNG NHAU CHƠI
+Tất cả những ai chơi cùng lúc sẽ gặp nhau trong cùng một thành phố. Ghé thăm nhà nhau, làm chung một ca và trò chuyện thoại nếu muốn. Từ ngữ xấu sẽ bị lọc, và ai cư xử không đẹp đều có thể bị chặn và báo cáo.
+
+Chơi bằng 14 ngôn ngữ: tiếng Việt, tiếng Anh, tiếng Tây Ban Nha, tiếng Đức, tiếng Pháp, tiếng Ba Lan, tiếng Ý, tiếng Bồ Đào Nha, tiếng Thụy Điển, tiếng Hà Lan, tiếng Na Uy, tiếng Đan Mạch, tiếng Indonesia và tiếng Thổ Nhĩ Kỳ.
+
+Không cần tài khoản và không có quảng cáo. Trò chơi được lưu trên điện thoại của bạn và liên tục có thêm điều mới.
 ```

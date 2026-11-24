@@ -9,7 +9,7 @@ import path from 'path';
 import { pathToFileURL } from 'url';
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Z]:)/, '$1')), '..');
-const LANGS = ['en', 'es', 'de', 'fr', 'pl', 'it', 'pt', 'nl', 'nb', 'da'];
+const LANGS = ['en', 'es', 'de', 'fr', 'pl', 'it', 'pt', 'nl', 'nb', 'da', 'id', 'tr', 'vi'];
 const files = [];
 (function walk(d) { for (const e of fs.readdirSync(d, { withFileTypes: true })) { const p = path.join(d, e.name); if (e.isDirectory()) { if (e.name !== 'i18n') walk(p); } else if (e.name.endsWith('.js') && !(e.name === 'i18n.js' && d.endsWith('core'))) files.push(p); } })(path.join(ROOT, 'js'));
 

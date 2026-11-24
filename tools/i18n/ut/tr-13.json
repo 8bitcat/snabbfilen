@@ -1,0 +1,19 @@
+{
+ "Zoom": "Yakınlaştırma",
+ "NÄRA": "YAKIN",
+ "VID": "GENİŞ",
+ "RAM": "TAM",
+ "Karta": "Harita",
+ "Taxi": "Taksi",
+ "Kompisar": "Arkadaşlar",
+ "Chatt": "Sohbet",
+ "Röst": "Ses",
+ "Livsmål": "Hedefler",
+ "Veckan": "Hafta",
+ "Dagboken": "Günlük",
+ "Inställningar": "Ayarlar",
+ "Mobilen: karta, taxi, kompisar, chatt, livsmål och inställningar": "Telefon: harita, taksi, arkadaşlar, sohbet, hedefler ve ayarlar",
+ "Mobilen": "Telefon",
+ "{0} · dag {1}": "{0} · {1}. gün",
+ "I mobilen 📱 nere till höger finns kartan, kompisarna och livsmålen. På kartan hittar du fler jobb, och under Livsmål ser du vad du sparar till. Ju mer du jobbar, desto bättre betalt.": "Sağ alttaki telefonda 📱 harita, arkadaşlar ve hedefler var. Haritada daha fazla iş bulursun, Hedefler'de de ne için para biriktirdiğini görürsün. Ne kadar çok çalışırsan o kadar iyi kazanırsın."
+}

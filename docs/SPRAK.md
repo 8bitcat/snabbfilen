@@ -3,7 +3,8 @@
 Carl 2026-10-07: spelet ska finnas på **engelska, spanska, tyska, franska, polska, italienska och
 portugisiska**, med **lokala namn** på staden, stadsdelarna, gatorna, butikerna och personerna.
 Carl 2026-11-23 (v0.176): **nederländska, norska (bokmål) och danska** – "billigast, bara översättning,
-säljer direkt". Tio språk utöver svenskan. Språklistorna står i `js/core/i18n.js` (LANGS), `tools/i18n-nycklar.mjs`,
+säljer direkt". Carl samma dag (v0.177): **indonesiska, turkiska och vietnamesiska** – "de befolkningstätaste
+länderna vi inte har med som ändå har samma skrivsätt". Tretton språk utöver svenskan. Språklistorna står i `js/core/i18n.js` (LANGS), `tools/i18n-nycklar.mjs`,
 `tools/i18n-bygg.mjs`, `tools/i18n-bredd.mjs`, `tools/sprak-test.mjs`, appens `Info.plist` (CFBundleLocalizations
 + `<id>.lproj/InfoPlist.strings`, registrerade i `App.xcodeproj/project.pbxproj`), `app/appstore-sprak.md` och
 `app/tools/skarmbilder.mjs` (RUBRIKER). Ett nytt språk läggs till på alla ställena.
@@ -58,6 +59,9 @@ stora HTML-block med loopar inuti. Märk i stället de enskilda texterna inuti.
 | nl | € 69 |
 | nb | 69 kr |
 | da | 69 kr. |
+| id | Rp 69 |
+| tr | 69 TL |
+| vi | 69 đ |
 
 Beloppen är desamma på alla språk. Bara tecknet byts.
 
@@ -107,5 +111,8 @@ Pixeltypsnitten (`SMALL` och `BIG` i `js/core/floor-pix.js`) och menyernas Pixel
 (`tools/pixelfont`, byggs med `node tools/pixelfont/build.mjs`) har accenterna för alla språken:
 
 - ÁÀÂÃÄÅ, ÇĆ, ÉÈÊË, ÍÌÎÏ, ÑŃ, ÓÒÔÕÖ, ŚŹŻ, ÚÙÛÜ, ŸÝ, ĄĘ, Ł, Œ, Æ, Ø, ¡, ¿ (även gemener i Pixelstad)
+- v0.177: turkiskans Ş Ğ İ (ı blir I i versaler) och vietnamesiskans Ă Â Ê Ô Ơ Ư Đ med de fem tonmärkena, staplade
+  (Ấ, Ặ, Ở, Ữ, Ệ …). De byggs av tecknets NFD-delar i `floor-pix.js` (`compose`, `EXTRA_LETTERS`) och för gemenerna i
+  `tools/pixelfont/glyphs.mjs` (`composeLower`). Nya märken: breve, krok ovanför, prick under. Ơ Ư Đ ı đ ơ ư ritas för hand.
 - ß blir SS i versaler
 - Typografiska citattecken och tankstreck byts mot de tecken som finns.

@@ -42,6 +42,9 @@
 		5F1A0C092FE9A00000A1B2C3 /* nl */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = nl; path = nl.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		5F1A0C0A2FE9A00000A1B2C3 /* nb */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = nb; path = nb.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		5F1A0C0B2FE9A00000A1B2C3 /* da */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = da; path = da.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		5F1A0C0C2FE9A00000A1B2C3 /* id */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = id; path = id.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		5F1A0C0D2FE9A00000A1B2C3 /* tr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = tr; path = tr.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		5F1A0C0E2FE9A00000A1B2C3 /* vi */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = vi; path = vi.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -146,6 +149,9 @@
 				nl,
 				nb,
 				da,
+				id,
+				tr,
+				vi,
 			);
 			mainGroup = 504EC2FB1FED79650016851F;
 			packageReferences = (
@@ -220,6 +226,9 @@
 				5F1A0C092FE9A00000A1B2C3 /* nl */,
 				5F1A0C0A2FE9A00000A1B2C3 /* nb */,
 				5F1A0C0B2FE9A00000A1B2C3 /* da */,
+				5F1A0C0C2FE9A00000A1B2C3 /* id */,
+				5F1A0C0D2FE9A00000A1B2C3 /* tr */,
+				5F1A0C0E2FE9A00000A1B2C3 /* vi */,
 			);
 			name = InfoPlist.strings;
 			sourceTree = "<group>";

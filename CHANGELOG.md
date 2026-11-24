@@ -10,6 +10,11 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.177.0] – 2026-11-24 – 🌏 Indonesiska, turkiska och vietnamesiska
+- 🌏 **Spelet på tre språk till: indonesiska, turkiska och vietnamesiska** – de folkrikaste länderna med vårt alfabet, tillsammans över 470 miljoner människor. Fjorton språk utöver svenskan. Staden heter Kota Pixel på indonesiska (spelet JALUR CEPAT), Pixelkent på turkiska (spelet SOL ŞERİT) och Thành phố Pixel på vietnamesiska (spelet LÀN NHANH), med egna namn på stadsdelar, gator, butiker och personer. Pengarna visas som Rp 69, 69 TL och 69 đ.
+- Pixeltypsnitten kan nu stapla accenter: turkiskans Ş Ğ İ och vietnamesiskans Ă Â Ê Ô Ơ Ư Đ med alla fem tonmärkena (Ấ, Ở, Ữ, Ệ …) ritas på skyltar och i menyer.
+- Appen: tre nya språk registrerade för App Store (syns där efter nästa appbygge). Butikstexterna ligger i app/appstore-sprak.md.
+
 ## [0.176.0] – 2026-11-24 – 🌍 Nederländska, norska och danska
 - 🌍 **Spelet på tre nya språk: nederländska, norska och danska** – tio språk utöver svenskan. Byt under ⚙ Inställningar → 🌍 Språk, eller låt spelet följa telefonens språk (norska och danska enheter fick förut svenska – nu får de sitt eget). Staden heter Pixelstad på nederländska (och spelet LINKERBAAN, vänsterfilen är omkörningsfilen i Nederländerna), Pixelbyen på norska (spelet I HUNDRE, «å leve livet i hundre») och Pixelkøbing på danska (spelet OVERHALINGSBANEN), med egna namn på stadsdelar, gator, butiker, personer och husdjur precis som på de andra språken. Kebab Grill heter Shoarma Grill, skeppskatten Sill heter Maatje och pengarna visas som € 69, 69 kr och 69 kr.
 - Pixeltypsnitten har fått Ø/ø (skyltar och menyer på norska och danska).

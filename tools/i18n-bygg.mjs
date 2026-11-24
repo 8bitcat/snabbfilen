@@ -9,7 +9,7 @@ import fs from 'fs';
 import path from 'path';
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Z]:)/, '$1')), '..');
-const ALL = ['en', 'es', 'de', 'fr', 'pl', 'it', 'pt', 'nl', 'nb', 'da'];
+const ALL = ['en', 'es', 'de', 'fr', 'pl', 'it', 'pt', 'nl', 'nb', 'da', 'id', 'tr', 'vi'];
 const langs = process.argv.slice(2).filter((a) => ALL.includes(a));
 const keysFile = path.join(ROOT, 'tools/out/i18n-nycklar.json');
 const KEYS = fs.existsSync(keysFile) ? new Set(JSON.parse(fs.readFileSync(keysFile, 'utf8')).keys) : null;

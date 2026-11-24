@@ -30,6 +30,10 @@ export const LANGS = [
   { id: 'nl', name: 'Nederlands', locale: 'nl-NL', money: (s) => `€ ${s}` },
   { id: 'nb', name: 'Norsk', locale: 'nb-NO', money: (s) => `${s} kr` },
   { id: 'da', name: 'Dansk', locale: 'da-DK', money: (s) => `${s} kr.` },
+  // v0.177 (Carl 2026-11-23: "de befolkningstätaste länderna vi inte har med som ändå har samma skrivsätt")
+  { id: 'id', name: 'Bahasa Indonesia', locale: 'id-ID', money: (s) => `Rp ${s}` },
+  { id: 'tr', name: 'Türkçe', locale: 'tr-TR', money: (s) => `${s} TL` },
+  { id: 'vi', name: 'Tiếng Việt', locale: 'vi-VN', money: (s) => `${s} đ` },
 ];
 const KEY = 'snabbfilen_lang';
 const known = (id) => LANGS.some((l) => l.id === id);
@@ -42,6 +46,7 @@ function pick() {
     const id = String(l || '').slice(0, 2).toLowerCase();
     if (known(id)) return id;
     if (id === 'nn' || id === 'no') return 'nb';   // nynorsk och "no" får bokmål
+    if (id === 'in') return 'id';                  // gamla koden för indonesiska
   }
   return 'en';
 }
