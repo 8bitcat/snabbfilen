@@ -28,7 +28,7 @@ Bjud hem kompisarna på fest, gå på bio, cykla eller kör moppe genom staden, 
 SPELA TILLSAMMANS
 Alla som spelar samtidigt hamnar i samma stad. Hälsa på hemma hos varandra, jobba ihop på samma pass och prata i röstchatten om ni vill. Fula ord filtreras bort, och den som är dum kan blockeras och anmälas.
 
-Inga konton, ingen reklam och inga köp i appen. Spelet sparas på din telefon och får nya saker hela tiden.
+Inga konton och ingen reklam. Spelet sparas på din telefon och får nya saker hela tiden.
 ```
 
 **Keywords** (högst 100 tecken, kommatecken utan mellanslag)

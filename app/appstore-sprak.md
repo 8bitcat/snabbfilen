@@ -47,7 +47,7 @@ Everyone playing at the same time ends up in the same city. Visit each other's h
 
 Play in 14 languages: English, Spanish, German, French, Polish, Italian, Portuguese, Swedish, Dutch, Norwegian, Danish, Indonesian, Turkish and Vietnamese.
 
-No accounts, no ads and no in-app purchases. The game saves on your phone and keeps getting new things.
+No accounts and no ads. The game saves on your phone and keeps getting new things.
 ```
 
 ---
@@ -87,7 +87,7 @@ Todos los que juegan a la vez están en la misma ciudad. Visitaos en casa, traba
 
 Juega en 14 idiomas: español, inglés, alemán, francés, polaco, italiano, portugués, sueco, neerlandés, noruego, danés, indonesio, turco y vietnamita.
 
-Sin cuentas, sin anuncios y sin compras dentro de la app. El juego se guarda en tu teléfono y no para de recibir novedades.
+Sin cuentas y sin anuncios. El juego se guarda en tu teléfono y no para de recibir novedades.
 ```
 
 ---
@@ -127,7 +127,7 @@ Alle, die gleichzeitig spielen, landen in derselben Stadt. Besucht euch zu Hause
 
 Spielbar in 14 Sprachen: Deutsch, Englisch, Spanisch, Französisch, Polnisch, Italienisch, Portugiesisch, Schwedisch, Niederländisch, Norwegisch, Dänisch, Indonesisch, Türkisch und Vietnamesisch.
 
-Keine Konten, keine Werbung und keine In-App-Käufe. Das Spiel speichert auf deinem Handy und bekommt ständig Neues.
+Keine Konten und keine Werbung. Das Spiel speichert auf deinem Handy und bekommt ständig Neues.
 ```
 
 ---
@@ -167,7 +167,7 @@ Tous ceux qui jouent en même temps se retrouvent dans la même ville. Rendez-vo
 
 Disponible en 14 langues : français, anglais, espagnol, allemand, polonais, italien, portugais, suédois, néerlandais, norvégien, danois, indonésien, turc et vietnamien.
 
-Pas de compte, pas de pub et pas d'achats intégrés. Le jeu s'enregistre sur ton téléphone et reçoit sans cesse des nouveautés.
+Pas de compte et pas de pub. Le jeu s'enregistre sur ton téléphone et reçoit sans cesse des nouveautés.
 ```
 
 ---
@@ -207,7 +207,7 @@ Wszyscy, którzy grają w tym samym czasie, trafiają do tego samego miasta. Odw
 
 Gra w 14 językach: polskim, angielskim, hiszpańskim, niemieckim, francuskim, włoskim, portugalskim, szwedzkim, niderlandzkim, norweskim, duńskim, indonezyjskim, tureckim i wietnamskim.
 
-Bez kont, bez reklam i bez zakupów w aplikacji. Gra zapisuje się na telefonie i ciągle dostaje nowości.
+Bez kont i bez reklam. Gra zapisuje się na telefonie i ciągle dostaje nowości.
 ```
 
 ---
@@ -247,7 +247,7 @@ Chi gioca nello stesso momento si ritrova nella stessa città. Andate a trovarvi
 
 Gioca in 14 lingue: italiano, inglese, spagnolo, tedesco, francese, polacco, portoghese, svedese, olandese, norvegese, danese, indonesiano, turco e vietnamita.
 
-Niente account, niente pubblicità e niente acquisti in-app. Il gioco si salva sul telefono e riceve sempre novità.
+Niente account e niente pubblicità. Il gioco si salva sul telefono e riceve sempre novità.
 ```
 
 ---
@@ -287,7 +287,7 @@ Quem joga ao mesmo tempo vai parar à mesma cidade. Visitem-se em casa, trabalhe
 
 Joga em 14 línguas: português, inglês, espanhol, alemão, francês, polaco, italiano, sueco, neerlandês, norueguês, dinamarquês, indonésio, turco e vietnamita.
 
-Sem contas, sem anúncios e sem compras na app. O jogo fica guardado no teu telemóvel e recebe sempre novidades.
+Sem contas e sem anúncios. O jogo fica guardado no teu telemóvel e recebe sempre novidades.
 ```
 
 ---
