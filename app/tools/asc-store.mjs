@@ -35,6 +35,7 @@ const steg = async (namn, fn) => { try { const r = await fn(); console.log(`✓ 
 
 const SUPPORT = 'https://8bitcat.github.io/snabbfilen/support.html';
 const MARKNAD = 'https://8bitcat.github.io/snabbfilen/';
+const NAMN = { no: 'Pixelcity – livssimulator' };
 const LOC = { English: 'en-US', Español: 'es-ES', Deutsch: 'de-DE', Français: 'fr-FR', Polski: 'pl', Italiano: 'it', Português: 'pt-PT', Nederlands: 'nl-NL', Norsk: 'no', Dansk: 'da', Bahasa: 'id', Türkçe: 'tr', Tiếng: 'vi' };
 // Nyheter i 1.4 (whatsNew, högst 4000 tecken)
 const NYTT = {
@@ -71,7 +72,7 @@ function texter() {
   for (const [loc, t] of Object.entries(out)) {
     for (const [f, max] of [['subtitle', 30], ['promotionalText', 170], ['keywords', 100], ['description', 4000]]) if (t[f] && [...t[f]].length > max) throw new Error(`${loc} ${f}: ${[...t[f]].length} > ${max}`);
     if (!t.description || !t.keywords || !t.promotionalText) throw new Error(`${loc}: text saknas`);
-    t.whatsNew = NYTT[loc === 'pt-BR' ? 'pt-PT' : loc];
+    t.whatsNew = NYTT[loc === 'pt-BR' ? 'pt-PT' : loc]?.replace(/s*(med|with|con|mit|avec|przez|com|met|dengan|bằng) 👫|👫 ile /g, '');   // Apple tar inga emojier i Nyheter
     if (!t.whatsNew) throw new Error(`${loc}: Nyheter saknas`);
   }
   return out;
@@ -83,7 +84,7 @@ async function versionen() {
 }
 async function appInfo() {
   const infos = await alla(`/v1/apps/${APP}/appInfos`);
-  return infos.find((i) => !['READY_FOR_DISTRIBUTION', 'REPLACED_WITH_NEW_INFO'].includes(i.attributes.appStoreState || i.attributes.state)) || infos[0];
+  return infos.find((i) => i.attributes.state === 'PREPARE_FOR_SUBMISSION') || infos.find((i) => !['READY_FOR_DISTRIBUTION', 'REPLACED_WITH_NEW_INFO'].includes(i.attributes.state)) || infos[0];
 }
 
 const [, , cmd, arg] = process.argv;
@@ -109,6 +110,18 @@ if (cmd === 'texter') {
   const T = texter();
   const ver = await versionen();
   if (!ver) throw new Error(`iOS ${VERSION} finns inte – kör version först`);
+  const info = await appInfo();
+  const il = Object.fromEntries((await alla(`/v1/appInfos/${info.id}/appInfoLocalizations`)).map((l) => [l.attributes.locale, l]));
+  const policy = Object.values(il).find((l) => l.attributes.privacyPolicyUrl)?.attributes.privacyPolicyUrl;
+  for (const [loc, t] of Object.entries(T)) {
+    if (!t.subtitle && il[loc]) continue;   // svenska: undertiteln står kvar som den är
+    await steg(`namn/undertitel ${loc}`, async () => {
+      const attrs = { name: NAMN[loc] || 'Pixelcity', ...(t.subtitle ? { subtitle: t.subtitle } : {}), ...(policy ? { privacyPolicyUrl: policy } : {}) };
+      if (il[loc]) { const { name, ...utan } = attrs; await call('PATCH', `/v1/appInfoLocalizations/${il[loc].id}`, { data: { type: 'appInfoLocalizations', id: il[loc].id, attributes: utan } }); return `uppdaterad (namnet ${il[loc].attributes.name} står kvar)`; }
+      await call('POST', '/v1/appInfoLocalizations', { data: { type: 'appInfoLocalizations', attributes: { locale: loc, ...attrs }, relationships: { appInfo: { data: { type: 'appInfos', id: info.id } } } } });
+      return 'nytt språk';
+    });
+  }
   const finns = Object.fromEntries((await alla(`/v1/appStoreVersions/${ver.id}/appStoreVersionLocalizations`)).map((l) => [l.attributes.locale, l]));
   for (const [loc, t] of Object.entries(T)) {
     await steg(`texter ${loc}`, async () => {
@@ -118,18 +131,7 @@ if (cmd === 'texter') {
       return 'nytt språk';
     });
   }
-  const info = await appInfo();
-  const il = Object.fromEntries((await alla(`/v1/appInfos/${info.id}/appInfoLocalizations`)).map((l) => [l.attributes.locale, l]));
-  const policy = Object.values(il).find((l) => l.attributes.privacyPolicyUrl)?.attributes.privacyPolicyUrl;
-  for (const [loc, t] of Object.entries(T)) {
-    if (!t.subtitle && il[loc]) continue;   // svenska: undertiteln står kvar som den är
-    await steg(`namn/undertitel ${loc}`, async () => {
-      const attrs = { name: 'Pixelcity', ...(t.subtitle ? { subtitle: t.subtitle } : {}), ...(policy ? { privacyPolicyUrl: policy } : {}) };
-      if (il[loc]) { await call('PATCH', `/v1/appInfoLocalizations/${il[loc].id}`, { data: { type: 'appInfoLocalizations', id: il[loc].id, attributes: attrs } }); return 'uppdaterad'; }
-      await call('POST', '/v1/appInfoLocalizations', { data: { type: 'appInfoLocalizations', attributes: { locale: loc, ...attrs }, relationships: { appInfo: { data: { type: 'appInfos', id: info.id } } } } });
-      return 'nytt språk';
-    });
-  }
+
 }
 if (cmd === 'bygge') {
   const ver = await versionen();

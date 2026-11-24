@@ -334,7 +334,7 @@ Geen accounts en geen reclame. Het spel wordt op je telefoon opgeslagen en krijg
 
 ## Norsk (bokmål) – Norge
 
-**Subtitle:** `Livssimulator i pikselkunst`
+**Subtitle:** `Bo, jobb og lek i Pixelbyen`
 
 **Promotional Text**
 ```
