@@ -153,3 +153,47 @@ if (cmd === 'skicka') {
     return `inskickad (${sub.data.id})`;
   });
 }
+
+// ---- skärmbilder per språk (2026-11-24) ----
+//   node app/tools/asc-store.mjs bilder-lage                 vilka bildset varje språk har i versionen
+//   node app/tools/asc-store.mjs bilder <locale> <lang> [enhet]  lägg upp app/store/skarmbilder/<lang>/ (ersätter språkets set)
+const ENHET_TYP = { iphone: 'APP_IPHONE_67', iphone65: 'APP_IPHONE_65', iphone63: 'APP_IPHONE_61', ipad: 'APP_IPAD_PRO_3GEN_129' };
+async function lokalisering(loc) {
+  const ver = await versionen();
+  const vl = await alla(`/v1/appStoreVersions/${ver.id}/appStoreVersionLocalizations`);
+  return { ver, vl, l: vl.find((x) => x.attributes.locale === loc) };
+}
+if (cmd === 'bilder-lage') {
+  const { vl } = await lokalisering('sv');
+  for (const l of vl) {
+    const sets = await get(`/v1/appStoreVersionLocalizations/${l.id}/appScreenshotSets?include=appScreenshots&limit=50`);
+    console.log(l.attributes.locale.padEnd(6), sets.data.map((s) => `${s.attributes.screenshotDisplayType}:${(s.relationships.appScreenshots.data || []).length}`).join(' ') || '–');
+  }
+}
+if (cmd === 'bilder') {
+  const [, , , loc, lang, bara] = process.argv;   // bara = en enhet (t.ex. ipad)
+  const { l } = await lokalisering(loc);
+  if (!l) throw new Error(`språket ${loc} finns inte i versionen`);
+  const mapp = path.join(ROT, 'app/store/skarmbilder', lang === 'sv' ? '' : lang);
+  const sets = await get(`/v1/appStoreVersionLocalizations/${l.id}/appScreenshotSets?include=appScreenshots&limit=50`);
+  for (const [enhet, TYP] of Object.entries(ENHET_TYP)) {
+    if (bara && bara !== enhet) continue;
+    const filer = fs.readdirSync(mapp).filter((f) => new RegExp(`^${enhet}-\\d+-[a-z]+\\.png$`).test(f)).sort((a, b) => +a.split('-')[1] - +b.split('-')[1]);
+    if (!filer.length) continue;
+    let set = sets.data.find((s) => s.attributes.screenshotDisplayType === TYP);
+    if (set) for (const s of set.relationships.appScreenshots.data || []) await call('DELETE', `/v1/appScreenshots/${s.id}`);
+    else set = (await call('POST', '/v1/appScreenshotSets', { data: { type: 'appScreenshotSets', attributes: { screenshotDisplayType: TYP }, relationships: { appStoreVersionLocalization: { data: { type: 'appStoreVersionLocalizations', id: l.id } } } } })).data;
+    await steg(`${loc} ${TYP} (${filer.length} bilder)`, async () => {
+      for (const f of filer) {
+        const buf = fs.readFileSync(path.join(mapp, f));
+        const res = (await call('POST', '/v1/appScreenshots', { data: { type: 'appScreenshots', attributes: { fileName: f, fileSize: buf.length }, relationships: { appScreenshotSet: { data: { type: 'appScreenshotSets', id: set.id } } } } })).data;
+        for (const op of res.attributes.uploadOperations) {
+          const h = Object.fromEntries(op.requestHeaders.map((x) => [x.name, x.value]));
+          const r = await fetch(op.url, { method: op.method, headers: h, body: buf.subarray(op.offset, op.offset + op.length) });
+          if (!r.ok) throw new Error(`uppladdning ${f} ${r.status}`);
+        }
+        await call('PATCH', `/v1/appScreenshots/${res.id}`, { data: { type: 'appScreenshots', id: res.id, attributes: { uploaded: true, sourceFileChecksum: crypto.createHash('md5').update(buf).digest('hex') } } });
+      }
+    });
+  }
+}
