@@ -10,6 +10,12 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.178.0] – 2026-11-24 – 📲 Bjud in vänner till Dockskåpet med en notis
+- 📲 **Bjud in dina vänner till Dockskåpet med en notis** – tryck på 👫 i Dockskåpet: under "📲 Dina vänner" står alla dina vänner, också de som inte spelar just nu. Ett tryck skickar en notis till deras telefon, och när de trycker på den öppnas spelet och de kommer rätt in i ditt hus – sedan bygger och leker ni tillsammans och ser allt den andra gör. Inbjudan gäller i 20 minuter; stanna kvar i huset så länge.
+- Spelar vännen på webben (eller trycker inte på notisen) dyker inbjudan upp som en ruta "👫 Leka ihop?" nästa gång hen är i spelet eller i menyn.
+- Dockskåpet kopplar nu upp sig mot Pixelstaden även när du öppnar det direkt från huvudmenyn – förut gick det bara att leka ihop om man först startade spelet.
+- Vännernas notiser ("din vän har hoppat in" och inbjudningarna) kommer nu på alla 14 språken.
+
 ## [0.177.0] – 2026-11-24 – 🌏 Indonesiska, turkiska och vietnamesiska
 - 🌏 **Spelet på tre språk till: indonesiska, turkiska och vietnamesiska** – de folkrikaste länderna med vårt alfabet, tillsammans över 470 miljoner människor. Fjorton språk utöver svenskan. Staden heter Kota Pixel på indonesiska (spelet JALUR CEPAT), Pixelkent på turkiska (spelet SOL ŞERİT) och Thành phố Pixel på vietnamesiska (spelet LÀN NHANH), med egna namn på stadsdelar, gator, butiker och personer. Pengarna visas som Rp 69, 69 TL och 69 đ.
 - Pixeltypsnitten kan nu stapla accenter: turkiskans Ş Ğ İ och vietnamesiskans Ă Â Ê Ô Ơ Ư Đ med alla fem tonmärkena (Ấ, Ở, Ữ, Ệ …) ritas på skyltar och i menyer.

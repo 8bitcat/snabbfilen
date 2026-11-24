@@ -140,6 +140,23 @@ export async function vanSmsHamta(A) {
     return lista.length;
   } finally { smsHamtar = false; }
 }
+// ---------- 🧸 inbjudan till dockhuset (Carl 2026-11-24: "när man bjuder in en kompis så skickas det en notis för dem
+// som sedan tar dem rätt in i deras hus så kan de bygga tillsammans") ----------
+// Skicka: servern sparar inbjudan i 20 minuter och skickar en pushnotis med mitt vän-id (js/net/dockdela.js tar emot).
+export async function vanDockBjud(A, till) {
+  const a = auth(A);
+  if (!a) return null;
+  await vanPushSynka(A);   // (servern måste veta att vi är vänner)
+  return pushPost('/van/dock', { ...a, till });
+}
+// Hämta inbjudningar som väntar (webben och appen när man inte tryckte på notisen): [{ id, fran, fvid, t }]
+export async function vanDockHamta(A) {
+  const a = auth(A);
+  if (!a || !vanLista(A.avatar).length) return [];
+  const r = await pushPost('/van/dock/hamta', a);
+  return Array.isArray(r?.inbjudningar) ? r.inbjudningar.slice(0, 5) : [];
+}
+
 // listan ändrades → till servern direkt (lite fördröjt, så att flera ändringar blir ett anrop)
 let vantar = null;
 vanOnAndrad(() => { if (!A0) return; clearTimeout(vantar); vantar = setTimeout(() => vanPushSynka(A0), 600); });

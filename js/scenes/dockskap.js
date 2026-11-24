@@ -91,7 +91,10 @@ import { openModal, closeModal, toast, esc } from '../core/ui.js';
 import { play, toner } from '../core/sound.js';
 import { mix, css, Pix, ctxText, textW, SMALL } from '../core/floor-pix.js';
 import { $t, $n, LANG } from '../core/i18n.js';
-import { onDock, dockSend, dockMyId, dockBjudIn, dockKandidater, dockSenasteInbjudan } from '../net/dockdela.js';
+import { onDock, dockSend, dockMyId, dockBjudIn, dockKandidater, dockSenasteInbjudan, dockVantarPa } from '../net/dockdela.js';
+import { ensureWorld } from '../net/world.js';
+import { vanLista } from '../net/vanner.js';
+import { vanDockBjud } from '../net/vanpush.js';
 import { TRADGARD_RUM, ARSTIDER, tradgardBg, UTE, TRADGARD_SEED, uteBild } from './dockskap-ute.js';
 import { SLOTT_RUM, slottBg, SLOTT, SLOTT_SEED, slottBild } from './dockskap-slott.js';
 import { PRISER, KBK, kbkBild, kbkKontext, tvattaSp } from './dockskap-kbk.js';
@@ -1403,23 +1406,39 @@ export function makeDockskap(A) {
     if (ok) { play('sms'); toast($t`📨 Inbjudan skickad till ${namn || $t('kompisen')} – när hen kommer ser ni samma hus.`, 'good'); byggLage(); }
     return ok;
   }
+  // 📲 en vän som inte är inne: inbjudan som pushnotis (v0.178) – trycket tar vännen rätt in i det här huset
+  async function bjudInPush(vid, namn = '') {
+    if (natv?.roll === 'gast' || !vid) return false;
+    if (!natv) natv = { roll: 'vard', gaster: new Map() };
+    byggLage();
+    const r = await vanDockBjud(A, vid);
+    if (r?.ok) { play('sms'); toast($t`📲 Inbjudan skickad till ${namn || $t('kompisen')} – hen får en notis och kommer rätt in i ditt hus. Stanna kvar här så länge!`, 'good'); return true; }
+    toast(r ? $t`Inbjudan gick inte iväg: ${r.fel || '?'}` : $t('Inbjudan gick inte iväg – är du uppkopplad mot internet?'), 'bad');
+    return false;
+  }
   function menyVanner() {
+    ensureWorld(A);
     const mig = dockMyId();
     let html = '';
     if (natv?.roll === 'gast') html = `<p style="font-size:var(--f2);margin:0">${$t`Du leker hemma hos ${esc(natv.namn || $t('en kompis'))}. Allt ni gör ser ni båda.`}</p>`;
-    else if (!mig) html = `<p style="font-size:var(--f2);margin:0">${$t('Du är inte uppkopplad mot Pixelstaden. Starta spelet och öppna huset från pausmenyn, så kan du bjuda in kompisar som är online.')}</p>`;
     else {
-      const kand = dockKandidater(A), inne = natv?.roll === 'vard' ? [...natv.gaster.values()].map((g) => g.namn || '?') : [];
-      html = `<p style="font-size:var(--f2);margin:0 0 6px">${$t('Bjud in en kompis som är i Pixelstaden just nu – ni leker i samma hus och ser allt den andra gör.')}</p>`
+      const kand = mig ? dockKandidater(A) : [], inne = natv?.roll === 'vard' ? [...natv.gaster.values()].map((g) => g.namn || '?') : [];
+      const onlineVid = new Set(kand.map((k) => k.vi).filter(Boolean));
+      const vanner = vanLista(A.avatar).filter((v) => !onlineVid.has(v.vid));
+      html = `<p style="font-size:var(--f2);margin:0 0 6px">${$t('Bjud in en kompis – ni leker i samma hus och ser allt den andra gör.')}</p>`
         + (inne.length ? `<p style="font-size:var(--f2);margin:0 0 6px">${$t`I huset: ${esc(inne.join(', '))}`}</p>` : '')
-        + (kand.length ? `<div class="dock-vanlista">${kand.map((k) => `<button class="btn btn-small ${k.van ? 'btn-gold' : ''}" data-bjud="${esc(k.id)}" data-namn="${esc(k.namn)}">${k.van ? '💛' : '👤'} ${esc(k.namn)}</button>`).join('')}</div>`
-          : `<p style="font-size:var(--f2);margin:0">${$t('Ingen annan är i Pixelstaden just nu.')}</p>`);
+        + (vanner.length ? `<p style="font-size:var(--f1);margin:0 0 4px">${$t('📲 Dina vänner – de får en notis i telefonen och kommer rätt in i ditt hus:')}</p>`
+          + `<div class="dock-vanlista">${vanner.map((v) => `<button class="btn btn-small btn-gold" data-push="${esc(v.vid)}" data-namn="${esc(v.namn || '')}">📲 ${esc(v.namn || '?')}</button>`).join('')}</div>` : '')
+        + (!mig ? `<p style="font-size:var(--f1);margin:6px 0 0">${$t('🔌 Kopplar upp mot Pixelstaden …')}</p>`
+          : kand.length ? `<p style="font-size:var(--f1);margin:6px 0 4px">${$t('👥 I Pixelstaden just nu:')}</p><div class="dock-vanlista">${kand.map((k) => `<button class="btn btn-small ${k.van ? 'btn-gold' : ''}" data-bjud="${esc(k.id)}" data-namn="${esc(k.namn)}">${k.van ? '💛' : '👤'} ${esc(k.namn)}</button>`).join('')}</div>`
+          : (!vanner.length ? `<p style="font-size:var(--f2);margin:0">${$t('Ingen annan är i Pixelstaden just nu. Bli vänner med någon i staden (👥), så kan du bjuda in hen hit med en notis.')}</p>` : ''));
     }
     const dlg = openModal($t('👫 Leka ihop'), html, [
       ...(natv?.roll === 'gast' ? [{ label: $t('🏠 Gå hem'), cls: 'btn-red', onClick: () => { closeModal(); gaHem($t('🏠 Du är hemma igen.')); } }] : []),
       { label: $t('Stäng'), onClick: closeModal },
     ]);
     dlg?.querySelectorAll('[data-bjud]').forEach((b) => { b.onclick = () => { closeModal(); bjudIn(b.dataset.bjud, b.dataset.namn); }; });
+    dlg?.querySelectorAll('[data-push]').forEach((b) => { b.onclick = () => { closeModal(); bjudInPush(b.dataset.push, b.dataset.namn); }; });
   }
   function natTick(dt) {
     if (!natv) { if (pek.size) pek.clear(); return; }
@@ -1944,6 +1963,7 @@ export function makeDockskap(A) {
     update, draw, down, move, up, key,
     enter() {
       gangList = null; aktivNat = hanteraNat;
+      ensureWorld(A);   // (öppnat från huvudmenyn: koppla upp, så att kompisar kan komma hit – v0.178)
       if (!gast()) H.dock = DOCK_KOP.filter((k) => agerDock(k.id)).map((k) => k.id);   // (ett köp i Butiken sedan sist)
       document.body.classList.add('dock-on'); byggPanel(); byggLage(); sattLage(lage, true);
       if (A.dockGast?.host) { const g = A.dockGast; gaTill(g.host, g.namn); }   // (👫 inbjudan från js/net/dockdela.js)
@@ -2030,6 +2050,7 @@ export function makeDockskap(A) {
     natv: () => (natv ? { roll: natv.roll, host: natv.host || null, namn: natv.namn || '', hus: !!natv.hus, gaster: natv.gaster ? [...natv.gaster].map(([id, g]) => ({ id, namn: g.namn })) : [] } : null),
     myId: () => dockMyId(),
     bjudIn: (id, namn) => bjudIn(id, namn),
+    bjudInPush: (vid, namn) => bjudInPush(vid, namn),
     gaTill: (host, namn) => gaTill(host, namn),
     gaHem: () => gaHem(null),
     pek: () => [...pek].map(([id, q]) => ({ id, ...q })),

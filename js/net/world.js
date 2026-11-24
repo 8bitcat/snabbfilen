@@ -87,7 +87,12 @@ let lastActive = Date.now();
 export const worldInfo = () => ({ idle, dbg: FAST && W ? { hb: !!W.hb, heard: Date.now() - (W.lastHeard || 0), connOpen: !!W.conn?.open, timers: W.timers?.length, dead: !!W.dead, peerOpen: !!W.peer?.open, peerDestroyed: !!W.peer?.destroyed, players: [...W.players.keys()].map((k) => k.slice(0, 6)) } : undefined, role: W?.role || 'off', myId: W?.myId || null, online: W ? W.players.size + 1 : 1, open: !!W?.open, world: worldName(), local: LOCAL, version: VERSION, tries: failedJoins, relay: TURN.length > 0 });
 
 // ---------- start & värdbyte ----------
+let startad = false;
+// 🧸 Dockskåpet från huvudmenyn (spelet inte startat): koppla upp om ingen annan redan har gjort det,
+// så att man kan leka ihop med kompisar och komma in via en inbjudan (js/net/dockdela.js)
+export function ensureWorld(A) { if (!startad && !W && A?.avatar?.name) startWorld(A); }
 export function startWorld(A) {
+  startad = true;
   if (idle) return;
   if (!window.Peer) { scheduleRetry(A, 8000); return; }
   // en dold flik ska inte bli värd om någon annan kan: försök först som klient
@@ -226,7 +231,7 @@ export const worldMarkActive = markActive;
 
 // ---------- min publicerade state ----------
 function myState(A) {
-  return { av: { name: A.avatar.name, look: A.avatar.look, color: A.avatar.color }, scene: myScene(A), x: A.scene?.worldX ?? 190, y: A.scene?.worldY ?? 174, home: A.game.home, deco: A.game.deco, key: myKey(), ver: VERSION, vo: voiceFlag() ? 1 : 0, si: mySit(A), ak: myAk(A), fd: myRide(A), fe: A.fest ? 1 : 0, hu: myHu(A), kb: kbkNr(A.avatar), vi: vanVid(A.avatar) };
+  return { av: { name: A.avatar.name, look: A.avatar.look, color: A.avatar.color }, scene: myScene(A), x: A.scene?.worldX ?? 190, y: A.scene?.worldY ?? 174, home: A.game?.home || "", deco: A.game?.deco || {}, key: myKey(), ver: VERSION, vo: voiceFlag() ? 1 : 0, si: mySit(A), ak: myAk(A), fd: myRide(A), fe: A.fest ? 1 : 0, hu: myHu(A), kb: kbkNr(A.avatar), vi: vanVid(A.avatar) };
 }
 // Bor jag ihop med någon (js/net/sambo.js)? Hushållets id – då är vi hemma i SAMMA rum (myScene)
 // och den som hälsar på hamnar hos oss båda.
@@ -433,7 +438,7 @@ export function worldTick(A, myX, dt) {
   if (!W || !W.open) return;
   const now = performance.now();
   const myY = A.scene?.worldY ?? null;
-  const meta = JSON.stringify([A.avatar.look, A.avatar.name, myScene(A), A.game.home, A.game.deco, voiceFlag() ? 1 : 0, mySit(A), myAk(A), myRide(A), A.fest ? 1 : 0, myHu(A), kbkNr(A.avatar)]);
+  const meta = JSON.stringify([A.avatar.look, A.avatar.name, myScene(A), A.game?.home || "", A.game?.deco || {}, voiceFlag() ? 1 : 0, mySit(A), myAk(A), myRide(A), A.fest ? 1 : 0, myHu(A), kbkNr(A.avatar)]);
   const metaChanged = meta !== W.lastMeta;
   const posChanged = myX !== null && (Math.abs(myX - W.lastX) > 0.5 || Math.abs((myY ?? 0) - (W.lastY ?? 0)) > 0.5);
   if ((metaChanged || posChanged) && now - W.lastSent > 90) {

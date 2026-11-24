@@ -146,6 +146,17 @@ try {
   ok(ms2.sms?.length === 40 && ms2.sms.at(-1).text === 'nr 38', `sms: brevlådan sparar de 40 senaste (${ms2.sms?.length}, sist "${ms2.sms?.at(-1)?.text}")`);
   const mk = await post('/van/sms/kvittera', { ...MOA, ids: ms2.sms.map((x) => x.id) });
   ok(mk.ok && mk.kvar === 0 && (await post('/van/sms/hamta', { ...MOA })).sms.length === 0, 'sms: /van/sms/kvittera tömmer brevlådan');
+  // ---------- 🧸 inbjudan till dockhuset (pushnotisen bär Miras vän-id, så att ett tryck tar Moa rätt in) ----------
+  const f4 = mottaget.length;
+  const di = await post('/van/dock', { ...MIRA, till: MOA.vid, vanta: true });
+  ok(di.ok && di.skickade === 1, `dock: Mira bjuder in Moa till sitt dockhus (${di.skickade} telefon)`);
+  const dn = mottaget.slice(f4).find((m) => m.token === IPAD);
+  ok(dn?.body?.aps?.alert?.body === '🧸 Mira bjuder in dig till sitt dockhus – tryck här så leker ni ihop!' && dn.body.dock === MIRA.vid && dn.body.namn === 'Mira', `dock: Moas telefon får notisen med Miras vän-id i notisen (${dn?.body?.aps?.alert?.body}, dock=${dn?.body?.dock})`);
+  ok((await post('/van/dock', { ...MIRA, till: LEO.vid })).status === 403, 'dock: bara vänner åt båda hållen (Leo → 403)');
+  await post('/van/dock', { ...MIRA, till: MOA.vid });
+  const dh = await post('/van/dock/hamta', { ...MOA });
+  ok(dh.inbjudningar?.length === 1 && dh.inbjudningar[0].fvid === MIRA.vid && dh.inbjudningar[0].fran === 'Mira', `dock: Moas väntande inbjudan (en per vän, den senaste) (${dh.inbjudningar?.length})`);
+  ok((await post('/van/dock/hamta', { ...MOA })).inbjudningar.length === 0, 'dock: inbjudan lämnas ut en gång');
 } catch (e) {
   ok(false, String(e.message || e));
 } finally {

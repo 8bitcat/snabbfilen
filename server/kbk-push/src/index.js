@@ -97,7 +97,25 @@ const VTEXT = {
   pl: { t: 'Przyjaciele', b: (n) => `💛 ${n} jest teraz w Pixelcity!` },
   it: { t: 'Amici', b: (n) => `💛 ${n} è ora in Pixelcity!` },
   pt: { t: 'Amigos', b: (n) => `💛 ${n} acabou de entrar no Pixelcity!` },
+  nl: { t: 'Vrienden', b: (n) => `💛 Je vriend ${n} is net Pixelcity binnengesprongen!` },
+  nb: { t: 'Venner', b: (n) => `💛 Vennen din ${n} hoppet akkurat inn i Pixelcity!` },
+  da: { t: 'Venner', b: (n) => `💛 Din ven ${n} er lige hoppet ind i Pixelcity!` },
+  id: { t: 'Sahabat', b: (n) => `💛 Sahabatmu ${n} baru saja masuk ke Pixelcity!` },
+  tr: { t: 'Dostlar', b: (n) => `💛 Dostun ${n} az önce Pixelcity'ye girdi!` },
+  vi: { t: 'Bạn thân', b: (n) => `💛 Bạn thân ${n} vừa vào Pixelcity!` },
 };
+// 🧸 inbjudan till dockhuset (Carl 2026-11-24: "när man bjuder in en kompis så skickas det en notis för dem som sedan
+// tar dem rätt in i deras hus så kan de bygga tillsammans")
+const DOCKTEXT = {
+  sv: (n) => `🧸 ${n} bjuder in dig till sitt dockhus – tryck här så leker ni ihop!`, en: (n) => `🧸 ${n} invites you to their dollhouse – tap to play together!`,
+  es: (n) => `🧸 ${n} te invita a su casa de muñecas – ¡toca para jugar juntos!`, de: (n) => `🧸 ${n} lädt dich ins Puppenhaus ein – tippe, um zusammen zu spielen!`,
+  fr: (n) => `🧸 ${n} t'invite dans sa maison de poupée – touche pour jouer ensemble !`, pl: (n) => `🧸 ${n} zaprasza cię do domku dla lalek – stuknij i bawcie się razem!`,
+  it: (n) => `🧸 ${n} ti invita nella sua casa delle bambole – tocca per giocare insieme!`, pt: (n) => `🧸 ${n} convida-te para a casa de bonecas – toca para brincarem juntos!`,
+  nl: (n) => `🧸 ${n} nodigt je uit in het poppenhuis – tik om samen te spelen!`, nb: (n) => `🧸 ${n} inviterer deg til dukkehuset – trykk for å leke sammen!`,
+  da: (n) => `🧸 ${n} inviterer dig ind i dukkehuset – tryk for at lege sammen!`, id: (n) => `🧸 ${n} mengajakmu ke rumah bonekanya – ketuk untuk main bareng!`,
+  tr: (n) => `🧸 ${n} seni oyuncak evine davet ediyor – birlikte oynamak için dokun!`, vi: (n) => `🧸 ${n} mời bạn đến nhà búp bê – chạm để cùng chơi!`,
+};
+const DOCK_TTL = 20 * 60;   // en inbjudan gäller i 20 minuter
 const PTEXT = {
   sv: (n) => `🎁 ${n} har skickat en present till dig!`, en: (n) => `🎁 ${n} sent you a present!`, es: (n) => `🎁 ¡${n} te ha enviado un regalo!`,
   de: (n) => `🎁 ${n} hat dir ein Geschenk geschickt!`, fr: (n) => `🎁 ${n} t'a envoyé un cadeau !`, pl: (n) => `🎁 ${n} wysyła ci prezent!`,
@@ -227,7 +245,7 @@ async function apnsJwt(env) {
   jwt = `${huvud}.${kropp}.${b64u(sig)}`; jwtT = now;
   return jwt;
 }
-async function skicka(env, token, text, { title = 'KBK', glom = `tok:${token}`, grupp = '' } = {}) {
+async function skicka(env, token, text, { title = 'KBK', glom = `tok:${token}`, grupp = '', data = null } = {}) {
   const host = env.APNS_HOST || 'https://api.push.apple.com';
   const r = await fetch(`${host}/3/device/${token}`, {
     method: 'POST',
@@ -236,7 +254,7 @@ async function skicka(env, token, text, { title = 'KBK', glom = `tok:${token}`, 
       'apns-push-type': 'alert', 'apns-priority': '10', 'apns-expiration': String(Math.floor(Date.now() / 1000) + 3600),
       'content-type': 'application/json', ...(grupp ? { 'apns-collapse-id': grupp } : {}),
     },
-    body: JSON.stringify({ aps: { alert: { title, body: text }, sound: 'default', ...(grupp ? { 'thread-id': grupp } : {}) } }),
+    body: JSON.stringify({ aps: { alert: { title, body: text }, sound: 'default', ...(grupp ? { 'thread-id': grupp } : {}) }, ...(data || {}) }),   // (data: appen läser den när man trycker på notisen)
   });
   if (r.status !== 200) {
     const fel = await r.json().catch(() => ({}));
@@ -360,6 +378,31 @@ export default {
         if (d.vanta) { const res = await jobb; return svar({ ok: true, id, text, skickade: tel.length, svar: res }); }
         ctx.waitUntil(jobb);
         return svar({ ok: true, id, text, skickade: tel.length });
+      }
+      if (url.pathname === '/van/dock') {
+        const till = String(d.till || '');
+        if (!VID_RE.test(till) || till === vid) return svar({ ok: false, fel: 'okänd vän' }, 400);
+        const mina = (await env.KBK.get(`vl:${vid}`, 'json')) || [], deras = (await env.KBK.get(`vl:${till}`, 'json')) || [];
+        if (!mina.includes(till) || !deras.includes(vid)) return svar({ ok: false, fel: 'inte vänner' }, 403);
+        const rk = `vdr:${vid}:${idag()}`, n = +(await env.KBK.get(rk)) || 0;
+        if (n >= 40) return svar({ ok: false, fel: 'för många inbjudningar i dag' }, 429);
+        await env.KBK.put(rk, String(n + 1), { expirationTtl: 60 * 60 * 48 });
+        const bk = `vd:${till}`, nu = Date.now();
+        const lada = ((await env.KBK.get(bk, 'json')) || []).filter((x) => x.fvid !== vid && nu - x.t < DOCK_TTL * 1000);
+        const id = nu.toString(36) + Math.random().toString(36).slice(2, 7);
+        lada.push({ id, fran: jag.namn, fvid: vid, t: nu });
+        await env.KBK.put(bk, JSON.stringify(lada.slice(-5)), { expirationTtl: DOCK_TTL });
+        const tel = (await lista(env, `vp:${till}:`)).map((k) => ({ token: k.name.split(':')[2], lang: k.metadata?.lang, glom: k.name }));
+        const jobb = Promise.all(tel.map((t) => skicka(env, t.token, (DOCKTEXT[t.lang] || DOCKTEXT.sv)(jag.namn), { title: (VTEXT[t.lang] || VTEXT.sv).t, glom: t.glom, grupp: `dock-${vid}`, data: { dock: vid, namn: jag.namn, id } }).catch((e) => ({ status: 0, reason: String(e) }))));
+        if (d.vanta) { const res = await jobb; return svar({ ok: true, id, skickade: tel.length, svar: res }); }
+        ctx.waitUntil(jobb);
+        return svar({ ok: true, id, skickade: tel.length });
+      }
+      if (url.pathname === '/van/dock/hamta') {   // inbjudningar som väntar (en inbjudan lämnas ut en gång)
+        const bk = `vd:${vid}`, nu = Date.now();
+        const lada = ((await env.KBK.get(bk, 'json')) || []).filter((x) => nu - x.t < DOCK_TTL * 1000);
+        if (lada.length) await env.KBK.delete(bk);
+        return svar({ ok: true, inbjudningar: lada });
       }
       if (url.pathname === '/van/sms/hamta') return svar({ ok: true, sms: (await env.KBK.get(`vm:${vid}`, 'json')) || [] });
       if (url.pathname === '/van/sms/kvittera') {
