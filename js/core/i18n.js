@@ -26,6 +26,10 @@ export const LANGS = [
   { id: 'pl', name: 'Polski', locale: 'pl-PL', money: (s) => `${s} zł` },
   { id: 'it', name: 'Italiano', locale: 'it-IT', money: (s) => `${s} €` },
   { id: 'pt', name: 'Português', locale: 'pt-PT', money: (s) => `${s} €` },
+  // v0.176 (Carl 2026-11-23: "nederländska och norska med danska – billigast, bara översättning")
+  { id: 'nl', name: 'Nederlands', locale: 'nl-NL', money: (s) => `€ ${s}` },
+  { id: 'nb', name: 'Norsk', locale: 'nb-NO', money: (s) => `${s} kr` },
+  { id: 'da', name: 'Dansk', locale: 'da-DK', money: (s) => `${s} kr.` },
 ];
 const KEY = 'snabbfilen_lang';
 const known = (id) => LANGS.some((l) => l.id === id);
@@ -37,7 +41,7 @@ function pick() {
   for (const l of (typeof navigator !== 'undefined' && (navigator.languages?.length ? navigator.languages : [navigator.language])) || []) {
     const id = String(l || '').slice(0, 2).toLowerCase();
     if (known(id)) return id;
-    if (id === 'nb' || id === 'nn' || id === 'no' || id === 'da') return 'sv';   // grannspråken förstår svenska bättre än engelska
+    if (id === 'nn' || id === 'no') return 'nb';   // nynorsk och "no" får bokmål
   }
   return 'en';
 }

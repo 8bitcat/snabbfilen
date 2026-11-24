@@ -15,7 +15,8 @@ const fileOf = {};
 for (const [f, ks] of Object.entries(KEYS.byFile)) for (const k of ks) fileOf[k] ??= f;
 const isSign = (k) => /[A-ZÅÄÖ]/.test(k) && k === k.toUpperCase() && !/[a-zåäö]/.test(k) && k.replace(/[^A-ZÅÄÖ]/g, '').length >= 2;
 const lineW = (s) => Math.max(...String(s).split('\n').map((l) => textW(SMALL, l.replace(/\{\d+\}/g, '00'))));
-for (const id of ['en', 'es', 'de', 'fr', 'pl', 'it', 'pt']) {
+for (const id of ['en', 'es', 'de', 'fr', 'pl', 'it', 'pt', 'nl', 'nb', 'da']) {
+  if (!fs.existsSync(path.join(ROOT, `js/i18n/${id}.js`))) continue;   // språk som inte är byggt än
   const dict = (await import(pathToFileURL(path.join(ROOT, `js/i18n/${id}.js`)).href)).default;
   const wide = [];
   for (const k of KEYS.keys) {

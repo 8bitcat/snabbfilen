@@ -2,6 +2,11 @@
 
 Carl 2026-10-07: spelet ska finnas på **engelska, spanska, tyska, franska, polska, italienska och
 portugisiska**, med **lokala namn** på staden, stadsdelarna, gatorna, butikerna och personerna.
+Carl 2026-11-23 (v0.176): **nederländska, norska (bokmål) och danska** – "billigast, bara översättning,
+säljer direkt". Tio språk utöver svenskan. Språklistorna står i `js/core/i18n.js` (LANGS), `tools/i18n-nycklar.mjs`,
+`tools/i18n-bygg.mjs`, `tools/i18n-bredd.mjs`, `tools/sprak-test.mjs`, appens `Info.plist` (CFBundleLocalizations
++ `<id>.lproj/InfoPlist.strings`, registrerade i `App.xcodeproj/project.pbxproj`), `app/appstore-sprak.md` och
+`app/tools/skarmbilder.mjs` (RUBRIKER). Ett nytt språk läggs till på alla ställena.
 
 ## Hur det fungerar
 
@@ -9,7 +14,7 @@ portugisiska**, med **lokala namn** på staden, stadsdelarna, gatorna, butikerna
   `js/i18n/<id>.js`, som är en tabell från svensk text till översättning.
 - **Saknas en översättning visas svenskan.** Spelet går alltså aldrig sönder av en saknad text.
 - **Språkvalet** sker i ordningen `?lang=xx` → sparat val (`snabbfilen_lang`) → enhetens språk → engelska.
-  Norska och danska enheter får svenska.
+  Nynorsk (`nn`) och `no` får bokmål.
 - **Testrobotarna** (`navigator.webdriver`) spelar på svenska om inte `?lang=` står i adressen.
 - **Byta språk:** menyn → ⚙ Inställningar → 🌍 Språk. `setLang` sparar valet och laddar om sidan.
 - **Ordlistan laddas med top-level await i `js/core/i18n.js`.** Varje modul som importerar `$t` har
@@ -50,6 +55,9 @@ stora HTML-block med loopar inuti. Märk i stället de enskilda texterna inuti.
 | en | $69 |
 | es, de, fr, it, pt | 69 € |
 | pl | 69 zł |
+| nl | € 69 |
+| nb | 69 kr |
+| da | 69 kr. |
 
 Beloppen är desamma på alla språk. Bara tecknet byts.
 
@@ -70,7 +78,7 @@ språkets listor med förnamn, efternamn, husdjurs- och hästnamn (`list('girls'
 | `node tools/i18n-in.mjs en de` | Tar in översättarnas svar (`svar/`) till `ut/` och listar det som saknas |
 | `node tools/i18n-bygg.mjs` | Bygger `js/i18n/<id>.js` och kontrollerar {0}-platser och HTML-taggar |
 | `node tools/i18n-bredd.mjs` | Listar skyltar där översättningen är för bred för pixelskylten |
-| `node tools/sprak-test.mjs` | Spelar alla sju språken: inga saknade texter, ingen svenska, inga fel |
+| `node tools/sprak-test.mjs` | Spelar alla tio språken: inga saknade texter, ingen svenska, inga fel |
 
 `window.__i18nMiss` innehåller de texter som visats utan översättning, och testerna läser den.
 
@@ -90,14 +98,14 @@ språkets listor med förnamn, efternamn, husdjurs- och hästnamn (`list('girls'
 
 ## App Store
 
-Butikstexterna för alla sju språken ligger i `app/appstore-sprak.md` och håller sig inom Apples
+Butikstexterna för alla språken ligger i `app/appstore-sprak.md` och håller sig inom Apples
 längdgränser: undertitel, reklamtext, nyckelord och beskrivning.
 
 ## Typsnitten
 
 Pixeltypsnitten (`SMALL` och `BIG` i `js/core/floor-pix.js`) och menyernas Pixelstad
-(`tools/pixelfont`, byggs med `node tools/pixelfont/build.mjs`) har accenterna för alla sju språken:
+(`tools/pixelfont`, byggs med `node tools/pixelfont/build.mjs`) har accenterna för alla språken:
 
-- ÁÀÂÃÄÅ, ÇĆ, ÉÈÊË, ÍÌÎÏ, ÑŃ, ÓÒÔÕÖ, ŚŹŻ, ÚÙÛÜ, ŸÝ, ĄĘ, Ł, Œ, Æ, ¡, ¿ (även gemener i Pixelstad)
+- ÁÀÂÃÄÅ, ÇĆ, ÉÈÊË, ÍÌÎÏ, ÑŃ, ÓÒÔÕÖ, ŚŹŻ, ÚÙÛÜ, ŸÝ, ĄĘ, Ł, Œ, Æ, Ø, ¡, ¿ (även gemener i Pixelstad)
 - ß blir SS i versaler
 - Typografiska citattecken och tankstreck byts mot de tecken som finns.

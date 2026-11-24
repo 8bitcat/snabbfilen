@@ -10,6 +10,11 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.176.0] – 2026-11-24 – 🌍 Nederländska, norska och danska
+- 🌍 **Spelet på tre nya språk: nederländska, norska och danska** – tio språk utöver svenskan. Byt under ⚙ Inställningar → 🌍 Språk, eller låt spelet följa telefonens språk (norska och danska enheter fick förut svenska – nu får de sitt eget). Staden heter Pixelstad på nederländska (och spelet LINKERBAAN, vänsterfilen är omkörningsfilen i Nederländerna), Pixelbyen på norska (spelet I HUNDRE, «å leve livet i hundre») och Pixelkøbing på danska (spelet OVERHALINGSBANEN), med egna namn på stadsdelar, gator, butiker, personer och husdjur precis som på de andra språken. Kebab Grill heter Shoarma Grill, skeppskatten Sill heter Maatje och pengarna visas som € 69, 69 kr och 69 kr.
+- Pixeltypsnitten har fått Ø/ø (skyltar och menyer på norska och danska).
+- Appen: tre nya språk registrerade för App Store (syns där efter nästa appbygge). Butikstexterna på de nya språken ligger i app/appstore-sprak.md.
+
 ## [0.175.0] – 2026-11-23 – 🧸 Saker på saker i Dockskåpet
 - 🧸 **Saker på saker i Dockskåpet** – nu bär allt som står på golvet: lägg nallen på sängen, ställ stolen på sängen och bollen på stolen, lampan uppe på klädskåpet, gosedjuret i fåtöljen, julklappen och tomten på nattduksbordet. Borden och vitrinskåpet fungerar som förut, resten tar höjden från sin egen form där du släpper saken (på sängens madrass, soffans dyna, stolens sits). Det får plats om det är smalare än det det ska stå på.
 - Det som står på något följer med när du flyttar basen – också det som står på det igen – och ställs ner på golvet när basen tas bort. Lösa saker (nallar, mat) ligger kvar och läggs på golvet.

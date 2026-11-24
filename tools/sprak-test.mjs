@@ -16,10 +16,15 @@ let fails = 0;
 const ok = (c, m) => { console.log((c ? 'ok: ' : 'FEL: ') + m); if (!c) fails++; };
 const cov = execFileSync('node', ['tools/i18n-nycklar.mjs'], { encoding: 'utf8' });
 const full = [...cov.matchAll(/(\w\w): (\d+)\/(\d+)/g)];
-ok(full.length === 7 && full.every((m) => m[2] === m[3]), `ordlistorna täcker alla texter i koden (${full.map((m) => `${m[1]} ${m[2]}/${m[3]}`).join(', ')})`);
+ok(full.length === 10 && full.every((m) => m[2] === m[3]), `ordlistorna täcker alla texter i koden (${full.map((m) => `${m[1]} ${m[2]}/${m[3]}`).join(', ')})`);
 
 const SV = /[åÅ]|(?<!\p{L})(och|inte|är|för|med|kronor|kr|tugga|tuggor|lycka|mättnad)(?!\p{L})/iu;
-const LANGS = { en: { title: 'THE FAST LANE', cur: /\$1,500/ }, es: { title: 'VÍA RÁPIDA', cur: /1\.?500 €/ }, de: { title: 'ÜBERHOLSPUR', cur: /1\.500 €/ }, fr: { title: 'LA VOIE RAPIDE', cur: /1\s?500 €/ }, pl: { title: 'SZYBKI PAS', cur: /1\s?500 zł/ }, it: { title: 'CORSIA VELOCE', cur: /1\.?500 €/ }, pt: { title: 'VIA RÁPIDA', cur: /1\.?500 €/ } };
+// norskan och danskan har å, "med" och "kr" själva – där avslöjar ä/ö och de svenska småorden svenskan
+const SV_NORD = /[äöÄÖ]|(?<!\p{L})(och|inte|är|kronor|tugga|tuggor|lycka)(?!\p{L})/iu;
+const svRe = (lang) => (lang === 'nb' || lang === 'da' ? SV_NORD : SV);
+const LANGS = { en: { title: 'THE FAST LANE', cur: /\$1,500/ }, es: { title: 'VÍA RÁPIDA', cur: /1\.?500 €/ }, de: { title: 'ÜBERHOLSPUR', cur: /1\.500 €/ }, fr: { title: 'LA VOIE RAPIDE', cur: /1\s?500 €/ }, pl: { title: 'SZYBKI PAS', cur: /1\s?500 zł/ }, it: { title: 'CORSIA VELOCE', cur: /1\.?500 €/ }, pt: { title: 'VIA RÁPIDA', cur: /1\.?500 €/ },
+  // v0.176: nederländska, norska, danska (titlarna = "Snabbfilen" i tools/i18n/namn.<id>.json)
+  nl: { title: 'LINKERBAAN', cur: /€ 1\.500/ }, nb: { title: 'I HUNDRE', cur: /1\s?500 kr(?!\.)/u }, da: { title: 'OVERHALINGSBANEN', cur: /1\.500 kr\./ } };
 const browser = await chromium.launch();
 for (const [lang, want] of Object.entries(LANGS)) {
   const p = await browser.newPage({ viewport: { width: 1152, height: 648 } });
@@ -48,8 +53,9 @@ for (const [lang, want] of Object.entries(LANGS)) {
   await D(() => SF.go('sjoboden')); await p.waitForTimeout(1300); await D(() => SF.scene._debug.openMenu()); await p.waitForTimeout(400);
   const modal = await D(() => document.querySelector('#modal')?.innerText || '');
   const r = await D(() => ({ miss: [...(window.__i18nMiss || [])], lines: (document.body.innerText || '').split('\n') }));
-  r.sv = [...new Set(r.lines.filter((l) => SV.test(l)))].slice(0, 5);
-  ok(modal.length > 40 && !SV.test(modal), `${lang}: Sjöbodens meny är översatt`);
+  const sv = svRe(lang);
+  r.sv = [...new Set(r.lines.filter((l) => sv.test(l)))].slice(0, 5);
+  ok(modal.length > 40 && !sv.test(modal), `${lang}: Sjöbodens meny är översatt`);
   ok(!r.miss.length, `${lang}: inga texter utan översättning visades${r.miss.length ? ' – ' + r.miss.slice(0, 5).join(' | ') : ''}`);
   ok(!r.sv.length, `${lang}: ingen svensk text i rutorna${r.sv.length ? ' – ' + r.sv.join(' | ') : ''}`);
   ok(!errs.length, `${lang}: inga fel${errs.length ? ' – ' + [...new Set(errs)].slice(0, 3).join(' | ') : ''}`);

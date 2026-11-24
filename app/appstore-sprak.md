@@ -289,3 +289,123 @@ Joga em 8 línguas: português, inglês, espanhol, alemão, francês, polaco, it
 
 Sem contas, sem anúncios e sem compras na app. O jogo fica guardado no teu telemóvel e recebe sempre novidades.
 ```
+
+---
+
+## Nederlands – också för Belgien (Flandern) och Surinam
+
+**Subtitle:** `Levenssimulatie in pixel art`
+
+**Promotional Text**
+```
+Een heel leven in pixel art: werk, zoek een huis, richt in, adopteer huisdieren, geef feestjes en ontdek Pixelstad – alleen of samen met je gezin in dezelfde stad.
+```
+
+**Keywords**
+```
+simulatie,stad,gezin,familie,huisdieren,inrichten,banen,kapper,kleding,boerderij,feest,kinderen
+```
+
+**Description**
+```
+Welkom in Pixelstad! Je komt aan met € 250 op zak en een roestige oude caravan – de rest bepaal jij.
+
+WERK JE OMHOOG
+14 verschillende banen, van de pizzeria en de burgerbar tot het vliegveld, het medisch centrum en de garage. Klim op tot teamleider en baas – of begin je eigen foodtruck.
+
+VIND EEN THUIS
+Spaar voor een appartement, een rijtjeshuis, een villa of een boerderij op het platteland. Richt kamer voor kamer in met meer dan honderd soorten meubels, kook in de keuken en kweek groenten in de tuin.
+
+SHOPPEN EN STYLEN
+De kledingwinkel, de speelgoedwinkel, de meubelreus en de kapper met heel veel kapsels en haarkleuren – en de dierenwinkel, waar kittens, puppy's en konijntjes op een thuis wachten.
+
+VAN ALLES TE DOEN
+Nodig vrienden uit voor een feestje, ga naar de bios, rij op de fiets of de scooter door de stad, word boer en ontdek Zuid, het park, de Flatwijk, de Lindenbuurt en Downtown – dag en nacht, in zon en regen. Eet kibbeling bij het Botenhuis op de steiger en hou de dolfijn in de gaten!
+
+SAMEN SPELEN
+Iedereen die tegelijk speelt, komt in dezelfde stad terecht. Ga bij elkaar op bezoek, werk dezelfde dienst en praat via de voicechat als je wilt. Scheldwoorden worden eruit gefilterd, en wie gemeen doet, kan worden geblokkeerd en gemeld.
+
+Speel in 11 talen: Nederlands, Engels, Spaans, Duits, Frans, Pools, Italiaans, Portugees, Zweeds, Noors en Deens.
+
+Geen accounts en geen reclame. Het spel wordt op je telefoon opgeslagen en krijgt steeds nieuwe dingen.
+```
+
+---
+
+## Norsk (bokmål) – Norge
+
+**Subtitle:** `Livssimulator i pikselkunst`
+
+**Promotional Text**
+```
+Et helt liv i pikselkunst: jobb, finn et hjem, innred, adopter kjæledyr, hold fester og utforsk Pixelbyen – alene eller sammen med familien i samme by.
+```
+
+**Keywords**
+```
+simulator,by,familie,barn,kjæledyr,innrede,jobber,frisør,klær,bondegård,fest,koselig,hund,katt
+```
+
+**Description**
+```
+Velkommen til Pixelbyen! Du flytter inn med 250 kr i lomma og en rusten gammel campingvogn – resten er opp til deg.
+
+JOBB DEG OPPOVER
+14 forskjellige jobber, fra pizzeriaen og burgerbaren til flyplassen, legesenteret og bilverkstedet. Rykk opp til skiftleder og sjef – eller start din egen foodtruck.
+
+FINN ET HJEM
+Spar til en leilighet, et rekkehus, en villa eller en gård på landet. Innred rom for rom med over hundre slags møbler, lag mat på kjøkkenet og dyrk grønnsaker i hagen.
+
+SHOPPING OG STIL
+Klesbutikken, lekebutikken, møbelgiganten og frisøren med haugevis av frisyrer og hårfarger – og dyrebutikken, der kattunger, valper og kaninunger venter på et hjem.
+
+MASSE Å GJØRE
+Inviter venner på fest, gå på kino, sykle eller kjør moped gjennom byen, bli bonde og utforsk Sørbyen, parken, Forstaden, Lindeløkka og Bjørvika – dag og natt, i sol og regn. Spis fisk på Rorbua ute på brygga og hold utkikk etter delfinen!
+
+SPILL SAMMEN
+Alle som spiller samtidig, havner i samme by. Besøk hverandre hjemme, jobb samme skift og snakk i talechatten om dere vil. Stygge ord filtreres bort, og den som er slem, kan blokkeres og rapporteres.
+
+Spill på 11 språk: norsk, engelsk, spansk, tysk, fransk, polsk, italiensk, portugisisk, svensk, nederlandsk og dansk.
+
+Ingen kontoer og ingen reklame. Spillet lagres på telefonen din og får stadig nye ting.
+```
+
+---
+
+## Dansk – Danmark
+
+**Subtitle:** `Livssimulator i pixelkunst`
+
+**Promotional Text**
+```
+Et helt liv i pixelkunst: arbejd, find et hjem, indret, adopter kæledyr, hold fester og udforsk Pixelkøbing – alene eller sammen med familien i samme by.
+```
+
+**Keywords**
+```
+simulator,by,familie,børn,kæledyr,indretning,jobs,frisør,tøj,bondegård,fest,hygge,hund,kat,legetøj
+```
+
+**Description**
+```
+Velkommen til Pixelkøbing! Du flytter ind med 250 kr. på lommen og en rusten gammel campingvogn – resten er op til dig.
+
+ARBEJD DIG OP
+14 forskellige jobs, fra pizzeriaet og burgerbaren til lufthavnen, lægehuset og autoværkstedet. Bliv forfremmet til holdleder og chef – eller start din egen foodtruck.
+
+FIND ET HJEM
+Spar op til en lejlighed, et rækkehus, en villa eller en gård på landet. Indret værelse for værelse med over hundrede slags møbler, lav mad i køkkenet og dyrk grøntsager i haven.
+
+SHOP OG FIND DIN STIL
+Tøjbutikken, legetøjsbutikken, møbelkæmpen og frisøren med masser af frisurer og hårfarver – og dyrehandlen, hvor killinger, hvalpe og kaninunger venter på et hjem.
+
+MASSER AT LAVE
+Inviter venner til fest, gå i biografen, kør på cykel eller knallert gennem byen, bliv landmand og udforsk Sønderbro, parken, Forstaden, Lindevang og City – dag og nat, i sol og regn. Spis fisk på Røgeriet ude på molen og hold udkig efter delfinen!
+
+SPIL SAMMEN
+Alle, der spiller samtidig, ender i den samme by. Besøg hinanden hjemme, arbejd på samme vagt og snak i stemmechatten, hvis I har lyst. Grimme ord bliver filtreret væk, og den, der er led, kan blokeres og anmeldes.
+
+Spil på 11 sprog: dansk, engelsk, spansk, tysk, fransk, polsk, italiensk, portugisisk, svensk, nederlandsk og norsk.
+
+Ingen konti og ingen reklamer. Spillet gemmes på din telefon og får hele tiden nye ting.
+```

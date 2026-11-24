@@ -16,6 +16,9 @@
 		<string>pl</string>
 		<string>it</string>
 		<string>pt</string>
+		<string>nl</string>
+		<string>nb</string>
+		<string>da</string>
 	</array>
 	<key>CFBundleDisplayName</key>
         <string>Pixelcity</string>
