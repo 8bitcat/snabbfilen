@@ -1,7 +1,7 @@
 {
-  "version": "0.180.0",
+  "version": "0.181.0",
   "date": "2026-11-25",
-  "title": "🚀 Rymdstationen och butikens andra våg",
+  "title": "🔗 Länkar rakt in i Dockskåpet",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
@@ -42,6 +42,7 @@
     "js/core/betyg.js",
     "js/core/brasa.js",
     "js/core/chat.js",
+    "js/core/djuplank.js",
     "js/core/djurnetapp.js",
     "js/core/drakt.js",
     "js/core/fest.js",

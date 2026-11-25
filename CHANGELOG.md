@@ -10,6 +10,9 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.181.0] – 2026-11-25 – 🔗 Länkar rakt in i Dockskåpet
+- 🔗 **Länkar rakt in i spelet** – i appen (version 1.5 och senare) öppnar en länk som pixelcity://dockskap/rymd spelet direkt i Dockskåpets Rymdstation, också från huvudmenyn. Länkarna används av händelserna på Pixelcitys sida i App Store: "Rymdstationen" och "Jul i Pixelstaden".
+
 ## [0.180.0] – 2026-11-25 – 🚀 Rymdstationen och butikens andra våg
 - 🚀 **Rymdstationen – Dockskåpets åttonde rum** (köps i Butiken i appen, 39 kr): metallväggar med nitar, runda fönster mot jorden och månen där stjärnorna blinkar, gallergolv och lysande ljuslister. Tolv nya saker: raketen (ryker när den lyfter), kontrollbordet (lamporna blinkar), rymddräkten, roboten (piper och sprider hjärtan), planetlampan, sovkapseln (figurerna lägger sig i den), teleskopet, odlingsröret, utomjordingen, satelliten, pilotstolen och månstenen.
 - 🔑 **Nytt i Butiken – dina för alltid, i varje spel:**

@@ -229,3 +229,12 @@ if (cmd === 'allt') {
   console.log('--- läget nu:');
   for (const iap of await befintliga()) console.log(await status(iap));
 }
+if (cmd === 'skicka') {   // node asc-iap.mjs skicka <del av produkt-ID> – skicka varor som är READY_TO_SUBMIT till granskning (efter 1.3 går det utan ny appversion)
+  const filt = process.argv[3] || '___';
+  for (const iap of (await befintliga()).filter((x) => x.attributes.productId.includes(filt) && x.attributes.state === 'READY_TO_SUBMIT')) {
+    try {
+      await call('POST', '/v1/inAppPurchaseSubmissions', { data: { type: 'inAppPurchaseSubmissions', relationships: { inAppPurchaseV2: { data: { type: 'inAppPurchases', id: iap.id } } } } });
+      console.log('✓ inskickad:', iap.attributes.productId);
+    } catch (e) { console.log('✗', iap.attributes.productId, e.message.slice(0, 400)); process.exitCode = 1; }
+  }
+}

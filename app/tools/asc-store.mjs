@@ -197,3 +197,12 @@ if (cmd === 'bilder') {
     });
   }
 }
+if (cmd === 'avbryt') {   // dra tillbaka versionens inskick (innan granskningen börjat) – för att byta bygge
+  const subs = await alla(`/v1/reviewSubmissions?filter[app]=${APP}&filter[platform]=IOS&limit=20`);
+  for (const s of subs.filter((x) => ['WAITING_FOR_REVIEW', 'READY_FOR_REVIEW'].includes(x.attributes.state))) {
+    const items = await alla(`/v1/reviewSubmissions/${s.id}/items?include=appStoreVersion&limit=20`);
+    const ver = await versionen();
+    if (!items.some((i) => i.relationships?.appStoreVersion?.data?.id === ver?.id)) continue;
+    await steg(`drar tillbaka inskick ${s.id}`, async () => { await call('PATCH', `/v1/reviewSubmissions/${s.id}`, { data: { type: 'reviewSubmissions', id: s.id, attributes: { canceled: true } } }); });
+  }
+}

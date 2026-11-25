@@ -1963,6 +1963,7 @@ export function makeDockskap(A) {
     natTick(dt);   // 👫 leka ihop: skicka ändringar, hela huset, hjärtslag; städa kompisens hand
   }
 
+  function gaTillRum(id) { const i = RUM.findIndex((r) => r.id === id); if (i >= 0) { camX = camRoom(i); camTo = null; } return i; }
   const scene = {
     dockskap: true,   // (main.js: spelklockan står still, ingen pixel-HUD)
     get viewMax() { return { w: W, h: FH }; },
@@ -1973,8 +1974,10 @@ export function makeDockskap(A) {
       if (!gast()) H.dock = DOCK_KOP.filter((k) => agerDock(k.id)).map((k) => k.id);   // (ett köp i Butiken sedan sist)
       document.body.classList.add('dock-on'); byggPanel(); byggLage(); sattLage(lage, true);
       if (A.dockGast?.host) { const g = A.dockGast; gaTill(g.host, g.namn); }   // (👫 inbjudan från js/net/dockdela.js)
+      if (A.dockRum) { gaTillRum(A.dockRum); A.dockRum = null; }                 // (🔗 djuplänk, js/core/djuplank.js)
     },
     gaTill,                                   // (dockdela.js: byter hus när man redan står i Dockskåpet)
+    gaTillRum,                                // (djuplank.js: pixelcity://dockskap/rymd)
     dockGast: () => natv?.roll === 'gast',
     exit() {
       spara(true); talk.clear(); drag = null; armed = null; pan = null; anims.clear(); fx.length = 0;

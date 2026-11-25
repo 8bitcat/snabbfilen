@@ -23,6 +23,17 @@
 		<string>tr</string>
 		<string>vi</string>
 	</array>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>io.eightbitcat.pixelcity</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>pixelcity</string>
+			</array>
+		</dict>
+	</array>
 	<key>CFBundleDisplayName</key>
         <string>Pixelcity</string>
 	<key>CFBundleExecutable</key>
