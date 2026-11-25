@@ -10,6 +10,10 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.179.0] – 2026-11-25 – ⭐ Betygsfrågan och App Store-bannern
+- ⭐ **Betygsfrågan** – i appen (version 1.5 och senare) kan Apples egen ruta "Gillar du Pixelcity?" dyka upp i ett glatt ögonblick: när du slår ett nytt rekord på jobbet, när du får lördagsfestens present eller efter en stunds lek ihop med en vän i Dockskåpet. Aldrig för helt nya spelare och högst var fjärde månad – och ett betyg hjälper fler att hitta spelet.
+- 📱 På webben visar Safari på iPhone och iPad nu en liten banner överst som leder till Pixelcity i App Store.
+
 ## [0.178.0] – 2026-11-24 – 📲 Bjud in vänner till Dockskåpet med en notis
 - 📲 **Bjud in dina vänner till Dockskåpet med en notis** – tryck på 👫 i Dockskåpet: under "📲 Dina vänner" står alla dina vänner, också de som inte spelar just nu. Ett tryck skickar en notis till deras telefon, och när de trycker på den öppnas spelet och de kommer rätt in i ditt hus – sedan bygger och leker ni tillsammans och ser allt den andra gör. Inbjudan gäller i 20 minuter; stanna kvar i huset så länge.
 - Spelar vännen på webben (eller trycker inte på notisen) dyker inbjudan upp som en ruta "👫 Leka ihop?" nästa gång hen är i spelet eller i menyn.

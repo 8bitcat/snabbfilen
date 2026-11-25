@@ -95,6 +95,7 @@ import { onDock, dockSend, dockMyId, dockBjudIn, dockKandidater, dockSenasteInbj
 import { ensureWorld } from '../net/world.js';
 import { vanLista } from '../net/vanner.js';
 import { vanDockBjud } from '../net/vanpush.js';
+import { betygOgonblick } from '../core/betyg.js';   // ⭐ betygsrutan efter en stunds lek ihop
 import { TRADGARD_RUM, ARSTIDER, tradgardBg, UTE, TRADGARD_SEED, uteBild } from './dockskap-ute.js';
 import { SLOTT_RUM, slottBg, SLOTT, SLOTT_SEED, slottBild } from './dockskap-slott.js';
 import { PRISER, KBK, kbkBild, kbkKontext, tvattaSp } from './dockskap-kbk.js';
@@ -1358,7 +1359,7 @@ export function makeDockskap(A) {
       if (!natv) natv = { roll: 'vard', gaster: new Map() };
       if (natv.roll !== 'vard') return;
       const namn = String(m.namn || '').slice(0, 16);
-      natv.gaster.set(from, { namn, t: tid });
+      natv.gaster.set(from, { namn, t: tid, start: natv.gaster.get(from)?.start ?? tid });
       dockSend({ t: 'state', to: from, hus: husPaket() });
       play('knock'); toast($t`👋 ${namn || $t('En kompis')} är här och leker med dig!`, 'good');
       byggLage();
@@ -1375,7 +1376,7 @@ export function makeDockskap(A) {
     }
     if (natv?.roll === 'vard' && natv.gaster.has(from)) {
       if (m.t === 'act') { natv.gaster.get(from).t = tid; tillampa(m.a, from); if (natv.gaster.size > 1 && m.a?.op !== 'hej') dockSend({ t: 'act', a: m.a, by: from }); }   // (vidare till de andra gästerna)
-      else if (m.t === 'leave') { const g = natv.gaster.get(from); natv.gaster.delete(from); pek.delete(from); toast($t`👋 ${g?.namn || $t('Kompisen')} gick hem.`); byggLage(); }
+      else if (m.t === 'leave') { const g = natv.gaster.get(from); natv.gaster.delete(from); pek.delete(from); toast($t`👋 ${g?.namn || $t('Kompisen')} gick hem.`); byggLage(); if (g && g.start != null && tid - g.start > 120) betygOgonblick('dock', { fordrojning: 2500 }); }   // (⭐ lekt ihop en stund)
     }
   }
   // gå hem till en kompis (inbjudan i js/net/dockdela.js, eller A.dockGast när huset öppnas)
@@ -1385,7 +1386,7 @@ export function makeDockskap(A) {
     if (natv?.roll === 'gast') dockSend({ t: 'leave' });
     spara(true);   // (mitt eget hus sparas innan jag lämnar det – sedan ingen skrivning förrän jag är hemma igen)
     if (!storeSave) { storeSave = store.save; store.save = () => false; }
-    natv = { roll: 'gast', host, namn: String(namn || '').slice(0, 16), hus: false, t: tid, hejT: 0 };
+    natv = { roll: 'gast', host, namn: String(namn || '').slice(0, 16), hus: false, t: tid, hejT: 0, start: tid };
     pek.clear(); dirty.clear(); drag = null; armed = null; pan = null;
     dockSend({ t: 'join', to: host, namn: mittNamn() });
     toast($t`🧸 På väg hem till ${natv.namn || $t('kompisen')} …`);
@@ -1393,6 +1394,7 @@ export function makeDockskap(A) {
     return true;
   }
   function gaHem(text) {
+    if (natv?.roll === 'gast' && natv.hus && natv.start != null && tid - natv.start > 120) betygOgonblick('dock', { fordrojning: 2500 });   // (⭐ lekt hos en vän en stund)
     if (natv?.roll === 'gast') dockSend({ t: 'leave' });
     natv = null; A.dockGast = null; pek.clear(); dirty.clear();
     if (storeSave) { store.save = storeSave; storeSave = null; try { store.load(); } catch { /* ok */ } }

@@ -1,7 +1,7 @@
 {
-  "version": "0.178.0",
-  "date": "2026-11-24",
-  "title": "📲 Bjud in vänner till Dockskåpet med en notis",
+  "version": "0.179.0",
+  "date": "2026-11-25",
+  "title": "⭐ Betygsfrågan och App Store-bannern",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
@@ -39,6 +39,7 @@
     "js/city/weather.js",
     "js/core/ambience.js",
     "js/core/avatar.js",
+    "js/core/betyg.js",
     "js/core/brasa.js",
     "js/core/chat.js",
     "js/core/djurnetapp.js",

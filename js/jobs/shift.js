@@ -15,6 +15,7 @@ import { play } from '../core/sound.js';
 import { shiftInStrip } from '../core/hud-pix.js';
 import { $t } from '../core/i18n.js';
 import { guideStep } from '../core/startguide.js'; // 🧭 första dagen: knappen att trycka på pulserar
+import { betygOgonblick } from '../core/betyg.js'; // ⭐ Apples betygsruta vid ett nytt rekord
 
 export const SHIFT_SECONDS = 60; // (nybörjarens vanliga pass – minispelen läser planOf(A).seconds)
 export const planOf = (A) => A?.shiftPlan || shiftPlan(1);
@@ -213,7 +214,7 @@ function finishShift(A, jobId, stats) {
     ${res.nightEnd ? `<p style="font-size:var(--f2);margin-bottom:0">${$t('🌙 Nattpasset tog slut vid midnatt – nattbussen tar dig hem till sängen.')}</p>` : ''}
     ${bf.nasta && bf.ok && !bf.soktIdag ? `<p style="font-size:var(--f2);margin-bottom:0" class="ok">${$t`⭐ ${chefOf(jobId)} har sett att du är duktig – sök befordran till <b>${bf.nasta.namn.toLowerCase()}</b>!`}</p>` : ''}`, [
     ...(bf.nasta && bf.ok && !bf.soktIdag && !res.nightEnd ? [{ label: $t`📝 Sök befordran (${bf.nasta.namn.toLowerCase()})`, cls: 'btn-gold', onClick: () => { closeModal(); openIntervju(A, jobId, () => afterShift(A, jobId)); } }] : []),
-    { label: res.nightEnd ? $t('🌙 Ta lönen och åk hem') : $t('💰 Ta lönen'), cls: 'btn-go', onClick: () => { closeModal(); afterShift(A, jobId, res.nightEnd); } },
+    { label: res.nightEnd ? $t('🌙 Ta lönen och åk hem') : $t('💰 Ta lönen'), cls: 'btn-go', onClick: () => { closeModal(); afterShift(A, jobId, res.nightEnd); if (res.newRecord) betygOgonblick('lon'); } },   // (⭐ nytt rekord = glatt ögonblick, js/core/betyg.js)
   ], { closable: false });
 }
 

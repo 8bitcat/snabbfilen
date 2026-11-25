@@ -18,6 +18,7 @@ import { SMALL, ctxText, textW, hash, mix } from '../core/floor-pix.js';
 import { PARK_LAYOUT } from './map.js';
 import { pushGet } from '../net/kbkpush.js';
 import { $t } from '../core/i18n.js';
+import { betygOgonblick } from '../core/betyg.js'; // ⭐ betygsrutan efter festpresenten
 
 const PL = PARK_LAYOUT.plaza;                                   // { cx 934, cy 366, r 42 }
 export const STATY = { x: PL.cx - 50, y: PL.cy + 64 };          // på gräset söder om torget, vid gången mot kyrkan (foodtruckens plats i parken ligger väster om torget)
@@ -177,6 +178,7 @@ export function createFest(env, { game, me } = {}) {
         const h = g.glad?.(6, $t('Lördagsfesten'), 'fest', 6) || 0;
         g.save();
         env.festPresent = { t: performance.now(), glad: h };   // (staden visar toasten och spelar fanfaren)
+        betygOgonblick('fest', { fordrojning: 9000 });
       }
     },
     statyAt: (x, y) => Math.abs(x - STATY.x) < 13 && y < STATY.y + 3 && y > STATY.y - 60,
