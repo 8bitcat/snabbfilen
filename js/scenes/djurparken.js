@@ -27,6 +27,7 @@ import { TW, TH, G, ENTRE, HALLPLATS, KASSA, HAGN, HAGNLISTA, PICKNICK, GLASSKIO
 import { ritaDjur, SADEL, DJURFAKTA } from '../djurparken/djur.js';
 import { ritaGrindstolpe, ritaGrind, ritaKassa, ritaParkskylt, ritaHallplats, ritaStaketFram, ritaSkylt, ritaKiosk, ritaLada, ritaKlatter, ritaGrotta, ritaKlippa, ritaAkacia, ritaFoder, ritaPersonalhus, ritaPicknickbord, ritaVass, ritaSkottkarra, ritaBallong, ritaTrag } from '../djurparken/deko.js';
 import { $t } from '../core/i18n.js';
+import { agerEvig } from '../core/kop.js';   // 🎟️ köpt årskort: fri entré och fri ponnyridning
 
 const BUSS = 10, GANG = 62, PONNY_PRIS = 15, FODER_PRIS = 5, RIDTUR = 14;
 const FOLKRAD = [
@@ -168,6 +169,7 @@ export function makeDjurparken(A) {
   function biljett() {
     if (!oppet()) { toast($t`🦁 Djurparken är stängd. ${OPPETTEXT()}.`, 'bad'); return; }
     if (betalt) { toast($t('🎟️ Du har redan betalat – grinden är öppen!')); return; }
+    if (agerEvig('arskort')) { play('ok'); slappIn(); toast($t('🎟️ Årskortet blippar – välkommen in!'), 'good'); walker.walkTo(ENTRE.X + 30, 286); const h = g.glad?.(2, '', 'djurpark', 2); if (h) setTimeout(() => toast($t`🦁 Djurparken! +${h} 😊`, 'good'), 900); return; }
     openModal($t('🎟️ Djurparken – entré'), `<p style="font-size:var(--f2);margin-top:0">${$t`Välkommen! Entrén kostar <b>${fmt(ENTRE.PRIS)}</b> och gäller hela dagen. Lejonen, elefanterna, girafferna, pingvinerna, klappzoo och ponnyridningen väntar där inne.`}</p><p style="font-size:var(--f2)">💰 <b>${fmt(g.money)}</b></p>`, [
       { label: $t`Betala · ${fmt(ENTRE.PRIS)}`, cls: g.money >= ENTRE.PRIS ? 'btn-go' : '', disabled: g.money < ENTRE.PRIS, onClick: () => { closeModal(); if (g.money < ENTRE.PRIS) { toast($t('Du har inte råd med entrén.'), 'bad'); return; } g.money -= ENTRE.PRIS; g.save(); play('coin'); slappIn(); toast($t('🎟️ Varsågod! Grinden är öppen – följ gången.'), 'good'); walker.walkTo(ENTRE.X + 30, 286); const h = g.glad?.(2, '', 'djurpark', 2); if (h) setTimeout(() => toast($t`🦁 Djurparken! +${h} 😊`, 'good'), 900); } },
       { label: $t('Nej tack'), onClick: closeModal },
@@ -190,6 +192,7 @@ export function makeDjurparken(A) {
   function rida() {
     if (rider) return;
     if (!oppet()) { toast($t('🐴 Pricken har gått och lagt sig. Ponnyridningen är öppen när parken är det.'), 'bad'); return; }
+    if (agerEvig('arskort')) { play('ok'); walker.stop(); rider = { t: 0 }; toast($t('🎟️ Årskortet gäller – upp i sadeln! Pricken går ett varv.'), 'good'); return; }
     openModal($t('🐴 Ponnyridningen'), `<p style="font-size:var(--f2);margin-top:0">${$t`Ett varv på ponnyn Pricken kostar <b>${fmt(PONNY_PRIS)}</b>. Han går lugnt – håll i sadeln!`}</p><p style="font-size:var(--f2)">💰 <b>${fmt(g.money)}</b></p>`, [
       { label: $t`Rid ett varv · ${fmt(PONNY_PRIS)}`, cls: g.money >= PONNY_PRIS ? 'btn-go' : '', disabled: g.money < PONNY_PRIS, onClick: () => { closeModal(); if (g.money < PONNY_PRIS) { toast($t('Du har inte råd just nu.'), 'bad'); return; } g.money -= PONNY_PRIS; g.save(); play('coin'); walker.stop(); rider = { t: 0 }; toast($t('🐴 Upp i sadeln! Pricken går ett varv.'), 'good'); } },
       { label: $t('Inte nu'), onClick: closeModal },
@@ -230,13 +233,13 @@ export function makeDjurparken(A) {
   // ---------- platserna ----------
   const spots = () => [
     { id: 'buss', r: [HALLPLATS.x - 12, HALLPLATS.y - 36, HALLPLATS.x + 14, HALLPLATS.y + 2], go: [HALLPLATS.x + 10, HALLPLATS.y - 8], label: $t('DJURBUSSEN TILL STAN'), act: bussen },
-    { id: 'kassa', r: [KASSA.x - 18, KASSA.y - 50, KASSA.x + 18, KASSA.y + 2], go: [KASSA.x, KASSA.y + 10], label: betalt ? $t('BILJETTKASSAN') : $t`ENTRÉ · ${fmt(ENTRE.PRIS)}`, act: biljett },
+    { id: 'kassa', r: [KASSA.x - 18, KASSA.y - 50, KASSA.x + 18, KASSA.y + 2], go: [KASSA.x, KASSA.y + 10], label: betalt ? $t('BILJETTKASSAN') : agerEvig('arskort') ? $t('ENTRÉ · ÅRSKORT') : $t`ENTRÉ · ${fmt(ENTRE.PRIS)}`, act: biljett },
     { id: 'grind', r: [ENTRE.X - 10, ENTRE.GRIND[0] - 70, ENTRE.X + 10, ENTRE.GRIND[1] + 2], go: [ENTRE.X - 14, 286], label: betalt ? $t('IN I PARKEN') : $t('GRINDEN – BETALA I KASSAN'), act: grinden },
     { id: 'parkskylt', r: [PARK.x - 20, PARK.y - 46, PARK.x + 20, PARK.y], go: [PARK.x + 16, PARK.y + 2], label: $t('ÖPPETTIDER'), act: () => toast(`🦁 ${OPPETTEXT()}`) },
     ...HAGNLISTA.map((id) => { const H = HAGN[id], [sx, sy] = H.skylt; return { id: 'skylt-' + id, r: [sx - 24, sy - 32, sx + 24, sy + 2], go: [sx + (H.norr ? 0 : 0), sy + (H.norr ? 10 : -10)], label: DJURFAKTA[id].namn, act: () => { toast(`${DJURFAKTA[id].namn}: ${DJURFAKTA[id].rad}`); reagera(id); } }; }),
     { id: 'klappgrind', r: [HAGN.klapp.grind[0] - 6, HAGN.klapp.r[3] - 14, HAGN.klapp.grind[1] + 6, HAGN.klapp.r[3] + 4], go: [(HAGN.klapp.grind[0] + HAGN.klapp.grind[1]) / 2, HAGN.klapp.r[3] - 14], label: $t('KLAPPZOO – GÅ IN'), act: () => toast($t('🐐 Klicka på en get för att klappa den. Getfodret står till vänster.')) },
     { id: 'foder', r: [FODER.x - 8, FODER.y - 28, FODER.x + 8, FODER.y + 2], go: [FODER.x + 12, FODER.y + 2], label: $t`GETFODER · ${fmt(FODER_PRIS)}`, act: foder },
-    { id: 'ponnygrind', r: [HAGN.ponny.grind[0] - 8, HAGN.ponny.r[1] - 14, HAGN.ponny.grind[1] + 8, HAGN.ponny.r[1] + 6], go: [(HAGN.ponny.grind[0] + HAGN.ponny.grind[1]) / 2, HAGN.ponny.r[1] - 8], label: $t`RID PÅ PRICKEN · ${fmt(PONNY_PRIS)}`, act: rida },
+    { id: 'ponnygrind', r: [HAGN.ponny.grind[0] - 8, HAGN.ponny.r[1] - 14, HAGN.ponny.grind[1] + 8, HAGN.ponny.r[1] + 6], go: [(HAGN.ponny.grind[0] + HAGN.ponny.grind[1]) / 2, HAGN.ponny.r[1] - 8], label: agerEvig('arskort') ? $t('RID PÅ PRICKEN · ÅRSKORT') : $t`RID PÅ PRICKEN · ${fmt(PONNY_PRIS)}`, act: rida },
     { id: 'glass', r: [GLASSKIOSK.x - 24, GLASSKIOSK.y - 62, GLASSKIOSK.x + 24, GLASSKIOSK.y], go: [GLASSKIOSK.x, GLASSKIOSK.y + 10], label: $t('GLASSKIOSKEN'), act: () => kiosk('glass') },
     { id: 'souvenir', r: [SOUVENIR.x - 24, SOUVENIR.y - 62, SOUVENIR.x + 24, SOUVENIR.y], go: [SOUVENIR.x, SOUVENIR.y + 10], label: $t('SOUVENIRKIOSKEN'), act: () => kiosk('souvenir') },
     { id: 'personal', r: [PERSONALHUS.x - 24, PERSONALHUS.y - 48, PERSONALHUS.x + 24, PERSONALHUS.y], go: [PERSONALHUS.x, PERSONALHUS.y + 8], label: $t('PERSONALHUSET – DJURSKÖTARJOBBET'), act: jobbet },

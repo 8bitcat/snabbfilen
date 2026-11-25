@@ -10,6 +10,14 @@ utbyggnaden (djur, alla jobb, storstaden, varuhuset i våningar) är på plats.
 
 <!-- släpp: tools/release.mjs lägger nya versioner direkt under denna rad -->
 
+## [0.180.0] – 2026-11-25 – 🚀 Rymdstationen och butikens andra våg
+- 🚀 **Rymdstationen – Dockskåpets åttonde rum** (köps i Butiken i appen, 39 kr): metallväggar med nitar, runda fönster mot jorden och månen där stjärnorna blinkar, gallergolv och lysande ljuslister. Tolv nya saker: raketen (ryker när den lyfter), kontrollbordet (lamporna blinkar), rymddräkten, roboten (piper och sprider hjärtan), planetlampan, sovkapseln (figurerna lägger sig i den), teleskopet, odlingsröret, utomjordingen, satelliten, pilotstolen och månstenen.
+- 🔑 **Nytt i Butiken – dina för alltid, i varje spel:**
+- 🚤 Motorbåten (49 kr) ligger vid båtrampen i hamnen, också efter Nytt spel.
+- 🏡 Röda stugan på Solön (39 kr): nyckeln är din – sov där gratis varje natt.
+- 🎟️ Djurparkens årskort (29 kr): fri entré och fri ponnyridning på Pricken.
+- Allt följer med Apple-kontot till en ny telefon (Återställ köp).
+
 ## [0.179.0] – 2026-11-25 – ⭐ Betygsfrågan och App Store-bannern
 - ⭐ **Betygsfrågan** – i appen (version 1.5 och senare) kan Apples egen ruta "Gillar du Pixelcity?" dyka upp i ett glatt ögonblick: när du slår ett nytt rekord på jobbet, när du får lördagsfestens present eller efter en stunds lek ihop med en vän i Dockskåpet. Aldrig för helt nya spelare och högst var fjärde månad – och ett betyg hjälper fler att hitta spelet.
 - 📱 På webben visar Safari på iPhone och iPad nu en liten banner överst som leder till Pixelcity i App Store.

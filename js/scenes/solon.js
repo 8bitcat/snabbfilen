@@ -24,6 +24,7 @@ import { propKit } from '../city/props.js';
 import { PIER } from '../city/map.js';
 import { TW, TH, S, BRYGGA, FARJA, KLIPPOR, FYR, FISKARE, KIOSK, TORN, NAT, SLOTT, STUGOR, SPANG, PARASOLLER, HANDDUKAR, SKYLT, BANKAR, klippKant, hinder, paintGround, stugaBild, kioskBild, fyrBild, farjaBild } from '../solon/karta.js';
 import { $t } from '../core/i18n.js';
+import { agerEvig } from '../core/kop.js';   // 🔑 köpt nyckel till Röda stugan
 import { openFiske, kopSpo, fiskeOf, SPO_PRIS, fiskURL } from '../solon/fiske.js';   // 🎣 fisket
 
 const GANG = 100, STUGA_PRIS = 150;   // 🏡 Röda stugan: hyran för en natt
@@ -90,13 +91,17 @@ export function makeSolon(A) {
   const stugan = () => {
     const r = g.stugaHyrd();
     if (r) { play('door'); A.go('stuga'); return; }
+    if (agerEvig('stuga')) {   // 🔑 köpt nyckel (js/core/kop.js): stugan är alltid din, ingen hyra
+      const h = g.hyrStuga(0);
+      if (h.ok) { play('door'); toast($t('🏡 Din egen nyckel – välkommen hem till Röda stugan!'), 'good'); A.go('stuga'); return; }
+    }
     play('knock');
     openModal($t('🏡 Röda stugan'), `<p style="font-size:var(--f2);margin-top:0">${$t`Hyr sommarstugan för natten: <b>${fmt(STUGA_PRIS)}</b>. Kamin, säng med lapptäcke, kaffe på morgonen och havet utanför fönstret. Nyckeln gäller till lunch dagen efter.`}</p><p style="font-size:var(--f2)">💰 <b>${fmt(g.money)}</b></p>`, [
       { label: $t`🔑 Hyr för natten · ${fmt(STUGA_PRIS)}`, cls: g.money >= STUGA_PRIS ? 'btn-go' : '', disabled: g.money < STUGA_PRIS, onClick: () => { closeModal(); const h = g.hyrStuga(STUGA_PRIS); if (!h.ok) { toast(h.msg, 'bad'); return; } play('coin'); toast($t('🔑 Nyckeln är din! Gå in och gör dig hemmastadd.'), 'good'); A.go('stuga'); } },
       { label: $t('Inte nu'), onClick: closeModal },
     ]);
   };
-  const stugSpot = (st) => ({ id: `stuga-${st.id}`, r: [st.x, S.BASE - st.h - 26, st.x + st.w, S.BASE], go: [st.x + (st.w >> 1), S.BASE + 8], label: st.id === 'rod' ? (g.stugaHyrd() ? $t('RÖDA STUGAN – GÅ IN') : $t`RÖDA STUGAN – HYR FÖR NATTEN · ${fmt(STUGA_PRIS)}`) : st.namn, act: st.id === 'rod' ? stugan : () => { play('knock'); toast($t('🏡 Uthyrd hela sommaren – en familj från stan bor här. Röda stugan går att hyra!'), 'wrap'); } });
+  const stugSpot = (st) => ({ id: `stuga-${st.id}`, r: [st.x, S.BASE - st.h - 26, st.x + st.w, S.BASE], go: [st.x + (st.w >> 1), S.BASE + 8], label: st.id === 'rod' ? (g.stugaHyrd() || agerEvig('stuga') ? $t('RÖDA STUGAN – GÅ IN') : $t`RÖDA STUGAN – HYR FÖR NATTEN · ${fmt(STUGA_PRIS)}`) : st.namn, act: st.id === 'rod' ? stugan : () => { play('knock'); toast($t('🏡 Uthyrd hela sommaren – en familj från stan bor här. Röda stugan går att hyra!'), 'wrap'); } });
   const spots = () => [
     { id: 'kiosk', r: [KIOSK.x, KIOSK.y - 66, KIOSK.x + KIOSK.w, KIOSK.y], go: [KIOSK.x + (KIOSK.w >> 1), KIOSK.y + 8], label: $t('SOLÖ-KIOSKEN – GLASS, SAFT OCH KORV'), act: kiosken },
     { id: 'fiska-brygga', r: [BRYGGA.x0 - 6, BRYGGA.y0 - 6, BRYGGA.x1 + 2, BRYGGA.y0 + 10], go: [(BRYGGA.x0 + BRYGGA.x1) / 2, BRYGGA.y0 + 6], label: $t('FISKA HÄR'), act: () => { walker.dir = 'up'; openFiske(A, { plats: 'brygga' }); } },

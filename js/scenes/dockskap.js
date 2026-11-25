@@ -98,13 +98,14 @@ import { vanDockBjud } from '../net/vanpush.js';
 import { betygOgonblick } from '../core/betyg.js';   // ⭐ betygsrutan efter en stunds lek ihop
 import { TRADGARD_RUM, ARSTIDER, tradgardBg, UTE, TRADGARD_SEED, uteBild } from './dockskap-ute.js';
 import { SLOTT_RUM, slottBg, SLOTT, SLOTT_SEED, slottBild } from './dockskap-slott.js';
+import { RYMD_RUM, rymdBg, RYMD, RYMD_SEED, rymdBild } from './dockskap-rymd.js';   // 🚀 (v0.181)
 import { PRISER, KBK, kbkBild, kbkKontext, tvattaSp } from './dockskap-kbk.js';
 import { kbkNr, spelare } from '../net/kbk.js';
 import { KUNGS_PLAYERS } from '../data/kbk.js';
 import { butikFinns, openButik, agerDock } from '../core/kop.js';
 
 export const DOCK_KEY = 'snabbfilen_dockskap';
-const SAKER_ALLA = Object.assign({}, UTE, SLOTT, PRISER, KBK);   // alla egna saker ritade i kod (dockskap-ute/-slott/-kbk): k → def (före EGNA nedan)
+const SAKER_ALLA = Object.assign({}, UTE, SLOTT, RYMD, PRISER, KBK);   // alla egna saker ritade i kod (dockskap-ute/-slott/-kbk): k → def (före EGNA nedan)
 const WALLW = APT.WALLW;
 const NIGHT_DIM = 0.42;   // (mörkare än hemma sedan v0.167 – lamporna ska betyda något)
 const MAX_I_RUM = 60;
@@ -236,6 +237,7 @@ export const RUM = [
   { id: 'badrum', ik: '🛁', name: $n('BADRUM'), bath: true, tiles: 'bla', wall: 0xa6cfe0, wallDk: 0x7aa4b8, floorA: 0xf0eee8, floorB: 0x6a9ec0, windows: [[150, 186], [250, 286]], winY: [16, 38], view: 'frost', towels: [128, 312], lamp: 'plafond' },
   TRADGARD_RUM,   // 🌳 (v0.172) köpbart: låst tills 'tradgard' finns i H.dock
   SLOTT_RUM,      // 🏰 (v0.173) köpbart: 'slott'
+  RYMD_RUM,       // 🚀 (v0.181) köpbart: 'rymd'
 ];
 const PLAN = { partition: 0, rooms: RUM };
 // De köpbara rummen (dockskap-ute.js, dockskap-slott.js): bakgrund, egna saker (ritade i kod), startmöblering,
@@ -245,6 +247,8 @@ const EXTRA = [
     text: $t('Husets baksida med gräsmatta: poolen, gungan, studsmattan, grillen, äppelträdet, sandlådan, parasollet, staketet, rabatten och hundkojan – och alla växter och bänkar ur lådan. Sommar, höst och vinter.') },
   { rum: SLOTT_RUM, namn: $t('Slottsvåningen'), bg: slottBg, saker: SLOTT, seed: SLOTT_SEED, bild: slottBild, tema: null, pris: 39, flik: $t('Slott'),
     text: $t('Tronsalen med stenvalv, bågfönster och röd matta: tronen, kristallkronan, rustningen, banderollerna, kronan, fontänen, himmelssängen, facklorna, draken och riddarskölden – och allt ur lådan som passar ett slott.') },
+  { rum: RYMD_RUM, namn: $t('Rymdstationen'), bg: rymdBg, saker: RYMD, seed: RYMD_SEED, bild: rymdBild, tema: null, pris: 39, flik: $t('Rymd'),
+    text: $t('En rymdstation med runda fönster mot jorden och månen: raketen, kontrollbordet, rymddräkten, roboten, planetlampan, sovkapseln, teleskopet, odlingsröret, utomjordingen, satelliten, pilotstolen och månstenen – och allt ur lådan som passar i rymden.') },
 ];
 const EXTRA_RUM = (i) => EXTRA.find((e) => e.rum === RUM[i]) || null;
 const EXTRA_AV = (k) => EXTRA.find((e) => e.saker[k]) || null;               // vilket rum saken k hör till (SAKER_ALLA högst upp)

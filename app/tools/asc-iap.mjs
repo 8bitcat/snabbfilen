@@ -28,9 +28,9 @@ async function call(method, path, body) {
 async function alla(path) { const out = []; let next = path; while (next) { const j = await call('GET', next); out.push(...(j.data || [])); next = j.links?.next || null; } return out; }
 const tyst404 = (p) => p.catch((e) => { if (e.status === 404) return null; throw e; });
 
-const REVIEW = 'Open the phone button (bottom right) → "Butik" (Shop). The shop lists the products with StoreKit prices. Money bags are consumables (added to the in-game wallet); rent-free homes are non-consumables (no deposit, no weekly rent in the game) with a "Restore Purchases" button in the same dialog. Gift boxes are consumables that place a present in the in-game phone\'s "Presenter" (Presents) app: each box\'s contents are fixed by type and listed in the shop before purchase (e.g. always 500 kr, one outfit and one card pack); only which specific outfit or furniture piece is drawn is random, uniformly among the items the player does not yet own. Purchased money does not count towards the in-game "Wealth" life goal. The shop only exists in the iOS app, never on the web version.';
+const REVIEW = 'Open the phone button (bottom right) → "Butik" (Shop). The shop lists the products with StoreKit prices. Money bags are consumables (added to the in-game wallet); rent-free homes are non-consumables (no deposit, no weekly rent in the game) with a "Restore Purchases" button in the same dialog. Gift boxes are consumables that place a present in the in-game phone\'s "Presenter" (Presents) app: each box\'s contents are fixed by type and listed in the shop before purchase (e.g. always 500 kr, one outfit and one card pack); only which specific outfit or furniture piece is drawn is random, uniformly among the items the player does not yet own. Purchased money does not count towards the in-game "Wealth" life goal. The shop only exists in the iOS app, never on the web version. Permanent items (non-consumable, restored with Restore Purchases): the motorboat is placed at the boat ramp in the harbor in every game; the Red Cottage key makes the cottage on Sun Island free to sleep in every night; the Zoo annual pass gives free entry and free pony rides in the Zoo.';
 const SKU = 'io.eightbitcat.pixelcity.';
-const LOC = { sv: 'sv', en: 'en-US', es: 'es-ES', de: 'de-DE', fr: 'fr-FR', pl: 'pl', it: 'it', pt: 'pt-PT' };
+const LOC = { sv: 'sv', en: 'en-US', es: 'es-ES', de: 'de-DE', fr: 'fr-FR', pl: 'pl', it: 'it', pt: 'pt-PT', nl: 'nl-NL', nb: 'no', da: 'da', id: 'id', tr: 'tr', vi: 'vi' };
 const PRODUKTER = [
   { namn: 'Pengapåse 1 000 kr', sku: SKU + 'pengar.1000', typ: 'CONSUMABLE', pris: 12, loc: {
     sv: ['Pengapåse 1 000 kr', '1 000 kr rakt i handkassan i Pixelstaden.'], en: ['Money Bag $1,000', '$1,000 straight into your pocket.'],
@@ -84,6 +84,39 @@ const PRODUKTER = [
     es: ['El castillo de la casita', 'Sala del trono: trono, lámpara, dragón.'], de: ['Puppenhaus-Schlosssaal', 'Thronsaal: Thron, Kronleuchter, Drache.'],
     fr: ['Le château de la maison', 'Salle du trône : trône, lustre, dragon.'], pl: ['Zamek domku dla lalek', 'Sala tronowa: tron, żyrandol, smok.'],
     it: ['Il castello della casetta', 'Sala del trono: trono, lampadario, drago.'], pt: ['O castelo da casinha', 'Sala do trono: trono, lustre, dragão.'] } },
+  { namn: 'Rymdstationen i Dockskåpet', sku: SKU + 'dock.rymd', typ: 'NON_CONSUMABLE', pris: 39, loc: {
+    sv: ['Rymdstationen i Dockskåpet', 'Raket, robot, sovkapsel och utomjording.'], en: ['Dollhouse Space Station', 'Rocket, robot, sleep pod and an alien.'],
+    es: ['La estación espacial', 'Cohete, robot, cápsula y extraterrestre.'], de: ['Puppenhaus-Raumstation', 'Rakete, Roboter, Schlafkapsel, Alien.'],
+    fr: ['La station spatiale', 'Fusée, robot, capsule et extraterrestre.'], pl: ['Stacja kosmiczna domku', 'Rakieta, robot, kapsuła i kosmita.'],
+    it: ['La stazione spaziale', 'Razzo, robot, capsula e alieno.'], pt: ['A estação espacial', 'Foguetão, robô, cápsula e extraterrestre.'],
+    nl: ['Het ruimtestation', 'Raket, robot, slaapcapsule en alien.'], nb: ['Romstasjonen i Dukkehuset', 'Rakett, robot, sovekapsel og romvesen.'],
+    da: ['Rumstationen i Dukkehuset', 'Raket, robot, sovekapsel og rumvæsen.'], id: ['Stasiun luar angkasa', 'Roket, robot, kapsul tidur, dan alien.'],
+    tr: ['Oyuncak Ev uzay istasyonu', 'Roket, robot, uyku kapsülü ve uzaylı.'], vi: ['Trạm vũ trụ Nhà búp bê', 'Tên lửa, rô-bốt, khoang ngủ, người ngoài.'] } },
+  // 🔑 butikens andra våg (spelet v0.180, 2026-11-25): engångsköp, dina i varje spel (kop.js typ 'evig')
+  { namn: 'Motorbåten för alltid', sku: SKU + 'evig.motorbat', typ: 'NON_CONSUMABLE', pris: 49, loc: {
+    sv: ['Motorbåten för alltid', 'Motorbåten vid rampen i varje spel.'], en: ['The Motorboat Forever', 'Your motorboat at the ramp in every game.'],
+    es: ['La lancha para siempre', 'Tu lancha en la rampa en cada partida.'], de: ['Das Motorboot für immer', 'Dein Motorboot an der Rampe, jedes Spiel.'],
+    fr: ['Le bateau pour toujours', 'Ton bateau à la cale dans chaque partie.'], pl: ['Motorówka na zawsze', 'Twoja motorówka w porcie w każdej grze.'],
+    it: ['Il motoscafo per sempre', 'Il tuo motoscafo al porto in ogni partita.'], pt: ['O barco para sempre', 'O teu barco na rampa em cada jogo.'],
+    nl: ['De motorboot voor altijd', 'Je motorboot bij de helling in elk spel.'], nb: ['Motorbåten for alltid', 'Motorbåten ved rampen i hvert spill.'],
+    da: ['Motorbåden for altid', 'Motorbåden ved rampen i hvert spil.'], id: ['Perahu motor selamanya', 'Perahu motormu di pelabuhan, tiap main.'],
+    tr: ['Motorlu tekne sonsuza dek', 'Motorlu teknen her oyunda limanda.'], vi: ['Xuồng máy mãi mãi', 'Xuồng máy của bạn ở bến, mọi lượt chơi.'] } },
+  { namn: 'Röda stugan för alltid', sku: SKU + 'evig.stuga', typ: 'NON_CONSUMABLE', pris: 39, loc: {
+    sv: ['Röda stugan för alltid', 'Sov gratis i stugan på Solön varje natt.'], en: ['The Red Cottage Forever', 'Sleep free in the island cottage nightly.'],
+    es: ['La Cabaña Roja para siempre', 'Duerme gratis en la cabaña cada noche.'], de: ['Die Rote Hütte für immer', 'Jede Nacht gratis in der Hütte schlafen.'],
+    fr: ['La Cabane rouge à vie', 'Dors gratuitement à la cabane chaque nuit.'], pl: ['Czerwona Chata na zawsze', 'Śpij za darmo w chacie każdej nocy.'],
+    it: ['La Casetta rossa per sempre', 'Dormi gratis nella casetta ogni notte.'], pt: ['A Cabana Vermelha para sempre', 'Dorme grátis na cabana todas as noites.'],
+    nl: ['Het Rode Huisje voor altijd', 'Elke nacht gratis slapen in het huisje.'], nb: ['Rødhytta for alltid', 'Sov gratis i hytta på Soløya hver natt.'],
+    da: ['Det røde hus for altid', 'Sov gratis i huset på Solø hver nat.'], id: ['Pondok Merah selamanya', 'Menginap gratis di pondok tiap malam.'],
+    tr: ['Kırmızı Ev sonsuza dek', 'Her gece adadaki evde bedava uyu.'], vi: ['Nhà Gỗ Đỏ mãi mãi', 'Ngủ miễn phí ở nhà gỗ trên đảo mỗi đêm.'] } },
+  { namn: 'Djurparkens årskort', sku: SKU + 'evig.arskort', typ: 'NON_CONSUMABLE', pris: 29, loc: {
+    sv: ['Djurparkens årskort', 'Fri entré och fri ponnyridning, alltid.'], en: ['Zoo Annual Pass', 'Free entry and free pony rides, always.'],
+    es: ['Pase anual del Zoo', 'Entrada y paseos en poni gratis, siempre.'], de: ['Tierpark-Jahreskarte', 'Freier Eintritt und Ponyreiten, immer.'],
+    fr: ['Abonnement au Zoo', 'Entrée et poney gratuits, pour toujours.'], pl: ['Roczny karnet do Zoo', 'Darmowy wstęp i kucyk, na zawsze.'],
+    it: ['Abbonamento allo Zoo', 'Ingresso e pony gratis, per sempre.'], pt: ['Passe anual do Zoo', 'Entrada e pónei grátis, para sempre.'],
+    nl: ['Jaarkaart Dierentuin', 'Gratis entree en ponyrijden, altijd.'], nb: ['Årskort til Dyreparken', 'Gratis inngang og ponniridning, alltid.'],
+    da: ['Årskort til Dyreparken', 'Gratis entré og ponyridning, altid.'], id: ['Kartu tahunan Taman Satwa', 'Masuk gratis dan naik poni gratis.'],
+    tr: ['Hayvanat Bahçesi kartı', 'Bedava giriş ve midilli turu, her zaman.'], vi: ['Vé năm Sở thú', 'Vào cửa và cưỡi ngựa miễn phí mãi mãi.'] } },
 ];
 for (const p of PRODUKTER) for (const [l, [n, d]] of Object.entries(p.loc)) { if (n.length > 30 || d.length > 45) throw new Error(`för lång text (${p.sku} ${l}): "${n}" ${n.length}/30, "${d}" ${d.length}/45`); }
 
@@ -129,6 +162,13 @@ async function laddaUppBild(id, fil) {
 }
 
 const cmd = process.argv[2] || 'lista';
+if (cmd === 'notering') {   // node asc-iap.mjs notering <del av produkt-ID> – skriv om Review Notes (REVIEW) på de varorna
+  const filt = process.argv[3] || '___';
+  for (const iap of (await befintliga()).filter((x) => x.attributes.productId.includes(filt))) {
+    await call('PATCH', `/v2/inAppPurchases/${iap.id}`, { data: { type: 'inAppPurchases', id: iap.id, attributes: { reviewNote: REVIEW } } });
+    console.log('Review Notes:', iap.attributes.productId);
+  }
+}
 if (cmd === 'bild') {   // node asc-iap.mjs bild <fil> [del av produkt-ID] – byter ut (misslyckad) granskningsbild
   const fil = process.argv[3], filt = process.argv[4] || '';
   for (const iap of (await befintliga()).filter((x) => x.attributes.productId.includes(filt))) {

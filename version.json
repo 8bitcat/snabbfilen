@@ -1,7 +1,7 @@
 {
-  "version": "0.179.0",
+  "version": "0.180.0",
   "date": "2026-11-25",
-  "title": "⭐ Betygsfrågan och App Store-bannern",
+  "title": "🚀 Rymdstationen och butikens andra våg",
   "files": [
     "CHANGELOG.md",
     "assets/fonts/pixelstad-fet.otf",
@@ -219,6 +219,7 @@
     "js/scenes/city.js",
     "js/scenes/djurparken.js",
     "js/scenes/dockskap-kbk.js",
+    "js/scenes/dockskap-rymd.js",
     "js/scenes/dockskap-slott.js",
     "js/scenes/dockskap-ute.js",
     "js/scenes/dockskap.js",

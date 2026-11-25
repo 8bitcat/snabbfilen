@@ -9,7 +9,9 @@ const PORT = process.env.SMOKE_PORT || 8788;
 const UT = 'D:/GamesProjects/snabbfilen/app/store/iap';
 fs.mkdirSync(UT, { recursive: true });
 const SKU = 'io.eightbitcat.pixelcity.';
-const PRIS = { 'pengar.1000': 12, 'pengar.10000': 49, 'bostad.lagenhet': 29, 'bostad.villa': 59, 'bostad.takvaning': 99 };
+const PRIS = { 'pengar.1000': 12, 'pengar.10000': 49, 'bostad.lagenhet': 29, 'bostad.villa': 59, 'bostad.takvaning': 99, 'present.liten': 9, 'present.mellan': 29, 'present.stor': 59, 'dock.tradgard': 29, 'dock.slott': 39, 'dock.rymd': 39, 'evig.motorbat': 49, 'evig.stuga': 39, 'evig.arskort': 29 };
+// 4:e argumentet 'slut': rulla ner till de sista varorna i listan (granskningsbild för nya varor), filnamnet får -slut
+const SLUT = process.argv[4] === 'slut';
 const browser = await chromium.launch();
 // storleken: "BREDDxHÖJD@skala" (standard 1200x760@2); andra storlekar får måtten i filnamnet
 const sizeArg = process.argv[3] || '1200x760@2';
@@ -38,11 +40,13 @@ for (const lang of (process.argv[2] || 'sv,en').split(',')) {
   await p.waitForTimeout(1500);
   await p.click('#hud-mobil'); await p.waitForTimeout(200);
   await p.click('#mobilen [data-app="butik"]');
-  await p.waitForFunction(() => document.querySelectorAll('#modal:not(.hidden) [data-kop]:not([disabled])').length === 5, null, { timeout: 5000 });
+  await p.waitForFunction(() => document.querySelectorAll('#modal:not(.hidden) [data-kop]:not([disabled])').length >= 5, null, { timeout: 5000 });
+  if (SLUT) await p.evaluate(() => { const l = document.querySelector('#modal .plist'); l?.lastElementChild?.scrollIntoView({ block: 'end' }); });
   await p.waitForTimeout(300);
-  await p.screenshot({ path: `${UT}/butik-${lang}${suffix}.png` });
-  await p.screenshot({ path: `${UT}/butik-${lang}${suffix}.jpg`, type: 'jpeg', quality: 92 });   // utan alfakanal, till App Store Connect
-  console.log(`${UT}/butik-${lang}${suffix}.png + .jpg`);
+  const fil = suffix + (SLUT ? '-slut' : '');
+  await p.screenshot({ path: `${UT}/butik-${lang}${fil}.png` });
+  await p.screenshot({ path: `${UT}/butik-${lang}${fil}.jpg`, type: 'jpeg', quality: 92 });   // utan alfakanal, till App Store Connect
+  console.log(`${UT}/butik-${lang}${fil}.png + .jpg`);
   await ctx.close();
 }
 await browser.close();

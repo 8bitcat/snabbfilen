@@ -33,9 +33,16 @@ export const PRODUKTER = [
   // 🌳 rum i Dockskåpet (v0.172): engångsköp som låser upp ett rum (dockskap.js läser snabbfilen_kop.dock)
   { id: 'dock-tradgard', sku: SKU + 'dock.tradgard', typ: 'dock', rum: 'tradgard', icon: '🌳', namn: $t('Trädgården i Dockskåpet'), text: $t('Ett sjätte rum i Dockskåpet: husets baksida med gräsmatta, pool, gunga, studsmatta, grill, äppelträd och mer – för alltid.') },
   { id: 'dock-slott', sku: SKU + 'dock.slott', typ: 'dock', rum: 'slott', icon: '🏰', namn: $t('Slottsvåningen i Dockskåpet'), text: $t('Ett sjunde rum i Dockskåpet: tronsalen med tron, kristallkrona, rustning, fontän, himmelssäng, facklor och en drake – för alltid.') },
+  { id: 'dock-rymd', sku: SKU + 'dock.rymd', typ: 'dock', rum: 'rymd', icon: '🚀', namn: $t('Rymdstationen i Dockskåpet'), text: $t('Ett åttonde rum i Dockskåpet: rymdstationen med raket, kontrollbord, rymddräkt, robot, sovkapsel, teleskop, utomjording och fönster mot jorden – för alltid.') },
+  // 🔑 butikens andra våg (v0.180, Carl 2026-11-25: "gör alla förslagen" – förslaget 11-19): engångsköp som är dina för
+  // alltid, i varje spel (st.evigt). Hamnen, Solön och Djurparken läser agerEvig().
+  { id: 'motorbat', sku: SKU + 'evig.motorbat', typ: 'evig', sak: 'motorbat', icon: '🚤', namn: $t('Motorbåten – din för alltid'), text: $t('Motorbåten ligger vid båtrampen i hamnen i varje spel, också efter Nytt spel. Kör ut till Solön när du vill.') },
+  { id: 'stuga', sku: SKU + 'evig.stuga', typ: 'evig', sak: 'stuga', icon: '🏡', namn: $t('Röda stugan på Solön – din för alltid'), text: $t('Nyckeln till Röda stugan är alltid din: sov över gratis varje natt, i varje spel.') },
+  { id: 'arskort', sku: SKU + 'evig.arskort', typ: 'evig', sak: 'arskort', icon: '🎟️', namn: $t('Djurparkens årskort'), text: $t('Fri entré till Djurparken och fri ponnyridning på Pricken – för alltid, i varje spel.') },
 ];
 const STORLEKAR = ['liten', 'mellan', 'stor'];
 const arRum = (r) => PRODUKTER.some((p) => p.typ === 'dock' && p.rum === r);
+const arEvig = (s) => PRODUKTER.some((p) => p.typ === 'evig' && p.sak === s);
 const TITEL = $t('🛍️ Butiken');
 
 // ---------- läget (utanför sparfilen) ----------
@@ -50,6 +57,7 @@ const tvatta = (p) => ({
   logg: Array.isArray(p?.logg) ? p.logg.slice(-100) : [],
   pres: Array.isArray(p?.pres) ? p.pres.filter((s) => STORLEKAR.includes(s)).slice(0, 20) : [],   // köpta presenter som inte hunnit in i spelet än
   dock: Array.isArray(p?.dock) ? [...new Set(p.dock.filter(arRum))] : [],                        // 🌳 köpta rum i Dockskåpet
+  evigt: Array.isArray(p?.evigt) ? [...new Set(p.evigt.filter(arEvig))] : [],                     // 🔑 båten, stugan, årskortet
 });
 function las() {
   if (S) return S;
@@ -61,6 +69,7 @@ function las() {
 function spara() { try { localStorage.setItem(KEY, JSON.stringify(las())); } catch { /* fullt */ } }
 export const agerBostad = (hem) => las().bostader.includes(hem);   // bostad utan hyra?
 export const agerDock = (rum) => las().dock.includes(rum);         // 🌳 rum i Dockskåpet köpt?
+export const agerEvig = (sak) => las().evigt.includes(sak);        // 🔑 motorbåten / Röda stugan / årskortet köpt?
 export const kopPengar = () => las().pengar;                         // köpta pengar totalt (dras från livsmålet Rikedom)
 export const kopLage = () => JSON.parse(JSON.stringify(las()));      // (tester)
 
@@ -78,7 +87,7 @@ async function hamtaPriser() {
   return priser;
 }
 const arOppen = () => document.querySelector('#modal .dlg')?.dataset.title === TITEL;
-const tack = (v) => (v.typ === 'pengar' ? $t`💰 ${fmt(v.kr)} ligger i handkassan – tack!` : v.typ === 'present' ? $t('🎁 Presenten ligger i mobilen – öppna den i 🎁 Presenter!') : v.typ === 'dock' ? $t`🌳 ${v.namn} är upplåst – öppna Dockskåpet och lek!` : $t`🔑 ${v.namn} är din – ingen insats och ingen hyra. Flytta in hos Bostadsbyrån!`);
+const tack = (v) => (v.typ === 'pengar' ? $t`💰 ${fmt(v.kr)} ligger i handkassan – tack!` : v.typ === 'present' ? $t('🎁 Presenten ligger i mobilen – öppna den i 🎁 Presenter!') : v.typ === 'dock' ? $t`🌳 ${v.namn} är upplåst – öppna Dockskåpet och lek!` : v.typ === 'evig' ? (v.sak === 'motorbat' ? $t('🚤 Motorbåten är din! Den ligger vid båtrampen i hamnen.') : v.sak === 'stuga' ? $t('🏡 Nyckeln till Röda stugan är din – sov där gratis varje natt!') : $t('🎟️ Årskortet är ditt – fri entré och fri ponnyridning i Djurparken!')) : $t`🔑 ${v.namn} är din – ingen insats och ingen hyra. Flytta in hos Bostadsbyrån!`);
 // 🎁 en köpt present läggs i spelets presentkö (presenter.js öppnar den); utan spel (osannolikt) väntar den i pres
 function gePresent(A, storlek, id) {
   const g = A?.game, st = las();
@@ -102,6 +111,7 @@ export function bokfor(A, tx) {
   if (tx.revocationDate) {   // Apple tog tillbaka köpet (återbetalning): bostaden/rummet försvinner, pengar som redan är spenderade rörs inte
     if (prod.typ === 'bostad' && st.bostader.includes(prod.hem)) { st.bostader = st.bostader.filter((h) => h !== prod.hem); spara(); }
     if (prod.typ === 'dock' && st.dock.includes(prod.rum)) { st.dock = st.dock.filter((r) => r !== prod.rum); spara(); }
+    if (prod.typ === 'evig' && st.evigt.includes(prod.sak)) { st.evigt = st.evigt.filter((x) => x !== prod.sak); spara(); }
     return null;
   }
   if (id && st.tx.includes(id)) return null;   // redan bokförd (köpet + transactionUpdated, eller Återställ köp)
@@ -111,6 +121,7 @@ export function bokfor(A, tx) {
   else if (prod.typ === 'bostad') { if (!st.bostader.includes(prod.hem)) st.bostader.push(prod.hem); }
   else if (prod.typ === 'present') gePresent(A, prod.storlek, id);
   else if (prod.typ === 'dock') { if (!st.dock.includes(prod.rum)) st.dock.push(prod.rum); }
+  else if (prod.typ === 'evig') { if (!st.evigt.includes(prod.sak)) st.evigt.push(prod.sak); if (prod.sak === 'motorbat' && g) { g.bat = 'motor'; g.save?.(); } }
   st.logg.push({ t: new Date().toISOString().slice(0, 16), id: prod.id });
   if (st.logg.length > 100) st.logg.shift();
   spara();
@@ -121,7 +132,7 @@ let upptagen = false;
 async function kopa(A, prod) {
   const P = plugin();
   if (!P || !prod || upptagen) return;
-  if ((prod.typ === 'bostad' && agerBostad(prod.hem)) || (prod.typ === 'dock' && agerDock(prod.rum))) { toast($t('Den är redan din.')); return; }
+  if ((prod.typ === 'bostad' && agerBostad(prod.hem)) || (prod.typ === 'dock' && agerDock(prod.rum)) || (prod.typ === 'evig' && agerEvig(prod.sak))) { toast($t('Den är redan din.')); return; }
   upptagen = true;
   if (arOppen()) rita(A, prod.id);
   try {
@@ -152,6 +163,7 @@ export async function aterstall(A, { tyst = false } = {}) {
       const p = PRODUKTER.find((x) => x.sku === tx?.productIdentifier);
       if (p?.typ === 'bostad' && !tx.revocationDate && !st.bostader.includes(p.hem)) { st.bostader.push(p.hem); n++; }
       if (p?.typ === 'dock' && !tx.revocationDate && !st.dock.includes(p.rum)) { st.dock.push(p.rum); n++; }   // 🌳 rummen följer med Apple-kontot
+      if (p?.typ === 'evig' && !tx.revocationDate && !st.evigt.includes(p.sak)) { st.evigt.push(p.sak); n++; }   // 🔑 båten, stugan, årskortet
     }
     if (n) spara();
     if (!tyst) { toast(n ? $t`${n} köp återställda.` : $t('Allt du köpt finns redan här.'), n ? 'good' : ''); if (arOppen()) rita(A); }
@@ -186,7 +198,7 @@ export function openButik(A) {
 function rita(A, laddar = null, fel = false) {
   const g = A.game, st = las();
   const rows = PRODUKTER.map((p) => {
-    const din = (p.typ === 'bostad' && st.bostader.includes(p.hem)) || (p.typ === 'dock' && st.dock.includes(p.rum));
+    const din = (p.typ === 'bostad' && st.bostader.includes(p.hem)) || (p.typ === 'dock' && st.dock.includes(p.rum)) || (p.typ === 'evig' && st.evigt.includes(p.sak));
     const pris = priser?.[p.sku]?.pris || '';
     const knapp = din ? `<span class="ok">${$t('✓ Din')}</span>`
       : `<button class="btn btn-small ${pris && !laddar ? 'btn-go' : ''}" data-kop="${p.id}" ${!pris || laddar ? 'disabled' : ''}>${laddar === p.id ? $t('Köper …') : pris || (fel ? '–' : '…')}</button>`;

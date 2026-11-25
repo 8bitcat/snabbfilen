@@ -1,0 +1,92 @@
+[
+ {
+  "i": 10419,
+  "f": "js/core/kop.js",
+  "k": "Rymdstationen i Dockskåpet"
+ },
+ {
+  "i": 10420,
+  "f": "js/core/kop.js",
+  "k": "Ett åttonde rum i Dockskåpet: rymdstationen med raket, kontrollbord, rymddräkt, robot, sovkapsel, teleskop, utomjording och fönster mot jorden – för alltid."
+ },
+ {
+  "i": 10421,
+  "f": "js/scenes/dockskap-rymd.js",
+  "k": "RYMDSTATIONEN"
+ },
+ {
+  "i": 10422,
+  "f": "js/scenes/dockskap-rymd.js",
+  "k": "Raketen"
+ },
+ {
+  "i": 10423,
+  "f": "js/scenes/dockskap-rymd.js",
+  "k": "Kontrollbordet"
+ },
+ {
+  "i": 10424,
+  "f": "js/scenes/dockskap-rymd.js",
+  "k": "Rymddräkten"
+ },
+ {
+  "i": 10425,
+  "f": "js/scenes/dockskap-rymd.js",
+  "k": "Roboten"
+ },
+ {
+  "i": 10426,
+  "f": "js/scenes/dockskap-rymd.js",
+  "k": "Planetlampan"
+ },
+ {
+  "i": 10427,
+  "f": "js/scenes/dockskap-rymd.js",
+  "k": "Sovkapseln"
+ },
+ {
+  "i": 10428,
+  "f": "js/scenes/dockskap-rymd.js",
+  "k": "Teleskopet"
+ },
+ {
+  "i": 10429,
+  "f": "js/scenes/dockskap-rymd.js",
+  "k": "Odlingsröret"
+ },
+ {
+  "i": 10430,
+  "f": "js/scenes/dockskap-rymd.js",
+  "k": "Utomjordingen"
+ },
+ {
+  "i": 10431,
+  "f": "js/scenes/dockskap-rymd.js",
+  "k": "Satelliten"
+ },
+ {
+  "i": 10432,
+  "f": "js/scenes/dockskap-rymd.js",
+  "k": "Pilotstolen"
+ },
+ {
+  "i": 10433,
+  "f": "js/scenes/dockskap-rymd.js",
+  "k": "Månstenen"
+ },
+ {
+  "i": 10434,
+  "f": "js/scenes/dockskap.js",
+  "k": "Rymdstationen"
+ },
+ {
+  "i": 10435,
+  "f": "js/scenes/dockskap.js",
+  "k": "Rymd"
+ },
+ {
+  "i": 10436,
+  "f": "js/scenes/dockskap.js",
+  "k": "En rymdstation med runda fönster mot jorden och månen: raketen, kontrollbordet, rymddräkten, roboten, planetlampan, sovkapseln, teleskopet, odlingsröret, utomjordingen, satelliten, pilotstolen och månstenen – och allt ur lådan som passar i rymden."
+ }
+]

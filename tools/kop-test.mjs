@@ -21,7 +21,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const browser = await chromium.launch();
 const errs = [];
 const SKU = 'io.eightbitcat.pixelcity.';
-const PRIS = { 'pengar.1000': 12, 'pengar.10000': 49, 'bostad.lagenhet': 29, 'bostad.villa': 59, 'bostad.takvaning': 99, 'present.liten': 9, 'present.mellan': 29, 'present.stor': 59, 'dock.tradgard': 29, 'dock.slott': 39 };
+const PRIS = { 'pengar.1000': 12, 'pengar.10000': 49, 'bostad.lagenhet': 29, 'bostad.villa': 59, 'bostad.takvaning': 99, 'present.liten': 9, 'present.mellan': 29, 'present.stor': 59, 'dock.tradgard': 29, 'dock.slott': 39, 'evig.motorbat': 49, 'evig.stuga': 39, 'evig.arskort': 29, 'dock.rymd': 39 };
 
 async function boot({ app = false, purchases = [], kop = null } = {}) {
   const ctx = await browser.newContext({ viewport: { width: 1200, height: 760 } });
@@ -93,7 +93,7 @@ async function oppnaButik(p) {
   ok(await D(p, () => { const b = document.querySelector('#mobilen [data-app="butik"]'); return !!b && !b.hidden && b.offsetParent !== null && /Butik/.test(b.textContent); }), 'appen: 🛍️ Butik syns i mobilen');
   await oppnaButik(p);
   const t2 = await modalText(p);
-  ok(/Butiken/.test(t2) && (await D(p, () => document.querySelectorAll('#modal [data-kop]').length)) === 10, 'Butiken öppnas med tio varor (pengapåsar, bostäder, presentlådor, trädgården, slottsvåningen)');
+  ok(/Butiken/.test(t2) && (await D(p, () => document.querySelectorAll('#modal [data-kop]').length)) === 14, 'Butiken öppnas med fjorton varor (pengapåsar, bostäder, presentlådor, trädgården, slottsvåningen, rymdstationen, båten, stugan, årskortet)');
   ok(await D(p, () => [...document.querySelectorAll('#modal [data-kop]')].every((b) => !b.disabled && /\d+,00 kr/.test(b.textContent))), 'varje vara har Apples pris i kronor (och knappen är aktiv när priset kommit)');
   ok(/Pengapåse 1 000 kr/.test(t2) && /Villan utan hyra/.test(t2) && /Takvåningen utan hyra/.test(t2), 'varorna heter Pengapåse 1 000 kr, Villan utan hyra, Takvåningen utan hyra …');
   ok(/Återställ köp/.test(t2) && /räknas inte mot livsmålet/.test(t2), 'rutan har Återställ köp och förklarar att köpta pengar inte räknas mot livsmålet');
@@ -199,6 +199,43 @@ async function oppnaButik(p) {
   const { ctx: ctx2, p: p2 } = await boot({ app: true, purchases: [tx] });
   await p2.waitForFunction(() => (JSON.parse(localStorage.getItem('snabbfilen_kop') || '{}').dock || []).includes('tradgard'), null, { timeout: 8000 }).catch(() => {});
   ok((await kopLage(p2))?.dock?.includes('tradgard'), 'ny telefon: trädgården hämtas tyst från Apple-kontot vid start');
+  await ctx2.close();
+}
+
+// ---- 7d. 🔑 butikens andra våg (v0.180): motorbåten, Röda stugan och Djurparkens årskort – dina för alltid ----
+{
+  const { ctx, p } = await boot({ app: true });
+  await oppnaButik(p);
+  const t9 = await modalText(p);
+  ok(/Motorbåten – din för alltid/.test(t9) && /Röda stugan på Solön – din för alltid/.test(t9) && /Djurparkens årskort/.test(t9), 'butiken visar motorbåten, Röda stugan och Djurparkens årskort');
+  for (const id of ['motorbat', 'stuga', 'arskort']) { await p.click(`#modal [data-kop="${id}"]`); await sleep(500); }
+  ok(await D(p, () => window.__iap.calls.slice(-3).every((c) => c.isConsumable === false) && window.__iap.calls.slice(-3).map((c) => c.productIdentifier.split('.').pop()).join() === 'motorbat,stuga,arskort'), 'Apple fick evig.motorbat, evig.stuga, evig.arskort – engångsköp');
+  ok(JSON.stringify((await kopLage(p))?.evigt) === '["motorbat","stuga","arskort"]' && (await modalText(p)).match(/✓ Din/g)?.length >= 3, 'köpen: evigt [motorbat, stuga, arskort] i snabbfilen_kop, ✓ Din på alla tre');
+  ok((await D(p, () => SF.game.bat)) === 'motor' && (await toasts(p)).some((t) => /Motorbåten är din/.test(t)), 'motorbåten är din direkt (game.bat = motor) och rutan säger var den ligger');
+  await stang(p);
+  // djurparken: fri entré och fri ponnyridning
+  await D(p, () => { SF.game.min = 12 * 60; SF.game.money = 3; SF.go('djurparken'); });
+  await p.waitForFunction(() => window.SF?.sceneName === 'djurparken' && !!window.SF.scene?._debug, null, { timeout: 15000 });
+  await sleep(500);
+  await D(p, () => SF.scene._debug.act('kassa')); await sleep(300);
+  ok((await D(p, () => SF.scene._debug.betalt())) === true && (await D(p, () => SF.game.money)) === 3 && (await toasts(p)).some((t) => /Årskortet blippar/.test(t)), 'Djurparken: årskortet släpper in utan att betala (3 kr kvar)');
+  await D(p, () => SF.scene._debug.act('ponnygrind')); await sleep(300);
+  ok((await D(p, () => SF.scene._debug.ponny()?.rider !== null)) && (await D(p, () => SF.game.money)) === 3, 'Djurparken: ponnyridningen är fri med årskortet');
+  // Solön: Röda stugan utan hyra
+  await D(p, () => { SF.game.min = 20 * 60; SF.game.stuga = null; SF.go('solon'); });
+  await p.waitForFunction(() => window.SF?.sceneName === 'solon' && !!window.SF.scene?._debug, null, { timeout: 15000 });
+  await sleep(500);
+  await D(p, () => SF.scene._debug.act('stuga-rod')); await sleep(600);
+  ok((await D(p, () => SF.sceneName)) === 'stuga' && (await D(p, () => SF.game.money)) === 3 && (await D(p, () => SF.game.stugaHyrd())), 'Solön: Röda stugan öppnas med din egen nyckel – ingen hyra');
+  await ctx.close();
+  // ny telefon: båten, stugan och årskortet hämtas tyst från Apple-kontot
+  const txs = ['motorbat', 'stuga', 'arskort'].map((s, i) => ({ transactionId: 'tx-evig-' + i, productIdentifier: SKU + 'evig.' + s, purchaseDate: new Date().toISOString() }));
+  const { ctx: ctx2, p: p2 } = await boot({ app: true, purchases: txs });
+  await p2.waitForFunction(() => (JSON.parse(localStorage.getItem('snabbfilen_kop') || '{}').evigt || []).length === 3, null, { timeout: 8000 }).catch(() => {});
+  ok(((await kopLage(p2))?.evigt || []).length === 3, 'ny telefon: båten, stugan och årskortet hämtas tyst från Apple-kontot');
+  await D(p2, () => SF.go('hamnen'));
+  await p2.waitForFunction(() => window.SF?.sceneName === 'hamnen', null, { timeout: 15000 });
+  ok((await D(p2, () => SF.game.bat)) === 'motor', 'ny telefon: motorbåten ligger vid rampen i hamnen');
   await ctx2.close();
 }
 

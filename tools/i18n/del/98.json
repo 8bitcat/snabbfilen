@@ -1,0 +1,72 @@
+[
+ {
+  "i": 10405,
+  "f": "js/core/kop.js",
+  "k": "Motorbåten – din för alltid"
+ },
+ {
+  "i": 10406,
+  "f": "js/core/kop.js",
+  "k": "Motorbåten ligger vid båtrampen i hamnen i varje spel, också efter Nytt spel. Kör ut till Solön när du vill."
+ },
+ {
+  "i": 10407,
+  "f": "js/core/kop.js",
+  "k": "Röda stugan på Solön – din för alltid"
+ },
+ {
+  "i": 10408,
+  "f": "js/core/kop.js",
+  "k": "Nyckeln till Röda stugan är alltid din: sov över gratis varje natt, i varje spel."
+ },
+ {
+  "i": 10409,
+  "f": "js/core/kop.js",
+  "k": "Djurparkens årskort"
+ },
+ {
+  "i": 10410,
+  "f": "js/core/kop.js",
+  "k": "Fri entré till Djurparken och fri ponnyridning på Pricken – för alltid, i varje spel."
+ },
+ {
+  "i": 10411,
+  "f": "js/core/kop.js",
+  "k": "🚤 Motorbåten är din! Den ligger vid båtrampen i hamnen."
+ },
+ {
+  "i": 10412,
+  "f": "js/core/kop.js",
+  "k": "🏡 Nyckeln till Röda stugan är din – sov där gratis varje natt!"
+ },
+ {
+  "i": 10413,
+  "f": "js/core/kop.js",
+  "k": "🎟️ Årskortet är ditt – fri entré och fri ponnyridning i Djurparken!"
+ },
+ {
+  "i": 10414,
+  "f": "js/scenes/djurparken.js",
+  "k": "🎟️ Årskortet blippar – välkommen in!"
+ },
+ {
+  "i": 10415,
+  "f": "js/scenes/djurparken.js",
+  "k": "🎟️ Årskortet gäller – upp i sadeln! Pricken går ett varv."
+ },
+ {
+  "i": 10416,
+  "f": "js/scenes/djurparken.js",
+  "k": "ENTRÉ · ÅRSKORT"
+ },
+ {
+  "i": 10417,
+  "f": "js/scenes/djurparken.js",
+  "k": "RID PÅ PRICKEN · ÅRSKORT"
+ },
+ {
+  "i": 10418,
+  "f": "js/scenes/solon.js",
+  "k": "🏡 Din egen nyckel – välkommen hem till Röda stugan!"
+ }
+]

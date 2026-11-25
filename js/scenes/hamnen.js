@@ -26,6 +26,7 @@ import { openFiske, kopSpo, fiskeOf, SPO_PRIS } from '../solon/fiske.js';
 import { TW, TH, H, HALLPLATS, ANKARE, HUS, HUSLISTA, STAND, FISKBIL, TRAILERS, KRAN, PIR, PIRHUVUD, FYR, FARJA, RAMP, BATAR, POLLARE, LYKTOR, LADOR, TINOR, NATSTALL, TUNNOR, BANKAR, REP, SKYLT, MAS, SAL, FARJA_PRIS, HYRA_PRIS, BATTYPER, hinder, vattenHinder, takCanvas, paintGround } from '../hamnen/karta.js';
 import { ritaHus, ritaStand, ritaFiskbil, ritaTrailer, ritaKran, ritaAnkare, ritaPollare, ritaHamnlykta, ritaLada, ritaTina, ritaNatstall, ritaTunna, ritaRep, ritaPirstolpe, ritaKatting, ritaBoj, ritaSkylt, ritaHallplats, ritaBat, ritaMas, ritaSal, ritaRok } from '../hamnen/deko.js';
 import { $t } from '../core/i18n.js';
+import { agerEvig } from '../core/kop.js';
 
 const BUSS = 10, GANG = 62, FISKPRIS = 30;
 const HAMNPRAT = [
@@ -45,6 +46,7 @@ const MARKNAD = {
 
 export function makeHamnen(A) {
   const g = A.game;
+  if (agerEvig('motorbat') && g.bat !== 'motor') { g.bat = 'motor'; g.save(); }   // 🔑 köpt motorbåt (js/core/kop.js): ligger vid rampen i varje spel
   let VW = Math.max(384, Math.min(A.W || 384, TW)), VH = Math.max(160, Math.min(A.H || 216, TH));
   const from = A.hamnFran || null; A.hamnFran = null;
   const walker = createCityWalker({ W: TW, H: TH, left: 2, right: TW - 2, top: H.TOP, bottom: H.BOTTOM, spawn: from?.marknad ? [(HUS.marknad.door.x0 + HUS.marknad.door.x1) / 2, H.BASE + 30] : [HALLPLATS.x + 16, HALLPLATS.y - 8] });
